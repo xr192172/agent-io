@@ -227,3 +227,87 @@ describe('decideFlushDelay（max-wait 拦风暴积压）', () => {
     expect(MAX_FLUSH_WAIT_MS).toBeGreaterThan(0);
   });
 });
+
+/**
+ * ★★ 2026-09-14 加的：watch 收尾"只重算**引用**部分"。
+ * 用户原话：「这个文件动了哪些就重新算这一部分就可以了，毕竟它只是引用，
+ * 我们只要重算引用部分即可。但是 AST 这部分是怎么算的？」
+ *
+ * 答案落在两处：
+ *   ① 被改文件自己的 AST：只有它**内容变了**才重新解析（syncFile 的 hash 闸）；
+ *   ② 引用**方**文件的 AST **不重解析**（文本没变），只重跑"引用名 → 符号"这一步 ——
+ *      而这一步必须先把"指向已消失符号"的边**重开**，否则引用方的边被 FK 级联删掉后
+ *      **永不重建**，find_references / impact 会静默漏报。
+ */
+describe('★ watch 收尾：引用方重算（只重算引用部分）', () => {
+  it('被引用方改名 → 引用方的引用被重开并重解析（不再静默漏报）', async () => {
+    const { root, db } = await makeProject('ref1');
+    put(root, 'src/service.ts', `import { login } from './auth';\nexport function handle(u: string): boolean {\n  return login(u, 'x');\n}\n`);
+    // 首次：service 引用 auth.login → 解析成跨文件边
+    await flushBatch(db, root, ['src/service.ts']);
+    const statusOf = (nm: string): string | undefined =>
+      (db
+        .prepare("SELECT status FROM unresolved_refs WHERE from_node_id LIKE 'src/service.ts#%' AND reference_name = $nm")
+        .get({ nm }) as { status: string } | undefined)?.status;
+    expect(statusOf('login')).toBe('resolved');
+
+    // 在编辑器里把 auth.login 改名（不经 rename_symbols）→ auth.ts 变、service.ts 没变
+    put(root, 'src/auth.ts', `export function signIn(user: string, pass: string): boolean {\n  return user === 'admin' && pass === 'x';\n}\n`);
+    const summary = await flushBatch(db, root, ['src/auth.ts']);
+
+    // ① 引用被重开（这个数历史上曾因异常被吞而长期为 0 ⇒ 必须显式断言）
+    expect(summary.refsReopened).toBeGreaterThan(0);
+    // ② 重开的引用**真的被解析了** —— 引用方文件必须并进 resolve scope，否则"开了却不解析"
+    expect(summary.cross.total).toBeGreaterThan(0);
+    // ③ 结论诚实：连不上就标 failed（不假装还连着旧符号）
+    expect(statusOf('login')).toBe('failed');
+    db.close();
+  });
+
+  it('未变文件不重解析（AST 只在内容变时才算）', async () => {
+    const { root, db } = await makeProject('ref2');
+    put(root, 'src/service.ts', `import { login } from './auth';\nexport function handle(u: string): boolean {\n  return login(u, 'x');\n}\n`);
+    await flushBatch(db, root, ['src/service.ts']);
+    // 原样再冲刷一次：hash 未变 ⇒ syncFile skipped ⇒ 不新建节点、不重开引用
+    const again = await flushBatch(db, root, ['src/auth.ts']);
+    expect(again.refsReopened).toBe(0);
+    expect(again.cross.total).toBe(0);
+    db.close();
+  });
+});
+
+/**
+ * ★★ 拼图边界闸（scopeToIndex）。
+ * 默认**不设界**（保持 serve 重建 DSL 的"新文件必须追进来"语义）；
+ * 大仓 + 只要保鲜时显式打开，界外事件如实计入 outOfScope（**不静默丢弃**）。
+ */
+describe('★ 拼图边界闸 scopeToIndex', () => {
+  it('默认不设界：新文件照常同步（serve/重建 DSL 的语义不受影响）', async () => {
+    const { root, db } = await makeProject('scope1');
+    put(root, 'src/fresh.ts', `export const n = 1;\n`);
+    const s = await flushBatch(db, root, ['src/fresh.ts']);
+    expect(s.changed).toBe(1);
+    expect(s.outOfScope).toBe(0);
+    db.close();
+  });
+
+  it('开启后：界外文件不处理，但计入 outOfScope；界内文件照常保鲜', async () => {
+    const { root, db } = await makeProject('scope2');
+    put(root, 'src/fresh.ts', `export const n = 1;\n`);
+    const s = await flushBatch(db, root, ['src/fresh.ts', 'src/auth.ts'], { scopeToIndex: true });
+    expect(s.outOfScope).toBe(1); // fresh.ts 未入索引 → 界外
+    expect(s.files).toEqual(['src/auth.ts']); // 已索引的照常处理
+    db.close();
+  });
+
+  it('索引为空时自动退回全处理（零前置 + watch 不能什么都不做）', async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'watch-empty-'));
+    roots.push(root);
+    const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    put(root, 'src/a.ts', `export const a = 1;\n`);
+    const s = await flushBatch(db, root, ['src/a.ts'], { scopeToIndex: true });
+    expect(s.changed).toBe(1);
+    expect(s.outOfScope).toBe(0);
+    db.close();
+  });
+});

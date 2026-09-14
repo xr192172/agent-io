@@ -143,6 +143,23 @@ export interface ProjectIndex {
 // 本函数只负责"读"侧：把种子周围建成拼图，并**如实返回覆盖度**。
 // ─────────────────────────────────────────────────────────────
 
+/**
+ * 拼图**边界**（= 索引已收录的文件集合）。`files.path` 是主键，所以判定是 O(1)。
+ *
+ * 为什么要把边界显式取出来：watch（看门狗）只该**保鲜已建的拼图**，
+ * 不该因为"监听了整个项目"就把未索引区的新增也顺手全量重建 —— 那是后台续建
+ * （`index_backfill`）的职责。两者分工：watch 高频低成本、reconcile 低频全量兜底。
+ */
+export function indexedRelativeSet(db: Database): Set<string> {
+  return new Set((db.prepare('SELECT path FROM files').all() as Array<{ path: string }>).map((r) => r.path));
+}
+
+/** 单文件是否已在拼图内（O(1)，走 files.path 主键） */
+export function isIndexedRelative(db: Database, rel: string): boolean {
+  const norm = rel.split(path.sep).join('/');
+  return db.prepare('SELECT 1 AS x FROM files WHERE path = $p').get({ p: norm }) !== undefined;
+}
+
 export interface TileOptions {
   /** 扩展跳数（默认 2） */
   depth?: number;
@@ -267,6 +284,7 @@ export async function ensureIndexAround(
     return [...outFiles];
   };
 
+  const syncedRels: string[] = []; // 本块真写进去的文件（供增量解析用）
   const seen = new Set<string>(relSeeds);
   /**
    * "终点节点"：文本反查进来的**引用方**。
@@ -321,7 +339,10 @@ export async function ensureIndexAround(
         try {
           const sr = await syncFile(db, root, abs);
           // 只把"真写进去的"算新建；failed/skipped 如实分开计（否则会把失败当成果）
-          if (sr.status === 'updated') report.newFiles++;
+          if (sr.status === 'updated') {
+            report.newFiles++;
+            syncedRels.push(rel);
+          }
           else if (sr.status === 'failed') report.failed++;
         } catch {
           report.failed++;
@@ -358,10 +379,14 @@ export async function ensureIndexAround(
     report.stopReason = 'depth';
   }
   // ★ 收尾：把本块新产生的**未决跨文件引用**解析掉（否则"谁引用我"方向看不到边）。
-  //   与 syncProject 的收尾同一件事；只在真新建了文件时才做。
-  if (report.newFiles > 0) {
+  //   两个口径修正（实测驱动）：
+  //   ① **只解析本块新同步的文件**（scopeFiles）：全量口径要预载全库符号表，实测 120 文件规模一次 9s，
+  //      而建块是"小步快跑"，全量口径会盖过解析本身；
+  //   ② **keepUnresolvedPending**：建块本身就是"局部索引"，目标符号很可能还没索引到 ——
+  //      此时判 `failed` 会永久缺边，所以留 pending，等后台续建/全量索引后再定论。
+  if (report.newFiles > 0 && syncedRels.length) {
     try {
-      resolveCrossFileCalls(db, root);
+      resolveCrossFileCalls(db, root, { scopeFiles: syncedRels, keepUnresolvedPending: true });
     } catch {
       /* 解析失败不阻断：pending 留待下轮 */
     }
@@ -509,21 +534,20 @@ export async function ensureFreshIndex(
       }
     }
 
-    // 有重同步 → 收尾跨文件调用解析（与 syncProject 收尾一致；幂等，只处理 pending）
-    if (dirty) {
-      try {
-        resolveCrossFileCalls(db, root);
-      } catch {
-        /* 解析失败不阻断：pending 留待下轮 */
-      }
-    }
     // ★ 引用方重解析（实测修正后的真缺口）：
     //   有人在编辑器里（不经工具）把 B 的符号改名/删掉时 ——
     //   ① B 的旧符号节点被删 ⇒ `edges` 的 FK `ON DELETE CASCADE` **自动删掉** A 指向它的边
     //      ⇒ **不会出现"悬空边"**（早先以为会，实测证伪）；
     //   ② 但 A 没变、不会被重解析 ⇒ 它的边被删后**不会重建** ⇒ find_references/impact 在 A 方向**漏报**。
-    //   正解：把"指向本轮变更/删除符号名"的已解析引用**重新打开**，交给随后的
-    //   resolveCrossFileCalls 重解析（连得上就连到新符号，连不上就明确标 failed）。
+    //   正解：把"指向本轮变更/删除符号名"的已解析引用**重新打开**，随后的 resolveCrossFileCalls
+    //   会重解析（连得上就连到新符号，连不上就明确标 failed）。
+    //   ★ 顺序要求：必须在下面那次 resolve **之前**做，并把被重开的**引用方文件**并进 scope ——
+    //     否则"开了却不解析"，只能退回全量 resolve（正确但慢，正是 42s 那类问题的根源）。
+    const scopeFiles = new Set(
+      pending
+        .filter((p) => p.kind === 'resync' || p.kind === 'add')
+        .map((p) => path.relative(root, p.abs).split(path.sep).join('/')),
+    );
     if (dirty) {
       try {
         const names = new Set<string>();
@@ -531,15 +555,26 @@ export async function ensureFreshIndex(
           if (p.kind !== 'resync') continue;
           for (const nm of changedSymbolNames(db, path.relative(root, p.abs).split(path.sep).join('/'))) names.add(nm);
         }
-        if (names.size) report.refsReopened = reopenRefsTo(db, [...names]);
+        if (names.size) {
+          const r = reopenRefsTo(db, [...names]);
+          report.refsReopened = r.reopened;
+          for (const f of r.files) scopeFiles.add(f);
+        }
       } catch {
         /* 重开失败不阻断 */
       }
-      // 收尾再解析一次（把刚重开的 pending 处理掉）
+    }
+
+    // 有重同步 → 收尾跨文件调用解析（幂等，只处理本轮变动的文件 + 被重开的引用方）
+    // ★ 两个口径修正：① **只解析本轮变动的文件**（全量口径要预载全库符号表，规模大时是主要耗时）；
+    //   ② 索引**还不完整**时（files 数 < 走查数，比如只在拼图模式下）留 pending、不判 failed ——
+    //   否则"目标只是还没索引到"会被误判成死引用，永久缺边。
+    if (dirty) {
+      const indexComplete = rows.length >= absFiles.length;
       try {
-        resolveCrossFileCalls(db, root);
+        resolveCrossFileCalls(db, root, { scopeFiles: [...scopeFiles], keepUnresolvedPending: !indexComplete });
       } catch {
-        /* 解析失败不阻断 */
+        /* 解析失败不阻断：pending 留待下轮 */
       }
     }
     report.state = report.skipped_adds > 0 ? 'partial' : 'ready';

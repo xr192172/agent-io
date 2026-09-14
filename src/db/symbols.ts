@@ -448,33 +448,56 @@ export async function syncFile(db: Database, projectRoot: string, absPath: strin
  *
  * 只动 `unresolved_refs` 的 status（纯 SQL，不解析任何文件）。
  */
-export function reopenRefsTo(db: Database, names: readonly string[]): number {
+export interface ReopenRefsResult {
+  /** 被重新打开的引用行数 */
+  reopened: number;
+  /**
+   * ★ 这些引用**所在的文件**（相对路径，去重）。
+   * 为什么必须返回：调用方（watch / 保鲜）接下来要跑 `resolveCrossFileCalls`，而它按 `scopeFiles`
+   * 收窄范围 —— 被重开的引用行属于**引用方文件**（它自己没变、本轮没同步），若不放宽 scope，
+   * 这些行就只会一直停在 pending，等于"打开了却不解析"，白改一场。
+   */
+  files: string[];
+}
+
+export function reopenRefsTo(db: Database, names: readonly string[]): ReopenRefsResult {
   const wanted = [...new Set(names.filter(Boolean))];
-  if (!wanted.length) return 0;
+  if (!wanted.length) return { reopened: 0, files: [] };
   // 该名字现在**在索引里还存在**吗？（决定要不要把 failed 的也一并重试 ——
   // 符号改名后又改回来 / 搬到别的文件时，之前标 failed 的引用应该有机会重连；
   // 名字彻底消失了就别每轮空转，尊重"failed 不再重试"的原设计。）
   const exists = db.prepare('SELECT 1 x FROM nodes WHERE name = ? LIMIT 1');
+  const pick = db.prepare(
+    `SELECT from_node_id FROM unresolved_refs
+     WHERE reference_name = $nm
+       AND (status = 'resolved' OR (status = 'failed' AND $retryFailed))`,
+  );
   const upd = db.prepare(
     `UPDATE unresolved_refs SET status = 'pending'
      WHERE reference_name = $nm
        AND (status = 'resolved' OR (status = 'failed' AND $retryFailed))`,
   );
+  const files = new Set<string>();
   let n = 0;
-  db.exec('BEGIN');
+  const ownTx = !inTransaction(db);
+  if (ownTx) db.exec('BEGIN');
   try {
     for (const nm of wanted) {
       const back = !!exists.get(nm);
       // ⚠️ node:sqlite 的命名参数键不能是纯数字（曾用 `{1: nm}` → Unknown named parameter '1'，
       //    而外层 try/catch 把它吞成了 refsReopened=0 ⇒ 静默失效。教训：被吞的异常要能看见。）
-      n += Number(upd.run({ nm, retryFailed: back ? 1 : 0 }).changes ?? 0);
+      const args = { nm, retryFailed: back ? 1 : 0 };
+      for (const r of pick.all(args) as Array<{ from_node_id: string }>) {
+        files.add(r.from_node_id.split('#')[0]);
+      }
+      n += Number(upd.run(args).changes ?? 0);
     }
-    db.exec('COMMIT');
+    if (ownTx) db.exec('COMMIT');
   } catch (e) {
-    db.exec('ROLLBACK');
+    if (ownTx) db.exec('ROLLBACK');
     throw e;
   }
-  return n;
+  return { reopened: n, files: [...files] };
 }
 
 /**
@@ -606,12 +629,31 @@ export interface CrossFileResolveStats {
  *
  * 幂等：只处理 status='pending' 的行；syncProject 全量同步后调用（跨文件匹配需要全库符号表）。
  */
-export function resolveCrossFileCalls(db: Database, projectRoot: string): CrossFileResolveStats {
-  const rows = db
-    .prepare(
-      "SELECT id, from_node_id, reference_name, reference_kind, line FROM unresolved_refs WHERE status='pending' AND reference_kind IN ('call','type_ref')",
-    )
-    .all() as Array<{ id: number; from_node_id: string; reference_name: string; reference_kind: string; line: number }>;
+export function resolveCrossFileCalls(
+  db: Database,
+  projectRoot: string,
+  opts: { scopeFiles?: readonly string[]; keepUnresolvedPending?: boolean } = {},
+): CrossFileResolveStats {
+  // ★ 增量口径（2026-09-14 实测加的）：只处理"来自指定文件"的未决引用。
+  //   为什么必需：本函数要**预载全库符号表**再处理所有 pending —— 实测 120 文件规模下一次就要 **9s**，
+  //   随索引增长而涨。若"每次建块/每批续建"都全量跑，成本会盖过解析本身（后台补齐 42s 的主因之一）。
+  //   传 `scopeFiles` = 本轮刚同步的文件 ⇒ 只解析它们的引用，成本与本轮文件数成正比。
+  const scope = (opts.scopeFiles ?? []).filter(Boolean);
+  const rows = (
+    scope.length
+      ? db
+          .prepare(
+            `SELECT id, from_node_id, reference_name, reference_kind, line FROM unresolved_refs
+             WHERE status='pending' AND reference_kind IN ('call','type_ref')
+               AND (${scope.map((_, i) => `from_node_id LIKE $s${i}`).join(' OR ')})`,
+          )
+          .all(Object.fromEntries(scope.map((f, i) => [`s${i}`, `${f}#%`])))
+      : db
+          .prepare(
+            "SELECT id, from_node_id, reference_name, reference_kind, line FROM unresolved_refs WHERE status='pending' AND reference_kind IN ('call','type_ref')",
+          )
+          .all()
+  ) as Array<{ id: number; from_node_id: string; reference_name: string; reference_kind: string; line: number }>;
   if (rows.length === 0) return { total: 0, resolved: 0, external: 0, failed: 0 };
 
   // 预加载：文件名 → 符号名集合（import 限定匹配用）
@@ -654,6 +696,20 @@ export function resolveCrossFileCalls(db: Database, projectRoot: string): CrossF
   const CROSS_META = JSON.stringify({ cross: true });
 
   const stats: CrossFileResolveStats = { total: rows.length, resolved: 0, external: 0, failed: 0 };
+  // ★ 索引**不完整**阶段（后台续建途中）不要急着判 failed：目标符号可能只是还没索引到。
+  //   一旦标 failed 就永不重试 ⇒ 最终索引会永久缺跨文件边。此时留 pending，等补完再一次性定论。
+  const keepPending = opts.keepUnresolvedPending === true;
+  const markUnresolved = (id: number): void => {
+    if (keepPending) return;
+    updFailed.run({ i: id });
+    stats.failed++;
+  };
+  // ★★ 事务包裹（2026-09-14 实测的关键修正）：本函数要写大量 edges / unresolved_refs 行。
+  //   不包事务 = 每条语句各自 autocommit ⇒ **每条一次 fsync** ⇒ 实测 20 文件规模的一批要 1.7s
+  //   （后台补齐 42s 里 27s 全在这里）。外层已有事务（如冷启 bootstrap）时自动降级为 no-op。
+  const ownTx = !inTransaction(db);
+  if (ownTx) db.exec('BEGIN');
+  try {
   for (const r of rows) {
     const rel = r.from_node_id.split('#')[0];
     const expr = r.reference_name;
@@ -671,8 +727,7 @@ export function resolveCrossFileCalls(db: Database, projectRoot: string): CrossF
         updResolved.run({ i: r.id });
         stats.resolved++;
       } else {
-        updFailed.run({ i: r.id });
-        stats.failed++;
+        markUnresolved(r.id);
       }
       continue;
     }
@@ -697,10 +752,14 @@ export function resolveCrossFileCalls(db: Database, projectRoot: string): CrossF
       updResolved.run({ i: r.id });
       stats.resolved++;
     } else {
-      updFailed.run({ i: r.id });
-      stats.failed++;
+      markUnresolved(r.id);
     }
   }
+  if (ownTx) db.exec('COMMIT');
+    } catch (e) {
+      if (ownTx) db.exec('ROLLBACK');
+      throw e;
+    }
   return stats;
 }
 

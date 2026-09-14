@@ -16,11 +16,11 @@
  * 纯本地：只读源码、写自己的 `<projectRoot>/.design-canvas/cache.db`。
  */
 
-import fs from 'node:fs';
 import path from 'node:path';
-import { getProjectCacheDb, type Database } from '../db/db.js';
+import { getProjectCacheDb, beginBatch, endBatch, type Database } from '../db/db.js';
 import { syncFile, resolveCrossFileCalls } from '../db/symbols.js';
 import { walkSourceFiles } from './refs_text.js';
+import { indexedRelativeSet } from './index_freshness.js';
 
 export interface BackfillState {
   running: boolean;
@@ -33,6 +33,10 @@ export interface BackfillState {
   synced: number;
   failed: number;
   rounds: number;
+  /** 计时拆分（诊断用）：同步 / 跨文件解析 / 其余(扫描+让出) */
+  syncMs: number;
+  resolveMs: number;
+  overheadMs: number;
   startedAt: number;
   finishedAt?: number;
   /** 最近一次错误（不吞：如实暴露） */
@@ -68,10 +72,8 @@ export function stopBackfill(root: string): void {
   if (s) s.running = false;
 }
 
-/** 已索引文件数（相对项目根） */
-function indexedSet(db: Database): Set<string> {
-  return new Set((db.prepare('SELECT path FROM files').all() as Array<{ path: string }>).map((r) => r.path));
-}
+/** 已索引文件数（相对项目根）—— 口径与拼图边界同一处（index_freshness.indexedRelativeSet） */
+const indexedSet = indexedRelativeSet;
 
 /**
  * 同步一批：返回本批结果与剩余量（纯前台可用的"手动补一批"，也是后台循环的步进函数）。
@@ -89,18 +91,28 @@ export async function backfillChunk(
   const take = todo.slice(0, batch);
   let synced = 0;
   let failed = 0;
-  for (const rel of take) {
-    try {
-      const r = await syncFile(db, absRoot, path.join(absRoot, rel));
-      if (r.status === 'updated') synced++;
-      else if (r.status === 'failed') failed++;
-    } catch {
-      failed++;
+  const scoped: string[] = [];
+  beginBatch(db);
+  try {
+    for (const rel of take) {
+      try {
+        const r = await syncFile(db, absRoot, path.join(absRoot, rel));
+        if (r.status === 'updated') {
+          synced++;
+          scoped.push(rel);
+        } else if (r.status === 'failed') failed++;
+      } catch {
+        failed++;
+      }
     }
+  } finally {
+    endBatch(db);
   }
-  if (synced > 0) {
+  if (scoped.length) {
     try {
-      resolveCrossFileCalls(db, absRoot);
+      // ★ 与后台循环同一口径：只解析本批文件的未决引用；索引尚未补完 ⇒ 留 pending 不判 failed。
+      //   （旧实现是全量 `resolveCrossFileCalls(db, absRoot)`，120 文件规模一次要 9s。）
+      resolveCrossFileCalls(db, absRoot, { scopeFiles: scoped, keepUnresolvedPending: true });
     } catch {
       /* 收尾失败不影响下一批 */
     }
@@ -127,6 +139,9 @@ export function scheduleBackfill(root: string, opts: BackfillOptions = {}): Back
     synced: 0,
     failed: 0,
     rounds: 0,
+    syncMs: 0,
+    resolveMs: 0,
+    overheadMs: 0,
     startedAt: Date.now(),
     ...(existing ? { synced: existing.synced, failed: existing.failed, rounds: existing.rounds } : {}),
   };
@@ -135,44 +150,85 @@ export function scheduleBackfill(root: string, opts: BackfillOptions = {}): Back
   const batch = opts.batch ?? 20;
   const intervalMs = opts.intervalMs ?? 200;
   const maxFiles = opts.maxFiles ?? Number.POSITIVE_INFINITY;
-  const resolveEvery = opts.resolveEvery ?? 5;
+  // 注： 参数保留兼容，但现在**只在全部补完后解析一次**（见 step 内注释）。
 
+  let cachedAll: string[] | null = null;
   const step = async (): Promise<void> => {
     if (!state.running) return;
     state.rounds++;
+    const roundStart = Date.now();
     try {
-      // 每轮重扫一次剩余（文件可能被增删；成本 ~几毫秒）
-      const all = walkSourceFiles(absRoot);
+      // 每 5 轮才重扫一次文件清单（文件增删不频繁；每轮重扫纯属浪费）
+      if (!state.rounds || state.rounds % 5 === 1 || !cachedAll) cachedAll = walkSourceFiles(absRoot);
+      const all = cachedAll;
+      state.overheadMs += Date.now() - roundStart;
       state.total = all.length;
       const indexed = indexedSet(db);
-      state.done = [...indexed].filter((p) => all.includes(p)).length || indexed.size;
+      // 进度口径：扫描列表 ∩ 已索引（用 Set，别在 filter 里 all.includes —— 那是 O(n²)）
+      state.done = all.length === 0 ? indexed.size : all.filter((p) => indexed.has(p)).length;
       const todo = all.filter((r) => !indexed.has(r));
-      if (!todo.length || state.synced >= maxFiles) {
+      // ★ 收尾解析：只在**全部补完之后**做一次（这一次是权威口径 —— 允许判 failed，
+      //   因为此时符号表已完整，"连不上"是真结论）。
+      //   中途则用增量口径（见下方每批的 resolveCrossFileCalls + keepUnresolvedPending），
+      //   两宗罪都避开：① 不反复全量重扫（实测 120 文件规模一次 9s）② 不把"还没索引到"误判成 failed。
+      if (!todo.length) {
+        try {
+          resolveCrossFileCalls(db, absRoot);
+        } catch {
+          /* 收尾失败：留待下次保鲜/查询时再解析 */
+        }
+        state.done = indexedSet(db).size;
+        state.running = false;
+        state.finishedAt = Date.now();
+        timers.delete(absRoot);
+        return;
+      }
+      if (state.synced >= maxFiles) {
         state.running = false;
         state.finishedAt = Date.now();
         timers.delete(absRoot);
         return;
       }
       const take = todo.slice(0, batch);
-      for (const rel of take) {
-        try {
-          const r = await syncFile(db, absRoot, path.join(absRoot, rel));
-          if (r.status === 'updated') state.synced++;
-          else if (r.status === 'failed') state.failed++;
-        } catch {
-          state.failed++;
+      // ★★ 增量解析（实测：全量 resolveCrossFileCalls 在 120 文件规模下要 9s，是"补齐 42s"的主因之一）：
+      //   每批只解析**本批文件**的未决引用，并且 `keepUnresolvedPending`（索引还没补完，
+      //   目标可能只是没索引到 —— 不能急着判 failed，否则永久缺边）。
+      beginBatch(db);
+      let resolvedScope: string[] = [];
+      const syncT0 = Date.now();
+      try {
+        for (const rel of take) {
+          try {
+            const r = await syncFile(db, absRoot, path.join(absRoot, rel));
+            if (r.status === 'updated') {
+              state.synced++;
+              resolvedScope.push(rel);
+            } else if (r.status === 'failed') state.failed++;
+          } catch {
+            state.failed++;
+          }
+          // 让出事件循环：前台请求（MCP）优先
+          await new Promise((r2) => setImmediate(r2));
         }
-        // 让出事件循环：前台请求（MCP）优先
-        await new Promise((r2) => setImmediate(r2));
+      } finally {
+        try {
+          endBatch(db);
+        } catch (e) {
+          state.lastError = `batch commit failed: ${(e as Error).message}`;
+        }
+        state.syncMs += Date.now() - syncT0;
       }
-      if (state.rounds % resolveEvery === 0) {
+      if (resolvedScope.length) {
+        const rt0 = Date.now();
         try {
-          resolveCrossFileCalls(db, absRoot);
+          resolveCrossFileCalls(db, absRoot, { scopeFiles: resolvedScope, keepUnresolvedPending: true });
         } catch {
-          /* 收尾失败不影响下一批 */
+          /* 本批解析失败：留 pending，下轮/收尾再试 */
         }
+        state.resolveMs += Date.now() - rt0;
       }
       state.done = indexedSet(db).size;
+      state.overheadMs += Date.now() - roundStart;
     } catch (e) {
       state.lastError = (e as Error).message;
     }

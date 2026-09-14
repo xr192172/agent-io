@@ -10,6 +10,14 @@
  * 二者共享 cache.db；watch_project 只更新缓存，不直接改 DSL（DSL 的实际/设计双文件
  * 更新由 S2 的调用方决定）。
  *
+ * ★ 三层分工（2026-09-14 定，见 docs/index-locality-design.md §8）：
+ *   1) **watch**（本模块，高频低成本）：只保鲜**已建拼图**里动过的文件 ——
+ *      拼图边界 = `files` 表已收录路径；边界外的事件交给 2)，并计入 `outOfScope` 如实上报；
+ *   2) **后台续建** `index_backfill`（分小批可中断）：把未索引区补齐（新增文件由此入索引）；
+ *   3) **reconcile**（本模块，低频全量兜底）：扫盘对比 stat，补 watch 漏掉的**已索引**文件变更，
+ *      并清掉磁盘上已消失的行。
+ *   收尾的跨文件解析一律走**增量口径**（`scopeFiles` = 本批动过的文件），不全量重解析。
+ *
  * 过滤规则（防反馈循环 + 噪声）：
  *   - 忽略 .design-canvas/（cache.db / live / features 写入会触发 watcher，必须排除）
  *   - 忽略 node_modules/.git/vendor 等非源码目录（与 import_project 的 SKIP_DIRS 对齐）
@@ -22,8 +30,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { Database } from '../db/db.js';
-import { syncFile, removeFile, resolveCrossFileCalls, pruneDeletedFiles, toRelPath, type CrossFileResolveStats } from '../db/symbols.js';
+import { syncFile, removeFile, resolveCrossFileCalls, pruneDeletedFiles, toRelPath, changedSymbolNames, reopenRefsTo, type CrossFileResolveStats } from '../db/symbols.js';
 import { isSupported } from './ts_kernel/index.js';
+import { indexedRelativeSet } from './index_freshness.js';
+import { backfillState } from './index_backfill.js';
 
 // ─────────────────────────────────────────────────────────────
 // 过滤规则（与 import_project 对齐，另加 .design-canvas 防反馈循环）
@@ -117,28 +127,105 @@ export interface WatchBatchSummary {
   ignored: number;
   /** 变更/删除的文件相对路径列表 */
   files: string[];
+  /** ★ 因落在**拼图边界外**而未处理的事件数（索引未收录 → 交给后台续建；不静默丢弃，如实暴露） */
+  outOfScope: number;
+  /**
+   * ★ 本轮因"变动文件里有符号改名/删除"而**重新打开**的引用行数。
+   * 为什么得有这个数：这一步的历史 bug 就是"静默为 0"（异常被吞）—— 有数字才看得见它真的在工作。
+   */
+  refsReopened: number;
+  /** 被重开的引用**分布在多少个引用方文件**里（= 本轮增量解析范围扣掉本批改动文件的部分） */
+  refsReopenedFiles: number;
+  /** 收尾阶段异常（不吞：宁可让调用方看见，也不要静默少边） */
+  error?: string;
   /** 跨文件调用重解析统计 */
   cross: { total: number; resolved: number; external: number; failed: number };
 }
 
-/** 对一批去重后的相对路径执行同步（增改=existsSync 判断），返回批量摘要 */
+export interface FlushBatchOptions {
+  /**
+   * ★ 只处理**拼图边界内**（索引已收录）的文件事件（**默认 false = 保持原语义**）。
+   *
+   * 打开后的语义：watch 变成**已建拼图的保鲜层** —— 边界外的新增/变更交给后台续建
+   * `index_backfill`（分小批、可中断），删除交给低频 `reconcileProject` 兜底。
+   * 未处理的事件计入 `outOfScope` 如实上报，**不静默丢弃**。
+   *
+   * 为什么不默认开：`serve` 的重建实际 DSL、以及"监听一个新项目"都用同一个 watch ——
+   * 对它们来说"新文件必须追进来"是正确性要求，收窄会变成静默少文件。
+   * 所以在**大仓 + 只要保鲜**的场景由调用方显式开。
+   *
+   * 特例：索引为空（从没建过）时自动退回全处理 —— 否则「零前置 + watch」会什么都不做。
+   */
+  scopeToIndex?: boolean;
+}
+
+/**
+ * 对一批去重后的相对路径执行同步（增改=existsSync 判断），返回批量摘要。
+ *
+ * ★ 收尾的跨文件解析走**增量口径**（`scopeFiles` = 本批真正动过的文件）：
+ * 旧实现是全量 `resolveCrossFileCalls(db, root)` —— 要预载全库符号表并处理所有 pending，
+ * 实测 120 文件规模一次 9s，且随索引增长而涨（这正是"后台补齐 42s"的主因之一）。
+ * 另外：索引补建途中不能判 failed（目标可能只是还没索引到）⇒ 跟随后台续建状态传 keepPending。
+ */
 export async function flushBatch(
   db: Database,
   projectRoot: string,
   rels: string[],
+  opts: FlushBatchOptions = {},
 ): Promise<WatchBatchSummary> {
-  const summary: WatchBatchSummary = { changed: 0, deleted: 0, ignored: 0, files: [], cross: { total: 0, resolved: 0, external: 0, failed: 0 } };
+  const summary: WatchBatchSummary = { changed: 0, deleted: 0, ignored: 0, files: [], outOfScope: 0, refsReopened: 0, refsReopenedFiles: 0, cross: { total: 0, resolved: 0, external: 0, failed: 0 } };
   const seen = new Set(rels.map((r) => r.split(path.sep).join('/')));
-  for (const rel of seen) {
+
+  // ── 拼图边界闸（仅显式开启；索引为空时自动退回全处理，保证零前置下 watch 仍可用）──
+  let inScope: string[] = [...seen];
+  if (opts.scopeToIndex === true) {
+    const indexed = indexedRelativeSet(db);
+    if (indexed.size > 0) {
+      inScope = [...seen].filter((r) => indexed.has(r));
+      summary.outOfScope = seen.size - inScope.length;
+    }
+  }
+
+  for (const rel of inScope) {
     const abs = path.join(projectRoot, rel);
     const res = await handleWatchEvent(db, projectRoot, abs);
     if (res.type === 'deleted') { summary.deleted++; summary.files.push(rel); }
     else if (res.type === 'changed') { summary.changed++; summary.files.push(rel); }
     else summary.ignored++;
   }
-  // 批量收尾：跨文件调用重解析（只处理 pending，幂等）
-  if (summary.changed + summary.deleted > 0) {
-    summary.cross = resolveCrossFileCalls(db, projectRoot);
+  // 批量收尾：① 重开指向"本轮变动符号"的引用 → ② 跨文件解析（只处理本批动过的文件 + 被重开的引用方）
+  if (summary.files.length > 0) {
+    const backfilling = backfillState(projectRoot)?.running === true;
+    // ① ★ 引用**部分**重算（用户 2026-09-14 问的正是这一段）：
+    //    本批文件改名的符号，其**引用方文件没变、不会被重解析** —— 而 `edges.target → nodes.id`
+    //    是 ON DELETE CASCADE，旧符号节点一删，引用方那条边就被**静默删掉且不重建** ⇒
+    //    find_references / impact 在该方向漏报。所以要把这些引用重开为 pending 再解析。
+    //    注意：重开的行属于**引用方文件**，必须一并放进 scope，否则"开了却不解析"。
+    const names = new Set<string>();
+    for (const rel of summary.files) {
+      for (const nm of changedSymbolNames(db, rel)) names.add(nm);
+    }
+    const scope = new Set(summary.files);
+    if (names.size) {
+      try {
+        const r = reopenRefsTo(db, [...names]);
+        summary.refsReopened = r.reopened;
+        summary.refsReopenedFiles = r.files.length;
+        for (const f of r.files) scope.add(f);
+      } catch (e) {
+        // 不吞：如实上报（历史教训 —— 静默吞掉曾让 refsReopened 长期为 0）
+        summary.error = `reopenRefsTo failed: ${(e as Error).message}`;
+      }
+    }
+    try {
+      summary.cross = resolveCrossFileCalls(db, projectRoot, {
+        scopeFiles: [...scope],
+        // 索引补建途中不能判 failed（目标可能只是还没索引到）⇒ 跟随后台续建状态
+        keepUnresolvedPending: backfilling,
+      });
+    } catch (e) {
+      summary.error = summary.error ? `${summary.error}; resolve failed: ${(e as Error).message}` : `resolve failed: ${(e as Error).message}`;
+    }
   }
   return summary;
 }
@@ -216,7 +303,9 @@ export async function reconcileProject(db: Database, projectRoot: string): Promi
   }
 
   // 3. 批量同步增改 + 跨文件重解析（复用 flushBatch 收尾）
-  const batch = await flushBatch(db, projectRoot, changedRels);
+  //    ★ scopeToIndex=false：兜底本身就是**全量语义**（候选已按 stat 收敛，不是"全项目重解析"），
+  //      若在这里也套拼图边界，"库中缺失的新文件"就永远补不进来。
+  const batch = await flushBatch(db, projectRoot, changedRels, { scopeToIndex: false });
   return {
     scanned: absFiles.length,
     changed: batch.changed,
@@ -237,6 +326,11 @@ export interface WatchProjectOptions {
   debounce_ms?: number;
   /** 定期 reconcile 兜底间隔（ms）。>0 时周期性全量扫描，补齐 fs.watch 漏掉的事件；0=关闭 */
   reconcile_interval_ms?: number;
+  /**
+   * ★ 是否把 watch 收窄到**拼图边界内**（默认 false）—— 见 `FlushBatchOptions.scopeToIndex`。
+   * 大仓 + 只要保鲜（不需要追新增）时打开：能避免一次 git checkout 把未索引区全量拉进索引。
+   */
+  scope_to_index?: boolean;
   /** 每批冲刷完成回调（供 serve 广播 SSE / 重建实际 DSL） */
   onChange?: (summary: WatchBatchSummary) => void;
   /** 每次 reconcile 完成回调 */
@@ -261,6 +355,7 @@ export function watchProject(opts: WatchProjectOptions): WatchHandle {
   const db = opts.db;
   const debounceMs = opts.debounce_ms ?? 150;
   const reconcileMs = opts.reconcile_interval_ms ?? 0;
+  const scopeToIndex = opts.scope_to_index ?? false;
   const onChange = opts.onChange;
   const onReconcile = opts.onReconcile;
   const onError = opts.onError;
@@ -289,7 +384,7 @@ export function watchProject(opts: WatchProjectOptions): WatchHandle {
     const rels = [...pending];
     pending.clear();
     try {
-      const summary = await flushBatch(db, root, rels);
+      const summary = await flushBatch(db, root, rels, { scopeToIndex });
       if (onChange) onChange(summary);
     } catch (e) {
       // flushBatch 失败时将未处理的路径归还 pending，避免静默丢失文件变更事件

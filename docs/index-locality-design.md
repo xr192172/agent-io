@@ -212,14 +212,59 @@ ensureIndexAround(db, root, seeds, { depth = 2, maxFiles = 200, directions = 'bo
 > 不能是纯数字，`{1: nm}` 抛 `Unknown named parameter '1'`）。**被吞的异常必须能被测试看见** ——
 > 现在测试直接断言 `refsReopened ≥ 1`。
 
-### 8.3 看门狗（watch）：已有，但需要"拼图化"
+### 8.3 看门狗（watch）：**已接上，并且把"引用部分"真正收窄了**（2026-09-14 落地）
 
-- 现状：`watch_project`（`explore_code action=watch`）已有 `fs.watch` + **周期 reconcile 兜底**
-  （fs.watch 会丢事件）+ `drift_on_change`；reconcile 会把**变更文件**透出（`changed_files`）。
-- 拼图化之后要补的两点：
-  1. **watch 范围收窄到"已索引区域"**（现在 watch 整个项目根）——拼图只对已建块负责；
-  2. **边界扩展**：边界处出现**新文件**时，把它并入相邻块（否则新文件要等下一次种子扩展才可见）。
-- 这两点都属于 S2（后台续建）的自然延伸：**前台按需建块 → 后台 watch 维护块**。
+用户问：「拼图的这一块，有文件更新了，触发更新……是不是这个文件动了哪些就重新算这一部分就可以了？」
+
+**三层分工**（写入 `watch_project.ts` 模块头，别再各说各的）：
+
+| 层 | 模块 | 频率/成本 | 职责 |
+|---|---|---|---|
+| **① watch** | `watch_project.flushBatch` | 高频、低成本 | 保鲜**已建拼图**里动过的文件：`syncFile` → **重开引用方** → **按 scope 解析** |
+| **② 后台续建** | `index_backfill` | 分小批、可中断 | 补齐未索引区（**新增文件由此入索引**） |
+| **③ reconcile** | `watch_project.reconcileProject` | 低频、全量扫盘 | 兜底 fs.watch 丢的事件 + 清掉磁盘上已消失的行 |
+
+三处改动：
+
+1. **收尾解析改增量口径**：`flushBatch` 的收尾从 `resolveCrossFileCalls(db, root)`（**全量**）
+   改为 `{ scopeFiles: 本批动过的文件 ∪ 被重开的引用方文件, keepUnresolvedPending: 后台续建仍在跑 }`。
+2. **引用方重开接进 watch**（§8.2 的修法原先只接在 `ensureFreshIndex` 保鲜路径上，watch 漏了）：
+   `changedSymbolNames` 取本批文件的 added/removed/changed 符号名 → `reopenRefsTo` 把指向它们的
+   已解析引用重开为 `pending`。**并且 `reopenRefsTo` 现在返回"这些引用在哪些文件里"**
+   —— 否则 scope 只含被改文件，"开了却不解析"，等于白改（这是接的时候差点犯的错）。
+3. **顺带修了 `ensureFreshIndex` 里的顺序 bug**：原先"先 resolve 再 reopen"，导致重开的行只能靠
+   再跑一次**全量** resolve 兜住；现在 reopen 在前、并把引用方并进 scope，只需一次增量 resolve。
+
+**拼图边界闸（`scope_to_index` / `scopeToIndex`）**：
+`index_freshness` 导出 `indexedRelativeSet` / `isIndexedRelative`（`files.path` 是主键，O(1)）。
+watch 可只处理边界内事件，界外的计入 `WatchBatchSummary.outOfScope` **如实上报（不静默丢弃）**。
+**默认关闭**：`serve` 重建实际 DSL 需要"新文件必须追进来"，收窄会变成静默少文件；
+大仓 + 只要保鲜时由调用方显式打开。索引为空时自动退回全处理（否则「零前置 + watch」会什么都不做）。
+
+### 8.4 ★ 实测对拍：旧口径"更快"是因为**它漏**（`probe-dc-watch-refresh.mjs`）
+
+两份独立副本，同一个改动（把被引用最多的符号 `storage.ts#getDSL` 改名，102 条跨文件边指向它）：
+
+| 口径 | 墙钟 | 重算范围 | 重开引用 | **陈旧断言**（说自己 resolved、但那个名字已不在索引里） |
+|---|---|---|---|---|
+| **旧**：sync + 全量 resolve | 66ms | **294 文件** | 0 条 | 0 → **100** ❌ |
+| **新**：`flushBatch`（sync + 重开 + scoped resolve） | 157ms | **51 文件** | 104 条 | 0 → **0** ✅ |
+
+读法（**三件事别混**）：
+
+1. **正确性最要紧**：旧口径把"陈旧断言"从 0 抬到 **100** —— 那 100 个引用方文件自己没变、行还停在
+   `'resolved'`，而**全量 resolve 只处理 `status='pending'` 的行，根本不看它们**。于是边被 FK 级联删掉后
+   一条都没重建 ⇒ `find_references` / `impact_analysis` 静默漏 100 条引用。
+   新口径多花的 91ms，**买的就是把这 100 条补回来/明确判死**（本例 resolved 20 / failed 101）。
+2. **范围是结构性的**：294 文件 vs 51 文件。全量的成本与**仓规模**成正比、与改动大小无关；
+   增量只与"改动文件 + 它的引用方"成正比。本例靶子是"引用最多"的最坏情况，比值才只到 5.8×。
+3. **与"补齐 42s"无关**：42s 的主因是**写了边却没包事务**（每条语句一次 fsync），
+   那条修正把跨文件解析 27.3s → 1.9s，修的是**写放大**不是范围。两件事。
+
+> 探针本身的坑也值得记：第一版靶子挑到了**靠 import 边**被指向的符号（`tools/serve.ts#sendError`，
+> 147 条入边），结果"重开 0 条"看着像功能没生效 —— 实际是 import 边由 `syncFile` 直建、
+> **不走 `unresolved_refs`**，符号改名不会级联删它、也就没有"重开"可言。现在靶子选取加了
+> `EXISTS (… status='resolved')` 条件，且 `refsReopened === 0` 时打印诊断而**不许沉默**。
 
 ---
 

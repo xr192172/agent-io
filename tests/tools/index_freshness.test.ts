@@ -22,7 +22,7 @@ import path from 'node:path';
 import { describe, it, expect, afterAll } from 'vitest';
 import { importProject } from '../../src/tools/import_project';
 import { semanticSearch } from '../../src/tools/semantic_search';
-import { ensureFreshIndex, hasChanges } from '../../src/tools/index_freshness';
+import { ensureFreshIndex, hasChanges, indexedRelativeSet, isIndexedRelative } from '../../src/tools/index_freshness';
 import { openDb } from '../../src/db/db';
 
 const roots: string[] = [];
@@ -250,6 +250,33 @@ describe('★ 引用方重解析（手工改名/删符号后，引用方的边�
       put(root, 'src/b.ts', 'export function foo(): number {\n  return 1;\n}\n');
       await ensureFreshIndex(db, root);
       expect(callEdges()).toBeGreaterThanOrEqual(1);
+    } finally {
+      db.close();
+    }
+  });
+});
+
+/**
+ * ★ 拼图**边界**：索引已收录的文件集合。watch 的收窄档、（未来的）局部查询都以它为准，
+ * 所以判定必须是 O(1) 且与 `files` 表同源（files.path 是主键）。
+ */
+describe('★ 拼图边界（indexedRelativeSet / isIndexedRelative）', () => {
+  it('已收录在界内 / 未收录在界外 / 源文件相对路径用 posix 分隔', async () => {
+    const root = await makeProject('boundary');
+    const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    try {
+      // 界内：import_project 收进来的两个文件
+      expect(isIndexedRelative(db, 'src/auth.ts')).toBe(true);
+      expect(isIndexedRelative(db, 'src/render.ts')).toBe(true);
+      // 界外：磁盘上有但没索引过
+      put(root, 'src/outside.ts', `export const o = 1;\n`);
+      expect(isIndexedRelative(db, 'src/outside.ts')).toBe(false);
+      // Windows 风格分隔符也要归一化（否则跨平台下判定会静默为 false）
+      expect(isIndexedRelative(db, 'src\\auth.ts')).toBe(true);
+
+      const set = indexedRelativeSet(db);
+      expect(set.has('src/auth.ts')).toBe(true);
+      expect(set.has('src/outside.ts')).toBe(false);
     } finally {
       db.close();
     }
