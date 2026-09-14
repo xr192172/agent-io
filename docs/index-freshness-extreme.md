@@ -31,14 +31,15 @@
 
 ---
 
-## 1. 五层保障（从便宜到贵，前一层失效才用后一层）
+## 1. 六层保障（从便宜到贵，前一层失效才用后一层）
 
 | 层 | 机制 | 覆盖谁 | 本层代价 | 状态 |
 |---|---|---|---|---|
+| **L0 首次接触建索引** | `registerAllTools` 唯一入口：带 `project_root` 的调用若该项目**还没有索引** ⇒ 顺手 `scheduleBackfill`（后台分小批、不阻塞本次调用）+ **诚实标注**"在建 ⇒ 结果可能不全" | **建索引的起点**：从"第一次读"提前到"第一次任何调用"（"工作区创建"没有钩子，这就是能拿到的最早信号） | 本次调用 0 阻塞（后台跑）；标注一行 | ✅ 2026-09-15 落地（kill-switch `DC_AUTO_BACKFILL=0`；幻觉路径不建库；`noAutoFresh` 工具不触发） |
 | **L1a 写穿** | `write_gate.writeSourceFiles()`：写前快照 → 真写 → `syncFile` + `reopenRefsTo` + scoped resolve | **我们自己改的**（async 工具） | 185ms/次（实测，单文件改名） | ✅ 已落地（`rename_symbols` 已接） |
 | **L1b 自写登记** | `write_gate.recordSelfWrite()` 落 `.design-canvas/self-writes.json`；读路径**优先消费** | **我们自己改的**（**同步签名**工具，await 不了异步 `syncFile`） | 写 ~0ms，读时一次性 | ✅ 已落地（`remove_dead_imports` 已接） |
 | **L2 watch** | `watch_project.flushBatch`：fs.watch + debounce + 增量 resolve | **别人改的**（git pull / 编辑器 / 另一个 agent） | 单批 ~100ms | ✅ 已落地（含拼图边界闸 `scopeToIndex`） |
-| **L3 读前自证**（两条路） | ① `ensureFreshIndex`：消费自写登记 → stat 比对 → 重同步 → 重开引用（**精确、异步**）<br>② **通用陈旧告警** `staleIndexWarning()`：注入**每一个**工具响应（**保守、同步、只 stat**） | ① 走了保鲜入口的工具<br>② **全部 60 个工具** | ① O(已索引文件) 次 stat<br>② 抽 ≤400 次 stat，5s 缓存 | ✅ 两条都落地 |
+| **L3 读前自证**（两条路） | ① **自动保鲜**：`registerAllTools` 唯一入口，调 handler 前若 `hasLiveIndex` 且**后台续建没在建**（`isIndexIncomplete`）就 `ensureProjectIndex({bootstrap:false})`（**精确**；在建时跳过 —— 后台循环本来就在持续同步，逐调用保鲜只会重复全盘走查 + 触发 `MAX_ADDS_PER_REFRESH` 噪音）<br>② **通用陈旧告警** `staleIndexWarning()`：注入**每一个**工具响应（**保守、同步、只 stat**） | ① **全部 60 个工具**（结构保证，新增工具不用记得）<br>② 同左，兜底标注 | ① ready 态 ~35ms/次<br>② 抽 ≤400 次 stat，5s 缓存 | ✅ 两条都落地 |
 | **L4 全量兜底** | `reconcileProject`：低频扫盘 | 目录级删除等 L2 看不见的 | O(文件数) stat | ✅ 已落地 |
 
 **L3 的②为什么是"结构性"的**：此前保鲜靠**每个工具自己记得调** `ensureProjectIndex` ——
@@ -96,14 +97,14 @@
 |---|---|---|---|---|
 | P1 | 读不到：先让我 `import_project` | 第一步就劝退 | 零前置冷启（有界 2000 文件 + 诚实 `truncated`） | ✅ |
 | P2 | 读得慢：首查等 12s | LLM 会放弃或超时 | 拼图首读（1.0s）+ 后台续建 | ✅ |
-| P3 | **读到旧数据** | 拿旧图做编辑决策 | L1a/L1b/L2/L3①②/L4 五层（本文） | ✅ |
+| P3 | **读到旧数据** | 拿旧图做编辑决策 | L0/L1a/L1b/L2/L3①②/L4 六层（本文） | ✅ |
 | P4 | 读到一半却不说 | 以为完整，结论偏 | `partial`/`stopReason`/`outOfScope` 诚实标注 + `index_integrity` 自检 | ✅ 标注；🟡 "顺着边界再长"未做（§4） |
 | P5 | 不知道自己不知道 | 幻觉选工具 | `capability_map`（由注册表派生，60/60 归线） | ✅ |
 | P6 | 改坏了不能退 | 不敢改 | `file_snapshot` + 写前快照（现已随 L1a 一起做） | 🟡 仅 3 个工具接快照 |
 | P7 | 改完索引变旧 → 下一次读又是旧数据 | P3 的回环 | L1a 写穿 + 返回 `indexWriteThrough` 让 LLM 知道 | ✅ 核心已通 |
 | P8 | 成本不可预期 | 不敢在热路径调 | 时长上限 `maxMs` + 报告里都给 `ms` | ✅ |
 | P9 | 多窗口/多进程互相踩 | 索引/快照互相覆盖 | 自写登记用原子 rename；`stale…` 自检可发现 | 🟡 无锁，靠"读前自证"兜 |
-| P10 | 某些语言只解析出部分结构 | 把"解析不到"当成"不存在" | 需**按语言的解析能力自述** + 降级说明 | ❌ 待做 |
+| P10 | 某些语言只解析出部分结构 | 把"解析不到"当成"不存在" | 需**按语言的解析能力自述** + 降级说明 | ✅ parse_capability（2026-09-15） |
 
 **当前最大的洞（已补一半）**：原本 **17 个读工具直接开库、不保鲜**（`diff_impact`、`function_outline`、
 `overview`、`query_feature`、`analyze_monolith`、`extract_contracts`、`language_concepts`、
@@ -129,6 +130,12 @@
 - 为什么可开：避免一次 `git checkout` 把未索引区全量拉进索引（拼图的意义就是**懒**）。
 - 为什么**默认关**：`serve` 重建实际 DSL 需要"新文件必须追进来"，收窄会静默少文件。
 - 特例：**索引为空**时自动退回全处理 —— 否则「零前置 + watch」会什么都不做。
+- ★ **拍板（2026-09-15，L0 落地后）**：MCP `watch_project` 的 `scope_to_index` **默认关（= 展开，
+  watch 管整个项目），维持现状不改代码**。理由：① 显式起 watch = 明确意图"给我盯住"，
+  LLM 接下来的读都默认可信，收窄会让界外事件出现"要等后台续建/reconcile 才追上"的时间窗；
+  ② L0 之后"保护拼图惰性"的理由消失 —— 反正整个项目马上会被后台补齐，"git checkout 把
+  未索引区拉进索引"本来就不再是需要防的事；③ 收窄的真实收益只剩"超大仓库 + 只关心一块"，
+  保留参数当 opt-in 即可。
 
 一句话：**它是"watch 要不要只对已建拼图负责"的开关**，不是"索引要不要建"的开关。
 
@@ -149,22 +156,39 @@
 
 ## 5. 还差的（按性价比排序）
 
-1. **把"标注"升级成"精确"**（L3② 的下一步）
-   `staleIndexWarning` 已覆盖全部工具，但它只**标注**（且 5s 缓存 + size/mtime 粒度）。
-   要让那 17 个工具**结果本身**也可信，二选一：
-   - 给 cache.db 连接加 **TTL 保鲜守卫**（`getFreshProjectCacheDb(root, {maxAgeMs})`，async），
-     让"直接开库"的路径自动保鲜；或
-   - 给 `diff_impact` 这个"给行动建议"的工具**优先**单独接 `ensureProjectIndex`（高风险优先）。
-2. **把可信度接进关键工具的输出**（`index_integrity` 已能算，待推广）
-   在"准备基于索引做改动"的工具（`impact_analysis` / `rename_*` / `diff_impact`）结果里
-   **自动附一行可信度**，让 LLM 不必记得主动问。
-3. **边界扩展**（§4.2）：`noExpand` 终点复用 + 新文件并入相邻块。
-4. **能力自述**（P10）：按语言的"可解析粒度"如实标注，别让"解析不到"等于"不存在"。
+1. ~~**把"标注"升级成"精确"**~~ ✅ 2026-09-15 已落地（L3① 自动保鲜）：`registerAllTools` 唯一入口
+   `hasLiveIndex ⇒ ensureProjectIndex({bootstrap:false})`，覆盖全部 60 个工具，ready 态 ~35ms/次。
+   逃生口 `ToolDef.noAutoFresh`（`index_integrity` / `import_project` 用）。
+2. ~~**把可信度接进关键工具的输出**~~ ✅ 2026-09-15 已落地：`ToolDef.trustAnnotated` 标在
+   `find_references` / `impact_analysis` / `rename_symbols` / `rename_files` 四个"结论会被拿去行动"的
+   工具上，响应自动附 `⚠️ TRUST：N 条陈旧断言（resolved 但目标符号已不在索引）⇒ 结论可能静默漏报`
+   + 可执行修复（`index_integrity({refresh:true})`）。与 `staleIndexWarning` 分工：后者管"索引落后于磁盘"
+   （stat 可见），本附注管"索引自身内部不一致"（保鲜路径看不见，唯一线索是那批行本身）。
+   **刻意不设缓存**：rename_symbols 自己会修陈旧引用，缓存会让附注在修完后还报旧数 —— 宁可每次
+   一次纯 SQL 计数（毫秒级），也不要"过期的诚实"。测试：`tests/server_registry.trust_note.test.ts`（5 项）。
+3. **边界扩展**（§4.2）：`noExpand` 终点复用 + 新文件并入相邻块（需要持久化拼图边界，设计级改动）。
+4. ~~**能力自述**（P10）~~：✅ 已落地（2026-09-15）—— 新模块 `src/tools/parse_capability.ts`：
+   按语言三档自述（`call` = LANG_ADAPTERS 有 callNode 的深解析（ts/tsx/js/jsx/go/python/java/rust/c#/
+   c/php，能出调用+import 边）；`symbol` = 注册了 symbol_nodes 但无 call 适配器（cpp/kotlin/ruby…）；
+   `none` = 解析器未安装/不在支持列表）。`find_references`（3 种模式）/ `impact_analysis` 结果自动附
+   "解析粒度"注（非 call 档 ⇒ "零引用/零波及不可全信"）；`index_integrity` 自述 `语言能力自述` 行
+   （按档分组计数）。核心不变量：**没有这些边的语言，"零波及"是解析器能力的极限，不是事实**。
+   测试：`tests/tools/parse_capability.test.ts`（9 项，含 impact_analysis/index_integrity 集成）。
 5. **同步工具的写穿**：`syncFile` 是异步的，同步签名工具只能走 L1b。
    若把 `parseFileFull` 的初始化改成"进程启动预热"，同步路径就能直连 L1a（去一层延迟）。
-6. **写入闸的覆盖面**：目前只接了 `rename_symbols`（L1a）与 `remove_dead_imports`（L1b）。
-   其余会改源码的：`edit_code`（已有快照 + syncFile，但未走闸）、`rename_files`、`symbol_move`、
-   `code_workbench`、`refactor_pipeline`、`scaffold` ⇒ 应统一收敛到 `writeSourceFiles`。
+6. ~~**写入闸的覆盖面**~~：✅ 全部收编完成（2026-09-15）——
+   `edit_code` / `rename_file` / `symbol_move` 接 `reopenAndResolveAfterWrite`；
+   `refactor_pipeline` 在每步**终态**（applied 或回滚后）跑一次 `syncSelfWrites`
+   （文件集 = 内容改写 ∪ 移动 from/to；回滚分支按 hash 判 skipped 零成本；异常 → `recordSelfWrite`
+   L1b 兜底；结果附 `index_note`）；`scaffold` 同步签名走 L1b（`snapshotAndRecordSelfWrite`，
+   新增 `project_dir` 入参，生成物在根外/无索引安静跳过）；
+   `code_workbench` **无需接闸**（真实写入全委托给已闸的 editCode/renameFile；DSL/提案 store
+   非源码）。测试：`tests/tools/write_gate_adoption.test.ts`（5 项）。
+7. ~~**`harvest_from_url` 的 git clone 路径格式**~~ ✅ 2026-09-15 已修复：
+   Git for Windows 把 `file://` URL 的路径部分当 POSIX 路径（剥掉 `file://` 后剩 `/C:/...`）
+   ⇒ clone 必失败。`shallowClone` 现在把 `file:///C:/foo` 先还原成 `C:/foo` 直接克隆
+   （本地克隆走硬链接，`--depth` 对本就无效，本地分支不带它）；远程 URL 分支不变。
+   测试 11/11 全绿（此前该项是全量套件里最后一个非环境类失败）。
 
 ---
 
@@ -176,7 +200,11 @@
 | 引用方不漏 | `probe-dc-watch-refresh.mjs` | 增量口径陈旧断言 **0**（旧全量口径 0→100） |
 | 可信度可自检 | `index_integrity` | 人为制造陈旧断言 ⇒ `trustworthy=false`；`refresh:true` 后归零 |
 | 陈旧告警注入可见 | `tests/server_registry.stale_index_warning.test.ts`（7 项） | 静默/报一次/防刷屏/恢复后能重报/自写登记也计入 |
-| 写入闸行为 | `tests/tools/write_gate.test.ts`（8 项） | 无索引不建库；有索引 ⇒ `refsReopened≥1` + 快照 |
+| 首次接触即建索引 | `tests/server_registry.first_contact.test.ts`（5 项） | 无索引 + 带根调用 ⇒ 后台起建 + 标注"可能不全"；30 文件后台补完；kill-switch / 幻觉路径 / noAutoFresh 不触发 |
+| 行动工具可信度附注 | `tests/server_registry.trust_note.test.ts`（5 项） | 4 工具带 `trustAnnotated`；健康 ⇒ 无注；陈旧断言 ⇒ TRUST 注（静默漏报 + 修复指引）；修完 ⇒ 注消失；无索引不注 |
+| 写入闸行为 | `tests/tools/write_gate.test.ts`（9 项） | 无索引不建库；有索引 ⇒ `refsReopened≥1` + 快照 |
+| 写闸收编（管线/骨架） | `tests/tools/write_gate_adoption.test.ts`（5 项） | 管线 applied ⇒ 索引随盘 + 引用方重开（旧名 failed）；rolled_back ⇒ 索引零扰动；纯移动 from 移除/to 入索引；scaffold L1b 登记可见、根外不登记 |
+| 语言能力自述（P10） | `tests/tools/parse_capability.test.ts`（9 项） | 按扩展名/语言分档；refs/impact 自动附"解析粒度"注；index_integrity 自述语言能力行 |
 | 首读够快 | `probe-dc-locality.mjs --flow` | 首读 < 1.5s（现 1.0s） |
 | 补齐成本 | `probe-dc-backfill-profile.mjs` | 与冷启同量级（现 13.4s vs 11.8s，298 文件） |
 | 目录与注册表一致 | `capability_map` 测试 | `validateLanes` 无「未归线」 |

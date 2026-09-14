@@ -23,6 +23,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { DesignDSL, SemanticFile, CodeTemplate, Node, ContentBlock } from '../dsl/types.js';
 import { getDSL } from '../storage.js';
+import { snapshotAndRecordSelfWrite, toRelPosix } from './write_gate.js';
 
 export interface ScaffoldInput {
   /** feature 名 */
@@ -33,6 +34,8 @@ export interface ScaffoldInput {
   overwrite?: boolean;
   /** UI 骨架类型（覆盖 DSL 配置） */
   ui_framework?: 'vue' | 'react' | 'html';
+  /** 项目根（索引归属）：提供时生成物登记为自写（读路径优先同步索引）；缺省不登记 */
+  project_dir?: string;
 }
 
 export interface ScaffoldResult {
@@ -679,6 +682,31 @@ export function scaffold(input: ScaffoldInput): ScaffoldResult {
     ? path.resolve(output_dir)
     : path.join(process.cwd(), 'scaffold', feature);
 
+  // 写闸收编（L1b）：本工具是同步签名 ⇒ **写前**快照 + 自写登记（不做写穿——syncFile
+  // 是异步的，同步调用者 await 不了），读路径（ensureFreshIndex）会优先消费这份清单
+  // 把生成的新文件同步进索引。登记的是"计划写入集"（含最终被跳过的：消费方按内容
+  // hash 判定，未变的同步是 no-op，无害）；生成物在项目根外 / 该项目还没有索引
+  // ⇒ 各自安静跳过（纪律：绝不凭空建索引）。
+  const plannedFiles = dsl.semantic.files.map((f) => path.join(outDir, f.path));
+  const invariantsPath = path.join(outDir, 'INVARIANTS.md');
+  plannedFiles.push(invariantsPath);
+  let indexNote: string | null = null;
+  if (input.project_dir) {
+    try {
+      const inRoot = plannedFiles.filter((f) => toRelPosix(input.project_dir!, f));
+      if (inRoot.length === 0) {
+        indexNote = '索引：未登记 —— 生成物在项目根之外';
+      } else {
+        const gate = snapshotAndRecordSelfWrite(input.project_dir, inRoot, { label: `scaffold:${feature}` });
+        indexNote = gate.mode === 'deferred'
+          ? `索引：已登记 ${inRoot.length} 个文件进自写清单（读路径优先同步）`
+          : '索引：未登记 —— 该项目还没有索引（只真写，不建索引）';
+      }
+    } catch (e) {
+      indexNote = `⚠️ 索引登记失败（不影响生成结果）：${(e as Error).message}`;
+    }
+  }
+
   const generatedFiles: string[] = [];
 
   // 为每个 semantic file 生成骨架
@@ -745,8 +773,7 @@ export function scaffold(input: ScaffoldInput): ScaffoldResult {
     generatedFiles.push(fullPath);
   }
 
-  // 生成不变式文件
-  const invariantsPath = path.join(outDir, 'INVARIANTS.md');
+  // 生成不变式文件（路径已在写闸登记段算好）
   fs.writeFileSync(invariantsPath, generateInvariants(dsl), 'utf-8');
   generatedFiles.push(invariantsPath);
 
@@ -754,6 +781,7 @@ export function scaffold(input: ScaffoldInput): ScaffoldResult {
     `已为 feature "${feature}" 生成 ${generatedFiles.length} 个文件`,
     `输出目录：${outDir}`,
     useMarkers ? '已生成注释标记（<!-- design-canvas:node_id -->）' : '未生成注释标记',
+    ...(indexNote ? [indexNote] : []),
     generateUi ? `UI 骨架：${uiFramework}` : '',
     '',
     '生成的文件：',

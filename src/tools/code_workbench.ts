@@ -536,6 +536,13 @@ export interface ApproveResult {
   error?: string;
 }
 
+/**
+ * 审批执行。★ 写闸说明（为什么这里没有索引写穿代码）：
+ * 本函数所有真实源码写入都委托给**已接闸**的执行器 —— rename_file→renameFile（自带
+ * syncFile+reopenAndResolveAfterWrite）、split_plan/edit_code→editCode（5 处写穿点）；
+ * dsl_rename/dsl_intent 只改设计画布 store（.design-canvas 下的 DSL/提案 JSON，非源码，
+ * 索引不覆盖）。⇒ 索引保鲜由被委托方保证，这里不需要（也不得重复）写穿。
+ */
 export async function approveChange(project_dir: string, id: string): Promise<ApproveResult> {
   project_dir = path.resolve(project_dir);
   const c = loadChanges(project_dir).find((x) => x.id === id);

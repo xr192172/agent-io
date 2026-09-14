@@ -28,6 +28,7 @@ import { walkSourceFiles } from './refs_text.js';
 import { hasLiveIndex, pendingSelfWrites } from './write_gate.js';
 import { backfillState, backfillSummary, isIndexIncomplete } from './index_backfill.js';
 import { ensureProjectIndex, type IndexState } from './index_freshness.js';
+import { summarizeLanguagesByTier, type LanguageTierSummary } from './parse_capability.js';
 
 export interface IntegrityIssue {
   /** 机器可读的问题码 */
@@ -89,6 +90,8 @@ export interface IndexIntegrityResult {
   };
 
   backfill: string;
+  /** P10 能力自述：已索引文件按语言的解析层级汇总（文件数降序；渲染时截前 8 行） */
+  languages: LanguageTierSummary[];
   issues: IntegrityIssue[];
   /** 综合判定：`true` = 眼下读到的东西可以当真 */
   trustworthy: boolean;
@@ -172,6 +175,7 @@ export async function indexIntegrity(opts: {
       refs: { pending: 0, resolved: 0, external: 0, failed: 0, stale_resolved: 0 },
       freshness: { not_fresh: 0, not_fresh_sample: [], self_writes_pending: pendingSelfWrites(root).length },
       backfill: backfillSummary(backfillState(root)),
+      languages: [],
       issues: [
         {
           code: 'no_index',
@@ -351,6 +355,7 @@ export async function indexIntegrity(opts: {
       self_writes_pending: selfWrites.length,
     },
     backfill: backfillSummary(bf),
+    languages: summarizeLanguagesByTier([...indexedSet]),
     issues,
     trustworthy,
     summary,
@@ -369,6 +374,17 @@ export function renderIntegrity(r: IndexIntegrityResult): string {
     `  ★ 陈旧断言（resolved 但目标名已不在索引）：${r.refs.stale_resolved}`,
     `  新鲜度：不一致 ${r.freshness.not_fresh} ｜ 待消费自写登记 ${r.freshness.self_writes_pending} ｜ ${r.backfill}`,
   ];
+  if (r.languages.length) {
+    const tierLabel: Record<string, string> = { call: '调用级', symbol: '符号级', none: '不解析' };
+    // 只展示前 8 种（按文件数）；同层级合并显示避免长尾刷屏
+    const top = r.languages.slice(0, 8);
+    const rest = r.languages.length - top.length;
+    lines.push(
+      `  语言能力自述：${top.map((l) => `${l.lang}=${tierLabel[l.tier] ?? l.tier}(${l.files})`).join(' · ')}` +
+        (rest > 0 ? ` · …等 ${r.languages.length} 种` : '') +
+        '——非"调用级"语言的引用/影响结论会低估（"零引用/零波及"不可全信）',
+    );
+  }
   if (r.freshness.not_fresh_sample.length) {
     lines.push(`  未保鲜样例：${r.freshness.not_fresh_sample.join(', ')}`);
   }

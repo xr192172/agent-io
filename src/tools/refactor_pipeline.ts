@@ -47,6 +47,7 @@ import type { JudgeIssue } from './refactor_judge.js';
 import { scanContracts, diffContracts, type ContractSnapshot, type ScanContractsOptions, type UndefinedRef } from './contract_gate.js';
 import { checkEmbedSubmissions, type SubmitCheckResult } from './submit_gate.js';
 import { planFunctionAnnotation } from './function_annotation.js';
+import { syncSelfWrites, recordSelfWrite, writeThroughLine } from './write_gate.js';
 
 // re-export 契约类型（向后兼容：外部可从本模块取用）
 export type {
@@ -84,6 +85,9 @@ export interface StageResult {
   after?: VerificationOutcome | null;
   /** 契约对账闸门结果（contractGate 开启且该步确有落盘时才记录） */
   contract?: { status: 'ok' | 'danger'; newIssues: UndefinedRef[] } | null;
+  /** 写闸收编（L1a）：本步终态（applied / 回滚后）的索引写穿结果（人读一行）。
+   *  undefined = 该项目还没有索引 ⇒ 只真写、不写穿（纪律：绝不凭空建索引）。 */
+  index_note?: string;
 }
 
 export interface PipelineOptions {
@@ -599,20 +603,44 @@ export async function runRefactorPipeline(opts: PipelineOptions): Promise<Pipeli
     // 仅当用真实 runner（未注入 verifyImpl）且探测不出命令（缺 mvn/javac/go npm 等工具链）→ 走静态复核降级。
     const hasAuthoritative = commands.length > 0 || !!opts.verifyImpl;
 
+    // ── 写闸收编（L1a）：本步**终态**（applied 或回滚后）把索引对齐磁盘 ──
+    // 文件集 = 内容改写 ∪ 移动 from/to：applied 时 from 已不在盘上（syncSelfWrites 按
+    // 存在性从索引移除）、to 是新内容；回滚时 from 回到原内容（hash 未变 ⇒ skipped 零成本）、
+    // to 不在盘上 ⇒ 同样移除。★ 只在终态跑一次：中途写穿会在回滚分支白做一轮同步。
+    // 已知边界：纯移动时若某引用方不在此批内容改写里，它指向旧路径符号的已解析边会被
+    // FK 级联删除且无法按名重开 —— 由管线自身的 import 改写（大多数引用方在 absToNew 里）
+    // 与 L4 reconcile 兜底；这比收编前"整步不同步"严格更好。
+    const gateFiles: string[] = [
+      ...plan.absToNew.keys(),
+      ...moves.flatMap((m) => [m.from, m.to]),
+    ];
+    const finalize = async (stage: StageResult): Promise<void> => {
+      try {
+        const out = await syncSelfWrites(proj, gateFiles);
+        if (out) stage.index_note = writeThroughLine(out);
+        // out 为 null = 该项目没有索引 ⇒ 只真写、不写穿、绝不凭空建索引
+      } catch (e) {
+        // 写穿崩了不静默：登记自写（L1b），读路径会优先同步
+        try { recordSelfWrite(proj, gateFiles, 'refactor_pipeline write-through failed'); } catch { /* 登记失败也不阻断主流程 */ }
+        stage.index_note = `⚠️ 索引写穿异常（已登记自写，读路径会优先同步）：${(e as Error).message}`;
+      }
+      r.stages.push(stage);
+    };
+
     // ── 无权威验证：`!verify`（本就只落盘）或 `verify` 开了但命令组空（无工具链）──
     // 降级：对每个内容改写的文件做 tree-sitter 静态复核——必须仍可解析；失败回滚。
     if (!verifyEnabled || !hasAuthoritative) {
       const staticFail = await staticRevalidate(plan.absToNew, proj);
       if (staticFail) {
         rollbackWrites();
-        r.stages.push({
+        await finalize({
           id, label, index, outcome: 'rolled_back',
           files_changed: changedCount, units_removed: units,
           detail: `静态复核失败：${staticFail}`,
         });
         return;
       }
-      r.stages.push({
+      await finalize({
         id, label, index, outcome: 'not_verifiable',
         files_changed: changedCount, units_removed: units,
         detail: verifyEnabled
@@ -626,7 +654,7 @@ export async function runRefactorPipeline(opts: PipelineOptions): Promise<Pipeli
     if (after.status === 'fail') {
       // ── 回滚此步：跨权威验证黄 → 回到上一步绿点 ──
       rollbackWrites();
-      r.stages.push({
+      await finalize({
         id, label, index, outcome: 'rolled_back',
         files_changed: changedCount, units_removed: units,
         detail: after.detail, baseline, after,
@@ -634,7 +662,7 @@ export async function runRefactorPipeline(opts: PipelineOptions): Promise<Pipeli
       return;
     }
 
-    r.stages.push({
+    await finalize({
       id, label, index, outcome: 'applied',
       files_changed: changedCount, units_removed: units,
       baseline, after,

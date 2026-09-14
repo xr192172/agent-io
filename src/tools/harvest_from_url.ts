@@ -133,10 +133,32 @@ function gitOk(cwd: string): string {
   }
 }
 
+/**
+ * `file:///C:/foo` → `C:/foo`（其余形式返回 null，原样走 URL 分支）。
+ *
+ * 为什么必须转：Git for Windows 解析 `file://` URL 时把路径部分当 **POSIX 路径**
+ * （剥掉 `file://` 后剩 `/C:/...`）⇒ `fatal: '/C:/...' does not appear to be a git repository`，
+ * clone 必失败（实测 2026-09-15，系统 git 复现）。本地路径直接 clone 则又快又稳 ——
+ * 本地克隆走硬链接，`--depth` 对它本就无效（git 会警告并忽略），所以本地分支不带 `--depth`。
+ */
+function fileUrlToLocalPath(url: string): string | null {
+  const m = /^file:\/\/\/([^/].*)$/i.exec(url);
+  if (!m) return null;
+  try {
+    return decodeURIComponent(m[1]);
+  } catch {
+    return m[1];
+  }
+}
+
 /** 浅克隆到临时目录；返回项目根。失败抛错（URL 错/网络断）。 */
 function shallowClone(url: string): string {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'brick-clone-'));
-  execSync(`git clone --depth 1 --quiet ${JSON.stringify(url)} ${JSON.stringify(dir)}`, {
+  const local = fileUrlToLocalPath(url);
+  const src = local ?? url;
+  // 本地路径：本地克隆（硬链接，快）；远程 URL：保 --depth 1
+  const depth = local ? '' : ' --depth 1';
+  execSync(`git clone${depth} --quiet ${JSON.stringify(src)} ${JSON.stringify(dir)}`, {
     encoding: 'utf-8',
     stdio: 'pipe',
     timeout: 120_000,

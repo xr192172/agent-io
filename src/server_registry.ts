@@ -18,6 +18,8 @@ import { makeCapabilityMapHandler, LANE_IDS, type LaneId } from './tools/capabil
 import { indexIntegrity, renderIntegrity } from './tools/index_integrity.js';
 import { ensureProjectIndex, detectStaleIndex } from './tools/index_freshness.js';
 import { hasLiveIndex } from './tools/write_gate.js';
+import { scheduleBackfill, backfillState, isIndexIncomplete } from './tools/index_backfill.js';
+import { renderGranularityNote } from './tools/parse_capability.js';
 import { unknownArgHints, renderArgHints } from './tools/arg_suggest.js';
 import { listFileSnapshots, rollbackFileSnapshot } from './tools/file_snapshot.js';
 import { recommendObservePoints } from './tools/observe_points.js';
@@ -326,6 +328,99 @@ export function staleIndexWarning(args: Record<string, unknown>): string {
 }
 
 // ─────────────────────────────────────────────────────────────
+// 首次接触 ⇒ 后台建索引（2026-09-15，用户拍板："白跑一轮索引对 LLM 是免费的"）
+//
+// 此前索引只能从"第一次读"开始建（explore_code 拼图 + 后台续建）——"工作区创建"
+// 没有钩子，没接线。任何带 project_root 的工具调用都是对项目的**首次接触**：
+// 在唯一入口顺手起后台续建（分小批、可中断、unref 定时器，**不阻塞本次调用**），
+// 把建索引的起点从"第一次读"提前到"第一次任何调用"。对 LLM 免费：后台跑，
+// 本次调用的耗时不受影响；需要索引的工具自身的冷启/拼图照旧优先。
+//
+// 纪律：
+//   - `noAutoFresh` 的工具不触发（`index_integrity` refresh:false 必须纯只读，连库都不该建；
+//     `import_project` 自己做全量导入）。
+//   - 根必须是真实存在的目录（不给幻觉路径凭空造 `.design-canvas`）。
+//   - `DC_AUTO_BACKFILL=0` 一键关（对齐 `DC_AUTO_WATCH` 的 env 约定）。
+//   - 起了之后**诚实标注**：索引在建 ⇒ 本轮结果可能不全 —— 这是"不撒谎"不变量的
+//     "明确标注"那半边。`staleIndexWarning` 只覆盖"有索引但落后于磁盘"，
+//     覆盖不了"索引还没建完"这种**空缺型不全**（查不到 ≠ 不存在），由本标注兜。
+// ─────────────────────────────────────────────────────────────
+
+/** 后台续建进行中 → 诚实标注"结果可能不全"（没在跑 → 空串） */
+function backfillProgressNote(absRoot: string): string {
+  const s = backfillState(absRoot);
+  if (!s?.running) return '';
+  const prog = s.total > 0 ? `${s.done}/${s.total}` : '刚启动';
+  return (
+    `\n[索引] 该项目还没有完整索引 —— 后台建索引进行中（${prog}）。` +
+    '**本轮结果可能不全**（还没索引到的文件查不到 ≠ 不存在）；建完后自动精确，`index_integrity({project_dir})` 可查进度。'
+  );
+}
+
+/**
+ * 首次接触 ⇒ 起后台建索引；返回要注入响应的诚实标注（已有索引且没在建 → 空串）。
+ * 导出是为了**能被测试看见** —— "顺手起后台"这类逻辑最容易静默失效（永远不起也没人发现）。
+ */
+export function firstContactBackfill(rawRoot: string | null): string {
+  if (!rawRoot || process.env.DC_AUTO_BACKFILL === '0') return '';
+  try {
+    const abs = path.resolve(rawRoot);
+    if (!existsSync(abs) || !statSync(abs).isDirectory()) return ''; // 幻觉路径不建库
+    if (hasLiveIndex(abs)) return backfillProgressNote(abs); // 已有索引：只承担"在建中标注"
+    scheduleBackfill(abs, { batch: 20, intervalMs: 200 }); // 幂等单飞；首个批次在 +200ms 后台起
+    return backfillProgressNote(abs);
+  } catch {
+    return '';
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// 行动工具的可信度自动附注（§5-②，2026-09-15）
+//
+// 分工（别跟 staleIndexWarning 重复）：
+//   - `staleIndexWarning`（全部工具）：索引**落后于磁盘**（not_fresh / 待消费自写登记）
+//     —— 靠 stat 就能发现的那类旧。
+//   - 本附注（只给"准备基于索引做改动/下结论"的工具）：**陈旧断言**（resolved 但目标符号
+//     已不在索引）—— 索引**自己内部**不一致，文件内容没变 ⇒ 保鲜路径（L3①）看不见它，
+//     唯一线索是这批行本身。它造成的是**静默漏报**：find_references / impact_analysis
+//     "查到了但少了"，LLM 无从察觉 —— 对行动建议类工具是最危险的一种错。
+//
+// 为什么**不设缓存**：一次纯 SQL 计数（resolved 行 × nodes.name 反查），毫秒级；
+// 且 rename_symbols 这类工具**自己会修**陈旧引用（写穿重开）—— 带缓存的附注会在
+// 修完之后还报旧的数，那是附注自己在撒谎。宁可每次都查，也不要"过期的诚实"。
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * 行动工具的可信度附注：陈旧断言 > 0 ⇒ 提示"本结论可能静默漏报"并给可执行修复。
+ * 健康时返回空串（不刷屏）。无索引也返回空串（那种"不全"由 firstContactBackfill 标注）。
+ * 导出是为了**能被测试看见** —— 注入型逻辑最容易静默失效。
+ */
+export function trustNoteFor(rawRoot: string | null): string {
+  if (!rawRoot) return '';
+  try {
+    const root = path.resolve(rawRoot);
+    if (!hasLiveIndex(root)) return '';
+    const db = getProjectCacheDb(root);
+    const stale =
+      (db
+        .prepare(
+          `SELECT COUNT(*) c FROM unresolved_refs u
+           WHERE u.status = 'resolved'
+             AND NOT EXISTS (SELECT 1 FROM nodes n WHERE n.name = u.reference_name)`,
+        )
+        .get() as { c: number } | undefined)?.c ?? 0;
+    if (stale <= 0) return '';
+    return (
+      `\n⚠️ TRUST：符号索引内有 ${stale} 条**陈旧断言**（声称"已解析"、但目标符号已不在索引）——` +
+      '本工具的结论可能**静默漏报**（查到了但少了，且无从察觉）。' +
+      '先 `index_integrity({project_dir, refresh:true})` 修复（重开重解析：连得上重连、连不上明确标 failed）再采信本结果。'
+    );
+  } catch {
+    return '';
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
 // 类型
 // ─────────────────────────────────────────────────────────────
 
@@ -343,6 +438,14 @@ export interface ToolDef {
    *   - `import_project`：自己做全量导入，前置保鲜纯属浪费。
    */
   noAutoFresh?: boolean;
+  /**
+   * true = 本工具的结果**自动附可信度标注**（陈旧断言检测）。
+   * 只有"准备基于索引做改动 / 下的结论会被拿去行动"的工具需要它：
+   * `find_references` / `impact_analysis` / `rename_symbols` / `rename_files`。
+   * 陈旧断言（resolved 但目标符号已不在索引）在这类工具上表现为**静默漏报** ——
+   * 与 `staleIndexWarning`（落后于磁盘，全部工具）分工不同，见 trustNoteFor 注释。
+   */
+  trustAnnotated?: boolean;
 }
 
 /** MCP content 输出 */
@@ -501,6 +604,7 @@ const renderDesignHandler = wrap(async (a) => {
 const scaffoldHandler = wrap(async (a) => {
   const r = scaffold({
     feature: a.feature as string,
+    project_dir: a.project_dir as string | undefined,
     output_dir: a.output_dir as string | undefined,
     overwrite: a.overwrite as boolean | undefined,
     ui_framework: a.ui_framework as 'vue' | 'react' | 'html' | undefined,
@@ -1720,6 +1824,7 @@ const TOOL_DEFS: ToolDef[] = [
   },
   {
     name: 'rename_symbols',
+    trustAnnotated: true, // 改名决策读的是引用清单 ⇒ 陈旧断言会漏报改名点（见 trustNoteFor）
     title: 'Batch cross-file module-level symbol renames with structured-diff preview',
     description:
       '跨文件符号改名（单条或批量统一入口）：对「模块级导出符号」改名，对标脚本效率并带结构化 diff 预览/验证。' +
@@ -1800,6 +1905,7 @@ const TOOL_DEFS: ToolDef[] = [
   },
   {
     name: 'rename_files',
+    trustAnnotated: true, // 改文件名决策同理（见 trustNoteFor）
     title: 'Batch file renames with import-reference rewrites (whole-batch dry-run first)',
     description:
       '文件改名/移动（单条或批量统一入口）并联动全仓 import 引用改写，对标脚本效率（消除"70 文件改名=70 次调用"的粒度问题）。' +
@@ -1895,6 +2001,7 @@ const TOOL_DEFS: ToolDef[] = [
   },
   {
     name: 'find_references',
+    trustAnnotated: true, // 陈旧断言 = 引用清单静默漏报（见 trustNoteFor）
     title: 'Find symbol references (callers/importers, structural field refs), read-only',
     description:
       '查找符号/字段的引用——改/删前看波及面。只读，不改文件。' +
@@ -1942,6 +2049,9 @@ const TOOL_DEFS: ToolDef[] = [
           for (const x of f.refs) lines.push(`\t    L${x.line}[${kindLabel[x.kind]}] ${x.snippet}`);
         }
         if (r.literals) for (const kv of r.literals) for (const m of kv.matches) lines.push(`\t[字面 ${kv.needle}] ${path.basename(m.file)} L${m.line} [${m.kind}] ${m.snippet}`);
+        // P10 能力自述：涉及文件是非调用级语言 ⇒ 诚实标注"文本级，零引用不可全信"
+        const granField = renderGranularityNote([common.file], 'refs');
+        if (granField) lines.push(granField);
         return { message: lines.join('\n'), data: r };
       }
       // mode=type：成员 + 候选构造点
@@ -1956,6 +2066,8 @@ const TOOL_DEFS: ToolDef[] = [
           lines.push(`\t- ${c.file}:L${c.line}（命中 ${c.matched.join(', ')}） ${c.snippet}`);
         }
         if (r.literals) for (const kv of r.literals) for (const m of kv.matches) lines.push(`\t[字面 ${kv.needle}] ${path.basename(m.file)} L${m.line} [${m.kind}] ${m.snippet}`);
+        const granType = renderGranularityNote([common.file], 'refs');
+        if (granType) lines.push(granType);
         return { message: lines.join('\n'), data: r };
       }
       // mode=symbol：既有逻辑
@@ -1976,11 +2088,15 @@ const TOOL_DEFS: ToolDef[] = [
         parts.push(`\t- ${imp.file}（import ${imp.importSources.join(', ')}）：行 ${imp.refs.map((x) => x.line).join(', ')}`);
       }
       if (r.literals) for (const kv of r.literals) for (const m of kv.matches) parts.push(`\t[字面 ${kv.needle}] ${path.basename(m.file)} L${m.line} [${m.kind}] ${m.snippet}`);
+      // P10 能力自述：定义文件是非调用级语言 ⇒ 诚实标注"文本级，零引用不可全信"
+      const granSymbol = renderGranularityNote([String(a.file)], 'refs');
+      if (granSymbol) parts.push(granSymbol);
       return { message: parts.join('\n'), data: r };
     }),
   },
   {
     name: 'impact_analysis',
+    trustAnnotated: true, // 陈旧断言 = 影响面静默漏报（见 trustNoteFor）
     title: 'Impact analysis - pre-change risk closure report',
     description:
       '影响面分析（改前风险闭包报告）：从变更点（文件 + 可选顶层导出符号）沿 import/调用/类型引用依赖图做反向可达闭包，' +
@@ -2016,6 +2132,9 @@ const TOOL_DEFS: ToolDef[] = [
       ];
       if (r.fell_back) lines.push('⚠ 存在符号级消费方解析失败 → 已保守降级为"改整个文件"的闭包');
       if (r.missing.length > 0) lines.push(`⚠ 未定位到变更点：${r.missing.join(', ')}`);
+      // P10 能力自述：变更点里有非调用级语言 ⇒ 闭包结论会低估（"零波及"不可信）
+      const granImpact = renderGranularityNote(cps.map((c) => c.file), 'impact');
+      if (granImpact) lines.push(granImpact);
       lines.push('');
       if (r.files.length === 0) lines.push('（零波及：该变更点没有任何文件依赖链）');
       for (const f of r.files) {
@@ -3184,6 +3303,11 @@ export function registerAllTools(server: McpServer): void {
   for (const def of TOOL_DEFS) {
     server.registerTool(def.name, { title: def.title, description: def.description, inputSchema: looseInputSchema(def.inputSchema) as unknown as z.ZodRawShape }, async (args) => {
       const a = (args ?? {}) as Record<string, unknown>;
+      // ★ 首次接触 ⇒ 后台建索引（2026-09-15）：带 project_root 的调用若该项目还没有索引，
+      //   顺手起后台续建（不阻塞本次调用）——把建索引的起点从"第一次读"提前到"第一次任何调用"。
+      //   起了就诚实标注"本轮结果可能不全"（空缺型不全，staleIndexWarning 覆盖不了）。
+      const rootArg = projectRootArg(a);
+      const firstContactNote = def.noAutoFresh ? '' : firstContactBackfill(rootArg);
       // ★ L3① 结构性精确化（2026-09-15）：有索引的项目，**每次调用前先保鲜**。
       //   为什么放这里：保鲜此前靠"每个工具自己记得调 ensureProjectIndex"，实测 60 个工具里有
       //   17 个直接开 cache.db 却没接 ⇒ 只能靠 staleIndexWarning 做**标注**。标注满足了不变量的
@@ -3191,10 +3315,11 @@ export function registerAllTools(server: McpServer): void {
       //   以后新增工具也不用记得（结构保证，不是自觉）。
       //   成本：ready 态实测 ~35ms/次（390 文件）；有变更时付的是本来也要付的重同步钱。
       //   纪律：bootstrap:false —— 绝不因为一次调用就冷启建索引；失败静默（结果里仍有陈旧告警兜底）。
-      const autoFreshRoot = projectRootArg(a);
-      if (autoFreshRoot && !def.noAutoFresh) {
+      //   ★ 后台续建在建时跳过（isIndexIncomplete）：后台循环本来就在持续同步，逐调用保鲜
+      //     只会重复全盘走查 + 触发 MAX_ADDS_PER_REFRESH 噪音；"在建 ⇒ 可能不全"由 firstContactNote 标注。
+      if (rootArg && !def.noAutoFresh) {
         try {
-          if (hasLiveIndex(autoFreshRoot)) await ensureProjectIndex(autoFreshRoot, { bootstrap: false });
+          if (hasLiveIndex(rootArg) && !isIndexIncomplete(rootArg)) await ensureProjectIndex(rootArg, { bootstrap: false });
         } catch {
           /* 保鲜失败不阻断主流程（staleIndexWarning 仍会兜底标注） */
         }
@@ -3220,8 +3345,11 @@ export function registerAllTools(server: McpServer): void {
       });
       // 响应注入：① 参数纠错（Did you mean）② 陈旧构建警告（dist 重建后进程仍跑旧代码 →
       //          明确提示重启，防误信旧结果）③ watch 产出的未读影响提醒借力本次响应自动送达。
+      //          ④ 行动工具的可信度附注（陈旧断言 → 静默漏报预警）：在 handler **之后**算 ——
+      //          rename_symbols 等工具自己会修陈旧引用，附注必须反映"修完之后"的现状。
+      const trustNote = def.trustAnnotated ? trustNoteFor(rootArg) : '';
       return textOut(
-        r.text + argHints + staleBuildWarning() + staleSourceWarning() + staleIndexWarning(a) + await collectPendingAlertText(def.name),
+        r.text + argHints + staleBuildWarning() + staleSourceWarning() + firstContactNote + staleIndexWarning(a) + trustNote + await collectPendingAlertText(def.name),
         r.isError,
       );
     });
