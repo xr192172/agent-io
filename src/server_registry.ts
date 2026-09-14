@@ -335,6 +335,14 @@ export interface ToolDef {
   description: string;
   inputSchema: Record<string, z.ZodType>;
   handler: (args: Record<string, unknown>) => Promise<{ text: string; isError?: boolean }>;
+  /**
+   * true = 本工具**不要**被自动保鲜（L3①）。
+   * 只有"自检类 / 自己做全量导入"的工具需要它：
+   *   - `index_integrity`：refresh:false 必须是**纯只读** —— 若被自动保鲜，它报告的就是
+   *     "修完之后"的现状而非"LLM 马上要读到的"现状，那是另一种撒谎。
+   *   - `import_project`：自己做全量导入，前置保鲜纯属浪费。
+   */
+  noAutoFresh?: boolean;
 }
 
 /** MCP content 输出 */
@@ -1091,6 +1099,7 @@ const TOOL_DEFS: ToolDef[] = [
   {
     name: 'import_project',
     title: 'Import a code project as DSL',
+    noAutoFresh: true, // 自己做全量导入，前置保鲜纯属浪费
     description:
       '扫描代码项目（.go/.ts/.py/.js 等）生成 DSL：文件节点 + 调用边 + 符号/API 语义层，写入 design-canvas 存储。' +
       '默认生成设计 DSL；live_only=true 只生成"实际视图"快照（live/ 目录，供 🎭设计/⚡实际 双视图对比）。' +
@@ -3038,6 +3047,8 @@ const TOOL_DEFS: ToolDef[] = [
       });
       return { text: renderIntegrity(r) };
     },
+    // refresh:false 必须是**纯只读**（否则它报告的是"修完之后"，不是"LLM 马上要读到的"）
+    noAutoFresh: true,
   },
   {
     name: 'set_design_intent',
@@ -3173,6 +3184,21 @@ export function registerAllTools(server: McpServer): void {
   for (const def of TOOL_DEFS) {
     server.registerTool(def.name, { title: def.title, description: def.description, inputSchema: looseInputSchema(def.inputSchema) as unknown as z.ZodRawShape }, async (args) => {
       const a = (args ?? {}) as Record<string, unknown>;
+      // ★ L3① 结构性精确化（2026-09-15）：有索引的项目，**每次调用前先保鲜**。
+      //   为什么放这里：保鲜此前靠"每个工具自己记得调 ensureProjectIndex"，实测 60 个工具里有
+      //   17 个直接开 cache.db 却没接 ⇒ 只能靠 staleIndexWarning 做**标注**。标注满足了不变量的
+      //   "要么标注"那半边，但结果本身仍是旧的。这里在**唯一入口**做一次，全部工具的结果自动精确，
+      //   以后新增工具也不用记得（结构保证，不是自觉）。
+      //   成本：ready 态实测 ~35ms/次（390 文件）；有变更时付的是本来也要付的重同步钱。
+      //   纪律：bootstrap:false —— 绝不因为一次调用就冷启建索引；失败静默（结果里仍有陈旧告警兜底）。
+      const autoFreshRoot = projectRootArg(a);
+      if (autoFreshRoot && !def.noAutoFresh) {
+        try {
+          if (hasLiveIndex(autoFreshRoot)) await ensureProjectIndex(autoFreshRoot, { bootstrap: false });
+        } catch {
+          /* 保鲜失败不阻断主流程（staleIndexWarning 仍会兜底标注） */
+        }
+      }
       // ★ 参数纠错（Did you mean）：zod object 会**静默丢弃**未知键（错参数 = 结果莫名其妙），
       // 这里对"够像"的未知键给一条建议；只提示不阻断，不够像则静默（避免噪音）。
       const knownArgs = Object.keys(def.inputSchema ?? {});
