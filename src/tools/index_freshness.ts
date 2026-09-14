@@ -38,6 +38,7 @@ import {
 } from '../db/symbols.js';
 import { walkFiles } from './import_project.js';
 import { walkSourceFiles, buildTextImportIndex, importLookupKeys } from './refs_text.js';
+import { pendingSelfWrites } from './write_gate.js';
 
 /** 索引可用性状态（诚实口径：不假装完整） */
 export type IndexState =
@@ -66,6 +67,12 @@ export interface FreshnessReport {
   refsReopened: number;
   /** ★ 冷启 bootstrap 本次新索引的文件数（0 = 本轮未冷启） */
   bootstrapped: number;
+  /**
+   * ★ 本轮因**消费自写登记**（`write_gate.recordSelfWrite`）而额外优先同步的文件数。
+   * 为什么要有这个数：同步签名的写工具（`remove_dead_imports` 等）改完只能"登记"，
+   * 真正同步发生在这里 —— 没这个数字，这条链路是否真的通了就看不见。
+   */
+  selfWriteHits: number;
   /** ★ 冷启是否被上限截断（true 时 state='partial'） */
   truncated: boolean;
   /** ★ 索引状态 */
@@ -84,6 +91,7 @@ function emptyReport(): FreshnessReport {
     skipped_adds: 0,
     refsReopened: 0,
     bootstrapped: 0,
+    selfWriteHits: 0,
     truncated: false,
     state: 'empty',
     ms: 0,
@@ -158,6 +166,68 @@ export function indexedRelativeSet(db: Database): Set<string> {
 export function isIndexedRelative(db: Database, rel: string): boolean {
   const norm = rel.split(path.sep).join('/');
   return db.prepare('SELECT 1 AS x FROM files WHERE path = $p').get({ p: norm }) !== undefined;
+}
+
+/** 索引陈旧探测的结果（**只 stat、不解析**：用来"标注"，不用来"修复"） */
+export interface StaleIndexProbe {
+  /** 抽到的不一致文件数（`sampled=true` 时是抽样口径，别当成全量） */
+  stale: number;
+  /** 索引里的文件总数 */
+  total: number;
+  /** true = 文件太多，只抽了一段（大仓保护；结论按比例看） */
+  sampled: boolean;
+  /** 抽样到的文件名（限量，供定位） */
+  sample: string[];
+  /** 待消费的自写登记文件数（同步写工具登记过、还没被读路径消费） */
+  selfWritesPending: number;
+}
+
+/**
+ * ★ **同步**的"索引是否落后于磁盘"探测 —— 只做 `statSync`，不解析、不写库。
+ *
+ * 为什么需要它（而不是直接 `ensureFreshIndex`）：`ensureFreshIndex` 是异步的（解析器是异步的），
+ * 而"给**所有**工具的响应自动附一行可信度标注"这件事必须在**同步**的响应注入层做。
+ * 不变量允许两种出路：「与磁盘一致」或「**明确标注它可能旧**」——本函数只负责拿到标注所需的证据。
+ *
+ * 成本控制：`maxScan` 上限 + 等距抽样（不是取前缀，避免只看到文件列表开头的部分）。
+ *
+ * ★ 已知局限（诚实标注，别当成 bug 修一半）：本探测只比 `size` + `mtime`（毫秒取整），
+ *   所以"**等长改写且落在同一毫秒**"会漏判。要兜住那种情况得比内容 hash ——
+ *   那是 `syncFile`（异步）的职责，也正是"标注"与"修复"必须分层的原因：
+ *   本函数只负责给 LLM 一个**更保守的**提示；漏报时仍有 L1/L3 的内容 hash 闸兜底。
+ */
+export function detectStaleIndex(
+  db: Database,
+  projectRoot: string,
+  opts: { maxScan?: number; sample?: number } = {},
+): StaleIndexProbe {
+  const root = path.resolve(projectRoot);
+  const maxScan = Math.max(1, opts.maxScan ?? 400);
+  const sampleLimit = Math.max(0, opts.sample ?? 8);
+  const paths = (db.prepare('SELECT path FROM files').all() as Array<{ path: string }>).map((r) => r.path);
+  const total = paths.length;
+  const stride = Math.max(1, Math.ceil(total / maxScan));
+  const sampled = stride > 1;
+  const sample: string[] = [];
+  let stale = 0;
+  for (let i = 0; i < total; i += stride) {
+    const rel = paths[i];
+    let st: fs.Stats;
+    try {
+      st = fs.statSync(path.join(root, rel));
+    } catch {
+      continue; // 磁盘上已没有 → 归"幽灵行"，不算"落后"
+    }
+    const row = db.prepare('SELECT size, modified_at FROM files WHERE path = $p').get({ p: rel }) as
+      | { size: number; modified_at: number }
+      | undefined;
+    if (!row) continue;
+    if (row.size !== st.size || row.modified_at !== Math.round(st.mtimeMs)) {
+      stale++;
+      if (sample.length < sampleLimit) sample.push(rel);
+    }
+  }
+  return { stale, total, sampled, sample, selfWritesPending: pendingSelfWrites(root).length };
 }
 
 export interface TileOptions {
@@ -491,7 +561,7 @@ export async function ensureFreshIndex(
 
     // 两遍扫：先 stat 全量分类（未变/变更/新增），新增超限整体跳过（守卫），
     // 再对准许集合做 syncFile——避免"补了一半才发现超限"的半吊子状态
-    interface Pending { abs: string; kind: 'resync' | 'add' }
+    interface Pending { abs: string; kind: 'resync' | 'add'; self?: boolean }
     const pending: Pending[] = [];
     for (const abs of absFiles) {
       const rel = path.relative(root, abs).split(path.sep).join('/');
@@ -512,9 +582,31 @@ export async function ensureFreshIndex(
     const allowAdds = addCount <= MAX_ADDS_PER_REFRESH;
     if (!allowAdds) report.skipped_adds = addCount;
 
+    // ★ L1b 消费：**消费自写登记**（`write_gate.recordSelfWrite`）—— 同步签名的写工具
+    //   （`remove_dead_imports` 等）await 不了异步的 `syncFile`，改完只能登记；这里替它们同步。
+    //   为什么**置顶**：那是我们自己刚改的，LLM 极可能**下一步就读**它（读己之写）。
+    //   为什么不信任 stat：同步写可能 size 不变、且 mtime 粒度粗（同毫秒多次写）⇒ stat 比不出来。
+    //   代价可控：`syncFile` 内部仍按内容 hash 判定，重复消费只是 `skipped`。
+    //   不列入 `allowAdds` 守卫：那道闸是防"项目扩容绕过 max_files"，不是防我们自己写。
+    const selfWrites = pendingSelfWrites(root);
+    if (selfWrites.length) {
+      const already = new Set(pending.map((p) => path.relative(root, p.abs).split(path.sep).join('/')));
+      const extra: Pending[] = [];
+      for (const rel of selfWrites) {
+        if (already.has(rel)) continue;
+        const abs = path.join(root, rel);
+        if (!fs.existsSync(abs)) continue;
+        extra.push({ abs, kind: known.has(rel) ? 'resync' : 'add', self: true });
+      }
+      if (extra.length) {
+        report.selfWriteHits = extra.length;
+        pending.unshift(...extra);
+      }
+    }
+
     let dirty = false;
     for (const p of pending) {
-      if (p.kind === 'add' && !allowAdds) continue;
+      if (p.kind === 'add' && !allowAdds && !p.self) continue;
       const r = await syncFile(db, root, p.abs);
       if (r.status === 'failed') report.failed++;
       else if (r.status === 'updated') {

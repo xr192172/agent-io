@@ -17,6 +17,7 @@ import path from 'node:path';
 import { renameSymbol, type RenameSymbolInput, type RenameSymbolResult } from './rename_symbol.js';
 import { resolveProjectRoot } from './project_root.js';
 import { createProtectGuard } from './protect.js';
+import { writeSourceFiles, type WriteThroughOutcome } from './write_gate.js';
 import type { ExternalRef } from './project_root.js';
 
 /** 字面量命中的类别：contract=对外工具注册名(破坏契约需人审)；history=tool-convergence 历史记录(保留原貌)；docs=文档；test=测试断言；code=源码字符串 */
@@ -88,6 +89,12 @@ export interface RenameSymbolsResult {
   literalFilesWritten?: number;
   /** 工作区外的 import 依赖边界（各条目 rename 反馈聚合）——只反馈不改 */
   externalRefs?: ExternalRef[];
+  /**
+   * ★ 索引写穿结果（2026-09-14）：改完源码后符号索引是否**已经跟着更新**。
+   * 为什么必须返回：LLM 常常"改完立刻读"，若索引还是旧图，它会拿旧图做下一轮决策 ——
+   * 这是"静默撒谎"，比报错危险得多。有了这个字段，调用方能明确知道"下一步读是可信的"。
+   */
+  indexWriteThrough?: WriteThroughOutcome;
 }
 
 export async function renameSymbols(input: {
@@ -157,36 +164,74 @@ export async function renameSymbols(input: {
   if (dry_run === true) return { ok: true, dryRun: true, previews, applied: [], filesWritten: 0, literals, ...(externalRefs.length ? { externalRefs } : {}) };
 
   // 阶段 2：全部通过 → 逐条真落盘（串行；前面改动导致后续阻断则中止并据实报告）
-  const applied: RenameSymbolsResult['applied'] = [];
-  let filesWritten = 0;
-  for (let i = 0; i < renames.length; i++) {
-    const item = renames[i];
-    const result = await renameSymbol({ project_dir: projectDir, file: item.file, symbol: item.symbol, to: item.to, rename_file_if_matching: item.rename_file_if_matching === true, dry_run: false });
-    if (!result.ok) {
-      return {
-        ok: false,
-        previews,
-        applied,
-        filesWritten,
-        blocked: [`条目 ${i}（${item.file} 的 ${item.symbol}→${item.to}）实际落盘时被阻断：${(result.blocked || []).join('；')}。已应用 ${applied.length} 条，之后条目未执行`],
-        literals,
-        literalFilesWritten,
-      };
+  //
+  // ★ 走**统一写入闸**（2026-09-14）：
+  //   旧的实现直接 `renameSymbol(..., dry_run:false)` 落盘，**既不快照、也不通知索引** ——
+  //   于是"改完符号名，紧接着 find_references / impact_analysis"读到的还是**旧图**，
+  //   而且引用方的边被 FK 级联删掉后不会重建（真 bug：静默漏报）。
+  //   现在：写前快照（可撤回）+ 写后把**实际写到的文件**同步进索引并把引用方重开重算。
+  //   受影响文件列表先按 dry-run 的预览算出来（快照要用），落盘时再把实际写到的 push 进去。
+  const touched: string[] = [];
+  for (const p of previews) {
+    const r = p.result;
+    if (!r) continue;
+    if (r.definition?.file) touched.push(r.definition.file);
+    for (const im of r.importers ?? []) touched.push(im.file);
+    if (r.fileRenamed) touched.push(r.fileRenamed);
+  }
+  if (input.apply_literals === true) {
+    for (const item of literals ?? []) {
+      for (const m of item.matches) if (m.decision === 'apply') touched.push(m.file);
     }
-    filesWritten += result.filesWritten;
-    applied.push({ index: i, item: item, result: result });
   }
 
-  // apply_literals：符号已全落盘 → 重新扫盘态（偏移对符号改动后的真值），只替换 decision=apply 的字面量。
-  // contract→需人审、history→保留、冻结行→跳过，均不写盘；decision 明细随 literals 返回供复核。
-  if (input.apply_literals === true && rootDir) {
-    const guard = createProtectGuard(rootDir);
-    const fresh = buildLiteralPlan(rootDir, renames, guard);
-    literalFilesWritten = applyLiteralPlan(fresh).filesWritten;
-    literals = fresh;
+  const doWrite = async (): Promise<RenameSymbolsResult> => {
+    const applied: RenameSymbolsResult['applied'] = [];
+    let filesWritten = 0;
+    for (let i = 0; i < renames.length; i++) {
+      const item = renames[i];
+      const result = await renameSymbol({ project_dir: projectDir, file: item.file, symbol: item.symbol, to: item.to, rename_file_if_matching: item.rename_file_if_matching === true, dry_run: false });
+      if (!result.ok) {
+        return {
+          ok: false,
+          previews,
+          applied,
+          filesWritten,
+          blocked: [`条目 ${i}（${item.file} 的 ${item.symbol}→${item.to}）实际落盘时被阻断：${(result.blocked || []).join('；')}。已应用 ${applied.length} 条，之后条目未执行`],
+          literals,
+          literalFilesWritten,
+        };
+      }
+      filesWritten += result.filesWritten;
+      if (result.definition?.file) touched.push(result.definition.file);
+      for (const im of result.importers ?? []) touched.push(im.file);
+      applied.push({ index: i, item: item, result: result });
+    }
+
+    // apply_literals：符号已全落盘 → 重新扫盘态（偏移对符号改动后的真值），只替换 decision=apply 的字面量。
+    // contract→需人审、history→保留、冻结行→跳过，均不写盘；decision 明细随 literals 返回供复核。
+    if (input.apply_literals === true && rootDir) {
+      const guard = createProtectGuard(rootDir);
+      const fresh = buildLiteralPlan(rootDir, renames, guard);
+      const lit = applyLiteralPlan(fresh);
+      literalFilesWritten = lit.filesWritten;
+      for (const f of lit.files) touched.push(f);
+      literals = fresh;
+    }
+
+    return { ok: true, previews, applied, filesWritten, ...(literalFilesWritten ? { literalFilesWritten } : {}), literals, ...(externalRefs.length ? { externalRefs } : {}) };
+  };
+
+  // 项目根算不出来（既没显式给 project_dir、也定位不到）→ 退化为直写：
+  // 没有根就无从算相对路径，快照与写穿都会变成空操作，不如如实跳过（并如实标注）。
+  const gateRoot = rootDir ?? projectDir;
+  if (!gateRoot) {
+    const value = await doWrite();
+    return { ...value, indexWriteThrough: { ok: false, mode: 'skipped', note: '未定位到项目根 ⇒ 跳过快照与索引写穿' } };
   }
 
-  return { ok: true, previews, applied, filesWritten, ...(literalFilesWritten ? { literalFilesWritten } : {}), literals, ...(externalRefs.length ? { externalRefs } : {}) };
+  const gated = await writeSourceFiles(gateRoot, touched, doWrite, { label: `rename_symbols: ${renames.length} 条` });
+  return { ...gated.value, indexWriteThrough: gated.report.index ?? { ok: false, mode: 'skipped', note: '未写穿' } };
 }
 
 // ──────────────── 字面量引用扫描（只报告，不改动） ────────────────
@@ -237,7 +282,11 @@ export function scanLiteralOccurrences(
 
   // 只扫描常见可读扩展名（排除二进制/编译产物）
   const SCAN_EXTS = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.mts', '.json', '.md', '.yml', '.yaml', '.html', '.css', '.vue', '.py', '.go', '.java', '.sh', '.mjs']);
-  const SKIP_DIRS = new Set(['node_modules', 'dist', '.git', '.github']);
+  // ★ `.design-canvas` 必须跳过（2026-09-14 发现的真 bug）：
+  //   里面是我们自己的派生物 —— 缓存库、`code-snapshots/` 影子副本、`live/` DSL。
+  //   尤其**影子副本就是被扫描文件的旧文本副本**：扫到它们既会虚增命中数，
+  //   又会把"可撤回的快照"本身改写掉（等于毁掉回滚能力）。
+  const SKIP_DIRS = new Set(['node_modules', 'dist', '.git', '.github', '.design-canvas']);
   // 根 .gitignore 标记为忽略的顶层目录：git-ignore 了 = 非一手源码（依赖/派生物），不扫。
   const gitIgnored = gitIgnoredTopDirs(projectDir);
 
@@ -337,10 +386,10 @@ export function buildLiteralPlan(
   });
 }
 
-/** 落盘字面量计划：只写 decision=apply 的命中（code/docs/test；契约/历史/冻结行跳过）。返回写入文件数。 */
-export function applyLiteralPlan(plan: RenameSymbolsResult['literals']): { filesWritten: number } {
+/** 落盘字面量计划：只写 decision=apply 的命中（code/docs/test；契约/历史/冻结行跳过）。返回写入文件数与文件清单。 */
+export function applyLiteralPlan(plan: RenameSymbolsResult['literals']): { filesWritten: number; files: string[] } {
   const byFile = new Map<string, Array<{ pos: number; len: number; text: string }>>();
-  if (!plan) return { filesWritten: 0 };
+  if (!plan) return { filesWritten: 0, files: [] };
   for (const item of plan) {
     for (const m of item.matches) {
       if (m.decision !== 'apply') continue;
@@ -353,6 +402,9 @@ export function applyLiteralPlan(plan: RenameSymbolsResult['literals']): { files
     }
   }
   let filesWritten = 0;
+  // ★ 返回文件清单：调用方要靠它做索引写穿（文档/测试里的字面量也进了源码语义，
+  //   只同步"符号定义所在文件"会漏掉这些）
+  const files: string[] = [];
   for (const [file, edits] of byFile) {
     let src: string;
     try {
@@ -366,7 +418,8 @@ export function applyLiteralPlan(plan: RenameSymbolsResult['literals']): { files
     if (out !== src) {
       fs.writeFileSync(file, out, 'utf-8');
       filesWritten++;
+      files.push(file);
     }
   }
-  return { filesWritten };
+  return { filesWritten, files };
 }

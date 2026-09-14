@@ -33,7 +33,7 @@ import type { Database } from '../db/db.js';
 import { syncFile, removeFile, resolveCrossFileCalls, pruneDeletedFiles, toRelPath, changedSymbolNames, reopenRefsTo, type CrossFileResolveStats } from '../db/symbols.js';
 import { isSupported } from './ts_kernel/index.js';
 import { indexedRelativeSet } from './index_freshness.js';
-import { backfillState } from './index_backfill.js';
+import { isIndexIncomplete } from './index_backfill.js';
 
 // ─────────────────────────────────────────────────────────────
 // 过滤规则（与 import_project 对齐，另加 .design-canvas 防反馈循环）
@@ -195,7 +195,8 @@ export async function flushBatch(
   }
   // 批量收尾：① 重开指向"本轮变动符号"的引用 → ② 跨文件解析（只处理本批动过的文件 + 被重开的引用方）
   if (summary.files.length > 0) {
-    const backfilling = backfillState(projectRoot)?.running === true;
+    // 统一口径（与 write_gate.syncSelfWrites 同一处判断，别各写一套慢慢漂移）
+    const backfilling = isIndexIncomplete(projectRoot);
     // ① ★ 引用**部分**重算（用户 2026-09-14 问的正是这一段）：
     //    本批文件改名的符号，其**引用方文件没变、不会被重解析** —— 而 `edges.target → nodes.id`
     //    是 ON DELETE CASCADE，旧符号节点一删，引用方那条边就被**静默删掉且不重建** ⇒

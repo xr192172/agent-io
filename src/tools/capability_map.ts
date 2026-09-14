@@ -107,6 +107,11 @@ export const LANE_META: ReadonlyArray<Omit<Lane, 'tools'>> = [
  *   忘了加不会静默丢失 —— 会在 capability_map 输出的「未归线」段出现，且测试红。
  */
 export const LANE_OF: Readonly<Record<string, LaneAssign>> = {
+  // ── meta · 元信息 / 自检 ──
+  index_integrity: {
+    lane: 'meta',
+    when: '索引可信度自检：陈旧断言 / 未保鲜文件 / 覆盖度 —— 判断"现在读到的索引能不能当真"，可选 refresh 顺手保鲜',
+  },
   // ── design · 设计 / 活文档 ──
   get_dsl: { lane: 'design', when: '统一只读入口，query 参数查 DSL/features/decisions/simulation_state' },
   edit_dsl: { lane: 'design', when: '统一写入口，operations 批量增删改节点/边/文件/API/binding/status' },

@@ -15,7 +15,9 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { makeCapabilityMapHandler, LANE_IDS, type LaneId } from './tools/capability_map.js';
-import { ensureProjectIndex } from './tools/index_freshness.js';
+import { indexIntegrity, renderIntegrity } from './tools/index_integrity.js';
+import { ensureProjectIndex, detectStaleIndex } from './tools/index_freshness.js';
+import { hasLiveIndex } from './tools/write_gate.js';
 import { unknownArgHints, renderArgHints } from './tools/arg_suggest.js';
 import { listFileSnapshots, rollbackFileSnapshot } from './tools/file_snapshot.js';
 import { recommendObservePoints } from './tools/observe_points.js';
@@ -238,6 +240,88 @@ function staleSourceWarning(): string {
     return '';
   } finally {
     _lastStaleState = state;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// 通用索引陈旧告警（"不撒谎"不变量的**结构性兜底**）
+//
+// 为什么要有它：索引层的唯一不变量是「LLM 读到的内容要么与磁盘一致，要么**明确标注**可能旧」。
+// 但"保鲜"此前靠**每个工具自己记得调** `ensureProjectIndex` —— 实测 60 个工具里有 **17 个**
+// 直接开 cache.db 却没任何保鲜入口（`diff_impact`、`function_outline`、`overview`…），
+// 其中 `diff_impact` 给的是**行动建议**，读旧图会直接导致改错。
+//
+// 与其逐个补（下次加工具还会漏），不如在**响应注入层**兜一次：跟 `staleSourceWarning` 同一套
+// 做法（5s 缓存 + 只在状态转变时报一次），一次覆盖全部工具。
+// 它只 stat、不解析、不写库 —— 负责"标注"，不负责"修复"（修复让 LLM 去调 refresh:true）。
+//
+// ★ 诚实标注它的**边界**（别把它当成保证）：
+//   ① 有 **5s 探测缓存**（与 `staleSourceWarning` 同一约定）⇒ 刚刚发生的改动最多 5s 内
+//      可能还没被标注到；这是"标注"而非"闸门"，真正的保证在 L1a（写穿）与 L3（读前自证）。
+//   ② 只比 `size` + `mtime`（毫秒取整）⇒ **等长改写落在同一毫秒**会漏判（见 detectStaleIndex 注释）。
+//   ③ 只在**状态转变**时报一次 ⇒ 持续陈旧期间静默（防刷屏）；恢复后再变旧能重新报。
+// ─────────────────────────────────────────────────────────────
+
+const STALE_INDEX_TTL_MS = 5000;
+
+let _staleIndexCache: { root: string; at: number; stale: number; total: number; sampled: boolean; selfWrites: number } | null = null;
+/** 每个项目根上次的陈旧状态（只在 ok→stale 转变时报一次，避免每次工具调用刷屏） */
+const _lastStaleIndexState = new Map<string, 'stale' | 'ok'>();
+
+/** 从工具入参里取项目根（各工具参数名不统一，两个都认） */
+function projectRootArg(args: Record<string, unknown>): string | null {
+  for (const k of ['project_dir', 'project_root', 'root', 'dir']) {
+    const v = args[k];
+    if (typeof v === 'string' && v.trim()) return v;
+  }
+  return null;
+}
+
+/** 测试隔离用：清掉陈旧告警的缓存与"已报过"状态 */
+export function resetStaleIndexWarningCache(): void {
+  _staleIndexCache = null;
+  _lastStaleIndexState.clear();
+}
+
+/**
+ * 索引是否落后于磁盘 → 提示（只在状态转变时报一次）；无索引 / 无参 / 出错 → 空串（静默，不干扰主流程）。
+ * 导出是为了**能被测试看见** —— 这类"注入型"逻辑最容易静默失效（永远返回空串也没人发现）。
+ */
+export function staleIndexWarning(args: Record<string, unknown>): string {
+  const raw = projectRootArg(args);
+  if (!raw) return '';
+  let root: string;
+  try {
+    root = path.resolve(raw);
+  } catch {
+    return '';
+  }
+  try {
+    if (!hasLiveIndex(root)) return '';
+    const now = Date.now();
+    if (!_staleIndexCache || _staleIndexCache.root !== root || now - _staleIndexCache.at >= STALE_INDEX_TTL_MS) {
+      const db = getProjectCacheDb(root);
+      const p = detectStaleIndex(db, root);
+      _staleIndexCache = { root, at: now, stale: p.stale, total: p.total, sampled: p.sampled, selfWrites: p.selfWritesPending };
+    }
+    const c = _staleIndexCache;
+    const isStale = c.stale > 0 || c.selfWrites > 0;
+    if (!isStale) {
+      _lastStaleIndexState.set(root, 'ok'); // 恢复 → 下次再变旧时能重新报一次
+      return '';
+    }
+    // 只在 ok→stale 的**转变**时报一次；持续 stale 期间静默（否则每次工具调用都刷屏）
+    if (_lastStaleIndexState.get(root) === 'stale') return '';
+    _lastStaleIndexState.set(root, 'stale');
+    const scope = c.sampled ? `抽样 ${c.total} 个已索引文件中的一段` : `全部 ${c.total} 个已索引文件`;
+    return (
+      `\n⚠️ STALE INDEX：符号索引**落后于磁盘**（${scope}里有 ${c.stale} 个已被改动` +
+      (c.selfWrites ? `，另有 ${c.selfWrites} 个自写登记待同步` : '') +
+      '）。**本次结果可能基于旧图**——`find_references` / `impact_analysis` 之类可能少报、或指向已改名的符号。' +
+      '要继续基于索引工作，先调 `index_integrity({project_dir, refresh:true})` 保鲜（或直接用任一读工具触发保鲜）。'
+    );
+  } catch {
+    return '';
   }
 }
 
@@ -2932,6 +3016,30 @@ const TOOL_DEFS: ToolDef[] = [
     handler: makeCapabilityMapHandler(() => TOOL_DEFS),
   },
   {
+    name: 'index_integrity',
+    title: '索引可信度自检：现在的索引能不能当真',
+    description:
+      '只读自检：回答"我眼下读到的索引能不能当真"。给出规模（索引文件/磁盘源码/未索引/幽灵行/节点/边）、' +
+      '引用状态（resolved/pending/external/failed）、**陈旧断言数**（声称 resolved 但目标符号已不在索引 ' +
+      '⇒ find_references / impact_analysis 会静默漏报）、未保鲜文件数、待消费的自写登记、后台续建进度，' +
+      '并给出一条总结论与可执行修复建议。发现"不可信"时可传 refresh:true 顺手保鲜后重报。' +
+      '在"准备基于索引做改动"或"怀疑漏报/读到旧数据"之前调它。',
+    inputSchema: {
+      project_dir: z.string().optional().describe('项目根目录；省略则用当前工作目录'),
+      refresh: z.boolean().optional().describe('true = 先跑一次保鲜（重同步变更文件 + 重开引用）再报告；默认 false = 纯只读'),
+      sample: z.number().int().min(0).max(200).optional().describe('未保鲜样例的条数上限（默认 20）'),
+    },
+    handler: async (a) => {
+      const dir = typeof a.project_dir === 'string' && a.project_dir ? a.project_dir : process.cwd();
+      const r = await indexIntegrity({
+        project_dir: dir,
+        ...(a.refresh === true ? { refresh: true } : {}),
+        ...(typeof a.sample === 'number' ? { sample: a.sample } : {}),
+      });
+      return { text: renderIntegrity(r) };
+    },
+  },
+  {
     name: 'set_design_intent',
     title: 'Write design intent',
     description:
@@ -3087,7 +3195,7 @@ export function registerAllTools(server: McpServer): void {
       // 响应注入：① 参数纠错（Did you mean）② 陈旧构建警告（dist 重建后进程仍跑旧代码 →
       //          明确提示重启，防误信旧结果）③ watch 产出的未读影响提醒借力本次响应自动送达。
       return textOut(
-        r.text + argHints + staleBuildWarning() + staleSourceWarning() + await collectPendingAlertText(def.name),
+        r.text + argHints + staleBuildWarning() + staleSourceWarning() + staleIndexWarning(a) + await collectPendingAlertText(def.name),
         r.isError,
       );
     });

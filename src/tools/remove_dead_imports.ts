@@ -24,6 +24,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { DeadDepCandidate } from './dead_deps.js';
 import { applyWithVerify, defaultVerifyCommands, runVerification, type VerifyCommand, type VerificationOutcome, type VerifyOutcomeKind } from './verify_refactor.js';
+import { snapshotAndRecordSelfWrite, type WriteThroughOutcome } from './write_gate.js';
 
 // ─────────────────────────────────────────────
 // 纯函数：单文件删除指向 target 的 import 语句
@@ -203,6 +204,11 @@ export interface RemoveDeadImportResult {
   files: FileRemoval[];
   files_changed: number;
   statements_removed: number;
+  /**
+   * ★ 索引写穿结果（2026-09-14）：改完源码后符号索引是否**已经跟着更新**。
+   * 不返回这个，LLM 就无从知道"我下一步查引用会不会读到旧图"。
+   */
+  indexWriteThrough?: WriteThroughOutcome;
 }
 
 function langOfFile(rel: string): 'go' | 'ts' | null {
@@ -286,8 +292,17 @@ export function removeDeadImports(opts: {
   dead: DeadDepCandidate[];
 }): RemoveDeadImportResult {
   const { absToNew, result } = computeChanges(opts);
+  if (absToNew.size === 0) return result;
+  const files = [...absToNew.keys()];
+  // ★ 统一写入闸（2026-09-14）：旧实现只 `writeFileSync`，**不快照、不登记** ——
+  //   改完 import 之后紧接着 find_references / 影响面分析读到的还是旧图（静默撒谎）。
+  //   本工具是**同步签名**（`syncFile` 是异步的，await 不了）⇒ 走"写前快照 + 自写登记"，
+  //   索引一致性由读路径优先消费登记来保证（见 write_gate 的分层说明 L1b）。
+  const indexWriteThrough = snapshotAndRecordSelfWrite(opts.project_dir, files, {
+    label: `remove_dead_imports: ${absToNew.size} 文件`,
+  });
   for (const [abs, newSrc] of absToNew) fs.writeFileSync(abs, newSrc, 'utf-8');
-  return result;
+  return { ...result, indexWriteThrough };
 }
 
 // ─────────────────────────────────────────────
@@ -349,21 +364,28 @@ export function removeDeadImportsWithVerify(opts: RemoveDeadImportsVerifyOptions
     },
   });
 
+  // ★ 索引一致性放在 `applyWithVerify` **之后**：此时盘态才是最终态（回滚过就是原样）。
+  //   本路径同样是同步签名 ⇒ 只登记自写；`syncFile` 按内容 hash 判定，所以"写完又回滚回原样"
+  //   在消费时会自然落成 skipped，不会假报改动。
+  const idx = snapshotAndRecordSelfWrite(cwd, [...c.absToNew.keys()], { label: 'remove_dead_imports: 验证闭环' });
+
   if (ver.outcome === 'baseline_fail') {
     // 地基黄：一个都不写
     return {
       files: [], files_changed: 0, statements_removed: 0,
       verification: { enabled: true, outcome: 'baseline_fail', baseline: ver.baseline, after: null, detail: ver.baseline?.detail },
+      indexWriteThrough: idx,
     };
   }
   if (ver.outcome === 'no_change') {
-    return { ...c.result, verification: { enabled: true, outcome: 'no_change', baseline: ver.baseline, after: ver.after } };
+    return { ...c.result, verification: { enabled: true, outcome: 'no_change', baseline: ver.baseline, after: ver.after }, indexWriteThrough: idx };
   }
   if (ver.outcome === 'regression_rolled_back') {
     return {
       ...c.result,
       verification: { enabled: true, outcome: 'regression_rolled_back', baseline: ver.baseline, after: ver.after, rolled_back: true, detail: ver.after?.detail },
+      indexWriteThrough: idx,
     };
   }
-  return { ...c.result, verification: { enabled: true, outcome: 'applied_verified', baseline: ver.baseline, after: ver.after } };
+  return { ...c.result, verification: { enabled: true, outcome: 'applied_verified', baseline: ver.baseline, after: ver.after }, indexWriteThrough: idx };
 }

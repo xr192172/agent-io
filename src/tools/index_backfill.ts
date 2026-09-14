@@ -72,8 +72,26 @@ export function stopBackfill(root: string): void {
   if (s) s.running = false;
 }
 
-/** 已索引文件数（相对项目根）—— 口径与拼图边界同一处（index_freshness.indexedRelativeSet） */
-const indexedSet = indexedRelativeSet;
+/**
+ * ★ 索引**还不完整**吗？（= 后台续建正在跑，符号表还没补齐）
+ *
+ * 为什么把它单独抽出来当**统一口径**：任何"重开引用 → 重解析"的路径都必须知道这件事 ——
+ * 不完整时**不能**把"连不上"判成 `failed`（目标可能只是还没索引到；一旦标 failed 就永不重试，
+ * 最终索引会永久缺边）。`watch_project.flushBatch` 与 `write_gate.syncSelfWrites` 共用本函数，
+ * 避免两处各写一套判断而慢慢漂移。
+ */
+export function isIndexIncomplete(root: string): boolean {
+  return backfillState(root)?.running === true;
+}
+
+/**
+ * 已索引文件集合 —— 口径与拼图边界同一处（`index_freshness.indexedRelativeSet`）。
+ *
+ * ⚠️ 别图省事写成模块级别名 `const indexedSet = indexedRelativeSet`：
+ * `index_backfill ⇄ index_freshness` 是**循环 import**（经 write_gate），
+ * 别名会在本模块先被求值时捕获到 `undefined`，运行时报 `indexedSet is not a function`。
+ * 直接调用（live binding 在调用时解析）才安全。
+ */
 
 /**
  * 同步一批：返回本批结果与剩余量（纯前台可用的"手动补一批"，也是后台循环的步进函数）。
@@ -86,7 +104,7 @@ export async function backfillChunk(
   const absRoot = path.resolve(root);
   const batch = opts.batch ?? 20;
   const all = walkSourceFiles(absRoot);
-  const indexed = indexedSet(db);
+  const indexed = indexedRelativeSet(db);
   const todo = all.filter((r) => !indexed.has(r));
   const take = todo.slice(0, batch);
   let synced = 0;
@@ -163,7 +181,7 @@ export function scheduleBackfill(root: string, opts: BackfillOptions = {}): Back
       const all = cachedAll;
       state.overheadMs += Date.now() - roundStart;
       state.total = all.length;
-      const indexed = indexedSet(db);
+      const indexed = indexedRelativeSet(db);
       // 进度口径：扫描列表 ∩ 已索引（用 Set，别在 filter 里 all.includes —— 那是 O(n²)）
       state.done = all.length === 0 ? indexed.size : all.filter((p) => indexed.has(p)).length;
       const todo = all.filter((r) => !indexed.has(r));
@@ -177,7 +195,7 @@ export function scheduleBackfill(root: string, opts: BackfillOptions = {}): Back
         } catch {
           /* 收尾失败：留待下次保鲜/查询时再解析 */
         }
-        state.done = indexedSet(db).size;
+        state.done = indexedRelativeSet(db).size;
         state.running = false;
         state.finishedAt = Date.now();
         timers.delete(absRoot);
@@ -227,7 +245,7 @@ export function scheduleBackfill(root: string, opts: BackfillOptions = {}): Back
         }
         state.resolveMs += Date.now() - rt0;
       }
-      state.done = indexedSet(db).size;
+      state.done = indexedRelativeSet(db).size;
       state.overheadMs += Date.now() - roundStart;
     } catch (e) {
       state.lastError = (e as Error).message;
