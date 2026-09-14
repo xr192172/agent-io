@@ -27,11 +27,51 @@ import { parseFileFull } from './ts_kernel/index.js';
 import { getProjectCacheDb } from '../db/db.js';
 import { ensureProjectIndex } from './index_freshness.js';
 import { buildImportGraph } from './import_graph.js';
+import { walkSourceFiles, scanTextMentions } from './refs_text.js';
 
-/** 候选引用文件：优先走已建 cache.db 的 import 图（反向闭包 = 谁（直接/间接）import 定义模块）。
- * 避免 find_references 对全依赖闭包"逐文件即时解析"的慢路径；索引缺失/失败返回 null，
- * 由调用方回退到即时 expandClosure。返回绝对路径列表。 */
-async function indexCandidateFiles(resolvedRoot: string, defAbs: string): Promise<string[] | null> {
+/** 每个文件最多取多少条文本提及（避免单文件刷屏） */
+const TEXT_MENTION_PER_FILE = 3;
+/**
+ * 文本提及补召回时最多扫多少文件。超过则**有界扫描**并把 `textBounded` 如实上报 ——
+ * 绝不假装"候选集是完整的"（"不撒谎"是索引层的唯一不变量）。
+ */
+const TEXT_SCAN_MAX_FILES = 3000;
+
+/** 候选集来源的如实账目（供结果里向 LLM 披露召回边界） */
+export interface CandidateScan {
+  /** import 反向闭包里的文件数 */
+  closureFiles: number;
+  /** 文本层额外补进来的候选文件数（跨语言 / 无 import 边的引用只能靠它） */
+  textAdded: number;
+  /** 文本层实际扫过的文件数 */
+  textScanned: number;
+  /** 文本层是否因上限被截断（true ⇒ 候选集可能不全，必须向调用方标注） */
+  textBounded: boolean;
+}
+
+interface CandidateSet {
+  files: string[];
+  scan: CandidateScan;
+}
+
+/**
+ * 候选引用文件：优先走已建 cache.db 的 import 图（反向闭包 = 谁（直接/间接）import 定义模块）。
+ * 索引缺失/失败返回 null，由调用方回退到"零前置冷启后再取一次"。
+ *
+ * ★★ 2026-09-15 补召回（修静默漏报）：import 反向闭包**看不见"没有 import 边的引用"**，
+ *   最典型的就是**跨语言**——Go/Python 文件直接调一个 TS 导出的函数名，磁盘上不存在任何 TS import 边，
+ *   于是它永远进不了候选集。实测后果：零前置冷启让索引从"空"变"非空"之后，这条快路径接管、
+ *   原先的"全闭包回退"被绕过 ⇒ `find_references` 对跨语言引用**静默漏报**
+ *   （`tests/tools/find_references.test.ts` 的 3 个跨语言用例正是这么红的，而代码注释还写着
+ *   "绝不再回退全闭包逐文件即时解析" —— 那是性能取舍，不该以静默漏报为代价）。
+ *   修法：用**粗层（文本提及）**把候选补成**超集**，是否真引用仍由细层（AST / 文本探针）判定；
+ *   代价与召回边界都如实上报（见 `CandidateScan`）。
+ */
+async function indexCandidateFiles(
+  resolvedRoot: string,
+  defAbs: string,
+  symbolName?: string,
+): Promise<CandidateSet | null> {
   try {
     const db = getProjectCacheDb(resolvedRoot);
     const cnt = (db.prepare('SELECT COUNT(*) AS c FROM files').get() as { c?: number } | undefined)?.c ?? 0;
@@ -45,7 +85,30 @@ async function indexCandidateFiles(resolvedRoot: string, defAbs: string): Promis
       const imp = g.importerOf.get(cur);
       if (imp) for (const e of imp) if (!seen.has(e.to)) { seen.add(e.to); queue.push(e.to); }
     }
-    return [...seen].map((r) => path.join(resolvedRoot, r));
+    const closureFiles = seen.size;
+
+    // ── 粗层补召回：谁在文本里提到了这个符号名 ──
+    let textAdded = 0;
+    let textScanned = 0;
+    let textBounded = false;
+    if (symbolName && symbolName.length >= 3) {
+      const all = walkSourceFiles(resolvedRoot);
+      const bounded = all.length > TEXT_SCAN_MAX_FILES;
+      const slice = bounded ? all.slice(0, TEXT_SCAN_MAX_FILES) : all;
+      textBounded = bounded;
+      textScanned = slice.length;
+      const hits = scanTextMentions(resolvedRoot, symbolName, slice, { limitPerFile: TEXT_MENTION_PER_FILE });
+      for (const h of hits) {
+        if (seen.has(h.file) || h.file === defRel) continue;
+        seen.add(h.file);
+        textAdded++;
+      }
+    }
+
+    return {
+      files: [...seen].map((r) => path.join(resolvedRoot, r)),
+      scan: { closureFiles, textAdded, textScanned, textBounded },
+    };
   } catch {
     return null;
   }
@@ -86,6 +149,12 @@ export interface FindReferencesResult {
   typeCandidates?: TypeConstructCandidate[];
   /** report_literals=true 时：符号 snake 变体在项目文本里的字面量命中（如工具注册名/README/测试里的串），只扫描不改 */
   literals?: Array<{ needle: string; matches: RawLiteralMatch[] }>;
+  /**
+   * ★ 候选集来源账目（2026-09-15 加）：import 反向闭包多少、文本层补了多少、是否被上限截断。
+   * 为什么要给 LLM 看：**召回边界必须可见**。"跨语言引用只能靠文本层补"，若文本层被截断，
+   * 本次结果就可能不全 —— 这属于"要么一致、要么明确标注"里的**标注**。
+   */
+  candidateScan?: CandidateScan;
   /** 阻断/非模块级符号等理由 */
   blocked?: string[];
 }
@@ -205,12 +274,14 @@ export async function findReferences(input: {
   // 闭包内引用点收集（import + usage + export_list）。候选集只走持久索引的 import 反闭包；
   // 索引缺失时**先就地冷启建索引再重试一次**（零前置），仍为空才拒绝——
   // 绝不再回退"全闭包逐文件即时解析"（仓库大时打满 CPU/内存）。
-  let candidates = await indexCandidateFiles(resolvedRoot, fileAbs);
-  if (candidates === null) {
+  // 候选集：import 反向闭包（快路径）**∪ 文本提及补召回**（跨语言 / 无 import 边，见 indexCandidateFiles）。
+  // 索引缺失时先就地冷启建索引再重试一次（零前置），仍为空才拒绝。
+  let cand = await indexCandidateFiles(resolvedRoot, fileAbs, symbol);
+  if (cand === null) {
     const { state } = await ensureProjectIndex(resolvedRoot);
-    if (state !== 'empty') candidates = await indexCandidateFiles(resolvedRoot, fileAbs);
+    if (state !== 'empty') cand = await indexCandidateFiles(resolvedRoot, fileAbs, symbol);
   }
-  if (candidates === null) {
+  if (cand === null) {
     return {
       ok: false,
       symbol: symbol!,
@@ -223,6 +294,8 @@ export async function findReferences(input: {
       ],
     };
   }
+  const candidateScan: CandidateScan = cand.scan;
+  const candidates = cand.files;
   if (candidates.length > 4000) {
     return {
       ok: false,
@@ -361,6 +434,7 @@ export async function findReferences(input: {
     definition: { file: (path.relative(resolvedRoot, fileAbs) || fileAbs).replace(/\\/g, '/'), kind: kind ?? 'module', refs: defRefs },
     importers,
     importerCount: importers.length,
+    candidateScan,
     literals: input.report_literals ? await scanLiterals(resolvedRoot, symbol!) : undefined,
   };
 }

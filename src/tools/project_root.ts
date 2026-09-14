@@ -8,9 +8,10 @@
  *
  * 本模块提供两级能力：
  *   1. resolveProjectRoot(file)：从文件自动定位初始项目根
- *        a. git rev-parse --show-toplevel 成功 → git 根（嵌套 git 天然返回最近仓库根）
- *        b. 否则向上找最近 manifest（package.json/go.mod/pyproject.toml）→ 其目录
- *        c. 都没有 → 文件所在目录
+ *        a. 向上找 `.git`（目录或文件）→ 最近仓库根（**文件系统走查，微秒级**；见 gitRootOf 注释）
+ *        b. 走查落空才 `git rev-parse --show-toplevel`（每目录记忆化）
+ *        c. 否则向上找最近 manifest（package.json/go.mod/pyproject.toml）→ 其目录
+ *        d. 都没有 → 文件所在目录
  *   2. expandClosure(seedFile, root)：沿 import 边做动态闭包边界
  *        - 初始 = 项目根内全部本地源文件（覆盖"谁引用 seed"的 importer 方向）
  *        - 对每个文件解析 import；相对导入（./ ../）若真实解析到边界外本地文件 → 扩入
@@ -28,6 +29,7 @@ import { homedir } from 'node:os';
 import { analyzeModuleSource } from './rename_symbol.js';
 import { parseFileFull, isSupported, type ParsedImport } from './ts_kernel/index.js';
 import { readGoModules, type GoModule } from './import_project.js';
+import { gitAvailable } from './exec_guard.js';
 import { getProjectCacheDb, closeProjectCacheDb, type Database } from '../db/db.js';
 import {
   toRelPath,
@@ -80,20 +82,72 @@ export function isInsideRoot(abs: string, root: string): boolean {
 }
 
 /**
- * 从 file 向上找 git 根（用 git 自身，嵌套 git 天然返回最近仓库根）。
- * 返回绝对路径或 null。
+ * 从 file 向上找 git 根（嵌套 git 天然返回最近仓库根）。返回绝对路径或 null。
+ *
+ * ★ 性能修正（2026-09-15，实测根因）：
+ *   原实现**每次都** `execSync('git rev-parse --show-toplevel')`。在 `git` 不在 PATH 的环境里
+ *   （测试进程、精简容器、被清过 PATH 的 shell），这行会在 Windows 上白等 **约 5.1 秒**
+ *   （cmd 启动 + "不是内部或外部命令" 的错误路径），而不是"快失败"。
+ *   实测：`resolveProjectRoot(cwd)` = **5112ms**，而它下游的
+ *   `find_references` / `move_symbol` / `harvest_decisions` 因此各花 ~5.2s ——
+ *   `tests/server_registry.stale_build.test.ts` 的 5s 超时就是这么被吃掉的（不是断言错）。
+ *
+ *   修法（顺序有讲究）：
+ *     ① **先向上找 `.git`**（目录或文件都算 —— 文件形态是 worktree/submodule）：
+ *        O(深度) 次 `existsSync`，微秒级，覆盖绝大多数真实检出。语义与 git 一致：取**最近**那层。
+ *     ② 找不到才 spawn `git`（例如 `GIT_DIR` 环境变量指定的非标准布局、bare 仓库），
+ *        并且**按起点目录记忆化**（连"不是仓库"的结论也缓存）⇒ 每进程每个目录最多付一次。
  */
+const gitRootCache = new Map<string, string | null>();
+
+/** 向上找 .git（目录或文件）。返回含 .git 的目录绝对路径，或 null。 */
+function gitRootByFsWalk(startDir: string): string | null {
+  let dir = startDir;
+  for (let i = 0; i < 64; i++) {
+    if (fs.existsSync(path.join(dir, '.git'))) return dir;
+    const parent = path.dirname(dir);
+    if (parent === dir) return null;
+    dir = parent;
+  }
+  return null;
+}
+
 export function gitRootOf(file: string): string | null {
   let dir = path.resolve(file);
   if (!fs.existsSync(dir)) dir = path.dirname(dir);
-  if (fs.statSync(dir).isFile()) dir = path.dirname(dir);
-  try {
-    const out = execSync('git rev-parse --show-toplevel', { cwd: dir, encoding: 'utf-8', stdio: 'pipe', timeout: 15_000 });
-    const root = out.trim();
-    return root ? path.resolve(root) : null;
-  } catch {
-    return null; // 非 git 仓库
+  else if (fs.statSync(dir).isFile()) dir = path.dirname(dir);
+
+  const cached = gitRootCache.get(dir);
+  if (cached !== undefined) return cached;
+
+  // ① 文件系统走查（快路径）
+  const byWalk = gitRootByFsWalk(dir);
+  if (byWalk) {
+    gitRootCache.set(dir, byWalk);
+    return byWalk;
   }
+
+  // ② 走查没命中才 spawn git（慢路径；失败也缓存，绝不每调用一次付一次代价）
+  //    ★ 先过 exec_guard：环境里没有 git 时，spawn 要白等约 5.1 秒（见 exec_guard 注释）
+  let out: string | null = null;
+  if (!gitAvailable()) {
+    out = null;
+  } else {
+    try {
+      const raw = execSync('git rev-parse --show-toplevel', { cwd: dir, encoding: 'utf-8', stdio: 'pipe', timeout: 15_000 });
+      const root = raw.trim();
+      out = root ? path.resolve(root) : null;
+    } catch {
+      out = null; // 非 git 仓库
+    }
+  }
+  gitRootCache.set(dir, out);
+  return out;
+}
+
+/** 测试隔离用：清掉 git 根解析缓存 */
+export function clearGitRootCache(): void {
+  gitRootCache.clear();
 }
 
 /**

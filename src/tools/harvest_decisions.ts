@@ -18,6 +18,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
+import { gitAvailable } from './exec_guard.js';
 
 export type HarvestSource = 'doc' | 'gitlog' | 'comment';
 
@@ -97,6 +98,8 @@ function hasIntent(text: string): boolean {
 // ──────── git 日志提取 ────────
 
 function gitLogEntries(gitRoot: string, limit: number): Array<{ hash: string; subject: string }> {
+  // ★ 先过 exec_guard：环境里没有 git 时 spawn 会白等约 5.1 秒（实测本工具 5169ms → ~0ms）
+  if (!gitAvailable()) return [];
   try {
     const out = execSync(`git log -n ${limit} --pretty=format:%H%x09%s`, {
       cwd: gitRoot,

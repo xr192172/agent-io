@@ -21,6 +21,7 @@ import { syncFile } from '../db/symbols.js';
 import { getProjectCacheDb } from '../db/db.js';
 import { splitKeepEnds, detectEol, isBlankLine } from './line_utils.js';
 import { snapshotBeforeWrite } from './file_snapshot.js';
+import { reopenAndResolveAfterWrite, reopenNote } from './write_gate.js';
 
 export type EditCodeOp = 'replace' | 'insert' | 'delete' | 'range' | 'replace_text';
 
@@ -321,9 +322,10 @@ export async function editCode(args: EditCodeArgs): Promise<{ message: string }>
     fs.mkdirSync(path.dirname(absPath), { recursive: true });
     fs.writeFileSync(absPath, content, 'utf8');
     const sync = await syncFile(getProjectCacheDb(projectRoot), projectRoot, absPath);
+    const _rw = await reopenAndResolveAfterWrite(projectRoot, [absPath]);
     return {
       message:
-        `✓ 已创建 ${relPath}（${reparsed.symbols.length} 符号）并重建索引（${sync.status}）\n` +
+        `✓ 已创建 ${relPath}（${reparsed.symbols.length} 符号）并重建索引（${sync.status}${reopenNote(_rw)}）\n` +
         reparsed.symbols.map((s) => `  + ${describeSymbol(s)}`).join('\n'),
     };
   }
@@ -385,13 +387,14 @@ export async function editCode(args: EditCodeArgs): Promise<{ message: string }>
     }
     fs.writeFileSync(absPath, newContent, 'utf8');
     const sync = await syncFile(getProjectCacheDb(projectRoot), projectRoot, absPath);
+    const _rw = await reopenAndResolveAfterWrite(projectRoot, [absPath]);
     const diffNote = sync.symbol_diff
       ? `（符号 diff: +${sync.symbol_diff.added} -${sync.symbol_diff.removed} ~${sync.symbol_diff.changed}）`
       : '';
     return {
       message:
         `✓ 已替换 ${relPath} 的 ${args.symbol} body（L${body.startLine}-${body.endLine}），` +
-        `签名与大括号保留，索引已重建（${sync.status}）${diffNote}\n${preview}`,
+        `签名与大括号保留，索引已重建（${sync.status}${reopenNote(_rw)}）${diffNote}\n${preview}`,
     };
   }
 
@@ -444,6 +447,7 @@ export async function editCode(args: EditCodeArgs): Promise<{ message: string }>
 
     fs.writeFileSync(absPath, newContent, 'utf8');
     const sync = await syncFile(getProjectCacheDb(projectRoot), projectRoot, absPath);
+    const _rw = await reopenAndResolveAfterWrite(projectRoot, [absPath]);
     const diffNote = sync.symbol_diff
       ? `（符号 diff: +${sync.symbol_diff.added} -${sync.symbol_diff.removed} ~${sync.symbol_diff.changed}）`
       : '';
@@ -451,7 +455,7 @@ export async function editCode(args: EditCodeArgs): Promise<{ message: string }>
     return {
       message:
         `✓ range 编辑 ${relPath} L${start}-L${end}（${count} 行 → ${aligned.length} 行），` +
-        `索引已重建（${sync.status}）${diffNote}${repairNote}\n${preview}`,
+        `索引已重建（${sync.status}${reopenNote(_rw)}）${diffNote}${repairNote}\n${preview}`,
     };
   }
 
@@ -495,12 +499,13 @@ export async function editCode(args: EditCodeArgs): Promise<{ message: string }>
     }
     fs.writeFileSync(absPath, newContent, 'utf8');
     const sync = await syncFile(getProjectCacheDb(projectRoot), projectRoot, absPath);
+    const _rw = await reopenAndResolveAfterWrite(projectRoot, [absPath]);
     const diffNote = sync.symbol_diff
       ? `（符号 diff: +${sync.symbol_diff.added} -${sync.symbol_diff.removed} ~${sync.symbol_diff.changed}）`
       : '';
     return {
       message:
-        `✓ replace_text ${relPath} L${line}（${oldLines.length} 行 → ${newLines.length} 行），索引已重建（${sync.status}）${diffNote}\n${preview}`,
+        `✓ replace_text ${relPath} L${line}（${oldLines.length} 行 → ${newLines.length} 行），索引已重建（${sync.status}${reopenNote(_rw)}）${diffNote}\n${preview}`,
     };
   }
 
@@ -649,6 +654,7 @@ export async function editCode(args: EditCodeArgs): Promise<{ message: string }>
   // ── 写盘 + 索引重建（新鲜度闭环） ──
   fs.writeFileSync(absPath, newContent, 'utf8');
   const sync = await syncFile(getProjectCacheDb(projectRoot), projectRoot, absPath);
+  const _rw = await reopenAndResolveAfterWrite(projectRoot, [absPath]);
 
   const before = parsed.symbols.length;
   const after = reparsed.symbols.length;
@@ -663,14 +669,14 @@ export async function editCode(args: EditCodeArgs): Promise<{ message: string }>
     return {
       message:
         `✓ 已删除 ${relPath} 的 ${delSym}（L${lineOp.startIdx + 1} 起 ${lineOp.count} 行），` +
-        `符号 ${before} → ${after}，索引已重建（${sync.status}）${diffNote}${repairNote}`,
+        `符号 ${before} → ${after}，索引已重建（${sync.status}${reopenNote(_rw)}）${diffNote}${repairNote}`,
     };
   }
   if (op === 'insert') {
     const anchor = args.symbol ? `（锚点 ${args.symbol} 之后）` : '（文件末尾）';
     return {
       message:
-        `✓ 已插入 ${relPath}${anchor}，符号 ${before} → ${after}，索引已重建（${sync.status}）${diffNote}${repairNote}\n` +
+        `✓ 已插入 ${relPath}${anchor}，符号 ${before} → ${after}，索引已重建（${sync.status}${reopenNote(_rw)}）${diffNote}${repairNote}\n` +
         `新符号:\n` + reparsed.symbols
           .filter((s) => !parsed.symbols.some((o) => o.qualified_name === s.qualified_name && o.start_line === s.start_line))
           .map((s) => `  + ${describeSymbol(s)}`)
@@ -680,7 +686,7 @@ export async function editCode(args: EditCodeArgs): Promise<{ message: string }>
   return {
     message:
       `✓ 已替换 ${relPath} 的 ${args.symbol}（原 L${lineOp.startIdx + 1}-${lineOp.startIdx + lineOp.count}，` +
-      `${lineOp.count} 行 → ${lineOp.insert.length} 行），索引已重建（${sync.status}）${diffNote}${repairNote}\n` +
+      `${lineOp.count} 行 → ${lineOp.insert.length} 行），索引已重建（${sync.status}${reopenNote(_rw)}）${diffNote}${repairNote}\n` +
       `文件符号: ${before} → ${after}`,
   };
 }

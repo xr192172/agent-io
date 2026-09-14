@@ -22,6 +22,7 @@ import { parseAstRoot, type SyntaxNodeLike } from './ts_kernel/kernel.js';
 import { resolveImportTarget, syncFile, removeFile } from '../db/symbols.js';
 import { getProjectCacheDb, closeProjectCacheDb } from '../db/db.js';
 import { createProtectGuard } from './protect.js';
+import { reopenAndResolveAfterWrite } from './write_gate.js';
 
 // 扫描范围内源码扩展名：TS 系全量 + Python（相对导入语义与 TS 同构，复用同一相对路径重算逻辑）。
 // Go 的 import 是模块包路径（非相对文件路径），移动单文件不改变途径名 → 不纳入扫描。
@@ -377,6 +378,11 @@ export async function renameFile(input: RenameFileInput): Promise<RenameFileResu
     fs.unlinkSync(fromAbs);
     removeFile(db, projectRoot, fromAbs);
     await syncFile(db, projectRoot, toAbs);
+    // ★ 写闸收尾（2026-09-15）：被移动/被改写的文件里可能有符号"消失/改名"，
+    //   它们的引用方边会被 FK 级联删掉且不会自己重建 ⇒ 必须重开再解析（否则静默漏报）。
+    //   失败不吞 —— 带进结果让调用方看见。
+    const _rw = await reopenAndResolveAfterWrite(projectRoot, [toAbs, ...[...byImporter.values()].map((i) => i.importerAbs)]);
+    if (_rw.error) blocked.push(`索引引用方重算失败：${_rw.error}`);
   } catch (e) {
     // 中途失败回滚：删除第 3 步留下的拷贝，让调用方看到「没挪动」
     try {

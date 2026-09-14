@@ -23,6 +23,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
+import { gitAvailable } from './exec_guard.js';
 import { getStorageRoot } from '../storage.js';
 import { openDb, closeProjectCacheDb, getProjectCacheDb } from '../db/db.js';
 import { syncProject } from '../db/symbols.js';
@@ -123,6 +124,8 @@ function seedStem(seed: string): string {
 }
 
 function gitOk(cwd: string): string {
+  // ★ 先过 exec_guard：环境里没有 git 时 spawn 会白等约 5.1 秒（本工具实测 5183ms → ~0ms）
+  if (!gitAvailable()) return '';
   try {
     return execSync('git rev-parse HEAD', { cwd, encoding: 'utf-8', stdio: 'pipe' }).trim();
   } catch {

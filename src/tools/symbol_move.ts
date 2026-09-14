@@ -34,6 +34,7 @@ import { syncFile } from '../db/symbols.js';
 import { getProjectCacheDb } from '../db/db.js';
 import { splitKeepEnds, detectEol, isBlankLine } from './line_utils.js';
 import { snapshotBeforeWrite } from './file_snapshot.js';
+import { reopenAndResolveAfterWrite } from './write_gate.js';
 
 // ─────────────────────────────────────────────
 // 类型
@@ -441,6 +442,9 @@ export async function moveSymbol(input: MoveSymbolInput): Promise<MoveSymbolResu
       /* 索引非致命 */
     }
   }
+  // ★ 写闸收尾（2026-09-15）：移动会让源文件里该符号"消失"，引用方边被 FK 级联删掉且
+  //   不会自己重建 ⇒ 必须重开再解析（否则 find_references / impact 静默漏报）。失败不吞。
+  const _rw = await reopenAndResolveAfterWrite(resolvedRoot, [sourceAbs, toAbs, ...importerEdits.keys()]);
 
   return {
     ok: true,

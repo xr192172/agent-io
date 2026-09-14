@@ -331,6 +331,65 @@ export async function syncSelfWrites(
 // ─────────────────────────────────────────────────────────────
 
 /**
+ * ★ 写盘后的**另一半**收尾：重开"指向本批被改符号"的引用，并按 scope 重解析。
+ *
+ * 为什么必须单独存在：`syncFile` 只负责**被改文件自己**；而**引用方文件没变、不会被重解析**，
+ * 它那条指向旧符号的边已被 FK `ON DELETE CASCADE` 静默删掉 ⇒ `find_references` / `impact` 漏报。
+ * 之前只有 `ensureFreshIndex` 与 `watch_project` 做了这件事，`edit_code` / `rename_file` /
+ * `symbol_move` 这类"自己 syncFile"的工具漏了 —— 本函数就是给它们的收尾点。
+ *
+ * 绝不抛错；失败写进 `error`，**调用方必须把它带进结果**（别吞：这类异常历史上被吞成"静默 0 条"）。
+ */
+export async function reopenAndResolveAfterWrite(
+  projectRoot: string,
+  files: readonly string[],
+): Promise<{
+  refsReopened: number;
+  refsReopenedFiles: number;
+  cross: { total: number; resolved: number; external: number; failed: number };
+  error?: string;
+}> {
+  const empty = { refsReopened: 0, refsReopenedFiles: 0, cross: { total: 0, resolved: 0, external: 0, failed: 0 } };
+  const root = path.resolve(projectRoot);
+  const rels = [...new Set(files.map((f) => toRelPosix(root, f)).filter((r): r is string => !!r))];
+  if (!rels.length || !hasLiveIndex(root)) return empty;
+  let db: Database;
+  try {
+    db = getProjectCacheDb(root);
+  } catch (e) {
+    return { ...empty, error: `open cache db failed: ${(e as Error).message}` };
+  }
+  try {
+    const names = new Set<string>();
+    for (const rel of rels) {
+      for (const nm of changedSymbolNames(db, rel)) names.add(nm);
+    }
+    const scope = new Set(rels);
+    let refsReopened = 0;
+    let refsReopenedFiles = 0;
+    if (names.size) {
+      const r = reopenRefsTo(db, [...names]);
+      refsReopened = r.reopened;
+      refsReopenedFiles = r.files.length;
+      for (const f of r.files) scope.add(f);
+    }
+    const cross = resolveCrossFileCalls(db, root, {
+      scopeFiles: [...scope],
+      keepUnresolvedPending: isIndexIncomplete(root),
+    });
+    return { refsReopened, refsReopenedFiles, cross };
+  } catch (e) {
+    return { ...empty, error: `reopen/resolve failed: ${(e as Error).message}` };
+  }
+}
+
+/** 人读短注（拼进"索引已重建"那类句子里）。失败必须可见 —— 绝不静默。 */
+export function reopenNote(r: { refsReopened: number; error?: string }): string {
+  if (r.error) return `｜⚠️ 引用方重算失败：${r.error}`;
+  return r.refsReopened > 0 ? `｜引用方重算 ${r.refsReopened} 条` : '';
+}
+
+/**
  * ★ **统一写入闸**：`快照 → 真写 → 索引写穿`（async 版）。
  *
  * 所有"会改源码"的工具都应走这里（或同步版走 `记录自写`），而不是各自 `fs.writeFileSync` ——
