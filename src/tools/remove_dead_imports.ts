@@ -24,7 +24,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { DeadDepCandidate } from './dead_deps.js';
 import { applyWithVerify, defaultVerifyCommands, runVerification, type VerifyCommand, type VerificationOutcome, type VerifyOutcomeKind } from './verify_refactor.js';
-import { snapshotAndRecordSelfWrite, type WriteThroughOutcome } from './write_gate.js';
+import { snapshotAndRecordSelfWrite, syncSelfWritesSync, type WriteThroughOutcome } from './write_gate.js';
 
 // ─────────────────────────────────────────────
 // 纯函数：单文件删除指向 target 的 import 语句
@@ -296,13 +296,16 @@ export function removeDeadImports(opts: {
   const files = [...absToNew.keys()];
   // ★ 统一写入闸（2026-09-14）：旧实现只 `writeFileSync`，**不快照、不登记** ——
   //   改完 import 之后紧接着 find_references / 影响面分析读到的还是旧图（静默撒谎）。
-  //   本工具是**同步签名**（`syncFile` 是异步的，await 不了）⇒ 走"写前快照 + 自写登记"，
-  //   索引一致性由读路径优先消费登记来保证（见 write_gate 的分层说明 L1b）。
-  const indexWriteThrough = snapshotAndRecordSelfWrite(opts.project_dir, files, {
+  //   本工具是**同步签名** ⇒ 写前快照 + 自写登记（L1b）先落兜底；
+  //   ⑤ 同步写穿（2026-09-15）：写完再尝试 `syncSelfWritesSync` —— 解析器已预热
+  //   （进程启动 prewarmKernel）则**当场直连 L1a**，优先取同步结果；未预热则预热闸
+  //   整批落回 L1b（idxPre 已登记，登记项按内容 hash 幂等，重复消费无害）。
+  const idxPre = snapshotAndRecordSelfWrite(opts.project_dir, files, {
     label: `remove_dead_imports: ${absToNew.size} 文件`,
   });
   for (const [abs, newSrc] of absToNew) fs.writeFileSync(abs, newSrc, 'utf-8');
-  return { ...result, indexWriteThrough };
+  const idxSync = syncSelfWritesSync(opts.project_dir, files);
+  return { ...result, indexWriteThrough: idxSync ?? idxPre };
 }
 
 // ─────────────────────────────────────────────
@@ -365,9 +368,12 @@ export function removeDeadImportsWithVerify(opts: RemoveDeadImportsVerifyOptions
   });
 
   // ★ 索引一致性放在 `applyWithVerify` **之后**：此时盘态才是最终态（回滚过就是原样）。
-  //   本路径同样是同步签名 ⇒ 只登记自写；`syncFile` 按内容 hash 判定，所以"写完又回滚回原样"
-  //   在消费时会自然落成 skipped，不会假报改动。
-  const idx = snapshotAndRecordSelfWrite(cwd, [...c.absToNew.keys()], { label: 'remove_dead_imports: 验证闭环' });
+  //   本路径同样是同步签名 ⇒ 写前快照 + 自写登记（L1b 兜底）；⑤ 同步写穿（2026-09-15）：
+  //   解析器已预热则当场直连 L1a，优先取同步结果（`syncFile` 按内容 hash 判定，
+  //   "写完又回滚回原样"自然落成 skipped，不会假报改动）。
+  const idxPre = snapshotAndRecordSelfWrite(cwd, [...c.absToNew.keys()], { label: 'remove_dead_imports: 验证闭环' });
+  const idxSync = syncSelfWritesSync(cwd, [...c.absToNew.keys()]);
+  const idx = idxSync ?? idxPre;
 
   if (ver.outcome === 'baseline_fail') {
     // 地基黄：一个都不写

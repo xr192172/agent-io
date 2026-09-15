@@ -174,8 +174,26 @@
    "解析粒度"注（非 call 档 ⇒ "零引用/零波及不可全信"）；`index_integrity` 自述 `语言能力自述` 行
    （按档分组计数）。核心不变量：**没有这些边的语言，"零波及"是解析器能力的极限，不是事实**。
    测试：`tests/tools/parse_capability.test.ts`（9 项，含 impact_analysis/index_integrity 集成）。
-5. **同步工具的写穿**：`syncFile` 是异步的，同步签名工具只能走 L1b。
-   若把 `parseFileFull` 的初始化改成"进程启动预热"，同步路径就能直连 L1a（去一层延迟）。
+5. ~~**同步工具的写穿**~~ ✅ 2026-09-15 已落地（⑤ 同步工具直连 L1a）：
+   实测 L1a 链路里**唯一的 await** 是 `syncFile → parseFileFull → getParser`（动态 import 语言包）；
+   解析本体（parseContent + traverseAndExtract*）与 SQLite 写入**全部同步**。⇒ 三步拆开：
+   ① `prewarmKernel()`（`registerAllTools` 开头 fire-and-forget）把全部已装语言包 × 全部扩展名的
+   Parser 预热进缓存；② kernel 增加只读缓存的同步孪生 `parseFileFullSync` / `getParserSync` /
+   `parserReadyForFile` / `canParseFileSync`（**绝不同步 import**：未命中返回 error，不硬等）；
+   ③ symbols.ts 把 syncFile 拆成 `syncFilePrelude`（读盘+hash 短路）+ `applyParsedToIndex`
+   （落库主体，两条路径共用一份 ⇒ 不会漂移）+ 薄封装 `syncFileSync`（sync）。
+   write_gate 增加 `syncSelfWritesSync`（与 async 版共用 `finishWriteThrough`，②③④ 口径一致），
+   带**预热闸：绝不半同步**——本批任何一个存在文件的扩展名 Parser 未预热 ⇒ 整批落回 L1b
+   （`recordSelfWrite` + `mode:'deferred'`），绝不出现"一半同步一半没同步"的批次；
+   要删的文件（磁盘已不存在）与不支持的扩展名不需要解析器，不受闸影响。
+   收编两个同步签名工具：`remove_dead_imports`（两处：写后尝试 `syncSelfWritesSync`，
+   `idxSync ?? idxPre` 优先取同步结果；idxPre 登记保留为兜底，按 hash 幂等无害）、
+   `scaffold`（`inRoot` 提到写循环外，INVARIANTS 落盘后尝试同步写穿，成功 ⇒ indexNote
+   升级为"同步写穿"，失败/未预热 ⇒ 保持"已登记"）。测试：`write_gate_adoption.test.ts`
+   新增 3 项（⑦ 未预热 ⇒ deferred+登记；⑥ prewarm ⇒ synced + 引用方重开重解析 + 再写穿
+   全 skipped；remove_dead_imports 组合 synced 且 files.hash 已更新），共 8 项。
+   残余（已知、可接受）：进程内极早期（预热完成前）的同步写入仍走 L1b，读路径会兜；
+   大小写非常规扩展名（如 `.TS`）缓存键不命中 ⇒ 同样落 L1b。
 6. ~~**写入闸的覆盖面**~~：✅ 全部收编完成（2026-09-15）——
    `edit_code` / `rename_file` / `symbol_move` 接 `reopenAndResolveAfterWrite`；
    `refactor_pipeline` 在每步**终态**（applied 或回滚后）跑一次 `syncSelfWrites`
@@ -203,7 +221,7 @@
 | 首次接触即建索引 | `tests/server_registry.first_contact.test.ts`（5 项） | 无索引 + 带根调用 ⇒ 后台起建 + 标注"可能不全"；30 文件后台补完；kill-switch / 幻觉路径 / noAutoFresh 不触发 |
 | 行动工具可信度附注 | `tests/server_registry.trust_note.test.ts`（5 项） | 4 工具带 `trustAnnotated`；健康 ⇒ 无注；陈旧断言 ⇒ TRUST 注（静默漏报 + 修复指引）；修完 ⇒ 注消失；无索引不注 |
 | 写入闸行为 | `tests/tools/write_gate.test.ts`（9 项） | 无索引不建库；有索引 ⇒ `refsReopened≥1` + 快照 |
-| 写闸收编（管线/骨架） | `tests/tools/write_gate_adoption.test.ts`（5 项） | 管线 applied ⇒ 索引随盘 + 引用方重开（旧名 failed）；rolled_back ⇒ 索引零扰动；纯移动 from 移除/to 入索引；scaffold L1b 登记可见、根外不登记 |
+| 写闸收编（管线/骨架） | `tests/tools/write_gate_adoption.test.ts`（8 项） | 管线 applied ⇒ 索引随盘 + 引用方重开（旧名 failed）；rolled_back ⇒ 索引零扰动；纯移动 from 移除/to 入索引；scaffold 预热态同步写穿、根外不登记；⑤ 未预热 ⇒ 预热闸整批 L1b（绝不半同步），prewarm ⇒ synced 与 async 版同口径 |
 | 语言能力自述（P10） | `tests/tools/parse_capability.test.ts`（9 项） | 按扩展名/语言分档；refs/impact 自动附"解析粒度"注；index_integrity 自述语言能力行 |
 | 首读够快 | `probe-dc-locality.mjs --flow` | 首读 < 1.5s（现 1.0s） |
 | 补齐成本 | `probe-dc-backfill-profile.mjs` | 与冷启同量级（现 13.4s vs 11.8s，298 文件） |

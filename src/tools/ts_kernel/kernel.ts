@@ -24,7 +24,7 @@ import path from 'node:path';
 import type Parser from 'tree-sitter';
 import { findLanguageByExt, LanguageEntry } from './languages.js';
 import { isLanguageInstalled, isExtSupported, listSupportedExts, probeInstalledLanguages } from './probe.js';
-import { getParser, clearLoaderCache } from './loader.js';
+import { getParser, getParserSync, clearLoaderCache } from './loader.js';
 
 export interface ParsedSymbol {
   name: string;
@@ -872,6 +872,85 @@ export async function parseFileFull(filePath: string, content: string): Promise<
  */
 export async function parseFile(filePath: string, content: string): Promise<ParsedSymbol[]> {
   return (await parseFileFull(filePath, content)).symbols;
+}
+
+// ─────────────────────────────────────────────────────────────
+// 同步解析路径（⑤ 同步工具直连 L1a，2026-09-15）
+// ─────────────────────────────────────────────────────────────
+//
+// 为什么能同步：parseFileFull 链路里唯一的 await 是 getParser（动态 import 语言包）；
+// 解析本体（parseContent + traverseAndExtract*）与后续 SQLite 写入全部同步。
+// ⇒ 进程启动预热 Parser 缓存（prewarmKernel）后，同步签名的工具
+//    （remove_dead_imports / scaffold 等）也能当场写穿索引，不再只能登记（L1b）。
+
+/**
+ * `parseFileFull` 的同步孪生（体逐行同构，仅 Parser 获取方式不同）。
+ *
+ * 纪律（绝不半同步）：
+ *   - 本函数**绝不**触发动态 import；缓存未命中 ⇒ 返回 `error: '解析器未预热: …'`，
+ *     调用方走 L1b 登记（write_gate 的预热闸在调用前就用 `canParseFileSync` 拦下了）。
+ *   - 扩展名缓存键与 `parseFileFull` 完全一致（原样大小写、`'.' + 最后一段`），
+ *     因此 `parserReadyForFile` / `canParseFileSync` 的判定不会与实际解析行为漂移。
+ */
+export function parseFileFullSync(filePath: string, content: string): ParsedFile {
+  const empty: ParsedFile = { symbols: [], imports: [], calls: [], type_refs: [] };
+  const ext = '.' + (filePath.split('.').pop() || '');
+  const lang = isExtSupported(ext);
+  if (!lang) return empty;
+
+  const parser = getParserSync(ext);
+  if (!parser) return { ...empty, error: `解析器未预热: ${lang.name}（先调 prewarmKernel）` };
+
+  try {
+    const tree = parseContent(parser as ParserLike, content);
+    const symbols: ParsedSymbol[] = [];
+    const imports: ParsedImport[] = [];
+    const calls: ParsedCall[] = [];
+    const typeRefs: ParsedTypeRef[] = [];
+    traverseAndExtract(tree.rootNode, lang, symbols, undefined);
+    traverseAndExtractImports(tree.rootNode, lang, imports);
+    traverseAndExtractCalls(tree.rootNode, lang, symbols, calls);
+    traverseAndExtractTypeRefs(tree.rootNode, lang, symbols, typeRefs);
+    return { symbols, imports, calls, type_refs: typeRefs };
+  } catch (e) {
+    console.warn(`[ts_kernel] parse(sync) ${filePath} failed: ${(e as Error).message}`);
+    return { ...empty, error: (e as Error).message };
+  }
+}
+
+/** 该文件的 Parser 是否已在缓存（与 parseFileFullSync 的缓存键完全一致） */
+export function parserReadyForFile(filePath: string): boolean {
+  const ext = '.' + (filePath.split('.').pop() || '');
+  return getParserSync(ext) !== null;
+}
+
+/**
+ * 同步解析该文件**此刻**是否可行：扩展名受支持时要求 Parser 已预热；
+ * 不支持的类型直接可行（parseFileFullSync 会返回空结果，无需解析器）。
+ * 给 write_gate 的预热闸用 —— 闸的判定与实际解析行为共用同一套键计算，不漂移。
+ */
+export function canParseFileSync(filePath: string): boolean {
+  const ext = '.' + (filePath.split('.').pop() || '');
+  if (!isExtSupported(ext)) return true;
+  return getParserSync(ext) !== null;
+}
+
+/**
+ * 预热：把全部已安装语言包 × 全部扩展名的 Parser 建好（进程启动时调用一次）。
+ * 完成后 `parseFileFullSync` / `syncFileSync` / `syncSelfWritesSync` 全程同步可用。
+ * 单个语言包加载失败照常走 loader 降级（记录 warning，返回 null），预热本身不抛。
+ */
+export async function prewarmKernel(): Promise<{ warmed: number; missing: string[] }> {
+  const missing: string[] = [];
+  let warmed = 0;
+  for (const lang of probeInstalledLanguages()) {
+    for (const ext of lang.exts) {
+      const p = await getParser(ext, lang);
+      if (p) warmed++;
+      else missing.push(ext);
+    }
+  }
+  return { warmed, missing };
 }
 
 /** 检查扩展名是否被支持（且已安装对应语言包） */

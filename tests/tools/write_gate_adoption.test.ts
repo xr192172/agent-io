@@ -6,7 +6,11 @@
  *     而不是维持 resolved 假象）；对同一文件再跑一次写穿全 skipped ⇒ 索引已等于磁盘。
  *   - refactor_pipeline rolled_back ⇒ 索引零扰动：引用边维持 resolved，未变文件全 skipped。
  *   - refactor_pipeline 纯移动 ⇒ from 从索引移除、to 进入索引。
- *   - scaffold（同步签名，L1b）⇒ 生成物登记自写 + pendingSelfWrites 可见；根外 / 无 project_dir ⇒ 不登记。
+ *   - scaffold（同步签名）⇒ 解析器已预热 ⇒ 同步直连 L1a（消息"同步写穿"）；
+ *     生成物进索引；根外 / 无 project_dir ⇒ 不登记。
+ *   - ⑤ 同步写穿 syncSelfWritesSync（2026-09-15）：未预热 ⇒ 预热闸整批落回 L1b（绝不半同步）；
+ *     prewarmKernel 后 ⇒ 与 async 版同口径（改名 → 引用方重开重解析 → 再写穿全 skipped）；
+ *     remove_dead_imports 组合：预热后 indexWriteThrough 直连 synced。
  */
 import fs from 'node:fs';
 import os from 'node:os';
@@ -15,9 +19,11 @@ import { describe, it, expect, afterAll, beforeEach, afterEach } from 'vitest';
 import { runRefactorPipeline } from '../../src/tools/refactor_pipeline';
 import { RefactorLangRegistry, type LanguageRefactorExecutor } from '../../src/tools/refactor_langs';
 import { openDb } from '../../src/db/db';
-import { syncSelfWrites, pendingSelfWrites } from '../../src/tools/write_gate';
+import { syncSelfWrites, syncSelfWritesSync, pendingSelfWrites } from '../../src/tools/write_gate';
 import { importProject } from '../../src/tools/import_project';
 import { scaffold } from '../../src/tools/scaffold';
+import { removeDeadImports } from '../../src/tools/remove_dead_imports';
+import { prewarmKernel, _reset as resetKernel } from '../../src/tools/ts_kernel';
 import { saveDSL } from '../../src/storage';
 
 const roots: string[] = [];
@@ -238,16 +244,23 @@ describe('scaffold 写闸（L1b 自写登记）', () => {
     } as never);
   }
 
-  it('有索引 + 生成物在根内 ⇒ 登记自写，pendingSelfWrites 可见', async () => {
-    const root = await makeIndexed('scaf');
+  it('有索引 + 生成物在根内 ⇒ 预热态下同步写穿（消息升级），生成物直接进索引', async () => {
+    const root = await makeIndexed('scaf'); // importProject 解析过 auth.ts ⇒ '.ts' Parser 已入缓存
     saveScaffoldDsl('scaf_f');
 
     const r = scaffold({ feature: 'scaf_f', output_dir: path.join(root, 'out'), project_dir: root });
     expect(r.files.length).toBeGreaterThanOrEqual(2); // 骨架 + INVARIANTS.md
-    const pend = pendingSelfWrites(root);
+    const pend = pendingSelfWrites(root); // 写前登记仍存在（幂等兜底，消费方按 hash 去重）
     expect(pend).toContain('out/src/gen/auth.ts');
     expect(pend).toContain('out/INVARIANTS.md');
-    expect(r.message).toContain('已登记');
+    // ⑤ 同步写穿：'.ts' 已预热 ⇒ 不再是"已登记"，而是当场同步进索引
+    expect(r.message).toContain('同步写穿');
+    const db = dbAt(root);
+    const inIndex = db
+      .prepare('SELECT COUNT(*) AS c FROM files WHERE path = $p')
+      .get({ p: 'out/src/gen/auth.ts' }) as { c: number };
+    expect(inIndex.c).toBe(1);
+    db.close();
   });
 
   it('生成物在项目根外 ⇒ 不登记（诚实标注）；无 project_dir ⇒ 不登记', async () => {
@@ -262,5 +275,83 @@ describe('scaffold 写闸（L1b 自写登记）', () => {
     const r2 = scaffold({ feature: 'scaf_out', output_dir: path.join(outside, 'gen2') });
     expect(r2.message).not.toContain('索引：');
     expect(pendingSelfWrites(root)).toEqual([]);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────
+// ⑤ 同步写穿（syncSelfWritesSync，2026-09-15）：同步签名工具直连 L1a
+// ─────────────────────────────────────────────────────────────
+
+describe('⑤ 同步写穿 syncSelfWritesSync（预热闸 + 直连 L1a）', () => {
+  /** 只建"活索引"（files 表非空），**不走 importProject**——避免它顺带预热解析器 */
+  function liveIndexOnly(tag: string, withFile: string): string {
+    const root = tmpRoot(tag);
+    const db = dbAt(root);
+    db.prepare(
+      `INSERT INTO files(path, content_hash, language, size, modified_at, indexed_at, node_count, errors, norm_hash)
+       VALUES ($p, 'h0', 'ts', 1, 0, 0, 1, NULL, NULL)`,
+    ).run({ p: withFile });
+    db.close();
+    return root;
+  }
+
+  it('⑦ 未预热 ⇒ 预热闸整批落回 L1b（deferred + 登记），绝不半同步', () => {
+    resetKernel(); // 清掉模块级 parserCache（同文件前面的测试可能已预热）
+    const root = liveIndexOnly('sync-defer', 'src/auth.ts');
+    const abs = path.join(root, 'src', 'auth.ts');
+    put(root, 'src/auth.ts', AUTH_SRC);
+
+    const out = syncSelfWritesSync(root, [abs]);
+    expect(out?.mode).toBe('deferred');
+    expect(out?.note).toContain('未预热');
+    expect(pendingSelfWrites(root)).toContain('src/auth.ts');
+  });
+
+  it('⑥ prewarmKernel 后 ⇒ 同步直连 L1a：改名 → 引用方重开重解析 → 再写穿全 skipped', async () => {
+    const pw = await prewarmKernel();
+    expect(pw.warmed).toBeGreaterThan(0);
+
+    const root = await makeIndexed('syncwarm');
+    await resolveServiceRef(root, 'syncwarm');
+    const db = dbAt(root);
+    expect(refStatus(db, 'src/service.ts', 'login')).toBe('resolved');
+    db.close();
+
+    const authAbs = path.join(root, 'src', 'auth.ts');
+    fs.writeFileSync(authAbs, AUTH_SRC.replace('login', 'signIn'), 'utf-8');
+
+    const out = syncSelfWritesSync(root, [authAbs]);
+    expect(out?.mode).toBe('synced');
+    expect(out?.synced).toBe(1);
+    expect(out?.refsReopened).toBeGreaterThan(0);
+
+    const db2 = dbAt(root);
+    expect(refStatus(db2, 'src/service.ts', 'login')).toBe('failed'); // 旧名连不上，不维持 resolved 假象
+    const again = syncSelfWritesSync(root, [authAbs]); // 索引已等于磁盘 ⇒ 全 skipped
+    expect(again?.mode).toBe('synced');
+    expect(again?.skippedFiles).toBe(1);
+    expect(again?.synced).toBe(0);
+    db2.close();
+  });
+
+  it('remove_dead_imports 组合：预热后 indexWriteThrough 优先取同步结果（synced）', () => {
+    const root = liveIndexOnly('sync-rdi', 'src/b.ts');
+    const rel = 'src/b.ts';
+    put(root, rel, "import { dead } from './deadmod';\nexport const y = 1;\n");
+
+    const r = removeDeadImports({
+      project_dir: root,
+      dead: [{ source: './deadmod', files: [rel], reason: 'no_reference' }],
+    });
+    expect(r.files_changed).toBe(1);
+    expect(r.indexWriteThrough?.mode).toBe('synced');
+    const db = dbAt(root);
+    const filesRow = db.prepare('SELECT content_hash FROM files WHERE path = $p').get({ p: rel }) as
+      | { content_hash: string }
+      | undefined;
+    db.close();
+    // 索引里的 hash 已被同步写穿更新（不再是 liveIndexOnly 塞的占位 'h0'）
+    expect(filesRow?.content_hash).toBeDefined();
+    expect(filesRow?.content_hash).not.toBe('h0');
   });
 });

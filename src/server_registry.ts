@@ -18,6 +18,7 @@ import { makeCapabilityMapHandler, LANE_IDS, type LaneId } from './tools/capabil
 import { indexIntegrity, renderIntegrity } from './tools/index_integrity.js';
 import { ensureProjectIndex, detectStaleIndex } from './tools/index_freshness.js';
 import { hasLiveIndex } from './tools/write_gate.js';
+import { prewarmKernel } from './tools/ts_kernel/index.js';
 import { scheduleBackfill, backfillState, isIndexIncomplete } from './tools/index_backfill.js';
 import { renderGranularityNote } from './tools/parse_capability.js';
 import { unknownArgHints, renderArgHints } from './tools/arg_suggest.js';

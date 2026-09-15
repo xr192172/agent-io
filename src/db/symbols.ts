@@ -16,7 +16,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import type { Database } from './db.js';
-import { parseFileFull, isSupported } from '../tools/ts_kernel/index.js';
+import { parseFileFull, parseFileFullSync, isSupported, type ParsedFile } from '../tools/ts_kernel/index.js';
 import { inTransaction } from './db.js';
 
 // ─────────────────────────────────────────────────────────────
@@ -165,7 +165,29 @@ export function resolveImportTarget(projectRoot: string, fromRel: string, source
 // 单文件同步
 // ─────────────────────────────────────────────────────────────
 
-export async function syncFile(db: Database, projectRoot: string, absPath: string): Promise<SyncFileResult> {
+/** 前置产物：applyParsedToIndex 需要的读盘/判定上下文 */
+interface SyncPrelude {
+  rel: string;
+  fail: (error: string) => SyncFileResult;
+  content: string;
+  stat: fs.Stats;
+  hash: string;
+  existing: { content_hash: string; norm_hash: string | null } | undefined;
+  /** 语言字段用的小写扩展名（DB files.language / 节点 language） */
+  ext: string;
+}
+
+type PreludeResult = { ok: true; pre: SyncPrelude } | { ok: false; early: SyncFileResult };
+
+/**
+ * 前置（同步、无解析）：读盘 + 内容 hash 短路。
+ * `early` = 短路结果（读盘失败 / 内容未变 skipped）。
+ *
+ * ⑤ 同步写穿（2026-09-15）：syncFile 链路里唯一的 await 是 parseFileFull → getParser
+ * 的动态 import；把读盘前置与落库主体拆开后，async / sync 两条路径共用同一份
+ * `applyParsedToIndex` 主体，不会漂移。预热（prewarmKernel）后 `syncFileSync` 全程无 await。
+ */
+function syncFilePrelude(db: Database, projectRoot: string, absPath: string): PreludeResult {
   const rel = toRelPath(projectRoot, absPath);
   const fail = (error: string): SyncFileResult => ({ path: rel, status: 'failed', node_count: 0, edge_count: 0, error });
 
@@ -175,7 +197,7 @@ export async function syncFile(db: Database, projectRoot: string, absPath: strin
     content = fs.readFileSync(absPath, 'utf-8');
     stat = fs.statSync(absPath);
   } catch (e) {
-    return fail((e as Error).message);
+    return { ok: false, early: fail((e as Error).message) };
   }
 
   const hash = contentHash(content);
@@ -183,15 +205,18 @@ export async function syncFile(db: Database, projectRoot: string, absPath: strin
     | { content_hash: string; norm_hash: string | null }
     | undefined;
   if (existing && existing.content_hash === hash) {
-    return { path: rel, status: 'skipped', node_count: 0, edge_count: 0 };
+    return { ok: false, early: { path: rel, status: 'skipped', node_count: 0, edge_count: 0 } };
   }
 
-  const ext = path.extname(rel).slice(1).toLowerCase();
-  const parsed = await parseFileFull(absPath, content);
-  if (parsed.error) {
-    // 不写 files 行：下次运行 hash 比对不到记录，自动重试
-    return fail(parsed.error);
-  }
+  return {
+    ok: true,
+    pre: { rel, fail, content, stat, hash, existing, ext: path.extname(rel).slice(1).toLowerCase() },
+  };
+}
+
+/** 解析结果落库（体即原 syncFile 主体，逐行未动）；async / sync 两条路径共用 ⇒ 不会漂移 */
+function applyParsedToIndex(db: Database, projectRoot: string, pre: SyncPrelude, parsed: ParsedFile): SyncFileResult {
+  const { rel, fail, content, stat, hash, existing, ext } = pre;
 
   const now = Date.now();
   const lineCount = countLinesOf(content);
@@ -427,6 +452,31 @@ export async function syncFile(db: Database, projectRoot: string, absPath: strin
     if (ownTx) db.exec('ROLLBACK');
     return fail((e as Error).message);
   }
+}
+
+/** 单文件同步（async，经典路径）：parseFileFull 懒加载解析器（首次该语言有一次 import 成本） */
+export async function syncFile(db: Database, projectRoot: string, absPath: string): Promise<SyncFileResult> {
+  const p = syncFilePrelude(db, projectRoot, absPath);
+  if (!p.ok) return p.early;
+  const parsed = await parseFileFull(absPath, p.pre.content);
+  if (parsed.error) {
+    // 不写 files 行：下次运行 hash 比对不到记录，自动重试
+    return p.pre.fail(parsed.error);
+  }
+  return applyParsedToIndex(db, projectRoot, p.pre, parsed);
+}
+
+/**
+ * 单文件同步（sync，⑤ 同步写穿 2026-09-15）：预热后全程无 await。
+ * 解析器未预热 ⇒ 返回 failed（error 注明"解析器未预热"）——调用方
+ * （write_gate 的预热闸）应在调用前用 `canParseFileSync` 拦下，这里只是兜底。
+ */
+export function syncFileSync(db: Database, projectRoot: string, absPath: string): SyncFileResult {
+  const p = syncFilePrelude(db, projectRoot, absPath);
+  if (!p.ok) return p.early;
+  const parsed = parseFileFullSync(absPath, p.pre.content);
+  if (parsed.error) return p.pre.fail(parsed.error);
+  return applyParsedToIndex(db, projectRoot, p.pre, parsed);
 }
 
 // ─────────────────────────────────────────────────────────────

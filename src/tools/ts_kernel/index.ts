@@ -4,6 +4,10 @@
 export {
   parseFile,
   parseFileFull,
+  parseFileFullSync,
+  parserReadyForFile,
+  canParseFileSync,
+  prewarmKernel,
   parseAstRoot,
   isSupported,
   listSupportedLanguages,

@@ -21,6 +21,8 @@
  *        `syncFile` 依赖异步解析器（`parseFileFull`），同步工具 await 不了；
  *        退一步登记到 `.design-canvas/self-writes.json`，**读路径优先消费**（见 L3）——
  *        比"全库 stat 扫"更便宜也更精确。
+ *        （⑤ 2026-09-15：进程启动 `prewarmKernel()` 预热 Parser 缓存后，同步工具可走
+ *        `syncSelfWritesSync` **同步直连 L1a**；未预热 ⇒ 预热闸整批落回本层，绝不半同步。）
  *   L2  `watch_project`：**别人的**写（git pull / 编辑器 / 另一个 agent）→ fs.watch + debounce。
  *   L3  `ensureFreshIndex` / `ensureProjectIndex`：**读前自证** —— 不信任任何上游，
  *        每次读都先消费自写登记、再按 stat 比对自己引用的文件；L1/L2 都漏了也能兜住。
@@ -48,7 +50,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { getProjectCacheDb, beginBatch, endBatch, type Database } from '../db/db.js';
-import { syncFile, removeFile, changedSymbolNames, reopenRefsTo, resolveCrossFileCalls } from '../db/symbols.js';
+import { syncFile, syncFileSync, removeFile, changedSymbolNames, reopenRefsTo, resolveCrossFileCalls } from '../db/symbols.js';
+import { canParseFileSync } from './ts_kernel/index.js';
 import { snapshotBeforeWrite, type FileSnapshotMeta } from './file_snapshot.js';
 import { isIndexIncomplete } from './index_backfill.js';
 
@@ -299,12 +302,34 @@ export async function syncSelfWrites(
   }
 
   // ②③④ 引用方重算（与 watch_project.flushBatch 同一套口径，别各写一套）
+  finishWriteThrough(db, root, rels, out, errors, keepPending);
+
+  if (errors.length) out.error = errors.join('; ');
+  out.ms = Date.now() - t0;
+  return out;
+}
+
+/**
+ * ②③④ 引用方重算（`syncSelfWrites` / `syncSelfWritesSync` 共用；全同步，别各写一套）：
+ *   ② `changedSymbolNames` 取本批 added/removed/changed 符号名
+ *   ③ `reopenRefsTo` 重开已解析引用，拿到"引用在哪些文件里"
+ *   ④ 用引用方文件 + 本批文件做 scope 解析（★ 只放本批不够：重开的行属于引用方，它自己没变）
+ * 不吞异常：失败进 `errors`，调用方必须把它带进结果（历史上被吞成"静默 0 条"）。
+ */
+function finishWriteThrough(
+  db: Database,
+  root: string,
+  rels: readonly string[],
+  out: WriteThroughOutcome,
+  errors: string[],
+  keepPending: boolean,
+): void {
   try {
     const names = new Set<string>();
     for (const rel of rels) {
       for (const nm of changedSymbolNames(db, rel)) names.add(nm);
     }
-    const scope = new Set(rels);
+    const scope = new Set<string>(rels);
     if (names.size) {
       const r = reopenRefsTo(db, [...names]);
       out.refsReopened = r.reopened;
@@ -320,6 +345,110 @@ export async function syncSelfWrites(
     // 不吞：历史上这类异常被 catch 吞掉，导致 reopenRefsTo 长期"静默 0 条"
     errors.push(`reference re-resolve failed: ${(e as Error).message}`);
   }
+}
+
+// ─────────────────────────────────────────────────────────────
+// L1a'：写穿（sync，⑤ 同步工具直连 2026-09-15）
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * **同步写穿**：`syncSelfWrites` 的同步孪生。给同步签名的写工具
+ * （remove_dead_imports / scaffold 等——await 不了 async 版）用。
+ *
+ * 为什么现在可能：L1a 链路里唯一的 await 是 `syncFile → parseFileFull → getParser`
+ * （动态 import 语言包）；解析与 SQLite 全部同步 ⇒ 进程启动 `prewarmKernel()` 预热
+ * Parser 缓存后，本函数全程无 await，**当场**写穿，不再只能登记（L1b）等读路径兜。
+ *
+ * ★ 预热闸（绝不半同步）：本批里只要有任何一个**存在文件**的扩展名 Parser 未预热，
+ *   整批**一起**落回 L1b（`recordSelfWrite` + `mode:'deferred'`）——绝不出现
+ *   "一半同步了一半没同步"的批次。要删的文件（磁盘上已不存在）不需要解析器，
+ *   不受闸影响；不支持的扩展名（.md/.json…）解析返回空，同样不受闸影响。
+ *
+ * 与 async 版逐段同构（步骤与口径一致）：②③④ 走共用的 `finishWriteThrough`。
+ */
+export function syncSelfWritesSync(
+  projectRoot: string,
+  files: readonly string[],
+  opts: { syncIndex?: boolean } = {},
+): WriteThroughOutcome | null {
+  const root = path.resolve(projectRoot);
+  if (opts.syncIndex === false) return null;
+  if (!hasLiveIndex(root)) return null;
+
+  const rels = [...new Set(files.map((f) => toRelPosix(root, f)).filter((r): r is string => !!r))];
+  if (!rels.length) return null;
+
+  const t0 = Date.now();
+  const out: WriteThroughOutcome = {
+    ok: false,
+    mode: 'synced',
+    synced: 0,
+    skippedFiles: 0,
+    removed: 0,
+    failed: 0,
+    refsReopened: 0,
+    refsReopenedFiles: 0,
+    cross: { ...EMPTY_CROSS },
+    ms: 0,
+  };
+
+  // ★ 预热闸：全批先验。任何未预热 ⇒ 整批落回 L1b（登记 + deferred），绝不半同步
+  const unready: string[] = [];
+  for (const rel of rels) {
+    const abs = path.join(root, rel);
+    if (!fs.existsSync(abs)) continue; // 删除路径不需要解析器
+    if (!canParseFileSync(abs)) unready.push(rel);
+  }
+  if (unready.length) {
+    const n = recordSelfWrite(root, rels, 'sync write-through: 解析器未预热（kernel 未 prewarm）');
+    return {
+      ok: false,
+      mode: 'deferred',
+      note: `解析器未预热（涉及 ${unready.join(', ')}），整批已登记 ${n} 个文件走读路径同步（绝不半同步）`,
+      ms: Date.now() - t0,
+    };
+  }
+
+  const errors: string[] = [];
+  let db: Database;
+  try {
+    db = getProjectCacheDb(root);
+  } catch (e) {
+    out.error = `open cache db failed: ${(e as Error).message}`;
+    out.ms = Date.now() - t0;
+    return out;
+  }
+
+  const keepPending = isIndexIncomplete(root);
+  beginBatch(db);
+  try {
+    for (const rel of rels) {
+      const abs = path.join(root, rel);
+      try {
+        if (!fs.existsSync(abs)) {
+          removeFile(db, root, abs);
+          out.removed = (out.removed ?? 0) + 1;
+          continue;
+        }
+        const r = syncFileSync(db, root, abs);
+        if (r.status === 'updated') out.synced = (out.synced ?? 0) + 1;
+        else if (r.status === 'skipped') out.skippedFiles = (out.skippedFiles ?? 0) + 1;
+        else if (r.status === 'failed') out.failed = (out.failed ?? 0) + 1;
+      } catch (e) {
+        out.failed = (out.failed ?? 0) + 1;
+        errors.push(`${rel}: ${(e as Error).message}`);
+      }
+    }
+  } finally {
+    try {
+      endBatch(db);
+    } catch (e) {
+      errors.push(`commit failed: ${(e as Error).message}`);
+    }
+  }
+
+  // ②③④ 引用方重算（与 async 版共用同一实现，别各写一套）
+  finishWriteThrough(db, root, rels, out, errors, keepPending);
 
   if (errors.length) out.error = errors.join('; ');
   out.ms = Date.now() - t0;

@@ -23,7 +23,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { DesignDSL, SemanticFile, CodeTemplate, Node, ContentBlock } from '../dsl/types.js';
 import { getDSL } from '../storage.js';
-import { snapshotAndRecordSelfWrite, toRelPosix } from './write_gate.js';
+import { snapshotAndRecordSelfWrite, syncSelfWritesSync, toRelPosix } from './write_gate.js';
 
 export interface ScaffoldInput {
   /** feature 名 */
@@ -691,9 +691,10 @@ export function scaffold(input: ScaffoldInput): ScaffoldResult {
   const invariantsPath = path.join(outDir, 'INVARIANTS.md');
   plannedFiles.push(invariantsPath);
   let indexNote: string | null = null;
+  // ⑤ 同步写穿（2026-09-15）：inRoot 提到写循环外 —— 写完所有文件后要用同一批路径做同步写穿尝试
+  const inRoot = input.project_dir ? plannedFiles.filter((f) => toRelPosix(input.project_dir!, f)) : [];
   if (input.project_dir) {
     try {
-      const inRoot = plannedFiles.filter((f) => toRelPosix(input.project_dir!, f));
       if (inRoot.length === 0) {
         indexNote = '索引：未登记 —— 生成物在项目根之外';
       } else {
@@ -776,6 +777,22 @@ export function scaffold(input: ScaffoldInput): ScaffoldResult {
   // 生成不变式文件（路径已在写闸登记段算好）
   fs.writeFileSync(invariantsPath, generateInvariants(dsl), 'utf-8');
   generatedFiles.push(invariantsPath);
+
+  // ⑤ 同步写穿（2026-09-15）：所有文件落盘后尝试直连 L1a。解析器已预热（进程启动
+  //    prewarmKernel）⇒ 当场同步进索引，indexNote 升级为"同步写穿"；未预热 ⇒ 预热闸
+  //    整批落回 L1b（写前的登记仍在，幂等无害），indexNote 保持"已登记"。
+  if (input.project_dir && inRoot.length > 0) {
+    try {
+      const idxSync = syncSelfWritesSync(input.project_dir, inRoot);
+      if (idxSync?.mode === 'synced') {
+        indexNote = idxSync.error
+          ? `索引：写穿部分失败（写前登记已兜底）：${idxSync.error}`
+          : `索引：同步写穿 ${idxSync.synced ?? 0} 个文件进索引（重开引用 ${idxSync.refsReopened ?? 0} 条，${idxSync.ms ?? 0}ms）`;
+      }
+    } catch {
+      /* 同步写穿异常：保持写前登记的 indexNote（L1b → L3 读路径兜底） */
+    }
+  }
 
   const message = [
     `已为 feature "${feature}" 生成 ${generatedFiles.length} 个文件`,

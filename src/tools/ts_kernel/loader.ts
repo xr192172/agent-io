@@ -115,6 +115,17 @@ export async function getParser(ext: string, lang: LanguageEntry): Promise<Parse
   }
 }
 
+/**
+ * 只读缓存的同步版 getParser（⑤ 同步写穿，2026-09-15）。
+ *
+ * 缓存未命中返回 null —— **绝不**在这里做同步动态 import（同步上下文等不了，
+ * 也绝不等：半同步比不同步更危险）。缓存由 `prewarmKernel()`（kernel.ts）在
+ * 进程启动时填满；未预热 ⇒ 调用方走 L1b 登记降级（write_gate 的预热闸）。
+ */
+export function getParserSync(ext: string): ParserInstance | null {
+  return parserCache.get(ext) ?? null;
+}
+
 /** 清理缓存（测试用） */
 export function clearLoaderCache(): void {
   parserCache.clear();
