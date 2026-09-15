@@ -22,6 +22,7 @@ import { getProjectCacheDb } from '../db/db.js';
 import { splitKeepEnds, detectEol, isBlankLine } from './line_utils.js';
 import { snapshotBeforeWrite } from './file_snapshot.js';
 import { reopenAndResolveAfterWrite, reopenNote } from './write_gate.js';
+import { locateReplaceText, realignNewTextTo, FUZZY_LEVEL_LABEL } from './fuzzy_match.js';
 
 export type EditCodeOp = 'replace' | 'insert' | 'delete' | 'range' | 'replace_text';
 
@@ -460,25 +461,31 @@ export async function editCode(args: EditCodeArgs): Promise<{ message: string }>
   }
 
   // ── op='replace_text'：文本唯一替换（edit 工具的 AST 安全版）──
+  // ★ 模糊编辑级联（P0-4，2026-09-15）：L1 逐字 → L2 空白归一 → L3 缩进弹性 → L4 省略号占位。
+  //   纪律：歧义即停（某级命中 >1 处直接报错并列行号，绝不降级硬找唯一）+ 唯一才动；
+  //   L≥2 在回执里明示命中级别与实际被替换片段（诚实——不让模型误以为逐字一致）。
   if (op === 'replace_text') {
     const oldText = args.old_text!;
     const newText = args.new_text ?? '';
     const content = original;
-    const idx = content.indexOf(oldText);
-    if (idx < 0) throw new Error(`replace_text 未找到 old_text（${JSON.stringify(oldText.slice(0, 40))}）`);
-    const occurrences: number[] = [];
-    let pos = 0;
-    while ((pos = content.indexOf(oldText, pos)) !== -1) {
-      occurrences.push(content.slice(0, pos).split('\n').length);
-      pos += oldText.length;
-    }
-    if (occurrences.length > 1) {
+    const loc = locateReplaceText(content, oldText);
+    if (loc.candidates.length > 1) {
       throw new Error(
-        `replace_text 不唯一：old_text 出现 ${occurrences.length} 次（行号 ${occurrences.join(', ')}）。` +
+        `replace_text 不唯一（L${loc.candidates[0].level}·${FUZZY_LEVEL_LABEL[loc.candidates[0].level]} ` +
+          `匹配到 ${loc.candidates.length} 处：行号 ${loc.candidates.map((c) => c.startLine).join(', ')}）。` +
           '请用更长/更独特的 old_text（含上下文）唯一化。',
       );
     }
-    const newContent = content.slice(0, idx) + newText + content.slice(idx + oldText.length);
+    if (!loc.match) {
+      throw new Error(
+        `replace_text 未找到 old_text（L1 逐字 / L2 空白归一 / L3 缩进弹性 / L4 省略号占位 四级均未命中；` +
+          `${JSON.stringify(oldText.slice(0, 40))}）。请确认内容存在，或改用 range 编辑。`,
+      );
+    }
+    const m = loc.match;
+    // L3/L4：new_text 按实际命中首行缩进重排（模型写去缩进形态也能落对位置；eol 用外层 detectEol 结果）
+    const effectiveNew = m.level >= 3 ? realignNewTextTo(newText, m.targetIndent, eol) : newText;
+    const newContent = content.slice(0, m.start) + effectiveNew + content.slice(m.end);
     const reparsed = await parseFileFull(absPath, newContent);
     if (reparsed.error) {
       throw new Error(`编辑后文件解析失败，已放弃（未写盘）: ${reparsed.error}`);
@@ -487,14 +494,24 @@ export async function editCode(args: EditCodeArgs): Promise<{ message: string }>
     if (!baselineHasError && afterHasError) {
       throw new Error('编辑引入了语法错误（hasError false→true），已放弃（未写盘）。请检查 new_text。');
     }
-    const line = occurrences[0];
-    const oldLines = oldText.split(/\r?\n/);
-    const newLines = newText.split(/\r?\n/);
-    const preview = buildGenericDiff(`L${line}（${oldLines.length} 行 → ${newLines.length} 行）`, oldLines, newLines);
+    // diff 的 "-" 侧用实际文件片段（L≥2 时 ≠ 模型写的 old_text，诚实展示被改内容）
+    const matchedLines = m.matchedText.split(/\r?\n/);
+    const newLines = effectiveNew.split(/\r?\n/);
+    const levelNote =
+      m.level >= 2
+        ? `（⚠ L${m.level}·${FUZZY_LEVEL_LABEL[m.level]} 模糊命中：old_text 非逐字一致` +
+          `${m.level >= 3 ? '，new_text 已按命中缩进重排' : ''}）`
+        : '';
+    const preview = buildGenericDiff(
+      `L${m.startLine}（${matchedLines.length} 行 → ${newLines.length} 行）`,
+      matchedLines,
+      newLines,
+    );
     if (args.dry_run) {
       return {
         message:
-          `[干跑] replace_text ${relPath} L${line}（唯一命中），语法门通过，未写盘:\n${preview}`,
+          `[干跑] replace_text ${relPath} L${m.startLine}（唯一命中 · L${m.level}·${FUZZY_LEVEL_LABEL[m.level]}），` +
+          `语法门通过，未写盘:\n${preview}`,
       };
     }
     fs.writeFileSync(absPath, newContent, 'utf8');
@@ -505,7 +522,9 @@ export async function editCode(args: EditCodeArgs): Promise<{ message: string }>
       : '';
     return {
       message:
-        `✓ replace_text ${relPath} L${line}（${oldLines.length} 行 → ${newLines.length} 行），索引已重建（${sync.status}${reopenNote(_rw)}）${diffNote}\n${preview}`,
+        `✓ replace_text ${relPath} L${m.startLine}（${matchedLines.length} 行 → ${newLines.length} 行，` +
+        `匹配 L${m.level}·${FUZZY_LEVEL_LABEL[m.level]}）${levelNote}，` +
+        `索引已重建（${sync.status}${reopenNote(_rw)}）${diffNote}\n${preview}`,
     };
   }
 

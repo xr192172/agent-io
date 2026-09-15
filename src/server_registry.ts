@@ -1762,14 +1762,14 @@ const TOOL_DEFS: ToolDef[] = [
       '安全设计：编辑后 re-parse 整个文件，解析失败自动放弃（不写盘）；' +
       'replace 要求新代码解析出同名符号（防粘贴错函数）；同名多候选时报错列出签名行号，传 parent 消歧。' +
       '写盘后自动重建该文件索引（新鲜度闭环）。' +
-      'op: replace（symbol 必填 + code 完整新定义）| insert（code 新符号，symbol 可选=锚点其后插入，缺省文件末尾；新文件也走 insert）| delete（symbol 必填）| range（显式行区间：start/end 必填 + code，不依赖符号）| replace_text（old_text 唯一文本替换：**不需要符号索引、不需要行号**，文本在文件内须恰好出现 1 次，否则报歧义；适合符号定位不明或未预热索引时的安全小改）。' +
+      'op: replace（symbol 必填 + code 完整新定义）| insert（code 新符号，symbol 可选=锚点其后插入，缺省文件末尾；新文件也走 insert）| delete（symbol 必填）| range（显式行区间：start/end 必填 + code，不依赖符号）| replace_text（old_text 唯一文本替换：**不需要符号索引、不需要行号**，4 级模糊级联定位——L1 逐字 → L2 空白归一（宽容 CRLF/行尾空格/行内空格差异）→ L3 缩进弹性（宽容整块缩进层级差异，new_text 自动按命中缩进重排）→ L4 省略号占位（old_text 里的 ... 或 … 行=省略任意行，适合只默写头尾）；每级都要求全文件恰好 1 处命中，歧义即报错并列行号、绝不猜；回执明示命中级别（exact/空白归一/缩进弹性/省略号占位），模糊命中时 diff 展示**实际被替换的文件片段**而非 old_text；适合凭记忆默写代码的小改）。' +
       'range：1-based 含端点的 start/end 行号 + code=区间新内容（传空串=删除区间）；dry_run=true 只出 diff 预览 + 语法门结果不写盘；' +
       '同 replace 的语法门兜底（编辑后 re-parse，新引入语法错误 → 拒绝不写盘），并列出区间穿透的符号供复核。' +
       '定位优先 qualified_name（如 Class.method），短名兜底；Go 方法用短名 + parent（receiver 类型）消歧。',
     inputSchema: {
       project_dir: z.string().describe('项目根目录（索引归属；编辑后重建该文件索引）'),
       file: z.string().describe('目标文件（相对 project_dir 或绝对路径）'),
-      op: z.enum(['replace', 'insert', 'delete', 'range', 'replace_text']).describe('replace=替换符号；insert=插入新符号；delete=删除符号；range=显式行区间替换；replace_text=唯一文本替换（不依赖符号索引/行号）'),
+      op: z.enum(['replace', 'insert', 'delete', 'range', 'replace_text']).describe('replace=替换符号；insert=插入新符号；delete=删除符号；range=显式行区间替换；replace_text=唯一文本替换（不依赖符号索引/行号；4 级模糊级联：逐字→空白归一→缩进弹性→省略号占位，回执明示级别）'),
       symbol: z
         .string()
         .optional()
@@ -1781,8 +1781,8 @@ const TOOL_DEFS: ToolDef[] = [
       old_text: z
         .string()
         .optional()
-        .describe('replace_text 专用：要替换的旧文本（文件内须**恰好出现 1 次**，否则报歧义并列出命中行号）'),
-      new_text: z.string().optional().describe('replace_text 专用：替换后的新文本（传空串=删除该文本）'),
+        .describe('replace_text 专用：要替换的旧文本（4 级模糊级联：逐字 → 空白归一 → 缩进弹性 → 省略号占位，逐级降级；每级须全文件恰好 1 处命中，否则报歧义并列命中行号；回执明示实际命中级别）'),
+      new_text: z.string().optional().describe('replace_text 专用：替换后的新文本（传空串=删除该文本；L3/L4 模糊命中时自动按实际命中首行缩进重排）'),
       dry_run: z.boolean().optional().describe('range / replace_text 专用：true=只出 diff 预览 + 语法门结果，不写盘'),
     },
     handler: wrap(async (a) => editCode(a as never)),
