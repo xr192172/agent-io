@@ -52,14 +52,22 @@ const tree: ArchifyTreeNode = {
   },
 };
 
+/**
+ * 未装配模拟：显式指向一个不存在的 root。
+ * ★ 2026-09-15 起 archify 已 vendor 进仓（third_party/archify），`archifyRoot:''` 会
+ * 解析到仓内真实安装 ⇒ 不再等价于"未装配"。要测诚实降级必须给一个确凿不存在的路径。
+ */
+const NO_ROOT = '__no_such_archify_root__';
+
 describe('runArchifyPipeline 诚实降级（未装配）', () => {
-  it('ARCHIFY_ROOT 未配置 → 5 类型均 delivered:false，note 如实说明', () => {
+  it('装配路径不存在 → 5 类型均 delivered:false，note 如实说明', () => {
     const before = JSON.stringify(tree);
-    const r = runArchifyPipeline({ ir: tree, archifyRoot: '' });
+    const r = runArchifyPipeline({ ir: tree, archifyRoot: NO_ROOT });
     expect(r.manifest).toHaveLength(5);
     expect(r.manifest.every((m) => m.delivered === false)).toBe(true);
     for (const m of r.manifest) {
-      expect(m.note).toContain('ARCHIFY_ROOT 未配置');
+      // 装配缺失时如实说明「Archify CLI 未找到」或「未配置」，不假装成功
+      expect(m.note).toMatch(/Archify CLI 未找到|ARCHIFY_ROOT 未配置/);
     }
     expect(r.delivered).toBe(false);
     // 输入逐字节不变（派生只读）
@@ -67,7 +75,7 @@ describe('runArchifyPipeline 诚实降级（未装配）', () => {
   });
 
   it('每类 candidate 含官方 schema 必填字段（可 validate 的第一步）', () => {
-    const r = runArchifyPipeline({ ir: tree, archifyRoot: '' });
+    const r = runArchifyPipeline({ ir: tree, archifyRoot: NO_ROOT });
     const arc = r.manifest.find((m) => m.type === 'architecture')!.candidate as any;
     expect(arc.diagram_type).toBe('architecture');
     expect(Array.isArray(arc.components)).toBe(true);
@@ -80,7 +88,7 @@ describe('runArchifyPipeline 诚实降级（未装配）', () => {
   });
 
   it('主路径：语义面收敛出 3 节点 + 一条沿边主路径', () => {
-    const r = runArchifyPipeline({ ir: tree, archifyRoot: '' });
+    const r = runArchifyPipeline({ ir: tree, archifyRoot: NO_ROOT });
     const arc = r.manifest.find((m) => m.type === 'architecture')!.candidate as any;
     const ids = arc.components.map((c: any) => c.id);
     expect(ids.sort()).toEqual(['ai', 'dsl', 'mcp'].sort());
@@ -92,7 +100,7 @@ describe('runArchifyPipeline 诚实降级（未装配）', () => {
 describe('runArchifyPipeline 不适配降级', () => {
   it('单节点输入：sequence/dataflow/lifecycle 返回"不适配"，architecture/workflow 仍出 candidate', () => {
     const single: ArchifyTreeNode = { id: 'x', label: '孤立节点', children: { nodes: [{ id: 'n0', label: '唯一', role: 'service', pins: { out: ['x'] } }], edges: [] } };
-    const r = runArchifyPipeline({ ir: single, archifyRoot: '' });
+    const r = runArchifyPipeline({ ir: single, archifyRoot: NO_ROOT });
     for (const t of ['sequence', 'dataflow', 'lifecycle'] as const) {
       const m = r.manifest.find((x) => x.type === t)!;
       expect(m.note).toContain('不适配');
@@ -100,6 +108,21 @@ describe('runArchifyPipeline 不适配降级', () => {
     for (const t of ['architecture', 'workflow'] as const) {
       const m = r.manifest.find((x) => x.type === t)!;
       expect(m.candidate).toBeTruthy();
+    }
+  });
+
+  it('★ 仓内默认装配：不传 archifyRoot（且无 ARCHIFY_ROOT env）→ 5 类图真实交付', () => {
+    const saved = process.env.ARCHIFY_ROOT;
+    delete process.env.ARCHIFY_ROOT;
+    try {
+      const r = runArchifyPipeline({ ir: tree });
+      expect(r.manifest).toHaveLength(5);
+      // 仓内 vendor 应为可用状态：5 类全部 delivered
+      expect(r.manifest.every((m) => m.delivered === true)).toBe(true);
+      expect(r.delivered).toBe(true);
+    } finally {
+      if (saved !== undefined) process.env.ARCHIFY_ROOT = saved;
+      else delete process.env.ARCHIFY_ROOT;
     }
   });
 });
