@@ -142,6 +142,9 @@ export const LANE_OF: Readonly<Record<string, LaneAssign>> = {
   list_snapshots: { lane: 'refactor', when: '列代码快照（每次 edit_code/rename_files/move_symbol 落盘前自动存一份）——先看能不能撤回' },
   rollback_snapshot: { lane: 'refactor', when: '把代码回滚到某份快照（省略=最近一份）；快照时新建的文件会被删掉，是这些改动工具的撤回通道' },
   diff_views: { lane: 'refactor', when: '多视图/多版本差异对比' },
+  export_rule: { lane: 'refactor', when: '★ 修复→规则沉淀：把一次实际修复泛化成可复跑规则（$hole 元变量 + 自动夹具），过「出生回归/反例不命中/幂等」三关才准落盘；Grit 无此自动萃取路径' },
+  apply_rules: { lane: 'refactor', when: '把规则库批量应用到项目（三态：applied / todo 标注释 / clean），唯一才动、歧义即停' },
+  check_rules: { lane: 'refactor', when: '把规则库当 lint 跑，带 CI 棘轮（只在"新增命中"上 fail）+ 规则自身夹具自检' },
   // ── observe · 观测 / 验证 ──
   observe_log: { lane: 'observe', when: '读运行日志/观测产物' },
   observe_judge: { lane: 'observe', when: '对观测结果做判定' },

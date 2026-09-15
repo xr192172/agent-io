@@ -102,6 +102,25 @@ import { queryObserveLog } from './observe/log_query.js';
 import { memoryObserveHandler, memoryTargetsHandler } from './tools/memory_observe.js';
 import { translateGoTsHandler } from './translate/tool.js';
 import { extractGo } from './translate/go_extractor.js';
+import { extractRule } from './tools/rule_extract.js';
+import {
+  loadRules,
+  writeRule,
+  isLegalRuleId,
+  hasNegativeFixture,
+  hasPositiveFixture,
+  rulesDir,
+  type Rule,
+} from './tools/rule_library.js';
+import {
+  collectRuleTargets,
+  applyRulesToFiles,
+  loadBaseline,
+  writeBaseline,
+  ratchetDelta,
+  runFixtures,
+  type ApplySummary,
+} from './tools/rule_apply.js';
 import { observeTrace } from './tools/observe_trace.js';
 import { normalizeEvents, judgeEvents, judgeEventsWithLLM, renderJudgeReport } from './observe/judge_service.js';
 import { TSComparator, renderTSDiffReport, type TSDLDecl, type TSDiffReport } from './observe/contract.js';
@@ -127,7 +146,6 @@ import {
 import path from 'node:path';
 import { statSync, readFileSync, writeFileSync, readdirSync, existsSync, type Dirent } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-
 // ─────────────────────────────────────────────────────────────
 // 陈旧进程检测（版本握手）
 // ─────────────────────────────────────────────────────────────
@@ -3276,6 +3294,213 @@ const TOOL_DEFS: ToolDef[] = [
       return {
         message,
         data: { ok: true, project_dir, proposal: { id: c.id, kind: c.kind, label: c.label, summary: c.summary, diffs: c.diffs, preview: c.preview, status: c.status } },
+      };
+    }),
+  },
+  {
+    name: 'export_rule',
+    title: 'Distill a one-off fix into a reusable rule (fix → rule)',
+    description:
+      '把一次已完成的修复**沉淀成可复跑规则**（修复→规则沉淀）：给一段 before/after，自动泛化出 pattern/replace ' +
+      '并生成夹具，过「验收三关」后才允许落盘。' +
+      '这是与 Grit/GritQL 的核心差异：Grit 的规则全靠专家手写，没有"从改动本身长出规则"的机制。' +
+      '泛化：before/after 先做行级 diff 取**变化行窗口**（pattern/replace/夹具三者同 scope）；' +
+      '两侧都出现的标识符抽象成 `$hole`（保持"同一实参"），只在一侧的保留字面量，关键字/全局对象/属性名不抽象。' +
+      '★ 泛化的"度"不靠猜：从最多抽象开始逐级放宽，每级用三关裁决 —— ① 出生回归（pattern 必须能复现这次修复）' +
+      '② 反例不命中（修好的代码/阴性样本不得被命中）③ 幂等（对 after 再跑不得再命中）；' +
+      '某级通过就采纳（泛化尽量强），全败则退化为**纯字面量**规则并在回执里如实标注降级。' +
+      '落盘位置：<project_dir>/.design-canvas/rules/<id>.md（单文件自包含：frontmatter + 说明 + pattern/replace + 夹具段）。' +
+      'dry_run=true（默认）只返回候选规则 + 三关结论，不写盘；确认后再传 dry_run=false 落盘。',
+    inputSchema: {
+      project_dir: z.string().describe('项目根目录（规则库落在 <project_dir>/.design-canvas/rules/）'),
+      id: z.string().describe('规则 id（同时是文件名）：小写字母/数字/连字符，如 no-console-log'),
+      before: z.string().describe('修复前的代码片段（含足够上下文，用于行级 diff 取变化窗口）'),
+      after: z.string().describe('修复后的代码片段'),
+      title: z.string().optional().describe('规则标题（缺省 = id）'),
+      tags: z.array(z.string()).optional().describe('标签（如 [style, logging]）'),
+      level: z.enum(['error', 'warn', 'info']).optional().describe('严重度（check_rules 用；缺省 warn）'),
+      language: z.string().optional().describe('目标语言（如 typescript / go；缺省自动）'),
+      created_from: z.string().optional().describe('来源描述（追溯用；缺省记当前时间）'),
+      dry_run: z.boolean().optional().describe('true（默认）=只返回候选规则与三关结论，不写盘；false=过三关后写盘'),
+    },
+    handler: wrapData(async (a) => {
+      const root = String(a.project_dir);
+      const id = String(a.id);
+      if (!isLegalRuleId(id)) {
+        throw new Error(`非法规则 id「${id}」：只允许小写字母/数字/连字符，且不以连字符开头或结尾`);
+      }
+      const r = extractRule({
+        before: String(a.before),
+        after: String(a.after),
+        id,
+        title: a.title === undefined ? undefined : String(a.title),
+        tags: Array.isArray(a.tags) ? (a.tags as string[]).map(String) : undefined,
+        level: a.level as Rule['level'] | undefined,
+        language: a.language === undefined ? undefined : String(a.language),
+        createdFrom: a.created_from === undefined ? undefined : String(a.created_from),
+      });
+
+      const g = r.generalization;
+      const lines: string[] = [];
+      lines.push(r.validation.ok ? '✅ 三关通过，规则可用' : '❌ 三关未过，规则不可落盘（如实报告，不写盘）');
+      lines.push(`  泛化：候选 ${g.candidateHoles} 个标识符 → 实采 ${g.holes.length} 个 $hole` +
+        (g.ladderSteps > 0 ? `（放宽了 ${g.ladderSteps} 级）` : '') +
+        (g.degraded ? ' ⚠️ 已降级：泛化后过宽，退化为字面量规则' : ''));
+      for (const at of g.attempts) {
+        lines.push(`    · ${at.holes.length ? at.holes.map((h) => '$' + h).join(' ') : '(字面量)'} → ${at.ok ? '通过' : '未过 ' + at.codes.join(',')}`);
+      }
+      lines.push(`  pattern:\n${g.pattern.split('\n').map((l) => '    ' + l).join('\n')}`);
+      lines.push(`  replace:\n${g.replace.split('\n').map((l) => '    ' + l).join('\n')}`);
+      lines.push(`  夹具 ${r.rule.fixtures.length} 条（反例 ${r.rule.fixtures.filter((f) => f.negative !== undefined).length} 条）`);
+      if (!r.validation.ok) {
+        for (const i of r.validation.issues.filter((x) => x.severity === 'error')) lines.push(`  [${i.code}] ${i.message}`);
+      } else {
+        for (const i of r.validation.issues) lines.push(`  [warn:${i.code}] ${i.message}`);
+      }
+
+      const dry = a.dry_run !== false;
+      if (!dry && r.validation.ok) {
+        const p = writeRule(root, r.rule);
+        lines.push(``, `已落盘：${p}`);
+      } else if (!dry && !r.validation.ok) {
+        lines.push(``, `dry_run=false 但三关未过 ⇒ **未写盘**（不会把没验证的规则放进库里）。`);
+      } else {
+        lines.push(``, `（dry_run：未写盘。确认后可传 dry_run=false 落盘）`);
+      }
+      return {
+        message: lines.join('\n'),
+        data: { ok: r.validation.ok, written: !dry && r.validation.ok, rule: r.rule, validation: r.validation, generalization: g },
+      };
+    }),
+  },
+  {
+    name: 'apply_rules',
+    title: 'Apply rule-library rules across a project (three-state)',
+    description:
+      '把规则库（<project_dir>/.design-canvas/rules/*.md）里的规则批量应用到项目源码，**三态语义**：' +
+      '① applied（命中且唯一 ⇒ 按 replace 改写）；② todo（命中但歧义 >1 处 ⇒ 在命中处插入 TODO(rule-id) 注释，不失败）；' +
+      '③ clean（无命中 ⇒ 对该文件干净）。' +
+      '纪律：**唯一才动**（歧义绝不挑一个改），**不改文件就不报成功**。' +
+      '默认 dry_run=true 只出逐文件三态计数与改写预览，不写盘；dry_run=false 才落盘。' +
+      'glob 可限定文件（正则，匹配相对路径）；rule_ids 可只跑指定规则。',
+    inputSchema: {
+      project_dir: z.string().describe('项目根目录（规则库与源码的锚点）'),
+      rule_ids: z.array(z.string()).optional().describe('只应用这些规则 id（缺省 = 全部）'),
+      glob: z.string().optional().describe('文件过滤（正则，匹配相对路径），如 "src/.*\\.ts$"'),
+      max_files: z.number().int().positive().optional().describe('最多扫描文件数（缺省 5000）'),
+      todo: z.boolean().optional().describe('命中但歧义时是否插入 TODO 注释（缺省 true；false=只如实报告）'),
+      dry_run: z.boolean().optional().describe('true（默认）=只算不写盘；false=把 applied 的文件写盘'),
+    },
+    handler: wrapData(async (a) => {
+      const root = String(a.project_dir);
+      const { rules, errors } = loadRules(root);
+      const want = Array.isArray(a.rule_ids) ? (a.rule_ids as string[]).map(String) : null;
+      const use = want ? rules.filter((r) => want.includes(r.id)) : rules;
+      if (use.length === 0) {
+        return {
+          message: `规则库为空或未命中指定规则（库目录：${rulesDir(root)}）` +
+            (errors.length ? `\n  读取失败 ${errors.length} 条：${errors.map((e) => e.file + ':' + e.error).join('; ')}` : ''),
+          data: { outcomes: [], applied: 0, todo: 0, clean: 0, totalHits: 0 },
+        };
+      }
+      const files = collectRuleTargets(root, { glob: a.glob === undefined ? undefined : String(a.glob), maxFiles: a.max_files as number | undefined });
+      const summary = applyRulesToFiles(root, files, use, { todo: a.todo !== false });
+
+      // ★ 夹具自检先行：库里有规则自身的夹具都不过 ⇒ 先别拿它去改代码
+      const badFixtures = use.map(runFixtures).filter((x) => !x.passed);
+
+      const dry = a.dry_run !== false;
+      const lines: string[] = [];
+      lines.push(`规则 ${use.length} 条 × 文件 ${files.length} 个 ⇒ applied ${summary.applied} / todo ${summary.todo} / clean ${summary.clean}（命中 ${summary.totalHits}）`);
+      for (const o of summary.outcomes) {
+        lines.push(`  [${o.state}] ${o.file} ← ${o.ruleId}（命中 ${o.hits}）${o.todoReason ? '：' + o.todoReason : ''}`);
+      }
+      if (badFixtures.length > 0) {
+        lines.push(``, `⚠️ 有 ${badFixtures.length} 条规则的**自身夹具没过**（先修规则再应用）：`);
+        for (const b of badFixtures) for (const f of b.failures) lines.push(`  · ${b.ruleId}: ${f}`);
+      }
+      if (errors.length) lines.push(``, `⚠️ 规则读取失败 ${errors.length} 条：${errors.map((e) => e.file).join(', ')}`);
+
+      if (!dry) {
+        const writes = summary.outcomes.filter(
+          (o) => (o.state === 'applied' || o.state === 'todo') && o.after !== undefined && o.before !== o.after,
+        );
+        const { writeSourceFiles } = await import('./tools/write_gate.js');
+        const report = await writeSourceFiles(
+          root,
+          writes.map((o) => o.file),
+          () => {
+            for (const o of writes) writeFileSync(path.resolve(root, o.file), o.after as string, 'utf8');
+            return writes.length;
+          },
+          { label: `apply_rules(${use.map((r) => r.id).join(',')})` },
+        );
+        lines.push(``, `已写盘 ${report.value} 个文件（走写闸：写前快照 + 索引写穿保鲜）。`);
+      } else {
+        lines.push(``, `（dry_run：未写盘。确认后传 dry_run=false 落盘）`);
+      }
+      return { message: lines.join('\n'), data: { ...summary, dryRun: dry, badFixtures } };
+    }),
+  },
+  {
+    name: 'check_rules',
+    title: 'Run rules as a lint with CI ratchet (baseline diff)',
+    description:
+      '把规则库当 **lint** 跑，带 **CI 棘轮**：结果与 <project_dir>/.design-canvas/rules/baseline.json 的存量比对 —— ' +
+      '命中数**未增加** ⇒ 通过（哪怕这条规则当下就有一堆存量命中）；出现**新增命中** ⇒ 不通过。' +
+      '这样"先启用一条当前就失败的规则"不会炸 CI，而新引入的问题会被立刻拦住。' +
+      'update_baseline=true 把当前存量记为基线（修完一批后收紧棘轮）。' +
+      '同时跑每条规则的**自身夹具**（正例须命中且改写一致、反例不得命中），夹具不过的规则单独列出（规则本身坏了）。',
+    inputSchema: {
+      project_dir: z.string().describe('项目根目录'),
+      rule_ids: z.array(z.string()).optional().describe('只检查这些规则 id（缺省 = 全部）'),
+      glob: z.string().optional().describe('文件过滤（正则，匹配相对路径）'),
+      max_files: z.number().int().positive().optional().describe('最多扫描文件数（缺省 5000）'),
+      update_baseline: z.boolean().optional().describe('true = 把当前命中存量写为新基线（收紧棘轮）；缺省 false'),
+    },
+    handler: wrapData(async (a) => {
+      const root = String(a.project_dir);
+      const { rules, errors } = loadRules(root);
+      const want = Array.isArray(a.rule_ids) ? (a.rule_ids as string[]).map(String) : null;
+      const use = want ? rules.filter((r) => want.includes(r.id)) : rules;
+
+      const fixtureResults = use.map(runFixtures);
+      const bad = fixtureResults.filter((x) => !x.passed);
+
+      if (a.update_baseline === true) {
+        const files = collectRuleTargets(root, { glob: a.glob === undefined ? undefined : String(a.glob), maxFiles: a.max_files as number | undefined });
+        const summary = applyRulesToFiles(root, files, use, { todo: false });
+        const bl = writeBaseline(root, summary);
+        return {
+          message: `已把当前存量写为棘轮基线：${bl.entries.length} 条（规则 ${use.length} 条，命中 ${summary.totalHits} 处）`,
+          data: { updated: true, baseline: bl },
+        };
+      }
+
+      const files = collectRuleTargets(root, { glob: a.glob === undefined ? undefined : String(a.glob), maxFiles: a.max_files as number | undefined });
+      const summary = applyRulesToFiles(root, files, use, { todo: false });
+      const baseline = loadBaseline(root);
+      const added = ratchetDelta(summary, baseline);
+
+      const lines: string[] = [];
+      const pass = added.length === 0 && bad.length === 0;
+      lines.push(pass ? '✅ 规则检查通过（无新增命中）' : '❌ 规则检查未通过');
+      lines.push(`  规则 ${use.length} 条 × 文件 ${files.length} 个 ⇒ 命中 ${summary.totalHits} 处；基线 ${baseline ? baseline.entries.length + ' 条' : '（无，视存量全为新增）'}`);
+      if (added.length > 0) {
+        lines.push(`  **新增命中 ${added.length} 条**（棘轮不放行）：`);
+        for (const d of added) lines.push(`    · ${d.ruleId} @ ${d.file}：当前 ${d.current}，基线 ${d.baseline}，新增 ${d.added}`);
+      }
+      if (bad.length > 0) {
+        lines.push(`  ⚠️ ${bad.length} 条规则**自身夹具不过**（规则坏了，先修规则）：`);
+        for (const b of bad) for (const f of b.failures) lines.push(`    · ${b.ruleId}: ${f}`);
+      }
+      if (!baseline && summary.totalHits > 0) {
+        lines.push(``, `提示：无基线时所有存量都被视为新增。存量若为"先启用的规则"，跑一次 update_baseline=true 把它记为基线。`);
+      }
+      if (errors.length) lines.push(``, `⚠️ 规则读取失败 ${errors.length} 条：${errors.map((e) => e.file).join(', ')}`);
+      return {
+        message: lines.join('\n'),
+        data: { pass, added, baseline: baseline ? baseline.updatedAt : null, totalHits: summary.totalHits, fixtureFailures: bad },
       };
     }),
   },
