@@ -298,8 +298,17 @@ npm run diagnose-loop -- --project <项目目录> --symptom "<症状>"
 
 ```bash
 npm test              # vitest 全量
+npm run test:main     # 只跑主线（排除 R5 线：tests/tools/archify_*.test.ts）
+npm run test:r5       # 只跑 R5 线（archify 渲染管线）
+DC_R5_SKIP=1 npm test # 全量但把 R5 线挂起（见下方"挂起的线"）
 npm run doctor        # 环境体检 + 能力缺口
 ```
+
+## 挂起的线
+
+* **R5（archify 渲染线）已挂起**：保留在仓内、暂不开发，以免影响主线。开关 `DC_R5_SKIP=1`
+  可整线挂起其 28 项测试。**对外契约（`/api/archify-demo`）与中性数据层
+  （`view_inputs.ts`）不受挂起影响，仍由 CI 守着。** 详见 [docs/r5-archify-hung.md](docs/r5-archify-hung.md)。
 
 ## 技术栈
 

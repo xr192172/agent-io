@@ -1,10 +1,11 @@
 /**
  * archify_semantics 语义面测试：从编辑 IR 树收敛成 ≤12 主节点 + 主路径 + 稀疏语义边 + 中文标签
  */
-import { describe, it, expect } from 'vitest';
+import { it, expect } from 'vitest';
 import { adaptIRTree } from '../../src/tools/archify_project';
 import { deriveSemantics, legalNodeId } from '../../src/tools/archify_semantics';
 import type { ArchifyTreeNode } from '../../src/tools/archify_project';
+import { r5Describe } from '../helpers/r5_gate';
 
 const tree: ArchifyTreeNode = {
   id: 'root',
@@ -22,7 +23,7 @@ const tree: ArchifyTreeNode = {
   },
 };
 
-describe('deriveSemantics', () => {
+r5Describe('deriveSemantics', () => {
   it('收敛出 ≤12 主节点、id 合法化、中文 label 保留', () => {
     const sem = deriveSemantics(adaptIRTree(tree));
     expect(sem.nodes).toHaveLength(3);
@@ -85,7 +86,7 @@ describe('deriveSemantics', () => {
   });
 });
 
-describe('legalNodeId', () => {
+r5Describe('legalNodeId', () => {
   it('合法 id 保留、非法 id 稳定转义 n{i}', () => {
     expect(legalNodeId('hello', 3)).toBe('hello');
     expect(legalNodeId('前端层', 0)).toBe('n0');

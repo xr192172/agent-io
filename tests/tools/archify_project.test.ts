@@ -5,10 +5,11 @@
  * archify_mappers），archify_project 只保留「编辑 IR 树 ↔ 数据层契约」的适配与
  * Archify 视觉令牌。演示层派生只读、绝不写回编辑真源。
  */
-import { describe, it, expect } from 'vitest';
+import { it, expect } from 'vitest';
 import { roleToType, ARCHIFY_TYPE_COLOR, adaptIRTree } from '../../src/tools/archify_project';
+import { r5Describe } from '../helpers/r5_gate';
 
-describe('适配层：编辑 IR 树（IRView/IRNode 渲染形状）→ ArchifyTreeNode（数据层契约形状）', () => {
+r5Describe('适配层：编辑 IR 树（IRView/IRNode 渲染形状）→ ArchifyTreeNode（数据层契约形状）', () => {
   // 模拟前端 workbench 真实编辑真源：根是 IRView，节点带渲染字段，children 是 IRView（可递归）
   const irView = {
     id: 'nav:root',
@@ -85,7 +86,7 @@ describe('适配层：编辑 IR 树（IRView/IRNode 渲染形状）→ ArchifyTr
   });
 });
 
-describe('视觉令牌：role → Archify type 确定性映射且落在色板内', () => {
+r5Describe('视觉令牌：role → Archify type 确定性映射且落在色板内', () => {
   it('service/core → backend、client → external、data/contract → database、queue → messagebus、auth → security、cloud → cloud', () => {
     expect(roleToType('cloud')).toBe('cloud');
     expect(roleToType('service')).toBe('backend');

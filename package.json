@@ -63,6 +63,8 @@
     "diagnose-loop": "node dist/src/tools/diagnose_loop_cli.js",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:main": "vitest run --exclude 'tests/tools/archify_*.test.ts'",
+    "test:r5": "vitest run tests/tools/archify_demo.test.ts tests/tools/archify_mappers.test.ts tests/tools/archify_project.test.ts tests/tools/archify_semantics.test.ts",
     "hub": "node scripts/hub.mjs",
     "demo": "node scripts/demo.mjs",
     "gen:schema": "node scripts/gen_endpoints_schema.mjs"

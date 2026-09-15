@@ -7,9 +7,10 @@
  *   3. candidate 含官方 schema 必填字段（validate 可跑的第一步）；
  *   4. 输入不适配某类型（缺主路径/终态）→ 该类型返回"不适配"说明，不影响其余类型。
  */
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { it, expect, beforeEach, afterEach } from 'vitest';
 import { runArchifyPipeline } from '../../src/tools/archify_pipeline';
 import type { ArchifyTreeNode } from '../../src/tools/archify_project';
+import { r5Describe } from '../helpers/r5_gate';
 
 /**
  * ★ 宿主环境隔离（2026-09-15 修复）：runArchifyPipeline 的 resolveArchifyRoot 会 fallback
@@ -59,7 +60,7 @@ const tree: ArchifyTreeNode = {
  */
 const NO_ROOT = '__no_such_archify_root__';
 
-describe('runArchifyPipeline 诚实降级（未装配）', () => {
+r5Describe('runArchifyPipeline 诚实降级（未装配）', () => {
   it('装配路径不存在 → 5 类型均 delivered:false，note 如实说明', () => {
     const before = JSON.stringify(tree);
     const r = runArchifyPipeline({ ir: tree, archifyRoot: NO_ROOT });
@@ -97,7 +98,7 @@ describe('runArchifyPipeline 诚实降级（未装配）', () => {
   });
 });
 
-describe('runArchifyPipeline 不适配降级', () => {
+r5Describe('runArchifyPipeline 不适配降级', () => {
   it('单节点输入：sequence/dataflow/lifecycle 返回"不适配"，architecture/workflow 仍出 candidate', () => {
     const single: ArchifyTreeNode = { id: 'x', label: '孤立节点', children: { nodes: [{ id: 'n0', label: '唯一', role: 'service', pins: { out: ['x'] } }], edges: [] } };
     const r = runArchifyPipeline({ ir: single, archifyRoot: NO_ROOT });

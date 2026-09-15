@@ -1,11 +1,12 @@
 /**
  * archify_mappers 5 类型映射测试：从语义面生成官方 candidate，遵循 showcase 首稿不排几何
  */
-import { describe, it, expect } from 'vitest';
+import { it, expect } from 'vitest';
 import { adaptIRTree } from '../../src/tools/archify_project';
 import { deriveSemantics } from '../../src/tools/archify_semantics';
 import { toArchitecture, toWorkflow, toSequence, toDataflow, toLifecycle, DIAGRAM_TYPES } from '../../src/tools/archify_mappers';
 import type { ArchifyTreeNode } from '../../src/tools/archify_project';
+import { r5Describe } from '../helpers/r5_gate';
 
 const tree: ArchifyTreeNode = {
   id: 'root', label: '能力面',
@@ -23,7 +24,7 @@ const tree: ArchifyTreeNode = {
 };
 const sem = deriveSemantics(adaptIRTree(tree));
 
-describe('toArchitecture', () => {
+r5Describe('toArchitecture', () => {
   it('架构图用官方 grid 布局（col/row + 适配 size），不排自由坐标/手工路由', () => {
     const c = toArchitecture(sem).ir as any;
     expect(c.meta.quality_profile).toBe('showcase');
@@ -66,7 +67,7 @@ describe('toArchitecture', () => {
   });
 });
 
-describe('toWorkflow', () => {
+r5Describe('toWorkflow', () => {
   it('schema v2、每 lane ≤6 列、同 lane col 唯一、mainPath 有效', () => {
     const c = toWorkflow(sem).ir as any;
     expect(c.schema_version).toBe(2);
@@ -115,7 +116,7 @@ describe('toWorkflow', () => {
   });
 });
 
-describe('toSequence', () => {
+r5Describe('toSequence', () => {
   it('participants ≥2、messages y 严格递增、首稿无 column_fit', () => {
     const c = toSequence(sem)!.ir as any;
     expect(c.participants.length).toBeGreaterThanOrEqual(2);
@@ -153,7 +154,7 @@ it('长参与者标签被短化（≤8 显示单位），避免超宽触 showcas
   });
 });
 
-describe('toDataflow', () => {
+r5Describe('toDataflow', () => {
   it('stages 2–5、nodes 段/行唯一、flows label 非空', () => {
     const c = toDataflow(sem)!.ir as any;
     expect(c.stages.length).toBeGreaterThanOrEqual(2);
@@ -181,7 +182,7 @@ describe('toDataflow', () => {
   });
 });
 
-describe('toLifecycle', () => {
+r5Describe('toLifecycle', () => {
   it('mainPath ≥2 时生成状态机；主轨 col 0..4、step 01..05', () => {
     const c = toLifecycle(sem);
     expect(c).not.toBeNull();
@@ -227,7 +228,7 @@ describe('toLifecycle', () => {
   });
 });
 
-describe('DIAGRAM_TYPES', () => {
+r5Describe('DIAGRAM_TYPES', () => {
   it('包含 5 种架构图类型，与后端 manifest 对齐', () => {
     expect(DIAGRAM_TYPES).toEqual(['architecture', 'workflow', 'sequence', 'dataflow', 'lifecycle']);
   });
