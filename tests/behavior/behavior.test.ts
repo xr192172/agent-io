@@ -12,6 +12,7 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import {
   captureBaseline,
@@ -26,6 +27,21 @@ import {
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const fixture = path.join(here, '..', 'fixtures', 'simple.py');
+
+/**
+ * ★ python 可用性探测（2026-09-15 修复）：真跑 harness 依赖本机 python/python3。
+ * CI 的 windows-latest runner 无 python（ubuntu/mac 自带 python3）⇒ 这些用例会
+ * ENOENT 假失败。按「环境不具备即优雅跳过、不假装正确」的既有纪律做 skipIf 降级。
+ */
+const PY = process.platform === 'win32' ? 'python' : 'python3';
+const hasPython = ((): boolean => {
+  try {
+    const r = spawnSync(PY, ['--version'], { encoding: 'utf8', windowsHide: true, timeout: 8000 });
+    return !r.error && r.status === 0;
+  } catch {
+    return false;
+  }
+})();
 
 const cases = (arr: Array<[string, unknown[]]>): BehaviorCase[] =>
   arr.map(([name, args]) => ({ name, args }));
@@ -45,7 +61,7 @@ const MODIFIED = `def add(a, b):
     return a + b + 1
 `;
 
-describe('behavior: harness 真跑（夹具 simple.py）', () => {
+describe.skipIf(!hasPython)('behavior: harness 真跑（夹具 simple.py）', () => {
   /** 基线写入系统临时目录，不污染 fixtures */
   const tmpBaseline = (file: string) => path.join(os.tmpdir(), `dc-beh-bl-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, file);
 
@@ -164,7 +180,7 @@ describe('behavior: diffRuns 纯函数', () => {
   });
 });
 
-describe('behavior: 端到端 capture → 改代码 → verify', () => {
+describe.skipIf(!hasPython)('behavior: 端到端 capture → 改代码 → verify', () => {
   it('改动后 verify 报 diff，未改再 verify 报 same', () => {
     const dir = tmpProject(ORIGINAL);
     const spec = { project_dir: dir, file: 'calc.py', function: 'add', cases: cases([['pos', [1, 2]], ['neg', [-5, 3]]]) };

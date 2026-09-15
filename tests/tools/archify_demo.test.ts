@@ -7,9 +7,25 @@
  *   3. candidate 含官方 schema 必填字段（validate 可跑的第一步）；
  *   4. 输入不适配某类型（缺主路径/终态）→ 该类型返回"不适配"说明，不影响其余类型。
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { runArchifyPipeline } from '../../src/tools/archify_pipeline';
 import type { ArchifyTreeNode } from '../../src/tools/archify_project';
+
+/**
+ * ★ 宿主环境隔离（2026-09-15 修复）：runArchifyPipeline 的 resolveArchifyRoot 会 fallback
+ * 到 process.env.ARCHIFY_ROOT。开发机上若恰好设了该变量（例如指向某个旧副本），
+ * 本文件「未装配」用例会走 validate 分支 → 断言假失败（CI 上无此变量故不会复现）。
+ * ⇒ 此处显式清空并复原，保证「未装配」语义只由入参 archifyRoot:'' 决定。
+ */
+let savedArchifyRoot: string | undefined;
+beforeEach(() => {
+  savedArchifyRoot = process.env.ARCHIFY_ROOT;
+  delete process.env.ARCHIFY_ROOT;
+});
+afterEach(() => {
+  if (savedArchifyRoot === undefined) delete process.env.ARCHIFY_ROOT;
+  else process.env.ARCHIFY_ROOT = savedArchifyRoot;
+});
 
 const tree: ArchifyTreeNode = {
   id: 'v1',
