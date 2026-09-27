@@ -19,3 +19,6 @@ export {
 
 export type { ParsedSymbol, ParsedImport, ParsedCall, ParsedTypeRef, ParsedFile, LanguageEntry, SyntaxNodeLike } from './kernel.js';
 export type { LanguageEntry as LanguageMeta } from './languages.js';
+
+export { IMPORT_EXTS, INDEX_FILES, importPathCandidates, resolveImportPath } from './import_resolve.js';
+export type { ResolvePathOptions } from './import_resolve.js';

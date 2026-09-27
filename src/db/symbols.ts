@@ -16,7 +16,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import type { Database } from './db.js';
-import { parseFileFull, parseFileFullSync, isSupported, type ParsedFile } from '../tools/ts_kernel/index.js';
+import { parseFileFull, parseFileFullSync, isSupported, resolveImportPath, type ParsedFile } from '../tools/ts_kernel/index.js';
 import { inTransaction } from './db.js';
 
 // ─────────────────────────────────────────────────────────────
@@ -64,9 +64,8 @@ export interface IndexStats {
   last_indexed_at: number | null;
 }
 
-/** 相对导入解析时尝试的扩展名（TS/JS 风格省略扩展名） */
-const IMPORT_EXTS = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs'];
-const INDEX_FILES = ['index.ts', 'index.tsx', 'index.js', 'index.jsx'];
+// 相对导入解析的候选扩展名 / index 文件名已上移到
+// `tools/ts_kernel/import_resolve.ts`（唯一实现，2026-09-28）—— 此处不再重复定义。
 
 // ─────────────────────────────────────────────────────────────
 // 路径与 hash
@@ -139,26 +138,18 @@ function hashSetsOf(rows: Array<{ qualified_name: string; sym_hash: string | nul
   return m;
 }
 
-/** 解析相对导入到项目内文件（posix relPath）；解析不到返回 null */
+/**
+ * 解析相对导入到项目内文件（posix relPath）；解析不到返回 null。
+ *
+ * ★ 候选生成已上移到 `tools/ts_kernel/import_resolve.ts`（**唯一实现**，2026-09-28）。
+ *   本份原先是最正确的一份（注释逐字写着"再 strip 扩展名重试"），但它只是三份复制中的一份，
+ *   另两份（health / impact）漏了这步、且修正从未横向传播 ⇒ 详见该模块头部说明。
+ *   与 health/impact 版的差别**只剩 `exists` 谓词**：这里查真实文件系统，它们查内存集合。
+ *   ⚠️ 本层**不判相对性** —— 本函数还被 `tools/rename_file.ts:295,303` 当
+ *   "路径字面量 → 项目内文件"的通用工具复用，在此加门会静默改变 rename_file 的行为。
+ */
 export function resolveImportTarget(projectRoot: string, fromRel: string, source: string): string | null {
-  const base = path.posix.normalize(path.posix.join(path.posix.dirname(fromRel), source));
-  const baseExt = path.posix.extname(base);
-  const candidates: string[] = [];
-  if (IMPORT_EXTS.includes(baseExt)) {
-    // source 已带扩展名：优先原样（JS 项目），再 strip 扩展名重试（TS NodeNext 用 .js 引 .ts）
-    candidates.push(base);
-    const bare = base.slice(0, -baseExt.length);
-    for (const e of IMPORT_EXTS) candidates.push(bare + e);
-    for (const f of INDEX_FILES) candidates.push(`${bare}/${f}`);
-  } else {
-    for (const e of IMPORT_EXTS) candidates.push(base + e);
-    for (const f of INDEX_FILES) candidates.push(`${base}/${f}`);
-  }
-  for (const c of candidates) {
-    if (c.startsWith('..')) continue; // 不允许逃逸项目根
-    if (fs.existsSync(path.join(projectRoot, c))) return c;
-  }
-  return null;
+  return resolveImportPath(fromRel, source, (c) => fs.existsSync(path.join(projectRoot, c)));
 }
 
 // ─────────────────────────────────────────────────────────────

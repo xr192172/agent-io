@@ -21,7 +21,7 @@
  */
 
 import path from 'node:path';
-import { parseFileFull, listSupportedExtensions, type ParsedSymbol } from '../tools/ts_kernel/index.js';
+import { parseFileFull, listSupportedExtensions, resolveImportPath, type ParsedSymbol } from '../tools/ts_kernel/index.js';
 import { collectSourceFiles } from '../version_upgrade/detect.js';
 
 // ── 对外类型 ─────────────────────────────────────────────────
@@ -100,29 +100,17 @@ interface GraphResult {
 
 const TYPE_KINDS = new Set<ParsedSymbol['kind']>(['interface', 'type', 'class']);
 
-/** 解析相对 import 到项目内文件；包导入/无法定位返回 null */
+/**
+ * 解析相对 import 到项目内文件；包导入/无法定位返回 null。
+ *
+ * ★ 候选生成已上移到 `tools/ts_kernel/import_resolve.ts`（**唯一实现**，2026-09-28）：
+ *   本份曾漏剥 `.js` 后缀 ⇒ 跨文件边整条丢失 ⇒ `impact_analysis` / 热区盘点漏报引用方
+ *   （该工具是 AGENTS.md 要求"改代码前必查"的影响面入口）。
+ *   此处只保留 impact 自己的策略：**包导入不走相对解析**（由 `resolvePackageImportDir` 兜）。
+ */
 function resolveImportFile(fromRel: string, source: string, rels: Set<string>, exts: string[]): string | null {
   if (!source.startsWith('.')) return null; // 包导入，v1 不解析
-  const base = path.posix.normalize(path.posix.join(path.posix.dirname(fromRel), source));
-  if (base.startsWith('..')) return null; // 逃出项目根，不建边
-  if (rels.has(base)) return base;
-  // ★ NodeNext ESM：import 写 `.js` 后缀，源码是 `.ts`/`.tsx` ⇒ 必须剥 JS 家族后缀再试。
-  //   与 src/db/symbols.ts `resolveImportTarget` 同语义（那份早就修对了，本份与 health 漏了）。
-  //   实测（2026-09-28）：本仓 961/971 条相对 import 带 `.js`；缺这一步 ⇒ 跨文件边整条丢失
-  //   ⇒ impact_analysis / 热区盘点在 NodeNext 项目上漏报引用方。
-  const stems = [base];
-  const stripped = base.replace(/\.(js|jsx|mjs|cjs)$/, '');
-  if (stripped !== base) stems.push(stripped);
-  for (const stem of stems) {
-    for (const ext of exts) {
-      if (rels.has(stem + ext)) return stem + ext;
-    }
-    for (const ext of exts) {
-      const idx = path.posix.join(stem, 'index') + ext;
-      if (rels.has(idx)) return idx;
-    }
-  }
-  return null;
+  return resolveImportPath(fromRel, source, (c) => rels.has(c), { exts });
 }
 
 /**
