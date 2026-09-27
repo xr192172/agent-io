@@ -4,7 +4,7 @@
  * 覆盖 analyzeReadmeTools 核心：数字一致/漂移时自愈、零提及工具收集、占位缺失报错。
  */
 import { describe, it, expect } from 'vitest';
-import { analyzeReadmeTools, registryToolNames } from '../../scripts/readme_tools_gate.mjs';
+import { analyzeReadmeTools, registryToolNames, readToolSources } from '../../scripts/readme_tools_gate.mjs';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -56,11 +56,14 @@ describe('readme_tools_gate', () => {
     expect(() => analyzeReadmeTools(reg, '# 无工具占位')).toThrow(/共注册/);
   });
 
-  it('self dogfood：真实 server_registry 与 README 数字一致（当前应 50/50）', () => {
-    const regSrc = readFileSync(path.join(repoRoot, 'src', 'server_registry.ts'), 'utf-8');
+  it('self dogfood：真实工具定义源与 README 数字一致', () => {
+    // ★ P1b（2026-09-28）：工具定义已从 server_registry.ts 搬进 src/registry/lanes/*.ts。
+    //   本用例原先直接读 server_registry.ts ⇒ lane 拆分后扫出 0 个工具、误报红。
+    //   改用 readToolSources（扫目录）—— 门不该跟着被搬走的代码一起失效。
+    const regSrc = readToolSources(repoRoot);
     const readme = readFileSync(path.join(repoRoot, 'README.md'), 'utf-8');
     const r = analyzeReadmeTools(regSrc, readme);
     expect(r.changed).toBe(false); // README 数字已与注册表一致，防回归漂移
-    expect(r.actual).toBeGreaterThan(40);
+    expect(r.actual).toBe(67); // 与 G1 工具集快照、capability_map 同口径
   });
 });

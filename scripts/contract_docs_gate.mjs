@@ -4,8 +4,8 @@
  *
  * 纪律：**契约变更才跟文档**（AGENTS「文档同步纪律」）。
  * 本脚本把这条从"人自觉"变成"提交前强制"：
- *   ① 新增契约未同步：对比 HEAD 与工作区 server_registry 注册工具名，若**新增**了对外
- *      MCP 工具名，但它在任何文档（README / AGENTS / skill / docs 非历史）都零提及
+ *   ① 新增契约未同步：对比 HEAD 与工作区的**工具定义文件**（见 scripts/tool_sources.mjs）注册工具名，
+ *      若**新增**了对外 MCP 工具名，但它在任何文档（README / AGENTS / skill / docs 非历史）都零提及
  *      → 判定"新增契约未同步文档"，阻断提交。
  *   ② 改名残留未清：工具名**消失**了（改名/删除），但旧名仍残留在「可同步」文档
  *      （docs 非历史、README、AGENTS、skill、测试断言、错误提示串）里 → 判定"改名残留
@@ -24,6 +24,7 @@ import { readFileSync, existsSync, statSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
 import { parseAstRoot } from '../dist/src/tools/ts_kernel/kernel.js';
+import { readToolSources, toolSourceRelPaths } from './tool_sources.mjs';
 
 // ── 常量/工具（顶层，供导出函数与 CLI 共用） ──
 const NAME_RE = /name:\s*['"]([a-z][a-z0-9_]*)['"]/g;
@@ -144,15 +145,23 @@ const isEntry = process.argv[1] && /contract_docs_gate\.(js|mjs)$/.test(process.
 if (isEntry) {
   if (process.env.SKIP_CONTRACT_CHECK === '1') process.exit(0);
   const root = execSync('git rev-parse --show-toplevel', { encoding: 'utf-8' }).trim();
-  const cur = toolNamesOf(read(path.join(root, 'src', 'server_registry.ts')));
+  const cur = toolNamesOf(readToolSources(root));
   // 对比 HEAD：拿不到(如首次提交/文件不在) → 放行
-  let prev = null;
-  try {
-    prev = toolNamesOf(execSync('git show HEAD:src/server_registry.ts', { encoding: 'utf-8', cwd: root }));
-  } catch {
-    process.exit(0);
+  // ★ 逐个**工具定义文件**从 HEAD 读，而不是写死一个路径（P1b，2026-09-28）：
+  //   工具定义已从 src/server_registry.ts 搬进 src/registry/lanes/*.ts。若仍只读 HEAD 的
+  //   server_registry.ts，就会 prev=67 而 cur=0 ⇒ **67 个工具全被误判成"改名残留未清"**，CI 一片假红。
+  let prev = new Set();
+  let anyRead = false;
+  for (const rel of toolSourceRelPaths(root)) {
+    try {
+      const src = execSync(`git show HEAD:${rel}`, { encoding: 'utf-8', cwd: root, stdio: ['ignore', 'pipe', 'ignore'] });
+      for (const n of toolNamesOf(src)) prev.add(n);
+      anyRead = true;
+    } catch {
+      /* HEAD 里还没有这个文件（如本笔新增的 lane 文件）→ 跳过 */
+    }
   }
-  if (!prev) process.exit(0);
+  if (!anyRead) process.exit(0);
   const newNames = [...cur].filter((n) => !prev.has(n));
   const goneNames = [...prev].filter((n) => !cur.has(n));
   const { ok, missingNew, residueList } = await runContractGate(root, newNames, goneNames);

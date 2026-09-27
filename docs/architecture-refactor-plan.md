@@ -98,7 +98,7 @@ question：一份就够，为什么会有 20 处静态扩展名清单？以下�
 | **P0 修量具** | ①解析器统一成一份 ②可达根注入（`package.json` 按路径调的入口 + registry 派发表）③`import type` 不计分层违规 ④健康分去饱和 ⑤分层规则重划 | 体检在"已知好/已知坏"双夹具上给出**不同**读数；层违规非空且每条可解释 | 低（只动分析器） |
 | **P1 拆注册表** | `server_registry.ts` 3,586 行 → `registry/lanes/*.ts`，按既有 `LANE_IDS` 一 lane 一文件；`registerAllTools` 汇总；`capability_map` 从 lane 文件聚合 | **工具集快照逐字相同**（G1 ✅ 已就位）；`readme_tools_gate` 仍 67=67；回归全绿 | 低（零行为变化） |
 | **P1a ✅ 已完成** | 抽 `registry/{types,plumbing,handlers}.ts`（**解除 lane 切分的循环依赖**） | G1 逐字相同 + 67=67 + 回归全绿 —— **三项全过** | 低 |
-| **P1b 待做** | 按 `LANE_OF` 切 `registry/lanes/*.ts` + `TOOL_DEFS` 汇总 | 同 P1 | 低 |
+| **P1b ✅ 已完成** | 按 `LANE_OF` 切 `registry/lanes/*.ts` + `TOOL_DEFS` 汇总 | 同 P1 —— **三项全过**（G1 逐字相同 / 67=67 / 回归全绿） | 低 |
 | **P2 拆抽屉** | `tools/` 200 文件按职责分层：`*_cli.ts`(17)→`surfaces/cli`、HTTP(`serve.ts` 等)→`surfaces/http`、库(`ts_kernel`/`ast_parser`/`project_root`/`db`)→`kernel`、工具定义→`features/<lane>/` | 每族搬完：回归全绿 + 无新增层违规（用 P0 修好的量具看） | **中高**（71k 行，必须一族一提交） |
 | **P3 抽字符串** | `renderer/scripts.ts` 6,209 + `styles.ts` 3,526 → 真资源文件，**复用既有 `gen_*_bundle.mjs` 机制** | playwright 渲染快照逐块对比无差异 | 中（先建快照基线） |
 | **P4 工具收敛** | **按仓内既有 `docs/tool-convergence.md` 走**（5 步核验纪律 + 已落地的 `gateway_provider`/`canvas_notes`/`manage_feature` 样板） | 该文档自身的验收口径 | 中（动对外契约，需你拍板） |
@@ -346,6 +346,36 @@ question：一份就够，为什么会有 20 处静态扩展名清单？以下�
     **原先就存在**（不是本笔引入），且 `sync_contracts` 的注释已说明"仅在函数执行期读取，ESM 循环 import 安全"
     —— 测试全绿是该结论的实证。
 
+- **P1b（本笔）：`TOOL_DEFS` 按能力线切成 `registry/lanes/*.ts` —— `server_registry.ts` 3,591 → **574** 行**
+  - 67 条逐字搬移，按 `LANE_OF` 分配：refactor 19 / observe 13 / design 12 / meta 9 / harvest 9 / cross 5（合计 67 ✓）。
+    lane 文件行数：`refactor 1158`（最大，本就是 P2 的重点）、`observe 426`、`design 399`、`meta 380`、`harvest 276`、`cross 192`。
+  - `server_registry.ts` 只剩：基础设施（陈旧构建/陈旧索引/首次接触/可信度附注）+ lane 汇总 + `registerAllTools`。
+  - ★ **线归属现在由文件路径表达** —— `capability_map.ts` 的那张 `LANE_OF` 表不再承担"哪些工具属于哪条线"
+    的唯一职责（P1c 可把它改成派生；`when` 这类策展文本仍留在原处）。
+  - ★ 搬迁中撞到两类"路径敏感"问题，都由 `tsc` 抓出（不是靠人眼）：
+    ① 导入清单首轮**漏了默认导入**（`import path from 'node:path'`）—— 名字匹配只覆盖具名导入；
+    ② 条目里有**动态 import**（`refactor.ts` 的 `await import('./tools/write_gate.js')`）——
+       其相对路径原本相对 `src/` 书写，搬到 `lanes/` 后必须退两级。
+    ⇒ 这正是 P2 风险台账"搬迁破坏相对 import"那条的实证；**静态 import 可靠生成，动态 import 必须特意处理**。
+  - ★ **破环：`capability_map` 与 `TOOL_DEFS` 互相需要**。`capability_map` 的目录必须来自真实注册表
+    （不能自己再维护一份清单），但它属于 meta 线，而 `TOOL_DEFS` 是各 lane 汇总出来的 ⇒ 结构上成环。
+    破环方式：meta.ts 放一个**延迟引用** + `bindToolDefs()`，由 `server_registry` 在汇总后注入；
+    **刻意不给"看起来能用"的空表** —— 未注入时直接抛错，而不是静默列出 0 个工具（§2d 的"不许静默降级"）。
+  - **验收三项全过**：G1 工具集快照 **6 项**（顺序变了、**契约逐字不变** —— 这正是 G1 当初把"顺序不算契约"写明的原因）、
+    `readme_tools_gate` 67=67、全量回归全绿；`capability_map` 15 项证明破环保住了。
+
+  - ★★ **搬迁把两个 CI 门打红了 —— 这类"门跟着被搬走的代码失效"要记进 P2 风险台账**：
+    - `scripts/readme_tools_gate.mjs` 写死读 `src/server_registry.ts` 数工具数 ⇒ 搬到 lanes 后**扫出 0 个**，
+      把一次全绿回归打成红的（`tests/scripts/readme_tools_gate.test.ts` 的 dogfood 用例暴露）。
+    - `scripts/contract_docs_gate.mjs` 更凶：它对比 `git show HEAD:src/server_registry.ts` 与工作区，
+      写死路径后 **`cur` 空而 `prev` 67 个 ⇒ 把 67 个工具全判成"改名残留未清"**（CI 会一片假红）。
+    - ⇒ 修法：新建 `scripts/tool_sources.mjs`（**唯一实现**，**扫目录**而不是写死清单：
+      `src/server_registry.ts` + `src/registry/lanes/*.ts`），两个门都 import 它；
+      `contract_docs_gate` 也改为**逐个工具定义文件**从 HEAD 读（HEAD 里还没有的文件跳过）。
+      `tests/tools/_dogfood.test.ts` 的扫描清单同步换到 `lanes/refactor.ts`。
+    - ★ 教训：**门的"输入在哪"本身也是一处知识**，写死路径 = 又一份副本。P2 要搬 200 个文件，
+      落盘前应先用 `grep -rn "src/" tests scripts | grep readFileSync` 盘一遍同类风险。
+
 ### ★ 本轮新发现的同族副本（病根仍在扩散，未清完）
 P0-① 只统一了「相对 import 解析」这一族的 3 份。顺着同一把尺子扫全仓，**同族副本远不止 3 份**。
 下表为实测（`grep` 可复现），**均未处理**，按价值排序：
@@ -384,6 +414,7 @@ P0-① 只统一了「相对 import 解析」这一族的 3 份。顺着同一�
 | 量具再度失真 | 修好的解析器 / type-only 判定又被复制一份 | G4 单一实现门（**仍未建**；本轮已现场撞到第 2 例：`rename_symbol.ts:178` 逐字复制了 `kernel.ts` 的 type-only 正则） |
 | 分阶段半途而废 | 出现"一半新一半旧" | 每阶段独立可回滚；不合并进行中的阶段 |
 | **量具"看不见自己"** | 分层规则退化（281/281 未分类）此前是沉默的 | 已加 `layers.unclassified` 显式暴露；G5 门守住空输入/饱和 |
+| **★ 门按路径读源码 ⇒ 搬迁即失效** | P1b 实测：`readme_tools_gate` 扫出 0 个工具、`contract_docs_gate` 把 67 个工具全判成"改名残留" | ①`scripts/tool_sources.mjs` 唯一实现 + **扫目录**；②P2 落盘前先盘一遍：`grep -rn "src/" tests scripts \| grep -E "readFileSync\|readdir\|existsSync"`；③**新门一律不许写死工具定义/内核的路径** |
 
 ---
 

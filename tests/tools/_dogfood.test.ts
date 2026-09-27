@@ -7,7 +7,9 @@ import { findSimilarNames } from '../../src/tools/similar_names';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const files = [
   'src/tools/ast_rename.ts',
-  'src/server_registry.ts',
+  // ★ P1b（2026-09-28）：67 条工具定义已从 src/server_registry.ts（现仅 574 行）搬进 lanes/。
+  //   原列里的 'src/server_registry.ts' 已扫不到工具定义了 ⇒ 换成最大的那条 lane，保持狗食信号。
+  'src/registry/lanes/refactor.ts',
   'src/tools/derive_mind_map.ts',
   'src/tools/slim_brick.ts',
 ];

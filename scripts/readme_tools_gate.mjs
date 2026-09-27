@@ -18,15 +18,20 @@
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
+import { readToolSources } from './tool_sources.mjs';
 
 if (process.env.SKIP_README_GATE === '1') process.exit(0);
 
 const root = execSync('git rev-parse --show-toplevel', { encoding: 'utf-8' }).trim();
 const readmePath = `${root}/README.md`;
-const registryPath = `${root}/src/server_registry.ts`;
 const check = process.argv.includes('--check');
 
-/** 从 server_registry 源码提取工具名集合 */
+// 「工具定义在哪」的读法收敛到 scripts/tool_sources.mjs（唯一实现，扫目录）。
+// ★ P1b（2026-09-28）教训：本门原先写死读 src/server_registry.ts，工具定义搬进
+//   src/registry/lanes/*.ts 后扫出 0 个工具、把一次全绿回归打成红的 —— 门不该跟着被搬走的代码失效。
+export { readToolSources };
+
+/** 从工具定义源码提取工具名集合 */
 const NAME_RE = /name:\s*['"]([a-z][a-z0-9_]*)['"]/g;
 export function registryToolNames(regSrc) {
   const names = new Set();
@@ -65,7 +70,7 @@ export function analyzeReadmeTools(regSrc, readme) {
 // 直接执行才跑（被测试 import 时仅导出核心函数）
 if (process.argv[1] && /readme_tools_gate\.(js|mjs)$/.test(process.argv[1].replace(/\\/g, '/'))) {
   try {
-    const regSrc = readFileSync(registryPath, 'utf-8');
+    const regSrc = readToolSources(root);
     const readme = readFileSync(readmePath, 'utf-8');
     const { claimed, actual, changed, missingFromReadme } = analyzeReadmeTools(regSrc, readme);
 
