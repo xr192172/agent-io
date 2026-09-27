@@ -104,38 +104,9 @@ export function scanFamily(family: Family, srcDir = SRC, repoRoot = REPO): Recor
   return hits;
 }
 
-export interface RatchetDiff {
-  /** 新增的副本文件（疑似又复制了一份） */
-  added: string[];
-  /** 已知副本里又多出的命中 */
-  grown: Array<{ file: string; was: number; now: number }>;
-  /** 债务已减少（好事，但应同步收紧基线） */
-  shrunk: Array<{ file: string; was: number; now: number }>;
-  /** 基线里的文件已经不再命中（同 shrunk 的极端情形） */
-  cleared: string[];
-  /** 基线里登记了但文件已不存在（P2 搬迁后必然出现） */
-  missing: string[];
-}
-
-/** 纯函数：棘轮比较（只允许减少）。单独抽出来以便单测"这扇门会红"。 */
-export function ratchetDiff(frozen: Record<string, number>, actual: Record<string, number>, exists = (): boolean => true): RatchetDiff {
-  const added = Object.keys(actual).filter((f) => !(f in frozen)).sort();
-  const grown: RatchetDiff['grown'] = [];
-  const shrunk: RatchetDiff['shrunk'] = [];
-  for (const f of Object.keys(frozen).sort()) {
-    const was = frozen[f];
-    const now = actual[f] ?? 0;
-    if (now > was) grown.push({ file: f, was, now });
-    else if (now > 0 && now < was) shrunk.push({ file: f, was, now });
-  }
-  return {
-    added,
-    grown,
-    shrunk,
-    cleared: Object.keys(frozen).filter((f) => (actual[f] ?? 0) === 0).sort(),
-    missing: Object.keys(frozen).filter((f) => !exists(f)).sort(),
-  };
-}
+// ★ 棘轮比较器抽到 tests/helpers/ratchet.ts（唯一实现）—— 品牌串残留门用的是**同一套语义**，
+//   两边各写一份必然分叉（测试辅助代码同样适用"同一份知识只有一处落点"）。
+import { ratchetDiff } from './helpers/ratchet.js';
 
 function readRegistry(): Registry {
   return JSON.parse(fs.readFileSync(REGISTRY, 'utf8')) as Registry;
