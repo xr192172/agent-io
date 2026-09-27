@@ -106,11 +106,21 @@ function resolveImportFile(fromRel: string, source: string, rels: Set<string>, e
   const base = path.posix.normalize(path.posix.join(path.posix.dirname(fromRel), source));
   if (base.startsWith('..')) return null; // 逃出项目根，不建边
   if (rels.has(base)) return base;
-  for (const ext of exts) {
-    if (rels.has(base + ext)) return base + ext;
-  }
-  for (const ext of exts) {
-    if (rels.has(path.posix.join(base, 'index') + ext)) return path.posix.join(base, 'index') + ext;
+  // ★ NodeNext ESM：import 写 `.js` 后缀，源码是 `.ts`/`.tsx` ⇒ 必须剥 JS 家族后缀再试。
+  //   与 src/db/symbols.ts `resolveImportTarget` 同语义（那份早就修对了，本份与 health 漏了）。
+  //   实测（2026-09-28）：本仓 961/971 条相对 import 带 `.js`；缺这一步 ⇒ 跨文件边整条丢失
+  //   ⇒ impact_analysis / 热区盘点在 NodeNext 项目上漏报引用方。
+  const stems = [base];
+  const stripped = base.replace(/\.(js|jsx|mjs|cjs)$/, '');
+  if (stripped !== base) stems.push(stripped);
+  for (const stem of stems) {
+    for (const ext of exts) {
+      if (rels.has(stem + ext)) return stem + ext;
+    }
+    for (const ext of exts) {
+      const idx = path.posix.join(stem, 'index') + ext;
+      if (rels.has(idx)) return idx;
+    }
   }
   return null;
 }

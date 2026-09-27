@@ -24,6 +24,7 @@ import { classifyLayer, estimateComplexity, unusedImportsIn, analyzeHealth } fro
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const fixtureRoot = path.join(here, '..', 'fixtures', 'codehealth-fixture');
+const esmFixtureRoot = path.join(here, '..', 'fixtures', 'codehealth-esm-fixture');
 
 describe('health: 分层分类（路径启发式）', () => {
   it('契约/胶水命中特征，其余默认积木', () => {
@@ -159,5 +160,22 @@ describe('health: Java 未使用 import（AST 绑定）', () => {
     const src = 'package p;\nimport com.acme.Foo;\nimport com.acme.Bar;\nclass A { Foo f; }\n';
     const unused = await unusedImportsIn('a.java', src);
     expect(unused.map((u) => u.name)).toEqual(['Bar']);
+  });
+});
+
+describe('health: NodeNext ESM 的 `.js` 后缀 import（回归门，2026-09-28）', () => {
+  // 夹具 tests/fixtures/codehealth-esm-fixture（3 文件）：
+  //   src/glue/app.ts → src/bricks/parent.js → src/bricks/child.js   （import 全写 `.js` 后缀）
+  // 背景：本仓是 NodeNext ESM，相对 import 必须写 `.js`（实测 961/971 条如此），
+  //   而源码文件是 `.ts`。resolveImportFile 若不会「剥 .js 再试 .ts」⇒ 两条边整条丢失
+  //   ⇒ parent/child 双双被判孤儿（orphan_file=2），且分层违规恒为 0（量具空转）。
+  // 旧夹具 codehealth-fixture 用的是【无后缀】import，故该缺陷长期未被测试覆盖。
+  it('沿 `.js` 后缀 import 连成链 → 无孤儿文件、链路被看见', async () => {
+    const r = await analyzeHealth(esmFixtureRoot);
+    expect(r.fileCount).toBe(3);
+    expect(r.counts.orphan_file).toBe(0);
+    expect(r.counts.layer_violation).toBe(0);
+    expect(r.layers.glue).toBe(1);
+    expect(r.layers.brick).toBe(2);
   });
 });

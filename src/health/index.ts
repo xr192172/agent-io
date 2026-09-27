@@ -477,11 +477,22 @@ function resolveImportFile(fromRel: string, source: string, rels: Set<string>, e
   const base = path.posix.normalize(path.posix.join(path.posix.dirname(fromRel), source));
   if (base.startsWith('..')) return null;
   if (rels.has(base)) return base;
-  for (const ext of exts) {
-    if (rels.has(base + ext)) return base + ext;
-  }
-  for (const ext of exts) {
-    if (rels.has(path.posix.join(base, 'index') + ext)) return path.posix.join(base, 'index') + ext;
+  // ★ NodeNext ESM：源码里 import 写 `.js` 后缀（指向构建产物），但本仓源码是 `.ts`/`.tsx`
+  //   ⇒ 必须剥掉 JS 家族后缀再按源码扩展名试一次，否则【相对 import 整体解析失败】。
+  //   实测（2026-09-28）：本仓 961/971 条相对 import 带 `.js`；缺这一步 ⇒ import 图整体断掉
+  //   ⇒ orphan_file 全部假阳（实测 src 报 284/308）+ 分层违规恒为 0（量具空转）。
+  //   旧夹具 tests/fixtures/codehealth-fixture 用的是无后缀 import，故一直没暴露该缺陷。
+  const stems = [base];
+  const stripped = base.replace(/\.(js|jsx|mjs|cjs)$/, '');
+  if (stripped !== base) stems.push(stripped);
+  for (const stem of stems) {
+    for (const ext of exts) {
+      if (rels.has(stem + ext)) return stem + ext;
+    }
+    for (const ext of exts) {
+      const idx = path.posix.join(stem, 'index') + ext;
+      if (rels.has(idx)) return idx;
+    }
   }
   return null;
 }
