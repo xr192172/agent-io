@@ -27,7 +27,7 @@ import path from 'node:path';
 import { execSync } from 'node:child_process';
 import { homedir } from 'node:os';
 import { analyzeModuleSource } from './rename_symbol.js';
-import { parseFileFull, isSupported, type ParsedImport } from './ts_kernel/index.js';
+import { parseFileFull, isSupported, resolveExistingPath, type ParsedImport } from './ts_kernel/index.js';
 import { readGoModules, type GoModule } from './import_project.js';
 import { gitAvailable } from './exec_guard.js';
 import { getProjectCacheDb, closeProjectCacheDb, type Database } from '../db/db.js';
@@ -199,28 +199,54 @@ export function walkProjectFiles(dir: string, out: string[]): void {
   }
 }
 
-/** 把绝对路径 base 补成真实文件：直接命中 / 补扩展名 / 目录索引（.go/.py/.vue 一并） */
+/**
+ * 多语言"补全候选"的政策参数（**政策留在这里，候选生成与剥扩展名重试走内核唯一实现**）。
+ * `resolveToFile` 的旧实现自带的候选循环**漏了"剥扩展名重试"** —— 见该函数注释。
+ */
+const MULTILANG_EXTS = ['.ts', '.tsx', '.js', '.jsx', '.mts', '.cts', '.mjs', '.cjs', '.go', '.py', '.vue', '.java', '.cs', '.c', '.h'] as const;
+const MULTILANG_INDEX = ['index.ts', 'index.tsx', 'index.js', 'index.jsx', 'mod.ts', 'mod.go', '__init__.py'] as const;
+
+/** 绝对路径上的"是普通文件"谓词（不抛） */
+function absIsFile(p: string): boolean {
+  try {
+    return fs.statSync(p).isFile();
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * 把绝对路径 base 补成真实文件：直接命中 / 补扩展名 / 剥扩展名重试 / 目录索引（多语言一并）。
+ *
+ * ★ 2026-09-28：候选生成改走内核唯一实现 `resolveExistingPath`（`ts_kernel/import_resolve.ts`）。
+ *   本函数原先自带一份候选循环，**漏了"剥扩展名重试"**那一步（旧守卫 `if (!path.extname(p))`
+ *   使 `./x.js` 直接跳过补全）⇒ 在本仓（961/971 条相对 import 带 `.js`）**基本解析不动**。
+ *   它不是死代码：`realResolveImport` 是 `resolveLangImport` 对**所有相对 import** 的统一出口，
+ *   也是 `expandClosure` 无索引回退路径的底座 ⇒ 盲区会让闭包漏文件
+ *   （`rename_symbol` / `find_references` / `symbol_move` 在无索引或跨根场景下可能漏改）。
+ *   ★ 与内核那三处（db/health/impact）是**同一族**：都在回答"specifier → 项目内哪个文件"。
+ *   同族副本的登记与棘轮见 `tests/single_source.test.ts`。
+ */
 export function resolveToFile(p: string): string | null {
-  if (fs.existsSync(p) && fs.statSync(p).isFile()) return p;
-  if (!path.extname(p)) {
-    for (const ext of ['.ts', '.tsx', '.js', '.jsx', '.mts', '.cts', '.mjs', '.cjs', '.go', '.py', '.vue', '.java', '.cs', '.c', '.h']) {
-      const cand = p + ext;
-      if (fs.existsSync(cand) && fs.statSync(cand).isFile()) return cand;
-    }
-  }
-  if (fs.existsSync(p) && fs.statSync(p).isDirectory()) {
-    for (const name of ['index.ts', 'index.tsx', 'index.js', 'index.jsx', 'mod.ts', 'mod.go', '__init__.py']) {
-      const cand = path.join(p, name);
-      if (fs.existsSync(cand) && fs.statSync(cand).isFile()) return cand;
-    }
-  }
-  return null;
+  // 用 posix 形态做候选计算（统一分隔符），命中后再换回本机分隔符 —— 调用方按原样字符串比较路径
+  const forward = p.replace(/\\/g, '/');
+  const hit = resolveExistingPath(forward, (c) => absIsFile(c.split('/').join(path.sep)), {
+    exts: MULTILANG_EXTS,
+    indexFiles: MULTILANG_INDEX,
+    bareBaseFirst: true, // 已拼好的路径：原样命中必须排第一
+  });
+  return hit ? hit.split('/').join(path.sep) : null;
 }
 
 /**
  * 真实解析相对 import 到磁盘文件（不依赖任何预建索引表）。
- * 处理：扩展名补全（./x → x.ts/tsx/js/...）、目录索引（./dir → dir/index.ts）。
+ * 处理：扩展名补全（./x → x.ts/tsx/js/...）、**剥扩展名重试**（./x.js → x.ts，NodeNext ESM）、
+ *       目录索引（./dir → dir/index.ts）。
  * 只解析相对导入（./ ../）；裸包名 / 绝对路径 / 外部 → 返回 null（不属本地闭包）。
+ *
+ * ★ 2026-09-28 修复：此前"剥扩展名重试"这一步**没有**（旧守卫 `if (!path.extname(p))` 使
+ *   `./x.js` 直接跳过补全）⇒ 本仓 961/971 条相对 import 带 `.js` 时它基本解析不动。
+ *   调用面：`resolveLangImport`（所有语言的相对导入统一走这条）与 `expandClosure` 的无索引回退。
  */
 export function realResolveImport(importerAbs: string, source: string): string | null {
   if (!source.startsWith('.')) return null;

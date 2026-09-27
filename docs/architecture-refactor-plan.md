@@ -244,14 +244,41 @@
       与内核那条（回答"依赖边要不要算"）是**不同问题**⇒ 不同判据。已写进注释与登记表 `intent`。
     - ⇒ 教训：**"重复的策略"≠"重复的实现"**。合并之前先问"两边回答的是同一个问题吗"。
 
-### ★ 本轮新发现的同族副本（病根仍在扩散，未清完）
+- **还债（本笔）：第 4 份 specifier→文件 解析器并入唯一实现 + 修掉一个产品级缺陷**
+  - 合并：`project_root.resolveToFile` 的候选循环删除，改走内核 `resolveExistingPath`；
+    新增内核 API `completionCandidates(base, opts)` / `resolveExistingPath(base, exists, opts)` /
+    `ResolvePathOptions.bareBaseFirst`（"已拼好的路径，原样命中排第一"）。
+    **政策留在调用点**：多语言扩展名/索引清单仍写在 `project_root.ts`（`MULTILANG_EXTS` / `MULTILANG_INDEX`）。
+  - 修 bug：旧 `resolveToFile` 的守卫 `if (!path.extname(p))` 使 `./x.js → x.ts` **永不尝试**。
+  - ★ **量化影响（同一份 src，新旧实现对比）**：
 
+    | 指标 | 值 |
+    |---|---|
+    | src 下相对 import 总数 | 967 |
+    | 带 JS 家族后缀 | **966（99.9%）** |
+    | 旧实现能解析到 | **1（0.1%）** |
+    | 新实现能解析到 | **967（100%）** |
+    | 本可解析却被漏掉 | **966** |
+
+  - 影响面（不是死代码）：`resolveLangImport` 对**所有语言的相对 import** 统一走 `realResolveImport`；
+    `expandClosure` / `expandClosureDetailed` 的**无索引回退**（文件不在 cache.db：跨根兄弟项目、
+    watch 新文件、无索引）也走它 ⇒ 盲区使闭包**几乎不沿相对边扩**
+    （`rename_symbol` / `find_references` / `symbol_move` 在那些场景下可能漏改）。
+    有索引时的快路径走 cache.db 的 edges（那份是对的），所以缺陷只在回退路径上发作 —— 这也是它长期没被发现的原因。
+  - 出生证（实测）：`realResolveImport('./a.js')` 旧实现 → `null`；新实现 → `a.ts`。
+  - 回归门：`tests/tools/project_root.test.ts` 新增 2 条 —— NodeNext `.js` 引 `.ts`（含"真 js 文件原样命中优先"）、
+    多语言补全未回归（`.go` / `__init__.py` / `mod.go`）。旧夹具只测**无后缀** import，
+    **与 health 旧夹具犯的是同一个错：夹具不覆盖生产条件**。
+  - G4 登记表未变（`project_root` 仍保留那份多语言索引清单 —— 那是**政策**，不是重复的**实现**）。
+  - 验证：tsc 干净；回归 **210 文件 / 2210 测试全过**；G1 6 项 / G4 9 项过；量具读数不变（45 / 2 违规 / 16 孤儿）。
+
+### ★ 本轮新发现的同族副本（病根仍在扩散，未清完）
 P0-① 只统一了「相对 import 解析」这一族的 3 份。顺着同一把尺子扫全仓，**同族副本远不止 3 份**。
 下表为实测（`grep` 可复现），**均未处理**，按价值排序：
 
 | # | 位置 | 同的是什么意图 | 状态 |
 |---|---|---|---|
-| 1 | `tools/project_root.ts:203 resolveToFile` / `:225 realResolveImport` | specifier → 文件（补扩展名 + 目录索引 + **只认相对导入**） | ❗**仍带原 bug**：`if (!path.extname(p))` 守卫使 `./x.js → x.ts` **永不尝试**；本仓 961/971 条相对 import 带 `.js` ⇒ 基本解析不动。**只被自己的测试引用**（死代码候选） |
+| 1 | `tools/project_root.ts:203 resolveToFile` / `:225 realResolveImport` | specifier → 文件（补扩展名 + 目录索引 + **只认相对导入**） | ✅ **已收敛**（本笔）：候选生成改走内核 `resolveExistingPath`，顺带修掉 `.js` 盲区。**量化**：src 下 967 条相对 import，旧实现只解析到 **1 条（0.1%）**、新实现 **967 条（100%）**，**966 条本可解析却被漏掉**。⚠️ **更正上一轮的误判**：我当时写它"只被自己的测试引用、死代码候选"——**错了**。它在 `project_root.ts` 内部被大量使用：`resolveLangImport` 对**所有语言的相对 import** 统一走它，`expandClosure`/`expandClosureDetailed` 的**无索引回退**也走它 ⇒ 盲区意味着「无索引 / 跨根 / 新文件」场景下闭包**几乎不沿相对边扩**（`rename_symbol` / `find_references` / `symbol_move` 可能漏改）。 |
 | 2 | `tools/refs_text.ts:41 specifierCandidates` + `:112/:151` | file → specifier 串（反向）+ 剥 JS 家族后缀 | 与第 1 族共享同一条"后缀知识" |
 | 3 | `tools/cli_extract.ts:47` 与 `tools/registry_extract.ts:57` | 同一段 `import {a,b} from './x'` → 符号→模块映射 | **两份逐字相同**（正则、过滤、`.replace(/^\.\//,'').replace(/\.js$/,'')` 全同） |
 | 4 | `tools/slim_brick.ts:618 TS_RESOLVE_EXTS` / `:726` | specifier → 文件 | 第 5 份候选表 |

@@ -127,6 +127,43 @@ describe('realResolveImport - 相对导入真实落盘解析', () => {
     expect(realResolveImport(importer, './nope')).toBeNull();
     rmForce(dir);
   });
+
+  /**
+   * ★ 回归门（2026-09-28）：NodeNext ESM 的 `.js` 引 `.ts`
+   *
+   * 上面那条用例只测了**无后缀** import（`'./a'` / `'./sub/plain'`），
+   * 而**本仓 961/971 条相对 import 带 `.js` 后缀** —— 夹具从未复现生产写法，
+   * 于是"剥扩展名重试"这一步长期缺失却无人发现（旧守卫 `if (!path.extname(p))`
+   * 让 `./a.js` 直接跳过补全 ⇒ 返回 null ⇒ 闭包漏文件 ⇒ rename 可能漏改）。
+   * 这与 health 旧夹具犯的是**同一个错**：夹具不覆盖生产条件。
+   */
+  it('NodeNext：`./x.js` 指向源码 `x.ts`（剥扩展名重试）', () => {
+    const dir = mkProj({
+      'a.ts': 'export const x = 1;\n',
+      'sub/index.ts': 'export const y = 2;\n',
+      'sub/plain.js': 'export const z = 3;\n',
+    });
+    const importer = path.join(dir, 'main.ts');
+    // 生产写法：源码 .ts，import 写 .js
+    expect(realResolveImport(importer, './a.js')).toBe(path.join(dir, 'a.ts'));
+    expect(realResolveImport(importer, './sub/index.js')).toBe(path.join(dir, 'sub/index.ts'));
+    // 真·js 文件：原样命中必须优先于剥壳候选
+    expect(realResolveImport(importer, './sub/plain.js')).toBe(path.join(dir, 'sub/plain.js'));
+    rmForce(dir);
+  });
+
+  it('多语言补全未被回归破坏（.go / 目录索引 mod.go）', () => {
+    const dir = mkProj({
+      'pkg/a.go': 'package pkg\n',
+      'b/py_mod/__init__.py': '',
+      'c/mod.go': 'package c\n',
+    });
+    const importer = path.join(dir, 'main.ts');
+    expect(realResolveImport(importer, './pkg/a.go')).toBe(path.join(dir, 'pkg/a.go'));
+    expect(realResolveImport(importer, './b/py_mod')).toBe(path.join(dir, 'b/py_mod/__init__.py'));
+    expect(realResolveImport(importer, './c')).toBe(path.join(dir, 'c/mod.go'));
+    rmForce(dir);
+  });
 });
 
 describe('expandClosure - 动态闭包边界', () => {
