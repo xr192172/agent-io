@@ -515,7 +515,6 @@ GIT_TERMINAL_PROMPT=0 git -c credential.helper= -c credential.helper=manager pus
 ---
 
 ## 9. 剩余工作总清单（每项：判据 / 风险 / 状态）
-
 > 执行程序一律走 [`refactor-playbook.md`](refactor-playbook.md) 的 **8 步法**；
 > 其中 §2（路径敏感）与 §4（陷阱）**在 P2 期间每条都会被撞到**。
 > 状态标记：✅ 已完成 ｜ 🔄 进行中 ｜ ⏳ 待做 ｜ 🔒 需你拍板
@@ -547,6 +546,9 @@ GIT_TERMINAL_PROMPT=0 git -c credential.helper= -c credential.helper=manager pus
 | C3 | G1/G4/G5 已在跑 | — | — | ✅ |
 
 ### D P2 拆 `src/tools/`（200 文件 / 71k 行，全仓 65%）—— **一族一提交**
+
+> ★ **顺序修正**：**§10 品牌改名排在 D 之前**（两者都触及几乎每个文件，不要交错；且改名自己的判据
+> "除品牌串外逐字相同"在文件未被移动时最强）。⇒ 实际执行顺序：**A → B/C → §10 改名 → D**。
 
 | # | 事项 | 判据 | 风险 | 状态 |
 |---|---|---|---|---|
@@ -581,3 +583,79 @@ GIT_TERMINAL_PROMPT=0 git -c credential.helper= -c credential.helper=manager pus
 | G2 | `orphan_file` 剩 **16** 个里哪些是真死代码（`version_upgrade/` ~1,941 行疑似全孤立、`tools/get_dsl.ts` 等） | 删除不可逆 |
 | G3 | 四层规则表（`surfaces/features/kernel/dsl`）**何时切换** | 建议 P2 落地那一刻；现在换会让搬迁中间态全判违规 |
 | G4 | B2 的结论（`refs_text` 是复用还是登记为不同维度） | 属工程判断，可直接做，结论记账即可 |
+
+---
+
+## 10. 品牌改名：DesignCanvas → AgentIO（独立一节，**排在 P2 之前**）
+
+### 10.1 结论：**不新增"项目改名工具"** —— 但现有能力的驱动方式不匹配，缺口在别处
+
+用户问："要不要增补一个项目改名工具？其实安全重命名应该就可以做到这件事。"
+
+**实测答案：不用加工具，但也不能直接拿 `rename_symbols` 来跑。** 理由：
+
+| 事实 | 证据 |
+|---|---|
+| `rename_symbols` **已经有**字面量能力 | `report_literals` / `apply_literals`；`buildLiteralPlan()`（`rename_symbols.ts:356`）会扫"每个旧符号的 snake 变体"在项目文本里的命中 |
+| 而且它**已经带了这种改名最需要的判断** | `decideLiteral(kind, frozen, isGen)`：`contract`=需人审 / `history`=保留 / **冻结行跳过** / **生成文件跳过** —— 这套判断才是资产 |
+| 但它是**符号驱动**的 | `needles = renames.map(i => camelToSnake(i.symbol))` —— 从**符号名**派生 snake 变体。**品牌串不是符号** ⇒ 不能直接驱动 |
+
+⇒ **做法：复用它的"判断"，不新造工具。** 具体是给品牌改名造一个**符号级锚点**（例如把品牌串声明成一组
+"仿符号"的替换对），或在 `rename_symbols` 上开一个"**显式字面量对**"入口（`renames` 已支持 `symbol→to`，
+只是 needle 由 `camelToSnake` 派生；显式入口 = 允许直接给 needle）。
+★ 这一处是**能力补齐**（同一个工具多一个入参），不是新工具 —— 与 P4「工具收敛」的方向一致。
+
+### 10.2 先量：品牌串实际有 **7 种形态**（实测文件数）
+
+| 形态 | 命中文件数 | 归谁 / 注意 |
+|---|---|---|
+| `design-canvas` | **116** | 主体（含 `.design-canvas` 的子串） |
+| `.design-canvas` | **86** | ★ **运行时契约**：数据目录（`rules/` 住那儿）⇒ 不是纯字符串，见 §10.4 |
+| `DC_` | 16 | ★ **有歧义**：可能是品牌缩写，也可能是别的 `DC` ⇒ **需人审**（正是 `contract` 那一类） |
+| `dc-` | 16 | ★ 同上，歧义更大（`dc-` 可能是任何东西） |
+| `DESIGN_CANVAS` | 6 | 环境变量（`DESIGN_CANVAS_MEMORY_WATCH`）等 |
+| `design_canvas` | 2 | snake 形态 |
+| `DesignCanvas` | 1 | Pascal 形态 |
+| `dsh-brain` | 4 | ★ **桥接耦合**（用户已定："改完再重新桥"）|
+
+产物形态：`package.json` 的 `name`/`bin`(`design-canvas`)/`repository`/`bugs`/`homepage`、
+MCP client 配置里的 **server key**（`"design-canvas": {...}` —— `mcp__design-canvas__*` 的前缀来自它）、
+git remote、README/AGENTS/skills/文档正文。
+
+### 10.3 排序：**排在 P2 之前**（三个理由）
+
+1. 改名自己的判据可以做得很强：**"除品牌串外逐字相同"** —— 这个 diff 在**文件没被移动过**时最可读；
+   P2 会移动 200 个文件，之后再做改名，判据就被淹没在 move 噪音里。
+2. 两者都触及**几乎每个文件**（改名动内容、P2 动位置）⇒ **不要交错做**，一次一个。
+3. 改完名再做 P2，P2 的新路径/新 import 一次到位，不必二次改。
+
+### 10.4 三类**不是字符串替换**的东西（必须单独处理）
+
+| # | 东西 | 问题 | 处置 |
+|---|---|---|---|
+| 1 | `.design-canvas/` **数据目录** | 盘上已有项目的数据（`rules/` 等）在这里；纯改名 ⇒ 老项目数据"消失" | **兼容策略**：新名目录 + **迁移期读旧名**（先读新、无则读旧），并在文档里给出迁移命令；**不许**静默改用新名 |
+| 2 | **环境变量**（`DC_*` / `DESIGN_CANVAS_*`） | 用户脚本/CI 里已经写死 | 新名 + **旧名仍生效**（读新优先、回退旧），并在日志里**提示已弃用**（不许静默忽略旧名） |
+| 3 | **MCP server key / bin / 包名 / git remote** | 对外契约与仓库级 | 单独一步：改配置 + README/AGENTS 同步 + 桥接重连（用户已授权） |
+
+### 10.5 判据：新增「品牌串残留门」（**先建门，再动手**）
+
+形态与 G4 棘轮一致（存量不拦、新增即红），但**多一条 history 允许表**（本仓既有惯例：
+历史决策/核验记录保留旧名是**正确原貌**，不算残留 —— 同 `contract_docs_gate` 的 `HISTORY_RE`）：
+
+- `patterns`：`design-canvas` / `DESIGN_CANVAS` / `design_canvas` / `DesignCanvas`（**不含** `DC_`/`dc-`，那两类要人审）
+- `allowFiles`：历史文档（`docs/tool-convergence.md` 等）、以及本规划书自身的**历史条目**
+- `frozen`：当前各文件的命中数（棘轮基线，**随改名推进逐笔收紧**）
+- 断言：① 新增命中 ⇒ 红；② `allowFiles` 里的文件必须真实存在；③ 改名完成后 frozen 应为 **0**（目标态）
+
+### 10.6 执行步骤（按 playbook 8 步法）
+
+1. **建残留门**（§10.5）—— 先有判据。
+2. **给 `rename_symbols` 开"显式字面量对"入口**（§10.1）—— 复用它的 `decideLiteral` 判断。
+3. **跑 `report_literals` 出全量清单**，逐类决策：`apply`（机械替换）/ `contract`（**人审**：`DC_`/`dc-`/数据目录/环境变量）/ `history`（保留）。
+4. **改产物与契约**：`package.json`（name/bin/repository/bugs/homepage）、README/AGENTS、MCP server key、git remote。
+5. **目录/环境变量兼容**（§10.4）：读新优先 + 回退旧 + 弃用提示。
+6. **重桥**（用户已授权；`dsh-brain` 4 处耦合）。
+7. 验证：tsc + G1（契约） + 67=67 + 全量回归 + 残留门 frozen 收紧。
+
+> ⚠️ **`mcp__design-canvas__*` 的前缀**来自 client 配置的 **server key**，不是工具名 ⇒ 改它属于"配置层改名"，
+> **与 P4-F1（改工具名）是两件事**；本节的改名**不动任何工具名**，工具集快照 G1 应保持逐字不变。

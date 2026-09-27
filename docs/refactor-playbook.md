@@ -202,3 +202,50 @@ B1 实测：把 `cli_extract` / `registry_extract` 里**逐字相同**的函数�
 
 见规划书 **[§9 剩余工作总清单](architecture-refactor-plan.md)**（含每项的判据、风险与状态）。
 本指南第 1 节的 8 步法适用于其中每一项；第 2/4 节的陷阱在 P2 期间**每条都会被撞到**。
+
+品牌改名（DesignCanvas → AgentIO）是**独立一节**：规划书 **[§10](architecture-refactor-plan.md)**。
+
+---
+
+## 8. 全局串改名（品牌 / 前缀 / 目录约定）怎么做
+
+> 与"搬移一块"的区别：搬移改**位置**，本程序改**内容**，而且**触及几乎每个文件**。
+> 具体案例与清单见规划书 §10。
+
+### 8.1 先判"这是不是字符串替换"—— 三类东西**不是**
+
+| 类别 | 判据 | 例（本仓） |
+|---|---|---|
+| **运行时契约** | 改了它，盘上已有数据/外部调用方就找不到 | `.design-canvas/` 数据目录（`rules/` 住这儿） |
+| **外部写死的名** | 用户脚本 / CI / 别人机器上已写死 | `DC_DAEMON_PORT`、`DESIGN_CANVAS_MEMORY_WATCH` |
+| **对外契约 / 仓库级** | 客户端配置、包名、bin、git remote | MCP client 的 server key（`mcp__<key>__*` 的前缀来源） |
+
+⇒ 这三类必须**单独一步**：新名 + **旧名仍生效**（读新优先、回退旧）+ **弃用提示**。
+★ **不许**静默改用新名 —— 那等于把"改名"变成"悄悄破坏"。
+
+### 8.2 五步程序
+
+1. **先量形态**（不是"一个词"）：把大小写/分隔符/派生缩写**全列出来**再动手。
+   本仓实测品牌串有 **7 种形态**（`design-canvas` / `.design-canvas` / `DESIGN_CANVAS` /
+   `design_canvas` / `DesignCanvas` / `DC_` / `dc-`），**漏一种就是半成品**。
+   ```bash
+   for p in 'design-canvas' 'DESIGN_CANVAS' 'design_canvas' 'DesignCanvas' 'DC_' 'dc-'; do
+     printf "%s : %s\n" "$p" "$(grep -rIl "$p" src tests scripts docs README.md AGENTS.md package.json | wc -l)"
+   done
+   ```
+2. **复用"判断"，别新造工具**：本仓 `rename_symbols` 的 `report_literals`/`apply_literals` 已带
+   `decideLiteral(kind, …)` —— `contract`=需人审 / `history`=保留 / 冻结行跳过 / 生成文件跳过。
+   品牌串**不是符号**，所以要**给工具开一个显式字面量入口**（能力补齐），而不是再写一个工具。
+3. **先建"残留门"**（棘轮：存量不拦、新增即红）+ **history 允许表** ——
+   本仓惯例：**历史决策/核验记录保留旧名是正确原貌**，不算残留。
+4. **改产物与契约**：`package.json`（name/bin/repository/bugs/homepage）、README/AGENTS/skills、
+   MCP server key、git remote、桥接。
+5. **兼容 + 重桥 + 收紧冻结**：旧名回退生效一段时间；重连下游；残留门 frozen 逐笔收紧到 **0**。
+
+### 8.3 排序纪律（★ 与"搬移"不要交错）
+
+**改内容与改位置都触及几乎每个文件 ⇒ 一次只做一件**，且：
+
+- **先改名、后搬移**更好：改名自己的判据是 **"除品牌串外逐字相同"**，在文件**未被移动**时 diff 最可读；
+  先搬 200 个文件再改名，判据会被 move 噪音淹没。
+- 改名前确认"**不改工具名**"或"改了并有墓碑机制"（否则 G1 会红，见 §4.6 与规划书 §9-F2）。
