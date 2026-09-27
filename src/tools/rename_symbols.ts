@@ -12,6 +12,7 @@
  * 跨文件模块级符号批量（依赖 direction2 的结构化 diff / dry_run）。
  */
 
+import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { renameSymbol, type RenameSymbolInput, type RenameSymbolResult } from './rename_symbol.js';
@@ -286,7 +287,7 @@ export function scanLiteralOccurrences(
   //   里面是我们自己的派生物 —— 缓存库、`code-snapshots/` 影子副本、`live/` DSL。
   //   尤其**影子副本就是被扫描文件的旧文本副本**：扫到它们既会虚增命中数，
   //   又会把"可撤回的快照"本身改写掉（等于毁掉回滚能力）。
-  const SKIP_DIRS = new Set(['node_modules', 'dist', '.git', '.github', '.design-canvas']);
+  const SKIP_DIRS = new Set(['node_modules', 'dist', '.git', '.github', DATA_DIR_NAME]);
   // 根 .gitignore 标记为忽略的顶层目录：git-ignore 了 = 非一手源码（依赖/派生物），不扫。
   const gitIgnored = gitIgnoredTopDirs(projectDir);
 

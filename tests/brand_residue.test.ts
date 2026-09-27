@@ -22,6 +22,7 @@
  *   UPDATE_BRAND_RESIDUE=1 ./node_modules/.bin/vitest run tests/brand_residue.test.ts
  */
 
+import { DATA_DIR_NAME } from '../src/data_dir.js';
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -34,7 +35,7 @@ const REGISTRY = path.join(here, 'fixtures', 'brand_residue_registry.json');
 
 /** 不进扫描的目录（产物 / 依赖 / 工具自己的数据目录 / 非本仓内容） */
 const SKIP_DIRS = new Set([
-  'node_modules', '.git', 'dist', 'out', 'output', 'third_party', '.design-canvas',
+  'node_modules', '.git', 'dist', 'out', 'output', 'third_party', DATA_DIR_NAME,
   '.inspect', '.vscode', '.trae', 'coverage', '.venv', 'venv', 'vendor', 'assets',
 ]);
 
@@ -113,7 +114,7 @@ describe('品牌串残留门 · 检测器自身有效（证明它会红）', () 
   });
   it('形态互不重叠（不会重复计数）', () => {
     // `.design-canvas` 由 `design-canvas` 覆盖，不另设 pattern
-    expect(countBrandHits('.design-canvas', ['design-canvas'])).toBe(1);
+    expect(countBrandHits(DATA_DIR_NAME, ['design-canvas'])).toBe(1);
   });
 });
 
@@ -136,13 +137,27 @@ describe('品牌串残留门 · 棘轮（存量不拦，新增即红）', () => 
     console.log(`[品牌残留] 存量：${Object.keys(actual).length} 个文件 / ${total} 处（目标态 0）`);
 
     const d = ratchetDiff(reg.frozen, actual, (f) => fs.existsSync(path.join(REPO, f)));
-    const msg = ratchetFailureText(
-      'brand-residue',
-      d,
+    const hint =
       '出现**新的**旧品牌串（design-canvas / DESIGN_CANVAS / design_canvas / DesignCanvas）。\n' +
-        '改名进行中时：请改为新名（AgentIO 系）；若确属历史记录，把它加进 tests/fixtures/brand_residue_registry.json 的 allowFiles 并写明理由。',
-    );
-    expect(msg).toBe('');
+      '改名进行中时：请改为新名（AgentIO 系）；若确属历史记录，把它加进 tests/fixtures/brand_residue_registry.json 的 allowFiles 并写明理由。';
+
+    // ★ 分别断言：**只有"新增/增长"才是失败**。
+    //   把"债务减少（好事，应收紧基线）"混进同一个失败信息里，会让**任何改善都把门打红** ——
+    //   那不是棘轮纪律（"只在新增命中上 fail"），是把提示当成了拦阻。本门第一版就踩了这个坑。
+    expect(d.added, `[brand-residue] ${hint}\n新增命中：\n  ${d.added.join('\n  ')}`).toEqual([]);
+    expect(
+      d.grown.map((g) => `${g.file} ${g.was} → ${g.now}`),
+      `[brand-residue] ${hint}\n已知处又多了：\n  ${d.grown.map((g) => `${g.file}: ${g.was} → ${g.now}`).join('\n  ')}`,
+    ).toEqual([]);
+
+    if (d.shrunk.length > 0 || d.cleared.length > 0) {
+      // 债务已减少 ⇒ 只是提示收紧（不让红），与 G4 同款纪律
+      // eslint-disable-next-line no-console
+      console.log(
+        `[品牌残留] 债务已减少，请收紧基线（UPDATE_BRAND_RESIDUE=1）：` +
+          [...d.shrunk.map((s) => `${s.file} ${s.was}→${s.now}`), ...d.cleared.map((f) => `${f} 已归零`)].join(', '),
+      );
+    }
   });
 
   it('登记表自身健康（patterns 非空 / allowFiles 的文件必须真实存在）', () => {

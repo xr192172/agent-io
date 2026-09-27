@@ -9,6 +9,7 @@
  *   - 查询为空 → 返回空结果
  *   - embedding 配置缺失时 provider=fts 且 hits 由 FTS 填充
  */
+import { DATA_DIR_NAME } from '../../src/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -58,7 +59,7 @@ async function makeProject(feature: string): Promise<string> {
   roots.push(root);
   put(root, 'src/auth.ts', `export function login(user: string, pass: string): boolean {\n  return user === 'admin' && pass === 'x';\n}\nexport function checkPermission(u: string): string {\n  return 'ok';\n}\n`);
   put(root, 'src/render.ts', `export function renderHTML(dsl: unknown): string {\n  return '<svg>';\n}\n`);
-  const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+  const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
   await importProject({ project_dir: root, feature, cache_db: db });
   db.close();
   return root;
@@ -128,7 +129,7 @@ describe('embedTexts 持久向量表（embedding_cache）', () => {
   it('持久表命中 → 返回表中向量，零 API 调用', async () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'embed-persist-'));
     roots.push(root);
-    const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
     const text = 'persistedSymbol';
     seed(db, text, [1, 0, 0, 0]);
     const before = embeddingCacheStats().api_calls;
@@ -141,7 +142,7 @@ describe('embedTexts 持久向量表（embedding_cache）', () => {
   it('模拟重启（重开 db）后仍命中——持久层跨进程存活', async () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'embed-restart-'));
     roots.push(root);
-    const dbFile = path.join(root, '.design-canvas', 'cache.db');
+    const dbFile = path.join(root, DATA_DIR_NAME, 'cache.db');
     const db1 = openDb(dbFile);
     seed(db1, 'rebootSymbol', [0, 1, 0, 0]);
     db1.close(); // "进程退出"
@@ -154,7 +155,7 @@ describe('embedTexts 持久向量表（embedding_cache）', () => {
   it('内存+持久都 miss 且 API 不可达 → 抛错（且不写持久表）', async () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'embed-miss-'));
     roots.push(root);
-    const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
     await expect(embedTexts(cfg, ['neverSeen'], db)).rejects.toThrow();
     const n = db.prepare('SELECT COUNT(*) c FROM embedding_cache').get() as { c: number };
     expect(n.c).toBe(0); // 失败不落库
@@ -164,7 +165,7 @@ describe('embedTexts 持久向量表（embedding_cache）', () => {
   it('dim 不匹配的旧向量自动 miss（换维度配置不错配）', async () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'embed-dim-'));
     roots.push(root);
-    const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
     const key = `test-model:999:${crypto.createHash('sha256').update('dimSymbol', 'utf8').digest('hex')}`;
     db.prepare(
       'INSERT OR REPLACE INTO embedding_cache(cache_key, dim, vector, created_at) VALUES (?, ?, ?, ?)',
@@ -237,7 +238,7 @@ describe('semantic_search FTS 降级（无 embedding 配置）', () => {
       'utf-8',
     );
     // 只建库、不导入：旧语义这里会抛"符号缓存为空"，新语义应自己建好并命中
-    const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
     db.close();
     const r = await semanticSearch({ project_dir: root, query: 'zeroSetupSymbol' });
     expect(r.provider).toBe('exact');
@@ -249,7 +250,7 @@ describe('semantic_search FTS 降级（无 embedding 配置）', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sem-empty-'));
     roots.push(root);
     // 建空缓存（无符号）
-    const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
     db.close();
     await expect(semanticSearch({ project_dir: root, query: 'anything' })).rejects.toThrow(
       /索引为空.*import_project/,

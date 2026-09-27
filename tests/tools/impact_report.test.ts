@@ -10,6 +10,7 @@
  *   - watch 集成（真实 fs.watch）：impact_on_change=true → 改文件 → status 带 alerts 摘要行
  *     → action=impact 取回全文（含波及文件）
  */
+import { DATA_DIR_NAME } from '../../src/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -48,7 +49,7 @@ async function makeProject(feature: string): Promise<string> {
   put(root, 'src/a.ts', `import { helperB } from './b';\n\nexport function mainA(x: number): number {\n  return helperB(x);\n}\n`);
   put(root, 'src/b.ts', `export function helperB(x: number): number {\n  return x * 2;\n}\n`);
   put(root, 'src/c.ts', `import { mainA } from './a';\n\nexport function mainC(x: number): number {\n  return mainA(x) + 1;\n}\n`);
-  const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+  const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
   await importProject({ project_dir: root, feature, cache_db: db });
   db.close();
   return root;
@@ -75,7 +76,7 @@ describe('impact_report 生成/落盘/读取', () => {
     expect(full.message).toContain('=== 变更影响分析');
     expect(full.message).toContain('src/a.ts'); // callers 波及
     // 落盘文件存在且命名规范
-    expect(fs.existsSync(path.join(root, '.design-canvas', 'impact', `rp-${String(s.seq).padStart(6, '0')}.json`))).toBe(true);
+    expect(fs.existsSync(path.join(root, DATA_DIR_NAME, 'impact', `rp-${String(s.seq).padStart(6, '0')}.json`))).toBe(true);
   });
 
   it('序号连续递增；listImpactReports 新→旧', async () => {
@@ -151,7 +152,7 @@ describe('watch 集成：impact_on_change 自动报告', () => {
       expect(full.message).toContain('src/a.ts'); // callers
 
       // Step 3 合流：影响事件应已注入 Observe 事件流（lazy sink → 项目级 events.jsonl）
-      const eventsPath = path.join(root, '.design-canvas', 'observe', 'events.jsonl');
+      const eventsPath = path.join(root, DATA_DIR_NAME, 'observe', 'events.jsonl');
       expect(fs.existsSync(eventsPath)).toBe(true);
       const { events } = loadTSEvents(eventsPath);
       const impactEvents = events.filter((e) => e.probe === 'impact.report');

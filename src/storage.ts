@@ -11,6 +11,7 @@
  *   - 人调整画布 → localStorage 暂存 + 可导出 design-canvas.json
  */
 
+import { DATA_DIR_NAME } from './data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -60,7 +61,7 @@ export function getDataHome(): string {
 
 /** 设计存储根目录：<dataHome>/.design-canvas */
 export function getStorageRoot(): string {
-  return path.join(getDataHome(), '.design-canvas');
+  return path.join(getDataHome(), DATA_DIR_NAME);
 }
 
 /** feature 持久化目录：<cwd>/.design-canvas/features */
@@ -84,7 +85,7 @@ export function getFeatureFile(feature: string): string {
 
 /** 实际 DSL 目录（动态快照）：<dataHome>/.design-canvas/live */
 export function getLiveDir(baseDir?: string): string {
-  return path.join(baseDir ?? getDataHome(), '.design-canvas', 'live');
+  return path.join(baseDir ?? getDataHome(), DATA_DIR_NAME, 'live');
 }
 
 /** 实际 DSL 文件路径：<dataHome>/.design-canvas/live/<feature>.dsl.json */
@@ -135,7 +136,7 @@ export function getLiveFeature(feature: string, baseDir?: string): DesignDSL | n
  * 与 baseDir 归位规则和 live 一致（watch_project 监听任意项目时传 project_dir）。
  */
 export function getBaselineDir(baseDir?: string): string {
-  return path.join(baseDir ?? getDataHome(), '.design-canvas', 'baseline');
+  return path.join(baseDir ?? getDataHome(), DATA_DIR_NAME, 'baseline');
 }
 
 /** 基线 DSL 文件路径：<dataHome>/.design-canvas/baseline/<feature>.dsl.json */
@@ -209,7 +210,7 @@ export interface ArchiveEntry {
 
 /** 下线库目录：<baseDir>/.design-canvas/archive/<feature>/ */
 export function getArchiveDir(feature: string, baseDir?: string): string {
-  return path.join(baseDir ?? getDataHome(), '.design-canvas', 'archive', feature);
+  return path.join(baseDir ?? getDataHome(), DATA_DIR_NAME, 'archive', feature);
 }
 
 /** 归档条目文件路径 */

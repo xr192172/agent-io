@@ -15,6 +15,7 @@
  *   - 建议仅作参考（suggestion），不落盘改代码——拆分决策权在人/LLM
  */
 
+import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { DesignDSL, Node, Edge } from '../dsl/types.js';
@@ -657,7 +658,7 @@ function sanitizeId(s: string): string {
 
 const WALK_SKIP_DIRS = new Set([
   'node_modules', '.git', 'dist', 'build', 'out', 'output', 'vendor',
-  '__pycache__', '.design-canvas', 'coverage', 'target', '.next', 'venv', '.venv',
+  '__pycache__', DATA_DIR_NAME, 'coverage', 'target', '.next', 'venv', '.venv',
 ]);
 
 const SOURCE_EXT_RE = /\.(go|ts|tsx|js|jsx|py|mjs|cjs)$/;

@@ -18,6 +18,7 @@
  *   - 其他包导入（npm 包、标准库）→ 外部依赖，跳过
  */
 
+import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import ignore from 'ignore';
@@ -113,7 +114,7 @@ export interface ImportProjectResult {
 /** 遍历跳过的目录名 */
 const SKIP_DIRS = new Set([
   'node_modules', '.git', '.svn', '.hg', 'dist', 'build', 'out', 'output',
-  'vendor', '__pycache__', '.design-canvas', 'coverage', 'target', 'bin', 'obj',
+  'vendor', '__pycache__', DATA_DIR_NAME, 'coverage', 'target', 'bin', 'obj',
   '.next', '.nuxt', '.venv', 'venv', '.idea', '.vscode', '.backup', 'scaffold',
   '.pytest_cache', '.mypy_cache', '.tox', 'egg-info',
 ]);

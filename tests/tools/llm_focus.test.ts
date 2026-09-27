@@ -7,6 +7,7 @@
  * - LLM 调用失败 → 降级启发式 + note
  */
 
+import { DATA_DIR_NAME } from '../../src/data_dir.js';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -65,7 +66,7 @@ describe('llm_focus', () => {
   });
 
   it('配置路径默认落在用户主目录（DESIGN_CANVAS_HOME 覆盖生效）', () => {
-    expect(configFilePath()).toBe(path.join(tmpHome, '.design-canvas', 'config.json'));
+    expect(configFilePath()).toBe(path.join(tmpHome, DATA_DIR_NAME, 'config.json'));
     expect(getConfigHome()).toBe(tmpHome);
   });
 
@@ -73,7 +74,7 @@ describe('llm_focus', () => {
     const legacyRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'dc_legacy_'));
     const spy = vi.spyOn(storage, 'getDataHome').mockReturnValue(legacyRoot);
     try {
-      const legacyCfg = path.join(legacyRoot, '.design-canvas', 'config.json');
+      const legacyCfg = path.join(legacyRoot, DATA_DIR_NAME, 'config.json');
       fs.mkdirSync(path.dirname(legacyCfg), { recursive: true });
       fs.writeFileSync(legacyCfg, JSON.stringify({ llm: { apiKey: 'sk-legacy', model: 'm-legacy', baseURL: 'https://legacy/v1' } }));
       // 主目录（tmpHome）无 config
@@ -90,7 +91,7 @@ describe('llm_focus', () => {
     const legacyRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'dc_legacy_'));
     const spy = vi.spyOn(storage, 'getDataHome').mockReturnValue(legacyRoot);
     try {
-      const legacyCfg = path.join(legacyRoot, '.design-canvas', 'config.json');
+      const legacyCfg = path.join(legacyRoot, DATA_DIR_NAME, 'config.json');
       fs.mkdirSync(path.dirname(legacyCfg), { recursive: true });
       fs.writeFileSync(legacyCfg, JSON.stringify({ llm: { apiKey: 'sk-legacy', model: 'm-legacy', baseURL: 'https://legacy/v1' } }));
       fs.mkdirSync(path.dirname(configFilePath()), { recursive: true });

@@ -9,6 +9,7 @@
  *   - 文件被外部改过 ⇒ not_fresh > 0（保鲜路径能看见的那类）
  *   - 待消费自写登记被计入报告
  */
+import { DATA_DIR_NAME } from '../../src/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -42,7 +43,7 @@ async function makeProject(tag: string): Promise<string> {
   roots.push(root);
   put(root, 'src/auth.ts', `export function login(user: string): boolean {\n  return user === 'admin';\n}\n`);
   put(root, 'src/service.ts', `import { login } from './auth';\nexport function handle(u: string): boolean {\n  return login(u);\n}\n`);
-  const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+  const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
   await importProject({ project_dir: root, feature: `integrity_${tag}`, cache_db: db });
   db.close();
   return root;
@@ -51,7 +52,7 @@ async function makeProject(tag: string): Promise<string> {
 /** 把索引里 auth.login 的节点直接删掉（模拟"索引自身与磁盘脱节"）：
  *  FK ON DELETE CASCADE 会顺手删掉 service→login 的边，但 service 的 unresolved_refs 行仍是 resolved。 */
 function corruptByDroppingNode(root: string, nodeId = 'src/auth.ts#login'): number {
-  const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+  const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
   const r = db.prepare('DELETE FROM nodes WHERE id = $id').run({ id: nodeId });
   db.close();
   return Number(r.changes ?? 0);
@@ -103,7 +104,7 @@ describe('★ 陈旧断言：最危险的静默漏报', () => {
   it('resolved 但目标符号已不在索引 ⇒ blocker 级问题 + 不可信', async () => {
     const root = await makeProject('stale-resolved');
     // 先确认基线：这条引用是 resolved 的
-    const db0 = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    const db0 = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
     const before = db0
       .prepare("SELECT status FROM unresolved_refs WHERE from_node_id LIKE 'src/service.ts#%' AND reference_name = 'login'")
       .get() as { status: string } | undefined;
@@ -136,7 +137,7 @@ describe('★ 陈旧断言：最危险的静默漏报', () => {
     // 修完可信度恢复（此项目内容未变 ⇒ 新鲜度也是干净的）
     expect(after.trustworthy).toBe(true);
 
-    const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
     const row = db
       .prepare("SELECT status FROM unresolved_refs WHERE from_node_id LIKE 'src/service.ts#%' AND reference_name = 'login'")
       .get() as { status: string } | undefined;
@@ -146,7 +147,7 @@ describe('★ 陈旧断言：最危险的静默漏报', () => {
 
   it('repairStaleResolvedRefs 无陈旧行时是空操作（幂等）', async () => {
     const root = await makeProject('noop');
-    const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
     const r = repairStaleResolvedRefs(db, root);
     expect(r.names).toBe(0);
     expect(r.reopened).toBe(0);

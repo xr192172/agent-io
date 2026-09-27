@@ -10,6 +10,7 @@
  *   - 自定义分层（三明治：积木/契约/胶水）+ 层间违规检测（积木引胶水 → 违规）
  *   - parseImportsLight / scanImportEdges / detectLayerViolations 纯函数
  */
+import { DATA_DIR_NAME } from '../../src/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -49,7 +50,7 @@ async function makeProject(feature: string): Promise<string> {
   put(root, 'src/server.ts', `export function main() {}\n`);
   put(root, 'src/tools/helper.ts', `export function h() {}\n`);
   put(root, 'src/oddname.ts', `export function x() {}\n`);
-  const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+  const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
   await importProject({ project_dir: root, feature, source_root: root, cache_db: db });
   db.close();
   return root;
@@ -71,7 +72,7 @@ async function makeSandwichProject(feature: string): Promise<string> {
   put(root, 'contract/types.ts', `export interface User { id: string }\n`);
   put(root, 'brick/service.ts', `import type { User } from '../contract/types';\nexport function svc(): User { return { id: '1' }; }\n`);
   put(root, 'brick/bad.ts', `import { boot } from '../glue/server';\nexport function bad() { boot(); }\n`);
-  const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+  const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
   await importProject({ project_dir: root, feature, source_root: root, cache_db: db });
   db.close();
   return root;

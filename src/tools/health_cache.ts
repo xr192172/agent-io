@@ -11,6 +11,7 @@
  * 失败不致命：任何读写异常静默降级为"重新体检"，绝不影响主流程。
  */
 
+import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
@@ -23,7 +24,7 @@ export interface FingerprintFile {
 }
 
 function cacheDir(): string {
-  return path.join(process.cwd(), '.design-canvas', 'cache', 'health');
+  return path.join(process.cwd(), DATA_DIR_NAME, 'cache', 'health');
 }
 
 /** 对一组文件做 (rel,size,mtimeMs) 快照指纹；读不到的文件记 missing（视为已变动） */

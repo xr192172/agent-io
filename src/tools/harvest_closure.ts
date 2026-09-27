@@ -19,6 +19,7 @@
  * 拎服务层连它的调用方一起搬）；默认 false——纯积木只需要根须不需要用户。
  */
 
+import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { getDSL } from '../storage.js';
@@ -159,7 +160,7 @@ export function harvestClosure(input: HarvestClosureInput): HarvestClosureResult
     db = getProjectCacheDb(root);
   } catch (e) {
     throw new Error(
-      `无法打开/创建缓存 ${path.join(root, '.design-canvas', 'cache.db')}：${(e as Error).message}。` +
+      `无法打开/创建缓存 ${path.join(root, DATA_DIR_NAME, 'cache.db')}：${(e as Error).message}。` +
         '（工具入口已在调用前自动冷启建索引，此处多为目录不存在或不可写。）',
     );
   }

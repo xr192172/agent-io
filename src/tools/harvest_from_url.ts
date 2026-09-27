@@ -19,6 +19,7 @@
  * 保护：单积木闭包 > max_closure（默认 50）跳过——防止把整个项目端走。
  */
 
+import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -237,7 +238,7 @@ export async function harvestFromUrl(input: HarvestFromUrlInput): Promise<Harves
     const maxClosure = input.max_closure ?? 50;
 
     // ① 索引（walkFiles + syncProject 纯建缓存，不走 importProject——那会写 DSL feature 污染列表）
-    const dbPath = path.join(root, '.design-canvas', 'cache.db');
+    const dbPath = path.join(root, DATA_DIR_NAME, 'cache.db');
     const db = openDb(dbPath);
     let indexed: number;
     try {

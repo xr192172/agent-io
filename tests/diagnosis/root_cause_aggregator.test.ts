@@ -9,6 +9,7 @@
  * （mock fetch 注入假 LLM 响应，验证证据不编造边界 + 降级路径）。
  */
 
+import { DATA_DIR_NAME } from '../../src/data_dir.js';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -54,7 +55,7 @@ beforeEach(async () => {
   writeProjectFile('src/types.ts', 'export interface User {\n  profile?: { name: string };\n}\n');
   writeProjectFile('src/util.ts', UTIL_TS);
   writeProjectFile('src/service.ts', SERVICE_TS);
-  db = openDb(path.join(dir, '.design-canvas', 'cache.db'));
+  db = openDb(path.join(dir, DATA_DIR_NAME, 'cache.db'));
   await syncProject(db, dir, [
     path.join(dir, 'src', 'types.ts'),
     path.join(dir, 'src', 'util.ts'),

@@ -10,6 +10,7 @@
  *   - changed 文件不在缓存 → 警告 + 仍列为直接受影响文件
  *   - feature 不存在 → 抛错
  */
+import { DATA_DIR_NAME } from '../../src/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -50,7 +51,7 @@ async function makeProject(feature: string): Promise<string> {
   put(root, 'src/b.ts', `export function helperB(x: number): number {\n  return x * 2;\n}\n`);
   put(root, 'src/c.ts', `import { mainA } from './a';\n\nexport function mainC(x: number): number {\n  return mainA(x) + 1;\n}\n`);
   // 缓存必须放在项目根 .design-canvas/ 下，diffImpact 的 getProjectCacheDb 读同一文件
-  const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+  const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
   await importProject({ project_dir: root, feature, cache_db: db });
   db.close();
   return root;
@@ -148,14 +149,14 @@ async function makeTypeProject(feature: string): Promise<string> {
   put(root, 'src/user.ts', `import { Config } from './types';\n\nexport function greet(c: Config): string {\n  return c.name;\n}\n`);
   put(root, 'src/flags.ts', `export const FLAG = true;\n`);
   put(root, 'src/use.ts', `import { FLAG } from './flags';\n\nexport function run(): boolean {\n  return FLAG;\n}\n`);
-  const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+  const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
   await importProject({ project_dir: root, feature, cache_db: db });
   return root;
 }
 
 /** 修改文件后增量重导（二次 importProject 走 syncFile → 产 symbol_diff） */
 async function reimport(root: string, feature: string): Promise<void> {
-  const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+  const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
   await importProject({ project_dir: root, feature, cache_db: db });
   db.close();
 }

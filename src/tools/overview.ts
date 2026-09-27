@@ -12,6 +12,7 @@
  *   - LLM 未配置/失败：降级规则版摘要，页面照常可用
  */
 
+import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { getDSL, getStorageRoot } from '../storage.js';
@@ -152,8 +153,8 @@ function isFlatMindMap(mm: MindMap): boolean {
 function tryDeriveFeatureTree(feature: string, dsl: { source_root?: string }, genNames: boolean): Promise<boolean> {
   const candidates: string[] = [
     path.join(getStorageRoot(), `import_cache_${feature}.db`),
-    dsl.source_root ? path.join(dsl.source_root, '.design-canvas', 'cache.db') : '',
-    path.join(process.cwd(), '.design-canvas', 'cache.db'),
+    dsl.source_root ? path.join(dsl.source_root, DATA_DIR_NAME, 'cache.db') : '',
+    path.join(process.cwd(), DATA_DIR_NAME, 'cache.db'),
   ].filter(Boolean) as string[];
   const dbFile = candidates.find((p) => fs.existsSync(p));
   if (!dbFile) return Promise.resolve(false);

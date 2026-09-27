@@ -21,6 +21,7 @@
  *   - teach 科普导图 JSON：<storageRoot>/mindmap/<feature>.teach.json（/mindmap/ 交互页的数据源）
  */
 
+import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { getDSL, getStorageRoot, getPackageRoot } from '../storage.js';
@@ -896,8 +897,8 @@ interface TeachScript {
 function findCacheDb(feature: string, dsl: DesignDSL): string | null {
   const candidates = [
     path.join(getStorageRoot(), `import_cache_${feature}.db`),
-    dsl.source_root ? path.join(dsl.source_root, '.design-canvas', 'cache.db') : '',
-    path.join(process.cwd(), '.design-canvas', 'cache.db'),
+    dsl.source_root ? path.join(dsl.source_root, DATA_DIR_NAME, 'cache.db') : '',
+    path.join(process.cwd(), DATA_DIR_NAME, 'cache.db'),
   ].filter(Boolean) as string[];
   return candidates.find((p) => fs.existsSync(p)) ?? null;
 }

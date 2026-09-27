@@ -8,6 +8,7 @@
  *   - design-canvas 管理的项目（.design-canvas 目录存在）：追加渲染/截图自检
  */
 
+import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { Impact, RootCause, SymptomType, Verification } from './contract.js';
@@ -54,7 +55,7 @@ export function suggestVerification(input: VerifyInput): Verification[] {
   const kind = detectKind(project_dir);
   const out: Verification[] = [];
 
-  const isDesignCanvasManaged = fs.existsSync(path.join(root, '.design-canvas'));
+  const isDesignCanvasManaged = fs.existsSync(path.join(root, DATA_DIR_NAME));
 
   if (symptom_type === 'test_failure' && kind) {
     out.push({

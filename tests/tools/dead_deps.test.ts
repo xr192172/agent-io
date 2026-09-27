@@ -11,6 +11,7 @@
  *   - TS 集成：种子调用链上的 dep 活；未被调用的导出函数里的 dep → 死候选；
  *     顶层 const（模块初始化）引用的 dep → 保守活
  */
+import { DATA_DIR_NAME } from '../../src/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -200,7 +201,7 @@ async function makeGoProject(): Promise<string> {
       'var Global = effect.Setup()',
     ].join('\n'),
   );
-  const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+  const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
   await importProject({ project_dir: root, feature: 'dead-deps-go', cache_db: db });
   db.close();
   return root;
@@ -239,7 +240,7 @@ async function makeTsProject(): Promise<string> {
       '}',
     ].join('\n'),
   );
-  const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+  const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
   await importProject({ project_dir: root, feature: 'dead-deps-ts', cache_db: db });
   db.close();
   return root;
@@ -248,7 +249,7 @@ async function makeTsProject(): Promise<string> {
 describe('analyzeDeadThirdParty 集成', () => {
   it('Go：sibling 不可达函数的 dep 死候选；种子用的活；包级 var 保守活', async () => {
     const root = await makeGoProject();
-    const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
     try {
       const closure = harvestClosure({ project_dir: root, files: ['pkg/svc/svc.go'] });
       const closureFiles = closure.internal_files.map((f) => f.path);
@@ -303,11 +304,11 @@ describe('analyzeDeadThirdParty 集成', () => {
       'pkg/svc/extra.go',
       ['package svc', '', 'func Extra() string {', '\treturn "x"', '}'].join('\n'),
     );
-    const db0 = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    const db0 = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
     await importProject({ project_dir: root, feature: 'dead-deps-go-xpkg', cache_db: db0 });
     db0.close();
 
-    const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
     try {
       const closure = harvestClosure({ project_dir: root, files: ['pkg/svc/svc.go'] });
       const closureFiles = closure.internal_files.map((f) => f.path);
@@ -334,7 +335,7 @@ describe('analyzeDeadThirdParty 集成', () => {
 
   it('TS：未调用导出函数的 dep 死候选；调用链上的活；顶层 const 保守活', async () => {
     const root = await makeTsProject();
-    const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
     try {
       const closure = harvestClosure({ project_dir: root, files: ['src/a.ts'] });
       const r = analyzeDeadThirdParty({

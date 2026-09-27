@@ -8,6 +8,7 @@
  * - 空缓存：优雅降级
  */
 
+import { DATA_DIR_NAME } from '../../src/data_dir.js';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -26,7 +27,7 @@ let db: Database | null = null;
 
 function mkProject(): string {
   root = fs.mkdtempSync(path.join(os.tmpdir(), 'analyze_monolith_'));
-  fs.mkdirSync(path.join(root, '.design-canvas'), { recursive: true });
+  fs.mkdirSync(path.join(root, DATA_DIR_NAME), { recursive: true });
   return root;
 }
 
@@ -36,7 +37,7 @@ function seedDb(
   funcs: Array<{ id: string; name: string; file: string; start: number; end: number }>,
   calls: Array<[string, string]>,
 ): void {
-  db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+  db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
   for (const f of files) {
     db.prepare(
       "INSERT INTO nodes(id, kind, name, qualified_name, file_path, language, start_line, end_line, updated_at) VALUES (?, 'file', ?, ?, ?, 'go', 1, ?, ?)",
@@ -97,7 +98,7 @@ describe('scoreAnchors', () => {
         ['f1.go#s3', 'f1.go#hot'],
       ],
     );
-    const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
     const { funcs, graph } = buildCallGraphFromCache(db);
     db.close();
     const scored = scoreAnchors(funcs, graph);
@@ -131,7 +132,7 @@ describe('labelPropagation', () => {
         ['f1.go#helperA', 'f1.go#helperB'],
       ],
     );
-    const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
     const { funcs, graph } = buildCallGraphFromCache(db);
     db.close();
     const scored = scoreAnchors(funcs, graph);

@@ -11,6 +11,7 @@
  * 同名不同 receiver 的方法会误连——语义标注阶段由 LLM 修正。
  */
 
+import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { AnimationValueSchema, Edge, Node } from '../dsl/types.js';
@@ -473,7 +474,7 @@ export async function deriveDetailChain(input: DeriveChainInput): Promise<Derive
   const relPath = path.relative(projectRoot, filePath).split(path.sep).join('/') || path.basename(filePath);
   let cacheDbPath: string | null = null;
   for (let dir = path.resolve(projectRoot); dir && dir !== path.dirname(dir); dir = path.dirname(dir)) {
-    const cand = path.join(dir, '.design-canvas', 'cache.db');
+    const cand = path.join(dir, DATA_DIR_NAME, 'cache.db');
     if (fs.existsSync(cand)) {
       cacheDbPath = cand;
       break;

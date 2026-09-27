@@ -26,6 +26,7 @@
  * 纯计算 + 一次 dry-run 插桩；不写被插桩项目的源码，只在自己的 `.design-canvas/` 下写清单。
  */
 
+import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { Database } from '../db/db.js';
@@ -427,7 +428,7 @@ export async function recommendObservePoints(
   }
   const truncated = deduped.length - kept.length;
 
-  const pointsFile = path.join(root, '.design-canvas', 'observe-points.json');
+  const pointsFile = path.join(root, DATA_DIR_NAME, 'observe-points.json');
   const payload = {
     schema: 'design-canvas/observe-points/v1',
     generatedAt: new Date().toISOString(),

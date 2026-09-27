@@ -16,6 +16,7 @@
  *   - 成本：每次调用一次 io append，可忽略
  *   - 只加不减：不提供删除/清空入口（原始日志两层分离：raw 全量 + LLM 聚合）
  */
+import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -35,7 +36,7 @@ export interface DogfoodUsage {
 const MAX_ERR_LEN = 200;
 
 function logDir(): string {
-  return path.join(getDataHome(), '.design-canvas', 'dogfood');
+  return path.join(getDataHome(), DATA_DIR_NAME, 'dogfood');
 }
 function logFile(): string {
   return path.join(logDir(), 'usage.jsonl');

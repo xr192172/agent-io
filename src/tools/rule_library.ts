@@ -56,6 +56,7 @@
  *      但我们写出去的永远是规范形态。
  */
 
+import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -102,7 +103,7 @@ export interface Rule {
 
 /** 规则库目录：`<root>/.design-canvas/rules/` */
 export function rulesDir(root: string): string {
-  return path.join(path.resolve(root), '.design-canvas', 'rules');
+  return path.join(path.resolve(root), DATA_DIR_NAME, 'rules');
 }
 
 /** 棘轮基线文件：`<root>/.design-canvas/rules/baseline.json` */

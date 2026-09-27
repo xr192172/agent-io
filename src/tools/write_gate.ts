@@ -47,6 +47,7 @@
  *     （索引是增强，不是写盘的前提）。
  */
 
+import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { getProjectCacheDb, beginBatch, endBatch, type Database } from '../db/db.js';
@@ -106,12 +107,12 @@ const EMPTY_CROSS = { total: 0, resolved: 0, external: 0, failed: 0 };
 
 /** 项目根的缓存库路径 */
 export function projectCacheDbPath(projectRoot: string): string {
-  return path.join(path.resolve(projectRoot), '.design-canvas', 'cache.db');
+  return path.join(path.resolve(projectRoot), DATA_DIR_NAME, 'cache.db');
 }
 
 /** 自写登记文件路径 */
 export function selfWritesPath(projectRoot: string): string {
-  return path.join(path.resolve(projectRoot), '.design-canvas', 'self-writes.json');
+  return path.join(path.resolve(projectRoot), DATA_DIR_NAME, 'self-writes.json');
 }
 
 /** 把绝对/相对路径统一成"相对项目根的 posix 路径"；已在根外则返回 null（不参与索引，避免键污染） */

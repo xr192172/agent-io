@@ -8,6 +8,7 @@
  *   - realResolveImport：扩展名补全 / 目录索引 / 裸包与缺失 → null
  *   - expandClosure：根内文件 + 沿 import 边扩入根外本地文件（跨根自包含）
  */
+import { DATA_DIR_NAME } from '../../src/data_dir.js';
 import { describe, it, expect } from 'vitest';
 import { mkdtempSync, writeFileSync, readFileSync, rmSync, mkdirSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -576,7 +577,7 @@ describe('expandClosure 索引快速路径 - ②+④ 行为', () => {
       'src/app.ts': "import { compute } from './def';\nexport function run() { return compute(); }\n",
     });
     // 把 .design-canvas/cache.db 作为目录创建（会导致 openDb 创建 DatabaseSync 抛错）
-    const fakeDb = path.join(dir, '.design-canvas', 'cache.db');
+    const fakeDb = path.join(dir, DATA_DIR_NAME, 'cache.db');
     mkdirSync(path.dirname(fakeDb), { recursive: true });
     writeFileSync(fakeDb, 'NOT A SQLITE FILE'); // 也可写垃圾头让 open 不炸但 hasAnyIndexedFiles 会炸
     // 注意：写入非法内容时 openDb() 可能不炸（SQLite 会在首次查询炸）。

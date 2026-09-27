@@ -7,6 +7,7 @@
  *   - `writeSourceFiles`：无索引 ⇒ `mode='skipped'` 且**不建库**；有索引 ⇒ 写穿 + 重开引用方 + 快照
  *   - `snapshotAndRecordSelfWrite`：同步工具路径 ⇒ `mode='deferred'` + 登记可见
  */
+import { DATA_DIR_NAME } from '../../src/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -52,7 +53,7 @@ function tmpRoot(tag: string): string {
 async function makeIndexed(tag: string, authBody = `export function login(user: string): boolean {\n  return user === 'admin';\n}\n`) {
   const root = tmpRoot(tag);
   put(root, 'src/auth.ts', authBody);
-  const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+  const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
   await importProject({ project_dir: root, feature: `wgate_${tag}`, cache_db: db });
   db.close();
   return root;
@@ -89,7 +90,7 @@ describe('recordSelfWrite / pendingSelfWrites（L1b）', () => {
     expect(recordSelfWrite(root, ['src/a.ts', 'src/a.ts'], 'note-1')).toBe(1);
     recordSelfWrite(root, ['src/b.ts'], 'note-2');
     expect(pendingSelfWrites(root).sort()).toEqual(['src/a.ts', 'src/b.ts']);
-    const raw = JSON.parse(fs.readFileSync(path.join(root, '.design-canvas', 'self-writes.json'), 'utf-8'));
+    const raw = JSON.parse(fs.readFileSync(path.join(root, DATA_DIR_NAME, 'self-writes.json'), 'utf-8'));
     expect(raw.writes.length).toBe(2);
     expect(raw.writes[0].note).toBe('note-1');
   });
@@ -106,7 +107,7 @@ describe('recordSelfWrite / pendingSelfWrites（L1b）', () => {
     const root = tmpRoot('selfempty');
     expect(recordSelfWrite(root, [])).toBe(0);
     expect(recordSelfWrite(root, [path.join(root, '..', 'x.ts')])).toBe(0);
-    expect(fs.existsSync(path.join(root, '.design-canvas', 'self-writes.json'))).toBe(false);
+    expect(fs.existsSync(path.join(root, DATA_DIR_NAME, 'self-writes.json'))).toBe(false);
   });
 });
 
@@ -128,7 +129,7 @@ describe('writeSourceFiles（L1a 统一写入闸）', () => {
     const root = await makeIndexed('wgsync');
     put(root, 'src/service.ts', `import { login } from './auth';\nexport function handle(u: string): boolean {\n  return login(u);\n}\n`);
     // 先把 service 引用 auth.login 解析成跨文件边
-    const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
     await db.prepare('SELECT 1 AS x').get();
     await importProject({ project_dir: root, feature: 'wgsync2', cache_db: db });
     expect(refStatus(db, 'src/service.ts', 'login')).toBe('resolved');
@@ -148,7 +149,7 @@ describe('writeSourceFiles（L1a 统一写入闸）', () => {
     expect(r.report.touched).toEqual(['src/auth.ts']);
 
     // 连不上就明确标 failed（而不是维持"已解析"的假象）
-    const db2 = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    const db2 = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
     expect(refStatus(db2, 'src/service.ts', 'login')).toBe('failed');
     db2.close();
   });
@@ -173,7 +174,7 @@ describe('snapshotAndRecordSelfWrite（同步工具路径）', () => {
     expect(r.mode).toBe('deferred');
     expect(pendingSelfWrites(root)).toContain('src/auth.ts');
     // 快照已建
-    const snaps = fs.readdirSync(path.join(root, '.design-canvas', 'code-snapshots'));
+    const snaps = fs.readdirSync(path.join(root, DATA_DIR_NAME, 'code-snapshots'));
     expect(snaps.length).toBeGreaterThan(0);
     expect(writeThroughLine(r)).toContain('已登记待同步');
 

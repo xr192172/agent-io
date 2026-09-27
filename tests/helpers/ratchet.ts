@@ -50,18 +50,8 @@ export function ratchetDiff(
   };
 }
 
-/** 把棘轮差异整理成"给人看"的失败信息（新增/增长两类才是红） */
-export function ratchetFailureText(id: string, d: RatchetDiff, hint: string): string {
-  const parts: string[] = [];
-  if (d.added.length) parts.push(`新增命中：\n  ${d.added.join('\n  ')}`);
-  if (d.grown.length) parts.push(`已知处又多了：\n  ${d.grown.map((g) => `${g.file}: ${g.was} → ${g.now}`).join('\n  ')}`);
-  if (d.shrunk.length || d.cleared.length) {
-    parts.push(
-      `（债务已减少，请收紧基线：` +
-        [...d.shrunk.map((s) => `${s.file} ${s.was}→${s.now}`), ...d.cleared.map((f) => `${f} 已归零`)].join(', ') +
-        `）`,
-    );
-  }
-  if (parts.length === 0) return '';
-  return `[${id}] ${hint}\n${parts.join('\n')}`;
-}
+// ★ 刻意**不**提供"把整个 diff 拼成一条字符串"的便捷函数。
+//   第一版有过一个 `ratchetFailureText`，它把"债务减少（提示收紧基线）"也拼进同一条信息里，
+//   调用方于是写成 `expect(msg).toBe('')` ⇒ **任何改善都会把门打红**，违反"只在新增上 fail"。
+//   ⇒ 纪律：**失败与提示必须分开**。调用方分别断言 `added` / `grown`（这两个才是红），
+//   把 `shrunk` / `cleared` 仅作 console 提示。

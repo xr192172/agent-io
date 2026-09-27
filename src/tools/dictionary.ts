@@ -17,6 +17,7 @@
  * 数据源零新增：纯 JSON 文件读写，不依赖 cache.db / DSL，可独立运行。
  */
 
+import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { getDataHome } from '../storage.js';
@@ -121,13 +122,13 @@ export function validateProjectRoot(projectRoot: string, context = 'project_dir'
 
 /** 全局词典路径：<dataHome>/.design-canvas/dict.global.json */
 export function getGlobalDictFile(): string {
-  return path.join(getDataHome(), '.design-canvas', 'dict.global.json');
+  return path.join(getDataHome(), DATA_DIR_NAME, 'dict.global.json');
 }
 
 /** 项目词典路径：<projectRoot>/.design-canvas/dict.project.json
  *  ⚠️  外部输入 projectRoot 时，必须先经 validateProjectRoot 校验，本函数假设已安全通过。 */
 export function getProjectDictFile(projectRoot: string): string {
-  return path.join(path.resolve(projectRoot), '.design-canvas', 'dict.project.json');
+  return path.join(path.resolve(projectRoot), DATA_DIR_NAME, 'dict.project.json');
 }
 
 // ─────────────────────────────────────────────────────────────

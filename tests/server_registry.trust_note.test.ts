@@ -14,6 +14,7 @@
  *   - 无索引 ⇒ 不附注（那种"不全"由 firstContactBackfill 标注，分工不混）
  *   - 无缓存：同一份陈旧状态连续两次调用都报（宁可每次查，也不要过期的诚实）
  */
+import { DATA_DIR_NAME } from '../src/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -62,7 +63,7 @@ async function makeProject(tag: string): Promise<string> {
   roots.push(root);
   put(root, 'src/auth.ts', `export function login(user: string): boolean {\n  return user === 'admin';\n}\n`);
   put(root, 'src/service.ts', `import { login } from './auth';\nexport function handle(u: string): boolean {\n  return login(u);\n}\n`);
-  const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+  const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
   await importProject({ project_dir: root, feature: `trust_${tag}`, cache_db: db });
   db.close();
   return root;
@@ -70,7 +71,7 @@ async function makeProject(tag: string): Promise<string> {
 
 /** 模拟"索引自身与磁盘脱节"：删掉 auth.login 节点，FK 级联删边但 service 的 ref 行仍是 resolved */
 function corruptByDroppingNode(root: string): void {
-  const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+  const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
   db.prepare('DELETE FROM nodes WHERE id = $id').run({ id: 'src/auth.ts#login' });
   db.close();
 }

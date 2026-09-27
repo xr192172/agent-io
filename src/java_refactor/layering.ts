@@ -16,6 +16,7 @@
  *   替换文本字节，会把类名当路径段误伤）。这里用 tree-sitter 精确改 import 声明节点 + 物理移动文件。
  */
 
+import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseAstRoot } from '../tools/ts_kernel/index.js';
@@ -93,7 +94,7 @@ export const LAYER_LABELS: Record<string, string> = {
 };
 
 const DEFAULT_SKIP_DIRS = new Set([
-  '.git', 'node_modules', 'dist', 'build', 'target', '.design-canvas', '.venv', 'venv', '__pycache__', '.next', 'out',
+  '.git', 'node_modules', 'dist', 'build', 'target', DATA_DIR_NAME, '.venv', 'venv', '__pycache__', '.next', 'out',
 ]);
 
 // ─────────────────────────────────────────────

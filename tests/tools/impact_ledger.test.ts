@@ -8,6 +8,7 @@
  *   - 再改 b → 实际波及 {b,a,d,c} → unexpected={d} → deviation（计划外扩散报警）
  *   - 一次消费：声明被报告消费后，后续报告不再对比
  */
+import { DATA_DIR_NAME } from '../../src/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -47,7 +48,7 @@ async function makeProject(): Promise<string> {
   put(root, 'src/b.ts', `export function b(x: number): number { return x * 2; }\n`);
   put(root, 'src/c.ts', `import { a } from './a';\nexport function c(x: number): number { return a(x) + 1; }\n`);
   put(root, 'src/d.ts', `import { b } from './b';\nexport function d(x: number): number { return b(x) + 2; }\n`);
-  const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+  const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
   await importProject({ project_dir: root, feature: 'ledger', cache_db: db });
   db.close();
   return root;
@@ -74,7 +75,7 @@ async function waitSpreadCount(root: string, n: number): Promise<void> {
 }
 
 function eventsOf(root: string, probe: string): ReturnType<typeof loadTSEvents>['events'] {
-  const p = path.join(root, '.design-canvas', 'observe', 'events.jsonl');
+  const p = path.join(root, DATA_DIR_NAME, 'observe', 'events.jsonl');
   return loadTSEvents(p).events.filter((e) => e.probe === probe);
 }
 
@@ -324,7 +325,7 @@ describe('Impact Ledger · 持久化 + verification gate', () => {
       await watchProjectTool({ project_dir: root, action: 'declare', files: ['src/b.ts'] });
       await watchProjectTool({ project_dir: root, action: 'stop' });
       // 伪造 created_at 为 25h 前
-      const p = path.join(root, '.design-canvas', 'impact', 'ledger.json');
+      const p = path.join(root, DATA_DIR_NAME, 'impact', 'ledger.json');
       const f = JSON.parse(fs.readFileSync(p, 'utf-8')) as { entries: Array<{ created_at: string }> };
       f.entries[0].created_at = new Date(Date.now() - 25 * 3600 * 1000).toISOString();
       fs.writeFileSync(p, JSON.stringify(f), 'utf-8');

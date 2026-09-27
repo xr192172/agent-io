@@ -11,6 +11,7 @@
  * 摘要行是"推送"的全部内容——MCP 无服务端推送，watch status 时 piggyback 带回。
  */
 
+import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { diffImpact, type DiffImpactResult, type ImpactDirection } from './diff_impact.js';
@@ -68,7 +69,7 @@ export interface RunImpactReportInput {
 // ─────────────────────────────────────────────────────────────
 
 function impactDir(projectRoot: string): string {
-  return path.join(projectRoot, '.design-canvas', 'impact');
+  return path.join(projectRoot, DATA_DIR_NAME, 'impact');
 }
 
 function reportPath(projectRoot: string, seq: number): string {

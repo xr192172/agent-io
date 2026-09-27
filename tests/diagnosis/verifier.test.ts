@@ -3,6 +3,7 @@
  * 覆盖：Node/Go/Python 类型探测、test_failure 重跑、design-canvas 渲染自检、未知项目 manual。
  */
 
+import { DATA_DIR_NAME } from '../../src/data_dir.js';
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -73,7 +74,7 @@ describe('suggestVerification 验证建议', () => {
   it('design-canvas 管理项目（.design-canvas 存在）→ 追加 observe 渲染自检', () => {
     const dir = tmp();
     fs.writeFileSync(path.join(dir, 'package.json'), '{}');
-    fs.mkdirSync(path.join(dir, '.design-canvas'));
+    fs.mkdirSync(path.join(dir, DATA_DIR_NAME));
     const v = suggestVerification({ project_dir: dir, impact: emptyImpact, root_cause: rootCause });
     expect(v.some((x) => x.type === 'observe')).toBe(true);
     expect(v.find((x) => x.type === 'observe')?.command_hint).toContain('src/util.ts');

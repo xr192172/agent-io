@@ -16,6 +16,7 @@
  *   - ★ 冷启上限截断 → state='partial' + truncated=true（诚实，不假装完整）
  *   - 目录下没有可索引文件 → 查询层仍抛可行动错误
  */
+import { DATA_DIR_NAME } from '../../src/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -49,7 +50,7 @@ async function makeProject(feature: string): Promise<string> {
   roots.push(root);
   put(root, 'src/auth.ts', `export function login(user: string): boolean {\n  return user === 'admin';\n}\n`);
   put(root, 'src/render.ts', `export function renderHTML(dsl: unknown): string {\n  return '<svg>';\n}\n`);
-  const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+  const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
   await importProject({ project_dir: root, feature, cache_db: db });
   db.close();
   return root;
@@ -106,7 +107,7 @@ describe('索引自动保鲜（ensureFreshIndex）', () => {
 
   it('直接调用：报告字段语义正确（resynced/added/removed 区分）', async () => {
     const root = await makeProject('fresh_report');
-    const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
     try {
       // 无变更
       const idle = await ensureFreshIndex(db, root);
@@ -141,7 +142,7 @@ describe('索引自动保鲜（ensureFreshIndex）', () => {
     put(root, 'src/auth.ts', `export function login(user: string): boolean {\n  return true;\n}\n`);
     fs.rmSync(path.join(root, 'src', 'render.ts'));
 
-    const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
     try {
       const rep = await ensureFreshIndex(db, root);
       expect(rep.skipped_adds).toBe(105);
@@ -160,7 +161,7 @@ describe('索引自动保鲜（ensureFreshIndex）', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'fresh-boot-'));
     roots.push(root);
     put(root, 'src/a.ts', `export function bootSymbol(): number { return 1; }\n`);
-    const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
     try {
       const rep = await ensureFreshIndex(db, root);
       expect(rep.state).toBe('ready');
@@ -180,7 +181,7 @@ describe('索引自动保鲜（ensureFreshIndex）', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'fresh-noboot-'));
     roots.push(root);
     put(root, 'src/a.ts', `export function a(): void {}\n`);
-    const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
     try {
       const rep = await ensureFreshIndex(db, root, { bootstrap: false });
       expect(rep.bootstrapped).toBe(0);
@@ -197,7 +198,7 @@ describe('索引自动保鲜（ensureFreshIndex）', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'fresh-trunc-'));
     roots.push(root);
     for (let i = 0; i < 5; i++) put(root, `src/m${i}.ts`, `export function m${i}(): void {}\n`);
-    const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
     try {
       const rep = await ensureFreshIndex(db, root, { maxFiles: 2 });
       expect(rep.state).toBe('partial');
@@ -222,7 +223,7 @@ describe('★ 引用方重解析（手工改名/删符号后，引用方的边�
     roots.push(root);
     put(root, 'src/b.ts', 'export function foo(): number {\n  return 1;\n}\n');
     put(root, 'src/a.ts', "import { foo } from './b';\nexport function useA(): number {\n  return foo();\n}\n");
-    const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
     try {
       await importProject({ project_dir: root, feature: 'fresh_dangle', cache_db: db });
       const dangling = (): number =>
@@ -263,7 +264,7 @@ describe('★ 引用方重解析（手工改名/删符号后，引用方的边�
 describe('★ 拼图边界（indexedRelativeSet / isIndexedRelative）', () => {
   it('已收录在界内 / 未收录在界外 / 源文件相对路径用 posix 分隔', async () => {
     const root = await makeProject('boundary');
-    const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
     try {
       // 界内：import_project 收进来的两个文件
       expect(isIndexedRelative(db, 'src/auth.ts')).toBe(true);

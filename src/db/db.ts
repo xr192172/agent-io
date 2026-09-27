@@ -10,6 +10,7 @@
  * 存储位置：<dataHome>/.design-canvas/cache.db（.design-canvas/ 已在 .gitignore）
  */
 
+import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
@@ -142,7 +143,7 @@ export function getProjectCacheDb(projectRoot: string): Database {
   const key = path.resolve(projectRoot);
   let db = projectCachePool.get(key);
   if (!db) {
-    db = openDb(path.join(key, '.design-canvas', 'cache.db'));
+    db = openDb(path.join(key, DATA_DIR_NAME, 'cache.db'));
     projectCachePool.set(key, db);
   }
   return db;

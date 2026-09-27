@@ -18,6 +18,7 @@
  *     DSL evolution loop（方向 D）的数据源
  */
 
+import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -78,7 +79,7 @@ const LEDGER_CLOSED_CAP = 100;
 // ─────────────────────────────────────────────────────────────
 
 function ledgerPath(projectRoot: string): string {
-  return path.join(projectRoot, '.design-canvas', 'impact', 'ledger.json');
+  return path.join(projectRoot, DATA_DIR_NAME, 'impact', 'ledger.json');
 }
 
 /** 读全部条目（新→旧）。文件缺失/损坏返回空（缓存派生物语义，不阻塞调用方） */

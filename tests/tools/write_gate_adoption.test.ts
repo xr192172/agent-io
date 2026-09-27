@@ -12,6 +12,7 @@
  *     prewarmKernel 后 ⇒ 与 async 版同口径（改名 → 引用方重开重解析 → 再写穿全 skipped）；
  *     remove_dead_imports 组合：预热后 indexWriteThrough 直连 synced。
  */
+import { DATA_DIR_NAME } from '../../src/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -56,7 +57,7 @@ const SERVICE_SRC = `import { login } from './auth';\nexport function handle(u: 
 async function makeIndexed(tag: string): Promise<string> {
   const root = tmpRoot(tag);
   put(root, 'src/auth.ts', AUTH_SRC);
-  const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+  const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
   await importProject({ project_dir: root, feature: `wga_${tag}`, cache_db: db });
   db.close();
   return root;
@@ -65,13 +66,13 @@ async function makeIndexed(tag: string): Promise<string> {
 /** 把 service.ts 补进盘上并重导入，拿到 login 的已解析跨文件边 */
 async function resolveServiceRef(root: string, tag: string): Promise<void> {
   put(root, 'src/service.ts', SERVICE_SRC);
-  const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+  const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
   await importProject({ project_dir: root, feature: `wga_${tag}_2`, cache_db: db });
   db.close();
 }
 
 function dbAt(root: string): ReturnType<typeof openDb> {
-  return openDb(path.join(root, '.design-canvas', 'cache.db'));
+  return openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
 }
 
 function refStatus(db: ReturnType<typeof openDb>, fileRel: string, name: string): string | undefined {

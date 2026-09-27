@@ -23,6 +23,7 @@
  * DSL 渲染图主要是文件级节点。BFS 后按 file_path 聚合回 DSL 文件节点。
  */
 
+import { DATA_DIR_NAME } from '../data_dir.js';
 import path from 'node:path';
 import { getDSL } from '../storage.js';
 import { getProjectCacheDb, type Database } from '../db/db.js';
@@ -203,7 +204,7 @@ export function diffImpact(input: DiffImpactInput): DiffImpactResult {
   } catch (e) {
     return emptyResult(
       feature ?? path.basename(root), root, changedRels, direction, max_depth,
-      [`无法打开/创建缓存 ${path.join(root, '.design-canvas', 'cache.db')}：${(e as Error).message}。请确认该目录存在且可写。`],
+      [`无法打开/创建缓存 ${path.join(root, DATA_DIR_NAME, 'cache.db')}：${(e as Error).message}。请确认该目录存在且可写。`],
       `变更影响分析失败：无法打开符号缓存（目录不存在或不可写）。`,
     );
   }

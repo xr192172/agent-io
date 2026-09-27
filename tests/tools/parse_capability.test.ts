@@ -13,6 +13,7 @@
  *   - impact_analysis 集成：.css 变更点 ⇒ 响应带"解析粒度"（闭包结论会低估）；.ts ⇒ 不带
  *   - index_integrity 自带语言能力自述一节
  */
+import { DATA_DIR_NAME } from '../../src/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -123,7 +124,7 @@ describe('parse_capability · 注册表集成', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'gran-'));
     roots.push(root);
     put(root, 'src/a.ts', 'export const a = 1;\n');
-    const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
     await importProject({ project_dir: root, feature: 'gran', cache_db: db });
     db.close();
 
@@ -142,7 +143,7 @@ describe('parse_capability · 注册表集成', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'gran-integ-'));
     roots.push(root);
     put(root, 'src/a.ts', 'export const a = 1;\n');
-    const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
     await importProject({ project_dir: root, feature: 'gran_integ', cache_db: db });
     db.close();
     const r = await tools.get('index_integrity')!({ project_dir: root, refresh: false });

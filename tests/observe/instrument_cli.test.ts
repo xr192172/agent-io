@@ -5,6 +5,7 @@
  *   2. 真实写盘后源码含探针标记。
  *   3. 重跑幂等：已插桩文件跳过。
  */
+import { DATA_DIR_NAME } from '../../src/data_dir.js';
 import { describe, it, expect, beforeEach } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -70,7 +71,7 @@ describe('Observe 全自动插桩 CLI', () => {
     const instrumented = fs.readFileSync(path.join(dir, 'src', 'util.ts'), 'utf-8');
     expect(instrumented).toContain('observe:instrumented');
     // 备份已生成
-    const backupFile = path.join(dir, '.design-canvas', 'observe-backup', 'src', 'util.ts');
+    const backupFile = path.join(dir, DATA_DIR_NAME, 'observe-backup', 'src', 'util.ts');
     expect(fs.existsSync(backupFile)).toBe(true);
     expect(fs.readFileSync(backupFile, 'utf-8')).toBe(original);
     // 一键还原
@@ -78,7 +79,7 @@ describe('Observe 全自动插桩 CLI', () => {
     expect(out).toContain('已还原');
     expect(fs.readFileSync(path.join(dir, 'src', 'util.ts'), 'utf-8')).toBe(original);
     // 备份目录已删除
-    expect(fs.existsSync(path.join(dir, '.design-canvas', 'observe-backup'))).toBe(false);
+    expect(fs.existsSync(path.join(dir, DATA_DIR_NAME, 'observe-backup'))).toBe(false);
   });
 
   it('--uninstrument 无备份时提示无需还原', async () => {
@@ -88,7 +89,7 @@ describe('Observe 全自动插桩 CLI', () => {
 
   it('写盘插桩后自动生成探针台账并统计', async () => {
     await capture(() => runInstrumentCLI([dir]))();
-    const ledgerFile = path.join(dir, '.design-canvas', 'observe-ledger.json');
+    const ledgerFile = path.join(dir, DATA_DIR_NAME, 'observe-ledger.json');
     expect(fs.existsSync(ledgerFile)).toBe(true);
     const ledger = JSON.parse(fs.readFileSync(ledgerFile, 'utf-8'));
     expect(ledger.projectRoot).toBe(dir);
@@ -103,7 +104,7 @@ describe('Observe 全自动插桩 CLI', () => {
 
   it('--dry-run 不生成台账', async () => {
     await capture(() => runInstrumentCLI([dir, '--dry-run']))();
-    expect(fs.existsSync(path.join(dir, '.design-canvas', 'observe-ledger.json'))).toBe(false);
+    expect(fs.existsSync(path.join(dir, DATA_DIR_NAME, 'observe-ledger.json'))).toBe(false);
   });
 
   it('--ledger 查看台账统计与明细', async () => {
@@ -123,7 +124,7 @@ describe('Observe 全自动插桩 CLI', () => {
 
   it('--uninstrument 一键全拔联动清理台账', async () => {
     await capture(() => runInstrumentCLI([dir]))();
-    const ledgerFile = path.join(dir, '.design-canvas', 'observe-ledger.json');
+    const ledgerFile = path.join(dir, DATA_DIR_NAME, 'observe-ledger.json');
     expect(fs.existsSync(ledgerFile)).toBe(true);
     const out = await capture(() => runInstrumentCLI([dir, '--uninstrument']))();
     expect(out).toContain('已清理探针台账');

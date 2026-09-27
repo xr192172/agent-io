@@ -22,6 +22,7 @@
  * 纯 fs、零依赖。
  */
 
+import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -47,7 +48,7 @@ export interface FileSnapshotMeta {
 export const MAX_FILE_SNAPSHOTS = 20;
 
 export function fileSnapshotsDir(root: string): string {
-  return path.join(path.resolve(root), '.design-canvas', 'code-snapshots');
+  return path.join(path.resolve(root), DATA_DIR_NAME, 'code-snapshots');
 }
 
 function normalizeRel(root: string, file: string): string | null {

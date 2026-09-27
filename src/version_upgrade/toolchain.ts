@@ -12,6 +12,7 @@
  * 只做"盘点/报告"，不做任何改写——改写是版本升级闭环的后续阶段。
  */
 
+import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -67,7 +68,7 @@ export interface ToolchainScan {
 /** 跳过的目录（构建产物/依赖/元数据，不视为子项目根；含各适配器追加项） */
 const SKIP_DIRS = new Set([
   'node_modules', '.git', 'dist', 'build', 'target', 'out', 'bin',
-  '.design-canvas', '.idea', '.vscode', '.next', 'coverage', 'vendor', '.gradle',
+  DATA_DIR_NAME, '.idea', '.vscode', '.next', 'coverage', 'vendor', '.gradle',
   ...ADAPTER_SKIP_DIRS,
 ]);
 

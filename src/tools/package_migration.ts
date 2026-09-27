@@ -22,6 +22,7 @@
  *     （prefix 目录不存在，to 目录已含源码）则只做内容重写、不移动。
  */
 
+import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { PackageMigrationSpec, RunningChangePlan } from './refactor_langs.js';
@@ -29,7 +30,7 @@ import { parseAstRoot, isTsJsExt, SOURCE_EXTS } from './ts_kernel/index.js';
 import type { SyntaxNodeLike } from './ts_kernel/index.js';
 
 const DEFAULT_SKIP = new Set([
-  '.git', 'node_modules', '.design-canvas', 'dist', 'build', 'target', '.venv', 'venv', '__pycache__', '.next', 'out',
+  '.git', 'node_modules', DATA_DIR_NAME, 'dist', 'build', 'target', '.venv', 'venv', '__pycache__', '.next', 'out',
 ]);
 
 /** 默认可迁移的源码扩展名 —— 来自内核唯一权威（`ts_kernel/source_exts.ts`） */

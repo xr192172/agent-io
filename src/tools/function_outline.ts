@@ -9,6 +9,7 @@
  * 缓存定位顺序（复用 overview.tryDeriveFeatureTree 同款）：
  *   import_cache_<feature>.db（dataHome） > <source_root>/.design-canvas/cache.db > cwd/.design-canvas/cache.db
  */
+import { DATA_DIR_NAME } from '../data_dir.js';
 import path from 'node:path';
 import fs from 'node:fs';
 import { getStorageRoot, getDSL } from '../storage.js';
@@ -65,8 +66,8 @@ function filePathFromId(nodeId: string): string {
 export function resolveFunctionCacheDb(feature?: string, sourceRoot?: string): string | null {
   const candidates: string[] = [
     feature ? path.join(getStorageRoot(), `import_cache_${feature}.db`) : '',
-    sourceRoot ? path.join(sourceRoot, '.design-canvas', 'cache.db') : '',
-    path.join(process.cwd(), '.design-canvas', 'cache.db'),
+    sourceRoot ? path.join(sourceRoot, DATA_DIR_NAME, 'cache.db') : '',
+    path.join(process.cwd(), DATA_DIR_NAME, 'cache.db'),
   ];
   return candidates.find((p) => p && fs.existsSync(p)) ?? null;
 }

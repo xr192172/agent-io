@@ -1,3 +1,4 @@
+import { DATA_DIR_NAME } from '../../src/data_dir.js';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtempSync, rmSync, writeFileSync, mkdirSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -155,7 +156,7 @@ describe('overlay 增量对账（design DSL 不再随真相刷新丢失设计意
       version: 1, feature: 'f',
       anchors: { file_a: { path: 'src/a.ts', kind: 'file', decision: { summary: '决策A' } } },
     };
-    const file = path.join(home, '.design-canvas', 'features', 'f.overlay.json');
+    const file = path.join(home, DATA_DIR_NAME, 'features', 'f.overlay.json');
     mkdirSync(path.dirname(file), { recursive: true });
     writeFileSync(file, JSON.stringify(overlay));
     const readBack = JSON.parse(readFileSync(file, 'utf-8'));

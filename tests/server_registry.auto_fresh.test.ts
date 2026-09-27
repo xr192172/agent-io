@@ -10,6 +10,7 @@
  *   - `noAutoFresh` 的工具（index_integrity）**不被**自动保鲜（refresh:false 必须纯只读）
  *   - 无索引的项目 ⇒ 不冷启（绝不因为一次调用就建索引）
  */
+import { DATA_DIR_NAME } from '../src/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -56,7 +57,7 @@ function diskSize(root: string, rel: string): number {
 }
 
 function indexedSize(root: string, rel: string): number | undefined {
-  const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+  const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
   const row = db.prepare('SELECT size FROM files WHERE path = $p').get({ p: rel }) as { size: number } | undefined;
   db.close();
   return row?.size;
@@ -68,7 +69,7 @@ describe('L3① 自动保鲜（registerAllTools 唯一入口）', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'autofresh-'));
     put(root, 'src/a.ts', 'export function alpha(): number {\n  return 1;\n}\n');
     put(root, 'src/b.ts', 'export function beta(): number {\n  return 2;\n}\n');
-    const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
     await importProject({ project_dir: root, feature: 'autofresh', cache_db: db });
     db.close();
 
@@ -91,7 +92,7 @@ describe('L3① 自动保鲜（registerAllTools 唯一入口）', () => {
 
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'autofresh-ro-'));
     put(root, 'src/a.ts', 'export function alpha(): number {\n  return 1;\n}\n');
-    const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
     await importProject({ project_dir: root, feature: 'autofresh_ro', cache_db: db });
     db.close();
 
@@ -122,7 +123,7 @@ describe('L3① 自动保鲜（registerAllTools 唯一入口）', () => {
     const bare = fs.mkdtempSync(path.join(os.tmpdir(), 'autofresh-none2-'));
     put(bare, 'src/a.ts', 'export function alpha(): number {\n  return 1;\n}\n');
     await tools.get('index_integrity')!({ project_dir: bare, refresh: false });
-    expect(fs.existsSync(path.join(bare, '.design-canvas', 'cache.db'))).toBe(false);
+    expect(fs.existsSync(path.join(bare, DATA_DIR_NAME, 'cache.db'))).toBe(false);
     roots.push(root, bare);
   });
 });

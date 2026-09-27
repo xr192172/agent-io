@@ -18,6 +18,7 @@
  * 事后诊断（进程已死但 pidfile 残留 → 覆盖）。
  */
 
+import { DATA_DIR_NAME } from '../data_dir.js';
 import { execFile } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -195,8 +196,8 @@ function scheduleLoopTrigger(projectDir: string, broadcast: (event: string, data
   const dataDir = path.join(projectDir, '.agent', 'observe');
   const proposalsDir = path.join(dataDir, 'proposals');
   const before = new Set(fs.existsSync(proposalsDir) ? fs.readdirSync(proposalsDir) : []);
-  const eventsPath = path.join(projectDir, '.design-canvas', 'observe', 'events.jsonl');
-  const ledgerPath = path.join(projectDir, '.design-canvas', 'impact', 'ledger.json');
+  const eventsPath = path.join(projectDir, DATA_DIR_NAME, 'observe', 'events.jsonl');
+  const ledgerPath = path.join(projectDir, DATA_DIR_NAME, 'impact', 'ledger.json');
   const bin = findObserveDslBin();
   const args = [
     '--project-root', projectDir,

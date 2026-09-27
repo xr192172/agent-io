@@ -8,6 +8,7 @@
  *   - Go 保守：空导入 `_` / 点导入 `.` 恒活。
  *   - 目录扫描：自动递归扫 TS/Go 源；files 显式收敛。
  */
+import { DATA_DIR_NAME } from '../../src/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -225,7 +226,7 @@ describe('detectDeadImports：目录扫描', () => {
     fs.mkdirSync(path.join(dir, 'src'), { recursive: true });
     fs.writeFileSync(path.join(dir, 'src', 'a.ts'), "import _ from 'lodash';\nexport const a = 1;\n", 'utf-8');
     // 快照/备份目录：同样的死 import 副本，绝不该被计入
-    for (const snap of ['.design-canvas', '.design-canvas.bak-20260830-122215']) {
+    for (const snap of [DATA_DIR_NAME, '.design-canvas.bak-20260830-122215']) {
       const snapSrcDir = path.join(dir, snap, 'projects', 'design-canvas', 'src');
       fs.mkdirSync(snapSrcDir, { recursive: true });
       fs.writeFileSync(path.join(snapSrcDir, 'a.ts'), "import _ from 'lodash';\nexport const a = 1;\n", 'utf-8');

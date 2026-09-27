@@ -14,6 +14,7 @@
  * 供 LLM 在交互中直接开启"项目保鲜"，两者共享 cache.db 与 live/ 目录。
  */
 
+import { DATA_DIR_NAME } from '../data_dir.js';
 import path from 'node:path';
 import { getProjectCacheDb } from '../db/db.js';
 import { importProject } from './import_project.js';
@@ -344,7 +345,7 @@ export interface WatchProjectToolResult {
 function ensureObserveSink(projectRoot: string): void {
   if (process.env.OBSERVE_EVENTS_FILE) return; // serve/哨兵已配置，复用全局
   if (hasGlobalProbeSink()) return;
-  const eventsPath = TSProbeCapture.pathFor(path.join(projectRoot, '.design-canvas', 'observe'));
+  const eventsPath = TSProbeCapture.pathFor(path.join(projectRoot, DATA_DIR_NAME, 'observe'));
   setGlobalProbeSink(new TSProbeCapture(eventsPath));
 }
 

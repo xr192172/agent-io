@@ -19,6 +19,7 @@
  *   - suggestions：文本建议（只给证据 + 启发，落不落盘由人/LLM 裁决）
  */
 
+import { DATA_DIR_NAME } from '../data_dir.js';
 import path from 'node:path';
 import { openDb, type Database } from '../db/db.js';
 
@@ -560,7 +561,7 @@ export function analyzeMonolith(input: AnalyzeMonolithInput): AnalyzeMonolithRes
   const maxIter = input.max_iter ?? 12;
 
   const projectRoot = path.resolve(input.project_dir);
-  const dbPath = path.join(projectRoot, '.design-canvas', 'cache.db');
+  const dbPath = path.join(projectRoot, DATA_DIR_NAME, 'cache.db');
   let db: Database | null = null;
   let opened = false;
   try {

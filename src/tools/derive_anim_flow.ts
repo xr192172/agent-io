@@ -15,6 +15,7 @@
  * 幂等：本工具只读既有 detail 节点，重跑清理重建自身前缀的 flows，不动手写 flows。
  */
 
+import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { AnimationBranch, AnimationError, AnimationFlow, AnimationValueSchema } from '../dsl/animation.js';
@@ -151,7 +152,7 @@ async function readCrossCalls(
   const relPath = path.relative(projectRoot, filePath).split(path.sep).join('/') || path.basename(filePath);
   let dbPath: string | null = null;
   for (let dir = path.resolve(projectRoot); dir && dir !== path.dirname(dir); dir = path.dirname(dir)) {
-    const cand = path.join(dir, '.design-canvas', 'cache.db');
+    const cand = path.join(dir, DATA_DIR_NAME, 'cache.db');
     if (fs.existsSync(cand)) {
       dbPath = cand;
       break;

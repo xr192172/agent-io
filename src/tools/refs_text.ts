@@ -16,6 +16,7 @@
  * 纯文本扫描：不依赖 AST、不写任何文件。
  */
 
+import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { SOURCE_EXTS } from './ts_kernel/index.js';
@@ -52,7 +53,7 @@ function specifierCandidates(rel: string): string[] {
 }
 
 /** 该文件是否是"值得扫的源码文件"（与 walkFiles 口径一致：跳过依赖/产物/测试夹具目录） */
-const SKIP_DIR = new Set(['node_modules', 'dist', '.git', '.design-canvas', 'build', 'out', 'coverage']);
+const SKIP_DIR = new Set(['node_modules', 'dist', '.git', DATA_DIR_NAME, 'build', 'out', 'coverage']);
 /** ★ 来自内核唯一权威 `SOURCE_EXTS`（`ts_kernel/source_exts.ts`）—— 此前这里手写 11 个，
  *  而仓内同一问题另有 5 份不同答案（7/8/12/14/15）⇒ 口径随工具而变；统一后只增不减。 */
 const SRC_EXT = new Set<string>(SOURCE_EXTS);

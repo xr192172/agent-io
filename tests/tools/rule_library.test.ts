@@ -12,6 +12,7 @@
  *   6. 棘轮：无基线 ⇒ 存量算新增；有基线 ⇒ 未增加即通过，新增才 fail。
  */
 
+import { DATA_DIR_NAME } from '../../src/data_dir.js';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -465,11 +466,11 @@ describe('rule_apply：三态 + todo 注释', () => {
   it('collectRuleTargets：排除我们自己的派生物目录 / node_modules / third_party', () => {
     fs.mkdirSync(path.join(root, 'src'), { recursive: true });
     fs.mkdirSync(path.join(root, 'node_modules', 'x'), { recursive: true });
-    fs.mkdirSync(path.join(root, '.design-canvas', 'rules'), { recursive: true });
+    fs.mkdirSync(path.join(root, DATA_DIR_NAME, 'rules'), { recursive: true });
     fs.mkdirSync(path.join(root, 'third_party', 'archify'), { recursive: true });
     fs.writeFileSync(path.join(root, 'src', 'a.ts'), 'a();', 'utf8');
     fs.writeFileSync(path.join(root, 'node_modules', 'x', 'b.ts'), 'b();', 'utf8');
-    fs.writeFileSync(path.join(root, '.design-canvas', 'rules', 'c.ts'), 'c();', 'utf8');
+    fs.writeFileSync(path.join(root, DATA_DIR_NAME, 'rules', 'c.ts'), 'c();', 'utf8');
     fs.writeFileSync(path.join(root, 'third_party', 'archify', 'd.ts'), 'd();', 'utf8');
     fs.writeFileSync(path.join(root, 'src', 'e.md'), 'not code', 'utf8');
     expect(collectRuleTargets(root)).toEqual(['src/a.ts']);

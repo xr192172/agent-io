@@ -13,6 +13,7 @@
  *   环境变量覆盖：LLM_API_KEY / LLM_MODEL / LLM_BASE_URL
  */
 
+import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -35,7 +36,7 @@ export function getConfigHome(): string {
 
 /** 写入/新位置：<configHome>/.design-canvas/config.json（默认用户主目录） */
 export function configFilePath(): string {
-  return path.join(getConfigHome(), '.design-canvas', 'config.json');
+  return path.join(getConfigHome(), DATA_DIR_NAME, 'config.json');
 }
 
 /**
@@ -45,7 +46,7 @@ export function configFilePath(): string {
 export function configFileReadPath(): string {
   const home = configFilePath();
   if (fs.existsSync(home)) return home;
-  const legacy = path.join(storage.getDataHome(), '.design-canvas', 'config.json');
+  const legacy = path.join(storage.getDataHome(), DATA_DIR_NAME, 'config.json');
   return legacy !== home && fs.existsSync(legacy) ? legacy : home;
 }
 

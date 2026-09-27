@@ -10,6 +10,7 @@
  *   - confidence 封顶 0.7（静态判定无 runtime 证据）
  *   - dry-run（write_dsl=false）不写 DSL；feature 写回 SemanticFile.contract
  */
+import { DATA_DIR_NAME } from '../../src/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -61,7 +62,7 @@ async function makeProject(feature?: string): Promise<string> {
     'src/util.ts',
     `export interface Point {\n  x: number;\n  y?: string;\n  calc(a: number): void;\n}\n\nexport function format(s: string): string {\n  return '[' + s + ']';\n}\n`,
   );
-  const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+  const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
   await importProject({ project_dir: root, feature, cache_db: db });
   db.close();
   return root;
@@ -220,7 +221,7 @@ async function makeEffectsProject(): Promise<string> {
       '}',
     ].join('\n'),
   );
-  const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+  const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
   await importProject({ project_dir: root, cache_db: db });
   db.close();
   return root;
@@ -269,7 +270,7 @@ async function makeGoEffectsProject(): Promise<string> {
       '}',
     ].join('\n'),
   );
-  const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+  const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
   await importProject({ project_dir: root, cache_db: db });
   db.close();
   return root;
@@ -361,7 +362,7 @@ async function makePyProject(): Promise<string> {
     'src/main.py',
     'import os\nfrom model import User\n\ndef run():\n    u = User()\n    u.age = 1\n    return u.greet()\n',
   );
-  const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+  const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
   await importProject({ project_dir: root, cache_db: db });
   db.close();
   return root;

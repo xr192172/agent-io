@@ -8,6 +8,7 @@
  * 沿 callees 摸到被引用的类型。
  */
 
+import { DATA_DIR_NAME } from '../../src/data_dir.js';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -64,7 +65,7 @@ beforeEach(async () => {
   writeProjectFile('src/util.ts', UTIL_TS);
   writeProjectFile('src/service.ts', SERVICE_TS);
   writeProjectFile('src/main.ts', MAIN_TS);
-  db = openDb(path.join(dir, '.design-canvas', 'cache.db'));
+  db = openDb(path.join(dir, DATA_DIR_NAME, 'cache.db'));
   await syncProject(db, dir, files());
 });
 

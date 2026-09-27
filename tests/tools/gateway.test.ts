@@ -8,6 +8,7 @@
  * - testProvider 连通性（不计入用量）
  * - OpenAI 兼容端点：400 / 503 / 200 / 502
  */
+import { DATA_DIR_NAME } from '../../src/data_dir.js';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -151,7 +152,7 @@ describe('AGNES 环境变量种子引导', () => {
   });
 
   it('损坏的 gateway.json → 按空配置处理，不抛异常', () => {
-    const dir = path.join(tmpHome, '.design-canvas');
+    const dir = path.join(tmpHome, DATA_DIR_NAME);
     fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(path.join(dir, 'gateway.json'), '{broken json', 'utf-8');
     expect(ensureSeededFromEnv()).toBe(false);

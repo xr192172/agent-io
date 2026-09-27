@@ -7,6 +7,7 @@
  *   - appendPendingAlerts：无未读原样 / 有未读追加+清空 / watch_project 跳过（自带 piggyback）
  *   - 集成：watch impact_on_change → 改文件 → 任意工具响应文本自动带提醒（一次投递）
  */
+import { DATA_DIR_NAME } from '../../src/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -100,7 +101,7 @@ describe('alert_inbox · watch 集成（真实 fs.watch）', () => {
       };
       put('src/a.ts', `import { b } from './b';\nexport function a(x: number): number { return b(x); }\n`);
       put('src/b.ts', `export function b(x: number): number { return x * 2; }\n`);
-      const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+      const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
       await importProject({ project_dir: root, feature: 'ai_watch', cache_db: db });
       db.close();
 

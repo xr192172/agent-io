@@ -12,6 +12,7 @@
  * 500+ 单测（针对纯函数）不受影响。
  */
 
+import { DATA_DIR_NAME } from './data_dir.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { makeCapabilityMapHandler, LANE_IDS, type LaneId } from './tools/capability_map.js';

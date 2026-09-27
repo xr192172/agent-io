@@ -27,6 +27,7 @@
  * 若平台抛错（旧 Linux），降级为非递归 + 手动注册子目录。
  */
 
+import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { Database } from '../db/db.js';
@@ -41,7 +42,7 @@ import { isIndexIncomplete } from './index_backfill.js';
 
 /** 忽略的目录名（任意层级命中即跳过整棵子树） */
 const IGNORE_DIRS = new Set([
-  '.design-canvas', 'node_modules', '.git', '.svn', '.hg', 'dist', 'build', 'out',
+  DATA_DIR_NAME, 'node_modules', '.git', '.svn', '.hg', 'dist', 'build', 'out',
   'vendor', '__pycache__', 'coverage', 'target', 'bin', 'obj',
   '.next', '.nuxt', '.venv', 'venv', '.idea', '.vscode', '.backup', 'scaffold',
   '.pytest_cache', '.mypy_cache', '.tox', 'egg-info',

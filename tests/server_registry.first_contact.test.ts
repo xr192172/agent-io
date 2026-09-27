@@ -17,6 +17,7 @@
  *   - `noAutoFresh` 工具不触发 ⇒ 由 tests/server_registry.auto_fresh.test.ts
  *     第 3 项覆盖（index_integrity 于无索引项目不建库），此处不重复。
  */
+import { DATA_DIR_NAME } from '../src/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -77,7 +78,7 @@ async function until(cond: () => boolean, timeoutMs = 15000): Promise<void> {
 }
 
 function indexedCount(root: string): number {
-  const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+  const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
   const row = db.prepare('SELECT COUNT(*) AS c FROM files').get() as { c: number };
   db.close();
   return row.c;
@@ -93,7 +94,7 @@ describe('首次接触 ⇒ 后台建索引（registerAllTools 唯一入口）', 
     expect(r.content[0].text).toContain('后台建索引进行中');
     expect(r.content[0].text).toContain('可能不全');
     // 库已被后台首接触建出来
-    expect(fs.existsSync(path.join(root, '.design-canvas', 'cache.db'))).toBe(true);
+    expect(fs.existsSync(path.join(root, DATA_DIR_NAME, 'cache.db'))).toBe(true);
   });
 
   it('后台真的把索引补完（"对 LLM 免费"的那部分要真的发生）', async () => {
@@ -125,7 +126,7 @@ describe('首次接触 ⇒ 后台建索引（registerAllTools 唯一入口）', 
       put(root, 'src/a.ts', 'export function alpha(): number {\n  return 1;\n}\n');
       const note = firstContactBackfill(root);
       expect(note).toBe('');
-      expect(fs.existsSync(path.join(root, '.design-canvas', 'cache.db'))).toBe(false);
+      expect(fs.existsSync(path.join(root, DATA_DIR_NAME, 'cache.db'))).toBe(false);
       expect(backfillState(root)).toBeNull();
     } finally {
       if (prev === undefined) delete process.env.DC_AUTO_BACKFILL;
@@ -137,6 +138,6 @@ describe('首次接触 ⇒ 后台建索引（registerAllTools 唯一入口）', 
     const ghost = path.join(os.tmpdir(), 'fc-ghost-' + Date.now());
     roots.push(ghost); // 不会被创建；stopBackfill 幂等无害
     expect(firstContactBackfill(ghost)).toBe('');
-    expect(fs.existsSync(path.join(ghost, '.design-canvas', 'cache.db'))).toBe(false);
+    expect(fs.existsSync(path.join(ghost, DATA_DIR_NAME, 'cache.db'))).toBe(false);
   });
 });

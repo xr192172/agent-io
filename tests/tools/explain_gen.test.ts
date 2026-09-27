@@ -8,6 +8,7 @@
  *   - 空/损坏文件 → 返回空对象（不抛错）
  *   - 校验三档字段缺失时丢弃该条
  */
+import { DATA_DIR_NAME } from '../../src/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -36,7 +37,7 @@ describe('explain_gen 持久化', () => {
     ]);
     expect(file).toBe(getExplainGenFile());
     expect(fs.existsSync(file)).toBe(true);
-    expect(file.startsWith(path.join(root, '.design-canvas'))).toBe(true);
+    expect(file.startsWith(path.join(root, DATA_DIR_NAME))).toBe(true);
 
     const map = loadGeneratedNarrations();
     expect(map['入口：MCP 服务']).toEqual({ newbie: 'n', pm: 'p', senior: 's' });

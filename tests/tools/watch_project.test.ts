@@ -7,6 +7,7 @@
  *   - flushBatch：批量去重 + 跨文件调用重解析收尾
  *   - 重复同步未变：syncFile 内部 skipped（node_count=0），不重复解析
  */
+import { DATA_DIR_NAME } from '../../src/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -39,7 +40,7 @@ async function makeProject(feature: string): Promise<{ root: string; db: ReturnT
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'watch-'));
   roots.push(root);
   put(root, 'src/auth.ts', `export function login(user: string, pass: string): boolean {\n  return user === 'admin' && pass === 'x';\n}\n`);
-  const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+  const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
   await importProject({ project_dir: root, feature, cache_db: db });
   return { root, db };
 }
@@ -303,7 +304,7 @@ describe('★ 拼图边界闸 scopeToIndex', () => {
   it('索引为空时自动退回全处理（零前置 + watch 不能什么都不做）', async () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'watch-empty-'));
     roots.push(root);
-    const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
     put(root, 'src/a.ts', `export const a = 1;\n`);
     const s = await flushBatch(db, root, ['src/a.ts'], { scopeToIndex: true });
     expect(s.changed).toBe(1);

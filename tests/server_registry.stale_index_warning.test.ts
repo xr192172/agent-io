@@ -12,6 +12,7 @@
  *   - 恢复一致后再变旧 ⇒ 能**重新报**一次（状态机不能卡死）
  *   - 待消费自写登记 ⇒ 也算"陈旧"（同步工具那条链路的可见性）
  */
+import { DATA_DIR_NAME } from '../src/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -45,7 +46,7 @@ async function makeIndexed(tag: string): Promise<string> {
   roots.push(root);
   put(root, 'src/a.ts', 'export function alpha(): number {\n  return 1;\n}\n');
   put(root, 'src/b.ts', 'export function beta(): number {\n  return 2;\n}\n');
-  const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+  const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
   await importProject({ project_dir: root, feature: `staleidx_${tag}`, cache_db: db });
   db.close();
   return root;
@@ -58,7 +59,7 @@ beforeEach(() => {
 describe('detectStaleIndex（同步、只 stat）', () => {
   it('与磁盘一致 ⇒ stale=0；改一个文件 ⇒ stale≥1 且列出样例', async () => {
     const root = await makeIndexed('probe');
-    const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
     const clean = detectStaleIndex(db, root);
     expect(clean.stale).toBe(0);
     expect(clean.total).toBeGreaterThanOrEqual(2);
@@ -73,7 +74,7 @@ describe('detectStaleIndex（同步、只 stat）', () => {
 
   it('待消费的自写登记被计入 selfWritesPending', async () => {
     const root = await makeIndexed('selfw');
-    const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
     expect(detectStaleIndex(db, root).selfWritesPending).toBe(0);
     recordSelfWrite(root, ['src/a.ts'], 'test');
     expect(detectStaleIndex(db, root).selfWritesPending).toBe(1);
@@ -82,7 +83,7 @@ describe('detectStaleIndex（同步、只 stat）', () => {
 
   it('大仓保护：文件多时抽样（sampled=true），不是取前缀', async () => {
     const root = await makeIndexed('sample');
-    const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
     const p = detectStaleIndex(db, root, { maxScan: 1 });
     expect(p.sampled).toBe(true);
     expect(p.total).toBeGreaterThanOrEqual(2);
@@ -123,7 +124,7 @@ describe('staleIndexWarning（响应注入层）', () => {
     put(root, 'src/a.ts', 'export function alpha(): number {\n  return 700;\n}\n');
     expect(staleIndexWarning({ project_dir: root })).toContain('STALE INDEX');
     // 用保鲜修好（importProject 全量重同步）
-    const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
     await importProject({ project_dir: root, feature: 'staleidx_recover2', cache_db: db });
     db.close();
     // 5s 缓存会挡住 → 清掉缓存模拟"下一轮"

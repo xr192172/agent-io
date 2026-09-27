@@ -10,6 +10,7 @@
  *   - 链式合并 → 同文件连续两次编辑合成净差异（加了又删 = 净无）
  *   - 首次导入 → 无 diff 行，回退文件级
  */
+import { DATA_DIR_NAME } from '../../src/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -56,7 +57,7 @@ async function makeProject(): Promise<{ root: string; db: Database; b0Hash: stri
   put(root, 'src/b.ts', B0);
   put(root, 'src/a.ts', `import { b1 } from './b';\nexport function a(x: number): number { return b1(x); }\n`);
   put(root, 'src/e.ts', `import { b2 } from './b';\nexport function e(x: number): number { return b2(x) + 9; }\n`);
-  const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+  const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
   dbs.push(db);
   await syncProject(db, root, ['src/b.ts', 'src/a.ts', 'src/e.ts'].map((f) => path.join(root, f)));
   return { root, db, b0Hash: crypto.createHash('sha1').update(B0, 'utf-8').digest('hex') };

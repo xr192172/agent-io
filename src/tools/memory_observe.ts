@@ -15,6 +15,7 @@
  * CDP 传输：Node >= 22 用全局 WebSocket；更老运行时回退动态 import('ws')。
  * 目标解析：target 直接给目标进程的 --inspect 端口；可用配套 memory_targets 工具自动列出。
  */
+import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFile } from 'node:child_process';
@@ -237,7 +238,7 @@ export async function memoryObserveHandler(args: Record<string, unknown>): Promi
       data = { port, ...gcResult };
     } else if (action === 'snapshot') {
       lines.push(`[快照 · 端口 ${port}] ${fmt(await sample(c), t0)}`);
-      const dir = args.project_dir ? path.join(path.resolve(String(args.project_dir)), '.design-canvas') : process.cwd();
+      const dir = args.project_dir ? path.join(path.resolve(String(args.project_dir)), DATA_DIR_NAME) : process.cwd();
       const file = path.join(dir, `heap-${port}-${Date.now()}.heapsnapshot`);
       const bytes = await snapshotToFile(c, file);
       lines.push(`heap snapshot 已写: ${file}（${(bytes / 1048576).toFixed(1)}MB，用 Chrome DevTools 加载或与另一份做 heap diff）`);

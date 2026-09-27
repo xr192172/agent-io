@@ -6,6 +6,7 @@
  *   ① **key 一定插得出来**：推荐点取自插桩器的 dry-run 站点（probe 字段），不是自己拼的字符串
  *   ② **预算裁剪**：按分数取前 N，超出的如实报 truncated（不搞第二套存储策略）
  */
+import { DATA_DIR_NAME } from '../../src/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -61,7 +62,7 @@ async function makeProject(feature: string): Promise<string> {
   const big = Array.from({ length: 45 }, (_, i) => `  const v${i} = ${i};`).join('\n');
   put(root, 'src/big.ts', `export function bigFn(): number {\n${big}\n  return 0;\n}\n`);
 
-  const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+  const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
   await importProject({ project_dir: root, feature, cache_db: db });
   db.close();
   return root;
@@ -70,7 +71,7 @@ async function makeProject(feature: string): Promise<string> {
 describe('observe_points 推荐器', () => {
   it('推荐点都带 score 与 reasons；高被引用函数的 enter/exit 在列', async () => {
     const root = await makeProject('obsrec_basic');
-    const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
     try {
       const r = await recommendObservePoints(db, root, { write: false });
       expect(r.points.length).toBeGreaterThan(0);
@@ -91,7 +92,7 @@ describe('observe_points 推荐器', () => {
 
   it('★ key 一定插得出来：每个 key 都是插桩器 dry-run 的站点名（probe 字段），不是拼的', async () => {
     const root = await makeProject('obsrec_keys');
-    const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
     try {
       const r = await recommendObservePoints(db, root, { write: false });
       // 推荐点必须命中 `<mod>.<fn>.<suffix>` 形状（插桩器的契约口径）
@@ -106,7 +107,7 @@ describe('observe_points 推荐器', () => {
 
   it('副作用 / 静默吞错 / 复杂度 三类信号都能命中对应文件', async () => {
     const root = await makeProject('obsrec_signals');
-    const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
     try {
       const r = await recommendObservePoints(db, root, { maxPoints: 200, write: false });
       const byFile = new Map<string, string[]>();
@@ -127,7 +128,7 @@ describe('observe_points 推荐器', () => {
 
   it('预算裁剪：maxPoints 生效且如实报 truncated', async () => {
     const root = await makeProject('obsrec_budget');
-    const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
     try {
       const all = await recommendObservePoints(db, root, { maxPoints: 500, write: false });
       expect(all.points.length).toBeGreaterThan(2);
@@ -144,7 +145,7 @@ describe('observe_points 推荐器', () => {
 
   it('★ focus 任务定向：命中优先（不被热点文件挤出预算），且「聚焦命中」理由只出现一次', async () => {
     const root = await makeProject('obsrec_focus');
-    const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
     try {
       const r = await recommendObservePoints(db, root, { write: false, focus: 'risky|store', maxPoints: 4 });
       expect(r.points.length).toBeGreaterThan(0);
@@ -163,10 +164,10 @@ describe('observe_points 推荐器', () => {
 
   it('write=true 落 observe-points.json（含 contractProbes，可人工编辑）', async () => {
     const root = await makeProject('obsrec_write');
-    const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
     try {
       const r = await recommendObservePoints(db, root);
-      const file = path.join(root, '.design-canvas', 'observe-points.json');
+      const file = path.join(root, DATA_DIR_NAME, 'observe-points.json');
       expect(fs.existsSync(file)).toBe(true);
       const j = JSON.parse(fs.readFileSync(file, 'utf8')) as { contractProbes: string[]; points: unknown[] };
       expect(j.contractProbes).toEqual(r.contractProbes);
@@ -180,7 +181,7 @@ describe('observe_points 推荐器', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'obsrec-empty-'));
     roots.push(root);
     put(root, 'notes.txt', 'not code\n');
-    const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
     try {
       const r = await recommendObservePoints(db, root, { write: false });
       expect(r.points).toEqual([]);

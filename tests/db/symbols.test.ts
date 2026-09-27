@@ -5,6 +5,7 @@
  * import 边在目标文件重同步后存活（文件节点 UPSERT 不删除的核心约定）、
  * 符号删除后 FTS 触发器同步、FTS5 trigram 搜索（中文/标识符子串）、removeFile 级联。
  */
+import { DATA_DIR_NAME } from '../../src/data_dir.js';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -54,7 +55,7 @@ function writeProjectFile(rel: string, content: string): string {
 
 beforeEach(() => {
   dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dc-db-test-'));
-  dbFile = path.join(dir, '.design-canvas', 'cache.db');
+  dbFile = path.join(dir, DATA_DIR_NAME, 'cache.db');
   writeProjectFile('a.ts', FILE_A);
   writeProjectFile('b.ts', FILE_B);
   db = openDb(dbFile);
@@ -356,8 +357,8 @@ describe('getProjectCacheDb - 项目缓存连接池', () => {
     const b1 = getProjectCacheDb(projB);
     expect(a1).toBe(a2);
     expect(a1).not.toBe(b1);
-    expect(fs.existsSync(path.join(projA, '.design-canvas', 'cache.db'))).toBe(true);
-    expect(fs.existsSync(path.join(projB, '.design-canvas', 'cache.db'))).toBe(true);
+    expect(fs.existsSync(path.join(projA, DATA_DIR_NAME, 'cache.db'))).toBe(true);
+    expect(fs.existsSync(path.join(projB, DATA_DIR_NAME, 'cache.db'))).toBe(true);
   });
 });
 

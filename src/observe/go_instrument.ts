@@ -10,6 +10,7 @@
  * 即需在其 go.mod 加 replace/require 指向 go-observe（插桩本身不校验，编译时见）。
  */
 
+import { DATA_DIR_NAME } from '../data_dir.js';
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -32,7 +33,7 @@ function scanDir(root: string): boolean {
   try { entries = fs.readdirSync(root, { withFileTypes: true }); } catch { return false; }
   for (const e of entries) {
     if (e.isDirectory()) {
-      if (e.name === '.design-canvas' || e.name === 'node_modules' || e.name === '.git' || e.name === 'bin') continue;
+      if (e.name === DATA_DIR_NAME || e.name === 'node_modules' || e.name === '.git' || e.name === 'bin') continue;
       if (scanDir(path.join(root, e.name))) return true;
     } else if (e.name.endsWith('.go') && !e.name.endsWith('_test.go')) {
       return true;

@@ -12,6 +12,7 @@
  *   或 npm run serve
  */
 
+import { DATA_DIR_NAME } from '../data_dir.js';
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -219,7 +220,7 @@ function handleApiLoad(_req: http.IncomingMessage, res: http.ServerResponse): vo
 
 function handleApiFeatures(_req: http.IncomingMessage, res: http.ServerResponse): void {
   try {
-    const featuresDir = path.join(process.cwd(), '.design-canvas', 'features');
+    const featuresDir = path.join(process.cwd(), DATA_DIR_NAME, 'features');
     if (!fs.existsSync(featuresDir)) {
       guard(res, '/api/features', 'features', { features: [] });
       return;
@@ -389,7 +390,7 @@ async function handleApiImport(req: http.IncomingMessage, res: http.ServerRespon
         return;
       }
       if (!feature) feature = sanitize(path.basename(abs));
-      const cacheDb = openDb(path.join(process.cwd(), '.design-canvas', `import_cache_${feature}.db`));
+      const cacheDb = openDb(path.join(process.cwd(), DATA_DIR_NAME, `import_cache_${feature}.db`));
       let imp;
       try {
         imp = await importProject({
@@ -423,7 +424,7 @@ async function handleApiImport(req: http.IncomingMessage, res: http.ServerRespon
     // 源码持久化到 .design-canvas/projects/<feature>/（重复导入整体替换旧快照）。
     // DSL.source_root 指向这里，巨石体检/影响面/一致性等读源功能据此定位文件。
     // 上传路径首段是用户所选文件夹名（webkitdirectory 特性），与 feature 命名重复，剥掉。
-    const projDir = path.join(process.cwd(), '.design-canvas', 'projects', feature);
+    const projDir = path.join(process.cwd(), DATA_DIR_NAME, 'projects', feature);
     if (fs.existsSync(projDir)) fs.rmSync(projDir, { recursive: true, force: true });
     for (const f of files) {
       const segs = f.path.split('/').filter(Boolean);
@@ -437,7 +438,7 @@ async function handleApiImport(req: http.IncomingMessage, res: http.ServerRespon
     }
 
     // 缓存 db 固定位置（跨重复导入增量复用），与项目目录生命周期解耦
-    const cacheDb = openDb(path.join(process.cwd(), '.design-canvas', `import_cache_${feature}.db`));
+    const cacheDb = openDb(path.join(process.cwd(), DATA_DIR_NAME, `import_cache_${feature}.db`));
     let imp;
     try {
       imp = await importProject({

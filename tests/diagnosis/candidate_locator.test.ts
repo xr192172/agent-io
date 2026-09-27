@@ -8,6 +8,7 @@
  * - 无缓存 → warnings + 空候选
  */
 
+import { DATA_DIR_NAME } from '../../src/data_dir.js';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -55,7 +56,7 @@ beforeEach(async () => {
   dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dc-cand-'));
   writeProjectFile('src/user.ts', USER_TS);
   writeProjectFile('src/config.ts', CONFIG_TS);
-  db = openDb(path.join(dir, '.design-canvas', 'cache.db'));
+  db = openDb(path.join(dir, DATA_DIR_NAME, 'cache.db'));
   await syncProject(db, dir, [path.join(dir, 'src', 'user.ts'), path.join(dir, 'src', 'config.ts')]);
 });
 
@@ -132,7 +133,7 @@ describe('candidate_locator 无缓存', () => {
   it('空库 → warnings + 空候选', () => {
     const emptyDir = fs.mkdtempSync(path.join(os.tmpdir(), 'dc-cand-empty-'));
     try {
-      const emptyDb = openDb(path.join(emptyDir, '.design-canvas', 'cache.db'));
+      const emptyDb = openDb(path.join(emptyDir, DATA_DIR_NAME, 'cache.db'));
       const r = locateCandidates(emptyDb, { project_dir: emptyDir, parsed: parsed({}) });
       expect(r.candidates).toEqual([]);
       expect(r.warnings.length).toBeGreaterThan(0);

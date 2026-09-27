@@ -9,6 +9,7 @@
  *   - Go：fmt=标准库 / github.com/x/y=三方 / example.com 内部包走闭包不算外部
  *   - 种子不在缓存 → 警告；feature 不存在 → 抛错
  */
+import { DATA_DIR_NAME } from '../../src/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -46,7 +47,7 @@ async function makeTsProject(feature: string): Promise<string> {
   );
   put(root, 'src/b.ts', `export function helperB(x: number): number {\n  return x * 2;\n}\n`);
   put(root, 'src/c.ts', `import { mainA } from './a';\n\nexport function mainC(x: number): string {\n  return mainA(x) + '!';\n}\n`);
-  const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+  const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
   await importProject({ project_dir: root, feature, cache_db: db });
   db.close();
   return root;
@@ -62,7 +63,7 @@ async function makeTypeOnlyProject(feature: string): Promise<string> {
     `import { helperB } from './b';\nimport type { useState } from 'react';\n\nexport function mainA(x: number): number {\n  return helperB(x);\n}\n`,
   );
   put(root, 'src/b.ts', `export function helperB(x: number): number {\n  return x * 2;\n}\n`);
-  const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+  const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
   await importProject({ project_dir: root, feature, cache_db: db });
   db.close();
   return root;
@@ -79,7 +80,7 @@ async function makeGoProject(feature: string): Promise<string> {
     'pkg/svc/svc.go',
     'package svc\n\nimport (\n\t"fmt"\n\t"github.com/x/y"\n\t"example.com/demo/pkg/model"\n)\n\nfunc GetUser() *model.User {\n\tfmt.Println(y.Tag())\n\treturn model.NewUser("alice")\n}\n',
   );
-  const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+  const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
   await importProject({ project_dir: root, feature, cache_db: db });
   db.close();
   return root;
@@ -155,7 +156,7 @@ describe('harvest_closure 积木拎取闭包', () => {
     const root = await makeGoProject('harvest_go_sibling');
     put(root, 'pkg/svc/svc2.go', 'package svc\n\n// Helper 与 svc.go 同包共享，无 import 边\nfunc Helper() int { return 7 }\n');
     put(root, 'pkg/svc/svc_test.go', 'package svc\n\nimport "testing"\n\nfunc TestHelper(t *testing.T) { _ = Helper() }\n');
-    const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
     await importProject({ project_dir: root, cache_db: db });
     db.close();
 

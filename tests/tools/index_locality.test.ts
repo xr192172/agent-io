@@ -7,6 +7,7 @@
  *   ③ 预算/深度停下时 `partial=true` 且 `stopReason` 如实（调用方必须标注覆盖度）
  *   ④ 入边方向也算一块（互相引用）
  */
+import { DATA_DIR_NAME } from '../../src/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -50,7 +51,7 @@ const countFiles = (db: ReturnType<typeof openDb>): number =>
 describe('ensureIndexAround 拼图式局部索引', () => {
   it('出边方向建块；(出边可自发现，入边只在"对方已索引"时可知 —— S1 的如实边界)', async () => {
     const root = makeChain();
-    const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
     try {
       // ① 先把 a.ts / e.ts 造成"已建好的拼图"
       await ensureIndexAround(db, root, ['src/a.ts', 'src/e.ts'], { depth: 0, maxFiles: 10 });
@@ -74,7 +75,7 @@ describe('ensureIndexAround 拼图式局部索引', () => {
 
   it('★ 文本反查补入边：**未索引的引用方也能被发现**（S1 的边界已被粗层补上）', async () => {
     const root = makeChain();
-    const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
     try {
       // 只从 b 进：a/e 还没被索引（图里没有它们的边）——靠文本反查发现
       const r = await ensureIndexAround(db, root, ['src/b.ts'], { depth: 3, maxFiles: 100 });
@@ -91,7 +92,7 @@ describe('ensureIndexAround 拼图式局部索引', () => {
 
   it('关掉 textScan → 回到"只靠图"的 S1 行为（未索引引用方看不见），如实标注', async () => {
     const root = makeChain();
-    const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
     try {
       const r = await ensureIndexAround(db, root, ['src/b.ts'], { depth: 3, maxFiles: 100, textScan: false });
       const idx = new Set((db.prepare('SELECT path FROM files').all() as Array<{ path: string }>).map((x) => x.path));
@@ -106,7 +107,7 @@ describe('ensureIndexAround 拼图式局部索引', () => {
 
   it('★ 深度不够时如实报 partial=depth（覆盖不完整不许装完整）', async () => {
     const root = makeChain();
-    const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
     try {
       const r = await ensureIndexAround(db, root, ['src/b.ts'], { depth: 1, maxFiles: 100 });
       expect(r.partial).toBe(true);
@@ -118,7 +119,7 @@ describe('ensureIndexAround 拼图式局部索引', () => {
 
   it('★ 第二次调用只缝合、零新建（已在索引里的文件不重新解析）', async () => {
     const root = makeChain();
-    const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
     try {
       const first = await ensureIndexAround(db, root, ['src/b.ts'], { depth: 2 });
       expect(first.newFiles).toBeGreaterThan(0);
@@ -134,7 +135,7 @@ describe('ensureIndexAround 拼图式局部索引', () => {
 
   it('预算封顶 → partial=true 且 stopReason=budget（覆盖度必须如实上报）', async () => {
     const root = makeChain();
-    const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
     try {
       const r = await ensureIndexAround(db, root, ['src/a.ts'], { depth: 3, maxFiles: 1 });
       expect(r.partial).toBe(true);
@@ -147,7 +148,7 @@ describe('ensureIndexAround 拼图式局部索引', () => {
 
   it('无种子 → no-seed；种子在项目外 → 忽略（不越界）', async () => {
     const root = makeChain();
-    const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
     try {
       const none = await ensureIndexAround(db, root, []);
       expect(none.stopReason).toBe('no-seed');

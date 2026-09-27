@@ -661,15 +661,48 @@ git remote、README/AGENTS/skills/文档正文。
 ★★ 顺带一条对 §9-D（P2）的提醒：**「品牌串残留门」与「G4 同族副本门」的 frozen 都登记了文件路径** ⇒
 P2 搬文件会同时打红两扇门。这是**有意的**（逼你在搬迁时同步登记表），但要在 P2 的族提交里预留这一步。
 
-### 10.6 执行步骤（按 playbook 8 步法）
+### 10.7 已执行：数据目录名**单点化**（值不变、零行为变化）—— 为改名把 193 处压成 1 处
 
-1. **建残留门**（§10.5）—— 先有判据。
-2. **给 `rename_symbols` 开"显式字面量对"入口**（§10.1）—— 复用它的 `decideLiteral` 判断。
-3. **跑 `report_literals` 出全量清单**，逐类决策：`apply`（机械替换）/ `contract`（**人审**：`DC_`/`dc-`/数据目录/环境变量）/ `history`（保留）。
-4. **改产物与契约**：`package.json`（name/bin/repository/bugs/homepage）、README/AGENTS、MCP server key、git remote。
-5. **目录/环境变量兼容**（§10.4）：读新优先 + 回退旧 + 弃用提示。
-6. **重桥**（用户已授权；`dsh-brain` 4 处耦合）。
-7. 验证：tsc + G1（契约） + 67=67 + 全量回归 + 残留门 frozen 收紧。
+改名要改的就是数据目录名，而它此前**硬写在 193 处、散在 130 个文件**（`storage.ts` / `db.ts` /
+`daemon.ts` / `observe/*` / `java_refactor/*` / 一堆 tools …）⇒ 直接改名**必然漏**，
+而且**没法加"旧名回退"的兼容层**（兼容逻辑要判断"新目录不存在而旧目录存在"，散落时无处安放）。
+
+⇒ 按"**先建单点，再改值**"：本轮只做**值不变**的单点化（纯重构，回归全绿即证零行为变化）：
+
+- 新增 `src/data_dir.ts`（唯一落点）：`DATA_DIR_NAME` / `DATA_DIR_NAME_LEGACY`（改名时启用回退）/
+  `DATA_DIR_NAMES`（迁移期新名与旧名并存，扫描跳过用）/ `dataDirOf` / `dataDirUnder` /
+  `isDataDirName` / `isUnderDataDir`。
+- **86 个文件 / 194 处**字面量改为引用常量（`src` + `tests`）。
+- 剩余**有意保留**：`scripts/*.mjs`（4 个：`demo` / `install_mcp` / `promote_design_canvas_mcp` / `setup`）
+  —— `.mjs` **不能 import TS**，改名那一步直接改这几处（已在残留门覆盖范围内）。
+- ★ 注意 `.design-canvas.json` 是**另一个东西**（保护清单文件名，`protect.ts`），与数据目录名无关，
+  本轮**刻意没动**；改名时单独决策。
+
+**实测数字**：
+
+| 指标 | 改前 | 改后 |
+|---|---|---|
+| `src`/`tests` 里独立字面量 `'.design-canvas'` | 193 + 4（反引号） | **2**（只剩 `data_dir.ts` 的两个常量声明） |
+| 品牌残留门存量 | 211 文件 / 759 处 | **175 文件 / 571 处** |
+
+★ 门在这一步**抓到一个真问题**（不是假阳）：新模块本身就构成"新增的旧名出现处" ——
+`DATA_DIR_NAME_LEGACY` **按设计必须永久保留旧名**（迁移期回退）⇒ 它进 `allowFiles`（写明理由），
+**不是**冻进存量、更不是删掉兼容层。
+★ 还修了门自己的一个 bug：**把"提示收紧基线"和"失败"混在同一条信息里 ⇒ 任何改善都会把门打红**
+（本轮减少 188 处时门就红了）。已改为分别断言 `added`/`grown`，`shrunk`/`cleared` 仅提示。
+
+### 10.6 执行步骤（按 playbook 8 步法）—— 进度
+
+1. ~~**建残留门**~~ ✅（§10.5，`1817617`）
+2. ~~**先建单点**：数据目录名单点化（值不变）~~ ✅（§10.7，本轮）
+3. **给 `rename_symbols` 开"显式字面量对"入口**（§10.1）—— 复用它的 `decideLiteral` 判断。
+   ⚠️ 这会**改到 inputSchema** ⇒ G1 会红，属**有意的契约变更**，要连带更新 G1 基线并在本台账登记。
+4. **跑 `report_literals` 出全量清单**，逐类决策：`apply`（机械替换）/ `contract`（**人审**：`DC_`/`dc-`/`.design-canvas.json`/环境变量）/ `history`（保留）。
+5. **改产物与契约**：`package.json`（name/bin/repository/bugs/homepage）、README/AGENTS、MCP server key、git remote。
+6. **启用兼容**：`DATA_DIR_NAME` 改新名 + `resolveDataDir()` 回退旧名；环境变量读新优先、回退旧、**弃用提示**；
+   顺带改 `scripts/*.mjs` 的 4 处。
+7. **重桥**（用户已授权；`dsh-brain` 4 处耦合）。
+8. 验证：tsc + G1（契约，需**有意更新**） + 67=67 + 全量回归 + 残留门 frozen 收紧到 **0**。
 
 > ⚠️ **`mcp__design-canvas__*` 的前缀**来自 client 配置的 **server key**，不是工具名 ⇒ 改它属于"配置层改名"，
 > **与 P4-F1（改工具名）是两件事**；本节的改名**不动任何工具名**，工具集快照 G1 应保持逐字不变。

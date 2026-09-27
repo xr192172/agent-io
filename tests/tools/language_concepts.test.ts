@@ -10,6 +10,7 @@
  *   - concepts 过滤 / files 过滤 / limit
  *   - 空缓存 / 无法打开缓存 → 提示性空结果
  */
+import { DATA_DIR_NAME } from '../../src/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -108,7 +109,7 @@ async function makeProject(feature: string): Promise<string> {
   put(root, 'src/bus.ts', `export function subscribe(event: string, cb: (d: unknown) => void): void {}\n`);
   put(root, 'src/fetch.ts', `export async function fetchData<T>(): Promise<T[]> { return [] as T[]; }\n`);
   put(root, 'src/plain.ts', `export function plain(): void {}\n`);
-  const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+  const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
   await importProject({ project_dir: root, feature, cache_db: db });
   db.close();
   return root;
@@ -167,7 +168,7 @@ describe('languageConcepts 批量检测', () => {
   it('符号缓存为空 → 提示性结果', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lc-empty-'));
     roots.push(root);
-    const db = openDb(path.join(root, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
     db.close();
     const r = languageConcepts({ project_dir: root });
     expect(r.matched).toBe(0);

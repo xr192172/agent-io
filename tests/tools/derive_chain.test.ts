@@ -13,6 +13,7 @@
  * - 错误：node 不存在 / 源文件缺失 / 无可用函数
  */
 
+import { DATA_DIR_NAME } from '../../src/data_dir.js';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -467,7 +468,7 @@ func Run(n int) int {
     setupHost('f_cross', 'branch.go');
     // 造项目缓存：tmpDir/.design-canvas/cache.db，插一条跨文件调用边（绕过外键）
     const { openDb } = await import('../../src/db/db');
-    const db = openDb(path.join(tmpDir, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(tmpDir, DATA_DIR_NAME, 'cache.db'));
     db.exec('PRAGMA foreign_keys = OFF');
     db.prepare(
       "INSERT INTO edges(source, target, kind, line, col, metadata) VALUES (?, ?, 'call', 6, NULL, ?)",
@@ -538,7 +539,7 @@ export function OtherFn(config: Cfg): boolean {
 `);
     setupHost('f_cross2', 'branch.go');
     const { openDb } = await import('../../src/db/db');
-    const db = openDb(path.join(tmpDir, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(tmpDir, DATA_DIR_NAME, 'cache.db'));
     db.exec('PRAGMA foreign_keys = OFF');
     db.prepare(
       "INSERT INTO edges(source, target, kind, line, col, metadata) VALUES (?, ?, 'call', 6, NULL, ?)",
@@ -572,7 +573,7 @@ export function OtherFn(config: Cfg): boolean {
     writeFixture('branch.go', BRANCH_FIXTURE);
     setupHost('f_cross3', 'branch.go');
     const { openDb } = await import('../../src/db/db');
-    const db = openDb(path.join(tmpDir, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(tmpDir, DATA_DIR_NAME, 'cache.db'));
     db.exec('PRAGMA foreign_keys = OFF');
     db.prepare(
       "INSERT INTO edges(source, target, kind, line, col, metadata) VALUES (?, ?, 'call', 6, NULL, ?)",
@@ -594,7 +595,7 @@ export function OtherFn(config: Cfg): boolean {
 `);
     setupHost('f_cross4', 'branch.go');
     const { openDb } = await import('../../src/db/db');
-    const db = openDb(path.join(tmpDir, '.design-canvas', 'cache.db'));
+    const db = openDb(path.join(tmpDir, DATA_DIR_NAME, 'cache.db'));
     db.exec('PRAGMA foreign_keys = OFF');
     db.prepare(
       "INSERT INTO edges(source, target, kind, line, col, metadata) VALUES (?, ?, 'call', 6, NULL, ?)",

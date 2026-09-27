@@ -30,6 +30,7 @@
  * 最后在文件顶部补 import。幂等：已注入过探针的文件跳过（检测探针标记）。
  */
 
+import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseAstRoot } from '../tools/ts_kernel/kernel.js';
@@ -306,7 +307,7 @@ const IO_CALLS: Record<string, string> = {
 /** 递归收集项目下所有 .ts 源文件（跳过 node_modules / dist / .git / .design-canvas） */
 export function collectTsFiles(root: string): string[] {
   const out: string[] = [];
-  const skip = new Set(['node_modules', 'dist', '.git', '.design-canvas', 'coverage', '.agent']);
+  const skip = new Set(['node_modules', 'dist', '.git', DATA_DIR_NAME, 'coverage', '.agent']);
   const walk = (dir: string) => {
     let entries: import('node:fs').Dirent[];
     try {

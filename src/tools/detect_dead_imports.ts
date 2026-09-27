@@ -22,6 +22,7 @@
  * dead_imports 步据此删除；也可单独交付给用户先看报告再拍板。
  */
 
+import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import {
@@ -77,7 +78,7 @@ function langOf(rel: string): 'go' | 'ts' | null {
 export function classifyFileKind(rel: string): FileKind {
   const p = rel.split(/[\\/]/);
   const base = p[p.length - 1] ?? '';
-  if (p.some((seg) => seg.startsWith('.design-canvas'))) return 'snapshot';
+  if (p.some((seg) => seg.startsWith(DATA_DIR_NAME))) return 'snapshot';
   if (/\.gen\.(ts|tsx|js|jsx|mjs|cjs|go)$/.test(base) || /\.generated\.|_generated\.go$/.test(base)) return 'generated';
   if (
     p.some((seg) => /^(fixtures?|__fixtures__|testdata|golden|snapshots)$/i.test(seg)) ||
@@ -121,7 +122,7 @@ export function scanProjectSourceFiles(project_dir: string, files?: string[]): s
       // 进一步排除 .design-canvas* 快照/备份目录（含 .design-canvas、.design-canvas.bak-<ts> 变体）：
       // 它们是项目自身历史快照的生成副本，扫进来会把每个 src 命中重复多倍，污染清理清单。
       if (ent.name === 'node_modules' || ent.name === '.git' || ent.name === 'dist' || ent.name === 'vendor') continue;
-      if (ent.isDirectory() && ent.name.startsWith('.design-canvas')) continue;
+      if (ent.isDirectory() && ent.name.startsWith(DATA_DIR_NAME)) continue;
       const p = path.join(dir, ent.name);
       // 跳过生成的源码产物（*.gen.ts 等），不参与"自研源码"判定
       if (ent.isDirectory()) walkDir(p);

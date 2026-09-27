@@ -8,6 +8,7 @@
  *   - 基线存取：baselinePathFor 路径规则；verify 无基线 → 报错
  */
 
+import { DATA_DIR_NAME } from '../../src/data_dir.js';
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -217,7 +218,7 @@ describe.skipIf(!hasPython)('behavior: 端到端 capture → 改代码 → verif
 describe('behavior: 基线存取', () => {
   it('baselinePathFor 路径规则', () => {
     const p = baselinePathFor('C:/proj', 'src/util/calc.py', 'add');
-    expect(p).toBe(path.join('C:/proj', '.design-canvas', 'behavior', 'src_util_calc__add.json'));
+    expect(p).toBe(path.join('C:/proj', DATA_DIR_NAME, 'behavior', 'src_util_calc__add.json'));
   });
 
   it('verify 无基线 → 报错', () => {

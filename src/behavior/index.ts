@@ -26,6 +26,7 @@
  *   - node 的 kwargs（JS 无关键字实参概念）以单个尾部 options 对象传入；无 kwargs 则不传。
  */
 
+import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -951,7 +952,7 @@ export function runHarness(spec: BehaviorSpec): BehaviorRun {
 /** 默认基线路径：<project_dir>/.design-canvas/behavior/<file>__<func>.json */
 export function baselinePathFor(project_dir: string, file: string, func: string): string {
   const safe = file.replace(/[^A-Za-z0-9_.-]/g, '_').replace(/\.[^.]+$/, '');
-  return path.join(project_dir, '.design-canvas', 'behavior', `${safe}__${func}.json`);
+  return path.join(project_dir, DATA_DIR_NAME, 'behavior', `${safe}__${func}.json`);
 }
 
 // ── capture / verify ─────────────────────────────────────────
