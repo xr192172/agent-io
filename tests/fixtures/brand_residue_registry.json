@@ -9,8 +9,7 @@
   "allowFiles": {
     "docs/architecture-refactor-plan.md": "本规划书自身：§7 历史条目记录的是当时在那个名字下发生的事（如 design-canvas 3,591 行拆到 574 行），改掉即篡改历史。改名完成后，正文与命令里的旧名要改、历史条目保留 —— 故整档进允许表，改名后人工复核。",
     "docs/tool-convergence.md": "历史决策/核验记录（本仓既有惯例：HISTORY_RE 不拦历史文档），保留旧名属正确原貌。",
-    "docs/refactor-playbook.md": "★ 它就是【记录改名程序本身的文档】（§8 全局串改名、§4.9 单点化暴露的问题），按定义必须引用旧名当例子。代价：它的命令行（如 cd /d/project_develop/design-canvas）不会被门盯着 —— 改名收尾时由人工统一复核这份文档。",
-    "src/data_dir.ts": "★ 兼容层的【唯一】旧名落点：DATA_DIR_NAME 是当前名、DATA_DIR_NAME_LEGACY 会永久保留旧名（迁移期回退用）。本模块**按设计必须**写出旧品牌串 —— 门在这里不该拦，否则兼容层无法存在。改名时只改 DATA_DIR_NAME 一处。"
+    "docs/refactor-playbook.md": "★ 它就是【记录改名程序本身的文档】（§8 全局串改名、§4.9 单点化暴露的问题），按定义必须引用旧名当例子。代价：它的命令行（如 cd /d/project_develop/design-canvas）不会被门盯着 —— 改名收尾时由人工统一复核这份文档。"
   },
   "frozen": {
     "AGENTS.md": 1,
@@ -63,6 +62,7 @@
     "src/behavior/index.ts": 1,
     "src/daemon/daemon.ts": 7,
     "src/daemon/memory_watch.ts": 1,
+    "src/data_dir.ts": 2,
     "src/db/db.ts": 5,
     "src/db/schema.ts": 1,
     "src/diagnosis/candidate_locator.ts": 1,
