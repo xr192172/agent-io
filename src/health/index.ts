@@ -295,8 +295,8 @@ function collectImportBinds(root: SyntaxNodeLike, lang: string): AstImportBind[]
   if (TS_FAMILY.has(lang)) {
     const walk = (n: SyntaxNodeLike): void => {
       if (n.type === 'import_statement') {
-        // import type {...} → 类型专用导入，v1 跳过（常作 re-export，避免噪音）
-        if (/^\s*import\s+type\b/.test(n.text)) return;
+        // import type {...} → 类型专用导入，不进未使用报告（见 TYPE_ONLY_IMPORT_RE）
+        if (TYPE_ONLY_IMPORT_RE.test(n.text)) return;
         const srcNode = n.childForFieldName('source');
         const module = srcNode ? stripQuotes(srcNode.text) : '';
         const line = n.startPosition.row + 1;
@@ -456,8 +456,8 @@ export function extractNamedImportsRegex(source: string): NamedImportRef[] {
     const line = i + 1;
     const t = raw.trim();
     if (!t || t.startsWith('#')) return;
-    // TS/JS: import type {...} → 类型专用导入，v1 跳过（常作 re-export，避免噪音）
-    if (/^import\s+type\b/.test(t)) return;
+    // TS/JS: import type {...} → 类型专用导入，不进未使用报告（与 AST 路径共用同一判据）
+    if (TYPE_ONLY_IMPORT_RE.test(t)) return;
     let m: RegExpMatchArray | null;
 
     // import def, { a, b as c } from 'm'
@@ -521,6 +521,23 @@ function unusedImportsInRegex(source: string): NamedImportRef[] {
 // ── 主分析 ───────────────────────────────────────────────────
 
 const TYPE_KINDS = new Set<ParsedSymbol['kind']>(['interface', 'type', 'class']);
+
+/**
+ * health 的**报告策略**：类型专用导入（`import type …`）不进"未使用 import"噪音 —— v1 决定
+ * （原注释逐字："类型专用导入，v1 跳过（常作 re-export，避免噪音）"）。
+ *
+ * ★ 为什么单列成常量：这条规则在本文件有**两条路径** —— AST 路径（`collectImportBinds`，tree-sitter 可用时）
+ *   与正则降级路径（`unusedImportsInRegex`，非 TS 家族 / 解析器不可用时）。
+ *   两条路径**必须给同一结论**，否则量具会在降级路径上换个答案；此前它们各写各的正则
+ *   （`/^\s*import\s+type\b/` 与 `/^import\s+type\b/`），是同一意图的第二、第三份副本。
+ *
+ * ⚠️ 与内核 `isTypeOnlyModuleStatement()` 的**有意差别**（不是漏改）：
+ *   内核那条回答"这条**依赖边**要不要算进依赖图"，覆盖 `export type … from` 与全 `type` 内联说明符；
+ *   本条回答"这条 import 要不要参与**未使用报告**"，只认 `import type …` 语句形式。
+ *   两个问题不同 ⇒ 判据不同。**别顺手把它们合并**，除非同时决定改报告策略。
+ *   该差别已登记在 `tests/fixtures/single_source_registry.json`（G4 同族登记表）。
+ */
+const TYPE_ONLY_IMPORT_RE = /^\s*import\s+type\b/;
 
 /**
  * 解析相对 import 到项目内文件（包导入/逃出项目根返回 null）。

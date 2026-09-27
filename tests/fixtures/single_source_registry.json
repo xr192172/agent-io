@@ -1,0 +1,47 @@
+{
+  "note": "G4 单一实现门（同族副本棘轮）的登记表。见 tests/single_source.test.ts。口径：存量不拦、新增即红。发现新家族就往 families 里加一条，intent 必须写清『同的是什么意图』。authority=null 表示权威实现尚未建立，则全部命中都算存量债务。pattern 是**字面量子串**（不是正则），在**非注释行**上计数。frozen 的收紧方式：UPDATE_SINGLE_SOURCE=1 ./node_modules/.bin/vitest run tests/single_source.test.ts",
+  "families": [
+    {
+      "id": "type-only-module-statement",
+      "intent": "识别 TS『运行时被整体擦除』的模块语句（import type / export type … from / 全 type 内联说明符）—— 回答『这条依赖边要不要算进依赖图』",
+      "authority": "src/tools/ts_kernel/kernel.ts",
+      "pattern": "import\\s+type\\b",
+      "frozen": {
+        "src/health/index.ts": 1,
+        "src/tools/ts_slim.ts": 1
+      }
+    },
+    {
+      "id": "import-candidate-index-list",
+      "intent": "specifier → 项目内文件的候选生成：目录 index 候选文件名清单",
+      "authority": "src/tools/ts_kernel/import_resolve.ts",
+      "pattern": "'index.ts', 'index.tsx', 'index.js', 'index.jsx'",
+      "frozen": {
+        "src/tools/project_root.ts": 1
+      }
+    },
+    {
+      "id": "source-extension-static-list",
+      "intent": "『什么算源码扩展名』—— 应为内核动态的 listSupportedExtensions() 派生，而非各处手写静态清单",
+      "authority": null,
+      "pattern": "'.ts', '.tsx', '.js'",
+      "frozen": {
+        "src/behavior/index.ts": 1,
+        "src/tools/contract_gate.ts": 1,
+        "src/tools/deprecate_offline.ts": 1,
+        "src/tools/import_project.ts": 1,
+        "src/tools/package_migration.ts": 2,
+        "src/tools/project_root.ts": 4,
+        "src/tools/refs_text.ts": 1,
+        "src/tools/rename_file.ts": 1,
+        "src/tools/rename_symbol.ts": 2,
+        "src/tools/rename_symbols.ts": 1,
+        "src/tools/rule_apply.ts": 1,
+        "src/tools/slim_brick.ts": 1,
+        "src/tools/symbol_move.ts": 1,
+        "src/tools/ts_kernel/import_resolve.ts": 1,
+        "src/version_upgrade/adapters/node.ts": 1
+      }
+    }
+  ]
+}

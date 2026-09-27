@@ -52,7 +52,7 @@
 | 阶段 | 内容 | 验收判据 | 风险 |
 |---|---|---|---|
 | **P0 修量具** | ①解析器统一成一份 ②可达根注入（`package.json` 按路径调的入口 + registry 派发表）③`import type` 不计分层违规 ④健康分去饱和 ⑤分层规则重划 | 体检在"已知好/已知坏"双夹具上给出**不同**读数；层违规非空且每条可解释 | 低（只动分析器） |
-| **P1 拆注册表** | `server_registry.ts` 3,586 行 → `registry/lanes/*.ts`，按既有 `LANE_IDS` 一 lane 一文件；`registerAllTools` 汇总；`capability_map` 从 lane 文件聚合 | **工具集快照逐字相同**；`readme_tools_gate` 仍 67=67；回归全绿 | 低（零行为变化） |
+| **P1 拆注册表** | `server_registry.ts` 3,586 行 → `registry/lanes/*.ts`，按既有 `LANE_IDS` 一 lane 一文件；`registerAllTools` 汇总；`capability_map` 从 lane 文件聚合 | **工具集快照逐字相同**（G1 ✅ 已就位）；`readme_tools_gate` 仍 67=67；回归全绿 | 低（零行为变化） |
 | **P2 拆抽屉** | `tools/` 200 文件按职责分层：`*_cli.ts`(17)→`surfaces/cli`、HTTP(`serve.ts` 等)→`surfaces/http`、库(`ts_kernel`/`ast_parser`/`project_root`/`db`)→`kernel`、工具定义→`features/<lane>/` | 每族搬完：回归全绿 + 无新增层违规（用 P0 修好的量具看） | **中高**（71k 行，必须一族一提交） |
 | **P3 抽字符串** | `renderer/scripts.ts` 6,209 + `styles.ts` 3,526 → 真资源文件，**复用既有 `gen_*_bundle.mjs` 机制** | playwright 渲染快照逐块对比无差异 | 中（先建快照基线） |
 | **P4 工具收敛** | **按仓内既有 `docs/tool-convergence.md` 走**（5 步核验纪律 + 已落地的 `gateway_provider`/`canvas_notes`/`manage_feature` 样板） | 该文档自身的验收口径 | 中（动对外契约，需你拍板） |
@@ -60,6 +60,30 @@
 
 **为什么 P1 在 P2 前**：P1 产出 lane 划分，正是 P2 的目标目录结构；且 P1 提供"工具集快照门"，
 使 P2 搬迁 71k 行时有一个**与文件位置无关**的验收判据。
+
+### P1 的执行顺序（实测摸清后写下，避免"直接按 lane 切线"踩空）
+
+`server_registry.ts` 的 3,586 行**不是**"一堆可以按 lane 切开的工具定义"。实测结构：
+
+| 区段 | 行 | 内容 | 归属 |
+|---|---|---|---|
+| 基础设施 | 150–442 | STALE BUILD / STALE SOURCE / 陈旧索引 / 首次接触 / 可信度附注 | 留在 `server_registry.ts` |
+| `ToolDef` 类型 | 446–468 | 接口 | → `registry/types.ts` |
+| 包装器 | 470–507 | `textOut` / `wrap` / `wrapData` | → `registry/plumbing.ts` |
+| **共享 handler** | 509–943 | **20 个 `const *Handler = wrap(...)`，约 430 行**，被跨 lane 复用 | → `registry/handlers.ts` |
+| `TOOL_DEFS` | 947–3527 | 67 条，其中 **45 条是内联闭包**（`handler: wrapData(async (a) => …)`） | → `registry/lanes/<lane>.ts` |
+| 注册 | 3522–3560 | `looseInputSchema` / `registerAllTools` | `looseInputSchema` → plumbing；`registerAllTools` 留下 |
+
+★ **所以不能直接切 lane**：lane 文件要用到那 20 个共享 handler 与三个包装器，而它们此刻都定义在
+`server_registry.ts` 里 ⇒ lane 文件 `import` 它就会**循环**（`server_registry` → lane → `server_registry`）。
+
+⇒ 正确顺序（每步一提交、每步过 G1 + 回归）：
+1. **P1a**：抽 `registry/types.ts` + `registry/plumbing.ts` + `registry/handlers.ts`，`server_registry.ts` 改为引用。
+2. **P1b**：按 `LANE_OF` 切出 `registry/lanes/{design,refactor,observe,harvest,cross,meta}.ts`；
+   `TOOL_DEFS = [...design, ...refactor, …]`；`server_registry.ts` 重新导出 `TOOL_DEFS`（对外 API 不变）。
+3. **P1c**（可选，`capability_map` 的"第二份表"）：lane 归属此时已由**文件路径**表达，
+   `capability_map.ts` 的 `LANE_OF.lane` 可改为**派生**（保留 `when` 这类策展覆盖）。
+   加一条门：`lane 文件里的工具 ↔ LANE_OF 归属` 必须一致，防两处漂移。
 
 ---
 
@@ -83,10 +107,10 @@
 
 | 编号 | 门 | 判据 | 状态 |
 |---|---|---|---|
-| G1 | 工具集快照 | `registerAllTools` 导出的 (name, schema) 列表与基线逐字相同 | 待建（P1 前置） |
+| G1 | 工具集快照 | `registerAllTools` 导出的 (name, schema) 列表与基线逐字相同 | ✅ 已在跑（P1 前置，`tests/server_registry.tool_snapshot.test.ts`，基线 `tests/fixtures/tool_set_snapshot.json`，67 工具） |
 | G2 | README 工具数 | 既有 `scripts/readme_tools_gate.mjs` ⇒ 67=67 | ✅ 已在跑 |
-| G3 | 分层方向 | 依赖只允许向下；`import type` 不计 | 待建（P0） |
-| G4 | 单一实现 | 同族实现（解析器/工具表/内核路径）不得有第二份 | 待建（P5） |
+| G3 | 分层方向 | 依赖只允许向下；`import type` 不计 | 待建（P0；③ 已在 `health` 落地，门未建） |
+| G4 | 单一实现 | 同族实现（解析器/工具表/内核路径）不得有第二份 | ✅ 已在跑（棘轮：存量不拦、**新增即红**，`tests/single_source.test.ts` + 登记表 `tests/fixtures/single_source_registry.json`） |
 | G5 | 量具有效性 | 同一量具在"已知好"与"已知坏"夹具上给出**不同**读数 | ✅ 已在跑（P0，`tests/health/health-validity.test.ts`，含**反饱和**与**空输入**断言） |
 | G6 | 回归 | 205 文件 / 2137 测试全绿 | ✅ 已在跑 |
 
@@ -191,6 +215,35 @@
 - **P0 待办（①完成后曾列，②③④⑤ 已在下一轮完成，见上）**：
   ②可达根注入／③`import type` 不计分层违规／④健康分去饱和／⑤分层规则重划
 
+- **G1 + G4（本轮续做，P1/P5 的门）**
+  - **G1 工具集快照门**（`tests/server_registry.tool_snapshot.test.ts`，6 项）
+    - 快照的是**注册时真正传给 SDK 的东西**：用假 server 捕获 `registerTool(name, config, cb)` 的入参，
+      `config.inputSchema` 经 **zod v4 原生 `z.toJSONSchema()`** 转 JSON Schema ——
+      即 MCP 客户端实际收到的契约（`looseInputSchema` 的包装也已含在内）。**不是重新推导一遍。**
+    - 基线 `tests/fixtures/tool_set_snapshot.json`（67 工具 / 150KB）。
+      更新方式：`UPDATE_TOOL_SNAPSHOT=1 vitest run tests/server_registry.tool_snapshot.test.ts`。
+    - ★ **顺序不是契约**（有意放宽 + 写明理由）：按 name 排序后比较。
+      lane 拆分必然改变 `TOOL_DEFS` 数组顺序，而 MCP 工具按名寻址；把顺序当契约会让 P1 变成不可做。
+      名字 / 标题 / 描述 / schema 任一变化仍会红。
+    - 含**检测器自证**用例（差异检测器本身必须能检出 title/description/schema/增删）。
+  - **G4 单一实现门**（`tests/single_source.test.ts`，9 项 + 登记表）
+    - ★ 设计成**棘轮**（与仓内 `check_rules` 同款纪律）：**存量不拦、新增即红**。
+      不要求先修完 —— 但债务不许增长。收敛进度可以一步步来（本仓 09-28 就是这么走的）。
+    - 声明式登记（`tests/fixtures/single_source_registry.json`），**不假装能自动发现重复**：
+      自动发现"意图重复"不可判定；可判定的部分（已知家族的副本数）恰好够拦住复发。
+    - **只扫非注释行**：第一版按全文裸扫，立刻在自己的注释里命中
+      （`rename_symbol.ts:179` 逐字引用了刚修掉的旧正则）—— 而注释里引用旧代码是好实践，不该被惩罚。
+    - 已登记 3 家族 / **18 处存量债务**：`type-only-module-statement`（2 文件）、
+      `import-candidate-index-list`（1）、`source-extension-static-list`（**15**，权威尚未建立）。
+    - 出生证（已实测）：往 `src/` 注入一份副本 ⇒ 两个家族同时报红且指名权威文件；删掉即恢复绿。
+  - ★★ **G4 一上线就抓出新东西**：type-only 知识实际有 **5 处**实现，`c694471` 只收敛了 2 处 ——
+    - `src/health/index.ts:299`（AST 路径）与 `:460`（正则降级路径）—— **同一条规则的两条路径**，
+      必须给同一结论，此前各写各的正则（`/^\s*import\s+type\b/` vs `/^import\s+type\b/`）。
+      本轮**收成一份常量 `TYPE_ONLY_IMPORT_RE`**（行为不变，仅去重）——这是安全的机械去重 ✅
+    - `src/tools/ts_slim.ts:376` —— **有意保留**：它是"重写 import 语句时保留 `type` 修饰符"，
+      与内核那条（回答"依赖边要不要算"）是**不同问题**⇒ 不同判据。已写进注释与登记表 `intent`。
+    - ⇒ 教训：**"重复的策略"≠"重复的实现"**。合并之前先问"两边回答的是同一个问题吗"。
+
 ### ★ 本轮新发现的同族副本（病根仍在扩散，未清完）
 
 P0-① 只统一了「相对 import 解析」这一族的 3 份。顺着同一把尺子扫全仓，**同族副本远不止 3 份**。
@@ -275,4 +328,25 @@ grep -rn "js|jsx|mjs|cjs" src --include=*.ts | grep -i "replace"           # 剥
 grep -rn "'index\.ts'" src --include=*.ts                                  # index 候选：第 2 份
 grep -rn "!path.extname" src --include=*.ts                                # project_root 的 .js 盲区
 diff <(sed -n '40,50p' src/tools/cli_extract.ts) <(sed -n '50,60p' src/tools/registry_extract.ts)  # 逐字相同的两份
+
+# ── G1 / G4（2026-09-28 新增）────────────────────────────────────
+
+# G1 工具集快照（对外契约不变，P1 的前置判据）
+./node_modules/.bin/vitest run tests/server_registry.tool_snapshot.test.ts
+# 仅当确认是**故意**的契约变更时才更新基线，并把变更写进本文件台账
+UPDATE_TOOL_SNAPSHOT=1 ./node_modules/.bin/vitest run tests/server_registry.tool_snapshot.test.ts
+
+# G4 同族副本棘轮（存量不拦、新增即红）
+./node_modules/.bin/vitest run tests/single_source.test.ts
+# 债务已还清时收紧基线
+UPDATE_SINGLE_SOURCE=1 ./node_modules/.bin/vitest run tests/single_source.test.ts
+
+# G4 出生证（证明它会红）：注入一份副本 → 应报红 → 删除 → 恢复绿
+printf 'export const t = /^\\s*import\\s+type\\b/.test(x);\n' > src/__probe.ts
+./node_modules/.bin/vitest run tests/single_source.test.ts   # 期望红
+rm src/__probe.ts
+
+# ── 推送（凭据：Windows 凭据管理器已有 git:https://github.com → xr192172）──
+# `credential.helper=helper-selector` 取不到它，需清空 helper 列表再指定 manager：
+GIT_TERMINAL_PROMPT=0 git -c credential.helper= -c credential.helper=manager push origin main
 ```
