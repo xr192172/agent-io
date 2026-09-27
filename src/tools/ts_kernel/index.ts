@@ -31,4 +31,5 @@ export {
   isSourceExt,
   isNodeRunnableExt,
 } from './source_exts.js';
+export { parseRelativeNamedImportMap } from './import_text.js';
 export type { ResolvePathOptions } from './import_resolve.js';

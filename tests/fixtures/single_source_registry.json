@@ -38,6 +38,13 @@
       "authority": "src/tools/ts_kernel/source_exts.ts",
       "pattern": "'.ts', '.tsx', '.js', '.jsx', '.mts', '.cts'",
       "frozen": {}
+    },
+    {
+      "id": "relative-named-import-text-parse",
+      "intent": "『从源码文本里认出 import { a, b } from './x' 并映射 符号→模块』—— 权威是内核 import_text.ts；此前 cli_extract.ts 与 registry_extract.ts 各有一份**逐字相同**的实现（含注释同义）",
+      "authority": "src/tools/ts_kernel/import_text.ts",
+      "pattern": "import\\s+(?:type\\s+)?\\{",
+      "frozen": {}
     }
   ]
 }

@@ -17,6 +17,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { parseRelativeNamedImportMap } from './ts_kernel/import_text.js';
 
 export interface RegistryTool {
   name: string;
@@ -45,20 +46,12 @@ function extractDescription(block: string): string {
   return parts.join('');
 }
 
-/** 相对具名 import：symbol → 模块（如 'tools/brickify_cli'）。含多行 import。 */
-function extractImportMap(src: string): Map<string, string> {
-  const map = new Map<string, string>();
-  const re = /import\s+(?:type\s+)?\{([^}]+)\}\s+from\s+'(\.[^']+)'/g;
-  for (const m of src.matchAll(re)) {
-    const symbols = m[1]
-      .split(',')
-      .map((s) => s.trim().split(/\s+as\s+/)[0].trim())
-      .filter((s) => /^[A-Za-z_$][\w$]*$/.test(s));
-    const mod = m[2].replace(/^\.\//, '').replace(/\.js$/, '');
-    for (const s of symbols) map.set(s, mod);
-  }
-  return map;
-}
+/**
+ * 相对具名 import：symbol → 模块（如 'tools/brickify_cli'）。含多行 import。
+ * ★ 实现已收进内核唯一落点 `ts_kernel/import_text.ts`（B1，2026-09-28）——
+ *   本函数与 `cli_extract.ts` 的同名函数曾是**逐字相同**的两份。
+ */
+const extractImportMap = parseRelativeNamedImportMap;
 
 /** 命名 handler 定义体：`const X = ...` 到下一个顶层 const 声明。 */
 function handlerDefBody(src: string, handlerName: string): string {
