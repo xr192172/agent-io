@@ -26,6 +26,7 @@ import path from 'node:path';
 import { getParser } from './ts_kernel/loader.js';
 import { findLanguageByExt } from './ts_kernel/languages.js';
 import { parseContent, isTypeOnlyModuleStatement } from './ts_kernel/kernel.js';
+import { TS_JS_EXTS } from './ts_kernel/index.js';
 import { renameFile } from './rename_file.js';
 import { resolveProjectRoot, expandClosureDetailed, loadAliasConfig, resolveAliasedImport, type AliasConfig, type ExternalRef } from './project_root.js';
 import { createProtectGuard } from './protect.js';
@@ -43,7 +44,8 @@ interface N {
   childForFieldName(f: string): N | null;
 }
 
-const TS_EXTS = new Set(['.ts', '.tsx', '.js', '.jsx', '.mts', '.cts', '.mjs', '.cjs']);
+/** TS/JS 家族扩展名 —— 来自内核唯一权威（`ts_kernel/source_exts.ts`） */
+const TS_EXTS = new Set<string>(TS_JS_EXTS);
 const TS_LANG_NAMES = new Set(['typescript', 'tsx', 'javascript', 'jsx']);
 
 type ScopeMap = Map<string, number>;
@@ -1502,7 +1504,7 @@ export function resolveRel(source: string, importerAbs: string, byNoExt: Map<str
   const target = path.posix.join(impRelDir, source);
   const hit = byNoExt.get(target);
   if (hit) return hit;
-  for (const ext of ['.ts', '.tsx', '.js', '.jsx', '.mts', '.cts', '.mjs', '.cjs']) {
+  for (const ext of TS_JS_EXTS) {
     const key = target.endsWith(ext) ? target.slice(0, -ext.length) : target;
     const h = byNoExt.get(key);
     // import './x.js' 在 TS 中可指向 x.ts（allowJs/emit 产物）；命中任一 TS 系源码即接受，

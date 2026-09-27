@@ -21,6 +21,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { SOURCE_EXTS } from './ts_kernel/index.js';
 import { matchRule, instantiateReplace } from './rule_match.js';
 import { applyMatch as applyOneMatch } from './rule_match.js';
 import { loadRules, baselinePath, rulesDir, type Rule } from './rule_library.js';
@@ -105,7 +106,9 @@ export function applyRuleToContent(
 /* ─────────────────── 目录遍历 ─────────────────── */
 
 const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', '.design-canvas', 'coverage', 'third_party']);
-const CODE_EXT = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.go', '.py', '.java', '.cs', '.c', '.h', '.rs', '.php']);
+/** ★ 来自内核唯一权威 `SOURCE_EXTS`（`ts_kernel/source_exts.ts`）—— 此前这里手写 14 个，
+ *  而仓内同一问题另有 5 份不同答案 ⇒ 口径随工具而变；统一后只增不减。 */
+const CODE_EXT = new Set<string>(SOURCE_EXTS);
 
 /** 收集待检文件（相对 root），带默认排除（我们自己的派生物目录必须排除） */
 export function collectRuleTargets(root: string, opts: { glob?: string; maxFiles?: number } = {}): string[] {

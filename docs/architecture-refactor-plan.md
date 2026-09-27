@@ -45,6 +45,50 @@
 **推论**：病根不是"分层不漂亮"，而是**没有单一落点** ⇒ 所以本次重构的每一阶段，验收都要落在
 "**这件事从此只有一份实现**"，而不只是"文件搬了位置"。
 
+### 2b. 为什么"兜底式代码"会增殖成 20 份 —— 根因（2026-09-28 实测）
+
+question：一份就够，为什么会有 20 处静态扩展名清单？以下是查出来的**机制**，不是感叹：
+
+| # | 机制 | 实测证据 |
+|---|---|---|
+| 1 | **权威答非所问** | 内核已有 `listSupportedExtensions()`，但它回答的是"**我装了哪些 tree-sitter 语言包 ⇒ 我能解析什么**"（动态、随 optionalDependencies 变）。各工具问的是"**这个项目里什么算源码**"。实测内核那份是 `['.ts','.js','.mjs','.cjs','.go','.py','.java','.c','.h','.cs','.rs','.php']` —— **连 `.tsx` 都没有**。⇒ 权威没回答大家的问题，于是各自写一份。 |
+| 2 | **缺失是沉默的** | 漏一个扩展名 = 少扫几个文件。**不报错、不告警、不失败**，没有任何反馈把作者推回权威。这是"兜底"增殖的**主因**。 |
+| 3 | **局部最优是理性选择** | 每次都是"我就加一个扩展名"。在单点看，抄一行比搞清"别处已有 19 份"便宜得多。 |
+| 4 | **没有变更通知** | 新增一门语言要改 20 处，而**没有任何机制告诉你有 20 处**。 |
+| 5 | **不同问题被当成同一个** | "扫哪些文件"/"可被 import 指向的"/"补全候选"/"反查键"/"可跑 node 的"是**5 个不同问题**，混在一起就永远合不拢（见 §2c）。 |
+
+**⇒ 解药的顺序**：先把**问题分维度**（§2c），再建**单点权威**，再用**棘轮**挡住第 21 份（G4），
+最后把"静默缺失"改成"可见"（§2d）。
+
+### 2c. 分维度：哪些该合并，哪些**不许**合并
+
+"重复的策略 ≠ 重复的实现"。合并前先问"两边回答的是同一个问题吗"。本次实测的分类：
+
+| 维度（问题） | 权威（单点） | 归属 |
+|---|---|---|
+| TS/JS 家族的 8 个扩展名 | `TS_JS_EXTS` | ✅ 合并 |
+| 转译后可交 node 子进程执行的 | `NODE_RUNNABLE_EXTS`（**派生**自上面） | ✅ 合并 |
+| 项目内"可被扫描/分析"的源码（多语言并集） | `SOURCE_EXTS` | ✅ 合并 |
+| **可被 import 指向的东西**（含 `.json`） | `import_resolve.IMPORT_EXTS` | ❌ 另一维度，**不许合进 SOURCE_EXTS** |
+| **同名无扩展名碰撞时的解析优先级** | `import_project.RESOLVE_EXTS` | ❌ 另一维度（顺序即语义） |
+| **值得做文本扫描的可读文本**（`.json/.md/.yml/.html/.css`） | `rename_symbols.SCAN_EXTS` | ❌ 不是"源码"，**不许合** |
+| 积木 resolve 候选（含 `.json`） | `slim_brick.TS_RESOLVE_EXTS` | ❌ 另一维度 |
+
+### 2d. 「只许成功不许失败」的功能，**不许有兜底**
+
+用户提出的判据，落成可执行的纪律：**当"错了"会静默降级时，禁止用兜底"猜一个"，必须硬失败或显式可见。**
+
+| 功能 | 现状 | 应有行为 |
+|---|---|---|
+| 对外契约（工具名 / inputSchema） | ✅ 已有 G1 快照门 | 变了就红，**没有"兜底兼容"** |
+| 全局配置 / 索引路径 | 曾散在 4 个文件（见 09-27 记忆） | 单点 + 缺失即报 |
+| **符号解析 / 引用闭包** | ⚠️ 解析不到**静默返回 null** ⇒ 闭包悄悄漏文件 | 计数并**显式暴露**"本次有 N 条相对 import 未解析"（下一次迭代做） |
+| 健康分 / 分层判定 | ✅ 已做：`N/A` 第三态 + `unclassified` 可见 | 保持 |
+| 索引保鲜 | ✅ 已有 `staleIndexWarning` 标注 | 保持 |
+
+> ★ 一条通用判据：**如果一个"兜底"的失败模式是"少做一点事而不说话"，它就不该存在。**
+> 要么硬失败（吵醒人），要么把"少做了什么"变成可读的数（看得见）。
+
 ---
 
 ## 3. 脉络（六阶段，顺序即优先级）
@@ -272,6 +316,18 @@
   - G4 登记表未变（`project_root` 仍保留那份多语言索引清单 —— 那是**政策**，不是重复的**实现**）。
   - 验证：tsc 干净；回归 **210 文件 / 2210 测试全过**；G1 6 项 / G4 9 项过；量具读数不变（45 / 2 违规 / 16 孤儿）。
 
+- **还债②（本笔）：建「什么算源码」的单点权威，把 20 处静态清单收敛到 1 处 + 4 处有意保留**
+  - 新 `src/tools/ts_kernel/source_exts.ts`（唯一权威，按**维度**分而不是硬合成一个大列表）：
+    `TS_JS_EXTS`（8 个，同 AST + 同模块语义）/ `OTHER_LANG_EXTS` / `SOURCE_EXTS`（多语言并集，17 个）/
+    `NODE_RUNNABLE_EXTS`（**派生**自 TS_JS_EXTS，排除未验证的 `.mts/.cts`）/ `isTsJsExt` / `isSourceExt` / `isNodeRunnableExt`。
+  - **迁移 13 处**（`behavior`、`rename_file`、`rename_symbol`×2、`symbol_move`、`version_upgrade/adapters/node`、
+    `project_root`×3、`package_migration`×2、`contract_gate`、`deprecate_offline`、`refs_text`、`rule_apply`）。
+  - ★ **方向单调安全**：新权威是原先 6 份互不一致清单的**真超集** ⇒ 迁移**只增不减**，
+    不存在"某工具反而看不到原本能看到的文件"。实测：**全量回归全绿，5 处扫描面变宽没有破坏任何测试**。
+  - 根因与分维度判据写进 §2b / §2c；「只许成功不许失败的功能不许有兜底」判据写进 §2d。
+  - G4 棘轮收紧：`source-extension-static-list` 存量 **15 → 4**；新增 `ts-js-family-extension-list`（存量 **0**）。
+  - 验证：tsc 干净；回归 **210 文件 / 2211 测试全过**；G1 6 项 / G4 10 项过；`readme_tools_gate` 数字一致（67=67）。
+
 ### ★ 本轮新发现的同族副本（病根仍在扩散，未清完）
 P0-① 只统一了「相对 import 解析」这一族的 3 份。顺着同一把尺子扫全仓，**同族副本远不止 3 份**。
 下表为实测（`grep` 可复现），**均未处理**，按价值排序：
@@ -283,7 +339,7 @@ P0-① 只统一了「相对 import 解析」这一族的 3 份。顺着同一�
 | 3 | `tools/cli_extract.ts:47` 与 `tools/registry_extract.ts:57` | 同一段 `import {a,b} from './x'` → 符号→模块映射 | **两份逐字相同**（正则、过滤、`.replace(/^\.\//,'').replace(/\.js$/,'')` 全同） |
 | 4 | `tools/slim_brick.ts:618 TS_RESOLVE_EXTS` / `:726` | specifier → 文件 | 第 5 份候选表 |
 | 5 | `tools/import_project.ts:346 RESOLVE_EXTS` | specifier → 文件 | 第 6 份候选表 |
-| 6 | `ts_kernel/import_resolve.ts:25 IMPORT_EXTS` | "什么算源码扩展名" | 第 16 份**静态**清单；权威是内核动态的 `listSupportedExtensions()`（实测 `[.ts,.js,.mjs,.cjs,.go,.py,.java,.c,.h,.cs,.rs,.php]`，**不含 `.tsx`**），二者从未对齐 |
+| 6 | "什么算源码扩展名"静态清单 | 全仓 **20 处**（比初版数的 15 更多），口径互不一致：contract_gate 12 / deprecate_offline 7 / package_migration 8 / refs_text 11 / rule_apply 14 / project_root 15 … | ✅ **已收敛**（本笔）：新建内核唯一权威 `ts_kernel/source_exts.ts`（`TS_JS_EXTS` / `NODE_RUNNABLE_EXTS`(派生) / `SOURCE_EXTS`(并集) / `isTsJsExt` / `isSourceExt`），迁移 **13 处**；G4 存量 **15 → 4**，并新增 `ts-js-family-extension-list` 家族（存量 0）。剩余 4 处**已判定为不同维度、有意保留**（理由写进登记表 `note`；见 §2c）。根因分析见 §2b，分维度判据见 §2c。 |
 
 **"什么算源码扩展名"全仓共 15+ 份静态清单，口径互不一致**（实测）：
 `project_root.ts:44`（含 `.vue/.mts/.cts`）／`rename_file.ts:29`（无 `.vue`）／`contract_gate.ts:73`（无 `.mts/.cts`）／
@@ -372,6 +428,11 @@ UPDATE_SINGLE_SOURCE=1 ./node_modules/.bin/vitest run tests/single_source.test.t
 printf 'export const t = /^\\s*import\\s+type\\b/.test(x);\n' > src/__probe.ts
 ./node_modules/.bin/vitest run tests/single_source.test.ts   # 期望红
 rm src/__probe.ts
+
+# 「什么算源码扩展名」权威的现状（3 个维度 + 谓词）
+grep -n "export const\|export function" src/tools/ts_kernel/source_exts.ts
+# 还在手写扩展名清单的地方（应只剩已登记的 4 处「不同维度」）
+grep -rn "'.ts', '.tsx', '.js'" src --include=*.ts | grep -v "^src/tools/ts_kernel/source_exts.ts"
 
 # ── 推送（凭据：Windows 凭据管理器已有 git:https://github.com → xr192172）──
 # `credential.helper=helper-selector` 取不到它，需清空 helper 列表再指定 manager：

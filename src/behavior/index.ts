@@ -32,13 +32,15 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import ts from 'typescript';
+import { NODE_RUNNABLE_EXTS } from '../tools/ts_kernel/index.js';
 
 
 /** Windows 常只有 python；POSIX 约定 python3（与动态闸 python 适配器一致） */
 const PY = process.platform === 'win32' ? 'python' : 'python3';
 
-/** node 家族扩展名（typescript.transpileModule 转 CJS 后由 node 子进程执行） */
-const NODE_EXTS = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs'];
+/** node 家族扩展名（typescript.transpileModule 转 CJS 后由 node 子进程执行）
+ *  ★ 清单来自内核唯一权威 `NODE_RUNNABLE_EXTS`（`ts_kernel/source_exts.ts`）—— 不再就地手写。 */
+const NODE_EXTS = NODE_RUNNABLE_EXTS;
 
 /** 编译语言扩展名（反射 harness：写临时工程 → go run / javac+java / dotnet run；缺工具链报不可用） */
 const GO_EXTS = ['.go'];

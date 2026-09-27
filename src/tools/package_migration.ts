@@ -25,14 +25,15 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { PackageMigrationSpec, RunningChangePlan } from './refactor_langs.js';
-import { parseAstRoot } from './ts_kernel/index.js';
+import { parseAstRoot, isTsJsExt, SOURCE_EXTS } from './ts_kernel/index.js';
 import type { SyntaxNodeLike } from './ts_kernel/index.js';
 
 const DEFAULT_SKIP = new Set([
   '.git', 'node_modules', '.design-canvas', 'dist', 'build', 'target', '.venv', 'venv', '__pycache__', '.next', 'out',
 ]);
 
-const DEFAULT_EXTS = new Set(['.go', '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.py']);
+/** 默认可迁移的源码扩展名 —— 来自内核唯一权威（`ts_kernel/source_exts.ts`） */
+const DEFAULT_EXTS = new Set<string>(SOURCE_EXTS);
 
 function escapeRe(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -447,7 +448,7 @@ async function cleanAlias(src: string, exactPath: string, from: string, to: stri
   let res: { ok: boolean; edits: AliasEdit[] };
   if (ext === '.go') {
     res = await goAliasEdits(src, exactPath, from, to, fileAbs);
-  } else if (['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs'].includes(ext)) {
+  } else if (isTsJsExt(ext)) {
     res = await tsAliasEdits(src, exactPath, from, to, fileAbs);
   } else if (ext === '.py') {
     res = await pyAliasEdits(src, exactPath, from, to, fileAbs);

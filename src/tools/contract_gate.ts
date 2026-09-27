@@ -25,6 +25,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { SOURCE_EXTS } from './ts_kernel/index.js';
 
 export type Lang = 'go' | 'ts' | 'py' | 'java' | 'cs' | 'c';
 
@@ -70,7 +71,15 @@ export interface ScanContractsOptions {
 
 // ── 常量 ─────────────────────────────────────────────
 
-const SRC_EXT = ['.go', '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.py', '.java', '.cs', '.c', '.h'];
+/**
+ * 扫描纳入的源码扩展名 —— ★ 来自内核唯一权威 `SOURCE_EXTS`（`ts_kernel/source_exts.ts`）。
+ *
+ * 此前此处手写 12 个，而同一问题在仓内还有 5 份不同答案（deprecate_offline 7 / package_migration 8 /
+ * refs_text 11 / rule_apply 14 / project_root 15）⇒ "某个扩展名的文件要不要分析"取决于
+ * **你碰巧调了哪个工具**。统一到权威的并集后**只增不减**（原 12 个是并集的真子集）。
+ * 同族副本的登记与棘轮见 `tests/single_source.test.ts`。
+ */
+const SRC_EXT = SOURCE_EXTS;
 
 const EXCLUDE_DIRS = new Set(['node_modules', '.git', 'vendor', 'dist', 'build', '.output', '.next', '.cache']);
 

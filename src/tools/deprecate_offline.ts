@@ -36,8 +36,10 @@ import { detectDeadImports, scanProjectSourceFiles } from './detect_dead_imports
 import { removeDeadImportsWithVerify } from './remove_dead_imports.js';
 import { parseTsImportQualifiers, parseGoImportQualifiers, stripTsImportLines, qualifierLines, type DeadDepCandidate } from './dead_deps.js';
 import { defaultVerifyCommands, runVerification } from './verify_refactor.js';
+import { SOURCE_EXTS } from './ts_kernel/index.js';
 
-const SOURCE_EXTS = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.go'];
+// 扫描纳入的源码扩展名：★ 来自内核唯一权威 `SOURCE_EXTS`（`ts_kernel/source_exts.ts`），
+// 不再就地手写（此前这里 7 个，仓内同一问题另有 5 份不同答案 ⇒ 口径随工具而变）。
 
 // ─────────────────────────────────────────────
 // 类型

@@ -27,7 +27,7 @@ import path from 'node:path';
 import { execSync } from 'node:child_process';
 import { homedir } from 'node:os';
 import { analyzeModuleSource } from './rename_symbol.js';
-import { parseFileFull, isSupported, resolveExistingPath, type ParsedImport } from './ts_kernel/index.js';
+import { parseFileFull, isSupported, isTsJsExt, resolveExistingPath, SOURCE_EXTS, TS_JS_EXTS, type ParsedImport } from './ts_kernel/index.js';
 import { readGoModules, type GoModule } from './import_project.js';
 import { gitAvailable } from './exec_guard.js';
 import { getProjectCacheDb, closeProjectCacheDb, type Database } from '../db/db.js';
@@ -40,8 +40,9 @@ import {
   findFilesImportingAnySource,
 } from '../db/symbols.js';
 
-/** 本地源扩展名（闭包只收这些；与 rename_symbol/rename_file 的 TS_EXTS 对齐） */
-const SRC_EXTS = new Set(['.ts', '.tsx', '.js', '.jsx', '.mts', '.cts', '.mjs', '.cjs', '.go', '.py', '.vue', '.java', '.cs', '.c', '.h']);
+/** 本地源扩展名（闭包只收这些）—— ★ 来自内核唯一权威 `SOURCE_EXTS`（`ts_kernel/source_exts.ts`）。
+ *  此前就地手写并与 rename_symbol/rename_file 的清单"对齐"——靠人记得对齐 ⇒ 已在 G4 登记表登记收敛。 */
+const SRC_EXTS = new Set<string>(SOURCE_EXTS);
 
 /** 跳过的目录名（闭包扫描绝不进入） */
 const SKIP_DIRS = new Set(['node_modules', 'dist', 'build', '.git', '.svn', '.hg', 'vendor', 'target', 'out', 'output', '.next', '.nuxt', '__pycache__', '.venv', 'venv']);
@@ -203,7 +204,7 @@ export function walkProjectFiles(dir: string, out: string[]): void {
  * 多语言"补全候选"的政策参数（**政策留在这里，候选生成与剥扩展名重试走内核唯一实现**）。
  * `resolveToFile` 的旧实现自带的候选循环**漏了"剥扩展名重试"** —— 见该函数注释。
  */
-const MULTILANG_EXTS = ['.ts', '.tsx', '.js', '.jsx', '.mts', '.cts', '.mjs', '.cjs', '.go', '.py', '.vue', '.java', '.cs', '.c', '.h'] as const;
+const MULTILANG_EXTS = SOURCE_EXTS;
 const MULTILANG_INDEX = ['index.ts', 'index.tsx', 'index.js', 'index.jsx', 'mod.ts', 'mod.go', '__init__.py'] as const;
 
 /** 绝对路径上的"是普通文件"谓词（不抛） */
@@ -663,7 +664,7 @@ export function isProjectDir(d: string): boolean {
  */
 async function importsTargetFile(fileAbs: string, targetAbs: string, aliasCfg?: AliasConfig | null, seedPkgName?: string): Promise<boolean> {
   const ext = path.extname(fileAbs);
-  if (!['.ts', '.tsx', '.js', '.jsx', '.mts', '.cts', '.mjs', '.cjs'].includes(ext)) return false;
+  if (!isTsJsExt(ext)) return false;
   let mod: Awaited<ReturnType<typeof analyzeModuleSource>> | null = null;
   try {
     mod = await analyzeModuleSource(fs.readFileSync(fileAbs, 'utf-8'), fileAbs);
@@ -778,8 +779,8 @@ export async function findExternalImporters(seedFile: string, root: string): Pro
 // expandClosure 索引快速路径（② cache.db 反查子图 + ④ 无索引回退全扫）
 // ─────────────────────────────────────────────────────────────
 
-/** TS/JS 本地源扩展名（快路径 BFS 的 import dispatch 用） */
-const CLOSURE_TS_EXTS = new Set(['.ts', '.tsx', '.js', '.jsx', '.mts', '.cts', '.mjs', '.cjs']);
+/** TS/JS 本地源扩展名（快路径 BFS 的 import dispatch 用）—— ★ 来自内核唯一权威 */
+const CLOSURE_TS_EXTS = new Set<string>(TS_JS_EXTS);
 
 /**
  * 取同目录的兄弟索引文件 relPath（包共享可见性：Go/Python/Java 同目录文件无需

@@ -29,7 +29,7 @@ import {
   type AliasConfig,
   type ExternalRef,
 } from './project_root.js';
-import { parseAstRoot } from './ts_kernel/index.js';
+import { parseAstRoot, TS_JS_EXTS } from './ts_kernel/index.js';
 import { syncFile } from '../db/symbols.js';
 import { getProjectCacheDb } from '../db/db.js';
 import { splitKeepEnds, detectEol, isBlankLine } from './line_utils.js';
@@ -90,7 +90,8 @@ export interface MoveSymbolResult {
 // 本地小工具（在 rename_symbol / edit_code 中为私有，此处按需复制/对齐）
 // ─────────────────────────────────────────────
 
-const TS_EXTS = new Set(['.ts', '.tsx', '.js', '.jsx', '.mts', '.cts', '.mjs', '.cjs']);
+/** TS/JS 家族扩展名 —— 来自内核唯一权威（`ts_kernel/source_exts.ts`） */
+const TS_EXTS = new Set<string>(TS_JS_EXTS);
 
 interface Edit {
   pos: number;

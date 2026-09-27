@@ -18,6 +18,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { SOURCE_EXTS } from './ts_kernel/index.js';
 
 export interface TextRefHit {
   /** 相对项目根（posix） */
@@ -52,7 +53,9 @@ function specifierCandidates(rel: string): string[] {
 
 /** 该文件是否是"值得扫的源码文件"（与 walkFiles 口径一致：跳过依赖/产物/测试夹具目录） */
 const SKIP_DIR = new Set(['node_modules', 'dist', '.git', '.design-canvas', 'build', 'out', 'coverage']);
-const SRC_EXT = new Set(['.ts', '.tsx', '.js', '.mjs', '.cjs', '.go', '.py', '.java', '.rs', '.cs', '.php']);
+/** ★ 来自内核唯一权威 `SOURCE_EXTS`（`ts_kernel/source_exts.ts`）—— 此前这里手写 11 个，
+ *  而仓内同一问题另有 5 份不同答案（7/8/12/14/15）⇒ 口径随工具而变；统一后只增不减。 */
+const SRC_EXT = new Set<string>(SOURCE_EXTS);
 
 /** 走查源码文件（相对路径，posix） */
 export function walkSourceFiles(root: string, limit = 20000): string[] {

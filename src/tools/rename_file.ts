@@ -19,6 +19,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { readdirSync } from 'node:fs';
 import { parseAstRoot, type SyntaxNodeLike } from './ts_kernel/kernel.js';
+import { TS_JS_EXTS } from './ts_kernel/index.js';
 import { resolveImportTarget, syncFile, removeFile } from '../db/symbols.js';
 import { getProjectCacheDb, closeProjectCacheDb } from '../db/db.js';
 import { createProtectGuard } from './protect.js';
@@ -26,7 +27,8 @@ import { reopenAndResolveAfterWrite } from './write_gate.js';
 
 // 扫描范围内源码扩展名：TS 系全量 + Python（相对导入语义与 TS 同构，复用同一相对路径重算逻辑）。
 // Go 的 import 是模块包路径（非相对文件路径），移动单文件不改变途径名 → 不纳入扫描。
-const SOURCE_EXTS = new Set(['.ts', '.tsx', '.js', '.jsx', '.mts', '.cts', '.mjs', '.cjs', '.py']);
+// ★ 清单来自内核唯一权威（`ts_kernel/source_exts.ts`）—— 不再就地手写。
+const SOURCE_EXTS = new Set<string>([...TS_JS_EXTS, '.py']);
 
 function walkProjectFiles(dir: string, out: string[]): void {
   let entries: fs.Dirent[];

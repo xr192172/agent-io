@@ -1,5 +1,5 @@
 {
-  "note": "G4 单一实现门（同族副本棘轮）的登记表。见 tests/single_source.test.ts。口径：存量不拦、新增即红。发现新家族就往 families 里加一条，intent 必须写清『同的是什么意图』。authority=null 表示权威实现尚未建立，则全部命中都算存量债务。pattern 是**字面量子串**（不是正则），在**非注释行**上计数。frozen 的收紧方式：UPDATE_SINGLE_SOURCE=1 ./node_modules/.bin/vitest run tests/single_source.test.ts",
+  "note": "G4 单一实现门（同族副本棘轮）的登记表。见 tests/single_source.test.ts。口径：存量不拦、新增即红。发现新家族就往 families 里加一条，intent 必须写清『同的是什么意图』。authority=null 表示权威实现尚未建立，则全部命中都算存量债务。pattern 是**字面量子串**（不是正则），在**非注释行**上计数。frozen 的收紧方式：UPDATE_SINGLE_SOURCE=1 ./node_modules/.bin/vitest run tests/single_source.test.ts。★★ 已判定为『不同维度、有意保留』的 4 处（不属于 source-extension-static-list 的应该被合并的部分）：① ts_kernel/import_resolve.ts 的 IMPORT_EXTS —— 回答『可被 import 指向的东西』（是另一族 import-candidate-index-list 的权威）；② import_project.ts 的 RESOLVE_EXTS —— 『同名无扩展名路径碰撞时的解析优先级』；③ slim_brick.ts 的 TS_RESOLVE_EXTS —— 积木 resolve 候选（含 .json，可 import）；④ rename_symbols.ts 的 SCAN_EXTS —— 『值得做文本扫描的可读文本』（含 .json/.md/.yml/.html/.css，不是『源码』）。这四条各回答不同问题，**不要**为了数字好看而强行合并。",
   "families": [
     {
       "id": "type-only-module-statement",
@@ -22,26 +22,22 @@
     },
     {
       "id": "source-extension-static-list",
-      "intent": "『什么算源码扩展名』—— 应为内核动态的 listSupportedExtensions() 派生，而非各处手写静态清单",
-      "authority": null,
+      "intent": "『什么算源码扩展名』—— 权威是内核 source_exts.ts 的 SOURCE_EXTS（并集）/ TS_JS_EXTS（JS 家族）/ NODE_RUNNABLE_EXTS（可跑 node）。此前同一问题有 20 处静态清单、口径互不一致（7/8/11/12/14/15…），迁移到权威后只增不减",
+      "authority": "src/tools/ts_kernel/source_exts.ts",
       "pattern": "'.ts', '.tsx', '.js'",
       "frozen": {
-        "src/behavior/index.ts": 1,
-        "src/tools/contract_gate.ts": 1,
-        "src/tools/deprecate_offline.ts": 1,
         "src/tools/import_project.ts": 1,
-        "src/tools/package_migration.ts": 2,
-        "src/tools/project_root.ts": 4,
-        "src/tools/refs_text.ts": 1,
-        "src/tools/rename_file.ts": 1,
-        "src/tools/rename_symbol.ts": 2,
         "src/tools/rename_symbols.ts": 1,
-        "src/tools/rule_apply.ts": 1,
         "src/tools/slim_brick.ts": 1,
-        "src/tools/symbol_move.ts": 1,
-        "src/tools/ts_kernel/import_resolve.ts": 1,
-        "src/version_upgrade/adapters/node.ts": 1
+        "src/tools/ts_kernel/import_resolve.ts": 1
       }
+    },
+    {
+      "id": "ts-js-family-extension-list",
+      "intent": "『TS/JS 家族扩展名』（同 AST + 同模块语义的那 8 个）—— 权威是内核 TS_JS_EXTS；任何地方再手写这 8 个就是副本",
+      "authority": "src/tools/ts_kernel/source_exts.ts",
+      "pattern": "'.ts', '.tsx', '.js', '.jsx', '.mts', '.cts'",
+      "frozen": {}
     }
   ]
 }

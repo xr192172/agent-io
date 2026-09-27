@@ -14,6 +14,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { transpileToCjs } from '../../behavior/index.js';
+import { NODE_RUNNABLE_EXTS } from '../../tools/ts_kernel/index.js';
 import type {
   LanguageAdapter,
   AdapterDeclaration,
@@ -133,7 +134,7 @@ export const nodeAdapter: LanguageAdapter = {
   lang: 'node',
   label: 'Node',
   declarationFiles: ['.nvmrc', 'package.json', '.tool-versions'],
-  sourceExts: ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs'],
+  sourceExts: [...NODE_RUNNABLE_EXTS],
   skipDirs: ['node_modules', '.next', 'dist'],
   asdfToolNames: ['nodejs', 'node'],
   featureRules: NODE_FEATURES,
