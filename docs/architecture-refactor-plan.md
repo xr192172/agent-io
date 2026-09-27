@@ -97,6 +97,8 @@ question：一份就够，为什么会有 20 处静态扩展名清单？以下�
 |---|---|---|---|
 | **P0 修量具** | ①解析器统一成一份 ②可达根注入（`package.json` 按路径调的入口 + registry 派发表）③`import type` 不计分层违规 ④健康分去饱和 ⑤分层规则重划 | 体检在"已知好/已知坏"双夹具上给出**不同**读数；层违规非空且每条可解释 | 低（只动分析器） |
 | **P1 拆注册表** | `server_registry.ts` 3,586 行 → `registry/lanes/*.ts`，按既有 `LANE_IDS` 一 lane 一文件；`registerAllTools` 汇总；`capability_map` 从 lane 文件聚合 | **工具集快照逐字相同**（G1 ✅ 已就位）；`readme_tools_gate` 仍 67=67；回归全绿 | 低（零行为变化） |
+| **P1a ✅ 已完成** | 抽 `registry/{types,plumbing,handlers}.ts`（**解除 lane 切分的循环依赖**） | G1 逐字相同 + 67=67 + 回归全绿 —— **三项全过** | 低 |
+| **P1b 待做** | 按 `LANE_OF` 切 `registry/lanes/*.ts` + `TOOL_DEFS` 汇总 | 同 P1 | 低 |
 | **P2 拆抽屉** | `tools/` 200 文件按职责分层：`*_cli.ts`(17)→`surfaces/cli`、HTTP(`serve.ts` 等)→`surfaces/http`、库(`ts_kernel`/`ast_parser`/`project_root`/`db`)→`kernel`、工具定义→`features/<lane>/` | 每族搬完：回归全绿 + 无新增层违规（用 P0 修好的量具看） | **中高**（71k 行，必须一族一提交） |
 | **P3 抽字符串** | `renderer/scripts.ts` 6,209 + `styles.ts` 3,526 → 真资源文件，**复用既有 `gen_*_bundle.mjs` 机制** | playwright 渲染快照逐块对比无差异 | 中（先建快照基线） |
 | **P4 工具收敛** | **按仓内既有 `docs/tool-convergence.md` 走**（5 步核验纪律 + 已落地的 `gateway_provider`/`canvas_notes`/`manage_feature` 样板） | 该文档自身的验收口径 | 中（动对外契约，需你拍板） |
@@ -327,6 +329,22 @@ question：一份就够，为什么会有 20 处静态扩展名清单？以下�
   - 根因与分维度判据写进 §2b / §2c；「只许成功不许失败的功能不许有兜底」判据写进 §2d。
   - G4 棘轮收紧：`source-extension-static-list` 存量 **15 → 4**；新增 `ts-js-family-extension-list`（存量 **0**）。
   - 验证：tsc 干净；回归 **210 文件 / 2211 测试全过**；G1 6 项 / G4 10 项过；`readme_tools_gate` 数字一致（67=67）。
+
+- **P1a（本笔）：抽 `src/registry/` 基础设施 —— 3,591 → 3,112 行，解除 lane 切分的循环依赖**
+  - 新三模块：`registry/types.ts`（40 行，`ToolDef`）、`registry/plumbing.ts`（70 行，`textOut`/`wrap`/`wrapData`/`looseInputSchema`）、
+    `registry/handlers.ts`（478 行，**20 个跨 lane 复用的主工具 handler**）。
+  - `server_registry.ts` 改为 import 之，并保留 `export type { ToolDef }`（公开 API 位置不变）。
+  - ★ **为什么必须先做这一步**（写在三个模块的文件头）：lane 文件要用到上面这些东西，
+    而它们原先都定义在 `server_registry.ts` **内部** ⇒ lane 一 import 就成环
+    （server_registry → lanes → server_registry）。抽出来后依赖变成单向。
+  - `handlers.ts` 的 import 清单由脚本**按标识符出现**算出（不是拍脑袋）：
+    涉及 `../tools/*` 25 个模块 + `../observe/*` 6 个 + `../daemon/dispatch` + `../storage`，
+    外加一条 `import path from 'node:path'`（★ 首轮漏了默认导入 —— 名字匹配只覆盖具名导入，tsc 抓出来的）。
+  - **验收三项全过**：G1 工具集快照 6 项（对外契约逐字相同）/ `readme_tools_gate` 67=67 / 全量回归全绿；
+    G4 棘轮 10 项（搬迁未引入新副本）、G5 15 项均不变。
+  - 顺带确认：`server_registry → registry/handlers → tools/sync_contracts → server_registry` 这个环
+    **原先就存在**（不是本笔引入），且 `sync_contracts` 的注释已说明"仅在函数执行期读取，ESM 循环 import 安全"
+    —— 测试全绿是该结论的实证。
 
 ### ★ 本轮新发现的同族副本（病根仍在扩散，未清完）
 P0-① 只统一了「相对 import 解析」这一族的 3 份。顺着同一把尺子扫全仓，**同族副本远不止 3 份**。
