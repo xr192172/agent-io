@@ -721,6 +721,61 @@ function stripQuotes(s: string): string {
   return s;
 }
 
+/** TS/JS 家族语言名（判定 type-only 语法时用） */
+const TS_FAMILY_LANGS = new Set(['typescript', 'tsx', 'javascript', 'jsx']);
+
+/**
+ * 该模块语句（`import` / `export … from`）是否**运行时被整体擦除**（TS 系）——
+ * 即"依赖图/闭包要不要算这条边"的唯一判据。【唯一实现】
+ *
+ * ★ 为什么这份判定必须收敛成一份（2026-09-28）：
+ *   这条知识原先有**两份**逐字相同的实现 —— `kernel.ts`（喂 db / health / impact /
+ *   import_project / dead_deps / harvest_closure / import_graph / project_root 的 `type_only`）
+ *   与 `rename_symbol.ts`（自己的 import 边）。两份都只写了一条正则
+ *   `/^\s*import\s+type\b/`，于是**同一个盲区在两处各存活一次**：
+ *   `export type { A } from './x'` 同样被运行时擦除，却谁都不认 ——
+ *   直到 health 报出 `dsl/types.ts:47 → dsl/contract.ts` 这条假违规才暴露。
+ *   这正是本仓的病根形态（同一意图多份实现、修正不横向传播）⇒ 收敛到这里，两边共用。
+ *
+ * 覆盖 TS 全部「整条语句被擦除」的写法：
+ *   · `import type { A } from 'x'` / `import type A from 'x'` / `import type * as ns from 'x'`
+ *   · `export type { A } from 'x'` / `export type * from 'x'` / `export type * as ns from 'x'`
+ *   · `import { type A, type B } from 'x'` —— 内联 type 且**全部**说明符都是 type
+ *   · `export { type A as B } from 'x'`
+ *
+ * 反面（**不能**判 true —— 这些语句仍会产出运行时 import）：
+ *   · `import { type A, B } from 'x'` —— 混有值绑定，模块会被真正加载
+ *   · `import './x'`（副作用导入）、`import x from 'x'`、`export * from 'x'`
+ *   · `import typeX from 'x'`（`\b` 保证 `typeX` 不被误判成 `type`）
+ *
+ * **适用边界**：只对**带模块源的语句**（`from '…'` 或 `import '…'`）有定义。
+ *   没有源的语句不构成依赖边，判定其 true/false 对调用方都无意义 ⇒ 一律返回 false。
+ *   例：`export type A = string;`（类型别名声明）虽然也在运行时被擦除，但它不 import 任何模块
+ *   ⇒ 返回 false。这不是漏判，而是**把"擦除"与"依赖边擦除"两件事分开**——
+ *   本函数的唯一用途是回答"这条边要不要算进依赖图"。
+ *
+ * 注：只吃**语句文本**，不依赖 AST 结构 —— 因为两份原实现都只有 node.text 可用，
+ *     保持一致使本函数可脱离解析器单测（`tests/tools/type_only_statement.test.ts`）。
+ */
+export function isTypeOnlyModuleStatement(text: string): boolean {
+  const t = text.trim();
+  // 前置：必须构成依赖边（有模块源），否则本判定无定义
+  if (!/\bfrom\s*['"`]/.test(t) && !/^import\s*['"`]/.test(t)) return false;
+  // ① 关键字在语句上：`import type …` / `export type …`
+  if (/^(?:import|export)\s+type\b/.test(t)) return true;
+  // ② 内联 type 说明符：形如 `{ type A, type B }` ⇒ 全部说明符都带 `type` 才算擦除
+  const m = t.match(/^(?:import|export)\s*\{([\s\S]*?)\}/);
+  if (m) {
+    const specs = m[1]
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+    if (specs.length === 0) return false;
+    return specs.every((s) => /^type\s+\S/.test(s));
+  }
+  return false;
+}
+
 function traverseAndExtractImports(
   node: SyntaxNodeLike,
   lang: LanguageEntry,
@@ -730,9 +785,9 @@ function traverseAndExtractImports(
   if (depth > 100 || !lang.import_nodes || lang.import_nodes.length === 0) return;
   if (lang.import_nodes.includes(node.type)) {
     const sources = extractImportSources(node, lang.name);
-    // TS 系 `import type` 整条语句运行时擦除——标记 type_only，依赖图/闭包不算边
-    const isTs = lang.name === 'typescript' || lang.name === 'tsx' || lang.name === 'javascript' || lang.name === 'jsx';
-    const typeOnly = isTs && /^\s*import\s+type\b/.test(node.text);
+    // TS 系 type-only 语句（`import type` / `export type` / 全 type 内联说明符）运行时擦除
+    // ⇒ 标记 type_only，依赖图/闭包不算边。判定收敛在 isTypeOnlyModuleStatement（唯一实现）。
+    const typeOnly = TS_FAMILY_LANGS.has(lang.name) && isTypeOnlyModuleStatement(node.text);
     const bindings = extractImportBindings(node, lang.name, sources);
     for (const src of sources) {
       imports.push({

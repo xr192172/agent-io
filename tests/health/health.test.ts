@@ -83,7 +83,9 @@ describe('health: 夹具整体体检', () => {
   it('五个文件三层 + 各类问题数量精确匹配', async () => {
     const r = await analyzeHealth(fixtureRoot);
     expect(r.fileCount).toBe(5);
-    expect(r.layers).toEqual({ contract: 2, brick: 2, glue: 1, violations: 1 });
+    // unclassified（P0-⑤，2026-09-28）：2 个 bricks/ 文件未命中任何层特征 ⇒ 落兜底积木层。
+    // 单列它 = 让「规则是否已退化」可见（实测本仓 src 是 281/309 未分类）。
+    expect(r.layers).toEqual({ contract: 2, brick: 2, glue: 1, unclassified: 2, violations: 1 });
     expect(r.counts).toEqual({
       unused_export: 5,
       unused_import: 1,

@@ -70,6 +70,7 @@ import { moveSymbol } from './tools/symbol_move.js';
 import { findReferences } from './tools/find_references.js';
 import { runTests } from './tools/run_tests.js';
 import { checkStaleBuild, formatStaleText } from './tools/stale_check.js';
+import { detectReachableRoots } from './tools/project_root.js';
 import { analyzeImpact, analyzeHubs } from './impact/index.js';
 import type { ImpactChangePoint } from './impact/index.js';
 import { compareProjects } from './cross_repo/index.js';
@@ -2328,7 +2329,7 @@ const TOOL_DEFS: ToolDef[] = [
       '②复杂度——顶层函数/方法圈复杂度启发式（剥注释后数分支，默认阈值 10，超阈值标 warn）；' +
       '③分层违规——依赖方向向上（契约→积木/胶水、积木→胶水）标 error。' +
       '守护"积木/契约/胶水"三分层哲学，是项目杂交选材的评分依据。' +
-      '输出：score(0-100)/grade(A-D)/summary + issues 逐条(file/line/symbol/message/evidence) + complexity Top 清单。',
+      '输出：score(0-100)/grade(A-D，0 个源文件时为 N/A)/summary + issues 逐条(file/line/symbol/message/evidence) + complexity Top 清单。',
     inputSchema: {
       project_dir: z.string().describe('目标项目根目录（绝对路径）'),
       complexity_threshold: z.number().int().optional().describe('圈复杂度阈值（默认 10）'),
@@ -2338,12 +2339,15 @@ const TOOL_DEFS: ToolDef[] = [
       const r = await analyzeHealth(String(a.project_dir), {
         complexityThreshold: a.complexity_threshold == null ? undefined : Number(a.complexity_threshold),
         top: a.top == null ? undefined : Number(a.top),
+        // P0-②：入口文件（package.json 的 bin / main / `node <路径>` script）喂给分析器，
+        // 否则它们会被当成无人消费的 dead code + "积木依赖胶水"（实测本仓 2 条假阳）。
+        reachableRoots: detectReachableRoots(String(a.project_dir)),
       });
       const sevMark: Record<string, string> = { error: '✗', warn: '!', info: '·' };
       const lines = [
         `代码健康度 · ${r.root}`,
         `${r.fileCount} 个文件 → 健康分 ${r.score}（${r.grade}）`,
-        `分层：胶水 ${r.layers.glue} / 积木 ${r.layers.brick} / 契约 ${r.layers.contract} / 违规 ${r.layers.violations}`,
+        `分层：胶水 ${r.layers.glue} / 积木 ${r.layers.brick}（其中未分类 ${r.layers.unclassified}）/ 契约 ${r.layers.contract} / 违规 ${r.layers.violations}`,
         r.summary,
         '',
         '—— 问题清单 ——',

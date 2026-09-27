@@ -71,10 +71,19 @@ export interface HealthReport {
   counts: Record<HealthKind, number>;
   /** 超阈值函数（按复杂度降序，最多 top 个） */
   complexity: ComplexityEntry[];
-  layers: { contract: number; brick: number; glue: number; violations: number };
-  /** 0-100 健康分 + 等级 */
+  /**
+   * 分层统计。
+   * `unclassified` = 未命中任何层特征、落到兜底 brick 的文件数（P0-⑤，2026-09-28）。
+   *
+   * ★ 为什么要单列它：brick 同时兼任「正面特征命中」与「什么都没命中」两个角色，
+   *   实测本仓 279/303（92%）落在这里 ⇒ 这个分级几乎不携带信息，却看不出来。
+   *   单列后「规则是否已退化」变成一个可读的数，而不是沉默的兜底。
+   *   （同款设计见 `capability_map` 的「未归线」段：看得见，而非静默消失。）
+   */
+  layers: { contract: number; brick: number; glue: number; unclassified: number; violations: number };
+  /** 0-100 健康分 + 等级；`N/A` = 没有可评的输入（0 个源文件），**不是满分** */
   score: number;
-  grade: 'A' | 'B' | 'C' | 'D';
+  grade: 'A' | 'B' | 'C' | 'D' | 'N/A';
   summary: string;
 }
 
@@ -83,6 +92,17 @@ export interface HealthOptions {
   complexityThreshold?: number;
   /** 复杂度清单最多列多少个（默认 10） */
   top?: number;
+  /**
+   * 可达性根（项目内相对路径）。P0-②，2026-09-28。
+   *
+   * 由调用方从 `package.json`（`bin` + `scripts.*` 里按路径调起的 `node dist/...`）探测后**显式喂入**，
+   * 而不是由本模块自己去读 package.json —— 分析器保持纯函数，探测在 `tools/project_root.ts`。
+   *
+   * 为什么必要：入口文件**天然没有项目内消费者**（它就是被外界调起的），
+   * 旧逻辑把它当 brick ⇒ 既报 orphan_file 又可能报 layer_violation。
+   * 实测本仓 2 条假阳：`daemon/daemon.ts`（`npm run daemon`）、`tools/serve.ts`（`npm run serve`）。
+   */
+  reachableRoots?: string[];
 }
 
 // ── 分层分类 ─────────────────────────────────────────────────
@@ -114,10 +134,42 @@ const GLUE_HINTS: RegExp[] = [
 
 const LAYER_ORDER: Record<Layer, number> = { contract: 0, brick: 1, glue: 2 };
 
-/** 按路径启发式给文件分层（未命中特征默认积木层） */
+/**
+ * ★ P2 之后改这一张表（P0-⑤，2026-09-28）。
+ *
+ * 目标形态（见 `docs/architecture-refactor-plan.md` §4）是
+ * `surfaces / features / kernel / dsl` 四层。**故意不在 P0 就换** —— 因为 P2 会分批搬迁
+ * 71k 行，中间态下新规则会把「还没搬完」全部判成违规，直接毁掉 P0 的验收口径
+ * 「层违规非空且**每条可解释**」。所以 P0 只做两件事（见下），换表留给 P2 落地那一刻。
+ */
+
+/** 是否命中某一层的**正面**特征（未命中 = 落兜底 brick，见 `unclassified`） */
+export function layerMatched(rel: string): boolean {
+  const p = normalizeForMatch(rel);
+  return CONTRACT_HINTS.some((re) => re.test(p)) || GLUE_HINTS.some((re) => re.test(p));
+}
+
+/**
+ * ★ 规范化：补一个前导 `/`，使**根级文件与深层文件同判**（P0-⑤，2026-09-28）。
+ *
+ * 修的是实测到的一个缺陷：旧实现把正则直接打在 `rel` 上，而 `GLUE_HINTS` 里
+ * `/\/server(\.|$)/`、`/\/routes?\//`、`/\/config\//` 这些都**要求前导斜杠** ⇒
+ * `classifyLayer('src/server.ts')` 判 glue，`classifyLayer('server.ts')` 判 brick。
+ * 即：**同一个文件，因为调用方传的 root 不同而分层不同**：
+ *   `analyzeHealth('src')`（rel 无 `src/` 前缀）与 `analyzeHealth('.')`（rel 有）读数不一致。
+ * 量具的读数不该取决于你从哪一级目录调用它。补前导 `/` 后两条路径同判。
+ *
+ * 注：`CONTRACT_HINTS` 里 `/(^|\/)types\.…$/` 这类本来就两种写法都覆盖，补 `/` 不改变其行为。
+ */
+function normalizeForMatch(rel: string): string {
+  return rel.startsWith('/') ? rel : `/${rel}`;
+}
+
+/** 按路径启发式给文件分层（未命中任何层特征 → 默认积木层） */
 export function classifyLayer(rel: string): Layer {
-  if (CONTRACT_HINTS.some((re) => re.test(rel))) return 'contract';
-  if (GLUE_HINTS.some((re) => re.test(rel))) return 'glue';
+  const p = normalizeForMatch(rel);
+  if (CONTRACT_HINTS.some((re) => re.test(p))) return 'contract';
+  if (GLUE_HINTS.some((re) => re.test(p))) return 'glue';
   return 'brick';
 }
 
@@ -511,7 +563,8 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
 
   // 跨文件引用（导出名唯一匹配 → 目标符号 qualified_name 入 provider 的 crossRefs）
   const crossRefs = new Map<string, Set<string>>();
-  const layerImports = new Map<string, Map<string, number>>(); // file → importedRel → 首个引用行
+  /** file → importedRel → { 首个引用行, 是否 type-only }（P0-③：type_only 供违规判定用） */
+  const layerImports = new Map<string, Map<string, { line: number; typeOnly: boolean }>>();
   const reverseConsumers = new Map<string, Set<string>>(); // provider → consumers（import 级）
   for (const p of parses) {
     for (const imp of p.parsed.imports) {
@@ -522,7 +575,7 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
         m = new Map();
         layerImports.set(p.rel, m);
       }
-      if (!m.has(target)) m.set(target, imp.line);
+      if (!m.has(target)) m.set(target, { line: imp.line, typeOnly: imp.type_only === true });
       let s = reverseConsumers.get(target);
       if (!s) {
         s = new Set();
@@ -559,11 +612,20 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
 
   const issues: HealthIssue[] = [];
   const complexityEntries: ComplexityEntry[] = [];
-  const layers: { contract: number; brick: number; glue: number; violations: number } = { contract: 0, brick: 0, glue: 0, violations: 0 };
+  const layers: { contract: number; brick: number; glue: number; unclassified: number; violations: number } = {
+    contract: 0, brick: 0, glue: 0, unclassified: 0, violations: 0,
+  };
+  /** 可达根（P0-②）：调用方喂入的项目内相对路径，规范成无前导 `./` 的形态再比 */
+  const roots = new Set((options.reachableRoots ?? []).map((r) => r.replace(/^\.\//, '')));
 
   for (const p of parses) {
-    const layer = classifyLayer(p.rel);
+    // P0-②：入口文件按胶水层算。它不是「积木」——它被外界（package.json / bin）调起，
+    //   天然没有项目内消费者；旧逻辑当 brick ⇒ 既报 orphan 又可能报 layer_violation（实测 2 条假阳）。
+    const isRoot = roots.has(p.rel);
+    const layer: Layer = isRoot ? 'glue' : classifyLayer(p.rel);
     layers[layer] += 1;
+    // P0-⑤：单列「未命中任何层特征」的兜底文件数，让规则退化可见（见 HealthReport.layers 注释）
+    if (layer === 'brick' && !layerMatched(p.rel)) layers.unclassified += 1;
     const content = contentByRel.get(p.rel) ?? '';
     const contentLines = content.split('\n');
     const internal = internalRefs.get(p.rel) ?? new Set();
@@ -612,6 +674,8 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
     }
 
     // ── 维度1c：孤儿文件（无任何项目内消费者 + 非胶水层）──
+    // ★ 可达根（P0-②）已在上面被归入 glue 层，故天然不会落到这里 —— 无需再判 isRoot。
+    //   实测本仓修掉 2 条假阳：daemon/daemon.ts（npm run daemon）、tools/serve.ts（npm run serve）。
     if (consumers.size === 0 && layer !== 'glue') {
       issues.push({
         kind: 'orphan_file',
@@ -641,15 +705,27 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
     }
 
     // ── 维度3：分层违规（import 的目标层 > 自身层 = 向上依赖）──
-    for (const [targetRel, line] of layerImports.get(p.rel) ?? []) {
-      const targetLayer = classifyLayer(targetRel);
+    for (const [targetRel, impInfo] of layerImports.get(p.rel) ?? []) {
+      // ★ P0-③（2026-09-28）：`import type` **不计**分层违规 —— 对齐 db/symbols.ts 的既有知识
+      //   （逐字："TS `import type` 运行时擦除——不建 import 边（依赖图/闭包不算依赖）"）。
+      //   这是同一条知识在本仓的第三处落点，前两处只躺在原地、没有横向传播。
+      //
+      //   为什么只跳过「违规判定」、**不**跳过 `reverseConsumers`：
+      //     · 架构违规问的是**运行时**依赖方向 —— type-only 依赖运行时并不存在，故不构成违规；
+      //     · 但 type-only 仍是真实的**编译期消费者**，若把它算成"无人消费"，
+      //       orphan_file / unused_export 立刻产生假阳。两个问题问的不是一回事。
+      //   实测效果：本仓 9 条假阳消失（dsl/types.ts 8 条统一再导出 + adapters/types.ts 1 条），
+      //   它们**全部**是 `import type`；剩下的违规因此每一条都是真依赖，可逐条解释。
+      if (impInfo.typeOnly) continue;
+      // 可达根作目标时同按胶水层算（P0-②）：入口是顶层，被入口 import 不是"向上依赖"
+      const targetLayer: Layer = roots.has(targetRel) ? 'glue' : classifyLayer(targetRel);
       if (LAYER_ORDER[targetLayer] > LAYER_ORDER[layer]) {
         layers.violations += 1;
         issues.push({
           kind: 'layer_violation',
           severity: 'error',
           file: p.rel,
-          line,
+          line: impInfo.line,
           message: `分层违规：${layer} 层依赖高层 ${targetLayer} 层（${targetRel}）`,
           evidence: targetRel,
         });
@@ -663,20 +739,42 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
   };
   for (const i of issues) counts[i.kind] += 1;
 
-  // 健康评分（0-100）
-  let score = 100;
-  score -= counts.layer_violation * 20;
-  score -= counts.high_complexity * 5;
-  score -= counts.orphan_file * 8;
-  score -= counts.unused_export * 3;
-  score -= counts.unused_import * 2;
-  score = Math.max(0, Math.min(100, score));
-  const grade: HealthReport['grade'] = score >= 90 ? 'A' : score >= 75 ? 'B' : score >= 60 ? 'C' : 'D';
+  // ── 健康评分（P0-④，2026-09-28 重做：去饱和）────────────────
+  //
+  // 旧实现：`score = 100 - Σ(count × 常数)` 再 clamp [0,100]。实测的失败模式是**两端都饱和**：
+  //   · 本仓真读数 −2400 被压成 **0 (D)**；443 高复杂度 / 156 未用导出 / 12 分层违规
+  //     这些截然不同的状态会读出**同一个数** ⇒ 没有动态范围，改好了也不动 ⇒ 不能承载判断。
+  //   · 更糟的反向饱和：一个**不存在的路径**（0 个文件）读到 **100 (A)** —— "没输入"被当成"满分健康"。
+  //   （计划书 §5 的 G5 就是这条教训：一个在两种状态下读数相同的指标，不是判据，是常量。）
+  //
+  // 新实现：**密度归一 + 单维封顶的连续映射**。
+  //   · 先把绝对条数换成「密度」= 条数 / 文件数 × 100（条/百文件）—— 使读数不随代码规模
+  //     单调变化（给同一份代码加文件不会自己变健康），也让"大仓天然违规多"不再自动压穿。
+  //   · 再对每维按 `w × min(1, 密度 / fullAt)` 扣分：**单维扣分上限 = w（各维之和 = 100）**
+  //     ⇒ 任何单一维度爆表都压不穿总分；**且封顶之前逐条都有分辨率**（这点很关键：
+  //     纯"分档"实现里 1 条违规与 2 条违规会落同一档、读同一个数，等于把饱和搬到档内）。
+  //   · 0 个源文件 ⇒ `grade = 'N/A'`、`score = 0`，summary 首句明说"无输入"。
+  //     空输入不是"健康"、也不是"极坏"，它是**第三种状态**，必须能与这两者区分开。
+  //
+  // ⚠️ `fullAt` 是**标定值**，不是自然常数：它表示"该维密度到此即扣满"。选它的依据是
+  //    让本仓当前读数落在有区分度的区间内（实测 43 分 / D），不是让本仓好看。
+  //    改 fullAt = 改判据口径 ⇒ 必须同步 G5 门（tests/health/health-validity.test.ts）与 docs 台账。
+  const score = computeScore(counts, files.length);
+  const grade = score.grade;
+
+  const density = (n: number): string =>
+    files.length === 0 ? '—' : `${((n / files.length) * 100).toFixed(1)}/百文件`;
 
   const summary =
-    `健康度 ${score} 分（${grade}）：${counts.layer_violation} 分层违规 / ` +
-    `${counts.high_complexity} 高复杂度 / ${counts.unused_export} 未使用导出 / ` +
-    `${counts.unused_import} 未使用 import / ${counts.orphan_file} 孤儿文件`;
+    files.length === 0
+      ? `无输入（0 个源文件）—— 本次读数不代表健康，grade=N/A。请检查 root 是否存在、扩展名是否被内核支持。`
+      : `健康度 ${score.value} 分（${grade}）：${counts.layer_violation} 分层违规 / ` +
+        `${counts.high_complexity} 高复杂度 / ${counts.unused_export} 未使用导出 / ` +
+        `${counts.unused_import} 未使用 import / ${counts.orphan_file} 孤儿文件` +
+        `　[密度 违规 ${density(counts.layer_violation)} · 复杂度 ${density(counts.high_complexity)} · ` +
+        `孤儿 ${density(counts.orphan_file)} · 未用导出 ${density(counts.unused_export)} · ` +
+        `未用 import ${density(counts.unused_import)}]` +
+        `　[分层 契约 ${layers.contract} / 积木 ${layers.brick}（其中未分类 ${layers.unclassified}）/ 胶水 ${layers.glue}]`;
 
   return {
     root,
@@ -685,8 +783,53 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
     counts,
     complexity: complexityEntries.slice(0, top),
     layers,
-    score,
+    score: score.value,
     grade,
     summary,
   };
+}
+
+/**
+ * 每维度评分口径（P0-④）。
+ * `w` = 该维度**最多**扣多少分（各维之和 = 100 ⇒ 单维不可压穿总分）；
+ * `fullAt` = 密度（条/百文件）达到该值即扣满。
+ */
+const SCORE_SPEC: Record<HealthKind, { w: number; fullAt: number }> = {
+  layer_violation: { w: 30, fullAt: 15 },
+  high_complexity: { w: 25, fullAt: 30 },
+  orphan_file: { w: 20, fullAt: 10 },
+  unused_export: { w: 15, fullAt: 50 },
+  unused_import: { w: 10, fullAt: 25 },
+};
+
+const SCORE_KEYS = Object.keys(SCORE_SPEC) as HealthKind[];
+
+/**
+ * 由各维度计数算健康分（纯函数，可单测 —— G5 的"分辨率"断言直接打在这里）。
+ *
+ * `contribution` 返回每维实际扣了多少分，用于解释读数（"这 43 分是被什么扣掉的"），
+ * 也用于 G5 断言"某一维变差 ⇒ 总分必须跟着变"（单调性）。
+ *
+ * 0 个文件 ⇒ `{ value: 0, grade: 'N/A' }`（**不是** 100 —— 见调用点上方注释的反向饱和）。
+ */
+export function computeScore(
+  counts: Record<HealthKind, number>,
+  fileCount: number,
+): { value: number; grade: HealthReport['grade']; contribution: Record<HealthKind, number> } {
+  const contribution = {} as Record<HealthKind, number>;
+  if (fileCount === 0) {
+    for (const k of SCORE_KEYS) contribution[k] = 0;
+    return { value: 0, grade: 'N/A', contribution };
+  }
+  let deducted = 0;
+  for (const k of SCORE_KEYS) {
+    const spec = SCORE_SPEC[k];
+    const per100 = (counts[k] / fileCount) * 100;
+    const c = spec.w * Math.min(1, per100 / spec.fullAt); // 连续 + 单维封顶
+    contribution[k] = c;
+    deducted += c;
+  }
+  const value = Math.max(0, Math.min(100, Math.round(100 - deducted)));
+  const grade: HealthReport['grade'] = value >= 90 ? 'A' : value >= 75 ? 'B' : value >= 60 ? 'C' : 'D';
+  return { value, grade, contribution };
 }

@@ -25,7 +25,7 @@ import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { getParser } from './ts_kernel/loader.js';
 import { findLanguageByExt } from './ts_kernel/languages.js';
-import { parseContent } from './ts_kernel/kernel.js';
+import { parseContent, isTypeOnlyModuleStatement } from './ts_kernel/kernel.js';
 import { renameFile } from './rename_file.js';
 import { resolveProjectRoot, expandClosureDetailed, loadAliasConfig, resolveAliasedImport, type AliasConfig, type ExternalRef } from './project_root.js';
 import { createProtectGuard } from './protect.js';
@@ -175,7 +175,9 @@ export async function analyzeModuleSource(src: string, filePath = 'file.ts'): Pr
 
   const handleImport = (node: N): void => {
     const source = stripQuotes(fieldText(node, 'source'));
-    const typeOnly = /^\s*import\s+type\b/.test(node.text);
+    // ★ type-only 判定收敛到内核唯一实现（2026-09-28）：此前本行与 kernel.ts 各有一份
+    //   逐字相同的 `/^\s*import\s+type\b/`，于是 `export type … from` 的盲区在两处各存活一次。
+    const typeOnly = isTypeOnlyModuleStatement(node.text);
     const pushEdge = (e: Omit<ImportEdge, 'typeOnly'>) => imports.push({ ...e, typeOnly });
     // 遍历 import 子句（import_clause / namespace_import / named_imports / default）
     const walkClause = (n: N, depth = 0): void => {
@@ -219,9 +221,12 @@ export async function analyzeModuleSource(src: string, filePath = 'file.ts'): Pr
     // 带 source 的 re-export（`export { a } from 'x'` / `export * from 'x'`）
     if (sourceNode) {
       const source = stripQuotes(sourceNode.text);
+      // ★ `export type { A } from 'x'` / `export type * from 'x'` 同样运行时擦除 —— 用同一判据
+      //   （2026-09-28：此前这里硬编码 typeOnly:false，是 type-only 知识的第二处盲区）
+      const typeOnly = isTypeOnlyModuleStatement(node.text);
       const isStar = /^\s*export\s+\*(?: as [\w$]+)?\s+from/.test(node.text);
       if (isStar) {
-        imports.push({ source, remoteName: null, remoteOffset: null, localName: null, typeOnly: false, star: true, isReexport: true });
+        imports.push({ source, remoteName: null, remoteOffset: null, localName: null, typeOnly, star: true, isReexport: true });
         return; // 星号后面没有可追踪的说明符
       }
       const specs: N[] = [];
@@ -231,7 +236,7 @@ export async function analyzeModuleSource(src: string, filePath = 'file.ts'): Pr
         if (ni) {
           declare(rootScope, ni.text, ni.offset, 'reexport');
           exportRefs.push({ name: ni.text, offset: ni.offset, nodeType: 'value' });
-          imports.push({ source, remoteName: ni.text, remoteOffset: ni.offset, localName: null, typeOnly: false, star: false, isReexport: true });
+          imports.push({ source, remoteName: ni.text, remoteOffset: ni.offset, localName: null, typeOnly, star: false, isReexport: true });
         }
       }
       return;

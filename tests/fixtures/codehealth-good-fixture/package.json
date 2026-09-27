@@ -1,0 +1,6 @@
+{
+  "name": "codehealth-good-fixture",
+  "private": true,
+  "bin": { "fixture": "dist/src/glue/main.js" },
+  "scripts": { "start": "node dist/src/glue/main.js" }
+}

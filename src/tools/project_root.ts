@@ -228,6 +228,117 @@ export function realResolveImport(importerAbs: string, source: string): string |
 }
 
 // ─────────────────────────────────────────────
+// 可达性根（P0-②）：被外界按路径调起的入口文件
+// ─────────────────────────────────────────────
+
+/** 被调起的「产物路径」→ 候选源码相对路径（剥 dist/ 前缀、JS 家族后缀互换） */
+function sourceCandidatesOfReferencedPath(p: string): string[] {
+  const norm = p.replace(/\\/g, '/').replace(/^\.?\//, '');
+  const bases = [norm];
+  // 本仓约定：`tsconfig` 是 rootDir='.' + outDir='./dist' + include=['src/**/*']，
+  // 故产物是 `dist/src/...` 而源码是 `src/...` ⇒ 正确映射是**剥掉 `dist/` 前缀**，
+  // 不是把 `dist` 换成 `src`（那会得到 `src/src/...`）。实测踩过这个坑。
+  if (norm.startsWith('dist/')) bases.push(norm.slice('dist/'.length));
+  const out: string[] = [];
+  for (const b of bases) {
+    out.push(b);
+    const ext = path.posix.extname(b);
+    if (['.js', '.mjs', '.cjs', '.jsx'].includes(ext)) {
+      const bare = b.slice(0, -ext.length);
+      for (const e of ['.ts', '.tsx']) out.push(bare + e);
+    }
+  }
+  return out;
+}
+
+/**
+ * 探测「可达性根」——被外界按路径调起的入口文件（P0-②，2026-09-28）
+ *
+ * **为什么需要它**：入口文件**天然没有项目内消费者**（它就是被 package.json / bin / 外界调起的）。
+ * 量具不知道这件事，就会把入口当普通模块，报出两类假阳：
+ *   · `orphan_file` —— "整文件无项目内消费者（可能是待清理的 dead code）"
+ *   · `layer_violation` —— 入口 import 自己的 server 模块，被判成"积木依赖胶水"
+ * 实测本仓 2 条：`daemon/daemon.ts`（`npm run daemon`）、`tools/serve.ts`（`npm run serve`）。
+ *
+ * **判据只认可信的声明，不做启发式猜测**（宁可少报，不可把"什么都算根"）：
+ *   1. `package.json` 的 `bin` 全部取值（字符串或对象）
+ *   2. `package.json` 的 `main`（若声明）
+ *   3. `package.json` 的 `scripts.*` 里 **`node <路径>`** 形式调起的脚本。
+ *      只认这一种写法：`tsc` / `vite` / 自定义 bin 调的不是"项目内入口文件"，
+ *      据此声明可达根会把根集合污染成"什么都算根"，量具就再也抓不到孤儿了。
+ *
+ * **路径映射**：scripts 写的是产物路径（`dist/src/daemon/daemon.js`），源码在 `src/`。
+ *   故对每个候选尝试 `dist/ → src/` 替换 + JS 家族后缀换 `.ts/.tsx`，
+ *   并以 `fs.existsSync` **落盘确认** —— 只把真实存在的文件当根，猜错不报。
+ *
+ * **返回值相对谁**：相对**调用方传入的 root**。manifest 允许在 root 的祖先目录
+ *   （典型：分析 `src/`，而 `package.json` 在项目根），此时会向上找到 manifest 再 rebase 回来；
+ *   落在 root 之外的入口（如 `scripts/*.mjs`）会被丢弃 —— 它们不在本次分析范围内。
+ *
+ * @returns 项目内相对路径（posix）去重排序；无 manifest / 无入口 → 空数组
+ */
+export function detectReachableRoots(root: string): string[] {
+  const absRoot = path.resolve(root);
+  let dir = absRoot;
+  let pkgAbs: string | null = null;
+  for (let i = 0; i < 8; i++) {
+    const cand = path.join(dir, 'package.json');
+    if (fs.existsSync(cand)) {
+      pkgAbs = cand;
+      break;
+    }
+    const up = path.dirname(dir);
+    if (up === dir) break;
+    dir = up;
+  }
+  if (!pkgAbs) return [];
+  const pkgDir = path.dirname(pkgAbs);
+
+  let pkg: Record<string, unknown>;
+  try {
+    pkg = JSON.parse(fs.readFileSync(pkgAbs, 'utf8')) as Record<string, unknown>;
+  } catch {
+    return [];
+  }
+
+  const referenced: string[] = [];
+  const bin = pkg.bin;
+  if (typeof bin === 'string') referenced.push(bin);
+  else if (bin && typeof bin === 'object') {
+    for (const v of Object.values(bin as Record<string, unknown>)) if (typeof v === 'string') referenced.push(v);
+  }
+  if (typeof pkg.main === 'string') referenced.push(pkg.main);
+  const scripts = pkg.scripts;
+  if (scripts && typeof scripts === 'object') {
+    // `node --experimental-foo dist/x.js` 里的开关不能被当成路径，故用 `(?!-)` 排除
+    const nodeScriptRe = /(?:^|[&|;]\s*)node\s+(?!-)(?:"([^"]+)"|'([^']+)'|([^\s&|;]+))/g;
+    for (const v of Object.values(scripts as Record<string, unknown>)) {
+      if (typeof v !== 'string') continue;
+      for (const m of v.matchAll(nodeScriptRe)) {
+        const p = m[1] ?? m[2] ?? m[3];
+        if (p) referenced.push(p);
+      }
+    }
+  }
+
+  const out = new Set<string>();
+  for (const ref of referenced) {
+    for (const cand of sourceCandidatesOfReferencedPath(ref)) {
+      const abs = path.join(pkgDir, cand);
+      let rel: string;
+      try {
+        rel = path.relative(absRoot, abs).replace(/\\/g, '/');
+      } catch {
+        continue;
+      }
+      if (!rel || rel.startsWith('..') || path.isAbsolute(rel)) continue; // 分析范围之外
+      if (fs.existsSync(abs) && fs.statSync(abs).isFile()) out.add(rel);
+    }
+  }
+  return [...out].sort();
+}
+
+// ─────────────────────────────────────────────
 // 跨语言 import 边（Go / Python）：让闭包沿非 TS 文件的 import 边扩展
 // ─────────────────────────────────────────────
 

@@ -87,7 +87,7 @@
 | G2 | README 工具数 | 既有 `scripts/readme_tools_gate.mjs` ⇒ 67=67 | ✅ 已在跑 |
 | G3 | 分层方向 | 依赖只允许向下；`import type` 不计 | 待建（P0） |
 | G4 | 单一实现 | 同族实现（解析器/工具表/内核路径）不得有第二份 | 待建（P5） |
-| G5 | 量具有效性 | 同一量具在"已知好"与"已知坏"夹具上给出**不同**读数 | 待建（P0，**防饱和**） |
+| G5 | 量具有效性 | 同一量具在"已知好"与"已知坏"夹具上给出**不同**读数 | ✅ 已在跑（P0，`tests/health/health-validity.test.ts`，含**反饱和**与**空输入**断言） |
 | G6 | 回归 | 205 文件 / 2137 测试全绿 | ✅ 已在跑 |
 
 > G5 是这次最贵的教训：**一个在两种状态下读数相同的指标，不是判据，是常量。**
@@ -114,6 +114,57 @@
   - 实测两态：`orphan_file` 284→18、`layer_violation` 0→12
   - 新增回归门 `tests/fixtures/codehealth-esm-fixture/`（旧夹具用无后缀 import，从未复现生产写法 ⇒ 缺陷在 237 测试下长期存活）
   - 验证：全量回归 205 文件 / 2137 测试全过；`dist` 已重建（`dist/` gitignored）
+
+- **commit `579d7ad`**　`refactor(kernel)`: P0-① 相对 import 解析统一成一份
+  - `src/tools/ts_kernel/import_resolve.ts` 成为唯一实现（`importPathCandidates` / `resolveImportPath`）
+  - 三处调用点（db/health/impact）改为委托，**策略留在原地不下沉**（`db.resolveImportTarget`
+    还被 `tools/rename_file.ts:295,303` 当通用工具复用，下沉相对性门会静默改其行为）
+  - `tests/tools/import_resolve.test.ts`（11 项）锁**候选顺序**；顺带钉住一条兼容性怪癖
+  - 验证：tsc 干净；205 文件 / 2137 测试全过（此后基线 206 文件 / 2148 测试）
+
+- **P0-②③④⑤ + G5**（本轮续做，见下条提交）
+  - **② 可达根注入**：新增 `detectReachableRoots()`（`src/tools/project_root.ts`），从 `package.json`
+    的 `bin` / `main` / `scripts.*` 中 `node <路径>` 形式探测入口，**落盘确认后**返回项目内相对路径；
+    `HealthOptions.reachableRoots` 由**调用方显式喂入**（分析器保持纯函数）。
+    ⇒ 入口按胶水层算 + 不计孤儿。实测消掉 **2 条假阳**：`daemon/daemon.ts`（`npm run daemon`）、
+    `tools/serve.ts`（`npm run serve`）。孤儿 18 → **16**。
+  - **③ `import type` 不计分层违规**：对齐 `db/symbols.ts` 既有知识（"运行时擦除——不建 import 边"）。
+    ★ 只跳过**违规判定**，**不**跳过 `reverseConsumers` —— 架构违规问运行时依赖方向，
+      而 type-only 仍是真实编译期消费者；算成"无人消费"会让 orphan/unused_export 假阳。
+    ⇒ 消掉 **9 条**假阳（`dsl/types.ts` 8 条统一再导出 + `adapters/types.ts` 1 条）。
+  - **③′ 连带修根因（比 ③ 更根本）**：type-only 判定原先有**两份逐字相同**的实现
+    （`ts_kernel/kernel.ts` 与 `rename_symbol.ts:178`），都只写了 `/^\s*import\s+type\b/`
+    ⇒ **同一个盲区在两处各存活一次**：`export type { A } from './x'` 同样被运行时擦除却谁都不认
+    （`dsl/types.ts:47` 那条假违规就是它）。收敛为内核唯一实现
+    `isTypeOnlyModuleStatement()`，两处共用 ⇒ 一改两处生效。
+  - **④ 健康分去饱和**：`computeScore()` 改为**密度归一 + 单维封顶的连续映射**
+    （`100 − Σ wᵢ·min(1, 密度ᵢ/fullAtᵢ)`，Σwᵢ=100）。实测旧公式两端都饱和：真仓被压成 **0(D)**、
+    而**不存在的路径读到 100(A)**。改后真仓 **45(D)**，有动态范围。
+    `HealthReport.grade` 增 `'N/A'`（0 个源文件 ⇒ 空输入是**第三种状态**，不是"健康"也不是"极坏"）；
+    `health_cli` 对不存在的 root 直接 exit 2。
+  - **⑤ 分层规则**：① 去**根依赖** —— `classifyLayer` 先补前导 `/`，修掉"`server.ts` 判 brick、
+    `src/server.ts` 判 glue"的读数漂移（同一文件因调用 root 不同而分层不同）；
+    ② 新增 `layers.unclassified` —— 积木层同时兼任"正面命中"与"兜底"两个角色，
+    实测本仓 **281/281 全未命中** ⇒ 规则退化此前是**沉默**的，现在可读（同款设计见 `capability_map` 的"未归线"段）。
+    ⚠️ 四层玩法（surfaces/features/kernel/dsl）**故意留到 P2**：现在换会让 P2 分批搬迁的中间态
+    全部判违规，直接毁掉 P0 的验收口径"每条可解释"。
+  - **G5 门**：`tests/health/health-validity.test.ts`（15 项）—— 方向 / **反饱和（坏 ≠ 0）** /
+    **分辨率（同维更差 ⇒ 分必须更低）** / 单维封顶 / 空输入第三态 / 分层与 root 无关 / 可达根注入确实消假阳。
+    新夹具：`codehealth-good-fixture`（已知好，零问题）、`codehealth-roots-fixture`（可达根）。
+  - **实测两态（同一份 src）**：
+
+    | 指标 | 改前 | 改后 |
+    |---|---|---|
+    | `layer_violation` | 12（9 条 type-only 假阳 + 1 条入口假阳） | **2**（两条均可解释，见下） |
+    | `orphan_file` | 18（2 条是入口） | **16** |
+    | 健康分 | 0 (D)（饱和，改好不动） | **45 (D)**（有动态范围） |
+    | 不存在的路径 | 100 (A) | **N/A** + exit 2 |
+    | 未分类（兜底层） | 不可见 | **281/281**（规则退化可见） |
+
+  - **改后剩下的 2 条违规**（逐条可解释，且都指向后续阶段）：
+    1. `tools/archify_pipeline.ts:14 → tools/archify_cli.ts` —— **库反向依赖自己的 CLI 壳**（真缺陷；R5 挂起线）。
+    2. `tools/sync_contracts.ts:18 → server_registry.ts` —— 工具定义依赖注册表
+       ⇒ **正是 P1 的目标**：`TOOL_DEFS` 应由 lane 文件聚合，工具不该 import 注册表。
 - **P0-① 完成：解析器统一成一份**（本文件写作同轮落地）
   - 新模块 `src/tools/ts_kernel/import_resolve.ts` —— **唯一实现**，导出
     `IMPORT_EXTS` / `INDEX_FILES` / `importPathCandidates()` / `resolveImportPath()`，
@@ -137,12 +188,28 @@
     新增测试 11 项过；调用方测试 26 项过；产物已重建
   - 单一实现核查（`grep INDEX_FILES|bare + e`）：除新模块外只剩注释引用与入口再导出 ✅
 
-- **P0 待办（下一步）**：
-  - ②可达根注入：把 `package.json` 里按路径调的入口（`start`/`serve`/`daemon`/… 共 14 条）与
-    registry 派发表作为**可达性根**喂给分析器 ⇒ 否则 `orphan_file` 仍会把入口文件报成孤儿
-  - ③`import type` 不计分层违规 —— 与 `db/symbols.ts` 既有实现对齐（注释："运行时擦除"）
-  - ④健康分去饱和（当前 `0 (D)` 在两态下读数相同 ⇒ 不承载判断）
-  - ⑤分层规则重划（旧 `contract/brick/glue` 把 283/308 文件判进默认层）
+- **P0 待办（①完成后曾列，②③④⑤ 已在下一轮完成，见上）**：
+  ②可达根注入／③`import type` 不计分层违规／④健康分去饱和／⑤分层规则重划
+
+### ★ 本轮新发现的同族副本（病根仍在扩散，未清完）
+
+P0-① 只统一了「相对 import 解析」这一族的 3 份。顺着同一把尺子扫全仓，**同族副本远不止 3 份**。
+下表为实测（`grep` 可复现），**均未处理**，按价值排序：
+
+| # | 位置 | 同的是什么意图 | 状态 |
+|---|---|---|---|
+| 1 | `tools/project_root.ts:203 resolveToFile` / `:225 realResolveImport` | specifier → 文件（补扩展名 + 目录索引 + **只认相对导入**） | ❗**仍带原 bug**：`if (!path.extname(p))` 守卫使 `./x.js → x.ts` **永不尝试**；本仓 961/971 条相对 import 带 `.js` ⇒ 基本解析不动。**只被自己的测试引用**（死代码候选） |
+| 2 | `tools/refs_text.ts:41 specifierCandidates` + `:112/:151` | file → specifier 串（反向）+ 剥 JS 家族后缀 | 与第 1 族共享同一条"后缀知识" |
+| 3 | `tools/cli_extract.ts:47` 与 `tools/registry_extract.ts:57` | 同一段 `import {a,b} from './x'` → 符号→模块映射 | **两份逐字相同**（正则、过滤、`.replace(/^\.\//,'').replace(/\.js$/,'')` 全同） |
+| 4 | `tools/slim_brick.ts:618 TS_RESOLVE_EXTS` / `:726` | specifier → 文件 | 第 5 份候选表 |
+| 5 | `tools/import_project.ts:346 RESOLVE_EXTS` | specifier → 文件 | 第 6 份候选表 |
+| 6 | `ts_kernel/import_resolve.ts:25 IMPORT_EXTS` | "什么算源码扩展名" | 第 16 份**静态**清单；权威是内核动态的 `listSupportedExtensions()`（实测 `[.ts,.js,.mjs,.cjs,.go,.py,.java,.c,.h,.cs,.rs,.php]`，**不含 `.tsx`**），二者从未对齐 |
+
+**"什么算源码扩展名"全仓共 15+ 份静态清单，口径互不一致**（实测）：
+`project_root.ts:44`（含 `.vue/.mts/.cts`）／`rename_file.ts:29`（无 `.vue`）／`contract_gate.ts:73`（无 `.mts/.cts`）／
+`package_migration.ts:35`（无 `.mts/.cts`）／`slim_brick.ts:618`（含 `.json`）／`refs_text.ts:55`（含 `.rs/.php`）／
+`behavior/index.ts:41`（只有 JS 家族 6 个）／`deprecate_offline.ts:40`／`rule_apply.ts:108`／`rename_symbols.ts:284`（含 `.json/.md/.yml`）…
+⇒ 建议做法与 P0-① 同：**能派生的不手写**，权威唯一（内核），其余按需传参。
 
 ### 未做 / 需要你决策
 
@@ -150,16 +217,19 @@
 |---|---|---|
 | 1 | **推送仍缺凭据**（`terminal prompts disabled`） | 需要凭据通道：`gh auth login` / PAT / 你本地推 |
 | 2 | P4 是否真动工具名（`mcp__design-canvas__*` 会对 DSH 现有会话与桥接造成断裂） | 改对外契约 |
-| 3 | `dsl/types.ts` 那 8 条"越界"是真实倒置还是 `import type` 误计 | 决定 P0-⑤ 的分层规则细节 |
-| 4 | `orphan_file` 降到 18 后的真实死代码（如 `version_upgrade/` 整个子系统 ~1,941 行疑似全孤立） | 删除不可逆 |
+| 3 | ~~`dsl/types.ts` 那 8 条是真实倒置还是 `import type` 误计~~ | **已答**：9 条全是 type-only（8 条在 `dsl/types.ts` + 1 条在 `adapters/types.ts`）⇒ P0-③ 已消；剩余 2 条是真依赖 |
+| 4 | `orphan_file` 降到 16 后的真实死代码（如 `version_upgrade/` 整个子系统 ~1,941 行疑似全孤立、`tools/get_dsl.ts` 等） | 删除不可逆 |
+| 5 | **高复杂度阈值 10 是否标定得当**（实测 444 个函数超阈值，占健康分扣分的 25/56） | 若阈值过严 ⇒ 该维永远顶格，"复杂度"实际退化成常数项；若阈值合理 ⇒ 本仓确实有 444 处待拆 |
+| 6 | 那 15+ 份静态扩展名清单要不要在 P2 一并收敛（见上表） | 动面广，属 P2 的活儿但影响 P0 量具口径 |
 
 ### 风险台账
 
 | 风险 | 表现 | 缓解 |
 |---|---|---|
 | P2 搬迁破坏相对 import | 200 文件全在一层，路径深度变化即断链 | 用仓内 `rename_files` 工具（联动全仓 import）+ 一族一提交 |
-| 量具再度失真 | 修好的解析器又被复制一份 | G4 单一实现门 |
+| 量具再度失真 | 修好的解析器 / type-only 判定又被复制一份 | G4 单一实现门（**仍未建**；本轮已现场撞到第 2 例：`rename_symbol.ts:178` 逐字复制了 `kernel.ts` 的 type-only 正则） |
 | 分阶段半途而废 | 出现"一半新一半旧" | 每阶段独立可回滚；不合并进行中的阶段 |
+| **量具"看不见自己"** | 分层规则退化（281/281 未分类）此前是沉默的 | 已加 `layers.unclassified` 显式暴露；G5 门守住空输入/饱和 |
 
 ---
 
@@ -180,4 +250,29 @@ node scripts/readme_tools_gate.mjs
 # 相对 import 写法统计（为何 .js 后缀是关键）
 grep -rn "from '\.\{1,2\}/[^']*\.js'" src --include=*.ts | wc -l   # 961
 grep -rn "from '\.\{1,2\}/[^']*'" src --include=*.ts | grep -v "\.js'" | wc -l  # 10
+
+# ── P0-②③④⑤ 的判据（2026-09-28 新增）──────────────────────────────
+
+# 量具有效性门（G5）：方向 / 反饱和 / 分辨率 / 空输入第三态 / 分层与 root 无关 / 可达根
+./node_modules/.bin/vitest run tests/health/health-validity.test.ts
+
+# 空输入不得读成"健康"（旧行为是 100(A)；现为 exit 2）
+node dist/src/tools/health_cli.js ./no/such/dir ; echo "exit=$?"   # 期望 exit=2
+
+# 同一份代码在两种 root 下分层必须一致（旧实现在此漂移）
+node -e "import('./dist/src/health/index.js').then(m=>console.log(m.classifyLayer('server.ts'), m.classifyLayer('src/server.ts')))"
+# 期望：glue glue
+
+# 可达根探测（入口不再报孤儿）
+node -e "import('./dist/src/tools/project_root.js').then(m=>console.log(m.detectReachableRoots('src').join(',')))"
+# 期望含 daemon/daemon.ts 与 tools/serve.ts
+
+# type-only 判定（唯一实现）+ 内核真的标 export type … from
+./node_modules/.bin/vitest run tests/tools/type_only_statement.test.ts
+
+# 同族副本扫描（P0-① 只清了 3 份，下表是剩余候选）
+grep -rn "js|jsx|mjs|cjs" src --include=*.ts | grep -i "replace"           # 剥后缀：第 3~6 份
+grep -rn "'index\.ts'" src --include=*.ts                                  # index 候选：第 2 份
+grep -rn "!path.extname" src --include=*.ts                                # project_root 的 .js 盲区
+diff <(sed -n '40,50p' src/tools/cli_extract.ts) <(sed -n '50,60p' src/tools/registry_extract.ts)  # 逐字相同的两份
 ```
