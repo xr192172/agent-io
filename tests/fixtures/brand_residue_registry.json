@@ -152,6 +152,7 @@
     "tests/diagnosis/symptom_parser.test.ts": 2,
     "tests/diagnosis/verifier.test.ts": 3,
     "tests/dsl/overlay.test.ts": 2,
+    "tests/fixtures/tool_behavior_snapshot.json": 1,
     "tests/fixtures/tool_set_snapshot.json": 28,
     "tests/observe/dogfood.test.ts": 1,
     "tests/renderer/html_renderer.test.ts": 1,

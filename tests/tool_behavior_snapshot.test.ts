@@ -40,6 +40,20 @@ const BASELINE = path.join(here, 'fixtures', 'tool_behavior_snapshot.json');
 const SIDE_EFFECT_TOOLS = new Set(['run_tests']);
 
 /**
+ * ★★ 「测量集」：输出是**仓库自身内容**的函数，字节快照**在设计上就是错的** ⇒ 改成结构性断言。
+ *
+ * 实测暴露：`harvest_decisions` 扫 `docs/` + git log，我**往规划书加了 2 节文档**，它的输出就从
+ * `180 条决策候选（doc 178）` 变成 `182 条（doc 180）` ⇒ 全量回归里 G8 红。
+ * 这不是 bug，是**它在正确地测量仓库** —— 拿字节快照去钉它，等于把"文档不能改"写成契约。
+ *
+ * ⇒ 处理：S1（其余工具）做**字节快照**；S2（本集合）只断言**结构**（能跑通、非空、含关键形态）。
+ * ★ 纪律：**一个随被测对象变化的读数，不能当"不变"的判据**（同 G5 那条：饱和指标不是判据）。
+ */
+const REPO_MEASURING_TOOLS = new Set([
+  'harvest_decisions', // 扫 docs/ 与 git log ⇒ 随仓库文档与提交历史变
+]);
+
+/**
  * 规范化：只抹掉**本来就会变**的部分。每一项都写明理由 —— 否则后人会觉得"这门的判据是软的"。
  */
 export function normalizeToolOutput(s: string): string {
@@ -65,7 +79,7 @@ interface Snapshot {
   isError: boolean;
 }
 
-/** 捕获全部工具无参调用的行为 */
+/** 捕获全部工具无参调用的行为（不含测量集 —— 它们另做结构断言） */
 export async function captureToolBehavior(): Promise<Snapshot[]> {
   const captured: Array<{ name: string; cb: (args: Record<string, unknown>) => Promise<unknown> }> = [];
   const fake = {
@@ -77,7 +91,7 @@ export async function captureToolBehavior(): Promise<Snapshot[]> {
 
   const out: Snapshot[] = [];
   for (const c of captured) {
-    if (SIDE_EFFECT_TOOLS.has(c.name)) continue;
+    if (SIDE_EFFECT_TOOLS.has(c.name) || REPO_MEASURING_TOOLS.has(c.name)) continue;
     try {
       const r = (await c.cb({})) as { content?: { text?: string }[]; isError?: boolean } | undefined;
       out.push({ name: c.name, text: normalizeToolOutput(r?.content?.[0]?.text ?? ''), isError: r?.isError === true });
@@ -86,6 +100,24 @@ export async function captureToolBehavior(): Promise<Snapshot[]> {
     }
   }
   return out.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/** 捕获「测量集」的原始输出（不做字节断言，只做结构断言） */
+async function captureMeasuringTools(): Promise<Map<string, string>> {
+  const captured: Array<{ name: string; cb: (args: Record<string, unknown>) => Promise<unknown> }> = [];
+  const fake = {
+    registerTool: (name: string, _config: unknown, cb: (args: Record<string, unknown>) => Promise<unknown>) => {
+      captured.push({ name, cb });
+    },
+  };
+  registerAllTools(fake as never);
+  const out = new Map<string, string>();
+  for (const c of captured) {
+    if (!REPO_MEASURING_TOOLS.has(c.name)) continue;
+    const r = (await c.cb({})) as { content?: { text?: string }[]; isError?: boolean } | undefined;
+    out.set(c.name, r?.content?.[0]?.text ?? '');
+  }
+  return out;
 }
 
 describe('G8 · 逐工具行为快照（"不退化即可"）', () => {
@@ -131,6 +163,24 @@ describe('G8 · 逐工具行为快照（"不退化即可"）', () => {
       problems,
       `工具行为发生变化（剪枝/搬迁不该改变行为；若是有意的改进，请 UPDATE_TOOL_BEHAVIOR=1 并在台账记账）：\n  ${problems.join('\n  ')}`,
     ).toEqual([]);
+  }, 60_000);
+
+  it('★ 测量集（输出随仓库内容变）只做结构断言，不做字节快照', async () => {
+    const measured = await captureMeasuringTools();
+    expect(measured.size, '测量集应至少有一个工具（集合写错了？）').toBeGreaterThan(0);
+    const problems: string[] = [];
+    for (const [name, text] of measured) {
+      // 结构：能跑通、非空、没有抛异常、不是错误响应
+      if (!text.trim()) problems.push(`${name}: 输出为空`);
+      if (/^THROW:|TypeError|ReferenceError/.test(text)) problems.push(`${name}: 抛异常 → ${text.slice(0, 120)}`);
+    }
+    // harvest_decisions 的**形态**必须在（它是"从仓库抽取决策候选"的报告）
+    const hd = measured.get('harvest_decisions') ?? '';
+    if (hd) {
+      if (!/提取到 \d+ 条决策候选/.test(hd)) problems.push(`harvest_decisions: 报告形态变了（缺"提取到 N 条决策候选"）`);
+      if (!/来源分布/.test(hd)) problems.push(`harvest_decisions: 报告形态变了（缺"来源分布"）`);
+    }
+    expect(problems, `测量集结构断言失败：\n  ${problems.join('\n  ')}`).toEqual([]);
   }, 60_000);
 
   it('规范化器自身有效（抹掉该抹的、保留该留的）', () => {
