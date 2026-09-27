@@ -1,0 +1,332 @@
+[
+  {
+    "name": "annotate_functions",
+    "text": "函数语义注释完成：扫描 0 个函数 / 0 个文件；\n已有注释 0，缺失 0，过期 0；\n本轮新注入 0、同步重注 0，改写 0 个文件。\n  无待补全/无过期注释，或 LLM 未配置——未写任何文件。",
+    "isError": false
+  },
+  {
+    "name": "apply_rules",
+    "text": "规则库为空或未命中指定规则（库目录：<ABS>\n---DATA---\n{\"outcomes\":[],\"applied\":0,\"todo\":0,\"clean\":0,\"totalHits\":0}",
+    "isError": false
+  },
+  {
+    "name": "archive_node",
+    "text": "archive_node 需要 file_path 与 retire_reason（为什么下线，必填）",
+    "isError": true
+  },
+  {
+    "name": "assemble_bricks",
+    "text": "bricks 不能为空：至少指定一个积木名（search_bricks 可查盒内清单）",
+    "isError": true
+  },
+  {
+    "name": "backfill_scaffold",
+    "text": "feature \"undefined\" 不存在，请先使用 create_feature 或 render_design 创建",
+    "isError": true
+  },
+  {
+    "name": "behavior_baseline",
+    "text": "行为基线不存在：<ABS> file+function 执行 capture。",
+    "isError": true
+  },
+  {
+    "name": "canvas_notes",
+    "text": "缺少 feature",
+    "isError": false
+  },
+  {
+    "name": "capability_map",
+    "text": "design-canvas 能力线导航：先看线再看工具，高频工具可绕过本导航直接调用。\n目录由工具注册表自动派生（67 工具 / 6 线），与注册表同源、不会脱节。\n前缀语义：observe_=观测、harvest_=采集、reconcile_=对账、rename_=改名、edit_=修改、render_=渲染。\n◆ design · 设计 / 活文档 —— DSL 读写、feature 生命周期、渲染与一致性。\n  直接可用（无需导航）：get_dsl, edit_dsl\n    · get_dsl —— 统一只读入口，query 参数查 DSL/features/decisions/simulation_state\n    · edit_dsl —— 统一写入口，operations 批量增删改节点/边/文件/API/binding/status\n      manage_feature —— feature 生命周期：create/clone/template/list/delete\n      render_design —— 渲染并保存设计图（完整 DSL 模式产物）\n      render_brickwork —— 渲染积木墙视图\n      scaffold —— 从设计图 semantic 层生成代码骨架（签名+TODO）\n      backfill_scaffold —— 写完代码后回填实际 API 签名到 DSL\n      consistency_check —— 设计 DSL 与代码语义一致性体检\n      detect_drift —— 检测 DSL 与代码语义漂移\n      import_project —— 扫描代码项目生成 DSL（文件节点+调用边+符号语义层）\n      set_design_intent —— 写设计意图到 overlay：goals（结构化目标/方向）+ edge_intents（A 为何依赖 B / 边界归属），LLM 开发时的意图写入口\n      propose_design_intent —— LLM 代拟「设计意图(why)改写」审批卡：propose 只算 diff 不写盘，人在工作台 approve 后才落 DSL\n\n◆ refactor · 重构 / 改名 —— 确定性改造：符号改名、文件移动、引用联动、影响面。\n  直接可用（无需导航）：rename_symbols, rename_files, find_references\n      diff_views —— 多视图/多版本差异对比\n      edit_code —— 符号级替换（文件+函数+新函数体，AST 定位）\n      rename_many —— 批量符号改名\n    · rename_symbols —— 符号改名（跨文件联动，dry_run 预览后落盘）\n    · rename_files —— 批量文件改名（dry_run 计算影响面，原子阻断）\n      move_symbol —— 跨文件移动模块级符号（自动重定向 importer 的 import 源，只改 source 不动使用点）\n    · find_references —— 查某符号的引用点/外部导入者（影响面前置）\n      impact_analysis —— 计算一次改动的变更点/风险面\n      remove_dead_imports —— 清理未使用 import\n      annotate_functions —— 函数语义注释（TS/JS + Go）：扫覆盖→缺失用 LLM 补→@fnhash body 指纹同步过期；可配进 refactor_pipeline 的 function_annotation 步\n      refactor_pipeline —— 整条重构流水线（预览→执行→校验闭环）\n      suggest_renames —— 生成改名建议（就近相似名/命名规范）；混淆/压缩代码的短名还原可读也走这里——建议先由格式化梳理结构，再经 rename_symbols 应用，意图复原留人/LLM\n      find_similar_names —— 找相似命名（撞名/歧义排查）\n      refactor_judge —— 重构后裁判：校验是否符合契约/无回归\n      list_snapshots —— 列代码快照（每次 edit_code/rename_files/move_symbol 落盘前自动存一份）——先看能不能撤回\n      rollback_snapshot —— 把代码回滚到某份快照（省略=最近一份）；快照时新建的文件会被删掉，是这些改动工具的撤回通道\n      export_rule —— ★ 修复→规则沉淀：把一次实际修复泛化成可复跑规则（$hole 元变量 + 自动夹具），过「出生回归/反例不命中/幂等」三关才准落盘；Grit 无此自动萃取路径\n      apply_rules —— 把规则库批量应用到项目（三态：applied / todo 标注释 / clean），唯一才动、歧义即停\n      check_rules —— 把规则库当 lint 跑，带 CI 棘轮（只在\"新增命中\"上 fail）+ 规则自身夹具自检\n\n◆ observe · 观测 / 验证 —— 运行时插桩、行为基线、测试与契约对账（执行类，按需触发）。\n  直接可用（无需导航）：（无）\n      memory_observe —— 外部进程内存观测（CDP 外连，不插目标进程）：status/baseline/track/gc，定位 JS 堆 vs native 泄漏方向\n      memory_targets —— 列出本机带 --inspect 的 node 进程（含 DSH gen），供 memory_observe 选 target\n      reconcile_effects —— 对账函数/模块的实际效应与契约\n      narrate_step —— 把某一步观测过程叙述成可读记录\n      observe_log —— 读运行日志/观测产物\n      observe_trace —— 读录制调用链回放：从 events.jsonl 重建结构化调用树（纯后端，LLM 分析用）\n      observe_judge —— 对观测结果做判定\n      reconcile_chain —— 沿效应链逐级对账契约\n      observe_instrument —— 源码插桩探针（dry_run 可预览）\n      recommend_observe_points —— ★ 推荐该在哪打观测点（索引/图 + AST 语义打分，不做全量插桩）；输出可编辑清单 + 每条的理由\n      behavior_baseline —— 编译语言行为基线（跑函数用例出返回值）\n      run_tests —— 运行测试并汇总结果\n      feature_line —— 功能线：每个功能搭一条主链（功能→入口→调用节点），供沿线单步运行/投大屏点位\n\n◆ harvest · 契约 / 闭包采集 —— 从文档/git/注释/闭包采集决策卡与契约，出箱与积木配方。\n  直接可用（无需导航）：（无）\n      harvest_decisions —— 从 docs/git log/注释粗提决策卡候选\n      sync_contracts —— 以 server_registry zod schema 回填 DSL expected_apis\n      harvest_closure —— 扫描闭包出产入盒三件套\n      extract_contracts —— 从代码提取契约（多语言 AST）\n      harvest_from_url —— 从 URL 采集决策/契约\n      reconcile_brick —— 对账单个积木与契约\n      search_bricks —— 检索积木配方\n      assemble_bricks —— 组装多个积木成新积木\n      slim_brick —— 给积木瘦身（收窄职责）\n\n◆ cross · 跨仓 / 杂交 / 健康 —— 重量级分析：跨仓符号索引、仓库杂交预检、代码健康度、跨语言翻译（Go→TS）。\n  直接可用（无需导航）：（无）\n      translate_go_ts —— 跨语言翻译：Go→TS 半自动（机械骨架+验证闸；fill 用 LLM 逐孔填；verify 跑行为对拍）\n      go_originals —— 读 Go 源文件顶层符号原文（ground truth）：翻译/评审时对照 Go 原文，不对着 TS 壳猜\n      cross_repo_symbol_index —— 跨仓库符号索引建立/反查\n      hybrid_precheck —— 仓库杂交前预检（依赖/符号连通性）\n      code_health —— 代码健康度扫描（含 unused_import 多语言）\n\n◆ meta · 元信息 / 探索 —— 代码理解入口、诊断、画布笔记、归档与网关说明。\n  直接可用（无需导航）：explore_code\n    · explore_code —— 代码理解统一入口（search/check_monolith/run_simulation/watch）\n      archive_node —— 下线库归档 + 合并记录\n      list_archive —— 列下线库归档条目\n      diagnose —— 诊断能力缺口（多语言矩阵）\n      canvas_notes —— 画布人审标注的读取/渲染\n      gateway_provider —— LLM 网关供应商/Key 池说明与状态\n      read_project_docs —— 读项目文档（README/活文档）\n      capability_map —— 本工具：能力线导航（目录由注册表 TOOL_DEFS 自动派生）\n      index_integrity —— 索引可信度自检：陈旧断言 / 未保鲜文件 / 覆盖度 —— 判断\"现在读到的索引能不能当真\"，可选 refresh 顺手保鲜",
+    "isError": false
+  },
+  {
+    "name": "check_rules",
+    "text": "✅ 规则检查通过（无新增命中）\n  规则 0 条 × 文件 0 个 ⇒ 命中 0 处；基线 （无，视存量全为新增）\n---DATA---\n{\"pass\":true,\"added\":[],\"baseline\":null,\"totalHits\":0,\"fixtureFailures\":[]}",
+    "isError": false
+  },
+  {
+    "name": "code_health",
+    "text": "代码健康度 · undefined\n0 个文件 → 健康分 0（N/A）\n分层：胶水 0 / 积木 0（其中未分类 0）/ 契约 0 / 违规 0\n无输入（0 个源文件）—— 本次读数不代表健康，grade=N/A。请检查 root 是否存在、扩展名是否被内核支持。\n\n—— 问题清单 ——\n（无问题）",
+    "isError": false
+  },
+  {
+    "name": "consistency_check",
+    "text": "feature \"undefined\" 不存在",
+    "isError": true
+  },
+  {
+    "name": "cross_repo_symbol_index",
+    "text": "跨项目符号索引 · undefined ↔ undefined\nA：0 文件 / 0 顶层符号     B：0 文件 / 0 顶层符号\n\n■ 冲突 0（同名不同签，杂交前需改名/错位）\n  （无）\n\n■ 双胞胎 0（同名同签，可去重一个）\n  （无）\n\n■ 迁移范围：A→B 候选 0 个\n\n■ 迁移范围：B→A 候选 0 个",
+    "isError": false
+  },
+  {
+    "name": "detect_drift",
+    "text": "feature \"undefined\" 不存在，请先 import_project 或写 DSL",
+    "isError": true
+  },
+  {
+    "name": "diagnose",
+    "text": "The \"paths[0]\" argument must be of type string. Received undefined",
+    "isError": true
+  },
+  {
+    "name": "diff_views",
+    "text": "══ feature \"undefined\" 视图对比 ══\n\n  ─ 概览 ─\n  设计视图: 不存在\n  实际视图: 不存在\n  基线视图: 不存在（首次导入后自动锚定）\n\n  ─ 文件变更 ─\n  新增: 0 文件\n  删除: 0 文件\n  修改: 0 文件\n  未变: 0 文件\n\n  ─ 符号变更 ─\n  设计视图: 0 符号\n  实际视图: 0 符号\n\n  ─ API 变更 ─\n  设计视图: 0 API\n  实际视图: 0 API\n\n  ─ 依赖边变更 ─\n  新增: 0 边\n  删除: 0 边（结构塌方）\n\n  ⚠ 设计视图不存在 — 请先通过 manage_feature 创建设计，或使用 import_project 生成设计 DSL\n\n  ⚠ 实际视图不存在 — 请先运行 import_project(live_only=true) 生成代码快照\n\n  (需要更多细节请使用 query_feature 查询单个文件)",
+    "isError": false
+  },
+  {
+    "name": "edit_code",
+    "text": "The \"paths[0]\" argument must be of type string. Received undefined",
+    "isError": true
+  },
+  {
+    "name": "edit_dsl",
+    "text": "变更原因校验未通过（L1）：原因过短或无实质内容（有效字符 0 < 6）。请用一句话说明这次变更为什么发生。",
+    "isError": true
+  },
+  {
+    "name": "explore_code",
+    "text": "explore_code 缺顶层 action。可用: search / read / diff_impact / arch_layer / guided_tour / check_monolith / derive_split / derive_chain / derive_anim_flow / derive_algorithm / derive_mind_map / inject_replay / run_simulation / reset_simulation / watch。search 传 {query, project_dir}，read 传 {file, project_dir}；其余路径请显式给 action[+args]。",
+    "isError": true
+  },
+  {
+    "name": "export_rule",
+    "text": "❌ 三关未过，规则不可落盘（如实报告，不写盘）\n  泛化：候选 0 个标识符 → 实采 0 个 $hole\n    · (字面量) → 未过 negative_hit,not_idempotent,no_hole\n  pattern:\n    undefined\n  replace:\n    undefined\n  夹具 2 条（反例 1 条）\n  [negative_hit] 反例「反例（幂等：修好的代码不得再被命中）」被命中 1 处（规则过宽）\n  [not_idempotent] 幂等失败：正例「正例（出生回归：本次修复必须能被复现）」的 after 仍被命中 1 处（会反复改）\n\n（dry_run：未写盘。确认后可传 dry_run=false 落盘）\n---DATA---\n{\"ok\":false,\"written\":false,\"rule\":{\"id\":\"undefined\",\"title\":\"undefined\",\"tags\":[],\"level\":\"warn\",\"language\":\"\",\"createdFrom\":\"<TS>\",\"description\":\"由一次实际修复萃取：undefined\",\"pattern\":\"undefined\",\"replace\":\"undefined\",\"fixtures\":[{\"title\":\"正例（出生回归：本次修复必须能被复现）\",\"before\":\"undefined\",\"after\":\"undefined\",\"lang\":\"\"},{\"title\":\"反例（幂等：修好的代码不得再被命中）\",\"negative\":\"undefined\",\"lang\":\"\"}]},\"validation\":{\"ok\":false,\"issues\":[{\"code\":\"negative_hit\",\"message\":\"反例「反例（幂等：修好的代码不得再被命中）」被命中 1 处（规则过宽）\",\"severity\":\"error\"},{\"code\":\"not_idempotent\",\"message\":\"幂等失败：正例「正例（出生回归：本次修复必须能被复现）」的 after 仍被命中 1 处（会反复改）\",\"severity\":\"error\"},{\"code\":\"no_hole\",\"message\":\"pattern 里没有 $hole：只能防住这一个字面量，泛化能力弱（不阻断）\",\"severity\":\"warn\"}]},\"generalization\":{\"pattern\":\"undefined\",\"replace\":\"undefined\",\"holes\":[],\"diffBlocks\":0,\"candidateHoles\":0,\"ladderSteps\":0,\"degraded\":false,\"attempts\":[{\"holes\":[],\"ok\":false,\"codes\":[\"negative_hit\",\"not_idempotent\",\"no_hole\"]}]}}",
+    "isError": false
+  },
+  {
+    "name": "extract_contracts",
+    "text": "The \"paths[0]\" argument must be of type string. Received undefined",
+    "isError": true
+  },
+  {
+    "name": "feature_line",
+    "text": "功能线总览（1 个功能）：\n  - （未归类）：入口 RunDSLCLI，主链 2 步",
+    "isError": false
+  },
+  {
+    "name": "find_references",
+    "text": "ENOENT: no such file or directory, open '<ABS>'",
+    "isError": true
+  },
+  {
+    "name": "find_similar_names",
+    "text": "The \"path\" argument must be of type string. Received undefined",
+    "isError": true
+  },
+  {
+    "name": "gateway_provider",
+    "text": "用量汇总：0 次调用 / 0 tokens / $0.0000 / 错误 0\n---DATA---\n{\"per_key\":[],\"totals\":{\"calls\":0,\"prompt_tokens\":0,\"completion_tokens\":0,\"cost_usd\":0,\"errors\":0}}",
+    "isError": false
+  },
+  {
+    "name": "get_dsl",
+    "text": "未知 query 类型: undefined",
+    "isError": true
+  },
+  {
+    "name": "go_originals",
+    "text": "Go 文件不存在: (未提供 file)",
+    "isError": false
+  },
+  {
+    "name": "harvest_closure",
+    "text": "The \"paths[0]\" argument must be of type string. Received undefined",
+    "isError": true
+  },
+  {
+    "name": "harvest_decisions",
+    "text": "harvest_decisions [undefined] 提取到 180 条决策候选（draft，未写入 DSL）\n  来源分布: gitlog 2 · doc 178 · comment 0\n\n  1. [gitlog] docs(plan): §12.8/12.9 逐工具推进的实测 —— 根必须分类；并查实\"工具数对不上\"的真因\n      ↳ 出处: git:0c90e6f7\n      ↳ 证据: docs(plan): §12.8/12.9 逐工具推进的实测 —— 根必须分类；并查实\"工具数对不上\"的真因\n  2. [gitlog] docs(plan): 品牌改名方案（DesignCanvas → AgentIO）—— 不新增工具，缺口在\"清单+门+兼容\"\n      ↳ 出处: git:9a577cba\n      ↳ 证据: docs(plan): 品牌改名方案（DesignCanvas → AgentIO）—— 不新增工具，缺口在\"清单+门+兼容\"\n  3. [doc] [2b. 为什么\"兜底式代码\"会增殖成 20 份 —— 根因（2026-09-28 实测）] | 3 | **局部最优是理性选择** | 每次都是\"我就加一个扩展名\"。在单点看，抄一行比搞清\"别处已有 19 份\"便宜得多。 |  [2b. 为什么\"兜底式代码\"会增殖成 20 份 —— 根因（2026-09-28 实测）]\n      ↳ 出处: docs\\architecture-refactor-plan.md:59\n      ↳ 证据: | 3 | **局部最优是理性选择** | 每次都是\"我就加一个扩展名\"。在单点看，抄一行比搞清\"别处已有 19 份\"便宜得多。 |\n  4. [doc] [2c. 分维度：哪些该合并，哪些**不许**合并] \"重复的策略 ≠ 重复的实现\"。合并前先问\"两边回答的是同一个问题吗\"。本次实测的分类：  [2c. 分维度：哪些该合并，哪些**不许**合并]  ⚠ lifecycle:merged\n      ↳ 出处: docs\\architecture-refactor-plan.md:68\n      ↳ 证据: \"重复的策略 ≠ 重复的实现\"。合并前先问\"两边回答的是同一个问题吗\"。本次实测的分类：\n  5. [doc] [2c. 分维度：哪些该合并，哪些**不许**合并] | TS/JS 家族的 8 个扩展名 | `TS_JS_EXTS` | ✅ 合并 |  [2c. 分维度：哪些该合并，哪些**不许**合并]  ⚠ lifecycle:merged\n      ↳ 出处: docs\\architecture-refactor-plan.md:72\n      ↳ 证据: | TS/JS 家族的 8 个扩展名 | `TS_JS_EXTS` | ✅ 合并 |\n  6. [doc] [2c. 分维度：哪些该合并，哪些**不许**合并] | 转译后可交 node 子进程执行的 | `NODE_RUNNABLE_EXTS`（**派生**自上面） | ✅ 合并 |  [2c. 分维度：哪些该合并，哪些**不许**合并]  ⚠ lifecycle:merged\n      ↳ 出处: docs\\architecture-refactor-plan.md:73\n      ↳ 证据: | 转译后可交 node 子进程执行的 | `NODE_RUNNABLE_EXTS`（**派生**自上面） | ✅ 合并 |\n  7. [doc] [2c. 分维度：哪些该合并，哪些**不许**合并] | 项目内\"可被扫描/分析\"的源码（多语言并集） | `SOURCE_EXTS` | ✅ 合并 |  [2c. 分维度：哪些该合并，哪些**不许**合并]  ⚠ lifecycle:merged\n      ↳ 出处: docs\\architecture-refactor-plan.md:74\n      ↳ 证据: | 项目内\"可被扫描/分析\"的源码（多语言并集） | `SOURCE_EXTS` | ✅ 合并 |\n  8. [doc] [2d. 「只许成功不许失败」的功能，**不许有兜底**] 用户提出的判据，落成可执行的纪律：**当\"错了\"会静默降级时，禁止用兜底\"猜一个\"，必须硬失败或显式可见。**  [2d. 「只许成功不许失败」的功能，**不许有兜底**]\n      ↳ 出处: docs\\architecture-refactor-plan.md:82\n      ↳ 证据: 用户提出的判据，落成可执行的纪律：**当\"错了\"会静默降级时，禁止用兜底\"猜一个\"，必须硬失败或显式可见。**\n  9. [doc] [3. 脉络（六阶段，顺序即优先级）] | **P2 拆抽屉** | `tools/` 200 文件按职责分层：`*_cli.ts`(17)→`surfaces/cli`、HTTP(`serve.ts…  [3. 脉络（六阶段，顺序即优先级）]\n      ↳ 出处: docs\\architecture-refactor-plan.md:105\n      ↳ 证据: | **P2 拆抽屉** | `tools/` 200 文件按职责分层：`*_cli.ts`(17)→`surfaces/cli`、HTTP(`serve.ts` 等)→`surfaces/http`、库(`ts_kernel`/`ast_parser`/`project_root`/`db`)→`kernel`、工具定义→`features/<lane>/` | 每族搬完：回归全绿 + 无新增层\n  10. [doc] [P1 的执行顺序（实测摸清后写下，避免\"直接按 lane 切线\"踩空）] 加一条门：`lane 文件里的工具 ↔ LANE_OF 归属` 必须一致，防两处漂移。  [P1 的执行顺序（实测摸清后写下，避免\"直接按 lane 切线\"踩空）]\n      ↳ 出处: docs\\architecture-refactor-plan.md:135\n      ↳ 证据: 加一条门：`lane 文件里的工具 ↔ LANE_OF 归属` 必须一致，防两处漂移。\n  11. [doc] [4. 目标分层（P0 重划的分层规则，P2 的落地形态）] > 新规则必须保证**每一层都装得下东西、且能装错**。  [4. 目标分层（P0 重划的分层规则，P2 的落地形态）]\n      ↳ 出处: docs\\architecture-refactor-plan.md:151\n      ↳ 证据: > 新规则必须保证**每一层都装得下东西、且能装错**。\n  12. [doc] [已完成（本轮，2026-09-28）] 实测本仓 **281/281 全未命中** ⇒ 规则退化此前是**沉默**的，现在可读（同款设计见 `capability_map` 的\"未归线\"段）。  [已完成（本轮，2026-09-28）]\n      ↳ 出处: docs\\architecture-refactor-plan.md:221\n      ↳ 证据: 实测本仓 **281/281 全未命中** ⇒ 规则退化此前是**沉默**的，现在可读（同款设计见 `capability_map` 的\"未归线\"段）。\n  13. [doc] [已完成（本轮，2026-09-28）] **分辨率（同维更差 ⇒ 分必须更低）** / 单维封顶 / 空输入第三态 / 分层与 root 无关 / 可达根注入确实消假阳。  [已完成（本轮，2026-09-28）]\n      ↳ 出处: docs\\architecture-refactor-plan.md:225\n      ↳ 证据: **分辨率（同维更差 ⇒ 分必须更低）** / 单维封顶 / 空输入第三态 / 分层与 root 无关 / 可达根注入确实消假阳。\n  14. [doc] [已完成（本轮，2026-09-28）] ★ 设计决定：**相对性判断与包导入回退不下沉到公共模块**。理由：`db.resolveImportTarget`  [已完成（本轮，2026-09-28）]\n      ↳ 出处: docs\\architecture-refactor-plan.md:251\n      ↳ 证据: ★ 设计决定：**相对性判断与包导入回退不下沉到公共模块**。理由：`db.resolveImportTarget`\n  15. [doc] [已完成（本轮，2026-09-28）] lane 拆分必然改变 `TOOL_DEFS` 数组顺序，而 MCP 工具按名寻址；把顺序当契约会让 P1 变成不可做。  [已完成（本轮，2026-09-28）]  ⚠ lifecycle:split\n      ↳ 出处: docs\\architecture-refactor-plan.md:275\n      ↳ 证据: lane 拆分必然改变 `TOOL_DEFS` 数组顺序，而 MCP 工具按名寻址；把顺序当契约会让 P1 变成不可做。\n  16. [doc] [已完成（本轮，2026-09-28）] 含**检测器自证**用例（差异检测器本身必须能检出 title/description/schema/增删）。  [已完成（本轮，2026-09-28）]\n      ↳ 出处: docs\\architecture-refactor-plan.md:277\n      ↳ 证据: 含**检测器自证**用例（差异检测器本身必须能检出 title/description/schema/增删）。\n  17. [doc] [已完成（本轮，2026-09-28）] ★ 设计成**棘轮**（与仓内 `check_rules` 同款纪律）：**存量不拦、新增即红**。  [已完成（本轮，2026-09-28）]\n      ↳ 出处: docs\\architecture-refactor-plan.md:279\n      ↳ 证据: ★ 设计成**棘轮**（与仓内 `check_rules` 同款纪律）：**存量不拦、新增即红**。\n  18. [doc] [已完成（本轮，2026-09-28）] 必须给同一结论，此前各写各的正则（`/^\\s*import\\s+type\\b/` vs `/^import\\s+type\\b/`）。  [已完成（本轮，2026-09-28）]\n      ↳ 出处: docs\\architecture-refactor-plan.md:290\n      ↳ 证据: 必须给同一结论，此前各写各的正则（`/^\\s*import\\s+type\\b/` vs `/^import\\s+type\\b/`）。\n  19. [doc] [已完成（本轮，2026-09-28）] ⇒ 教训：**\"重复的策略\"≠\"重复的实现\"**。合并之前先问\"两边回答的是同一个问题吗\"。  [已完成（本轮，2026-09-28）]  ⚠ lifecycle:merged\n      ↳ 出处: docs\\architecture-refactor-plan.md:294\n      ↳ 证据: ⇒ 教训：**\"重复的策略\"≠\"重复的实现\"**。合并之前先问\"两边回答的是同一个问题吗\"。\n  20. [doc] [已完成（本轮，2026-09-28）] 合并：`project_root.resolveToFile` 的候选循环删除，改走内核 `resolveExistingPath`；  [已完成（本轮，2026-09-28）]  ⚠ lifecycle:retired\n      ↳ 出处: docs\\architecture-refactor-plan.md:297\n      ↳ 证据: 合并：`project_root.resolveToFile` 的候选循环删除，改走内核 `resolveExistingPath`；\n  21. [doc] [已完成（本轮，2026-09-28）] ★ **为什么必须先做这一步**（写在三个模块的文件头）：lane 文件要用到上面这些东西，  [已完成（本轮，2026-09-28）]\n      ↳ 出处: docs\\architecture-refactor-plan.md:340\n      ↳ 证据: ★ **为什么必须先做这一步**（写在三个模块的文件头）：lane 文件要用到上面这些东西，\n  22. [doc] [已完成（本轮，2026-09-28）] 其相对路径原本相对 `src/` 书写，搬到 `lanes/` 后必须退两级。  [已完成（本轮，2026-09-28）]\n      ↳ 出处: docs\\architecture-refactor-plan.md:361\n      ↳ 证据: 其相对路径原本相对 `src/` 书写，搬到 `lanes/` 后必须退两级。\n  23. [doc] [已完成（本轮，2026-09-28）] ⇒ 这正是 P2 风险台账\"搬迁破坏相对 import\"那条的实证；**静态 import 可靠生成，动态 import 必须特意处理**。  [已完成（本轮，2026-09-28）]\n      ↳ 出处: docs\\architecture-refactor-plan.md:362\n      ↳ 证据: ⇒ 这正是 P2 风险台账\"搬迁破坏相对 import\"那条的实证；**静态 import 可靠生成，动态 import 必须特意处理**。\n  24. [doc] [已完成（本轮，2026-09-28）] ★ **破环：`capability_map` 与 `TOOL_DEFS` 互相需要**。`capability_map` 的目录必须来自真实注册表  [已完成（本轮，2026-09-28）]\n      ↳ 出处: docs\\architecture-refactor-plan.md:363\n      ↳ 证据: ★ **破环：`capability_map` 与 `TOOL_DEFS` 互相需要**。`capability_map` 的目录必须来自真实注册表\n  25. [doc] [未做 / 需要你决策] | 1 | **推送仍缺凭据**（`terminal prompts disabled`） | 需要凭据通道：`gh auth login` / PAT / 你…  [未做 / 需要你决策]\n      ↳ 出处: docs\\architecture-refactor-plan.md:426\n      ↳ 证据: | 1 | **推送仍缺凭据**（`terminal prompts disabled`） | 需要凭据通道：`gh auth login` / PAT / 你本地推 |\n  26. [doc] [风险台账] | 分阶段半途而废 | 出现\"一半新一半旧\" | 每阶段独立可回滚；不合并进行中的阶段 |  [风险台账]  ⚠ lifecycle:merged\n      ↳ 出处: docs\\architecture-refactor-plan.md:439\n      ↳ 证据: | 分阶段半途而废 | 出现\"一半新一半旧\" | 每阶段独立可回滚；不合并进行中的阶段 |\n  27. [doc] [C 门补完] | C4 | **G7 可达性门**（§12.5）：`src/` 下每个文件必须从某个**登记在册的根**可达，口径=棘轮 | 注入一个不可达文件 ⇒ 门红；根…  [C 门补完]\n      ↳ 出处: docs\\architecture-refactor-plan.md:547\n      ↳ 证据: | C4 | **G7 可达性门**（§12.5）：`src/` 下每个文件必须从某个**登记在册的根**可达，口径=棘轮 | 注入一个不可达文件 ⇒ 门红；根从 38 起算 | ⚠️ **前置**：先补全三类隐式边（动态 import / 字符串路径 / 手调 CLI）的扫描，否则门会**误报不可达**、诱导人删错 | ⏳ |\n  28. [doc] [D P2 拆 `src/tools/`（200 文件 / 71k 行，全仓 65%）—— **一族一提交**] > ⚠️ D 阶段每搬一族，**迁移脚本都要重算 import**；且必须走 playbook §4.1/§4.2 的编译器复核。  [D P2 拆 `src/tools/`（200 文件 / 71k 行，全仓 65%）—— **一族一提交**]\n      ↳ 出处: docs\\architecture-refactor-plan.md:562\n      ↳ 证据: > ⚠️ D 阶段每搬一族，**迁移脚本都要重算 import**；且必须走 playbook §4.1/§4.2 的编译器复核。\n  29. [doc] [F P4 工具收敛（按仓内 `docs/tool-convergence.md` 的 5 步核验纪律，**不另立方案**）] | F2 | ★ 加 `DELETED_TOOLS` **墓碑清单**（warning 不 raise，附替代指引）—— 来自 Serena 对照 | 删/改工…  [F P4 工具收敛（按仓内 `docs/tool-convergence.md` 的 5 步核验纪律，**不另立方案**）]  ⚠ lifecycle:superseded\n      ↳ 出处: docs\\architecture-refactor-plan.md:576\n      ↳ 证据: | F2 | ★ 加 `DELETED_TOOLS` **墓碑清单**（warning 不 raise，附替代指引）—— 来自 Serena 对照 | 删/改工具名后老调用得到 warning 而非 unknown tool | 低 | ⏳ |\n  30. [doc] [G 待决策 / 待确认] | G6 | **根清单显式化 + 三桶输出**（§12.8）：A 被工具需要 235 / B 仅非工具面 66 / C 谁都不需要 16 | 与 G7 同批做…  [G 待决策 / 待确认]\n      ↳ 出处: docs\\architecture-refactor-plan.md:588\n      ↳ 证据: | G6 | **根清单显式化 + 三桶输出**（§12.8）：A 被工具需要 235 / B 仅非工具面 66 / C 谁都不需要 16 | 与 G7 同批做；B 桶**必须存在且不剪**，否则会剪掉 CLI 面 | ⏳ |\n  31. [doc] [10.1 结论：**不新增\"项目改名工具\"** —— 但现有能力的驱动方式不匹配，缺口在别处] **实测答案：不用加工具，但也不能直接拿 `rename_symbols` 来跑。** 理由：  [10.1 结论：**不新增\"项目改名工具\"** —— 但现有能力的驱动方式不匹配，缺口在别处]\n      ↳ 出处: docs\\architecture-refactor-plan.md:598\n      ↳ 证据: **实测答案：不用加工具，但也不能直接拿 `rename_symbols` 来跑。** 理由：\n  32. [doc] [10.1 结论：**不新增\"项目改名工具\"** —— 但现有能力的驱动方式不匹配，缺口在别处] | 而且它**已经带了这种改名最需要的判断** | `decideLiteral(kind, frozen, isGen)`：`contract`=需人审 / …  [10.1 结论：**不新增\"项目改名工具\"** —— 但现有能力的驱动方式不匹配，缺口在别处]\n      ↳ 出处: docs\\architecture-refactor-plan.md:603\n      ↳ 证据: | 而且它**已经带了这种改名最需要的判断** | `decideLiteral(kind, frozen, isGen)`：`contract`=需人审 / `history`=保留 / **冻结行跳过** / **生成文件跳过** —— 这套判断才是资产 |\n  33. [doc] [10.4 ★ 无下游 ⇒ **不做兼容层**（2026-09-28 用户纠正，已采纳）] 我起初的设计是\"新名 + 旧名仍生效 + 弃用提示\"（数据目录回退、环境变量回退）。**用户否掉了，理由成立**：  [10.4 ★ 无下游 ⇒ **不做兼容层**（2026-09-28 用户纠正，已采纳）]  ⚠ lifecycle:retired\n      ↳ 出处: docs\\architecture-refactor-plan.md:637\n      ↳ 证据: 我起初的设计是\"新名 + 旧名仍生效 + 弃用提示\"（数据目录回退、环境变量回退）。**用户否掉了，理由成立**：\n  34. [doc] [10.4 ★ 无下游 ⇒ **不做兼容层**（2026-09-28 用户纠正，已采纳）] ★ 提炼成纪律（与 playbook §8.1 呼应）：**兼容层必须有下游才配存在。**  [10.4 ★ 无下游 ⇒ **不做兼容层**（2026-09-28 用户纠正，已采纳）]\n      ↳ 出处: docs\\architecture-refactor-plan.md:656\n      ↳ 证据: ★ 提炼成纪律（与 playbook §8.1 呼应）：**兼容层必须有下游才配存在。**\n  35. [doc] [10.5 判据：新增「品牌串残留门」（**先建门，再动手**）] 断言：① 新增命中 ⇒ 红；② `allowFiles` 里的文件必须真实存在；③ 改名完成后 frozen 应为 **0**（目标态）  [10.5 判据：新增「品牌串残留门」（**先建门，再动手**）]\n      ↳ 出处: docs\\architecture-refactor-plan.md:668\n      ↳ 证据: 断言：① 新增命中 ⇒ 红；② `allowFiles` 里的文件必须真实存在；③ 改名完成后 frozen 应为 **0**（目标态）\n  36. [doc] [10.5 判据：新增「品牌串残留门」（**先建门，再动手**）] 1. **门必须排除自己**：门自身按定义就要写出那些品牌串（`patterns` 数组、提示语）⇒ 不排除则基线**永不可能归零**。  [10.5 判据：新增「品牌串残留门」（**先建门，再动手**）]\n      ↳ 出处: docs\\architecture-refactor-plan.md:674\n      ↳ 证据: 1. **门必须排除自己**：门自身按定义就要写出那些品牌串（`patterns` 数组、提示语）⇒ 不排除则基线**永不可能归零**。\n  37. [doc] [10.5 判据：新增「品牌串残留门」（**先建门，再动手**）] 必须走 G1 的 `UPDATE_TOOL_SNAPSHOT=1` 更新基线，并在本台账登记这次变更。  [10.5 判据：新增「品牌串残留门」（**先建门，再动手**）]\n      ↳ 出处: docs\\architecture-refactor-plan.md:678\n      ↳ 证据: 必须走 G1 的 `UPDATE_TOOL_SNAPSHOT=1` 更新基线，并在本台账登记这次变更。\n  38. [doc] [10.7 已执行：数据目录名**单点化**（值不变、零行为变化）—— 为改名把 193 处压成 1 处] `DATA_DIR_NAME_LEGACY` **按设计必须永久保留旧名**（迁移期回退）⇒ 它进 `allowFiles`（写明理由），  [10.7 已执行：数据目录名**单点化**（值不变、零行为变化）—— 为改名把 193 处压成 1 处]\n      ↳ 出处: docs\\architecture-refactor-plan.md:709\n      ↳ 证据: `DATA_DIR_NAME_LEGACY` **按设计必须永久保留旧名**（迁移期回退）⇒ 它进 `allowFiles`（写明理由），\n  39. [doc] [11.1 用户纠正了两件我做过头的事] > \"那个设计并不是我提出来的，而是你自己说的，你真的觉得这个设计有必要存在？已经失去了旧名，  [11.1 用户纠正了两件我做过头的事]\n      ↳ 出处: docs\\architecture-refactor-plan.md:736\n      ↳ 证据: > \"那个设计并不是我提出来的，而是你自己说的，你真的觉得这个设计有必要存在？已经失去了旧名，\n  40. [doc] [11.1 用户纠正了两件我做过头的事] ⇒ **纪律：兼容层必须有下游才配存在；判断\"有没有下游\"要取证，不是习惯性留一手。**  [11.1 用户纠正了两件我做过头的事]\n      ↳ 出处: docs\\architecture-refactor-plan.md:742\n      ↳ 证据: ⇒ **纪律：兼容层必须有下游才配存在；判断\"有没有下游\"要取证，不是习惯性留一手。**\n  41. [doc] [11.2 取证方法（★ 我前三轮查错了三次，方法与教训都记下）] 判\"有没有引用\"必须**按模块说明符**查，且**要覆盖后缀变体**：  [11.2 取证方法（★ 我前三轮查错了三次，方法与教训都记下）]\n      ↳ 出处: docs\\architecture-refactor-plan.md:747\n      ↳ 证据: 判\"有没有引用\"必须**按模块说明符**查，且**要覆盖后缀变体**：\n  42. [doc] [对每个候选模块 m：] ⇒ 判 barrel 死活必须**按目录名**查：`grep -rIn \"['\\\"][^'\\\"]*/<dir>['\\\"]\" src tests`  [对每个候选模块 m：]\n      ↳ 出处: docs\\architecture-refactor-plan.md:762\n      ↳ 证据: ⇒ 判 barrel 死活必须**按目录名**查：`grep -rIn \"['\\\"][^'\\\"]*/<dir>['\\\"]\" src tests`\n  43. [doc] [11.5 ★ 明确**不删**：`src/tools/view_inputs.ts`(140)] ★ **教训：`orphan_file` 只回答\"没有 import 边\"，它不回答\"该不该删\"。** 判死代码前必须查  [11.5 ★ 明确**不删**：`src/tools/view_inputs.ts`(140)]\n      ↳ 出处: docs\\architecture-refactor-plan.md:806\n      ↳ 证据: ★ **教训：`orphan_file` 只回答\"没有 import 边\"，它不回答\"该不该删\"。** 判死代码前必须查\n  44. [doc] [12.3 ★★ 代价：**根清单必须完整**，否则会剪掉真在用的东西（实测踩到）] ⇒ **三类\"静态查看不见\"的边，根清单必须显式覆盖**：  [12.3 ★★ 代价：**根清单必须完整**，否则会剪掉真在用的东西（实测踩到）]\n      ↳ 出处: docs\\architecture-refactor-plan.md:856\n      ↳ 证据: ⇒ **三类\"静态查看不见\"的边，根清单必须显式覆盖**：\n  45. [doc] [12.4 回答\"会不会退化 / 更难管理\"] 代价是**多了一份必须维护的根清单** —— 但它是**显式、可审**的，比隐式依赖好。  [12.4 回答\"会不会退化 / 更难管理\"]\n      ↳ 出处: docs\\architecture-refactor-plan.md:873\n      ↳ 证据: 代价是**多了一份必须维护的根清单** —— 但它是**显式、可审**的，比隐式依赖好。\n  46. [doc] [12.5 建议的新门（G7，待建）] **可达性门**：`src/` 下每个文件必须**从某个登记在册的根可达**，否则报红。  [12.5 建议的新门（G7，待建）]\n      ↳ 出处: docs\\architecture-refactor-plan.md:877\n      ↳ 证据: **可达性门**：`src/` 下每个文件必须**从某个登记在册的根可达**，否则报红。\n  47. [doc] [12.8 逐工具推进的实测（用户要求\"逐工具推\"）：**根必须分类**，否则会掩盖工具的冗余] 1. 能说清\"这个文件是**哪个工具**需要的\"（平铺闭包只告诉你\"有人需要\"）；  [12.8 逐工具推进的实测（用户要求\"逐工具推\"）：**根必须分类**，否则会掩盖工具的冗余]\n      ↳ 出处: docs\\architecture-refactor-plan.md:913\n      ↳ 证据: 1. 能说清\"这个文件是**哪个工具**需要的\"（平铺闭包只告诉你\"有人需要\"）；\n  48. [doc] [12.8 逐工具推进的实测（用户要求\"逐工具推\"）：**根必须分类**，否则会掩盖工具的冗余] 3. ★ 能把\"根\"从混杂的 38 个**收敛成 67 个工具根**，于是\"没有任何工具需要它\"成为一个**尖锐判据**。  [12.8 逐工具推进的实测（用户要求\"逐工具推\"）：**根必须分类**，否则会掩盖工具的冗余]\n      ↳ 出处: docs\\architecture-refactor-plan.md:915\n      ↳ 证据: 3. ★ 能把\"根\"从混杂的 38 个**收敛成 67 个工具根**，于是\"没有任何工具需要它\"成为一个**尖锐判据**。\n  49. [doc] [12.8 逐工具推进的实测（用户要求\"逐工具推\"）：**根必须分类**，否则会掩盖工具的冗余] | **A** | **235** | 被 **≥1 个工具**需要 |  [12.8 逐工具推进的实测（用户要求\"逐工具推\"）：**根必须分类**，否则会掩盖工具的冗余]\n      ↳ 出处: docs\\architecture-refactor-plan.md:926\n      ↳ 证据: | **A** | **235** | 被 **≥1 个工具**需要 |\n  50. [doc] [12.8 逐工具推进的实测（用户要求\"逐工具推\"）：**根必须分类**，否则会掩盖工具的冗余] | **B** | **66** | **不被任何工具需要**，但被非工具根需要（CLI / daemon / 生成脚本 / 文档契约） |  [12.8 逐工具推进的实测（用户要求\"逐工具推\"）：**根必须分类**，否则会掩盖工具的冗余]\n      ↳ 出处: docs\\architecture-refactor-plan.md:927\n      ↳ 证据: | **B** | **66** | **不被任何工具需要**，但被非工具根需要（CLI / daemon / 生成脚本 / 文档契约） |\n  51. [doc] [12.8 逐工具推进的实测（用户要求\"逐工具推\"）：**根必须分类**，否则会掩盖工具的冗余] | **C** | **16 / 2,377 行** | 谁都不需要 ⇒ **真剪候选** |  [12.8 逐工具推进的实测（用户要求\"逐工具推\"）：**根必须分类**，否则会掩盖工具的冗余]\n      ↳ 出处: docs\\architecture-refactor-plan.md:928\n      ↳ 证据: | **C** | **16 / 2,377 行** | 谁都不需要 ⇒ **真剪候选** |\n  52. [doc] [12.8 逐工具推进的实测（用户要求\"逐工具推\"）：**根必须分类**，否则会掩盖工具的冗余] ★ **关键修正：根必须分类。** 平铺全闭包只回答\"可达\"，于是 B 类（66 个）会被**混进\"可达\"里消失** ——  [12.8 逐工具推进的实测（用户要求\"逐工具推\"）：**根必须分类**，否则会掩盖工具的冗余]\n      ↳ 出处: docs\\architecture-refactor-plan.md:930\n      ↳ 证据: ★ **关键修正：根必须分类。** 平铺全闭包只回答\"可达\"，于是 B 类（66 个）会被**混进\"可达\"里消失** ——\n  53. [doc] [12.8 逐工具推进的实测（用户要求\"逐工具推\"）：**根必须分类**，否则会掩盖工具的冗余] 而 B 类恰恰是\"工具其实不需要、只是别的表面在用\"的那一层：**只看闭包看不出工具的冗余。**  [12.8 逐工具推进的实测（用户要求\"逐工具推\"）：**根必须分类**，否则会掩盖工具的冗余]\n      ↳ 出处: docs\\architecture-refactor-plan.md:931\n      ↳ 证据: 而 B 类恰恰是\"工具其实不需要、只是别的表面在用\"的那一层：**只看闭包看不出工具的冗余。**\n  54. [doc] [12.8 逐工具推进的实测（用户要求\"逐工具推\"）：**根必须分类**，否则会掩盖工具的冗余] ⇒ 输出必须**分三桶报**，而不是一个\"闭包外\"列表。  [12.8 逐工具推进的实测（用户要求\"逐工具推\"）：**根必须分类**，否则会掩盖工具的冗余]\n      ↳ 出处: docs\\architecture-refactor-plan.md:932\n      ↳ 证据: ⇒ 输出必须**分三桶报**，而不是一个\"闭包外\"列表。\n  55. [doc] [12.8 逐工具推进的实测（用户要求\"逐工具推\"）：**根必须分类**，否则会掩盖工具的冗余] 只是错法不同：它会把\"只被人手动调用的 CLI 需要的文件\"标成\"无工具需要\" ⇒ 若照此剪，会**剪掉 CLI 面**。  [12.8 逐工具推进的实测（用户要求\"逐工具推\"）：**根必须分类**，否则会掩盖工具的冗余]\n      ↳ 出处: docs\\architecture-refactor-plan.md:935\n      ↳ 证据: 只是错法不同：它会把\"只被人手动调用的 CLI 需要的文件\"标成\"无工具需要\" ⇒ 若照此剪，会**剪掉 CLI 面**。\n  56. [doc] [12.8 逐工具推进的实测（用户要求\"逐工具推\"）：**根必须分类**，否则会掩盖工具的冗余] ⇒ B 桶必须存在且不剪。  [12.8 逐工具推进的实测（用户要求\"逐工具推\"）：**根必须分类**，否则会掩盖工具的冗余]\n      ↳ 出处: docs\\architecture-refactor-plan.md:936\n      ↳ 证据: ⇒ B 桶必须存在且不剪。\n  57. [doc] [Go→TS 半自动翻译工具（`translate_go_ts`）] > 一句话定位：设计内一条**端到端可用**的 Go→TS 半自动翻译链路，已注册为 MCP 工具。  [Go→TS 半自动翻译工具（`translate_go_ts`）]\n      ↳ 出处: docs\\go-ts-translate.md:3\n      ↳ 证据: > 一句话定位：设计内一条**端到端可用**的 Go→TS 半自动翻译链路，已注册为 MCP 工具。\n  58. [doc] [一、已覆盖（机器自动翻译）] | 泛型 | 函数/struct/别名类型参数 `<T,…>`、可表达约束降级 `extends`（`~int\\|~float64→number`、`~[]by…  [一、已覆盖（机器自动翻译）]\n      ↳ 出处: docs\\go-ts-translate.md:26\n      ↳ 证据: | 泛型 | 函数/struct/别名类型参数 `<T,…>`、可表达约束降级 `extends`（`~int\\|~float64→number`、`~[]byte→Uint8Array`）、约束原文 note |\n  59. [doc] [二、诚实边界（不自动，交 LLM / note）] `comparable` / 自定义约束（TS 无等价，note）  [二、诚实边界（不自动，交 LLM / note）]\n      ↳ 出处: docs\\go-ts-translate.md:45\n      ↳ 证据: `comparable` / 自定义约束（TS 无等价，note）\n  60. [doc] [三、设计原则：正确性边界（为什么这样切）] 翻译锚点是 **trans_unit 契约**（锁定骨架 + `bodyHole` + 约束），不是一棵要 round-trip 的公共 AST。  [三、设计原则：正确性边界（为什么这样切）]\n      ↳ 出处: docs\\go-ts-translate.md:52\n      ↳ 证据: 翻译锚点是 **trans_unit 契约**（锁定骨架 + `bodyHole` + 约束），不是一棵要 round-trip 的公共 AST。\n  61. [doc] [五、Go↔TS 转换约定表（B3，与 `src/translate/ts_codegen.ts` 的 `mapGoType`/渲染逻辑一致）] | `[T int64]` 等标量约束 | `<T extends number>` | 约束降级为 `extends`（`~T` 剥 `~`：int 族→nu…  [五、Go↔TS 转换约定表（B3，与 `src/translate/ts_codegen.ts` 的 `mapGoType`/渲染逻辑一致）]\n      ↳ 出处: docs\\go-ts-translate.md:108\n      ↳ 证据: | `[T int64]` 等标量约束 | `<T extends number>` | 约束降级为 `extends`（`~T` 剥 `~`：int 族→number、string→string、bool→boolean、`[]byte`→Uint8Array） |\n  62. [doc] [五、Go↔TS 转换约定表（B3，与 `src/translate/ts_codegen.ts` 的 `mapGoType`/渲染逻辑一致）] | `[T comparable]` / 自定义约束 | `<T>` | TS 无等价约束，`extends` 不设，另写 note |  [五、Go↔TS 转换约定表（B3，与 `src/translate/ts_codegen.ts` 的 `mapGoType`/渲染逻辑一致）]\n      ↳ 出处: docs\\go-ts-translate.md:109\n      ↳ 证据: | `[T comparable]` / 自定义约束 | `<T>` | TS 无等价约束，`extends` 不设，另写 note |\n  63. [doc] [五、Go↔TS 转换约定表（B3，与 `src/translate/ts_codegen.ts` 的 `mapGoType`/渲染逻辑一致）] | 未用 import → `fixUnusedImports` 幂等移除；同源 import → `squashImports` 合并 |  [五、Go↔TS 转换约定表（B3，与 `src/translate/ts_codegen.ts` 的 `mapGoType`/渲染逻辑一致）]  ⚠ lifecycle:merged\n      ↳ 出处: docs\\go-ts-translate.md:131\n      ↳ 证据: | 未用 import → `fixUnusedImports` 幂等移除；同源 import → `squashImports` 合并 |\n  64. [doc] [0. 一句话不变量（整个索引层只服务它）] 而信任是非线性的：**一次静默的旧数据就足以摧毁它**。因为 LLM 不会怀疑工具的输出，  [0. 一句话不变量（整个索引层只服务它）]\n      ↳ 出处: docs\\index-freshness-extreme.md:18\n      ↳ 证据: 而信任是非线性的：**一次静默的旧数据就足以摧毁它**。因为 LLM 不会怀疑工具的输出，\n  65. [doc] [0. 一句话不变量（整个索引层只服务它）] 两个必须区分的失败模式：  [0. 一句话不变量（整个索引层只服务它）]\n      ↳ 出处: docs\\index-freshness-extreme.md:23\n      ↳ 证据: 两个必须区分的失败模式：\n  66. [doc] [0. 一句话不变量（整个索引层只服务它）] 一切设计都优先消灭第二种。  [0. 一句话不变量（整个索引层只服务它）]\n      ↳ 出处: docs\\index-freshness-extreme.md:30\n      ↳ 证据: 一切设计都优先消灭第二种。\n  67. [doc] [1. 六层保障（从便宜到贵，前一层失效才用后一层）] | **L3 读前自证**（两条路） | ① **自动保鲜**：`registerAllTools` 唯一入口，调 handler 前若 `hasLiveInd…  [1. 六层保障（从便宜到贵，前一层失效才用后一层）]\n      ↳ 出处: docs\\index-freshness-extreme.md:42\n      ↳ 证据: | **L3 读前自证**（两条路） | ① **自动保鲜**：`registerAllTools` 唯一入口，调 handler 前若 `hasLiveIndex` 且**后台续建没在建**（`isIndexIncomplete`）就 `ensureProjectIndex({bootstrap:false})`（**精确**；在建时跳过 —— 后台循环本来就在持续同步，逐调用保鲜只会重复全盘走\n  68. [doc] [1. 六层保障（从便宜到贵，前一层失效才用后一层）] > 改了的部分才是改了，就不需要说后台那样做。」  [1. 六层保障（从便宜到贵，前一层失效才用后一层）]\n      ↳ 出处: docs\\index-freshness-extreme.md:55\n      ↳ 证据: > 改了的部分才是改了，就不需要说后台那样做。」\n  69. [doc] [1. 六层保障（从便宜到贵，前一层失效才用后一层）] 那是 `syncFile`（异步）的职责 —— 这也是\"标注\"与\"修复\"必须分层的原因。  [1. 六层保障（从便宜到贵，前一层失效才用后一层）]\n      ↳ 出处: docs\\index-freshness-extreme.md:65\n      ↳ 证据: 那是 `syncFile`（异步）的职责 —— 这也是\"标注\"与\"修复\"必须分层的原因。\n  70. [doc] [2. 实测：同一个改动，两个世界（`probe-dc-write-through.mjs`）] 注意 B 的 ③（陈旧断言）是 0：因为索引**还没重同步**，旧节点还在，旧引用\"连得上\"。  [2. 实测：同一个改动，两个世界（`probe-dc-write-through.mjs`）]\n      ↳ 出处: docs\\index-freshness-extreme.md:81\n      ↳ 证据: 注意 B 的 ③（陈旧断言）是 0：因为索引**还没重同步**，旧节点还在，旧引用\"连得上\"。\n  71. [doc] [3. 痛点全清单（诚实版）] | P2 | 读得慢：首查等 <DUR> | LLM 会放弃或超时 | 拼图首读（<DUR>）+ 后台续建 | ✅ |  [3. 痛点全清单（诚实版）]\n      ↳ 出处: docs\\index-freshness-extreme.md:99\n      ↳ 证据: | P2 | 读得慢：首查等 <DUR> | LLM 会放弃或超时 | 拼图首读（<DUR>）+ 后台续建 | ✅ |\n  72. [doc] [3. 痛点全清单（诚实版）] > 精确仍需要工具自己走 `ensureProjectIndex`。下一步见 §5.1。  [3. 痛点全清单（诚实版）]\n      ↳ 出处: docs\\index-freshness-extreme.md:116\n      ↳ 证据: > 精确仍需要工具自己走 `ensureProjectIndex`。下一步见 §5.1。\n  73. [doc] [4.1 `scopeToIndex`（拼图边界闸）] 为什么**默认关**：`serve` 重建实际 DSL 需要\"新文件必须追进来\"，收窄会静默少文件。  [4.1 `scopeToIndex`（拼图边界闸）]\n      ↳ 出处: docs\\index-freshness-extreme.md:131\n      ↳ 证据: 为什么**默认关**：`serve` 重建实际 DSL 需要\"新文件必须追进来\"，收窄会静默少文件。\n  74. [doc] [4.1 `scopeToIndex`（拼图边界闸）] 未索引区拉进索引\"本来就不再是需要防的事；③ 收窄的真实收益只剩\"超大仓库 + 只关心一块\"，  [4.1 `scopeToIndex`（拼图边界闸）]\n      ↳ 出处: docs\\index-freshness-extreme.md:137\n      ↳ 证据: 未索引区拉进索引\"本来就不再是需要防的事；③ 收窄的真实收益只剩\"超大仓库 + 只关心一块\"，\n  75. [doc] [5. 还差的（按性价比排序）] 3. **边界扩展**（§4.2）：`noExpand` 终点复用 + 新文件并入相邻块（需要持久化拼图边界，设计级改动）。  [5. 还差的（按性价比排序）]  ⚠ lifecycle:merged\n      ↳ 出处: docs\\index-freshness-extreme.md:169\n      ↳ 证据: 3. **边界扩展**（§4.2）：`noExpand` 终点复用 + 新文件并入相邻块（需要持久化拼图边界，设计级改动）。\n  76. [doc] [5. 还差的（按性价比排序）] 要删的文件（磁盘已不存在）与不支持的扩展名不需要解析器，不受闸影响。  [5. 还差的（按性价比排序）]\n      ↳ 出处: docs\\index-freshness-extreme.md:188\n      ↳ 证据: 要删的文件（磁盘已不存在）与不支持的扩展名不需要解析器，不受闸影响。\n  77. [doc] [拼图式局部索引（按需及时建立）设计] > 我的意思是——**不用预建立，而是及时建立**：从用户/模型**选中的这个文件**为起点，向周围拓展，  [拼图式局部索引（按需及时建立）设计]\n      ↳ 出处: docs\\index-locality-design.md:5\n      ↳ 证据: > 我的意思是——**不用预建立，而是及时建立**：从用户/模型**选中的这个文件**为起点，向周围拓展，\n  78. [doc] [2. 为什么现在做成本很低：三块料都现成] | 需要的东西 | 现状 |  [2. 为什么现在做成本很低：三块料都现成]\n      ↳ 出处: docs\\index-locality-design.md:33\n      ↳ 证据: | 需要的东西 | 现状 |\n  79. [doc] [2. 为什么现在做成本很低：三块料都现成] | **图数据** | 索引里已有 `edges(kind='import'/'call'/'type_ref')` ⇒ 扩展不需要重新解析文件来\"找邻居\"（已…  [2. 为什么现在做成本很低：三块料都现成]\n      ↳ 出处: docs\\index-locality-design.md:38\n      ↳ 证据: | **图数据** | 索引里已有 `edges(kind='import'/'call'/'type_ref')` ⇒ 扩展不需要重新解析文件来\"找邻居\"（已索引文件从图里查，新文件才解析） |\n  80. [doc] [3. 机制：种子驱动的 BFS + 缝合 + 预算] | 读/导航（`explore_code read`、`get_dsl` query=node、`read_project_docs`） | **args 里的…  [3. 机制：种子驱动的 BFS + 缝合 + 预算]\n      ↳ 出处: docs\\index-locality-design.md:61\n      ↳ 证据: | 读/导航（`explore_code read`、`get_dsl` query=node、`read_project_docs`） | **args 里的 file/symbol** | ✅ 可局部（**必须带覆盖度**） |\n  81. [doc] [4. ★ 纪律：局部索引服务\"读\"，不服务\"改\"] 这是本方案唯一不能让步的地方，理由是**失败模式不对称**：  [4. ★ 纪律：局部索引服务\"读\"，不服务\"改\"]\n      ↳ 出处: docs\\index-locality-design.md:69\n      ↳ 证据: 这是本方案唯一不能让步的地方，理由是**失败模式不对称**：\n  82. [doc] [4. ★ 纪律：局部索引服务\"读\"，不服务\"改\"] 1. **只读路径**：可以用局部索引，但返回必须带 **`coverage: { indexedFiles, closureSize, partial }`*…  [4. ★ 纪律：局部索引服务\"读\"，不服务\"改\"]\n      ↳ 出处: docs\\index-locality-design.md:77\n      ↳ 证据: 1. **只读路径**：可以用局部索引，但返回必须带 **`coverage: { indexedFiles, closureSize, partial }`**，\n  83. [doc] [4. ★ 纪律：局部索引服务\"读\"，不服务\"改\"] 2. **编辑路径**：必须先把闭包**扩到闭合**（沿 importer 方向直到没有新文件），再动手；  [4. ★ 纪律：局部索引服务\"读\"，不服务\"改\"]\n      ↳ 出处: docs\\index-locality-design.md:79\n      ↳ 证据: 2. **编辑路径**：必须先把闭包**扩到闭合**（沿 importer 方向直到没有新文件），再动手；\n  84. [doc] [4. ★ 纪律：局部索引服务\"读\"，不服务\"改\"] 3. **本质上需要全量的查询**：`code_health`（孤儿文件/未用导出）、跨包 `impact_analysis`、  [4. ★ 纪律：局部索引服务\"读\"，不服务\"改\"]\n      ↳ 出处: docs\\index-locality-design.md:82\n      ↳ 证据: 3. **本质上需要全量的查询**：`code_health`（孤儿文件/未用导出）、跨包 `impact_analysis`、\n  85. [doc] [4. ★ 纪律：局部索引服务\"读\"，不服务\"改\"] \"全仓搜某字符串\"——必须能**识别出这类查询**并触发全量/后台，否则答案会**错**（不是\"不完整\"而是\"错\"）。  [4. ★ 纪律：局部索引服务\"读\"，不服务\"改\"]\n      ↳ 出处: docs\\index-locality-design.md:83\n      ↳ 证据: \"全仓搜某字符串\"——必须能**识别出这类查询**并触发全量/后台，否则答案会**错**（不是\"不完整\"而是\"错\"）。\n  86. [doc] [6. 风险与边界（诚实清单）] 4. **不要预计算分块**：用户自己也修正了（\"不用预建立，而是及时建立\"）。  [6. 风险与边界（诚实清单）]\n      ↳ 出处: docs\\index-locality-design.md:109\n      ↳ 证据: 4. **不要预计算分块**：用户自己也修正了（\"不用预建立，而是及时建立\"）。\n  87. [doc] [6. 风险与边界（诚实清单）] 预计算分块会引入\"分块表\"这一新真相源（漂移风险），而 **BFS + 缝合不需要任何预计算**。  [6. 风险与边界（诚实清单）]\n      ↳ 出处: docs\\index-locality-design.md:110\n      ↳ 证据: 预计算分块会引入\"分块表\"这一新真相源（漂移风险），而 **BFS + 缝合不需要任何预计算**。\n  88. [doc] [S1 实测（`probe-dc-locality.mjs --tile`，296 文件项目）] 语义上也对：「谁引用**我**」只需对种子成立，不需要对每个邻居都成立。  [S1 实测（`probe-dc-locality.mjs --tile`，296 文件项目）]\n      ↳ 出处: docs\\index-locality-design.md:144\n      ↳ 证据: 语义上也对：「谁引用**我**」只需对种子成立，不需要对每个邻居都成立。\n  89. [doc] [S2 已落地：首次读（前台，有上限）+ 后台续建（空闲补齐）] 进一步压到 <<DUR> 需要**按文件大小设预算**（大文件延后到后台）；② watch 收窄到已索引区 + 边界扩展。  [S2 已落地：首次读（前台，有上限）+ 后台续建（空闲补齐）]\n      ↳ 出处: docs\\index-locality-design.md:171\n      ↳ 证据: 进一步压到 <<DUR> 需要**按文件大小设预算**（大文件延后到后台）；② watch 收窄到已索引区 + 边界扩展。\n  90. [doc] [8.1 结论：**不是重算全仓，也不只是\"重算引用\"；分四档，各司其职**] ⇒ **你的直觉对了一半**：确实\"不需要重算全仓\"，而且**跨文件引用解析确实不重解析对方**（只查符号表）。  [8.1 结论：**不是重算全仓，也不只是\"重算引用\"；分四档，各司其职**]\n      ↳ 出处: docs\\index-locality-design.md:186\n      ↳ 证据: ⇒ **你的直觉对了一半**：确实\"不需要重算全仓\"，而且**跨文件引用解析确实不重解析对方**（只查符号表）。\n  91. [doc] [8.2 ★ 修正（2026-09-14 实测）：不会有\"悬空边\"，真问题是**引用方的边被删后不会重建**] > 不能是纯数字，`{1: nm}` 抛 `Unknown named parameter '1'`）。**被吞的异常必须能被测试看见** ——  [8.2 ★ 修正（2026-09-14 实测）：不会有\"悬空边\"，真问题是**引用方的边被删后不会重建**]\n      ↳ 出处: docs\\index-locality-design.md:212\n      ↳ 证据: > 不能是纯数字，`{1: nm}` 抛 `Unknown named parameter '1'`）。**被吞的异常必须能被测试看见** ——\n  92. [doc] [8.3 看门狗（watch）：**已接上，并且把\"引用部分\"真正收窄了**（2026-09-14 落地）] **默认关闭**：`serve` 重建实际 DSL 需要\"新文件必须追进来\"，收窄会变成静默少文件；  [8.3 看门狗（watch）：**已接上，并且把\"引用部分\"真正收窄了**（2026-09-14 落地）]\n      ↳ 出处: docs\\index-locality-design.md:241\n      ↳ 证据: **默认关闭**：`serve` 重建实际 DSL 需要\"新文件必须追进来\"，收窄会变成静默少文件；\n  93. [doc] [9.2 ★ 关键实测：反向边**不必付 AST 的价**（296 文件项目）] | ② **文本级 import 反查**（正则，**不需要 AST**） | **<DUR>**（<DUR>/文件） | **0.1%** | 命中 1275 …  [9.2 ★ 关键实测：反向边**不必付 AST 的价**（296 文件项目）]\n      ↳ 出处: docs\\index-locality-design.md:290\n      ↳ 证据: | ② **文本级 import 反查**（正则，**不需要 AST**） | **<DUR>**（<DUR>/文件） | **0.1%** | 命中 1275 条 import |\n  94. [doc] [9.5 精度纪律（别把粗层当结论）] 粗层只用于\"缩范围\"，**结论必须由细层确认**；  [9.5 精度纪律（别把粗层当结论）]\n      ↳ 出处: docs\\index-locality-design.md:323\n      ↳ 证据: 粗层只用于\"缩范围\"，**结论必须由细层确认**；\n  95. [doc] [9.5 精度纪律（别把粗层当结论）] 对外必须标注 `candidates` vs `confirmed`，**不允许把候选当命中的引用**；  [9.5 精度纪律（别把粗层当结论）]\n      ↳ 出处: docs\\index-locality-design.md:324\n      ↳ 证据: 对外必须标注 `candidates` vs `confirmed`，**不允许把候选当命中的引用**；\n  96. [doc] [observe（原 camera）线体检：插桩 / 事件 / 判定 / 对账] > 2026-09-14 ｜ 起因：用户提问「我们其实有一个探针栏目，但当时设计得很激进，**到底有没有用**？  [observe（原 camera）线体检：插桩 / 事件 / 判定 / 对账]\n      ↳ 出处: docs\\observe-line-triage.md:3\n      ↳ 证据: > 2026-09-14 ｜ 起因：用户提问「我们其实有一个探针栏目，但当时设计得很激进，**到底有没有用**？\n  97. [doc] [1. 它到底是什么（先把名字与范围对齐）] **设计原话**（`src/observe/instrument.ts` 头注释）：  [1. 它到底是什么（先把名字与范围对齐）]\n      ↳ 出处: docs\\observe-line-triage.md:13\n      ↳ 证据: **设计原话**（`src/observe/instrument.ts` 头注释）：\n  98. [doc] [★ `observe_*` / `reconcile_*` / `narrate_*` / `feature_line`：**0 次**] 但\"模型不主动用\"本身就是问题：它设计了 6 条 observe 能力线、10 个工具，结果是 **0 采纳**。  [★ `observe_*` / `reconcile_*` / `narrate_*` / `feature_line`：**0 次**]\n      ↳ 出处: docs\\observe-line-triage.md:60\n      ↳ 证据: 但\"模型不主动用\"本身就是问题：它设计了 6 条 observe 能力线、10 个工具，结果是 **0 采纳**。\n  99. [doc] [3. 为什么用不上（根因，不是\"功能不好\"）] | **③ 原设计假设太激进** | \"**全量无脑插桩**，靠 DSL 判定筛掉噪音\"——把筛选成本推给了判定层与读者；现实中没人愿意为了\"也许要看\"而全量改…  [3. 为什么用不上（根因，不是\"功能不好\"）]\n      ↳ 出处: docs\\observe-line-triage.md:70\n      ↳ 证据: | **③ 原设计假设太激进** | \"**全量无脑插桩**，靠 DSL 判定筛掉噪音\"——把筛选成本推给了判定层与读者；现实中没人愿意为了\"也许要看\"而全量改写源码。 |\n  100. [doc] [4. 但有两块是\"承重墙\"，别一起删] | **`behavior_baseline`（金丝雀 harness：capture→改代码→verify 对拍）** | 它就是**\"验证闸\"**：Morp…  [4. 但有两块是\"承重墙\"，别一起删]\n      ↳ 出处: docs\\observe-line-triage.md:79\n      ↳ 证据: | **`behavior_baseline`（金丝雀 harness：capture→改代码→verify 对拍）** | 它就是**\"验证闸\"**：Morph/Modelcode 的差异化卖点正是\"新旧程序行为对拍\"，而我们自己的判据阶梯 **L4 = 可执行验收 + 隐藏 holdout** 也需要一个执行器。 |\n  101. [doc] [A. 降级不暴露（保守）] 收益：工具面 62 → ~53，description token 直接省；零风险。**缺点：不解决\"没人用\"的根因。**  [A. 降级不暴露（保守）]\n      ↳ 出处: docs\\observe-line-triage.md:90\n      ↳ 证据: 收益：工具面 62 → ~53，description token 直接省；零风险。**缺点：不解决\"没人用\"的根因。**\n  102. [doc] [C. ★ 收敛为\"验收执行器\" + 归档展示类（推荐）] 与 P1「修复→规则沉淀」天然接续：规则能复跑，就需要对拍来证明\"这次改动没坏行为\"。  [C. ★ 收敛为\"验收执行器\" + 归档展示类（推荐）]\n      ↳ 出处: docs\\observe-line-triage.md:99\n      ↳ 证据: 与 P1「修复→规则沉淀」天然接续：规则能复跑，就需要对拍来证明\"这次改动没坏行为\"。\n  103. [doc] [结论三：环形缓冲 → 触发保留 的失控，是\"事后裁剪\"的必然 —— 你们自己已经纠正过同一个错误] ⇒ **采集侧的正解完全同构**：**判定必须前移到采集点（写入前决定写不写），而不是先全量落盘再用环形缓冲去挑。**  [结论三：环形缓冲 → 触发保留 的失控，是\"事后裁剪\"的必然 —— 你们自己已经纠正过同一个错误]\n      ↳ 出处: docs\\observe-line-triage.md:156\n      ↳ 证据: ⇒ **采集侧的正解完全同构**：**判定必须前移到采集点（写入前决定写不写），而不是先全量落盘再用环形缓冲去挑。**\n  104. [doc] [5.6 第四条路 D（推荐，替代/包裹 C）：**语义观测点 + 采集前判定 + 预算**] | 机制 | 做法 | 解决什么 |  [5.6 第四条路 D（推荐，替代/包裹 C）：**语义观测点 + 采集前判定 + 预算**]\n      ↳ 出处: docs\\observe-line-triage.md:163\n      ↳ 证据: | 机制 | 做法 | 解决什么 |\n  105. [doc] [观测点推荐器（observe-point-recommender）设计] > 采集、选择性插桩、分级、台账、一键还原、事件端口**全都已经实现了**。  [观测点推荐器（observe-point-recommender）设计]\n      ↳ 出处: docs\\observe-point-recommender.md:8\n      ↳ 证据: > 采集、选择性插桩、分级、台账、一键还原、事件端口**全都已经实现了**。\n  106. [doc] [观测点推荐器（observe-point-recommender）设计] > 本文只设计缺的那一块，并划清 LLM 的边界。  [观测点推荐器（observe-point-recommender）设计]\n      ↳ 出处: docs\\observe-point-recommender.md:9\n      ↳ 证据: > 本文只设计缺的那一块，并划清 LLM 的边界。\n  107. [doc] [0. ★ v1 已实现（2026-09-14），实测数据与途中修掉的三个真 bug] 2. **推荐点重复**：探针名**不含行号**，同一符号内多个同类站点名字相同 ⇒ 必须**按 key 去重**  [0. ★ v1 已实现（2026-09-14），实测数据与途中修掉的三个真 bug]\n      ↳ 出处: docs\\observe-point-recommender.md:33\n      ↳ 证据: 2. **推荐点重复**：探针名**不含行号**，同一符号内多个同类站点名字相同 ⇒ 必须**按 key 去重**\n  108. [doc] [0. ★ v1 已实现（2026-09-14），实测数据与途中修掉的三个真 bug] ⇒ 必须新建数组/去重。（测试里加了防复发断言。）  [0. ★ v1 已实现（2026-09-14），实测数据与途中修掉的三个真 bug]\n      ↳ 出处: docs\\observe-point-recommender.md:36\n      ↳ 证据: ⇒ 必须新建数组/去重。（测试里加了防复发断言。）\n  109. [doc] [0. ★ v1 已实现（2026-09-14），实测数据与途中修掉的三个真 bug] **另有两条设计补强**：  [0. ★ v1 已实现（2026-09-14），实测数据与途中修掉的三个真 bug]\n      ↳ 出处: docs\\observe-point-recommender.md:38\n      ↳ 证据: **另有两条设计补强**：\n  110. [doc] [1. ★ 体检结论：现有资产已覆盖 5/6，只缺\"谁来自动生成清单\"] | **采集（事件端口）** | ✅ **已实现**：零侵入探针（未配 sink 时 no-op）、全局 sink（`globalThis`，解决多模块实例）/…  [1. ★ 体检结论：现有资产已覆盖 5/6，只缺\"谁来自动生成清单\"]\n      ↳ 出处: docs\\observe-point-recommender.md:52\n      ↳ 证据: | **采集（事件端口）** | ✅ **已实现**：零侵入探针（未配 sink 时 no-op）、全局 sink（`globalThis`，解决多模块实例）/ `AsyncLocalStorage` 作用域、产出 `events.jsonl`（对齐 `schema/observe_contract.schema.json`） | `src/observe/probe.ts` |\n  111. [doc] [1. ★ 体检结论：现有资产已覆盖 5/6，只缺\"谁来自动生成清单\"] | **选择性插桩** | ✅ **已实现**：`InstrumentOptions.contractProbes?: string[]` —— **非 und…  [1. ★ 体检结论：现有资产已覆盖 5/6，只缺\"谁来自动生成清单\"]\n      ↳ 出处: docs\\observe-point-recommender.md:53\n      ↳ 证据: | **选择性插桩** | ✅ **已实现**：`InstrumentOptions.contractProbes?: string[]` —— **非 undefined 时只注入清单里的点**（`matchContract` 精确匹配 `<mod>.<fn>.<suffix>` + 模块级过滤）；**undefined 才全量**，注释原文就叫「**探索模式**」 | `src/observe\n  112. [doc] [1. ★ 体检结论：现有资产已覆盖 5/6，只缺\"谁来自动生成清单\"] | **★ 推荐器（谁产出 contractProbes）** | ❌ **缺** —— 今天是**人工写清单**或**全量兜底** | **本文设计** |  [1. ★ 体检结论：现有资产已覆盖 5/6，只缺\"谁来自动生成清单\"]\n      ↳ 出处: docs\\observe-point-recommender.md:57\n      ↳ 证据: | **★ 推荐器（谁产出 contractProbes）** | ❌ **缺** —— 今天是**人工写清单**或**全量兜底** | **本文设计** |\n  113. [doc] [1. ★ 体检结论：现有资产已覆盖 5/6，只缺\"谁来自动生成清单\"] ⇒ 所以用户的方案不是\"另起一套\"，而是**给已有的 `contractProbes` 装一个自动产出的脑子**。  [1. ★ 体检结论：现有资产已覆盖 5/6，只缺\"谁来自动生成清单\"]\n      ↳ 出处: docs\\observe-point-recommender.md:59\n      ↳ 证据: ⇒ 所以用户的方案不是\"另起一套\"，而是**给已有的 `contractProbes` 装一个自动产出的脑子**。\n  114. [doc] [3. 推荐信号表（★ 全部来自已有资产，不必新造）] | **契约缺口/漂移** | `detect_drift`（`design_stale`/`missing_impl`）、`reconcile_effects…  [3. 推荐信号表（★ 全部来自已有资产，不必新造）]\n      ↳ 出处: docs\\observe-point-recommender.md:84\n      ↳ 证据: | **契约缺口/漂移** | `detect_drift`（`design_stale`/`missing_impl`）、`reconcile_effects` | 声明与实测不符处，最需要实测 |\n  115. [doc] [✅ LLM 只在三个**可关、可回退、产出必须落盘**的入口用] **★ 一条铁律**：**LLM 的产出必须落成\"清单资产\"**（可 review、可 diff、可复用、可回滚），  [✅ LLM 只在三个**可关、可回退、产出必须落盘**的入口用]\n      ↳ 出处: docs\\observe-point-recommender.md:121\n      ↳ 证据: **★ 一条铁律**：**LLM 的产出必须落成\"清单资产\"**（可 review、可 diff、可复用、可回滚），\n  116. [doc] [5. 必须配套：锚点漂移与\"未命中报告\"] **仍需配套**：符号**改名/移动**后 key 会失配 ⇒ 插桩时必须**报告未命中清单**：  [5. 必须配套：锚点漂移与\"未命中报告\"]\n      ↳ 出处: docs\\observe-point-recommender.md:131\n      ↳ 证据: **仍需配套**：符号**改名/移动**后 key 会失配 ⇒ 插桩时必须**报告未命中清单**：\n  117. [doc] [6. 与既有设计/新能力的整合] | 方案 D（语义观测点 + 采集前判定 + 预算） | **推荐器的输出就是 D 的\"声明观测点\"**；人工声明 = 覆盖/追加（`observe-point…  [6. 与既有设计/新能力的整合]\n      ↳ 出处: docs\\observe-point-recommender.md:143\n      ↳ 证据: | 方案 D（语义观测点 + 采集前判定 + 预算） | **推荐器的输出就是 D 的\"声明观测点\"**；人工声明 = 覆盖/追加（`observe-points.json` 可手改） |\n  118. [doc] [2. 为什么挂起（而不是删掉）] ⇒ 不是\"组件坏了\"，是**布局参数未收敛**。修它需要动 vendored 上游的 renderer  [2. 为什么挂起（而不是删掉）]\n      ↳ 出处: docs\\r5-archify-hung.md:36\n      ↳ 证据: ⇒ 不是\"组件坏了\"，是**布局参数未收敛**。修它需要动 vendored 上游的 renderer\n  119. [doc] [4. 挂起的边界（**重要**：哪些没挂起）] 以下**没有**挂起，因为它们守着主线资产或对外契约：  [4. 挂起的边界（**重要**：哪些没挂起）]\n      ↳ 出处: docs\\r5-archify-hung.md:69\n      ↳ 证据: 以下**没有**挂起，因为它们守着主线资产或对外契约：\n  120. [doc] [4. 挂起的边界（**重要**：哪些没挂起）] ⇒ 契约漂移必须继续暴露。  [4. 挂起的边界（**重要**：哪些没挂起）]\n      ↳ 出处: docs\\r5-archify-hung.md:74\n      ↳ 证据: ⇒ 契约漂移必须继续暴露。\n  121. [doc] [6. 与主线开发的互不干扰约定] 改了 `third_party/archify/**`（比如换版本）⇒ 必须跑 `archify doctor` +  [6. 与主线开发的互不干扰约定]\n      ↳ 出处: docs\\r5-archify-hung.md:102\n      ↳ 证据: 改了 `third_party/archify/**`（比如换版本）⇒ 必须跑 `archify doctor` +\n  122. [doc] [1. ★ 搬移/收敛一块的标准 8 步法（顺序即纪律）] | 3 | **脚本化搬移** | 用一次性脚本按**文本区段**精确搬，不要手抄。★ 区段边界必须用编译器复核（§4.1） |  [1. ★ 搬移/收敛一块的标准 8 步法（顺序即纪律）]\n      ↳ 出处: docs\\refactor-playbook.md:52\n      ↳ 证据: | 3 | **脚本化搬移** | 用一次性脚本按**文本区段**精确搬，不要手抄。★ 区段边界必须用编译器复核（§4.1） |\n  123. [doc] [4.3 ★ 门\"跟着被搬走的代码失效\"（最隐蔽，P1b 一次打红两个 CI 门）] 3. 需要历史对比的，**逐个文件**从 git 读（HEAD 里还没有的跳过）。  [4.3 ★ 门\"跟着被搬走的代码失效\"（最隐蔽，P1b 一次打红两个 CI 门）]\n      ↳ 出处: docs\\refactor-playbook.md:126\n      ↳ 证据: 3. 需要历史对比的，**逐个文件**从 git 读（HEAD 里还没有的跳过）。\n  124. [doc] [4.4 破环：两个东西互相需要 → **延迟注入，且不给\"看起来能用\"的默认值**] 实例：`capability_map` 的目录必须来自真实注册表，但它属于 meta 线，而 `TOOL_DEFS` 是各 lane 汇总出来的。  [4.4 破环：两个东西互相需要 → **延迟注入，且不给\"看起来能用\"的默认值**]\n      ↳ 出处: docs\\refactor-playbook.md:132\n      ↳ 证据: 实例：`capability_map` 的目录必须来自真实注册表，但它属于 meta 线，而 `TOOL_DEFS` 是各 lane 汇总出来的。\n  125. [doc] [4.6 一致性断言会挡\"改善方向\"的改动 —— 要显式放宽并写明理由] G1 快照按 **name 排序**比较（lane 拆分必然改顺序，而 MCP 工具按名寻址）。  [4.6 一致性断言会挡\"改善方向\"的改动 —— 要显式放宽并写明理由]  ⚠ lifecycle:split\n      ↳ 出处: docs\\refactor-playbook.md:150\n      ↳ 证据: G1 快照按 **name 排序**比较（lane 拆分必然改顺序，而 MCP 工具按名寻址）。\n  126. [doc] [4.6 一致性断言会挡\"改善方向\"的改动 —— 要显式放宽并写明理由] 这是**有意放宽**，必须在门的文件头写明理由，否则后人会以为漏了判据。  [4.6 一致性断言会挡\"改善方向\"的改动 —— 要显式放宽并写明理由]\n      ↳ 出处: docs\\refactor-playbook.md:151\n      ↳ 证据: 这是**有意放宽**，必须在门的文件头写明理由，否则后人会以为漏了判据。\n  127. [doc] [4.9 ★ 单点化本身会把\"必须保留旧名\"的地方暴露出来 —— 那不是假阳] 因为**新模块本身就是\"新增的旧名出现处\"**。  [4.9 ★ 单点化本身会把\"必须保留旧名\"的地方暴露出来 —— 那不是假阳]\n      ↳ 出处: docs\\refactor-playbook.md:174\n      ↳ 证据: 因为**新模块本身就是\"新增的旧名出现处\"**。\n  128. [doc] [4.9 ★ 单点化本身会把\"必须保留旧名\"的地方暴露出来 —— 那不是假阳] ⇒ 门没错：`DATA_DIR_NAME_LEGACY` 这个常量**按设计必须永久保留旧名**（迁移期回退）。  [4.9 ★ 单点化本身会把\"必须保留旧名\"的地方暴露出来 —— 那不是假阳]\n      ↳ 出处: docs\\refactor-playbook.md:175\n      ↳ 证据: ⇒ 门没错：`DATA_DIR_NAME_LEGACY` 这个常量**按设计必须永久保留旧名**（迁移期回退）。\n  129. [doc] [5. 回滚纪律] **每笔提交前工作树必须是干净的起点** ⇒ 搬坏了就 `git checkout -- <改动文件>`，**别在半成品上继续修**。  [5. 回滚纪律]\n      ↳ 出处: docs\\refactor-playbook.md:183\n      ↳ 证据: **每笔提交前工作树必须是干净的起点** ⇒ 搬坏了就 `git checkout -- <改动文件>`，**别在半成品上继续修**。\n  130. [doc] [6. 提交信息模板（本仓惯例：说清\"为什么\"，不只\"做了什么\"）] 承 <上一笔 short-sha>。<为什么必须做这一步；不做的后果>  [6. 提交信息模板（本仓惯例：说清\"为什么\"，不只\"做了什么\"）]\n      ↳ 出处: docs\\refactor-playbook.md:198\n      ↳ 证据: 承 <上一笔 short-sha>。<为什么必须做这一步；不做的后果>\n  131. [doc] [6. 提交信息模板（本仓惯例：说清\"为什么\"，不只\"做了什么\"）] ★ 数字要**自洽**：测试数变化必须能对上\"新增了几个用例\"。对不上就是有问题。  [6. 提交信息模板（本仓惯例：说清\"为什么\"，不只\"做了什么\"）]\n      ↳ 出处: docs\\refactor-playbook.md:212\n      ↳ 证据: ★ 数字要**自洽**：测试数变化必须能对上\"新增了几个用例\"。对不上就是有问题。\n  132. [doc] [8.1 先判\"这是不是字符串替换\"—— 先回答**\"有没有下游\"**] > ★★ **纪律：兼容层必须有下游才配存在。**（2026-09-28 用户纠正 —— 我起初给数据目录名/环境变量  [8.1 先判\"这是不是字符串替换\"—— 先回答**\"有没有下游\"**]\n      ↳ 出处: docs\\refactor-playbook.md:232\n      ↳ 证据: > ★★ **纪律：兼容层必须有下游才配存在。**（2026-09-28 用户纠正 —— 我起初给数据目录名/环境变量\n  133. [doc] [8.1 先判\"这是不是字符串替换\"—— 先回答**\"有没有下游\"**] > 设计了\"新名 + 旧名仍生效 + 弃用提示\"，用户一句\"我们又没有下游\"就否掉了，且实测那批预留  [8.1 先判\"这是不是字符串替换\"—— 先回答**\"有没有下游\"**]  ⚠ lifecycle:retired\n      ↳ 出处: docs\\refactor-playbook.md:233\n      ↳ 证据: > 设计了\"新名 + 旧名仍生效 + 弃用提示\"，用户一句\"我们又没有下游\"就否掉了，且实测那批预留\n  134. [doc] [8.1 先判\"这是不是字符串替换\"—— 先回答**\"有没有下游\"**] **有下游时**，下列三类**不是字符串替换**，必须单独处理：  [8.1 先判\"这是不是字符串替换\"—— 先回答**\"有没有下游\"**]  ⚠ lifecycle:superseded\n      ↳ 出处: docs\\refactor-playbook.md:238\n      ↳ 证据: **有下游时**，下列三类**不是字符串替换**，必须单独处理：\n  135. [doc] [8.1 先判\"这是不是字符串替换\"—— 先回答**\"有没有下游\"**] **→ 有下游**：新名 + 旧名仍生效（读新优先、回退旧）+ 弃用提示，**不许**静默改用新名。  [8.1 先判\"这是不是字符串替换\"—— 先回答**\"有没有下游\"**]  ⚠ lifecycle:retired\n      ↳ 出处: docs\\refactor-playbook.md:246\n      ↳ 证据: **→ 有下游**：新名 + 旧名仍生效（读新优先、回退旧）+ 弃用提示，**不许**静默改用新名。\n  136. [doc] [0. 渐进式披露（MCP 工具对外组织原则，路径 B）] > - 反面教训：`camera_*`（instrument/judge/log/chain\\_recon）**不聚合**——看似同对象，实为不同抽象层（基础动…  [0. 渐进式披露（MCP 工具对外组织原则，路径 B）]  ⚠ lifecycle:merged\n      ↳ 出处: docs\\tool-convergence.md:33\n      ↳ 证据: > - 反面教训：`camera_*`（instrument/judge/log/chain\\_recon）**不聚合**——看似同对象，实为不同抽象层（基础动作/判定/查询/编排），且被 `mcp_tools.test` 显式锚定，强行合并违背契约。\n  137. [doc] [第一层 · LLM 能力域（给 MCP 工具）] | **design** 设计编辑   | 改设计/DSL/脚手架/渲染视图 | `get_dsl` `edit_dsl` `manage_feature` `…  [第一层 · LLM 能力域（给 MCP 工具）]\n      ↳ 出处: docs\\tool-convergence.md:41\n      ↳ 证据: | **design** 设计编辑   | 改设计/DSL/脚手架/渲染视图 | `get_dsl` `edit_dsl` `manage_feature` `render_design` `render_brickwork` `scaffold` `backfill_scaffold` `diff_views`                     |\n  138. [doc] [第一层 · LLM 能力域（给 MCP 工具）] | **query** 查询理解    | 读设计/读代码/搜索定位     | `import_project` `explore_code` `read_p…  [第一层 · LLM 能力域（给 MCP 工具）]\n      ↳ 出处: docs\\tool-convergence.md:42\n      ↳ 证据: | **query** 查询理解    | 读设计/读代码/搜索定位     | `import_project` `explore_code` `read_project_docs`                                                                                      |\n  139. [doc] [第二层 · 操作面（给 CLI 对偶工具）] | `split_stage_cli`                    | refactor           | 拆分阶段终端形态  |  [第二层 · 操作面（给 CLI 对偶工具）]  ⚠ lifecycle:split\n      ↳ 出处: docs\\tool-convergence.md:63\n      ↳ 证据: | `split_stage_cli`                    | refactor           | 拆分阶段终端形态  |\n  140. [doc] [第二层 · 操作面（给 CLI 对偶工具）] | `deprecate_offline_cli`              | refactor           | 下线遗留终端形态  |  [第二层 · 操作面（给 CLI 对偶工具）]  ⚠ lifecycle:retired\n      ↳ 出处: docs\\tool-convergence.md:64\n      ↳ 证据: | `deprecate_offline_cli`              | refactor           | 下线遗留终端形态  |\n  141. [doc] [3. 收敛候选（按「名称相似 + 职责重叠」初筛）] > 原则：**先定性后合并**，避免伤到对外契约。每个候选都标「收益 / 风险」。  [3. 收敛候选（按「名称相似 + 职责重叠」初筛）]  ⚠ lifecycle:merged\n      ↳ 出处: docs\\tool-convergence.md:81\n      ↳ 证据: > 原则：**先定性后合并**，避免伤到对外契约。每个候选都标「收益 / 风险」。\n  142. [doc] [A. 命名似乎重叠 → Phase 1 已逐项核验（结论：全部不合并，详见第 7 节）] > ✅ 2026-08 核验完成：A 组三项**均是『名字像、职责不同』，判不合并**——当初的收敛设想被源实现证伪，避免无效甚至有害的合并。  [A. 命名似乎重叠 → Phase 1 已逐项核验（结论：全部不合并，详见第 7 节）]  ⚠ lifecycle:merged\n      ↳ 出处: docs\\tool-convergence.md:85\n      ↳ 证据: > ✅ 2026-08 核验完成：A 组三项**均是『名字像、职责不同』，判不合并**——当初的收敛设想被源实现证伪，避免无效甚至有害的合并。\n  143. [doc] [A. 命名似乎重叠 → Phase 1 已逐项核验（结论：全部不合并，详见第 7 节）] | `rename_symbol` / `rename_file` / `rename_many` | **不合并**。三种底层机制：单文件作用域折叠(ast\\…  [A. 命名似乎重叠 → Phase 1 已逐项核验（结论：全部不合并，详见第 7 节）]  ⚠ lifecycle:merged\n      ↳ 出处: docs\\tool-convergence.md:89\n      ↳ 证据: | `rename_symbol` / `rename_file` / `rename_many` | **不合并**。三种底层机制：单文件作用域折叠(ast\\_rename) vs 跨文件符号引用图(rename\\_symbol) vs 文件系统迁移+全仓 import 改写(rename\\_file)。抽公共内核纯属糅合。 |\n  144. [doc] [A. 命名似乎重叠 → Phase 1 已逐项核验（结论：全部不合并，详见第 7 节）] | `suggest_renames` / `find_similar_names`        | **不合并**。两种互补视角：无意义短名 vs 易混淆孪…  [A. 命名似乎重叠 → Phase 1 已逐项核验（结论：全部不合并，详见第 7 节）]  ⚠ lifecycle:merged\n      ↳ 出处: docs\\tool-convergence.md:90\n      ↳ 证据: | `suggest_renames` / `find_similar_names`        | **不合并**。两种互补视角：无意义短名 vs 易混淆孪生名。两者都输出可喂 `rename_many` 的数据，是上下游配合。                                                 |\n  145. [doc] [A. 命名似乎重叠 → Phase 1 已逐项核验（结论：全部不合并，详见第 7 节）] | `camera_log` / `chain_recon`                    | **不合并**。纯事件查询 vs 中观对账编排聚合。前缀…  [A. 命名似乎重叠 → Phase 1 已逐项核验（结论：全部不合并，详见第 7 节）]  ⚠ lifecycle:merged\n      ↳ 出处: docs\\tool-convergence.md:91\n      ↳ 证据: | `camera_log` / `chain_recon`                    | **不合并**。纯事件查询 vs 中观对账编排聚合。前缀统一是命名风格而非代码合并，收益有限。                                                                  |\n  146. [doc] [A. 命名似乎重叠 → Phase 1 已逐项核验（结论：全部不合并，详见第 7 节）] > 从 A 组的教训看：**\"名称相似\"不等于\"职责重叠\"，收敛必须以源实现核验为准。**  [A. 命名似乎重叠 → Phase 1 已逐项核验（结论：全部不合并，详见第 7 节）]\n      ↳ 出处: docs\\tool-convergence.md:93\n      ↳ 证据: > 从 A 组的教训看：**\"名称相似\"不等于\"职责重叠\"，收敛必须以源实现核验为准。**\n  147. [doc] [B. 疑似重复 → Phase 1 已逐项核验（详见第 7 节）] | `render_dsl` vs `render_sandbox`           | **不合并**。render\\_dsl=读 DSL 渲染设计稿(m…  [B. 疑似重复 → Phase 1 已逐项核验（详见第 7 节）]  ⚠ lifecycle:merged\n      ↳ 出处: docs\\tool-convergence.md:99\n      ↳ 证据: | `render_dsl` vs `render_sandbox`           | **不合并**。render\\_dsl=读 DSL 渲染设计稿(mindmap/html/svg/md)；render\\_sandbox=扫描工程生成依赖驱动积木工作台(不读 DSL)。职能正交。 |\n  148. [doc] [B. 疑似重复 → Phase 1 已逐项核验（详见第 7 节）] | `read_canvas_notes` vs `harvest_decisions` | **不合并**。画布批注工单 vs 仓库材料挖决策卡。数据源/产物…  [B. 疑似重复 → Phase 1 已逐项核验（详见第 7 节）]  ⚠ lifecycle:merged\n      ↳ 出处: docs\\tool-convergence.md:100\n      ↳ 证据: | `read_canvas_notes` vs `harvest_decisions` | **不合并**。画布批注工单 vs 仓库材料挖决策卡。数据源/产物都不同。                                                              |\n  149. [doc] [B. 疑似重复 → Phase 1 已逐项核验（详见第 7 节）] | `gateway_*(4个)`                            | **✅ 已合并** → 收敛为单入口 `gateway_provi…  [B. 疑似重复 → Phase 1 已逐项核验（详见第 7 节）]  ⚠ lifecycle:merged\n      ↳ 出处: docs\\tool-convergence.md:101\n      ↳ 证据: | `gateway_*(4个)`                            | **✅ 已合并** → 收敛为单入口 `gateway_provider`（action=list/upsert/delete/stats）。唯一真实可合并项。                   |\n  150. [doc] [4. 合并前核验（硬性纪律，每次合并强制走完）] > **规矩**：任何一次合并**动手改代码前**，先逐项核验待合并的工具是否和设想一致。**核验不过不动手。**  [4. 合并前核验（硬性纪律，每次合并强制走完）]  ⚠ lifecycle:merged\n      ↳ 出处: docs\\tool-convergence.md:126\n      ↳ 证据: > **规矩**：任何一次合并**动手改代码前**，先逐项核验待合并的工具是否和设想一致。**核验不过不动手。**\n  151. [doc] [4. 合并前核验（硬性纪律，每次合并强制走完）] 1. **读源实现** —— 合并双方 handler 源码是否职责真实重叠？还是只是名字像、做的其实是两回事？  [4. 合并前核验（硬性纪律，每次合并强制走完）]  ⚠ lifecycle:merged\n      ↳ 出处: docs\\tool-convergence.md:130\n      ↳ 证据: 1. **读源实现** —— 合并双方 handler 源码是否职责真实重叠？还是只是名字像、做的其实是两回事？\n  152. [doc] [4. 合并前核验（硬性纪律，每次合并强制走完）] 4. **查测试** —— 现有回归测试覆盖了两个工具的哪些行为？合并后哪些测试要跟着改？  [4. 合并前核验（硬性纪律，每次合并强制走完）]  ⚠ lifecycle:merged\n      ↳ 出处: docs\\tool-convergence.md:133\n      ↳ 证据: 4. **查测试** —— 现有回归测试覆盖了两个工具的哪些行为？合并后哪些测试要跟着改？\n  153. [doc] [4. 合并前核验（硬性纪律，每次合并强制走完）] 5. **跑回归 + 插桩验收** —— 合并后跑全量回归；关键路径留可观测产物（插桩/日志），确认真实行为对得上。**验收通过才提交，否则回滚。**  [4. 合并前核验（硬性纪律，每次合并强制走完）]  ⚠ lifecycle:merged\n      ↳ 出处: docs\\tool-convergence.md:134\n      ↳ 证据: 5. **跑回归 + 插桩验收** —— 合并后跑全量回归；关键路径留可观测产物（插桩/日志），确认真实行为对得上。**验收通过才提交，否则回滚。**\n  154. [doc] [4. 合并前核验（硬性纪律，每次合并强制走完）] > 核验结论记入本文件\"合并记录\"（第 7 节），每个候选一条：核验到哪一步、发现什么、怎么处理。  [4. 合并前核验（硬性纪律，每次合并强制走完）]  ⚠ lifecycle:merged\n      ↳ 出处: docs\\tool-convergence.md:136\n      ↳ 证据: > 核验结论记入本文件\"合并记录\"（第 7 节），每个候选一条：核验到哪一步、发现什么、怎么处理。\n  155. [doc] [5. 分阶段推进（每阶段有可验收产物）] **Phase 1 · 高确定合并**：A 组无风险合并（rename 内核、camera 前缀统一）→ 验收 diff + 回归全绿。  [5. 分阶段推进（每阶段有可验收产物）]  ⚠ lifecycle:merged\n      ↳ 出处: docs\\tool-convergence.md:144\n      ↳ 证据: **Phase 1 · 高确定合并**：A 组无风险合并（rename 内核、camera 前缀统一）→ 验收 diff + 回归全绿。\n  156. [doc] [起名贴切（隐喻自洽 + 直白）] | `archive_node`（下线归档） | 把下线节点归档保存     | ✅ 贴切 |  [起名贴切（隐喻自洽 + 直白）]  ⚠ lifecycle:retired\n      ↳ 出处: docs\\tool-convergence.md:173\n      ↳ 证据: | `archive_node`（下线归档） | 把下线节点归档保存     | ✅ 贴切 |\n  157. [doc] [新发现命名摩擦（待定，2026-08）] | **`render_dsl`** **vs** **`render_sandbox`** | render\\_dsl=渲染 DSL 设计稿(mindmap/…  [新发现命名摩擦（待定，2026-08）]\n      ↳ 出处: docs\\tool-convergence.md:186\n      ↳ 证据: | **`render_dsl`** **vs** **`render_sandbox`** | render\\_dsl=渲染 DSL 设计稿(mindmap/svg/md)；render\\_sandbox=渲染工程依赖积木工作台(brickify) | **render 一词承担两种不相关职责**（设计稿渲染 vs 代码分析可视化），与 camera 命名通胀同型 | ⚠️ 中等 |\n  158. [doc] [待评估增强：符号-文件联动改名] > 用户提问：\"重构工具不联动文件名，是不是设计缺陷？\"  [待评估增强：符号-文件联动改名]\n      ↳ 出处: docs\\tool-convergence.md:194\n      ↳ 证据: > 用户提问：\"重构工具不联动文件名，是不是设计缺陷？\"\n  159. [doc] [待评估增强：符号-文件联动改名] **结论：不是缺陷，是刻意的职责分离**（rename\\_symbol 改符号、rename\\_file 改路径，\"宁漏不误\"）。改符号 ≠ 必须改文件名（`u…  [待评估增强：符号-文件联动改名]\n      ↳ 出处: docs\\tool-convergence.md:196\n      ↳ 证据: **结论：不是缺陷，是刻意的职责分离**（rename\\_symbol 改符号、rename\\_file 改路径，\"宁漏不误\"）。改符号 ≠ 必须改文件名（`utils.ts` 导出 `foo`、`index.ts` 聚合是合法场景）。\n  160. [doc] [障碍清单（按根因）] | 3 | **粒度太细 + 黑盒** | `rename_file` 一次只改一个文件（70 文件改名=70 次调用）；返回仅文本，看不到结构化 diff →…  [障碍清单（按根因）]\n      ↳ 出处: docs\\tool-convergence.md:214\n      ↳ 证据: | 3 | **粒度太细 + 黑盒** | `rename_file` 一次只改一个文件（70 文件改名=70 次调用）；返回仅文本，看不到结构化 diff → 不透明→不信任→不用 |\n  161. [doc] [会主动用的场景（诚实）] **差异化场景**：活文档同步、契约回填、运行时观测（observe）——写代码时不主动想，但项目健康需要  [会主动用的场景（诚实）]\n      ↳ 出处: docs\\tool-convergence.md:224\n      ↳ 证据: **差异化场景**：活文档同步、契约回填、运行时观测（observe）——写代码时不主动想，但项目健康需要\n  162. [doc] [改进方向（1、2、3、4 已实施，闭包边界全部补齐）] **活文档漂移（detect\\_drift）** —— ✅ **已实施（2026-09）**：补齐「代码变更 → 提示 DSL 过时/欠实现」的闭环缺口。复用 …  [改进方向（1、2、3、4 已实施，闭包边界全部补齐）]\n      ↳ 出处: docs\\tool-convergence.md:258\n      ↳ 证据: **活文档漂移（detect\\_drift）** —— ✅ **已实施（2026-09）**：补齐「代码变更 → 提示 DSL 过时/欠实现」的闭环缺口。复用 `checkConsistency` 引擎，叠加：git 变更作用域（`scope=changed` 默认只看工作区改动 / `since_ref`；`scope=all` 全量）、过时判定（`unexpected/mismatched` \n  163. [doc] [改进方向（1、2、3、4 已实施，闭包边界全部补齐）] > **✅ 已实现：drift 挂周期性 reconcile 兜底**（fs.watch 丢事件时，reconcile 定期全量扫盘兜补漏改，并对有变更的文件精…  [改进方向（1、2、3、4 已实施，闭包边界全部补齐）]\n      ↳ 出处: docs\\tool-convergence.md:262\n      ↳ 证据: > **✅ 已实现：drift 挂周期性 reconcile 兜底**（fs.watch 丢事件时，reconcile 定期全量扫盘兜补漏改，并对有变更的文件精确补判 drift）。原设想的障碍「`ReconcileSummary` 不暴露变更文件」已解决：`ReconcileSummary.changed_files` 由 `reconcileProject` 透出；`watch_project\n  164. [doc] [草丛工具评估（2026-09）——零星工具文件「转正 or 归位」] **遗留命名重叠（2026-09 已收口）**：`render_dsl`→`render_design`（渲染设计稿）、`render_dsl_workbenc…  [草丛工具评估（2026-09）——零星工具文件「转正 or 归位」]\n      ↳ 出处: docs\\tool-convergence.md:279\n      ↳ 证据: **遗留命名重叠（2026-09 已收口）**：`render_dsl`→`render_design`（渲染设计稿）、`render_dsl_workbench`→`render_workbench`（契约投影工作台）、`render_sandbox_canvas`→`render_dep_canvas`（依赖图画布）均已成。render 前缀下对象各异：`render_design`/`ren\n  165. [doc] [结论：能力边界缺口] 2. **历史记录需要灰名单**：改名时 `docs/tool-convergence` 的历史核验/判定记录（如「render\\_sandbox 曾判 ren…  [结论：能力边界缺口]  ⚠ lifecycle:merged\n      ↳ 出处: docs\\tool-convergence.md:300\n      ↳ 证据: 2. **历史记录需要灰名单**：改名时 `docs/tool-convergence` 的历史核验/判定记录（如「render\\_sandbox 曾判 render\\_dsl 不合并」）必须保留原名还原语境，不能被无脑全局替换。这要求工具支持「按语义保留的原名白名单」。\n  166. [doc] [结论：能力边界缺口] 3. **生成物源头优先**：`AGENTS.md` 里的工具名由 `gen_agents.mjs` TRIGGER\\_ROWS 驱动，改工具名必须改源头而非生…  [结论：能力边界缺口]\n      ↳ 出处: docs\\tool-convergence.md:301\n      ↳ 证据: 3. **生成物源头优先**：`AGENTS.md` 里的工具名由 `gen_agents.mjs` TRIGGER\\_ROWS 驱动，改工具名必须改源头而非生成物本身（生成物会被 build 自愈重建）。\n  167. [doc] [6. 待办 / 开放问题] [x] 决定 `render_dsl`/`render_sandbox` 的 render 一词职责拆分是否处理 —— ✅ **已成（2026-09）**：`r…  [6. 待办 / 开放问题]  ⚠ lifecycle:split\n      ↳ 出处: docs\\tool-convergence.md:321\n      ↳ 证据: [x] 决定 `render_dsl`/`render_sandbox` 的 render 一词职责拆分是否处理 —— ✅ **已成（2026-09）**：`render_dsl`→`render_design`（渲染设计稿）、`render_sandbox`(现 `render_brickwork`) 早成 `render_brickwork`。render 前缀下对象各异：`render_de\n  168. [doc] [7. 合并记录] > 每次合并按「4. 合并前核验」走完五步后，在此记录一条：候选组、核验到哪一步、发现什么、怎么处理、验收结果。  [7. 合并记录]  ⚠ lifecycle:merged\n      ↳ 出处: docs\\tool-convergence.md:339\n      ↳ 证据: > 每次合并按「4. 合并前核验」走完五步后，在此记录一条：候选组、核验到哪一步、发现什么、怎么处理、验收结果。\n  169. [doc] [7. 合并记录] >   - 结果：合并提交 `<hash>`，回归 `n` 无回归  [7. 合并记录]  ⚠ lifecycle:merged\n      ↳ 出处: docs\\tool-convergence.md:348\n      ↳ 证据: >   - 结果：合并提交 `<hash>`，回归 `n` 无回归\n  170. [doc] [Phase 1 · A 组核验记录（2026-08）] 核验：读源实现 ✓（未达合并标准，账停于第 1 步）  [Phase 1 · A 组核验记录（2026-08）]  ⚠ lifecycle:merged\n      ↳ 出处: docs\\tool-convergence.md:356\n      ↳ 证据: 核验：读源实现 ✓（未达合并标准，账停于第 1 步）\n  171. [doc] [Phase 1 · A 组核验记录（2026-08）] 处理：判**不合并**。抽公共内核=强制糅合三种不相关实现，制造参数开关反噬心智。  [Phase 1 · A 组核验记录（2026-08）]  ⚠ lifecycle:merged\n      ↳ 出处: docs\\tool-convergence.md:360\n      ↳ 证据: 处理：判**不合并**。抽公共内核=强制糅合三种不相关实现，制造参数开关反噬心智。\n  172. [doc] [Phase 1 · A 组核验记录（2026-08）] 处理：判**不合并**。  [Phase 1 · A 组核验记录（2026-08）]  ⚠ lifecycle:merged\n      ↳ 出处: docs\\tool-convergence.md:369\n      ↳ 证据: 处理：判**不合并**。\n  173. [doc] [Phase 1 · A 组核验记录（2026-08）] 处理：判**不合并**。`camera_*` 前缀统一属命名风格，非代码合并，收益有限。  [Phase 1 · A 组核验记录（2026-08）]  ⚠ lifecycle:merged\n      ↳ 出处: docs\\tool-convergence.md:378\n      ↳ 证据: 处理：判**不合并**。`camera_*` 前缀统一属命名风格，非代码合并，收益有限。\n  174. [doc] [Phase 1 · A 组核验记录（2026-08）] > **Phase 1 结论：A 组无有效合并项。收敛价值转回 B/C 组（待下轮核验）。**  [Phase 1 · A 组核验记录（2026-08）]  ⚠ lifecycle:merged\n      ↳ 出处: docs\\tool-convergence.md:382\n      ↳ 证据: > **Phase 1 结论：A 组无有效合并项。收敛价值转回 B/C 组（待下轮核验）。**\n  175. [doc] [Phase 1 · B 组核验记录（2026-08）] 发现：render\\_dsl 读 DSL 渲染设计稿(mindmap/html/svg/markdown，用 feature 从存储读)；render\\_san…  [Phase 1 · B 组核验记录（2026-08）]\n      ↳ 出处: docs\\tool-convergence.md:389\n      ↳ 证据: 发现：render\\_dsl 读 DSL 渲染设计稿(mindmap/html/svg/markdown，用 feature 从存储读)；render\\_sandbox 扫描工程生成依赖驱动积木化工作台(brickify，不读 DSL 读依赖图)。输入(feature vs project\\_dir)、产物、handler 完全独立。\n  176. [doc] [Phase 1 · B 组核验记录（2026-08）] 处理：判**不合并**。  [Phase 1 · B 组核验记录（2026-08）]  ⚠ lifecycle:merged\n      ↳ 出处: docs\\tool-convergence.md:391\n      ↳ 证据: 处理：判**不合并**。\n  177. [doc] [Phase 1 · B 组核验记录（2026-08）] 处理：判**不合并**。  [Phase 1 · B 组核验记录（2026-08）]  ⚠ lifecycle:merged\n      ↳ 出处: docs\\tool-convergence.md:400\n      ↳ 证据: 处理：判**不合并**。\n  178. [doc] [Phase 1 · B 组核验记录（2026-08）] 处理：**合并**为单入口 `gateway_provider`（action=list/upsert/delete/stats 分派），对齐 `manage_…  [Phase 1 · B 组核验记录（2026-08）]  ⚠ lifecycle:merged\n      ↳ 出处: docs\\tool-convergence.md:409\n      ↳ 证据: 处理：**合并**为单入口 `gateway_provider`（action=list/upsert/delete/stats 分派），对齐 `manage_feature` 的 CRUD action 先例。\n  179. [doc] [Phase 1 · B 组核验记录（2026-08）] > **Phase 1 小结：A 组 0 合并（全核验证伪）、B 组 1 合并（gateway 4→1）。**  [Phase 1 · B 组核验记录（2026-08）]  ⚠ lifecycle:merged\n      ↳ 出处: docs\\tool-convergence.md:413\n      ↳ 证据: > **Phase 1 小结：A 组 0 合并（全核验证伪）、B 组 1 合并（gateway 4→1）。**\n  180. [doc] [渐进披露 · 画布批注入口聚合（2026-08，路径 B 首个按对象聚合）] 处理：**合并**为 `canvas_notes` 单入口（action=read|mark|decide），对齐渐进披露路径 B。  [渐进披露 · 画布批注入口聚合（2026-08，路径 B 首个按对象聚合）]  ⚠ lifecycle:merged\n      ↳ 出处: docs\\tool-convergence.md:422\n      ↳ 证据: 处理：**合并**为 `canvas_notes` 单入口（action=read|mark|decide），对齐渐进披露路径 B。\n\n用法: LLM review 上述候选（核对出处/原文），定稿后通过 edit_dsl / 决策卡工具写入 DSL（status: active）。",
+    "isError": false
+  },
+  {
+    "name": "harvest_from_url",
+    "text": "Command failed: git clone --depth 1 --quiet undefined \"<ABS>\"\nfatal: repository 'undefined' does not exist\n",
+    "isError": true
+  },
+  {
+    "name": "hybrid_precheck",
+    "text": "项目杂交预检 · undefined ↔ undefined\n判定：可直接融合（ok）\n  · 健康度良好：A 0（N/A）/ B 0（N/A），选材质量过关\n\n■ 符号冲突 0（同名不同签，杂交前需改名/错位）\n  （无）\n\n■ 功能重叠 0（同名同签双胞胎，可去重一个）\n  （无）\n\n■ 依赖版本冲突 0\n  （无）\n\n■ 依赖共享 0 / 仅A 0 / 仅B 0",
+    "isError": false
+  },
+  {
+    "name": "impact_analysis",
+    "text": "影响面报告 · undefined\n变更点 0 个，受影响文件 0 个（直接 0，高风险 0）\n\n（零波及：该变更点没有任何文件依赖链）",
+    "isError": false
+  },
+  {
+    "name": "import_project",
+    "text": "The \"paths[0]\" argument must be of type string. Received undefined",
+    "isError": true
+  },
+  {
+    "name": "index_integrity",
+    "text": "索引可信度自检 —— <ABS>\n  判定：⚠️ 不可全信\n  索引**不可全信**：69 个文件自上次索引后被改过\n  规模：索引 390 文件 / 磁盘源码 694 文件（未索引 308） ｜ 节点 4890 ｜ 边 9435\n  引用：resolved 2257 ｜ pending 0 ｜ external 20984 ｜ failed 2798\n  ★ 陈旧断言（resolved 但目标名已不在索引）：0\n  新鲜度：不一致 69 ｜ 待消费自写登记 0 ｜ 后台续建：未启动\n  语言能力自述：typescript=调用级(318) · javascript=调用级(39) · go=调用级(32) · python=调用级(1)——非\"调用级\"语言的引用/影响结论会低估（\"零引用/零波及\"不可全信）\n  未保鲜样例：scripts/contract_docs_gate.mjs, scripts/readme_tools_gate.mjs, src/behavior/index.ts, src/daemon/daemon.ts, src/db/db.ts, src/db/symbols.ts, src/diagnosis/verifier.ts, src/health/index.ts, src/impact/index.ts, src/java_refactor/layering.ts, src/observe/go_instrument.ts, src/observe/index.ts, src/observe/instrument.ts, src/server_registry.ts, src/storage.ts, src/tools/analyze_monolith.ts, src/tools/archify_cli.ts, src/tools/capability_map.ts, src/tools/cli_extract.ts, src/tools/code_workbench.ts\n  问题：\n    [blocker] files_not_fresh：69 个已索引文件与磁盘不一致（自上次索引后被改过） → 传 refresh:true 重同步；或直接调读工具（保鲜路径会自动同步）\n    [warn] ghost_files：索引里有 4 个文件在磁盘上已不存在（幽灵行） → 传 refresh:true 清理\n    [info] partial_coverage：磁盘上有 308 个源码文件尚未索引（拼图模式下这是**正常**的按需状态） → 以某个文件为种子读它（会连带建块）；或让后台续建跑完",
+    "isError": false
+  },
+  {
+    "name": "list_archive",
+    "text": "The \"path\" argument must be of type string. Received undefined",
+    "isError": true
+  },
+  {
+    "name": "list_snapshots",
+    "text": "The \"paths[0]\" argument must be of type string. Received undefined",
+    "isError": true
+  },
+  {
+    "name": "manage_feature",
+    "text": "未知 manage_feature action: undefined",
+    "isError": true
+  },
+  {
+    "name": "memory_observe",
+    "text": "target 需为目标进程的 --inspect 端口（纯数字）；如不知道可用 memory_targets 工具列出本机所有 --inspect 进程。",
+    "isError": true
+  },
+  {
+    "name": "memory_targets",
+    "text": "pid=<N>  inspect端口=32811  10448:32811\n\n共 1 个。把其中一个 inspect端口 传给 memory_observe 的 target=32811\n---DATA---\n[{\"pid\":\"10448\",\"port\":\"32811\",\"pidPort\":\"10448:32811\"}]",
+    "isError": false
+  },
+  {
+    "name": "move_symbol",
+    "text": "移动被阻断（）：\nmove 暂只支持 TS/JS 模块级符号（）",
+    "isError": false
+  },
+  {
+    "name": "narrate_step",
+    "text": "feature \"undefined\" 不存在",
+    "isError": true
+  },
+  {
+    "name": "observe_instrument",
+    "text": "observe_instrument 需要 target 参数：传要插桩的项目目录。",
+    "isError": true
+  },
+  {
+    "name": "observe_judge",
+    "text": "observe_judge 需要 events 参数：传要判定的事件数组（符合 TSEvent 形状）。",
+    "isError": true
+  },
+  {
+    "name": "observe_log",
+    "text": "observe_log 需要 events_file 参数：传 Observe 事件文件路径（events.jsonl）。",
+    "isError": true
+  },
+  {
+    "name": "observe_trace",
+    "text": "未提供 events_path / events_text，且未发现默认录制文件（DS_OBSERVE_EVENTS / os.tmpdir()/dsh_events.jsonl / cwd/runs.jsonl）。请先录一发（探针插桩跑一次操作）再读回放。",
+    "isError": true
+  },
+  {
+    "name": "propose_design_intent",
+    "text": "缺参数 feature",
+    "isError": true
+  },
+  {
+    "name": "read_project_docs",
+    "text": "缺少 feature",
+    "isError": false
+  },
+  {
+    "name": "recommend_observe_points",
+    "text": "The \"paths[0]\" argument must be of type string. Received undefined",
+    "isError": true
+  },
+  {
+    "name": "reconcile_brick",
+    "text": "需提供 brick_dir 或 brick_name（+可选 box_dir）定位积木",
+    "isError": true
+  },
+  {
+    "name": "reconcile_chain",
+    "text": "reconcile_chain 需要 feature + node_id：指定宿主文件节点（detail 链挂在它下面）做中观档对账。",
+    "isError": true
+  },
+  {
+    "name": "reconcile_effects",
+    "text": "The \"paths[0]\" argument must be of type string. Received undefined",
+    "isError": true
+  },
+  {
+    "name": "refactor_judge",
+    "text": "【LLM 审闭环】共 0 个候选问题 → 采纳 0 / 驳回 0 / 拿不定主意 0。\n全部已裁定，无需上抛。",
+    "isError": false
+  },
+  {
+    "name": "refactor_pipeline",
+    "text": "确定性重构管线完成：全局 通过，\n共 0 步，0 个文件被改写，\n删除 0 单位（import 语句×文件 / 死语句文件数）。\n基线=未验证",
+    "isError": false
+  },
+  {
+    "name": "remove_dead_imports",
+    "text": "无可删除的死 import（dead 列表为空）",
+    "isError": false
+  },
+  {
+    "name": "rename_files",
+    "text": "Cannot read properties of undefined (reading 'map')",
+    "isError": true
+  },
+  {
+    "name": "rename_many",
+    "text": "The \"path\" argument must be of type string. Received undefined",
+    "isError": true
+  },
+  {
+    "name": "rename_symbols",
+    "text": "Cannot read properties of undefined (reading 'map')",
+    "isError": true
+  },
+  {
+    "name": "render_brickwork",
+    "text": "The \"paths[0]\" argument must be of type string. Received undefined",
+    "isError": true
+  },
+  {
+    "name": "render_design",
+    "text": "render_design mindmap 模式需要 feature（从存储读取设计 DSL 派生，不支持 dsl_json 直传）",
+    "isError": true
+  },
+  {
+    "name": "rollback_snapshot",
+    "text": "The \"paths[0]\" argument must be of type string. Received undefined",
+    "isError": true
+  },
+  {
+    "name": "scaffold",
+    "text": "feature \"undefined\" 不存在，请先使用 create_feature 或 render_design 创建",
+    "isError": true
+  },
+  {
+    "name": "search_bricks",
+    "text": "积木盒不存在：<ABS> harvest_from_url 入盒）",
+    "isError": true
+  },
+  {
+    "name": "set_design_intent",
+    "text": "feature \"undefined\" 不存在",
+    "isError": true
+  },
+  {
+    "name": "slim_brick",
+    "text": "The \"path\" argument must be of type string. Received undefined",
+    "isError": true
+  },
+  {
+    "name": "suggest_renames",
+    "text": "The \"path\" argument must be of type string. Received undefined",
+    "isError": true
+  },
+  {
+    "name": "sync_contracts",
+    "text": "feature undefined 不存在，请先写 DSL 或 import_project",
+    "isError": true
+  },
+  {
+    "name": "translate_go_ts",
+    "text": "需要 file=<Go 源文件路径> 或 projectDir=<Go 项目目录>",
+    "isError": false
+  }
+]
