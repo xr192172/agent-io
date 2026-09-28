@@ -81,23 +81,34 @@ export interface ExternalRef {
   resolved: string;
 }
 
+/**
+ * 「读不了 ⇒ 少做了一步」的**可读记录**（§2d：把少做了什么变成可读的数）。
+ * `path` = 读不了的目标（目录或文件），`why` = 原因（异常文本）。
+ * ★ 本模块四处产物（walkProjectFiles 的 collector / ExpansionResult / RootsResult /
+ *   ExternalImporterResult）共用这一份形状 —— 同一件事只有一份定义。
+ */
+export interface ScanSkip {
+  path: string;
+  why: string;
+}
+
 /** findExternalImporters 的返回：成功找到的引用文件 + 跳过项（可读的失败计数） */
 export interface ExternalImporterResult {
   files: string[];
-  skipped: Array<{ dir: string; why: string }>;
+  skipped: ScanSkip[];
 }
 
 /** expandClosureDetailed 的返回：闭包文件 + 外部边界引用 + 解析失败的跳过项 */
 export interface ExpansionResult {
   files: string[];
   externalRefs: ExternalRef[];
-  skipped: Array<{ path: string; why: string }>;
+  skipped: ScanSkip[];
 }
 
 /** detectReachableRoots 的返回：可达根 + 跳过的候选（相对路径计算失败时记录原因） */
 export interface RootsResult {
   roots: string[];
-  skipped: Array<{ path: string; why: string }>;
+  skipped: ScanSkip[];
 }
 
 /** 判断绝对路径是否落在 root（或其子目录）内——闭包只扩根内，越界即视为外部边界 */
@@ -204,12 +215,20 @@ export function resolveProjectRoot(file: string): string {
   return fs.existsSync(p) && !fs.statSync(p).isFile() ? p : path.dirname(p);
 }
 
-/** 递归收集目录内全部本地源文件（跳过噪音目录） */
-export function walkProjectFiles(dir: string, out: string[]): void {
+/**
+ * 递归收集目录内全部本地源文件（跳过噪音目录）。
+ *
+ * `skipped` 可省：给了就把"读不了的目录"记进去。
+ * ★ §23.2 行 192：`readdirSync` 失败原来直接静默 `return`（="扫不到"与"扫不了"混成空结果）。
+ *   这是**逐项**失败（一个子目录读不了一来不该炸掉整轮全扫，二来必须说出来）⇒ 记 skipped，不抛。
+ *   ⚠️ 不传 collector 的调用方（`field_refs.ts` 两处）仍看不见这处失败 —— 要可见得改它的产物契约。
+ */
+export function walkProjectFiles(dir: string, out: string[], skipped?: ScanSkip[]): void {
   let entries: fs.Dirent[];
   try {
     entries = fs.readdirSync(dir, { withFileTypes: true });
-  } catch {
+  } catch (err) {
+    skipped?.push({ path: dir, why: String(err) });
     return;
   }
   for (const e of entries) {
@@ -217,7 +236,7 @@ export function walkProjectFiles(dir: string, out: string[]): void {
     const p = path.join(dir, e.name);
     if (e.isDirectory()) {
       if (isSkippedDir(e.name)) continue;
-      walkProjectFiles(p, out);
+      walkProjectFiles(p, out, skipped);
     } else if (e.isFile() && SRC_EXTS.has(path.extname(e.name))) {
       out.push(p);
     }
@@ -231,12 +250,22 @@ export function walkProjectFiles(dir: string, out: string[]): void {
 const MULTILANG_EXTS = SOURCE_EXTS;
 const MULTILANG_INDEX = ['index.ts', 'index.tsx', 'index.js', 'index.jsx', 'mod.ts', 'mod.go', '__init__.py'] as const;
 
-/** 绝对路径上的"是普通文件"谓词（不抛） */
-function absIsFile(p: string): boolean {
+/**
+ * 绝对路径上的"是普通文件"谓词（**三态**：`true` / `false` / `'unknown'`）。
+ *
+ * ★ §23.2 行 218："不知道"与"不是"原本被混成同一个 `false`。现在分开：
+ *   · `ENOENT` / `ENOTDIR` = **语义答案**"这个候选不存在"（候选探测循环里的常态，
+ *     与 `gitRootOf` 那条"不是 git 仓库"同类）⇒ `false`，不是降级；
+ *   · 其它错误码（EACCES / EPERM / EIO / ELOOP…）= 真"不知道" ⇒ `'unknown'`，
+ *     **不许谎报成 `false`**（谎报 = 把一个可能存在的文件当成不存在 ⇒ 静默漏边）。
+ */
+function absIsFile(p: string): boolean | 'unknown' {
   try {
     return fs.statSync(p).isFile();
-  } catch {
-    return false;
+  } catch (err) {
+    const code = (err as NodeJS.ErrnoException).code;
+    if (code === 'ENOENT' || code === 'ENOTDIR') return false;
+    return 'unknown';
   }
 }
 
@@ -255,12 +284,27 @@ function absIsFile(p: string): boolean {
 export function resolveToFile(p: string): string | null {
   // 用 posix 形态做候选计算（统一分隔符），命中后再换回本机分隔符 —— 调用方按原样字符串比较路径
   const forward = p.replace(/\\/g, '/');
-  const hit = resolveExistingPath(forward, (c) => absIsFile(c.split('/').join(path.sep)), {
+  // §23.2 行 218：探测过程中"读不了"（非 ENOENT）的候选 —— 它们是"不知道"，不是"没有"。
+  const undecided: string[] = [];
+  const hit = resolveExistingPath(forward, (c) => {
+    const r = absIsFile(c.split('/').join(path.sep));
+    if (r === 'unknown') undecided.push(c);
+    return r === true; // 'unknown' 不作为命中（不能返回一个可能不存在的路径），但已记下
+  }, {
     exts: MULTILANG_EXTS,
     indexFiles: MULTILANG_INDEX,
     bareBaseFirst: true, // 已拼好的路径：原样命中必须排第一
   });
-  return hit ? hit.split('/').join(path.sep) : null;
+  if (hit) return hit.split('/').join(path.sep);
+  // 全不命中，且有候选是"读不了"而非"不存在" ⇒ 解析器答不出"这个 specifier 指向项目内哪个文件"
+  // ⇒ 不许把"不知道"谎报成 null（null 的含义是"确认没有本地文件"）。这是**整体前置条件**失败
+  //（文件系统拒绝回答），按 §2d 硬失败，不静默丢边。
+  if (undecided.length > 0) {
+    throw new Error(
+      `resolveToFile: cannot decide "${forward}" — ${undecided.length} candidate(s) unreadable (not ENOENT): ${undecided.join(', ')}`,
+    );
+  }
+  return null;
 }
 
 /**
@@ -704,17 +748,21 @@ export function isProjectDir(d: string): boolean {
  *  - 相对导入（./ ../）→ realResolveImport
  *  - 别名导入（@/ 等）→ resolveAliasedImport（用本文件所属项目的 tsconfig，aliasCfg 传近）
  *  - 裸包导入（非相对、非别名）→ 若匹配 seed 所在项目包名（workspace 互引）则命中
+ *
+ * ★ 三态（§23.2 行 675，与行 218 同）：`false` 的含义是"**读了，确认没引用**"。
+ *   这个文件读不了 / 分析不了时返回 `'unknown'`（"不知道"），**不降级成 false** ——
+ *   降级会让调用方把一个够不着的引用者当成"不引用"，静默少报跨根引用者。
  */
-async function importsTargetFile(fileAbs: string, targetAbs: string, aliasCfg?: AliasConfig | null, seedPkgName?: string): Promise<boolean> {
+async function importsTargetFile(fileAbs: string, targetAbs: string, aliasCfg?: AliasConfig | null, seedPkgName?: string): Promise<boolean | 'unknown'> {
   const ext = path.extname(fileAbs);
-  if (!isTsJsExt(ext)) return false;
+  if (!isTsJsExt(ext)) return false; // 语义答案：TS 系之外的文件没有模块 import 概念
   let mod: Awaited<ReturnType<typeof analyzeModuleSource>> | null = null;
   try {
     mod = await analyzeModuleSource(fs.readFileSync(fileAbs, 'utf-8'), fileAbs);
   } catch {
-    return false;
+    return 'unknown'; // 读不了 / 分析不了 ⇒ 不知道（§21 规矩③：analyzeModuleSource 的解析错误是硬失败信号）
   }
-  if (!mod) return false;
+  if (!mod) return false; // `null` 的唯一含义 = "本文件不适用模块级分析"（扩展名/语言/解析器缺一）⇒ 语义答案
   for (const e of mod.imports) {
     if (!e.source) continue;
     let real: string | null = null;
@@ -775,7 +823,7 @@ export async function findExternalImporters(seedFile: string, root: string): Pro
     entries = fs.readdirSync(siblingDir, { withFileTypes: true });
   } catch (err) {
     // readdirSync 失败：邻域目录权限不足/不存在等，记 skipped 并带 why，不抛（§2d：不是硬失败场景）
-    skipped.push({ dir: siblingDir, why: String(err) });
+    skipped.push({ path: siblingDir, why: String(err) });
     return { files: [], skipped };
   }
   // 防御：项目样兄弟数量异常 → 这是 temp/缓存容器，不是工作区，短路（不逐个 walk）
@@ -805,18 +853,22 @@ export async function findExternalImporters(seedFile: string, root: string): Pro
       // 每个兄弟项目按其自身 tsconfig 解析（该目录内文件可能用 @xxx/* 别名引用 seed）
       const projAlias = loadAliasConfig(p);
       const projFiles: string[] = [];
-      walkProjectFiles(p, projFiles);
+      walkProjectFiles(p, projFiles, skipped); // 兄弟目录读不了的，记进同一个 skipped（§23.2 行 192）
       for (const f of projFiles) {
         if (Date.now() > deadline) break; // 单个仓库内也受同一预算约束
         const abs = path.resolve(f);
         if (abs === seedAbs || !isLocalSource(abs)) continue;
-        if (await importsTargetFile(abs, seedAbs, projAlias, rootPkgName)) files.push(abs);
+        const r = await importsTargetFile(abs, seedAbs, projAlias, rootPkgName);
+        if (r === true) files.push(abs);
+        else if (r === 'unknown') skipped.push({ path: abs, why: 'importsTargetFile: file unreadable / unanalyzable' });
       }
     } else if (e.isFile() && SRC_EXTS.has(path.extname(e.name))) {
       if (Date.now() > deadline) break;
       const abs = path.resolve(p);
       if (abs === seedAbs || !isLocalSource(abs)) continue;
-      if (await importsTargetFile(abs, seedAbs, rootAlias, rootPkgName)) files.push(abs);
+      const r = await importsTargetFile(abs, seedAbs, rootAlias, rootPkgName);
+      if (r === true) files.push(abs);
+      else if (r === 'unknown') skipped.push({ path: abs, why: 'importsTargetFile: file unreadable / unanalyzable' });
     }
   }
   return { files, skipped };
@@ -914,11 +966,15 @@ function candidatePkgImportSources(
  * 对一个文件做 import 现场解析（仅当该文件不在 cache.db 索引中时触发；
  * 典型如 findExternalImporters 扫到的跨根兄弟项目文件，或 watch 新文件尚未索引）。
  * 与原 drain 的单文件解析一致，但抽成纯函数复用。
+ *
+ * `skipped` 可省：给了就把"读不了 / 分析不了"的单文件记进去 —— 否则调用方分不清
+ * "这个文件没有 import 边"与"这个文件没读成功"（§23.2 行 886 / 897）。
  */
 async function expandOneFileOnTheFly(
   f: string,
   aliasCfg: AliasConfig | null,
   ctx: LangResolveCtx,
+  skipped?: ScanSkip[],
 ): Promise<string[]> {
   const ext = path.extname(f);
   const out: string[] = [];
@@ -926,7 +982,10 @@ async function expandOneFileOnTheFly(
     let mod: Awaited<ReturnType<typeof analyzeModuleSource>> | null = null;
     try {
       mod = await analyzeModuleSource(fs.readFileSync(f, 'utf-8'), f);
-    } catch { /* ignore */ }
+    } catch (err) {
+      // §23.2 行 886：原来只有注释的 catch（彻底静默：这个文件的 import 边无声消失）⇒ 记 skipped
+      skipped?.push({ path: f, why: `analyzeModuleSource failed: ${String(err)}` });
+    }
     if (!mod) return out;
     for (const e of mod.imports) {
       if (!e.source) continue;
@@ -937,7 +996,14 @@ async function expandOneFileOnTheFly(
     }
   } else if (isSupported(ext)) {
     let content: string;
-    try { content = fs.readFileSync(f, 'utf-8'); } catch { return out; }
+    try {
+      content = fs.readFileSync(f, 'utf-8');
+    } catch (err) {
+      // §23.2 行 897：原来 `return out`（"读不了"伪装成"没有边"——失败与成功同为 `[]`）
+      //   ⇒ 先记 skipped 再返回已收集的（此处是分支开头，`out` 实为空；语义仍须说清）
+      skipped?.push({ path: f, why: `readFileSync failed: ${String(err)}` });
+      return out;
+    }
     let parsed: Awaited<ReturnType<typeof parseFileFull>> | null = null;
     try { parsed = await parseFileFull(f, content); } catch { /* ignore */ }
     if (!parsed) return out;
@@ -951,7 +1017,7 @@ async function expandOneFileOnTheFly(
 
 /**
  * 索引快速路径：从 seed 沿 cache.db 的 import 边双向 BFS，只取依赖子图。
- * 成功返回闭包文件列表；任何前置不满足（项目无 cache.db / seed 未索引 /
+ * 成功返回闭包文件列表 + 跳过项；任何前置不满足（项目无 cache.db / seed 未索引 /
  * 打开 DB 异常）返回 null → expandClosure 回退原现场全扫逻辑。
  *
  * 快路径覆盖（与原全扫等价的来源）：
@@ -968,7 +1034,7 @@ async function tryIndexedExpandClosure(
   seedAbs: string,
   root: string,
   aliasCfg: AliasConfig | null,
-): Promise<{ files: string[]; externalRefs: ExternalRef[] } | null> {
+): Promise<{ files: string[]; externalRefs: ExternalRef[]; skipped: ScanSkip[] } | null> {
   // 存在性预检：避免 getProjectCacheDb() 在无索引的项目里把空 cache.db 创建出来（否则 Windows 上会持有 EBUSY 锁，
   // 导致 temp 目录测试的 rmSync 抛错，且无意义消耗一次池连接）。
   const dbFile = path.join(root, DATA_DIR_NAME, 'cache.db');
@@ -996,6 +1062,7 @@ async function tryIndexedExpandClosure(
   const included = new Map<string, boolean>(); // abs → 是否已扩边（true=已处理）
   const queue: string[] = [];
   const externalRefs: ExternalRef[] = [];
+  const skipped: ScanSkip[] = [];
   const addAbs = (a: string) => {
     if (!isLocalSource(a)) return;
     if (!included.has(a)) {
@@ -1055,7 +1122,7 @@ async function tryIndexedExpandClosure(
       }
     } else {
       // 未索引文件（root 内尚未索引的增量文件，数量极少）→ 现场读+解析一次
-      for (const real of await expandOneFileOnTheFly(f, aliasCfg, langCtx)) {
+      for (const real of await expandOneFileOnTheFly(f, aliasCfg, langCtx, skipped)) {
         addResolved(f, '', real);
       }
     }
@@ -1082,7 +1149,7 @@ async function tryIndexedExpandClosure(
   // 6) 邻域 importer（外部"谁 import 我"）—— 我们不改外部仓库，不做这方向扫描，
   //    故不再调用 findExternalImporters（那曾是每次 rename O(全兄弟仓库 AST) 卡死 + 爆内存的根源）。
 
-  return { files: [...included.keys()], externalRefs };
+  return { files: [...included.keys()], externalRefs, skipped };
 }
 
 /**
@@ -1116,7 +1183,7 @@ export async function expandClosureDetailed(
 
   // ② 索引反查快路径：有 cache.db 且 seed 已索引 → 子图 BFS
   const fast = await tryIndexedExpandClosure(seedAbs, root, aliasCfg);
-  if (fast) return { files: fast.files, externalRefs: fast.externalRefs, skipped: [] };
+  if (fast) return { files: fast.files, externalRefs: fast.externalRefs, skipped: fast.skipped };
 
   // ④ 兜底：无索引时走现场全扫（零前置、免摩擦）
   const included = new Map<string, boolean>(); // absPath → 是否已解析其 imports
@@ -1126,7 +1193,7 @@ export async function expandClosureDetailed(
 
   // 初始：项目根内全部本地源 + 种子文件（种子可能不在根内，如跨根引用起点）
   const rootFiles: string[] = [];
-  walkProjectFiles(root, rootFiles);
+  walkProjectFiles(root, rootFiles, skipped); // 读不了的子目录记 skipped（§23.2 行 192）
   for (const f of rootFiles) {
     if (!included.has(f)) {
       included.set(f, false);

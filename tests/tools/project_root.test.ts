@@ -25,6 +25,7 @@ import {
   resolveAliasedImport,
   findExternalImporters,
   resolveLangImport,
+  walkProjectFiles,
 } from '../../src/tools/project_root';
 import { syncFile, syncProject, toRelPath, hasAnyIndexedFiles, pruneDeletedFiles } from '../../src/db/symbols';
 import { getProjectCacheDb, closeProjectCacheDb } from '../../src/db/db';
@@ -102,6 +103,32 @@ describe('resolveProjectRoot - git 优先（嵌套安全）', () => {
     expect(
       existsSync(path.join(resolveProjectRoot(path.join(dir, 'outer/inner/src/def.ts')), 'src/def.ts')),
     ).toBe(true);
+    rmForce(dir);
+  });
+});
+
+describe('walkProjectFiles - 「扫不了」必须说出来（§23.2 行 192）', () => {
+  it('传入非目录（文件）→ 不抛，且把 readdir 失败记进 skipped', () => {
+    const dir = mkProj({ 'a.ts': 'export const x = 1;\n' });
+    const target = path.join(dir, 'a.ts'); // 文件不是目录 ⇒ readdirSync 抛 ENOTDIR
+    const out: string[] = [];
+    const skipped: Array<{ path: string; why: string }> = [];
+    expect(() => walkProjectFiles(target, out, skipped)).not.toThrow();
+    // 原来这里是静默 `return`（"扫不到"与"扫不了"混成空结果）
+    expect(out).toEqual([]);
+    expect(skipped).toHaveLength(1);
+    expect(skipped[0].path).toBe(target);
+    expect(skipped[0].why).toMatch(/ENOTDIR/i);
+    rmForce(dir);
+  });
+
+  it('不给 collector 时行为不变（第 3 参可选 ⇒ `field_refs.ts` 两处调用点不受影响）', () => {
+    const dir = mkProj({ 'src/a.ts': 'export const x = 1;\n', 'src/deep/b.ts': 'export const y = 2;\n' });
+    const out: string[] = [];
+    walkProjectFiles(dir, out);
+    const norm = out.map((f) => f.replace(/\\/g, '/'));
+    expect(norm).toContain(path.join(dir, 'src/a.ts').replace(/\\/g, '/'));
+    expect(norm).toContain(path.join(dir, 'src/deep/b.ts').replace(/\\/g, '/'));
     rmForce(dir);
   });
 });
@@ -406,6 +433,8 @@ describe('findExternalImporters - importer 邻域有界扫描', () => {
     const norm = hits.files.map((h) => h.replace(/\\/g, '/'));
     expect(norm).toContain(path.join(dir, 'B/src/use.ts').replace(/\\/g, '/'));
     expect(norm).not.toContain(expect.stringContaining('other.ts'));
+    // skipped 的形状统一为 ScanSkip{path,why}（原为 {dir,why}）—— 空时仍须是 [] 而非 undefined
+    expect(hits.skipped).toEqual([]);
     rmForce(dir);
   });
 
