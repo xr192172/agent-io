@@ -307,12 +307,14 @@ describe('loadAliasConfig - tsconfig 路径别名读取', () => {
     rmForce(dir);
   });
 
-  it('截断的 tsconfig（真正坏 JSONC）→ 返回 null（§23.2 保留，不抛）', () => {
+  it('截断的 tsconfig（真正坏 JSONC）→ 抛，不再伪装成"没有配置"', () => {
     const dir = mkProj({
       'tsconfig.json': '{ "compilerOptions": ',  // 故意截断
       'src/foo.ts': 'export const foo = 1;\n',
     });
-    expect(loadAliasConfig(dir)).toBeNull();
+    // ★ §23.2 判"改"：配置坏了 ≠ 没有配置。return null 会让上游静默丢别名 ⇒ 静默漏引用（§2d / §21 规矩③）。
+    //   （"保留 return null"是 §23.2 对 extends 那处的判定，不适用于主配置）
+    expect(() => loadAliasConfig(dir)).toThrow(/failed to load tsconfig/);
     rmForce(dir);
   });
 

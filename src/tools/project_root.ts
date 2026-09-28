@@ -619,8 +619,15 @@ export function loadAliasConfig(root: string): AliasConfig | null {
   let cfg: any = null;
   try {
     cfg = parseConfigJson(cfgFile, fs.readFileSync(cfgFile, 'utf-8'));
-  } catch {
-    return null; // 文件存在但无论主配置还是 extends 均解析失败 —— §23.2 判为保留
+  } catch (err) {
+    // ★ 主配置"真的坏了"（连 JSONC 都解析不了）= 数据源不可用 ⇒ 硬失败（§21 规矩③ / §2d）。
+    //   原先 return null 把"配置坏了"伪装成"没有配置" ⇒ find_references / expandClosure
+    //   静默拿不到别名 ⇒ @/ 类引用被静默漏掉（这才是本笔要根除的病）。
+    //   ★ 合法 JSONC（注释/尾逗号）已在 parseConfigJson 里正常解析，不会走到这里。
+    //   ★ 注意：§23.2 判"保留"的是**下面 extends 那处** catch（父配置坏了不该拖垮子配置），不是这里。
+    throw new Error(
+      `failed to load tsconfig ${cfgFile}: ${err instanceof Error ? err.message : String(err)}`,
+    );
   }
   // 一级 extends：父配置提供默认，子配置覆盖
   if (cfg && typeof cfg.extends === 'string') {
