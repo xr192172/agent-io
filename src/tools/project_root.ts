@@ -27,6 +27,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
 import { homedir } from 'node:os';
+import ts from 'typescript';
 import { analyzeModuleSource } from './rename_symbol.js';
 import { parseFileFull, isSupported, isTsJsExt, resolveExistingPath, SOURCE_EXTS, TS_JS_EXTS, type ParsedImport } from './ts_kernel/index.js';
 import { readGoModules, type GoModule } from './import_project.js';
@@ -600,31 +601,39 @@ function findConfigFile(root: string): string | null {
   }
 }
 
+/** 用 TS 的 JSONC 解析器读配置文件（支持注释和尾逗号），解析失败时 throw */
+function parseConfigJson(cfgFile: string, text: string): any {
+  const result = ts.parseConfigFileTextToJson(cfgFile, text);
+  if (result.error) throw new Error(`failed to parse ${cfgFile}: ${String(result.error.messageText)}`);
+  return result.config;
+}
+
 /**
  * 读取并合并 tsconfig compilerOptions（支持一级 extends；子配置覆盖父）。
  * 无 tsconfig / 无 baseUrl+paths → 返回 null。
  */
 export function loadAliasConfig(root: string): AliasConfig | null {
   const cfgFile = findConfigFile(root);
-  if (!cfgFile) return null;
+  if (!cfgFile) return null; // ① 合法第三态：确实没有配置文件，不是降级
   const cfgDir = path.dirname(cfgFile);
   let cfg: any = null;
   try {
-    cfg = JSON.parse(fs.readFileSync(cfgFile, 'utf-8'));
+    cfg = parseConfigJson(cfgFile, fs.readFileSync(cfgFile, 'utf-8'));
   } catch {
-    return null;
+    return null; // 文件存在但无论主配置还是 extends 均解析失败 —— §23.2 判为保留
   }
   // 一级 extends：父配置提供默认，子配置覆盖
   if (cfg && typeof cfg.extends === 'string') {
     try {
-      const parent = JSON.parse(fs.readFileSync(path.resolve(cfgDir, cfg.extends), 'utf-8'));
+      const parentFile = path.resolve(cfgDir, cfg.extends);
+      const parent = parseConfigJson(parentFile, fs.readFileSync(parentFile, 'utf-8'));
       cfg = { ...parent, ...cfg, compilerOptions: { ...parent?.compilerOptions, ...cfg?.compilerOptions } };
     } catch {
-      /* extends 解析失败不影响自身配置 */
+      /* extends 解析失败不影响自身配置：父配置 JSONC 损坏时，子配置仍可正常使用（§23.2 保留）*/
     }
   }
   const opts = cfg?.compilerOptions;
-  if (!opts) return null;
+  if (!opts) return null; // ④ 合法第三态：确实没有 compilerOptions，不是降级
   const baseUrl = opts.baseUrl ? path.resolve(cfgDir, opts.baseUrl) : cfgDir;
   const paths = opts.paths && typeof opts.paths === 'object' ? opts.paths : {};
   const list: AliasConfig['paths'] = Object.entries(paths)
@@ -633,7 +642,7 @@ export function loadAliasConfig(root: string): AliasConfig | null {
     .sort((a, b) => b.prefix.length - a.prefix.length); // 最长前缀优先（TS 语义）
   const hasPaths = list.length > 0;
   const hasBaseUrl = typeof opts.baseUrl === 'string';
-  if (!hasPaths && !hasBaseUrl) return null;
+  if (!hasPaths && !hasBaseUrl) return null; // ⑤ 合法第三态：没配 paths+baseUrl，不是降级
   return { baseUrl, paths: list };
 }
 

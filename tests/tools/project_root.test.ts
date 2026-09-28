@@ -265,6 +265,73 @@ describe('loadAliasConfig - tsconfig 路径别名读取', () => {
     expect(resolveAliasedImport('@/foo', cfg!)).toBe(path.join(dir, 'src/foo.ts'));
     rmForce(dir);
   });
+
+  // ── JSONC 支持（tsconfig 允许注释与尾逗号；§2d 修复：原 JSON.parse 不支持 JSONC）──
+  it('JSONC 带注释 tsconfig → 正常读出 paths', () => {
+    const dir = mkProj({
+      'tsconfig.json': [
+        '{',
+        '// VS Code 生成的默认注释',
+        '"compilerOptions": {',
+        '  "baseUrl": ".",',
+        '  "paths": { "@/*": ["src/*"] }',
+        '}',
+        '}',
+      ].join('\n'),
+      'src/foo.ts': 'export const foo = 1;\n',
+    });
+    const cfg = loadAliasConfig(dir);
+    expect(cfg).not.toBeNull();
+    expect(cfg!.paths[0].prefix).toBe('@/*');
+    expect(resolveAliasedImport('@/foo', cfg!)).toBe(path.join(dir, 'src/foo.ts'));
+    rmForce(dir);
+  });
+
+  it('JSONC 带尾逗号 tsconfig → 正常读出', () => {
+    const dir = mkProj({
+      'tsconfig.json': [
+        '{',
+        '"compilerOptions": {',
+        '  "baseUrl": ".",',   // 尾逗号
+        '  "paths": {',
+        '    "@/lib": ["lib/*"],',
+        '  },',               // 尾逗号
+        '}',
+        '}',
+      ].join('\n'),
+      'lib/util.ts': 'export const u = 1;\n',
+    });
+    const cfg = loadAliasConfig(dir);
+    expect(cfg).not.toBeNull();
+    expect(cfg!.paths[0].prefix).toBe('@/lib');
+    rmForce(dir);
+  });
+
+  it('截断的 tsconfig（真正坏 JSONC）→ 返回 null（§23.2 保留，不抛）', () => {
+    const dir = mkProj({
+      'tsconfig.json': '{ "compilerOptions": ',  // 故意截断
+      'src/foo.ts': 'export const foo = 1;\n',
+    });
+    expect(loadAliasConfig(dir)).toBeNull();
+    rmForce(dir);
+  });
+
+  it('端到端：带注释 tsconfig → resolveAliasedImport 确实解析到目标文件', () => {
+    const dir = mkProj({
+      'tsconfig.json': [
+        '{',
+        '// 带注释的 tsconfig，模拟 VS Code 生成的实际配置',
+        '"compilerOptions": { "baseUrl": ".", "paths": { "@shared/*": ["shared/*"] } }',
+        '}',
+      ].join('\n'),
+      'shared/helper.ts': 'export function helper(): number { return 1; }\n',
+    });
+    const cfg = loadAliasConfig(dir);
+    expect(cfg).not.toBeNull();
+    const resolved = resolveAliasedImport('@shared/helper', cfg!);
+    expect(resolved).toBe(path.join(dir, 'shared/helper.ts'));
+    rmForce(dir);
+  });
 });
 
 describe('resolveAliasedImport - 别名导入落盘解析', () => {
