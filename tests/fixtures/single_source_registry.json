@@ -56,6 +56,19 @@
         "src/tools/run_tests.ts": "★ **假阳**：这行是 `path.join(cwd, 'node_modules', 'vitest', 'vitest.mjs')`（定位 vitest 可执行文件），**不是跳过集**。G4 是文本模式扫的，区分不了「路径拼接」与「跳过集清单」—— 如实豁免而不是把模式写得更花（模式越花越容易漏真货）。",
         "src/version_upgrade/adapters/node.ts": "★ **不是副本，是合法的语言维度**（规划书 §2c「不同维度的不许合并」）：`version_upgrade/adapters/*.ts` 每个语言适配器声明**自己生态的**目录 —— c[build,.deps] / csharp[bin,obj] / go[vendor] / java[target,.gradle] / node[node_modules,.next,dist] / python[__pycache__,.venv,venv,.tox]。它是**输入数据**，被 `toolchain.ts` 用 `skipDirSet([...ADAPTER_SKIP_DIRS, …])` 与内核基础集组合 ⇒ 基础集已单点，这里的差异就是语言差异本身。"
       }
+    },
+    {
+      "id": "repo-walk",
+      "intent": "『这个项目有哪些源码文件』的遍历 —— 权威是 ProjectView（src/tools/ts_kernel/project_view.ts，一处算→TTL 缓存→多处取用）。实测此前被 walk 了 29 处（walkSourceFiles 15 + feature_map.scanSourceFiles 6 + observe/instrument.collectTsFiles 8 + monolith 同名遮蔽），每次重 walk 一遍。★ 消费者应取 `getProjectView(root).sourceFiles`，不要自己 walk。",
+      "authority": "src/tools/ts_kernel/project_view.ts",
+      "pattern": "walkSourceFiles(",
+      "frozen": {
+        "src/tools/find_references.ts": 1,
+        "src/tools/index_backfill.ts": 2,
+        "src/tools/index_freshness.ts": 1,
+        "src/tools/monolith.ts": 2,
+        "src/tools/refs_text.ts": 1
+      }
     }
   ]
 }

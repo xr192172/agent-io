@@ -24,7 +24,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { getProjectCacheDb } from '../db/db.js';
 import { reopenRefsTo, resolveCrossFileCalls } from '../db/symbols.js';
-import { walkSourceFiles } from './refs_text.js';
+import { getProjectView } from './ts_kernel/project_view.js';
 import { INDEX_SKIP_DIR_EXTRA, isNoiseFileName, isTestFileName, isUnderSkippedDir } from './ts_kernel/source_exts.js';
 import { hasLiveIndex, pendingSelfWrites } from './write_gate.js';
 import { backfillState, backfillSummary, isIndexIncomplete } from './index_backfill.js';
@@ -232,7 +232,8 @@ export async function indexIntegrity(opts: {
   const edges = one('SELECT COUNT(*) c FROM edges');
   const diskList = (() => {
     try {
-      return walkSourceFiles(root);
+      // ★ 走 ProjectView（§19 第 ① 步）：同一轮工作里多处取用只 walk 一次
+      return getProjectView(root).sourceFiles;
     } catch {
       return [];
     }
