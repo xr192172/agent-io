@@ -1988,3 +1988,130 @@ parse 失败），共同病是 **把「读不了」与「确实没有」混成�
 | 1 | `expandClosureDetailed` | ⏳ |
 | 2 | `detectReachableRoots` | ⏳ |
 | 2 | `loadAliasConfig` | ⏳ |
+
+---
+
+## 26. ★★★ 修正「入参袋子」判据 + 重测修剪队列（2026-09-28，**只量不改**）
+
+### 26.1 判据（把 §22.2 规矩①量准）
+§22.2 把「袋子」定义为 **文件里 `Record<string, unknown>` 的条数** ⇒ **量错了对象**。
+实测 `archify_mappers.ts` 的 18 处**全是函数内部的 IR builder 字典**（`const c: Record<string, unknown> = {…}` 后接可选字段条件赋值），
+5 个导出函数的入参**本来就是显式类型化参数**（`(sem: SemanticSurface)`），且全文 **0 处** `as unknown as {`。
+⇒ 这是 §22.1「**拿一个便于测量的量，替代了真正要问的问题**」在 §22.2 **自己身上**重犯（用户裁定：A，认下错标）。
+
+**修正后的判据（本节口径）**，一条 `Record<string, unknown>` 才算「入参袋子」当且仅当：
+
+| # | 条件 |
+|---|---|
+| ① | 出现在**导出函数的参数位置**（`export function f(x: Record<string, unknown>)` / `params: { …; args: Record<string, unknown> }`）**或** |
+| ② | 是**导出函数的唯一/主要入参**（典型：`export async function foo(args: Record<string, unknown>)`，体内再 `as unknown as {…}`） |
+
+**明确不算**（必须排除）：
+- 函数**内部**的 builder 字典 / Map 字面量 / 局部 `const x: Record<string, unknown>`
+- **非导出**函数签名的袋子参数（降级到「疑似漏网」，见 26.4）
+- 只作为**工具 SDK 边界**出现（`server_registry` 把 SDK 的 `a` 转发进来）、而该文件**不是工具定义文件**
+
+**量法**：用 TypeScript compiler API 遍历 190 个 `src/tools/*.ts`，**只认参数类型节点**（含内联对象字面量类型里的属性），别处一律不认；
+`as unknown as {` 用文本计数（与原口径一致）；兜底用 AST 数 **CatchClause**（三类：块内含 return / 块内空语句＝静默 / 块内含 continue）。
+★ **可复现**：§22.3 的「只有 message」列 = **含 `message` 键的 return 对象字面量数**
+（用 4 个文件反推验证：query_feature 29、edit_code 13、update_feature 11、explore_code 5 —— **全中**）。
+★ 量器是一次性脚本，置于系统 temp，**未在仓内新增任何文件**。
+
+### 26.2 修正后队列（按距离降序，只列 `src/tools/*.ts`）
+★ **分 = 真袋子×6 + 非导出袋×2 + 强转×3 + 兜底×1 + message-return×1**（公式显式给出便于复算；
+   §22.3 的「分」公式**从表内不可反推**，故不复用）。
+★ 「只有 message」= 26.1 的可复现口径；「兜底」= catch 内含 return ＋ catch 空块（静默）＋ catch 含 continue。
+★ 「说明」列带 ★ = 该文件含**真入参袋子**（§21 规矩① 的正面目标）。
+
+| 分 | 文件 | 真入参袋子处数 | `as unknown as {` 强转处数 | 只有 message 的 return 处数 | 兜底处数 | 说明 |
+|---|---|---|---|---|---|---|
+| 33 | `query_feature.ts` | 0 | 1 | 29 | 1 | |
+| 28 | `rename_symbol.ts` | 0 | 5 | 0 | 13 | 两维都差 |
+| 23 | `explore_code.ts` | **1** | 0 | 5 | 2 | ★ 真袋子；另有 5 处非导出袋（26.4） |
+| 22 | `watch_project_tool.ts` | 0 | 0 | 16 | 6 | |
+| 17 | `symbol_move.ts` | 0 | 5 | 0 | 2 | ★ **原 §22.3 未列**（与 rename_symbol 同量的 5 处强转） |
+| 15 | `derive_mind_map.ts` | 0 | 0 | 5 | 10 | |
+| 13 | `edit_code.ts` | 0 | 0 | 13 | 0 | |
+| 12 | `project_root.ts` | 0 | 0 | 0 | 12 | ★ 正被**并发**修改，此数为「在途工作区版」 |
+| 12 | `update_feature.ts` | 0 | 0 | 11 | 1 | 兜底 1 为原文**漏检**（26.5） |
+| 10 | `memory_observe.ts` | **1** | 0 | 3 | 1 | ★ 真袋子（`registry/lanes/observe.ts` 已注册） |
+| 10 | `snapshot.ts` | 0 | 0 | 5 | 5 | |
+| 9 | `derive_split.ts` | 0 | 0 | 2 | 7 | |
+| 9 | `import_project.ts` | 0 | 0 | 1 | 8 | |
+| 9 | `index_backfill.ts` | 0 | 2 | 0 | 3 | **原未列** |
+| 9 | `serve.ts` | 0 | 0 | 0 | 9 | ★ 本地 HTTP 服务器，**非 §21 语义的工具**（26.5） |
+| 9 | `slim_brick.ts` | 0 | 0 | 4 | 5 | |
+| 8 | `deprecate_offline.ts` | 0 | 0 | 3 | 5 | |
+| 8 | `file_snapshot.ts` | 0 | 0 | 4 | 4 | |
+| 8 | `watch_project.ts` | 0 | 0 | 0 | 8 | |
+| 7 | `function_outline.ts` | 0 | 0 | 0 | 7 | |
+| 7 | `write_gate.ts` | 0 | 0 | 0 | 7 | |
+| 6 | `dag_layout.ts` | 0 | 0 | 6 | 0 | |
+| 6 | `harvest_from_url.ts` | 0 | 0 | 1 | 5 | |
+| 6 | `index_freshness.ts` | 0 | 0 | 0 | 6 | |
+| 6 | `manage_feature.ts` | 0 | 0 | 6 | 0 | |
+
+★ 全表 **128 个文件** score>0；其中 **33 个 ≥5**。上表列前 25（score ≥ 6）。
+**其余 103 个文件 score 1–5**，几乎全是单点 catch 兜底或个别 message-return，不逐个列表。
+★★ **真入参袋子（判据①/②）全库仅 2 处**（`explore_code`、`memory_observe`）；另有 1 处**边界**（`arg_suggest`，见 26.5）。
+★ 全库 `Record<string, unknown>` 共 **93 处**，处于**参数位置**的仅 **10 处**（导出 3 ＋ 非导出 7），其余 **83 处**一律为内部字典 ⇒ 判据一改，虚高即刻显形。
+
+### 26.3 ★ 修正前后对比（掉分的＝错标）
+只对 **§22.3 原榜单的 8 行**比「袋子」列（其余列口径不同，不可逐格比）。
+
+| 文件 | 原 §22.3 袋子 | 修正后真袋子（导出口径） | 掉分 |
+|---|---|---|---|
+| `archify_mappers.ts` | **18** | **0** | **−18** |
+| `serve.ts` | 6 | 0 | −6 |
+| `explore_code.ts` | 7 | 1 | −6 |
+| `project_root.ts` | 4 | 0 | −4 |
+| `update_feature.ts` | 2 | 0 | −2 |
+| `query_feature.ts` | 0 | 0 | 0 |
+| `rename_symbol.ts` | 0 | 0 | 0 |
+| `edit_code.ts` | 0 | 0 | 0 |
+| **合计** | **37** | **1** | **−36** |
+
+★ 若放宽到「**任何**函数参数位」（含非导出）：`explore_code` = 6 ⇒ 合计 6，仍掉 **−31**。
+★ **原榜单 8 行里有 5 行的「袋子」整列为虚高**；`archify_mappers` 一行**全错**（18 处全为内部 builder）。
+★ 反向错漏：原榜单**漏掉了唯二的真袋子文件 `memory_observe.ts`** 与 5 处强转的 **`symbol_move.ts`**（另有边界件 `arg_suggest.ts`）。
+
+### 26.4 疑似漏网（判据未覆盖、但形似袋子）——**不硬塞进队列**
+
+| 文件:行 | 形态 | 为什么「疑似」 | 我的判定 |
+|---|---|---|---|
+| `explore_code.ts:58,66,71,76` | `requireStr/str/num/bool(v: Record<string, unknown>, key)` | **非导出**函数参数位 ⇒ 判据①/② 都不覆盖；语义是「从袋子里取键」的解参助手 | **算**：是同一袋子的下游，应随 26.2 的 `explore_code` 一并收敛 |
+| `explore_code.ts:300` | `readCode(args: Record<string, unknown>)` | 非导出，但它是**真正的执行体**（导出壳 `exploreCode` 只负责分派） | **算**（同上） |
+| `trace_exec.ts:424` | `execPy(codeText, entryName, kwargs: Record<string, unknown>)` | 非导出；`kwargs` 语义是 **Python 函数 kwargs 字典**（`**json.loads(...)`），**不是工具入参袋** | **不算**（语义正确，勿改） |
+| `trace_reasoning.ts:97` | `findClassInExports(ns: Record<string, unknown>, …)` | 非导出；`ns` 是**模块命名空间对象** | **不算**（语义正确，勿改） |
+
+⇒ 结论：**真正的「疑似漏网」只有 `explore_code` 的 5 处**（含 `readCode`）；其余 2 处是「任意字典」而非「工具参数袋」。
+
+### 26.5 诚实清单（判不准 / 边界 / 未验）
+1. ★ **`arg_suggest.ts:75` 判不准**：`unknownArgHints(args: Record<string, unknown>, known, opts)`
+   **命中判据①**（导出 ＋ 参数位），但调用方是 `src/server_registry.ts:572` 的
+   `renderArgHints(unknownArgHints(a, knownArgs), knownArgs)` —— `a` 就是 **SDK 边界袋**；
+   且该文件**不是工具定义文件**（纯工具函数，被 `server_registry` import）⇒ 按排除条**不计核心**。
+   ★ **判据①的正面条件与排除条在此直接打架 ⇒ 我没有硬下结论。**
+2. ★ **兜底列的可复现性：8 行里 5 行复现、3 行对不上**（我未强行对齐，如实记录）：
+   - 复现：`archify_mappers` 0 ✓、`explore_code` 2 ✓、`project_root` 12 ✓、`rename_symbol` 13 ✓、`edit_code` 0 ✓
+   - ★ **原表漏检**：`query_feature` 0→**1**（`query_feature.ts:660 catch { return {message, data:null} }`）、
+     `update_feature` 0→**1**（`update_feature.ts:336 catch { /* 快照失败不阻断布局，仅忽略 */ }` —— 正是 §2d 的「只注释的 catch」）
+   - ★ **口径不同**：`serve` 2→**9**。它是**本地 HTTP 服务器**（`/api/save`、SSE），
+     其 `catch (e) { sendError(res,500,…) }`/`catch { sseClients.delete(client) }` 多为**HTTP 错误路径与清理**，
+     **不是 §21/§2d 语义的「少做了一点事而不说话」** ⇒ 该行兜底分**不可直接当降级判**。
+3. ★ **`src/registry/` 才是 [C] 层真正的袋子所在**：`plumbing.ts:35` 定义
+   `wrapData(fn: (args: Record<string, unknown>) => …)`，注册表用 `wrapData(async (a) => memoryObserveHandler(a))`
+   （`registry/lanes/observe.ts:45`），且 **`a` 靠上下文化类型**（不写 `Record`）。⇒ 本节按判据**只量 `src/tools/*.ts`**，
+   **registry 层袋子未计入** —— ★ 这是**口径边界，不是漏检**。
+4. ★ **`project_root.ts` 的在途改动**：该文件正被**另一执行者并发修改**（工作区 `M`，mtime `21:10:39`）。
+   本节数**以「当前工作区版本」为准**，**未核 HEAD**，且我**未触碰**该文件。
+5. ★ **未验**：`兜底` 只按 CatchClause 的**语法三形态**计数，**未逐处人读**判「是否真降级」。
+   §21.1 已警：形态计数是**候选**不是结论 ⇒ 本节兜底列**同样是候选**，落地前必须逐个人读。
+6. ★ **未验**：`只有 message` 口径的反推只在 **4 个文件**上验证（全中），**未全库验证**；若 §22.3 当时用了别的口径，该列可能仍有偏差。
+7. ★ **未验**：`symbol_move.ts` / `index_backfill.ts` 等「原榜未列」的文件，我只量了**计数**，**未读代码确认**其强转/兜底是否真属 §21 目标形状。
+8. **未做编译与测试**：本节**对 `.ts` 源码零改动**（仅追加本 `.md`）⇒ 无 `tsc`/vitest 影响面，故未跑；`git` 未提交。
+
+---
+
+★ **一句话口令（修正后）**：判「入参袋子」看**参数位置**，不看 `Record<string, unknown>` 的**出现次数**——
+`archify_mappers` 那 18 处是**内部 builder**，不是袋子；全库真袋子只有 `explore_code` 与 `memory_observe` 两处。
