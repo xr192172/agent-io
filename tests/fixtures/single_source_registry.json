@@ -62,9 +62,9 @@
       "intent": "『这个项目有哪些源码文件』的遍历 —— 权威是 ProjectView（src/tools/ts_kernel/project_view.ts，一处算→TTL 缓存→多处取用）。实测此前被 walk 了 29 处（walkSourceFiles 15 + feature_map.scanSourceFiles 6 + observe/instrument.collectTsFiles 8 + monolith 同名遮蔽），每次重 walk 一遍。★ 消费者应取 `getProjectView(root).sourceFiles`，不要自己 walk。",
       "authority": "src/tools/ts_kernel/project_view.ts",
       "pattern": "walkSourceFiles(",
-      "frozen": {
-        "src/tools/monolith.ts": 2,
-        "src/tools/refs_text.ts": 1
+      "frozen": {},
+      "allow": {
+        "src/tools/refs_text.ts": "★ **不是副本，是 [A] 层原语本身**：`walkSourceFiles` 的**函数定义**就在这里 —— 它是 ProjectView 依赖的底层遍历实现（`project_view.ts` import 它），不是\"绕过权威的自己走一遍\"。G4 是按字面 `walkSourceFiles(` 扫的，会命中定义行 ⇒ 如实豁免（**不把模式写得更花**：模式越花越容易漏真货）。"
       }
     }
   ]

@@ -21,6 +21,7 @@ import path from 'node:path';
 import type { DesignDSL, Node, Edge } from '../dsl/types.js';
 import { getDSL, saveDSL } from '../storage.js';
 import { parseFileFull } from './ts_kernel/index.js';
+import { getProjectView } from './ts_kernel/project_view.js'; // ★ §19②
 import type { ParsedSymbol } from './ts_kernel/index.js';
 import { fileFingerprint, healthKey, readHealthCache, writeHealthCache } from './health_cache.js';
 import { skipDirSet } from './ts_kernel/source_exts.js';
@@ -657,35 +658,6 @@ function sanitizeId(s: string): string {
 // D6 主入口
 // ─────────────────────────────────────────────────────────────
 
-// ★ 迁到内核同源跳过集（2026-09-28）：基础集由 `source_exts.SKIP_DIR_BASE` 唯一提供
-//   ⇒ 本行的数组是**本调用方显式追加**的语言/用途专属项（有意变宽的部分已在提交里声明）
-const WALK_SKIP_DIRS = skipDirSet(['vendor', 'target']);
-
-const SOURCE_EXT_RE = /\.(go|ts|tsx|js|jsx|py|mjs|cjs)$/;
-
-function walkSourceFiles(root: string, max: number): string[] {
-  const out: string[] = [];
-  const stack = [root];
-  while (stack.length && out.length < max) {
-    const dir = stack.pop()!;
-    let entries: fs.Dirent[];
-    try {
-      entries = fs.readdirSync(dir, { withFileTypes: true });
-    } catch {
-      continue;
-    }
-    for (const e of entries) {
-      if (out.length >= max) break;
-      const full = path.join(dir, e.name);
-      if (e.isDirectory()) {
-        if (!WALK_SKIP_DIRS.has(e.name)) stack.push(full);
-      } else if (SOURCE_EXT_RE.test(e.name)) {
-        out.push(full);
-      }
-    }
-  }
-  return out;
-}
 
 export async function checkMonolith(input: CheckMonolithInput): Promise<CheckMonolithResult> {
   const warn = input.warn_lines ?? 500;
@@ -716,7 +688,9 @@ export async function checkMonolith(input: CheckMonolithInput): Promise<CheckMon
     if (!fs.existsSync(root) || !fs.statSync(root).isDirectory()) {
       throw new Error(`project_dir 不存在或不是目录: ${root}`);
     }
-    for (const abs of walkSourceFiles(root, maxFiles)) {
+  // ★ §19②：原先这里调**本文件同名的私有 walker**（自己 walk、绕过 ProjectView 缓存），
+  //   且它的扩展名表与内核不一致（缺 .java/.c/.h/.cs/.rs/.php）⇒ 改取 ProjectView（顺带修掉口径分叉）。
+  for (const abs of getProjectView(root).sourceFiles.slice(0, maxFiles)) {
       targets.push({ abs, rel: path.relative(root, abs).split(path.sep).join('/') });
     }
   } else {
