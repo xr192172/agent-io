@@ -1,9 +1,11 @@
 /**
- * harvest 线（9 个工具）—— 由 `TOOL_DEFS` 按 `capability_map.LANE_OF` 切分而来。
+ * harvest 线（9 个工具）—— ★ **本文件即该线归属的唯一来源**。
  *
- * ★ P1b（2026-09-28）：条目**逐字搬移**，只加了 `export const HARVEST_TOOLS` 外壳。
- *   线归属此前是 `capability_map.ts` 里的一张表；切到本文件后，**归属由文件路径表达**，
- *   不再有第二份清单。
+ * ★ P1b（2026-09-28）：按当时 `capability_map.LANE_OF` 的归属从 `TOOL_DEFS` 切分而来，
+ *   条目**逐字搬移**，只加了 `export const HARVEST_TOOLS` 外壳 —— 归属自此由文件路径表达。
+ * ★ P1c（2026-09-28）：`capability_map.LANE_OF` 已删除。`server_registry` 的 `LANE_SOURCES` 把本文件
+ *   接到线 id `'harvest'`，并派生「工具 → 线」归属表注入 capability_map。
+ *   ⇒ **把工具挪出本线 = 把它从本数组移到另一条线的数组，一处改动**（不再有第二处要同步）。
  *
  * 为什么能切了：依赖已先行抽到 `registry/{types,plumbing,handlers}.ts`（P1a）——
  *   否则本文件 import 它们就会成环（server_registry → lanes → server_registry）。

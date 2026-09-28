@@ -6,19 +6,28 @@
  * 不如给一个**纯只读的能力线地图**：agent 不确定用哪个工具前，先调它分层定位，
  * 再进入具体工具；高频工具仍直接可用、无需先经导航。
  *
- * ★ 单一真相源（2026-09-14 改造，此前是手工同步的静态表 → 必然漂移）：
+ * ★ 单一真相源（2026-09-14 起逐步收紧，2026-09-28 P1c 收口）：
  *   - 工具集合 = server_registry 的 TOOL_DEFS（真实注册，唯一权威）；本模块**不自己维护工具清单**。
- *   - 归属标注 = 本文件的 LANE_OF（工具 → 线，可选 when 覆盖）+ LANE_META（线元信息）。
- *   - when 缺省由注册描述**自动摘要**（首句，≤60 字）→ 新增工具只要写一行 lane 归属即可露面。
+ *   - **线的归属** = lane 文件所在（`registry/lanes/<lane>.ts`）→ server_registry 汇总后 `bindLaneOf()` 注入。
+ *     本模块**不再持有归属清单**（P1c 前的 `LANE_OF` 是第二份，必然与 lane 文件漂移）。
+ *   - `when` 策展文本 = 本文件 `WHEN_OVERRIDES`（**只是文本**，不含归属）；缺省由注册描述
+ *     **自动摘要**（首句，≤60 字）⇒ 新增工具把它放进对应 lane 文件即可露面，**不必改本文件**。
+ *   - 线元信息 = LANE_META（线 id / 展示名 / 说明 / direct 白名单）。
  *
- * 漂移防护（三重，均为"看得见"而非静默）：
+ * 漂移防护（均为"看得见"而非静默）：
  *   1. 已注册但没归属的工具 → 输出单列「未归线」段，导航仍能看见它（不再静默消失）；
- *   2. LANE_OF 写了但注册表没有 → validateLanes 报「陈旧标注」；
- *   3. tests/server_registry.lanes + tests/tools/capability_map 对**真实 TOOL_DEFS** 断言
+ *   2. 注入表里有、注册表没有 → validateLanes 报「陈旧标注」；
+ *      `WHEN_OVERRIDES` 里有、注册表没有 → 报「陈旧策展文本」（工具删了、说明忘删）；
+ *   3. tests/registry/lane_sources.test.ts 对**真实 lane 文件**断言：六份来源两两不交、并集 = TOOL_DEFS、
+ *      磁盘上 lane 文件名集合 = 归属 id 集合（防"新建了 lane 文件但没人 import"）；
+ *   4. tests/tools/capability_map.test.ts 对**真实 TOOL_DEFS** 断言
  *      （旧测试自带一份手抄的 55 工具清单，等于第三份副本，已删）。
  *
- * 装配：server_registry 用 makeCapabilityMapHandler(() => TOOL_DEFS) 注入目录
- *   —— 本模块**不 import 注册表**，避免 server_registry ⇄ capability_map 循环 import。
+ * 装配（两步注入，均在 server_registry 加载期完成）：
+ *   · `makeCapabilityMapHandler(() => TOOL_DEFS)` —— 注入**目录**；
+ *   · `bindLaneOf(汇总各 lane 文件得出的 name→lane 表)` —— 注入**归属**。
+ *   本模块**不 import 注册表**，避免 server_registry ⇄ capability_map 循环 import。
+ *   ★ 未注入就调 buildLanes ⇒ **抛错**（见 resolveAssign 的说明：不给"看起来能用"的空表）。
  *
  * 纯数据 + 纯函数（目录取自入参，无 IO）：testable。
  */
@@ -54,10 +63,13 @@ export interface Lane {
   direct: string[];
 }
 
-/** 工具 → 线归属标注（★ 人工唯一入口）。when 省略 = 由注册描述自动摘要。 */
+/**
+ * 工具 → 线归属。**由 lane 文件派生后注入**（`bindLaneOf`），不是本文件的数据。
+ * when 省略 = 走 `WHEN_OVERRIDES`；再省略 = 由注册描述自动摘要。
+ */
 export interface LaneAssign {
   lane: LaneId;
-  /** 需要人工语义时才写（导航价值高于注册描述时） */
+  /** 需要人工语义时才写（导航价值高于注册描述时）；一般不必——策展文本请写进 WHEN_OVERRIDES */
   when?: string;
 }
 
@@ -102,89 +114,125 @@ export const LANE_META: ReadonlyArray<Omit<Lane, 'tools'>> = [
 ];
 
 /**
- * ★ 工具归属标注（人工唯一需要维护的地方）。
- *   新增工具：在 server_registry 注册后，在下面加一行 `{ lane: '...' }` 即可；
- *   忘了加不会静默丢失 —— 会在 capability_map 输出的「未归线」段出现，且测试红。
+ * ★ 只保留**策展文本**（`when`）。lane 归属**不在这里**。
+ *
+ * P1c（2026-09-28）：此前本文件持有 `LANE_OF`（工具 → { lane, when }）—— 那是**第二份归属清单**，
+ *   与 P1b 切出来的 lane 文件必然漂移（一处改了、另一处忘改，只在导航里静默显示成"未归线"）。
+ *   现在：
+ *     · **归属**（工具属哪条线）＝ 由 lane 文件所在表达（`registry/lanes/<lane>.ts`），
+ *       `server_registry` 汇总时调 `bindLaneOf()` 注入；
+ *     · **说明**（when：导航价值高于注册描述时的策展语句）＝ 留在本表，是真正的人工资产。
+ *   ⇒ 本文件**不再有任何 lane 字面量**；`validateLanes` 的"未归线 / 陈旧标注"检查改成对着注入表查，
+ *     并新增"`WHEN_OVERRIDES` 里的陈旧条目"检查（工具删了、策展文本忘了删）。
  */
-export const LANE_OF: Readonly<Record<string, LaneAssign>> = {
-  // ── meta · 元信息 / 自检 ──
-  index_integrity: {
-    lane: 'meta',
-    when: '索引可信度自检：陈旧断言 / 未保鲜文件 / 覆盖度 —— 判断"现在读到的索引能不能当真"，可选 refresh 顺手保鲜',
-  },
-  // ── design · 设计 / 活文档 ──
-  get_dsl: { lane: 'design', when: '统一只读入口，query 参数查 DSL/features/decisions/simulation_state' },
-  edit_dsl: { lane: 'design', when: '统一写入口，operations 批量增删改节点/边/文件/API/binding/status' },
-  manage_feature: { lane: 'design', when: 'feature 生命周期：create/clone/template/list/delete' },
-  render_design: { lane: 'design', when: '渲染并保存设计图（完整 DSL 模式产物）' },
-  render_brickwork: { lane: 'design', when: '渲染积木墙视图' },
-  scaffold: { lane: 'design', when: '从设计图 semantic 层生成代码骨架（签名+TODO）' },
-  backfill_scaffold: { lane: 'design', when: '写完代码后回填实际 API 签名到 DSL' },
-  consistency_check: { lane: 'design', when: '设计 DSL 与代码语义一致性体检' },
-  detect_drift: { lane: 'design', when: '检测 DSL 与代码语义漂移' },
-  import_project: { lane: 'design', when: '扫描代码项目生成 DSL（文件节点+调用边+符号语义层）' },
-  set_design_intent: { lane: 'design', when: '写设计意图到 overlay：goals（结构化目标/方向）+ edge_intents（A 为何依赖 B / 边界归属），LLM 开发时的意图写入口' },
-  propose_design_intent: { lane: 'design', when: 'LLM 代拟「设计意图(why)改写」审批卡：propose 只算 diff 不写盘，人在工作台 approve 后才落 DSL' },
-  // ── refactor · 重构 / 改名 ──
-  rename_symbols: { lane: 'refactor', when: '符号改名（跨文件联动，dry_run 预览后落盘）' },
-  rename_files: { lane: 'refactor', when: '批量文件改名（dry_run 计算影响面，原子阻断）' },
-  rename_many: { lane: 'refactor', when: '批量符号改名' },
-  move_symbol: { lane: 'refactor', when: '跨文件移动模块级符号（自动重定向 importer 的 import 源，只改 source 不动使用点）' },
-  edit_code: { lane: 'refactor', when: '符号级替换（文件+函数+新函数体，AST 定位）' },
-  find_references: { lane: 'refactor', when: '查某符号的引用点/外部导入者（影响面前置）' },
-  impact_analysis: { lane: 'refactor', when: '计算一次改动的变更点/风险面' },
-  remove_dead_imports: { lane: 'refactor', when: '清理未使用 import' },
-  refactor_pipeline: { lane: 'refactor', when: '整条重构流水线（预览→执行→校验闭环）' },
-  annotate_functions: { lane: 'refactor', when: '函数语义注释（TS/JS + Go）：扫覆盖→缺失用 LLM 补→@fnhash body 指纹同步过期；可配进 refactor_pipeline 的 function_annotation 步' },
-  suggest_renames: { lane: 'refactor', when: '生成改名建议（就近相似名/命名规范）；混淆/压缩代码的短名还原可读也走这里——建议先由格式化梳理结构，再经 rename_symbols 应用，意图复原留人/LLM' },
-  find_similar_names: { lane: 'refactor', when: '找相似命名（撞名/歧义排查）' },
-  refactor_judge: { lane: 'refactor', when: '重构后裁判：校验是否符合契约/无回归' },
-  list_snapshots: { lane: 'refactor', when: '列代码快照（每次 edit_code/rename_files/move_symbol 落盘前自动存一份）——先看能不能撤回' },
-  rollback_snapshot: { lane: 'refactor', when: '把代码回滚到某份快照（省略=最近一份）；快照时新建的文件会被删掉，是这些改动工具的撤回通道' },
-  diff_views: { lane: 'refactor', when: '多视图/多版本差异对比' },
-  export_rule: { lane: 'refactor', when: '★ 修复→规则沉淀：把一次实际修复泛化成可复跑规则（$hole 元变量 + 自动夹具），过「出生回归/反例不命中/幂等」三关才准落盘；Grit 无此自动萃取路径' },
-  apply_rules: { lane: 'refactor', when: '把规则库批量应用到项目（三态：applied / todo 标注释 / clean），唯一才动、歧义即停' },
-  check_rules: { lane: 'refactor', when: '把规则库当 lint 跑，带 CI 棘轮（只在"新增命中"上 fail）+ 规则自身夹具自检' },
-  // ── observe · 观测 / 验证 ──
-  observe_log: { lane: 'observe', when: '读运行日志/观测产物' },
-  observe_judge: { lane: 'observe', when: '对观测结果做判定' },
-  observe_instrument: { lane: 'observe', when: '源码插桩探针（dry_run 可预览）' },
-  observe_trace: { lane: 'observe', when: '读录制调用链回放：从 events.jsonl 重建结构化调用树（纯后端，LLM 分析用）' },
-  feature_line: { lane: 'observe', when: '功能线：每个功能搭一条主链（功能→入口→调用节点），供沿线单步运行/投大屏点位' },
-  narrate_step: { lane: 'observe', when: '把某一步观测过程叙述成可读记录' },
-  behavior_baseline: { lane: 'observe', when: '编译语言行为基线（跑函数用例出返回值）' },
-  run_tests: { lane: 'observe', when: '运行测试并汇总结果' },
-  reconcile_chain: { lane: 'observe', when: '沿效应链逐级对账契约' },
-  reconcile_effects: { lane: 'observe', when: '对账函数/模块的实际效应与契约' },
-  memory_targets: { lane: 'observe', when: '列出本机带 --inspect 的 node 进程（含 DSH gen），供 memory_observe 选 target' },
-  memory_observe: { lane: 'observe', when: '外部进程内存观测（CDP 外连，不插目标进程）：status/baseline/track/gc，定位 JS 堆 vs native 泄漏方向' },
-  recommend_observe_points: { lane: 'observe', when: '★ 推荐该在哪打观测点（索引/图 + AST 语义打分，不做全量插桩）；输出可编辑清单 + 每条的理由' },
-  // ── harvest · 契约 / 闭包采集 ──
-  harvest_decisions: { lane: 'harvest', when: '从 docs/git log/注释粗提决策卡候选' },
-  harvest_closure: { lane: 'harvest', when: '扫描闭包出产入盒三件套' },
-  harvest_from_url: { lane: 'harvest', when: '从 URL 采集决策/契约' },
-  extract_contracts: { lane: 'harvest', when: '从代码提取契约（多语言 AST）' },
-  sync_contracts: { lane: 'harvest', when: '以 server_registry zod schema 回填 DSL expected_apis' },
-  reconcile_brick: { lane: 'harvest', when: '对账单个积木与契约' },
-  search_bricks: { lane: 'harvest', when: '检索积木配方' },
-  assemble_bricks: { lane: 'harvest', when: '组装多个积木成新积木' },
-  slim_brick: { lane: 'harvest', when: '给积木瘦身（收窄职责）' },
-  // ── cross · 跨仓 / 杂交 / 健康 ──
-  cross_repo_symbol_index: { lane: 'cross', when: '跨仓库符号索引建立/反查' },
-  hybrid_precheck: { lane: 'cross', when: '仓库杂交前预检（依赖/符号连通性）' },
-  code_health: { lane: 'cross', when: '代码健康度扫描（含 unused_import 多语言）' },
-  translate_go_ts: { lane: 'cross', when: '跨语言翻译：Go→TS 半自动（机械骨架+验证闸；fill 用 LLM 逐孔填；verify 跑行为对拍）' },
-  go_originals: { lane: 'cross', when: '读 Go 源文件顶层符号原文（ground truth）：翻译/评审时对照 Go 原文，不对着 TS 壳猜' },
-  // ── meta · 元信息 / 探索 ──
-  explore_code: { lane: 'meta', when: '代码理解统一入口（search/check_monolith/run_simulation/watch）' },
-  diagnose: { lane: 'meta', when: '诊断能力缺口（多语言矩阵）' },
-  canvas_notes: { lane: 'meta', when: '画布人审标注的读取/渲染' },
-  archive_node: { lane: 'meta', when: '下线库归档 + 合并记录' },
-  list_archive: { lane: 'meta', when: '列下线库归档条目' },
-  gateway_provider: { lane: 'meta', when: 'LLM 网关供应商/Key 池说明与状态' },
-  read_project_docs: { lane: 'meta', when: '读项目文档（README/活文档）' },
-  capability_map: { lane: 'meta', when: '本工具：能力线导航（目录由注册表 TOOL_DEFS 自动派生）' },
+export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
+  index_integrity: '索引可信度自检：陈旧断言 / 未保鲜文件 / 覆盖度 —— 判断"现在读到的索引能不能当真"，可选 refresh 顺手保鲜',
+  get_dsl: '统一只读入口，query 参数查 DSL/features/decisions/simulation_state',
+  edit_dsl: '统一写入口，operations 批量增删改节点/边/文件/API/binding/status',
+  manage_feature: 'feature 生命周期：create/clone/template/list/delete',
+  render_design: '渲染并保存设计图（完整 DSL 模式产物）',
+  render_brickwork: '渲染积木墙视图',
+  scaffold: '从设计图 semantic 层生成代码骨架（签名+TODO）',
+  backfill_scaffold: '写完代码后回填实际 API 签名到 DSL',
+  consistency_check: '设计 DSL 与代码语义一致性体检',
+  detect_drift: '检测 DSL 与代码语义漂移',
+  import_project: '扫描代码项目生成 DSL（文件节点+调用边+符号语义层）',
+  set_design_intent: '写设计意图到 overlay：goals（结构化目标/方向）+ edge_intents（A 为何依赖 B / 边界归属），LLM 开发时的意图写入口',
+  propose_design_intent: 'LLM 代拟「设计意图(why)改写」审批卡：propose 只算 diff 不写盘，人在工作台 approve 后才落 DSL',
+  rename_symbols: '符号改名（跨文件联动，dry_run 预览后落盘）',
+  rename_files: '批量文件改名（dry_run 计算影响面，原子阻断）',
+  rename_many: '批量符号改名',
+  move_symbol: '跨文件移动模块级符号（自动重定向 importer 的 import 源，只改 source 不动使用点）',
+  edit_code: '符号级替换（文件+函数+新函数体，AST 定位）',
+  find_references: '查某符号的引用点/外部导入者（影响面前置）',
+  impact_analysis: '计算一次改动的变更点/风险面',
+  remove_dead_imports: '清理未使用 import',
+  refactor_pipeline: '整条重构流水线（预览→执行→校验闭环）',
+  annotate_functions: '函数语义注释（TS/JS + Go）：扫覆盖→缺失用 LLM 补→@fnhash body 指纹同步过期；可配进 refactor_pipeline 的 function_annotation 步',
+  suggest_renames: '生成改名建议（就近相似名/命名规范）；混淆/压缩代码的短名还原可读也走这里——建议先由格式化梳理结构，再经 rename_symbols 应用，意图复原留人/LLM',
+  find_similar_names: '找相似命名（撞名/歧义排查）',
+  refactor_judge: '重构后裁判：校验是否符合契约/无回归',
+  list_snapshots: '列代码快照（每次 edit_code/rename_files/move_symbol 落盘前自动存一份）——先看能不能撤回',
+  rollback_snapshot: '把代码回滚到某份快照（省略=最近一份）；快照时新建的文件会被删掉，是这些改动工具的撤回通道',
+  diff_views: '多视图/多版本差异对比',
+  export_rule: '★ 修复→规则沉淀：把一次实际修复泛化成可复跑规则（$hole 元变量 + 自动夹具），过「出生回归/反例不命中/幂等」三关才准落盘；Grit 无此自动萃取路径',
+  apply_rules: '把规则库批量应用到项目（三态：applied / todo 标注释 / clean），唯一才动、歧义即停',
+  check_rules: '把规则库当 lint 跑，带 CI 棘轮（只在"新增命中"上 fail）+ 规则自身夹具自检',
+  observe_log: '读运行日志/观测产物',
+  observe_judge: '对观测结果做判定',
+  observe_instrument: '源码插桩探针（dry_run 可预览）',
+  observe_trace: '读录制调用链回放：从 events.jsonl 重建结构化调用树（纯后端，LLM 分析用）',
+  feature_line: '功能线：每个功能搭一条主链（功能→入口→调用节点），供沿线单步运行/投大屏点位',
+  narrate_step: '把某一步观测过程叙述成可读记录',
+  behavior_baseline: '编译语言行为基线（跑函数用例出返回值）',
+  run_tests: '运行测试并汇总结果',
+  reconcile_chain: '沿效应链逐级对账契约',
+  reconcile_effects: '对账函数/模块的实际效应与契约',
+  memory_targets: '列出本机带 --inspect 的 node 进程（含 DSH gen），供 memory_observe 选 target',
+  memory_observe: '外部进程内存观测（CDP 外连，不插目标进程）：status/baseline/track/gc，定位 JS 堆 vs native 泄漏方向',
+  recommend_observe_points: '★ 推荐该在哪打观测点（索引/图 + AST 语义打分，不做全量插桩）；输出可编辑清单 + 每条的理由',
+  harvest_decisions: '从 docs/git log/注释粗提决策卡候选',
+  harvest_closure: '扫描闭包出产入盒三件套',
+  harvest_from_url: '从 URL 采集决策/契约',
+  extract_contracts: '从代码提取契约（多语言 AST）',
+  sync_contracts: '以 server_registry zod schema 回填 DSL expected_apis',
+  reconcile_brick: '对账单个积木与契约',
+  search_bricks: '检索积木配方',
+  assemble_bricks: '组装多个积木成新积木',
+  slim_brick: '给积木瘦身（收窄职责）',
+  cross_repo_symbol_index: '跨仓库符号索引建立/反查',
+  hybrid_precheck: '仓库杂交前预检（依赖/符号连通性）',
+  code_health: '代码健康度扫描（含 unused_import 多语言）',
+  translate_go_ts: '跨语言翻译：Go→TS 半自动（机械骨架+验证闸；fill 用 LLM 逐孔填；verify 跑行为对拍）',
+  go_originals: '读 Go 源文件顶层符号原文（ground truth）：翻译/评审时对照 Go 原文，不对着 TS 壳猜',
+  explore_code: '代码理解统一入口（search/check_monolith/run_simulation/watch）',
+  diagnose: '诊断能力缺口（多语言矩阵）',
+  canvas_notes: '画布人审标注的读取/渲染',
+  archive_node: '下线库归档 + 合并记录',
+  list_archive: '列下线库归档条目',
+  gateway_provider: 'LLM 网关供应商/Key 池说明与状态',
+  read_project_docs: '读项目文档（README/活文档）',
+  capability_map: '本工具：能力线导航（目录由注册表 TOOL_DEFS 自动派生）',
 };
+
+// ─────────────────────────────────────────────────────────────
+// 归属表注入（P1c）：lane 文件的归属由 server_registry 汇总后送进来
+// ─────────────────────────────────────────────────────────────
+
+/** 注入的归属表（null = 还没注入）。模块级单值 —— 与 registry/lanes/meta.ts 的 bindToolDefs 同一模式。 */
+let _laneOf: Readonly<Record<string, LaneAssign>> | null = null;
+
+/**
+ * 注入「工具 → 线」归属表。由 **server_registry** 在汇总各 lane 文件后调用一次。
+ * 为什么是注入而不是本文件持有：归属已由 lane 文件所在表达，在本文件再存一份 = 第二份清单，必然漂移。
+ */
+export function bindLaneOf(table: Readonly<Record<string, LaneAssign>>): void {
+  _laneOf = table;
+}
+
+/** 测试隔离用：清掉注入的归属表（回到"未注入"状态） */
+export function resetLaneOfForTest(): void {
+  _laneOf = null;
+}
+
+/**
+ * 解析本次调用要用的归属表。
+ *
+ * ★ 未注入时**抛错**，返回空表是错的：空表会让 67 个工具**全部**变成"未归线"，
+ *   而"未归线"在导航里是**正常可见**的一类（设计如此，防新工具静默消失）——
+ *   于是"忘了注入"会被伪装成"这些工具确实没归线"，静默且难查。
+ *   抛错把加载期接线错误变成**立刻可见的失败**（同 P1a 的破环纪律：不给"看起来能用"的空壳）。
+ */
+function resolveAssign(assign?: Readonly<Record<string, LaneAssign>>): Readonly<Record<string, LaneAssign>> {
+  if (assign) return assign;
+  if (!_laneOf) {
+    throw new Error(
+      'capability_map：归属表未注入。归属由 lane 文件（registry/lanes/*.ts）表达，' +
+        '需在 server_registry 汇总后调用 bindLaneOf()；测试请显式传第二参。',
+    );
+  }
+  return _laneOf;
+}
 
 // ─────────────────────────────────────────────────────────────
 // 派生（纯函数）
@@ -194,19 +242,22 @@ export interface BuiltLanes {
   lanes: Lane[];
   /** 已注册但没归属的工具（导航可见，测试红） */
   unassigned: ToolCatalogEntry[];
-  /** LANE_OF 有、注册表没有的工具（陈旧标注） */
+  /** 归属表有、注册表没有的工具（陈旧标注） */
   stale: string[];
+  /** `WHEN_OVERRIDES` 有、注册表没有的工具（陈旧策展文本：工具删了、说明忘删） */
+  staleWhen: string[];
 }
 
 /**
  * 由注册目录派生能力线。**迭代顺序 = 注册表顺序**（不再人工排序，消除第二处手抄）。
- * when 缺省走 describeForNav（注册描述首句）。
- * @param assign 归属标注表（默认 LANE_OF；测试可注入自定义表以验证派生路径）
+ * when 取值优先级：注入表里的 `when` → `WHEN_OVERRIDES[name]` → describeForNav（注册描述首句）。
+ * @param assign 归属表（省略 = 用 `bindLaneOf` 注入的表；测试可显式传以验证派生路径）
  */
 export function buildLanes(
   catalog: readonly ToolCatalogEntry[],
-  assign: Readonly<Record<string, LaneAssign>> = LANE_OF,
+  assign?: Readonly<Record<string, LaneAssign>>,
 ): BuiltLanes {
+  const table = resolveAssign(assign);
   const lanes: Lane[] = LANE_META.map((m) => ({ ...m, tools: [] }));
   const byId = new Map(lanes.map((l) => [l.id as string, l]));
   const unassigned: ToolCatalogEntry[] = [];
@@ -215,7 +266,7 @@ export function buildLanes(
   for (const t of catalog) {
     if (!t?.name || seen.has(t.name)) continue;
     seen.add(t.name);
-    const a = assign[t.name];
+    const a = table[t.name];
     if (!a) {
       unassigned.push(t);
       continue;
@@ -225,15 +276,17 @@ export function buildLanes(
       unassigned.push(t);
       continue;
     }
+    const when = a.when ?? WHEN_OVERRIDES[t.name];
     lane.tools.push({
       name: t.name,
-      when: a.when ?? describeForNav(t),
-      whenSource: a.when ? 'curated' : 'derived',
+      when: when ?? describeForNav(t),
+      whenSource: when ? 'curated' : 'derived',
     });
   }
 
-  const stale = Object.keys(assign).filter((n) => !seen.has(n)).sort();
-  return { lanes, unassigned, stale };
+  const stale = Object.keys(table).filter((n) => !seen.has(n)).sort();
+  const staleWhen = Object.keys(WHEN_OVERRIDES).filter((n) => !seen.has(n)).sort();
+  return { lanes, unassigned, stale, staleWhen };
 }
 
 /** 导航用短描述：注册描述首句（截 60 字），空则退回标题/工具名。 */
@@ -249,16 +302,19 @@ export function describeForNav(t: ToolCatalogEntry, max = 60): string {
 /** 校验（对真实注册表断言用）：返回错误列表，空 = 目录与注册表一致。 */
 export function validateLanes(
   catalog: readonly ToolCatalogEntry[],
-  assign: Readonly<Record<string, LaneAssign>> = LANE_OF,
+  assign?: Readonly<Record<string, LaneAssign>>,
 ): string[] {
   const errors: string[] = [];
-  const { lanes, unassigned, stale } = buildLanes(catalog, assign);
+  const { lanes, unassigned, stale, staleWhen } = buildLanes(catalog, assign);
 
   for (const t of unassigned) {
-    errors.push(`已注册但未归线：${t.name}（在 capability_map 的 LANE_OF 里补一条归属）`);
+    errors.push(`已注册但未归线：${t.name}（把它加成 registry/lanes/<line>.ts 里对应线数组的一项）`);
   }
   if (stale.length) {
-    errors.push(`LANE_OF 里的陈旧标注（注册表已无此工具）：${stale.join(', ')}`);
+    errors.push(`归属表里的陈旧标注（注册表已无此工具）：${stale.join(', ')}`);
+  }
+  if (staleWhen.length) {
+    errors.push(`WHEN_OVERRIDES 里的陈旧策展文本（注册表已无此工具）：${staleWhen.join(', ')}`);
   }
   for (const lane of lanes) {
     const names = new Set(lane.tools.map((t) => t.name));
@@ -271,14 +327,15 @@ export function validateLanes(
 /** 维护视图（不进 agent 输出）：哪些 when 还是自动摘要、哪些没归线。 */
 export function laneMaintenanceReport(
   catalog: readonly ToolCatalogEntry[],
-  assign: Readonly<Record<string, LaneAssign>> = LANE_OF,
+  assign?: Readonly<Record<string, LaneAssign>>,
 ): {
   derived: string[];
   curated: number;
   unassigned: string[];
   stale: string[];
+  staleWhen: string[];
 } {
-  const { lanes, unassigned, stale } = buildLanes(catalog, assign);
+  const { lanes, unassigned, stale, staleWhen } = buildLanes(catalog, assign);
   const derived: string[] = [];
   let curated = 0;
   for (const lane of lanes) {
@@ -287,7 +344,7 @@ export function laneMaintenanceReport(
       else curated += 1;
     }
   }
-  return { derived, curated, unassigned: unassigned.map((t) => t.name), stale };
+  return { derived, curated, unassigned: unassigned.map((t) => t.name), stale, staleWhen };
 }
 
 // ─────────────────────────────────────────────────────────────
