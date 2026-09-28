@@ -86,6 +86,13 @@ export interface ExternalImporterResult {
   skipped: Array<{ dir: string; why: string }>;
 }
 
+/** expandClosureDetailed 的返回：闭包文件 + 外部边界引用 + 解析失败的跳过项 */
+export interface ExpansionResult {
+  files: string[];
+  externalRefs: ExternalRef[];
+  skipped: Array<{ path: string; why: string }>;
+}
+
 /** 判断绝对路径是否落在 root（或其子目录）内——闭包只扩根内，越界即视为外部边界 */
 export function isInsideRoot(abs: string, root: string): boolean {
   const rp = path.relative(path.resolve(root), path.resolve(abs));
@@ -1077,18 +1084,19 @@ export async function expandClosureDetailed(
   seedFile: string,
   root: string,
   alias?: AliasConfig | null,
-): Promise<{ files: string[]; externalRefs: ExternalRef[] }> {
+): Promise<ExpansionResult> {
   const aliasCfg = alias === undefined ? loadAliasConfig(root) : alias;
   const seedAbs = path.resolve(seedFile);
 
   // ② 索引反查快路径：有 cache.db 且 seed 已索引 → 子图 BFS
   const fast = await tryIndexedExpandClosure(seedAbs, root, aliasCfg);
-  if (fast) return fast;
+  if (fast) return { files: fast.files, externalRefs: fast.externalRefs, skipped: [] };
 
   // ④ 兜底：无索引时走现场全扫（零前置、免摩擦）
   const included = new Map<string, boolean>(); // absPath → 是否已解析其 imports
   const queue: string[] = [];
   const externalRefs: ExternalRef[] = [];
+  const skipped: ExpansionResult['skipped'] = [];
 
   // 初始：项目根内全部本地源 + 种子文件（种子可能不在根内，如跨根引用起点）
   const rootFiles: string[] = [];
@@ -1116,11 +1124,13 @@ export async function expandClosureDetailed(
       let edges: Array<string | null> = [];
       if (CLOSURE_TS_EXTS.has(ext)) {
         // TS 系：analyzeModuleSource → import 边（相对/别名）
-        let mod: Awaited<ReturnType<typeof analyzeModuleSource>>;
+        let mod: Awaited<ReturnType<typeof analyzeModuleSource>> | null;
         try {
           mod = await analyzeModuleSource(fs.readFileSync(f, 'utf-8'), f);
-        } catch {
-          mod = null as any;
+        } catch (err) {
+          // §2d：解析失败记 skipped 并带 why（原来静默 continue，调用方无感知）
+          mod = null;
+          skipped.push({ path: f, why: String(err) });
         }
         if (!mod) continue;
         for (const e of mod.imports) {
@@ -1133,14 +1143,17 @@ export async function expandClosureDetailed(
         let content: string;
         try {
           content = fs.readFileSync(f, 'utf-8');
-        } catch {
+        } catch (err) {
+          // §2d：读盘失败记 skipped 并带 why（原来静默 continue，调用方无感知）
+          skipped.push({ path: f, why: String(err) });
           continue;
         }
         let parsed: Awaited<ReturnType<typeof parseFileFull>> | null = null;
         try {
           parsed = await parseFileFull(f, content);
-        } catch {
-          parsed = null;
+        } catch (err) {
+          // §2d：AST 解析失败记 skipped 并带 why（原来静默 parsed=null → continue）
+          skipped.push({ path: f, why: String(err) });
         }
         if (!parsed) continue;
         for (const e of parsed.imports) edges.push(resolveLangImport(f, e, { root, goModules }));
@@ -1162,7 +1175,7 @@ export async function expandClosureDetailed(
   };
   await drain();
 
-  return { files: [...included.keys()], externalRefs };
+  return { files: [...included.keys()], externalRefs, skipped };
 }
 
 /**
