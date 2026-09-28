@@ -89,8 +89,21 @@ export function isNodeRunnableExt(ext: string): boolean {
 /** 测试文件：跨语言的"这条是测试吗"（Go `_test.go` / TS `.test.`·`.spec.` / Python `test_*`·`*_test`） */
 const TEST_FILE_RE = /(_test\.go$|\.test\.[tj]sx?$|\.spec\.[tj]sx?$|test_.*\.py$|.*_test\.py$)/;
 
-/** 噪音/产物：编辑器临时件 + 压缩/生成/声明产物（`.min.js` `.d.ts` `*.gen.ts` …） */
-const NOISE_FILE_RE = /(\.min\.js$|\.d\.ts$|\.gen\.[tj]sx?$|\.tmp$|\.temp$|\.crswap$|\.crdownload$|\.swp$|\.swo$|\.swx$|\.bak$|\.orig$|\.rej$|~$)/;
+/**
+ * 噪音/产物：编辑器临时件 + 压缩/生成/声明产物（`.min.js` `.d.ts` `*.gen.ts` …）
+ *   + **构建工具转译 config 的临时 ESM 产物**。
+ *
+ * ★ 为什么把后一条并进来（2026-09-28，本文件头注说的"病根长在量具自己身上"的同一处）：
+ *   vitest / vite 启动时会把 `vitest.config.ts`（vite 则是 `vite.config.ts`）**转译**成
+ *   `<config>.ts.timestamp-<ms>-<hash>.mjs` 落在**仓库根**，且**不总清理**（实测一次连出 5 个）。
+ *   它扩展名是 `.mjs` ⇒ 落进 `TS_JS_EXTS`，于是**索引器把它当源码收进去**：
+ *   正文含绝对路径（`file:///D:/…/node_modules/vitest/...`），是**纯噪音**，不是项目源码。
+ *   它一度还让品牌残留门周期性假红（门侧已单独跳过；索引侧就是这里）。
+ *   同族产物：`vite.config.ts` 走**同一机制**（Vite 的 config 打包临时文件），故模式写成
+ *   **形状匹配**（`*.timestamp-<数字>-<字母数字>.mjs`）而非只盯 `vitest.config` 一个名字。
+ *   ★ 只加这一种形状，不做宽泛忽略（本仓纪律：跳过面越宽越容易悄悄吞掉真源码）。
+ */
+const NOISE_FILE_RE = /(\.min\.js$|\.d\.ts$|\.gen\.[tj]sx?$|\.tmp$|\.temp$|\.crswap$|\.crdownload$|\.swp$|\.swo$|\.swx$|\.bak$|\.orig$|\.rej$|\.timestamp-\d+-\w+\.mjs$|~$)/;
 
 /** 这条文件名是测试吗（★ 与索引器的 `include_tests` 判据同源） */
 export function isTestFileName(name: string): boolean {

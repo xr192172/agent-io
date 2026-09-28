@@ -15,6 +15,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { importProject, readAssemblyBricks } from '../../src/tools/import_project';
 import { getDSL, getLiveFeature } from '../../src/storage';
 import { diffViews } from '../../src/tools/diff_views';
+import { isIndexSkippedFileName, isNoiseFileName } from '../../src/tools/ts_kernel/source_exts';
 
 let fixtureRoot: string;
 
@@ -555,5 +556,52 @@ describe('import_project', () => {
         /* Windows 文件占用，留给 OS 清理 */
       }
     }
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // 构建工具临时产物：vitest/vite 把 config 转译成 `<config>.ts.timestamp-<ms>-<hash>.mjs`
+  // 落在**仓库根**（正文含绝对路径），扩展名是 `.mjs` ⇒ 不加过滤就会被当源码索引。
+  // 权威 = source_exts.ts 的 NOISE_FILE_RE（本仓唯一来源）。
+  // ─────────────────────────────────────────────────────────────
+  describe('构建工具临时产物不算源码', () => {
+    it('谓词：命中 vitest/vite 的 timestamp 临时产物，且不误伤真配置文件', () => {
+      // 实测形状（本轮品牌残留门捕获到的例子）
+      expect(isNoiseFileName('vitest.config.ts.timestamp-1789423272444-6198b5291304c3e415f1.mjs')).toBe(true);
+      // vite.config.ts 走同一机制 ⇒ 同一形状应命中（不写死 vitest 一个名字）
+      expect(isNoiseFileName('vite.config.ts.timestamp-1789423272444-a1b2c3d4.mjs')).toBe(true);
+      // 索引器默认跳过它（噪音 ⊂ 索引跳过面）
+      expect(isIndexSkippedFileName('vitest.config.ts.timestamp-1789423272444-6198b5291304c3e415f1.mjs', true)).toBe(true);
+      // ★ 反向：真配置文件**不能**被误判（否则会把项目配置排除出索引）
+      expect(isNoiseFileName('vitest.config.ts')).toBe(false);
+      expect(isNoiseFileName('vite.config.ts')).toBe(false);
+      expect(isNoiseFileName('vitest.config.mjs')).toBe(false);
+      expect(isIndexSkippedFileName('src/a.ts', true)).toBe(false);
+    });
+
+    it('indexer：timestamp 产物不进索引，真源码照常进', async () => {
+      const root = fs.mkdtempSync(path.join(os.tmpdir(), 'import-noise-'));
+      try {
+        fs.mkdirSync(path.join(root, 'src'), { recursive: true });
+        fs.writeFileSync(path.join(root, 'src', 'real.ts'), 'export const real = 1;\n', 'utf-8');
+        // 名字形状 = vitest 转译 config 时落盘的临时文件（含一个会被提取的符号，证明是"跳过"而非"没符号"）
+        fs.writeFileSync(
+          path.join(root, 'vitest.config.ts.timestamp-1789423272444-6198b5291304c3e415f1.mjs'),
+          'export function ghostFromTempConfig(): void {}\n',
+          'utf-8',
+        );
+
+        const r = await importProject({ project_dir: root, feature: 'import_noise_probe' });
+        // 只收 real.ts —— 临时产物被跳过（否则会是 2）
+        expect(r.files_parsed).toBe(1);
+
+        const dsl = getDSL('import_noise_probe')!;
+        const ids = dsl.geometry.nodes.map((n) => n.id);
+        expect(ids.some((id) => id.includes('timestamp'))).toBe(false);
+        // 真源码仍在（不是把整轮都跳没了）
+        expect(ids).toContain('file_src_real_ts');
+      } finally {
+        fs.rmSync(root, { recursive: true, force: true });
+      }
+    });
   });
 });
