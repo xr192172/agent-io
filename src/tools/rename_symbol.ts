@@ -21,7 +21,7 @@
  *     class/enum 值类型双栖，identifier 与 type_identifier 都改。
  *   - 原子性：任一阻断（新名撞名、星号转发、目标不是模块级符号）→ 全部不落盘，返回理由。
  */
-import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync, type Dirent } from 'node:fs';
 import path from 'node:path';
 import { getParser } from './ts_kernel/loader.js';
 import { findLanguageByExt } from './ts_kernel/languages.js';
@@ -147,12 +147,11 @@ export async function analyzeModuleSource(src: string, filePath = 'file.ts'): Pr
   if (!lang || !TS_LANG_NAMES.has(lang.name)) return null;
   const parser = await getParser(ext, lang);
   if (!parser) return null;
-  let root: N;
-  try {
-    root = (parseContent(parser as Parameters<typeof parseContent>[0], src) as unknown as { rootNode: N }).rootNode;
-  } catch {
-    return null;
-  }
+  // ★ §21 规矩③（2026-09-28 修剪）：解析失败**不再兜成 null**。
+  //   null 的唯一含义收敛为"这个文件不适用模块级分析"（扩展名/语言/解析器缺一）；
+  //   解析本身抛错 = 少做了事 → 向上抛（硬失败），"记 skipped 还是整体失败"由调用方定
+  //   （本文件内：候选文件循环记 skipped，定义文件直接抛）。
+  const root: N = (parseContent(parser as Parameters<typeof parseContent>[0], src) as unknown as { rootNode: N }).rootNode;
 
   const rootOffsets = new Map<string, number>();
   const rootKinds = new Map<string, string>();
@@ -452,12 +451,8 @@ const GO_DEF_NODE_TYPES = new Set(['function_declaration', 'type_spec', 'const_s
 export async function analyzeGoSource(src: string): Promise<GoModuleAnalysis | null> {
   const parser = await getParser('.go', findLanguageByExt('.go')!);
   if (!parser) return null;
-  let root: N;
-  try {
-    root = (parseContent(parser as Parameters<typeof parseContent>[0], src) as unknown as { rootNode: N }).rootNode;
-  } catch {
-    return null;
-  }
+  // §21 规矩③：解析失败不兜底（同 analyzeModuleSource）
+  const root: N = (parseContent(parser as Parameters<typeof parseContent>[0], src) as unknown as { rootNode: N }).rootNode;
   const rootOffsets = new Map<string, number>();
   const rootKinds = new Map<string, string>();
   const refs = new Map<string, number[]>();
@@ -584,12 +579,8 @@ export async function analyzeGoSource(src: string): Promise<GoModuleAnalysis | n
 export async function analyzePythonSource(src: string): Promise<GoModuleAnalysis | null> {
   const parser = await getParser('.py', findLanguageByExt('.py')!);
   if (!parser) return null;
-  let root: N;
-  try {
-    root = (parseContent(parser as Parameters<typeof parseContent>[0], src) as unknown as { rootNode: N }).rootNode;
-  } catch {
-    return null;
-  }
+  // §21 规矩③：解析失败不兜底（同 analyzeModuleSource）
+  const root: N = (parseContent(parser as Parameters<typeof parseContent>[0], src) as unknown as { rootNode: N }).rootNode;
   const rootOffsets = new Map<string, number>();
   const rootKinds = new Map<string, string>();
   const refs = new Map<string, number[]>();
@@ -733,12 +724,8 @@ function makeNamespaceAnalyzer(opts: {
   return async function analyze(src: string): Promise<GoModuleAnalysis | null> {
     const parser = await getParser(opts.ext, findLanguageByExt(opts.ext)!);
     if (!parser) return null;
-    let root: N;
-    try {
-      root = (parseContent(parser as Parameters<typeof parseContent>[0], src) as unknown as { rootNode: N }).rootNode;
-    } catch {
-      return null;
-    }
+    // §21 规矩③：解析失败不兜底（同 analyzeModuleSource）
+    const root: N = (parseContent(parser as Parameters<typeof parseContent>[0], src) as unknown as { rootNode: N }).rootNode;
     const isJava = opts.ext === '.java';
     const typeNodes = new Set(opts.typeNodes);
     const rootOffsets = new Map<string, number>();
@@ -910,22 +897,34 @@ export const analyzeJavaSource = makeNamespaceAnalyzer({
   idType: 'identifier',
 });
 
-/** 递归收集项目根下指定扩展名文件 */
-function collectFilesByExt(root: string, ext: string): Set<string> {
-  const out = new Set<string>();
-  try {
-    const walkDir = (d: string): void => {
-      for (const e of readdirSync(d, { withFileTypes: true })) {
-        const full = path.join(d, e.name);
-        if (e.isDirectory() && !e.name.startsWith('.') && e.name !== 'node_modules') walkDir(full);
-        else if (e.isFile() && e.name.endsWith(ext)) out.add(full);
-      }
-    };
-    walkDir(root);
-  } catch {
-    /* ignore */
-  }
-  return out;
+/**
+ * 递归收集项目根下指定扩展名文件。
+ * ★ §2d（2026-09-28 修剪）：读不了的目录**记 skipped（带 why）**，不再"catch 里只留一句注释"静默少扫 ——
+ *   调用方（改名执行器）据此知道"哪些目录这次没看到 ⇒ 可能有未改写的引用"。
+ * ★ 改为**逐目录 catch**：原来整趟 walk 一个 try，任何一层失败就丢掉整棵子树的静默结果（连坐兄弟目录）。
+ */
+function collectFilesByExt(
+  root: string,
+  ext: string,
+): { files: Set<string>; skipped: Array<{ path: string; why: string }> } {
+  const files = new Set<string>();
+  const skipped: Array<{ path: string; why: string }> = [];
+  const walkDir = (d: string): void => {
+    let entries: Dirent[];
+    try {
+      entries = readdirSync(d, { withFileTypes: true });
+    } catch (err) {
+      skipped.push({ path: d, why: String(err) });
+      return;
+    }
+    for (const e of entries) {
+      const full = path.join(d, e.name);
+      if (e.isDirectory() && !e.name.startsWith('.') && e.name !== 'node_modules') walkDir(full);
+      else if (e.isFile() && e.name.endsWith(ext)) files.add(full);
+    }
+  };
+  walkDir(root);
+  return { files, skipped };
 }
 
 /**
@@ -977,13 +976,16 @@ export async function renameNamespaceSymbol(args: {
   const editsByFile = new Map<string, { src: string; edits: Array<{ pos: number; len: number; text: string }> }>();
   editsByFile.set(file, { src: defSrc, edits: defEdits });
 
-  const all = collectFilesByExt(resolvedRoot, args.ext);
-  for (const abs of all) {
+  const scan = collectFilesByExt(resolvedRoot, args.ext);
+  const skipped: Array<{ path: string; why: string }> = [...scan.skipped];
+  for (const abs of scan.files) {
     if (path.resolve(abs) === path.resolve(file)) continue;
     let src: string;
     try {
       src = readFileSync(abs, 'utf-8');
-    } catch {
+    } catch (err) {
+      // §2d：读不了的候选文件不再静默 continue（"少看了它 ⇒ 可能漏改引用"必须可读）
+      skipped.push({ path: abs, why: String(err) });
       continue;
     }
     const m = await analyze(src);
@@ -1031,7 +1033,16 @@ export async function renameNamespaceSymbol(args: {
   }
 
   const definition = ordered[0];
-  return { ok: true, symbol, to, dryRun: dryRun || undefined, definition, importers: ordered.filter((o) => o !== definition), filesWritten };
+  return {
+    ok: true,
+    symbol,
+    to,
+    dryRun: dryRun || undefined,
+    definition,
+    importers: ordered.filter((o) => o !== definition),
+    filesWritten,
+    ...(skipped.length > 0 ? { skipped } : {}),
+  };
 }
 
 // ─────────────────────────────────────────────
@@ -1045,12 +1056,8 @@ export async function renameNamespaceSymbol(args: {
 export async function analyzeCLanguage(src: string): Promise<GoModuleAnalysis | null> {
   const parser = await getParser('.c', findLanguageByExt('.c')!);
   if (!parser) return null;
-  let root: N;
-  try {
-    root = (parseContent(parser as Parameters<typeof parseContent>[0], src) as unknown as { rootNode: N }).rootNode;
-  } catch {
-    return null;
-  }
+  // §21 规矩③：解析失败不兜底（同 analyzeModuleSource）
+  const root: N = (parseContent(parser as Parameters<typeof parseContent>[0], src) as unknown as { rootNode: N }).rootNode;
   const rootOffsets = new Map<string, number>();
   const rootKinds = new Map<string, string>();
   const refs = new Map<string, number[]>();
@@ -1162,14 +1169,17 @@ export async function renameCSymbol(args: {
   const editsByFile = new Map<string, { src: string; edits: Array<{ pos: number; len: number; text: string }> }>();
   editsByFile.set(file, { src: defSrc, edits: defEdits });
 
-  const all = collectFilesByExt(resolvedRoot, '.c');
-  const allH = collectFilesByExt(resolvedRoot, '.h');
-  for (const abs of new Set([...all, ...allH])) {
+  const scanC = collectFilesByExt(resolvedRoot, '.c');
+  const scanH = collectFilesByExt(resolvedRoot, '.h');
+  const skipped: Array<{ path: string; why: string }> = [...scanC.skipped, ...scanH.skipped];
+  for (const abs of new Set([...scanC.files, ...scanH.files])) {
     if (path.resolve(abs) === path.resolve(file)) continue;
     let src: string;
     try {
       src = readFileSync(abs, 'utf-8');
-    } catch {
+    } catch (err) {
+      // §2d：读不了的候选文件不再静默 continue
+      skipped.push({ path: abs, why: String(err) });
       continue;
     }
     const m = await analyzeCLanguage(src);
@@ -1217,7 +1227,16 @@ export async function renameCSymbol(args: {
   }
 
   const definition = ordered[0];
-  return { ok: true, symbol, to, dryRun: dryRun || undefined, definition, importers: ordered.filter((o) => o !== definition), filesWritten };
+  return {
+    ok: true,
+    symbol,
+    to,
+    dryRun: dryRun || undefined,
+    definition,
+    importers: ordered.filter((o) => o !== definition),
+    filesWritten,
+    ...(skipped.length > 0 ? { skipped } : {}),
+  };
 }
 
 // ─────────────────────────────────────────────
@@ -1232,6 +1251,7 @@ export async function renamePythonSymbol(args: {
   blocked: string[];
 }): Promise<RenameSymbolResult> {
   const { file, symbol, to, dryRun, resolvedRoot } = args;
+  const skipped: Array<{ path: string; why: string }> = [];
 
   // 基础校验（与 TS 分支一致）
   if (!/^[A-Za-z_]\w*$/.test(to)) return { ok: false, symbol, to, filesWritten: 0, blocked: ['新名非法：' + to] };
@@ -1252,25 +1272,30 @@ export async function renamePythonSymbol(args: {
 
   // 项目根下递归收集所有 .py（跨模块 `X.sym` 引用）
   const pyFiles = new Set<string>();
-  try {
-    const walkDir = (d: string): void => {
-      for (const e of readdirSync(d, { withFileTypes: true })) {
-        const full = path.join(d, e.name);
-        if (e.isDirectory() && !e.name.startsWith('.') && e.name !== 'node_modules' && e.name !== '__pycache__') walkDir(full);
-        else if (e.isFile() && e.name.endsWith('.py')) pyFiles.add(full);
-      }
-    };
-    walkDir(resolvedRoot);
-  } catch {
-    /* 根扫描失败 → 只用定义文件 */
-  }
+  const walkDir = (d: string): void => {
+    let entries: Dirent[];
+    try {
+      entries = readdirSync(d, { withFileTypes: true });
+    } catch (err) {
+      // §2d：根/子目录扫不了不再只留一句注释（原来直接退化成"只用定义文件"而调用方无感）
+      skipped.push({ path: d, why: String(err) });
+      return;
+    }
+    for (const e of entries) {
+      const full = path.join(d, e.name);
+      if (e.isDirectory() && !e.name.startsWith('.') && e.name !== 'node_modules' && e.name !== '__pycache__') walkDir(full);
+      else if (e.isFile() && e.name.endsWith('.py')) pyFiles.add(full);
+    }
+  };
+  walkDir(resolvedRoot);
 
   for (const abs of pyFiles) {
     if (path.resolve(abs) === path.resolve(file)) continue;
     let src: string;
     try {
       src = readFileSync(abs, 'utf-8');
-    } catch {
+    } catch (err) {
+      skipped.push({ path: abs, why: String(err) });
       continue;
     }
     const m = await analyzePythonSource(src);
@@ -1329,6 +1354,7 @@ export async function renamePythonSymbol(args: {
     definition,
     importers: ordered.filter((o) => o !== definition),
     filesWritten,
+    ...(skipped.length > 0 ? { skipped } : {}),
   };
 }
 
@@ -1345,6 +1371,7 @@ export async function renameGoSymbol(args: {
 }): Promise<RenameSymbolResult> {
   const { file, symbol, to, dryRun, resolvedRoot } = args;
   const blocked = args.blocked.slice();
+  const skipped: Array<{ path: string; why: string }> = [];
 
   // 基础校验（与 TS 分支一致）
   if (!/^[A-Za-z_][\w$]*$/.test(to)) return { ok: false, symbol, to, filesWritten: 0, blocked: ['新名非法：' + to] };
@@ -1364,23 +1391,27 @@ export async function renameGoSymbol(args: {
   const dir = path.dirname(file);
   try {
     for (const f of readdirSync(dir).filter((f) => f.endsWith('.go'))) candidateGoFiles.add(path.join(dir, f));
-  } catch {
-    /* 目录读取失败 → 仅定义文件自身 */
+  } catch (err) {
+    // §2d：同包目录读不了 ⇒ 记 skipped（原来只留一句注释，"同包文件一个都没扫"调用方不可见）
+    skipped.push({ path: dir, why: String(err) });
   }
   // 项目根下递归收集所有 .go（引包方可在任意目录）
-  try {
-    const rootAbs = resolvedRoot;
-    const walkDir = (d: string): void => {
-      for (const e of readdirSync(d, { withFileTypes: true })) {
-        const full = path.join(d, e.name);
-        if (e.isDirectory() && !e.name.startsWith('.') && e.name !== 'node_modules') walkDir(full);
-        else if (e.isFile() && e.name.endsWith('.go')) candidateGoFiles.add(full);
-      }
-    };
-    walkDir(rootAbs);
-  } catch {
-    /* 根扫描失败 → 只用同目录 */
-  }
+  const walkDir = (d: string): void => {
+    let entries: Dirent[];
+    try {
+      entries = readdirSync(d, { withFileTypes: true });
+    } catch (err) {
+      // §2d：根/子目录扫不了 ⇒ 记 skipped（原来只留一句注释）
+      skipped.push({ path: d, why: String(err) });
+      return;
+    }
+    for (const e of entries) {
+      const full = path.join(d, e.name);
+      if (e.isDirectory() && !e.name.startsWith('.') && e.name !== 'node_modules') walkDir(full);
+      else if (e.isFile() && e.name.endsWith('.go')) candidateGoFiles.add(full);
+    }
+  };
+  walkDir(resolvedRoot);
 
   // 汇总各文件的编辑（偏移逆序应用）
   const editsByFile = new Map<string, { src: string; edits: Array<{ pos: number; len: number; text: string }> }>();
@@ -1396,7 +1427,9 @@ export async function renameGoSymbol(args: {
     let src: string;
     try {
       src = readFileSync(abs, 'utf-8');
-    } catch {
+    } catch (err) {
+      // §2d：读不了的候选文件不再静默 continue
+      skipped.push({ path: abs, why: String(err) });
       continue;
     }
     const m = await analyzeGoSource(src);
@@ -1474,6 +1507,7 @@ export async function renameGoSymbol(args: {
     definition,
     importers: ordered.filter((o) => o !== definition),
     filesWritten,
+    ...(skipped.length > 0 ? { skipped } : {}),
   };
 }
 
@@ -1604,6 +1638,12 @@ export interface RenameSymbolResult {
   dryRun?: boolean;
   /** 工作区外的 import 依赖边界（本文件的 import 解析到 root 外部仓库）——只反馈不改，LLM 可据此判断是否另处理 */
   externalRefs?: ExternalRef[];
+  /**
+   * ★ §2d/§21（2026-09-28 修剪）：本次改名**少做了什么**——扫描/读取/解析阶段被跳过的目录或文件及原因。
+   * 这些文件**没有被分析**，可能含本次未改写的引用；只在非空时返回（空 = 一处没少做）。
+   * 不做静默跳过：以前这些位置是"catch 里只留一句注释"/"catch 后直接 continue"（调用方无感）。
+   */
+  skipped?: Array<{ path: string; why: string }>;
   /** 联动文件名（rename_file_if_matching 且文件名=符号名时，被同步改名的新路径） */
   fileRenamed?: string;
   /** 文件联动阻断理由（符号已改名成功，仅文件联动失败时给出） */
@@ -1617,6 +1657,8 @@ export async function renameSymbol(input: RenameSymbolInput): Promise<RenameSymb
   const renameFileIfMatching = !!input.rename_file_if_matching;
   const dryRun = input.dry_run === true;
   const blocked: string[] = [];
+  /** §2d：本次"少做了什么"（被跳过的 importer + 闭包扩展自己报的 skipped），非空才随结果返回 */
+  const skipped: Array<{ path: string; why: string }> = [];
 
   // 基础校验
   if (!/^[A-Za-z_$][\w$]*$/.test(to)) return { ok: false, symbol, to, filesWritten: 0, blocked: ['新名非法：' + to] };
@@ -1706,11 +1748,17 @@ export async function renameSymbol(input: RenameSymbolInput): Promise<RenameSymb
     try {
       src = readFileSync(f, 'utf-8');
       fmod = await analyzeModuleSource(src, f);
-    } catch {
-      fmod = null;
-      src = '';
+    } catch (err) {
+      // §2d：读不了/解析不了这个 importer ⇒ 记 skipped 并带上原因（原来 fmod=null 后静默 continue）
+      skipped.push({ path: f, why: String(err) });
+      continue;
     }
-    if (!fmod) continue;
+    if (!fmod) {
+      // 走到这里扩展名已确认是 TS 系（上面 !TS_EXTS.has(ext) 已 continue）⇒ null 只可能是
+      // "该扩展名没有可用解析器"，不是"这个文件没问题" —— 也要可读
+      skipped.push({ path: f, why: '无可用 TS 解析器：该扩展名的语法未加载' });
+      continue;
+    }
 
     let fileEdits: Edit[] = [];
     let touched = false;
@@ -1822,6 +1870,7 @@ export async function renameSymbol(input: RenameSymbolInput): Promise<RenameSymb
     importers,
     filesWritten,
     ...(closure.externalRefs.length > 0 ? { externalRefs: closure.externalRefs } : {}),
+    ...(skipped.length + closure.skipped.length > 0 ? { skipped: [...skipped, ...closure.skipped] } : {}),
     ...(fileRenamed !== undefined ? { fileRenamed } : {}),
     ...(fileRenameBlocked !== undefined ? { fileRenameBlocked } : {}),
   };
