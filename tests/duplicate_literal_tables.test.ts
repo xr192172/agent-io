@@ -1,5 +1,5 @@
-// G9 · 重复字面量表检测门（"单源化"判据）—— 规划书 §28.3 第 9 条
-// 与 G4 同族但不同物：G4 管代码实现重复，G9 管字面量数据表重复
+// G10 · 重复字面量表检测门（"单源化"判据）—— 规划书 §28.3 第 9 条
+// 与 G4 同族但不同物：G4 管代码实现重复，G10 管字面量数据表重复
 // 判据：扫描 src/**/*.ts 中 export const X = [...] 声明，
 //   对象元素取属性 key 集合做并集作为数组指纹，同指纹 >= 2 份即报重复组
 // 门纪律：存量不拦（frozen 只允许减少/不变），新增即红
@@ -196,7 +196,7 @@ function readRegistry(): Registry {
   return JSON.parse(fs.readFileSync(REGISTRY, 'utf8')) as Registry;
 }
 
-describe('G9 · 重复字面量表检测门', () => {
+describe('G10 · 重复字面量表检测门', () => {
   describe('扫描器自身有效（证明这道门会红）', () => {
     it('computeElementFingerprint 对同名 key 集合返回相同指纹', () => {
       const src1 = ts.createSourceFile('a.ts', `const x = [{ a: 1, b: 2, c: 3 }];`, ts.ScriptTarget.Latest, true);
@@ -274,7 +274,7 @@ describe('G9 · 重复字面量表检测门', () => {
     });
   });
 
-  describe('G9 · 实际门（按家庭登记，存量不拦，新增即红）', () => {
+  describe('G10 · 实际门（按家庭登记，存量不拦，新增即红）', () => {
     it('登记表本身健康（每条家族都有 id / intent / fingerprintPattern）', () => {
       const reg = readRegistry();
       expect(reg.families.length).toBeGreaterThan(0);
@@ -309,7 +309,7 @@ describe('G9 · 重复字面量表检测门', () => {
         const added = Object.keys(actual).filter((k) => !(k in frozen)).sort();
         expect(
           added,
-          `[G9] ${family.id} 出现新增副本（权威：${family.authority ?? '尚未建立'}）。\n` +
+          `[G10] ${family.id} 出现新增副本（权威：${family.authority ?? '尚未建立'}）。\n` +
             `意图：${family.intent}\n请将该文件加入 frozen 或在 allow 里写理由。`,
         ).toEqual([]);
       }
@@ -347,6 +347,6 @@ if (process.env.LITERAL_TABLE_FROZEN === '1') {
   };
   fs.writeFileSync(REGISTRY, JSON.stringify(next, null, 2) + '\n', 'utf8');
   // eslint-disable-next-line no-console
-  console.log('[G9] 基线已更新，共', reg.families.length, '个家族');
+  console.log('[G10] 基线已更新，共', reg.families.length, '个家族');
   process.exitCode = 0;
 }

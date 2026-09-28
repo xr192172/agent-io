@@ -2450,3 +2450,65 @@ DSH 交付 `4537a34`，**主目标达成**（合法 JSONC 现在能正常解析 
 - **依据**：按 G8 门指引 `UPDATE_TOOL_BEHAVIOR=1` 重生成 `tests/fixtures/tool_behavior_snapshot.json`；`git diff` 实测**仅该 1 条变化**（其余 63 条逐字不变）。
 - **关联**：§16.4 P-D（入参前置校验统一：缺必需参数 ⇒ 报「缺什么 + 怎么给」，绝不把 `undefined` 拼进路径）。执行者：本仓执行者。
 
+---
+
+## 29. §28.3 八条欠账的推进（2026-09-28 深夜）—— 7 条落地 + ★ 四个执行者纠正我 **8 处**
+
+### 29.1 已落地（全部核验 + 全量回归零回归）
+| # | 事项 | commit | 结论 |
+|---|---|---|---|
+| 1 | `symbol_move.ts` 收 2 处耦合 + 兜底改硬失败 | `5111845` | ✅ 耦合①（**把 analyzer 新抛吸收成静默 `continue`**）删 catch → `throw`；耦合②（`loadAliasConfig` 调用点）**上游不需要处理**（只读规划期、落盘在后 ⇒ 天然原子） |
+| 2 | `project_root.ts` 兜底"变可见" | `bda28e1` | ✅ ★★ **实际只剩 5 处**（见 §29.2 第 1 条）—— 其余 4 处本轮前面几笔已改掉 |
+| 3 | 索引器跳过构建临时产物 | `a041918` | ✅ `NOISE_FILE_RE` 加 `\.timestamp-\d+-\w+\.mjs$`；★ 改前/改后口径对比证实它原来**被算进「本体」**（幻影"真缺陷"） |
+| 4 | 门的出生证抽共享 helper | `595dc03` | ✅ `tests/helpers/gate_probe.ts` 的 `expectGateGoesRed`（`finally` 还原 + `process.on('exit')` 兜底）；迁 G4 + 品牌门；★ **证伪实验**证明它是真出生证、不是橡皮图章 |
+| 5a | **P-D** 入参前置校验统一 | `01a6bcc` | ✅ ★ **全仓只有 `find_references` 一个真点**；修 3 个 mode 的缺参报错 + 删 4 处 `String()` 强转 + G8 基线记账（§27.17） |
+| 5b | **P-F** 告警结构化 + 两级呈现 | `ba85168` | ✅ 三个 stale 告警**首次全文/后续一行摘要** + `warnings:[{code,summary,detail,fix}]`；★ 用新 helper 做出生证，**并当场用它抓出自己一个错假设** |
+| 5c | **P-G** 实测 `explore_code(read)` | `01a6bcc` | ✅ **是稳定入口**（入参显式、返回 `wrapData`、四类失败 `isError=true` + 文案可行动）；★ **空文件不抛**（返回"显示 L1-L0"退化区间）—— **如实写不符** |
+| 7 | 改名 `skipped` 非空时显式警告 | `a313dc1` | ✅ `[C]` 层加 `skippedWarning()`（正文**靠前** + 逐条 `{path,why}`）；2 条测试（**真场景**：`.mts` 属 `TS_JS_EXTS` 但无解析器声明 ⇒ 真实产生 skipped） |
+| 8 | 重复字面量表检测（原 PR-001） | `113bf3c` | ✅ 做成**门**（不新增工具 ⇒ 不动 G1 契约）⇒ 见 §29.3 |
+
+**全量回归**：`226 passed / 1 skipped (227)` 文件、**`2336 passed / 5 skipped`** 测试
+（基线 2284 **+52，全是新增测试**）⇒ **零回归**。
+
+### 29.2 ★★★ 四个执行者一共纠正了我 **8 处** —— 这才是本轮最值钱的产出
+| # | 我说的 | 实际 | 谁纠正 |
+|---|---|---|---|
+| 1 | 「`project_root.ts` 有 8–9 处要改」 | ★ **实际只剩 5 处**（192/218/675/886/897）—— 331/362/591/702/735 本轮前面几笔**已经改过** | `bda28e1` |
+| 2 | §23.2「12 处」 | 表里 **13 行**；"3 保留 + 9 需变可见"实为 **3 + 10** | 同上 |
+| 3 | §23.2 的表是穷尽的 | 原文件 `catch` 实测 **17 个**，表只列 13（漏 4 个） | 同上 |
+| 4 | ★ §24.2 与 §23.2 **直接矛盾**：§24.2 把 `walkProjectFiles` 列进「兜底为 0 ⇒ 本轮不许动」，而 §23.2 行 192 **就是它的静默 `catch { return; }`** | 执行者判 §24.2 那个「0」是**扫描器漏计**（正则匹配不到**裸 `return;`**）—— 与 §24.3 自己承认的"聚合数不能当结论"**同因** | 同上 |
+| 5 | §23.2 判 886「改」、899「保留」 | 两者**结构逐字同形**（`if (!mod) return out`）⇒ 副作用：**TS 解析失败可见、多语言解析失败静默** | 同上 |
+| 6 | §16.8 的判据说「全仓 grep 断言不再出现 `undefined` 拼进路径」 | ★ **无法落成单条 blunt grep** —— required 参数上的 `String()` 与 optional 上的**文本同形**，grep 分不出 ⇒ 改为「blunt grep + 逐条分类 + 精确断言」 | `01a6bcc` |
+| 7 | 「`STALE SOURCE/INDEX` 每轮附整段长文本」 | ★ 实际是 **`STALE BUILD` 压根没有状态位**（每轮都发全文）才是典型；`SOURCE/INDEX` 是"报一次就永久静默" | `ba85168` |
+| 8 | （`symbol_move` 的 `skipped` 记不出来） | 结论成立，但**根因比我说得具体**：`plumbing.ts:27` 的 **`wrap` 只 `return {text: r.message}` ⇒ 丢 `data`** | `5111845` |
+
+★★ **执行者还独立发现两处我完全没看到的东西**：
+1. ★★ **`wrap` 丢 data 是系统性缺口**：lane 里 **18 处用 `wrap`（丢 data）／ 27 处用 `wrapData`（保留）**
+   ⇒ **18 个工具的 [B] 结构化产物到不了 agent**。这是 **§21 规矩②在 [C] 层的缺口**，
+   也正是 **§19 ④（统一 [B] 契约形状）的现成抓手**。
+   ★ 已核实原文：`function wrap` → `return { text: r.message }`；`function wrapData` → 追加 `---DATA---` + `JSON.stringify(r.data)`。
+2. ★ **`src/tools/rename_file.ts:33` 有一份同名私有副本 `walkProjectFiles`**，其 `catch { return; }` 同形且**仍静默**
+   —— 是「**同一意图多份实现**」的**现成实例**（G4 该登记的家族）。
+
+### 29.3 第 8 条的交付质量（★ 值得单独记）
+需求原文说"**同一个映射表被复制了 6 份**" —— 执行者找到了 **3 个真实家族，各 6 份**：
+
+| 家族 | 是什么 |
+|---|---|
+| `lane-tool-def-table` | **6 条 lane 的 `ToolDef[]` 表形状完全一致**（`description/handler/inputSchema/name/title` 五个公共 key）—— ★ 讽刺的是，**lane 的工具定义表本身就是"同一张表被拆成 6 份"** |
+| `removed-feature-rules-table` | 6 个语言适配器的 `REMOVED` 规则表 |
+| `feature-rules-table` | 6 个适配器的 `FEATURES` 规则表（C/C#/Go/Java/Node/Python） |
+
+- **判据**：数组元素的**属性 key 并集**作形状指纹（同指纹 ≥ 2 份即报重复组）
+- **门的自检完整**：指纹同/异两向 + 多元素并集 + **"注入两份同形状表 ⇒ 门确实变红"（出生证）**
+  + "至少找到一组真重复"（反证门不是哑的）
+- ★ **编号**：我原台账把 `lane_sources` 叫 **G9**（但它代码里不自称），新门也叫 G9 ⇒
+  **我把新门改为 G10**（`tests/duplicate_literal_tables.test.ts` + fixture 的 note）
+
+### 29.4 还剩什么（§28.3 的剩余项）
+- **P-B** `edit_code` 批量 `targets[]`
+- **P-C** `plan_refactor` / `apply_refactor_plan` 成对（会改 G1 契约 67 → 68/69）
+- **P-E** "完成 ⇒ 可验证产物"写进 `docs/tool-convergence.md` + G7 扩到全部工具
+- **§19 ④⑤⑥**：统一 [B] 契约形状 → 面收敛 + 重排（不留墓碑）→ 清过渡物
+  ★ **抓手已现成**：`wrap` 丢 data 的 18 处（§29.2）+ `rename_file.ts` 的同名副本
+

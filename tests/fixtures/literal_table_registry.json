@@ -1,5 +1,5 @@
 {
-  "note": "G9 重复字面量表门登记表。见 tests/duplicate_literal_tables.test.ts。口径：存量不拦、新增即红。\nfingerprint = 数组所有对象元素的属性 key 并集（去重排序），反映「整张表」的形状。\n更新基线：LITERAL_TABLE_FROZEN=1 ./node_modules/.bin/vitest run tests/duplicate_literal_tables.test.ts",
+  "note": "G10 重复字面量表门登记表。见 tests/duplicate_literal_tables.test.ts。口径：存量不拦、新增即红。\nfingerprint = 数组所有对象元素的属性 key 并集（去重排序），反映「整张表」的形状。\n更新基线：LITERAL_TABLE_FROZEN=1 ./node_modules/.bin/vitest run tests/duplicate_literal_tables.test.ts",
   "families": [
     {
       "id": "lane-tool-def-table",
