@@ -11,6 +11,13 @@
  *
  * 2026-09：复用 rename_symbol 的模块作用域分析 + project_root 的闭包边界（只扩工作区、
  * 外部 import 记为 externalRef 不追外）。
+ *
+ * ★ §21 形状裁定（2026-09-28）：本文件**收显式参数**（`MoveSymbolInput`，无 args 袋子、
+ *   无 `Record<string, unknown>`）、产物是**结构化数据**（`MoveSymbolResult`，无 message 键）。
+ *   文件内 5 处 `as unknown as { … }` **不是** "入参袋子漏进纯函数" 的证据：它们逐处都是把
+ *   **解析内核返回的 AST 节点**收窄到本文件自己声明的最小节点面（`declName` 的入参 156/157、
+ *   `findTopLevelDeclRange` 的 196/201、importer 重写的 367），落点没有一处是 args。
+ *   ⇒ 按 §21 保留，不为"消强转"硬改（真要消，得内核先把公开类型面收好，另一件事）。
  */
 
 import fs from 'node:fs';
@@ -19,7 +26,6 @@ import {
   analyzeModuleSource,
   resolveRel,
   buildNoExt,
-  type ModuleAnalysis,
 } from './rename_symbol.js';
 import {
   resolveProjectRoot,
@@ -82,6 +88,15 @@ export interface MoveSymbolResult {
   affectedFiles?: string[];
   blocked?: string[];
   externalRefs?: ExternalRef[];
+  /**
+   * ★ §2d（2026-09-28 修剪）：闭包扫描**跳过**的文件（读不了 / 解析不了），逐条带 why。
+   *   跳过 = "可能漏掉一个引用本符号的 importer" ⇒ 移动后它的 import 可能仍指向旧文件。
+   *   原来 `expandClosureDetailed` 已经报出这个数组，本文件却**直接丢弃** ⇒ 静默少改。
+   * ★ 诚实边界：本字段当前**渲染不出去** —— [C]（`registry/lanes/refactor.ts` 的 move_symbol
+   *   handler）用的是 `wrap`（只取 message、**丢弃 data**）。要真正可见需把该 handler 换成
+   *   `wrapData`（或把 skipped 拼进 message）—— 本轮该文件被另一执行者锁定，未改。
+   */
+  skipped?: Array<{ path: string; why: string }>;
   /** 传了 to_symbol 但 v1 未启用改名 */
   toSymbolDeferred?: boolean;
 }
@@ -234,6 +249,12 @@ export async function moveSymbol(input: MoveSymbolInput): Promise<MoveSymbolResu
       ? path.resolve(effectiveRoot, input.file)
       : path.resolve(process.cwd(), input.file);
   const resolvedRoot = effectiveRoot ?? resolveProjectRoot(sourceAbs);
+  // ★ 耦合裁定（2026-09-28，§27.14）：loadAliasConfig 现在在主配置**真的坏了**时**抛**
+  //   （合法 JSONC 已能正常解析）。本文件两处调用（此处 + 下面 aliasFor 的逐目录）**都发生在
+  //   只读的规划阶段** —— 落盘在第 7 步之后 ⇒ 异常跑出 moveSymbol 时**一个字节都还没写**，
+  //   天然就是 §21 规矩③要的原子硬失败。
+  //   ⇒ 上游**不需要** catch：加 catch 等于把"配置坏了"重新降级成"没有别名"（§2d 要根除的病，
+  //     那会让 @/ 类 import 被静默漏改）。
   const aliasCfg = loadAliasConfig(resolvedRoot);
   const toAbs = path.isAbsolute(input.to_file)
     ? path.resolve(input.to_file)
@@ -293,11 +314,16 @@ export async function moveSymbol(input: MoveSymbolInput): Promise<MoveSymbolResu
   const closure = await expandClosureDetailed(sourceAbs, resolvedRoot, aliasCfg);
   const files = closure.files;
   const externalRefs = closure.externalRefs;
+  // ★ §2d（2026-09-28 修剪）：闭包扫描**跳过的文件**（读不了 / 解析不了）此前在本行被**直接丢弃**。
+  //   跳过 = "可能漏掉一个引用本符号的 importer" ⇒ 丢掉它就是"少做一点事而不说话"（与 rename_symbol
+  //   同族，那边的对应修复是 A14 透传 closure.skipped）。这里逐条带 why 透传进结果。
+  const closureSkipped = closure.skipped;
   const byNoExt = buildNoExt(files);
 
   const aliasMemo = new Map<string, AliasConfig | null>();
   const aliasFor = (fAbs: string): AliasConfig | null => {
     const d = path.dirname(fAbs);
+    // ★ 同样不 catch（见上面 aliasCfg 那处的裁定）：某个 importer 目录的 tsconfig 真坏了 ⇒ 抛。
     if (!aliasMemo.has(d)) aliasMemo.set(d, loadAliasConfig(d));
     return aliasMemo.get(d) ?? null;
   };
@@ -314,15 +340,20 @@ export async function moveSymbol(input: MoveSymbolInput): Promise<MoveSymbolResu
     if (path.resolve(fAbs) === sourceAbs) continue;
     const ext = path.extname(fAbs);
     if (!TS_EXTS.has(ext)) continue;
-    let fmod: ModuleAnalysis | null;
-    let fsrc: string;
-    try {
-      fsrc = fs.readFileSync(fAbs, 'utf-8');
-      fmod = await analyzeModuleSource(fsrc, fAbs);
-    } catch {
-      continue;
+    // ★ §2d / §21 规矩③（2026-09-28 修剪）：这里原是一处 `try { read; analyze } catch { continue }`，
+    //   把两种失败**一起吸收成静默 `continue`**：① `readFileSync` 的 I/O 失败；② `analyzeModuleSource`
+    //   的解析失败（该函数本轮已改成"解析失败即抛"，这个 catch 正好会**把新抛吞掉**）。
+    //   被跳过的是一个**可能 import 了本符号**的文件 ⇒ 移动后它的 import 仍指向旧文件（静默改坏仓库）
+    //   —— 正是 §2d 点名的"少做一点事而不说话"。
+    //   ⇒ 删掉 catch：两类失败都向上抛（[C] 的 `wrap` 会把它标成 isError，硬失败可见）。
+    const fsrc = fs.readFileSync(fAbs, 'utf-8');
+    const fmod = await analyzeModuleSource(fsrc, fAbs);
+    if (!fmod) {
+      // null 的契约已收敛为"该文件不适用模块级分析（扩展名 / 语言 / 解析器缺一）"。走到这里扩展名
+      // 已确认是 TS 系（上面的 TS_EXTS 闸）⇒ null 只可能是"该扩展名没有可用解析器"= 数据源不可用。
+      // 静默跳过会让"少分析了这个文件"不可见 ⇒ 硬失败（§21 规矩③）。
+      throw new Error(`无法对本文件做模块级分析（该扩展名无可用解析器），移动无法保证引用完整: ${fAbs}`);
     }
-    if (!fmod) continue;
 
     // 5a. 用 analyze 判定：指向源文件的 import 边，按其 source 字符串聚合，是否只引入 symbol
     //     （namespace / 星号 / 混入其它符号 → 阻断）
@@ -363,7 +394,11 @@ export async function moveSymbol(input: MoveSymbolInput): Promise<MoveSymbolResu
 
     // 5b. 用 parseAstRoot 应用字节重定向（source 节点 → 新相对路径）
     const ast = await parseAstRoot(fAbs, fsrc);
-    if (!ast?.root) continue;
+    if (!ast?.root) {
+      // ★ §2d：走到这里**已确认**该文件有一条要重定向的 import；拿不到 AST 就没法改写它
+      //   ⇒ 原来静默 `continue` 会让这条 import 仍指向旧文件（**必然改坏**）。硬失败（§21 规矩③）。
+      throw new Error(`无法解析该 importer 的 AST，无法重定向其 import: ${fAbs}`);
+    }
     const root = ast.root as unknown as { childCount: number; child(i: number): unknown };
     const edits: Edit[] = [];
     const walkTop = (n: unknown): void => {
@@ -421,6 +456,7 @@ export async function moveSymbol(input: MoveSymbolInput): Promise<MoveSymbolResu
       redirects,
       affectedFiles: affectedFiles.map((f) => (path.relative(resolvedRoot, f) || f).replace(/\\/g, '/')),
       externalRefs,
+      ...(closureSkipped.length > 0 ? { skipped: closureSkipped } : {}),
       ...(toSymbolDeferred ? { toSymbolDeferred: true } : {}),
     };
   }
@@ -435,16 +471,26 @@ export async function moveSymbol(input: MoveSymbolInput): Promise<MoveSymbolResu
   }
 
   // 索引重建（新鲜度闭环）
+  // ★ §2d（2026-09-28 修剪）：原来这里是 `try { syncFile } catch { /* 索引非致命 */ }` ——
+  //   §21.1 的"**彻底静默**"形态（块内只有一句注释）。
+  //   ★ 先问"它捕获的是哪一类失败"：`syncFile` 的正常失败模式是**返回** `status:'failed'`（不是抛），
+  //     所以这个 catch 只承接**意料之外的异常**（DB 被关 / 锁死 / 句柄失效）—— 那类失败被吞掉后
+  //     调用方与 agent **完全看不到**，与紧随其后的写闸收尾所声明的"失败不吞"自相矛盾。
+  //   ⇒ 删掉 catch，让它向上抛（[C] 的 `wrap` 会标 isError）。
+  //   ★ 残留（未改，见提交信息的"已知未做"）：`syncFile` 的 `status:'failed'` 返回值与下面
+  //     `reopenAndResolveAfterWrite` 的 `error` 字段仍被忽略 —— 它们**不是 catch 形态**，
+  //     且 [C] 用 `wrap` 丢弃 data ⇒ 要可见必须同时改 refactor.ts（本轮被锁）。
   const db = getProjectCacheDb(resolvedRoot);
   for (const f of [sourceAbs, toAbs, ...importerEdits.keys()]) {
-    try {
-      await syncFile(db, resolvedRoot, f);
-    } catch {
-      /* 索引非致命 */
-    }
+    await syncFile(db, resolvedRoot, f);
   }
   // ★ 写闸收尾（2026-09-15）：移动会让源文件里该符号"消失"，引用方边被 FK 级联删掉且
-  //   不会自己重建 ⇒ 必须重开再解析（否则 find_references / impact 静默漏报）。失败不吞。
+  //   不会自己重建 ⇒ 必须重开再解析（否则 find_references / impact 静默漏报）。
+  // ★ 诚实修正（2026-09-28）：上面原写"失败不吞"，但本文件**把返回值丢掉了** ——
+  //   `reopenAndResolveAfterWrite` 按契约**不抛**（失败写在自己的 `error` 字段里，其文档明写
+  //   "调用方必须把它带进结果"）。本文件没带 ⇒ 这条失败目前**不可见**。
+  //   ★ 本轮未修：修它必须让 [C] 能渲染（`wrap` 丢 data ⇒ 要改 `registry/lanes/refactor.ts`），
+  //     而该文件本轮被另一执行者锁定（详见提交信息"已知未做"）。
   const _rw = await reopenAndResolveAfterWrite(resolvedRoot, [sourceAbs, toAbs, ...importerEdits.keys()]);
 
   return {
@@ -457,6 +503,7 @@ export async function moveSymbol(input: MoveSymbolInput): Promise<MoveSymbolResu
     redirects,
     affectedFiles: affectedFiles.map((f) => (path.relative(resolvedRoot, f) || f).replace(/\\/g, '/')),
     externalRefs,
+    ...(closureSkipped.length > 0 ? { skipped: closureSkipped } : {}),
     ...(toSymbolDeferred ? { toSymbolDeferred: true } : {}),
   };
 }
