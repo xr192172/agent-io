@@ -26,28 +26,9 @@ export type {
   RulePredicate,
 } from './contract.js';
 export { enableObserveFromEnv } from './run_sentinel.js';
-// v2 分级采集 runtime（对齐 go-observe/probe：tiered.go/trace.go/export.go）
-export {
-  Tiered,
-  setGlobalTiered,
-  getGlobalTiered,
-  isCatchProbe,
-  DEFAULT_RING_BUDGET_MB,
-} from './tiered.js';
-export type {
-  TieredOptions,
-  FullSink,
-  CountersSnapshot,
-  HistogramSnapshot,
-  RingStats,
-} from './tiered.js';
-export { withScope, enterScope, currentScope, currentTraceId, newTraceId } from './trace.js';
-export type { Scope, ScopeFields } from './trace.js';
-export {
-  ExportGate,
-  exportIncident,
-  splitEvents,
-  DEFAULT_EXPORT_PER_MIN,
-  DEFAULT_MAX_INCIDENTS,
-} from './export_incident.js';
-export type { IncidentHeader } from './export_incident.js';
+// ★ 2026-09-28 剪枝：原先此处再导出 v2 分级采集 runtime（`tiered` / `trace` / `export_incident`，
+//   共 704 行）—— 它们是"对齐 go-observe 的 TS 侧移植"，但**从未接线**：
+//   全仓（含测试）没有任何真实消费者，只有本 barrel 再导出。
+//   Go 侧（`go-observe/probe/tiered.go` 等）仍在用，死的是这份 TS 移植。
+//   口径：可达闭包（本仓已有机器判据）之外 ⇒ 剪；需要时 git 里还在。
+//   同批剪掉 `online_loader/`（4 个 .mjs，263 行，零引用）。

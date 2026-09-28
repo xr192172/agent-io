@@ -155,11 +155,6 @@
     "isError": true
   },
   {
-    "name": "index_integrity",
-    "text": "索引可信度自检 —— <ABS>\n  判定：⚠️ 不可全信\n  索引**不可全信**：69 个文件自上次索引后被改过\n  规模：索引 390 文件 / 磁盘源码 694 文件（未索引 308） ｜ 节点 4890 ｜ 边 9435\n  引用：resolved 2257 ｜ pending 0 ｜ external 20984 ｜ failed 2798\n  ★ 陈旧断言（resolved 但目标名已不在索引）：0\n  新鲜度：不一致 69 ｜ 待消费自写登记 0 ｜ 后台续建：未启动\n  语言能力自述：typescript=调用级(318) · javascript=调用级(39) · go=调用级(32) · python=调用级(1)——非\"调用级\"语言的引用/影响结论会低估（\"零引用/零波及\"不可全信）\n  未保鲜样例：scripts/contract_docs_gate.mjs, scripts/readme_tools_gate.mjs, src/behavior/index.ts, src/daemon/daemon.ts, src/db/db.ts, src/db/symbols.ts, src/diagnosis/verifier.ts, src/health/index.ts, src/impact/index.ts, src/java_refactor/layering.ts, src/observe/go_instrument.ts, src/observe/index.ts, src/observe/instrument.ts, src/server_registry.ts, src/storage.ts, src/tools/analyze_monolith.ts, src/tools/archify_cli.ts, src/tools/capability_map.ts, src/tools/cli_extract.ts, src/tools/code_workbench.ts\n  问题：\n    [blocker] files_not_fresh：69 个已索引文件与磁盘不一致（自上次索引后被改过） → 传 refresh:true 重同步；或直接调读工具（保鲜路径会自动同步）\n    [warn] ghost_files：索引里有 4 个文件在磁盘上已不存在（幽灵行） → 传 refresh:true 清理\n    [info] partial_coverage：磁盘上有 308 个源码文件尚未索引（拼图模式下这是**正常**的按需状态） → 以某个文件为种子读它（会连带建块）；或让后台续建跑完",
-    "isError": false
-  },
-  {
     "name": "list_archive",
     "text": "The \"path\" argument must be of type string. Received undefined",
     "isError": true
