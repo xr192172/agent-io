@@ -45,6 +45,7 @@ import type { SemanticFile } from '../dsl/semantic.js';
 import { getProjectCacheDb } from '../db/db.js';
 import type { Database } from '../db/db.js';
 import { buildFunctionOutline } from './function_outline.js';
+import type { OverlayGoal } from '../dsl/overlay.js';
 
 export interface QueryFeatureInput {
   /** 查询类型 */
@@ -114,6 +115,11 @@ export interface QueryFeatureResult {
   message: string;
   /** 原始数据（供 LLM 进一步处理） */
   data?: unknown;
+}
+
+/** DesignDSL 顶层类型未声明 meta（overlay 把结构化目标落进 base meta.goals），读取时按显式类型收窄 */
+interface DSLWithMeta {
+  meta?: { goals?: OverlayGoal[] };
 }
 
 function requireFeature(input: QueryFeatureInput): string {
@@ -653,15 +659,14 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
       const file = (dsl.semantic?.files ?? []).find((f) => f.id === input.file_id);
       if (!file) throw new Error(`feature "${dsl.feature}" 中不存在文件 "${input.file_id}"`);
 
-      // 打开项目 cache.db
+      // 打开项目 cache.db：打不开 = 数据源不可用 ⇒ 硬失败（不降级成"看起来正常"的返回值）
       let db: Database;
       try {
         db = getProjectCacheDb(input.project_dir);
-      } catch {
-        return {
-          message: `无法打开项目 cache.db（${input.project_dir}），请先运行 import_project 并传入 cache_db 参数。`,
-          data: null,
-        };
+      } catch (err) {
+        throw new Error(
+          `无法打开项目 cache.db（project_dir=${input.project_dir}）：${err instanceof Error ? err.message : String(err)}。请先运行 import_project 并传入 cache_db 参数。`,
+        );
       }
 
       const { incoming, outgoing } = queryFileCalls(db, input.file_id, file.path);
@@ -714,13 +719,21 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
     case 'functions': {
       const dsl = loadDSL(input);
       const feature = dsl.feature;
-      const sourceRoot = dsl.source_root ?? (input.project_dir as string | undefined);
+      const sourceRoot = dsl.source_root ?? input.project_dir;
       const { ok, outline, note } = buildFunctionOutline(feature, sourceRoot);
 
-      if (!ok || outline.functions.length === 0) {
+      // 找不到 / 打不开函数索引缓存 = 数据源不可用 ⇒ 硬失败（不降级成"空大纲"的正常返回）
+      if (!ok) {
+        throw new Error(
+          `feature "${feature}" 无法读取函数级大纲（source_root=${sourceRoot ?? '(未指定)'}）：${note ?? '未知原因'}`,
+        );
+      }
+
+      // 缓存可读、但确实没有函数符号 = 成功且为空
+      if (outline.functions.length === 0) {
         return {
-          message: `feature "${feature}" 暂无函数级大纲${note ? `（${note}）` : ''} ${viewTag}`,
-          data: { functions: [], note: note ?? undefined },
+          message: `feature "${feature}" 暂无函数级大纲 ${viewTag}`,
+          data: { functions: [] },
         };
       }
 
@@ -815,9 +828,7 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
     // ── 细粒度查询：结构化目标（overlay 全局 goals → base meta.goals）─────
     case 'goals': {
       const dsl = loadDSL(input);
-      const goals =
-        ((dsl as unknown as { meta?: { goals?: Array<{ id?: string; title?: string; description?: string; status?: string }> } }).meta?.goals) ??
-        [];
+      const goals = (dsl as DSLWithMeta).meta?.goals ?? [];
       if (goals.length === 0) return { message: `feature "${dsl.feature}" 暂无结构化目标`, data: [] };
       const lines = goals.map(
         (g, i) => `${i + 1}. [${g.status ?? 'active'}] ${g.title}${g.description ? ' — ' + g.description : ''}`,
