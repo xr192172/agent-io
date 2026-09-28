@@ -69,11 +69,15 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       'op: replace（symbol 必填 + code 完整新定义）| insert（code 新符号，symbol 可选=锚点其后插入，缺省文件末尾；新文件也走 insert）| delete（symbol 必填）| range（显式行区间：start/end 必填 + code，不依赖符号）| replace_text（old_text 唯一文本替换：**不需要符号索引、不需要行号**，4 级模糊级联定位——L1 逐字 → L2 空白归一（宽容 CRLF/行尾空格/行内空格差异）→ L3 缩进弹性（宽容整块缩进层级差异，new_text 自动按命中缩进重排）→ L4 省略号占位（old_text 里的 ... 或 … 行=省略任意行，适合只默写头尾）；每级都要求全文件恰好 1 处命中，歧义即报错并列行号、绝不猜；回执明示命中级别（exact/空白归一/缩进弹性/省略号占位），模糊命中时 diff 展示**实际被替换的文件片段**而非 old_text；适合凭记忆默写代码的小改）。' +
       'range：1-based 含端点的 start/end 行号 + code=区间新内容（传空串=删除区间）；dry_run=true 只出 diff 预览 + 语法门结果不写盘；' +
       '同 replace 的语法门兜底（编辑后 re-parse，新引入语法错误 → 拒绝不写盘），并列出区间穿透的符号供复核。' +
-      '定位优先 qualified_name（如 Class.method），短名兜底；Go 方法用短名 + parent（receiver 类型）消歧。',
+      '定位优先 qualified_name（如 Class.method），短名兜底；Go 方法用短名 + parent（receiver 类型）消歧。' +
+      '★ 批量（P-B，规划书 §16.2）：传 targets=[{file, old_text, new_text}, ...] 一次调用对**多个文件**做唯一文本替换，' +
+      '省去"每文件一次 dry-run + 一次 apply"（N 文件 = 2N 次调用）。逐项**独立回报**（每项 ok/hit/error 各自独立，一项失败不影响其余）；' +
+      'atomic=true ⇒ 任一项失败则**整批不落盘**（全成或全不成，缺省 false=逐项独立）；dry_run=true 一次性给出**全部**预览、不写盘。' +
+      '批量落盘走写闸（写前快照 + 索引写穿保鲜），每文件只写一次。',
     inputSchema: {
       project_dir: z.string().describe('项目根目录（索引归属；编辑后重建该文件索引）'),
       file: z.string().describe('目标文件（相对 project_dir 或绝对路径）'),
-      op: z.enum(['replace', 'insert', 'delete', 'range', 'replace_text']).describe('replace=替换符号；insert=插入新符号；delete=删除符号；range=显式行区间替换；replace_text=唯一文本替换（不依赖符号索引/行号；4 级模糊级联：逐字→空白归一→缩进弹性→省略号占位，回执明示级别）'),
+      op: z.enum(['replace', 'insert', 'delete', 'range', 'replace_text']).describe('replace=替换符号；insert=插入新符号；delete=删除符号；range=显式行区间替换；replace_text=唯一文本替换（不依赖符号索引/行号；4 级模糊级联：逐字→空白归一→缩进弹性→省略号占位，回执明示级别）。注：传 targets 时忽略 file/op 等单文件参数'),
       symbol: z
         .string()
         .optional()
@@ -88,6 +92,17 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         .describe('replace_text 专用：要替换的旧文本（4 级模糊级联：逐字 → 空白归一 → 缩进弹性 → 省略号占位，逐级降级；每级须全文件恰好 1 处命中，否则报歧义并列命中行号；回执明示实际命中级别）'),
       new_text: z.string().optional().describe('replace_text 专用：替换后的新文本（传空串=删除该文本；L3/L4 模糊命中时自动按实际命中首行缩进重排）'),
       dry_run: z.boolean().optional().describe('range / replace_text 专用：true=只出 diff 预览 + 语法门结果，不写盘'),
+      targets: z
+        .array(
+          z.object({
+            file: z.string().describe('目标文件（相对 project_dir 或绝对路径）'),
+            old_text: z.string().describe('要替换的唯一旧文本（同 replace_text 的 4 级模糊级联）'),
+            new_text: z.string().describe('替换后的新文本（传空串=删除该文本）'),
+          }),
+        )
+        .optional()
+        .describe('★ 批量（P-B）：一次调用对多文件做唯一文本替换。每项等价于一次 op=replace_text；逐项独立回报；给了非空 targets ⇒ 忽略 file/op/symbol/code/old_text/new_text'),
+      atomic: z.boolean().optional().describe('★ 批量专用原子性：true=任一项失败则整批不落盘（全成或全不成）；缺省 false=逐项独立（一项失败不影响其余）。dry_run 天然不落盘'),
     },
     handler: wrapData(async (a) => editCode(a as never)),
   },

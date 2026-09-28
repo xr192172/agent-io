@@ -1524,6 +1524,11 @@ P1c（LANE_OF 改派生 + 一致性门）        ✅ 本轮完成
 | P-F | 警告结构化 + 首次全文/后续摘要 | 结构化 warnings 可被程序判定 |
 | P-G | （待验证）`explore_code(action='read')` 是否是稳定的**读文件**入口 | 先实测再登记 —— **不凭印象写** |
 
+> ✅ **P-B 已落地**（2026-09-28）：`edit_code` 增 `targets[]`（批量 `{file,old_text,new_text}`，**逐项独立回报**）
+> + `atomic`（可选：任一项失败则整批不落盘）。判据三条均以测试坐实（一次调用改 **7** 文件 / 注入必失败项 ⇒ 该项红且其余按策略处理 / 原子性开-关各一）。
+> 批量回执走 `---DATA---`（`items[]` 逐项 + `total/succeeded/failed/atomic` 计数）。因 `inputSchema` 变更，
+> **G1 契约基线已按门指引重算**（`UPDATE_TOOL_SNAPSHOT=1`，仍 **67** 工具，仅 `edit_code` 的 description/inputSchema 变）。
+
 ---
 
 ## 17. ★★★ 关于"要不要用 tree-sitter 重头实现成编译器内核"（2026-09-28 用户提出，我给的判断）
