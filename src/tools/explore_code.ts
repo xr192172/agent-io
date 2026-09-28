@@ -78,6 +78,11 @@ function bool(v: Record<string, unknown>, key: string): boolean | undefined {
   return typeof val === 'boolean' ? val : undefined;
 }
 
+/** catch 里如实记下「跳过了什么/为什么」时用的错误文本（§2d：少做的事不许不说） */
+function errMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
+
 function toResult(r: unknown, isAsync = false): { message: string; data: unknown } {
   return {
     message: isAsync ? '异步 action 已完成' : '',
@@ -119,6 +124,8 @@ export async function exploreCode(params: { action: ExploreAction; args: Record<
       //   不触发全量冷启（大仓首调会 12s+），也不假装完整：**覆盖度写进结果**。
       //   只读路径可以用局部索引；编辑类工具仍必须先扩到闭合（见 docs/index-locality-design.md §4）。
       let tileNote = '';
+      // 索引增强是「可选加分项」：失败不阻断读取，但**必须如实记下跳过了什么、为什么**（§2d）
+      const indexSkipped: Array<{ what: string; why: string }> = [];
       const readRootRaw = args['project_dir'];
       const readFileRaw = args['file'];
       if (typeof readRootRaw === 'string' && readRootRaw.trim() && typeof readFileRaw === 'string' && readFileRaw.trim()) {
@@ -138,8 +145,9 @@ export async function exploreCode(params: { action: ExploreAction; args: Record<
           if (tile.partial || !bf || !bf.running) {
             try {
               bf = scheduleBackfill(readRoot, { batch: 20, intervalMs: 200 });
-            } catch {
-              /* 后台起不来不影响本次读 */
+            } catch (err) {
+              // 后台起不来不影响本次读 —— 但「跳过了后台续建」要说话
+              indexSkipped.push({ what: '后台续建', why: errMessage(err) });
             }
           }
           const parts: string[] = [];
@@ -153,12 +161,26 @@ export async function exploreCode(params: { action: ExploreAction; args: Record<
           }
           if (bf) parts.push(backfillSummary(bf));
           if (parts.length) tileNote = `\n（${parts.join('；')}）`;
-        } catch {
-          /* 拼图/后台失败不阻断读取（索引是增强，不是前提） */
+        } catch (err) {
+          // 拼图失败不阻断读取（索引是增强、不是前提）—— 但「跳过了按需建索引」要说话（§2d）
+          indexSkipped.push({ what: '按需建索引', why: errMessage(err) });
         }
       }
-      const r = await readCode(args);
-      return { message: r.message + tileNote, data: r.data };
+      // ★ 解参只在这一层（[C] 工具边界，§21.2）；readCode 是显式参数的 [B] 执行体
+      const r = await readCode(str(args, 'project_dir'), requireStr(args, 'file'), {
+        symbol: str(args, 'symbol'),
+        parent: str(args, 'parent'),
+        start: num(args, 'start'),
+        end: num(args, 'end'),
+        context: num(args, 'context'),
+        symbols: bool(args, 'symbols'),
+        symbolsLimit: num(args, 'symbols_limit'),
+      });
+      const data = indexSkipped.length ? { ...r.data, index_skipped: indexSkipped } : r.data;
+      const skipNote = indexSkipped.length
+        ? `\n（索引增强跳过：${indexSkipped.map((s) => `${s.what}（${s.why}）`).join('；')}）`
+        : '';
+      return { message: r.message + tileNote + skipNote, data };
     }
     case 'diff_impact': {
       // ★ 零前置：影响面分析依赖符号边（call/type_ref/import）。空库先就地冷启建索引，
@@ -297,20 +319,50 @@ type SymbolIndexItem = {
   end_line: number;
 };
 
-async function readCode(args: Record<string, unknown>): Promise<{ message: string; data: unknown }> {
-  const file = requireStr(args, 'file');
-  const symbol = str(args, 'symbol');
-  const parent = str(args, 'parent');
-  const start = num(args, 'start');
-  const end = num(args, 'end');
-  const context = num(args, 'context');
-  const projectDirRaw = str(args, 'project_dir');
+/** read 的可选参数（显式收口；不再从 args 袋子里解参） */
+interface ReadCodeOptions {
+  symbol?: string;
+  parent?: string;
+  start?: number;
+  end?: number;
+  context?: number;
+  /** 是否附整文件符号索引（缺省 true；false 关闭，省一次 AST） */
+  symbols?: boolean;
+  /** 符号表上限（缺省 30，钳制 1-500） */
+  symbolsLimit?: number;
+}
+
+interface ReadCodeData {
+  file: string;
+  rel_path: string;
+  total_lines: number;
+  start: number;
+  end: number;
+  truncated: boolean;
+  symbol?: SymbolIndexItem;
+  symbols: SymbolIndexItem[];
+  lines: string[];
+  /** 索引增强被跳过的项（§2d：少做的事必须可读，不许静默） */
+  index_skipped?: Array<{ what: string; why: string }>;
+}
+
+// [B] 纯函数形状：显式参数 + 结构化产物（§21.2）。拿不到/出错就 throw，不返回"看起来正常"的兜底值。
+async function readCode(
+  root: string | undefined,
+  file: string,
+  opts: ReadCodeOptions = {},
+): Promise<{ message: string; data: ReadCodeData }> {
+  const symbol = opts.symbol;
+  const parent = opts.parent;
+  const start = opts.start;
+  const end = opts.end;
+  const context = opts.context;
   // 符号索引默认开启；symbols:false 可关（读超大文件/纯看正文时可省一次 AST）
-  const wantSymbols = bool(args, 'symbols') !== false;
+  const wantSymbols = opts.symbols !== false;
 
   // 符号表上限：缺省 30，传参可调（钳制 1-500）
-  const symbolsLimit = Math.min(Math.max(num(args, 'symbols_limit') || SYMBOL_TABLE_CAP, 1), 500);
-  const projectRoot = projectDirRaw ? path.resolve(projectDirRaw) : undefined;
+  const symbolsLimit = Math.min(Math.max(opts.symbolsLimit || SYMBOL_TABLE_CAP, 1), 500);
+  const projectRoot = root ? path.resolve(root) : undefined;
   const absPath = path.isAbsolute(file) ? file : projectRoot ? path.resolve(projectRoot, file) : path.resolve(file);
 
   if (!fs.existsSync(absPath)) throw new Error(`文件不存在: ${absPath}`);
