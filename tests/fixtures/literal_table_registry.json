@@ -1,0 +1,46 @@
+{
+  "note": "G9 重复字面量表门登记表。见 tests/duplicate_literal_tables.test.ts。口径：存量不拦、新增即红。\nfingerprint = 数组所有对象元素的属性 key 并集（去重排序），反映「整张表」的形状。\n更新基线：LITERAL_TABLE_FROZEN=1 ./node_modules/.bin/vitest run tests/duplicate_literal_tables.test.ts",
+  "families": [
+    {
+      "id": "lane-tool-def-table",
+      "intent": "『工具定义表』—— 每个能力线（lane）有一份 ToolDef[] 数组，声明本线的工具清单。6 份数组形状完全一致（description/handler/inputSchema/name/title 为公共 key），是同张数据表被拆分进不同文件的不同副本。authority 指向第一个写入的那份（design.ts）；其余 5 份在 frozen 中登记为存量债务。",
+      "authority": "src/registry/lanes/design.ts",
+      "fingerprintPattern": "description,handler,inputSchema,name,title",
+      "frozen": {
+        "src/registry/lanes/cross.ts": 1,
+        "src/registry/lanes/design.ts": 1,
+        "src/registry/lanes/harvest.ts": 1,
+        "src/registry/lanes/meta.ts": 1,
+        "src/registry/lanes/observe.ts": 1,
+        "src/registry/lanes/refactor.ts": 1
+      }
+    },
+    {
+      "id": "removed-feature-rules-table",
+      "intent": "『已废弃 API 规则表』—— 每个语言适配器的 REMOVED 规则数组形状一致（kind/name/pattern/rewrite/since/tool），是同一模板被复制的副本",
+      "authority": "src/version_upgrade/adapters/c.ts",
+      "fingerprintPattern": "kind,name,pattern,rewrite,since,tool",
+      "frozen": {
+        "src/version_upgrade/adapters/c.ts": 1,
+        "src/version_upgrade/adapters/csharp.ts": 1,
+        "src/version_upgrade/adapters/go.ts": 1,
+        "src/version_upgrade/adapters/java.ts": 1,
+        "src/version_upgrade/adapters/node.ts": 1,
+        "src/version_upgrade/adapters/python.ts": 1
+      }
+    },
+    {
+      "id": "feature-rules-table",
+      "intent": "『特性版本规则表』—— 每个语言适配器的 FEATURES 规则数组形状一致（name/pattern/rewrite/since/tool），是同一模板被复制的副本。C/C#/Go/Java/Node/Python 六份。",
+      "authority": "src/version_upgrade/adapters/c.ts",
+      "fingerprintPattern": "name,pattern,rewrite,since,tool",
+      "frozen": {
+        "src/version_upgrade/adapters/c.ts": 1,
+        "src/version_upgrade/adapters/csharp.ts": 1,
+        "src/version_upgrade/adapters/java.ts": 1,
+        "src/version_upgrade/adapters/node.ts": 1,
+        "src/version_upgrade/adapters/python.ts": 1
+      }
+    }
+  ]
+}
