@@ -1430,7 +1430,11 @@ P1c（LANE_OF 改派生 + 一致性门）        ✅ 本轮完成
 
 ```
 ① 修数据/量具（索引覆盖 57% → 先查清 310 个未索引文件）
-② G7 门（宣传-实现一致性：每个 action 必须真调实现）—— 让空壳变红
+② G7 门（宣传-实现一致性：每个 action 必须真调实现）—— ✅ **已落地**（2026-09-28）
+   `tests/tools/explore_action_wiring.test.ts` + `tests/fixtures/explore_action_wiring.json`（4 项，出生证 6/6）
+   两档判据：**机械档**（case 块必须真调一个 import 来的实现）+ **声明档**（每个 action 必须声明实现，
+   或进 `debt` 并写理由；debt 棘轮上界 5 = §14.1 的 2 纯空壳 + 3 半空壳）。
+   ★ 它同时是"堆新工具/新 action"的**准入闸** —— 新增若不声明实现即红。
 ③ 按「操作对象」聚合（面 = lane；observe 按层次拆）
 ④ 用 refactor_pipeline 当模板，把"顺延链"做成编排（而不是继续造工具）
 ⑤ 新增功能的准入门：现有面覆盖不了（举证）+ 归到某条 lane + G7 绿

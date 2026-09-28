@@ -39,15 +39,21 @@ node scripts/contract_docs_gate.mjs
 # ⑧ 品牌串残留门（改名后＝零容忍） —— 旧名一处都不许回来（含 .gitignore / *.mod 这类无扩展名文件）
 ./node_modules/.bin/vitest run tests/brand_residue.test.ts
 
-# ⑨ G8 逐工具行为快照     —— 不退化即可（S1 稳定集 / S2 测量集）
+# ⑨ G7 宣传-实现一致性门 —— 每个对外宣传的 action 必须真调实现；空壳/半空壳进 debt 棘轮
+./node_modules/.bin/vitest run tests/tools/explore_action_wiring.test.ts
+
+# ⑩ G8 逐工具行为快照     —— 不退化即可（S1 稳定集 / S2 测量集）
 ./node_modules/.bin/vitest run tests/tool_behavior_snapshot.test.ts
 
-# ⑩ 全量回归（仓内约定：排除 archify）
+# ⑪ 全量回归（仓内约定：排除 archify）
 ./node_modules/.bin/vitest run --exclude 'tests/tools/archify_*.test.ts'
 ```
 
-**基线**：⑩ 当前应为 **218 文件 / 2264 测试**（217 过 + 1 skip；2259 过 + 5 skip）。
+**基线**：⑪ 当前应为 **219 文件 / 2268 测试**（见最近一次全量回归输出；上一轮是 218/2264，本轮 G7 加 1 文件 4 项）。
 任何一笔改动若把这些数字变少，先解释清楚再提交。
+
+★ **G7 是"堆新工具"的准入闸**（用户 2026-09-28 要求）：新增 action 必须①声明它调的实现
+（且该实现**是从别处 import 的**，不能拿本地 no-op 冒充），或②进 `debt` 并写明理由 —— 而 `debt` 是棘轮，只许减不许增。
 
 ---
 
