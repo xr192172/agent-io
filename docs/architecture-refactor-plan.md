@@ -1528,6 +1528,24 @@ P1c（LANE_OF 改派生 + 一致性门）        ✅ 本轮完成
 > + `atomic`（可选：任一项失败则整批不落盘）。判据三条均以测试坐实（一次调用改 **7** 文件 / 注入必失败项 ⇒ 该项红且其余按策略处理 / 原子性开-关各一）。
 > 批量回执走 `---DATA---`（`items[]` 逐项 + `total/succeeded/failed/atomic` 计数）。因 `inputSchema` 变更，
 > **G1 契约基线已按门指引重算**（`UPDATE_TOOL_SNAPSHOT=1`，仍 **67** 工具，仅 `edit_code` 的 description/inputSchema 变）。
+>
+> ✅ **P-C 已落地**（2026-09-29）：新增**成对**的 `plan_refactor`（只管算清单 + 预览，**只读**，不写任何文件）
+> 与 `apply_refactor_plan`（按清单落盘，**幂等** + 指纹校验）。**工具数 67 → 69**（这是本批唯一改 G1 对外契约的一笔）。
+> - **清单结构**（`schema:'refactor_plan/1'`）：`plan_id`（内容派生指纹）+ `items[{file,old,new,hit{level,label,start_line,old_lines,new_lines},preview}]`
+>   + `files[{file,base_fingerprint,post_fingerprint}]` + `summary{items,files,by_level}`。可**回传**（走 `---DATA---`）；
+>   不含绝对路径/时间戳 ⇒ **可复跑**（同输入同源 ⇒ 同 `plan_id`，有测试坐实）。
+> - **幂等怎么保证**：apply 先按**文件级指纹**判（当前 == `post_fingerprint` ⇒ 该文件项全部"已应用"），
+>   再逐项判（`old` 仍唯一命中 ⇒ 改；`old` 没了而 `new` 唯一命中 ⇒ `already_applied` 不写盘；都不成立 ⇒ `failed`，不猜）。
+>   ⇒ 重复 apply：`ok=true / written=false / 字节不变`。
+> - **篡改检出**：`plan_id = sha256(canonical{items(file/old/new 按序) + files(两个指纹)})`，apply 前重算比对，不符即抛。
+> - **不另写一套实现**：算清单/判"已应用"复用 `planReplaceText`（P-B 抽出的单文件&批量**共用**实现）；
+>   落盘复用 `editCode({targets[]})`（写闸/快照/索引写穿/逐项回报全复用）⇒ 本笔只加了"编排"。
+> - **诚实边界（没验什么）**：`preview` 文本**不参与** `plan_id`（改预览不会被指纹抓到，但预览不影响落盘结果）；
+>   清单的**落盘保存**由调用方负责（`plan_refactor` 严守"只读"，不经工具写清单文件）；"已应用"的逐项判定在文件被
+>   **部分**改动（既非 base 也非 post 指纹）时退回按 `new` 的唯一命中判，`new` 过于通用（多处命中）⇒ 如实判 `failed`。
+> - **门同步**：G1 `tool_set_snapshot.json` 按门指引重算（`UPDATE_TOOL_SNAPSHOT=1` → **69**）；G8 `tool_behavior_snapshot.json`
+>   重算（`UPDATE_TOOL_BEHAVIOR=1` → 快照集 **66**，新增两工具 `{}` 调用如实记为 `缺参数 "project_dir"`）；
+>   README「共注册」67 → **69**（`readme_tools_gate` 自愈）+ `readme_tools_gate.test.ts` 断言同改；`capability_map.WHEN_OVERRIDES` 补 2 条。
 
 ---
 

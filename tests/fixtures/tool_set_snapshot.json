@@ -37,6 +37,161 @@
     }
   },
   {
+    "name": "apply_refactor_plan",
+    "title": "Apply a refactor plan from plan_refactor (idempotent, fingerprint-checked)",
+    "description": "「先算清单 → 预览 → 批量落盘」的**第二半**（规划书 §16.3 P-C）：按 plan_refactor 的清单落盘（不重算清单、不再要 old_text）。**幂等**：先按**文件级指纹**判（当前内容指纹 == 清单里的 post_fingerprint ⇒ 该文件的项全部已应用），再用逐项判——old 仍唯一命中 ⇒ 改；old 已不在而 new 唯一命中 ⇒ 判 already_applied、**不写盘**；两者都不成立 ⇒ failed（源被别处改过，绝不猜）。⇒ 同一份清单重复 apply：第二次全部落 already_applied，ok=true / written=false / 文件字节不变。**篡改检出**：apply 前重算 plan_id 与声明值比对，不符即报错（改 old/new/顺序/base_fingerprint/增删项都会变）。**复用 edit_code(targets[]) 的落地路径**（写闸 + 写前快照 + 索引写穿保鲜 + 逐项回报），不另写一套；落盘走同一批量编排。atomic=true ⇒ 任一项失败（含\"清单与实际源冲突\"与落盘失败）则**整批不落盘**（全成或全不成）；缺省 false = 逐项独立。结果 data：{ok, plan_id, written, items[{file,status:applied|already_applied|failed,...}], total, applied, already_applied, failed, atomic}。空清单（items=[]）⇒ 合法 no-op（ok=true / written=false）。",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "project_dir": {
+          "type": "string",
+          "description": "项目根目录（清单里的相对路径以此为锚点）"
+        },
+        "plan": {
+          "type": "object",
+          "properties": {
+            "schema": {
+              "type": "string",
+              "const": "refactor_plan/1"
+            },
+            "plan_id": {
+              "type": "string",
+              "description": "清单指纹（由 old/new/base_fingerprint 派生）；apply 会重算比对，不符即报错"
+            },
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "description": "相对 project_dir 的路径（正斜杠）"
+                  },
+                  "old": {
+                    "type": "string"
+                  },
+                  "new": {
+                    "type": "string"
+                  },
+                  "hit": {
+                    "type": "object",
+                    "properties": {
+                      "level": {
+                        "type": "number"
+                      },
+                      "label": {
+                        "type": "string"
+                      },
+                      "start_line": {
+                        "type": "number"
+                      },
+                      "old_lines": {
+                        "type": "number"
+                      },
+                      "new_lines": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "level",
+                      "label",
+                      "start_line",
+                      "old_lines",
+                      "new_lines"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "preview": {
+                    "type": "string",
+                    "description": "diff 预览（展示用；不参与 plan_id）"
+                  }
+                },
+                "required": [
+                  "file",
+                  "old",
+                  "new",
+                  "hit",
+                  "preview"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "files": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string"
+                  },
+                  "base_fingerprint": {
+                    "type": "string",
+                    "description": "规划时刻内容指纹"
+                  },
+                  "post_fingerprint": {
+                    "type": "string",
+                    "description": "把本文件清单项全应用后的内容指纹（幂等快路径用）"
+                  }
+                },
+                "required": [
+                  "file",
+                  "base_fingerprint",
+                  "post_fingerprint"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "summary": {
+              "type": "object",
+              "properties": {
+                "items": {
+                  "type": "number"
+                },
+                "files": {
+                  "type": "number"
+                },
+                "by_level": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {
+                    "type": "number"
+                  }
+                }
+              },
+              "required": [
+                "items",
+                "files",
+                "by_level"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "schema",
+            "plan_id",
+            "items",
+            "files",
+            "summary"
+          ],
+          "additionalProperties": false,
+          "description": "plan_refactor 的 data 原样传入（含 plan_id / items / files / summary）"
+        },
+        "atomic": {
+          "description": "true ⇒ 任一项失败（含清单与实际源冲突）则整批不落盘（全成或全不成）；缺省 false = 逐项独立",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "project_dir",
+        "plan"
+      ],
+      "additionalProperties": {}
+    }
+  },
+  {
     "name": "apply_rules",
     "title": "Apply rule-library rules across a project (three-state)",
     "description": "把规则库（<project_dir>/.agent-io/rules/*.md）里的规则批量应用到项目源码，**三态语义**：① applied（命中且唯一 ⇒ 按 replace 改写）；② todo（命中但歧义 >1 处 ⇒ 在命中处插入 TODO(rule-id) 注释，不失败）；③ clean（无命中 ⇒ 对该文件干净）。纪律：**唯一才动**（歧义绝不挑一个改），**不改文件就不报成功**。默认 dry_run=true 只出逐文件三态计数与改写预览，不写盘；dry_run=false 才落盘。glob 可限定文件（正则，匹配相对路径）；rule_ids 可只跑指定规则。",
@@ -1985,6 +2140,53 @@
           "type": "number"
         }
       },
+      "additionalProperties": {}
+    }
+  },
+  {
+    "name": "plan_refactor",
+    "title": "Compute a reviewable, replayable refactor plan (read-only)",
+    "description": "「先算清单 → 预览 → 批量落盘」的**第一半**（规划书 §16.3 P-C）：**只读**算出一份可审、可复跑、可入账的重构清单，不写任何文件。输入 targets=[{file, old_text, new_text}, ...]（与 edit_code 批量同形状，每项 = 文件内一次**唯一**文本替换）；输出结构化清单 data：plan_id（内容派生指纹）+ items（每项 file/old/new/**命中级别**/diff 预览）+ files（规划时刻源文件指纹 base_fingerprint 与\"全应用后\"指纹 post_fingerprint）+ summary（项数/文件数/按命中级别分布）。定位与语法门**复用** edit_code 的 replace_text 同一实现（4 级模糊级联：逐字→空白归一→缩进弹性→省略号占位；歧义即报错、绝不猜）。纪律（§21）：清单必须**全部可执行**——任一项规划不出来（old_text 不在/歧义/新引入语法错误）⇒ 报错并列全每项原因，不产出半成品；targets 为空 ⇒ 产出**显式空清单**（items=[]）。★ 把本品的 data **原样**交给 apply_refactor_plan 落盘（同一份清单 = 同一 plan_id；清单被改动会被指纹检出）。与 refactor_pipeline 的分工：pipeline 是\"内置步骤自动检测\"（dead import/语句/迁移）；本品是\"**调用方给定清单**\"的算清单入口（无自动检测，只算你要的那批替换）。",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "project_dir": {
+          "type": "string",
+          "description": "项目根目录（相对路径的锚点）"
+        },
+        "targets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "file": {
+                "type": "string",
+                "description": "目标文件（相对 project_dir 或绝对路径）"
+              },
+              "old_text": {
+                "type": "string",
+                "description": "要替换的旧文本（在文件内须恰好 1 处命中，否则报歧义）"
+              },
+              "new_text": {
+                "type": "string",
+                "description": "替换后的新文本（传空串=删除该文本）"
+              }
+            },
+            "required": [
+              "file",
+              "old_text",
+              "new_text"
+            ],
+            "additionalProperties": false
+          },
+          "description": "重构目标清单（每项 = 文件内一次唯一文本替换；空数组 ⇒ 显式空清单）"
+        }
+      },
+      "required": [
+        "project_dir",
+        "targets"
+      ],
       "additionalProperties": {}
     }
   },

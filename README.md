@@ -105,7 +105,7 @@ npm run demo -- --prepare   # 只准备示例（构建+渲染+注册），不起
 
 ## MCP 工具参考
 
-共注册 **67 个 MCP 工具**，按「主工具 + 专项工具」组织：主工具承担统一入口，专项工具各司其职。
+共注册 **69 个 MCP 工具**，按「主工具 + 专项工具」组织：主工具承担统一入口，专项工具各司其职。
 
 ### 能力导航（1 个）
 
@@ -196,6 +196,8 @@ npm run demo -- --prepare   # 只准备示例（构建+渲染+注册），不起
 | `rename_symbols`      | 批量跨文件符号重命名（单条或批量统一入口，整体先 dry-run）                                                                           |
 | `rename_files`        | 批量文件重命名（单条或批量统一入口，整体先 dry-run）                                                                              |
 | `remove_dead_imports` | 移除失效 import                                                                                                 |
+| `plan_refactor`       | **先算清单**（只读）：把一批 `file`+`old_text`+`new_text` 算成可审、可复跑、可入账的清单（plan id + 命中级别 + diff 预览），把"算清单"放回工具体内 |
+| `apply_refactor_plan` | 按 `plan_refactor` 的清单落盘（**幂等**：重复 apply 不重复改；`plan_id` 指纹不符即报错）                                            |
 | `refactor_pipeline`   | 确定性重构流水线（死代码清理 + 包迁移 + 函数语义注释；按项目探测语言并跑语言专属 stage——Java 工程自动触发 Spring MVC 分层迁移、Python 走其死代码清理，落盘/验证/回滚统一闭环） |
 | `annotate_functions`  | 函数语义注释（TS/JS + Go）：扫覆盖→缺失用 LLM 补→`@fnhash` body 指纹同步过期；mode=scan/dry\_run/apply                             |
 | `suggest_renames`     | 为短名 / 无意义变量建议语义化名字（含混淆/压缩代码的短名还原可读）                                                                         |

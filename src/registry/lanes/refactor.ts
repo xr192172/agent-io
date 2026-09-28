@@ -1,5 +1,5 @@
 /**
- * refactor 线（19 个工具）—— ★ **本文件即该线归属的唯一来源**。
+ * refactor 线（21 个工具）—— ★ **本文件即该线归属的唯一来源**。
  *
  * ★ P1b（2026-09-28）：按当时 `capability_map.LANE_OF` 的归属从 `TOOL_DEFS` 切分而来，
  *   条目**逐字搬移**，只加了 `export const REFACTOR_TOOLS` 外壳 —— 归属自此由文件路径表达。
@@ -37,9 +37,51 @@ import { isLegalRuleId, loadRules, rulesDir, writeRule } from '../../tools/rule_
 import type { Rule } from '../../tools/rule_library.js';
 import { disambiguationItems, suggestDisambiguations } from '../../tools/similar_names.js';
 import { moveSymbol } from '../../tools/symbol_move.js';
+import { buildRefactorPlan, applyRefactorPlan } from '../../tools/refactor_plan.js';
+import type { RefactorTarget, RefactorPlan } from '../../tools/refactor_plan.js';
 import { diffViewsHandler } from '../handlers.js';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import type { ToolDef } from '../types.js';
+
+/** [C] 层入参守卫：缺必填字符串 **明确报错**（绝不把 `undefined` 拼进路径 —— 规划书 §16.4 P-D） */
+function requireStr(a: Record<string, unknown>, key: string): string {
+  const v = a[key];
+  if (typeof v !== 'string' || v.trim() === '') throw new Error(`缺参数 "${key}"`);
+  return v;
+}
+
+/** `plan_refactor` 产出的清单形状（`apply_refactor_plan` 的入参 schema —— 逐字接受上一环的 data） */
+const refactorPlanSchema = z.object({
+  schema: z.literal('refactor_plan/1'),
+  plan_id: z.string().describe('清单指纹（由 old/new/base_fingerprint 派生）；apply 会重算比对，不符即报错'),
+  items: z.array(
+    z.object({
+      file: z.string().describe('相对 project_dir 的路径（正斜杠）'),
+      old: z.string(),
+      new: z.string(),
+      hit: z.object({
+        level: z.number(),
+        label: z.string(),
+        start_line: z.number(),
+        old_lines: z.number(),
+        new_lines: z.number(),
+      }),
+      preview: z.string().describe('diff 预览（展示用；不参与 plan_id）'),
+    }),
+  ),
+  files: z.array(
+    z.object({
+      file: z.string(),
+      base_fingerprint: z.string().describe('规划时刻内容指纹'),
+      post_fingerprint: z.string().describe('把本文件清单项全应用后的内容指纹（幂等快路径用）'),
+    }),
+  ),
+  summary: z.object({
+    items: z.number(),
+    files: z.number(),
+    by_level: z.record(z.string(), z.number()),
+  }),
+});
 
 export const REFACTOR_TOOLS: ToolDef[] = [
   {
@@ -1203,6 +1245,108 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         message: lines.join('\n'),
         data: { pass, added, baseline: baseline ? baseline.updatedAt : null, totalHits: summary.totalHits, fixtureFailures: bad },
       };
+    }),
+  },
+
+  {
+    name: 'plan_refactor',
+    title: 'Compute a reviewable, replayable refactor plan (read-only)',
+    description:
+      '「先算清单 → 预览 → 批量落盘」的**第一半**（规划书 §16.3 P-C）：**只读**算出一份可审、可复跑、可入账的重构清单，不写任何文件。' +
+      '输入 targets=[{file, old_text, new_text}, ...]（与 edit_code 批量同形状，每项 = 文件内一次**唯一**文本替换）；' +
+      '输出结构化清单 data：plan_id（内容派生指纹）+ items（每项 file/old/new/**命中级别**/diff 预览）+ files（规划时刻源文件指纹 base_fingerprint 与"全应用后"指纹 post_fingerprint）+ summary（项数/文件数/按命中级别分布）。' +
+      '定位与语法门**复用** edit_code 的 replace_text 同一实现（4 级模糊级联：逐字→空白归一→缩进弹性→省略号占位；歧义即报错、绝不猜）。' +
+      '纪律（§21）：清单必须**全部可执行**——任一项规划不出来（old_text 不在/歧义/新引入语法错误）⇒ 报错并列全每项原因，不产出半成品；targets 为空 ⇒ 产出**显式空清单**（items=[]）。' +
+      '★ 把本品的 data **原样**交给 apply_refactor_plan 落盘（同一份清单 = 同一 plan_id；清单被改动会被指纹检出）。' +
+      '与 refactor_pipeline 的分工：pipeline 是"内置步骤自动检测"（dead import/语句/迁移）；本品是"**调用方给定清单**"的算清单入口（无自动检测，只算你要的那批替换）。',
+    inputSchema: {
+      project_dir: z.string().describe('项目根目录（相对路径的锚点）'),
+      targets: z
+        .array(
+          z.object({
+            file: z.string().describe('目标文件（相对 project_dir 或绝对路径）'),
+            old_text: z.string().describe('要替换的旧文本（在文件内须恰好 1 处命中，否则报歧义）'),
+            new_text: z.string().describe('替换后的新文本（传空串=删除该文本）'),
+          }),
+        )
+        .describe('重构目标清单（每项 = 文件内一次唯一文本替换；空数组 ⇒ 显式空清单）'),
+    },
+    handler: wrapData(async (a) => {
+      const project_dir = requireStr(a, 'project_dir');
+      if (!Array.isArray(a.targets)) throw new Error('缺参数 "targets"（[{file, old_text, new_text}, ...]）');
+      const plan = await buildRefactorPlan({ project_dir, targets: a.targets as RefactorTarget[] });
+      const lines: string[] = [];
+      if (plan.summary.items === 0) {
+        lines.push(`[空清单] 没有可执行的替换项（targets 为空）—— plan_id ${plan.plan_id}，未写任何文件。`);
+      } else {
+        const levels = Object.entries(plan.summary.by_level)
+          .sort(([x], [y]) => Number(x) - Number(y))
+          .map(([lv, n]) => `L${lv}×${n}`)
+          .join(' ');
+        lines.push(
+          `清单 ${plan.plan_id}：${plan.summary.items} 项 / ${plan.summary.files} 个文件（命中级别 ${levels}）—— 只读，未写任何文件。`,
+        );
+        for (const it of plan.items) {
+          lines.push(
+            `  · ${it.file} L${it.hit.start_line}（L${it.hit.level}·${it.hit.label}）${it.hit.old_lines} 行 → ${it.hit.new_lines} 行`,
+          );
+        }
+        lines.push('', '把本回执的 data 原样交给 apply_refactor_plan 落盘（清单被改动会被 plan_id 指纹检出）。');
+      }
+      return { message: lines.join('\n'), data: plan };
+    }),
+  },
+
+  {
+    name: 'apply_refactor_plan',
+    title: 'Apply a refactor plan from plan_refactor (idempotent, fingerprint-checked)',
+    description:
+      '「先算清单 → 预览 → 批量落盘」的**第二半**（规划书 §16.3 P-C）：按 plan_refactor 的清单落盘（不重算清单、不再要 old_text）。' +
+      '**幂等**：先按**文件级指纹**判（当前内容指纹 == 清单里的 post_fingerprint ⇒ 该文件的项全部已应用），再用逐项判——old 仍唯一命中 ⇒ 改；old 已不在而 new 唯一命中 ⇒ 判 already_applied、**不写盘**；两者都不成立 ⇒ failed（源被别处改过，绝不猜）。' +
+      '⇒ 同一份清单重复 apply：第二次全部落 already_applied，ok=true / written=false / 文件字节不变。' +
+      '**篡改检出**：apply 前重算 plan_id 与声明值比对，不符即报错（改 old/new/顺序/base_fingerprint/增删项都会变）。' +
+      '**复用 edit_code(targets[]) 的落地路径**（写闸 + 写前快照 + 索引写穿保鲜 + 逐项回报），不另写一套；落盘走同一批量编排。' +
+      'atomic=true ⇒ 任一项失败（含"清单与实际源冲突"与落盘失败）则**整批不落盘**（全成或全不成）；缺省 false = 逐项独立。' +
+      '结果 data：{ok, plan_id, written, items[{file,status:applied|already_applied|failed,...}], total, applied, already_applied, failed, atomic}。' +
+      '空清单（items=[]）⇒ 合法 no-op（ok=true / written=false）。',
+    inputSchema: {
+      project_dir: z.string().describe('项目根目录（清单里的相对路径以此为锚点）'),
+      plan: refactorPlanSchema.describe('plan_refactor 的 data 原样传入（含 plan_id / items / files / summary）'),
+      atomic: z
+        .boolean()
+        .optional()
+        .describe('true ⇒ 任一项失败（含清单与实际源冲突）则整批不落盘（全成或全不成）；缺省 false = 逐项独立'),
+    },
+    handler: wrapData(async (a) => {
+      const project_dir = requireStr(a, 'project_dir');
+      const plan = a.plan;
+      if (!plan || typeof plan !== 'object' || Array.isArray(plan)) {
+        throw new Error('缺参数 "plan"（把 plan_refactor 回执的 data 原样传入）');
+      }
+      const r = await applyRefactorPlan({
+        project_dir,
+        plan: plan as RefactorPlan,
+        atomic: a.atomic === true,
+      });
+      const lines: string[] = [];
+      lines.push(
+        `${r.failed === 0 ? '✓' : '⚠'} apply_refactor_plan ${r.plan_id}：${r.total} 项` +
+          `（applied ${r.applied} / already_applied ${r.already_applied} / failed ${r.failed}）` +
+          `${r.written ? '，已落盘' : '，未写盘'}`,
+      );
+      for (const it of r.items) {
+        if (it.status === 'applied') {
+          lines.push(
+            `  ✓ ${it.file} L${it.hit?.start_line ?? '?'} 已落盘` +
+              `${it.symbol_diff ? `（符号 diff: +${it.symbol_diff.added} -${it.symbol_diff.removed} ~${it.symbol_diff.changed}）` : ''}`,
+          );
+        } else if (it.status === 'already_applied') {
+          lines.push(`  = ${it.file} 已应用（幂等跳过，未写盘）`);
+        } else {
+          lines.push(`  ✗ ${it.file}：${it.error ?? '未知失败'}`);
+        }
+      }
+      return { message: lines.join('\n'), data: r };
     }),
   },
 ];

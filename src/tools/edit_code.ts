@@ -338,8 +338,9 @@ export interface EditReceipt {
   atomic?: boolean;
 }
 
-/** ★ P-B：`replace_text` 的**纯规划结果**（不写盘、不碰索引）—— 单文件路径与 targets[] 批量共用同一份实现 */
-interface ReplaceTextPlan {
+/** ★ P-B：`replace_text` 的**纯规划结果**（不写盘、不碰索引）—— 单文件路径与 targets[] 批量共用同一份实现。
+ *  ★ P-C：`planReplaceText` 同时被 `refactor_plan.ts` 复用（算清单/判"已应用"）—— 导出以免再写第二份定位+语法门。 */
+export interface ReplaceTextPlan {
   /** 编辑后的完整文件内容（已过语法门） */
   newContent: string;
   hit: NonNullable<EditReceipt['hit']>;
@@ -355,8 +356,9 @@ interface ReplaceTextPlan {
  * ★ P-B：`replace_text` 的**规划**（纯函数语义：读 content → 返回新内容或抛错，不写盘、不碰索引）。
  * 单文件 `op='replace_text'` 与 `targets[]` 批量**共用这一份**（同一件事不许两份实现）。
  * 纪律不变：歧义即停（不猜）、语法门兜底（新引入语法错误 → 抛错）、模糊命中回执明示级别。
+ * ★ 导出（P-C）：`refactor_plan.ts` 的算清单/判"已应用"必须用**这一份**（同一定位+语法门），不许另写。
  */
-async function planReplaceText(
+export async function planReplaceText(
   absPath: string,
   content: string,
   eol: string,

@@ -148,6 +148,8 @@ export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
   impact_analysis: '计算一次改动的变更点/风险面',
   remove_dead_imports: '清理未使用 import',
   refactor_pipeline: '整条重构流水线（预览→执行→校验闭环）',
+  plan_refactor: '★ 先算清单（只读）：把一批 file+old_text+new_text 算成可审、可复跑、可入账的清单（plan id + 命中级别 + 预览）——"工具链"缺的那一环',
+  apply_refactor_plan: '按 plan_refactor 的清单落盘（幂等：重复 apply 不重复改；plan_id 指纹不符即报错）；与 plan_refactor 成对',
   annotate_functions: '函数语义注释（TS/JS + Go）：扫覆盖→缺失用 LLM 补→@fnhash body 指纹同步过期；可配进 refactor_pipeline 的 function_annotation 步',
   suggest_renames: '生成改名建议（就近相似名/命名规范）；混淆/压缩代码的短名还原可读也走这里——建议先由格式化梳理结构，再经 rename_symbols 应用，意图复原留人/LLM',
   find_similar_names: '找相似命名（撞名/歧义排查）',
