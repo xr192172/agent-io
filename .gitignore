@@ -17,6 +17,9 @@ output/
 # 一次性临时脚本
 scripts/*.tmp.mjs
 
+# vitest 把 config 转译成带时间戳的临时文件落在仓库根（且不总清理）—— 不是仓库内容
+vitest.config.ts.timestamp-*.mjs
+
 # 运行时持久化的 DSL（用户实际使用时生成；examples/ 目录的示例需要提交）
 .agent-io/
 # DSL 布局/内容的自动备份目录（带时间戳成批生成，不入库，避免大体积误提交）

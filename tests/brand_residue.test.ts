@@ -113,13 +113,24 @@ interface BrandRegistry {
   frozen: Record<string, number>;
 }
 
+/**
+ * ★ 构建工具的临时产物：vitest 会把 `vitest.config.ts` 转译成
+ * `vitest.config.ts.timestamp-<ms>-<hash>.mjs` 落在**仓库根**，且**不总清理**。
+ * 它们不是仓库内容，但正文里含**绝对路径**（`file:///D:/…/design-canvas/node_modules/…`）
+ * ⇒ 会命中品牌串、让本门**周期性假红**（2026-09-28 实测：连跑几次测试后门自己就红了）。
+ * ⇒ 一律跳过（同时已加进 .gitignore 防误提交）。
+ */
+export function isToolTempFile(name: string): boolean {
+  return /^vitest\.config\.ts\.timestamp-\d+-[0-9a-f]+\.mjs$/.test(name);
+}
+
 function walk(dir: string, out: string[] = []): string[] {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
     const abs = path.join(dir, e.name);
     if (e.isDirectory()) {
       if (SKIP_DIRS.has(e.name) || e.name.startsWith('.')) continue;
       walk(abs, out);
-    } else if (e.isFile() && isProbablyText(abs)) {
+    } else if (e.isFile() && !isToolTempFile(e.name) && isProbablyText(abs)) {
       out.push(abs);
     }
   }
@@ -190,6 +201,16 @@ describe('品牌串残留门 · 检测器自身有效（证明它会红）', () 
     // 反面：真二进制不该当文本读（否则每次跑门都白读一堆二进制）
     expect(isProbablyText(path.join(REPO, 'package.json'))).toBe(true);
     expect(isProbablyText(path.join(REPO, '不存在的文件.xyz'))).toBe(false);
+  });
+  it('★ 门的假红防护：构建工具的临时产物必须被跳过', () => {
+    // 出生证：vitest 把 config 转译成 `vitest.config.ts.timestamp-<ms>-<hash>.mjs` 落在**仓库根**且不总清理，
+    // 其正文含绝对路径（`file:///D:/…/design-canvas/node_modules/…`）⇒ 不跳过就会让门**周期性假红**
+    // （2026-09-28 实测：连跑几次测试后门自己就红了，一度被误判为代码改动引起）。
+    expect(isToolTempFile('vitest.config.ts.timestamp-1790603891994-01d1d7c1be0a.mjs')).toBe(true);
+    // 反面：真配置文件不能被误跳（否则门会漏掉真内容）
+    expect(isToolTempFile('vitest.config.ts')).toBe(false);
+    expect(isToolTempFile('vitest.config.mjs')).toBe(false);
+    expect(isToolTempFile('package.json')).toBe(false);
   });
 });
 
