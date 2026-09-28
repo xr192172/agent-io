@@ -586,6 +586,8 @@ GIT_TERMINAL_PROMPT=0 git -c credential.helper= -c credential.helper=manager pus
 | G4 | B2 的结论（`refs_text` 是复用还是登记为不同维度） | 属工程判断，可直接做，结论记账即可 |
 | G5 | **README 里全部工具计数与注册表同源**（§12.9）：现状 4 个口径不一 —— 真实 **67** / 「共注册」声称 **67** ✓ / 表里实际列 **58** / 三个小标题声称之和 **43** | 根因：`readme_tools_gate` **只守了「共注册 N 个」一个数**，其余 4 个数（3 小标题 + 表行数）无门 ⇒ 已漂。属工程判断（可直接做）：把自愈扩展到全部计数 | ⏳ |
 | G6 | **根清单显式化 + 三桶输出**（§12.8）：A 被工具需要 235 / B 仅非工具面 66 / C 谁都不需要 16 | 与 G7 同批做；B 桶**必须存在且不剪**，否则会剪掉 CLI 面 | ⏳ |
+| **G7** | ★★★ **宣传-实现一致性门**（§14.1/§14.5）：每个 action（`EXPLORE_ACTIONS` 等派发表）的**派发体必须真的调用实现**（非空壳） | 注入空壳 action ⇒ 门红；**当前应能抓出 5 个**（`derive_anim_flow`/`derive_algorithm` 空壳，`derive_split`/`derive_chain`/`check_monolith` 半空壳） | ⏳ **高优先**（这是"对 agent 说谎"） |
+| **G8′** | 一致性测试的"工具名↔文件名"口径**须覆盖 camelCase 导出**（§14.4 盲区）；`INTERNAL_MODULES` 与 `tool-convergence.md` 的**陈旧声明**须与实现对齐（§14.3） | 把 `derive_anim_flow` 移出豁免 ⇒ 测试应报"未注册" | ⏳ |
 
 ---
 
@@ -1087,3 +1089,84 @@ G8 基线因此收为 **64 个工具**（66 − 2）。
 
 tsc **0 错误**（这也是"它们确实是死代码"的第二个证据）；
 五门（G1/G4/G5/G8/品牌）**39 项全过**；全量回归见台账末尾。
+
+---
+
+## 14. ★★★★ 用户指出的"中间态工具"—— 推翻了我"无 importer ⇒ 死"的判据（本笔最重要的发现）
+
+用户原话：
+> "有没有可能他们是被编排过的工具。**没有被纳入工具注册里面，就是属于是中间态工具**，
+>  它们**能完成它们名字上所指示的功能吗**？你存一下，就你翻一下上一版的 Git，然后用一下试一下。"
+
+**做法**：① 把已删的 observe 批从 git 取回存档（会话工作区 `.inspect/prune-archive/`，8 文件）；
+② 翻 git / 文档 / 测试；③ **真跑一遍**（工具面 vs 直接调实现）。
+
+### 14.1 ★★★ 铁证：`explore_code` 有 5 个 action 是空壳或半空壳（且**都对 LLM 公开宣传**）
+
+`EXPLORE_ACTIONS` 是 `explore_code` 的 `action` 枚举 ⇒ **它宣传什么，LLM 就能看到什么**。逐个看派发体：
+
+| action | 派发体实际做什么 | 判定 |
+|---|---|---|
+| `derive_anim_flow` | `const r = { project_dir }` → `return toResult(r, true)` | **空壳**（没调实现） |
+| `derive_algorithm` | 同上 | **空壳** |
+| `derive_split` | `buildSplitPreviewDsl(project_dir, **[]**, 300, 600)` —— 文件列表**硬编码空数组** | 半空壳 |
+| `derive_chain` | `buildCallGraph(**[]**, **[]**)` —— 两个参数都是**空数组** | 半空壳 |
+| `check_monolith` | `assessLines(**0**, 300, 600)` —— 行号**硬编码 0** | 半空壳 |
+| 其余 10 个（search/read/diff_impact/arch_layer/guided_tour/derive_mind_map/inject_replay/run_simulation/reset_simulation/watch） | 真调实现 ✓ | 正常 |
+
+**实测走工具面的输出**（一字不改）：
+
+```
+$ explore_code(action=derive_anim_flow, project_dir=<src>)
+异步 action 已完成
+---DATA---
+{"project_dir":"D:/project_develop/design-canvas/src"}
+```
+
+★★★ **它说"异步 action 已完成"，却什么都没做。** 这不是死代码 —— 这是**对 agent 的主动误导**。
+（直接调被孤立的实现 `deriveAnimFlow({...})` ⇒ 它**是活的**，会走到业务逻辑并报"feature 不存在，请先 create_feature"。）
+
+⇒ **若按我原来的判据（无 importer ⇒ 删）执行，就会删掉一个"对外宣传过的 action"的唯一实现，把谎言钉死。**
+**用户这项质疑救了它。**
+
+### 14.2 ★★ 但要区分三类 —— 不是所有"无 importer"都该留
+
+| 类 | 成员 | 依据 | 处置 |
+|---|---|---|---|
+| **A 被宣传 + 有实现（接线断了）** | `derive_anim_flow.ts`(492)、`derive_algorithm.ts`(190) | 在 `EXPLORE_ACTIONS` 里；实现活着 | **修接线 或 撤销宣传**（二者择一，**不能删实现**） |
+| **B 被取代（功能已迁移）** | `get_dsl.ts`(32)、`list_features.ts`(33) | `query_feature.ts:4` 逐字"合并原 9 个查询工具（get_dsl / list_features / …）"；实测它用的是 `storage.listFeatures`，**不是** `tools/list_features.ts` | 真残留 ⇒ 可删（连同其测试） |
+| **C 零宣传零引用** | `batch_ops.ts`(103)、`refactor_report.ts`(86) | 在 `registry/lanes/*`、README、AGENTS、`explore_code` 里**零命中** | 真残留 ⇒ 可删 |
+| **D 有设计文档但"从未被采纳"** | `observe/{tiered,trace,export_incident}`、`online_loader/*` | ★ `docs/observe-point-recommender.md:71` 逐字：**"（judge / chain / tiered 已有雏形，但从未被采纳）"**；`observe-line-triage.md` 把"展示/叙事类"列为**建议归档**对象 | 已删（`c416533`）—— **文档依据成立**，且 git + 存档两手都有 |
+| **E 同族待判** | `run_narrate.ts`(40)、`observe_chain_view.ts`(175) | 被 `observe-line-triage.md` 列入"展示/叙事类"（建议归档），但**没有工具面宣传** | 倾向删，但需确认无 action 引用 |
+
+### 14.3 ★ 顺带查实两处**陈旧声明**（文档/测试与现实不符）
+
+1. `docs/tool-convergence.md:272` 与 `tests/server_registry.consistency.test.ts:23-24` 都写着
+   "**`list_features` 是 `get_dsl` query=features 的实现**"。
+   **实测：不成立** —— `query_feature.ts:35` 用 `getDSLByView, listFeatures as listStoredFeatures`
+   **from `../storage.js`**；`tools/list_features.ts` 无消费者。
+   ⇒ 这条声明是 convergence 之后遗留的**陈旧注释**，**误导了本次判定**（差点让我以为它是活的）。
+2. `INTERNAL_MODULES`（同测试的豁免表）里列着 `derive_reasoning` —— 而它**零引用**（已删）。
+   ⇒ 豁免表同样陈旧。
+
+### 14.4 ★★ 一致性测试的**盲区**（第 N 次"门看不见某类问题"）
+
+`tests/server_registry.consistency.test.ts` 的漏注册检测口径是：
+**`src/tools/{x}.ts` 且 `export function {x}()`**（文件名与函数名**严格同名**）。
+⇒ 而 `derive_anim_flow.ts` 导出的是 **`deriveAnimFlow`（camelCase）** ⇒ **不匹配 ⇒ 完全漏检**。
+这就是 `derive_anim_flow`/`derive_algorithm` 这类"实现了但没接线"能长期潜伏的机制。
+
+### 14.5 本笔**不删任何东西**（撤回原计划的第三批），并新增两个待办
+
+| # | 事项 | 判据 |
+|---|---|---|
+| **§9-G7 ★ 宣传-实现一致性门** | 对**每个** action（`EXPLORE_ACTIONS` 等派发表）断言：派发体**真的调用了实现**（非空壳）；且 action 清单里每个名字都有可达实现 | 注入一个空壳 action ⇒ 门红；当前应能抓出 5 个（§14.1） |
+| **§9-G8** | 一致性测试的"工具名 ↔ 文件名"口径须**覆盖 camelCase 导出**（现在漏检，见 §14.4）；`INTERNAL_MODULES` 与 `tool-convergence.md` 的陈旧声明要**与实现对齐** | 把 `derive_anim_flow` 移出豁免 ⇒ 测试应报"未注册" |
+
+### 14.6 给用户的判断项（本轮只取证，未动代码）
+
+`derive_anim_flow` / `derive_algorithm` 这两个 action 要**修接线**还是**撤销宣传**？——
+这是**产品语义决策**（它们还要不要），不是工程判断：
+- 要 ⇒ 把派发体接回实现（约 10 行）+ 补 G7 门；
+- 不要 ⇒ 从 `EXPLORE_ACTIONS` 摘掉（**对外契约变更**，G1 会红，属有意变更）+ 实现连带归档。
+**默认建议**：先做 **G7 门**（让它可见），再逐个功能决定去留 —— 顺序上先"看得见"再"做决定"。
