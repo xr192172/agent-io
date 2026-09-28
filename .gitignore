@@ -20,6 +20,9 @@ scripts/*.tmp.mjs
 # vitest 把 config 转译成带时间戳的临时文件落在仓库根（且不总清理）—— 不是仓库内容
 vitest.config.ts.timestamp-*.mjs
 
+# 执行者的临时工作区（提交信息文件等）——是脚手架不是仓库内容（2026-09-28 曾误提交过一份）
+.inspect/
+
 # 运行时持久化的 DSL（用户实际使用时生成；examples/ 目录的示例需要提交）
 .agent-io/
 # DSL 布局/内容的自动备份目录（带时间戳成批生成，不入库，避免大体积误提交）
