@@ -25,10 +25,21 @@ import path from 'node:path';
 import { getProjectCacheDb } from '../db/db.js';
 import { reopenRefsTo, resolveCrossFileCalls } from '../db/symbols.js';
 import { walkSourceFiles } from './refs_text.js';
+import { isTestFileName, isNoiseFileName } from './ts_kernel/source_exts.js';
 import { hasLiveIndex, pendingSelfWrites } from './write_gate.js';
 import { backfillState, backfillSummary, isIndexIncomplete } from './index_backfill.js';
 import { ensureProjectIndex, type IndexState } from './index_freshness.js';
 import { summarizeLanguagesByTier, type LanguageTierSummary } from './parse_capability.js';
+
+/** 源码文件按类拆分（本体 / 测试 / 噪音）。★ 见 ④ 处的长注释：两把尺差的就是这两个类 */
+export interface FileKindCounts {
+  /** 本体（真正的源码）—— **本应全覆盖**，缺一个就是缺陷 */
+  main: number;
+  /** 测试文件 —— 索引器 `include_tests=false` 时**有意排除** */
+  test: number;
+  /** 噪音/产物（`.min.js` `.d.ts` `*.gen.ts` `.swp` …）—— 不该算进任何一个数 */
+  noise: number;
+}
 
 export interface IntegrityIssue {
   /** 机器可读的问题码 */
@@ -57,6 +68,12 @@ export interface IndexIntegrityResult {
     disk_files: number;
     /** 磁盘有、索引没有（= 未索引区，拼图模式下正常） */
     not_indexed: number;
+    /** ★ 磁盘源码按类拆分（本体/测试/噪音）—— 别只报一个"未索引"，那是两把尺的差 */
+    disk_files_by_kind: FileKindCounts;
+    /** 已索引按类拆分 */
+    indexed_files_by_kind: FileKindCounts;
+    /** 未索引按类拆分。★ `main > 0` 才是**真缺陷**；`test` 是 `include_tests=false` 的**有意结果** */
+    not_indexed_by_kind: FileKindCounts;
     /** 索引有、磁盘没有（= 需要清理的幽灵行） */
     ghosts: number;
     nodes: number;
@@ -171,7 +188,17 @@ export async function indexIntegrity(opts: {
       project_root: root,
       state: 'empty',
       refreshed,
-      counts: { indexed_files: 0, disk_files: 0, not_indexed: 0, ghosts: 0, nodes: 0, edges: 0 },
+      counts: {
+        indexed_files: 0,
+        disk_files: 0,
+        not_indexed: 0,
+        ghosts: 0,
+        nodes: 0,
+        edges: 0,
+        disk_files_by_kind: { main: 0, test: 0, noise: 0 },
+        indexed_files_by_kind: { main: 0, test: 0, noise: 0 },
+        not_indexed_by_kind: { main: 0, test: 0, noise: 0 },
+      },
       refs: { pending: 0, resolved: 0, external: 0, failed: 0, stale_resolved: 0 },
       freshness: { not_fresh: 0, not_fresh_sample: [], self_writes_pending: pendingSelfWrites(root).length },
       backfill: backfillSummary(backfillState(root)),
@@ -212,7 +239,26 @@ export async function indexIntegrity(opts: {
     (db.prepare('SELECT path FROM files').all() as Array<{ path: string }>).map((r) => r.path),
   );
   const diskSet = new Set(diskList);
-  const not_indexed = [...diskSet].filter((p) => !indexedSet.has(p)).length;
+  // ★★ 三分类（本体 / 测试 / 噪音）—— 2026-09-28
+  // 为什么必须分类，而不是只报一个"未索引 N"：**索引器与量具对"什么算源码"的口径本就不同** ——
+  //   索引器默认 `include_tests=false` 跳过测试文件，而量具（`walkSourceFiles`）把测试算进"磁盘源码"
+  //   ⇒ 只报一个数时，量具**必然永远**报"未索引 240"（实测其中 219 是 `tests/**/*.test.ts`），
+  //   看起来像缺陷、实际是**有意排除**。分类后：`main` 缺口才是真信号，`test` 缺口是**可解释**的。
+  const kindOf = (p: string): keyof FileKindCounts => {
+    const n = path.basename(p);
+    if (isNoiseFileName(n)) return 'noise';
+    return isTestFileName(n) ? 'test' : 'main';
+  };
+  const tally = (set: Iterable<string>): FileKindCounts => {
+    const r: FileKindCounts = { main: 0, test: 0, noise: 0 };
+    for (const p of set) r[kindOf(p)] += 1;
+    return r;
+  };
+  const disk_files_by_kind = tally(diskSet);
+  const indexed_files_by_kind = tally(indexedSet);
+  const notIndexedSet = [...diskSet].filter((p) => !indexedSet.has(p));
+  const not_indexed_by_kind = tally(notIndexedSet);
+  const not_indexed = notIndexedSet.length;
   const ghosts = [...indexedSet].filter((p) => !diskSet.has(p)).length;
 
   // ── 引用状态 ──
@@ -298,12 +344,25 @@ export async function indexIntegrity(opts: {
       fix: '调用任意读工具或 refresh:true 即会优先同步它们',
     });
   }
-  if (not_indexed > 0) {
+  if (not_indexed_by_kind.main > 0) {
     issues.push({
       code: 'partial_coverage',
-      severity: state === 'ready' ? 'info' : 'warn',
-      message: `磁盘上有 ${not_indexed} 个源码文件尚未索引（拼图模式下这是**正常**的按需状态）`,
-      fix: not_indexed > 0 ? '以某个文件为种子读它（会连带建块）；或让后台续建跑完' : undefined,
+      severity: 'warn',
+      message:
+        `**本体**源码有 ${not_indexed_by_kind.main} 个尚未索引（本体 ${indexed_files_by_kind.main}/${disk_files_by_kind.main}）` +
+        '—— 这个数非 0 就是**真缺陷**（本体本应全覆盖）',
+      fix: '以某个文件为种子读它（会连带建块）；或让后台续建跑完',
+    });
+  }
+  if (not_indexed_by_kind.test > 0) {
+    issues.push({
+      code: 'test_not_indexed',
+      severity: 'info',
+      message:
+        `**测试**文件 ${not_indexed_by_kind.test} 个未入索引（测试 ${indexed_files_by_kind.test}/${disk_files_by_kind.test}）` +
+        '—— 这是索引器 `include_tests=false` 的**有意结果**，不是缺陷。' +
+        '★ 但**改名 / find_references 会看不到测试里的引用** ⇒ 需要时传 `include_tests=true` 重建。',
+      fix: 'import_project({ include_tests: true }) —— 做引用/改名类判断时建议开',
     });
   }
   const bf = backfillState(root);
@@ -341,7 +400,17 @@ export async function indexIntegrity(opts: {
     state,
     refreshed,
     ...(repair ? { repair } : {}),
-    counts: { indexed_files, disk_files: diskSet.size, not_indexed, ghosts, nodes, edges },
+    counts: {
+      indexed_files,
+      disk_files: diskSet.size,
+      not_indexed,
+      ghosts,
+      nodes,
+      edges,
+      disk_files_by_kind,
+      indexed_files_by_kind,
+      not_indexed_by_kind,
+    },
     refs: {
       pending: byStatus('pending'),
       resolved: byStatus('resolved'),
@@ -369,6 +438,10 @@ export function renderIntegrity(r: IndexIntegrityResult): string {
     `  判定：${r.trustworthy ? '✅ 可信' : '⚠️ 不可全信'}${r.refreshed ? '（本次已顺手保鲜）' : ''}`,
     `  ${r.summary}`,
     `  规模：索引 ${r.counts.indexed_files} 文件 / 磁盘源码 ${r.counts.disk_files} 文件（未索引 ${r.counts.not_indexed}）` +
+    `
+  　★ 按类拆（本体/测试/噪音）：本体 ${r.counts.indexed_files_by_kind.main}/${r.counts.disk_files_by_kind.main} 已索引 · ` +
+    `测试 ${r.counts.indexed_files_by_kind.test}/${r.counts.disk_files_by_kind.test} · ` +
+    `噪音 ${r.counts.indexed_files_by_kind.noise}/${r.counts.disk_files_by_kind.noise}` +
       ` ｜ 节点 ${r.counts.nodes} ｜ 边 ${r.counts.edges}`,
     `  引用：resolved ${r.refs.resolved} ｜ pending ${r.refs.pending} ｜ external ${r.refs.external} ｜ failed ${r.refs.failed}`,
     `  ★ 陈旧断言（resolved 但目标名已不在索引）：${r.refs.stale_resolved}`,

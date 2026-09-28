@@ -67,3 +67,43 @@ export function isNodeRunnableExt(ext: string): boolean {
   const e = ext.toLowerCase();
   return e !== '.mts' && e !== '.cts' && TS_JS_SET.has(e);
 }
+
+// ─────────────────────────────────────────────────────────────
+// "这个文件该不该进符号索引" —— 唯一落点（2026-09-28）
+//
+// ★ 为什么把它放这里：`import_project`（索引器）原本**自己**持有一条
+//   `SKIP_FILE_RE`，而 `index_integrity`（量具）数"磁盘源码"用的 `walkSourceFiles`
+//   **只跳目录、不跳这类文件** ⇒ **两个"什么算源码"的口径不一致**，
+//   于是量具**必然永远**报"未索引 240"（实测：其中 219 是 `tests/**/*.test.ts`）。
+//   这正是本文件头注里说的老病根（"什么算源码"曾散成 20 份清单）**长在量具自己身上**。
+//   ⇒ 收成一份、两边共用，删掉索引器里那份私有实现。
+//
+// ★★ 刻意拆成**两个谓词**（别合成一条正则，那是两个不同维度 —— 见规划书 §2c）：
+//   · `isTestFileName`  —— **测试文件**。它们**应当**能进图（改名/找引用时必须看到测试），
+//     只是索引器默认 `include_tests=false` 把它排除了；量具要**单独把它标出来**，
+//     而不是混进"未索引"当缺陷报。
+//   · `isNoiseFileName` —— **噪音/产物**（编辑器临时文件、压缩/生成/声明文件）。
+//     它们**不该**被算进"源码"的任何一个数里。
+// ─────────────────────────────────────────────────────────────
+
+/** 测试文件：跨语言的"这条是测试吗"（Go `_test.go` / TS `.test.`·`.spec.` / Python `test_*`·`*_test`） */
+const TEST_FILE_RE = /(_test\.go$|\.test\.[tj]sx?$|\.spec\.[tj]sx?$|test_.*\.py$|.*_test\.py$)/;
+
+/** 噪音/产物：编辑器临时件 + 压缩/生成/声明产物（`.min.js` `.d.ts` `*.gen.ts` …） */
+const NOISE_FILE_RE = /(\.min\.js$|\.d\.ts$|\.gen\.[tj]sx?$|\.tmp$|\.temp$|\.crswap$|\.crdownload$|\.swp$|\.swo$|\.swx$|\.bak$|\.orig$|\.rej$|~$)/;
+
+/** 这条文件名是测试吗（★ 与索引器的 `include_tests` 判据同源） */
+export function isTestFileName(name: string): boolean {
+  return TEST_FILE_RE.test(name);
+}
+
+/** 这条文件名是噪音/产物吗（不该算进"源码"任何一个数） */
+export function isNoiseFileName(name: string): boolean {
+  return NOISE_FILE_RE.test(name);
+}
+
+/** 索引器默认跳过（= 测试 ∪ 噪音）。`include_tests=true` 时只跳过噪音。 */
+export function isIndexSkippedFileName(name: string, includeTests = false): boolean {
+  if (isNoiseFileName(name)) return true;
+  return includeTests ? false : isTestFileName(name);
+}

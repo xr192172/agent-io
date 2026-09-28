@@ -19,6 +19,7 @@
  */
 
 import { DATA_DIR_NAME } from '../data_dir.js';
+import { isIndexSkippedFileName } from './ts_kernel/source_exts.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import ignore from 'ignore';
@@ -131,7 +132,6 @@ const ARCHIVE_DIRS = new Set([
 ]);
 
 /** 跳过的文件模式（测试/生成物 / 编辑器临时存取，非架构） */
-const SKIP_FILE_RE = /(_test\.go$|\.test\.[tj]sx?$|\.spec\.[tj]sx?$|\.min\.js$|\.d\.ts$|\.gen\.[tj]sx?$|test_.*\.py$|.*_test\.py$|\.tmp$|\.temp$|\.crswap$|\.crdownload$|\.swp$|\.swo$|\.swx$|\.bak$|\.orig$|\.rej$|~$|^~)/;
 
 /** 测试文件判定（仅测试类，不含 .min/.d.ts 等其它 SKIP 项）——live 快照刷新跟随设计 DSL 时用 */
 const TEST_FILE_RE = /(_test\.go$|\.test\.[tj]sx?$|\.spec\.[tj]sx?$|test_.*\.py$|.*_test\.py$)/;
@@ -260,7 +260,7 @@ export function walkFiles(
         if (isGitignored(chain, full, true)) continue;
         stack.push({ dir: full, chain: childChain });
       } else if (e.isFile()) {
-        if (!includeTests && SKIP_FILE_RE.test(e.name)) continue;
+        if (isIndexSkippedFileName(e.name, includeTests)) continue;
         if (isGitignored(chain, full, false)) continue;
         if (isSupported(path.extname(e.name))) out.push(full);
       }
