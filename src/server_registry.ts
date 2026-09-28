@@ -70,7 +70,8 @@ import { renameSymbols } from './tools/rename_symbols.js';
 import { moveSymbol } from './tools/symbol_move.js';
 import { findReferences } from './tools/find_references.js';
 import { runTests } from './tools/run_tests.js';
-import { checkStaleBuild, formatStaleText } from './tools/stale_check.js';
+// （`tools/stale_check` 的导入已随 P-F 删除：本文件不再直接消费它 —— 三个 stale 告警各自
+//   探测，`stale_check.formatStaleText` 仍由 lanes/observe.ts 的 `run_tests` 前置提示使用。）
 import { detectReachableRoots } from './tools/project_root.js';
 import { analyzeImpact, analyzeHubs } from './impact/index.js';
 import type { ImpactChangePoint } from './impact/index.js';
@@ -160,6 +161,10 @@ import { fileURLToPath } from 'node:url';
  * 每次工具调用轻量 stat 比对，dist 更新后在所有返回（含错误）尾部追加
  * 重启警告。警告由 registerAllTools 统一注入（唯一出口，覆盖全部工具；
  * wrap/wrapData 不再各自追加）。开销 = 每调用一次 stat，可忽略。
+ *
+ * ★ P-F（§16.6）：注入出去的**不是字符串**而是结构化告警（`ToolWarning`），
+ *   由 `emitWarnings`（registry/tool_warnings.ts）负责①首次全文/后续一行摘要 ②追加
+ *   `---WARNINGS---` 机器块。本文件的三个生产方只负责"判出来"。
  */
 const SELF_PATH = (() => {
   try {
@@ -180,21 +185,24 @@ function safeMtimeMs(p: string): number | null {
 
 /**
  * 陈旧构建判定（纯函数，可单测）：加载时的 mtime 早于当前 mtime → 进程仍跑旧代码。
- * 任何一侧未知（非编译产物环境）→ 返回空串，静默禁用。
+ * 任何一侧未知（非编译产物环境）→ `null`，静默禁用。
+ *
+ * ★ P-F（§16.6）：产物是**结构化告警**（不是 message）—— 分级呈现（首次全文/后续摘要）与
+ *   机器通道由 `emitWarnings` 统一负责，本函数只管"判出来"。
  */
-export function staleBuildWarningFor(loadedMtimeMs: number | null, curMtimeMs: number | null): string {
-  if (loadedMtimeMs === null || curMtimeMs === null) return '';
-  if (curMtimeMs > loadedMtimeMs) {
-    return (
-      '\n⚠️ STALE BUILD：dist 已在本进程启动后重建，当前响应来自旧代码——' +
-      '新增工具/字段/参数可能缺失或报"未知"错误。请重启 agent-io MCP server 后再执行写操作。'
-    );
-  }
-  return '';
+export function staleBuildWarningFor(loadedMtimeMs: number | null, curMtimeMs: number | null): ToolWarning | null {
+  if (loadedMtimeMs === null || curMtimeMs === null) return null;
+  if (curMtimeMs <= loadedMtimeMs) return null;
+  return {
+    code: 'STALE_BUILD',
+    summary: 'dist 已在本进程启动后重建 ⇒ 当前响应来自旧代码（新增工具/字段/参数可能缺失或报"未知"错误）',
+    detail: '本进程加载的是重建**之前**的编译产物：进程启动时记录 dist/server_registry.js 的 mtime，之后每次调用比对发现它已被更新。',
+    fix: '重启 agent-io MCP server 后再执行写操作',
+  };
 }
 
-/** dist 已更新（进程仍在跑旧代码）时返回重启警告，否则空串。 */
-function staleBuildWarning(): string {
+/** dist 已更新（进程仍在跑旧代码）⇒ 告警；否则 null。 */
+function staleBuildWarning(): ToolWarning | null {
   return staleBuildWarningFor(SELF_MTIME_MS, SELF_PATH ? safeMtimeMs(SELF_PATH) : null);
 }
 
@@ -242,28 +250,31 @@ function cachedSrcMtime(): number | null {
   return v;
 }
 
-/** 上次 stale 状态（null=未检测过；'stale'=src 比 dist 新；'ok'=dist 不旧）。只在状态变化时报一次，避免每次工具调用刷屏。 */
-let _lastStaleState: 'stale' | 'ok' | null = null;
+/**
+ * src 树最新 mtime 晚于 dist 树最新 mtime ⇒ 结构化告警；任一未知 / 不新 ⇒ `null`。
+ * 纯函数（两个 mtime 进来），与 `staleBuildWarningFor` 对称 —— 导出**为了能被测试看见**。
+ */
+export function staleSourceWarningFor(srcMax: number | null, distMax: number | null): ToolWarning | null {
+  if (srcMax === null || distMax === null) return null;
+  if (srcMax <= distMax) return null;
+  return {
+    code: 'STALE_SOURCE',
+    summary: '`src/` 比 `dist/` 新（疑似改了源码但未 `npm run build`）—— 当前工具跑的是旧编译产物',
+    detail: 'dist 产物比源旧：工具的行为（新增字段/修好的 bug）不会体现在本进程里，直到重建。',
+    fix: '`npm run build` 后重启 agent-io MCP server 生效',
+  };
+}
 
-/** src 比 dist 新（改了源码未 build）→ 提示，否则空串。仅在状态从 ok→stale 转变时报告，避免每次工具调用重复刷屏。 */
-function staleSourceWarning(): string {
-  const srcMax = cachedSrcMtime();
-  const distMax = newestMtime(DIST_DIR, false);
-  if (srcMax === null || distMax === null) return '';
-  const isStale = srcMax > distMax;
-  const state: 'stale' | 'ok' = isStale ? 'stale' : 'ok';
-  try {
-    // 只在「上次不是 stale → 这次是 stale」的转变时报一次；持续 stale 期间静默
-    if (isStale && _lastStaleState !== 'stale') {
-      return (
-        '\n⚠️ STALE SOURCE：`src/` 比 `dist/` 新（疑似改了源码但未 `npm run build`）。' +
-        '当前工具跑的是旧编译产物——请运行 `npm run build` 后再重启 agent-io MCP server 生效。'
-      );
-    }
-    return '';
-  } finally {
-    _lastStaleState = state;
-  }
+/**
+ * src 比 dist 新（改了源码未 build）⇒ 结构化告警；否则 `null`。
+ *
+ * ★ P-F（§16.6）：原先的状态位 `_lastStaleState`（"转变时报一次、持续期静默"）**已删除** ——
+ *   分级呈现（首次全文 / 后续一行摘要，且后续**不静默**）统一交给 `emitWarnings` 的进程内记账。
+ *   删除的原因：那个状态位把"持续陈旧"变成**永久静默**（§2d：把"少做了什么"藏起来 ——
+ *   后来加入的读者永远不知道图是旧的）。
+ */
+function staleSourceWarning(): ToolWarning | null {
+  return staleSourceWarningFor(cachedSrcMtime(), newestMtime(DIST_DIR, false));
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -275,21 +286,21 @@ function staleSourceWarning(): string {
 // 其中 `diff_impact` 给的是**行动建议**，读旧图会直接导致改错。
 //
 // 与其逐个补（下次加工具还会漏），不如在**响应注入层**兜一次：跟 `staleSourceWarning` 同一套
-// 做法（5s 缓存 + 只在状态转变时报一次），一次覆盖全部工具。
+// 做法（5s 探测缓存），一次覆盖全部工具。
 // 它只 stat、不解析、不写库 —— 负责"标注"，不负责"修复"（修复让 LLM 去调 refresh:true）。
 //
 // ★ 诚实标注它的**边界**（别把它当成保证）：
 //   ① 有 **5s 探测缓存**（与 `staleSourceWarning` 同一约定）⇒ 刚刚发生的改动最多 5s 内
 //      可能还没被标注到；这是"标注"而非"闸门"，真正的保证在 L1a（写穿）与 L3（读前自证）。
 //   ② 只比 `size` + `mtime`（毫秒取整）⇒ **等长改写落在同一毫秒**会漏判（见 detectStaleIndex 注释）。
-//   ③ 只在**状态转变**时报一次 ⇒ 持续陈旧期间静默（防刷屏）；恢复后再变旧能重新报。
+//   ③ ★ P-F（§16.6）：不再"只在状态转变时报一次、持续期静默"（那会把"少做了什么"藏起来，§2d）
+//      —— 改为**每轮都给**，但分级：首次全文 / 之后一行摘要。分级的状态位在
+//      `registry/tool_warnings.ts` 的进程内记账里（键含本函数的 `scope` = 项目根）。
 // ─────────────────────────────────────────────────────────────
 
 const STALE_INDEX_TTL_MS = 5000;
 
 let _staleIndexCache: { root: string; at: number; stale: number; total: number; sampled: boolean; selfWrites: number } | null = null;
-/** 每个项目根上次的陈旧状态（只在 ok→stale 转变时报一次，避免每次工具调用刷屏） */
-const _lastStaleIndexState = new Map<string, 'stale' | 'ok'>();
 
 /** 从工具入参里取项目根（各工具参数名不统一，两个都认） */
 function projectRootArg(args: Record<string, unknown>): string | null {
@@ -300,27 +311,31 @@ function projectRootArg(args: Record<string, unknown>): string | null {
   return null;
 }
 
-/** 测试隔离用：清掉陈旧告警的缓存与"已报过"状态 */
+/**
+ * 测试隔离用：清掉陈旧告警的**探测缓存**（5s TTL），让下一次调用重新 stat。
+ * ★ 与 `resetWarningDelivery()`（清"已投递全文"的记账）**分开**：前者=模拟"过了 5s"，
+ *   后者=模拟"新进程"。搅在一起就会让"首次全文/后续摘要"这条性质无法被观测。
+ */
 export function resetStaleIndexWarningCache(): void {
   _staleIndexCache = null;
-  _lastStaleIndexState.clear();
 }
 
 /**
- * 索引是否落后于磁盘 → 提示（只在状态转变时报一次）；无索引 / 无参 / 出错 → 空串（静默，不干扰主流程）。
- * 导出是为了**能被测试看见** —— 这类"注入型"逻辑最容易静默失效（永远返回空串也没人发现）。
+ * 索引是否落后于磁盘 → 结构化告警；无索引 / 无根 / 出错 → `null`（静默，不干扰主流程）。
+ *
+ * `scope` = 项目根：换项目各自算"首次全文"（分级键 `STALE_INDEX@<root>`）。
+ * 导出是为了**能被测试看见** —— 这类"注入型"逻辑最容易静默失效（永远返回 null 也没人发现）。
  */
-export function staleIndexWarning(args: Record<string, unknown>): string {
-  const raw = projectRootArg(args);
-  if (!raw) return '';
+export function staleIndexWarning(rawRoot: string | null): ToolWarning | null {
+  if (!rawRoot) return null;
   let root: string;
   try {
-    root = path.resolve(raw);
+    root = path.resolve(rawRoot);
   } catch {
-    return '';
+    return null;
   }
   try {
-    if (!hasLiveIndex(root)) return '';
+    if (!hasLiveIndex(root)) return null;
     const now = Date.now();
     if (!_staleIndexCache || _staleIndexCache.root !== root || now - _staleIndexCache.at >= STALE_INDEX_TTL_MS) {
       const db = getProjectCacheDb(root);
@@ -328,23 +343,19 @@ export function staleIndexWarning(args: Record<string, unknown>): string {
       _staleIndexCache = { root, at: now, stale: p.stale, total: p.total, sampled: p.sampled, selfWrites: p.selfWritesPending };
     }
     const c = _staleIndexCache;
-    const isStale = c.stale > 0 || c.selfWrites > 0;
-    if (!isStale) {
-      _lastStaleIndexState.set(root, 'ok'); // 恢复 → 下次再变旧时能重新报一次
-      return '';
-    }
-    // 只在 ok→stale 的**转变**时报一次；持续 stale 期间静默（否则每次工具调用都刷屏）
-    if (_lastStaleIndexState.get(root) === 'stale') return '';
-    _lastStaleIndexState.set(root, 'stale');
+    if (c.stale <= 0 && c.selfWrites <= 0) return null;
     const scope = c.sampled ? `抽样 ${c.total} 个已索引文件中的一段` : `全部 ${c.total} 个已索引文件`;
-    return (
-      `\n⚠️ STALE INDEX：符号索引**落后于磁盘**（${scope}里有 ${c.stale} 个已被改动` +
-      (c.selfWrites ? `，另有 ${c.selfWrites} 个自写登记待同步` : '') +
-      '）。**本次结果可能基于旧图**——`find_references` / `impact_analysis` 之类可能少报、或指向已改名的符号。' +
-      '要继续基于索引工作，先调 `index_integrity({project_dir, refresh:true})` 保鲜（或直接用任一读工具触发保鲜）。'
-    );
+    return {
+      code: 'STALE_INDEX',
+      scope: root,
+      summary: `符号索引落后于磁盘（${scope}里有 ${c.stale} 个已被改动${c.selfWrites ? `，另有 ${c.selfWrites} 个自写登记待同步` : ''}）—— 本次结果可能基于旧图`,
+      detail:
+        '`find_references` / `impact_analysis` 之类可能少报、或指向已改名的符号。' +
+        '（探测口径：只比 size + mtime，5s 缓存；这是"标注"而非"闸门"。）',
+      fix: '先调 `index_integrity({project_dir, refresh:true})` 保鲜（或直接用任一读工具触发保鲜）',
+    };
   } catch {
-    return '';
+    return null;
   }
 }
 
@@ -451,6 +462,7 @@ export function trustNoteFor(rawRoot: string | null): string {
 
 import type { ToolDef } from './registry/types.js';
 import { looseInputSchema, textOut, wrap, wrapData } from './registry/plumbing.js';
+import { emitWarnings, type ToolWarning } from './registry/tool_warnings.js';
 import {
   getDslHandler,
   editDslHandler,
@@ -585,13 +597,20 @@ export function registerAllTools(server: McpServer): void {
         ms: Date.now() - t0,
         err: r.isError ? (r.text ?? '').slice(0, 200) : undefined,
       });
-      // 响应注入：① 参数纠错（Did you mean）② 陈旧构建警告（dist 重建后进程仍跑旧代码 →
-      //          明确提示重启，防误信旧结果）③ watch 产出的未读影响提醒借力本次响应自动送达。
+      // 响应注入（顺序即拼接顺序）：① 参数纠错（Did you mean）② 陈旧告警家族（BUILD/SOURCE/INDEX，
+      //          **结构化** + 首次全文/后续一行摘要，见 registry/tool_warnings.ts）③ 索引在建标注（首触）
       //          ④ 行动工具的可信度附注（陈旧断言 → 静默漏报预警）：在 handler **之后**算 ——
       //          rename_symbols 等工具自己会修陈旧引用，附注必须反映"修完之后"的现状。
+      //          ⑤ watch 产出的未读影响提醒借力本次响应自动送达；⑥ `---WARNINGS---` 机器块（最末）。
+      //    ★ P-F（§16.6）：三个 stale 告警不再各自拼字符串，而是产出 `ToolWarning`，由 `emitWarnings`
+      //      统一分级 + 生成机器块（**追加在文本最末**，好让 `split(marker)[1]` 直接 `JSON.parse`）。
+      //      注入点在 handler 之后、`wrap`/`wrapData` **之外** ⇒ 不经过那两个包装器，
+      //      所以本笔无需改动 plumbing.ts（`wrap` 丢 `data` 与这里的告警通道无关）。
       const trustNote = def.trustAnnotated ? trustNoteFor(rootArg) : '';
+      const alertNote = await collectPendingAlertText(def.name);
+      const emission = emitWarnings([staleBuildWarning(), staleSourceWarning(), staleIndexWarning(rootArg)]);
       return textOut(
-        r.text + argHints + staleBuildWarning() + staleSourceWarning() + firstContactNote + staleIndexWarning(a) + trustNote + await collectPendingAlertText(def.name),
+        r.text + argHints + emission.text + firstContactNote + trustNote + alertNote + emission.block,
         r.isError,
       );
     });
