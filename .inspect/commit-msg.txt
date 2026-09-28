@@ -1,0 +1,21 @@
+trim: findExternalImporters 静默兜底改三态返回
+
+选中第一个样板函数：findExternalImporters
+- 理由：兜底处数 1（最小），被调用 1 处（测试），全函数 55 行（最小）
+- 返回类型由 Promise<string[]> 改为 Promise<ExternalImporterResult>
+  = { files: string[]; skipped: Array<{dir, why}> }
+- 原来 catch { return [] } 现在改为：
+    skipped.push({ dir: siblingDir, why: String(err) })
+    return { files: [], skipped }
+  （§2d：不是硬失败场景，readdirSync 失败记 skipped 而非抛）
+
+tsc 报出的调用点：src/ 0 处，tests/ 3 处（共 3 处），均已在本次提交修改
+（tsconfig.json include 仅 src/**/*，故 tsc 不检查 tests；
+  vitest run 覆盖测试类型安全，测试中 hits.map → hits.files.map）
+
+未改动：§23.2 判定为「保留」的 3 处 catch（行 145 git 非仓库 / 599 extends 失败 / 899 parsed 保持 null）——git diff 确认无变更
+
+没验什么：
+- 新增的 ExternalImporterResult 接口在 src/ 中无生产调用点，
+  但 tests/ 里 3 处用法已全部适配并跑绿
+- skipped 字段目前测试未断言（无失败路径用例），后续可补
