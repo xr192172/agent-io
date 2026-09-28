@@ -17,6 +17,10 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import type { Database } from './db.js';
 import { parseFileFull, parseFileFullSync, isSupported, resolveImportPath, type ParsedFile } from '../tools/ts_kernel/index.js';
+// ★ 写路径挂钩（§19）：ProjectView 的缓存在「磁盘被改过」时必须失效。
+//   syncFile/syncFileSync 是**全部 15 个写工具**的公共落点 ⇒ 挂这一处即覆盖所有写入，
+//   不必让每个写工具自己记得调 —— 「靠自觉的接线」正是本项目反复踩的坑。
+import { invalidateProjectView } from '../tools/ts_kernel/project_view.js';
 import { inTransaction } from './db.js';
 
 // ─────────────────────────────────────────────────────────────
@@ -447,6 +451,7 @@ function applyParsedToIndex(db: Database, projectRoot: string, pre: SyncPrelude,
 
 /** 单文件同步（async，经典路径）：parseFileFull 懒加载解析器（首次该语言有一次 import 成本） */
 export async function syncFile(db: Database, projectRoot: string, absPath: string): Promise<SyncFileResult> {
+  invalidateProjectView(projectRoot); // ★ 写路径挂钩：磁盘要变了 ⇒ ProjectView 缓存失效
   const p = syncFilePrelude(db, projectRoot, absPath);
   if (!p.ok) return p.early;
   const parsed = await parseFileFull(absPath, p.pre.content);
@@ -463,6 +468,7 @@ export async function syncFile(db: Database, projectRoot: string, absPath: strin
  * （write_gate 的预热闸）应在调用前用 `canParseFileSync` 拦下，这里只是兜底。
  */
 export function syncFileSync(db: Database, projectRoot: string, absPath: string): SyncFileResult {
+  invalidateProjectView(projectRoot); // ★ 同上（同步版）
   const p = syncFilePrelude(db, projectRoot, absPath);
   if (!p.ok) return p.early;
   const parsed = parseFileFullSync(absPath, p.pre.content);
