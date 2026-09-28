@@ -14,7 +14,6 @@
     "refactor_pipeline",
     "remove_dead_imports",
     "rename_files",
-    "rename_many",
     "rename_symbols",
     "render_design",
     "scaffold"

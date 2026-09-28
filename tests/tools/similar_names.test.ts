@@ -7,7 +7,7 @@
  *     - 跨函数同名保持隔离，各自成组，互不误并。
  *     - 短名（长度 <3）与 `_` 不在此判（归 suggest_renames）。
  *   - suggestDisambiguations：可注入 LLM 消歧命名；null/失败 → 降级只列聚类。
- *   - disambiguationItems：把消歧结果转成 renameMany 可消费的 items。
+ *   - disambiguationItems：把消歧结果转成 `rename_symbols(scope='local')` 可直接消费的 renames 条目。
  */
 import { describe, it, expect } from 'vitest';
 import { findSimilarNames, suggestDisambiguations, disambiguationItems, type SimilarNameCluster } from '../../src/tools/similar_names';
@@ -120,11 +120,12 @@ describe('suggestDisambiguations - LLM 消歧命名（可注入）', () => {
     expect(result.clusters[0].offenders[0].suggested).toBeUndefined();
   });
 
-  it('disambiguationItems 只收集有合法新名的 offender 进 renameMany items', async () => {
+  it('disambiguationItems 只收集有合法新名的 offender，转成 rename_symbols(scope=local) 可直接吃的 renames 条目', async () => {
     const src = 'function f() {\n  const count = 0;\n  const count2 = 0;\n}\n';
     const llm = async () => [{ name: 'count2', renamed: 'retryCount', reason: '' }];
     const result = await suggestDisambiguations(src, 'f.ts', { llm });
-    const items = disambiguationItems(result);
-    expect(items).toEqual([{ id: result.clusters[0].offenders[0].id, to: 'retryCount' }]);
+    // ★ 寻址键是**名字**（不是内部的 LocalBinding.id）：id 是不可复算的遍历序号，
+    //   源码一变就会静默指到别的绑定（= 改错变量）；名字是对着当前源码验的。
+    expect(disambiguationItems(result, 'src/f.ts')).toEqual([{ file: 'src/f.ts', symbol: 'count2', to: 'retryCount' }]);
   });
 });

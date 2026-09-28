@@ -2531,7 +2531,7 @@ DSH 交付 `4537a34`，**主目标达成**（合法 JSONC 现在能正常解析 
 ### 29.4 第二批（又落地 2 条）
 | # | 事项 | commit | 结论 |
 |---|---|---|---|
-| 5d | **P-B** `edit_code` 批量 `targets[]` | `c525a93` | ✅ 抽 `planReplaceText` 让**单文件与批量共用一份实现**；`targets?: [{file,old_text,new_text}]` + `atomic?`（缺省**逐项独立**，一项失败不影响其余）；7 项测试（含"一次调用改 7 文件"，对应 §16.8 原话）；★ 核实**不重复**既有工具（`rename_many` 是单文件内局部变量改名、`apply_rules` 需规则库）；G1 基线重算后**仍是 67 工具** |
+| 5d | **P-B** `edit_code` 批量 `targets[]` | `c525a93` | ✅ 抽 `planReplaceText` 让**单文件与批量共用一份实现**；`targets?: [{file,old_text,new_text}]` + `atomic?`（缺省**逐项独立**，一项失败不影响其余）；7 项测试（含"一次调用改 7 文件"，对应 §16.8 原话）；★ 核实**不重复**既有工具（`rename\_many` 是单文件内局部变量改名、`apply_rules` 需规则库）；G1 基线重算后**仍是 67 工具** |
 | 5e | **P-E** 完成⇒可验证产物 + G7 扩展 | `e7e2208` | ✅ ★★ **没有硬扩 G7** —— G7 读的是 `explore_code` 的 **switch 结构**，套不到"没有 action 派发表"的工具上，硬扩只有两种下场：**恒真（空门）**或靠猜（**误伤 + 维护地狱**）⇒ 改为新开 **G11 · 回执产物门**（判据换成「**回执通道能否携带产物**」），★ 与 P-A 门**互补不重复**（P-A 正向棘轮／G11 反向棘轮） |
 
 **全量回归**（累计 9 笔）：`228 passed / 1 skipped (229)` 文件、**`2350 passed / 5 skipped`** 测试
@@ -2551,3 +2551,98 @@ DSH 交付 `4537a34`，**主目标达成**（合法 JSONC 现在能正常解析 
   ★★ **抓手已现成且带门**：G11 的 `dropData:[34]`（§29.4）—— 每换一处，棘轮就收紧一格
   ＋ `src/tools/rename_file.ts:33` 的同名私有副本 `walkProjectFiles`（G4 该登记的家族）
 
+
+***
+
+## 30. ★★★ 改名族「内化」：`rename_symbols` + 局部改名两品合一（2026-09-29）
+
+> 用户原话：
+> 「重排吧。提醒你一句，他**曾经已经做过好几次收敛了，但是收敛不起来**。不过那可能是因为
+>  当时其实是**接口性的收敛**。现在你用工具看看能不能把它们**通过路由等方式进行内化**，就像是 **SafeRename** 那样。」
+
+### 30.1 诊断（一句话）
+
+前几轮收敛是「**接口性**」的：把工具名/参数对齐，**内核各写各的**。实证 —— 同一件"落盘"：
+`rename_symbols` 的 [C] 是薄转发（落盘在 [B]），而局部改名那一支的 [C] **自己 readFileSync + writeFileSync**，
+于是它少了三样：`dry_run`、写前快照（不可撤回）、索引写穿（改完立刻读可能读到旧索引）。
+⇒ 本笔把「落盘」下沉到一个内核（`tools/apply_writes.ts`，上一笔已建）+ 一道门（`tests/registry/lane_no_io.test.ts`，lane 出现 IO 即红），
+本笔再把**改名这件事本身**内化。
+
+### 30.2 「SafeRename 形态」的样板与本次所指
+
+样板 = `src/tools/rename_symbol.ts` 的 `renameSymbol()`：**一个 [B] 内部按对象路由**（`.go`/`.py`/`.cs`/`.java`/`.c`/TS 默认），
+各分支**共享同一套入参**与**同一套产物**（含 `blocked[]`）。
+⇒ 内化的本质 = **共享内核 + 按对象路由**，**不是**外面再包一个 action 分发壳。
+
+本次对象 = 「标识符改名」；它的两个**作用域粒度**（模块级跨文件 / 文件内局部）此前是两个独立入口。
+按 `docs/tool-convergence.md` §2.0 的口径（**按「操作对象」聚合，不按「实现机制」**）⇒ 应当合一。
+★ 注意 §3-A 当年判"不合并"给的理由正是「**三种底层机制**」—— 那恰是**按实现机制**的口径，与本笔的口径不同；
+本笔没有推翻那条结论的事实部分（机制确实不同），只换了聚合判据，并把"机制不同"降级为**路由的一个维度**。
+
+### 30.3 落地形态
+
+```
+renameSymbols()                       ← [B] 单一入口（[C] 只转发到它）
+  ├─ scope='local'  → renameLocals()          ← tools/rename_local.ts（读+算+写全在 [B]，落盘走 applyWrites）
+  └─ scope='module' → renameSymbolsModule()   ← 再按语言路由：renameSymbol() → .go/.py/.cs/.java/.c/TS
+```
+- **共享入参**：`renames=[{file,symbol,to,decl_line?,rename_file_if_matching?}]`（两种 scope 同形）。
+- **共享产物**：`RenameSymbolsResult`（`ok / scope / dryRun / previews[] / applied[] / filesWritten / blocked[] / indexWriteThrough`）。
+- **共享内核**：作用域分析（`analyzeLocals`/`resolveTo`/`collectDeclaratorDecls`）、合并改写（`renameMany`：一次解析、多编辑逆序应用）、
+  落盘（`applyWrites`）—— 全部复用，**一行都没重写**。`ast_rename.ts` 反而被**瘦身**（删掉自带的 `renameManyInFile`：
+  那是"第二份读+写 + 第二份落盘形态"，正是病根）。
+
+### 30.4 ★ 两处**有意的差别**（不藏，明写）
+
+| 维度 | `scope='module'` | `scope='local'` |
+|---|---|---|
+| 写盘粒度 | **全批原子**（任一条被阻断 ⇒ 整批不落盘） | **逐项独立**（一项跳过不影响其余，跳过项逐条可见） |
+| 理由 | 阻断常是**跨条目**性质（重复条目、跨文件符号图、星号转发、根外文件） | 局部改名的失败天然**逐项**（一个名字对不上不构成"别的项也有问题"） |
+| `symbol` 的含义 | 模块级声明名 / import 进来的远程名 | 文件内绑定名（含形参、catch 参数） |
+| 寻址 | `symbol`（模块内唯一） | `symbol` + 可选 `decl_line`（同名遮蔽时消歧；歧义 ⇒ 拒并列出候选） |
+
+`previews[].ok` 的语义两 scope **同义**：`ok=false` ⇔ 该项不能落盘、理由在 `blocked[]`。
+
+### 30.5 ★ 寻址键：为什么**弃用内部 `id`**、改用「名字 + 声明行」
+
+原局部入口的条目是 `{id, to}`，`id` 是 `LocalBinding.id`（遍历序号）。弃用理由（三条，均可验证）：
+
+1. **不可复算 ⇒ 会改错变量**：`id` 由 `resetIds()` 每次解析从 1 重排；源码一变，老 `id` 会**静默指向另一个绑定**。
+   名字 + 行号是**对着当前源码验**的 ⇒ 对不上就拒。
+2. **agent 拿不到**：给 `id` 的只有两个只读分析工具（命名建议 / 相似名消歧），而它们只覆盖"短名"与"易混淆孪生名"两类局部变量
+   —— **其余局部变量没有任何入口能拿到 `id`**，等于工具对它们不可用（`rename\_many` 的 description 曾写 `id 来自 analyze_locals`，
+   但**该工具并不存在**，是个幻影引用）。名字 + 行号是 agent 读一眼文件就能给出的。
+3. **统一入参的必要条件**：模块级符号**没有** `id`。若保留 `id`，schema 只能写成"`id?` 异或 `symbol?`"——
+   那正是用户点名的失败形态（一个入口里两套完全不同的入参）。
+
+代价（如实记）：`suggest_renames` / `find_similar_names` 的产出**原本**是 `{id,to}`，现在不再是可直接喂的形态；
+`find_similar_names` 的**派生便利数组** `disambiguationItems` 已随之改成 `{file,symbol,to}`（其聚类/消歧分析逻辑一行未动）。
+两个只读工具的**行号**字段仍叫 `declLine` 且是**行文本**（不是行号），需要消歧时得自己数行 —— 这是本轮留下的摩擦。
+
+### 30.6 能力核对（逐项对着旧入口的清单）
+
+| 旧能力（局部支） | 收敛后 | 在哪 |
+|---|---|---|
+| 作用域隔离（同作用域不撞名） | ✅ 仍在 | `renameMany` 的 clash 判定（复用，未重写） |
+| `changed=0` 的跳过项**可见** | ✅ 仍在（且**更可见**） | 每项 `blocked[]` + `renameMany` 新增的 `why`（原来只说"0"，不说为什么） |
+| 一次解析多编辑逆序合并（防偏移错位） | ✅ 仍在 | 同文件所有项合成**一次** `renameMany` |
+| `dry_run` | ✅ **从"内核有、工具面无"变成工具面参数** | schema 的 `dry_run` |
+| （新增）跨多文件一次调用 | ✅ 新增 | 条目带 `file`，按文件分组 |
+| （新增）写前快照 / 索引写穿 | ✅ 新增（走 `applyWrites`） | `rename_local.ts` → `applyWrites` |
+
+| 旧能力（模块支） | 收敛后 | 在哪 |
+|---|---|---|
+| 结构化 diff 预览 | ✅ 仍在 | `previews[].result.definition.ops` |
+| 整体阻断（任一条 ⇒ 全不落盘） | ✅ 仍在 | `renameSymbolsModule` 未改 |
+| `rename_file_if_matching` | ✅ 仍在（仅 module；local 传它会**拒该项**并说明） | schema + `rename_local` |
+| `report_literals` | ✅ 仍在（仅 module；local 传它会**拒整批**并说明） | schema + `renameSymbolsLocal` |
+| `trustAnnotated`（P-A 回执门） | ✅ 仍在 | [C] 条目 |
+
+**没丢能力**：只有一项"能力"被**替换**而非删除 —— `id` 寻址 → 名字+行号寻址（理由见 30.5）。
+
+### 30.7 交付与门
+
+- 工具数 **69 → 68**（本仓唯一对外契约变更）；G1 基线按门指引重算；G8 基线删掉被合并方一条（66 → 65，`rename_symbols` 一条**逐字未变**）；
+  G11 基线删掉被合并方一条；`readme_tools_gate` 68=68；`contract_docs_gate` 残留清零（含历史台账里的旧名 → 按本仓既有惯例写成 `rename\_many` 转义保留原貌）。
+- **没验什么**（如实）：没有跑全量回归（由用户统一跑）；没验跨进程 MCP 会话里 agent 的**实际**易用性（只有单测与回执文本）；
+  没验非 TS/JS 文件的 `scope=local`（该支对无解析器扩展名是**响亮拒**，不是静默跳过，但未逐语言实测）。

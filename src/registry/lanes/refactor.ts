@@ -1,11 +1,15 @@
 /**
- * refactor 线（21 个工具）—— ★ **本文件即该线归属的唯一来源**。
+ * refactor 线（20 个工具）—— ★ **本文件即该线归属的唯一来源**。
  *
  * ★ P1b（2026-09-28）：按当时 `capability_map.LANE_OF` 的归属从 `TOOL_DEFS` 切分而来，
  *   条目**逐字搬移**，只加了 `export const REFACTOR_TOOLS` 外壳 —— 归属自此由文件路径表达。
  * ★ P1c（2026-09-28）：`capability_map.LANE_OF` 已删除。`server_registry` 的 `LANE_SOURCES` 把本文件
  *   接到线 id `'refactor'`，并派生「工具 → 线」归属表注入 capability_map。
  *   ⇒ **把工具挪出本线 = 把它从本数组移到另一条线的数组，一处改动**（不再有第二处要同步）。
+ * ★ 2026-09-29（本笔）：本线 21 → 20 —— 「文件内局部变量批量改名」并入 `rename_symbols`
+ *   （两品是同一操作对象「标识符改名」的两个**作用域粒度**，按 `docs/tool-convergence.md` §2.0 的
+ *   「按操作对象聚合」口径合一；合一方式是 [B] 内部按「作用域 × 语言」路由 + 共享一份落盘内核，
+ *   **不是**外面再包一个 action 分发壳）。对外工具数 69 → 68。
  *
  * 为什么能切了：依赖已先行抽到 `registry/{types,plumbing,handlers}.ts`（P1a）——
  *   否则本文件 import 它们就会成环（server_registry → lanes → server_registry）。
@@ -15,8 +19,6 @@ import { wrap, wrapData } from '../plumbing.js';
 import path from 'node:path';
 import { analyzeHubs, analyzeImpact } from '../../impact/index.js';
 import type { ImpactChangePoint } from '../../impact/index.js';
-import { renameManyInFile } from '../../tools/ast_rename.js';
-import type { RenameItem } from '../../tools/ast_rename.js';
 import { suggestRenamesInFile } from '../../tools/ast_suggest.js';
 import type { SuggestOptions } from '../../tools/ast_suggest.js';
 import { applyWrites } from '../../tools/apply_writes.js';
@@ -150,90 +152,75 @@ export const REFACTOR_TOOLS: ToolDef[] = [
   },
 
   {
-    name: 'rename_many',
-    title: 'Batch-rename local variables with scope isolation',
-    description:
-      '作用域感知的批量重命名：一次解析源码、合并多处编辑偏移后逆序统一生成，避免串行改名导致的偏移错位。' +
-      '对文件中多个局部变量（含形参）同时改名，自动保证同作用域不撞名（clash 项按 changed=0 跳过并列出）。' +
-      '输入 items=[{id,to}]，id 来自 suggest_renames / analyze_locals 的 LocalBinding.id，to 为合法标识符。' +
-      '写盘前自动检查语法的工具请配合 edit_code；本品为纯表 → 只做折叠改写并写回原文件。',
-    inputSchema: {
-      project_dir: z.string().describe('目标项目根目录（用于解析 file 为绝对路径）'),
-      file: z.string().describe('目标文件（相对 project_dir 或绝对路径）'),
-      items: z
-        .array(
-          z.object({
-            id: z.number().describe('LocalBinding.id（来自 suggest_renames 的 candidate.id 或 analyze_locals）'),
-            to: z.string().describe('新变量名（必须为合法标识符 /^[A-Za-z_$][\\w$]*$/）'),
-          }),
-        )
-        .describe('待重命名的目标数组'),
-    },
-    handler: wrap(async (a) => {
-      // ★ [C] 只做路由：读源码 → 算改写 → 落盘 全在 [B]（`renameManyInFile`）。
-      //   本层此前自己 readFileSync/writeFileSync ⇒ 漏了 dry_run / 写前快照 / 索引同步三样；
-      //   整段下沉后这三样由落盘内核（applyWrites）天然补齐。
-      const r = await renameManyInFile({
-        project_dir: String(a.project_dir),
-        file: a.file as string,
-        items: a.items as RenameItem[],
-      });
-      // ★ 目标文件在 project_dir 之外 ⇒ 进不了快照、也进不了索引 ⇒ 内核拒绝落盘。
-      //   这里必须**响亮地报**（否则 message 会写"成功 N 项"而其实一个字节都没写 = 静默撒谎）。
-      if (r.blocked?.length) {
-        throw new Error(
-          `目标文件在 project_dir 之外，无法做写前快照与索引写穿 ⇒ 拒绝落盘：${r.blocked.join(', ')}` +
-            `（project_dir=${String(a.project_dir)}；请把它指到该文件所在的项目根）`,
-        );
-      }
-      return {
-        message:
-          `批量重命名完成：成功 ${r.changed.length} 项${r.skipped.length > 0 ? `，跳过 ${r.skipped.length} 项（非法名/撞名/原名相同）` : ''}。` +
-          (r.skipped.length > 0 ? ` 跳过的项：${r.skipped.map((s) => `${s.from}→${s.to}`).join(', ')}` : ''),
-        data: r.applied,
-      };
-    }),
-  },
-
-  {
     name: 'rename_symbols',
     trustAnnotated: true, // 改名决策读的是引用清单 ⇒ 陈旧断言会漏报改名点（见 trustNoteFor）
-    title: 'Batch cross-file module-level symbol renames with structured-diff preview',
+    title: 'Rename identifiers — module-level symbols (cross-file) or file-local bindings (scope-isolated)',
     description:
-      '跨文件符号改名（单条或批量统一入口）：对「模块级导出符号」改名，对标脚本效率并带结构化 diff 预览/验证。' +
-      '支持单条或批量——renames 传 1 条即单符号改名（原独立的 rename_symbol 单条目工具已并入本入口）。' +
-      '输入 renames=[{file,symbol,to,rename_file_if_matching?}]。' +
-      '先对所有条目按原始文件态 dry_run 算结构化 diff（每处 old→new，可验证）；任一条被阻断（撞名/星号转发/非模块级符号）→ 整体不落盘，返回预览报告。' +
-      '全部可落盘时才逐条落盘并返回每条 preview(含 applied 的实际 diff)。apply 阶段若前面改动使后续条目被阻断，立即中止并如实报告已应用条数。' +
-      '与 rename_many 互补：rename_many 是单文件局部变量批量；本品是跨文件模块级符号批量。' +
-      'report_literals=true 时，额外扫描每个旧符号的 snake 变体在项目文本里的字面量引用（如工具名 render_dsl 在错误提示/README 里的串），返回清单待确认，仅报告不改动。',
+      '标识符改名**统一入口**：一个工具、两种作用域粒度，用 scope 选；**入参两种 scope 同形**：renames=[{file,symbol,to,decl_line?,rename_file_if_matching?}]（单条或批量）。' +
+      '· scope=module（缺省，即老行为）：改**模块级符号**（函数/const/class/interface/type/enum，或 import 进来的远程名），跨文件联动定义点 + import 子句 + 全部引用点（含 tsconfig 别名、re-export）；**全批原子** —— 任一条被阻断（撞名/星号转发/非模块级符号/根外文件）⇒ 整体不落盘，返回预览报告。' +
+      '· scope=local：改**文件内局部绑定**（函数/块内 const·let·var、形参、catch 参数），作用域隔离（同作用域不撞名；不同函数/块的同名绑定互不误伤）；**逐项独立** —— 某一项找不到绑定/名字歧义/撞名/非法名 ⇒ 只跳它，其余照改，跳过项逐条可见。' +
+      '两种 scope 共有：先算结构化预览（每处 old→new 可验证）、true=dry_run 只看不写、**一次解析多编辑逆序合并**（避免串行改名导致的偏移错位）、一批一份写前快照（撤回通道）、落盘后索引写穿（改完立刻读不会读到旧索引）。' +
+      'scope=local 按 **symbol（名字）+ 可选 decl_line（声明行，1-based）** 寻址：名字在文件内唯一就直接命中；同名多于一个（不同函数/块级遮蔽）而没给 decl_line ⇒ 该条被拒并列出候选行号（**不猜**，改错变量是这类工具最不能出的错）。' +
+      'report_literals=true（仅 scope=module）：额外扫描每个旧符号 snake 变体在项目文本里的字面量引用（如工具名 render_dsl 出现在错误提示/README 里的串），按 kind 分治（契约/历史/文档/测试/代码），仅报告不改动。' +
+      '★ 与 rename_files 是**两个对象**（那个改文件系统路径 + 全仓 import 源），不聚合；suggest_renames / find_similar_names 是它的上游只读分析层。',
     inputSchema: {
-      project_dir: z.string().optional().describe('目标项目根（可选；缺省各条自动定位；统一定位时传）'),
+      project_dir: z.string().optional().describe('目标项目根（可选；缺省按条目自动定位；统一定位时传）'),
+      scope: z
+        .enum(['module', 'local'])
+        .optional()
+        .describe('作用域粒度：module（缺省）=模块级符号、跨文件联动、全批原子；local=文件内局部绑定、作用域隔离、逐项独立。两种 scope 的条目形态相同（renames=[{file,symbol,to,…}]）'),
       renames: z
         .array(
           z.object({
-            file: z.string().describe('定义符号的文件（绝对路径；或相对 cwd/project_dir 路径）'),
-            symbol: z.string().describe('旧符号名（模块级声明名/被 import 的远程名）'),
+            file: z.string().describe('目标文件（绝对路径；或相对 cwd/project_dir 路径）。module=符号定义所在文件；local=绑定所在文件（可跨多文件）'),
+            symbol: z.string().describe('要改名的标识符当前名。module=模块级声明名/被 import 的远程名；local=局部绑定名（含形参/catch 参数）'),
             to: z.string().describe('新符号名（合法标识符 /^[A-Za-z_$][\\w$]*$/）'),
-            rename_file_if_matching: z.boolean().optional().describe('true=符号是文件主导出时联动改文件名（默认 false）'),
+            decl_line: z
+              .number()
+              .int()
+              .min(1)
+              .optional()
+              .describe('★ 仅 scope=local：声明所在行号（1-based）——同名绑定多于一个时消歧（缺省且唯一则不必给；缺省且不唯一 ⇒ 该条被拒并列出候选）'),
+            rename_file_if_matching: z.boolean().optional().describe('★ 仅 scope=module：true=符号是文件主导出时联动改文件名（默认 false）。scope=local 传 true 会拒该项（响亮报错，不静默忽略）'),
           }),
         )
-        .describe('待批量改名的符号条目'),
-      dry_run: z.boolean().optional().describe('true=只算全部 dry-run diff 不落盘（默认：先整体校验，全通过才落盘）'),
-      report_literals: z.boolean().optional().describe('true=扫描旧符号 snake 变体的字面量引用清单（错误提示/README 等纯字符串），仅报告不改动'),
+        .describe('待改名的条目（两种 scope 同形）'),
+      dry_run: z.boolean().optional().describe('true=只算全部预览 diff 不落盘（默认：module 先整体校验全通过才落盘；local 逐项改）'),
+      report_literals: z.boolean().optional().describe('★ 仅 scope=module：true=扫描旧符号 snake 变体的字面量引用清单（错误提示/README 等纯字符串），仅报告不改动'),
     },
     handler: wrap(async (a) => {
       const r = await renameSymbols({
         project_dir: typeof a.project_dir === 'string' && a.project_dir ? a.project_dir : undefined,
-        renames: (a.renames as Array<{ file: string; symbol: string; to: string; rename_file_if_matching?: boolean }>).map((x) => ({
+        scope: a.scope === 'local' ? 'local' : 'module',
+        renames: (a.renames as Array<{ file: string; symbol: string; to: string; decl_line?: number; rename_file_if_matching?: boolean }>).map((x) => ({
           file: String(x.file),
           symbol: String(x.symbol),
           to: String(x.to),
+          decl_line: typeof (x as { decl_line?: number }).decl_line === 'number' ? (x as { decl_line: number }).decl_line : undefined,
           rename_file_if_matching: (x as { rename_file_if_matching?: boolean }).rename_file_if_matching === true,
         })),
         dry_run: a.dry_run === true,
         report_literals: a.report_literals === true,
       });
+      // ★ scope 分支只影响**渲染** —— [C] 是路由器 + 回执渲染器，不在这里写第二套改名/落盘实现。
+      if (r.scope === 'local') {
+        const done = r.previews.filter((p) => p.ok);
+        const parts: string[] = [
+          r.dryRun
+            ? `[局部改名 dry-run 预览·未落盘] 共 ${r.previews.length} 条：可改 ${done.length} 条，跳过 ${r.previews.length - done.length} 条`
+            : `局部改名完成：共 ${r.previews.length} 条（改 ${done.length} 条，跳过 ${r.previews.length - done.length} 条），落盘 ${r.filesWritten} 个文件`,
+        ];
+        if (!r.ok) {
+          parts.push('⚠ 整批未落盘（一个字节都没写）：');
+          for (const b of r.blocked ?? []) parts.push(`\t${b}`);
+        }
+        for (const p of r.previews) {
+          const note = p.result?.definition?.note;
+          parts.push(`  ${p.ok ? '✓' : '✗'} ${p.item.file} 的 ${p.item.symbol} → ${p.item.to}${note ? ` —— ${note}` : ''}`);
+          for (const b of p.blocked ?? []) parts.push(`\t✗ 跳过：${b}`);
+        }
+        return { message: parts.join('\n'), data: r };
+      }
       const fmt = (item: { file: string; symbol: string; to: string }, res?: { definition?: { file: string }; importers?: { file: string; ops?: { old: string; new: string }[] }[] }): string => {
         const lines = [`  - ${item.file} 的 ${item.symbol} → ${item.to}`];
         if (res?.definition) lines.push(`\t定义 ${res.definition.file}`);
@@ -900,7 +887,8 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       '为每个候选给出 suggested（建议新名）与 reason（理由）。' +
       'use_llm=true（默认）调 LLM 建议；false 或未配置 LLM 时降级为仅候选识别（suggested 留空）。' +
       '返回 candidates 含 id/name/kind/parentFunction/refs/declLine/suggested/reason，' +
-      '可直接把 {id, suggested} 数组传给 rename_many 完成批量改名。',
+      '可直接把 {file, symbol: name, to: suggested} 作为 rename_symbols(scope="local") 的 renames 条目完成批量改名' +
+      '（同文件同名绑定多于一个时再补 decl_line=声明行号；候选里的 declLine 是**行文本**、不是行号）。',
     inputSchema: {
       project_dir: z.string().describe('目标项目根目录（用于解析 file 为绝对路径）'),
       file: z.string().describe('目标文件（相对 project_dir 或绝对路径）'),
@@ -924,7 +912,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         message:
           `识别到 ${result.candidates.length} 个短名/无意义变量候选；` +
           `LLM 建议：${result.llm ? '已启用' : '未启用/降级'}${result.note ? `（${result.note}）` : ''}。` +
-          `建议名可直接作为 rename_many 的 items 使用。`,
+          `建议名可直接作为 rename_symbols(scope="local") 的 renames 条目使用（{file, symbol, to}）。`,
         data: result,
       };
     }),
@@ -938,7 +926,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       '相邻换位 typo total-totla / 小编辑距离），按相似度连通块聚类。每个 cluster 保留最清晰名 basis，' +
       '其余为待改名 offenders；use_llm=true（默认）请 LLM 为每个 offender 建议语义化且与 basis 明显区分的新名。' +
       'use_llm=false 或未配置 LLM 时降级为仅聚类（suggested 留空）。' +
-      '返回 clusters（含 offenders.suggested 与 reason）+ 可直接喂给 rename_many 的 items 数组，' +
+      '返回 clusters（含 offenders.suggested 与 reason）+ 可直接作为 rename_symbols(scope="local") 的 renames 条目使用的 items 数组（{file, symbol, to}），' +
       '实现"检测→建议→批量改名"闭环。',
     inputSchema: {
       project_dir: z.string().describe('目标项目根目录（用于解析 file 为绝对路径）'),
@@ -957,12 +945,12 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         file: a.file as string,
         opts,
       });
-      const items = disambiguationItems(result);
+      const items = disambiguationItems(result, String(a.file));
       return {
         message:
           `识别到 ${result.clusters.length} 个相似名聚类；` +
           `LLM 消歧：${result.llm ? '已启用' : '未启用/降级'}${result.note ? `（${result.note}）` : ''}；` +
-          `可直接改名的项 ${items.length} 条，已附在 data.items 供 rename_many 使用。`,
+          `可直接改名的项 ${items.length} 条，已附在 data.items（形如 {file,symbol,to}）供 rename_symbols(scope="local") 使用。`,
         data: { ...result, items },
       };
     }),

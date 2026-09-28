@@ -1192,7 +1192,7 @@
   {
     "name": "find_similar_names",
     "title": "Detect confusable similar names and disambiguate",
-    "description": "相似名称检测与一键消歧：识别同一函数内\"易看错\"的孪生名（仅大小写不同 / 数字后缀 count-count2 / 相邻换位 typo total-totla / 小编辑距离），按相似度连通块聚类。每个 cluster 保留最清晰名 basis，其余为待改名 offenders；use_llm=true（默认）请 LLM 为每个 offender 建议语义化且与 basis 明显区分的新名。use_llm=false 或未配置 LLM 时降级为仅聚类（suggested 留空）。返回 clusters（含 offenders.suggested 与 reason）+ 可直接喂给 rename_many 的 items 数组，实现\"检测→建议→批量改名\"闭环。",
+    "description": "相似名称检测与一键消歧：识别同一函数内\"易看错\"的孪生名（仅大小写不同 / 数字后缀 count-count2 / 相邻换位 typo total-totla / 小编辑距离），按相似度连通块聚类。每个 cluster 保留最清晰名 basis，其余为待改名 offenders；use_llm=true（默认）请 LLM 为每个 offender 建议语义化且与 basis 明显区分的新名。use_llm=false 或未配置 LLM 时降级为仅聚类（suggested 留空）。返回 clusters（含 offenders.suggested 与 reason）+ 可直接作为 rename_symbols(scope=\"local\") 的 renames 条目使用的 items 数组（{file, symbol, to}），实现\"检测→建议→批量改名\"闭环。",
     "schema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
@@ -3028,63 +3028,24 @@
     }
   },
   {
-    "name": "rename_many",
-    "title": "Batch-rename local variables with scope isolation",
-    "description": "作用域感知的批量重命名：一次解析源码、合并多处编辑偏移后逆序统一生成，避免串行改名导致的偏移错位。对文件中多个局部变量（含形参）同时改名，自动保证同作用域不撞名（clash 项按 changed=0 跳过并列出）。输入 items=[{id,to}]，id 来自 suggest_renames / analyze_locals 的 LocalBinding.id，to 为合法标识符。写盘前自动检查语法的工具请配合 edit_code；本品为纯表 → 只做折叠改写并写回原文件。",
-    "schema": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "type": "object",
-      "properties": {
-        "project_dir": {
-          "type": "string",
-          "description": "目标项目根目录（用于解析 file 为绝对路径）"
-        },
-        "file": {
-          "type": "string",
-          "description": "目标文件（相对 project_dir 或绝对路径）"
-        },
-        "items": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "id": {
-                "type": "number",
-                "description": "LocalBinding.id（来自 suggest_renames 的 candidate.id 或 analyze_locals）"
-              },
-              "to": {
-                "type": "string",
-                "description": "新变量名（必须为合法标识符 /^[A-Za-z_$][\\w$]*$/）"
-              }
-            },
-            "required": [
-              "id",
-              "to"
-            ],
-            "additionalProperties": false
-          },
-          "description": "待重命名的目标数组"
-        }
-      },
-      "required": [
-        "project_dir",
-        "file",
-        "items"
-      ],
-      "additionalProperties": {}
-    }
-  },
-  {
     "name": "rename_symbols",
-    "title": "Batch cross-file module-level symbol renames with structured-diff preview",
-    "description": "跨文件符号改名（单条或批量统一入口）：对「模块级导出符号」改名，对标脚本效率并带结构化 diff 预览/验证。支持单条或批量——renames 传 1 条即单符号改名（原独立的 rename_symbol 单条目工具已并入本入口）。输入 renames=[{file,symbol,to,rename_file_if_matching?}]。先对所有条目按原始文件态 dry_run 算结构化 diff（每处 old→new，可验证）；任一条被阻断（撞名/星号转发/非模块级符号）→ 整体不落盘，返回预览报告。全部可落盘时才逐条落盘并返回每条 preview(含 applied 的实际 diff)。apply 阶段若前面改动使后续条目被阻断，立即中止并如实报告已应用条数。与 rename_many 互补：rename_many 是单文件局部变量批量；本品是跨文件模块级符号批量。report_literals=true 时，额外扫描每个旧符号的 snake 变体在项目文本里的字面量引用（如工具名 render_dsl 在错误提示/README 里的串），返回清单待确认，仅报告不改动。",
+    "title": "Rename identifiers — module-level symbols (cross-file) or file-local bindings (scope-isolated)",
+    "description": "标识符改名**统一入口**：一个工具、两种作用域粒度，用 scope 选；**入参两种 scope 同形**：renames=[{file,symbol,to,decl_line?,rename_file_if_matching?}]（单条或批量）。· scope=module（缺省，即老行为）：改**模块级符号**（函数/const/class/interface/type/enum，或 import 进来的远程名），跨文件联动定义点 + import 子句 + 全部引用点（含 tsconfig 别名、re-export）；**全批原子** —— 任一条被阻断（撞名/星号转发/非模块级符号/根外文件）⇒ 整体不落盘，返回预览报告。· scope=local：改**文件内局部绑定**（函数/块内 const·let·var、形参、catch 参数），作用域隔离（同作用域不撞名；不同函数/块的同名绑定互不误伤）；**逐项独立** —— 某一项找不到绑定/名字歧义/撞名/非法名 ⇒ 只跳它，其余照改，跳过项逐条可见。两种 scope 共有：先算结构化预览（每处 old→new 可验证）、true=dry_run 只看不写、**一次解析多编辑逆序合并**（避免串行改名导致的偏移错位）、一批一份写前快照（撤回通道）、落盘后索引写穿（改完立刻读不会读到旧索引）。scope=local 按 **symbol（名字）+ 可选 decl_line（声明行，1-based）** 寻址：名字在文件内唯一就直接命中；同名多于一个（不同函数/块级遮蔽）而没给 decl_line ⇒ 该条被拒并列出候选行号（**不猜**，改错变量是这类工具最不能出的错）。report_literals=true（仅 scope=module）：额外扫描每个旧符号 snake 变体在项目文本里的字面量引用（如工具名 render_dsl 出现在错误提示/README 里的串），按 kind 分治（契约/历史/文档/测试/代码），仅报告不改动。★ 与 rename_files 是**两个对象**（那个改文件系统路径 + 全仓 import 源），不聚合；suggest_renames / find_similar_names 是它的上游只读分析层。",
     "schema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
       "properties": {
         "project_dir": {
-          "description": "目标项目根（可选；缺省各条自动定位；统一定位时传）",
+          "description": "目标项目根（可选；缺省按条目自动定位；统一定位时传）",
           "type": "string"
+        },
+        "scope": {
+          "description": "作用域粒度：module（缺省）=模块级符号、跨文件联动、全批原子；local=文件内局部绑定、作用域隔离、逐项独立。两种 scope 的条目形态相同（renames=[{file,symbol,to,…}]）",
+          "type": "string",
+          "enum": [
+            "module",
+            "local"
+          ]
         },
         "renames": {
           "type": "array",
@@ -3093,18 +3054,24 @@
             "properties": {
               "file": {
                 "type": "string",
-                "description": "定义符号的文件（绝对路径；或相对 cwd/project_dir 路径）"
+                "description": "目标文件（绝对路径；或相对 cwd/project_dir 路径）。module=符号定义所在文件；local=绑定所在文件（可跨多文件）"
               },
               "symbol": {
                 "type": "string",
-                "description": "旧符号名（模块级声明名/被 import 的远程名）"
+                "description": "要改名的标识符当前名。module=模块级声明名/被 import 的远程名；local=局部绑定名（含形参/catch 参数）"
               },
               "to": {
                 "type": "string",
                 "description": "新符号名（合法标识符 /^[A-Za-z_$][\\w$]*$/）"
               },
+              "decl_line": {
+                "description": "★ 仅 scope=local：声明所在行号（1-based）——同名绑定多于一个时消歧（缺省且唯一则不必给；缺省且不唯一 ⇒ 该条被拒并列出候选）",
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              },
               "rename_file_if_matching": {
-                "description": "true=符号是文件主导出时联动改文件名（默认 false）",
+                "description": "★ 仅 scope=module：true=符号是文件主导出时联动改文件名（默认 false）。scope=local 传 true 会拒该项（响亮报错，不静默忽略）",
                 "type": "boolean"
               }
             },
@@ -3115,14 +3082,14 @@
             ],
             "additionalProperties": false
           },
-          "description": "待批量改名的符号条目"
+          "description": "待改名的条目（两种 scope 同形）"
         },
         "dry_run": {
-          "description": "true=只算全部 dry-run diff 不落盘（默认：先整体校验，全通过才落盘）",
+          "description": "true=只算全部预览 diff 不落盘（默认：module 先整体校验全通过才落盘；local 逐项改）",
           "type": "boolean"
         },
         "report_literals": {
-          "description": "true=扫描旧符号 snake 变体的字面量引用清单（错误提示/README 等纯字符串），仅报告不改动",
+          "description": "★ 仅 scope=module：true=扫描旧符号 snake 变体的字面量引用清单（错误提示/README 等纯字符串），仅报告不改动",
           "type": "boolean"
         }
       },
@@ -3462,7 +3429,7 @@
   {
     "name": "suggest_renames",
     "title": "Suggest semantic names for short/unmeaningful variables",
-    "description": "智能化改名建议：识别文件中短名/无意义局部变量（含形参），结合纯逻辑候选识别 + LLM 命名建议，为每个候选给出 suggested（建议新名）与 reason（理由）。use_llm=true（默认）调 LLM 建议；false 或未配置 LLM 时降级为仅候选识别（suggested 留空）。返回 candidates 含 id/name/kind/parentFunction/refs/declLine/suggested/reason，可直接把 {id, suggested} 数组传给 rename_many 完成批量改名。",
+    "description": "智能化改名建议：识别文件中短名/无意义局部变量（含形参），结合纯逻辑候选识别 + LLM 命名建议，为每个候选给出 suggested（建议新名）与 reason（理由）。use_llm=true（默认）调 LLM 建议；false 或未配置 LLM 时降级为仅候选识别（suggested 留空）。返回 candidates 含 id/name/kind/parentFunction/refs/declLine/suggested/reason，可直接把 {file, symbol: name, to: suggested} 作为 rename_symbols(scope=\"local\") 的 renames 条目完成批量改名（同文件同名绑定多于一个时再补 decl_line=声明行号；候选里的 declLine 是**行文本**、不是行号）。",
     "schema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",

@@ -3,9 +3,10 @@
  *
  * 由来（用户 2026-09-29）：
  *   「把它**通过路由等方式进行内化**，就像是 `SafeRename` 那样。」
- *   诊断：`rename_symbols` 的 [C] 是**薄转发**（落盘在 [B] 里），而 `rename_many` 的 [C]
- *   **自己 readFileSync/writeFileSync** —— 而且它缺 `dry_run`、缺写前快照（撤回通道）、
- *   缺索引同步。同一件事"落盘"，有的工具做全了、有的漏一半 ⇒ 这就是"接口性收敛收敛不起来"。
+ *   诊断：`rename_symbols` 的 [C] 是**薄转发**（落盘在 [B] 里），而**另一支局部改名入口**的 [C]
+ *   **自己 readFileSync/writeFileSync**（该支已于 2026-09-29 并入 `rename_symbols`）—— 而且它缺
+ *   `dry_run`、缺写前快照（撤回通道）、缺索引同步。同一件事"落盘"，有的工具做全了、有的漏一半
+ *   ⇒ 这就是"接口性收敛收敛不起来"。
  *
  * ★ 本模块**不是**新造的第五份写入实现：它就是 `write_gate.writeSourceFiles`
  *   （L1a 统一写入闸：**快照(一次，含全部文件) → 真写 → 索引写穿 + 引用方重算**）的
@@ -59,7 +60,7 @@ export interface WriteReceipt {
  * @param projectRoot 项目根（快照与索引的归属）
  * @param items       待写文件与新内容；**同一文件多项时后者胜**（与"逐项覆盖"直觉一致，且只写一次）
  * @param opts.dryRun true=只走流程、不碰盘
- * @param opts.note   快照/回执里的人读说明（如 `rename_many:src/a.ts`）
+ * @param opts.note   快照/回执里的人读说明（如 `rename_symbols(scope=local):src/a.ts`）
  */
 export async function applyWrites(
   projectRoot: string,

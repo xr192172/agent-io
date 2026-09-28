@@ -16,12 +16,13 @@
 | 开发前先看 / 画活文档                            | `get_dsl` / `render_design` / `edit_dsl` / `manage_feature`         | 开工前对齐设计，避免方向性错误                                                                                                                  |
 | 记录结构化目标/方向，或解释「A 为何依赖 B」      | `set_design_intent`                                                 | 写 goals（目标/方向）+ edge_intents（边级意图 + 边界归属）到设计意图 overlay，落进 base 的 meta.goals / edge.intent 供 LLM 与读端消费           |
 | 日常维护（补节点/改描述/加标注）                 | `edit_dsl weight=routine`                                           | 轻量写路径：跳过 L4 证据回溯，仍留 L1-L3 防空话；改架构/契约等重改用 normal 全链                                                                |
-| 改一个模块级符号名                               | `rename_symbols`                                                    | 单条或批量统一入口（renames=[…]），自动定根+闭包+跨语言，先 dry_run 看 diff                                                                    |
-| 批量改多个符号                                   | `rename_symbols`                                                    | 先整体 dry-run，全部可落盘才落                                                                                                                  |
+| 改一个模块级符号名                               | `rename_symbols`（scope=module，缺省）                              | 单条或批量统一入口（renames=[…]），自动定根+闭包+跨语言，先 dry_run 看 diff                                                                    |
+| 批量改多个模块级符号                             | `rename_symbols`（scope=module）                                    | 先整体 dry-run，全部可落盘才落                                                                                                                  |
+| 改文件内局部变量/形参（可跨多文件）              | `rename_symbols scope=local`                                        | 作用域隔离：同作用域不撞名、不同函数/块的同名绑定互不误伤；逐项独立，跳过项逐条可见                                                             |
 | 改**对外契约名 / MCP 工具名**                    | `rename_symbols report_literals=true`                               | 扫旧名 snake 字面量清单，按 kind 分治(契约/历史/文档/测试/代码)；契约变更才跟文档                                                               |
 | 改文件名并联动全仓 import                        | `rename_files`                                                      | 单条或批量统一入口（renames=[…]），防文件悬空                                                                                                  |
 | 批量改多个文件名                                 | `rename_files`                                                      | 整体先 dry-run，全部可落盘才落                                                                                                                  |
-| 单文件局部变量/形参批量改名                      | `rename_many`                                                       | 作用域隔离                                                                                                                                      |
+| 单文件/文件内局部变量/形参批量改名               | `rename_symbols scope=local`                                        | 作用域隔离；逐项独立（一项跳过不影响其余），跳过项逐条可见                                                                                      |
 | 改一段代码（函数体/range）                       | `edit_code`                                                         | 按符号/行号定位改写                                                                                                                             |
 | 理解一串代码/结构                                | `explore_code`                                                      | 只读、即时答案                                                                                                                                  |
 | 清理无效 import                                  | `remove_dead_imports`                                               | 剪刀剪 dead_deps                                                                                                                                |
@@ -46,13 +47,13 @@
 当任务涉及**重命名**（符号、函数、类、文件、变量、作用域内局部名）时，优先使用本仓库 MCP 暴露的
 `rename_*` 工具，而非 `grep + 正则` 手动替换。
 
-| 场景                                                     | 必用工具         |
-| -------------------------------------------------------- | ---------------- |
-| 改一个模块级符号（函数/const/class/interface/type/enum） | `rename_symbols` |
-| 批量改多个模块级符号                                     | `rename_symbols` |
-| 改文件名并联动全仓 import 引用                           | `rename_files`   |
-| 批量改多个文件路径                                       | `rename_files`   |
-| 单文件内局部变量/形参批量改名                            | `rename_many`    |
+| 场景                                                     | 必用工具                     |
+| -------------------------------------------------------- | ---------------------------- |
+| 改一个模块级符号（函数/const/class/interface/type/enum） | `rename_symbols`             |
+| 批量改多个模块级符号                                     | `rename_symbols`             |
+| 改文件名并联动全仓 import 引用                           | `rename_files`               |
+| 批量改多个文件路径                                       | `rename_files`               |
+| 文件内局部变量/形参批量改名（可跨多文件）                | `rename_symbols scope=local` |
 
 **硬性流程（每次改名都执行）：**
 
@@ -64,7 +65,7 @@
 
 **例外（可绕过工具直接手改）：**
 
-- 目标不是模块级符号（局部变量畅通走 `rename_many`，而不是手改）。
+- 目标不是模块级符号（局部变量畅通走 `rename_symbols scope=local`，而不是手改）。
 
 - 非 TS/JS/Go/Python 文件的改名，且本仓库工具不支持时。
 

@@ -425,6 +425,35 @@
 
 > **渐进披露小结：已落地 2 个入口样板 ——** **`gateway_provider`(4→1)、`canvas_notes`(3→1)、`manage_feature`(既有 CRUD action 先例)。**
 
+#### ★★ 改名族「内化」：`rename_symbols` + 局部改名两品合一（2026-09-29，**路径 A：共享内核 + 按对象路由**）
+
+- [x] 候选组：`rename_symbols`（跨文件模块级符号）/ 局部改名入口（文件内局部绑定）
+  - 核验：读源实现 ✓ / 对契约 ✓ / 找调用方 ✓ / 查测试 ✓ / 回归+插桩 ✓
+
+  - **推翻本文件 §3-A 的"不合并"结论（事实不动、判据换口径 ✓）**：§3-A 的理由是「**三种底层机制**完全不同 ⇒ 抽公共内核纯属糅合」——
+    那是**按实现机制**聚类。§2.0 的判据是**按操作对象**聚合：两者改的都是「**标识符**」（同一对象），
+    差别是**作用域粒度**（模块级跨文件 / 文件内局部）。本次把"机制不同"降级为**路由的一个维度**，
+    并用 SafeRename 形态（一个 [B] 内部按对象路由、各支共享入参与产物）实现 ⇒ 不是糅合，是**同一个 [B] 的两条分支**。
+
+  - 发现（诊断"以前为什么收敛不起来"）：前几轮是**接口性收敛**（名字/参数对齐，内核各写各的）。
+    实证：同一件"落盘"，模块支的 [C] 是薄转发（落盘在 [B]），局部支的 [C] **自己 readFileSync/writeFileSync**
+    ⇒ 少了 `dry_run` / 写前快照 / 索引写穿三样。
+
+  - 处理：**合并**为单入口 `rename_symbols`（新增 `scope: 'module' | 'local'`，缺省 `module` = 老行为，老调用方零改动）；
+    [B] 内部按「作用域 × 语言」路由（local → `renameLocals`，module → `renameSymbolsModule` → 现有按语言分支）；
+    **共享内核**：`analyzeLocals` / `renameMany`（作用域分析 + 合并改写）、`applyWrites`（落盘）全部复用；
+    `ast_rename.ts` 反被**瘦身**（删掉自带的 `renameManyInFile` —— 那是第二份"读+写+落盘形态"）。
+    **统一入参**：`renames=[{file,symbol,to,decl_line?,rename_file_if_matching?}]`（两 scope 同形）。
+    **寻址键从内部 `id` 改为「名字 + 声明行」**（`id` 是不可复算的遍历序号，源码一变会静默指到别的绑定 = 改错变量；
+    且模块级符号没有 `id`，保留 `id` 会让 schema 变成"两套入参"= 用户点名的失败形态）。
+
+  - 结果：对外工具数 **69 → 68**；两 scope 的**写盘粒度有意不同**（module 全批原子 / local 逐项独立）并已在 description 与回执里写明；
+    `suggest_renames` / `find_similar_names`（只读分析层）**不合并**，但 `find_similar_names` 的派生便利数组
+    `disambiguationItems` 随寻址键改成 `{file,symbol,to}`（其聚类/消歧分析一行未动）。
+
+> **内化小结（与前面几笔的区别）：`gateway_provider` / `canvas_notes` 是「入口聚合」（外壳），
+> 本笔是「内核内化」（[B] 路由 + 共享落盘内核）—— 后者才是用户说的"收敛得起来"。**
+
 ***
 
 ## 8. P-G 实测登记：`explore_code(action='read')` 是不是稳定的读文件入口（2026-09-28）

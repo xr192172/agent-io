@@ -50,7 +50,7 @@ description: "design-canvas 渐进披露路由。遇到『画图/看代码/重�
 - **改名优先走 `rename_*` 工具组**（别 grep+正则手改，那是归位失败）：
   - 改一个模块级符号 → `rename_symbol`（先 `dry_run=true` 看结构化 diff，`rename_file_if_matching` 联动改名文件）
   - 批量改多个模块级符号 → `rename_symbols`（先整体 dry-run，全部可落盘才落盘）
-  - 改文件名并联动全仓 import → `rename_file`；单文件局部变量/形参批量 → `rename_many`
+  - 改文件名并联动全仓 import → `rename_file`；文件内局部变量/形参批量改名（作用域隔离）→ `rename_symbols scope=local`（`renames=[{file,symbol,to}]`；同名遮蔽时补 `decl_line`，逐项独立、跳过项逐条可见）
   - 改**对外契约名 / MCP 工具名**（如 `render_dsl`→`render_design`）→ 在 `rename_symbols` 加 **`report_literals=true`**：扫旧名 snake 变体在文本的字面量清单，按 `kind` 分治——`contract`(server_registry `name:`) 会破坏契约需人审、`history`(tool-convergence) 保留原貌、`docs`/`test`/`code` 决定是否同步。**契约变更才跟文档，实现变更不碰文档。**
 - 安全重构/改名（自身带基线验证→落盘→重验→回滚）→ `verify_refactor` / `refactor_pipeline`
 - 提级/包改名（含别名清洗）→ `package_migration`（已 AST 作用域守卫，不会误扫局部变量）

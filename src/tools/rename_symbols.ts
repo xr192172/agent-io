@@ -1,21 +1,43 @@
 /**
- * rename_symbols —— 跨文件符号批量改名（对标脚本效率 + 结构化 diff 预览/验证）
+ * rename_symbols —— 标识符改名的**单一入口 [B]**：内部按「**作用域 × 语言**」路由。
  *
- * 把多个「跨文件符号改名」合成一次调用：
- *   - 先对所有条目按原始文件态 dry_run 计算结构化 diff（old→new，可验证），
- *     任一条目被阻断（撞名/星号转发/非模块级符号）→ 整体不落盘，先给预览报告。
- *   - 全部可落盘时才逐条真落盘，返回每条的 preview(applied)。
- *   - 复用 rename_symbol 的单条原子语义（每条内部：阻断→该条不动）；跨条 clash
- *     在 apply 阶段兜底：若前面改动使后续条目被阻断，立即中止并如实报告已应用条数。
+ * ```
+ * renameSymbols()                       ← 入口（[C] 只转发到这一个函数）
+ *   ├─ scope='local'  → renameLocals()          （文件内局部绑定；作用域分析复用 ast_rename）
+ *   └─ scope='module' → renameSymbolsModule()   （模块级符号；再按语言路由 ↓）
+ *                         renameSymbol()
+ *                           ├─ '.go'  → renameGoSymbol()
+ *                           ├─ '.py'  → renamePythonSymbol()
+ *                           ├─ '.cs'  → renameNamespaceSymbol(ext='.cs')
+ *                           ├─ '.java'→ renameNamespaceSymbol(ext='.java')
+ *                           ├─ '.c'/'.h' → renameCSymbol()
+ *                           └─ 其余 TS 系 → 模块符号引用图（本文件下半部）
+ * ```
  *
- * 与 rename_many 互补：rename_many 是单文件局部变量批量（作用域隔离）；本工具是
- * 跨文件模块级符号批量（依赖 direction2 的结构化 diff / dry_run）。
+ * 这就是用户点名的 **SafeRename 形态**：**一个 [B] 内部按对象路由**（对象 = 要改名的那个标识符，
+ * 它的**作用域**与**语言**决定了机制），各分支**共享同一套入参形态**（`renames:[{file,symbol,to,…}]`）
+ * 与**同一套产物形态**（`RenameSymbolsResult`：`ok / scope / dryRun / previews / applied /
+ * filesWritten / blocked / indexWriteThrough`）。
+ *
+ * ★ 为什么 `scope` 是**调用级**参数而不是逐条参数：作用域是"这一批在做什么粒度的事"，
+ *   而不是某个条目的属性 —— 逐条混两种粒度会让"整批是否原子"变成一句没法回答的话
+ *   （见下"写盘粒度"）。
+ * ★ **写盘粒度（两种 scope 有意不同，[C] 的 description 里也明写了）**：
+ *   - `scope='module'`：**全批原子** —— 任一条被阻断 ⇒ 整批不落盘（阻断常是跨条目性质）。
+ *   - `scope='local'` ：**逐项独立** —— 某一项找不到绑定/名字歧义/撞名/非法名 ⇒ 只跳它，
+ *     其余照改（局部改名的失败天然是逐项的）；跳过项逐条可见（`blocked[]` / 回执里列出）。
+ *   两种情形都在 `previews[].ok` / `blocked[]` 上**同义**：`ok=false` ⇔ 该项不能落盘、理由在 `blocked`。
+ *
+ * 与 `rename_files` 的分工（**不同操作对象，不聚合**）：那个改的是**文件系统实体**（路径 + 全仓 import 改写）；
+ * 本工具改的是**标识符**（符号绑定 + 引用点）。`suggest_renames` / `find_similar_names` 是只读分析层，
+ * 与本工具是上下游（它们出建议，本工具落盘），同样不聚合。
  */
 
 import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { renameSymbol, type RenameSymbolInput, type RenameSymbolResult } from './rename_symbol.js';
+import { renameLocals, type LocalRenameOutcome } from './rename_local.js';
 import { resolveProjectRoot } from './project_root.js';
 import { createProtectGuard } from './protect.js';
 import { writeSourceFiles, type WriteThroughOutcome } from './write_gate.js';
@@ -50,18 +72,30 @@ export interface LiteralMatch extends RawLiteralMatch {
 }
 
 export interface RenameSymbolsItem {
-  /** 定义符号的文件（绝对路径；或相对 cwd / project_dir 路径） */
+  /** 定义/所在文件（绝对路径；或相对 cwd / project_dir 路径） */
   file: string;
-  /** 旧符号名（模块级声明名/被 import 的远程名） */
+  /**
+   * 要改名的标识符**当前**的名字：
+   *   - `scope='module'`：该文件的**模块级声明名**（或它 import 进来的远程名）
+   *   - `scope='local'` ：该文件的**局部绑定名**（函数/块内 const·let·var、形参、catch 参数）
+   */
   symbol: string;
   /** 新符号名（合法标识符） */
   to: string;
-  /** true=符号是文件主导出（文件名=符号名）时联动改文件名（可选） */
+  /**
+   * ★ `scope='local'` 专用：声明所在**行号**（1-based）——同名绑定多于一个（不同函数 / 块级遮蔽）时消歧。
+   * 缺省时若该名在本文件唯一 ⇒ 直接用；不唯一 ⇒ 该条被拒并列出候选（不猜）。
+   * 只为名字寻址才需要它：内部 `id` 是不可复算的遍历序号，源码一变就会静默指到别的绑定（改错变量）。
+   */
+  decl_line?: number;
+  /** ★ 仅 `scope='module'`：true=符号是文件主导出（文件名=符号名）时联动改文件名（默认 false）。local 支收到 true 会拒该项 */
   rename_file_if_matching?: boolean;
 }
 
 export interface RenameSymbolsResult {
   ok: boolean;
+  /** 本次走的**作用域分支**（回执永远自报家门，免得调用方靠猜） */
+  scope: 'module' | 'local';
   /** true=本次为纯预览（dry_run=true 或任一条被阻断返回的整体不落盘预览） */
   dryRun?: boolean;
   /** 每个条目的 dry-run 结构化 diff（基于原始文件态；含 ok/blocked 信息） */
@@ -99,17 +133,31 @@ export interface RenameSymbolsResult {
   indexWriteThrough?: WriteThroughOutcome;
 }
 
-export async function renameSymbols(input: {
-  /** 可省：传给每条作为统一定位（缺省各条自动定位项目根） */
+/** `rename_symbols` 的**调用级入参**（[C] 逐字转发；语义见 `renameSymbols` 的文档与 `scope` 注释） */
+export interface RenameSymbolsInput {
+  /** 可省（`scope='module'` 时各条自动定位项目根；`scope='local'` 缺省时按第一条 file 自动定位） */
   project_dir?: string;
+  /** `'module'`（缺省）= 模块级符号、跨文件；`'local'` = 文件内局部绑定（作用域隔离）。缺省即老行为 ⇒ 老调用方零改动 */
+  scope?: 'module' | 'local';
   renames: RenameSymbolsItem[];
   /** true=只算全部 dry-run diff 不落盘；默认优先整体校验，全通过才落盘 */
   dry_run?: boolean;
-  /** true=额外扫描每个旧符号的 snake 变体在项目文本里的字面量引用（如工具名 render_dsl 在错误提示/README 里的串），返回清单（只扫描，不改动） */
+  /** 仅 `scope='module'`：true=额外扫描每个旧符号的 snake 变体在项目文本里的字面量引用（如工具名 render_dsl 在错误提示/README 里的串），返回清单（只扫描，不改动） */
   report_literals?: boolean;
-  /** true=在符号改名成功后，自动替换 decision=apply 的字面量（code/docs/test）；contract→需人审、history→保留、冻结行→跳过，均不写盘。dry_run 下只预览不入盘。 */
+  /** 仅 `scope='module'`：true=在符号改名成功后，自动替换 decision=apply 的字面量（code/docs/test）；contract→需人审、history→保留、冻结行→跳过，均不写盘。dry_run 下只预览不入盘。 */
   apply_literals?: boolean;
-}): Promise<RenameSymbolsResult> {
+}
+
+/** 入口：按「作用域」路由。这是 [C] 唯一要认识的 [B] 符号。 */
+export async function renameSymbols(input: RenameSymbolsInput): Promise<RenameSymbolsResult> {
+  const scope: 'module' | 'local' = input.scope === 'local' ? 'local' : 'module';
+  if (scope === 'local') return renameSymbolsLocal(input);
+  // module 支（内部再按**语言**路由：.go/.py/.cs/.java/.c/TS）
+  return { scope, ...(await renameSymbolsModule(input)) };
+}
+
+/** module 支的实体（调用级入参去掉 `scope` —— 路由已经选定它了） */
+async function renameSymbolsModule(input: Omit<RenameSymbolsInput, 'scope'>): Promise<Omit<RenameSymbolsResult, 'scope'>> {
   const { renames, dry_run } = input;
   const projectDir = typeof input.project_dir === 'string' && input.project_dir ? input.project_dir : undefined;
   const blocked: string[] = [];
@@ -187,7 +235,7 @@ export async function renameSymbols(input: {
     }
   }
 
-  const doWrite = async (): Promise<RenameSymbolsResult> => {
+  const doWrite = async (): Promise<Omit<RenameSymbolsResult, 'scope'>> => {
     const applied: RenameSymbolsResult['applied'] = [];
     let filesWritten = 0;
     for (let i = 0; i < renames.length; i++) {
@@ -234,6 +282,97 @@ export async function renameSymbols(input: {
 
   const gated = await writeSourceFiles(gateRoot, touched, doWrite, { label: `rename_symbols: ${renames.length} 条` });
   return { ...gated.value, indexWriteThrough: gated.report.index ?? { ok: false, mode: 'skipped', note: '未写穿' } };
+}
+
+// ──────────────── scope='local' 支：文件内局部绑定（产物适配成上面同一封回执） ────────────────
+
+/** 局部支逐项 → 与 module 支**同型**的单项结果（`definition.file` = 该文件，`definition.edits` = 替换点数） */
+function localItemResult(it: LocalRenameOutcome, dryRun: boolean): RenameSymbolResult {
+  const where = it.declLine === undefined ? '' : `声明第 ${it.declLine} 行${it.parentFunction ? `（函数 ${it.parentFunction}）` : ''}`;
+  return {
+    ok: it.ok,
+    symbol: it.symbol,
+    to: it.to,
+    ...(it.changed > 0
+      ? {
+          definition: {
+            file: it.file,
+            edits: it.changed,
+            note: `文件内局部绑定（作用域隔离）：${where}；替换 ${it.changed} 处（声明+赋值+引用）`,
+          },
+        }
+      : {}),
+    filesWritten: it.ok && !dryRun ? 1 : 0,
+    dryRun,
+    // 跳过项走**同一封信**：`{path, why}` 就是"这个文件上我没做的那件事 + 为什么"（§2d）
+    ...(it.blocked?.length ? { skipped: it.blocked.map((why) => ({ path: it.file, why })) } : {}),
+  };
+}
+
+/**
+ * `scope='local'` 支：作用域分析复用 `ast_rename`，落盘复用 `applyWrites` —— 本函数只做
+ * **定位项目根 + 把逐项产物适配成共享回执**这两件"胶水"，不讲第二套改名/落盘实现。
+ */
+async function renameSymbolsLocal(input: RenameSymbolsInput): Promise<RenameSymbolsResult> {
+  const empty = { scope: 'local' as const, dryRun: true, previews: [], applied: [], filesWritten: 0 };
+  const renames = input.renames;
+  if (!renames || renames.length === 0) return { ...empty, ok: false, blocked: ['批量列表为空'] };
+  if (input.report_literals === true || input.apply_literals === true) {
+    return {
+      ...empty,
+      ok: false,
+      blocked: [
+        'scope=local 不支持字面量引用扫描（report_literals / apply_literals）：那扫的是**模块级符号名**在项目文本里的 snake 字面量（对外契约名/文档串），局部变量不进对外契约' +
+          ' ⇒ 如需请用 scope=module',
+      ],
+    };
+  }
+
+  // 项目根：显式给了就用；缺省按第一条 file 自动定位（与 module 支的兜底同源，都用 resolveProjectRoot）
+  const first = String(renames[0].file);
+  const rootDir =
+    typeof input.project_dir === 'string' && input.project_dir
+      ? input.project_dir
+      : resolveProjectRoot(path.isAbsolute(first) ? first : path.resolve(process.cwd(), first));
+
+  const r = await renameLocals({
+    root: rootDir,
+    renames: renames.map((x) => ({
+      file: String(x.file),
+      symbol: String(x.symbol),
+      to: String(x.to),
+      ...(typeof x.decl_line === 'number' ? { decl_line: x.decl_line } : {}),
+      rename_file_if_matching: x.rename_file_if_matching === true,
+    })),
+    dry_run: input.dry_run === true,
+  });
+
+  const previews: RenameSymbolsResult['previews'] = r.items.map((it) => ({
+    index: it.index,
+    item: renames[it.index],
+    ok: it.ok,
+    ...(it.blocked?.length ? { blocked: it.blocked } : {}),
+    result: localItemResult(it, r.dryRun),
+  }));
+  const applied: RenameSymbolsResult['applied'] = r.dryRun || !r.ok
+    ? []
+    : previews.filter((p) => p.ok).map((p) => ({ index: p.index, item: p.item, result: p.result! }));
+
+  return {
+    ok: r.ok,
+    scope: 'local',
+    dryRun: r.dryRun,
+    previews,
+    applied,
+    filesWritten: r.filesWritten,
+    ...(r.blocked?.length ? { blocked: r.blocked } : {}),
+    indexWriteThrough:
+      r.index ?? {
+        ok: false,
+        mode: 'skipped',
+        note: r.dryRun ? 'dry_run：未落盘 ⇒ 未做索引写穿' : '无改动 ⇒ 未落盘、未做索引写穿',
+      },
+  };
 }
 
 // ──────────────── 字面量引用扫描（只报告，不改动） ────────────────

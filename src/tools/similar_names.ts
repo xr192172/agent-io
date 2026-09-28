@@ -398,15 +398,22 @@ export async function suggestDisambiguationsInFile(args: {
 }
 
 /**
- * 便捷：把消歧结果转成 renameMany 可直接消费的 items 数组。
+ * 便捷：把消歧结果转成 `rename_symbols(scope='local')` 可直接消费的 `renames` 条目数组
+ * （形态 `{file, symbol, to}`，与 module 支的条目同形）。
+ *
+ * ★ 为什么给的是 `symbol`（名字）而不是内部的 `LocalBinding.id`：见
+ *   `ast_rename.resolveLocalAddress` 的文档 —— `id` 是不可外部复算的遍历序号，源码一变就会
+ *   静默指到**另一个绑定**（= 改错变量）；名字是对着当前源码验的，对不上就拒。这里的 offender
+ *   本来就带着 `name`，名字寻址零成本（同名遮蔽时调用方补 `decl_line` 即可，缺了会被明确拒）。
+ *
  * 只收集分身（offenders）里 LLM 给出了合法新名的项。
  */
-export function disambiguationItems(result: DisambiguateResult): { id: number; to: string }[] {
-  const items: { id: number; to: string }[] = [];
+export function disambiguationItems(result: DisambiguateResult, file: string): Array<{ file: string; symbol: string; to: string }> {
+  const items: Array<{ file: string; symbol: string; to: string }> = [];
   for (const c of result.clusters) {
     for (const o of c.offenders) {
       if (o.suggested && /^[A-Za-z_$][\w$]*$/.test(o.suggested)) {
-        items.push({ id: o.id, to: o.suggested });
+        items.push({ file, symbol: o.name, to: o.suggested });
       }
     }
   }

@@ -12,13 +12,17 @@
  *   - 无同名可解析的 identifier（外部/内置/全局）→ 不替换。
  *   - 块级遮蔽：内层声明遮蔽外层，各自独立绑定，互不误伤。
  *   - 宁漏不误：无法判定的形态（如解构逐名失败）不持有，而非乱改。
+ *
+ * ★ 本模块**只算不写**：它是「文件内局部作用域改名」的**分析/改写引擎**（纯函数面，吃得进
+ *   源码字符串、吐得出新源码字符串），**不做任何文件 IO**。读文件 + 落盘（写前快照 / 索引写穿）
+ *   统一在 `tools/rename_local.ts`（`scope='local'` 的 [B] 分支）里走 `applyWrites` 内核。
+ *   这样切的意义：**同一份改写能力可以被不同入口复用，而"落盘"永远只有一条路** ——
+ *   旧版本模块自带一个 `renameManyInFile`（自己 readFileSync + 自己写盘），
+ *   与 `rename_symbol.ts` 的落盘形态各写各的，正是"收敛收敛不起来"的病根。
  */
 import { getParser } from './ts_kernel/loader.js';
 import { findLanguageByExt, type LanguageEntry } from './ts_kernel/languages.js';
 import { parseContent } from './ts_kernel/kernel.js';
-import fs from 'node:fs';
-import path from 'node:path';
-import { applyWrites } from './apply_writes.js';
 
 /** 最小 tree-sitter 节点面（与 ts_slim 同源） */
 interface NodeLike {
@@ -402,6 +406,96 @@ export async function analyzeScopes(src: string, filePath = 'file.ts'): Promise<
   return (await built(src, filePath)).scopes;
 }
 
+/** 字节偏移 → **1-based** 行号（报告与寻址都用它；`declIndex` 是偏移，人读的是行号）。 */
+export function lineNumberOf(src: string, index: number): number {
+  const end = Math.max(0, Math.min(index, src.length));
+  let line = 1;
+  for (let i = 0; i < end; i++) if (src.charCodeAt(i) === 10) line++;
+  return line;
+}
+
+/** 同名绑定在**别的**作用域里出现时，用来让人（或 LLM）挑出目标的那点信息 */
+export interface LocalAddressCandidate {
+  id: number;
+  name: string;
+  kind: LocalBinding['kind'];
+  /** 声明所在行（1-based） */
+  line: number;
+  parentFunction: string;
+}
+
+export type LocalAddressResolution =
+  | { ok: true; binding: LocalBinding; line: number }
+  | { ok: false; why: string; candidates: LocalAddressCandidate[] };
+
+/**
+ * 按「**符号名 +（可选）声明行**」在绑定表里寻址 → 目标绑定。
+ *
+ * ★ 为什么寻址键是「名字 + 声明行」，而不是 `LocalBinding.id`：
+ *   1. **id 是不可外部复算的遍历序号**（`resetIds()` 每次 build 从 1 重排）。源码一变，
+ *      老 id 会**静默指到另一个绑定**上 —— 那等于"改错变量"，是本引擎最不能出的错。
+ *      名字 + 行号是**对着当前源码验**的：对不上就拒（下面的 why），绝不会错改。
+ *   2. **id 对 agent 不可得**：给 id 的那两个只读工具（命名建议 / 相似名消歧）只覆盖
+ *      "短名"与"易混淆孪生名"两类局部变量；其余局部变量**没有任何入口能拿到 id** ⇒ 工具对它们不可用。
+ *      名字 + 行号是 agent 读一眼文件就能给出的东西。
+ *   3. **歧义不猜**：同文件里同名绑定（不同函数/块级遮蔽）多于一个、而调用方没给 `declLine`
+ *      （或给了仍不唯一）⇒ 返回 `ok:false` 并列出全部候选（id/行/函数），让调用方补精确的一刀。
+ *      "宁漏不误"是本引擎的地基（见文件头"安全边界"）。
+ */
+export function resolveLocalAddress(
+  bindings: readonly LocalBinding[],
+  src: string,
+  addr: { symbol: string; declLine?: number },
+): LocalAddressResolution {
+  const named = bindings.filter((b) => b.name === addr.symbol);
+  const describe = (b: LocalBinding): LocalAddressCandidate => ({
+    id: b.id,
+    name: b.name,
+    kind: b.kind,
+    line: lineNumberOf(src, b.declIndex),
+    parentFunction: b.parentFunction,
+  });
+  if (named.length === 0) {
+    return {
+      ok: false,
+      why:
+        `该文件里没有名为 "${addr.symbol}" 的局部绑定` +
+        '（局部绑定 = 函数/块内的 const/let/var + 形参 + catch 参数；模块顶层声明属 scope=module）',
+      candidates: [],
+    };
+  }
+  if (named.length === 1) {
+    const b = named[0];
+    const line = lineNumberOf(src, b.declIndex);
+    if (addr.declLine !== undefined && addr.declLine !== line) {
+      return {
+        ok: false,
+        why: `"${addr.symbol}" 唯一绑定的声明在第 ${line} 行，与声明的 decl_line=${addr.declLine} 不符`,
+        candidates: [describe(b)],
+      };
+    }
+    return { ok: true, binding: b, line };
+  }
+  const pool = addr.declLine === undefined ? named : named.filter((b) => lineNumberOf(src, b.declIndex) === addr.declLine);
+  if (pool.length === 1) {
+    const b = pool[0];
+    return { ok: true, binding: b, line: lineNumberOf(src, b.declIndex) };
+  }
+  // ★ 候选清单必须**写进 why**（不只是放进结构化 candidates）：[C] 渲染的是 why —— 只说"有 2 个绑定、
+  //   请用 decl_line"却不给行号，调用方补不上这一刀（工具就白拒了）。这是可用性问题，不是文案问题。
+  const shown = (bs: readonly LocalBinding[]): string =>
+    bs.map((b) => `第 ${lineNumberOf(src, b.declIndex)} 行${b.parentFunction ? `（函数 ${b.parentFunction}）` : ''}`).join('、');
+  return {
+    ok: false,
+    why:
+      `"${addr.symbol}" 在该文件里有 ${named.length} 个绑定` +
+      (addr.declLine === undefined
+        ? `（不同函数 / 块级遮蔽各算一个）⇒ 请用 decl_line 指定声明行。候选：${shown(named)}`
+        : `，其中声明行 = ${addr.declLine} 的有 ${pool.length} 个 ⇒ 无法唯一定位。候选：${shown(pool)}`),
+    candidates: named.map(describe),
+  };
+}
+
 /**
  * 列级安全重命名：把目标绑定（声明 + 全部引用）换成 to。
  * 只改动该作用域内的字节偏移，绝不波及其他同名绑定。
@@ -445,6 +539,12 @@ export interface RenameApplied {
   to: string;
   /** 实际替换的字节位置数（声明+引用）；0 = 未改（原名相同 / 冲突 / 非法名 / 目标不存在） */
   changed: number;
+  /**
+   * `changed === 0` 时的**具体**理由（原名相同 / 非法新名 / 同作用域撞名 / 目标 id 不存在）。
+   * ★ 为什么必须有：只报 `changed:0` 等于"少做了一件事而不说话"（§2d）—— 调用方（与 LLM）
+   *   无法区分"这个名字本来就对"和"它撞了名所以没改"，只能重跑一遍分析去猜。
+   */
+  why?: string;
 }
 
 /**
@@ -469,18 +569,22 @@ export async function renameMany(
 
   for (const item of items) {
     const b = byId.get(item.id);
-    if (!b || !/^[A-Za-z_$][\w$]*$/.test(item.to)) {
-      applied.push({ id: item.id, from: b?.name ?? '', to: item.to, changed: 0 });
+    if (!b) {
+      applied.push({ id: item.id, from: '', to: item.to, changed: 0, why: '目标绑定不存在（id 与当前源码的绑定表对不上）' });
+      continue;
+    }
+    if (!/^[A-Za-z_$][\w$]*$/.test(item.to)) {
+      applied.push({ id: item.id, from: b.name, to: item.to, changed: 0, why: `新名非法（必须是标识符）：${JSON.stringify(item.to)}` });
       continue;
     }
     if (b.name === item.to) {
-      applied.push({ id: item.id, from: b.name, to: item.to, changed: 0 });
+      applied.push({ id: item.id, from: b.name, to: item.to, changed: 0, why: '新名与原名相同' });
       continue;
     }
     // 同作用域冲突：目标名已是另一绑定 → 跳过
     const clash = bindings.some((o) => o.scopeId === b.scopeId && o.name === item.to && o.id !== b.id);
     if (clash) {
-      applied.push({ id: item.id, from: b.name, to: item.to, changed: 0 });
+      applied.push({ id: item.id, from: b.name, to: item.to, changed: 0, why: `同作用域已有同名绑定 "${item.to}"（作用域 #${b.scopeId}）` });
       continue;
     }
     const positions = new Set<number>([b.declIndex, ...b.defs, ...b.refs]);
@@ -500,88 +604,6 @@ export async function renameMany(
   let out = src;
   for (const e of edits) out = out.slice(0, e.pos) + e.text + out.slice(e.pos + e.len);
   return { out, applied };
-}
-
-/** `renameManyInFile` 的产物：算好的逐项结果 + 落盘回执 */
-export interface RenameManyFileResult {
-  /** 目标文件绝对路径 */
-  absPath: string;
-  /** 逐项结果（含 changed=0 的跳过项） */
-  applied: RenameApplied[];
-  /** 真正改到的项（changed>0） */
-  changed: RenameApplied[];
-  /** 被跳过的项（非法名 / 同作用域撞名 / 原名相同 / id 不存在） */
-  skipped: RenameApplied[];
-  /** 是否有任何改动 */
-  changedAny: boolean;
-  /** 是否干跑（不落盘） */
-  dryRun: boolean;
-  /** 是否**真的**落盘（干跑 / 无改动 ⇒ false） */
-  written: boolean;
-  /** 写前快照 id（撤回通道凭据） */
-  snapshotId?: string;
-  /** 逐文件索引同步结果 */
-  indexSynced: Array<{ file: string; updated: boolean }>;
-  /**
-   * 被拒绝落盘的文件（在 `project_dir` 之外 ⇒ 进不了快照、也进不了索引）。
-   * ★ 有值时 `written=false`：**调用方必须响亮地报出去**，不能报"成功 N 项"（那就是静默撒谎）。
-   */
-  blocked?: string[];
-}
-
-/**
- * ★ [B] 按文件入口（**读 → 算 → 落盘**三段全在这）。
- *
- * 为什么整段下沉到 [B]（而不是把 [C] 里的 `writeFileSync` 换个函数）：
- *   `rename_many` 的 [C]（lane）原来自己 `readFileSync` + `writeFileSync` —— 而 `rename_symbol.ts`
- *   （SafeRename 形态）是 [B] 收 `{file, ...}`、自己读自己写。同一件事两处形态 ⇒ 于是
- *   `rename_many` 漏掉了 `dry_run`、写前快照（撤回通道）、索引同步三样，而 `rename_symbol` 有。
- *   把"读→算→写"整段收进 [B]，[C] 退化为**路由器**，三样缺失由落盘内核（`applyWrites`）天然补齐。
- *
- * ★ 顺序与旧 [C] 逐字一致：**先 resolve 再读**（`file` 为 undefined 时的报错形态因此不变）。
- */
-export async function renameManyInFile(args: {
-  project_dir: string;
-  file: string;
-  items: RenameItem[];
-  /** true=只算不落盘。★ 工具面尚未暴露（改 inputSchema 属对外契约变更，留给下一笔）；内核已具备。 */
-  dryRun?: boolean;
-}): Promise<RenameManyFileResult> {
-  const absPath = path.isAbsolute(args.file) ? args.file : path.resolve(String(args.project_dir), String(args.file));
-  const src = fs.readFileSync(absPath, 'utf-8');
-  const { out, applied } = await renameMany(src, args.items as RenameItem[], absPath);
-  const changed = applied.filter((x) => x.changed > 0);
-  const skipped = applied.filter((x) => x.changed === 0);
-  const dryRun = args.dryRun === true;
-  const changedAny = changed.length > 0;
-
-  let written = false;
-  let snapshotId: string | undefined;
-  let indexSynced: Array<{ file: string; updated: boolean }> = [];
-  let blocked: string[] | undefined;
-  if (changedAny && !dryRun) {
-    // ★ 落盘走共享内核（写前快照一次 + 真写 + 索引写穿），绝不在这里自己 writeFileSync
-    const rel = path.relative(path.resolve(String(args.project_dir)), absPath).split(path.sep).join('/');
-    const receipt = await applyWrites(args.project_dir, [{ file: absPath, content: out }], {
-      note: `rename_many:${rel}`,
-    });
-    written = receipt.written.length > 0;
-    snapshotId = receipt.snapshot_id;
-    indexSynced = receipt.index_synced;
-    if (receipt.blocked?.length) blocked = receipt.blocked;
-  }
-  return {
-    absPath,
-    applied,
-    changed,
-    skipped,
-    changedAny,
-    dryRun,
-    written,
-    ...(snapshotId ? { snapshotId } : {}),
-    indexSynced,
-    ...(blocked ? { blocked } : {}),
-  };
 }
 
 /**

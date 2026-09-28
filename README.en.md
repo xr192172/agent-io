@@ -190,8 +190,7 @@ A total of **60 MCP tools** are registered, organized into "capability navigatio
 | Tool | Purpose |
 |------|------|
 | `edit_code` | Symbol-level code editing (replace / insert / delete / range) |
-| `rename_many` | Bulk-rename local variables (scope-isolated) |
-| `rename_symbols` | Batch cross-file symbol renaming (single or batch unified entry; whole-run dry-run first) |
+| `rename_symbols` | Unified identifier renaming: `scope=module` (default) renames cross-file module-level symbols (whole-batch atomic); `scope=local` renames file-local bindings (scope-isolated, per-item independent). Items `renames=[{file,symbol,to,decl_line?}]`, whole-run dry-run first |
 | `rename_files` | Batch file renaming (single or batch unified entry; whole-run dry-run first) |
 | `remove_dead_imports` | Remove stale imports |
 | `refactor_pipeline` | Deterministic refactoring pipeline (dead code cleanup + package

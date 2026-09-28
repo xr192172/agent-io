@@ -64,6 +64,6 @@ describe('readme_tools_gate', () => {
     const readme = readFileSync(path.join(repoRoot, 'README.md'), 'utf-8');
     const r = analyzeReadmeTools(regSrc, readme);
     expect(r.changed).toBe(false); // README 数字已与注册表一致，防回归漂移
-    expect(r.actual).toBe(69); // 与 G1 工具集快照、capability_map 同口径（P-C 新增 plan_refactor / apply_refactor_plan：67 → 69）
+    expect(r.actual).toBe(68); // 与 G1 工具集快照、capability_map 同口径（2026-09-29 改名族两品合一：69 → 68）
   });
 });
