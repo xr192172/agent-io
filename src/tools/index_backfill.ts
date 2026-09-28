@@ -19,7 +19,7 @@
 import path from 'node:path';
 import { getProjectCacheDb, beginBatch, endBatch, type Database } from '../db/db.js';
 import { syncFile, resolveCrossFileCalls } from '../db/symbols.js';
-import { walkSourceFiles } from './refs_text.js';
+import { getProjectView } from './ts_kernel/project_view.js';
 import { indexedRelativeSet } from './index_freshness.js';
 
 export interface BackfillState {
@@ -103,7 +103,7 @@ export async function backfillChunk(
 ): Promise<{ synced: number; failed: number; remaining: number; total: number }> {
   const absRoot = path.resolve(root);
   const batch = opts.batch ?? 20;
-  const all = walkSourceFiles(absRoot);
+  const all = [...getProjectView(absRoot).sourceFiles]; // ★ §19②
   const indexed = indexedRelativeSet(db);
   const todo = all.filter((r) => !indexed.has(r));
   const take = todo.slice(0, batch);
@@ -177,7 +177,8 @@ export function scheduleBackfill(root: string, opts: BackfillOptions = {}): Back
     const roundStart = Date.now();
     try {
       // 每 5 轮才重扫一次文件清单（文件增删不频繁；每轮重扫纯属浪费）
-      if (!state.rounds || state.rounds % 5 === 1 || !cachedAll) cachedAll = walkSourceFiles(absRoot);
+      // ★ §19②：这里原本自己缓存「每 5 轮重扫」，现在交给 ProjectView 的 TTL（同一意图，单一落点）
+      if (!state.rounds || state.rounds % 5 === 1 || !cachedAll) cachedAll = [...getProjectView(absRoot).sourceFiles];
       const all = cachedAll;
       state.overheadMs += Date.now() - roundStart;
       state.total = all.length;

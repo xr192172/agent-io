@@ -63,9 +63,6 @@
       "authority": "src/tools/ts_kernel/project_view.ts",
       "pattern": "walkSourceFiles(",
       "frozen": {
-        "src/tools/find_references.ts": 1,
-        "src/tools/index_backfill.ts": 2,
-        "src/tools/index_freshness.ts": 1,
         "src/tools/monolith.ts": 2,
         "src/tools/refs_text.ts": 1
       }

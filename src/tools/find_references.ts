@@ -27,7 +27,8 @@ import { parseFileFull } from './ts_kernel/index.js';
 import { getProjectCacheDb } from '../db/db.js';
 import { ensureProjectIndex } from './index_freshness.js';
 import { buildImportGraph } from './import_graph.js';
-import { walkSourceFiles, scanTextMentions } from './refs_text.js';
+import { scanTextMentions } from './refs_text.js';
+import { getProjectView } from './ts_kernel/project_view.js'; // ★ §19②
 
 /** 每个文件最多取多少条文本提及（避免单文件刷屏） */
 const TEXT_MENTION_PER_FILE = 3;
@@ -92,7 +93,7 @@ async function indexCandidateFiles(
     let textScanned = 0;
     let textBounded = false;
     if (symbolName && symbolName.length >= 3) {
-      const all = walkSourceFiles(resolvedRoot);
+      const all = getProjectView(resolvedRoot).sourceFiles; // ★ §19②：走 ProjectView（一处算、多处取）
       const bounded = all.length > TEXT_SCAN_MAX_FILES;
       const slice = bounded ? all.slice(0, TEXT_SCAN_MAX_FILES) : all;
       textBounded = bounded;
