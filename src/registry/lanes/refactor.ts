@@ -188,7 +188,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       dry_run: z.boolean().optional().describe('true=只算全部预览 diff 不落盘（默认：module 先整体校验全通过才落盘；local 逐项改）'),
       report_literals: z.boolean().optional().describe('★ 仅 scope=module：true=扫描旧符号 snake 变体的字面量引用清单（错误提示/README 等纯字符串），仅报告不改动'),
     },
-    handler: wrap(async (a) => {
+    handler: wrapData(async (a) => {
       const r = await renameSymbols({
         project_dir: typeof a.project_dir === 'string' && a.project_dir ? a.project_dir : undefined,
         scope: a.scope === 'local' ? 'local' : 'module',
