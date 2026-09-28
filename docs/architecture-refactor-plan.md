@@ -2770,3 +2770,83 @@ renameSymbols()                       ← [B] 单一入口（[C] 只转发到它
 7. **没验 G8**：本笔只改注释 + 一处纯逻辑抽函数，预期 G8 基线不需变更；G8 跑了（见验收），
    但"基线未变更"是**结果**，不是我先验过的假设。
 
+---
+
+## 32. ★★★ 重排：**"内化"与"接口性收敛"的分界**（2026-09-29，用户给出关键诊断 + 两处参考物）
+
+### 32.1 用户的诊断（本节的出发点）
+> 「重排吧。提醒你一句，他**曾经已经做过好几次收敛了，但是收敛不起来**。
+>  不过那可能是因为**当时其实是接口性的收敛**。现在你用工具看看能不能把它们**通过路由等方式进行内化**，
+>  就像是 **SafeRename** 那样。」
+>
+> 后续澄清：**「我说的 saferename 是 dsh 桥接的工具」**；
+> **「我们参考的 serena 的工具面是怎么样的，它的工具也是多语言的吧，是怎么适配的」**
+> ★ 我曾误以为 `safe_rename` 是本仓旧名（本仓注释里确实见过它）——**错**，它是**桥接层的工具**。
+
+### 32.2 两处参考物的实测形态
+#### (a) **桥 `agent-io-bridge`（dsh-brain）—— 只有 8 个工具，且自称"编排壳"**
+| 桥工具 | 逐字 description（节选） |
+|---|---|
+| `symbol_edit` | 「符号级精准编辑（**编排壳**）：按 文件+符号名 定位 AST 边界后 replace/insert/delete/range」 |
+| `safe_rename` | 「安全符号重命名（**编排壳**）：先算影响面 → 跨文件 AST 重命名 → **把项目文本里的字面量引用一并处理**（README/错误串/工具注册名/snake 变体，即"**改名常漏改的别家标记**"）；默认 dry_run 预览；**任一处被阻断则整体不落盘**；字面量按决策分组（code/docs/test 自动改、contract 需人审、历史/冻结保留）」 |
+| `memory_observe` | 「内存基线/追踪/触发/快照**一体化**观测。**动作**：baseline / track / …」 |
+| `move_symbol` | 「跨文件移动模块级符号（语义重构）」 |
+| `design_canvas_index` | 「…agent-io 全量**能力线和工具导航地图**」 |
+| `self_evolve` / `design_canvas_prewarm[_scan]` | 实验内核单指令闭环 / 索引前置 |
+
+★ 机制：桥通过 `loadKernel(kernelDir)` **直接 `import()` 内核的 `dist/src/tools/*.js`**
+（`edit_code` / `find_references` / `rename_symbols` / `symbol_move`）—— 自称"**深度注入**"，**绕过 MCP 工具面**。
+⇒ ★★ **"收敛"发生在桥层：内核 68 个 → 桥 8 个；但桥只是"编排壳"，内核的 68 个一个没少。**
+
+#### (b) **serena（参考项目，`.inspect/serena` @ `7a29683`）—— 工具按功能切，语言适配全在 LSP 层**
+- 工具面：`symbol_tools`(13) / `file_tools`(10) / `jetbrains_tools`(13) / `memory_tools`(6) / `config_tools`(4) /
+  `workflow_tools`(3) / `query_project_tools`(2) / `cmd_tools`(1) / `repl_tools`(1) ≈ **53 个工具类**
+- ★★ **工具类是"语言无关"的，只做声明 + 转发**：
+  ```python
+  class RenameSymbolTool(Tool, ToolMarkerSymbolicEdit, LspApiMixin):
+      def apply(self, name_path, relative_path, new_name) -> str:
+          return self._api().rename_symbol(name_path, relative_path, new_name)
+  ```
+  ⇒ 真实现在 `self._api()`（LSP agent），**语言差异全部下沉到 `src/solidlsp/language_servers/`**
+  （**几十个** server：`clangd` / `csharp` / `dart` / `elixir` / `angular` / `astro` …）
+- 配套：`LspApiMixin` / `EditApiMixin`（**Mixin 注入语言能力**）
+  + `ToolMarkerSymbolicRead` / `ToolMarkerSymbolicEdit` / `ToolMarkerOptional`（**标记**，用于按模式过滤工具集）
+
+### 32.3 ★★★ 对照表（这决定了"该怎么重排"）
+| | **serena** | **agent-io 内核** | **桥 `agent-io-bridge`** |
+|---|---|---|---|
+| 工具数 | ~53 | **68** | **8** |
+| 切法 | 按**功能** | 按**功能** | 按**编排线** |
+| 多语言适配 | ★ **LSP 层**（几十个 server；工具面零语言知识） | **`[B]` 内部按扩展名路由**（自己写各语言 AST 分析） | — |
+| 收敛程度 | ❌ 未收敛 | ❌ 未收敛 | ✅ 收敛了，**但只是"编排壳"（转发）** |
+
+★★★ **结论：用户说的"收敛不起来"终于有了机制解释** ——
+**以前的收敛发生在桥层（68 → 8 个壳），内核一个没少** ⇒ 壳只是**转发**
+⇒ 于是**工具数看起来少了，但代码没少、可组合性没增、agent 面对的内核复杂度也没降** ⇒ **接口性收敛** ✓
+
+★★ **而"内化"要做的是内核那一步**：消除重复实现 + 统一契约 ⇒ 功能才**真能组合**。
+
+### 32.4 本轮两刀（"内化"的落地）
+| 刀 | commit | 做了什么 | 判据 |
+|---|---|---|---|
+| **① 落盘内核内化** | `b6e5647` | 抽 `src/tools/apply_writes.ts` 的 `applyWrites()`（= `write_gate.writeSourceFiles` 的结构化适配层，**写盘逻辑一行未重复**）；把 `[C]` 层（lane）的 **7 处文件 IO 全部下沉** | ★ **新门 `tests/registry/lane_no_io.test.ts`**（`frozen: {}` 零容忍）：**lane 里出现任何文件 IO 即红**；出生证含对照「IO 字样只在**注释**里 ⇒ 不红」 |
+| **② 改名族 `[B]` 合一** | `6cd53a5` | `renameSymbols` 成为**唯一 `[B]`**，内部按 **「作用域 × 语言」** 路由（`scope:'local'` → `renameLocals`；`scope:'module'` → 原路径再按语言路由）；**删掉 `ast_rename.ts` 自带的 `renameManyInFile`**（第二份读+写+第二份落盘形态 = 病根） | 工具数 **69 → 68**；G1 基线只 `removed=[rename_many]`、**其余 66 条逐字不变**；G8 66→65 |
+| （收尾） | `be2f955` | `rename_symbols` 回执 `wrap` → `wrapData`（**改名预览/逐项结果/skipped 不再在传输层蒸发**） | G11 `dropData` **17 → 16 → 15** |
+| （判断） | `6d1f259` | ★ **`edit_code` 的"第三份落盘形态"判定为「有意保留」**（先判断、未强行内化）+ 抽掉两条落盘路径之间**真实存在**的共享内核 `resolveRefsAfterWrite` | 判断题答案见 §31 |
+
+### 32.5 ★ 方法论：**"内化"的判据是可 grep 的**
+| | 接口性收敛 | **内化** |
+|---|---|---|
+| 工具面 | 改 `name` / 加 action 分发 ⇒ 工具数 ↓ | 同 |
+| **实现层** | ❌ **没少** | ✅ **`[C]` 变薄（可 grep：lane 无 IO）** + **重复实现被删（可 grep：`renameManyInFile` 消失）** |
+| **能力** | 不变 | ★ **反而增加**（`rename_many` 补上了原本缺的快照 / 索引写穿 / `dry_run`） |
+
+### 32.6 留给下一刀
+- **`refactor.ts` 里仍有 8 个 `wrap(`（丢 data）**：`rename_files` / `move_symbol` / `find_references` /
+  `impact_analysis` / `remove_dead_imports` / `annotate_functions` / `refactor_pipeline` / `refactor_judge`
+- 其它候选族（按"操作对象"看）：快照族（`list_snapshots`/`rollback_snapshot`）、
+  规则族（`export_rule`/`apply_rules`/`check_rules`）、编辑族（`edit_code`/`plan_refactor`/`apply_refactor_plan`）、
+  归档族（`archive_node`/`list_archive`）、砖块族（`*_brick` ×4）
+- ★ 按 `tool-convergence.md` §2.0 的**反面教训**（`camera_*`：**看似同对象、实为不同抽象层 ⇒ 不聚合**），
+  以上每一族**都要先判断"是不是同一操作对象"**，**不许按名字硬合**
+
