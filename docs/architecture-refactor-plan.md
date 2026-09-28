@@ -2444,3 +2444,9 @@ DSH 交付 `4537a34`，**主目标达成**（合法 JSONC 现在能正常解析 
   · §26.1 判据① **会误伤 [C] 边界** ⇒ 真袋子 = "[B] 收了袋子"（§27.9）
 - **我自己被纠正 1 次**：`loadAliasConfig` 的 JSONC 判定（§27.5），且**挖出一个真 bug**（带注释 tsconfig ⇒ 引用分析静默漏引用）
 - **进行中**：DSH 第 5 笔（`loadAliasConfig` 的 JSONC 修复）
+
+### 27.17 ★ G8 行为基线更新（P-D：`find_references` 缺参报错，2026-09-28 晚）
+- **变更**（`find_references` 无参调用，`isError` 仍为 true）：`ENOENT: no such file or directory, open '<ABS>\undefined'` → `缺少必需参数 file：mode=symbol（默认）需要 file（定义符号的文件）。例：{file:'src/tools/find_references.ts', symbol:'findReferences'}`。
+- **依据**：按 G8 门指引 `UPDATE_TOOL_BEHAVIOR=1` 重生成 `tests/fixtures/tool_behavior_snapshot.json`；`git diff` 实测**仅该 1 条变化**（其余 63 条逐字不变）。
+- **关联**：§16.4 P-D（入参前置校验统一：缺必需参数 ⇒ 报「缺什么 + 怎么给」，绝不把 `undefined` 拼进路径）。执行者：本仓执行者。
+

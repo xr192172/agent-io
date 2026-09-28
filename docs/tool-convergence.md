@@ -425,3 +425,67 @@
 
 > **渐进披露小结：已落地 2 个入口样板 ——** **`gateway_provider`(4→1)、`canvas_notes`(3→1)、`manage_feature`(既有 CRUD action 先例)。**
 
+***
+
+## 8. P-G 实测登记：`explore_code(action='read')` 是不是稳定的读文件入口（2026-09-28）
+
+> 判据出处：`architecture-refactor-plan.md` §16.8 P-G ——「**先实测再登记，不凭印象写**」。
+> 实测方式：真调 MCP 工具（`scripts/mcp/mcp_call.mjs explore_code '<json>'`），**原始输出**为证。
+> 夹具：`%TEMP%/pg-probe/`（`src/hello.ts` 3 行 / `src/empty.ts` 0 字节 / `src/sub/` 目录）。
+
+**结论：是——`explore_code(action='read')` 是一个稳定、硬失败的读文件入口。**
+入参显式、产物结构化（`---DATA---` 段）、四类失败（缺参 / 不存在 / 目录 / 符号未找到）**全部 `isError=true` 且文案可行动**；
+唯一不抛的是「空文件」这一正常边界（见 8.4 的诚实边界）。
+
+### 8.1 入参形状（`{action:'read', args:{...}}`）
+| 参数 | 必填 | 说明 |
+|---|---|---|
+| `args.project_dir` | 否 | 项目根；缺省按 `file` 解析（相对路径时） |
+| `args.file` | **是** | 目标文件（绝对/相对 `project_dir`）。**缺失即 `throw`（`缺参数 "file"`）** |
+| `args.symbol` / `args.parent` | 否 | 按符号定位（`parent` 消歧）；与 `start/end` 互斥 |
+| `args.start` / `args.end` | 否 | 行区间（1-based 含端点，**须成对**） |
+| `args.context` | 否 | 符号模式附带上下文行数 |
+| `args.symbols` / `args.symbols_limit` | 否 | 是否附整文件符号索引（默认 true）/ 上限（默认 30，钳 1-500） |
+
+### 8.2 返回形状（`wrapData`：`message` + `---DATA---` + `---WARNINGS---`）
+`---DATA---` = JSON(`ReadCodeData`)：`{file, rel_path, total_lines, start, end, truncated, symbol?, symbols[], lines[]}`。
+**结构化产物确实到达 agent**（对比：`find_references` 用 `wrap`，其 `FindReferencesResult` **被丢弃**——见 8.5）。
+
+原文（正常读 `src/hello.ts`）：
+````text
+src/hello.ts 共 3 行，显示 L1-L3
+文件符号索引（共 1）:
+  hello (function, hello(name: string): string, L1-3)
+```
+1| export function hello(name: string): string {
+2|   return `hi ${name}`;
+3| }
+```
+---DATA---
+{"file":"...\\pg-probe\\src\\hello.ts","rel_path":"src/hello.ts","total_lines":3,"start":1,"end":3,"truncated":false,"symbols":[{"name":"hello","qualified_name":"hello","kind":"function","signature":"hello(name: string): string","start_line":1,"end_line":3}],"lines":["1| export function hello(name: string): string {","2|   return `hi ${name}`;","3| }"]}
+````
+
+### 8.3 失败行为（逐条原始输出）
+| 场景 | 原始输出 | isError |
+|---|---|---|
+| 缺 `args.file` | `缺参数 "file"` | ✅ true |
+| 文件不存在 | `文件不存在: C:\Users\...\pg-probe\src\nope.ts` | ✅ true |
+| 传目录 | `是目录，不是文件: C:\Users\...\pg-probe\src\sub` | ✅ true |
+| 符号未找到 | `符号未找到: ghost。文件符号:\n  hello (function, hello(name: string): string, L1-3)` | ✅ true |
+
+失败文案都**可行动**（"是目录"直接说了原因；"符号未找到"顺带列出该文件符号表，免二次调用）。
+
+### 8.4 ★ 诚实边界（与"稳定入口"预想**不符**之处，如实记）
+1. **空文件不抛**：读 0 字节文件返回 `src/empty.ts 共 0 行，显示 L1-L0`，`data.start=1, end=0, lines=[]`。
+   不违反「少做事要说话」——它如实报了 `total_lines:0/lines:[]`；但 **`显示 L1-L0` 是退化区间，属显示层瑕疵**，非失败。
+2. **缺参报错只报 key、不给"怎么给"**：`explore_code` 的 `requireStr` 文案是 `缺参数 "file"`（只报 key）；
+   相比 `find_references` 的 P-D 文案（`缺少必需参数 file：…例：{...}`）**少了示例**。⇒ **两处口径尚未统一**（P-D 本次只统一了 `find_references`；`explore_code` 的 `requireStr` 仍是 `缺参数 "key"`，未动）。
+3. `read` 只读**文本源码**：>5MB 抛「文件过大」；非文本（二进制）未实测（**没验**）。
+
+### 8.5 实测顺带发现（★ 只记录，不修 —— 属另一笔）
+- `find_references` lane 用 **`wrap`**（`refactor.ts`）：其结构化产物 `FindReferencesResult`（`definition/importers/candidateScan/literals`）
+  **被 `wrap` 丢弃**，agent 只拿到 message。**正是** `plumbing.ts` `wrap` 丢 `data` 的实例（§21 ②"产物是结构化数据不是 message"未达标）。
+- 对比 `explore_code` 用 **`wrapData`** ⇒ `---DATA---` 正常到达。**同一仓、两种外壳，产物可见性不同**——收敛 `wrap`/`wrapData` 是一笔独立改动（未在本笔动）。
+
+
+

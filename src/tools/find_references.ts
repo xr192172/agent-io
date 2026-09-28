@@ -200,32 +200,54 @@ export async function findReferences(input: {
   const effectiveRoot = input.project_dir ? path.resolve(String(input.project_dir)) : undefined;
   const projectDir = effectiveRoot ?? path.resolve(process.cwd());
 
+  // ── 入参前置校验（§16.4 P-D，2026-09-28）──
+  // file / symbol / field 是「**模式相关必填**」——schema 里只能标 optional（symbol 模式要 file+symbol，
+  // field 模式要 field，type 模式要 file+symbol）。上游一旦把 undefined 漏下来，
+  // `path.resolve(root, undefined)` 会拼出 `...\undefined` 这种**最难反查**的 ENOENT；
+  // 更隐蔽的是 `String(undefined) === 'undefined'`，它会变成一个合法的字符串参数、
+  // 静默去查一个名叫 "undefined" 的符号。⇒ 三种模式在此**一次性判清**：
+  // 缺参就 throw「缺什么 + 怎么给」（§21③ 失败就抛，不降级成"看起来正常"的返回）。
+  const reqStr = (v: unknown, what: string, how: string): string => {
+    if (typeof v !== 'string' || v.trim() === '') throw new Error(`缺少必需参数 ${what}：${how}`);
+    return v;
+  };
+  const EXAMPLE_FILE = `'src/tools/find_references.ts'`;
+  if (input.mode === 'type') {
+    reqStr(input.file, 'file', `mode=type 需要 file（类型定义文件）。例：{mode:'type', file:${EXAMPLE_FILE}, symbol:'FindReferencesResult'}`);
+    reqStr(input.symbol, 'symbol', `mode=type 需要 symbol（类型名）。例：{mode:'type', file:${EXAMPLE_FILE}, symbol:'FindReferencesResult'}`);
+  } else if (input.mode === 'field') {
+    reqStr(input.field, 'field', `mode=field 需要 field（要查的字段名）。例：{mode:'field', field:'importerCount', project_dir:'.'}`);
+  } else {
+    reqStr(input.file, 'file', `mode=symbol（默认）需要 file（定义符号的文件）。例：{file:${EXAMPLE_FILE}, symbol:'findReferences'}`);
+    reqStr(input.symbol, 'symbol', `mode=symbol（默认）需要 symbol（模块级声明名）。例：{file:${EXAMPLE_FILE}, symbol:'findReferences'}`);
+  }
+
   // type 模式：形如某类型的对象字面量构造候选（启发式，找成员交叠 ≥ min_hit）
   if (input.mode === 'type') {
-    if (!input.file || !input.symbol) return { ok: false, symbol: input.symbol ?? '', mode: 'type', importerCount: 0, blocked: ['mode=type 需要 file + symbol（类型名）'] };
+    const file = input.file as string; // 缺参已在上方前置校验 throw
+    const symbol = input.symbol as string;
     const { members, candidates } = await collectTypeConstructCandidates({
       project_dir: projectDir,
-      file: input.file,
-      symbol: input.symbol,
+      file,
+      symbol,
       scope: input.scope === 'all' ? 'all' : 'closure',
       min_hit: input.min_hit,
     });
     return {
       ok: true,
-      symbol: input.symbol,
+      symbol,
       mode: 'type',
       importerCount: 0,
       typeMembers: members,
       typeCandidates: candidates,
-      literals: input.report_literals ? await scanLiterals(projectDir, input.symbol) : undefined,
+      literals: input.report_literals ? await scanLiterals(projectDir, symbol) : undefined,
       blocked: members.length === 0 ? ['未从声明中解出成员字段（认 interface/type { ... }）'] : candidates.length === 0 ? ['未找到交叠 ≥ min_hit 的对象字面量候选'] : undefined,
     };
   }
 
   // field 模式：字段的结构引用点（AST 分类：读/构/解/声明，含定义文件内部）
   if (input.mode === 'field') {
-    const field = input.field;
-    if (!field) return { ok: false, symbol: field ?? '', mode: 'field', importerCount: 0, blocked: ['mode=field 需要 field 参数'] };
+    const field = input.field as string; // 缺参已在上方前置校验 throw
     const fieldRefs = await collectFieldRefs({
       project_dir: projectDir,
       field,
@@ -245,9 +267,10 @@ export async function findReferences(input: {
 
   // symbol 模式：既有逻辑
   const mode = 'symbol' as const;
-  const { file, symbol } = input;
+  const file = input.file as string; // 缺参已在上方前置校验 throw
+  const symbol = input.symbol as string;
   const symRoot = input.project_dir ? path.resolve(String(input.project_dir)) : undefined;
-  const fileAbs = path.isAbsolute(file!) ? path.resolve(file!) : symRoot ? path.resolve(symRoot, file!) : path.resolve(process.cwd(), file!);
+  const fileAbs = path.isAbsolute(file) ? path.resolve(file) : symRoot ? path.resolve(symRoot, file) : path.resolve(process.cwd(), file);
   const resolvedRoot = symRoot ?? resolveProjectRoot(fileAbs);
   const rootAlias = loadAliasConfig(resolvedRoot);
 

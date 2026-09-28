@@ -364,16 +364,20 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       report_literals: z.boolean().optional().describe('true=额外扫描符号 snake 变体在项目文本里的字面量命中（文档/测试/契约/工具注册名），返回清单待核验，不改动'),
     },
     handler: wrap(async (a) => {
+      // ★ §16.4 P-D：file/symbol/field 是「模式相关必填」，schema 里只能 optional。
+      //   这里**不做 `String(a.x)` 强转**——`String(undefined)==='undefined'` 会把缺参变成
+      //   一个合法字符串，静默去查名叫 "undefined" 的符号或拼出 `...\undefined` 路径。
+      //   原样透传 undefined，由 findReferences 体（[B]）前置校验 throw「缺什么 + 怎么给」。
+      const optStr = (v: unknown): string | undefined => (typeof v === 'string' && v.trim() !== '' ? v : undefined);
       const common = {
-        project_dir: typeof a.project_dir === 'string' && a.project_dir ? a.project_dir : undefined,
+        project_dir: optStr(a.project_dir),
         scope: a.scope === 'all' ? ('all' as const) : ('closure' as const),
-        file: typeof a.file === 'string' && a.file ? a.file : undefined,
+        file: optStr(a.file),
         report_literals: a.report_literals === true,
       };
       // mode=field：AST 分类的读/构/解/声明点 + snippet
       if (a.mode === 'field') {
-        if (typeof a.field !== 'string' || !a.field) return { message: 'mode=field 需要 field 参数', data: { ok: false as boolean } };
-        const r = await findReferences({ ...common, mode: 'field', field: a.field });
+        const r = await findReferences({ ...common, mode: 'field', field: optStr(a.field) });
         if (!r.ok) return { message: `字段引用查找失败：\n- ${(r.blocked || []).join('\n- ')}`, data: r };
         const kindLabel = { 'field-read': '读', 'field-key': '构', 'field-destructure': '解', 'field-decl': '声明' } as Record<string, string>;
         const lines = [`字段 ${r.symbol} 的引用（${r.fieldRefs!.length} 个文件；scope=${common.scope}）：`];
@@ -395,7 +399,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       }
       // mode=type：成员 + 候选构造点
       if (a.mode === 'type') {
-        const r = await findReferences({ ...common, mode: 'type', symbol: String(a.symbol), min_hit: typeof a.min_hit === 'number' ? a.min_hit : undefined });
+        const r = await findReferences({ ...common, mode: 'type', symbol: optStr(a.symbol), min_hit: typeof a.min_hit === 'number' ? a.min_hit : undefined });
         if (!r.ok) return { message: `类型构造查找失败：\n- ${(r.blocked || []).join('\n- ')}`, data: r };
         const lines = [
           `类型 ${r.symbol} 的成员（${r.typeMembers!.length}）：${r.typeMembers!.join(', ')}`,
@@ -411,9 +415,9 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       }
       // mode=symbol：既有逻辑
       const r = await findReferences({
-        project_dir: typeof a.project_dir === 'string' && a.project_dir ? a.project_dir : undefined,
-        file: String(a.file),
-        symbol: String(a.symbol),
+        project_dir: optStr(a.project_dir),
+        file: optStr(a.file),
+        symbol: optStr(a.symbol),
         report_literals: common.report_literals,
       });
       if (!r.ok) {
@@ -428,7 +432,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       }
       if (r.literals) for (const kv of r.literals) for (const m of kv.matches) parts.push(`\t[字面 ${kv.needle}] ${path.basename(m.file)} L${m.line} [${m.kind}] ${m.snippet}`);
       // P10 能力自述：定义文件是非调用级语言 ⇒ 诚实标注"文本级，零引用不可全信"
-      const granSymbol = renderGranularityNote([String(a.file)], 'refs');
+      const granSymbol = renderGranularityNote([common.file], 'refs');
       if (granSymbol) parts.push(granSymbol);
       return { message: parts.join('\n'), data: r };
     }),

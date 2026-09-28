@@ -231,4 +231,30 @@ describe('findReferences', () => {
     expect(r.literals!.find((x) => x.needle === 'active_count')!.matches.some((m) => m.file.includes('docs') && m.file.endsWith('meta.md'))).toBe(true);
     rmForce(dir);
   });
+
+  // ── P-D（§16.4）：file/symbol/field 是「模式相关必填」，schema 只能标 optional。
+  // 缺参必须**明确报「缺什么 + 怎么给」并硬失败**；绝不 String(undefined)→"undefined"
+  // 去拼 `...\undefined` 路径，或静默去查一个名叫 "undefined" 的符号。
+  describe('入参前置校验（P-D）', () => {
+    it('mode=symbol 缺 file → throw 缺 file（含怎么给），不再 ENOENT ...\\undefined', async () => {
+      await expect(findReferences({ symbol: 'compute' })).rejects.toThrow(/缺少必需参数 file/);
+      await expect(findReferences({ symbol: 'compute' })).rejects.toThrow(/例：/);
+    });
+
+    it('mode=symbol 缺 symbol → throw 缺 symbol（不再查名叫 "undefined" 的符号）', async () => {
+      await expect(findReferences({ file: 'src/def.ts' })).rejects.toThrow(/缺少必需参数 symbol/);
+    });
+
+    it('mode=type 给了 file 但缺 symbol → throw（不把 "undefined" 当类型名静默求出 0 成员）', async () => {
+      await expect(findReferences({ mode: 'type', file: 'src/def.ts' })).rejects.toThrow(/缺少必需参数 symbol/);
+    });
+
+    it('mode=field 缺 field → throw 缺 field', async () => {
+      await expect(findReferences({ mode: 'field' })).rejects.toThrow(/缺少必需参数 field/);
+    });
+
+    it('空串/空白等同缺失（trim 后为空同样报缺）', async () => {
+      await expect(findReferences({ file: '   ', symbol: 'compute' })).rejects.toThrow(/缺少必需参数 file/);
+    });
+  });
 });
