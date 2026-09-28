@@ -764,39 +764,44 @@ async function llmEnrichDescriptions(
 // 上下文来源 = MCP 工具注册表（server_registry）——比目录聚类更能回答"能干嘛"
 // ─────────────────────────────────────────────────────────────
 
-/** 从工程的 MCP 工具注册文件提取"能力清单"（工具名 + 一句话），供能力合成作上下文 */
-function extractToolContext(dsl: DesignDSL): string {
+/** 从工程的 MCP 工具注册文件提取"能力清单"（工具名 + 一句话），供能力合成作上下文。
+ *  返回 { text, readError } —— 把两种"没有上下文"分开（§2d / §27.5）：
+ *   · text=''：**本工程没有**工具注册文件 = 合法第三态（能力合成按"无上下文"照常进行）；
+ *   · readError：文件**在、但读不了** = 失败，不许混进上面的"没有"，由调用方写进导图 note。 */
+function extractToolContext(dsl: DesignDSL): { text: string; readError?: string } {
   // source_root 在 live 快照上可能缺省，回退到包根；server_registry.ts 就在 <包根>/src/。
   // 不要在语义文件路径里猜：其基准常是 src/ 且旧正则易误配 daemon/server.ts 等，
   // 直接按包根实际搜索真实存在的注册文件，找不到即跳过能力合成。
   const base = (dsl.source_root && dsl.source_root.trim()) || getPackageRoot();
-  if (!base) return '';
-  try {
-    let abs = '';
-    // 兜底候选（文件已存在才作数）：先 server_registry，其次任意 registry/server.ts
-    const names = ['server_registry.ts', 'server_registry.tsx', 'registry.ts', 'server.ts'];
-    for (const n of names) {
-      const p = path.join(base, 'src', n);
-      if (fs.existsSync(p)) { abs = p; break; }
-    }
-    if (!abs) return '';
-    const text = fs.readFileSync(abs, 'utf-8');
-    const tools: string[] = [];
-    // 逐块抓 tool 定义（name + description），正则防御性、失败即止
-    const re = /name:\s*'([a-zA-Z0-9_]+)'[\s\S]*?description:\s*([\s\S]*?)(?:inputSchema:|handler:)/g;
-    let m: RegExpExecArray | null;
-    while ((m = re.exec(text)) !== null && tools.length < 40) {
-      const desc = m[2]
-        .replace(/['"`]|\s*\+\s*/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim()
-        .slice(0, 120);
-      if (m[1] && desc) tools.push(`${m[1]}：${desc}`);
-    }
-    return tools.map((t) => `- ${t}`).join('\n');
-  } catch {
-    return '';
+  if (!base) return { text: '' };
+  let abs = '';
+  // 兜底候选（文件已存在才作数）：先 server_registry，其次任意 registry/server.ts
+  const names = ['server_registry.ts', 'server_registry.tsx', 'registry.ts', 'server.ts'];
+  for (const n of names) {
+    const p = path.join(base, 'src', n);
+    if (fs.existsSync(p)) { abs = p; break; }
   }
+  if (!abs) return { text: '' }; // 找不到注册文件 = 合法第三态（不是失败），不报错
+  let text: string;
+  try {
+    text = fs.readFileSync(abs, 'utf-8');
+  } catch (err) {
+    // §2d：文件在、读不了 ≠ 没有工具上下文 —— 记下原因交调用方播报，不静默当成"无上下文"
+    return { text: '', readError: `${abs}: ${err instanceof Error ? err.message : String(err)}` };
+  }
+  const tools: string[] = [];
+  // 逐块抓 tool 定义（name + description）
+  const re = /name:\s*'([a-zA-Z0-9_]+)'[\s\S]*?description:\s*([\s\S]*?)(?:inputSchema:|handler:)/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null && tools.length < 40) {
+    const desc = m[2]
+      .replace(/['"`]|\s*\+\s*/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 120);
+    if (m[1] && desc) tools.push(`${m[1]}：${desc}`);
+  }
+  return { text: tools.map((t) => `- ${t}`).join('\n') };
 }
 
 /** 用 LLM 把细功能归并成几个业务能力支柱：返回 [{name, explanation, features}] 或 null */
@@ -1428,6 +1433,8 @@ async function buildTeachMindMap(
   //  - prevPipelineLike：主人已拍板的"是/否产线"，重建只允许 LLM 再出提议、绝不覆盖确认
   let prevProposals: MindMap['proposals'];
   let prevPipelineLike: MindMap['pipeline_like'];
+  /** 旧导图存在但读不回来（损坏/不可读）——§2d：主人资产（构想/产线确认）读不回要说出来 */
+  let prevFileBroken = false;
   try {
     if (fs.existsSync(jsonFile)) {
       const prev = JSON.parse(fs.readFileSync(jsonFile, 'utf-8')) as MindMap;
@@ -1435,7 +1442,9 @@ async function buildTeachMindMap(
       prevPipelineLike = prev.pipeline_like;
     }
   } catch {
-    /* 旧文件损坏则忽略 */
+    // §2d（2026-09-28 修剪）：原来只留一句注释 = 静默 —— 主人的构想/产线确认读不回却无人知晓。
+    // 不 throw（旧 JSON 是可重建的中间产物，损坏不该让整张导图不可生成）；改为置标记、重建后写进 note 播报。
+    prevFileBroken = true;
   }
 
   // 平铺兜底：无功能树（早期数据）——诚实降级，与 structure 一致
@@ -1474,11 +1483,16 @@ async function buildTeachMindMap(
   // db 打不开时 edges=[]，材料仍以职责清单为主（LLM 会标注顺序为推断）
   let db: Database | null = null;
   const dbFile = findCacheDb(feature, dsl);
+  /** cache.db 存在却打不开的原因（§2d / §27.5：读不了 ≠ 没有调用数据，不许静默当成"无调用记录"） */
+  let dbReadError = '';
   if (dbFile) {
     try {
       db = openDb(dbFile);
-    } catch {
+    } catch (err) {
+      // 不 throw（cache.db 是"可选证据源"不是前置条件；损坏的索引不该让整张导图不可生成）——
+      // 但"分镜顺序缺调用证据"必须可读，故记下原因写进 note。
       db = null;
+      dbReadError = `${dbFile}: ${err instanceof Error ? err.message : String(err)}`;
     }
   }
   // 功能 → 文件全集：以 file_map（目录/能力域优先归属，权威）为准。
@@ -1569,7 +1583,8 @@ async function buildTeachMindMap(
       if (old.desc_cache && typeof old.desc_cache === 'object') descCache = old.desc_cache;
     }
   } catch {
-    /* 旧文件损坏则忽略 */
+    // §2d（同上）：分镜/译名缓存读不回也要说话 —— 不静默丢缓存
+    prevFileBroken = true;
   }
   // 缺译名的社区 → LLM 批量翻译（一次性，之后走缓存；开销与分镜无关独立判断）。
   // 噪音名（数据结构/辅助器类）不送 LLM：直译（最小堆）还是噪音，统一按「内部组件」兜底。
@@ -1831,9 +1846,11 @@ async function buildTeachMindMap(
   let capGroups: Array<{ name: string; explanation: string; features: string[] }> | null = null;
   // 能力合成与分镜描述解耦：只要配置了 LLM 即合成（功能名都够），
   // 不依赖 useLlm/gen_descriptions——避免 overview 默认不传 gen_descriptions 时"能干嘛"层静默缺失。
+  let ctxReadError = '';
   if (loadAgentConfig()) {
     const toolCtx = extractToolContext(dsl);
-    capGroups = toolCtx ? await llmSynthesizeCapabilities(ft.features, toolCtx, title) : null;
+    ctxReadError = toolCtx.readError ?? '';
+    capGroups = toolCtx.text ? await llmSynthesizeCapabilities(ft.features, toolCtx.text, title) : null;
   }
   if (capGroups && capGroups.length > 0) {
     // root.children 已按 order 排好序；按 ft.features[order[i]].name → root.children[i] 建映射
@@ -1903,6 +1920,18 @@ async function buildTeachMindMap(
     .filter((e) => fileIdSet.has(e.from) && fileIdSet.has(e.to) && e.from !== e.to)
     .map((e) => ({ from: e.from, to: e.to, label: e.label }));
 
+  // §2d：把"少做了什么"变成可读的（原来这些失败全静默：索引读不了/上下文读不了/旧文件坏了）
+  const teachDegraded = [
+    dbReadError ? `⚠ 调用索引打不开（${dbReadError}）⇒ 分镜顺序缺少真实调用证据` : '',
+    ctxReadError ? `⚠ 工具上下文不可读（${ctxReadError}）⇒ 未做能力支柱归并` : '',
+    prevFileBroken ? '⚠ 旧导图损坏，已重建（主人的构想/产线确认/分镜缓存可能已丢失）' : '',
+  ].filter(Boolean);
+  const teachNote =
+    (anyLlm
+      ? `已用 LLM（${loadAgentConfig()?.model ?? ''}）生成科普分镜；子模块/文件专属描述 ${descHit}/${descTargets.length} 条`
+      : 'LLM 分镜不可用（未配置或调用失败），已降级规则描述') +
+    (teachDegraded.length ? `；${teachDegraded.join('；')}` : '');
+
   const mindMap: MindMap = {
     feature,
     mode: anyLlm ? 'llm' : 'rule',
@@ -1918,9 +1947,7 @@ async function buildTeachMindMap(
     pipeline_like: prevPipelineLike,
     pipeline_like_proposals: Object.keys(pipelineProposals).length > 0 ? pipelineProposals : undefined,
     generated_at: new Date().toISOString(),
-    note: anyLlm
-      ? `已用 LLM（${loadAgentConfig()?.model ?? ''}）生成科普分镜；子模块/文件专属描述 ${descHit}/${descTargets.length} 条`
-      : 'LLM 分镜不可用（未配置或调用失败），已降级规则描述',
+    note: teachNote,
   };
   fs.mkdirSync(path.dirname(jsonFile), { recursive: true });
   fs.writeFileSync(jsonFile, JSON.stringify(mindMap, null, 2), 'utf-8');
@@ -2108,6 +2135,8 @@ export async function deriveMindMap(input: DeriveMindMapInput): Promise<DeriveMi
   };
   let mode: 'llm' | 'rule' = 'rule';
   let note: string | undefined;
+  /** 能力支柱上下文读取失败原因（§2d：读不了 ≠ 没有；否则能力层静默消失） */
+  let ctxReadError = '';
   let root: MindMapNode;
 
   if (ft && ft.features.length > 0) {
@@ -2177,7 +2206,8 @@ export async function deriveMindMap(input: DeriveMindMapInput): Promise<DeriveMi
     let capGroups: Array<{ name: string; explanation: string; features: string[] }> | null = null;
     if (loadAgentConfig()) {
       const toolCtx = extractToolContext(dsl);
-      capGroups = toolCtx ? await llmSynthesizeCapabilities(ft.features, toolCtx, title) : null;
+      ctxReadError = toolCtx.readError ?? '';
+      capGroups = toolCtx.text ? await llmSynthesizeCapabilities(ft.features, toolCtx.text, title) : null;
     }
     if (capGroups && capGroups.length > 0) {
       // 功能名/id → 子树节点 映射（能力支柱把它下面的功能子树整棵搬进去）
@@ -2403,10 +2433,15 @@ export async function deriveMindMap(input: DeriveMindMapInput): Promise<DeriveMi
         if (n.children) for (const c of n.children) apply(c);
       };
       apply(root);
-      note = `已用 LLM（${loadAgentConfig()?.model ?? ''}）提炼功能/子模块描述`;
+      // §2d：把"覆盖了几成"变成可读的数 —— 原来只会在"全失败"时说话，部分失败静默（teach 路径早已有此覆盖度）
+      note = `已用 LLM（${loadAgentConfig()?.model ?? ''}）提炼功能/子模块描述 ${enriched.size}/${llmTargets.length} 条`;
     } else {
       note = 'LLM 提炼不可用（未配置或调用失败），已用规则描述';
     }
+  }
+  // §2d：能力上下文读取失败 ⇒ 能力支柱层不会出现，必须可读（不再静默少做一层）
+  if (ctxReadError) {
+    note = [note, `⚠ 工具上下文不可读（${ctxReadError}）⇒ 未做能力支柱归并`].filter(Boolean).join('；');
   }
 
   const mindMap: MindMap = {
@@ -2516,7 +2551,10 @@ interface NoteCtx {
  *  实际生产路径：feature 名 → getDSL → 纯解析。 */
 export function resolveCanvasNoteTargets(feature: string): ResolvedCanvasNote[] {
   const dsl = getDSL(feature);
-  if (!dsl) return [];
+  // §21 规矩③（2026-09-28 修剪）：feature 不存在 = 数据源不可用，原来 `return []` 把它降级成
+  // "看起来正常的空工单"（调用方 canvas_notes/notes 资源会静默报 0 条）⇒ 改为硬失败，
+  // 与本文件 deriveMindMap / placeProposals 的 `feature 不存在` 口径一致。
+  if (!dsl) throw new Error(`feature "${feature}" 不存在`);
   return resolveCanvasNotesFromDSL(dsl, feature);
 }
 
