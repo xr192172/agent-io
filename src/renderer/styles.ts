@@ -157,7 +157,7 @@ export function buildStyles(): string {
   --anim-card-body: #93b4e0;
 }
 
-/* dynamic 主题：dynamic-ui SVG 示意图风格（浅色底 + 紫色主调），design-canvas 设计层默认输出 */
+/* dynamic 主题：dynamic-ui SVG 示意图风格（浅色底 + 紫色主调），agent-io 设计层默认输出 */
 [data-theme="dynamic"] {
   --theme-primary: #7c3aed;
   --theme-primary-rgb: 124, 58, 237;

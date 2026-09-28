@@ -1,11 +1,11 @@
 /**
- * dogfood: 为 design-canvas 自身构建符号缓存（.design-canvas/cache.db）
+ * dogfood: 为 agent-io 自身构建符号缓存（.agent-io/cache.db）
  *
  * 供诊断工具 self-diagnosis 使用：缓存 src/ 与 tests/ 的符号/调用边，
  * 之后 diagnose_cli --project <repo> 就能定位到符号级。
  *
  * 用法：node dogfood/build_cache.mjs [repoRoot]
- *   repoRoot 缺省 = 本脚本所在仓库根（design-canvas/）。
+ *   repoRoot 缺省 = 本脚本所在仓库根（agent-io/）。
  *
  * 注意：isSupported() 接收的是【扩展名】（如 '.ts'），不是文件路径——
  * 传全路径会永远匹配不上，导致缓存 0 文件。
@@ -24,7 +24,7 @@ const root = path.resolve(process.argv[2] || path.join(here, '..'));
 
 const skipDirs = new Set([
   'node_modules', '.git', '.svn', '.hg', 'dist', 'build', 'out', 'output',
-  'vendor', '__pycache__', '.design-canvas', 'coverage', 'target', 'bin', 'obj',
+  'vendor', '__pycache__', '.agent-io', 'coverage', 'target', 'bin', 'obj',
   '.next', '.nuxt', '.venv', 'venv', '.idea', '.vscode', '.backup', 'scaffold',
   '.pytest_cache', '.mypy_cache', '.tox', 'egg-info', '.trae',
 ]);
@@ -53,7 +53,7 @@ const db = getProjectCacheDb(root);
 const res = await syncProject(db, root, files);
 closeAllProjectCacheDbs();
 
-console.log(`[dogfood] 缓存 ${files.length} 个文件 -> ${path.join(root, '.design-canvas', 'cache.db')}`);
+console.log(`[dogfood] 缓存 ${files.length} 个文件 -> ${path.join(root, '.agent-io', 'cache.db')}`);
 console.log(`[dogfood] updated=${res.updated} skipped=${res.skipped} ignored=${res.ignored} failed=${res.failed} ms=${res.ms}`);
 console.log(`[dogfood] 跨文件调用: total=${res.cross?.total} resolved=${res.cross?.resolved} external=${res.cross?.external} failed=${res.cross?.failed}`);
 if (res.failed > 0) {

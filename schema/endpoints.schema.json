@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "design-canvas 响应契约（from src/api/contract.ts zod 单源）",
-  "description": "自动生成，请勿手改。来源：design-canvas/src/api/contract.ts；由 scripts/gen_endpoints_schema.mjs 在 npm run gen:schema 时生成。",
+  "title": "agent-io 响应契约（from src/api/contract.ts zod 单源）",
+  "description": "自动生成，请勿手改。来源：agent-io/src/api/contract.ts；由 scripts/gen_endpoints_schema.mjs 在 npm run gen:schema 时生成。",
   "definitions": {
     "features": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",

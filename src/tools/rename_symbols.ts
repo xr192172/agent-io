@@ -283,7 +283,7 @@ export function scanLiteralOccurrences(
 
   // 只扫描常见可读扩展名（排除二进制/编译产物）
   const SCAN_EXTS = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.mts', '.json', '.md', '.yml', '.yaml', '.html', '.css', '.vue', '.py', '.go', '.java', '.sh', '.mjs']);
-  // ★ `.design-canvas` 必须跳过（2026-09-14 发现的真 bug）：
+  // ★ `.agent-io` 必须跳过（2026-09-14 发现的真 bug）：
   //   里面是我们自己的派生物 —— 缓存库、`code-snapshots/` 影子副本、`live/` DSL。
   //   尤其**影子副本就是被扫描文件的旧文本副本**：扫到它们既会虚增命中数，
   //   又会把"可撤回的快照"本身改写掉（等于毁掉回滚能力）。

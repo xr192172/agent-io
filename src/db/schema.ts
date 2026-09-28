@@ -1,5 +1,5 @@
 /**
- * design-canvas 符号缓存 schema（v2）
+ * agent-io 符号缓存 schema（v2）
  *
  * 以 vendor/codegraph/src/db/schema.sql 为底裁剪改造：
  *   - 保留：nodes / edges / files / unresolved_refs / schema_versions / project_metadata

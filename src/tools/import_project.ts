@@ -1,5 +1,5 @@
 /**
- * import_project 工具：扫描现有项目 → 自动生成 design-canvas DSL
+ * import_project 工具：扫描现有项目 → 自动生成 agent-io DSL
  *
  * 降低工具门槛：新用户无需手写 DSL，指向项目目录即可得到初始设计图，
  * 随后在画布上迭代（人改几何层 / LLM 改语义层）。
@@ -75,7 +75,7 @@ export interface ImportProjectInput {
   /**
    * 可选：导入源码的持久根目录（绝对路径）。提供时写入 DSL.source_root，
    * 供巨石体检/影响面/一致性等需读源文件的功能定位源码。
-   * 浏览器上传导入时由 serve 指定为 .design-canvas/projects/<feature>/。
+   * 浏览器上传导入时由 serve 指定为 .agent-io/projects/<feature>/。
    */
   source_root?: string;
   /**

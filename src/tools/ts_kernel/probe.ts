@@ -1,8 +1,8 @@
 /**
  * 探测已安装的 tree-sitter 语言包：用标准 ESM resolver (import.meta.resolve) 判定，
  * 而非扫 node_modules 目录名。resolve 从【本模块所在包】向上解析，天然定位到
- * design-canvas 自带 node_modules，与进程 cwd 无关——修复深度注入（宿主进程 cwd
- * 非 design-canvas）下被误判"语言未装"→ parseFileFull 0 符号的问题；也让"该用哪个
+ * agent-io 自带 node_modules，与进程 cwd 无关——修复深度注入（宿主进程 cwd
+ * 非 agent-io）下被误判"语言未装"→ parseFileFull 0 符号的问题；也让"该用哪个
  * language 包"的判定可复用于 AST 引擎等任何按语言探依赖的场合。
  *
  * resolve 同步、不加载 native（只解析路径）：成功=包可解析，抛 ERR_MODULE_NOT_FOUND=未装。

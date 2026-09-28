@@ -1,7 +1,7 @@
 /**
  * brickify（依赖驱动积木化管线）测试：
  *   buildFileDeps 文件级依赖边 / computeCommunities 功能社区 / detectMixedFiles 混合文件信号
- *   buildBrickify 全链路（design-canvas 狗食现场）
+ *   buildBrickify 全链路（agent-io 狗食现场）
  */
 import fs from 'node:fs';
 import os from 'node:os';
@@ -198,7 +198,7 @@ describe('computeBrickSubClusters 第2层（积木内小簇）', () => {
   });
 });
 
-describe('buildBrickify 全链路（design-canvas 狗食）', () => {
+describe('buildBrickify 全链路（agent-io 狗食）', () => {
   it('扫描 src → 积木 → 社区 → 混合文件，链路自洽可渲染', async () => {
     const r = await buildBrickify({ project_dir: path.join(process.cwd()), source_root: SRC });
     expect(r.meta.scanned_files).toBeGreaterThan(100);

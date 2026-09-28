@@ -2,30 +2,30 @@
  * DSL 持久化
  *
  * 存储路径：
- *   1. <cwd>/.design-canvas/features/<feature>.json —— 各 feature 历史存档
- *   2. <cwd>/design-canvas.json —— 当前活态 DSL（LLM 和浏览器共享）
+ *   1. <cwd>/.agent-io/features/<feature>.json —— 各 feature 历史存档
+ *   2. <cwd>/agent-io.json —— 当前活态 DSL（LLM 和浏览器共享）
  *
  * 双向同步机制：
- *   - LLM 调用 saveDSL → 同时更新 design-canvas.json
- *   - 浏览器启动时 → 读取 design-canvas.json 覆盖本地状态
- *   - 人调整画布 → localStorage 暂存 + 可导出 design-canvas.json
+ *   - LLM 调用 saveDSL → 同时更新 agent-io.json
+ *   - 浏览器启动时 → 读取 agent-io.json 覆盖本地状态
+ *   - 人调整画布 → localStorage 暂存 + 可导出 agent-io.json
  */
 
-import { DATA_DIR_NAME } from './data_dir.js';
+import { DATA_DIR_NAME, PKG_NAME } from './data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { DesignDSL } from './dsl/types.js';
 
 /**
- * design-canvas 包根：从模块自身位置（dist/src/storage.js 或 src/storage.ts）
- * 向上找最近的 package.json 且 name==="design-canvas" 的目录。
+ * agent-io 包根：从模块自身位置（dist/src/storage.js 或 src/storage.ts）
+ * 向上找最近的 package.json 且 name==="agent-io" 的目录。
  *
  * 与 cwd 无关：MCP server / serve / daemon 可能由任意 cwd 拉起
  * （TRAE/Claude 等 client 常以工作区根为用户目录作为 stdio 子进程 cwd），
  * 若 dataHome 裸依赖 process.cwd()，会把 features 存档 + 活态 DSL 错位写到
  * 工作区根，甚至把其它项目的 go-* 文件并进本 feature 的边（"146 条 flows 污染"根因）。
- * 这里自省锚定，保证设计数据永远落在 design-canvas 自身安装根。
+ * 这里自省锚定，保证设计数据永远落在 agent-io 自身安装根。
  */
 export function getPackageRoot(): string {
   let dir = path.dirname(fileURLToPath(import.meta.url));
@@ -34,7 +34,7 @@ export function getPackageRoot(): string {
     if (fs.existsSync(pkg)) {
       try {
         const j = JSON.parse(fs.readFileSync(pkg, 'utf-8')) as { name?: string };
-        if (j.name === 'design-canvas') return dir;
+        if (j.name === PKG_NAME) return dir;
       } catch {
         /* 忽略损坏的 package.json */
       }
@@ -48,30 +48,30 @@ export function getPackageRoot(): string {
  * 数据主目录：所有持久化路径的根
  *
  * 优先级：
- *   1. DESIGN_CANVAS_HOME（测试/显式覆盖用，最高优先）
- *   2. design-canvas 包根（getPackageRoot，从模块位置自省，cwd 无关，稳定）
+ *   1. AGENT_IO_HOME（测试/显式覆盖用，最高优先）
+ *   2. agent-io 包根（getPackageRoot，从模块位置自省，cwd 无关，稳定）
  *   3. process.cwd()（自省失败的最末端兜底）
  *
  * 注意：必须在调用时读取 env（不能模块加载时缓存），保证 vitest setup 生效。
  */
 export function getDataHome(): string {
-  if (process.env.DESIGN_CANVAS_HOME) return process.env.DESIGN_CANVAS_HOME;
+  if (process.env.AGENT_IO_HOME) return process.env.AGENT_IO_HOME;
   return getPackageRoot();
 }
 
-/** 设计存储根目录：<dataHome>/.design-canvas */
+/** 设计存储根目录：<dataHome>/.agent-io */
 export function getStorageRoot(): string {
   return path.join(getDataHome(), DATA_DIR_NAME);
 }
 
-/** feature 持久化目录：<cwd>/.design-canvas/features */
+/** feature 持久化目录：<cwd>/.agent-io/features */
 export function getFeaturesDir(): string {
   return path.join(getStorageRoot(), 'features');
 }
 
-/** 活态 DSL 文件：<dataHome>/design-canvas.json */
+/** 活态 DSL 文件：<dataHome>/agent-io.json */
 export function getLiveDslFile(): string {
-  return path.join(getDataHome(), 'design-canvas.json');
+  return path.join(getDataHome(), 'agent-io.json');
 }
 
 /** 单个 feature 文件路径 */
@@ -83,12 +83,12 @@ export function getFeatureFile(feature: string): string {
   return path.join(getFeaturesDir(), `${feature}.json`);
 }
 
-/** 实际 DSL 目录（动态快照）：<dataHome>/.design-canvas/live */
+/** 实际 DSL 目录（动态快照）：<dataHome>/.agent-io/live */
 export function getLiveDir(baseDir?: string): string {
   return path.join(baseDir ?? getDataHome(), DATA_DIR_NAME, 'live');
 }
 
-/** 实际 DSL 文件路径：<dataHome>/.design-canvas/live/<feature>.dsl.json */
+/** 实际 DSL 文件路径：<dataHome>/.agent-io/live/<feature>.dsl.json */
 export function getLiveFeatureFile(feature: string, baseDir?: string): string {
   if (!/^[a-zA-Z0-9_-]+$/.test(feature)) {
     throw new Error(`非法 feature 名: "${feature}"，必须匹配 ^[a-zA-Z0-9_-]+$`);
@@ -139,7 +139,7 @@ export function getBaselineDir(baseDir?: string): string {
   return path.join(baseDir ?? getDataHome(), DATA_DIR_NAME, 'baseline');
 }
 
-/** 基线 DSL 文件路径：<dataHome>/.design-canvas/baseline/<feature>.dsl.json */
+/** 基线 DSL 文件路径：<dataHome>/.agent-io/baseline/<feature>.dsl.json */
 export function getBaselineFeatureFile(feature: string, baseDir?: string): string {
   if (!/^[a-zA-Z0-9_-]+$/.test(feature)) {
     throw new Error(`非法 feature 名: "${feature}"，必须匹配 ^[a-zA-Z0-9_-]+$`);
@@ -208,7 +208,7 @@ export interface ArchiveEntry {
   archived_at: string;
 }
 
-/** 下线库目录：<baseDir>/.design-canvas/archive/<feature>/ */
+/** 下线库目录：<baseDir>/.agent-io/archive/<feature>/ */
 export function getArchiveDir(feature: string, baseDir?: string): string {
   return path.join(baseDir ?? getDataHome(), DATA_DIR_NAME, 'archive', feature);
 }
@@ -407,7 +407,7 @@ export function deleteDSL(feature: string): void {
  * 完整删除 feature（manage_feature action=delete 用）：
  * 1. 删 feature 存档文件
  * 2. 删该 feature 的实际代码快照（live/<f>.dsl.json）
- * 3. 若活态文件（design-canvas.json）当前对应此 feature，一并删除，避免残留陈旧活态视图
+ * 3. 若活态文件（agent-io.json）当前对应此 feature，一并删除，避免残留陈旧活态视图
  */
 export function deleteFeature(feature: string): void {
   const file = getFeatureFile(feature);

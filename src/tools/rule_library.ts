@@ -101,12 +101,12 @@ export interface Rule {
   sourcePath?: string;
 }
 
-/** 规则库目录：`<root>/.design-canvas/rules/` */
+/** 规则库目录：`<root>/.agent-io/rules/` */
 export function rulesDir(root: string): string {
   return path.join(path.resolve(root), DATA_DIR_NAME, 'rules');
 }
 
-/** 棘轮基线文件：`<root>/.design-canvas/rules/baseline.json` */
+/** 棘轮基线文件：`<root>/.agent-io/rules/baseline.json` */
 export function baselinePath(root: string): string {
   return path.join(rulesDir(root), 'baseline.json');
 }

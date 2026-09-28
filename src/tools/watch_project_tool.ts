@@ -269,7 +269,7 @@ export interface WatchProjectToolInput {
   /**
    * 变更后是否自动生成影响报告（Step 2，默认 false）。
    * 开启后每次变更（节流合并）自动跑 diffImpact：一行摘要入 alerts 队列
-   * （watch status 时带回），全文落盘 .design-canvas/impact/rp-<seq>.json，
+   * （watch status 时带回），全文落盘 .agent-io/impact/rp-<seq>.json，
    * action=impact 按序号取全文。feature 可选（缺省纯缓存分析）。
    */
   impact_on_change?: boolean;
@@ -337,7 +337,7 @@ export interface WatchProjectToolResult {
 /**
  * impact 事件入 Observe 流的 lazy sink（Step 3 合流）：
  * MCP stdio 进程默认无全局 sink（captureProbe 是 no-op，事件会丢）——首次注入前
- * 按项目落盘 <projectRoot>/.design-canvas/observe/events.jsonl。
+ * 按项目落盘 <projectRoot>/.agent-io/observe/events.jsonl。
  * 已有 sink（serve 设 OBSERVE_EVENTS_FILE / 先前 watch 已建）则复用不覆盖。
  * 注：全局 sink 只有一个，多项目同进程 watch 时共用首个项目的流（可接受：serve
  * 场景本来就走全局单文件）。

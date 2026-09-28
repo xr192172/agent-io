@@ -71,7 +71,7 @@ export const META_TOOLS: ToolDef[] = [
       'search 必填 args.project_dir（目标项目根目录，缺省报错）+ args.query，可选 top_k；' +
       'arch_layer/diff_impact 等同样需要 project_dir。' +
       'watch 支持 impact_on_change=true：文件变更后自动生成影响报告（一行摘要入 alerts，' +
-      'action=status 查看未读提醒，action=impact + seq 取全文；报告持久落盘 .design-canvas/impact/）。' +
+      'action=status 查看未读提醒，action=impact + seq 取全文；报告持久落盘 .agent-io/impact/）。' +
       '改代码前建议 action=declare + files 登记预告（Impact Ledger）：改后自动对比实际波及，' +
       '计划外扩散即时报警。预告持久化 ledger.json（跨会话恢复，24h 未消费过期）；' +
       'action=ledger 查台账，violated 用 resolve_id + reason 过门处理（status 播报未处理数）。',
@@ -119,13 +119,13 @@ export const META_TOOLS: ToolDef[] = [
     description:
       '症状诊断：输入"症状"（报错信息 / stack trace / 测试失败输出 / 行为异常描述），' +
       '输出"根因 + 证据链 + 影响面 + 修改建议 + 验证方式"。' +
-      '六步流水线：症状解析（正则提取 错误类型/文件:行/符号）→ 候选定位（查 .design-canvas/cache.db 符号缓存，' +
+      '六步流水线：症状解析（正则提取 错误类型/文件:行/符号）→ 候选定位（查 .agent-io/cache.db 符号缓存，' +
       'exact/file/FTS/anchor 四路）→ 调用链追溯（沿 call/type_ref/import 三类边双向 BFS）→ 影响面分析（复用 diff_impact）→ ' +
       '根因聚合（规则引擎先跑，LLM 可选把证据翻成人话根因，未配置自动降级）→ 验证建议（按项目类型给命令，只建议不执行）。' +
       '前置：无需任何准备——缓存为空时会自动冷启建索引；仅在目标目录没有可解析源码时退化为文件级线索。' +
       'anchor 可选：用户已知的线索（文件路径或函数名）帮助聚焦。',
     inputSchema: {
-      project_dir: z.string().describe('被诊断项目根目录（其下 .design-canvas/cache.db 是符号缓存，为空则自动冷启建索引）'),
+      project_dir: z.string().describe('被诊断项目根目录（其下 .agent-io/cache.db 是符号缓存，为空则自动冷启建索引）'),
       symptom: z.string().describe('症状：报错信息 / stack trace / 测试失败输出 / 行为异常描述'),
       symptom_type: z.enum(['error', 'test_failure', 'behavior']).optional().describe('症状类型，缺省 auto 自动识别'),
       anchor: z.string().optional().describe('可选线索：文件路径或函数名，帮助聚焦定位'),
@@ -148,7 +148,7 @@ export const META_TOOLS: ToolDef[] = [
       'action=decide 内置 LLM 决策器：读 open 批注逐单决策（change/done/reject），将"批注→改动提案"自动化（LLM 经网关 Key 池调度，未配置则停用）。',
     inputSchema: {
       action: z.enum(['read', 'mark', 'decide']).describe('read=读批注成工单 | mark=更新批注状态 | decide=LLM 决策批注并出提案'),
-      feature: z.string().describe('feature 名（如 design-canvas）'),
+      feature: z.string().describe('feature 名（如 agent-io）'),
       format: z.enum(['markdown', 'json']).default('markdown').optional().describe('read 用：markdown=工单文档（默认）/ json=结构化 JSON'),
       updates: z
         .array(
@@ -286,13 +286,13 @@ export const META_TOOLS: ToolDef[] = [
     name: 'read_project_docs',
     title: 'Read project docs (per-project docs/ folder)',
     description:
-      '读取某 feature 的项目文档夹（<project_dir>/docs/，或受管目录 .design-canvas/docs/<feature>/）。' +
+      '读取某 feature 的项目文档夹（<project_dir>/docs/，或受管目录 .agent-io/docs/<feature>/）。' +
       '三种用法：不带 name= 返回清单（含 frontmatter 关联标签与预览，供 agent 挑）；带 name= 返回单篇全文；' +
       '带 targets 返回命中该目标集（功能/步骤/文件）的文档正文（与 canvas_notes action=decide 的按批关联注入同一套匹配）。' +
       '项目文档可丢进项目仓库 docs/ 作为 LLM 决策背景（需求/设计约定/约定规范），' +
       'canvas_notes action=decide 会自动按批把命中文档注入决策上下文（TOC 全量 + 命中正文封顶）。',
     inputSchema: {
-      feature: z.string().describe('feature 名（如 design-canvas）'),
+      feature: z.string().describe('feature 名（如 agent-io）'),
       project_dir: z.string().optional().describe('项目根目录（缺省用 dsl.source_root）'),
       name: z.string().optional().describe('文档 id（相对 docs/ 的路径）；给则返回该篇全文'),
       targets: z
@@ -338,7 +338,7 @@ export const META_TOOLS: ToolDef[] = [
 
   {
     name: 'capability_map',
-    title: '能力线导航：design-canvas 工具分层地图',
+    title: '能力线导航：agent-io 工具分层地图',
     description:
       '统一能力线入口（只读导航，无副作用）。无参返回完整分层清单：6 条能力线（design 设计 / refactor 重构 / ' +
       'observe 观测 / harvest 契约采集 / cross 跨仓杂交健康 / meta 元信息）× 每条线内工具及其适用时机；' +

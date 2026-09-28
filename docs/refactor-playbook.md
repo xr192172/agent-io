@@ -36,14 +36,17 @@ node scripts/contract_docs_gate.mjs
 # ⑦ G9 lane 来源门（P1c） —— 归属只有一个来源；lane 文件 ↔ 线 id 配对
 ./node_modules/.bin/vitest run tests/registry/lane_sources.test.ts
 
-# ⑧ G8 逐工具行为快照     —— 不退化即可（S1 稳定集 / S2 测量集）
+# ⑧ 品牌串残留门（改名后＝零容忍） —— 旧名一处都不许回来（含 .gitignore / *.mod 这类无扩展名文件）
+./node_modules/.bin/vitest run tests/brand_residue.test.ts
+
+# ⑨ G8 逐工具行为快照     —— 不退化即可（S1 稳定集 / S2 测量集）
 ./node_modules/.bin/vitest run tests/tool_behavior_snapshot.test.ts
 
-# ⑨ 全量回归（仓内约定：排除 archify）
+# ⑩ 全量回归（仓内约定：排除 archify）
 ./node_modules/.bin/vitest run --exclude 'tests/tools/archify_*.test.ts'
 ```
 
-**基线**：⑨ 当前应为 **218 文件 / 2261 测试**（217 过 + 1 skip；2256 过 + 5 skip）。
+**基线**：⑩ 当前应为 **218 文件 / 2264 测试**（217 过 + 1 skip；2259 过 + 5 skip）。
 任何一笔改动若把这些数字变少，先解释清楚再提交。
 
 ---
@@ -350,3 +353,50 @@ grep -rIn "['\"][^'\"]*/$m\(\.js\)\?['\"]" src tests --include=*.ts --include=*.
 - **先改名、后搬移**更好：改名自己的判据是 **"除品牌串外逐字相同"**，在文件**未被移动**时 diff 最可读；
   先搬 200 个文件再改名，判据会被 move 噪音淹没。
 - 改名前确认"**不改工具名**"或"改了并有墓碑机制"（否则 G1 会红，见 §4.6 与规划书 §9-F2）。
+
+### 8.5 ★★ 改名实操：六条（2026-09-28 实战，`DesignCanvas → AgentIO`，176 文件 / 617 处）
+
+1. **先量**：清点**逐形态**命中 + 逐文件数，并**把歧义形态单独列出人审**。
+   ★ 只数一个总命中数没有用 —— 实测 7 种形态里 `DC_`/`dc-` 的性质与另外 5 种**完全不同**。
+2. **有序映射**，形态按"最长/最具体优先"；**需要边界的形态单走正则**
+   （`(?<![A-Za-z0-9_])DC_` —— 裸子串替换会误伤 `SOME_DC_X`）。
+3. **生成物不手改**：本仓涉及 `AGENTS.md`、`*.gen.ts`、`schema/*.json`、`package-lock.json`。
+   改**生成器源码**后重算（`npm run build` / `npm run gen:schema` / `npm install --package-lock-only`）。
+   ★ **交叉验证**：若基线文件（如 G1/G8 快照）恰好也被替换带到新名，**另行用官方重算命令重算并比对哈希**
+   —— 哈希一致才证明"文本替换 == 正规重算"；不一致说明有别的真相源。
+4. ★★ **门的"什么算文本"必须内容嗅探，不能是扩展名白名单**。实测白名单漏掉三处：
+   `.gitignore`（无扩展名）、`go-observe/go.mod` 与 `go-slim/go.mod`（`.mod`）——
+   **它们既没被改名、门也照样绿**。判据：前 8KB 无 NUL 字节 ⇒ 当文本。
+   教训：**"手抄的清单"代替"可判定的规则"，就是这个项目的病根，它连门自己都没放过。**
+5. ★★ **"不需要兼容层" ≠ "没有下游"**：这两步的取证强度完全不同，别合并成一句。
+   先真的去量下游（`ls /d/project_develop/*/` + 逐仓 `grep -rIl <品牌>`，再逐个看**耦合方式**：
+   是按路径 import？走 HTTP？还是只是文档里的字符串？）。本仓实测 4 个真实使用方，
+   结论仍是"不做兼容层"，但**理由要写成"没有下游依赖旧名继续可用"**，并列出迁移清单。
+6. ★ **改名会 un-hide 被 ignore 规则遮住的东西**：本仓 `.gitignore` 里 `.design-canvas/` 与
+   `design-canvas.json` 是**无路径前缀**规则（匹配任意层级）⇒ 改名后规则不再匹配，
+   原先被遮住的产物**立刻出现在 `git status`**（实测：根活态 DSL 要 `mv`、`src/` 下有个游离 `cache.db`）。
+   ⇒ 改名收尾**必看 `git status` 的 untracked**，逐个判"迁移 / 删除"。
+
+### 8.6 改名收尾清单（照着核，别凭印象）
+
+```bash
+cd /d/project_develop/design-canvas
+# ① 残留门必须 0（且它不是"0 因为扫不到"—— 先看门的 isProbablyText 自测）
+./node_modules/.bin/vitest run tests/brand_residue.test.ts
+# ② 契约与行为基线（重算过、哈希一致）
+UPDATE_TOOL_SNAPSHOT=1 ./node_modules/.bin/vitest run tests/server_registry.tool_snapshot.test.ts
+UPDATE_TOOL_BEHAVIOR=1 ./node_modules/.bin/vitest run tests/tool_behavior_snapshot.test.ts
+# ③ 生成物重算
+npm run build && npm run gen:schema && npm install --package-lock-only
+# ④ 别的语言别忘（本仓有两个 Go 模块 + 一个交叉语言的数据目录名约定）
+(cd go-observe && go build ./... && go test ./...)
+(cd go-slim && go build ./...)
+# ⑤ un-hide 检查
+git status --short | grep '^??'
+# ⑥ 全量回归 + 残留门 second pass
+npm run test:main
+```
+
+★ **跨语言的数据目录名是一条真耦合**：`go-observe/internal/instrument/instrument.go` 里
+`const backupDir = ".design-canvas/observe-backup"` 与 TS 侧的 `DATA_DIR_NAME` **必须同改**，
+而**没有任何门在守这条**（Go 不在 vitest 范围）⇒ 靠"改名时两种语言一起改 + `go test` 兜"。

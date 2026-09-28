@@ -1,7 +1,7 @@
 /**
  * memory_watch —— 内存自动托管（memory_observe 闭环：持续采样 → 阈值判定 → 主动提醒）
  *
- * 定位：常驻在 design-canvas daemon 里的看门狗。每 intervalMs 对外部目标 gen（带 --inspect 的
+ * 定位：常驻在 agent-io daemon 里的看门狗。每 intervalMs 对外部目标 gen（带 --inspect 的
  * node 进程）做一次 `sampleRemote`（复用 memory_observe 的 CDP 采样），按阈值判定：
  *   - grow              ：RSS 相对启动基线增幅 ≥ rssDeltaMb → 内存快速增长
  *   - leak              ：heapUsed 连续 leakRuns 次单调上升且对比基线增超 leakDeltaMb → 疑似 JS 堆泄漏

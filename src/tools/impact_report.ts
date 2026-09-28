@@ -2,7 +2,7 @@
  * impact_report —— 变更影响报告：生成、落盘、按序号读取
  *
  * watch_project 变更回调（Step 2）的落地形态：
- *   - runImpactReport：基于符号缓存跑 diffImpact，全文落盘 <project>/.design-canvas/impact/rp-<seq>.json，
+ *   - runImpactReport：基于符号缓存跑 diffImpact，全文落盘 <project>/.agent-io/impact/rp-<seq>.json，
  *     返回一行摘要（推送用，不膨胀上下文）
  *   - readImpactReport：按 seq 取全文（LLM 看到摘要后需要深挖时调用）
  *   - listImpactReports：最近 N 条摘要

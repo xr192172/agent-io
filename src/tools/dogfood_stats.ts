@@ -1,9 +1,9 @@
 /**
  * dogfood_stats —— 工具使用"正式统计"（狗食量化）
  *
- * design-canvas 作为 AI 第一性工具的采纳度怎么量？—— 在统一调度咽喉
+ * agent-io 作为 AI 第一性工具的采纳度怎么量？—— 在统一调度咽喉
  * (server_registry registerAllTools) 记录每次工具调用结果，落盘 JSONL：
- *   <dataHome>/.design-canvas/dogfood/usage.jsonl
+ *   <dataHome>/.agent-io/dogfood/usage.jsonl
  *
  * 每条记录 = { ts, tool, action?, ok, ms, err? }
  *   - tool    : 工具名（explore_code / edit_code / get_dsl / ...）

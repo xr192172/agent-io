@@ -7,7 +7,7 @@
  * resolveCrossFileCalls 做跨文件解析），本模块只做「汇聚成大纲」的纯函数，不重新解析代码。
  *
  * 缓存定位顺序（复用 overview.tryDeriveFeatureTree 同款）：
- *   import_cache_<feature>.db（dataHome） > <source_root>/.design-canvas/cache.db > cwd/.design-canvas/cache.db
+ *   import_cache_<feature>.db（dataHome） > <source_root>/.agent-io/cache.db > cwd/.agent-io/cache.db
  */
 import { DATA_DIR_NAME } from '../data_dir.js';
 import path from 'node:path';

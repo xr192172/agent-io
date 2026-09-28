@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://design-canvas.dev/schema/design_dsl.schema.json",
-  "title": "design-canvas DSL",
+  "$id": "https://agent-io.dev/schema/design_dsl.schema.json",
+  "title": "agent-io DSL",
   "description": "双层 DSL：几何层（位置/样式）+ 语义层（文件/API/依赖）",
   "type": "object",
   "required": ["id", "type", "feature", "geometry"],

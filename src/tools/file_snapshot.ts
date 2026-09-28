@@ -8,15 +8,15 @@
  *
  * ⚠️ 命名区分（别重造 / 别撞车）：
  *   已有 `src/tools/snapshot.ts` 是 **DSL feature 快照**（设计状态里程碑，存
- *   `.design-canvas/snapshots/<feature>/`）；本模块管的是 **代码文件**，
- *   存 `.design-canvas/code-snapshots/` —— 两者目录与 API 都分开，互不干扰。
+ *   `.agent-io/snapshots/<feature>/`）；本模块管的是 **代码文件**，
+ *   存 `.agent-io/code-snapshots/` —— 两者目录与 API 都分开，互不干扰。
  *
  * 为什么不用 git：
  *   - 项目未必是 git 仓（`import_project` 常在非 git 目录上跑）；
  *   - 替用户 commit / stash 会污染他的工作区与历史（"撤回"不该改变用户仓库状态）；
  *   - 影子副本**只存被改动的那几个文件**（KB 级），与 git 完全解耦。
  *
- * 存储：`<projectRoot>/.design-canvas/code-snapshots/<id>/{meta.json,files/<rel>}`
+ * 存储：`<projectRoot>/.agent-io/code-snapshots/<id>/{meta.json,files/<rel>}`
  * 保留：默认最近 20 份（`MAX_FILE_SNAPSHOTS`），建新快照时清理更旧的。
  *
  * 纯 fs、零依赖。

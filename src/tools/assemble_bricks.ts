@@ -2,7 +2,7 @@
  * assemble_bricks —— 拼装区（Brick Harvest Phase 5：实码搬运与重组）
  *
  * 用户核心决策（2026-08-20）：每次拼装都要一个**新的拼装区**，
- * 绝不在原项目上抽取和拼装——原项目（design-canvas / OCR 克隆 / 任何源）永远只读。
+ * 绝不在原项目上抽取和拼装——原项目（agent-io / OCR 克隆 / 任何源）永远只读。
  * 拼装区是一次性新目录：可 git init、可编译运行、可 import_project 解析，
  * 用完不满意整个删掉，零残留。
  *
@@ -58,7 +58,7 @@ export interface AssembleBricksInput {
   module?: string;
   /** go.mod 的 go 版本（默认 1.25.5；只是最低版本声明） */
   go_version?: string;
-  /** 积木盒根目录（默认 <dataHome>/.design-canvas/bricks，与 harvest/slim 同源） */
+  /** 积木盒根目录（默认 <dataHome>/.agent-io/bricks，与 harvest/slim 同源） */
   box_dir?: string;
   /** false 只预演：输出搬运计划与 import 重写预览，不落盘（默认 true） */
   write?: boolean;
@@ -208,7 +208,7 @@ export async function assembleBricks(input: AssembleBricksInput): Promise<Assemb
     throw new Error('bricks 不能为空：至少指定一个积木名（search_bricks 可查盒内清单）');
   }
   // 盒根默认与 harvest_from_url / slim_brick 同源（getStorageRoot）：曾用
-  // <cwd>/.design-canvas/bricks，测试环境（DESIGN_CANVAS_HOME 重定向）下
+  // <cwd>/.agent-io/bricks，测试环境（AGENT_IO_HOME 重定向）下
   // 与写入方分裂——slim 写临时盒、拼装读持久盒，拼到过期残废产物
   const boxDir = path.resolve(input.box_dir ?? path.join(getStorageRoot(), 'bricks'));
   if (!fs.existsSync(boxDir)) {

@@ -3,7 +3,7 @@
  *
  * 设计（用户拍板路线：按批关联注入 + 项目仓库 docs/ + frontmatter 关联兜底文件名）：
  *   1. 文档夹位置：<project_dir>/docs/**\/*.md（project_dir = feature 的 source_root，
- *      即真实项目仓库，文档跟代码同库）；兜底 <dataHome>/.design-canvas/docs/<feature>/。
+ *      即真实项目仓库，文档跟代码同库）；兜底 <dataHome>/.agent-io/docs/<feature>/。
  *   2. 关联方式：文档头部 frontmatter 写 feature/steps/files 元信息（精确关联），
  *      未写 frontmatter 时按文件名关键词（拆 [-_ ]）对目标名做包含匹配（兜底）。
  *   3. 注入粒度（按批）：一次决策一批工单时，汇总这批工单涉及的 功能/步骤/文件 集合，

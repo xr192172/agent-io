@@ -15,7 +15,7 @@ import path from 'node:path';
 // ─────────────────────────────────────────────────────────────
 // 全局零侵入探针接口（对齐 Go 侧 SetGlobalSink / Capture 语义）
 // 默认关闭：未配置 sink 时 captureProbe 是 no-op，插桩不改变宿主行为。
-// 狗食插桩路径：<dataHome>/.design-canvas/observe/events.jsonl
+// 狗食插桩路径：<dataHome>/.agent-io/observe/events.jsonl
 //
 // 重要：sink 状态挂在 globalThis 上，而非模块级变量。因为全自动插桩会把
 // captureProbe 注入到项目的任意文件，而同一 probe.js 被不同相对路径 specifier

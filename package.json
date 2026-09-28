@@ -1,17 +1,17 @@
 {
-  "name": "design-canvas",
+  "name": "agent-io",
   "version": "0.1.3",
   "description": "人机共享的可视化协议层。LLM 输出结构化 DSL JSON → 协作前端渲染成可交互图 → 人看图改 JSON → LLM 读 JSON 迭代。本仓库是数据/协议层，可视化由独立前端承载，内置精简渲染器仅作预览兜底。作为 MCP 服务对外开放。",
   "license": "MIT",
   "type": "module",
   "author": "xr192172",
-  "homepage": "https://github.com/xr192172/design-canvas#readme",
+  "homepage": "https://github.com/xr192172/agent-io#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/xr192172/design-canvas.git"
+    "url": "git+https://github.com/xr192172/agent-io.git"
   },
   "bugs": {
-    "url": "https://github.com/xr192172/design-canvas/issues"
+    "url": "https://github.com/xr192172/agent-io/issues"
   },
   "keywords": [
     "mcp",
@@ -39,7 +39,7 @@
     "LICENSE"
   ],
   "bin": {
-    "design-canvas": "dist/src/server.js"
+    "agent-io": "dist/src/server.js"
   },
   "scripts": {
     "build": "node scripts/gen_agents.mjs && node scripts/gen_anim_core_bundle.mjs && tsc",

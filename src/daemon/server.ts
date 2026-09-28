@@ -1,7 +1,7 @@
 /**
  * daemon HTTP + SSE server（方向 E Phase 1）
  *
- * 端点（绑定 127.0.0.1，默认 7600，DC_DAEMON_PORT 可配）：
+ * 端点（绑定 127.0.0.1，默认 7600，AGENT_IO_DAEMON_PORT 可配）：
  *   GET  /api/health          存活探测 + 活跃 watch 汇总（MCP 自动降级的判据）
  *   POST /api/watch           watch_project_tool 全量 action 转发（daemon 进程内注册表为权威）
  *   GET  /api/alerts?since=N  按游标拉取未读提醒（多客户端各持游标，互不互抢）
@@ -87,7 +87,7 @@ function hostAllowed(host: string | undefined, port: number): boolean {
 }
 
 export function createDaemonServer(handlers: DaemonServerHandlers, opts: { port?: number; host?: string } = {}): DaemonServer {
-  const wantPort = opts.port ?? (Number(process.env.DC_DAEMON_PORT || 0) || 7600);
+  const wantPort = opts.port ?? (Number(process.env.AGENT_IO_DAEMON_PORT || 0) || 7600);
   const host = opts.host ?? '127.0.0.1';
   const sseClients = new Set<http.ServerResponse>();
   let actualPort = wantPort;

@@ -10,7 +10,7 @@
  *     → harvest_closure 算闭包
  *     → 入盒三件套（Phase 2.7 决策：自包含快照，不保留原项目）
  *
- * 积木盒布局（<box_dir>/<name>/，默认 <dataHome>/.design-canvas/bricks/）：
+ * 积木盒布局（<box_dir>/<name>/，默认 <dataHome>/.agent-io/bricks/）：
  *   manifest.json   —— BrickManifest：闭包档案 + 聚合契约（检索货架卡片）
  *   contracts.json  —— 闭包全体文件 BrickContract（按 path 分 key）
  *   files/<rel>     —— 闭包文件内容原样（自包含快照）
@@ -59,7 +59,7 @@ export interface HarvestFromUrlInput {
   };
   /** 单积木闭包文件数上限（默认 50；超限跳过该积木并告警） */
   max_closure?: number;
-  /** 积木盒根目录（默认 <dataHome>/.design-canvas/bricks） */
+  /** 积木盒根目录（默认 <dataHome>/.agent-io/bricks） */
   box_dir?: string;
   /** false 只预演不入盒（dry-run） */
   write?: boolean;

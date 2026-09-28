@@ -4,7 +4,7 @@
  * 背景（docs/tool-convergence "历史记录需要灰名单"）：改名/移动前要防止误伤带历史语境的
  * 行（判定/结论/核验记录）。本模块给"别的项目用"提供管理员自配的保护：不在源码硬编码路径。
  *
- * 配置（项目根 .design-canvas.json，无此文件 → 不启用，对任何项目零影响）：
+ * 配置（项目根 .agent-io.json，无此文件 → 不启用，对任何项目零影响）：
  *   {
  *     "rename": {
  *       "protect": [
@@ -40,10 +40,10 @@ export interface RenameProtectConfig {
   rules: RenameProtectRule[];
 }
 
-/** 解析并校验 .design-canvas.json 的 rename.protect 段；无/非法 → null（不启用） */
+/** 解析并校验 .agent-io.json 的 rename.protect 段；无/非法 → null（不启用） */
 export function loadRenameProtect(root: string): RenameProtectConfig | null {
   try {
-    const p = path.join(root, '.design-canvas.json');
+    const p = path.join(root, '.agent-io.json');
     if (!fs.existsSync(p)) return null;
     const j = JSON.parse(fs.readFileSync(p, 'utf-8'));
     const protect = j?.rename?.protect;
@@ -61,10 +61,10 @@ export function loadRenameProtect(root: string): RenameProtectConfig | null {
   }
 }
 
-/** 解析 .design-canvas.json 的 rename.generated 段（生成物文件 glob，改名应改源头而非它）；空/非法 → [] */
+/** 解析 .agent-io.json 的 rename.generated 段（生成物文件 glob，改名应改源头而非它）；空/非法 → [] */
 export function loadRenameGenerated(root: string): string[] {
   try {
-    const p = path.join(root, '.design-canvas.json');
+    const p = path.join(root, '.agent-io.json');
     if (!fs.existsSync(p)) return [];
     const j = JSON.parse(fs.readFileSync(p, 'utf-8'));
     const g = j?.rename?.generated;

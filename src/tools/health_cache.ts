@@ -7,7 +7,7 @@
  *   - 文件未变动（mtime/size 不变）→ 指纹不变 → 缓存命中。
  *   - 阈值参数（warn/crit/flag_cohesive/max_files）也纳入缓存 key，
  *     阈值变了即使文件没变也要重算（报告本就会变）。
- * 缓存根：<cwd>/.design-canvas/cache/health/<key>.json（与 live DSL 同根，持久化，重启生效）。
+ * 缓存根：<cwd>/.agent-io/cache/health/<key>.json（与 live DSL 同根，持久化，重启生效）。
  * 失败不致命：任何读写异常静默降级为"重新体检"，绝不影响主流程。
  */
 

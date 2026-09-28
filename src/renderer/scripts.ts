@@ -317,18 +317,18 @@ ${I18N_SOURCE}
   // ==== 自动持久化到 localStorage ====
   function saveLocal() {
     try {
-      localStorage.setItem('design-canvas:' + (dsl.feature || 'unknown'), JSON.stringify(dsl));
+      localStorage.setItem('agent-io:' + (dsl.feature || 'unknown'), JSON.stringify(dsl));
       // 同时保存 undo/redo 栈
-      const historyKey = 'design-canvas-history:' + (dsl.feature || 'unknown');
+      const historyKey = 'agent-io-history:' + (dsl.feature || 'unknown');
       localStorage.setItem(historyKey, JSON.stringify({
         undo: undoStack,
         redo: redoStack,
       }));
       // 保存折叠状态
-      const collapsedKey = 'design-canvas-collapsed:' + (dsl.feature || 'unknown');
+      const collapsedKey = 'agent-io-collapsed:' + (dsl.feature || 'unknown');
       localStorage.setItem(collapsedKey, JSON.stringify(Array.from(state.collapsed)));
       // 保存边控制点偏移
-      const edgeOffsetKey = 'design-canvas-edge-offsets:' + (dsl.feature || 'unknown');
+      const edgeOffsetKey = 'agent-io-edge-offsets:' + (dsl.feature || 'unknown');
       localStorage.setItem(edgeOffsetKey, JSON.stringify(state.edgeCtrlOffset));
     } catch (e) {
       console.warn('localStorage save failed', e);
@@ -338,7 +338,7 @@ ${I18N_SOURCE}
   // 加载 undo/redo 历史
   function loadHistory() {
     try {
-      const historyKey = 'design-canvas-history:' + (dsl.feature || 'unknown');
+      const historyKey = 'agent-io-history:' + (dsl.feature || 'unknown');
       const raw = localStorage.getItem(historyKey);
       if (!raw) return;
       const data = JSON.parse(raw);
@@ -447,7 +447,7 @@ ${I18N_SOURCE}
 
   function loadLocal() {
     try {
-      const key = 'design-canvas:' + (dsl.feature || 'unknown');
+      const key = 'agent-io:' + (dsl.feature || 'unknown');
       const raw = localStorage.getItem(key);
       if (!raw) return null;
       return JSON.parse(raw);
@@ -594,7 +594,7 @@ ${I18N_SOURCE}
 
   // 加载边控制点偏移（从 localStorage）
   try {
-    var _edgeOffsetKey = 'design-canvas-edge-offsets:' + (dsl.feature || 'unknown');
+    var _edgeOffsetKey = 'agent-io-edge-offsets:' + (dsl.feature || 'unknown');
     var _savedOffsets = localStorage.getItem(_edgeOffsetKey);
     if (_savedOffsets) {
       state.edgeCtrlOffset = JSON.parse(_savedOffsets) || {};
@@ -661,8 +661,8 @@ ${I18N_SOURCE}
     }
     var restored = null;
     try {
-      var collapsedKey = 'design-canvas-collapsed:' + (dsl.feature || 'unknown');
-      var versionKey = 'design-canvas-collapsed-ver:' + (dsl.feature || 'unknown');
+      var collapsedKey = 'agent-io-collapsed:' + (dsl.feature || 'unknown');
+      var versionKey = 'agent-io-collapsed-ver:' + (dsl.feature || 'unknown');
       // v3 = 巨图默认折叠目录容器；清除旧版本持久化状态
       if (localStorage.getItem(versionKey) !== '3') {
         localStorage.removeItem(collapsedKey);
@@ -5600,7 +5600,7 @@ ${I18N_SOURCE}
 
   // ==== 导出按钮 ====
   function setupExport() {
-    // 导出按钮 → design-canvas.json（固定文件名，LLM 可读取）
+    // 导出按钮 → agent-io.json（固定文件名，LLM 可读取）
     const exportBtn = document.getElementById('export-json');
     if (exportBtn) {
       exportBtn.addEventListener('click', () => {
@@ -5609,12 +5609,12 @@ ${I18N_SOURCE}
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'design-canvas.json';  // 固定文件名
+        a.download = 'agent-io.json';  // 固定文件名
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        showToast('已导出 design-canvas.json', 'success');
+        showToast('已导出 agent-io.json', 'success');
       });
     }
 
@@ -5652,12 +5652,12 @@ ${I18N_SOURCE}
     }
 
     // 页面启动时：尝试 fetch 最新数据（如果通过 http serve）
-    // 实际视图 → 拉取实际 DSL（/api/live，代码实时快照）；设计视图 → 拉取活态 design-canvas.json
+    // 实际视图 → 拉取实际 DSL（/api/live，代码实时快照）；设计视图 → 拉取活态 agent-io.json
     if (window.location.protocol !== 'file:') {
       const feature = (window.__DSL__ && window.__DSL__.feature) || '';
       const url = dcView === 'actual'
         ? '/api/live?feature=' + encodeURIComponent(feature)
-        : 'design-canvas.json';
+        : 'agent-io.json';
       fetch(url)
         .then(r => { if (!r.ok) throw new Error('not found'); return r.json(); })
         .then(data => {
@@ -5667,7 +5667,7 @@ ${I18N_SOURCE}
             if (!inlineTime || fileTime > inlineTime) {
               window.__DSL__ = data;
               saveLocal();
-              showToast(dcView === 'actual' ? '已加载实际 DSL（代码实时快照）' : '已同步最新 DSL（来自 design-canvas.json）', 'info');
+              showToast(dcView === 'actual' ? '已加载实际 DSL（代码实时快照）' : '已同步最新 DSL（来自 agent-io.json）', 'info');
             }
           }
         })

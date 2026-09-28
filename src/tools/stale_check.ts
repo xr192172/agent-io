@@ -1,7 +1,7 @@
 /**
  * stale_check —— 检测「源码比编译产物新」的 STALE BUILD（文件级精确）
  *
- * 痛点：design-canvas 自身 `npm run build` 产出 dist/（tsc）。改 src 下 ts 后忘了
+ * 痛点：agent-io 自身 `npm run build` 产出 dist/（tsc）。改 src 下 ts 后忘了
  * 重跑 build，MCP server / CLI 跑的是旧 dist——行为与源码不符，排查浪费时间。
  *
  * 判定：对每个可编译源码文件（src 下 ts/tsx），找其对应 dist 产物

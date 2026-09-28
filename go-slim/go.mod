@@ -1,3 +1,3 @@
-module design-canvas/go-slim
+module agent-io/go-slim
 
 go 1.26

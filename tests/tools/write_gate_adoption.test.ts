@@ -214,10 +214,10 @@ describe('scaffold 写闸（L1b 自写登记）', () => {
   let home: string;
   beforeEach(() => {
     home = fs.mkdtempSync(path.join(os.tmpdir(), 'wga-home-'));
-    process.env.DESIGN_CANVAS_HOME = home;
+    process.env.AGENT_IO_HOME = home;
   });
   afterEach(() => {
-    delete process.env.DESIGN_CANVAS_HOME;
+    delete process.env.AGENT_IO_HOME;
     try {
       fs.rmSync(home, { recursive: true, force: true });
     } catch {

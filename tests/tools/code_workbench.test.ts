@@ -15,7 +15,7 @@ describe('code_workbench · dsl_intent（设计意图改写审批）', () => {
   let home: string;
   beforeEach(() => {
     home = mkdtempSync(path.join(tmpdir(), 'cwb_'));
-    process.env.DESIGN_CANVAS_HOME = home;
+    process.env.AGENT_IO_HOME = home;
     saveDSL({
       feature: 'f',
       geometry: {
@@ -28,7 +28,7 @@ describe('code_workbench · dsl_intent（设计意图改写审批）', () => {
     });
   });
   afterEach(() => {
-    delete process.env.DESIGN_CANVAS_HOME;
+    delete process.env.AGENT_IO_HOME;
     rmSync(home, { recursive: true, force: true });
   });
 

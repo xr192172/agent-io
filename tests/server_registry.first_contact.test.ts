@@ -12,7 +12,7 @@
  *   - 无索引项目 + 普通读工具 ⇒ 响应带"后台建索引进行中"标注，cache.db 已建
  *   - 后台真的把索引补完（对 LLM 免费的那部分要**真的发生**）
  *   - 建索引进行中，后续调用持续标注（不静默）
- *   - `DC_AUTO_BACKFILL=0` ⇒ 不起后台、不建库、不标注（kill-switch）
+ *   - `AGENT_IO_AUTO_BACKFILL=0` ⇒ 不起后台、不建库、不标注（kill-switch）
  *   - 幻觉路径（不存在的目录）⇒ 不建库、不崩
  *   - `noAutoFresh` 工具不触发 ⇒ 由 tests/server_registry.auto_fresh.test.ts
  *     第 3 项覆盖（index_integrity 于无索引项目不建库），此处不重复。
@@ -117,9 +117,9 @@ describe('首次接触 ⇒ 后台建索引（registerAllTools 唯一入口）', 
     expect(n2).toContain('后台建索引进行中');
   });
 
-  it('DC_AUTO_BACKFILL=0 ⇒ 不起后台、不建库、不标注（kill-switch）', () => {
-    const prev = process.env.DC_AUTO_BACKFILL;
-    process.env.DC_AUTO_BACKFILL = '0';
+  it('AGENT_IO_AUTO_BACKFILL=0 ⇒ 不起后台、不建库、不标注（kill-switch）', () => {
+    const prev = process.env.AGENT_IO_AUTO_BACKFILL;
+    process.env.AGENT_IO_AUTO_BACKFILL = '0';
     try {
       const root = fs.mkdtempSync(path.join(os.tmpdir(), 'fc-off-'));
       roots.push(root);
@@ -129,8 +129,8 @@ describe('首次接触 ⇒ 后台建索引（registerAllTools 唯一入口）', 
       expect(fs.existsSync(path.join(root, DATA_DIR_NAME, 'cache.db'))).toBe(false);
       expect(backfillState(root)).toBeNull();
     } finally {
-      if (prev === undefined) delete process.env.DC_AUTO_BACKFILL;
-      else process.env.DC_AUTO_BACKFILL = prev;
+      if (prev === undefined) delete process.env.AGENT_IO_AUTO_BACKFILL;
+      else process.env.AGENT_IO_AUTO_BACKFILL = prev;
     }
   });
 

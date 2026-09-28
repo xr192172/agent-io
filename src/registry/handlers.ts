@@ -409,7 +409,7 @@ export const observeInstrumentHandler = wrap(async (a) => {
       const s = goReportSummary(rep);
       lines.push(`  完成：${s.instrumented} 新插桩 / ${s.skipped} 已含探针跳过 / ${s.errors} 失败，共 ${s.totalSites} 探针点`);
       data.report = rep;
-      if (dryRun) lines.push('  DRY-RUN 未写盘。传 dry_run=false 实际改写源码（备份在 .design-canvas/observe-backup，随时可还原）。');
+      if (dryRun) lines.push('  DRY-RUN 未写盘。传 dry_run=false 实际改写源码（备份在 .agent-io/observe-backup，随时可还原）。');
       // 运行前提预检：工程能否 import go-observe（否则插桩后编译报错）
       const deps = checkGoObserveDeps(target);
       lines.push(deps.needs_replace || deps.needs_require

@@ -1,8 +1,8 @@
 /**
- * design-canvas daemon（方向 E）—— watch/影响播报/loop 回流的常驻宿主进程
+ * agent-io daemon（方向 E）—— watch/影响播报/loop 回流的常驻宿主进程
  *
  * 启动：npm run daemon（node dist/src/daemon/daemon.js）
- * 端口：127.0.0.1:7600（DC_DAEMON_PORT 可配）；pidfile 落 OS tmpdir
+ * 端口：127.0.0.1:7600（AGENT_IO_DAEMON_PORT 可配）；pidfile 落 OS tmpdir
  *
  * 为什么需要 daemon（此前"伪常驻"的三个断点）：
  *   1. watch 注册表挂在 MCP stdio 进程内存——LLM 会话重启全丢；daemon 独立
@@ -147,7 +147,7 @@ const startedAt = new Date().toISOString();
 // ─────────────────────────────────────────────────────────────
 
 function pidfilePath(port: number): string {
-  return path.join(os.tmpdir(), `design-canvas-daemon-${port}.pid`);
+  return path.join(os.tmpdir(), `agent-io-daemon-${port}.pid`);
 }
 
 function writePidfile(port: number): void {
@@ -175,7 +175,7 @@ let loopRunning = false;
 
 /** observe-dsl 二进制定位：env 显式指定 → 仓库内 build 产物 → PATH */
 function findObserveDslBin(): string {
-  if (process.env.DC_OBSERVE_DSL_BIN) return process.env.DC_OBSERVE_DSL_BIN;
+  if (process.env.AGENT_IO_OBSERVE_DSL_BIN) return process.env.AGENT_IO_OBSERVE_DSL_BIN;
   const exe = process.platform === 'win32' ? 'observe-dsl.exe' : 'observe-dsl';
   // dist/src/daemon/daemon.js → 上溯 3 级到仓库根 → go-observe/build/
   const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
@@ -252,7 +252,7 @@ async function main(): Promise<void> {
   // 幂等：已有 daemon 在跑 → 提示并退出（不抢端口）
   const existing = await probeDaemon(500);
   if (existing) {
-    console.log(`design-canvas daemon 已在运行（pid ${existing.pid}，${existing.watches.length} 个监听），本次启动退出。`);
+    console.log(`agent-io daemon 已在运行（pid ${existing.pid}，${existing.watches.length} 个监听），本次启动退出。`);
     process.exit(0);
   }
 
@@ -261,7 +261,7 @@ async function main(): Promise<void> {
   const srv = createDaemonServer({
     health: () => ({
       ok: true,
-      name: 'design-canvas-daemon',
+      name: 'agent-io-daemon',
       pid: process.pid,
       port,
       started_at: startedAt,
@@ -283,7 +283,7 @@ async function main(): Promise<void> {
 
   await srv.start();
   writePidfile(port);
-  console.log(`design-canvas daemon 就绪：http://127.0.0.1:${port}`);
+  console.log(`agent-io daemon 就绪：http://127.0.0.1:${port}`);
   console.log(`  GET  /api/health          存活 + 监听汇总`);
   console.log(`  POST /api/watch           watch action 转发（start/status/stop/declare/ledger/impact）`);
   console.log(`  GET  /api/alerts?since=N  游标拉取未读提醒`);
@@ -293,13 +293,13 @@ async function main(): Promise<void> {
 
   // 内存自动托管看门狗：持续采样 gen（带 --inspect 的外部进程）→ 阈值判定 →
   // pushAlert（daemon SSE 实时广播 + 下一次 MCP 工具响应自动附带，DSH gen 自己看到）。
-  if ((process.env.DESIGN_CANVAS_MEMORY_WATCH ?? '1') !== '0') {
+  if ((process.env.AGENT_IO_MEMORY_WATCH ?? '1') !== '0') {
     const intervalMs = Number(process.env.MEMORY_WATCH_INTERVAL_MS ?? 60_000);
     const rssDeltaMb = Number(process.env.MEMORY_WATCH_RSS_DELTA_MB ?? 1024);
     const leakRuns = Number(process.env.MEMORY_WATCH_LEAK_RUNS ?? 3);
     const minGapMs = Number(process.env.MEMORY_WATCH_MIN_GAP_MS ?? 300_000);
     await startMemoryWatch({ enabled: true, intervalMs, rssDeltaMb, leakRuns, minAlertGapMs: minGapMs });
-    console.log(`  [memory_watch] 采样间隔 ${intervalMs}ms · RSS 增幅>${rssDeltaMb}MB 或 heapUsed 连续${leakRuns}次↑判告警 · DESIGN_CANVAS_MEMORY_WATCH=0 关闭`);
+    console.log(`  [memory_watch] 采样间隔 ${intervalMs}ms · RSS 增幅>${rssDeltaMb}MB 或 heapUsed 连续${leakRuns}次↑判告警 · AGENT_IO_MEMORY_WATCH=0 关闭`);
   }
 
   // 优雅退出：停 watch（flush 未落库变更）→ 关 server → 清 pidfile。

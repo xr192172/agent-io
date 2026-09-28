@@ -1,4 +1,4 @@
-// npm run hub：一键启动 design-canvas Hub（人类入口）
+// npm run hub：一键启动 agent-io Hub（人类入口）
 // 流程：dist 缺失→build → 起 serve（主页/项目页由 serve 动态渲染）→ 自动开浏览器
 // 用法：npm run hub        （默认 3000 端口）
 //       npm run hub 8081   （指定端口）

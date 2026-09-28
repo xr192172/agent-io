@@ -1,14 +1,14 @@
 /**
  * reconcile_chain —— 中观档工具：按「文件 / 宿主节点」一条命令的真跑 + 查数据 + 对账
  *
- * 定位（design-canvas 工具可用性复盘 2026-08-26，缺口桶 C）：
+ * 定位（agent-io 工具可用性复盘 2026-08-26，缺口桶 C）：
  *   宏观对账（整项目 contract vs 全量 observe 事件）重，微观（trace-exec 纯函数
  *   子集，一碰真实 I/O 就 unsupported）假——两者之间空着的「按这一条链真跑 +
  *   查这条链真数据 + 对该块」就是本工具。
  *
  * 编排（后工具自动前置 + 缓存跳过）：
  *   1. deriveDetailChain（建链）—— 宿主下已有 detail 链则缓存命中跳过，没有才自动派生
- *   2. 自动发现被观测项目的事件文件（.agent/observe + .design-canvas/observe）
+ *   2. 自动发现被观测项目的事件文件（.agent/observe + .agent-io/observe）
  *   3. queryObserveLog 按链涉及文件过滤 → 这条链的真跑事件
  *   4. judgeEvent 逐事件判定 → 偏差清单（silent-error-discard 等）
  *   5. rebuildChains 从带 trace 的事件重建实测调用链
@@ -98,10 +98,10 @@ export interface ReconcileChainResult {
 // 工具方法
 // ─────────────────────────────────────────────────────────────
 
-/** 自动发现事件文件：.agent/observe + .design-canvas/observe（与 reconcile_effects 对齐） */
+/** 自动发现事件文件：.agent/observe + .agent-io/observe（与 reconcile_effects 对齐） */
 function discoverEventFiles(root: string): string[] {
   const out: string[] = [];
-  for (const dirRel of ['.agent/observe', '.design-canvas/observe']) {
+  for (const dirRel of ['.agent/observe', '.agent-io/observe']) {
     const dir = path.join(root, ...dirRel.split('/'));
     if (!fs.existsSync(dir)) continue;
     for (const name of fs.readdirSync(dir)) {

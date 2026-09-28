@@ -41,7 +41,7 @@ export interface ReconcileBrickInput {
   brick_dir?: string;
   /** 积木名（与 box_dir 搭配：<box_dir>/<brick_name>） */
   brick_name?: string;
-  /** 积木盒根目录（默认 <dataHome>/.design-canvas/bricks；brick_name 模式必填或可默认） */
+  /** 积木盒根目录（默认 <dataHome>/.agent-io/bricks；brick_name 模式必填或可默认） */
   box_dir?: string;
   /** 事件文件（缺省自动发现 <brick_dir>/.agent/observe/events-*.jsonl 及验证项目常见位置） */
   events_files?: string[];
@@ -110,7 +110,7 @@ function defaultBoxDir(): string {
 /** 自动发现事件文件：.agent/observe/events-*.jsonl（含裸 events.jsonl） */
 function discoverEventFiles(root: string): string[] {
   const out: string[] = [];
-  for (const dirRel of ['.agent/observe', '.design-canvas/observe']) {
+  for (const dirRel of ['.agent/observe', '.agent-io/observe']) {
     const dir = path.join(root, ...dirRel.split('/'));
     if (!fs.existsSync(dir)) continue;
     for (const name of fs.readdirSync(dir)) {

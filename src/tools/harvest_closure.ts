@@ -10,7 +10,7 @@
  * 与 diff_impact（波及分析，importer 方向）正交：
  *   diff_impact 回答"改这里波及谁"，本工具回答"拎走它需要什么"。
  *
- * 数据源：<project_dir>/.design-canvas/cache.db（import_project 建立）
+ * 数据源：<project_dir>/.agent-io/cache.db（import_project 建立）
  *   - edges(kind='import')：已解析的文件级导入边（source=导入方，target=被导入方，
  *     节点 id = 缓存基准相对路径）
  *   - imports(kind='package')：未解析的原始包导入（Go 包路径 / npm 包 / Python 模块）
@@ -27,7 +27,7 @@ import { getProjectCacheDb, type Database } from '../db/db.js';
 import { buildImportGraph } from './import_graph.js';
 
 export interface HarvestClosureInput {
-  /** 被分析项目的根目录（其下 .design-canvas/cache.db 是符号缓存） */
+  /** 被分析项目的根目录（其下 .agent-io/cache.db 是符号缓存） */
   project_dir: string;
   /** 种子文件（相对项目根或缓存基准的路径，或绝对路径） */
   files: string[];
@@ -196,7 +196,7 @@ export function harvestClosure(input: HarvestClosureInput): HarvestClosureResult
   {
     const rows = db.prepare('SELECT path FROM files').all() as Array<{ path: string }>;
     for (const r of rows) {
-      if (r.path.endsWith('_test.go') || r.path.startsWith('.design-canvas/')) continue;
+      if (r.path.endsWith('_test.go') || r.path.startsWith('.agent-io/')) continue;
       const i = r.path.lastIndexOf('/');
       const dir = i < 0 ? '' : r.path.slice(0, i);
       let arr = dirFiles.get(dir);

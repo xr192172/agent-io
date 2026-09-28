@@ -949,7 +949,7 @@ export function runHarness(spec: BehaviorSpec): BehaviorRun {
 
 // ── 基线路径规则 ─────────────────────────────────────────────
 
-/** 默认基线路径：<project_dir>/.design-canvas/behavior/<file>__<func>.json */
+/** 默认基线路径：<project_dir>/.agent-io/behavior/<file>__<func>.json */
 export function baselinePathFor(project_dir: string, file: string, func: string): string {
   const safe = file.replace(/[^A-Za-z0-9_.-]/g, '_').replace(/\.[^.]+$/, '');
   return path.join(project_dir, DATA_DIR_NAME, 'behavior', `${safe}__${func}.json`);

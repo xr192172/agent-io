@@ -39,7 +39,7 @@
   {
     "name": "apply_rules",
     "title": "Apply rule-library rules across a project (three-state)",
-    "description": "把规则库（<project_dir>/.design-canvas/rules/*.md）里的规则批量应用到项目源码，**三态语义**：① applied（命中且唯一 ⇒ 按 replace 改写）；② todo（命中但歧义 >1 处 ⇒ 在命中处插入 TODO(rule-id) 注释，不失败）；③ clean（无命中 ⇒ 对该文件干净）。纪律：**唯一才动**（歧义绝不挑一个改），**不改文件就不报成功**。默认 dry_run=true 只出逐文件三态计数与改写预览，不写盘；dry_run=false 才落盘。glob 可限定文件（正则，匹配相对路径）；rule_ids 可只跑指定规则。",
+    "description": "把规则库（<project_dir>/.agent-io/rules/*.md）里的规则批量应用到项目源码，**三态语义**：① applied（命中且唯一 ⇒ 按 replace 改写）；② todo（命中但歧义 >1 处 ⇒ 在命中处插入 TODO(rule-id) 注释，不失败）；③ clean（无命中 ⇒ 对该文件干净）。纪律：**唯一才动**（歧义绝不挑一个改），**不改文件就不报成功**。默认 dry_run=true 只出逐文件三态计数与改写预览，不写盘；dry_run=false 才落盘。glob 可限定文件（正则，匹配相对路径）；rule_ids 可只跑指定规则。",
     "schema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
@@ -141,7 +141,7 @@
           "type": "string"
         },
         "box_dir": {
-          "description": "积木盒根目录（默认 <cwd>/.design-canvas/bricks）",
+          "description": "积木盒根目录（默认 <cwd>/.agent-io/bricks）",
           "type": "string"
         },
         "write": {
@@ -181,7 +181,7 @@
   {
     "name": "behavior_baseline",
     "title": "Behavior baseline - canary test capture/verify diff",
-    "description": "行为基线（金丝雀测试对比）：对目标 Python 函数用样例输入跑一次记录行为快照（capture），改代码后再跑一次对比（verify）——回答\"跑得对不对\"（动态闸只答\"跑得动不炸\"，补不了行为级变化）。action=capture：生成 harness（顶层 exec 目标文件 + 规范化 repr 返回值 + stdout 痕迹 + 函数源码快照），存基线到 <project_dir>/.design-canvas/behavior/<file>__<func>.json（baseline 参数可覆盖路径）。action=verify：读基线 + 对当前磁盘再跑同一份 harness，逐 case 对齐对比 → verdict same/diff（进程级失败 → error）。v1 边界：仅 Python；目标函数须自包含（顶层 exec 整文件，模块级常量/其它函数可用；跨文件 import 与 import 副作用不支持）；返回值对比 = 规范化 repr（set 排序化）；样例输入由 cases 显式提供（capture 必需），不自动生成。",
+    "description": "行为基线（金丝雀测试对比）：对目标 Python 函数用样例输入跑一次记录行为快照（capture），改代码后再跑一次对比（verify）——回答\"跑得对不对\"（动态闸只答\"跑得动不炸\"，补不了行为级变化）。action=capture：生成 harness（顶层 exec 目标文件 + 规范化 repr 返回值 + stdout 痕迹 + 函数源码快照），存基线到 <project_dir>/.agent-io/behavior/<file>__<func>.json（baseline 参数可覆盖路径）。action=verify：读基线 + 对当前磁盘再跑同一份 harness，逐 case 对齐对比 → verdict same/diff（进程级失败 → error）。v1 边界：仅 Python；目标函数须自包含（顶层 exec 整文件，模块级常量/其它函数可用；跨文件 import 与 import 副作用不支持）；返回值对比 = 规范化 repr（set 排序化）；样例输入由 cases 显式提供（capture 必需），不自动生成。",
     "schema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
@@ -234,7 +234,7 @@
           }
         },
         "baseline": {
-          "description": "基线 JSON 路径覆盖（缺省 <project_dir>/.design-canvas/behavior/<file>__<func>.json）",
+          "description": "基线 JSON 路径覆盖（缺省 <project_dir>/.agent-io/behavior/<file>__<func>.json）",
           "type": "string"
         }
       },
@@ -266,7 +266,7 @@
         },
         "feature": {
           "type": "string",
-          "description": "feature 名（如 design-canvas）"
+          "description": "feature 名（如 agent-io）"
         },
         "format": {
           "description": "read 用：markdown=工单文档（默认）/ json=结构化 JSON",
@@ -326,7 +326,7 @@
   },
   {
     "name": "capability_map",
-    "title": "能力线导航：design-canvas 工具分层地图",
+    "title": "能力线导航：agent-io 工具分层地图",
     "description": "统一能力线入口（只读导航，无副作用）。无参返回完整分层清单：6 条能力线（design 设计 / refactor 重构 / observe 观测 / harvest 契约采集 / cross 跨仓杂交健康 / meta 元信息）× 每条线内工具及其适用时机；传 lane 只看某条线。agent 在不确定用哪个工具前，优先调它分层定位，再进入具体工具。高频工具（get_dsl / edit_dsl / explore_code / rename_symbols / rename_files / find_references）始终直接可用，无需先经本工具。",
     "schema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -351,7 +351,7 @@
   {
     "name": "check_rules",
     "title": "Run rules as a lint with CI ratchet (baseline diff)",
-    "description": "把规则库当 **lint** 跑，带 **CI 棘轮**：结果与 <project_dir>/.design-canvas/rules/baseline.json 的存量比对 —— 命中数**未增加** ⇒ 通过（哪怕这条规则当下就有一堆存量命中）；出现**新增命中** ⇒ 不通过。这样\"先启用一条当前就失败的规则\"不会炸 CI，而新引入的问题会被立刻拦住。update_baseline=true 把当前存量记为基线（修完一批后收紧棘轮）。同时跑每条规则的**自身夹具**（正例须命中且改写一致、反例不得命中），夹具不过的规则单独列出（规则本身坏了）。",
+    "description": "把规则库当 **lint** 跑，带 **CI 棘轮**：结果与 <project_dir>/.agent-io/rules/baseline.json 的存量比对 —— 命中数**未增加** ⇒ 通过（哪怕这条规则当下就有一堆存量命中）；出现**新增命中** ⇒ 不通过。这样\"先启用一条当前就失败的规则\"不会炸 CI，而新引入的问题会被立刻拦住。update_baseline=true 把当前存量记为基线（修完一批后收紧棘轮）。同时跑每条规则的**自身夹具**（正例须命中且改写一致、反例不得命中），夹具不过的规则单独列出（规则本身坏了）。",
     "schema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
@@ -511,14 +511,14 @@
   {
     "name": "diagnose",
     "title": "Diagnose a symptom to root cause + evidence chain + impact + fix suggestions",
-    "description": "症状诊断：输入\"症状\"（报错信息 / stack trace / 测试失败输出 / 行为异常描述），输出\"根因 + 证据链 + 影响面 + 修改建议 + 验证方式\"。六步流水线：症状解析（正则提取 错误类型/文件:行/符号）→ 候选定位（查 .design-canvas/cache.db 符号缓存，exact/file/FTS/anchor 四路）→ 调用链追溯（沿 call/type_ref/import 三类边双向 BFS）→ 影响面分析（复用 diff_impact）→ 根因聚合（规则引擎先跑，LLM 可选把证据翻成人话根因，未配置自动降级）→ 验证建议（按项目类型给命令，只建议不执行）。前置：无需任何准备——缓存为空时会自动冷启建索引；仅在目标目录没有可解析源码时退化为文件级线索。anchor 可选：用户已知的线索（文件路径或函数名）帮助聚焦。",
+    "description": "症状诊断：输入\"症状\"（报错信息 / stack trace / 测试失败输出 / 行为异常描述），输出\"根因 + 证据链 + 影响面 + 修改建议 + 验证方式\"。六步流水线：症状解析（正则提取 错误类型/文件:行/符号）→ 候选定位（查 .agent-io/cache.db 符号缓存，exact/file/FTS/anchor 四路）→ 调用链追溯（沿 call/type_ref/import 三类边双向 BFS）→ 影响面分析（复用 diff_impact）→ 根因聚合（规则引擎先跑，LLM 可选把证据翻成人话根因，未配置自动降级）→ 验证建议（按项目类型给命令，只建议不执行）。前置：无需任何准备——缓存为空时会自动冷启建索引；仅在目标目录没有可解析源码时退化为文件级线索。anchor 可选：用户已知的线索（文件路径或函数名）帮助聚焦。",
     "schema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
       "properties": {
         "project_dir": {
           "type": "string",
-          "description": "被诊断项目根目录（其下 .design-canvas/cache.db 是符号缓存，为空则自动冷启建索引）"
+          "description": "被诊断项目根目录（其下 .agent-io/cache.db 是符号缓存，为空则自动冷启建索引）"
         },
         "symptom": {
           "type": "string",
@@ -778,7 +778,7 @@
   {
     "name": "explore_code",
     "title": "Explore, analyze and understand code",
-    "description": "代码理解统一入口：通过 action 参数化执行各类分析。action: search / read / diff_impact / arch_layer / guided_tour / check_monolith / derive_split / derive_chain / derive_anim_flow / derive_algorithm / derive_mind_map / inject_replay / run_simulation / reset_simulation / watch。语义搜索/读取/影响分析/架构分层/导览/巨石分析/拆分/变形链/动画流/算法/注入回放/仿真/文件监听。args 为各 action 的具体参数。read 是 edit_code 的\"先读后改\"前置：按符号定位（symbol，+parent 消歧，+context 附带上下文）或行区间（start/end，1-based 含端点）读文件，返回带真实行号的内容；返回的 start/end/行号与 edit_code(op=range) 同基准（line_utils.splitKeepEnds 下标+1=行号），可直接把 read 的行号喂给 edit_code，杜绝行号漂移改错行。read 默认在 data.symbols 附整文件符号索引（name/kind/行号/签名，message 末尾附可读符号表，上限30截断），一次 read 同时拿到正文+文件地图，symbols:false 可关。search 三层路由：标识符查询（如 normalizeCode / Calc.reset）→ 精确符号索引（provider=exact，零向量开销）；自然语言意图 → 语义向量相似度；无 embedding 配置/失败 → FTS trigram 降级。search 必填 args.project_dir（目标项目根目录，缺省报错）+ args.query，可选 top_k；arch_layer/diff_impact 等同样需要 project_dir。watch 支持 impact_on_change=true：文件变更后自动生成影响报告（一行摘要入 alerts，action=status 查看未读提醒，action=impact + seq 取全文；报告持久落盘 .design-canvas/impact/）。改代码前建议 action=declare + files 登记预告（Impact Ledger）：改后自动对比实际波及，计划外扩散即时报警。预告持久化 ledger.json（跨会话恢复，24h 未消费过期）；action=ledger 查台账，violated 用 resolve_id + reason 过门处理（status 播报未处理数）。",
+    "description": "代码理解统一入口：通过 action 参数化执行各类分析。action: search / read / diff_impact / arch_layer / guided_tour / check_monolith / derive_split / derive_chain / derive_anim_flow / derive_algorithm / derive_mind_map / inject_replay / run_simulation / reset_simulation / watch。语义搜索/读取/影响分析/架构分层/导览/巨石分析/拆分/变形链/动画流/算法/注入回放/仿真/文件监听。args 为各 action 的具体参数。read 是 edit_code 的\"先读后改\"前置：按符号定位（symbol，+parent 消歧，+context 附带上下文）或行区间（start/end，1-based 含端点）读文件，返回带真实行号的内容；返回的 start/end/行号与 edit_code(op=range) 同基准（line_utils.splitKeepEnds 下标+1=行号），可直接把 read 的行号喂给 edit_code，杜绝行号漂移改错行。read 默认在 data.symbols 附整文件符号索引（name/kind/行号/签名，message 末尾附可读符号表，上限30截断），一次 read 同时拿到正文+文件地图，symbols:false 可关。search 三层路由：标识符查询（如 normalizeCode / Calc.reset）→ 精确符号索引（provider=exact，零向量开销）；自然语言意图 → 语义向量相似度；无 embedding 配置/失败 → FTS trigram 降级。search 必填 args.project_dir（目标项目根目录，缺省报错）+ args.query，可选 top_k；arch_layer/diff_impact 等同样需要 project_dir。watch 支持 impact_on_change=true：文件变更后自动生成影响报告（一行摘要入 alerts，action=status 查看未读提醒，action=impact + seq 取全文；报告持久落盘 .agent-io/impact/）。改代码前建议 action=declare + files 登记预告（Impact Ledger）：改后自动对比实际波及，计划外扩散即时报警。预告持久化 ledger.json（跨会话恢复，24h 未消费过期）；action=ledger 查台账，violated 用 resolve_id + reason 过门处理（status 播报未处理数）。",
     "schema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
@@ -822,14 +822,14 @@
   {
     "name": "export_rule",
     "title": "Distill a one-off fix into a reusable rule (fix → rule)",
-    "description": "把一次已完成的修复**沉淀成可复跑规则**（修复→规则沉淀）：给一段 before/after，自动泛化出 pattern/replace 并生成夹具，过「验收三关」后才允许落盘。这是与 Grit/GritQL 的核心差异：Grit 的规则全靠专家手写，没有\"从改动本身长出规则\"的机制。泛化：before/after 先做行级 diff 取**变化行窗口**（pattern/replace/夹具三者同 scope）；两侧都出现的标识符抽象成 `$hole`（保持\"同一实参\"），只在一侧的保留字面量，关键字/全局对象/属性名不抽象。★ 泛化的\"度\"不靠猜：从最多抽象开始逐级放宽，每级用三关裁决 —— ① 出生回归（pattern 必须能复现这次修复）② 反例不命中（修好的代码/阴性样本不得被命中）③ 幂等（对 after 再跑不得再命中）；某级通过就采纳（泛化尽量强），全败则退化为**纯字面量**规则并在回执里如实标注降级。落盘位置：<project_dir>/.design-canvas/rules/<id>.md（单文件自包含：frontmatter + 说明 + pattern/replace + 夹具段）。dry_run=true（默认）只返回候选规则 + 三关结论，不写盘；确认后再传 dry_run=false 落盘。",
+    "description": "把一次已完成的修复**沉淀成可复跑规则**（修复→规则沉淀）：给一段 before/after，自动泛化出 pattern/replace 并生成夹具，过「验收三关」后才允许落盘。这是与 Grit/GritQL 的核心差异：Grit 的规则全靠专家手写，没有\"从改动本身长出规则\"的机制。泛化：before/after 先做行级 diff 取**变化行窗口**（pattern/replace/夹具三者同 scope）；两侧都出现的标识符抽象成 `$hole`（保持\"同一实参\"），只在一侧的保留字面量，关键字/全局对象/属性名不抽象。★ 泛化的\"度\"不靠猜：从最多抽象开始逐级放宽，每级用三关裁决 —— ① 出生回归（pattern 必须能复现这次修复）② 反例不命中（修好的代码/阴性样本不得被命中）③ 幂等（对 after 再跑不得再命中）；某级通过就采纳（泛化尽量强），全败则退化为**纯字面量**规则并在回执里如实标注降级。落盘位置：<project_dir>/.agent-io/rules/<id>.md（单文件自包含：frontmatter + 说明 + pattern/replace + 夹具段）。dry_run=true（默认）只返回候选规则 + 三关结论，不写盘；确认后再传 dry_run=false 落盘。",
     "schema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
       "properties": {
         "project_dir": {
           "type": "string",
-          "description": "项目根目录（规则库落在 <project_dir>/.design-canvas/rules/）"
+          "description": "项目根目录（规则库落在 <project_dir>/.agent-io/rules/）"
         },
         "id": {
           "type": "string",
@@ -1287,7 +1287,7 @@
       "properties": {
         "project_dir": {
           "type": "string",
-          "description": "目标项目根目录（其下 .design-canvas/cache.db 是符号缓存，为空则自动冷启建索引）"
+          "description": "目标项目根目录（其下 .agent-io/cache.db 是符号缓存，为空则自动冷启建索引）"
         },
         "files": {
           "type": "array",
@@ -1357,7 +1357,7 @@
   {
     "name": "harvest_from_url",
     "title": "Harvest bricks from a git URL or local project into the brick box",
-    "description": "积木抽取编排（Brick Harvest Phase 3）：一句\"这个项目好，抽它\"的完整链——浅克隆（或本地目录原地）→ import_project 索引 → extract_contracts 契约 → 选积木（显式 seeds 或 auto：functional+fan_in≥2+confidence≥0.7 按 fan_in 降序）→ harvest_closure 闭包 → 入盒三件套（files/ 快照 + contracts.json + manifest.json 聚合清单），默认盒 <dataHome>/.design-canvas/bricks/。原项目只留 provenance 冷记录（URL+commit），不保留工作副本；上游更新凭记录重抽即覆盖。单积木闭包>50 文件自动跳过（防整项目端走）。",
+    "description": "积木抽取编排（Brick Harvest Phase 3）：一句\"这个项目好，抽它\"的完整链——浅克隆（或本地目录原地）→ import_project 索引 → extract_contracts 契约 → 选积木（显式 seeds 或 auto：functional+fan_in≥2+confidence≥0.7 按 fan_in 降序）→ harvest_closure 闭包 → 入盒三件套（files/ 快照 + contracts.json + manifest.json 聚合清单），默认盒 <dataHome>/.agent-io/bricks/。原项目只留 provenance 冷记录（URL+commit），不保留工作副本；上游更新凭记录重抽即覆盖。单积木闭包>50 文件自动跳过（防整项目端走）。",
     "schema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
@@ -1410,7 +1410,7 @@
           "type": "number"
         },
         "box_dir": {
-          "description": "积木盒根目录（默认 <dataHome>/.design-canvas/bricks）",
+          "description": "积木盒根目录（默认 <dataHome>/.agent-io/bricks）",
           "type": "string"
         },
         "write": {
@@ -1503,7 +1503,7 @@
   {
     "name": "import_project",
     "title": "Import a code project as DSL",
-    "description": "扫描代码项目（.go/.ts/.py/.js 等）生成 DSL：文件节点 + 调用边 + 符号/API 语义层，写入 design-canvas 存储。默认生成设计 DSL；live_only=true 只生成\"实际视图\"快照（live/ 目录，供 🎭设计/⚡实际 双视图对比）。design_mode=true 按目录聚合成模块节点；functional_mode=true 按调用图做功能性聚合（优先级高于 design_mode）。导入后可用 render_design 渲染可视化，或 diff_views 对比设计 vs 实际。",
+    "description": "扫描代码项目（.go/.ts/.py/.js 等）生成 DSL：文件节点 + 调用边 + 符号/API 语义层，写入 agent-io 存储。默认生成设计 DSL；live_only=true 只生成\"实际视图\"快照（live/ 目录，供 🎭设计/⚡实际 双视图对比）。design_mode=true 按目录聚合成模块节点；functional_mode=true 按调用图做功能性聚合（优先级高于 design_mode）。导入后可用 render_design 渲染可视化，或 diff_views 对比设计 vs 实际。",
     "schema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
@@ -1794,7 +1794,7 @@
   {
     "name": "observe_instrument",
     "title": "Auto-instrument or restore a TS/Go project",
-    "description": "对目标项目全自动插桩，按语言分派：Go 工程走 go-observe（go/ast 注入 camprobe.Capture，函数出/入/return/catch/IO）；TS 工程走 TS AST（captureProbe）。均幂等（已含探针文件跳过）。action=uninstrument|restore 一键全拔（从自动备份拷回原文件、删备份目录）。dry_run=true 只预览不写盘。写盘前自动备份，git 可兜底。TS 写盘后自动生成探针台账（.design-canvas/observe-ledger.json）；Go 写盘后可用 --restore 还原。契约模式：contract_probes 传探针 id 数组则只注入这些探针点；缺省=探索模式全量插桩。Go 运行前提：被测工程须能 import `go-observe/probe`（其 go.mod 需 replace/require 指向本仓 go-observe）。",
+    "description": "对目标项目全自动插桩，按语言分派：Go 工程走 go-observe（go/ast 注入 camprobe.Capture，函数出/入/return/catch/IO）；TS 工程走 TS AST（captureProbe）。均幂等（已含探针文件跳过）。action=uninstrument|restore 一键全拔（从自动备份拷回原文件、删备份目录）。dry_run=true 只预览不写盘。写盘前自动备份，git 可兜底。TS 写盘后自动生成探针台账（.agent-io/observe-ledger.json）；Go 写盘后可用 --restore 还原。契约模式：contract_probes 传探针 id 数组则只注入这些探针点；缺省=探索模式全量插桩。Go 运行前提：被测工程须能 import `go-observe/probe`（其 go.mod 需 replace/require 指向本仓 go-observe）。",
     "schema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
@@ -1824,7 +1824,7 @@
           }
         },
         "project_root": {
-          "description": "design-canvas 根（TS 探针实现 src/observe/probe.js 所在仓库根），用于计算相对 import 路径，默认自动推断",
+          "description": "agent-io 根（TS 探针实现 src/observe/probe.js 所在仓库根），用于计算相对 import 路径，默认自动推断",
           "type": "string"
         },
         "deep": {
@@ -1901,7 +1901,7 @@
       "properties": {
         "events_file": {
           "type": "string",
-          "description": "Observe 事件文件路径（events.jsonl）。由插桩/哨兵运行时产生，如 <dataHome>/.design-canvas/observe/events.jsonl"
+          "description": "Observe 事件文件路径（events.jsonl）。由插桩/哨兵运行时产生，如 <dataHome>/.agent-io/observe/events.jsonl"
         },
         "files": {
           "description": "按文件路径过滤（可多个）。传相对路径/文件名片段均可，精确或后缀/包含匹配",
@@ -2050,14 +2050,14 @@
   {
     "name": "read_project_docs",
     "title": "Read project docs (per-project docs/ folder)",
-    "description": "读取某 feature 的项目文档夹（<project_dir>/docs/，或受管目录 .design-canvas/docs/<feature>/）。三种用法：不带 name= 返回清单（含 frontmatter 关联标签与预览，供 agent 挑）；带 name= 返回单篇全文；带 targets 返回命中该目标集（功能/步骤/文件）的文档正文（与 canvas_notes action=decide 的按批关联注入同一套匹配）。项目文档可丢进项目仓库 docs/ 作为 LLM 决策背景（需求/设计约定/约定规范），canvas_notes action=decide 会自动按批把命中文档注入决策上下文（TOC 全量 + 命中正文封顶）。",
+    "description": "读取某 feature 的项目文档夹（<project_dir>/docs/，或受管目录 .agent-io/docs/<feature>/）。三种用法：不带 name= 返回清单（含 frontmatter 关联标签与预览，供 agent 挑）；带 name= 返回单篇全文；带 targets 返回命中该目标集（功能/步骤/文件）的文档正文（与 canvas_notes action=decide 的按批关联注入同一套匹配）。项目文档可丢进项目仓库 docs/ 作为 LLM 决策背景（需求/设计约定/约定规范），canvas_notes action=decide 会自动按批把命中文档注入决策上下文（TOC 全量 + 命中正文封顶）。",
     "schema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
       "properties": {
         "feature": {
           "type": "string",
-          "description": "feature 名（如 design-canvas）"
+          "description": "feature 名（如 agent-io）"
         },
         "project_dir": {
           "description": "项目根目录（缺省用 dsl.source_root）",
@@ -2105,7 +2105,7 @@
   {
     "name": "recommend_observe_points",
     "title": "Recommend where to instrument (observe points)",
-    "description": "★ 观测点推荐器：**不做全量插桩**，而是先用索引/图 + AST 语义算出「该在哪打日志」，只在推荐点上插。信号：高被引用（call 入度）/ 最近真改过的符号（symbol_diffs）/ 副作用边界（span 内 IO 调用，启发式）/静默吞错（catch 块内无 throw/日志，启发式）/ 复杂度高地（行数）/ 文件热点（24h 内改动）。每个点给出 score 与 reasons（为什么推荐它——这份「理由」本身就是整理日志的骨架）。key 取自**插桩器自身的 dry-run 站点清单**（`<mod>.<fn>.enter/.exit/.catch/.io.<op>`），与 contractProbes 精确匹配 ⇒ 推荐出来的点一定插得出来，不会漂移。输出清单落 `<project_dir>/.design-canvas/observe-points.json`（可人工增删/改 level），再把 contractProbes 交给 observe_instrument 即可只插这些点。预算按分数裁剪（max_points），被截断的如实列出——不搞环形缓冲那套事后策略。",
+    "description": "★ 观测点推荐器：**不做全量插桩**，而是先用索引/图 + AST 语义算出「该在哪打日志」，只在推荐点上插。信号：高被引用（call 入度）/ 最近真改过的符号（symbol_diffs）/ 副作用边界（span 内 IO 调用，启发式）/静默吞错（catch 块内无 throw/日志，启发式）/ 复杂度高地（行数）/ 文件热点（24h 内改动）。每个点给出 score 与 reasons（为什么推荐它——这份「理由」本身就是整理日志的骨架）。key 取自**插桩器自身的 dry-run 站点清单**（`<mod>.<fn>.enter/.exit/.catch/.io.<op>`），与 contractProbes 精确匹配 ⇒ 推荐出来的点一定插得出来，不会漂移。输出清单落 `<project_dir>/.agent-io/observe-points.json`（可人工增删/改 level），再把 contractProbes 交给 observe_instrument 即可只插这些点。预算按分数裁剪（max_points），被截断的如实列出——不搞环形缓冲那套事后策略。",
     "schema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
@@ -2165,7 +2165,7 @@
           "type": "string"
         },
         "box_dir": {
-          "description": "积木盒根目录（默认 <cwd>/.design-canvas/bricks）",
+          "description": "积木盒根目录（默认 <cwd>/.agent-io/bricks）",
           "type": "string"
         },
         "events_files": {
@@ -2211,7 +2211,7 @@
   {
     "name": "reconcile_chain",
     "title": "Reconcile a host chain with its real-run observe events (meso tier)",
-    "description": "中观档对账（工具可用性复盘缺口 C）：按「文件/宿主节点」一条命令的真跑 + 查数据 + 对账，填补宏观（整项目对账）与微观（trace-exec 纯函数子集）之间的空档。后工具自动前置 + 缓存跳过：宿主下无 detail 链时自动调用 deriveDetailChain 建链（已有链则命中缓存跳过派生），自动发现被观测项目事件文件（.agent/observe + .design-canvas/observe），按链涉及文件过滤出这条链的真跑事件 → judgeEvent 逐事件判定偏差 → rebuildChains 重建实测调用链→ 链路契约匹配（声明链须是某条实测链的子序列，mode=bare-name 近似）。该链无任何事件时 not_run=true 并明示「先跑一遍再对账」，绝不伪造事件降级冒充成品。用途：重构前基线 + 重构后验收对照。",
+    "description": "中观档对账（工具可用性复盘缺口 C）：按「文件/宿主节点」一条命令的真跑 + 查数据 + 对账，填补宏观（整项目对账）与微观（trace-exec 纯函数子集）之间的空档。后工具自动前置 + 缓存跳过：宿主下无 detail 链时自动调用 deriveDetailChain 建链（已有链则命中缓存跳过派生），自动发现被观测项目事件文件（.agent/observe + .agent-io/observe），按链涉及文件过滤出这条链的真跑事件 → judgeEvent 逐事件判定偏差 → rebuildChains 重建实测调用链→ 链路契约匹配（声明链须是某条实测链的子序列，mode=bare-name 近似）。该链无任何事件时 not_run=true 并明示「先跑一遍再对账」，绝不伪造事件降级冒充成品。用途：重构前基线 + 重构后验收对照。",
     "schema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
@@ -2916,7 +2916,7 @@
           "type": "string"
         },
         "output_path": {
-          "description": "输出 HTML 路径（默认 <design-canvas>/docs/brickify_preview.html）",
+          "description": "输出 HTML 路径（默认 <agent-io>/docs/brickify_preview.html）",
           "type": "string"
         }
       },
@@ -3059,7 +3059,7 @@
   {
     "name": "search_bricks",
     "title": "Search and browse the brick shelf (cross-project reuse catalog)",
-    "description": "积木货架（Brick Harvest Phase 4：跨项目统一检索层）——浏览/检索积木盒 .design-canvas/bricks/ 的全部积木，\"拎之前先看它要什么、给什么\"。三种模式：①浏览（无参数：全部积木概况——语言/来源/规模/exposes/验证状态）；②检索（query 关键词打分：积木名 > 形状名 > 字段名 > 人话介绍，matched 明细可追溯）；③详情（name 精确：完整契约——形状 fields、effects 全清单、不变量断言、闭包、observe 验证档案）。过滤：language / verified（有运行证据）/ has_invariants / zero_third_party（拎走即跑）。数据源是盒内 manifest.json 自包含档案（跨项目资产的统一命名空间就是盒本身，不碰项目 cache.db）。这是\"我要 X 功能 → 找到积木 → 拎取拼装\"价值链的检索环节。",
+    "description": "积木货架（Brick Harvest Phase 4：跨项目统一检索层）——浏览/检索积木盒 .agent-io/bricks/ 的全部积木，\"拎之前先看它要什么、给什么\"。三种模式：①浏览（无参数：全部积木概况——语言/来源/规模/exposes/验证状态）；②检索（query 关键词打分：积木名 > 形状名 > 字段名 > 人话介绍，matched 明细可追溯）；③详情（name 精确：完整契约——形状 fields、effects 全清单、不变量断言、闭包、observe 验证档案）。过滤：language / verified（有运行证据）/ has_invariants / zero_third_party（拎走即跑）。数据源是盒内 manifest.json 自包含档案（跨项目资产的统一命名空间就是盒本身，不碰项目 cache.db）。这是\"我要 X 功能 → 找到积木 → 拎取拼装\"价值链的检索环节。",
     "schema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
@@ -3095,7 +3095,7 @@
           "type": "string"
         },
         "box_dir": {
-          "description": "积木盒根目录（默认 <cwd>/.design-canvas/bricks）",
+          "description": "积木盒根目录（默认 <cwd>/.agent-io/bricks）",
           "type": "string"
         }
       },
@@ -3204,7 +3204,7 @@
           "description": "原积木名（盒内 <box_dir>/<brick_name>；须为 Go 积木且带 slim_candidates live 档案）"
         },
         "box_dir": {
-          "description": "积木盒根目录（默认 <dataHome>/.design-canvas/bricks）",
+          "description": "积木盒根目录（默认 <dataHome>/.agent-io/bricks）",
           "type": "string"
         },
         "name": {

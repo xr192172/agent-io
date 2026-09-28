@@ -11,14 +11,14 @@ let origHome: string | undefined;
 let tmp: string;
 
 beforeAll(() => {
-  origHome = process.env.DESIGN_CANVAS_HOME;
+  origHome = process.env.AGENT_IO_HOME;
   tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dogfood-stats-'));
-  process.env.DESIGN_CANVAS_HOME = tmp;
+  process.env.AGENT_IO_HOME = tmp;
 });
 
 afterAll(() => {
-  if (origHome === undefined) delete process.env.DESIGN_CANVAS_HOME;
-  else process.env.DESIGN_CANVAS_HOME = origHome;
+  if (origHome === undefined) delete process.env.AGENT_IO_HOME;
+  else process.env.AGENT_IO_HOME = origHome;
   try {
     fs.rmSync(tmp, { recursive: true, force: true });
   } catch {
@@ -63,10 +63,10 @@ describe('recordDogfoodUsage / snapshotDogfoodStats', () => {
   });
 
   it('无日志 → 空快照不抛错', () => {
-    process.env.DESIGN_CANVAS_HOME = fs.mkdtempSync(path.join(os.tmpdir(), 'dogfood-empty-'));
+    process.env.AGENT_IO_HOME = fs.mkdtempSync(path.join(os.tmpdir(), 'dogfood-empty-'));
     const s = snapshotDogfoodStats();
     expect(s.total).toBe(0);
     expect(s.tools.length).toBe(0);
-    process.env.DESIGN_CANVAS_HOME = tmp;
+    process.env.AGENT_IO_HOME = tmp;
   });
 });

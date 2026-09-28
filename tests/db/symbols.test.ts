@@ -347,7 +347,7 @@ describe('getProjectCacheDb - 项目缓存连接池', () => {
     closeAllProjectCacheDbs();
   });
 
-  it('同一项目根复用同一连接，不同根各自独立，db 文件落在项目 .design-canvas/', () => {
+  it('同一项目根复用同一连接，不同根各自独立，db 文件落在项目 .agent-io/', () => {
     const projA = path.join(dir, 'projA');
     const projB = path.join(dir, 'projB');
     fs.mkdirSync(projA, { recursive: true });

@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
- * design-canvas MCP server 入口
+ * agent-io MCP server 入口
  *
  * 启动方式（stdio）：
  *   node dist/server.js
  *
  * 在 MCP client 配置中：
- *   { "mcpServers": { "design-canvas": { "command": "node", "args": ["/path/to/dist/server.js"] } } }
+ *   { "mcpServers": { "agent-io": { "command": "node", "args": ["/path/to/dist/server.js"] } } }
  *
  * 工具统一由 server_registry 注册为 MCP tools（数量与分组见 README「核心能力」表；旧工具名别名已移除）。
  */
@@ -24,7 +24,7 @@ import { installLifecycle } from './lifecycle.js';
 import { closeAllActiveWatches } from './tools/watch_project_tool.js';
 import { closeAllProjectCacheDbs } from './db/db.js';
 
-const SERVER_NAME = 'design-canvas';
+const SERVER_NAME = 'agent-io';
 const SERVER_VERSION = '0.1.3';
 
 const server = new McpServer(
@@ -32,7 +32,7 @@ const server = new McpServer(
   {
     capabilities: { tools: {}, resources: {} },
     instructions:
-      'design-canvas：人机共享的可视化协议层。支持两种工作流：' +
+      'agent-io：人机共享的可视化协议层。支持两种工作流：' +
       '\n\n1. 完整 DSL 模式：render_design 渲染并保存 → get_dsl 读取（query:"dsl"/"features" 等）' +
       '\n\n2. 增量编辑模式（推荐）：manage_feature(action=create) 创建 → edit_dsl 统一提交所有写操作 → render_design 渲染预览' +
       '\n   edit_dsl 通过 operations 列表批量执行（任一失败全部回滚）：' +
@@ -61,7 +61,7 @@ const server = new McpServer(
       '修改用 edit_code（符号级替换：文件+函数名+新函数体，AST 定位防改错行/改错函数，编辑后自动重建索引）；' +
       'Grep/Glob 仅作 fallback（DSL 未绑定的文件才全文搜索），Edit 工具仅作 edit_code 不适用场景的兜底。' +
       '绑定新鲜度由 edit_code（编辑即更新）/ import_project（全量）/ explore_code(action=watch)（增量）维护。' +
-      '\n\n增量模式让你逐步完善设计，避免每次重写整个 JSON。所有修改自动保存到 .design-canvas/features/。' +
+      '\n\n增量模式让你逐步完善设计，避免每次重写整个 JSON。所有修改自动保存到 .agent-io/features/。' +
       '\n\n能力不止于设计层，本 MCP 还提供：代码理解与索引（import_project / explore_code / find_references）、' +
       '确定性改造与重构（edit_code / rename_symbols / rename_files / remove_dead_imports / refactor_pipeline / diff_views）、' +
       '代码积木收割与质检（harvest_* / extract_contracts / slim_brick / search_bricks / assemble_bricks）、' +
@@ -81,17 +81,17 @@ registerAllTools(server);
 
 // ─────────────────────────────────────────────────────────────
 // Resource：批注语义工单（订阅式返回给外部 agent）
-// 模板 design-canvas://{feature}/notes —— 读时实时解析几何批注 → Markdown 工单。
+// 模板 agent-io://{feature}/notes —— 读时实时解析几何批注 → Markdown 工单。
 // 与 read_canvas_notes 工具（显式调用）互为双通道。
 // ─────────────────────────────────────────────────────────────
 server.resource(
   'canvas-notes',
-  new ResourceTemplate('design-canvas://{feature}/notes', {
+  new ResourceTemplate('agent-io://{feature}/notes', {
     list: async () => {
       const resources = listFeatures()
         .filter((d) => (d.canvas_notes ?? []).length > 0)
         .map((d) => ({
-          uri: `design-canvas://${d.feature}/notes`,
+          uri: `agent-io://${d.feature}/notes`,
           name: `批注工单 · ${d.feature}`,
           mimeType: 'text/markdown',
           description: `${d.feature} 的画布批注语义工单（${(d.canvas_notes ?? []).length} 条图元）`,
@@ -102,12 +102,12 @@ server.resource(
   async (_uri, variables) => {
     const feature = String(variables.feature ?? '').replace(/[^a-zA-Z0-9_-]/g, '');
     if (!feature) {
-      return { contents: [{ uri: 'design-canvas:///notes', mimeType: 'text/markdown', text: '缺少 feature 参数。' }] };
+      return { contents: [{ uri: 'agent-io:///notes', mimeType: 'text/markdown', text: '缺少 feature 参数。' }] };
     }
     const resolved = resolveCanvasNoteTargets(feature);
     const digest = renderCanvasNotesDigest(feature, resolved);
     return {
-      contents: [{ uri: `design-canvas://${feature}/notes`, mimeType: 'text/markdown', text: digest.markdown }],
+      contents: [{ uri: `agent-io://${feature}/notes`, mimeType: 'text/markdown', text: digest.markdown }],
     };
   },
 );
@@ -116,14 +116,14 @@ server.resource(
 // 与 read_project_docs 工具互为双通道，风格对齐 notes Resource。
 server.resource(
   'project-docs',
-  new ResourceTemplate('design-canvas://{feature}/docs', {
+  new ResourceTemplate('agent-io://{feature}/docs', {
     list: async () => {
       const resources = listFeatures()
         .map((d) => ({
-          uri: `design-canvas://${d.feature}/docs`,
+          uri: `agent-io://${d.feature}/docs`,
           name: `项目文档 · ${d.feature}`,
           mimeType: 'text/markdown',
-          description: `${d.feature} 的项目文档夹清单（<project_dir>/docs/ 或 .design-canvas/docs/${d.feature}/）`,
+          description: `${d.feature} 的项目文档夹清单（<project_dir>/docs/ 或 .agent-io/docs/${d.feature}/）`,
         }));
       return { resources };
     },
@@ -131,7 +131,7 @@ server.resource(
   async (_uri, variables) => {
     const feature = String(variables.feature ?? '').replace(/[^a-zA-Z0-9_-]/g, '');
     if (!feature) {
-      return { contents: [{ uri: 'design-canvas:///docs', mimeType: 'text/markdown', text: '缺少 feature 参数。' }] };
+      return { contents: [{ uri: 'agent-io:///docs', mimeType: 'text/markdown', text: '缺少 feature 参数。' }] };
     }
     const dsl = getDSL(feature);
     const man = listProjectDocs(dsl?.source_root ?? '', feature);
@@ -139,7 +139,7 @@ server.resource(
       return {
         contents: [
           {
-            uri: `design-canvas://${feature}/docs`,
+            uri: `agent-io://${feature}/docs`,
             mimeType: 'text/markdown',
             text: `# 项目文档 · ${feature}\n\n（docs/ 目录暂无文档——往 ${man.dir ?? '<project_dir>/docs/'} 丢 .md 即可被索引）`,
           },
@@ -152,7 +152,7 @@ server.resource(
     return {
       contents: [
         {
-          uri: `design-canvas://${feature}/docs`,
+          uri: `agent-io://${feature}/docs`,
           mimeType: 'text/markdown',
           text: `# 项目文档 · ${feature}\n\n来源目录：\`${man.dir}\`\n\n${toc}\n\n（正文用 read_project_docs 工具按 name= 读取）`,
         },
@@ -162,12 +162,12 @@ server.resource(
 );
 
 // ─────────────────────────────────────────────────────────────
-// 启动钩子（常驻模式）：DC_AUTO_WATCH=1 时，启动即导入并监听工作空间
+// 启动钩子（常驻模式）：AGENT_IO_AUTO_WATCH=1 时，启动即导入并监听工作空间
 // ─────────────────────────────────────────────────────────────
 
-/** 项目根：默认 process.cwd()，可用 DC_PROJECT_DIR 覆盖（相对 cwd 或绝对路径，语义同 serve） */
+/** 项目根：默认 process.cwd()，可用 AGENT_IO_PROJECT_DIR 覆盖（相对 cwd 或绝对路径，语义同 serve） */
 function resolveProjectDir(): string {
-  const override = process.env.DC_PROJECT_DIR;
+  const override = process.env.AGENT_IO_PROJECT_DIR;
   return override ? path.resolve(process.cwd(), override) : process.cwd();
 }
 
@@ -182,17 +182,17 @@ function deriveFeatureName(projectDir: string): string {
  *   1. import_project 全量导入工作空间 → 建索引（cache.db + 设计 DSL）
  *   2. watch_project 常驻监听 → 文件变更增量保鲜 + 影响报告
  * 环境变量（与 serve.ts 约定一致）：
- *   DC_AUTO_WATCH=1            开启本钩子
- *   DC_PROJECT_DIR=<dir>       目标工作空间（默认 cwd）
- *   DC_WATCH_FEATURE=<name>    feature 名（默认取目录名）
- *   DC_WATCH_INTERVAL_MS=<ms>  reconcile 兜底扫描间隔（默认 30000）
+ *   AGENT_IO_AUTO_WATCH=1            开启本钩子
+ *   AGENT_IO_PROJECT_DIR=<dir>       目标工作空间（默认 cwd）
+ *   AGENT_IO_WATCH_FEATURE=<name>    feature 名（默认取目录名）
+ *   AGENT_IO_WATCH_INTERVAL_MS=<ms>  reconcile 兜底扫描间隔（默认 30000）
  * 失败不致命：任何一步出错仅打日志，不影响 MCP 工具服务。
  */
 async function runAutoWatchHook(): Promise<void> {
-  if (process.env.DC_AUTO_WATCH !== '1') return;
+  if (process.env.AGENT_IO_AUTO_WATCH !== '1') return;
   const projectDir = resolveProjectDir();
-  const feature = process.env.DC_WATCH_FEATURE?.trim() || deriveFeatureName(projectDir);
-  const reconcileMs = parseInt(process.env.DC_WATCH_INTERVAL_MS ?? '30000', 10) || 30000;
+  const feature = process.env.AGENT_IO_WATCH_FEATURE?.trim() || deriveFeatureName(projectDir);
+  const reconcileMs = parseInt(process.env.AGENT_IO_WATCH_INTERVAL_MS ?? '30000', 10) || 30000;
 
   try {
     const imp = await importProject({ project_dir: projectDir, feature });

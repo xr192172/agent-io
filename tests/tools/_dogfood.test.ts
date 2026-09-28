@@ -14,7 +14,7 @@ const files = [
   'src/tools/slim_brick.ts',
 ];
 
-it('狗食：扫描 design-canvas 自身源码里的相似名聚类', async () => {
+it('狗食：扫描 agent-io 自身源码里的相似名聚类', async () => {
   const root = path.resolve(here, '../../');
   for (const rel of files) {
     const abs = path.resolve(root, rel);

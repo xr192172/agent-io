@@ -109,7 +109,7 @@ export const OBSERVE_TOOLS: ToolDef[] = [
     inputSchema: {
       events_file: z
         .string()
-        .describe('Observe 事件文件路径（events.jsonl）。由插桩/哨兵运行时产生，如 <dataHome>/.design-canvas/observe/events.jsonl'),
+        .describe('Observe 事件文件路径（events.jsonl）。由插桩/哨兵运行时产生，如 <dataHome>/.agent-io/observe/events.jsonl'),
       files: z
         .array(z.string())
         .optional()
@@ -172,7 +172,7 @@ export const OBSERVE_TOOLS: ToolDef[] = [
       '中观档对账（工具可用性复盘缺口 C）：按「文件/宿主节点」一条命令的真跑 + 查数据 + 对账，' +
       '填补宏观（整项目对账）与微观（trace-exec 纯函数子集）之间的空档。' +
       '后工具自动前置 + 缓存跳过：宿主下无 detail 链时自动调用 deriveDetailChain 建链' +
-      '（已有链则命中缓存跳过派生），自动发现被观测项目事件文件（.agent/observe + .design-canvas/observe），' +
+      '（已有链则命中缓存跳过派生），自动发现被观测项目事件文件（.agent/observe + .agent-io/observe），' +
       '按链涉及文件过滤出这条链的真跑事件 → judgeEvent 逐事件判定偏差 → rebuildChains 重建实测调用链' +
       '→ 链路契约匹配（声明链须是某条实测链的子序列，mode=bare-name 近似）。' +
       '该链无任何事件时 not_run=true 并明示「先跑一遍再对账」，绝不伪造事件降级冒充成品。' +
@@ -196,7 +196,7 @@ export const OBSERVE_TOOLS: ToolDef[] = [
       'TS 工程走 TS AST（captureProbe）。均幂等（已含探针文件跳过）。' +
       'action=uninstrument|restore 一键全拔（从自动备份拷回原文件、删备份目录）。' +
       'dry_run=true 只预览不写盘。写盘前自动备份，git 可兜底。' +
-      'TS 写盘后自动生成探针台账（.design-canvas/observe-ledger.json）；Go 写盘后可用 --restore 还原。' +
+      'TS 写盘后自动生成探针台账（.agent-io/observe-ledger.json）；Go 写盘后可用 --restore 还原。' +
       '契约模式：contract_probes 传探针 id 数组则只注入这些探针点；缺省=探索模式全量插桩。' +
       'Go 运行前提：被测工程须能 import `go-observe/probe`（其 go.mod 需 replace/require 指向本仓 go-observe）。',
     inputSchema: {
@@ -210,7 +210,7 @@ export const OBSERVE_TOOLS: ToolDef[] = [
         .array(z.string())
         .optional()
         .describe('契约模式探针 id 数组（如 ["store.save.writefile"]），只注入这些探针点；缺省=探索模式全量插桩'),
-      project_root: z.string().optional().describe('design-canvas 根（TS 探针实现 src/observe/probe.js 所在仓库根），用于计算相对 import 路径，默认自动推断'),
+      project_root: z.string().optional().describe('agent-io 根（TS 探针实现 src/observe/probe.js 所在仓库根），用于计算相对 import 路径，默认自动推断'),
       deep: z.boolean().optional().describe('仅 Go：开启 deep 级插桩（函数内变量赋值捕获），默认 false'),
       effects: z.boolean().optional().describe('仅 Go：开启 effect 级插桩（包级变量写/chan send/资源获取观测），默认 false'),
       scope: z.boolean().optional().describe('仅 TS：开启 scope 模式（try/finally 包裹函数体注入 enterScope/exitScope，录带帧调用树），默认 false（captureProbe 点探针）'),
@@ -228,7 +228,7 @@ export const OBSERVE_TOOLS: ToolDef[] = [
       '每个点给出 score 与 reasons（为什么推荐它——这份「理由」本身就是整理日志的骨架）。' +
       'key 取自**插桩器自身的 dry-run 站点清单**（`<mod>.<fn>.enter/.exit/.catch/.io.<op>`），' +
       '与 contractProbes 精确匹配 ⇒ 推荐出来的点一定插得出来，不会漂移。' +
-      '输出清单落 `<project_dir>/.design-canvas/observe-points.json`（可人工增删/改 level），' +
+      '输出清单落 `<project_dir>/.agent-io/observe-points.json`（可人工增删/改 level），' +
       '再把 contractProbes 交给 observe_instrument 即可只插这些点。' +
       '预算按分数裁剪（max_points），被截断的如实列出——不搞环形缓冲那套事后策略。',
     inputSchema: {
@@ -272,7 +272,7 @@ export const OBSERVE_TOOLS: ToolDef[] = [
       '行为基线（金丝雀测试对比）：对目标 Python 函数用样例输入跑一次记录行为快照（capture），' +
       '改代码后再跑一次对比（verify）——回答"跑得对不对"（动态闸只答"跑得动不炸"，补不了行为级变化）。' +
       'action=capture：生成 harness（顶层 exec 目标文件 + 规范化 repr 返回值 + stdout 痕迹 + 函数源码快照），' +
-      '存基线到 <project_dir>/.design-canvas/behavior/<file>__<func>.json（baseline 参数可覆盖路径）。' +
+      '存基线到 <project_dir>/.agent-io/behavior/<file>__<func>.json（baseline 参数可覆盖路径）。' +
       'action=verify：读基线 + 对当前磁盘再跑同一份 harness，逐 case 对齐对比 → verdict same/diff（进程级失败 → error）。' +
       'v1 边界：仅 Python；目标函数须自包含（顶层 exec 整文件，模块级常量/其它函数可用；跨文件 import 与 import 副作用不支持）；' +
       '返回值对比 = 规范化 repr（set 排序化）；样例输入由 cases 显式提供（capture 必需），不自动生成。',
@@ -285,7 +285,7 @@ export const OBSERVE_TOOLS: ToolDef[] = [
         .array(z.object({ name: z.string(), args: z.array(z.unknown()).optional(), kwargs: z.record(z.string(), z.unknown()).optional() }))
         .optional()
         .describe('capture 必需：金丝雀样例输入（verify 忽略，复用基线里的 cases）'),
-      baseline: z.string().optional().describe('基线 JSON 路径覆盖（缺省 <project_dir>/.design-canvas/behavior/<file>__<func>.json）'),
+      baseline: z.string().optional().describe('基线 JSON 路径覆盖（缺省 <project_dir>/.agent-io/behavior/<file>__<func>.json）'),
     },
     handler: wrap(async (a) => {
       const spec = {

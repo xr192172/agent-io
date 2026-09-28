@@ -14,7 +14,7 @@ func TestDSLLog_DefaultListsOnlyAnomalies(t *testing.T) {
 	eventsPath := filepath.Join(dir, "events.jsonl")
 	writeLines(t, eventsPath,
 		`{"probe":"saveSink.writefile","time":"2026-08-14T10:00:00Z","source":"s","fields":{"op":"writefile","err":"","path":"note.json"}}`,
-		`{"probe":"saveSink.writefile","time":"2026-08-14T10:00:01Z","source":"s","fields":{"op":"writefile","err":"EISDIR: illegal operation on a directory","path":"design-canvas.json"}}`,
+		`{"probe":"saveSink.writefile","time":"2026-08-14T10:00:01Z","source":"s","fields":{"op":"writefile","err":"EISDIR: illegal operation on a directory","path":"agent-io.json"}}`,
 		`{"probe":"save.enter","time":"2026-08-14T10:00:01Z","source":"s","fields":{"args":{"key":"demo"}}}`,
 	)
 

@@ -1,5 +1,5 @@
 /**
- * design-canvas serve：轻量 HTTP 服务器
+ * agent-io serve：轻量 HTTP 服务器
  *
  * 提供：
  *   1. 静态文件服务（HTML 页面）
@@ -87,9 +87,9 @@ const PORT = parseInt(process.argv[2]) || 3000;
 const PUBLIC_DIR = path.join(process.cwd(), 'output');
 const LIVE_FILE = getLiveDslFile();
 
-// 项目根：默认 process.cwd()，可用 DC_PROJECT_DIR 覆盖（如聚焦 src/ 做设计图闭环演示）
+// 项目根：默认 process.cwd()，可用 AGENT_IO_PROJECT_DIR 覆盖（如聚焦 src/ 做设计图闭环演示）
 function getServeProjectRoot(): string {
-  const override = process.env.DC_PROJECT_DIR;
+  const override = process.env.AGENT_IO_PROJECT_DIR;
   return override ? path.resolve(process.cwd(), override) : process.cwd();
 }
 
@@ -208,7 +208,7 @@ async function handleApiSave(req: http.IncomingMessage, res: http.ServerResponse
 function handleApiLoad(_req: http.IncomingMessage, res: http.ServerResponse): void {
   try {
     if (!fs.existsSync(LIVE_FILE)) {
-      sendError(res, 404, 'design-canvas.json 不存在，请先使用 render_design 创建');
+      sendError(res, 404, 'agent-io.json 不存在，请先使用 render_design 创建');
       return;
     }
     const content = fs.readFileSync(LIVE_FILE, 'utf-8');
@@ -364,7 +364,7 @@ async function handleApiLiveRebuild(req: http.IncomingMessage, res: http.ServerR
 /** POST /api/import：浏览器目录上传导入项目
  * body: { files: [{ path, content }], feature? } —— 前端用 webkitdirectory 选目录后
  * 逐文件读文本（已过滤 node_modules/二进制）。服务端把源码持久化到
- * .design-canvas/projects/<feature>/ → importProject 解析（DSL 记 source_root）→
+ * .agent-io/projects/<feature>/ → importProject 解析（DSL 记 source_root）→
  * renderDesign 渲染项目地图并注册产物。 */
 const IMPORT_BODY_LIMIT = 200 * 1024 * 1024; // 目录上传远超通用 5MB 上限
 async function handleApiImport(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
@@ -421,7 +421,7 @@ async function handleApiImport(req: http.IncomingMessage, res: http.ServerRespon
       feature = sanitize(segs.length > 1 ? segs[0] : (segs[0] || 'project').replace(/\.[^.]+$/, ''));
     }
 
-    // 源码持久化到 .design-canvas/projects/<feature>/（重复导入整体替换旧快照）。
+    // 源码持久化到 .agent-io/projects/<feature>/（重复导入整体替换旧快照）。
     // DSL.source_root 指向这里，巨石体检/影响面/一致性等读源功能据此定位文件。
     // 上传路径首段是用户所选文件夹名（webkitdirectory 特性），与 feature 命名重复，剥掉。
     const projDir = path.join(process.cwd(), DATA_DIR_NAME, 'projects', feature);
@@ -468,7 +468,7 @@ function buildSplitPlanMarkdown(r: FileMonolithReport, relPath: string, generate
   const lines: string[] = [
     `# 拆分任务单：${relPath}`,
     '',
-    `> 生成于 ${generatedAt} · design-canvas checkMonolith（tree-sitter 静态解析）`,
+    `> 生成于 ${generatedAt} · agent-io checkMonolith（tree-sitter 静态解析）`,
     '> 用法：本单可直接喂给 LLM 执行拆分，或人工按表搬移声明。',
     '',
     '## 现状',
@@ -855,7 +855,7 @@ async function handleApiArchifyDemo(req: http.IncomingMessage, res: http.ServerR
 
 /** GET /api/function-outline?feature=<feature>[&project_dir=<root>]：函数级大纲
  *  （目录 → 文件 → 函数 + 调用/被调用/回环），数据源 = import_cache_<feature>.db 或
- *  <source_root>/.design-canvas/cache.db。派生只读，不写回任何存储。 */
+ *  <source_root>/.agent-io/cache.db。派生只读，不写回任何存储。 */
 function handleApiFunctionOutline(req: http.IncomingMessage, res: http.ServerResponse): void {
   try {
     const url = new URL(req.url || '/', 'http://localhost');
@@ -1032,7 +1032,7 @@ async function handleApiLayout(req: http.IncomingMessage, res: http.ServerRespon
   try {
     const body = await readBody(req);
     const params = JSON.parse(body.toString('utf-8'));
-    const feature = params.feature || 'design-canvas';
+    const feature = params.feature || 'agent-io';
 
     let result: Record<string, unknown> = {};
     switch (layoutType) {
@@ -1085,7 +1085,7 @@ async function handleApiScaffold(req: http.IncomingMessage, res: http.ServerResp
       safeOutputDir = validateProjectRoot(params.output_dir, '/api/scaffold output_dir');
     }
     const result = scaffold({
-      feature: params.feature || 'design-canvas',
+      feature: params.feature || 'agent-io',
       output_dir: safeOutputDir,
       overwrite: params.overwrite,
       ui_framework: params.ui_framework,
@@ -1106,7 +1106,7 @@ async function handleApiConsistency(req: http.IncomingMessage, res: http.ServerR
     const body = await readBody(req);
     const params = JSON.parse(body.toString('utf-8'));
     const result = await checkConsistency({
-      feature: params.feature || 'design-canvas',
+      feature: params.feature || 'agent-io',
       code_dir: params.code_dir,
     });
     sendJson(res, 200, {
@@ -1124,7 +1124,7 @@ async function handleApiDiffImpact(req: http.IncomingMessage, res: http.ServerRe
     const params = JSON.parse(body.toString('utf-8'));
     const safeDir = validateProjectRoot(params.project_dir || process.cwd(), '/api/diff-impact project_dir');
     const result = diffImpact({
-      feature: params.feature || 'design-canvas',
+      feature: params.feature || 'agent-io',
       project_dir: safeDir,
       changed: Array.isArray(params.changed) ? params.changed : [],
       direction: params.direction,
@@ -1701,7 +1701,7 @@ async function handleApiArchLayer(req: http.IncomingMessage, res: http.ServerRes
     const body = await readBody(req);
     const params = JSON.parse(body.toString('utf-8'));
     const result = await archLayer({
-      feature: params.feature || 'design-canvas',
+      feature: params.feature || 'agent-io',
       persist: params.persist,
       layers: params.layers,
       check_violations: params.check_violations,
@@ -1737,7 +1737,7 @@ async function handleApiGuidedTour(req: http.IncomingMessage, res: http.ServerRe
     const body = await readBody(req);
     const params = JSON.parse(body.toString('utf-8'));
     const result = guidedTour({
-      feature: params.feature || 'design-canvas',
+      feature: params.feature || 'agent-io',
       include_deep: params.include_deep,
       include_containers: params.include_containers,
       max_steps: params.max_steps,
@@ -1904,7 +1904,7 @@ async function handleApiRegistry(req: http.IncomingMessage, res: http.ServerResp
 
 /**
  * 科普式讲解导览脚本（核心主链路）：按"双层DSL → 渲染器 → 自我分析星图 → 代码理解 →
- * 缓存 → 实时同步 → 语义搜索 → 导览"的顺序，逐模块讲解 design-canvas 自身的工作机制。
+ * 缓存 → 实时同步 → 语义搜索 → 导览"的顺序，逐模块讲解 agent-io 自身的工作机制。
  * 播放器（/explain.html）每步显示字幕条，并通过 postMessage 让星图定位高亮对应节点。
  */
 /**
@@ -1919,7 +1919,7 @@ const EXPLAIN_SCRIPT: Array<{ title: string; n: Narrations; nodeId: string }> = 
   {
     title: '入口：MCP 服务',
     n: {
-      newbie: 'design-canvas 的"大门"是一个叫 MCP 服务的东西。它把画布的各种能力包装成一个个小工具，让 AI 助手（比如 Claude、Cursor）能直接调用。简单说：AI 想用画布，都得先通过这个入口。',
+      newbie: 'agent-io 的"大门"是一个叫 MCP 服务的东西。它把画布的各种能力包装成一个个小工具，让 AI 助手（比如 Claude、Cursor）能直接调用。简单说：AI 想用画布，都得先通过这个入口。',
       pm: 'MCP 是当前 AI 编程工具的标准接口。我们把它做成标准 MCP 服务，意味着 Claude Code、Cursor、VS Code 等任何客户端都能无缝接入，不用为每个工具单独适配——这是"一次开发、处处可用"的关键投资。',
       senior: 'server.ts 实现标准 MCP stdio 传输，注册 40+ 工具（render_design / import_project / guided_tour 等），JSON-RPC 协议。工具集是画布能力的程序化暴露层，也是后续 MCP 收敛（路线图序号2）的改造主体。',
     },
@@ -2299,7 +2299,7 @@ function handleExplainPage(res: http.ServerResponse): void {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>科普式讲解导览 · design-canvas</title>
+<title>科普式讲解导览 · agent-io</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; background: #02040d; color: #dbe7ff; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
@@ -2337,7 +2337,7 @@ function handleExplainPage(res: http.ServerResponse): void {
 <body data-map="${latestMap ? latestMap.path.replace(/"/g, '') : ''}">
   <div class="head">
     <a href="/">← 主页</a>
-    <span class="ftitle">科普式讲解导览 · design-canvas 主链路</span>
+    <span class="ftitle">科普式讲解导览 · agent-io 主链路</span>
     <span class="prog" id="prog"></span>
   </div>
   <div class="body">
@@ -2373,7 +2373,7 @@ function handleExplainPage(res: http.ServerResponse): void {
   var loading = document.getElementById('loading');
   var cTitle = document.getElementById('c-title');
   var cBody = document.getElementById('c-body');
-  var STAR = new URLSearchParams(location.search).get('map') || document.body.getAttribute('data-map') || 'design-canvas.html';
+  var STAR = new URLSearchParams(location.search).get('map') || document.body.getAttribute('data-map') || 'agent-io.html';
   function go(k){
     if(!steps.length) return;
     i = Math.max(0, Math.min(steps.length-1, k));
@@ -2482,19 +2482,19 @@ function handleStaticFile(req: http.IncomingMessage, res: http.ServerResponse): 
   if (qIdx !== -1) filePath = filePath.substring(0, qIdx);
   if (filePath === '/') {
     // 兜底：/ 路由已在主路由渲染 Hub 主页；走到这里说明非 GET，回退示例画布
-    filePath = '/design-canvas.html';
+    filePath = '/agent-io.html';
   }
 
-  // 活态 DSL 别名：浏览器设计视图 fetch 相对路径 design-canvas.json，
+  // 活态 DSL 别名：浏览器设计视图 fetch 相对路径 agent-io.json，
   // 静态目录（output/）不含它 → 映射到数据根目录的活态 DSL 文件，避免 404。
-  if (filePath === '/design-canvas.json') {
+  if (filePath === '/agent-io.json') {
     if (fs.existsSync(LIVE_FILE)) {
       const content = fs.readFileSync(LIVE_FILE);
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(content);
       return;
     }
-    sendError(res, 404, 'design-canvas.json 不存在，请先使用 render_design 或 import_project 创建');
+    sendError(res, 404, 'agent-io.json 不存在，请先使用 render_design 或 import_project 创建');
     return;
   }
 
@@ -2672,8 +2672,8 @@ export async function startServer(port?: number): Promise<void> {
     notifyDslChange(feature, source);
   });
 
-  // 安全：默认仅绑定本机回环，避免局域网/公网暴露；如需跨机访问，显式设 DC_BIND=0.0.0.0
-  const bindHost = process.env.DC_BIND || '127.0.0.1';
+  // 安全：默认仅绑定本机回环，避免局域网/公网暴露；如需跨机访问，显式设 AGENT_IO_BIND=0.0.0.0
+  const bindHost = process.env.AGENT_IO_BIND || '127.0.0.1';
   // CORS：仅允许 localhost 系列源（含 IPv4/IPv6/hostname），阻止第三方网页通过浏览器跨域调用写入 API
   const safeOriginPattern = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\]|0\.0\.0\.0)(:\d+)?$/;
   const isSafeOrigin = (origin: string | undefined): boolean => {
@@ -3088,7 +3088,7 @@ export async function startServer(port?: number): Promise<void> {
   return new Promise((resolve) => {
     server.listen(listenPort, bindHost, () => {
       const bound = bindHost === '0.0.0.0' ? `（已绑定 0.0.0.0，局域网可访问）` : `（仅本机 ${bindHost}）`;
-      console.log(`design-canvas serve running at http://localhost:${listenPort} ${bound}`);
+      console.log(`agent-io serve running at http://localhost:${listenPort} ${bound}`);
       console.log(`  - 静态文件: ${PUBLIC_DIR}`);
       console.log(`  - API: POST /api/save, GET /api/load, GET /api/features`);
       console.log(`  - 布局 API: POST /api/layout/dag, POST /api/layout/force, POST /api/layout/grid`);
@@ -3108,11 +3108,11 @@ export async function startServer(port?: number): Promise<void> {
       console.log(`  - SSE 实时推送: GET /api/events`);
       console.log(`  - 访问 http://localhost:${listenPort}/workbench 打开唯一前端出口`);
 
-      // 常驻 watch（最后一英里实时推送）：DC_AUTO_WATCH=1 + DC_WATCH_FEATURE=X 时，
+      // 常驻 watch（最后一英里实时推送）：AGENT_IO_AUTO_WATCH=1 + AGENT_IO_WATCH_FEATURE=X 时，
       // 监听 cwd 代码变更 → 重建实际 DSL（live/）→ SSE 推送 dsl-changed(source=watch)，
       // 打开的画布自动刷新并重新跑 /api/diff-views 图级高亮（含边级结构塌方）。
-      if (process.env.DC_AUTO_WATCH === '1' && process.env.DC_WATCH_FEATURE) {
-        const autoFeature = process.env.DC_WATCH_FEATURE.trim();
+      if (process.env.AGENT_IO_AUTO_WATCH === '1' && process.env.AGENT_IO_WATCH_FEATURE) {
+        const autoFeature = process.env.AGENT_IO_WATCH_FEATURE.trim();
         try {
           const projectRoot = getServeProjectRoot();
           const db = getProjectCacheDb(projectRoot);

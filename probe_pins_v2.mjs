@@ -2,9 +2,9 @@
 import { readFileSync } from 'node:fs';
 import { buildFileIndex, projectStepDataShape, deriveStepFlow } from './dist/src/tools/derive_mind_map.js';
 
-const dsl = JSON.parse(readFileSync('.design-canvas/live/design-canvas.dsl.json', 'utf-8'));
+const dsl = JSON.parse(readFileSync('.agent-io/live/agent-io.dsl.json', 'utf-8'));
 const fileIndex = buildFileIndex(dsl);
-const mm = JSON.parse(readFileSync('.design-canvas/mindmap/design-canvas.teach.json', 'utf-8'));
+const mm = JSON.parse(readFileSync('.agent-io/mindmap/agent-io.teach.json', 'utf-8'));
 
 let totalEdges = 0, featWithEdges = 0, featN = 0;
 for (const f of mm.root.children ?? []) {

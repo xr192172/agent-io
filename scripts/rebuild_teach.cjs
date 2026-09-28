@@ -3,7 +3,7 @@
 const { deriveMindMap, placeProposals } = require('../dist/src/tools/derive_mind_map.js');
 
 (async () => {
-  const feature = process.argv[2] || 'design-canvas';
+  const feature = process.argv[2] || 'agent-io';
   const r = await deriveMindMap({ feature, view: 'teach' });
   const withFiles = r.mind_map.root.children.filter((c) => c.children && c.children.length).length;
   console.log('[rebuild] mode=' + r.mode, '带关键文件的功能:', withFiles + '/' + r.mind_map.root.children.length);

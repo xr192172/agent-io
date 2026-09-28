@@ -30,7 +30,7 @@ afterEach(() => {
 
 const tree: ArchifyTreeNode = {
   id: 'v1',
-  label: 'design-canvas 能力面',
+  label: 'agent-io 能力面',
   children: {
     nodes: [
       {

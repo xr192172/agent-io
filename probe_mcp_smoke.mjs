@@ -42,7 +42,7 @@ console.log('canvas_notes:', toolNames.includes('canvas_notes') ? '✅' : '❌')
 const resources = await send('resources/list', {});
 console.log('resources/list 响应:', JSON.stringify(resources, null, 1));
 
-const readRes = await send('resources/read', { uri: 'design-canvas://design-canvas/notes' });
+const readRes = await send('resources/read', { uri: 'agent-io://agent-io/notes' });
 const text = readRes.result?.contents?.[0]?.text ?? '';
 console.log('Resource read 响应:', JSON.stringify(readRes, null, 1).slice(0, 300));
 console.log('Resource read 前缀:', JSON.stringify(text.slice(0, 120)));

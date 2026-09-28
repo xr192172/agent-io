@@ -5,7 +5,7 @@
  * 全自动插桩（instrument）就绪后，手写探针已删除，扩插桩只走一条命令：
  *   node dist/src/observe/instrument_cli.js <project> [--dry-run]
  * 本测试改为验证：
- *   1. 全自动插桩能覆盖 design-canvas 自身写盘源文件（storage.ts 应被注入
+ *   1. 全自动插桩能覆盖 agent-io 自身写盘源文件（storage.ts 应被注入
  *      enter/exit/io 探针点，dry-run 不写盘）。
  *   2. captureProbe 在无 sink 时是无害 no-op（插桩零侵入）。
  *   3. 跨模块实例共享同一份全局 sink（真实插桩场景：被插桩代码与哨兵从不同

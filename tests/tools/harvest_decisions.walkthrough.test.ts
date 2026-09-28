@@ -4,7 +4,7 @@
  * 步骤 1（先写 DSL）：把 harvest_decisions 的行为契约写进 feature DSL——
  *   决策卡（为什么做）+ expected_apis（输入/输出语义）。此时实现代码还不存在。
  * 步骤 2（从源码实现）：实现 src/tools/harvest_decisions.ts 后，
- *   从 design-canvas 自身 docs + git 日志跑一遍，验证候选质量（吃自己的狗粮）。
+ *   从 agent-io 自身 docs + git 日志跑一遍，验证候选质量（吃自己的狗粮）。
  *
  * 走查目标：暴露「先写 DSL」与「直接实现」的摩擦点（见测试输出的 ─ 摩擦 ─ 段）。
  */
@@ -26,7 +26,7 @@ const HARVEST_CARD: NodeDecision = {
   alternatives: [
     { option: '内置 LLM 自动补录并直接写 active 卡', rejected_because: '纯函数工具无 LLM 运行时；无出处的补录会编造历史' },
   ],
-  acceptance: '从 design-canvas 自身 docs+git 日志能提取 3 条以上可复核（含出处）的决策候选',
+  acceptance: '从 agent-io 自身 docs+git 日志能提取 3 条以上可复核（含出处）的决策候选',
   status: 'active',
   thread: '决策卡补录',
   tags: ['harvest', 'decision', 'gitlog', 'doc'],
@@ -64,7 +64,7 @@ const harvestDSL = (): DesignDSL => {
   } as DesignDSL;
 };
 
-const PKG_ROOT = path.resolve(__dirname, '..', '..'); // design-canvas/
+const PKG_ROOT = path.resolve(__dirname, '..', '..'); // agent-io/
 
 describe('走查：harvest_decisions 先写 DSL → 从源码实现', () => {
   beforeEach(() => clearAllFeatures());
@@ -91,7 +91,7 @@ describe('走查：harvest_decisions 先写 DSL → 从源码实现', () => {
     expect(saved.status).toBe('draft');
   });
 
-  it('步骤2: 从源码实现走一遍——用 design-canvas 自身 docs + git 日志跑 harvest（吃自己的狗粮）', () => {
+  it('步骤2: 从源码实现走一遍——用 agent-io 自身 docs + git 日志跑 harvest（吃自己的狗粮）', () => {
     // 契约已定，现在实现源码（h2 完成后此处有真实现）
     const gitRoot = PKG_ROOT;
     const docDir = path.join(PKG_ROOT, 'docs');

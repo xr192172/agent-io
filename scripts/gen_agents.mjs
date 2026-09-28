@@ -90,7 +90,7 @@ function buildAgents() {
   const triggerTable = renderTable(['开发动作', '必用工具', '说明'], TRIGGER_ROWS);
   const renameTable = renderTable(['场景', '必用工具'], RENAME_ROWS);
 
-  return `# AGENTS.md — design-canvas 开发约定（为 AI agent 编写）
+  return `# AGENTS.md — agent-io 开发约定（为 AI agent 编写）
 
 > 本文件约束在此仓库内进行开发时，agent（Trae/Claude 等）应遵循的规则。
 > 核心目标：让日常开发动作（改名/编辑/理解/清理/引用/测试/漂移）走项目自带 MCP 工具，

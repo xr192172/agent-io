@@ -1,23 +1,23 @@
-# design-canvas
+# agent-io
 
-![CI](https://github.com/xr192172/design-canvas/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/xr192172/agent-io/actions/workflows/ci.yml/badge.svg)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)
 ![MCP](https://img.shields.io/badge/MCP-server-7c3aed.svg)
 
-> Give your codebase a **living document** and a **quality gate**. As a standard MCP server, design-canvas encodes design and contracts into structured DSL JSON — auto-backfilled as code evolves, never stale — and turns LLM code changes into a controlled pipeline of **precise editing, runtime verification, and rollback on failure**.
+> Give your codebase a **living document** and a **quality gate**. As a standard MCP server, agent-io encodes design and contracts into structured DSL JSON — auto-backfilled as code evolves, never stale — and turns LLM code changes into a controlled pipeline of **precise editing, runtime verification, and rollback on failure**.
 
 [中文](README.md) · [English](README.en.md)
 
-![design-canvas companion frontend dsl-workbench sandbox view (real-time DSL rendering)](assets/demo-workbench.png)
+![agent-io companion frontend dsl-workbench sandbox view (real-time DSL rendering)](assets/demo-workbench.png)
 
 ## Background & Positioning
 
-Two chronic problems in engineering collaboration, both addressed by design-canvas:
+Two chronic problems in engineering collaboration, both addressed by agent-io:
 
-**Problem 1: Documentation drift.** Every design doc and architecture diagram goes stale as code evolves, until nobody trusts it. design-canvas encodes the "design truth" as **structured DSL JSON** that evolves with the code: the semantic layer records file contracts (files / apis / decisions), auto-backfilled from the implementation by `backfill_scaffold` and corrected by runtime observation (Observe) — **documentation no longer goes stale**.
+**Problem 1: Documentation drift.** Every design doc and architecture diagram goes stale as code evolves, until nobody trusts it. agent-io encodes the "design truth" as **structured DSL JSON** that evolves with the code: the semantic layer records file contracts (files / apis / decisions), auto-backfilled from the implementation by `backfill_scaffold` and corrected by runtime observation (Observe) — **documentation no longer goes stale**.
 
-**Problem 2: Uncontrolled changes.** LLMs often edit the wrong location, break files, and produce changes that can't be verified — forcing rework. design-canvas provides a controlled change pipeline: symbol-level precise editing (`edit_code`) → real diff review before applying → runtime probe reconciliation → commit only on pass, auto-rollback on failure — **changes no longer rely on luck**.
+**Problem 2: Uncontrolled changes.** LLMs often edit the wrong location, break files, and produce changes that can't be verified — forcing rework. agent-io provides a controlled change pipeline: symbol-level precise editing (`edit_code`) → real diff review before applying → runtime probe reconciliation → commit only on pass, auto-rollback on failure — **changes no longer rely on luck**.
 
 The two-layer DSL is the common foundation:
 
@@ -53,8 +53,8 @@ One thread runs through everything: **any code → bricks (production) → trust
 
 ```bash
 # 1. Clone the repository to your machine (first time)
-git clone https://github.com/xr192172/design-canvas.git
-cd design-canvas
+git clone https://github.com/xr192172/agent-io.git
+cd agent-io
 
 # 2. Install dependencies
 npm install
@@ -71,9 +71,9 @@ Register in your MCP client configuration:
 ```json
 {
   "mcpServers": {
-    "design-canvas": {
+    "agent-io": {
       "command": "node",
-      "args": ["/path/to/design-canvas/dist/src/server.js"]
+      "args": ["/path/to/agent-io/dist/src/server.js"]
     }
   }
 }
@@ -312,8 +312,8 @@ npm run doctor        # Environment health check + capability gaps
 
 The repository ships agent-facing skills (`.trae/skills/`):
 
-- **design-canvas-router**: progressive-disclosure routing — "what problem → which tool", layer by layer; check existing capabilities first before deciding to build a new tool;
-- **design-canvas-mind**: a mental wrapper providing a capability map, needs-to-toolchain orchestration, tool-call caching, and honest-delivery discipline.
+- **agent-io-router**: progressive-disclosure routing — "what problem → which tool", layer by layer; check existing capabilities first before deciding to build a new tool;
+- **agent-io-mind**: a mental wrapper providing a capability map, needs-to-toolchain orchestration, tool-call caching, and honest-delivery discipline.
 
 Loading these two skills before using the toolchain is recommended, to avoid reinventing the wheel.
 

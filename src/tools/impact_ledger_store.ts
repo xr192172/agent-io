@@ -7,7 +7,7 @@
  *   violated ──(resolve 过门)─────────▶ resolved（reviewer + reason 记入，审计不可改）
  *   pending ──(超 TTL 24h 未消费)─────▶ expired（防跨会话陈旧预告误报）
  *
- * 落盘：<project>/.design-canvas/impact/ledger.json（与影响报告 rp-*.json 同目录）。
+ * 落盘：<project>/.agent-io/impact/ledger.json（与影响报告 rp-*.json 同目录）。
  * 历史封顶：pending/violated 永不裁剪，其余（ok/resolved/expired）保留最近 100 条。
  *
  * 与 verification gate 的关系（对齐 go-observe proposal.go 的"提案-审批-证据"语义）：

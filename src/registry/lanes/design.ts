@@ -173,7 +173,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
     inputSchema: {
       project_dir: z.string().describe('目标项目根目录（扫描依赖的源）'),
       source_root: z.string().optional().describe('源码根目录（默认 = project_dir）'),
-      output_path: z.string().optional().describe('输出 HTML 路径（默认 <design-canvas>/docs/brickify_preview.html）'),
+      output_path: z.string().optional().describe('输出 HTML 路径（默认 <agent-io>/docs/brickify_preview.html）'),
     },
     handler: wrapData(async (a) => {
       const out = await buildBrickifyPreview({
@@ -250,7 +250,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
     title: 'Import a code project as DSL',
     noAutoFresh: true, // 自己做全量导入，前置保鲜纯属浪费
     description:
-      '扫描代码项目（.go/.ts/.py/.js 等）生成 DSL：文件节点 + 调用边 + 符号/API 语义层，写入 design-canvas 存储。' +
+      '扫描代码项目（.go/.ts/.py/.js 等）生成 DSL：文件节点 + 调用边 + 符号/API 语义层，写入 agent-io 存储。' +
       '默认生成设计 DSL；live_only=true 只生成"实际视图"快照（live/ 目录，供 🎭设计/⚡实际 双视图对比）。' +
       'design_mode=true 按目录聚合成模块节点；functional_mode=true 按调用图做功能性聚合（优先级高于 design_mode）。' +
       '导入后可用 render_design 渲染可视化，或 diff_views 对比设计 vs 实际。',
@@ -274,7 +274,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
       functional_mode: z.boolean().optional().describe('true=按调用图做功能性聚合（跨目录功能社区，优先于 design_mode）'),
     },
     handler: wrap(async (a) => {
-      // MCP 路径默认连项目级符号缓存（<project_dir>/.design-canvas/cache.db）：
+      // MCP 路径默认连项目级符号缓存（<project_dir>/.agent-io/cache.db）：
       // 不连则 importProject 走无缓存路径，符号缓存永远不更新（增量 re-parse 失效）。
       // 开库失败（只读目录等）降级为无缓存导入，不阻断导入本身。
       let cacheDb;

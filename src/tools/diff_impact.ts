@@ -34,7 +34,7 @@ export type EdgeKind = 'call' | 'type_ref' | 'import';
 export interface DiffImpactInput {
   /** 可选：提供时用于 DSL 文件节点映射（dsl_node_id）与语义路径基准；缺省纯缓存分析 */
   feature?: string;
-  /** 被分析项目的根目录（其下 .design-canvas/cache.db 是符号缓存） */
+  /** 被分析项目的根目录（其下 .agent-io/cache.db 是符号缓存） */
   project_dir: string;
   /** 已变更文件（相对项目根的路径，或绝对路径） */
   changed: string[];

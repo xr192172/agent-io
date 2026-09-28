@@ -1,6 +1,6 @@
 /**
  * verifier 测试：验证建议（诊断流水线第 6 步）
- * 覆盖：Node/Go/Python 类型探测、test_failure 重跑、design-canvas 渲染自检、未知项目 manual。
+ * 覆盖：Node/Go/Python 类型探测、test_failure 重跑、agent-io 渲染自检、未知项目 manual。
  */
 
 import { DATA_DIR_NAME } from '../../src/data_dir.js';
@@ -71,7 +71,7 @@ describe('suggestVerification 验证建议', () => {
     fs.rmSync(dir, { recursive: true, force: true });
   });
 
-  it('design-canvas 管理项目（.design-canvas 存在）→ 追加 observe 渲染自检', () => {
+  it('agent-io 管理项目（.agent-io 存在）→ 追加 observe 渲染自检', () => {
     const dir = tmp();
     fs.writeFileSync(path.join(dir, 'package.json'), '{}');
     fs.mkdirSync(path.join(dir, DATA_DIR_NAME));

@@ -400,7 +400,7 @@ func dslReject(args []string, dataDir string) bool {
 // 支持 --min-deviation-rate <比例> / --min-undesigned <数量> 调节触发阈值，
 // --use-llm 对可疑/违反事件做 LLM 行为级复核。
 // --ledger <path> 接入影响台账（方向 D：偏差回流设计）——缺省自动探测
-// {projectRoot}/.design-canvas/impact/ledger.json（dataDir 上溯两级）。
+// {projectRoot}/.agent-io/impact/ledger.json（dataDir 上溯两级）。
 func dslLoop(args []string, dataDir string) bool {
 	if len(args) < 1 {
 		fmt.Fprintln(os.Stderr, "用法: observe-dsl loop <events.jsonl> [--min-deviation-rate 0.1] [--min-undesigned 1] [--use-llm] [--ledger <ledger.json>]")
@@ -445,9 +445,9 @@ func dslLoop(args []string, dataDir string) bool {
 		}
 	}
 	// 未显式指定 --ledger：自动探测默认位置。dataDir = {projectRoot}/.agent/observe
-	// → projectRoot = dataDir 上溯两级；台账在 {projectRoot}/.design-canvas/impact/。
+	// → projectRoot = dataDir 上溯两级；台账在 {projectRoot}/.agent-io/impact/。
 	if !ledgerSet {
-		candidate := filepath.Join(dataDir, "..", "..", ".design-canvas", "impact", "ledger.json")
+		candidate := filepath.Join(dataDir, "..", "..", ".agent-io", "impact", "ledger.json")
 		if abs, err := filepath.Abs(candidate); err == nil {
 			candidate = abs
 		}

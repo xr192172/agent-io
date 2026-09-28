@@ -123,7 +123,7 @@ export function locateCandidates(db: Database, input: LocateInput): LocateResult
   }
   if (!cacheAlive) {
     warnings.push(
-      `符号缓存为空（${root}/.design-canvas/cache.db）：该目录下可能没有可解析源码，或冷启动建索引失败。诊断本轮只能给文件级线索。`,
+      `符号缓存为空（${root}/.agent-io/cache.db）：该目录下可能没有可解析源码，或冷启动建索引失败。诊断本轮只能给文件级线索。`,
     );
     return { candidates: [], warnings };
   }

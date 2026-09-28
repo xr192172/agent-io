@@ -114,7 +114,7 @@ describe('symptom_parser 关键词', () => {
 
   it('回归：绝对路径只留文件名，目录组成词不污染关键词（含空格路径）', () => {
     const kws = extractKeywords(
-      'Failed to load url /C:/Users/Admin/Downloads/Browsers/Microsoft Edge/design-canvas-main/design-canvas/tests/fixtures/agent_demo.mjs. Does the file exist?',
+      'Failed to load url /C:/Users/Admin/Downloads/Browsers/Microsoft Edge/agent-io-main/agent-io/tests/fixtures/agent_demo.mjs. Does the file exist?',
     );
     // 路径里的 Microsoft / Edge / design / canvas 等目录组成词不应进入关键词
     for (const bad of ['microsoft', 'edge', 'design', 'canvas', 'admin', 'downloads', 'browsers']) {

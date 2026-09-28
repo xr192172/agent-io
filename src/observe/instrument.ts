@@ -84,7 +84,7 @@ export interface InstrumentOptions {
   probeImport?: string;
   /** 项目根，用于计算 probe import 相对路径（默认从 src/observe/probe.ts 向上推断） */
   projectRoot?: string;
-  /** 备份根：写盘前把原文件备份到 <backupRoot>/.design-canvas/observe-backup/<rel>，
+  /** 备份根：写盘前把原文件备份到 <backupRoot>/.agent-io/observe-backup/<rel>，
    *  供 --uninstrument 还原。默认等于 projectRoot（被插桩项目根）。 */
   backupRoot?: string;
   /** 是否实际写盘；false 只做 dry-run 报告（默认 true） */
@@ -126,11 +126,11 @@ const PROBE_MARKER = 'observe:instrumented';
  *  文件含此标记说明 deep 探针已注入，避免重复。 */
 const DEEP_MARKER = 'observe:deep';
 
-/** 备份目录名（相对被插桩项目根，位于 .design-canvas 下，collectTsFiles 会跳过） */
-const BACKUP_DIR = '.design-canvas/observe-backup';
+/** 备份目录名（相对被插桩项目根，位于 .agent-io 下，collectTsFiles 会跳过） */
+const BACKUP_DIR = '.agent-io/observe-backup';
 
-/** 探针台账文件名（相对被插桩项目根，位于 .design-canvas 下） */
-const LEDGER_FILE = '.design-canvas/observe-ledger.json';
+/** 探针台账文件名（相对被插桩项目根，位于 .agent-io 下） */
+const LEDGER_FILE = '.agent-io/observe-ledger.json';
 
 /** 备份文件名：把原文件相对项目根（backupRoot）的路径映射为备份目录下的镜像路径 */
 function backupPathFor(backupRoot: string, file: string): string {
@@ -138,7 +138,7 @@ function backupPathFor(backupRoot: string, file: string): string {
   return path.join(backupRoot, BACKUP_DIR, rel);
 }
 
-/** 原文件写盘前，若尚无备份则把当前内容备份到 .design-canvas/observe-backup */
+/** 原文件写盘前，若尚无备份则把当前内容备份到 .agent-io/observe-backup */
 function backupOriginal(backupRoot: string, file: string, content: string): void {
   const dest = backupPathFor(backupRoot, file);
   if (fs.existsSync(dest)) return; // 已备份过则保留最早的原版
@@ -172,7 +172,7 @@ function listBackups(backupRoot: string): string[] {
 }
 
 /**
- * 还原被插桩项目的所有文件：从 .design-canvas/observe-backup 拷回原版，然后删除备份目录。
+ * 还原被插桩项目的所有文件：从 .agent-io/observe-backup 拷回原版，然后删除备份目录。
  * 返回已还原的文件绝对路径列表。
  */
 export function restoreInstrumented(root: string): string[] {
@@ -191,7 +191,7 @@ export function restoreInstrumented(root: string): string[] {
 // ─────────────────────────────────────────────────────────────
 // 探针台账（ledger）：把「单文件插拔」记账成台账 + 统计，
 // 支撑 一键插所有文件 / 一键拔所有文件 / 查看统计 的联动。
-// 台账持久化在 <被插桩项目根>/.design-canvas/observe-ledger.json，
+// 台账持久化在 <被插桩项目根>/.agent-io/observe-ledger.json，
 // 与 observe-backup 备份目录同处，collectTsFiles 自动跳过。
 // ─────────────────────────────────────────────────────────────
 
@@ -240,7 +240,7 @@ export function buildProbeLedger(results: InstrumentFileResult[], projectRoot: s
   };
 }
 
-/** 保存台账到 <root>/.design-canvas/observe-ledger.json，返回台账文件路径 */
+/** 保存台账到 <root>/.agent-io/observe-ledger.json，返回台账文件路径 */
 export function saveProbeLedger(root: string, ledger: ProbeLedger): string {
   const file = ledgerPath(root);
   fs.mkdirSync(path.dirname(file), { recursive: true });
@@ -304,7 +304,7 @@ const IO_CALLS: Record<string, string> = {
   rm: 'remove',
 };
 
-/** 递归收集项目下所有 .ts 源文件（跳过 node_modules / dist / .git / .design-canvas） */
+/** 递归收集项目下所有 .ts 源文件（跳过 node_modules / dist / .git / .agent-io） */
 export function collectTsFiles(root: string): string[] {
   const out: string[] = [];
   const skip = new Set(['node_modules', 'dist', '.git', DATA_DIR_NAME, 'coverage', '.agent']);

@@ -31,7 +31,7 @@
 
 ## 2. 体检数据（本机唯一 dogfood 账本，2026-09-08 → 09-14）
 
-账本：`<dataHome>/.design-canvas/dogfood/usage.jsonl`（所有 MCP 工具调用都过 `recordDogfoodUsage`）。
+账本：`<dataHome>/.agent-io/dogfood/usage.jsonl`（所有 MCP 工具调用都过 `recordDogfoodUsage`）。
 **样本：944 次调用，7 天。**
 
 | 工具 | 次数 | | 工具 | 次数 |
@@ -165,7 +165,7 @@
 | **① 声明观测点（语义锚点）** | 观测点 = 代码里的**语义位置**（如 `compaction.fold`、`cache.miss_reason`），不是"每个函数出入口"。声明可写在配置文件/DSL 里，由工具负责把埋点**生成**到源码（可一键还原），而不是让人手抄 `console.log` 到各处 | 语义缺失（事件里得有"这是一次折叠"） |
 | **② 采集前判定（写入时筛）** | 事件在**产生点**就按"是否命中已声明观测点 + 是否在预算内"决定写不写；**不写全量、不做环形丢弃** | "无用细节冲掉有用细节"（对齐 spill-policy 的"写入前替换"） |
 | **③ 预算 + 采样（声明层降级）** | 每个观测点带 **token/字节预算 + 采样率**；超预算在**声明层**降级（如"只记前 3 次折叠 + 首次 miss 的原因"），而不是在存储层丢最老的 | 撑爆硬盘；且降级决策**有语义**、可解释 |
-| **④ 结构化记录 + A/B** | 落 `<project>/.design-canvas/observe/<session>.jsonl`，每行带 `measurement` 风格的结构化字段；两轮记录可直接对比（复刻 `cache-ab-experiment-log` 的做法） | "因果解释 + 影响因素"（命中率对比） |
+| **④ 结构化记录 + A/B** | 落 `<project>/.agent-io/observe/<session>.jsonl`，每行带 `measurement` 风格的结构化字段；两轮记录可直接对比（复刻 `cache-ab-experiment-log` 的做法） | "因果解释 + 影响因素"（命中率对比） |
 | **⑤ 全量插桩降级为"探索模式"** | 只有当**你还不知道观测点在哪**时才开，默认关闭、限时限额，结果只用于**反推候选观测点**，不长期保留 | 保留"发现未知"的能力，去掉它的长期成本 |
 
 **与 C 的关系**：**C 是 D 的一个特例**（"验证"就是一种观测点：改动前后的对拍）。所以 D 兼容 C，只是把
@@ -194,7 +194,7 @@
 ## 6. 待用户拍板
 
 1. 选 **D（推荐，包裹 C）** / C / A / B？
-2. 若选 D：**观测点声明**放哪（`.design-canvas.json` / DSL overlay / 独立 observe 配置）？
+2. 若选 D：**观测点声明**放哪（`.agent-io.json` / DSL overlay / 独立 observe 配置）？
    "探索模式（全量插桩）"保留还是直接删？
 3. 若选 C 或 D：展示/叙事类（`narrate_*` / `observe_chain_view` / `feature_line` / `export_incident`）
    移出模型面后，留 CLI 还是进归档区？

@@ -98,7 +98,7 @@ export interface BrickContract {
 }
 
 /**
- * 积木级清单（注册表：`<dataHome>/.design-canvas/bricks/<name>/manifest.json`）
+ * 积木级清单（注册表：`<dataHome>/.agent-io/bricks/<name>/manifest.json`）
  *
  * 积木 = 动态拎取产物（种子 + 传递闭包），不进 DSL（防膨胀）。
  * 三件套快照（Phase 2.7 决策）：

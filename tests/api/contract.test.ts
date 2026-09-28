@@ -19,7 +19,7 @@ describe('api/contract —— 响应契约 zod 单源', () => {
   it('featuresResp 能校验采样响应（含 _api=1 + features[]）', () => {
     const r = featuresResp.safeParse({
       _api: 1,
-      features: [{ feature: 'design-canvas', title: 'design-canvas', files: 2, nodes: 8, language: 'ts' }],
+      features: [{ feature: 'agent-io', title: 'agent-io', files: 2, nodes: 8, language: 'ts' }],
     });
     expect(r.success).toBe(true);
   });
@@ -41,8 +41,8 @@ describe('api/contract —— 响应契约 zod 单源', () => {
     const r = overviewResp.safeParse({
       _api: 1,
       success: true,
-      feature: 'design-canvas',
-      title: 'design-canvas',
+      feature: 'agent-io',
+      title: 'agent-io',
       summary: { one_liner: 'x', brief: 'y', mode: 'rule', extra_field: 1 },
       mind_map: { root: { id: 'r' } },
     });

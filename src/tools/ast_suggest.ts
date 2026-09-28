@@ -128,7 +128,7 @@ const DEFAULT_SYSTEM =
 let cachedDefault: SuggestLlm | null | undefined;
 async function defaultLlmCands(cands: SuggestCandidate[], filePath: string): Promise<Array<{ name: string; reason?: string }>> {
   const cfg = loadLlmConfig();
-  if (!cfg) throw new Error('未配置 LLM（.design-canvas/config.json 或环境变量）');
+  if (!cfg) throw new Error('未配置 LLM（.agent-io/config.json 或环境变量）');
   const list = cands
     .map((c) => `- id=${c.id} · name=${c.name} · kind=${c.kind} · 函数=${c.parentFunction} · 引用=${c.refs} · 声明行：${c.declLine}`)
     .join('\n');
@@ -178,7 +178,7 @@ export async function suggestRenames(
   else llm = opts.llm;
 
   if (!llm) {
-    return { llm: false, candidates: cands, note: '未配置 LLM（.design-canvas/config.json 或环境变量）' };
+    return { llm: false, candidates: cands, note: '未配置 LLM（.agent-io/config.json 或环境变量）' };
   }
 
   try {

@@ -436,7 +436,7 @@ describe('expandClosure - 通用兜底语言 + 裸包 workspace importer', () =>
 // 索引快速路径（② cache.db 反查子图 + ④ 无索引回退）
 // ─────────────────────────────────────────────────────────────
 
-/** 在临时项目根内建 cache.db：把 files 全部 syncFile 进项目的 .design-canvas/cache.db */
+/** 在临时项目根内建 cache.db：把 files 全部 syncFile 进项目的 .agent-io/cache.db */
 async function buildIndex(root: string): Promise<void> {
   const db = getProjectCacheDb(root);
   const allAbs: string[] = [];
@@ -533,7 +533,7 @@ describe('expandClosure 索引快速路径 - ②+④ 行为', () => {
     rmForce(dir);
   });
 
-  it('④ 无索引（无 .design-canvas/cache.db）→ 回退全扫，结果与原行为一致', async () => {
+  it('④ 无索引（无 .agent-io/cache.db）→ 回退全扫，结果与原行为一致', async () => {
     const dir = mkProj({
       'package.json': '{ "name": "a" }\n',
       'src/def.ts': "import { sharedHelper } from '../../shared';\nexport function compute(a: number): number { return a + sharedHelper(a); }\n",
@@ -570,13 +570,13 @@ describe('expandClosure 索引快速路径 - ②+④ 行为', () => {
     rmForce(dir);
   });
 
-  it('DB 打开异常（只读根 / 不可写 .design-canvas）→ 回退全扫，不抛错', async () => {
+  it('DB 打开异常（只读根 / 不可写 .agent-io）→ 回退全扫，不抛错', async () => {
     const dir = mkProj({
       'package.json': '{ "name": "a" }\n',
       'src/def.ts': 'export function compute() { return 1; }\n',
       'src/app.ts': "import { compute } from './def';\nexport function run() { return compute(); }\n",
     });
-    // 把 .design-canvas/cache.db 作为目录创建（会导致 openDb 创建 DatabaseSync 抛错）
+    // 把 .agent-io/cache.db 作为目录创建（会导致 openDb 创建 DatabaseSync 抛错）
     const fakeDb = path.join(dir, DATA_DIR_NAME, 'cache.db');
     mkdirSync(path.dirname(fakeDb), { recursive: true });
     writeFileSync(fakeDb, 'NOT A SQLITE FILE'); // 也可写垃圾头让 open 不炸但 hasAnyIndexedFiles 会炸

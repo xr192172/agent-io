@@ -795,14 +795,14 @@ describe('renameSymbol - Python 跨文件改名', () => {
   });
 });
 
-describe('renameSymbol - 冻结行保护（管理员自配 .design-canvas.json）', () => {
+describe('renameSymbol - 冻结行保护（管理员自配 .agent-io.json）', () => {
   const cfg = {
     rename: { protect: [{ globs: ['src/archive.*'], markers: ['判定'] }] },
   };
 
   it('importer 命中冻结行 → 原子阻断，无任何文件被改', async () => {
     const dir = mkProj({
-      '.design-canvas.json': JSON.stringify(cfg),
+      '.agent-io.json': JSON.stringify(cfg),
       'src/def.ts': [
         'export function compute(a: number): number {',
         '  return a * 2;',
@@ -832,7 +832,7 @@ describe('renameSymbol - 冻结行保护（管理员自配 .design-canvas.json�
 
   it('未命中的 rename 完全不受保护影响', async () => {
     const dir = mkProj({
-      '.design-canvas.json': JSON.stringify({ rename: { protect: [{ globs: ['src/frozen/**'], markers: ['判定'] }] } }),
+      '.agent-io.json': JSON.stringify({ rename: { protect: [{ globs: ['src/frozen/**'], markers: ['判定'] }] } }),
       'src/def.ts': 'export function compute(a: number): number {\n  return a * 2;\n}\n',
       'src/live.ts': "import { compute } from './def';\nexport function run() { return compute(3); }\n",
     });

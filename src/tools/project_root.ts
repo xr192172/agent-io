@@ -4,7 +4,7 @@
  * 背景（工具被主动使用的障碍 #1/#2，见 docs/tool-convergence.md 5.6 节）：
  *   rename_symbol 等工具要求调用方显式传 project_dir，LLM 得先自己知道项目根——
  *   这是"不会想起来用"的第一根因。本项目内自己就是嵌套 git 实例：
- *   design-canvas-main（外壳非 git）内含 design-canvas/、dsl-workbench/ 两个独立 git 仓库。
+ *   agent-io-main（外壳非 git）内含 agent-io/、dsl-workbench/ 两个独立 git 仓库。
  *
  * 本模块提供两级能力：
  *   1. resolveProjectRoot(file)：从文件自动定位初始项目根
@@ -1045,7 +1045,7 @@ async function tryIndexedExpandClosure(
  *  - BFS 沿 import 边扩展：相对导入（./ ../）或别名导入（@/ 等，需 alias）真实解析到
  *    边界外本地文件 → 扩入（importee 方向：seed 依赖不漏）
  *  - 邻域 importer 有界扫描：根外兄弟项目/松散文件引用 seed → 扩入（importer 方向，
- *    覆盖跨 git 根引用，如 dsl-workbench 引用 design-canvas）
+ *    覆盖跨 git 根引用，如 dsl-workbench 引用 agent-io）
  *  - 跨 git 根引用也被纳入（不依赖单一 project_dir 的物理边界）
  *  - alias 可省略：缺省时按 root 的 tsconfig 自动加载；传 null 显式禁用别名解析
  *

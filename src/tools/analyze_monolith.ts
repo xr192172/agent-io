@@ -54,7 +54,7 @@ export interface MonolithFileView {
 }
 
 export interface AnalyzeMonolithInput {
-  /** 项目根（定位 <root>/.design-canvas/cache.db） */
+  /** 项目根（定位 <root>/.agent-io/cache.db） */
   project_dir: string;
   /** 可选：注入已打开的 cache.db 连接（复用调用方同一实例，避免路径漂移）；缺省按 project_dir 推导 */
   db?: Database;

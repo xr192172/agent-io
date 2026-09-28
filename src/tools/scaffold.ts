@@ -7,7 +7,7 @@
  *   1. 多语言模板：go / ts / py / js / vue / react
  *   2. 可配置模板系统：通过 DSL semantic.scaffold.templates 自定义模板
  *   3. 从节点内容生成 UI 骨架：将 color_block/text/image 映射为 UI 组件
- *   4. 注释标记：生成 <!-- design-canvas:node_id --> 锚点，支持 backfill 定位
+ *   4. 注释标记：生成 <!-- agent-io:node_id --> 锚点，支持 backfill 定位
  *   5. 模板占位符：{{package}}, {{imports}}, {{apis}}, {{behavior}}, {{node_id}}, {{node_label}}, {{ui_skeleton}}
  *
  * 工作原理：
@@ -64,7 +64,7 @@ function detectLang(filePath: string): Lang {
 // ─────────────────────────────────────────────────────────────
 
 function makeMarker(nodeId: string, label?: string): string {
-  return `<!-- design-canvas:${nodeId}${label ? ' ' + label : ''} -->`;
+  return `<!-- agent-io:${nodeId}${label ? ' ' + label : ''} -->`;
 }
 
 function makeMarkerComment(nodeId: string, lang: Lang, label?: string): string {
@@ -78,7 +78,7 @@ function makeMarkerComment(nodeId: string, lang: Lang, label?: string): string {
     case 'py':
       return `# ${marker}`;
     case 'vue':
-      return `<!-- design-canvas:${nodeId}${label ? ' ' + label : ''} -->`;
+      return `<!-- agent-io:${nodeId}${label ? ' ' + label : ''} -->`;
     default:
       return `// ${marker}`;
   }
@@ -797,7 +797,7 @@ export function scaffold(input: ScaffoldInput): ScaffoldResult {
   const message = [
     `已为 feature "${feature}" 生成 ${generatedFiles.length} 个文件`,
     `输出目录：${outDir}`,
-    useMarkers ? '已生成注释标记（<!-- design-canvas:node_id -->）' : '未生成注释标记',
+    useMarkers ? '已生成注释标记（<!-- agent-io:node_id -->）' : '未生成注释标记',
     ...(indexNote ? [indexNote] : []),
     generateUi ? `UI 骨架：${uiFramework}` : '',
     '',

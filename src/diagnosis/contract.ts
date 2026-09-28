@@ -9,7 +9,7 @@
 export type SymptomType = 'error' | 'test_failure' | 'behavior' | 'auto';
 
 export interface DiagnoseInput {
-  /** 被诊断项目的根目录（其下 .design-canvas/cache.db 是符号索引） */
+  /** 被诊断项目的根目录（其下 .agent-io/cache.db 是符号索引） */
   project_dir: string;
   /** 症状：报错信息 / stack trace / 测试失败输出 / 行为异常描述 */
   symptom: string;

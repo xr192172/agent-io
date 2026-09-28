@@ -10,9 +10,9 @@
  * 决定降级路径——client 本身不重试、不缓存。
  */
 
-/** daemon 默认端口（DC_DAEMON_PORT 可覆盖） */
+/** daemon 默认端口（AGENT_IO_DAEMON_PORT 可覆盖） */
 export function daemonPort(): number {
-  const p = Number(process.env.DC_DAEMON_PORT || 0);
+  const p = Number(process.env.AGENT_IO_DAEMON_PORT || 0);
   return p > 0 ? p : 7600;
 }
 

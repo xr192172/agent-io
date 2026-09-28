@@ -466,7 +466,7 @@ func Run(n int) int {
   it('跨文件调用标注：cache.db 有 cross 边时节点 label 加 → 标记', async () => {
     writeFixture('branch.go', BRANCH_FIXTURE);
     setupHost('f_cross', 'branch.go');
-    // 造项目缓存：tmpDir/.design-canvas/cache.db，插一条跨文件调用边（绕过外键）
+    // 造项目缓存：tmpDir/.agent-io/cache.db，插一条跨文件调用边（绕过外键）
     const { openDb } = await import('../../src/db/db');
     const db = openDb(path.join(tmpDir, DATA_DIR_NAME, 'cache.db'));
     db.exec('PRAGMA foreign_keys = OFF');

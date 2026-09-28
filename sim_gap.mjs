@@ -1,6 +1,6 @@
 /* 模拟：改进针脚清洗 + 顺序倒挂缺口 + 共享文件连线，验证数量变化 */
 import { readFileSync } from 'node:fs';
-const mm = JSON.parse(readFileSync('.design-canvas/mindmap/design-canvas.teach.json', 'utf-8'));
+const mm = JSON.parse(readFileSync('.agent-io/mindmap/agent-io.teach.json', 'utf-8'));
 
 const GENERIC_T = new Set([
   'string', 'number', 'boolean', 'bool', 'int', 'int32', 'int64', 'uint', 'uint32', 'uint64',

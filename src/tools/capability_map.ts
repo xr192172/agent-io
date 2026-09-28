@@ -395,7 +395,7 @@ export function makeCapabilityMapHandler(getCatalog: () => readonly ToolCatalogE
     const lane = args.lane as LaneId | undefined;
     const toolCount = lanes.reduce((n, l) => n + l.tools.length, 0) + unassigned.length;
     const header =
-      `design-canvas 能力线导航：先看线再看工具，高频工具可绕过本导航直接调用。` +
+      `agent-io 能力线导航：先看线再看工具，高频工具可绕过本导航直接调用。` +
       `\n目录由工具注册表自动派生（${toolCount} 工具 / ${LANE_IDS.length} 线），与注册表同源、不会脱节。` +
       `\n前缀语义：observe_=观测、harvest_=采集、reconcile_=对账、rename_=改名、edit_=修改、render_=渲染。`;
 

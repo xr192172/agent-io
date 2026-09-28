@@ -5,7 +5,7 @@
 
 ## 1. R5 是什么
 
-R5 = **archify 及其基础上开发的组件**：把 design-canvas 的语义面（DSL / 编辑 IR）
+R5 = **archify 及其基础上开发的组件**：把 agent-io 的语义面（DSL / 编辑 IR）
 渲染成 5 类图（architecture / workflow / sequence / dataflow / lifecycle）的可视化产线。
 
 它由三层构成，**其中有一层是主线资产，不要误伤**：
@@ -36,18 +36,18 @@ R5 = **archify 及其基础上开发的组件**：把 design-canvas 的语义面
 ⇒ 不是"组件坏了"，是**布局参数未收敛**。修它需要动 vendored 上游的 renderer
 （会有升级冲突成本），**与主线（索引/压缩/编辑/自进化）无关** ⇒ 挂起，日后专门做。
 
-## 3. 挂起开关：`DC_R5_SKIP`
+## 3. 挂起开关：`AGENT_IO_R5_SKIP`
 
 单点控制，逻辑在 `tests/helpers/r5_gate.ts`。
 
 | 变量 | 行为 |
 |---|---|
-| 不设 / `DC_R5_SKIP=0` | **默认**：R5 测试照常跑（保留回归保护） |
-| `DC_R5_SKIP=1` | **整线挂起**：R5 的 28 项测试全部 skip（报告里可见，非静默消失） |
+| 不设 / `AGENT_IO_R5_SKIP=0` | **默认**：R5 测试照常跑（保留回归保护） |
+| `AGENT_IO_R5_SKIP=1` | **整线挂起**：R5 的 28 项测试全部 skip（报告里可见，非静默消失） |
 
 **为什么默认是"跑"而不是"跳过"**：静默跳过会隐瞒问题（本项目最反对"静默给旧答案"）。
 那条线虽然不开发了，但只要没坏就该继续被回归守着；只有真的出问题、要绕过时，
-才显式设 `DC_R5_SKIP=1`。
+才显式设 `AGENT_IO_R5_SKIP=1`。
 
 ### 相关命令
 
@@ -55,13 +55,13 @@ R5 = **archify 及其基础上开发的组件**：把 design-canvas 的语义面
 npm test           # 全量（含 R5，默认）
 npm run test:main  # 只跑主线（排除 tests/tools/archify_*.test.ts）
 npm run test:r5    # 只跑 R5 那 4 个文件
-DC_R5_SKIP=1 npm test   # 全量但把 R5 挂起
+AGENT_IO_R5_SKIP=1 npm test   # 全量但把 R5 挂起
 ```
 
 ### CI 里的表现
 
-- `archify doctor` 自检步骤带 `if: ${{ env.DC_R5_SKIP != '1' }}` ⇒ 挂起时自动跳过；
-- R5 测试随 `npm test` 一起跑；要挂起，在 job 里加 `env: { DC_R5_SKIP: '1' }`。
+- `archify doctor` 自检步骤带 `if: ${{ env.AGENT_IO_R5_SKIP != '1' }}` ⇒ 挂起时自动跳过；
+- R5 测试随 `npm test` 一起跑；要挂起，在 job 里加 `env: { AGENT_IO_R5_SKIP: '1' }`。
 
 ## 4. 挂起的边界（**重要**：哪些没挂起）
 
@@ -80,7 +80,7 @@ DC_R5_SKIP=1 npm test   # 全量但把 R5 挂起
 
 ## 5. 日后如何恢复开发
 
-1. 取消挂起：确认环境没设 `DC_R5_SKIP`（或显式 `DC_R5_SKIP=0`）。
+1. 取消挂起：确认环境没设 `AGENT_IO_R5_SKIP`（或显式 `AGENT_IO_R5_SKIP=0`）。
 2. 跑基线：`npm run test:r5`（应 28 passed）。
 3. 复现质量问题：
    ```bash

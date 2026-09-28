@@ -63,7 +63,7 @@ type Options struct {
 	// EnableEffect 是否启用 effect 级插桩（Brick Harvest Phase 2c 动静对账：
 	// 包级变量写/chan send/资源获取三类点，Capture 带 kind/target/op）。
 	EnableEffect bool
-	// BackupRoot 备份根：写盘前把原文件备份到 <backupRoot>/.design-canvas/observe-backup/<rel>。
+	// BackupRoot 备份根：写盘前把原文件备份到 <backupRoot>/.agent-io/observe-backup/<rel>。
 	BackupRoot string
 	// ExcludeDirs 相对目录名列表（如 internal/probe），这些目录下的文件跳过插桩。
 	// 用于避免把探针打进探针包自身/其依赖链造成 import cycle。
@@ -86,7 +86,7 @@ const deepMarker = "observe:deep"
 const effectMarker = "observe:effect"
 
 // 备份目录名（相对被插桩项目根）。
-const backupDir = ".design-canvas/observe-backup"
+const backupDir = ".agent-io/observe-backup"
 
 // IO 写盘调用 → 探针 op 名（selector 选择器名）。
 var ioOps = map[string]string{
@@ -97,7 +97,7 @@ var ioOps = map[string]string{
 	"AppendFile": "writefile", "Copy": "writefile",
 }
 
-// collectGoFiles 递归收集目录下所有 .go 源文件（跳过 node_modules/dist/.git/.design-canvas 等）。
+// collectGoFiles 递归收集目录下所有 .go 源文件（跳过 node_modules/dist/.git/.agent-io 等）。
 func collectGoFiles(root string, excludes []string) []string {
 	var out []string
 	// excludes 是相对根目录的路径（如 internal/probe），命中则跳过整目录
@@ -111,7 +111,7 @@ func collectGoFiles(root string, excludes []string) []string {
 		}
 		if d.IsDir() {
 			if d.Name() == "node_modules" || d.Name() == ".git" ||
-				d.Name() == ".design-canvas" || d.Name() == "coverage" {
+				d.Name() == ".agent-io" || d.Name() == "coverage" {
 				return filepath.SkipDir
 			}
 			// 相对 root 的目录路径（slash），命中 exclude 则跳过
@@ -564,7 +564,7 @@ func walkStmts(fset *token.FileSet, stmts []ast.Stmt, probeName func(string) str
 
 		// ── effect（可选，Phase 2c 动静对账）：外部作用点观测 ──
 		// 包级变量写 / chan send / go 语句 / 资源获取调用，语句末注入，
-		// Capture 带 kind/target/op，与 design-canvas 静态候选（origin='ast'）同构。
+		// Capture 带 kind/target/op，与 agent-io 静态候选（origin='ast'）同构。
 		if enableEffect && MatchProbe(probeName("effect"), probes) {
 			if hit, ok := effectInStmt(stmt, pkgVars); ok {
 				code := fmt.Sprintf(`camprobe.Capture(%q, "llm-design", map[string]any{"file": %q, "level": "effect", "kind": %q, "target": %q, "op": %q});`,

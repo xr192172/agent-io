@@ -4,7 +4,7 @@
  *
  * 三层架构：
  *   L1 实际代码层（live/）——代码实时快照
- *   L2 设计/图层（design-canvas.json）——几何 + 语义 DSL
+ *   L2 设计/图层（agent-io.json）——几何 + 语义 DSL
  *   L3 总结层（本文件）——内置 LLM 将 L2 提炼为思维导图，修改可回写 L2
  *
  * 锚点约定：每个 L3 节点 id 尽力与 L2/L1 共享（如文件节点 id = file_xxx），

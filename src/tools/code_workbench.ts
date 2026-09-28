@@ -16,7 +16,7 @@
  *   - approve 时重新跑真实操作（非内存假执行），复用 edit_code 的语法门 /
  *     rename_file 的目标冲突阻断，行号漂移会报错上抛而非静默改错。
  *   - 行号漂移 / 目标已存在等执行失败 → 保留原提案并记录 lastError，不吞。
- *   - 变更按（project_dir）隔离存在 `<dataHome>/.design-canvas/workbench/` 下。
+ *   - 变更按（project_dir）隔离存在 `<dataHome>/.agent-io/workbench/` 下。
  */
 
 import fs from 'node:fs';
@@ -540,7 +540,7 @@ export interface ApproveResult {
  * 审批执行。★ 写闸说明（为什么这里没有索引写穿代码）：
  * 本函数所有真实源码写入都委托给**已接闸**的执行器 —— rename_file→renameFile（自带
  * syncFile+reopenAndResolveAfterWrite）、split_plan/edit_code→editCode（5 处写穿点）；
- * dsl_rename/dsl_intent 只改设计画布 store（.design-canvas 下的 DSL/提案 JSON，非源码，
+ * dsl_rename/dsl_intent 只改设计画布 store（.agent-io 下的 DSL/提案 JSON，非源码，
  * 索引不覆盖）。⇒ 索引保鲜由被委托方保证，这里不需要（也不得重复）写穿。
  */
 export async function approveChange(project_dir: string, id: string): Promise<ApproveResult> {

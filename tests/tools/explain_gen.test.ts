@@ -2,7 +2,7 @@
  * explain_gen 角色文案持久化测试（讲解导览 G2）
  *
  * 覆盖：
- *   - saveGeneratedNarrations 落盘到 <dataHome>/.design-canvas/explain.gen.json
+ *   - saveGeneratedNarrations 落盘到 <dataHome>/.agent-io/explain.gen.json
  *   - loadGeneratedNarrations 读回并按标题索引
  *   - 二次保存按标题覆盖
  *   - 空/损坏文件 → 返回空对象（不抛错）
@@ -20,7 +20,7 @@ import {
 } from '../../src/tools/explain_gen';
 
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dc-explain-'));
-process.env.DESIGN_CANVAS_HOME = root;
+process.env.AGENT_IO_HOME = root;
 
 afterAll(() => {
   try {
@@ -31,7 +31,7 @@ afterAll(() => {
 });
 
 describe('explain_gen 持久化', () => {
-  it('保存后按标题读回，路径位于 <dataHome>/.design-canvas', () => {
+  it('保存后按标题读回，路径位于 <dataHome>/.agent-io', () => {
     const file = saveGeneratedNarrations([
       { title: '入口：MCP 服务', narrations: { newbie: 'n', pm: 'p', senior: 's' } },
     ]);

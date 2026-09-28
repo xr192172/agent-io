@@ -11,7 +11,7 @@ describe('set_design_intent —— 写设计意图到 overlay（goals / edge_int
 
   beforeEach(() => {
     home = mkdtempSync(path.join(tmpdir(), 'sdi_'));
-    process.env.DESIGN_CANVAS_HOME = home;
+    process.env.AGENT_IO_HOME = home;
     saveDSL({
       feature: 'f',
       geometry: {
@@ -24,7 +24,7 @@ describe('set_design_intent —— 写设计意图到 overlay（goals / edge_int
     });
   });
   afterEach(() => {
-    delete process.env.DESIGN_CANVAS_HOME;
+    delete process.env.AGENT_IO_HOME;
     rmSync(home, { recursive: true, force: true });
   });
 

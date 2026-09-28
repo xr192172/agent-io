@@ -1,7 +1,7 @@
 /* 临时探针：端到端 API 闭环（serve:3100）
  * 画批注(POST) → 读语义文档(GET digest) → 标 done(POST status) → 读回验证 → 清理还原 */
 const BASE = 'http://localhost:3100';
-const FEATURE = 'design-canvas';
+const FEATURE = 'agent-io';
 
 async function api(path, opts = {}) {
   const res = await fetch(BASE + path, opts);

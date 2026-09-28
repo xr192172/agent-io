@@ -2,7 +2,7 @@
 import { readFileSync } from 'node:fs';
 import { deriveStepFlow } from './dist/src/tools/derive_mind_map.js';
 
-const jsonPath = '.design-canvas/mindmap/design-canvas.teach.json';
+const jsonPath = '.agent-io/mindmap/agent-io.teach.json';
 const mm = JSON.parse(readFileSync(jsonPath, 'utf-8'));
 const out = [];
 let featTotal = 0, edgeTotal = 0, gapTotal = 0;

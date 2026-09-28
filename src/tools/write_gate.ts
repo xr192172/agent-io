@@ -19,7 +19,7 @@
  *        写完立刻同步 + 重开受影响的引用方 ⇒ **本进程内读己之写立即可信**，零延迟。
  *   L1b **自写登记**（`recordSelfWrite`，给同步签名的工具用，或写穿失败时兜底）：
  *        `syncFile` 依赖异步解析器（`parseFileFull`），同步工具 await 不了；
- *        退一步登记到 `.design-canvas/self-writes.json`，**读路径优先消费**（见 L3）——
+ *        退一步登记到 `.agent-io/self-writes.json`，**读路径优先消费**（见 L3）——
  *        比"全库 stat 扫"更便宜也更精确。
  *        （⑤ 2026-09-15：进程启动 `prewarmKernel()` 预热 Parser 缓存后，同步工具可走
  *        `syncSelfWritesSync` **同步直连 L1a**；未预热 ⇒ 预热闸整批落回本层，绝不半同步。）
@@ -128,7 +128,7 @@ export function toRelPosix(projectRoot: string, p: string): string | null {
  * 该项目**是否已有可用的索引**（cache.db 存在且 files 表非空）。
  *
  * 为什么先看文件是否存在、而不是直接 `getProjectCacheDb`：后者**会顺手建库**。
- * 一次编辑不该凭空造出 `.design-canvas/cache.db` —— 那会让后续的"零前置冷启"以为
+ * 一次编辑不该凭空造出 `.agent-io/cache.db` —— 那会让后续的"零前置冷启"以为
  * 已经有了，也会让多进程互相抢建。
  */
 export function hasLiveIndex(projectRoot: string): boolean {

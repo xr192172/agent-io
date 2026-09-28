@@ -4,7 +4,7 @@
  * 让 LLM 和用户能够保存 DSL 的"时间点快照"，
  * 随时回滚到之前的设计状态。
  *
- * 存储路径：.design-canvas/snapshots/<feature>/<timestamp>_<label>.json
+ * 存储路径：.agent-io/snapshots/<feature>/<timestamp>_<label>.json
  *
  * 与 undo/redo 的区别：
  * - undo/redo 是浏览器端的细粒度操作历史（拖拽、编辑等）

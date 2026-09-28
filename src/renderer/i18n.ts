@@ -111,7 +111,7 @@ export const UI_DICT: Record<string, { zh: string; en: string }> = {
   // ── 页脚 ──
   'footer_hint': { zh: '· 双击节点编辑属性 · 右键节点开始连线', en: '· double-click node to edit · right-click node to connect' },
   'rerender': { zh: '重新渲染', en: 'Re-render' },
-  'export_json': { zh: '📥 导出 design-canvas.json', en: '📥 Export design-canvas.json' },
+  'export_json': { zh: '📥 导出 agent-io.json', en: '📥 Export agent-io.json' },
   'import_json': { zh: '📤 导入 DSL', en: '📤 Import DSL' },
 
   // ── 节点属性编辑器 ──

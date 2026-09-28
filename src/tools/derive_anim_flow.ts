@@ -2,7 +2,7 @@
  * derive_anim_flow 工具（路线图序号 14：L3 条件分支 + L4 函数绑定的自动生成层）
  *
  * 背景：动画引擎（animation_engine.ts / anim_core.ts）已在运行时实现 L3 条件分支、
- * L4 函数绑定、L4.5 异常语义，但 flows 声明只能手工写（如 design-canvas.json 中的手工 flows）。
+ * L4 函数绑定、L4.5 异常语义，但 flows 声明只能手工写（如 agent-io.json 中的手工 flows）。
  * 本工具补齐"生成层"：把 derive_detail_chain 已提取的调用链 + CFG 自动转成
  * animations_v2.flows，让已实现的 L3/L4 引擎能力可被自动驱动，而非仅手写。
  *
@@ -139,7 +139,7 @@ function langOf(filePath: string): string {
 
 /**
  * 读取 cache.db 里本文件的跨文件调用边（kind='call' + metadata.cross=true）。
- * 从 project_root 向上逐级找 .design-canvas/cache.db（源文件根常是项目根子目录）。
+ * 从 project_root 向上逐级找 .agent-io/cache.db（源文件根常是项目根子目录）。
  * source 格式：<relPath>#<caller>（relPath 相对 cache.db 所在项目根，可能与本文件计算出的
  * relPath 不一致 → 退化为 basename 匹配）。
  * 失败（无 cache.db / 损坏 / 被锁）静默返回空，不影响主流程。

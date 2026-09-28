@@ -180,7 +180,7 @@ describe('renderHTML - 顶部 / 底部', () => {
     const html = renderHTML(makeMinimalDSL());
     expect(html).toContain('id="export-json"');
     expect(html).toContain('id="rerender"');
-    expect(html).toContain('导出 design-canvas.json');
+    expect(html).toContain('导出 agent-io.json');
   });
 });
 

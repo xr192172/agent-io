@@ -1,5 +1,5 @@
 /**
- * scan_canvas —— 只读全扫 design-canvas：聚合符号/调用边，演示"图节点→代码行→定义"可追溯链。
+ * scan_canvas —— 只读全扫 agent-io：聚合符号/调用边，演示"图节点→代码行→定义"可追溯链。
  * 不写任何文件/DB。用 tsx 跑： npx tsx scripts/scan_canvas.ts
  */
 import fs from 'node:fs';
@@ -7,7 +7,7 @@ import path from 'node:path';
 import { parseFileFull } from '../src/tools/ts_kernel/index.js';
 
 const ROOT = path.resolve(process.cwd());
-const SKIP = new Set(['.git', 'node_modules', 'dist', 'build', 'target', '.design-canvas', '.design-canvas.bak-20260830-122215', 'scripts', 'test', 'tests']);
+const SKIP = new Set(['.git', 'node_modules', 'dist', 'build', 'target', '.agent-io', '.agent-io.bak-20260830-122215', 'scripts', 'test', 'tests']);
 
 function walk(dir, out) {
   let ents;
@@ -53,7 +53,7 @@ async function main() {
     }
   }
 
-  console.log('=== 全扫 design-canvas (src/**) ===');
+  console.log('=== 全扫 agent-io (src/**) ===');
   console.log(`文件: ${files.length} | 符号: ${syms} | import: ${imports} | 调用边: ${calls} | 类型引用: ${types}`);
   console.log(`同文件已解析(resolved)调用: ${calls - unresolved} | 跨文件/未解析候选: ${unresolved}`);
 

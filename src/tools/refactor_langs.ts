@@ -82,7 +82,7 @@ export interface PackageMigrationSpec {
   sourceExts?: string[];
   /** import 别名清洗：importPath 为"重写后"的规范化路径，from 为现别名，to 为清洗目标名 */
   aliases?: Array<{ importPath: string; from: string; to: string }>;
-  /** 移动时跳过的目录名（缺省：node_modules/.git/dist/.design-canvas/venv/__pycache__/target 等） */
+  /** 移动时跳过的目录名（缺省：node_modules/.git/dist/.agent-io/venv/__pycache__/target 等） */
   skipDirs?: string[];
   /** 顶层目录内是否只处理"直接位于 to 下的源文件"做 package 改名（缺省 true，子目录不碰） */
   packageRenameTopLevelOnly?: boolean;

@@ -187,7 +187,7 @@ export function staleBuildWarningFor(loadedMtimeMs: number | null, curMtimeMs: n
   if (curMtimeMs > loadedMtimeMs) {
     return (
       '\n⚠️ STALE BUILD：dist 已在本进程启动后重建，当前响应来自旧代码——' +
-      '新增工具/字段/参数可能缺失或报"未知"错误。请重启 design-canvas MCP server 后再执行写操作。'
+      '新增工具/字段/参数可能缺失或报"未知"错误。请重启 agent-io MCP server 后再执行写操作。'
     );
   }
   return '';
@@ -257,7 +257,7 @@ function staleSourceWarning(): string {
     if (isStale && _lastStaleState !== 'stale') {
       return (
         '\n⚠️ STALE SOURCE：`src/` 比 `dist/` 新（疑似改了源码但未 `npm run build`）。' +
-        '当前工具跑的是旧编译产物——请运行 `npm run build` 后再重启 design-canvas MCP server 生效。'
+        '当前工具跑的是旧编译产物——请运行 `npm run build` 后再重启 agent-io MCP server 生效。'
       );
     }
     return '';
@@ -360,8 +360,8 @@ export function staleIndexWarning(args: Record<string, unknown>): string {
 // 纪律：
 //   - `noAutoFresh` 的工具不触发（`index_integrity` refresh:false 必须纯只读，连库都不该建；
 //     `import_project` 自己做全量导入）。
-//   - 根必须是真实存在的目录（不给幻觉路径凭空造 `.design-canvas`）。
-//   - `DC_AUTO_BACKFILL=0` 一键关（对齐 `DC_AUTO_WATCH` 的 env 约定）。
+//   - 根必须是真实存在的目录（不给幻觉路径凭空造 `.agent-io`）。
+//   - `AGENT_IO_AUTO_BACKFILL=0` 一键关（对齐 `AGENT_IO_AUTO_WATCH` 的 env 约定）。
 //   - 起了之后**诚实标注**：索引在建 ⇒ 本轮结果可能不全 —— 这是"不撒谎"不变量的
 //     "明确标注"那半边。`staleIndexWarning` 只覆盖"有索引但落后于磁盘"，
 //     覆盖不了"索引还没建完"这种**空缺型不全**（查不到 ≠ 不存在），由本标注兜。
@@ -383,7 +383,7 @@ function backfillProgressNote(absRoot: string): string {
  * 导出是为了**能被测试看见** —— "顺手起后台"这类逻辑最容易静默失效（永远不起也没人发现）。
  */
 export function firstContactBackfill(rawRoot: string | null): string {
-  if (!rawRoot || process.env.DC_AUTO_BACKFILL === '0') return '';
+  if (!rawRoot || process.env.AGENT_IO_AUTO_BACKFILL === '0') return '';
   try {
     const abs = path.resolve(rawRoot);
     if (!existsSync(abs) || !statSync(abs).isDirectory()) return ''; // 幻觉路径不建库

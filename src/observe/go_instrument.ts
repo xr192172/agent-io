@@ -1,5 +1,5 @@
 /**
- * go_instrument —— 把 go-observe 的 Go 插桩器桥接进 design-canvas 工具面。
+ * go_instrument —— 把 go-observe 的 Go 插桩器桥接进 agent-io 工具面。
  *
  * 背景：observe_instrument 原本只支持 TS（instrumentProject，往 .ts 插 captureProbe）；
  * Go 工程的自动插桩（go-observe：go/ast 注入 camprobe.Capture）退在同一仓库但没接线。
@@ -27,7 +27,7 @@ export interface GoInstrumentOptions {
   contractProbes?: string[];
 }
 
-/** 是否 Go 工程：目录含 go.mod 且含离散 .go 文件（排除 .design-canvas/node_modules）。 */
+/** 是否 Go 工程：目录含 go.mod 且含离散 .go 文件（排除 .agent-io/node_modules）。 */
 function scanDir(root: string): boolean {
   let entries: fs.Dirent[];
   try { entries = fs.readdirSync(root, { withFileTypes: true }); } catch { return false; }
@@ -49,10 +49,10 @@ export function isGoProject(root: string): boolean {
   } catch { return false; }
 }
 
-/** 定位 go-observe 模块目录（含 go.mod 的 go-observe）。env DC_GO_OBSERVE_DIR 优先。 */
+/** 定位 go-observe 模块目录（含 go.mod 的 go-observe）。env AGENT_IO_GO_OBSERVE_DIR 优先。 */
 export function goObserveDir(): string {
-  if (process.env.DC_GO_OBSERVE_DIR && fs.existsSync(path.join(process.env.DC_GO_OBSERVE_DIR, 'go.mod'))) {
-    return process.env.DC_GO_OBSERVE_DIR;
+  if (process.env.AGENT_IO_GO_OBSERVE_DIR && fs.existsSync(path.join(process.env.AGENT_IO_GO_OBSERVE_DIR, 'go.mod'))) {
+    return process.env.AGENT_IO_GO_OBSERVE_DIR;
   }
   let dir = path.dirname(fileURLToPath(import.meta.url));
   for (let i = 0; i < 8; i++) {
@@ -62,7 +62,7 @@ export function goObserveDir(): string {
     if (parent === dir) break;
     dir = parent;
   }
-  throw new Error('未定位 go-observe 模块目录（可设环境变量 DC_GO_OBSERVE_DIR）');
+  throw new Error('未定位 go-observe 模块目录（可设环境变量 AGENT_IO_GO_OBSERVE_DIR）');
 }
 
 function runGo(moduleDir: string, args: string[], timeoutMs = 60000): Promise<string> {
@@ -117,7 +117,7 @@ export async function instrumentGoProject(root: string, opts: GoInstrumentOption
   return parseReport(raw);
 }
 
-/** 一键还原被插桩的 Go 工程（从 .design-canvas/observe-backup 拷回原文件并删备份）。 */
+/** 一键还原被插桩的 Go 工程（从 .agent-io/observe-backup 拷回原文件并删备份）。 */
 export async function restoreGoProject(root: string): Promise<number> {
   const mod = goObserveDir();
   const raw = await runGo(mod, ['run', './cmd/instrument', root, '--restore']);

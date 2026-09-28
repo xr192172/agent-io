@@ -46,8 +46,8 @@ async function makeProject(feature: string): Promise<{ root: string; db: ReturnT
 }
 
 describe('shouldSyncRel 过滤', () => {
-  it('忽略 .design-canvas / node_modules / 非源码目录', () => {
-    expect(shouldSyncRel('.design-canvas/cache.db')).toBe(false);
+  it('忽略 .agent-io / node_modules / 非源码目录', () => {
+    expect(shouldSyncRel('.agent-io/cache.db')).toBe(false);
     expect(shouldSyncRel('node_modules/x/index.js')).toBe(false);
     expect(shouldSyncRel('src/.git/HEAD')).toBe(false);
     expect(shouldSyncRel('dist/out.js')).toBe(false);
@@ -139,7 +139,7 @@ describe('flushBatch', () => {
     // 新增一个调用方 + 一个被调用方，触发跨文件调用解析
     put(root, 'src/service.ts', `export function handle(u: string): string {\n  return login(u, 'x');\n}\n`);
     put(root, 'src/auth.ts', `export function login(user: string, pass: string): boolean {\n  return user === 'admin' && pass === 'x';\n}\n`);
-    const summary = await flushBatch(db, root, ['src/service.ts', 'src/service.ts', '.design-canvas/cache.db', 'src/notes.md']);
+    const summary = await flushBatch(db, root, ['src/service.ts', 'src/service.ts', '.agent-io/cache.db', 'src/notes.md']);
     expect(summary.changed).toBe(1); // 重复的 service.ts 去重为 1
     expect(summary.ignored).toBeGreaterThan(0); // cache.db + notes.md
     expect(summary.files).toContain('src/service.ts');
@@ -181,7 +181,7 @@ describe('reconcileProject 兜底', () => {
   it('忽略目录不入扫描（scanned 不含缓存/依赖）', async () => {
     const { root, db } = await makeProject('r3');
     put(root, 'node_modules/pkg/index.js', `export const x = 1;\n`);
-    put(root, '.design-canvas/live/none.dsl.json', '{}');
+    put(root, '.agent-io/live/none.dsl.json', '{}');
     const summary = await reconcileProject(db, root);
     // scanned 只含可同步源码（本项目仅 src/auth.ts）
     expect(summary.scanned).toBe(1);

@@ -1,5 +1,5 @@
 /**
- * design-canvas DSL 类型定义（根模块）
+ * agent-io DSL 类型定义（根模块）
  * 与 schema/design_dsl.schema.json 严格对齐
  *
  * 领域拆分：几何层 ./geometry / 语义层 ./semantic / 标注 ./annotation

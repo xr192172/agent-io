@@ -2,7 +2,7 @@
 $ErrorActionPreference = 'Stop'
 $proj = Join-Path $env:TEMP 'dc-dbg-proj'
 if (Test-Path $proj) { Remove-Item -Recurse -Force $proj }
-New-Item -ItemType Directory -Path (Join-Path $proj '.design-canvas\impact') -Force | Out-Null
+New-Item -ItemType Directory -Path (Join-Path $proj '.agent-io\impact') -Force | Out-Null
 
 $ledger = @'
 {"version":1,"entries":[
@@ -11,7 +11,7 @@ $ledger = @'
 {"id":"decl-3","created_at":"2026-08-17T12:00:00Z","declared_files":["src/x.ts"],"expected_files":["src/y.ts"],"status":"ok","consumed_at":"2026-08-17T12:05:00Z","matched_seq":3}
 ]}
 '@
-Set-Content -Path (Join-Path $proj '.design-canvas\impact\ledger.json') -Value $ledger -Encoding UTF8
+Set-Content -Path (Join-Path $proj '.agent-io\impact\ledger.json') -Value $ledger -Encoding UTF8
 Set-Content -Path (Join-Path $proj 'events.jsonl') -Value '{"probe":"p1","time":"2026-08-17T00:00:00Z","source":"s","fields":{"x":1}}' -Encoding UTF8
 
 Set-Location $here

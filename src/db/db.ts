@@ -2,12 +2,12 @@
  * cache.db 打开与初始化
  *
  * 选型：node:sqlite（Node 22 内置 DatabaseSync）
- *   - 零新增依赖：design-canvas 作为 npm 分发的 MCP server，
+ *   - 零新增依赖：agent-io 作为 npm 分发的 MCP server，
  *     不引入 better-sqlite3 这类原生编译模块（Windows 用户无构建工具即安装失败）
  *   - 实测（scripts 探针，2026-07-29）：SQLite 3.50.2，FTS5 + trigram + 触发器 + WAL 全可用
  *   - 代价：启动时 stderr 有一条 ExperimentalWarning（不影响 stdio JSON-RPC，可接受）
  *
- * 存储位置：<dataHome>/.design-canvas/cache.db（.design-canvas/ 已在 .gitignore）
+ * 存储位置：<dataHome>/.agent-io/cache.db（.agent-io/ 已在 .gitignore）
  */
 
 import { DATA_DIR_NAME } from '../data_dir.js';
@@ -69,7 +69,7 @@ export function endBatch(db: Database, rollback = false): void {
 
 export const SCHEMA_VERSION = 8;
 
-/** 默认 db 文件路径：<dataHome>/.design-canvas/cache.db */
+/** 默认 db 文件路径：<dataHome>/.agent-io/cache.db */
 export function getDbFile(): string {
   return path.join(getStorageRoot(), 'cache.db');
 }
@@ -133,7 +133,7 @@ export function openDb(dbFile: string = getDbFile()): Database {
 const projectCachePool = new Map<string, Database>();
 
 /**
- * 打开（并复用）目标项目的符号缓存：<projectRoot>/.design-canvas/cache.db
+ * 打开（并复用）目标项目的符号缓存：<projectRoot>/.agent-io/cache.db
  * 缓存跟着被分析的项目走（内容是该项目源文件的派生物，相对路径键才不撞车），
  * 与 getDbFile() 的数据主目录缓存是两个独立用途。
  * 失败（只读目录 / 无写权限）会抛错——调用方应 catch 后按无缓存退化。

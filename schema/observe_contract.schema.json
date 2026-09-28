@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://design-canvas.dev/schema/observe_contract.schema.json",
+  "$id": "https://agent-io.dev/schema/observe_contract.schema.json",
   "title": "Observe 多语言数据契约",
   "description": "语言无关的动态插桩数据契约：事件(event) → 观测画像(actual) ⇄ 设计契约(contract/design) → 偏差报告(deviation)。任何语言接入 Observe 只需按其语言惯例实现这四类结构的读写，判定语义由统一规则谓词 & LLM 判定层承载，不随语言而变。",
   "type": "object",

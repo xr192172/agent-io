@@ -1,6 +1,6 @@
 /* 模拟 L4：单步文件视图，两种连线规则对比（当前唯一产出者 vs 放宽任意类型匹配） */
 import { readFileSync } from 'node:fs';
-const mm = JSON.parse(readFileSync('.design-canvas/mindmap/design-canvas.teach.json', 'utf-8'));
+const mm = JSON.parse(readFileSync('.agent-io/mindmap/agent-io.teach.json', 'utf-8'));
 const GENERIC_T = new Set(['string','number','boolean','bool','int','int32','int64','uint','uint32','uint64','float','float32','float64','this','void','any','unknown','null','undefined','nil','object','Object','true','false','never','bigint','symbol','byte','rune','error','func','function','promise','Promise','array','Array','map','Map','record','Record','Date','Set','WeakMap','WeakSet','RegExp','Error','String','Number','Boolean','Function','BigInt','Symbol','Buffer','URL','URLSearchParams','JSON','Math','console','process','node','PromiseLike','Iterator','Iterable','Generator','AsyncIterable','ArrayLike']);
 const cleanPinStr = (s) => (s || '').replace(/^[:*\s]+/, '').replace(/[\s\]\)]+$/, '').trim();
 function pinIdentity(p) {

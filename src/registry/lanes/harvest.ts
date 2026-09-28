@@ -75,7 +75,7 @@ export const HARVEST_TOOLS: ToolDef[] = [
       'include_callers=true 时连调用方一起端走（拎服务层带生态）。前置：项目需先跑 import_project 建符号缓存。' +
       '规划见 docs/plans/2026-08-19-cross-project-brick-harvest.md。',
     inputSchema: {
-      project_dir: z.string().describe('目标项目根目录（其下 .design-canvas/cache.db 是符号缓存，为空则自动冷启建索引）'),
+      project_dir: z.string().describe('目标项目根目录（其下 .agent-io/cache.db 是符号缓存，为空则自动冷启建索引）'),
       files: z.array(z.string()).describe('种子文件（相对项目根或绝对路径，可多个）'),
       feature: z.string().optional().describe('可选 feature 名：提供时为闭包文件附加 DSL 文件节点 id'),
       include_callers: z
@@ -131,7 +131,7 @@ export const HARVEST_TOOLS: ToolDef[] = [
       '浅克隆（或本地目录原地）→ import_project 索引 → extract_contracts 契约 → ' +
       '选积木（显式 seeds 或 auto：functional+fan_in≥2+confidence≥0.7 按 fan_in 降序）→ ' +
       'harvest_closure 闭包 → 入盒三件套（files/ 快照 + contracts.json + manifest.json 聚合清单），' +
-      '默认盒 <dataHome>/.design-canvas/bricks/。原项目只留 provenance 冷记录（URL+commit），不保留工作副本；' +
+      '默认盒 <dataHome>/.agent-io/bricks/。原项目只留 provenance 冷记录（URL+commit），不保留工作副本；' +
       '上游更新凭记录重抽即覆盖。单积木闭包>50 文件自动跳过（防整项目端走）。',
     inputSchema: {
       source: z.string().describe('git URL（浅克隆）或本地目录绝对路径（原地分析不写源项目）'),
@@ -152,7 +152,7 @@ export const HARVEST_TOOLS: ToolDef[] = [
         .optional()
         .describe('auto 模式参数（bricks 未提供时生效）'),
       max_closure: z.number().optional().describe('单积木闭包文件数上限（默认 50）'),
-      box_dir: z.string().optional().describe('积木盒根目录（默认 <dataHome>/.design-canvas/bricks）'),
+      box_dir: z.string().optional().describe('积木盒根目录（默认 <dataHome>/.agent-io/bricks）'),
       write: z.boolean().optional().describe('false=dry-run 只预演不入盒，默认 true'),
     },
     handler: wrapData(async (a) => {
@@ -174,7 +174,7 @@ export const HARVEST_TOOLS: ToolDef[] = [
     inputSchema: {
       brick_dir: z.string().optional().describe('积木目录（含 contracts.json；与 brick_name 二选一）'),
       brick_name: z.string().optional().describe('积木名（搭配 box_dir：<box_dir>/<brick_name>）'),
-      box_dir: z.string().optional().describe('积木盒根目录（默认 <cwd>/.design-canvas/bricks）'),
+      box_dir: z.string().optional().describe('积木盒根目录（默认 <cwd>/.agent-io/bricks）'),
       events_files: z.array(z.string()).optional().describe('显式事件文件列表（缺省自动发现）'),
       verify_dir: z.string().optional().describe('验证项目根目录（自动发现其 .agent/observe/events-*.jsonl）'),
       gap_notes: z
@@ -195,7 +195,7 @@ export const HARVEST_TOOLS: ToolDef[] = [
     name: 'search_bricks',
     title: 'Search and browse the brick shelf (cross-project reuse catalog)',
     description:
-      '积木货架（Brick Harvest Phase 4：跨项目统一检索层）——浏览/检索积木盒 .design-canvas/bricks/ 的全部积木，' +
+      '积木货架（Brick Harvest Phase 4：跨项目统一检索层）——浏览/检索积木盒 .agent-io/bricks/ 的全部积木，' +
       '"拎之前先看它要什么、给什么"。三种模式：①浏览（无参数：全部积木概况——语言/来源/规模/exposes/验证状态）；' +
       '②检索（query 关键词打分：积木名 > 形状名 > 字段名 > 人话介绍，matched 明细可追溯）；' +
       '③详情（name 精确：完整契约——形状 fields、effects 全清单、不变量断言、闭包、observe 验证档案）。' +
@@ -209,7 +209,7 @@ export const HARVEST_TOOLS: ToolDef[] = [
       has_invariants: z.boolean().optional().describe('只看有数学不变量的（acceptance.invariants）'),
       zero_third_party: z.boolean().optional().describe('只看零三方依赖的（拎走即跑）'),
       name: z.string().optional().describe('精确积木名 → 详情模式（完整契约输出）'),
-      box_dir: z.string().optional().describe('积木盒根目录（默认 <cwd>/.design-canvas/bricks）'),
+      box_dir: z.string().optional().describe('积木盒根目录（默认 <cwd>/.agent-io/bricks）'),
     },
     handler: wrapData(async (a) => {
       const r = await searchBricks(a as unknown as SearchBricksInput);
@@ -240,7 +240,7 @@ export const HARVEST_TOOLS: ToolDef[] = [
         .optional()
         .describe('新项目 Go module 名（闭包含 .go 文件时必填，如 example.com/assembly-001）'),
       go_version: z.string().optional().describe('go.mod 的 go 版本声明（默认 1.25.5）'),
-      box_dir: z.string().optional().describe('积木盒根目录（默认 <cwd>/.design-canvas/bricks）'),
+      box_dir: z.string().optional().describe('积木盒根目录（默认 <cwd>/.agent-io/bricks）'),
       write: z.boolean().optional().describe('false 只预演：输出搬运计划与 import 重写预览，不落盘（默认 true）'),
     },
     handler: wrapData(async (a) => {
@@ -262,7 +262,7 @@ export const HARVEST_TOOLS: ToolDef[] = [
       '由人后续补——剔除生效前请人工补验。',
     inputSchema: {
       brick_name: z.string().describe('原积木名（盒内 <box_dir>/<brick_name>；须为 Go 积木且带 slim_candidates live 档案）'),
-      box_dir: z.string().optional().describe('积木盒根目录（默认 <dataHome>/.design-canvas/bricks）'),
+      box_dir: z.string().optional().describe('积木盒根目录（默认 <dataHome>/.agent-io/bricks）'),
       name: z.string().optional().describe('衍生积木名（默认 <brick_name>-slim）'),
       verify_build: z
         .boolean()

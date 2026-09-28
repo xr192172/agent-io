@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /**
- * design-canvas MCP 分发安装器（路线图序号 12：多平台插件分发）
+ * agent-io MCP 分发安装器（路线图序号 12：多平台插件分发）
  *
- * 自动为各主流 MCP client 写入 design-canvas 的 MCP server 配置，
+ * 自动为各主流 MCP client 写入 agent-io 的 MCP server 配置，
  * 免去手工编辑 JSON/TOML 的繁琐与格式错误。
  *
- * 用法（在 design-canvas 根目录）：
+ * 用法（在 agent-io 根目录）：
  *   node scripts/install_mcp.mjs                 # 写入全部已安装 client 的配置
  *   node scripts/install_mcp.mjs --list          # 列出各平台配置路径与写入状态（不写）
  *   node scripts/install_mcp.mjs --dry-run       # 打印将写入的内容（不写）
@@ -24,7 +24,7 @@
  *   cline    ~/.cline/mcp_settings.json         (Cline 扩展)
  *   trae     <root>/.trae/mcp.json              (TRAE 项目级 MCP，需在设置中开启「启用项目级 MCP」)
  *
- * 安全：所有写入前备份原文件为 <file>.design-canvas.bak；合并时保留已有其他 server。
+ * 安全：所有写入前备份原文件为 <file>.agent-io.bak；合并时保留已有其他 server。
  */
 
 import fs from 'node:fs';
@@ -102,7 +102,7 @@ const PLATFORMS = [
     configPath: path.join(HOME, '.claude.json'),
     kind: 'json',
     keyPath: 'mcpServers',
-    serverKey: 'design-canvas',
+    serverKey: 'agent-io',
   },
   {
     name: 'cursor',
@@ -110,7 +110,7 @@ const PLATFORMS = [
     configPath: path.join(HOME, '.cursor', 'mcp.json'),
     kind: 'json',
     keyPath: 'mcpServers',
-    serverKey: 'design-canvas',
+    serverKey: 'agent-io',
   },
   {
     name: 'vscode',
@@ -118,7 +118,7 @@ const PLATFORMS = [
     configPath: path.join(ROOT, '.vscode', 'mcp.json'),
     kind: 'json',
     keyPath: 'servers',
-    serverKey: 'design-canvas',
+    serverKey: 'agent-io',
   },
   {
     name: 'codex',
@@ -126,7 +126,7 @@ const PLATFORMS = [
     configPath: path.join(HOME, '.codex', 'config.toml'),
     kind: 'toml',
     keyPath: '',
-    serverKey: 'design-canvas',
+    serverKey: 'agent-io',
   },
   {
     name: 'copilot',
@@ -134,7 +134,7 @@ const PLATFORMS = [
     configPath: path.join(HOME, '.github', 'copilot-mcp.json'),
     kind: 'json',
     keyPath: 'mcpServers',
-    serverKey: 'design-canvas',
+    serverKey: 'agent-io',
   },
   {
     name: 'gemini',
@@ -142,7 +142,7 @@ const PLATFORMS = [
     configPath: path.join(HOME, '.gemini', 'settings.json'),
     kind: 'json',
     keyPath: 'mcpServers',
-    serverKey: 'design-canvas',
+    serverKey: 'agent-io',
   },
   {
     name: 'windsurf',
@@ -150,7 +150,7 @@ const PLATFORMS = [
     configPath: path.join(HOME, '.codeium', 'windsurf', 'mcp_config.json'),
     kind: 'json',
     keyPath: 'mcpServers',
-    serverKey: 'design-canvas',
+    serverKey: 'agent-io',
   },
   {
     name: 'cline',
@@ -158,7 +158,7 @@ const PLATFORMS = [
     configPath: path.join(HOME, '.cline', 'mcp_settings.json'),
     kind: 'json',
     keyPath: 'mcpServers',
-    serverKey: 'design-canvas',
+    serverKey: 'agent-io',
   },
   {
     name: 'trae',
@@ -166,7 +166,7 @@ const PLATFORMS = [
     configPath: path.join(ROOT, '.trae', 'mcp.json'),
     kind: 'json',
     keyPath: 'mcpServers',
-    serverKey: 'design-canvas',
+    serverKey: 'agent-io',
     // TRAE 要求 command 不含空格（Windows node 位于 C:\Program Files 下有空格），故用 PATH 内 node
     command: 'node',
     // 用 ${workspaceFolder} 相对项目根：git worktree / 目录迁移时仍指向当前项目 dist
@@ -193,7 +193,7 @@ function writeConfig(p, outText) {
   const dir = path.dirname(p.configPath);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   if (fs.existsSync(p.configPath)) {
-    fs.copyFileSync(p.configPath, `${p.configPath}.design-canvas.bak`);
+    fs.copyFileSync(p.configPath, `${p.configPath}.agent-io.bak`);
   }
   fs.writeFileSync(p.configPath, outText, 'utf-8');
 }
@@ -252,7 +252,7 @@ if (TARGET && targets.length === 0) {
   process.exit(1);
 }
 
-console.log(`design-canvas MCP 分发（server: ${SERVER}）\n`);
+console.log(`agent-io MCP 分发（server: ${SERVER}）\n`);
 
 let written = 0;
 let configured = 0;
@@ -292,6 +292,6 @@ if (LIST || CHECK) {
 } else {
   console.log(`完成：写入 ${written} 个，跳过 ${configured} 个已配置`);
   if (written > 0) {
-    console.log('提示：原配置文件已备份为 <file>.design-canvas.bak；重启对应 client 生效。');
+    console.log('提示：原配置文件已备份为 <file>.agent-io.bak；重启对应 client 生效。');
   }
 }

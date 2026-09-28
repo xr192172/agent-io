@@ -2,7 +2,7 @@
 //
 // 与 deep 级的区别：deep 捕获所有单标识符赋值（局部变量为主，量大噪音高）；
 // effect 只盯"积木契约"关心的外部作用点，Capture 带 kind/target/op 结构化字段，
-// 与 design-canvas 侧 extract_contracts 静态候选（origin='ast'）同构对账：
+// 与 agent-io 侧 extract_contracts 静态候选（origin='ast'）同构对账：
 //
 //	writes : 包级 var 赋值/自增        kind="write"  target=变量名（含 .字段/[下标] 归一）
 //	         + os.WriteFile/Remove     target=file:路径表达式（op=write/delete）
@@ -61,7 +61,7 @@ func collectPkgVars(f *ast.File) map[string]bool {
 // EffectHit 是一条语句里检测到的 effect 候选（插桩点）。
 type EffectHit struct {
 	Kind   string // write | hold | emit
-	Target string // 与 design-canvas 契约 target 同构
+	Target string // 与 agent-io 契约 target 同构
 	Op     string // write | append | acquire | release | emit | delete
 }
 
@@ -102,7 +102,7 @@ func effectInStmt(stmt ast.Stmt, pkgVars map[string]bool) (EffectHit, bool) {
 }
 
 // effectTargetOfLHS 判断赋值目标是否包级变量（或其字段/下标），返回归一 target。
-// 归一规则与 design-canvas extract_contracts.scanVarWrites 一致：
+// 归一规则与 agent-io extract_contracts.scanVarWrites 一致：
 // name / name.field.sub / name[]（下标归一为 []）。
 func effectTargetOfLHS(e ast.Expr, pkgVars map[string]bool) (string, bool) {
 	switch t := e.(type) {

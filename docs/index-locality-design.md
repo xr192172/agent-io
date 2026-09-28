@@ -11,7 +11,7 @@
 
 ## 1. 结论先行：**成立，收益 85–94%**（实测，非估算）
 
-测量方法（`scripts/probe-dc-locality.mjs`）：把 `design-canvas/src`（296 文件）复制到临时目录 →
+测量方法（`scripts/probe-dc-locality.mjs`）：把 `agent-io/src`（296 文件）复制到临时目录 →
 建好索引 → **只读地**用索引图算"以某文件为种子、沿 import+call 边扩展 N 跳"的闭包规模，
 再按实测冷启成本折算（**41.1ms/文件**）。
 

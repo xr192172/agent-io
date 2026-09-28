@@ -1,6 +1,6 @@
 // instrument — 插桩器统一 CLI（observe-conformance 契约入口）。
 //
-// 契约见 design-canvas/observe-conformance/SPEC.md §2：
+// 契约见 agent-io/observe-conformance/SPEC.md §2：
 //
 //	instrument <file|dir> [--probes '<json数组>'] [--deep] [--dry-run] [--restore]
 //
@@ -96,7 +96,7 @@ func main() {
 		fail(err)
 	}
 
-	// --restore：从 <target>/.design-canvas/observe-backup 恢复。
+	// --restore：从 <target>/.agent-io/observe-backup 恢复。
 	if restore {
 		root := abs
 		if fi, err := os.Stat(abs); err == nil && !fi.IsDir() {

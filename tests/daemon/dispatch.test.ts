@@ -23,7 +23,7 @@ const roots: string[] = [];
 afterAll(async () => {
   setAlertListener(null);
   closeAllActiveWatches();
-  delete process.env.DC_DAEMON_PORT;
+  delete process.env.AGENT_IO_DAEMON_PORT;
   invalidateDaemonCache();
   for (const c of cleanups) await c();
   for (const r of roots) {
@@ -35,18 +35,18 @@ afterAll(async () => {
   }
 });
 
-/** 起测试 daemon（随机端口 + 写 DC_DAEMON_PORT），返回 baseUrl */
+/** 起测试 daemon（随机端口 + 写 AGENT_IO_DAEMON_PORT），返回 baseUrl */
 async function startDaemon(): Promise<string> {
   const srv = createDaemonServer(
     {
-      health: () => ({ ok: true, name: 'design-canvas-daemon', pid: process.pid, watches: [] }),
+      health: () => ({ ok: true, name: 'agent-io-daemon', pid: process.pid, watches: [] }),
       watch: (input) => watchProjectTool(input as Parameters<typeof watchProjectTool>[0]) as unknown as Promise<Record<string, unknown>>,
       alertsSince: (cursor) => alertsSince(cursor),
     },
     { port: 0 },
   );
   const { port } = await srv.start();
-  process.env.DC_DAEMON_PORT = String(port);
+  process.env.AGENT_IO_DAEMON_PORT = String(port);
   invalidateDaemonCache();
   cleanups.push(async () => {
     await srv.stop();
@@ -63,7 +63,7 @@ function mkproj(name: string): string {
 
 describe('dispatch · daemon 不在 → 降级本地', () => {
   beforeEach(() => {
-    delete process.env.DC_DAEMON_PORT;
+    delete process.env.AGENT_IO_DAEMON_PORT;
     invalidateDaemonCache();
     clearAlertInbox();
   });

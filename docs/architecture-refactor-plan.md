@@ -775,17 +775,95 @@ P2 搬文件会同时打红两扇门。这是**有意的**（逼你在搬迁时�
 
 1. ~~**建残留门**~~ ✅（§10.5，`1817617`）
 2. ~~**先建单点**：数据目录名单点化（值不变）~~ ✅（§10.7，本轮）
-3. **给 `rename_symbols` 开"显式字面量对"入口**（§10.1）—— 复用它的 `decideLiteral` 判断。
-   ⚠️ 这会**改到 inputSchema** ⇒ G1 会红，属**有意的契约变更**，要连带更新 G1 基线并在本台账登记。
-4. **跑 `report_literals` 出全量清单**，逐类决策：`apply`（机械替换）/ `contract`（**人审**：`DC_`/`dc-`/`.design-canvas.json`/环境变量）/ `history`（保留）。
-5. **改产物与契约**：`package.json`（name/bin/repository/bugs/homepage）、README/AGENTS、MCP server key、git remote、`.design-canvas.json`。
-6. **不做兼容层**（§10.4）：`DATA_DIR_NAME` 直接改新值；环境变量直接改名；`scripts/*.mjs` 的 4 处一起改。
-   ★ 本地已有数据（本仓自己的 `.design-canvas/`、以及用户机器上别的项目）**由使用者自己迁移或丢弃** —— 代码不留回退路径。
-7. **重桥**（用户已授权；`dsh-brain` 4 处耦合）。
-8. 验证：tsc + G1（契约，需**有意更新**） + 67=67 + 全量回归 + 残留门 frozen 收紧到 **0**。
+3. **给 `rename_symbols` 开"显式字面量对"入口**（§10.1）—— ⏳ **本轮未做，且我判断它不该挡在改名前面**。
+   ⚠️ 这会**改到 inputSchema** ⇒ G1 会红，属**有意的契约变更**。
+   ★ 理由：那是给**用户**的能力补齐（让工具能改用户自己项目里的品牌串），而本次改名是我们对**自己仓库**的开发者操作。
+   脚本里用**显式排除表**（`allowFiles` / 生成物 / 门自身）复刻了 `decideLiteral` 那套判断（contract=人审 / history=保留 / 生成物跳过）。
+   ⇒ 该能力补齐仍留在 §9 清单，但**与本次改名解耦**。
+4. ~~**跑清单**，逐类决策~~ ✅（**10.8**：自写 `brand_inventory.mjs` 出全量清单，逐类显式决策）
+5. ~~**改产物与契约**~~ ✅（**10.8**：package.json / README / AGENTS / MCP server key / `scripts/*.mjs` / 两个 go.mod / `.gitignore`）
+6. ~~**不做兼容层**~~ ✅（`DATA_DIR_NAME` 直接改新值；环境变量直接改名；**无任何回退路径**）
+7. **重桥**（用户已授权）—— ⏳ **下一笔**（属 ops 层，含 `dsh-brain` 配置 + 其数据目录迁移）
+8. ~~验证~~ ✅（**10.8**：tsc / 8 门 73 项 / 全量回归 218 文件 2264 项 / Go build+test / 残留门 frozen 归 **0**）
 
 > ⚠️ **`mcp__design-canvas__*` 的前缀**来自 client 配置的 **server key**，不是工具名 ⇒ 改它属于"配置层改名"，
-> **与 P4-F1（改工具名）是两件事**；本节的改名**不动任何工具名**，工具集快照 G1 应保持逐字不变。
+> **与 P4-F1（改工具名）是两件事**；本节的改名**不动任何工具名**，工具集快照 G1 逐字保持。
+
+---
+
+### 10.8 ★★ 改名执行记录（2026-09-28）—— 代码层已完成，ops 层剩两步
+
+**① 做法：有序映射 + 边界规则 + 生成物重算**（`brand_inventory.mjs` 先量 → `rename_brand.mjs` 执行）
+
+| 旧形态 | 新名 | 命中 | 备注 |
+|---|---|---|---|
+| `design-canvas` | `agent-io` | 503 | 主体；`.design-canvas`→`.agent-io`、`design-canvas.json`→`agent-io.json` 由它**覆盖**（不另设 pattern） |
+| `DESIGN_CANVAS` | `AGENT_IO` | 42 | 环境变量长形态（`DESIGN_CANVAS_HOME`→`AGENT_IO_HOME`） |
+| `design_canvas` | `agent_io` | 5 | snake |
+| `DesignCanvas` | `AgentIO` | 3 | Pascal |
+| `DC_`（**独立前缀**） | `AGENT_IO_` | 64 | ★ **统一成一个**环境变量前缀（原先是 `DC_` 与 `DESIGN_CANVAS_` 两套） |
+
+⇒ 合计 **176 文件 / 617 处**（553 品牌 + 64 环境变量），全部归 **0**。
+
+- `DC_` 用**负向后视** `(?<![A-Za-z0-9_])DC_`：实测 11 个 `DC_*` 全是环境变量，但裸替会误伤 `SOME_DC_X`
+  ⇒ 登记表新增 `regexPatterns` 字段（**需要边界的形态走正则**，不硬塞进 `patterns`）。
+  ★ 出生证含**反向对照**：注入 `SOME_DC_X` ⇒ 门**应绿**（实测绿）——否则就是假阳。
+- **生成物不手改**：`AGENTS.md` / `src/renderer/i18n_bundle.gen.ts` / `schema/endpoints.schema.json` /
+  `package-lock.json` 四处**排除在替换之外**，改**生成器源码**后重算（`npm run build` / `npm run gen:schema` /
+  `npm install --package-lock-only`）。★ 重算后残留 0 ⇒ 证明生成链完整。
+- G1/G8 两份基线**恰好也被替换带到新名** ⇒ 我**另行用官方重算命令**（`UPDATE_TOOL_SNAPSHOT=1` /
+  `UPDATE_TOOL_BEHAVIOR=1`）重算，**md5 与替换结果逐字相同** ⇒ 证明"文本替换 == 正规重算"。
+
+**② ★★★ 一个改名时才暴露的「门盲区」（比改名本身更值钱的产出）**
+
+本门原先只扫一张**扩展名白名单**（`TEXT_EXTS`）。实测有 **3 个文件既没被改名、门也照样绿**：
+
+| 文件 | 为什么逃掉 |
+|---|---|
+| `.gitignore` | **没有扩展名** |
+| `go-observe/go.mod` | `.mod` 不在白名单里 |
+| `go-slim/go.mod` | 同上（**而且它的 `module` 行就是品牌**：`module design-canvas/go-slim`） |
+
+⇒ 已改为**内容嗅探**（前 8KB 无 NUL ⇒ 当文本）。教训：**"手抄的清单"代替"可判定的规则"
+—— 这就是本项目的病根，它连门自己都没放过。** 出生证 4/4（含反向对照）。
+
+**③ ★★★ 对 §10.4「无下游」前提的实质修正**（这是本轮最重要的判断修正）
+
+我在 §10.4 写"**本项目没有外部用户**，唯一的下游是 dsh-brain" —— **不准确**。实测 `D:\project_develop` 下：
+
+| 下游 | 耦合方式 | 改名后是否需要动作 |
+|---|---|---|
+| `dsh-brain` | MCP 桥接（client 配置里的 **server key**）+ 它自己工程根下的 `.design-canvas/` 数据 + `scripts/probe-dc-*.mjs` | ★ **必须重桥**；其旧数据留在 `.design-canvas/`（迁移或丢弃，由使用者定） |
+| `dsl-workbench` | HTTP 拉本仓 `/api/*`；`gen:schema` 的**镜像目标**；README/文案引用品牌 | 路径与端口不变 ⇒ 仅文案/文档层面的品牌同步 |
+| `elv` | ★ `incremental_fill.js` **按路径 import 本仓 dist**（`../design-canvas/dist/src/translate/*.js`） | **目录名不变 ⇒ 不断**；无品牌串逻辑 |
+| `ai-config/skills/design-canvas-mind` | 一个**技能包**（目录名 + SKILL.md 引用品牌） | 要改名需重命名该 skill 目录 |
+| `_*`/`ai-base` 等 | 实验副本 / arena 快照 | 不受影响 |
+
+⇒ **但结论"不做兼容层"仍然成立**（§10.4 的判断对，理由要换）：没有下游**依赖旧名继续可用** ——
+四个使用方都是**自家工程**，可以一次性同步过去。**兼容层是为"无法同时升级的外部方"准备的，这里没有那种方。**
+★ 教训：我把"**不需要兼容层**"直接写成了"**没有下游**"两步合一，而这两步的取证强度完全不同。
+
+**④ 有意不改的三处（写进登记表 `note`，不是遗漏）**
+- **`dc-` 小写短形态**：它已不是品牌契约，而是三种东西 —— `os.tmpdir()` 前缀（`dc-beh-*` 等，~30 处）、
+  renderer 的 CSS 类与 localStorage 键（`dc-tab`/`dc-lang`/`dc-view`）、以及**别的仓库**里的 `probe-dc-*.mjs` 文件名。
+  ⇒ 改它零功能收益，且会把文档指向**不存在的文件**。
+- **`docs/` 里引用 dsh-brain 侧 `probe-dc-*.mjs` 的行文**（同上理由）。
+- **本地目录名 `D:\project_develop\design-canvas` 与 GitHub 仓库 `xr192172/design-canvas`** ⇒ **ops 层**，
+  不在代码改名范围（改本目录会立刻断掉会话路径与 DSH 桥接；改远端仓库名需要 GitHub 凭据 —— `gh` token 当前**已失效**）。
+  ⚠️ 因此 `package.json` 的 `repository`/`bugs`/`homepage` **已指向 `xr192172/agent-io`**，该 URL **在远端仓库改名之前是 404**
+  —— 这是**有意的中间态**，登记在此。
+
+**⑤ ★ 一个副作用值得记：改名会 un-hide 被旧 ignore 规则遮住的东西**
+`.gitignore` 里 `.design-canvas/` 与 `design-canvas.json` 是**无路径前缀**的规则（匹配任意层级）。
+改名后规则变成 `.agent-io/` / `agent-io.json` ⇒ 原先被遮住的两处**立刻出现在 `git status`**：
+- 根 `design-canvas.json` = **本仓自己的活态 DSL**（`getLiveDslPath()`）⇒ 已 `mv` 成 `agent-io.json`（数据迁移）；
+- `src/.design-canvas/cache.db`（163KB，今早某次把 `src/` 当目标项目的运行留下的**游离缓存**）⇒ 已删。
+⇒ 提醒：**任何"重命名被 ignore 的产物名"都会改变工作树的可见面**，改名收尾时要专门看一眼 `git status` 的 untracked。
+
+**⑥ 验收**
+`tsc --noEmit` 干净 ｜ 8 个门文件 **73 项全绿** ｜ 全量回归 **217 文件通过 / 1 跳过；2259 项通过 / 5 跳过** ｜
+品牌残留门 `frozen` 归 **0**（本门自本日起**零容忍**）｜ Go：`go build ./...` ×2 + `go test ./...` 全过 ｜
+新门出生证 **4/4**（含反向对照）。
 
 ---
 

@@ -10,7 +10,7 @@ describe('get_dsl 定向读端：goals / edge_intents（overlay 读侧）', () =
 
   beforeEach(() => {
     home = mkdtempSync(path.join(tmpdir(), 'qfi_'));
-    process.env.DESIGN_CANVAS_HOME = home;
+    process.env.AGENT_IO_HOME = home;
     // feature 'f'：带 edge.intent + meta.goals（overlay 落 base 后的形态）
     saveDSL({
       feature: 'f',
@@ -25,7 +25,7 @@ describe('get_dsl 定向读端：goals / edge_intents（overlay 读侧）', () =
     } as never);
   });
   afterEach(() => {
-    delete process.env.DESIGN_CANVAS_HOME;
+    delete process.env.AGENT_IO_HOME;
     rmSync(home, { recursive: true, force: true });
   });
 

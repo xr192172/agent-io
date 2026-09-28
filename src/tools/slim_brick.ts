@@ -44,7 +44,7 @@ import type { BrickContract, BrickManifest } from '../dsl/contract.js';
 export interface SlimBrickInput {
   /** 原积木名（盒内 <box_dir>/<brick_name>；须为 Go 积木且带 slim_candidates live 档案） */
   brick_name: string;
-  /** 积木盒根目录（默认 <dataHome>/.design-canvas/bricks） */
+  /** 积木盒根目录（默认 <dataHome>/.agent-io/bricks） */
   box_dir?: string;
   /** 衍生积木名（默认 <brick_name>-slim） */
   name?: string;

@@ -11,7 +11,7 @@
  *
  * 配置（复用 llm_focus，OpenAI 兼容）：
  *   环境变量 LLM_API_KEY / LLM_MODEL / LLM_BASE_URL
- *   或 <home>/.design-canvas/config.json 的 llm 段 / agent.mmd 段（AGNES）。
+ *   或 <home>/.agent-io/config.json 的 llm 段 / agent.mmd 段（AGNES）。
  * 无配置 → 规则降级（诚实分类：信息性→done，动作性→reject，不伪造代码）。
  * LLM_DECIDER_MOCK=1 → 确定性假决策（无 key 环境的端到端接线验证专用，明确标注）。
  *

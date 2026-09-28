@@ -115,7 +115,7 @@ const PROVIDER_OF = { architect: 'council-architect', dev: 'council-dev', review
 
 ---
 
-## 3. 为什么是 design-canvas 来做（而不是我自己写脚本）
+## 3. 为什么是 agent-io 来做（而不是我自己写脚本）
 
 1. **本项目已经有这个模式的正确先例**：`scripts/gen_agents.mjs` 的
    `TRIGGER_ROWS`（单一事实源）→ 生成 `AGENTS.md`，并在生成物里印

@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
- * npm run demo —— 黄金演示路径：克隆后三步看到 design-canvas 的价值
+ * npm run demo —— 黄金演示路径：克隆后三步看到 agent-io 的价值
  *
  * 流程：build（缺则补）→ 渲染 examples/*.json 为「feature DSL + HTML 产物并注册」
  *       → 起 serve → 自动打开 /workbench#<首个示例>。
  * 全程复用现有工具链（render_design 持久化+渲染+注册、serve 静态服务），不新增业务逻辑。
  *
- * 用法（design-canvas 根）：
+ * 用法（agent-io 根）：
  *   npm run demo                 # 完整：准备示例 + 起服务 + 开浏览器
  *   npm run demo -- 8081         # 指定端口
  *   npm run demo -- --prepare    # 只准备示例（构建+渲染+注册），不起服务（适合 CI/验收）
@@ -25,7 +25,7 @@ const ARGS = process.argv.slice(2);
 const PREPARE_ONLY = ARGS.includes('--prepare');
 const NO_OPEN = ARGS.includes('--no-open');
 const PORT_ARG = ARGS.find((a) => /^\d+$/.test(a));
-const PORT = PORT_ARG ? parseInt(PORT_ARG, 10) : parseInt(process.env.DC_PORT || '3000', 10);
+const PORT = PORT_ARG ? parseInt(PORT_ARG, 10) : parseInt(process.env.AGENT_IO_PORT || '3000', 10);
 const BASE_URL = `http://localhost:${PORT}`;
 const EXAMPLES_DIR = path.join(ROOT, 'examples');
 const SERVE_JS = path.join(ROOT, 'dist', 'src', 'tools', 'serve.js');
@@ -89,7 +89,7 @@ async function prepareExamples() {
       console.warn(`[demo] 跳过 ${f}（缺少 feature 字段）`);
       continue;
     }
-    const featureFile = path.join(ROOT, '.design-canvas', 'features', `${feature}.json`);
+    const featureFile = path.join(ROOT, '.agent-io', 'features', `${feature}.json`);
     if (fs.existsSync(featureFile)) {
       console.log(`[demo] 跳过 ${feature}（已存在同名 feature，不覆盖用户数据）`);
       continue;
@@ -106,7 +106,7 @@ async function prepareExamples() {
 }
 
 async function main() {
-  console.log(`\n[demo] design-canvas 黄金演示路径（端口 ${PORT}）\n`);
+  console.log(`\n[demo] agent-io 黄金演示路径（端口 ${PORT}）\n`);
   const rendered = await prepareExamples();
 
   if (PREPARE_ONLY) {
@@ -133,7 +133,7 @@ async function main() {
     if (!NO_OPEN) openBrowser(url);
     console.log(`
 ────────────────────────────────────────────────────────────
-  你现在看到的是 design-canvas 的可视化协议层（工作台）。
+  你现在看到的是 agent-io 的可视化协议层（工作台）。
   左边画布：示例 DSL 渲染的可交互图（点击节点看详情）。
   下一步（10 分钟闭环）：在 MCP client（Claude/Cursor）里
   让 LLM 调用 edit_dsl 改这张图 → 浏览器画布会自动刷新。

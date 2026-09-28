@@ -2,7 +2,7 @@
 /**
  * rebuild_feature.mjs —— 权威重建命令（修复 feature 导图污染 + 恢复功能聚类的正式入口）
  *
- * 背景：design-canvas 曾因 getDataHome() 裸依赖 process.cwd()，当 MCP server /
+ * 背景：agent-io 曾因 getDataHome() 裸依赖 process.cwd()，当 MCP server /
  * serve / daemon 由工作区根等任意 cwd 拉起时，会把其它项目的 go-* 文件并进
  * 本 feature 的 DSL 与导图（"146 条 flows 污染"）。storage.ts 已修复为自省包根
  * 锚定；本命令提供配套的一键全链重建入口。
@@ -21,7 +21,7 @@
  *
  * 用法：
  *   node scripts/rebuild_feature.mjs [feature] [--src=<路径>]
- *   默认 feature=design-canvas，src=design-canvas 包根/src
+ *   默认 feature=agent-io，src=agent-io 包根/src
  */
 import path from 'node:path';
 import { importProject } from '../dist/src/tools/import_project.js';
@@ -31,7 +31,7 @@ import { openDb } from '../dist/src/db/db.js';
 import { getPackageRoot, getStorageRoot } from '../dist/src/storage.js';
 
 const args = process.argv.slice(2);
-const feature = args.find((a) => !a.startsWith('--')) || 'design-canvas';
+const feature = args.find((a) => !a.startsWith('--')) || 'agent-io';
 const srcArg = args.find((a) => a.startsWith('--src='));
 const pkgRoot = getPackageRoot();
 const src = srcArg ? srcArg.slice('--src='.length) : path.join(pkgRoot, 'src');

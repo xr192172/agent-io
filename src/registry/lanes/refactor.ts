@@ -960,10 +960,10 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       '★ 泛化的"度"不靠猜：从最多抽象开始逐级放宽，每级用三关裁决 —— ① 出生回归（pattern 必须能复现这次修复）' +
       '② 反例不命中（修好的代码/阴性样本不得被命中）③ 幂等（对 after 再跑不得再命中）；' +
       '某级通过就采纳（泛化尽量强），全败则退化为**纯字面量**规则并在回执里如实标注降级。' +
-      '落盘位置：<project_dir>/.design-canvas/rules/<id>.md（单文件自包含：frontmatter + 说明 + pattern/replace + 夹具段）。' +
+      '落盘位置：<project_dir>/.agent-io/rules/<id>.md（单文件自包含：frontmatter + 说明 + pattern/replace + 夹具段）。' +
       'dry_run=true（默认）只返回候选规则 + 三关结论，不写盘；确认后再传 dry_run=false 落盘。',
     inputSchema: {
-      project_dir: z.string().describe('项目根目录（规则库落在 <project_dir>/.design-canvas/rules/）'),
+      project_dir: z.string().describe('项目根目录（规则库落在 <project_dir>/.agent-io/rules/）'),
       id: z.string().describe('规则 id（同时是文件名）：小写字母/数字/连字符，如 no-console-log'),
       before: z.string().describe('修复前的代码片段（含足够上下文，用于行级 diff 取变化窗口）'),
       after: z.string().describe('修复后的代码片段'),
@@ -1029,7 +1029,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
     name: 'apply_rules',
     title: 'Apply rule-library rules across a project (three-state)',
     description:
-      '把规则库（<project_dir>/.design-canvas/rules/*.md）里的规则批量应用到项目源码，**三态语义**：' +
+      '把规则库（<project_dir>/.agent-io/rules/*.md）里的规则批量应用到项目源码，**三态语义**：' +
       '① applied（命中且唯一 ⇒ 按 replace 改写）；② todo（命中但歧义 >1 处 ⇒ 在命中处插入 TODO(rule-id) 注释，不失败）；' +
       '③ clean（无命中 ⇒ 对该文件干净）。' +
       '纪律：**唯一才动**（歧义绝不挑一个改），**不改文件就不报成功**。' +
@@ -1099,7 +1099,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
     name: 'check_rules',
     title: 'Run rules as a lint with CI ratchet (baseline diff)',
     description:
-      '把规则库当 **lint** 跑，带 **CI 棘轮**：结果与 <project_dir>/.design-canvas/rules/baseline.json 的存量比对 —— ' +
+      '把规则库当 **lint** 跑，带 **CI 棘轮**：结果与 <project_dir>/.agent-io/rules/baseline.json 的存量比对 —— ' +
       '命中数**未增加** ⇒ 通过（哪怕这条规则当下就有一堆存量命中）；出现**新增命中** ⇒ 不通过。' +
       '这样"先启用一条当前就失败的规则"不会炸 CI，而新引入的问题会被立刻拦住。' +
       'update_baseline=true 把当前存量记为基线（修完一批后收紧棘轮）。' +

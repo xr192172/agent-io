@@ -108,7 +108,7 @@ interface FileObservation {
 /** 自动发现事件文件：.agent/observe/events-*.jsonl（含裸 events.jsonl） */
 function discoverEventFiles(root: string): string[] {
   const out: string[] = [];
-  for (const dirRel of ['.agent/observe', '.design-canvas/observe']) {
+  for (const dirRel of ['.agent/observe', '.agent-io/observe']) {
     const dir = path.join(root, ...dirRel.split('/'));
     if (!fs.existsSync(dir)) continue;
     for (const name of fs.readdirSync(dir)) {

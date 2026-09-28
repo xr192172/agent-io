@@ -24,7 +24,7 @@ describe('feature_map 顶层约定', () => {
   });
 });
 
-describe('feature_map 在 design-canvas src 上的真实结果', () => {
+describe('feature_map 在 agent-io src 上的真实结果', () => {
   it('能切出 renderer/tools/dsl 等功能，且 renderer 有前端文件', () => {
     const { features, scannedFiles } = buildFeatureMap({ project_dir: path.join(process.cwd()), source_root: SRC });
     expect(scannedFiles).toBeGreaterThan(100);

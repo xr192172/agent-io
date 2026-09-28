@@ -1,7 +1,7 @@
 /**
  * lifecycle —— 长驻 MCP server 的进程级稳定性兜底
  *
- * 背景（运行稳定性 / 障碍 #5 的运行时侧）：design-canvas 是长驻 stdio MCP server。
+ * 背景（运行稳定性 / 障碍 #5 的运行时侧）：agent-io 是长驻 stdio MCP server。
  * Node 自 v15 起，**未捕获的 Promise rejection 默认直接让进程崩溃**——任何一个后台异步
  * 回调（watch/rebuild/drift/impact 任务、或某次工具调用的 stray rejection）漏了 catch，
  * 整个 server 就退出、所有 MCP 客户端掉线；硬杀进程还会留下 fs.watch 句柄/ SQLite 锁

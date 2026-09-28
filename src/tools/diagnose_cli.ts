@@ -5,7 +5,7 @@
  *   node dist/src/tools/diagnose_cli.js --project <dir> --symptom "<报错/行为描述>"
  *        [--type error|test_failure|behavior] [--anchor <文件|符号>] [--depth 3] [--json]
  *
- * 前置：目标项目需已运行 import_project 建立符号缓存（.design-canvas/cache.db），
+ * 前置：目标项目需已运行 import_project 建立符号缓存（.agent-io/cache.db），
  * 否则只能给文件级线索。--json 输出结构化 DiagnoseOutput，便于脚本/前端消费。
  */
 

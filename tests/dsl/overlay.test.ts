@@ -12,10 +12,10 @@ describe('overlay 增量对账（design DSL 不再随真相刷新丢失设计意
 
   beforeEach(() => {
     home = mkdtempSync(path.join(tmpdir(), 'ov_'));
-    process.env.DESIGN_CANVAS_HOME = home;
+    process.env.AGENT_IO_HOME = home;
   });
   afterEach(() => {
-    delete process.env.DESIGN_CANVAS_HOME;
+    delete process.env.AGENT_IO_HOME;
     rmSync(home, { recursive: true, force: true });
   });
 

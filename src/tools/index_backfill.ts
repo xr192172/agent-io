@@ -13,7 +13,7 @@
  * 诚实纪律：**补齐前不许声称完整** —— 进度由 `backfillState()` 如实暴露
  * （running / done / total / finishedAt / lastError）。
  *
- * 纯本地：只读源码、写自己的 `<projectRoot>/.design-canvas/cache.db`。
+ * 纯本地：只读源码、写自己的 `<projectRoot>/.agent-io/cache.db`。
  */
 
 import path from 'node:path';

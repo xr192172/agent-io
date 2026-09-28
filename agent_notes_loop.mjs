@@ -15,7 +15,7 @@
  */
 import { spawn } from 'node:child_process';
 
-const FEATURE = 'design-canvas';
+const FEATURE = 'agent-io';
 const HTTP = 'http://127.0.0.1:3100';
 
 async function httpPost(path, payload) {

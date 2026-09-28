@@ -178,10 +178,10 @@ describe('renameFile - Python 相对导入（同构复用，不做语言专属�
   });
 });
 
-describe('renameFile - 冻结行保护（管理员自配 .design-canvas.json）', () => {
+describe('renameFile - 冻结行保护（管理员自配 .agent-io.json）', () => {
   it('受保护 importer 命中冻结行 → 整笔原子阻断，不落盘', async () => {
     const dir = mkProj({
-      '.design-canvas.json': JSON.stringify({
+      '.agent-io.json': JSON.stringify({
         rename: { protect: [{ globs: ['src/entry.*'], markers: ['判定', '结论'] }] },
       }),
       'src/foo.ts': FOO,
@@ -208,7 +208,7 @@ describe('renameFile - 冻结行保护（管理员自配 .design-canvas.json）'
 
   it('未命中的 rename 完全不受保护影响', async () => {
     const dir = mkProj({
-      '.design-canvas.json': JSON.stringify({
+      '.agent-io.json': JSON.stringify({
         rename: { protect: [{ globs: ['src/frozen/**'], markers: ['判定'] }] },
       }),
       'src/foo.ts': FOO,

@@ -3,7 +3,7 @@ package probe
 // Package probe — Ledger 装载与分析（方向 D：偏差回流 DSL evolution loop）。
 //
 // 数据源：TS 侧 impact_ledger_store.ts 落盘的
-// {projectRoot}/.design-canvas/impact/ledger.json（declare 预告-消费定损台账）。
+// {projectRoot}/.agent-io/impact/ledger.json（declare 预告-消费定损台账）。
 // 本模块只读不写：把台账折叠成「影响偏差率 + 累犯波及模式」，供 RunLoop
 // 触发演进并生成 design:impact-known-spread 提案（把实际耦合回流进设计 DSL）。
 //

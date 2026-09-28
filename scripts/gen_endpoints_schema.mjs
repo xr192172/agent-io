@@ -7,7 +7,7 @@
  *      （不用 zod-to-json-schema：其 v3 路径对 zod v4 的 `_def.type`（无 typeName）解析失败，
  *       产物为空；v4 内建转换直接读 zod 单源，职责一致、少一层依赖）
  *   3. 写出两份中介产物（同一份单源，保持同步）：
- *      - design-canvas/schema/endpoints.schema.json（发布用）
+ *      - agent-io/schema/endpoints.schema.json（发布用）
  *      - dsl-workbench/src/data/schema/endpoints.schema.json（前端 import 做 ajv 校验的镜像）
  *
  * 运行：npm run gen:schema（需先 npm run build 让 dist 就绪）
@@ -29,8 +29,8 @@ for (const [key, schema] of Object.entries(schemas)) {
 
 const artifact = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
-  title: 'design-canvas 响应契约（from src/api/contract.ts zod 单源）',
-  description: '自动生成，请勿手改。来源：design-canvas/src/api/contract.ts；由 scripts/gen_endpoints_schema.mjs 在 npm run gen:schema 时生成。',
+  title: 'agent-io 响应契约（from src/api/contract.ts zod 单源）',
+  description: '自动生成，请勿手改。来源：agent-io/src/api/contract.ts；由 scripts/gen_endpoints_schema.mjs 在 npm run gen:schema 时生成。',
   definitions,
 };
 

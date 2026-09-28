@@ -186,7 +186,7 @@ describe('detectDeadImports：目录扫描', () => {
   });
 
   it('classifyFileKind：快照/生成物优先级 + 默认 src', () => {
-    expect(classifyFileKind('.design-canvas/projects/x/a.ts')).toBe('snapshot');
+    expect(classifyFileKind('.agent-io/projects/x/a.ts')).toBe('snapshot');
     expect(classifyFileKind('src/gen/cli.gen.ts')).toBe('generated');
     expect(classifyFileKind('tests/__fixtures__/data.ts')).toBe('fixture');
     expect(classifyFileKind('tests/foo.test.ts')).toBe('test');
@@ -220,14 +220,14 @@ describe('detectDeadImports：目录扫描', () => {
     expect(res.dead.find((c) => c.source === 'a')).toBeUndefined();
   });
 
-  it('跳过 .design-canvas* 快照/备份目录（含 .design-canvas.bak-<ts> 变体）——不把历史快照副本重复计入', () => {
+  it('跳过 .agent-io* 快照/备份目录（含 .agent-io.bak-<ts> 变体）——不把历史快照副本重复计入', () => {
     const dir = tempRoot();
     // 真实源里的死 import
     fs.mkdirSync(path.join(dir, 'src'), { recursive: true });
     fs.writeFileSync(path.join(dir, 'src', 'a.ts'), "import _ from 'lodash';\nexport const a = 1;\n", 'utf-8');
     // 快照/备份目录：同样的死 import 副本，绝不该被计入
-    for (const snap of [DATA_DIR_NAME, '.design-canvas.bak-20260830-122215']) {
-      const snapSrcDir = path.join(dir, snap, 'projects', 'design-canvas', 'src');
+    for (const snap of [DATA_DIR_NAME, '.agent-io.bak-20260830-122215']) {
+      const snapSrcDir = path.join(dir, snap, 'projects', 'agent-io', 'src');
       fs.mkdirSync(snapSrcDir, { recursive: true });
       fs.writeFileSync(path.join(snapSrcDir, 'a.ts'), "import _ from 'lodash';\nexport const a = 1;\n", 'utf-8');
     }

@@ -2,7 +2,7 @@
 /**
  * dev —— 开发态自动重编（消除 STALE BUILD 的"忘了重跑 build"根因）
  *
- * 背景：design-canvas 的 MCP server / CLI 跑 dist/ 编译产物。改 src/** 忘了重跑
+ * 背景：agent-io 的 MCP server / CLI 跑 dist/ 编译产物。改 src/** 忘了重跑
  * `npm run build`，服务就一直跑旧代码（文档 5.6 障碍 #5）。stale_check 已能在跑测试/
  * CI 时事后检测，但开发循环里仍会"静默咬人"。本脚本把"重编"变成自动：
  *

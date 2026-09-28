@@ -53,7 +53,7 @@
 | **选择性插桩** | ✅ **已实现**：`InstrumentOptions.contractProbes?: string[]` —— **非 undefined 时只注入清单里的点**（`matchContract` 精确匹配 `<mod>.<fn>.<suffix>` + 模块级过滤）；**undefined 才全量**，注释原文就叫「**探索模式**」 | `src/observe/instrument.ts` |
 | **分级** | ✅ `ProbeLevel = core | event | deep`，`deep` 默认关（"事件量很大，按需放大"） | 同上 |
 | **台账** | ✅ `ProbeLedger`：`buildProbeLedger` / `saveProbeLedger` / `loadProbeLedger` / `clearProbeLedger` / `ledgerSummary`（`N 探针点 · M 文件 · perKind · perLevel`） | 同上 |
-| **一键还原** | ✅ `restoreInstrumented(root)` + 写盘前备份到 `.design-canvas/observe-backup/` | 同上 |
+| **一键还原** | ✅ `restoreInstrumented(root)` + 写盘前备份到 `.agent-io/observe-backup/` | 同上 |
 | **★ 推荐器（谁产出 contractProbes）** | ❌ **缺** —— 今天是**人工写清单**或**全量兜底** | **本文设计** |
 
 ⇒ 所以用户的方案不是"另起一套"，而是**给已有的 `contractProbes` 装一个自动产出的脑子**。
@@ -167,6 +167,6 @@
 ## 8. 待用户拍板
 
 1. 接受"**只做推荐器 + 复用已有插桩/台账/还原**"这个范围吗？（不重写 observe 线）
-2. `observe-points.json` 的落点：项目根 `.design-canvas/`？还是并入 `.design-canvas.json`？
+2. `observe-points.json` 的落点：项目根 `.agent-io/`？还是并入 `.agent-io.json`？
 3. LLM 三个入口默认**全关**、按需开，同意吗？
 4. 是否先做 §7 那个最小用例（对 dsh-brain 跑一遍推荐器 + 人工 holdout 对照）？

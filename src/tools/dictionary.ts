@@ -2,10 +2,10 @@
  * dictionary —— 伪维基双层术语词典（路线图序号 12）
  *
  * 通用术语词典（先有语言概念，现升级为"伪维基"）：
- *   - 全局词典（<dataHome>/.design-canvas/dict.global.json）：通用概念，跨语言/跨项目共享。
+ *   - 全局词典（<dataHome>/.agent-io/dict.global.json）：通用概念，跨语言/跨项目共享。
  *     不限于编程模式，任何通用术语（如「异步」「缓存」「依赖注入」乃至「维基百科」「算法」）
  *     都可收录。词条解释里命中其他已收录词 → 自动高亮并可点击跳转（词条互链）。
- *   - 项目词典（<projectRoot>/.design-canvas/dict.project.json）：项目专有词（函数名/库名/业务术语）。
+ *   - 项目词典（<projectRoot>/.agent-io/dict.project.json）：项目专有词（函数名/库名/业务术语）。
  *
  * 词条结构：{ term, kind: 'global'|'project', newbie, pm, senior, generated_at, aliases? }
  *   - newbie / pm / senior：三档角色解释（复用 explain_gen 的角色化文案口径）
@@ -120,12 +120,12 @@ export function validateProjectRoot(projectRoot: string, context = 'project_dir'
   return resolved;
 }
 
-/** 全局词典路径：<dataHome>/.design-canvas/dict.global.json */
+/** 全局词典路径：<dataHome>/.agent-io/dict.global.json */
 export function getGlobalDictFile(): string {
   return path.join(getDataHome(), DATA_DIR_NAME, 'dict.global.json');
 }
 
-/** 项目词典路径：<projectRoot>/.design-canvas/dict.project.json
+/** 项目词典路径：<projectRoot>/.agent-io/dict.project.json
  *  ⚠️  外部输入 projectRoot 时，必须先经 validateProjectRoot 校验，本函数假设已安全通过。 */
 export function getProjectDictFile(projectRoot: string): string {
   return path.join(path.resolve(projectRoot), DATA_DIR_NAME, 'dict.project.json');

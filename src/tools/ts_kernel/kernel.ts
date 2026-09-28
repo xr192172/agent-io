@@ -15,7 +15,7 @@
  *   const symbols = await parseFile('src/app.go', goSource);
  *
  * 共享给其他项目：
- *   - 抽出为 @design-canvas/ts-kernel 包
+ *   - 抽出为 @agent-io/ts-kernel 包
  *   - 各项目 npm install 后都能用
  *   - 用户只需装一次 tree-sitter-* 包
  */

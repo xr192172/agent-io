@@ -1,7 +1,7 @@
 /**
  * search_bricks —— 积木货架（Brick Harvest Phase 4：跨项目统一检索层）
  *
- * 积木盒 `.design-canvas/bricks/` 是跨项目资产（各积木来自不同源项目），
+ * 积木盒 `.agent-io/bricks/` 是跨项目资产（各积木来自不同源项目），
  * 本工具是盒的统一浏览/检索入口——"拎之前先看它要什么、给什么"：
  *
  *   浏览：无参数列出全部积木概况（语言/来源/规模/exposes/effects/验证状态）
@@ -41,7 +41,7 @@ export interface SearchBricksInput {
   name?: string;
   /** query 命中时也输出完整契约（默认列表模式只给概况） */
   detail?: boolean;
-  /** 积木盒根目录（默认 <dataHome>/.design-canvas/bricks，与 harvest/slim 同源） */
+  /** 积木盒根目录（默认 <dataHome>/.agent-io/bricks，与 harvest/slim 同源） */
   box_dir?: string;
 }
 

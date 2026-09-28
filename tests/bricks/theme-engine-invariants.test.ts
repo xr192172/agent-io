@@ -13,7 +13,7 @@ import path from 'node:path';
 
 const brickDir = path.resolve(
   __dirname,
-  '../../.design-canvas/bricks/ua_theme_engine/files/understand-anything-plugin/packages/dashboard/src/themes',
+  '../../.agent-io/bricks/ua_theme_engine/files/understand-anything-plugin/packages/dashboard/src/themes',
 );
 const hasBrick = fs.existsSync(path.join(brickDir, 'theme-engine.ts'));
 

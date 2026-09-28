@@ -1,10 +1,10 @@
 /* 临时探针：批注语义化闭环验证（resolveCanvasNotesFromDSL → renderCanvasNotesDigest → markCanvasNotesStatus）
- * 在真实 design-canvas DSL 上注入合成批注，覆盖 锚定文件 / 坐标命中 / 空白批注 / 状态闭环。 */
+ * 在真实 agent-io DSL 上注入合成批注，覆盖 锚定文件 / 坐标命中 / 空白批注 / 状态闭环。 */
 import { readFileSync } from 'node:fs';
 import { resolveCanvasNotesFromDSL, renderCanvasNotesDigest, markCanvasNotesStatus } from './dist/src/tools/derive_mind_map.js';
 
-const FEATURE = 'design-canvas';
-const dsl = JSON.parse(readFileSync('.design-canvas/live/design-canvas.dsl.json', 'utf-8'));
+const FEATURE = 'agent-io';
+const dsl = JSON.parse(readFileSync('.agent-io/live/agent-io.dsl.json', 'utf-8'));
 
 // 找一个真实文件节点做锚定；找一个几何节点坐标做命中
 const fileId = 'file_camera_chain_ts';

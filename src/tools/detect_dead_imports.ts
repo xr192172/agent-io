@@ -119,7 +119,7 @@ export function scanProjectSourceFiles(project_dir: string, files?: string[]): s
     for (const ent of entries) {
       // 递归跳过：依赖/版本控制/构建产物；以及 vendor/（第三方 vendored 代码）——
       // 它们绝不可能算"自研积木"，不参与死 import 扫描，避免把 vendored 依赖误报为下线候选。
-      // 进一步排除 .design-canvas* 快照/备份目录（含 .design-canvas、.design-canvas.bak-<ts> 变体）：
+      // 进一步排除 .agent-io* 快照/备份目录（含 .agent-io、.agent-io.bak-<ts> 变体）：
       // 它们是项目自身历史快照的生成副本，扫进来会把每个 src 命中重复多倍，污染清理清单。
       if (ent.name === 'node_modules' || ent.name === '.git' || ent.name === 'dist' || ent.name === 'vendor') continue;
       if (ent.isDirectory() && ent.name.startsWith(DATA_DIR_NAME)) continue;

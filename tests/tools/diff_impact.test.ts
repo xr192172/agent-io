@@ -50,7 +50,7 @@ async function makeProject(feature: string): Promise<string> {
   put(root, 'src/a.ts', `import { helperB } from './b';\n\nexport function mainA(x: number): number {\n  return helperB(x);\n}\n`);
   put(root, 'src/b.ts', `export function helperB(x: number): number {\n  return x * 2;\n}\n`);
   put(root, 'src/c.ts', `import { mainA } from './a';\n\nexport function mainC(x: number): number {\n  return mainA(x) + 1;\n}\n`);
-  // 缓存必须放在项目根 .design-canvas/ 下，diffImpact 的 getProjectCacheDb 读同一文件
+  // 缓存必须放在项目根 .agent-io/ 下，diffImpact 的 getProjectCacheDb 读同一文件
   const db = openDb(path.join(root, DATA_DIR_NAME, 'cache.db'));
   await importProject({ project_dir: root, feature, cache_db: db });
   db.close();

@@ -4,7 +4,7 @@
  * 输入：dsl_json (string, 必填) + output_path (string, 可选)
  * 行为：
  *   1. 校验 DSL（schema + 语义锚定）
- *   2. 保存 DSL 到 .design-canvas/features/<feature>.json
+ *   2. 保存 DSL 到 .agent-io/features/<feature>.json
  *   3. 调渲染器生成 HTML
  *   4. 写 HTML 到 output_path（默认 output/<feature>.html）
  *   5. 返回路径信息

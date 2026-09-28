@@ -18,11 +18,11 @@ output/
 scripts/*.tmp.mjs
 
 # 运行时持久化的 DSL（用户实际使用时生成；examples/ 目录的示例需要提交）
-.design-canvas/
+.agent-io/
 # DSL 布局/内容的自动备份目录（带时间戳成批生成，不入库，避免大体积误提交）
-.design-canvas.bak-*/
+.agent-io.bak-*/
 # MCP server 运行时 DSL（项目根，随使用场景变化，不入库）
-design-canvas.json
+agent-io.json
 # Observe DSL 仓库（运行时生成：{projectRoot}/.agent/observe/dsl.json + history）
 .agent/
 # Go 编译产物
@@ -109,7 +109,7 @@ ROADMAP.md
 .tmp_test.mjs
 .brickify_agentshell_report.json
 *.report.json
-# 一次性/诊断/目标项目专属脚本（产品链 scripts 保留：gen_anim_core_bundle / install_mcp / install_global_skill / promote_design_canvas_mcp / setup / hub / rebuild_feature / gen_teach / rebuild_teach / scan_projects / batch_import / audit_env / reorg_env）
+# 一次性/诊断/目标项目专属脚本（产品链 scripts 保留：gen_anim_core_bundle / install_mcp / install_global_skill / promote_agent_io_mcp / setup / hub / rebuild_feature / gen_teach / rebuild_teach / scan_projects / batch_import / audit_env / reorg_env）
 scripts/*_aibase.mjs
 scripts/annotate_aibase.mjs
 scripts/bughunt_self.mjs

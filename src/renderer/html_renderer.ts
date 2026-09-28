@@ -1000,7 +1000,7 @@ ${items}
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${esc(dsl.feature)} - design-canvas</title>
+  <title>${esc(dsl.feature)} - agent-io</title>
   <style>${buildStyles()}</style>
 </head>
 <body data-theme="${esc(theme)}">
@@ -1243,10 +1243,10 @@ ${
 }
     </aside>
   <footer>
-    <span class="info">design-canvas · id=${esc(dsl.id)} · <span data-i18n="footer_ops">双击节点编辑属性 · 右键节点开始连线</span></span>
+    <span class="info">agent-io · id=${esc(dsl.id)} · <span data-i18n="footer_ops">双击节点编辑属性 · 右键节点开始连线</span></span>
     <div>
       <button id="rerender" type="button" data-i18n="rerender">重新渲染</button>
-      <button id="export-json" type="button" data-i18n="export_json">📥 导出 design-canvas.json</button>
+      <button id="export-json" type="button" data-i18n="export_json">📥 导出 agent-io.json</button>
       <button id="import-json" type="button" data-i18n="import_json">📤 导入 DSL</button>
     </div>
   </footer>

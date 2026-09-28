@@ -30,11 +30,11 @@ describe('go_instrument - Go 工程识别', () => {
     expect(isGoProject(tmp)).toBe(false);
   });
 
-  it('排除 .design-canvas/.git/node_modules 下的 .go', () => {
+  it('排除 .agent-io/.git/node_modules 下的 .go', () => {
     mk('go.mod', 'module m\n');
     mk('.git/objects/x.go', 'package x\n');
     mk('node_modules/pkg.go', 'package p\n');
-    mk('.design-canvas/cache/go.go', 'package c\n');
+    mk('.agent-io/cache/go.go', 'package c\n');
     expect(isGoProject(tmp)).toBe(false);
   });
 

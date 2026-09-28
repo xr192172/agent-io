@@ -11,7 +11,7 @@
  *      - ❌ 缺失（red）：expected 中有，但代码中没有
  *      - ⚠️ 签名不匹配（yellow）：函数存在但参数/返回值不一致
  *      - 🆕 代码新增（blue）：代码中有，但 DSL expected_apis 中没有
- *   4. 支持注释标记定位（<!-- design-canvas:node_id -->）
+ *   4. 支持注释标记定位（<!-- agent-io:node_id -->）
  *   5. 验证跨文件不变式（multi_file_invariants）
  *
  * 与 backfill_scaffold 的区别：

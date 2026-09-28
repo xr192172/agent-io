@@ -38,7 +38,7 @@ import type {
 } from '../dsl/contract.js';
 
 export interface ExtractContractsInput {
-  /** 被分析项目的根目录（其下 .design-canvas/cache.db 是符号缓存） */
+  /** 被分析项目的根目录（其下 .agent-io/cache.db 是符号缓存） */
   project_dir: string;
   /** 提供时把 contract 写回该 feature 的 DSL（SemanticFile.contract）；不提供只返回结果 */
   feature?: string;

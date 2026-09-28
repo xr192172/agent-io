@@ -72,7 +72,7 @@ describe('backfillScaffold', () => {
 
   beforeEach(() => {
     clearAllFeatures();
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'design-canvas-backfill-'));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-io-backfill-'));
   });
 
   afterEach(() => {

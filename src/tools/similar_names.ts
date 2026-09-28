@@ -293,7 +293,7 @@ async function defaultLlmFor(
   filePath: string,
 ): Promise<Array<{ name: string; renamed?: string; reason?: string }>> {
   const cfg = loadLlmConfig();
-  if (!cfg) throw new Error('未配置 LLM（.design-canvas/config.json 或环境变量）');
+  if (!cfg) throw new Error('未配置 LLM（.agent-io/config.json 或环境变量）');
   const list = clusters
     .map((c) => {
       const members = c.offenders
@@ -350,7 +350,7 @@ export async function suggestDisambiguations(
     return {
       llm: false,
       clusters,
-      note: picked.length === 0 ? '未发现相似名聚类' : '未配置 LLM（.design-canvas/config.json 或环境变量）',
+      note: picked.length === 0 ? '未发现相似名聚类' : '未配置 LLM（.agent-io/config.json 或环境变量）',
     };
   }
 

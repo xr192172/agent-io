@@ -23,7 +23,7 @@
  *   - 复杂度高地：符号行数（span 大小）
  *   - 文件热点：files.modified_at 距今 < 24h
  *
- * 纯计算 + 一次 dry-run 插桩；不写被插桩项目的源码，只在自己的 `.design-canvas/` 下写清单。
+ * 纯计算 + 一次 dry-run 插桩；不写被插桩项目的源码，只在自己的 `.agent-io/` 下写清单。
  */
 
 import { DATA_DIR_NAME } from '../data_dir.js';
@@ -200,7 +200,7 @@ function sliceLines(text: string, startLine: number, endLine: number): string {
 }
 
 /**
- * 推荐观测点。`write !== false` 时把清单写到 `<root>/.design-canvas/observe-points.json`。
+ * 推荐观测点。`write !== false` 时把清单写到 `<root>/.agent-io/observe-points.json`。
  */
 export async function recommendObservePoints(
   db: Database,
@@ -430,7 +430,7 @@ export async function recommendObservePoints(
 
   const pointsFile = path.join(root, DATA_DIR_NAME, 'observe-points.json');
   const payload = {
-    schema: 'design-canvas/observe-points/v1',
+    schema: 'agent-io/observe-points/v1',
     generatedAt: new Date().toISOString(),
     projectRoot: root,
     contractProbes: kept.map((p) => p.key),

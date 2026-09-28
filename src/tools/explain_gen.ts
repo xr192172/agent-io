@@ -179,7 +179,7 @@ export async function generateModuleNarrations(
 // 三档文案持久化
 // ─────────────────────────────────────────────────────────────
 
-/** 生成文案落盘路径：<dataHome>/.design-canvas/explain.gen.json */
+/** 生成文案落盘路径：<dataHome>/.agent-io/explain.gen.json */
 export function getExplainGenFile(): string {
   return path.join(getStorageRoot(), 'explain.gen.json');
 }

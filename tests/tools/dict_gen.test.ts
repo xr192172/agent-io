@@ -35,7 +35,7 @@ const LLM_ENV_KEYS = ['DEEPSEEK_API_KEY', 'DEEPSEEK_BASE_URL', 'DEEPSEEK_MODEL',
 const savedLlmEnv: Record<string, string | undefined> = {};
 
 beforeAll(() => {
-  process.env.DESIGN_CANVAS_HOME = dataHome;
+  process.env.AGENT_IO_HOME = dataHome;
   fs.mkdirSync(projectRoot, { recursive: true });
   // 测试使用的临时目录需要显式加入安全白名单
   setAllowedProjectRoots([projectRoot, dataHome, process.cwd()]);
@@ -102,10 +102,10 @@ describe('ingestTerm dry_run 预览与收录', () => {
   });
 
   it('分类 project → 写入项目词典', async () => {
-    branchMock({ kind: 'project', term: 'design_canvas_x' }, { newbie: 'n', pm: 'p', senior: 's' });
-    const r = await ingestTerm('design_canvas_x', projectRoot, 'demo');
+    branchMock({ kind: 'project', term: 'agent_io_x' }, { newbie: 'n', pm: 'p', senior: 's' });
+    const r = await ingestTerm('agent_io_x', projectRoot, 'demo');
     expect(r.kind).toBe('project');
     const proj = loadProjectDict(projectRoot);
-    expect(proj.find((e) => e.term === 'design_canvas_x')).toBeDefined();
+    expect(proj.find((e) => e.term === 'agent_io_x')).toBeDefined();
   });
 });

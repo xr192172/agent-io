@@ -9,8 +9,8 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { buildFileIndex, projectStepDataShape, projectFileDataShape, deriveStepFlow, deriveFileFlow, deriveCrossFeatureFlow, pinIdentityKeys } from './dist/src/tools/derive_mind_map.js';
 
-const dslPath = '.design-canvas/live/design-canvas.dsl.json';
-const jsonPath = '.design-canvas/mindmap/design-canvas.teach.json';
+const dslPath = '.agent-io/live/agent-io.dsl.json';
+const jsonPath = '.agent-io/mindmap/agent-io.teach.json';
 const dsl = JSON.parse(readFileSync(dslPath, 'utf-8'));
 const fileIndex = buildFileIndex(dsl);
 const mm = JSON.parse(readFileSync(jsonPath, 'utf-8'));

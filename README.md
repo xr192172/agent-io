@@ -1,6 +1,6 @@
-# design-canvas
+# agent-io
 
-![CI](https://github.com/xr192172/design-canvas/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/xr192172/agent-io/actions/workflows/ci.yml/badge.svg)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)
 ![MCP](https://img.shields.io/badge/MCP-server-7c3aed.svg)
@@ -9,15 +9,15 @@
 
 [中文](README.md) · [English](README.en.md)
 
-![design-canvas 配套前端 dsl-workbench 沙盘视图（真实 DSL 实时渲染）](assets/demo-workbench.png)
+![agent-io 配套前端 dsl-workbench 沙盘视图（真实 DSL 实时渲染）](assets/demo-workbench.png)
 
 ## 背景与定位
 
-两个长期困扰工程协作的问题，design-canvas 同时给出解法：
+两个长期困扰工程协作的问题，agent-io 同时给出解法：
 
-**问题一：文档漂移。** 任何设计文档、架构图都会在代码演进后过期，最终没人敢信。design-canvas 把「设计真相」编码为**结构化的 DSL JSON**，随代码一起演进：语义层记录文件契约（files / apis / decisions），由 `backfill_scaffold` 从实现自动回填、由运行时观测（Observe）自动校正——**文档不再会过期**。
+**问题一：文档漂移。** 任何设计文档、架构图都会在代码演进后过期，最终没人敢信。agent-io 把「设计真相」编码为**结构化的 DSL JSON**，随代码一起演进：语义层记录文件契约（files / apis / decisions），由 `backfill_scaffold` 从实现自动回填、由运行时观测（Observe）自动校正——**文档不再会过期**。
 
-**问题二：改动失控。** LLM 改代码经常改错位置、改坏文件、无法验证，只能返工。design-canvas 提供一条受控的改造流水线：符号级准确编辑（`edit_code`）→ 改前真实 diff 审批 → 运行时探针对账验证 → 通过才提交、失败自动回滚——**改动不再靠赌**。
+**问题二：改动失控。** LLM 改代码经常改错位置、改坏文件、无法验证，只能返工。agent-io 提供一条受控的改造流水线：符号级准确编辑（`edit_code`）→ 改前真实 diff 审批 → 运行时探针对账验证 → 通过才提交、失败自动回滚——**改动不再靠赌**。
 
 DSL 双层结构是两者的共同根基：
 
@@ -54,8 +54,8 @@ DSL 双层结构是两者的共同根基：
 
 ```bash
 # 1. 将代码克隆到本地（首次）
-git clone https://github.com/xr192172/design-canvas.git
-cd design-canvas
+git clone https://github.com/xr192172/agent-io.git
+cd agent-io
 
 # 2. 安装依赖
 npm install
@@ -72,9 +72,9 @@ npm start
 ```json
 {
   "mcpServers": {
-    "design-canvas": {
+    "agent-io": {
       "command": "node",
-      "args": ["/path/to/design-canvas/dist/src/server.js"]
+      "args": ["/path/to/agent-io/dist/src/server.js"]
     }
   }
 }
@@ -208,7 +208,7 @@ npm run demo -- --prepare   # 只准备示例（构建+渲染+注册），不起
 **规则库（修复 → 规则沉淀）**
 
 把**一次实际修复**沉淀成可复跑的规则，下次自动拦住同类回归。规则 = 一个自包含 `.md`
-（frontmatter + 说明 + `pattern`/`replace` + 正/反例夹具），住在 `<project>/.design-canvas/rules/`。
+（frontmatter + 说明 + `pattern`/`replace` + 正/反例夹具），住在 `<project>/.agent-io/rules/`。
 
 | 工具            | 用途                                                                                                                                                        |
 | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -315,13 +315,13 @@ npm run diagnose-loop -- --project <项目目录> --symptom "<症状>"
 npm test              # vitest 全量
 npm run test:main     # 只跑主线（排除 R5 线：tests/tools/archify_*.test.ts）
 npm run test:r5       # 只跑 R5 线（archify 渲染管线）
-DC_R5_SKIP=1 npm test # 全量但把 R5 线挂起（见下方"挂起的线"）
+AGENT_IO_R5_SKIP=1 npm test # 全量但把 R5 线挂起（见下方"挂起的线"）
 npm run doctor        # 环境体检 + 能力缺口
 ```
 
 ## 挂起的线
 
-* **R5（archify 渲染线）已挂起**：保留在仓内、暂不开发，以免影响主线。开关 `DC_R5_SKIP=1`
+* **R5（archify 渲染线）已挂起**：保留在仓内、暂不开发，以免影响主线。开关 `AGENT_IO_R5_SKIP=1`
   可整线挂起其 28 项测试。**对外契约（`/api/archify-demo`）与中性数据层
   （`view_inputs.ts`）不受挂起影响，仍由 CI 守着。** 详见 [docs/r5-archify-hung.md](docs/r5-archify-hung.md)。
 
@@ -341,9 +341,9 @@ npm run doctor        # 环境体检 + 能力缺口
 
 仓库内置面向 Agent 的 skill（`.trae/skills/`）：
 
-* **design-canvas-router**：渐进披露路由，按「遇到什么问题 → 调哪个工具」分层定位，先查询已有能力再决定是否新建工具；
+* **agent-io-router**：渐进披露路由，按「遇到什么问题 → 调哪个工具」分层定位，先查询已有能力再决定是否新建工具；
 
-* **design-canvas-mind**：心智外衣，提供能力地图、需求到工具链的编排、工具调用缓存与诚实交付纪律。
+* **agent-io-mind**：心智外衣，提供能力地图、需求到工具链的编排、工具调用缓存与诚实交付纪律。
 
 使用本工具链前建议先加载这两个 skill，避免重复造轮子。
 

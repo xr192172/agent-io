@@ -42,7 +42,7 @@ function entry(term: string, newbie: string, opts: Partial<DictEntry> = {}): Dic
 }
 
 beforeAll(() => {
-  process.env.DESIGN_CANVAS_HOME = dataHome;
+  process.env.AGENT_IO_HOME = dataHome;
   fs.mkdirSync(projectRoot, { recursive: true });
   // 测试使用的临时目录需要显式加入安全白名单
   setAllowedProjectRoots([projectRoot, dataHome, process.cwd()]);

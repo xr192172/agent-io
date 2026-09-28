@@ -5,7 +5,7 @@
  * 按项目类型（marker 文件探测）给出最合适的验证命令：
  *   - test_failure 症状：先重跑失败用例（最窄复现）
  *   - 通用：类型检查 → 构建 → 测试
- *   - design-canvas 管理的项目（.design-canvas 目录存在）：追加渲染/截图自检
+ *   - agent-io 管理的项目（.agent-io 目录存在）：追加渲染/截图自检
  */
 
 import { DATA_DIR_NAME } from '../data_dir.js';
@@ -55,7 +55,7 @@ export function suggestVerification(input: VerifyInput): Verification[] {
   const kind = detectKind(project_dir);
   const out: Verification[] = [];
 
-  const isDesignCanvasManaged = fs.existsSync(path.join(root, DATA_DIR_NAME));
+  const isAgentIOManaged = fs.existsSync(path.join(root, DATA_DIR_NAME));
 
   if (symptom_type === 'test_failure' && kind) {
     out.push({
@@ -79,7 +79,7 @@ export function suggestVerification(input: VerifyInput): Verification[] {
     });
   }
 
-  if (isDesignCanvasManaged) {
+  if (isAgentIOManaged) {
     out.push({
       type: 'observe',
       command_hint: `渲染自检：${root_cause?.file_path ?? '根因文件'} 修改后，用项目自带截图/渲染自检确认 DSL 图与预期一致`,

@@ -147,8 +147,8 @@ function isFlatMindMap(mm: MindMap): boolean {
 /**
  * 平铺兜底修复：DSL 没有 feature_tree 时用 deriveFeatureTree 现场生成
  * （Louvain 社区 → 按目录/LLM 归并成 3-8 个功能），写回 DSL。
- * cache.db 定位顺序：导入缓存 import_cache_<feature>.db > <source_root>/.design-canvas/cache.db
- * > <serve 项目根>/.design-canvas/cache.db。找不到任何 db 时静默失败（保持平铺）。
+ * cache.db 定位顺序：导入缓存 import_cache_<feature>.db > <source_root>/.agent-io/cache.db
+ * > <serve 项目根>/.agent-io/cache.db。找不到任何 db 时静默失败（保持平铺）。
  */
 function tryDeriveFeatureTree(feature: string, dsl: { source_root?: string }, genNames: boolean): Promise<boolean> {
   const candidates: string[] = [

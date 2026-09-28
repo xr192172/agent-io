@@ -19,7 +19,7 @@
  *   收尾的跨文件解析一律走**增量口径**（`scopeFiles` = 本批动过的文件），不全量重解析。
  *
  * 过滤规则（防反馈循环 + 噪声）：
- *   - 忽略 .design-canvas/（cache.db / live / features 写入会触发 watcher，必须排除）
+ *   - 忽略 .agent-io/（cache.db / live / features 写入会触发 watcher，必须排除）
  *   - 忽略 node_modules/.git/vendor 等非源码目录（与 import_project 的 SKIP_DIRS 对齐）
  *   - 忽略非支持扩展名 / 测试生成物（与 import_project 的 SKIP_FILE_RE 对齐）
  *
@@ -37,7 +37,7 @@ import { indexedRelativeSet } from './index_freshness.js';
 import { isIndexIncomplete } from './index_backfill.js';
 
 // ─────────────────────────────────────────────────────────────
-// 过滤规则（与 import_project 对齐，另加 .design-canvas 防反馈循环）
+// 过滤规则（与 import_project 对齐，另加 .agent-io 防反馈循环）
 // ─────────────────────────────────────────────────────────────
 
 /** 忽略的目录名（任意层级命中即跳过整棵子树） */

@@ -2,7 +2,7 @@
  * protect —— 行级保护灰名单单元测试
  *
  * 覆盖：
- *   - 无 .design-canvas.json / 非法配置 → 不启用（createProtectGuard 空转，什么都不挡）
+ *   - 无 .agent-io.json / 非法配置 → 不启用（createProtectGuard 空转，什么都不挡）
  *   - glob 命中才参与；未命中的文件 → 全部放行
  *   - 命中 glob 的文件里：落在「含标记行」上的编辑被跳过，其它行照常保留
  *   - keep 集（定义名偏移）即便落在标记行也强制保留——避免改一半悬空
@@ -28,7 +28,7 @@ const cfgFrom = (config: unknown): string => {
   const dir = mkdtempSync(path.join(tmpdir(), 'prot-'));
   mkdirSync(path.join(dir, 'docs', 'tool-convergence'), { recursive: true });
   mkdirSync(path.join(dir, 'src'), { recursive: true });
-  writeFileSync(path.join(dir, '.design-canvas.json'), JSON.stringify(config), 'utf-8');
+  writeFileSync(path.join(dir, '.agent-io.json'), JSON.stringify(config), 'utf-8');
   // 规则 glob 相对项目根；源文件
   writeFileSync(path.join(dir, 'docs/tool-convergence/history.md'), '处理：判不合并。useless_tool 前缀属命名风格，非代码合并。', 'utf-8');
   writeFileSync(path.join(dir, 'src/entry.ts'), 'import { a } from "./foo";\nconst x = a;\n', 'utf-8');

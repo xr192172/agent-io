@@ -204,7 +204,7 @@ function typeParamString(u: TransUnit): string {
 export function channelShimSource(): string {
   return [
     '/**',
-    ' * design-canvas Go→TS 翻译自动附加的通道垫片。',
+    ' * agent-io Go→TS 翻译自动附加的通道垫片。',
     ' * 近似实现：用 JS 队列模拟。非 Go 的阻塞/select/缓冲区满语义，并发与竞态需人工核对。',
     ' */',
     'export class Channel<T> {',

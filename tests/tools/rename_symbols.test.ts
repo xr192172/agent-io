@@ -279,10 +279,10 @@ describe('renameSymbols - apply_literals（补全字面量感知改名闭环）'
     rmForce(dir);
   });
 
-  it('冻结行保护：命中 .design-canvas.json 标记行 → decision=frozen，不写盘', async () => {
+  it('冻结行保护：命中 .agent-io.json 标记行 → decision=frozen，不写盘', async () => {
     const dir = mkProj(
       renderFiles({
-        '.design-canvas.json': JSON.stringify({ rename: { protect: [{ globs: ['src/usage.*'], markers: ['请用'] }] } }),
+        '.agent-io.json': JSON.stringify({ rename: { protect: [{ globs: ['src/usage.*'], markers: ['请用'] }] } }),
       }),
     );
     const r = await renameSymbols({
@@ -304,7 +304,7 @@ describe('renameSymbols - apply_literals（补全字面量感知改名闭环）'
   it('生成物识别：命中 rename.generated → decision=generated，不写盘（改源头而非生成物）', async () => {
     const dir = mkProj(
       renderFiles({
-        '.design-canvas.json': JSON.stringify({ rename: { generated: ['AGENTS.md'] } }),
+        '.agent-io.json': JSON.stringify({ rename: { generated: ['AGENTS.md'] } }),
         'AGENTS.md': '请用 render_dsl（触发点表，自动生成）。\n',
       }),
     );

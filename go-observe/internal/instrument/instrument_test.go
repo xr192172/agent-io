@@ -209,14 +209,14 @@ func TestCollectGoFilesSkips(t *testing.T) {
 	// 添加应被跳过的目录
 	os.MkdirAll(filepath.Join(dir, "node_modules"), 0o755)
 	os.WriteFile(filepath.Join(dir, "node_modules", "x.go"), []byte("package x\n"), 0o644)
-	os.MkdirAll(filepath.Join(dir, ".design-canvas"), 0o755)
-	os.WriteFile(filepath.Join(dir, ".design-canvas", "y.go"), []byte("package y\n"), 0o644)
+	os.MkdirAll(filepath.Join(dir, ".agent-io"), 0o755)
+	os.WriteFile(filepath.Join(dir, ".agent-io", "y.go"), []byte("package y\n"), 0o644)
 	// _test.go 也应跳过
 	os.WriteFile(filepath.Join(dir, "svc", "save_test.go"), []byte("package demo\n"), 0o644)
 
 	files := collectGoFiles(dir, nil)
 	for _, f := range files {
-		if strings.Contains(f, "node_modules") || strings.Contains(f, ".design-canvas") ||
+		if strings.Contains(f, "node_modules") || strings.Contains(f, ".agent-io") ||
 			strings.HasSuffix(f, "_test.go") {
 			t.Errorf("不应收集被跳过文件: %s", f)
 		}
@@ -379,7 +379,7 @@ func F() error {
 		t.Fatal("插桩未生效")
 	}
 
-	// 断言备份应落在 <dir>/.design-canvas/observe-backup/f.go（项目根内）
+	// 断言备份应落在 <dir>/.agent-io/observe-backup/f.go（项目根内）
 	expectedBackup := filepath.Join(dir, backupDir, "f.go")
 	if _, err := os.Stat(expectedBackup); err != nil {
 		// 备份不在项目根 → Bug2复现：它被写到父目录去了

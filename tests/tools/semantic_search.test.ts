@@ -4,7 +4,7 @@
  * 覆盖（不依赖真实 embedding API，避免网络/unstable 于 CI）：
  *   - cosineSimilarity：零向量/正交/同向/不同长度取 min
  *   - embedTexts：进程内缓存命中统计（同文本二次调用不新增 API 调用数）
- *   - 无 embedding 配置（测试环境无 .design-canvas/config.json）→ semanticSearch 降级 FTS
+ *   - 无 embedding 配置（测试环境无 .agent-io/config.json）→ semanticSearch 降级 FTS
  *   - 符号缓存为空 → 返回提示性空结果
  *   - 查询为空 → 返回空结果
  *   - embedding 配置缺失时 provider=fts 且 hits 由 FTS 填充
@@ -44,7 +44,7 @@ afterAll(() => {
 function isolateHome(): void {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'sem-home-'));
   roots.push(tmp);
-  process.env.DESIGN_CANVAS_HOME = tmp;
+  process.env.AGENT_IO_HOME = tmp;
 }
 
 function put(root: string, rel: string, content: string): void {

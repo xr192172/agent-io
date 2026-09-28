@@ -3,7 +3,7 @@
  *
  * ★ 为什么要有它（2026-09-28，为品牌改名铺路）：
  *   这个目录名此前**硬写在 193 处、散在 130 个文件**里（`storage.ts` / `db.ts` / `daemon.ts` /
- *   `observe/*` / `java_refactor/*` / 一堆 tools …）。品牌改名 DesignCanvas → AgentIO 要改的正是它
+ *   `observe/*` / `java_refactor/*` / 一堆 tools …）。品牌改名 AgentIO → AgentIO 要改的正是它
  *   ⇒ 193 处散落意味着**必然漏改**。收成单点后，改名只需改**这一个常量**。
  *
  * ★ 为什么是独立模块而不是塞进 `storage.ts`：它必须**零依赖**。
@@ -22,4 +22,16 @@
  */
 
 /** 数据目录名（目标项目根下；改名时**只改这一行**） */
-export const DATA_DIR_NAME = '.design-canvas';
+export const DATA_DIR_NAME = '.agent-io';
+
+/**
+ * 包名（= `package.json` 的 `name`）。
+ *
+ * ★ 为什么它必须是一个常量、而不是各处写字面量（2026-09-28 改名时发现的**真耦合**）：
+ *   `storage.ts` 的 `getPackageRoot()` 靠**自省**找包根 —— 从模块位置向上找最近的
+ *   `package.json`、且 `name === <包名>` 的那个目录。这里若与 `package.json` 的 `name` 不一致，
+ *   **不报错、不告警**，只会静默退化成 `process.cwd()` ⇒ 把 features 存档与活态 DSL
+ *   写到工作区根（`storage.ts` 头注里记的那个"146 条 flows 污染"就是这类）。
+ *   ⇒ 改名时这两处**必须同改**；一致性由 `tests/identity.test.ts` 兜（读真实 package.json 比对）。
+ */
+export const PKG_NAME = 'agent-io';

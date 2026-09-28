@@ -24,7 +24,7 @@ function dsl(by: Record<string, [number, number]>): DesignDSL {
 
 beforeAll(() => {
   tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'sna-auto-'));
-  process.env.DESIGN_CANVAS_HOME = tmp;
+  process.env.AGENT_IO_HOME = tmp;
   saveDSL(dsl({ a: [0, 0], b: [10, 20] }));
 });
 

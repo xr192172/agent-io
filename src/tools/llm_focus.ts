@@ -7,8 +7,8 @@
  *   - llm_focus：从全链里挑出值得聚焦的关键节点（判定点/汇聚点/高风险函数），附理由
  *
  * 配置（用户偏好：配置文件管理 API keys/model 参数，未来前端 HUB 集成）：
- *   <home>/.design-canvas/config.json        ← 默认（含密钥，放用户主目录，避免随项目打包/提交泄漏）
- *   <projectRoot>/.design-canvas/config.json ← 旧默认位置，读取时回退兼容
+ *   <home>/.agent-io/config.json        ← 默认（含密钥，放用户主目录，避免随项目打包/提交泄漏）
+ *   <projectRoot>/.agent-io/config.json ← 旧默认位置，读取时回退兼容
  *   { "llm": { "apiKey": "sk-...", "model": "gpt-4o-mini", "baseURL": "https://api.openai.com/v1" } }
  *   环境变量覆盖：LLM_API_KEY / LLM_MODEL / LLM_BASE_URL
  */
@@ -29,19 +29,19 @@ export interface LlmConfig {
   baseURL: string;
 }
 
-/** 配置主目录：DESIGN_CANVAS_HOME 显式覆盖（测试/部署用）优先，否则用户主目录 */
+/** 配置主目录：AGENT_IO_HOME 显式覆盖（测试/部署用）优先，否则用户主目录 */
 export function getConfigHome(): string {
-  return process.env.DESIGN_CANVAS_HOME ?? os.homedir();
+  return process.env.AGENT_IO_HOME ?? os.homedir();
 }
 
-/** 写入/新位置：<configHome>/.design-canvas/config.json（默认用户主目录） */
+/** 写入/新位置：<configHome>/.agent-io/config.json（默认用户主目录） */
 export function configFilePath(): string {
   return path.join(getConfigHome(), DATA_DIR_NAME, 'config.json');
 }
 
 /**
  * 实际读取路径：新位置（主目录）优先；不存在时回退旧默认位置
- * （<projectRoot>/.design-canvas/config.json），兼容升级前已落盘的配置。
+ * （<projectRoot>/.agent-io/config.json），兼容升级前已落盘的配置。
  */
 export function configFileReadPath(): string {
   const home = configFilePath();
@@ -221,7 +221,7 @@ export async function pickKeyNodes(
     return {
       llm: false,
       key_nodes: heuristicFocus(chain, max),
-      note: '未配置 LLM（.design-canvas/config.json 或环境变量），已用启发式选点',
+      note: '未配置 LLM（.agent-io/config.json 或环境变量），已用启发式选点',
     };
   }
 

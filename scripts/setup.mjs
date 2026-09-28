@@ -1,17 +1,17 @@
 #!/usr/bin/env node
 /**
- * design-canvas 一键就绪器（dc setup / dc doctor）——「拿到包 → 能对账」的环境闭环
+ * agent-io 一键就绪器（dc setup / dc doctor）——「拿到包 → 能对账」的环境闭环
  *
  * 定位：把已存在但彼此断开的环节合成一条命令。复用既有 CLI，不重造：
  *   - MCP 安装      → 复用 scripts/install_mcp.mjs（写 9 个 client 配置）
  *   - TS 静态插桩   → 复用 dist/src/camera/instrument_cli.js（幂等，--uninstrument 还原）
  *   - skill 安装    → 本脚本新增：把 .trae/skills/ 拷进目标 agent skills 目录
- *   - 事件目录规约   → 本脚本新增：确保 <target>/.design-canvas/camera + .agent/camera 存在
+ *   - 事件目录规约   → 本脚本新增：确保 <target>/.agent-io/camera + .agent/camera 存在
  *                   （这两处正是 reconcile_chain.discoverEventFiles 自动发现的两个事件源）
  *   - 跑一轮出事件  → 本脚本新增：带 OBSERVE_EVENTS_FILE sink 跑用户给的命令，产出真事件
  *   - 体检报告      → 本脚本新增：doctor 逐项检测就绪度，给可执行提示，不静默
  *
- * 用法（design-canvas 根）：
+ * 用法（agent-io 根）：
  *   node scripts/setup.mjs <target>                # 全量就绪：依赖目标项目就绪（装 MCP+skill+目录）
  *   node scripts/setup.mjs <target> --instrument   # 同时静态插桩目标项目（可反复，幂等）
  *   node scripts/setup.mjs <target> --run "<cmd>"  # 插桩/就绪后跑一轮目标入口，产真事件
@@ -20,7 +20,7 @@
  *   node scripts/setup.mjs --help
  *
  * 目标项目：
- *   要拿 design-canvas 对账的那个项目（其 .agent/camera / .design-canvas/camera 是事件源）。
+ *   要拿 agent-io 对账的那个项目（其 .agent/camera / .agent-io/camera 是事件源）。
  *   默认当前目录。
  */
 
@@ -36,7 +36,7 @@ const INSTALL_MCP = path.join(ROOT, 'scripts', 'install_mcp.mjs');
 const INSTRUMENT_CLI = path.join(ROOT, 'dist', 'src', 'camera', 'instrument_cli.js');
 const CAPABILITY_CLI = path.join(ROOT, 'dist', 'src', 'tools', 'capability_cli.js');
 const DEFAULT_AGENT_SKILLS = path.join(ROOT, '..', 'ai-config', 'skills'); // 本地 agent 的 skills 目录
-const EVENT_DIRS_TPL = ['.design-canvas/camera', '.agent/camera'];
+const EVENT_DIRS_TPL = ['.agent-io/camera', '.agent/camera'];
 
 // ── 参数解析 ──
 const args = process.argv.slice(2);
@@ -44,7 +44,7 @@ const parg = (name) => { const i = args.indexOf(name); return i >= 0 && i + 1 < 
 const flag = (name) => args.includes(name);
 
 function usage() {
-  console.log(`design-canvas 一键就绪器（dc setup / dc doctor）
+  console.log(`agent-io 一键就绪器（dc setup / dc doctor）
 用法:
   node scripts/setup.mjs <target> [选项]
   <target>   被观测项目目录（默认当前目录）
@@ -129,7 +129,7 @@ function runDoctor() {
   const evTotal = countEvents();
   if (evFiles.length === 0) {
     fail++;
-    console.log(no(`事件源：无（<target>/.design-canvas/camera 与 .agent/camera 均无 events*.jsonl）`));
+    console.log(no(`事件源：无（<target>/.agent-io/camera 与 .agent/camera 均无 events*.jsonl）`));
     console.log(dim(`   → reconcile_chain/trace-exec 面对本项目会一直 not_run。先跑：`));
     console.log(dim(`     node scripts/setup.mjs ${T} --instrument --run "<项目入口命令>"`));
   } else {
@@ -148,25 +148,25 @@ function runDoctor() {
 
   // 3) skill 安装
   {
-    const srcExist = fs.existsSync(path.join(SKILL_SRC, 'design-canvas-mind', 'SKILL.md'));
-    const dstExist = fs.existsSync(path.join(SKILL_DST, 'design-canvas-mind', 'SKILL.md'));
+    const srcExist = fs.existsSync(path.join(SKILL_SRC, 'agent-io-mind', 'SKILL.md'));
+    const dstExist = fs.existsSync(path.join(SKILL_DST, 'agent-io-mind', 'SKILL.md'));
     if (srcExist && dstExist) { pass++; console.log(ok(`skill：已安装到 ${SKILL_DST}`)); }
     else if (srcExist) { fail++; console.log(warn(`skill：项目内有 ${SKILL_SRC}，但未安装到目标 agent（${SKILL_DST}）`)); }
-    else { fail++; console.log(no(`skill：项目缺少 ${path.join(SKILL_SRC, 'design-canvas-mind', 'SKILL.md')}`)); }
+    else { fail++; console.log(no(`skill：项目缺少 ${path.join(SKILL_SRC, 'agent-io-mind', 'SKILL.md')}`)); }
   }
 
   // 4) 插桩状态
   {
-    const backup = path.join(T, '.design-canvas', 'camera-backup');
-    if (fs.existsSync(backup)) { pass++; console.log(ok(`插桩：目标已插桩（备份在 .design-canvas/camera-backup）`)); }
+    const backup = path.join(T, '.agent-io', 'camera-backup');
+    if (fs.existsSync(backup)) { pass++; console.log(ok(`插桩：目标已插桩（备份在 .agent-io/camera-backup）`)); }
     else { console.log(warn(`插桩：目标未见插桩备份（可 --instrument 加探针，或仅用运行态 sink 经 --run 产事件）`)); }
   }
 
   // 5) LLM 配置（分镜/语义命名依赖。缺时明示，不静默降级）
   {
-    const hasLLM = process.env.DESIGN_CANVAS_LLM || process.env.LLM_API_KEY;
+    const hasLLM = process.env.AGENT_IO_LLM || process.env.LLM_API_KEY;
     if (hasLLM) { pass++; console.log(ok(`LLM/Router：已配置 (${hasLLM ? 'env 可见' : ''})`)); }
-    else { console.log(warn(`LLM/Router：未检测到 env（DESIGN_CANVAS_LLM/LLM_API_KEY）。分镜/语义命名会停在「需配置 LLM」，这是诚实标注，不是缺失功能`)); }
+    else { console.log(warn(`LLM/Router：未检测到 env（AGENT_IO_LLM/LLM_API_KEY）。分镜/语义命名会停在「需配置 LLM」，这是诚实标注，不是缺失功能`)); }
   }
 
   // 6) 能力矩阵缺口（工具自身的「功能×语言」支持度）。纯计算，不依赖目标项目；
@@ -221,16 +221,16 @@ async function runSetup() {
   // 2) skill 安装（拷 .trae/skills/ → 目标 agent skills 目录）
   {
     const src = SKILL_SRC;
-    const dst = path.join(SKILL_DST, 'design-canvas-mind');
-    if (fs.existsSync(path.join(src, 'design-canvas-mind', 'SKILL.md'))) {
+    const dst = path.join(SKILL_DST, 'agent-io-mind');
+    if (fs.existsSync(path.join(src, 'agent-io-mind', 'SKILL.md'))) {
       actions.push(`copy skill → ${dst}`);
       if (!DRY) {
         fs.mkdirSync(dst, { recursive: true });
-        fs.copyFileSync(path.join(src, 'design-canvas-mind', 'SKILL.md'), path.join(dst, 'SKILL.md'));
+        fs.copyFileSync(path.join(src, 'agent-io-mind', 'SKILL.md'), path.join(dst, 'SKILL.md'));
       }
       console.log(ok(`skill 安装 → ${dst}`));
     } else {
-      console.log(warn(`未找到 skill 源 ${path.join(src, 'design-canvas-mind', 'SKILL.md')}`));
+      console.log(warn(`未找到 skill 源 ${path.join(src, 'agent-io-mind', 'SKILL.md')}`));
     }
   }
 

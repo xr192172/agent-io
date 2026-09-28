@@ -26,7 +26,7 @@ let tmpHome: string;
 
 beforeEach(() => {
   tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), 'dc_focus_'));
-  process.env.DESIGN_CANVAS_HOME = tmpHome;
+  process.env.AGENT_IO_HOME = tmpHome;
   delete process.env.LLM_API_KEY;
   delete process.env.LLM_MODEL;
   delete process.env.LLM_BASE_URL;
@@ -36,7 +36,7 @@ beforeEach(() => {
   delete process.env.AGNES_BASE_URL;
 });
 afterEach(() => {
-  delete process.env.DESIGN_CANVAS_HOME;
+  delete process.env.AGENT_IO_HOME;
   fs.rmSync(tmpHome, { recursive: true, force: true });
   vi.restoreAllMocks();
   // stubGlobal 的 fetch mock 不会随 restoreAllMocks 卸载（只清实现不清注册），
@@ -65,12 +65,12 @@ describe('llm_focus', () => {
     expect(cfg!.baseURL).toBe('https://api.deepseek.com/v1');
   });
 
-  it('配置路径默认落在用户主目录（DESIGN_CANVAS_HOME 覆盖生效）', () => {
+  it('配置路径默认落在用户主目录（AGENT_IO_HOME 覆盖生效）', () => {
     expect(configFilePath()).toBe(path.join(tmpHome, DATA_DIR_NAME, 'config.json'));
     expect(getConfigHome()).toBe(tmpHome);
   });
 
-  it('回退旧位置：主目录无 config 时读项目根 .design-canvas/config.json（迁移兼容）', () => {
+  it('回退旧位置：主目录无 config 时读项目根 .agent-io/config.json（迁移兼容）', () => {
     const legacyRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'dc_legacy_'));
     const spy = vi.spyOn(storage, 'getDataHome').mockReturnValue(legacyRoot);
     try {

@@ -115,7 +115,7 @@ describe('file_snapshot 基础语义', () => {
     expect(listFileSnapshots(root)).toHaveLength(2);
   });
 
-  it('空清单不建快照；快照目录落在 .design-canvas/code-snapshots', () => {
+  it('空清单不建快照；快照目录落在 .agent-io/code-snapshots', () => {
     const root = mk();
     expect(snapshotBeforeWrite(root, 'empty', [])).toBeNull();
     expect(fs.existsSync(fileSnapshotsDir(root))).toBe(false);

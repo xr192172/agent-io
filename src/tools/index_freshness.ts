@@ -129,7 +129,7 @@ export function hasChanges(r: FreshnessReport | null): boolean {
 }
 
 export interface ProjectIndex {
-  /** 打开（必要时新建）的 <projectRoot>/.design-canvas/cache.db 连接（连接池管理，不要 close） */
+  /** 打开（必要时新建）的 <projectRoot>/.agent-io/cache.db 连接（连接池管理，不要 close） */
   db: Database;
   /** 本轮保鲜/冷启的报表 */
   report: FreshnessReport;

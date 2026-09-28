@@ -2,10 +2,10 @@
  * Vitest 全局 setup：把 DSL 数据目录指向临时目录
  *
  * 背景：storage.ts / render_design.ts 的默认持久化路径基于 process.cwd()，
- * 测试里调用 saveDSL / renderDesign 会覆盖项目根目录的活态 design-canvas.json
- * （曾发生 design-canvas.json 被测试 feature "no_status" 覆盖的事故）。
+ * 测试里调用 saveDSL / renderDesign 会覆盖项目根目录的活态 agent-io.json
+ * （曾发生 agent-io.json 被测试 feature "no_status" 覆盖的事故）。
  *
- * 这里通过 DESIGN_CANVAS_HOME 把数据主目录重定向到临时目录，
+ * 这里通过 AGENT_IO_HOME 把数据主目录重定向到临时目录，
  * 生产行为不变（未设置 env 时仍用 process.cwd()）。
  *
  * 注意：pool 为 singleFork 串行，各测试文件共享同一进程；
@@ -16,10 +16,10 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterAll } from 'vitest';
 
-const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), 'design-canvas-test-'));
+const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-io-test-'));
 // 外层已显式指定（如"正式入盒"场景指向真实 dataHome）则尊重，不重定向
-if (!process.env.DESIGN_CANVAS_HOME) {
-  process.env.DESIGN_CANVAS_HOME = tmpHome;
+if (!process.env.AGENT_IO_HOME) {
+  process.env.AGENT_IO_HOME = tmpHome;
 }
 
 afterAll(() => {

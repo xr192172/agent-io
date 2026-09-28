@@ -60,7 +60,7 @@ function mockFetch(failIf: (url: string, auth: string) => boolean): ReturnType<t
 
 beforeEach(() => {
   tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), 'dc_gw_'));
-  process.env.DESIGN_CANVAS_HOME = tmpHome;
+  process.env.AGENT_IO_HOME = tmpHome;
   delete process.env.AGNES_API_KEY;
   delete process.env.AGNES_BASE_URL;
   delete process.env.AGNES_MODEL;
@@ -68,7 +68,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  delete process.env.DESIGN_CANVAS_HOME;
+  delete process.env.AGENT_IO_HOME;
   fs.rmSync(tmpHome, { recursive: true, force: true });
   vi.restoreAllMocks();
   vi.unstubAllGlobals();

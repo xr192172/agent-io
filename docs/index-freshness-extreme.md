@@ -35,9 +35,9 @@
 
 | 层 | 机制 | 覆盖谁 | 本层代价 | 状态 |
 |---|---|---|---|---|
-| **L0 首次接触建索引** | `registerAllTools` 唯一入口：带 `project_root` 的调用若该项目**还没有索引** ⇒ 顺手 `scheduleBackfill`（后台分小批、不阻塞本次调用）+ **诚实标注**"在建 ⇒ 结果可能不全" | **建索引的起点**：从"第一次读"提前到"第一次任何调用"（"工作区创建"没有钩子，这就是能拿到的最早信号） | 本次调用 0 阻塞（后台跑）；标注一行 | ✅ 2026-09-15 落地（kill-switch `DC_AUTO_BACKFILL=0`；幻觉路径不建库；`noAutoFresh` 工具不触发） |
+| **L0 首次接触建索引** | `registerAllTools` 唯一入口：带 `project_root` 的调用若该项目**还没有索引** ⇒ 顺手 `scheduleBackfill`（后台分小批、不阻塞本次调用）+ **诚实标注**"在建 ⇒ 结果可能不全" | **建索引的起点**：从"第一次读"提前到"第一次任何调用"（"工作区创建"没有钩子，这就是能拿到的最早信号） | 本次调用 0 阻塞（后台跑）；标注一行 | ✅ 2026-09-15 落地（kill-switch `AGENT_IO_AUTO_BACKFILL=0`；幻觉路径不建库；`noAutoFresh` 工具不触发） |
 | **L1a 写穿** | `write_gate.writeSourceFiles()`：写前快照 → 真写 → `syncFile` + `reopenRefsTo` + scoped resolve | **我们自己改的**（async 工具） | 185ms/次（实测，单文件改名） | ✅ 已落地（`rename_symbols` 已接） |
-| **L1b 自写登记** | `write_gate.recordSelfWrite()` 落 `.design-canvas/self-writes.json`；读路径**优先消费** | **我们自己改的**（**同步签名**工具，await 不了异步 `syncFile`） | 写 ~0ms，读时一次性 | ✅ 已落地（`remove_dead_imports` 已接） |
+| **L1b 自写登记** | `write_gate.recordSelfWrite()` 落 `.agent-io/self-writes.json`；读路径**优先消费** | **我们自己改的**（**同步签名**工具，await 不了异步 `syncFile`） | 写 ~0ms，读时一次性 | ✅ 已落地（`remove_dead_imports` 已接） |
 | **L2 watch** | `watch_project.flushBatch`：fs.watch + debounce + 增量 resolve | **别人改的**（git pull / 编辑器 / 另一个 agent） | 单批 ~100ms | ✅ 已落地（含拼图边界闸 `scopeToIndex`） |
 | **L3 读前自证**（两条路） | ① **自动保鲜**：`registerAllTools` 唯一入口，调 handler 前若 `hasLiveIndex` 且**后台续建没在建**（`isIndexIncomplete`）就 `ensureProjectIndex({bootstrap:false})`（**精确**；在建时跳过 —— 后台循环本来就在持续同步，逐调用保鲜只会重复全盘走查 + 触发 `MAX_ADDS_PER_REFRESH` 噪音）<br>② **通用陈旧告警** `staleIndexWarning()`：注入**每一个**工具响应（**保守、同步、只 stat**） | ① **全部 60 个工具**（结构保证，新增工具不用记得）<br>② 同左，兜底标注 | ① ready 态 ~35ms/次<br>② 抽 ≤400 次 stat，5s 缓存 | ✅ 两条都落地 |
 | **L4 全量兜底** | `reconcileProject`：低频扫盘 | 目录级删除等 L2 看不见的 | O(文件数) stat | ✅ 已落地 |

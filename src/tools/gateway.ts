@@ -7,7 +7,7 @@
  *   3. 用量监视：调用数 / token / 费用 / 错误 / 延迟（持久化 gateway.stats.json）
  *   4. OpenAI 兼容端点 POST /v1/chat/completions —— 上层网关（如 AI base）可把我当 upstream
  *
- * 配置持久化：<dataHome>/.design-canvas/gateway.json
+ * 配置持久化：<dataHome>/.agent-io/gateway.json
  * 首次启动若检测到 AGNES_API_KEY 环境变量（老配置），自动种入 agnes 供应商，
  * 从"直连 env"无缝过渡到"网关统一管理"。
  */

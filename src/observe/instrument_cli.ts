@@ -12,15 +12,15 @@
  *
  *   <project>       要插桩的目标项目目录（默认当前目录）
  *   --dry-run       只报告会注入的探针点，不写盘
- *   --uninstrument  一键全拔：从 .design-canvas/observe-backup 拷回所有原文件，
+ *   --uninstrument  一键全拔：从 .agent-io/observe-backup 拷回所有原文件，
  *                   删除备份目录，并清理探针台账（插桩时已自动备份原文件+记账）
  *   --ledger        查看探针台账：一次插桩的全部探针点 + 统计（JSON 打印）
- *   --project-root  design-canvas 根（探针实现 src/observe/probe.js 所在仓库根），
+ *   --project-root  agent-io 根（探针实现 src/observe/probe.js 所在仓库根），
  *                   用于计算被插桩文件 → probe.js 的相对 import 路径。默认自动推断。
  *
  * 输出：每个文件注入的探针点数 + 汇总；idempotent——重跑时已插桩文件标记为跳过。
- * 台账：写盘插桩成功后自动生成 .design-canvas/observe-ledger.json（一键全拔时联动清理）。
- * 回退：插桩写盘前会在 .design-canvas/observe-backup 自动备份原文件；--uninstrument 一键全拔。
+ * 台账：写盘插桩成功后自动生成 .agent-io/observe-ledger.json（一键全拔时联动清理）。
+ * 回退：插桩写盘前会在 .agent-io/observe-backup 自动备份原文件；--uninstrument 一键全拔。
  */
 
 import fs from 'node:fs';
@@ -39,7 +39,7 @@ import {
 
 const isMain = import.meta.url === pathToFileURL(path.resolve(process.argv[1] ?? '')).href;
 
-/** 推断 design-canvas 根：向上找含 src/observe/probe.ts 的目录 */
+/** 推断 agent-io 根：向上找含 src/observe/probe.ts 的目录 */
 function inferRoot(from: string): string {
   let dir = path.resolve(from);
   for (let i = 0; i < 10; i++) {
@@ -92,7 +92,7 @@ export async function runInstrumentCLI(argv: string[]): Promise<void> {
     return;
   }
 
-  // ── 一键全拔：从 .design-canvas/observe-backup 拷回所有原文件，清理台账 ──
+  // ── 一键全拔：从 .agent-io/observe-backup 拷回所有原文件，清理台账 ──
   if (unintrument) {
     const restored = restoreInstrumented(root);
     const cleared = clearProbeLedger(root);
