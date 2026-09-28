@@ -89,7 +89,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       new_text: z.string().optional().describe('replace_text 专用：替换后的新文本（传空串=删除该文本；L3/L4 模糊命中时自动按实际命中首行缩进重排）'),
       dry_run: z.boolean().optional().describe('range / replace_text 专用：true=只出 diff 预览 + 语法门结果，不写盘'),
     },
-    handler: wrap(async (a) => editCode(a as never)),
+    handler: wrapData(async (a) => editCode(a as never)),
   },
 
   {

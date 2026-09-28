@@ -273,7 +273,33 @@ function buildAmbiguityError(hits: ParsedSymbol[], symbol: string, lines: string
   );
 }
 
-export async function editCode(args: EditCodeArgs): Promise<{ message: string }> {
+/**
+ * ★ P-A（规划书 §16.1）：写工具回执的**机器可读字段**。
+ *
+ * 为什么需要：回执此前是**纯散文**，agent 判成败只能**正则解析文本** ——
+ * 实测我因此踩了两次（干跑回执以 `[干跑]` 开头 ⇒ `startsWith('✓')` 把成功判成失败 ⇒ **静默跳过落盘**；
+ * 正则漏 `from ` ⇒ 6 个文件全判错）。这与本仓 §2d「不许靠猜」**自相矛盾**。
+ *
+ * ★ 字段**从入参派生**，不从 message 反推（反推 = 把上面的错再写一遍）。
+ */
+export interface EditReceipt {
+  /** 调用是否成功（**干跑成功也是 true** —— 看 `written` 区分是否真落盘） */
+  ok: boolean;
+  op: string;
+  file: string;
+  /** 是否干跑（未写盘） */
+  dry_run: boolean;
+  /** 是否**真的落盘**（干跑 = false）—— ★ agent 判"做没做"只看这个字段 */
+  written: boolean;
+  /** `replace_text` 专有：命中位置与级别 */
+  hit?: { level: number; label: string; start_line: number; old_lines: number; new_lines: number };
+  /** 落盘后索引同步状态 */
+  index_synced?: string;
+  /** 符号 diff（落盘后才有） */
+  symbol_diff?: { added: number; removed: number; changed: number };
+}
+
+async function editCodeInner(args: EditCodeArgs): Promise<{ message: string; data?: unknown }> {
   const { op } = args;
   const projectRoot = path.resolve(args.project_dir);
   const absPath = path.isAbsolute(args.file) ? args.file : path.resolve(projectRoot, args.file);
@@ -708,4 +734,21 @@ export async function editCode(args: EditCodeArgs): Promise<{ message: string }>
       `${lineOp.count} 行 → ${lineOp.insert.length} 行），索引已重建（${sync.status}${reopenNote(_rw)}）${diffNote}${repairNote}\n` +
       `文件符号: ${before} → ${after}`,
   };
+}
+
+
+/**
+ * ★ P-A 外层：给**所有**返回路径补一份稳定回执（`ok/op/file/dry_run/written` 从入参派生）。
+ * 内层若给了更细的 `data`（如 `replace_text` 的 `hit`/`symbol_diff`）则合并保留。
+ */
+export async function editCode(args: EditCodeArgs): Promise<{ message: string; data: EditReceipt }> {
+  const r = await editCodeInner(args);
+  const base: EditReceipt = {
+    ok: true,
+    op: String(args.op),
+    file: String(args.file),
+    dry_run: args.dry_run === true,
+    written: args.dry_run !== true,
+  };
+  return { message: r.message, data: { ...base, ...((r.data as Partial<EditReceipt>) ?? {}) } };
 }
