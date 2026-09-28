@@ -334,7 +334,7 @@ describe('findExternalImporters - importer 邻域有界扫描', () => {
       'B/src/other.ts': 'export const x = 1;\n',
     });
     const hits = await findExternalImporters(path.join(dir, 'A/src/def.ts'), path.join(dir, 'A'));
-    const norm = hits.map((h) => h.replace(/\\/g, '/'));
+    const norm = hits.files.map((h) => h.replace(/\\/g, '/'));
     expect(norm).toContain(path.join(dir, 'B/src/use.ts').replace(/\\/g, '/'));
     expect(norm).not.toContain(expect.stringContaining('other.ts'));
     rmForce(dir);
@@ -350,7 +350,7 @@ describe('findExternalImporters - importer 邻域有界扫描', () => {
       'B/src/use.ts': "import { compute } from '@shared/def';\nexport function use() { return compute(); }\n",
     });
     const hits = await findExternalImporters(path.join(dir, 'A/src/def.ts'), path.join(dir, 'A'));
-    const norm = hits.map((h) => h.replace(/\\/g, '/'));
+    const norm = hits.files.map((h) => h.replace(/\\/g, '/'));
     expect(norm).toContain(path.join(dir, 'B/src/use.ts').replace(/\\/g, '/'));
     rmForce(dir);
   });
@@ -426,7 +426,7 @@ describe('expandClosure - 通用兜底语言 + 裸包 workspace importer', () =>
       'B/src/use.ts': "import { compute } from 'alpha';\nexport function use() { return compute(); }\n",
     });
     const hits = await findExternalImporters(path.join(dir, 'A/src/index.ts'), path.join(dir, 'A'));
-    const norm = hits.map((h) => h.replace(/\\/g, '/'));
+    const norm = hits.files.map((h) => h.replace(/\\/g, '/'));
     expect(norm).toContain(path.join(dir, 'B/src/use.ts').replace(/\\/g, '/'));
     rmForce(dir);
   });

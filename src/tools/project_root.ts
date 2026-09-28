@@ -80,6 +80,12 @@ export interface ExternalRef {
   resolved: string;
 }
 
+/** findExternalImporters 的返回：成功找到的引用文件 + 跳过项（可读的失败计数） */
+export interface ExternalImporterResult {
+  files: string[];
+  skipped: Array<{ dir: string; why: string }>;
+}
+
 /** 判断绝对路径是否落在 root（或其子目录）内——闭包只扩根内，越界即视为外部边界 */
 export function isInsideRoot(abs: string, root: string): boolean {
   const rp = path.relative(path.resolve(root), path.resolve(abs));
@@ -723,17 +729,20 @@ export function readPackageName(root: string): string | undefined {
  *  - 匹配：相对 import 或别名 import 真实解析到 seedFile
  * 返回被引用 seedFile 的文件绝对路径列表。
  */
-export async function findExternalImporters(seedFile: string, root: string): Promise<string[]> {
+export async function findExternalImporters(seedFile: string, root: string): Promise<ExternalImporterResult> {
   const seedAbs = path.resolve(seedFile);
   const rootAbs = path.resolve(root);
   const home = path.resolve(homedir());
   const siblingDir = path.dirname(rootAbs);
-  if (siblingDir === path.dirname(siblingDir)) return []; // root 已在驱动器（盘）根 → 无兄弟层
-  let entries: fs.Dirent[] = [];
+  if (siblingDir === path.dirname(siblingDir)) return { files: [], skipped: [] }; // root 已在驱动器（盘）根 → 无兄弟层
+  let entries: fs.Dirent[];
+  const skipped: ExternalImporterResult['skipped'] = [];
   try {
     entries = fs.readdirSync(siblingDir, { withFileTypes: true });
-  } catch {
-    return [];
+  } catch (err) {
+    // readdirSync 失败：邻域目录权限不足/不存在等，记 skipped 并带 why，不抛（§2d：不是硬失败场景）
+    skipped.push({ dir: siblingDir, why: String(err) });
+    return { files: [], skipped };
   }
   // 防御：项目样兄弟数量异常 → 这是 temp/缓存容器，不是工作区，短路（不逐个 walk）
   let projectLike = 0;
@@ -742,9 +751,9 @@ export async function findExternalImporters(seedFile: string, root: string): Pro
     const p = path.join(siblingDir, e.name);
     if (p === rootAbs || rootAbs.startsWith(p + path.sep)) continue;
     if (isProjectDir(p)) projectLike++;
-    if (projectLike > NEIGHBOR_LIMIT) return [];
+    if (projectLike > NEIGHBOR_LIMIT) return { files: [], skipped };
   }
-  const out: string[] = [];
+  const files: string[] = [];
   // 松散文件（非项目样兄弟）用 seed 根的别名兜底
   const rootAlias = loadAliasConfig(rootAbs);
   // 裸包 workspace 互引：seed 所在项目包名（B `import {..} from 'a'`，a=A 包名 → 命中）
@@ -767,16 +776,16 @@ export async function findExternalImporters(seedFile: string, root: string): Pro
         if (Date.now() > deadline) break; // 单个仓库内也受同一预算约束
         const abs = path.resolve(f);
         if (abs === seedAbs || !isLocalSource(abs)) continue;
-        if (await importsTargetFile(abs, seedAbs, projAlias, rootPkgName)) out.push(abs);
+        if (await importsTargetFile(abs, seedAbs, projAlias, rootPkgName)) files.push(abs);
       }
     } else if (e.isFile() && SRC_EXTS.has(path.extname(e.name))) {
       if (Date.now() > deadline) break;
       const abs = path.resolve(p);
       if (abs === seedAbs || !isLocalSource(abs)) continue;
-      if (await importsTargetFile(abs, seedAbs, rootAlias, rootPkgName)) out.push(abs);
+      if (await importsTargetFile(abs, seedAbs, rootAlias, rootPkgName)) files.push(abs);
     }
   }
-  return out;
+  return { files, skipped };
 }
 
 // ─────────────────────────────────────────────────────────────
