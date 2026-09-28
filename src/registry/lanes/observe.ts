@@ -288,7 +288,7 @@ export const OBSERVE_TOOLS: ToolDef[] = [
         .describe('capture 必需：金丝雀样例输入（verify 忽略，复用基线里的 cases）'),
       baseline: z.string().optional().describe('基线 JSON 路径覆盖（缺省 <project_dir>/.agent-io/behavior/<file>__<func>.json）'),
     },
-    handler: wrap(async (a) => {
+    handler: wrapData(async (a) => {
       const spec = {
         project_dir: String(a.project_dir),
         file: String(a.file),
@@ -357,7 +357,7 @@ export const OBSERVE_TOOLS: ToolDef[] = [
       filter: z.string().optional().describe('测试文件/名称过滤（如 tests/tools/find_references.test.ts）'),
       timeout_ms: z.number().optional().describe('超时毫秒（默认 120000）'),
     },
-    handler: wrap(async (a) => {
+    handler: wrapData(async (a) => {
       // 跑测试前置：检本服务自身 dist 是否 stale（改 src 忘 build → 提示先重建，防测旧产物）
       const staleHint = (() => {
         try {
@@ -406,7 +406,7 @@ export const OBSERVE_TOOLS: ToolDef[] = [
       target: z.string().optional().describe('指定功能名；缺省返回所有功能 入口+链长 总览'),
       max_steps: z.number().optional().describe('主链最大步数（默认 24）'),
     },
-    handler: wrap(async (a) => {
+    handler: wrapData(async (a) => {
       const feature = String(a.feature ?? '');
       const sourceRoot = a.project_dir ? String(a.project_dir) : undefined;
       const opts = { target: a.target ? String(a.target) : undefined, maxSteps: typeof a.max_steps === 'number' ? a.max_steps : undefined };

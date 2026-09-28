@@ -79,7 +79,7 @@ export const CROSS_TOOLS: ToolDef[] = [
       project_dir_a: z.string().describe('项目 A 根目录（绝对路径）'),
       project_dir_b: z.string().describe('项目 B 根目录（绝对路径）'),
     },
-    handler: wrap(async (a) => {
+    handler: wrapData(async (a) => {
       const r = await compareProjects(String(a.project_dir_a), String(a.project_dir_b));
       const fmtSym = (defs: Array<{ file: string; signature: string }>) => defs.map((d) => `${d.file}  ${d.signature}`).join(' ; ');
       const lines = [
@@ -117,7 +117,7 @@ export const CROSS_TOOLS: ToolDef[] = [
       project_dir_a: z.string().describe('项目 A 根目录（绝对路径）'),
       project_dir_b: z.string().describe('项目 B 根目录（绝对路径）'),
     },
-    handler: wrap(async (a) => {
+    handler: wrapData(async (a) => {
       const r = await precheckHybrid(String(a.project_dir_a), String(a.project_dir_b));
       const fmtSym = (defs: Array<{ file: string; signature: string }>) => defs.map((d) => `${d.file}  ${d.signature}`).join(' ; ');
       const lines = [
@@ -161,7 +161,7 @@ export const CROSS_TOOLS: ToolDef[] = [
       complexity_threshold: z.number().int().optional().describe('圈复杂度阈值（默认 10）'),
       top: z.number().int().optional().describe('复杂度清单最多列多少个（默认 10）'),
     },
-    handler: wrap(async (a) => {
+    handler: wrapData(async (a) => {
       const r = await analyzeHealth(String(a.project_dir), {
         complexityThreshold: a.complexity_threshold == null ? undefined : Number(a.complexity_threshold),
         top: a.top == null ? undefined : Number(a.top),

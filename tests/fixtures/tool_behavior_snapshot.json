@@ -46,7 +46,7 @@
   },
   {
     "name": "code_health",
-    "text": "代码健康度 · undefined\n0 个文件 → 健康分 0（N/A）\n分层：胶水 0 / 积木 0（其中未分类 0）/ 契约 0 / 违规 0\n无输入（0 个源文件）—— 本次读数不代表健康，grade=N/A。请检查 root 是否存在、扩展名是否被内核支持。\n\n—— 问题清单 ——\n（无问题）",
+    "text": "代码健康度 · undefined\n0 个文件 → 健康分 0（N/A）\n分层：胶水 0 / 积木 0（其中未分类 0）/ 契约 0 / 违规 0\n无输入（0 个源文件）—— 本次读数不代表健康，grade=N/A。请检查 root 是否存在、扩展名是否被内核支持。\n\n—— 问题清单 ——\n（无问题）\n---DATA---\n{\"root\":\"undefined\",\"fileCount\":0,\"issues\":[],\"counts\":{\"unused_export\":0,\"unused_import\":0,\"orphan_file\":0,\"high_complexity\":0,\"layer_violation\":0},\"complexity\":[],\"layers\":{\"contract\":0,\"brick\":0,\"glue\":0,\"unclassified\":0,\"violations\":0},\"score\":0,\"grade\":\"N/A\",\"summary\":\"无输入（0 个源文件）—— 本次读数不代表健康，grade=N/A。请检查 root 是否存在、扩展名是否被内核支持。\"}",
     "isError": false
   },
   {
@@ -56,7 +56,7 @@
   },
   {
     "name": "cross_repo_symbol_index",
-    "text": "跨项目符号索引 · undefined ↔ undefined\nA：0 文件 / 0 顶层符号     B：0 文件 / 0 顶层符号\n\n■ 冲突 0（同名不同签，杂交前需改名/错位）\n  （无）\n\n■ 双胞胎 0（同名同签，可去重一个）\n  （无）\n\n■ 迁移范围：A→B 候选 0 个\n\n■ 迁移范围：B→A 候选 0 个",
+    "text": "跨项目符号索引 · undefined ↔ undefined\nA：0 文件 / 0 顶层符号     B：0 文件 / 0 顶层符号\n\n■ 冲突 0（同名不同签，杂交前需改名/错位）\n  （无）\n\n■ 双胞胎 0（同名同签，可去重一个）\n  （无）\n\n■ 迁移范围：A→B 候选 0 个\n\n■ 迁移范围：B→A 候选 0 个\n---DATA---\n{\"aRoot\":\"undefined\",\"bRoot\":\"undefined\",\"aFiles\":0,\"bFiles\":0,\"aSymbols\":0,\"bSymbols\":0,\"conflicts\":[],\"duplicates\":[],\"aOnly\":[],\"bOnly\":[]}",
     "isError": false
   },
   {
@@ -71,7 +71,7 @@
   },
   {
     "name": "diff_views",
-    "text": "══ feature \"undefined\" 视图对比 ══\n\n  ─ 概览 ─\n  设计视图: 不存在\n  实际视图: 不存在\n  基线视图: 不存在（首次导入后自动锚定）\n\n  ─ 文件变更 ─\n  新增: 0 文件\n  删除: 0 文件\n  修改: 0 文件\n  未变: 0 文件\n\n  ─ 符号变更 ─\n  设计视图: 0 符号\n  实际视图: 0 符号\n\n  ─ API 变更 ─\n  设计视图: 0 API\n  实际视图: 0 API\n\n  ─ 依赖边变更 ─\n  新增: 0 边\n  删除: 0 边（结构塌方）\n\n  ⚠ 设计视图不存在 — 请先通过 manage_feature 创建设计，或使用 import_project 生成设计 DSL\n\n  ⚠ 实际视图不存在 — 请先运行 import_project(live_only=true) 生成代码快照\n\n  (需要更多细节请使用 query_feature 查询单个文件)",
+    "text": "══ feature \"undefined\" 视图对比 ══\n\n  ─ 概览 ─\n  设计视图: 不存在\n  实际视图: 不存在\n  基线视图: 不存在（首次导入后自动锚定）\n\n  ─ 文件变更 ─\n  新增: 0 文件\n  删除: 0 文件\n  修改: 0 文件\n  未变: 0 文件\n\n  ─ 符号变更 ─\n  设计视图: 0 符号\n  实际视图: 0 符号\n\n  ─ API 变更 ─\n  设计视图: 0 API\n  实际视图: 0 API\n\n  ─ 依赖边变更 ─\n  新增: 0 边\n  删除: 0 边（结构塌方）\n\n  ⚠ 设计视图不存在 — 请先通过 manage_feature 创建设计，或使用 import_project 生成设计 DSL\n\n  ⚠ 实际视图不存在 — 请先运行 import_project(live_only=true) 生成代码快照\n\n  (需要更多细节请使用 query_feature 查询单个文件)\n---DATA---\n{\"design_exists\":false,\"live_exists\":false,\"baseline_exists\":false,\"summary\":{\"design_files\":0,\"live_files\":0,\"added_files\":0,\"removed_files\":0,\"modified_files\":0,\"unchanged_files\":0,\"design_symbols\":0,\"live_symbols\":0,\"design_apis\":0,\"live_apis\":0,\"added_edges\":0,\"removed_edges\":0},\"files\":[],\"edges\":[]}",
     "isError": false
   },
   {
@@ -101,7 +101,7 @@
   },
   {
     "name": "feature_line",
-    "text": "功能线总览（1 个功能）：\n  - （未归类）：入口 RunDSLCLI，主链 2 步",
+    "text": "功能线总览（1 个功能）：\n  - （未归类）：入口 RunDSLCLI，主链 2 步\n---DATA---\n{\"ok\":true,\"features\":[{\"feature\":\"（未归类）\",\"entry\":\"RunDSLCLI\",\"steps\":2}]}",
     "isError": false
   },
   {
@@ -141,7 +141,7 @@
   },
   {
     "name": "hybrid_precheck",
-    "text": "项目杂交预检 · undefined ↔ undefined\n判定：可直接融合（ok）\n  · 健康度良好：A 0（N/A）/ B 0（N/A），选材质量过关\n\n■ 符号冲突 0（同名不同签，杂交前需改名/错位）\n  （无）\n\n■ 功能重叠 0（同名同签双胞胎，可去重一个）\n  （无）\n\n■ 依赖版本冲突 0\n  （无）\n\n■ 依赖共享 0 / 仅A 0 / 仅B 0",
+    "text": "项目杂交预检 · undefined ↔ undefined\n判定：可直接融合（ok）\n  · 健康度良好：A 0（N/A）/ B 0（N/A），选材质量过关\n\n■ 符号冲突 0（同名不同签，杂交前需改名/错位）\n  （无）\n\n■ 功能重叠 0（同名同签双胞胎，可去重一个）\n  （无）\n\n■ 依赖版本冲突 0\n  （无）\n\n■ 依赖共享 0 / 仅A 0 / 仅B 0\n---DATA---\n{\"aRoot\":\"undefined\",\"bRoot\":\"undefined\",\"symbolConflicts\":[],\"symbolDuplicates\":[],\"deps\":{\"conflicts\":[],\"shared\":[],\"aOnly\":[],\"bOnly\":[]},\"health\":{\"a\":{\"root\":\"undefined\",\"fileCount\":0,\"issues\":[],\"counts\":{\"unused_export\":0,\"unused_import\":0,\"orphan_file\":0,\"high_complexity\":0,\"layer_violation\":0},\"complexity\":[],\"layers\":{\"contract\":0,\"brick\":0,\"glue\":0,\"unclassified\":0,\"violations\":0},\"score\":0,\"grade\":\"N/A\",\"summary\":\"无输入（0 个源文件）—— 本次读数不代表健康，grade=N/A。请检查 root 是否存在、扩展名是否被内核支持。\"},\"b\":{\"root\":\"undefined\",\"fileCount\":0,\"issues\":[],\"counts\":{\"unused_export\":0,\"unused_import\":0,\"orphan_file\":0,\"high_complexity\":0,\"layer_violation\":0},\"complexity\":[],\"layers\":{\"contract\":0,\"brick\":0,\"glue\":0,\"unclassified\":0,\"violations\":0},\"score\":0,\"grade\":\"N/A\",\"summary\":\"无输入（0 个源文件）—— 本次读数不代表健康，grade=N/A。请检查 root 是否存在、扩展名是否被内核支持。\"}},\"verdict\":\"ok\",\"reasons\":[\"健康度良好：A 0（N/A）/ B 0（N/A），选材质量过关\"]}",
     "isError": false
   },
   {

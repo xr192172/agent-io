@@ -367,15 +367,18 @@ export const META_TOOLS: ToolDef[] = [
       refresh: z.boolean().optional().describe('true = 先跑一次保鲜（重同步变更文件 + 重开引用）再报告；默认 false = 纯只读'),
       sample: z.number().int().min(0).max(200).optional().describe('未保鲜样例的条数上限（默认 20）'),
     },
-    handler: async (a) => {
+    // ★ P-E 本笔：裸 arrow ⇒ wrapData。原先 `return { text: renderIntegrity(r) }` 把
+    //   IndexIntegrityResult（trustworthy / counts / refs.stale_resolved / issues …
+    //   索引可信度是**结构化产物**）在通道层丢掉，agent 只能读散文。
+    handler: wrapData(async (a) => {
       const dir = typeof a.project_dir === 'string' && a.project_dir ? a.project_dir : process.cwd();
       const r = await indexIntegrity({
         project_dir: dir,
         ...(a.refresh === true ? { refresh: true } : {}),
         ...(typeof a.sample === 'number' ? { sample: a.sample } : {}),
       });
-      return { text: renderIntegrity(r) };
-    },
+      return { message: renderIntegrity(r), data: r };
+    }),
     // refresh:false 必须是**纯只读**（否则它报告的是"修完之后"，不是"LLM 马上要读到的"）
     noAutoFresh: true,
   },

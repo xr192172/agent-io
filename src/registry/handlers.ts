@@ -47,8 +47,10 @@ import { updateFeature } from '../tools/update_feature.js';
 // 8 个主工具 handler
 // ─────────────────────────────────────────────────────────────
 
-/** get_dsl：只读查询（复用 queryFeature） */
-export const getDslHandler = wrap(async (a) => queryFeature(a as never));
+/** get_dsl：只读查询（复用 queryFeature）。
+ * ★ 用 wrapData：queryFeature 返回 `{ message, data? }` —— data 是查询的结构化产物
+ *   （dsl / nodes / edges / files / functions …），wrap 会在通道层静默丢弃它。 */
+export const getDslHandler = wrapData(async (a) => queryFeature(a as never));
 
 /** edit_dsl：统一写操作（复用 updateFeature，Step A 扩展后覆盖更多写动作） */
 export const editDslHandler = wrap(async (a) => {
@@ -104,8 +106,8 @@ export const editDslHandler = wrap(async (a) => {
   return result;
 });
 
-/** manage_feature：生命周期 */
-export const manageFeatureHandler = wrap(async (a) => manageFeature(a as never));
+/** manage_feature：生命周期。★ wrapData：manageFeature 返回 `{ message, data? }`（create/list 等的结构化产物） */
+export const manageFeatureHandler = wrapData(async (a) => manageFeature(a as never));
 
 /** render_design：渲染思维导图/HTML/SVG/Markdown（format 参数聚合导出；view 决定渲染设计或实际视图） */
 export const renderDesignHandler = wrap(async (a) => {
@@ -215,8 +217,8 @@ export const exploreCodeHandler = wrapData(async (a) => {
   return { message: result.message, data: result.data };
 });
 
-/** diff_views：设计视图 vs 实际代码快照双栏对比 */
-export const diffViewsHandler = wrap(async (a) => {
+/** diff_views：设计视图 vs 实际代码快照双栏对比。★ wrapData：handler 本就回 `data: r.data`（结构化对比表） */
+export const diffViewsHandler = wrapData(async (a) => {
   const r = diffViews({
     feature: a.feature as string,
     live_dir: a.live_dir as string | undefined,
@@ -224,8 +226,8 @@ export const diffViewsHandler = wrap(async (a) => {
   return { message: r.message, data: r.data };
 });
 
-/** archive_node：把下线的文件/节点孤立到下线库（历史研究材料） */
-export const archiveNodeHandler = wrap(async (a) => {
+/** archive_node：把下线的文件/节点孤立到下线库（历史研究材料）。★ wrapData：回 `data: r`（归档卡） */
+export const archiveNodeHandler = wrapData(async (a) => {
   const r = archiveNode({
     feature: a.feature as string,
     file_path: a.file_path as string,
@@ -235,8 +237,8 @@ export const archiveNodeHandler = wrap(async (a) => {
   return { message: r.message, data: r };
 });
 
-/** sync_contracts：以 server_registry zod schema 为唯一源，回填 DSL expected_apis */
-export const syncContractsHandler = wrap((a) => {
+/** sync_contracts：以 server_registry zod schema 为唯一源，回填 DSL expected_apis。★ wrapData：回 `data: r` */
+export const syncContractsHandler = wrapData((a) => {
   const r = syncContracts({ feature: a.feature as string, include_all: a.include_all as boolean | undefined });
   return { message: r.message, data: r };
 });
@@ -251,14 +253,14 @@ export const setDesignIntentHandler = wrapData((a) => {
   return { message: r.message, data: r };
 });
 
-/** list_archive：列出某 feature 的下线库归档条目 */
-export const listArchiveHandler = wrap(async (a) => {
+/** list_archive：列出某 feature 的下线库归档条目。★ wrapData：回 `data: r`（归档条目数组） */
+export const listArchiveHandler = wrapData(async (a) => {
   const r = listArchive({ feature: a.feature as string, live_dir: a.live_dir as string | undefined });
   return { message: r.message, data: r };
 });
 
-/** harvest_decisions：从文档/git日志/注释提取决策卡候选（draft，供 review 补录） */
-export const harvestDecisionsHandler = wrap(async (a) => {
+/** harvest_decisions：从文档/git日志/注释提取决策卡候选（draft，供 review 补录）。★ wrapData：回 `data: r` */
+export const harvestDecisionsHandler = wrapData(async (a) => {
   const r = harvestDecisions({
     feature: a.feature as string,
     doc_dir: a.doc_dir as string | undefined,
@@ -274,8 +276,9 @@ export const harvestDecisionsHandler = wrap(async (a) => {
 // 与 design 主工具并列同一套 MCP。底层复用 observe/* 纯函数，不重写逻辑。
 // ─────────────────────────────────────────────────────────────
 
-/** observe_log：按文件/全量查询 Observe 运行日志（复用 queryObserveLog） */
-export const observeLogHandler = wrap(async (a) => {
+/** observe_log：按文件/全量查询 Observe 运行日志（复用 queryObserveLog）。
+ * ★ wrapData：结构化 entries 由**通道**附带 `---DATA---`（原先手写在 message 里，现交给包装器，输出字节等价）。 */
+export const observeLogHandler = wrapData(async (a) => {
   const eventsFile = a.events_file as string | undefined;
   if (!eventsFile) {
     throw new Error('observe_log 需要 events_file 参数：传 Observe 事件文件路径（events.jsonl）。');
@@ -293,15 +296,13 @@ export const observeLogHandler = wrap(async (a) => {
     lines.push(`  ${mark} [${e.result}] ${e.probe}${e.file ? ` (${e.file})` : ''} rule=${e.rule}`);
     lines.push(`      ${e.reason}`);
   }
-  // 附完整结构化数据供 LLM 继续分析
-  lines.push('---DATA---');
-  lines.push(JSON.stringify(r.entries));
+  // 附完整结构化数据供 LLM 继续分析（由 wrapData 通道追加，不再手写；见上注释）
   return { message: lines.join('\n'), data: r.entries };
 });
 
 /** observe_trace：读录制调用链 → 采样 → 返回结构化调用树（面向 LLM 的纯后端回放）。
  * 不给 trace_id 时返回链路清单（供 LLM 挑）；给 trace_id 展开该针完整调用树文本+数据。 */
-export const observeTraceHandler = wrap(async (a) => {
+export const observeTraceHandler = wrapData(async (a) => {
   const cfg = {
     events_path: typeof a.events_path === 'string' && a.events_path ? a.events_path : undefined,
     events_text: typeof a.events_text === 'string' && a.events_text ? a.events_text : undefined,
@@ -369,8 +370,9 @@ export const reconcileChainHandler = wrapData(async (a) => {
   return { message: r.message, data: r };
 });
 
-/** observe_instrument：对目标项目全自动插桩 / 还原（复用 instrumentProject/restoreInstrumented） */
-export const observeInstrumentHandler = wrap(async (a) => {
+/** observe_instrument：对目标项目全自动插桩 / 还原（复用 instrumentProject/restoreInstrumented）。
+ * ★ wrapData：handler 回 `data`（results / ledger / 还原清单），wrap 会静默丢弃。 */
+export const observeInstrumentHandler = wrapData(async (a) => {
   const target = a.target as string | undefined;
   if (!target) {
     throw new Error('observe_instrument 需要 target 参数：传要插桩的项目目录。');

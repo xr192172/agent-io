@@ -364,7 +364,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
         .optional()
         .describe('边级意图：按 base 边 id 或 from+to 匹配挂载'),
     },
-    handler: wrap(async (a) => {
+    handler: wrapData(async (a) => {
       const feature = String(a.feature ?? '');
       if (!feature) throw new Error('缺参数 feature');
       let project_dir = a.project_dir ? String(a.project_dir) : '';
