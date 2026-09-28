@@ -179,10 +179,28 @@ async function snapshotToFile(c: CdpClient, file: string): Promise<number> {
   return text.length;
 }
 
+/** memory_observe 动作（与 observe 线 inputSchema 的 z.enum 同源）。 */
+export type MemObserveAction = 'status' | 'baseline' | 'track' | 'gc' | 'snapshot';
+
+/**
+ * memory_observe 显式入参。
+ * ★ §21 规矩①：[B] 收显式参数，不收 `Record<string, unknown>` 的 args 袋子 ——
+ *   本函数是被 [C]（`registry/lanes/observe.ts` 里 `wrapData` 回调）直接调用的执行体，
+ *   入参三项（target/action/project_dir）**可枚举** ⇒ 无需袋子。
+ */
+export interface MemoryObserveInput {
+  /** 目标进程的 --inspect 端口（纯数字） */
+  target: number;
+  /** 缺省 status */
+  action?: MemObserveAction;
+  /** snapshot 落盘归属项目根（缺省 process.cwd） */
+  project_dir?: string;
+}
+
 /** memory_observe 主入口：{ message, data }。 */
-export async function memoryObserveHandler(args: Record<string, unknown>): Promise<{ message: string; data?: unknown }> {
-  const port = resolvePort(args.target);
-  const action = String(args.action ?? 'status').toLowerCase();
+export async function memoryObserveHandler(input: MemoryObserveInput): Promise<{ message: string; data?: unknown }> {
+  const port = resolvePort(input.target);
+  const action = String(input.action ?? 'status').toLowerCase();
   const key = String(port);
   const t0 = Date.now();
   const c = await connectCdp(port);
@@ -238,7 +256,7 @@ export async function memoryObserveHandler(args: Record<string, unknown>): Promi
       data = { port, ...gcResult };
     } else if (action === 'snapshot') {
       lines.push(`[快照 · 端口 ${port}] ${fmt(await sample(c), t0)}`);
-      const dir = args.project_dir ? path.join(path.resolve(String(args.project_dir)), DATA_DIR_NAME) : process.cwd();
+      const dir = input.project_dir ? path.join(path.resolve(String(input.project_dir)), DATA_DIR_NAME) : process.cwd();
       const file = path.join(dir, `heap-${port}-${Date.now()}.heapsnapshot`);
       const bytes = await snapshotToFile(c, file);
       lines.push(`heap snapshot 已写: ${file}（${(bytes / 1048576).toFixed(1)}MB，用 Chrome DevTools 加载或与另一份做 heap diff）`);

@@ -18,6 +18,7 @@ import { rebuildChains } from '../../observe/chain.js';
 import { getFeatureLine } from '../../tools/feature_line.js';
 import { ensureProjectIndex } from '../../tools/index_freshness.js';
 import { memoryObserveHandler, memoryTargetsHandler } from '../../tools/memory_observe.js';
+import type { MemoryObserveInput } from '../../tools/memory_observe.js';
 import { narrateStep } from '../../tools/narrate_step.js';
 import type { NarrateStepInput } from '../../tools/narrate_step.js';
 import { recommendObservePoints } from '../../tools/observe_points.js';
@@ -42,7 +43,7 @@ export const OBSERVE_TOOLS: ToolDef[] = [
       action: z.enum(['status', 'baseline', 'track', 'gc', 'snapshot']).default('status').optional().describe('status=一次性统计（默认）/ baseline=记基线 / track=对比基线 / gc=强制GC判定瞬时或泄漏 / snapshot=写heap snapshot'),
       project_dir: z.string().optional().describe('snapshot 用：heapsnapshot 落盘归属项目根（缺省 process.cwd）'),
     },
-    handler: wrapData(async (a) => memoryObserveHandler(a)),
+    handler: wrapData(async (a) => memoryObserveHandler(a as unknown as MemoryObserveInput)),
   },
 
   {
