@@ -2510,10 +2510,26 @@ DSH 交付 `4537a34`，**主目标达成**（合法 JSONC 现在能正常解析 
 - ★ **编号**：我原台账把 `lane_sources` 叫 **G9**（但它代码里不自称），新门也叫 G9 ⇒
   **我把新门改为 G10**（`tests/duplicate_literal_tables.test.ts` + fixture 的 note）
 
-### 29.4 还剩什么（§28.3 的剩余项）
-- **P-B** `edit_code` 批量 `targets[]`
-- **P-C** `plan_refactor` / `apply_refactor_plan` 成对（会改 G1 契约 67 → 68/69）
-- **P-E** "完成 ⇒ 可验证产物"写进 `docs/tool-convergence.md` + G7 扩到全部工具
+### 29.4 第二批（又落地 2 条）
+| # | 事项 | commit | 结论 |
+|---|---|---|---|
+| 5d | **P-B** `edit_code` 批量 `targets[]` | `c525a93` | ✅ 抽 `planReplaceText` 让**单文件与批量共用一份实现**；`targets?: [{file,old_text,new_text}]` + `atomic?`（缺省**逐项独立**，一项失败不影响其余）；7 项测试（含"一次调用改 7 文件"，对应 §16.8 原话）；★ 核实**不重复**既有工具（`rename_many` 是单文件内局部变量改名、`apply_rules` 需规则库）；G1 基线重算后**仍是 67 工具** |
+| 5e | **P-E** 完成⇒可验证产物 + G7 扩展 | `e7e2208` | ✅ ★★ **没有硬扩 G7** —— G7 读的是 `explore_code` 的 **switch 结构**，套不到"没有 action 派发表"的工具上，硬扩只有两种下场：**恒真（空门）**或靠猜（**误伤 + 维护地狱**）⇒ 改为新开 **G11 · 回执产物门**（判据换成「**回执通道能否携带产物**」），★ 与 P-A 门**互补不重复**（P-A 正向棘轮／G11 反向棘轮） |
+
+**全量回归**（累计 9 笔）：`228 passed / 1 skipped (229)` 文件、**`2350 passed / 5 skipped`** 测试
+（基线 2284 **+66**，全是新增测试）⇒ **零回归**。
+
+★★ **P-E 顺带纠正我的口径**：§29.2 记的「18 处丢 data」**只算了 lane 文件内部**；
+算上 `src/registry/handlers.ts` 的具名 handler 后，**真正丢 data 的工具是 34 个**（另有 2 个 `unresolved`）。
+⇒ 已在 `tests/fixtures/tool_completion_receipt.json` 立基线（`dropData:[34]`），**棘轮只许减不许增**。
+
+★ **P-E 的另一个好判断（值得进 playbook）**：它的门出生证**刻意不往 `src/registry/lanes/` 写临时文件** ——
+因为 `lane_sources.test.ts` 会 `readdirSync` 那个目录，写盘会造成**别人的门**假红。
+⇒ **跨门污染是并发编排的真陷阱**：注入物要放"没有别的门在扫"的位置。
+
+### 29.5 还剩什么
+- **P-C** `plan_refactor` / `apply_refactor_plan` 成对（★ 会改 G1 契约 67 → 68/69 ⇒ **必须单独一笔**）
 - **§19 ④⑤⑥**：统一 [B] 契约形状 → 面收敛 + 重排（不留墓碑）→ 清过渡物
-  ★ **抓手已现成**：`wrap` 丢 data 的 18 处（§29.2）+ `rename_file.ts` 的同名副本
+  ★★ **抓手已现成且带门**：G11 的 `dropData:[34]`（§29.4）—— 每换一处，棘轮就收紧一格
+  ＋ `src/tools/rename_file.ts:33` 的同名私有副本 `walkProjectFiles`（G4 该登记的家族）
 

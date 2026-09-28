@@ -12,7 +12,37 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { expectGateGoesRed, expectGateStaysGreen } from './gate_probe.js';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { expectGateGoesRed, expectGateStaysGreen, sweepProbeResidues, PROBE_PREFIX } from './gate_probe.js';
+
+const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+
+describe('★ 残留自清（比"退出钩子"更可靠的那道保险）', () => {
+  it('上一次留下的注入物 ⇒ 下一次调用把它扫掉', () => {
+    // 出生证：2026-09-28 实测 —— `process.on('exit')` 在 vitest worker 被强杀时**不保证触发**，
+    // 跑完一轮全量后仓里留下 4 个注入物，其中 `tests/__gate_probe_brand__.txt`
+    // 让**品牌残留门**在**下一轮**全量里假红（红得莫名其妙、且误导排查方向）。
+    const residue = path.join(REPO, 'tests', `${PROBE_PREFIX}_sweep_probe.txt`);
+    // ★ 内容随便写 —— 本测试验的是"自清能删掉残留文件"，**不**需要这个文件含品牌串。
+    //   （我原先写成旧品牌名 ⇒ 被品牌残留门当"新增旧名出现处"报红。门是对的，是我多此一举：
+    //    在源码里硬编码被检测的串，等于给门送一个假阳性。）
+    fs.writeFileSync(residue, 'residue');
+    expect(fs.existsSync(residue)).toBe(true);
+
+    const removed = sweepProbeResidues();
+
+    expect(removed).toContain(`tests/${PROBE_PREFIX}_sweep_probe.txt`);
+    expect(fs.existsSync(residue)).toBe(false);
+  });
+
+  it('没有残留 ⇒ 返回空数组（不误报、不瞎删）', () => {
+    // 反面：先扫一遍，再扫一遍必须为空 —— 证明它不会每次都报一堆（否则这个"保险"自己就是噪音源）
+    sweepProbeResidues();
+    expect(sweepProbeResidues()).toEqual([]);
+  });
+});
 
 describe('gate_probe · 自身出生证（它不是哑的）', () => {
   it('① 门**没有**变红 ⇒ 报错（核心：它会当场戳穿恒真的空门）', () => {

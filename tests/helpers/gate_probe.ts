@@ -27,6 +27,50 @@
  *   - `restore` 必须**幂等**（重复调用无害）—— exit 兜底会再调一次。
  */
 
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+
+/** ★ 注入物的统一命名前缀（约定）：helper 不认识各门注入什么，只按这个名字前缀**扫残留**。 */
+export const PROBE_PREFIX = '__gate_probe';
+
+/**
+ * ★★ 残留自清 —— 比"退出钩子"更可靠的那道保险。
+ *
+ * 为什么必须有（2026-09-28 实测）：**`process.on('exit')` 在 vitest worker 被强杀时不一定触发**。
+ * 跑完一轮全量后仓里留下了 4 个注入物：
+ *   - `tests/__gate_probe_brand__.txt` ⇒ 让**品牌残留门**在**下一轮**全量里假红（红得莫名其妙）
+ *   - `src/__gate_probe_copy__.ts` 等 ⇒ 还进了索引
+ * ⇒ 每次 `runProbe` 开头先扫一遍并删掉"上一次留下的"，**不依赖退出钩子是否跑到**。
+ *
+ * ★ 副产品：它也是"跨门污染"的止血带 —— 注入物要放在**别的门没在扫**的位置，
+ *   但万一放错了，至少下一轮会自清。
+ */
+export function sweepProbeResidues(): string[] {
+  const removed: string[] = [];
+  for (const dir of [path.join(REPO, 'src'), path.join(REPO, 'tests')]) {
+    let entries: fs.Dirent[] = [];
+    try {
+      entries = fs.readdirSync(dir, { withFileTypes: true });
+    } catch {
+      continue; // 目录不在就跳过（报目录不存在不是本 helper 的职责）
+    }
+    for (const e of entries) {
+      if (!e.isFile() || !e.name.startsWith(PROBE_PREFIX)) continue;
+      const abs = path.join(dir, e.name);
+      try {
+        fs.rmSync(abs, { force: true });
+        removed.push(path.relative(REPO, abs).split(path.sep).join('/'));
+      } catch {
+        // 删不掉也继续扫别的（不能因为一个残留让整趟失败）
+      }
+    }
+  }
+  return removed;
+}
+
 /** 一扇门的出生证探针。`T` = 门判定逻辑的返回值（如"命中表""差异结构""bad 列表"）。 */
 export interface GateProbe<T> {
   /** 门名（进失败信息，便于一眼知道是哪扇门的出生证坏了） */
@@ -62,7 +106,7 @@ let exitBackstopInstalled = false;
 function installExitBackstop(): void {
   if (exitBackstopInstalled) return;
   exitBackstopInstalled = true;
-  process.on('exit', () => {
+  const flush = (): void => {
     for (const restore of pendingRestores) {
       try {
         restore();
@@ -71,7 +115,14 @@ function installExitBackstop(): void {
       }
     }
     pendingRestores.clear();
-  });
+    // ★ 最后再扫一遍硬残留 —— 各门的 restore 未必都覆盖到自己的注入物
+    sweepProbeResidues();
+  };
+  // ★★ 多挂几个钩子：只挂 'exit' 在 vitest worker 被强杀时不保险（见 sweepProbeResidues 的注释）
+  process.on('exit', flush);
+  process.on('SIGINT', flush);
+  process.on('SIGTERM', flush);
+  process.on('beforeExit', flush);
 }
 
 function errText(e: unknown): string {
@@ -85,6 +136,8 @@ function errText(e: unknown): string {
  */
 function runProbe<T>(probe: GateProbe<T>): ProbeOutcome<T> {
   installExitBackstop();
+  // ★★ 先扫掉"上一次留下的"残留 —— 不依赖退出钩子是否触发（见 sweepProbeResidues 的注释）
+  sweepProbeResidues();
   pendingRestores.add(probe.restore);
 
   let mutateErr: unknown = null;
