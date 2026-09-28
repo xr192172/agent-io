@@ -33,6 +33,10 @@
  *
  * 收紧基线（确认某处已改完）：
  *   UPDATE_BRAND_RESIDUE=1 ./node_modules/.bin/vitest run tests/brand_residue.test.ts
+ *
+ * ★ 出生证（§4.11）自 2026-09-28 起由共享 helper `tests/helpers/gate_probe.ts` 承载（§9.1）：
+ *   真实注入一份写回旧名的 `.txt` ⇒ 跑门**真正用的** `scan()` ⇒ 断言红 ⇒ **必定还原**；
+ *   另带"注入不含旧名的文件 ⇒ 不该红"的对照项。见文件末「出生证」块。
  */
 
 import { DATA_DIR_NAME } from '../src/data_dir.js';
@@ -41,6 +45,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ratchetDiff, ratchetFailureText } from './helpers/ratchet.js';
+// ★ 出生证探针抽到 tests/helpers/gate_probe.ts（唯一实现）—— §9.1：原先每扇门各写一个
+//   一次性探针脚本（注入→跑门→断言红→还原），那是"同一种活各写一遍"。见下方「出生证」块。
+import { expectGateGoesRed, expectGateStaysGreen } from './helpers/gate_probe.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.join(here, '..');
@@ -264,5 +271,57 @@ describe('品牌串残留门 · 棘轮（存量不拦，新增即红）', () => 
     expect(missing, `allowFiles 引用了不存在的文件：\n  ${missing.join('\n  ')}`).toEqual([]);
     const stale = Object.keys(reg.frozen).filter((f) => !fs.existsSync(path.join(REPO, f)));
     expect(stale, `frozen 引用了不存在的文件（搬迁后请更新基线）：\n  ${stale.join('\n  ')}`).toEqual([]);
+  });
+});
+
+describe('品牌串残留门 · 出生证（真实注入：写回一处旧名 ⇒ 门会红）', () => {
+  // ★ §9.1 已欠的"共享 helper"落地：原先每扇门各写一个一次性探针脚本
+  //   （`probe_*.mjs`），那是"同一种活各写一遍"。现在各门只声明
+  //   「注入什么、跑什么、怎么算红、怎么还原」，由 helper 保证**必定还原**。
+  //
+  //   注入物落**真实工作区**（`tests/` 下一个带标记的临时 `.txt`），跑门 = 走门**真正用的**
+  //   `scan()`（不是另写一份判定），还原 = 删掉它。helper 的 finally + exit 兜底保证：
+  //   注入失败 / 跑门抛错 / 断言失败，都照样还原。
+  //
+  //   ⚠️ 与上方「检测器自身有效」块的分工：那一块测的是**纯函数分支**（计数规则、文本嗅探、
+  //      临时产物跳过），本块测的是**整条管道**（walk → allowFiles/SELF_FILES 排除 → 计数 → 棘轮）。
+  //      两者互补，不互相替代。
+  const probeFile = path.join(here, '__gate_probe_brand__.txt');
+  const cleanFile = path.join(here, '__gate_probe_clean__.txt');
+  const probeRel = path.relative(REPO, probeFile).split(path.sep).join('/');
+  const cleanRel = path.relative(REPO, cleanFile).split(path.sep).join('/');
+
+  const reg = JSON.parse(fs.readFileSync(REGISTRY, 'utf8')) as BrandRegistry;
+  // 取登记表里第一条旧名形态来注入（不写死字符串 —— 登记表改了出生证跟着走）
+  const oldName = reg.patterns[0];
+  const run = () => ratchetDiff(reg.frozen, scan(), (f) => fs.existsSync(path.join(REPO, f)));
+  const render = (d: ReturnType<typeof run>): string =>
+    `added=${JSON.stringify(d.added)} grown=${JSON.stringify(d.grown.map((g) => g.file))}`;
+
+  it('注入"写回一处旧名" ⇒ 门会红（跑的是门真正用的 scan()）', () => {
+    expectGateGoesRed({
+      name: '品牌串残留门',
+      mutate: () => fs.writeFileSync(probeFile, `const leaked = '${oldName}';\n`, 'utf-8'),
+      run,
+      isRed: (d) => d.added.includes(probeRel),
+      render,
+      restore: () => fs.rmSync(probeFile, { force: true }),
+    });
+  });
+
+  it('对照项：注入一个不含任何旧名的文件 ⇒ 门不该红（证明判据不是"见新文件就红"）', () => {
+    expectGateStaysGreen({
+      name: '品牌串残留门（对照项）',
+      mutate: () => fs.writeFileSync(cleanFile, "const ok = 'agent-io';\n", 'utf-8'),
+      run,
+      isRed: (d) => d.added.includes(cleanRel) || d.grown.some((g) => g.file === cleanRel),
+      render,
+      restore: () => fs.rmSync(cleanFile, { force: true }),
+    });
+  });
+
+  it('出生证过后工作区仍干净（helper 已还原，没留下注入物）', () => {
+    expect(fs.existsSync(probeFile), '注入物没被还原').toBe(false);
+    expect(fs.existsSync(cleanFile), '对照项没被还原').toBe(false);
   });
 });

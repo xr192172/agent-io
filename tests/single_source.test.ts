@@ -27,6 +27,10 @@
  *
  * 基线的收紧方式（确认债务已还清时）：
  *   UPDATE_SINGLE_SOURCE=1 ./node_modules/.bin/vitest run tests/single_source.test.ts
+ *
+ * ★ 出生证（§4.11）自 2026-09-28 起由共享 helper `tests/helpers/gate_probe.ts` 承载（§9.1）：
+ *   真实注入一份副本（`src/` 下带标记的临时 .ts）⇒ 跑门**真正用的** `scanFamily`+`ratchetDiff`
+ *   ⇒ 断言红 ⇒ **必定还原**；另带"注入不含该模式的文件 ⇒ 不该红"的对照项。见下方「出生证」块。
  */
 
 import { describe, it, expect } from 'vitest';
@@ -109,7 +113,10 @@ export function scanFamily(family: Family, srcDir = SRC, repoRoot = REPO): Recor
 
 // ★ 棘轮比较器抽到 tests/helpers/ratchet.ts（唯一实现）—— 品牌串残留门用的是**同一套语义**，
 //   两边各写一份必然分叉（测试辅助代码同样适用"同一份知识只有一处落点"）。
-import { ratchetDiff } from './helpers/ratchet.js';
+import { ratchetDiff, type RatchetDiff } from './helpers/ratchet.js';
+// ★ 出生证探针抽到 tests/helpers/gate_probe.ts（唯一实现）—— 原先每扇门各写一个一次性探针
+//   脚本（§9.1 已欠），那正是"同一种活各写一遍"。见下方「出生证」块。
+import { expectGateGoesRed, expectGateStaysGreen } from './helpers/gate_probe.js';
 
 function readRegistry(): Registry {
   return JSON.parse(fs.readFileSync(REGISTRY, 'utf8')) as Registry;
@@ -134,6 +141,58 @@ describe('G4 · 棘轮比较器自身有效（证明这道门会红）', () => {
     expect(countOccurrences(comment, 'import\\s+type\\b')).toBe(0);
     // ★ 出生证：这正是 `rename_symbol.ts:178` 修好之前的那一行
     expect(countOccurrences('const typeOnly = /^\\s*import\\s+type\\b/.test(node.text);', 'import\\s+type\\b')).toBe(1);
+  });
+});
+
+describe('G4 · 出生证（真实注入：新增一份副本 ⇒ 门会红；对照项 ⇒ 不放红）', () => {
+  // ★ §9.1 已欠的"共享 helper"落地：原先每扇门各写一个一次性探针脚本
+  //   （`probe_*.mjs`，注入→跑门→断言红→还原），那是"同一种活各写一遍"。
+  //   现在各门只声明「注入什么、跑什么、怎么算红、怎么还原」，由 helper 保证**必定还原**。
+  //
+  //   本块注入物落**真实工作区**（`src/` 下一个带标记的临时 `.ts`），跑门 = 走门真正用的
+  //   `scanFamily` + `ratchetDiff`（不是另写一份判定），还原 = 删掉它。
+  //   helper 的 finally + exit 兜底保证：注入失败 / 跑门抛错 / 断言失败都照样还原。
+  const MARKER = '__GATE_PROBE_COPY_MARKER__';
+  const probeFile = path.join(SRC, '__gate_probe_copy__.ts');
+  const cleanFile = path.join(SRC, '__gate_probe_clean__.ts');
+
+  /** 合成一个只认标记串的家族 —— 不读登记表，出生证本身才不随登记表内容漂移 */
+  const synthetic: Family = {
+    id: '__gate_probe__',
+    intent: '出生证用的合成家族（不进登记表）：只要 src/ 里出现标记串就算一份副本',
+    authority: null,
+    pattern: MARKER,
+    frozen: {},
+  };
+  const run = (): RatchetDiff => ratchetDiff(synthetic.frozen, scanFamily(synthetic));
+  const isRed = (d: RatchetDiff): boolean => d.added.length > 0;
+  const render = (d: RatchetDiff): string => `added=${JSON.stringify(d.added)}`;
+
+  it('注入"新增一份副本" ⇒ 门会红（跑的是门真正用的 scanFamily）', () => {
+    expectGateGoesRed({
+      name: 'G4 同族副本门',
+      mutate: () => fs.writeFileSync(probeFile, `export const probe = '${MARKER}';\n`, 'utf-8'),
+      run,
+      isRed,
+      render,
+      restore: () => fs.rmSync(probeFile, { force: true }),
+    });
+  });
+
+  it('对照项：注入一个不含该模式的文件 ⇒ 门不该红（证明判据不是「见文件就红」）', () => {
+    expectGateStaysGreen({
+      name: 'G4 同族副本门（对照项）',
+      mutate: () => fs.writeFileSync(cleanFile, 'export const clean = 0;\n', 'utf-8'),
+      run,
+      isRed,
+      render,
+      restore: () => fs.rmSync(cleanFile, { force: true }),
+    });
+  });
+
+  it('出生证过后工作区仍干净（helper 已还原，没留下注入物）', () => {
+    expect(fs.existsSync(probeFile), '注入物没被还原').toBe(false);
+    expect(fs.existsSync(cleanFile), '对照项没被还原').toBe(false);
   });
 });
 
