@@ -194,8 +194,35 @@ export const REFACTOR_TOOLS: ToolDef[] = [
           parts.push('  ⚠ 命中【契约名】= 对外 MCP 注册名（name:）——改名会破坏调用契约，需人审同步契约而非自动落盘。');
         }
       };
+      // ★ §27.4 / §28.3-7（2026-09-28）：改名是**正确性敏感**操作 —— `skipped` 非空意味着
+      //   "有文件我没看"（读不了 / 该扩展名无解析器 / 闭包扫描失败）⇒ 那些文件里的引用**可能没被改写**，
+      //   改名会产出**损坏的代码**（定义改了、引用没改）。故必须在回执**显著位置**显式警告，
+      //   并逐条列出 {path, why}；不能让它混在普通回执里（否则退化成 §2d 的"少做而不说话"）。
+      //   数据来源：每条 preview/applied 的 result.skipped（rename_symbol 只在非空时返回）。
+      const skippedWarning = (): string | null => {
+        const seen = new Set<string>();
+        const entries: Array<{ path: string; why: string }> = [];
+        const take = (s?: Array<{ path: string; why: string }>): void => {
+          for (const x of s ?? []) {
+            const k = `${x.path}\u0000${x.why}`;
+            if (seen.has(k)) continue;
+            seen.add(k);
+            entries.push(x);
+          }
+        };
+        for (const p of r.previews) take(p.result?.skipped);
+        for (const a of r.applied) take(a.result.skipped);
+        if (entries.length === 0) return null;
+        const lines = [
+          `⚠ 改名可能不完整：${entries.length} 个文件未能扫描（原因见下）——这些文件里的引用可能未改写，请人工复核：`,
+        ];
+        for (const e of entries) lines.push(`  · ${e.path} —— ${e.why}`);
+        return lines.join('\n');
+      };
       if (!r.ok) {
         const parts = [`批量改名被阻断（${r.dryRun ? '整体未落盘' : '部分已应用后中止'}）：`];
+        const warn = skippedWarning();
+        if (warn) parts.push(warn);
         parts.push(`\t${(r.blocked || []).join('\n\t')}`);
         parts.push('\tdry-run 各条状态：');
         for (const p of r.previews) parts.push(`\t  [${p.ok ? '可落盘' : '被阻断'}] ${fmt(p.item, p.result)}`.replace(/\n/g, '\n\t  '));
@@ -205,6 +232,8 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       const parts = [
         r.dryRun ? `[批量 dry-run 预览·未落盘] 共 ${r.previews.length} 条` : `批量改名完成：${r.previews.length} 条，落盘 ${r.filesWritten} 个文件`,
       ];
+      const warn = skippedWarning();
+      if (warn) parts.push(warn);
       for (const p of r.previews) parts.push(fmt(p.item, p.result).replace(/\n/g, '\n\t'));
       appendLiterals(parts, r);
       return { message: parts.join('\n'), data: r };
