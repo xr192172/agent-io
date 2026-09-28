@@ -23,6 +23,7 @@ import path from 'node:path';
 import { matchLayer } from './layer_detect.js';
 import { detectDeadImports, type DeadImportCandidate } from './detect_dead_imports.js';
 import { detectDeadPyImports, type DetectPyDeadImportsResult } from './python_refactor/dead_imports.js';
+import { skipDirSet } from './ts_kernel/source_exts.js';
 
 export type FeatureSide = 'frontend' | 'backend' | 'shared';
 
@@ -110,10 +111,9 @@ export interface FeatureMapResult {
   limitations: string[];
 }
 
-const SKIP_DIRS = new Set([
-  'node_modules', '.git', 'dist', '.next', 'out', 'build', 'target',
-  'venv', '.venv', '__pycache__', 'coverage', '.cache',
-]);
+// ★ 迁到内核同源跳过集（2026-09-28）：基础集由 `source_exts.SKIP_DIR_BASE` 唯一提供
+//   ⇒ 本行的数组是**本调用方显式追加**的语言/用途专属项（有意变宽的部分已在提交里声明）
+const SKIP_DIRS = skipDirSet(['target']);
 
 const SOURCE_EXT = /\.(ts|tsx|js|jsx|mjs|cjs|go|py)$/;
 

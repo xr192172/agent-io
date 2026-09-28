@@ -32,6 +32,7 @@ import { parseFileFull, isSupported, isTsJsExt, resolveExistingPath, SOURCE_EXTS
 import { readGoModules, type GoModule } from './import_project.js';
 import { gitAvailable } from './exec_guard.js';
 import { getProjectCacheDb, closeProjectCacheDb, type Database } from '../db/db.js';
+import { skipDirSet } from './ts_kernel/source_exts.js';
 import {
   toRelPath,
   hasAnyIndexedFiles,
@@ -46,7 +47,9 @@ import {
 const SRC_EXTS = new Set<string>(SOURCE_EXTS);
 
 /** 跳过的目录名（闭包扫描绝不进入） */
-const SKIP_DIRS = new Set(['node_modules', 'dist', 'build', '.git', '.svn', '.hg', 'vendor', 'target', 'out', 'output', '.next', '.nuxt', '__pycache__', '.venv', 'venv']);
+// ★ 迁到内核同源跳过集（2026-09-28）：基础集由 `source_exts.SKIP_DIR_BASE` 唯一提供
+//   ⇒ 本行的数组是**本调用方显式追加**的语言/用途专属项（有意变宽的部分已在提交里声明）
+const SKIP_DIRS = skipDirSet(['vendor', 'target']);
 
 /** 项目根标志文件（manifest，git 之外的项目边界判据） */
 const MANIFESTS = ['package.json', 'go.mod', 'pyproject.toml', 'Cargo.toml', 'pom.xml', 'composer.json', 'pubspec.yaml', 'build.gradle'];

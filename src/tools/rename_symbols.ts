@@ -20,6 +20,7 @@ import { resolveProjectRoot } from './project_root.js';
 import { createProtectGuard } from './protect.js';
 import { writeSourceFiles, type WriteThroughOutcome } from './write_gate.js';
 import type { ExternalRef } from './project_root.js';
+import { skipDirSet } from './ts_kernel/source_exts.js';
 
 /** 字面量命中的类别：contract=对外工具注册名(破坏契约需人审)；history=tool-convergence 历史记录(保留原貌)；docs=文档；test=测试断言；code=源码字符串 */
 export type LiteralMatchKind = 'contract' | 'history' | 'docs' | 'test' | 'code';
@@ -287,7 +288,9 @@ export function scanLiteralOccurrences(
   //   里面是我们自己的派生物 —— 缓存库、`code-snapshots/` 影子副本、`live/` DSL。
   //   尤其**影子副本就是被扫描文件的旧文本副本**：扫到它们既会虚增命中数，
   //   又会把"可撤回的快照"本身改写掉（等于毁掉回滚能力）。
-  const SKIP_DIRS = new Set(['node_modules', 'dist', '.git', '.github', DATA_DIR_NAME]);
+  // ★ 迁到内核同源跳过集（2026-09-28）：基础集由 `source_exts.SKIP_DIR_BASE` 唯一提供
+//   ⇒ 本行的数组是**本调用方显式追加**的语言/用途专属项（有意变宽的部分已在提交里声明）
+const SKIP_DIRS = skipDirSet(['.github']);
   // 根 .gitignore 标记为忽略的顶层目录：git-ignore 了 = 非一手源码（依赖/派生物），不扫。
   const gitIgnored = gitIgnoredTopDirs(projectDir);
 

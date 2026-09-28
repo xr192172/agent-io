@@ -22,6 +22,7 @@ import path from 'node:path';
 import { parseAstRoot } from '../tools/ts_kernel/index.js';
 import type { SyntaxNodeLike } from '../tools/ts_kernel/index.js';
 import type { RunningChangePlan } from '../tools/refactor_langs.js';
+import { skipDirSet } from '../tools/ts_kernel/source_exts.js';
 
 // ─────────────────────────────────────────────
 // 类型
@@ -93,9 +94,9 @@ export const LAYER_LABELS: Record<string, string> = {
   other: '未识别',
 };
 
-const DEFAULT_SKIP_DIRS = new Set([
-  '.git', 'node_modules', 'dist', 'build', 'target', DATA_DIR_NAME, '.venv', 'venv', '__pycache__', '.next', 'out',
-]);
+// ★ 迁到内核同源跳过集（2026-09-28）：基础集由 `source_exts.SKIP_DIR_BASE` 唯一提供
+//   ⇒ 本行的数组是**本调用方显式追加**的语言/用途专属项（有意变宽的部分已在提交里声明）
+const DEFAULT_SKIP_DIRS = skipDirSet(['target']);
 
 // ─────────────────────────────────────────────
 // 纯函数：扫源码 + AST 提取

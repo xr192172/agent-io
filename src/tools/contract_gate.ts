@@ -26,6 +26,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { SOURCE_EXTS } from './ts_kernel/index.js';
+import { skipDirSet } from './ts_kernel/source_exts.js';
 
 export type Lang = 'go' | 'ts' | 'py' | 'java' | 'cs' | 'c';
 
@@ -81,7 +82,9 @@ export interface ScanContractsOptions {
  */
 const SRC_EXT = SOURCE_EXTS;
 
-const EXCLUDE_DIRS = new Set(['node_modules', '.git', 'vendor', 'dist', 'build', '.output', '.next', '.cache']);
+// ★ 迁到内核同源跳过集（2026-09-28）：基础集由 `source_exts.SKIP_DIR_BASE` 唯一提供
+//   ⇒ 本行的数组是**本调用方显式追加**的语言/用途专属项（有意变宽的部分已在提交里声明）
+const EXCLUDE_DIRS = skipDirSet(['vendor']);
 
 /** `.` 左侧绝不可能代表"包/接收者引用"的标识符（保留字 / 关键字） */
 const SKIP_LHS = new Set([

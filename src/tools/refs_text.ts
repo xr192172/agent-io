@@ -20,6 +20,7 @@ import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { SOURCE_EXTS } from './ts_kernel/index.js';
+import { skipDirSet } from './ts_kernel/source_exts.js';
 
 export interface TextRefHit {
   /** 相对项目根（posix） */
@@ -53,7 +54,9 @@ function specifierCandidates(rel: string): string[] {
 }
 
 /** 该文件是否是"值得扫的源码文件"（与 walkFiles 口径一致：跳过依赖/产物/测试夹具目录） */
-const SKIP_DIR = new Set(['node_modules', 'dist', '.git', DATA_DIR_NAME, 'build', 'out', 'coverage']);
+// ★ 迁到内核同源跳过集（2026-09-28）：基础集由 `source_exts.SKIP_DIR_BASE` 唯一提供
+//   ⇒ 本行的数组是**本调用方显式追加**的语言/用途专属项（有意变宽的部分已在提交里声明）
+const SKIP_DIR = skipDirSet([]);
 /** ★ 来自内核唯一权威 `SOURCE_EXTS`（`ts_kernel/source_exts.ts`）—— 此前这里手写 11 个，
  *  而仓内同一问题另有 5 份不同答案（7/8/12/14/15）⇒ 口径随工具而变；统一后只增不减。 */
 const SRC_EXT = new Set<string>(SOURCE_EXTS);

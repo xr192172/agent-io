@@ -23,6 +23,7 @@ import { getDSL, saveDSL } from '../storage.js';
 import { parseFileFull } from './ts_kernel/index.js';
 import type { ParsedSymbol } from './ts_kernel/index.js';
 import { fileFingerprint, healthKey, readHealthCache, writeHealthCache } from './health_cache.js';
+import { skipDirSet } from './ts_kernel/source_exts.js';
 
 // ─────────────────────────────────────────────────────────────
 // 类型
@@ -656,10 +657,9 @@ function sanitizeId(s: string): string {
 // D6 主入口
 // ─────────────────────────────────────────────────────────────
 
-const WALK_SKIP_DIRS = new Set([
-  'node_modules', '.git', 'dist', 'build', 'out', 'output', 'vendor',
-  '__pycache__', DATA_DIR_NAME, 'coverage', 'target', '.next', 'venv', '.venv',
-]);
+// ★ 迁到内核同源跳过集（2026-09-28）：基础集由 `source_exts.SKIP_DIR_BASE` 唯一提供
+//   ⇒ 本行的数组是**本调用方显式追加**的语言/用途专属项（有意变宽的部分已在提交里声明）
+const WALK_SKIP_DIRS = skipDirSet(['vendor', 'target']);
 
 const SOURCE_EXT_RE = /\.(go|ts|tsx|js|jsx|py|mjs|cjs)$/;
 

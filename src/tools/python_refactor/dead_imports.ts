@@ -16,8 +16,11 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { skipDirSet } from '../ts_kernel/source_exts.js';
 
-const SKIP_DIRS = new Set(['venv', '.venv', '__pycache__', 'node_modules', '.git', 'dist']);
+// ★ 迁到内核同源跳过集（2026-09-28）：基础集由 `source_exts.SKIP_DIR_BASE` 唯一提供
+//   ⇒ 本行的数组是**本调用方显式追加**的语言/用途专属项（有意变宽的部分已在提交里声明）
+const SKIP_DIRS = skipDirSet([]);
 
 export interface PyDeadImportCandidate {
   /** 死源（模块说明符；`import foo.bar` 记 `foo.bar`，`from foo.bar import c` 记 `foo.bar`） */

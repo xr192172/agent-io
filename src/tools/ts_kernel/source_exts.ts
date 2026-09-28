@@ -124,7 +124,7 @@ export function isIndexSkippedFileName(name: string, includeTests = false): bool
 // ─────────────────────────────────────────────────────────────
 
 /** 无争议的目录跳过集：依赖目录 / VCS / 构建产物 / 缓存 / 本工具自己的数据目录 */
-const SKIP_DIR_BASE = new Set<string>([
+export const SKIP_DIR_BASE: ReadonlySet<string> = new Set<string>([
   'node_modules', '.git', '.svn', '.hg',
   'dist', 'build', 'out', 'output', 'coverage',
   '.next', '.nuxt', '.cache', '.output',
@@ -155,3 +155,20 @@ export function isUnderSkippedDir(relPath: string, extra?: ReadonlySet<string> |
 export const INDEX_SKIP_DIR_EXTRA: ReadonlySet<string> = new Set([
   'vendor', 'target', 'bin', 'obj', '.idea', '.vscode', '.backup', 'scaffold', 'egg-info',
 ]);
+
+/**
+ * 造一个"同源跳过集"：**真 `Set` 子类**，但 `has()` 走 `shouldSkipDir`。
+ * 为什么是子类而不是普通对象：调用方常把它当 `Set` 传递/迭代（如 `collectJavaFiles(proj, skipDirs)`），
+ *   普通 `{has(){}}` 会在 `instanceof Set` / 迭代处炸；子类两样都保住。
+ * ⇒ 迁移后各站点的"追加项"变成**显式参数**，基础集由内核唯一提供（本文件头注解释的那条纪律）。
+ */
+class SkipDirSetImpl extends Set<string> {
+  private readonly extra?: readonly string[];
+  constructor(extra?: readonly string[]) { super(); this.extra = extra; }
+  override has(name: string): boolean { return shouldSkipDir(name, this.extra); }
+}
+
+/** 造一个同源跳过集；`extra` = 本调用方**显式**追加的语言/用途专属目录名 */
+export function skipDirSet(extra?: readonly string[]): Set<string> {
+  return new SkipDirSetImpl(extra);
+}
