@@ -133,12 +133,13 @@ describe('Impact Ledger · 改前预告-改后验证闭环', () => {
     30000,
   );
 
-  it('declare 缺 files → 温和报错不启动监听', async () => {
+  it('declare 缺 files → 硬失败（throw，不降级成 watching:false 的返回值）', async () => {
     const root = await makeProject();
-    const r = await watchProjectTool({ project_dir: root, action: 'declare', files: [] });
-    expect(r.error).toContain('files');
-    expect(r.watching).toBe(false);
-    expect(r.message).toContain('缺少 files');
+    await expect(watchProjectTool({ project_dir: root, action: 'declare', files: [] }))
+      .rejects.toThrow(/缺少 files/);
+    // throw 后不应启动监听：status 仍为未监听
+    const st = await watchProjectTool({ project_dir: root, action: 'status' });
+    expect(st.watching).toBe(false);
   });
 
   it(
@@ -270,9 +271,9 @@ describe('Impact Ledger · 持久化 + verification gate', () => {
       expect(lg.message).toContain('src/c.ts');
       expect(lg.message).toContain('resolve');
 
-      // resolve 缺 reason → 拒绝过门
-      const bad = await watchProjectTool({ project_dir: root, action: 'ledger', resolve_id: dec.ledger_entry_id });
-      expect(bad.error).toContain('reason');
+      // resolve 缺 reason → 拒绝过门（硬失败：throw，不降级成 {error} 返回值）
+      await expect(watchProjectTool({ project_dir: root, action: 'ledger', resolve_id: dec.ledger_entry_id }))
+        .rejects.toThrow(/reason/);
 
       // resolve 过门：reviewer + reason 留痕
       const ok = await watchProjectTool({
@@ -285,9 +286,9 @@ describe('Impact Ledger · 持久化 + verification gate', () => {
       expect(entries[0].resolution?.reason).toContain('遗漏');
       expect(entries[0].resolution?.reviewer).toBe('llm');
 
-      // 已 resolved 再 resolve → 拒绝；status 债务清零
-      const again = await watchProjectTool({ project_dir: root, action: 'ledger', resolve_id: dec.ledger_entry_id, reason: 'x' });
-      expect(again.error).toContain('violated');
+      // 已 resolved 再 resolve → 拒绝（硬失败：throw）；status 债务清零
+      await expect(watchProjectTool({ project_dir: root, action: 'ledger', resolve_id: dec.ledger_entry_id, reason: 'x' }))
+        .rejects.toThrow(/violated/);
       const st2 = await watchProjectTool({ project_dir: root, action: 'status' });
       expect(st2.unresolved_violations).toBe(0);
 

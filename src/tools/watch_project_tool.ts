@@ -631,11 +631,8 @@ function startWatch(input: WatchProjectToolInput): WatchProjectToolResult {
       onError: (err) => { entry.error = err.message; },
     });
   } catch (e) {
-    return {
-      action: 'start', project_dir: entry.project_dir, watching: false, running: false,
-      feature, rebuild, diff_on_change: diffOnChange,
-      message: '启动监听失败: ' + (e as Error).message, error: (e as Error).message,
-    };
+    // 监听起不来 = 这次请求失败了 ⇒ 硬失败（不降级成 watching:false 的"看起来正常"返回值）
+    throw new Error('启动监听失败: ' + (e as Error).message);
   }
 
   entry.handle = handle;
@@ -785,23 +782,16 @@ function impactWatch(input: WatchProjectToolInput): WatchProjectToolResult {
       message: '暂无影响报告。开启 impact_on_change=true 监听并修改文件后自动生成。',
     };
   }
-  try {
-    const report = readImpactReport(root, seq);
-    return {
-      action: 'impact', project_dir: root, watching: entry?.handle ? true : false, running: false,
-      rebuild: entry?.rebuild ?? false, diff_on_change: entry?.diff_on_change ?? false,
-      impact_on_change: entry?.impact_on_change ?? false,
-      last_impact_seq: seq,
-      alerts: [report.summary.summary_line],
-      message: report.message,
-    };
-  } catch (e) {
-    return {
-      action: 'impact', project_dir: root, watching: entry?.handle ? true : false, running: false,
-      rebuild: entry?.rebuild ?? false, diff_on_change: entry?.diff_on_change ?? false,
-      message: (e as Error).message, error: (e as Error).message,
-    };
-  }
+  // 指定/推导出的报告读不到（序号不存在 / 文件损坏）= 这次请求失败 ⇒ 让 readImpactReport 的异常抛出
+  const report = readImpactReport(root, seq);
+  return {
+    action: 'impact', project_dir: root, watching: entry?.handle ? true : false, running: false,
+    rebuild: entry?.rebuild ?? false, diff_on_change: entry?.diff_on_change ?? false,
+    impact_on_change: entry?.impact_on_change ?? false,
+    last_impact_seq: seq,
+    alerts: [report.summary.summary_line],
+    message: report.message,
+  };
 }
 
 /**
@@ -819,20 +809,17 @@ function impactWatch(input: WatchProjectToolInput): WatchProjectToolResult {
 async function declareWatch(input: WatchProjectToolInput): Promise<WatchProjectToolResult> {
   const files = (input.files ?? []).map((f) => f.trim()).filter(Boolean);
   if (files.length === 0) {
-    return {
-      action: 'declare', project_dir: path.resolve(input.project_dir), watching: false, running: false,
-      rebuild: false, diff_on_change: false,
-      message: '缺少 files 参数：declare 需要登记打算修改的文件（相对项目根或绝对路径）。',
-      error: 'files 为空',
-    };
+    // 参数缺失 = 请求失败 ⇒ 硬失败（不降级成 watching:false 的"看起来正常"返回值）
+    throw new Error('缺少 files 参数：declare 需要登记打算修改的文件（相对项目根或绝对路径）。');
   }
 
   // 确保监听 + 影响报告在跑（无 watch 自动 start；有但 impact 关则打开）
-  const start = await watchProjectTool({ project_dir: input.project_dir, action: 'start', impact_on_change: true, feature: input.feature });
-  if (!start.watching) return start; // 启动失败原样上抛
+  // 启动失败会在 startWatch 内直接 throw（不再返回 watching:false）⇒ 此处 start 必为 watching=true
+  await watchProjectTool({ project_dir: input.project_dir, action: 'start', impact_on_change: true, feature: input.feature });
   const entry = active.get(keyOf(input.project_dir));
   if (!entry) {
-    return { ...start, action: 'declare', message: '内部错误：监听已启动但注册表缺项。', error: 'registry miss' };
+    // 不变量被破坏 = 内部错误 ⇒ 硬失败（不降级成 error:'registry miss' 的返回值）
+    throw new Error('内部错误：监听已启动但注册表缺项。');
   }
   entry.impact_on_change = true;
   if (!entry.throttle) {
@@ -917,18 +904,15 @@ function ledgerWatch(input: WatchProjectToolInput): WatchProjectToolResult {
 
   // resolve 分支：violated → resolved（reason 必填，store 内校验）
   if (input.resolve_id) {
-    try {
-      const resolved = resolveViolation(root, input.resolve_id, input.reviewer ?? 'llm', input.reason ?? '');
-      return {
-        ...base,
-        ledger_entries: [resolved],
-        unresolved_violations: countOpenViolations(root),
-        message: `已处理违规 ${resolved.id}：${resolved.declared_files.join(', ')} 的改动曾计划外扩散 ${resolved.unexpected_files?.length ?? 0} 文件` +
-          `（证据 rp-#${resolved.matched_seq}）。处理人 ${resolved.resolution?.reviewer}，剩余待处理 ${countOpenViolations(root)} 条。`,
-      };
-    } catch (e) {
-      return { ...base, message: (e as Error).message, error: (e as Error).message };
-    }
+    // 过门被拒（缺 reason / 条目不存在 / 状态非 violated）= 这次请求失败 ⇒ 让 resolveViolation 的异常抛出
+    const resolved = resolveViolation(root, input.resolve_id, input.reviewer ?? 'llm', input.reason ?? '');
+    return {
+      ...base,
+      ledger_entries: [resolved],
+      unresolved_violations: countOpenViolations(root),
+      message: `已处理违规 ${resolved.id}：${resolved.declared_files.join(', ')} 的改动曾计划外扩散 ${resolved.unexpected_files?.length ?? 0} 文件` +
+        `（证据 rp-#${resolved.matched_seq}）。处理人 ${resolved.resolution?.reviewer}，剩余待处理 ${countOpenViolations(root)} 条。`,
+    };
   }
 
   const entries = listLedger(root, input.ledger_status);
