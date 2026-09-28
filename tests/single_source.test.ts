@@ -47,6 +47,8 @@ export interface Family {
   authority: string | null;
   /** 字面量模式（子串，**不是正则** —— 避免转义歧义；按非重叠出现计数） */
   pattern: string;
+  /** ★ 带理由的**逐文件豁免**：命中了 pattern 但**不是**该家族的副本（与品牌门 allowFiles 同款） */
+  allow?: Record<string, string>;
   /** 棘轮基线：文件 → 命中数。只允许减少，不允许新增或增长 */
   frozen: Record<string, number>;
 }
@@ -98,6 +100,7 @@ export function scanFamily(family: Family, srcDir = SRC, repoRoot = REPO): Recor
   for (const abs of walkTs(srcDir)) {
     const r = path.relative(repoRoot, abs).split(path.sep).join('/');
     if (family.authority && r === family.authority) continue;
+    if (family.allow && r in family.allow) continue; // ★ 带理由的豁免（见家族 allow）
     const n = countOccurrences(fs.readFileSync(abs, 'utf8'), family.pattern);
     if (n > 0) hits[r] = n;
   }
@@ -143,6 +146,11 @@ describe('G4 · 同族副本棘轮（存量不拦，新增即红）', () => {
       expect(f.id, '家族缺 id').toBeTruthy();
       expect(f.pattern, `${f.id} 缺 pattern`).toBeTruthy();
       expect(f.intent.length, `${f.id} 的 intent 太短，写不清"同的是什么意图"`).toBeGreaterThan(10);
+      // ★ 豁免必须带**非空理由**，且文件真实存在（否则就是"用豁免掩盖分叉"）
+      for (const [file, why] of Object.entries(f.allow ?? {})) {
+        expect(why?.trim().length ?? 0, `${f.id} 对 ${file} 的豁免没写理由`).toBeGreaterThan(10);
+        expect(fs.existsSync(path.join(REPO, file)), `${f.id} 豁免了一个不存在的文件：${file}`).toBe(true);
+      }
     }
     expect(new Set(reg.families.map((f) => f.id)).size).toBe(reg.families.length);
   });
