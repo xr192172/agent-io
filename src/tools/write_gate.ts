@@ -51,7 +51,7 @@ import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { getProjectCacheDb, beginBatch, endBatch, type Database } from '../db/db.js';
-import { syncFile, syncFileSync, removeFile, changedSymbolNames, reopenRefsTo, resolveCrossFileCalls, type SyncStatus } from '../db/symbols.js';
+import { syncFile, syncFileSync, removeFile, changedSymbolNames, reopenRefsTo, resolveCrossFileCalls, type SyncStatus, type CrossFileResolveStats } from '../db/symbols.js';
 import { canParseFileSync } from './ts_kernel/index.js';
 import { snapshotBeforeWrite, type FileSnapshotMeta } from './file_snapshot.js';
 import { isIndexIncomplete } from './index_backfill.js';
@@ -314,11 +314,48 @@ export async function syncSelfWrites(
 }
 
 /**
- * ②③④ 引用方重算（`syncSelfWrites` / `syncSelfWritesSync` 共用；全同步，别各写一套）：
+ * ★ **写后引用重算的唯一内核**（②③④）—— 两条落盘路径共用**这一份**：
+ *   · `finishWriteThrough`（闸内：`syncSelfWrites` / `syncSelfWritesSync`，服务于 `applyWrites`）
+ *   · `reopenAndResolveAfterWrite`（闸外：`edit_code` 这类"自己 syncFile 再收尾"的工具）
+ * 两者此前是**逐字同形的两份实现**（同一意图两份实现 = 本仓点名的病根），故一并收在这里。
+ *
  *   ② `changedSymbolNames` 取本批 added/removed/changed 符号名
  *   ③ `reopenRefsTo` 重开已解析引用，拿到"引用在哪些文件里"
  *   ④ 用引用方文件 + 本批文件做 scope 解析（★ 只放本批不够：重开的行属于引用方，它自己没变）
- * 不吞异常：失败进 `errors`，调用方必须把它带进结果（历史上被吞成"静默 0 条"）。
+ *
+ * ★ 本函数**抛**（不吞）：调用方各自决定"怎么把失败说出去"——
+ *   闸内进 `errors`（历史上这类异常被 catch 吞掉，导致 `reopenRefsTo` 长期"静默 0 条"），
+ *   闸外进回执的 `error` 字段。**两条路都不许静默。**
+ */
+function resolveRefsAfterWrite(
+  db: Database,
+  root: string,
+  rels: readonly string[],
+  keepPending: boolean,
+): { refsReopened: number; refsReopenedFiles: number; cross: CrossFileResolveStats } {
+  const names = new Set<string>();
+  for (const rel of rels) {
+    for (const nm of changedSymbolNames(db, rel)) names.add(nm);
+  }
+  const scope = new Set<string>(rels);
+  let refsReopened = 0;
+  let refsReopenedFiles = 0;
+  if (names.size) {
+    const r = reopenRefsTo(db, [...names]);
+    refsReopened = r.reopened;
+    refsReopenedFiles = r.files.length;
+    for (const f of r.files) scope.add(f);
+  }
+  const cross = resolveCrossFileCalls(db, root, {
+    scopeFiles: [...scope],
+    keepUnresolvedPending: keepPending,
+  });
+  return { refsReopened, refsReopenedFiles, cross };
+}
+
+/**
+ * ②③④ 的**闸内挂载点**：把内核结果写进 `out`（并在成功时置 `out.ok = true`）；
+ * 失败进 `errors`（调用方必须把它带进结果）。逻辑本身在 `resolveRefsAfterWrite`，别在这重写。
  */
 function finishWriteThrough(
   db: Database,
@@ -329,21 +366,10 @@ function finishWriteThrough(
   keepPending: boolean,
 ): void {
   try {
-    const names = new Set<string>();
-    for (const rel of rels) {
-      for (const nm of changedSymbolNames(db, rel)) names.add(nm);
-    }
-    const scope = new Set<string>(rels);
-    if (names.size) {
-      const r = reopenRefsTo(db, [...names]);
-      out.refsReopened = r.reopened;
-      out.refsReopenedFiles = r.files.length;
-      for (const f of r.files) scope.add(f);
-    }
-    out.cross = resolveCrossFileCalls(db, root, {
-      scopeFiles: [...scope],
-      keepUnresolvedPending: keepPending,
-    });
+    const r = resolveRefsAfterWrite(db, root, rels, keepPending);
+    out.refsReopened = r.refsReopened;
+    out.refsReopenedFiles = r.refsReopenedFiles;
+    out.cross = r.cross;
     out.ok = true;
   } catch (e) {
     // 不吞：历史上这类异常被 catch 吞掉，导致 reopenRefsTo 长期"静默 0 条"
@@ -493,24 +519,8 @@ export async function reopenAndResolveAfterWrite(
     return { ...empty, error: `open cache db failed: ${(e as Error).message}` };
   }
   try {
-    const names = new Set<string>();
-    for (const rel of rels) {
-      for (const nm of changedSymbolNames(db, rel)) names.add(nm);
-    }
-    const scope = new Set(rels);
-    let refsReopened = 0;
-    let refsReopenedFiles = 0;
-    if (names.size) {
-      const r = reopenRefsTo(db, [...names]);
-      refsReopened = r.reopened;
-      refsReopenedFiles = r.files.length;
-      for (const f of r.files) scope.add(f);
-    }
-    const cross = resolveCrossFileCalls(db, root, {
-      scopeFiles: [...scope],
-      keepUnresolvedPending: isIndexIncomplete(root),
-    });
-    return { refsReopened, refsReopenedFiles, cross };
+    // ★ ②③④ 走**唯一内核**（与闸内 `finishWriteThrough` 同一份实现，勿在此另写一套）
+    return resolveRefsAfterWrite(db, root, rels, isIndexIncomplete(root));
   } catch (e) {
     return { ...empty, error: `reopen/resolve failed: ${(e as Error).message}` };
   }

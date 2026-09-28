@@ -12,6 +12,34 @@
  * - replace 的新代码必须解析出同名符号（防粘贴错函数）
  * - 同名多候选 → 报错列出候选（签名+行号），AI 传 parent 消歧后重试
  * - 写盘后自动 syncFile 重建该文件索引（新鲜度闭环：编辑即索引更新）
+ *
+ * ─────────────────────────────────────────────────────────────
+ * ★ 落盘形态：**有意保留的第三份**（2026-09-29 判定 —— 勿再"顺手统一"）
+ * ─────────────────────────────────────────────────────────────
+ * 本文件的落盘是内联四件套 `snapshotBeforeWrite → writeFileSync → syncFile → reopenAndResolveAfterWrite`，
+ * **没有**走 `tools/apply_writes.ts` 的 `applyWrites()`（= `write_gate.writeSourceFiles` 的适配层）。
+ * 第一刀（`b6e5647`）把它登记为"下一笔候选，请人拍板"；本笔拍板 = **保留**，判据是**实测**出的
+ * 四条政策差异（不是"懒得改"，也不是"看着统一"）：
+ *
+ * 1. **索引政策相反**：本文件 =「编辑即建索引」——`syncFile(getProjectCacheDb(...))` 在**没有索引**的
+ *    项目里会就地建库并同步该文件（`edit_code.test.ts`「未预热…编辑后索引已建立」锁定此行为）。
+ *    而 `applyWrites` 继承 `write_gate` 的纪律「**绝不因为一次编辑就凭空建索引**」（`write_gate.ts:42`：
+ *    否则会造出"只有这几个文件"的半成品索引）。两条政策**相互否定** ⇒ 合并 = 单方面推翻一条，不是内化。
+ * 2. **目录创建**：`op='insert'` 建新文件会 `mkdirSync(dirname, {recursive:true})`
+ *    （`edit_code.test.ts`「insert 创建新文件」走的正是尚不存在的 `src/`）；`applyWrites` 不建目录（实测 `ENOENT`）。
+ * 3. **根外文件**：本文件对 `project_dir` 之外的目标**照写**（实测写盘成功）；`applyWrites`
+ *    **拒绝落盘**并进 `blocked`（`ok=false`）。
+ * 4. **快照时机**：本文件在**编辑前**（校验之前）就快照 ⇒ 被拒绝的编辑也留一份撤回点（实测）；
+ *    `applyWrites` 只在**真要写**的那一刻快照。
+ *
+ * ★ 而"**逐文件**快照"这条 —— 当初被当成理由的差异 —— **实测证不出必要性**（本笔的判断题）：
+ *   · 判据场景「批量改 3 文件、第 2 个失败、第 1 个必须能单独撤回」：现状**能**（`list_snapshots` 找到
+ *     该文件的快照 id → `rollback_snapshot`）；
+ *   · 「**一次**快照含全部文件」**也能**做到同样的事（`rollbackFileSnapshot` 支持 `file` 过滤）；
+ *   · 反向：逐文件粒度**做不到**"整批一次撤回"（`rollback latest` 只回到最后一个被写的文件）。
+ *   ⇒ 快照粒度**不是**能力差异，也**不是**本文件不能并入 `applyWrites` 的原因；真正原因是上面那 4 条政策。
+ *   （下一步若要动：先由人拍板"索引政策以哪条为准"，再谈合并。详见
+ *    `docs/architecture-refactor-plan.md` §31）
  */
 
 import fs from 'node:fs';
@@ -447,6 +475,8 @@ async function editCodeInner(args: EditCodeArgs): Promise<{ message: string; dat
 
   // ★ 可撤回：任何会落盘的编辑，先把目标文件原样存一份（dry_run 不快照）。
   // 之后可用 rollback_snapshot 一键回到这一刻（含"本次新建的文件"会被删掉）。
+  // 逐文件（本工具一次只改一个文件）+ 编辑前（校验之前）就快照 —— 两条都是**有意**的形态，
+  // 且是"不并入 applyWrites"的两条原因之一，理由与实测证据见文件头「落盘形态」块。
   if (args.dry_run !== true) {
     snapshotBeforeWrite(projectRoot, `edit_code:${op}:${relPath}`, [relPath]);
   }
@@ -896,6 +926,9 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
   if (!dry && !blockedByAtomic) {
     for (const absPath of [...new Set(plans.filter((p) => p.ok).map((p) => p.absPath))]) {
       const rel = path.relative(projectRoot, absPath).split(path.sep).join('/');
+      // 逐文件一份快照（**不是**"一份含全部文件"）。粒度这条**证不出必要性**（见文件头「落盘形态」块），
+      // 但本笔**不动它**：改粒度 = 改**可观察**行为（`list_snapshots` 条目数、`rollback latest` 的语义），
+      // 那是另一笔"行为变更"，与本笔的"同一件事有没有多份实现"无关。
       snapshotBeforeWrite(projectRoot, `edit_code:batch:${rel}`, [rel]);
       fs.writeFileSync(absPath, virtual.get(absPath)!, 'utf8');
       const sync = await syncFile(getProjectCacheDb(projectRoot), projectRoot, absPath);
