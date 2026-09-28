@@ -107,3 +107,51 @@ export function isIndexSkippedFileName(name: string, includeTests = false): bool
   if (isNoiseFileName(name)) return true;
   return includeTests ? false : isTestFileName(name);
 }
+
+// ─────────────────────────────────────────────────────────────
+// "哪些目录不算项目源码" —— 唯一落点（2026-09-28，与上面的**文件级**判据同族）
+//
+// ★ 实测：这个判据在 src/ 下被**各写了 9 份**，大小从 5 项到 28 项、互有出入：
+//   import_project(28) / monolith(14) / project_root(15) / java_refactor(12) / feature_map(12) /
+//   contract_gate(8) / refs_text(7) / rename_symbols(5) / python_refactor(6)。
+//   **它已经产生了可观测的假信号**：`refs_text` 跳 `out` 却**不跳 `output`**、
+//   也不跳 `bin`，而索引器两样都跳 ⇒ 量具把 `output/diag-*.mjs` 与
+//   `third_party/archify/bin/*.mjs` 数成「**本体**未索引（真缺陷）」—— 其实是"根本不该算源码"。
+//
+// ★★ 纪律（别取并集！）：**基础集 = 无争议项**；**语言/用途专属项必须由调用方显式追加**。
+//   直接取并集会**悄悄扩大**某些工具的跳过面（例如给一个项目的 `bin/` 里放真源码的仓
+//   跳掉 CLI 入口），那是"顺手修正语义"，违反 §2c。
+// ─────────────────────────────────────────────────────────────
+
+/** 无争议的目录跳过集：依赖目录 / VCS / 构建产物 / 缓存 / 本工具自己的数据目录 */
+const SKIP_DIR_BASE = new Set<string>([
+  'node_modules', '.git', '.svn', '.hg',
+  'dist', 'build', 'out', 'output', 'coverage',
+  '.next', '.nuxt', '.cache', '.output',
+  '__pycache__', '.venv', 'venv', '.pytest_cache', '.mypy_cache', '.tox',
+]);
+
+/** 这条目录名该跳过吗？`extra` = 调用方**显式**追加的（语言/用途专属，如 Java 的 `target`、C# 的 `bin`/`obj`） */
+export function shouldSkipDir(name: string, extra?: ReadonlySet<string> | readonly string[]): boolean {
+  if (name.startsWith('.')) return true; // 隐藏目录（含 `.git` / 本工具数据目录）
+  if (SKIP_DIR_BASE.has(name)) return true;
+  if (!extra) return false;
+  return extra instanceof Set ? extra.has(name) : (extra as readonly string[]).includes(name);
+}
+
+/** 相对路径里**任意一段**目录该跳过吗（用于把"索引器本来就不会收的文件"从缺陷里分出来） */
+export function isUnderSkippedDir(relPath: string, extra?: ReadonlySet<string> | readonly string[]): boolean {
+  const segs = relPath.split('/');
+  for (let i = 0; i < segs.length - 1; i += 1) if (shouldSkipDir(segs[i], extra)) return true;
+  return false;
+}
+
+/**
+ * **索引器**（`import_project`）显式追加的跳过目录 —— 放在内核是为了让**量具**
+ * （`index_integrity`）能按**同一政策**分类"哪些文件本来就不会被收"，
+ * 从而把「本体缺口（真缺陷）」与「根本不该算源码（可解释）」分开。
+ * ★ 它是**索引器的政策**、不是通用基础集（别拿去给别的消费者用）。
+ */
+export const INDEX_SKIP_DIR_EXTRA: ReadonlySet<string> = new Set([
+  'vendor', 'target', 'bin', 'obj', '.idea', '.vscode', '.backup', 'scaffold', 'egg-info',
+]);

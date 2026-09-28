@@ -25,7 +25,7 @@ import path from 'node:path';
 import { getProjectCacheDb } from '../db/db.js';
 import { reopenRefsTo, resolveCrossFileCalls } from '../db/symbols.js';
 import { walkSourceFiles } from './refs_text.js';
-import { isTestFileName, isNoiseFileName } from './ts_kernel/source_exts.js';
+import { INDEX_SKIP_DIR_EXTRA, isNoiseFileName, isTestFileName, isUnderSkippedDir } from './ts_kernel/source_exts.js';
 import { hasLiveIndex, pendingSelfWrites } from './write_gate.js';
 import { backfillState, backfillSummary, isIndexIncomplete } from './index_backfill.js';
 import { ensureProjectIndex, type IndexState } from './index_freshness.js';
@@ -39,6 +39,8 @@ export interface FileKindCounts {
   test: number;
   /** 噪音/产物（`.min.js` `.d.ts` `*.gen.ts` `.swp` …）—— 不该算进任何一个数 */
   noise: number;
+  /** ★ 目录维度：位于**索引器本就不收**的目录下（`output/` `third_party/<pkg>/bin/` …）—— 可解释，不是缺陷 */
+  excluded: number;
 }
 
 export interface IntegrityIssue {
@@ -195,9 +197,9 @@ export async function indexIntegrity(opts: {
         ghosts: 0,
         nodes: 0,
         edges: 0,
-        disk_files_by_kind: { main: 0, test: 0, noise: 0 },
-        indexed_files_by_kind: { main: 0, test: 0, noise: 0 },
-        not_indexed_by_kind: { main: 0, test: 0, noise: 0 },
+        disk_files_by_kind: { main: 0, test: 0, noise: 0, excluded: 0 },
+        indexed_files_by_kind: { main: 0, test: 0, noise: 0, excluded: 0 },
+        not_indexed_by_kind: { main: 0, test: 0, noise: 0, excluded: 0 },
       },
       refs: { pending: 0, resolved: 0, external: 0, failed: 0, stale_resolved: 0 },
       freshness: { not_fresh: 0, not_fresh_sample: [], self_writes_pending: pendingSelfWrites(root).length },
@@ -247,10 +249,15 @@ export async function indexIntegrity(opts: {
   const kindOf = (p: string): keyof FileKindCounts => {
     const n = path.basename(p);
     if (isNoiseFileName(n)) return 'noise';
-    return isTestFileName(n) ? 'test' : 'main';
+    if (isTestFileName(n)) return 'test';
+    // ★ 目录维度：索引器按自己的政策**本来就不会收**的文件 —— 归"可解释"，不归"本体缺口"。
+    //   实测来源：`refs_text` 跳 out 却不跳 output/bin ⇒ 把 output/*.mjs 与 third_party/<pkg>/bin/*.mjs
+    //   数成"本体未索引（真缺陷）"，追查后才发现是**跳过表分叉**（见 source_exts.ts 的长注释）。
+    if (isUnderSkippedDir(p, INDEX_SKIP_DIR_EXTRA)) return 'excluded';
+    return 'main';
   };
   const tally = (set: Iterable<string>): FileKindCounts => {
-    const r: FileKindCounts = { main: 0, test: 0, noise: 0 };
+    const r: FileKindCounts = { main: 0, test: 0, noise: 0, excluded: 0 };
     for (const p of set) r[kindOf(p)] += 1;
     return r;
   };
@@ -441,7 +448,8 @@ export function renderIntegrity(r: IndexIntegrityResult): string {
     `
   　★ 按类拆（本体/测试/噪音）：本体 ${r.counts.indexed_files_by_kind.main}/${r.counts.disk_files_by_kind.main} 已索引 · ` +
     `测试 ${r.counts.indexed_files_by_kind.test}/${r.counts.disk_files_by_kind.test} · ` +
-    `噪音 ${r.counts.indexed_files_by_kind.noise}/${r.counts.disk_files_by_kind.noise}` +
+    `噪音 ${r.counts.indexed_files_by_kind.noise}/${r.counts.disk_files_by_kind.noise} · ` +
+    `不该收的目录 ${r.counts.indexed_files_by_kind.excluded}/${r.counts.disk_files_by_kind.excluded}` +
       ` ｜ 节点 ${r.counts.nodes} ｜ 边 ${r.counts.edges}`,
     `  引用：resolved ${r.refs.resolved} ｜ pending ${r.refs.pending} ｜ external ${r.refs.external} ｜ failed ${r.refs.failed}`,
     `  ★ 陈旧断言（resolved 但目标名已不在索引）：${r.refs.stale_resolved}`,

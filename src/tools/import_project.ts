@@ -19,7 +19,7 @@
  */
 
 import { DATA_DIR_NAME } from '../data_dir.js';
-import { isIndexSkippedFileName } from './ts_kernel/source_exts.js';
+import { INDEX_SKIP_DIR_EXTRA, isIndexSkippedFileName, shouldSkipDir } from './ts_kernel/source_exts.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import ignore from 'ignore';
@@ -113,12 +113,13 @@ export interface ImportProjectResult {
 // ─────────────────────────────────────────────────────────────
 
 /** 遍历跳过的目录名 */
-const SKIP_DIRS = new Set([
-  'node_modules', '.git', '.svn', '.hg', 'dist', 'build', 'out', 'output',
-  'vendor', '__pycache__', DATA_DIR_NAME, 'coverage', 'target', 'bin', 'obj',
-  '.next', '.nuxt', '.venv', 'venv', '.idea', '.vscode', '.backup', 'scaffold',
-  '.pytest_cache', '.mypy_cache', '.tox', 'egg-info',
-]);
+// ★ 索引器的目录跳过集：**基础集（内核唯一落点）+ 本工具显式追加**。
+//   逐字保留原 28 项语义（追加项 = vendor/target/bin/obj/.idea/.vscode/.backup/scaffold/egg-info）
+//   —— 迁移只做"同源"，**不顺手改行为**（§2c：不许悄悄扩大跳过面）。
+const SKIP_DIR_EXTRA = INDEX_SKIP_DIR_EXTRA;
+const SKIP_DIRS = {
+  has: (n: string) => shouldSkipDir(n, SKIP_DIR_EXTRA),
+} as unknown as Set<string>;
 
 /**
  * 归档/历史目录名单：遗留项目里"已弃用但保留"的代码堆（如 _archive/）。

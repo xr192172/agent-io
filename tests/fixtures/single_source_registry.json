@@ -45,6 +45,31 @@
       "authority": "src/tools/ts_kernel/import_text.ts",
       "pattern": "import\\s+(?:type\\s+)?\\{",
       "frozen": {}
+    },
+    {
+      "id": "skip-directory-static-list",
+      "intent": "『哪些目录不算项目源码』（node_modules/.git/dist/build/out/output/vendor/target/bin/obj…）—— 权威是内核 source_exts.ts 的 SKIP_DIR_BASE + shouldSkipDir(name, extra)。★ 纪律：基础集无争议、语言/用途专属项由调用方**显式追加**；**不许取并集**（会悄悄扩大别人的跳过面，违反 §2c）。此前同一问题有 9 处静态清单、5~28 项互有出入，并已产生假信号：refs_text 不跳 output/bin ⇒ 量具把 output/*.mjs 与 third_party/*/bin/*.mjs 数成「本体未索引（真缺陷）」。",
+      "authority": "src/tools/ts_kernel/source_exts.ts",
+      "pattern": "node_modules', '",
+      "frozen": {
+        "src/java_refactor/layering.ts": 1,
+        "src/observe/instrument.ts": 1,
+        "src/tools/contract_gate.ts": 1,
+        "src/tools/feature_map.ts": 1,
+        "src/tools/monolith.ts": 1,
+        "src/tools/project_root.ts": 1,
+        "src/tools/python_refactor/dead_imports.ts": 1,
+        "src/tools/refactor_langs.ts": 1,
+        "src/tools/refs_text.ts": 1,
+        "src/tools/rename_symbols.ts": 1,
+        "src/tools/rule_apply.ts": 1,
+        "src/tools/run_tests.ts": 1,
+        "src/tools/watch_project.ts": 1,
+        "src/translate/project.ts": 1,
+        "src/version_upgrade/adapters/node.ts": 1,
+        "src/version_upgrade/detect.ts": 1,
+        "src/version_upgrade/toolchain.ts": 1
+      }
     }
   ]
 }
