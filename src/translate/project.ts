@@ -23,9 +23,10 @@ import type { SkippedDecl } from './go_extractor.js';
 import { parseFileFull } from '../tools/ts_kernel/index.js';
 import type { TransUnit } from './unit.js';
 import type { VerifyIssue } from './verify.js';
+import { skipDirSet } from '../tools/ts_kernel/source_exts.js';
 
 /** 项目内跳过的噪声目录（不进 .go 扫描） */
-const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'build', '.next', 'out', 'vendor', 'target', 'venv', '.venv', '__pycache__', DATA_DIR_NAME]);
+const SKIP_DIRS = skipDirSet(['vendor', 'target']);
 
 /** 递归收集 .go 源文件（跳过 _test.go 与噪声目录） */
 export function walkGoFiles(dir: string): string[] {

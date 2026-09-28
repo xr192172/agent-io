@@ -22,6 +22,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { VerifyCommand } from './verify_refactor.js';
+import { skipDirSet } from './ts_kernel/source_exts.js';
 
 // ─────────────────────────────────────────────
 // 步骤配置（与 runRefactorPipeline.steps 对齐，供执行器判定是否启用）
@@ -154,10 +155,7 @@ export function manifestPresent(cwd: string, files?: string[]): boolean {
 // ─────────────────────────────────────────────
 // 注册表
 // ─────────────────────────────────────────────
-const DEFAULT_SKIP = new Set([
-  'node_modules', '.git', 'dist', '.next', 'out', 'build', 'target', // node/go/js/java
-  'venv', '.venv', '__pycache__', // python
-]);
+const DEFAULT_SKIP = skipDirSet(['target']);
 
 /** 递归判定目录内是否存在命中该语言判定的源文件（含路径过滤，跳过噪音目录） */
 export function dirHasSource(cwd: string, isSourceFile: (rel: string) => boolean): boolean {

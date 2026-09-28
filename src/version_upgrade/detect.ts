@@ -22,6 +22,7 @@ import {
 import { adapterForLang } from './adapters/registry.js';
 import { scanFeatureHits, type FeatureHit } from './features.js';
 import { scanRemovedApis, type RemovedHit } from './removed.js';
+import { skipDirSet } from '../tools/ts_kernel/source_exts.js';
 
 /** 语言 → 源码扩展名（来自适配器；保持导出以兼容既有调用方） */
 export const FEATURE_EXTS: Record<ToolName, string[]> = Object.fromEntries(
@@ -63,7 +64,7 @@ export function collectSourceFiles(
   excludeRelDirs?: Set<string>
 ): Array<{ rel: string; content: string }> {
   const out: Array<{ rel: string; content: string }> = [];
-  const skip = new Set(['node_modules', '.git', 'dist', 'build', 'target', 'out', 'bin', 'vendor', '.gradle', '__pycache__', '.venv', 'venv']);
+  const skip = skipDirSet(['target', 'bin', 'vendor']);
   const stack: Array<{ abs: string; rel: string }> = [{ abs: dir, rel: '' }];
   while (stack.length > 0) {
     const { abs, rel } = stack.pop()!;

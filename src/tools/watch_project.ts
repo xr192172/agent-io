@@ -35,18 +35,14 @@ import { syncFile, removeFile, resolveCrossFileCalls, pruneDeletedFiles, toRelPa
 import { isSupported } from './ts_kernel/index.js';
 import { indexedRelativeSet } from './index_freshness.js';
 import { isIndexIncomplete } from './index_backfill.js';
+import { skipDirSet } from './ts_kernel/source_exts.js';
 
 // ─────────────────────────────────────────────────────────────
 // 过滤规则（与 import_project 对齐，另加 .agent-io 防反馈循环）
 // ─────────────────────────────────────────────────────────────
 
 /** 忽略的目录名（任意层级命中即跳过整棵子树） */
-const IGNORE_DIRS = new Set([
-  DATA_DIR_NAME, 'node_modules', '.git', '.svn', '.hg', 'dist', 'build', 'out',
-  'vendor', '__pycache__', 'coverage', 'target', 'bin', 'obj',
-  '.next', '.nuxt', '.venv', 'venv', '.idea', '.vscode', '.backup', 'scaffold',
-  '.pytest_cache', '.mypy_cache', '.tox', 'egg-info',
-]);
+const IGNORE_DIRS = skipDirSet(['vendor', 'target', 'bin', 'obj', 'scaffold', 'egg-info']);
 
 /** 忽略的文件名模式（测试/生成物 / 编辑器临时存取，非架构） */
 const SKIP_FILE_RE = /(_test\.go$|\.test\.[tj]sx?$|\.spec\.[tj]sx?$|\.min\.js$|\.d\.ts$|\.gen\.[tj]sx?$|test_.*\.py$|.*_test\.py$|\.tmp$|\.temp$|\.crswap$|\.crdownload$|\.swp$|\.swo$|\.swx$|\.bak$|\.orig$|\.rej$|~$|^~)/;

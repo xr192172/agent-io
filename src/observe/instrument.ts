@@ -34,6 +34,7 @@ import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseAstRoot } from '../tools/ts_kernel/kernel.js';
+import { skipDirSet } from '../tools/ts_kernel/source_exts.js';
 
 /**
  * 强类型节点接口：tree-sitter 节点原生携带 startIndex/endIndex（字符偏移），
@@ -307,7 +308,7 @@ const IO_CALLS: Record<string, string> = {
 /** 递归收集项目下所有 .ts 源文件（跳过 node_modules / dist / .git / .agent-io） */
 export function collectTsFiles(root: string): string[] {
   const out: string[] = [];
-  const skip = new Set(['node_modules', 'dist', '.git', DATA_DIR_NAME, 'coverage', '.agent']);
+  const skip = skipDirSet([]);
   const walk = (dir: string) => {
     let entries: import('node:fs').Dirent[];
     try {

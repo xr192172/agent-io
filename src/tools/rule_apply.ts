@@ -27,6 +27,7 @@ import { matchRule, instantiateReplace } from './rule_match.js';
 import { applyMatch as applyOneMatch } from './rule_match.js';
 import { loadRules, baselinePath, rulesDir, type Rule } from './rule_library.js';
 import { splitLines, leadingWs } from './rule_tokens.js';
+import { skipDirSet } from './ts_kernel/source_exts.js';
 
 /* ─────────────────── 三态结果 ─────────────────── */
 
@@ -106,7 +107,7 @@ export function applyRuleToContent(
 
 /* ─────────────────── 目录遍历 ─────────────────── */
 
-const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', DATA_DIR_NAME, 'coverage', 'third_party']);
+const SKIP_DIRS = skipDirSet(['third_party']);
 /** ★ 来自内核唯一权威 `SOURCE_EXTS`（`ts_kernel/source_exts.ts`）—— 此前这里手写 14 个，
  *  而仓内同一问题另有 5 份不同答案 ⇒ 口径随工具而变；统一后只增不减。 */
 const CODE_EXT = new Set<string>(SOURCE_EXTS);

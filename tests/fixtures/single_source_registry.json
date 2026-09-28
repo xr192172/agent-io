@@ -52,15 +52,8 @@
       "authority": "src/tools/ts_kernel/source_exts.ts",
       "pattern": "node_modules', '",
       "frozen": {
-        "src/observe/instrument.ts": 1,
-        "src/tools/refactor_langs.ts": 1,
-        "src/tools/rule_apply.ts": 1,
         "src/tools/run_tests.ts": 1,
-        "src/tools/watch_project.ts": 1,
-        "src/translate/project.ts": 1,
-        "src/version_upgrade/adapters/node.ts": 1,
-        "src/version_upgrade/detect.ts": 1,
-        "src/version_upgrade/toolchain.ts": 1
+        "src/version_upgrade/adapters/node.ts": 1
       }
     }
   ]

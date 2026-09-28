@@ -24,6 +24,7 @@ import {
   ADAPTER_SKIP_DIRS,
 } from './adapters/registry.js';
 import type { ToolName } from './adapters/types.js';
+import { skipDirSet } from '../tools/ts_kernel/source_exts.js';
 
 export type { ToolName } from './adapters/types.js';
 export type { VersionInfo } from './adapters/types.js';
@@ -66,11 +67,7 @@ export interface ToolchainScan {
 // ─────────────────────────────────────────────────────────────
 
 /** 跳过的目录（构建产物/依赖/元数据，不视为子项目根；含各适配器追加项） */
-const SKIP_DIRS = new Set([
-  'node_modules', '.git', 'dist', 'build', 'target', 'out', 'bin',
-  DATA_DIR_NAME, '.idea', '.vscode', '.next', 'coverage', 'vendor', '.gradle',
-  ...ADAPTER_SKIP_DIRS,
-]);
+const SKIP_DIRS = skipDirSet([...ADAPTER_SKIP_DIRS, 'target', 'bin', 'vendor']);
 
 /** 找出所有工具链声明文件（含子项目），文件名集合来自适配器注册表 */
 export function collectDeclarationFiles(root: string): string[] {
