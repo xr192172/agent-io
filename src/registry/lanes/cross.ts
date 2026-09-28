@@ -167,7 +167,7 @@ export const CROSS_TOOLS: ToolDef[] = [
         top: a.top == null ? undefined : Number(a.top),
         // P0-②：入口文件（package.json 的 bin / main / `node <路径>` script）喂给分析器，
         // 否则它们会被当成无人消费的 dead code + "积木依赖胶水"（实测本仓 2 条假阳）。
-        reachableRoots: detectReachableRoots(String(a.project_dir)),
+        reachableRoots: detectReachableRoots(String(a.project_dir)).roots,
       });
       const sevMark: Record<string, string> = { error: '✗', warn: '!', info: '·' };
       const lines = [

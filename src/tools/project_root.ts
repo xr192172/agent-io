@@ -93,6 +93,12 @@ export interface ExpansionResult {
   skipped: Array<{ path: string; why: string }>;
 }
 
+/** detectReachableRoots 的返回：可达根 + 跳过的候选（相对路径计算失败时记录原因） */
+export interface RootsResult {
+  roots: string[];
+  skipped: Array<{ path: string; why: string }>;
+}
+
 /** 判断绝对路径是否落在 root（或其子目录）内——闭包只扩根内，越界即视为外部边界 */
 export function isInsideRoot(abs: string, root: string): boolean {
   const rp = path.relative(path.resolve(root), path.resolve(abs));
@@ -321,7 +327,7 @@ function sourceCandidatesOfReferencedPath(p: string): string[] {
  *
  * @returns 项目内相对路径（posix）去重排序；无 manifest / 无入口 → 空数组
  */
-export function detectReachableRoots(root: string): string[] {
+export function detectReachableRoots(root: string): RootsResult {
   const absRoot = path.resolve(root);
   let dir = absRoot;
   let pkgAbs: string | null = null;
@@ -335,14 +341,15 @@ export function detectReachableRoots(root: string): string[] {
     if (up === dir) break;
     dir = up;
   }
-  if (!pkgAbs) return [];
+  if (!pkgAbs) return { roots: [], skipped: [] };
   const pkgDir = path.dirname(pkgAbs);
 
   let pkg: Record<string, unknown>;
   try {
     pkg = JSON.parse(fs.readFileSync(pkgAbs, 'utf8')) as Record<string, unknown>;
-  } catch {
-    return [];
+  } catch (err) {
+    // §2d：malformed package.json 是配置硬错误，不再静默返回空数组
+    throw new Error(`failed to parse ${pkgAbs}: ${String(err)}`);
   }
 
   const referenced: string[] = [];
@@ -365,21 +372,24 @@ export function detectReachableRoots(root: string): string[] {
     }
   }
 
-  const out = new Set<string>();
+  const roots = new Set<string>();
+  const skipped: RootsResult['skipped'] = [];
   for (const ref of referenced) {
     for (const cand of sourceCandidatesOfReferencedPath(ref)) {
       const abs = path.join(pkgDir, cand);
       let rel: string;
       try {
         rel = path.relative(absRoot, abs).replace(/\\/g, '/');
-      } catch {
+      } catch (err) {
+        // §2d：path.relative 失败记 skipped 并带 why（原来静默 continue）
+        skipped.push({ path: cand, why: String(err) });
         continue;
       }
       if (!rel || rel.startsWith('..') || path.isAbsolute(rel)) continue; // 分析范围之外
-      if (fs.existsSync(abs) && fs.statSync(abs).isFile()) out.add(rel);
+      if (fs.existsSync(abs) && fs.statSync(abs).isFile()) roots.add(rel);
     }
   }
-  return [...out].sort();
+  return { roots: [...roots].sort(), skipped };
 }
 
 // ─────────────────────────────────────────────

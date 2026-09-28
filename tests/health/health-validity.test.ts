@@ -133,13 +133,13 @@ describe('G5 · 分层判定与调用 root 无关（防"从哪一级调用读数
 
 describe('G5 · 可达根注入确实消掉入口的假阳（P0-②）', () => {
   it('入口能从 package.json 的 scripts / bin 探出来', () => {
-    expect(detectReachableRoots(rootsRoot)).toEqual(['src/orphan_entry.ts']);
-    expect(detectReachableRoots(goodRoot)).toEqual(['src/glue/main.ts']);
+    expect(detectReachableRoots(rootsRoot)).toEqual({ roots: ['src/orphan_entry.ts'], skipped: [] });
+    expect(detectReachableRoots(goodRoot)).toEqual({ roots: ['src/glue/main.ts'], skipped: [] });
   });
 
   it('分析子目录时，根会被 rebase 到该子目录的相对路径（manifest 允许在祖先）', () => {
     // 典型用法：`health_cli src` —— package.json 在项目根，而分析范围是 src/
-    expect(detectReachableRoots(path.join(rootsRoot, 'src'))).toEqual(['orphan_entry.ts']);
+    expect(detectReachableRoots(path.join(rootsRoot, 'src'))).toEqual({ roots: ['orphan_entry.ts'], skipped: [] });
   });
 
   it('不注入根：入口被当 brick ⇒ 孤儿 + 假分层违规', async () => {
@@ -151,7 +151,7 @@ describe('G5 · 可达根注入确实消掉入口的假阳（P0-②）', () => {
   });
 
   it('注入根：两条假阳同时消失，真依赖不受影响', async () => {
-    const r = await analyzeHealth(rootsRoot, { reachableRoots: detectReachableRoots(rootsRoot) });
+    const r = await analyzeHealth(rootsRoot, { reachableRoots: detectReachableRoots(rootsRoot).roots });
     expect(r.counts.orphan_file).toBe(0);
     expect(r.counts.layer_violation).toBe(0);
     expect(r.fileCount).toBe(2); // 两个文件仍在统计里，只是不再误判

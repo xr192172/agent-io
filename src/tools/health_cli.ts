@@ -56,7 +56,7 @@ async function main(): Promise<void> {
   const r = await analyzeHealth(root, {
     complexityThreshold: intArg('--threshold', 10),
     top: intArg('--top', 10),
-    reachableRoots,
+    reachableRoots: reachableRoots.roots,
   });
 
   const lines: string[] = [];
@@ -65,8 +65,8 @@ async function main(): Promise<void> {
   lines.push(
     `分层：胶水 ${r.layers.glue} / 积木 ${r.layers.brick}（其中未分类 ${r.layers.unclassified}）/ 契约 ${r.layers.contract} / 分层违规 ${r.layers.violations}`,
   );
-  if (reachableRoots.length > 0) {
-    lines.push(`可达根 ${reachableRoots.length} 个（入口按胶水层算，不计孤儿）：${reachableRoots.join(', ')}`);
+  if (reachableRoots.roots.length > 0) {
+    lines.push(`可达根 ${reachableRoots.roots.length} 个（入口按胶水层算，不计孤儿）：${reachableRoots.roots.join(', ')}`);
   }
   lines.push(r.summary);
   lines.push('');
