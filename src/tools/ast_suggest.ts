@@ -11,6 +11,8 @@
 
 import { analyzeLocals } from './ast_rename.js';
 import { loadLlmConfig } from './llm_focus.js';
+import fs from 'node:fs';
+import path from 'node:path';
 
 // ─────────────────────────────────────────────────────────────
 // 低信息量变量名（启发式候选）
@@ -193,4 +195,23 @@ export async function suggestRenames(
   } catch (e) {
     return { llm: false, candidates: cands, note: `LLM 调用失败（${(e as Error).message}）` };
   }
+}
+
+/**
+ * ★ [B] 按文件入口（**解析 file → 读源码 → 建议命名**）。
+ *
+ * 为什么收在 [B]：`suggest_renames` 的 [C]（lane）原来自己 `readFileSync` 再喂给
+ * `suggestRenames(src, …)` —— 于是"读文件"这件事散落在 [C] 里，与 `rename_symbol.ts`
+ * （[B] 收 `{file}` 自己读）形态不一致。收进 [B] 后 [C] 退化为纯路由器，lane 内不出现文件 IO。
+ *
+ * ★ 顺序与旧 [C] 逐字一致：**先 resolve 再读**（`file` 为 undefined 时的报错形态因此不变）。
+ */
+export async function suggestRenamesInFile(args: {
+  project_dir: string;
+  file: string;
+  opts?: SuggestOptions;
+}): Promise<SuggestResult> {
+  const absPath = path.isAbsolute(args.file) ? args.file : path.resolve(String(args.project_dir), String(args.file));
+  const src = fs.readFileSync(absPath, 'utf-8');
+  return suggestRenames(src, absPath, args.opts ?? {});
 }

@@ -73,30 +73,11 @@ function walkTs(dir: string, out: string[] = []): string[] {
   return out;
 }
 
-/** 注释行判定：`// …` / `* …`（JSDoc 中行）/ `/* …` —— 跳过，见文件头说明 */
-export function isCommentLine(line: string): boolean {
-  const t = line.trimStart();
-  return t.startsWith('//') || t.startsWith('*') || t.startsWith('/*');
-}
-
-/**
- * 把源码里的注释行**置空**（不是删行 —— 保留换行，使跨行的模式仍能匹配），
- * 再统计模式出现次数。纯函数，可单测。
- */
-export function countOccurrences(src: string, pattern: string): number {
-  if (!pattern) return 0;
-  const blanked = src
-    .split('\n')
-    .map((l) => (isCommentLine(l) ? '' : l))
-    .join('\n');
-  let n = 0;
-  let i = 0;
-  while ((i = blanked.indexOf(pattern, i)) >= 0) {
-    n += 1;
-    i += pattern.length;
-  }
-  return n;
-}
+/** 注释行判定与"跳过注释后数模式"的判定，已抽到 `tests/helpers/source_scan.ts`（唯一实现）——
+ *  lane 无 IO 门（`tests/registry/lane_no_io.test.ts`）用的是**同一套**，两份各一套必然分叉。
+ *  这里再导出，只为不改动既有调用点与单测。 */
+import { countOccurrences, isCommentLine } from './helpers/source_scan.js';
+export { countOccurrences, isCommentLine };
 
 /** 扫描全 src，返回 文件 → 命中数（仅非零；已排除权威文件） */
 export function scanFamily(family: Family, srcDir = SRC, repoRoot = REPO): Record<string, number> {

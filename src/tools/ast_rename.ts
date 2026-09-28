@@ -16,6 +16,9 @@
 import { getParser } from './ts_kernel/loader.js';
 import { findLanguageByExt, type LanguageEntry } from './ts_kernel/languages.js';
 import { parseContent } from './ts_kernel/kernel.js';
+import fs from 'node:fs';
+import path from 'node:path';
+import { applyWrites } from './apply_writes.js';
 
 /** 最小 tree-sitter 节点面（与 ts_slim 同源） */
 interface NodeLike {
@@ -497,6 +500,88 @@ export async function renameMany(
   let out = src;
   for (const e of edits) out = out.slice(0, e.pos) + e.text + out.slice(e.pos + e.len);
   return { out, applied };
+}
+
+/** `renameManyInFile` 的产物：算好的逐项结果 + 落盘回执 */
+export interface RenameManyFileResult {
+  /** 目标文件绝对路径 */
+  absPath: string;
+  /** 逐项结果（含 changed=0 的跳过项） */
+  applied: RenameApplied[];
+  /** 真正改到的项（changed>0） */
+  changed: RenameApplied[];
+  /** 被跳过的项（非法名 / 同作用域撞名 / 原名相同 / id 不存在） */
+  skipped: RenameApplied[];
+  /** 是否有任何改动 */
+  changedAny: boolean;
+  /** 是否干跑（不落盘） */
+  dryRun: boolean;
+  /** 是否**真的**落盘（干跑 / 无改动 ⇒ false） */
+  written: boolean;
+  /** 写前快照 id（撤回通道凭据） */
+  snapshotId?: string;
+  /** 逐文件索引同步结果 */
+  indexSynced: Array<{ file: string; updated: boolean }>;
+  /**
+   * 被拒绝落盘的文件（在 `project_dir` 之外 ⇒ 进不了快照、也进不了索引）。
+   * ★ 有值时 `written=false`：**调用方必须响亮地报出去**，不能报"成功 N 项"（那就是静默撒谎）。
+   */
+  blocked?: string[];
+}
+
+/**
+ * ★ [B] 按文件入口（**读 → 算 → 落盘**三段全在这）。
+ *
+ * 为什么整段下沉到 [B]（而不是把 [C] 里的 `writeFileSync` 换个函数）：
+ *   `rename_many` 的 [C]（lane）原来自己 `readFileSync` + `writeFileSync` —— 而 `rename_symbol.ts`
+ *   （SafeRename 形态）是 [B] 收 `{file, ...}`、自己读自己写。同一件事两处形态 ⇒ 于是
+ *   `rename_many` 漏掉了 `dry_run`、写前快照（撤回通道）、索引同步三样，而 `rename_symbol` 有。
+ *   把"读→算→写"整段收进 [B]，[C] 退化为**路由器**，三样缺失由落盘内核（`applyWrites`）天然补齐。
+ *
+ * ★ 顺序与旧 [C] 逐字一致：**先 resolve 再读**（`file` 为 undefined 时的报错形态因此不变）。
+ */
+export async function renameManyInFile(args: {
+  project_dir: string;
+  file: string;
+  items: RenameItem[];
+  /** true=只算不落盘。★ 工具面尚未暴露（改 inputSchema 属对外契约变更，留给下一笔）；内核已具备。 */
+  dryRun?: boolean;
+}): Promise<RenameManyFileResult> {
+  const absPath = path.isAbsolute(args.file) ? args.file : path.resolve(String(args.project_dir), String(args.file));
+  const src = fs.readFileSync(absPath, 'utf-8');
+  const { out, applied } = await renameMany(src, args.items as RenameItem[], absPath);
+  const changed = applied.filter((x) => x.changed > 0);
+  const skipped = applied.filter((x) => x.changed === 0);
+  const dryRun = args.dryRun === true;
+  const changedAny = changed.length > 0;
+
+  let written = false;
+  let snapshotId: string | undefined;
+  let indexSynced: Array<{ file: string; updated: boolean }> = [];
+  let blocked: string[] | undefined;
+  if (changedAny && !dryRun) {
+    // ★ 落盘走共享内核（写前快照一次 + 真写 + 索引写穿），绝不在这里自己 writeFileSync
+    const rel = path.relative(path.resolve(String(args.project_dir)), absPath).split(path.sep).join('/');
+    const receipt = await applyWrites(args.project_dir, [{ file: absPath, content: out }], {
+      note: `rename_many:${rel}`,
+    });
+    written = receipt.written.length > 0;
+    snapshotId = receipt.snapshot_id;
+    indexSynced = receipt.index_synced;
+    if (receipt.blocked?.length) blocked = receipt.blocked;
+  }
+  return {
+    absPath,
+    applied,
+    changed,
+    skipped,
+    changedAny,
+    dryRun,
+    written,
+    ...(snapshotId ? { snapshotId } : {}),
+    indexSynced,
+    ...(blocked ? { blocked } : {}),
+  };
 }
 
 /**

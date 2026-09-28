@@ -51,7 +51,7 @@ import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { getProjectCacheDb, beginBatch, endBatch, type Database } from '../db/db.js';
-import { syncFile, syncFileSync, removeFile, changedSymbolNames, reopenRefsTo, resolveCrossFileCalls } from '../db/symbols.js';
+import { syncFile, syncFileSync, removeFile, changedSymbolNames, reopenRefsTo, resolveCrossFileCalls, type SyncStatus } from '../db/symbols.js';
 import { canParseFileSync } from './ts_kernel/index.js';
 import { snapshotBeforeWrite, type FileSnapshotMeta } from './file_snapshot.js';
 import { isIndexIncomplete } from './index_backfill.js';
@@ -242,7 +242,7 @@ export function pendingSelfWrites(projectRoot: string, opts: { maxAgeMs?: number
 export async function syncSelfWrites(
   projectRoot: string,
   files: readonly string[],
-  opts: { syncIndex?: boolean } = {},
+  opts: { syncIndex?: boolean; onFile?: (rel: string, status: SyncStatus) => void } = {},
 ): Promise<WriteThroughOutcome | null> {
   const root = path.resolve(projectRoot);
   if (opts.syncIndex === false) return null;
@@ -283,15 +283,18 @@ export async function syncSelfWrites(
         if (!fs.existsSync(abs)) {
           removeFile(db, root, abs);
           out.removed = (out.removed ?? 0) + 1;
+          opts.onFile?.(rel, 'ignored');
           continue;
         }
         const r = await syncFile(db, root, abs);
         if (r.status === 'updated') out.synced = (out.synced ?? 0) + 1;
         else if (r.status === 'skipped') out.skippedFiles = (out.skippedFiles ?? 0) + 1;
         else if (r.status === 'failed') out.failed = (out.failed ?? 0) + 1;
+        opts.onFile?.(rel, r.status);
       } catch (e) {
         out.failed = (out.failed ?? 0) + 1;
         errors.push(`${rel}: ${(e as Error).message}`);
+        opts.onFile?.(rel, 'failed');
       }
     }
   } finally {
@@ -533,7 +536,14 @@ export async function writeSourceFiles<T>(
   projectRoot: string,
   files: readonly string[],
   mutate: () => T | Promise<T>,
-  opts: { label?: string; snapshot?: boolean; syncIndex?: boolean; before?: () => void } = {},
+  opts: {
+    label?: string;
+    snapshot?: boolean;
+    syncIndex?: boolean;
+    before?: () => void;
+    /** 逐文件回报索引同步结果（`SyncStatus`）—— 供需要逐文件回执的调用方（如 `applyWrites`）用 */
+    onFile?: (rel: string, status: SyncStatus) => void;
+  } = {},
 ): Promise<{ value: T; report: SourceWriteReport }> {
   const root = path.resolve(projectRoot);
   const norm = (): string[] =>
@@ -551,7 +561,7 @@ export async function writeSourceFiles<T>(
   const rels = norm();
   let index: WriteThroughOutcome | null = null;
   try {
-    index = await syncSelfWrites(root, rels, { syncIndex: opts.syncIndex });
+    index = await syncSelfWrites(root, rels, { syncIndex: opts.syncIndex, onFile: opts.onFile });
     if (!index) index = { ok: false, mode: 'skipped', note: '该项目还没有索引 ⇒ 只真写，未写穿' };
   } catch (e) {
     // 写穿崩了也不能静默：登记自写，让读路径去兜（L1b → L3）

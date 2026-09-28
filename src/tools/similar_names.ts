@@ -26,6 +26,8 @@
 
 import { analyzeLocals, type LocalBinding } from './ast_rename.js';
 import { loadLlmConfig } from './llm_focus.js';
+import fs from 'node:fs';
+import path from 'node:path';
 
 export interface SimilarNameEntry {
   id: number;
@@ -375,6 +377,24 @@ export async function suggestDisambiguations(
   } catch (e) {
     return { llm: false, clusters, note: `LLM 调用失败（${(e as Error).message}）` };
   }
+}
+
+/**
+ * ★ [B] 按文件入口（**解析 file → 读源码 → 聚类 + 消歧**）。
+ *
+ * 为什么收在 [B]：`find_similar_names` 的 [C]（lane）原来自己 `readFileSync` 再喂给
+ * `suggestDisambiguations(src, …)`。收进 [B] 后 [C] 退化为纯路由器，lane 内不出现文件 IO。
+ *
+ * ★ 顺序与旧 [C] 逐字一致：**先 resolve 再读**（`file` 为 undefined 时的报错形态因此不变）。
+ */
+export async function suggestDisambiguationsInFile(args: {
+  project_dir: string;
+  file: string;
+  opts?: DisambiguateOptions;
+}): Promise<DisambiguateResult> {
+  const absPath = path.isAbsolute(args.file) ? args.file : path.resolve(String(args.project_dir), String(args.file));
+  const src = fs.readFileSync(absPath, 'utf-8');
+  return suggestDisambiguations(src, absPath, args.opts ?? {});
 }
 
 /**

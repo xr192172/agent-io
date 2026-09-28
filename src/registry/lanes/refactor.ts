@@ -15,10 +15,11 @@ import { wrap, wrapData } from '../plumbing.js';
 import path from 'node:path';
 import { analyzeHubs, analyzeImpact } from '../../impact/index.js';
 import type { ImpactChangePoint } from '../../impact/index.js';
-import { renameMany } from '../../tools/ast_rename.js';
+import { renameManyInFile } from '../../tools/ast_rename.js';
 import type { RenameItem } from '../../tools/ast_rename.js';
-import { suggestRenames } from '../../tools/ast_suggest.js';
+import { suggestRenamesInFile } from '../../tools/ast_suggest.js';
 import type { SuggestOptions } from '../../tools/ast_suggest.js';
+import { applyWrites } from '../../tools/apply_writes.js';
 import { editCode } from '../../tools/edit_code.js';
 import { listFileSnapshots, rollbackFileSnapshot } from '../../tools/file_snapshot.js';
 import { findReferences } from '../../tools/find_references.js';
@@ -35,12 +36,11 @@ import { applyRulesToFiles, collectRuleTargets, loadBaseline, ratchetDelta, runF
 import { extractRule } from '../../tools/rule_extract.js';
 import { isLegalRuleId, loadRules, rulesDir, writeRule } from '../../tools/rule_library.js';
 import type { Rule } from '../../tools/rule_library.js';
-import { disambiguationItems, suggestDisambiguations } from '../../tools/similar_names.js';
+import { disambiguationItems, suggestDisambiguationsInFile } from '../../tools/similar_names.js';
 import { moveSymbol } from '../../tools/symbol_move.js';
 import { buildRefactorPlan, applyRefactorPlan } from '../../tools/refactor_plan.js';
 import type { RefactorTarget, RefactorPlan } from '../../tools/refactor_plan.js';
 import { diffViewsHandler } from '../handlers.js';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import type { ToolDef } from '../types.js';
 
 /** [C] 层入参守卫：缺必填字符串 **明确报错**（绝不把 `undefined` 拼进路径 —— 规划书 §16.4 P-D） */
@@ -170,18 +170,27 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         .describe('待重命名的目标数组'),
     },
     handler: wrap(async (a) => {
-      const { project_dir, file, items } = a;
-      const absPath = path.isAbsolute(file as string) ? (file as string) : path.resolve(String(project_dir), String(file));
-      const src = readFileSync(absPath, 'utf-8');
-      const { out, applied } = await renameMany(src, items as RenameItem[], absPath);
-      const done = applied.filter((x) => x.changed > 0);
-      if (done.length > 0) writeFileSync(absPath, out, 'utf-8');
-      const skipped = applied.filter((x) => x.changed === 0);
+      // ★ [C] 只做路由：读源码 → 算改写 → 落盘 全在 [B]（`renameManyInFile`）。
+      //   本层此前自己 readFileSync/writeFileSync ⇒ 漏了 dry_run / 写前快照 / 索引同步三样；
+      //   整段下沉后这三样由落盘内核（applyWrites）天然补齐。
+      const r = await renameManyInFile({
+        project_dir: String(a.project_dir),
+        file: a.file as string,
+        items: a.items as RenameItem[],
+      });
+      // ★ 目标文件在 project_dir 之外 ⇒ 进不了快照、也进不了索引 ⇒ 内核拒绝落盘。
+      //   这里必须**响亮地报**（否则 message 会写"成功 N 项"而其实一个字节都没写 = 静默撒谎）。
+      if (r.blocked?.length) {
+        throw new Error(
+          `目标文件在 project_dir 之外，无法做写前快照与索引写穿 ⇒ 拒绝落盘：${r.blocked.join(', ')}` +
+            `（project_dir=${String(a.project_dir)}；请把它指到该文件所在的项目根）`,
+        );
+      }
       return {
         message:
-          `批量重命名完成：成功 ${done.length} 项${skipped.length > 0 ? `，跳过 ${skipped.length} 项（非法名/撞名/原名相同）` : ''}。` +
-          (skipped.length > 0 ? ` 跳过的项：${skipped.map((s) => `${s.from}→${s.to}`).join(', ')}` : ''),
-        data: applied,
+          `批量重命名完成：成功 ${r.changed.length} 项${r.skipped.length > 0 ? `，跳过 ${r.skipped.length} 项（非法名/撞名/原名相同）` : ''}。` +
+          (r.skipped.length > 0 ? ` 跳过的项：${r.skipped.map((s) => `${s.from}→${s.to}`).join(', ')}` : ''),
+        data: r.applied,
       };
     }),
   },
@@ -646,25 +655,38 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       const project_dir = String(a.project_dir);
       const mode = (a.mode as string | undefined) || 'apply';
       const files = Array.isArray(a.files) ? a.files.map((f) => String(f)) : undefined;
+      // ★ 不再在 [C] 里 existsSync 过滤：`planFunctionAnnotation`（[B]）逐文件已有**同一道**存在性检查，
+      //   在这里再过滤一遍 = 第二份判据（两边口径一旦分叉就静默不一致）。本层只做"路径归一 + 转发"。
       const absFiles = files
-        ? files.map((f) => (path.isAbsolute(f) ? path.resolve(f) : path.resolve(project_dir, f))).filter((f) => existsSync(f))
+        ? files.map((f) => (path.isAbsolute(f) ? path.resolve(f) : path.resolve(project_dir, f)))
         : undefined;
       const useLlm = mode !== 'scan';
       const r = await planFunctionAnnotation({ project_dir, absFiles, llm: useLlm });
       const s = r.summary;
       if (mode === 'apply') {
-        let written = 0;
-        for (const [abs, content] of r.absToNew) {
-          writeFileSync(abs, content, 'utf-8');
-          written += 1;
-        }
+        // ★ 落盘走共享内核（写前快照一次 + 真写 + 索引写穿）：此前这里是裸 writeFileSync 循环，
+        //   落盘后既不进索引、也没有撤回通道。
+        const receipt = await applyWrites(
+          project_dir,
+          [...r.absToNew].map(([abs, content]) => ({ file: abs, content })),
+          { note: 'annotate_functions' },
+        );
+        const written = receipt.written.length;
         const parts = [
           `函数语义注释完成：扫描 ${s.scanned} 个函数 / ${s.files} 个文件；`,
           `已有注释 ${s.with_comment}，缺失 ${s.missing}，过期 ${s.stale}；`,
           `本轮新注入 ${s.annotated}、同步重注 ${s.updated}，改写 ${written} 个文件。`,
         ];
         if (r.note) parts.push(` 备注：${r.note}`);
-        if (written === 0) parts.push('  无待补全/无过期注释，或 LLM 未配置——未写任何文件。');
+        // ★ 在 project_dir 之外的文件进不了快照/索引 ⇒ 内核拒绝落盘。绝不静默：
+        //   否则上面那句"改写 0 个文件"会被读成"没什么要改的"，而其实是有改动被拒了。
+        if (receipt.blocked?.length) {
+          parts.push(
+            `  ⚠ ${receipt.blocked.length} 个文件在 project_dir 之外，**未落盘**（无法做写前快照与索引写穿）：` +
+              receipt.blocked.join(', '),
+          );
+        }
+        if (written === 0 && !receipt.blocked?.length) parts.push('  无待补全/无过期注释，或 LLM 未配置——未写任何文件。');
         return { message: parts.join('\n'), data: { summary: s, files_changed: written, note: r.note } };
       }
       if (mode === 'dry_run') {
@@ -887,15 +909,17 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       use_llm: z.boolean().optional().default(true).describe('是否用 LLM 生成命名建议（默认 true；false/未配置 LLM 则降级为仅候选识别）'),
     },
     handler: wrapData(async (a) => {
-      const { project_dir, file, min_len, max, use_llm } = a;
-      const absPath = path.isAbsolute(file as string) ? (file as string) : path.resolve(String(project_dir), String(file));
-      const src = readFileSync(absPath, 'utf-8');
       const opts: SuggestOptions = {
-        max: typeof max === 'number' ? max : undefined,
-        minLen: typeof min_len === 'number' ? min_len : undefined,
-        llm: use_llm === false ? null : undefined,
+        max: typeof a.max === 'number' ? a.max : undefined,
+        minLen: typeof a.min_len === 'number' ? a.min_len : undefined,
+        llm: a.use_llm === false ? null : undefined,
       };
-      const result = await suggestRenames(src, absPath, opts);
+      // ★ [C] 只转发：解析 file → 读源码 → 建议 全在 [B]（suggestRenamesInFile）
+      const result = await suggestRenamesInFile({
+        project_dir: String(a.project_dir),
+        file: a.file as string,
+        opts,
+      });
       return {
         message:
           `识别到 ${result.candidates.length} 个短名/无意义变量候选；` +
@@ -923,14 +947,16 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       use_llm: z.boolean().optional().default(true).describe('是否用 LLM 生成消歧新名（默认 true；false/未配置 LLM 则降级为仅聚类）'),
     },
     handler: wrapData(async (a) => {
-      const { project_dir, file, max_clusters, use_llm } = a;
-      const absPath = path.isAbsolute(file as string) ? (file as string) : path.resolve(String(project_dir), String(file));
-      const src = readFileSync(absPath, 'utf-8');
       const opts = {
-        maxClusters: typeof max_clusters === 'number' ? max_clusters : undefined,
-        llm: use_llm === false ? null : undefined,
+        maxClusters: typeof a.max_clusters === 'number' ? a.max_clusters : undefined,
+        llm: a.use_llm === false ? null : undefined,
       };
-      const result = await suggestDisambiguations(src, absPath, opts);
+      // ★ [C] 只转发：解析 file → 读源码 → 聚类+消歧 全在 [B]（suggestDisambiguationsInFile）
+      const result = await suggestDisambiguationsInFile({
+        project_dir: String(a.project_dir),
+        file: a.file as string,
+        opts,
+      });
       const items = disambiguationItems(result);
       return {
         message:
@@ -1167,17 +1193,15 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         const writes = summary.outcomes.filter(
           (o) => (o.state === 'applied' || o.state === 'todo') && o.after !== undefined && o.before !== o.after,
         );
-        const { writeSourceFiles } = await import('../../tools/write_gate.js');
-        const report = await writeSourceFiles(
+        // ★ 落盘走共享内核：此前是"动态 import 写闸 + 在 mutate 回调里裸 writeFileSync"——
+        //   回调里的 fs 调用即 [C] 自己落盘。[B]（applyRulesToFiles）已算好 before/after，
+        //   本层只需把 {file, content} 交给内核（快照一次 + 逐文件写 + 索引写穿）。
+        const receipt = await applyWrites(
           root,
-          writes.map((o) => o.file),
-          () => {
-            for (const o of writes) writeFileSync(path.resolve(root, o.file), o.after as string, 'utf8');
-            return writes.length;
-          },
-          { label: `apply_rules(${use.map((r) => r.id).join(',')})` },
+          writes.map((o) => ({ file: o.file, content: o.after as string })),
+          { note: `apply_rules(${use.map((r) => r.id).join(',')})` },
         );
-        lines.push(``, `已写盘 ${report.value} 个文件（走写闸：写前快照 + 索引写穿保鲜）。`);
+        lines.push(``, `已写盘 ${receipt.written.length} 个文件（走写闸：写前快照 + 索引写穿保鲜）。`);
       } else {
         lines.push(``, `（dry_run：未写盘。确认后传 dry_run=false 落盘）`);
       }

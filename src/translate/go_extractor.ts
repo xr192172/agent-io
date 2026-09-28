@@ -15,6 +15,7 @@
 import { parseAstRoot, type SyntaxNodeLike } from '../tools/ts_kernel/index.js';
 import { DEFAULT_CONSTRAINTS, type TransUnit, type TranslateParam, type TranslateKind, type TranslateMethod, type DecisionShape } from './unit.js';
 import { evalConstExpr, constToTsLiteral, type ConstValue } from './const_eval.js';
+import fs from 'node:fs';
 
 /** 从 Go AST 节点取字段子节点（tree-sitter 字段名访问，防御 null） */
 function childField(node: SyntaxNodeLike, name: string): SyntaxNodeLike | null {
@@ -434,6 +435,26 @@ export interface ExtractGoResult {
   skipped: SkippedDecl[];
   /** 萃取失败原因（解析失败时返回空 units + error） */
   error?: string;
+}
+
+/**
+ * `extractGoFromFile` 的产物：萃取结果 + "文件本身在不在"（与"解析失败"分开 —— 两种失败要给人不同的话）
+ */
+export interface ExtractGoFileResult extends ExtractGoResult {
+  /** 磁盘上找不到该文件（此时 units/skipped 为空，`error` 不置位） */
+  missing?: boolean;
+}
+
+/**
+ * ★ [B] 按文件入口（**读盘 → 萃取**）。
+ *
+ * 为什么收在 [B]：`go_originals` 的 [C]（lane）原来自己 `existsSync` + `readFileSync`
+ * 再把源码喂给 `extractGo(file, source)` —— "读文件"这件事于是散落在 [C] 里。
+ * 收进 [B] 后 [C] 退化为纯路由器（只把 `missing`/`error` 翻成人话），lane 内不出现文件 IO。
+ */
+export async function extractGoFromFile(file: string): Promise<ExtractGoFileResult> {
+  if (!fs.existsSync(file)) return { units: [], skipped: [], missing: true };
+  return extractGo(file, fs.readFileSync(file, 'utf8'));
 }
 
 /**

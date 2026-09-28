@@ -17,9 +17,8 @@ import { compareProjects } from '../../cross_repo/index.js';
 import { analyzeHealth } from '../../health/index.js';
 import { VERDICT_LABEL, precheckHybrid } from '../../hybrid/index.js';
 import { detectReachableRoots } from '../../tools/project_root.js';
-import { extractGo } from '../../translate/go_extractor.js';
+import { extractGoFromFile } from '../../translate/go_extractor.js';
 import { translateGoTsHandler } from '../../translate/tool.js';
-import { existsSync, readFileSync } from 'node:fs';
 import type { ToolDef } from '../types.js';
 
 export const CROSS_TOOLS: ToolDef[] = [
@@ -51,10 +50,11 @@ export const CROSS_TOOLS: ToolDef[] = [
       symbol: z.string().optional().describe('可选：只返回该符号名的原文'),
     },
     handler: wrapData(async (a) => {
+      // ★ [C] 只做路由：读文件（含存在性判定）在 [B]（extractGoFromFile），本层不碰文件系统
       const file = a.file ? path.resolve(String(a.file)) : '';
-      if (!file || !existsSync(file)) return { message: 'Go 文件不存在: ' + (file || '(未提供 file)') };
-      const source = readFileSync(file, 'utf8');
-      const r = await extractGo(file, source);
+      if (!file) return { message: 'Go 文件不存在: (未提供 file)' };
+      const r = await extractGoFromFile(file);
+      if (r.missing) return { message: 'Go 文件不存在: ' + file };
       if (r.error) return { message: 'Go 解析失败: ' + r.error };
       let units = r.units ?? [];
       if (a.symbol) { const want = String(a.symbol); units = units.filter((u) => u.name === want); }
