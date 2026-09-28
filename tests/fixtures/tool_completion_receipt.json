@@ -1,0 +1,43 @@
+{
+  "note": "G11 回执产物门（P-E「完成 ⇒ 可验证产物」，见 docs/tool-convergence.md §9-R1 / 规划书 §16.5）的存量基线。口径：**存量不拦、新增即红**。① dropData = handler 走 `wrap`（src/registry/plumbing.ts 的 `wrap()` = `return { text: r.message }`，静默丢弃 `data`）⇒ 结构化产物到不了 agent，结构上无法满足「完成 ⇒ 可验证产物」。②  unresolved = handler 既非 wrap/wrapData、也不是能在 src/registry/handlers.ts 里解析到包装器的具名 handler（工厂 / 裸 arrow）⇒ 通道无法机械判定。基线**只许减不许增**：新增工具若落进这两态 ⇒ 门红（改 wrapData，或像这里一样显式登记 = 一次落笔一次判断）。收紧方式：UPDATE_RECEIPT_BASELINE=1 ./node_modules/.bin/vitest run tests/tools/tool_completion_receipt.test.ts。★ 与 P-A 门（tests/registry/receipt_channel.test.ts，正向棘轮『声明的回执类工具必须已迁 wrapData』）分工互补：本门是反向棘轮『任何工具不得**新增**落进丢数据的通道』，覆盖全部注册工具。",
+  "dropData": [
+    "annotate_functions",
+    "archive_node",
+    "backfill_scaffold",
+    "behavior_baseline",
+    "code_health",
+    "consistency_check",
+    "cross_repo_symbol_index",
+    "diff_views",
+    "edit_dsl",
+    "feature_line",
+    "find_references",
+    "get_dsl",
+    "harvest_decisions",
+    "hybrid_precheck",
+    "impact_analysis",
+    "import_project",
+    "list_archive",
+    "manage_feature",
+    "move_symbol",
+    "observe_instrument",
+    "observe_judge",
+    "observe_log",
+    "observe_trace",
+    "propose_design_intent",
+    "refactor_judge",
+    "refactor_pipeline",
+    "remove_dead_imports",
+    "rename_files",
+    "rename_many",
+    "rename_symbols",
+    "render_design",
+    "run_tests",
+    "scaffold",
+    "sync_contracts"
+  ],
+  "unresolved": [
+    "capability_map",
+    "index_integrity"
+  ]
+}

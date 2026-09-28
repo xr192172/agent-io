@@ -487,5 +487,50 @@ src/hello.ts 共 3 行，显示 L1-L3
   **被 `wrap` 丢弃**，agent 只拿到 message。**正是** `plumbing.ts` `wrap` 丢 `data` 的实例（§21 ②"产物是结构化数据不是 message"未达标）。
 - 对比 `explore_code` 用 **`wrapData`** ⇒ `---DATA---` 正常到达。**同一仓、两种外壳，产物可见性不同**——收敛 `wrap`/`wrapData` 是一笔独立改动（未在本笔动）。
 
+***
+
+## 9. 工具设计规范（Tool Design Rules）
+
+> 本节不是"某个工具怎么用"，而是**工具面通则** —— 任何工具都不许违反的设计纪律。
+> 每条规范必须有四项：**判据 / 机制 / 正例 / 反例**，并指明它的**机械门**（没有门的规范会腐成口号）。
+
+### R1 ★★ 「完成 ⇒ 可验证产物」（P-E，规划书 §16.5 / §16.8）
+
+**判据**：一个工具**报"完成"**（"已改 N 处" / "已落盘" / "✓" / "异步 action 已完成"…）时，
+**同一份回执必须携带机器可判的产物** —— 改动了几行 / 哪些文件 / diff / 新产物 id **之一**。
+**只有自然语言描述（散文）不算完成**；说不清"干了什么、动了哪里"的"完成"一律视为**未完成**。
+
+**为什么它必须是通则（不是 `explore_code` 的特例）**：本仓的主要用户是 **agent**。
+若 agent 判成败只能**正则解析散文**，就与本仓 §2d「不许靠猜、不许靠文本判断」**自相矛盾**，
+且**猜错不报错**——P-A 实测正是如此（干跑回执以 `[干跑]` 开头不以 `✓` 开头 ⇒ `startsWith('✓')`
+把**成功判成失败** ⇒ **静默跳过落盘**；另一处正则漏 `from ` ⇒ 6 个文件全判成"无 import"）。
+
+**机制（本仓的落地形态 = 回执通道）**：`src/registry/plumbing.ts`
+
+- `wrapData()` → `message` + `---DATA---` + `JSON.stringify(data)` ⇒ 结构化产物**可达** agent；
+- `wrap()` → `return { text: r.message }` ⇒ **只取 message，静默丢弃 `data`** ⇒ 结构化产物**到不了** agent。
+
+⇒ **落在 `wrap` 上的工具，结构上无法满足 R1**：它的 diff / 文件清单 / 产物 id 即使被 handler 算出来了，
+也在**通道层**被扔掉。这不是"文案不好"，是**产物在传输途中蒸发**。
+
+**正例**：`explore_code(action='read')` 走 `wrapData`，真 MCP 实测回执带
+`---DATA--- {"file","rel_path","total_lines","start","end","truncated","symbols[]","lines[]"}`（§8.2 原文）
+⇒ agent 可直接判定"读到了什么、读到第几行"，**不必解析散文**。
+
+**反例**：`rename_files`（`src/registry/lanes/refactor.ts`）走 `wrap`，其 handler 在成功与受阻两条路径上
+都 `return { message: … , data: r }`（`r` = 每条改名 + 联动改写的引用清单），但 **`data` 被 `wrap` 丢弃**
+⇒ agent 只拿到 `批量文件改名完成：N 条，联动改写引用 M 处` 这句散文，**"改了哪些文件/哪些引用"无从验证**。
+`find_references` / `rename_many` / `move_symbol` 同型（`find_references` 的 `FindReferencesResult`
+被丢已在 §8.5 实测登记）。
+
+**机械门**：`tests/tools/tool_completion_receipt.test.ts`（**G11 · 回执产物门**）——
+按 `TOOL_DEFS` 覆盖**全部**工具（不只 `explore_code` 的 action），逐工具判定回执通道；
+`wrap` / 不可判定者登记为**存量基线**（`tests/fixtures/tool_completion_receipt.json`），
+**棘轮：存量不拦、新增即红**（新工具落在 `wrap` 上 ⇒ 门红，这是"堆新工具"的准入闸）。
+
+**R1 的机检边界（诚实标注）**：G11 验的是"**通道能携带结构化产物**"（**必要条件**），
+**不验**"指纹字段内容对不对、真的出现了没有"——后者要**真调工具看 `---DATA---` 内容**（行为级），
+属 G8 行为快照域。故 R1 **尚未被完全机械化**：机检挡住"通道丢弃"这一类，文案质量与字段正确性仍靠实测/人审。
+
 
 

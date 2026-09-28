@@ -24,6 +24,12 @@
  *   新增 action ⇒ 不声明实现就会被这扇门拦下，或者必须**显式登记为待实现债务**。
  *
  * 收紧基线：UPDATE_EXPLORE_WIRING=1 ./node_modules/.bin/vitest run tests/tools/explore_action_wiring.test.ts
+ *
+ * ★ P-E（2026-09-28）：本门的**判据**（`case '<action>':` 派发块 ↔ 声明的 import 实现）读的是
+ *   `explore_code.ts` 的 switch 结构，**结构上套不到全部工具**（多数工具没有 action 派发表）⇒
+ *   「完成 ⇒ 可验证产物」**没有**硬扩到本文件，而是另立一扇对全部工具可机械判定的门：
+ *   `tests/tools/tool_completion_receipt.test.ts`（G11 · 回执产物门，判**回执通道**）。
+ *   两门纪律同族、判据不同。
  */
 
 import { describe, it, expect } from 'vitest';
