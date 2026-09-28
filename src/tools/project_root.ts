@@ -698,16 +698,17 @@ async function importsTargetFile(fileAbs: string, targetAbs: string, aliasCfg?: 
   return false;
 }
 
-/** 读项目根 package.json 的 name（裸包 workspace 互引匹配用）；无则 undefined */
+/**
+ * 读项目根 package.json 的 name（裸包 workspace 互引匹配用）；无则 undefined。
+ * ★ 2026-09-29：去掉静默兜底——malformed package.json 不再是"无 name"，而是明确报错（§2d）。
+ *   原先 catch { return undefined } 把"读不了"与"没有 name"混成同一态，现在分开：
+ *   文件不存在 / name 未声明 → undefined（正常）；文件存在但 JSON 坏 → throw（硬失败）。
+ */
 export function readPackageName(root: string): string | undefined {
-  try {
-    const p = path.join(root, 'package.json');
-    if (!fs.existsSync(p)) return undefined;
-    const j = JSON.parse(fs.readFileSync(p, 'utf-8'));
-    return typeof j.name === 'string' && j.name ? j.name : undefined;
-  } catch {
-    return undefined;
-  }
+  const p = path.join(root, 'package.json');
+  if (!fs.existsSync(p)) return undefined;
+  const j = JSON.parse(fs.readFileSync(p, 'utf-8'));
+  return typeof j.name === 'string' && j.name ? j.name : undefined;
 }
 
 /**
