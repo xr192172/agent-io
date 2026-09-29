@@ -15,7 +15,7 @@
 
 Two chronic problems in engineering collaboration, both addressed by agent-io:
 
-**Problem 1: Documentation drift.** Every design doc and architecture diagram goes stale as code evolves, until nobody trusts it. agent-io encodes the "design truth" as **structured DSL JSON** that evolves with the code: the semantic layer records file contracts (files / apis / decisions), auto-backfilled from the implementation by `backfill_scaffold` and corrected by runtime observation (Observe) — **documentation no longer goes stale**.
+**Problem 1: Documentation drift.** Every design doc and architecture diagram goes stale as code evolves, until nobody trusts it. agent-io encodes the "design truth" as **structured DSL JSON** that evolves with the code: the semantic layer records file contracts (files / apis / decisions), auto-backfilled from the implementation by `scaffold` (action=backfill) and corrected by runtime observation (Observe) — **documentation no longer goes stale**.
 
 **Problem 2: Uncontrolled changes.** LLMs often edit the wrong location, break files, and produce changes that can't be verified — forcing rework. agent-io provides a controlled change pipeline: symbol-level precise editing (`edit_code`) → real diff review before applying → runtime probe reconciliation → commit only on pass, auto-rollback on failure — **changes no longer rely on luck**.
 
@@ -44,7 +44,7 @@ One thread runs through everything: **any code → bricks (production) → trust
 | **Code understanding** | Project import, semantic search, impact analysis, architecture layering, monolith splitting, algorithm/dataflow derivation | `import_project` / `explore_code` |
 | **Brick system** | Harvest code from any source (URL / local project) into contract-bearing bricks: extraction, slimming, search, and assembly | `harvest_from_url` / `harvest_closure` / `extract_contracts` / `bricks` |
 | **Runtime verification** | Reconcile contracts and behavior baselines against actual runtime observations, forming a "commit only if verified, roll back on failure" gate | `observe_instrument` / `observe_judge` / `reconcile_chain` / `reconcile_effects` |
-| **Generation / backfill / consistency** | Generate code skeleton from DSL, backfill contracts from implementation, output consistency reports | `scaffold` / `backfill_scaffold` / `consistency_check` |
+| **Generation / backfill / consistency** | Generate code skeleton from DSL, backfill contracts from implementation, output consistency reports | `scaffold` / `consistency_check` |
 | **Deterministic refactoring (no rework)** | Symbol-level editing (never matches wrong), bulk/cross-file renaming, dead code removal, diff review before applying, rollback on failure | `edit_code` / `rename_*` / `refactor_pipeline` |
 | **Diagnosis loop** | Full chain from symptom → root cause → fix → verify → commit (or roll back) | `diagnose` / `refactor_judge` / `diagnose-loop` (CLI) |
 | **Multi-language AST foundation** | Unified extraction of symbols / imports / call edges / type references on top of tree-sitter | `ts_kernel` / `package_migration` |
@@ -104,7 +104,7 @@ Your browser opens `http://localhost:3000/workbench`: the left canvas is an inte
 
 ## MCP Tool Reference
 
-A total of **61 MCP tools** are registered, organized into "capability navigation + primary tools + specialized tools": `capability_map` provides layered capability-lane navigation, primary tools provide unified entry points, specialized tools each do one job. The tables below are a curated subset, not the full list — the authoritative count comes from `TOOL_DEFS` in `src/server_registry.ts`.
+A total of **58 MCP tools** are registered, organized into "capability navigation + primary tools + specialized tools": `capability_map` provides layered capability-lane navigation, primary tools provide unified entry points, specialized tools each do one job. The tables below are a curated subset, not the full list — the authoritative count comes from `TOOL_DEFS` in `src/server_registry.ts`.
 
 ### Capability navigation (1)
 
@@ -134,7 +134,7 @@ A total of **61 MCP tools** are registered, organized into "capability navigatio
 >
 > The catalogue is **derived automatically from the tool registry**: `LANE_OF` in `src/tools/capability_map.ts` only declares the tool → lane membership, and `when` defaults to the first sentence of the registered description. A newly registered tool needs just one membership line and can never silently disappear from navigation (unmapped tools are listed explicitly under "unmapped"). Consistency is enforced by `tests/tools/capability_map.test.ts` against the real `TOOL_DEFS`.
 
-### Primary tools (8)
+### Primary tools (7)
 
 | Tool | Purpose |
 |------|------|
@@ -142,8 +142,7 @@ A total of **61 MCP tools** are registered, organized into "capability navigatio
 | `edit_dsl` | Unified write entry: batch `operations[]` for add/update/delete, semantic binding, status updates, annotations, approvals, auto-layout; executed in order, full rollback on any failure (atomic) |
 | `manage_feature` | Feature lifecycle management: create / clone / template / list / delete |
 | `render_design` | Render entry: mindmap / html / svg / markdown, with `view` and output path |
-| `scaffold` | Generate a code skeleton from the DSL semantic layer (vue / react / html) + status inference |
-| `backfill_scaffold` | Parse implementation API signatures back into actual_apis and output a diff report |
+| `scaffold` | Scaffold unified entry: `action=generate` (generate a code skeleton from the DSL semantic layer, vue / react / html + status inference) / `action=backfill` (parse implementation API signatures back into actual_apis and output a diff report) |
 | `consistency_check` | Compare expected contracts against actual code; output a consistency report and cross-file invariants (read-only) |
 | `explore_code` | Code understanding entry: semantic search, impact analysis, architecture layering, monolith detection, split suggestions, algorithm/dataflow derivation, simulation replay, etc. |
 
@@ -214,8 +213,7 @@ Java projects, Python dead-code cleanup on Python projects; apply / verify / rol
 
 | Tool | Purpose |
 |------|------|
-| `set_design_intent` | Write design intent to the intent overlay: `goals` (structured objectives/direction) + `edge_intents` (why A depends on B / boundary attribution); lands into base `meta.goals` / `edge.intent` for the LLM and read side to consume (write entry for overlay gaps ①③④) |
-| `propose_design_intent` | LLM drafts a "design-intent (why) rewrite" approval card: propose only computes a before/after intent diff without writing; the human approves in the workbench "Code approval" tab before it truly lands in the DSL; reject discards (human is the decision approver, LLM the proposer) |
+| `design_intent` | Design-intent (why) unified entry (`action=set` / `propose`). `set`: write `goals` (structured objectives/direction) + `edge_intents` (why A depends on B / boundary attribution) into the design-intent overlay, which then lands into base `meta.goals` / `edge.intent` for the LLM and read side to consume; `propose`: LLM drafts a "design-intent rewrite" approval card, only computing a before/after intent diff **without writing** — the human approves in the workbench "Code approval" tab before it truly lands in the DSL; reject discards (human is the decision approver, LLM the proposer) |
 
 **Canvas annotations**
 

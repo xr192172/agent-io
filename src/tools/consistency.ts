@@ -14,8 +14,8 @@
  *   4. 支持注释标记定位（<!-- agent-io:node_id -->）
  *   5. 验证跨文件不变式（multi_file_invariants）
  *
- * 与 backfill_scaffold 的区别：
- *   - backfill_scaffold：从代码提取 actual_apis 回写到 DSL
+ * 与 scaffold(action=backfill) 的区别：
+ *   - scaffold(action=backfill)：从代码提取 actual_apis 回写到 DSL
  *   - consistency：只读检查，生成报告，不修改 DSL
  *
  * 职责归属（对账语义，与三方对比/基线一致）：

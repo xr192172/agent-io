@@ -46,7 +46,7 @@ const server = new McpServer(
       '\n   - {op:"update",type:"binding",id:"<node_id>",data:{file_id,sync_status?}} 绑定节点与语义文件' +
       '\n   - {op:"update",type:"status",id:"<node_id>",data:{status}} 更新状态（同步 file 并重算 feature 状态）' +
       '\n\n3. 代码生成：scaffold 从设计图 semantic 层生成代码骨架（签名 + TODO + import），LLM 在骨架上填充实现。' +
-      '\n\n4. 状态回填：LLM 写完代码后，调用 backfill_scaffold 自动解析实际 API 签名回填到 DSL。' +
+      '\n\n4. 状态回填：LLM 写完代码后，调用 scaffold（action=backfill）自动解析实际 API 签名回填到 DSL。' +
       '\n   然后 scaffold 扫描 TODO 残留量自动推断状态，或 edit_dsl 的 status 操作手动标记。' +
       '\n   render_design 重新渲染后节点颜色随状态变化：灰=待实现, 橙=实现中, 绿=已完成。' +
       '\n\n5. 人审流程：人类在浏览器双击节点添加标注 → get_dsl（query:"annotations"）读取 → LLM 迭代修改 → edit_dsl(op=resolve,type=annotation) 关闭。' +

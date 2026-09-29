@@ -565,6 +565,80 @@
 > —— 采集族**不该合**（§35.2）。★ 另一条未决项：`scripts/contract_docs_gate.mjs` 对
 > "工具名 = 实现模块名"的族产生**结构性假红**（本仓首次遇到），处置见规划书 §35.6。
 
+#### 面收敛**第三批**：设计/DSL 12→10、观测 13→12（2026-09-29，样板照 §34/§35 办）
+
+- [x] 候选组：**脚手架族**两品（从 DSL 生成骨架 / 从实现回填 actual_apis）⇒ 单入口 `scaffold`（action=`generate` / `backfill`）
+  - 核验：读源实现 ✓ / 对契约 ✓ / 找调用方 ✓ / 查测试 ✓ / 回归+快照 ✓
+
+  - **是不是"同一操作对象"（§2.0 的判据）**：是。两者操作的是**同一个对象**「脚手架输出目录」——
+    两个 `[B]` 的默认目录**逐字相同** = `<cwd>/scaffold/<feature>/`（一个参数叫 `output_dir`、
+    一个叫 `scaffold_dir`，值等价），**共用同一锚点参数 `feature`**，动作互补 = **生成 + 回填**；
+    `backfill.ts` 头注释本就写着工作流「生成骨架 → LLM 填充实现 → 回填解析实际代码 → DSL 更新」。
+    **不属** `camera_*` 那类反面教训。
+
+  - 处理：**合并**为单入口 `scaffold`（显式参数、无 args 袋子；`action` 缺省 `generate` = **零语义变更**地
+    保留旧生成入口的调用形状）；两分支都走 `wrapData`（generate 回 `{files,dir}`、backfill 回 `{feature,updates}`）；
+    ★ 安全策略前移**零语义变更**：把"默认目录 `<cwd>/scaffold/<feature>` / 已存在文件默认不覆盖 /
+    backfill 只写 DSL 不改代码"明写进 description + schema，**没有**硬加 `dry_run`
+    （那要改 `[B]` 或把 `[B]` 解析抄进 `[C]` = G4 要消灭的副本）。
+
+  - 结果：对外工具数 **本族 2 → 1**。
+
+- [x] 候选组：**设计意图（why）族**两品（直接写 / 先请人批再写）⇒ 单入口 `design_intent`（action=`set` / `propose`）
+  - 核验：读源实现 ✓ / 对契约 ✓ / 找调用方 ✓ / 查测试 ✓ / 回归+快照 ✓
+
+  - **是不是"同一操作对象"**：是。两者操作的是**同一个对象**「设计意图 overlay」
+    （`<feature>.overlay.json` 的 `goals` + `edge_intents`），**共用同一锚点 `feature`**；
+    两份 description 本**互相指名**（propose 明写"复用 set 的写端"，两者 schema 完全同形）；
+    `propose` 只是 `set` 的**"先请人批再落"前置闸** —— 同一操作对象的两种写入策略，不是两个对象。
+
+  - 处理：**合并**为单入口 `design_intent`（显式参数；`action` 缺省 `set` = **零语义变更**地保留旧直接写入口的调用形状）；
+    两分支都走 `wrapData`；★ 安全策略前移**零语义变更**：把"propose 永不直接落盘、须人 approve 才真写"
+    明写进 description（**没有**为 propose 硬加预览参数 —— 预览本就是 propose 的产物）。
+
+  - 结果：对外工具数 **本族 2 → 1**。
+
+- [x] 候选组：**内存观测族**两品（列出本机 `--inspect` 进程 / 用端口做内存诊断）⇒ 并进 `memory_observe`（新增 action=`targets`）
+  - 核验：读源实现 ✓ / 对契约 ✓ / 找调用方 ✓ / 查测试 ✓ / 回归+快照 ✓
+
+  - **是不是"同一操作对象"**：是。两者操作的是**同一个对象**「目标 node 进程（--inspect）」——
+    一个是"选 target 的那一端"（列出进程/端口），一个是"用 target 诊断"
+    （status/baseline/track/gc/snapshot）；旧的两份 description **互相指名**
+    （列进程的说"供 `memory_observe` 的 target 使用"），共用锚点 `target`（targets 自身产出它）。
+    ⇒ 把"选目标"并进"用目标"，与第一批 `snapshot`（list / rollback）同型。
+
+  - 处理：`memory_observe` 新增 `action=targets`（把旧入口的 `[B]` 分派进来），`target` 改为可选
+    （仅 targets 不需要）；targets 分支 `wrapData`。旧入口的 `[B]` **一行未改**。
+
+  - 结果：对外工具数 **本族 2 → 1**（三族合计 **61 → 58**）。
+
+- [x] 候选组：**`observe_*` 四件套 + reconcile 族 + 本线其余**⇒ **判为不该合，停手**
+  - 核验：读源实现 ✓ / 对契约 ✓ / 找调用方 ✓
+
+  - 发现：**不同抽象层**（`observe_log`/`reconcile_effects` = 纯查询；`observe_judge` = 判定；
+    `observe_instrument` = 动作；`reconcile_chain` = 中观编排；`observe_trace` = 回放重建），
+    **锚点各异**（`events_file` / `events_path` / `events[]` / `node_id`+`feature` / `target`），
+    **不共用操作对象** —— 与 §2.0 的 `camera_*` 反面教训**同型**。
+    `behavior_baseline`（已是 capture/verify 聚合体）/ `run_tests` / `feature_line` /
+    `recommend_observe_points` / `narrate_step` 亦各自操作对象不同，同样不动。
+
+  - 处理：**不合并**（按前缀聚类正是 §2.0 明确禁止的口径）。本线除内存观测族外**一行未动**。
+
+- [x] 候选组：设计线 **`consistency_check` + `detect_drift`** ⇒ **判为不该合，停手**
+  - 核验：读源实现 ✓ / 对契约 ✓ / 找调用方 ✓
+
+  - 发现：**不同抽象层** —— `detect_drift` 是**编排**（内部调 `checkConsistency` 做引擎计算），
+    `consistency_check` 是**基础动作/引擎**；且**不共用输入契约**（前者要 `code_dir`；后者要
+    `scope`/`since_ref`/`mode`）。这是 `camera_*` 教训（基础动作 vs 编排）的翻版。
+
+  - 处理：**不合并**。`get_dsl` / `edit_dsl` / `manage_feature`（已聚合体）/ `render_design` /
+    `render_brickwork` / `import_project` 各是独立操作对象，亦不动。
+
+> **第三批小结**：本笔在"设计/DSL + 观测"两条线上收出 **3 个单入口**（`scaffold` /
+> `design_intent` / `memory_observe(+action=targets)`），对外工具数 **61 → 58**；
+> 同时产出**两条反面结论** —— `observe_*` 族与 `consistency_check`+`detect_drift` **不该合**
+> （同 §2.0 的 `camera_*` 教训）。★ 起点是"先判断该不该合"，**不是按名字硬合**。
+
 ***
 
 ## 8. P-G 实测登记：`explore_code(action='read')` 是不是稳定的读文件入口（2026-09-28）

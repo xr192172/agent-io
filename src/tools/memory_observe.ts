@@ -13,7 +13,7 @@
  *   snapshot → HeapProfiler.takeHeapSnapshot 收集落盘，供 heap diff
  *
  * CDP 传输：Node >= 22 用全局 WebSocket；更老运行时回退动态 import('ws')。
- * 目标解析：target 直接给目标进程的 --inspect 端口；可用配套 memory_targets 工具自动列出。
+ * 目标解析：target 直接给目标进程的 --inspect 端口；可用 memory_observe(action=targets) 自动列出。
  */
 import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
@@ -147,7 +147,7 @@ function fmt(s: MemSample, t0: number): string {
 function resolvePort(target: unknown): number {
   const t = String(target ?? '').trim();
   if (/^\d+$/.test(t)) return parseInt(t, 10);
-  throw new Error('target 需为目标进程的 --inspect 端口（纯数字）；如不知道可用 memory_targets 工具列出本机所有 --inspect 进程。');
+  throw new Error('target 需为目标进程的 --inspect 端口（纯数字）；如不知道可用 memory_observe(action=targets) 列出本机所有 --inspect 进程。');
 }
 
 /** HeapProfiler.takeHeapSnapshot 的 chunk 收集并落盘。 */

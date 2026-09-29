@@ -1,5 +1,5 @@
 /**
- * design 线（12 个工具）—— ★ **本文件即该线归属的唯一来源**。
+ * design 线（10 个工具）—— ★ **本文件即该线归属的唯一来源**。
  *
  * ★ P1b（2026-09-28）：按当时 `capability_map.LANE_OF` 的归属从 `TOOL_DEFS` 切分而来，
  *   条目**逐字搬移**，只加了 `export const DESIGN_TOOLS` 外壳 —— 归属自此由文件路径表达。
@@ -7,21 +7,36 @@
  *   接到线 id `'design'`，并派生「工具 → 线」归属表注入 capability_map。
  *   ⇒ **把工具挪出本线 = 把它从本数组移到另一条线的数组，一处改动**（不再有第二处要同步）。
  *
+ * ★ 面收敛第三批（2026-09-29）：本线 12 → 10 个注册入口。两族收成单入口
+ *   （判据 = `docs/tool-convergence.md` §2.0「按**操作对象**聚合，不按实现机制」）：
+ *   · 脚手架族 2 → 1：`scaffold`（action=generate / backfill）—— 同一操作对象「脚手架输出目录」，
+ *     两个 [B] 的默认目录**逐字相同** = `<cwd>/scaffold/<feature>/`；共用锚点 feature；动作互补 = 生成 + 回填。
+ *   · 设计意图族 2 → 1：`design_intent`（action=set / propose）—— 同一操作对象「设计意图 overlay」
+ *     （<feature>.overlay.json 的 goals + edge_intents）；共用锚点 feature；propose 是 set 的
+ *     "先请人批再落"前置闸（两者 description 本相互指名、propose 复用 set 的写端）。
+ *   ★ 本线其余**不动**：`get_dsl` / `edit_dsl` / `manage_feature`（已是聚合体）/ `render_design`
+ *     / `render_brickwork` / `consistency_check` / `detect_drift` / `import_project` 各是独立操作对象。
+ *   ★ 反面结论（与 `camera_*` 教训同型，见提交信息）：「一致性检查 + 漂移检测」**不该合** ——
+ *     `detect_drift` 是**编排**（内部调 `checkConsistency`），`consistency_check` 是**基础动作/引擎**，
+ *     二者**不同抽象层**，且不共用输入契约（前者要 code_dir；后者要 scope/since_ref/mode/changed_files）。
+ *
  * 为什么能切了：依赖已先行抽到 `registry/{types,plumbing,handlers}.ts`（P1a）——
  *   否则本文件 import 它们就会成环（server_registry → lanes → server_registry）。
  */
 import { z } from 'zod';
-import { wrapData } from '../plumbing.js';
+import { requireStr, wrapData } from '../plumbing.js';
 import path from 'node:path';
 import { getProjectCacheDb } from '../../db/db.js';
 import { getDSL } from '../../storage.js';
+import { backfillScaffold } from '../../tools/backfill.js';
 import { proposeChange } from '../../tools/code_workbench.js';
 import { importProject } from '../../tools/import_project.js';
 import type { ImportProjectInput } from '../../tools/import_project.js';
 import { MANAGE_ACTIONS } from '../../tools/manage_feature.js';
 import { buildBrickifyPreview } from '../../tools/render_brickwork.js';
 import { scaffold } from '../../tools/scaffold.js';
-import { backfillHandler, consistencyHandler, detectDriftHandler, editDslHandler, getDslHandler, manageFeatureHandler, renderDesignHandler, scaffoldHandler, setDesignIntentHandler } from '../handlers.js';
+import { setDesignIntent } from '../../tools/set_design_intent.js';
+import { consistencyHandler, detectDriftHandler, editDslHandler, getDslHandler, manageFeatureHandler, renderDesignHandler } from '../handlers.js';
 import type { ToolDef } from '../types.js';
 
 export const DESIGN_TOOLS: ToolDef[] = [
@@ -188,30 +203,53 @@ export const DESIGN_TOOLS: ToolDef[] = [
 
   {
     name: 'scaffold',
-    title: 'Generate code skeleton from DSL',
+    title: 'Scaffold: generate code skeleton from DSL / backfill actual_apis from code — single entry',
     description:
-      '从 DSL semantic 层生成代码骨架。支持语言：.go/.ts/.py/.js/.vue/.tsx。' +
-      '额外生成 INVARIANTS.md 记录跨文件不变式。',
+      '「脚手架」统一入口（**2 个注册入口收敛为 1 个入口 + action 分派**；两者操作的是**同一个对象**' +
+      '「脚手架输出目录」——generate 与 backfill 的默认目录**逐字相同** = `<cwd>/scaffold/<feature>/`，' +
+      '共用同一锚点参数 feature，动作互补 = **生成 + 回填**，对应工作流「生成骨架 → LLM 填充实现 → 回填」）。' +
+      'action=generate（默认）：从 DSL semantic 层生成代码骨架。支持语言 .go/.ts/.py/.js/.vue/.tsx。' +
+      '额外生成 INVARIANTS.md 记录跨文件不变式。' +
+      'action=backfill：LLM 写完代码后，解析实现文件中的 API 签名，回填到 DSL semantic.files[].actual_apis，' +
+      '对比 expected_apis 输出差异报告。支持 .go/.ts/.py/.js。' +
+      '★ 安全策略前移（默认值与写入面明写在这里）：generate 输出根目录缺省 `<cwd>/scaffold/<feature>`，' +
+      '已存在文件默认**不覆盖**（`overwrite=true` 才覆盖）；backfill **只写 DSL 的 actual_apis，不改代码**。',
     inputSchema: {
-      feature: z.string().describe('feature 名'),
-      output_dir: z.string().optional(),
-      overwrite: z.boolean().optional(),
-      ui_framework: z.enum(['vue', 'react', 'html']).optional(),
+      action: z
+        .enum(['generate', 'backfill'])
+        .default('generate')
+        .describe('generate=从 DSL 生成代码骨架（默认） | backfill=解析实现回填 actual_apis 到 DSL'),
+      feature: z.string().describe('feature 名（2 个 action 共用锚点）'),
+      output_dir: z.string().optional().describe('generate 用：输出根目录（默认 <cwd>/scaffold/<feature>）'),
+      overwrite: z.boolean().optional().describe('generate 用：是否覆盖已存在文件（默认 false）'),
+      ui_framework: z.enum(['vue', 'react', 'html']).optional().describe('generate 用：UI 骨架类型（覆盖 DSL 配置）'),
+      project_dir: z.string().optional().describe('generate 用：项目根（索引归属），提供时生成物登记为自写（读路径优先同步索引）'),
+      scaffold_dir: z.string().optional().describe('backfill 用：脚手架输出根目录（默认 <cwd>/scaffold/<feature>）'),
     },
-    handler: scaffoldHandler,
-  },
+    handler: wrapData(async (a) => {
+      const action = (a.action as 'generate' | 'backfill' | undefined) ?? 'generate';
+      const feature = requireStr(a, 'feature');
 
-  {
-    name: 'backfill_scaffold',
-    title: 'Backfill scaffold from implementation code',
-    description:
-      'LLM 写完代码后，解析实现文件中的 API 签名，回填到 DSL semantic.files[].actual_apis，' +
-      '对比 expected_apis 输出差异报告。支持 .go/.ts/.py/.js。',
-    inputSchema: {
-      feature: z.string().describe('feature 名'),
-      scaffold_dir: z.string().optional(),
-    },
-    handler: backfillHandler,
+      if (action === 'generate') {
+        const r = scaffold({
+          feature,
+          project_dir: a.project_dir as string | undefined,
+          output_dir: a.output_dir as string | undefined,
+          overwrite: a.overwrite as boolean | undefined,
+          ui_framework: a.ui_framework as 'vue' | 'react' | 'html' | undefined,
+        });
+        // ★ 回执编排：files（生成的文件清单）与 dir（输出根）是 agent 后续要引用的机器可读产物，
+        //   旧入口用 wrapData 时已在回；本笔保持同名同义。
+        return { message: r.message, data: { action, files: r.files, dir: r.dir } };
+      }
+
+      if (action === 'backfill') {
+        const r = await backfillScaffold({ feature, scaffold_dir: a.scaffold_dir as string | undefined });
+        return { message: r.message, data: { action, feature: r.feature, updates: r.updates } };
+      }
+
+      throw new Error(`scaffold: 未知 action "${String(action)}"（可选值：generate / backfill）`);
+    }),
   },
 
   {
@@ -296,16 +334,26 @@ export const DESIGN_TOOLS: ToolDef[] = [
   },
 
   {
-    name: 'set_design_intent',
-    title: 'Write design intent',
+    name: 'design_intent',
+    title: 'Design intent (why): set directly / propose for human approval — single entry',
     description:
-      '写设计意图到意图 overlay（缺口①③④ 的写入口，LLM 开发时即消费方）：' +
-      'goals（结构化目标/方向，全量替换）与 edge_intents（"A 为何依赖 B" 与边界归属，' +
-      '按 base 边 id 或 from+to 匹配挂载）两者均可选、至少传一类。' +
-      '写进 <feature>.overlay.json（意图权威库），随即 apply 回 base 并保存，get_dsl/serve 当下即可读到 ' +
-      '（meta.goals 与 edge.intent），不依赖下一次代码扫描再生。',
+      '「设计意图（why）」统一入口（**2 个注册入口收敛为 1 个入口 + action 分派**；两者操作的是' +
+      '**同一个对象**「设计意图 overlay」——`<feature>.overlay.json` 的 goals + edge_intents，' +
+      '共用同一锚点参数 feature；action=propose 是 action=set 的"先请人批再落"前置闸）。' +
+      'action=set（默认）：直接写 goals（结构化目标/方向，全量替换）与 edge_intents（"A 为何依赖 B" 与边界归属，' +
+      '按 base 边 id 或 from+to 匹配挂载）到 overlay，随即 apply 回 base 并保存，让 get_dsl/serve 当下即可读到' +
+      '（meta.goals 与 edge.intent），不依赖下一次代码扫描再生。' +
+      'action=propose：由 LLM 代拟意图改写提案（把当前意图 vs 将改意图算成 before/after 预览）进入人工审批闸门，' +
+      '**不写盘不碰 DSL**；人在工作台「代码审批」页签 approve 后才真正写入 overlay + base。' +
+      '★ 何时用哪个：确定要改、无需人拍板 → action=set 直接落；"改 why / 方向"这类应由人决策的变更 → action=propose。' +
+      '★ 安全策略前移（与"人只做决策审批、LLM 只做提案转述"的分层一致）：propose **永不直接落盘**；' +
+      'project_dir 是审批台账的隔离桶名，应与人当前查看的项目一致，提案才会出现在他的审批列表里。',
     inputSchema: {
-      feature: z.string().describe('feature 名'),
+      action: z
+        .enum(['set', 'propose'])
+        .default('set')
+        .describe('set=直接写盘落 DSL（默认，get_dsl 当下可读到） | propose=只算 before/after 提案等人工审批，不写盘'),
+      feature: z.string().describe('feature 名（2 个 action 共用锚点）'),
       goals: z
         .array(
           z.object({
@@ -316,7 +364,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
           }),
         )
         .optional()
-        .describe('结构化目标/方向（全量替换；空数组=清空）'),
+        .describe('结构化目标/方向（全量替换；空数组=清空）—— 2 个 action 共用'),
       edge_intents: z
         .array(
           z.object({
@@ -329,80 +377,54 @@ export const DESIGN_TOOLS: ToolDef[] = [
           }),
         )
         .optional()
-        .describe('边级意图：按 base 边 id 或 from+to 匹配挂载 reason/boundary'),
-    },
-    handler: setDesignIntentHandler,
-  },
-
-  {
-    name: 'propose_design_intent',
-    title: '提出设计意图改写审批卡（by LLM，approve 才落 DSL）',
-    description:
-      '由 LLM 代拟「设计意图（why）」的改写提案并进入人工审批闸门：把 goals / edge_intents 的意图变更' +
-      '算成一份 before/after（当前意图 vs 将改意图）预览，落为 pending 提案，**不写盘不碰 DSL**——' +
-      '需要人在工作台「代码审批」页签 approve 后，才真正写入 overlay + base（复用 set_design_intent 的写端）。' +
-      '这与直接 set_design_intent 的区别：本工具是"先请人批再落"，符合"人只做决策审批、LLM 只做提案转述"的分层。' +
-      'project_dir 是审批台账的隔离桶名（缺省取 feature 的 source_root），应与人当前查看的项目一致，提案才会出现在他的审批列表里。',
-    inputSchema: {
-      feature: z.string().describe('feature 名（要改哪个设计意图）'),
-      project_dir: z.string().optional().describe('审批台账桶名（人查看的项目目录）；缺省取 feature 的 source_root'),
-      goals: z
-        .array(
-          z.object({
-            id: z.string().optional(),
-            title: z.string().describe('目标一句话'),
-            description: z.string().optional(),
-            status: z.enum(['active', 'done', 'parked', 'dropped']).optional(),
-          }),
-        )
-        .optional()
-        .describe('结构化目标/方向（全量替换）'),
-      edge_intents: z
-        .array(
-          z.object({
-            id: z.string().optional().describe('目标 base 边 id（优先于 from+to）'),
-            from: z.string().optional(),
-            to: z.string().optional(),
-            reason: z.string().optional().describe('A 为何依赖 B'),
-            boundary: z.string().optional().describe('边界归属说明'),
-            status: z.enum(['open', 'resolved']).optional(),
-          }),
-        )
-        .optional()
-        .describe('边级意图：按 base 边 id 或 from+to 匹配挂载'),
+        .describe('边级意图：按 base 边 id 或 from+to 匹配挂载 reason/boundary —— 2 个 action 共用'),
+      project_dir: z.string().optional().describe('propose 用：审批台账的隔离桶名（人查看的项目目录）；缺省取 feature 的 source_root'),
     },
     handler: wrapData(async (a) => {
-      const feature = String(a.feature ?? '');
-      if (!feature) throw new Error('缺参数 feature');
-      let project_dir = a.project_dir ? String(a.project_dir) : '';
-      if (!project_dir) {
-        const dsl = getDSL(feature);
-        project_dir = dsl?.source_root ?? process.cwd();
-      }
+      const action = (a.action as 'set' | 'propose' | undefined) ?? 'set';
+      const feature = requireStr(a, 'feature');
       const goals = Array.isArray(a.goals) ? (a.goals as unknown[]) : undefined;
       const edgeIntents = Array.isArray(a.edge_intents) ? (a.edge_intents as unknown[]) : undefined;
-      if (!goals && !edgeIntents) throw new Error('至少传 goals 或 edge_intents 之一');
-      const r = await proposeChange({
-        kind: 'dsl_intent',
-        project_dir,
-        op: { feature, goals: goals as never, edge_intents: edgeIntents as never },
-        submitter: 'llm',
-      });
-      if (!r.ok) throw new Error(r.error ?? '提案失败');
-      const c = r.change;
-      const message = [
-        `已提出设计意图改写审批卡（pending，未写盘）：`,
-        `  提案：${c.label}`,
-        ...(c.summary ?? []).map((s) => `  · ${s}`),
-        `  预览：`,
-        ...(c.preview ?? '').split('\n').map((l) => `    ${l}`),
-        ``,
-        `人将在工作台「代码审批」页签看到这条提案，approve 后 goals/边意图才真正写入 DSL；reject 则丢弃。`,
-      ].join('\n');
-      return {
-        message,
-        data: { ok: true, project_dir, proposal: { id: c.id, kind: c.kind, label: c.label, summary: c.summary, diffs: c.diffs, preview: c.preview, status: c.status } },
-      };
+
+      if (action === 'set') {
+        // set：直接落盘。[B] 自己处理"两类都没传 = 无改动"（与旧 set 入口逐字同义）。
+        const r = setDesignIntent({ feature, goals: goals as never, edge_intents: edgeIntents as never });
+        return { message: r.message, data: r };
+      }
+
+      if (action === 'propose') {
+        // propose：只算提案、永不落盘（[B] proposeChange 落 pending 审批卡）。
+        // 旧 propose 入口的 [C] 编排原样搬到这里（同一份逻辑，不再有第二处）。
+        if (!goals && !edgeIntents) throw new Error('至少传 goals 或 edge_intents 之一');
+        let project_dir = typeof a.project_dir === 'string' && a.project_dir ? a.project_dir : '';
+        if (!project_dir) {
+          const dsl = getDSL(feature);
+          project_dir = dsl?.source_root ?? process.cwd();
+        }
+        const r = await proposeChange({
+          kind: 'dsl_intent',
+          project_dir,
+          op: { feature, goals: goals as never, edge_intents: edgeIntents as never },
+          submitter: 'llm',
+        });
+        if (!r.ok) throw new Error(r.error ?? '提案失败');
+        const c = r.change;
+        const message = [
+          `已提出设计意图改写审批卡（pending，未写盘）：`,
+          `  提案：${c.label}`,
+          ...(c.summary ?? []).map((s) => `  · ${s}`),
+          `  预览：`,
+          ...(c.preview ?? '').split('\n').map((l) => `    ${l}`),
+          ``,
+          `人将在工作台「代码审批」页签看到这条提案，approve 后 goals/边意图才真正写入 DSL；reject 则丢弃。`,
+        ].join('\n');
+        return {
+          message,
+          data: { action, ok: true, project_dir, proposal: { id: c.id, kind: c.kind, label: c.label, summary: c.summary, diffs: c.diffs, preview: c.preview, status: c.status } },
+        };
+      }
+
+      throw new Error(`design_intent: 未知 action "${String(action)}"（可选值：set / propose）`);
     }),
   },
 ];

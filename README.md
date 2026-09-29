@@ -15,7 +15,7 @@
 
 两个长期困扰工程协作的问题，agent-io 同时给出解法：
 
-**问题一：文档漂移。** 任何设计文档、架构图都会在代码演进后过期，最终没人敢信。agent-io 把「设计真相」编码为**结构化的 DSL JSON**，随代码一起演进：语义层记录文件契约（files / apis / decisions），由 `backfill_scaffold` 从实现自动回填、由运行时观测（Observe）自动校正——**文档不再会过期**。
+**问题一：文档漂移。** 任何设计文档、架构图都会在代码演进后过期，最终没人敢信。agent-io 把「设计真相」编码为**结构化的 DSL JSON**，随代码一起演进：语义层记录文件契约（files / apis / decisions），由 `scaffold`（action=backfill）从实现自动回填、由运行时观测（Observe）自动校正——**文档不再会过期**。
 
 **问题二：改动失控。** LLM 改代码经常改错位置、改坏文件、无法验证，只能返工。agent-io 提供一条受控的改造流水线：符号级准确编辑（`edit_code`）→ 改前真实 diff 审批 → 运行时探针对账验证 → 通过才提交、失败自动回滚——**改动不再靠赌**。
 
@@ -45,7 +45,7 @@ DSL 双层结构是两者的共同根基：
 | **代码理解**          | 工程导入、语义搜索、影响分析、架构分层、单体拆分、算法/数据流推导              | `import_project` / `explore_code`                                                                                 |
 | **代码积木体系**        | 从任意来源（URL / 本地工程）收割代码为带契约的积木，支持切块、抽契约、瘦身、搜索与拼装 | `harvest_from_url` / `harvest_closure` / `extract_contracts` / `bricks`                                           |
 | **运行时验证**         | 以实际运行观测对账契约与行为基线，形成「验证通过才提交，失败回滚」的防线           | `observe_instrument` / `observe_judge` / `reconcile_chain` / `reconcile_effects`                                  |
-| **生成 / 回填 / 一致性** | 从 DSL 生成代码骨架，解析实现回填契约，输出一致性报告                  | `scaffold` / `backfill_scaffold` / `consistency_check`                                                            |
+| **生成 / 回填 / 一致性** | 从 DSL 生成代码骨架，解析实现回填契约，输出一致性报告                  | `scaffold` / `consistency_check`                                                                                  |
 | **确定性改造（防返工）**    | 符号级代码编辑（绝不匹配错）、批量/跨文件重命名、死代码清理、改前 diff 审批、失败回滚 | `edit_code` / `rename_*` / `refactor_pipeline`                                                                    |
 | **诊断闭环**          | 症状 → 根因 → 修复 → 验证 → 提交（或回退）的完整链路               | `diagnose` / `refactor_judge` / `diagnose-loop`(CLI)                                                              |
 | **多语言 AST 根基**    | 基于 tree-sitter 的符号 / import / 调用边 / 类型引用统一产出   | `ts_kernel` / `package_migration`                                                                                 |
@@ -105,7 +105,7 @@ npm run demo -- --prepare   # 只准备示例（构建+渲染+注册），不起
 
 ## MCP 工具参考
 
-共注册 **61 个 MCP 工具**，按「主工具 + 专项工具」组织：主工具承担统一入口，专项工具各司其职。
+共注册 **58 个 MCP 工具**，按「主工具 + 专项工具」组织：主工具承担统一入口，专项工具各司其职。
 
 ### 能力导航（1 个）
 
@@ -135,7 +135,7 @@ npm run demo -- --prepare   # 只准备示例（构建+渲染+注册），不起
 >
 > 目录**由工具注册表自动派生**（`src/tools/capability_map.ts` 的 `LANE_OF` 只写「工具 → 线」归属，`when` 缺省取注册描述首句）：新增工具只需补一行归属，不会与注册表脱节；漏标的工具会在输出里单列「未归线」段显式暴露，不会静默消失。一致性由 `tests/tools/capability_map.test.ts` 对真实 `TOOL_DEFS` 断言兜底。
 
-### 主工具（8 个）
+### 主工具（7 个）
 
 | 主工具                 | 用途                                                                                 |
 | ------------------- | ---------------------------------------------------------------------------------- |
@@ -143,8 +143,7 @@ npm run demo -- --prepare   # 只准备示例（构建+渲染+注册），不起
 | `edit_dsl`          | 统一写入口：`operations[]` 批量增删改、语义绑定、状态更新、标注、审批、自动布局，按序执行、任一失败全量回滚（原子）                  |
 | `manage_feature`    | 功能生命周期管理：create / clone / template / list / delete                                 |
 | `render_design`     | 渲染入口：mindmap / html / svg / markdown，支持 `view` 与输出路径                               |
-| `scaffold`          | 从 DSL 语义层生成代码骨架（vue / react / html）+ 状态推断                                          |
-| `backfill_scaffold` | 解析实现代码 API 签名回填 actual\_apis，输出差异报告                                                |
+| `scaffold`          | 脚手架统一入口：`action=generate`（从 DSL 语义层生成代码骨架，vue / react / html + 状态推断）/ `action=backfill`（解析实现代码 API 签名回填 actual\_apis，输出差异报告） |
 | `consistency_check` | 对比预期契约与实际代码，输出一致性报告与跨文件不变式（只读）                                                     |
 | `explore_code`      | 代码理解入口：语义搜索、影响分析、架构分层、单体检测、拆分建议、算法/数据流推导、仿真回放等                                     |
 
@@ -226,10 +225,9 @@ npm run demo -- --prepare   # 只准备示例（构建+渲染+注册），不起
 
 **设计意图（overlay）**
 
-| 工具                      | 用途                                                                                                                                |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `set_design_intent`     | 写设计意图到设计意图 overlay：goals（结构化目标/方向）+ edge\_intents（「A 为何依赖 B」/边界归属），落进 base 的 `meta.goals` / `edge.intent` 供 LLM 与读端消费（缺口①③④ 的写入口） |
-| `propose_design_intent` | LLM 代拟「设计意图(why)改写」审批卡：propose 只算前后 intent diff 不写盘，人在工作台「代码审批」approve 后才真写 DSL；驳则丢弃（人只做决策审批）                                     |
+| 工具               | 用途                                                                                                                                                        |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `design_intent` | 设计意图(why)统一入口（`action=set` / `propose`）。`set`：直接写 goals（结构化目标/方向）+ edge\_intents（「A 为何依赖 B」/边界归属）到设计意图 overlay，随即落进 base 的 `meta.goals` / `edge.intent` 供 LLM 与读端消费；`propose`：LLM 代拟「设计意图改写」审批卡，只算前后 intent diff **不写盘**，人在工作台「代码审批」approve 后才真写 DSL（reject 则丢弃，人只做决策审批） |
 
 **画布批注**
 

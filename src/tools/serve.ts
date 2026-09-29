@@ -1948,7 +1948,7 @@ const EXPLAIN_SCRIPT: Array<{ title: string; n: Narrations; nodeId: string }> = 
     n: {
       newbie: '这一层记的是代码信息：每个文件有哪些函数、依赖哪些文件、做完了没有。它是代码分析自动填的，你不用手动维护。',
       pm: '语义层把"代码讲了什么"结构化——文件、API、依赖、实现状态。它由分析工具自动生成，让 AI 能读懂设计图对应的真实代码，是"设计对得上实现"的保证。',
-      senior: 'semantic.files 记录每个文件的 apis（ExpectedApi，含签名）、dependencies、status。由 import_project/backfill_scaffold 填充，consistency_check 校验与真实代码是否一致。status 驱动节点着色（待实现/实现中/已完成）。',
+      senior: 'semantic.files 记录每个文件的 apis（ExpectedApi，含签名）、dependencies、status。由 import_project/scaffold(action=backfill) 填充，consistency_check 校验与真实代码是否一致。status 驱动节点着色（待实现/实现中/已完成）。',
     },
     nodeId: 'file_dsl_semantic_ts',
   },

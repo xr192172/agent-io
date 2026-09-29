@@ -15,11 +15,6 @@
     "isError": true
   },
   {
-    "name": "backfill_scaffold",
-    "text": "feature \"undefined\" 不存在，请先使用 create_feature 或 render_design 创建",
-    "isError": true
-  },
-  {
     "name": "behavior_baseline",
     "text": "行为基线不存在：<ABS> file+function 执行 capture。",
     "isError": true
@@ -36,7 +31,7 @@
   },
   {
     "name": "capability_map",
-    "text": "agent-io 能力线导航：先看线再看工具，高频工具可绕过本导航直接调用。\n目录由工具注册表自动派生（61 工具 / 6 线），与注册表同源、不会脱节。\n前缀语义：observe_=观测、harvest_=采集、reconcile_=对账、rename_=改名、edit_=修改、render_=渲染。\n◆ design · 设计 / 活文档 —— DSL 读写、feature 生命周期、渲染与一致性。\n  直接可用（无需导航）：get_dsl, edit_dsl\n    · get_dsl —— 统一只读入口，query 参数查 DSL/features/decisions/simulation_state\n    · edit_dsl —— 统一写入口，operations 批量增删改节点/边/文件/API/binding/status\n      manage_feature —— feature 生命周期：create/clone/template/list/delete\n      render_design —— 渲染并保存设计图（完整 DSL 模式产物）\n      render_brickwork —— 渲染积木墙视图\n      scaffold —— 从设计图 semantic 层生成代码骨架（签名+TODO）\n      backfill_scaffold —— 写完代码后回填实际 API 签名到 DSL\n      consistency_check —— 设计 DSL 与代码语义一致性体检\n      detect_drift —— 检测 DSL 与代码语义漂移\n      import_project —— 扫描代码项目生成 DSL（文件节点+调用边+符号语义层）\n      set_design_intent —— 写设计意图到 overlay：goals（结构化目标/方向）+ edge_intents（A 为何依赖 B / 边界归属），LLM 开发时的意图写入口\n      propose_design_intent —— LLM 代拟「设计意图(why)改写」审批卡：propose 只算 diff 不写盘，人在工作台 approve 后才落 DSL\n\n◆ refactor · 重构 / 改名 —— 确定性改造：符号改名、文件移动、引用联动、影响面。\n  直接可用（无需导航）：rename_symbols, rename_files, find_references\n      diff_views —— 多视图/多版本差异对比\n      edit_code —— 符号级替换（文件+函数+新函数体，AST 定位）\n    · rename_symbols —— 标识符改名（两种作用域粒度：scope=module 跨文件模块级符号、全批原子；scope=local 文件内局部绑定、作用域隔离、逐项独立），dry_run 预览后落盘\n    · rename_files —— 批量文件改名（dry_run 计算影响面，原子阻断）\n      move_symbol —— 跨文件移动模块级符号（自动重定向 importer 的 import 源，只改 source 不动使用点）\n    · find_references —— 查某符号的引用点/外部导入者（影响面前置）\n      impact_analysis —— 计算一次改动的变更点/风险面\n      remove_dead_imports —— 清理未使用 import\n      annotate_functions —— 函数语义注释（TS/JS + Go）：扫覆盖→缺失用 LLM 补→@fnhash body 指纹同步过期；可配进 refactor_pipeline 的 function_annotation 步\n      refactor_pipeline —— 整条重构流水线（预览→执行→校验闭环）\n      suggest_renames —— 生成改名建议（就近相似名/命名规范）；混淆/压缩代码的短名还原可读也走这里——建议先由格式化梳理结构，再经 rename_symbols 应用，意图复原留人/LLM\n      find_similar_names —— 找相似命名（撞名/歧义排查）\n      refactor_judge —— 重构后裁判：校验是否符合契约/无回归\n      snapshot —— 代码快照统一入口（action=list/rollback）：列每次 edit_code/rename_files/move_symbol 落盘前自动存的撤回点，或回滚到某一份（省略=最近一份）；★ 回滚立即落盘、本身不可再撤回\n      rules —— 规则库统一入口（action=export/apply/check）—— export：把一次实际修复泛化成可复跑规则（$hole + 自动夹具，过「出生回归/反例不命中/幂等」三关才准落盘）；apply：三态（applied/todo/clean），唯一才动、歧义即停；check：当 lint 跑，带 CI 棘轮（只在\"新增命中\"上 fail）+ 规则自身夹具自检。两个写 action 默认 dry_run=true\n      plan_refactor —— ★ 先算清单（只读）：把一批 file+old_text+new_text 算成可审、可复跑、可入账的清单（plan id + 命中级别 + 预览）——\"工具链\"缺的那一环\n      apply_refactor_plan —— 按 plan_refactor 的清单落盘（幂等：重复 apply 不重复改；plan_id 指纹不符即报错）；与 plan_refactor 成对\n\n◆ observe · 观测 / 验证 —— 运行时插桩、行为基线、测试与契约对账（执行类，按需触发）。\n  直接可用（无需导航）：（无）\n      memory_observe —— 外部进程内存观测（CDP 外连，不插目标进程）：status/baseline/track/gc，定位 JS 堆 vs native 泄漏方向\n      memory_targets —— 列出本机带 --inspect 的 node 进程（含 DSH gen），供 memory_observe 选 target\n      reconcile_effects —— 对账函数/模块的实际效应与契约\n      narrate_step —— 把某一步观测过程叙述成可读记录\n      observe_log —— 读运行日志/观测产物\n      observe_trace —— 读录制调用链回放：从 events.jsonl 重建结构化调用树（纯后端，LLM 分析用）\n      observe_judge —— 对观测结果做判定\n      reconcile_chain —— 沿效应链逐级对账契约\n      observe_instrument —— 源码插桩探针（dry_run 可预览）\n      recommend_observe_points —— ★ 推荐该在哪打观测点（索引/图 + AST 语义打分，不做全量插桩）；输出可编辑清单 + 每条的理由\n      behavior_baseline —— 编译语言行为基线（跑函数用例出返回值）\n      run_tests —— 运行测试并汇总结果\n      feature_line —— 功能线：每个功能搭一条主链（功能→入口→调用节点），供沿线单步运行/投大屏点位\n\n◆ harvest · 契约 / 闭包采集 —— 从文档/git/注释/闭包采集决策卡与契约，出箱与积木配方。\n  直接可用（无需导航）：（无）\n      harvest_decisions —— 从 docs/git log/注释粗提决策卡候选\n      sync_contracts —— 以 server_registry zod schema 回填 DSL expected_apis\n      harvest_closure —— 扫描闭包出产入盒三件套\n      extract_contracts —— 从代码提取契约（多语言 AST）\n      harvest_from_url —— 从 URL 采集决策/契约\n      bricks —— 积木盒统一入口（action=search/assemble/slim/reconcile）—— search：检索/浏览盒内积木（只读）；assemble：把盒内积木拼装进新目录（写）；slim：把积木剪成衍生积木回盒（写）；reconcile：用 observe 事件对账盒内契约（写）。三个写 action 缺省 write=true = 默认落盘\n\n◆ cross · 跨仓 / 杂交 / 健康 —— 重量级分析：跨仓符号索引、仓库杂交预检、代码健康度、跨语言翻译（Go→TS）。\n  直接可用（无需导航）：（无）\n      translate_go_ts —— 跨语言翻译：Go→TS 半自动（机械骨架+验证闸；fill 用 LLM 逐孔填；verify 跑行为对拍）\n      go_originals —— 读 Go 源文件顶层符号原文（ground truth）：翻译/评审时对照 Go 原文，不对着 TS 壳猜\n      cross_repo_symbol_index —— 跨仓库符号索引建立/反查\n      hybrid_precheck —— 仓库杂交前预检（依赖/符号连通性）\n      code_health —— 代码健康度扫描（含 unused_import 多语言）\n\n◆ meta · 元信息 / 探索 —— 代码理解入口、诊断、画布笔记、归档与网关说明。\n  直接可用（无需导航）：explore_code\n    · explore_code —— 代码理解统一入口（search/check_monolith/run_simulation/watch）\n      archive —— 下线库统一入口（action=node/list）—— node：把文件下线归档（写，不可逆，立即落盘，无 dry_run，重复归档被拒）+ 合并记录；list：列某 feature 的下线库归档条目（只读）\n      diagnose —— 诊断能力缺口（多语言矩阵）\n      canvas_notes —— 画布人审标注的读取/渲染\n      gateway_provider —— LLM 网关供应商/Key 池说明与状态\n      read_project_docs —— 读项目文档（README/活文档）\n      capability_map —— 本工具：能力线导航（目录由注册表 TOOL_DEFS 自动派生）\n      index_integrity —— 索引可信度自检：陈旧断言 / 未保鲜文件 / 覆盖度 —— 判断\"现在读到的索引能不能当真\"，可选 refresh 顺手保鲜",
+    "text": "agent-io 能力线导航：先看线再看工具，高频工具可绕过本导航直接调用。\n目录由工具注册表自动派生（58 工具 / 6 线），与注册表同源、不会脱节。\n前缀语义：observe_=观测、harvest_=采集、reconcile_=对账、rename_=改名、edit_=修改、render_=渲染。\n◆ design · 设计 / 活文档 —— DSL 读写、feature 生命周期、渲染与一致性。\n  直接可用（无需导航）：get_dsl, edit_dsl\n    · get_dsl —— 统一只读入口，query 参数查 DSL/features/decisions/simulation_state\n    · edit_dsl —— 统一写入口，operations 批量增删改节点/边/文件/API/binding/status\n      manage_feature —— feature 生命周期：create/clone/template/list/delete\n      render_design —— 渲染并保存设计图（完整 DSL 模式产物）\n      render_brickwork —— 渲染积木墙视图\n      scaffold —— 脚手架统一入口（action=generate=从设计图生成代码骨架 / backfill=写完代码回填实际 API 签名）\n      consistency_check —— 设计 DSL 与代码语义一致性体检\n      detect_drift —— 检测 DSL 与代码语义漂移\n      import_project —— 扫描代码项目生成 DSL（文件节点+调用边+符号语义层）\n      design_intent —— 设计意图(why)统一入口（action=set=直接写 overlay：goals + edge_intents / propose=只算审批卡不写盘，人 approve 才落）\n\n◆ refactor · 重构 / 改名 —— 确定性改造：符号改名、文件移动、引用联动、影响面。\n  直接可用（无需导航）：rename_symbols, rename_files, find_references\n      diff_views —— 多视图/多版本差异对比\n      edit_code —— 符号级替换（文件+函数+新函数体，AST 定位）\n    · rename_symbols —— 标识符改名（两种作用域粒度：scope=module 跨文件模块级符号、全批原子；scope=local 文件内局部绑定、作用域隔离、逐项独立），dry_run 预览后落盘\n    · rename_files —— 批量文件改名（dry_run 计算影响面，原子阻断）\n      move_symbol —— 跨文件移动模块级符号（自动重定向 importer 的 import 源，只改 source 不动使用点）\n    · find_references —— 查某符号的引用点/外部导入者（影响面前置）\n      impact_analysis —— 计算一次改动的变更点/风险面\n      remove_dead_imports —— 清理未使用 import\n      annotate_functions —— 函数语义注释（TS/JS + Go）：扫覆盖→缺失用 LLM 补→@fnhash body 指纹同步过期；可配进 refactor_pipeline 的 function_annotation 步\n      refactor_pipeline —— 整条重构流水线（预览→执行→校验闭环）\n      suggest_renames —— 生成改名建议（就近相似名/命名规范）；混淆/压缩代码的短名还原可读也走这里——建议先由格式化梳理结构，再经 rename_symbols 应用，意图复原留人/LLM\n      find_similar_names —— 找相似命名（撞名/歧义排查）\n      refactor_judge —— 重构后裁判：校验是否符合契约/无回归\n      snapshot —— 代码快照统一入口（action=list/rollback）：列每次 edit_code/rename_files/move_symbol 落盘前自动存的撤回点，或回滚到某一份（省略=最近一份）；★ 回滚立即落盘、本身不可再撤回\n      rules —— 规则库统一入口（action=export/apply/check）—— export：把一次实际修复泛化成可复跑规则（$hole + 自动夹具，过「出生回归/反例不命中/幂等」三关才准落盘）；apply：三态（applied/todo/clean），唯一才动、歧义即停；check：当 lint 跑，带 CI 棘轮（只在\"新增命中\"上 fail）+ 规则自身夹具自检。两个写 action 默认 dry_run=true\n      plan_refactor —— ★ 先算清单（只读）：把一批 file+old_text+new_text 算成可审、可复跑、可入账的清单（plan id + 命中级别 + 预览）——\"工具链\"缺的那一环\n      apply_refactor_plan —— 按 plan_refactor 的清单落盘（幂等：重复 apply 不重复改；plan_id 指纹不符即报错）；与 plan_refactor 成对\n\n◆ observe · 观测 / 验证 —— 运行时插桩、行为基线、测试与契约对账（执行类，按需触发）。\n  直接可用（无需导航）：（无）\n      memory_observe —— 外部进程内存观测（CDP 外连，不插目标进程）：action=targets 列出本机 --inspect 进程 / status/baseline/track/gc/snapshot 定位 JS 堆 vs native 泄漏方向\n      reconcile_effects —— 对账函数/模块的实际效应与契约\n      narrate_step —— 把某一步观测过程叙述成可读记录\n      observe_log —— 读运行日志/观测产物\n      observe_trace —— 读录制调用链回放：从 events.jsonl 重建结构化调用树（纯后端，LLM 分析用）\n      observe_judge —— 对观测结果做判定\n      reconcile_chain —— 沿效应链逐级对账契约\n      observe_instrument —— 源码插桩探针（dry_run 可预览）\n      recommend_observe_points —— ★ 推荐该在哪打观测点（索引/图 + AST 语义打分，不做全量插桩）；输出可编辑清单 + 每条的理由\n      behavior_baseline —— 编译语言行为基线（跑函数用例出返回值）\n      run_tests —— 运行测试并汇总结果\n      feature_line —— 功能线：每个功能搭一条主链（功能→入口→调用节点），供沿线单步运行/投大屏点位\n\n◆ harvest · 契约 / 闭包采集 —— 从文档/git/注释/闭包采集决策卡与契约，出箱与积木配方。\n  直接可用（无需导航）：（无）\n      harvest_decisions —— 从 docs/git log/注释粗提决策卡候选\n      sync_contracts —— 以 server_registry zod schema 回填 DSL expected_apis\n      harvest_closure —— 扫描闭包出产入盒三件套\n      extract_contracts —— 从代码提取契约（多语言 AST）\n      harvest_from_url —— 从 URL 采集决策/契约\n      bricks —— 积木盒统一入口（action=search/assemble/slim/reconcile）—— search：检索/浏览盒内积木（只读）；assemble：把盒内积木拼装进新目录（写）；slim：把积木剪成衍生积木回盒（写）；reconcile：用 observe 事件对账盒内契约（写）。三个写 action 缺省 write=true = 默认落盘\n\n◆ cross · 跨仓 / 杂交 / 健康 —— 重量级分析：跨仓符号索引、仓库杂交预检、代码健康度、跨语言翻译（Go→TS）。\n  直接可用（无需导航）：（无）\n      translate_go_ts —— 跨语言翻译：Go→TS 半自动（机械骨架+验证闸；fill 用 LLM 逐孔填；verify 跑行为对拍）\n      go_originals —— 读 Go 源文件顶层符号原文（ground truth）：翻译/评审时对照 Go 原文，不对着 TS 壳猜\n      cross_repo_symbol_index —— 跨仓库符号索引建立/反查\n      hybrid_precheck —— 仓库杂交前预检（依赖/符号连通性）\n      code_health —— 代码健康度扫描（含 unused_import 多语言）\n\n◆ meta · 元信息 / 探索 —— 代码理解入口、诊断、画布笔记、归档与网关说明。\n  直接可用（无需导航）：explore_code\n    · explore_code —— 代码理解统一入口（search/check_monolith/run_simulation/watch）\n      archive —— 下线库统一入口（action=node/list）—— node：把文件下线归档（写，不可逆，立即落盘，无 dry_run，重复归档被拒）+ 合并记录；list：列某 feature 的下线库归档条目（只读）\n      diagnose —— 诊断能力缺口（多语言矩阵）\n      canvas_notes —— 画布人审标注的读取/渲染\n      gateway_provider —— LLM 网关供应商/Key 池说明与状态\n      read_project_docs —— 读项目文档（README/活文档）\n      capability_map —— 本工具：能力线导航（目录由注册表 TOOL_DEFS 自动派生）\n      index_integrity —— 索引可信度自检：陈旧断言 / 未保鲜文件 / 覆盖度 —— 判断\"现在读到的索引能不能当真\"，可选 refresh 顺手保鲜",
     "isError": false
   },
   {
@@ -53,6 +48,11 @@
     "name": "cross_repo_symbol_index",
     "text": "跨项目符号索引 · undefined ↔ undefined\nA：0 文件 / 0 顶层符号     B：0 文件 / 0 顶层符号\n\n■ 冲突 0（同名不同签，杂交前需改名/错位）\n  （无）\n\n■ 双胞胎 0（同名同签，可去重一个）\n  （无）\n\n■ 迁移范围：A→B 候选 0 个\n\n■ 迁移范围：B→A 候选 0 个\n---DATA---\n{\"aRoot\":\"undefined\",\"bRoot\":\"undefined\",\"aFiles\":0,\"bFiles\":0,\"aSymbols\":0,\"bSymbols\":0,\"conflicts\":[],\"duplicates\":[],\"aOnly\":[],\"bOnly\":[]}",
     "isError": false
+  },
+  {
+    "name": "design_intent",
+    "text": "缺参数 \"feature\"",
+    "isError": true
   },
   {
     "name": "detect_drift",
@@ -151,13 +151,8 @@
   },
   {
     "name": "memory_observe",
-    "text": "target 需为目标进程的 --inspect 端口（纯数字）；如不知道可用 memory_targets 工具列出本机所有 --inspect 进程。",
+    "text": "target 需为目标进程的 --inspect 端口（纯数字）；如不知道可用 memory_observe(action=targets) 列出本机所有 --inspect 进程。",
     "isError": true
-  },
-  {
-    "name": "memory_targets",
-    "text": "pid=<N>  inspect端口=32811  10448:32811\n\n共 1 个。把其中一个 inspect端口 传给 memory_observe 的 target=32811\n---DATA---\n[{\"pid\":\"10448\",\"port\":\"32811\",\"pidPort\":\"10448:32811\"}]",
-    "isError": false
   },
   {
     "name": "move_symbol",
@@ -192,11 +187,6 @@
   {
     "name": "plan_refactor",
     "text": "缺参数 \"project_dir\"",
-    "isError": true
-  },
-  {
-    "name": "propose_design_intent",
-    "text": "缺参数 feature",
     "isError": true
   },
   {
@@ -261,12 +251,7 @@
   },
   {
     "name": "scaffold",
-    "text": "feature \"undefined\" 不存在，请先使用 create_feature 或 render_design 创建",
-    "isError": true
-  },
-  {
-    "name": "set_design_intent",
-    "text": "feature \"undefined\" 不存在",
+    "text": "缺参数 \"feature\"",
     "isError": true
   },
   {

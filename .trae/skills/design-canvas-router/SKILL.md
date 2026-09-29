@@ -43,7 +43,7 @@ description: "design-canvas 渐进披露路由。遇到『画图/看代码/重�
 
 ### C · 生成 / 回填 / 一致性
 - 生成骨架 → `scaffold`
-- 代码已实现，想回填 expected→actual 差异 → `backfill_scaffold`
+- 代码已实现，想回填 expected→actual 差异 → `scaffold`（action=backfill）
 - 纯对比契约，不写盘 → `consistency_check`（只读）
 
 ### D · 重构防线

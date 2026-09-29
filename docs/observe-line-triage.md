@@ -40,8 +40,8 @@
 | `capability_map` | 87 | | `read_project_docs` | 3 |
 | `get_dsl` | 42 | | `edit_code` | 3 |
 | `gateway_provider` | 14 | | `consistency_check` | 2 |
-| `import_project` | 12 | | `set_design_intent` | 2 |
-| `translate_go_ts` | 9 | | 其余各 1（find_references / canvas_notes / backfill_scaffold / render_design / manage_feature / extract_contracts / run_tests / annotate_functions） |
+| `import_project` | 12 | | `design_intent`（action=set） | 2 |
+| `translate_go_ts` | 9 | | 其余各 1（find_references / canvas_notes / scaffold（action=backfill） / render_design / manage_feature / extract_contracts / run_tests / annotate_functions） |
 | `edit_dsl` | 7 | | | |
 
 ### ★ `observe_*` / `reconcile_*` / `narrate_*` / `feature_line`：**0 次**
@@ -132,7 +132,7 @@
 | 压缩产出的 **`measurement` 契约**（`start/end/shadowedSeqs/selectedNodes`） | **结构化语义埋点**（写入时就有语义） |
 | `scripts/dump-request-tools.mjs`（读会话 `request/header` 事件） | 定点探针 |
 | `docs/context-cache-efficiency-measurement.md` + `cache-ab-experiment-log.md` | **结构化记录 + A/B 对比** |
-| `memory_observe` / `memory_targets`（CDP 外连内存观测） | 定点探针（另一套自建观测器） |
+| `memory_observe`（CDP 外连内存观测；含 action=targets 列出 --inspect 进程） | 定点探针（另一套自建观测器） |
 
 ⇒ **"观察压缩折叠 / 缓存命中率"这件事，用户是用"结构化埋点 + 定点探针 + 实验日志"做到的，而且成功了。**
 反过来，**通用全量插桩在这件事上是负资产**：它产出的 `enter/exit/args` 里**没有"fold"这个语义**，

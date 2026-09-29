@@ -104,7 +104,7 @@ export function wizardSteps(): WizardStep[] {
       role: 'flow',
       tools: [
         { name: 'harvest_closure', kind: 'mcp', note: '采集实现闭包（种子→依赖→外部）回设计' },
-        { name: 'backfill_scaffold', kind: 'mcp', note: '回填骨架：设计里的占位长成真文件' },
+        { name: 'scaffold', kind: 'mcp', note: '回填骨架（action=backfill）：设计里的占位长成真文件' },
       ],
       input: '新写的代码',
       output: '设计的 expected_apis = 实际 actual_apis',

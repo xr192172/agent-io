@@ -63,10 +63,12 @@ describe('capability_map 目录与注册表同源', () => {
     );
   });
 
-  it('回归：曾漏归的 5 个工具必须在导航里可见', () => {
+  it('回归：曾漏归的工具必须在导航里可见', () => {
     const { lanes } = buildLanes(catalog);
     const shown = new Set(lanes.flatMap((l) => l.tools.map((t) => t.name)));
-    for (const n of ['memory_observe', 'memory_targets', 'go_originals', 'move_symbol', 'capability_map']) {
+    // ★ 面收敛第三批（2026-09-29）：原独立的「列出本机 --inspect 进程」入口已并进 `memory_observe`
+    //   （新增 action=targets）⇒ 它不再是独立注册项，从本回归清单移除。
+    for (const n of ['memory_observe', 'go_originals', 'move_symbol', 'capability_map']) {
       expect(shown.has(n), `${n} 未出现在能力线里`).toBe(true);
     }
   });

@@ -12,7 +12,7 @@
  *   expected 无），与 consistency 的 red/blue 语义一致
  *
  * 工作流：
- *   scaffold 生成骨架 → LLM 填充实现 → backfill_scaffold 解析实际代码 → DSL 更新
+ *   scaffold(action=generate) 生成骨架 → LLM 填充实现 → scaffold(action=backfill) 解析实际代码 → DSL 更新
  *   → check_status 推断状态 → render_design 可视化差异
  *
  * 支持语言：.go / .ts / .py / .js（优先 tree-sitter AST，fallback 正则）

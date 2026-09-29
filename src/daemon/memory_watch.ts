@@ -9,7 +9,7 @@
  * 命中 → `pushAlert`（alert_inbox）：既是 daemon SSE `/api/events` 实况广播，又会搭"下一次任意
  * MCP 工具响应"自动附带 —— DSH gen 自己在下次调工具时看到自己内存超标提醒，即"系统自动托管自提醒"。
  *
- * 只提醒不动手（不杀进程/不强 GC/不重启），避免误判误伤。目标自动由 memory_targets 扫描所得（可覆盖新增 gen）。
+ * 只提醒不动手（不杀进程/不强 GC/不重启），避免误判误伤。目标自动由 memory_observe(action=targets) 扫描所得（可覆盖新增 gen）。
  */
 import { MemSample, sampleRemote, memoryTargetsHandler } from '../tools/memory_observe.js';
 import { pushAlert } from '../tools/alert_inbox.js';
@@ -29,7 +29,7 @@ export interface MemoryWatchOpts {
   leakDeltaMb?: number;
   /** 同 target 告警去抖 ms（默认 300000 = 5min） */
   minAlertGapMs?: number;
-  /** 显式目标端口；缺省自动扫描 memory_targets */
+  /** 显式目标端口；缺省自动扫描 memory_observe(action=targets) */
   targets?: number[];
 }
 

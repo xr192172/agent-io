@@ -1,11 +1,22 @@
 /**
- * observe 线（13 个工具）—— ★ **本文件即该线归属的唯一来源**。
+ * observe 线（12 个工具）—— ★ **本文件即该线归属的唯一来源**。
  *
  * ★ P1b（2026-09-28）：按当时 `capability_map.LANE_OF` 的归属从 `TOOL_DEFS` 切分而来，
  *   条目**逐字搬移**，只加了 `export const OBSERVE_TOOLS` 外壳 —— 归属自此由文件路径表达。
  * ★ P1c（2026-09-28）：`capability_map.LANE_OF` 已删除。`server_registry` 的 `LANE_SOURCES` 把本文件
  *   接到线 id `'observe'`，并派生「工具 → 线」归属表注入 capability_map。
  *   ⇒ **把工具挪出本线 = 把它从本数组移到另一条线的数组，一处改动**（不再有第二处要同步）。
+ *
+ * ★ 面收敛第三批（2026-09-29）：本线 13 → 12 个注册入口。内存观测族 2 → 1：
+ *   把"列出本机 --inspect 进程"并进 `memory_observe`（新增 action=targets）。
+ *   判据（`docs/tool-convergence.md` §2.0「按操作对象聚合」）：两者操作的是**同一个对象**
+ *   「目标 node 进程（--inspect）」—— 一个是"选 target 的那一端"（列出进程/端口），
+ *   一个是"用 target 诊断"（status/baseline/track/gc/snapshot）；共用锚点 target（targets 自身产出它），
+ *   且旧的两份 description **互相指名**（列进程的说"供 memory_observe 的 target 使用"）。
+ *   ★ 反面结论（本笔最重要，见提交信息）：`observe_*` 四件套（log/trace/judge/instrument）+
+ *     `reconcile_chain` / `reconcile_effects` **不该合** —— 它们是**不同抽象层**
+ *     （查询 / 判定 / 动作 / 中观编排），锚点各异（events_file / events_path / events[] / node_id+feature / target），
+ *     与 `camera_*` 教训同型。**按前缀聚类是 §2.0 明确禁止的口径**，故一行未动。
  *
  * 为什么能切了：依赖已先行抽到 `registry/{types,plumbing,handlers}.ts`（P1a）——
  *   否则本文件 import 它们就会成环（server_registry → lanes → server_registry）。
@@ -36,23 +47,25 @@ export const OBSERVE_TOOLS: ToolDef[] = [
     title: 'External process memory observer (CDP)',
     description:
       '外部进程内存观测：开发期对 DSH gen / 任意 node 进程做内存诊断。通过 CDP 从外部连到目标进程的 --inspect 端口（observer≠subject，不需往目标进程塞插件）。' +
-      'action：status=一次性内存构成 / baseline=记基线 / track=对比基线报增量+增长率+泄漏方向(JS堆 vs native) / gc=目标进程强制 global.gc() 判断瞬时或泄漏(需目标带 --expose-gc) / snapshot=HeapProfiler 写 heap snapshot 落盘。' +
-      'target 是目标进程的 --inspect 端口；不知道用 memory_targets 自动列出。',
+      'action：targets=（**无需 target**）列出本机所有带 --inspect=<port> 的 node 进程（pid + inspect 端口），用来决定后面 target 传什么；' +
+      'status=一次性内存构成（默认）/ baseline=记基线 / track=对比基线报增量+增长率+泄漏方向(JS堆 vs native) / gc=目标进程强制 global.gc() 判断瞬时或泄漏(需目标带 --expose-gc) / snapshot=HeapProfiler 写 heap snapshot 落盘。' +
+      '除 action=targets 外，target（目标进程 --inspect 端口，纯数字）**必填**；不知道填什么时先 action=targets。' +
+      '★ 常用链：action=targets 拿端口 → target=<端口> status 看现状 → action=baseline 记起点 → 跑活 → action=track 看增量。',
     inputSchema: {
-      target: z.number().int().positive().describe('目标进程的 --inspect 端口（纯数字）；用 memory_targets 可自动列出'),
-      action: z.enum(['status', 'baseline', 'track', 'gc', 'snapshot']).default('status').optional().describe('status=一次性统计（默认）/ baseline=记基线 / track=对比基线 / gc=强制GC判定瞬时或泄漏 / snapshot=写heap snapshot'),
+      action: z
+        .enum(['targets', 'status', 'baseline', 'track', 'gc', 'snapshot'])
+        .default('status')
+        .optional()
+        .describe('targets=列出本机 --inspect 进程（无需 target）/ status=一次性统计（默认）/ baseline=记基线 / track=对比基线 / gc=强制GC判定瞬时或泄漏 / snapshot=写heap snapshot'),
+      target: z.number().int().positive().optional().describe('目标进程的 --inspect 端口（纯数字）；除 action=targets 外必填，可用 action=targets 自动列出'),
       project_dir: z.string().optional().describe('snapshot 用：heapsnapshot 落盘归属项目根（缺省 process.cwd）'),
     },
-    handler: wrapData(async (a) => memoryObserveHandler(a as unknown as MemoryObserveInput)),
-  },
-
-  {
-    name: 'memory_targets',
-    title: 'List local node processes exposing --inspect',
-    description:
-      '列出本机所有带 --inspect=<port> 的 node 进程（含 DSH gen），返回 pid + inspect端口，供 memory_observe 的 target 使用。',
-    inputSchema: {},
-    handler: wrapData(async () => memoryTargetsHandler()),
+    handler: wrapData(async (a) => {
+      // ★ 面收敛第三批：把"列出本机 --inspect 进程"这一动作并进来（同一操作对象「目标 node 进程」）。
+      //   action=targets 分派到 targets 的 [B]，其余 action 仍走内存观测的 [B]（[B] 一行未改）。
+      if (String(a.action ?? 'status') === 'targets') return memoryTargetsHandler();
+      return memoryObserveHandler(a as unknown as MemoryObserveInput);
+    }),
   },
 
   {

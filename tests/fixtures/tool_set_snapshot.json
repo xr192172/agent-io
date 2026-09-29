@@ -236,28 +236,6 @@
     }
   },
   {
-    "name": "backfill_scaffold",
-    "title": "Backfill scaffold from implementation code",
-    "description": "LLM 写完代码后，解析实现文件中的 API 签名，回填到 DSL semantic.files[].actual_apis，对比 expected_apis 输出差异报告。支持 .go/.ts/.py/.js。",
-    "schema": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "type": "object",
-      "properties": {
-        "feature": {
-          "type": "string",
-          "description": "feature 名"
-        },
-        "scaffold_dir": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "feature"
-      ],
-      "additionalProperties": {}
-    }
-  },
-  {
     "name": "behavior_baseline",
     "title": "Behavior baseline - canary test capture/verify diff",
     "description": "行为基线（金丝雀测试对比）：对目标 Python 函数用样例输入跑一次记录行为快照（capture），改代码后再跑一次对比（verify）——回答\"跑得对不对\"（动态闸只答\"跑得动不炸\"，补不了行为级变化）。action=capture：生成 harness（顶层 exec 目标文件 + 规范化 repr 返回值 + stdout 痕迹 + 函数源码快照），存基线到 <project_dir>/.agent-io/behavior/<file>__<func>.json（baseline 参数可覆盖路径）。action=verify：读基线 + 对当前磁盘再跑同一份 harness，逐 case 对齐对比 → verdict same/diff（进程级失败 → error）。v1 边界：仅 Python；目标函数须自包含（顶层 exec 整文件，模块级常量/其它函数可用；跨文件 import 与 import 副作用不支持）；返回值对比 = 规范化 repr（set 排序化）；样例输入由 cases 显式提供（capture 必需），不自动生成。",
@@ -626,6 +604,109 @@
       "required": [
         "project_dir_a",
         "project_dir_b"
+      ],
+      "additionalProperties": {}
+    }
+  },
+  {
+    "name": "design_intent",
+    "title": "Design intent (why): set directly / propose for human approval — single entry",
+    "description": "「设计意图（why）」统一入口（**2 个注册入口收敛为 1 个入口 + action 分派**；两者操作的是**同一个对象**「设计意图 overlay」——`<feature>.overlay.json` 的 goals + edge_intents，共用同一锚点参数 feature；action=propose 是 action=set 的\"先请人批再落\"前置闸）。action=set（默认）：直接写 goals（结构化目标/方向，全量替换）与 edge_intents（\"A 为何依赖 B\" 与边界归属，按 base 边 id 或 from+to 匹配挂载）到 overlay，随即 apply 回 base 并保存，让 get_dsl/serve 当下即可读到（meta.goals 与 edge.intent），不依赖下一次代码扫描再生。action=propose：由 LLM 代拟意图改写提案（把当前意图 vs 将改意图算成 before/after 预览）进入人工审批闸门，**不写盘不碰 DSL**；人在工作台「代码审批」页签 approve 后才真正写入 overlay + base。★ 何时用哪个：确定要改、无需人拍板 → action=set 直接落；\"改 why / 方向\"这类应由人决策的变更 → action=propose。★ 安全策略前移（与\"人只做决策审批、LLM 只做提案转述\"的分层一致）：propose **永不直接落盘**；project_dir 是审批台账的隔离桶名，应与人当前查看的项目一致，提案才会出现在他的审批列表里。",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "action": {
+          "default": "set",
+          "description": "set=直接写盘落 DSL（默认，get_dsl 当下可读到） | propose=只算 before/after 提案等人工审批，不写盘",
+          "type": "string",
+          "enum": [
+            "set",
+            "propose"
+          ]
+        },
+        "feature": {
+          "type": "string",
+          "description": "feature 名（2 个 action 共用锚点）"
+        },
+        "goals": {
+          "description": "结构化目标/方向（全量替换；空数组=清空）—— 2 个 action 共用",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string",
+                "description": "目标一句话"
+              },
+              "description": {
+                "type": "string"
+              },
+              "status": {
+                "description": "active=推进中/done=完成/parked=暂缓/dropped=放弃",
+                "type": "string",
+                "enum": [
+                  "active",
+                  "done",
+                  "parked",
+                  "dropped"
+                ]
+              }
+            },
+            "required": [
+              "title"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "edge_intents": {
+          "description": "边级意图：按 base 边 id 或 from+to 匹配挂载 reason/boundary —— 2 个 action 共用",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "description": "目标 base 边 id（优先于 from+to）",
+                "type": "string"
+              },
+              "from": {
+                "description": "源节点 id（无 id 时用 from+to 定位边）",
+                "type": "string"
+              },
+              "to": {
+                "description": "目标节点 id",
+                "type": "string"
+              },
+              "reason": {
+                "description": "A 为何依赖 B",
+                "type": "string"
+              },
+              "boundary": {
+                "description": "边界归属说明",
+                "type": "string"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "open",
+                  "resolved"
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "project_dir": {
+          "description": "propose 用：审批台账的隔离桶名（人查看的项目目录）；缺省取 feature 的 source_root",
+          "type": "string"
+        }
+      },
+      "required": [
+        "action",
+        "feature"
       ],
       "additionalProperties": {}
     }
@@ -1753,22 +1834,17 @@
   {
     "name": "memory_observe",
     "title": "External process memory observer (CDP)",
-    "description": "外部进程内存观测：开发期对 DSH gen / 任意 node 进程做内存诊断。通过 CDP 从外部连到目标进程的 --inspect 端口（observer≠subject，不需往目标进程塞插件）。action：status=一次性内存构成 / baseline=记基线 / track=对比基线报增量+增长率+泄漏方向(JS堆 vs native) / gc=目标进程强制 global.gc() 判断瞬时或泄漏(需目标带 --expose-gc) / snapshot=HeapProfiler 写 heap snapshot 落盘。target 是目标进程的 --inspect 端口；不知道用 memory_targets 自动列出。",
+    "description": "外部进程内存观测：开发期对 DSH gen / 任意 node 进程做内存诊断。通过 CDP 从外部连到目标进程的 --inspect 端口（observer≠subject，不需往目标进程塞插件）。action：targets=（**无需 target**）列出本机所有带 --inspect=<port> 的 node 进程（pid + inspect 端口），用来决定后面 target 传什么；status=一次性内存构成（默认）/ baseline=记基线 / track=对比基线报增量+增长率+泄漏方向(JS堆 vs native) / gc=目标进程强制 global.gc() 判断瞬时或泄漏(需目标带 --expose-gc) / snapshot=HeapProfiler 写 heap snapshot 落盘。除 action=targets 外，target（目标进程 --inspect 端口，纯数字）**必填**；不知道填什么时先 action=targets。★ 常用链：action=targets 拿端口 → target=<端口> status 看现状 → action=baseline 记起点 → 跑活 → action=track 看增量。",
     "schema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
       "properties": {
-        "target": {
-          "type": "integer",
-          "exclusiveMinimum": 0,
-          "maximum": 9007199254740991,
-          "description": "目标进程的 --inspect 端口（纯数字）；用 memory_targets 可自动列出"
-        },
         "action": {
-          "description": "status=一次性统计（默认）/ baseline=记基线 / track=对比基线 / gc=强制GC判定瞬时或泄漏 / snapshot=写heap snapshot",
+          "description": "targets=列出本机 --inspect 进程（无需 target）/ status=一次性统计（默认）/ baseline=记基线 / track=对比基线 / gc=强制GC判定瞬时或泄漏 / snapshot=写heap snapshot",
           "default": "status",
           "type": "string",
           "enum": [
+            "targets",
             "status",
             "baseline",
             "track",
@@ -1776,25 +1852,17 @@
             "snapshot"
           ]
         },
+        "target": {
+          "description": "目标进程的 --inspect 端口（纯数字）；除 action=targets 外必填，可用 action=targets 自动列出",
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
         "project_dir": {
           "description": "snapshot 用：heapsnapshot 落盘归属项目根（缺省 process.cwd）",
           "type": "string"
         }
       },
-      "required": [
-        "target"
-      ],
-      "additionalProperties": {}
-    }
-  },
-  {
-    "name": "memory_targets",
-    "title": "List local node processes exposing --inspect",
-    "description": "列出本机所有带 --inspect=<port> 的 node 进程（含 DSH gen），返回 pid + inspect端口，供 memory_observe 的 target 使用。",
-    "schema": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "type": "object",
-      "properties": {},
       "additionalProperties": {}
     }
   },
@@ -2084,96 +2152,6 @@
       "required": [
         "project_dir",
         "targets"
-      ],
-      "additionalProperties": {}
-    }
-  },
-  {
-    "name": "propose_design_intent",
-    "title": "提出设计意图改写审批卡（by LLM，approve 才落 DSL）",
-    "description": "由 LLM 代拟「设计意图（why）」的改写提案并进入人工审批闸门：把 goals / edge_intents 的意图变更算成一份 before/after（当前意图 vs 将改意图）预览，落为 pending 提案，**不写盘不碰 DSL**——需要人在工作台「代码审批」页签 approve 后，才真正写入 overlay + base（复用 set_design_intent 的写端）。这与直接 set_design_intent 的区别：本工具是\"先请人批再落\"，符合\"人只做决策审批、LLM 只做提案转述\"的分层。project_dir 是审批台账的隔离桶名（缺省取 feature 的 source_root），应与人当前查看的项目一致，提案才会出现在他的审批列表里。",
-    "schema": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "type": "object",
-      "properties": {
-        "feature": {
-          "type": "string",
-          "description": "feature 名（要改哪个设计意图）"
-        },
-        "project_dir": {
-          "description": "审批台账桶名（人查看的项目目录）；缺省取 feature 的 source_root",
-          "type": "string"
-        },
-        "goals": {
-          "description": "结构化目标/方向（全量替换）",
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "id": {
-                "type": "string"
-              },
-              "title": {
-                "type": "string",
-                "description": "目标一句话"
-              },
-              "description": {
-                "type": "string"
-              },
-              "status": {
-                "type": "string",
-                "enum": [
-                  "active",
-                  "done",
-                  "parked",
-                  "dropped"
-                ]
-              }
-            },
-            "required": [
-              "title"
-            ],
-            "additionalProperties": false
-          }
-        },
-        "edge_intents": {
-          "description": "边级意图：按 base 边 id 或 from+to 匹配挂载",
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "id": {
-                "description": "目标 base 边 id（优先于 from+to）",
-                "type": "string"
-              },
-              "from": {
-                "type": "string"
-              },
-              "to": {
-                "type": "string"
-              },
-              "reason": {
-                "description": "A 为何依赖 B",
-                "type": "string"
-              },
-              "boundary": {
-                "description": "边界归属说明",
-                "type": "string"
-              },
-              "status": {
-                "type": "string",
-                "enum": [
-                  "open",
-                  "resolved"
-                ]
-              }
-            },
-            "additionalProperties": false
-          }
-        }
-      },
-      "required": [
-        "feature"
       ],
       "additionalProperties": {}
     }
@@ -3134,121 +3112,53 @@
   },
   {
     "name": "scaffold",
-    "title": "Generate code skeleton from DSL",
-    "description": "从 DSL semantic 层生成代码骨架。支持语言：.go/.ts/.py/.js/.vue/.tsx。额外生成 INVARIANTS.md 记录跨文件不变式。",
+    "title": "Scaffold: generate code skeleton from DSL / backfill actual_apis from code — single entry",
+    "description": "「脚手架」统一入口（**2 个注册入口收敛为 1 个入口 + action 分派**；两者操作的是**同一个对象**「脚手架输出目录」——generate 与 backfill 的默认目录**逐字相同** = `<cwd>/scaffold/<feature>/`，共用同一锚点参数 feature，动作互补 = **生成 + 回填**，对应工作流「生成骨架 → LLM 填充实现 → 回填」）。action=generate（默认）：从 DSL semantic 层生成代码骨架。支持语言 .go/.ts/.py/.js/.vue/.tsx。额外生成 INVARIANTS.md 记录跨文件不变式。action=backfill：LLM 写完代码后，解析实现文件中的 API 签名，回填到 DSL semantic.files[].actual_apis，对比 expected_apis 输出差异报告。支持 .go/.ts/.py/.js。★ 安全策略前移（默认值与写入面明写在这里）：generate 输出根目录缺省 `<cwd>/scaffold/<feature>`，已存在文件默认**不覆盖**（`overwrite=true` 才覆盖）；backfill **只写 DSL 的 actual_apis，不改代码**。",
     "schema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
       "properties": {
+        "action": {
+          "default": "generate",
+          "description": "generate=从 DSL 生成代码骨架（默认） | backfill=解析实现回填 actual_apis 到 DSL",
+          "type": "string",
+          "enum": [
+            "generate",
+            "backfill"
+          ]
+        },
         "feature": {
           "type": "string",
-          "description": "feature 名"
+          "description": "feature 名（2 个 action 共用锚点）"
         },
         "output_dir": {
+          "description": "generate 用：输出根目录（默认 <cwd>/scaffold/<feature>）",
           "type": "string"
         },
         "overwrite": {
+          "description": "generate 用：是否覆盖已存在文件（默认 false）",
           "type": "boolean"
         },
         "ui_framework": {
+          "description": "generate 用：UI 骨架类型（覆盖 DSL 配置）",
           "type": "string",
           "enum": [
             "vue",
             "react",
             "html"
           ]
+        },
+        "project_dir": {
+          "description": "generate 用：项目根（索引归属），提供时生成物登记为自写（读路径优先同步索引）",
+          "type": "string"
+        },
+        "scaffold_dir": {
+          "description": "backfill 用：脚手架输出根目录（默认 <cwd>/scaffold/<feature>）",
+          "type": "string"
         }
       },
       "required": [
-        "feature"
-      ],
-      "additionalProperties": {}
-    }
-  },
-  {
-    "name": "set_design_intent",
-    "title": "Write design intent",
-    "description": "写设计意图到意图 overlay（缺口①③④ 的写入口，LLM 开发时即消费方）：goals（结构化目标/方向，全量替换）与 edge_intents（\"A 为何依赖 B\" 与边界归属，按 base 边 id 或 from+to 匹配挂载）两者均可选、至少传一类。写进 <feature>.overlay.json（意图权威库），随即 apply 回 base 并保存，get_dsl/serve 当下即可读到 （meta.goals 与 edge.intent），不依赖下一次代码扫描再生。",
-    "schema": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "type": "object",
-      "properties": {
-        "feature": {
-          "type": "string",
-          "description": "feature 名"
-        },
-        "goals": {
-          "description": "结构化目标/方向（全量替换；空数组=清空）",
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "id": {
-                "type": "string"
-              },
-              "title": {
-                "type": "string",
-                "description": "目标一句话"
-              },
-              "description": {
-                "type": "string"
-              },
-              "status": {
-                "description": "active=推进中/done=完成/parked=暂缓/dropped=放弃",
-                "type": "string",
-                "enum": [
-                  "active",
-                  "done",
-                  "parked",
-                  "dropped"
-                ]
-              }
-            },
-            "required": [
-              "title"
-            ],
-            "additionalProperties": false
-          }
-        },
-        "edge_intents": {
-          "description": "边级意图：按 base 边 id 或 from+to 匹配挂载 reason/boundary",
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "id": {
-                "description": "目标 base 边 id（优先于 from+to）",
-                "type": "string"
-              },
-              "from": {
-                "description": "源节点 id（无 id 时用 from+to 定位边）",
-                "type": "string"
-              },
-              "to": {
-                "description": "目标节点 id",
-                "type": "string"
-              },
-              "reason": {
-                "description": "A 为何依赖 B",
-                "type": "string"
-              },
-              "boundary": {
-                "description": "边界归属说明",
-                "type": "string"
-              },
-              "status": {
-                "type": "string",
-                "enum": [
-                  "open",
-                  "resolved"
-                ]
-              }
-            },
-            "additionalProperties": false
-          }
-        }
-      },
-      "required": [
+        "action",
         "feature"
       ],
       "additionalProperties": {}

@@ -173,9 +173,12 @@ export const renderDesignHandler = wrap(async (a) => {
   return { message: r.message };
 });
 
-/** scaffold：骨架 + 状态推断。★ wrapData（2026-09-29）：[B] `scaffold` 回 `ScaffoldResult`
+/** 生成骨架（原独立入口，★ 面收敛第三批已并入 lane `scaffold` 的单入口 action=generate）。
+ *  ★ wrapData（2026-09-29）：[B] `scaffold` 回 `ScaffoldResult`
  *   = `{ message, files: string[], dir }` —— `files`（生成的文件清单）与 `dir` 原被 `wrap` 丢掉，
- *   agent 只能从"1. 2. 3. …"编号散文里正则抠路径。`message` 不放进 data（同一份回执文本，重复无益）。 */
+ *   agent 只能从"1. 2. 3. …"编号散文里正则抠路径。`message` 不放进 data（同一份回执文本，重复无益）。
+ *  ★ 本壳不再被任何 lane 引用（编排内联进 `lanes/design.ts` 的 `scaffold` entry）——
+ *   保留只为不牵动 `server_registry.ts` 的具名导入清单（该文件另有一批同类死导入，属独立卫生笔）。 */
 export const scaffoldHandler = wrapData(async (a) => {
   const r = scaffold({
     feature: a.feature as string,
@@ -187,9 +190,11 @@ export const scaffoldHandler = wrapData(async (a) => {
   return { message: r.message, data: { files: r.files, dir: r.dir } };
 });
 
-/** backfill_scaffold：回填。★ wrapData（2026-09-29）：[B] 回 `BackfillResult`
+/** 回填实际 API（原独立入口，★ 面收敛第三批已并入 lane `scaffold` 的单入口 action=backfill）。
+ *  ★ wrapData（2026-09-29）：[B] 回 `BackfillResult`
  *   = `{ message, feature, updates: BackfillUpdate[] }` —— 逐条回填结果（文件/符号/签名差异）
- *   是**审计产物**，原被 `wrap` 丢掉。 */
+ *   是**审计产物**，原被 `wrap` 丢掉。
+ *  ★ 本壳不再被任何 lane 引用 —— 保留理由同上（不牵动 server_registry 的具名导入清单）。 */
 export const backfillHandler = wrapData(async (a) => {
   const r = await backfillScaffold({
     feature: a.feature as string,
@@ -270,7 +275,8 @@ export const syncContractsHandler = wrapData((a) => {
   return { message: r.message, data: r };
 });
 
-/** set_design_intent：写结构化目标 / 边级意图到设计意图 overlay（缺口①③④ 的写入口） */
+/** 写设计意图到 overlay（原独立入口，★ 面收敛第三批已并入 lane `design_intent` 的单入口 action=set）。
+ *  ★ 本壳不再被任何 lane 引用 —— 保留只为不牵动 `server_registry.ts` 的具名导入清单。 */
 export const setDesignIntentHandler = wrapData((a) => {
   const r = setDesignIntent({
     feature: a.feature as string,

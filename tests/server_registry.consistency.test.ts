@@ -124,7 +124,7 @@ describe('server_registry 一致性', () => {
       // 主函数名 == 文件名 camelCase（约定），如 diff_views.ts export diffViews
       const isToolImpl = new RegExp(`export\\s+function\\s+${camel}\\b`).test(content);
       if (!isToolImpl) continue;
-      // 注册名约定 = snake_case 文件名；历史命名不一致的（如 backfill.ts → backfill_scaffold）
+      // 注册名约定 = snake_case 文件名；历史命名不一致的（实现模块名 ≠ 注册名）
       // 用 alias 宽松匹配：存在某注册，其实现在该文件里
       const expectName = toSnake(camel);
       if (!new Set(TOOL_DEFS.map((d) => d.name)).has(expectName)) {

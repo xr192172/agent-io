@@ -56,8 +56,8 @@ describe('bricks 单入口', () => {
     expect(TOOL_DEFS.some((t) => t.name === 'bricks')).toBe(true);
     // ★ 旧名不出现在本文件里（`contract_docs_gate` 会把旧名的任何字符串/注释判成"改名残留"）。
     //   "旧入口已消失"由 **G1 快照基线**的 `removed` 差集机器证明（tests/fixtures/tool_set_snapshot.json），
-    //   与本门的 61 条一致性断言互补 —— 不在这里重抄旧名（抄了反而把门打红）。
-    expect(TOOL_DEFS).toHaveLength(61);
+    //   与本门的 58 条一致性断言互补 —— 不在这里重抄旧名（抄了反而把门打红）。
+    expect(TOOL_DEFS).toHaveLength(58);
   });
 
   it('description 写明 4 个 action + 「write 缺省 true = 默认落盘」+ 「target 拒绝覆盖」+ 「原积木永不覆盖」', () => {
