@@ -78,6 +78,7 @@ node scripts/capability_scan.mjs --check   # 仓库既有的能力一致性门�
 ```ts
 // 参照 languages.ts 里 typescript 那条（LANG_ADAPTERS 之外，纯数据）
 { name: 'kotlin', pkg: 'kotlin', exts: ['.kt', '.kts'],
+  kind: 'code',            // ★ 必填（2026-09-29 新增）—— 见下方字段表；这门语言算"代码"
   symbol_nodes: ['class_declaration', 'function_declaration'],
   // 要 import 边才填（填了就必须同时在 kernel.ts 的 LANG_ADAPTERS 加记录，否则测试红，见 1.4）
   // ★ 节点名必须查该语言 grammar 的 node-types.json —— 下面这个值只是占位示例，未必对
@@ -92,9 +93,28 @@ node scripts/capability_scan.mjs --check   # 仓库既有的能力一致性门�
 | `name` | 语言 id（能力矩阵/Q 分支 key 都用它） | 必填 |
 | `pkg` | npm 包名（探测定 `tree-sitter-<pkg>`） | 必填 |
 | `exts` | 扩展名（含 `.`） | 必填 |
+| ★ `kind` | ★★ **这门语言算不算「代码」**：`code` / `data` / `markup` / `style` / `doc` | **必填**（2026-09-29 新增） |
 | `symbol_nodes` | 哪些 tree-sitter 节点算"符号定义" | 必填（查该语言的 grammar 的 `node-types.json`） |
 | `import_nodes` | 哪些节点算 import 声明 | **选了才填** —— 填了 = 承诺有 import 边（受门约束） |
 | `field_map` | tree-sitter 字段名 → `ParsedSymbol` 字段 | 必填（`name` 至少要） |
+
+★★ **`kind` 为什么必须存在**（这是本仓踩过的口径缺陷，别把它当可选装饰）：
+
+本仓有**三个不同**的问题，曾经被混成一个：
+
+| 概念 | 回答什么 | 权威 |
+|---|---|---|
+| **可解析** | 我**能**解析哪些扩展名 | `probe.listSupportedExts()`（= 装了哪些语言包） |
+| ★ **代码语言** | **什么算「源码」**（该进符号索引 / 该算孤立模块 / 该体检） | `source_exts.ts: isCodeLangExt` ⇐ **数据源就是本字段** |
+| **可跑 node** | 哪些能被 node 执行 | `NODE_RUNNABLE_EXTS` |
+
+★ 混用的后果（实测）：`.json` **能解析**（`tree-sitter-json` 真载入）⇒ 被当成"源码" ⇒
+`package.json` 被报成「**孤立模块 / 待清理 dead code**」，好夹具从 **100/A 掉到 80/B**。
+⇒ 修法就是本字段：`.json`/`.yaml`/`.toml`/`.xml` 标 `data`、`.md`/`.tex` 标 `doc`、
+`.css`/`.scss`/`.less` 标 `style`、`.html` 标 `markup` ⇒ **它们不再进源码集**（但**仍在"能解析"集合里**，两回事）。
+★ 口径收紧后**必须可见**（不许静默消失）：`health` / `impact` 会报
+`excludedNonCode: [{ext, count}]`（如 `[{"ext":".json","count":43}]`）。
+
 
 **改动 B** — 装包（**不要手抄 npm 命令**，钉版与 ABI 校验都在这条 CLI 里）：
 
