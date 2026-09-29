@@ -34,6 +34,7 @@ import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import ts from 'typescript';
 import { NODE_RUNNABLE_EXTS } from '../tools/ts_kernel/index.js';
+import { missingLanguageHint } from '../tools/lang_hint.js';
 
 
 /** Windows 常只有 python；POSIX 约定 python3（与动态闸 python 适配器一致） */
@@ -51,7 +52,10 @@ const C_EXTS = ['.c', '.h'];
 
 export type BehaviorLang = 'python' | 'node' | 'go' | 'java' | 'csharp' | 'c';
 
-/** 按文件扩展名判定 harness 语言（未知扩展 → 抛错，不静默猜） */
+/** 按文件扩展名判定 harness 语言（未知扩展 → 抛错，不静默猜）
+ *  ★ P11（2026-09-29）：抛错文案追加**可执行**提示（装什么包 / 照哪份清单 / 现缺口多少）。
+ *    `behavior_baseline` 要的不是 tree-sitter 解析器，而是该语言的**工具链 + harness**，
+ *    所以提示里的"装包"会指向该能力的清单小节（§2.10），而不是让人去装个 tree-sitter 包。 */
 export function langOfFile(file: string): BehaviorLang {
   const ext = path.extname(file).toLowerCase();
   if (ext === '.py') return 'python';
@@ -60,7 +64,9 @@ export function langOfFile(file: string): BehaviorLang {
   if (JAVA_EXTS.includes(ext)) return 'java';
   if (CS_EXTS.includes(ext)) return 'csharp';
   if (C_EXTS.includes(ext)) return 'c';
-  throw new Error(`不支持的脚本语言（${ext}）：行为基线支持 .py / ${NODE_EXTS.join(' / ')} / .go / .java / .cs / .c`);
+  throw new Error(
+    `不支持的脚本语言（${ext}）：行为基线支持 .py / ${NODE_EXTS.join(' / ')} / .go / .java / .cs / .c。${missingLanguageHint(ext, 'behavior_baseline')}`,
+  );
 }
 
 export type BehaviorVerdict = 'same' | 'diff' | 'error';

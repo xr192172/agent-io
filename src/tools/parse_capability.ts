@@ -20,6 +20,7 @@ import path from 'node:path';
 import { findLanguageByExt, type LanguageEntry } from './ts_kernel/languages.js';
 import { LANG_ADAPTERS } from './ts_kernel/kernel.js';
 import { isExtSupported } from './ts_kernel/probe.js';
+import { missingLanguageHint } from './lang_hint.js';
 
 /** 解析层级：call = 调用级（最深） / symbol = 仅符号定义 / none = 不解析 */
 export type ParseTier = 'call' | 'symbol' | 'none';
@@ -43,17 +44,26 @@ export function tierForLanguage(lang: LanguageEntry | undefined, parserInstalled
   return LANG_ADAPTERS[lang.name]?.callNode ? 'call' : 'symbol';
 }
 
-/** 人读粒度说明（与 kernel 实际行为对齐） */
-function granularityOf(tier: ParseTier, lang: string | null): string {
+/**
+ * 人读粒度说明（与 kernel 实际行为对齐）。
+ *
+ * ★ P11（2026-09-29）：`none` 档（真缺）追加**可执行**提示 —— 这是全仓最通用的落点
+ *   （find_references / impact_analysis 等行动类工具都经 `renderGranularityNote` 走这里）。
+ *   `call`/`symbol` 档**不追加**：包都装了，再喊"装什么包"是噪音（§2d：别把警告重复 N 遍；
+ *   symbol 档的精度提示原文已够）。`none` 提示由调用方按整串去重 ⇒ 同一语言只说一次。
+ */
+function granularityOf(tier: ParseTier, lang: string | null, ext: string): string {
   switch (tier) {
     case 'call':
       return `${lang ?? '该语言'} = 调用级：符号定义 + import 边 + 调用边（TS 系另有类型引用边）`;
     case 'symbol':
       return `${lang ?? '该语言'} = 仅符号定义级（无 import/调用/类型边；引用检索并入文本级扫描）`;
-    case 'none':
-      return lang
+    case 'none': {
+      const base = lang
         ? `${lang} = 不建符号索引（解析器未安装；该文件不入图，只剩文本级检索）`
         : '该语言不在支持列表，不建符号索引';
+      return `${base}；${missingLanguageHint(ext)}`;
+    }
   }
 }
 
@@ -67,7 +77,7 @@ export function parseCapabilityForFile(relOrAbs: string): ParseCapability {
   const installed = isExtSupported(ext);
   const tier = tierForLanguage(registered, installed !== null);
   const lang = (installed ?? registered)?.name ?? null;
-  return { tier, lang, granularity: granularityOf(tier, lang), zeroTrustworthy: tier === 'call' };
+  return { tier, lang, granularity: granularityOf(tier, lang, ext), zeroTrustworthy: tier === 'call' };
 }
 
 /**

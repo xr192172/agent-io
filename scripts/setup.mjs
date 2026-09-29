@@ -190,6 +190,11 @@ function runDoctor() {
         for (const [id, langs] of Object.entries(data?.gaps ?? {})) {
           console.log(dim(`   - ${id}: ${langs.join(', ')}`));
         }
+        // ★ P11：缺口太多会让人不知从哪下手 ⇒ 补一句"优先补哪档"（判据 = 单门成本 ÷ 覆盖能力数）。
+        //   档位与依据见 docs/adding-a-language.md §3.3；这里只给一行指路，不重述整张表。
+        console.log(dim('   优先补哪档：P0 内核 LANG_ADAPTERS 加行（1 行≈impact/cross_repo/hybrid 3 个能力）'
+          + ' → P1 version_upgrade 适配器文件 → P2 复杂度表/包迁移采集 → P3 rename_symbol/contract_gate/extract_contracts/behavior_baseline（真写语义）'));
+        console.log(dim('   逐能力落点/TS 样板/判据：docs/adding-a-language.md（§2 总表 + §3.3 优先级）'));
       }
     } else {
       fail++;

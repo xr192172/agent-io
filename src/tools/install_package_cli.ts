@@ -33,8 +33,11 @@ import { LANGUAGES } from './ts_kernel/languages.js';
 /**
  * 语言包 ABI 钉版表：已实测与 `tree-sitter@0.21` 核心兼容的版本（含 bindings 导出 .language）。
  * 加语言包 = 在此登记 {pkg 版本} + 在 LANGUAGES/适配器/resolver 各加一行。
+ *
+ * ★ 导出（2026-09-29）：`lang_hint.ts` 的缺失提示要带钉版，**复用本表**而不是另抄一份
+ *   （另抄一份 = 第二个真相源，装包换了钉版告示不跟着换）。本模块顶层无副作用，可安全 import。
  */
-const PACK_PINS: Record<string, string> = {
+export const PACK_PINS: Record<string, string> = {
   go: '^0.21.2',
   python: '^0.21.0',
   java: '^0.23.5',

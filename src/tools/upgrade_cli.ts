@@ -23,6 +23,7 @@
 import path from 'node:path';
 import { runContractScan, type ContractScanResult } from '../version_upgrade/detect.js';
 import { runStaticGates, runDynamicGates, type StaticGateResult, type DynamicGateResult } from '../version_upgrade/gate.js';
+import { adapterMissHint } from '../version_upgrade/adapters/registry.js';
 import type { FeatureHit } from '../version_upgrade/features.js';
 import type { RemovedHit } from '../version_upgrade/removed.js';
 
@@ -81,6 +82,17 @@ function renderFeatures(res: ContractScanResult): string[] {
       lines.push(`      ${h.file}:${h.line}  ${h.feature}（需 ${label} ${h.since}）`);
       lines.push(`        → ${h.rewrite}：${h.snippet}`);
     }
+  }
+  return lines;
+}
+
+/** 未覆盖扩展名：扫到却没适配器 ⇒ 这些文件**没被检查**（§2d 少做事必须可见）。
+ *  按扩展名去重成一行/种，并把"怎么补"（装什么/照哪份清单/现缺口多少）一次说清。 */
+function renderUncovered(res: ContractScanResult): string[] {
+  if (res.uncoveredExts.length === 0) return [];
+  const lines: string[] = ['', '【2b. 未覆盖扩展名】（扫到却没有语言适配器 ⇒ 这些文件**没被检查**，不等于没问题）'];
+  for (const { ext, files } of res.uncoveredExts) {
+    lines.push(`  ${ext} ×${files} → ${adapterMissHint(ext)}`);
   }
   return lines;
 }
@@ -196,6 +208,7 @@ function toJson(res: ContractScanResult, gates: StaticGateResult[] = [], dynamic
         declaredVersion: d.declaredVersion,
         hits: hits.map((h: RemovedHit) => ({ file: h.file, line: h.line, api: h.api, since: h.since, kind: h.kind, rewrite: h.rewrite, snippet: h.snippet })),
       })),
+      uncoveredExts: res.uncoveredExts,
       gates: gates.map((g) => ({
         projectDir: g.projectDir,
         tool: g.tool,
@@ -235,6 +248,7 @@ async function main(): Promise<void> {
   const out = [`版本升级契约差检测：${root}`];
   out.push(...renderToolchain(res.scan));
   out.push(...renderFeatures(res));
+  out.push(...renderUncovered(res));
   out.push(...renderRemoved(res));
   if (gate) out.push(...renderGates(gates));
   if (dynamic) out.push(...renderDynamicGates(dynamicGates));

@@ -12,6 +12,7 @@ import { nodeAdapter } from './node.js';
 import { pythonAdapter } from './python.js';
 import { csharpAdapter } from './csharp.js';
 import { cAdapter } from './c.js';
+import { missingLanguageHint } from '../../tools/lang_hint.js';
 
 /** 全部已注册适配器（顺序即探测/验证优先级，go 须在 node 前保持既有行为） */
 export const adapters: LanguageAdapter[] = [javaAdapter, goAdapter, nodeAdapter, pythonAdapter, csharpAdapter, cAdapter];
@@ -39,3 +40,25 @@ export const ALL_DECLARATION_FILES: string[] = [
 
 /** 各语言默认跳过的构建产物/依赖目录（并入内核默认集） */
 export const ADAPTER_SKIP_DIRS: Set<string> = new Set(adapters.flatMap((a) => a.skipDirs ?? []));
+
+/**
+ * 全部适配器覆盖的源码扩展名**并集**（由数组派生，不另抄）。
+ * 判"这个扩展名到底有没有适配器"要用**并集**，不能用"当前这条声明那门语言的 ext"
+ * —— 否则多语言仓库里每个文件都会被记成"未覆盖"（实测踩过：`.nvmrc`(node) 声明下
+ * 一个 `a.py` 被误报未覆盖，虽然 python 适配器明明在管它）。
+ */
+export const ALL_ADAPTER_EXTS: Set<string> = new Set(adapters.flatMap((a) => a.sourceExts));
+
+/**
+ * 「取不到适配器」时的**可执行**提示（纯函数）。P11（2026-09-29）。
+ *
+ * 为什么不让 `adapterForLang` / `adapterForExt` **直接返回原因串**（规划书 §6.3 的原写法）：
+ * 它们的返回类型是 `LanguageAdapter | undefined`，改成 `| string` 会让**全部调用点**
+ * 都要处理 string 分支（`adapterForExt(ext)?.featureRules` 这种 `?.` 语义直接失效）
+ * —— 提示升级不该以破坏契约/类型为代价。故另开一个独立入口，
+ * 由"确实遇到了未覆盖扩展名"的调用点（如 `upgrade_cli` 的未覆盖段）按需调用。
+ */
+export function adapterMissHint(extOrLang: string): string {
+  const e = extOrLang.startsWith('.') ? extOrLang : `.${extOrLang}`;
+  return missingLanguageHint(e, 'version_upgrade_detection');
+}

@@ -25,6 +25,7 @@ import type Parser from 'tree-sitter';
 import { findLanguageByExt, LanguageEntry } from './languages.js';
 import { isLanguageInstalled, isExtSupported, listSupportedExts, probeInstalledLanguages } from './probe.js';
 import { getParser, getParserSync, clearLoaderCache } from './loader.js';
+import { missingLanguageHint } from '../lang_hint.js';
 
 export interface ParsedSymbol {
   name: string;
@@ -895,6 +896,11 @@ export interface ParsedFile {
 /**
  * 解析文件的符号与 import 依赖（单次 AST parse）。
  * 返回空数组字段表示：文件类型不支持 / 解析失败 / 无对应内容。
+ *
+ * ★ P11（2026-09-29）：`!lang`（扩展名不支持）**保持静默返回空** —— 这里**不是**缺语言，
+ *   而是"这个文件类型本来就不入图"（.md/.json/图片…），补 error 会让 edit_code/derive_chain
+ *   等把"编辑 .md"误判成"解析失败"（实测 20+ 调用点按 `parsed.error` 抛错/记 fail）。
+ *   真正的**加载失败**（包在但 import 抛了，多为 ABI 不匹配）才给可执行提示。
  */
 export async function parseFileFull(filePath: string, content: string): Promise<ParsedFile> {
   const empty: ParsedFile = { symbols: [], imports: [], calls: [], type_refs: [] };
@@ -903,7 +909,7 @@ export async function parseFileFull(filePath: string, content: string): Promise<
   if (!lang) return empty;
 
   const parser = await getParser(ext, lang);
-  if (!parser) return { ...empty, error: `语言包加载失败: ${lang}` };
+  if (!parser) return { ...empty, error: `语言包加载失败: ${lang.name}；${missingLanguageHint(ext)}` };
 
   try {
     const tree = parseContent(parser as ParserLike, content);
@@ -946,6 +952,10 @@ export async function parseFile(filePath: string, content: string): Promise<Pars
  *     调用方走 L1b 登记（write_gate 的预热闸在调用前就用 `canParseFileSync` 拦下了）。
  *   - 扩展名缓存键与 `parseFileFull` 完全一致（原样大小写、`'.' + 最后一段`），
  *     因此 `parserReadyForFile` / `canParseFileSync` 的判定不会与实际解析行为漂移。
+ *
+ * ★ P11（2026-09-29）：本函数的 `解析器未预热` **不加缺语言提示** —— 那是"进程还没预热"
+ *   （调用方走 L1b 登记），包已装、语言也认得，加"装 tree-sitter-x"是**误导**（§2d 同理：
+ *   别给不相干的告警）。缺语言的可执行提示落在 async 孪生的加载失败分支。
  */
 export function parseFileFullSync(filePath: string, content: string): ParsedFile {
   const empty: ParsedFile = { symbols: [], imports: [], calls: [], type_refs: [] };

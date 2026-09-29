@@ -30,6 +30,7 @@ import { TS_JS_EXTS } from './ts_kernel/index.js';
 import { renameFile } from './rename_file.js';
 import { resolveProjectRoot, expandClosureDetailed, loadAliasConfig, resolveAliasedImport, type AliasConfig, type ExternalRef } from './project_root.js';
 import { createProtectGuard } from './protect.js';
+import { missingLanguageHint } from './lang_hint.js';
 
 // ─────────────────────────────────────────────
 // 最小 tree-sitter 节点面（同 Kernel）
@@ -1704,7 +1705,16 @@ export async function renameSymbol(input: RenameSymbolInput): Promise<RenameSymb
     return renameCSymbol({ file: defAbs, symbol, to, dryRun, resolvedRoot, blocked });
   }
 
-  if (!TS_EXTS.has(defExt)) return { ok: false, symbol, to, filesWritten: 0, blocked: [`文件非 TS 系（${defExt}），跨文件改名暂只支持 TS/JS 模块级符号`] };
+  // ★ P11：以前只写"暂只支持 TS/JS"——不可执行。补上"装什么包 / 照哪份清单 / 现缺口多少"。
+  if (!TS_EXTS.has(defExt)) {
+    return {
+      ok: false,
+      symbol,
+      to,
+      filesWritten: 0,
+      blocked: [`文件非 TS 系（${defExt}），跨文件改名暂只支持 TS/JS 模块级符号。${missingLanguageHint(defExt, 'rename_symbol')}`],
+    };
+  }
 
   const defSrc = readFileSync(defAbs, 'utf-8');
   const def = await analyzeModuleSource(defSrc, defAbs);
@@ -1761,7 +1771,8 @@ export async function renameSymbol(input: RenameSymbolInput): Promise<RenameSymb
     if (!fmod) {
       // 走到这里扩展名已确认是 TS 系（上面 !TS_EXTS.has(ext) 已 continue）⇒ null 只可能是
       // "该扩展名没有可用解析器"，不是"这个文件没问题" —— 也要可读
-      skipped.push({ path: f, why: '无可用 TS 解析器：该扩展名的语法未加载' });
+      // ★ P11：可读不够，还要**可执行**（包名/清单/缺口数），否则用户只能去猜。
+      skipped.push({ path: f, why: `无可用 TS 解析器：该扩展名的语法未加载。${missingLanguageHint(ext, 'rename_symbol')}` });
       continue;
     }
 

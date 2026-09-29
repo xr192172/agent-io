@@ -27,6 +27,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { SOURCE_EXTS } from './ts_kernel/index.js';
 import { skipDirSet } from './ts_kernel/source_exts.js';
+import { missingLanguageHint } from './lang_hint.js';
 
 export type Lang = 'go' | 'ts' | 'py' | 'java' | 'cs' | 'c';
 
@@ -45,11 +46,28 @@ export interface FileScan {
   undefinedRefs: UndefinedRef[];
 }
 
+/**
+ * 被**跳过**（未对账）的文件 —— §2d「少做事必须可见」。
+ *
+ * 为什么需要（P11，2026-09-29）：`scanContracts` 原先 `if (!l) continue;` ——
+ * 「本工具没有这门语言的适配器」这件事**没被报告**，于是 `.rs`/`.php`/`.vue` 这类
+ * 已进入扫描列表（`SOURCE_EXTS`）的文件，在报告里与"查过且干净"**无法区分**。
+ * ⇒ 现在显式记一笔，并给可执行提示；「未对账 ≠ 没问题」。
+ */
+export interface SkippedFile {
+  file: string;
+  /** 归一化扩展名（小写，含点） */
+  ext: string;
+  reason: string;
+}
+
 export interface ContractSnapshot {
   at: string;
   files: FileScan[];
   /** 聚合去重后全部失配（便于一眼看） */
   undefinedRefs: UndefinedRef[];
+  /** 未对账的文件（无适配器/无法判定语言）——**漏检必须可见**，不是"零失配" */
+  skipped: SkippedFile[];
 }
 
 export interface ContractDiff {
@@ -497,13 +515,20 @@ export function scanContracts(opts: ScanContractsOptions): ContractSnapshot {
     : walkFiles(cwd, opts.dirs && opts.dirs.length > 0 ? opts.dirs.map((d) => path.resolve(cwd, d)) : [cwd]);
 
   const dirList: FileScan[] = [];
+  const skipped: SkippedFile[] = [];
   const seen = new Set<string>();
   for (const abs of files) {
     const rel = path.relative(cwd, abs).split(path.sep).join('/');
     if (seen.has(rel)) continue;
     seen.add(rel);
     const l = opts.lang === 'auto' || !opts.lang ? langOfFile(rel) : opts.lang;
-    if (!l) continue;
+    if (!l) {
+      // ★ P11（§2d 少做事必须可见）：原来这里 `continue` —— 静默跳过 = 报告里看不见
+      // "这个文件压根没查"。现在显式登记，由 renderContractSkips 汇总成一句话。
+      const ext = path.extname(rel).toLowerCase();
+      skipped.push({ file: rel, ext, reason: `无 ${ext} 的语言分支（本闸只对 go/ts 家族/py/java/cs/c 对账）` });
+      continue;
+    }
     dirList.push(scanOne(cwd, abs, l));
   }
 
@@ -516,7 +541,24 @@ export function scanContracts(opts: ScanContractsOptions): ContractSnapshot {
     }
   }
 
-  return { at: new Date().toISOString(), files: dirList, undefinedRefs: [...undefMap.values()] };
+  return { at: new Date().toISOString(), files: dirList, undefinedRefs: [...undefMap.values()], skipped };
+}
+
+/**
+ * 未对账文件的**可见**报告（§2d：少做事必须可见；且**别把同一警告重复 N 遍**）。
+ * 按扩展名去重成一行/种 ⇒ 一个仓库里 200 个 `.rs` 只喊一次。
+ */
+export function renderContractSkips(skipped: readonly SkippedFile[]): string {
+  if (skipped.length === 0) return '';
+  const byExt = new Map<string, number>();
+  for (const s of skipped) byExt.set(s.ext, (byExt.get(s.ext) ?? 0) + 1);
+  const lines = [...byExt.entries()]
+    .sort((a, b) => (a[0] < b[0] ? -1 : 1))
+    .map(([ext, n]) => `${ext} ×${n} → ${missingLanguageHint(ext, 'contract_gate')}`);
+  return (
+    `\n⚠️ 契约闸门**未对账** ${skipped.length} 个文件（没查过 ≠ 没问题，这些文件的失配不在下面清单里）：\n  ` +
+    lines.join('\n  ')
+  );
 }
 
 // ── 前后 diff ─────────────────────────────────────────
@@ -539,13 +581,17 @@ export interface ContractGateResult {
   detail?: string;
 }
 
-/** 单点扫描：直接对给定 cwd/files 扫一遍并报告失配（不上 diff）。 */
+/** 单点扫描：直接对给定 cwd/files 扫一遍并报告失配（不上 diff）。
+ *  ★ P11：没查过的文件（无语言分支）也进 detail —— 「零失配」不该掩盖「少查了」。 */
 export function contractGate(opts: ScanContractsOptions): ContractGateResult {
   const scan = scanContracts(opts);
-  if (scan.undefinedRefs.length === 0) return { scan, ok: true };
+  const skipNote = renderContractSkips(scan.skipped);
+  if (scan.undefinedRefs.length === 0) {
+    return skipNote ? { scan, ok: true, detail: skipNote.trim() } : { scan, ok: true };
+  }
   return {
     scan,
     ok: false,
-    detail: scan.undefinedRefs.map((r) => r.hint).join('\n'),
+    detail: scan.undefinedRefs.map((r) => r.hint).join('\n') + skipNote,
   };
 }
