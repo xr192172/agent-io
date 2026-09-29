@@ -3327,3 +3327,113 @@ LSP 默认 `positionEncoding` **也是 utf-16** ⇒ **无需 byte↔UTF-16 转�
 - ★ 或**要接 LSP / 换语法层**（那时整个基座要重估，见 §36）
 
 ★ **一句话**：**契约没变、所以不急；阻碍在 grammar 的 ABI，所以升级是"整链条"的事；眼下先把不吃升级的 37 个语言吃掉更划算。**
+
+## 38. ★★★ 解析口径**内化**：`health`/`impact`/`import_project` 三份 → 内核一份（2026-09-30）
+
+> 承接 §29/§32（"内化"指令）。上一笔（`c5af95e` 补 import 边）在结尾标出一个**拦路点**：
+> 「`health`/`impact` 的 `resolveImportFile` 对非相对 source 早退；`SOURCE_EXTS` 不含新语言
+> ⇒ 两处口径都不在本笔允许面，且只改 health 会让两个量具互相矛盾 ⇒ **留作独立一笔**。」
+> 本笔就是那一笔。
+
+### 38.1 侦察：找到**四个**分叉（上一笔只看到两个）
+
+上一笔的结论"根因不在 languages.ts，而在工程内解析口径"**方向对了一半**，但它少看了两处。
+逐条实测如下（夹具 `.inspect/decl5_imports/*` + 我新造的 `.inspect/import_ctl/*`）：
+
+| # | 分叉 | 实测证据 |
+|---|---|---|
+| A | `SOURCE_EXTS` 是**手抄静态清单**：17 项；而 `CODE_LANG_EXTS`（注册表派生）68 项 ⇒ **51 个源码扩展名扫不到**（含刚做通的 scala/groovy/julia/haskell/elixir/kotlin/cpp/ruby/swift） | 逐扩展名差集比对；反方向：清单里有 `.mts/.cts` 而注册表无 |
+| B | 内核"唯一实现"`importPathCandidates` **把 Python 前导点当文件系统路径** | `importPathCandidates('pkg/use.py', '.helper')` 产出 `pkg/.helper.ts…pkg/.helper.py` ⇒ 恒 null。而旧 `import_project.resolveImport` **有**正确分支 |
+| C | 包/模块式 import（`app.Helper` / `Helper` / `Lib`）在 health/impact **完全不解析**（health `!source.startsWith('.')` 早退；impact 只有只认 `/` 的目录式回退） | 4 门夹具 + java 对照夹具：health 0 边、impact 0 边 |
+| D | ★ **上一笔没看到的**：`impact` 有「裸名全局唯一保底」的**调用边**，`health` 没有 ⇒ 同夹具上 impact 有边、health 报 orphan | `python_rel`：impact `edges={pkg/use.py:[pkg/helper.py]}`（来自 `twice` 裸名唯一保底，**不是** import 边）；`julia`：`edges={}`（`Helper.twice` 带前缀 ⇒ 前缀解析不到就不建边） |
+
+⇒ **同一个问题「这条 import 指向项目内哪个文件」，本仓有三个答案**（`import_project` / `health` / `impact`）。
+这就是本仓头注一直在批的那条病，而它长在**量具自己**身上。
+
+### 38.2 ★★ 更正上一笔的**判据选错了**（比根因更重要）
+
+上一笔写：「判据（orphan 密度不再 100 + 已用的 `Helper` 不再被报）**未达标 ⇒ 不纳入**」。
+
+★ 第一条**不可达**：`orphan_file` 的判据是 `consumers.size === 0 && layer !== 'glue'`
+（`src/health/index.ts:717`）—— 2 文件夹具里的**入口文件**（`Use.jl`）**没有任何项目内消费者**，
+它是天然的根，**永远**是孤儿，除非被 `options.reachableRoots` 识别（本仓 `daemon.ts`/`serve.ts` 就是这么豁免的）。
+⇒ **2 文件夹具的 orphan 最多降到 1，不可能到 0。拿一条不可达的线当验收标准，等价于"永远不纳入"。**
+
+★ 第二条**与 import 边毫无关系**：`unused_export` 走 internalRefs/crossRefs，**只按裸名匹配顶层符号**；
+`Helper.twice(3)` 的被调是 `twice`（挂 object/class 下有 parent，进不了只收顶层的 symIndex），
+`Helper` 前缀从不成为 crossRef。⇒ **加 import 边不改这条判据一个字节**（实测：unused_export 仍 2）。
+要修它得改 **symIndex 的收面**，是**另一笔**。
+
+⇒ 本笔把判据换成**逐文件可归因**（看"哪条边被建起来了"），而不是看一个不可达的密度。
+
+### 38.3 交付
+
+1. ★ **内核新增 `resolveProjectImport`**（`src/tools/ts_kernel/import_resolve.ts`，**唯一实现**）——
+   六层**串行假设**：`relative` / `python-dot` / `dotted` / `bare-name` / `go-module` / `package-dir`。
+   ★ 分派按 **source 字面量形状**，不按 `ParsedImport.kind`（实测该字段跨 parser 语义不一致：
+   Python `from .x import y` 是 `kind:'relative'` 但语义是**包相对**）。
+   ★ 返回 `{rel, layer, tried}` —— `layer` 是**边可归因**的载体，`tried` 让"为什么没建边"可查证。
+2. **`health` / `impact` 的私有实现全删**（`impact` 连 `resolvePackageImportDir` 一起删），共用内核。
+3. **`SOURCE_EXTS` 改派生**：`OTHER_LANG_EXTS = CODE_LANG_EXTS.filter(e => !TS_JS_SET.has(e))`
+   ⇒ `SOURCE_EXTS` **17 → 70**（`CODE_LANG_EXTS` 68 ⊂ 70，多出的 2 项正是注册表缺的 `.mts/.cts`，
+   由 `TS_JS_EXTS` 保底）。**六条不变量实测通过**：旧 17 项全在 / TS-JS 仍在最前（解析优先级）/
+   超集关系成立 / 无重复 / 真丢的 51 项全回来 / `codeSourceExts(parseable)` 仍 28（**health/impact
+   的源码集未被变宽污染**）。
+4. **新增 `tests/tools/import_project_resolve.test.ts`（28 条）** —— ★ 这是本笔的**出生证**，
+   且刻意**不依赖仓内夹具**（`.inspect/` 是 gitignored ⇒ 别人复现不了）：直接用内存 `rels` 集合
+   覆盖六层 + 串行假设 + 两个 API 陷阱。
+
+### 38.4 真跑 before/after（`.inspect/measure_import_fix.mjs`，`dist` 真产物）
+
+| 夹具（同为 2 文件） | orphan | impact 边 | 走哪层 |
+|---|---|---|---|
+| `decl5_imports/scala` | 2 → **1** | `app/Use.scala→app/Helper.scala` | dotted |
+| `decl5_imports/groovy` | 2 → **1** | `use/Use.groovy→helper/Helper.groovy` | dotted |
+| `decl5_imports/julia` | 2 → **1** | `Use.jl→Helper.jl` | bare-name |
+| `decl5_imports/haskell` | 2 → **1** | `Use.hs→Lib.hs` | bare-name |
+| `decl5_imports/elixir` | 2 → 2（**不变**） | 无 | —（该 grammar **无 import 节点**，`parsed.imports` 为空，非缺陷） |
+| `import_ctl/java` | 2 → **1** | `app/Use.java→app/Helper.java` | dotted |
+| `import_ctl/python_rel`（`from .helper`） | 2 → **1** | `pkg/use.py→pkg/helper.py` | python-dot（**分叉 B 的修复点**） |
+| `import_ctl/python_dotted`（`from pkg.helper`） | 2 → **1** | `pkg/use.py→pkg/helper.py` | dotted |
+| `import_ctl/julia_dir`（模块在 `Helper/Helper.jl`） | 2 → **1** | `Use.jl→Helper/Helper.jl` | package-dir |
+| `import_ctl/java_maven`（`src/main/java/app/…`） | 2 → **1** | `src/main/java/app/Use.java→…/Helper.java` | dotted（多根搜索） |
+
+★ 剩下那 1 个 orphan **是入口文件本身**（见 §38.2），不是缺陷 —— 别去"修"它。
+
+**全量测试**：`241 passed / 1 skipped`（242 文件），`2460 passed / 5 skipped`（2465 用例），**0 failed**
+—— 与改动前基线**逐字一致**。
+
+### 38.5 ★★ 分工：DSH 执行 + 我核验 ⇒ 我改判它 **4 处**（含 1 处真回归、2 处真 bug）
+
+本笔按 §24 分工：DSH 会话执行（`.inspect/BRIEF_import_internalize.md` 任务书），我核验。
+它的产出**主框架正确**（六层、形状分派、消费方全删、SOURCE_EXTS 派生、夹具读数全达标），
+但核验揪出 4 处 —— 这不是"它做错了"，而是**这四处只有拿着判据的人才能判**：
+
+| # | 问题 | 判据/证据 | 处置 |
+|---|---|---|---|
+| 1 | ★ **真回归**：第 2/3/4 层**未命中即早退** ⇒ 丢掉旧 `impact` 的目录式回退 | 修前真产物对 `using Helper`（模块在 `Helper/Helper.jl`）返回 `null`，而旧 `resolvePackageImportDir` 会命中（`dirname` 唯一） | 改为**串行假设**（2~4 未命中继续往下试）；只 `relative` 早退（`./x` 是**已知缺失**，再撞尾段只会造假边） |
+| 2 | ★ **真 bug**：`const exts = options?.exts ?? []` 把"未传"变成"空表" | `{exts:[]}` → 只剩 4 个 index 候选；`{}` → 10 个（`completionCandidates` 的 `?? IMPORT_EXTS` **对空数组不兜底**，且不报错） | 区分 undefined 与 `[]` |
+| 3 | ★ **真 bug**：第 5 层 `path.posix.join('', '/core/pkg')` 得到**绝对路径** ⇒ 恒 null | 单测首跑即红 | 先剥前导 `/` 再 join |
+| 4 | 第 1 层注释说"不含扩展名剥 / index 回退" —— **事实相反** | 代码就是 `importPathCandidates` | 改正 |
+
+★★ **顺带发现一处能力缺口并补上**（这一条**不是**对旧实现的移植，是**新增能力**，故单列）：
+`dotted` 层原先只试 `['', importer.dir]` 两个包根 —— 而**真实的 Java/Scala/Groovy 工程是 Maven 布局**
+（`src/main/java/app/Use.java` 里写 `import app.Helper`）：包根是 `src/main/java`，**两个根都落空**
+⇒ 这层在真实工程上会**静默恒 null**，**只在"仓库根恰好等于包根"的夹具上成立**。
+改为**试每个可能的包根**（项目根 + 导入者上方逐层，浅→深）⇒ 对旧假设的**单调放宽**（只增候选、
+不改既有顺序）⇒ 不会让已能解析的变解析不到。真跑：`.inspect/import_ctl/java_maven` orphan 2→1、边建成。
+★ 教训：**"证据只在夹具的形状上成立"是这一行最危险的状态** —— 旧实现与新实现都有，
+只是新实现这次被 Maven 夹具试出来了。
+
+### 38.6 本笔**未动**（登记为后续）
+
+1. ★ **`import_project.resolveImport` 仍持第三份**（多目标 0..n 版本 + `byNoExt` 碰撞可见性）。
+   它答的是"解析到哪些文件"，内核这一份答"解析到哪个文件" ⇒ 统一要处理多目标与碰撞，**独立一笔**。
+2. ★ **分叉 D**（`health` 缺 `impact` 的裸名唯一保底调用边）—— 这是
+   「import 级消费者」vs「调用级依赖」**两个不同判据**，**先判定是否有意，别顺手统一**。
+3. ★ **`unused_export` 对"带 parent 的方法"的盲区**（§38.2 第二条）—— 要改的是 symIndex 的**收面**。
+4. 注册表 `typescript` 条目缺 `.mts/.cts`（现由 `TS_JS_EXTS` 保底，不丢；但注册表本身该补）。
+5. 第 5 层 `go-module` 与第 6 层 `package-dir` 的**有意不对称**：
+   前者"取目录内首个文件"，后者要求"恰好一个文件"（前者是旧 `import_project` 语义，
+   后者是旧 `impact` 语义，内化时**两份都保留了原样**）。且 `go-module` **目前无调用方**
+   （health/impact 不传 `goModules`）⇒ 是本笔唯一"有单测但无真跑"的层。

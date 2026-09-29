@@ -325,32 +325,53 @@ declareCapability({
   //     · 分层违规恒 0；未使用导出：haskell 能靠裸名跨文件反查，其余 4 门的方法挂 object/class/module
   //       下（有 parent）进不了只收顶层的 symIndex ⇒ 已用的 `Helper` 仍被报 unused_export（实测）。
   //     · 结论（上一笔）：**差的是内核 import 边**（根因在 languages.ts，不在 health）。
-  //   ── 第二轮评估（本笔：import 边**已补**，scala/groovy/julia/haskell 4 门）——**结论不变，但根因更正**──
+  //   ── 第二轮评估（import 边**已补**：scala/groovy/julia/haskell 4 门）——结论同"不纳入"，但根因更正 ──
   //     · 真跑夹具 `.inspect/decl5_imports/<lang>`（2 文件，每门用**该语言母语形态**的 import：
   //       scala `import app.Helper` / groovy `import helper.Helper` / julia `using Helper` /
   //       haskell `import Lib (twice)`；elixir 无 import 边，作同批对照）。
   //       读数：orphan 仍 **2/2 = 100.0/百文件**（5 门全同）；`Helper`（/`Use`）仍被报 unused_export
   //       （haskell 例外，与上一笔同：裸名能反查）。
-  //     · **根因不在 languages.ts，而在"工程内解析口径"**：health 建边的唯一入口是
-  //       `resolveImportFile`，它对**非相对** source 直接早退（`!source.startsWith('.')` → null），
-  //       包路径回退 `resolvePackageImportDir` 只认 `/` 分隔的**目录式**包路径 ⇒
-  //       点分模块（`app.Helper`）、单段模块名（`Lib`/`Helper`）**都解析不到项目内文件**。
-  //     · **对照实验（本笔未改这两门的任何东西）**：Java `import app.Helper`——它本来就有
-  //       import_declaration、本来就是 code_health 的 full_ast——在同一形状的 2 文件夹具上读出
-  //       **逐字相同**的 `2 孤儿文件 / Helper 未使用导出`；Python 的 `from pkg.mod import hello`
-  //       与 `from .mod import hello` 同样 2 孤儿。⇒ 这两条判据**不是**这 5 门的缺口，
-  //       是 java/python/go/c# 共有的解析口径缺口。
+  //     · **根因更正**：上一笔断言"根因不在 languages.ts，而在工程内解析口径"——方向对，但
+  //       "orphan 密度不再 100" 这条判据**本身选错了**（2 文件夹具里入口文件永远无项目内消费者，
+  //       orphan 最多降到 1，不可能到 0 ⇒ 拿一条不可达的线当验收标准）。
+  //     · **本笔已修复口径**（`ts_kernel/import_resolve.ts` 新增 `resolveProjectImport` 唯一实现，
+  //       health/impact 共用），scala/groovy/julia/haskell/java/python 的 import 边现在可以解析。
   //     · 另：`Helper` 的 unused_export **与 import 边无关** —— 该维度走 internalRefs/crossRefs，
   //       只按**裸名**匹配顶层符号；`Helper.twice(3)` 的被调是 `twice`（挂 object 下有 parent，
   //       进不了 symIndex），`Helper` 前缀从不成为 crossRef。加 import 边不改这条判据一个字节。
   //     · 另两维不受本笔影响（仍然是真读数、不是假阳/假阴）：复杂度这 5 门未进
   //       `COMPLEXITY_BRANCH_NODES` ⇒ 走正则回退（非 AST 计数）；未使用 import 因
   //       `collectImportBinds` 无这 5 门分支 ⇒ 恒 0（无声）。
-  //   ── 所以：判据（orphan 密度不再 100 + 已用的 Helper 不再被报）**未达标 ⇒ 不纳入**（不硬塞）──
-  //     要做成需要改的是**解析口径本身**，且应改在唯一实现 `ts_kernel/import_resolve.ts`（health/impact
-  //     共用）上；`impact/index.ts` / `import_resolve.ts` **不在本笔允许的改动面内**，而只改 health 会让
-  //     两个量具对同一仓给出互相矛盾的答案（本仓明确反对该分叉）。⇒ 留作独立一笔（口径类）。
-  //     ★ 顺带（留给裁决，本笔未动）：java/c/c_sharp/cpp/go/python 这几门的 full_ast 档在
+  //   ── 第三轮评估（本笔：**解析口径已内化**，2026-09-30）——orphan 判据**已达标**，unused_export 仍未达标 ──
+  //     · 改的是什么：`ts_kernel/import_resolve.ts` 新增 `resolveProjectImport`（六层口径：
+  //       relative / python-dot / dotted / bare-name / go-module / package-dir），health 与 impact
+  //       **各自的私有实现全部删除**、共用它。此前同一问题三个工具三个答案（`import_project` 能解析
+  //       点分模块与单段名，health/impact 恒不解析）——本仓最反对的那种分叉。
+  //     · 真跑读数（`.inspect/measure_import_fix.mjs`，夹具同为 2 文件）：
+  //
+  //        | 夹具                      | orphan | impact 边                       |
+  //        |---------------------------|--------|---------------------------------|
+  //        | decl5_imports/scala       | 2 → 1  | `app/Use.scala→app/Helper.scala` |
+  //        | decl5_imports/groovy      | 2 → 1  | `use/Use.groovy→helper/Helper.groovy` |
+  //        | decl5_imports/julia       | 2 → 1  | `Use.jl→Helper.jl`              |
+  //        | decl5_imports/haskell     | 2 → 1  | `Use.hs→Lib.hs`                 |
+  //        | decl5_imports/elixir      | 2 → 2  | 无（该 grammar 无 import 节点）  |
+  //        | 对照 java / python（点分·前导点）| 2 → 1 | `app/Use.java→app/Helper.java` 等 |
+
+  //       ⇒ **判据一（孤儿密度）已达标**：2 → 1。剩下那 1 个是**入口文件本身**（无项目内消费者、
+  //       非 `glue` 层）—— 它是"没有别人 import 我"，不是"我可能是死的"，2 文件夹具里**不可能到 0**。
+  //       上一笔把它当判据是**判据选错了**（本笔更正：见下"判据更正"）。
+  //     · **判据二（已用的 `Helper` 不再被报 unused_export）仍未达标，且本笔证明它与此无关**：
+  //       该维度走 internalRefs/crossRefs，**只按裸名匹配顶层符号**；`Helper.twice(3)` 的被调是
+  //       `twice`（挂 object/class 下有 parent，进不了只收顶层的 symIndex），`Helper` 前缀从不成为
+  //       crossRef。⇒ 加 import 边不改这条判据一个字节（实测：unused_export 仍为 2）。
+  //       要修它得改的是 **symIndex 的收面**（是否收带 parent 的方法），属**另一笔**。
+  //     · 另两维不受影响（真读数，非假阳/假阴）：复杂度这 5 门未进 `COMPLEXITY_BRANCH_NODES`
+  //       ⇒ 走正则回退（非 AST 计数）；未使用 import 因 `collectImportBinds` 无这 5 门分支 ⇒ 恒 0（无声）。
+  //   ── 所以：档位**保持不纳入**（不硬塞）—— 一条判据达标、一条不达标，且不达标那条的根因在别处 ──
+  //     后续要动的是 symIndex 收面（见上）与分叉 D（health 缺 impact 的"裸名唯一保底"调用边，
+  //     那是 import 级消费者 vs 调用级依赖两个不同判据，**先判定是否有意，别顺手统一**）。
+  //     ★ 顺带（本笔未动）：java/c/c_sharp/cpp/go/python 这几门的 full_ast 档在
   //       同样口径下也读不出孤儿边，档位与"真读数"本就不严格对应；本笔不擅自下调既有声明。
   notes: {
     typescript: '复杂度=AST 分支节点计数；未使用 import=AST 绑定+使用集比对；未使用导出/孤儿/分层=导入+调用边反查',

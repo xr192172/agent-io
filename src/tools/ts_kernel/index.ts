@@ -21,7 +21,7 @@ export {
 export type { ParsedSymbol, ParsedImport, ParsedCall, ParsedTypeRef, ParsedFile, LanguageEntry, SyntaxNodeLike } from './kernel.js';
 export type { LanguageEntry as LanguageMeta } from './languages.js';
 
-export { IMPORT_EXTS, INDEX_FILES, importPathCandidates, completionCandidates, resolveImportPath, resolveExistingPath } from './import_resolve.js';
+export { IMPORT_EXTS, INDEX_FILES, importPathCandidates, completionCandidates, resolveImportPath, resolveExistingPath, resolveProjectImport } from './import_resolve.js';
 export {
   TS_JS_EXTS,
   OTHER_LANG_EXTS,
@@ -32,4 +32,4 @@ export {
   isNodeRunnableExt,
 } from './source_exts.js';
 export { parseRelativeNamedImportMap } from './import_text.js';
-export type { ResolvePathOptions } from './import_resolve.js';
+export type { ResolvePathOptions, ProjectImportLayer, ProjectImportHit, ProjectImportOptions } from './import_resolve.js';

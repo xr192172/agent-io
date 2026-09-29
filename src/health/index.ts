@@ -29,7 +29,7 @@
  *     宁漏不误报；跨文件的模块级调用仍会漏——报 info 级仅提示，不自动删）。
  */
 
-import { parseFileFull, parseAstRoot, listSupportedExtensions, resolveImportPath, type ParsedSymbol, type SyntaxNodeLike } from '../tools/ts_kernel/index.js';
+import { parseFileFull, parseAstRoot, listSupportedExtensions, resolveProjectImport, type ParsedSymbol, type SyntaxNodeLike } from '../tools/ts_kernel/index.js';
 import { codeSourceExts, partitionByCodeLang } from '../tools/ts_kernel/source_exts.js';
 import { boundsSkipFromExcluded, type ScanBounds } from '../tools/scan_bounds.js';
 import { collectSourceFiles } from '../version_upgrade/detect.js';
@@ -554,16 +554,15 @@ const TYPE_KINDS = new Set<ParsedSymbol['kind']>(['interface', 'type', 'class'])
 const TYPE_ONLY_IMPORT_RE = /^\s*import\s+type\b/;
 
 /**
- * 解析相对 import 到项目内文件（包导入/逃出项目根返回 null）。
+ * 解析 import source 到项目内文件 —— 【唯一实现入口】。
  *
- * ★ 候选生成已上移到 `tools/ts_kernel/import_resolve.ts`（**唯一实现**，2026-09-28）：
- *   这段逻辑曾被复制成 3 份且只有 1 份正确 ⇒ 本仓 961/971 条相对 import（带 `.js` 后缀）
- *   在本份上解析恒 null ⇒ orphan_file 284 假阳 + 分层违规空转。
- *   此处只保留 health 自己的策略：**包导入不建边**。
+ * ★ 候选生成与分层口径已上移到 `tools/ts_kernel/import_resolve.ts` 的 `resolveProjectImport`（2026-09-30）：
+ *   同一份逻辑覆盖 relative / python-dot / dotted / bare-name / go-module / package-dir 六层，
+ *   消解了 health/impact 各持私有实现的口径分叉（分叉 A/B/C）。
+ *   此处只做薄包装：调内核 + 取 `.rel`，不引入新策略。
  */
 function resolveImportFile(fromRel: string, source: string, rels: Set<string>, exts: string[]): string | null {
-  if (!source.startsWith('.')) return null;
-  return resolveImportPath(fromRel, source, (c) => rels.has(c), { exts });
+  return resolveProjectImport(fromRel, source, rels, { exts }).rel;
 }
 
 export async function analyzeHealth(root: string, options: HealthOptions = {}): Promise<HealthReport> {

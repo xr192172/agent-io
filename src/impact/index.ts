@@ -21,7 +21,7 @@
  */
 
 import path from 'node:path';
-import { parseFileFull, listSupportedExtensions, resolveImportPath, type ParsedSymbol } from '../tools/ts_kernel/index.js';
+import { parseFileFull, listSupportedExtensions, resolveProjectImport, type ParsedSymbol } from '../tools/ts_kernel/index.js';
 import { codeSourceExts, partitionByCodeLang } from '../tools/ts_kernel/source_exts.js';
 import { boundsSkipFromExcluded, type ScanBounds } from '../tools/scan_bounds.js';
 import { collectSourceFiles } from '../version_upgrade/detect.js';
@@ -117,43 +117,15 @@ interface GraphResult {
 const TYPE_KINDS = new Set<ParsedSymbol['kind']>(['interface', 'type', 'class']);
 
 /**
- * 解析相对 import 到项目内文件；包导入/无法定位返回 null。
+ * 解析 import source 到项目内文件 —— 【唯一实现入口】。
  *
- * ★ 候选生成已上移到 `tools/ts_kernel/import_resolve.ts`（**唯一实现**，2026-09-28）：
- *   本份曾漏剥 `.js` 后缀 ⇒ 跨文件边整条丢失 ⇒ `impact_analysis` / 热区盘点漏报引用方
- *   （该工具是 AGENTS.md 要求"改代码前必查"的影响面入口）。
- *   此处只保留 impact 自己的策略：**包导入不走相对解析**（由 `resolvePackageImportDir` 兜）。
+ * ★ 候选生成与分层口径已上移到 `tools/ts_kernel/import_resolve.ts` 的 `resolveProjectImport`（2026-09-30）：
+ *   覆盖 relative / python-dot / dotted / bare-name / go-module / package-dir 六层，
+ *   消解了 impact 原来持私有 `resolveImportFile` + `resolvePackageImportDir` 的口径分叉（分叉 C）。
+ *   此处只做薄包装：调内核 + 取 `.rel`，不引入新策略。
  */
-function resolveImportFile(fromRel: string, source: string, rels: Set<string>, exts: string[]): string | null {
-  if (!source.startsWith('.')) return null; // 包导入，v1 不解析
-  return resolveImportPath(fromRel, source, (c) => rels.has(c), { exts });
-}
-
-/**
- * 解析包路径 import（Go `import "core/pkg"` / Python `import pkg`）到项目内文件。
- * 方式：把包路径当作相对路径（与 source 文件所在目录无关的绝对型），逐段拼接项目内可能的目录。
- * 返回匹配的目录下任一同扩展名文件；匹配不到返回 null。
- * 保守语义：一个候选目录 + 一个文件才接受（目录多文件→无法唯一，宁漏不错）。
- */
-function resolvePackageImportDir(source: string, rels: Set<string>, exts: string[]): string | null {
-  const seg = source.split('/').filter(Boolean);
-  if (seg.length === 0) return null;
-  // 直接匹配完整包路径目录（Go 通常 import 完整路径）
-  const direct = path.posix.join(...seg);
-  const directCand = [...rels].filter((r) => r === direct || path.posix.dirname(r) === direct);
-  if (directCand.length === 1) return directCand[0];
-  // 回退：匹配"包末段"目录（同目录名项目内常见）
-  const tail = seg[seg.length - 1];
-  const tailCand = [...rels].filter((r) => path.posix.basename(path.posix.dirname(r)) === tail);
-  if (tailCand.length === 1) return tailCand[0];
-  return null;
-}
-
-/** 把 import source 解析到项目内文件：相对走 resolveImportFile，包路径走 resolvePackageImportDir */
 function resolveImportTarget(fromRel: string, source: string, rels: Set<string>, exts: string[]): string | null {
-  const rel = resolveImportFile(fromRel, source, rels, exts);
-  if (rel) return rel;
-  return resolvePackageImportDir(source, rels, exts);
+  return resolveProjectImport(fromRel, source, rels, { exts }).rel;
 }
 
 /** 解析并建立全项目依赖图（供影响面 / 风险热区复用） */

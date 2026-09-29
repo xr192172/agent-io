@@ -18,6 +18,16 @@
  *     · `health` ：额外有 `!source.startsWith('.')` 早退
  *   ⇒ 策略留在原地，才能保证 `db.resolveImportTarget` 被
  *     `tools/rename_file.ts` 当"路径字面量 → 项目内文件"通用工具复用时行为不变。
+ *
+ * ★ 与 `resolveProjectImport` 的分工：
+ *   `resolveImportPath` = **纯相对路径**候选生成（`.js`→`.ts` 剥扩展名 + index 回退），
+ *   被 `db.resolveImportTarget` / `tools/rename_file.ts` 复用，行为不许变。
+ *   `resolveProjectImport` = **工程内 import 边**的多层口径（relative / python-dot /
+ *   dotted / bare-name / go-module / package-dir），是 health/impact 的唯一入口。
+ *
+ * ★ 两处待统一（本笔不做）：
+ *   · `import_project.resolveImport` 仍持一份**多目标（0..n）**版本 —— 下一步统一
+ *   · `health` 缺 `impact` 的「裸名全局唯一保底」调用边（分叉 D）—— 待判定是否有意
  */
 import path from 'node:path';
 
@@ -133,4 +143,160 @@ export function resolveExistingPath(
     if (exists(c)) return c;
   }
   return null;
+}
+
+// ── resolveProjectImport：工程内 import 边的唯一实现（2026-09-30） ──────────────────────
+
+/** 命中的**层**：这条边是哪条口径建起来的（回执可见性用） */
+export type ProjectImportLayer = 'relative' | 'python-dot' | 'dotted' | 'bare-name' | 'go-module' | 'package-dir';
+
+export interface ProjectImportHit {
+  /** 命中项目内文件（相对项目根、posix）；null = 指向项目外 / 无法唯一定位 */
+  rel: string | null;
+  /** 命中的层；rel 为 null 时为 null */
+  layer: ProjectImportLayer | null;
+  /** 试过的候选（按序，含各层的 completionCandidates 展开）—— 让"为什么没建边"可查证 */
+  tried: readonly string[];
+}
+
+export interface ProjectImportOptions extends ResolvePathOptions {
+  /** Go module 前缀表（可选；health/impact 不传 ⇒ `go-module` 层不触发） */
+  goModules?: readonly { module: string; dir: string }[];
+}
+
+/**
+ * 把一条 import source 解析到**项目内文件** —— 【唯一实现】。
+ * `rels` = 项目内源码文件相对路径全集（posix）。
+ *
+ * ★ 分派规则按 source 字面量形状（非 `ParsedImport.kind`）：
+ *   1. `relative`     : `^\.\.?/`  → 复用 `resolveImportPath`（**含** `.js`→`.ts` 剥扩展名重试 + index 回退）
+ *   2. `python-dot`   : `^\.+$` 或 `^\.+[^./]`  → Python 包相对：dots 跳级 + 点分转路径
+ *   3. `dotted`       : `^[\w][\w.]*$` 且含 `.`  → 点分模块 → `/` 路径，试**每个可能的包根**
+ *                        （项目根 + 导入者上方逐层 ⇒ Maven 布局 `src/main/java/` 也能命中）
+ *   4. `bare-name`    : `^[\w]+$`  → 先导入者同目录，再项目根
+ *   5. `go-module`    : `goModules` 匹配前缀 → 目标目录内首个文件
+ *   6. `package-dir`  : 其余（含 `a/b` 形式）→ 照抄 impact 的 resolvePackageImportDir 语义（宁漏不错）
+ *
+ * ★★ 层间是**串行假设**，不是互斥分类（`2`~`4` 未命中**继续往下试**，只 `1` 早退）：
+ *   这六层是"这条串**可能**用的是哪种语言约定"的**假设表** —— 我们并不知道它属于哪种，
+ *   所以某一层没命中**不等于**"它指向项目外"，只是"这个假设不成立"。旧 `impact` 就是这么做的
+ *   （`resolveImportFile` 失败后串行回退 `resolvePackageImportDir`），串行是**既定语义**。
+ *   ★ 为什么 `relative` 例外：`./x` 是一个**已知缺失**的文件（语法上就写明按路径找），
+ *   不是"未知约定" ⇒ 再拿它去撞目录式尾段匹配只会造出假边。
+ */
+export function resolveProjectImport(
+  fromRel: string,
+  source: string,
+  rels: ReadonlySet<string>,
+  options?: ProjectImportOptions,
+): ProjectImportHit {
+  // ★ 只有**显式传了** exts 才覆盖：`{ exts: options?.exts ?? [] }` 会让"未传"变成"空表"，
+  //   而 `completionCandidates` 的 `options.exts ?? IMPORT_EXTS` 对空数组**不**兜底
+  //   ⇒ 补全候选整条消失（实测：`{exts:[]}` 只剩 4 个 index 候选，`{}` 有 10 个），
+  //   且**不报错**。调用方漏传时静默失能 ⇒ 这里必须区分 undefined 与 []。
+  const opts: ResolvePathOptions = options?.exts ? { exts: options.exts } : {};
+  const tried: string[] = [];
+
+  // 1. relative
+  if (/^\.\.?\//.test(source)) {
+    for (const c of importPathCandidates(fromRel, source, opts)) {
+      tried.push(c);
+      if (rels.has(c)) return { rel: c, layer: 'relative', tried };
+    }
+    return { rel: null, layer: null, tried };
+  }
+
+  // 2. python-dot：前导点 = 包相对（Python `from .helper import twice`）
+  if (/^\.+$/.test(source) || /^\.+[^./]/.test(source)) {
+    const dots = source.match(/^\.+/)?.[0].length ?? 0;
+    const rest = source.slice(dots);
+    // 从 dirname(fromRel) 向上跳 (dots.length - 1) 级（`.helper` = 当前包，不跳）
+    const jump = Math.max(0, dots - 1);
+    let base = path.posix.dirname(fromRel);
+    for (let i = 0; i < jump; i++) base = path.posix.dirname(base);
+    // 点分模块 → 路径
+    const asPath = rest.replace(/\./g, '/');
+    const target = asPath ? path.posix.join(base, asPath) : base;
+    for (const c of completionCandidates(target, opts)) {
+      tried.push(c);
+      if (rels.has(c)) return { rel: c, layer: 'python-dot', tried };
+    }
+    // 未命中 ⇒ **继续往下试**（层间是串行假设，见函数头注）
+  }
+
+  // 3. dotted：点分模块名（如 `app.Helper` → `app/Helper`）
+  if (/^[\w][\w.]*$/.test(source) && source.includes('.')) {
+    const asPath = source.replace(/\./g, '/');
+    // ★ 试**每一个可能的包根**：先项目根，再导入者上方逐层（浅 → 深）。
+    //   为什么要逐层（这一条是**本笔新增的能力**，不是对旧实现的移植）：旧实现只试
+    //   `['', importer.dir]` 两个根，而真实的 Java/Scala/Groovy 工程是 Maven 布局
+    //   （`src/main/java/app/Use.java` 里写 `import app.Helper`）—— 包根是 `src/main/java`，
+    //   既不是项目根（`app/Helper` 落空）也不是导入者同层（`src/main/java/app/app/Helper` 落空）
+    //   ⇒ 这层在真实工程上会**静默恒 null**，只在"仓库根恰好等于包根"的夹具上成立。
+    //   逐层试是对旧串行假设的**单调放宽**（只增候选，不改既有顺序）⇒ 不会让已能解析的变解析不到。
+    const dir = path.posix.dirname(fromRel);
+    const ancestors: string[] = [];
+    for (let d = dir; d && d !== '.' && d !== '/'; d = path.posix.dirname(d)) ancestors.push(d);
+    const bases = ['', ...ancestors.reverse()]; // 浅 → 深（项目根优先，与旧实现同序）
+    for (const base of bases) {
+      const target = base ? path.posix.join(base, asPath) : asPath;
+      for (const c of completionCandidates(target, opts)) {
+        tried.push(c);
+        if (rels.has(c)) return { rel: c, layer: 'dotted', tried };
+      }
+    }
+    // 未命中 ⇒ **继续往下试**（层间是串行假设，见函数头注）
+  }
+
+  // 4. bare-name：单段裸名（如 `Helper`、`Lib`）
+  if (/^[\w]+$/.test(source)) {
+    for (const base of [path.posix.join(path.posix.dirname(fromRel), source), source]) {
+      for (const c of completionCandidates(base, opts)) {
+        tried.push(c);
+        if (rels.has(c)) return { rel: c, layer: 'bare-name', tried };
+      }
+    }
+    // 未命中 ⇒ **继续往下试**（层间是串行假设，见函数头注）
+  }
+
+  // 5. go-module
+  if (options?.goModules) {
+    for (const gm of options.goModules) {
+      if (source === gm.module || source.startsWith(gm.module + '/')) {
+        const sub = source.slice(gm.module.length).replace(/^\//, '');
+        // ★ 必须先剥前导 `/` 再 join：`path.posix.join('', '/core/pkg')` 得到的是**绝对路径**
+        //   `/core/pkg`，而 `rels` 里的键是项目相对路径 ⇒ 永远匹配不到（该层此前恒 null）。
+        const targetDir = sub ? path.posix.join(gm.dir, sub) : gm.dir;
+        // 取该目录下按路径排序的第一个文件作代表（多文件展开是 import_project 的事）
+        const hits = [...rels].filter((r) => r.startsWith(targetDir + '/') || r === targetDir);
+        if (hits.length > 0) {
+          const hit = hits.sort()[0];
+          tried.push(hit);
+          return { rel: hit, layer: 'go-module', tried };
+        }
+      }
+    }
+  }
+
+  // 6. package-dir：照抄 impact/index.ts resolvePackageImportDir（宁漏不错）
+  {
+    const seg = source.split('/').filter(Boolean);
+    if (seg.length > 0) {
+      const direct = path.posix.join(...seg);
+      const directCand = [...rels].filter((r) => r === direct || path.posix.dirname(r) === direct);
+      if (directCand.length === 1) {
+        tried.push(...directCand);
+        return { rel: directCand[0], layer: 'package-dir', tried };
+      }
+      const tail = seg[seg.length - 1];
+      const tailCand = [...rels].filter((r) => path.posix.basename(path.posix.dirname(r)) === tail);
+      if (tailCand.length === 1) {
+        tried.push(...tailCand);
+        return { rel: tailCand[0], layer: 'package-dir', tried };
+      }
+      // 两种都不满足唯一性，宁漏不错
+    }
+  }
+
+  return { rel: null, layer: null, tried };
 }

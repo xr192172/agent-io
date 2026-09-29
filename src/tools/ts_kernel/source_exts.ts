@@ -34,43 +34,7 @@ import { LANGUAGES } from './languages.js';
 /** TS/JS 家族：同一套 tree-sitter AST、同一套 ESM/CJS 语义。顺序即解析优先级（`.ts` 优先于编译产物 `.js`）。 */
 export const TS_JS_EXTS = ['.ts', '.tsx', '.js', '.jsx', '.mts', '.cts', '.mjs', '.cjs'] as const;
 
-/** TS/JS 之外、内核可解析的源码扩展名（本项目按需启用；不含 `.json` 等数据文件）。 */
-export const OTHER_LANG_EXTS = ['.go', '.py', '.java', '.cs', '.c', '.h', '.rs', '.php', '.vue'] as const;
-
-/**
- * 项目内"可被扫描/分析"的源码扩展名（多语言并集）。
- *
- * ★ 这是**超集**：原先 6 份互不一致的清单全部是它的真子集 ⇒ 迁移到它**只增不减**，
- *   不存在"某个工具反而看不到原本能看到的文件"的情况（方向单调安全）。
- */
-export const SOURCE_EXTS: readonly string[] = [...TS_JS_EXTS, ...OTHER_LANG_EXTS];
-
-/**
- * 转译后能交给 `node` 子进程执行的扩展名（`behavior/` 的 harness 用）。
- *
- * ★ 从 `TS_JS_EXTS` **派生**而非另抄一份：`.mts`/`.cts` 在 node 子进程场景下未经验证，
- *   故显式排除 —— 但"排除哪两个"这件事写在这里，不散在调用点。
- */
-export const NODE_RUNNABLE_EXTS: readonly string[] = TS_JS_EXTS.filter((e) => e !== '.mts' && e !== '.cts');
-
 const TS_JS_SET = new Set<string>(TS_JS_EXTS);
-const SOURCE_EXT_SET = new Set<string>(SOURCE_EXTS);
-
-/** 是否属于 TS/JS 家族（同 AST / 同模块语义） */
-export function isTsJsExt(ext: string): boolean {
-  return TS_JS_SET.has(ext.toLowerCase());
-}
-
-/** 是否算"项目内可分析的源码"（多语言并集） */
-export function isSourceExt(ext: string): boolean {
-  return SOURCE_EXT_SET.has(ext.toLowerCase());
-}
-
-/** 是否是可交给 node 子进程执行的源码 */
-export function isNodeRunnableExt(ext: string): boolean {
-  const e = ext.toLowerCase();
-  return e !== '.mts' && e !== '.cts' && TS_JS_SET.has(e);
-}
 
 // ─────────────────────────────────────────────────────────────
 // ★★ 「代码语言」—— 「什么算源码」的唯一权威（2026-09-29）
@@ -98,6 +62,52 @@ export function isNodeRunnableExt(ext: string): boolean {
 
 /** 注册表里 `kind === 'code'` 的扩展名并集 —— "什么算源码"的权威数据（**派生**自注册表，不手抄） */
 export const CODE_LANG_EXTS: readonly string[] = LANGUAGES.filter((l) => l.kind === 'code').flatMap((l) => l.exts);
+
+/**
+ * TS/JS 之外、注册表 `kind==='code'` 的所有扩展名（**派生**自 `CODE_LANG_EXTS`，不手抄）。
+ * ★ 与旧手抄版（`.go .py .java .cs .c .h .rs .php .vue`）相比，本份**自动包含** kotlin/cpp/ruby/scala/elixir/julia/haskell/go 等
+ *   已在 `languages.ts` 登记但本仓未装包的语言 —— 它们进 `SOURCE_EXTS` 但不进 `codeSourceExts()` 的交集，
+ *   不会污染实际扫描，但口径声明不再漏报（消除"静默收窄"病根）。
+ * ★ 注册表 `typescript` 条目只写 `['.ts']`，缺 `.mts/.cts`；这两项由 `TS_JS_EXTS` 保底，**不会丢**。
+ */
+export const OTHER_LANG_EXTS: readonly string[] = CODE_LANG_EXTS.filter((e) => !TS_JS_SET.has(e));
+
+/**
+ * 项目内"可被扫描/分析"的源码扩展名（多语言并集）。
+ *
+ * ★ 这是**超集**：原先 6 份互不一致的清单全部是它的真子集 ⇒ 迁移到它**只增不减**，
+ *   不存在"某个工具反而看不到原本能看到的文件"的情况（方向单调安全）。
+ * ★ `OTHER_LANG_EXTS` 已由 `CODE_LANG_EXTS` 派生，含 kotlin/cpp/ruby/scala 等
+ *   注册表已声明但本仓暂未装包的扩展名 —— 它们进 `SOURCE_EXTS` 但不进 `codeSourceExts()` 的交集，
+ *   不会污染实际扫描，但口径声明不再漏报（消除"静默收窄"病根）。
+ */
+export const SOURCE_EXTS: readonly string[] = [...TS_JS_EXTS, ...OTHER_LANG_EXTS];
+
+/**
+ * 转译后能交给 `node` 子进程执行的扩展名（`behavior/` 的 harness 用）。
+ *
+ * ★ 从 `TS_JS_EXTS` **派生**而非另抄一份：`.mts`/`.cts` 在 node 子进程场景下未经验证，
+ *   故显式排除 —— 但"排除哪两个"这件事写在这里，不散在调用点。
+ */
+export const NODE_RUNNABLE_EXTS: readonly string[] = TS_JS_EXTS.filter((e) => e !== '.mts' && e !== '.cts');
+
+const SOURCE_EXT_SET = new Set<string>(SOURCE_EXTS);
+
+/** 是否属于 TS/JS 家族（同 AST / 同模块语义） */
+export function isTsJsExt(ext: string): boolean {
+  return TS_JS_SET.has(ext.toLowerCase());
+}
+
+/** 是否算"项目内可分析的源码"（多语言并集） */
+export function isSourceExt(ext: string): boolean {
+  return SOURCE_EXT_SET.has(ext.toLowerCase());
+}
+
+/** 是否是可交给 node 子进程执行的源码 */
+export function isNodeRunnableExt(ext: string): boolean {
+  const e = ext.toLowerCase();
+  return e !== '.mts' && e !== '.cts' && TS_JS_SET.has(e);
+}
 
 const CODE_LANG_EXT_SET = new Set<string>(CODE_LANG_EXTS.map((e) => e.toLowerCase()));
 
