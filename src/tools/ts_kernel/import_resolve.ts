@@ -30,7 +30,10 @@ export const INDEX_FILES = ['index.ts', 'index.tsx', 'index.js', 'index.jsx'] as
 const IMPORT_EXT_SET = new Set<string>(IMPORT_EXTS);
 
 export interface ResolvePathOptions {
-  /** 覆盖候选源码扩展名（默认 `IMPORT_EXTS`）。health/impact 传内核的 `listSupportedExtensions()`。 */
+  /**
+   * 覆盖候选源码扩展名（默认 `IMPORT_EXTS`）。
+   * health/impact 传内核的 `codeSourceExts(listSupportedExtensions())`（可解析 ∩ 代码语言，2026-09-29 口径）。
+   */
   exts?: readonly string[];
   /** 覆盖目录 index 候选（默认 `INDEX_FILES`）。 */
   indexFiles?: readonly string[];

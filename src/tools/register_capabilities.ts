@@ -166,6 +166,14 @@ declareCapability({
     cpp: 'full_ast',
     ruby: 'full_ast',
     kotlin: 'full_ast',
+    // 2026-09-29 契约扩展笔（2301041）已用新契约落地 scala/groovy/julia/haskell/elixir 5 门，
+    //   本笔按探针真跑读数（symbols 非空 **且** calls 非空 ⇒ 同文件闭包完整）校正声明；
+    //   逐门读数/跨文件边实测限制见 notes（★ 5 门均**无 import 边**，见下）。
+    scala: 'full_ast',
+    groovy: 'full_ast',
+    julia: 'full_ast',
+    haskell: 'full_ast',
+    elixir: 'full_ast',
   },
   notes: {
     go: '跨文件前缀调用 `pkg.Symbol` 经 import bindings 精确连边，重名不漏（2026-09 升级）',
@@ -176,6 +184,16 @@ declareCapability({
     cpp: '经 ts_kernel 调用边（call_expression）+ #include 边（preproc_include）；同文件闭包完整，跨文件边未验证',
     ruby: '经 ts_kernel 调用边（call 节点，被调名取 method 字段）；同文件闭包完整；★ 无 import 边（Ruby 的 require 是普通 call，无专用节点）⇒ 跨文件边缺',
     kotlin: '经 ts_kernel 调用边（call_expression，该 grammar 无字段）+ import_header 边；同文件闭包完整，跨文件边未验证',
+    // ★ 下面 5 门：真跑证据 = `scripts/ts_kernel_probe.mjs --file`（读数为本笔提交信息逐字记录）。
+    //   共同限制：内核这 5 门**无 import 边**（languages.ts 未声明 import_nodes）⇒ impact 的带前缀
+    //   跨文件调用（`Mod.func`）因拿不到 import bindings 而**不建边**（impact 的 resolveCallTarget
+    //   对 dotted expr 只信 bindings）。同文件闭包完整，故此档位与 ruby（无 import 边仍 full_ast）
+    //   同一判据；跨文件缺口如实写在各门 notes 里，不掩盖。
+    scala: '经 ts_kernel 调用边（call_expression，被调在 function 字段）；同文件闭包完整（实测 2 调用全 resolved）；★ 无 import 边 ⇒ 跨文件 `Helper.twice` 带前缀不建边（实测跨文件边 0）',
+    groovy: '经 ts_kernel 调用边（method_invocation + juxt_function_call 两种调用节点）；同文件闭包完整（实测 3 调用全 resolved）；★ 无 import 边 ⇒ 跨文件带前缀调用不建边（实测 0）',
+    julia: '经 ts_kernel 调用边（call_expression，被调=首个子节点）；同文件闭包完整（实测 5 调用，含 println 未解析）；★ 无 import 边；type_refs 恒 0（实测）',
+    haskell: '经 ts_kernel 调用边（apply，被调在 function 字段）；同文件闭包完整；★ 跨文件**可**建边（裸名全局唯一，实测 lib←use 1 条）；无 import 边',
+    elixir: '经 ts_kernel 调用边（call，被调在 target 字段）；同文件闭包完整（实测 2 调用全 resolved，含 `App.greet`）；★ 无 import 边 ⇒ 跨模块带前缀调用不建边（实测 0）',
   },
 });
 
@@ -199,6 +217,14 @@ declareCapability({
     cpp: 'full_ast',
     ruby: 'full_ast',
     kotlin: 'full_ast',
+    // 2026-09-29 本笔：同内核表落地 scala/groovy/julia/haskell/elixir 5 门。本能力要的是
+    //   「顶层导出符号」，5 门均实测非空（scala/groovy/julia/elixir 的 object/class/module 即顶层符号，
+    //   haskell 顶层 function）⇒ 两仓符号求交/求差可用（读数见提交信息）。
+    scala: 'full_ast',
+    groovy: 'full_ast',
+    julia: 'full_ast',
+    haskell: 'full_ast',
+    elixir: 'full_ast',
   },
 });
 
@@ -223,6 +249,13 @@ declareCapability({
     cpp: 'full_ast',
     ruby: 'full_ast',
     kotlin: 'full_ast',
+    // 2026-09-29 本笔：同内核表落地 scala/groovy/julia/haskell/elixir 5 门（符号支柱随内核表生效；
+    //   冲突/双胞胎判定要的顶层符号，5 门实测非空）。依赖支柱不受影响（sbt/gradle 等 manifest 仍未接）。
+    scala: 'full_ast',
+    groovy: 'full_ast',
+    julia: 'full_ast',
+    haskell: 'full_ast',
+    elixir: 'full_ast',
   },
 });
 
@@ -271,6 +304,19 @@ declareCapability({
     python: 'partial_ast',
     go: 'partial_ast',
   },
+  // ★ 2026-09-29 本笔**评估过、决定不纳入** scala/groovy/julia/haskell/elixir（保持 default=unimplemented）。
+  //   判据（`src/health/index.ts` 的实际依赖）+ 真跑证据（health_cli 打 5 门多文件夹具，读数见提交信息）：
+  //     · 未使用导出/孤儿文件/分层违规 三处都靠 `imports` 建边（`reverseConsumers` 只由 import 填）
+  //       ⇒ 内核这 5 门**无 import 边**（languages.ts 未声明 import_nodes）⇒ **每门每个非胶水文件都被
+  //       报成 orphan_file（实测 5 门均 100% 密度、2/2 文件全中）**，这是系统性假阳，不是"部分支持"。
+  //     · 分层违规维度恒 0（无 import 边 ⇒ 无 layerImports）⇒ 该维度对这 5 门完全是死的。
+  //     · 未使用导出：haskell（顶层 function）能靠裸名跨文件反查；scala/groovy/julia/elixir 的方法
+  //       挂在 object/class/module 下（有 parent），进不了只收顶层的 symIndex ⇒ 已用的 `Helper` 仍被
+  //       报成 unused_export（实测）。
+  //     · 复杂度：这 5 门未进 COMPLEXITY_BRANCH_NODES ⇒ 走正则回退（非 AST 计数）。
+  //     · 未使用 import：collectImportBinds 无这 5 门分支 ⇒ 恒 0（无声，非假阳）。
+  //   ⇒ 结论：**差的是内核 import 边**（根因在 languages.ts，不在 health）。等内核补 import 边后
+  //     再评（那时 orphan/层违规才有意义）。未使用导出/复杂度两项可单独再议，但不足以让"整能力"进档。
   notes: {
     typescript: '复杂度=AST 分支节点计数；未使用 import=AST 绑定+使用集比对；未使用导出/孤儿/分层=导入+调用边反查',
     javascript: '经 TS 家族同一解析路径',
