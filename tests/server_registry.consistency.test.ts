@@ -19,20 +19,123 @@ const toCamel = (s: string) => s.replace(/_(\w)/g, (_, c) => c.toUpperCase());
 /** camelCase → snake_case：diffViews → diff_views */
 const toSnake = (s: string) => s.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase();
 
-/** 内部/主工具实现模块（有主函数但非独立 MCP 工具），漏注册检测豁免。
- *  注：query_feature/update_feature 分别是 get_dsl/edit_dsl 的实现（注册名≠文件名）；
- *     list_features 是 get_dsl query=features 的实现；feature_ops(createFeature)/render_workbench
- *     /feature_map(buildFeatureMap)/derive_feature_tree 是 manage_feature/render_brickwork/import_project
- *     等已注册工具的内部派生/渲染助手；其余为被各工具调用的内部辅助模块。
- *  新增真正的 MCP 工具文件（src/tools/{x}.ts 且 export function {x}()）→ 必须注册，不在豁免表。 */
-const INTERNAL_MODULES = new Set([
-  'analyze_monolith', 'collect_functions', 'contract_gate', 'dag_layout', 'derive_reasoning',
-  'detect_dead_imports', 'diff_impact', 'guided_tour', 'inject_replay', 'language_concepts',
-  'list_features', 'query_feature', 'update_feature', 'watch_project', 'wizard_steps',
-  'feature_ops', 'render_workbench', 'feature_map', 'derive_feature_tree',
-  // ★ 2026-09-29（面收敛）：被新入口吸收的实现模块 —— 它们的主函数仍在，但不再自己注册。
-  'archive_node', // → lane `archive`（action=list 走 list_archive，action=… 走本模块）
-]);
+/**
+ * 内部/主工具实现模块（有主函数但非独立 MCP 工具）—— 漏注册检测的**豁免登记表**。
+ *
+ * ★★ 2026-09-29 升级（**本笔**）：原先是一个裸 `Set<string>`。那是本仓头注一直在批的
+ *   「**手抄清单**」病根，而且**长在门自己身上** —— 名单腐烂了**没有任何东西会红**。
+ *   实测抓到三类腐烂（`.inspect/audit_internal_modules.mjs` / `who_imports_internal.mjs`）：
+ *     · `derive_reasoning` —— **文件已不存在**（陈旧条目，挂了很久没人发现）
+ *     · `archive_node`    —— 已被 lane import ⇒ 下方 `isAbsorbedByFacade` **已能自动判定**（冗余）
+ *     · `list_features`   —— **无人 import** ⇒ 是**死代码**（不是"内部模块"），而它一直躲在名单里
+ *   ⇒ 改成「**登记 + 门复算**」：每条必须给出 `importedBy`（谁在用它的**证据**）与 `why`，
+ *     门逐条复算这些断言；断言不成立 ⇒ 红。想豁免就必须写出**机器能核实的理由**。
+ *
+ * ★ 判据（不写清就会退化成"什么都往里塞"）：
+ *   1. **被 lane（`[C]` 层）import 的 ⇒ 不必登记**（`isAbsorbedByFacade` 自动判定）。登记了会红。
+ *   2. ★ 本表**只收**「被**兄弟模块**（别的 `[B]` / `registry` / `daemon`）import」的 ——
+ *      那是自动判定盖不到的那一类，也正是用户 2026-09-28 说的
+ *      「*有一些工具被其他工具依赖了，就先写一个 skip，后续再移植*」。
+ *   3. `importedBy` 里的每个路径必须**存在**且**真的 import 了本模块**（门复算，防止写成愿望）。
+ *   4. ★ **不许**登记"无人 import"的模块 —— 那是死代码，处置是**删**，不是豁免
+ *      （本笔就据此删掉了 `src/tools/list_features.ts`：它被 `query_feature` 的 `features`
+ *       分支**严格取代**，且 `get_dsl` 工具的实现本就直通 `queryFeature`）。
+ *   5. `why` 写清"它是谁的实现"，≥10 字。
+ *
+ * ★ 新增真正的 MCP 工具文件（`src/tools/{x}.ts` 且 `export function {x}()`）⇒ **必须注册**，不在本表。
+ */
+const INTERNAL_MODULES: Record<string, { importedBy: string[]; why: string }> = {
+  analyze_monolith: {
+    importedBy: ['src/tools/derive_feature_tree.ts'],
+    why: 'derive_feature_tree 的底座识别步骤；其对内实现，不单独注册',
+  },
+  collect_functions: {
+    importedBy: ['src/tools/brickify_cli.ts', 'src/tools/classify_tools.ts'],
+    why: '积木化/分类两个 CLI 共用的函数收集器；不是 MCP 工具',
+  },
+  contract_gate: {
+    importedBy: ['src/tools/refactor_pipeline.ts'],
+    why: 'refactor_pipeline 的契约闸门检查步骤；不是 MCP 工具',
+  },
+  dag_layout: {
+    importedBy: ['src/tools/serve.ts', 'src/tools/update_feature.ts'],
+    why: 'DAG 布局算法（serve 渲染 + update_feature 共用）；纯算法模块',
+  },
+  detect_dead_imports: {
+    importedBy: [
+      'src/tools/brickify.ts',
+      'src/tools/brick_bag.ts',
+      'src/tools/deprecate_offline.ts',
+      'src/tools/feature_map.ts',
+      'src/tools/function_annotation.ts',
+      'src/tools/refactor_judge_cli.ts',
+      'src/tools/refactor_pipeline.ts',
+    ],
+    why: '死 import 检测是多个工具/CLI 共用的分析步骤；本身不是 MCP 工具',
+  },
+  diff_impact: {
+    importedBy: [
+      'src/diagnosis/impact_analyzer.ts',
+      'src/tools/explore_code.ts',
+      'src/tools/impact_report.ts',
+      'src/tools/serve.ts',
+      'src/tools/watch_project_tool.ts',
+    ],
+    why: '变更影响面计算，被 explore_code / impact_report 等复用；不是独立工具',
+  },
+  guided_tour: {
+    importedBy: ['src/tools/explore_code.ts', 'src/tools/overview.ts', 'src/tools/serve.ts'],
+    why: '引导式导览生成，被 explore_code / overview 等复用',
+  },
+  inject_replay: {
+    importedBy: ['src/tools/explore_code.ts'],
+    why: 'explore_code 的 replay 注入实现',
+  },
+  language_concepts: {
+    importedBy: ['src/tools/serve.ts'],
+    why: '语言概念词典（serve 渲染用）；不是 MCP 工具',
+  },
+  query_feature: {
+    importedBy: ['src/registry/handlers.ts', 'src/server_registry.ts'],
+    why: '★ 已注册工具 `get_dsl` 的真正实现（handlers 里 `queryFeature(a)`）；注册名 ≠ 文件名',
+  },
+  update_feature: {
+    importedBy: ['src/daemon/daemon.ts', 'src/registry/handlers.ts', 'src/server_registry.ts'],
+    why: '★ 已注册工具 `edit_dsl` 的真正实现；注册名 ≠ 文件名',
+  },
+  watch_project: {
+    importedBy: ['src/tools/serve.ts', 'src/tools/watch_project_tool.ts'],
+    why: '文件监听内核，被 serve 与 watch_project_tool 复用',
+  },
+  wizard_steps: {
+    importedBy: ['src/tools/render_wizard.ts'],
+    why: '向导步骤生成，render_wizard 的实现细节',
+  },
+  feature_ops: {
+    importedBy: ['src/tools/manage_feature.ts'],
+    why: 'manage_feature 的 feature 增删改实现（createFeature 等）',
+  },
+  render_workbench: {
+    importedBy: ['src/tools/brickify_cli.ts'],
+    why: '工作台渲染，brickify CLI 的实现细节',
+  },
+  feature_map: {
+    importedBy: ['src/tools/brickify.ts', 'src/tools/brick_bag.ts', 'src/tools/render_brickwork.ts'],
+    why: 'buildFeatureMap 是 import_project / render_brickwork 等的内部派生助手',
+  },
+  derive_feature_tree: {
+    importedBy: ['src/tools/overview.ts'],
+    why: '功能树派生，overview 的实现细节',
+  },
+};
+
+/**
+ * ★ 棘轮基线：条目数**只许减不许增**（与仓内其他门同款纪律）。
+ *   新增一条 = 手抄清单又长了一行 ⇒ 红。
+ *   ⇒ 想加？先问"能不能被 `isAbsorbedByFacade` 或"被兄弟 import"这条判据自动覆盖"；
+ *     真盖不住才允许登记，并在**同一次提交**里把基线 +1 并写明理由。
+ */
+const INTERNAL_MODULES_BASELINE = 17;
 
 describe('server_registry 一致性', () => {
   it('tool def 元数据齐全：name 唯一、title/description 非空、handler 有效、schema 是合法 zod', () => {
@@ -117,7 +220,7 @@ describe('server_registry 一致性', () => {
       laneSource.includes(`/tools/${base}.js'`) || laneSource.includes(`/tools/${base}.js"`);
 
     for (const base of files) {
-      if (INTERNAL_MODULES.has(base)) continue;
+      if (base in INTERNAL_MODULES) continue;
       if (isAbsorbedByFacade(base)) continue; // ★ 被工具面吸收 ⇒ 不是独立工具，无需注册
       const camel = toCamel(base);
       const content = fs.readFileSync(path.join(TOOLS_DIR, `${base}.ts`), 'utf-8');
@@ -136,5 +239,67 @@ describe('server_registry 一致性', () => {
       }
     }
     expect(missing, `漏注册的工具文件：\n${missing.join('\n')}\n请在 server_registry.ts 注册`).toEqual([]);
+  });
+});
+
+/**
+ * ★ INTERNAL_MODULES 登记表**自校验**（本笔新增）—— 复算每条断言，让名单不许腐烂。
+ *
+ * 为什么必须有这一组：升级前的裸 `Set` 腐烂了**三处**却无声（文件已删、被 lane 覆盖、死代码），
+ * 而"名单腐烂"与"工具漏注册"在门眼里**长得一模一样** —— 都是"该红却没红"。
+ * ⇒ 让每条豁免都携带**可复算的证据**（`importedBy`），门每次跑都重算一遍。
+ */
+describe('INTERNAL_MODULES 登记表自校验（复算，防手抄清单腐烂）', () => {
+  const entries = Object.entries(INTERNAL_MODULES);
+
+  it('每条 why 写清了"它是谁的实现"（≥10 字）', () => {
+    for (const [name, v] of entries) {
+      expect(v.why?.trim().length ?? 0, `${name} 的 why 太短，写不清"它是谁的实现"`).toBeGreaterThanOrEqual(10);
+    }
+  });
+
+  it('登记的文件必须存在（陈旧条目 ⇒ 红）', () => {
+    const stale = entries.filter(([name]) => !fs.existsSync(path.join(TOOLS_DIR, `${name}.ts`))).map(([n]) => n);
+    expect(stale, `这些登记条目指向不存在的文件（已删？请一并删条目）：\n  ${stale.join('\n  ')}`).toEqual([]);
+  });
+
+  it('★ 每条 importedBy 都真实存在、且**真的** import 了该模块（断言复算）', () => {
+    const bad: string[] = [];
+    for (const [name, v] of entries) {
+      const declared = new Set(v.importedBy ?? []);
+      expect(declared.size, `${name} 必须给出 importedBy（谁在用它的证据）`).toBeGreaterThan(0);
+      for (const f of declared) {
+        if (!fs.existsSync(path.join(PKG_ROOT, f))) { bad.push(`${name}: importedBy 里的 ${f} 不存在`); continue; }
+        const s = fs.readFileSync(path.join(PKG_ROOT, f), 'utf-8');
+        if (!new RegExp(`from '[^']*/${name}\\.js'`).test(s)) bad.push(`${name}: ${f} 其实没有 import 它`);
+      }
+    }
+    expect(bad, `INTERNAL_MODULES 的 importedBy 与实际不符：\n  ${bad.join('\n  ')}`).toEqual([]);
+  });
+
+  it('★ 被 lane import 的模块**不许**登记（isAbsorbedByFacade 已能自动判定 ⇒ 登记就是冗余手抄）', () => {
+    const laneDir = path.join(PKG_ROOT, 'src/registry/lanes');
+    const laneSource = fs.readdirSync(laneDir).filter((f) => f.endsWith('.ts'))
+      .map((f) => fs.readFileSync(path.join(laneDir, f), 'utf-8')).join('\n');
+    const redundant = entries
+      .filter(([name]) => laneSource.includes(`/tools/${name}.js'`) || laneSource.includes(`/tools/${name}.js"`))
+      .map(([n]) => n);
+    expect(redundant, `这些模块已被 lane import ⇒ 自动判定会接住，条目属冗余（请删）：\n  ${redundant.join('\n  ')}`).toEqual([]);
+  });
+
+  it('★ 棘轮：条目数只许减不许增（新增手抄一行 ⇒ 红）', () => {
+    expect(
+      entries.length,
+      `INTERNAL_MODULES 条目 ${entries.length} > 基线 ${INTERNAL_MODULES_BASELINE} ⇒ 手抄清单又长了。\n` +
+        '先问它能不能被 `isAbsorbedByFacade`（被 lane import）自动覆盖；\n' +
+        '真盖不住才登记，并在同一次提交里把 INTERNAL_MODULES_BASELINE 一并 +1 且写明理由。',
+    ).toBeLessThanOrEqual(INTERNAL_MODULES_BASELINE);
+  });
+
+  it('★ 出生证：判据对"文件不存在"的条目**真的会红**（跑的是上面那条存在性判据的同源写法）', () => {
+    const fake = ['__gate_probe_absent__'];
+    expect(fs.existsSync(path.join(TOOLS_DIR, `${fake[0]}.ts`)), '探针名撞上了真实文件，换一个').toBe(false);
+    const wouldBeStale = fake.filter((n) => !fs.existsSync(path.join(TOOLS_DIR, `${n}.ts`)));
+    expect(wouldBeStale, '假条目没被判成陈旧 ⇒ 判据本身失效').toEqual(fake);
   });
 });

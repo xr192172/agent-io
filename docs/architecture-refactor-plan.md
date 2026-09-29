@@ -3437,3 +3437,71 @@ LSP 默认 `positionEncoding` **也是 utf-16** ⇒ **无需 byte↔UTF-16 转�
    前者"取目录内首个文件"，后者要求"恰好一个文件"（前者是旧 `import_project` 语义，
    后者是旧 `impact` 语义，内化时**两份都保留了原样**）。且 `go-module` **目前无调用方**
    （health/impact 不传 `goModules`）⇒ 是本笔唯一"有单测但无真跑"的层。
+
+## 39. ★★★ 「被其他工具依赖 ⇒ 先写一个 skip」这笔债：**找到了，而且没做完**（2026-09-29 晚，用户回忆触发）
+
+用户问：「我记得**一开始做重构的时候**，你说有一些**工具被其他工具依赖了**，然后就**先写一个 skip 然后再后续移植**，我不知道你完成没有。」
+
+### 39.1 定位：就是 `tests/server_registry.consistency.test.ts` 的 `INTERNAL_MODULES`
+
+一个**裸 `Set<string>`**（20 条），注释逐字：「内部/主工具实现模块（有主函数但非独立 MCP 工具），漏注册检测豁免」。
+它服务的门是「每个 `src/tools/<x>.ts` 且有 `export function <x>()` ⇒ 必须已注册」。
+
+★ 关键在一处**已经发生过一半的泛化**：同文件下方新增了 `isAbsorbedByFacade(base)`
+（`2026-09-29` 面收敛撞出的门盲区），其注释逐字写着：
+> ★ 这样以后每收一个面都**不用再往 `INTERNAL_MODULES` 手抄一行**（本仓病根就是手抄清单）
+
+⇒ 即：**"被 lane import" 这一类已被判据自动覆盖**；但用户记得的那一类（**"被其他工具依赖"**）**没有**。
+
+### 39.2 实测：这张名单已经烂了（`.inspect/audit_internal_modules.mjs` + `who_imports_internal.mjs`）
+
+| 类别 | 条数 | 例子 |
+|---|---|---|
+| 被 **lane** import ⇒ 自动判定已覆盖（**登记属冗余**） | 1 | `archive_node` |
+| ★ **只被兄弟模块 import** ⇒ 自动判定**盖不到**，仍是手抄豁免 | **17** | `diff_impact`（← explore_code/impact_report/serve…）、`detect_dead_imports`（← 7 处）、`query_feature`/`update_feature`（← handlers/registry/daemon）… |
+| ★ **无人 import** ⇒ 是**死代码**，不是"内部模块" | 1 | `list_features` |
+| **文件已不存在**（陈旧条目） | 1 | `derive_reasoning` |
+
+⇒ ★★ **答案：没做完。** 而且这笔债的形态很讽刺 —— **门自己得了它要防的那种病**：
+名单腐烂了三处（陈旧 / 冗余 / 死代码），**没有任何东西会红**，因为"烂名单"与"漏注册"在门眼里长得一样。
+
+### 39.3 ★ 顺带挖出一个真死模块：`src/tools/list_features.ts`
+
+- 未注册（不在 58 个工具里）；
+- **无人 import**（只有它自己的测试在引）；
+- ★ `query_feature.ts` 的 `features` 分支是它的**严格超集**（多"决策"计数 + 结构化 `data`）；
+- ★ `src/registry/handlers.ts:53` `export const getDslHandler = wrapData(async (a) => queryFeature(a))`
+  —— **`get_dsl` 工具的实现本就直通 `queryFeature`**，`list_features` 早被它吃掉了。
+
+⇒ 即"**先写一个 skip，后续再移植**"里的**移植那一步从没发生**。
+
+### 39.4 本笔做了什么
+
+1. ★ **`INTERNAL_MODULES` 从裸 `Set` 升级成「登记 + 门复算」**：`Record<name, { importedBy, why }>`。
+   门**逐条复算**：`importedBy` 里每个路径**存在**且**真的 import 了本模块**；`why` ≥10 字。
+   想豁免就必须写出**机器能核实的理由**。
+2. **删掉 3 条**：`derive_reasoning`（文件不存在）、`archive_node`（自动判定已覆盖）、
+   `list_features`（死代码）；并**新增一条门**「被 lane import 的**不许**登记」。
+3. ★ **棘轮**：条目数只许减不许增（基线 `INTERNAL_MODULES_BASELINE = 17`）。
+4. ★ **删 `src/tools/list_features.ts`**（用户裁定"不留墓碑"），
+   **5 条行为契约原样迁到活入口** `queryFeature({ query: 'features' })` ——
+   并补一条「结构化 `data` 也回来了」（死模块根本给不出 ⇒ 这是删除的**收益**）。
+   ★ 纪律：**测试是行为契约，死模块可以死，契约必须继续被守**，不许连测试一起删。
+5. **出生证（真注入，不是自己模拟自己）**：
+   · 注入一条 `importedBy: ['src/tools/__nope__.ts']` ⇒ **只有"复算"那条红**（1 failed / 9 passed），
+     报错逐字指名 `derive_feature_tree: importedBy 里的 src/tools/__nope__.ts 不存在` ✓
+   · 加回 `archive_node` ⇒ **"被 lane import 不许登记" + "棘轮"两条同时红** ✓
+   · 注入**改坏后又逐字还原**（备份放 `.inspect/`，跑完复验 10 passed / tsc 0 错）。
+
+### 39.5 教训（与 §38 同源，值得单独记）
+
+1. ★★ **"手抄名单"最危险的地方是：它腐烂时长得像正常。** 陈旧条目、冗余条目、死代码条目，
+   在门眼里与"合法的豁免"**完全无法区分** ⇒ 名单必须携带**可复算的证据**，否则它只是把
+   "不知道"换成了"看起来知道"。⇒ 本笔的解法：**豁免 = 断言 + 复算**，不是"一行豁免"。
+2. ★★★ **门自己会得它要防的病**（§28 的"病根长在量具自己身上"第二次发作）。⇒ 每加一道门，
+   都要问一遍「**这道门自己的输入（名单/基线）会不会腐烂而它不知道？**」。
+3. ★ **用户凭记忆提出的"我是不是记错了"，两次都不是记错** —— §38 那次是判据选错，这次是**债没还完**。
+   ⇒ 用户对"**说过但没做**"的记忆比台账更可靠（台账只记"打算做什么"，不记"做成了没有"）。
+4. ★ 顺手踩的坑：`node -e` 里写正则被 `\r\n` 吃掉（CRLF 仓）⇒ 注入"没生效"却**不报错**
+   （10 passed 看起来像"判据失效"，其实是**注入本身没落盘**）。★ 同族于 §38.5 的
+   「先怀疑判据，还是先怀疑证据」——**这次是证据先坏**。⇒ 注入后必须**回读文件确认注入真的落盘**。

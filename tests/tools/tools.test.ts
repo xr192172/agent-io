@@ -1,17 +1,22 @@
 /**
- * get_dsl / list_features 工具测试
+ * get_dsl / get_dsl(query=features) 工具测试
  *
  * 覆盖 e2e 未触及的边界场景：
  * - get_dsl 找不到 feature 时抛错
- * - list_features 空列表返回提示
- * - list_features 多个 feature 排序
- * - list_features 统计文件数 / 不变式数 / 状态
+ * - features 查询：空列表返回提示 / 排序 / 统计文件数·决策数·不变式数 / status 默认 draft
+ *
+ * ★ 2026-09-29：本文件的 `list_features` 组原先 import `src/tools/list_features.ts`。
+ *   该模块是**死代码**（`query_feature.ts` 的 `features` 分支是它的**严格超集** —— 多"决策"计数
+ *   与结构化 `data`，且 `src/registry/handlers.ts` 的 `get_dsl` 工具直接走 `queryFeature`）
+ *   ⇒ 模块已删（用户裁定"不留墓碑"）。
+ *   ★ **断言一条没少**：5 条行为契约**原样迁到活入口** `queryFeature({ query: 'features' })`，
+ *   并补一条"结构化 `data` 也回来了"（死模块根本给不出，这是删除的**收益**而非代价）。
+ *   ★ 为什么不能连测试一起删：测试是**行为契约**，死模块可以死，契约必须继续被守。
  */
-
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { renderDesign } from '../../src/tools/render_design';
 import { getDsl } from '../../src/tools/get_dsl';
-import { listFeatures } from '../../src/tools/list_features';
+import { queryFeature } from '../../src/tools/query_feature';
 import { clearAllFeatures } from '../../src/storage';
 import type { DesignDSL } from '../../src/dsl/types';
 
@@ -60,20 +65,20 @@ describe('get_dsl', () => {
   });
 });
 
-describe('list_features', () => {
+describe('get_dsl(query=features) —— 原 list_features 的行为契约（模块已删，契约保留）', () => {
   beforeEach(() => clearAllFeatures());
   afterEach(() => clearAllFeatures());
 
   it('无 feature 时返回提示', () => {
-    const result = listFeatures();
-    expect(result.count).toBe(0);
+    const result = queryFeature({ query: 'features' });
+    expect(result.data).toEqual([]);
     expect(result.message).toContain('尚无');
   });
 
   it('单个 feature 正确列出', () => {
     renderDesign({ dsl_json: JSON.stringify(makeDSL('alpha', 'done')) });
-    const result = listFeatures();
-    expect(result.count).toBe(1);
+    const result = queryFeature({ query: 'features' });
+    expect(result.data).toHaveLength(1);
     expect(result.message).toContain('alpha');
     expect(result.message).toContain('done');
     expect(result.message).toContain('1 文件');
@@ -84,8 +89,8 @@ describe('list_features', () => {
     renderDesign({ dsl_json: JSON.stringify(makeDSL('zeta', 'draft')) });
     renderDesign({ dsl_json: JSON.stringify(makeDSL('alpha', 'draft')) });
     renderDesign({ dsl_json: JSON.stringify(makeDSL('middle', 'draft')) });
-    const result = listFeatures();
-    expect(result.count).toBe(3);
+    const result = queryFeature({ query: 'features' });
+    expect(result.data).toHaveLength(3);
     // alpha 应该在 zeta 之前
     const alphaIdx = result.message.indexOf('alpha');
     const middleIdx = result.message.indexOf('middle');
@@ -96,7 +101,7 @@ describe('list_features', () => {
 
   it('draft 状态的 feature 无不变式时不显示不变式计数异常', () => {
     renderDesign({ dsl_json: JSON.stringify(makeDSL('draft_one', 'draft')) });
-    const result = listFeatures();
+    const result = queryFeature({ query: 'features' });
     expect(result.message).toContain('0 不变式');
   });
 
@@ -104,8 +109,19 @@ describe('list_features', () => {
     const dsl = makeDSL('no_status', 'done');
     delete dsl.status;
     renderDesign({ dsl_json: JSON.stringify(dsl) });
-    const result = listFeatures();
+    const result = queryFeature({ query: 'features' });
     expect(result.message).toContain('no_status');
     expect(result.message).toContain('draft');
+  });
+
+  it('★ 结构化 data 也回来（死模块给不出 ⇒ 这是删掉它的收益）', () => {
+    const dsl = makeDSL('alpha', 'done');
+    dsl.geometry.nodes.push({ id: 'n2', x: 0, y: 60, width: 100, height: 50, label: 'n2', decision: 'd1' });
+    renderDesign({ dsl_json: JSON.stringify(dsl) });
+    const result = queryFeature({ query: 'features' });
+    expect(result.data).toEqual([
+      { id: 'id_alpha', feature: 'alpha', status: 'done', decisions: 1 },
+    ]);
+    expect(result.message).toContain('1 决策');
   });
 });
