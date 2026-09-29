@@ -8,7 +8,8 @@
  *
  * 覆盖：
  *   - .ts ⇒ call 级；.xyz ⇒ none（不在支持列表）；.css ⇒ none（注册表有但解析器未装）
- *   - symbol 级判定（纯函数）：cpp 装了解析器 ⇒ symbol（有符号无适配）；未装 ⇒ none
+ *   - symbol 级判定（纯函数）：swift 装了解析器 ⇒ symbol（有符号无适配）；未装 ⇒ none
+ *     （2026-09-29：cpp/kotlin/ruby 已接 LANG_ADAPTERS ⇒ 由 symbol 升为 call，本用例换 swift）
  *   - renderGranularityNote：全 call ⇒ 空串（健康不刷屏）；有非 call ⇒ 诚实标注 + 工具口味
  *   - impact_analysis 集成：.css 变更点 ⇒ 响应带"解析粒度"（闭包结论会低估）；.ts ⇒ 不带
  *   - index_integrity 自带语言能力自述一节
@@ -85,12 +86,14 @@ describe('parse_capability · 分层判定', () => {
     expect(cap.granularity).toContain('解析器未安装');
   });
 
-  it('symbol 级判定（纯函数，不依赖环境）：cpp 有注册表无适配 ⇒ 装了解析器就是 symbol；未装 ⇒ none', () => {
-    const cpp = findLanguageByExt('.cpp');
-    expect(cpp).toBeDefined();
-    expect(tierForLanguage(cpp, true)).toBe('symbol');
-    expect(tierForLanguage(cpp, false)).toBe('none');
+  it('symbol 级判定（纯函数，不依赖环境）：swift 有注册表无适配 ⇒ 装了解析器就是 symbol；未装 ⇒ none', () => {
+    const swift = findLanguageByExt('.swift');
+    expect(swift).toBeDefined();
+    expect(tierForLanguage(swift, true)).toBe('symbol');
+    expect(tierForLanguage(swift, false)).toBe('none');
     expect(tierForLanguage(undefined, true)).toBe('none');
+    // 2026-09-29：cpp 已接 LANG_ADAPTERS（call_expression）⇒ 反例换位，另断 cpp 升为 call 级
+    expect(tierForLanguage(findLanguageByExt('.cpp'), true)).toBe('call');
   });
 });
 

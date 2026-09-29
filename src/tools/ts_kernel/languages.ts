@@ -57,11 +57,18 @@ export const LANGUAGES: LanguageEntry[] = [
   { name: 'python', pkg: 'python', exts: ['.py'], symbol_nodes: ['function_definition', 'class_definition'], import_nodes: ['import_statement', 'import_from_statement'], field_map: { name: 'name', parameters: 'parameters', return_type: 'return_type' } },
   { name: 'java', pkg: 'java', exts: ['.java'], symbol_nodes: ['class_declaration', 'method_declaration', 'interface_declaration'], import_nodes: ['import_declaration'], field_map: { name: 'name', parameters: 'parameters', return_type: 'type' } },
   { name: 'c', pkg: 'c', exts: ['.c', '.h'], symbol_nodes: ['function_definition', 'struct_specifier'], import_nodes: ['preproc_include'], field_map: { name: 'name', parameters: 'parameters' } },
-  { name: 'cpp', pkg: 'cpp', exts: ['.cpp', '.cc', '.cxx', '.hpp', '.hh', '.hxx'], symbol_nodes: ['function_definition', 'class_specifier', 'struct_specifier', 'namespace_definition'], field_map: { name: 'name', parameters: 'parameters' } },
+  { name: 'cpp', pkg: 'cpp', exts: ['.cpp', '.cc', '.cxx', '.hpp', '.hh', '.hxx'], symbol_nodes: ['function_definition', 'class_specifier', 'struct_specifier', 'namespace_definition'], import_nodes: ['preproc_include'], field_map: { name: 'name', parameters: 'parameters' } },
   { name: 'c_sharp', pkg: 'c-sharp', exts: ['.cs'], symbol_nodes: ['class_declaration', 'method_declaration', 'interface_declaration'], import_nodes: ['using_directive'], field_map: { name: 'name', parameters: 'parameters' } },
   { name: 'rust', pkg: 'rust', exts: ['.rs'], symbol_nodes: ['function_item', 'struct_item', 'impl_item', 'trait_item'], import_nodes: ['use_declaration'], field_map: { name: 'name', parameters: 'parameters', return_type: 'return_type' } },
-  { name: 'kotlin', pkg: 'kotlin', exts: ['.kt', '.kts'], symbol_nodes: ['class_declaration', 'function_declaration'], field_map: { name: 'name', parameters: 'parameters' } },
+  // ★ 2026-09-29 实测校准：symbol_nodes 的 class_declaration/function_declaration **本来就与
+  //   tree-sitter-kotlin 的 node-types 对得上**（该 grammar 里两者都是 named 节点）——
+  //   kotlin 此前提不出符号的真正原因是 kernel 侧三处"有字段"假设（见 kernel.ts: extractName /
+  //   findBodyNode / extractCallee）。本次顺带把 object_declaration（单例 object）纳入符号；
+  //   import_nodes=import_header 为专用 import 节点（`import a.b.C as D`）。
+  { name: 'kotlin', pkg: 'kotlin', exts: ['.kt', '.kts'], symbol_nodes: ['class_declaration', 'function_declaration', 'object_declaration'], import_nodes: ['import_header'], field_map: { name: 'name', parameters: 'parameters' } },
   { name: 'swift', pkg: 'swift', exts: ['.swift'], symbol_nodes: ['function_declaration', 'class_declaration'], field_map: { name: 'name', parameters: 'parameters' } },
+  // ★ ruby 无 import_nodes：tree-sitter-ruby 没有"import 声明"节点 —— `require 'x'` 就是普通
+  //   `call`（见 kernel.ts: LANG_ADAPTERS.ruby 注释）。调用边已通（callNode='call'）。
   { name: 'ruby', pkg: 'ruby', exts: ['.rb'], symbol_nodes: ['method', 'class', 'module'], field_map: { name: 'name', parameters: 'parameters' } },
   { name: 'php', pkg: 'php', exts: ['.php'], symbol_nodes: ['function_definition', 'method_declaration', 'class_declaration'], import_nodes: ['namespace_use_declaration'], field_map: { name: 'name', parameters: 'parameters' } },
   { name: 'scala', pkg: 'scala', exts: ['.scala', '.sc'], symbol_nodes: ['class_definition', 'object_definition', 'def_definition'], field_map: { name: 'name', parameters: 'parameters' } },

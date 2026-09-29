@@ -43,14 +43,32 @@ describe('语言适配器注册表完备性', () => {
   });
 
   it('无深适配/无 import_nodes 的语言不要求 adapter（保持未装语言静默禁用）', () => {
-    // 尚未接线的语言（如 kotlin）无 import_nodes → 不需要 adapter（静默禁用，不报漏接）
-    const kotlin = LANGUAGES.find((l) => l.name === 'kotlin')!;
-    expect(kotlin.import_nodes).toBeUndefined();
+    // 尚未接线的语言（如 swift）无 import_nodes → 不需要 adapter（静默禁用，不报漏接）
+    const swift = LANGUAGES.find((l) => l.name === 'swift')!;
+    expect(swift.import_nodes).toBeUndefined();
     // C 已接线（t4）：import_nodes=preproc_include + c adapter
     const c = LANGUAGES.find((l) => l.name === 'c')!;
     expect(c.import_nodes).toEqual(['preproc_include']);
     expect(LANG_ADAPTERS['c'].callNode).toBe('call_expression');
     expect(typeof LANG_ADAPTERS['c'].extractImportSources).toBe('function');
+  });
+
+  it('cpp/kotlin 已接线（callNode + import_nodes）；ruby 只接调用边（无专用 import 节点）', () => {
+    // cpp：调用边 + `#include` 边（与 c 共用 includePath）
+    const cpp = LANGUAGES.find((l) => l.name === 'cpp')!;
+    expect(cpp.import_nodes).toEqual(['preproc_include']);
+    expect(LANG_ADAPTERS['cpp'].callNode).toBe('call_expression');
+    expect(typeof LANG_ADAPTERS['cpp'].extractImportSources).toBe('function');
+    // kotlin：调用边 + import_header；grammar 无字段 ⇒ 申报 bodyNodeTypes/calleeIsFirstChild
+    const kotlin = LANGUAGES.find((l) => l.name === 'kotlin')!;
+    expect(kotlin.import_nodes).toEqual(['import_header']);
+    expect(LANG_ADAPTERS['kotlin'].callNode).toBe('call_expression');
+    expect(LANG_ADAPTERS['kotlin'].bodyNodeTypes).toEqual(['function_body', 'class_body']);
+    expect(LANG_ADAPTERS['kotlin'].calleeIsFirstChild).toBe(true);
+    // ruby：`require` 就是普通 `call`（无专用 import 节点）⇒ 有意不声明 import_nodes
+    const ruby = LANGUAGES.find((l) => l.name === 'ruby')!;
+    expect(ruby.import_nodes).toBeUndefined();
+    expect(LANG_ADAPTERS['ruby'].callNode).toBe('call');
   });
 
   it('c 适配器已有 callNode 与 import 提取（不要求 binding：C include 无本地名）', () => {

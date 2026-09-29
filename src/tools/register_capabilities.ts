@@ -162,6 +162,10 @@ declareCapability({
     java: 'full_ast',
     c_sharp: 'full_ast',
     c: 'full_ast',
+    // 2026-09-29 P0：内核 LANG_ADAPTERS 补 cpp/ruby/kotlin（同文件调用边）⇒ 声明随之校正
+    cpp: 'full_ast',
+    ruby: 'full_ast',
+    kotlin: 'full_ast',
   },
   notes: {
     go: '跨文件前缀调用 `pkg.Symbol` 经 import bindings 精确连边，重名不漏（2026-09 升级）',
@@ -169,6 +173,9 @@ declareCapability({
     java: '经 ts_kernel parseFileFull 通用调用边/限定引用',
     c_sharp: '经 ts_kernel 通用调用边（invocation_expression）',
     c: '经 ts_kernel include/调用边（import_nodes+call_expression 新补）',
+    cpp: '经 ts_kernel 调用边（call_expression）+ #include 边（preproc_include）；同文件闭包完整，跨文件边未验证',
+    ruby: '经 ts_kernel 调用边（call 节点，被调名取 method 字段）；同文件闭包完整；★ 无 import 边（Ruby 的 require 是普通 call，无专用节点）⇒ 跨文件边缺',
+    kotlin: '经 ts_kernel 调用边（call_expression，该 grammar 无字段）+ import_header 边；同文件闭包完整，跨文件边未验证',
   },
 });
 
@@ -188,6 +195,10 @@ declareCapability({
     java: 'full_ast',
     c_sharp: 'full_ast',
     c: 'full_ast',
+    // 2026-09-29 P0：内核 LANG_ADAPTERS 补 cpp/ruby/kotlin（符号支柱随内核表生效）
+    cpp: 'full_ast',
+    ruby: 'full_ast',
+    kotlin: 'full_ast',
   },
 });
 
@@ -207,6 +218,11 @@ declareCapability({
     java: 'full_ast',
     c_sharp: 'full_ast',
     c: 'full_ast',
+    // 2026-09-29 P0：内核 LANG_ADAPTERS 补 cpp/ruby/kotlin（符号支柱随内核表生效）
+    //   ★ 依赖支柱仍只认 package.json/go.mod/pyproject.toml/requirements.txt（§2.9 是独立一笔）
+    cpp: 'full_ast',
+    ruby: 'full_ast',
+    kotlin: 'full_ast',
   },
 });
 

@@ -100,7 +100,7 @@ export interface ParsedTypeRef {
 // ─────────────────────────────────────────────────────────────
 
 function nodeTypeToKind(nodeType: string, parent?: string): ParsedSymbol['kind'] {
-  if (nodeType.includes('class')) return 'class';
+  if (nodeType.includes('class') || nodeType === 'object_declaration') return 'class'; // kotlin object（单例）也是类型
   if (nodeType.includes('interface')) return 'interface';
   // enum 是类型也是值：映射 'type' 才能被跨文件 type_ref 解析命中
   // （resolveCrossFileCalls 的 typeNamesByFile 只认 interface/type/class；
@@ -154,24 +154,56 @@ function isValidIdentifier(s: string): boolean {
   return /^[A-Za-z_$][\w$]*$/.test(s);
 }
 
+/** C/C++ declarator 包装节点：函数名可能被指针/引用/括号声明符包住 */
+const CPP_DECLARATOR_WRAPPERS = new Set([
+  'function_declarator',
+  'pointer_declarator',
+  'reference_declarator',
+  'parenthesized_declarator',
+  'array_declarator',
+]);
+
+/**
+ * 沿 `declarator` 字段下钻取 C/C++ 的函数名。实测形态（tree-sitter-cpp）：
+ *   `int foo()`            → function_declarator → identifier('foo')
+ *   `char* name()`         → pointer_declarator → function_declarator → identifier('name')
+ *   `Node* next()`         → 同上（★ 若不优先走这里，通用兜底会把**返回类型** Node 当符号名）
+ *   `int Greeter::greet()` → function_declarator → qualified_identifier → name('greet')
+ *   `void C::m() const`    → function_declarator → field_identifier('m')
+ */
+function nameFromCppDeclarator(node: SyntaxNodeLike | null, depth = 0): string {
+  if (!node || depth > 6) return '';
+  if (node.type === 'identifier' || node.type === 'field_identifier') return isValidIdentifier(node.text) ? node.text : '';
+  if (node.type === 'qualified_identifier') {
+    const nm = node.childForFieldName('name'); // `Greeter::greet` → 只取 greet（类归属另由 parent 表达）
+    return nm && isValidIdentifier(nm.text) ? nm.text : '';
+  }
+  if (CPP_DECLARATOR_WRAPPERS.has(node.type)) return nameFromCppDeclarator(node.childForFieldName('declarator'), depth + 1);
+  return '';
+}
+
 function extractName(node: SyntaxNodeLike, fieldMap: LanguageEntry['field_map']): string {
   const direct = fieldText(node, fieldMap.name);
   if (direct && isValidIdentifier(direct)) return direct;
 
-  // 兜底：从第一个 identifier 子节点取
+  // C/C++：函数名在 declarator 链里，**必须优先于**下面的通用子节点兜底。
+  // 实测（2026-09-29，tree-sitter-cpp）：`template<typename T> T maxof(…){…}` 与 `Node* next(){…}`
+  // 若先走通用兜底，function_definition 的**第一个** type_identifier 子节点是**返回类型**
+  // ⇒ 符号名错成 'T' / 'Node'。故先沿 declarator 链取真名。
   for (let i = 0; i < node.childCount; i++) {
     const child = node.child(i);
-    if (child && (child.type === 'identifier' || child.type === 'property_identifier' || child.type === 'type_identifier' || child.type === 'name')) {
-      const text = child.text;
-      if (isValidIdentifier(text)) return text;
+    if (child && CPP_DECLARATOR_WRAPPERS.has(child.type)) {
+      const nm = nameFromCppDeclarator(child);
+      if (nm) return nm;
     }
   }
-  // C/C++：function_definition/declaration 的函数名在 function_declarator 的 declarator 字段（无 name 字段）
+  // 兜底：从第一个 identifier 子节点取
+  //   · simple_identifier = kotlin（该 grammar 的声明节点**无 name 字段**，名字就是头一个子节点）
   for (let i = 0; i < node.childCount; i++) {
     const child = node.child(i);
-    if (child && child.type === 'function_declarator') {
-      const d = child.childForFieldName('declarator');
-      if (d && d.type === 'identifier' && isValidIdentifier(d.text)) return d.text;
+    if (child && (child.type === 'identifier' || child.type === 'property_identifier' || child.type === 'type_identifier' || child.type === 'simple_identifier' || child.type === 'name')) {
+      const text = child.text;
+      if (isValidIdentifier(text)) return text;
     }
   }
   return '';
@@ -321,7 +353,7 @@ function traverseAndExtract(
         if (child) traverseAndExtract(child, lang, symbols, qn, depth + 1, childScope);
       };
       // 进入 body 继续提取（找方法/嵌套类）
-      const body = node.childForFieldName('body') || node.childForFieldName('suite');
+      const body = findBodyNode(node, lang.name);
       if (body) {
         for (let i = 0; i < body.childCount; i++) recBody(body.child(i));
         return;
@@ -350,7 +382,27 @@ interface LangImportAdapter {
   topLevelCall?: boolean;
   extractImportSources?: (node: SyntaxNodeLike) => string[];
   extractImportBindings?: (node: SyntaxNodeLike, paths: string[]) => string[];
+  /**
+   * 无 `body`/`suite` 字段的语法（实测 kotlin：`function_declaration`/`class_declaration`
+   * 的 node-types.json 里 `"fields": {}`，体是 `function_body`/`class_body` 子节点）
+   * —— 列出该语言的"体"节点类型；符号/调用遍历按此下钻。
+   * 有字段的语法（TS/Go/Python/Java/Rust/C/C#/C++/Ruby…）**不用填**。
+   */
+  bodyNodeTypes?: string[];
+  /**
+   * 调用表达式无 `function`/`name`/`method` 字段的语法（实测 kotlin：`call_expression`
+   * 的 `"fields": {}`，`(call_expression (simple_identifier) (call_suffix …))`）
+   * —— 被调表达式 = 第一个命名子节点。
+   */
+  calleeIsFirstChild?: boolean;
 }
+
+/** `#include "x.h"` / `#include <vector>` → 头文件路径（C 与 C++ 同型，共用一份正则，别抄第二份） */
+function includePath(node: SyntaxNodeLike): string[] {
+  const m = /^\s*#\s*include\s*[<"]([^>"]+)[>"]/.exec(node.text);
+  return m ? [m[1]] : [];
+}
+
 export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
   go: {
     callNode: 'call_expression',
@@ -475,10 +527,50 @@ export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
   },
   c: {
     callNode: 'call_expression',
-    // `#include "math.h"` / `#include <stdio.h>` → 头文件路径
+    // `#include "math.h"` / `#include <stdio.h>` → 头文件路径（与 C++ 共用 includePath）
+    extractImportSources: includePath,
+  },
+  cpp: {
+    callNode: 'call_expression',
+    // ★ 值来自 tree-sitter-cpp 的 node-types.json（named）+ 真实语法树实测：
+    //   `helper(n)` → (call_expression function: (identifier) arguments: …)
+    //   `g.greet(3)` → (call_expression function: (field_expression …) arguments: …)
+    //   import：`#include "util.h"` → (preproc_include path: (string_literal …))（与 C 同型）
+    extractImportSources: includePath,
+  },
+  ruby: {
+    // ★ 值来自 tree-sitter-ruby 的 node-types.json（named 里有 `call`，**没有** `method_call`）
+    //   + 真实语法树：`helper(n)` → (call method: (identifier) arguments: …)
+    //   被调名在 **`method` 字段**（不是 function/name），故 extractCallee 认这个字段。
+    callNode: 'call',
+    // ★ 本语言**不接 import 边、不声明 import_nodes**（实测结论，非遗漏）：
+    //   tree-sitter-ruby 没有"import 声明"节点 —— `require 'x'` / `require_relative 'x'`
+    //   就是普通 `call`（method=identifier 'require'），与每一次方法调用**同型**。
+    //   把 `call` 声明成 import_nodes 会让"每一次调用"都变成依赖边候选（类别错误）。
+  },
+  kotlin: {
+    // ★ 值来自 tree-sitter-kotlin 的 node-types.json（named）+ 真实语法树实测：
+    //   `fun main() { helper() }` → (function_declaration (simple_identifier) (function_value_parameters) (function_body …))
+    //   `helper()` → (call_expression (simple_identifier) (call_suffix (value_arguments …)))
+    //   ★ 该 grammar 的声明/调用节点 **"fields": {}**（无 name/body/function 字段）⇒
+    //     名字靠 simple_identifier 子节点、体靠 function_body/class_body、被调靠第一个子节点。
+    callNode: 'call_expression',
+    bodyNodeTypes: ['function_body', 'class_body'],
+    calleeIsFirstChild: true,
+    // `import a.b.C` / `import a.b.*` / `import a.b.C as D` → 模块路径（去通配/去别名）
     extractImportSources(node) {
-      const m = /^\s*#\s*include\s*[<"]([^>"]+)[>"]/.exec(node.text);
-      return m ? [m[1]] : [];
+      let t = node.text.replace(/^\s*import\s+/, '').replace(/[\s;]+$/, '').trim();
+      t = t.replace(/\s+as\s+[A-Za-z_]\w*$/, '').trim();
+      t = t.replace(/\.\*$/, '');
+      return t ? [t] : [];
+    },
+    // `import a.b.C as D` → D；否则末段 C
+    extractImportBindings(node) {
+      const asM = node.text.match(/\s+as\s+([A-Za-z_]\w*)\s*;?\s*$/);
+      if (asM) return [asM[1]];
+      const t = node.text.replace(/^\s*import\s+/, '').replace(/[\s;]+$/, '').trim().replace(/\.\*$/, '');
+      const last = t.split('.').pop();
+      return last ? [last] : [];
     },
   },
   php: {
@@ -544,10 +636,41 @@ function isCallNode(node: SyntaxNodeLike, lang: LanguageEntry): boolean {
   return LANG_ADAPTERS[lang.name]?.callNode === node.type || (Array.isArray(LANG_ADAPTERS[lang.name]?.callNode) && (LANG_ADAPTERS[lang.name]!.callNode as string[]).includes(node.type));
 }
 
+/**
+ * 符号定义节点的"体"：优先 `body`/`suite` 字段；**无字段的语法**（kotlin）回落
+ * 到适配器申报的体节点类型（`function_body`/`class_body`）。★ 缺这一步的症状：
+ * kotlin 的 `fun`/`class` 提得出名字却进不去体 ⇒ 调用边恒空（实测）。
+ */
+function findBodyNode(node: SyntaxNodeLike, langName: string): SyntaxNodeLike | null {
+  const byField = node.childForFieldName('body') || node.childForFieldName('suite');
+  if (byField) return byField;
+  const types = LANG_ADAPTERS[langName]?.bodyNodeTypes;
+  if (!types) return null;
+  for (let i = 0; i < node.childCount; i++) {
+    const c = node.child(i);
+    if (c && types.includes(c.type)) return c;
+  }
+  return null;
+}
+
+/** 第一个命名子节点（跳过匿名关键字/标点；isNamed 缺省视为命名节点） */
+function firstNamedChild(node: SyntaxNodeLike): SyntaxNodeLike | null {
+  for (let i = 0; i < node.childCount; i++) {
+    const c = node.child(i);
+    if (c && c.isNamed !== false) return c;
+  }
+  return null;
+}
+
 /** 从 call 节点提取被调用名：取 function 字段文本的尾部标识符（去点、去泛型参数） */
 function extractCallee(callNode: SyntaxNodeLike, langName: string): { name: string; expr: string } | null {
-  // TS/Go/C/Rust 用 function 字段；Java method_invocation 用 name(+object) 字段
-  const fn = callNode.childForFieldName('function') || callNode.childForFieldName('name');
+  // TS/Go/C/Rust 用 function 字段；Java method_invocation 用 name(+object) 字段；
+  // Ruby `call` 的被调名在 method 字段；无字段语法（kotlin）取第一个命名子节点。
+  const fn =
+    callNode.childForFieldName('function') ||
+    callNode.childForFieldName('name') ||
+    callNode.childForFieldName('method') ||
+    (LANG_ADAPTERS[langName]?.calleeIsFirstChild ? firstNamedChild(callNode) : null);
   if (!fn) return null;
   // Java 中对象与方法名分离（object='Bar'、name='run'）→ 拼回 qualified 前缀供 is-target 用
   const obj = langName === 'java' ? callNode.childForFieldName('object') : null;
@@ -615,7 +738,7 @@ function traverseAndExtractCalls(
     if (name) {
       const qn = funcStack.length > 0 ? `${funcStack[funcStack.length - 1]}.${name}` : name;
       const kind = nodeTypeToKind(node.type, funcStack.length > 0 ? funcStack[funcStack.length - 1] : undefined);
-      const body = node.childForFieldName('body') || node.childForFieldName('suite');
+      const body = findBodyNode(node, lang.name);
       if (body) {
         funcStack.push(qn);
         if (kind === 'function' || kind === 'method') {
