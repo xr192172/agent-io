@@ -3279,3 +3279,51 @@ LSP 默认 `positionEncoding` **也是 utf-16** ⇒ **无需 byte↔UTF-16 转�
 
 ★ **结论：本轮不接 LSP。** 若将来要接，先做 36.6 第 1 条的**实测**（它决定"接进来会不会更不安全"），
 再做 36.5 的 (a)(b)(c) 三项核算 —— **任一不成立就不接**。
+
+---
+
+## 37. ★★ tree-sitter 版本决策：**要不要追更新？**（2026-09-29，用户提问）
+
+用户问：「**要不要追 tree-sitter 的更新，它的对外契约变了吗**？」
+
+### 37.1 先答"契约变了吗" —— ★ **本仓用到的那部分没变**
+本仓实际用到的 tree-sitter API 面**极窄**（实测统计）：
+```
+.type(57)  .text(49)  .childCount(25)  .child(i)(25)  .rootNode(9)  parser.parse(3)  .setLanguage(1)
+```
+官方 release notes 里的 breaking changes（`node-tree-sitter`）：
+| 版本 | breaking | 影响本仓？ |
+|---|---|---|
+| **v0.21.0** | ★ **Node-API 取代 NAN**，且「**requires updating the `binding.cc` for all languages you want to use by running `tree-sitter generate` with tree-sitter ≥0.22.0**」 | ★★ **这正是"旧 grammar 配 0.21 / 新 grammar 要 0.25"的根源** |
+| v0.21.0 | `SyntaxNode.hasChanges` / `hasError` / `isMissing` **从方法变属性** | ❌ **本仓没用到这三个** |
+| v0.21.0 | 弃 Node 14/16；改用 prebuildify | ❌ 本仓 Node 22 |
+| v0.22.x → v0.25.x | 无进一步 breaking 记录 | — |
+
+⇒ ★ **结论：本仓用到的 API 子集在 0.21 → 0.25 之间稳定。真正的阻碍**不是 API**，是 **grammar 包的 ABI**。
+
+### 37.2 ★★ 升级的真实成本（这才是决策依据）
+**收益**：能装那 **7 个"要 0.22+/0.25+"的包**：
+`bash`(0.25.x) / `css`(0.23.2→0.25.0) / `ocaml`(0.24.x) / `perl`(1.2.1→2.0.0) /
+`power``shell`(0.26.x) / `solidity`(1.2.x) / `swift`(0.7.x)
+★ 且实测**它们没有兼容 0.21 的版本**（"曲线吃旧版"不通）；**版本号体系还很乱**（0.25/0.26/1.x/2.0/0.7 混用）。
+
+**成本**：
+1. ★★ **必须同时升级全部 12 个已装 grammar** —— 它们**钉在 0.21.x**：
+   `python ^0.21.0` / `rust ^0.21.0` / `c ^0.21.0` / `javascript ^0.21.4` / `typescript ^0.21.2` /
+   `c-sharp ^0.21.3` / `go ^0.21.2`（另 `java ^0.23.5` / `php ^0.23.12` 已是 0.23 线）
+2. ★★ 升级后**节点名可能变 ⇒ `symbol_nodes` 要全部重校**（`languages.ts` 55 条）
+3. ★ **kernel 的取值假设要重验** —— 本轮刚在 kotlin 上踩过「grammar 的 **`"fields": {}`** ⇒ `extractName`/`findBodyNode`/`extractCallee` 全落空」
+
+⇒ ★★ **成本 >> 收益**（为 7 个语言，动 12 个已装 + 重校 55 条节点名 + 重验 kernel 假设）。
+
+### 37.3 决策：**不追**（现在不追）
+1. ★ **性价比**：为 7 语言做整链条升级，不如先把 **37 个 peer 兼容的语言**吃掉（它们**不需要升级**）；
+2. ★★ **风险**：升级是"整链条"（grammar + 节点名 + kernel 假设），而本仓的节点名假设**刚从 kotlin 那个坑里爬出来**；
+3. ★ **API 契约稳定**意味着将来要升也不难（本仓的子集不变）。
+
+**留下的触发条件**（满足任一再考虑）：
+- **那 7 个语言里有业务上必须的**（如脚本类项目要 `bash` / `power``shell`）
+- **老 grammar（0.21.x）停止维护**
+- ★ 或**要接 LSP / 换语法层**（那时整个基座要重估，见 §36）
+
+★ **一句话**：**契约没变、所以不急；阻碍在 grammar 的 ABI，所以升级是"整链条"的事；眼下先把不吃升级的 37 个语言吃掉更划算。**
