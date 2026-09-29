@@ -52,6 +52,26 @@ export function wrapData(
 }
 
 // ─────────────────────────────────────────────────────────────
+// [C] 层入参守卫
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * 缺必填字符串 ⇒ **当场报错**（绝不把 `undefined` 拼进路径 —— 规划书 §16.4 P-D）。
+ *
+ * ★ 2026-09-29（面收敛第二批）从 `lanes/refactor.ts` 的**文件内私有**函数上提到本模块：
+ *   `lanes/harvest.ts` 的新入口 `bricks` 也要用同一把守卫，留在原地就会长出**第二份副本**
+ *   —— 那正是 G4（`tests/single_source.test.ts` 同族副本棘轮）要消灭的东西。
+ *   ⇒ 上提到**跨 lane 共用的基础设施**（本文件与 `types.ts` / `handlers.ts` 同层）。
+ *   ★ 未收编的第三份：`src/tools/explore_code.ts` 里有一个同名私有实现 —— 它在 `[B]` 层，
+ *     不在本笔（只改 `src/registry/**`）的边界内，**登记但不改**（见 commit message「没验什么」）。
+ */
+export function requireStr(a: Record<string, unknown>, key: string): string {
+  const v = a[key];
+  if (typeof v !== 'string' || v.trim() === '') throw new Error(`缺参数 "${key}"`);
+  return v;
+}
+
+// ─────────────────────────────────────────────────────────────
 // 输入 schema 包装
 // ─────────────────────────────────────────────────────────────
 

@@ -42,8 +42,8 @@ One thread runs through everything: **any code → bricks (production) → trust
 |---|---|---|
 | **Visual protocol layer** | DSL read/write/edit, design view vs. actual code snapshot diff, built-in render fallback | `get_dsl` / `edit_dsl` / `manage_feature` / `render_design` / `diff_views` |
 | **Code understanding** | Project import, semantic search, impact analysis, architecture layering, monolith splitting, algorithm/dataflow derivation | `import_project` / `explore_code` |
-| **Brick system** | Harvest code from any source (URL / local project) into contract-bearing bricks: extraction, slimming, search, and assembly | `harvest_from_url` / `harvest_closure` / `extract_contracts` / `slim_brick` / `search_bricks` / `assemble_bricks` |
-| **Runtime verification** | Reconcile contracts and behavior baselines against actual runtime observations, forming a "commit only if verified, roll back on failure" gate | `observe_instrument` / `observe_judge` / `reconcile_chain` / `reconcile_brick` / `reconcile_effects` |
+| **Brick system** | Harvest code from any source (URL / local project) into contract-bearing bricks: extraction, slimming, search, and assembly | `harvest_from_url` / `harvest_closure` / `extract_contracts` / `bricks` |
+| **Runtime verification** | Reconcile contracts and behavior baselines against actual runtime observations, forming a "commit only if verified, roll back on failure" gate | `observe_instrument` / `observe_judge` / `reconcile_chain` / `reconcile_effects` |
 | **Generation / backfill / consistency** | Generate code skeleton from DSL, backfill contracts from implementation, output consistency reports | `scaffold` / `backfill_scaffold` / `consistency_check` |
 | **Deterministic refactoring (no rework)** | Symbol-level editing (never matches wrong), bulk/cross-file renaming, dead code removal, diff review before applying, rollback on failure | `edit_code` / `rename_*` / `refactor_pipeline` |
 | **Diagnosis loop** | Full chain from symptom → root cause → fix → verify → commit (or roll back) | `diagnose` / `refactor_judge` / `diagnose-loop` (CLI) |
@@ -104,7 +104,7 @@ Your browser opens `http://localhost:3000/workbench`: the left canvas is an inte
 
 ## MCP Tool Reference
 
-A total of **65 MCP tools** are registered, organized into "capability navigation + primary tools + specialized tools": `capability_map` provides layered capability-lane navigation, primary tools provide unified entry points, specialized tools each do one job. The tables below are a curated subset, not the full list — the authoritative count comes from `TOOL_DEFS` in `src/server_registry.ts`.
+A total of **61 MCP tools** are registered, organized into "capability navigation + primary tools + specialized tools": `capability_map` provides layered capability-lane navigation, primary tools provide unified entry points, specialized tools each do one job. The tables below are a curated subset, not the full list — the authoritative count comes from `TOOL_DEFS` in `src/server_registry.ts`.
 
 ### Capability navigation (1)
 
@@ -168,10 +168,7 @@ A total of **65 MCP tools** are registered, organized into "capability navigatio
 | `harvest_decisions` | Reverse-extract design decisions from project records |
 | `extract_contracts` | Extract brick contracts (role / shapes / effects) |
 | `reconcile_effects` | Reconcile effect candidates against runtime observations |
-| `reconcile_brick` | Reconcile brick contracts against runtime observations |
-| `search_bricks` | Search the brick shelf (cross-project reuse directory) |
-| `assemble_bricks` | Assemble a new project from boxed bricks |
-| `slim_brick` | Slim a Go brick into a derived brick (compiler-style dead code elimination) |
+| `bricks` | Unified brick-box entry (search=browse/query bricks·read-only / assemble=assemble boxed bricks into a new project·write / slim=slim a brick into a derived brick·write / reconcile=reconcile brick contracts against observe events·write) |
 | `narrate_step` | Narrate a pipeline step as a governed narration brick |
 
 **Runtime verification (Observe)**
@@ -225,8 +222,7 @@ Java projects, Python dead-code cleanup on Python projects; apply / verify / rol
 | Tool | Purpose |
 |------|------|
 | `canvas_notes` | Unified canvas-notes entry (read=work orders / mark=status / decide=LLM) |
-| `archive_node` | Archive DSL nodes (snapshot) |
-| `list_archive` | List archived nodes |
+| `archive` | Unified retired-node library entry (node=archive a file·write & irreversible / list=list archived entries·read-only) |
 | `sync_contracts` | Backfill DSL contracts using the server_registry schema as source |
 
 **LLM gateway**

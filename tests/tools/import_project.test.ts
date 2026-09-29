@@ -335,10 +335,10 @@ describe('import_project', () => {
     beforeAll(() => {
       brickRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'import-brick-fixture-'));
 
-      // 出生证明：2 个积木 + 契约投影（description/aggregate——assemble_bricks 写入形态）
+      // 出生证明：2 个积木 + 契约投影（description/aggregate——bricks(action=assemble) 写入形态）
       putBrick('assembly.json', JSON.stringify({
         assembled_at: '2026-08-20T00:00:00.000Z',
-        tool: 'assemble_bricks',
+        tool: 'bricks',
         bricks: [
           {
             name: 'go_logging',

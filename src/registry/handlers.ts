@@ -250,7 +250,10 @@ export const diffViewsHandler = wrapData(async (a) => {
   return { message: r.message, data: r.data };
 });
 
-/** archive_node：把下线的文件/节点孤立到下线库（历史研究材料）。★ wrapData：回 `data: r`（归档卡） */
+/** 下线归档的单动作壳（原两入口之一）。
+ * ★ 2026-09-29 面收敛第二批：注册入口已收编为 `archive`（action=node/list），编排内联进
+ *   `lanes/meta.ts` 的 `archive` entry ⇒ 本壳不再被任何 lane 引用。保留只为不牵动
+ *   `server_registry.ts` 的具名导入清单（该文件另有一批同类死导入来自第一批，属独立卫生笔）。 */
 export const archiveNodeHandler = wrapData(async (a) => {
   const r = archiveNode({
     feature: a.feature as string,
@@ -277,7 +280,7 @@ export const setDesignIntentHandler = wrapData((a) => {
   return { message: r.message, data: r };
 });
 
-/** list_archive：列出某 feature 的下线库归档条目。★ wrapData：回 `data: r`（归档条目数组） */
+/** 列下线库归档条目的单动作壳（原两入口之二）。★ 上游入口已并入 `archive`（action=node/list）。 */
 export const listArchiveHandler = wrapData(async (a) => {
   const r = listArchive({ feature: a.feature as string, live_dir: a.live_dir as string | undefined });
   return { message: r.message, data: r };

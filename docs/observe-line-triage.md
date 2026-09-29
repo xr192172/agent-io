@@ -23,7 +23,7 @@
 | 事件 | 事件日志 `events.jsonl` + `log_query.ts`（查询） | `src/observe/` |
 | 判定 | `judge.ts` / `judge_guard.ts` / `judge_service.ts`（逐事件判定 + 守护） | `src/observe/` |
 | 链路 | `chain.ts`（重建实测调用链）、`trace.ts`（回放）、`tiered.ts`（分层） | `src/observe/` |
-| 对账 | `reconcile_chain` / `reconcile_effects` / `reconcile_brick` | `src/tools/` |
+| 对账 | `reconcile_chain` / `reconcile_effects` / `bricks`(action=reconcile，原积木对账入口) | `src/tools/` |
 | 叙事/展示 | `narrate_step` / `run_narrate` / `observe_chain_view` / `feature_line` / `export_incident` | `src/tools/` |
 | Go 侧 | `go-observe/`（cmd/internal/probe，独立 Go 模块） | 仓根 |
 

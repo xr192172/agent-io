@@ -2845,11 +2845,15 @@ renameSymbols()                       ← [B] 单一入口（[C] 只转发到它
 ### 32.6 留给下一刀
 - **`refactor.ts` 里仍有 8 个 `wrap(`（丢 data）**：`rename_files` / `move_symbol` / `find_references` /
   `impact_analysis` / `remove_dead_imports` / `annotate_functions` / `refactor_pipeline` / `refactor_judge`
-- 其它候选族（按"操作对象"看）：~~快照族~~（★ **本笔已收敛为 `snapshot`**，见 §34）、
-  ~~规则族~~（★ **本笔已收敛为 `rules`**，见 §34）、编辑族（`edit_code`/`plan_refactor`/`apply_refactor_plan`）、
-  归档族（`archive_node`/`list_archive`）、砖块族（`*_brick` ×4）
+- 其它候选族（按"操作对象"看）：~~快照族~~（★ **已收敛为 `snapshot`**，见 §34）、
+  ~~规则族~~（★ **已收敛为 `rules`**，见 §34）、编辑族（`edit_code`/`plan_refactor`/`apply_refactor_plan`）、
+  ~~归档族~~（★ **已收敛为 `archive`**，见 §35）、~~砖块族~~（★ **已收敛为 `bricks`**，见 §35）
 - ★ 按 `tool-convergence.md` §2.0 的**反面教训**（`camera_*`：**看似同对象、实为不同抽象层 ⇒ 不聚合**），
   以上每一族**都要先判断"是不是同一操作对象"**，**不许按名字硬合**
+- ★★ 第二批的**反面结论**（同样重要）：**采集族（`harvest_decisions` / `harvest_closure` / `harvest_from_url`）判为"不该合"** ——
+  三者不共用锚点（`feature` vs `project_dir`+`files` vs `source`）、不共用操作对象（决策卡候选 / import 闭包 / 积木盒），
+  且 `harvest_closure` 是 `harvest_from_url` 的**一步**、同时被 `dead_deps` / `detect_dead_imports` 当库调用
+  ⇒ 那是「按功能/前缀」聚类（正是 `camera_*` 的形态）。**说出来并停手**，判据见 §35.2。
 
 ### 32.7 ★★★ 用户三问的答复（2026-09-29，含"要不要改走 LSP"的取舍）
 
@@ -2951,9 +2955,9 @@ kernel.renameSymbols({...})
 | **符号 / 代码** | `rename_symbols` `rename_files` `move_symbol` `find_references` `impact_analysis` `edit_code` `plan_refactor` `apply_refactor_plan` `remove_dead_imports` `annotate_functions` `suggest_renames` `find_similar_names` `refactor_judge` `refactor_pipeline` `rules` `diff_views` `snapshot`（**17**；★ 2026-09-29 本笔：规则族 3→1、快照族 2→1 ⇒ 该面 20→17，见 §34） |
 | **设计 / DSL** | `get_dsl` `edit_dsl` `manage_feature` `render_design` `render_brickwork` `scaffold` `backfill_scaffold` `consistency_check` `detect_drift` `import_project` `set_design_intent` `propose_design_intent`（**12**） |
 | **观测** | `memory_observe` `memory_targets` `reconcile_effects` `narrate_step` `observe_log` `observe_trace` `observe_judge` `observe_instrument` `reconcile_chain` `recommend_observe_points` `behavior_baseline` `run_tests` `feature_line`（**13**） |
-| **采集 / 契约** | `harvest_decisions` `sync_contracts` `harvest_closure` `extract_contracts` `harvest_from_url` `reconcile_brick` `search_bricks` `assemble_bricks` `slim_brick`（**9**） |
+| **采集 / 契约** | `harvest_decisions` `sync_contracts` `harvest_closure` `extract_contracts` `harvest_from_url` `bricks`（**6**；★ 2026-09-29 第二批：砖块族 4→1 ⇒ 9→6，见 §35。该面原来的"积木对账"入口已并入 `bricks`） |
 | **跨仓 / 健康** | `translate_go_ts` `go_originals` `cross_repo_symbol_index` `hybrid_precheck` `code_health`（**5**） |
-| **元 / 导航** | `explore_code` `archive_node` `list_archive` `diagnose` `canvas_notes` `gateway_provider` `read_project_docs` `capability_map` `index_integrity`（**9**） |
+| **元 / 导航** | `explore_code` `archive` `diagnose` `canvas_notes` `gateway_provider` `read_project_docs` `capability_map` `index_integrity`（**8**；★ 2026-09-29 第二批：归档族 2→1 ⇒ 9→8，见 §35） |
 
 ⇒ **68 → 6 个面**。★ 但**不许一次做完**：
 1. **先挑一个面做样板**（建议 **符号/代码** —— 它刚内化过两刀，`[B]` 最干净）
@@ -3099,3 +3103,96 @@ kernel.renameSymbols({...})
   在 lane 里是**逐段独立**的，回退成本 ≈ 再生 4 个 def 外壳；基线用各自的 `UPDATE_*` 重算。
 - **为什么仍然选了合**：桥的三件事里**入口收敛**的收益（agent 面对的入口数）与**回执编排**的收益
   （把结构化产物分组呈现）都要靠"一个面一个入口"才成立；且本笔**没有**为了合一去动任何 `[B]`。
+
+
+---
+
+## 35. ★★★ 面收敛**第二批**：砖块族 4→1、归档族 2→1（2026-09-29）
+
+### 35.1 本笔的依据（逐字，与 §34 同一句）
+> 「**把那个桥的那种收敛内化进去，内化进我们本身的项目**…你可以**将其内化到我们的 MCP 里面*…」
+
+⇒ 照 §34（第一批 `snapshot` / `rules`）的**做法、判据、交付格式**办：**只做能合的**，
+**判明不该合的要说出来并停手**（§33.5 第 3 条：一次只动一个面）。
+
+### 35.2 ★ 逐面判断"该不该合"（证据，不是按名字）
+| 面（操作对象） | 收编的注册入口 | 判 | 证据 |
+|---|---|---|---|
+| **积木盒** | 4 个（检索 / 拼装 / 瘦身 / 盒内对账） | ✅ **该合** | 四者操作**同一个对象**「积木盒 `<box_dir>/.agent-io/bricks/`」，**共用同一锚点参数 `box_dir`**，动作互补成一条价值链 **找 → 拼 → 剪 → 验**（原检索入口的 description 本来就写着"我要 X 功能 → 找到积木 → 拎取拼装"）⇒ `bricks` + `action: 'search' \| 'assemble' \| 'slim' \| 'reconcile'` |
+| **下线库** | 2 个（归档一个节点 / 列归档条目） | ✅ **该合** | 两者操作**同一个对象**「某 feature 的下线库归档条目」（`<live_dir>/.agent-io/archive/<feature>/`），**共用同一锚点参数 `feature`**，动作互补 = **写 + 读**（与第一批 `snapshot` 的 list/rollback 同型）⇒ `archive` + `action: 'node' \| 'list'` |
+| ~~**采集族**~~ | 3 个（`harvest_decisions` / `harvest_closure` / `harvest_from_url`） | ❌ **不该合（停手）** | 见下 |
+
+**采集族为什么不合并（★ 这是本笔最重要的"反面结论"，与 §32.6 的 `camera_*` 教训同型）**：
+1. **不共用锚点**：`harvest_decisions` 锚 `feature`；`harvest_closure` 锚 `project_dir` + `files`；
+   `harvest_from_url` 锚 `source`。
+2. **不共用操作对象**：决策卡候选（从 docs/git log/注释粗提）vs **import 闭包**（沿 import 边算必须连根带走的东西）
+   vs **积木盒**（编排：克隆→索引→抽契约→选积木→入盒）。
+3. **不同抽象层**：`harvest_closure` 是 `harvest_from_url` 编排链里的**一步**，
+   同时被 `dead_deps` / `detect_dead_imports` 当**库**直接调用 ⇒ 它是"能力"，不是"动作"。
+⇒ 三者只是**前缀相同**。按前缀聚类正是 §2.0 明确禁止的口径（`camera_*`：看似同对象、实为不同抽象层）。
+**判为不该合 ⇒ 本笔不动它们**（工具数里这 3 个原样保留）。
+
+### 35.3 统一入参与回执（照 §21 / §34 的口径）
+- **显式参数，不收 `args` 袋子**：`bricks` 的 21 个键、`archive` 的 6 个键都各自写明"哪个 action 用"。
+- ★ **两义键如实标注**：`bricks` 的 `name` 在 search 是"精确积木名 ⇒ 详情模式"、在 slim 是"衍生积木名"
+  ⇒ schema 的 describe 里**逐字写明"按 action 读"**（不是含糊过去）。
+- **回执结构化且走 `wrapData`**（本仓刚清扫完通道，`dropData` 只剩 3 个，**本笔没有新增**）：
+  - `bricks`：把 `[B]` 已解析好的**盒根**（`data.box_dir`）、衍生积木**落盘目录**（`data.slim_dir`）、
+    实际对账的**积木目录**（`data.brick_dir`）点进 message —— 这三个 `[B]` 的 message 都只给名字，不给路径。
+  - `archive`：把**归档条目 id**（`data.archive_id`）与**是否已从设计 DSL 移除**（`data.removed_from_dsl`）点进 message。
+- ★ **安全策略前移 = 零语义变更**（照 §34.5 的判据）：**没有**给任何 action 硬加 `dry_run`
+  （那要求改 `[B]`、或把 `[B]` 逻辑抄进 `[C]` —— 后者正是 G4 要消灭的副本），而是：
+  ① 把 `write` 的**缺省值 `true` = 默认落盘**明写进 description 与 schema；
+  ② 把 `archive(action=node)` 的**不可逆**（立即落盘、从 DSL 移除、无 `dry_run`、重复归档被拒）明写进 description；
+  ③ 在 `[C]` 入口加**前置校验**（缺 action / 缺锚点 / 缺必填项当场报错，而不是把 `undefined` 拼进路径）。
+
+### 35.4 交付与门（本笔实测，逐条原始输出见 commit message）
+- `npx tsc --noEmit` ⇒ **EXIT=0**
+- **G1**：**65 → 61**；`removed` 正好 6 条 = 两族被收编的全部旧入口，`added=[bricks, archive]`、
+  其余条目**逐字不变**（⇒ "面收敛不该动别人"有机器证据）
+- **G8**：**62 → 58** 条；逐条比对**只有** `capability_map` 变（"65 工具"→"61 工具" + 6 行旧条目 → 2 行新条目），
+  两个新入口 `{}` 调用的回执 = 缺 action 报错（`isError:true`）
+- **G11**：`dropData` **仍 3** / `unresolved` **仍 1**（两个新入口都走 `wrapData`；note 里记了本笔核验）
+- lane 无 IO ✓ · lane 来源 ✓ · G4 ✓ · G7 ✓ · P-A ✓ · `capability_map`（`WHEN_OVERRIDES` 与注册表等长）✓
+- `node scripts/readme_tools_gate.mjs --check` ⇒ **EXIT=0**（README=61 / 真实=61）
+- `node scripts/capability_scan.mjs --check` ⇒ **EXIT=0**（仅既有 info 级提示）
+- ★ `node scripts/contract_docs_gate.mjs` ⇒ **红**，且**本笔无法在不越界的前提下消除** —— 见 35.6
+
+### 35.5 ★ 没验什么（诚实清单）
+1. **没跑全量 vitest**（任务要求"全量回归由委托人统一跑"）。
+2. **没做真 MCP 端到端调用**（新入口只在 vitest 里拆 `---DATA---` 验过）。
+3. **没验 DSH 侧下游**：桥 / 预设 / 技能若硬写了 6 个旧名，本笔**未去改**（`grep` 本仓零命中）。
+4. **`bricks(action=assemble/slim/reconcile)` 的"真写"路径未在本笔新测**：那三支的既有行为测试
+   （拼装 / 瘦身 / TS 瘦身 / 盒内对账 四个测试文件）本笔**一行未改**，
+   它们仍直接调 `[B]`；新入口这一层只测到"前置校验 + 只读路径 + schema/description"。
+5. **`assembly.json` 的 `tool` 字段由"旧的组装工具名"改成 `'bricks'`**（出生证明里的**注册入口名**）：
+   全仓无读者、无断言（已 grep 证实），但这是一处**产物内容变更**，如实登记。
+6. **README 的"零提及"名单还剩 6 个**（`translate_go_ts` / `go_originals` / `index_integrity` /
+   `memory_observe` / `memory_targets` / `recommend_observe_points`）：与两面无关，本笔**没顺手补**。
+
+### 35.6 ★★ `contract_docs_gate` 的结构性假红（本笔的最大未决项）
+**现象**：`node scripts/contract_docs_gate.mjs` 报 30+ 行"改名前旧名仍残留"，且**本笔无法消除**。
+
+**根因（不是本笔的疏漏）**：被收编的 6 个旧注册入口里有 **5 个与实现模块同名**
+（即 `src/tools/<旧名>.ts` 至今仍在，且**本笔不该动它** —— 模块名不是工具名，见 §8.1 的分工：
+本仓本来就存在"模块名 ≠ 工具名"的正常先例，如 `get_dsl` 的实现住在 `query_feature.ts`）。
+该门对 `src/**`+`tests/**` 的 `.ts/.tsx` 用 **AST 的 `string_fragment` + `comment`** 判"提及" ⇒
+**import 说明符**（`'../../tools/<旧名>.js'`）、**模块头注释**、`derive_feature_tree` 的**文件名清单**、
+**以模块名命名的测试文件与 describe 标题** 全部命中，而这些都是**正确的**。
+
+**为什么本仓现在才遇到**：第一批的两个旧名**没有同名模块**
+⇒ 改名后残留自然归零。本笔是**第一次**碰到"工具名 = 模块名"的族。
+
+**本笔已做的（合法范围内能做的全部）**：新测试文件里**不写旧名**（改用 G1 基线的 `removed` 差集作机器证据）、
+把 `docs/observe-line-triage.md` 的工具映射表与验收演示里的**工具引用**改成新入口、
+§32.6/§33.5/本 §35 **只写新名**（照 §34.2 的纪律：台账是可同步文本，写旧名会被判残留）；
+⇒ 剩余命中**全部**是"模块身份"（import 路径 / 模块头 / 文件名清单 / 模块名测试文件），一条不剩地归因为此。
+
+**两个选项（本笔不擅自选，须委托人定）**：
+- **(a) 另起一笔改门**：给该门加一条**窄豁免** —— 若 `<旧名>` 仍是**存在**的实现模块（`src/tools/<旧名>.ts`），
+  则对该名字只扫**文档 + 工具定义文件**，不扫其它 `src/tests` 代码文件（因为那里无法区分"残留"与"模块路径"）。
+  这与该门自述的"低误报优先"一致，且不放松任何**真**残留（真残留主要落在 docs/README/AGENTS）。
+- **(b) 连实现模块一起改名**：**越出本笔边界**（任务明确"禁止碰 `src/tools/**` 的实现逻辑"），
+  且会牵动 import 面 + `derive_feature_tree` 的文件名清单 + `_dogfood` 的文件清单 + 可能的脚本
+  ⇒ **不建议在本笔做**（"一次动太多无法定位回退"，§33.5 第 3 条）。
+- 在 (a) 落地前，**CI 的这一步会红**；本笔的 commit 按该门自述的逃生口（`--no-verify`）交付并**逐条归因**（不是静默绕过）。

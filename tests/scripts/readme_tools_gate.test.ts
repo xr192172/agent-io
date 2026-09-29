@@ -64,6 +64,6 @@ describe('readme_tools_gate', () => {
     const readme = readFileSync(path.join(repoRoot, 'README.md'), 'utf-8');
     const r = analyzeReadmeTools(regSrc, readme);
     expect(r.changed).toBe(false); // README 数字已与注册表一致，防回归漂移
-    expect(r.actual).toBe(65); // 与 G1 工具集快照、capability_map 同口径（2026-09-29 面收敛样板：快照族 2→1、规则族 3→1 ⇒ 68 → 65）
+    expect(r.actual).toBe(61); // 与 G1 工具集快照、capability_map 同口径（2026-09-29 面收敛第二批：砖块族 4→1、归档族 2→1 ⇒ 65 → 61）
   });
 });

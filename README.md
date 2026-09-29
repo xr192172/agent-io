@@ -43,8 +43,8 @@ DSL 双层结构是两者的共同根基：
 | ----------------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | **可视化协议层**        | DSL 读写编辑、设计视图与实际代码快照对比、内置渲染兜底                  | `get_dsl` / `edit_dsl` / `manage_feature` / `render_design` / `diff_views`                                        |
 | **代码理解**          | 工程导入、语义搜索、影响分析、架构分层、单体拆分、算法/数据流推导              | `import_project` / `explore_code`                                                                                 |
-| **代码积木体系**        | 从任意来源（URL / 本地工程）收割代码为带契约的积木，支持切块、抽契约、瘦身、搜索与拼装 | `harvest_from_url` / `harvest_closure` / `extract_contracts` / `slim_brick` / `search_bricks` / `assemble_bricks` |
-| **运行时验证**         | 以实际运行观测对账契约与行为基线，形成「验证通过才提交，失败回滚」的防线           | `observe_instrument` / `observe_judge` / `reconcile_chain` / `reconcile_brick` / `reconcile_effects`              |
+| **代码积木体系**        | 从任意来源（URL / 本地工程）收割代码为带契约的积木，支持切块、抽契约、瘦身、搜索与拼装 | `harvest_from_url` / `harvest_closure` / `extract_contracts` / `bricks`                                           |
+| **运行时验证**         | 以实际运行观测对账契约与行为基线，形成「验证通过才提交，失败回滚」的防线           | `observe_instrument` / `observe_judge` / `reconcile_chain` / `reconcile_effects`                                  |
 | **生成 / 回填 / 一致性** | 从 DSL 生成代码骨架，解析实现回填契约，输出一致性报告                  | `scaffold` / `backfill_scaffold` / `consistency_check`                                                            |
 | **确定性改造（防返工）**    | 符号级代码编辑（绝不匹配错）、批量/跨文件重命名、死代码清理、改前 diff 审批、失败回滚 | `edit_code` / `rename_*` / `refactor_pipeline`                                                                    |
 | **诊断闭环**          | 症状 → 根因 → 修复 → 验证 → 提交（或回退）的完整链路               | `diagnose` / `refactor_judge` / `diagnose-loop`(CLI)                                                              |
@@ -105,7 +105,7 @@ npm run demo -- --prepare   # 只准备示例（构建+渲染+注册），不起
 
 ## MCP 工具参考
 
-共注册 **65 个 MCP 工具**，按「主工具 + 专项工具」组织：主工具承担统一入口，专项工具各司其职。
+共注册 **61 个 MCP 工具**，按「主工具 + 专项工具」组织：主工具承担统一入口，专项工具各司其职。
 
 ### 能力导航（1 个）
 
@@ -162,18 +162,15 @@ npm run demo -- --prepare   # 只准备示例（构建+渲染+注册），不起
 
 **积木体系**
 
-| 工具                  | 用途                              |
-| ------------------- | ------------------------------- |
-| `harvest_closure`   | 连同传递 import 闭包收割积木              |
-| `harvest_from_url`  | 从 git URL / 本地项目收割积木入箱          |
-| `extract_contracts` | 抽取积木契约（role / shapes / effects） |
-| `reconcile_effects` | 用运行时观测对账 effect 候选              |
-| `reconcile_brick`   | 用运行时观测对账积木契约                    |
-| `search_bricks`     | 搜索积木架（跨项目复用目录）                  |
-| `assemble_bricks`   | 用箱装积木拼装新项目                      |
-| `slim_brick`        | 将 Go 积木瘦身为派生积木（编译器式死码剪枝）        |
-| `narrate_step`      | 将流水线步骤叙述为受治理的叙述积木               |
-| `harvest_decisions` | 从项目记录反向采集设计决策                   |
+| 工具                  | 用途                                                              |
+| ------------------- | --------------------------------------------------------------- |
+| `harvest_closure`   | 连同传递 import 闭包收割积木                                              |
+| `harvest_from_url`  | 从 git URL / 本地项目收割积木入箱                                          |
+| `extract_contracts` | 抽取积木契约（role / shapes / effects）                                 |
+| `reconcile_effects` | 用运行时观测对账 effect 候选                                              |
+| `bricks`            | 积木盒统一入口（search=检索/浏览盒内积木·只读 / assemble=拼装进新目录·写 / slim=剪成衍生积木回盒·写 / reconcile=用 observe 事件对账盒内契约·写） |
+| `narrate_step`      | 将流水线步骤叙述为受治理的叙述积木                                               |
+| `harvest_decisions` | 从项目记录反向采集设计决策                                                   |
 
 **运行时验证（Observe）**
 
@@ -236,12 +233,11 @@ npm run demo -- --prepare   # 只准备示例（构建+渲染+注册），不起
 
 **画布批注**
 
-| 工具               | 用途                                                |
-| ---------------- | ------------------------------------------------- |
-| `canvas_notes`   | 画布批注统一入口（read=读成语义工单 / mark=更新状态 / decide=LLM 决策） |
-| `archive_node`   | 归档 DSL 节点（快照）                                     |
-| `list_archive`   | 列出归档节点                                            |
-| `sync_contracts` | 以 server\_registry schema 为源，回填 DSL 契约            |
+| 工具               | 用途                                                                 |
+| ---------------- | ------------------------------------------------------------------ |
+| `canvas_notes`   | 画布批注统一入口（read=读成语义工单 / mark=更新状态 / decide=LLM 决策）                 |
+| `archive`        | 下线库统一入口（node=把文件下线归档·写且不可逆 / list=列出已归档条目·只读）                      |
+| `sync_contracts` | 以 server\_registry schema 为源，回填 DSL 契约                            |
 
 **LLM 网关**
 

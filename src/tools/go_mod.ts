@@ -4,7 +4,7 @@
  * 版本事实单一来源纪律（"LLM 不产生事实"在依赖版本上的落点）：
  *   版本不猜、不查网、不升版——唯一来源是**源项目 go.mod 的 require 块**。
  *   入盒时存档（manifest.go_mod_requires，harvest_from_url），
- *   拼装时原样复用（assemble_bricks 自动生成 require）；
+ *   拼装时原样复用（bricks(action=assemble) 自动生成 require）；
  *   存档缺项 → 进 pending 清单待人/LLM 补（decline rather than guess）。
  *
  * 诚实边界：

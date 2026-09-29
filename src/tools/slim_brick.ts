@@ -325,7 +325,7 @@ export async function slimBrick(input: SlimBrickInput): Promise<SlimBrickResult>
   const brickDir = path.join(boxDir, input.brick_name);
   const manifestPath = path.join(brickDir, 'manifest.json');
   if (!fs.existsSync(manifestPath)) {
-    throw new Error(`积木不存在：${manifestPath}（search_bricks 可查盒内清单）`);
+    throw new Error(`积木不存在：${manifestPath}（bricks(action=search) 可查盒内清单）`);
   }
   let manifest: BrickManifest;
   try {
@@ -351,7 +351,7 @@ export async function slimBrick(input: SlimBrickInput): Promise<SlimBrickResult>
   const slimName = input.name ?? `${input.brick_name}-slim`;
   const slimDir = path.join(boxDir, slimName);
   if (fs.existsSync(slimDir)) {
-    throw new Error(`衍生积木已存在：${slimDir}（机器产物可重生成：删除该目录后重跑 slim_brick）`);
+    throw new Error(`衍生积木已存在：${slimDir}（机器产物可重生成：删除该目录后重跑 bricks(action=slim)）`);
   }
   const write = input.write !== false;
   if (diskTsFiles.length > 0) {

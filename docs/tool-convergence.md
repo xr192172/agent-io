@@ -507,6 +507,64 @@
 > 且刻意**只动 [C]（lane）与文档/测试**，不碰 `src/tools/**` 的实现逻辑 —— 样板要能证明
 > "面收敛本身不需要改实现"。两笔合起来才对应桥的三件事（入口收敛 / 回执编排 / 安全策略前移）。
 
+#### 面收敛**第二批**：积木盒族 4→1、下线库族 2→1（2026-09-29，样板照 §34 办）
+
+- [x] 候选组：**积木盒**四品（检索 / 拼装 / 瘦身 / 盒内对账）⇒ 单入口 `bricks`（action=`search` / `assemble` / `slim` / `reconcile`）
+  - 核验：读源实现 ✓ / 对契约 ✓ / 找调用方 ✓ / 查测试 ✓ / 回归+插桩 ✓
+
+  - **是不是"同一操作对象"（§2.0 的判据）**：是。四者操作的是**同一个对象**「积木盒」
+    （`<box_dir>/.agent-io/bricks/`，默认 `getStorageRoot()/bricks`），**共用同一锚点参数 `box_dir`**，
+    动作互补成一条价值链 **找 → 拼 → 剪 → 验** —— 且原检索入口的 description 本来就写着
+    "我要 X 功能 → 找到积木 → 拎取拼装"这条链。**不属** `camera_*` 那类反面教训。
+
+  - 发现：四个 `[B]` 的 `box_dir` 解析**代码各异**（三处 `path.resolve(input.box_dir ?? join(getStorageRoot(),'bricks'))`、
+    一处带显式 `??` 分支），但**默认值逐字相同** ⇒ 值等价，**无需改任何 `[B]`**（面收敛不改实现）。
+    ★ 另一处**只在报告里记、本笔不动**：四个入口都没有"缺参前置校验"，
+    `assemble` 缺 `target_dir` 时 `[B]` 会抛 `path.resolve(undefined)` 的底层 TypeError（不是给人看的错误）。
+
+  - 处理：**合并**为单入口 `bricks`（显式参数、无 args 袋子；21 个键各自写明"哪个 action 用"）；
+    ★ 两义键如实标注（`name` 在 search = 精确积木名 / 在 slim = 衍生积木名，describe 里写"按 action 读"）；
+    **[C] 加前置校验**（缺/非法 action、`assemble` 缺 `bricks` 或空数组、缺 `target_dir`、`slim` 缺 `brick_name` 当场报错）；
+    回执走 `wrapData` 并把 `[B]` **没给路径的三个产物**（盒根 / 衍生积木落盘目录 / 实际对账的积木目录）点进 message；
+    ★ 安全策略前移**零语义变更**：`write` 缺省 `true = 默认落盘`（与旧入口逐字同）**明写进 description + schema**，
+    **没有**硬加 `dry_run`（那要改 `[B]` 或把 `[B]` 逻辑抄进 `[C]` = G4 要消灭的副本）。
+
+  - 结果：对外工具数 **本面 4 → 1**；G1 `removed` 4 条 / `added=[bricks]`、其余条目**逐字不变**；
+    G8 同步重算；新增 `tests/tools/bricks_tool.test.ts`（7 项）。
+
+- [x] 候选组：**下线库**两品（归档一个节点 / 列归档条目）⇒ 单入口 `archive`（action=`node` / `list`）
+  - 核验：读源实现 ✓ / 对契约 ✓ / 找调用方 ✓ / 查测试 ✓ / 回归+插桩 ✓
+
+  - **是不是"同一操作对象"**：是。两者操作的是**同一个对象**「某 feature 的下线库归档条目」
+    （`<live_dir>/.agent-io/archive/<feature>/`），**共用同一锚点参数 `feature`**，动作互补 = **写 + 读**
+    —— 与第一批的 `snapshot`（list / rollback）**同型**。
+
+  - 发现：旧的两个入口对**缺 `feature`** 都不校验 ⇒ 一路走到 `getDSL(undefined)` 才失败；
+    归档的 `[B]` 自己有"重复归档防御"与"文件必须存在"两条防线（**原样保留**）。
+
+  - 处理：**合并**为单入口 `archive`（`{action, feature, file_path?, retire_reason?, merged_into?, live_dir?}`）；
+    **[C] 加前置校验**（缺 action / 缺 feature / node 缺 file_path|retire_reason 当场报错）；
+    回执走 `wrapData` 并点出 `data.archive_id` 与 `data.removed_from_dsl`；
+    ★ 安全策略前移**零语义变更**：把 `node` 的**不可逆**（立即落盘 + 从 DSL 移除 + 无 `dry_run` + 重复归档被拒）
+    明写进 description —— **没有**加预览（理由同上，且回滚/归档的 `dry_run` 属 `[B]` 语义）。
+
+  - 结果：对外工具数 **本面 2 → 1**（两族合计 **65 → 61**）；G1 `removed` 2 条 / `added=[archive]`；
+    新增 `tests/tools/archive_tool.test.ts`（8 项，含"node⇒list 是一条链"）。
+
+- [x] 候选组：**采集族**（`harvest_decisions` / `harvest_closure` / `harvest_from_url`）⇒ **判为不该合，停手**
+  - 核验：读源实现 ✓ / 对契约 ✓ / 找调用方 ✓
+
+  - 发现：**不共用锚点**（`feature` vs `project_dir`+`files` vs `source`）、**不共用操作对象**
+    （决策卡候选 vs import 闭包 vs 积木盒）、**不同抽象层**（`harvest_closure` 是 `harvest_from_url` 编排链的**一步**，
+    同时被 `dead_deps` / `detect_dead_imports` 当**库**调用）⇒ 只是**前缀相同**。
+
+  - 处理：**不合并**（按前缀聚类正是 §2.0 明确禁止的口径；与 §32.6 的 `camera_*` 教训同型）。
+    三者原样保留，本笔一行未动。判据与证据同时写进规划书 §35.2。
+
+> **第二批小结**：本笔是第一批样板的**照办**（"一次只动一个面"），并额外产出一条**反面结论**
+> —— 采集族**不该合**（§35.2）。★ 另一条未决项：`scripts/contract_docs_gate.mjs` 对
+> "工具名 = 实现模块名"的族产生**结构性假红**（本仓首次遇到），处置见规划书 §35.6。
+
 ***
 
 ## 8. P-G 实测登记：`explore_code(action='read')` 是不是稳定的读文件入口（2026-09-28）

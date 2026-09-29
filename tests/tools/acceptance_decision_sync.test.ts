@@ -6,7 +6,7 @@
  *   2. 锚定基线（import_project 首次导入的 fork 语义）
  *   3. 实现改动（模拟实现侧动了代码）
  *   4. 跑 diffViews——看决策卡依据（基线卡/设计卡/符号卡）如何作为裁决一手资料
- *   5. 下线归档（archive_node）——孤立节点进下线库
+ *   5. 下线归档（`archive` action=node）——孤立节点进下线库
  *
  * 运行：npx vitest run tests/tools/acceptance_decision_sync.test.ts
  * 验收方式：看 console 输出的完整 diff 消息。
@@ -197,7 +197,7 @@ describe('验收：决策卡进同步（增量功能端到端）', () => {
     expect(target.lifecycle?.merged_from).toContain('src/tools/diff_views.ts');
 
     // 6. 下线库可查（历史研究材料）
-    console.log('\n────── 7. 下线库（list_archive）──────');
+    console.log('\n────── 7. 下线库（`archive` action=list）──────');
     console.log(listArchive({ feature }).message);
     expect(listArchiveEntries(feature)).toHaveLength(1);
   });

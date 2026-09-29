@@ -217,8 +217,8 @@ export interface BrickManifest {
     live_type_names?: string[];
   };
   /**
-   * -slim 衍生积木溯源（slim_brick 产出，Phase 6）。
-   * 原积木永不覆盖；衍生积木是机器产物，可随时重生成（删除后重跑 slim_brick）。
+   * -slim 衍生积木溯源（bricks(action=slim) 产出，Phase 6）。
+   * 原积木永不覆盖；衍生积木是机器产物，可随时重生成（删除后重跑 bricks(action=slim)）。
    */
   derived_from?: {
     brick: string;
@@ -232,7 +232,7 @@ export interface BrickManifest {
     deps_before: string[];
     deps_after: string[];
   };
-  /** 瘦身验证档案（四层验证渐进填充：build=slim_brick --verify_build；源测试/observe/效果验收后续）。
+  /** 瘦身验证档案（四层验证渐进填充：build=bricks(action=slim) --verify_build；源测试/observe/效果验收后续）。
    *  skipped = TS 贫困编译降级（typescript 包不可用/无源文件）——工具链缺席不是产物失败 */
   slim_verification?: {
     build?: { status: 'pass' | 'fail' | 'skipped'; at: string; detail?: string };

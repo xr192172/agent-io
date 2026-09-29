@@ -1,20 +1,30 @@
 /**
- * meta 线（9 个工具）—— ★ **本文件即该线归属的唯一来源**。
+ * meta 线（8 个工具）—— ★ **本文件即该线归属的唯一来源**。
  *
  * ★ P1b（2026-09-28）：按当时 `capability_map.LANE_OF` 的归属从 `TOOL_DEFS` 切分而来，
  *   条目**逐字搬移**，只加了 `export const META_TOOLS` 外壳 —— 归属自此由文件路径表达。
  * ★ P1c（2026-09-28）：`capability_map.LANE_OF` 已删除。`server_registry` 的 `LANE_SOURCES` 把本文件
  *   接到线 id `'meta'`，并派生「工具 → 线」归属表注入 capability_map。
  *   ⇒ **把工具挪出本线 = 把它从本数组移到另一条线的数组，一处改动**（不再有第二处要同步）。
+ * ★ 2026-09-29（面收敛**第二批**）：本线 9 → 8 —— 「下线库」两品（归档 / 列条目）收编为单入口
+ *   `archive`（action=node/list）。两者操作的是**同一个对象**「下线库」（同一 feature 的归档条目，
+ *   住在 `<live_dir>/.agent-io/archive/<feature>/`），共用同一锚点 `feature`，动作互补 = 写 + 读
+ *   ⇒ 按 `docs/tool-convergence.md` §2.0「按操作对象聚合」口径合一（与 `snapshot` 的 list/rollback 同型）。
+ *   ★ 同笔**逐项判断后不动**的邻居（不是漏）：`explore_code`（已是 11-action 聚合体）、
+ *   `canvas_notes`（read/mark/decide 已聚合）、`gateway_provider`（list/upsert/delete/stats 已聚合）
+ *   —— 三者都已是 §2.0 的"已落地样板"；`diagnose`（症状→根因，独一对象）、`read_project_docs`（项目文档）、
+ *   `capability_map`（导航）、`index_integrity`（索引自检）各自操作对象不同，**判不明/不该合 ⇒ 留着**
+ *   （理由逐条见 commit message）。
  *
  * 为什么能切了：依赖已先行抽到 `registry/{types,plumbing,handlers}.ts`（P1a）——
  *   否则本文件 import 它们就会成环（server_registry → lanes → server_registry）。
  */
 import { z } from 'zod';
-import { wrap, wrapData } from '../plumbing.js';
+import { requireStr, wrapData } from '../plumbing.js';
 import type { DiagnoseInput } from '../../diagnosis/contract.js';
 import { formatDiagnoseText, runDiagnosis } from '../../diagnosis/diagnose.js';
 import { getDSL, saveDSL } from '../../storage.js';
+import { archiveNode, listArchive } from '../../tools/archive_node.js';
 import { LANE_IDS, makeCapabilityMapHandler } from '../../tools/capability_map.js';
 import type { LaneId } from '../../tools/capability_map.js';
 import { markCanvasNotesStatus, renderCanvasNotesDigest, resolveCanvasNoteTargets } from '../../tools/derive_mind_map.js';
@@ -24,7 +34,7 @@ import { indexIntegrity, renderIntegrity } from '../../tools/index_integrity.js'
 import { decideCanvasNotes } from '../../tools/llm_decider.js';
 import { buildDocsPromptBlock, listProjectDocs, matchDocsForTargets, readProjectDoc } from '../../tools/project_docs.js';
 import type { DocTargetSet } from '../../tools/project_docs.js';
-import { archiveNodeHandler, exploreCodeHandler, listArchiveHandler } from '../handlers.js';
+import { exploreCodeHandler } from '../handlers.js';
 import type { ToolDef } from '../types.js';
 
 
@@ -83,34 +93,62 @@ export const META_TOOLS: ToolDef[] = [
   },
 
   {
-    name: 'archive_node',
-    title: 'Archive a retiring node to the offline library',
+    name: 'archive',
+    title: 'Retired-node library: archive a node / list archived entries — single entry',
     description:
-      '节点下线：把要下线的文件/节点孤立到下线库（archive），存档完整 DSL 快照（含决策卡）+ 为什么下线，' +
-      '作为历史研究材料，并从设计 DSL 移除（不再参与周边联系）。' +
+      '「下线库」统一入口（**2 个注册入口收敛为 1 个入口 + action 分派**；两者操作的是**同一个对象**' +
+      '「某 feature 的下线库归档条目」（条目住在 `<live_dir>/.agent-io/archive/<feature>/`），' +
+      '共用同一锚点参数 feature，动作互补 = 写 + 读）。' +
+      'action=node（**写，且不可逆**）节点下线：把要下线的文件/节点孤立到下线库，存档完整 DSL 快照（含决策卡）' +
+      '+ 为什么下线，作为历史研究材料，并从设计 DSL 移除（不再参与周边联系）。' +
       '"下线=两个文件合并"时传 merged_into 指向合并目标，目标文件 lifecycle.merged_from 记录来源，' +
       'diff 时 LLM 可据归档卡 + diff 增量做决策合并（不做自动合并，决策是语义的）。' +
-      '适用：删掉废弃模块、合并重复文件、结构重构后的清理。',
+      'action=list（**只读**）列出某 feature 的下线库归档条目：每个条目含被下线文件、下线原因、合并去向、归档时间。' +
+      '★ 安全策略前移（**默认值与不可逆事实明写在这里**，不是隐藏知识）：action=node **立即落盘**' +
+      '（归档条目写盘 + 从设计 DSL 移除并 saveDSL），**没有 dry_run 预览**；' +
+      '同一文件**重复归档会被拒绝**（"已归档过，勿重复归档"）；设计 DSL 里不存在的文件也会被拒。' +
+      '⇒ 调用前请确认该文件确实要下线；只在需要"以前为什么这么设计、为什么下线"的历史依据时用 action=list。' +
+      '适用：删掉废弃模块、合并重复文件、结构重构后的清理（list 用于这类决策前的历史查证）。',
     inputSchema: {
-      feature: z.string().describe('feature 名'),
-      file_path: z.string().describe('要下线的文件相对路径'),
-      retire_reason: z.string().describe('为什么下线（必填，作为历史研究材料）'),
-      merged_into: z.string().optional().describe('若下线是合并（两文件合一），填合并目标文件路径'),
+      action: z.enum(['node', 'list']).describe('node=把文件下线归档（写，不可逆，立即落盘） | list=列出已归档条目（只读）'),
+      feature: z.string().describe('feature 名（2 个 action 共用锚点）'),
+      file_path: z.string().optional().describe('node 用：要下线的文件相对路径'),
+      retire_reason: z.string().optional().describe('node 用：为什么下线（必填，作为历史研究材料）'),
+      merged_into: z.string().optional().describe('node 用：若下线是合并（两文件合一），填合并目标文件路径'),
+      live_dir: z.string().optional().describe('list 用：live/base 视图的 baseDir（可选，默认 dataHome）'),
     },
-    handler: archiveNodeHandler,
-  },
+    handler: wrapData(async (a) => {
+      const action = a.action as 'node' | 'list' | undefined;
+      // ★ 前置校验（安全策略前移）：入口先判，缺 action / 缺 feature 当场报错
+      //   （旧入口由 [B] 兜：归档 [B] 抛的是"需要 file_path 与 retire_reason"，
+      //    对缺 feature 的调用则一路走到 getDSL(undefined) 才失败 —— 不是给人看的一层）。
+      if (action !== 'node' && action !== 'list') {
+        throw new Error('缺参数或非法 "action"（可选值：node / list）');
+      }
+      const feature = requireStr(a, 'feature');
 
-  {
-    name: 'list_archive',
-    title: 'List archived (retired) nodes',
-    description:
-      '列出某 feature 的下线库归档条目（历史研究材料）：每个条目含被下线文件、下线原因、合并去向、归档时间。' +
-      'LLM 在做结构重构/删除决策前，可先查历史归档了解"以前为什么这么设计、为什么下线"。',
-    inputSchema: {
-      feature: z.string().describe('feature 名'),
-      live_dir: z.string().optional().describe('live/base 视图的 baseDir（可选，默认 dataHome）'),
-    },
-    handler: listArchiveHandler,
+      if (action === 'list') {
+        const r = listArchive({
+          feature,
+          ...(typeof a.live_dir === 'string' && a.live_dir ? { live_dir: a.live_dir } : {}),
+        });
+        // ★ 回执编排：message 已含"共 N 条归档"逐条清单（文件/原因/合并去向/时间），不再重复。
+        return { message: r.message, data: r };
+      }
+
+      // node：不可逆写。两个必填项在 [C] 先判（[B] 的报错沿用，但直白的一层放这里）。
+      const file_path = requireStr(a, 'file_path');
+      const retire_reason = requireStr(a, 'retire_reason');
+      const r = archiveNode({
+        feature,
+        file_path,
+        retire_reason,
+        ...(typeof a.merged_into === 'string' && a.merged_into ? { merged_into: a.merged_into } : {}),
+      });
+      // ★ 回执编排：把 [B] 的结构化产物点出来 —— 归档条目 id（data.archive_id）与
+      //   "是否已从设计 DSL 移除"（data.removed_from_dsl）都是 agent 后续要引用的机器可读事实。
+      return { message: `${r.message}\n  归档条目：${r.archive_id}（已从设计 DSL 移除：${r.removed_from_dsl}）`, data: r };
+    }),
   },
 
   {

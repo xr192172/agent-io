@@ -468,7 +468,7 @@ export function resolveImport(
 // 积木折叠（拼装区黑盒化）：assembly.json 出生证明 → DSL 单符号节点
 // ─────────────────────────────────────────────────────────────
 
-/** assembly.json 出生证明里的积木条目（assemble_bricks 写入的契约投影） */
+/** assembly.json 出生证明里的积木条目（bricks(action=assemble) 写入的契约投影） */
 export interface BrickFoldInfo {
   name: string;
   /** 拼装区内落位根（恒带尾斜杠，如 'go_logging/'） */
@@ -1092,7 +1092,7 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
   }
 
   // ── 积木折叠（拼装区黑盒化）──
-  // 拼装区根的 assembly.json（assemble_bricks 出生证明）记录每个积木的
+  // 拼装区根的 assembly.json（bricks(action=assemble) 出生证明）记录每个积木的
   // dest_root 与契约投影（description/aggregate）。据此把积木折叠成 DSL
   // 单符号节点：内部文件不进 geometry/semantic——LLM 检索 DSL 不再看
   // 已治理功能的内部细节（减少检索负担），接口事实只读契约投影；

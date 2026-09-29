@@ -205,7 +205,7 @@ function hasTsFiles(internal: string[]): boolean {
 
 export async function assembleBricks(input: AssembleBricksInput): Promise<AssembleBricksResult> {
   if (!input.bricks?.length) {
-    throw new Error('bricks 不能为空：至少指定一个积木名（search_bricks 可查盒内清单）');
+    throw new Error('bricks 不能为空：至少指定一个积木名（bricks(action=search) 可查盒内清单）');
   }
   // 盒根默认与 harvest_from_url / slim_brick 同源（getStorageRoot）：曾用
   // <cwd>/.agent-io/bricks，测试环境（AGENT_IO_HOME 重定向）下
@@ -471,7 +471,8 @@ export async function assembleBricks(input: AssembleBricksInput): Promise<Assemb
   if (write) {
     const assembly = {
       assembled_at: new Date().toISOString(),
-      tool: 'assemble_bricks',
+      // 出生证明：记录**注册入口名**（2026-09-29 面收敛后该动作的入口是 `bricks` action=assemble）
+      tool: 'bricks',
       module: input.module,
       bricks: reports.map((r) => ({
         name: r.name,

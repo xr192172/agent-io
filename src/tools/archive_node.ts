@@ -47,7 +47,7 @@ export interface ArchiveNodeResult {
 export function archiveNode(input: ArchiveNodeInput): ArchiveNodeResult {
   const { feature, file_path, retire_reason, merged_into } = input;
   if (!file_path || !retire_reason?.trim()) {
-    throw new Error('archive_node 需要 file_path 与 retire_reason（为什么下线，必填）');
+    throw new Error('archive(action=node) 需要 file_path 与 retire_reason（为什么下线，必填）');
   }
 
   const dsl = getDSL(feature);

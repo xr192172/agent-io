@@ -64,7 +64,7 @@ const server = new McpServer(
       '\n\n增量模式让你逐步完善设计，避免每次重写整个 JSON。所有修改自动保存到 .agent-io/features/。' +
       '\n\n能力不止于设计层，本 MCP 还提供：代码理解与索引（import_project / explore_code / find_references）、' +
       '确定性改造与重构（edit_code / rename_symbols / rename_files / remove_dead_imports / refactor_pipeline / diff_views）、' +
-      '代码积木收割与质检（harvest_* / extract_contracts / slim_brick / search_bricks / assemble_bricks）、' +
+      '代码积木收割与质检（harvest_* / extract_contracts / bricks）、' +
       '运行时观测与契约对账（observe_instrument / observe_judge / observe_log / reconcile_*）、' +
       '影响分析与诊断闭环（impact_analysis / diagnose / refactor_judge / code_health）。完整分组见 README「核心能力」表。' +
       '\n\n## 能力导航（capability_map）' +

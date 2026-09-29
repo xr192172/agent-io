@@ -25,7 +25,7 @@
  *   `{message, feature}`，压根没有 data）、`render_design` / `observe_judge`（data 与 message 逐字重复）。
  */
 import { z } from 'zod';
-import { wrapData } from '../plumbing.js';
+import { requireStr, wrapData } from '../plumbing.js';
 import path from 'node:path';
 import { analyzeHubs, analyzeImpact } from '../../impact/index.js';
 import type { ImpactChangePoint } from '../../impact/index.js';
@@ -55,12 +55,9 @@ import type { RefactorTarget, RefactorPlan } from '../../tools/refactor_plan.js'
 import { diffViewsHandler } from '../handlers.js';
 import type { ToolDef } from '../types.js';
 
-/** [C] 层入参守卫：缺必填字符串 **明确报错**（绝不把 `undefined` 拼进路径 —— 规划书 §16.4 P-D） */
-function requireStr(a: Record<string, unknown>, key: string): string {
-  const v = a[key];
-  if (typeof v !== 'string' || v.trim() === '') throw new Error(`缺参数 "${key}"`);
-  return v;
-}
+// ★ 2026-09-29（面收敛第二批）：本文件原先自带一个**私有** `requireStr` 守卫，本笔把它上提到
+//   `registry/plumbing.ts`（跨 lane 共用）—— 因为 `lanes/harvest.ts` 的新入口 `bricks` 也要用它，
+//   留在原地等于长出第二份副本（G4 要消灭的形态）。函数体与错误文案**逐字未改**。
 
 /** `plan_refactor` 产出的清单形状（`apply_refactor_plan` 的入参 schema —— 逐字接受上一环的 data） */
 const refactorPlanSchema = z.object({
