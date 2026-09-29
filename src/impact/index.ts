@@ -22,6 +22,7 @@
 
 import path from 'node:path';
 import { parseFileFull, listSupportedExtensions, resolveImportPath, type ParsedSymbol } from '../tools/ts_kernel/index.js';
+import { codeSourceExts, partitionByCodeLang } from '../tools/ts_kernel/source_exts.js';
 import { collectSourceFiles } from '../version_upgrade/detect.js';
 
 // ── 对外类型 ─────────────────────────────────────────────────
@@ -68,6 +69,11 @@ export interface ImpactReport {
   high_risk: number;
   /** 符号级消费方解析失败，发生保守整闭包降级 */
   fell_back: boolean;
+  /**
+   * 「口径收紧的可见性」（2026-09-29）：可解析但**不算源码**、因而不在图里的扩展名 → 文件数。
+   * ★ 只在非空时出现（同 `HealthReport.excludedNonCode`：没有可说的就不说）。
+   */
+  excludedNonCode?: Array<{ ext: string; count: number }>;
 }
 
 export interface HubFile {
@@ -96,6 +102,11 @@ interface GraphResult {
   reverse: Map<string, Set<string>>;
   /** 顶层导出符号名 → (文件, 符号) */
   nameIndex: Map<string, Array<{ rel: string; sym: ParsedSymbol }>>;
+  /**
+   * 「口径收紧的可见性」（2026-09-29）：可解析但**不算源码**的扩展名 → 文件数（空 = 无）。
+   * 见 `health/index.ts` 的 `HealthReport.excludedNonCode`（同一口径、同一理由）。
+   */
+  excludedNonCode: Array<{ ext: string; count: number }>;
 }
 
 const TYPE_KINDS = new Set<ParsedSymbol['kind']>(['interface', 'type', 'class']);
@@ -142,8 +153,13 @@ function resolveImportTarget(fromRel: string, source: string, rels: Set<string>,
 
 /** 解析并建立全项目依赖图（供影响面 / 风险热区复用） */
 export async function buildImpactGraph(root: string): Promise<GraphResult> {
-  const exts = listSupportedExtensions();
-  const files = collectSourceFiles(root, exts);
+  // ★ 2026-09-29 同 `health`：源码集 = 「**可解析 ∩ 代码语言**」，而不是 `listSupportedExtensions()`
+  //   （那是"我装了哪些语言包"）。差集里有 `.json` —— 它真能被 tree-sitter-json 载入，
+  //   于是 `package.json` 曾被当源码收进依赖图（夹具 fileCount 4 ≠ 3 的来源）。
+  //   权威 = 内核 `source_exts.ts` 的「代码语言」一节；一次走查再分拣，非代码只进可见性统计。
+  const parseable = listSupportedExtensions();
+  const exts = codeSourceExts(parseable);
+  const { code: files, nonCodeExts } = partitionByCodeLang(collectSourceFiles(root, parseable));
   const rels = new Set(files.map((f) => f.rel));
 
   const parses = await Promise.all(
@@ -275,7 +291,7 @@ export async function buildImpactGraph(root: string): Promise<GraphResult> {
     }
   }
 
-  return { rels, edges, reverse, nameIndex };
+  return { rels, edges, reverse, nameIndex, excludedNonCode: nonCodeExts };
 }
 
 function riskLevel(depth: number, depCount: number): ImpactedFile['risk'] {
@@ -376,6 +392,8 @@ export function computeImpact(
     direct: files.filter((f) => f.depth <= 1).length,
     high_risk: files.filter((f) => f.risk === 'high').length,
     fell_back,
+    // ★ 只在非空时出现（理由见 ImpactReport.excludedNonCode）
+    ...(graph.excludedNonCode.length > 0 ? { excludedNonCode: graph.excludedNonCode } : {}),
   };
 }
 

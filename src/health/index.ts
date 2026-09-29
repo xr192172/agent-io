@@ -30,6 +30,7 @@
  */
 
 import { parseFileFull, parseAstRoot, listSupportedExtensions, resolveImportPath, type ParsedSymbol, type SyntaxNodeLike } from '../tools/ts_kernel/index.js';
+import { codeSourceExts, partitionByCodeLang } from '../tools/ts_kernel/source_exts.js';
 import { collectSourceFiles } from '../version_upgrade/detect.js';
 
 // ── 对外类型 ─────────────────────────────────────────────────
@@ -85,6 +86,17 @@ export interface HealthReport {
   score: number;
   grade: 'A' | 'B' | 'C' | 'D' | 'N/A';
   summary: string;
+  /**
+   * 「口径收紧的可见性」（2026-09-29）：**装了/可解析、但按「代码语言」不算源码**的扩展名 → 文件数
+   * （如 `[{ ext: '.json', count: 1 }]`）。
+   *
+   * ★ 为什么要单列：源码集从"可解析"收到"代码语言"之后，`.json` 这类文件**不再进体检** ——
+   *   如果连"有几个、是什么"都不说，那就是本仓头注批的「**缺失是沉默的**」。
+   *   同款设计见 `layers.unclassified`（单列"什么都没命中"的文件数，而不是混进 brick）。
+   * ★ **只在非空时出现**：没有可说的就不说 —— 这样"读数没变"与"口径变了但没东西被排除"
+   *   在回执上可区分（也让逐工具行为快照 G8 只在真有变化时才动）。
+   */
+  excludedNonCode?: Array<{ ext: string; count: number }>;
 }
 
 export interface HealthOptions {
@@ -555,8 +567,15 @@ function resolveImportFile(fromRel: string, source: string, rels: Set<string>, e
 export async function analyzeHealth(root: string, options: HealthOptions = {}): Promise<HealthReport> {
   const threshold = options.complexityThreshold ?? 10;
   const top = options.top ?? 10;
-  const exts = listSupportedExtensions();
-  const files = collectSourceFiles(root, exts);
+  const parseable = listSupportedExtensions();
+  const exts = codeSourceExts(parseable);
+  // ★ 2026-09-29「什么算源码」口径修正：`listSupportedExtensions()` 回答的是"**我装了哪些语言包**"，
+  //   不是"**什么算源码**" —— 两者不等价，且差集里恰好有 `.json`（tree-sitter-json 真能载入，
+  //   「真筛子」拦不住）⇒ 夹具里的 `package.json` 曾进源码集、被报成「孤立模块 / 待清理 dead code」，
+  //   已知好的夹具从 100/A 掉到 80/B。合成点 = 内核唯一权威 `codeSourceExts`（可解析 ∩ 代码语言）。
+  //   走查仍按"可解析"全集**一次走完**，再分拣：源码进分析，非代码只进下面的"看得见的统计"
+  //   （口径收紧不许静默 —— 同 `layers.unclassified` 的设计）。
+  const { code: files, nonCodeExts } = partitionByCodeLang(collectSourceFiles(root, parseable));
   const rels = new Set(files.map((f) => f.rel));
   const parses = await Promise.all(
     files.map(async (f) => ({ rel: f.rel, parsed: await parseFileFull(f.rel, f.content) })),
@@ -791,7 +810,11 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
         `　[密度 违规 ${density(counts.layer_violation)} · 复杂度 ${density(counts.high_complexity)} · ` +
         `孤儿 ${density(counts.orphan_file)} · 未用导出 ${density(counts.unused_export)} · ` +
         `未用 import ${density(counts.unused_import)}]` +
-        `　[分层 契约 ${layers.contract} / 积木 ${layers.brick}（其中未分类 ${layers.unclassified}）/ 胶水 ${layers.glue}]`;
+        `　[分层 契约 ${layers.contract} / 积木 ${layers.brick}（其中未分类 ${layers.unclassified}）/ 胶水 ${layers.glue}]` +
+        // ★ 口径可见性（非空才出现）：被"代码语言"口径排除的文件说清楚，别静默消失。
+        (nonCodeExts.length > 0
+          ? `　[口径 非代码语言未计入源码：${nonCodeExts.map((e) => `${e.ext}×${e.count}`).join(' ')}]`
+          : '');
 
   return {
     root,
@@ -803,6 +826,8 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
     score: score.value,
     grade,
     summary,
+    // ★ 只在非空时出现（理由见 HealthReport.excludedNonCode 的注释）
+    ...(nonCodeExts.length > 0 ? { excludedNonCode: nonCodeExts } : {}),
   };
 }
 

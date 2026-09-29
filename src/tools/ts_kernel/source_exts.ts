@@ -22,10 +22,14 @@
  *     · `TS_JS_EXTS`        —— 同一套 AST + 同一套模块语义的 JS 家族
  *     · `NODE_RUNNABLE_EXTS`—— 转译后能交给 node 子进程执行的（是上面那个的**真子集**）
  *     · `SOURCE_EXTS`       —— 项目内"可被扫描/分析"的源码（多语言并集）
+ *     · ★ `CODE_LANG_EXTS`  —— "**什么算源码**"（按语言类别派生，见「代码语言」一节）
  *   **不属于本模块**（问题不同，继续各留在调用点，但已在 `tests/single_source_registry.json` 登记）：
  *     · `rename_symbols` 的文本扫描清单（含 `.json/.md/.yml/.html/.css` —— 那些是**可读文本**，不是源码）
  *     · `import_resolve.IMPORT_EXTS`（**可被 import 指向**的东西，含 `.json` 场景是合法的）
  */
+
+import path from 'node:path';
+import { LANGUAGES } from './languages.js';
 
 /** TS/JS 家族：同一套 tree-sitter AST、同一套 ESM/CJS 语义。顺序即解析优先级（`.ts` 优先于编译产物 `.js`）。 */
 export const TS_JS_EXTS = ['.ts', '.tsx', '.js', '.jsx', '.mts', '.cts', '.mjs', '.cjs'] as const;
@@ -66,6 +70,79 @@ export function isSourceExt(ext: string): boolean {
 export function isNodeRunnableExt(ext: string): boolean {
   const e = ext.toLowerCase();
   return e !== '.mts' && e !== '.cts' && TS_JS_SET.has(e);
+}
+
+// ─────────────────────────────────────────────────────────────
+// ★★ 「代码语言」—— 「什么算源码」的唯一权威（2026-09-29）
+//
+// 为什么单列（本笔的病根，读过再动）：`health/index.ts` 与 `impact/index.ts` 此前拿
+//   `listSupportedExtensions()`（内核的「**可解析**」能力）当「**什么算源码**」用。
+//   两个问题**不等价**，而 `.json` 恰好落在差集里：tree-sitter-json 真能载入 ⇒ 「真筛子」拦不住
+//   ⇒ 夹具里的 `package.json` 进了源码集，被报成「**孤立模块 / 待清理 dead code**」，
+//   已知好的夹具从 100/A 掉到 80/B（G5 的题眼）。
+//
+// ★★ 三个概念，各回答各的问题（**别互相替换，更别取并集**）：
+//   | 概念       | 回答什么问题                                          | 权威                                | 例               |
+//   |------------|-------------------------------------------------------|-------------------------------------|------------------|
+//   | 可解析     | 我**能**解析哪些扩展名（随 optionalDependencies 变）   | `probe.listSupportedExts()`         | `.json` ✅        |
+//   | ★ 代码语言 | **什么算「源码」**（该进符号索引/该算孤立模块/该体检） | **本节的 `isCodeLangExt`**          | `.json` ❌        |
+//   | 可跑 node  | 哪些能被 node 子进程执行                               | `NODE_RUNNABLE_EXTS`（本文件已有）  | `.ts` ✅ `.vue` ❌ |
+//   调用方要「源码集」时的正确写法是**前两者的交集**：`codeSourceExts(listSupportedExtensions())`。
+//   ⇒ 取交集而不是换成某一份静态清单，是**刻意的**（两个反例都实测过）：
+//     改用 `SOURCE_EXTS` 会**静默丢掉** kotlin/cpp/ruby/scala（已装、刚做通，却不在那份清单里），
+//     并**带进 `.vue`**（在清单里、本机却根本载不入）—— 那是"少做事而不说话"，正是头注批的那条。
+//
+// ★ 判据**不在本文件复述**：类别数据 = `languages.ts` 的 `LanguageEntry.kind`（55 条表项）。
+//   这里只做**派生**（`kind === 'code'` 的扩展名并集）⇒ 加新语言 = 只加数据，不散落 if。
+// ─────────────────────────────────────────────────────────────
+
+/** 注册表里 `kind === 'code'` 的扩展名并集 —— "什么算源码"的权威数据（**派生**自注册表，不手抄） */
+export const CODE_LANG_EXTS: readonly string[] = LANGUAGES.filter((l) => l.kind === 'code').flatMap((l) => l.exts);
+
+const CODE_LANG_EXT_SET = new Set<string>(CODE_LANG_EXTS.map((e) => e.toLowerCase()));
+
+/** 这个扩展名算「源码」吗（= 该语言的类别是 `code`；与"我装没装语言包"无关） */
+export function isCodeLangExt(ext: string): boolean {
+  return CODE_LANG_EXT_SET.has(ext.toLowerCase());
+}
+
+/**
+ * 「可解析」∩「代码语言」= 调用方要的**源码集**（唯一合成点 —— 别在调用点各写一遍）。
+ * `parseableExts` = `listSupportedExtensions()` 之类"我能解析什么"的答案。
+ */
+export function codeSourceExts(parseableExts: readonly string[]): string[] {
+  return parseableExts.filter(isCodeLangExt);
+}
+
+/**
+ * 「可解析」里有、但**不算源码**的扩展名 —— 口径收紧的**可见性载体**。
+ *
+ * ★ 为什么要它：口径一收紧，被排除的扩展名就从源码集里"消失"了；若连**说出来**都没有，
+ *   就是本文件头注批的「**缺失是沉默的**」。调用方应把它（或其计数）放进回执 / 统计。
+ */
+export function excludedNonCodeExts(parseableExts: readonly string[]): string[] {
+  return parseableExts.filter((e) => !isCodeLangExt(e));
+}
+
+/**
+ * 把一次走查的结果按「代码语言」分拣成 源码 / 非代码（非代码给**逐扩展名计数**）。
+ * 用途：调用方**一次走查**就能既拿到源码、又拿到"有哪些东西被口径排除"（可见性），
+ *   不必为了统计再走一遍目录（也避免第二份目录走查实现）。
+ */
+export function partitionByCodeLang<T extends { rel: string }>(
+  files: readonly T[],
+): { code: T[]; nonCodeExts: Array<{ ext: string; count: number }> } {
+  const code: T[] = [];
+  const counts = new Map<string, number>();
+  for (const f of files) {
+    const ext = path.extname(f.rel).toLowerCase();
+    if (isCodeLangExt(ext)) code.push(f);
+    else counts.set(ext, (counts.get(ext) ?? 0) + 1);
+  }
+  return {
+    code,
+    nonCodeExts: [...counts].map(([ext, count]) => ({ ext, count })).sort((a, b) => (a.ext < b.ext ? -1 : 1)),
+  };
 }
 
 // ─────────────────────────────────────────────────────────────
