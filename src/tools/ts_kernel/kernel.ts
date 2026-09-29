@@ -557,6 +557,48 @@ function includePath(node: SyntaxNodeLike): string[] {
   return m ? [m[1]] : [];
 }
 
+/** 点分模块路径的末段（`a.b.C` → `C`）——多门语言的"本地可用名"都是它，共用一份，别各写各的。 */
+function lastDotSegment(p: string): string {
+  const segs = p.split('.');
+  return (segs[segs.length - 1] ?? '').trim();
+}
+
+/**
+ * 按**括号深度 0** 处的分隔符切分（`import a.{B, C}, d.e` → `['a.{B, C}', 'd.e']`）。
+ * 为什么要它：Scala/Julia 的 import 语法是 `sep1(',', …)`，花括号里的逗号**不是**条目分隔符
+ * （`{Try, Success}` 是选择器列表）⇒ 裸 `split(',')` 会把一个 import 拆成两条假源。
+ * 与 `lastDotSegment` 同属"跨语言共用的字符串工具"，不是按语言分支。
+ */
+function splitTopLevel(text: string, sep = ','): string[] {
+  const out: string[] = [];
+  let depth = 0;
+  let cur = '';
+  for (const ch of text) {
+    if (ch === '{' || ch === '(' || ch === '[') depth += 1;
+    else if (ch === '}' || ch === ')' || ch === ']') depth = Math.max(0, depth - 1);
+    if (ch === sep && depth === 0) {
+      out.push(cur);
+      cur = '';
+      continue;
+    }
+    cur += ch;
+  }
+  out.push(cur);
+  return out.map((s) => s.trim()).filter((s) => s.length > 0);
+}
+
+/** 第 n 个**命名**子节点（无则 null）。用于"字段为空的语法"按结构取位（Julia 的模块/别名）。 */
+function nthNamedChild(node: SyntaxNodeLike, n: number): SyntaxNodeLike | null {
+  let seen = 0;
+  for (let i = 0; i < node.childCount; i++) {
+    const c = node.child(i);
+    if (!c || c.isNamed === false) continue;
+    if (seen === n) return c;
+    seen += 1;
+  }
+  return null;
+}
+
 export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
   go: {
     callNode: 'call_expression',
@@ -828,6 +870,51 @@ export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
     calleeFields: ['function'],
     // object（单例）在 Scala 里是类型/模块作用域 ⇒ kind='class'，否则其成员函数会被标成闭包
     nodeKindOverride: { object_definition: 'class' },
+    // ★ 2026-09-29 本笔补 import 边。实测（0.24.0，`.inspect/ast-import-probe.mjs` dump 真树）：
+    //   `import scala.collection.mutable` → (import_declaration path:identifier path:. path:identifier …)
+    //   `import scala.util.{Try, Success}` → 末段是**兄弟** `namespace_selectors`（{ Try , Success }）
+    //   `import allinone.*`               → 末段是**兄弟** `namespace_wildcard`
+    //   ⇒ **path 字段是扁平的**（只标单个 identifier），点号/选择器都挂在同一层 ⇒ 按**文本**提取，
+    //     并按"括号深度 0 的逗号"切分多条（`import a.b, c.d` 是**一条** import_declaration 两个源）。
+    extractImportSources(node) {
+      return splitTopLevel(node.text.replace(/^\s*(?:import|export)\s+/, ''))
+        .map((p) => p.replace(/\s+as\s+[\w$]+\s*$/, '')) // Scala 3 `import a.b as c`
+        .map((p) => {
+          // `a.b.{C, D}` / `a.b.{C => D}` → a.b。★ 必须**先从 `{` 切**再剥尾点：
+          //   早期写成正则 `/\.[^{}]*\{/`，`[^{}]*` 会跨过中间的点（`scala.util.{` 被从
+          //   **第一个**点起匹配）⇒ 现场真跑读出 source='scala'（丢了 util）。实测踩过。
+          const brace = p.indexOf('{');
+          return brace >= 0 ? p.slice(0, brace).replace(/\.$/, '') : p;
+        })
+        .map((p) => p.replace(/\.(?:\*|_|given)$/, '').trim()) // `a.b.*` / `a.b._` / `a.b.given`
+        .filter((p) => p.length > 0);
+    },
+    extractImportBindings(node) {
+      const out: string[] = [];
+      for (const p of splitTopLevel(node.text.replace(/^\s*(?:import|export)\s+/, ''))) {
+        const brace = p.indexOf('{');
+        if (brace >= 0) {
+          // 选择器列表：`{C, D}` 本地名 = C/D；`{C => D}`/`{C as D}` 本地名 = D；`*`/`_`/`given` 无名
+          for (const sel of splitTopLevel(p.slice(brace + 1, p.lastIndexOf('}')))) {
+            if (/^(?:\*|_|given)$/.test(sel)) continue;
+            const renamed = sel.match(/(?:=>|\bas)\s*([\w$]+)\s*$/);
+            const plain = sel.replace(/\s*(?:=>|\bas)\s*[\w$]+\s*$/, '').trim();
+            const name = renamed ? renamed[1] : lastDotSegment(plain);
+            if (name && !name.includes('*')) out.push(name);
+          }
+          continue;
+        }
+        const asM = p.match(/\s+as\s+([\w$]+)\s*$/);
+        if (asM) {
+          out.push(asM[1]);
+          continue;
+        }
+        const base = p.replace(/\.(?:\*|_|given)$/, '').trim();
+        if (!base || /[{}]/.test(base)) continue;
+        out.push(lastDotSegment(base));
+      }
+      return out.filter((s) => s.length > 0);
+    },
   },
   groovy: {
     // 实测（tree-sitter-groovy 0.1.2）：
@@ -841,6 +928,28 @@ export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
     // `g.greet(…)` 的接收者在 `object` 字段 ⇒ 拼回 callee_expr='g.greet'
     calleeFields: ['name'],
     calleeObjectField: 'object',
+    // ★ 2026-09-29 本笔补 import 边。实测（0.1.2）import_declaration 的**逐字 text**：
+    //   "import helper.Helper\n" / "import static helper.Helper.twice\n" / "import java.util.List as L\n"
+    //   / "import allin.*\n\n" —— ★ 尾部带 **DELIMITER**（grammar.js L48：';' 或换行）
+    //   ⇒ 正则必须先剥尾部空白/分号，否则 `as` 匹配不到句尾（先踩过）。
+    extractImportSources(node) {
+      const t = node.text
+        .replace(/^\s*import\s+/, '')
+        .replace(/^static\s+/, '')
+        .replace(/[\s;]+$/, '')
+        .replace(/\s+as\s+[\w$]+$/, '')
+        .replace(/\.\*$/, '')
+        .trim();
+      return t ? [t] : [];
+    },
+    // 本地名 = `as` 别名；否则路径末段（`import static helper.Helper.twice` ⇒ `twice` 可直接裸调）
+    extractImportBindings(node) {
+      const body = node.text.replace(/^\s*import\s+/, '').replace(/^static\s+/, '').replace(/[\s;]+$/, '');
+      const asM = body.match(/\s+as\s+([\w$]+)$/);
+      if (asM) return [asM[1]];
+      const last = lastDotSegment(body.replace(/\.\*$/, ''));
+      return last ? [last] : [];
+    },
   },
   julia: {
     // 实测（tree-sitter-julia 0.23.1）：
@@ -866,6 +975,49 @@ export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
     },
     // ★ 未接：`helper(n) = n * 2` 短形式（LHS 是 call_expression 的 assignment）——
     //   那需要"符号节点的结构谓词"，本笔未做（见提交信息「没验什么」）。
+    // ★ 2026-09-29 本笔补 import 边。实测（0.23.1，node-types.json + dump 真树）：
+    //   `using Helper` → (using_statement (identifier))
+    //   `using A, B`   → (using_statement (identifier) "," (identifier))  ⇒ 逗号列表**拍平**在同层
+    //   `import Helper: twice`   → (import_statement (selected_import (identifier) ":" (identifier)))
+    //   `import Other.Helper as H` → (import_statement (import_alias (scoped_identifier) "as" (identifier)))
+    //   ⇒ 三者都**无字段**，靠"命名子节点"取位：模块 = 首个命名子节点（selected_import/import_alias
+    //     下钻一层），本地名 = 其余命名子节点。★ 该 grammar 里 import/using 是**两个**专用节点，
+    //     故不需要任何按语言 if（本文件里也没有）。
+    extractImportSources(node) {
+      const out: string[] = [];
+      for (let i = 0; i < node.childCount; i++) {
+        const c = node.child(i);
+        if (!c || c.isNamed === false) continue;
+        const wraps = c.type === 'selected_import' || c.type === 'import_alias';
+        const head = wraps ? nthNamedChild(c, 0) : c;
+        const t = head ? head.text.trim() : '';
+        if (t) out.push(t);
+      }
+      return out;
+    },
+    extractImportBindings(node) {
+      const out: string[] = [];
+      for (let i = 0; i < node.childCount; i++) {
+        const c = node.child(i);
+        if (!c || c.isNamed === false) continue;
+        if (c.type === 'selected_import' || c.type === 'import_alias') {
+          // 选项 2..n 是本地名：`import Helper: twice` 的 twice；`… as H` 的 H
+          let named = 0;
+          for (let j = 0; j < c.childCount; j++) {
+            const g = c.child(j);
+            if (!g || g.isNamed === false) continue;
+            named += 1;
+            if (named === 1) continue; // 首个命名子节点是模块本身，不是本地名
+            const t = lastDotSegment(g.text);
+            if (t) out.push(t);
+          }
+          continue;
+        }
+        const t = lastDotSegment(c.text);
+        if (t) out.push(t);
+      }
+      return out;
+    },
   },
   haskell: {
     // 实测（tree-sitter-haskell 0.23.1）：
@@ -887,7 +1039,32 @@ export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
     nodeKindOverride: { data_type: 'type', newtype: 'type' },
     // ★ 未接：`signature`（类型签名 `greet :: Int -> Int`）**故意不进 symbol_nodes** ——
     //   它不是函数声明，且它的 name 字段会让类型名混进符号表（旧表项误报 'Int' 的来源）。
-    // ★ 未接 import：`import Data.List (sort)` 的 (import module: …) 需要专属提取器，本笔未做。
+    // ★ 2026-09-29 本笔补 import 边（**前一版的"未接 import"注释已作废**）。实测（0.23.1，
+    //   node-types.json + dump 真树）：import 是**专用节点**且**带字段** ——
+    //   `import Lib (twice)`               → (import module: (module) names: (import_list (import_name …)))
+    //   `import qualified Data.List as L`  → (import module: (module) alias: (module))
+    //   `import Data.Map (Map, empty)`     → module=Data.Map，names 里两条 import_name
+    //   ⇒ 模块源走 module 字段、别名走 alias 字段、可见名走 names 字段，**全字段**、无文本正则。
+    extractImportSources(node) {
+      const m = fieldText(node, 'module');
+      return m ? [m] : [];
+    },
+    // 本地可用名：有 `as` 别名 ⇒ 别名（`L.sort` 的 L）；否则**只有 names 列表里的名字**才进入
+    // 无限定作用域（裸 `import Data.List` 不提供裸名，故不给绑定 —— 保守方向）。
+    extractImportBindings(node) {
+      const alias = fieldText(node, 'alias');
+      if (alias) return [alias];
+      const names = node.childForFieldName('names');
+      if (!names) return [];
+      const out: string[] = [];
+      for (let i = 0; i < names.childCount; i++) {
+        const c = names.child(i);
+        if (!c || c.isNamed === false) continue;
+        const t = lastDotSegment(c.text);
+        if (t) out.push(t);
+      }
+      return out;
+    },
   },
   elixir: {
     // 实测（tree-sitter-elixir 0.3.5）：

@@ -168,7 +168,10 @@ declareCapability({
     kotlin: 'full_ast',
     // 2026-09-29 契约扩展笔（2301041）已用新契约落地 scala/groovy/julia/haskell/elixir 5 门，
     //   本笔按探针真跑读数（symbols 非空 **且** calls 非空 ⇒ 同文件闭包完整）校正声明；
-    //   逐门读数/跨文件边实测限制见 notes（★ 5 门均**无 import 边**，见下）。
+    //   逐门读数/跨文件边实测限制见 notes。
+    //   ★ 2026-09-29 第二笔改了下面注释里"无 import 边"的**一半**：scala/groovy/julia/haskell
+    //     已补 import 边（elixir 仍无，理由见 notes）——但 impact 侧的工程内解析口径未变，
+    //     故这 5 门的 impact 档位**不动**（仍 full_ast，判据同 ruby：同文件闭包完整）。
     scala: 'full_ast',
     groovy: 'full_ast',
     julia: 'full_ast',
@@ -185,15 +188,25 @@ declareCapability({
     ruby: '经 ts_kernel 调用边（call 节点，被调名取 method 字段）；同文件闭包完整；★ 无 import 边（Ruby 的 require 是普通 call，无专用节点）⇒ 跨文件边缺',
     kotlin: '经 ts_kernel 调用边（call_expression，该 grammar 无字段）+ import_header 边；同文件闭包完整，跨文件边未验证',
     // ★ 下面 5 门：真跑证据 = `scripts/ts_kernel_probe.mjs --file`（读数为本笔提交信息逐字记录）。
-    //   共同限制：内核这 5 门**无 import 边**（languages.ts 未声明 import_nodes）⇒ impact 的带前缀
-    //   跨文件调用（`Mod.func`）因拿不到 import bindings 而**不建边**（impact 的 resolveCallTarget
-    //   对 dotted expr 只信 bindings）。同文件闭包完整，故此档位与 ruby（无 import 边仍 full_ast）
-    //   同一判据；跨文件缺口如实写在各门 notes 里，不掩盖。
-    scala: '经 ts_kernel 调用边（call_expression，被调在 function 字段）；同文件闭包完整（实测 2 调用全 resolved）；★ 无 import 边 ⇒ 跨文件 `Helper.twice` 带前缀不建边（实测跨文件边 0）',
-    groovy: '经 ts_kernel 调用边（method_invocation + juxt_function_call 两种调用节点）；同文件闭包完整（实测 3 调用全 resolved）；★ 无 import 边 ⇒ 跨文件带前缀调用不建边（实测 0）',
-    julia: '经 ts_kernel 调用边（call_expression，被调=首个子节点）；同文件闭包完整（实测 5 调用，含 println 未解析）；★ 无 import 边；type_refs 恒 0（实测）',
-    haskell: '经 ts_kernel 调用边（apply，被调在 function 字段）；同文件闭包完整；★ 跨文件**可**建边（裸名全局唯一，实测 lib←use 1 条）；无 import 边',
-    elixir: '经 ts_kernel 调用边（call，被调在 target 字段）；同文件闭包完整（实测 2 调用全 resolved，含 `App.greet`）；★ 无 import 边 ⇒ 跨模块带前缀调用不建边（实测 0）',
+    //   ★ 2026-09-29 第二笔（补 import 边）**改写了这 5 门的共同限制，逐字对照如下**：
+    //     · 旧注释：「内核这 5 门无 import 边（languages.ts 未声明 import_nodes）」—— **已过期**。
+    //       现 scala/groovy/julia/haskell 4 门都声明并落地了 import 边（节点名逐门见提交信息；
+    //       elixir 仍无，理由见 languages.ts 的 elixir 注释：该 grammar 没有 import 节点）。
+    //     · 新的、**仍然成立**的限制：「impact/health 这两个量具的**工程内解析**只认相对路径」
+    //       （health/impact 的 resolveImportFile 对 `!source.startsWith('.')` 早退；包路径回退
+    //       `resolvePackageImportDir` 只认 `/` 分隔的**目录式**包路径）⇒ 这 4 门的 import 源
+    //       （点分模块 `app.Helper`、单段模块名 `Lib`/`Helper`）在 impact/hybrid 侧**仍不建边**。
+    //       实测（多文件夹具 `.inspect/decl5_imports/<lang>`，2 文件）：impact `--hubs` 读
+    //       `2 文件 / 0 依赖边`（haskell 1 条来自**裸名全局唯一**保底，与 import 无关）。
+    //     · 但**别的消费方吃到了**：`import_project` 的 resolveImport 会做点分→路径（`app.Helper`
+    //       → `app/Helper.scala`）与单段同目录（`Helper` → `Helper.jl`）解析 ⇒ 同一夹具的 DSL
+    //       依赖边 **0 → 1**（门门实测，elixir 仍 0）。`import_graph` 读同一张 imports 表、走同一
+    //       resolveImport ⇒ 同受益。⇒ "无 import 边"不再适用，但 "impact 侧跨文件边仍 0" 仍适用。
+    scala: '经 ts_kernel 调用边（call_expression，被调在 function 字段）；同文件闭包完整（实测 2 调用全 resolved）；★ import 边**已补**（import_declaration/export_declaration）⇒ DSL 依赖边实测 0→1；但 impact/health 的工程内解析只认相对路径 ⇒ 该量具上跨文件边仍 0',
+    groovy: '经 ts_kernel 调用边（method_invocation + juxt_function_call 两种调用节点）；同文件闭包完整（实测 3 调用全 resolved）；★ import 边**已补**（import_declaration）⇒ DSL 依赖边实测 0→1；impact 侧仍 0（同上口径）',
+    julia: '经 ts_kernel 调用边（call_expression，被调=首个子节点）；同文件闭包完整（实测 5 调用，含 println 未解析）；type_refs 恒 0（实测）；★ import 边**已补**（import_statement/using_statement）⇒ DSL 依赖边实测 0→1；impact 侧仍 0（同上口径）',
+    haskell: '经 ts_kernel 调用边（apply，被调在 function 字段）；同文件闭包完整；★ 跨文件**可**建边（裸名全局唯一，实测 lib←use 1 条）；★ import 边**已补**（import，module/alias/names 三字段）⇒ DSL 依赖边实测 0→1',
+    elixir: '经 ts_kernel 调用边（call，被调在 target 字段）；同文件闭包完整（实测 2 调用全 resolved，含 `App.greet`）；★ **仍无 import 边**：该 grammar 里 import/alias/require/use 全是普通 `call`（无专用节点），声明 `call` 会①把每次调用当 import 候选、②命中即 return 使模块体内的 import 扫不到 ⇒ 见 languages.ts 的 elixir 注释（本笔核查后的结论，非遗漏）⇒ 跨模块带前缀调用仍不建边（实测 0）',
   },
 });
 
@@ -305,18 +318,40 @@ declareCapability({
     go: 'partial_ast',
   },
   // ★ 2026-09-29 本笔**评估过、决定不纳入** scala/groovy/julia/haskell/elixir（保持 default=unimplemented）。
-  //   判据（`src/health/index.ts` 的实际依赖）+ 真跑证据（health_cli 打 5 门多文件夹具，读数见提交信息）：
+  //   ── 第一轮评估（上一笔，真跑证据 = health_cli 打 5 门无 import 的 2 文件夹具）──
   //     · 未使用导出/孤儿文件/分层违规 三处都靠 `imports` 建边（`reverseConsumers` 只由 import 填）
   //       ⇒ 内核这 5 门**无 import 边**（languages.ts 未声明 import_nodes）⇒ **每门每个非胶水文件都被
   //       报成 orphan_file（实测 5 门均 100% 密度、2/2 文件全中）**，这是系统性假阳，不是"部分支持"。
-  //     · 分层违规维度恒 0（无 import 边 ⇒ 无 layerImports）⇒ 该维度对这 5 门完全是死的。
-  //     · 未使用导出：haskell（顶层 function）能靠裸名跨文件反查；scala/groovy/julia/elixir 的方法
-  //       挂在 object/class/module 下（有 parent），进不了只收顶层的 symIndex ⇒ 已用的 `Helper` 仍被
-  //       报成 unused_export（实测）。
-  //     · 复杂度：这 5 门未进 COMPLEXITY_BRANCH_NODES ⇒ 走正则回退（非 AST 计数）。
-  //     · 未使用 import：collectImportBinds 无这 5 门分支 ⇒ 恒 0（无声，非假阳）。
-  //   ⇒ 结论：**差的是内核 import 边**（根因在 languages.ts，不在 health）。等内核补 import 边后
-  //     再评（那时 orphan/层违规才有意义）。未使用导出/复杂度两项可单独再议，但不足以让"整能力"进档。
+  //     · 分层违规恒 0；未使用导出：haskell 能靠裸名跨文件反查，其余 4 门的方法挂 object/class/module
+  //       下（有 parent）进不了只收顶层的 symIndex ⇒ 已用的 `Helper` 仍被报 unused_export（实测）。
+  //     · 结论（上一笔）：**差的是内核 import 边**（根因在 languages.ts，不在 health）。
+  //   ── 第二轮评估（本笔：import 边**已补**，scala/groovy/julia/haskell 4 门）——**结论不变，但根因更正**──
+  //     · 真跑夹具 `.inspect/decl5_imports/<lang>`（2 文件，每门用**该语言母语形态**的 import：
+  //       scala `import app.Helper` / groovy `import helper.Helper` / julia `using Helper` /
+  //       haskell `import Lib (twice)`；elixir 无 import 边，作同批对照）。
+  //       读数：orphan 仍 **2/2 = 100.0/百文件**（5 门全同）；`Helper`（/`Use`）仍被报 unused_export
+  //       （haskell 例外，与上一笔同：裸名能反查）。
+  //     · **根因不在 languages.ts，而在"工程内解析口径"**：health 建边的唯一入口是
+  //       `resolveImportFile`，它对**非相对** source 直接早退（`!source.startsWith('.')` → null），
+  //       包路径回退 `resolvePackageImportDir` 只认 `/` 分隔的**目录式**包路径 ⇒
+  //       点分模块（`app.Helper`）、单段模块名（`Lib`/`Helper`）**都解析不到项目内文件**。
+  //     · **对照实验（本笔未改这两门的任何东西）**：Java `import app.Helper`——它本来就有
+  //       import_declaration、本来就是 code_health 的 full_ast——在同一形状的 2 文件夹具上读出
+  //       **逐字相同**的 `2 孤儿文件 / Helper 未使用导出`；Python 的 `from pkg.mod import hello`
+  //       与 `from .mod import hello` 同样 2 孤儿。⇒ 这两条判据**不是**这 5 门的缺口，
+  //       是 java/python/go/c# 共有的解析口径缺口。
+  //     · 另：`Helper` 的 unused_export **与 import 边无关** —— 该维度走 internalRefs/crossRefs，
+  //       只按**裸名**匹配顶层符号；`Helper.twice(3)` 的被调是 `twice`（挂 object 下有 parent，
+  //       进不了 symIndex），`Helper` 前缀从不成为 crossRef。加 import 边不改这条判据一个字节。
+  //     · 另两维不受本笔影响（仍然是真读数、不是假阳/假阴）：复杂度这 5 门未进
+  //       `COMPLEXITY_BRANCH_NODES` ⇒ 走正则回退（非 AST 计数）；未使用 import 因
+  //       `collectImportBinds` 无这 5 门分支 ⇒ 恒 0（无声）。
+  //   ── 所以：判据（orphan 密度不再 100 + 已用的 Helper 不再被报）**未达标 ⇒ 不纳入**（不硬塞）──
+  //     要做成需要改的是**解析口径本身**，且应改在唯一实现 `ts_kernel/import_resolve.ts`（health/impact
+  //     共用）上；`impact/index.ts` / `import_resolve.ts` **不在本笔允许的改动面内**，而只改 health 会让
+  //     两个量具对同一仓给出互相矛盾的答案（本仓明确反对该分叉）。⇒ 留作独立一笔（口径类）。
+  //     ★ 顺带（留给裁决，本笔未动）：java/c/c_sharp/cpp/go/python 这几门的 full_ast 档在
+  //       同样口径下也读不出孤儿边，档位与"真读数"本就不严格对应；本笔不擅自下调既有声明。
   notes: {
     typescript: '复杂度=AST 分支节点计数；未使用 import=AST 绑定+使用集比对；未使用导出/孤儿/分层=导入+调用边反查',
     javascript: '经 TS 家族同一解析路径',

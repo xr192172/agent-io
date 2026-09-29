@@ -101,22 +101,43 @@ export const LANGUAGES: LanguageEntry[] = [
   //   `node-node-types.json` + 真跑）：function_definition/class_definition/object_definition/
   //   trait_definition/enum_definition/type_definition 都带 name 字段，且函数带 body/parameters/return_type
   //   ⇒ 走通用"有字段"路径即可，不需要任何专属适配（适配器只补 callNode + object 的 kind 覆盖）。
-  { name: 'scala', pkg: 'scala', exts: ['.scala', '.sc'], kind: 'code', symbol_nodes: ['function_definition', 'function_declaration', 'class_definition', 'object_definition', 'trait_definition', 'enum_definition', 'type_definition'], field_map: { name: 'name', parameters: 'parameters', return_type: 'return_type' } },
+  //   ★ 2026-09-29 补 import 边（本笔）：import_declaration 是**专用** import 节点
+  //   （grammar.js L224：`import` + sep1(',', $._namespace_expression)）。同形另有 export_declaration
+  //   （L227，Scala 3 再导出）——它的源是同一个 namespace_expression，是等价的**依赖方向**
+  //   ⇒ 一并纳入（与 TS 系把 export_statement 计入 import_nodes 同一判据）。
+  //   ★ 拒绝纳入的形态（别"顺手加"）：`using`/`given` 不是 import；`namespace_selectors`
+  //   花括号里的是**被引入的名字**（`{Try, Success}`），不是模块源 —— 见 kernel.ts 的提取器。
+  { name: 'scala', pkg: 'scala', exts: ['.scala', '.sc'], kind: 'code', symbol_nodes: ['function_definition', 'function_declaration', 'class_definition', 'object_definition', 'trait_definition', 'enum_definition', 'type_definition'], import_nodes: ['import_declaration', 'export_declaration'], field_map: { name: 'name', parameters: 'parameters', return_type: 'return_type' } },
   // ★ 2026-09-29 校准：旧表项的 `class_definition` 在 tree-sitter-groovy 里**不存在**
   //   （真名 class_declaration）。实测（0.1.2）：method_declaration/class_declaration 都带
   //   name/body 字段（方法的返回类型在 `type` 字段）；脚本级 `String f(){}` 是 function_definition。
-  { name: 'groovy', pkg: 'groovy', exts: ['.groovy'], kind: 'code', symbol_nodes: ['class_declaration', 'interface_declaration', 'enum_declaration', 'method_declaration', 'function_definition'], field_map: { name: 'name', parameters: 'parameters', return_type: 'type' } },
+  //   ★ 2026-09-29 补 import 边（本笔）：import_declaration（grammar.js L131）——
+  //   `import [static] a.b.C [as D]` / `import a.b.*`。★ 与 Java 同族（scoped_identifier 链）。
+  { name: 'groovy', pkg: 'groovy', exts: ['.groovy'], kind: 'code', symbol_nodes: ['class_declaration', 'interface_declaration', 'enum_declaration', 'method_declaration', 'function_definition'], import_nodes: ['import_declaration'], field_map: { name: 'name', parameters: 'parameters', return_type: 'type' } },
   // ★ 2026-09-29 新增：实测（elixir 0.3.5）该语法里 **`def`/`defmodule` 自己就是 `call`**
   //   ⇒ 符号节点只能是 `call`，靠适配器的 symbolDispatch（target ∈ def/defp/defmodule/…）
   //   把"声明"与"普通调用"分开；名字走 namePaths、体走 bodyNodeTypes=['do_block']。
   //   旧表项 ['call','do_block'] 会把 defmodule/def/内层名全当符号（实测 8 条里 6 条是垃圾）。
+  //   ★ 2026-09-29（本笔）**仍然无 import_nodes，这是核查后的结论、不是遗漏**：
+  //   tree-sitter-elixir 0.3.5 的 node-types.json 里**没有** import/require/alias/use 节点类型
+  //   （只有 `call` 与模块名 token `alias`）—— `import Helper` / `alias App.Helper` /
+  //   `require Logger` / `use GenServer` **全都是普通 `call`**（target 字段的 identifier）。
+  //   把 `call` 声明成 import_nodes 有两个后果，都不可接受：
+  //     ① 类别错误：每次函数调用都成了 import 候选（与 ruby 的 `require` 同一情形，见下条）；
+  //     ② 实测的**机制**后果：`traverseAndExtractImports` 命中 import_nodes 即 `return`（不再下滑），
+  //        而 `defmodule … do … end` 自身就是 call ⇒ 模块体内的 import **永远扫不到**。
+  //   ⇒ 要接 elixir，得先给 LANG_ADAPTERS 扩一个「按某字段的**值**分派 import」的数据字段
+  //     （形如已有的 `symbolDispatch`，那正是 elixir 符号侧用的同一机制），并让上述 return 改为
+  //     "命中但无源 ⇒ 继续下滑"。本笔**未做**（见提交信息「没验什么」），故不声明。
   { name: 'elixir', pkg: 'elixir', exts: ['.ex', '.exs'], kind: 'code', symbol_nodes: ['call'], field_map: { name: 'name' } },
   { name: 'erlang', pkg: 'erlang', exts: ['.erl', '.hrl'], kind: 'code', symbol_nodes: ['function_clause'], field_map: { name: 'name' } },
   // ★ 2026-09-29 新增：实测（haskell 0.23.1）函数体在 **match** 字段（局部绑定在 binds），
   //   旧内核只认 'body'/'suite' ⇒ 下不了体 ⇒ 调用边恒空。真节点名是 function/bind（不是
   //   旧表项的 function_declaration/type_declaration，那两个在该 grammar 里不存在）。
   //   ★ `signature`（类型签名 greet :: Int -> Int）**故意不进表** —— 它不是函数声明。
-  { name: 'haskell', pkg: 'haskell', exts: ['.hs'], kind: 'code', symbol_nodes: ['function', 'bind', 'class', 'data_type', 'newtype'], field_map: { name: 'name' } },
+  //   ★ 2026-09-29 补 import 边（本笔）：`import` 是**专用**节点，带 module/alias/names 字段
+  //   （grammar/module.js L59）。★ 与 elixir 正相反：这里是真 import 声明节点，故可以声明。
+  { name: 'haskell', pkg: 'haskell', exts: ['.hs'], kind: 'code', symbol_nodes: ['function', 'bind', 'class', 'data_type', 'newtype'], import_nodes: ['import'], field_map: { name: 'name' } },
   { name: 'lua', pkg: 'lua', exts: ['.lua'], kind: 'code', symbol_nodes: ['function_declaration'], field_map: { name: 'name', parameters: 'parameters' } },
   { name: 'perl', pkg: 'perl', exts: ['.pl', '.pm'], kind: 'code', symbol_nodes: ['subroutine_declaration_statement'], field_map: { name: 'name' } },
   { name: 'r', pkg: 'r', exts: ['.r', '.R'], kind: 'code', symbol_nodes: ['function_definition'], field_map: { name: 'name' } },
@@ -143,7 +164,10 @@ export const LANGUAGES: LanguageEntry[] = [
   //   **"fields": {}** ⇒ 名字/体都靠结构走（适配器 nameNodeTypes + bodyIsSelf）。
   //   struct/abstract/primitive 是类型声明（名字在 type_head 里），module 有 name 字段但无 body 字段。
   //   ★ 未纳入 `assignment`（`f(x) = …` 短形式）：它需要"符号节点的结构谓词"（见提交信息）。
-  { name: 'julia', pkg: 'julia', exts: ['.jl'], kind: 'code', symbol_nodes: ['function_definition', 'struct_definition', 'module_definition', 'abstract_definition', 'primitive_definition'], field_map: { name: 'name' } },
+  //   ★ 2026-09-29 补 import 边（本笔）：`import_statement` 与 `using_statement` 是**两个**专用节点
+  //   （grammar.js L485/L495）。★ 故意**不**纳入 `export_statement`（L47x）：julia 的 `export foo`
+  //   导出的是**本文件里的名字**，不含模块源 ⇒ 当 import 节点会造出假边（与 scala 的 export 相反）。
+  { name: 'julia', pkg: 'julia', exts: ['.jl'], kind: 'code', symbol_nodes: ['function_definition', 'struct_definition', 'module_definition', 'abstract_definition', 'primitive_definition'], import_nodes: ['import_statement', 'using_statement'], field_map: { name: 'name' } },
   { name: 'clojure', pkg: 'clojure', exts: ['.clj', '.cljs'], kind: 'code', symbol_nodes: ['list_lit'], field_map: { name: 'name' } },
   { name: 'scheme', pkg: 'scheme', exts: ['.scm', '.ss'], kind: 'code', symbol_nodes: ['list'], field_map: { name: 'name' } },
   { name: 'solidity', pkg: 'solidity', exts: ['.sol'], kind: 'code', symbol_nodes: ['contract_declaration', 'function_definition'], field_map: { name: 'name' } },
