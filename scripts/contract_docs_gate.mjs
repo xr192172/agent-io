@@ -29,7 +29,10 @@ import { readToolSources, toolSourceRelPaths } from './tool_sources.mjs';
 // ── 常量/工具（顶层，供导出函数与 CLI 共用） ──
 const NAME_RE = /name:\s*['"]([a-z][a-z0-9_]*)['"]/g;
 const READ_RE = /\.(ts|tsx)$/;
-const HISTORY_RE = /([\\/])tool-convergence(\.md|$)|([\\/])plans[\\/]/;
+// ★ 2026-09-29：把 `architecture-refactor-plan.md`（**活台账**）也纳入"历史文档"豁免 ——
+//   它与 `tool-convergence.md` **同类**：都**记录变更过程**（"某某工具被收成 X"）⇒
+//   **必须能提旧名**，否则就是篡改历史。★ 品牌残留门的 `allowFiles` 对这份文件也是同一口径，两门保持一致。
+const HISTORY_RE = /([\\/])tool-convergence(\.md|$)|([\\/])plans[\\/]|([\\/])architecture-refactor-plan\.md$/;
 
 function read(p) {
   try {
@@ -135,7 +138,19 @@ export async function runContractGate(root, newNames, goneNames) {
   }
   const residueList = [];
   for (const name of goneNames) {
-    for (const d of syncSet) if (await mentions(d, name)) residueList.push({ name, file: d.label });
+    // ★★ 窄豁免（2026-09-29，面收敛时实测出的门盲区）：
+    //   若这个"消失的工具名"恰好是**仍然存在的实现模块名**（`src/tools/<name>.ts`），
+    //   那么**代码文件**（src/tests）里的命中是「**模块身份**」—— import 说明符、
+    //   模块头注释、模块名本身 —— **不是改名残留** ⇒ 跳过代码文件。
+    //   ★ 但**文档**（README / AGENTS / skill / docs 非历史）里的命中**仍报**，那才是真残留。
+    //   ★ 为什么必须豁免：pre-commit 阶段 HEAD 还是旧状态，而**面收敛只改"工具名"、
+    //     不动 `src/tools/*.ts` 的实现模块** ⇒ 不豁免则「旧名 == 模块名」的每次改名都**必然误报**，
+    //     只能靠 `--no-verify` 逃生 —— 那等于把这扇门废掉（第一批没撞上只因它的旧名恰好无同名模块）。
+    const isImplModule = existsSync(path.join(root, 'src', 'tools', `${name}.ts`));
+    for (const d of syncSet) {
+      if (isImplModule && READ_RE.test(d.path)) continue; // 窄豁免：只跳代码文件，不跳文档
+      if (await mentions(d, name)) residueList.push({ name, file: d.label });
+    }
   }
   return { ok: missingNew.length === 0 && residueList.length === 0, missingNew, residueList };
 }
