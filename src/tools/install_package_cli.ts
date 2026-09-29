@@ -14,12 +14,15 @@
  *
  * 用法：
  *   node dist/src/tools/install_package_cli.js list
+ *   node dist/src/tools/install_package_cli.js check lua markdown toml   # 装包前查模板兼容性（真筛子）
  *   node dist/src/tools/install_package_cli.js install go python
  *   node dist/src/tools/install_package_cli.js uninstall rust
  *   node dist/src/tools/install_package_cli.js index [--json <out.json>]   # GitHub 分发索引
  *   node dist/src/tools/install_package_cli.js list --json <out.json>
  *
  * 对齐上游 tree-sitter 分发模型：
+ *   - ★ 装包**前**用「真筛子」预检（scripts.install 是否为 node-gyp-build）——见
+ *     `templateCompatFromPkgJson`。判据证据来自本机 36 个已装包的逐个真载入（20/20 vs 0/16）。
  *   - install 后自动做 ABI 运行时校验（读包 peerDependencies.tree-sitter vs 已装核心）
  *   - install 后提示当前平台是否有 prebuild（缺则可能现场 node-gyp 编译）
  *   - `index` 输出语言↦GitHub 上游语法仓库 + npm 包 + ABI 钉版，供 GitHub 侧分发/文档引用
@@ -46,7 +49,9 @@ export const PACK_PINS: Record<string, string> = {
   php: '^0.23.12',
 };
 
-/** 语言包清单行（导出供单测/JSON 输出） */
+/**
+ * 语言包清单行（导出供单测/JSON 输出）
+ */
 export interface LangPackRow {
   /** LANGUAGES 中的语言名（即 languages.ts 的 name） */
   lang: string;
@@ -60,6 +65,103 @@ export interface LangPackRow {
   installedVersion?: string;
   /** 是否深适配语言（有 import 边/调用边提取） */
   adapted: boolean;
+  /**
+   * 装包模板兼容性（★ 真筛子，见 `templateCompatFromPkgJson`）。
+   * 未装的包**离线判不出** ⇒ 'unknown'（用 `check` 子命令查 registry 元数据）。
+   */
+  compat: TemplateCompat;
+  /** 本机是否有 `prebuilds/<platform>-<arch>/`（装上即用）；未装 ⇒ null */
+  prebuild: boolean | null;
+}
+
+/**
+ * 装包模板兼容性 —— ★★ 本仓的「真筛子」（2026-09-29 侦察，8/8 命中 vs 0/15，无一例外）：
+ *
+ * 为什么 peer 声明靠不住：核心 `tree-sitter@0.21.1` 用 **N-API 的 LANGUAGE_TYPE_TAG**
+ * 约定去认「语言对象」。包的**安装模板**决定它导出的是不是这种对象：
+ *   · `scripts.install === 'node-gyp-build'`（prebuildify 模板）⇒ 导出 N-API 语言对象 ⇒ 可载入
+ *   · 其它（老 `nan.h` 模板 / 干脆没有 install 脚本）⇒ `require` 可能成功，但 `setLanguage`
+ *     抛 "Invalid language object"，或连 binding 都没编出来 ⇒ **装上也用不了**
+ * 本机实测（36 个已装包，逐个真 `require` + `setLanguage` + `parse`）：
+ *   `node-gyp-build` 的 20 个 → **20/20 可载入**；其余 16 个 → **0/16**（10 个 require 就挂、
+ *   6 个 setLanguage 抛 Invalid language object）。
+ *
+ * 第二层信号（只作"要不要现场编译"的提醒，**不作**可载入判据）：
+ *   `prebuilds/<platform>-<arch>/` 里有 .node ⇒ 装上即用；没有 ⇒ 靠本机 node-gyp 编译。
+ *   实测例外：tree-sitter-kotlin 无 prebuild 但本机编译成功、仍可载入 ⇒ 缺 prebuild 不等于不可用。
+ *
+ * 用途：`list` 把已装的**标红**、`install` 在真正 npm install **之前**用 registry 元数据
+ * 预检（而不是让它静默进 optionalDependencies、等运行时才炸）。
+ */
+export type TemplateCompat = 'ok' | 'incompatible' | 'unknown';
+
+/** 纯函数：从 package.json 内容判模板兼容（本地读 / registry 元数据走同一判据，不抄第二份） */
+export function templateCompatFromPkgJson(j: Record<string, unknown> | null): TemplateCompat {
+  if (!j) return 'unknown';
+  const scripts = j.scripts as Record<string, unknown> | undefined;
+  const install = scripts?.install;
+  return install === 'node-gyp-build' ? 'ok' : 'incompatible';
+}
+
+/** 本机是否有该包的平台预编译产物（node_modules/tree-sitter-{pkg}/prebuilds/<plat>-<arch>/*.node） */
+export function hasHostPrebuild(pkg: string): boolean {
+  const dir = path.join(findNodeModulesRoot(), `tree-sitter-${pkg}`, 'prebuilds', `${process.platform}-${process.arch}`);
+  try {
+    return fs.readdirSync(dir).some((f) => f.endsWith('.node'));
+  } catch {
+    return false;
+  }
+}
+
+/** 兼容性的人读结论（一处措辞，list/check/install 三处共用，别各写一份） */
+export function compatVerdict(compat: TemplateCompat, prebuild: boolean | null): string {
+  if (compat === 'ok') {
+    return prebuild === false ? '⚠ 可载入，但本机无 prebuild（要靠本机 node-gyp 编译）' : '✅ 模板兼容（node-gyp-build）';
+  }
+  if (compat === 'incompatible') {
+    return '❌ 模板不兼容（非 node-gyp-build ⇒ 多为老 nan.h 模板，载入必失败）';
+  }
+  return '？未装（离线判不出，用 `check <lang>` 查 registry 元数据）';
+}
+
+/**
+ * registry 元数据取 `scripts.install`（装包**前**的预检）。
+ * best-effort：包不存在 / 网络不通 / 超时 ⇒ 如实返回原因（不猜、不假装能载入）。
+ */
+export function registryInstallScript(pkg: string): { script: string | null; missing: boolean; error?: string } {
+  const r = spawnSync(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['view', `tree-sitter-${pkg}`, 'scripts.install', '--json'], {
+    encoding: 'utf-8',
+    shell: process.platform === 'win32',
+    timeout: 30_000,
+    cwd: path.dirname(findNodeModulesRoot()),
+  });
+  const out = (r.stdout || '').trim();
+  const errText = r.stderr || '';
+  // npm view 的失败有两条路：`--json` 下错误 JSON 走 **stdout**（{"error":{"code":"E404"…}}），
+  // 人读文本走 stderr。两条都认，否则"包不存在"会被误判成"取到了但没 install 脚本"。
+  const errJson = (() => {
+    try {
+      const v = JSON.parse(out) as { error?: { code?: string; summary?: string } };
+      return v && typeof v === 'object' && v.error ? v.error : null;
+    } catch {
+      return null;
+    }
+  })();
+  const notFound =
+    errJson?.code === 'E404' ||
+    /E404|Not found|is not in this registry/i.test(errText) ||
+    /E404|is not in this registry/i.test(out);
+  if (notFound) return { script: null, missing: true };
+  if (!out || out === 'undefined') {
+    if (r.status !== 0) return { script: null, missing: false, error: (errText.split('\n').find((l) => l.trim()) || `npm 退出码 ${r.status ?? '?'}`).trim() };
+    return { script: null, missing: false };
+  }
+  try {
+    const v = JSON.parse(out);
+    return { script: typeof v === 'string' ? v : null, missing: false };
+  } catch {
+    return { script: out.replace(/^"|"$/g, ''), missing: false };
+  }
 }
 
 /** 派生语言：没有独立 npm 包，语法随父包（如 tsx 随 tree-sitter-typescript、jsx 随 tree-sitter-javascript）。不可独立安装。 */
@@ -204,6 +306,9 @@ export function collect(): LangPackRow[] {
     // 派生语言（tsx/jsx）随父包判定已装；不可独立 install/uninstall
     const parent = DERIVED[l.pkg];
     const { installed, version } = isInstalled(parent ?? l.pkg);
+    // ★ 模板兼容性：只对**已装**的包离线可判（读本地 package.json）——
+    //   未装的包拿不到 scripts.install（要么联网查 registry，要么不猜）⇒ 'unknown'
+    const compat = installed ? templateCompatFromPkgJson(readPkgJson(`tree-sitter-${parent ?? l.pkg}`)) : 'unknown';
     rows.push({
       lang: l.name,
       pkg: l.pkg,
@@ -211,6 +316,8 @@ export function collect(): LangPackRow[] {
       installed,
       installedVersion: version,
       adapted: l.import_nodes && l.import_nodes.length > 0 ? true : false,
+      compat,
+      prebuild: installed && !parent ? hasHostPrebuild(l.pkg) : null,
     });
   }
   // 按「深适配 + 未装」优先排序，方便一眼看到还能补的
@@ -220,6 +327,42 @@ export function collect(): LangPackRow[] {
 
 function findRowByName(rows: LangPackRow[], key: string): LangPackRow | undefined {
   return rows.find((r) => r.lang === key || r.pkg === key);
+}
+
+/**
+ * 装包**前**的标红清单（★ 而不是让它静默进 optionalDependencies、等运行时才炸）。
+ *
+ * 判据 = 真筛子（`scripts.install === 'node-gyp-build'`）。数据来源两级：
+ *   ① 已装包 → 读本地 package.json（离线、确定、不发网络请求）
+ *   ② 未装包 → 读 registry 元数据（`npm view … scripts.install`）；取不到就**如实说取不到**
+ *     （不假装"兼容"，也不假装"不兼容"）
+ * 返回人读告警列表（空 = 没发现红牌）。**不硬拦**：本机编译链/私有 registry 可能导致不同结论，
+ * 但红牌照打 —— 本笔要治的是"静默"。
+ */
+export function installPrecheck(targets: string[], rows: LangPackRow[]): string[] {
+  const out: string[] = [];
+  for (const t of targets) {
+    const r = findRowByName(rows, t);
+    if (!r) continue;
+    const realPkg = DERIVED[r.pkg] ?? r.pkg;
+    const local = templateCompatFromPkgJson(readPkgJson(`tree-sitter-${realPkg}`));
+    if (local === 'ok') continue;
+    if (local === 'incompatible') {
+      out.push(`${r.lang}（tree-sitter-${r.pkg}）：本地已装包 scripts.install ≠ 'node-gyp-build' ⇒ **老 nan.h 模板，载入必失败**`);
+      continue;
+    }
+    const remote = registryInstallScript(realPkg);
+    if (remote.missing) {
+      out.push(`${r.lang}（tree-sitter-${r.pkg}）：npm 上**不存在**这个包 —— 装必失败`);
+    } else if (remote.error) {
+      out.push(`${r.lang}（tree-sitter-${r.pkg}）：模板兼容性**取不到**（${remote.error}；本地也未装）⇒ 判不出，装了再看`);
+    } else if (remote.script !== 'node-gyp-build') {
+      out.push(
+        `${r.lang}（tree-sitter-${r.pkg}）：registry 里 scripts.install=${remote.script ?? '（无）'} ≠ 'node-gyp-build' ⇒ **老 nan.h 模板，装上也载入失败**`,
+      );
+    }
+  }
+  return out;
 }
 
 function runNpm(args: string[]): { status: number; out: string } {
@@ -268,14 +411,74 @@ function main(): void {
         : r.installed
           ? ` (v${r.installedVersion})`
           : `  → npm i tree-sitter-${r.pkg}@${r.pin ?? 'latest'}`;
-      return `${status.padEnd(8)} ${r.pkg.padEnd(18)} ${adapted}${r.pin && !derived ? ` 钉版 ${r.pin}` : ''} ${hint}`;
+      // ★ 装包模板兼容性：只对已装的包离线可判（判据 = 真筛子，见 templateCompatFromPkgJson）；
+      //   不兼容的**当场标红**，别让它静默躺在 optionalDependencies 里等运行时炸
+      const compat = r.installed ? `  ${compatVerdict(r.compat, r.prebuild)}` : '';
+      return `${status.padEnd(8)} ${r.pkg.padEnd(18)} ${adapted}${r.pin && !derived ? ` 钉版 ${r.pin}` : ''} ${hint}${compat}`;
     });
-    console.log(['语言包清单（path: node_modules/tree-sitter-*；装即用，未装静默跳过）：', ...lines].join('\n'));
+    console.log(
+      [
+        '语言包清单（path: node_modules/tree-sitter-*；装即用，未装静默跳过）：',
+        ...lines,
+        '',
+        `判据（真筛子）：package.json 的 scripts.install === 'node-gyp-build' ⇒ 可载入；否则多为老 nan.h 模板 ⇒ 载入必失败。`,
+        `  本机实测：node-gyp-build 的包 20/20 可载入，其余 0/16（详见 templateCompatFromPkgJson 注释）。`,
+        '未装包看不到 scripts.install（离线判不出）⇒ 装之前先查：npm run install-package check <lang…>（联网读 registry 元数据）。',
+      ].join('\n'),
+    );
     if (jsonOut) {
       fs.mkdirSync(path.dirname(jsonOut), { recursive: true });
       fs.writeFileSync(jsonOut, JSON.stringify(rows, null, 2), 'utf-8');
       console.log(`\n[install-package] JSON → ${jsonOut}`);
     }
+    return;
+  }
+
+  // check：装包**前**的模板兼容预检（读 registry 元数据；取不到就退化为本地已装包的 scripts.install）
+  if (cmd === 'check') {
+    if (targets.length === 0) {
+      console.error('✗ 需要指定语言名（如：npm run install-package check lua markdown）');
+      process.exit(1);
+    }
+    let bad = 0;
+    for (const t of targets) {
+      const r = findRowByName(rows, t);
+      if (!r) {
+        console.error(`✗ 未知语言：${t}（list 查看可用语言）`);
+        process.exit(1);
+      }
+      const localJson = readPkgJson(`tree-sitter-${DERIVED[r.pkg] ?? r.pkg}`);
+      const local = templateCompatFromPkgJson(localJson);
+      const remote = registryInstallScript(DERIVED[r.pkg] ?? r.pkg);
+      let compat: TemplateCompat;
+      let via: string;
+      if (local === 'ok') {
+        compat = 'ok';
+        via = '本地已装包（package.json scripts.install）';
+      } else if (local === 'incompatible') {
+        compat = 'incompatible';
+        via = '本地已装包（package.json scripts.install）';
+      } else if (remote.missing) {
+        compat = 'incompatible';
+        via = 'registry：该包在 npm 上不存在（E404）';
+      } else if (remote.error) {
+        compat = 'unknown';
+        via = `registry 取不到（${remote.error}）且本地未装 ⇒ 判不出`;
+      } else {
+        compat = remote.script === 'node-gyp-build' ? 'ok' : 'incompatible';
+        via = `registry 元数据（scripts.install=${remote.script ?? '（无 install 脚本）'}）`;
+      }
+      const prebuild = localJson ? hasHostPrebuild(DERIVED[r.pkg] ?? r.pkg) : null;
+      const verdict = remote.missing && local === 'unknown' ? '❌ npm 上不存在这个包（装必失败）' : compatVerdict(compat, prebuild);
+      if (compat !== 'ok') bad++;
+      console.log(`${r.lang.padEnd(12)} tree-sitter-${r.pkg.padEnd(18)} ${verdict}   [来源：${via}]`);
+    }
+    console.log(
+      bad > 0
+        ? `\n❌ ${bad}/${targets.length} 个包**装上也载入不了**（或 npm 上不存在）—— 别装，或先补一个 node-gyp-build 模板的 fork/新版本（见 .inspect 侦察记录的判据）。`
+        : `\n✅ ${targets.length} 个包模板兼容，可装。`,
+    );
+    if (bad > 0) process.exit(1);
     return;
   }
 
@@ -343,6 +546,13 @@ function main(): void {
       // 派生语言不可独立装（已在上方拦截）；这里只需真实包
       return `tree-sitter-${r.pkg}@${pinned}`;
     });
+    // ★★ 装包**前**的标红（而不是让它静默进 optionalDependencies、等运行时才炸）：
+    //   判据与数据来源见 installPrecheck 的注释。
+    const redFlags = installPrecheck(targets, rows);
+    if (redFlags.length > 0) {
+      console.log('\n❌ 装包前预检（真筛子：scripts.install === node-gyp-build）：\n' + redFlags.map((w) => `  · ${w}`).join('\n'));
+      console.log('  ⇒ 仍继续安装（不硬拦：本机编译链/私有 registry 可能导致不同结论），但这些包**不会**让对应语言解析生效。');
+    }
     console.log(`[install-package] npm install ${pkgs.join(' ')} --save-optional`);
     const res = runNpm(['install', ...pkgs, '--save-optional', '--no-audit', '--no-fund']);
     console.log(res.out.slice(-2000));
@@ -379,7 +589,7 @@ function main(): void {
     return;
   }
 
-  console.error(`✗ 未知命令：${cmd}（支持 list / install / uninstall / index）`);
+  console.error(`✗ 未知命令：${cmd}（支持 list / check / install / uninstall / index）`);
   process.exit(1);
 }
 

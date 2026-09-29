@@ -107,6 +107,18 @@ function levelClause(capabilityId: string, langName: string | null): string {
 }
 
 /**
+ * ★ 装包前的「真筛子」一句（静态知识，不是本函数的 IO —— 所以纯计算纪律不破）：
+ *   peer 声明靠不住。核心 tree-sitter 0.21 用 N-API 的 LANGUAGE_TYPE_TAG 认语言对象，
+ *   而包的**安装模板**决定它导出的是不是这种对象：
+ *     `scripts.install === 'node-gyp-build'` ⇒ 可载入；其它（老 nan.h 模板）⇒ 装上也会
+ *     setLanguage 抛 "Invalid language object"（本机 36 包实测：20/20 命中 vs 0/16）。
+ *   ⇒ 提示里只**指向**那条命令（`install-package check`），不在这里做任何探测。
+ */
+const SIEVE_HINT =
+  '（装前先验：npm run install-package check <lang> —— 判据是 scripts.install === node-gyp-build，' +
+  '老 nan.h 模板的包装上也载入失败）';
+
+/**
  * 缺失语言能力的**可执行**提示（一句四要件）。
  * @param ext          文件扩展名（带不带 `.` 均可，大小写不敏感）
  * @param capabilityId 可选：具体能力 id（给了就带上"该能力缺多少门"，并指到对应小节）
@@ -133,7 +145,7 @@ export function missingLanguageHint(ext: string, capabilityId?: string): string 
   } else if (!installed) {
     const pin = PACK_PINS[registered.pkg];
     const spec = pin ? `tree-sitter-${registered.pkg}@${pin}` : `tree-sitter-${registered.pkg}@latest（未登记钉版）`;
-    packText = `装包：${spec}，或 npm run install-package install ${registered.name}`;
+    packText = `装包：${spec}，或 npm run install-package install ${registered.name}${SIEVE_HINT}`;
   } else {
     packText = `装包：tree-sitter-${registered.pkg} 已装（不是缺包；若解析仍失败按钉版重装：npm run install-package install ${registered.name}）`;
   }

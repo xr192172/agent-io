@@ -154,59 +154,125 @@ function isValidIdentifier(s: string): boolean {
   return /^[A-Za-z_$][\w$]*$/.test(s);
 }
 
-/** C/C++ declarator 包装节点：函数名可能被指针/引用/括号声明符包住 */
-const CPP_DECLARATOR_WRAPPERS = new Set([
-  'function_declarator',
-  'pointer_declarator',
-  'reference_declarator',
-  'parenthesized_declarator',
-  'array_declarator',
-]);
+/**
+ * C/C++ declarator 包装节点：函数名可能被指针/引用/括号声明符包住。
+ * ★ 2026-09-29 已下沉为**数据**（`LanguageEntry` 的 `nameNodeTypes`）：
+ *   原先这里是一个硬编码的 `Set`，现在 C/C++ 表项自带同一份名单，
+ *   内核不再认识"cpp 是什么"（见 `resolveName`）。
+ */
+
+/** 名字的**默认**候选节点类型（tree-sitter 各语法给"名字"命名的通用惯例）。
+ *  ★ 这不是按语言分支，而是"未声明 nameNodeTypes 的语言"的兜底惯例；
+ *    声明了 nameNodeTypes 的语言（C/C++、Julia）完全走自己的名单。
+ *    保留它 = 不因本次收紧而让表里另外 50+ 门语言的既有行为集体退化。 */
+const DEFAULT_NAME_NODE_TYPES = ['identifier', 'property_identifier', 'type_identifier', 'simple_identifier', 'name'];
+
+/** 体的**默认**候选字段名（tree-sitter 两种通用命名：主流 'body' / Python 系 'suite'）。
+ *  ★ 同理：不是按语言分支，是"未声明 bodyFields 的语言"的兜底；Haskell='match'、
+ *    Elixir='do_block'、Kotlin（无字段）等各语言表项自带声明。 */
+const DEFAULT_BODY_FIELDS = ['body', 'suite'];
+
+/** 逐层取名字：先看本节点的 `name` 字段，再按类型名单下钻，最后取自身文本（叶子） */
+function nameAtNode(node: SyntaxNodeLike, types: string[], nameField: string, depth: number): string {
+  const byField = fieldText(node, nameField);
+  if (byField && isValidIdentifier(byField)) return byField;
+  const byTypes = nameViaTypes(node, types, nameField, depth + 1);
+  if (byTypes) return byTypes;
+  return isValidIdentifier(node.text) ? node.text : '';
+}
 
 /**
- * 沿 `declarator` 字段下钻取 C/C++ 的函数名。实测形态（tree-sitter-cpp）：
- *   `int foo()`            → function_declarator → identifier('foo')
- *   `char* name()`         → pointer_declarator → function_declarator → identifier('name')
- *   `Node* next()`         → 同上（★ 若不优先走这里，通用兜底会把**返回类型** Node 当符号名）
- *   `int Greeter::greet()` → function_declarator → qualified_identifier → name('greet')
- *   `void C::m() const`    → function_declarator → field_identifier('m')
+ * 按**类型名单**（列表序 = 优先级）递归下钻取名字。
+ * 下钻规则：对名单里的每个类型，按文档序找**直接**子节点；命中就递归进去
+ * （`depth` 封顶 8），递归结果为空则继续试下一个。
+ * 为什么列表序即优先级：C/C++ 必须**先**走声明符包装链，否则
+ * `Node* next(){…}` 会把**返回类型** Node 当符号名（实测，见 .inspect 侦察）。
  */
-function nameFromCppDeclarator(node: SyntaxNodeLike | null, depth = 0): string {
-  if (!node || depth > 6) return '';
-  if (node.type === 'identifier' || node.type === 'field_identifier') return isValidIdentifier(node.text) ? node.text : '';
-  if (node.type === 'qualified_identifier') {
-    const nm = node.childForFieldName('name'); // `Greeter::greet` → 只取 greet（类归属另由 parent 表达）
-    return nm && isValidIdentifier(nm.text) ? nm.text : '';
+function nameViaTypes(node: SyntaxNodeLike, types: string[], nameField: string, depth = 0): string {
+  if (depth > 8) return '';
+  for (const t of types) {
+    for (let i = 0; i < node.childCount; i++) {
+      const c = node.child(i);
+      if (!c || c.type !== t) continue;
+      const got = nameAtNode(c, types, nameField, depth);
+      if (got) return got;
+      // 同一类型下可能有多个子节点（如双声明符）——继续试下一个
+    }
   }
-  if (CPP_DECLARATOR_WRAPPERS.has(node.type)) return nameFromCppDeclarator(node.childForFieldName('declarator'), depth + 1);
   return '';
 }
 
-function extractName(node: SyntaxNodeLike, fieldMap: LanguageEntry['field_map']): string {
-  const direct = fieldText(node, fieldMap.name);
-  if (direct && isValidIdentifier(direct)) return direct;
+/** 一步名字路径：字段优先（节点自带该字段），否则取该类型的第一个直接子节点 */
+function nameStep(node: SyntaxNodeLike, step: string): SyntaxNodeLike | null {
+  const byField = node.childForFieldName(step);
+  if (byField) return byField;
+  for (let i = 0; i < node.childCount; i++) {
+    const c = node.child(i);
+    if (c && c.type === step && c.isNamed !== false) return c;
+  }
+  return null;
+}
 
-  // C/C++：函数名在 declarator 链里，**必须优先于**下面的通用子节点兜底。
-  // 实测（2026-09-29，tree-sitter-cpp）：`template<typename T> T maxof(…){…}` 与 `Node* next(){…}`
-  // 若先走通用兜底，function_definition 的**第一个** type_identifier 子节点是**返回类型**
-  // ⇒ 符号名错成 'T' / 'Node'。故先沿 declarator 链取真名。
+/** 子节点下标（tree-sitter 节点对象身份不稳定，按 (type,startIndex,endIndex) 对齐） */
+function childIndexOf(node: SyntaxNodeLike, target: SyntaxNodeLike | null): number | null {
+  if (!target) return null;
   for (let i = 0; i < node.childCount; i++) {
-    const child = node.child(i);
-    if (child && CPP_DECLARATOR_WRAPPERS.has(child.type)) {
-      const nm = nameFromCppDeclarator(child);
-      if (nm) return nm;
+    const c = node.child(i);
+    if (!c) continue;
+    if (c.type === target.type && c.startIndex === target.startIndex && c.endIndex === target.endIndex) return i;
+  }
+  return null;
+}
+
+/**
+ * 取符号名 + **名字来自哪个直接子节点**（下标，供 `bodyIsSelf` 跳过它）。
+ * 三级（全部数据驱动，内核不认识任何具体语言）：
+ *   ① `field_map.name` 声明的字段（既有表项最常用的一条）；
+ *   ② 适配器的 `namePaths`（定长路径，Elixir 的 `def`/`defmodule`）；
+ *   ③ 适配器的 `nameNodeTypes` ?? 默认惯例名单（变长类型下钻，C/C++ 声明符链、Julia 的 signature）。
+ */
+function resolveName(node: SyntaxNodeLike, lang: LanguageEntry): { name: string; fromIndex: number | null } {
+  const a = LANG_ADAPTERS[lang.name];
+  const byField = node.childForFieldName(lang.field_map.name);
+  if (byField && isValidIdentifier(byField.text)) {
+    return { name: byField.text, fromIndex: childIndexOf(node, byField) };
+  }
+  for (const path of a?.namePaths ?? []) {
+    let cur: SyntaxNodeLike | null = node;
+    let firstIndex: number | null = null;
+    for (let i = 0; i < path.length && cur; i++) {
+      const next = nameStep(cur, path[i]);
+      if (!next) {
+        cur = null;
+        break;
+      }
+      if (i === 0) firstIndex = childIndexOf(node, next);
+      cur = next;
+    }
+    if (cur && isValidIdentifier(cur.text)) return { name: cur.text, fromIndex: firstIndex };
+  }
+  const declared = a?.nameNodeTypes;
+  if (declared) {
+    for (const t of declared) {
+      for (let i = 0; i < node.childCount; i++) {
+        const c = node.child(i);
+        if (!c || c.type !== t) continue;
+        const got = nameAtNode(c, declared, lang.field_map.name, 0);
+        if (got) return { name: got, fromIndex: i };
+      }
+    }
+    return { name: '', fromIndex: null };
+  }
+  // 未声明 nameNodeTypes 的语言：沿用**既有惯例**（文档序、取第一个名字型子节点文本）。
+  // ★ 为什么不一并改成"类型下钻"：表里另有 50+ 门语言没声明（也装不上包，无从实测），
+  //   这一支保证它们的既有行为**逐字不变**（改动 = 只有实测过的语言才换语义）。
+  for (let i = 0; i < node.childCount; i++) {
+    const c = node.child(i);
+    if (c && DEFAULT_NAME_NODE_TYPES.includes(c.type) && isValidIdentifier(c.text)) {
+      return { name: c.text, fromIndex: i };
     }
   }
-  // 兜底：从第一个 identifier 子节点取
-  //   · simple_identifier = kotlin（该 grammar 的声明节点**无 name 字段**，名字就是头一个子节点）
-  for (let i = 0; i < node.childCount; i++) {
-    const child = node.child(i);
-    if (child && (child.type === 'identifier' || child.type === 'property_identifier' || child.type === 'type_identifier' || child.type === 'simple_identifier' || child.type === 'name')) {
-      const text = child.text;
-      if (isValidIdentifier(text)) return text;
-    }
-  }
-  return '';
+  return { name: '', fromIndex: null };
 }
 
 function stripParens(s: string): string {
@@ -217,48 +283,38 @@ function stripParens(s: string): string {
   return s.trim();
 }
 
+/**
+ * 签名文本（`name(params) + 返回类型`）。
+ * ★ 2026-09-29 扩契约：原先按 `lang.name === 'go' | 'python' | 'rust' | 'java'…` 的
+ *   **四条按语言分支**，全部收敛成适配器数据（`returnSep` / `signatureHasReceiver` /
+ *   `stripSelfParam`）。缺省即 TS/JS/Java/C#/Kotlin/Swift 形态（': ' 连接返回类型）。
+ */
 function buildSignature(node: SyntaxNodeLike, fieldMap: LanguageEntry['field_map'], lang: LanguageEntry): string {
-  const name = extractName(node, fieldMap);
+  const name = resolveName(node, lang).name;
   const rawParams = fieldText(node, fieldMap.parameters || '');
-  const params = stripParens(rawParams);
+  let params = stripParens(rawParams);
   // 一些 tree-sitter 语法（如 typescript 的 type_annotation）返回类型文本含前导 ':'，
   // 而这里各语言分支都会自己拼 ': ' / ' -> '。统一剥掉前导冒号，避免 '): : number' 双冒号。
   const retType = (fieldName: string): string =>
     fieldText(node, fieldName).replace(/^\s*:\s*/, '');
 
-  if (lang.name === 'go') {
-    const result = retType(fieldMap.return_type || '');
-    const receiver = fieldText(node, fieldMap.receiver || '');
-    // receiver text 如 "(u *UserService)" 或 "u *UserService"
-    const receiverClean = stripParens(receiver);
-    const receiverMatch = receiverClean.match(/(?:\*\s*)?(\w+)$/);
-    const receiverName = receiverMatch ? receiverMatch[1] : '';
-    if (receiverName) {
-      return `${receiverName}.${name}(${params})${result ? ' ' + result : ''}`;
-    }
-    return `${name}(${params})${result ? ' ' + result : ''}`;
-  }
-
-  if (lang.name === 'python') {
-    const ret = retType(fieldMap.return_type || '');
-    // 移除 self 参数
-    const cleanParams = params.replace(/^self\s*,?\s*/, '').trim();
-    return `${name}(${cleanParams})${ret ? ' -> ' + ret : ''}`;
-  }
-
-  if (lang.name === 'rust') {
-    const ret = retType(fieldMap.return_type || '');
-    return `${name}(${params})${ret ? ' -> ' + ret : ''}`;
-  }
-
-  if (lang.name === 'java' || lang.name === 'c_sharp' || lang.name === 'kotlin' || lang.name === 'swift') {
-    const ret = retType(fieldMap.return_type || '');
-    return `${name}(${params})${ret ? ': ' + ret : ''}`;
-  }
-
-  // TypeScript / JavaScript / C / C++ 等
+  const a = LANG_ADAPTERS[lang.name];
   const ret = retType(fieldMap.return_type || '');
-  return `${name}(${params})${ret ? ': ' + ret : ''}`;
+  const sep = a?.returnSep ?? ': ';
+
+  if (a?.stripSelfParam) {
+    params = params.replace(/^self\s*,?\s*/, '').trim();
+  }
+
+  let prefix = '';
+  if (a?.signatureHasReceiver) {
+    // receiver text 如 "(u *UserService)" 或 "u *UserService"
+    const receiverClean = stripParens(fieldText(node, fieldMap.receiver || ''));
+    const receiverMatch = receiverClean.match(/(?:\*\s*)?(\w+)$/);
+    if (receiverMatch) prefix = `${receiverMatch[1]}.`;
+  }
+
+  return `${prefix}${name}(${params})${ret ? sep + ret : ''}`;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -298,8 +354,10 @@ function traverseAndExtract(
         const valueBrief = rawValue.length > 60 ? rawValue.slice(0, 57) + '…' : rawValue;
         // 局部闭包检测：Go 顶层 `var x = func(){}` / Python 顶层 `x = lambda` 是内部辅助，
         // 不是设计契约（TS/JS 顶层 handler const 不标——它们是主体结构，须保留在契约面）。
+        // ★ 2026-09-29 扩契约：原先这里按 `lang.name === 'go'|'python'` 判断，现走数据
+        //   （适配器 closureLiteralNodeTypes）。
         const vt = valueNode?.type;
-        const isClosureLit = (lang.name === 'go' && vt === 'func_literal') || (lang.name === 'python' && vt === 'lambda');
+        const isClosureLit = !!vt && (LANG_ADAPTERS[lang.name]?.closureLiteralNodeTypes ?? []).includes(vt);
         symbols.push({
           name: nameNode.text,
           kind: 'const',
@@ -315,15 +373,16 @@ function traverseAndExtract(
     return;
   }
 
-  if (lang.symbol_nodes.includes(node.type)) {
-    const name = extractName(node, lang.field_map);
+  if (isSymbolNode(node, lang)) {
+    const { name, fromIndex } = resolveName(node, lang);
     if (name) {
-      const kind = nodeTypeToKind(node.type, parent);
+      const kind = symbolKind(node, lang, parent);
       const signature = buildSignature(node, lang.field_map, lang);
       // Go 方法：receiver 类型即“所属类型”。只填 parent（供社区按类型聚合），
       // 不改 qualified_name（保留 "Method" 短名，避免破坏既有调用边解析契约）。
+      // ★ 2026-09-29：`lang.name === 'go'` → 数据字段 parentFromReceiver。
       let symbolParent = parent;
-      if (lang.name === 'go' && !symbolParent) {
+      if (LANG_ADAPTERS[lang.name]?.parentFromReceiver && !symbolParent) {
         const receiver = fieldText(node, lang.field_map.receiver || '');
         const receiverMatch = stripParens(receiver).match(/(?:\*\s*)?(\w+)$/);
         if (receiverMatch) symbolParent = receiverMatch[1];
@@ -353,12 +412,14 @@ function traverseAndExtract(
         if (child) traverseAndExtract(child, lang, symbols, qn, depth + 1, childScope);
       };
       // 进入 body 继续提取（找方法/嵌套类）
-      const body = findBodyNode(node, lang.name);
+      const body = bodyChildren(node, lang, fromIndex);
       if (body) {
-        for (let i = 0; i < body.childCount; i++) recBody(body.child(i));
+        for (const c of body) recBody(c);
         return;
       }
       // 兜底：直接遍历子节点（如 Python class 的 body 可能不是标准 body 字段）
+      // ★ 这是**跨语言**的节点名兜底（不是按语言分支）；新语言优先用数据声明
+      //   （bodyFields / bodyNodeTypes / bodyIsSelf），别往这里加名字。
       if (node.type === 'class_definition' || node.type === 'class_declaration') {
         for (let i = 0; i < node.childCount; i++) recBody(node.child(i));
         return;
@@ -376,25 +437,118 @@ function traverseAndExtract(
 // 调用边提取（函数级，AST 级，路线图序号 3）
 // ─────────────────────────────────────────────────────────────
 
-/** 语言适配器注册表：深适配语言 = 一条记录（callNode + import/binding 提取 + 顶层调用）。加语言 = 加一行，kernel 消费查此 map。 */
+/**
+ * 语言适配器注册表：**一门语言的"深适配契约" = 一条数据记录**。
+ *
+ * ★ 2026-09-29 扩契约（用户方针「不许再加一门语言加一个 if」）：
+ *   原先散在 kernel 里的按语言判断
+ *     · `extractName` 的 `CPP_DECLARATOR_WRAPPERS` Set + 硬编码节点名兜底串
+ *     · `findBodyNode` 的 `'body' | 'suite'` 两个字面量
+ *     · `extractCallee` 的 `'function' | 'name' | 'method'` 三个字段名 + `langName === 'java'`
+ *     · `buildSignature` 的四条语言分支、receiver/闭包字面量/TS 系 import 源/type-only
+ *   全部收敛成**下表字段**。kernel 只消费数据，不写按语言分支（判据见
+ *   `tests/tools/kernel_no_lang_branch.test.ts`）。加语言 = 加一行数据。
+ */
 interface LangImportAdapter {
+  /** 调用节点类型（数组 = 该语言有多种调用形态，如 PHP 三种 / Groovy 两种） */
   callNode?: string | string[];
+  /** 顶层调用也提取（无包裹函数的脚本语言，如 Python） */
   topLevelCall?: boolean;
-  extractImportSources?: (node: SyntaxNodeLike) => string[];
-  extractImportBindings?: (node: SyntaxNodeLike, paths: string[]) => string[];
   /**
-   * 无 `body`/`suite` 字段的语法（实测 kotlin：`function_declaration`/`class_declaration`
-   * 的 node-types.json 里 `"fields": {}`，体是 `function_body`/`class_body` 子节点）
-   * —— 列出该语言的"体"节点类型；符号/调用遍历按此下钻。
-   * 有字段的语法（TS/Go/Python/Java/Rust/C/C#/C++/Ruby…）**不用填**。
+   * 被调名候选【字段名】，按序试、命中即取。
+   * **替代**内核原先硬编码的 `'function' | 'name' | 'method'` 串
+   * （C/C++/Rust/TS 系/Go/Haskell/Scala='function'、Java/Groovy/PHP='name'、
+   * Ruby='method'、Elixir='target'）。
+   */
+  calleeFields?: string[];
+  /**
+   * 被调名的"对象/限定"字段（Java/Groovy 的 `method_invocation.object`）：
+   * 有它就把 `对象.方法` 拼回 `callee_expr`。
+   * **替代**内核原先的 `langName === 'java' ? … : null`（按语言 if，屎山本体）。
+   */
+  calleeObjectField?: string;
+  /**
+   * 调用表达式无字段的语法（实测 kotlin/julia：`call_expression` 的 `"fields": {}`，
+   * 被调表达式就是**第一个命名子节点**）。
+   */
+  calleeIsFirstChild?: boolean;
+  /**
+   * 体的候选【字段名】；未声明则用 DEFAULT_BODY_FIELDS（'body'/'suite' 两个通用命名）。
+   * 实测：Haskell 体在 `match`（局部绑定在 `binds`）、Elixir 体在 `do_block`。
+   */
+  bodyFields?: string[];
+  /**
+   * 无体字段的语法 ⇒ 体的**节点类型**（实测 kotlin：`function_declaration`/`class_declaration`
+   * 的 `"fields": {}`，体是 `function_body`/`class_body` 子节点）。
    */
   bodyNodeTypes?: string[];
   /**
-   * 调用表达式无 `function`/`name`/`method` 字段的语法（实测 kotlin：`call_expression`
-   * 的 `"fields": {}`，`(call_expression (simple_identifier) (call_suffix …))`）
-   * —— 被调表达式 = 第一个命名子节点。
+   * 体就是**本节点自身**（实测 julia：定义节点的子节点按序即体语句，没有包裹节点）。
+   * `resolveName` 命中的那个直接子节点（如 `signature`）会被跳过——否则签名里的
+   * `call_expression` 会被误当成一次真实调用（实测：会多出 `-> greet` 自调用边）。
    */
-  calleeIsFirstChild?: boolean;
+  bodyIsSelf?: boolean;
+  /**
+   * 名字候选【节点类型】：字段取不到时按类型递归下钻（实测两条用途）
+   *   · C/C++ 的声明符包装链 `function_declarator → pointer_declarator → identifier`
+   *     （必须先于通用兜底，否则 `Node* next(){…}` 会把**返回类型** Node 当符号名）
+   *   · Julia 的 `signature → call_expression → identifier`
+   * 未声明则用 DEFAULT_NAME_NODE_TYPES（跨语言命名惯例兜底）。
+   */
+  nameNodeTypes?: string[];
+  /**
+   * 名字的**定长路径**（按序试、命中即止）：每步先按字段名找（节点自带该字段），
+   * 否则按节点类型找第一个直接子节点；走完路径取该节点文本（须是合法标识符）。
+   * 为什么需要它：少数语法把"声明"写成普通调用（Elixir 的 `def`/`defmodule`
+   * **自身就是 `call`**），真名既不在本节点字段里、也不在同型子节点链上，
+   * 而在 `arguments → 内层 call → target` 这条定长路径上。
+   */
+  namePaths?: string[][];
+  /**
+   * 节点类型 → 符号 kind 的**覆盖**（修正启发式 `nodeTypeToKind` 的误判）。
+   * 为什么要紧：kind 错了不只是标签难看——`class`/`type` 作用域内的符号才留在
+   * 设计契约面，被误判成 `function` 会把模块内的函数全标成 `is_closure`（实测：
+   * Julia `module`、Scala `object`、Haskell `data_type`）。
+   */
+  nodeKindOverride?: Record<string, ParsedSymbol['kind']>;
+  /**
+   * 「宏即声明」语法（实测 Elixir）：符号节点就是普通 `call`，靠某字段的**文本值**
+   * 分派 kind —— 命中即符号节点、未命中即不是（该表**兼作**符号节点判据）。
+   * 例：`{ field: 'target', kinds: { def: 'function', defmodule: 'class', … } }`
+   */
+  symbolDispatch?: { field: string; kinds: Record<string, ParsedSymbol['kind']> };
+  /**
+   * 符号节点的**结构前提**：必须至少存在其中之一字段（实测 Haskell：
+   * `function` 这个节点名**同时**表示「函数绑定」和「函数类型」——只有绑定带
+   * `match`/`binds`；不设前提就会把类型签名里的 `Int -> Int` 当函数提取，实测多出
+   * `Int` 符号）。
+   * 与 symbolDispatch 的分工：本字段管「是不是符号节点」，symbolDispatch 管「按值分派 kind」。
+   */
+  symbolRequireFields?: string[];
+  /**
+   * import 语句里"模块源"所在字段名（TS 系 = `source`）。
+   * **替代**内核原先的 `langName === 'typescript' || 'tsx' || 'javascript' || 'jsx'`。
+   */
+  importSourceField?: string;
+  /**
+   * 该语言的模块语句是否可能「运行时整体擦除」（TS 系 `import type` / `export type`）。
+   * **替代**内核原先的 `TS_FAMILY_LANGS = new Set([...])`。
+   */
+  erasedModuleStatements?: boolean;
+  /** 签名里返回类型的连接符（缺省 `': '`；实测 Python/Rust = `' -> '`、Go = `' '`） */
+  returnSep?: string;
+  /** 签名里带 receiver 前缀（实测 Go：`(u *User) Greet()` 签名为 `User.Greet()`） */
+  signatureHasReceiver?: boolean;
+  /** 签名参数里剥掉首参 `self`（实测 Python） */
+  stripSelfParam?: boolean;
+  /** 用 receiver 文本里的类型名当 `parent`（Go 方法归属类型）——替代 `lang.name === 'go'` */
+  parentFromReceiver?: boolean;
+  /** 顶层 const/var 绑定**裸闭包**的值节点类型（Go `func_literal` / Python `lambda`）
+   *  ⇒ 该符号标 `is_closure`（内部辅助，不是设计契约面） */
+  closureLiteralNodeTypes?: string[];
+  /** 该语言专属的 import 源提取（形态复杂时用；简单字段走 importSourceField） */
+  extractImportSources?: (node: SyntaxNodeLike) => string[];
+  extractImportBindings?: (node: SyntaxNodeLike, paths: string[]) => string[];
 }
 
 /** `#include "x.h"` / `#include <vector>` → 头文件路径（C 与 C++ 同型，共用一份正则，别抄第二份） */
@@ -406,6 +560,16 @@ function includePath(node: SyntaxNodeLike): string[] {
 export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
   go: {
     callNode: 'call_expression',
+    // ★ 数据（原先散在 kernel 里的按语言 if）：
+    //   calleeFields —— `fmt.Println(x)` → (call_expression function: (selector_expression) …)
+    //   returnSep=' ' / signatureHasReceiver / parentFromReceiver —— Go 特有的
+    //     `func (u *UserService) Greet()` 形态（签名带 receiver 前缀、parent 取 receiver 类型）
+    //   closureLiteralNodeTypes —— 顶层 `var x = func(){}` 是本文件的内部辅助，非设计契约
+    calleeFields: ['function'],
+    returnSep: ' ',
+    signatureHasReceiver: true,
+    parentFromReceiver: true,
+    closureLiteralNodeTypes: ['func_literal'],
     extractImportSources(node) {
       const p = fieldText(node, 'path');
       return p ? [stripQuotes(p)] : [];
@@ -420,6 +584,11 @@ export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
   python: {
     callNode: 'call',
     topLevelCall: true,
+    // ★ 数据：`f(x)` → (call function: (identifier))；签名 `def f(self)` 剥 self、返回 ' -> '
+    calleeFields: ['function'],
+    returnSep: ' -> ',
+    stripSelfParam: true,
+    closureLiteralNodeTypes: ['lambda'],
     extractImportSources(node) {
       if (node.type === 'import_statement') {
         const out: string[] = [];
@@ -471,6 +640,11 @@ export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
   },
   java: {
     callNode: 'method_invocation',
+    // ★ 数据：Java 把对象与方法名分在两个字段（object='Bar'、name='run'）——
+    //   原先这里是 kernel 里的一条**按语言分支**（只对 Java 取 object 字段拼 callee_expr），
+    //   现为表项数据 calleeObjectField，内核不认识"java"。Groovy 用同一个字段。
+    calleeFields: ['name'],
+    calleeObjectField: 'object',
     extractImportSources(node) {
       const m = node.text.replace(/^\s*import\s+static\s+/, 'import ').match(/^\s*import\s+([\w.]+)(?:\.\*)?\s*;/);
       return m ? [m[1]] : [];
@@ -484,6 +658,9 @@ export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
   },
   rust: {
     callNode: 'call_expression',
+    // ★ 数据：`f(x)` → (call_expression function: …)；签名 `fn f() -> T`
+    calleeFields: ['function'],
+    returnSep: ' -> ',
     extractImportSources(node) {
       const t = node.text.replace(/^\s*use\s+/, '').replace(/;?\s*$/, '').trim();
       const brace = t.indexOf('{');
@@ -506,6 +683,8 @@ export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
   },
   c_sharp: {
     callNode: 'invocation_expression',
+    // ★ 数据：`F(x)` → (invocation_expression function: …)
+    calleeFields: ['function'],
     // `using System;` / `using static System.Math;` / `using Alias = System.Console;`
     // source = 命名空间全名（别名形式取 RHS，静态 using 去 static）
     extractImportSources(node) {
@@ -527,6 +706,11 @@ export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
   },
   c: {
     callNode: 'call_expression',
+    // ★ 数据：C 的函数名也在声明符链里（`static char* format(...)` = pointer_declarator →
+    //   function_declarator → identifier）——原先靠 kernel 里硬编码的 CPP_DECLARATOR_WRAPPERS SET，
+    //   现与 C++ 各自表项自带同一份名单（同一意图两处声明：这里是数据，不是代码分支）。
+    nameNodeTypes: ['function_declarator', 'pointer_declarator', 'reference_declarator', 'parenthesized_declarator', 'array_declarator', 'identifier', 'field_identifier', 'qualified_identifier'],
+    calleeFields: ['function'],
     // `#include "math.h"` / `#include <stdio.h>` → 头文件路径（与 C++ 共用 includePath）
     extractImportSources: includePath,
   },
@@ -536,6 +720,10 @@ export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
     //   `helper(n)` → (call_expression function: (identifier) arguments: …)
     //   `g.greet(3)` → (call_expression function: (field_expression …) arguments: …)
     //   import：`#include "util.h"` → (preproc_include path: (string_literal …))（与 C 同型）
+    //   ★ 名字在声明符链里（详见 nameNodeTypes 的接口注释：顺序即优先级，
+    //     声明符包装必须排在叶子标识符前，否则 `Node* next(){…}` 会取到返回类型 Node）
+    nameNodeTypes: ['function_declarator', 'pointer_declarator', 'reference_declarator', 'parenthesized_declarator', 'array_declarator', 'identifier', 'field_identifier', 'qualified_identifier'],
+    calleeFields: ['function'],
     extractImportSources: includePath,
   },
   ruby: {
@@ -543,6 +731,7 @@ export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
     //   + 真实语法树：`helper(n)` → (call method: (identifier) arguments: …)
     //   被调名在 **`method` 字段**（不是 function/name），故 extractCallee 认这个字段。
     callNode: 'call',
+    calleeFields: ['method'],
     // ★ 本语言**不接 import 边、不声明 import_nodes**（实测结论，非遗漏）：
     //   tree-sitter-ruby 没有"import 声明"节点 —— `require 'x'` / `require_relative 'x'`
     //   就是普通 `call`（method=identifier 'require'），与每一次方法调用**同型**。
@@ -553,8 +742,11 @@ export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
     //   `fun main() { helper() }` → (function_declaration (simple_identifier) (function_value_parameters) (function_body …))
     //   `helper()` → (call_expression (simple_identifier) (call_suffix (value_arguments …)))
     //   ★ 该 grammar 的声明/调用节点 **"fields": {}**（无 name/body/function 字段）⇒
-    //     名字靠 simple_identifier 子节点、体靠 function_body/class_body、被调靠第一个子节点。
+    //     名字靠 simple_identifier 子节点（nameNodeTypes）、体靠 function_body/class_body、被调靠第一个子节点。
     callNode: 'call_expression',
+    // 名字靠子节点类型：`fun twice()` 是 simple_identifier；`class Greeter`/`object Util`
+    // 的名字是 **type_identifier**（实测 kotlin 0.3.8 的 class_declaration/object_declaration）
+    nameNodeTypes: ['simple_identifier', 'type_identifier'],
     bodyNodeTypes: ['function_body', 'class_body'],
     calleeIsFirstChild: true,
     // `import a.b.C` / `import a.b.*` / `import a.b.C as D` → 模块路径（去通配/去别名）
@@ -576,6 +768,9 @@ export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
   php: {
     // PHP 调用形式多样：自由函数 foo()=function_call_expression；静态 Class::m()=scoped_call_expression；实例 $o->m()=member_call_expression
     callNode: ['function_call_expression', 'scoped_call_expression', 'member_call_expression'],
+    // ★ 数据：自由函数被调名在 `function` 字段；静态/实例调用在 `name` 字段
+    //   （与改动前的 `'function'|'name'|'method'` 串在 PHP 上等价 —— 有意不改 callee_expr 形态）
+    calleeFields: ['function', 'name'],
     // `use Foo\Bar<;>` / `use Foo\Bar as Baz;` / `use Foo\{Bar, Baz};` / `use function Foo\bar;`
     extractImportSources(node) {
       let t = node.text.replace(/^\s*use\s+/, '').replace(/;\s*$/, '').trim();
@@ -609,18 +804,138 @@ export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
       return last ? [last] : [];
     },
   },
-  typescript: { callNode: 'call_expression' },
-  tsx: { callNode: 'call_expression' },
-  javascript: { callNode: 'call_expression' },
-  jsx: { callNode: 'call_expression' },
+  // ── TS 系四门：同一份契约（callNode + 被调字段 + import 源字段 + type-only 擦除）──
+  //   ★ 原先这四门在 kernel 里被两处**按语言 if** 特判（import 源提取、TS_FAMILY_LANGS 的
+  //     type-only 判定），现各自表项声明；四门形同一份数据，故意不合并成别名——
+  //     每门都是独立 npm 包 + 独立扩展名，表项自足才符合"加语言 = 加一行"。
+  typescript: { callNode: 'call_expression', calleeFields: ['function'], importSourceField: 'source', erasedModuleStatements: true },
+  tsx: { callNode: 'call_expression', calleeFields: ['function'], importSourceField: 'source', erasedModuleStatements: true },
+  javascript: { callNode: 'call_expression', calleeFields: ['function'], importSourceField: 'source', erasedModuleStatements: true },
+  jsx: { callNode: 'call_expression', calleeFields: ['function'], importSourceField: 'source', erasedModuleStatements: true },
+
+  // ═══════════════════════════════════════════════════════════════════
+  // 2026-09-29 新增 5 门（scala / groovy / julia / haskell / elixir）
+  //   全部值来自 `node_modules/tree-sitter-<lang>/**/node-types.json` + 真实语法树实测
+  //   （探针：`scripts/ts_kernel_probe.mjs`；读数见提交信息）
+  // ═══════════════════════════════════════════════════════════════════
+  scala: {
+    // 实测（tree-sitter-scala 0.24.0）：
+    //   `def greet(n: Int): String = { … }` → (function_definition name: (identifier) … body: (indented_block …))
+    //   `Helper.twice(n)` → (call_expression function: (field_expression …) arguments: …)
+    //   ★ 该 grammar 里**没有** `def_definition` 节点（旧表项写错了）——真名是 function_definition
+    //   ★ body 字段存在（='body'）⇒ 不必声明 bodyFields；被调在 `function` 字段
+    callNode: 'call_expression',
+    calleeFields: ['function'],
+    // object（单例）在 Scala 里是类型/模块作用域 ⇒ kind='class'，否则其成员函数会被标成闭包
+    nodeKindOverride: { object_definition: 'class' },
+  },
+  groovy: {
+    // 实测（tree-sitter-groovy 0.1.2）：
+    //   `String greet(String n) { … }` → (method_declaration name: (identifier) parameters: … body: (block …))
+    //   `def format(String s) { … }`   → (function_definition name: … body: (closure …))
+    //   `format(x)` → (method_invocation name: (identifier) arguments: …)
+    //   `println x` → (juxt_function_call name: (identifier) args: …)（命令式调用，另一种调用节点）
+    //   ★ 旧表项写的 `class_definition` 在该 grammar 里不存在 —— 真名是 class_declaration
+    callNode: ['method_invocation', 'juxt_function_call'],
+    // method_invocation / juxt_function_call 的被调名都在 `name` 字段；
+    // `g.greet(…)` 的接收者在 `object` 字段 ⇒ 拼回 callee_expr='g.greet'
+    calleeFields: ['name'],
+    calleeObjectField: 'object',
+  },
+  julia: {
+    // 实测（tree-sitter-julia 0.23.1）：
+    //   `function greet(n) … end` → (function_definition (signature (call_expression (identifier) (argument_list))))
+    //     ★ function_definition 的 node-types.json 里 **"fields": {}** ⇒ 名字/体都得靠结构走
+    //   `helper(n) + 1` → (call_expression (identifier "helper") (argument_list …))（被调 = 第一个命名子节点）
+    //   `struct Greeter … end` → (struct_definition (type_head (identifier)))；`module App … end`
+    //     → (module_definition name: (identifier))（模块有 name 字段，但没有 body 字段）
+    callNode: 'call_expression',
+    // 名字：function_definition→signature→call_expression→identifier（定长链由类型下钻走通）；
+    //   struct/abstract/primitive 走 type_head。顺序即优先级（signature/type_head 先于通用 identifier）
+    nameNodeTypes: ['signature', 'type_head', 'call_expression', 'identifier'],
+    // 体就是本节点自身（子节点按序即体语句；resolveName 命中的 signature 会被跳过）
+    bodyIsSelf: true,
+    calleeIsFirstChild: true,
+    // module/struct/abstract/primitive 是**类型/模块作用域**（默认启发式会给 'function'，
+    // 那会把模块内的函数误标成 is_closure —— 实测后果，见 nodeKindOverride 注释）
+    nodeKindOverride: {
+      module_definition: 'class',
+      struct_definition: 'type',
+      abstract_definition: 'type',
+      primitive_definition: 'type',
+    },
+    // ★ 未接：`helper(n) = n * 2` 短形式（LHS 是 call_expression 的 assignment）——
+    //   那需要"符号节点的结构谓词"，本笔未做（见提交信息「没验什么」）。
+  },
+  haskell: {
+    // 实测（tree-sitter-haskell 0.23.1）：
+    //   `greet n = helper n + 1` → (function name: (variable) patterns: … match: (match expression: (infix left_operand: (apply function: (variable "helper")))))
+    //   `main = greet 3`        → (bind name: (variable) match: (match expression: (apply …)))
+    //   `class Greeter a where prefix :: a -> String` → (class name: (name) declarations: (class_declarations …))
+    //   ★ 体在 **match**（局部绑定在 binds），旧内核只认 'body'/'suite' ⇒ 下不了体 ⇒ 调用边恒空（实测）
+    callNode: 'apply',
+    // `helper n` → (apply function: (variable "helper") argument: …)
+    calleeFields: ['function'],
+    // 函数体 = match；where/let 里的局部绑定 = binds；class 的方法表 = declarations
+    bodyFields: ['match', 'binds', 'declarations'],
+    // ★ `function` 这个节点名在该 grammar 里**一物两用**：既是「函数绑定」
+    //   （`greet n = …`，带 match/binds），又是「函数类型」（`Int -> Int`，带 result）。
+    //   不设结构前提就会把类型签名里的 Int 当函数（实测：多出 `Int` 符号）。带 match/binds
+    //   的才是绑定；data_type/newtype 看 constructors/constructor，class 看 declarations。
+    symbolRequireFields: ['match', 'binds', 'declarations', 'constructors', 'constructor'],
+    // `data_type`/`newtype` 的默认启发式给 'function'（会把构造器标成闭包）⇒ 覆盖为 'type'
+    nodeKindOverride: { data_type: 'type', newtype: 'type' },
+    // ★ 未接：`signature`（类型签名 `greet :: Int -> Int`）**故意不进 symbol_nodes** ——
+    //   它不是函数声明，且它的 name 字段会让类型名混进符号表（旧表项误报 'Int' 的来源）。
+    // ★ 未接 import：`import Data.List (sort)` 的 (import module: …) 需要专属提取器，本笔未做。
+  },
+  elixir: {
+    // 实测（tree-sitter-elixir 0.3.5）：
+    //   `defmodule App do … end` → (call target: (identifier "defmodule") arguments: (alias "App") do_block: …)
+    //   `def greet(n) do … end`  → (call target: (identifier "def") arguments: (call target: (identifier "greet") …) do_block: …)
+    //   `helper(n)`              → (call target: (identifier "helper") arguments: …)
+    //   `App.greet(3)`           → (call target: (dot left: (alias "App") right: (identifier "greet")) …)
+    //   ★ 该语法里 **`def`/`defmodule` 自己就是 call** ⇒ 旧表项（symbol_nodes=['call','do_block']）
+    //     会把 defmodule/def/内层名全当符号（实测 8 条里 6 条是垃圾），且 calls 恒为 0
+    callNode: 'call',
+    // 被调名在 `target` 字段（`App.greet` 的 target 是 dot 节点，取文本尾部标识符 → greet）
+    calleeFields: ['target'],
+    // ★ 体是 **do_block 子节点**（node-types.json 里 `call` 只有 target 一个字段，
+    //   arguments/do_block 都是**无字段的命名子节点**）⇒ 走 bodyNodeTypes 而不是 bodyFields
+    //   （`,` 一行式 `def helper(n), do: n*2` 的体在 arguments 的 keywords 里，本笔未接）
+    bodyNodeTypes: ['do_block'],
+    // 宏即声明：只有 target ∈ 下表值才算符号定义节点（其余 call 是普通调用）
+    symbolDispatch: {
+      field: 'target',
+      kinds: {
+        def: 'function',
+        defp: 'function',
+        defmacro: 'function',
+        defmacrop: 'function',
+        defmodule: 'class',
+        defprotocol: 'interface',
+        defimpl: 'class',
+        defstruct: 'type',
+      },
+    },
+    // 真名不在本节点字段里（那是 `def` 关键字），在 arguments → 内层 call → target 这条**定长路径**上
+    namePaths: [
+      ['arguments', 'call', 'target'], // def greet(n) / defp foo(x) / def helper(n), do: …
+      ['arguments', 'identifier'], // def run
+      ['arguments', 'alias'], // defmodule App
+    ],
+  },
 };
 
-/** 取某语言 import 的 source 列表（深适配查注册表，否则 TS/flutter 通用） */
+/** 取某语言 import 的 source 列表（深适配查注册表；简单字段走 importSourceField） */
 function extractImportSources(node: SyntaxNodeLike, langName: string): string[] {
   const a = LANG_ADAPTERS[langName];
   if (a?.extractImportSources) return a.extractImportSources(node);
-  if (langName === 'typescript' || langName === 'tsx' || langName === 'javascript' || langName === 'jsx') {
-    const s = fieldText(node, 'source');
+  // ★ 典型形态：语句上有 `source` 字段（TS 系 `import x from 'y'`）。
+  //   原先这里是 `langName === 'typescript' || 'tsx' || 'javascript' || 'jsx'` 的按语言 if，
+  //   现改为表项数据 importSourceField。
+  if (a?.importSourceField) {
+    const s = fieldText(node, a.importSourceField);
     return s ? [stripQuotes(s)] : [];
   }
   return [];
@@ -637,18 +952,80 @@ function isCallNode(node: SyntaxNodeLike, lang: LanguageEntry): boolean {
 }
 
 /**
- * 符号定义节点的"体"：优先 `body`/`suite` 字段；**无字段的语法**（kotlin）回落
- * 到适配器申报的体节点类型（`function_body`/`class_body`）。★ 缺这一步的症状：
- * kotlin 的 `fun`/`class` 提得出名字却进不去体 ⇒ 调用边恒空（实测）。
+ * 是不是「符号定义节点」——**唯一判据**（三个遍历器共用，别各写一份）。
+ *
+ * ★ 2026-09-29 扩契约：原先三处都是 `lang.symbol_nodes.includes(node.type)`，
+ *   对「宏即声明」语法（Elixir）不够用 —— `def` 与普通函数调用**同型**（都是 `call`），
+ *   只看节点类型会把每次调用都当声明。现由适配器 `symbolDispatch` 声明
+ *   「哪个字段的文本命中哪些值才算声明」，命中即符号节点（该表兼作 kind 表）。
  */
-function findBodyNode(node: SyntaxNodeLike, langName: string): SyntaxNodeLike | null {
-  const byField = node.childForFieldName('body') || node.childForFieldName('suite');
-  if (byField) return byField;
-  const types = LANG_ADAPTERS[langName]?.bodyNodeTypes;
-  if (!types) return null;
-  for (let i = 0; i < node.childCount; i++) {
-    const c = node.child(i);
-    if (c && types.includes(c.type)) return c;
+function isSymbolNode(node: SyntaxNodeLike, lang: LanguageEntry): boolean {
+  if (!lang.symbol_nodes.includes(node.type)) return false;
+  const a = LANG_ADAPTERS[lang.name];
+  if (a?.symbolRequireFields && !a.symbolRequireFields.some((f) => node.childForFieldName(f) !== null)) return false;
+  const d = a?.symbolDispatch;
+  if (!d) return true;
+  return Object.prototype.hasOwnProperty.call(d.kinds, fieldText(node, d.field));
+}
+
+/** 符号节点的 kind：symbolDispatch（宏即声明）＞ nodeKindOverride（覆盖表）＞ 通用启发式 */
+function symbolKind(node: SyntaxNodeLike, lang: LanguageEntry, parent?: string): ParsedSymbol['kind'] {
+  const a = LANG_ADAPTERS[lang.name];
+  const d = a?.symbolDispatch;
+  if (d) {
+    const k = d.kinds[fieldText(node, d.field)];
+    if (k) return k;
+  }
+  const ov = a?.nodeKindOverride?.[node.type];
+  if (ov) return ov;
+  return nodeTypeToKind(node.type, parent);
+}
+
+/**
+ * 符号定义节点的「体」= **体的子节点列表**（不是单个节点：见 bodyIsSelf）。
+ * 取法（三级，全数据驱动）：
+ *   ① 适配器 `bodyFields` ?? DEFAULT_BODY_FIELDS 里的字段（实测 Haskell='match'、Elixir='do_block'）
+ *   ② 适配器 `bodyNodeTypes` 声明的体节点类型（实测 kotlin：'function_body'/'class_body'）
+ *   ③ 适配器 `bodyIsSelf` ⇒ 本节点的子节点按序即体（实测 julia），
+ *      **跳过 resolveName 命中的那个子节点**（`nameIndex`）——否则签名里的 call_expression
+ *      会被当成一次真实调用（实测会多出 `-> greet` 自调用边）
+ * 返回 null = 没找到体（调用方按"该符号无体"处理）。
+ */
+function bodyChildren(node: SyntaxNodeLike, lang: LanguageEntry, nameIndex: number | null): SyntaxNodeLike[] | null {
+  const a = LANG_ADAPTERS[lang.name];
+  for (const f of a?.bodyFields ?? DEFAULT_BODY_FIELDS) {
+    const c = node.childForFieldName(f);
+    if (c) {
+      const out: SyntaxNodeLike[] = [];
+      for (let i = 0; i < c.childCount; i++) {
+        const k = c.child(i);
+        if (k) out.push(k);
+      }
+      return out;
+    }
+  }
+  const types = a?.bodyNodeTypes;
+  if (types) {
+    for (let i = 0; i < node.childCount; i++) {
+      const c = node.child(i);
+      if (c && types.includes(c.type)) {
+        const out: SyntaxNodeLike[] = [];
+        for (let k = 0; k < c.childCount; k++) {
+          const kk = c.child(k);
+          if (kk) out.push(kk);
+        }
+        return out;
+      }
+    }
+  }
+  if (a?.bodyIsSelf) {
+    const out: SyntaxNodeLike[] = [];
+    for (let i = 0; i < node.childCount; i++) {
+      if (i === nameIndex) continue;
+      const c = node.child(i);
+      if (c) out.push(c);
+    }
+    return out;
   }
   return null;
 }
@@ -662,18 +1039,28 @@ function firstNamedChild(node: SyntaxNodeLike): SyntaxNodeLike | null {
   return null;
 }
 
-/** 从 call 节点提取被调用名：取 function 字段文本的尾部标识符（去点、去泛型参数） */
+/**
+ * 从 call 节点提取被调用名：按适配器 `calleeFields` 的字段顺序取被调表达式，
+ * 再取**尾部标识符**（去点、去泛型参数）。
+ *
+ * ★ 2026-09-29 扩契约：原先这里硬编码 `'function' || 'name' || 'method'` 三个字段名，
+ *   并对 Java 单开一条 `langName === 'java' ? childForFieldName('object') : null`（按语言 if）。
+ *   现两者都是表项数据（calleeFields / calleeObjectField），内核不认识任何具体语言。
+ */
 function extractCallee(callNode: SyntaxNodeLike, langName: string): { name: string; expr: string } | null {
-  // TS/Go/C/Rust 用 function 字段；Java method_invocation 用 name(+object) 字段；
-  // Ruby `call` 的被调名在 method 字段；无字段语法（kotlin）取第一个命名子节点。
-  const fn =
-    callNode.childForFieldName('function') ||
-    callNode.childForFieldName('name') ||
-    callNode.childForFieldName('method') ||
-    (LANG_ADAPTERS[langName]?.calleeIsFirstChild ? firstNamedChild(callNode) : null);
+  const a = LANG_ADAPTERS[langName];
+  let fn: SyntaxNodeLike | null = null;
+  for (const f of a?.calleeFields ?? []) {
+    const c = callNode.childForFieldName(f);
+    if (c) {
+      fn = c;
+      break;
+    }
+  }
+  if (!fn && a?.calleeIsFirstChild) fn = firstNamedChild(callNode);
   if (!fn) return null;
-  // Java 中对象与方法名分离（object='Bar'、name='run'）→ 拼回 qualified 前缀供 is-target 用
-  const obj = langName === 'java' ? callNode.childForFieldName('object') : null;
+  // 对象与方法名分离的语法（Java/Groovy 的 method_invocation.object）→ 拼回 qualified 前缀供 is-target 用
+  const obj = a?.calleeObjectField ? callNode.childForFieldName(a.calleeObjectField) : null;
   const expr = obj && obj.text ? `${obj.text}.${fn.text}` : fn.text;
   // 泛型调用 fn<T>(...)：取 < 前的基底再取尾部标识符（`svc.Process` → Process / `a.b.c` → c）
   const base = expr.split('<')[0].trim();
@@ -697,7 +1084,7 @@ function extractCallsFromBody(
   depth: number = 0
 ): void {
   if (depth > 200) return;
-  if (lang.symbol_nodes.includes(node.type)) return;
+  if (isSymbolNode(node, lang)) return;
   if (isCallNode(node, lang)) {
     const c = extractCallee(node, lang.name);
     if (c) {
@@ -733,26 +1120,20 @@ function traverseAndExtractCalls(
   depth: number = 0
 ): void {
   if (depth > 200) return;
-  if (lang.symbol_nodes.includes(node.type)) {
-    const name = extractName(node, lang.field_map);
+  if (isSymbolNode(node, lang)) {
+    const { name, fromIndex } = resolveName(node, lang);
     if (name) {
       const qn = funcStack.length > 0 ? `${funcStack[funcStack.length - 1]}.${name}` : name;
-      const kind = nodeTypeToKind(node.type, funcStack.length > 0 ? funcStack[funcStack.length - 1] : undefined);
-      const body = findBodyNode(node, lang.name);
+      const kind = symbolKind(node, lang, funcStack.length > 0 ? funcStack[funcStack.length - 1] : undefined);
+      const body = bodyChildren(node, lang, fromIndex);
       if (body) {
         funcStack.push(qn);
         if (kind === 'function' || kind === 'method') {
           // 本函数体调用（跳过嵌套函数子树）
-          for (let i = 0; i < body.childCount; i++) {
-            const child = body.child(i);
-            if (child) extractCallsFromBody(child, lang, qn, calls, symbols, depth + 1);
-          }
+          for (const child of body) extractCallsFromBody(child, lang, qn, calls, symbols, depth + 1);
         }
         // 继续递归找方法/嵌套函数
-        for (let i = 0; i < body.childCount; i++) {
-          const child = body.child(i);
-          if (child) traverseAndExtractCalls(child, lang, symbols, calls, funcStack, depth + 1);
-        }
+        for (const child of body) traverseAndExtractCalls(child, lang, symbols, calls, funcStack, depth + 1);
         funcStack.pop();
       }
       return;
@@ -795,8 +1176,8 @@ function traverseAndExtractTypeRefs(
   depth: number = 0,
 ): void {
   if (depth > 200) return;
-  if (lang.symbol_nodes.includes(node.type)) {
-    const name = extractName(node, lang.field_map);
+  if (isSymbolNode(node, lang)) {
+    const name = resolveName(node, lang).name;
     if (name) {
       const parent = stack.length > 0 ? stack[stack.length - 1].qn : undefined;
       const qn = parent ? `${parent}.${name}` : name;
@@ -845,8 +1226,8 @@ function stripQuotes(s: string): string {
   return s;
 }
 
-/** TS/JS 家族语言名（判定 type-only 语法时用） */
-const TS_FAMILY_LANGS = new Set(['typescript', 'tsx', 'javascript', 'jsx']);
+/** TS/JS 家族语言名（判定 type-only 语法时用）→ ★ 2026-09-29 已下沉为表项数据
+ *  （适配器 `erasedModuleStatements`），保留下面的注释只为解释这段知识的来历。 */
 
 /**
  * 该模块语句（`import` / `export … from`）是否**运行时被整体擦除**（TS 系）——
@@ -910,8 +1291,9 @@ function traverseAndExtractImports(
   if (lang.import_nodes.includes(node.type)) {
     const sources = extractImportSources(node, lang.name);
     // TS 系 type-only 语句（`import type` / `export type` / 全 type 内联说明符）运行时擦除
-    // ⇒ 标记 type_only，依赖图/闭包不算边。判定收敛在 isTypeOnlyModuleStatement（唯一实现）。
-    const typeOnly = TS_FAMILY_LANGS.has(lang.name) && isTypeOnlyModuleStatement(node.text);
+    // ⇒ 标记 type_only，依赖图/闭包不算边。判定收敛在 isTypeOnlyModuleStatement（唯一实现）；
+    // 「哪些语言有这套语法」由适配器 erasedModuleStatements 声明（替代原先的 TS_FAMILY_LANGS Set）。
+    const typeOnly = LANG_ADAPTERS[lang.name]?.erasedModuleStatements === true && isTypeOnlyModuleStatement(node.text);
     const bindings = extractImportBindings(node, lang.name, sources);
     for (const src of sources) {
       imports.push({
