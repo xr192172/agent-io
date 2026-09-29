@@ -3196,3 +3196,86 @@ kernel.renameSymbols({...})
   且会牵动 import 面 + `derive_feature_tree` 的文件名清单 + `_dogfood` 的文件清单 + 可能的脚本
   ⇒ **不建议在本笔做**（"一次动太多无法定位回退"，§33.5 第 3 条）。
 - 在 (a) 落地前，**CI 的这一步会红**；本笔的 commit 按该门自述的逃生口（`--no-verify`）交付并**逐条归因**（不是静默绕过）。
+
+---
+
+## 36. ★★★ LSP 试点：**侦察与量算**（2026-09-29）—— 结论是**净亏**，且更正了我三处错
+
+用户问「LSP server 有现成的包可以引入吗」⇒ 实测**能**（本机 node/npm/python3.13/java17/dotnet9 齐；
+`pyright`/`typescript-language-server`/`basedpyright`/`@vtsls/language-server` 均可 `npm i`）。
+⇒ 于是做**Python 一支的试点**，但**第一步只做侦察与量算**（不接进程、不装包），先量收益上限。
+
+### 36.1 ★ 先更正我给的"已知事实"（三处偏差，执行者实测）
+| 我写的 | 实测 | 差在哪 |
+|---|---|---|
+| `renamePythonSymbol` 1245–1363 ~119 行 | **1245–1359 = 115 行** | 我把 1361–1363 的 **Go 段注释头**算进来了 |
+| `renameGoSymbol` 1364–1654 ~291 行 | **1364–1512 = 149 行** | ★ 我把**共享工具**吞进去了（`kindNodeTypes`/`resolveRel`/`buildNoExt`/`applyEdits`/`toOps`/接口块 1517–1653） |
+| 主入口 ~222 行 | 1655–1877 ≈223 行 | 基本对 |
+
+★ 另：`analyzePythonSource` = **579–707 = 129 行**，且 `grep` 确认**只有 `renamePythonSymbol` 一个消费者**（+测试）
+⇒ 这 129 行可 **100% 归到 Python 改名支**。
+
+### 36.2 ★★ 我原以为「语义分析只占一小部分」——**错了，它是大头**
+`renamePythonSymbol`（115 行）逐段分类（**每段都给了行号证据**）：
+| 归类 | 行数 | 占比 | 例 |
+|---|---|---|---|
+| **LSP 可替代**（"符号在哪/有哪些引用/跨文件怎么连"） | **30** | 26% | `analyzePythonSource` 调用、`X.sym` 跨模块匹配（1306–1315 的 `operandIsImport` **就是在按 basename 猜"谁 import 了定义模块"——正是 `textDocument/references` 的输出**） |
+| **本仓特有，LSP 不管** | **54** | 47% | 冻结行保护（1319–1327）/ 落盘+`dry_run`+`ops`（1329–1346）/ 结果装配（1348–1358）/ `skipped[]` 与 `blocked[]` |
+| 骨架接线 | 31 | 27% | — |
+
+★ **把分析器算进来：Python 支的「纯语义面」= 30 + 129 = 159 / 244 = 65%** ⇒ 语义**不是**"一小部分"，是 **2/3**。
+
+### 36.3 ★★★ 但替掉它的工具比它本身贵 4 倍 ⇒ **净亏**
+| 项 | 行数 |
+|---|---|
+| **省**（乐观：连跨模块引用也交 LSP，分析器整份删除） | **−159** |
+| 花：**LSP 客户端**（中值；★ 锚点是本仓自己的 `connectCdp` = **52 行**，那是个真·JSON-RPC 客户端） | **+700** |
+| 花：**位置映射**（见 36.4） | **+120** |
+| 花：**definition/importer 分类**（LSP 的 `WorkspaceEdit` **不标"哪个文件是定义"**，而本仓要返回 `definition`/`importers` 分类） | **+45** |
+| **净** | ★ **≈ +706 行** |
+
+★ 关键省钱点：serena 那份 **5,962 行**的 `lsp_types.py` 是协议类型全量集 ⇒ TS 侧可用 npm
+`vscode-jsonrpc` + `vscode-languageserver-protocol` **免写**（⇒ 那 5,962 行变 0）。
+★ 但 **pyright 有私有扩展**：`beginProgress`/`reportProgress`/`endProgress` + `check_experimental_status(quiescent)`；
+serena 甚至 `sleep(...)` —— 注释承认"**有些 LS 需要等一会才有正确的跨文件结果**"
+⇒ ★ **这是本仓现有实现完全没有的风险类别**（现状是**同步、确定性、一次算完**）。
+
+### 36.4 ★★ 映射成本：编码轴**同轴（0 行）**，真坑在**换行轴**
+**(a) 好消息 —— 编码轴成本 0（可复核）**：本仓 `pos` **本来就是 UTF-16 code unit**，
+LSP 默认 `positionEncoding` **也是 utf-16** ⇒ **无需 byte↔UTF-16 转换**。
+- 证据：`node_modules/tree-sitter/src/node.cc:438` = `ts_node_start_byte(node) / 2`；`parser.cc:30` = `TSInputEncodingUTF16`。
+- ★★ **顺带更正两处错注释**（按字面实现会算错）：`rename_symbol.ts:1588–1589` 与 `src/health/index.ts:263`
+  都写"**字节偏移**" —— **错，是 code unit**。（旁证：`rename_symbol.ts` 有 **315 行含非 ASCII**；
+  若 `pos` 真是字节，`applyEdits` 的 `src.slice()` 早把带中文的文件切烂了。）
+
+**(b) ★ 真坑：本仓工作区是 CRLF，但 `.gitattributes` 声明 LF**
+- 实测：`rename_symbol.ts` 1876 行 / **1877 个 CR 行尾**；`project_root.ts` 1280/1280；`package.json` 97/97。
+- ⇒ 若映射器按 LF 推 line-start 表，**第 2 行起每个偏移累计漂移 1 个 code unit**。
+- ★ serena 是**绕开**的（`ls_utils.py:48` 注释：读入时统一归一化成 LF）—— **本仓不能照抄**
+  （现状 `readFileSync(...,'utf-8')` **保留 CRLF**，且位置要和 tree-sitter 的 code unit 对上）。
+- 正解参考 `ls_utils.py:291–304` + `TextStepper.step_line`（显式处理 `\n`/`\r\n`/`\r` 三种，还有"index 落在 `\r\n` 中间"的边界）。
+- 成本：编码轴 **0 行**；换行轴 **~120 行**（本仓场景现实值；serena 级健壮 ~375 行）。
+
+### 36.5 ★★ 判断与前提
+**只做 Python 一支 = 净亏（≈ +706 行）**。而且**丢掉的东西无法用行数计价**：
+1. `skipped[]` 完整性回执（**LSP 不告诉你"哪些文件没被索引"**，而现状是刻意保留的可读数）；
+2. ★★ **确定性**：现状的 basename 匹配是**纯路径规则、配置无关**；pyright 是**索引配置相关**的
+   ⇒ 在"**无 venv / 依赖缺失 / 非标准包布局**"的项目里，pyright 可能**只返回定义文件**
+   ⇒ **那时 LSP 版比现状更不安全**（现状至少按朴素规则全仓改）；
+3. `blocked[]` 原子阻断语义（撞名 / 非模块级定义）LSP 一概不管。
+
+**收益为正的前提（须同时满足）**：
+- **(a) 服务对象 ≥4–5 个语言分支**（四支非 TS 语义面合计约 **1,090 行**，全迁可省 ≈ **640 行** ⇒ 仍 < 865）；
+- **(b) 客户端压到 ≤600 行**（必须用 npm `vscode-jsonrpc`，**不自写协议**）；
+- **(c) 当成 §19 的 [A] 层共用资产**（同一客户端同时供 `find_references` / `symbol_move` / `edit_code` 用）。
+  ★ **但** `dead_imports` 走的是 `publishDiagnostics`（要订阅 + 等 quiescent），**是另一套客户端能力，不是免费搭车**。
+
+### 36.6 ★ 最关键的未验项（★ 足以单独推翻本节结论）
+1. ★★ **pyright 在"无 venv / 依赖缺失 / 非包布局"的项目里是否仍返回完整跨文件引用** —— **无任何证据**（本笔按边界没装没起）。
+2. **pyright 真实 rename 输出没测过**：尤其中文项目里 `import util` + `util.compute` 这种形态，
+   pyright 是否**只改 `compute` 不动 `util`** —— 而现有测试（`tests/tools/rename_symbol.test.ts:744–758`）**正是断言这个行为**。
+3. 客户端 600–800 行 / 映射 ~120 行**都是估算**（锚点仅 `connectCdp` 52 + serena 行数），**未写代码验证**。
+4. 其它语言分支的"可替代行数"**未逐段量算**（按 Python 的 26%/65% 外推）。
+
+★ **结论：本轮不接 LSP。** 若将来要接，先做 36.6 第 1 条的**实测**（它决定"接进来会不会更不安全"），
+再做 36.5 的 (a)(b)(c) 三项核算 —— **任一不成立就不接**。

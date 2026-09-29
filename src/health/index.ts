@@ -258,9 +258,9 @@ export interface NamedImportRef {
   name: string;
 }
 
-/** AST 提取的绑定（额外带声明 identifier 的字节偏移，供"排除绑定自身"使用） */
+/** AST 提取的绑定（额外带声明 identifier 的 **code unit** 偏移，供"排除绑定自身"使用） */
 interface AstImportBind extends NamedImportRef {
-  /** 绑定 identifier 的 startIndex（tree-sitter 字节偏移） */
+  /** 绑定 identifier 的 startIndex（tree-sitter 的 **UTF-16 code unit** 偏移，★ 不是字节偏移 —— 2026-09-29 更正） */
   startIndex: number;
 }
 

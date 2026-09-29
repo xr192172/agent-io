@@ -1585,9 +1585,14 @@ function applyEdits(src: string, edits: Edit[]): string {
 
 /** 结构化编辑操作：一次"旧 → 新"替换（供 LLM 直接验证，不只给计数） */
 export interface RenameEditOp {
-  /** 字节偏移（在源文件中） */
+  /**
+   * UTF-16 code unit 偏移（★ 不是字节偏移 —— 2026-09-29 更正）。
+   * 来源是 tree-sitter：`node.cc` 的 `ts_node_start_byte(node) / 2`（parser 以 `TSInputEncodingUTF16` 喂入）
+   * ⇒ 这个单位**与 LSP 的 `positionEncoding` 默认值（utf-16）同轴**，将来接 LSP 时**不需要**做字节换算。
+   * ★ 若按字面当成"字节"实现，带中文的源文件（本文件就有 315 行含非 ASCII）会被 `src.slice()` 切烂。
+   */
   pos: number;
-  /** 被替换的字节数 */
+  /** 被替换的 **code unit** 数（同上，非字节数） */
   len: number;
   /** 被替换的旧文本 */
   old: string;
