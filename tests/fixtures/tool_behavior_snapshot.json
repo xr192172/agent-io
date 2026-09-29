@@ -1,7 +1,7 @@
 [
   {
     "name": "annotate_functions",
-    "text": "函数语义注释完成：扫描 0 个函数 / 0 个文件；\n已有注释 0，缺失 0，过期 0；\n本轮新注入 0、同步重注 0，改写 0 个文件。\n  无待补全/无过期注释，或 LLM 未配置——未写任何文件。",
+    "text": "函数语义注释完成：扫描 0 个函数 / 0 个文件；\n已有注释 0，缺失 0，过期 0；\n本轮新注入 0、同步重注 0，改写 0 个文件。\n  无待补全/无过期注释，或 LLM 未配置——未写任何文件。\n---DATA---\n{\"summary\":{\"files\":0,\"scanned\":0,\"with_comment\":0,\"missing\":0,\"stale\":0,\"annotated\":0,\"updated\":0},\"files_changed\":0}",
     "isError": false
   },
   {
@@ -151,7 +151,7 @@
   },
   {
     "name": "impact_analysis",
-    "text": "影响面报告 · undefined\n变更点 0 个，受影响文件 0 个（直接 0，高风险 0）\n\n（零波及：该变更点没有任何文件依赖链）",
+    "text": "影响面报告 · undefined\n变更点 0 个，受影响文件 0 个（直接 0，高风险 0）\n\n（零波及：该变更点没有任何文件依赖链）\n---DATA---\n{\"root\":\"undefined\",\"changePoints\":[],\"missing\":[],\"files\":[],\"total\":0,\"direct\":0,\"high_risk\":0,\"fell_back\":false}",
     "isError": false
   },
   {
@@ -186,7 +186,7 @@
   },
   {
     "name": "move_symbol",
-    "text": "移动被阻断（）：\nmove 暂只支持 TS/JS 模块级符号（）",
+    "text": "移动被阻断（）：\nmove 暂只支持 TS/JS 模块级符号（）\n---DATA---\n{\"ok\":false,\"symbol\":\"undefined\",\"to_file\":\"undefined\",\"filesWritten\":0,\"blocked\":[\"move 暂只支持 TS/JS 模块级符号（）\"]}",
     "isError": false
   },
   {
@@ -251,17 +251,17 @@
   },
   {
     "name": "refactor_judge",
-    "text": "【LLM 审闭环】共 0 个候选问题 → 采纳 0 / 驳回 0 / 拿不定主意 0。\n全部已裁定，无需上抛。",
+    "text": "【LLM 审闭环】共 0 个候选问题 → 采纳 0 / 驳回 0 / 拿不定主意 0。\n全部已裁定，无需上抛。\n---DATA---\n{\"decided\":{\"adopt\":[],\"reject\":[]},\"escalated\":[],\"decisions\":[],\"meta\":{\"total\":0,\"adopted\":0,\"rejected\":0,\"unsure\":0}}",
     "isError": false
   },
   {
     "name": "refactor_pipeline",
-    "text": "确定性重构管线完成：全局 通过，\n共 0 步，0 个文件被改写，\n删除 0 单位（import 语句×文件 / 死语句文件数）。\n基线=未验证",
+    "text": "确定性重构管线完成：全局 通过，\n共 0 步，0 个文件被改写，\n删除 0 单位（import 语句×文件 / 死语句文件数）。\n基线=未验证\n---DATA---\n{\"ok\":true,\"stages\":[],\"total_files_changed\":0,\"total_units_removed\":0,\"baseline\":null,\"planned_steps\":0,\"changed_files\":[],\"submit_check\":null}",
     "isError": false
   },
   {
     "name": "remove_dead_imports",
-    "text": "无可删除的死 import（dead 列表为空）",
+    "text": "无可删除的死 import（dead 列表为空）\n---DATA---\n{\"files\":[],\"files_changed\":0,\"statements_removed\":0,\"verification\":{\"enabled\":false,\"outcome\":\"no_change\",\"baseline\":null,\"after\":null}}",
     "isError": false
   },
   {

@@ -13,9 +13,19 @@
  *
  * 为什么能切了：依赖已先行抽到 `registry/{types,plumbing,handlers}.ts`（P1a）——
  *   否则本文件 import 它们就会成环（server_registry → lanes → server_registry）。
+ *
+ * ★ 2026-09-29（回执通道清扫本笔）：本线 **8 个 `wrap` → `wrapData`** ——
+ *   `rename_files` / `move_symbol` / `find_references` / `impact_analysis` /
+ *   `remove_dead_imports` / `annotate_functions` / `refactor_pipeline` / `refactor_judge`。
+ *   判据（逐处人读 [B] 的返回类型，不是按名字猜）：它们的 [C] 都已经在回 `data: r`
+ *   （或已构造 data 对象），而 `src/registry/plumbing.ts` 的 `wrap()` 只取 `r.message` ⇒
+ *   **结构化产物（逐项 preview/applied、引用点/行号、影响面文件表、失效清单、逐阶段 outcome、
+ *   裁决台账 …）在传输层蒸发**，agent 只能正则解析散文。8 处的理由是同一条，故不逐处重写注释。
+ *   ★ 两处**刻意例外**（不在本线，见 handlers.ts 的逐处说明）：`edit_dsl`（[B] 的 EditResult 只有
+ *   `{message, feature}`，压根没有 data）、`render_design` / `observe_judge`（data 与 message 逐字重复）。
  */
 import { z } from 'zod';
-import { wrap, wrapData } from '../plumbing.js';
+import { wrapData } from '../plumbing.js';
 import path from 'node:path';
 import { analyzeHubs, analyzeImpact } from '../../impact/index.js';
 import type { ImpactChangePoint } from '../../impact/index.js';
@@ -312,7 +322,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         .describe('待批量改名的文件条目'),
       dry_run: z.boolean().optional().describe('true=只算全部 dry-run 影响面不落盘（默认：先整体校验，全通过才落盘）'),
     },
-    handler: wrap(async (a) => {
+    handler: wrapData(async (a) => {
       const r = await renameFiles({
         project_dir: typeof a.project_dir === 'string' && a.project_dir ? a.project_dir : undefined,
         renames: (a.renames as Array<{ from: string; to: string }>).map((x) => ({ from: String(x.from), to: String(x.to) })),
@@ -357,7 +367,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       to_symbol: z.string().optional().describe('可选：移动后改名为该名（v1 未启用，仅提示走 safe_rename）'),
       dry_run: z.boolean().optional().describe('true=只出结构化预览不落盘（默认：先整体校验，全通过才落盘）'),
     },
-    handler: wrap(async (a) => {
+    handler: wrapData(async (a) => {
       const r = await moveSymbol({
         project_dir: typeof a.project_dir === 'string' && a.project_dir ? a.project_dir : undefined,
         file: String(a.file),
@@ -416,7 +426,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       field: z.string().optional().describe('mode=field 必填：要查的字段名'),
       report_literals: z.boolean().optional().describe('true=额外扫描符号 snake 变体在项目文本里的字面量命中（文档/测试/契约/工具注册名），返回清单待核验，不改动'),
     },
-    handler: wrap(async (a) => {
+    handler: wrapData(async (a) => {
       // ★ §16.4 P-D：file/symbol/field 是「模式相关必填」，schema 里只能 optional。
       //   这里**不做 `String(a.x)` 强转**——`String(undefined)==='undefined'` 会把缺参变成
       //   一个合法字符串，静默去查名叫 "undefined" 的符号或拼出 `...\undefined` 路径。
@@ -511,7 +521,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       top: z.number().optional().describe('热区只列前 N（默认 10）'),
       max_depth: z.number().optional().describe('闭包最大距离（默认不限）'),
     },
-    handler: wrap(async (a) => {
+    handler: wrapData(async (a) => {
       const root = String(a.project_dir);
       if (a.hubs) {
         const h = await analyzeHubs(root, typeof a.top === 'number' ? a.top : 10);
@@ -589,7 +599,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         .optional()
         .describe('true 启用改前/改后验证闭环；{commands} 自定义验证命令；缺省只执行不验证'),
     },
-    handler: wrap(async (a) => {
+    handler: wrapData(async (a) => {
       const { project_dir, dead, verify } = a;
       if (!Array.isArray(dead) || dead.length === 0) {
         return { message: '无可删除的死 import（dead 列表为空）', data: { files: [], files_changed: 0, statements_removed: 0, verification: { enabled: Boolean(verify), outcome: 'no_change', baseline: null, after: null } } };
@@ -638,7 +648,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       files: z.array(z.string()).optional().describe('限定只处理这些文件（相对 project_dir 或绝对路径）；缺省扫目录全部'),
       mode: z.enum(['apply', 'dry_run', 'scan']).optional().default('apply').describe('apply=生成并写盘；dry_run=生成但只预览；scan=只读报告'),
     },
-    handler: wrap(async (a) => {
+    handler: wrapData(async (a) => {
       const project_dir = String(a.project_dir);
       const mode = (a.mode as string | undefined) || 'apply';
       const files = Array.isArray(a.files) ? a.files.map((f) => String(f)) : undefined;
@@ -804,7 +814,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         .optional()
         .describe('true 启用统一验证闭环；{commands} 自定义命令；缺省/verify=false 仅落盘不验证'),
     },
-    handler: wrap(async (a) => {
+    handler: wrapData(async (a) => {
       const project_dir = String(a.project_dir);
       const steps = a.steps as
         | {
@@ -995,7 +1005,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         .describe('裁决结果；不传则全部判"不确定"上抛（最小形态）'),
       escalate_to_inbox: z.boolean().optional().default(true).describe('uncertain 是否入收件箱回上下文'),
     },
-    handler: wrap(async (a) => {
+    handler: wrapData(async (a) => {
       const issues = (a.issues as JudgeIssue[]) ?? [];
       const verdicts = a.verdicts as JudgeDecision[] | undefined;
       const result = await runRefactorJudge({
@@ -1005,7 +1015,11 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         decide: verdicts ? () => verdicts : undefined,
         escalate_to_inbox: a.escalate_to_inbox !== false,
       });
-      return { message: result.review_prompt, data: result };
+      // ★ `review_prompt` 与 message **是同一个字符串** ⇒ 从 data 里剔掉再走 `---DATA---`，
+      //   否则回执里那一段裁决摘要会逐字打两遍。剩下的 decided/escalated/decisions/meta
+      //   才是 message 里没有的**结构化裁决台账**（这才是本工具原先在通道层丢掉的东西）。
+      const { review_prompt, ...data } = result;
+      return { message: review_prompt, data };
     }),
   },
 

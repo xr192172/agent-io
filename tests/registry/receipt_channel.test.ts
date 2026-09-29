@@ -47,13 +47,21 @@ function laneSrc(name: string): string {
 describe('P-A 门 · 写工具回执必须走 ---DATA--- 通道', () => {
   it('检测器自身有效（防"空转绿"）', () => {
     expect(laneSrc('edit_code').length, '找不到 edit_code 的定义').toBeGreaterThan(100);
-    const all = fs
-      .readdirSync(LANES)
-      .filter((x) => x.endsWith('.ts'))
-      .map((x) => fs.readFileSync(path.join(LANES, x), 'utf8'))
-      .join('\n');
-    // 反面：全仓确实同时存在 wrap 与 wrapData —— 证明"两种都抓得到"
-    expect(/handler: wrap\s*\(/.test(all), '居然没有用 wrap 的工具？检测口径可疑').toBe(true);
+    // ★ 2026-09-29（wrap→wrapData 清扫本笔）：语料**必须含 `handlers.ts`**，且要认 `= wrap(` 这种**具名**包装。
+    //   原因（本笔实测，不是设想）：这一笔把 `src/registry/lanes/*.ts` 里**最后 8 处** `handler: wrap(` 清掉了
+    //   （12 个工具迁 wrapData；剩下 3 个"不该换"的 —— edit_dsl / render_design / observe_judge ——
+    //   都是 handlers.ts 里的**具名** handler，形态是 `export const X = wrap(` 而不是 lane 里的 `handler: wrap(`）。
+    //   ⇒ 原判据只看 lanes，会因为"工具搬了家"而**假红**（判据的语料跟不上工具的位置），
+    //     而不是因为"真的没有 wrap 工具了" —— 那会把一条有效的自检变成噪音。
+    const all = [
+      ...fs
+        .readdirSync(LANES)
+        .filter((x) => x.endsWith('.ts'))
+        .map((x) => fs.readFileSync(path.join(LANES, x), 'utf8')),
+      fs.readFileSync(path.join(REPO, 'src', 'registry', 'handlers.ts'), 'utf8'),
+    ].join('\n');
+    // 反面：全仓（lanes + handlers）确实同时存在 wrap 与 wrapData —— 证明"两种都抓得到"
+    expect(/(?:handler:|=\s*)wrap\s*\(/.test(all), '居然没有用 wrap 的工具？检测口径可疑').toBe(true);
     expect(/handler: wrapData\s*\(/.test(all), '居然没有用 wrapData 的工具？').toBe(true);
   });
 

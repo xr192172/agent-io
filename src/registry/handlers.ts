@@ -52,7 +52,12 @@ import { updateFeature } from '../tools/update_feature.js';
  *   （dsl / nodes / edges / files / functions …），wrap 会在通道层静默丢弃它。 */
 export const getDslHandler = wrapData(async (a) => queryFeature(a as never));
 
-/** edit_dsl：统一写操作（复用 updateFeature，Step A 扩展后覆盖更多写动作） */
+/** edit_dsl：统一写操作（复用 updateFeature，Step A 扩展后覆盖更多写动作）
+ * ★ 刻意保留 `wrap`（2026-09-29 逐处复核）：[B] 一路到 [C] 的结果类型 `EditResult`
+ *   （`src/tools/edit_result.ts`）**结构上只有 `{ message, feature }`，没有 `data` 字段**——
+ *   `dispatchDslEdit` 的两条路径（daemon / 本地 updateFeature）都只造这两个键
+ *   ⇒ 这里没有任何结构化产物被通道丢掉，`wrap` 是**对的那一个**，不换。
+ *   （若将 [B] 补出 `data`，本处再随之升级；那是动 [B] 的契约，不在本笔范围。） */
 export const editDslHandler = wrap(async (a) => {
   // 视图写护栏：live 是代码快照，只能由 import/watch 重建，禁止手改
   if (a.view === 'live') {
@@ -109,7 +114,17 @@ export const editDslHandler = wrap(async (a) => {
 /** manage_feature：生命周期。★ wrapData：manageFeature 返回 `{ message, data? }`（create/list 等的结构化产物） */
 export const manageFeatureHandler = wrapData(async (a) => manageFeature(a as never));
 
-/** render_design：渲染思维导图/HTML/SVG/Markdown（format 参数聚合导出；view 决定渲染设计或实际视图） */
+/** render_design：渲染思维导图/HTML/SVG/Markdown（format 参数聚合导出；view 决定渲染设计或实际视图）
+ * ★ 刻意保留 `wrap`（2026-09-29 逐处复核）：把四个分支的 [B] 结果逐字段拆开看过后，
+ *   **换成 `wrapData` 的净收益为零，代价是回执被淹**：
+ *     · 非重复字段 = 产物路径（`htmlFile` / `file` / `jsonFile`）+ `feature`
+ *       —— 这些**已逐字出现在 message 里**（`已渲染：<path>` / `已导出 SVG：<path>` /
+ *       `L3 结构骨架已生成：<jsonFile>`）⇒ 放进 `---DATA---` 只是第二遍；
+ *     · [B] 的四个结果类型都**自带 `message` 字段**（与回执同一份文本）⇒ `data: r` 会逐字重复；
+ *     · 唯一不冗余的字段是 `mind_map`（整棵树）—— 它是**超大对象**（节点数随项目规模线性增长），
+ *       且 `deriveMindMap` 已经把它**落盘到 message 给出的 `jsonFile`**（agent 可按路径读）
+ *       ⇒ 直接塞进回执是"淹掉回执"，正是 §2d 说的那种"为了好看而加的东西"。
+ *   ⇒ 保留 `wrap`；**这不是漏迁，是逐字段算过后的判定**（不刷假账）。 */
 export const renderDesignHandler = wrap(async (a) => {
   // 默认 mindmap：现行思维导图架构（root → 功能分组 → 文件）；html 星图画布仅调试保留
   const format = typeof a.format === 'string' ? a.format : 'mindmap';
@@ -158,8 +173,10 @@ export const renderDesignHandler = wrap(async (a) => {
   return { message: r.message };
 });
 
-/** scaffold：骨架 + 状态推断 */
-export const scaffoldHandler = wrap(async (a) => {
+/** scaffold：骨架 + 状态推断。★ wrapData（2026-09-29）：[B] `scaffold` 回 `ScaffoldResult`
+ *   = `{ message, files: string[], dir }` —— `files`（生成的文件清单）与 `dir` 原被 `wrap` 丢掉，
+ *   agent 只能从"1. 2. 3. …"编号散文里正则抠路径。`message` 不放进 data（同一份回执文本，重复无益）。 */
+export const scaffoldHandler = wrapData(async (a) => {
   const r = scaffold({
     feature: a.feature as string,
     project_dir: a.project_dir as string | undefined,
@@ -167,25 +184,32 @@ export const scaffoldHandler = wrap(async (a) => {
     overwrite: a.overwrite as boolean | undefined,
     ui_framework: a.ui_framework as 'vue' | 'react' | 'html' | undefined,
   });
-  return { message: r.message };
+  return { message: r.message, data: { files: r.files, dir: r.dir } };
 });
 
-/** backfill_scaffold：回填 */
-export const backfillHandler = wrap(async (a) => {
+/** backfill_scaffold：回填。★ wrapData（2026-09-29）：[B] 回 `BackfillResult`
+ *   = `{ message, feature, updates: BackfillUpdate[] }` —— 逐条回填结果（文件/符号/签名差异）
+ *   是**审计产物**，原被 `wrap` 丢掉。 */
+export const backfillHandler = wrapData(async (a) => {
   const r = await backfillScaffold({
     feature: a.feature as string,
     scaffold_dir: a.scaffold_dir as string | undefined,
   });
-  return { message: r.message };
+  return { message: r.message, data: { feature: r.feature, updates: r.updates } };
 });
 
-/** consistency_check：一致性 */
-export const consistencyHandler = wrap(async (a) => {
+/** consistency_check：一致性。★ wrapData（2026-09-29）：[B] 回 `ConsistencyResult`
+ *   = `{ message, fileResults[], invariantResults[], summary{totals…} }` ——
+ *   逐文件 API 匹配明细 + 不变式结果 + **计数摘要**原被 `wrap` 丢掉（agent 无从机器判定"过没过"）。 */
+export const consistencyHandler = wrapData(async (a) => {
   const r = await checkConsistency({
     feature: a.feature as string,
     code_dir: a.code_dir as string | undefined,
   });
-  return { message: r.message };
+  return {
+    message: r.message,
+    data: { fileResults: r.fileResults, invariantResults: r.invariantResults, summary: r.summary },
+  };
 });
 
 /** detect_drift：活文档↔代码漂移检测（代码变更 → 提示 DSL 过时/欠实现），持久化台账 */
@@ -316,7 +340,16 @@ export const observeTraceHandler = wrapData(async (a) => {
 
 /** observe_judge：对一批事件执行偏差判定。decls（可选）提供时额外执行 P2 链路契约判定——
  * 重建实测调用链（trace 三元组）+ Comparator 全量对比（探针级 + 链路级），
- * 链路断裂（chain-broken）带 trace_id 与实测窗口。不传 decls 保持逐事件判定。 */
+ * 链路断裂（chain-broken）带 trace_id 与实测窗口。不传 decls 保持逐事件判定。
+ * ★ 刻意保留 `wrap`（2026-09-29 逐处复核，**这条最容易被误迁**）：
+ *   本 handler 的 message 在**缺省模式下就是判定结果的 JSON 全文**（`JSON.stringify(merged)`，
+ *   见下方 `text` 的三元式）⇒ `data: merged` 与 message **逐字重复**，
+ *   迁 `wrapData` 只会把同一份 JSON 打两遍（回执体积翻倍、零信息增量）——
+ *   正是「data 会重复 message」应当保留 `wrap` 的那一类。
+ *   ★ 如实记下残余缺口：`text=true` 时 message 是**人读散文**（renderJudgeReport / renderTSDiffReport），
+ *     此时结构化的 `merged` 只有散文可达。要补它需要一个"**按参数条件输出 data**"的通道
+ *     （缺省模式不输出 data）——那会让静态门（G11）记一笔"已迁 wrapData"而缺省模式实际仍无 `---DATA---`，
+ *     属**刷假账**，故不做；此缺口在此登记，留给"回执通道按需选档"那一笔统一处理。 */
 export const observeJudgeHandler = wrap(async (a) => {
   const events = a.events;
   if (!Array.isArray(events) || events.length === 0) {

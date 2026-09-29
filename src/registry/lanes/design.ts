@@ -11,7 +11,7 @@
  *   否则本文件 import 它们就会成环（server_registry → lanes → server_registry）。
  */
 import { z } from 'zod';
-import { wrap, wrapData } from '../plumbing.js';
+import { wrapData } from '../plumbing.js';
 import path from 'node:path';
 import { getProjectCacheDb } from '../../db/db.js';
 import { getDSL } from '../../storage.js';
@@ -273,7 +273,13 @@ export const DESIGN_TOOLS: ToolDef[] = [
       design_mode: z.boolean().optional().describe('true=按目录聚合为模块节点（设计草图模式）'),
       functional_mode: z.boolean().optional().describe('true=按调用图做功能性聚合（跨目录功能社区，优先于 design_mode）'),
     },
-    handler: wrap(async (a) => {
+    // ★ 回执通道（2026-09-29）：`wrap` → `wrapData`。[B] `importProject` 的
+    //   `ImportProjectResult` 带**机器可读的导入读数**（feature / files_parsed / symbols_found /
+    //   dep_edges / dirs_created / skipped / cache / bricks_folded）——原 `return { message: r.message }`
+    //   把它们在通道层丢掉，agent 只能从散文里正则抠数字（正是 P-A 门记的那类翻车）。
+    //   `message` 字段刻意**不放进 data**：[B] 的结果里嵌的就是同一份回执文本，
+    //   再塞进 `---DATA---` 只是逐字重复（体积翻倍、零信息增量）。
+    handler: wrapData(async (a) => {
       // MCP 路径默认连项目级符号缓存（<project_dir>/.agent-io/cache.db）：
       // 不连则 importProject 走无缓存路径，符号缓存永远不更新（增量 re-parse 失效）。
       // 开库失败（只读目录等）降级为无缓存导入，不阻断导入本身。
@@ -284,7 +290,8 @@ export const DESIGN_TOOLS: ToolDef[] = [
         cacheDb = undefined;
       }
       const r = await importProject({ ...(a as unknown as ImportProjectInput), cache_db: cacheDb });
-      return { message: r.message };
+      const { message, ...data } = r;
+      return { message, data };
     }),
   },
 
