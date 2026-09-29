@@ -113,7 +113,9 @@ node scripts/capability_scan.mjs --check   # 仓库既有的能力一致性门�
 ⇒ 修法就是本字段：`.json`/`.yaml`/`.toml`/`.xml` 标 `data`、`.md`/`.tex` 标 `doc`、
 `.css`/`.scss`/`.less` 标 `style`、`.html` 标 `markup` ⇒ **它们不再进源码集**（但**仍在"能解析"集合里**，两回事）。
 ★ 口径收紧后**必须可见**（不许静默消失）：`health` / `impact` 会报
-`excludedNonCode: [{ext, count}]`（如 `[{"ext":".json","count":43}]`）。
+`bounds.skipped: [{path, why, count}]`（如 `[{"path":"**/*.json","why":"非代码语言扩展名：不进调用/依赖图…","count":43}]`）。
+★（2026-09-29：该字段原先叫 `excludedNonCode`，已**统一进 `ScanBounds` 契约** —— 见 `src/tools/scan_bounds.ts`；
+口径收紧的"少做了什么"现在走 `data.bounds.skipped`，与其它扫仓库类工具**同一形状**。）
 
 
 **改动 B** — 装包（**不要手抄 npm 命令**，钉版与 ABI 校验都在这条 CLI 里）：
