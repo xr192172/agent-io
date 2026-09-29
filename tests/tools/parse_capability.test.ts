@@ -7,7 +7,7 @@
  * tierForLanguage 判定（不依赖环境装没装某个解析器）。
  *
  * 覆盖：
- *   - .ts ⇒ call 级；.xyz ⇒ none（不在支持列表）；.css ⇒ none（注册表有但解析器未装）
+ *   - .ts ⇒ call 级；.xyz ⇒ none（不在支持列表）；.css ⇒ none（注册表有但解析器不可用）
  *   - symbol 级判定（纯函数）：swift 装了解析器 ⇒ symbol（有符号无适配）；未装 ⇒ none
  *     （2026-09-29：cpp/kotlin/ruby 已接 LANG_ADAPTERS ⇒ 由 symbol 升为 call，本用例换 swift）
  *   - renderGranularityNote：全 call ⇒ 空串（健康不刷屏）；有非 call ⇒ 诚实标注 + 工具口味
@@ -79,8 +79,10 @@ describe('parse_capability · 分层判定', () => {
     expect(cap.granularity).toContain('不在支持列表');
   });
 
-  it('.css ⇒ none（注册表有该语言但解析器未装）', () => {
+  it('.css ⇒ none（注册表有该语言但解析器不可用）', () => {
     const cap = parseCapabilityForFile('src/style.css');
+    // ★ 注册表里**有**这条语言（故不是"不在支持列表"），但 tree-sitter-css 是老 nan.h 模板、
+    //   载入必失败 ⇒ probe 的真筛子判不可用（包在盘上也没用）。断言本身不变。
     expect(findLanguageByExt('.css')).toBeDefined(); // 注册表里有
     expect(cap.tier).toBe('none');
     expect(cap.granularity).toContain('解析器未安装');

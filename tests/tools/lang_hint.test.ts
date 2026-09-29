@@ -6,7 +6,7 @@
  *
  * 覆盖三类缺失（各断言**四要件**，不是"非空"就过）：
  *   ① 缺语言（扩展名不在 LANGUAGES 注册表）      → 应说"注册表里还没有它"
- *   ② 语言在注册表但解析包未装（.css）            → 应给包名 + 钉版/CLI 命令
+ *   ② 语言在注册表但解析包不可用（.css）        → 应给包名 + 钉版/CLI 命令
  *   ③ 包已装但该能力未实现（.ts × spring_mvc_layering）→ 应说"已装" + 指到该能力小节
  *
  * 判据（每条都独立可验，不自我循环）：
@@ -56,14 +56,20 @@ describe('lang_hint · 缺失语言能力提示', () => {
     expect(hint).not.toContain('tree-sitter-undefined');
   });
 
-  it('② 语言在注册表但包未装（.css）⇒ 给包名 + 安装命令（含钉版信息）', () => {
+  it('② 语言在注册表但包不可载入（.css）⇒ 给包名 + 安装命令（含钉版信息）', () => {
     const ext = '.css';
     const entry = findLanguageByExt(ext);
     expect(entry, '前提：.css 在注册表').toBeDefined();
-    expect(isExtSupported(ext), '前提：本机未装 tree-sitter-css').toBeNull();
+    // ★ 前提是「不可载入」，不是「未装」——tree-sitter-css 实际在盘上（scss 的传递依赖），
+    //   但老 nan.h 模板 ⇒ 载入必失败。断言用的是"探到的可用性"，与盘上有没有无关。
+    expect(isExtSupported(ext), '前提：tree-sitter-css 不可载入（真筛子判不可用）').toBeNull();
 
     const hint = missingLanguageHint(ext, 'code_health');
     assertFourParts(hint, ext);
+    // ★ 2026-09-29 措辞纠正：tree-sitter-css **在盘上**（是 tree-sitter-scss 的传递依赖），
+    //   但它是老 nan.h 模板、无可用二进制 ⇒ 载入必失败 ⇒ probe 的「真筛子」判**不可用**。
+    //   ∴ 这里的"不可用"而不是"未装"，断言本身不变（isExtSupported 的语义已从"可 resolve"
+    //   收紧为"可载入"，见 src/tools/ts_kernel/probe.ts）。
     expect(hint, '要件②：应给 npm 包名').toContain(`tree-sitter-${entry!.pkg}`);
     expect(hint, '要件②：应给装包命令').toContain(`npm run install-package install ${entry!.name}`);
     expect(hint, '要件①：应带上该能力 id').toContain('「code_health」能力');
