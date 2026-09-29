@@ -41,6 +41,7 @@ import { getProjectCacheDb } from '../db/db.js';
 import { splitKeepEnds, detectEol, isBlankLine } from './line_utils.js';
 import { snapshotBeforeWrite } from './file_snapshot.js';
 import { reopenAndResolveAfterWrite } from './write_gate.js';
+import type { ScanBounds } from './scan_bounds.js';
 
 // ─────────────────────────────────────────────
 // 类型
@@ -89,14 +90,13 @@ export interface MoveSymbolResult {
   blocked?: string[];
   externalRefs?: ExternalRef[];
   /**
-   * ★ §2d（2026-09-28 修剪）：闭包扫描**跳过**的文件（读不了 / 解析不了），逐条带 why。
+   * ★ 扫描边界（统一形状，2026-09-29）：闭包扫描**跳过**的文件（读不了 / 解析不了）逐条带 why
+   *   —— 收进 `bounds.skipped`（原字段名 `skipped`，本笔收成统一形状，内容一字未改）。
    *   跳过 = "可能漏掉一个引用本符号的 importer" ⇒ 移动后它的 import 可能仍指向旧文件。
    *   原来 `expandClosureDetailed` 已经报出这个数组，本文件却**直接丢弃** ⇒ 静默少改。
-   * ★ 诚实边界：本字段当前**渲染不出去** —— [C]（`registry/lanes/refactor.ts` 的 move_symbol
-   *   handler）用的是 `wrap`（只取 message、**丢弃 data**）。要真正可见需把该 handler 换成
-   *   `wrapData`（或把 skipped 拼进 message）—— 本轮该文件被另一执行者锁定，未改。
+   * 形状与挂载层见 `src/tools/scan_bounds.ts`。
    */
-  skipped?: Array<{ path: string; why: string }>;
+  bounds?: ScanBounds;
   /** 传了 to_symbol 但 v1 未启用改名 */
   toSymbolDeferred?: boolean;
 }
@@ -318,6 +318,12 @@ export async function moveSymbol(input: MoveSymbolInput): Promise<MoveSymbolResu
   //   跳过 = "可能漏掉一个引用本符号的 importer" ⇒ 丢掉它就是"少做一点事而不说话"（与 rename_symbol
   //   同族，那边的对应修复是 A14 透传 closure.skipped）。这里逐条带 why 透传进结果。
   const closureSkipped = closure.skipped;
+  // ★ 统一「扫描边界」：闭包口径 + 实扫文件数 + 跳过的文件（`closureSkipped` 为空时只报口径与规模）
+  const bounds: ScanBounds = {
+    scope: '工作区内 import 反向闭包（expandClosureDetailed 展开的引用方；工作区外只记 externalRefs 不追外）',
+    scanned: { files: closure.files.length },
+    ...(closureSkipped.length > 0 ? { skipped: closureSkipped } : {}),
+  };
   const byNoExt = buildNoExt(files);
 
   const aliasMemo = new Map<string, AliasConfig | null>();
@@ -456,7 +462,7 @@ export async function moveSymbol(input: MoveSymbolInput): Promise<MoveSymbolResu
       redirects,
       affectedFiles: affectedFiles.map((f) => (path.relative(resolvedRoot, f) || f).replace(/\\/g, '/')),
       externalRefs,
-      ...(closureSkipped.length > 0 ? { skipped: closureSkipped } : {}),
+      bounds,
       ...(toSymbolDeferred ? { toSymbolDeferred: true } : {}),
     };
   }
@@ -503,7 +509,7 @@ export async function moveSymbol(input: MoveSymbolInput): Promise<MoveSymbolResu
     redirects,
     affectedFiles: affectedFiles.map((f) => (path.relative(resolvedRoot, f) || f).replace(/\\/g, '/')),
     externalRefs,
-    ...(closureSkipped.length > 0 ? { skipped: closureSkipped } : {}),
+    bounds,
     ...(toSymbolDeferred ? { toSymbolDeferred: true } : {}),
   };
 }

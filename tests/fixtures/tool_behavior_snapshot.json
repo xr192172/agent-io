@@ -36,7 +36,7 @@
   },
   {
     "name": "code_health",
-    "text": "代码健康度 · undefined\n0 个文件 → 健康分 0（N/A）\n分层：胶水 0 / 积木 0（其中未分类 0）/ 契约 0 / 违规 0\n无输入（0 个源文件）—— 本次读数不代表健康，grade=N/A。请检查 root 是否存在、扩展名是否被内核支持。\n\n—— 问题清单 ——\n（无问题）\n---DATA---\n{\"root\":\"undefined\",\"fileCount\":0,\"issues\":[],\"counts\":{\"unused_export\":0,\"unused_import\":0,\"orphan_file\":0,\"high_complexity\":0,\"layer_violation\":0},\"complexity\":[],\"layers\":{\"contract\":0,\"brick\":0,\"glue\":0,\"unclassified\":0,\"violations\":0},\"score\":0,\"grade\":\"N/A\",\"summary\":\"无输入（0 个源文件）—— 本次读数不代表健康，grade=N/A。请检查 root 是否存在、扩展名是否被内核支持。\"}",
+    "text": "代码健康度 · undefined\n0 个文件 → 健康分 0（N/A）\n分层：胶水 0 / 积木 0（其中未分类 0）/ 契约 0 / 违规 0\n无输入（0 个源文件）—— 本次读数不代表健康，grade=N/A。请检查 root 是否存在、扩展名是否被内核支持。\n\n—— 问题清单 ——\n（无问题）\n---DATA---\n{\"root\":\"undefined\",\"fileCount\":0,\"issues\":[],\"counts\":{\"unused_export\":0,\"unused_import\":0,\"orphan_file\":0,\"high_complexity\":0,\"layer_violation\":0},\"complexity\":[],\"layers\":{\"contract\":0,\"brick\":0,\"glue\":0,\"unclassified\":0,\"violations\":0},\"score\":0,\"grade\":\"N/A\",\"summary\":\"无输入（0 个源文件）—— 本次读数不代表健康，grade=N/A。请检查 root 是否存在、扩展名是否被内核支持。\",\"bounds\":{\"scope\":\"全项目源码文件（AST 解析 + 调用/类型/import 边；源码集 = 可解析 ∩ 代码语言）\",\"scanned\":{\"files\":0}}}",
     "isError": false
   },
   {
@@ -131,12 +131,12 @@
   },
   {
     "name": "hybrid_precheck",
-    "text": "项目杂交预检 · undefined ↔ undefined\n判定：可直接融合（ok）\n  · 健康度良好：A 0（N/A）/ B 0（N/A），选材质量过关\n\n■ 符号冲突 0（同名不同签，杂交前需改名/错位）\n  （无）\n\n■ 功能重叠 0（同名同签双胞胎，可去重一个）\n  （无）\n\n■ 依赖版本冲突 0\n  （无）\n\n■ 依赖共享 0 / 仅A 0 / 仅B 0\n---DATA---\n{\"aRoot\":\"undefined\",\"bRoot\":\"undefined\",\"symbolConflicts\":[],\"symbolDuplicates\":[],\"deps\":{\"conflicts\":[],\"shared\":[],\"aOnly\":[],\"bOnly\":[]},\"health\":{\"a\":{\"root\":\"undefined\",\"fileCount\":0,\"issues\":[],\"counts\":{\"unused_export\":0,\"unused_import\":0,\"orphan_file\":0,\"high_complexity\":0,\"layer_violation\":0},\"complexity\":[],\"layers\":{\"contract\":0,\"brick\":0,\"glue\":0,\"unclassified\":0,\"violations\":0},\"score\":0,\"grade\":\"N/A\",\"summary\":\"无输入（0 个源文件）—— 本次读数不代表健康，grade=N/A。请检查 root 是否存在、扩展名是否被内核支持。\"},\"b\":{\"root\":\"undefined\",\"fileCount\":0,\"issues\":[],\"counts\":{\"unused_export\":0,\"unused_import\":0,\"orphan_file\":0,\"high_complexity\":0,\"layer_violation\":0},\"complexity\":[],\"layers\":{\"contract\":0,\"brick\":0,\"glue\":0,\"unclassified\":0,\"violations\":0},\"score\":0,\"grade\":\"N/A\",\"summary\":\"无输入（0 个源文件）—— 本次读数不代表健康，grade=N/A。请检查 root 是否存在、扩展名是否被内核支持。\"}},\"verdict\":\"ok\",\"reasons\":[\"健康度良好：A 0（N/A）/ B 0（N/A），选材质量过关\"]}",
+    "text": "项目杂交预检 · undefined ↔ undefined\n判定：可直接融合（ok）\n  · 健康度良好：A 0（N/A）/ B 0（N/A），选材质量过关\n\n■ 符号冲突 0（同名不同签，杂交前需改名/错位）\n  （无）\n\n■ 功能重叠 0（同名同签双胞胎，可去重一个）\n  （无）\n\n■ 依赖版本冲突 0\n  （无）\n\n■ 依赖共享 0 / 仅A 0 / 仅B 0\n---DATA---\n{\"aRoot\":\"undefined\",\"bRoot\":\"undefined\",\"symbolConflicts\":[],\"symbolDuplicates\":[],\"deps\":{\"conflicts\":[],\"shared\":[],\"aOnly\":[],\"bOnly\":[]},\"health\":{\"a\":{\"root\":\"undefined\",\"fileCount\":0,\"issues\":[],\"counts\":{\"unused_export\":0,\"unused_import\":0,\"orphan_file\":0,\"high_complexity\":0,\"layer_violation\":0},\"complexity\":[],\"layers\":{\"contract\":0,\"brick\":0,\"glue\":0,\"unclassified\":0,\"violations\":0},\"score\":0,\"grade\":\"N/A\",\"summary\":\"无输入（0 个源文件）—— 本次读数不代表健康，grade=N/A。请检查 root 是否存在、扩展名是否被内核支持。\",\"bounds\":{\"scope\":\"全项目源码文件（AST 解析 + 调用/类型/import 边；源码集 = 可解析 ∩ 代码语言）\",\"scanned\":{\"files\":0}}},\"b\":{\"root\":\"undefined\",\"fileCount\":0,\"issues\":[],\"counts\":{\"unused_export\":0,\"unused_import\":0,\"orphan_file\":0,\"high_complexity\":0,\"layer_violation\":0},\"complexity\":[],\"layers\":{\"contract\":0,\"brick\":0,\"glue\":0,\"unclassified\":0,\"violations\":0},\"score\":0,\"grade\":\"N/A\",\"summary\":\"无输入（0 个源文件）—— 本次读数不代表健康，grade=N/A。请检查 root 是否存在、扩展名是否被内核支持。\",\"bounds\":{\"scope\":\"全项目源码文件（AST 解析 + 调用/类型/import 边；源码集 = 可解析 ∩ 代码语言）\",\"scanned\":{\"files\":0}}}},\"verdict\":\"ok\",\"reasons\":[\"健康度良好：A 0（N/A）/ B 0（N/A），选材质量过关\"]}",
     "isError": false
   },
   {
     "name": "impact_analysis",
-    "text": "影响面报告 · undefined\n变更点 0 个，受影响文件 0 个（直接 0，高风险 0）\n\n（零波及：该变更点没有任何文件依赖链）\n---DATA---\n{\"root\":\"undefined\",\"changePoints\":[],\"missing\":[],\"files\":[],\"total\":0,\"direct\":0,\"high_risk\":0,\"fell_back\":false}",
+    "text": "影响面报告 · undefined\n变更点 0 个，受影响文件 0 个（直接 0，高风险 0）\n\n（零波及：该变更点没有任何文件依赖链）\n---DATA---\n{\"root\":\"undefined\",\"changePoints\":[],\"missing\":[],\"files\":[],\"total\":0,\"direct\":0,\"high_risk\":0,\"fell_back\":false,\"bounds\":{\"scope\":\"全项目源码文件依赖图（import + 调用 + 类型引用三路证据边；源码集 = 可解析 ∩ 代码语言）\",\"scanned\":{\"files\":0}}}",
     "isError": false
   },
   {

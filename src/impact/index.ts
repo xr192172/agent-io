@@ -23,6 +23,7 @@
 import path from 'node:path';
 import { parseFileFull, listSupportedExtensions, resolveImportPath, type ParsedSymbol } from '../tools/ts_kernel/index.js';
 import { codeSourceExts, partitionByCodeLang } from '../tools/ts_kernel/source_exts.js';
+import { boundsSkipFromExcluded, type ScanBounds } from '../tools/scan_bounds.js';
 import { collectSourceFiles } from '../version_upgrade/detect.js';
 
 // ── 对外类型 ─────────────────────────────────────────────────
@@ -70,10 +71,13 @@ export interface ImpactReport {
   /** 符号级消费方解析失败，发生保守整闭包降级 */
   fell_back: boolean;
   /**
-   * 「口径收紧的可见性」（2026-09-29）：可解析但**不算源码**、因而不在图里的扩展名 → 文件数。
-   * ★ 只在非空时出现（同 `HealthReport.excludedNonCode`：没有可说的就不说）。
+   * ★ 扫描边界（统一形状，2026-09-29；原名 `excludedNonCode`）。
+   * 「口径收紧的可见性」：可解析但**不算源码**、因而不在图里的扩展名 → 逐族计数，收进
+   * `bounds.skipped`。原设计与理由见 `health/index.ts` 的 `HealthReport`（同一口径、同一理由）。
+   * ★ 本工具属「扫仓库类」⇒ `bounds` **恒在**（口径收紧被排除了什么，必须说出来）。
+   * 形状与挂载层见 `src/tools/scan_bounds.ts`。
    */
-  excludedNonCode?: Array<{ ext: string; count: number }>;
+  bounds: ScanBounds;
 }
 
 export interface HubFile {
@@ -104,7 +108,8 @@ interface GraphResult {
   nameIndex: Map<string, Array<{ rel: string; sym: ParsedSymbol }>>;
   /**
    * 「口径收紧的可见性」（2026-09-29）：可解析但**不算源码**的扩展名 → 文件数（空 = 无）。
-   * 见 `health/index.ts` 的 `HealthReport.excludedNonCode`（同一口径、同一理由）。
+   * 见 `health/index.ts` 的 `HealthReport.bounds`（同一口径、同一理由）——本字段是**内部**形状，
+   * 对外统一由 `ImpactReport.bounds.skipped` 承载（`scan_bounds.ts`）。
    */
   excludedNonCode: Array<{ ext: string; count: number }>;
 }
@@ -392,15 +397,22 @@ export function computeImpact(
     direct: files.filter((f) => f.depth <= 1).length,
     high_risk: files.filter((f) => f.risk === 'high').length,
     fell_back,
-    // ★ 只在非空时出现（理由见 ImpactReport.excludedNonCode）
-    ...(graph.excludedNonCode.length > 0 ? { excludedNonCode: graph.excludedNonCode } : {}),
+    // ★ 扫描边界恒在（扫仓库类工具的自证字段；口径收紧被排除的文件走 skipped，不静默消失）
+    bounds: {
+      scope: '全项目源码文件依赖图（import + 调用 + 类型引用三路证据边；源码集 = 可解析 ∩ 代码语言）',
+      scanned: { files: graph.rels.size },
+      ...(graph.excludedNonCode.length > 0 ? { skipped: boundsSkipFromExcluded(graph.excludedNonCode) } : {}),
+    },
   };
 }
 
 // ── 风险热区盘点（无变更点时的扫描模式） ──────────────────────────
 
-/** 全项目"改哪里风险最高"盘点：按波及半径（被直接依赖数）排序 */
-export async function analyzeHubs(root: string, top = 10): Promise<{ root: string; files: HubFile[]; fileCount: number; edgeCount: number }> {
+/** 全项目"改哪里风险最高"盘点：按波及半径（被直接依赖数）排序（★ 同样带统一扫描边界） */
+export async function analyzeHubs(
+  root: string,
+  top = 10,
+): Promise<{ root: string; files: HubFile[]; fileCount: number; edgeCount: number; bounds: ScanBounds }> {
   const graph = await buildImpactGraph(root);
   const out: HubFile[] = [];
   for (const rel of graph.rels) {
@@ -416,5 +428,10 @@ export async function analyzeHubs(root: string, top = 10): Promise<{ root: strin
     files: out.slice(0, top),
     fileCount: graph.rels.size,
     edgeCount: edges,
+    bounds: {
+      scope: '全项目源码文件依赖图（import + 调用 + 类型引用三路证据边；源码集 = 可解析 ∩ 代码语言）',
+      scanned: { files: graph.rels.size },
+      ...(graph.excludedNonCode.length > 0 ? { skipped: boundsSkipFromExcluded(graph.excludedNonCode) } : {}),
+    },
   };
 }

@@ -31,6 +31,7 @@
 
 import { parseFileFull, parseAstRoot, listSupportedExtensions, resolveImportPath, type ParsedSymbol, type SyntaxNodeLike } from '../tools/ts_kernel/index.js';
 import { codeSourceExts, partitionByCodeLang } from '../tools/ts_kernel/source_exts.js';
+import { boundsSkipFromExcluded, type ScanBounds } from '../tools/scan_bounds.js';
 import { collectSourceFiles } from '../version_upgrade/detect.js';
 
 // ── 对外类型 ─────────────────────────────────────────────────
@@ -87,16 +88,17 @@ export interface HealthReport {
   grade: 'A' | 'B' | 'C' | 'D' | 'N/A';
   summary: string;
   /**
-   * 「口径收紧的可见性」（2026-09-29）：**装了/可解析、但按「代码语言」不算源码**的扩展名 → 文件数
-   * （如 `[{ ext: '.json', count: 1 }]`）。
+   * ★ 扫描边界（统一形状，2026-09-29；原名 `excludedNonCode`）。
    *
+   * 「口径收紧的可见性」：装了 / 可解析、但按「代码语言」不算源码的扩展名 → 逐族计数，
+   * 收进 `bounds.skipped`（`count` 保留、`ext` 落在 `path` 模式上 ⇒ 无损）。
    * ★ 为什么要单列：源码集从"可解析"收到"代码语言"之后，`.json` 这类文件**不再进体检** ——
    *   如果连"有几个、是什么"都不说，那就是本仓头注批的「**缺失是沉默的**」。
    *   同款设计见 `layers.unclassified`（单列"什么都没命中"的文件数，而不是混进 brick）。
-   * ★ **只在非空时出现**：没有可说的就不说 —— 这样"读数没变"与"口径变了但没东西被排除"
-   *   在回执上可区分（也让逐工具行为快照 G8 只在真有变化时才动）。
+   * ★ 本工具属「扫仓库类」⇒ `bounds` **恒在**（哪怕扫了 0 个文件也要说出来 —— 那正是边界）。
+   * 形状与挂载层见 `src/tools/scan_bounds.ts`。
    */
-  excludedNonCode?: Array<{ ext: string; count: number }>;
+  bounds: ScanBounds;
 }
 
 export interface HealthOptions {
@@ -826,8 +828,12 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
     score: score.value,
     grade,
     summary,
-    // ★ 只在非空时出现（理由见 HealthReport.excludedNonCode 的注释）
-    ...(nonCodeExts.length > 0 ? { excludedNonCode: nonCodeExts } : {}),
+    // ★ 扫描边界恒在（扫仓库类工具的自证字段；口径收紧被排除的文件走 skipped，不静默消失）
+    bounds: {
+      scope: '全项目源码文件（AST 解析 + 调用/类型/import 边；源码集 = 可解析 ∩ 代码语言）',
+      scanned: { files: files.length },
+      ...(nonCodeExts.length > 0 ? { skipped: boundsSkipFromExcluded(nonCodeExts) } : {}),
+    },
   };
 }
 

@@ -53,6 +53,7 @@ import { moveSymbol } from '../../tools/symbol_move.js';
 import { buildRefactorPlan, applyRefactorPlan } from '../../tools/refactor_plan.js';
 import type { RefactorTarget, RefactorPlan } from '../../tools/refactor_plan.js';
 import { diffViewsHandler } from '../handlers.js';
+import type { ScanBounds } from '../../tools/scan_bounds.js';
 import type { ToolDef } from '../types.js';
 
 // ★ 2026-09-29（面收敛第二批）：本文件原先自带一个**私有** `requireStr` 守卫，本笔把它上提到
@@ -209,6 +210,25 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         dry_run: a.dry_run === true,
         report_literals: a.report_literals === true,
       });
+      /**
+       * ★ 去重后的「跳过的文件」清单 —— **一处实现、两处消费**（① 显著警告文本 ② `bounds.skipped`）。
+       * 数据来源：每条 preview/applied 的 `result.skipped`（`rename_symbol` 只在非空时返回）。
+       */
+      const skippedEntries = (): Array<{ path: string; why: string }> => {
+        const seen = new Set<string>();
+        const entries: Array<{ path: string; why: string }> = [];
+        const take = (s?: Array<{ path: string; why: string }>): void => {
+          for (const x of s ?? []) {
+            const k = `${x.path}\u0000${x.why}`;
+            if (seen.has(k)) continue;
+            seen.add(k);
+            entries.push(x);
+          }
+        };
+        for (const p of r.previews) take(p.result?.skipped);
+        for (const a of r.applied) take(a.result.skipped);
+        return entries;
+      };
       // ★ scope 分支只影响**渲染** —— [C] 是路由器 + 回执渲染器，不在这里写第二套改名/落盘实现。
       if (r.scope === 'local') {
         const done = r.previews.filter((p) => p.ok);
@@ -226,7 +246,14 @@ export const REFACTOR_TOOLS: ToolDef[] = [
           parts.push(`  ${p.ok ? '✓' : '✗'} ${p.item.file} 的 ${p.item.symbol} → ${p.item.to}${note ? ` —— ${note}` : ''}`);
           for (const b of p.blocked ?? []) parts.push(`\t✗ 跳过：${b}`);
         }
-        return { message: parts.join('\n'), data: r };
+        // ★ 统一「扫描边界」（唯一落点：`src/tools/scan_bounds.ts`）：局部支**无跨文件闭包**，
+        //   边界就是"逐条目所在文件"；跳过项 = 被拒的那些条目（名字歧义/撞名/非法名…）。
+        const localBounds: ScanBounds = {
+          scope: '文件内局部绑定（作用域隔离，不跨文件；无 import 闭包扩展）',
+          scanned: { files: r.previews.length },
+          ...(skippedEntries().length > 0 ? { skipped: skippedEntries() } : {}),
+        };
+        return { message: parts.join('\n'), data: { ...r, bounds: localBounds } };
       }
       const fmt = (item: { file: string; symbol: string; to: string }, res?: { definition?: { file: string }; importers?: { file: string; ops?: { old: string; new: string }[] }[] }): string => {
         const lines = [`  - ${item.file} 的 ${item.symbol} → ${item.to}`];
@@ -259,25 +286,37 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       //   改名会产出**损坏的代码**（定义改了、引用没改）。故必须在回执**显著位置**显式警告，
       //   并逐条列出 {path, why}；不能让它混在普通回执里（否则退化成 §2d 的"少做而不说话"）。
       //   数据来源：每条 preview/applied 的 result.skipped（rename_symbol 只在非空时返回）。
+      //   ★ 2026-09-29（本笔）：去重逻辑上提为 `skippedEntries()`（本函数顶部），与 `bounds.skipped` 共用。
       const skippedWarning = (): string | null => {
-        const seen = new Set<string>();
-        const entries: Array<{ path: string; why: string }> = [];
-        const take = (s?: Array<{ path: string; why: string }>): void => {
-          for (const x of s ?? []) {
-            const k = `${x.path}\u0000${x.why}`;
-            if (seen.has(k)) continue;
-            seen.add(k);
-            entries.push(x);
-          }
-        };
-        for (const p of r.previews) take(p.result?.skipped);
-        for (const a of r.applied) take(a.result.skipped);
+        const entries = skippedEntries();
         if (entries.length === 0) return null;
         const lines = [
           `⚠ 改名可能不完整：${entries.length} 个文件未能扫描（原因见下）——这些文件里的引用可能未改写，请人工复核：`,
         ];
         for (const e of entries) lines.push(`  · ${e.path} —— ${e.why}`);
         return lines.join('\n');
+      };
+      /**
+       * ★ 统一「扫描边界」（唯一落点：`src/tools/scan_bounds.ts`）。
+       *   scope = 两条候选来源（import 反向闭包 + report_literals 的文本扫描）；
+       *   scanned.files = 各条目**闭包分析到的文件数**（定义文件 1 + 它解析到的 importer 数，逐条累加）；
+       *   skipped = 上面那份去重清单。
+       */
+      const bounds = (): ScanBounds => {
+        let scanned = 0;
+        const add = (res?: { importers?: unknown[] }): void => {
+          if (res) scanned += 1 + (res.importers?.length ?? 0);
+        };
+        for (const p of r.previews) add(p.result);
+        for (const a of r.applied) add(a.result);
+        const entries = skippedEntries();
+        return {
+          scope:
+            'import 反向闭包（工作区内引用方；含 tsconfig 别名 / re-export）' +
+            (r.literals ? ' + 字面量文本扫描（report_literals：项目文本里的 snake 变体命中）' : ''),
+          scanned: { files: scanned },
+          ...(entries.length > 0 ? { skipped: entries } : {}),
+        };
       };
       if (!r.ok) {
         const parts = [`批量改名被阻断（${r.dryRun ? '整体未落盘' : '部分已应用后中止'}）：`];
@@ -287,7 +326,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         parts.push('\tdry-run 各条状态：');
         for (const p of r.previews) parts.push(`\t  [${p.ok ? '可落盘' : '被阻断'}] ${fmt(p.item, p.result)}`.replace(/\n/g, '\n\t  '));
         appendLiterals(parts, r);
-        return { message: parts.join('\n'), data: r };
+        return { message: parts.join('\n'), data: { ...r, bounds: bounds() } };
       }
       const parts = [
         r.dryRun ? `[批量 dry-run 预览·未落盘] 共 ${r.previews.length} 条` : `批量改名完成：${r.previews.length} 条，落盘 ${r.filesWritten} 个文件`,
@@ -296,7 +335,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       if (warn) parts.push(warn);
       for (const p of r.previews) parts.push(fmt(p.item, p.result).replace(/\n/g, '\n\t'));
       appendLiterals(parts, r);
-      return { message: parts.join('\n'), data: r };
+      return { message: parts.join('\n'), data: { ...r, bounds: bounds() } };
     }),
   },
 

@@ -29,6 +29,7 @@ import { ensureProjectIndex } from './index_freshness.js';
 import { buildImportGraph } from './import_graph.js';
 import { scanTextMentions } from './refs_text.js';
 import { getProjectView } from './ts_kernel/project_view.js'; // ★ §19②
+import type { ScanBounds } from './scan_bounds.js';
 
 /** 每个文件最多取多少条文本提及（避免单文件刷屏） */
 const TEXT_MENTION_PER_FILE = 3;
@@ -38,8 +39,8 @@ const TEXT_MENTION_PER_FILE = 3;
  */
 const TEXT_SCAN_MAX_FILES = 3000;
 
-/** 候选集来源的如实账目（供结果里向 LLM 披露召回边界） */
-export interface CandidateScan {
+/** 候选集来源的**内部**账目（供 `[C]` 收成统一 `ScanBounds` 后再对外披露） */
+interface CandidateScan {
   /** import 反向闭包里的文件数 */
   closureFiles: number;
   /** 文本层额外补进来的候选文件数（跨语言 / 无 import 边的引用只能靠它） */
@@ -48,6 +49,18 @@ export interface CandidateScan {
   textScanned: number;
   /** 文本层是否因上限被截断（true ⇒ 候选集可能不全，必须向调用方标注） */
   textBounded: boolean;
+}
+
+/** ★ 候选账目 → 统一「扫描边界」（唯一落点：`scan_bounds.ts` 的契约）。 */
+function boundsOf(scan: CandidateScan): ScanBounds {
+  return {
+    scope: 'import 反向闭包（cache.db 的 importer 图）∪ 全仓文本提及补召回（跨语言 / 无 import 边的引用只能靠它）',
+    // 实际逐个读取解析的候选文件数 = 闭包文件 + 文本层补进来的
+    scanned: { files: scan.closureFiles + scan.textAdded },
+    truncated: scan.textBounded,
+    // 核心三槽装不下的分解读数（该工具独有）→ 逃生舱
+    detail: { closureFiles: scan.closureFiles, textAdded: scan.textAdded, textScanned: scan.textScanned },
+  };
 }
 
 interface CandidateSet {
@@ -151,11 +164,12 @@ export interface FindReferencesResult {
   /** report_literals=true 时：符号 snake 变体在项目文本里的字面量命中（如工具注册名/README/测试里的串），只扫描不改 */
   literals?: Array<{ needle: string; matches: RawLiteralMatch[] }>;
   /**
-   * ★ 候选集来源账目（2026-09-15 加）：import 反向闭包多少、文本层补了多少、是否被上限截断。
+   * ★ 扫描边界（统一形状，2026-09-29）：import 反向闭包多少、文本层补了多少、是否被上限截断。
    * 为什么要给 LLM 看：**召回边界必须可见**。"跨语言引用只能靠文本层补"，若文本层被截断，
    * 本次结果就可能不全 —— 这属于"要么一致、要么明确标注"里的**标注**。
+   * 形状与挂载层见 `scan_bounds.ts`（本字段原名 `candidateScan`，本笔收成统一形状）。
    */
-  candidateScan?: CandidateScan;
+  bounds?: ScanBounds;
   /** 阻断/非模块级符号等理由 */
   blocked?: string[];
 }
@@ -318,7 +332,7 @@ export async function findReferences(input: {
       ],
     };
   }
-  const candidateScan: CandidateScan = cand.scan;
+  const bounds = boundsOf(cand.scan);
   const candidates = cand.files;
   if (candidates.length > 4000) {
     return {
@@ -458,7 +472,7 @@ export async function findReferences(input: {
     definition: { file: (path.relative(resolvedRoot, fileAbs) || fileAbs).replace(/\\/g, '/'), kind: kind ?? 'module', refs: defRefs },
     importers,
     importerCount: importers.length,
-    candidateScan,
+    bounds,
     literals: input.report_literals ? await scanLiterals(resolvedRoot, symbol!) : undefined,
   };
 }
