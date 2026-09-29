@@ -30,6 +30,8 @@ const INTERNAL_MODULES = new Set([
   'detect_dead_imports', 'diff_impact', 'guided_tour', 'inject_replay', 'language_concepts',
   'list_features', 'query_feature', 'update_feature', 'watch_project', 'wizard_steps',
   'feature_ops', 'render_workbench', 'feature_map', 'derive_feature_tree',
+  // ★ 2026-09-29（面收敛）：被新入口吸收的实现模块 —— 它们的主函数仍在，但不再自己注册。
+  'archive_node', // → lane `archive`（action=list 走 list_archive，action=… 走本模块）
 ]);
 
 describe('server_registry 一致性', () => {
@@ -97,8 +99,26 @@ describe('server_registry 一致性', () => {
     const registered = new Set(TOOL_DEFS.map((d) => d.name));
 
     const missing: string[] = [];
+    // ★★ 2026-09-29（面收敛撞出的门盲区）：**被某个工具面吸收的实现模块，不需要自己注册。**
+    //
+    // 起因：面收敛（`archive_node` → lane `archive`）后本测试误报"漏注册"。根因见下方 alias 匹配：
+    //   它假设「每个工具的实现在 `src/tools/<工具名>.ts`」，而**新入口没有同名实现文件**
+    //   （`archive`/`bricks`/`snapshot`/`rules` 复用旧模块）⇒ 假设破产 ⇒ 把老实现误判成漏注册。
+    //
+    // 正解（治本）：扫 **lane 文件（`[C]` 层）** —— 若该模块**被任何 lane import**，
+    //   它就是这个面里某个工具的**实现**（而不是一个独立 MCP 工具）⇒ 天然豁免。
+    //   ★ 这样以后每收一个面都**不用再往 INTERNAL_MODULES 手抄一行**（本仓病根就是手抄清单）。
+    const laneDir = path.join(PKG_ROOT, 'src', 'registry', 'lanes');
+    const laneSource = fs.existsSync(laneDir)
+      ? fs.readdirSync(laneDir).filter((f) => f.endsWith('.ts'))
+          .map((f) => fs.readFileSync(path.join(laneDir, f), 'utf-8')).join('\n')
+      : '';
+    const isAbsorbedByFacade = (base: string): boolean =>
+      laneSource.includes(`/tools/${base}.js'`) || laneSource.includes(`/tools/${base}.js"`);
+
     for (const base of files) {
       if (INTERNAL_MODULES.has(base)) continue;
+      if (isAbsorbedByFacade(base)) continue; // ★ 被工具面吸收 ⇒ 不是独立工具，无需注册
       const camel = toCamel(base);
       const content = fs.readFileSync(path.join(TOOLS_DIR, `${base}.ts`), 'utf-8');
       // 主函数名 == 文件名 camelCase（约定），如 diff_views.ts export diffViews
