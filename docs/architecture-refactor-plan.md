@@ -2898,3 +2898,71 @@ renameSymbols()                       ← [B] 单一入口（[C] 只转发到它
    **它解决"解析"，没解决"语义"**；而 serena 从一开始站在 LSP 上，**语义是白拿的**。
 5. ★ 现在要不要补上语义层，见 (b) 的双轨建议 —— **不必推翻 tree-sitter，只要在需要语义的地方接 LSP 即可。**
 
+---
+
+## 33. ★★★ 用户指令：**把桥的收敛内化进本仓 MCP**（2026-09-29）
+
+### 33.1 用户原话（本节的依据）
+> 「所以实际上重命名一整条这个链路是**很成熟的一个工具**是吗？我现在只是在**做重复的事情**，
+>  这个工具实际上**并不是特别强大**。然后**记一下，把那个桥的那种收敛内化进去，内化进我们本身的项目**，
+>  因为当时**那个桥是 DSH 面貌下的插件开发**，你可以**将其内化到我们的 MCP 里面**。」
+
+### 33.2 对"rename 是很成熟的工具 / 我们在重复"的答复 —— **对了一半，而那一半更值钱**
+| 链路的一半 | 状况 | 判断 |
+|---|---|---|
+| **符号层语义**（改哪些位置） | ★ LSP `textDocument/rename` 是**标准协议**，serena 79 个 server 全支持；本仓**用 tree-sitter 自建语义**（`rename_symbol.ts` 1876 行） | ★★ **确实在重复造，且很可能更弱** —— 类型系统 / 泛型 / 重载 / 跨包可见性这些，**tree-sitter 层面拿不到** |
+| **改名完整性 + 可控性** | 闭包扩展（未建索引也拉进来）/ **文本层字面量**（README/错误串/工具注册名）/ 快照撤回 / 整体阻断 / 审计 | ★ **LSP 不管** ⇒ 这是本仓的**真实增量**（唯一例外：serena 的 `rename_in_text_occurrences`，默认 `False`） |
+
+⇒ **准确结论**：「**符号语义**」那半在重复造且更弱；「**完整性 + 可控性**」那半是本仓的真增量。
+⇒ 对应行动：见 §32.7 (b) 的**双轨建议**（tree-sitter 兜结构 + 需要语义处接 LSP）。
+
+### 33.3 桥的编排形态（实测，决定了"该内化什么"）
+**桥的 4 个"深度注入"壳，各自只调 1 个内核工具**（`loadKernel` ⇒ `import()` 内核 `dist/src/tools/*.js`）：
+| 桥壳 | 调内核 | 行号 |
+|---|---|---|
+| `symbol_edit` | `kernel.editCode(...)` | `index.ts:516` |
+| `safe_rename` | `kernel.findReferences(...)` → `kernel.renameSymbols(...)` | `:492` / `:610` |
+| `move_symbol` | `kernel.moveSymbol(...)` | `:719` |
+
+★★ **`safe_rename` 的完整实现 = 1 次内核调用 + 精心渲染**：
+```
+kernel.renameSymbols({...})
+  ↓ 渲染 4 组
+  ① 符号层（definition + importers 前 10 条）
+  ② 文本层字面量（按 decision 分组：apply / 人审 / 保留）
+  ③ 项目边界（externalRefs，只提示不落盘）
++ 安全策略前移：默认 dry_run、未预热拦截、沙箱闸（fenceThroughFsSeam）
+```
+⇒ ★★ **桥的壳做的是三件事**：**① 入口收敛**（68 → 8）+ **② 回执编排**（把结构化结果渲染成分组摘要）+ **③ 安全策略前移**。
+**这三件本仓都该自己有好** —— 现在为了做它们，反倒得在外面"深度注入"绕过 MCP。
+
+### 33.4 ★★★ 内化的**正确形态**（关键判断）
+- ❌ **错误做法**：把桥的 8 个壳**搬进本仓** ⇒ 工具数 68 → **76** ⇒ **与收敛背道而驰**
+- ✅ **正确做法**：**把"桥为什么要存在"这件事消灭掉** ——
+  桥存在的理由是「**内核工具面太碎、agent 不好用**」⇒ 那就**把内核的工具面收好**：
+  **68 个按「操作对象」收敛成少数几个面**（§15.2 的三层次），每个面用 **action** 展开。
+
+★ 而**它必须配合内核内化**（§30 的两刀），否则就是把"重复实现"固化进 action 分支 ⇒ **又变成接口性收敛**。
+
+### 33.5 方案骨架（按 §15 口径 + 桥的切法，6 个面）
+| 面（操作对象） | 拟收编的现有工具（计数） |
+|---|---|
+| **符号 / 代码** | `rename_symbols` `rename_files` `move_symbol` `find_references` `impact_analysis` `edit_code` `plan_refactor` `apply_refactor_plan` `remove_dead_imports` `annotate_functions` `suggest_renames` `find_similar_names` `refactor_judge` `refactor_pipeline` `apply_rules` `check_rules` `export_rule` `diff_views` `list_snapshots` `rollback_snapshot`（**20**） |
+| **设计 / DSL** | `get_dsl` `edit_dsl` `manage_feature` `render_design` `render_brickwork` `scaffold` `backfill_scaffold` `consistency_check` `detect_drift` `import_project` `set_design_intent` `propose_design_intent`（**12**） |
+| **观测** | `memory_observe` `memory_targets` `reconcile_effects` `narrate_step` `observe_log` `observe_trace` `observe_judge` `observe_instrument` `reconcile_chain` `recommend_observe_points` `behavior_baseline` `run_tests` `feature_line`（**13**） |
+| **采集 / 契约** | `harvest_decisions` `sync_contracts` `harvest_closure` `extract_contracts` `harvest_from_url` `reconcile_brick` `search_bricks` `assemble_bricks` `slim_brick`（**9**） |
+| **跨仓 / 健康** | `translate_go_ts` `go_originals` `cross_repo_symbol_index` `hybrid_precheck` `code_health`（**5**） |
+| **元 / 导航** | `explore_code` `archive_node` `list_archive` `diagnose` `canvas_notes` `gateway_provider` `read_project_docs` `capability_map` `index_integrity`（**9**） |
+
+⇒ **68 → 6 个面**。★ 但**不许一次做完**：
+1. **先挑一个面做样板**（建议 **符号/代码** —— 它刚内化过两刀，`[B]` 最干净）
+2. 样板必须**同时给出判据**：`[C]` 块体 handler 数 ↓、lane 层无 IO（已有门）、G1/G8/G11 全绿、**行为不退化**
+3. 样板过了再推其余 5 个面；**每次只动一个面**（一次动 60 个工具名 = 断掉所有现有会话且无法定位回退）
+
+### 33.6 ★ 前置条件（不满足就别动）
+1. ★★ **桥那 8 个壳里的 DSH 特有项，不搬**：`self_evolve`（依赖 `dsh-brain/scripts/*.mjs`）、
+   `design_canvas_prewarm_scan`（扫的是 DSH 的工作区概念）—— 它们是**宿主插件**，不是内核能力
+2. ★★ **面收敛会改 60 个工具名** ⇒ 断 DSH 现有会话/预设/技能 ⇒ **必须走 playbook §8 的"全局串改名 + 残留门"流程**（不发明新机制）
+3. ★ **回执编排本仓已在做**（`[C]` 层渲染），但 **G11 门显示仍有 15 个工具走 `wrap`（丢 data）**
+   ⇒ 收敛前先把它们迁到 `wrapData`（否则收敛后 agent 仍读不到结构化产物）
+
