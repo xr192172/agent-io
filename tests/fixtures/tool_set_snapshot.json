@@ -192,50 +192,6 @@
     }
   },
   {
-    "name": "apply_rules",
-    "title": "Apply rule-library rules across a project (three-state)",
-    "description": "把规则库（<project_dir>/.agent-io/rules/*.md）里的规则批量应用到项目源码，**三态语义**：① applied（命中且唯一 ⇒ 按 replace 改写）；② todo（命中但歧义 >1 处 ⇒ 在命中处插入 TODO(rule-id) 注释，不失败）；③ clean（无命中 ⇒ 对该文件干净）。纪律：**唯一才动**（歧义绝不挑一个改），**不改文件就不报成功**。默认 dry_run=true 只出逐文件三态计数与改写预览，不写盘；dry_run=false 才落盘。glob 可限定文件（正则，匹配相对路径）；rule_ids 可只跑指定规则。",
-    "schema": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "type": "object",
-      "properties": {
-        "project_dir": {
-          "type": "string",
-          "description": "项目根目录（规则库与源码的锚点）"
-        },
-        "rule_ids": {
-          "description": "只应用这些规则 id（缺省 = 全部）",
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "glob": {
-          "description": "文件过滤（正则，匹配相对路径），如 \"src/.*\\.ts$\"",
-          "type": "string"
-        },
-        "max_files": {
-          "description": "最多扫描文件数（缺省 5000）",
-          "type": "integer",
-          "exclusiveMinimum": 0,
-          "maximum": 9007199254740991
-        },
-        "todo": {
-          "description": "命中但歧义时是否插入 TODO 注释（缺省 true；false=只如实报告）",
-          "type": "boolean"
-        },
-        "dry_run": {
-          "description": "true（默认）=只算不写盘；false=把 applied 的文件写盘",
-          "type": "boolean"
-        }
-      },
-      "required": [
-        "project_dir"
-      ],
-      "additionalProperties": {}
-    }
-  },
-  {
     "name": "archive_node",
     "title": "Archive a retiring node to the offline library",
     "description": "节点下线：把要下线的文件/节点孤立到下线库（archive），存档完整 DSL 快照（含决策卡）+ 为什么下线，作为历史研究材料，并从设计 DSL 移除（不再参与周边联系）。\"下线=两个文件合并\"时传 merged_into 指向合并目标，目标文件 lifecycle.merged_from 记录来源，diff 时 LLM 可据归档卡 + diff 增量做决策合并（不做自动合并，决策是语义的）。适用：删掉废弃模块、合并重复文件、结构重构后的清理。",
@@ -500,46 +456,6 @@
           ]
         }
       },
-      "additionalProperties": {}
-    }
-  },
-  {
-    "name": "check_rules",
-    "title": "Run rules as a lint with CI ratchet (baseline diff)",
-    "description": "把规则库当 **lint** 跑，带 **CI 棘轮**：结果与 <project_dir>/.agent-io/rules/baseline.json 的存量比对 —— 命中数**未增加** ⇒ 通过（哪怕这条规则当下就有一堆存量命中）；出现**新增命中** ⇒ 不通过。这样\"先启用一条当前就失败的规则\"不会炸 CI，而新引入的问题会被立刻拦住。update_baseline=true 把当前存量记为基线（修完一批后收紧棘轮）。同时跑每条规则的**自身夹具**（正例须命中且改写一致、反例不得命中），夹具不过的规则单独列出（规则本身坏了）。",
-    "schema": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "type": "object",
-      "properties": {
-        "project_dir": {
-          "type": "string",
-          "description": "项目根目录"
-        },
-        "rule_ids": {
-          "description": "只检查这些规则 id（缺省 = 全部）",
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "glob": {
-          "description": "文件过滤（正则，匹配相对路径）",
-          "type": "string"
-        },
-        "max_files": {
-          "description": "最多扫描文件数（缺省 5000）",
-          "type": "integer",
-          "exclusiveMinimum": 0,
-          "maximum": 9007199254740991
-        },
-        "update_baseline": {
-          "description": "true = 把当前命中存量写为新基线（收紧棘轮）；缺省 false",
-          "type": "boolean"
-        }
-      },
-      "required": [
-        "project_dir"
-      ],
       "additionalProperties": {}
     }
   },
@@ -1001,72 +917,6 @@
       },
       "required": [
         "action"
-      ],
-      "additionalProperties": {}
-    }
-  },
-  {
-    "name": "export_rule",
-    "title": "Distill a one-off fix into a reusable rule (fix → rule)",
-    "description": "把一次已完成的修复**沉淀成可复跑规则**（修复→规则沉淀）：给一段 before/after，自动泛化出 pattern/replace 并生成夹具，过「验收三关」后才允许落盘。这是与 Grit/GritQL 的核心差异：Grit 的规则全靠专家手写，没有\"从改动本身长出规则\"的机制。泛化：before/after 先做行级 diff 取**变化行窗口**（pattern/replace/夹具三者同 scope）；两侧都出现的标识符抽象成 `$hole`（保持\"同一实参\"），只在一侧的保留字面量，关键字/全局对象/属性名不抽象。★ 泛化的\"度\"不靠猜：从最多抽象开始逐级放宽，每级用三关裁决 —— ① 出生回归（pattern 必须能复现这次修复）② 反例不命中（修好的代码/阴性样本不得被命中）③ 幂等（对 after 再跑不得再命中）；某级通过就采纳（泛化尽量强），全败则退化为**纯字面量**规则并在回执里如实标注降级。落盘位置：<project_dir>/.agent-io/rules/<id>.md（单文件自包含：frontmatter + 说明 + pattern/replace + 夹具段）。dry_run=true（默认）只返回候选规则 + 三关结论，不写盘；确认后再传 dry_run=false 落盘。",
-    "schema": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "type": "object",
-      "properties": {
-        "project_dir": {
-          "type": "string",
-          "description": "项目根目录（规则库落在 <project_dir>/.agent-io/rules/）"
-        },
-        "id": {
-          "type": "string",
-          "description": "规则 id（同时是文件名）：小写字母/数字/连字符，如 no-console-log"
-        },
-        "before": {
-          "type": "string",
-          "description": "修复前的代码片段（含足够上下文，用于行级 diff 取变化窗口）"
-        },
-        "after": {
-          "type": "string",
-          "description": "修复后的代码片段"
-        },
-        "title": {
-          "description": "规则标题（缺省 = id）",
-          "type": "string"
-        },
-        "tags": {
-          "description": "标签（如 [style, logging]）",
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "level": {
-          "description": "严重度（check_rules 用；缺省 warn）",
-          "type": "string",
-          "enum": [
-            "error",
-            "warn",
-            "info"
-          ]
-        },
-        "language": {
-          "description": "目标语言（如 typescript / go；缺省自动）",
-          "type": "string"
-        },
-        "created_from": {
-          "description": "来源描述（追溯用；缺省记当前时间）",
-          "type": "string"
-        },
-        "dry_run": {
-          "description": "true（默认）=只返回候选规则与三关结论，不写盘；false=过三关后写盘",
-          "type": "boolean"
-        }
-      },
-      "required": [
-        "project_dir",
-        "id",
-        "before",
-        "after"
       ],
       "additionalProperties": {}
     }
@@ -1791,29 +1641,6 @@
       },
       "required": [
         "feature"
-      ],
-      "additionalProperties": {}
-    }
-  },
-  {
-    "name": "list_snapshots",
-    "title": "List code snapshots (undo points)",
-    "description": "列出本项目的代码快照（每次 edit_code / rename_files / move_symbol 落盘前自动生成一份）。用来回答\"我能不能撤回刚才那一步\"：返回 id / 时间 / 原因 / 涉及文件数。回滚走 rollback_snapshot。",
-    "schema": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "type": "object",
-      "properties": {
-        "project_dir": {
-          "type": "string",
-          "description": "目标项目根目录"
-        },
-        "limit": {
-          "description": "最多返回几条（默认 10）",
-          "type": "number"
-        }
-      },
-      "required": [
-        "project_dir"
       ],
       "additionalProperties": {}
     }
@@ -3173,27 +3000,98 @@
     }
   },
   {
-    "name": "rollback_snapshot",
-    "title": "Rollback code to a snapshot",
-    "description": "把代码回滚到某份快照（省略 snapshot = 最近一份）：快照里存在的文件写回原内容；快照时\"还不存在\"的文件（= 这次改动新建的）会被删除。传 file 可只回滚单个文件。这是 edit_code / rename_files / move_symbol 的\"撤回\"通道（快照在落盘前自动生成）。",
+    "name": "rules",
+    "title": "Rule library (fix → rule): export / apply / check with CI ratchet — single entry",
+    "description": "规则库统一入口（**3 个注册入口收敛为 1 个入口 + action 分派**；三者操作的是**同一个库**，故按「操作对象」聚合成一面）。规则 = 一个自包含 `.md`（frontmatter + 说明 + `pattern`/`replace` + 正/反例夹具），住在 `<project_dir>/.agent-io/rules/` —— 三个动作操作的是**同一个库**，故按「操作对象」聚合成一面。action=export（修复→规则沉淀）：把一次已完成的修复**沉淀成可复跑规则**：给一段 before/after，自动泛化出 pattern/replace 并生成夹具，过「验收三关」后才允许落盘。这是与 Grit/GritQL 的核心差异：Grit 的规则全靠专家手写，没有\"从改动本身长出规则\"的机制。泛化：before/after 先做行级 diff 取**变化行窗口**（pattern/replace/夹具三者同 scope）；两侧都出现的标识符抽象成 `$hole`（保持\"同一实参\"），只在一侧的保留字面量，关键字/全局对象/属性名不抽象。★ 泛化的\"度\"不靠猜：从最多抽象开始逐级放宽，每级用三关裁决 —— ① 出生回归（pattern 必须能复现这次修复）② 反例不命中（修好的代码/阴性样本不得被命中）③ 幂等（对 after 再跑不得再命中）；某级通过就采纳（泛化尽量强），全败则退化为**纯字面量**规则并在回执里如实标注降级。落盘位置：`<project_dir>/.agent-io/rules/<id>.md`（单文件自包含）。action=apply（三态语义）：把规则库批量应用到项目源码 —— ① applied（命中且唯一 ⇒ 按 replace 改写）；② todo（命中但歧义 >1 处 ⇒ 在命中处插入 TODO(rule-id) 注释，不失败）；③ clean（无命中 ⇒ 对该文件干净）。纪律：**唯一才动**（歧义绝不挑一个改），**不改文件就不报成功**。glob 可限定文件（正则，匹配相对路径）；rule_ids 可只跑指定规则。action=check（lint + CI 棘轮）：结果与 `<project_dir>/.agent-io/rules/baseline.json` 的存量比对 —— 命中数**未增加** ⇒ 通过（哪怕这条规则当下就有一堆存量命中）；出现**新增命中** ⇒ 不通过。这样\"先启用一条当前就失败的规则\"不会炸 CI，而新引入的问题会被立刻拦住。update_baseline=true 把当前存量记为基线（修完一批后收紧棘轮）。同时跑每条规则的**自身夹具**（正例须命中且改写一致、反例不得命中），夹具不过的规则单独列出（规则本身坏了）。★ 安全策略前移（默认值**明写在这里**，不是隐藏知识）：两个**写** action（export / apply）的 dry_run 都默认 `true` —— 只出预览 / 三态计数、**不写盘**；确认后必须**显式**传 dry_run=false 才落盘（apply 落盘走写闸：写前快照 + 索引写穿保鲜）。★ check 的 update_baseline=true 会**改写棘轮基线**（收紧后不会自动回退），属不可逆动作 ⇒ 只在修完一批后显式传。",
     "schema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
       "properties": {
+        "action": {
+          "type": "string",
+          "enum": [
+            "export",
+            "apply",
+            "check"
+          ],
+          "description": "export=从 before/after 萃取规则 | apply=把规则库应用到源码（三态） | check=当 lint 跑（CI 棘轮）"
+        },
         "project_dir": {
           "type": "string",
-          "description": "目标项目根目录"
+          "description": "项目根目录（规则库落在 <project_dir>/.agent-io/rules/）"
         },
-        "snapshot": {
-          "description": "快照 id，或 \"latest\"（缺省 = 最近一份）",
+        "id": {
+          "description": "export 用：规则 id（同时是文件名）：小写字母/数字/连字符，如 no-console-log",
           "type": "string"
         },
-        "file": {
-          "description": "只回滚该文件（相对项目根或绝对路径）",
+        "before": {
+          "description": "export 用：修复前的代码片段（含足够上下文，用于行级 diff 取变化窗口）",
           "type": "string"
+        },
+        "after": {
+          "description": "export 用：修复后的代码片段",
+          "type": "string"
+        },
+        "title": {
+          "description": "export 用：规则标题（缺省 = id）",
+          "type": "string"
+        },
+        "tags": {
+          "description": "export 用：标签（如 [style, logging]）",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "level": {
+          "description": "export 用：严重度（check 用；缺省 warn）",
+          "type": "string",
+          "enum": [
+            "error",
+            "warn",
+            "info"
+          ]
+        },
+        "language": {
+          "description": "export 用：目标语言（如 typescript / go；缺省自动）",
+          "type": "string"
+        },
+        "created_from": {
+          "description": "export 用：来源描述（追溯用；缺省记当前时间）",
+          "type": "string"
+        },
+        "rule_ids": {
+          "description": "apply/check 用：只跑这些规则 id（缺省 = 全部）",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "glob": {
+          "description": "apply/check 用：文件过滤（正则，匹配相对路径），如 \"src/.*\\.ts$\"",
+          "type": "string"
+        },
+        "max_files": {
+          "description": "apply/check 用：最多扫描文件数（缺省 5000）",
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "todo": {
+          "description": "apply 用：命中但歧义时是否插 TODO 注释（缺省 true；false=只如实报告）",
+          "type": "boolean"
+        },
+        "update_baseline": {
+          "description": "check 用：true = 把当前命中存量写为新基线（收紧棘轮）；缺省 false",
+          "type": "boolean"
+        },
+        "dry_run": {
+          "description": "export/apply 用：true（默认）=只算不写盘；false=把通过三关的规则 / applied 的文件落盘",
+          "type": "boolean"
         }
       },
       "required": [
+        "action",
         "project_dir"
       ],
       "additionalProperties": {}
@@ -3422,6 +3320,46 @@
       },
       "required": [
         "brick_name"
+      ],
+      "additionalProperties": {}
+    }
+  },
+  {
+    "name": "snapshot",
+    "title": "Code snapshots (undo points): list them / roll back to one — single entry",
+    "description": "代码快照统一入口（**2 个注册入口收敛为 1 个入口 + action 分派**；按「操作对象」聚合的理由：两者操作的是同一个快照库）。快照 = 每次 edit_code / rename_files / move_symbol **落盘前**自动存的一份文件副本（住 <project_dir>/.agent-io/code-snapshots/，默认保留最近 20 份）。action=list 列出快照（id / 时间 / 原因 / 涉及文件数）—— 回答\"我能不能撤回刚才那一步\"，limit 默认 10；action=rollback 回滚到某份快照（snapshot 省略或 \"latest\" = 最近一份）：快照里存在的文件写回原内容，快照时\"还不存在\"的文件（= 那次改动新建的）会被删除；传 file 可只回滚单个文件。★ 语义明写（**不静默改**）：rollback **立即落盘、没有 dry_run 预览**（与收敛前的 rollback 入口逐字同语义）；且**回滚本身不再存快照 ⇒ 这一步不可再撤回** —— 要留后路请先 action=list 确认目标快照，或依赖 git。★ 别与设计稿快照混淆：本工具管**代码文件**快照；**DSL 设计快照**走 get_dsl(query=\"snapshots\")。",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": [
+            "list",
+            "rollback"
+          ],
+          "description": "list=列代码快照（撤回点） | rollback=回滚到某份快照"
+        },
+        "project_dir": {
+          "type": "string",
+          "description": "目标项目根目录"
+        },
+        "limit": {
+          "description": "list 用：最多返回几条（默认 10）",
+          "type": "number"
+        },
+        "snapshot": {
+          "description": "rollback 用：快照 id，或 \"latest\"（缺省 = 最近一份）",
+          "type": "string"
+        },
+        "file": {
+          "description": "rollback 用：只回滚该文件（相对项目根或绝对路径）",
+          "type": "string"
+        }
+      },
+      "required": [
+        "action",
+        "project_dir"
       ],
       "additionalProperties": {}
     }

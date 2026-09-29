@@ -277,7 +277,7 @@ question：一份就够，为什么会有 20 处静态扩展名清单？以下�
       名字 / 标题 / 描述 / schema 任一变化仍会红。
     - 含**检测器自证**用例（差异检测器本身必须能检出 title/description/schema/增删）。
   - **G4 单一实现门**（`tests/single_source.test.ts`，9 项 + 登记表）
-    - ★ 设计成**棘轮**（与仓内 `check_rules` 同款纪律）：**存量不拦、新增即红**。
+    - ★ 设计成**棘轮**（与仓内 `rules(action="check")` 同款纪律）：**存量不拦、新增即红**。
       不要求先修完 —— 但债务不许增长。收敛进度可以一步步来（本仓 09-28 就是这么走的）。
     - 声明式登记（`tests/fixtures/single_source_registry.json`），**不假装能自动发现重复**：
       自动发现"意图重复"不可判定；可判定的部分（已知家族的副本数）恰好够拦住复发。
@@ -1088,7 +1088,8 @@ handler 早已指向 `queryFeature`）—— 这正是"按工具链路"判据的
 - 真实原因是**同一份 README 内部数字分叉**：67（真实）/ 58（表列）/ 43（小标题声称）。
 - ★ **67 − 58 = 9，正好等于 `readme_tools_gate` 报的"零提及"名单那 9 个**（memory_observe /
   memory_targets / translate_go_ts / go_originals / recommend_observe_points / move_symbol /
-  list_snapshots / rollback_snapshot / index_integrity）⇒ 两处独立证据吻合。
+  快照两入口 / index_integrity）⇒ 两处独立证据吻合。
+  （★ 那份名单里的"快照两入口"已于 2026-09-29 收敛为单入口 `snapshot` 并补进 README，见 §34。）
 - ★★ 根因：**`readme_tools_gate` 只守了「共注册 N 个」这**一个**数字**，
   同一份 README 里的另外 4 个工具计数（3 个小标题 + 表行数）**没有任何门在管** ⇒ 早就漂了。
   **这是"门只盯一个数"的典型盲区**，与 §2d 那条纪律同源。
@@ -1480,7 +1481,7 @@ P1c（LANE_OF 改派生 + 一致性门）        ✅ 本轮完成
 
 ### 16.2 ★ 缺批量入口（7 文件 = 14 次调用）
 `edit_code` 是**单文件**的。机械迁移 N 个文件时只能 N 次 dry-run + N 次 apply。
-`apply_rules` 存在（Grit 规则 + 三关夹具）但对"一次性机械替换"**太重**。
+`rules(action="apply")` 存在（Grit 规则 + 三关夹具）但对"一次性机械替换"**太重**。
 ⇒ **提议 P-B**：`edit_code` 支持 `targets: [{file, old_text, new_text}]`（批量 + **逐项独立回报** +
 可选的"全成或全不成"原子性）。
 
@@ -1850,7 +1851,7 @@ P1c（LANE_OF 改派生 + 一致性门）        ✅ 本轮完成
 ### 22.1 我连着两次挑错样板 —— 根因是"判据错了"
 | 我挑的 | 为什么是错的 |
 |---|---|
-| `list_snapshots`（最小块体 17 行） | 那 17 行里真逻辑只有 7 行，其余是 description/schema；handler 剩的只是**渲染回执**（[C] 该干的活） |
+| `snapshot` 的 list 一半（当时是独立入口，最小块体 17 行） | 那 17 行里真逻辑只有 7 行，其余是 description/schema；handler 剩的只是**渲染回执**（[C] 该干的活） |
 | `findReferences`（被 3 处引用） | ★ 它的返回类型 **`FindReferencesResult` 本来就是结构化的**、入参也是类型化对象 ⇒ **已经离目标形状很近**，修剪几乎无事可做 |
 
 ⇒ **教训：选样板必须按「离目标形状的距离」，不能按"块体行数 / 被引用次数"。**
@@ -2531,7 +2532,7 @@ DSH 交付 `4537a34`，**主目标达成**（合法 JSONC 现在能正常解析 
 ### 29.4 第二批（又落地 2 条）
 | # | 事项 | commit | 结论 |
 |---|---|---|---|
-| 5d | **P-B** `edit_code` 批量 `targets[]` | `c525a93` | ✅ 抽 `planReplaceText` 让**单文件与批量共用一份实现**；`targets?: [{file,old_text,new_text}]` + `atomic?`（缺省**逐项独立**，一项失败不影响其余）；7 项测试（含"一次调用改 7 文件"，对应 §16.8 原话）；★ 核实**不重复**既有工具（`rename\_many` 是单文件内局部变量改名、`apply_rules` 需规则库）；G1 基线重算后**仍是 67 工具** |
+| 5d | **P-B** `edit_code` 批量 `targets[]` | `c525a93` | ✅ 抽 `planReplaceText` 让**单文件与批量共用一份实现**；`targets?: [{file,old_text,new_text}]` + `atomic?`（缺省**逐项独立**，一项失败不影响其余）；7 项测试（含"一次调用改 7 文件"，对应 §16.8 原话）；★ 核实**不重复**既有工具（`rename\_many` 是单文件内局部变量改名、`rules(action="apply")` 需规则库）；G1 基线重算后**仍是 67 工具** |
 | 5e | **P-E** 完成⇒可验证产物 + G7 扩展 | `e7e2208` | ✅ ★★ **没有硬扩 G7** —— G7 读的是 `explore_code` 的 **switch 结构**，套不到"没有 action 派发表"的工具上，硬扩只有两种下场：**恒真（空门）**或靠猜（**误伤 + 维护地狱**）⇒ 改为新开 **G11 · 回执产物门**（判据换成「**回执通道能否携带产物**」），★ 与 P-A 门**互补不重复**（P-A 正向棘轮／G11 反向棘轮） |
 
 **全量回归**（累计 9 笔）：`228 passed / 1 skipped (229)` 文件、**`2350 passed / 5 skipped`** 测试
@@ -2698,7 +2699,7 @@ renameSymbols()                       ← [B] 单一入口（[C] 只转发到它
 |---|---|---|
 | 3 目标、第 2 个失败后 → 快照份数 | **2 份**（`edit_code:batch:src/a.ts`、`…:src/c.ts`，实测） | 1 份 |
 | 「只撤回第 1 个」（`rollback latest + file=a.ts`） | ❌ **失败**：「快照 … 里没有文件 src/a.ts —— 可用文件：src/c.ts」（实测） | ✅ 成功（`rollbackFileSnapshot` 支持 `file` 过滤，实测 `restored:["src/a.ts"]`） |
-| 「只撤回第 1 个」（先查 id） | ✅ 成功（`list_snapshots` 找到 id → `restored:["src/a.ts"]`） | ✅ 成功 |
+| 「只撤回第 1 个」（先查 id） | ✅ 成功（`snapshot(action="list")` 找到 id → `restored:["src/a.ts"]`） | ✅ 成功 |
 | 「**整批一次撤回**」（`rollback latest` 不带 file） | ❌ **做不到**：`latest` 只回到**最后一个**被写的文件（实测 `restored:["src/c.ts"]`，`a.ts` 仍是新内容） | ✅ 一次撤全部（实测 `restored:["src/a.ts","src/c.ts"]`） |
 
 **结论**：判据场景**两种粒度都能满足**（都能"单独撤回第 1 个"）；而**"整批撤回"是逐文件粒度做不到、一次快照做得到**。
@@ -2710,7 +2711,7 @@ renameSymbols()                       ← [B] 单一入口（[C] 只转发到它
 - **不加开关的理由**：粒度既然不是能力差异，把 `applyWrites` 加一个 `snapshotGranularity` 只为
   "保留一个切法"就是**纯粹的配置膨胀**；而它**换不来任何去重收益**（真正要合并的 4 条政策一个都没解决）。
   这正是本仓点名的失败形态：**看着统一了、语义丢了**。
-- **不动现状粒度的理由**：把批量从 N 份改成 1 份，会改**可观察**行为（`list_snapshots` 条目数、
+- **不动现状粒度的理由**：把批量从 N 份改成 1 份，会改**可观察**行为（`snapshot(action="list")` 条目数、
   `rollback latest` 的含义、快照 reason 文案），却与本笔要治的病（"同一件事有没有多份实现"）**无关** ⇒ 不在本笔授权范围内。
   ★ 已登记为**下一笔候选**，并把它与"索引政策"绑定成**同一个决策**（见 31.6）。
 
@@ -2844,8 +2845,8 @@ renameSymbols()                       ← [B] 单一入口（[C] 只转发到它
 ### 32.6 留给下一刀
 - **`refactor.ts` 里仍有 8 个 `wrap(`（丢 data）**：`rename_files` / `move_symbol` / `find_references` /
   `impact_analysis` / `remove_dead_imports` / `annotate_functions` / `refactor_pipeline` / `refactor_judge`
-- 其它候选族（按"操作对象"看）：快照族（`list_snapshots`/`rollback_snapshot`）、
-  规则族（`export_rule`/`apply_rules`/`check_rules`）、编辑族（`edit_code`/`plan_refactor`/`apply_refactor_plan`）、
+- 其它候选族（按"操作对象"看）：~~快照族~~（★ **本笔已收敛为 `snapshot`**，见 §34）、
+  ~~规则族~~（★ **本笔已收敛为 `rules`**，见 §34）、编辑族（`edit_code`/`plan_refactor`/`apply_refactor_plan`）、
   归档族（`archive_node`/`list_archive`）、砖块族（`*_brick` ×4）
 - ★ 按 `tool-convergence.md` §2.0 的**反面教训**（`camera_*`：**看似同对象、实为不同抽象层 ⇒ 不聚合**），
   以上每一族**都要先判断"是不是同一操作对象"**，**不许按名字硬合**
@@ -2947,7 +2948,7 @@ kernel.renameSymbols({...})
 ### 33.5 方案骨架（按 §15 口径 + 桥的切法，6 个面）
 | 面（操作对象） | 拟收编的现有工具（计数） |
 |---|---|
-| **符号 / 代码** | `rename_symbols` `rename_files` `move_symbol` `find_references` `impact_analysis` `edit_code` `plan_refactor` `apply_refactor_plan` `remove_dead_imports` `annotate_functions` `suggest_renames` `find_similar_names` `refactor_judge` `refactor_pipeline` `apply_rules` `check_rules` `export_rule` `diff_views` `list_snapshots` `rollback_snapshot`（**20**） |
+| **符号 / 代码** | `rename_symbols` `rename_files` `move_symbol` `find_references` `impact_analysis` `edit_code` `plan_refactor` `apply_refactor_plan` `remove_dead_imports` `annotate_functions` `suggest_renames` `find_similar_names` `refactor_judge` `refactor_pipeline` `rules` `diff_views` `snapshot`（**17**；★ 2026-09-29 本笔：规则族 3→1、快照族 2→1 ⇒ 该面 20→17，见 §34） |
 | **设计 / DSL** | `get_dsl` `edit_dsl` `manage_feature` `render_design` `render_brickwork` `scaffold` `backfill_scaffold` `consistency_check` `detect_drift` `import_project` `set_design_intent` `propose_design_intent`（**12**） |
 | **观测** | `memory_observe` `memory_targets` `reconcile_effects` `narrate_step` `observe_log` `observe_trace` `observe_judge` `observe_instrument` `reconcile_chain` `recommend_observe_points` `behavior_baseline` `run_tests` `feature_line`（**13**） |
 | **采集 / 契约** | `harvest_decisions` `sync_contracts` `harvest_closure` `extract_contracts` `harvest_from_url` `reconcile_brick` `search_bricks` `assemble_bricks` `slim_brick`（**9**） |
@@ -2966,3 +2967,135 @@ kernel.renameSymbols({...})
 3. ★ **回执编排本仓已在做**（`[C]` 层渲染），但 **G11 门显示仍有 15 个工具走 `wrap`（丢 data）**
    ⇒ 收敛前先把它们迁到 `wrapData`（否则收敛后 agent 仍读不到结构化产物）
 
+
+---
+
+## 34. ★★★ 面收敛的**第一个样板**：两个小面跑通流程（2026-09-29）
+
+### 34.1 本笔的依据（逐字）
+> 「**记一下，把那个桥的那种收敛内化进去，内化进我们本身的项目**，因为当时**那个桥是 DSH 面貌下的插件开发**，
+>  你可以**将其内化到我们的 MCP 里面**。」
+
+⇒ 依据 §33.4 的**正确形态**：不搬桥的 8 个壳（那会让工具数 68 → 76，与收敛背道而驰），
+而是把「**桥为什么要存在**」这件事消灭掉 —— 把内核工具面**按「操作对象」收好**。
+本笔**只做两个面**（后续 5 个面照此办），因为"一次动太多无法定位回退"（§33.5 第 3 条）。
+
+### 34.2 做了什么（两面 / 工具数 68 → 65）
+| 面（操作对象） | 收编的注册入口 | 收敛后 | 面内工具数 |
+|---|---|---|---|
+| **代码快照 / 撤回** | 2 个（列出撤回点 / 回滚到某一份） | **`snapshot`** + `action: 'list' \| 'rollback'` | 2 → 1 |
+| **规则库（修复→规则）** | 3 个（萃取 / 应用 / 检查） | **`rules`** + `action: 'export' \| 'apply' \| 'check'` | 3 → 1 |
+
+★ **旧名 → 新名的逐字映射记在本笔的 commit message**（`.inspect/commit-msg-facade-pilot.md`）。
+为什么台账里不写旧名：`scripts/contract_docs_gate.mjs` 把**本台账**当"可同步文本"
+（只有 `tool-convergence.md` / `docs/plans/` 属历史），台账里留旧名会被判**改名残留**并阻断提交 ——
+这正是该门的设计（§8.6 的残留纪律），本笔按它的口径走，把映射放在它扫不到的地方。
+（旧名同样留在 `tool-convergence.md` 的「合并记录」里 —— 那份是历史，按纪律**保留旧名是正确原貌**。）
+
+### 34.3 判据：它们**该不该**合（不许按名字硬合，§2.0 反面教训）
+| 面 | 是不是同一操作对象 | 证据 |
+|---|---|---|
+| 快照 | **是** | 两者操作**同一个库**（`<project_dir>/.agent-io/code-snapshots/`）：一个是**列**撤回点、一个是**用**它撤回 ⇒ 动作互补；旧的两个 description **本来就互相指名**（同一链的两端） |
+| 规则 | **是** | 三者操作**同一个库**（`<project_dir>/.agent-io/rules/`）：**沉淀（export）→ 应用（apply）→ 校验（check）** 是同一条链的三个动作；共用同一寻址（`project_dir` + 规则 id / 扫描参数） |
+| （对照）`camera_*` | **不是** | 那是四个**不同抽象层**（基础动作 / 判定 / 查询 / 编排）⇒ 本笔**不碰** |
+
+⇒ **结论：两个面都该合。** 没有发现"看似同对象、实为不同抽象层"的情形（若发现，按纪律**停手只做能合的那个**）。
+
+### 34.4 桥的三件事，各自的落点（这是"样板"的价值所在）
+| 桥做的事 | 本笔落点 | 判据 |
+|---|---|---|
+| ① **入口收敛** | 68 → 65；每个面 1 个入口 + action 枚举 | G1 基线 `removed/added` 精确等于预期、**其余条目逐字不变** |
+| ② **回执编排** | 两个入口都走 `wrapData`；`snapshot(action="rollback")` 把 恢复/删除/未恢复 **分组**渲染并把不可逆事实写进回执；`rules` 的 export 把"泛化阶梯/三关结论/夹具数"分组、apply 把三态逐文件列、check 把"新增命中/夹具不过"分开列 | G11 / P-A 门 + 新测试的逐条断言 |
+| ③ **安全策略前移** | **显式保留**（不是新造）：两个**写** action（export / apply）默认 `dry_run=true`，要落盘必须**显式** `dry_run=false`；**新增前置校验**：`action` / `project_dir` / export 的 `id,before,after` 缺参**当场报错** | 见 34.5 的"刻意不改"与 34.7 的测试 |
+
+### 34.5 ★★ 一个**判断**（本笔最该被复核的地方）：**没有**给 `rollback` 加 `dry_run` 预览
+- **桥的做法**：`safe_rename` 默认 `dry_run` ⇒ 看起来"写操作都该先预览"。
+- **本笔的判断**：**不加**。三条理由：
+  1. `rollback` 是**撤回通道**（它的用途就是"立刻退回去"），再加一步确认会削弱其核心用途；
+  2. 要真加"预览"，必须改 `[B]`（`src/tools/file_snapshot.ts`）或把 `[B]` 的"取哪份快照 / 过滤哪个文件"
+     逻辑**抄进 `[C]`** —— 前者**越出本笔边界**（硬边界：只改 `src/registry/**`），后者**正是 G4 要消灭的副本**；
+  3. ⇒ 于是本笔改成**零语义变更的策略前移**：把"**回滚本身不留快照 ⇒ 不可再撤回**"这条事实
+     **写进 description + 每次回执**（agent 动手前就知道它不可逆）。
+- ★ **没有静默改语义**：`rollback` 的行为与收敛前**逐字相同**（新测试里专门钉住"回执必须含不可逆提示"）。
+- ★ **留给下一笔**：若要给 `rollback` 加 `dry-run`，那是一次**行为变更**，须连 `[B]` 一起改并单独记账。
+
+### 34.6 能力核对（逐项对着旧入口的清单 —— "收敛不许丢能力"）
+| 原能力 | 收敛后**还在不在** | 在哪 |
+|---|---|---|
+| 快照：`limit` 默认 10 的列表（id/时间/原因/文件数） | ✅ | `snapshot(action="list")`，`data.snapshots` 逐条同形 |
+| 快照：**省略 id = 最近一份**（`latest` 同义） | ✅ | `snapshot(action="rollback")`，`snapshot?` 省略即 `latest` |
+| 快照：`file` 只回滚**单个**文件 | ✅ | 同 action，仍走 `rollbackFileSnapshot(..., {file})` |
+| 快照：快照时**不存在的文件 ⇒ 回滚时删除** | ✅ | [B] 语义未动；新测试断言 `removed=[...]` |
+| 快照：`ok=false` + `failed` 诚实上报 | ✅ | `data` 原样（`RollbackResult`），回执多分组渲染 |
+| 规则：三关（出生回归/反例不命中/幂等）+ 降级标注 `no_hole` | ✅ | `rules(action="export")`；`data.ok/written/rule/validation/generalization` 同形 |
+| 规则：**三关不过 ⇒ `dry_run=false` 也不写盘** | ✅ | 同 action（原测试保留，只换寻址） |
+| 规则：非法 id 报错（id 就是文件名） | ✅ | 同 action，错误串未改 |
+| 规则：**三态** `applied`/`todo`/`clean` + "唯一才动" | ✅ | `rules(action="apply")`；`data.outcomes/applied/todo/clean/totalHits` 同形 |
+| 规则：`glob` / `rule_ids` / `max_files` / `todo` 开关 | ✅ | 同 action（`todo` 缺省 true 的行为未变） |
+| 规则：落盘走**写闸**（写前快照 + 索引写穿） | ✅ | 同 action，`applyWrites` 调用未动（只把 reason 文案改成 `rules(apply:…)`） |
+| 规则：**CI 棘轮**（只在"新增命中"上 fail）+ `update_baseline` | ✅ | `rules(action="check")`；`data.pass/added/baseline/totalHits/fixtureFailures` 同形 |
+| 规则：规则**自身夹具**自检并点名 | ✅ | 同 action（原测试两条保留） |
+| ★ **新增**（不是丢）：缺参**前置校验** | ➕ | 两个入口都加（旧入口缺参会被当成字符串 `'undefined'` 用） |
+| ★ **新增**（不是丢）：`snapshot` 的不可逆提示 + 与 **DSL 设计快照**的区别说明 | ➕ | description + 回执 |
+
+### 34.7 交付与门（本笔实测，逐条原始输出见 commit message）
+- `npx tsc --noEmit` ⇒ **EXIT=0**
+- **G1**（`tests/fixtures/tool_set_snapshot.json`）：**68 → 65**；
+  `removed` **正好 5 条 = 两族被收编的全部旧入口**（逐字清单见本笔 commit message，理由见 34.2）、
+  `added=[rules, snapshot]`、**`changed=[]`**（其余 63 条**逐字不变** ⇒ "面收敛不该动别人"这句话有机器证据）
+- **G8**（`tool_behavior_snapshot.json`）：**65 → 62** 条；同样 `removed` 5 / `added` 2；
+  逐条比对只有 `capability_map` 变（= 输出里的目录变了）——**逐行核对**过：88 行 → 85 行，
+  差异**只有** ①"68 工具"→"65 工具" ②5 行旧工具条目换成 2 行新条目；两个新入口 `{}` 调用的回执 = 缺参报错（`isError:true`）
+- **G11**（`tool_completion_receipt.json`）：`dropData` **仍 3** / `unresolved` **仍 1**（两个新入口都走 `wrapData`，无一落进 `wrap`）；
+  名单无需改（5 个旧名本就不在名单里，否则本门的 `stale` 检查会强制同步）——**note 里记了本笔的核验**
+- **P-A**（`tests/registry/receipt_channel.test.ts`）✓ · **lane 无 IO 门** ✓（[C] 仍未碰文件 IO）
+  · **lane 来源门** ✓ · **G4 单一实现门** ✓ · **capability_map 测试**（含 `WHEN_OVERRIDES` 与注册表**等长**）✓
+- `node scripts/readme_tools_gate.mjs --check` ⇒ **EXIT=0**（README=65 / 真实=65；"零提及"名单 9 → 6）
+- `node scripts/contract_docs_gate.mjs` ⇒ **EXIT=0**（旧名在可同步文本里**一处不剩**）
+- `node scripts/capability_scan.mjs --check` ⇒ **EXIT=0**（仅 2 条既有 info 级待决提示）
+- 两个面的测试：`tests/tools/rule_tools.test.ts`（13 项，原 12 项行为断言逐条保留 + 1 项新入口前置校验）
+  + **新** `tests/tools/snapshot_tool.test.ts`（7 项，补上快照面原本**没有**的工具层测试）
+
+### 34.8 ★ 引用点清单（旧名一次改全；"怎么证明没漏"）
+证据方式：`grep -rn "<5 个旧名>" src tests docs README.md README.en.md AGENTS.md CONTRIBUTING.md .trae`
+⇒ 改完后**除历史文档 `tool-convergence.md` 外零命中**（该文件按纪律保留旧名），并逐条过门。
+
+| 类 | 文件 | 改了什么 |
+|---|---|---|
+| 入口定义 | `src/registry/lanes/refactor.ts` | 5 个 def → 2 个 def（本笔主体） |
+| 策展文本 | `src/tools/capability_map.ts` | `WHEN_OVERRIDES` 5 条 → 2 条（该表与注册表**等长**，有门守着） |
+| [B] 文案/错误串（**仅名字，无逻辑**） | `src/tools/snapshot.ts`（错误串里的旧名指向的是 DSH 时代的**另一件事**，顺手改成准确出口 `get_dsl(query="snapshots")`）、`src/tools/edit_code.ts`×3、`src/tools/query_feature.ts`×2、`src/tools/rule_extract.ts`、`src/tools/rule_library.ts` | 注释/错误串里的旧注册名 → 新入口写法（**逐处只改名，未动任何实现逻辑**） |
+| README | `README.md`（工具数 68→65、规则表 3 行→1 行、**新增** `snapshot` 行）、`README.en.md`（工具数 →65） | ★ `.en` 原先写 **60**（**本笔之前就漂了**，非本笔引入）⇒ 顺手校正为 65 并在此登记 |
+| 测试与夹具 | `tests/tools/rule_tools.test.ts`（改走新入口）、**新增** `tests/tools/snapshot_tool.test.ts`、`tests/scripts/readme_tools_gate.test.ts`（工具数 68→65）、`tests/helpers/ratchet.ts` + `tests/single_source.test.ts`（注释里的旧名） | 三个基线夹具（G1/G8/G11）按各门指引重算 |
+| 台账 | 本文件（§32.6 / §33.5 的候选清单与工具表、§22.1 / §16.2 / §5 的旧名指针、本 §34）、`docs/tool-convergence.md` §7 合并记录（两条） | 台账内**不留旧名**（见 34.2 的理由） |
+| ★ **刻意没碰** | `tests/registry/lane_no_io.*`、`tests/duplicate_literal_tables.*`、`tests/fixtures/literal_table_registry.json`、`src/tools/**` 的实现逻辑 | 硬边界 |
+
+### 34.9 ★ 没验什么（诚实清单）
+1. **没跑全量 vitest**（任务要求"全量回归由委托人统一跑"）。本笔只跑了：两个面的工具层测试 +
+   G1/G8/G11 + P-A + lane 无 IO + lane 来源 + G4 + README 门 + 契约文档门 + capability_scan + `tsc`。
+   ⇒ **未覆盖**的包括：任何依赖"工具名字符串"的**未被我搜到**的旁路（我只用 `grep` 找引用点 —— 若某处是
+   运行时拼出来的名字，`grep` 看不见；`contract_docs_gate` 是第二道网，但它也只扫 `src/tests/docs/README/AGENTS`）。
+2. **没做真 MCP 端到端调用**：新入口的回执只在 vitest 里拆 `---DATA---` 验过（`wrapData` 通道 + 字段内容），
+   **没有**起真 server 走一次 MCP 往返（桥的 `safe_rename` 那种"dsh-brain 深注入"路径未复现，也不在本笔范围）。
+3. **没验 DSH 侧下游**：桥 / 预设 / 技能里若硬写了这 5 个旧名，本笔**未去改**（`grep` 本仓零命中；
+   跨仓下游按 §8.5 的纪律应"先量下游"，本笔**没有**做那一步 —— 若要发布给 DSH，须补这一步）。
+4. **`rollback` 的"不可再撤回"只是文案**：本笔**没有**给它加真正的预览/二次确认（理由见 34.5），
+   也**没有**验证"回滚后确实无法再撤回到回滚前"（那是 [B] 的既有行为，本笔未动）。
+5. **`rules(action="apply")` 在"库里有夹具不过的规则"时仍会落盘**（只警告）—— 这是**既有**行为，
+   本笔按边界**未改**，也**未测**它在新入口下的表现（行为与旧入口同源，故预期一致，但未单独断言）。
+6. **两个新入口在 G8 里的行为 = "缺 action 报错"**：G8 用 `{}` 调用，所以它验的是"缺参不静默"，
+   **不是**各 action 的真实行为 —— 后者由 34.7 的两个测试文件覆盖（快照面 7 项 / 规则面 13 项）。
+7. **README 的"零提及"名单还剩 6 个**（`translate_go_ts` / `go_originals` / `index_integrity` /
+   `memory_observe` / `memory_targets` / `recommend_observe_points`）：本笔**没顺手补**（与两面无关）。
+   ★ 同样"顺手发现但没动"的还有 `README.en.md:135` 仍写着 `LANE_OF`（P1c 已删除该表）⇒ 既有文档漂移，登记在此。
+
+### 34.10 ★★ 合并的代价与回退点（如实说"可能更难用"的那一面）
+- **代价（真实存在）**：`rules` 这一个 schema 里装了两套**形态不同**的入参 ——
+  `export` 要 `id/before/after`（**代码片段**），`apply`/`check` 要 `rule_ids/glob/...`（**项目扫描参数**）。
+  这**确实**让"我该传什么"多了一层判断（靠 description 的 action 分段 + `requireStr` 的明确报错补偿）。
+  本仓已有同型先例（`gateway_provider` 的 upsert/list/stats、`manage_feature` 的 create/clone/template），
+  故不视为违反契约；但**这是本笔唯一"可能让 agent 更难用"的点**，若实测反悔：
+- **回退点**：把 `rules` 拆回三个入口、`snapshot` 拆回两个入口即可 —— 实现体（`[B]` 调用与渲染）
+  在 lane 里是**逐段独立**的，回退成本 ≈ 再生 4 个 def 外壳；基线用各自的 `UPDATE_*` 重算。
+- **为什么仍然选了合**：桥的三件事里**入口收敛**的收益（agent 面对的入口数）与**回执编排**的收益
+  （把结构化产物分组呈现）都要靠"一个面一个入口"才成立；且本笔**没有**为了合一去动任何 `[B]`。

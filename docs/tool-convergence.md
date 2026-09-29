@@ -454,6 +454,59 @@
 > **内化小结（与前面几笔的区别）：`gateway_provider` / `canvas_notes` 是「入口聚合」（外壳），
 > 本笔是「内核内化」（[B] 路由 + 共享落盘内核）—— 后者才是用户说的"收敛得起来"。**
 
+- [x] 候选组：`list_snapshots` / `rollback_snapshot` ⇒ 单入口 `snapshot`（action=`list` / `rollback`）
+  - 核验：读源实现 ✓ / 对契约 ✓ / 找调用方 ✓ / 查测试 ✓ / 回归+插桩 ✓
+
+  - **是不是"同一操作对象"（§2.0 的判据）**：是。两者操作的是**同一个对象**「代码文件快照库」
+    （`<project_dir>/.agent-io/code-snapshots/`）——一个是**列**撤回点、一个是**用**它撤回，
+    动作互补（且旧 `list_snapshots` 的 description 本来就写着"回滚走 rollback_snapshot"，是同一条链的两端）。
+    **不属 `camera_*` 那类反面教训**（那不是"两个动作"，是四个**不同抽象层**：基础动作/判定/查询/编排）。
+
+  - 发现（顺带核出的两处真实缺口，本笔按边界只修了 [C] 层那处）：
+    ① 旧入口 `String(a.project_dir)` ⇒ 缺参时 `String(undefined)` 变成字符串 `'undefined'`（**看着像合法值**），
+       "没传参"表现为"结果莫名其妙"；② 两个旧入口都**没有**缺参校验。
+    ★ 另一处（`rollback` 无预览、且回滚本身不留快照 ⇒ 不可再撤回）**属 [B] 语义**，
+    加 `dry_run` 必须改 `file_snapshot.ts` 或把 [B] 的解析逻辑抄进 [C]（前者越界、后者正是 G4 要消灭的副本）
+    ⇒ **本笔不改其默认语义**，改为把"不可逆"这条事实**前置写进 description 与回执**（零语义变更的策略前移）。
+
+  - 处理：**合并**为单入口 `snapshot`（`{action, project_dir, limit?, snapshot?, file?}`，显式参数、无 args 袋子）；
+    两个 action 的**行为逐字保留**（`省略 snapshot = 最近一份`、`file 只回滚单文件`、
+    "快照时还不存在的文件 ⇒ 回滚时删除" 三条能力有专门的测试）；新增 `requireStr` 前置校验；
+    回执走 `wrapData` 并把 恢复/删除/未恢复 分组渲染；description 里点明与 **DSL 设计快照**
+    （走 `get_dsl(query="snapshots")`）的区别。
+
+  - 结果：对外工具数 **本面 2 → 1**（两面合计 **68 → 65**）；G1 基线 `removed=[list_snapshots, rollback_snapshot]`、
+    其余条目**逐字不变**；G8 同步重算。
+
+- [x] 候选组：`export_rule` / `apply_rules` / `check_rules` ⇒ 单入口 `rules`（action=`export` / `apply` / `check`）
+  - 核验：读源实现 ✓ / 对契约 ✓ / 找调用方 ✓ / 查测试 ✓ / 回归+插桩 ✓
+
+  - **是不是"同一操作对象"**：是。三者操作的是**同一个对象**「规则库」
+    （`<project_dir>/.agent-io/rules/`），动作互补成一条链：**沉淀**（export）→ **应用**（apply）→ **校验**（check），
+    且共用同一寻址（`project_dir` + 规则 id / 扫描参数）。**不是** `camera_*` 那类"不同抽象层"。
+
+  - 发现：三个旧入口都用 `String(a.project_dir)` / `String(a.id)`，同样有上面①的病；且 `id` 缺参时
+    `'undefined'` 能通过 `isLegalRuleId` 的全小写检查 ⇒ **会真的去萃取一条叫 undefined 的规则**。
+    ★ 另有一处**只在报告里记、本笔不动**：`apply` 在 `dry_run=false` 时，即使库里有规则**自身夹具不过**，
+    也照样落盘（只打一行警告）。这属 [C]/[B] 的**写策略**变更（会让"能写"变成"写不了"），
+    与"面收敛"无关 ⇒ 按边界不顺手改。
+
+  - 处理：**合并**为单入口 `rules`（显式参数：`{action, project_dir, ...各 action 自己的项}`；
+    schema 层把 `id/before/after` 从必填改成按 action 说明，**必填性由 [C] 的 `requireStr` 兜**）；
+    **安全策略前移显式保留**：两个写 action（export / apply）默认 `dry_run=true`（与旧语义一致，**没有**偷偷改），
+    check 的 `update_baseline=true` 在 description 里点明是**不可逆的基线改写**；
+    三态 `applied`/`todo`/`clean`、CI 棘轮（只在"新增命中"上 fail）、规则自身夹具自检、`no_hole` 降级标注
+    **逐项保留**（原测试逐条改成走新入口后**行为断言一字未改**）。
+
+  - 结果：对外工具数 **本面 3 → 1**（两面合计 **68 → 65**）；G1 基线 `removed=[export_rule, apply_rules, check_rules]`、
+    `added=[rules, snapshot]`、其余条目**逐字不变**；G8 同步重算（`capability_map` 一条随之变化，逐行核对过 =
+    仅"68 工具"→"65 工具" + 5 行工具条目换成 2 行）。
+
+> **本笔与上一笔的关系**：上一笔（`rename_symbols`）是「**内核内化**」（[B] 路由 + 共享落盘内核）；
+> 本笔是「**面收敛的样板**」（按操作对象聚合 + 回执编排 + 安全策略前移），
+> 且刻意**只动 [C]（lane）与文档/测试**，不碰 `src/tools/**` 的实现逻辑 —— 样板要能证明
+> "面收敛本身不需要改实现"。两笔合起来才对应桥的三件事（入口收敛 / 回执编排 / 安全策略前移）。
+
 ***
 
 ## 8. P-G 实测登记：`explore_code(action='read')` 是不是稳定的读文件入口（2026-09-28）

@@ -33,8 +33,8 @@
  *    `applyWrites` 只在**真要写**的那一刻快照。
  *
  * ★ 而"**逐文件**快照"这条 —— 当初被当成理由的差异 —— **实测证不出必要性**（本笔的判断题）：
- *   · 判据场景「批量改 3 文件、第 2 个失败、第 1 个必须能单独撤回」：现状**能**（`list_snapshots` 找到
- *     该文件的快照 id → `rollback_snapshot`）；
+ *   · 判据场景「批量改 3 文件、第 2 个失败、第 1 个必须能单独撤回」：现状**能**（`snapshot(action="list")` 找到
+ *     该文件的快照 id → `snapshot(action="rollback")`）；
  *   · 「**一次**快照含全部文件」**也能**做到同样的事（`rollbackFileSnapshot` 支持 `file` 过滤）；
  *   · 反向：逐文件粒度**做不到**"整批一次撤回"（`rollback latest` 只回到最后一个被写的文件）。
  *   ⇒ 快照粒度**不是**能力差异，也**不是**本文件不能并入 `applyWrites` 的原因；真正原因是上面那 4 条政策。
@@ -474,7 +474,7 @@ async function editCodeInner(args: EditCodeArgs): Promise<{ message: string; dat
   }
 
   // ★ 可撤回：任何会落盘的编辑，先把目标文件原样存一份（dry_run 不快照）。
-  // 之后可用 rollback_snapshot 一键回到这一刻（含"本次新建的文件"会被删掉）。
+  // 之后可用 snapshot(action="rollback") 一键回到这一刻（含"本次新建的文件"会被删掉）。
   // 逐文件（本工具一次只改一个文件）+ 编辑前（校验之前）就快照 —— 两条都是**有意**的形态，
   // 且是"不并入 applyWrites"的两条原因之一，理由与实测证据见文件头「落盘形态」块。
   if (args.dry_run !== true) {
@@ -927,7 +927,7 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
     for (const absPath of [...new Set(plans.filter((p) => p.ok).map((p) => p.absPath))]) {
       const rel = path.relative(projectRoot, absPath).split(path.sep).join('/');
       // 逐文件一份快照（**不是**"一份含全部文件"）。粒度这条**证不出必要性**（见文件头「落盘形态」块），
-      // 但本笔**不动它**：改粒度 = 改**可观察**行为（`list_snapshots` 条目数、`rollback latest` 的语义），
+      // 但本笔**不动它**：改粒度 = 改**可观察**行为（`snapshot(action="list")` 条目数、`rollback latest` 的语义），
       // 那是另一笔"行为变更"，与本笔的"同一件事有没有多份实现"无关。
       snapshotBeforeWrite(projectRoot, `edit_code:batch:${rel}`, [rel]);
       fs.writeFileSync(absPath, virtual.get(absPath)!, 'utf8');

@@ -1024,53 +1024,68 @@ export const REFACTOR_TOOLS: ToolDef[] = [
   },
 
   {
-    name: 'list_snapshots',
-    title: 'List code snapshots (undo points)',
+    name: 'snapshot',
+    title: 'Code snapshots (undo points): list them / roll back to one — single entry',
     description:
-      '列出本项目的代码快照（每次 edit_code / rename_files / move_symbol 落盘前自动生成一份）。' +
-      '用来回答"我能不能撤回刚才那一步"：返回 id / 时间 / 原因 / 涉及文件数。回滚走 rollback_snapshot。',
+      '代码快照统一入口（**2 个注册入口收敛为 1 个入口 + action 分派**；按「操作对象」聚合的理由：两者操作的是同一个快照库）。' +
+      '快照 = 每次 edit_code / rename_files / move_symbol **落盘前**自动存的一份文件副本' +
+      '（住 <project_dir>/.agent-io/code-snapshots/，默认保留最近 20 份）。' +
+      'action=list 列出快照（id / 时间 / 原因 / 涉及文件数）—— 回答"我能不能撤回刚才那一步"，limit 默认 10；' +
+      'action=rollback 回滚到某份快照（snapshot 省略或 "latest" = 最近一份）：快照里存在的文件写回原内容，' +
+      '快照时"还不存在"的文件（= 那次改动新建的）会被删除；传 file 可只回滚单个文件。' +
+      '★ 语义明写（**不静默改**）：rollback **立即落盘、没有 dry_run 预览**（与收敛前的 rollback 入口逐字同语义）；' +
+      '且**回滚本身不再存快照 ⇒ 这一步不可再撤回** —— 要留后路请先 action=list 确认目标快照，或依赖 git。' +
+      '★ 别与设计稿快照混淆：本工具管**代码文件**快照；**DSL 设计快照**走 get_dsl(query="snapshots")。',
     inputSchema: {
+      action: z.enum(['list', 'rollback']).describe('list=列代码快照（撤回点） | rollback=回滚到某份快照'),
       project_dir: z.string().describe('目标项目根目录'),
-      limit: z.number().optional().describe('最多返回几条（默认 10）'),
+      limit: z.number().optional().describe('list 用：最多返回几条（默认 10）'),
+      snapshot: z.string().optional().describe('rollback 用：快照 id，或 "latest"（缺省 = 最近一份）'),
+      file: z.string().optional().describe('rollback 用：只回滚该文件（相对项目根或绝对路径）'),
     },
     handler: wrapData(async (a) => {
-      const input = a as unknown as { project_dir: string; limit?: number };
-      const list = listFileSnapshots(input.project_dir).slice(0, input.limit ?? 10);
-      const body = list.length
-        ? list.map((m) => `  ${m.id}  ${m.createdAt}  ${m.reason}（${m.files.length} 文件）`).join('\n')
-        : '（暂无快照：任何 edit_code / rename_files / move_symbol 落盘前都会自动存一份）';
-      return { message: `代码快照 ${list.length} 条：\n${body}`, data: { snapshots: list } };
-    }),
-  },
+      const action = a.action as 'list' | 'rollback' | undefined;
+      // ★ 前置校验（安全策略前移）：入口与锚点先判，缺参**明确报错**，不把 'undefined' 拼进路径。
+      if (action !== 'list' && action !== 'rollback') {
+        throw new Error(`缺参数或非法 "action"（可选值：list / rollback）`);
+      }
+      const root = requireStr(a, 'project_dir');
 
-  {
-    name: 'rollback_snapshot',
-    title: 'Rollback code to a snapshot',
-    description:
-      '把代码回滚到某份快照（省略 snapshot = 最近一份）：快照里存在的文件写回原内容；' +
-      '快照时"还不存在"的文件（= 这次改动新建的）会被删除。传 file 可只回滚单个文件。' +
-      '这是 edit_code / rename_files / move_symbol 的"撤回"通道（快照在落盘前自动生成）。',
-    inputSchema: {
-      project_dir: z.string().describe('目标项目根目录'),
-      snapshot: z.string().optional().describe('快照 id，或 "latest"（缺省 = 最近一份）'),
-      file: z.string().optional().describe('只回滚该文件（相对项目根或绝对路径）'),
-    },
-    handler: wrapData(async (a) => {
-      const input = a as unknown as { project_dir: string; snapshot?: string; file?: string };
+      if (action === 'list') {
+        const list = listFileSnapshots(root).slice(0, (a.limit as number | undefined) ?? 10);
+        const body = list.length
+          ? list.map((m) => `  ${m.id}  ${m.createdAt}  ${m.reason}（${m.files.length} 文件）`).join('\n')
+          : '（暂无快照：任何 edit_code / rename_files / move_symbol 落盘前都会自动存一份）';
+        return { message: `代码快照 ${list.length} 条：\n${body}`, data: { snapshots: list } };
+      }
+
+      // rollback
       const r = rollbackFileSnapshot(
-        input.project_dir,
-        input.snapshot,
-        input.file ? { file: input.file } : undefined,
+        root,
+        a.snapshot === undefined ? undefined : String(a.snapshot),
+        typeof a.file === 'string' && a.file ? { file: a.file } : undefined,
       );
-      return { message: r.message + (r.failed.length ? `\n未恢复：${r.failed.join(', ')}` : ''), data: r };
+      // ★ 回执编排：恢复/删除/未恢复分组（这些是 agent 判"撤回到位没"的机器可判产物），
+      //   并把"不可再撤回"这条**不可逆事实**放在真落了盘的回执里（策略前移的第二半）。
+      const lines = [r.message];
+      if (r.restored.length) lines.push(`  恢复：${r.restored.join(', ')}`);
+      if (r.removed.length) lines.push(`  删除：${r.removed.join(', ')}`);
+      if (r.failed.length) lines.push(`  ⚠ 未恢复 ${r.failed.length} 个：${r.failed.join(', ')}`);
+      if (r.restored.length || r.removed.length) {
+        lines.push('★ 回滚本身不留快照 ⇒ 这一步不可再撤回（要留后路请先用 action=list 记下当前快照 id，或用 git）。');
+      }
+      return { message: lines.join('\n'), data: r };
     }),
   },
 
   {
-    name: 'export_rule',
-    title: 'Distill a one-off fix into a reusable rule (fix → rule)',
+    name: 'rules',
+    title: 'Rule library (fix → rule): export / apply / check with CI ratchet — single entry',
     description:
-      '把一次已完成的修复**沉淀成可复跑规则**（修复→规则沉淀）：给一段 before/after，自动泛化出 pattern/replace ' +
+      '规则库统一入口（**3 个注册入口收敛为 1 个入口 + action 分派**；三者操作的是**同一个库**，故按「操作对象」聚合成一面）。' +
+      '规则 = 一个自包含 `.md`（frontmatter + 说明 + `pattern`/`replace` + 正/反例夹具），' +
+      '住在 `<project_dir>/.agent-io/rules/` —— 三个动作操作的是**同一个库**，故按「操作对象」聚合成一面。' +
+      'action=export（修复→规则沉淀）：把一次已完成的修复**沉淀成可复跑规则**：给一段 before/after，自动泛化出 pattern/replace ' +
       '并生成夹具，过「验收三关」后才允许落盘。' +
       '这是与 Grit/GritQL 的核心差异：Grit 的规则全靠专家手写，没有"从改动本身长出规则"的机制。' +
       '泛化：before/after 先做行级 diff 取**变化行窗口**（pattern/replace/夹具三者同 scope）；' +
@@ -1078,157 +1093,153 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       '★ 泛化的"度"不靠猜：从最多抽象开始逐级放宽，每级用三关裁决 —— ① 出生回归（pattern 必须能复现这次修复）' +
       '② 反例不命中（修好的代码/阴性样本不得被命中）③ 幂等（对 after 再跑不得再命中）；' +
       '某级通过就采纳（泛化尽量强），全败则退化为**纯字面量**规则并在回执里如实标注降级。' +
-      '落盘位置：<project_dir>/.agent-io/rules/<id>.md（单文件自包含：frontmatter + 说明 + pattern/replace + 夹具段）。' +
-      'dry_run=true（默认）只返回候选规则 + 三关结论，不写盘；确认后再传 dry_run=false 落盘。',
-    inputSchema: {
-      project_dir: z.string().describe('项目根目录（规则库落在 <project_dir>/.agent-io/rules/）'),
-      id: z.string().describe('规则 id（同时是文件名）：小写字母/数字/连字符，如 no-console-log'),
-      before: z.string().describe('修复前的代码片段（含足够上下文，用于行级 diff 取变化窗口）'),
-      after: z.string().describe('修复后的代码片段'),
-      title: z.string().optional().describe('规则标题（缺省 = id）'),
-      tags: z.array(z.string()).optional().describe('标签（如 [style, logging]）'),
-      level: z.enum(['error', 'warn', 'info']).optional().describe('严重度（check_rules 用；缺省 warn）'),
-      language: z.string().optional().describe('目标语言（如 typescript / go；缺省自动）'),
-      created_from: z.string().optional().describe('来源描述（追溯用；缺省记当前时间）'),
-      dry_run: z.boolean().optional().describe('true（默认）=只返回候选规则与三关结论，不写盘；false=过三关后写盘'),
-    },
-    handler: wrapData(async (a) => {
-      const root = String(a.project_dir);
-      const id = String(a.id);
-      if (!isLegalRuleId(id)) {
-        throw new Error(`非法规则 id「${id}」：只允许小写字母/数字/连字符，且不以连字符开头或结尾`);
-      }
-      const r = extractRule({
-        before: String(a.before),
-        after: String(a.after),
-        id,
-        title: a.title === undefined ? undefined : String(a.title),
-        tags: Array.isArray(a.tags) ? (a.tags as string[]).map(String) : undefined,
-        level: a.level as Rule['level'] | undefined,
-        language: a.language === undefined ? undefined : String(a.language),
-        createdFrom: a.created_from === undefined ? undefined : String(a.created_from),
-      });
-
-      const g = r.generalization;
-      const lines: string[] = [];
-      lines.push(r.validation.ok ? '✅ 三关通过，规则可用' : '❌ 三关未过，规则不可落盘（如实报告，不写盘）');
-      lines.push(`  泛化：候选 ${g.candidateHoles} 个标识符 → 实采 ${g.holes.length} 个 $hole` +
-        (g.ladderSteps > 0 ? `（放宽了 ${g.ladderSteps} 级）` : '') +
-        (g.degraded ? ' ⚠️ 已降级：泛化后过宽，退化为字面量规则' : ''));
-      for (const at of g.attempts) {
-        lines.push(`    · ${at.holes.length ? at.holes.map((h) => '$' + h).join(' ') : '(字面量)'} → ${at.ok ? '通过' : '未过 ' + at.codes.join(',')}`);
-      }
-      lines.push(`  pattern:\n${g.pattern.split('\n').map((l) => '    ' + l).join('\n')}`);
-      lines.push(`  replace:\n${g.replace.split('\n').map((l) => '    ' + l).join('\n')}`);
-      lines.push(`  夹具 ${r.rule.fixtures.length} 条（反例 ${r.rule.fixtures.filter((f) => f.negative !== undefined).length} 条）`);
-      if (!r.validation.ok) {
-        for (const i of r.validation.issues.filter((x) => x.severity === 'error')) lines.push(`  [${i.code}] ${i.message}`);
-      } else {
-        for (const i of r.validation.issues) lines.push(`  [warn:${i.code}] ${i.message}`);
-      }
-
-      const dry = a.dry_run !== false;
-      if (!dry && r.validation.ok) {
-        const p = writeRule(root, r.rule);
-        lines.push(``, `已落盘：${p}`);
-      } else if (!dry && !r.validation.ok) {
-        lines.push(``, `dry_run=false 但三关未过 ⇒ **未写盘**（不会把没验证的规则放进库里）。`);
-      } else {
-        lines.push(``, `（dry_run：未写盘。确认后可传 dry_run=false 落盘）`);
-      }
-      return {
-        message: lines.join('\n'),
-        data: { ok: r.validation.ok, written: !dry && r.validation.ok, rule: r.rule, validation: r.validation, generalization: g },
-      };
-    }),
-  },
-
-  {
-    name: 'apply_rules',
-    title: 'Apply rule-library rules across a project (three-state)',
-    description:
-      '把规则库（<project_dir>/.agent-io/rules/*.md）里的规则批量应用到项目源码，**三态语义**：' +
-      '① applied（命中且唯一 ⇒ 按 replace 改写）；② todo（命中但歧义 >1 处 ⇒ 在命中处插入 TODO(rule-id) 注释，不失败）；' +
-      '③ clean（无命中 ⇒ 对该文件干净）。' +
+      '落盘位置：`<project_dir>/.agent-io/rules/<id>.md`（单文件自包含）。' +
+      'action=apply（三态语义）：把规则库批量应用到项目源码 —— ① applied（命中且唯一 ⇒ 按 replace 改写）；' +
+      '② todo（命中但歧义 >1 处 ⇒ 在命中处插入 TODO(rule-id) 注释，不失败）；③ clean（无命中 ⇒ 对该文件干净）。' +
       '纪律：**唯一才动**（歧义绝不挑一个改），**不改文件就不报成功**。' +
-      '默认 dry_run=true 只出逐文件三态计数与改写预览，不写盘；dry_run=false 才落盘。' +
-      'glob 可限定文件（正则，匹配相对路径）；rule_ids 可只跑指定规则。',
-    inputSchema: {
-      project_dir: z.string().describe('项目根目录（规则库与源码的锚点）'),
-      rule_ids: z.array(z.string()).optional().describe('只应用这些规则 id（缺省 = 全部）'),
-      glob: z.string().optional().describe('文件过滤（正则，匹配相对路径），如 "src/.*\\.ts$"'),
-      max_files: z.number().int().positive().optional().describe('最多扫描文件数（缺省 5000）'),
-      todo: z.boolean().optional().describe('命中但歧义时是否插入 TODO 注释（缺省 true；false=只如实报告）'),
-      dry_run: z.boolean().optional().describe('true（默认）=只算不写盘；false=把 applied 的文件写盘'),
-    },
-    handler: wrapData(async (a) => {
-      const root = String(a.project_dir);
-      const { rules, errors } = loadRules(root);
-      const want = Array.isArray(a.rule_ids) ? (a.rule_ids as string[]).map(String) : null;
-      const use = want ? rules.filter((r) => want.includes(r.id)) : rules;
-      if (use.length === 0) {
-        return {
-          message: `规则库为空或未命中指定规则（库目录：${rulesDir(root)}）` +
-            (errors.length ? `\n  读取失败 ${errors.length} 条：${errors.map((e) => e.file + ':' + e.error).join('; ')}` : ''),
-          data: { outcomes: [], applied: 0, todo: 0, clean: 0, totalHits: 0 },
-        };
-      }
-      const files = collectRuleTargets(root, { glob: a.glob === undefined ? undefined : String(a.glob), maxFiles: a.max_files as number | undefined });
-      const summary = applyRulesToFiles(root, files, use, { todo: a.todo !== false });
-
-      // ★ 夹具自检先行：库里有规则自身的夹具都不过 ⇒ 先别拿它去改代码
-      const badFixtures = use.map(runFixtures).filter((x) => !x.passed);
-
-      const dry = a.dry_run !== false;
-      const lines: string[] = [];
-      lines.push(`规则 ${use.length} 条 × 文件 ${files.length} 个 ⇒ applied ${summary.applied} / todo ${summary.todo} / clean ${summary.clean}（命中 ${summary.totalHits}）`);
-      for (const o of summary.outcomes) {
-        lines.push(`  [${o.state}] ${o.file} ← ${o.ruleId}（命中 ${o.hits}）${o.todoReason ? '：' + o.todoReason : ''}`);
-      }
-      if (badFixtures.length > 0) {
-        lines.push(``, `⚠️ 有 ${badFixtures.length} 条规则的**自身夹具没过**（先修规则再应用）：`);
-        for (const b of badFixtures) for (const f of b.failures) lines.push(`  · ${b.ruleId}: ${f}`);
-      }
-      if (errors.length) lines.push(``, `⚠️ 规则读取失败 ${errors.length} 条：${errors.map((e) => e.file).join(', ')}`);
-
-      if (!dry) {
-        const writes = summary.outcomes.filter(
-          (o) => (o.state === 'applied' || o.state === 'todo') && o.after !== undefined && o.before !== o.after,
-        );
-        // ★ 落盘走共享内核：此前是"动态 import 写闸 + 在 mutate 回调里裸 writeFileSync"——
-        //   回调里的 fs 调用即 [C] 自己落盘。[B]（applyRulesToFiles）已算好 before/after，
-        //   本层只需把 {file, content} 交给内核（快照一次 + 逐文件写 + 索引写穿）。
-        const receipt = await applyWrites(
-          root,
-          writes.map((o) => ({ file: o.file, content: o.after as string })),
-          { note: `apply_rules(${use.map((r) => r.id).join(',')})` },
-        );
-        lines.push(``, `已写盘 ${receipt.written.length} 个文件（走写闸：写前快照 + 索引写穿保鲜）。`);
-      } else {
-        lines.push(``, `（dry_run：未写盘。确认后传 dry_run=false 落盘）`);
-      }
-      return { message: lines.join('\n'), data: { ...summary, dryRun: dry, badFixtures } };
-    }),
-  },
-
-  {
-    name: 'check_rules',
-    title: 'Run rules as a lint with CI ratchet (baseline diff)',
-    description:
-      '把规则库当 **lint** 跑，带 **CI 棘轮**：结果与 <project_dir>/.agent-io/rules/baseline.json 的存量比对 —— ' +
+      'glob 可限定文件（正则，匹配相对路径）；rule_ids 可只跑指定规则。' +
+      'action=check（lint + CI 棘轮）：结果与 `<project_dir>/.agent-io/rules/baseline.json` 的存量比对 —— ' +
       '命中数**未增加** ⇒ 通过（哪怕这条规则当下就有一堆存量命中）；出现**新增命中** ⇒ 不通过。' +
       '这样"先启用一条当前就失败的规则"不会炸 CI，而新引入的问题会被立刻拦住。' +
       'update_baseline=true 把当前存量记为基线（修完一批后收紧棘轮）。' +
-      '同时跑每条规则的**自身夹具**（正例须命中且改写一致、反例不得命中），夹具不过的规则单独列出（规则本身坏了）。',
+      '同时跑每条规则的**自身夹具**（正例须命中且改写一致、反例不得命中），夹具不过的规则单独列出（规则本身坏了）。' +
+      '★ 安全策略前移（默认值**明写在这里**，不是隐藏知识）：两个**写** action（export / apply）的 dry_run 都默认 `true`' +
+      ' —— 只出预览 / 三态计数、**不写盘**；确认后必须**显式**传 dry_run=false 才落盘（apply 落盘走写闸：写前快照 + 索引写穿保鲜）。' +
+      '★ check 的 update_baseline=true 会**改写棘轮基线**（收紧后不会自动回退），属不可逆动作 ⇒ 只在修完一批后显式传。',
     inputSchema: {
-      project_dir: z.string().describe('项目根目录'),
-      rule_ids: z.array(z.string()).optional().describe('只检查这些规则 id（缺省 = 全部）'),
-      glob: z.string().optional().describe('文件过滤（正则，匹配相对路径）'),
-      max_files: z.number().int().positive().optional().describe('最多扫描文件数（缺省 5000）'),
-      update_baseline: z.boolean().optional().describe('true = 把当前命中存量写为新基线（收紧棘轮）；缺省 false'),
+      action: z
+        .enum(['export', 'apply', 'check'])
+        .describe('export=从 before/after 萃取规则 | apply=把规则库应用到源码（三态） | check=当 lint 跑（CI 棘轮）'),
+      project_dir: z.string().describe('项目根目录（规则库落在 <project_dir>/.agent-io/rules/）'),
+      // ── export ──
+      id: z.string().optional().describe('export 用：规则 id（同时是文件名）：小写字母/数字/连字符，如 no-console-log'),
+      before: z.string().optional().describe('export 用：修复前的代码片段（含足够上下文，用于行级 diff 取变化窗口）'),
+      after: z.string().optional().describe('export 用：修复后的代码片段'),
+      title: z.string().optional().describe('export 用：规则标题（缺省 = id）'),
+      tags: z.array(z.string()).optional().describe('export 用：标签（如 [style, logging]）'),
+      level: z.enum(['error', 'warn', 'info']).optional().describe('export 用：严重度（check 用；缺省 warn）'),
+      language: z.string().optional().describe('export 用：目标语言（如 typescript / go；缺省自动）'),
+      created_from: z.string().optional().describe('export 用：来源描述（追溯用；缺省记当前时间）'),
+      // ── apply / check ──
+      rule_ids: z.array(z.string()).optional().describe('apply/check 用：只跑这些规则 id（缺省 = 全部）'),
+      glob: z.string().optional().describe('apply/check 用：文件过滤（正则，匹配相对路径），如 "src/.*\\.ts$"'),
+      max_files: z.number().int().positive().optional().describe('apply/check 用：最多扫描文件数（缺省 5000）'),
+      todo: z.boolean().optional().describe('apply 用：命中但歧义时是否插 TODO 注释（缺省 true；false=只如实报告）'),
+      update_baseline: z.boolean().optional().describe('check 用：true = 把当前命中存量写为新基线（收紧棘轮）；缺省 false'),
+      // ── 写策略（两个写 action 共用） ──
+      dry_run: z.boolean().optional().describe('export/apply 用：true（默认）=只算不写盘；false=把通过三关的规则 / applied 的文件落盘'),
     },
     handler: wrapData(async (a) => {
-      const root = String(a.project_dir);
+      const action = a.action as 'export' | 'apply' | 'check' | undefined;
+      // ★ 前置校验（安全策略前移第一半）：入口与锚点先判。
+      //   为什么要它：旧版三个入口都是 `String(a.project_dir)` —— 缺参时 `String(undefined)` 会变成
+      //   字符串 `'undefined'`（**看着像合法值**），于是"没传参"表现为"结果莫名其妙"，而 `id='undefined'`
+      //   甚至能通过 isLegalRuleId 的全小写字母检查。这里改成缺参**当场报错**（requireStr）。
+      if (action !== 'export' && action !== 'apply' && action !== 'check') {
+        throw new Error(`缺参数或非法 "action"（可选值：export / apply / check）`);
+      }
+      const root = requireStr(a, 'project_dir');
+
+      if (action === 'export') {
+        const id = requireStr(a, 'id');
+        const before = requireStr(a, 'before');
+        const after = requireStr(a, 'after');
+        if (!isLegalRuleId(id)) {
+          throw new Error(`非法规则 id「${id}」：只允许小写字母/数字/连字符，且不以连字符开头或结尾`);
+        }
+        const r = extractRule({
+          before,
+          after,
+          id,
+          title: a.title === undefined ? undefined : String(a.title),
+          tags: Array.isArray(a.tags) ? (a.tags as string[]).map(String) : undefined,
+          level: a.level as Rule['level'] | undefined,
+          language: a.language === undefined ? undefined : String(a.language),
+          createdFrom: a.created_from === undefined ? undefined : String(a.created_from),
+        });
+
+        const g = r.generalization;
+        const lines: string[] = [];
+        lines.push(r.validation.ok ? '✅ 三关通过，规则可用' : '❌ 三关未过，规则不可落盘（如实报告，不写盘）');
+        lines.push(`  泛化：候选 ${g.candidateHoles} 个标识符 → 实采 ${g.holes.length} 个 $hole` +
+          (g.ladderSteps > 0 ? `（放宽了 ${g.ladderSteps} 级）` : '') +
+          (g.degraded ? ' ⚠️ 已降级：泛化后过宽，退化为字面量规则' : ''));
+        for (const at of g.attempts) {
+          lines.push(`    · ${at.holes.length ? at.holes.map((h) => '$' + h).join(' ') : '(字面量)'} → ${at.ok ? '通过' : '未过 ' + at.codes.join(',')}`);
+        }
+        lines.push(`  pattern:\n${g.pattern.split('\n').map((l) => '    ' + l).join('\n')}`);
+        lines.push(`  replace:\n${g.replace.split('\n').map((l) => '    ' + l).join('\n')}`);
+        lines.push(`  夹具 ${r.rule.fixtures.length} 条（反例 ${r.rule.fixtures.filter((f) => f.negative !== undefined).length} 条）`);
+        if (!r.validation.ok) {
+          for (const i of r.validation.issues.filter((x) => x.severity === 'error')) lines.push(`  [${i.code}] ${i.message}`);
+        } else {
+          for (const i of r.validation.issues) lines.push(`  [warn:${i.code}] ${i.message}`);
+        }
+
+        const dry = a.dry_run !== false;
+        if (!dry && r.validation.ok) {
+          const p = writeRule(root, r.rule);
+          lines.push(``, `已落盘：${p}`);
+        } else if (!dry && !r.validation.ok) {
+          lines.push(``, `dry_run=false 但三关未过 ⇒ **未写盘**（不会把没验证的规则放进库里）。`);
+        } else {
+          lines.push(``, `（dry_run：未写盘。确认后可传 dry_run=false 落盘）`);
+        }
+        return {
+          message: lines.join('\n'),
+          data: { ok: r.validation.ok, written: !dry && r.validation.ok, rule: r.rule, validation: r.validation, generalization: g },
+        };
+      }
+
+      if (action === 'apply') {
+        const { rules, errors } = loadRules(root);
+        const want = Array.isArray(a.rule_ids) ? (a.rule_ids as string[]).map(String) : null;
+        const use = want ? rules.filter((r) => want.includes(r.id)) : rules;
+        if (use.length === 0) {
+          return {
+            message: `规则库为空或未命中指定规则（库目录：${rulesDir(root)}）` +
+              (errors.length ? `\n  读取失败 ${errors.length} 条：${errors.map((e) => e.file + ':' + e.error).join('; ')}` : ''),
+            data: { outcomes: [], applied: 0, todo: 0, clean: 0, totalHits: 0 },
+          };
+        }
+        const files = collectRuleTargets(root, { glob: a.glob === undefined ? undefined : String(a.glob), maxFiles: a.max_files as number | undefined });
+        const summary = applyRulesToFiles(root, files, use, { todo: a.todo !== false });
+
+        // ★ 夹具自检先行：库里有规则自身的夹具都不过 ⇒ 先别拿它去改代码
+        const badFixtures = use.map(runFixtures).filter((x) => !x.passed);
+
+        const dry = a.dry_run !== false;
+        const lines: string[] = [];
+        lines.push(`规则 ${use.length} 条 × 文件 ${files.length} 个 ⇒ applied ${summary.applied} / todo ${summary.todo} / clean ${summary.clean}（命中 ${summary.totalHits}）`);
+        for (const o of summary.outcomes) {
+          lines.push(`  [${o.state}] ${o.file} ← ${o.ruleId}（命中 ${o.hits}）${o.todoReason ? '：' + o.todoReason : ''}`);
+        }
+        if (badFixtures.length > 0) {
+          lines.push(``, `⚠️ 有 ${badFixtures.length} 条规则的**自身夹具没过**（先修规则再应用）：`);
+          for (const b of badFixtures) for (const f of b.failures) lines.push(`  · ${b.ruleId}: ${f}`);
+        }
+        if (errors.length) lines.push(``, `⚠️ 规则读取失败 ${errors.length} 条：${errors.map((e) => e.file).join(', ')}`);
+
+        if (!dry) {
+          const writes = summary.outcomes.filter(
+            (o) => (o.state === 'applied' || o.state === 'todo') && o.after !== undefined && o.before !== o.after,
+          );
+          // ★ 落盘走共享内核：此前是"动态 import 写闸 + 在 mutate 回调里裸 writeFileSync"——
+          //   回调里的 fs 调用即 [C] 自己落盘。[B]（applyRulesToFiles）已算好 before/after，
+          //   本层只需把 {file, content} 交给内核（快照一次 + 逐文件写 + 索引写穿）。
+          const receipt = await applyWrites(
+            root,
+            writes.map((o) => ({ file: o.file, content: o.after as string })),
+            { note: `rules(apply:${use.map((r) => r.id).join(',')})` },
+          );
+          lines.push(``, `已写盘 ${receipt.written.length} 个文件（走写闸：写前快照 + 索引写穿保鲜）。`);
+        } else {
+          lines.push(``, `（dry_run：未写盘。确认后传 dry_run=false 落盘）`);
+        }
+        return { message: lines.join('\n'), data: { ...summary, dryRun: dry, badFixtures } };
+      }
+
+      // ── check ──
       const { rules, errors } = loadRules(root);
       const want = Array.isArray(a.rule_ids) ? (a.rule_ids as string[]).map(String) : null;
       const use = want ? rules.filter((r) => want.includes(r.id)) : rules;

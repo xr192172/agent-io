@@ -377,7 +377,7 @@ export interface ExtractResult {
  *       并在 `attempts`/`degraded` 里如实记下"泛化失败"。
  *   这样"规则库"里不会出现没过关的规则，同时也不会因为一次泛化过宽就整个放弃。
  *
- * **注意**：本函数**不落盘**。调用方（export_rule 工具）须先看 `validation.ok`，
+ * **注意**：本函数**不落盘**。调用方（`rules(action="export")` 工具）须先看 `validation.ok`，
  * 不 ok 就如实回报问题，绝不"先写了再说"。
  */
 export function extractRule(input: ExtractInput): ExtractResult {

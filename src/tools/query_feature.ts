@@ -2,7 +2,7 @@
  * query_feature 工具：统一读操作入口
  *
  * 合并原 9 个查询工具（get_dsl / list_features / list_annotations / list_approvals /
- * list_snapshots / list_templates / get_simulation_state / get_approval_history / diff_features），
+ * DSL 快照列举 / list_templates / get_simulation_state / get_approval_history / diff_features），
  * 通过 { query, ...params } 单点调用，减少 LLM 工具选择成本。
  *
  * 细粒度查询（DSL 替代 read/grep/search）：
@@ -26,7 +26,7 @@
  *   annotations      → list_annotations { feature, node_id?, severity?, unresolved_only? }
  *   approvals        → list_approvals   { feature, status?, assignee? }
  *   approval_history → get_approval_history { feature, annotation_id }
- *   snapshots        → list_snapshots   { feature }
+ *   snapshots        → listSnapshots(feature) { feature }
  *   templates        → list_templates   {}
  *   simulation_state → get_simulation_state { feature }
  *   diff             → diff_features    { feature_a, feature_b }

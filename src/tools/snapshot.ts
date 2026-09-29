@@ -255,7 +255,7 @@ export function rollbackSnapshot(input: RollbackSnapshotInput): RollbackSnapshot
   }
 
   if (!targetFile || !targetData) {
-    throw new Error(`快照 "${snapshot_id}" 不存在，使用 list_snapshots 查看可用快照`);
+    throw new Error(`快照 "${snapshot_id}" 不存在（列出可用快照：get_dsl 的 query="snapshots"）`);
   }
 
   const snap = (targetData as any)._snapshot || {};
