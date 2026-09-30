@@ -55,7 +55,7 @@ const INTERNAL_MODULES: Record<string, { importedBy: string[]; why: string }> = 
     why: '积木化/分类两个 CLI 共用的函数收集器；不是 MCP 工具',
   },
   contract_gate: {
-    importedBy: ['src/tools/refactor_pipeline.ts'],
+    importedBy: ['src/application/refactor/refactor_pipeline.ts'],
     why: 'refactor_pipeline 的契约闸门检查步骤；不是 MCP 工具',
   },
   dag_layout: {
@@ -68,15 +68,15 @@ const INTERNAL_MODULES: Record<string, { importedBy: string[]; why: string }> = 
       'src/tools/brick_bag.ts',
       'src/tools/deprecate_offline.ts',
       'src/tools/feature_map.ts',
-      'src/tools/function_annotation.ts',
-      'src/tools/refactor_pipeline.ts',
+      'src/application/refactor/function_annotation.ts',
+      'src/application/refactor/refactor_pipeline.ts',
     ],
     why: '死 import 检测是多个工具/CLI 共用的分析步骤；本身不是 MCP 工具',
   },
   diff_impact: {
     importedBy: [
       'src/infrastructure/analysis/diagnosis/impact_analyzer.ts',
-      'src/tools/explore_code.ts',
+      'src/application/meta/explore_code.ts',
       'src/tools/impact_report.ts',
       'src/presentation/http/serve.ts',
       'src/tools/watch_project_tool.ts',
@@ -84,11 +84,11 @@ const INTERNAL_MODULES: Record<string, { importedBy: string[]; why: string }> = 
     why: '变更影响面计算，被 explore_code / impact_report 等复用；不是独立工具',
   },
   guided_tour: {
-    importedBy: ['src/tools/explore_code.ts', 'src/tools/overview.ts', 'src/presentation/http/serve.ts'],
+    importedBy: ['src/application/meta/explore_code.ts', 'src/tools/overview.ts', 'src/presentation/http/serve.ts'],
     why: '引导式导览生成，被 explore_code / overview 等复用',
   },
   inject_replay: {
-    importedBy: ['src/tools/explore_code.ts'],
+    importedBy: ['src/application/meta/explore_code.ts'],
     why: 'explore_code 的 replay 注入实现',
   },
   language_concepts: {
@@ -112,7 +112,7 @@ const INTERNAL_MODULES: Record<string, { importedBy: string[]; why: string }> = 
     why: '向导步骤生成，render_wizard 的实现细节',
   },
   feature_ops: {
-    importedBy: ['src/tools/manage_feature.ts'],
+    importedBy: ['src/application/design/manage_feature.ts'],
     why: 'manage_feature 的 feature 增删改实现（createFeature 等）',
   },
   render_workbench: {
@@ -120,7 +120,7 @@ const INTERNAL_MODULES: Record<string, { importedBy: string[]; why: string }> = 
     why: '工作台渲染，brickify CLI 的实现细节',
   },
   feature_map: {
-    importedBy: ['src/tools/brickify.ts', 'src/tools/brick_bag.ts', 'src/tools/render_brickwork.ts'],
+    importedBy: ['src/tools/brickify.ts', 'src/tools/brick_bag.ts', 'src/application/design/render_brickwork.ts'],
     why: 'buildFeatureMap 是 import_project / render_brickwork 等的内部派生助手',
   },
   derive_feature_tree: {
@@ -188,7 +188,7 @@ describe('server_registry 一致性', () => {
         : Object.keys((raw ?? {}) as Record<string, unknown>);
     expect(values.length, 'op 枚举解析失败（zod 内部结构变了？）').toBeGreaterThan(0);
 
-    // 实现侧的 op 联合（与 src/tools/edit_code.ts 的 EditCodeOp 保持一致）
+    // 实现侧的 op 联合（与 src/application/refactor/edit_code.ts 的 EditCodeOp 保持一致）
     const implOps = ['replace', 'insert', 'delete', 'range', 'replace_text'];
     const missing = implOps.filter((o) => !values.includes(o));
     expect(missing, `实现支持但 schema 未暴露（从 MCP 面不可达）：${missing.join(', ')}`).toEqual([]);

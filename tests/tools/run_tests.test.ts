@@ -5,7 +5,7 @@
  * 不建临时项目（避免无 vitest），直接复用它自身已装的 vitest。
  */
 import { describe, it, expect } from 'vitest';
-import { runTests } from '../../src/tools/run_tests';
+import { runTests } from '../../src/application/observe/run_tests.js';
 import path from 'node:path';
 
 const REPO = path.resolve(__dirname, '..', '..');

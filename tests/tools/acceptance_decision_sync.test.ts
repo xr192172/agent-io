@@ -13,7 +13,7 @@
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { diffViews } from '../../src/tools/diff_views';
-import { archiveNode, listArchive } from '../../src/tools/archive_node';
+import { archiveNode, listArchive } from '../../src/application/meta/archive_node.js';
 import {
   saveDSL,
   getDSL,
@@ -116,7 +116,7 @@ describe('验收：决策卡进同步（增量功能端到端）', () => {
       [
         file('src/tools/diff_views.ts', [{ name: 'diffViews', sig: 'diffViews(input): DiffViewsResult' }], DIFF_VIEWS_CARD),
         file(
-          'src/tools/archive_node.ts',
+          'src/application/meta/archive_node.ts',
           [
             { name: 'archiveNode', sig: 'archiveNode(input): ArchiveNodeResult', decision: ARCHIVE_FUNC_CARD },
             { name: 'listArchive', sig: 'listArchive(input): ListArchiveResult' },
@@ -126,7 +126,7 @@ describe('验收：决策卡进同步（增量功能端到端）', () => {
       ],
       [
         { id: 'f_src_tools_diff_views_ts', decision: DIFF_VIEWS_CARD },
-        { id: 'f_src_tools_archive_node_ts', decision: ARCHIVE_NODE_CARD },
+        { id: 'f_src_application_meta_archive_node_ts', decision: ARCHIVE_NODE_CARD },
       ],
     );
     console.log('\n────── 1. 先写 DSL（决策卡写进设计侧）──────');
@@ -154,7 +154,7 @@ describe('验收：决策卡进同步（增量功能端到端）', () => {
         { name: 'diffViews', sig: 'diffViews(input)' },
         { name: 'renderDecisionRef', sig: 'renderDecisionRef(card)' }, // 实现新增
       ]),
-      file('src/tools/archive_node.ts', [{ name: 'archiveNode', sig: 'archiveNode(input, force?)' }]),
+      file('src/application/meta/archive_node.ts', [{ name: 'archiveNode', sig: 'archiveNode(input, force?)' }]),
     ]);
     saveLiveFeature(live);
     console.log('\n────── 3. 实现改动（live：diff_views 新增函数 renderDecisionRef；archive_node 签名改动）──────');
@@ -176,7 +176,7 @@ describe('验收：决策卡进同步（增量功能端到端）', () => {
     const twDiffViews = r.data.three_way!.files.find((x) => x.path === 'src/tools/diff_views.ts')!;
     expect(twDiffViews.design_decision?.summary).toBe(DIFF_VIEWS_CARD.summary);
     expect(twDiffViews.state).toBe('conflict'); // 设计加了卡+实现加了函数，两侧都改且不一致
-    const twArchive = r.data.three_way!.files.find((x) => x.path === 'src/tools/archive_node.ts')!;
+    const twArchive = r.data.three_way!.files.find((x) => x.path === 'src/application/meta/archive_node.ts')!;
     expect(twArchive.design_decision?.summary).toBe(ARCHIVE_NODE_CARD.summary);
     expect(twArchive.symbol_decisions?.['archiveNode']?.summary).toBe(ARCHIVE_FUNC_CARD.summary);
 
@@ -186,13 +186,13 @@ describe('验收：决策卡进同步（增量功能端到端）', () => {
       feature,
       file_path: 'src/tools/diff_views.ts',
       retire_reason: 'diff 裁决逻辑并入 archive_node 统一收口',
-      merged_into: 'src/tools/archive_node.ts',
+      merged_into: 'src/application/meta/archive_node.ts',
     });
     console.log(ar.message);
     expect(getArchiveEntryByPath(feature, 'src/tools/diff_views.ts')?.retire_reason).toContain('统一收口');
     const cur = getDSL(feature)!;
     expect(cur.semantic!.files.map((x) => x.path)).not.toContain('src/tools/diff_views.ts');
-    const target = cur.semantic!.files.find((x) => x.path === 'src/tools/archive_node.ts')!;
+    const target = cur.semantic!.files.find((x) => x.path === 'src/application/meta/archive_node.ts')!;
     expect(target.lifecycle?.status).toBe('merged');
     expect(target.lifecycle?.merged_from).toContain('src/tools/diff_views.ts');
 

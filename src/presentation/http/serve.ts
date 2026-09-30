@@ -28,7 +28,7 @@ import { getProjectCacheDb, openDb } from '../../infrastructure/index/db.js';
 import { validateDSLJson } from '../../domain/validator.js';
 import { saveAutoSnapshot, pruneSnapshots } from '../../tools/snapshot.js';
 import { dagLayout, forceLayout, gridAlign } from '../../tools/dag_layout.js';
-import { scaffold } from '../../tools/scaffold.js';
+import { scaffold } from '../../application/design/scaffold.js';
 import { checkConsistency } from '../../tools/consistency.js';
 import { diffImpact } from '../../tools/diff_impact.js';
 import { diffViews } from '../../tools/diff_views.js';
@@ -41,20 +41,20 @@ import { languageConcepts } from '../../tools/language_concepts.js';
 import { buildDictionaryView, getGlobalDictFile, getProjectDictFile, loadGlobalDict, loadProjectDict, saveGlobalEntry, saveProjectEntry, splitHighlights, validateProjectRoot, type DictEntry } from '../../tools/dictionary.js';
 import { ingestTerm, classifyTerm, generateDictEntry } from '../../tools/dict_gen.js';
 import { readRegistry, updateArtifact } from '../../tools/registry.js';
-import { proposeChange, listChanges, approveChange, rejectChange } from '../../tools/code_workbench.js';
+import { proposeChange, listChanges, approveChange, rejectChange } from '../../application/design/code_workbench.js';
 import { checkMonolith } from '../../tools/monolith.js';
 import type { FileMonolithReport } from '../../tools/monolith.js';
 import { runArchifyPipeline } from '../../tools/archify_pipeline.js';
 import { adaptIRTree } from '../../tools/archify_project.js';
 import { buildFunctionOutline, listFunctionDirs } from '../../tools/function_outline.js';
-import { getFeatureLine } from '../../tools/feature_line.js';
+import { getFeatureLine } from '../../application/observe/feature_line.js';
 import { exampleInputFor } from '../../tools/trace_exec.js';
 import { parseFileFull } from '../../infrastructure/parse/index.js';
-import { deriveMindMap, buildFileIndex } from '../../tools/derive_mind_map.js';
-import { placeProposals } from '../../tools/derive_mind_map.js';
+import { deriveMindMap, buildFileIndex } from '../../application/meta/derive_mind_map.js';
+import { placeProposals } from '../../application/meta/derive_mind_map.js';
 import { getOverview } from '../../tools/overview.js';
-import { getMindMapFile } from '../../tools/derive_mind_map.js';
-import { resolveCanvasNoteTargets, renderCanvasNotesDigest, markCanvasNotesStatus } from '../../tools/derive_mind_map.js';
+import { getMindMapFile } from '../../application/meta/derive_mind_map.js';
+import { resolveCanvasNoteTargets, renderCanvasNotesDigest, markCanvasNotesStatus } from '../../application/meta/derive_mind_map.js';
 import type { MindMap } from '../../domain/mindmap.js';
 import { oplAdd, oplLocate, oplDeclare, oplImplement, oplCheck, oplIntegrate, oplList, oplGet, oplAuto } from '../../tools/opl.js';
 import { traceExecChain, type TraceStepSpec } from '../../tools/trace_exec.js';
@@ -80,7 +80,7 @@ import {
   hasEnabledProvider,
   handleOpenAICompatRequest,
   type OpenAICompatRequest,
-} from '../../tools/gateway.js';
+} from '../../application/meta/gateway.js';
 
 const PORT = parseInt(process.argv[2]) || 3000;
 const PUBLIC_DIR = path.join(process.cwd(), 'output');

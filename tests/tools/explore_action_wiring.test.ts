@@ -36,11 +36,11 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { EXPLORE_ACTIONS } from '../../src/tools/explore_code.js';
+import { EXPLORE_ACTIONS } from '../../src/application/meta/explore_code.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.join(here, '..', '..');
-const SRC = path.join(REPO, 'src', 'tools', 'explore_code.ts');
+const SRC = path.join(REPO, 'src', 'application', 'meta', 'explore_code.ts');
 const REG = path.join(here, '..', 'fixtures', 'explore_action_wiring.json');
 
 interface WiringRegistry {

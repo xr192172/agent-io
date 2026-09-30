@@ -14,7 +14,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { backfillScaffold } from '../../src/tools/backfill';
+import { backfillScaffold } from '../../src/application/design/backfill.js';
 import { saveDSL } from '../../src/storage';
 import { clearAllFeatures, getDSL } from '../../src/storage';
 import type { DesignDSL } from '../../src/domain/types';

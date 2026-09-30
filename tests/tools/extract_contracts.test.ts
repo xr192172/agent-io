@@ -16,7 +16,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect, afterAll, beforeEach, afterEach } from 'vitest';
 import { importProject } from '../../src/infrastructure/graph/import_project.js';
-import { extractContracts } from '../../src/tools/extract_contracts';
+import { extractContracts } from '../../src/application/harvest/extract_contracts.js';
 import { openDb } from '../../src/infrastructure/index/db';
 import { getDSL, saveDSL, clearAllFeatures, getLiveDslFile } from '../../src/storage';
 import type { DesignDSL } from '../../src/domain/types';

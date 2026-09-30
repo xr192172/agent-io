@@ -10,7 +10,7 @@
  *   - disambiguationItems：把消歧结果转成 `rename_symbols(scope='local')` 可直接消费的 renames 条目。
  */
 import { describe, it, expect } from 'vitest';
-import { findSimilarNames, suggestDisambiguations, disambiguationItems, type SimilarNameCluster } from '../../src/tools/similar_names';
+import { findSimilarNames, suggestDisambiguations, disambiguationItems, type SimilarNameCluster } from '../../src/application/refactor/similar_names.js';
 
 /** 断言：在 clusters 里找包含指定名字（作为 basis 或 offender）的 cluster */
 function findCluster(clusters: SimilarNameCluster[], name: string): SimilarNameCluster {

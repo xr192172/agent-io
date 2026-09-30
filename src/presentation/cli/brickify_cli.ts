@@ -17,7 +17,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { buildBrickify, ROLE_LABEL } from '../../tools/brickify.js';
-import { renderBrickifyWorkbenchHtml } from '../../tools/render_brickwork.js';
+import { renderBrickifyWorkbenchHtml } from '../../application/design/render_brickwork.js';
 import { renderBrickifyMindMapHtml } from '../../tools/render_mindmap.js';
 import { narrateClusters } from '../../tools/cluster_narrator.js';
 import { renderClusterWorkbenchHtml } from '../../tools/render_cluster_workbench.js';

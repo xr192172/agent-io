@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { manageFeature } from '../../src/tools/manage_feature';
+import { manageFeature } from '../../src/application/design/manage_feature.js';
 import { createFeature } from '../../src/tools/feature_ops';
 import { clearAllFeatures, getDSL, saveLiveFeature, getLiveFeature } from '../../src/storage';
 

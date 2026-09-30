@@ -11,8 +11,8 @@
  * 复用 buildFileIndex 产出的 FileIndex（pv exact 按 path 取 FileInfo）、projectFileDataShape、
  * pinIdentityKeys、deriveCrossFeatureFlow。不重造。id 一律合法化且稳定。
  */
-import { projectFileDataShape, pinIdentityKeys, deriveCrossFeatureFlow } from './derive_mind_map.js';
-import type { FileIndex } from './derive_mind_map.js';
+import { projectFileDataShape, pinIdentityKeys, deriveCrossFeatureFlow } from '../application/meta/derive_mind_map.js';
+import type { FileIndex } from '../application/meta/derive_mind_map.js';
 import type { TeachPin } from '../domain/mindmap.js';
 import { roleToType, type ArchifyTreeNode } from './archify_project.js';
 

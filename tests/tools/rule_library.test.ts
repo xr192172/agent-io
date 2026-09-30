@@ -26,9 +26,9 @@ import {
   hasNegativeFixture,
   hasPositiveFixture,
   rulesDir,
-} from '../../src/tools/rule_library';
+} from '../../src/application/refactor/rule_library.js';
 import { matchRule, instantiateReplace, applyMatch, holeNamesOf, tokenizePattern } from '../../src/tools/rule_match';
-import { diffLines, extractRule, generalizeChange, validateRule } from '../../src/tools/rule_extract';
+import { diffLines, extractRule, generalizeChange, validateRule } from '../../src/application/refactor/rule_extract.js';
 import {
   applyRuleToContent,
   applyRulesToFiles,
@@ -40,8 +40,8 @@ import {
   runAllFixtures,
   commentStyleFor,
   insertTodo,
-} from '../../src/tools/rule_apply';
-import type { Rule } from '../../src/tools/rule_library';
+} from '../../src/application/refactor/rule_apply.js';
+import type { Rule } from '../../src/application/refactor/rule_library.js';
 
 /* ─────────────── 1. md 载体 ─────────────── */
 

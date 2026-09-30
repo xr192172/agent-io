@@ -24,7 +24,7 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { parseAstRoot, type SyntaxNodeLike } from '../infrastructure/parse/kernel.js';
-import { expandClosure, walkProjectFiles, loadAliasConfig } from './project_root.js';
+import { expandClosure, walkProjectFiles, loadAliasConfig } from '../application/cross/project_root.js';
 
 export type FieldRefKind = 'field-read' | 'field-key' | 'field-destructure' | 'field-decl';
 

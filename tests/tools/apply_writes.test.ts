@@ -17,8 +17,8 @@ import path from 'node:path';
 import { describe, it, expect, afterAll } from 'vitest';
 import { importProject } from '../../src/infrastructure/graph/import_project.js';
 import { openDb } from '../../src/infrastructure/index/db';
-import { applyWrites } from '../../src/tools/apply_writes';
-import { rollbackFileSnapshot, listFileSnapshots } from '../../src/tools/file_snapshot';
+import { applyWrites } from '../../src/application/refactor/apply_writes.js';
+import { rollbackFileSnapshot, listFileSnapshots } from '../../src/application/refactor/file_snapshot.js';
 import { renameLocals } from '../../src/tools/rename_local';
 import { hasLiveIndex } from '../../src/tools/write_gate';
 

@@ -17,13 +17,13 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect, afterAll, beforeEach, afterEach } from 'vitest';
-import { runRefactorPipeline } from '../../src/tools/refactor_pipeline';
+import { runRefactorPipeline } from '../../src/application/refactor/refactor_pipeline.js';
 import { RefactorLangRegistry, type LanguageRefactorExecutor } from '../../src/tools/refactor_langs';
 import { openDb } from '../../src/infrastructure/index/db';
 import { syncSelfWrites, syncSelfWritesSync, pendingSelfWrites } from '../../src/tools/write_gate';
 import { importProject } from '../../src/infrastructure/graph/import_project.js';
-import { scaffold } from '../../src/tools/scaffold';
-import { removeDeadImports } from '../../src/tools/remove_dead_imports';
+import { scaffold } from '../../src/application/design/scaffold.js';
+import { removeDeadImports } from '../../src/application/refactor/remove_dead_imports.js';
 import { prewarmKernel, _reset as resetKernel } from '../../src/infrastructure/parse';
 import { saveDSL } from '../../src/storage';
 

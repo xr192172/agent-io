@@ -16,7 +16,7 @@ import path from 'node:path';
 import { compareProjects } from '../../infrastructure/analysis/cross_repo/index.js';
 import { analyzeHealth } from '../../infrastructure/analysis/health/index.js';
 import { VERDICT_LABEL, precheckHybrid } from '../../infrastructure/analysis/hybrid/index.js';
-import { detectReachableRoots } from '../../tools/project_root.js';
+import { detectReachableRoots } from './project_root.js';
 import { extractGoFromFile } from '../../infrastructure/analysis/translate/go_extractor.js';
 import { translateGoTsHandler } from '../../infrastructure/analysis/translate/tool.js';
 import type { ToolDef } from '../types.js';

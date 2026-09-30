@@ -31,7 +31,7 @@
 
 import { parseFileFull, parseAstRoot, listSupportedExtensions, resolveProjectImport, type ParsedSymbol, type SyntaxNodeLike } from '../../parse/index.js';
 import { codeSourceExts, partitionByCodeLang } from '../../parse/source_exts.js';
-import { boundsSkipFromExcluded, type ScanBounds } from '../../../tools/scan_bounds.js';
+import { boundsSkipFromExcluded, type ScanBounds } from '../../../application/refactor/scan_bounds.js';
 import { collectSourceFiles } from '../version_upgrade/detect.js';
 
 // ── 对外类型 ─────────────────────────────────────────────────
@@ -96,7 +96,7 @@ export interface HealthReport {
    *   如果连"有几个、是什么"都不说，那就是本仓头注批的「**缺失是沉默的**」。
    *   同款设计见 `layers.unclassified`（单列"什么都没命中"的文件数，而不是混进 brick）。
    * ★ 本工具属「扫仓库类」⇒ `bounds` **恒在**（哪怕扫了 0 个文件也要说出来 —— 那正是边界）。
-   * 形状与挂载层见 `src/tools/scan_bounds.ts`。
+   * 形状与挂载层见 `src/application/refactor/scan_bounds.ts`。
    */
   bounds: ScanBounds;
 }

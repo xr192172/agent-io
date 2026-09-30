@@ -15,7 +15,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect, beforeEach } from 'vitest';
-import { assembleBricks, rewriteGoFile } from '../../src/tools/assemble_bricks.js';
+import { assembleBricks, rewriteGoFile } from '../../src/application/harvest/assemble_bricks.js';
 
 interface Fixture {
   boxDir: string;

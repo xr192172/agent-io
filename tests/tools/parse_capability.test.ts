@@ -24,7 +24,7 @@ import {
   renderGranularityNote,
   summarizeLanguagesByTier,
   tierForLanguage,
-} from '../../src/tools/parse_capability';
+} from '../../src/application/refactor/parse_capability.js';
 import { findLanguageByExt } from '../../src/infrastructure/parse/languages.js';
 import { registerAllTools } from '../../src/presentation/mcp/server_registry.js';
 import { importProject } from '../../src/infrastructure/graph/import_project.js';

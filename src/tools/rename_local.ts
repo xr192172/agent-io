@@ -42,7 +42,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { analyzeLocals, renameMany, resolveLocalAddress, type RenameItem } from './ast_rename.js';
-import { applyWrites } from './apply_writes.js';
+import { applyWrites } from '../application/refactor/apply_writes.js';
 import { findLanguageByExt } from '../infrastructure/parse/languages.js';
 import type { WriteThroughOutcome } from './write_gate.js';
 

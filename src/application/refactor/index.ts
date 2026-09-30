@@ -29,31 +29,31 @@ import { requireStr, wrapData } from '../plumbing.js';
 import path from 'node:path';
 import { analyzeHubs, analyzeImpact } from '../../infrastructure/analysis/impact/index.js';
 import type { ImpactChangePoint } from '../../infrastructure/analysis/impact/index.js';
-import { suggestRenamesInFile } from '../../tools/ast_suggest.js';
-import type { SuggestOptions } from '../../tools/ast_suggest.js';
-import { applyWrites } from '../../tools/apply_writes.js';
-import { editCode } from '../../tools/edit_code.js';
-import { listFileSnapshots, rollbackFileSnapshot } from '../../tools/file_snapshot.js';
-import { findReferences } from '../../tools/find_references.js';
-import { planFunctionAnnotation } from '../../tools/function_annotation.js';
-import { renderGranularityNote } from '../../tools/parse_capability.js';
-import { runRefactorJudge } from '../../tools/refactor_judge.js';
-import type { JudgeDecision, JudgeIssue } from '../../tools/refactor_judge.js';
-import { runRefactorPipeline } from '../../tools/refactor_pipeline.js';
-import { removeDeadImports, removeDeadImportsWithVerify } from '../../tools/remove_dead_imports.js';
-import type { RemoveDeadImportsVerifyOptions } from '../../tools/remove_dead_imports.js';
-import { renameFiles } from '../../tools/rename_files.js';
-import { renameSymbols } from '../../tools/rename_symbols.js';
-import { applyRulesToFiles, collectRuleTargets, loadBaseline, ratchetDelta, runFixtures, writeBaseline } from '../../tools/rule_apply.js';
-import { extractRule } from '../../tools/rule_extract.js';
-import { isLegalRuleId, loadRules, rulesDir, writeRule } from '../../tools/rule_library.js';
-import type { Rule } from '../../tools/rule_library.js';
-import { disambiguationItems, suggestDisambiguationsInFile } from '../../tools/similar_names.js';
-import { moveSymbol } from '../../tools/symbol_move.js';
-import { buildRefactorPlan, applyRefactorPlan } from '../../tools/refactor_plan.js';
-import type { RefactorTarget, RefactorPlan } from '../../tools/refactor_plan.js';
+import { suggestRenamesInFile } from './ast_suggest.js';
+import type { SuggestOptions } from './ast_suggest.js';
+import { applyWrites } from './apply_writes.js';
+import { editCode } from './edit_code.js';
+import { listFileSnapshots, rollbackFileSnapshot } from './file_snapshot.js';
+import { findReferences } from './find_references.js';
+import { planFunctionAnnotation } from './function_annotation.js';
+import { renderGranularityNote } from './parse_capability.js';
+import { runRefactorJudge } from './refactor_judge.js';
+import type { JudgeDecision, JudgeIssue } from './refactor_judge.js';
+import { runRefactorPipeline } from './refactor_pipeline.js';
+import { removeDeadImports, removeDeadImportsWithVerify } from './remove_dead_imports.js';
+import type { RemoveDeadImportsVerifyOptions } from './remove_dead_imports.js';
+import { renameFiles } from './rename_files.js';
+import { renameSymbols } from './rename_symbols.js';
+import { applyRulesToFiles, collectRuleTargets, loadBaseline, ratchetDelta, runFixtures, writeBaseline } from './rule_apply.js';
+import { extractRule } from './rule_extract.js';
+import { isLegalRuleId, loadRules, rulesDir, writeRule } from './rule_library.js';
+import type { Rule } from './rule_library.js';
+import { disambiguationItems, suggestDisambiguationsInFile } from './similar_names.js';
+import { moveSymbol } from './symbol_move.js';
+import { buildRefactorPlan, applyRefactorPlan } from './refactor_plan.js';
+import type { RefactorTarget, RefactorPlan } from './refactor_plan.js';
 import { diffViewsHandler } from '../handlers.js';
-import type { ScanBounds } from '../../tools/scan_bounds.js';
+import type { ScanBounds } from './scan_bounds.js';
 import type { ToolDef } from '../types.js';
 
 // ★ 2026-09-29（面收敛第二批）：本文件原先自带一个**私有** `requireStr` 守卫，本笔把它上提到
@@ -246,7 +246,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
           parts.push(`  ${p.ok ? '✓' : '✗'} ${p.item.file} 的 ${p.item.symbol} → ${p.item.to}${note ? ` —— ${note}` : ''}`);
           for (const b of p.blocked ?? []) parts.push(`\t✗ 跳过：${b}`);
         }
-        // ★ 统一「扫描边界」（唯一落点：`src/tools/scan_bounds.ts`）：局部支**无跨文件闭包**，
+        // ★ 统一「扫描边界」（唯一落点：`src/application/refactor/scan_bounds.ts`）：局部支**无跨文件闭包**，
         //   边界就是"逐条目所在文件"；跳过项 = 被拒的那些条目（名字歧义/撞名/非法名…）。
         const localBounds: ScanBounds = {
           scope: '文件内局部绑定（作用域隔离，不跨文件；无 import 闭包扩展）',
@@ -297,7 +297,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         return lines.join('\n');
       };
       /**
-       * ★ 统一「扫描边界」（唯一落点：`src/tools/scan_bounds.ts`）。
+       * ★ 统一「扫描边界」（唯一落点：`src/application/refactor/scan_bounds.ts`）。
        *   scope = 两条候选来源（import 反向闭包 + report_literals 的文本扫描）；
        *   scanned.files = 各条目**闭包分析到的文件数**（定义文件 1 + 它解析到的 importer 数，逐条累加）；
        *   skipped = 上面那份去重清单。

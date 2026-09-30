@@ -17,7 +17,7 @@
       "authority": "src/infrastructure/parse/import_resolve.ts",
       "pattern": "'index.ts', 'index.tsx', 'index.js', 'index.jsx'",
       "frozen": {
-        "src/tools/project_root.ts": 1
+        "src/application/cross/project_root.ts": 1
       }
     },
     {
@@ -27,8 +27,8 @@
       "pattern": "'.ts', '.tsx', '.js'",
       "frozen": {
         "src/infrastructure/graph/import_project.ts": 1,
-        "src/tools/rename_symbols.ts": 1,
-        "src/tools/slim_brick.ts": 1,
+        "src/application/refactor/rename_symbols.ts": 1,
+        "src/application/harvest/slim_brick.ts": 1,
         "src/infrastructure/parse/import_resolve.ts": 1
       }
     },
@@ -53,7 +53,7 @@
       "pattern": "node_modules', '",
       "frozen": {},
       "allow": {
-        "src/tools/run_tests.ts": "★ **假阳**：这行是 `path.join(cwd, 'node_modules', 'vitest', 'vitest.mjs')`（定位 vitest 可执行文件），**不是跳过集**。G4 是文本模式扫的，区分不了「路径拼接」与「跳过集清单」—— 如实豁免而不是把模式写得更花（模式越花越容易漏真货）。",
+        "src/application/observe/run_tests.ts": "★ **假阳**：这行是 `path.join(cwd, 'node_modules', 'vitest', 'vitest.mjs')`（定位 vitest 可执行文件），**不是跳过集**。G4 是文本模式扫的，区分不了「路径拼接」与「跳过集清单」—— 如实豁免而不是把模式写得更花（模式越花越容易漏真货）。",
         "src/infrastructure/analysis/version_upgrade/adapters/node.ts": "★ **不是副本，是合法的语言维度**（规划书 §2c「不同维度的不许合并」）：`version_upgrade/adapters/*.ts` 每个语言适配器声明**自己生态的**目录 —— c[build,.deps] / csharp[bin,obj] / go[vendor] / java[target,.gradle] / node[node_modules,.next,dist] / python[__pycache__,.venv,venv,.tox]。它是**输入数据**，被 `toolchain.ts` 用 `skipDirSet([...ADAPTER_SKIP_DIRS, …])` 与内核基础集组合 ⇒ 基础集已单点，这里的差异就是语言差异本身。"
       }
     },

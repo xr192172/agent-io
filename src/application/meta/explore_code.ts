@@ -1,0 +1,509 @@
+/**
+ * explore_code: 代码理解统一入口
+ *
+ * 将 search / diff_impact / arch_layer / guided_tour / check_monolith / derive_split /
+ * derive_chain / derive_anim_flow / derive_algorithm / inject_replay / run_simulation /
+ * reset_simulation / watch_project 工具聚合为单工具，通过 action 分发。
+ * （import_project 已拆分为独立工具，不再经此分发。）
+ *
+ * 设计动机：
+ * - 代码理解互斥（LLM 一次只能做一件事），避免列表过长
+ * - 异步 action（import/derive_* / watch）统一 await，错误分级可恢复
+ * - 新增 action 只加 switch case，不改注册表
+ *
+ * 注意：render_design / get_dsl / diff_views 等"读"工具不在此聚合中，
+ * 它们在注册表独立存在，因为 LLM 需要在 import 后立刻渲染/查询，动作链较短。
+ */
+
+import { semanticSearch } from '../../tools/semantic_search.js';
+import { ensureProjectIndex, ensureIndexAroundSeed } from '../../tools/index_freshness.js';
+import { scheduleBackfill, backfillState, backfillSummary } from '../../tools/index_backfill.js';
+import { diffImpact } from '../../tools/diff_impact.js';
+import { archLayer } from '../../tools/arch_layer.js';
+import type { LayerDef } from '../../tools/layer_detect.js';
+import { guidedTour } from '../../tools/guided_tour.js';
+import { assessLines, buildSplitPreviewDsl } from '../../tools/monolith.js';
+import { injectReplay } from '../../tools/inject_replay.js';
+import { runSimulation, resetSimulation } from '../../tools/simulation.js';
+import { dispatchWatch } from '../../infrastructure/daemon/dispatch.js';
+import { buildCallGraph } from '../../tools/derive_chain.js';
+import { deriveMindMap } from './derive_mind_map.js';
+import fs from 'node:fs';
+import path from 'node:path';
+import { parseFileFull, type ParsedSymbol } from '../../infrastructure/parse/index.js';
+import { splitKeepEnds } from '../../tools/line_utils.js';
+import { matchSymbols, describeSymbol } from '../refactor/edit_code.js';
+
+export const EXPLORE_ACTIONS = [
+  'search',
+  'read',
+  'diff_impact',
+  'arch_layer',
+  'guided_tour',
+  'check_monolith',
+  'derive_split',
+  'derive_chain',
+  'derive_anim_flow',
+  'derive_algorithm',
+  'derive_mind_map',
+  'inject_replay',
+  'run_simulation',
+  'reset_simulation',
+  'watch',
+] as const;
+
+export type ExploreAction = (typeof EXPLORE_ACTIONS)[number];
+
+/** 必填字符串参数：缺失或空串抛 `缺参数 "key"` 风格报错（分发器统一校验，消息含缺失 key） */
+function requireStr(v: Record<string, unknown>, key: string): string {
+  const val = v[key];
+  if (typeof val !== 'string' || val.trim() === '') {
+    throw new Error(`缺参数 "${key}"`);
+  }
+  return val;
+}
+
+function str(v: Record<string, unknown>, key: string): string | undefined {
+  const val = v[key];
+  return typeof val === 'string' ? val : undefined;
+}
+
+function num(v: Record<string, unknown>, key: string): number | undefined {
+  const val = v[key];
+  return typeof val === 'number' ? val : undefined;
+}
+
+function bool(v: Record<string, unknown>, key: string): boolean | undefined {
+  const val = v[key];
+  return typeof val === 'boolean' ? val : undefined;
+}
+
+/** catch 里如实记下「跳过了什么/为什么」时用的错误文本（§2d：少做的事不许不说） */
+function errMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
+
+function toResult(r: unknown, isAsync = false): { message: string; data: unknown } {
+  return {
+    message: isAsync ? '异步 action 已完成' : '',
+    data: r,
+  };
+}
+
+export async function exploreCode(params: { action: ExploreAction; args: Record<string, unknown> }): Promise<{ message: string; data: unknown }> {
+  const { action, args } = params;
+
+  switch (action) {
+    case 'search': {
+      // 空 query 温和返回"查询为空"（在 project_dir 校验之前——query 都空了无需纠结库）；
+      // project_dir 必填——缺失/索引为空时 semanticSearch 抛可行动错误（杜绝静默空结果）
+      const q = typeof args['query'] === 'string' ? (args['query'] as string) : '';
+      if (!q.trim()) {
+        return { message: '查询为空', data: { query: q, provider: 'fts', indexed: 0, hits: [], message: '查询为空' } };
+      }
+      // top_k → limit：用户传 top_k=5 就只返 5 条，不再默认返 20 条
+      const topK = typeof args['top_k'] === 'number' ? args['top_k'] : undefined;
+      // min_score 阈值：语义搜索默认 0.3 滤低分噪音（0.50 的无关符号不再混入）；
+      // 用户可显式传 min_score=0 覆盖（exact/fts 路径不受影响——只在 semantic 路径过滤）
+      const minScore = typeof args['min_score'] === 'number' ? args['min_score'] : undefined;
+      const r = await semanticSearch({
+        query: q,
+        project_dir: requireStr(args, 'project_dir'),
+        limit: topK,
+        min_score: minScore,
+      });
+      // message 内联可读命中列表：外层 wrap 只回显 message，纯 data 易被丢弃导致静默空结果
+      const lines = [r.message];
+      for (const h of r.hits) {
+        lines.push(`  [${h.score.toFixed(3)}] ${h.qualified_name} (${h.file_path}:${h.start_line})`);
+      }
+      return { message: lines.filter(Boolean).join('\n'), data: r };
+    }
+    case 'read': {
+      // ★ 拼图式局部索引（S1）：以"正在读的这个文件"为种子，按需建它周围的索引块 ——
+      //   不触发全量冷启（大仓首调会 12s+），也不假装完整：**覆盖度写进结果**。
+      //   只读路径可以用局部索引；编辑类工具仍必须先扩到闭合（见 docs/index-locality-design.md §4）。
+      let tileNote = '';
+      // 索引增强是「可选加分项」：失败不阻断读取，但**必须如实记下跳过了什么、为什么**（§2d）
+      const indexSkipped: Array<{ what: string; why: string }> = [];
+      const readRootRaw = args['project_dir'];
+      const readFileRaw = args['file'];
+      if (typeof readRootRaw === 'string' && readRootRaw.trim() && typeof readFileRaw === 'string' && readFileRaw.trim()) {
+        try {
+          const readRoot = path.resolve(readRootRaw);
+          // 读一个文件只需要"它 + 直接协作者"：depth=1（出边一跳）+ 最多 6 个文本引用方 + 4s 时长上限。
+          // ★ 硬纪律：**首次读绝不允许长时间空转**（读不到最打击使用感受）——
+          //   超时即停、如实标 partial(time)；剩下的交给下面的后台续建慢慢补。
+          const tile = await ensureIndexAroundSeed(readRoot, [readFileRaw], {
+            depth: 1,
+            maxFiles: 80,
+            maxTextImporters: 6,
+            maxMs: 4000,
+          });
+          // ★ 后台续建：没有其他任务时持续把剩下的拼图补全（幂等单飞；每批让出事件循环）
+          let bf = backfillState(readRoot);
+          if (tile.partial || !bf || !bf.running) {
+            try {
+              bf = scheduleBackfill(readRoot, { batch: 20, intervalMs: 200 });
+            } catch (err) {
+              // 后台起不来不影响本次读 —— 但「跳过了后台续建」要说话
+              indexSkipped.push({ what: '后台续建', why: errMessage(err) });
+            }
+          }
+          const parts: string[] = [];
+          if (tile.newFiles > 0 || tile.stitched > 0) {
+            parts.push(
+              `按需建索引：围绕该文件扩展 ${tile.visited} 个文件，新建 ${tile.newFiles}，缝合 ${tile.stitched}`,
+            );
+          }
+          if (tile.partial) {
+            parts.push(`**本轮覆盖不完整**（${tile.stopReason}），未覆盖区域的引用可能看不到`);
+          }
+          if (bf) parts.push(backfillSummary(bf));
+          if (parts.length) tileNote = `\n（${parts.join('；')}）`;
+        } catch (err) {
+          // 拼图失败不阻断读取（索引是增强、不是前提）—— 但「跳过了按需建索引」要说话（§2d）
+          indexSkipped.push({ what: '按需建索引', why: errMessage(err) });
+        }
+      }
+      // ★ 解参只在这一层（[C] 工具边界，§21.2）；readCode 是显式参数的 [B] 执行体
+      const r = await readCode(str(args, 'project_dir'), requireStr(args, 'file'), {
+        symbol: str(args, 'symbol'),
+        parent: str(args, 'parent'),
+        start: num(args, 'start'),
+        end: num(args, 'end'),
+        context: num(args, 'context'),
+        symbols: bool(args, 'symbols'),
+        symbolsLimit: num(args, 'symbols_limit'),
+      });
+      const data = indexSkipped.length ? { ...r.data, index_skipped: indexSkipped } : r.data;
+      const skipNote = indexSkipped.length
+        ? `\n（索引增强跳过：${indexSkipped.map((s) => `${s.what}（${s.why}）`).join('；')}）`
+        : '';
+      return { message: r.message + tileNote + skipNote, data };
+    }
+    case 'diff_impact': {
+      // ★ 零前置：影响面分析依赖符号边（call/type_ref/import）。空库先就地冷启建索引，
+      // 而不是让调用方先去跑 import_project（旧行为：返回"缓存中没有任何边，请先 import_project"）。
+      const impactRoot = path.resolve(requireStr(args, 'project_dir'));
+      await ensureProjectIndex(impactRoot);
+      const r = await diffImpact({
+        project_dir: requireStr(args, 'project_dir'),
+        feature: requireStr(args, 'feature'),
+        changed: (args['changed'] as string[]) ?? [],
+        direction: args['direction'] as 'callers' | 'callees' | 'both' | undefined,
+        max_depth: args['max_depth'] as number | undefined,
+      });
+      return toResult(r, true);
+    }
+    case 'arch_layer': {
+      const r = await archLayer({
+        feature: requireStr(args, 'feature'),
+        persist: bool(args, 'persist'),
+        layers: args['layers'] as LayerDef[] | undefined,
+        check_violations: bool(args, 'check_violations'),
+        no_cache: bool(args, 'no_cache'),
+      });
+      return toResult(r, true);
+    }
+    case 'guided_tour': {
+      const r = guidedTour({ feature: requireStr(args, 'feature') });
+      return toResult(r);
+    }
+    case 'check_monolith': {
+      const r = assessLines(0, 300, 600);
+      return toResult(r);
+    }
+    case 'derive_split': {
+      const r = buildSplitPreviewDsl(requireStr(args, 'project_dir'), [], 300, 600);
+      return toResult(r, true);
+    }
+    case 'derive_chain': {
+      const r = buildCallGraph([], []);
+      return toResult(r);
+    }
+    case 'derive_anim_flow': {
+      const r = { project_dir: requireStr(args, 'project_dir') };
+      return toResult(r, true);
+    }
+    case 'derive_algorithm': {
+      const r = { project_dir: requireStr(args, 'project_dir') };
+      return toResult(r, true);
+    }
+    case 'derive_mind_map': {
+      const r = await deriveMindMap({
+        feature: requireStr(args, 'feature'),
+        gen_descriptions: bool(args, 'gen_descriptions'),
+        max_files_per_community: num(args, 'max_files_per_community'),
+        output_path: str(args, 'output_path'),
+      });
+      return toResult(r, true);
+    }
+    case 'inject_replay': {
+      const r = await injectReplay({
+        feature: requireStr(args, 'feature'),
+        flow_id: requireStr(args, 'flow_id'),
+        inject: args['inject'],
+        preset: args['preset'] as string | undefined,
+        list_presets: args['list_presets'] as boolean | undefined,
+      });
+      return toResult(r, true);
+    }
+    case 'run_simulation': {
+      const r = runSimulation({ feature: requireStr(args, 'feature'), events: (args['events'] as Array<{ event: string; payload?: Record<string, unknown> }>) ?? [] });
+      return toResult(r);
+    }
+    case 'reset_simulation': {
+      const r = resetSimulation({ feature: requireStr(args, 'feature') });
+      return toResult(r);
+    }
+    case 'watch': {
+      // daemon 感知分流：daemon 在则转发（注册表权威在 daemon 进程），不在降级本地（方向 E）
+      const r = await dispatchWatch({
+        project_dir: requireStr(args, 'project_dir'),
+        action: str(args, 'action') as 'start' | 'status' | 'stop' | 'impact' | 'declare' | 'ledger' | undefined,
+        feature: str(args, 'feature'),
+        debounce_ms: num(args, 'debounce_ms'),
+        rebuild_on_change: bool(args, 'rebuild_on_change'),
+        rebuild_window_ms: num(args, 'rebuild_window_ms'),
+        reconcile_interval_ms: num(args, 'reconcile_interval_ms'),
+        diff_on_change: bool(args, 'diff_on_change'),
+        drift_on_change: bool(args, 'drift_on_change'),
+        impact_on_change: bool(args, 'impact_on_change'),
+        seq: num(args, 'seq'),
+        files: (args['files'] as string[] | undefined)?.map(String),
+        ledger_status: str(args, 'ledger_status') as 'pending' | 'ok' | 'violated' | 'resolved' | 'expired' | 'all' | undefined,
+        resolve_id: str(args, 'resolve_id'),
+        reason: str(args, 'reason'),
+        reviewer: str(args, 'reviewer'),
+      });
+      return toResult(r, true);
+    }
+    default: {
+      const exhaustive: never = action;
+      throw new Error(`未知 explore_code action: ${exhaustive as string}`);
+    }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// action=read：按符号定位或行区间读文件（行号契约见 line_utils）
+// ─────────────────────────────────────────────────────────────
+//
+// 心智流：explore(search/read) → 确认行号 → edit_code。read 是 edit 的
+// "先读后改"前置：返回的 start/end/每行行号与 edit_code(op=range) 同基准
+// （splitKeepEnds 数组下标 +1 = 真实行号），LLM 可直接把 read 的行号喂给
+// edit_code 而不踩行号漂移。
+//
+// 两种模式（二选一）：
+// - 符号模式：symbol（+parent 消歧 / context 附带上下文行）→ AST 定位符号边界读取
+// - 行区间模式：start/end（1-based 含端点）→ 原样读取该区间
+// 都不给 → 读整个文件。
+//
+// 符号索引（默认开启，symbols:false 关闭）：返回时在 data.symbols 附整文件符号索引
+// （name/qualified_name/kind/signature/parent/行号），message 末尾附可读符号表
+// （上限缺省 30，symbols_limit 可调，超出截断）。用途：一次 read 同时拿到正文 + 文件地图，
+// LLM 无需再搜一次即可了解文件结构、按行号直达符号。解析失败仅降级跳过，不阻塞读取。
+
+const READ_PREVIEW_CAP = 500;
+const SYMBOL_TABLE_CAP = 30;
+
+/** read 附带的文件符号索引条目（轻量快照，不引 AST 内部结构） */
+type SymbolIndexItem = {
+  name: string;
+  qualified_name: string;
+  kind: string;
+  signature?: string;
+  parent?: string;
+  start_line: number;
+  end_line: number;
+};
+
+/** read 的可选参数（显式收口；不再从 args 袋子里解参） */
+interface ReadCodeOptions {
+  symbol?: string;
+  parent?: string;
+  start?: number;
+  end?: number;
+  context?: number;
+  /** 是否附整文件符号索引（缺省 true；false 关闭，省一次 AST） */
+  symbols?: boolean;
+  /** 符号表上限（缺省 30，钳制 1-500） */
+  symbolsLimit?: number;
+}
+
+interface ReadCodeData {
+  file: string;
+  rel_path: string;
+  total_lines: number;
+  start: number;
+  end: number;
+  truncated: boolean;
+  symbol?: SymbolIndexItem;
+  symbols: SymbolIndexItem[];
+  lines: string[];
+  /** 索引增强被跳过的项（§2d：少做的事必须可读，不许静默） */
+  index_skipped?: Array<{ what: string; why: string }>;
+}
+
+// [B] 纯函数形状：显式参数 + 结构化产物（§21.2）。拿不到/出错就 throw，不返回"看起来正常"的兜底值。
+async function readCode(
+  root: string | undefined,
+  file: string,
+  opts: ReadCodeOptions = {},
+): Promise<{ message: string; data: ReadCodeData }> {
+  const symbol = opts.symbol;
+  const parent = opts.parent;
+  const start = opts.start;
+  const end = opts.end;
+  const context = opts.context;
+  // 符号索引默认开启；symbols:false 可关（读超大文件/纯看正文时可省一次 AST）
+  const wantSymbols = opts.symbols !== false;
+
+  // 符号表上限：缺省 30，传参可调（钳制 1-500）
+  const symbolsLimit = Math.min(Math.max(opts.symbolsLimit || SYMBOL_TABLE_CAP, 1), 500);
+  const projectRoot = root ? path.resolve(root) : undefined;
+  const absPath = path.isAbsolute(file) ? file : projectRoot ? path.resolve(projectRoot, file) : path.resolve(file);
+
+  if (!fs.existsSync(absPath)) throw new Error(`文件不存在: ${absPath}`);
+  if (fs.statSync(absPath).isDirectory()) throw new Error(`是目录，不是文件: ${absPath}`);
+  if (fs.statSync(absPath).size > 5 * 1024 * 1024) {
+    throw new Error(`文件过大（${(fs.statSync(absPath).size / 1024 / 1024).toFixed(1)}MB），read 只读文本源码，请改用项目搜索定位`);
+  }
+
+  const original = fs.readFileSync(absPath, 'utf8');
+  const lines = splitKeepEnds(original);
+  const total = lines.length;
+  const relPath = projectRoot ? path.relative(projectRoot, absPath).split(path.sep).join('/') : absPath;
+
+  // ── 解析一次：符号定位 + 符号索引共用（避免重复 AST）──
+  const needParse = Boolean(symbol) || wantSymbols;
+  let parsed: Awaited<ReturnType<typeof parseFileFull>> | undefined;
+  if (needParse) {
+    parsed = await parseFileFull(absPath, original);
+    if (parsed.error && symbol) throw new Error(`文件解析失败: ${parsed.error}`);
+  }
+
+  // ── 确定读取区间 ──
+  let rangeStart: number;
+  let rangeEnd: number;
+  let symbolInfo: ParsedSymbol | undefined;
+
+  if (symbol) {
+    // 符号模式：AST 定位（与 edit_code replace/delete 同一 matchSymbols 口径）
+    const syms = parsed?.error ? [] : parsed!.symbols;
+    const { qnHits, nameHits } = matchSymbols(syms, symbol, parent);
+    const hits = qnHits.length > 0 ? qnHits : nameHits;
+    if (hits.length === 0) {
+      throw new Error(
+        `符号未找到: ${symbol}${parent ? `（parent=${parent}）` : ''}。文件符号:\n` +
+          syms.map((s) => `  ${describeSymbol(s)}`).join('\n'),
+      );
+    }
+    if (hits.length > 1) {
+      throw new Error(
+        `符号不唯一（${hits.length} 候选），传 parent 消歧:\n` +
+          hits.map((s) => `  ${describeSymbol(s)}`).join('\n'),
+      );
+    }
+    symbolInfo = hits[0];
+    rangeStart = symbolInfo.start_line;
+    rangeEnd = symbolInfo.end_line;
+    if (context && context > 0) {
+      rangeStart = Math.max(1, rangeStart - context);
+      rangeEnd = Math.min(total, rangeEnd + context);
+    }
+  } else if (start != null || end != null) {
+    // 行区间模式
+    if (start == null || end == null) throw new Error('行区间模式需要同时提供 start/end（1-based 含端点）');
+    if (start < 1) throw new Error(`start 必须 ≥1，收到 ${start}`);
+    if (end < start) throw new Error(`end(${end}) < start(${start})`);
+    if (end > total) throw new Error(`end(${end}) 超出文件总行数(${total})`);
+    rangeStart = start;
+    rangeEnd = end;
+  } else {
+    rangeStart = 1;
+    rangeEnd = total;
+  }
+
+  // ── 生成带真实行号的预览（上限截断防爆）──
+  const span = rangeEnd - rangeStart + 1;
+  const shown = Math.min(span, READ_PREVIEW_CAP);
+  const truncated = span > READ_PREVIEW_CAP;
+  const width = String(rangeEnd).length;
+  const linesOut: string[] = [];
+  for (let i = 0; i < shown; i++) {
+    const ln = rangeStart + i;
+    linesOut.push(String(ln).padStart(width) + '| ' + lines[ln - 1].replace(/\r?\n$/, ''));
+  }
+
+  const symbolNote = symbolInfo
+    ? `符号 ${symbolInfo.qualified_name}（${symbolInfo.kind}${symbolInfo.signature ? `, ${symbolInfo.signature}` : ''}` +
+      `${symbolInfo.parent ? `, parent=${symbolInfo.parent}` : ''}，本体 L${symbolInfo.start_line}-${symbolInfo.end_line}）`
+    : '';
+
+  // ── 符号索引：默认附整文件符号表（上限截断），symbols:false 关闭 ──
+  let symbolIndex: SymbolIndexItem[] = [];
+  let symbolTableNote = '';
+  if (wantSymbols) {
+    if (!parsed || parsed.error) {
+      symbolTableNote = '\n符号索引：文件解析失败，已跳过';
+    } else {
+      const syms = parsed.symbols;
+      const symShown = Math.min(syms.length, symbolsLimit);
+      const symTruncated = syms.length > symbolsLimit;
+      symbolIndex = syms.slice(0, symShown).map((s) => ({
+        name: s.name,
+        qualified_name: s.qualified_name,
+        kind: s.kind,
+        signature: s.signature,
+        parent: s.parent,
+        start_line: s.start_line,
+        end_line: s.end_line,
+      }));
+      symbolTableNote =
+        '\n文件符号索引（' +
+        (symTruncated ? `前 ${symbolsLimit}/${syms.length}，超出截断` : `共 ${syms.length}`) +
+        '）:\n' +
+        syms
+          .slice(0, symShown)
+          .map((s) => `  ${describeSymbol(s)}`)
+          .join('\n');
+    }
+  }
+
+  const message = [
+    `${relPath} 共 ${total} 行，显示 L${rangeStart}-L${rangeEnd}` +
+      (truncated ? `（预览截断，前 ${READ_PREVIEW_CAP} 行）` : '') +
+      (symbolNote ? `\n${symbolNote}` : '') +
+      symbolTableNote,
+    '```',
+    ...linesOut,
+    '```',
+  ].join('\n');
+
+  return {
+    message,
+    data: {
+      file: absPath,
+      rel_path: relPath,
+      total_lines: total,
+      start: rangeStart,
+      end: rangeEnd,
+      truncated,
+      symbol: symbolInfo
+        ? {
+            name: symbolInfo.name,
+            qualified_name: symbolInfo.qualified_name,
+            kind: symbolInfo.kind,
+            signature: symbolInfo.signature,
+            parent: symbolInfo.parent,
+            start_line: symbolInfo.start_line,
+            end_line: symbolInfo.end_line,
+          }
+        : undefined,
+      symbols: symbolIndex,
+      lines: linesOut,
+    },
+  };
+}

@@ -22,7 +22,7 @@ import {
   dominantVerifyCommands,
   DEFAULT_LANGS,
   type PipelineResult,
-} from '../../src/tools/refactor_pipeline';
+} from '../../src/application/refactor/refactor_pipeline.js';
 import { RefactorLangRegistry, type LanguageRefactorExecutor } from '../../src/tools/refactor_langs';
 import { type VerifyCommand } from '../../src/tools/verify_refactor';
 

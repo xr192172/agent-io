@@ -15,96 +15,96 @@
 import { DATA_DIR_NAME } from '../../data_dir.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { makeCapabilityMapHandler, LANE_IDS, type LaneId } from '../../tools/capability_map.js';
-import { indexIntegrity, renderIntegrity } from '../../tools/index_integrity.js';
+import { makeCapabilityMapHandler, LANE_IDS, type LaneId } from '../../application/meta/capability_map.js';
+import { indexIntegrity, renderIntegrity } from '../../application/meta/index_integrity.js';
 import { ensureProjectIndex, detectStaleIndex } from '../../tools/index_freshness.js';
 import { hasLiveIndex } from '../../tools/write_gate.js';
 import { prewarmKernel } from '../../infrastructure/parse/index.js';
 import { scheduleBackfill, backfillState, isIndexIncomplete } from '../../tools/index_backfill.js';
-import { renderGranularityNote } from '../../tools/parse_capability.js';
+import { renderGranularityNote } from '../../application/refactor/parse_capability.js';
 import { unknownArgHints, renderArgHints } from '../../tools/arg_suggest.js';
-import { listFileSnapshots, rollbackFileSnapshot } from '../../tools/file_snapshot.js';
-import { recommendObservePoints } from '../../tools/observe_points.js';
+import { listFileSnapshots, rollbackFileSnapshot } from '../../application/refactor/file_snapshot.js';
+import { recommendObservePoints } from '../../application/observe/observe_points.js';
 import { collectPendingAlertText, dispatchDslEdit } from '../../infrastructure/daemon/dispatch.js';
 import { exportSvg, exportMarkdown } from '../../tools/export.js';
-import { deriveMindMap } from '../../tools/derive_mind_map.js';
+import { deriveMindMap } from '../../application/meta/derive_mind_map.js';
 import { queryFeature } from '../../tools/query_feature.js';
 import { updateFeature } from '../../tools/update_feature.js';
-import { scaffold } from '../../tools/scaffold.js';
+import { scaffold } from '../../application/design/scaffold.js';
 
-import { backfillScaffold } from '../../tools/backfill.js';
+import { backfillScaffold } from '../../application/design/backfill.js';
 import { checkConsistency } from '../../tools/consistency.js';
 import { detectDrift } from '../../tools/detect_drift.js';
-import { exploreCode, EXPLORE_ACTIONS } from '../../tools/explore_code.js';
-import { editCode } from '../../tools/edit_code.js';
+import { exploreCode, EXPLORE_ACTIONS } from '../../application/meta/explore_code.js';
+import { editCode } from '../../application/refactor/edit_code.js';
 import { importProject } from '../../infrastructure/graph/import_project.js';
 import type { ImportProjectInput } from '../../infrastructure/graph/import_project.js';
-import { manageFeature, MANAGE_ACTIONS } from '../../tools/manage_feature.js';
+import { manageFeature, MANAGE_ACTIONS } from '../../application/design/manage_feature.js';
 import { diffViews } from '../../tools/diff_views.js';
-import { archiveNode, listArchive } from '../../tools/archive_node.js';
-import { setDesignIntent } from '../../tools/set_design_intent.js';
+import { archiveNode, listArchive } from '../../application/meta/archive_node.js';
+import { setDesignIntent } from '../../application/design/set_design_intent.js';
 import { harvestDecisions } from '../../tools/harvest_decisions.js';
 import { syncContracts } from '../../tools/sync_contracts.js';
-import { harvestClosure } from '../../tools/harvest_closure.js';
-import type { HarvestClosureInput } from '../../tools/harvest_closure.js';
-import { extractContracts } from '../../tools/extract_contracts.js';
-import type { ExtractContractsInput } from '../../tools/extract_contracts.js';
-import { reconcileEffects } from '../../tools/reconcile_effects.js';
-import type { ReconcileEffectsInput } from '../../tools/reconcile_effects.js';
-import { reconcileBrick } from '../../tools/reconcile_brick.js';
-import type { ReconcileBrickInput } from '../../tools/reconcile_brick.js';
-import { searchBricks } from '../../tools/search_bricks.js';
-import type { SearchBricksInput } from '../../tools/search_bricks.js';
-import { assembleBricks } from '../../tools/assemble_bricks.js';
-import { narrateStep } from '../../tools/narrate_step.js';
-import type { NarrateStepInput } from '../../tools/narrate_step.js';
-import type { AssembleBricksInput } from '../../tools/assemble_bricks.js';
-import { buildBrickifyPreview } from '../../tools/render_brickwork.js';
-import { harvestFromUrl } from '../../tools/harvest_from_url.js';
-import type { HarvestFromUrlInput } from '../../tools/harvest_from_url.js';
-import { slimBrick } from '../../tools/slim_brick.js';
-import type { SlimBrickInput } from '../../tools/slim_brick.js';
+import { harvestClosure } from '../../application/harvest/harvest_closure.js';
+import type { HarvestClosureInput } from '../../application/harvest/harvest_closure.js';
+import { extractContracts } from '../../application/harvest/extract_contracts.js';
+import type { ExtractContractsInput } from '../../application/harvest/extract_contracts.js';
+import { reconcileEffects } from '../../application/observe/reconcile_effects.js';
+import type { ReconcileEffectsInput } from '../../application/observe/reconcile_effects.js';
+import { reconcileBrick } from '../../application/harvest/reconcile_brick.js';
+import type { ReconcileBrickInput } from '../../application/harvest/reconcile_brick.js';
+import { searchBricks } from '../../application/harvest/search_bricks.js';
+import type { SearchBricksInput } from '../../application/harvest/search_bricks.js';
+import { assembleBricks } from '../../application/harvest/assemble_bricks.js';
+import { narrateStep } from '../../application/observe/narrate_step.js';
+import type { NarrateStepInput } from '../../application/observe/narrate_step.js';
+import type { AssembleBricksInput } from '../../application/harvest/assemble_bricks.js';
+import { buildBrickifyPreview } from '../../application/design/render_brickwork.js';
+import { harvestFromUrl } from '../../application/harvest/harvest_from_url.js';
+import type { HarvestFromUrlInput } from '../../application/harvest/harvest_from_url.js';
+import { slimBrick } from '../../application/harvest/slim_brick.js';
+import type { SlimBrickInput } from '../../application/harvest/slim_brick.js';
 import { renameMany, type RenameItem } from '../../tools/ast_rename.js';
-import { renameSymbols } from '../../tools/rename_symbols.js';
-import { moveSymbol } from '../../tools/symbol_move.js';
-import { findReferences } from '../../tools/find_references.js';
-import { runTests } from '../../tools/run_tests.js';
+import { renameSymbols } from '../../application/refactor/rename_symbols.js';
+import { moveSymbol } from '../../application/refactor/symbol_move.js';
+import { findReferences } from '../../application/refactor/find_references.js';
+import { runTests } from '../../application/observe/run_tests.js';
 // （`tools/stale_check` 的导入已随 P-F 删除：本文件不再直接消费它 —— 三个 stale 告警各自
 //   探测，`stale_check.formatStaleText` 仍由 lanes/observe.ts 的 `run_tests` 前置提示使用。）
-import { detectReachableRoots } from '../../tools/project_root.js';
+import { detectReachableRoots } from '../../application/cross/project_root.js';
 import { analyzeImpact, analyzeHubs } from '../../infrastructure/analysis/impact/index.js';
 import type { ImpactChangePoint } from '../../infrastructure/analysis/impact/index.js';
 import { compareProjects } from '../../infrastructure/analysis/cross_repo/index.js';
 import { precheckHybrid, VERDICT_LABEL } from '../../infrastructure/analysis/hybrid/index.js';
 import { captureBaseline, verifyBaseline, baselinePathFor } from '../../infrastructure/analysis/behavior/index.js';
 import { analyzeHealth } from '../../infrastructure/analysis/health/index.js';
-import { renameFiles } from '../../tools/rename_files.js';
-import { removeDeadImports, removeDeadImportsWithVerify, type RemoveDeadImportsVerifyOptions } from '../../tools/remove_dead_imports.js';
-import { runRefactorPipeline } from '../../tools/refactor_pipeline.js';
-import { planFunctionAnnotation, scanFileAnnotations } from '../../tools/function_annotation.js';
-import { getFeatureLine } from '../../tools/feature_line.js';
-import { proposeChange } from '../../tools/code_workbench.js';
-import { suggestRenames, type SuggestOptions } from '../../tools/ast_suggest.js';
-import { suggestDisambiguations, disambiguationItems } from '../../tools/similar_names.js';
-import { runRefactorJudge } from '../../tools/refactor_judge.js';
-import type { JudgeIssue, JudgeDecision } from '../../tools/refactor_judge.js';
+import { renameFiles } from '../../application/refactor/rename_files.js';
+import { removeDeadImports, removeDeadImportsWithVerify, type RemoveDeadImportsVerifyOptions } from '../../application/refactor/remove_dead_imports.js';
+import { runRefactorPipeline } from '../../application/refactor/refactor_pipeline.js';
+import { planFunctionAnnotation, scanFileAnnotations } from '../../application/refactor/function_annotation.js';
+import { getFeatureLine } from '../../application/observe/feature_line.js';
+import { proposeChange } from '../../application/design/code_workbench.js';
+import { suggestRenames, type SuggestOptions } from '../../application/refactor/ast_suggest.js';
+import { suggestDisambiguations, disambiguationItems } from '../../application/refactor/similar_names.js';
+import { runRefactorJudge } from '../../application/refactor/refactor_judge.js';
+import type { JudgeIssue, JudgeDecision } from '../../application/refactor/refactor_judge.js';
 import { validateReason } from '../../tools/reason_validator.js';
 import type { ReasonEvidenceRef } from '../../tools/reason_validator.js';
 import { loadTraceRecords, buildTraceResolver } from '../../tools/trace_evidence.js';
 import { runDiagnosis, formatDiagnoseText } from '../../infrastructure/analysis/diagnosis/diagnose.js';
 import type { DiagnoseInput } from '../../infrastructure/analysis/diagnosis/contract.js';
 import { getDSLByView, getLiveDir, getDSL, saveDSL } from '../../storage.js';
-import { resolveCanvasNoteTargets, renderCanvasNotesDigest, markCanvasNotesStatus } from '../../tools/derive_mind_map.js';
-import { decideCanvasNotes } from '../../tools/llm_decider.js';
-import { listProjectDocs, readProjectDoc, matchDocsForTargets, buildDocsPromptBlock, type DocTargetSet } from '../../tools/project_docs.js';
-import { listProvidersMasked, upsertProvider, deleteProvider, getStats, resetStats, testProvider } from '../../tools/gateway.js';
+import { resolveCanvasNoteTargets, renderCanvasNotesDigest, markCanvasNotesStatus } from '../../application/meta/derive_mind_map.js';
+import { decideCanvasNotes } from '../../application/meta/llm_decider.js';
+import { listProjectDocs, readProjectDoc, matchDocsForTargets, buildDocsPromptBlock, type DocTargetSet } from '../../application/meta/project_docs.js';
+import { listProvidersMasked, upsertProvider, deleteProvider, getStats, resetStats, testProvider } from '../../application/meta/gateway.js';
 import { getProjectCacheDb } from '../../infrastructure/index/db.js';
 import { recordDogfoodUsage } from '../../tools/dogfood_stats.js';
 import { queryObserveLog } from '../../infrastructure/analysis/observe/log_query.js';
-import { memoryObserveHandler, memoryTargetsHandler } from '../../tools/memory_observe.js';
+import { memoryObserveHandler, memoryTargetsHandler } from '../../application/observe/memory_observe.js';
 import { translateGoTsHandler } from '../../infrastructure/analysis/translate/tool.js';
 import { extractGo } from '../../infrastructure/analysis/translate/go_extractor.js';
-import { extractRule } from '../../tools/rule_extract.js';
+import { extractRule } from '../../application/refactor/rule_extract.js';
 import {
   loadRules,
   writeRule,
@@ -113,7 +113,7 @@ import {
   hasPositiveFixture,
   rulesDir,
   type Rule,
-} from '../../tools/rule_library.js';
+} from '../../application/refactor/rule_library.js';
 import {
   collectRuleTargets,
   applyRulesToFiles,
@@ -122,7 +122,7 @@ import {
   ratchetDelta,
   runFixtures,
   type ApplySummary,
-} from '../../tools/rule_apply.js';
+} from '../../application/refactor/rule_apply.js';
 import { observeTrace } from '../../tools/observe_trace.js';
 import { normalizeEvents, judgeEvents, judgeEventsWithLLM, renderJudgeReport } from '../../infrastructure/analysis/observe/judge_service.js';
 import { TSComparator, renderTSDiffReport, type TSDLDecl, type TSDiffReport } from '../../infrastructure/analysis/observe/contract.js';
@@ -505,7 +505,7 @@ import { DESIGN_TOOLS } from '../../application/design/index.js';
 import { META_TOOLS, bindToolDefs } from '../../application/meta/index.js';
 import { REFACTOR_TOOLS } from '../../application/refactor/index.js';
 import { HARVEST_TOOLS } from '../../application/harvest/index.js';
-import { bindLaneOf, type LaneAssign } from '../../tools/capability_map.js';
+import { bindLaneOf, type LaneAssign } from '../../application/meta/capability_map.js';
 
 /**
  * ★ 能力线来源（P1c）：**归属由文件所在表达** —— 本数组是"lane 文件 → 线 id"的**唯一**映射。

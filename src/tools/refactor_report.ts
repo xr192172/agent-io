@@ -12,7 +12,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import type { PipelineResult, StageResult } from './refactor_pipeline.js';
+import type { PipelineResult, StageResult } from '../application/refactor/refactor_pipeline.js';
 
 export type RefactorStageOutcome = StageResult['outcome'];
 

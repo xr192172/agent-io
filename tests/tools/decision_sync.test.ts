@@ -11,7 +11,7 @@
 import fs from 'node:fs';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { diffViews } from '../../src/tools/diff_views';
-import { archiveNode } from '../../src/tools/archive_node';
+import { archiveNode } from '../../src/application/meta/archive_node.js';
 import {
   saveDSL,
   getDSL,

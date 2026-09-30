@@ -13,7 +13,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect, beforeEach } from 'vitest';
-import { searchBricks } from '../../src/tools/search_bricks.js';
+import { searchBricks } from '../../src/application/harvest/search_bricks.js';
 
 interface Fixture {
   boxDir: string;

@@ -28,7 +28,7 @@ import { findLanguageByExt } from '../infrastructure/parse/languages.js';
 import { parseContent, isTypeOnlyModuleStatement } from '../infrastructure/parse/kernel.js';
 import { TS_JS_EXTS } from '../infrastructure/parse/index.js';
 import { renameFile } from './rename_file.js';
-import { resolveProjectRoot, expandClosureDetailed, loadAliasConfig, resolveAliasedImport, type AliasConfig, type ExternalRef } from './project_root.js';
+import { resolveProjectRoot, expandClosureDetailed, loadAliasConfig, resolveAliasedImport, type AliasConfig, type ExternalRef } from '../application/cross/project_root.js';
 import { createProtectGuard } from './protect.js';
 import { missingLanguageHint } from './lang_hint.js';
 

@@ -39,7 +39,7 @@ export const FEATURE_FILES = {
   package_migration: ['src/tools/package_migration.ts'],
   rename_symbol: ['src/tools/rename_symbol.ts'],
   contract_gate: ['src/tools/contract_gate.ts'],
-  extract_contracts: ['src/tools/extract_contracts.ts'],
+  extract_contracts: ['src/application/harvest/extract_contracts.ts'],
   version_upgrade_detection: ['src/infrastructure/analysis/version_upgrade'],
   impact_analysis: ['src/infrastructure/analysis/impact'],
   cross_repo_symbol_index: ['src/infrastructure/analysis/cross_repo'],

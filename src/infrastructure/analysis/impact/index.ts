@@ -23,7 +23,7 @@
 import path from 'node:path';
 import { parseFileFull, listSupportedExtensions, resolveProjectImport, type ParsedSymbol } from '../../parse/index.js';
 import { codeSourceExts, partitionByCodeLang } from '../../parse/source_exts.js';
-import { boundsSkipFromExcluded, type ScanBounds } from '../../../tools/scan_bounds.js';
+import { boundsSkipFromExcluded, type ScanBounds } from '../../../application/refactor/scan_bounds.js';
 import { collectSourceFiles } from '../version_upgrade/detect.js';
 
 // ── 对外类型 ─────────────────────────────────────────────────
@@ -75,7 +75,7 @@ export interface ImpactReport {
    * 「口径收紧的可见性」：可解析但**不算源码**、因而不在图里的扩展名 → 逐族计数，收进
    * `bounds.skipped`。原设计与理由见 `health/index.ts` 的 `HealthReport`（同一口径、同一理由）。
    * ★ 本工具属「扫仓库类」⇒ `bounds` **恒在**（口径收紧被排除了什么，必须说出来）。
-   * 形状与挂载层见 `src/tools/scan_bounds.ts`。
+   * 形状与挂载层见 `src/application/refactor/scan_bounds.ts`。
    */
   bounds: ScanBounds;
 }

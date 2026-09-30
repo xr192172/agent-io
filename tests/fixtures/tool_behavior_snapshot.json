@@ -96,7 +96,7 @@
   },
   {
     "name": "find_references",
-    "text": "缺少必需参数 file：mode=symbol（默认）需要 file（定义符号的文件）。例：{file:'src/tools/find_references.ts', symbol:'findReferences'}",
+    "text": "缺少必需参数 file：mode=symbol（默认）需要 file（定义符号的文件）。例：{file:'src/application/refactor/find_references.ts', symbol:'findReferences'}",
     "isError": true
   },
   {

@@ -16,7 +16,7 @@ import path from 'node:path';
 import { describe, it, expect, afterAll } from 'vitest';
 import { importProject } from '../../src/infrastructure/graph/import_project.js';
 import { openDb } from '../../src/infrastructure/index/db';
-import { indexIntegrity, renderIntegrity, repairStaleResolvedRefs } from '../../src/tools/index_integrity';
+import { indexIntegrity, renderIntegrity, repairStaleResolvedRefs } from '../../src/application/meta/index_integrity.js';
 import { recordSelfWrite } from '../../src/tools/write_gate';
 
 const roots: string[] = [];

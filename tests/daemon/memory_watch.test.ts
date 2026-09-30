@@ -4,7 +4,7 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-vi.mock('../../src/tools/memory_observe.js', () => ({
+vi.mock('../../src/application/observe/memory_observe.js', () => ({
   sampleRemote: vi.fn(),
   memoryTargetsHandler: vi.fn(),
 }));
@@ -14,9 +14,9 @@ vi.mock('../../src/tools/alert_inbox.js', async (orig) => {
 });
 
 import { judgeLeak, startMemoryWatch } from '../../src/presentation/daemon/memory_watch.js';
-import { sampleRemote, memoryTargetsHandler } from '../../src/tools/memory_observe.js';
+import { sampleRemote, memoryTargetsHandler } from '../../src/application/observe/memory_observe.js';
 import { pushAlert } from '../../src/tools/alert_inbox.js';
-import type { MemSample } from '../../src/tools/memory_observe.js';
+import type { MemSample } from '../../src/application/observe/memory_observe.js';
 
 const MB = 1048576;
 const mk = (rssMB: number, heapMB: number, extMB = 0): MemSample => ({

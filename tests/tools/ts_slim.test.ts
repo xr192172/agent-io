@@ -20,9 +20,9 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect, afterAll } from 'vitest';
 import { slimTsFile } from '../../src/tools/ts_slim';
-import { resolveTsSpecifier } from '../../src/tools/slim_brick';
-import { harvestFromUrl } from '../../src/tools/harvest_from_url';
-import { slimBrick } from '../../src/tools/slim_brick';
+import { resolveTsSpecifier } from '../../src/application/harvest/slim_brick.js';
+import { harvestFromUrl } from '../../src/application/harvest/harvest_from_url.js';
+import { slimBrick } from '../../src/application/harvest/slim_brick.js';
 
 const roots: string[] = [];
 const boxes: string[] = [];

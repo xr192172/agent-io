@@ -121,7 +121,7 @@ describe('走查：harvest_decisions 先写 DSL → 从源码实现', () => {
     const result = harvestDecisions({
       feature: 'harvest-decisions',
       git_root: undefined,
-      comment_files: [path.join(PKG_ROOT, 'src/tools/backfill.ts')],
+      comment_files: [path.join(PKG_ROOT, 'src/application/design/backfill.ts')],
     });
     // 工具级注释块（/** … */）应被识别为设计意图线索
     console.log('\n────── 走查·步骤2b：从源码注释块提取决策线索 ──────');

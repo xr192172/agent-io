@@ -9,7 +9,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { getDSL, saveDSL } from '../../src/storage.js';
-import { proposeChange, approveChange, rejectChange } from '../../src/tools/code_workbench.js';
+import { proposeChange, approveChange, rejectChange } from '../../src/application/design/code_workbench.js';
 
 describe('code_workbench · dsl_intent（设计意图改写审批）', () => {
   let home: string;

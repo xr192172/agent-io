@@ -9,7 +9,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect, afterAll } from 'vitest';
-import { runRefactorPipeline, type PipelineResult, type StageResult } from '../../src/tools/refactor_pipeline';
+import { runRefactorPipeline, type PipelineResult, type StageResult } from '../../src/application/refactor/refactor_pipeline.js';
 import { buildRefactorReport, writeRefactorReport } from '../../src/tools/refactor_report';
 
 const roots: string[] = [];

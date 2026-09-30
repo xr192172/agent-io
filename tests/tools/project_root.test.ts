@@ -26,7 +26,7 @@ import {
   findExternalImporters,
   resolveLangImport,
   walkProjectFiles,
-} from '../../src/tools/project_root';
+} from '../../src/application/cross/project_root.js';
 import { syncFile, syncProject, toRelPath, hasAnyIndexedFiles, pruneDeletedFiles } from '../../src/infrastructure/index/symbols';
 import { getProjectCacheDb, closeProjectCacheDb } from '../../src/infrastructure/index/db';
 

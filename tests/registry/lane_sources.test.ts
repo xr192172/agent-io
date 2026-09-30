@@ -33,8 +33,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { TOOL_DEFS, LANE_SOURCES, laneOfFromSources } from '../../src/presentation/mcp/server_registry.js';
-import { LANE_IDS, LANE_META } from '../../src/tools/capability_map.js';
-import * as capabilityMap from '../../src/tools/capability_map.js';
+import { LANE_IDS, LANE_META } from '../../src/application/meta/capability_map.js';
+import * as capabilityMap from '../../src/application/meta/capability_map.js';
 import { LANE_IDS, laneFileOf } from '../helpers/lane_files.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));

@@ -16,7 +16,7 @@ import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { getDSL, getStorageRoot } from '../storage.js';
-import { deriveMindMap, getMindMapFile } from './derive_mind_map.js';
+import { deriveMindMap, getMindMapFile } from '../application/meta/derive_mind_map.js';
 import { loadAgentConfig } from './llm_focus.js';
 import { guidedTour } from './guided_tour.js';
 import type { TourStep } from './guided_tour.js';

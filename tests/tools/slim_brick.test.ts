@@ -20,8 +20,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { describe, it, expect, afterAll } from 'vitest';
-import { harvestFromUrl } from '../../src/tools/harvest_from_url';
-import { slimBrick } from '../../src/tools/slim_brick';
+import { harvestFromUrl } from '../../src/application/harvest/harvest_from_url.js';
+import { slimBrick } from '../../src/application/harvest/slim_brick.js';
 import type { BrickManifest } from '../../src/domain/contract';
 
 const goOk = spawnSync('go', ['version'], { encoding: 'utf8' }).status === 0;

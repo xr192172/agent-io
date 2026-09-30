@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { deriveMindMap } from '../../src/tools/derive_mind_map';
+import { deriveMindMap } from '../../src/application/meta/derive_mind_map.js';
 import { saveDSL } from '../../src/storage';
 import { clearAllFeatures } from '../../src/storage';
 import type { DesignDSL } from '../../src/domain/types';

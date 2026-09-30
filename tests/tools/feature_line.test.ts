@@ -2,7 +2,7 @@
  * feature_line 测试：功能线 入口挑选(pickEntry) + 主链构建(buildMainChain) + 按功能推导(deriveLineFromFunctions)
  */
 import { describe, it, expect } from 'vitest';
-import { pickEntry, buildMainChain, deriveLineFromFunctions, type FeatureLineNode } from '../../src/tools/feature_line';
+import { pickEntry, buildMainChain, deriveLineFromFunctions, type FeatureLineNode } from '../../src/application/observe/feature_line.js';
 import type { FunctionOutlineFn } from '../../src/tools/function_outline';
 
 function fn(id: string, name: string, feature: string, calls: string[] = [], calledBy: string[] = []): FunctionOutlineFn {

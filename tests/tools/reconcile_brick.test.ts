@@ -14,7 +14,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect, beforeEach } from 'vitest';
-import { reconcileBrick } from '../../src/tools/reconcile_brick.js';
+import { reconcileBrick } from '../../src/application/harvest/reconcile_brick.js';
 
 function writeEvent(file: string, ev: Record<string, unknown>) {
   fs.appendFileSync(file, JSON.stringify(ev) + '\n', 'utf8');

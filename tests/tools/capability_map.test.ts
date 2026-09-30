@@ -22,7 +22,7 @@ import {
   describeForNav,
   makeCapabilityMapHandler,
   type ToolCatalogEntry,
-} from '../../src/tools/capability_map.js';
+} from '../../src/application/meta/capability_map.js';
 
 /** 真实注册目录（唯一真相源） */
 const catalog: ToolCatalogEntry[] = TOOL_DEFS.map((d) => ({

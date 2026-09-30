@@ -11,7 +11,7 @@ import { describe, it, expect } from 'vitest';
 import { mkdtempSync, writeFileSync, readFileSync, rmSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { renameSymbols } from '../../src/tools/rename_symbols';
+import { renameSymbols } from '../../src/application/refactor/rename_symbols.js';
 
 function mkProj(files: Record<string, string>): string {
   const dir = mkdtempSync(path.join(tmpdir(), 'drs-'));

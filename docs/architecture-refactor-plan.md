@@ -4154,3 +4154,42 @@ error layer-downward-only: src/application/handlers.ts → src/presentation/daem
 `tsconfig.json` 的 `exclude` 含 `"tests"` ⇒ **`npx tsc` 对测试文件零保证**。
 实测：我给测试加了 `laneTexts()` 却**忘了 import**，`tsc` 照样全绿（vitest 用 esbuild，也不做类型检查）。
 ⇒ **测试的正确性只能靠"跑"，不能靠"编译过"。** 这条要写进"验证手段本身也要先被验证"那一条下面。
+
+### 44.11 ★★ 搬迁⑦-2：48 个 A 类工具 → `application/<线名>/`（⑦ 收口）
+
+每一条线现在**自成一体**：`application/<线名>/{index.ts + 该线的工具实现}`。
+工具数：cross 1 ｜ design 6 ｜ harvest 7 ｜ meta 8 ｜ observe 7 ｜ refactor 19 = **48**。
+引用改写 **421 处 / 128 个文件**；`src/tools/` 顶层 **171 → 123**。
+
+**归属判据（非手抄）**：**"恰好被 1 条 lane import" ⇒ 归那条线**。
+- `index_freshness`（observe+harvest 都用）**不搬** —— 它还被 `infrastructure/diagnosis` 用着，
+  进 `application/` 会造成 `infrastructure → application` **反向违规**。它该下沉 infrastructure，
+  但那要连 `write_gate` 一起裁 ⇒ 归 **T11 身份普查**。剩下 122 个未被任何 lane 引用的同理。
+
+#### ★★★ 事故：「数层级」第 **3** 次发作（这个病必须进"下一次别再犯"清单）
+`slim_brick.ts` 原为 `new URL('../../go-slim', import.meta.url)`（"上溯两级"）。
+搬到 `application/harvest/`（深一层）⇒ 指到 `src/go-slim`（不存在）
+⇒ `spawnSync('go', ['run','.'], {cwd: 不存在})` ⇒ **ENOENT** ⇒ 错误信息却是
+「**Go 工具链不在 PATH？**」—— **把根因指到了完全错误的地方**，5 个测试同时红。
+| 次数 | 位置 | 症状 |
+|---|---|---|
+| ① | `PROBE_DIR_REL`（§44.5） | 目录改名后找不到 probe |
+| ② | `daemon.ts` 的 `findObserveDslBin`（§44.10） | 上溯 3 级 → 静默退回 PATH |
+| ③ | `slim_brick.ts` 的 go-slim 定位（本节） | 上溯 2 级 → **ENOENT 但报成"Go 不在 PATH"** |
+⇒ **纪律：禁止按层级数推路径，一律按路标（marker）上溯。**
+★ 一个关键认识：**"数层级"在 src 态与 dist 态里必然有一个是错的**
+  （`src/tools/` 与 `dist/src/tools/` 深度不同）—— 它以前"能用"只是因为 vitest 直接从 `src/` 转译。
+⇒ 新增回归门 `tests/tools/slim_brick_locating.test.ts`（4 项，含反例；出生证已做）。
+
+#### ★★ 新坑：**CRLF 的 `.mjs` 让 vitest 报 `SyntaxError: Invalid or unexpected token`**
+我用 python 批量写回文件时**默认把 LF 转成了 CRLF** ⇒ `tests/scripts/capability_scan.test.ts`
+加载 `scripts/capability_scan.mjs` 直接炸；而 **`node --check` 报通过**（误导性极强，查了很久）。
+⇒ ① 写回统一 `newline=''`；② **跑测试前先跑 `normalize_lf.mjs`**。与 §44.7(4) 的 T16 同族。
+
+#### ★ 顺带修的"点名目录 / 分段拼"门
+11 个文件的 `src/tools/<工具>.ts` 字符串（INTERNAL_MODULES / single_source 登记表 / G8 快照 /
+`capability_scan.mjs` 的 FEATURE_FILES / `harvest_decisions` 的 `comment_files`）；
+2 处分段拼（`explore_action_wiring` 的 SRC、`receipt_channel` 的 edit_code）；
+`acceptance_decision_sync` 的节点 id（由路径派生，路径改了 id 没跟上）；
+`feature_map` 的 derive 家族断言（原点名 `feature_id==='tools'` ⇒ 改跨 feature 汇总）。
+★ 并记录一条量具边界：**`repeatedFamilies` 按 feature 内的名字前缀算 ⇒ 家族跨目录会被削弱**。

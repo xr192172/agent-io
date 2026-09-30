@@ -10,7 +10,7 @@
  * 旁白是 IO（读文件解析），故不并入纯同步的 parseRunTraces；由回放展示层按
  * frame 的(file, func)逐个拉取。
  */
-import { scanFileAnnotations } from './function_annotation.js';
+import { scanFileAnnotations } from '../application/refactor/function_annotation.js';
 
 /** 从一行注释文本剥离注释记号 / 星号 / 可忽略前景 */
 function stripCommentLine(raw: string): string {

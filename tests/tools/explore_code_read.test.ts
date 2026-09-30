@@ -12,8 +12,8 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { exploreCode } from '../../src/tools/explore_code';
-import { editCode } from '../../src/tools/edit_code';
+import { exploreCode } from '../../src/application/meta/explore_code.js';
+import { editCode } from '../../src/application/refactor/edit_code.js';
 import { closeProjectCacheDb } from '../../src/infrastructure/index/db';
 
 interface ReadData {

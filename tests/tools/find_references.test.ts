@@ -8,7 +8,7 @@ import { describe, it, expect } from 'vitest';
 import { mkdtempSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { findReferences } from '../../src/tools/find_references';
+import { findReferences } from '../../src/application/refactor/find_references.js';
 
 function mkProj(files: Record<string, string>): string {
   const dir = mkdtempSync(path.join(tmpdir(), 'fr-'));
