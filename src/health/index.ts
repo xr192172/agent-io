@@ -630,6 +630,19 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
         crossRefs.set(cands[0].rel, s);
       }
       s.add(cands[0].sym.qualified_name);
+      // ★★ 2026-09-30（T3 / 分叉 D）：跨文件的**调用**也是"这个文件被人用了"的证据 ⇒ 记进消费者。
+      //   为什么必须有（实测假阳）：`orphan_file` 原先**只**看 import 边，而**同包/同模块互相引用
+      //  根本不需要 import** —— Go 同包文件之间、Julia `using` 后的裸名调用都属此类。
+      //   实测（`.inspect/gopkg`，2 文件、无 import）：`main.go` 调 `helper.go` 的 `Helper`，
+      //   impact 建出了边 `main.go→helper.go`，而 health 报 **`orphan_file: helper.go`** ⇒ 假阳。
+      //   ★ 判据与 `impact.resolveCallTarget` 的"裸名全局唯一保底"**同源**（唯一候选才认），
+      //     区别只在它作用在 health 自己的 `symIndex`/`crossRefs` 上，不新起一份实现。
+      s = reverseConsumers.get(cands[0].rel);
+      if (!s) {
+        s = new Set();
+        reverseConsumers.set(cands[0].rel, s);
+      }
+      s.add(p.rel);
     }
     for (const t of p.parsed.type_refs) {
       if (t.resolved) continue;
@@ -641,6 +654,13 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
         crossRefs.set(cands[0].rel, s);
       }
       s.add(cands[0].sym.qualified_name);
+      // 同上：跨文件的**类型引用**也是消费者（与 import 边同义 —— 有人引用这个文件里的东西）
+      s = reverseConsumers.get(cands[0].rel);
+      if (!s) {
+        s = new Set();
+        reverseConsumers.set(cands[0].rel, s);
+      }
+      s.add(p.rel);
     }
   }
 
