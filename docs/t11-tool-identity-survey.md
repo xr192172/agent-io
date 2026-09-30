@@ -307,7 +307,9 @@
 
 - `sync_contracts.ts` —— ④-2：import `presentation/mcp/server_registry` 的 `TOOL_DEFS` ⇒ 落哪都违规，要先解环
 - `trace_reasoning.ts` —— 产品裁决：**活链的生产端**（`application/observe/trace_evidence` 消费），删它 = 砍半条链
-- `view_inputs.ts` —— ★ `README.md:325` + 规划书 §11.5 **逐字钦定"不删"**，且 `src/` 零消费者
+- `view_inputs.ts` —— ★ **已裁（2026-10-01，用户定性）**：「它只是代码里零消费者，但它是我们的**下游**，
+  也就是本项目的前端项目 **dsl-workbench** 的输出」⇒ **保留**，它是**对外契约层**（5 种图的渲染输入），
+  与 `README.md:325` + 规划书 §11.5 的"文档化契约层，不受 R5 挂起影响"一致。
 
 ### 已搬（按落点分组）
 
