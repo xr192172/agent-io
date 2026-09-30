@@ -1,5 +1,8 @@
 /**
- * meta 线（8 个工具）—— ★ **本文件即该线归属的唯一来源**。
+ * meta 线（9 个工具）—— ★ **本文件即该线归属的唯一来源**。
+ *
+ * ★ 2026-10-01（④-2 按能力改判整条线）：本线 8 → 9 —— `sync_contracts` 从 `harvest` 线**改判**进来
+ *   （与 `capability_map` 同族：都以"工具注册表"为事实源）。实现文件 `meta/sync_contracts.ts`。
  *
  * ★ P1b（2026-09-28）：按当时 `capability_map.LANE_OF` 的归属从 `TOOL_DEFS` 切分而来，
  *   条目**逐字搬移**，只加了 `export const META_TOOLS` 外壳 —— 归属自此由文件路径表达。
@@ -25,7 +28,7 @@ import type { DiagnoseInput } from '../../infrastructure/analysis/diagnosis/cont
 import { formatDiagnoseText, runDiagnosis } from '../../infrastructure/analysis/diagnosis/diagnose.js';
 import { getDSL, saveDSL } from '../../infrastructure/storage.js';
 import { archiveNode, listArchive } from './archive_node.js';
-import { LANE_IDS, makeCapabilityMapHandler } from './capability_map.js';
+import { LANE_IDS, listToolDefs, makeCapabilityMapHandler } from './capability_map.js';
 import type { LaneId } from './capability_map.js';
 import { markCanvasNotesStatus, renderCanvasNotesDigest, resolveCanvasNoteTargets } from './derive_mind_map.js';
 import { EXPLORE_ACTIONS } from './explore_code.js';
@@ -34,33 +37,22 @@ import { indexIntegrity, renderIntegrity } from './index_integrity.js';
 import { decideCanvasNotes } from './llm_decider.js';
 import { buildDocsPromptBlock, listProjectDocs, matchDocsForTargets, readProjectDoc } from './project_docs.js';
 import type { DocTargetSet } from './project_docs.js';
-import { exploreCodeHandler } from '../handlers.js';
+import { exploreCodeHandler, syncContractsHandler } from '../handlers.js';
 import type { ToolDef } from '../types.js';
 
 
 /**
  * capability_map 的目录必须来自**真实注册表**（不能自己再维护一份清单）——
- * 但它属于 meta 线，而 `TOOL_DEFS` 是由**各 lane 汇总**出来的 ⇒ 结构上成环。
+ * 但它属于 meta 线，而目录是由**各 lane 汇总**出来的 ⇒ 结构上成环。
  *
- * ★ 破环方式（P1b，2026-09-28）：这里只放一个**延迟引用**，由 server_registry 在汇总完
- *   TOOL_DEFS 之后注入（`bindToolDefs`）。刻意**不 import**（那会真成环）；
- *   也刻意**不给一份"看起来能用"的空表** —— 未注入时直接抛错，
- *   而不是静默列出 0 个工具（"不许静默降级"，见 docs/architecture-refactor-plan.md §2d）。
+ * ★ 破环方式（P1b，2026-09-28 起；2026-10-01 ④-2 把 ref 下移到叶子）：
+ *   这里**不 import 聚合器**，目录由 `application/tool_registry.ts` 汇总完后
+ *   经 `capability_map.bindToolDefs()` 注入，读取走 `capability_map.listToolDefs()`。
+ *   ★ 注入点之所以放在 `capability_map.ts`（叶子）而不是本文件：本文件被聚合器 import
+ *     ⇒ 任何"从本文件出发能走到聚合器"的模块都会成环（`sync_contracts` 即一例）。
+ *   未注入时 `listToolDefs()` 直接**抛错**，不给"看起来能用"的空目录
+ *   （"不许静默降级"，见 docs/architecture-refactor-plan.md §2d）。
  */
-let toolDefsRef: ToolDef[] | null = null;
-
-/** 由 server_registry 在 TOOL_DEFS 汇总完成后调用（模块加载期，一次性） */
-export function bindToolDefs(defs: ToolDef[]): void {
-  toolDefsRef = defs;
-}
-
-function laneCatalog(): ToolDef[] {
-  if (!toolDefsRef) {
-    throw new Error('[capability_map] TOOL_DEFS 尚未注入 —— server_registry 应在汇总后调用 bindToolDefs()');
-  }
-  return toolDefsRef;
-}
-
 export const META_TOOLS: ToolDef[] = [
   {
     name: 'explore_code',
@@ -388,7 +380,27 @@ export const META_TOOLS: ToolDef[] = [
         .optional()
         .describe('只看指定能力线；省略返回全部 6 线'),
     },
-    handler: makeCapabilityMapHandler(() => laneCatalog()),
+    handler: makeCapabilityMapHandler(() => listToolDefs()),
+  },
+
+  {
+    // ★ 2026-10-01（④-2 按能力改判整条线）：本工具从 `harvest` 线**改判**到 `meta` 线。
+    //   判据：它的能力是「以注册表为事实源回填工具契约」= **元数据 / 注册**能力（不是"收割"），
+    //   与同样以工具目录为目录的 `capability_map` 同族。实现随之搬到 `./sync_contracts.js`。
+    //   ★ 搬动同时消灭 5 条已知 `no-circular`（见 tool_registry.ts 的文件头说明）。
+    name: 'sync_contracts',
+    title: 'Sync tool contracts from registry schema into DSL expected_apis',
+    description:
+      '契约回填（修复契约漂移）：以注册表的 zod schema 为唯一事实源，把每个已注册工具的输入契约生成签名回填到 DSL semantic.files 的 expected_apis。' +
+      '改了工具 schema 后跑一次，DSL 契约自动跟上。' +
+      '默认只更新 DSL 中已存在的工具实现文件（按 basename 在 src/ 下解析真实路径）；include_all=true 时为缺失的工具文件补全契约节点。' +
+      '只回填签名（notes 带机器生成标记），设计侧意图由 LLM 维护。' +
+      '解析不到同名实现文件的工具（在 lane 内联实现）会在结果 unresolved 里如实列出，不静默跳过。',
+    inputSchema: {
+      feature: z.string().describe('feature 名（已存在的 DSL feature）'),
+      include_all: z.boolean().optional().describe('为 DSL 中缺失的工具文件补全契约节点（默认 false）'),
+    },
+    handler: syncContractsHandler,
   },
 
   {

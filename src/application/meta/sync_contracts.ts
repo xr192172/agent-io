@@ -6,20 +6,24 @@
  *   - 本工具把每个已注册工具的输入契约生成签名 + notes，回填到 DSL semantic.files 的 expected_apis
  *   - 改了 schema 后跑一次 → DSL 契约自动跟上，不再手工对齐
  *
- * 默认（include_all=false）：只更新 DSL 中已存在且 path 匹配 src/tools/{name}.ts 的文件，
+ * 默认（include_all=false）：只更新 DSL 中已存在、且 path 能被 `resolveImplPath()` 解析到的文件，
  *   不新增节点（契约文件属于文档性质，不在架构图里）。
  * include_all=true：为 DSL 中缺失的工具文件补全契约文件节点（连同 geometry 节点），
  *   用于"新工具接入"时让 DSL 契约一次到位。
  *
  * 语义边界：本工具只回填"签名 + notes（机器生成标记）"；设计侧的决策卡/notes 意图由 LLM 维护。
- * 循环依赖说明：TOOL_DEFS 由 server_registry 导出，本模块仅在函数执行期读取（handler 调用时），
- *   不在模块加载期求值，ESM 循环 import 安全。
+ *
+ * ★ 2026-10-01（④-2 按能力改判整条线）：本文件**从 `src/tools/` 搬到 `application/meta/`** ——
+ *   它的能力是「以注册表为事实源回填工具契约」= **元数据 / 注册**能力，与 `capability_map` 同族。
+ *   ★ 目录**不再 import 聚合器**（那会成环：`handlers → 本文件 → tool_registry → <线>/index → handlers`），
+ *     改从**叶子** `./capability_map.js` 取注入目录（`listToolDefs()`，由 `tool_registry` 加载期注入）。
+ *     ⇒ 5 条已知 `no-circular` 由此**结构性消失**，而不是"这次特判放过"。
  */
-import { TOOL_DEFS } from '../presentation/mcp/server_registry.js';
-import { getDSL, saveDSL, getPackageRoot } from '../infrastructure/storage.js';
+import { listToolDefs } from './capability_map.js';
+import { getDSL, saveDSL, getPackageRoot } from '../../infrastructure/storage.js';
 import fs from 'node:fs';
 import path from 'node:path';
-import type { DesignDSL } from '../domain/types.js';
+import type { DesignDSL } from '../../domain/types.js';
 
 export interface SyncContractsInput {
   /** feature 名（已存在的 DSL feature） */
@@ -103,8 +107,8 @@ export function syncContracts(input: SyncContractsInput): SyncContractsResult {
   if (!dsl) throw new Error(`feature ${input.feature} 不存在，请先写 DSL 或 import_project`);
   const includeAll = input.include_all ?? false;
 
-  // 自身不写自己（sync_contracts 的契约由 server_registry 的注册本身保证）
-  const tools = TOOL_DEFS.filter((t) => t.name !== 'sync_contracts');
+  // 自身不写自己（sync_contracts 的契约由注册表的注册本身保证）
+  const tools = listToolDefs().filter((t) => t.name !== 'sync_contracts');
   const files = dsl.semantic?.files ?? [];
   const added: string[] = [];
   const updated: string[] = [];
@@ -161,7 +165,7 @@ export function syncContracts(input: SyncContractsInput): SyncContractsResult {
   saveDSL(next);
 
   const msg =
-    `sync_contracts [${input.feature}]：工具契约与 server_registry 对齐完成。` +
+    `sync_contracts [${input.feature}]：工具契约与注册表对齐完成。` +
     `新增 ${added.length} 个契约文件（${added.join(', ') || '无'}），` +
     `更新 ${updated.length} 个（${updated.join(', ') || '无'}），未变 ${unchanged}。` +
     // ★★ 2026-10-01：**不许静默跳过** —— 解析不到实现文件的工具（在 lane 内联实现的那些）

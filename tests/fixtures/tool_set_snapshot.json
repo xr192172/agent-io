@@ -1014,7 +1014,7 @@
           "description": "操作列表，按顺序执行，任一失败全部回滚"
         },
         "evidence": {
-          "description": "证据链（L4 回溯）：可选。传入后程序会到真实 trace 库（<feature>.trace.json）复算验证，查不到或不符则打回",
+          "description": "证据链（L4 回溯）：可选。传入后程序会到 observe 线真实录制的事件（events JSONL）复算验证，查不到或不符则打回",
           "type": "array",
           "items": {
             "type": "object",
@@ -1032,7 +1032,7 @@
               },
               "ref": {
                 "type": "string",
-                "description": "trace 证据的 ref：函数名，或 '<函数名>@token>N'（声明该函数实际 token 超 N，程序复算验证）"
+                "description": "trace 证据的 ref：探针名（全名或末段短名），或 '<探针名>@dur>N'（声明该函数实际耗时超 N ms，程序按真实录制事件复算）"
               }
             },
             "required": [
@@ -3235,7 +3235,7 @@
   {
     "name": "sync_contracts",
     "title": "Sync tool contracts from registry schema into DSL expected_apis",
-    "description": "契约回填（修复契约漂移）：以 server_registry 的 zod schema 为唯一事实源，把每个已注册工具的输入契约生成签名回填到 DSL semantic.files 的 expected_apis。改了工具 schema 后跑一次，DSL 契约自动跟上。默认只更新 DSL 中已存在且 path=src/tools/{name}.ts 的文件；include_all=true 时为缺失的工具文件补全契约节点。只回填签名（notes 带机器生成标记），设计侧意图由 LLM 维护。",
+    "description": "契约回填（修复契约漂移）：以注册表的 zod schema 为唯一事实源，把每个已注册工具的输入契约生成签名回填到 DSL semantic.files 的 expected_apis。改了工具 schema 后跑一次，DSL 契约自动跟上。默认只更新 DSL 中已存在的工具实现文件（按 basename 在 src/ 下解析真实路径）；include_all=true 时为缺失的工具文件补全契约节点。只回填签名（notes 带机器生成标记），设计侧意图由 LLM 维护。解析不到同名实现文件的工具（在 lane 内联实现）会在结果 unresolved 里如实列出，不静默跳过。",
     "schema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",

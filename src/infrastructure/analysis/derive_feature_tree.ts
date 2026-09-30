@@ -100,7 +100,7 @@ export const TOOL_DOMAINS: Array<{ id: string; label: string; files: string[]; k
   },
   {
     id: 'observe', label: '观测质检',
-    files: ['reconcile_chain', 'cluster_narrator', 'narrate_step', 'consistency', 'trace_evidence', 'trace_exec', 'trace_reasoning', 'inject_replay', 'dogfood_stats', 'index_freshness', 'alert_inbox'],
+    files: ['reconcile_chain', 'cluster_narrator', 'narrate_step', 'consistency', 'trace_evidence', 'trace_exec', 'inject_replay', 'dogfood_stats', 'index_freshness', 'alert_inbox'],
     kws: ['observe', 'reconcile_chain', 'narrat', 'consistency', 'trace', 'replay', 'dogfood', 'signal_', 'instrument'],
   },
   {

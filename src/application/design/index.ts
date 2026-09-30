@@ -134,11 +134,11 @@ export const DESIGN_TOOLS: ToolDef[] = [
               .describe("证据类型，当前 L4 支持 'trace'（真实执行记录）"),
             ref: z
               .string()
-              .describe("trace 证据的 ref：函数名，或 '<函数名>@token>N'（声明该函数实际 token 超 N，程序复算验证）"),
+              .describe("trace 证据的 ref：探针名（全名或末段短名），或 '<探针名>@dur>N'（声明该函数实际耗时超 N ms，程序按真实录制事件复算）"),
           }),
         )
         .optional()
-        .describe('证据链（L4 回溯）：可选。传入后程序会到真实 trace 库（<feature>.trace.json）复算验证，查不到或不符则打回'),
+        .describe('证据链（L4 回溯）：可选。传入后程序会到 observe 线真实录制的事件（events JSONL）复算验证，查不到或不符则打回'),
     },
     handler: editDslHandler,
   },

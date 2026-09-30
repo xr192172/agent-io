@@ -1,5 +1,13 @@
 /**
- * harvest 线（6 个工具）—— ★ **本文件即该线归属的唯一来源**。
+ * harvest 线（5 个工具）—— ★ **本文件即该线归属的唯一来源**。
+ *
+ * ★ 2026-10-01（④-2 按能力改判整条线）：本线 6 → 5 —— `sync_contracts` **改判到 `meta` 线**。
+ *   判据（用户裁定「根据他的能力重新重构整个能力线」）：它的能力是
+ *   「**以注册表为事实源**，把工具契约回填进 DSL」，这是**元数据 / 注册**的能力，**不是"收割"**；
+ *   且它与同样以工具目录为输入的 `capability_map`（在 `meta` 线）**同族**。
+ *   ⇒ 一并搬到 `application/meta/sync_contracts.ts`（实现）+ `meta/index.ts`（工具定义）。
+ *   ★ 这同时**消灭了 5 条已知 `no-circular`**（`handlers → sync_contracts → 聚合器 → <线>/index.ts`）：
+ *     它的目录改由 `meta/capability_map` 叶子注入（`listToolDefs()`），**不再静态 import 聚合器**。
  *
  * ★ P1b（2026-09-28）：按当时 `capability_map.LANE_OF` 的归属从 `TOOL_DEFS` 切分而来，
  *   条目**逐字搬移**，只加了 `export const HARVEST_TOOLS` 外壳 —— 归属自此由文件路径表达。
@@ -38,7 +46,7 @@ import { searchBricks } from './search_bricks.js';
 import type { SearchBricksInput } from './search_bricks.js';
 import { slimBrick } from './slim_brick.js';
 import type { SlimBrickInput } from './slim_brick.js';
-import { harvestDecisionsHandler, syncContractsHandler } from '../handlers.js';
+import { harvestDecisionsHandler } from '../handlers.js';
 import type { ToolDef } from '../types.js';
 
 export const HARVEST_TOOLS: ToolDef[] = [
@@ -58,21 +66,6 @@ export const HARVEST_TOOLS: ToolDef[] = [
       comment_files: z.array(z.string()).optional().describe('要提取注释的源码文件（绝对路径）'),
     },
     handler: harvestDecisionsHandler,
-  },
-
-  {
-    name: 'sync_contracts',
-    title: 'Sync tool contracts from registry schema into DSL expected_apis',
-    description:
-      '契约回填（修复契约漂移）：以 server_registry 的 zod schema 为唯一事实源，把每个已注册工具的输入契约生成签名回填到 DSL semantic.files 的 expected_apis。' +
-      '改了工具 schema 后跑一次，DSL 契约自动跟上。' +
-      '默认只更新 DSL 中已存在且 path=src/tools/{name}.ts 的文件；include_all=true 时为缺失的工具文件补全契约节点。' +
-      '只回填签名（notes 带机器生成标记），设计侧意图由 LLM 维护。',
-    inputSchema: {
-      feature: z.string().describe('feature 名（已存在的 DSL feature）'),
-      include_all: z.boolean().optional().describe('为 DSL 中缺失的工具文件补全契约节点（默认 false）'),
-    },
-    handler: syncContractsHandler,
   },
 
   {

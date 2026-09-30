@@ -1,9 +1,16 @@
 /**
- * sync_contracts 走查：先写 DSL → 从 server_registry zod schema 回填工具契约（修复契约漂移 D）。
- * 同时验证 ESM 循环 import（sync_contracts ↔ server_registry）在函数执行期安全。
+ * sync_contracts 走查：先写 DSL → 从注册表 zod schema 回填工具契约（修复契约漂移 D）。
+ *
+ * ★ 2026-10-01（④-2）：原先这里还验证「ESM 循环 import（sync_contracts ↔ server_registry）在函数执行期安全」——
+ *   那条环**已被结构性消灭**（目录改从 `meta/capability_map` 叶子注入），断言随之删除，不再需要"容忍"。
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { syncContracts } from '../../src/tools/sync_contracts';
+// ★ 目录注入（④-2）：syncContracts 的目录来自 `meta/capability_map` 的**注入 ref**，
+//   而注入发生在 `tool_registry` 加载期 ⇒ 本用例必须加载注册表。
+//   这与生产路径一致：进程入口（server_registry / cli）启动即加载 tool_registry。
+//   反过来，未加载就调用会**抛错**（不静默回填空表），这正是要的行为。
+import '../../src/application/tool_registry.js';
+import { syncContracts } from '../../src/application/meta/sync_contracts';
 import { saveDSL, getDSL, clearAllFeatures, deleteFeature } from '../../src/infrastructure/storage.js';
 import type { DesignDSL } from '../../src/domain/types';
 

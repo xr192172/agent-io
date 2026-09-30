@@ -10,7 +10,8 @@
  *   首次全文 / 之后一行摘要 + `---WARNINGS---` 机器块。分级逻辑见 tests/registry/tool_warnings.test.ts。
  */
 import { describe, it, expect } from 'vitest';
-import { registerAllTools, TOOL_DEFS, staleBuildWarningFor } from '../src/presentation/mcp/server_registry.js';
+import { TOOL_DEFS } from '../src/application/tool_registry.js';
+import { registerAllTools, staleBuildWarningFor } from '../src/presentation/mcp/server_registry.js';
 import { WARNINGS_MARKER } from '../src/presentation/mcp/tool_warnings.js';
 
 describe('staleBuildWarningFor（陈旧构建判定纯函数）', () => {

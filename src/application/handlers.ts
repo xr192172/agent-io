@@ -38,8 +38,8 @@ import { reconcileChain } from './observe/reconcile_chain.js';
 import type { ReconcileChainInput } from './observe/reconcile_chain.js';
 import { scaffold } from './design/scaffold.js';
 import { setDesignIntent } from './design/set_design_intent.js';
-import { syncContracts } from '../tools/sync_contracts.js';
-import { buildTraceResolver, loadTraceRecords } from './observe/trace_evidence.js';
+import { syncContracts } from './meta/sync_contracts.js';
+import { buildTraceResolver, loadObservedTraceRecords } from './observe/trace_evidence.js';
 import { updateFeature } from './design/update_feature.js';
 
 // ─────────────────────────────────────────────────────────────
@@ -80,15 +80,18 @@ export const editDslHandler = wrap(async (a) => {
       if (f.path) entityIds.push(f.path);
     }
   }
-  // L4 证据回溯：从真实 trace 库（<feature>.trace.json）加载记录并复算校验；
-  // 无 trace 文件 → 无法回溯 → evidence 一律打回（宁缺毋滥，杜绝编造证据进库）。
-  // routine 轻量路径跳过此步（level=3，不加载 trace）。
+  // L4 证据回溯：源 = **observe 线真实录制的事件**（JSONL，`observe_instrument` 的探针落盘，
+  // 候选项与 `observe_trace` 同源）。★ 2026-10-01：原先读 `<live_dir>/<feature>.trace.json`，
+  // 而那份文件全仓只有一个产者 —— 已被撤掉的 `tools/trace_reasoning.ts`（零接触自动插桩），
+  // 且它写的 token 是"行数"这个合成代理值。改读事件后，验的是**真实测量**（dur_ms），代价是
+  // 证据不再与 feature 绑定（事件是会话级的）。
+  // 没有录制事件 → 无法回溯 → evidence 一律打回（宁缺毋滥，杜绝编造证据进库）。
+  // routine 轻量路径跳过此步（level=3，不加载事件）。
   let traceResolver:
     | { exists?: (ev: ReasonEvidenceRef) => boolean; traceRefs?: string[] }
     | undefined;
   if (level >= 4) {
-    const traceFile = path.join(getLiveDir(), `${a.feature as string}.trace.json`);
-    const records = loadTraceRecords(traceFile);
+    const { records } = loadObservedTraceRecords();
     traceResolver = records.length > 0 ? buildTraceResolver(records) : undefined;
   }
   const v = validateReason({

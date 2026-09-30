@@ -14,7 +14,8 @@
  * 本文件用**静默可判**的方式锁住"两个面共用同一入口"这件事，不依赖那两条 CLI 的进程外行为。
  */
 import { describe, it, expect } from 'vitest';
-import { TOOL_DEFS, invokeTool } from '../src/presentation/mcp/server_registry.js';
+import { TOOL_DEFS } from '../src/application/tool_registry.js';
+import { invokeTool } from '../src/presentation/mcp/server_registry.js';
 
 describe('invokeTool —— 工具的唯一调用入口', () => {
   it('导出可用，且是 MCP 面与 CLI 面**共用**的那一个（registerAllTools 也调它）', async () => {

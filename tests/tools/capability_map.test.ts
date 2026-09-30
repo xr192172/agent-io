@@ -7,7 +7,7 @@
  *   现在直接对**真实 TOOL_DEFS**断言：注册了没归线 → 本测试红。
  */
 import { describe, it, expect } from 'vitest';
-import { TOOL_DEFS, laneOfFromSources } from '../../src/presentation/mcp/server_registry.js';
+import { TOOL_DEFS, laneOfFromSources } from '../../src/application/tool_registry.js';
 import {
   LANE_IDS,
   LANE_META,

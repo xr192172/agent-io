@@ -4281,3 +4281,75 @@ src/  application/  domain/  infrastructure/  presentation/  tools/     ← 根�
 ★ 回填器自己也栽了一次：第一版**按 basename 查**，而 `simulation.ts` 在 `src/domain/` 本来就有同名文件
 ⇒ 误读成"落到了 domain"；第二版改成**按搬迁清单的精确目标**核。
 ⇒ **又一个"别用名字猜、要用清单核"。**
+
+---
+
+### 44.14 ★★ ④-2 收口：工具表回到 application + `sync_contracts` 改判 meta 线（`src/tools/` 顶层 3 → 2）
+> 取证与执行 2026-10-01。方案见 `docs/plan-44-2-tool-defs-cycle.md`（含 §8「按能力改判整条线」）。
+
+#### 做了什么（三件，同一笔）
+| # | 改动 | 位置 |
+|---|---|---|
+| 1 | **工具表（lane 来源 + `TOOL_DEFS` + 归属派生）从 presentation 搬回 application** | 新建 `application/tool_registry.ts`；`presentation/mcp/server_registry.ts` 只留"注册到 MCP" |
+| 2 | **`sync_contracts` 按能力改判：`harvest` 线 → `meta` 线**（用户裁定「根据他的能力重新重构整个能力线」） | 工具定义 `harvest/index.ts` → `meta/index.ts`；实现 `src/tools/sync_contracts.ts` → `application/meta/sync_contracts.ts` |
+| 3 | **目录注入点从 `meta/index.ts` 下移到叶子 `meta/capability_map.ts`** | 新增 `bindToolDefs` / `listToolDefs`，见下 |
+
+判据（#2）：它的能力是「**以注册表为事实源**回填工具契约」= **元数据/注册**能力，**不是"收割"**；
+且与同样以工具目录为目录的 `capability_map` **同族**（后者就在 `meta` 线）。
+
+#### ★★★ 方案里那句"顺带消灭一条 `no-circular`"**是错的**，实测纠正
+方案写的收益是"基线少 1 条"。**实测：不是 1 条，是 5 条；而且只是搬 TOOL_DEFS 并不能消灭它。**
+- 基线里那 5 条 `no-circular`（`to: handlers.ts`）**是同一个环**，只是终点换了 lane 文件：
+  `handlers.ts → tools/sync_contracts.ts → <聚合器> → application/<line>/index.ts`（design/harvest/meta/observe/refactor）。
+- 我只把聚合器从 `server_registry.ts` 挪到 `tool_registry.ts` ⇒ **环原样换乘一条路**（`arch` 报 5 条新 + 5 条 stale）。
+- ⇒ **真正的断环条件只有一条：`sync_contracts` 不许静态 import 聚合器。**
+  因为**任何被聚合器 import 的 lane 文件、及其可达的模块，都不能回头 import 聚合器**。
+  `sync_contracts` 恰恰是"在 meta 线里要读工具目录"的那一个。
+- ⇒ 用**已被接受的同一机制**（注入，不是新机制）：目录 ref 从 `meta/index.ts` 挪到**叶子** `capability_map.ts`
+  （它本来就持有 `_laneOf` 注入表，且**零出边** ⇒ 永远不会参与环）。
+  `sync_contracts.ts → capability_map.ts`（叶子）⇒ 5 条环**结构性消失**。
+- 验收：`arch` **0 违规** + `arch:baseline --shrink-only` 报 **new 0 / same 18 / stale 5 已移除**（23 → 18）。
+
+★ **纪律**：**"把数据挪到正确的层" ≠ "环会消失"** —— 要单独问一句"**环上的那条回边是谁**"。
+方案里"顺带消灭"这种话就是**没验过的断言**，本笔实测推翻。
+
+#### ★★ 撤销 `tools/trace_reasoning.ts`（用户裁定"那你就撤吧"）+ 把 L4 接到 observe 线更全的那份
+**取证（撤之前）**：
+1. `trace_reasoning` **从未注册为 MCP 工具**（G1 快照 0 命中、六条 lane 都没有）—— 它是个"库"，不是工具；
+   自述即「**零接触自动插桩记录器**」，与用户说的"自动插桩"是同一个东西。
+2. 它写的 `<feature>.trace.json` **全仓只有一个产者**（`grep trace.json src/` 只剩它）；
+   唯一消费者是 observe 线的 `trace_evidence.ts`（喂 `edit_dsl` 的 **L4 证据回溯**）。
+3. ⇒ 用户假设成立：observe 线**有更全的那份** ——
+   `recommend_observe_points`（选点）→ `observe_instrument`（注入探针）→ 运行时落 events JSONL
+   → `observe_trace` / `run_trace_replay`（重建成调用树）。`trace_reasoning` 是**平行原型**，自造格式。
+4. ★ 关键约束：`reason_validator.ts:160` 写着「**提供了 evidence 但未配置解析器 → 优先打回**」
+   ⇒ **L4 不是静默空转，是硬拒**。所以**不能只删产者**（否则 L4 变成"永远无法满足的闸"）——
+   "撤"与"重接"必须**同一笔**做完。
+
+**改了**：`trace_evidence.ts` 的证据源从 `<live_dir>/<feature>.trace.json` 改为**observe 线真实录制的事件 JSONL**
+（候选解析与 `observe_trace` 同源）。`TraceRecord` 由"另立一份"改为**由事件派生**（probe/真实 `dur_ms`/缺帧标注）。
+声称语法随数据变实：**`@token>N`（合成代理：函数行数）→ `@dur>N`（真实测量耗时 ms）**。
+同一探针多次调用**取最大耗时**（声称"慢"看最慢那次；取最大保证不会挑到快样本而**误放行**——漏放比误拒危险）。
+`handlers.ts` / `edit_dsl` 参数描述 / `reason_validator` 注释 / `derive_feature_tree` 的名字表 逐条跟上。
+
+★ **两处代价，如实记**（不粉饰）：
+1. `@token>` → `@dur>` 是**对外契约变更**（`edit_dsl` 的 evidence ref 语法）⇒ 已同步 G1 快照 + 参数描述。
+2. **证据与 feature 不再绑定**（事件是会话级的，不再是"这个 feature 的 trace 文件"）
+   ⇒ 换来的是"验的是**真实跑过**的数据"，而不是"用行数估出来的 token"。
+
+#### ★ 我在这笔里**又一次把没验过的断言写进注释**（当场抓住）
+我在新 `loadTraceRecords` 的注释里写「内容坏 ⇒ **抛**」—— 回看上游 `parseRunTraces` 才发现它是
+`catch { continue }`（**沿路静默跳过坏行，从不抛**）。⇒ 注释改为陈述**上游的真实口径**，
+并说明本层**不再包一层 try/catch**（多包一层 = 把上游的容忍伪装成本层的行为，还会吞掉 IO 错）。
+★ **纪律：写进注释的每一条"行为断言"，都要回看它凭什么成立。**
+
+#### 出生证
+「多次调用取最大耗时」注入 `Math.min` ⇒ **只有那一条断言变红**（精确对准判据）⇒ 还原后全绿。
+
+#### 验收
+| 项 | 结果 |
+|---|---|
+| `npx tsc --noEmit` | **0 error** |
+| `npm run arch` | **0 违规**（模块 312 → 311），已知基线 **23 → 18**（`new 0 / stale 5`） |
+| 全量 `npm run test:main` | **236 文件通过 / 1 跳过 ｜ 2427 项通过 / 5 跳过 / 0 失败** |
+| `src/tools/` 顶层 | **3 → 2**（`view_inputs.ts` 已钦定保留；`python_refactor/` 是子项目目录，另账） |

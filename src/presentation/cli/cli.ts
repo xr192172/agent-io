@@ -33,7 +33,8 @@
  *   在这里重做一遍就又造出了第二份口径（本仓最贵的病）。
  */
 import fs from 'node:fs';
-import { TOOL_DEFS, invokeTool } from '../mcp/server_registry.js';
+import { TOOL_DEFS } from '../../application/tool_registry.js';
+import { invokeTool } from '../mcp/server_registry.js';
 
 function die(msg: string): never {
   process.stderr.write(msg.endsWith('\n') ? msg : msg + '\n');

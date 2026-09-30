@@ -293,7 +293,12 @@
 - [判不了的（待裁决）] - （无）本分片 18 个逐个给出了判定。上列"存疑"项已在"值得单独说"写明反证与改判条件，非无法判定。
 ## 附：实际落点（2026-10-01 搬迁后**回填**，替代上面的"计划"）
 
-原始 123 个：**已搬 115** ｜ **已删 5** ｜ **未搬 3**
+原始 123 个：**已搬 116** ｜ **已删 6** ｜ **保留 1**（对外契约）
+
+> ★ 2026-10-01 收口（§44.14）：`sync_contracts` 改判到 `meta` 线后**已搬**（115 → 116）；
+> `trace_reasoning` 经产品裁定**已撤**（5 → 6）—— 它写的 `<feature>.trace.json` 全仓只有一个产者，
+> 撤后 L4 的证据源改接 **observe 线真实录制的事件 JSONL**（见 §44.14）；
+> `view_inputs.ts` 是**唯一保留**的（下游 dsl-workbench 的输出契约，见下）。
 
 ### 已删（判死后删除）
 
@@ -302,14 +307,26 @@
 - `observe_chain_view.ts`
 - `refactor_report.ts`
 - `run_narrate.ts`
+- `trace_reasoning.ts` —— ★ 2026-10-01 产品裁定**撤**（详见 `docs/architecture-refactor-plan.md` §44.14）。
+  它从未注册为 MCP 工具（是个库），写出的 `<feature>.trace.json` 全仓只有一个产者。
+  撤后 L4 证据源改接 **observe 线真实录制的事件 JSONL**（`observe_instrument` → events → `observe_trace`），
+  声称语法 `@token>N`（函数行数这个**合成代理**）→ `@dur>N`（**真实测量**耗时）。
 
-### 未搬（有明确裁决前置，不是漏搬）
+### 保留（对外契约，不搬不删）
 
-- `sync_contracts.ts` —— ④-2：import `presentation/mcp/server_registry` 的 `TOOL_DEFS` ⇒ 落哪都违规，要先解环
-- `trace_reasoning.ts` —— 产品裁决：**活链的生产端**（`application/observe/trace_evidence` 消费），删它 = 砍半条链
 - `view_inputs.ts` —— ★ **已裁（2026-10-01，用户定性）**：「它只是代码里零消费者，但它是我们的**下游**，
   也就是本项目的前端项目 **dsl-workbench** 的输出」⇒ **保留**，它是**对外契约层**（5 种图的渲染输入），
   与 `README.md:325` + 规划书 §11.5 的"文档化契约层，不受 R5 挂起影响"一致。
+
+### 已收口（原"未搬 3"）
+
+| 文件 | 结局 |
+|---|---|
+| `sync_contracts.ts` | ✅ ④-2 解环后**改判 meta 线 + 已搬** → `application/meta/sync_contracts.ts` |
+| `trace_reasoning.ts` | ✅ **已撤**（见上"已删"） |
+| `view_inputs.ts` | ✅ **保留**（见上"保留"） |
+
+★ 因此 `src/tools/` 顶层现在只剩 **1 个 `.ts`**（`view_inputs.ts`）+ 一个子项目目录 `python_refactor/`（另账）。
 
 ### 已搬（按落点分组）
 

@@ -9,7 +9,7 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
-import { TOOL_DEFS } from '../src/presentation/mcp/server_registry.js';
+import { TOOL_DEFS } from '../src/application/tool_registry.js';
 import { laneTexts } from './helpers/lane_files.js';
 
 const PKG_ROOT = path.resolve(__dirname, '..');

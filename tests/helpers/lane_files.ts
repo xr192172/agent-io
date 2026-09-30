@@ -12,7 +12,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { LANE_SOURCES } from '../../src/presentation/mcp/server_registry.js';
+import { LANE_SOURCES } from '../../src/application/tool_registry.js';
 
 export const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 

@@ -44,7 +44,7 @@ import { diffViews } from '../../application/refactor/diff_views.js';
 import { archiveNode, listArchive } from '../../application/meta/archive_node.js';
 import { setDesignIntent } from '../../application/design/set_design_intent.js';
 import { harvestDecisions } from '../../application/observe/harvest_decisions.js';
-import { syncContracts } from '../../tools/sync_contracts.js';
+import { syncContracts } from '../../application/meta/sync_contracts.js';
 import { harvestClosure } from '../../application/harvest/harvest_closure.js';
 import type { HarvestClosureInput } from '../../application/harvest/harvest_closure.js';
 import { extractContracts } from '../../application/harvest/extract_contracts.js';
@@ -90,7 +90,6 @@ import { runRefactorJudge } from '../../application/refactor/refactor_judge.js';
 import type { JudgeIssue, JudgeDecision } from '../../application/refactor/refactor_judge.js';
 import { validateReason } from '../../application/observe/reason_validator.js';
 import type { ReasonEvidenceRef } from '../../application/observe/reason_validator.js';
-import { loadTraceRecords, buildTraceResolver } from '../../application/observe/trace_evidence.js';
 import { runDiagnosis, formatDiagnoseText } from '../../infrastructure/analysis/diagnosis/diagnose.js';
 import type { DiagnoseInput } from '../../infrastructure/analysis/diagnosis/contract.js';
 import { getDSLByView, getLiveDir, getDSL, saveDSL } from '../../infrastructure/storage.js';
@@ -493,58 +492,9 @@ export type { ToolDef };
 // ─────────────────────────────────────────────────────────────
 
 
-// ─────────────────────────────────────────────────────────────
-// TOOL_DEFS：按能力线拆分（P1b，2026-09-28）
-//   条目逐字搬移到 src/application/<线名>/index.ts；此处只做汇总。
-//   ★ 数组顺序因此改变 —— 顺序**不是**对外契约（MCP 工具按名寻址），
-//     该判断已写明在 tests/server_registry.tool_snapshot.test.ts 的文件头。
-// ─────────────────────────────────────────────────────────────
-import { OBSERVE_TOOLS } from '../../application/observe/index.js';
-import { CROSS_TOOLS } from '../../application/cross/index.js';
-import { DESIGN_TOOLS } from '../../application/design/index.js';
-import { META_TOOLS, bindToolDefs } from '../../application/meta/index.js';
-import { REFACTOR_TOOLS } from '../../application/refactor/index.js';
-import { HARVEST_TOOLS } from '../../application/harvest/index.js';
-import { bindLaneOf, type LaneAssign } from '../../application/meta/capability_map.js';
-
-/**
- * ★ 能力线来源（P1c）：**归属由文件所在表达** —— 本数组是"lane 文件 → 线 id"的**唯一**映射。
- *
- * 为什么还留这 6 行映射：文件名 `design.ts` 与导出名 `DESIGN_TOOLS` 之间没有机器可读的联系，
- * 总得有一处把两者接到线 id（`'design'`）上。把它压到**唯一一处**即可；
- * 再在 `capability_map.ts` 里存第二份，就是漂移源（P1c 之前的 `LANE_OF` 正是那份）。
- *
- * 顺序**不是**对外契约（MCP 工具按名寻址，见 tests/server_registry.tool_snapshot.test.ts）。
- * 文件名 ↔ 线 id 是否配对、六份来源是否两两不交且并集 = TOOL_DEFS，由 tests/registry/lane_sources.test.ts 兜。
- */
-export const LANE_SOURCES: ReadonlyArray<readonly [LaneId, readonly ToolDef[]]> = [
-  ['observe', OBSERVE_TOOLS],
-  ['cross', CROSS_TOOLS],
-  ['design', DESIGN_TOOLS],
-  ['meta', META_TOOLS],
-  ['refactor', REFACTOR_TOOLS],
-  ['harvest', HARVEST_TOOLS],
-];
-
-const TOOL_DEFS: ToolDef[] = LANE_SOURCES.flatMap(([, defs]) => [...defs]);
-
-/**
- * 由 lane 来源汇总出「工具 → 线」归属表。
- * P1c 之前这张表是**手抄**在 `capability_map.LANE_OF` 里的第二份清单；现在由来源派生。
- */
-export function laneOfFromSources(
-  sources: ReadonlyArray<readonly [LaneId, readonly ToolDef[]]> = LANE_SOURCES,
-): Record<string, LaneAssign> {
-  const table: Record<string, LaneAssign> = {};
-  for (const [lane, defs] of sources) for (const d of defs) table[d.name] = { lane };
-  return table;
-}
-
-// ★ 破环注入：meta 线的 capability_map 需要真实注册表作目录，而 TOOL_DEFS 是各 lane 汇总出来的。
-//   用到时才解析（handler 调用期），故加载期注入一次即可（见 lanes/meta.ts 的说明）。
-bindToolDefs(TOOL_DEFS);
-// ★ P1c 归属注入：capability_map 不再持有归属清单，改由本文件的 lane 来源派生后送进去。
-bindLaneOf(laneOfFromSources());
+// ★ 2026-10-01（④-2）：工具表的**汇总**已下沉 `application/tool_registry.ts` ——
+//   它本是 application 层的事实（6 个 `*_TOOLS` 数组都在那儿）；本文件只负责**注册到 MCP server**。
+import { TOOL_DEFS } from '../../application/tool_registry.js';
 
 // ─────────────────────────────────────────────────────────────
 // 注册
@@ -645,5 +595,4 @@ export function registerAllTools(server: McpServer): void {
   }
 }
 
-export { TOOL_DEFS };
 

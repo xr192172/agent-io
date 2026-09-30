@@ -25,7 +25,7 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { TOOL_DEFS } from '../../src/presentation/mcp/server_registry.js';
+import { TOOL_DEFS } from '../../src/application/tool_registry.js';
 
 const def = (name: string) => {
   const d = TOOL_DEFS.find((t) => t.name === name);

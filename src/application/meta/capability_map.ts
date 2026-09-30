@@ -32,6 +32,8 @@
  * 纯数据 + 纯函数（目录取自入参，无 IO）：testable。
  */
 
+import type { ToolDef } from '../types.js';
+
 export const LANE_IDS = ['design', 'refactor', 'observe', 'harvest', 'cross', 'meta'] as const;
 export type LaneId = (typeof LANE_IDS)[number];
 
@@ -170,7 +172,7 @@ export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
   harvest_closure: '扫描闭包出产入盒三件套',
   harvest_from_url: '从 URL 采集决策/契约',
   extract_contracts: '从代码提取契约（多语言 AST）',
-  sync_contracts: '以 server_registry zod schema 回填 DSL expected_apis',
+  sync_contracts: '以注册表 zod schema 回填 DSL expected_apis',
   bricks: '积木盒统一入口（action=search/assemble/slim/reconcile）—— search：检索/浏览盒内积木（只读）；assemble：把盒内积木拼装进新目录（写）；slim：把积木剪成衍生积木回盒（写）；reconcile：用 observe 事件对账盒内契约（写）。三个写 action 缺省 write=true = 默认落盘',
   cross_repo_symbol_index: '跨仓库符号索引建立/反查',
   hybrid_precheck: '仓库杂交前预检（依赖/符号连通性）',
@@ -187,10 +189,47 @@ export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
 };
 
 // ─────────────────────────────────────────────────────────────
+// 工具目录注入（P1b 起）：目录来自真实注册表，本模块**不 import 注册表**
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * 注入的工具目录（null = 还没注入）。模块级单值 —— 与下面的 `_laneOf` 同一模式。
+ *
+ * ★★ 为什么这份 ref 住在**本叶子模块**而不是 `meta/index.ts`（2026-10-01，④-2）：
+ *   目录的注入点是「谁需要读注册表却不能被注册表 import」的那一层。
+ *   `meta/index.ts` 会被 `tool_registry.ts`（聚合 6 条 lane 数组）import ⇒
+ *   任何**从 meta/index.ts 出发能走到 tool_registry.ts** 的模块，都会和聚合器成环。
+ *   `sync_contracts`（同属 meta 线，要读目录）正是这样一个模块 ⇒ 它必须改从叶子取目录。
+ *   放在本文件后，`sync_contracts.ts → capability_map.ts`（叶子，无出边）⇒ **环结构性不存在**。
+ */
+let _toolDefs: ToolDef[] | null = null;
+
+/**
+ * 注入工具目录。由 **`application/tool_registry.ts`** 在汇总完 6 条 lane 数组后调用一次
+ * （模块加载期 ⇒ 早于任何 handler 执行）。
+ */
+export function bindToolDefs(defs: ToolDef[]): void {
+  _toolDefs = defs;
+}
+
+/**
+ * 取本次调用要用的工具目录。
+ *
+ * ★ 未注入时**抛错**（同 `resolveAssign` 的理由）：返回空目录会让所有消费者**静默列出 0 个工具**，
+ *   把"加载期接线漏了"伪装成"注册表里真没有工具"。
+ */
+export function listToolDefs(): ToolDef[] {
+  if (!_toolDefs) {
+    throw new Error('capability_map：工具目录未注入 —— tool_registry 应在汇总后调用 bindToolDefs()');
+  }
+  return _toolDefs;
+}
+
+// ─────────────────────────────────────────────────────────────
 // 归属表注入（P1c）：lane 文件的归属由 server_registry 汇总后送进来
 // ─────────────────────────────────────────────────────────────
 
-/** 注入的归属表（null = 还没注入）。模块级单值 —— 与 application/meta/index.ts 的 bindToolDefs 同一模式。 */
+/** 注入的归属表（null = 还没注入）。模块级单值 —— 与上面的 `_toolDefs` 同一模式。 */
 let _laneOf: Readonly<Record<string, LaneAssign>> | null = null;
 
 /**

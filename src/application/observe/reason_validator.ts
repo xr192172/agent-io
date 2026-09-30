@@ -44,7 +44,7 @@ export interface ReasonEvidenceResolver {
   exists?: (ev: ReasonEvidenceRef) => boolean;
   /** 可选的实体集合（L3 用）：节点 id / 文件 id / 文件路径 */
   entityIds?: string[];
-  /** 可选的 trace 引用集合（L3 用）：如 trace 节点 id 或 token 超限标记 */
+  /** 可选的 trace 引用集合（L3 用）：**真实执行过的探针全名**（如 "order.Place"） */
   traceRefs?: string[];
 }
 
