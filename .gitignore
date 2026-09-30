@@ -152,3 +152,6 @@ tests/tools/z_dg_*.test.ts
 # 根一次性探针（AI/诊断辅助）
 /_*.mjs
 
+
+# 出生证探针的残留（gate_probe 注入后由测试删除；若被 git add -A 捞到，不该进仓）
+**/__gate_probe*.*
