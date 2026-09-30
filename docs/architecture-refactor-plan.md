@@ -4028,3 +4028,52 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'
   ①**受控 fixture** 钉机制（alpha/beta 共享 `a.ts` ⇒ score 恰好 0.5 + 镜像），
   ②真仓只留**不变式**（凡报出来的必须镜像对称、score ≥ 0.2）。
   ⇒ 这比原来**更强**（原来连"公式对不对"都没钉），且与布局无关。
+
+## 46. ★★★ 用户裁定：**删掉「自包含 HTML」**（2026-09-30）—— 它只是 `render_design` 的一个格式，不是整个工具
+
+> 用户原话：「我的要求是**依旧保留 DSL 方面相关的能力**……我想要把这个**自包含的 HTML 去掉**，
+> 因为它没有留这个的必要。本身……自包含的这个 HTML，它的**效果是很差的**。」
+> 并指出真正的可视化前端是**隔壁的 `dsl-workbench`**（`D:\project_develop\dsl-workbench`，本仓当后端）。
+
+### 46.1 ★★ 先量后动：砍掉的**不是整个工具**（这是本节最重要的发现）
+`render_design` 的四个格式各有独立实现：
+| 格式 | 实现 | 是否自包含 HTML |
+|---|---|---|
+| `mindmap`（默认） | `deriveMindMap` → `/mindmap/<feature>` 交互页 | ✗（另有一套） |
+| `svg` | `exportSvg` | ✗ |
+| `markdown` | `exportMarkdown` | ✗ |
+| **`html`** | `renderDesign` → **`renderHTML`** | ★ **是**（lane 自己标注"**仅调试用**"） |
+⇒ 所以删的是**一个格式** ⇒ **`render_design` 保留，工具数 58 不变**。
+★ 若按最初的粗判（"删 renderer 目录 = 删工具"）就会**错删整个工具**。
+⇒ 教训：**"删一个目录"之前先问"它是被谁、以什么粒度使用的"** ——
+   `src/renderer/` 14 个文件里只有 7 个服务这条路，另 3 个（`anim_core` / `simulation_engine` /
+   `dataflow_core`）被 `inject_replay` / `simulation` / `trace_exec` 三个**工具**用着，必须留。
+
+### 46.2 删除清单（实测血缘闭合）
+**删（11 个 .ts + 1 个脚本 + 1 个工具实现 + 3 个测试）**：
+`renderer/{html_renderer,styles,scripts,animation_engine,edge_geom,i18n,shape_card}.ts`（558KB）、
+`renderer/{anim_core,edge_geom,i18n,dataflow_core}_bundle.gen.ts`、
+`tools/render_design.ts`、`scripts/gen_anim_core_bundle.mjs`、
+`tests/renderer/{html_renderer,filter_bar,shape_card}.test.ts`
+**留（下沉到 `src/infrastructure/render/`）**：`anim_core.ts`（`inject_replay`）、
+`simulation_engine.ts`（`simulation`）、`dataflow_core.ts`（`trace_exec`）
+⇒ `src/renderer/` **整个目录消失**；`presentation/web/` 这一格**取消**（§44.2 的该行作废）。
+
+### 46.3 对外契约变更（**两处，都需记账**）
+1. **`render_design` 的入参 schema**：去掉 `view` 与 `dsl_json`，`format` 枚举
+   `['mindmap','html','svg','markdown']` → `['mindmap','svg','markdown']`，`feature` 由**可选变必填**。
+   ⇒ G1 快照重算：**仍 58 个工具**；G8 行为快照：**只变 1 行**（mindmap 报错文案去掉"不支持 dsl_json 直传"）。
+2. **`POST /api/import` 的响应去掉 `html` 字段**（`serve.ts` 两处调用点）。
+   ★ **已经实测下游**：`dsl-workbench` 的 `src/data/api.ts` 只在**类型声明**里写了 `html: string`，
+   `main.ts` 的 `importLocalPath` **只读 `feature`**，从不读 `html`
+   ⇒ 前端行为不受影响（它那份类型声明可以顺手删，属它自己仓库的事）。
+   ★ 另一个连带：导入后**不再自动渲染"项目地图"产物**；需要视图请用 `/mindmap/<feature>` 或 `render_design`。
+
+### 46.4 ★ 这一批顺带修掉 **3 条"赌目录布局"的门**（不是放宽，是换成更强的判据）
+| 门 | 原判据 | 为什么它必红 | 新判据 |
+|---|---|---|---|
+| `view_guard` 的 `render_design view=live` | 调 handler 期望 `已渲染`/`未写回设计层` | `view` 参数已删 | 改成钉**"墓碑不许留"**：从 **G1 快照的 JSON Schema** 断言 `view`/`dsl_json` 已消失、`format.enum` 只剩三项、`required=['feature']` ★ 取快照而非 zod 内部结构（`.optional()` 一包就取不到 `.options`，实测踩到） |
+| `feature_map` 顶层目录数 | `topDirs.length > 5` | 删 `src/renderer/` 后恰剩 **5** | 下一行「每个顶层目录都要被切成 feature」**已经更强地**盖住了"空目录残留"⇒ 只留退化保护 `> 1` |
+| `feature_map` 前端文件 | `file_map` 里有 `feature_id==='renderer' && side==='frontend'` | `renderer/` 是本仓**唯一**前端来源，删了 frontend 计数归 **0** | 换成**分区自洽**：`features` 三侧汇总 `=== file_map.length` + `file_map` 的 `feature_id` 都能在 `features` 里找到（这正是"file_map 是唯一真相源"的实际含义，且**与布局无关**） |
+★ 三条的共同病：**把"当时仓库长什么样"写成了判据**。与 §44.8 的 `similar` 那条同族
+  —— 搬迁**合法地**改变仓库形状时，这类门会红，而红得**指不到真问题**。

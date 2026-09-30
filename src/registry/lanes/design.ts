@@ -159,18 +159,18 @@ export const DESIGN_TOOLS: ToolDef[] = [
 
   {
     name: 'render_design',
-    title: 'Render design DSL to mindmap/HTML/SVG/Markdown',
+    title: 'Render design DSL to mindmap/SVG/Markdown',
     description:
-      '渲染设计 DSL：format=mindmap（默认，现行思维导图架构：root → 功能分组 → 文件，自包含查看器 HTML；' +
+      '渲染设计 DSL：format=mindmap（默认，现行思维导图架构：root → 功能分组 → 文件；' +
       '功能分组优先读设计视图语义分组容器，其次 feature_tree 功能树）/' +
-      'html（旧设计画布·星图，仅调试用，自包含单 HTML）/ svg（矢量图）/ markdown（可读设计文档）。' +
-      'mindmap/svg/markdown 用 feature 从存储读取；html 模式可直接传 dsl_json 渲染，或用 feature+view 读取。',
+      'svg（矢量图）/ markdown（可读设计文档）。均用 feature 从存储读取。' +
+      '★ 2026-09-30：原 `format=html`（自包含单文件设计画布·星图）**已删除** —— ' +
+      '它是 lane 自己标注的"仅调试用"旧路径、渲染效果差，且前端（dsl-workbench）自取数据自行渲染；' +
+      'DSL 相关能力不受影响。',
     inputSchema: {
-      feature: z.string().optional().describe('feature 名（mindmap/svg/markdown 必填；html 用 feature+view 读取）'),
-      view: z.enum(['design', 'live']).default('design').describe('视图层级：design=设计视图（默认），live=实际代码快照（仅 html 用）'),
-      format: z.enum(['mindmap', 'html', 'svg', 'markdown']).optional().describe('输出格式，默认 mindmap（现行思维导图架构）'),
-      dsl_json: z.string().optional().describe('html 模式：完整 DSL JSON 字符串'),
-      output_path: z.string().optional().describe('输出路径'),
+      feature: z.string().describe('feature 名（mindmap/svg/markdown 均从存储读取）'),
+      format: z.enum(['mindmap', 'svg', 'markdown']).optional().describe('输出格式，默认 mindmap（现行思维导图架构）'),
+      output_path: z.string().optional().describe('输出路径（svg / markdown 用）'),
     },
     handler: renderDesignHandler,
   },

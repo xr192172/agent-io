@@ -38,7 +38,11 @@ describe('feature_map 在 agent-io src 上的真实结果', () => {
       .readdirSync(SRC, { withFileTypes: true })
       .filter((d) => d.isDirectory())
       .map((d) => d.name);
-    expect(topDirs.length, 'src/ 顶层目录数异常（是不是盘上有空目录残留？）').toBeGreaterThan(5);
+    expect(topDirs.length, 'src/ 顶层目录数异常（是不是盘上有空目录残留？）').toBeGreaterThan(1);
+    //   ★ 2026-09-30：原为 `toBeGreaterThan(5)` —— 那是在**赌当时的分层进度**
+    //     （删掉 `src/renderer/` 后恰剩 5 个 ⇒ 红）。而"盘上有空目录残留"这件事，
+    //     下一行「每个顶层目录都要被切成 feature」已经**更强地**盖住了：
+    //     空目录切不出 feature ⇒ 那一行必红。⇒ 这里只留"还剩不止一个目录"的退化保护。
     for (const d of topDirs) expect(fns, `顶层目录 ${d} 没被切成 feature`).toContain(d);
     expect(fns).toContain('root'); // 根文件归 root
     // 分层识别的有效性：**至少有一族**命中前端或 shared 文件 —— 同样不写死是哪一族
@@ -110,7 +114,7 @@ describe('feature_map 在 agent-io src 上的真实结果', () => {
   });
 
   it('file_map 给出文件级明细（file/feature_id/side/layer/dead_sources），是唯一真相源', () => {
-    const { file_map, scannedFiles } = buildFeatureMap({ project_dir: path.join(process.cwd()), source_root: SRC });
+    const { file_map, scannedFiles, features } = buildFeatureMap({ project_dir: path.join(process.cwd()), source_root: SRC });
     expect(file_map.length).toBe(scannedFiles);
     expect(file_map.length).toBeGreaterThan(100);
     // 每一条都带侧别与分层，且与功能聚合自洽：file_map 与 features 的划分一致
@@ -120,8 +124,14 @@ describe('feature_map 在 agent-io src 上的真实结果', () => {
       expect(typeof e.layer).toBe('string');
       expect(Array.isArray(e.dead_sources)).toBe(true);
     }
-    // renderer 下应有前端文件
-    expect(file_map.some((e) => e.feature_id === 'renderer' && e.side === 'frontend')).toBe(true);
+    // ★ 2026-09-30：原断言是「renderer 下有前端文件」—— 那**点名了一个目录**；
+    //   删掉 `src/renderer/`（它是本仓唯一的前端来源）后 frontend 计数归 0 ⇒ 红。
+    //   ⇒ 换成**与布局无关、且更强**的分区自洽：`file_map` 与 `features` 的
+    //     frontend/backend/shared 必须是**同一个划分**（这正是"file_map 是唯一真相源"的含义）。
+    const total = features.reduce((n, f) => n + f.frontend.length + f.backend.length + f.shared.length, 0);
+    expect(total, 'features 三侧汇总必须等于 file_map 条目数（同一份划分）').toBe(file_map.length);
+    const ids = new Set(features.map((f) => f.id));
+    expect(file_map.every((e) => ids.has(e.feature_id)), 'file_map 的 feature_id 必须都能在 features 里找到').toBe(true);
   });
 
   it('meta 携带 project_dir/source_root/langs（前端窗口据此定位与说明）', () => {

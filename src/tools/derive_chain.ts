@@ -485,7 +485,7 @@ export async function deriveDetailChain(input: DeriveChainInput): Promise<Derive
     try {
       const { openDb: open } = await import('../infrastructure/index/db.js');
       db = open(cacheDbPath);
-      // source 格式对齐：cache.db 的 relPath 可能相对 src/ 根（如 renderer/xx.ts），
+      // source 格式对齐：cache.db 的 relPath 可能相对 src/ 根（如 infrastructure/render/anim_core.ts），
       // 与 project_root 计算的 relPath 不一致 → relPath 查不到时退化为 basename 匹配
       let rows = db
         .prepare("SELECT source, target FROM edges WHERE kind='call' AND metadata IS NOT NULL AND source LIKE ?")
@@ -678,7 +678,7 @@ export async function deriveDetailChain(input: DeriveChainInput): Promise<Derive
     for (const t of targets) {
       const [tfile, tfn] = t.split('#');
       if (!tfile || !tfn) continue;
-      // cache.db 的 target 相对 src/ 根（如 renderer/styles.ts）→ 尝试 project_root 与 project_root/src 两个候选
+      // cache.db 的 target 相对 src/ 根（如 presentation/http/contract.ts）→ 尝试 project_root 与 project_root/src 两个候选
       const candPaths = [
         path.isAbsolute(tfile) ? tfile : path.join(projectRoot, tfile),
         path.join(projectRoot, 'src', tfile),

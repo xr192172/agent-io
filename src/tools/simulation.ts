@@ -8,7 +8,7 @@
  */
 
 import { getDSL } from '../storage.js';
-import { SimulationEngine } from '../renderer/simulation_engine.js';
+import { SimulationEngine } from '../infrastructure/render/simulation_engine.js';
 import type { Simulation, SimulationTrace } from '../domain/types.js';
 
 // 引擎缓存：feature → engine 实例（保持状态跨调用）

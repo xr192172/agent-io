@@ -41,7 +41,6 @@ import { languageConcepts } from './language_concepts.js';
 import { buildDictionaryView, getGlobalDictFile, getProjectDictFile, loadGlobalDict, loadProjectDict, saveGlobalEntry, saveProjectEntry, splitHighlights, validateProjectRoot, type DictEntry } from './dictionary.js';
 import { ingestTerm, classifyTerm, generateDictEntry } from './dict_gen.js';
 import { readRegistry, updateArtifact } from './registry.js';
-import { renderDesign } from './render_design.js';
 import { proposeChange, listChanges, approveChange, rejectChange } from './code_workbench.js';
 import { checkMonolith } from './monolith.js';
 import type { FileMonolithReport } from './monolith.js';
@@ -403,10 +402,11 @@ async function handleApiImport(req: http.IncomingMessage, res: http.ServerRespon
       } finally {
         cacheDb.close();
       }
-      const dsl = getDSL(feature);
-      const rendered = renderDesign({ dsl_json: JSON.stringify(dsl) });
+      // ★ 2026-09-30：导入后**不再渲染"自包含 HTML"**（该能力已删，见台账 §44.9）。
+      //   前端（dsl-workbench）从 /api/features 等端点自取数据渲染；本端点只回导入回执。
+      //   ⚠ 对外契约变更：响应里**去掉了 `html` 字段**（前端实测未使用，只用 `feature`）。
       broadcastSSE('project-imported', { feature, at: new Date().toISOString() });
-      sendJson(res, 200, { success: true, feature, html: path.basename(rendered.htmlFile), message: imp.message, local: true });
+      sendJson(res, 200, { success: true, feature, message: imp.message, local: true });
       return;
     }
 
@@ -452,11 +452,9 @@ async function handleApiImport(req: http.IncomingMessage, res: http.ServerRespon
       cacheDb.close();
     }
 
-    // 导入即渲染项目地图（renderDesign 自动注册产物到 registry）
-    const dsl = getDSL(feature);
-    const rendered = renderDesign({ dsl_json: JSON.stringify(dsl) });
+    // ★ 2026-09-30：导入后不再渲染自包含 HTML（同上一处；见台账 §44.9）
     broadcastSSE('project-imported', { feature, at: new Date().toISOString() });
-    sendJson(res, 200, { success: true, feature, html: path.basename(rendered.htmlFile), message: imp.message });
+    sendJson(res, 200, { success: true, feature, message: imp.message });
   } catch (e) {
     sendError(res, 500, `导入失败：${(e as Error).message}`);
   }
@@ -534,7 +532,7 @@ async function handleApiSplitPlan(req: http.IncomingMessage, res: http.ServerRes
     const body = await readBody(req);
     const { path: relPath } = JSON.parse(body.toString('utf-8'));
     if (!relPath || typeof relPath !== 'string' || relPath.includes('..') || path.isAbsolute(relPath)) {
-      sendError(res, 400, '非法 path（应为相对 src/ 的路径，如 renderer/scripts.ts）');
+      sendError(res, 400, '非法 path（应为相对 src/ 的路径，如 presentation/http/contract.ts）');
       return;
     }
     const absPath = path.join(process.cwd(), 'src', relPath);
@@ -1960,24 +1958,6 @@ const EXPLAIN_SCRIPT: Array<{ title: string; n: Narrations; nodeId: string }> = 
       senior: 'validator.ts 校验 ①schema 字段合法性 ②锚定完整性（几何节点 id 与语义引用是否一一对应）。非法 DSL 在进入渲染/AI 分析前即被拦截，返回结构化错误。',
     },
     nodeId: 'file_dsl_validator_ts',
-  },
-  {
-    title: '渲染器：把 DSL 变成活画布',
-    n: {
-      newbie: '这个部分把 DSL 变成一张你眼前这样的网页画布。整张网页是一个独立文件，双击能编辑、拖拽能改，不依赖任何外面加载的东西。',
-      pm: '渲染器把协议数据变成"活"的成果——一张自包含 HTML 画布，零外部依赖、可离线打开。它是产品价值的最终呈现层：人看到的、操作的都是它渲染出来的。',
-      senior: 'renderer/html_renderer.ts 将 DSL 拼成自包含 HTML（内联 CSS+JS），零外部依赖。支持双击编辑、拖拽回写、撤销重做、动画引擎（animation_engine）、图层着色等功能。scripts.ts（5290 行）是交互脑。',
-    },
-    nodeId: 'file_renderer_html_renderer_ts',
-  },
-  {
-    title: '画布交互脚本',
-    n: {
-      newbie: '画布上的拖拽、放大缩小、搜索、撤销这些操作，都靠这个脚本来实现。它就像画布的"大脑"。',
-      pm: 'scripts.ts 是画布的交互核心——决定了用户能怎么操作、反馈是否流畅。拖拽、缩放、搜索、撤销重做、右键菜单都在这层实现，直接决定上手体验。',
-      senior: 'scripts.ts（5290 行）实现画布全部交互：setupNodes/Edges、拖拽回写、撤销重做（Ctrl+Z/Y，localStorage 持久化）、搜索定位、动画、以及本讲解导览的 postMessage flyToNode 接收器（source:"dc-tour"）。是单文件巨石，待拆。',
-    },
-    nodeId: 'file_renderer_scripts_ts',
   },
   {
     title: '自我分析：把 src 变成星图',

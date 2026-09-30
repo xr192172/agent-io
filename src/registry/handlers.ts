@@ -36,7 +36,6 @@ import { validateReason } from '../tools/reason_validator.js';
 import type { ReasonEvidenceRef } from '../tools/reason_validator.js';
 import { reconcileChain } from '../tools/reconcile_chain.js';
 import type { ReconcileChainInput } from '../tools/reconcile_chain.js';
-import { renderDesign } from '../tools/render_design.js';
 import { scaffold } from '../tools/scaffold.js';
 import { setDesignIntent } from '../tools/set_design_intent.js';
 import { syncContracts } from '../tools/sync_contracts.js';
@@ -126,25 +125,25 @@ export const manageFeatureHandler = wrapData(async (a) => manageFeature(a as nev
  *       ⇒ 直接塞进回执是"淹掉回执"，正是 §2d 说的那种"为了好看而加的东西"。
  *   ⇒ 保留 `wrap`；**这不是漏迁，是逐字段算过后的判定**（不刷假账）。 */
 export const renderDesignHandler = wrap(async (a) => {
-  // 默认 mindmap：现行思维导图架构（root → 功能分组 → 文件）；html 星图画布仅调试保留
+  // 默认 mindmap：现行思维导图架构（root → 功能分组 → 文件）。
+  // ★ 2026-09-30：原 `format=html`（自包含单文件设计画布·星图）**已删除** ——
+  //   它是 lane 自己标注"仅调试用"的旧路径、渲染效果差；前端（dsl-workbench）自取数据渲染。
+  //   详见 `lanes/design.ts` 的 tool description 与台账 §44.9。
   const format = typeof a.format === 'string' ? a.format : 'mindmap';
   const feature = a.feature as string;
-  const view = a.view === 'live' ? 'live' : 'design';
   const output_path = typeof a.output_path === 'string' ? a.output_path : undefined;
   if (format === 'mindmap') {
-    if (!feature) throw new Error('render_design mindmap 模式需要 feature（从存储读取设计 DSL 派生，不支持 dsl_json 直传）');
+    if (!feature) throw new Error('render_design mindmap 模式需要 feature（从存储读取设计 DSL 派生）');
     const r = await deriveMindMap({ feature, gen_descriptions: false });
-    // 空导图回退：DSL 无 semantic.files 时导图会空，降级为 html 设计画布避免产物不可用
+    // 空导图：DSL 无 semantic.files 时导图就是空的。
+    // ★ 原先这里会「降级渲染设计画布」把产物凑出来；那条路径已随自包含 HTML 一起删除
+    //   ⇒ 改为**如实报告为空 + 给补数据的方向**。§2d：失败就说失败，不假装有产物。
     if ((r.mind_map.root.children ?? []).length === 0) {
-      const dsl = getDSLByView(feature, view);
-      if (dsl) {
-        const rr = renderDesign({ dsl_json: JSON.stringify(dsl), output_path, persist: false });
-        return {
-          message:
-            `⚠ 思维导图为空（DSL 无语义文件层），已回退渲染设计画布：\n${rr.message}\n` +
-            `提示：先 import_project 或 edit_dsl 补充 semantic.files 后再派生思维导图`,
-        };
-      }
+      return {
+        message:
+          `⚠ 思维导图为空：DSL 的 semantic.files 还没有内容。\n${r.message}\n` +
+          `提示：先 import_project 或 edit_dsl 补充 semantic.files 后再派生思维导图。`,
+      };
     }
     return {
       message:
@@ -160,17 +159,9 @@ export const renderDesignHandler = wrap(async (a) => {
     const r = exportMarkdown({ feature, output_path });
     return { message: r.message };
   }
-  // html：优先用显式 dsl_json；否则按 view 从存储读取
-  let dsl_json = a.dsl_json as string | undefined;
-  if (!dsl_json) {
-    if (!feature) throw new Error('render_design html 模式需要 feature 或 dsl_json');
-    const dsl = getDSLByView(feature, view);
-    if (!dsl) throw new Error(`feature "${feature}" 不存在（视图: ${view}）`);
-    dsl_json = JSON.stringify(dsl);
-  }
-  // live 视图渲染不写回设计层（persist=false）
-  const r = renderDesign({ dsl_json, output_path, persist: view === 'design' });
-  return { message: r.message };
+  // ★ 到不了这里：`format` 已被 lane 的 zod 枚举约束在 mindmap|svg|markdown 内。
+  //   仍**显式抛错**而不是静默返回 —— 不写兜底（§3），真越界要响。
+  throw new Error(`render_design 不支持的 format：${String(format)}（只支持 mindmap / svg / markdown）`);
 });
 
 /** 生成骨架（原独立入口，★ 面收敛第三批已并入 lane `scaffold` 的单入口 action=generate）。

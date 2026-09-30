@@ -15,7 +15,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { backfillScaffold } from '../../src/tools/backfill';
-import { renderDesign } from '../../src/tools/render_design';
+import { saveDSL } from '../../src/storage';
 import { clearAllFeatures, getDSL } from '../../src/storage';
 import type { DesignDSL } from '../../src/domain/types';
 
@@ -86,7 +86,7 @@ describe('backfillScaffold', () => {
 
   it('Go 文件解析与差异报告', async () => {
     const dsl = makeDSL('backfill_go');
-    renderDesign({ dsl_json: JSON.stringify(dsl) });
+    saveDSL(dsl);
 
     // 写入实现的 Go 文件（只实现了 Login，没实现 HealthCheck，新增了一个 Logout）
     const goCode = `package service
@@ -123,7 +123,7 @@ func (u UserService) Logout() error {
 
   it('TypeScript 文件解析（class 方法 + 顶层函数）', async () => {
     const dsl = makeDSL('backfill_ts');
-    renderDesign({ dsl_json: JSON.stringify(dsl) });
+    saveDSL(dsl);
 
     const tsCode = `export class Store {
   findUser(id: string): User | null {
@@ -159,7 +159,7 @@ export function createStore(): Store {
       { signature: 'User.validate()', notes: '验证' },
       { signature: 'build_user()', notes: '工厂函数' },
     ];
-    renderDesign({ dsl_json: JSON.stringify(dsl) });
+    saveDSL(dsl);
 
     const pyCode = `class User:
     def validate(self):
@@ -186,7 +186,7 @@ def build_user():
 
   it('文件不存在时 actual_apis 为空', async () => {
     const dsl = makeDSL('backfill_missing');
-    renderDesign({ dsl_json: JSON.stringify(dsl) });
+    saveDSL(dsl);
 
     const result = await backfillScaffold({ feature: 'backfill_missing', scaffold_dir: tmpDir });
 
@@ -200,7 +200,7 @@ def build_user():
 
   it('backfill 只回填 actual_apis，不覆盖设计侧 expected_apis（预期只由设计产生）', async () => {
     const dsl = makeDSL('backfill_contract');
-    renderDesign({ dsl_json: JSON.stringify(dsl) });
+    saveDSL(dsl);
     const expectedBefore = JSON.stringify(dsl.semantic!.files.map((f) => f.expected_apis));
 
     // 实现代码与 expected 完全不一致（预期全部缺失 + 全新实现）

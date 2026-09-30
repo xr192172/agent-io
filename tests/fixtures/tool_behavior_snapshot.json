@@ -241,7 +241,7 @@
   },
   {
     "name": "render_design",
-    "text": "render_design mindmap 模式需要 feature（从存储读取设计 DSL 派生，不支持 dsl_json 直传）",
+    "text": "render_design mindmap 模式需要 feature（从存储读取设计 DSL 派生）",
     "isError": true
   },
   {

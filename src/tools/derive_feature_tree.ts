@@ -11,7 +11,7 @@
  *     文件 → 主导社区 → 功能 的归属映射（file_map）。
  *
  * 归并策略（目录优先，结构保真——功能树必须对得上实际项目、符合人类阅读习惯）：
- *   - 社区按"成员文件主导目录"聚成功能（dsl/db/daemon/renderer/observe… 各成功能，
+ *   - 社区按"成员文件主导目录"聚成功能（domain/infrastructure/presentation/registry/observe… 各成功能，
  *     tools 大桶再按能力域拆成 8 类，杜绝"工具"一口大锅）；
  *   - 零社区的目录（纯定义/配置/入口文件，如 dsl 类型、db 存储、daemon 守护、tools 脚本）
  *     按目录直挂补成功能，不凭空消失；

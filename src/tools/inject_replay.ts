@@ -20,7 +20,7 @@
  */
 
 import { getDSL } from '../storage.js';
-import { classifyError, pickBranch, formatValueShort, buildPresetValue, validateValueSchema } from '../renderer/anim_core.js';
+import { classifyError, pickBranch, formatValueShort, buildPresetValue, validateValueSchema } from '../infrastructure/render/anim_core.js';
 import type { AnimationError, AnimationFlow, AnimationValueSchema } from '../domain/types.js';
 
 export interface InjectReplayInput {

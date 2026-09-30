@@ -53,32 +53,6 @@ export function inferLanguageFromPath(p: string): string | undefined {
   return map[ext];
 }
 
-/** 从 DSL 摘取产物元数据（语义化的自动来源） */
-export function artifactFromDsl(dsl: DesignDSL, htmlPath: string): Partial<ArtifactEntry> {
-  const rel = path.posix.relative('output', htmlPath);
-  const entry: Partial<ArtifactEntry> = {
-    path: rel.startsWith('..') ? path.basename(htmlPath) : rel,
-    feature: dsl.feature,
-    title: dsl.title,
-    type: dsl.type,
-    status: dsl.status,
-  };
-  // 语言：取 semantic.files 中出现最多的扩展名对应语言
-  const counts = new Map<string, number>();
-  const files = dsl.semantic?.files ?? [];
-  for (const f of files) {
-    const lang = inferLanguageFromPath(f.path);
-    if (lang) counts.set(lang, (counts.get(lang) ?? 0) + 1);
-  }
-  let best: string | undefined;
-  let bestN = 0;
-  for (const [lang, n] of counts) {
-    if (n > bestN) { bestN = n; best = lang; }
-  }
-  if (best) entry.language = best;
-  return entry;
-}
-
 /** 读取全部注册条目（文件不存在返回空数组） */
 export function readRegistry(): ArtifactEntry[] {
   const file = registryFilePath();

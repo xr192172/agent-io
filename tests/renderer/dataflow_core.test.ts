@@ -15,7 +15,7 @@ import {
   flattenScope,
   evaluateCond,
   applyJudgements,
-} from '../../src/renderer/dataflow_core';
+} from '../../src/infrastructure/render/dataflow_core.js';
 
 // ─────────────────────────────────────────────────────────────
 // mockValue

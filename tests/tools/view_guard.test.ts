@@ -8,6 +8,8 @@
  * - edit_dsl view=live：写护栏拒绝且不落盘
  */
 
+import fs from 'node:fs';
+import path from 'node:path';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createFeature } from '../../src/tools/feature_ops';
 import { clearAllFeatures, getDSL, saveLiveFeature, getDSLByView, getLiveFeature } from '../../src/storage';
@@ -96,22 +98,22 @@ describe('视图分层 - edit_dsl view=live 写护栏', () => {
   });
 });
 
-describe('视图分层 - render_design view=live', () => {
-  beforeEach(() => clearAllFeatures());
-  afterEach(() => clearAllFeatures());
-
-  it('view=live 渲染实际视图且不写回设计层', async () => {
-    createFeature({ feature: 'vf_rd', title: '设计版' });
-    const design = getDSL('vf_rd')!;
-    saveLiveFeature({ ...design, title: '代码现状版' });
-    const before = JSON.stringify(getDSL('vf_rd'));
-
-    const r = await handlerOf('render_design')({ feature: 'vf_rd', view: 'live', format: 'html' });
-
-    expect(r.isError).toBeFalsy();
-    expect(r.text).toMatch(/已渲染/);
-    expect(r.text).toMatch(/未写回设计层/);
-    // 设计层未被 live 覆盖
-    expect(JSON.stringify(getDSL('vf_rd'))).toBe(before);
+describe('视图分层 - render_design view=live（★ 该路径已随自包含 HTML 一起删除）', () => {
+  it('view / dsl_json 参数已不存在，format 只剩 mindmap|svg|markdown', async () => {
+    // ★ 2026-09-30：`format=html` + `view=live` 是**自包含单文件设计画布**专属的参数，
+    //   那条路径已删（台账 §44.9）。这里改成钉"它真的没有了"—— 留在 schema 里就是墓碑。
+    //   ★ 判据取**对外契约快照**（G1 的 JSON Schema），不取 zod 对象内部结构 ——
+    //     后者是实现细节（`.optional()` 包一层就取不到 `.options`，实测踩到）。
+    const snap = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'tests', 'fixtures', 'tool_set_snapshot.json'), 'utf8')) as Array<{
+      name: string;
+      schema: { properties?: Record<string, { enum?: string[] }>; required?: string[] };
+    }>;
+    const rd = snap.find((t) => t.name === 'render_design');
+    expect(rd, 'render_design 工具应仍在（只删了它的 html 格式）').toBeDefined();
+    const props = rd!.schema.properties ?? {};
+    expect(Object.keys(props), 'view / dsl_json 是 html 路径专属参数，应已消失').not.toContain('view');
+    expect(Object.keys(props)).not.toContain('dsl_json');
+    expect(props.format?.enum).toEqual(['mindmap', 'svg', 'markdown']);
+    expect(rd!.schema.required).toEqual(['feature']);
   });
 });
