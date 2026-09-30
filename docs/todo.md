@@ -35,17 +35,6 @@
       ⇒ ★ 这是 **P2 的前置**：不换表，"搬家没搬坏"就没有机器可判的信号。
       设计要点：新表 + **让"还没搬完的"落进 `unclassified`**（而不是判成违规），这样中间态可测且唯一可收敛。
 
-- [ ] **T12 ★ 搬迁工具 `renameFiles` 漏改「内联 `import('…')` 类型引用」**
-      *(核实：09-30 搬 `src/dsl/` → `src/domain/` 时实测 —— `src/renderer/html_renderer.ts:89` 的
-      `function renderContentBlocks(blocks: import('../dsl/types.js').ContentBlock[])`
-      **没被改写** ⇒ `tsc` 报 `TS2307: Cannot find module '../dsl/types.js'`。
-      · 全仓共 **5 处**这种写法（另 4 处指向 `node:fs` / `../db/db.js` / `./monolith.js` / `./fill.js`，
-        当前恰好都还成立 ⇒ **只有 1 处当场炸**）
-      · ★★ **这是个定时炸弹**：`derive_feature_tree.ts:33` 的 `import('../db/db.js')` 在我们搬 `db/` 时
-        **会同样炸**；`serve.ts:587` / `project.ts:126` 同理。)*
-      ⇒ 修法：让 `rename_file` 的 import 改写**同时认 `import('…')` 形式**（它现在只认 `from '…'`）。
-      ★ 兜底：`tsc` 是安全网（会报 TS2307），但**每一族搬迁都会踩一次** ⇒ 值得先修工具。
-
 - [ ] **T4 `unused_export` 对"带 parent 的方法"有盲区**（`symIndex` 只收顶层符号）
       ⇒ 改 `symIndex` 的**收面**。
       ★ 做完这条，`code_health` 纳入 scala/groovy/julia/haskell/elixir 那 5 门的**判据二**才可能达标。

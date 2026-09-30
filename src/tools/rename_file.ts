@@ -157,10 +157,20 @@ function newPySpecifier(importerRel: string, newRelNoExt: string): string {
 function importSourceLiteral(node: SyntaxNodeLike): { startIndex: number; text: string; inner: string } | null {
   const lit = stringLiteral(node.childForFieldName('source'));
   if (lit) return lit;
-  // require('./x') / require.resolve('./x')：call_expression 没有 source 字段，需从 arguments 取
+  // require('./x') / require.resolve('./x') / **import('./x')**：call_expression 没有 source 字段，
+  // 需从 arguments 取。
+  //
+  // ★★ 2026-09-30（T12）：原先正则只有 `require(\.resolve)?` ⇒ **不认 `import(...)`**。
+  //   后果（实测）：搬 `src/dsl/` → `src/domain/` 时，`src/renderer/html_renderer.ts:89` 的
+  //   `function renderContentBlocks(blocks: import('../dsl/types.js').ContentBlock[])`
+  //   **没被改写** ⇒ `tsc` 报 `TS2307: Cannot find module '../dsl/types.js'`。
+  //   ★ 实测该写法在 tree-sitter（typescript）下的节点形状：
+  //     `member_expression > call_expression(function=`import` 关键字节点, arguments=(string))`
+  //   —— 与动态 `import('./x')` **同一个形状**，所以这一条同时覆盖"类型位置的内联 import"与"动态 import"。
+  //   ★ 这是个**定时炸弹**：全仓 5 处这种写法，另 4 处只是恰好还没搬到 ⇒ 不修的话每族搬迁都会踩。
   if (node.type === 'call_expression') {
     const fn = node.childForFieldName('function');
-    if (fn && /^require(\.resolve)?$/.test(fn.text.trim())) {
+    if (fn && /^(require(\.resolve)?|import)$/.test(fn.text.trim())) {
       const args = node.childForFieldName('arguments');
       if (args) {
         for (let i = 0; i < args.childCount; i++) {

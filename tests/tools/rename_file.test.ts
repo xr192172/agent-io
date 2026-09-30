@@ -325,3 +325,33 @@ describe('renameFile - 原子阻断（前置检查仍保持）', () => {
     }
   });
 });
+describe('★ T12：内联 import() 类型引用 / 动态 import() 也要改写（2026-09-30）', () => {
+  // ★ 出生证（实现前实测为**红**）：搬 `src/dsl/` → `src/domain/` 时，
+  //   `src/renderer/html_renderer.ts:89` 的 `import('../dsl/types.js').ContentBlock` **没被改写**
+  //   ⇒ `tsc` 报 TS2307。根因：`importSourceLiteral` 的 `call_expression` 分支只认
+  //   `require` / `require.resolve`，**不认 `import(...)`**。
+  //   实测节点形状（tree-sitter typescript）：类型位置的 `import('x').Y` 与动态 `import('x')`
+  //   都是 `call_expression(function=<import 关键字节点> arguments=(string))` ⇒ 一处修好覆盖两者。
+  it('搬文件时 `import(…)` 形态的引用同样被改写（此前只认 from 与 require()）', async () => {
+    const dir = mkProj({
+      'src/old/b.ts': 'export interface T { a: number }\n',
+      // ① 常规 import（对照项）② 内联 import() **类型位置**（T12 的靶子）③ 动态 import()
+      'src/use.ts':
+        "import { T as T2 } from './old/b.js';\n" +
+        "function f(x: import('./old/b.js').T): T2 { return x; }\n" +
+        "export const lazy = () => import('./old/b.js');\n",
+    });
+    try {
+      const r = await renameFile({ project_dir: dir, from: 'src/old/b.ts', to: 'src/new/b.ts' });
+      expect(r.ok).toBe(true);
+      const after = readFileSync(path.join(dir, 'src/use.ts'), 'utf-8');
+      expect(after, '旧路径不该残留').not.toContain("'./old/b.js'");
+      expect(after, '① 常规 import').toContain("from './new/b.js'");
+      expect(after, '② 内联 import() 类型位置').toContain("import('./new/b.js').T");
+      expect(after, '③ 动态 import()').toContain("import('./new/b.js')");
+    } finally {
+      closeProjectCacheDb(dir);
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
