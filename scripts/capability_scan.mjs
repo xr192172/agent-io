@@ -41,11 +41,11 @@ export const FEATURE_FILES = {
   contract_gate: ['src/tools/contract_gate.ts'],
   extract_contracts: ['src/tools/extract_contracts.ts'],
   version_upgrade_detection: ['src/version_upgrade'],
-  impact_analysis: ['src/impact'],
-  cross_repo_symbol_index: ['src/cross_repo'],
-  hybrid_precheck: ['src/hybrid'],
-  behavior_baseline: ['src/behavior'],
-  code_health: ['src/health'],
+  impact_analysis: ['src/infrastructure/analysis/impact'],
+  cross_repo_symbol_index: ['src/infrastructure/analysis/cross_repo'],
+  hybrid_precheck: ['src/infrastructure/analysis/hybrid'],
+  behavior_baseline: ['src/infrastructure/analysis/behavior'],
+  code_health: ['src/infrastructure/analysis/health'],
 };
 
 // ── 语言名别名 → LANGUAGES.name 归一 ──

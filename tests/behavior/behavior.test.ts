@@ -24,7 +24,7 @@ import {
   langOfFile,
   type BehaviorCase,
   type BehaviorRun,
-} from '../../src/behavior/index.js';
+} from '../../src/infrastructure/analysis/behavior/index.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const fixture = path.join(here, '..', 'fixtures', 'simple.py');

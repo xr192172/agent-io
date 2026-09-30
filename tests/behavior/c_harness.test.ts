@@ -11,7 +11,7 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { cParamTypes, cArgLiteral, cHarnessSource, runHarness, type BehaviorCase } from '../../src/behavior/index.js';
+import { cParamTypes, cArgLiteral, cHarnessSource, runHarness, type BehaviorCase } from '../../src/infrastructure/analysis/behavior/index.js';
 
 const cases = (arr: Array<[string, unknown[]]>): BehaviorCase[] => arr.map(([name, args]) => ({ name, args }));
 

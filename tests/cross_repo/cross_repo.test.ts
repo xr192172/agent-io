@@ -15,7 +15,7 @@
 import { describe, it, expect } from 'vitest';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildProjectIndex, compareProjects } from '../../src/cross_repo/index.js';
+import { buildProjectIndex, compareProjects } from '../../src/infrastructure/analysis/cross_repo/index.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const aRoot = path.join(here, '..', 'fixtures', 'hybrid-a');

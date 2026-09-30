@@ -17,7 +17,7 @@
 import { describe, it, expect } from 'vitest';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { analyzeImpact, analyzeHubs } from '../../src/impact/index.js';
+import { analyzeImpact, analyzeHubs } from '../../src/infrastructure/analysis/impact/index.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const fixtureRoot = path.join(here, '..', 'fixtures', 'impact-fixture');

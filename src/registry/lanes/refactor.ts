@@ -27,8 +27,8 @@
 import { z } from 'zod';
 import { requireStr, wrapData } from '../plumbing.js';
 import path from 'node:path';
-import { analyzeHubs, analyzeImpact } from '../../impact/index.js';
-import type { ImpactChangePoint } from '../../impact/index.js';
+import { analyzeHubs, analyzeImpact } from '../../infrastructure/analysis/impact/index.js';
+import type { ImpactChangePoint } from '../../infrastructure/analysis/impact/index.js';
 import { suggestRenamesInFile } from '../../tools/ast_suggest.js';
 import type { SuggestOptions } from '../../tools/ast_suggest.js';
 import { applyWrites } from '../../tools/apply_writes.js';

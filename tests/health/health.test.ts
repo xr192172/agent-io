@@ -20,7 +20,7 @@
 import { describe, it, expect } from 'vitest';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { classifyLayer, estimateComplexity, unusedImportsIn, analyzeHealth } from '../../src/health/index.js';
+import { classifyLayer, estimateComplexity, unusedImportsIn, analyzeHealth } from '../../src/infrastructure/analysis/health/index.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const fixtureRoot = path.join(here, '..', 'fixtures', 'codehealth-fixture');

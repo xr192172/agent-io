@@ -13,7 +13,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { transpileToCjs } from '../../behavior/index.js';
+import { transpileToCjs } from '../../infrastructure/analysis/behavior/index.js';
 import { NODE_RUNNABLE_EXTS } from '../../tools/ts_kernel/index.js';
 import type {
   LanguageAdapter,

@@ -13,9 +13,9 @@
 import { z } from 'zod';
 import { wrap, wrapData } from '../plumbing.js';
 import path from 'node:path';
-import { compareProjects } from '../../cross_repo/index.js';
-import { analyzeHealth } from '../../health/index.js';
-import { VERDICT_LABEL, precheckHybrid } from '../../hybrid/index.js';
+import { compareProjects } from '../../infrastructure/analysis/cross_repo/index.js';
+import { analyzeHealth } from '../../infrastructure/analysis/health/index.js';
+import { VERDICT_LABEL, precheckHybrid } from '../../infrastructure/analysis/hybrid/index.js';
 import { detectReachableRoots } from '../../tools/project_root.js';
 import { extractGoFromFile } from '../../translate/go_extractor.js';
 import { translateGoTsHandler } from '../../translate/tool.js';

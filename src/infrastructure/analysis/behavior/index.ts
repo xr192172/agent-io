@@ -26,15 +26,15 @@
  *   - node 的 kwargs（JS 无关键字实参概念）以单个尾部 options 对象传入；无 kwargs 则不传。
  */
 
-import { DATA_DIR_NAME } from '../data_dir.js';
+import { DATA_DIR_NAME } from '../../../data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import ts from 'typescript';
-import { NODE_RUNNABLE_EXTS } from '../tools/ts_kernel/index.js';
-import { missingLanguageHint } from '../tools/lang_hint.js';
+import { NODE_RUNNABLE_EXTS } from '../../../tools/ts_kernel/index.js';
+import { missingLanguageHint } from '../../../tools/lang_hint.js';
 
 
 /** Windows 常只有 python；POSIX 约定 python3（与动态闸 python 适配器一致） */

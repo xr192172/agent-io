@@ -73,12 +73,12 @@ import { runTests } from './tools/run_tests.js';
 // （`tools/stale_check` 的导入已随 P-F 删除：本文件不再直接消费它 —— 三个 stale 告警各自
 //   探测，`stale_check.formatStaleText` 仍由 lanes/observe.ts 的 `run_tests` 前置提示使用。）
 import { detectReachableRoots } from './tools/project_root.js';
-import { analyzeImpact, analyzeHubs } from './impact/index.js';
-import type { ImpactChangePoint } from './impact/index.js';
-import { compareProjects } from './cross_repo/index.js';
-import { precheckHybrid, VERDICT_LABEL } from './hybrid/index.js';
-import { captureBaseline, verifyBaseline, baselinePathFor } from './behavior/index.js';
-import { analyzeHealth } from './health/index.js';
+import { analyzeImpact, analyzeHubs } from './infrastructure/analysis/impact/index.js';
+import type { ImpactChangePoint } from './infrastructure/analysis/impact/index.js';
+import { compareProjects } from './infrastructure/analysis/cross_repo/index.js';
+import { precheckHybrid, VERDICT_LABEL } from './infrastructure/analysis/hybrid/index.js';
+import { captureBaseline, verifyBaseline, baselinePathFor } from './infrastructure/analysis/behavior/index.js';
+import { analyzeHealth } from './infrastructure/analysis/health/index.js';
 import { renameFiles } from './tools/rename_files.js';
 import { removeDeadImports, removeDeadImportsWithVerify, type RemoveDeadImportsVerifyOptions } from './tools/remove_dead_imports.js';
 import { runRefactorPipeline } from './tools/refactor_pipeline.js';

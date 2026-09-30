@@ -23,7 +23,7 @@
 import { describe, it, expect } from 'vitest';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { analyzeHealth, computeScore, classifyLayer, type HealthKind } from '../../src/health/index.js';
+import { analyzeHealth, computeScore, classifyLayer, type HealthKind } from '../../src/infrastructure/analysis/health/index.js';
 import { detectReachableRoots } from '../../src/tools/project_root.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));

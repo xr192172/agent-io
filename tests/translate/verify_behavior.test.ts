@@ -12,7 +12,7 @@ import { extractGo } from '../../src/translate/go_extractor.js';
 import { renderTsSkeleton } from '../../src/translate/ts_codegen.js';
 import { fillUnit } from '../../src/translate/fill.js';
 import { generateCasesFor, checkTranslationParity } from '../../src/translate/verify_behavior.js';
-import type { BehaviorRun, BehaviorSpec } from '../../src/behavior/index.js';
+import type { BehaviorRun, BehaviorSpec } from '../../src/infrastructure/analysis/behavior/index.js';
 
 const GO_SRC = `package calc
 func Add(a, b int) int {

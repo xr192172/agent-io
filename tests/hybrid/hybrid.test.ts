@@ -19,7 +19,7 @@ import {
   compareDeps,
   judgeVerdict,
   precheckHybrid,
-} from '../../src/hybrid/index.js';
+} from '../../src/infrastructure/analysis/hybrid/index.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const fix = (name: string): string => path.join(here, '..', 'fixtures', name);

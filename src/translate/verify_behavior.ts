@@ -10,7 +10,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { runHarness, diffRuns, type BehaviorCase, type BehaviorRun, type BehaviorDiff } from '../behavior/index.js';
+import { runHarness, diffRuns, type BehaviorCase, type BehaviorRun, type BehaviorDiff } from '../infrastructure/analysis/behavior/index.js';
 import type { TranslateParam } from './unit.js';
 
 /** 单参数类型的样例值集（确定性，按 Go 类型分派） */

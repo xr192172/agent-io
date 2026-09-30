@@ -7,7 +7,7 @@
       "authority": "src/tools/ts_kernel/kernel.ts",
       "pattern": "import\\s+type\\b",
       "frozen": {
-        "src/health/index.ts": 1,
+        "src/infrastructure/analysis/health/index.ts": 1,
         "src/tools/ts_slim.ts": 1
       }
     },
