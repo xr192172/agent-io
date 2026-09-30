@@ -34,9 +34,9 @@ import { stdin, stdout } from 'node:process';
 import { runDiagnosis, formatDiagnoseText } from '../diagnosis/diagnose.js';
 import { generatePatch, applyPatches, revertPatches, formatPatchDiff, allowedPatchFiles } from '../diagnosis/repair.js';
 import { detectKind } from '../diagnosis/verifier.js';
-import { getProjectCacheDb } from '../db/db.js';
+import { getProjectCacheDb } from '../infrastructure/index/db.js';
 import { walkFiles } from './import_project.js';
-import { syncProject } from '../db/symbols.js';
+import { syncProject } from '../infrastructure/index/symbols.js';
 import { isGitRepo, gitDirty, gitCommitFiles, gitCommitAll, gitRestoreFiles } from './git.js';
 import type { AppliedPatch } from '../diagnosis/repair.js';
 

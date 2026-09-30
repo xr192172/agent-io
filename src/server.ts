@@ -22,7 +22,7 @@ import { resolveCanvasNoteTargets, renderCanvasNotesDigest } from './tools/deriv
 import { listProjectDocs } from './tools/project_docs.js';
 import { installLifecycle } from './lifecycle.js';
 import { closeAllActiveWatches } from './tools/watch_project_tool.js';
-import { closeAllProjectCacheDbs } from './db/db.js';
+import { closeAllProjectCacheDbs } from './infrastructure/index/db.js';
 
 const SERVER_NAME = 'agent-io';
 const SERVER_VERSION = '0.1.3';

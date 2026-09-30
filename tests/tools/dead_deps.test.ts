@@ -18,7 +18,7 @@ import path from 'node:path';
 import { describe, it, expect, afterAll } from 'vitest';
 import { importProject } from '../../src/tools/import_project';
 import { harvestClosure } from '../../src/tools/harvest_closure';
-import { openDb } from '../../src/db/db';
+import { openDb } from '../../src/infrastructure/index/db';
 import {
   analyzeDeadThirdParty,
   parseGoImportQualifiers,

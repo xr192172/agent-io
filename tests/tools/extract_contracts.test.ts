@@ -17,7 +17,7 @@ import path from 'node:path';
 import { describe, it, expect, afterAll, beforeEach, afterEach } from 'vitest';
 import { importProject } from '../../src/tools/import_project';
 import { extractContracts } from '../../src/tools/extract_contracts';
-import { openDb } from '../../src/db/db';
+import { openDb } from '../../src/infrastructure/index/db';
 import { getDSL, saveDSL, clearAllFeatures, getLiveDslFile } from '../../src/storage';
 import type { DesignDSL } from '../../src/domain/types';
 

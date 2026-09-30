@@ -160,7 +160,7 @@ async function readCrossCalls(
   }
   if (!dbPath) return byCaller;
   try {
-    const { openDb } = await import('../db/db.js');
+    const { openDb } = await import('../infrastructure/index/db.js');
     const db = openDb(dbPath);
     try {
       let rows = db

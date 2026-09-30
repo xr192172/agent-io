@@ -19,7 +19,7 @@ import path from 'node:path';
 import { describe, it, expect, afterAll, beforeEach, afterEach } from 'vitest';
 import { runRefactorPipeline } from '../../src/tools/refactor_pipeline';
 import { RefactorLangRegistry, type LanguageRefactorExecutor } from '../../src/tools/refactor_langs';
-import { openDb } from '../../src/db/db';
+import { openDb } from '../../src/infrastructure/index/db';
 import { syncSelfWrites, syncSelfWritesSync, pendingSelfWrites } from '../../src/tools/write_gate';
 import { importProject } from '../../src/tools/import_project';
 import { scaffold } from '../../src/tools/scaffold';

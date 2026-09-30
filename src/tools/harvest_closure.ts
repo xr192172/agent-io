@@ -23,7 +23,7 @@ import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { getDSL } from '../storage.js';
-import { getProjectCacheDb, type Database } from '../db/db.js';
+import { getProjectCacheDb, type Database } from '../infrastructure/index/db.js';
 import { buildImportGraph } from './import_graph.js';
 
 export interface HarvestClosureInput {

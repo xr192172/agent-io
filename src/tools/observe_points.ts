@@ -29,7 +29,7 @@
 import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
-import type { Database } from '../db/db.js';
+import type { Database } from '../infrastructure/index/db.js';
 import { instrumentFile } from '../observe/instrument.js';
 
 export interface PointReason {

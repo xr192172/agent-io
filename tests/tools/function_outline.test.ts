@@ -2,7 +2,7 @@
  * function_outline 测试：函数级大纲汇聚（nodes=function/method + edges=call）
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { openDb, closeAllProjectCacheDbs, type Database } from '../../src/db/db';
+import { openDb, closeAllProjectCacheDbs, type Database } from '../../src/infrastructure/index/db';
 import { queryFunctionOutline, buildFeatureIndex, attachFunctionFeatures, type FunctionOutlineFn } from '../../src/tools/function_outline';
 import os from 'node:os';
 import path from 'node:path';

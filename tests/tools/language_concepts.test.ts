@@ -17,7 +17,7 @@ import path from 'node:path';
 import { describe, it, expect, afterAll } from 'vitest';
 import { importProject } from '../../src/tools/import_project';
 import { detectConcepts, languageConcepts, CONCEPTS } from '../../src/tools/language_concepts';
-import { openDb } from '../../src/db/db';
+import { openDb } from '../../src/infrastructure/index/db';
 
 const roots: string[] = [];
 

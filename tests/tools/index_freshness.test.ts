@@ -24,7 +24,7 @@ import { describe, it, expect, afterAll } from 'vitest';
 import { importProject } from '../../src/tools/import_project';
 import { semanticSearch } from '../../src/tools/semantic_search';
 import { ensureFreshIndex, hasChanges, indexedRelativeSet, isIndexedRelative } from '../../src/tools/index_freshness';
-import { openDb } from '../../src/db/db';
+import { openDb } from '../../src/infrastructure/index/db';
 
 const roots: string[] = [];
 

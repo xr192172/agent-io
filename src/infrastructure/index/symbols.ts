@@ -16,11 +16,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import type { Database } from './db.js';
-import { parseFileFull, parseFileFullSync, isSupported, resolveImportPath, type ParsedFile } from '../tools/ts_kernel/index.js';
+import { parseFileFull, parseFileFullSync, isSupported, resolveImportPath, type ParsedFile } from '../../tools/ts_kernel/index.js';
 // ★ 写路径挂钩（§19）：ProjectView 的缓存在「磁盘被改过」时必须失效。
 //   syncFile/syncFileSync 是**全部 15 个写工具**的公共落点 ⇒ 挂这一处即覆盖所有写入，
 //   不必让每个写工具自己记得调 —— 「靠自觉的接线」正是本项目反复踩的坑。
-import { invalidateProjectView } from '../tools/ts_kernel/project_view.js';
+import { invalidateProjectView } from '../../tools/ts_kernel/project_view.js';
 import { inTransaction } from './db.js';
 
 // ─────────────────────────────────────────────────────────────

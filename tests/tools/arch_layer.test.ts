@@ -18,7 +18,7 @@ import { describe, it, expect, afterAll } from 'vitest';
 import { importProject } from '../../src/tools/import_project';
 import { archLayer, scanImportEdges } from '../../src/tools/arch_layer';
 import { getDSL } from '../../src/storage';
-import { openDb } from '../../src/db/db';
+import { openDb } from '../../src/infrastructure/index/db';
 import { parseImportsLight, detectLayerViolations, type LayerDef } from '../../src/tools/layer_detect';
 
 const roots: string[] = [];

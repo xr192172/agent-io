@@ -467,7 +467,7 @@ func Run(n int) int {
     writeFixture('branch.go', BRANCH_FIXTURE);
     setupHost('f_cross', 'branch.go');
     // 造项目缓存：tmpDir/.agent-io/cache.db，插一条跨文件调用边（绕过外键）
-    const { openDb } = await import('../../src/db/db');
+    const { openDb } = await import('../../src/infrastructure/index/db');
     const db = openDb(path.join(tmpDir, DATA_DIR_NAME, 'cache.db'));
     db.exec('PRAGMA foreign_keys = OFF');
     db.prepare(
@@ -538,7 +538,7 @@ export function OtherFn(config: Cfg): boolean {
 }
 `);
     setupHost('f_cross2', 'branch.go');
-    const { openDb } = await import('../../src/db/db');
+    const { openDb } = await import('../../src/infrastructure/index/db');
     const db = openDb(path.join(tmpDir, DATA_DIR_NAME, 'cache.db'));
     db.exec('PRAGMA foreign_keys = OFF');
     db.prepare(
@@ -572,7 +572,7 @@ export function OtherFn(config: Cfg): boolean {
   it('目标文件不存在 → 跨文件追加跳过（标注仍在，主链不受影响）', async () => {
     writeFixture('branch.go', BRANCH_FIXTURE);
     setupHost('f_cross3', 'branch.go');
-    const { openDb } = await import('../../src/db/db');
+    const { openDb } = await import('../../src/infrastructure/index/db');
     const db = openDb(path.join(tmpDir, DATA_DIR_NAME, 'cache.db'));
     db.exec('PRAGMA foreign_keys = OFF');
     db.prepare(
@@ -594,7 +594,7 @@ export function OtherFn(config: Cfg): boolean {
 }
 `);
     setupHost('f_cross4', 'branch.go');
-    const { openDb } = await import('../../src/db/db');
+    const { openDb } = await import('../../src/infrastructure/index/db');
     const db = openDb(path.join(tmpDir, DATA_DIR_NAME, 'cache.db'));
     db.exec('PRAGMA foreign_keys = OFF');
     db.prepare(

@@ -21,7 +21,7 @@
 
 import { DATA_DIR_NAME } from '../data_dir.js';
 import path from 'node:path';
-import { openDb, type Database } from '../db/db.js';
+import { openDb, type Database } from '../infrastructure/index/db.js';
 
 // ─────────────────────────────────────────────────────────────
 // 类型

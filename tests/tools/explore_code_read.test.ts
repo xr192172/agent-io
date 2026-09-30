@@ -14,7 +14,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { exploreCode } from '../../src/tools/explore_code';
 import { editCode } from '../../src/tools/edit_code';
-import { closeProjectCacheDb } from '../../src/db/db';
+import { closeProjectCacheDb } from '../../src/infrastructure/index/db';
 
 interface ReadData {
   file: string;

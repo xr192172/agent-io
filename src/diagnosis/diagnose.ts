@@ -7,7 +7,7 @@
  */
 
 import path from 'node:path';
-import { getProjectCacheDb } from '../db/db.js';
+import { getProjectCacheDb } from '../infrastructure/index/db.js';
 import { ensureFreshIndex } from '../tools/index_freshness.js';
 import { parseSymptom } from './symptom_parser.js';
 import { locateCandidates } from './candidate_locator.js';

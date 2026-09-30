@@ -16,7 +16,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { AnimationValueSchema, Edge, Node } from '../domain/types.js';
 import { getDSL, saveDSL } from '../storage.js';
-import type { Database } from '../db/db.js';
+import type { Database } from '../infrastructure/index/db.js';
 import { parseFileFull, isSupported, type ParsedCall, type ParsedSymbol } from './ts_kernel/index.js';
 import { extractFunctionCfg } from './ts_kernel/cfg.js';
 import { KIND_SHAPE } from './derive_algorithm.js';
@@ -483,7 +483,7 @@ export async function deriveDetailChain(input: DeriveChainInput): Promise<Derive
   if (cacheDbPath) {
     let db: Database | null = null;
     try {
-      const { openDb: open } = await import('../db/db.js');
+      const { openDb: open } = await import('../infrastructure/index/db.js');
       db = open(cacheDbPath);
       // source 格式对齐：cache.db 的 relPath 可能相对 src/ 根（如 renderer/xx.ts），
       // 与 project_root 计算的 relPath 不一致 → relPath 查不到时退化为 basename 匹配

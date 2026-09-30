@@ -19,8 +19,8 @@ import fs from 'node:fs';
 import crypto from 'node:crypto';
 import path from 'node:path';
 import { configFileReadPath } from './llm_focus.js';
-import { getProjectCacheDb, type Database } from '../db/db.js';
-import { searchSymbols, type SymbolHit } from '../db/symbols.js';
+import { getProjectCacheDb, type Database } from '../infrastructure/index/db.js';
+import { searchSymbols, type SymbolHit } from '../infrastructure/index/symbols.js';
 import { ensureFreshIndex } from './index_freshness.js';
 
 // ─────────────────────────────────────────────────────────────

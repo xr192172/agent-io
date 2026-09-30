@@ -45,8 +45,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseFileFull, parseAstRoot, type ParsedSymbol } from './ts_kernel/index.js';
-import { syncFile } from '../db/symbols.js';
-import { getProjectCacheDb } from '../db/db.js';
+import { syncFile } from '../infrastructure/index/symbols.js';
+import { getProjectCacheDb } from '../infrastructure/index/db.js';
 import { splitKeepEnds, detectEol, isBlankLine } from './line_utils.js';
 import { snapshotBeforeWrite } from './file_snapshot.js';
 import { reopenAndResolveAfterWrite, reopenNote } from './write_gate.js';

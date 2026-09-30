@@ -27,7 +27,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { getProjectCacheDb, beginBatch, endBatch, type Database } from '../db/db.js';
+import { getProjectCacheDb, beginBatch, endBatch, type Database } from '../infrastructure/index/db.js';
 import {
   syncFile,
   removeFile,
@@ -35,7 +35,7 @@ import {
   syncProject,
   reopenRefsTo,
   changedSymbolNames,
-} from '../db/symbols.js';
+} from '../infrastructure/index/symbols.js';
 import { walkFiles } from './import_project.js';
 import { buildTextImportIndex, importLookupKeys } from './refs_text.js';
 import { getProjectView } from './ts_kernel/project_view.js'; // ★ §19②

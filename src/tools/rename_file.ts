@@ -20,8 +20,8 @@ import path from 'node:path';
 import { readdirSync } from 'node:fs';
 import { parseAstRoot, type SyntaxNodeLike } from './ts_kernel/kernel.js';
 import { TS_JS_EXTS } from './ts_kernel/index.js';
-import { resolveImportTarget, syncFile, removeFile } from '../db/symbols.js';
-import { getProjectCacheDb, closeProjectCacheDb } from '../db/db.js';
+import { resolveImportTarget, syncFile, removeFile } from '../infrastructure/index/symbols.js';
+import { getProjectCacheDb, closeProjectCacheDb } from '../infrastructure/index/db.js';
 import { createProtectGuard } from './protect.js';
 import { reopenAndResolveAfterWrite } from './write_gate.js';
 

@@ -13,8 +13,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { editCode } from '../../src/tools/edit_code.js';
 import { parseFileFull } from '../../src/tools/ts_kernel/index.js';
-import { getProjectCacheDb, closeAllProjectCacheDbs } from '../../src/db/db.js';
-import { searchSymbols, getFileParse } from '../../src/db/symbols.js';
+import { getProjectCacheDb, closeAllProjectCacheDbs } from '../../src/infrastructure/index/db.js';
+import { searchSymbols, getFileParse } from '../../src/infrastructure/index/symbols.js';
 
 let dir: string;
 

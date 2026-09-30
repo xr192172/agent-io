@@ -11,7 +11,7 @@
  */
 
 import path from 'node:path';
-import type { Database } from '../db/db.js';
+import type { Database } from '../infrastructure/index/db.js';
 import { resolveImport, readGoModules, buildIndex, type FileEntry } from './import_project.js';
 import type { ParsedImport } from './ts_kernel/kernel.js';
 

@@ -99,7 +99,7 @@ import { resolveCanvasNoteTargets, renderCanvasNotesDigest, markCanvasNotesStatu
 import { decideCanvasNotes } from './tools/llm_decider.js';
 import { listProjectDocs, readProjectDoc, matchDocsForTargets, buildDocsPromptBlock, type DocTargetSet } from './tools/project_docs.js';
 import { listProvidersMasked, upsertProvider, deleteProvider, getStats, resetStats, testProvider } from './tools/gateway.js';
-import { getProjectCacheDb } from './db/db.js';
+import { getProjectCacheDb } from './infrastructure/index/db.js';
 import { recordDogfoodUsage } from './tools/dogfood_stats.js';
 import { queryObserveLog } from './observe/log_query.js';
 import { memoryObserveHandler, memoryTargetsHandler } from './tools/memory_observe.js';

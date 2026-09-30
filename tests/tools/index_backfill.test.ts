@@ -11,7 +11,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect, afterAll } from 'vitest';
-import { openDb } from '../../src/db/db';
+import { openDb } from '../../src/infrastructure/index/db';
 import { ensureIndexAround } from '../../src/tools/index_freshness';
 import { backfillChunk, scheduleBackfill, stopBackfill, backfillState, backfillSummary } from '../../src/tools/index_backfill';
 

@@ -9,8 +9,8 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { getProjectCacheDb, closeAllProjectCacheDbs } from '../../src/db/db';
-import { syncProject } from '../../src/db/symbols';
+import { getProjectCacheDb, closeAllProjectCacheDbs } from '../../src/infrastructure/index/db';
+import { syncProject } from '../../src/infrastructure/index/symbols';
 import { analyzeImpact } from '../../src/diagnosis/impact_analyzer';
 
 const TYPES_TS = `export interface User {

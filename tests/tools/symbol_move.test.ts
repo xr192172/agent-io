@@ -11,8 +11,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { moveSymbol } from '../../src/tools/symbol_move.js';
 import { analyzeModuleSource } from '../../src/tools/rename_symbol.js';
-import { getProjectCacheDb, closeAllProjectCacheDbs } from '../../src/db/db.js';
-import { searchSymbols } from '../../src/db/symbols.js';
+import { getProjectCacheDb, closeAllProjectCacheDbs } from '../../src/infrastructure/index/db.js';
+import { searchSymbols } from '../../src/infrastructure/index/symbols.js';
 
 let tmp: string;
 let root: string;

@@ -18,7 +18,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect, afterAll } from 'vitest';
 import { watchProjectTool, closeAllActiveWatches, createRebuildThrottler } from '../../src/tools/watch_project_tool';
-import { openDb } from '../../src/db/db';
+import { openDb } from '../../src/infrastructure/index/db';
 import { getFeatureFile } from '../../src/storage';
 
 const roots: string[] = [];

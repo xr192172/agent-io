@@ -24,7 +24,7 @@ import { queryObserveLog } from '../observe/log_query.js';
 import { judgeEvents, judgeEventsWithLLM, normalizeEvents, renderJudgeReport } from '../observe/judge_service.js';
 import { judgeGuardLog } from '../observe/judge_guard.js';
 import { importProject } from './import_project.js';
-import { getProjectCacheDb, openDb } from '../db/db.js';
+import { getProjectCacheDb, openDb } from '../infrastructure/index/db.js';
 import { validateDSLJson } from '../domain/validator.js';
 import { saveAutoSnapshot, pruneSnapshots } from './snapshot.js';
 import { dagLayout, forceLayout, gridAlign } from './dag_layout.js';

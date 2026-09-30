@@ -14,7 +14,7 @@ import path from 'node:path';
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { importProject } from '../../src/tools/import_project';
 import { getDSL } from '../../src/storage';
-import { openDb } from '../../src/db/db';
+import { openDb } from '../../src/infrastructure/index/db';
 
 let fixtureRoot: string;
 let dbDir: string;

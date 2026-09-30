@@ -16,8 +16,8 @@ import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { describe, it, expect, afterAll } from 'vitest';
-import { syncProject, mergeSymbolStatus, symbolSpanHash } from '../../src/db/symbols';
-import { openDb, closeAllProjectCacheDbs, type Database } from '../../src/db/db';
+import { syncProject, mergeSymbolStatus, symbolSpanHash } from '../../src/infrastructure/index/symbols';
+import { openDb, closeAllProjectCacheDbs, type Database } from '../../src/infrastructure/index/db';
 import { diffImpact } from '../../src/tools/diff_impact';
 import { runImpactReport } from '../../src/tools/impact_report';
 

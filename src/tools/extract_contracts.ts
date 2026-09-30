@@ -27,7 +27,7 @@ import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { getDSL, saveDSL } from '../storage.js';
-import { getProjectCacheDb, type Database } from '../db/db.js';
+import { getProjectCacheDb, type Database } from '../infrastructure/index/db.js';
 import { buildImportGraph, type ImportGraph } from './import_graph.js';
 import type {
   BrickContract,

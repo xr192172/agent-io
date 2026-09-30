@@ -23,7 +23,7 @@ import type { TourStep } from './guided_tour.js';
 import type { MindMap } from '../domain/mindmap.js';
 import { extractJsonObject } from './explain_gen.js';
 import { deriveFeatureTree } from './derive_feature_tree.js';
-import { openDb } from '../db/db.js';
+import { openDb } from '../infrastructure/index/db.js';
 
 export interface OverviewSummary {
   /** 一句话：这是什么软件（≤30 字，人话） */

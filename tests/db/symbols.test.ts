@@ -10,8 +10,8 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import type { Database } from '../../src/db/db';
-import { openDb, getProjectCacheDb, closeAllProjectCacheDbs, SCHEMA_VERSION } from '../../src/db/db';
+import type { Database } from '../../src/infrastructure/index/db';
+import { openDb, getProjectCacheDb, closeAllProjectCacheDbs, SCHEMA_VERSION } from '../../src/infrastructure/index/db';
 import {
   syncFile,
   syncProject,
@@ -21,7 +21,7 @@ import {
   getIndexStats,
   getFileParse,
   resolveImportTarget,
-} from '../../src/db/symbols';
+} from '../../src/infrastructure/index/symbols';
 
 const FILE_A = `import { helperB } from './b';
 

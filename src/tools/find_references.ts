@@ -24,7 +24,7 @@ import { analyzeModuleSource, resolveRel, buildNoExt } from './rename_symbol.js'
 import { camelToSnake, scanLiteralOccurrences, type RawLiteralMatch } from './rename_symbols.js';
 import { collectFieldRefs, collectTypeConstructCandidates, type FieldRefFile, type TypeConstructCandidate } from './field_refs.js';
 import { parseFileFull } from './ts_kernel/index.js';
-import { getProjectCacheDb } from '../db/db.js';
+import { getProjectCacheDb } from '../infrastructure/index/db.js';
 import { ensureProjectIndex } from './index_freshness.js';
 import { buildImportGraph } from './import_graph.js';
 import { scanTextMentions } from './refs_text.js';

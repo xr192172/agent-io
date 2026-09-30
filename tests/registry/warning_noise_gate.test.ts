@@ -25,7 +25,7 @@ import { expectGateGoesRed, expectGateStaysGreen } from '../helpers/gate_probe';
 import { WARNINGS_MARKER, warningBlock, emitWarnings, resetWarningDelivery, type WireWarning } from '../../src/registry/tool_warnings';
 import { staleIndexWarning, resetStaleIndexWarningCache } from '../../src/server_registry';
 import { importProject } from '../../src/tools/import_project';
-import { openDb, closeAllProjectCacheDbs } from '../../src/db/db';
+import { openDb, closeAllProjectCacheDbs } from '../../src/infrastructure/index/db';
 
 /**
  * 门判定：跨轮扫描结构化告警，报"同一 code 的 detail 出现在多轮"。

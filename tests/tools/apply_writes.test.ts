@@ -16,7 +16,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect, afterAll } from 'vitest';
 import { importProject } from '../../src/tools/import_project';
-import { openDb } from '../../src/db/db';
+import { openDb } from '../../src/infrastructure/index/db';
 import { applyWrites } from '../../src/tools/apply_writes';
 import { rollbackFileSnapshot, listFileSnapshots } from '../../src/tools/file_snapshot';
 import { renameLocals } from '../../src/tools/rename_local';

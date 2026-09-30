@@ -11,7 +11,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { editCode } from '../../src/tools/edit_code.js';
-import { closeAllProjectCacheDbs } from '../../src/db/db.js';
+import { closeAllProjectCacheDbs } from '../../src/infrastructure/index/db.js';
 
 let dir: string;
 

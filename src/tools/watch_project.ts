@@ -30,8 +30,8 @@
 import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
-import type { Database } from '../db/db.js';
-import { syncFile, removeFile, resolveCrossFileCalls, pruneDeletedFiles, toRelPath, changedSymbolNames, reopenRefsTo, type CrossFileResolveStats } from '../db/symbols.js';
+import type { Database } from '../infrastructure/index/db.js';
+import { syncFile, removeFile, resolveCrossFileCalls, pruneDeletedFiles, toRelPath, changedSymbolNames, reopenRefsTo, type CrossFileResolveStats } from '../infrastructure/index/symbols.js';
 import { isSupported } from './ts_kernel/index.js';
 import { indexedRelativeSet } from './index_freshness.js';
 import { isIndexIncomplete } from './index_backfill.js';

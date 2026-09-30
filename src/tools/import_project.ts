@@ -32,8 +32,8 @@ import { detectArchLayers } from './layer_detect.js';
 import { parseFileFull, isSupported, resolveProjectImport } from './ts_kernel/index.js';
 import type { ParsedImport } from './ts_kernel/index.js';
 import { countLines, assessLines } from './monolith.js';
-import type { Database } from '../db/db.js';
-import { syncProject, getFileParse, pruneDeletedFiles } from '../db/symbols.js';
+import type { Database } from '../infrastructure/index/db.js';
+import { syncProject, getFileParse, pruneDeletedFiles } from '../infrastructure/index/symbols.js';
 import { generateFileRoleTitles } from './role_title.js';
 
 export interface ImportProjectInput {

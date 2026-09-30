@@ -42,8 +42,8 @@ import { getSimulationState } from './simulation.js';
 import { diffFeatures } from './diff.js';
 import type { Node, Edge } from '../domain/geometry.js';
 import type { SemanticFile } from '../domain/semantic.js';
-import { getProjectCacheDb } from '../db/db.js';
-import type { Database } from '../db/db.js';
+import { getProjectCacheDb } from '../infrastructure/index/db.js';
+import type { Database } from '../infrastructure/index/db.js';
 import { buildFunctionOutline } from './function_outline.js';
 import type { OverlayGoal } from '../domain/overlay.js';
 

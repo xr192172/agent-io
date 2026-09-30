@@ -22,8 +22,8 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { getProjectCacheDb } from '../db/db.js';
-import { reopenRefsTo, resolveCrossFileCalls } from '../db/symbols.js';
+import { getProjectCacheDb } from '../infrastructure/index/db.js';
+import { reopenRefsTo, resolveCrossFileCalls } from '../infrastructure/index/symbols.js';
 import { getProjectView } from './ts_kernel/project_view.js';
 import { INDEX_SKIP_DIR_EXTRA, isNoiseFileName, isTestFileName, isUnderSkippedDir } from './ts_kernel/source_exts.js';
 import { hasLiveIndex, pendingSelfWrites } from './write_gate.js';

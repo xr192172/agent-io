@@ -13,8 +13,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect, afterAll } from 'vitest';
 import { importProject } from '../../src/tools/import_project';
-import { openDb } from '../../src/db/db';
-import { getIndexStats } from '../../src/db/symbols';
+import { openDb } from '../../src/infrastructure/index/db';
+import { getIndexStats } from '../../src/infrastructure/index/symbols';
 import { handleWatchEvent, flushBatch, shouldSyncRel, reconcileProject, watchProject, decideFlushDelay, MAX_FLUSH_WAIT_MS } from '../../src/tools/watch_project';
 
 const roots: string[] = [];

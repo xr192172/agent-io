@@ -25,7 +25,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import { importProject } from '../src/tools/import_project';
-import { openDb, closeAllProjectCacheDbs } from '../src/db/db';
+import { openDb, closeAllProjectCacheDbs } from '../src/infrastructure/index/db';
 import { detectStaleIndex } from '../src/tools/index_freshness';
 import { recordSelfWrite } from '../src/tools/write_gate';
 import { registerAllTools, staleIndexWarning, resetStaleIndexWarningCache } from '../src/server_registry';

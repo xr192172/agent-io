@@ -28,7 +28,7 @@ import {
 import { findLanguageByExt } from '../../src/tools/ts_kernel/languages';
 import { registerAllTools } from '../../src/server_registry';
 import { importProject } from '../../src/tools/import_project';
-import { openDb, closeAllProjectCacheDbs } from '../../src/db/db';
+import { openDb, closeAllProjectCacheDbs } from '../../src/infrastructure/index/db';
 import { stopBackfill } from '../../src/tools/index_backfill';
 
 type Cb = (args: Record<string, unknown>) => Promise<{ content: { type: string; text: string }[]; isError?: boolean }>;

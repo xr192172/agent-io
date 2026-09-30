@@ -36,8 +36,8 @@ import {
   type ExternalRef,
 } from './project_root.js';
 import { parseAstRoot, TS_JS_EXTS } from './ts_kernel/index.js';
-import { syncFile } from '../db/symbols.js';
-import { getProjectCacheDb } from '../db/db.js';
+import { syncFile } from '../infrastructure/index/symbols.js';
+import { getProjectCacheDb } from '../infrastructure/index/db.js';
 import { splitKeepEnds, detectEol, isBlankLine } from './line_utils.js';
 import { snapshotBeforeWrite } from './file_snapshot.js';
 import { reopenAndResolveAfterWrite } from './write_gate.js';

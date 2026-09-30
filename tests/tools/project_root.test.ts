@@ -27,8 +27,8 @@ import {
   resolveLangImport,
   walkProjectFiles,
 } from '../../src/tools/project_root';
-import { syncFile, syncProject, toRelPath, hasAnyIndexedFiles, pruneDeletedFiles } from '../../src/db/symbols';
-import { getProjectCacheDb, closeProjectCacheDb } from '../../src/db/db';
+import { syncFile, syncProject, toRelPath, hasAnyIndexedFiles, pruneDeletedFiles } from '../../src/infrastructure/index/symbols';
+import { getProjectCacheDb, closeProjectCacheDb } from '../../src/infrastructure/index/db';
 
 function mkProj(files: Record<string, string>): string {
   const dir = mkdtempSync(path.join(tmpdir(), 'pr-'));

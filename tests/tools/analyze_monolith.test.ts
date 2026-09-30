@@ -13,7 +13,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { openDb, type Database } from '../../src/db/db';
+import { openDb, type Database } from '../../src/infrastructure/index/db';
 import {
   analyzeMonolith,
   assessCommunitySubSplit,

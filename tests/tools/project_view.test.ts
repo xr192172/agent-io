@@ -73,7 +73,7 @@ describe('ProjectView：一处算、多处取', () => {
     // ★ 为什么这里用文本断言（这是我刚批过的做法）：本层要验的是**接线**（"挂没挂上"），
     //   而不是"逻辑对不对"（那由本文件上面的行为断言管）。接线是**静态事实** —— 文本在这里是对的尺。
     //   ⚠️ 边界：它只证明"那两处调了 invalidateProjectView"，不证明调用点真的会执行。
-    const symbols = fs.readFileSync(path.join(REPO, 'src', 'db', 'symbols.ts'), 'utf8');
+    const symbols = fs.readFileSync(path.join(REPO, 'src', 'infrastructure', 'index', 'symbols.ts'), 'utf8');
     const watch = fs.readFileSync(path.join(REPO, 'src', 'tools', 'watch_project.ts'), 'utf8');
     // 写路径：syncFile / syncFileSync 是全部写工具的公共落点 ⇒ 必须各挂一次
     expect(symbols, 'syncFile 没挂失效（写工具落盘后视图会读到旧的）').toContain(

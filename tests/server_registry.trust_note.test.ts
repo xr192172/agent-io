@@ -21,7 +21,7 @@ import path from 'node:path';
 import { describe, it, expect, afterAll } from 'vitest';
 import { registerAllTools, TOOL_DEFS, trustNoteFor } from '../src/server_registry';
 import { importProject } from '../src/tools/import_project';
-import { openDb, closeAllProjectCacheDbs } from '../src/db/db';
+import { openDb, closeAllProjectCacheDbs } from '../src/infrastructure/index/db';
 import { stopBackfill } from '../src/tools/index_backfill';
 
 type Cb = (args: Record<string, unknown>) => Promise<{ content: { type: string; text: string }[]; isError?: boolean }>;

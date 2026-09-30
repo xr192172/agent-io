@@ -13,9 +13,9 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import type { Database } from '../../src/db/db';
-import { openDb, closeAllProjectCacheDbs } from '../../src/db/db';
-import { syncProject } from '../../src/db/symbols';
+import type { Database } from '../../src/infrastructure/index/db';
+import { openDb, closeAllProjectCacheDbs } from '../../src/infrastructure/index/db';
+import { syncProject } from '../../src/infrastructure/index/symbols';
 import { locateCandidates } from '../../src/diagnosis/candidate_locator';
 import type { SymptomParsed } from '../../src/diagnosis/contract';
 

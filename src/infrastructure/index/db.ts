@@ -10,12 +10,12 @@
  * 存储位置：<dataHome>/.agent-io/cache.db（.agent-io/ 已在 .gitignore）
  */
 
-import { DATA_DIR_NAME } from '../data_dir.js';
+import { DATA_DIR_NAME } from '../../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import type { DatabaseSync as DatabaseSyncType } from 'node:sqlite';
-import { getStorageRoot } from '../storage.js';
+import { getStorageRoot } from '../../storage.js';
 import { SCHEMA_SQL } from './schema.js';
 
 // node:sqlite 用 createRequire 运行时加载而非静态 import：

@@ -203,7 +203,7 @@ describe('derive_anim_flow - 跨文件 L4 chain flow（序号 15）', () => {
     setupHost('f_crossff', 'compose.go');
     await deriveDetailChain({ feature: 'f_crossff', node_id: 'host_node', project_root: tmpDir });
     // 造项目缓存：tmpDir/.agent-io/cache.db，插跨文件调用边（绕过外键）
-    const { openDb } = await import('../../src/db/db');
+    const { openDb } = await import('../../src/infrastructure/index/db');
     const db = openDb(path.join(tmpDir, DATA_DIR_NAME, 'cache.db'));
     db.exec('PRAGMA foreign_keys = OFF');
     db.prepare(
@@ -237,7 +237,7 @@ describe('derive_anim_flow - 跨文件 L4 chain flow（序号 15）', () => {
     writeFixture('compose.go', GO_FIXTURE);
     setupHost('f_crossoff', 'compose.go');
     await deriveDetailChain({ feature: 'f_crossoff', node_id: 'host_node', project_root: tmpDir });
-    const { openDb } = await import('../../src/db/db');
+    const { openDb } = await import('../../src/infrastructure/index/db');
     const db = openDb(path.join(tmpDir, DATA_DIR_NAME, 'cache.db'));
     db.exec('PRAGMA foreign_keys = OFF');
     db.prepare(

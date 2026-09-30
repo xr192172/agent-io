@@ -13,7 +13,7 @@ import { DATA_DIR_NAME } from '../data_dir.js';
 import path from 'node:path';
 import fs from 'node:fs';
 import { getStorageRoot, getDSL } from '../storage.js';
-import { openDb, type Database } from '../db/db.js';
+import { openDb, type Database } from '../infrastructure/index/db.js';
 
 export interface FuncCallRef {
   fn_id: string;
