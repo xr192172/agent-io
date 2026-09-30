@@ -30,7 +30,7 @@ import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { Database } from '../infrastructure/index/db.js';
-import { instrumentFile } from '../observe/instrument.js';
+import { instrumentFile } from '../infrastructure/analysis/observe/instrument.js';
 
 export interface PointReason {
   /** 信号名（人读） */

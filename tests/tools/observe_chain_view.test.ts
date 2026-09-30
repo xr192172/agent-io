@@ -6,8 +6,8 @@
  */
 import { describe, it, expect } from 'vitest';
 import { buildChainViewHtml } from '../../src/tools/observe_chain_view';
-import type { TSDLDecl, TSDeviation, TSDiffReport } from '../../src/observe/contract';
-import type { TSChainObs } from '../../src/observe/chain';
+import type { TSDLDecl, TSDeviation, TSDiffReport } from '../../src/infrastructure/analysis/observe/contract';
+import type { TSChainObs } from '../../src/infrastructure/analysis/observe/chain';
 
 function declsOf(...decs: TSDLDecl[]): TSDLDecl[] { return decs; }
 

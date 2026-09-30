@@ -17,7 +17,7 @@ import {
   collectTsFiles,
   instrumentFile,
   instrumentProject,
-} from '../../src/observe/instrument.js';
+} from '../../src/infrastructure/analysis/observe/instrument.js';
 
 let dir: string;
 

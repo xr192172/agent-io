@@ -6,16 +6,16 @@
  * （函数出入口/return/catch/IO 写盘），幂等（已含探针标记的文件跳过）。
  *
  * 用法（项目根，先构建）：
- *   node dist/src/observe/instrument_cli.js <project> [--dry-run] [--project-root <根>]
- *   node dist/src/observe/instrument_cli.js <project> --uninstrument
- *   node dist/src/observe/instrument_cli.js <project> --ledger
+ *   node dist/src/presentation/cli/instrument_cli.js <project> [--dry-run] [--project-root <根>]
+ *   node dist/src/presentation/cli/instrument_cli.js <project> --uninstrument
+ *   node dist/src/presentation/cli/instrument_cli.js <project> --ledger
  *
  *   <project>       要插桩的目标项目目录（默认当前目录）
  *   --dry-run       只报告会注入的探针点，不写盘
  *   --uninstrument  一键全拔：从 .agent-io/observe-backup 拷回所有原文件，
  *                   删除备份目录，并清理探针台账（插桩时已自动备份原文件+记账）
  *   --ledger        查看探针台账：一次插桩的全部探针点 + 统计（JSON 打印）
- *   --project-root  agent-io 根（探针实现 src/observe/probe.js 所在仓库根），
+ *   --project-root  agent-io 根（探针实现所在目录，见 `PROBE_DIR_REL`），
  *                   用于计算被插桩文件 → probe.js 的相对 import 路径。默认自动推断。
  *
  * 输出：每个文件注入的探针点数 + 汇总；idempotent——重跑时已插桩文件标记为跳过。
@@ -35,15 +35,19 @@ import {
   loadProbeLedger,
   clearProbeLedger,
   ledgerSummary,
-} from './instrument.js';
+  PROBE_DIR_REL,
+} from '../../infrastructure/analysis/observe/instrument.js';
 
 const isMain = import.meta.url === pathToFileURL(path.resolve(process.argv[1] ?? '')).href;
 
-/** 推断 agent-io 根：向上找含 src/observe/probe.ts 的目录 */
+/** 推断 agent-io 根：向上找含 `<PROBE_DIR_REL>/probe.ts` 的目录
+ *  ★ 与 `instrument.inferProjectRoot` **共用同一常量** —— 原先这里硬编码了第二份
+ *    `src/observe/probe.ts`（判据分叉：搬一次家要改两处），现已收口。 */
 function inferRoot(from: string): string {
   let dir = path.resolve(from);
+  const marker = PROBE_DIR_REL.split('/');
   for (let i = 0; i < 10; i++) {
-    if (fs.existsSync(path.join(dir, 'src', 'observe', 'probe.ts'))) return dir;
+    if (fs.existsSync(path.join(dir, ...marker, 'probe.ts'))) return dir;
     const parent = path.dirname(dir);
     if (parent === dir) break;
     dir = parent;

@@ -13,8 +13,8 @@
  * 纯渲染，不判定、不联网、不依赖重框架；单测聚焦 HTML 结构断言。
  */
 
-import type { TSDLDecl, TSDeviation, TSDiffReport } from '../observe/contract.js';
-import type { TSChainObs } from '../observe/chain.js';
+import type { TSDLDecl, TSDeviation, TSDiffReport } from '../infrastructure/analysis/observe/contract.js';
+import type { TSChainObs } from '../infrastructure/analysis/observe/chain.js';
 
 /** 视图输入：已判定的链路数据（外部用 observe/contract TSComparator + chain 装配）。 */
 export interface ChainViewInput {

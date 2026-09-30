@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { silentErrorDiscard, judgeEvent, impactBlastRadius, IMPACT_BLAST_RADIUS_LIMIT, impactUnplannedSpread } from '../../src/observe/judge.js';
-import type { TSEvent } from '../../src/observe/probe.js';
+import { silentErrorDiscard, judgeEvent, impactBlastRadius, IMPACT_BLAST_RADIUS_LIMIT, impactUnplannedSpread } from '../../src/infrastructure/analysis/observe/judge.js';
+import type { TSEvent } from '../../src/infrastructure/analysis/observe/probe.js';
 
 function ev(over: Partial<TSEvent> = {}): TSEvent {
   return { probe: 'save.writefile', time: '2026-08-14T00:00:00Z', source: 'static-rule', fields: {}, ...over };

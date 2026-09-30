@@ -11,7 +11,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { instrumentFile } from '../../src/observe/instrument.js';
+import { instrumentFile } from '../../src/infrastructure/analysis/observe/instrument.js';
 
 let dir: string;
 

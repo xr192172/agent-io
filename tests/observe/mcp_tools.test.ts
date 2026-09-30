@@ -15,7 +15,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { TOOL_DEFS } from '../../src/server_registry';
-import { TSProbeCapture } from '../../src/observe/probe';
+import { TSProbeCapture } from '../../src/infrastructure/analysis/observe/probe';
 
 /** 从 TOOL_DEFS 取指定主工具的 handler */
 function handlerOf(name: string) {

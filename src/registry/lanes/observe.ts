@@ -25,7 +25,7 @@ import { z } from 'zod';
 import { wrap, wrapData } from '../plumbing.js';
 import path from 'node:path';
 import { baselinePathFor, captureBaseline, verifyBaseline } from '../../infrastructure/analysis/behavior/index.js';
-import { rebuildChains } from '../../observe/chain.js';
+import { rebuildChains } from '../../infrastructure/analysis/observe/chain.js';
 import { getFeatureLine } from '../../tools/feature_line.js';
 import { ensureProjectIndex } from '../../tools/index_freshness.js';
 import { memoryObserveHandler, memoryTargetsHandler } from '../../tools/memory_observe.js';
@@ -224,7 +224,7 @@ export const OBSERVE_TOOLS: ToolDef[] = [
         .array(z.string())
         .optional()
         .describe('契约模式探针 id 数组（如 ["store.save.writefile"]），只注入这些探针点；缺省=探索模式全量插桩'),
-      project_root: z.string().optional().describe('agent-io 根（TS 探针实现 src/observe/probe.js 所在仓库根），用于计算相对 import 路径，默认自动推断'),
+      project_root: z.string().optional().describe('agent-io 根（TS 探针实现所在仓库根），用于计算相对 import 路径，默认自动推断'),
       deep: z.boolean().optional().describe('仅 Go：开启 deep 级插桩（函数内变量赋值捕获），默认 false'),
       effects: z.boolean().optional().describe('仅 Go：开启 effect 级插桩（包级变量写/chan send/资源获取观测），默认 false'),
       scope: z.boolean().optional().describe('仅 TS：开启 scope 模式（try/finally 包裹函数体注入 enterScope/exitScope，录带帧调用树），默认 false（captureProbe 点探针）'),

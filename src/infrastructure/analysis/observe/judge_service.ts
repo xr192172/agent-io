@@ -17,7 +17,7 @@
  */
 
 import { judgeEvent, type JudgeVerdict } from './judge.js';
-import { callChat, loadLlmConfig } from '../tools/llm_focus.js';
+import { callChat, loadLlmConfig } from '../../../tools/llm_focus.js';
 import type { TSEvent } from './probe.js';
 
 /** 单条判定结果（含事件副本，方便调用方对齐）。 */

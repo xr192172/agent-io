@@ -39,10 +39,29 @@ describe('★ 残留自清（比"退出钩子"更可靠的那道保险）', () =
     expect(isProbeNeutralized(residue), '残留应已被中和（删除，或删不动时置空）').toBe(true);
   });
 
-  it('没有残留 ⇒ 返回空数组（不误报、不瞎删）', () => {
-    // 反面：先扫一遍，再扫一遍必须为空 —— 证明它不会每次都报一堆（否则这个"保险"自己就是噪音源）
+  it('没有残留 ⇒ 扫完之后仓里不留"脏"残留（不误报、不瞎删）', () => {
+    // 反面：先扫两遍，然后钉住真正的不变量 —— **扫完不能留下"内容非空"的探针文件**。
+    //
+    // ★ 判据为什么**不是**「第二次调用返回 `[]`」（2026-09-30 修 T9 的漏网）：
+    //   `sweepProbeResidues` 返回的是「**已被中和**的路径」，而中和 = 先删、删不动就置空。
+    //   宿主的批量删除护栏**按 turn 计数**（threshold=50，跑一次全量必超）
+    //   ⇒ 那时文件会以「空壳」形式留下 ⇒ 第二次扫**必然再把它报一遍**。
+    //   所以「返回 []」只在"删除恰好还能用"时成立 —— 那是**环境的巧合**，不是这个 helper 的契约。
+    //   实测（2026-09-30 16:53）：本轮搬迁连删 50+ 次后，这条**绿了很久突然红**，
+    //   红的不是代码、也不是这个 helper —— 正是上面那行注释写过的现象。同一份 helper 的注释
+    //   （`neutralizeProbe` 第 42-48 行）早就说明了"以删除为唯一还原手段"不可靠。
     sweepProbeResidues();
-    expect(sweepProbeResidues()).toEqual([]);
+    sweepProbeResidues();
+
+    const dirty: string[] = [];
+    for (const dir of ['src', 'tests']) {
+      for (const e of fs.readdirSync(path.join(REPO, dir), { withFileTypes: true })) {
+        if (!e.isFile() || !e.name.startsWith(PROBE_PREFIX)) continue;
+        const abs = path.join(REPO, dir, e.name);
+        if (!isProbeNeutralized(abs)) dirty.push(`${dir}/${e.name}`);
+      }
+    }
+    expect(dirty, '扫完之后不应再有"内容非空"的探针残留').toEqual([]);
   });
 });
 

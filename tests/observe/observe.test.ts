@@ -14,8 +14,8 @@ import {
   TSComparator,
   silentErrorDiscardTS,
   renderTSDiffReport,
-} from '../../src/observe';
-import type { TSEvent } from '../../src/observe';
+} from '../../src/infrastructure/analysis/observe/index';
+import type { TSEvent } from '../../src/infrastructure/analysis/observe/index';
 
 let dir: string;
 let eventsPath: string;

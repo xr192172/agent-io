@@ -6,7 +6,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { setGlobalProbeSink, TSProbeCapture, loadTSEvents, enterScope, exitScope, type TSEvent } from '../../src/observe/probe';
+import { setGlobalProbeSink, TSProbeCapture, loadTSEvents, enterScope, exitScope, type TSEvent } from '../../src/infrastructure/analysis/observe/probe';
 
 let tmp: string;
 let eventsPath: string;

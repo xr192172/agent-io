@@ -1976,7 +1976,7 @@
           }
         },
         "project_root": {
-          "description": "agent-io 根（TS 探针实现 src/observe/probe.js 所在仓库根），用于计算相对 import 路径，默认自动推断",
+          "description": "agent-io 根（TS 探针实现所在仓库根），用于计算相对 import 路径，默认自动推断",
           "type": "string"
         },
         "deep": {

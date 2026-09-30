@@ -16,8 +16,8 @@ import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import { watchProjectTool, closeAllActiveWatches } from '../../src/tools/watch_project_tool';
 import { importProject } from '../../src/tools/import_project';
 import { openDb } from '../../src/infrastructure/index/db';
-import { setGlobalProbeSink, loadTSEvents } from '../../src/observe/probe';
-import { judgeEvent } from '../../src/observe/judge';
+import { setGlobalProbeSink, loadTSEvents } from '../../src/infrastructure/analysis/observe/probe';
+import { judgeEvent } from '../../src/infrastructure/analysis/observe/judge';
 import { clearAlertInbox, peekAlerts } from '../../src/tools/alert_inbox';
 import { loadLedger } from '../../src/tools/impact_ledger_store';
 

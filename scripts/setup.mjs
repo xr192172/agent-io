@@ -4,7 +4,7 @@
  *
  * 定位：把已存在但彼此断开的环节合成一条命令。复用既有 CLI，不重造：
  *   - MCP 安装      → 复用 scripts/install_mcp.mjs（写 9 个 client 配置）
- *   - TS 静态插桩   → 复用 dist/src/camera/instrument_cli.js（幂等，--uninstrument 还原）
+ *   - TS 静态插桩   → 复用 dist/src/presentation/cli/instrument_cli.js（幂等，--uninstrument 还原）
  *   - skill 安装    → 本脚本新增：把 .trae/skills/ 拷进目标 agent skills 目录
  *   - 事件目录规约   → 本脚本新增：确保 <target>/.agent-io/camera + .agent/camera 存在
  *                   （这两处正是 reconcile_chain.discoverEventFiles 自动发现的两个事件源）
@@ -33,7 +33,7 @@ import { spawnSync } from 'node:child_process';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SKILL_SRC = path.join(ROOT, '.trae', 'skills');
 const INSTALL_MCP = path.join(ROOT, 'scripts', 'install_mcp.mjs');
-const INSTRUMENT_CLI = path.join(ROOT, 'dist', 'src', 'camera', 'instrument_cli.js');
+const INSTRUMENT_CLI = path.join(ROOT, 'dist', 'src', 'presentation', 'cli', 'instrument_cli.js');
 const CAPABILITY_CLI = path.join(ROOT, 'dist', 'src', 'tools', 'capability_cli.js');
 const DEFAULT_AGENT_SKILLS = path.join(ROOT, '..', 'ai-config', 'skills'); // 本地 agent 的 skills 目录
 const EVENT_DIRS_TPL = ['.agent-io/camera', '.agent/camera'];

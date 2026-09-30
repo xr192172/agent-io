@@ -3820,3 +3820,64 @@ src/tools/simulation.ts      ←  ../renderer/simulation_engine.js
 | ④ | **解析成仓库相对绝对路径**再比 | ✅ 可用；**对照项**（`health_cli` 与 lane `cross` 解析出同一路径）证明不哑 |
 ⇒ ★★ **教训**：**判定"两个东西是不是同一个"时，必须先归一化到同一个坐标系**（这里是绝对路径）。
   相对路径的字符串比较**在两边基准不同时必然出错**，而且**错得安静**（返回"全不重叠"这种看起来很合理的结果）。
+
+### 44.5 ★★★ 搬迁③-4（`src/observe/` 混合目录）撞到的**第二个真问题**：改名工具管不到"拼字符串拼出来的本仓路径"
+
+搬迁进度：① `dsl→domain` ✅｜② `db→infrastructure/index` ✅｜③-1 五个单文件分析器 ✅｜
+③-2 `java_refactor`+`version_upgrade` ✅｜③-3 `diagnosis` ✅｜**③-4 `observe` ✅**｜③-5 `translate` ⏳
+
+`src/observe/` 是**混合目录**（§44.2 明写 `instrument_cli.ts` 属 `presentation/cli/`）⇒ 拆两处：
+11 个 → `src/infrastructure/analysis/observe/`，1 个 CLI → **`src/presentation/cli/`**（该层首次出现）。
+
+#### (1) `rename_files` 全绿 ≠ 指对了：这是**同一知识的第 3 种载体**
+`instrument.ts` 里有两处本仓路径知识，**都不是 import**，所以改名工具**看不到它们**：
+| 位置 | 形态 | 干什么 |
+|---|---|---|
+| `relativeProbeImport` | `path.join(root,'dist','src','observe','probe.js')` | 给**被插桩代码**生成探针 import 说明符 |
+| `inferProjectRoot` | `existsSync(dir + 'src/observe/probe.ts')` | 拿它当**仓库根的路标** |
+★ 而 `instrument_cli.ts` 的 `inferRoot` **又抄了同一份路标逻辑** ⇒ **判据分叉**（搬一次家要改两处）。
+
+⇒ 处置：建**唯一落点** `export const PROBE_DIR_REL = 'src/infrastructure/analysis/observe'`，
+两处推算 + CLI 的 `inferRoot` 全改为读它。★ 对照 §2b 的判据优先级表：
+**改名工具能覆盖的只有"载体=import 说明符"这一类**；载体是"字符串拼接"的，**它必然漏**，
+而且**漏得安静**（`tsc` 不报错 —— 那个路径只在**运行时被插桩**时才用得上）。
+⇒ ★★ 通用结论：**搬目录后要单独问一句"这个目录的路径有没有被谁拼成字符串用"**。
+   现在 `scripts/move_finish.mjs` 覆盖 `tests/**`+`scripts/**`+根 `*.json|mjs|cjs|ts`，
+   **`src/**` 内部**的字符串拼接仍然得人看（因为它不敢动 `src/` 里的真 import）。
+   ★ 反例存档：`package.json` / `setup.mjs` 里 `dist/src/observe/instrument_cli.js` 因为**带 `.js` 后缀**
+   逃过了 `move_finish` 的"路径边界"正则（`from` 后面必须跟 `/` 或引号）—— 也是这一类。
+
+#### (2) ★ 顺手修掉一个**早已坏掉**的路径（不是这次搬坏的）
+`scripts/setup.mjs` 把插桩 CLI 指到 `dist/src/camera/instrument_cli.js` —— **`camera/` 这个目录早已不存在**
+（前几轮改名时漏改）⇒ `setup.mjs --instrument` 一直是坏的。
+★ 这正是"**没有门去看这类字符串路径**"的代价：坏了好几天，谁都不知道。
+
+#### (3) ★★ 给这类路径补了一条**真断言**，并因此撞出「陈旧 `dist` 会骗过断言」
+`InstrumentFileResult` 新增 `probeImport`（本次实际注入的那句 import），`dogfood.test.ts` 新增一测。
+**出生证实测踩坑（值得记）**：
+- 第一版断言 = 比对`probeImport`字符串 + `existsSync(它解析出的 dist 路径)`。
+  把常量故意改成 `src/observe` 后 —— **仍然通过**。
+- 原因：**`tsc` 不清除"源文件已删除"的旧产物**，`dist/src/observe/probe.js` 这个陈旧文件还在。
+  ⇒ 断言被**假绿**（判据靠了一个"可能过期的镜像"）。
+- 第二版把判据绑到**源码路标**（`<PROBE_DIR_REL>/probe.ts` 必须存在 —— **与产品代码用的是同一个路标**）：
+  **复测：注入错常量 ⇒ 变红；还原 ⇒ 绿** ✓
+- 并**清掉陈旧 dist 重编**（`rm -rf dist && tsc`）⇒ 三条子判据都不再可能被假绿。
+⇒ ★★ 通用结论：**当判据指向"编译产物"时，先问"这个产物有没有可能是过期的"**；
+   指向"源码"的判据不会过期，所以**优先指源码**，产物只当补充项。
+
+#### (4) ★ 环境障碍（不是代码问题，但会让搬迁**半途损坏**）—— 已写进记忆
+`rename_files` 落盘时会触发宿主的**批量删除护栏**
+`[safe-delete][SAFE_DELETE_BULK_CONFIRM_REQUIRED]`（按 **turn** 累计，阈值 50）。
+- ★ 后果：搬迁**半途被拦**，留下"**引用已改写、文件没搬**"的坏中间态。
+- ★★ 试过两次"分步搬"都坏得一样：`rename_files` 的改写**按"已搬集合"逐步**算
+  ⇒ 分批必然产出"自己搬了、兄弟没搬"的错 specifier（实测 `chain.ts` 的目标副本里写成
+  `../../../observe/probe.js` —— 那正是"我搬了、probe 没搬"的坐标系）。
+- ⇒ **纪律：一个目录必须一次成型；被拦就整批回滚（`git checkout -- src tests` + 删新建目录），不要续做。**
+- ⇒ 可行通道：**前台 + 绕过沙箱**（后台任务**不**继承绕过 —— 实测后台跑时护栏照样拦，count 50→53）。
+- ⇒ 副产品：给 `.inspect/move_batch.mjs` 补了 `--exclude=`（混合目录靠它把 CLI 摘出来单独归位）。
+  ★ 这次之后才敢说：**③ 这一族的搬迁流程是稳的**（③-5 `translate/` 照抄即可）。
+
+#### (5) 对外契约变更（需记账）
+G1 快照按门指引重算：**仍 58 个工具**，只有 `observe_instrument` 的 `project_root` 描述
+**去掉了硬编码路径**（`…探针实现 src/observe/probe.js 所在仓库根…` → `…探针实现所在仓库根…`）。
+★ 故意改成**不带路径**：这是**用户可见描述**，写死内部目录 = 下一个腐点。

@@ -7,7 +7,7 @@
  *   3. 开启后打印内容包含 rule/probe。
  */
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { judgeGuardLog, judgeGuardEnabled } from '../../src/observe/judge_guard.js';
+import { judgeGuardLog, judgeGuardEnabled } from '../../src/infrastructure/analysis/observe/judge_guard.js';
 
 function ev(probe: string, fields: Record<string, unknown>) {
   return { probe, time: '2026-08-14T00:00:00Z', source: 'runtime', fields };

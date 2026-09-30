@@ -10,7 +10,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { runInstrumentCLI } from '../../src/observe/instrument_cli.js';
+import { runInstrumentCLI } from '../../src/presentation/cli/instrument_cli.js';
 
 let dir: string;
 

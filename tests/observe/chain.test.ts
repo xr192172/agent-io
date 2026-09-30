@@ -18,10 +18,10 @@ import {
   matchChainDecl,
   baseProbeName,
   type TSChainObs,
-} from '../../src/observe/chain';
-import { TSComparator, type TSDesignDSLDoc } from '../../src/observe/contract';
-import { normalizeEvents } from '../../src/observe/judge_service';
-import type { TSEvent } from '../../src/observe/probe';
+} from '../../src/infrastructure/analysis/observe/chain';
+import { TSComparator, type TSDesignDSLDoc } from '../../src/infrastructure/analysis/observe/contract';
+import { normalizeEvents } from '../../src/infrastructure/analysis/observe/judge_service';
+import type { TSEvent } from '../../src/infrastructure/analysis/observe/probe';
 
 function ev(probe: string, time: string, traceId?: string, frameId?: number, err?: string): TSEvent {
   return {

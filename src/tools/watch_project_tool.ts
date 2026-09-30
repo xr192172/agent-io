@@ -27,7 +27,7 @@ import {
   type LedgerEntry,
 } from './impact_ledger_store.js';
 import { pushAlert } from './alert_inbox.js';
-import { captureProbe, TSProbeCapture, setGlobalProbeSink, hasGlobalProbeSink } from '../observe/probe.js';
+import { captureProbe, TSProbeCapture, setGlobalProbeSink, hasGlobalProbeSink } from '../infrastructure/analysis/observe/probe.js';
 import { watchProject, type WatchHandle, type WatchBatchSummary, type ReconcileSummary } from './watch_project.js';
 
 // ─────────────────────────────────────────────────────────────

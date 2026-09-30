@@ -26,10 +26,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { getDSL } from '../storage.js';
 import { deriveDetailChain } from './derive_chain.js';
-import { queryObserveLog } from '../observe/log_query.js';
-import { judgeEvent } from '../observe/judge.js';
-import { rebuildChains, matchChainDecl, type TSChainObs } from '../observe/chain.js';
-import { loadTSEvents, type TSEvent } from '../observe/probe.js';
+import { queryObserveLog } from '../infrastructure/analysis/observe/log_query.js';
+import { judgeEvent } from '../infrastructure/analysis/observe/judge.js';
+import { rebuildChains, matchChainDecl, type TSChainObs } from '../infrastructure/analysis/observe/chain.js';
+import { loadTSEvents, type TSEvent } from '../infrastructure/analysis/observe/probe.js';
 
 export interface ReconcileChainInput {
   /** DSL feature 名 */

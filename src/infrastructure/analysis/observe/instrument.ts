@@ -30,11 +30,24 @@
  * 最后在文件顶部补 import。幂等：已注入过探针的文件跳过（检测探针标记）。
  */
 
-import { DATA_DIR_NAME } from '../data_dir.js';
+import { DATA_DIR_NAME } from '../../../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
-import { parseAstRoot } from '../tools/ts_kernel/kernel.js';
-import { skipDirSet } from '../tools/ts_kernel/source_exts.js';
+import { parseAstRoot } from '../../../tools/ts_kernel/kernel.js';
+import { skipDirSet } from '../../../tools/ts_kernel/source_exts.js';
+
+/**
+ * ★★ 唯一落点：**探针实现**在本仓里的目录（相对仓库根的 posix 路径）。
+ *
+ * 这个知识被用在**两处**，且两处都**不能靠 import 表达**（都是字符串拼路径）：
+ *   ① `relativeProbeImport`：给被插桩代码生成指向「**编译后**探针 (`dist/<此目录>/probe.js`)」的相对 import；
+ *   ② `inferProjectRoot`：从被插桩文件向上找 agent-io 仓库根 —— 拿此目录下的 `probe.ts` 当**路标**。
+ *   （`src/presentation/cli/instrument_cli.ts` 的 `inferRoot` 也复用这里，见其 import。）
+ *
+ * ⚠️ **搬家时必须同步这里** —— `src/tools/rename_files` 只改 import 说明符，
+ *    **改不了这种字符串拼接**（2026-09-30 搬 `src/observe/` 时实测：改名工具全绿，这两处会静默指错）。
+ */
+export const PROBE_DIR_REL = 'src/infrastructure/analysis/observe';
 
 /**
  * 强类型节点接口：tree-sitter 节点原生携带 startIndex/endIndex（字符偏移），
@@ -76,14 +89,18 @@ export interface InstrumentedSite {
 export interface InstrumentFileResult {
   file: string;
   sites: InstrumentedSite[];
+  /** ★ 本次实际用的探针 import 说明符（注入到文件头部的那一句）。
+   *  暴露出来是为了**可被测试断言** —— 它由 `relativeProbeImport` **拼字符串**得出
+   *  （不是 import），改名工具管不到 ⇒ 没有这个字段，"搬完家指错路径"就只能靠人眼发现。 */
+  probeImport?: string;
   error?: string;
 }
 
 /** 插桩配置 */
 export interface InstrumentOptions {
-  /** 探针 import 的模块路径（相对被插桩文件，默认相对 src/observe/probe.js 计算） */
+  /** 探针 import 的模块路径（相对被插桩文件，默认相对 `dist/<PROBE_DIR_REL>/probe.js` 计算） */
   probeImport?: string;
-  /** 项目根，用于计算 probe import 相对路径（默认从 src/observe/probe.ts 向上推断） */
+  /** 项目根，用于计算 probe import 相对路径（默认从 `<PROBE_DIR_REL>/probe.ts` 向上推断） */
   projectRoot?: string;
   /** 备份根：写盘前把原文件备份到 <backupRoot>/.agent-io/observe-backup/<rel>，
    *  供 --uninstrument 还原。默认等于 projectRoot（被插桩项目根）。 */
@@ -332,20 +349,20 @@ function buildImportStmt(probeImport: string): string {
   return `import { captureProbe, enterScope, exitScope } from '${probeImport}';\n`;
 }
 
-/** 计算 import 相对路径：从 file 目录到编译后的探针实现 dist/src/observe/probe.js
+/** 计算 import 相对路径：从 file 目录到编译后的探针实现 `dist/<PROBE_DIR_REL>/probe.js`
  * （被插桩代码运行时解析的是编译产物，而非 TS 源） */
 function relativeProbeImport(file: string, projectRoot: string): string {
-  const observeProbe = path.join(projectRoot, 'dist', 'src', 'observe', 'probe.js');
+  const observeProbe = path.join(projectRoot, 'dist', ...PROBE_DIR_REL.split('/'), 'probe.js');
   let rel = path.relative(path.dirname(file), observeProbe).replaceAll('\\', '/');
   if (!rel.startsWith('.')) rel = './' + rel;
   return rel;
 }
 
-/** 从文件路径向上找含 src/observe/probe.ts 的项目根；找不到退回文件所在目录 */
+/** 从文件路径向上找含 `<PROBE_DIR_REL>/probe.ts` 的项目根；找不到退回文件所在目录 */
 function inferProjectRoot(file: string): string {
   let dir = path.dirname(file);
   for (let i = 0; i < 8; i++) {
-    if (fs.existsSync(path.join(dir, 'src', 'observe', 'probe.ts'))) return dir;
+    if (fs.existsSync(path.join(dir, ...PROBE_DIR_REL.split('/'), 'probe.ts'))) return dir;
     const parent = path.dirname(dir);
     if (parent === dir) break;
     dir = parent;
@@ -497,6 +514,8 @@ export async function instrumentFile(file: string, opts: InstrumentOptions = {})
   const root = asInstr(parsed.root);
 
   const projectRoot = opts.projectRoot ?? inferProjectRoot(file);
+  const probeImport = opts.probeImport ?? relativeProbeImport(file, projectRoot);
+  result.probeImport = probeImport;
   // 探针注入时附带的文件相对路径（相对项目根，正斜杠），供日志按文件过滤
   const fileRel = path.relative(projectRoot, file).replaceAll('\\', '/');
 
@@ -513,7 +532,6 @@ export async function instrumentFile(file: string, opts: InstrumentOptions = {})
   // 按 index 从大到小排序，从后往前注入避免偏移漂移
   insertions.sort((a, b) => b.index - a.index);
 
-  const probeImport = opts.probeImport ?? relativeProbeImport(file, projectRoot);
   const importStmt = buildImportStmt(probeImport);
 
   let out = content;

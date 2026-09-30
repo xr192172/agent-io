@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { queryObserveLog } from '../../src/observe/log_query.js';
+import { queryObserveLog } from '../../src/infrastructure/analysis/observe/log_query.js';
 
 function writeEvents(file: string, lines: string[]): void {
   fs.writeFileSync(file, lines.join('\n') + '\n', 'utf8');

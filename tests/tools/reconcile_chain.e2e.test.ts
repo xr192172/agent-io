@@ -10,7 +10,7 @@ describe('reconcile_chain e2e（中观档：派生 → 缓存 → 事件对账�
     // 自建临时 feature：宿主节点指向真实源文件（绝对路径）
     const feature = 'cr_e2e';
     const nodeId = 'file_chain_ts';
-    const realFile = path.resolve('src/observe/chain.ts');
+    const realFile = path.resolve('src/infrastructure/analysis/observe/chain.ts');
     saveDSL({
       feature,
       title: 'reconcile_chain e2e',
@@ -37,7 +37,7 @@ describe('reconcile_chain e2e（中观档：派生 → 缓存 → 事件对账�
       probe: 'observe.chain.' + n,
       time: new Date(Date.now() + i * 1000).toISOString(),
       fields: {
-        file: 'src/observe/chain.ts',
+        file: 'src/infrastructure/analysis/observe/chain.ts',
         ...(i === 0 ? { op: 'writefile', err: 'disk full', benign: false } : { err: '', benign: true }),
       },
     }));

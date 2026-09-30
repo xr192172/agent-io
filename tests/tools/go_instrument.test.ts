@@ -5,7 +5,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { isGoProject, goReportSummary, goObserveDir, checkGoObserveDeps, ensureGoObserveIntegration, type GoInstrumentOut } from '../../src/observe/go_instrument';
+import { isGoProject, goReportSummary, goObserveDir, checkGoObserveDeps, ensureGoObserveIntegration, type GoInstrumentOut } from '../../src/infrastructure/analysis/observe/go_instrument';
 
 let tmp: string;
 beforeEach(() => { tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'goinstr_')); });

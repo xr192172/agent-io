@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { instrumentProject } from '../../src/observe/instrument';
+import { instrumentProject } from '../../src/infrastructure/analysis/observe/instrument';
 
 describe('instrument scope 模式（enterScope/try/finally/exitScope 注入）', () => {
   it('对含 return 的嵌套函数注入 scope，花括号平衡，一个函数只一对 enter/exit', async () => {

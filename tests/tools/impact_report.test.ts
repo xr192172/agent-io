@@ -20,8 +20,8 @@ import { diffImpact } from '../../src/tools/diff_impact';
 import { importProject } from '../../src/tools/import_project';
 import { openDb } from '../../src/infrastructure/index/db';
 import { watchProjectTool, closeAllActiveWatches } from '../../src/tools/watch_project_tool';
-import { setGlobalProbeSink, loadTSEvents } from '../../src/observe/probe';
-import { judgeEvent } from '../../src/observe/judge';
+import { setGlobalProbeSink, loadTSEvents } from '../../src/infrastructure/analysis/observe/probe';
+import { judgeEvent } from '../../src/infrastructure/analysis/observe/judge';
 
 const roots: string[] = [];
 

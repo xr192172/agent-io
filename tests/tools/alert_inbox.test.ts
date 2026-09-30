@@ -22,7 +22,7 @@ import {
 import { watchProjectTool, closeAllActiveWatches } from '../../src/tools/watch_project_tool';
 import { importProject } from '../../src/tools/import_project';
 import { openDb } from '../../src/infrastructure/index/db';
-import { setGlobalProbeSink } from '../../src/observe/probe';
+import { setGlobalProbeSink } from '../../src/infrastructure/analysis/observe/probe';
 
 const roots: string[] = [];
 

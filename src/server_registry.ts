@@ -101,7 +101,7 @@ import { listProjectDocs, readProjectDoc, matchDocsForTargets, buildDocsPromptBl
 import { listProvidersMasked, upsertProvider, deleteProvider, getStats, resetStats, testProvider } from './tools/gateway.js';
 import { getProjectCacheDb } from './infrastructure/index/db.js';
 import { recordDogfoodUsage } from './tools/dogfood_stats.js';
-import { queryObserveLog } from './observe/log_query.js';
+import { queryObserveLog } from './infrastructure/analysis/observe/log_query.js';
 import { memoryObserveHandler, memoryTargetsHandler } from './tools/memory_observe.js';
 import { translateGoTsHandler } from './translate/tool.js';
 import { extractGo } from './translate/go_extractor.js';
@@ -125,9 +125,9 @@ import {
   type ApplySummary,
 } from './tools/rule_apply.js';
 import { observeTrace } from './tools/observe_trace.js';
-import { normalizeEvents, judgeEvents, judgeEventsWithLLM, renderJudgeReport } from './observe/judge_service.js';
-import { TSComparator, renderTSDiffReport, type TSDLDecl, type TSDiffReport } from './observe/contract.js';
-import { rebuildChains } from './observe/chain.js';
+import { normalizeEvents, judgeEvents, judgeEventsWithLLM, renderJudgeReport } from './infrastructure/analysis/observe/judge_service.js';
+import { TSComparator, renderTSDiffReport, type TSDLDecl, type TSDiffReport } from './infrastructure/analysis/observe/contract.js';
+import { rebuildChains } from './infrastructure/analysis/observe/chain.js';
 import { reconcileChain } from './tools/reconcile_chain.js';
 import type { ReconcileChainInput } from './tools/reconcile_chain.js';
 import {
@@ -138,14 +138,14 @@ import {
   saveProbeLedger,
   clearProbeLedger,
   ledgerSummary,
-} from './observe/instrument.js';
+} from './infrastructure/analysis/observe/instrument.js';
 import {
   isGoProject,
   instrumentGoProject,
   restoreGoProject,
   goReportSummary,
   checkGoObserveDeps,
-} from './observe/go_instrument.js';
+} from './infrastructure/analysis/observe/go_instrument.js';
 import path from 'node:path';
 import { statSync, readFileSync, writeFileSync, readdirSync, existsSync, type Dirent } from 'node:fs';
 import { fileURLToPath } from 'node:url';

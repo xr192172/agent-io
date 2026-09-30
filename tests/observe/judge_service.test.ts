@@ -9,8 +9,8 @@
  *   4. renderJudgeReport 输出人类可读报告（无偏差时单行 ✓）。
  */
 import { describe, it, expect } from 'vitest';
-import { normalizeEvents, judgeEvents, renderJudgeReport } from '../../src/observe/judge_service.js';
-import type { TSEvent } from '../../src/observe/probe.js';
+import { normalizeEvents, judgeEvents, renderJudgeReport } from '../../src/infrastructure/analysis/observe/judge_service.js';
+import type { TSEvent } from '../../src/infrastructure/analysis/observe/probe.js';
 
 function ev(over: Partial<TSEvent> = {}): TSEvent {
   return { probe: 'save.writefile', time: '2026-08-14T00:00:00Z', source: 'llm-design', fields: {}, ...over };
