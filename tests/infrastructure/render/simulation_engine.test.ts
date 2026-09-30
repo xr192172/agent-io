@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { SimulationEngine, applyNodeUpdates } from '../../src/infrastructure/render/simulation_engine.js';
-import type { Simulation, Node } from '../../src/domain/types';
+import { SimulationEngine, applyNodeUpdates } from '../../../src/infrastructure/render/simulation_engine.js';
+import type { Simulation, Node } from '../../../src/domain/types.js';
 
 function makeSim(def: Partial<Simulation>): Simulation {
   return {

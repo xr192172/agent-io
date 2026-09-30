@@ -21,7 +21,7 @@ import {
   parseApiName,
   formatHandlerArgs,
   formatValueShort,
-} from '../../src/infrastructure/render/anim_core.js';
+} from '../../../src/infrastructure/render/anim_core.js';
 
 describe('evalCondition - 条件表达式求值', () => {
   it('简单比较表达式', () => {
