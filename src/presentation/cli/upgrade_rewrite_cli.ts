@@ -23,8 +23,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { runContractScan } from '../../infrastructure/analysis/version_upgrade/detect.js';
 import { buildRewritePlan, applyEdits, type PlanEdit } from '../../infrastructure/analysis/version_upgrade/rewrite.js';
-import { runVerification, defaultVerifyCommands } from '../../tools/verify_refactor.js';
-import { isGitRepo, gitDirty, gitCommitFiles, gitCommitAll, gitRestoreFiles } from '../../tools/git.js';
+import { runVerification, defaultVerifyCommands } from '../../infrastructure/verify_refactor.js';
+import { isGitRepo, gitDirty, gitCommitFiles, gitCommitAll, gitRestoreFiles } from '../../infrastructure/git.js';
 
 function readArg(name: string): string | undefined {
   const i = process.argv.indexOf(name);

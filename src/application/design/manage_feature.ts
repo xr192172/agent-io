@@ -5,8 +5,8 @@
  * 通过 action 分发。list 复用 storage.listFeatures。
  */
 
-import { createFeature, cloneFeature } from '../../tools/feature_ops.js';
-import { createFromTemplate } from '../../tools/templates.js';
+import { createFeature, cloneFeature } from './feature_ops.js';
+import { createFromTemplate } from './templates.js';
 import { listFeatures as listStoredFeatures, deleteFeature } from '../../infrastructure/storage.js';
 
 export const MANAGE_ACTIONS = ['create', 'clone', 'template', 'list', 'delete'] as const;

@@ -15,7 +15,7 @@ import { describe, it, expect, afterAll } from 'vitest';
 import { importProject } from '../../src/infrastructure/graph/import_project.js';
 import { openDb } from '../../src/infrastructure/index/db';
 import { getIndexStats } from '../../src/infrastructure/index/symbols';
-import { handleWatchEvent, flushBatch, shouldSyncRel, reconcileProject, watchProject, decideFlushDelay, MAX_FLUSH_WAIT_MS } from '../../src/tools/watch_project';
+import { handleWatchEvent, flushBatch, shouldSyncRel, reconcileProject, watchProject, decideFlushDelay, MAX_FLUSH_WAIT_MS } from '../../src/infrastructure/index/watch_project.js';
 
 const roots: string[] = [];
 

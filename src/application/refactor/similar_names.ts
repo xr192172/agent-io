@@ -24,8 +24,8 @@
  * 边界：长度 <3 的短名不在此处理（归 suggest_renames）；`_` 忽略。
  */
 
-import { analyzeLocals, type LocalBinding } from '../../tools/ast_rename.js';
-import { loadLlmConfig } from '../../tools/llm_focus.js';
+import { analyzeLocals, type LocalBinding } from '../../infrastructure/parse/ast_rename.js';
+import { loadLlmConfig } from '../../infrastructure/llm_focus.js';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -305,7 +305,7 @@ async function defaultLlmFor(
     })
     .join('\n\n');
   const user = `target: ${filePath}\n为下列冗余相似名建议消歧新名（JSON）。\n\n${list}`;
-  const { callChat } = await import('../../tools/llm_focus.js');
+  const { callChat } = await import('../../infrastructure/llm_focus.js');
   const raw = await callChat(cfg, [
     { role: 'system', content: DEFAULT_SYSTEM },
     { role: 'user', content: user },

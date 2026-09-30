@@ -45,8 +45,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { BrickManifest } from '../../domain/contract.js';
-import { resolveGoThirdParty, compareGoVersion } from '../../tools/go_mod.js';
-import { resolveNpmThirdParty, compareNpmVersion, isNonRegistrySpec } from '../../tools/npm_mod.js';
+import { resolveGoThirdParty, compareGoVersion } from '../../infrastructure/parse/go_mod.js';
+import { resolveNpmThirdParty, compareNpmVersion, isNonRegistrySpec } from '../../infrastructure/parse/npm_mod.js';
 import { getStorageRoot } from '../../infrastructure/storage.js';
 
 export interface AssembleBricksInput {

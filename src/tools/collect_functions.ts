@@ -12,8 +12,8 @@
  * 每个功能条目带：暴露形态徽章 + 两边各自的描述/参数 + 合并后的实现模块连线。
  */
 
-import type { RegistryTool } from './registry_extract.js';
-import type { CliCommand } from './cli_extract.js';
+import type { RegistryTool } from '../application/meta/registry_extract.js';
+import type { CliCommand } from '../application/meta/cli_extract.js';
 
 export type EntryKind = 'mcp_only' | 'cli_only' | 'both';
 

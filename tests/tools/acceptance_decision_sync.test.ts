@@ -12,7 +12,7 @@
  * 验收方式：看 console 输出的完整 diff 消息。
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { diffViews } from '../../src/tools/diff_views';
+import { diffViews } from '../../src/application/refactor/diff_views.js';
 import { archiveNode, listArchive } from '../../src/application/meta/archive_node.js';
 import {
   saveDSL,
@@ -114,7 +114,7 @@ describe('验收：决策卡进同步（增量功能端到端）', () => {
     const design = dsl(
       feature,
       [
-        file('src/tools/diff_views.ts', [{ name: 'diffViews', sig: 'diffViews(input): DiffViewsResult' }], DIFF_VIEWS_CARD),
+        file('src/application/refactor/diff_views.ts', [{ name: 'diffViews', sig: 'diffViews(input): DiffViewsResult' }], DIFF_VIEWS_CARD),
         file(
           'src/application/meta/archive_node.ts',
           [
@@ -125,7 +125,7 @@ describe('验收：决策卡进同步（增量功能端到端）', () => {
         ),
       ],
       [
-        { id: 'f_src_tools_diff_views_ts', decision: DIFF_VIEWS_CARD },
+        { id: 'f_src_application_refactor_diff_views_ts', decision: DIFF_VIEWS_CARD },
         { id: 'f_src_application_meta_archive_node_ts', decision: ARCHIVE_NODE_CARD },
       ],
     );
@@ -143,14 +143,14 @@ describe('验收：决策卡进同步（增量功能端到端）', () => {
 
     // 2. 锚定基线（fork 语义：契约创立时刻）
     const baseline = dsl(feature, [
-      file('src/tools/diff_views.ts', [{ name: 'diffViews', sig: 'diffViews(input)' }]), // v1 无卡
+      file('src/application/refactor/diff_views.ts', [{ name: 'diffViews', sig: 'diffViews(input)' }]), // v1 无卡
     ]);
     saveBaselineFeature(baseline);
     console.log('\n────── 2. 锚定基线（fork：契约创立时刻，diff_views v1 无卡）──────');
 
     // 3. 实现改动（模拟实现侧动了代码：diff_views 加了新函数，live 未同步设计卡）
     const live = dsl(feature, [
-      file('src/tools/diff_views.ts', [
+      file('src/application/refactor/diff_views.ts', [
         { name: 'diffViews', sig: 'diffViews(input)' },
         { name: 'renderDecisionRef', sig: 'renderDecisionRef(card)' }, // 实现新增
       ]),
@@ -173,7 +173,7 @@ describe('验收：决策卡进同步（增量功能端到端）', () => {
     }
 
     // 断言关键语义（验收不只看消息，还要有硬断言）
-    const twDiffViews = r.data.three_way!.files.find((x) => x.path === 'src/tools/diff_views.ts')!;
+    const twDiffViews = r.data.three_way!.files.find((x) => x.path === 'src/application/refactor/diff_views.ts')!;
     expect(twDiffViews.design_decision?.summary).toBe(DIFF_VIEWS_CARD.summary);
     expect(twDiffViews.state).toBe('conflict'); // 设计加了卡+实现加了函数，两侧都改且不一致
     const twArchive = r.data.three_way!.files.find((x) => x.path === 'src/application/meta/archive_node.ts')!;
@@ -184,17 +184,17 @@ describe('验收：决策卡进同步（增量功能端到端）', () => {
     console.log('\n────── 6. 下线归档（archive_node）──────');
     const ar = archiveNode({
       feature,
-      file_path: 'src/tools/diff_views.ts',
+      file_path: 'src/application/refactor/diff_views.ts',
       retire_reason: 'diff 裁决逻辑并入 archive_node 统一收口',
       merged_into: 'src/application/meta/archive_node.ts',
     });
     console.log(ar.message);
-    expect(getArchiveEntryByPath(feature, 'src/tools/diff_views.ts')?.retire_reason).toContain('统一收口');
+    expect(getArchiveEntryByPath(feature, 'src/application/refactor/diff_views.ts')?.retire_reason).toContain('统一收口');
     const cur = getDSL(feature)!;
-    expect(cur.semantic!.files.map((x) => x.path)).not.toContain('src/tools/diff_views.ts');
+    expect(cur.semantic!.files.map((x) => x.path)).not.toContain('src/application/refactor/diff_views.ts');
     const target = cur.semantic!.files.find((x) => x.path === 'src/application/meta/archive_node.ts')!;
     expect(target.lifecycle?.status).toBe('merged');
-    expect(target.lifecycle?.merged_from).toContain('src/tools/diff_views.ts');
+    expect(target.lifecycle?.merged_from).toContain('src/application/refactor/diff_views.ts');
 
     // 6. 下线库可查（历史研究材料）
     console.log('\n────── 7. 下线库（`archive` action=list）──────');

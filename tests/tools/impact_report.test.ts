@@ -15,11 +15,11 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect, afterAll } from 'vitest';
-import { runImpactReport, readImpactReport, listImpactReports } from '../../src/tools/impact_report';
-import { diffImpact } from '../../src/tools/diff_impact';
+import { runImpactReport, readImpactReport, listImpactReports } from '../../src/application/meta/impact_report.js';
+import { diffImpact } from '../../src/infrastructure/analysis/diff_impact.js';
 import { importProject } from '../../src/infrastructure/graph/import_project.js';
 import { openDb } from '../../src/infrastructure/index/db';
-import { watchProjectTool, closeAllActiveWatches } from '../../src/tools/watch_project_tool';
+import { watchProjectTool, closeAllActiveWatches } from '../../src/infrastructure/index/watch_project_tool.js';
 import { setGlobalProbeSink, loadTSEvents } from '../../src/infrastructure/analysis/observe/probe';
 import { judgeEvent } from '../../src/infrastructure/analysis/observe/judge';
 

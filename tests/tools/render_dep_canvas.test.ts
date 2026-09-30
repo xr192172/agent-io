@@ -6,8 +6,8 @@
  *   - HTML 骨架完整（节点/连线/小地图/悬窗数据）
  */
 import { describe, it, expect } from 'vitest';
-import { layoutCanvas, renderDepCanvasHtml } from '../../src/tools/render_dep_canvas';
-import type { BrickifyResult } from '../../src/tools/brickify';
+import { layoutCanvas, renderDepCanvasHtml } from '../../src/presentation/cli/render_dep_canvas.js';
+import type { BrickifyResult } from '../../src/application/design/brickify.js';
 
 function brick(id: string, subIds: string[], opts?: { degenerate?: boolean }): BrickifyResult['bricks'][number] {
   const files = subIds.flatMap((sid) =>

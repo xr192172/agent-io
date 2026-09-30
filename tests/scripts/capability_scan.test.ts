@@ -30,7 +30,7 @@ function rmForce(dir) {
 
 /** 构造一个 register_capabilities.ts（含指定 id 的声明片段） */
 function writeCapReg(dir, decls) {
-  const p = path.join(dir, 'src/tools/register_capabilities.ts');
+  const p = path.join(dir, 'src/infrastructure/parse/register_capabilities.ts');
   mkdirSync(path.dirname(p), { recursive: true });
   writeFileSync(p, decls, 'utf-8');
 }

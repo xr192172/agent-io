@@ -33,11 +33,11 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { getStorageRoot } from '../../infrastructure/storage.js';
-import { resolveGoThirdParty } from '../../tools/go_mod.js';
-import { resolveNpmThirdParty } from '../../tools/npm_mod.js';
+import { resolveGoThirdParty } from '../../infrastructure/parse/go_mod.js';
+import { resolveNpmThirdParty } from '../../infrastructure/parse/npm_mod.js';
 import { parseGoImportQualifiers } from '../../infrastructure/graph/dead_deps.js';
 import { aggregateContracts } from './harvest_from_url.js';
-import { slimTsFile, type TsSlimResult } from '../../tools/ts_slim.js';
+import { slimTsFile, type TsSlimResult } from '../../infrastructure/parse/ts_slim.js';
 import { NODE_BUILTINS } from './harvest_closure.js';
 import type { BrickContract, BrickManifest } from '../../domain/contract.js';
 

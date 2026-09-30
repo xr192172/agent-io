@@ -23,7 +23,7 @@ import type { DesignDSL, Node } from '../domain/types.js';
 import { getDSL, saveDSL } from '../infrastructure/storage.js';
 import { parseFileFull, type ParsedSymbol } from '../infrastructure/parse/index.js';
 import { extractFunctionCfg } from '../infrastructure/parse/cfg.js';
-import { buildCallGraph, pickEntry, walkChain } from './derive_chain.js';
+import { buildCallGraph, pickEntry, walkChain } from '../application/design/derive_chain.js';
 
 export interface DeriveAnimFlowInput {
   /** feature 名 */

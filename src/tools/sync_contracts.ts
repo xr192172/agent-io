@@ -16,7 +16,9 @@
  *   不在模块加载期求值，ESM 循环 import 安全。
  */
 import { TOOL_DEFS } from '../presentation/mcp/server_registry.js';
-import { getDSL, saveDSL } from '../infrastructure/storage.js';
+import { getDSL, saveDSL, getPackageRoot } from '../infrastructure/storage.js';
+import fs from 'node:fs';
+import path from 'node:path';
 import type { DesignDSL } from '../domain/types.js';
 
 export interface SyncContractsInput {
@@ -32,6 +34,8 @@ export interface SyncContractsResult {
   added_files: string[];
   updated_files: string[];
   unchanged: number;
+  /** ★ 2026-10-01：解析不到同名实现文件、因而未参与回填的工具名（**显式**，不静默跳过） */
+  unresolved: string[];
 }
 
 /** zod v4 内部类型标签（_def.type）→ TS 类型 */
@@ -61,6 +65,39 @@ function isOptional(z: unknown): boolean {
   return t === 'optional' || t === 'default' || t === 'nullable';
 }
 
+/**
+ * ★★ 2026-10-01（搬 T11）：**工具实现已按能力线搬离 `src/tools/`**。
+ *
+ * 本文件原先写死 `src/tools/${name}.ts` 去匹配 DSL 里记的文件路径 ——
+ * 搬完之后那条模板**匹配不到任何文件** ⇒ 本工具**静默变成空操作**（走查测试是它的证据）。
+ *
+ * ⇒ 改为**按 basename 在包根的 `src/` 下解析真实路径**：
+ *   · 用 `getPackageRoot()` 自省锚定（与 storage 的既有做法一致，**不依赖 cwd**）；
+ *   · **找不到就抛** —— 不许拿旧模板兜底（兜底会让它继续静默空转，违反"失败就说失败"）。
+ */
+function findUnder(dir: string, fileName: string): string | null {
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    const p = path.join(dir, e.name);
+    if (e.isDirectory()) {
+      const r = findUnder(p, fileName);
+      if (r) return r;
+    } else if (e.name === fileName) return p;
+  }
+  return null;
+}
+/**
+ * 解析成功返回仓库相对路径；**找不到返回 null**。
+ * ★ 为什么不是"一律抛"：本仓**有些注册工具是在 lane 里内联实现**的（没有同名实现文件）
+ *   —— 一致性门自己就写着「无同名文件：允许——主工具（get_dsl/edit_dsl 等）在注册表内实现」。
+ *   ⇒ 对它们，"DSL 里没有对应文件条目"是**正常**，不是错误。
+ *   ★ 但**不许静默**：跳过谁要如实报出来（见 `unresolved`）。
+ */
+function resolveImplPath(name: string): string | null {
+  const root = getPackageRoot();
+  const found = findUnder(path.join(root, 'src'), `${name}.ts`);
+  return found ? path.relative(root, found).split(path.sep).join('/') : null;
+}
+
 export function syncContracts(input: SyncContractsInput): SyncContractsResult {
   const dsl = getDSL(input.feature);
   if (!dsl) throw new Error(`feature ${input.feature} 不存在，请先写 DSL 或 import_project`);
@@ -73,8 +110,15 @@ export function syncContracts(input: SyncContractsInput): SyncContractsResult {
   const updated: string[] = [];
   let unchanged = 0;
 
+  /** 无同名实现文件的工具（在 lane 内联实现）⇒ 没有 DSL 文件条目可回填，如实记下 */
+  const unresolved: string[] = [];
+
   for (const t of tools) {
-    const filePath = `src/tools/${t.name}.ts`;
+    const filePath = resolveImplPath(t.name);
+    if (filePath === null) {
+      unresolved.push(t.name);
+      continue;
+    }
     const params = Object.entries(t.inputSchema)
       .map(([k, z]) => `${k}${isOptional(z) ? '?' : ''}: ${zodToTs(z)}`)
       .join('; ');
@@ -120,6 +164,19 @@ export function syncContracts(input: SyncContractsInput): SyncContractsResult {
     `sync_contracts [${input.feature}]：工具契约与 server_registry 对齐完成。` +
     `新增 ${added.length} 个契约文件（${added.join(', ') || '无'}），` +
     `更新 ${updated.length} 个（${updated.join(', ') || '无'}），未变 ${unchanged}。` +
-    (includeAll ? '' : '（未传 include_all，未补全新文件节点；如需让新工具一次到位可传 include_all=true）');
-  return { message: msg, feature: input.feature, added_files: added, updated_files: updated, unchanged };
+    // ★★ 2026-10-01：**不许静默跳过** —— 解析不到实现文件的工具（在 lane 内联实现的那些）
+    //   没有 DSL 文件条目可回填，**必须如实报出来**，否则读者会以为"全都对齐了"。
+    (unresolved.length
+      ? `\n★ 跳过 ${unresolved.length} 个（无同名实现文件 ⇒ 无 DSL 文件条目可回填，属正常）：${unresolved.join(', ')}`
+      : '') +
+    (includeAll ? '' : '\n（未传 include_all，未补全新文件节点；如需让新工具一次到位可传 include_all=true）');
+  return {
+    message: msg,
+    feature: input.feature,
+    added_files: added,
+    updated_files: updated,
+    unchanged,
+    /** 解析不到实现文件、因而未参与回填的工具名（**显式**，不静默） */
+    unresolved,
+  };
 }

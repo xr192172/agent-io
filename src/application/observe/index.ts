@@ -27,7 +27,7 @@ import path from 'node:path';
 import { baselinePathFor, captureBaseline, verifyBaseline } from '../../infrastructure/analysis/behavior/index.js';
 import { rebuildChains } from '../../infrastructure/analysis/observe/chain.js';
 import { getFeatureLine } from './feature_line.js';
-import { ensureProjectIndex } from '../../tools/index_freshness.js';
+import { ensureProjectIndex } from '../../infrastructure/index/index_freshness.js';
 import { memoryObserveHandler, memoryTargetsHandler } from './memory_observe.js';
 import type { MemoryObserveInput } from './memory_observe.js';
 import { narrateStep } from './narrate_step.js';

@@ -11,7 +11,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { runSplitStage } from '../../tools/split_stage.js';
+import { runSplitStage } from '../../application/design/split_stage.js';
 
 function readArg(name: string): string | undefined {
   const i = process.argv.indexOf(name);

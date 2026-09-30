@@ -10,7 +10,7 @@
  */
 import fs from 'node:fs';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { diffViews } from '../../src/tools/diff_views';
+import { diffViews } from '../../src/application/refactor/diff_views.js';
 import { archiveNode } from '../../src/application/meta/archive_node.js';
 import {
   saveDSL,

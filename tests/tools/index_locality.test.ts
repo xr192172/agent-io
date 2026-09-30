@@ -13,7 +13,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect, afterAll } from 'vitest';
 import { openDb } from '../../src/infrastructure/index/db';
-import { ensureIndexAround } from '../../src/tools/index_freshness';
+import { ensureIndexAround } from '../../src/infrastructure/index/index_freshness.js';
 
 const roots: string[] = [];
 

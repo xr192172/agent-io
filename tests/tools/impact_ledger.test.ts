@@ -13,13 +13,13 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect, beforeEach, afterAll } from 'vitest';
-import { watchProjectTool, closeAllActiveWatches } from '../../src/tools/watch_project_tool';
+import { watchProjectTool, closeAllActiveWatches } from '../../src/infrastructure/index/watch_project_tool.js';
 import { importProject } from '../../src/infrastructure/graph/import_project.js';
 import { openDb } from '../../src/infrastructure/index/db';
 import { setGlobalProbeSink, loadTSEvents } from '../../src/infrastructure/analysis/observe/probe';
 import { judgeEvent } from '../../src/infrastructure/analysis/observe/judge';
-import { clearAlertInbox, peekAlerts } from '../../src/tools/alert_inbox';
-import { loadLedger } from '../../src/tools/impact_ledger_store';
+import { clearAlertInbox, peekAlerts } from '../../src/infrastructure/alert_inbox.js';
+import { loadLedger } from '../../src/application/meta/impact_ledger_store.js';
 
 const roots: string[] = [];
 

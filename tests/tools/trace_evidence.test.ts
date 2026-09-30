@@ -6,7 +6,7 @@ import {
   resolveTraceEvidence,
   buildTraceResolver,
   loadTraceRecords,
-} from '../../src/tools/trace_evidence';
+} from '../../src/application/observe/trace_evidence.js';
 
 const fixtures = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'fixtures');
 const agentFile = path.join(fixtures, 'agent_demo.mjs');

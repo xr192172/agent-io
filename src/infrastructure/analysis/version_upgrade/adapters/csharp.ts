@@ -18,7 +18,7 @@ import type {
   FeatureRule,
   RemovedRule,
 } from './types.js';
-import type { VerifyCommand } from '../../../../tools/verify_refactor.js';
+import type { VerifyCommand } from '../../../verify_refactor.js';
 
 // ── 规则表（按 C# 语言版本边界） ──────────────────────────────
 

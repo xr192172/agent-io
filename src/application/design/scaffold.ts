@@ -23,7 +23,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { DesignDSL, SemanticFile, CodeTemplate, Node, ContentBlock } from '../../domain/types.js';
 import { getDSL } from '../../infrastructure/storage.js';
-import { snapshotAndRecordSelfWrite, syncSelfWritesSync, toRelPosix } from '../../tools/write_gate.js';
+import { snapshotAndRecordSelfWrite, syncSelfWritesSync, toRelPosix } from '../observe/write_gate.js';
 
 export interface ScaffoldInput {
   /** feature 名 */

@@ -36,9 +36,9 @@ function repoRoot() {
 // ── 功能 id → 实现位置（文件或目录；约定 id 与工程结构对应） ──
 export const FEATURE_FILES = {
   ast_parse_skeleton: ['src/infrastructure/parse'],
-  package_migration: ['src/tools/package_migration.ts'],
-  rename_symbol: ['src/tools/rename_symbol.ts'],
-  contract_gate: ['src/tools/contract_gate.ts'],
+  package_migration: ['src/application/refactor/package_migration.ts'],
+  rename_symbol: ['src/application/refactor/rename_symbol.ts'],
+  contract_gate: ['src/infrastructure/analysis/contract_gate.ts'],
   extract_contracts: ['src/application/harvest/extract_contracts.ts'],
   version_upgrade_detection: ['src/infrastructure/analysis/version_upgrade'],
   impact_analysis: ['src/infrastructure/analysis/impact'],
@@ -109,7 +109,7 @@ export function scanFile(rel, root) {
 
 /** 从 register_capabilities.ts 提取某 id 的声明（文本正则，不 import TS） */
 export function capDecl(id, root) {
-  const reg = readFileSync(path.join(root, 'src/tools/register_capabilities.ts'), 'utf-8');
+  const reg = readFileSync(path.join(root, 'src/infrastructure/parse/register_capabilities.ts'), 'utf-8');
   const start = reg.indexOf(`id: '${id}'`);
   if (start < 0) return null;
   const block = reg.slice(start, start + 1600);

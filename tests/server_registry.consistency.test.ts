@@ -15,6 +15,48 @@ import { laneTexts } from './helpers/lane_files.js';
 const PKG_ROOT = path.resolve(__dirname, '..');
 const TOOLS_DIR = path.join(PKG_ROOT, 'src/tools');
 
+/**
+ * ★★ 2026-10-01（搬 T11）：**工具实现已不再住 `src/tools/`** ——
+ *   它们按能力线搬进了 `src/application/<线>/`，少数进了 `src/infrastructure/**` 与 `src/presentation/cli/`。
+ *   ⇒ 原先四处"拿 `src/tools/<name>.ts` 拼路径"的写法**全部失效**。
+ *   ⇒ 收敛成**一个落点**：`resolveToolFile(name)` 按 basename 在 `src/` 下查找（不另抄名单）。
+ */
+const SRC_DIR = path.join(PKG_ROOT, 'src');
+const _findCache = new Map<string, string | null>();
+function findUnder(dir: string, fileName: string): string | null {
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    const p = path.join(dir, e.name);
+    if (e.isDirectory()) {
+      const r = findUnder(p, fileName);
+      if (r) return r;
+    } else if (e.name === fileName) return p;
+  }
+  return null;
+}
+/** 按 basename（不含 .ts）在 `src/` 下找实现文件；找不到返回 null */
+function resolveToolFile(name: string): string | null {
+  if (!_findCache.has(name)) _findCache.set(name, findUnder(SRC_DIR, `${name}.ts`));
+  return _findCache.get(name) ?? null;
+}
+/** 「工具实现」现在住的两处：能力线目录 + CLI/HTTP 面 */
+function toolImplBasenames(): string[] {
+  const out: string[] = [];
+  const walk = (d: string) => {
+    for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+      const p = path.join(d, e.name);
+      if (e.isDirectory()) walk(p);
+      else if (e.name.endsWith('.ts') && !e.name.endsWith('.test.ts') && !e.name.endsWith('.d.ts')) {
+        out.push(e.name.replace(/\.ts$/, ''));
+      }
+    }
+  };
+  for (const rel of ['application', 'presentation/cli']) {
+    const abs = path.join(SRC_DIR, rel);
+    if (fs.existsSync(abs)) walk(abs);
+  }
+  return out;
+}
+
 /** snake_case → camelCase：diff_views → diffViews */
 const toCamel = (s: string) => s.replace(/_(\w)/g, (_, c) => c.toUpperCase());
 /** camelCase → snake_case：diffViews → diff_views */
@@ -47,11 +89,11 @@ const toSnake = (s: string) => s.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerC
  */
 const INTERNAL_MODULES: Record<string, { importedBy: string[]; why: string }> = {
   analyze_monolith: {
-    importedBy: ['src/tools/derive_feature_tree.ts'],
+    importedBy: ['src/infrastructure/analysis/derive_feature_tree.ts'],
     why: 'derive_feature_tree 的底座识别步骤；其对内实现，不单独注册',
   },
   collect_functions: {
-    importedBy: ['src/presentation/cli/brickify_cli.ts', 'src/tools/classify_tools.ts'],
+    importedBy: ['src/presentation/cli/brickify_cli.ts', 'src/application/meta/classify_tools.ts'],
     why: '积木化/分类两个 CLI 共用的函数收集器；不是 MCP 工具',
   },
   contract_gate: {
@@ -59,15 +101,15 @@ const INTERNAL_MODULES: Record<string, { importedBy: string[]; why: string }> = 
     why: 'refactor_pipeline 的契约闸门检查步骤；不是 MCP 工具',
   },
   dag_layout: {
-    importedBy: ['src/presentation/http/serve.ts', 'src/tools/update_feature.ts'],
+    importedBy: ['src/presentation/http/serve.ts', 'src/application/design/update_feature.ts'],
     why: 'DAG 布局算法（serve 渲染 + update_feature 共用）；纯算法模块',
   },
   detect_dead_imports: {
     importedBy: [
-      'src/tools/brickify.ts',
-      'src/tools/brick_bag.ts',
+      'src/application/design/brickify.ts',
+      'src/application/design/brick_bag.ts',
       'src/tools/deprecate_offline.ts',
-      'src/tools/feature_map.ts',
+      'src/infrastructure/analysis/feature_map.ts',
       'src/application/refactor/function_annotation.ts',
       'src/application/refactor/refactor_pipeline.ts',
     ],
@@ -77,14 +119,14 @@ const INTERNAL_MODULES: Record<string, { importedBy: string[]; why: string }> = 
     importedBy: [
       'src/infrastructure/analysis/diagnosis/impact_analyzer.ts',
       'src/application/meta/explore_code.ts',
-      'src/tools/impact_report.ts',
+      'src/application/meta/impact_report.ts',
       'src/presentation/http/serve.ts',
-      'src/tools/watch_project_tool.ts',
+      'src/infrastructure/index/watch_project_tool.ts',
     ],
     why: '变更影响面计算，被 explore_code / impact_report 等复用；不是独立工具',
   },
   guided_tour: {
-    importedBy: ['src/application/meta/explore_code.ts', 'src/tools/overview.ts', 'src/presentation/http/serve.ts'],
+    importedBy: ['src/application/meta/explore_code.ts', 'src/application/meta/overview.ts', 'src/presentation/http/serve.ts'],
     why: '引导式导览生成，被 explore_code / overview 等复用',
   },
   inject_replay: {
@@ -104,11 +146,11 @@ const INTERNAL_MODULES: Record<string, { importedBy: string[]; why: string }> = 
     why: '★ 已注册工具 `edit_dsl` 的真正实现；注册名 ≠ 文件名',
   },
   watch_project: {
-    importedBy: ['src/presentation/http/serve.ts', 'src/tools/watch_project_tool.ts'],
+    importedBy: ['src/presentation/http/serve.ts', 'src/infrastructure/index/watch_project_tool.ts'],
     why: '文件监听内核，被 serve 与 watch_project_tool 复用',
   },
   wizard_steps: {
-    importedBy: ['src/tools/render_wizard.ts'],
+    importedBy: ['src/presentation/cli/render_wizard.ts'],
     why: '向导步骤生成，render_wizard 的实现细节',
   },
   feature_ops: {
@@ -120,11 +162,11 @@ const INTERNAL_MODULES: Record<string, { importedBy: string[]; why: string }> = 
     why: '工作台渲染，brickify CLI 的实现细节',
   },
   feature_map: {
-    importedBy: ['src/tools/brickify.ts', 'src/tools/brick_bag.ts', 'src/application/design/render_brickwork.ts'],
+    importedBy: ['src/application/design/brickify.ts', 'src/application/design/brick_bag.ts', 'src/application/design/render_brickwork.ts'],
     why: 'buildFeatureMap 是 import_project / render_brickwork 等的内部派生助手',
   },
   derive_feature_tree: {
-    importedBy: ['src/tools/overview.ts'],
+    importedBy: ['src/application/meta/overview.ts'],
     why: '功能树派生，overview 的实现细节',
   },
 };
@@ -161,8 +203,8 @@ describe('server_registry 一致性', () => {
   it('每个注册工具对应的实现文件存在（src/tools/{name}.ts）', () => {
     const missing: string[] = [];
     for (const d of TOOL_DEFS) {
-      const impl = path.join(TOOLS_DIR, `${d.name}.ts`);
-      if (fs.existsSync(impl)) continue; // 有同名实现文件 → OK
+      const impl = resolveToolFile(d.name);
+      if (impl !== null) continue; // 有同名实现文件 → OK
       // 无同名文件：允许——主工具（get_dsl/edit_dsl 等）在 server_registry 内实现
     }
     expect(missing).toEqual([]);
@@ -195,10 +237,7 @@ describe('server_registry 一致性', () => {
   });
 
   it('src/tools 下主函数名=文件名 camelCase 的工具文件必须已注册（漏注册检测，摩擦 E）', () => {
-    const files = fs
-      .readdirSync(TOOLS_DIR)
-      .filter((f) => f.endsWith('.ts') && !f.endsWith('.test.ts') && !f.endsWith('.d.ts'))
-      .map((f) => f.replace(/\.ts$/, ''));
+    const files = toolImplBasenames();
     const registered = new Set(TOOL_DEFS.map((d) => d.name));
 
     const missing: string[] = [];
@@ -215,14 +254,20 @@ describe('server_registry 一致性', () => {
     //   这里改用**唯一落点** `tests/helpers/lane_files.ts`（线名从 `LANE_SOURCES` 派生，不另抄名单）；
     //   原先 `readdirSync('src/registry/lanes')` 在目录消失后直接 ENOENT。
     const laneSource = laneTexts().map((t) => t.text).join(String.fromCharCode(10));
+    // ★ 2026-10-01（搬 T11）：lane 与被吸收实现**同目录**了 ⇒ 说明符从 `'/tools/<name>.js'`
+    //   变成 `'./<name>.js'`（或 `'../<线>/<name>.js'` 之类）。判据要跟着"实际的引用形态"走，
+    //   否则会把它误判成"漏注册"（本门原先就栽在"假设实现在 src/tools/ 下"）。
     const isAbsorbedByFacade = (base: string): boolean =>
-      laneSource.includes(`/tools/${base}.js'`) || laneSource.includes(`/tools/${base}.js"`);
+      laneSource.includes(`/tools/${base}.js'`) ||
+      laneSource.includes(`/tools/${base}.js"`) ||
+      laneSource.includes(`'./${base}.js'`) ||
+      laneSource.includes(`'./${base}.js"`);
 
     for (const base of files) {
       if (base in INTERNAL_MODULES) continue;
       if (isAbsorbedByFacade(base)) continue; // ★ 被工具面吸收 ⇒ 不是独立工具，无需注册
       const camel = toCamel(base);
-      const content = fs.readFileSync(path.join(TOOLS_DIR, `${base}.ts`), 'utf-8');
+      const content = fs.readFileSync(resolveToolFile(base)!, 'utf-8');
       // 主函数名 == 文件名 camelCase（约定），如 diff_views.ts export diffViews
       const isToolImpl = new RegExp(`export\\s+function\\s+${camel}\\b`).test(content);
       if (!isToolImpl) continue;
@@ -258,7 +303,7 @@ describe('INTERNAL_MODULES 登记表自校验（复算，防手抄清单腐烂�
   });
 
   it('登记的文件必须存在（陈旧条目 ⇒ 红）', () => {
-    const stale = entries.filter(([name]) => !fs.existsSync(path.join(TOOLS_DIR, `${name}.ts`))).map(([n]) => n);
+    const stale = entries.filter(([name]) => !fs.existsSync(resolveToolFile(name) ?? path.join(SRC_DIR, '__not_found__', `${name}.ts`))).map(([n]) => n);
     expect(stale, `这些登记条目指向不存在的文件（已删？请一并删条目）：\n  ${stale.join('\n  ')}`).toEqual([]);
   });
 

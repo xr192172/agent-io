@@ -21,7 +21,7 @@ import {
   analyzeFileContent,
   buildSplitPreviewDsl,
   checkMonolith,
-} from '../../src/tools/monolith';
+} from '../../src/infrastructure/analysis/monolith.js';
 import type { ParsedSymbol } from '../../src/infrastructure/parse/index.js';
 
 // ─────────────────────────────────────────────────────────────

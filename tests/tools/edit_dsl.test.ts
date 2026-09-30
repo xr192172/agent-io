@@ -12,11 +12,11 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { createFeature } from '../../src/tools/feature_ops';
-import { addNode, updateNode, deleteNode } from '../../src/tools/node_ops';
-import { addEdge, deleteEdge } from '../../src/tools/edge_ops';
-import { addFile, updateFile, deleteFile } from '../../src/tools/file_ops';
-import { addExpectedApi, updateExpectedApi, deleteExpectedApi, setNodeSemantic } from '../../src/tools/api_ops';
+import { createFeature } from '../../src/application/design/feature_ops.js';
+import { addNode, updateNode, deleteNode } from '../../src/application/design/node_ops.js';
+import { addEdge, deleteEdge } from '../../src/application/design/edge_ops.js';
+import { addFile, updateFile, deleteFile } from '../../src/application/design/file_ops.js';
+import { addExpectedApi, updateExpectedApi, deleteExpectedApi, setNodeSemantic } from '../../src/application/design/api_ops.js';
 import { clearAllFeatures, getDSL } from '../../src/infrastructure/storage.js';
 
 describe('edit_dsl - 节点增强属性', () => {

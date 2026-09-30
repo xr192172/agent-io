@@ -13,9 +13,9 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { buildFeatureMap } from '../../tools/feature_map.js';
-import { assembleBrickBagWithCall, type BrickBag, type Brick } from '../../tools/brick_bag.js';
-import { buildBrickify, type BrickifyResult, type Community, type MixedFileSignal } from '../../tools/brickify.js';
+import { buildFeatureMap } from '../../infrastructure/analysis/feature_map.js';
+import { assembleBrickBagWithCall, type BrickBag, type Brick } from './brick_bag.js';
+import { buildBrickify, type BrickifyResult, type Community, type MixedFileSignal } from './brickify.js';
 
 const SIDE_LABEL: Record<string, string> = { frontend: '前端', backend: '后端', shared: '通用' };
 const SIDE_COLOR: Record<string, string> = { frontend: '#2563eb', backend: '#d97706', shared: '#6b7280' };

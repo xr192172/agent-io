@@ -9,11 +9,11 @@
  * LLM 真调用不做单测；rule 路径即"标注层缺席"契约。
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { extractRegistryTools } from '../../src/tools/registry_extract';
+import { extractRegistryTools } from '../../src/application/meta/registry_extract.js';
 import { collectFunctions, type FunctionEntry } from '../../src/tools/collect_functions';
-import { classifyTools, defaultDomains } from '../../src/tools/classify_tools';
-import { renderToolsMapHtml } from '../../src/tools/render_tools_map';
-import type { BrickifyResult } from '../../src/tools/brickify';
+import { classifyTools, defaultDomains } from '../../src/application/meta/classify_tools.js';
+import { renderToolsMapHtml } from '../../src/presentation/cli/render_tools_map.js';
+import type { BrickifyResult } from '../../src/application/design/brickify.js';
 
 const FIXTURE_SRC = `import fs from 'node:fs';
 import { buildBrickify } from './tools/brickify_cli.js';

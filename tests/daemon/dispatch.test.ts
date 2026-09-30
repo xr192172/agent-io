@@ -14,8 +14,8 @@ import path from 'node:path';
 import { describe, it, expect, afterAll, beforeEach } from 'vitest';
 import { createDaemonServer } from '../../src/presentation/daemon/server.js';
 import { dispatchWatch, collectPendingAlertText, isDaemonAvailable, invalidateDaemonCache } from '../../src/infrastructure/daemon/dispatch.js';
-import { watchProjectTool, closeAllActiveWatches } from '../../src/tools/watch_project_tool';
-import { pushAlert, clearAlertInbox, alertsSince, setAlertListener } from '../../src/tools/alert_inbox';
+import { watchProjectTool, closeAllActiveWatches } from '../../src/infrastructure/index/watch_project_tool.js';
+import { pushAlert, clearAlertInbox, alertsSince, setAlertListener } from '../../src/infrastructure/alert_inbox.js';
 
 const cleanups: Array<() => Promise<void> | void> = [];
 const roots: string[] = [];

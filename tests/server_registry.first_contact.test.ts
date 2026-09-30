@@ -24,7 +24,7 @@ import path from 'node:path';
 import { describe, it, expect, afterAll } from 'vitest';
 import { registerAllTools, firstContactBackfill } from '../src/presentation/mcp/server_registry.js';
 import { openDb, closeAllProjectCacheDbs } from '../src/infrastructure/index/db';
-import { stopBackfill, backfillState } from '../src/tools/index_backfill';
+import { stopBackfill, backfillState } from '../src/infrastructure/index/index_backfill.js';
 
 type Cb = (args: Record<string, unknown>) => Promise<{ content: { type: string; text: string }[]; isError?: boolean }>;
 

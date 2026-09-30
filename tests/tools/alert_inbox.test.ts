@@ -18,8 +18,8 @@ import {
   peekAlerts,
   clearAlertInbox,
   appendPendingAlerts,
-} from '../../src/tools/alert_inbox';
-import { watchProjectTool, closeAllActiveWatches } from '../../src/tools/watch_project_tool';
+} from '../../src/infrastructure/alert_inbox.js';
+import { watchProjectTool, closeAllActiveWatches } from '../../src/infrastructure/index/watch_project_tool.js';
 import { importProject } from '../../src/infrastructure/graph/import_project.js';
 import { openDb } from '../../src/infrastructure/index/db';
 import { setGlobalProbeSink } from '../../src/infrastructure/analysis/observe/probe';

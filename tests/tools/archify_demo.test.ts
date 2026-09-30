@@ -43,7 +43,7 @@ const tree: ArchifyTreeNode = {
       },
       {
         id: 'ai', label: 'AI 分析', role: 'backend',
-        children: { nodes: [{ id: 'ai_s', label: '语义搜索', role: 'step', pins: { in: ['符号表'], out: ['命中'] }, file: 'src/tools/semantic_search.ts' }], edges: [] },
+        children: { nodes: [{ id: 'ai_s', label: '语义搜索', role: 'step', pins: { in: ['符号表'], out: ['命中'] }, file: 'src/application/meta/semantic_search.ts' }], edges: [] },
       },
     ],
     edges: [

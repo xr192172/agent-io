@@ -16,10 +16,10 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect, afterAll } from 'vitest';
 import { importProject } from '../../src/infrastructure/graph/import_project.js';
-import { archLayer, scanImportEdges } from '../../src/tools/arch_layer';
+import { archLayer, scanImportEdges } from '../../src/infrastructure/analysis/arch_layer.js';
 import { getDSL } from '../../src/infrastructure/storage.js';
 import { openDb } from '../../src/infrastructure/index/db';
-import { parseImportsLight, detectLayerViolations, type LayerDef } from '../../src/tools/layer_detect';
+import { parseImportsLight, detectLayerViolations, type LayerDef } from '../../src/infrastructure/analysis/layer_detect.js';
 
 const roots: string[] = [];
 

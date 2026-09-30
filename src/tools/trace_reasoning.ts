@@ -25,7 +25,7 @@ import type {
   ReasoningFold,
   ReasoningStepKind,
 } from '../domain/reasoning.js';
-import { buildCallGraph, pickEntry, walkChain } from './derive_chain.js';
+import { buildCallGraph, pickEntry, walkChain } from '../application/design/derive_chain.js';
 
 export interface TraceReasoningInput {
   /** 入口文件（绝对路径，或相对 projectRoot） */

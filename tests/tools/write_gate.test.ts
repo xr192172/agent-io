@@ -23,7 +23,7 @@ import {
   snapshotAndRecordSelfWrite,
   writeThroughLine,
   toRelPosix,
-} from '../../src/tools/write_gate';
+} from '../../src/application/observe/write_gate.js';
 
 const roots: string[] = [];
 

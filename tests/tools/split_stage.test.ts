@@ -9,9 +9,9 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { collectAdoptedPlans, type SplitStagePlan } from '../../src/tools/split_stage';
-import type { MixedFileSignal } from '../../src/tools/brickify';
-import type { SignalReview } from '../../src/tools/signal_review';
+import { collectAdoptedPlans, type SplitStagePlan } from '../../src/application/design/split_stage.js';
+import type { MixedFileSignal } from '../../src/application/design/brickify.js';
+import type { SignalReview } from '../../src/application/design/signal_review.js';
 
 const signals: MixedFileSignal[] = [
   {

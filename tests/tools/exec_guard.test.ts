@@ -13,7 +13,7 @@
  *   - clearCommandAvailabilityCache ⇒ 缓存真的可清（测试隔离）
  */
 import { describe, it, expect } from 'vitest';
-import { findOnPath, commandAvailable, clearCommandAvailabilityCache, gitAvailable } from '../../src/tools/exec_guard';
+import { findOnPath, commandAvailable, clearCommandAvailabilityCache, gitAvailable } from '../../src/infrastructure/exec_guard.js';
 import { execSync } from 'node:child_process';
 
 const BOGUS = 'definitely-not-a-command-xyz-9f3a';

@@ -8,7 +8,7 @@
  *   - compareGoVersion：数值比较 / prerelease 高低 / 伪版本时间戳序
  */
 import { describe, it, expect } from 'vitest';
-import { parseGoModRequires, resolveGoThirdParty, compareGoVersion } from '../../src/tools/go_mod';
+import { parseGoModRequires, resolveGoThirdParty, compareGoVersion } from '../../src/infrastructure/parse/go_mod.js';
 
 describe('parseGoModRequires', () => {
   it('括号块 + 单行 + indirect 注释全收（间接依赖也是版本事实）', () => {

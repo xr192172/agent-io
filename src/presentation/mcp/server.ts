@@ -16,12 +16,12 @@ import { McpServer, ResourceTemplate } from '@modelcontextprotocol/sdk/server/mc
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { registerAllTools } from './server_registry.js';
 import { importProject } from '../../infrastructure/graph/import_project.js';
-import { watchProjectTool } from '../../tools/watch_project_tool.js';
+import { watchProjectTool } from '../../infrastructure/index/watch_project_tool.js';
 import { listFeatures, getDSL } from '../../infrastructure/storage.js';
 import { resolveCanvasNoteTargets, renderCanvasNotesDigest } from '../../application/meta/derive_mind_map.js';
 import { listProjectDocs } from '../../application/meta/project_docs.js';
 import { installLifecycle } from './lifecycle.js';
-import { closeAllActiveWatches } from '../../tools/watch_project_tool.js';
+import { closeAllActiveWatches } from '../../infrastructure/index/watch_project_tool.js';
 import { closeAllProjectCacheDbs } from '../../infrastructure/index/db.js';
 
 const SERVER_NAME = 'agent-io';

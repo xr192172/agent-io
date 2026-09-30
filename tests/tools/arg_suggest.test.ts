@@ -13,7 +13,7 @@ import {
   suggestNames,
   unknownArgHints,
   renderArgHints,
-} from '../../src/tools/arg_suggest';
+} from '../../src/infrastructure/parse/arg_suggest.js';
 
 describe('levenshtein', () => {
   it('基本距离', () => {

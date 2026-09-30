@@ -25,7 +25,7 @@ import { getStorageRoot, getDSL, saveDSL } from '../../infrastructure/storage.js
 import { loadOverlay, saveOverlay } from '../../infrastructure/storage_overlay.js';
 import { reconcileOverlay, buildCandidates, buildEdgeCandidates, seedOverlayFromDsl, applyOverlay, type OverlayGoal } from '../../domain/overlay.js';
 import { setDesignIntent, type DesignEdgeIntentWrite } from './set_design_intent.js';
-import { renameFile, type RenameFileInput } from '../../tools/rename_file.js';
+import { renameFile, type RenameFileInput } from '../refactor/rename_file.js';
 import { editCode, type EditCodeArgs } from '../refactor/edit_code.js';
 import type { DesignDSL } from '../../domain/types.js';
 

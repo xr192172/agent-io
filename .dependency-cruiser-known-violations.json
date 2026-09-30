@@ -2,8 +2,8 @@
   {
     "type": "cycle",
     "from": "src/application/cross/project_root.ts",
-    "to": "src/tools/rename_symbol.ts",
-    "unresolvedTo": "../../tools/rename_symbol.js",
+    "to": "src/application/refactor/rename_symbol.ts",
+    "unresolvedTo": "../refactor/rename_symbol.js",
     "dependencyTypes": [
       "local",
       "require"
@@ -14,7 +14,7 @@
     },
     "cycle": [
       {
-        "name": "src/tools/rename_symbol.ts",
+        "name": "src/application/refactor/rename_symbol.ts",
         "dependencyTypes": [
           "local",
           "require"
@@ -207,6 +207,43 @@
   },
   {
     "type": "cycle",
+    "from": "src/application/observe/write_gate.ts",
+    "to": "src/infrastructure/index/index_backfill.ts",
+    "unresolvedTo": "../../infrastructure/index/index_backfill.js",
+    "dependencyTypes": [
+      "local",
+      "require"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular"
+    },
+    "cycle": [
+      {
+        "name": "src/infrastructure/index/index_backfill.ts",
+        "dependencyTypes": [
+          "local",
+          "require"
+        ]
+      },
+      {
+        "name": "src/infrastructure/index/index_freshness.ts",
+        "dependencyTypes": [
+          "local",
+          "require"
+        ]
+      },
+      {
+        "name": "src/application/observe/write_gate.ts",
+        "dependencyTypes": [
+          "local",
+          "require"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
     "from": "src/application/refactor/index.ts",
     "to": "src/application/handlers.ts",
     "unresolvedTo": "../handlers.js",
@@ -250,41 +287,13 @@
     ]
   },
   {
-    "type": "cycle",
-    "from": "src/tools/index_backfill.ts",
-    "to": "src/tools/index_freshness.ts",
-    "unresolvedTo": "./index_freshness.js",
-    "dependencyTypes": [
-      "local",
-      "require"
-    ],
+    "type": "module",
+    "from": "src/application/design/edit_result.ts",
+    "to": "src/application/design/edit_result.ts",
     "rule": {
-      "severity": "error",
-      "name": "no-circular"
-    },
-    "cycle": [
-      {
-        "name": "src/tools/index_freshness.ts",
-        "dependencyTypes": [
-          "local",
-          "require"
-        ]
-      },
-      {
-        "name": "src/tools/write_gate.ts",
-        "dependencyTypes": [
-          "local",
-          "require"
-        ]
-      },
-      {
-        "name": "src/tools/index_backfill.ts",
-        "dependencyTypes": [
-          "local",
-          "require"
-        ]
-      }
-    ]
+      "severity": "warn",
+      "name": "no-orphans"
+    }
   },
   {
     "type": "module",
@@ -407,24 +416,6 @@
     "type": "module",
     "from": "src/infrastructure/render/dataflow_core.ts",
     "to": "src/infrastructure/render/dataflow_core.ts",
-    "rule": {
-      "severity": "warn",
-      "name": "no-orphans"
-    }
-  },
-  {
-    "type": "module",
-    "from": "src/tools/edit_result.ts",
-    "to": "src/tools/edit_result.ts",
-    "rule": {
-      "severity": "warn",
-      "name": "no-orphans"
-    }
-  },
-  {
-    "type": "module",
-    "from": "src/tools/observe_chain_view.ts",
-    "to": "src/tools/observe_chain_view.ts",
     "rule": {
       "severity": "warn",
       "name": "no-orphans"

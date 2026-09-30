@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { applyDecisionWrite } from '../../src/tools/node_ops.js';
+import { applyDecisionWrite } from '../../src/application/design/node_ops.js';
 import type { NodeDecision } from '../../src/domain/types.js';
 
 describe('applyDecisionWrite —— 决策写入纯函数（缺扣① 作者/时间线）', () => {

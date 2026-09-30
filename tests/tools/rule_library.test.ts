@@ -27,7 +27,7 @@ import {
   hasPositiveFixture,
   rulesDir,
 } from '../../src/application/refactor/rule_library.js';
-import { matchRule, instantiateReplace, applyMatch, holeNamesOf, tokenizePattern } from '../../src/tools/rule_match';
+import { matchRule, instantiateReplace, applyMatch, holeNamesOf, tokenizePattern } from '../../src/infrastructure/parse/rule_match.js';
 import { diffLines, extractRule, generalizeChange, validateRule } from '../../src/application/refactor/rule_extract.js';
 import {
   applyRuleToContent,

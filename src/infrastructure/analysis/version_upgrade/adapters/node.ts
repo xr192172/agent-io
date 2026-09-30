@@ -24,7 +24,7 @@ import type {
   SourceFile,
   DynamicGateItem,
 } from './types.js';
-import type { VerifyCommand } from '../../../../tools/verify_refactor.js';
+import type { VerifyCommand } from '../../../verify_refactor.js';
 
 // ── 规则表（原 features.ts / removed.ts 的 Node 段） ──────────────
 

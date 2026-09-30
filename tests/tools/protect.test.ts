@@ -12,7 +12,7 @@ import { describe, it, expect } from 'vitest';
 import { mkdtempSync, writeFileSync, rmSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { createProtectGuard, loadRenameProtect, loadRenameGenerated } from '../../src/tools/protect';
+import { createProtectGuard, loadRenameProtect, loadRenameGenerated } from '../../src/application/refactor/protect.js';
 
 function mkRoot(files: Record<string, string>): string {
   const dir = mkdtempSync(path.join(tmpdir(), 'prot-'));

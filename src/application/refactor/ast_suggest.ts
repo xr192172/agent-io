@@ -9,8 +9,8 @@
  * 只建议、不替用户拍板：suggested 是"建议值"，最终是否应用交给调用方连到 renameMany。
  */
 
-import { analyzeLocals } from '../../tools/ast_rename.js';
-import { loadLlmConfig } from '../../tools/llm_focus.js';
+import { analyzeLocals } from '../../infrastructure/parse/ast_rename.js';
+import { loadLlmConfig } from '../../infrastructure/llm_focus.js';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -137,7 +137,7 @@ async function defaultLlmCands(cands: SuggestCandidate[], filePath: string): Pro
   const user =
     `target: ${filePath}\n为下列短变量建议更语义化的新名（JSON）。\n变量清单：\n${list}`;
   // 延迟 import 避免顶部加载 llm_focus
-  const { callChat } = await import('../../tools/llm_focus.js');
+  const { callChat } = await import('../../infrastructure/llm_focus.js');
   const raw = await callChat(cfg, [
     { role: 'system', content: DEFAULT_SYSTEM },
     { role: 'user', content: user },

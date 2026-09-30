@@ -3,7 +3,7 @@
  *
  * 步骤 1（先写 DSL）：把 harvest_decisions 的行为契约写进 feature DSL——
  *   决策卡（为什么做）+ expected_apis（输入/输出语义）。此时实现代码还不存在。
- * 步骤 2（从源码实现）：实现 src/tools/harvest_decisions.ts 后，
+ * 步骤 2（从源码实现）：实现 src/application/observe/harvest_decisions.ts 后，
  *   从 agent-io 自身 docs + git 日志跑一遍，验证候选质量（吃自己的狗粮）。
  *
  * 走查目标：暴露「先写 DSL」与「直接实现」的摩擦点（见测试输出的 ─ 摩擦 ─ 段）。
@@ -12,7 +12,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import { saveDSL, getDSL, deleteFeature, clearAllFeatures } from '../../src/infrastructure/storage.js';
-import { harvestDecisions } from '../../src/tools/harvest_decisions';
+import { harvestDecisions } from '../../src/application/observe/harvest_decisions.js';
 import type { DesignDSL, SemanticFile, NodeDecision } from '../../src/domain/types';
 
 // ──────── 契约（先写 DSL：决策卡 + expected_apis）────────
@@ -36,7 +36,7 @@ const HARVEST_CARD: NodeDecision = {
 const harvestDSL = (): DesignDSL => {
   const file: SemanticFile = {
     id: 'f_src_tools_harvest_decisions_ts',
-    path: 'src/tools/harvest_decisions.ts',
+    path: 'src/application/observe/harvest_decisions.ts',
     responsibility: '从文档/git日志/注释提取设计意图线索，生成 draft 决策卡候选，供 LLM review 后补录',
     lines: 1,
     expected_apis: [
@@ -57,7 +57,7 @@ const harvestDSL = (): DesignDSL => {
       layout: 'free',
       width: 800,
       height: 400,
-      nodes: [{ id: file.id, label: 'src/tools/harvest_decisions.ts', decision: HARVEST_CARD }],
+      nodes: [{ id: file.id, label: 'src/application/observe/harvest_decisions.ts', decision: HARVEST_CARD }],
       edges: [],
     },
     semantic: { files: [file] },

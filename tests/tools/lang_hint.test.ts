@@ -16,9 +16,9 @@
  *   · 要件④：输出里的"缺口 N 个"== 用 capability_matrix 的 diagnose+aggregate 独立算出的 N
  */
 import { describe, it, expect } from 'vitest';
-import { missingLanguageHint, capabilityGaps } from '../../src/tools/lang_hint';
-import { diagnoseCapabilities, aggregateGaps } from '../../src/tools/capability_matrix';
-import { languageCatalog } from '../../src/tools/capability_matrix';
+import { missingLanguageHint, capabilityGaps } from '../../src/infrastructure/parse/lang_hint.js';
+import { diagnoseCapabilities, aggregateGaps } from '../../src/infrastructure/analysis/capability_matrix.js';
+import { languageCatalog } from '../../src/infrastructure/analysis/capability_matrix.js';
 import { findLanguageByExt } from '../../src/infrastructure/parse/languages.js';
 import { isExtSupported } from '../../src/infrastructure/parse/probe.js';
 

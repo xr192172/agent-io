@@ -12,7 +12,7 @@
 import http from 'node:http';
 import { describe, it, expect, afterAll } from 'vitest';
 import { createDaemonServer } from '../../src/presentation/daemon/server.js';
-import { pushAlert, clearAlertInbox, alertsSince } from '../../src/tools/alert_inbox';
+import { pushAlert, clearAlertInbox, alertsSince } from '../../src/infrastructure/alert_inbox.js';
 import type { DslWriteRequest, DslWriteResult } from '../../src/presentation/daemon/server.js';
 
 const cleanups: Array<() => Promise<void> | void> = [];

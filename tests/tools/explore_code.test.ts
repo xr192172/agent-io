@@ -11,7 +11,7 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { exploreCode } from '../../src/application/meta/explore_code.js';
-import { createFeature } from '../../src/tools/feature_ops';
+import { createFeature } from '../../src/application/design/feature_ops.js';
 import { clearAllFeatures } from '../../src/infrastructure/storage.js';
 
 describe('explore_code - action 路由与参数校验', () => {

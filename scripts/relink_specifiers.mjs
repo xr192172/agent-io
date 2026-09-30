@@ -56,8 +56,15 @@ function resolveSpec(fromOldDir, spec) {
   return null;
 }
 
-/** 覆盖全部"模块说明符"写法：静态 import/export、动态 import、require、测试 mock */
-const SPEC_RE = /(\bfrom\s*|\bimport\s*\(\s*|\brequire\s*\(\s*|\bvi\.mock\s*\(\s*|\bvi\.doMock\s*\(\s*|\bvi\.importActual\s*\(\s*|\bjest\.mock\s*\(\s*)(['"])([^'"]+)\2/g;
+/**
+ * 覆盖全部"模块说明符"写法：静态 import/export、动态 import、require、测试 mock、
+ * ★ **以及副作用 import** `import './x.js';`（无 from、无括号）。
+ *   ★★ 2026-10-01 补：本器原先**漏了这一种** —— 而我在同一天修 `t11_facts.mjs` 时修的是同一个盲区、
+ *   **却没回头修这里**（"同族两处只改一处"）⇒ `lang_hint.ts` 的 `import './register_capabilities.js'`
+ *   没被改写 ⇒ **157 个测试文件加载失败**。
+ *   ★ 教训：**修一个盲区时，先问"同一个盲区还有谁在犯"** —— 否则修好的那处会让人以为问题没了。
+ */
+const SPEC_RE = /(\bfrom\s*|\bimport\s*\(\s*|\bimport\s+|\brequire\s*\(\s*|\bvi\.mock\s*\(\s*|\bvi\.doMock\s*\(\s*|\bvi\.importActual\s*\(\s*|\bjest\.mock\s*\(\s*)(['"])([^'"]+)\2/g;
 
 function relSpecifier(fromDir, toAbs) {
   let rel = path.relative(fromDir, toAbs).split(path.sep).join('/');

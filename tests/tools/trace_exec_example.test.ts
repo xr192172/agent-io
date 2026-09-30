@@ -2,7 +2,7 @@
  * trace_exec exampleInputFor 测试：按签名生成示例入参（免手工拼 JSON）
  */
 import { describe, it, expect } from 'vitest';
-import { exampleInputFor } from '../../src/tools/trace_exec';
+import { exampleInputFor } from '../../src/infrastructure/analysis/trace_exec.js';
 
 describe('exampleInputFor', () => {
   it('Go 自由函数：按类型生成示例值', () => {

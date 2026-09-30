@@ -21,7 +21,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { parseAstRoot } from '../../parse/index.js';
 import type { SyntaxNodeLike } from '../../parse/index.js';
-import type { RunningChangePlan } from '../../../tools/refactor_langs.js';
+import type { RunningChangePlan } from '../refactor_langs.js';
 import { skipDirSet } from '../../parse/source_exts.js';
 
 // ─────────────────────────────────────────────

@@ -3,7 +3,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { pickEntry, buildMainChain, deriveLineFromFunctions, type FeatureLineNode } from '../../src/application/observe/feature_line.js';
-import type { FunctionOutlineFn } from '../../src/tools/function_outline';
+import type { FunctionOutlineFn } from '../../src/infrastructure/index/function_outline.js';
 
 function fn(id: string, name: string, feature: string, calls: string[] = [], calledBy: string[] = []): FunctionOutlineFn {
   return {

@@ -37,7 +37,7 @@ import { detectKind } from '../../infrastructure/analysis/diagnosis/verifier.js'
 import { getProjectCacheDb } from '../../infrastructure/index/db.js';
 import { walkFiles } from '../../infrastructure/graph/import_project.js';
 import { syncProject } from '../../infrastructure/index/symbols.js';
-import { isGitRepo, gitDirty, gitCommitFiles, gitCommitAll, gitRestoreFiles } from '../../tools/git.js';
+import { isGitRepo, gitDirty, gitCommitFiles, gitCommitAll, gitRestoreFiles } from '../../infrastructure/git.js';
 import type { AppliedPatch } from '../../infrastructure/analysis/diagnosis/repair.js';
 
 function readArg(name: string): string | undefined {

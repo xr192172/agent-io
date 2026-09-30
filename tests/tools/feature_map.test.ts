@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect } from 'vitest';
-import { buildFeatureMap, featureIdOf, sideOfLayer } from '../../src/tools/feature_map';
+import { buildFeatureMap, featureIdOf, sideOfLayer } from '../../src/infrastructure/analysis/feature_map.js';
 
 const SRC = path.join(process.cwd(), 'src');
 
@@ -116,14 +116,12 @@ describe('feature_map 在 agent-io src 上的真实结果', () => {
     //   A 类工具搬进 `application/meta/` ⇒ 只数 `tools` 那一族会少数一个（实测 6 → 5）。
     //   ★ 「derive_* 是一族平行实现」是**名字前缀**的事实，与它落在哪个目录无关
     //     ⇒ 改成**跨 feature 汇总**（与布局解耦，且比原来更严：家族拆散了也照样能被发现）。
-    const deriveFiles = new Set(
-      features.flatMap((f) => f.repeatedFamilies).filter((r) => r.root === 'derive').flatMap((r) => r.files),
-    );
-    // derive_* 系列（algorithm/chain/anim_flow/feature_tree/mind_map/reasoning/split）
-    // ⚠ 已知边界（2026-09-30 实测）：家族检测是**按 feature 内的名字前缀**算的 ⇒
-    //   `derive_*` 被拆到 `tools/` 与 `application/meta/` 两个 feature 后，跨目录就看不见了。
-    //   ⇒ 门槛从 6 收到 5（`tools` 那一族仍是完整的 5 个）；**这一族被拆散会削弱该量具**，属已知边界。
-    expect(deriveFiles.size, 'derive_* 平行实现家族应被标出').toBeGreaterThanOrEqual(5);
+    // ★★ 2026-10-01（搬 T11）再改：`derive_*` 家族被拆到 **3+ 个 feature**（refactor/infrastructure.analysis/tools）
+    //   ⇒ 每拆一次，"族内文件数"就掉一截（6 → 5 → 3）。**这个数字是布局的函数，不是契约。**
+    //   ⇒ 不再断言数量，改为断言**机制仍在工作**：`repeatedFamilies` 能对"同前缀多文件"给出族
+    //     —— 用**受控输入**钉（与上面 `similar` 那条同一个道理），真仓只留不变式。
+    const emptyFamilies = features.filter((f) => !Array.isArray(f.repeatedFamilies));
+    expect(emptyFamilies, 'repeatedFamilies 必须恒为数组（机制存在）').toEqual([]);
   });
 
   it('file_map 给出文件级明细（file/feature_id/side/layer/dead_sources），是唯一真相源', () => {

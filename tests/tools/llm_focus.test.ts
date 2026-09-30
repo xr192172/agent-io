@@ -12,7 +12,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { pickKeyNodes, loadLlmConfig, configFilePath, configFileReadPath, getConfigHome } from '../../src/tools/llm_focus';
+import { pickKeyNodes, loadLlmConfig, configFilePath, configFileReadPath, getConfigHome } from '../../src/infrastructure/llm_focus.js';
 import * as storage from '../../src/infrastructure/storage.js';
 
 const CHAIN = [

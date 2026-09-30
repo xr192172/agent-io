@@ -22,8 +22,8 @@
  * 纪律：萃取只是**候选**，不自动落盘 —— 必须过 `validateRule`（三关）才允许写入规则库。
  */
 
-import { splitLines } from '../../tools/rule_tokens.js';
-import { matchRule, instantiateReplace, holeNamesOf } from '../../tools/rule_match.js';
+import { splitLines } from '../../infrastructure/parse/rule_tokens.js';
+import { matchRule, instantiateReplace, holeNamesOf } from '../../infrastructure/parse/rule_match.js';
 import type { Rule, RuleFixture, RuleLevel } from './rule_library.js';
 
 /* ─────────────────── 差异计算 ─────────────────── */

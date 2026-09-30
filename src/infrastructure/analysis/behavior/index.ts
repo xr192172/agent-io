@@ -34,7 +34,7 @@ import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import ts from 'typescript';
 import { NODE_RUNNABLE_EXTS } from '../../parse/index.js';
-import { missingLanguageHint } from '../../../tools/lang_hint.js';
+import { missingLanguageHint } from '../../parse/lang_hint.js';
 
 
 /** Windows 常只有 python；POSIX 约定 python3（与动态闸 python 适配器一致） */

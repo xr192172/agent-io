@@ -8,7 +8,7 @@
  *   - 从入口沿 `calls`（限定本功能内、不重复）贪心走一条主链，产出有序傅近点。
  * 执行/单步入出/投屏由上层（traceExec + 前端视图）负责。
  */
-import { buildFunctionOutline, type FunctionOutlineFn } from '../../tools/function_outline.js';
+import { buildFunctionOutline, type FunctionOutlineFn } from '../../infrastructure/index/function_outline.js';
 
 export interface FeatureLineNode {
   id: string;

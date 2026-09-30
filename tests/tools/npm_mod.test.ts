@@ -15,7 +15,7 @@ import {
   resolveNpmThirdParty,
   isNonRegistrySpec,
   compareNpmVersion,
-} from '../../src/tools/npm_mod';
+} from '../../src/infrastructure/parse/npm_mod.js';
 
 describe('parseNpmDeps', () => {
   it('dependencies > peerDependencies > devDependencies（同名冲突取高优先）', () => {

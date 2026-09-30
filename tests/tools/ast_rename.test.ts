@@ -9,7 +9,7 @@
  *   - 遮蔽：内层块同名变量与外层是不同绑定，改外层不影响内层。
  */
 import { describe, it, expect } from 'vitest';
-import { analyzeLocals, renameLocal, deleteDeadLocals, type LocalBinding } from '../../src/tools/ast_rename';
+import { analyzeLocals, renameLocal, deleteDeadLocals, type LocalBinding } from '../../src/infrastructure/parse/ast_rename.js';
 
 /** 拿到 src 里第 n 个名字匹配的绑定 */
 async function findByName(src: string, name: string, nth = 0): Promise<LocalBinding> {

@@ -14,7 +14,7 @@ import path from 'node:path';
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { importProject, readAssemblyBricks } from '../../src/infrastructure/graph/import_project.js';
 import { getDSL, getLiveFeature } from '../../src/infrastructure/storage.js';
-import { diffViews } from '../../src/tools/diff_views';
+import { diffViews } from '../../src/application/refactor/diff_views.js';
 import { isIndexSkippedFileName, isNoiseFileName } from '../../src/infrastructure/parse/source_exts.js';
 
 let fixtureRoot: string;
@@ -281,7 +281,7 @@ describe('import_project', () => {
   // 修复：传给 LLM 的 path 字段提前去掉 '/'，与 searchRel 对齐。
   // ─────────────────────────────────────────────────────────────
   it('gen_roles + design_mode：LLM 返回的标题能正确写回 dir 节点', async () => {
-    const roleMod = await import('../../src/tools/role_title');
+    const roleMod = await import('../../src/infrastructure/analysis/role_title.js');
     const orig = roleMod.generateFileRoleTitles;
     // 模拟真实 LLM：原样回传输入的 path 作为 key（这是 LLM 提示"path 必须来自给定清单"的标准行为）
     Object.defineProperty(roleMod, 'generateFileRoleTitles', {

@@ -8,14 +8,14 @@ vi.mock('../../src/application/observe/memory_observe.js', () => ({
   sampleRemote: vi.fn(),
   memoryTargetsHandler: vi.fn(),
 }));
-vi.mock('../../src/tools/alert_inbox.js', async (orig) => {
+vi.mock('../../src/infrastructure/alert_inbox.js', async (orig) => {
   const m = (await orig()) as Record<string, unknown>;
   return { ...m, pushAlert: vi.fn() };
 });
 
 import { judgeLeak, startMemoryWatch } from '../../src/presentation/daemon/memory_watch.js';
 import { sampleRemote, memoryTargetsHandler } from '../../src/application/observe/memory_observe.js';
-import { pushAlert } from '../../src/tools/alert_inbox.js';
+import { pushAlert } from '../../src/infrastructure/alert_inbox.js';
 import type { MemSample } from '../../src/application/observe/memory_observe.js';
 
 const MB = 1048576;

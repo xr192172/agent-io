@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { recordDogfoodUsage, snapshotDogfoodStats, renderDogfoodSnapshot, renderDogfoodSummary } from '../../src/tools/dogfood_stats';
+import { recordDogfoodUsage, snapshotDogfoodStats, renderDogfoodSnapshot, renderDogfoodSummary } from '../../src/infrastructure/dogfood_stats.js';
 
 let origHome: string | undefined;
 let tmp: string;

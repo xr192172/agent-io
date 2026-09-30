@@ -20,12 +20,12 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { resolveProjectRoot, loadAliasConfig, resolveAliasedImport, resolveLangImport } from '../cross/project_root.js';
-import { analyzeModuleSource, resolveRel, buildNoExt } from '../../tools/rename_symbol.js';
+import { analyzeModuleSource, resolveRel, buildNoExt } from './rename_symbol.js';
 import { camelToSnake, scanLiteralOccurrences, type RawLiteralMatch } from './rename_symbols.js';
-import { collectFieldRefs, collectTypeConstructCandidates, type FieldRefFile, type TypeConstructCandidate } from '../../tools/field_refs.js';
+import { collectFieldRefs, collectTypeConstructCandidates, type FieldRefFile, type TypeConstructCandidate } from './field_refs.js';
 import { parseFileFull } from '../../infrastructure/parse/index.js';
 import { getProjectCacheDb } from '../../infrastructure/index/db.js';
-import { ensureProjectIndex } from '../../tools/index_freshness.js';
+import { ensureProjectIndex } from '../../infrastructure/index/index_freshness.js';
 import { buildImportGraph } from '../../infrastructure/graph/import_graph.js';
 import { scanTextMentions } from '../../infrastructure/text/refs_text.js';
 import { getProjectView } from '../../infrastructure/parse/project_view.js'; // ★ §19②

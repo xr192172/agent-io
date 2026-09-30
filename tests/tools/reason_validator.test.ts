@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { validateReason } from '../../src/tools/reason_validator';
+import { validateReason } from '../../src/application/observe/reason_validator.js';
 
 describe('reason_validator - L1 非空', () => {
   it('空字符串拒绝', () => {

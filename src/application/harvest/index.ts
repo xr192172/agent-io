@@ -31,7 +31,7 @@ import { harvestClosure } from './harvest_closure.js';
 import type { HarvestClosureInput } from './harvest_closure.js';
 import { harvestFromUrl } from './harvest_from_url.js';
 import type { HarvestFromUrlInput } from './harvest_from_url.js';
-import { ensureProjectIndex } from '../../tools/index_freshness.js';
+import { ensureProjectIndex } from '../../infrastructure/index/index_freshness.js';
 import { reconcileBrick } from './reconcile_brick.js';
 import type { ReconcileBrickInput } from './reconcile_brick.js';
 import { searchBricks } from './search_bricks.js';

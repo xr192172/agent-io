@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect } from 'vitest';
-import { buildFileDeps, computeCommunities, computeBrickSubClusters, detectMixedFiles, buildBrickify, roleOfFile, roleOfLayer, type BrickRole } from '../../src/tools/brickify';
+import { buildFileDeps, computeCommunities, computeBrickSubClusters, detectMixedFiles, buildBrickify, roleOfFile, roleOfLayer, type BrickRole } from '../../src/application/design/brickify.js';
 
 function makeTmp(): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'brickify-'));

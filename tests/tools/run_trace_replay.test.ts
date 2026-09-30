@@ -3,7 +3,7 @@
  * fixture 为一次性录制（order.Place → pay.Charge → inv.Reserve，3 层）。
  */
 import { describe, it, expect } from 'vitest';
-import { parseRunTraces } from '../../src/tools/run_trace_replay';
+import { parseRunTraces } from '../../src/infrastructure/analysis/run_trace_replay.js';
 
 const RUNS = [
   '{"probe":"order.Place.enter","trace_id":"20961189ba5d9338","frame_id":1,"fields":{"order_id":42}}',

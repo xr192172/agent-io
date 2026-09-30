@@ -14,7 +14,7 @@
  * 冻结行保护 / 生成物识别：逐条内部走 rename_file，天然继承（body 文件不套 / importer 命中冻结行 → 该条阻断）。
  */
 
-import { renameFile, type RenameFileResult } from '../../tools/rename_file.js';
+import { renameFile, type RenameFileResult } from './rename_file.js';
 import { resolveProjectRoot } from '../cross/project_root.js';
 import { snapshotBeforeWrite } from './file_snapshot.js';
 

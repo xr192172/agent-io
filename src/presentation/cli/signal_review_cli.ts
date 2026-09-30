@@ -13,8 +13,8 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { buildBrickify } from '../../tools/brickify.js';
-import { reviewSignals } from '../../tools/signal_review.js';
+import { buildBrickify } from '../../application/design/brickify.js';
+import { reviewSignals } from '../../application/design/signal_review.js';
 
 function readArg(name: string): string | undefined {
   const i = process.argv.indexOf(name);

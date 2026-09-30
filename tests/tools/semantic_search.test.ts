@@ -25,7 +25,7 @@ import {
   encodeVectorBlob,
   decodeVectorBlob,
   type EmbeddingConfig,
-} from '../../src/tools/semantic_search';
+} from '../../src/application/meta/semantic_search.js';
 import { openDb } from '../../src/infrastructure/index/db';
 
 const roots: string[] = [];

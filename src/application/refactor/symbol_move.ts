@@ -26,7 +26,7 @@ import {
   analyzeModuleSource,
   resolveRel,
   buildNoExt,
-} from '../../tools/rename_symbol.js';
+} from './rename_symbol.js';
 import {
   resolveProjectRoot,
   expandClosureDetailed,
@@ -38,9 +38,9 @@ import {
 import { parseAstRoot, TS_JS_EXTS } from '../../infrastructure/parse/index.js';
 import { syncFile } from '../../infrastructure/index/symbols.js';
 import { getProjectCacheDb } from '../../infrastructure/index/db.js';
-import { splitKeepEnds, detectEol, isBlankLine } from '../../tools/line_utils.js';
+import { splitKeepEnds, detectEol, isBlankLine } from '../../infrastructure/parse/line_utils.js';
 import { snapshotBeforeWrite } from './file_snapshot.js';
-import { reopenAndResolveAfterWrite } from '../../tools/write_gate.js';
+import { reopenAndResolveAfterWrite } from '../observe/write_gate.js';
 import type { ScanBounds } from './scan_bounds.js';
 
 // ─────────────────────────────────────────────

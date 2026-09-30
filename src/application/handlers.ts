@@ -22,25 +22,25 @@ import { queryObserveLog } from '../infrastructure/analysis/observe/log_query.js
 import { getDSLByView, getLiveDir } from '../infrastructure/storage.js';
 import { archiveNode, listArchive } from './meta/archive_node.js';
 import { backfillScaffold } from './design/backfill.js';
-import { checkConsistency } from '../tools/consistency.js';
+import { checkConsistency } from './design/consistency.js';
 import { deriveMindMap } from './meta/derive_mind_map.js';
-import { detectDrift } from '../tools/detect_drift.js';
-import { diffViews } from '../tools/diff_views.js';
+import { detectDrift } from './design/detect_drift.js';
+import { diffViews } from './refactor/diff_views.js';
 import { EXPLORE_ACTIONS, exploreCode } from './meta/explore_code.js';
-import { exportMarkdown, exportSvg } from '../tools/export.js';
-import { harvestDecisions } from '../tools/harvest_decisions.js';
+import { exportMarkdown, exportSvg } from '../infrastructure/render/export.js';
+import { harvestDecisions } from './observe/harvest_decisions.js';
 import { manageFeature } from './design/manage_feature.js';
-import { observeTrace } from '../tools/observe_trace.js';
-import { queryFeature } from '../tools/query_feature.js';
-import { validateReason } from '../tools/reason_validator.js';
-import type { ReasonEvidenceRef } from '../tools/reason_validator.js';
-import { reconcileChain } from '../tools/reconcile_chain.js';
-import type { ReconcileChainInput } from '../tools/reconcile_chain.js';
+import { observeTrace } from './observe/observe_trace.js';
+import { queryFeature } from './meta/query_feature.js';
+import { validateReason } from './observe/reason_validator.js';
+import type { ReasonEvidenceRef } from './observe/reason_validator.js';
+import { reconcileChain } from './observe/reconcile_chain.js';
+import type { ReconcileChainInput } from './observe/reconcile_chain.js';
 import { scaffold } from './design/scaffold.js';
 import { setDesignIntent } from './design/set_design_intent.js';
 import { syncContracts } from '../tools/sync_contracts.js';
-import { buildTraceResolver, loadTraceRecords } from '../tools/trace_evidence.js';
-import { updateFeature } from '../tools/update_feature.js';
+import { buildTraceResolver, loadTraceRecords } from './observe/trace_evidence.js';
+import { updateFeature } from './design/update_feature.js';
 
 // ─────────────────────────────────────────────────────────────
 // 8 个主工具 handler

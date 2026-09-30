@@ -9,8 +9,8 @@
  * 失败策略：任何一步失败都抛错，由调用方决定是否回退到"未收录"提示，不阻塞前端。
  */
 
-import { loadExplainConfig, type ExplainConfig } from './explain_gen.js';
-import { extractJsonObject } from './explain_gen.js';
+import { loadExplainConfig, type ExplainConfig } from '../application/meta/explain_gen.js';
+import { extractJsonObject } from '../application/meta/explain_gen.js';
 
 // ─────────────────────────────────────────────────────────────
 // 分类判断
@@ -147,7 +147,7 @@ export async function generateDictEntry(
 // 组合入口：分类 + 生成 + 注入
 // ─────────────────────────────────────────────────────────────
 
-import { saveGlobalEntry, saveProjectEntry, loadGlobalDict, loadProjectDict, type DictEntry } from './dictionary.js';
+import { saveGlobalEntry, saveProjectEntry, loadGlobalDict, loadProjectDict, type DictEntry } from '../infrastructure/dictionary.js';
 
 export interface IngestResult {
   term: string;

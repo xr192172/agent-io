@@ -19,7 +19,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect, afterAll } from 'vitest';
-import { slimTsFile } from '../../src/tools/ts_slim';
+import { slimTsFile } from '../../src/infrastructure/parse/ts_slim.js';
 import { resolveTsSpecifier } from '../../src/application/harvest/slim_brick.js';
 import { harvestFromUrl } from '../../src/application/harvest/harvest_from_url.js';
 import { slimBrick } from '../../src/application/harvest/slim_brick.js';

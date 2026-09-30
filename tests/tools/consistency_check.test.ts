@@ -14,7 +14,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect } from 'vitest';
 import { getFeatureFile } from '../../src/infrastructure/storage.js';
-import { checkConsistency } from '../../src/tools/consistency.js';
+import { checkConsistency } from '../../src/application/design/consistency.js';
 import type { DesignDSL } from '../../src/domain/types.js';
 
 function writeFeature(feature: string, expectedSignatures: string[], filePath: string): void {

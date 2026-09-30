@@ -15,24 +15,24 @@
  * 它们在注册表独立存在，因为 LLM 需要在 import 后立刻渲染/查询，动作链较短。
  */
 
-import { semanticSearch } from '../../tools/semantic_search.js';
-import { ensureProjectIndex, ensureIndexAroundSeed } from '../../tools/index_freshness.js';
-import { scheduleBackfill, backfillState, backfillSummary } from '../../tools/index_backfill.js';
-import { diffImpact } from '../../tools/diff_impact.js';
-import { archLayer } from '../../tools/arch_layer.js';
-import type { LayerDef } from '../../tools/layer_detect.js';
-import { guidedTour } from '../../tools/guided_tour.js';
-import { assessLines, buildSplitPreviewDsl } from '../../tools/monolith.js';
-import { injectReplay } from '../../tools/inject_replay.js';
-import { runSimulation, resetSimulation } from '../../tools/simulation.js';
+import { semanticSearch } from './semantic_search.js';
+import { ensureProjectIndex, ensureIndexAroundSeed } from '../../infrastructure/index/index_freshness.js';
+import { scheduleBackfill, backfillState, backfillSummary } from '../../infrastructure/index/index_backfill.js';
+import { diffImpact } from '../../infrastructure/analysis/diff_impact.js';
+import { archLayer } from '../../infrastructure/analysis/arch_layer.js';
+import type { LayerDef } from '../../infrastructure/analysis/layer_detect.js';
+import { guidedTour } from '../../infrastructure/index/guided_tour.js';
+import { assessLines, buildSplitPreviewDsl } from '../../infrastructure/analysis/monolith.js';
+import { injectReplay } from '../../infrastructure/render/inject_replay.js';
+import { runSimulation, resetSimulation } from '../design/simulation.js';
 import { dispatchWatch } from '../../infrastructure/daemon/dispatch.js';
-import { buildCallGraph } from '../../tools/derive_chain.js';
+import { buildCallGraph } from '../design/derive_chain.js';
 import { deriveAnimFlow } from '../../tools/derive_anim_flow.js';
 import { deriveMindMap } from './derive_mind_map.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseFileFull, type ParsedSymbol } from '../../infrastructure/parse/index.js';
-import { splitKeepEnds } from '../../tools/line_utils.js';
+import { splitKeepEnds } from '../../infrastructure/parse/line_utils.js';
 import { matchSymbols, describeSymbol } from '../refactor/edit_code.js';
 
 export const EXPLORE_ACTIONS = [

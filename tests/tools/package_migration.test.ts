@@ -11,7 +11,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect, afterAll } from 'vitest';
-import { computeMigrationPlan } from '../../src/tools/package_migration';
+import { computeMigrationPlan } from '../../src/application/refactor/package_migration.js';
 
 const roots: string[] = [];
 afterAll(() => {

@@ -6,7 +6,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { runRefactorJudge } from '../../src/application/refactor/refactor_judge.js';
-import { takeAlerts, setAlertListener } from '../../src/tools/alert_inbox';
+import { takeAlerts, setAlertListener } from '../../src/infrastructure/alert_inbox.js';
 
 // 隔离收件箱：跑每条前清空（takeAlerts 取空 = 已读清空）
 function drainInbox(): number {

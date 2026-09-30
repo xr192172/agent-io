@@ -24,7 +24,7 @@ import {
   setAllowedProjectRoots,
   validateProjectRoot,
   type DictEntry,
-} from '../../src/tools/dictionary';
+} from '../../src/infrastructure/dictionary.js';
 
 const dataHome = fs.mkdtempSync(path.join(os.tmpdir(), 'dc-dict-'));
 const projectRoot = path.join(os.tmpdir(), 'dc-dict-proj-' + Date.now());

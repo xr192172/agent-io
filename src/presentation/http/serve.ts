@@ -26,50 +26,50 @@ import { judgeGuardLog } from '../../infrastructure/analysis/observe/judge_guard
 import { importProject } from '../../infrastructure/graph/import_project.js';
 import { getProjectCacheDb, openDb } from '../../infrastructure/index/db.js';
 import { validateDSLJson } from '../../domain/validator.js';
-import { saveAutoSnapshot, pruneSnapshots } from '../../tools/snapshot.js';
-import { dagLayout, forceLayout, gridAlign } from '../../tools/dag_layout.js';
+import { saveAutoSnapshot, pruneSnapshots } from '../../application/design/snapshot.js';
+import { dagLayout, forceLayout, gridAlign } from '../../application/design/dag_layout.js';
 import { scaffold } from '../../application/design/scaffold.js';
-import { checkConsistency } from '../../tools/consistency.js';
-import { diffImpact } from '../../tools/diff_impact.js';
-import { diffViews } from '../../tools/diff_views.js';
-import { watchProject } from '../../tools/watch_project.js';
-import { createRebuildThrottler } from '../../tools/watch_project_tool.js';
-import { archLayer } from '../../tools/arch_layer.js';
-import { guidedTour } from '../../tools/guided_tour.js';
-import { semanticSearch } from '../../tools/semantic_search.js';
-import { languageConcepts } from '../../tools/language_concepts.js';
-import { buildDictionaryView, getGlobalDictFile, getProjectDictFile, loadGlobalDict, loadProjectDict, saveGlobalEntry, saveProjectEntry, splitHighlights, validateProjectRoot, type DictEntry } from '../../tools/dictionary.js';
+import { checkConsistency } from '../../application/design/consistency.js';
+import { diffImpact } from '../../infrastructure/analysis/diff_impact.js';
+import { diffViews } from '../../application/refactor/diff_views.js';
+import { watchProject } from '../../infrastructure/index/watch_project.js';
+import { createRebuildThrottler } from '../../infrastructure/index/watch_project_tool.js';
+import { archLayer } from '../../infrastructure/analysis/arch_layer.js';
+import { guidedTour } from '../../infrastructure/index/guided_tour.js';
+import { semanticSearch } from '../../application/meta/semantic_search.js';
+import { languageConcepts } from '../../infrastructure/analysis/language_concepts.js';
+import { buildDictionaryView, getGlobalDictFile, getProjectDictFile, loadGlobalDict, loadProjectDict, saveGlobalEntry, saveProjectEntry, splitHighlights, validateProjectRoot, type DictEntry } from '../../infrastructure/dictionary.js';
 import { ingestTerm, classifyTerm, generateDictEntry } from '../../tools/dict_gen.js';
-import { readRegistry, updateArtifact } from '../../tools/registry.js';
+import { readRegistry, updateArtifact } from '../../infrastructure/index/registry.js';
 import { proposeChange, listChanges, approveChange, rejectChange } from '../../application/design/code_workbench.js';
-import { checkMonolith } from '../../tools/monolith.js';
-import type { FileMonolithReport } from '../../tools/monolith.js';
+import { checkMonolith } from '../../infrastructure/analysis/monolith.js';
+import type { FileMonolithReport } from '../../infrastructure/analysis/monolith.js';
 import { runArchifyPipeline } from '../../tools/archify_pipeline.js';
 import { adaptIRTree } from '../../tools/archify_project.js';
-import { buildFunctionOutline, listFunctionDirs } from '../../tools/function_outline.js';
+import { buildFunctionOutline, listFunctionDirs } from '../../infrastructure/index/function_outline.js';
 import { getFeatureLine } from '../../application/observe/feature_line.js';
-import { exampleInputFor } from '../../tools/trace_exec.js';
+import { exampleInputFor } from '../../infrastructure/analysis/trace_exec.js';
 import { parseFileFull } from '../../infrastructure/parse/index.js';
 import { deriveMindMap, buildFileIndex } from '../../application/meta/derive_mind_map.js';
 import { placeProposals } from '../../application/meta/derive_mind_map.js';
-import { getOverview } from '../../tools/overview.js';
+import { getOverview } from '../../application/meta/overview.js';
 import { getMindMapFile } from '../../application/meta/derive_mind_map.js';
 import { resolveCanvasNoteTargets, renderCanvasNotesDigest, markCanvasNotesStatus } from '../../application/meta/derive_mind_map.js';
 import type { MindMap } from '../../domain/mindmap.js';
-import { oplAdd, oplLocate, oplDeclare, oplImplement, oplCheck, oplIntegrate, oplList, oplGet, oplAuto } from '../../tools/opl.js';
-import { traceExecChain, type TraceStepSpec } from '../../tools/trace_exec.js';
+import { oplAdd, oplLocate, oplDeclare, oplImplement, oplCheck, oplIntegrate, oplList, oplGet, oplAuto } from '../../application/design/opl.js';
+import { traceExecChain, type TraceStepSpec } from '../../infrastructure/analysis/trace_exec.js';
 import { schemas, RESPONSE_SCHEMA_AT, API_VERSION, type ResponseSchemaKey } from './contract.js';
-import { deriveDetailChain } from '../../tools/derive_chain.js';
-import { reconcileChain } from '../../tools/reconcile_chain.js';
+import { deriveDetailChain } from '../../application/design/derive_chain.js';
+import { reconcileChain } from '../../application/observe/reconcile_chain.js';
 import type { DesignDSL } from '../../domain/types.js';
-import { loadLlmConfig, pickKeyNodes, type ChainNodeInfo } from '../../tools/llm_focus.js';
+import { loadLlmConfig, pickKeyNodes, type ChainNodeInfo } from '../../infrastructure/llm_focus.js';
 import {
   loadExplainConfig,
   generateModuleNarrations,
   loadGeneratedNarrations,
   saveGeneratedNarrations,
   getExplainGenFile,
-} from '../../tools/explain_gen.js';
+} from '../../application/meta/explain_gen.js';
 import {
   listProvidersMasked,
   upsertProvider,
@@ -582,7 +582,7 @@ async function handleApiMonolith(req: http.IncomingMessage, res: http.ServerResp
   try {
     const body = await readBody(req);
     const params = JSON.parse(body.toString('utf-8') || '{}');
-    const input: import('../../tools/monolith.js').CheckMonolithInput = {
+    const input: import('../../infrastructure/analysis/monolith.js').CheckMonolithInput = {
       warn_lines: typeof params.warn_lines === 'number' ? params.warn_lines : undefined,
       crit_lines: typeof params.crit_lines === 'number' ? params.crit_lines : undefined,
       max_files: typeof params.max_files === 'number' ? params.max_files : undefined,
