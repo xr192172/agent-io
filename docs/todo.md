@@ -15,6 +15,18 @@
 
 ## 待做
 
+- [ ] **T13 ★ 第 4 / 5 处 import 解析口径：`rename_file` 的「TS/JS 一份 + Python 一份」**
+      *(核实：09-30 做 T12 时顺带撞到 —— `src/tools/rename_file.ts:23` 引的是
+      **`src/db/symbols.ts:155` 的 `resolveImportTarget(projectRoot, fromRel, source)`**：
+      `return resolveImportPath(fromRel, source, (c) => fs.existsSync(path.join(projectRoot, c)))`
+      —— ★ 它只是内核 `resolveImportPath` 的**薄包装，且没传 `exts`** ⇒ 走 `IMPORT_EXTS` 默认
+      ⇒ **只认 TS/JS 系扩展名**；子目录 import / 点分模块 / 裸名**都不认**。
+      而 `rename_file.ts:297,305` 对 Python **另走本地 `resolvePythonTarget`**。)*
+      ⇒ ★ 这是 §38 收口那三份（health / impact / import_project）之外的**第四处**，
+      且 `rename_file` 同时持 **TS/JS 一份 + Python 一份** ⇒ **第五处**。
+      ★ 影响（未量）：`rename_file` 判定"某个字面量是否真的解析到被移动文件"时，这些形态**可能漏改**。
+      ⇒ 方向：并进内核 `resolveProjectImport`（传真实 `exts`），但**先量差集**再动（改名是正确性敏感路径）。
+
 - [ ] **T11 ★ P2 的真正前置：`src/tools/` 那 157 个"没有归属"的文件，先做身份普查**
       —— ★ **第一切片已做完（台账 §42）**：194 个顶层文件定性 =
       **49 工具实现**（可机械归属）/ **17 CLI** / **119 内部 helper**（最大块，**还要再分**）/
