@@ -17,7 +17,6 @@ import { addNode, updateNode, deleteNode } from '../../src/tools/node_ops';
 import { addEdge, deleteEdge } from '../../src/tools/edge_ops';
 import { addFile, updateFile, deleteFile } from '../../src/tools/file_ops';
 import { addExpectedApi, updateExpectedApi, deleteExpectedApi, setNodeSemantic } from '../../src/tools/api_ops';
-import { batchMoveNodes, batchUpdateStyle, batchDeleteNodes } from '../../src/tools/batch_ops';
 import { clearAllFeatures, getDSL } from '../../src/infrastructure/storage.js';
 
 describe('edit_dsl - 节点增强属性', () => {
@@ -292,66 +291,5 @@ describe('edit_dsl - 节点语义绑定', () => {
     const dsl = getDSL('test_bind_nosync')!;
     expect(dsl.geometry.nodes[0].status).toBe('draft');
     expect(dsl.semantic!.files[0].status).toBe('done');
-  });
-});
-
-describe('edit_dsl - 批量操作', () => {
-  beforeEach(() => clearAllFeatures());
-  afterEach(() => clearAllFeatures());
-
-  it('batch_move_nodes 批量移动节点', () => {
-    createFeature({ feature: 'test_batch_move' });
-    addNode({ feature: 'test_batch_move', node_id: 'n1', label: 'n1', x: 10, y: 20 });
-    addNode({ feature: 'test_batch_move', node_id: 'n2', label: 'n2', x: 100, y: 200 });
-    addNode({ feature: 'test_batch_move', node_id: 'n3', label: 'n3', x: 50, y: 50 });
-
-    batchMoveNodes({ feature: 'test_batch_move', node_ids: ['n1', 'n2'], dx: 5, dy: -3 });
-
-    const dsl = getDSL('test_batch_move')!;
-    const n1 = dsl.geometry.nodes.find(n => n.id === 'n1')!;
-    const n2 = dsl.geometry.nodes.find(n => n.id === 'n2')!;
-    const n3 = dsl.geometry.nodes.find(n => n.id === 'n3')!;
-    expect(n1.x).toBe(15);
-    expect(n1.y).toBe(17);
-    expect(n2.x).toBe(105);
-    expect(n2.y).toBe(197);
-    expect(n3.x).toBe(50);
-    expect(n3.y).toBe(50);
-  });
-
-  it('batch_update_style 批量更新样式和状态', () => {
-    createFeature({ feature: 'test_batch_style' });
-    addNode({ feature: 'test_batch_style', node_id: 'n1', label: 'n1' });
-    addNode({ feature: 'test_batch_style', node_id: 'n2', label: 'n2' });
-
-    batchUpdateStyle({
-      feature: 'test_batch_style',
-      node_ids: ['n1', 'n2'],
-      bg: '#ff0000',
-      status: 'done',
-    });
-
-    const dsl = getDSL('test_batch_style')!;
-    expect(dsl.geometry.nodes[0].style?.bg).toBe('#ff0000');
-    expect(dsl.geometry.nodes[0].status).toBe('done');
-    expect(dsl.geometry.nodes[1].style?.bg).toBe('#ff0000');
-    expect(dsl.geometry.nodes[1].status).toBe('done');
-  });
-
-  it('batch_delete_nodes 批量删除节点及关联边', () => {
-    createFeature({ feature: 'test_batch_delete' });
-    addNode({ feature: 'test_batch_delete', node_id: 'n1', label: 'n1' });
-    addNode({ feature: 'test_batch_delete', node_id: 'n2', label: 'n2' });
-    addNode({ feature: 'test_batch_delete', node_id: 'n3', label: 'n3' });
-    addEdge({ feature: 'test_batch_delete', edge_id: 'e1', from: 'n1', to: 'n2' });
-    addEdge({ feature: 'test_batch_delete', edge_id: 'e2', from: 'n2', to: 'n3' });
-    addEdge({ feature: 'test_batch_delete', edge_id: 'e3', from: 'n1', to: 'n3' });
-
-    batchDeleteNodes({ feature: 'test_batch_delete', node_ids: ['n1', 'n2'] });
-
-    const dsl = getDSL('test_batch_delete')!;
-    expect(dsl.geometry.nodes).toHaveLength(1);
-    expect(dsl.geometry.nodes[0].id).toBe('n3');
-    expect(dsl.geometry.edges).toHaveLength(0);
   });
 });

@@ -90,8 +90,8 @@ export const TOOL_DOMAINS: Array<{ id: string; label: string; files: string[]; k
   },
   {
     id: 'query', label: '查询理解',
-    files: ['query_feature', 'get_dsl', 'list_features', 'explore_code', 'diff', 'diff_views', 'diff_impact', 'semantic_search', 'search_bricks', 'snapshot', 'dict_gen', 'dictionary', 'language_concepts', 'role_title', 'feature_map', 'guided_tour', 'status_tools', 'ast_parser', 'layer_detect', 'arch_layer', 'monolith', 'analyze_monolith', 'derive_feature_tree', 'derive_mind_map', 'derive_reasoning', 'derive_chain', 'derive_algorithm', 'derive_anim_flow', 'llm_focus', 'explain_gen', 'impact_ledger_store'],
-    kws: ['query', 'get_dsl', 'explore', 'diff', 'search', 'snapshot', 'dict', 'language_concepts', 'role_title', 'feature_map', 'guided_tour', 'status_', 'monolith', 'derive_', 'ast_parser', 'layer_detect', 'arch_'],
+    files: ['query_feature', 'list_features', 'explore_code', 'diff', 'diff_views', 'diff_impact', 'semantic_search', 'search_bricks', 'snapshot', 'dict_gen', 'dictionary', 'language_concepts', 'role_title', 'feature_map', 'guided_tour', 'status_tools', 'ast_parser', 'layer_detect', 'arch_layer', 'monolith', 'analyze_monolith', 'derive_feature_tree', 'derive_mind_map', 'derive_reasoning', 'derive_chain', 'derive_algorithm', 'derive_anim_flow', 'llm_focus', 'explain_gen', 'impact_ledger_store'],
+    kws: ['query', 'explore', 'diff', 'search', 'snapshot', 'dict', 'language_concepts', 'role_title', 'feature_map', 'guided_tour', 'status_', 'monolith', 'derive_', 'ast_parser', 'layer_detect', 'arch_'],
   },
   {
     id: 'refactor', label: '重构治理',
@@ -100,7 +100,7 @@ export const TOOL_DOMAINS: Array<{ id: string; label: string; files: string[]; k
   },
   {
     id: 'observe', label: '观测质检',
-    files: ['observe_chain_view', 'reconcile_chain', 'cluster_narrator', 'narrate_step', 'consistency', 'trace_evidence', 'trace_exec', 'trace_reasoning', 'inject_replay', 'dogfood_stats', 'index_freshness', 'alert_inbox'],
+    files: ['reconcile_chain', 'cluster_narrator', 'narrate_step', 'consistency', 'trace_evidence', 'trace_exec', 'trace_reasoning', 'inject_replay', 'dogfood_stats', 'index_freshness', 'alert_inbox'],
     kws: ['observe', 'reconcile_chain', 'narrat', 'consistency', 'trace', 'replay', 'dogfood', 'signal_', 'instrument'],
   },
   {
@@ -110,7 +110,7 @@ export const TOOL_DOMAINS: Array<{ id: string; label: string; files: string[]; k
   },
   {
     id: 'edit', label: '代码编辑',
-    files: ['edit_code', 'edit_result', 'file_ops', 'api_ops', 'node_ops', 'batch_ops', 'edge_ops', 'feature_ops', 'update_feature', 'manage_feature', 'git', 'go_mod', 'npm_mod'],
+    files: ['edit_code', 'edit_result', 'file_ops', 'api_ops', 'node_ops', 'edge_ops', 'feature_ops', 'update_feature', 'manage_feature', 'git', 'go_mod', 'npm_mod'],
     kws: ['edit_', '_ops', 'update_', 'manage_'],
   },
   {

@@ -12,7 +12,7 @@
  *   3. queryObserveLog 按链涉及文件过滤 → 这条链的真跑事件
  *   4. judgeEvent 逐事件判定 → 偏差清单（silent-error-discard 等）
  *   5. rebuildChains 从带 trace 的事件重建实测调用链
- *   6. 链路契约匹配：声明链 vs 实测链（子序列语义，与 observe_chain_view 一致）
+ *   6. 链路契约匹配：声明链 vs 实测链（子序列语义）
  *
  * 诚实纪律：工具不产生事实、不伪造事件。该链无任何事件 → not_run=true，明示
  * 「先跑一遍再对账」，绝不降级冒充成品。

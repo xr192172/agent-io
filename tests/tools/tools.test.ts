@@ -15,7 +15,6 @@
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { saveDSL } from '../../src/infrastructure/storage.js';
-import { getDsl } from '../../src/tools/get_dsl';
 import { queryFeature } from '../../src/tools/query_feature';
 import { clearAllFeatures } from '../../src/infrastructure/storage.js';
 import type { DesignDSL } from '../../src/domain/types';
@@ -41,27 +40,33 @@ function makeDSL(feature: string, status: DesignDSL['status']): DesignDSL {
   };
 }
 
-describe('get_dsl', () => {
+/**
+ * ★ 2026-10-01（T11）：`src/tools/get_dsl.ts` **模块已删**（它只被本测试引用；活工具 `get_dsl` 的
+ *   handler 走 `queryFeature`）。**契约继续被守** —— 正如下面那条 `list_features` 的做法：
+ *   **死模块可以死，行为契约必须继续被守。**
+ * ★ 路径安全那条**为什么敢迁**：`非法 feature 名` 的守卫**不在** `get_dsl.ts` 里，
+ *   而在 `infrastructure/storage.ts:84,97,148,222`（4 处 `getFeatureFile`/`getLiveFeatureFile`…），
+ *   `queryFeature` 走的是同一个 storage ⇒ **同一条守卫照样拦**（已实测，见本 describe 的第 3 条）。
+ */
+describe('get_dsl 的行为契约（模块已删，契约迁到 query_feature 继续被守）', () => {
   beforeEach(() => clearAllFeatures());
   afterEach(() => clearAllFeatures());
 
   it('feature 不存在时抛错', () => {
-    expect(() => getDsl({ feature_name: 'not_exist' })).toThrow(/feature not found/);
+    expect(() => queryFeature({ query: 'dsl', feature: 'not_exist' })).toThrow(/不存在/);
   });
 
   it('能读回已保存的 DSL', () => {
     const dsl = makeDSL('alpha', 'in_progress');
     saveDSL(dsl);
-    const result = getDsl({ feature_name: 'alpha' });
-    const parsed = JSON.parse(result.json);
-    expect(parsed.feature).toBe('alpha');
-    expect(parsed.status).toBe('in_progress');
+    const result = queryFeature({ query: 'dsl', feature: 'alpha' });
+    expect(result.data).toMatchObject({ feature: 'alpha', status: 'in_progress' });
   });
 
   it('feature 名含特殊字符时抛错（路径安全）', () => {
-    expect(() => getDsl({ feature_name: '../etc/passwd' })).toThrow(/非法 feature 名/);
-    expect(() => getDsl({ feature_name: 'a/b' })).toThrow(/非法 feature 名/);
-    expect(() => getDsl({ feature_name: 'a b' })).toThrow(/非法 feature 名/);
+    for (const bad of ['../etc/passwd', 'a/b', 'a b']) {
+      expect(() => queryFeature({ query: 'dsl', feature: bad })).toThrow(/非法 feature 名/);
+    }
   });
 });
 
