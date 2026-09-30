@@ -14,7 +14,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { transpileToCjs } from '../../behavior/index.js';
-import { NODE_RUNNABLE_EXTS } from '../../../../tools/ts_kernel/index.js';
+import { NODE_RUNNABLE_EXTS } from '../../../parse/index.js';
 import type {
   LanguageAdapter,
   AdapterDeclaration,

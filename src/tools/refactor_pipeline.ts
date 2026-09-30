@@ -27,7 +27,7 @@ import { flagDeadStatements, applyReachabilityRuns } from './dead_statements.js'
 import { removeImportsFromSource } from './remove_dead_imports.js';
 import { detectDeadImports } from './detect_dead_imports.js';
 import { computeMigrationPlan } from './package_migration.js';
-import { parseAstRoot } from './ts_kernel/index.js';
+import { parseAstRoot } from '../infrastructure/parse/index.js';
 import {
   RefactorLangRegistry,
   manifestPresent,

@@ -17,7 +17,7 @@
 import { DATA_DIR_NAME } from '../data_dir.js';
 import path from 'node:path';
 import { getProjectCacheDb } from '../infrastructure/index/db.js';
-import { importProject } from './import_project.js';
+import { importProject } from '../infrastructure/graph/import_project.js';
 import { diffViews, type DiffViewsResult } from './diff_views.js';
 import { detectDrift, type DriftData } from './detect_drift.js';
 import { diffImpact } from './diff_impact.js';

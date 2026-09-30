@@ -15,7 +15,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { isTypeOnlyModuleStatement, parseFileFull } from '../../src/tools/ts_kernel/index.js';
+import { isTypeOnlyModuleStatement, parseFileFull } from '../../src/infrastructure/parse/index.js';
 
 describe('isTypeOnlyModuleStatement: 运行时被整体擦除的写法 → true', () => {
   const CASES: Array<[string, string]> = [

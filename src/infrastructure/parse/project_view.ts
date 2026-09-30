@@ -19,7 +19,7 @@
  *   本模块**不 import 任何消费者**（避免成环）。
  */
 
-import { walkSourceFiles } from '../refs_text.js';
+import { walkSourceFiles } from '../text/refs_text.js';
 
 export interface ProjectView {
   /** 项目根（绝对路径，已 resolve） */

@@ -23,7 +23,7 @@
 import { readFileSync, existsSync, statSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
-import { parseAstRoot } from '../dist/src/tools/ts_kernel/kernel.js';
+import { parseAstRoot } from '../dist/src/infrastructure/parse/kernel.js';
 import { readToolSources, toolSourceRelPaths } from './tool_sources.mjs';
 
 // ── 常量/工具（顶层，供导出函数与 CLI 共用） ──

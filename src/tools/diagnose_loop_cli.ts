@@ -35,7 +35,7 @@ import { runDiagnosis, formatDiagnoseText } from '../infrastructure/analysis/dia
 import { generatePatch, applyPatches, revertPatches, formatPatchDiff, allowedPatchFiles } from '../infrastructure/analysis/diagnosis/repair.js';
 import { detectKind } from '../infrastructure/analysis/diagnosis/verifier.js';
 import { getProjectCacheDb } from '../infrastructure/index/db.js';
-import { walkFiles } from './import_project.js';
+import { walkFiles } from '../infrastructure/graph/import_project.js';
 import { syncProject } from '../infrastructure/index/symbols.js';
 import { isGitRepo, gitDirty, gitCommitFiles, gitCommitAll, gitRestoreFiles } from './git.js';
 import type { AppliedPatch } from '../infrastructure/analysis/diagnosis/repair.js';

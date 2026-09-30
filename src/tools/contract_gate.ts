@@ -25,8 +25,8 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { SOURCE_EXTS } from './ts_kernel/index.js';
-import { skipDirSet } from './ts_kernel/source_exts.js';
+import { SOURCE_EXTS } from '../infrastructure/parse/index.js';
+import { skipDirSet } from '../infrastructure/parse/source_exts.js';
 import { missingLanguageHint } from './lang_hint.js';
 
 export type Lang = 'go' | 'ts' | 'py' | 'java' | 'cs' | 'c';

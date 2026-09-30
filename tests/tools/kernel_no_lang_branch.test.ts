@@ -6,7 +6,7 @@
  *   「**if 会不会太屎山了**」⇒ 同意做契约扩展，**不许**再用"加一门语言加一个 if"的方式补。
  *
  * 本门的判据（可 grep、可判红、与文件位置无关）：
- *   ① `src/tools/ts_kernel/kernel.ts` 里**不许出现按语言分支** ——
+ *   ① `src/infrastructure/parse/kernel.ts` 里**不许出现按语言分支** ——
  *      `langName === 'xxx'` / `lang.name === 'xxx'` / `lang.pkg === 'xxx'` /
  *      `new Set(['typescript', …])` 这类"把语言名写进控制流"的写法。
  *      知识只有两个合法落点：`languages.ts` 的 LANGUAGES 表项（注册事实）
@@ -27,12 +27,16 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { LANG_ADAPTERS } from '../../src/tools/ts_kernel/kernel.js';
-import { LANGUAGES } from '../../src/tools/ts_kernel/languages.js';
+import { LANG_ADAPTERS } from '../../src/infrastructure/parse/kernel.js';
+import { LANGUAGES } from '../../src/infrastructure/parse/languages.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.join(here, '..', '..');
-const KERNEL = path.join(REPO, 'src', 'tools', 'ts_kernel', 'kernel.ts');
+// ★ 2026-09-30：内核已搬到 infrastructure/parse/（§44.3 ④）。
+//   ⚠ 这里**不能**指望 `scripts/move_finish.mjs` 自动跟：它是**分段**拼的路径
+//   （`'src','tools','ts_kernel','kernel.ts'`），没有 `src/tools/ts_kernel` 这个连续子串 ⇒ 抓不到。
+//   同族的坑见台账 §44.5(1)：**改名工具只认"连续的路径字符串 / import 说明符"**。
+const KERNEL = path.join(REPO, 'src', 'infrastructure', 'parse', 'kernel.ts');
 
 /**
  * 只去掉注释、**保留字符串字面量** —— 判据要看的是"代码里有没有把语言名写进比较"，
@@ -103,7 +107,7 @@ describe('G12 · 内核无「按语言 if」门（契约扩展的判据）', () 
     expect(stripComments("callNode.childForFieldName('name')")).toContain("'name'");
   });
 
-  it('★ src/tools/ts_kernel/kernel.ts 里没有按语言分支', () => {
+  it('★ src/infrastructure/parse/kernel.ts 里没有按语言分支', () => {
     const code = stripComments(fs.readFileSync(KERNEL, 'utf8'));
     const hits = findPerLanguageBranches(code);
     expect(

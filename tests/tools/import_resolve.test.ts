@@ -7,7 +7,7 @@
  * 背景（2026-09-28）：该逻辑曾被复制成 3 份，只有 1 份处理了 "NodeNext ESM 用 `.js` 引 `.ts`"，
  * 而本仓 961/971 条相对 import 带 `.js` ⇒ 漏的那两份解析恒 null ⇒ import 图整体断掉
  * ⇒ 量具双向失真（orphan_file 284 假阳 + layer_violation 0 空转）+ impact_analysis 漏报引用方。
- * 详见 `src/tools/ts_kernel/import_resolve.ts` 头部说明。
+ * 详见 `src/infrastructure/parse/import_resolve.ts` 头部说明。
  */
 import { describe, it, expect } from 'vitest';
 import {
@@ -15,7 +15,7 @@ import {
   INDEX_FILES,
   importPathCandidates,
   resolveImportPath,
-} from '../../src/tools/ts_kernel/import_resolve.js';
+} from '../../src/infrastructure/parse/import_resolve.js';
 
 describe('import_resolve: 候选顺序（契约）', () => {
   it('带 .js 后缀：原样 → 剥后缀重试 → 目录 index（且 .ts 早于 index）', () => {

@@ -20,7 +20,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
-import { parseFileFull } from './ts_kernel/index.js';
+import { parseFileFull } from '../infrastructure/parse/index.js';
 import { loadLlmConfig, callChat } from './llm_focus.js';
 import { scanProjectSourceFiles } from './detect_dead_imports.js';
 

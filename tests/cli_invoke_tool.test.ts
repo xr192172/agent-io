@@ -30,9 +30,12 @@ describe('invokeTool —— 工具的唯一调用入口', () => {
     // 挑一个工具，塞一个"够像"的未知键 ⇒ 期望输出里出现纠错提示（这段逻辑只在 invokeTool 里）
     const def = TOOL_DEFS.find((d) => d.name === 'find_references');
     expect(def, 'find_references 必须在注册表里').toBeTruthy();
+    // ★ 显式超时 30s：这条会**真的跑一次 find_references**（开符号索引 / 读 cache.db，真实 I/O）。
+    //   全量并行时撞过一次默认 5s 超时（实测 2026-09-30：单跑 82ms，全量里 timed out）。
+    //   ⇒ 门可以慢，但**不许抖动** —— 抖动会让人以为是代码坏了。
     const r = await invokeTool(def!, { project_dir: process.cwd(), file: 'src/server_registry.ts', symbal: 'x' });
     expect(r.text, '未知键 symbal 应触发 Did you mean（这一条只在 invokeTool 里做）').toMatch(/symbal/);
-  });
+  }, 30_000);
 
   it('未知工具名不在 TOOL_DEFS 里（CLI 的 list/派发都以它为唯一真相源）', () => {
     expect(TOOL_DEFS.find((d) => d.name === '__no_such_tool__')).toBeUndefined();

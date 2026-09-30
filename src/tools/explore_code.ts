@@ -30,7 +30,7 @@ import { buildCallGraph } from './derive_chain.js';
 import { deriveMindMap } from './derive_mind_map.js';
 import fs from 'node:fs';
 import path from 'node:path';
-import { parseFileFull, type ParsedSymbol } from './ts_kernel/index.js';
+import { parseFileFull, type ParsedSymbol } from '../infrastructure/parse/index.js';
 import { splitKeepEnds } from './line_utils.js';
 import { matchSymbols, describeSymbol } from './edit_code.js';
 

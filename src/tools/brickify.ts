@@ -27,9 +27,9 @@ import { scanSourceFiles, featureIdOf, sideOfLayer, type FeatureSide } from './f
 import { matchLayer } from './layer_detect.js';
 import { enumerateTsSources } from './detect_dead_imports.js';
 import { resolveSpecifier } from './brick_bag.js';
-import { getParser } from './ts_kernel/loader.js';
-import { findLanguageByExt, type LanguageEntry } from './ts_kernel/languages.js';
-import { parseContent } from './ts_kernel/kernel.js';
+import { getParser } from '../infrastructure/parse/loader.js';
+import { findLanguageByExt, type LanguageEntry } from '../infrastructure/parse/languages.js';
+import { parseContent } from '../infrastructure/parse/kernel.js';
 
 export interface BrickifyOptions {
   /** 工程根（死码探测等工作目录） */

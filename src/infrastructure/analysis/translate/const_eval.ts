@@ -9,7 +9,7 @@
  * 用 BigInt 做整数运算避免溢出；输出 TS 字面量用 constToTsLiteral。
  */
 
-import type { SyntaxNodeLike } from '../../../tools/ts_kernel/index.js';
+import type { SyntaxNodeLike } from '../../parse/index.js';
 
 export type ConstValue =
   | { kind: 'int'; num: bigint }

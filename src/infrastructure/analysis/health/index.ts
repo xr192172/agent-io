@@ -29,8 +29,8 @@
  *     宁漏不误报；跨文件的模块级调用仍会漏——报 info 级仅提示，不自动删）。
  */
 
-import { parseFileFull, parseAstRoot, listSupportedExtensions, resolveProjectImport, type ParsedSymbol, type SyntaxNodeLike } from '../../../tools/ts_kernel/index.js';
-import { codeSourceExts, partitionByCodeLang } from '../../../tools/ts_kernel/source_exts.js';
+import { parseFileFull, parseAstRoot, listSupportedExtensions, resolveProjectImport, type ParsedSymbol, type SyntaxNodeLike } from '../../parse/index.js';
+import { codeSourceExts, partitionByCodeLang } from '../../parse/source_exts.js';
 import { boundsSkipFromExcluded, type ScanBounds } from '../../../tools/scan_bounds.js';
 import { collectSourceFiles } from '../version_upgrade/detect.js';
 

@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { parseFileFull, _reset } from '../../src/tools/ts_kernel/index';
+import { parseFileFull, _reset } from '../../src/infrastructure/parse/index.js';
 
 describe('ts_kernel - 调用边提取', () => {
   beforeEach(() => {

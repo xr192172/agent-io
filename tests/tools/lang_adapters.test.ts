@@ -5,8 +5,8 @@
  *  - 兜底目标：把「平移到注册表时漏掉某个语言/某层」变成测试期错误，而非运行时静默遗漏。
  */
 import { describe, it, expect } from 'vitest';
-import { LANG_ADAPTERS } from '../../src/tools/ts_kernel/kernel.js';
-import { LANGUAGES } from '../../src/tools/ts_kernel/languages.js';
+import { LANG_ADAPTERS } from '../../src/infrastructure/parse/kernel.js';
+import { LANGUAGES } from '../../src/infrastructure/parse/languages.js';
 
 describe('语言适配器注册表完备性', () => {
   it('每个声明 import_nodes 的语言都有 adapter 记录', () => {

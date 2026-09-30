@@ -35,7 +35,7 @@ function repoRoot() {
 
 // ── 功能 id → 实现位置（文件或目录；约定 id 与工程结构对应） ──
 export const FEATURE_FILES = {
-  ast_parse_skeleton: ['src/tools/ts_kernel'],
+  ast_parse_skeleton: ['src/infrastructure/parse'],
   package_migration: ['src/tools/package_migration.ts'],
   rename_symbol: ['src/tools/rename_symbol.ts'],
   contract_gate: ['src/tools/contract_gate.ts'],

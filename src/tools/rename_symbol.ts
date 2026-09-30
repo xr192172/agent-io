@@ -23,10 +23,10 @@
  */
 import { readFileSync, writeFileSync, readdirSync, type Dirent } from 'node:fs';
 import path from 'node:path';
-import { getParser } from './ts_kernel/loader.js';
-import { findLanguageByExt } from './ts_kernel/languages.js';
-import { parseContent, isTypeOnlyModuleStatement } from './ts_kernel/kernel.js';
-import { TS_JS_EXTS } from './ts_kernel/index.js';
+import { getParser } from '../infrastructure/parse/loader.js';
+import { findLanguageByExt } from '../infrastructure/parse/languages.js';
+import { parseContent, isTypeOnlyModuleStatement } from '../infrastructure/parse/kernel.js';
+import { TS_JS_EXTS } from '../infrastructure/parse/index.js';
 import { renameFile } from './rename_file.js';
 import { resolveProjectRoot, expandClosureDetailed, loadAliasConfig, resolveAliasedImport, type AliasConfig, type ExternalRef } from './project_root.js';
 import { createProtectGuard } from './protect.js';

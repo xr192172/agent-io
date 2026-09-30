@@ -17,8 +17,8 @@ import path from 'node:path';
 import type { AnimationValueSchema, Edge, Node } from '../domain/types.js';
 import { getDSL, saveDSL } from '../storage.js';
 import type { Database } from '../infrastructure/index/db.js';
-import { parseFileFull, isSupported, type ParsedCall, type ParsedSymbol } from './ts_kernel/index.js';
-import { extractFunctionCfg } from './ts_kernel/cfg.js';
+import { parseFileFull, isSupported, type ParsedCall, type ParsedSymbol } from '../infrastructure/parse/index.js';
+import { extractFunctionCfg } from '../infrastructure/parse/cfg.js';
 import { KIND_SHAPE } from './derive_algorithm.js';
 
 export interface DeriveChainInput {

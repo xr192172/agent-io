@@ -34,8 +34,8 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import type { Database } from '../infrastructure/index/db.js';
-import type { ExternalDep } from './harvest_closure.js';
+import type { Database } from '../index/db.js';
+import type { ExternalDep } from '../../tools/harvest_closure.js';
 import { buildIndex, readGoModules, resolveImport, type FileEntry } from './import_project.js';
 
 export interface DeadDepCandidate {

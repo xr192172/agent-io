@@ -35,7 +35,7 @@ import {
   type AliasConfig,
   type ExternalRef,
 } from './project_root.js';
-import { parseAstRoot, TS_JS_EXTS } from './ts_kernel/index.js';
+import { parseAstRoot, TS_JS_EXTS } from '../infrastructure/parse/index.js';
 import { syncFile } from '../infrastructure/index/symbols.js';
 import { getProjectCacheDb } from '../infrastructure/index/db.js';
 import { splitKeepEnds, detectEol, isBlankLine } from './line_utils.js';

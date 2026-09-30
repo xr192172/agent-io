@@ -20,11 +20,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { DesignDSL, Node, Edge } from '../domain/types.js';
 import { getDSL, saveDSL } from '../storage.js';
-import { parseFileFull } from './ts_kernel/index.js';
-import { getProjectView } from './ts_kernel/project_view.js'; // ★ §19②
-import type { ParsedSymbol } from './ts_kernel/index.js';
+import { parseFileFull } from '../infrastructure/parse/index.js';
+import { getProjectView } from '../infrastructure/parse/project_view.js'; // ★ §19②
+import type { ParsedSymbol } from '../infrastructure/parse/index.js';
 import { fileFingerprint, healthKey, readHealthCache, writeHealthCache } from './health_cache.js';
-import { skipDirSet } from './ts_kernel/source_exts.js';
+import { skipDirSet } from '../infrastructure/parse/source_exts.js';
 
 // ─────────────────────────────────────────────────────────────
 // 类型

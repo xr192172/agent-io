@@ -24,7 +24,7 @@ import {
   ADAPTER_SKIP_DIRS,
 } from './adapters/registry.js';
 import type { ToolName } from './adapters/types.js';
-import { skipDirSet } from '../../../tools/ts_kernel/source_exts.js';
+import { skipDirSet } from '../../parse/source_exts.js';
 
 export type { ToolName } from './adapters/types.js';
 export type { VersionInfo } from './adapters/types.js';

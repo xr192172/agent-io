@@ -26,8 +26,8 @@
  *   即使编号漂移，用 id 也能搜到（比裸编号稳，比裸文件名准）。
  */
 
-import { findLanguageByExt } from './ts_kernel/languages.js';
-import { isExtSupported } from './ts_kernel/probe.js';
+import { findLanguageByExt } from '../infrastructure/parse/languages.js';
+import { isExtSupported } from '../infrastructure/parse/probe.js';
 import {
   aggregateGaps,
   diagnoseCapabilities,

@@ -22,7 +22,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import type { DeadDepCandidate } from './dead_deps.js';
+import type { DeadDepCandidate } from '../infrastructure/graph/dead_deps.js';
 import { applyWithVerify, defaultVerifyCommands, runVerification, type VerifyCommand, type VerificationOutcome, type VerifyOutcomeKind } from './verify_refactor.js';
 import { snapshotAndRecordSelfWrite, syncSelfWritesSync, type WriteThroughOutcome } from './write_gate.js';
 

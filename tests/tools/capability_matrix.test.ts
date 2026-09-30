@@ -19,7 +19,7 @@ import {
   aggregateGaps,
   _resetRegistry,
 } from '../../src/tools/capability_matrix';
-import { LANGUAGES } from '../../src/tools/ts_kernel/languages';
+import { LANGUAGES } from '../../src/infrastructure/parse/languages.js';
 
 describe('capability_matrix', () => {
   it('语言名单复用 ts_kernel 的 LANGUAGES（>50 门）', () => {

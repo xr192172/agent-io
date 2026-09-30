@@ -30,7 +30,7 @@ import { LANGUAGES, findLanguageByExt, LanguageEntry } from './languages.js';
  *   依赖方向（内核 → 工具 CLI）不理想，但该 CLI 有 main 守卫、import 零副作用；
  *   若日后要归位，应把这个纯函数抽到更底层的共享模块、两边都引它，而不是各自实现。
  */
-import { templateCompatFromPkgJson } from '../install_package_cli.js';
+import { templateCompatFromPkgJson } from '../../tools/install_package_cli.js';
 
 /**
  * 语言包可解析性判定用了两套 resolver，按可用性依次回退：

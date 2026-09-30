@@ -7,7 +7,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { collect, rangeOk, verifyAbi, checkPrebuild, ghSource } from '../../src/tools/install_package_cli.js';
-import { LANGUAGES } from '../../src/tools/ts_kernel/languages.js';
+import { LANGUAGES } from '../../src/infrastructure/parse/languages.js';
 
 describe('install-package 语言包清单', () => {
   it('每个 LANGUAGES 语言都有清单条目（含派生语言与通用语言）', () => {

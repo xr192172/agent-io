@@ -20,7 +20,7 @@ import {
   appendPendingAlerts,
 } from '../../src/tools/alert_inbox';
 import { watchProjectTool, closeAllActiveWatches } from '../../src/tools/watch_project_tool';
-import { importProject } from '../../src/tools/import_project';
+import { importProject } from '../../src/infrastructure/graph/import_project.js';
 import { openDb } from '../../src/infrastructure/index/db';
 import { setGlobalProbeSink } from '../../src/infrastructure/analysis/observe/probe';
 

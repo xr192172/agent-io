@@ -6,7 +6,7 @@
  *   - TS 系不填 bindings（走 ImportEdge 精确）。
  */
 import { describe, it, expect } from 'vitest';
-import { parseFileFull } from '../../src/tools/ts_kernel/index.js';
+import { parseFileFull } from '../../src/infrastructure/parse/index.js';
 
 describe('ts_kernel 跨语言 import 绑定提取', () => {
   it('Go：无别名取路径尾段，显式 alias 取别名', async () => {

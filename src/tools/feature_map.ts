@@ -23,7 +23,7 @@ import path from 'node:path';
 import { matchLayer } from './layer_detect.js';
 import { detectDeadImports, type DeadImportCandidate } from './detect_dead_imports.js';
 import { detectDeadPyImports, type DetectPyDeadImportsResult } from './python_refactor/dead_imports.js';
-import { skipDirSet } from './ts_kernel/source_exts.js';
+import { skipDirSet } from '../infrastructure/parse/source_exts.js';
 
 export type FeatureSide = 'frontend' | 'backend' | 'shared';
 

@@ -29,11 +29,11 @@ import { execSync } from 'node:child_process';
 import { homedir } from 'node:os';
 import ts from 'typescript';
 import { analyzeModuleSource } from './rename_symbol.js';
-import { parseFileFull, isSupported, isTsJsExt, resolveExistingPath, SOURCE_EXTS, TS_JS_EXTS, type ParsedImport } from './ts_kernel/index.js';
-import { readGoModules, type GoModule } from './import_project.js';
+import { parseFileFull, isSupported, isTsJsExt, resolveExistingPath, SOURCE_EXTS, TS_JS_EXTS, type ParsedImport } from '../infrastructure/parse/index.js';
+import { readGoModules, type GoModule } from '../infrastructure/graph/import_project.js';
 import { gitAvailable } from './exec_guard.js';
 import { getProjectCacheDb, closeProjectCacheDb, type Database } from '../infrastructure/index/db.js';
-import { skipDirSet } from './ts_kernel/source_exts.js';
+import { skipDirSet } from '../infrastructure/parse/source_exts.js';
 import {
   toRelPath,
   hasAnyIndexedFiles,

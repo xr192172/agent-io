@@ -52,7 +52,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { getProjectCacheDb, beginBatch, endBatch, type Database } from '../infrastructure/index/db.js';
 import { syncFile, syncFileSync, removeFile, changedSymbolNames, reopenRefsTo, resolveCrossFileCalls, type SyncStatus, type CrossFileResolveStats } from '../infrastructure/index/symbols.js';
-import { canParseFileSync } from './ts_kernel/index.js';
+import { canParseFileSync } from '../infrastructure/parse/index.js';
 import { snapshotBeforeWrite, type FileSnapshotMeta } from './file_snapshot.js';
 import { isIndexIncomplete } from './index_backfill.js';
 

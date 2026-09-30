@@ -17,7 +17,7 @@ import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { isLoadablePackage } from '../../src/tools/ts_kernel/probe.js';
+import { isLoadablePackage } from '../../src/infrastructure/parse/probe.js';
 
 let dir: string;
 const roots: string[] = [];

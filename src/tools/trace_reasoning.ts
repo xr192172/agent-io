@@ -16,8 +16,8 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { parseFileFull } from './ts_kernel/index.js';
-import type { ParsedSymbol } from './ts_kernel/kernel.js';
+import { parseFileFull } from '../infrastructure/parse/index.js';
+import type { ParsedSymbol } from '../infrastructure/parse/kernel.js';
 import type { DesignDSL } from '../domain/types.js';
 import type {
   ReasoningSystem,

@@ -20,9 +20,9 @@
  *   旧版本模块自带一个 `renameManyInFile`（自己 readFileSync + 自己写盘），
  *   与 `rename_symbol.ts` 的落盘形态各写各的，正是"收敛收敛不起来"的病根。
  */
-import { getParser } from './ts_kernel/loader.js';
-import { findLanguageByExt, type LanguageEntry } from './ts_kernel/languages.js';
-import { parseContent } from './ts_kernel/kernel.js';
+import { getParser } from '../infrastructure/parse/loader.js';
+import { findLanguageByExt, type LanguageEntry } from '../infrastructure/parse/languages.js';
+import { parseContent } from '../infrastructure/parse/kernel.js';
 
 /** 最小 tree-sitter 节点面（与 ts_slim 同源） */
 interface NodeLike {

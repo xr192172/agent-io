@@ -23,12 +23,12 @@ import { resolveProjectRoot, loadAliasConfig, resolveAliasedImport, resolveLangI
 import { analyzeModuleSource, resolveRel, buildNoExt } from './rename_symbol.js';
 import { camelToSnake, scanLiteralOccurrences, type RawLiteralMatch } from './rename_symbols.js';
 import { collectFieldRefs, collectTypeConstructCandidates, type FieldRefFile, type TypeConstructCandidate } from './field_refs.js';
-import { parseFileFull } from './ts_kernel/index.js';
+import { parseFileFull } from '../infrastructure/parse/index.js';
 import { getProjectCacheDb } from '../infrastructure/index/db.js';
 import { ensureProjectIndex } from './index_freshness.js';
-import { buildImportGraph } from './import_graph.js';
-import { scanTextMentions } from './refs_text.js';
-import { getProjectView } from './ts_kernel/project_view.js'; // ★ §19②
+import { buildImportGraph } from '../infrastructure/graph/import_graph.js';
+import { scanTextMentions } from '../infrastructure/text/refs_text.js';
+import { getProjectView } from '../infrastructure/parse/project_view.js'; // ★ §19②
 import type { ScanBounds } from './scan_bounds.js';
 
 /** 每个文件最多取多少条文本提及（避免单文件刷屏） */

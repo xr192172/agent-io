@@ -7,7 +7,7 @@
  * ⇒ 收敛到 `ts_kernel/import_text.ts` 后，用本文件直接测**权威**，一次覆盖两个消费者。
  */
 import { describe, it, expect } from 'vitest';
-import { parseRelativeNamedImportMap } from '../../src/tools/ts_kernel/import_text.js';
+import { parseRelativeNamedImportMap } from '../../src/infrastructure/parse/import_text.js';
 
 describe('parseRelativeNamedImportMap', () => {
   it('基本形：symbol → 去掉 ./ 与 .js 的模块串', () => {

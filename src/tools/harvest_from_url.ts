@@ -28,12 +28,12 @@ import { gitAvailable } from './exec_guard.js';
 import { getStorageRoot } from '../storage.js';
 import { openDb, closeProjectCacheDb, getProjectCacheDb } from '../infrastructure/index/db.js';
 import { syncProject } from '../infrastructure/index/symbols.js';
-import { walkFiles } from './import_project.js';
+import { walkFiles } from '../infrastructure/graph/import_project.js';
 import { extractContracts, type FileContractReport } from './extract_contracts.js';
 import { harvestClosure } from './harvest_closure.js';
 import { parseGoModRequires, resolveGoThirdParty } from './go_mod.js';
 import { parseNpmDeps, resolveNpmThirdParty } from './npm_mod.js';
-import { analyzeDeadThirdParty } from './dead_deps.js';
+import { analyzeDeadThirdParty } from '../infrastructure/graph/dead_deps.js';
 import type { BrickContract, BrickManifest, ShapeSchema } from '../domain/contract.js';
 
 export interface BrickSpec {

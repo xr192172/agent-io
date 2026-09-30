@@ -12,7 +12,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect } from 'vitest';
-import { importProject } from '../../src/tools/import_project.js';
+import { importProject } from '../../src/infrastructure/graph/import_project.js';
 import { checkConsistency } from '../../src/tools/consistency.js';
 import { getDSL, getLiveFeature, clearAllFeatures } from '../../src/storage.js';
 

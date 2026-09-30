@@ -9,13 +9,13 @@
  *
  * 背景（2026-09-30，收口）：逻辑已收成一份，六层**串行假设**——
  *   relative / python-dot / dotted / bare-name / go-module / package-dir。
- *   详见 `src/tools/ts_kernel/import_resolve.ts` 的函数头注。
+ *   详见 `src/infrastructure/parse/import_resolve.ts` 的函数头注。
  *
  * ★ 本文件**不用仓内夹具**（`.inspect/` 是 gitignored，别人复现不了）——
  *   直接给 `rels` 一个内存集合，纯函数即可覆盖六层。
  */
 import { describe, it, expect } from 'vitest';
-import { resolveProjectImport } from '../../src/tools/ts_kernel/import_resolve.js';
+import { resolveProjectImport } from '../../src/infrastructure/parse/import_resolve.js';
 
 const EXTS = ['.ts', '.tsx', '.js', '.py', '.jl', '.hs', '.scala', '.java', '.groovy', '.ex', '.go'];
 const S = (...files: string[]): Set<string> => new Set(files);

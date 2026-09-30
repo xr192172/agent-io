@@ -31,7 +31,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { LANGUAGES } from './ts_kernel/languages.js';
+import { LANGUAGES } from '../infrastructure/parse/languages.js';
 
 /**
  * 语言包 ABI 钉版表：已实测与 `tree-sitter@0.21` 核心兼容的版本（含 bindings 导出 .language）。

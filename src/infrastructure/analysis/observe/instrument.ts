@@ -33,8 +33,8 @@
 import { DATA_DIR_NAME } from '../../../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
-import { parseAstRoot } from '../../../tools/ts_kernel/kernel.js';
-import { skipDirSet } from '../../../tools/ts_kernel/source_exts.js';
+import { parseAstRoot } from '../../parse/kernel.js';
+import { skipDirSet } from '../../parse/source_exts.js';
 
 /**
  * ★★ 唯一落点：**探针实现**在本仓里的目录（相对仓库根的 posix 路径）。

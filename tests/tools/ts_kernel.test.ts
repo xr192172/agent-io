@@ -9,8 +9,8 @@ import {
   listSupportedLanguages,
   listSupportedExtensions,
   _reset,
-} from '../../src/tools/ts_kernel/index';
-import { findLanguageByExt } from '../../src/tools/ts_kernel/languages';
+} from '../../src/infrastructure/parse/index.js';
+import { findLanguageByExt } from '../../src/infrastructure/parse/languages.js';
 
 describe('ts_kernel - languages registry', () => {
   it('应有 50+ 种语言注册', () => {

@@ -15,7 +15,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect, afterAll } from 'vitest';
-import { importProject } from '../../src/tools/import_project';
+import { importProject } from '../../src/infrastructure/graph/import_project.js';
 import { openDb } from '../../src/infrastructure/index/db';
 import { applyWrites } from '../../src/tools/apply_writes';
 import { rollbackFileSnapshot, listFileSnapshots } from '../../src/tools/file_snapshot';

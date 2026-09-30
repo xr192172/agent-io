@@ -16,11 +16,11 @@
  * 纯文本扫描：不依赖 AST、不写任何文件。
  */
 
-import { DATA_DIR_NAME } from '../data_dir.js';
+import { DATA_DIR_NAME } from '../../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
-import { SOURCE_EXTS } from './ts_kernel/index.js';
-import { skipDirSet } from './ts_kernel/source_exts.js';
+import { SOURCE_EXTS } from '../parse/index.js';
+import { skipDirSet } from '../parse/source_exts.js';
 
 export interface TextRefHit {
   /** 相对项目根（posix） */

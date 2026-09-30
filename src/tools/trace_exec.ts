@@ -18,7 +18,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { spawn } from 'node:child_process';
 import ts from 'typescript';
-import { parseFileFull, type ParsedSymbol } from './ts_kernel/index.js';
+import { parseFileFull, type ParsedSymbol } from '../infrastructure/parse/index.js';
 
 // ─────────────────────────────────────────────────────────────
 // 类型

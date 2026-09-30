@@ -32,13 +32,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { Database } from '../infrastructure/index/db.js';
 import { syncFile, removeFile, resolveCrossFileCalls, pruneDeletedFiles, toRelPath, changedSymbolNames, reopenRefsTo, type CrossFileResolveStats } from '../infrastructure/index/symbols.js';
-import { isSupported } from './ts_kernel/index.js';
+import { isSupported } from '../infrastructure/parse/index.js';
 import { indexedRelativeSet } from './index_freshness.js';
 import { isIndexIncomplete } from './index_backfill.js';
-import { skipDirSet } from './ts_kernel/source_exts.js';
+import { skipDirSet } from '../infrastructure/parse/source_exts.js';
 // ★ watcher 挂钩（§19）：**有 watcher 时由事件驱动失效**，TTL 只是没有 watcher 时的兜底。
 //   enqueue 是 fs.watch 回调归一后的**唯一入口** ⇒ 挂这一处即覆盖全部变更事件。
-import { invalidateProjectView } from './ts_kernel/project_view.js';
+import { invalidateProjectView } from '../infrastructure/parse/project_view.js';
 
 // ─────────────────────────────────────────────────────────────
 // 过滤规则（与 import_project 对齐，另加 .agent-io 防反馈循环）

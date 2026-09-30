@@ -42,7 +42,7 @@ import { resolveProjectRoot } from './project_root.js';
 import { createProtectGuard } from './protect.js';
 import { writeSourceFiles, type WriteThroughOutcome } from './write_gate.js';
 import type { ExternalRef } from './project_root.js';
-import { skipDirSet } from './ts_kernel/source_exts.js';
+import { skipDirSet } from '../infrastructure/parse/source_exts.js';
 
 /** 字面量命中的类别：contract=对外工具注册名(破坏契约需人审)；history=tool-convergence 历史记录(保留原貌)；docs=文档；test=测试断言；code=源码字符串 */
 export type LiteralMatchKind = 'contract' | 'history' | 'docs' | 'test' | 'code';

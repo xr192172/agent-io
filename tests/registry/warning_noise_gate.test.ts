@@ -24,7 +24,7 @@ import { describe, it, expect, afterAll } from 'vitest';
 import { expectGateGoesRed, expectGateStaysGreen } from '../helpers/gate_probe';
 import { WARNINGS_MARKER, warningBlock, emitWarnings, resetWarningDelivery, type WireWarning } from '../../src/registry/tool_warnings';
 import { staleIndexWarning, resetStaleIndexWarningCache } from '../../src/server_registry';
-import { importProject } from '../../src/tools/import_project';
+import { importProject } from '../../src/infrastructure/graph/import_project.js';
 import { openDb, closeAllProjectCacheDbs } from '../../src/infrastructure/index/db';
 
 /**

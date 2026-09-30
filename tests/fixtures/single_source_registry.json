@@ -4,7 +4,7 @@
     {
       "id": "type-only-module-statement",
       "intent": "识别 TS『运行时被整体擦除』的模块语句（import type / export type … from / 全 type 内联说明符）—— 回答『这条依赖边要不要算进依赖图』",
-      "authority": "src/tools/ts_kernel/kernel.ts",
+      "authority": "src/infrastructure/parse/kernel.ts",
       "pattern": "import\\s+type\\b",
       "frozen": {
         "src/infrastructure/analysis/health/index.ts": 1,
@@ -14,7 +14,7 @@
     {
       "id": "import-candidate-index-list",
       "intent": "specifier → 项目内文件的候选生成：目录 index 候选文件名清单",
-      "authority": "src/tools/ts_kernel/import_resolve.ts",
+      "authority": "src/infrastructure/parse/import_resolve.ts",
       "pattern": "'index.ts', 'index.tsx', 'index.js', 'index.jsx'",
       "frozen": {
         "src/tools/project_root.ts": 1
@@ -23,33 +23,33 @@
     {
       "id": "source-extension-static-list",
       "intent": "『什么算源码扩展名』—— 权威是内核 source_exts.ts 的 SOURCE_EXTS（并集）/ TS_JS_EXTS（JS 家族）/ NODE_RUNNABLE_EXTS（可跑 node）。此前同一问题有 20 处静态清单、口径互不一致（7/8/11/12/14/15…），迁移到权威后只增不减",
-      "authority": "src/tools/ts_kernel/source_exts.ts",
+      "authority": "src/infrastructure/parse/source_exts.ts",
       "pattern": "'.ts', '.tsx', '.js'",
       "frozen": {
-        "src/tools/import_project.ts": 1,
+        "src/infrastructure/graph/import_project.ts": 1,
         "src/tools/rename_symbols.ts": 1,
         "src/tools/slim_brick.ts": 1,
-        "src/tools/ts_kernel/import_resolve.ts": 1
+        "src/infrastructure/parse/import_resolve.ts": 1
       }
     },
     {
       "id": "ts-js-family-extension-list",
       "intent": "『TS/JS 家族扩展名』（同 AST + 同模块语义的那 8 个）—— 权威是内核 TS_JS_EXTS；任何地方再手写这 8 个就是副本",
-      "authority": "src/tools/ts_kernel/source_exts.ts",
+      "authority": "src/infrastructure/parse/source_exts.ts",
       "pattern": "'.ts', '.tsx', '.js', '.jsx', '.mts', '.cts'",
       "frozen": {}
     },
     {
       "id": "relative-named-import-text-parse",
       "intent": "『从源码文本里认出 import { a, b } from './x' 并映射 符号→模块』—— 权威是内核 import_text.ts；此前 cli_extract.ts 与 registry_extract.ts 各有一份**逐字相同**的实现（含注释同义）",
-      "authority": "src/tools/ts_kernel/import_text.ts",
+      "authority": "src/infrastructure/parse/import_text.ts",
       "pattern": "import\\s+(?:type\\s+)?\\{",
       "frozen": {}
     },
     {
       "id": "skip-directory-static-list",
       "intent": "『哪些目录不算项目源码』（node_modules/.git/dist/build/out/output/vendor/target/bin/obj…）—— 权威是内核 source_exts.ts 的 SKIP_DIR_BASE + shouldSkipDir(name, extra)。★ 纪律：基础集无争议、语言/用途专属项由调用方**显式追加**；**不许取并集**（会悄悄扩大别人的跳过面，违反 §2c）。此前同一问题有 9 处静态清单、5~28 项互有出入，并已产生假信号：refs_text 不跳 output/bin ⇒ 量具把 output/*.mjs 与 third_party/*/bin/*.mjs 数成「本体未索引（真缺陷）」。",
-      "authority": "src/tools/ts_kernel/source_exts.ts",
+      "authority": "src/infrastructure/parse/source_exts.ts",
       "pattern": "node_modules', '",
       "frozen": {},
       "allow": {
@@ -59,12 +59,12 @@
     },
     {
       "id": "repo-walk",
-      "intent": "『这个项目有哪些源码文件』的遍历 —— 权威是 ProjectView（src/tools/ts_kernel/project_view.ts，一处算→TTL 缓存→多处取用）。实测此前被 walk 了 29 处（walkSourceFiles 15 + feature_map.scanSourceFiles 6 + observe/instrument.collectTsFiles 8 + monolith 同名遮蔽），每次重 walk 一遍。★ 消费者应取 `getProjectView(root).sourceFiles`，不要自己 walk。",
-      "authority": "src/tools/ts_kernel/project_view.ts",
+      "intent": "『这个项目有哪些源码文件』的遍历 —— 权威是 ProjectView（src/infrastructure/parse/project_view.ts，一处算→TTL 缓存→多处取用）。实测此前被 walk 了 29 处（walkSourceFiles 15 + feature_map.scanSourceFiles 6 + observe/instrument.collectTsFiles 8 + monolith 同名遮蔽），每次重 walk 一遍。★ 消费者应取 `getProjectView(root).sourceFiles`，不要自己 walk。",
+      "authority": "src/infrastructure/parse/project_view.ts",
       "pattern": "walkSourceFiles(",
       "frozen": {},
       "allow": {
-        "src/tools/refs_text.ts": "★ **不是副本，是 [A] 层原语本身**：`walkSourceFiles` 的**函数定义**就在这里 —— 它是 ProjectView 依赖的底层遍历实现（`project_view.ts` import 它），不是\"绕过权威的自己走一遍\"。G4 是按字面 `walkSourceFiles(` 扫的，会命中定义行 ⇒ 如实豁免（**不把模式写得更花**：模式越花越容易漏真货）。"
+        "src/infrastructure/text/refs_text.ts": "★ **不是副本，是 [A] 层原语本身**：`walkSourceFiles` 的**函数定义**就在这里 —— 它是 ProjectView 依赖的底层遍历实现（`project_view.ts` import 它），不是\"绕过权威的自己走一遍\"。G4 是按字面 `walkSourceFiles(` 扫的，会命中定义行 ⇒ 如实豁免（**不把模式写得更花**：模式越花越容易漏真货）。"
       }
     }
   ]

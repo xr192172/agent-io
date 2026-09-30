@@ -33,7 +33,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import ts from 'typescript';
-import { NODE_RUNNABLE_EXTS } from '../../../tools/ts_kernel/index.js';
+import { NODE_RUNNABLE_EXTS } from '../../parse/index.js';
 import { missingLanguageHint } from '../../../tools/lang_hint.js';
 
 

@@ -18,9 +18,9 @@
  *   本笔未动（见 `register_capabilities.ts` 的 impact/code_health 注释与本笔提交信息）。
  */
 import { describe, it, expect } from 'vitest';
-import { parseFileFull } from '../../src/tools/ts_kernel/index.js';
-import { LANG_ADAPTERS } from '../../src/tools/ts_kernel/kernel.js';
-import { LANGUAGES } from '../../src/tools/ts_kernel/languages.js';
+import { parseFileFull } from '../../src/infrastructure/parse/index.js';
+import { LANG_ADAPTERS } from '../../src/infrastructure/parse/kernel.js';
+import { LANGUAGES } from '../../src/infrastructure/parse/languages.js';
 
 const nodesOf = (lang: string): string[] | undefined => LANGUAGES.find((l) => l.name === lang)?.import_nodes;
 

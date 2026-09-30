@@ -26,8 +26,8 @@ import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { PackageMigrationSpec, RunningChangePlan } from './refactor_langs.js';
-import { parseAstRoot, isTsJsExt, SOURCE_EXTS } from './ts_kernel/index.js';
-import type { SyntaxNodeLike } from './ts_kernel/index.js';
+import { parseAstRoot, isTsJsExt, SOURCE_EXTS } from '../infrastructure/parse/index.js';
+import type { SyntaxNodeLike } from '../infrastructure/parse/index.js';
 
 const DEFAULT_SKIP = new Set([
   '.git', 'node_modules', DATA_DIR_NAME, 'dist', 'build', 'target', '.venv', 'venv', '__pycache__', '.next', 'out',

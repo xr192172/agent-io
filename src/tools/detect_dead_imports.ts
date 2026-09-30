@@ -30,7 +30,7 @@ import {
   parseTsImportQualifiers,
   qualifierLines,
   stripTsImportLines,
-} from './dead_deps.js';
+} from '../infrastructure/graph/dead_deps.js';
 
 export interface DeadImportCandidate {
   /** 死三方源（Go import 路径 / TS 模块说明符） */

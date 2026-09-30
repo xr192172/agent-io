@@ -14,7 +14,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import { watchProjectTool, closeAllActiveWatches } from '../../src/tools/watch_project_tool';
-import { importProject } from '../../src/tools/import_project';
+import { importProject } from '../../src/infrastructure/graph/import_project.js';
 import { openDb } from '../../src/infrastructure/index/db';
 import { setGlobalProbeSink, loadTSEvents } from '../../src/infrastructure/analysis/observe/probe';
 import { judgeEvent } from '../../src/infrastructure/analysis/observe/judge';

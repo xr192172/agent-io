@@ -8,10 +8,10 @@
  * 旧的同步调用方需迁移到 await。
  */
 
-import { isSupported, parseFile, listSupportedLanguages, listSupportedExtensions } from './ts_kernel/index.js';
-import type { ParsedSymbol } from './ts_kernel/index.js';
+import { isSupported, parseFile, listSupportedLanguages, listSupportedExtensions } from '../infrastructure/parse/index.js';
+import type { ParsedSymbol } from '../infrastructure/parse/index.js';
 
-export { parseFile as parseFileSymbolsAsync } from './ts_kernel/index.js';
+export { parseFile as parseFileSymbolsAsync } from '../infrastructure/parse/index.js';
 export type { ParsedSymbol };
 
 /** 同步检查文件是否被支持（只检查扩展名 + 是否已安装） */

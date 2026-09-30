@@ -13,7 +13,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { probeInstalledLanguages } from './ts_kernel/probe.js';
+import { probeInstalledLanguages } from '../infrastructure/parse/probe.js';
 import {
   allCapabilities,
   diagnoseCapabilities,

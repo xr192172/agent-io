@@ -15,7 +15,7 @@ import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { describe, it, expect, afterAll, beforeEach } from 'vitest';
-import { importProject } from '../../src/tools/import_project';
+import { importProject } from '../../src/infrastructure/graph/import_project.js';
 import {
   semanticSearch,
   cosineSimilarity,

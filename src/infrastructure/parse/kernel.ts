@@ -25,7 +25,7 @@ import type Parser from 'tree-sitter';
 import { findLanguageByExt, LanguageEntry } from './languages.js';
 import { isLanguageInstalled, isExtSupported, listSupportedExts, probeInstalledLanguages } from './probe.js';
 import { getParser, getParserSync, clearLoaderCache } from './loader.js';
-import { missingLanguageHint } from '../lang_hint.js';
+import { missingLanguageHint } from '../../tools/lang_hint.js';
 
 export interface ParsedSymbol {
   name: string;

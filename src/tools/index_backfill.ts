@@ -19,7 +19,7 @@
 import path from 'node:path';
 import { getProjectCacheDb, beginBatch, endBatch, type Database } from '../infrastructure/index/db.js';
 import { syncFile, resolveCrossFileCalls } from '../infrastructure/index/symbols.js';
-import { getProjectView } from './ts_kernel/project_view.js';
+import { getProjectView } from '../infrastructure/parse/project_view.js';
 import { indexedRelativeSet } from './index_freshness.js';
 
 export interface BackfillState {

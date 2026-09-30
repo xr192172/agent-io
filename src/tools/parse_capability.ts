@@ -17,9 +17,9 @@
  */
 
 import path from 'node:path';
-import { findLanguageByExt, type LanguageEntry } from './ts_kernel/languages.js';
-import { LANG_ADAPTERS } from './ts_kernel/kernel.js';
-import { isExtSupported } from './ts_kernel/probe.js';
+import { findLanguageByExt, type LanguageEntry } from '../infrastructure/parse/languages.js';
+import { LANG_ADAPTERS } from '../infrastructure/parse/kernel.js';
+import { isExtSupported } from '../infrastructure/parse/probe.js';
 import { missingLanguageHint } from './lang_hint.js';
 
 /** 解析层级：call = 调用级（最深） / symbol = 仅符号定义 / none = 不解析 */

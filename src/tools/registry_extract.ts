@@ -17,7 +17,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { parseRelativeNamedImportMap } from './ts_kernel/import_text.js';
+import { parseRelativeNamedImportMap } from '../infrastructure/parse/import_text.js';
 
 export interface RegistryTool {
   name: string;

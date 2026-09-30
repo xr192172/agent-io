@@ -11,9 +11,9 @@
  */
 
 import path from 'node:path';
-import type { Database } from '../infrastructure/index/db.js';
+import type { Database } from '../index/db.js';
 import { resolveImport, readGoModules, buildIndex, type FileEntry } from './import_project.js';
-import type { ParsedImport } from './ts_kernel/kernel.js';
+import type { ParsedImport } from '../parse/kernel.js';
 
 export interface ImportGraph {
   /** 导入方 → 被导入文件（拎取方向：根须）——全视图（值边 + type-only 相对边）。

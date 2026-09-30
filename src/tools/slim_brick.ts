@@ -35,7 +35,7 @@ import { fileURLToPath } from 'node:url';
 import { getStorageRoot } from '../storage.js';
 import { resolveGoThirdParty } from './go_mod.js';
 import { resolveNpmThirdParty } from './npm_mod.js';
-import { parseGoImportQualifiers } from './dead_deps.js';
+import { parseGoImportQualifiers } from '../infrastructure/graph/dead_deps.js';
 import { aggregateContracts } from './harvest_from_url.js';
 import { slimTsFile, type TsSlimResult } from './ts_slim.js';
 import { NODE_BUILTINS } from './harvest_closure.js';

@@ -22,7 +22,7 @@ import {
   buildSplitPreviewDsl,
   checkMonolith,
 } from '../../src/tools/monolith';
-import type { ParsedSymbol } from '../../src/tools/ts_kernel/index';
+import type { ParsedSymbol } from '../../src/infrastructure/parse/index.js';
 
 // ─────────────────────────────────────────────────────────────
 // D1 行数与阈值

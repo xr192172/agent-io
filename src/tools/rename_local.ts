@@ -43,7 +43,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { analyzeLocals, renameMany, resolveLocalAddress, type RenameItem } from './ast_rename.js';
 import { applyWrites } from './apply_writes.js';
-import { findLanguageByExt } from './ts_kernel/languages.js';
+import { findLanguageByExt } from '../infrastructure/parse/languages.js';
 import type { WriteThroughOutcome } from './write_gate.js';
 
 /** 一条局部改名请求（`scope='local'` 的条目形态；与 module 支的条目同形，见 rename_symbols.ts） */

@@ -30,7 +30,7 @@ import { readFileSync, writeFileSync, existsSync, rmSync, readdirSync } from 'no
 import { tmpdir } from 'node:os';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { parseFileFull, parseAstRoot, ParsedSymbol } from './ts_kernel/index.js';
+import { parseFileFull, parseAstRoot, ParsedSymbol } from '../infrastructure/parse/index.js';
 
 const execFileAsync = promisify(execFile);
 

@@ -22,12 +22,12 @@
 import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
-import { SOURCE_EXTS } from './ts_kernel/index.js';
+import { SOURCE_EXTS } from '../infrastructure/parse/index.js';
 import { matchRule, instantiateReplace } from './rule_match.js';
 import { applyMatch as applyOneMatch } from './rule_match.js';
 import { loadRules, baselinePath, rulesDir, type Rule } from './rule_library.js';
 import { splitLines, leadingWs } from './rule_tokens.js';
-import { skipDirSet } from './ts_kernel/source_exts.js';
+import { skipDirSet } from '../infrastructure/parse/source_exts.js';
 
 /* ─────────────────── 三态结果 ─────────────────── */
 

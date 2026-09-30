@@ -133,8 +133,11 @@ export const TOOL_DOMAINS: Array<{ id: string; label: string; files: string[]; k
 /** tools/ 下文件 → 能力域 id（子目录先定家，再显式清单，最后关键词打分兜底） */
 export function toolDomainOf(relPath: string): string {
   const nf = normPath(relPath);
-  // 子目录整体定家：ts_kernel 是工具执行内核，python_refactor 是重构子项目（避免同目录被拆到两个功能）
-  if (nf.startsWith('tools/ts_kernel/')) return 'kernel';
+  // 子目录整体定家：解析内核是工具执行内核，python_refactor 是重构子项目（避免同目录被拆到两个功能）
+  // ★ 2026-09-30：内核已从 `tools/ts_kernel/` 搬到 `infrastructure/parse/`（§44.3 ④）。
+  //   这类"按仓库相对路径前缀判断"的字符串**改名工具改不到**（见台账 §44.5(1)）——
+  //   同批用 `grep -rn "startsWith('tools/"` 全仓扫过，只有这一处。
+  if (nf.startsWith('infrastructure/parse/')) return 'kernel';
   if (nf.startsWith('tools/python_refactor/')) return 'refactor';
   const base = (nf.split('/').pop() ?? '').replace(/\.tsx?$/, '').replace(/\.go$/, '').toLowerCase();
   for (const d of TOOL_DOMAINS) if (d.files.includes(base)) return d.id;

@@ -19,8 +19,8 @@ import { describe, it, expect } from 'vitest';
 import { missingLanguageHint, capabilityGaps } from '../../src/tools/lang_hint';
 import { diagnoseCapabilities, aggregateGaps } from '../../src/tools/capability_matrix';
 import { languageCatalog } from '../../src/tools/capability_matrix';
-import { findLanguageByExt } from '../../src/tools/ts_kernel/languages';
-import { isExtSupported } from '../../src/tools/ts_kernel/probe';
+import { findLanguageByExt } from '../../src/infrastructure/parse/languages.js';
+import { isExtSupported } from '../../src/infrastructure/parse/probe.js';
 
 /** 独立重算缺口（不复用 lang_hint 的入口，防"自己重算错了也一致"） */
 function gaps() {
@@ -69,7 +69,7 @@ describe('lang_hint · 缺失语言能力提示', () => {
     // ★ 2026-09-29 措辞纠正：tree-sitter-css **在盘上**（是 tree-sitter-scss 的传递依赖），
     //   但它是老 nan.h 模板、无可用二进制 ⇒ 载入必失败 ⇒ probe 的「真筛子」判**不可用**。
     //   ∴ 这里的"不可用"而不是"未装"，断言本身不变（isExtSupported 的语义已从"可 resolve"
-    //   收紧为"可载入"，见 src/tools/ts_kernel/probe.ts）。
+    //   收紧为"可载入"，见 src/infrastructure/parse/probe.ts）。
     expect(hint, '要件②：应给 npm 包名').toContain(`tree-sitter-${entry!.pkg}`);
     expect(hint, '要件②：应给装包命令').toContain(`npm run install-package install ${entry!.name}`);
     expect(hint, '要件①：应带上该能力 id').toContain('「code_health」能力');

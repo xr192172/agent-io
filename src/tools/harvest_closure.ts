@@ -24,7 +24,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { getDSL } from '../storage.js';
 import { getProjectCacheDb, type Database } from '../infrastructure/index/db.js';
-import { buildImportGraph } from './import_graph.js';
+import { buildImportGraph } from '../infrastructure/graph/import_graph.js';
 
 export interface HarvestClosureInput {
   /** 被分析项目的根目录（其下 .agent-io/cache.db 是符号缓存） */

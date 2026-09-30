@@ -22,7 +22,7 @@ import {
 import { adapterForLang, ALL_ADAPTER_EXTS } from './adapters/registry.js';
 import { scanFeatureHits, type FeatureHit } from './features.js';
 import { scanRemovedApis, type RemovedHit } from './removed.js';
-import { skipDirSet, SOURCE_EXTS } from '../../../tools/ts_kernel/source_exts.js';
+import { skipDirSet, SOURCE_EXTS } from '../../parse/source_exts.js';
 
 /** 语言 → 源码扩展名（来自适配器；保持导出以兼容既有调用方） */
 export const FEATURE_EXTS: Record<ToolName, string[]> = Object.fromEntries(

@@ -16,7 +16,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect, afterAll } from 'vitest';
 import { registerAllTools, TOOL_DEFS } from '../src/server_registry';
-import { importProject } from '../src/tools/import_project';
+import { importProject } from '../src/infrastructure/graph/import_project.js';
 import { openDb, closeAllProjectCacheDbs } from '../src/infrastructure/index/db';
 
 type Cb = (args: Record<string, unknown>) => Promise<{ content: { type: string; text: string }[]; isError?: boolean }>;

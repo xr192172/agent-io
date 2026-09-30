@@ -19,10 +19,10 @@
 import { DATA_DIR_NAME } from '../../../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
-import { parseAstRoot } from '../../../tools/ts_kernel/index.js';
-import type { SyntaxNodeLike } from '../../../tools/ts_kernel/index.js';
+import { parseAstRoot } from '../../parse/index.js';
+import type { SyntaxNodeLike } from '../../parse/index.js';
 import type { RunningChangePlan } from '../../../tools/refactor_langs.js';
-import { skipDirSet } from '../../../tools/ts_kernel/source_exts.js';
+import { skipDirSet } from '../../parse/source_exts.js';
 
 // ─────────────────────────────────────────────
 // 类型

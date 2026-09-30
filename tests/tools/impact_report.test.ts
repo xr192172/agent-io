@@ -17,7 +17,7 @@ import path from 'node:path';
 import { describe, it, expect, afterAll } from 'vitest';
 import { runImpactReport, readImpactReport, listImpactReports } from '../../src/tools/impact_report';
 import { diffImpact } from '../../src/tools/diff_impact';
-import { importProject } from '../../src/tools/import_project';
+import { importProject } from '../../src/infrastructure/graph/import_project.js';
 import { openDb } from '../../src/infrastructure/index/db';
 import { watchProjectTool, closeAllActiveWatches } from '../../src/tools/watch_project_tool';
 import { setGlobalProbeSink, loadTSEvents } from '../../src/infrastructure/analysis/observe/probe';

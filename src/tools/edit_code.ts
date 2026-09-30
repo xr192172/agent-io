@@ -44,7 +44,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { parseFileFull, parseAstRoot, type ParsedSymbol } from './ts_kernel/index.js';
+import { parseFileFull, parseAstRoot, type ParsedSymbol } from '../infrastructure/parse/index.js';
 import { syncFile } from '../infrastructure/index/symbols.js';
 import { getProjectCacheDb } from '../infrastructure/index/db.js';
 import { splitKeepEnds, detectEol, isBlankLine } from './line_utils.js';

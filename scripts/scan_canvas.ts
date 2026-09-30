@@ -4,7 +4,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { parseFileFull } from '../src/tools/ts_kernel/index.js';
+import { parseFileFull } from '../src/infrastructure/parse/index.js';
 
 const ROOT = path.resolve(process.cwd());
 const SKIP = new Set(['.git', 'node_modules', 'dist', 'build', 'target', '.agent-io', '.agent-io.bak-20260830-122215', 'scripts', 'test', 'tests']);

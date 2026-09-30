@@ -23,7 +23,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { parseAstRoot, type SyntaxNodeLike } from './ts_kernel/kernel.js';
+import { parseAstRoot, type SyntaxNodeLike } from '../infrastructure/parse/kernel.js';
 import { applyWithVerify, defaultVerifyCommands, runVerification, type VerifyCommand, type VerificationOutcome, type VerifyOutcomeKind } from './verify_refactor.js';
 
 // ─────────────────────────────────────────────

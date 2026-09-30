@@ -36,9 +36,9 @@ import {
   reopenRefsTo,
   changedSymbolNames,
 } from '../infrastructure/index/symbols.js';
-import { walkFiles } from './import_project.js';
-import { buildTextImportIndex, importLookupKeys } from './refs_text.js';
-import { getProjectView } from './ts_kernel/project_view.js'; // ★ §19②
+import { walkFiles } from '../infrastructure/graph/import_project.js';
+import { buildTextImportIndex, importLookupKeys } from '../infrastructure/text/refs_text.js';
+import { getProjectView } from '../infrastructure/parse/project_view.js'; // ★ §19②
 import { pendingSelfWrites } from './write_gate.js';
 
 /** 索引可用性状态（诚实口径：不假装完整） */

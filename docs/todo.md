@@ -15,6 +15,19 @@
 
 ## 待做
 
+- [ ] **T16 ★ `core.autocrlf=true` 与"按 `\n` 逐字断言"的测试相冲 —— 每次 `git checkout/reset` 都会随机掀红几条**
+      *(核实：2026-09-30 搬 ④ 时实测 —— `git reset --hard HEAD` 把工作区文件翻成 CRLF，
+      而 `tests/tools/project_view.test.ts` 断言的是带 `\n` 的**多行字面量** ⇒ 假红。
+      实测：`node .inspect/normalize_lf.mjs --apply`（把 `git status` 里的文件归一为 LF）后立刻转绿。)*
+      ⇒ 范围：全仓 1098 个文本文件里 **539 个含 CRLF**，而 git blobs 全是 LF
+      （`git config core.autocrlf` = **true**，每次提交都会打一片 "LF will be replaced by CRLF" 警告）。
+      ⇒ ★ 它不是"代码坏了"，是**每次搬迁/回滚都会随机假红**（⑤⑥⑦ 还会再撞）。
+      **候选修法**（择一，别都上）：
+      · ① 加 `.gitattributes`：`* text=auto eol=lf`（仓级、对所有人一致）—— **推荐**；
+      · ② 本仓 `git config core.autocrlf false` + 归一工作区（只治本机）；
+      · ③ 把这类测试的断言改成**行尾无关**（`content.replace(/\r\n/g,'\n')` 后再比）。
+      ★ 不要"每次红了就手动归一" —— 那是把环境问题变成**人工税**。
+
 - [ ] **T15 ★★ 把 CLI-only 的能力注册为 MCP 工具 ⇒ 「CLI-only」这个类别应当**归零****
       *(用户裁定的洞察 2026-09-30：「**工作台为什么不能注册为 MCP 呢**？就是说**同样同时投影为 MCP 和 CLI**，
       这样的话就**不用保留为 CLI only** 了。」)*

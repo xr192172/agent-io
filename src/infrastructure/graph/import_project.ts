@@ -18,23 +18,23 @@
  *   - 其他包导入（npm 包、标准库）→ 外部依赖，跳过
  */
 
-import { DATA_DIR_NAME } from '../data_dir.js';
-import { INDEX_SKIP_DIR_EXTRA, isIndexSkippedFileName, shouldSkipDir } from './ts_kernel/source_exts.js';
+import { DATA_DIR_NAME } from '../../data_dir.js';
+import { INDEX_SKIP_DIR_EXTRA, isIndexSkippedFileName, shouldSkipDir } from '../parse/source_exts.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import ignore from 'ignore';
 import type { Ignore } from 'ignore';
-import type { DesignDSL, Node, Edge, SemanticFile, ExpectedApi, Symbol } from '../domain/types.js';
-import type { BrickManifest } from '../domain/contract.js';
-import { saveDSL, saveLiveFeature, ensureBaseline, getDSL } from '../storage.js';
-import { mergeDesignLayer } from '../storage_overlay.js';
-import { detectArchLayers } from './layer_detect.js';
-import { parseFileFull, isSupported, resolveProjectImport } from './ts_kernel/index.js';
-import type { ParsedImport } from './ts_kernel/index.js';
-import { countLines, assessLines } from './monolith.js';
-import type { Database } from '../infrastructure/index/db.js';
-import { syncProject, getFileParse, pruneDeletedFiles } from '../infrastructure/index/symbols.js';
-import { generateFileRoleTitles } from './role_title.js';
+import type { DesignDSL, Node, Edge, SemanticFile, ExpectedApi, Symbol } from '../../domain/types.js';
+import type { BrickManifest } from '../../domain/contract.js';
+import { saveDSL, saveLiveFeature, ensureBaseline, getDSL } from '../../storage.js';
+import { mergeDesignLayer } from '../../storage_overlay.js';
+import { detectArchLayers } from '../../tools/layer_detect.js';
+import { parseFileFull, isSupported, resolveProjectImport } from '../parse/index.js';
+import type { ParsedImport } from '../parse/index.js';
+import { countLines, assessLines } from '../../tools/monolith.js';
+import type { Database } from '../index/db.js';
+import { syncProject, getFileParse, pruneDeletedFiles } from '../index/symbols.js';
+import { generateFileRoleTitles } from '../../tools/role_title.js';
 
 export interface ImportProjectInput {
   /** 目标项目根目录（绝对路径或相对 cwd） */
@@ -770,7 +770,7 @@ async function buildFromMonolith(
   let groups: Array<{ id: string; name: string; communities: Array<{ id: number; files: string[] }> }> | null = null;
   if (genNames) {
     try {
-      const { deriveFeatureTree } = await import('./derive_feature_tree.js');
+      const { deriveFeatureTree } = await import('../../tools/derive_feature_tree.js');
       const ft = await deriveFeatureTree({ project_dir: projectDir, db: cacheDb, gen_names: true });
       if (ft.features.length > 0) {
         groups = ft.features.map((f, i) => ({
@@ -913,7 +913,7 @@ async function buildFunctionalLayout(
   // 0. skill 级：复用 analyze_monolith（锚点驱动社区）+ derive_feature_tree（LLM 归并业务功能）
   if (useSkillPipeline) {
     try {
-      const { analyzeMonolith } = await import('./analyze_monolith.js');
+      const { analyzeMonolith } = await import('../../tools/analyze_monolith.js');
       const mono = analyzeMonolith({ project_dir: projectDir, db: cacheDb });
       if (mono.communities.length > 0) {
         return await buildFromMonolith(mono, projectDir, parsed, lineCounts, genNames, sanitize, moduleId, cacheDb);

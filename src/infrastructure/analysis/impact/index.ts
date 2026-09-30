@@ -21,8 +21,8 @@
  */
 
 import path from 'node:path';
-import { parseFileFull, listSupportedExtensions, resolveProjectImport, type ParsedSymbol } from '../../../tools/ts_kernel/index.js';
-import { codeSourceExts, partitionByCodeLang } from '../../../tools/ts_kernel/source_exts.js';
+import { parseFileFull, listSupportedExtensions, resolveProjectImport, type ParsedSymbol } from '../../parse/index.js';
+import { codeSourceExts, partitionByCodeLang } from '../../parse/source_exts.js';
 import { boundsSkipFromExcluded, type ScanBounds } from '../../../tools/scan_bounds.js';
 import { collectSourceFiles } from '../version_upgrade/detect.js';
 
