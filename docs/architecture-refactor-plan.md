@@ -4239,3 +4239,45 @@ src/  application/  domain/  infrastructure/  presentation/  tools/     ← 根�
 #### ★ 又一条"点名布局"的断言
 `feature_map` 的 `expect(fns).toContain('root')` —— 搬完后 `src/` 根无文件 ⇒ `root` 族消失 ⇒ 红
 （**这正是搬迁成功的证据**）。改成与布局无关且更强的判据：每个 feature id 必须能对上某个顶层目录或 `root`。
+
+### 44.13 ★★ T11 收口：`src/tools/` 顶层 **171 → 3**（提交 `4b9f28a` + `50e0612`）
+
+| 阶段 | 内容 | `src/tools/` 顶层 |
+|---|---|---|
+| 起点 | 194（T11 普查前） | 194 |
+| ④ 内核搬走 + ⑥-3 CLIs 搬走 + 删自包含 HTML | | ↓ |
+| ⑦-2 | 48 个 A 类工具 → `application/<线>/` | 123 |
+| **⑤ 主体** | **103 个**按收拢后的 10 个目录（引用改写 **594 处 / 244 文件**） | 15 |
+| **尾刀** | **12 个**按"最低消费者所在层"归位（含 archify 四件收进 `presentation/http/archify/`） | **3** |
+
+**剩下的 3 个都是"有裁决前置"，不是漏搬**：
+- `sync_contracts.ts` —— **④-2**：import `presentation/mcp/server_registry` 的 `TOOL_DEFS` ⇒ 落哪都违规
+- `trace_reasoning.ts` —— **产品裁决**：活链的生产端（`application/observe/trace_evidence` 消费）
+- `view_inputs.ts` —— ★ `README.md:325` + §11.5 **逐字钦定"不删"**，且 `src/` 零消费者
+
+#### ★★★ 我在这一批**两次自伤**（两次都不是"代码坏"，是"我的量具坏"）
+1. **同族两处只改一处**：在 `t11_facts.mjs` 修了"副作用 import（`import './x.js'`）"盲区，**没回头修 `relink_specifiers.mjs`**
+   ⇒ `lang_hint.ts` 那条没被改写 ⇒ **157 个测试文件加载失败**。
+   ⇒ **纪律：修一个盲区时，先问"同一个盲区还有谁在犯"。**
+2. **我给 `move_finish` 加的 ③ 分段拼把 `.ts` 吃掉了** ⇒ 6+ 处改坏（还把 `brick_bag` 写成 `brickify`）。
+   ⇒ 停用该工具收尾，写 `.inspect/repair_ext.mjs` 补回 **37 处**。
+   ⇒ **纪律：一个"顺手加的形态支持"必须自己先做出生证**（我给 ⑤ 做了、**没给 ③ 的末段扩展名分支做**）。
+
+#### ★★ 搬家才看得见的**结构性**错误（这类最该记住）
+`lang_hint → register_capabilities` 在搬**前**同目录（合法）；搬**后**一个在 `infrastructure/parse`、
+一个在 `application/meta` ⇒ **infra → app 倒挂**。**逐文件的层检查看不见它**（只看"这个文件 import 了谁"，
+而两个文件当时都还没搬）。⇒ 按"**共享者取最下层**"把它下沉 `infrastructure/parse/`（与 `PACK_PINS` 同款）。
+★ 衍生：**说明符一断，架构门也看不见那条边** ⇒ `layer-downward-only` 不能当唯一的网。
+
+#### ★★ 一个只有搬完才暴露的**真功能断裂**
+`sync_contracts.ts:77` 写死 `` `src/tools/${name}.ts` `` 去匹配 DSL 里记的文件路径 ⇒ 搬完后**匹配不到任何文件**，
+该工具**静默变成空操作**（走查测试 3 条红是它的证据）。
+⇒ 改为按 basename 在 `<包根>/src` 解析（复用既有的**自省锚定** `getPackageRoot()`，不依赖 cwd）；
+★ **不是"一律抛"**：有些注册工具**在 lane 里内联实现**（门自己写着"无同名文件：允许"）⇒ 对它们是正常；
+★ 但**不许静默**：新增 `unresolved: string[]` + message 里如实列出被跳过的工具名。
+
+#### ★ 交付物已**回填实际落点**
+`docs/t11-tool-identity-survey.md` 末尾新增「附：实际落点」——**原始 123 个：已搬 115 ｜ 已删 5 ｜ 未搬 3**。
+★ 回填器自己也栽了一次：第一版**按 basename 查**，而 `simulation.ts` 在 `src/domain/` 本来就有同名文件
+⇒ 误读成"落到了 domain"；第二版改成**按搬迁清单的精确目标**核。
+⇒ **又一个"别用名字猜、要用清单核"。**

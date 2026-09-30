@@ -291,3 +291,37 @@
 - [值得单独说的] - **wizard_steps / workbench_shell_css 严格口径存疑（单消费者）**：二者各只有 1 个 importer（分别 render_wizard.ts、render_workbench.ts），严格按"被 ≥2 个工具共用"不满足 `工具间共享`。判为 `工具间共享` 的依据是它们是"渲染能力"的内部数据/静态资产，与渲染器同生共死；**若按严格口径，可另立或降为渲染器内部实现**。workbench_data 有 2 个 importer（brickify_cli + render_workbench），无此问题。
 - [值得单独说的] - **brickify 是否"旧世代"存疑（影响 workbench_data/wizard_steps/workbench_shell_css/taxonomy 的判定）**：团队线索把 `brickify` 列为旧世代，但实测 **brickify 仍被现行 MCP 工具 render_brickwork（application/design）消费**，`package.json` 也有 `npm run brickify`；`docs/tool-convergence.md`§草丛工具评估（2026-09）明确把 `render_workbench` 等判为"内部实现、零转正"。故本分片**未**把这几个 workbench/wizard 文件判为旧世代，而判为 `工具间共享`。若团队已确认 brickify 工作台族退役，这几个（含 taxonomy、wizard_steps、workbench_*）应改判 `旧世代遗留`。
 - [判不了的（待裁决）] - （无）本分片 18 个逐个给出了判定。上列"存疑"项已在"值得单独说"写明反证与改判条件，非无法判定。
+## 附：实际落点（2026-10-01 搬迁后**回填**，替代上面的"计划"）
+
+原始 123 个：**已搬 115** ｜ **已删 5** ｜ **未搬 3**
+
+### 已删（判死后删除）
+
+- `batch_ops.ts`
+- `get_dsl.ts`
+- `observe_chain_view.ts`
+- `refactor_report.ts`
+- `run_narrate.ts`
+
+### 未搬（有明确裁决前置，不是漏搬）
+
+- `sync_contracts.ts` —— ④-2：import `presentation/mcp/server_registry` 的 `TOOL_DEFS` ⇒ 落哪都违规，要先解环
+- `trace_reasoning.ts` —— 产品裁决：**活链的生产端**（`application/observe/trace_evidence` 消费），删它 = 砍半条链
+- `view_inputs.ts` —— ★ `README.md:325` + 规划书 §11.5 **逐字钦定"不删"**，且 `src/` 零消费者
+
+### 已搬（按落点分组）
+
+| 落点 | 个数 | 文件 |
+|---|---|---|
+| `src/application/design/` | 28 | `annotation_tools` `api_ops` `brick_bag` `brickify` `classify_bricks` `cluster_narrator` `consistency` `dag_layout` `derive_algorithm` `derive_chain` `derive_split` `detect_drift` `edge_ops` `edit_result` `feature_ops` `file_ops` `node_ops` `opl` `signal_review` `simulation` `snapshot` `split_stage` `status_tools` `taxonomy` `templates` `update_feature` `wizard_steps` `workbench_data` |
+| `src/application/meta/` | 11 | `classify_tools` `cli_extract` `collect_functions` `derive_anim_flow` `explain_gen` `impact_ledger_store` `impact_report` `overview` `query_feature` `registry_extract` `semantic_search` |
+| `src/application/observe/` | 7 | `approval` `harvest_decisions` `observe_trace` `reason_validator` `reconcile_chain` `trace_evidence` `write_gate` |
+| `src/application/refactor/` | 7 | `diff_views` `field_refs` `package_migration` `protect` `rename_file` `rename_local` `rename_symbol` |
+| `src/infrastructure/` | 7 | `alert_inbox` `dictionary` `dogfood_stats` `exec_guard` `git` `llm_focus` `verify_refactor` |
+| `src/infrastructure/analysis/` | 20 | `analyze_monolith` `arch_layer` `capability_matrix` `contract_gate` `dead_statements` `derive_feature_tree` `detect_dead_imports` `diff` `diff_impact` `feature_map` `health_cache` `language_concepts` `layer_detect` `monolith` `refactor_langs` `role_title` `run_trace_replay` `snapshot_needle` `submit_gate` `trace_exec` |
+| `src/infrastructure/index/` | 7 | `function_outline` `guided_tour` `index_backfill` `index_freshness` `registry` `watch_project` `watch_project_tool` |
+| `src/infrastructure/parse/` | 12 | `arg_suggest` `ast_parser` `ast_rename` `fuzzy_match` `go_mod` `lang_hint` `line_utils` `npm_mod` `rule_match` `rule_tokens` `ts_slim` | `register_capabilities` |
+| `src/infrastructure/render/` | 2 | `export` `inject_replay` |
+| `src/presentation/cli/` | 9 | `deprecate_offline` `render_anatomy` `render_cluster_workbench` `render_dep_canvas` `render_mindmap` `render_tools_map` `render_wizard` `render_workbench` `workbench_shell_css` |
+| `src/presentation/http/` | 1 | `dict_gen` |
+| `src/presentation/http/archify/` | 4 | `archify_mappers` `archify_pipeline` `archify_project` `archify_semantics` |
