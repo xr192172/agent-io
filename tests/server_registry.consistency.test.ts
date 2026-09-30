@@ -108,7 +108,7 @@ const INTERNAL_MODULES: Record<string, { importedBy: string[]; why: string }> = 
     importedBy: [
       'src/application/design/brickify.ts',
       'src/application/design/brick_bag.ts',
-      'src/tools/deprecate_offline.ts',
+      'src/presentation/cli/deprecate_offline.ts',
       'src/infrastructure/analysis/feature_map.ts',
       'src/application/refactor/function_annotation.ts',
       'src/application/refactor/refactor_pipeline.ts',

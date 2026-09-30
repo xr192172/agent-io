@@ -13,7 +13,7 @@
  * LLM 缺席/失败 → 关键词启发式降级；命中不了 → 诚实进 unclassified。
  */
 
-import type { FunctionEntry } from '../../tools/collect_functions.js';
+import type { FunctionEntry } from './collect_functions.js';
 import type { BrickifyResult } from '../design/brickify.js';
 import { loadLlmConfig, callChat } from '../../infrastructure/llm_focus.js';
 import { loadExplainConfig } from './explain_gen.js';

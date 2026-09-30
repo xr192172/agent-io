@@ -11,8 +11,8 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { deriveSemantics, type SemanticSurface } from './archify_semantics.js';
 import { DIAGRAM_TYPES, toArchitecture, toWorkflow, toSequence, toDataflow, toLifecycle, type DiagramCandidate, type DiagramType } from './archify_mappers.js';
-import { resolveArchifyRoot, archifyCliPath, validateCandidate, deliverHtml } from '../presentation/cli/archify_cli.js';
-import type { FileIndex } from '../application/meta/derive_mind_map.js';
+import { resolveArchifyRoot, archifyCliPath, validateCandidate, deliverHtml } from '../../cli/archify_cli.js';
+import type { FileIndex } from '../../../application/meta/derive_mind_map.js';
 import type { ArchifyTreeNode } from './archify_project.js';
 
 export interface ProductionItem {

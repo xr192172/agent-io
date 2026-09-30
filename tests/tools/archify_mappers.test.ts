@@ -2,10 +2,10 @@
  * archify_mappers 5 类型映射测试：从语义面生成官方 candidate，遵循 showcase 首稿不排几何
  */
 import { it, expect } from 'vitest';
-import { adaptIRTree } from '../../src/tools/archify_project';
-import { deriveSemantics } from '../../src/tools/archify_semantics';
-import { toArchitecture, toWorkflow, toSequence, toDataflow, toLifecycle, DIAGRAM_TYPES } from '../../src/tools/archify_mappers';
-import type { ArchifyTreeNode } from '../../src/tools/archify_project';
+import { adaptIRTree } from '../../src/presentation/http/archify/archify_project.js';
+import { deriveSemantics } from '../../src/presentation/http/archify/archify_semantics.js';
+import { toArchitecture, toWorkflow, toSequence, toDataflow, toLifecycle, DIAGRAM_TYPES } from '../../src/presentation/http/archify/archify_mappers.js';
+import type { ArchifyTreeNode } from '../../src/presentation/http/archify/archify_project.js';
 import { r5Describe } from '../helpers/r5_gate';
 
 const tree: ArchifyTreeNode = {

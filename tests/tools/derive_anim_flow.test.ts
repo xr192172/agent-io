@@ -15,7 +15,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { deriveAnimFlow } from '../../src/tools/derive_anim_flow';
+import { deriveAnimFlow } from '../../src/application/meta/derive_anim_flow.js';
 import { exploreCode } from '../../src/application/meta/explore_code.js';
 import { deriveDetailChain } from '../../src/application/design/derive_chain.js';
 import { createFeature } from '../../src/application/design/feature_ops.js';

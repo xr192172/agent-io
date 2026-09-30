@@ -25,7 +25,7 @@
 import path from 'node:path';
 import type { MixedFileSignal } from './brickify.js';
 import type { SignalReview } from './signal_review.js';
-import { deriveSplit, type DeriveSplitResult } from '../../tools/derive_split.js';
+import { deriveSplit, type DeriveSplitResult } from './derive_split.js';
 
 // ─────────────────────────────────────────────
 // 类型

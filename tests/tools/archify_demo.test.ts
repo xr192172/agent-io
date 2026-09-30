@@ -8,8 +8,8 @@
  *   4. 输入不适配某类型（缺主路径/终态）→ 该类型返回"不适配"说明，不影响其余类型。
  */
 import { it, expect, beforeEach, afterEach } from 'vitest';
-import { runArchifyPipeline } from '../../src/tools/archify_pipeline';
-import type { ArchifyTreeNode } from '../../src/tools/archify_project';
+import { runArchifyPipeline } from '../../src/presentation/http/archify/archify_pipeline.js';
+import type { ArchifyTreeNode } from '../../src/presentation/http/archify/archify_project.js';
 import { r5Describe } from '../helpers/r5_gate';
 
 /**

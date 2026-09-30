@@ -15,10 +15,10 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import type { DesignDSL, Node, Edge } from '../domain/types.js';
-import { getDSL, saveDSL } from '../infrastructure/storage.js';
-import { extractFunctionCfg } from '../infrastructure/parse/cfg.js';
-import type { CfgNodeKind } from '../infrastructure/parse/cfg.js';
+import type { DesignDSL, Node, Edge } from '../../domain/types.js';
+import { getDSL, saveDSL } from '../../infrastructure/storage.js';
+import { extractFunctionCfg } from '../../infrastructure/parse/cfg.js';
+import type { CfgNodeKind } from '../../infrastructure/parse/cfg.js';
 
 export interface DeriveAlgorithmInput {
   feature: string;

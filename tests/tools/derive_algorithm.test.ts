@@ -16,7 +16,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { deriveAlgorithm } from '../../src/tools/derive_algorithm';
+import { deriveAlgorithm } from '../../src/application/design/derive_algorithm.js';
 import { createFeature } from '../../src/application/design/feature_ops.js';
 import { addNode } from '../../src/application/design/node_ops.js';
 import { addFile } from '../../src/application/design/file_ops.js';

@@ -19,7 +19,7 @@ import { getDSL, saveDSL } from '../../infrastructure/storage.js';
 import type { Database } from '../../infrastructure/index/db.js';
 import { parseFileFull, isSupported, type ParsedCall, type ParsedSymbol } from '../../infrastructure/parse/index.js';
 import { extractFunctionCfg } from '../../infrastructure/parse/cfg.js';
-import { KIND_SHAPE } from '../../tools/derive_algorithm.js';
+import { KIND_SHAPE } from './derive_algorithm.js';
 
 export interface DeriveChainInput {
   /** feature 名 */

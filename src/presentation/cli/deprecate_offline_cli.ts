@@ -2,10 +2,10 @@
  * deprecate_offline_cli —— 废弃积木下线链 CLI（C 链落地入口）
  *
  * 用法：
- *   node dist/src/tools/deprecate_offline_cli.js --project <dir>
+ *   node dist/src/presentation/cli/deprecate_offline_cli.js --project <dir>
  *        [--plans ./a.ts,./legacy/b] [--files <scope>] [--apply] [--remove-file] [--no-verify]
  */
-import { runDeprecateOffline } from '../../tools/deprecate_offline.js';
+import { runDeprecateOffline } from './deprecate_offline.js';
 
 function readArg(name: string): string | undefined {
   const i = process.argv.indexOf(name);

@@ -13,7 +13,7 @@ import { afterAll, describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { resolveConsumerSource, aggregateProjectSources, remainingImporters, hasActiveReference } from '../../src/tools/deprecate_offline';
+import { resolveConsumerSource, aggregateProjectSources, remainingImporters, hasActiveReference } from '../../src/presentation/cli/deprecate_offline.js';
 import type { DeadDepCandidate } from '../../src/infrastructure/graph/dead_deps.js';
 
 function tmp(): string {

@@ -19,7 +19,7 @@ import {
 import {
   clusterEdgesOf,
   renderClusterWorkbenchHtml,
-} from '../../src/tools/render_cluster_workbench';
+} from '../../src/presentation/cli/render_cluster_workbench.js';
 import { buildBrickify, type BrickifyResult } from '../../src/application/design/brickify.js';
 
 function makeTmp(): string {

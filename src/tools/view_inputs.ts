@@ -12,7 +12,7 @@
  *   - dataflow    ：按依赖深度的阶段流转
  *   - lifecycle   ：主路径 + 终态的状态迁移
  */
-import type { SemanticSurface, SemanticNode, SemanticEdge } from './archify_semantics.js';
+import type { SemanticSurface, SemanticNode, SemanticEdge } from '../presentation/http/archify/archify_semantics.js';
 
 /** 统一节点：含分区/角色/层/规模等"图无关"投影字段，映射层据此选具体 schema 字段 */
 export interface ViewNode {

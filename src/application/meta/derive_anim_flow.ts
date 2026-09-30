@@ -15,15 +15,15 @@
  * 幂等：本工具只读既有 detail 节点，重跑清理重建自身前缀的 flows，不动手写 flows。
  */
 
-import { DATA_DIR_NAME } from '../infrastructure/data_dir.js';
+import { DATA_DIR_NAME } from '../../infrastructure/data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
-import type { AnimationBranch, AnimationError, AnimationFlow, AnimationValueSchema } from '../domain/animation.js';
-import type { DesignDSL, Node } from '../domain/types.js';
-import { getDSL, saveDSL } from '../infrastructure/storage.js';
-import { parseFileFull, type ParsedSymbol } from '../infrastructure/parse/index.js';
-import { extractFunctionCfg } from '../infrastructure/parse/cfg.js';
-import { buildCallGraph, pickEntry, walkChain } from '../application/design/derive_chain.js';
+import type { AnimationBranch, AnimationError, AnimationFlow, AnimationValueSchema } from '../../domain/animation.js';
+import type { DesignDSL, Node } from '../../domain/types.js';
+import { getDSL, saveDSL } from '../../infrastructure/storage.js';
+import { parseFileFull, type ParsedSymbol } from '../../infrastructure/parse/index.js';
+import { extractFunctionCfg } from '../../infrastructure/parse/cfg.js';
+import { buildCallGraph, pickEntry, walkChain } from '../design/derive_chain.js';
 
 export interface DeriveAnimFlowInput {
   /** feature 名 */
@@ -160,7 +160,7 @@ async function readCrossCalls(
   }
   if (!dbPath) return byCaller;
   try {
-    const { openDb } = await import('../infrastructure/index/db.js');
+    const { openDb } = await import('../../infrastructure/index/db.js');
     const db = openDb(dbPath);
     try {
       let rows = db

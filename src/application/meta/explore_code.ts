@@ -27,7 +27,7 @@ import { injectReplay } from '../../infrastructure/render/inject_replay.js';
 import { runSimulation, resetSimulation } from '../design/simulation.js';
 import { dispatchWatch } from '../../infrastructure/daemon/dispatch.js';
 import { buildCallGraph } from '../design/derive_chain.js';
-import { deriveAnimFlow } from '../../tools/derive_anim_flow.js';
+import { deriveAnimFlow } from './derive_anim_flow.js';
 import { deriveMindMap } from './derive_mind_map.js';
 import fs from 'node:fs';
 import path from 'node:path';

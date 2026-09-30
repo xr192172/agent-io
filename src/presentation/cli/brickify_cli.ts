@@ -20,13 +20,13 @@ import { buildBrickify, ROLE_LABEL } from '../../application/design/brickify.js'
 import { renderBrickifyWorkbenchHtml } from '../../application/design/render_brickwork.js';
 import { renderBrickifyMindMapHtml } from './render_mindmap.js';
 import { narrateClusters } from '../../application/design/cluster_narrator.js';
-import { renderClusterWorkbenchHtml } from '../../tools/render_cluster_workbench.js';
+import { renderClusterWorkbenchHtml } from './render_cluster_workbench.js';
 import { renderDepCanvasHtml } from './render_dep_canvas.js';
 import { classifyBricks } from '../../application/design/classify_bricks.js';
 import { renderAnatomyHtml } from './render_anatomy.js';
 import { extractRegistryToolsFromFile } from '../../application/meta/registry_extract.js';
 import { extractCliCommands } from '../../application/meta/cli_extract.js';
-import { collectFunctions } from '../../tools/collect_functions.js';
+import { collectFunctions } from '../../application/meta/collect_functions.js';
 import { classifyTools } from '../../application/meta/classify_tools.js';
 import { renderToolsMapHtml } from './render_tools_map.js';
 import { renderWizardHtml } from './render_wizard.js';

@@ -6,7 +6,7 @@
  * Archify 视觉令牌。演示层派生只读、绝不写回编辑真源。
  */
 import { it, expect } from 'vitest';
-import { roleToType, ARCHIFY_TYPE_COLOR, adaptIRTree } from '../../src/tools/archify_project';
+import { roleToType, ARCHIFY_TYPE_COLOR, adaptIRTree } from '../../src/presentation/http/archify/archify_project.js';
 import { r5Describe } from '../helpers/r5_gate';
 
 r5Describe('适配层：编辑 IR 树（IRView/IRNode 渲染形状）→ ArchifyTreeNode（数据层契约形状）', () => {

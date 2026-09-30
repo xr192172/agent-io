@@ -32,11 +32,11 @@
 
 import path from 'node:path';
 import fs from 'node:fs';
-import { detectDeadImports, scanProjectSourceFiles } from '../infrastructure/analysis/detect_dead_imports.js';
-import { removeDeadImportsWithVerify } from '../application/refactor/remove_dead_imports.js';
-import { parseTsImportQualifiers, parseGoImportQualifiers, stripTsImportLines, qualifierLines, type DeadDepCandidate } from '../infrastructure/graph/dead_deps.js';
-import { defaultVerifyCommands, runVerification } from '../infrastructure/verify_refactor.js';
-import { SOURCE_EXTS } from '../infrastructure/parse/index.js';
+import { detectDeadImports, scanProjectSourceFiles } from '../../infrastructure/analysis/detect_dead_imports.js';
+import { removeDeadImportsWithVerify } from '../../application/refactor/remove_dead_imports.js';
+import { parseTsImportQualifiers, parseGoImportQualifiers, stripTsImportLines, qualifierLines, type DeadDepCandidate } from '../../infrastructure/graph/dead_deps.js';
+import { defaultVerifyCommands, runVerification } from '../../infrastructure/verify_refactor.js';
+import { SOURCE_EXTS } from '../../infrastructure/parse/index.js';
 
 // 扫描纳入的源码扩展名：★ 来自内核唯一权威 `SOURCE_EXTS`（`ts_kernel/source_exts.ts`），
 // 不再就地手写（此前这里 7 个，仓内同一问题另有 5 份不同答案 ⇒ 口径随工具而变）。

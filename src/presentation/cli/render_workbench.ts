@@ -20,7 +20,7 @@ import type { BrickifyResult } from '../../application/design/brickify.js';
 import type { AnatomyResult } from '../../application/design/classify_bricks.js';
 import type { ClusterNarratives } from '../../application/design/cluster_narrator.js';
 import { buildWorkbenchData, type WorkbenchData, type WorkbenchIssue, type WorkbenchSlot } from '../../application/design/workbench_data.js';
-import { WORKBENCH_SHELL_CSS } from '../../tools/workbench_shell_css.js';
+import { WORKBENCH_SHELL_CSS } from './workbench_shell_css.js';
 
 function esc(s: string): string {
   return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));

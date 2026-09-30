@@ -11,7 +11,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest';
-import { ingestTerm } from '../../src/tools/dict_gen';
+import { ingestTerm } from '../../src/presentation/http/dict_gen.js';
 import { loadGlobalDict, loadProjectDict, setAllowedProjectRoots } from '../../src/infrastructure/dictionary.js';
 
 const dataHome = fs.mkdtempSync(path.join(os.tmpdir(), 'dc-dictgen-'));

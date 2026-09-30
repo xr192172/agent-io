@@ -10,7 +10,7 @@
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { extractRegistryTools } from '../../src/application/meta/registry_extract.js';
-import { collectFunctions, type FunctionEntry } from '../../src/tools/collect_functions';
+import { collectFunctions, type FunctionEntry } from '../../src/application/meta/collect_functions.js';
 import { classifyTools, defaultDomains } from '../../src/application/meta/classify_tools.js';
 import { renderToolsMapHtml } from '../../src/presentation/cli/render_tools_map.js';
 import type { BrickifyResult } from '../../src/application/design/brickify.js';

@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { adaptIRTree } from '../../src/tools/archify_project';
-import { deriveSemantics } from '../../src/tools/archify_semantics';
+import { adaptIRTree } from '../../src/presentation/http/archify/archify_project.js';
+import { deriveSemantics } from '../../src/presentation/http/archify/archify_semantics.js';
 import { deriveViewInputs } from '../../src/tools/view_inputs';
-import type { ArchifyTreeNode } from '../../src/tools/archify_project';
+import type { ArchifyTreeNode } from '../../src/presentation/http/archify/archify_project.js';
 
 const tree: ArchifyTreeNode = {
   id: 'root', label: '系统',
