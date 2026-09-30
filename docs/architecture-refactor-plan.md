@@ -3505,3 +3505,72 @@ LSP 默认 `positionEncoding` **也是 utf-16** ⇒ **无需 byte↔UTF-16 转�
 4. ★ 顺手踩的坑：`node -e` 里写正则被 `\r\n` 吃掉（CRLF 仓）⇒ 注入"没生效"却**不报错**
    （10 passed 看起来像"判据失效"，其实是**注入本身没落盘**）。★ 同族于 §38.5 的
    「先怀疑判据，还是先怀疑证据」——**这次是证据先坏**。⇒ 注入后必须**回读文件确认注入真的落盘**。
+
+## 41. §4 四层的**完整对照表**（2026-09-30 补：框架已有但**覆盖不全**）
+
+> 起因（用户 2026-09-30）：「需不需要为这个项目专门创立一个框架，规划好文件应该怎么放……
+> 像 Java 一样 MVC 或者其他的那种**框架式**的开发，去把这个开发的目录框定起来会不会更好？」
+> ⇒ 查证结论：**框架不用发明，§4 已经定了**；缺的是**它覆盖不到的两处**（见 41.2）与**那条门**（G3）。
+
+### 41.1 先说两件"已经有了"的（用户同时提出的另两点）
+
+| 用户的设想 | 现状 | 判据 |
+|---|---|---|
+| **设一个项目根**，所有开发对它做相对路径 | **已有**：`src/tools/project_root.ts` 的 `resolveProjectRoot(file)` —— 向上找 `.git` → manifest（`package.json`/`go.mod`/`pyproject.toml`）⇒ 自动定位；全部工具有 `project_dir` 入参 | 读码 |
+| **目录重构工具**：搬文件时自动改 import | ★ **已有且实测双向正确**：`rename_files`（核心是 `rename_file`） | 09-30 实测：`src/old/b.ts`→`src/new/b.ts` ⇒ **引用它的** `a.ts`/`c.ts` 的 `'./old/b.js'`→`'./new/b.js'` ✓；**它自己要 import 的** `'./inner/helper.js'`→`'../old/inner/helper.js'` ✓；`ok=true`、`filesWritten=2`、0 阻断 |
+
+★ 关于"把项目根**存下来**"：现在是**每次算出来**的（不是存一份绝对路径）。这更稳（不会过期、git 改挂载点也不会失效），
+且已有 `ProjectView` 那层 TTL 缓存承担"算一次用多次"。⇒ **不建议再加一个"项目根文件"**（那会变成第二份真相）。
+
+### 41.2 ★★ 框架的**两处覆盖空洞**（实测，这是"分类最细致"真正要补的）
+
+§4 的四层给了例子（`surfaces`←CLI/http、`features`←工具定义、`kernel`←ts_kernel/ast_parser/project_root/db/impact/health、`dsl`），
+但**没有一份"每个现有目录归哪一层"的完整对照** ⇒ 于是这两处**无家可归**：
+
+| 无处可归的 | 体量 | 为什么是空洞 |
+|---|---|---|
+| ★ `src/renderer/` | **14 文件 / 12,173 行字符串 JS+CSS**（其中 `scripts.ts` 6,209 + `styles.ts` 3,526） | §4 表里**根本没有"前端外壳"这一层**；它既不是内核，也不是工具定义 |
+| ★ 一批**分析器**：`diagnosis/`(9) `behavior/`(1) `translate/`(15) `version_upgrade/`(14) `java_refactor/`(2) `cross_repo/`(1) `hybrid/`(1) `observe/`(12) | 合计 **55 文件** | §4 的 `kernel/` 只点名了 `impact/`、`health/`；**其余分析器没被涵盖** |
+
+★ 后果与 `layer_violation` 那 30 条假读数**同源**：**表不全 ⇒ "新代码该放哪"没有答案 ⇒ 每个新文件都是一次猜测。**
+这正是用户说的"对 AI 不友好"的**机制**（不是感觉）。
+
+### 41.3 完整对照表（目标形态）
+
+| 目标层 | 子层 | 从哪来（现目录） | 铁律 |
+|---|---|---|---|
+| **`surfaces/`** | `mcp/` | `src/server.ts`、`src/server_registry.ts`、`src/registry/{types,plumbing,handlers}.ts` | **只做转发与外壳**；不写业务逻辑 |
+| | `cli/` | `src/tools/*_cli.ts`（**17 个**）、`src/observe/instrument_cli.ts` 等 | 同上 |
+| | `http/` | `src/tools/serve.ts`、`src/api/` | 同上 |
+| | `daemon/` | `src/daemon/`（5） | 同上 |
+| | ★ `web/` | **`src/renderer/`（14 / 12k 行）—— 新增的子层**（§4 原表缺） | 同上；P3 只把字符串换成真资源文件，**形态不变** |
+| **`features/`** | `<线名>/` × 6 | `src/registry/lanes/{design,refactor,observe,harvest,cross,meta}.ts` | **一个工具一个文件**，导出 `ToolDef`；只允许依赖 `kernel`、`dsl` |
+| **`kernel/`** | `parse/` | `src/tools/ts_kernel/` | 纯函数优先、尽量无 fs 副作用 |
+| | `index/` | `src/db/`、`src/tools/index_*.ts`、`src/tools/project_view.ts` | 同上 |
+| | `graph/` | `src/tools/import_graph.ts`、`dead_deps.ts`、`import_project.ts` | 同上 |
+| | `text/` | `src/tools/refs_text.ts`、`import_text.ts` | 同上 |
+| | ★ `analysis/` | **`health/` `impact/` `diagnosis/` `behavior/` `translate/` `version_upgrade/` `java_refactor/` `cross_repo/` `hybrid/` `observe/`（除 CLI） —— 新增的子层**（§4 原表只点名了 impact/health） | 同上；**注意**：它们**依赖 `graph/`、`parse/`**，不许反过来 |
+| **`dsl/`** | — | `src/dsl/`（13） | **自洽，不 import 实现** |
+
+依赖规则不变：**只允许向下**（`surfaces` → `features` → `kernel` → `dsl`）。
+
+### 41.4 ★★ 一条**反对照抄**的意见（用户提到"像 Java 的 interface/impl 那样再细分"）
+
+**不建议**照 Java 的包结构再往下切"接口 / 实现"层。理由（本仓的实际扩展机制）：
+
+- Java 的细包结构成立，是因为**框架可执行**（Spring 帮你接线，放错编译不过/起不来），且扩展靠**类继承**。
+- 本仓的扩展机制是**数据表，不是继承**：加一门语言 = 在 `languages.ts` 的 55 条表里**加一行**
+  （参见本仓已裁定的"内核不许按语言写 `if`"）。⇒ 再插一层"接口/实现"目录，
+  会得到**一层没有实现者的接口**（本仓是"契约 + 表驱动"，不是"接口 + 多实现"）。
+- ⇒ **该细的是「职责边界」（41.3 那张表），不是「继承层级」。**
+
+### 41.5 ★★ 落地纪律（**这条比表本身重要**）
+
+1. ★★ **表必须配门（G3）**：**放错层就红**。没有门，41.3 就只是"一张更漂亮的图" ——
+   本仓的活证已经有两个（43 条手抄的"谁扫仓库"名单、20 条手抄的"豁免"名单，都是"约定了、没人守、烂了没人知道"）。
+2. ★★ **换表必须与 P2 同一次落地，且中间态必须可测**：`src/health/index.ts` 现在的表是**已废除的旧三级**
+   （`contract/brick/glue`），注释写着"换表留给 P2 落地那一刻"。⇒ 换表时**未搬完的文件必须落进 `unclassified`**
+   （而不是判成违规）—— 这样中间态只会**单调收敛**（`unclassified` → 0 = 搬完），
+   否则"还没搬完"会被判成一大片违规，把 P2 自己的验收口径毁掉。（详见待办 T10）
+3. ★ **新增子层的规则**（防它长成新抽屉）：① 该子层必须能装下**≥3 个文件**；② 必须写清**允许依赖谁**；
+   ③ 必须**同一次提交**在门里登记。**不满足就不许开新目录**（否则"分类最细致"会退化成"目录最多"）。
