@@ -16,17 +16,15 @@
 ## 待做
 
 - [ ] **T11 ★ P2 的真正前置：`src/tools/` 那 157 个"没有归属"的文件，先做身份普查**
-      *(核实：09-30 实测两个脚本 —— `.inspect/survey_layer_mapping.mjs` + `survey_lane_attribution.mjs`)*
-      · 按 §41.3 的四层表套真实的 **316** 个文件 ⇒ **只归位 140，176 归不进去**，其中 **169 就是 `src/tools/` 平铺文件**
-        ⇒ ★ **§41.3 那张表也有洞，而且洞比格子大**：`features/` 的定义写的是"导出 `ToolDef`"（那只有 lanes 那 6 个文件），
-        **完全没覆盖"工具的 169 个实现文件"** —— §4 把「工具**定义**」与「工具**实现**」混为一谈了。
-      · ❌ 我先想当然的"用 lane 归属机械推导" —— **实测证伪**：207 个模块里**只有 49 个**恰好被 1 条线 import，
-        **157 个没有任何线 import**。⇒ 机械推导只覆盖 24%，**救不了这个洞**。
-      · ⇒ 那 157 个混着**至少四类东西**：① CLI 入口（`*_cli.ts`）② 被别的工具 import 的内部 helper
-        ③ 算法/内核模块 ④ ★ **可能已经没人用的旧世代工具**（`archify_*`、`brickify`、`dead_statements`、
-        `deprecate_offline`… 名单里就有）。
-      · ★★ **结论：P2 不是"搬文件"，第一步是"先把这 157 个到底是什么弄清楚"** —— 否则会把垃圾一起搬进新结构。
-        （用户 09-30 的原话正是"你**先**把它分类最细致地分好"。）
+      —— ★ **第一切片已做完（台账 §42）**：194 个顶层文件定性 =
+      **49 工具实现**（可机械归属）/ **17 CLI** / **119 内部 helper**（最大块，**还要再分**）/
+      **1 入口点**（`serve`）/ ★ **7 死代码候选**（`batch_ops` `derive_anim_flow` `get_dsl`
+      `observe_chain_view` `refactor_report` `run_narrate` `view_inputs`）/ **0 无人引用** / **1 需裁决**（`index_freshness`）
+      **剩下的三片**：
+      · (a) ★ **119 个内部 helper 再分**：算法内核 / 工具间共享 / **旧世代遗留**（`archify_*`、`brickify` 那族像上一代工具）
+      · (b) ★ **7 个死代码候选逐个判死**（`get_dsl` 已是强候选：与 `list_features` **同型** —— `handlers` 的 `getDslHandler` 直通 `queryFeature`）
+      · (c) `index_freshness` 归 harvest / observe / 下沉 kernel
+      *(核实：09-30 `.inspect/survey_tool_identity.mjs`；★ 该量具**被打了三次脸**才可信 —— 详见 §42.2)*
 
 - [ ] **T10 ★ 量具的「分层」表还是已废除的旧三级（`contract/brick/glue`），P2 的验收判据因此判不了**
       *(核实：09-30 实测 —— `src/health/index.ts:39` 的 `Layer` 仍是旧三级；
