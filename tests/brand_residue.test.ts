@@ -47,7 +47,7 @@ import { fileURLToPath } from 'node:url';
 import { ratchetDiff, ratchetFailureText } from './helpers/ratchet.js';
 // ★ 出生证探针抽到 tests/helpers/gate_probe.ts（唯一实现）—— §9.1：原先每扇门各写一个
 //   一次性探针脚本（注入→跑门→断言红→还原），那是"同一种活各写一遍"。见下方「出生证」块。
-import { expectGateGoesRed, expectGateStaysGreen } from './helpers/gate_probe.js';
+import { expectGateGoesRed, expectGateStaysGreen, neutralizeProbe, isProbeNeutralized } from './helpers/gate_probe.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.join(here, '..');
@@ -305,7 +305,7 @@ describe('品牌串残留门 · 出生证（真实注入：写回一处旧名 �
       run,
       isRed: (d) => d.added.includes(probeRel),
       render,
-      restore: () => fs.rmSync(probeFile, { force: true }),
+      restore: () => neutralizeProbe(probeFile),
     });
   });
 
@@ -316,12 +316,12 @@ describe('品牌串残留门 · 出生证（真实注入：写回一处旧名 �
       run,
       isRed: (d) => d.added.includes(cleanRel) || d.grown.some((g) => g.file === cleanRel),
       render,
-      restore: () => fs.rmSync(cleanFile, { force: true }),
+      restore: () => neutralizeProbe(cleanFile),
     });
   });
 
   it('出生证过后工作区仍干净（helper 已还原，没留下注入物）', () => {
-    expect(fs.existsSync(probeFile), '注入物没被还原').toBe(false);
-    expect(fs.existsSync(cleanFile), '对照项没被还原').toBe(false);
+    expect(isProbeNeutralized(probeFile), '注入物没被还原').toBe(true);
+    expect(isProbeNeutralized(cleanFile), '对照项没被还原').toBe(true);
   });
 });

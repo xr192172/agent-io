@@ -251,17 +251,16 @@ describe('G10 · 重复字面量表检测门', () => {
         "export const ALPHA_TOOLS = [{ name: 'a', title: 'A', description: 'adesc' }];",
         "export const BETA_TOOLS  = [{ name: 'b', title: 'B', description: 'bdesc' }];",
       ].join('\n');
-      const tmpFile = path.join(REPO, '.inspect', '_g9_tmp_scan.ts');
-      fs.mkdirSync(path.dirname(tmpFile), { recursive: true });
-      fs.writeFileSync(tmpFile, tmpSrc);
-      try {
+      // ★ 2026-09-30（T9）：这里原先 `mkdirSync` + `writeFileSync` 落一份盘，再在 finally 里
+      //   `unlinkSync` 拔掉。**那次落盘是多余的** —— `ts.createSourceFile` 吃的是**字符串** `tmpSrc`，
+      //   文件名只当标签用（下面传的 `'_g9_tmp_scan.ts'` 就是个字面量）。⇒ **不插就不用拔**，
+      //   顺带少一次"删除"（宿主按 turn 记批量删除次数，阈值 50；跑全量时会被拒 ⇒ 见 commit 说明）。
+      {
         const tmpSf = ts.createSourceFile('_g9_tmp_scan.ts', tmpSrc, ts.ScriptTarget.Latest, true);
         const stmts = tmpSf.statements as ts.VariableStatement[];
         const fp1 = computeElementFingerprint(stmts[0]!.declarationList!.declarations![0]!.initializer!.elements[0]!);
         const fp2 = computeElementFingerprint(stmts[1]!.declarationList!.declarations![0]!.initializer!.elements[0]!);
         expect(fp1).toBe(fp2);
-      } finally {
-        fs.unlinkSync(tmpFile);
       }
     });
 

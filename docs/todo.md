@@ -15,16 +15,6 @@
 
 ## 待做
 
-- [ ] **T9 门探针的自清**靠**删除文件**，而删除可能被环境拒绝 ⇒ 注入物残留 ⇒ **连带多扇门红**。
-      *(核实：09-30 实测 —— 一次全量 **4 文件 / 8 条红**，断言逐字是「注入物没被还原」「expected []
-      to include 'tests/__gate_probe_sweep_probe.txt'」，**与当笔改动无关**；残留里有
-      `src/__gate_probe_clean__.ts` / `src/__gate_probe_copy__.ts` —— ★ **落在最敏感的 `src/` 里**，
-      于是扫源码的门全被带红。`globalSetup` 只在**开头**扫一次 ⇒ 跑中出现的残留会毒到本次运行的后半。)*
-      ⇒ 这是"整仓绿灯"这个信号**不可靠**的根因之一。方向（择一，未设计）：
-      ① 注入物改放**系统临时目录**（但门要扫到它才算有效探针 ⇒ 需确认可行性）；
-      ② 清理改成"**先覆写为空、再删**"（至少让"空文件"不污染判据）；
-      ③ 每扇门自己的 `afterEach/afterAll` 兜一次，而不是只在 `globalSetup` 开头扫。
-
 - [ ] **T4 `unused_export` 对"带 parent 的方法"有盲区**（`symIndex` 只收顶层符号）
       ⇒ 改 `symIndex` 的**收面**。
       ★ 做完这条，`code_health` 纳入 scala/groovy/julia/haskell/elixir 那 5 门的**判据二**才可能达标。
