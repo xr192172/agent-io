@@ -17,12 +17,12 @@ import os from 'node:os';
 import type { Database } from '../../src/infrastructure/index/db';
 import { openDb, closeAllProjectCacheDbs } from '../../src/infrastructure/index/db';
 import { syncProject } from '../../src/infrastructure/index/symbols';
-import { locateCandidates } from '../../src/diagnosis/candidate_locator';
-import { traceChain } from '../../src/diagnosis/chain_tracer';
-import { analyzeImpact } from '../../src/diagnosis/impact_analyzer';
-import { aggregateRule, captureSnippet } from '../../src/diagnosis/root_cause_aggregator';
-import { parseSymptom } from '../../src/diagnosis/symptom_parser';
-import type { Impact } from '../../src/diagnosis/contract';
+import { locateCandidates } from '../../src/infrastructure/analysis/diagnosis/candidate_locator';
+import { traceChain } from '../../src/infrastructure/analysis/diagnosis/chain_tracer';
+import { analyzeImpact } from '../../src/infrastructure/analysis/diagnosis/impact_analyzer';
+import { aggregateRule, captureSnippet } from '../../src/infrastructure/analysis/diagnosis/root_cause_aggregator';
+import { parseSymptom } from '../../src/infrastructure/analysis/diagnosis/symptom_parser';
+import type { Impact } from '../../src/infrastructure/analysis/diagnosis/contract';
 
 const UTIL_TS = `import { User } from './types';
 

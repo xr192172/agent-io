@@ -288,15 +288,6 @@
   },
   {
     "type": "module",
-    "from": "src/diagnosis/contract.ts",
-    "to": "src/diagnosis/contract.ts",
-    "rule": {
-      "severity": "warn",
-      "name": "no-orphans"
-    }
-  },
-  {
-    "type": "module",
     "from": "src/domain/animation.ts",
     "to": "src/domain/animation.ts",
     "rule": {
@@ -434,6 +425,15 @@
     "type": "module",
     "from": "src/tools/view_inputs.ts",
     "to": "src/tools/view_inputs.ts",
+    "rule": {
+      "severity": "warn",
+      "name": "no-orphans"
+    }
+  },
+  {
+    "type": "module",
+    "from": "src/infrastructure/analysis/diagnosis/contract.ts",
+    "to": "src/infrastructure/analysis/diagnosis/contract.ts",
     "rule": {
       "severity": "warn",
       "name": "no-orphans"

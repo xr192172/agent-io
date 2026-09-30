@@ -8,8 +8,8 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { detectKind, suggestVerification } from '../../src/diagnosis/verifier';
-import type { Impact, RootCause, Verification } from '../../src/diagnosis/contract';
+import { detectKind, suggestVerification } from '../../src/infrastructure/analysis/diagnosis/verifier';
+import type { Impact, RootCause, Verification } from '../../src/infrastructure/analysis/diagnosis/contract';
 
 function tmp(): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'dc-verify-'));

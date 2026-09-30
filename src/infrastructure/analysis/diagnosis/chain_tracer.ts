@@ -16,7 +16,7 @@
  */
 
 import path from 'node:path';
-import type { Database } from '../infrastructure/index/db.js';
+import type { Database } from '../../index/db.js';
 import type { Candidate, EvidenceStep } from './contract.js';
 
 export interface ChainTraceInput {

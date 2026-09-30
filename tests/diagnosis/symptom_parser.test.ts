@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { parseSymptom, extractLocations, extractSymbols, extractKeywords } from '../../src/diagnosis/symptom_parser';
+import { parseSymptom, extractLocations, extractSymbols, extractKeywords } from '../../src/infrastructure/analysis/diagnosis/symptom_parser';
 
 describe('symptom_parser 错误类型识别', () => {
   it('识别 TypeError', () => {

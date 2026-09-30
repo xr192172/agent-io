@@ -74,7 +74,7 @@ const INTERNAL_MODULES: Record<string, { importedBy: string[]; why: string }> = 
   },
   diff_impact: {
     importedBy: [
-      'src/diagnosis/impact_analyzer.ts',
+      'src/infrastructure/analysis/diagnosis/impact_analyzer.ts',
       'src/tools/explore_code.ts',
       'src/tools/impact_report.ts',
       'src/tools/serve.ts',

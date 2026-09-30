@@ -21,8 +21,8 @@
  */
 import { z } from 'zod';
 import { requireStr, wrapData } from '../plumbing.js';
-import type { DiagnoseInput } from '../../diagnosis/contract.js';
-import { formatDiagnoseText, runDiagnosis } from '../../diagnosis/diagnose.js';
+import type { DiagnoseInput } from '../../infrastructure/analysis/diagnosis/contract.js';
+import { formatDiagnoseText, runDiagnosis } from '../../infrastructure/analysis/diagnosis/diagnose.js';
 import { getDSL, saveDSL } from '../../storage.js';
 import { archiveNode, listArchive } from '../../tools/archive_node.js';
 import { LANE_IDS, makeCapabilityMapHandler } from '../../tools/capability_map.js';

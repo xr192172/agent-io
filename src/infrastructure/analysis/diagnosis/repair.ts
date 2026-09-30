@@ -13,7 +13,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { loadLlmConfig, callChat } from '../tools/llm_focus.js';
+import { loadLlmConfig, callChat } from '../../../tools/llm_focus.js';
 import type { FixSuggestion, RootCause } from './contract.js';
 
 // ─────────────────────────────────────────────────────────────

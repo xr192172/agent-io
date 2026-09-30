@@ -14,8 +14,8 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { generatePatch, buildRepairPrompt, validatePatches, applyPatches, revertPatches, formatPatchDiff, allowedPatchFiles } from '../../src/diagnosis/repair';
-import type { FixSuggestion, RootCause } from '../../src/diagnosis/contract';
+import { generatePatch, buildRepairPrompt, validatePatches, applyPatches, revertPatches, formatPatchDiff, allowedPatchFiles } from '../../src/infrastructure/analysis/diagnosis/repair';
+import type { FixSuggestion, RootCause } from '../../src/infrastructure/analysis/diagnosis/contract';
 
 const SERVICE_TS = `import { findById } from './db';
 

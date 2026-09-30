@@ -14,8 +14,8 @@
  */
 
 import path from 'node:path';
-import type { Database } from '../infrastructure/index/db.js';
-import { searchSymbols } from '../infrastructure/index/symbols.js';
+import type { Database } from '../../index/db.js';
+import { searchSymbols } from '../../index/symbols.js';
 import type { Candidate, SymptomParsed } from './contract.js';
 
 export interface LocateInput {

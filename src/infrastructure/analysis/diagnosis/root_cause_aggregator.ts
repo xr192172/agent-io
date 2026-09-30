@@ -13,8 +13,8 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import type { Database } from '../infrastructure/index/db.js';
-import { loadLlmConfig, callChat, type LlmConfig } from '../tools/llm_focus.js';
+import type { Database } from '../../index/db.js';
+import { loadLlmConfig, callChat, type LlmConfig } from '../../../tools/llm_focus.js';
 import type {
   Candidate,
   EvidenceStep,

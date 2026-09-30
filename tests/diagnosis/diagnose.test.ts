@@ -14,7 +14,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { getProjectCacheDb, closeAllProjectCacheDbs } from '../../src/infrastructure/index/db';
 import { syncProject } from '../../src/infrastructure/index/symbols';
-import { runDiagnosis, formatDiagnoseText } from '../../src/diagnosis/diagnose';
+import { runDiagnosis, formatDiagnoseText } from '../../src/infrastructure/analysis/diagnosis/diagnose';
 
 const TYPES_TS = `export interface User {
   profile?: { name: string };

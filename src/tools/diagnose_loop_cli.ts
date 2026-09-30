@@ -31,14 +31,14 @@ import fs from 'node:fs';
 import { execSync } from 'node:child_process';
 import { createInterface } from 'node:readline/promises';
 import { stdin, stdout } from 'node:process';
-import { runDiagnosis, formatDiagnoseText } from '../diagnosis/diagnose.js';
-import { generatePatch, applyPatches, revertPatches, formatPatchDiff, allowedPatchFiles } from '../diagnosis/repair.js';
-import { detectKind } from '../diagnosis/verifier.js';
+import { runDiagnosis, formatDiagnoseText } from '../infrastructure/analysis/diagnosis/diagnose.js';
+import { generatePatch, applyPatches, revertPatches, formatPatchDiff, allowedPatchFiles } from '../infrastructure/analysis/diagnosis/repair.js';
+import { detectKind } from '../infrastructure/analysis/diagnosis/verifier.js';
 import { getProjectCacheDb } from '../infrastructure/index/db.js';
 import { walkFiles } from './import_project.js';
 import { syncProject } from '../infrastructure/index/symbols.js';
 import { isGitRepo, gitDirty, gitCommitFiles, gitCommitAll, gitRestoreFiles } from './git.js';
-import type { AppliedPatch } from '../diagnosis/repair.js';
+import type { AppliedPatch } from '../infrastructure/analysis/diagnosis/repair.js';
 
 function readArg(name: string): string | undefined {
   const i = process.argv.indexOf(name);

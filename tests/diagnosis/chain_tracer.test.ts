@@ -16,8 +16,8 @@ import os from 'node:os';
 import type { Database } from '../../src/infrastructure/index/db';
 import { openDb, closeAllProjectCacheDbs } from '../../src/infrastructure/index/db';
 import { syncProject } from '../../src/infrastructure/index/symbols';
-import { traceChain } from '../../src/diagnosis/chain_tracer';
-import type { Candidate } from '../../src/diagnosis/contract';
+import { traceChain } from '../../src/infrastructure/analysis/diagnosis/chain_tracer';
+import type { Candidate } from '../../src/infrastructure/analysis/diagnosis/contract';
 
 const TYPES_TS = `export interface User {
   profile?: { name: string };

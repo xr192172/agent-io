@@ -11,7 +11,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { getProjectCacheDb, closeAllProjectCacheDbs } from '../../src/infrastructure/index/db';
 import { syncProject } from '../../src/infrastructure/index/symbols';
-import { analyzeImpact } from '../../src/diagnosis/impact_analyzer';
+import { analyzeImpact } from '../../src/infrastructure/analysis/diagnosis/impact_analyzer';
 
 const TYPES_TS = `export interface User {
   profile?: { name: string };
