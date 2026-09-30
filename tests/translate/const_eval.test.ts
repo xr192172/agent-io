@@ -6,7 +6,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { parseAstRoot, type SyntaxNodeLike } from '../../src/tools/ts_kernel/index.js';
-import { evalConstExpr, constToTsLiteral } from '../../src/translate/const_eval.js';
+import { evalConstExpr, constToTsLiteral } from '../../src/infrastructure/analysis/translate/const_eval.js';
 
 async function evalAllIn(src: string): Promise<Array<{ name: string; v: ReturnType<typeof evalConstExpr> }>> {
   const r = await parseAstRoot('/tmp/ce.go', src);

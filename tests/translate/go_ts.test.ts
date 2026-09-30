@@ -6,12 +6,12 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { extractGo } from '../../src/translate/go_extractor.js';
-import { mapGoType, renderTsSkeleton } from '../../src/translate/ts_codegen.js';
-import { verifySkeletons } from '../../src/translate/verify.js';
-import { translateGoToTs } from '../../src/translate/pairs.js';
-import { buildHolePrompt } from '../../src/translate/prompts.js';
-import type { TransUnit } from '../../src/translate/unit.js';
+import { extractGo } from '../../src/infrastructure/analysis/translate/go_extractor.js';
+import { mapGoType, renderTsSkeleton } from '../../src/infrastructure/analysis/translate/ts_codegen.js';
+import { verifySkeletons } from '../../src/infrastructure/analysis/translate/verify.js';
+import { translateGoToTs } from '../../src/infrastructure/analysis/translate/pairs.js';
+import { buildHolePrompt } from '../../src/infrastructure/analysis/translate/prompts.js';
+import type { TransUnit } from '../../src/infrastructure/analysis/translate/unit.js';
 
 const GO_SRC = `package calc
 

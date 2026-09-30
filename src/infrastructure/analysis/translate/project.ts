@@ -9,7 +9,7 @@
  * Go stdlib / 外部类型不硬解、同名冲突不 import，均记 diagnostic。
  */
 
-import { DATA_DIR_NAME } from '../data_dir.js';
+import { DATA_DIR_NAME } from '../../../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import ts from 'typescript';
@@ -20,10 +20,10 @@ import { fillUnitsWithRetry, fillUnitsBatched } from './fill.js';
 import { createPooledBatchTranslator } from './llm.js';
 import { applyDeterministicFixers } from './fixers.js';
 import type { SkippedDecl } from './go_extractor.js';
-import { parseFileFull } from '../tools/ts_kernel/index.js';
+import { parseFileFull } from '../../../tools/ts_kernel/index.js';
 import type { TransUnit } from './unit.js';
 import type { VerifyIssue } from './verify.js';
-import { skipDirSet } from '../tools/ts_kernel/source_exts.js';
+import { skipDirSet } from '../../../tools/ts_kernel/source_exts.js';
 
 /** 项目内跳过的噪声目录（不进 .go 扫描） */
 const SKIP_DIRS = skipDirSet(['vendor', 'target']);

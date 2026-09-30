@@ -6,12 +6,12 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { extractGo } from '../../src/translate/go_extractor.js';
-import { renderTsSkeleton } from '../../src/translate/ts_codegen.js';
-import { createPooledHoleTranslator, createPooledBatchTranslator, loadKeys, KeyPool, normalizeBody } from '../../src/translate/llm.js';
-import { fillUnit } from '../../src/translate/fill.js';
-import type { MinimalFetch } from '../../src/translate/llm.js';
-import type { TransUnit } from '../../src/translate/unit.js';
+import { extractGo } from '../../src/infrastructure/analysis/translate/go_extractor.js';
+import { renderTsSkeleton } from '../../src/infrastructure/analysis/translate/ts_codegen.js';
+import { createPooledHoleTranslator, createPooledBatchTranslator, loadKeys, KeyPool, normalizeBody } from '../../src/infrastructure/analysis/translate/llm.js';
+import { fillUnit } from '../../src/infrastructure/analysis/translate/fill.js';
+import type { MinimalFetch } from '../../src/infrastructure/analysis/translate/llm.js';
+import type { TransUnit } from '../../src/infrastructure/analysis/translate/unit.js';
 
 const GO_SRC = `package calc
 func Add(a, b int) int {

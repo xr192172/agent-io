@@ -6,10 +6,10 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { extractGo } from '../../src/translate/go_extractor.js';
-import { renderTsSkeleton } from '../../src/translate/ts_codegen.js';
-import { spliceBody, fillUnit, fillUnits, fillUnitWithRetry, fillUnitsWithRetry, fillUnitsBatched, parseUnitBlocks, type HoleTranslator } from '../../src/translate/fill.js';
-import type { TransUnit } from '../../src/translate/unit.js';
+import { extractGo } from '../../src/infrastructure/analysis/translate/go_extractor.js';
+import { renderTsSkeleton } from '../../src/infrastructure/analysis/translate/ts_codegen.js';
+import { spliceBody, fillUnit, fillUnits, fillUnitWithRetry, fillUnitsWithRetry, fillUnitsBatched, parseUnitBlocks, type HoleTranslator } from '../../src/infrastructure/analysis/translate/fill.js';
+import type { TransUnit } from '../../src/infrastructure/analysis/translate/unit.js';
 
 const GO_SRC = `package calc
 func Add(a, b int) int {
@@ -118,7 +118,7 @@ describe('projectNote：项目级调用约定注入单孔 prompt', () => {
   it('buildFillContext 注入 projectNote → ctx 携带 + prompt 含 note', async () => {
     const add = (await unitsOf(GO_SRC)).find((u) => u.name === 'Add')!;
     const note = '【项目级调用约定】\n- 可直接调用函数：user_GetName\n- receiver 方法请译成 user_GetName(recv, ...)';
-    const ctx = (await import('../../src/translate/fill.js')).buildFillContext(add, undefined, note);
+    const ctx = (await import('../../src/infrastructure/analysis/translate/fill.js')).buildFillContext(add, undefined, note);
     expect(ctx.projectNote).toBe(note);
     expect(ctx.prompt).toContain('user_GetName');
   });

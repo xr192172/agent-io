@@ -8,10 +8,10 @@
 import { describe, it, expect } from 'vitest';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
-import { extractGo } from '../../src/translate/go_extractor.js';
-import { renderTsSkeleton } from '../../src/translate/ts_codegen.js';
-import { fillUnit } from '../../src/translate/fill.js';
-import { generateCasesFor, checkTranslationParity } from '../../src/translate/verify_behavior.js';
+import { extractGo } from '../../src/infrastructure/analysis/translate/go_extractor.js';
+import { renderTsSkeleton } from '../../src/infrastructure/analysis/translate/ts_codegen.js';
+import { fillUnit } from '../../src/infrastructure/analysis/translate/fill.js';
+import { generateCasesFor, checkTranslationParity } from '../../src/infrastructure/analysis/translate/verify_behavior.js';
 import type { BehaviorRun, BehaviorSpec } from '../../src/infrastructure/analysis/behavior/index.js';
 
 const GO_SRC = `package calc

@@ -11,7 +11,7 @@
  * 说明：真编译闸（tsc + 行为基线）留给切片之后接行为层时再加。
  */
 
-import { parseAstRoot } from '../tools/ts_kernel/index.js';
+import { parseAstRoot } from '../../../tools/ts_kernel/index.js';
 import type { TransUnit } from './unit.js';
 
 export interface VerifyIssue {

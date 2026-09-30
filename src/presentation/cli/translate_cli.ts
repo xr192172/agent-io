@@ -2,7 +2,7 @@
  * translate_cli —— Go→TS 半自动翻译命令行入口
  *
  * 用法：
- *   node dist/src/translate/translate_cli.js <file.go> [--out <file.ts>] [--holes] [--llm]
+ *   node dist/src/presentation/cli/translate_cli.js <file.go> [--out <file.ts>] [--holes] [--llm]
  *
  * 无 --llm：打印目标 TS 骨架（函数体留孔）+ 验证闸结果。
  * --llm：用 AGNES key 池（AGNES_KEY_POOL）真调 LLM 逐孔填函数体，输出填充后源码。
@@ -14,11 +14,11 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { translateGoToTs } from './pairs.js';
+import { translateGoToTs } from '../../infrastructure/analysis/translate/pairs.js';
 // ★ 2026-09-30：同 tool.ts —— 原先从 pairs 引 `translateGoProject`（转发）制造了环，改为直连出处。
-import { translateGoProject } from './project.js';
-import { createPooledHoleTranslator } from './llm.js';
-import { fillUnitsWithRetry } from './fill.js';
+import { translateGoProject } from '../../infrastructure/analysis/translate/project.js';
+import { createPooledHoleTranslator } from '../../infrastructure/analysis/translate/llm.js';
+import { fillUnitsWithRetry } from '../../infrastructure/analysis/translate/fill.js';
 
 function readArg(name: string): string | undefined {
   const i = process.argv.indexOf(name);
@@ -66,8 +66,8 @@ async function main(): Promise<void> {
   }
 
   if (!file) {
-    console.error('用法: node dist/src/translate/translate_cli.js <file.go> [--out <file.ts>] [--holes] [--llm]');
-    console.error('       node dist/src/translate/translate_cli.js --project <dir> [--out-dir <out>] [--llm]');
+    console.error('用法: node dist/src/presentation/cli/translate_cli.js <file.go> [--out <file.ts>] [--holes] [--llm]');
+    console.error('       node dist/src/presentation/cli/translate_cli.js --project <dir> [--out-dir <out>] [--llm]');
     process.exit(1);
   }
   const abs = path.resolve(file);

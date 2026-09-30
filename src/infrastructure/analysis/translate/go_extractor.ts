@@ -12,7 +12,7 @@
  *     result，由目标 codegen 判"不可机械翻译"并加约束，而非在此强行猜。
  */
 
-import { parseAstRoot, type SyntaxNodeLike } from '../tools/ts_kernel/index.js';
+import { parseAstRoot, type SyntaxNodeLike } from '../../../tools/ts_kernel/index.js';
 import { DEFAULT_CONSTRAINTS, type TransUnit, type TranslateParam, type TranslateKind, type TranslateMethod, type DecisionShape } from './unit.js';
 import { evalConstExpr, constToTsLiteral, type ConstValue } from './const_eval.js';
 import fs from 'node:fs';

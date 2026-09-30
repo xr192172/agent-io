@@ -6,7 +6,7 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { translateGoTsHandler } from '../../src/translate/tool.js';
+import { translateGoTsHandler } from '../../src/infrastructure/analysis/translate/tool.js';
 
 function tmpGo(src: string): string {
   const p = path.join(os.tmpdir(), `dc-tr-tool-${Date.now()}-${Math.random().toString(36).slice(2)}.go`);

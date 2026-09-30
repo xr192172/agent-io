@@ -9,7 +9,7 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { translateGoProject, walkGoFiles, buildProjectCallNote } from '../../src/translate/project.js';
+import { translateGoProject, walkGoFiles, buildProjectCallNote } from '../../src/infrastructure/analysis/translate/project.js';
 
 /** 模拟 LLM 的确定性填孔翻译器：按 unit.id 产出引用"调用约定"里名字的函数体 */
 function deterministicFiller(notesSeen: string[]): (ctx: { unit: { id: string }; prompt: string; projectNote?: string }) => string {

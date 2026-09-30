@@ -103,8 +103,8 @@ import { getProjectCacheDb } from './infrastructure/index/db.js';
 import { recordDogfoodUsage } from './tools/dogfood_stats.js';
 import { queryObserveLog } from './infrastructure/analysis/observe/log_query.js';
 import { memoryObserveHandler, memoryTargetsHandler } from './tools/memory_observe.js';
-import { translateGoTsHandler } from './translate/tool.js';
-import { extractGo } from './translate/go_extractor.js';
+import { translateGoTsHandler } from './infrastructure/analysis/translate/tool.js';
+import { extractGo } from './infrastructure/analysis/translate/go_extractor.js';
 import { extractRule } from './tools/rule_extract.js';
 import {
   loadRules,

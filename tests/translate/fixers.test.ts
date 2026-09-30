@@ -9,8 +9,8 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { fixUnusedImports, squashImports, applyDeterministicFixers } from '../../src/translate/fixers.js';
-import { translateGoProject } from '../../src/translate/project.js';
+import { fixUnusedImports, squashImports, applyDeterministicFixers } from '../../src/infrastructure/analysis/translate/fixers.js';
+import { translateGoProject } from '../../src/infrastructure/analysis/translate/project.js';
 
 describe('fixUnusedImports：去未用 import', () => {
   it('保用过的 A/C，删未用的 B', () => {

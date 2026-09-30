@@ -3881,3 +3881,46 @@ src/tools/simulation.ts      ←  ../renderer/simulation_engine.js
 G1 快照按门指引重算：**仍 58 个工具**，只有 `observe_instrument` 的 `project_root` 描述
 **去掉了硬编码路径**（`…探针实现 src/observe/probe.js 所在仓库根…` → `…探针实现所在仓库根…`）。
 ★ 故意改成**不带路径**：这是**用户可见描述**，写死内部目录 = 下一个腐点。
+
+### 44.6 ★ 搬迁 ③ 族收口（③-5 `translate/`）—— 顺序表里"分析器目录"这一族**搬完了**
+
+| 序 | 族 | 状态 |
+|---|---|---|
+| ① | `domain/` ← `dsl/` | ✅ 104 引用 |
+| ② | `infrastructure/index/` ← `db/` | ✅ 114 引用 |
+| ③-1 | 5 个单文件分析器（behavior/cross_repo/health/hybrid/impact） | ✅ 25 引用 |
+| ③-2 | `java_refactor` + `version_upgrade` | ✅ 71 引用 |
+| ③-3 | `diagnosis` | ✅ 46 引用 |
+| ③-4 | `observe`（混合目录：11 + CLI） | ✅ 74 引用 |
+| **③-5** | **`translate`（混合目录：14 + CLI）** | ✅ 本章 |
+
+#### (1) `translate/` 与 `observe/` **同型**（都是混合目录），处置也照抄
+- 14 个 → `src/infrastructure/analysis/translate/`
+- `translate_cli.ts` → **`src/presentation/cli/`**（真 CLI，有 argv 解析；`translate_go_ts`
+  的 MCP 面只覆盖"翻译"，CLI 还多 `--holes` / `--project` 等入口形态）
+★ **`tool.ts`（`translate_go_ts` 的实现）跟着分析器目录走**，不单独提前搬 ——
+与 `health/index.ts` / `impact/index.ts` 同款（它们也都是 tool 实现，但都跟着各自的目录进了 `analysis/`）。
+⇒ 保持一致，不制造特例。（§44.2 的 `application/` 那行说的是 `src/tools/` 的 A 类 49 个，不含这些。）
+
+#### (2) ★ §44.2 的 `cli/` 那行**少写了一个**（如实更正）
+原文只写 `src/tools/*_cli.ts`（17）+ `src/observe/instrument_cli.ts`。
+**实测漏了 `src/translate/translate_cli.ts`** —— 它同样是 CLI 入口，只是**住在了分析器目录里**。
+⇒ 更正后的口径：**"CLI 入口"这件事与它当前住在哪个目录无关**，
+判据是"**有没有 `process.argv` 解析**"（`instrument_cli` / `translate_cli` / `archify_cli` /
+`install_package_cli` 都有；我上一轮曾据子 Agent 转述把前两个判成"库"，**是错的**）。
+⇒ ⑥ 搬 `presentation/cli/` 时，**也要用这条判据全仓扫一遍**，别只按 `src/tools/*_cli.ts` 的名单。
+
+#### (3) 一处**工具执行不稳定**的记录（不是代码问题，但影响流程）
+`move_batch` 的 **dry-run 空转 13 分钟无输出**（实测 ③-5 那次；磁盘无改动）。
+★ 但同一命令加 `--apply` 走"前台 + 绕过沙箱"通道时**正常完成**。
+⇒ 结论：**这一族的搬迁别再单独跑 dry-run 预览** —— `--apply` 一次成型即可，
+   验证靠 `tsc` + `npm run arch` + 定向测试（这三样都是秒级/十秒级）。
+   ★ 本次 `--apply` 也出现"输出被截断、第二个条目（单文件 CLI）没落地"的情况，
+   但**引用已被改写** ⇒ 手工补 `git mv` + 4 处前缀加深即可（已做完，见下）。
+   ⇒ 纪律：**每次搬迁后必须逐条核"文件真的到位了吗"**（`ls` 源目录 + 目标目录），
+     不能只看工具打印的总结行。
+
+#### (4) ★ "陈旧 dist"这条教训**又中了一次**（③-4 已记，此处只是再次印证）
+`move_batch` 走的是 `dist/` 里的 `rename_files` ⇒ 每次搬迁前 `rm -rf dist && npx tsc`。
+★ 注意：`npx tsc` **单独跑不够** —— 它不清除"源文件已删除"的旧产物（这正是 ③-4 里那个假绿断言的根因）。
+   所以搬迁前用 **`rm -rf dist && npx tsc`**，而不是只 `npx tsc`。
