@@ -15,6 +15,25 @@
 
 ## 待做
 
+- [ ] **T15 ★★ 把 CLI-only 的能力注册为 MCP 工具 ⇒ 「CLI-only」这个类别应当**归零****
+      *(用户裁定的洞察 2026-09-30：「**工作台为什么不能注册为 MCP 呢**？就是说**同样同时投影为 MCP 和 CLI**，
+      这样的话就**不用保留为 CLI only** 了。」)*
+      ⇒ ★ 唯一真相源 = **MCP 注册**（`registry/lanes/*.ts` 的 `ToolDef`）⇒ CLI 是**投影出来的**。
+      所以「CLI-only」这个类别**根本不该存在** —— 它只说明**能力被藏在了 MCP 面之外**。
+      **要做的事**（两个方向合流）：
+      · ① `brickify_cli`（**11 个输出产物的积木工作台**）与 `diagnose_loop_cli`（一键诊断闭环，`--apply` 会改代码）
+        ⇒ 注册为 MCP 工具（它们**不是**别的工具的 CLI，是独立能力）
+      · ② B 类 10 个 CLI-only（`archify_cli` `capability_cli` `deprecate_offline_cli` `install_package_cli`
+        `signal_review_cli` `split_stage_cli` `upgrade_cli` `upgrade_rewrite_cli` `instrument_cli` `translate_cli`）
+        **逐项判**：其中 `capability_cli` / `instrument_cli` / `translate_cli` **对应的 MCP 工具已存在**
+        （`capability_map` / `observe_instrument` / `translate_go_ts`）⇒ 那三个只需**删 CLI**；
+        其余**注册为 MCP 工具**（或明确判为"一次性运维脚本"，给理由）
+      **牵连**（必须同一次做，否则门会红）：
+      · `tests/fixtures/tool_set_snapshot.json`（58 个工具）⇒ `UPDATE_TOOL_SNAPSHOT=1` **并记账**（对外契约变更）
+      · `README.md` / `AGENTS.md` 要提及新工具名（否则 `readme_tools_gate` 红）
+      · `package.json` 里 13 个指向 `dist/src/tools/*_cli.js` 的 scripts ⇒ 改为走投影
+      · `tests/server_registry.consistency.test.ts` 的 `INTERNAL_MODULES` 登记表要同步（删文件的 `importedBy`）
+
 - [ ] **T14 ★★ 一致性门对 `export async function` 完全失明 —— 实测 **29 个文件**被整类豁免**
       *(核实：09-30 —— `tests/server_registry.consistency.test.ts:228` 的正则是
       ``new RegExp(`export\\s+function\\s+${camel}\\b`)``。**实测**：`export function X()` 匹配 ✓，
