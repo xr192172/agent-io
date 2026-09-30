@@ -13,10 +13,10 @@
  */
 
 import { probeDaemon, postWatch, postDsl, fetchAlertsSince } from './client.js';
-import { takeAlerts } from '../tools/alert_inbox.js';
+import { takeAlerts } from '../../tools/alert_inbox.js';
 
-import type { WatchProjectToolInput, WatchProjectToolResult } from '../tools/watch_project_tool.js';
-import { watchProjectTool } from '../tools/watch_project_tool.js';
+import type { WatchProjectToolInput, WatchProjectToolResult } from '../../tools/watch_project_tool.js';
+import { watchProjectTool } from '../../tools/watch_project_tool.js';
 
 const PROBE_TTL_MS = 30_000;
 let daemonCache: { alive: boolean; checkedAt: number } | null = null;

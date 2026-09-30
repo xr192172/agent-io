@@ -59,7 +59,7 @@ import { resolveCanvasNoteTargets, renderCanvasNotesDigest, markCanvasNotesStatu
 import type { MindMap } from '../domain/mindmap.js';
 import { oplAdd, oplLocate, oplDeclare, oplImplement, oplCheck, oplIntegrate, oplList, oplGet, oplAuto } from './opl.js';
 import { traceExecChain, type TraceStepSpec } from './trace_exec.js';
-import { schemas, RESPONSE_SCHEMA_AT, API_VERSION, type ResponseSchemaKey } from '../api/contract.js';
+import { schemas, RESPONSE_SCHEMA_AT, API_VERSION, type ResponseSchemaKey } from '../presentation/http/contract.js';
 import { deriveDetailChain } from './derive_chain.js';
 import { reconcileChain } from './reconcile_chain.js';
 import type { DesignDSL } from '../domain/types.js';

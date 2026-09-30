@@ -3984,3 +3984,47 @@ grep -rn "startsWith('tools/\|startsWith('src/" --include=*.ts src tests scripts
 grep -rn "'src', *'tools'\|'tools', *'<被搬目录>'" --include=*.ts tests scripts   # ③
 grep -rn "dist/src/<被搬目录>" --include=*.ts --include=*.json --include=*.mjs .   # ⑤
 ```
+
+### 44.8 搬迁⑥ 第一刀：`presentation/{daemon,http}/`（`src/daemon/` + `src/api/`）
+
+- `src/daemon/`（5）→ **`src/presentation/daemon/`**
+- `src/api/contract.ts`（1）→ **`src/presentation/http/contract.ts`**
+（`src/tools/serve.ts` 也属 http/，但它在 `tools/` 里 ⇒ 留给 ⑥ 正式那一刀，与 ⑦ 同批更省）
+引用改写 11 文件 / 20 处。`package.json` 的 `npm run daemon` 已同步。
+
+#### ★★ 又抓到一种新形态（第 ⑥ 种）：**按"上溯几级"推路径**
+`daemon.ts` 的 `findObserveDslBin`：
+```ts
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..','..','..');
+// 注释逐字：dist/src/daemon/daemon.js → 上溯 3 级到仓库根
+```
+搬到 `presentation/daemon/` 后层级变成 **4** ⇒ 算出 `dist/`（而不是仓库根）
+⇒ **不报错、不返回 null，只是悄悄退回 PATH** —— 完全是静默失败。
+⇒ 修法：**按路标找根**（`go-observe/` 是本仓独有目录），与 `PROBE_DIR_REL` 同款思路；
+  并**导出** `resolveRepoRoot(fromUrl)` 让测试能钉住它。
+⇒ 新增回归门 `tests/daemon/repo_root_locating.test.ts`（4 项）：
+  ①路标存在 ②从 daemon 位置解析到真根 ③从任意位置也一样
+  **④反例：老的"上溯 3 级"从 dist 侧算出来不是仓库根**（这条就是"它凭什么会红"）。
+★ 出生证实测：把 `resolveRepoRoot` 换回数层级 ⇒ 正例两条**变红**；还原 ⇒ 绿 ✓
+★ 教训（值得复用）：**"数层级"只在它被写下的那个位置正确**，而且
+  **从 `src/` 侧数往往还是对的**（`src/presentation/daemon` 上溯 3 级恰好= 仓库根）
+  ⇒ 它只在 `dist/` 侧显形 —— 所以**反例必须用编译产物侧的位置来写**。
+
+⇒ 形态清单更新为 **6 种**（①import 说明符 ②连续路径字符串 ③分段拼路径 ④路径前缀判断
+  ⑤带 `.js` 后缀的路径 **⑥数层级推路径**）；排查 grep 见 §44.7(3) + 本节。
+
+#### ★ 搬迁暴露的另一件事：`feature_map` 的「相似功能」启发式**族越大越瞎**
+`similar.score = |共享 basename| / min(|A|, |B|)`，阈值 0.2 ⇒ **分母取小的一侧**，
+所以**把一个小目录并进大目录，就会把原本命中的一对压到阈值以下**。
+实测（同一份代码，只差这次搬迁）：
+| | features | with similar | 命中对 |
+|---|---|---|---|
+| 搬迁前 | 9 | 5 | `api↔domain`(1)、`api↔infrastructure`(1)、`daemon↔root`(0.2) |
+| 搬迁后 | 7 | **0** | ——（`api`(1 文件) 并进 `presentation`(10+) ⇒ 分母变大） |
+★ **信号其实还在**（本仓仍有三处 `contract.ts`），只是这条启发式看不见了 ——
+  这是**量具灵敏度**问题，不是代码问题。★ 与 §2b「先问分子分母是不是同一把尺」同族。
+⇒ 处置：`tests/tools/feature_map.test.ts` 里那条
+  「**真仓** `withSimilar.length > 0`」是**赌目录布局**，不是测机制 ⇒ 改成
+  ①**受控 fixture** 钉机制（alpha/beta 共享 `a.ts` ⇒ score 恰好 0.5 + 镜像），
+  ②真仓只留**不变式**（凡报出来的必须镜像对称、score ≥ 0.2）。
+  ⇒ 这比原来**更强**（原来连"公式对不对"都没钉），且与布局无关。

@@ -99,7 +99,7 @@ const INTERNAL_MODULES: Record<string, { importedBy: string[]; why: string }> = 
     why: '★ 已注册工具 `get_dsl` 的真正实现（handlers 里 `queryFeature(a)`）；注册名 ≠ 文件名',
   },
   update_feature: {
-    importedBy: ['src/daemon/daemon.ts', 'src/registry/handlers.ts', 'src/server_registry.ts'],
+    importedBy: ['src/presentation/daemon/daemon.ts', 'src/registry/handlers.ts', 'src/server_registry.ts'],
     why: '★ 已注册工具 `edit_dsl` 的真正实现；注册名 ≠ 文件名',
   },
   watch_project: {

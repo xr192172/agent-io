@@ -2,6 +2,7 @@
  * feature_map（可视化地基）测试 —— 把设计画布 src 当狗食现场验证"功能→前端/后端→相似→废弃"
  */
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect } from 'vitest';
 import { buildFeatureMap, featureIdOf, sideOfLayer } from '../../src/tools/feature_map';
@@ -57,15 +58,44 @@ describe('feature_map 在 agent-io src 上的真实结果', () => {
     }
   });
 
-  it('多处存在相似功能链接（互相重复实现的风险被显式标出）', () => {
+  it('★ 相似功能链接的**机制**：受控输入下必须产出 link，且 score/镜像都对', () => {
+    // ★ 2026-09-30 改：原断言是「**真仓**里 `withSimilar.length > 0`」——
+    //   那是在**赌目录布局**，不是测机制：搬 ⑥（`src/daemon/`→`presentation/daemon/`、
+    //   `src/api/contract.ts`→`presentation/http/`）之后，它**合法地**变成 0：
+    //   · `score = |共享 basename| / min(|A|, |B|)` ⇒ **族越大越难命中**；
+    //   · 1 文件的 `api` 并进 10+ 文件的 `presentation` ⇒ 分母变大 ⇒ 落到 0.2 阈值下。
+    //   （实测搬迁前 9 族 / 5 对 → 搬迁后 7 族 / 0 对。**信号其实还在**：三处 contract.ts
+    //     依旧共存，只是这条启发式看不见了 —— 这是**量具灵敏度**问题，不是代码问题。）
+    //   ⇒ 改成**受控输入**钉机制：这比"希望真仓恰好有一对"**更强**，且与布局无关。
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'fm-similar-'));
+    try {
+      for (const [dir, files] of [['alpha', ['a', 'b', 'c']], ['beta', ['a', 'd']]] as const) {
+        fs.mkdirSync(path.join(tmp, 'src', dir), { recursive: true });
+        for (const f of files) fs.writeFileSync(path.join(tmp, 'src', dir, `${f}.ts`), `export const ${f} = 1;\n`);
+      }
+      const { features } = buildFeatureMap({ project_dir: tmp, source_root: path.join(tmp, 'src') });
+      const alpha = features.find((f) => f.id === 'alpha');
+      const beta = features.find((f) => f.id === 'beta');
+      expect(alpha, 'alpha 应被切成独立 feature').toBeDefined();
+      expect(beta, 'beta 应被切成独立 feature').toBeDefined();
+      // 共享 a.ts：|∩|=1，min(|alpha|=3, |beta|=2)=2 ⇒ score=0.5
+      expect(alpha!.similar).toEqual([{ featureId: 'beta', score: 0.5, sharedBasenames: ['a.ts'] }]);
+      // 镜像性：a→b 存在 ⇒ b→a 必须存在
+      expect(beta!.similar).toEqual([{ featureId: 'alpha', score: 0.5, sharedBasenames: ['a.ts'] }]);
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+
+  it('相似链接的不变式：真仓里凡是报出来的，必须镜像对称', () => {
+    // 只钉不变式（与"真仓有几对"无关）—— 数量是布局的函数，不变式才是契约
     const { features } = buildFeatureMap({ project_dir: path.join(process.cwd()), source_root: SRC });
-    const withSimilar = features.filter((f) => f.similar.length > 0);
-    expect(withSimilar.length).toBeGreaterThan(0);
-    // 镜像性：a→b 存在时 b→a 也应存在（抽查）
-    for (const a of withSimilar) {
+    for (const a of features) {
       for (const link of a.similar) {
         const b = features.find((f) => f.id === link.featureId);
-        expect(b?.similar.some((x) => x.featureId === a.id)).toBe(true);
+        expect(b, `similar 指向了不存在的 feature：${link.featureId}`).toBeDefined();
+        expect(b!.similar.some((x) => x.featureId === a.id), `a→b 存在但 b→a 不存在：${a.id}↔${link.featureId}`).toBe(true);
+        expect(link.score).toBeGreaterThanOrEqual(0.2);
       }
     }
   });

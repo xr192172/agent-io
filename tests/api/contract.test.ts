@@ -8,7 +8,7 @@ import {
   overviewResp,
   mindMapResp,
   archifyDemoResp,
-} from '../../src/api/contract.js';
+} from '../../src/presentation/http/contract.js';
 
 describe('api/contract —— 响应契约 zod 单源', () => {
   it('export 契约常量对齐：_api=1 且字段名为 RESPONSE_SCHEMA_AT', () => {

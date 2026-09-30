@@ -362,7 +362,7 @@ function sourceCandidatesOfReferencedPath(p: string): string[] {
  *      只认这一种写法：`tsc` / `vite` / 自定义 bin 调的不是"项目内入口文件"，
  *      据此声明可达根会把根集合污染成"什么都算根"，量具就再也抓不到孤儿了。
  *
- * **路径映射**：scripts 写的是产物路径（`dist/src/daemon/daemon.js`），源码在 `src/`。
+ * **路径映射**：scripts 写的是产物路径（如 `dist/src/presentation/daemon/daemon.js`），源码在 `src/`。
  *   故对每个候选尝试 `dist/ → src/` 替换 + JS 家族后缀换 `.ts/.tsx`，
  *   并以 `fs.existsSync` **落盘确认** —— 只把真实存在的文件当根，猜错不报。
  *

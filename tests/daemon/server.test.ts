@@ -11,9 +11,9 @@
  */
 import http from 'node:http';
 import { describe, it, expect, afterAll } from 'vitest';
-import { createDaemonServer } from '../../src/daemon/server';
+import { createDaemonServer } from '../../src/presentation/daemon/server.js';
 import { pushAlert, clearAlertInbox, alertsSince } from '../../src/tools/alert_inbox';
-import type { DslWriteRequest, DslWriteResult } from '../../src/daemon/server';
+import type { DslWriteRequest, DslWriteResult } from '../../src/presentation/daemon/server.js';
 
 const cleanups: Array<() => Promise<void> | void> = [];
 const servers: Array<{ stop: () => Promise<void>; baseUrl: () => string; broadcast: (e: string, d: unknown) => void }> = [];

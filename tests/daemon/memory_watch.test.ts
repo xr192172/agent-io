@@ -13,7 +13,7 @@ vi.mock('../../src/tools/alert_inbox.js', async (orig) => {
   return { ...m, pushAlert: vi.fn() };
 });
 
-import { judgeLeak, startMemoryWatch } from '../../src/daemon/memory_watch.js';
+import { judgeLeak, startMemoryWatch } from '../../src/presentation/daemon/memory_watch.js';
 import { sampleRemote, memoryTargetsHandler } from '../../src/tools/memory_observe.js';
 import { pushAlert } from '../../src/tools/alert_inbox.js';
 import type { MemSample } from '../../src/tools/memory_observe.js';

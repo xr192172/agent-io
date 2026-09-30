@@ -27,7 +27,7 @@ function extractLine(src, line) {
 async function main() {
   const files = walk(path.join(ROOT, 'src'), []);
   let syms = 0, calls = 0, unresolved = 0, types = 0, imports = 0;
-  const edgeToDemo = { file: 'src/daemon/dispatch.ts', caller: 'isDaemonAvailable', calleeExpr: 'probeDaemon', targetFile: 'src/daemon/client.ts' };
+  const edgeToDemo = { file: 'src/presentation/daemon/dispatch.ts', caller: 'isDaemonAvailable', calleeExpr: 'probeDaemon', targetFile: 'src/presentation/daemon/client.ts' };
   const demoCaller = { file: null, line: null, src: null, call: null };
   let targetDef = null;
 

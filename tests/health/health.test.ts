@@ -35,7 +35,7 @@ describe('health: 分层分类（路径启发式）', () => {
     expect(classifyLayer('src/bricks/orphan.ts')).toBe('brick');
     // 未命中特征 → 积木
     expect(classifyLayer('src/foo.ts')).toBe('brick');
-    expect(classifyLayer('src/api/helper.ts')).toBe('brick');
+    expect(classifyLayer('src/presentation/http/helper.ts')).toBe('brick');
   });
 });
 

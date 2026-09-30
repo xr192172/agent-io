@@ -25,7 +25,7 @@ import { renderGranularityNote } from './tools/parse_capability.js';
 import { unknownArgHints, renderArgHints } from './tools/arg_suggest.js';
 import { listFileSnapshots, rollbackFileSnapshot } from './tools/file_snapshot.js';
 import { recommendObservePoints } from './tools/observe_points.js';
-import { collectPendingAlertText, dispatchDslEdit } from './daemon/dispatch.js';
+import { collectPendingAlertText, dispatchDslEdit } from './presentation/daemon/dispatch.js';
 import { renderDesign } from './tools/render_design.js';
 import { exportSvg, exportMarkdown } from './tools/export.js';
 import { deriveMindMap } from './tools/derive_mind_map.js';

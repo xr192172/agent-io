@@ -1,7 +1,7 @@
 /**
  * agent-io daemon（方向 E）—— watch/影响播报/loop 回流的常驻宿主进程
  *
- * 启动：npm run daemon（node dist/src/daemon/daemon.js）
+ * 启动：npm run daemon（node dist/src/presentation/daemon/daemon.js）
  * 端口：127.0.0.1:7600（AGENT_IO_DAEMON_PORT 可配）；pidfile 落 OS tmpdir
  *
  * 为什么需要 daemon（此前"伪常驻"的三个断点）：
@@ -18,16 +18,16 @@
  * 事后诊断（进程已死但 pidfile 残留 → 覆盖）。
  */
 
-import { DATA_DIR_NAME } from '../data_dir.js';
+import { DATA_DIR_NAME } from '../../data_dir.js';
 import { execFile } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { watchProjectTool, listActiveWatches, setWatchToolEventListener } from '../tools/watch_project_tool.js';
-import { setAlertListener, alertsSince, pushAlert } from '../tools/alert_inbox.js';
-import { saveDSL, getDSL, onDslChange } from '../storage.js';
-import { updateFeature } from '../tools/update_feature.js';
+import { watchProjectTool, listActiveWatches, setWatchToolEventListener } from '../../tools/watch_project_tool.js';
+import { setAlertListener, alertsSince, pushAlert } from '../../tools/alert_inbox.js';
+import { saveDSL, getDSL, onDslChange } from '../../storage.js';
+import { updateFeature } from '../../tools/update_feature.js';
 import { createDaemonServer, type DslWriteRequest, type DslWriteResult } from './server.js';
 import { probeDaemon, daemonPort } from './client.js';
 import { startMemoryWatch } from './memory_watch.js';
@@ -173,12 +173,31 @@ const LOOP_TIMEOUT_MS = 60_000;
 const loopCooldown = new Map<string, number>();
 let loopRunning = false;
 
+/**
+ * ★ 从**任意模块位置**向上找仓库根：按**路标** `go-observe/`（本仓独有目录）判定，**不数层级**。
+ *
+ * 为什么导出：原先这里写死「`dist/src/daemon/daemon.js` → 上溯 **3** 级」，
+ * 本文件随 §44.3 ⑥ 搬到 `dist/src/presentation/daemon/` 后层级变成 **4** ⇒ **静默算错**
+ * （指到 `dist/` ⇒ 找不到二进制 ⇒ 悄悄退回 PATH）。导出后**可被测试钉住**。
+ * ★ 这类"按层级数推路径"的知识**改名工具抓不到** —— 台账 §44.7 的形态清单里叫「⑥ 数层级」。
+ */
+export function resolveRepoRoot(fromUrl: string): string {
+  const here = path.dirname(fileURLToPath(fromUrl));
+  let dir = here;
+  for (let i = 0; i < 8; i++) {
+    if (fs.existsSync(path.join(dir, 'go-observe'))) return dir;
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return here; // 找不到路标 ⇒ 退回自身所在目录（与旧行为一致的"保守失败"）
+}
+
 /** observe-dsl 二进制定位：env 显式指定 → 仓库内 build 产物 → PATH */
 function findObserveDslBin(): string {
   if (process.env.AGENT_IO_OBSERVE_DSL_BIN) return process.env.AGENT_IO_OBSERVE_DSL_BIN;
   const exe = process.platform === 'win32' ? 'observe-dsl.exe' : 'observe-dsl';
-  // dist/src/daemon/daemon.js → 上溯 3 级到仓库根 → go-observe/build/
-  const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
+  const repoRoot = resolveRepoRoot(import.meta.url);
   const candidate = path.join(repoRoot, 'go-observe', 'build', exe);
   if (fs.existsSync(candidate)) return candidate;
   return exe; // 交给 PATH

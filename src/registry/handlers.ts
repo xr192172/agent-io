@@ -11,7 +11,7 @@
  */
 import path from 'node:path';
 import { wrap, wrapData } from './plumbing.js';
-import { dispatchDslEdit } from '../daemon/dispatch.js';
+import { dispatchDslEdit } from '../presentation/daemon/dispatch.js';
 import { rebuildChains } from '../infrastructure/analysis/observe/chain.js';
 import { TSComparator, renderTSDiffReport } from '../infrastructure/analysis/observe/contract.js';
 import type { TSDLDecl, TSDiffReport } from '../infrastructure/analysis/observe/contract.js';
