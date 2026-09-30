@@ -135,7 +135,14 @@ function walk(dir: string, out: string[] = []): string[] {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
     const abs = path.join(dir, e.name);
     if (e.isDirectory()) {
-      if (SKIP_DIRS.has(e.name) || e.name.startsWith('.')) continue;
+      // ★★ 2026-10-01 修盲区：这里原来还有 `|| e.name.startsWith('.')` —— 它把所有 dot-dir 一网打尽，
+      //   于是**`.github/` 与 `.githooks/` 也扫不到** ⇒ 一个"零容忍"的品牌门**结构上看不见 CI 配置**。
+      //   实测现场：`.github/workflows/ci.yml:50` 用 `DC_R5_SKIP`，而全仓其它地方用 `AGENT_IO_R5_SKIP`
+      //   ⇒ CI 里那条跳过条件**永远不成立**（R5 挂起没真正生效），门却报"命中 0"。
+      //   ★ 判据本来是对的（`DC_` 就在登记表的 regexPatterns 里）⇒ 问题在**扫描面**，不在正则。
+      //   ⇒ 改成**只按 SKIP_DIRS 显式列举**（它本来就已列了 `.git`/`.inspect`/`.vscode`/`.trae`/DATA_DIR_NAME）：
+      //     跳过面必须**显式**，不许用"以点开头"这种一刀切 —— 一刀切会随新目录出现而**静默扩大**。
+      if (SKIP_DIRS.has(e.name)) continue;
       walk(abs, out);
     } else if (e.isFile() && !isToolTempFile(e.name) && isProbablyText(abs)) {
       out.push(abs);

@@ -45,9 +45,9 @@ jobs:
       # archify 已 vendor 进 third_party/，doctor 会校验「每类型的 renderer + schema + example」
       # 三件套完整。精简化 vendor 时若误删 examples/ 或 renderers/，这一步会直接报 not ready
       # （此前靠本机全局 ARCHIFY_ROOT 指向仓外副本，CI 上该分支永远绿 → 从没被发现）。
-      # R5 线挂起时（DC_R5_SKIP=1）跳过：该线虽保留在仓内但暂不开发，不该拖累主线 CI。
+      # R5 线挂起时（AGENT_IO_R5_SKIP=1）跳过：该线虽保留在仓内但暂不开发，不该拖累主线 CI。
       - name: archify vendor 自检（renderer + schema + example 三件套完整）
-        if: ${{ env.DC_R5_SKIP != '1' }}
+        if: ${{ env.AGENT_IO_R5_SKIP != '1' }}
         run: node third_party/archify/bin/archify.mjs doctor
       - name: 单元测试（vitest）
         run: npm test
