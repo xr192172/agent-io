@@ -19,7 +19,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect, afterAll } from 'vitest';
-import { registerAllTools, TOOL_DEFS, trustNoteFor } from '../src/server_registry';
+import { registerAllTools, TOOL_DEFS, trustNoteFor } from '../src/presentation/mcp/server_registry.js';
 import { importProject } from '../src/infrastructure/graph/import_project.js';
 import { openDb, closeAllProjectCacheDbs } from '../src/infrastructure/index/db';
 import { stopBackfill } from '../src/tools/index_backfill';

@@ -58,7 +58,7 @@ describe('P-A 门 · 写工具回执必须走 ---DATA--- 通道', () => {
         .readdirSync(LANES)
         .filter((x) => x.endsWith('.ts'))
         .map((x) => fs.readFileSync(path.join(LANES, x), 'utf8')),
-      fs.readFileSync(path.join(REPO, 'src', 'registry', 'handlers.ts'), 'utf8'),
+      fs.readFileSync(path.join(REPO, 'src', 'presentation', 'mcp', 'handlers.ts'), 'utf8'),
     ].join('\n');
     // 反面：全仓（lanes + handlers）确实同时存在 wrap 与 wrapData —— 证明"两种都抓得到"
     expect(/(?:handler:|=\s*)wrap\s*\(/.test(all), '居然没有用 wrap 的工具？检测口径可疑').toBe(true);

@@ -29,7 +29,7 @@
     "node": ">=18"
   },
   "files": [
-    "dist/src/server.js",
+    "dist/src/presentation/mcp/server.js",
     "dist/src/**/*.js",
     "schema/*.json",
     "examples/*.json",
@@ -39,13 +39,13 @@
     "LICENSE"
   ],
   "bin": {
-    "agent-io": "dist/src/server.js"
+    "agent-io": "dist/src/presentation/mcp/server.js"
   },
   "scripts": {
     "build": "node scripts/gen_agents.mjs && tsc",
     "dev": "node scripts/dev.mjs",
-    "start": "node dist/src/server.js",
-    "serve": "node dist/src/tools/serve.js",
+    "start": "node dist/src/presentation/mcp/server.js",
+    "serve": "node dist/src/presentation/http/serve.js",
     "daemon": "node dist/src/presentation/daemon/daemon.js",
     "instrument": "node dist/src/presentation/cli/instrument_cli.js",
     "setup": "node scripts/setup.mjs",
@@ -59,7 +59,7 @@
     "deprecate-offline": "node dist/src/tools/deprecate_offline_cli.js",
     "capability": "node dist/src/tools/capability_cli.js",
     "install-package": "node dist/src/tools/install_package_cli.js",
-    "diagnose": "node dist/src/cli.js diagnose",
+    "diagnose": "node dist/src/presentation/cli/cli.js diagnose",
     "diagnose-loop": "node dist/src/tools/diagnose_loop_cli.js",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -70,7 +70,7 @@
     "gen:schema": "node scripts/gen_endpoints_schema.mjs",
     "arch": "depcruise src --config .dependency-cruiser.cjs --ignore-known",
     "arch:baseline": "depcruise src --config .dependency-cruiser.cjs --baseline --baseline-mode shrink-only",
-    "tool": "node dist/src/cli.js"
+    "tool": "node dist/src/presentation/cli/cli.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",

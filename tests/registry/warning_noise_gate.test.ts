@@ -22,8 +22,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect, afterAll } from 'vitest';
 import { expectGateGoesRed, expectGateStaysGreen } from '../helpers/gate_probe';
-import { WARNINGS_MARKER, warningBlock, emitWarnings, resetWarningDelivery, type WireWarning } from '../../src/registry/tool_warnings';
-import { staleIndexWarning, resetStaleIndexWarningCache } from '../../src/server_registry';
+import { WARNINGS_MARKER, warningBlock, emitWarnings, resetWarningDelivery, type WireWarning } from '../../src/presentation/mcp/tool_warnings.js';
+import { staleIndexWarning, resetStaleIndexWarningCache } from '../../src/presentation/mcp/server_registry.js';
 import { importProject } from '../../src/infrastructure/graph/import_project.js';
 import { openDb, closeAllProjectCacheDbs } from '../../src/infrastructure/index/db';
 
@@ -151,7 +151,7 @@ describe('门 · 告警长文本不得跨轮重复（结构化判定，无正则
 
   it('★ 结构断言：注入点必须走 emitWarnings（防"结构化通道被绕过、退回字符串拼接"）', () => {
     const here = path.dirname(fileURLToPath(import.meta.url)); // tests/registry
-    const src = fs.readFileSync(path.join(here, '..', '..', 'src', 'server_registry.ts'), 'utf8');
+    const src = fs.readFileSync(path.join(here, '..', '..', 'src', 'presentation', 'mcp', 'server_registry.ts'), 'utf8');
     expect(src, '注入点没调 emitWarnings ⇒ 分级与机器块都被绕过').toContain('emitWarnings([');
     expect(src, '机器块没进响应（emission.block 未使用）').toContain('emission.block');
     // 反面：三个 stale 生产方不得再返回字符串（用 `+ staleSourceWarning()` 这种拼接回归即红）

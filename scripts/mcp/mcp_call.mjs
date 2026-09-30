@@ -18,7 +18,7 @@ if (!tool) {
   process.exit(2);
 }
 const cwd = cwdArg ? path.resolve(cwdArg) : process.cwd();
-const entry = path.resolve(entryArg ?? path.join(cwd, 'dist/src/server.js'));
+const entry = path.resolve(entryArg ?? path.join(cwd, 'dist/src/presentation/mcp/server.js'));
 
 const p = spawn('node', [entry], { stdio: ['pipe', 'pipe', 'pipe'], cwd });
 let buf = '';

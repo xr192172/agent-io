@@ -22,7 +22,7 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { TOOL_DEFS } from '../../src/server_registry';
+import { TOOL_DEFS } from '../../src/presentation/mcp/server_registry.js';
 import { listFileSnapshots, rollbackFileSnapshot } from '../../src/tools/file_snapshot';
 
 const def = (name: string) => {

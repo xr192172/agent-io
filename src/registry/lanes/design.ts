@@ -24,7 +24,7 @@
  *   否则本文件 import 它们就会成环（server_registry → lanes → server_registry）。
  */
 import { z } from 'zod';
-import { requireStr, wrapData } from '../plumbing.js';
+import { requireStr, wrapData } from '../../presentation/mcp/plumbing.js';
 import path from 'node:path';
 import { getProjectCacheDb } from '../../infrastructure/index/db.js';
 import { getDSL } from '../../storage.js';
@@ -36,8 +36,8 @@ import { MANAGE_ACTIONS } from '../../tools/manage_feature.js';
 import { buildBrickifyPreview } from '../../tools/render_brickwork.js';
 import { scaffold } from '../../tools/scaffold.js';
 import { setDesignIntent } from '../../tools/set_design_intent.js';
-import { consistencyHandler, detectDriftHandler, editDslHandler, getDslHandler, manageFeatureHandler, renderDesignHandler } from '../handlers.js';
-import type { ToolDef } from '../types.js';
+import { consistencyHandler, detectDriftHandler, editDslHandler, getDslHandler, manageFeatureHandler, renderDesignHandler } from '../../presentation/mcp/handlers.js';
+import type { ToolDef } from '../../presentation/mcp/types.js';
 
 export const DESIGN_TOOLS: ToolDef[] = [
   {

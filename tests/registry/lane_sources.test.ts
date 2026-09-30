@@ -32,7 +32,7 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { TOOL_DEFS, LANE_SOURCES, laneOfFromSources } from '../../src/server_registry.js';
+import { TOOL_DEFS, LANE_SOURCES, laneOfFromSources } from '../../src/presentation/mcp/server_registry.js';
 import { LANE_IDS, LANE_META } from '../../src/tools/capability_map.js';
 import * as capabilityMap from '../../src/tools/capability_map.js';
 

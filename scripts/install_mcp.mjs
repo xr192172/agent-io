@@ -11,7 +11,7 @@
  *   node scripts/install_mcp.mjs --dry-run       # 打印将写入的内容（不写）
  *   node scripts/install_mcp.mjs --check         # 只检查各平台是否存在/已配置（不写）
  *   node scripts/install_mcp.mjs --target claude # 只写入指定平台
- *   node scripts/install_mcp.mjs --server <path> # 覆盖 server 入口（默认 <root>/dist/src/server.js）
+ *   node scripts/install_mcp.mjs --server <path> # 覆盖 server 入口（默认 <root>/dist/src/presentation/mcp/server.js）
  *
  * 平台支持：
  *   claude   ~/.claude.json                     (Claude Code / Claude Desktop 共用 user 级)
@@ -170,7 +170,7 @@ const PLATFORMS = [
     // TRAE 要求 command 不含空格（Windows node 位于 C:\Program Files 下有空格），故用 PATH 内 node
     command: 'node',
     // 用 ${workspaceFolder} 相对项目根：git worktree / 目录迁移时仍指向当前项目 dist
-    args: [`${WF}/dist/src/server.js`],
+    args: [`${WF}/dist/src/presentation/mcp/server.js`],
   },
 ];
 

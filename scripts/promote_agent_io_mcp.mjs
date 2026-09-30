@@ -20,7 +20,7 @@ if (!fs.existsSync(mcpPath)) {
   process.exit(1);
 }
 if (!fs.existsSync(path.join(ROOT, 'dist', 'src', 'server.js'))) {
-  console.error('[promote-mcp] dist/src/server.js 不存在，请先 npm run build');
+  console.error('[promote-mcp] dist/src/presentation/mcp/server.js 不存在，请先 npm run build');
   process.exit(1);
 }
 

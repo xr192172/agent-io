@@ -18,7 +18,7 @@ import {
   resetWarningDelivery,
   WARNINGS_MARKER,
   type ToolWarning,
-} from '../../src/registry/tool_warnings';
+} from '../../src/presentation/mcp/tool_warnings.js';
 
 /** 造一条"生产方产物"（全字段都在） */
 function w(code: string, scope?: string): ToolWarning {

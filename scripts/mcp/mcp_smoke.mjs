@@ -7,13 +7,13 @@
  *
  * ★ 路径无关（不硬编码本仓路径）：服务端入口与 cwd 取自 argv 或 cwd。
  *   用法： node scripts/mcp/mcp_smoke.mjs [服务端入口.js] [cwd]
- *   缺省： <cwd>/dist/src/server.js ，cwd = 当前目录
+ *   缺省： <cwd>/dist/src/presentation/mcp/server.js ，cwd = 当前目录
  */
 import { spawn } from 'node:child_process';
 import path from 'node:path';
 
 const cwd = process.argv[3] ? path.resolve(process.argv[3]) : process.cwd();
-const entry = path.resolve(process.argv[2] ?? path.join(cwd, 'dist/src/server.js'));
+const entry = path.resolve(process.argv[2] ?? path.join(cwd, 'dist/src/presentation/mcp/server.js'));
 
 const p = spawn('node', [entry], { stdio: ['pipe', 'pipe', 'pipe'], cwd });
 let buf = '';

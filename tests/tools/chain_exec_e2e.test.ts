@@ -2,7 +2,7 @@ import { describe, it, expect, afterAll } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { startServer } from '../../src/tools/serve';
+import { startServer } from '../../src/presentation/http/serve.js';
 
 const PORT = 39777;
 const BASE = `http://127.0.0.1:${PORT}`;

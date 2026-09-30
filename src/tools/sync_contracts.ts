@@ -15,7 +15,7 @@
  * 循环依赖说明：TOOL_DEFS 由 server_registry 导出，本模块仅在函数执行期读取（handler 调用时），
  *   不在模块加载期求值，ESM 循环 import 安全。
  */
-import { TOOL_DEFS } from '../server_registry.js';
+import { TOOL_DEFS } from '../presentation/mcp/server_registry.js';
 import { getDSL, saveDSL } from '../storage.js';
 import type { DesignDSL } from '../domain/types.js';
 

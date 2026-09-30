@@ -9,19 +9,19 @@
  *   **全都没有**保鲜、陈旧告警、狗食统计（各 0 命中）⇒ 跑的是**旧索引 + 无任何标注**。
  *   实测对照：同一份 `code_health`，
  *     · 手写 CLI（`dist/src/tools/health_cli.js`）⇒ 告警/STALE 命中 **0**
- *     · 投影 CLI（`dist/src/cli.js code_health`）⇒ 命中 **3**（带告警 + `---WARNINGS---` 块）
+ *     · 投影 CLI（`dist/src/presentation/cli/cli.js code_health`）⇒ 命中 **3**（带告警 + `---WARNINGS---` 块）
  *
  * 本文件用**静默可判**的方式锁住"两个面共用同一入口"这件事，不依赖那两条 CLI 的进程外行为。
  */
 import { describe, it, expect } from 'vitest';
-import { TOOL_DEFS, invokeTool } from '../src/server_registry';
+import { TOOL_DEFS, invokeTool } from '../src/presentation/mcp/server_registry.js';
 
 describe('invokeTool —— 工具的唯一调用入口', () => {
   it('导出可用，且是 MCP 面与 CLI 面**共用**的那一个（registerAllTools 也调它）', async () => {
     expect(typeof invokeTool).toBe('function');
     // 反面：它必须真的在 registerAllTools 里被调用（否则就只是"又一份实现"）
     const { readFileSync } = await import('node:fs');
-    const reg = readFileSync('src/server_registry.ts', 'utf-8');
+    const reg = readFileSync('src/presentation/mcp/server_registry.ts', 'utf-8');
     const body = reg.slice(reg.indexOf('export function registerAllTools'));
     expect(body, 'registerAllTools 必须走 invokeTool（否则两个面又分叉了）').toContain('invokeTool(def,');
   });
@@ -33,7 +33,7 @@ describe('invokeTool —— 工具的唯一调用入口', () => {
     // ★ 显式超时 30s：这条会**真的跑一次 find_references**（开符号索引 / 读 cache.db，真实 I/O）。
     //   全量并行时撞过一次默认 5s 超时（实测 2026-09-30：单跑 82ms，全量里 timed out）。
     //   ⇒ 门可以慢，但**不许抖动** —— 抖动会让人以为是代码坏了。
-    const r = await invokeTool(def!, { project_dir: process.cwd(), file: 'src/server_registry.ts', symbal: 'x' });
+    const r = await invokeTool(def!, { project_dir: process.cwd(), file: 'src/presentation/mcp/server_registry.ts', symbal: 'x' });
     expect(r.text, '未知键 symbal 应触发 Did you mean（这一条只在 invokeTool 里做）').toMatch(/symbal/);
   }, 30_000);
 

@@ -44,14 +44,14 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { TOOL_DEFS } from '../../src/server_registry.js';
+import { TOOL_DEFS } from '../../src/presentation/mcp/server_registry.js';
 // ★ 出生证走共享 helper（`tests/helpers/gate_probe.ts`）：注入 → 跑门真正用的判定 → 断言红 → **必定还原**。
 import { expectGateGoesRed, expectGateStaysGreen } from '../helpers/gate_probe.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.join(here, '..', '..');
 const LANES_DIR = path.join(REPO, 'src', 'registry', 'lanes');
-const HANDLERS = path.join(REPO, 'src', 'registry', 'handlers.ts');
+const HANDLERS = path.join(REPO, 'src', 'presentation', 'mcp', 'handlers.ts');
 const BASELINE = path.join(here, '..', 'fixtures', 'tool_completion_receipt.json');
 
 /** 回执通道：`wrapData` = 可携带结构化产物；`dropData` = `wrap` 丢弃 data；`unresolved` = 无法机械判定 */

@@ -14,7 +14,7 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { staleBuildWarningFor, staleSourceWarningFor, newestMtime } from '../../src/server_registry';
+import { staleBuildWarningFor, staleSourceWarningFor, newestMtime } from '../../src/presentation/mcp/server_registry.js';
 
 describe('staleBuildWarningFor（纯函数）', () => {
   it('dist 重建后（加载早、当前晚）→ 返回重启告警（码/摘要/说明/修复俱全）', () => {

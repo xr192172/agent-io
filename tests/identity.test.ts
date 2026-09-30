@@ -59,10 +59,10 @@ describe('项目标识一致性门', () => {
     expect(/j\.name === '/.test(src), 'storage.ts 里又出现了字面量比较').toBe(false);
   });
 
-  it('③ MCP 服务名（src/server.ts 的 SERVER_NAME）与 PKG_NAME 一致', () => {
-    const src = fs.readFileSync(path.join(REPO, 'src', 'server.ts'), 'utf8');
+  it('③ MCP 服务名（src/presentation/mcp/server.ts 的 SERVER_NAME）与 PKG_NAME 一致', () => {
+    const src = fs.readFileSync(path.join(REPO, 'src', 'presentation', 'mcp', 'server.ts'), 'utf8');
     const m = src.match(/const SERVER_NAME\s*=\s*'([^']*)'/);
-    expect(m, '没找到 src/server.ts 的 SERVER_NAME 声明').not.toBeNull();
+    expect(m, '没找到 src/presentation/mcp/server.ts 的 SERVER_NAME 声明').not.toBeNull();
     expect(m![1]).toBe(PKG_NAME);
   });
 

@@ -9,7 +9,7 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
-import { TOOL_DEFS } from '../src/server_registry';
+import { TOOL_DEFS } from '../src/presentation/mcp/server_registry.js';
 
 const PKG_ROOT = path.resolve(__dirname, '..');
 const TOOLS_DIR = path.join(PKG_ROOT, 'src/tools');
@@ -58,7 +58,7 @@ const INTERNAL_MODULES: Record<string, { importedBy: string[]; why: string }> = 
     why: 'refactor_pipeline 的契约闸门检查步骤；不是 MCP 工具',
   },
   dag_layout: {
-    importedBy: ['src/tools/serve.ts', 'src/tools/update_feature.ts'],
+    importedBy: ['src/presentation/http/serve.ts', 'src/tools/update_feature.ts'],
     why: 'DAG 布局算法（serve 渲染 + update_feature 共用）；纯算法模块',
   },
   detect_dead_imports: {
@@ -77,13 +77,13 @@ const INTERNAL_MODULES: Record<string, { importedBy: string[]; why: string }> = 
       'src/infrastructure/analysis/diagnosis/impact_analyzer.ts',
       'src/tools/explore_code.ts',
       'src/tools/impact_report.ts',
-      'src/tools/serve.ts',
+      'src/presentation/http/serve.ts',
       'src/tools/watch_project_tool.ts',
     ],
     why: '变更影响面计算，被 explore_code / impact_report 等复用；不是独立工具',
   },
   guided_tour: {
-    importedBy: ['src/tools/explore_code.ts', 'src/tools/overview.ts', 'src/tools/serve.ts'],
+    importedBy: ['src/tools/explore_code.ts', 'src/tools/overview.ts', 'src/presentation/http/serve.ts'],
     why: '引导式导览生成，被 explore_code / overview 等复用',
   },
   inject_replay: {
@@ -91,19 +91,19 @@ const INTERNAL_MODULES: Record<string, { importedBy: string[]; why: string }> = 
     why: 'explore_code 的 replay 注入实现',
   },
   language_concepts: {
-    importedBy: ['src/tools/serve.ts'],
+    importedBy: ['src/presentation/http/serve.ts'],
     why: '语言概念词典（serve 渲染用）；不是 MCP 工具',
   },
   query_feature: {
-    importedBy: ['src/registry/handlers.ts', 'src/server_registry.ts'],
+    importedBy: ['src/presentation/mcp/handlers.ts', 'src/presentation/mcp/server_registry.ts'],
     why: '★ 已注册工具 `get_dsl` 的真正实现（handlers 里 `queryFeature(a)`）；注册名 ≠ 文件名',
   },
   update_feature: {
-    importedBy: ['src/presentation/daemon/daemon.ts', 'src/registry/handlers.ts', 'src/server_registry.ts'],
+    importedBy: ['src/presentation/daemon/daemon.ts', 'src/presentation/mcp/handlers.ts', 'src/presentation/mcp/server_registry.ts'],
     why: '★ 已注册工具 `edit_dsl` 的真正实现；注册名 ≠ 文件名',
   },
   watch_project: {
-    importedBy: ['src/tools/serve.ts', 'src/tools/watch_project_tool.ts'],
+    importedBy: ['src/presentation/http/serve.ts', 'src/tools/watch_project_tool.ts'],
     why: '文件监听内核，被 serve 与 watch_project_tool 复用',
   },
   wizard_steps: {

@@ -26,7 +26,7 @@ import {
   tierForLanguage,
 } from '../../src/tools/parse_capability';
 import { findLanguageByExt } from '../../src/infrastructure/parse/languages.js';
-import { registerAllTools } from '../../src/server_registry';
+import { registerAllTools } from '../../src/presentation/mcp/server_registry.js';
 import { importProject } from '../../src/infrastructure/graph/import_project.js';
 import { openDb, closeAllProjectCacheDbs } from '../../src/infrastructure/index/db';
 import { stopBackfill } from '../../src/tools/index_backfill';

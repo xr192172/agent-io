@@ -14,7 +14,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createFeature } from '../../src/tools/feature_ops';
 import { clearAllFeatures, getDSL, saveLiveFeature, getDSLByView, getLiveFeature } from '../../src/storage';
 import { queryFeature } from '../../src/tools/query_feature';
-import { TOOL_DEFS } from '../../src/server_registry';
+import { TOOL_DEFS } from '../../src/presentation/mcp/server_registry.js';
 
 /** 从 TOOL_DEFS 取指定主工具的 handler */
 function handlerOf(name: string) {

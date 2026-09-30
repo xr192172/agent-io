@@ -20,12 +20,12 @@
  * ─────────────────────────────────────────────────────────────
  * 用法
  * ─────────────────────────────────────────────────────────────
- *   node dist/src/cli.js list                      列出全部工具（名字 + 一句话）
- *   node dist/src/cli.js list --json               同上，机器可读
- *   node dist/src/cli.js <name> --json '{"a":1}'   调一个工具（入参走 JSON）
- *   node dist/src/cli.js <name> --input args.json  入参从文件读
- *   echo '{"a":1}' | node dist/src/cli.js <name> - 入参从 stdin 读
- *   node dist/src/cli.js <name>                   入参 = {}（等价 MCP 的无参调用）
+ *   node dist/src/presentation/cli/cli.js list                      列出全部工具（名字 + 一句话）
+ *   node dist/src/presentation/cli/cli.js list --json               同上，机器可读
+ *   node dist/src/presentation/cli/cli.js <name> --json '{"a":1}'   调一个工具（入参走 JSON）
+ *   node dist/src/presentation/cli/cli.js <name> --input args.json  入参从文件读
+ *   echo '{"a":1}' | node dist/src/presentation/cli/cli.js <name> - 入参从 stdin 读
+ *   node dist/src/presentation/cli/cli.js <name>                   入参 = {}（等价 MCP 的无参调用）
  *
  * 退出码：0 = 成功；1 = 工具报错（`isError`）；2 = 用法错/工具名不存在。
  *
@@ -33,7 +33,7 @@
  *   在这里重做一遍就又造出了第二份口径（本仓最贵的病）。
  */
 import fs from 'node:fs';
-import { TOOL_DEFS, invokeTool } from './server_registry.js';
+import { TOOL_DEFS, invokeTool } from '../mcp/server_registry.js';
 
 function die(msg: string): never {
   process.stderr.write(msg.endsWith('\n') ? msg : msg + '\n');

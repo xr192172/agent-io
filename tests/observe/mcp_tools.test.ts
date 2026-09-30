@@ -14,7 +14,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { TOOL_DEFS } from '../../src/server_registry';
+import { TOOL_DEFS } from '../../src/presentation/mcp/server_registry.js';
 import { TSProbeCapture } from '../../src/infrastructure/analysis/observe/probe';
 
 /** 从 TOOL_DEFS 取指定主工具的 handler */

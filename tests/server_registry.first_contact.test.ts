@@ -22,7 +22,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect, afterAll } from 'vitest';
-import { registerAllTools, firstContactBackfill } from '../src/server_registry';
+import { registerAllTools, firstContactBackfill } from '../src/presentation/mcp/server_registry.js';
 import { openDb, closeAllProjectCacheDbs } from '../src/infrastructure/index/db';
 import { stopBackfill, backfillState } from '../src/tools/index_backfill';
 

@@ -22,7 +22,7 @@
  *   否则本文件 import 它们就会成环（server_registry → lanes → server_registry）。
  */
 import { z } from 'zod';
-import { wrap, wrapData } from '../plumbing.js';
+import { wrap, wrapData } from '../../presentation/mcp/plumbing.js';
 import path from 'node:path';
 import { baselinePathFor, captureBaseline, verifyBaseline } from '../../infrastructure/analysis/behavior/index.js';
 import { rebuildChains } from '../../infrastructure/analysis/observe/chain.js';
@@ -37,9 +37,9 @@ import { reconcileEffects } from '../../tools/reconcile_effects.js';
 import type { ReconcileEffectsInput } from '../../tools/reconcile_effects.js';
 import { runTests } from '../../tools/run_tests.js';
 import { checkStaleBuild, formatStaleText } from '../../tools/stale_check.js';
-import { observeInstrumentHandler, observeJudgeHandler, observeLogHandler, observeTraceHandler, reconcileChainHandler } from '../handlers.js';
+import { observeInstrumentHandler, observeJudgeHandler, observeLogHandler, observeTraceHandler, reconcileChainHandler } from '../../presentation/mcp/handlers.js';
 import { fileURLToPath } from 'node:url';
-import type { ToolDef } from '../types.js';
+import type { ToolDef } from '../../presentation/mcp/types.js';
 
 export const OBSERVE_TOOLS: ToolDef[] = [
   {

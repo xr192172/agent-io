@@ -27,7 +27,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
-import { registerAllTools } from '../src/server_registry';
+import { registerAllTools } from '../src/presentation/mcp/server_registry.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const BASELINE = path.join(here, 'fixtures', 'tool_set_snapshot.json');

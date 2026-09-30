@@ -20,7 +20,7 @@
  *   否则本文件 import 它们就会成环（server_registry → lanes → server_registry）。
  */
 import { z } from 'zod';
-import { requireStr, wrapData } from '../plumbing.js';
+import { requireStr, wrapData } from '../../presentation/mcp/plumbing.js';
 import type { DiagnoseInput } from '../../infrastructure/analysis/diagnosis/contract.js';
 import { formatDiagnoseText, runDiagnosis } from '../../infrastructure/analysis/diagnosis/diagnose.js';
 import { getDSL, saveDSL } from '../../storage.js';
@@ -34,8 +34,8 @@ import { indexIntegrity, renderIntegrity } from '../../tools/index_integrity.js'
 import { decideCanvasNotes } from '../../tools/llm_decider.js';
 import { buildDocsPromptBlock, listProjectDocs, matchDocsForTargets, readProjectDoc } from '../../tools/project_docs.js';
 import type { DocTargetSet } from '../../tools/project_docs.js';
-import { exploreCodeHandler } from '../handlers.js';
-import type { ToolDef } from '../types.js';
+import { exploreCodeHandler } from '../../presentation/mcp/handlers.js';
+import type { ToolDef } from '../../presentation/mcp/types.js';
 
 
 /**
