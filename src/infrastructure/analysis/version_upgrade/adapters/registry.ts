@@ -12,7 +12,7 @@ import { nodeAdapter } from './node.js';
 import { pythonAdapter } from './python.js';
 import { csharpAdapter } from './csharp.js';
 import { cAdapter } from './c.js';
-import { missingLanguageHint } from '../../tools/lang_hint.js';
+import { missingLanguageHint } from '../../../../tools/lang_hint.js';
 
 /** 全部已注册适配器（顺序即探测/验证优先级，go 须在 node 前保持既有行为） */
 export const adapters: LanguageAdapter[] = [javaAdapter, goAdapter, nodeAdapter, pythonAdapter, csharpAdapter, cAdapter];

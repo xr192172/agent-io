@@ -32,7 +32,7 @@
 import { parseFileFull, parseAstRoot, listSupportedExtensions, resolveProjectImport, type ParsedSymbol, type SyntaxNodeLike } from '../../../tools/ts_kernel/index.js';
 import { codeSourceExts, partitionByCodeLang } from '../../../tools/ts_kernel/source_exts.js';
 import { boundsSkipFromExcluded, type ScanBounds } from '../../../tools/scan_bounds.js';
-import { collectSourceFiles } from '../../../version_upgrade/detect.js';
+import { collectSourceFiles } from '../version_upgrade/detect.js';
 
 // ── 对外类型 ─────────────────────────────────────────────────
 

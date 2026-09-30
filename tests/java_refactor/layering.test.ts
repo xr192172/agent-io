@@ -21,8 +21,8 @@ import {
   buildSpringMvcLayeringPlan,
   renderLayeringText,
   DEFAULT_ANNOTATION_LAYERS,
-} from '../../src/java_refactor/layering.js';
-import { javaVerifyCommands, javaExecutor, buildSpringMvcStage } from '../../src/java_refactor/executor.js';
+} from '../../src/infrastructure/analysis/java_refactor/layering.js';
+import { javaVerifyCommands, javaExecutor, buildSpringMvcStage } from '../../src/infrastructure/analysis/java_refactor/executor.js';
 import { runRefactorPipeline } from '../../src/tools/refactor_pipeline';
 
 const roots: string[] = [];

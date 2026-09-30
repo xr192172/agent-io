@@ -17,7 +17,7 @@
  * 通用内核只认这个接口，不认识具体语言；新增语言 = 新增一个适配器 + 注册进 registry。
  */
 
-import type { VerifyCommand } from '../../tools/verify_refactor.js';
+import type { VerifyCommand } from '../../../../tools/verify_refactor.js';
 
 /** 语言代号（新增语言在此扩展） */
 export type ToolName = 'java' | 'node' | 'go' | 'python' | 'csharp' | 'c';

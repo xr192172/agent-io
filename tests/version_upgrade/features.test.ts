@@ -8,7 +8,7 @@
  *   - 同行同特性去重
  */
 import { describe, it, expect } from 'vitest';
-import { scanFeatureHits, rulesForExt } from '../../src/version_upgrade/features';
+import { scanFeatureHits, rulesForExt } from '../../src/infrastructure/analysis/version_upgrade/features';
 
 const JAVA_SRC = `package com.acme;
 

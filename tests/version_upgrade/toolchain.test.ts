@@ -20,7 +20,7 @@ import {
   matchRuntimes,
   scanToolchains,
   type RuntimeInfo,
-} from '../../src/version_upgrade/toolchain';
+} from '../../src/infrastructure/analysis/version_upgrade/toolchain';
 
 const roots: string[] = [];
 afterAll(() => {

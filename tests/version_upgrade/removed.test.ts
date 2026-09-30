@@ -12,7 +12,7 @@
  *   - 同行同规则去重。
  */
 import { describe, it, expect } from 'vitest';
-import { scanRemovedApis, removedRulesForExt } from '../../src/version_upgrade/removed';
+import { scanRemovedApis, removedRulesForExt } from '../../src/infrastructure/analysis/version_upgrade/removed';
 
 const JAVA_SRC = `package com.acme;
 

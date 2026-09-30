@@ -11,7 +11,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect, afterAll } from 'vitest';
-import { buildRewritePlan, suggestDeterministicEdits, applyEdits } from '../../src/version_upgrade/rewrite';
+import { buildRewritePlan, suggestDeterministicEdits, applyEdits } from '../../src/infrastructure/analysis/version_upgrade/rewrite';
 
 const roots: string[] = [];
 afterAll(() => {

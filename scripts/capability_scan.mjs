@@ -40,7 +40,7 @@ export const FEATURE_FILES = {
   rename_symbol: ['src/tools/rename_symbol.ts'],
   contract_gate: ['src/tools/contract_gate.ts'],
   extract_contracts: ['src/tools/extract_contracts.ts'],
-  version_upgrade_detection: ['src/version_upgrade'],
+  version_upgrade_detection: ['src/infrastructure/analysis/version_upgrade'],
   impact_analysis: ['src/infrastructure/analysis/impact'],
   cross_repo_symbol_index: ['src/infrastructure/analysis/cross_repo'],
   hybrid_precheck: ['src/infrastructure/analysis/hybrid'],

@@ -21,11 +21,11 @@
  */
 
 import path from 'node:path';
-import { runContractScan, type ContractScanResult } from '../version_upgrade/detect.js';
-import { runStaticGates, runDynamicGates, type StaticGateResult, type DynamicGateResult } from '../version_upgrade/gate.js';
-import { adapterMissHint } from '../version_upgrade/adapters/registry.js';
-import type { FeatureHit } from '../version_upgrade/features.js';
-import type { RemovedHit } from '../version_upgrade/removed.js';
+import { runContractScan, type ContractScanResult } from '../infrastructure/analysis/version_upgrade/detect.js';
+import { runStaticGates, runDynamicGates, type StaticGateResult, type DynamicGateResult } from '../infrastructure/analysis/version_upgrade/gate.js';
+import { adapterMissHint } from '../infrastructure/analysis/version_upgrade/adapters/registry.js';
+import type { FeatureHit } from '../infrastructure/analysis/version_upgrade/features.js';
+import type { RemovedHit } from '../infrastructure/analysis/version_upgrade/removed.js';
 
 const TOOL_LABEL: Record<string, string> = { java: 'JDK', node: 'Node', go: 'Go', python: 'Python' };
 

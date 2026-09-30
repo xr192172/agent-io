@@ -12,7 +12,7 @@
  * 只做"盘点/报告"，不做任何改写——改写是版本升级闭环的后续阶段。
  */
 
-import { DATA_DIR_NAME } from '../data_dir.js';
+import { DATA_DIR_NAME } from '../../../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -24,7 +24,7 @@ import {
   ADAPTER_SKIP_DIRS,
 } from './adapters/registry.js';
 import type { ToolName } from './adapters/types.js';
-import { skipDirSet } from '../tools/ts_kernel/source_exts.js';
+import { skipDirSet } from '../../../tools/ts_kernel/source_exts.js';
 
 export type { ToolName } from './adapters/types.js';
 export type { VersionInfo } from './adapters/types.js';

@@ -42,7 +42,7 @@ import {
   type PackageMigrationSpec,
 } from './refactor_langs.js';
 import { pythonExecutor } from './python_refactor/index.js';
-import { javaExecutor } from '../java_refactor/executor.js';
+import { javaExecutor } from '../infrastructure/analysis/java_refactor/executor.js';
 import type { JudgeIssue } from './refactor_judge.js';
 import { scanContracts, diffContracts, type ContractSnapshot, type ScanContractsOptions, type UndefinedRef } from './contract_gate.js';
 import { checkEmbedSubmissions, type SubmitCheckResult } from './submit_gate.js';

@@ -13,8 +13,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { transpileToCjs } from '../../infrastructure/analysis/behavior/index.js';
-import { NODE_RUNNABLE_EXTS } from '../../tools/ts_kernel/index.js';
+import { transpileToCjs } from '../../behavior/index.js';
+import { NODE_RUNNABLE_EXTS } from '../../../../tools/ts_kernel/index.js';
 import type {
   LanguageAdapter,
   AdapterDeclaration,
@@ -24,7 +24,7 @@ import type {
   SourceFile,
   DynamicGateItem,
 } from './types.js';
-import type { VerifyCommand } from '../../tools/verify_refactor.js';
+import type { VerifyCommand } from '../../../../tools/verify_refactor.js';
 
 // ── 规则表（原 features.ts / removed.ts 的 Node 段） ──────────────
 

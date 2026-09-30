@@ -19,15 +19,15 @@ import {
   adapterForExt,
   adaptersForFile,
   ALL_DECLARATION_FILES,
-} from '../../src/version_upgrade/adapters/registry';
-import { pythonAdapter } from '../../src/version_upgrade/adapters/python';
-import { javaAdapter } from '../../src/version_upgrade/adapters/java';
-import { nodeAdapter } from '../../src/version_upgrade/adapters/node';
-import { csharpAdapter } from '../../src/version_upgrade/adapters/csharp';
-import { cAdapter } from '../../src/version_upgrade/adapters/c';
-import { scanToolchainDeclarations, versionSatisfies } from '../../src/version_upgrade/toolchain';
-import { scanFeatureHits } from '../../src/version_upgrade/features';
-import { scanRemovedApis } from '../../src/version_upgrade/removed';
+} from '../../src/infrastructure/analysis/version_upgrade/adapters/registry';
+import { pythonAdapter } from '../../src/infrastructure/analysis/version_upgrade/adapters/python';
+import { javaAdapter } from '../../src/infrastructure/analysis/version_upgrade/adapters/java';
+import { nodeAdapter } from '../../src/infrastructure/analysis/version_upgrade/adapters/node';
+import { csharpAdapter } from '../../src/infrastructure/analysis/version_upgrade/adapters/csharp';
+import { cAdapter } from '../../src/infrastructure/analysis/version_upgrade/adapters/c';
+import { scanToolchainDeclarations, versionSatisfies } from '../../src/infrastructure/analysis/version_upgrade/toolchain';
+import { scanFeatureHits } from '../../src/infrastructure/analysis/version_upgrade/features';
+import { scanRemovedApis } from '../../src/infrastructure/analysis/version_upgrade/removed';
 
 const roots: string[] = [];
 afterAll(() => {

@@ -18,28 +18,28 @@
     {
       "id": "removed-feature-rules-table",
       "intent": "『已废弃 API 规则表』—— 每个语言适配器的 REMOVED 规则数组形状一致（kind/name/pattern/rewrite/since/tool），是同一模板被复制的副本",
-      "authority": "src/version_upgrade/adapters/c.ts",
+      "authority": "src/infrastructure/analysis/version_upgrade/adapters/c.ts",
       "fingerprintPattern": "kind,name,pattern,rewrite,since,tool",
       "frozen": {
-        "src/version_upgrade/adapters/c.ts": 1,
-        "src/version_upgrade/adapters/csharp.ts": 1,
-        "src/version_upgrade/adapters/go.ts": 1,
-        "src/version_upgrade/adapters/java.ts": 1,
-        "src/version_upgrade/adapters/node.ts": 1,
-        "src/version_upgrade/adapters/python.ts": 1
+        "src/infrastructure/analysis/version_upgrade/adapters/c.ts": 1,
+        "src/infrastructure/analysis/version_upgrade/adapters/csharp.ts": 1,
+        "src/infrastructure/analysis/version_upgrade/adapters/go.ts": 1,
+        "src/infrastructure/analysis/version_upgrade/adapters/java.ts": 1,
+        "src/infrastructure/analysis/version_upgrade/adapters/node.ts": 1,
+        "src/infrastructure/analysis/version_upgrade/adapters/python.ts": 1
       }
     },
     {
       "id": "feature-rules-table",
       "intent": "『特性版本规则表』—— 每个语言适配器的 FEATURES 规则数组形状一致（name/pattern/rewrite/since/tool），是同一模板被复制的副本。C/C#/Go/Java/Node/Python 六份。",
-      "authority": "src/version_upgrade/adapters/c.ts",
+      "authority": "src/infrastructure/analysis/version_upgrade/adapters/c.ts",
       "fingerprintPattern": "name,pattern,rewrite,since,tool",
       "frozen": {
-        "src/version_upgrade/adapters/c.ts": 1,
-        "src/version_upgrade/adapters/csharp.ts": 1,
-        "src/version_upgrade/adapters/java.ts": 1,
-        "src/version_upgrade/adapters/node.ts": 1,
-        "src/version_upgrade/adapters/python.ts": 1
+        "src/infrastructure/analysis/version_upgrade/adapters/c.ts": 1,
+        "src/infrastructure/analysis/version_upgrade/adapters/csharp.ts": 1,
+        "src/infrastructure/analysis/version_upgrade/adapters/java.ts": 1,
+        "src/infrastructure/analysis/version_upgrade/adapters/node.ts": 1,
+        "src/infrastructure/analysis/version_upgrade/adapters/python.ts": 1
       }
     }
   ]

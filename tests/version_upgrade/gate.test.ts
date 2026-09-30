@@ -12,10 +12,10 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { describe, it, expect, afterAll } from 'vitest';
-import { runStaticGates, runDynamicGates } from '../../src/version_upgrade/gate';
-import { pythonAdapter } from '../../src/version_upgrade/adapters/python';
-import { javaAdapter } from '../../src/version_upgrade/adapters/java';
-import type { SourceFile } from '../../src/version_upgrade/adapters/types';
+import { runStaticGates, runDynamicGates } from '../../src/infrastructure/analysis/version_upgrade/gate';
+import { pythonAdapter } from '../../src/infrastructure/analysis/version_upgrade/adapters/python';
+import { javaAdapter } from '../../src/infrastructure/analysis/version_upgrade/adapters/java';
+import type { SourceFile } from '../../src/infrastructure/analysis/version_upgrade/adapters/types';
 
 const PY = process.platform === 'win32' ? 'python' : 'python3';
 const pyAvailable = ((): boolean => {

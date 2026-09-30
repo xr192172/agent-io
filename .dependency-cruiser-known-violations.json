@@ -387,6 +387,15 @@
   },
   {
     "type": "module",
+    "from": "src/infrastructure/analysis/version_upgrade/adapters/types.ts",
+    "to": "src/infrastructure/analysis/version_upgrade/adapters/types.ts",
+    "rule": {
+      "severity": "warn",
+      "name": "no-orphans"
+    }
+  },
+  {
+    "type": "module",
     "from": "src/registry/types.ts",
     "to": "src/registry/types.ts",
     "rule": {
@@ -425,15 +434,6 @@
     "type": "module",
     "from": "src/tools/view_inputs.ts",
     "to": "src/tools/view_inputs.ts",
-    "rule": {
-      "severity": "warn",
-      "name": "no-orphans"
-    }
-  },
-  {
-    "type": "module",
-    "from": "src/version_upgrade/adapters/types.ts",
-    "to": "src/version_upgrade/adapters/types.ts",
     "rule": {
       "severity": "warn",
       "name": "no-orphans"
