@@ -67,7 +67,9 @@
     "test:r5": "vitest run tests/tools/archify_demo.test.ts tests/tools/archify_mappers.test.ts tests/tools/archify_project.test.ts tests/tools/archify_semantics.test.ts",
     "hub": "node scripts/hub.mjs",
     "demo": "node scripts/demo.mjs",
-    "gen:schema": "node scripts/gen_endpoints_schema.mjs"
+    "gen:schema": "node scripts/gen_endpoints_schema.mjs",
+    "arch": "depcruise src --config .dependency-cruiser.cjs --ignore-known",
+    "arch:baseline": "depcruise src --config .dependency-cruiser.cjs --baseline --baseline-mode shrink-only"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
@@ -116,6 +118,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.20.1",
+    "dependency-cruiser": "^18.4.0",
     "playwright": "^1.62.0",
     "typescript": "^5.4.0",
     "vitest": "^1.6.0"

@@ -1,0 +1,472 @@
+[
+  {
+    "type": "cycle",
+    "from": "src/registry/handlers.ts",
+    "to": "src/tools/sync_contracts.ts",
+    "unresolvedTo": "../tools/sync_contracts.js",
+    "dependencyTypes": [
+      "local",
+      "require"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular"
+    },
+    "cycle": [
+      {
+        "name": "src/tools/sync_contracts.ts",
+        "dependencyTypes": [
+          "local",
+          "require"
+        ]
+      },
+      {
+        "name": "src/server_registry.ts",
+        "dependencyTypes": [
+          "local",
+          "require"
+        ]
+      },
+      {
+        "name": "src/registry/lanes/design.ts",
+        "dependencyTypes": [
+          "local",
+          "require"
+        ]
+      },
+      {
+        "name": "src/registry/handlers.ts",
+        "dependencyTypes": [
+          "local",
+          "require"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/registry/lanes/harvest.ts",
+    "to": "src/registry/handlers.ts",
+    "unresolvedTo": "../handlers.js",
+    "dependencyTypes": [
+      "local",
+      "require"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular"
+    },
+    "cycle": [
+      {
+        "name": "src/registry/handlers.ts",
+        "dependencyTypes": [
+          "local",
+          "require"
+        ]
+      },
+      {
+        "name": "src/tools/sync_contracts.ts",
+        "dependencyTypes": [
+          "local",
+          "require"
+        ]
+      },
+      {
+        "name": "src/server_registry.ts",
+        "dependencyTypes": [
+          "local",
+          "require"
+        ]
+      },
+      {
+        "name": "src/registry/lanes/harvest.ts",
+        "dependencyTypes": [
+          "local",
+          "require"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/registry/lanes/meta.ts",
+    "to": "src/registry/handlers.ts",
+    "unresolvedTo": "../handlers.js",
+    "dependencyTypes": [
+      "local",
+      "require"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular"
+    },
+    "cycle": [
+      {
+        "name": "src/registry/handlers.ts",
+        "dependencyTypes": [
+          "local",
+          "require"
+        ]
+      },
+      {
+        "name": "src/tools/sync_contracts.ts",
+        "dependencyTypes": [
+          "local",
+          "require"
+        ]
+      },
+      {
+        "name": "src/server_registry.ts",
+        "dependencyTypes": [
+          "local",
+          "require"
+        ]
+      },
+      {
+        "name": "src/registry/lanes/meta.ts",
+        "dependencyTypes": [
+          "local",
+          "require"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/registry/lanes/observe.ts",
+    "to": "src/registry/handlers.ts",
+    "unresolvedTo": "../handlers.js",
+    "dependencyTypes": [
+      "local",
+      "require"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular"
+    },
+    "cycle": [
+      {
+        "name": "src/registry/handlers.ts",
+        "dependencyTypes": [
+          "local",
+          "require"
+        ]
+      },
+      {
+        "name": "src/tools/sync_contracts.ts",
+        "dependencyTypes": [
+          "local",
+          "require"
+        ]
+      },
+      {
+        "name": "src/server_registry.ts",
+        "dependencyTypes": [
+          "local",
+          "require"
+        ]
+      },
+      {
+        "name": "src/registry/lanes/observe.ts",
+        "dependencyTypes": [
+          "local",
+          "require"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/registry/lanes/refactor.ts",
+    "to": "src/registry/handlers.ts",
+    "unresolvedTo": "../handlers.js",
+    "dependencyTypes": [
+      "local",
+      "require"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular"
+    },
+    "cycle": [
+      {
+        "name": "src/registry/handlers.ts",
+        "dependencyTypes": [
+          "local",
+          "require"
+        ]
+      },
+      {
+        "name": "src/tools/sync_contracts.ts",
+        "dependencyTypes": [
+          "local",
+          "require"
+        ]
+      },
+      {
+        "name": "src/server_registry.ts",
+        "dependencyTypes": [
+          "local",
+          "require"
+        ]
+      },
+      {
+        "name": "src/registry/lanes/refactor.ts",
+        "dependencyTypes": [
+          "local",
+          "require"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/tools/index_backfill.ts",
+    "to": "src/tools/index_freshness.ts",
+    "unresolvedTo": "./index_freshness.js",
+    "dependencyTypes": [
+      "local",
+      "require"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular"
+    },
+    "cycle": [
+      {
+        "name": "src/tools/index_freshness.ts",
+        "dependencyTypes": [
+          "local",
+          "require"
+        ]
+      },
+      {
+        "name": "src/tools/write_gate.ts",
+        "dependencyTypes": [
+          "local",
+          "require"
+        ]
+      },
+      {
+        "name": "src/tools/index_backfill.ts",
+        "dependencyTypes": [
+          "local",
+          "require"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/tools/project_root.ts",
+    "to": "src/tools/rename_symbol.ts",
+    "unresolvedTo": "./rename_symbol.js",
+    "dependencyTypes": [
+      "local",
+      "require"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular"
+    },
+    "cycle": [
+      {
+        "name": "src/tools/rename_symbol.ts",
+        "dependencyTypes": [
+          "local",
+          "require"
+        ]
+      },
+      {
+        "name": "src/tools/project_root.ts",
+        "dependencyTypes": [
+          "local",
+          "require"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/translate/pairs.ts",
+    "to": "src/translate/project.ts",
+    "unresolvedTo": "./project.js",
+    "dependencyTypes": [
+      "local",
+      "require"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular"
+    },
+    "cycle": [
+      {
+        "name": "src/translate/project.ts",
+        "dependencyTypes": [
+          "local",
+          "require"
+        ]
+      },
+      {
+        "name": "src/translate/pairs.ts",
+        "dependencyTypes": [
+          "local",
+          "require"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "module",
+    "from": "src/diagnosis/contract.ts",
+    "to": "src/diagnosis/contract.ts",
+    "rule": {
+      "severity": "warn",
+      "name": "no-orphans"
+    }
+  },
+  {
+    "type": "module",
+    "from": "src/dsl/animation.ts",
+    "to": "src/dsl/animation.ts",
+    "rule": {
+      "severity": "warn",
+      "name": "no-orphans"
+    }
+  },
+  {
+    "type": "module",
+    "from": "src/dsl/annotation.ts",
+    "to": "src/dsl/annotation.ts",
+    "rule": {
+      "severity": "warn",
+      "name": "no-orphans"
+    }
+  },
+  {
+    "type": "module",
+    "from": "src/dsl/canvas_note.ts",
+    "to": "src/dsl/canvas_note.ts",
+    "rule": {
+      "severity": "warn",
+      "name": "no-orphans"
+    }
+  },
+  {
+    "type": "module",
+    "from": "src/dsl/contract.ts",
+    "to": "src/dsl/contract.ts",
+    "rule": {
+      "severity": "warn",
+      "name": "no-orphans"
+    }
+  },
+  {
+    "type": "module",
+    "from": "src/dsl/geometry.ts",
+    "to": "src/dsl/geometry.ts",
+    "rule": {
+      "severity": "warn",
+      "name": "no-orphans"
+    }
+  },
+  {
+    "type": "module",
+    "from": "src/dsl/mindmap.ts",
+    "to": "src/dsl/mindmap.ts",
+    "rule": {
+      "severity": "warn",
+      "name": "no-orphans"
+    }
+  },
+  {
+    "type": "module",
+    "from": "src/dsl/reasoning.ts",
+    "to": "src/dsl/reasoning.ts",
+    "rule": {
+      "severity": "warn",
+      "name": "no-orphans"
+    }
+  },
+  {
+    "type": "module",
+    "from": "src/dsl/semantic.ts",
+    "to": "src/dsl/semantic.ts",
+    "rule": {
+      "severity": "warn",
+      "name": "no-orphans"
+    }
+  },
+  {
+    "type": "module",
+    "from": "src/dsl/simulation.ts",
+    "to": "src/dsl/simulation.ts",
+    "rule": {
+      "severity": "warn",
+      "name": "no-orphans"
+    }
+  },
+  {
+    "type": "module",
+    "from": "src/dsl/types.ts",
+    "to": "src/dsl/types.ts",
+    "rule": {
+      "severity": "warn",
+      "name": "no-orphans"
+    }
+  },
+  {
+    "type": "module",
+    "from": "src/registry/types.ts",
+    "to": "src/registry/types.ts",
+    "rule": {
+      "severity": "warn",
+      "name": "no-orphans"
+    }
+  },
+  {
+    "type": "module",
+    "from": "src/renderer/dataflow_core.ts",
+    "to": "src/renderer/dataflow_core.ts",
+    "rule": {
+      "severity": "warn",
+      "name": "no-orphans"
+    }
+  },
+  {
+    "type": "module",
+    "from": "src/tools/edit_result.ts",
+    "to": "src/tools/edit_result.ts",
+    "rule": {
+      "severity": "warn",
+      "name": "no-orphans"
+    }
+  },
+  {
+    "type": "module",
+    "from": "src/tools/observe_chain_view.ts",
+    "to": "src/tools/observe_chain_view.ts",
+    "rule": {
+      "severity": "warn",
+      "name": "no-orphans"
+    }
+  },
+  {
+    "type": "module",
+    "from": "src/tools/view_inputs.ts",
+    "to": "src/tools/view_inputs.ts",
+    "rule": {
+      "severity": "warn",
+      "name": "no-orphans"
+    }
+  },
+  {
+    "type": "module",
+    "from": "src/version_upgrade/adapters/types.ts",
+    "to": "src/version_upgrade/adapters/types.ts",
+    "rule": {
+      "severity": "warn",
+      "name": "no-orphans"
+    }
+  }
+]
