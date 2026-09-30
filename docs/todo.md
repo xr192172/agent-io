@@ -15,6 +15,19 @@
 
 ## 待做
 
+- [ ] **T14 ★★ 一致性门对 `export async function` 完全失明 —— 实测 **29 个文件**被整类豁免**
+      *(核实：09-30 —— `tests/server_registry.consistency.test.ts:228` 的正则是
+      ``new RegExp(`export\\s+function\\s+${camel}\\b`)``。**实测**：`export function X()` 匹配 ✓，
+      **`export async function X()` 不匹配 ✗**；而 `src/tools/derive_anim_flow.ts:292` 正是
+      `export async function deriveAnimFlow(...)`。*
+      *量具：`.inspect/survey_async_export_blindspot.mjs`（含对照项证明脚本不哑）。)*
+      ⇒ ★★ **命中 29 个 `src/tools/*.ts`**，含 `edit_code` / `explore_code` / `find_references` /
+      `import_project` / `detect_drift` / `derive_mind_map` / `harvest_from_url` / `index_integrity` /
+      `rename_*` / `reconcile_*` … —— 它们的 `isToolImpl` 恒 false ⇒ 门**直接 `continue`**
+      ⇒ 这些工具**丢了注册也报不出来**。
+      ★ 这正是那 7 个死模块能躲过一致性门的原因之一（子 Agent 推断 + **我已独立实测证实**）。
+      ⇒ 修法：正则改成认 `async`（`export\s+(?:async\s+)?function\s+`），**并给门做出生证**（注入一个 async 工具不注册 ⇒ 必须红）。
+
 - [ ] **T13 ★ 第 4 / 5 处 import 解析口径：`rename_file` 的「TS/JS 一份 + Python 一份」**
       *(核实：09-30 做 T12 时顺带撞到 —— `src/tools/rename_file.ts:23` 引的是
       **`src/db/symbols.ts:155` 的 `resolveImportTarget(projectRoot, fromRel, source)`**：
