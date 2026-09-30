@@ -553,67 +553,96 @@ bindLaneOf(laneOfFromSources());
 
 /** 注册全部主工具到 McpServer（旧工具名别名已于 2026-08-17 全部移除） */
 
+/**
+ * ★★★ 工具的**唯一调用入口**（2026-09-30 抽出）—— MCP 面与 CLI 面调**同一个函数**。
+ *
+ * 它把「每次调用前保鲜 / 首次接触建索引 / 参数纠错 / 狗食统计 / 响应注入」这五件**外围事**
+ * 从注册闭包里搬出来，于是**任何**入口都自动获得它们。
+ *
+ * ★ 为什么必须抽（**实测的真缺陷**，不是风格问题）：那些**手写的** CLI
+ *   （`health_cli` / `impact_cli` / `behavior_cli` / `cross_repo_cli` / `hybrid_cli` …）
+ *   **全都没有**保鲜、陈旧告警、狗食统计（实测各 0 命中）⇒ 它们跑的是**旧索引 + 无任何标注**，
+ *   给出不可信的结果**还不说**。
+ *   ⇒ 「CLI 从唯一真相源投影」的价值不只是消重，是**让 CLI 自动获得这些能力**（结构保证，不是自觉）。
+ *
+ * ★ 为什么放本文件而不是新开 `registry/invoke.ts`：它需要的 7 个外围函数
+ *   （`projectRootArg` / `firstContactBackfill` / `staleIndexWarning` / `trustNoteFor` …）**都定义在本文件里**
+ *   ⇒ 另开模块会成环（本仓 §P1a 已为同样的理由抽过一层基础设施）。
+ *   等 `server_registry.ts` 按 §44 搬进 `presentation/mcp/` 时，本函数一并搬去 `registry/invoke.ts`。
+ */
+export async function invokeTool(
+  def: ToolDef,
+  args: Record<string, unknown> | undefined,
+): Promise<{ text: string; isError?: boolean }> {
+  const a = (args ?? {}) as Record<string, unknown>;
+  // ★ 首次接触 ⇒ 后台建索引（2026-09-15）：带 project_root 的调用若该项目还没有索引，
+  //   顺手起后台续建（不阻塞本次调用）——把建索引的起点从"第一次读"提前到"第一次任何调用"。
+  //   起了就诚实标注"本轮结果可能不全"（空缺型不全，staleIndexWarning 覆盖不了）。
+  const rootArg = projectRootArg(a);
+  const firstContactNote = def.noAutoFresh ? '' : firstContactBackfill(rootArg);
+  // ★ L3① 结构性精确化（2026-09-15）：有索引的项目，**每次调用前先保鲜**。
+  //   为什么放这里：保鲜此前靠"每个工具自己记得调 ensureProjectIndex"，实测 60 个工具里有
+  //   17 个直接开 cache.db 却没接 ⇒ 只能靠 staleIndexWarning 做**标注**。标注满足了不变量的
+  //   "要么标注"那半边，但结果本身仍是旧的。这里在**唯一入口**做一次，全部工具的结果自动精确，
+  //   以后新增工具也不用记得（结构保证，不是自觉）。
+  //   成本：ready 态实测 ~35ms/次（390 文件）；有变更时付的是本来也要付的重同步钱。
+  //   纪律：bootstrap:false —— 绝不因为一次调用就冷启建索引；失败静默（结果里仍有陈旧告警兜底）。
+  //   ★ 后台续建在建时跳过（isIndexIncomplete）：后台循环本来就在持续同步，逐调用保鲜
+  //     只会重复全盘走查 + 触发 MAX_ADDS_PER_REFRESH 噪音；"在建 ⇒ 可能不全"由 firstContactNote 标注。
+  if (rootArg && !def.noAutoFresh) {
+    try {
+      if (hasLiveIndex(rootArg) && !isIndexIncomplete(rootArg)) await ensureProjectIndex(rootArg, { bootstrap: false });
+    } catch {
+      /* 保鲜失败不阻断主流程（staleIndexWarning 仍会兜底标注） */
+    }
+  }
+  // ★ 参数纠错（Did you mean）：zod object 会**静默丢弃**未知键（错参数 = 结果莫名其妙），
+  // 这里对"够像"的未知键给一条建议；只提示不阻断，不够像则静默（避免噪音）。
+  const knownArgs = Object.keys(def.inputSchema ?? {});
+  const argHints = renderArgHints(unknownArgHints(a, knownArgs), knownArgs);
+  // 狗食正式统计：记录每次工具调用的成败与子动作（失败静默，不阻断主流程）
+  const t0 = Date.now();
+  const r = await def.handler(a);
+  recordDogfoodUsage({
+    ts: new Date().toISOString(),
+    tool: def.name,
+    action: def.name === 'explore_code'
+      ? (typeof a.action === 'string' ? a.action : undefined)
+      : def.name === 'edit_code'
+        ? (typeof a.op === 'string' ? a.op : undefined)
+        : undefined,
+    ok: !r.isError,
+    ms: Date.now() - t0,
+    err: r.isError ? (r.text ?? '').slice(0, 200) : undefined,
+  });
+  // 响应注入（顺序即拼接顺序）：① 参数纠错（Did you mean）② 陈旧告警家族（BUILD/SOURCE/INDEX，
+  //          **结构化** + 首次全文/后续一行摘要，见 registry/tool_warnings.ts）③ 索引在建标注（首触）
+  //          ④ 行动工具的可信度附注（陈旧断言 → 静默漏报预警）：在 handler **之后**算 ——
+  //          rename_symbols 等工具自己会修陈旧引用，附注必须反映"修完之后"的现状。
+  //          ⑤ watch 产出的未读影响提醒借力本次响应自动送达；⑥ `---WARNINGS---` 机器块（最末）。
+  //    ★ P-F（§16.6）：三个 stale 告警不再各自拼字符串，而是产出 `ToolWarning`，由 `emitWarnings`
+  //      统一分级 + 生成机器块（**追加在文本最末**，好让 `split(marker)[1]` 直接 `JSON.parse`）。
+  //      注入点在 handler 之后、`wrap`/`wrapData` **之外** ⇒ 不经过那两个包装器，
+  //      所以本笔无需改动 plumbing.ts（`wrap` 丢 `data` 与这里的告警通道无关）。
+  const trustNote = def.trustAnnotated ? trustNoteFor(rootArg) : '';
+  const alertNote = await collectPendingAlertText(def.name);
+  const emission = emitWarnings([staleBuildWarning(), staleSourceWarning(), staleIndexWarning(rootArg)]);
+  // ★ 只回**合成好的文本**（含注入的告警块），**不在这里包 MCP 形状** ——
+  //   「怎么呈现」是各面自己的事：MCP 面用 `textOut(...)` 包成 `{content:[...]}`，
+  //   CLI 面直接打到 stdout。★ 这样两个面共用的就是**同一份合成逻辑**（唯一真相源）。
+  return { text: r.text + argHints + emission.text + firstContactNote + trustNote + alertNote + emission.block, isError: r.isError };
+}
+
 export function registerAllTools(server: McpServer): void {
   for (const def of TOOL_DEFS) {
-    server.registerTool(def.name, { title: def.title, description: def.description, inputSchema: looseInputSchema(def.inputSchema) as unknown as z.ZodRawShape }, async (args) => {
-      const a = (args ?? {}) as Record<string, unknown>;
-      // ★ 首次接触 ⇒ 后台建索引（2026-09-15）：带 project_root 的调用若该项目还没有索引，
-      //   顺手起后台续建（不阻塞本次调用）——把建索引的起点从"第一次读"提前到"第一次任何调用"。
-      //   起了就诚实标注"本轮结果可能不全"（空缺型不全，staleIndexWarning 覆盖不了）。
-      const rootArg = projectRootArg(a);
-      const firstContactNote = def.noAutoFresh ? '' : firstContactBackfill(rootArg);
-      // ★ L3① 结构性精确化（2026-09-15）：有索引的项目，**每次调用前先保鲜**。
-      //   为什么放这里：保鲜此前靠"每个工具自己记得调 ensureProjectIndex"，实测 60 个工具里有
-      //   17 个直接开 cache.db 却没接 ⇒ 只能靠 staleIndexWarning 做**标注**。标注满足了不变量的
-      //   "要么标注"那半边，但结果本身仍是旧的。这里在**唯一入口**做一次，全部工具的结果自动精确，
-      //   以后新增工具也不用记得（结构保证，不是自觉）。
-      //   成本：ready 态实测 ~35ms/次（390 文件）；有变更时付的是本来也要付的重同步钱。
-      //   纪律：bootstrap:false —— 绝不因为一次调用就冷启建索引；失败静默（结果里仍有陈旧告警兜底）。
-      //   ★ 后台续建在建时跳过（isIndexIncomplete）：后台循环本来就在持续同步，逐调用保鲜
-      //     只会重复全盘走查 + 触发 MAX_ADDS_PER_REFRESH 噪音；"在建 ⇒ 可能不全"由 firstContactNote 标注。
-      if (rootArg && !def.noAutoFresh) {
-        try {
-          if (hasLiveIndex(rootArg) && !isIndexIncomplete(rootArg)) await ensureProjectIndex(rootArg, { bootstrap: false });
-        } catch {
-          /* 保鲜失败不阻断主流程（staleIndexWarning 仍会兜底标注） */
-        }
-      }
-      // ★ 参数纠错（Did you mean）：zod object 会**静默丢弃**未知键（错参数 = 结果莫名其妙），
-      // 这里对"够像"的未知键给一条建议；只提示不阻断，不够像则静默（避免噪音）。
-      const knownArgs = Object.keys(def.inputSchema ?? {});
-      const argHints = renderArgHints(unknownArgHints(a, knownArgs), knownArgs);
-      // 狗食正式统计：记录每次工具调用的成败与子动作（失败静默，不阻断主流程）
-      const t0 = Date.now();
-      const r = await def.handler(a);
-      recordDogfoodUsage({
-        ts: new Date().toISOString(),
-        tool: def.name,
-        action: def.name === 'explore_code'
-          ? (typeof a.action === 'string' ? a.action : undefined)
-          : def.name === 'edit_code'
-            ? (typeof a.op === 'string' ? a.op : undefined)
-            : undefined,
-        ok: !r.isError,
-        ms: Date.now() - t0,
-        err: r.isError ? (r.text ?? '').slice(0, 200) : undefined,
-      });
-      // 响应注入（顺序即拼接顺序）：① 参数纠错（Did you mean）② 陈旧告警家族（BUILD/SOURCE/INDEX，
-      //          **结构化** + 首次全文/后续一行摘要，见 registry/tool_warnings.ts）③ 索引在建标注（首触）
-      //          ④ 行动工具的可信度附注（陈旧断言 → 静默漏报预警）：在 handler **之后**算 ——
-      //          rename_symbols 等工具自己会修陈旧引用，附注必须反映"修完之后"的现状。
-      //          ⑤ watch 产出的未读影响提醒借力本次响应自动送达；⑥ `---WARNINGS---` 机器块（最末）。
-      //    ★ P-F（§16.6）：三个 stale 告警不再各自拼字符串，而是产出 `ToolWarning`，由 `emitWarnings`
-      //      统一分级 + 生成机器块（**追加在文本最末**，好让 `split(marker)[1]` 直接 `JSON.parse`）。
-      //      注入点在 handler 之后、`wrap`/`wrapData` **之外** ⇒ 不经过那两个包装器，
-      //      所以本笔无需改动 plumbing.ts（`wrap` 丢 `data` 与这里的告警通道无关）。
-      const trustNote = def.trustAnnotated ? trustNoteFor(rootArg) : '';
-      const alertNote = await collectPendingAlertText(def.name);
-      const emission = emitWarnings([staleBuildWarning(), staleSourceWarning(), staleIndexWarning(rootArg)]);
-      return textOut(
-        r.text + argHints + emission.text + firstContactNote + trustNote + alertNote + emission.block,
-        r.isError,
-      );
-    });
+    server.registerTool(
+      def.name,
+      { title: def.title, description: def.description, inputSchema: looseInputSchema(def.inputSchema) as unknown as z.ZodRawShape },
+      async (args) => {
+        const r = await invokeTool(def, args as Record<string, unknown>);
+        return textOut(r.text, r.isError);
+      },
+    );
   }
 }
 

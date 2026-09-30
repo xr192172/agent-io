@@ -69,7 +69,8 @@
     "demo": "node scripts/demo.mjs",
     "gen:schema": "node scripts/gen_endpoints_schema.mjs",
     "arch": "depcruise src --config .dependency-cruiser.cjs --ignore-known",
-    "arch:baseline": "depcruise src --config .dependency-cruiser.cjs --baseline --baseline-mode shrink-only"
+    "arch:baseline": "depcruise src --config .dependency-cruiser.cjs --baseline --baseline-mode shrink-only",
+    "tool": "node dist/src/cli.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
