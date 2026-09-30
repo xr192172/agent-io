@@ -48,10 +48,11 @@ import { fileURLToPath } from 'node:url';
 import { ratchetDiff, type RatchetDiff } from '../helpers/ratchet.js';
 import { findCodeMatches } from '../helpers/source_scan.js';
 import { expectGateGoesRed, expectGateStaysGreen } from '../helpers/gate_probe.js';
+// ★ lane 文件位置的**唯一落点**（搬 ⑦ 后 lane 不再同目录，见该 helper 的说明）
+import { laneFiles } from '../helpers/lane_files.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.join(here, '..', '..');
-const LANES_DIR = path.join(REPO, 'src', 'registry', 'lanes');
 const REGISTRY = path.join(here, '..', 'fixtures', 'lane_no_io.json');
 
 export interface LaneNoIoRegistry {
@@ -68,7 +69,7 @@ function readRegistry(): LaneNoIoRegistry {
   return JSON.parse(fs.readFileSync(REGISTRY, 'utf8')) as LaneNoIoRegistry;
 }
 
-/** 目录里的 `.ts` 文件（真去读磁盘，不用代码里的记忆 —— §4.3） */
+/** 目录里的 `.ts` 文件（真去读磁盘，不用代码里的记忆 —— §4.3）。★ 只给**出生证探针**用（它打的是临时目录） */
 export function laneFilesIn(dir: string): string[] {
   return fs
     .readdirSync(dir)
@@ -76,15 +77,17 @@ export function laneFilesIn(dir: string): string[] {
     .sort();
 }
 
+/** 把"某个目录下的 .ts"展开成绝对路径清单（探针用） */
+const tsUnder = (dir: string): string[] => laneFilesIn(dir).map((f) => path.join(dir, f));
+
 /**
  * 扫一个目录下的 `.ts` 文件 → 文件（相对 `repoRoot` 的 posix 路径）→ **IO 命中行数**（仅非零；allow 已排除）。
  * 计**行数**而非出现次数：同一行里写两次 IO 与写一次，是同一处"这里在做 IO"。
  */
-export function scanLaneIo(dir: string, reg: LaneNoIoRegistry, repoRoot: string = REPO): Record<string, number> {
+export function scanLaneIo(paths: readonly string[], reg: LaneNoIoRegistry, repoRoot: string = REPO): Record<string, number> {
   const re = new RegExp(reg.pattern);
   const hits: Record<string, number> = {};
-  for (const f of laneFilesIn(dir)) {
-    const abs = path.join(dir, f);
+  for (const abs of paths) {
     const rel = path.relative(repoRoot, abs).split(path.sep).join('/');
     if (reg.allow && rel in reg.allow) continue; // ★ 带理由的豁免（见登记表 allow）
     const n = findCodeMatches(fs.readFileSync(abs, 'utf8'), re).length;
@@ -102,12 +105,12 @@ function synthReg(pattern: string): LaneNoIoRegistry {
 }
 
 describe('lane 无 IO 门 · 门自身有效（证明它不哑、也不误伤）', () => {
-  it('① 门读到的目录非空、且真读到了内容（防"门读到空 ⇒ 空过"，§4.3）', () => {
-    expect(fs.existsSync(LANES_DIR), `lane 目录不存在：${LANES_DIR}`).toBe(true);
-    const files = laneFilesIn(LANES_DIR);
-    expect(files.length, 'lane 目录里一个 .ts 都没读到 —— 门会静默全绿').toBeGreaterThan(0);
-    for (const f of files) {
-      expect(fs.readFileSync(path.join(LANES_DIR, f), 'utf8').length, `${f} 是空的？`).toBeGreaterThan(0);
+  it('① 6 个 lane 源文件都在且非空（线名派生自 LANE_SOURCES ⇒ 加了第七条线这里自动跟上）', () => {
+    const files = laneFiles();
+    expect(files.length, '一条线都没读到 —— 门会静默全绿').toBeGreaterThan(0);
+    for (const abs of files) {
+      expect(fs.existsSync(abs), `lane 文件不存在：${abs}`).toBe(true);
+      expect(fs.readFileSync(abs, 'utf8').length, `${abs} 是空的？`).toBeGreaterThan(0);
     }
   });
 
@@ -115,7 +118,7 @@ describe('lane 无 IO 门 · 门自身有效（证明它不哑、也不误伤）
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lane-no-io-self-'));
     try {
       fs.writeFileSync(path.join(dir, 'a.ts'), "const s = fs.readFileSync(p, 'utf8');\n", 'utf8');
-      const hits = scanLaneIo(dir, synthReg(readRegistry().pattern), dir);
+      const hits = scanLaneIo(tsUnder(dir), synthReg(readRegistry().pattern), dir);
       expect(hits['a.ts'], '含 readFileSync 的行没被判命中 ⇒ 判据是哑的').toBe(1);
     } finally {
       fs.rmSync(dir, { recursive: true, force: true });
@@ -139,7 +142,7 @@ describe('lane 无 IO 门 · 出生证（注入 ⇒ 变红；对照项 ⇒ 不�
     fs.writeFileSync(path.join(dir, 'lane.ts'), content, 'utf8');
     return dir;
   };
-  const run = (dir: string): RatchetDiff => ratchetDiff(synthReg(pattern).frozen, scanLaneIo(dir, synthReg(pattern), dir));
+  const run = (dir: string): RatchetDiff => ratchetDiff(synthReg(pattern).frozen, scanLaneIo(tsUnder(dir), synthReg(pattern), dir));
 
   it('注入一处 IO（readFileSync）⇒ 门变红', () => {
     const dir = path.join(tmpRoot, 'probe-io');
@@ -200,15 +203,16 @@ describe('lane 无 IO 门 · 判据（存量不拦，新增即红）', () => {
 
   it('lane 文件不 import node:fs（连"引用 fs"都不许 —— IO 只能在 [B]）', () => {
     const offenders: string[] = [];
-    for (const f of laneFilesIn(LANES_DIR)) {
-      const src = fs.readFileSync(path.join(LANES_DIR, f), 'utf8');
-      if (findCodeMatches(src, /from\s+['"]node:fs['"]/).length > 0) offenders.push(f);
+    for (const abs of laneFiles()) {
+      if (findCodeMatches(fs.readFileSync(abs, 'utf8'), /from\s+['"]node:fs['"]/).length > 0) {
+        offenders.push(path.relative(REPO, abs).split(path.sep).join('/'));
+      }
     }
     expect(offenders, `这些 lane 仍直接依赖 node:fs：${offenders.join(', ')}（请把 IO 下沉到 [B]）`).toEqual([]);
   });
 
-  it('★ src/registry/lanes/*.ts 里不出现文件 IO（存量不拦、新增即红）', () => {
-    const actual = scanLaneIo(LANES_DIR, reg);
+  it('★ 各线的 lane 源文件里不出现文件 IO（存量不拦、新增即红）', () => {
+    const actual = scanLaneIo(laneFiles(), reg);
     const d = ratchetDiff(reg.frozen, actual, (f) => fs.existsSync(path.join(REPO, f)));
 
     expect(

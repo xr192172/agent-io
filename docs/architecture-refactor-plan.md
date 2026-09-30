@@ -4077,3 +4077,80 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'
 | `feature_map` 前端文件 | `file_map` 里有 `feature_id==='renderer' && side==='frontend'` | `renderer/` 是本仓**唯一**前端来源，删了 frontend 计数归 **0** | 换成**分区自洽**：`features` 三侧汇总 `=== file_map.length` + `file_map` 的 `feature_id` 都能在 `features` 里找到（这正是"file_map 是唯一真相源"的实际含义，且**与布局无关**） |
 ★ 三条的共同病：**把"当时仓库长什么样"写成了判据**。与 §44.8 的 `similar` 那条同族
   —— 搬迁**合法地**改变仓库形状时，这类门会红，而红得**指不到真问题**。
+
+### 44.9 ★ 搬迁⑥ 收口：`presentation/` 四格齐了（mcp / http / daemon / cli）
+
+| 片 | 内容 | 结果 |
+|---|---|---|
+| ⑥-1 | `src/daemon/`(5) → `presentation/daemon/`；`src/api/contract.ts` → `presentation/http/` | ✅ |
+| ⑥-2 | `server.ts` `server_registry.ts` `registry/{types,plumbing,handlers,tool_warnings}.ts` → `presentation/mcp/`；`tools/serve.ts` → `presentation/http/`；`cli.ts` → `presentation/cli/` | ✅ 243 处说明符 |
+| ⑥-3 | `src/tools/*_cli.ts`(10) → `presentation/cli/`（该目录共 **13 个 CLI 入口**） | ✅ 45 处说明符 |
+
+`src/registry/` 现在**只剩 `lanes/`**（那是 ⑦ 的 `application/<线>/`）。
+
+#### ★★ 架构门"点亮"的正面实证（§44.3 那句话不是修辞）
+搬完 ⑥-3 第一次跑 `npm run arch` 就报：
+```
+error layer-downward-only: src/infrastructure/parse/probe.ts → src/presentation/cli/install_package_cli.ts
+```
+**是真违规**（内核 → CLI = 下层依赖上层）。★ 而 `probe.ts` 自己的注释**早就写好了处置办法**：
+「依赖方向（内核 → 工具 CLI）不理想……若日后要归位，应把这个纯函数抽到更底层的共享模块、两边都引它」
+⇒ 规则一点亮，"日后"就是现在 ⇒ 抽到 `infrastructure/parse/template_compat.ts`（零依赖纯函数），两边都引 ⇒ **0 violations**。
+★ 结论：**这一族没有自写任何"分类进度量具"，进度就是规则命中数** —— 与 §43 的判断一致。
+
+#### ★★ 架构基线的**改名处理**：先证明，再重写（`.inspect/arch_baseline_remap.mjs`）
+搬 ⑥-2 后 `arch` 报 5 errors + 6 stale。逐条打印确认：基线那 7 条环与现测 7 条**节点集合一字不差**，
+只是 `from` 被**重新定基** + 路径改名。⇒ 用映射法判定：**每条现测违规施加逆映射后必须能命中基线**，
+**0 条解释不了的**才允许写基线。
+- ★ 坑 1：判等键若把**循环的 `from`** 算进去 ⇒ 7 条环**全被判成"真新增"**（`from` 取环上任一节点都可能）。
+  ⇒ 循环必须按**节点集合**归一化。
+- ★ 坑 2：`from` 与 `to` **都要过映射**（只映 `from` 会漏掉 `no-orphans` 那条）。
+- ★ 坑 3：`--baseline --baseline-mode shrink-only` **只删不加** ⇒ 把"重新定基"的 4 条环删掉、下一跑全红。
+  **改名场景不能用 shrink-only**；要么用映射法精确替换，要么在**已证明 0 真新增**后用默认模式重写。
+
+#### ★ 路径形态排查（§44.7(3) 的清单，本次 ③⑤ 又各命中一批）
+自动化能覆盖的只有 ①(import) 与 ②(连续串)。本次 **③分段拼** 与 **⑤带 `.js` 后缀** 命中：
+`tests/identity.test.ts`、`tests/registry/warning_noise_gate.test.ts`（③）；
+`tests/cli_invoke_tool.test.ts`、`tests/server_registry.consistency.test.ts`、
+`package.json` 7 处、`scripts/setup.mjs` 2 处（⑤）。
+★ **反例（有意不改）**：`registry_extract` / `arch_layer` / `rename_symbols` / `health-validity` 里的
+`'tools/brickify_cli.ts'` / `'src/server.ts'` —— 它们是**合成夹具与纯函数入参**，不是仓库路径。
+⇒ 纪律：扫出来后**要分清"仓库路径"与"测试夹具里的假路径"**，后者改动反而错。
+
+### 44.10 ★★ 搬迁⑦-1：立 `application/` 层 —— 架构门**连抓两处真违规**，逼着纠正 §44.2 的两处放错层
+
+```
+src/application/
+  types.ts  plumbing.ts  handlers.ts      ← 原 src/presentation/mcp/{types,plumbing,handlers}.ts
+  design/ refactor/ observe/ harvest/ cross/ meta/   各含 index.ts（= 原来的 lanes/<线>.ts）
+```
+`src/registry/` **整个目录消失**。
+
+#### (1) ★★ §44.2 把 `types/plumbing/handlers` 归到 `presentation/mcp/` 是**放错了层**（门逼出来的）
+证据（不是猜）：
+- `handlers.ts` 的 import 只有 `infrastructure/*` / `tools/*` / `storage` —— **零 presentation 依赖**；
+- **6 条 lane（application 层）全都要 import `handlers.ts` 的 `xxxHandler` 与 `plumbing.ts` 的 `wrap/wrapData`**。
+⇒ lane 一进 `application/`，`application → presentation` 立刻成立 ⇒ `layer-downward-only` 会红。
+⇒ 落位改为：**`types`/`plumbing`/`handlers` = 应用层的用例与响应协议 ⇒ `application/`**；
+   `presentation/mcp/` 只留 `server.ts`（引导）+ `server_registry.ts`（注册）。
+★ 这正是 §44.3 那句"**搬迁进度 = 规则命中数**"的价值：**规则替我把"层放错了"这件事指出来了。**
+
+#### (2) ★★ 门抓到的真违规（**不是**路径改名）
+```
+error layer-downward-only: src/application/handlers.ts → src/presentation/daemon/dispatch.ts
+```
+`daemon/{dispatch,client}.ts` 是**出站适配器**（HTTP 打 `127.0.0.1:7600` 的 daemon），不是表现层
+⇒ 搬到 **`src/infrastructure/daemon/`**；`presentation/daemon/` 只留真身
+（`daemon.ts` / `server.ts` / `memory_watch.ts`）。⇒ `layer-downward-only` 归零。
+
+#### (3) ★ 4 个门 + 1 个脚本各自写死 `src/registry/lanes` 目录 ⇒ 目录一没集体红
+收成**唯一落点** `tests/helpers/lane_files.ts`（线名**从 `LANE_SOURCES` 派生**，不另抄名单）；
+`scripts/tool_sources.mjs`（唯一实现，两个门共用）改扫 `presentation/mcp/server_registry.ts`
++ **glob `application/*/index.ts`** —— 依旧"扫目录/按约定"，加第七条线自动跟上。
+★ `lane_no_io` 的 `scanLaneIo` 从"收目录"改成"**收文件清单**"（出生证探针仍打临时目录）。
+★ 另修 2 个测试的**分段拼 / 带后缀**路径（③⑤）+ 1 个夹具的 7 处 lane 路径。
+
+#### (4) ★★ 一条新纪律：**`tsc` 不检查 `tests/`**
+`tsconfig.json` 的 `exclude` 含 `"tests"` ⇒ **`npx tsc` 对测试文件零保证**。
+实测：我给测试加了 `laneTexts()` 却**忘了 import**，`tsc` 照样全绿（vitest 用 esbuild，也不做类型检查）。
+⇒ **测试的正确性只能靠"跑"，不能靠"编译过"。** 这条要写进"验证手段本身也要先被验证"那一条下面。

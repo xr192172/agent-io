@@ -495,7 +495,7 @@ export async function moveSymbol(input: MoveSymbolInput): Promise<MoveSymbolResu
   // ★ 诚实修正（2026-09-28）：上面原写"失败不吞"，但本文件**把返回值丢掉了** ——
   //   `reopenAndResolveAfterWrite` 按契约**不抛**（失败写在自己的 `error` 字段里，其文档明写
   //   "调用方必须把它带进结果"）。本文件没带 ⇒ 这条失败目前**不可见**。
-  //   ★ 本轮未修：修它必须让 [C] 能渲染（`wrap` 丢 data ⇒ 要改 `registry/lanes/refactor.ts`），
+  //   ★ 本轮未修：修它必须让 [C] 能渲染（`wrap` 丢 data ⇒ 要改 `application/refactor/index.ts`），
   //     而该文件本轮被另一执行者锁定（详见提交信息"已知未做"）。
   const _rw = await reopenAndResolveAfterWrite(resolvedRoot, [sourceAbs, toAbs, ...importerEdits.keys()]);
 

@@ -10,6 +10,7 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import { TOOL_DEFS } from '../src/presentation/mcp/server_registry.js';
+import { laneTexts } from './helpers/lane_files.js';
 
 const PKG_ROOT = path.resolve(__dirname, '..');
 const TOOLS_DIR = path.join(PKG_ROOT, 'src/tools');
@@ -95,11 +96,11 @@ const INTERNAL_MODULES: Record<string, { importedBy: string[]; why: string }> = 
     why: '语言概念词典（serve 渲染用）；不是 MCP 工具',
   },
   query_feature: {
-    importedBy: ['src/presentation/mcp/handlers.ts', 'src/presentation/mcp/server_registry.ts'],
+    importedBy: ['src/application/handlers.ts', 'src/presentation/mcp/server_registry.ts'],
     why: '★ 已注册工具 `get_dsl` 的真正实现（handlers 里 `queryFeature(a)`）；注册名 ≠ 文件名',
   },
   update_feature: {
-    importedBy: ['src/presentation/daemon/daemon.ts', 'src/presentation/mcp/handlers.ts', 'src/presentation/mcp/server_registry.ts'],
+    importedBy: ['src/presentation/daemon/daemon.ts', 'src/application/handlers.ts', 'src/presentation/mcp/server_registry.ts'],
     why: '★ 已注册工具 `edit_dsl` 的真正实现；注册名 ≠ 文件名',
   },
   watch_project: {
@@ -210,11 +211,10 @@ describe('server_registry 一致性', () => {
     // 正解（治本）：扫 **lane 文件（`[C]` 层）** —— 若该模块**被任何 lane import**，
     //   它就是这个面里某个工具的**实现**（而不是一个独立 MCP 工具）⇒ 天然豁免。
     //   ★ 这样以后每收一个面都**不用再往 INTERNAL_MODULES 手抄一行**（本仓病根就是手抄清单）。
-    const laneDir = path.join(PKG_ROOT, 'src', 'registry', 'lanes');
-    const laneSource = fs.existsSync(laneDir)
-      ? fs.readdirSync(laneDir).filter((f) => f.endsWith('.ts'))
-          .map((f) => fs.readFileSync(path.join(laneDir, f), 'utf-8')).join('\n')
-      : '';
+    // ★ 2026-09-30（搬 ⑦）：lane 不再同目录 —— 每条线住 `src/application/<线名>/index.ts`。
+    //   这里改用**唯一落点** `tests/helpers/lane_files.ts`（线名从 `LANE_SOURCES` 派生，不另抄名单）；
+    //   原先 `readdirSync('src/registry/lanes')` 在目录消失后直接 ENOENT。
+    const laneSource = laneTexts().map((t) => t.text).join(String.fromCharCode(10));
     const isAbsorbedByFacade = (base: string): boolean =>
       laneSource.includes(`/tools/${base}.js'`) || laneSource.includes(`/tools/${base}.js"`);
 
@@ -277,9 +277,7 @@ describe('INTERNAL_MODULES 登记表自校验（复算，防手抄清单腐烂�
   });
 
   it('★ 被 lane import 的模块**不许**登记（isAbsorbedByFacade 已能自动判定 ⇒ 登记就是冗余手抄）', () => {
-    const laneDir = path.join(PKG_ROOT, 'src/registry/lanes');
-    const laneSource = fs.readdirSync(laneDir).filter((f) => f.endsWith('.ts'))
-      .map((f) => fs.readFileSync(path.join(laneDir, f), 'utf-8')).join('\n');
+    const laneSource = laneTexts().map((t) => t.text).join(String.fromCharCode(10));
     const redundant = entries
       .filter(([name]) => laneSource.includes(`/tools/${name}.js'`) || laneSource.includes(`/tools/${name}.js"`))
       .map(([n]) => n);

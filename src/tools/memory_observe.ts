@@ -185,7 +185,7 @@ export type MemObserveAction = 'status' | 'baseline' | 'track' | 'gc' | 'snapsho
 /**
  * memory_observe 显式入参。
  * ★ §21 规矩①：[B] 收显式参数，不收 `Record<string, unknown>` 的 args 袋子 ——
- *   本函数是被 [C]（`registry/lanes/observe.ts` 里 `wrapData` 回调）直接调用的执行体，
+ *   本函数是被 [C]（`application/observe/index.ts` 里 `wrapData` 回调）直接调用的执行体，
  *   入参三项（target/action/project_dir）**可枚举** ⇒ 无需袋子。
  */
 export interface MemoryObserveInput {

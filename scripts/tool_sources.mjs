@@ -28,11 +28,20 @@ import path from 'node:path';
  */
 export function toolSourceRelPaths(repoRoot) {
   const out = [];
-  if (existsSync(path.join(repoRoot, 'src', 'server_registry.ts'))) out.push('src/server_registry.ts');
-  const lanesDir = path.join(repoRoot, 'src', 'registry', 'lanes');
-  if (existsSync(lanesDir)) {
-    for (const f of readdirSync(lanesDir).filter((n) => n.endsWith('.ts')).sort()) {
-      out.push(`src/registry/lanes/${f}`);
+  // ★ 2026-09-30（搬 ⑥/⑦）：这两处的路径都跟着搬迁变了 ——
+  //   注册表：`src/server_registry.ts` → `src/presentation/mcp/server_registry.ts`
+  //   lane：  `src/registry/lanes/<线>.ts` → `src/application/<线>/index.ts`
+  //   ★ 依旧是**扫目录/按约定 glob**，不写死 6 个文件名（加了第七条线这里自动跟上）。
+  const registry = 'src/presentation/mcp/server_registry.ts';
+  if (existsSync(path.join(repoRoot, ...registry.split('/')))) out.push(registry);
+  const appDir = path.join(repoRoot, 'src', 'application');
+  if (existsSync(appDir)) {
+    for (const lane of readdirSync(appDir, { withFileTypes: true })
+      .filter((e) => e.isDirectory())
+      .map((e) => e.name)
+      .sort()) {
+      const rel = `src/application/${lane}/index.ts`;
+      if (existsSync(path.join(repoRoot, ...rel.split('/')))) out.push(rel);
     }
   }
   return out;

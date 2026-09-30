@@ -8,7 +8,7 @@
  *
  * ★ 单一真相源（2026-09-14 起逐步收紧，2026-09-28 P1c 收口）：
  *   - 工具集合 = server_registry 的 TOOL_DEFS（真实注册，唯一权威）；本模块**不自己维护工具清单**。
- *   - **线的归属** = lane 文件所在（`registry/lanes/<lane>.ts`）→ server_registry 汇总后 `bindLaneOf()` 注入。
+ *   - **线的归属** = lane 文件所在（`application/<线名>/index.ts`）→ server_registry 汇总后 `bindLaneOf()` 注入。
  *     本模块**不再持有归属清单**（P1c 前的 `LANE_OF` 是第二份，必然与 lane 文件漂移）。
  *   - `when` 策展文本 = 本文件 `WHEN_OVERRIDES`（**只是文本**，不含归属）；缺省由注册描述
  *     **自动摘要**（首句，≤60 字）⇒ 新增工具把它放进对应 lane 文件即可露面，**不必改本文件**。
@@ -119,7 +119,7 @@ export const LANE_META: ReadonlyArray<Omit<Lane, 'tools'>> = [
  * P1c（2026-09-28）：此前本文件持有 `LANE_OF`（工具 → { lane, when }）—— 那是**第二份归属清单**，
  *   与 P1b 切出来的 lane 文件必然漂移（一处改了、另一处忘改，只在导航里静默显示成"未归线"）。
  *   现在：
- *     · **归属**（工具属哪条线）＝ 由 lane 文件所在表达（`registry/lanes/<lane>.ts`），
+ *     · **归属**（工具属哪条线）＝ 由 lane 文件所在表达（`application/<线名>/index.ts`），
  *       `server_registry` 汇总时调 `bindLaneOf()` 注入；
  *     · **说明**（when：导航价值高于注册描述时的策展语句）＝ 留在本表，是真正的人工资产。
  *   ⇒ 本文件**不再有任何 lane 字面量**；`validateLanes` 的"未归线 / 陈旧标注"检查改成对着注入表查，
@@ -190,7 +190,7 @@ export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
 // 归属表注入（P1c）：lane 文件的归属由 server_registry 汇总后送进来
 // ─────────────────────────────────────────────────────────────
 
-/** 注入的归属表（null = 还没注入）。模块级单值 —— 与 registry/lanes/meta.ts 的 bindToolDefs 同一模式。 */
+/** 注入的归属表（null = 还没注入）。模块级单值 —— 与 application/meta/index.ts 的 bindToolDefs 同一模式。 */
 let _laneOf: Readonly<Record<string, LaneAssign>> | null = null;
 
 /**
@@ -218,7 +218,7 @@ function resolveAssign(assign?: Readonly<Record<string, LaneAssign>>): Readonly<
   if (assign) return assign;
   if (!_laneOf) {
     throw new Error(
-      'capability_map：归属表未注入。归属由 lane 文件（registry/lanes/*.ts）表达，' +
+      'capability_map：归属表未注入。归属由 lane 文件（application/*/index.ts）表达，' +
         '需在 server_registry 汇总后调用 bindLaneOf()；测试请显式传第二参。',
     );
   }
@@ -299,7 +299,7 @@ export function validateLanes(
   const { lanes, unassigned, stale, staleWhen } = buildLanes(catalog, assign);
 
   for (const t of unassigned) {
-    errors.push(`已注册但未归线：${t.name}（把它加成 registry/lanes/<line>.ts 里对应线数组的一项）`);
+    errors.push(`已注册但未归线：${t.name}（把它加成 application/<line>/index.ts 里对应线数组的一项）`);
   }
   if (stale.length) {
     errors.push(`归属表里的陈旧标注（注册表已无此工具）：${stale.join(', ')}`);

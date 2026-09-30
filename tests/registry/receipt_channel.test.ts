@@ -27,19 +27,19 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { laneTexts } from '../helpers/lane_files.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.join(here, '..', '..'); // here = tests/registry
-const LANES = path.join(REPO, 'src', 'registry', 'lanes');
+
 
 /** ★ 棘轮：已迁到 wrapData 的"回执类"工具（只许增）。写工具一族应逐个加入。 */
 const RECEIPT_TOOLS: readonly string[] = ['edit_code'];
 
 /** 该工具定义所在的 lane 源码 */
 function laneSrc(name: string): string {
-  for (const f of fs.readdirSync(LANES).filter((x) => x.endsWith('.ts'))) {
-    const s = fs.readFileSync(path.join(LANES, f), 'utf8');
-    if (new RegExp("name: '" + name + "',").test(s)) return s;
+  for (const t of laneTexts()) {
+    if (new RegExp("name: '" + name + "',").test(t.text)) return t.text;
   }
   return '';
 }
@@ -54,11 +54,8 @@ describe('P-A 门 · 写工具回执必须走 ---DATA--- 通道', () => {
     //   ⇒ 原判据只看 lanes，会因为"工具搬了家"而**假红**（判据的语料跟不上工具的位置），
     //     而不是因为"真的没有 wrap 工具了" —— 那会把一条有效的自检变成噪音。
     const all = [
-      ...fs
-        .readdirSync(LANES)
-        .filter((x) => x.endsWith('.ts'))
-        .map((x) => fs.readFileSync(path.join(LANES, x), 'utf8')),
-      fs.readFileSync(path.join(REPO, 'src', 'presentation', 'mcp', 'handlers.ts'), 'utf8'),
+      ...laneTexts().map((t) => t.text),
+      fs.readFileSync(path.join(REPO, 'src', 'application', 'handlers.ts'), 'utf8'),
     ].join('\n');
     // 反面：全仓（lanes + handlers）确实同时存在 wrap 与 wrapData —— 证明"两种都抓得到"
     expect(/(?:handler:|=\s*)wrap\s*\(/.test(all), '居然没有用 wrap 的工具？检测口径可疑').toBe(true);

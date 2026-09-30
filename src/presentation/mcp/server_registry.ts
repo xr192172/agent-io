@@ -25,7 +25,7 @@ import { renderGranularityNote } from '../../tools/parse_capability.js';
 import { unknownArgHints, renderArgHints } from '../../tools/arg_suggest.js';
 import { listFileSnapshots, rollbackFileSnapshot } from '../../tools/file_snapshot.js';
 import { recommendObservePoints } from '../../tools/observe_points.js';
-import { collectPendingAlertText, dispatchDslEdit } from '../daemon/dispatch.js';
+import { collectPendingAlertText, dispatchDslEdit } from '../../infrastructure/daemon/dispatch.js';
 import { exportSvg, exportMarkdown } from '../../tools/export.js';
 import { deriveMindMap } from '../../tools/derive_mind_map.js';
 import { queryFeature } from '../../tools/query_feature.js';
@@ -459,8 +459,8 @@ export function trustNoteFor(rawRoot: string | null): string {
 //   （server_registry → lanes → server_registry）。先抽成独立模块，依赖就变成单向。
 // ─────────────────────────────────────────────────────────────
 
-import type { ToolDef } from './types.js';
-import { looseInputSchema, textOut, wrap, wrapData } from './plumbing.js';
+import type { ToolDef } from '../../application/types.js';
+import { looseInputSchema, textOut, wrap, wrapData } from '../../application/plumbing.js';
 import { emitWarnings, type ToolWarning } from './tool_warnings.js';
 import {
   getDslHandler,
@@ -483,7 +483,7 @@ import {
   observeJudgeHandler,
   reconcileChainHandler,
   observeInstrumentHandler,
-} from './handlers.js';
+} from '../../application/handlers.js';
 
 // 对外仍从本模块导出（原 `export interface ToolDef` 的公开 API 位置不变）
 export type { ToolDef };
@@ -495,16 +495,16 @@ export type { ToolDef };
 
 // ─────────────────────────────────────────────────────────────
 // TOOL_DEFS：按能力线拆分（P1b，2026-09-28）
-//   条目逐字搬移到 src/registry/lanes/<lane>.ts；此处只做汇总。
+//   条目逐字搬移到 src/application/<线名>/index.ts；此处只做汇总。
 //   ★ 数组顺序因此改变 —— 顺序**不是**对外契约（MCP 工具按名寻址），
 //     该判断已写明在 tests/server_registry.tool_snapshot.test.ts 的文件头。
 // ─────────────────────────────────────────────────────────────
-import { OBSERVE_TOOLS } from '../../registry/lanes/observe.js';
-import { CROSS_TOOLS } from '../../registry/lanes/cross.js';
-import { DESIGN_TOOLS } from '../../registry/lanes/design.js';
-import { META_TOOLS, bindToolDefs } from '../../registry/lanes/meta.js';
-import { REFACTOR_TOOLS } from '../../registry/lanes/refactor.js';
-import { HARVEST_TOOLS } from '../../registry/lanes/harvest.js';
+import { OBSERVE_TOOLS } from '../../application/observe/index.js';
+import { CROSS_TOOLS } from '../../application/cross/index.js';
+import { DESIGN_TOOLS } from '../../application/design/index.js';
+import { META_TOOLS, bindToolDefs } from '../../application/meta/index.js';
+import { REFACTOR_TOOLS } from '../../application/refactor/index.js';
+import { HARVEST_TOOLS } from '../../application/harvest/index.js';
 import { bindLaneOf, type LaneAssign } from '../../tools/capability_map.js';
 
 /**

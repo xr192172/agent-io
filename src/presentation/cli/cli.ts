@@ -8,7 +8,7 @@
  *   > 「有很多本身它既有 MCP 工具又有 CLI 工具的……把那些 CLI 工具等**全部清除只留 MCP 工具**。
  *   >   然后**后续再通过唯一真相源投影出 CLI 工具**。」
  *
- *   **唯一真相源 = `registry/lanes/*.ts` 的 `ToolDef`** —— MCP 面本来就已从它投影
+ *   **唯一真相源 = `application/<线名>/index.ts` 的 `ToolDef`** —— MCP 面本来就已从它投影
  *   （`LANE_SOURCES` → `TOOL_DEFS` → `registerTool`）。本文件只是**再投影一个面**，不新造机制。
  *
  *   ★ **投影的价值不只是消重，是修一个真缺陷**：实测 5 个手写 CLI
@@ -52,7 +52,7 @@ if (!cmd || cmd === '-h' || cmd === '--help' || cmd === 'help') {
       '  cli <name> --input args.json        入参从文件读',
       "  echo '{...}' | cli <name> -         入参从 stdin 读",
       '',
-      `共 ${TOOL_DEFS.length} 个工具（唯一真相源：registry/lanes/*.ts 的 ToolDef）。`,
+      `共 ${TOOL_DEFS.length} 个工具（唯一真相源：application/<线名>/index.ts 的 ToolDef）。`,
       '',
     ].join('\n'),
   );

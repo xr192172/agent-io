@@ -47,11 +47,12 @@ import { fileURLToPath } from 'node:url';
 import { TOOL_DEFS } from '../../src/presentation/mcp/server_registry.js';
 // ★ 出生证走共享 helper（`tests/helpers/gate_probe.ts`）：注入 → 跑门真正用的判定 → 断言红 → **必定还原**。
 import { expectGateGoesRed, expectGateStaysGreen } from '../helpers/gate_probe.js';
+import { laneTexts } from '../helpers/lane_files.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.join(here, '..', '..');
-const LANES_DIR = path.join(REPO, 'src', 'registry', 'lanes');
-const HANDLERS = path.join(REPO, 'src', 'presentation', 'mcp', 'handlers.ts');
+
+const HANDLERS = path.join(REPO, 'src', 'application', 'handlers.ts');
 const BASELINE = path.join(here, '..', 'fixtures', 'tool_completion_receipt.json');
 
 /** 回执通道：`wrapData` = 可携带结构化产物；`dropData` = `wrap` 丢弃 data；`unresolved` = 无法机械判定 */
@@ -130,10 +131,7 @@ export function judge(channels: Map<string, { channel: Channel; file: string }>,
 }
 
 function readLaneSources(): LaneSource[] {
-  return fs
-    .readdirSync(LANES_DIR)
-    .filter((f) => f.endsWith('.ts'))
-    .map((f) => ({ file: f, text: fs.readFileSync(path.join(LANES_DIR, f), 'utf8') }));
+  return laneTexts().map((t) => ({ file: path.relative(REPO, t.file).split(path.sep).join('/'), text: t.text }));
 }
 
 function readBaseline(): Baseline {

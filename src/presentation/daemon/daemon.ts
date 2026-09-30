@@ -29,7 +29,7 @@ import { setAlertListener, alertsSince, pushAlert } from '../../tools/alert_inbo
 import { saveDSL, getDSL, onDslChange } from '../../storage.js';
 import { updateFeature } from '../../tools/update_feature.js';
 import { createDaemonServer, type DslWriteRequest, type DslWriteResult } from './server.js';
-import { probeDaemon, daemonPort } from './client.js';
+import { probeDaemon, daemonPort } from '../../infrastructure/daemon/client.js';
 import { startMemoryWatch } from './memory_watch.js';
 
 // ─────────────────────────────────────────────────────────────

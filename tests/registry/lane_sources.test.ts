@@ -35,22 +35,19 @@ import { fileURLToPath } from 'node:url';
 import { TOOL_DEFS, LANE_SOURCES, laneOfFromSources } from '../../src/presentation/mcp/server_registry.js';
 import { LANE_IDS, LANE_META } from '../../src/tools/capability_map.js';
 import * as capabilityMap from '../../src/tools/capability_map.js';
+import { LANE_IDS, laneFileOf } from '../helpers/lane_files.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const LANES_DIR = path.join(here, '..', '..', 'src', 'registry', 'lanes');
 
-/** 从磁盘读出 lanes 目录里的文件名（不带扩展名）—— 真去读，不用代码里的记忆 */
-function laneFilesOnDisk(): string[] {
-  return fs
-    .readdirSync(LANES_DIR)
-    .filter((f) => f.endsWith('.ts'))
-    .map((f) => f.slice(0, -'.ts'.length))
-    .sort();
+
+/** 磁盘上真实存在的线名 —— ★ 从**唯一落点**取，且每条都要落到一个真实文件上（读盘确认，不用记忆） */
+function laneIdsOnDisk(): string[] {
+  return LANE_IDS.filter((id) => fs.existsSync(laneFileOf(id))).slice().sort();
 }
 
 describe('lane 来源门：归属只能有一个来源', () => {
   it('① 六个 lane 文件与六条线一一对应（磁盘文件名 = LANE_IDS = 映射里的 id）', () => {
-    const disk = laneFilesOnDisk();
+    const disk = laneIdsOnDisk();
     const ids = LANE_SOURCES.map(([id]) => id);
     expect(disk).toEqual([...LANE_IDS].sort());
     expect([...ids].sort()).toEqual([...LANE_IDS].sort());
@@ -88,10 +85,10 @@ describe('lane 来源门：归属只能有一个来源', () => {
     //   ⇒ 只有把「id → 文件 → 该文件到底导出了哪个数组」跑通，才能抓到这个。
     const mismatched: string[] = [];
     for (const [id, defs] of LANE_SOURCES) {
-      const mod = (await import(/* @vite-ignore */ `../../src/registry/lanes/${id}.js`)) as Record<string, unknown>;
+      const mod = (await import(/* @vite-ignore */ `../../src/application/${id}/index.js`)) as Record<string, unknown>;
       const owner = Object.entries(mod).find(([, v]) => v === defs);
       if (!owner) {
-        mismatched.push(`线 '${id}'：映射里挂的数组不是 ./registry/lanes/${id}.js 导出的任何值`);
+        mismatched.push(`线 '${id}'：映射里挂的数组不是 application/${id}/index.ts 导出的任何值`);
       } else if (!owner[0].endsWith('_TOOLS')) {
         mismatched.push(`线 '${id}'：${id}.ts 导出名 ${owner[0]} 不以 _TOOLS 结尾（惯例：${id.toUpperCase()}_TOOLS）`);
       }

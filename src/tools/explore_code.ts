@@ -25,7 +25,7 @@ import { guidedTour } from './guided_tour.js';
 import { assessLines, buildSplitPreviewDsl } from './monolith.js';
 import { injectReplay } from './inject_replay.js';
 import { runSimulation, resetSimulation } from './simulation.js';
-import { dispatchWatch } from '../presentation/daemon/dispatch.js';
+import { dispatchWatch } from '../infrastructure/daemon/dispatch.js';
 import { buildCallGraph } from './derive_chain.js';
 import { deriveMindMap } from './derive_mind_map.js';
 import fs from 'node:fs';

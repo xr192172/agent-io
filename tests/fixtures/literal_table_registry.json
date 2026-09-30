@@ -4,15 +4,15 @@
     {
       "id": "lane-tool-def-table",
       "intent": "『工具定义表』—— 每个能力线（lane）有一份 ToolDef[] 数组，声明本线的工具清单。6 份数组形状完全一致（description/handler/inputSchema/name/title 为公共 key），是同张数据表被拆分进不同文件的不同副本。authority 指向第一个写入的那份（design.ts）；其余 5 份在 frozen 中登记为存量债务。",
-      "authority": "src/registry/lanes/design.ts",
+      "authority": "src/application/design/index.ts",
       "fingerprintPattern": "description,handler,inputSchema,name,title",
       "frozen": {
-        "src/registry/lanes/cross.ts": 1,
-        "src/registry/lanes/design.ts": 1,
-        "src/registry/lanes/harvest.ts": 1,
-        "src/registry/lanes/meta.ts": 1,
-        "src/registry/lanes/observe.ts": 1,
-        "src/registry/lanes/refactor.ts": 1
+        "src/application/cross/index.ts": 1,
+        "src/application/design/index.ts": 1,
+        "src/application/harvest/index.ts": 1,
+        "src/application/meta/index.ts": 1,
+        "src/application/observe/index.ts": 1,
+        "src/application/refactor/index.ts": 1
       }
     },
     {

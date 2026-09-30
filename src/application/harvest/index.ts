@@ -21,7 +21,7 @@
  *   否则本文件 import 它们就会成环（server_registry → lanes → server_registry）。
  */
 import { z } from 'zod';
-import { requireStr, wrapData } from '../../presentation/mcp/plumbing.js';
+import { requireStr, wrapData } from '../plumbing.js';
 import path from 'node:path';
 import { assembleBricks } from '../../tools/assemble_bricks.js';
 import type { AssembleBricksInput } from '../../tools/assemble_bricks.js';
@@ -38,8 +38,8 @@ import { searchBricks } from '../../tools/search_bricks.js';
 import type { SearchBricksInput } from '../../tools/search_bricks.js';
 import { slimBrick } from '../../tools/slim_brick.js';
 import type { SlimBrickInput } from '../../tools/slim_brick.js';
-import { harvestDecisionsHandler, syncContractsHandler } from '../../presentation/mcp/handlers.js';
-import type { ToolDef } from '../../presentation/mcp/types.js';
+import { harvestDecisionsHandler, syncContractsHandler } from '../handlers.js';
+import type { ToolDef } from '../types.js';
 
 export const HARVEST_TOOLS: ToolDef[] = [
   {

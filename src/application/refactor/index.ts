@@ -25,7 +25,7 @@
  *   `{message, feature}`，压根没有 data）、`render_design` / `observe_judge`（data 与 message 逐字重复）。
  */
 import { z } from 'zod';
-import { requireStr, wrapData } from '../../presentation/mcp/plumbing.js';
+import { requireStr, wrapData } from '../plumbing.js';
 import path from 'node:path';
 import { analyzeHubs, analyzeImpact } from '../../infrastructure/analysis/impact/index.js';
 import type { ImpactChangePoint } from '../../infrastructure/analysis/impact/index.js';
@@ -52,9 +52,9 @@ import { disambiguationItems, suggestDisambiguationsInFile } from '../../tools/s
 import { moveSymbol } from '../../tools/symbol_move.js';
 import { buildRefactorPlan, applyRefactorPlan } from '../../tools/refactor_plan.js';
 import type { RefactorTarget, RefactorPlan } from '../../tools/refactor_plan.js';
-import { diffViewsHandler } from '../../presentation/mcp/handlers.js';
+import { diffViewsHandler } from '../handlers.js';
 import type { ScanBounds } from '../../tools/scan_bounds.js';
-import type { ToolDef } from '../../presentation/mcp/types.js';
+import type { ToolDef } from '../types.js';
 
 // ★ 2026-09-29（面收敛第二批）：本文件原先自带一个**私有** `requireStr` 守卫，本笔把它上提到
 //   `registry/plumbing.ts`（跨 lane 共用）—— 因为 `lanes/harvest.ts` 的新入口 `bricks` 也要用它，

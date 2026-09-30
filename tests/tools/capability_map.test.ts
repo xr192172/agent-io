@@ -121,7 +121,7 @@ describe('目录派生（不依赖真实注册表的部分）', () => {
     // ① 漏归线
     const mini: ToolCatalogEntry[] = [{ name: 'orphan_tool', description: '没归线。' }];
     expect(
-      validateLanes(mini, {}).some((e) => e === '已注册但未归线：orphan_tool（把它加成 registry/lanes/<line>.ts 里对应线数组的一项）'),
+      validateLanes(mini, {}).some((e) => e === '已注册但未归线：orphan_tool（把它加成 application/<line>/index.ts 里对应线数组的一项）'),
     ).toBe(true);
     // ② 陈旧标注：标注里有、注册目录里没有
     const staleErrs = validateLanes([], { ghost_tool: { lane: 'meta' } });

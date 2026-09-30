@@ -13,7 +13,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect, afterAll, beforeEach } from 'vitest';
 import { createDaemonServer } from '../../src/presentation/daemon/server.js';
-import { dispatchWatch, collectPendingAlertText, isDaemonAvailable, invalidateDaemonCache } from '../../src/presentation/daemon/dispatch.js';
+import { dispatchWatch, collectPendingAlertText, isDaemonAvailable, invalidateDaemonCache } from '../../src/infrastructure/daemon/dispatch.js';
 import { watchProjectTool, closeAllActiveWatches } from '../../src/tools/watch_project_tool';
 import { pushAlert, clearAlertInbox, alertsSince, setAlertListener } from '../../src/tools/alert_inbox';
 

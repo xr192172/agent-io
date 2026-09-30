@@ -11,7 +11,7 @@
  *   否则本文件 import 它们就会成环（server_registry → lanes → server_registry）。
  */
 import { z } from 'zod';
-import { wrap, wrapData } from '../../presentation/mcp/plumbing.js';
+import { wrap, wrapData } from '../plumbing.js';
 import path from 'node:path';
 import { compareProjects } from '../../infrastructure/analysis/cross_repo/index.js';
 import { analyzeHealth } from '../../infrastructure/analysis/health/index.js';
@@ -19,7 +19,7 @@ import { VERDICT_LABEL, precheckHybrid } from '../../infrastructure/analysis/hyb
 import { detectReachableRoots } from '../../tools/project_root.js';
 import { extractGoFromFile } from '../../infrastructure/analysis/translate/go_extractor.js';
 import { translateGoTsHandler } from '../../infrastructure/analysis/translate/tool.js';
-import type { ToolDef } from '../../presentation/mcp/types.js';
+import type { ToolDef } from '../types.js';
 
 export const CROSS_TOOLS: ToolDef[] = [
   {
