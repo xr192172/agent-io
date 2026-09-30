@@ -1,9 +1,9 @@
 [
   {
     "type": "cycle",
-    "from": "src/presentation/mcp/handlers.ts",
-    "to": "src/tools/sync_contracts.ts",
-    "unresolvedTo": "../../tools/sync_contracts.js",
+    "from": "src/application/cross/project_root.ts",
+    "to": "src/tools/rename_symbol.ts",
+    "unresolvedTo": "../../tools/rename_symbol.js",
     "dependencyTypes": [
       "local",
       "require"
@@ -14,28 +14,14 @@
     },
     "cycle": [
       {
-        "name": "src/tools/sync_contracts.ts",
+        "name": "src/tools/rename_symbol.ts",
         "dependencyTypes": [
           "local",
           "require"
         ]
       },
       {
-        "name": "src/presentation/mcp/server_registry.ts",
-        "dependencyTypes": [
-          "local",
-          "require"
-        ]
-      },
-      {
-        "name": "src/registry/lanes/design.ts",
-        "dependencyTypes": [
-          "local",
-          "require"
-        ]
-      },
-      {
-        "name": "src/presentation/mcp/handlers.ts",
+        "name": "src/application/cross/project_root.ts",
         "dependencyTypes": [
           "local",
           "require"
@@ -45,9 +31,9 @@
   },
   {
     "type": "cycle",
-    "from": "src/presentation/mcp/server_registry.ts",
-    "to": "src/registry/lanes/harvest.ts",
-    "unresolvedTo": "../../registry/lanes/harvest.js",
+    "from": "src/application/design/index.ts",
+    "to": "src/application/handlers.ts",
+    "unresolvedTo": "../handlers.js",
     "dependencyTypes": [
       "local",
       "require"
@@ -58,14 +44,7 @@
     },
     "cycle": [
       {
-        "name": "src/registry/lanes/harvest.ts",
-        "dependencyTypes": [
-          "local",
-          "require"
-        ]
-      },
-      {
-        "name": "src/presentation/mcp/handlers.ts",
+        "name": "src/application/handlers.ts",
         "dependencyTypes": [
           "local",
           "require"
@@ -80,6 +59,13 @@
       },
       {
         "name": "src/presentation/mcp/server_registry.ts",
+        "dependencyTypes": [
+          "local",
+          "require"
+        ]
+      },
+      {
+        "name": "src/application/design/index.ts",
         "dependencyTypes": [
           "local",
           "require"
@@ -89,9 +75,9 @@
   },
   {
     "type": "cycle",
-    "from": "src/presentation/mcp/server_registry.ts",
-    "to": "src/registry/lanes/meta.ts",
-    "unresolvedTo": "../../registry/lanes/meta.js",
+    "from": "src/application/harvest/index.ts",
+    "to": "src/application/handlers.ts",
+    "unresolvedTo": "../handlers.js",
     "dependencyTypes": [
       "local",
       "require"
@@ -102,14 +88,7 @@
     },
     "cycle": [
       {
-        "name": "src/registry/lanes/meta.ts",
-        "dependencyTypes": [
-          "local",
-          "require"
-        ]
-      },
-      {
-        "name": "src/presentation/mcp/handlers.ts",
+        "name": "src/application/handlers.ts",
         "dependencyTypes": [
           "local",
           "require"
@@ -124,6 +103,13 @@
       },
       {
         "name": "src/presentation/mcp/server_registry.ts",
+        "dependencyTypes": [
+          "local",
+          "require"
+        ]
+      },
+      {
+        "name": "src/application/harvest/index.ts",
         "dependencyTypes": [
           "local",
           "require"
@@ -133,9 +119,9 @@
   },
   {
     "type": "cycle",
-    "from": "src/presentation/mcp/server_registry.ts",
-    "to": "src/registry/lanes/observe.ts",
-    "unresolvedTo": "../../registry/lanes/observe.js",
+    "from": "src/application/meta/index.ts",
+    "to": "src/application/handlers.ts",
+    "unresolvedTo": "../handlers.js",
     "dependencyTypes": [
       "local",
       "require"
@@ -146,14 +132,7 @@
     },
     "cycle": [
       {
-        "name": "src/registry/lanes/observe.ts",
-        "dependencyTypes": [
-          "local",
-          "require"
-        ]
-      },
-      {
-        "name": "src/presentation/mcp/handlers.ts",
+        "name": "src/application/handlers.ts",
         "dependencyTypes": [
           "local",
           "require"
@@ -168,6 +147,13 @@
       },
       {
         "name": "src/presentation/mcp/server_registry.ts",
+        "dependencyTypes": [
+          "local",
+          "require"
+        ]
+      },
+      {
+        "name": "src/application/meta/index.ts",
         "dependencyTypes": [
           "local",
           "require"
@@ -177,9 +163,9 @@
   },
   {
     "type": "cycle",
-    "from": "src/presentation/mcp/server_registry.ts",
-    "to": "src/registry/lanes/refactor.ts",
-    "unresolvedTo": "../../registry/lanes/refactor.js",
+    "from": "src/application/observe/index.ts",
+    "to": "src/application/handlers.ts",
+    "unresolvedTo": "../handlers.js",
     "dependencyTypes": [
       "local",
       "require"
@@ -190,14 +176,7 @@
     },
     "cycle": [
       {
-        "name": "src/registry/lanes/refactor.ts",
-        "dependencyTypes": [
-          "local",
-          "require"
-        ]
-      },
-      {
-        "name": "src/presentation/mcp/handlers.ts",
+        "name": "src/application/handlers.ts",
         "dependencyTypes": [
           "local",
           "require"
@@ -212,6 +191,57 @@
       },
       {
         "name": "src/presentation/mcp/server_registry.ts",
+        "dependencyTypes": [
+          "local",
+          "require"
+        ]
+      },
+      {
+        "name": "src/application/observe/index.ts",
+        "dependencyTypes": [
+          "local",
+          "require"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/application/refactor/index.ts",
+    "to": "src/application/handlers.ts",
+    "unresolvedTo": "../handlers.js",
+    "dependencyTypes": [
+      "local",
+      "require"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular"
+    },
+    "cycle": [
+      {
+        "name": "src/application/handlers.ts",
+        "dependencyTypes": [
+          "local",
+          "require"
+        ]
+      },
+      {
+        "name": "src/tools/sync_contracts.ts",
+        "dependencyTypes": [
+          "local",
+          "require"
+        ]
+      },
+      {
+        "name": "src/presentation/mcp/server_registry.ts",
+        "dependencyTypes": [
+          "local",
+          "require"
+        ]
+      },
+      {
+        "name": "src/application/refactor/index.ts",
         "dependencyTypes": [
           "local",
           "require"
@@ -257,34 +287,13 @@
     ]
   },
   {
-    "type": "cycle",
-    "from": "src/tools/project_root.ts",
-    "to": "src/tools/rename_symbol.ts",
-    "unresolvedTo": "./rename_symbol.js",
-    "dependencyTypes": [
-      "local",
-      "require"
-    ],
+    "type": "module",
+    "from": "src/application/types.ts",
+    "to": "src/application/types.ts",
     "rule": {
-      "severity": "error",
-      "name": "no-circular"
-    },
-    "cycle": [
-      {
-        "name": "src/tools/rename_symbol.ts",
-        "dependencyTypes": [
-          "local",
-          "require"
-        ]
-      },
-      {
-        "name": "src/tools/project_root.ts",
-        "dependencyTypes": [
-          "local",
-          "require"
-        ]
-      }
-    ]
+      "severity": "warn",
+      "name": "no-orphans"
+    }
   },
   {
     "type": "module",
