@@ -29,7 +29,7 @@ import type { BrickManifest } from '../dsl/contract.js';
 import { saveDSL, saveLiveFeature, ensureBaseline, getDSL } from '../storage.js';
 import { mergeDesignLayer } from '../storage_overlay.js';
 import { detectArchLayers } from './layer_detect.js';
-import { parseFileFull, isSupported } from './ts_kernel/index.js';
+import { parseFileFull, isSupported, resolveProjectImport } from './ts_kernel/index.js';
 import type { ParsedImport } from './ts_kernel/index.js';
 import { countLines, assessLines } from './monolith.js';
 import type { Database } from '../db/db.js';
@@ -351,11 +351,28 @@ const RESOLVE_EXTS = ['.ts', '.tsx', '.js', '.jsx', '.py', '.go'];
 export function buildIndex(files: FileEntry[]): {
   byNoExt: Map<string, FileEntry>;
   byDir: Map<string, FileEntry[]>;
+  /** ★ 精确路径 → 条目（`resolveProjectImport` 的 `rels` 视角；2026-09-30 T2） */
+  byRel: Map<string, FileEntry>;
+  /** ★ 精确路径全集（传给内核 `resolveProjectImport` 的唯一入参形态） */
+  rels: Set<string>;
+  /**
+   * ★★ 补全候选用的扩展名 —— **必须是索引里真实存在的那些**，否则会静默丢解析（2026-09-30 T2）。
+   *
+   * 为什么（这条是踩出来的）：本索引的 `byNoExt` 是**扩展名无关**的（键 = 去掉扩展名的路径 ⇒
+   * 任何扩展名都能命中）；而内核 `resolveProjectImport` 走的是 `completionCandidates`，
+   * 它**逐个枚举** `base + ext`。若只传旧的窄表 `RESOLVE_EXTS`（`.ts/.tsx/.js/.jsx/.py/.go`），
+   * 那么 `.hs` / `.scala` / `.jl` 之类的文件**永远补不出来** ⇒ 解析静默变空（实测：
+   * `hroot/Use.hs` 的 `import Lib` 从「命中 `hroot/Lib.hs`」退化成「空」）。
+   * ⇒ 顺序仍是 `RESOLVE_EXTS` **优先**（那是同名不同扩展名时的选择优先级，与 `extRank` 同源），
+   *   其余扩展名按索引实际出现补在后面。
+   */
+  exts: string[];
   /** 同名不同扩展名的碰撞记录（被丢弃的一方），用于结果可见性 */
   collisions: string[];
 } {
   const byNoExt = new Map<string, FileEntry>();
   const byDir = new Map<string, FileEntry[]>();
+  const byRel = new Map<string, FileEntry>();
   const collisions: string[] = [];
   const extRank = (f: FileEntry): number => {
     const i = RESOLVE_EXTS.indexOf(f.ext);
@@ -379,6 +396,7 @@ export function buildIndex(files: FileEntry[]): {
   for (const f of files) {
     const noExt = f.rel.slice(0, f.rel.length - f.ext.length);
     setNoExt(noExt, f);
+    byRel.set(f.rel, f);
     const list = byDir.get(f.dir) || [];
     list.push(f);
     byDir.set(f.dir, list);
@@ -388,78 +406,72 @@ export function buildIndex(files: FileEntry[]): {
       setNoExt(f.dir, f);
     }
   }
-  return { byNoExt, byDir, collisions };
+  return {
+    byNoExt,
+    byDir,
+    byRel,
+    rels: new Set(byRel.keys()),
+    // ★ RESOLVE_EXTS 优先（同名不同扩展名的选择优先级），其余按索引实际出现补在后面
+    exts: [...RESOLVE_EXTS, ...new Set(files.map((f) => f.ext).filter((e) => !RESOLVE_EXTS.includes(e)))],
+    collisions,
+  };
 }
 
 /**
- * 把一条 import 解析为项目内部文件列表（0..n）
- * - relative：按导入者目录解析，补扩展名 / index
- * - Go package：module 前缀剥离 → 包目录下全部文件
- * - Python 点分模块 → 点转斜杠，先试项目根再试导入者目录
+ * 把一条 import 解析为项目内部文件列表（0..n）。
+ *
+ * ★★ 2026-09-30（T2 内化）：**四层规则已交给内核唯一实现** `resolveProjectImport`
+ *   （relative / python-dot / dotted / bare-name），本函数只剩两处**它专有**的东西：
+ *    ① **Go 包 = 多目标**（该目录下**全部**文件）—— 内核的 `go-module` 层只给**单目标代表**
+ *       （那是给 health/impact 那种"唯一定位"用的）⇒ 多文件展开留在本地；
+ *    ② **目录形式兜底**：`import './dir'` → 该目录下 `index|__init__|mod` 的**正则**匹配
+ *       （扩展名不限）；内核的 `INDEX_FILES` 是**固定清单**（`index.{ts,tsx,js,jsx}`），
+ *       覆盖不到 `__init__.py` / `mod.go` ⇒ 这条**策略**留在本地。
+ *
+ * 改造前这里曾有 **~45 行**自己实现的分派（含 Python 前导点的正则与注释、点分→路径、
+ * 单段同名），与 `health` / `impact` 各一份**互不一致**（同一夹具三个答案）——
+ * 那正是本仓 §38 收口的三份之一。现在只剩"薄壳 + 两处专有策略"。
+ *
+ * ★ 已知的行为**放宽**（都是"更能解析"，不是丢解析；实测差集见提交信息）：
+ *    · 点分模块（`app.Helper`）现在试**导入者上方每一层**作包根 ⇒ Maven 布局
+ *      （`src/main/java/app/Use.java`）也能命中；旧实现只试「项目根 + 导入者同层」；
+ *    · 单段裸名（`Helper`）现在多一个**项目根**兜底；
+ *    · `kind==='relative'` 但 source 是点分形式（Python `from pkg.mod import`）以前**早退成空**，
+ *      现在走 dotted 层能解析到。
  */
 export function resolveImport(
   imp: ParsedImport,
   importer: FileEntry,
-  index: { byNoExt: Map<string, FileEntry>; byDir: Map<string, FileEntry[]> },
+  index: { byNoExt: Map<string, FileEntry>; byDir: Map<string, FileEntry[]>; byRel: Map<string, FileEntry>; rels: Set<string>; exts: string[] },
   goModules: GoModule[],
 ): FileEntry[] {
-  const { byNoExt, byDir } = index;
+  const { byDir, byRel, rels, exts } = index;
 
-  if (imp.kind === 'relative') {
-    let target: string;
-    // [^./] 而非 [^/]：'../types.js' 在回溯下会被误判成 Python 前导点形式
-    // （`\.` 吃一个点、`[^/]` 吃第二个点）→ 走错分支解析成 types/js。
-    // 排除点号后：'..' 纯点走第一支，'.pkg'/'..pkg' 走 Python 支，'./x'/'../x' 走 TS 支。
-    if (/^\.+$/.test(imp.source) || /^\.+[^./]/.test(imp.source)) {
-      // Python 前导点形式：'.'=当前目录 '..'=上一级，后续点分模块转路径
-      const m = imp.source.match(/^(\.+)(.*)$/);
-      const dots = m ? m[1] : '.';
-      const rest = m ? m[2] : '';
-      let base = importer.dir;
-      for (let i = 1; i < dots.length; i++) base = path.posix.dirname(base);
-      target = rest ? path.posix.join(base, rest.split('.').join('/')) : base;
-    } else {
-      target = path.posix.normalize(path.posix.join(importer.dir, imp.source));
-    }
-    const hit = byNoExt.get(target);
-    if (hit) return [hit];
-    for (const ext of RESOLVE_EXTS) {
-      const cand = byNoExt.get(target.endsWith(ext) ? target.slice(0, -ext.length) : target);
-      if (cand) return [cand];
-    }
-    // 目录形式（import './dir'）
-    const dirFiles = byDir.get(target);
-    if (dirFiles && dirFiles.length > 0) {
-      const init = dirFiles.find((f) => /(^|\/)(index|__init__|mod)\.[^.]+$/.test(f.rel));
-      return [init || dirFiles[0]];
-    }
-    return [];
-  }
-
-  // package 导入：遍历全部 go.mod（已按 module 长度降序，最长前缀优先）
+  // ① Go 包：**多目标**（module 前缀剥离 → 包目录下全部文件）。最长前缀优先（goModules 已按长度降序）
   for (const gm of goModules) {
     if (imp.source === gm.module || imp.source.startsWith(gm.module + '/')) {
       const rest = imp.source.slice(gm.module.length).replace(/^\//, '');
-      // 目标目录 = go.mod 所在目录 + 剥离 module 前缀后的子路径
       const dir = gm.dir ? (rest ? `${gm.dir}/${rest}` : gm.dir) : rest;
       const dirFiles = byDir.get(dir);
       if (dirFiles && dirFiles.length > 0) return [...dirFiles];
     }
   }
 
-  // Python 点分模块 / 其他点分形式
-  if (/^[\w][\w.]*$/.test(imp.source) && imp.source.includes('.')) {
-    const asPath = imp.source.split('.').join('/');
-    for (const base of ['', importer.dir]) {
-      const target = base ? path.posix.join(base, asPath) : asPath;
-      const hit = byNoExt.get(target);
-      if (hit) return [hit];
-    }
+  // ② 四层解析规则：内核唯一实现（不传 goModules —— 那层只要单目标代表，见上）
+  const hit = resolveProjectImport(importer.rel, imp.source, rels, { exts });
+  if (hit.rel) {
+    const entry = byRel.get(hit.rel);
+    if (entry) return [entry];
   }
-  // 单段包名：试导入者同目录（Python 同包 import sibling 常见）
-  if (/^[\w]+$/.test(imp.source)) {
-    const hit = byNoExt.get(path.posix.join(importer.dir, imp.source));
-    if (hit) return [hit];
+
+  // ③ 目录形式兜底（本仓专有策略：`index|__init__|mod` **正则**，扩展名不限）
+  if (imp.kind === 'relative' && !/^\.+$/.test(imp.source) && !/^\.+[^./]/.test(imp.source)) {
+    const target = path.posix.normalize(path.posix.join(importer.dir, imp.source));
+    const dirFiles = byDir.get(target);
+    if (dirFiles && dirFiles.length > 0) {
+      const init = dirFiles.find((f) => /(^|\/)(index|__init__|mod)\.[^.]+$/.test(f.rel));
+      return [init || dirFiles[0]];
+    }
   }
   return [];
 }
