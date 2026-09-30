@@ -32,8 +32,8 @@
  *   diff             → diff_features    { feature_a, feature_b }
  */
 
-import { getDSLByView, listFeatures as listStoredFeatures } from '../storage.js';
-import type { DSLView } from '../storage.js';
+import { getDSLByView, listFeatures as listStoredFeatures } from '../infrastructure/storage.js';
+import type { DSLView } from '../infrastructure/storage.js';
 import { listAnnotations } from './annotation_tools.js';
 import { listApprovals, getApprovalHistory } from './approval.js';
 import { listSnapshots } from './snapshot.js';

@@ -19,7 +19,7 @@
  *   （{error:{code:type}} / {panic:true} 等形态，取第一个命中 decl.condition 的）。
  */
 
-import { getDSL } from '../storage.js';
+import { getDSL } from '../infrastructure/storage.js';
 import { classifyError, pickBranch, formatValueShort, buildPresetValue, validateValueSchema } from '../infrastructure/render/anim_core.js';
 import type { AnimationError, AnimationFlow, AnimationValueSchema } from '../domain/types.js';
 

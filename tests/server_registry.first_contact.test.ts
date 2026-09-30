@@ -17,7 +17,7 @@
  *   - `noAutoFresh` 工具不触发 ⇒ 由 tests/server_registry.auto_fresh.test.ts
  *     第 3 项覆盖（index_integrity 于无索引项目不建库），此处不重复。
  */
-import { DATA_DIR_NAME } from '../src/data_dir.js';
+import { DATA_DIR_NAME } from '../src/infrastructure/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

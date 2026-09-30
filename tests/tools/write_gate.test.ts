@@ -7,7 +7,7 @@
  *   - `writeSourceFiles`：无索引 ⇒ `mode='skipped'` 且**不建库**；有索引 ⇒ 写穿 + 重开引用方 + 快照
  *   - `snapshotAndRecordSelfWrite`：同步工具路径 ⇒ `mode='deferred'` + 登记可见
  */
-import { DATA_DIR_NAME } from '../../src/data_dir.js';
+import { DATA_DIR_NAME } from '../../src/infrastructure/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

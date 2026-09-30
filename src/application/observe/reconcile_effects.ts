@@ -25,7 +25,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import readline from 'node:readline';
-import { getDSL, saveDSL } from '../../storage.js';
+import { getDSL, saveDSL } from '../../infrastructure/storage.js';
 import type { EffectTarget } from '../../domain/contract.js';
 
 export interface ReconcileEffectsInput {

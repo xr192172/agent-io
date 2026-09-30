@@ -16,7 +16,7 @@
  *   - ★ 冷启上限截断 → state='partial' + truncated=true（诚实，不假装完整）
  *   - 目录下没有可索引文件 → 查询层仍抛可行动错误
  */
-import { DATA_DIR_NAME } from '../../src/data_dir.js';
+import { DATA_DIR_NAME } from '../../src/infrastructure/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

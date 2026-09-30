@@ -7,7 +7,7 @@
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
-import { clearAllFeatures, saveDSL, getDSL, getLiveDslFile } from '../../src/storage.js';
+import { clearAllFeatures, saveDSL, getDSL, getLiveDslFile } from '../../src/infrastructure/storage.js';
 import { injectReplay } from '../../src/tools/inject_replay.js';
 import { updateNode } from '../../src/tools/node_ops.js';
 import type { DesignDSL } from '../../src/domain/types.js';

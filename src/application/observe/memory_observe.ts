@@ -15,7 +15,7 @@
  * CDP 传输：Node >= 22 用全局 WebSocket；更老运行时回退动态 import('ws')。
  * 目标解析：target 直接给目标进程的 --inspect 端口；可用 memory_observe(action=targets) 自动列出。
  */
-import { DATA_DIR_NAME } from '../../data_dir.js';
+import { DATA_DIR_NAME } from '../../infrastructure/data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFile } from 'node:child_process';

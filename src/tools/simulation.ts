@@ -7,7 +7,7 @@
  * - reset_simulation: 重置到初始状态
  */
 
-import { getDSL } from '../storage.js';
+import { getDSL } from '../infrastructure/storage.js';
 import { SimulationEngine } from '../infrastructure/render/simulation_engine.js';
 import type { Simulation, SimulationTrace } from '../domain/types.js';
 

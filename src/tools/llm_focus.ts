@@ -13,11 +13,11 @@
  *   环境变量覆盖：LLM_API_KEY / LLM_MODEL / LLM_BASE_URL
  */
 
-import { DATA_DIR_NAME } from '../data_dir.js';
+import { DATA_DIR_NAME } from '../infrastructure/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import * as storage from '../storage.js';
+import * as storage from '../infrastructure/storage.js';
 
 // ─────────────────────────────────────────────────────────────
 // 配置

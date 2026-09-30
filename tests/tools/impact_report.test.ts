@@ -10,7 +10,7 @@
  *   - watch 集成（真实 fs.watch）：impact_on_change=true → 改文件 → status 带 alerts 摘要行
  *     → action=impact 取回全文（含波及文件）
  */
-import { DATA_DIR_NAME } from '../../src/data_dir.js';
+import { DATA_DIR_NAME } from '../../src/infrastructure/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

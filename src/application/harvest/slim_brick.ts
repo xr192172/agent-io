@@ -32,7 +32,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { getStorageRoot } from '../../storage.js';
+import { getStorageRoot } from '../../infrastructure/storage.js';
 import { resolveGoThirdParty } from '../../tools/go_mod.js';
 import { resolveNpmThirdParty } from '../../tools/npm_mod.js';
 import { parseGoImportQualifiers } from '../../infrastructure/graph/dead_deps.js';

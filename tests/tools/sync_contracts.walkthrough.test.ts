@@ -4,7 +4,7 @@
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { syncContracts } from '../../src/tools/sync_contracts';
-import { saveDSL, getDSL, clearAllFeatures, deleteFeature } from '../../src/storage';
+import { saveDSL, getDSL, clearAllFeatures, deleteFeature } from '../../src/infrastructure/storage.js';
 import type { DesignDSL } from '../../src/domain/types';
 
 function makeDSL(feature: string): DesignDSL {

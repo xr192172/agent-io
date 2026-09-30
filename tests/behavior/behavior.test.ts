@@ -8,7 +8,7 @@
  *   - 基线存取：baselinePathFor 路径规则；verify 无基线 → 报错
  */
 
-import { DATA_DIR_NAME } from '../../src/data_dir.js';
+import { DATA_DIR_NAME } from '../../src/infrastructure/data_dir.js';
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';

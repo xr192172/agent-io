@@ -12,7 +12,7 @@
  *     prewarmKernel 后 ⇒ 与 async 版同口径（改名 → 引用方重开重解析 → 再写穿全 skipped）；
  *     remove_dead_imports 组合：预热后 indexWriteThrough 直连 synced。
  */
-import { DATA_DIR_NAME } from '../../src/data_dir.js';
+import { DATA_DIR_NAME } from '../../src/infrastructure/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -25,7 +25,7 @@ import { importProject } from '../../src/infrastructure/graph/import_project.js'
 import { scaffold } from '../../src/application/design/scaffold.js';
 import { removeDeadImports } from '../../src/application/refactor/remove_dead_imports.js';
 import { prewarmKernel, _reset as resetKernel } from '../../src/infrastructure/parse';
-import { saveDSL } from '../../src/storage';
+import { saveDSL } from '../../src/infrastructure/storage.js';
 
 const roots: string[] = [];
 afterAll(() => {

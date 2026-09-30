@@ -12,7 +12,7 @@
  *   5. LLM 调用 resolve_annotation 关闭已解决的标注
  */
 
-import { getDSL, saveDSL } from '../storage.js';
+import { getDSL, saveDSL } from '../infrastructure/storage.js';
 
 // ─────────────────────────────────────────────────────────────
 // list_annotations：列出所有标注

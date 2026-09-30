@@ -28,7 +28,7 @@ import { importProject } from '../dist/src/tools/import_project.js';
 import { deriveMindMap } from '../dist/src/tools/derive_mind_map.js';
 import { deriveFeatureTree } from '../dist/src/tools/derive_feature_tree.js';
 import { openDb } from '../dist/src/db/db.js';
-import { getPackageRoot, getStorageRoot } from '../dist/src/storage.js';
+import { getPackageRoot, getStorageRoot } from '../dist/src/infrastructure/storage.js';
 
 const args = process.argv.slice(2);
 const feature = args.find((a) => !a.startsWith('--')) || 'agent-io';

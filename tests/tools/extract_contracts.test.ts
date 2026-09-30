@@ -10,7 +10,7 @@
  *   - confidence 封顶 0.7（静态判定无 runtime 证据）
  *   - dry-run（write_dsl=false）不写 DSL；feature 写回 SemanticFile.contract
  */
-import { DATA_DIR_NAME } from '../../src/data_dir.js';
+import { DATA_DIR_NAME } from '../../src/infrastructure/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -18,7 +18,7 @@ import { describe, it, expect, afterAll, beforeEach, afterEach } from 'vitest';
 import { importProject } from '../../src/infrastructure/graph/import_project.js';
 import { extractContracts } from '../../src/application/harvest/extract_contracts.js';
 import { openDb } from '../../src/infrastructure/index/db';
-import { getDSL, saveDSL, clearAllFeatures, getLiveDslFile } from '../../src/storage';
+import { getDSL, saveDSL, clearAllFeatures, getLiveDslFile } from '../../src/infrastructure/storage.js';
 import type { DesignDSL } from '../../src/domain/types';
 
 const roots: string[] = [];

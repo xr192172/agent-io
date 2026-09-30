@@ -12,7 +12,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createFeature } from '../../src/tools/feature_ops';
-import { clearAllFeatures, getDSL, saveLiveFeature, getDSLByView, getLiveFeature } from '../../src/storage';
+import { clearAllFeatures, getDSL, saveLiveFeature, getDSLByView, getLiveFeature } from '../../src/infrastructure/storage.js';
 import { queryFeature } from '../../src/tools/query_feature';
 import { TOOL_DEFS } from '../../src/presentation/mcp/server_registry.js';
 

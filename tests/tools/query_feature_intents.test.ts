@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { saveDSL } from '../../src/storage.js';
+import { saveDSL } from '../../src/infrastructure/storage.js';
 import { queryFeature } from '../../src/tools/query_feature.js';
 
 describe('get_dsl 定向读端：goals / edge_intents（overlay 读侧）', () => {

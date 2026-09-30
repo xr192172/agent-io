@@ -25,13 +25,13 @@ import {
   captureProbe,
   loadTSEvents,
 } from '../../src/infrastructure/analysis/observe/probe.js';
-import { getDataHome } from '../../src/storage.js';
+import { getDataHome } from '../../src/infrastructure/storage.js';
 
 const PROJECT_ROOT = path.resolve(import.meta.dirname, '..', '..');
 
 describe('Observe 狗食插桩 · 全自动插桩覆盖自身写盘路径', () => {
   it('storage.ts 被全自动插桩注入 enter/io 探针点（dry-run）', async () => {
-    const file = path.join(PROJECT_ROOT, 'src', 'storage.ts');
+    const file = path.join(PROJECT_ROOT, 'src', 'infrastructure', 'storage.ts');
     expect(fs.existsSync(file)).toBe(true);
     const res = await instrumentFile(file, { projectRoot: PROJECT_ROOT, write: false });
     expect(res.error).toBeUndefined();
@@ -47,7 +47,7 @@ describe('Observe 狗食插桩 · 全自动插桩覆盖自身写盘路径', () =
   });
 
   it('★ 探针 import 说明符指向真实存在的编译产物（防「搬目录后静默指错」）', async () => {
-    const file = path.join(PROJECT_ROOT, 'src', 'storage.ts');
+    const file = path.join(PROJECT_ROOT, 'src', 'infrastructure', 'storage.ts');
     const res = await instrumentFile(file, { projectRoot: PROJECT_ROOT, write: false });
     expect(res.probeImport, 'instrumentFile 应回报本次用的探针 import').toBeTruthy();
 
@@ -71,7 +71,7 @@ describe('Observe 狗食插桩 · 全自动插桩覆盖自身写盘路径', () =
   });
 
   it('dry-run 不写盘：源文件保持原样', async () => {
-    const file = path.join(PROJECT_ROOT, 'src', 'storage.ts');
+    const file = path.join(PROJECT_ROOT, 'src', 'infrastructure', 'storage.ts');
     const before = fs.readFileSync(file, 'utf-8');
     await instrumentFile(file, { projectRoot: PROJECT_ROOT, write: false });
     const after = fs.readFileSync(file, 'utf-8');

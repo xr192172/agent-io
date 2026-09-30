@@ -18,7 +18,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { getDSL, saveDSL } from '../storage.js';
+import { getDSL, saveDSL } from '../infrastructure/storage.js';
 import {
   detectArchLayers,
   detectLayerViolations,

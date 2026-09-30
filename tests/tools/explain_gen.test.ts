@@ -8,7 +8,7 @@
  *   - 空/损坏文件 → 返回空对象（不抛错）
  *   - 校验三档字段缺失时丢弃该条
  */
-import { DATA_DIR_NAME } from '../../src/data_dir.js';
+import { DATA_DIR_NAME } from '../../src/infrastructure/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

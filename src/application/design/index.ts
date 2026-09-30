@@ -27,7 +27,7 @@ import { z } from 'zod';
 import { requireStr, wrapData } from '../plumbing.js';
 import path from 'node:path';
 import { getProjectCacheDb } from '../../infrastructure/index/db.js';
-import { getDSL } from '../../storage.js';
+import { getDSL } from '../../infrastructure/storage.js';
 import { backfillScaffold } from './backfill.js';
 import { proposeChange } from './code_workbench.js';
 import { importProject } from '../../infrastructure/graph/import_project.js';

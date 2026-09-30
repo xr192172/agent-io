@@ -26,7 +26,7 @@
  * 纯计算 + 一次 dry-run 插桩；不写被插桩项目的源码，只在自己的 `.agent-io/` 下写清单。
  */
 
-import { DATA_DIR_NAME } from '../../data_dir.js';
+import { DATA_DIR_NAME } from '../../infrastructure/data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { Database } from '../../infrastructure/index/db.js';

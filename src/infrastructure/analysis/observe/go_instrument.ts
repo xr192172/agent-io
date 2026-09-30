@@ -10,7 +10,7 @@
  * 即需在其 go.mod 加 replace/require 指向 go-observe（插桩本身不校验，编译时见）。
  */
 
-import { DATA_DIR_NAME } from '../../../data_dir.js';
+import { DATA_DIR_NAME } from '../../data_dir.js';
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';

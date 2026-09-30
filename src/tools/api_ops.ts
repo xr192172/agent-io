@@ -2,7 +2,7 @@
  * 预期 API 操作：add_expected_api / update_expected_api / delete_expected_api / set_node_semantic
  */
 
-import { getDSL, saveDSL } from '../storage.js';
+import { getDSL, saveDSL } from '../infrastructure/storage.js';
 import type { EditResult } from './edit_result.js';
 
 // ─────────────────────────────────────────────────────────────

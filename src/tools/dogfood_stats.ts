@@ -16,11 +16,11 @@
  *   - 成本：每次调用一次 io append，可忽略
  *   - 只加不减：不提供删除/清空入口（原始日志两层分离：raw 全量 + LLM 聚合）
  */
-import { DATA_DIR_NAME } from '../data_dir.js';
+import { DATA_DIR_NAME } from '../infrastructure/data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { getDataHome } from '../storage.js';
+import { getDataHome } from '../infrastructure/storage.js';
 
 export interface DogfoodUsage {
   ts: string;

@@ -15,10 +15,13 @@ import { DATA_DIR_NAME, PKG_NAME } from './data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { DesignDSL } from './domain/types.js';
+import type { DesignDSL } from '../domain/types.js';
 
 /**
- * agent-io 包根：从模块自身位置（dist/src/storage.js 或 src/storage.ts）
+ * agent-io 包根：从模块自身位置**按路标上溯**（找 `package.json` 且 `name === PKG_NAME` 的目录）。
+ * ★ 2026-09-30：本文件从 `src/storage.ts` 搬到 `src/infrastructure/storage.ts`（深了一层）——
+ *   **实现无需改**，因为它本来就按路标找、而不是数层级。
+ *   （对照：同一天 `slim_brick.ts` / `daemon.ts` 用的是「上溯 N 级」⇒ 各翻车一次，见台账 §44.11）
  * 向上找最近的 package.json 且 name==="agent-io" 的目录。
  *
  * 与 cwd 无关：MCP server / serve / daemon 可能由任意 cwd 拉起

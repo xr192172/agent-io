@@ -10,7 +10,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { clearAllFeatures, saveDSL, getDSL, getLiveDslFile } from '../../src/storage.js';
+import { clearAllFeatures, saveDSL, getDSL, getLiveDslFile } from '../../src/infrastructure/storage.js';
 import { reconcileEffects } from '../../src/application/observe/reconcile_effects.js';
 import type { DesignDSL } from '../../src/domain/types.js';
 

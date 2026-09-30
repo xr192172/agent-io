@@ -23,7 +23,7 @@ import {
   clearAllFeatures,
   listArchiveEntries,
   getArchiveEntryByPath,
-} from '../../src/storage';
+} from '../../src/infrastructure/storage.js';
 import type { DesignDSL, SemanticFile, Symbol, NodeDecision } from '../../src/domain/types';
 
 // ──────── 工厂 ────────

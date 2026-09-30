@@ -17,10 +17,10 @@
  * 数据源零新增：纯 JSON 文件读写，不依赖 cache.db / DSL，可独立运行。
  */
 
-import { DATA_DIR_NAME } from '../data_dir.js';
+import { DATA_DIR_NAME } from '../infrastructure/data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
-import { getDataHome } from '../storage.js';
+import { getDataHome } from '../infrastructure/storage.js';
 
 // ─────────────────────────────────────────────────────────────
 // 类型定义

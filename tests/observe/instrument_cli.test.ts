@@ -5,7 +5,7 @@
  *   2. 真实写盘后源码含探针标记。
  *   3. 重跑幂等：已插桩文件跳过。
  */
-import { DATA_DIR_NAME } from '../../src/data_dir.js';
+import { DATA_DIR_NAME } from '../../src/infrastructure/data_dir.js';
 import { describe, it, expect, beforeEach } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';

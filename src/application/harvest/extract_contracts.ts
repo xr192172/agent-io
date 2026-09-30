@@ -23,10 +23,10 @@
  * runtime 字段本阶段不填——静态判定的 confidence 自然受 schema 语义封顶 0.7（由调用方执行）。
  */
 
-import { DATA_DIR_NAME } from '../../data_dir.js';
+import { DATA_DIR_NAME } from '../../infrastructure/data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
-import { getDSL, saveDSL } from '../../storage.js';
+import { getDSL, saveDSL } from '../../infrastructure/storage.js';
 import { getProjectCacheDb, type Database } from '../../infrastructure/index/db.js';
 import { buildImportGraph, type ImportGraph } from '../../infrastructure/graph/import_graph.js';
 import type {

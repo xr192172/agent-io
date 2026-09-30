@@ -9,7 +9,7 @@
  *   - Go：fmt=标准库 / github.com/x/y=三方 / example.com 内部包走闭包不算外部
  *   - 种子不在缓存 → 警告；feature 不存在 → 抛错
  */
-import { DATA_DIR_NAME } from '../../src/data_dir.js';
+import { DATA_DIR_NAME } from '../../src/infrastructure/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

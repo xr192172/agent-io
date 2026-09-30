@@ -21,7 +21,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { DesignDSL, SemanticFile, ExpectedApi } from '../../domain/types.js';
-import { getDSL, saveDSL } from '../../storage.js';
+import { getDSL, saveDSL } from '../../infrastructure/storage.js';
 import { parseFileSymbols, isSupportedFile } from '../../tools/ast_parser.js';
 
 export interface BackfillInput {

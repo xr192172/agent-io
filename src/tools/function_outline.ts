@@ -9,10 +9,10 @@
  * 缓存定位顺序（复用 overview.tryDeriveFeatureTree 同款）：
  *   import_cache_<feature>.db（dataHome） > <source_root>/.agent-io/cache.db > cwd/.agent-io/cache.db
  */
-import { DATA_DIR_NAME } from '../data_dir.js';
+import { DATA_DIR_NAME } from '../infrastructure/data_dir.js';
 import path from 'node:path';
 import fs from 'node:fs';
-import { getStorageRoot, getDSL } from '../storage.js';
+import { getStorageRoot, getDSL } from '../infrastructure/storage.js';
 import { openDb, type Database } from '../infrastructure/index/db.js';
 
 export interface FuncCallRef {

@@ -4193,3 +4193,49 @@ error layer-downward-only: src/application/handlers.ts → src/presentation/daem
 `acceptance_decision_sync` 的节点 id（由路径派生，路径改了 id 没跟上）；
 `feature_map` 的 derive 家族断言（原点名 `feature_id==='tools'` ⇒ 改跨 feature 汇总）。
 ★ 并记录一条量具边界：**`repeatedFamilies` 按 feature 内的名字前缀算 ⇒ 家族跨目录会被削弱**。
+
+### 44.12 ★ 收尾刀：`src/` 根清零 + 搬迁工具链补强（含"用第一次就抓出自己两个缺口"）
+
+```
+src/  application/  domain/  infrastructure/  presentation/  tools/     ← 根目录 0 个 .ts
+```
+| 从 | 到 | 判据 |
+|---|---|---|
+| `src/data_dir.ts` | `infrastructure/data_dir.ts` | ← infrastructure:10 |
+| `src/storage.ts` | `infrastructure/storage.ts` | ← infrastructure:2 |
+| `src/storage_overlay.ts` | `infrastructure/storage_overlay.ts` | ← infrastructure:1 |
+| `src/lifecycle.ts` | `presentation/mcp/lifecycle.ts` | 进程级兜底，只被 mcp server 注册 |
+★ 判据一律是「**最下游的消费者在哪层 ⇒ 取那层或更低**」。212 处说明符 / 174 文件。**本次 arch 无需改基线**。
+
+#### ★★ 用户问："搬迁时用到了重构工具吗、缺什么能力" —— 如实答
+**`rename_files` / `find_references` / `impact_analysis` / `plan_refactor` / `capability_map` /
+`index_integrity` / `explore_code` 全套 MCP 工具**一个都没用上，全靠 `grep` + `python` + `git mv` + 自写脚本。
+这就是本仓自己的病根（"用文本，只因为事实没被表示成数据"）。已补三件：
+1. `scripts/move_finish.mjs`：覆盖形态 **2 → 5**（②连续串 / ③分段拼 / ④去src前缀(仅报告) / ⑤带后缀；⑥数层级明确不可覆盖）。
+2. `scripts/relink_specifiers.mjs` 进仓（改 ①import 说明符；`rename_files` 被删除护栏拦死时的替代品）。
+3. `scripts/arch_baseline_remap.mjs` 进仓（内建"先证明 0 条真新增才许重写基线"）。
+
+**还缺的（下一个人的清单）**：
+- `rename_files` 应能**只产 plan**（`{file, range, newText}[]`），把"算"与"删"解耦 ⇒ 删除被拦时仍可用；
+- **"批量搬文件"不是一等形态**（`plan_refactor` 面向变更点）；
+- `tsc` **不查 `tests/`**（`tsconfig.json` 的 `exclude` 含 tests）⇒ 测试路径错了编译不报；
+- **搬迁期索引失真** ⇒ 所有基于索引的工具（find_references / impact_analysis / explore_code）集体不可用；
+- **路径知识不是数据**：`repoRoot()` / `PROBE_DIR_REL` / go-slim 各写一份 ⇒ 三次"数层级"事故的土壤；
+- 环境体检（代理端口 / dist 新鲜度 / 删除配额 / 行尾）全靠手工试探。
+
+#### ★★ "补强后用第一次"就抓出工具自己的两个缺口 —— 真跑一遍才算验过
+1. **扫进 vitest 临时文件**：根目录 **96 个** `vitest.config.ts.timestamp-*.mjs`（已 gitignore）被当源码扫。
+   ★ 根因：**出生证探针只喂 `tests/` 下的文件，从没走"根目录扫描"分支** ⇒ 探针覆盖不到输入形状。
+   ⇒ **纪律：探针要覆盖输入形状，不只是 happy path。**
+2. **③ 的子形态漏了**：`path.join(REPO,'src','storage.ts')` 的末段带扩展名 ⇒ 段值不等 ⇒ 漏匹配。
+   实测让它单独造成 4 条红。⇒ 末段支持可选扩展名 + **捕获组带回 `.ts`**。
+
+#### ★ 一正一反两个例证（同一病、两种写法）
+- **反面（三次翻车）**：`slim_brick.ts` / `daemon.ts` 用"上溯 N 级" ⇒ 搬家即错，且**错误信息指错根因**。
+- **正面（安然无恙）**：`storage.ts` 的 `getPackageRoot()` 用**按路标上溯**（找 `name === PKG_NAME` 的 package.json）
+  ⇒ 这次搬深一层**实现无需改**。已在注释里写下这个对照。
+⇒ ★★ **纪律：定位仓库内资源一律按路标，禁止数层级。**
+
+#### ★ 又一条"点名布局"的断言
+`feature_map` 的 `expect(fns).toContain('root')` —— 搬完后 `src/` 根无文件 ⇒ `root` 族消失 ⇒ 红
+（**这正是搬迁成功的证据**）。改成与布局无关且更强的判据：每个 feature id 必须能对上某个顶层目录或 `root`。

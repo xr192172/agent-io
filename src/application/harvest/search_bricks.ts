@@ -24,7 +24,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { BrickManifest, ShapeSchema } from '../../domain/contract.js';
-import { getStorageRoot } from '../../storage.js';
+import { getStorageRoot } from '../../infrastructure/storage.js';
 
 export interface SearchBricksInput {
   /** 关键词检索：匹配积木名/形状名/字段名/description，多词独立打分求和 */

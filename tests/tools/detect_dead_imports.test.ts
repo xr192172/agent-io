@@ -8,7 +8,7 @@
  *   - Go 保守：空导入 `_` / 点导入 `.` 恒活。
  *   - 目录扫描：自动递归扫 TS/Go 源；files 显式收敛。
  */
-import { DATA_DIR_NAME } from '../../src/data_dir.js';
+import { DATA_DIR_NAME } from '../../src/infrastructure/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

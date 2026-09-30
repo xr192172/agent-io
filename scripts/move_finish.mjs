@@ -63,14 +63,28 @@ const TAIL = String.raw`[/'",\]}\s]|$`;
 
 /** ② 连续路径串（含 ⑤ 带后缀） */
 const contRe = (from) => new RegExp(String.raw`(?<![\w-])${esc(from)}(?=${TAIL}|${SRC_EXT})`, 'g');
-/** ③ 分段拼：'a' , 'b' , 'c'（各段可各自引号；`path.join(...)` 的形态） */
+/**
+ * ③ 分段拼：'a' , 'b' , 'c'（各段可各自引号；`path.join(...)` 的形态）
+ * ★★ 2026-09-30 实战补漏：**最后一段常带扩展名**（`path.join(REPO,'src', 'infrastructure', 'storage.ts')`）——
+ *   实测就是这个子形态漏了，导致 `identity.test.ts` + `observe/dogfood.test.ts` 共 4 条红。
+ *   ⇒ 末段允许可选扩展名，并**用捕获组把它带回去**（不丢 `.ts`）。
+ */
 function segRe(from) {
   const segs = from.split('/').filter(Boolean);
   if (segs.length < 2) return null;
-  const body = segs.map((s) => String.raw`['"]${esc(s)}['"]`).join(String.raw`\s*,\s*`);
+  const body = segs
+    .map((s, i) =>
+      i === segs.length - 1
+        ? String.raw`['"]${esc(s)}(` + SRC_EXT + String.raw`)?['"]`
+        : String.raw`['"]${esc(s)}['"]`,
+    )
+    .join(String.raw`\s*,\s*`);
   return new RegExp(body, 'g');
 }
-const segTo = (to) => to.split('/').filter(Boolean).map((s) => `'${s}'`).join(', ');
+const segTo = (to) => {
+  const segs = to.split('/').filter(Boolean);
+  return segs.map((s, i) => (i === segs.length - 1 ? `'${s}$1'` : `'${s}'`)).join(', ');
+};
 
 /** 要扫的目录 / 文件（**故意不含 src/ 与 .inspect/**） */
 function targets() {
@@ -88,8 +102,15 @@ function targets() {
   walk('tests', ['.ts', '.json', '.mjs']);
   walk('scripts', ['.ts', '.mjs', '.json']);
   // 根目录的 json / mjs / config
+  // ★★ 2026-09-30 实战补漏（首次真跑就中）：vitest 会在根目录留一堆
+  //   `vitest.config.ts.timestamp-*.mjs`（已在 .gitignore 里，本仓现存 96 个）——
+  //   它们**不是源码**，却混进根目录扫描并被报成"去 src 前缀"形态 ⇒ 纯噪音。
+  //   ★ 教训：出生证探针只喂了 `tests/` 下的文件，**没走根目录那条分支** ⇒ 探针覆盖不到真输入面。
   for (const e of fs.readdirSync(ROOT, { withFileTypes: true })) {
-    if (e.isFile() && /\.(json|mjs|cjs|ts)$/.test(e.name) && !e.name.startsWith('.')) out.push(e.name);
+    if (!e.isFile() || e.name.startsWith('.')) continue;
+    if (/\.(json|mjs|cjs|ts)$/.test(e.name) === false) continue;
+    if (e.name.includes('.timestamp-')) continue; // vitest 临时文件（gitignored）
+    out.push(e.name);
   }
   return out;
 }

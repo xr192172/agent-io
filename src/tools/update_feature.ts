@@ -12,7 +12,7 @@
  * - edge 支持 update（删除后按合并数据重建，原子 ops 无独立 updateEdge）
  */
 
-import { getDSL, saveDSL } from '../storage.js';
+import { getDSL, saveDSL } from '../infrastructure/storage.js';
 import type { EditResult } from './edit_result.js';
 import { addNode, updateNode, deleteNode } from './node_ops.js';
 import type { AddNodeInput, UpdateNodeInput } from './node_ops.js';

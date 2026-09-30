@@ -2,8 +2,8 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { getDSL, saveDSL } from '../../src/storage.js';
-import { loadOverlay } from '../../src/storage_overlay.js';
+import { getDSL, saveDSL } from '../../src/infrastructure/storage.js';
+import { loadOverlay } from '../../src/infrastructure/storage_overlay.js';
 import { setDesignIntent } from '../../src/application/design/set_design_intent.js';
 
 describe('set_design_intent —— 写设计意图到 overlay（goals / edge_intents）', () => {

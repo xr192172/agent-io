@@ -15,8 +15,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { backfillScaffold } from '../../src/application/design/backfill.js';
-import { saveDSL } from '../../src/storage';
-import { clearAllFeatures, getDSL } from '../../src/storage';
+import { saveDSL } from '../../src/infrastructure/storage.js';
+import { clearAllFeatures, getDSL } from '../../src/infrastructure/storage.js';
 import type { DesignDSL } from '../../src/domain/types';
 
 function makeDSL(feature: string): DesignDSL {

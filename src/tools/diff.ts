@@ -2,7 +2,7 @@
  * diff_features：对比两个 feature 的差异
  */
 
-import { getDSLByView } from '../storage.js';
+import { getDSLByView } from '../infrastructure/storage.js';
 
 export interface DiffFeaturesInput {
   feature_a: string;

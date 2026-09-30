@@ -10,7 +10,7 @@
  * - 错误：node 不存在 / 源文件缺失
  */
 
-import { DATA_DIR_NAME } from '../../src/data_dir.js';
+import { DATA_DIR_NAME } from '../../src/infrastructure/data_dir.js';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -20,7 +20,7 @@ import { deriveDetailChain } from '../../src/tools/derive_chain';
 import { createFeature } from '../../src/tools/feature_ops';
 import { addNode } from '../../src/tools/node_ops';
 import { addFile } from '../../src/tools/file_ops';
-import { clearAllFeatures, getDSL, getLiveDslFile } from '../../src/storage';
+import { clearAllFeatures, getDSL, getLiveDslFile } from '../../src/infrastructure/storage.js';
 
 let tmpDir: string;
 
@@ -265,7 +265,7 @@ describe('derive_anim_flow - 幂等', () => {
       flows: [{ id: 'manual_flow', trigger: { type: 'periodic', interval: 1000 }, from: 'a', to: 'b' }],
     };
     // 无法直接 saveDSL 类型断言，用 getDSL 改后通过 deriveAnimFlow 触发保存？改用手动保存
-    const { saveDSL } = await import('../../src/storage');
+    const { saveDSL } = await import('../../src/infrastructure/storage.js');
     saveDSL(dsl0);
 
     await deriveAnimFlow({ feature: 'f_idem', node_id: 'host_node', project_root: tmpDir });

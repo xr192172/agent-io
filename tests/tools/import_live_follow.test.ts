@@ -14,7 +14,7 @@ import path from 'node:path';
 import { describe, it, expect } from 'vitest';
 import { importProject } from '../../src/infrastructure/graph/import_project.js';
 import { checkConsistency } from '../../src/tools/consistency.js';
-import { getDSL, getLiveFeature, clearAllFeatures } from '../../src/storage.js';
+import { getDSL, getLiveFeature, clearAllFeatures } from '../../src/infrastructure/storage.js';
 
 function makeProject(): string {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dc-live-follow-'));

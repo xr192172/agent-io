@@ -8,7 +8,7 @@
  *   - agent-io 管理的项目（.agent-io 目录存在）：追加渲染/截图自检
  */
 
-import { DATA_DIR_NAME } from '../../../data_dir.js';
+import { DATA_DIR_NAME } from '../../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { Impact, RootCause, SymptomType, Verification } from './contract.js';

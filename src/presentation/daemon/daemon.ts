@@ -18,7 +18,7 @@
  * 事后诊断（进程已死但 pidfile 残留 → 覆盖）。
  */
 
-import { DATA_DIR_NAME } from '../../data_dir.js';
+import { DATA_DIR_NAME } from '../../infrastructure/data_dir.js';
 import { execFile } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -26,7 +26,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { watchProjectTool, listActiveWatches, setWatchToolEventListener } from '../../tools/watch_project_tool.js';
 import { setAlertListener, alertsSince, pushAlert } from '../../tools/alert_inbox.js';
-import { saveDSL, getDSL, onDslChange } from '../../storage.js';
+import { saveDSL, getDSL, onDslChange } from '../../infrastructure/storage.js';
 import { updateFeature } from '../../tools/update_feature.js';
 import { createDaemonServer, type DslWriteRequest, type DslWriteResult } from './server.js';
 import { probeDaemon, daemonPort } from '../../infrastructure/daemon/client.js';

@@ -11,7 +11,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { diffFeatures } from '../../src/tools/diff';
 import { createFeature } from '../../src/tools/feature_ops';
 import { addNode } from '../../src/tools/node_ops';
-import { clearAllFeatures, getDSL, saveLiveFeature } from '../../src/storage';
+import { clearAllFeatures, getDSL, saveLiveFeature } from '../../src/infrastructure/storage.js';
 
 describe('diff_features 视图对比', () => {
   beforeEach(() => clearAllFeatures());

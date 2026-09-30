@@ -26,7 +26,7 @@
  *   - node 的 kwargs（JS 无关键字实参概念）以单个尾部 options 对象传入；无 kwargs 则不传。
  */
 
-import { DATA_DIR_NAME } from '../../../data_dir.js';
+import { DATA_DIR_NAME } from '../../data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

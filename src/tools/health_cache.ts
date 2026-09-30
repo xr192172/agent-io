@@ -11,7 +11,7 @@
  * 失败不致命：任何读写异常静默降级为"重新体检"，绝不影响主流程。
  */
 
-import { DATA_DIR_NAME } from '../data_dir.js';
+import { DATA_DIR_NAME } from '../infrastructure/data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';

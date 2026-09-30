@@ -14,7 +14,7 @@
  *   - 无索引 ⇒ 不附注（那种"不全"由 firstContactBackfill 标注，分工不混）
  *   - 无缓存：同一份陈旧状态连续两次调用都报（宁可每次查，也不要过期的诚实）
  */
-import { DATA_DIR_NAME } from '../src/data_dir.js';
+import { DATA_DIR_NAME } from '../src/infrastructure/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

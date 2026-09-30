@@ -44,7 +44,13 @@ describe('feature_map 在 agent-io src 上的真实结果', () => {
     //     下一行「每个顶层目录都要被切成 feature」已经**更强地**盖住了：
     //     空目录切不出 feature ⇒ 那一行必红。⇒ 这里只留"还剩不止一个目录"的退化保护。
     for (const d of topDirs) expect(fns, `顶层目录 ${d} 没被切成 feature`).toContain(d);
-    expect(fns).toContain('root'); // 根文件归 root
+    // ★ 2026-09-30（搬 ⑦）：`src/` 根**已无 .ts 文件**（四个根文件都归了层）
+    //   ⇒ 不再有 `root` 这一族。原断言是“点名 `root`”（与当时布局耦合）。
+    //   ⇒ 换成**与布局无关且更强**的判据：每个 feature id 必须能对上
+    //     `src/` 下的一个顶层目录或 `root`（出现陌生 id 就说明切分逻辑变了）。
+    for (const id of fns) {
+      expect([...topDirs, 'root'], `出现了陌生的 feature id：${id}`).toContain(id);
+    }
     // 分层识别的有效性：**至少有一族**命中前端或 shared 文件 —— 同样不写死是哪一族
     const withFrontend = features.filter((f) => f.frontend.length + f.shared.length > 0);
     expect(withFrontend.length, '没有任何一族命中前端/shared ⇒ 分层识别失效').toBeGreaterThan(0);

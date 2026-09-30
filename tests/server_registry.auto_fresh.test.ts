@@ -10,7 +10,7 @@
  *   - `noAutoFresh` 的工具（index_integrity）**不被**自动保鲜（refresh:false 必须纯只读）
  *   - 无索引的项目 ⇒ 不冷启（绝不因为一次调用就建索引）
  */
-import { DATA_DIR_NAME } from '../src/data_dir.js';
+import { DATA_DIR_NAME } from '../src/infrastructure/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

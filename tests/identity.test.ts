@@ -24,7 +24,7 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { DATA_DIR_NAME, PKG_NAME } from '../src/data_dir.js';
+import { DATA_DIR_NAME, PKG_NAME } from '../src/infrastructure/data_dir.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.join(here, '..');
@@ -49,11 +49,11 @@ function walkExt(dir: string, exts: Set<string>, out: string[] = []): string[] {
 describe('项目标识一致性门', () => {
   it('① PKG_NAME 与 package.json 的 name 一致（不一致 ⇒ 包根自省静默退化成 cwd）', () => {
     const pkg = JSON.parse(fs.readFileSync(path.join(REPO, 'package.json'), 'utf8')) as { name?: string };
-    expect(pkg.name, 'package.json 与 src/data_dir.ts 的 PKG_NAME 不一致（改包名必须两处同改）').toBe(PKG_NAME);
+    expect(pkg.name, 'package.json 与 src/infrastructure/data_dir.ts 的 PKG_NAME 不一致（改包名必须两处同改）').toBe(PKG_NAME);
   });
 
   it('② storage.ts 的自省锚点用的是 PKG_NAME 常量，而不是字面量', () => {
-    const src = fs.readFileSync(path.join(REPO, 'src', 'storage.ts'), 'utf8');
+    const src = fs.readFileSync(path.join(REPO, 'src', 'infrastructure', 'storage.ts'), 'utf8');
     expect(src).toContain('j.name === PKG_NAME');
     // 反面：不许再出现 `j.name === '<某个字面量>'`（那又是一份要同步的副本）
     expect(/j\.name === '/.test(src), 'storage.ts 里又出现了字面量比较').toBe(false);

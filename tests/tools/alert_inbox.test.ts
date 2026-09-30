@@ -7,7 +7,7 @@
  *   - appendPendingAlerts：无未读原样 / 有未读追加+清空 / watch_project 跳过（自带 piggyback）
  *   - 集成：watch impact_on_change → 改文件 → 任意工具响应文本自动带提醒（一次投递）
  */
-import { DATA_DIR_NAME } from '../../src/data_dir.js';
+import { DATA_DIR_NAME } from '../../src/infrastructure/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

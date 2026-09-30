@@ -19,10 +19,10 @@
  * 拎服务层连它的调用方一起搬）；默认 false——纯积木只需要根须不需要用户。
  */
 
-import { DATA_DIR_NAME } from '../../data_dir.js';
+import { DATA_DIR_NAME } from '../../infrastructure/data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
-import { getDSL } from '../../storage.js';
+import { getDSL } from '../../infrastructure/storage.js';
 import { getProjectCacheDb, type Database } from '../../infrastructure/index/db.js';
 import { buildImportGraph } from '../../infrastructure/graph/import_graph.js';
 

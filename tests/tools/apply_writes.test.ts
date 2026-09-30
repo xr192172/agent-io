@@ -10,7 +10,7 @@
  *   - 同文件多项 ⇒ 后者胜、只写一次
  *   - `renameLocals`（`scope='local'` 的 [B] 分支）：局部改名的落盘现在走内核 ⇒ 快照/索引同步**从无到有**
  */
-import { DATA_DIR_NAME } from '../../src/data_dir.js';
+import { DATA_DIR_NAME } from '../../src/infrastructure/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

@@ -12,7 +12,7 @@
  *   - 空清单不建快照
  *   - ★ 接线：edit_code 落盘前自动快照 → rollback 能撤回（端到端的那一条）
  */
-import { DATA_DIR_NAME } from '../../src/data_dir.js';
+import { DATA_DIR_NAME } from '../../src/infrastructure/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

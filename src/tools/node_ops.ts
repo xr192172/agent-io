@@ -3,7 +3,7 @@
  */
 
 import type { DesignDSL, Node, NodeStyle, NodeContent, DiagramStatus, NodeLayer, NodeShapes, NodeDecision, DecisionHistoryEntry, AnimationValueSchema } from '../domain/types.js';
-import { getDSL, saveDSL } from '../storage.js';
+import { getDSL, saveDSL } from '../infrastructure/storage.js';
 import type { EditResult } from './edit_result.js';
 
 /** 形状卡轻校验：type 枚举 + properties/items 递归（防止渲染垃圾） */

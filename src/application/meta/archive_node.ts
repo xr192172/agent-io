@@ -20,7 +20,7 @@ import {
   getArchiveEntryByPath,
   listArchiveEntries,
   type ArchiveEntry,
-} from '../../storage.js';
+} from '../../infrastructure/storage.js';
 
 export interface ArchiveNodeInput {
   /** feature 名 */

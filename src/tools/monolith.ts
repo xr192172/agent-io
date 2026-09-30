@@ -15,11 +15,11 @@
  *   - 建议仅作参考（suggestion），不落盘改代码——拆分决策权在人/LLM
  */
 
-import { DATA_DIR_NAME } from '../data_dir.js';
+import { DATA_DIR_NAME } from '../infrastructure/data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { DesignDSL, Node, Edge } from '../domain/types.js';
-import { getDSL, saveDSL } from '../storage.js';
+import { getDSL, saveDSL } from '../infrastructure/storage.js';
 import { parseFileFull } from '../infrastructure/parse/index.js';
 import { getProjectView } from '../infrastructure/parse/project_view.js'; // ★ §19②
 import type { ParsedSymbol } from '../infrastructure/parse/index.js';

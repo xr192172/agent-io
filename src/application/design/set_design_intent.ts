@@ -12,8 +12,8 @@
  * 与 base 再生对账：写前先用 buildCandidates/buildEdgeCandidates 把旧 overlay reconcile 到当前 base，
  * 保证 edges 键与 base 边 id 一致、被删边按孤儿暂存；此前孤儿、边重现时复原。
  */
-import { getDSL, saveDSL } from '../../storage.js';
-import { loadOverlay, saveOverlay } from '../../storage_overlay.js';
+import { getDSL, saveDSL } from '../../infrastructure/storage.js';
+import { loadOverlay, saveOverlay } from '../../infrastructure/storage_overlay.js';
 import {
   reconcileOverlay,
   buildCandidates,

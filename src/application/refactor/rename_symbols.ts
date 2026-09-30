@@ -33,7 +33,7 @@
  * 与本工具是上下游（它们出建议，本工具落盘），同样不聚合。
  */
 
-import { DATA_DIR_NAME } from '../../data_dir.js';
+import { DATA_DIR_NAME } from '../../infrastructure/data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { renameSymbol, type RenameSymbolInput, type RenameSymbolResult } from '../../tools/rename_symbol.js';

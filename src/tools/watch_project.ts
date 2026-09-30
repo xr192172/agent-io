@@ -27,7 +27,7 @@
  * 若平台抛错（旧 Linux），降级为非递归 + 手动注册子目录。
  */
 
-import { DATA_DIR_NAME } from '../data_dir.js';
+import { DATA_DIR_NAME } from '../infrastructure/data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { Database } from '../infrastructure/index/db.js';

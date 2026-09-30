@@ -20,7 +20,7 @@ import { deriveAlgorithm } from '../../src/tools/derive_algorithm';
 import { createFeature } from '../../src/tools/feature_ops';
 import { addNode } from '../../src/tools/node_ops';
 import { addFile } from '../../src/tools/file_ops';
-import { clearAllFeatures, getDSL, getLiveDslFile } from '../../src/storage';
+import { clearAllFeatures, getDSL, getLiveDslFile } from '../../src/infrastructure/storage.js';
 
 let tmpDir: string;
 

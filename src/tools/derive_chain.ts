@@ -11,11 +11,11 @@
  * 同名不同 receiver 的方法会误连——语义标注阶段由 LLM 修正。
  */
 
-import { DATA_DIR_NAME } from '../data_dir.js';
+import { DATA_DIR_NAME } from '../infrastructure/data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { AnimationValueSchema, Edge, Node } from '../domain/types.js';
-import { getDSL, saveDSL } from '../storage.js';
+import { getDSL, saveDSL } from '../infrastructure/storage.js';
 import type { Database } from '../infrastructure/index/db.js';
 import { parseFileFull, isSupported, type ParsedCall, type ParsedSymbol } from '../infrastructure/parse/index.js';
 import { extractFunctionCfg } from '../infrastructure/parse/cfg.js';

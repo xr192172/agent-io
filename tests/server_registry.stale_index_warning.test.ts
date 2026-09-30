@@ -19,7 +19,7 @@
  *   - ★ 端到端：经 `registerAllTools` 真实调用 ⇒ 响应末尾带 `---WARNINGS---` 机器块，
  *     且**块里的 JSON 与人类可读段同源**（"可被程序判定"的落点）
  */
-import { DATA_DIR_NAME } from '../src/data_dir.js';
+import { DATA_DIR_NAME } from '../src/infrastructure/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

@@ -19,7 +19,7 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { TOOL_DEFS } from '../../src/presentation/mcp/server_registry.js';
-import { clearAllFeatures, deleteFeature, getDSL, listArchiveEntries, saveDSL } from '../../src/storage';
+import { clearAllFeatures, deleteFeature, getDSL, listArchiveEntries, saveDSL } from '../../src/infrastructure/storage.js';
 import type { DesignDSL, SemanticFile } from '../../src/domain/types';
 
 const def = (name: string) => {

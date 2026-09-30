@@ -7,7 +7,7 @@
 
 import { createFeature, cloneFeature } from '../../tools/feature_ops.js';
 import { createFromTemplate } from '../../tools/templates.js';
-import { listFeatures as listStoredFeatures, deleteFeature } from '../../storage.js';
+import { listFeatures as listStoredFeatures, deleteFeature } from '../../infrastructure/storage.js';
 
 export const MANAGE_ACTIONS = ['create', 'clone', 'template', 'list', 'delete'] as const;
 export type ManageAction = (typeof MANAGE_ACTIONS)[number];

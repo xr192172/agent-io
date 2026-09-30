@@ -7,7 +7,7 @@
  * - get_approval_history: 获取单条审批的完整审计日志
  */
 
-import { getDSL, saveDSL } from '../storage.js';
+import { getDSL, saveDSL } from '../infrastructure/storage.js';
 import type { Annotation, ApprovalStatus, ApprovalHistoryEntry } from '../domain/types.js';
 
 function now(): string {

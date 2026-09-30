@@ -12,7 +12,7 @@
  *   6. 棘轮：无基线 ⇒ 存量算新增；有基线 ⇒ 未增加即通过，新增才 fail。
  */
 
-import { DATA_DIR_NAME } from '../../src/data_dir.js';
+import { DATA_DIR_NAME } from '../../src/infrastructure/data_dir.js';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';

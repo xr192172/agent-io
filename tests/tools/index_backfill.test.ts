@@ -6,7 +6,7 @@
  *   ① 首次建块**有时长上限**，超时即停并如实标 partial(time)（读不到最伤使用感受）；
  *   ② 后台续建是**单飞**的、每批让出事件循环、进度如实可查（补齐前不许声称完整）。
  */
-import { DATA_DIR_NAME } from '../../src/data_dir.js';
+import { DATA_DIR_NAME } from '../../src/infrastructure/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

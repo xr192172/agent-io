@@ -10,7 +10,7 @@
  *   - 链式合并 → 同文件连续两次编辑合成净差异（加了又删 = 净无）
  *   - 首次导入 → 无 diff 行，回退文件级
  */
-import { DATA_DIR_NAME } from '../../src/data_dir.js';
+import { DATA_DIR_NAME } from '../../src/infrastructure/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

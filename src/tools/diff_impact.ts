@@ -23,9 +23,9 @@
  * DSL 渲染图主要是文件级节点。BFS 后按 file_path 聚合回 DSL 文件节点。
  */
 
-import { DATA_DIR_NAME } from '../data_dir.js';
+import { DATA_DIR_NAME } from '../infrastructure/data_dir.js';
 import path from 'node:path';
-import { getDSL } from '../storage.js';
+import { getDSL } from '../infrastructure/storage.js';
 import { getProjectCacheDb, type Database } from '../infrastructure/index/db.js';
 
 export type ImpactDirection = 'callers' | 'callees' | 'both';

@@ -18,7 +18,7 @@
  *   - 其他包导入（npm 包、标准库）→ 外部依赖，跳过
  */
 
-import { DATA_DIR_NAME } from '../../data_dir.js';
+import { DATA_DIR_NAME } from '../data_dir.js';
 import { INDEX_SKIP_DIR_EXTRA, isIndexSkippedFileName, shouldSkipDir } from '../parse/source_exts.js';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -26,8 +26,8 @@ import ignore from 'ignore';
 import type { Ignore } from 'ignore';
 import type { DesignDSL, Node, Edge, SemanticFile, ExpectedApi, Symbol } from '../../domain/types.js';
 import type { BrickManifest } from '../../domain/contract.js';
-import { saveDSL, saveLiveFeature, ensureBaseline, getDSL } from '../../storage.js';
-import { mergeDesignLayer } from '../../storage_overlay.js';
+import { saveDSL, saveLiveFeature, ensureBaseline, getDSL } from '../storage.js';
+import { mergeDesignLayer } from '../storage_overlay.js';
 import { detectArchLayers } from '../../tools/layer_detect.js';
 import { parseFileFull, isSupported, resolveProjectImport } from '../parse/index.js';
 import type { ParsedImport } from '../parse/index.js';

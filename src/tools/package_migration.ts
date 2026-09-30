@@ -22,7 +22,7 @@
  *     （prefix 目录不存在，to 目录已含源码）则只做内容重写、不移动。
  */
 
-import { DATA_DIR_NAME } from '../data_dir.js';
+import { DATA_DIR_NAME } from '../infrastructure/data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { PackageMigrationSpec, RunningChangePlan } from './refactor_langs.js';

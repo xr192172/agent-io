@@ -13,8 +13,8 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { getDSL, saveDSL } from '../storage.js';
-import { getStorageRoot } from '../storage.js';
+import { getDSL, saveDSL } from '../infrastructure/storage.js';
+import { getStorageRoot } from '../infrastructure/storage.js';
 import type { DesignDSL } from '../domain/types.js';
 
 /** 快照存储目录 */

@@ -19,7 +19,7 @@
  *   - suggestions：文本建议（只给证据 + 启发，落不落盘由人/LLM 裁决）
  */
 
-import { DATA_DIR_NAME } from '../data_dir.js';
+import { DATA_DIR_NAME } from '../infrastructure/data_dir.js';
 import path from 'node:path';
 import { openDb, type Database } from '../infrastructure/index/db.js';
 

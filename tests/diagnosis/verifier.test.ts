@@ -3,7 +3,7 @@
  * 覆盖：Node/Go/Python 类型探测、test_failure 重跑、agent-io 渲染自检、未知项目 manual。
  */
 
-import { DATA_DIR_NAME } from '../../src/data_dir.js';
+import { DATA_DIR_NAME } from '../../src/infrastructure/data_dir.js';
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';

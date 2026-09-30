@@ -10,7 +10,7 @@
  *   - concepts 过滤 / files 过滤 / limit
  *   - 空缓存 / 无法打开缓存 → 提示性空结果
  */
-import { DATA_DIR_NAME } from '../../src/data_dir.js';
+import { DATA_DIR_NAME } from '../../src/infrastructure/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

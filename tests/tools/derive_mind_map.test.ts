@@ -10,8 +10,8 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { deriveMindMap } from '../../src/application/meta/derive_mind_map.js';
-import { saveDSL } from '../../src/storage';
-import { clearAllFeatures } from '../../src/storage';
+import { saveDSL } from '../../src/infrastructure/storage.js';
+import { clearAllFeatures } from '../../src/infrastructure/storage.js';
 import type { DesignDSL } from '../../src/domain/types';
 
 function makeDSL(feature: string, opts: { grouped: boolean }): DesignDSL {

@@ -8,7 +8,7 @@
  * （入度先清空的节点先看，即依赖喂给谁、谁就排在依赖之后）。
  */
 
-import { getDSL } from '../storage.js';
+import { getDSL } from '../infrastructure/storage.js';
 
 export interface GuidedTourInput {
   /** feature 名 */

@@ -11,7 +11,7 @@
  *   - TS 集成：种子调用链上的 dep 活；未被调用的导出函数里的 dep → 死候选；
  *     顶层 const（模块初始化）引用的 dep → 保守活
  */
-import { DATA_DIR_NAME } from '../../src/data_dir.js';
+import { DATA_DIR_NAME } from '../../src/infrastructure/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

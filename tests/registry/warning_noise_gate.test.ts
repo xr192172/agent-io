@@ -15,7 +15,7 @@
  * ★ 出生证（tests/helpers/gate_probe.ts）：① 注入"重复长文本" ⇒ 门变红；
  *   ② 对照项：用**真实链路**（真 stale 项目连调两轮）⇒ 门不变红。
  */
-import { DATA_DIR_NAME } from '../../src/data_dir.js';
+import { DATA_DIR_NAME } from '../../src/infrastructure/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

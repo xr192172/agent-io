@@ -8,7 +8,7 @@
  *   - realResolveImport：扩展名补全 / 目录索引 / 裸包与缺失 → null
  *   - expandClosure：根内文件 + 沿 import 边扩入根外本地文件（跨根自包含）
  */
-import { DATA_DIR_NAME } from '../../src/data_dir.js';
+import { DATA_DIR_NAME } from '../../src/infrastructure/data_dir.js';
 import { describe, it, expect } from 'vitest';
 import { mkdtempSync, writeFileSync, readFileSync, rmSync, mkdirSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';

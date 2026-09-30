@@ -4,7 +4,7 @@
  * 读取已保存的 DSL JSON
  */
 
-import { getDSL } from '../storage.js';
+import { getDSL } from '../infrastructure/storage.js';
 
 export interface GetDslInput {
   feature_name: string;

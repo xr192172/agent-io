@@ -14,7 +14,7 @@
  * 供 LLM 在交互中直接开启"项目保鲜"，两者共享 cache.db 与 live/ 目录。
  */
 
-import { DATA_DIR_NAME } from '../data_dir.js';
+import { DATA_DIR_NAME } from '../infrastructure/data_dir.js';
 import path from 'node:path';
 import { getProjectCacheDb } from '../infrastructure/index/db.js';
 import { importProject } from '../infrastructure/graph/import_project.js';

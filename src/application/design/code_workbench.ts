@@ -21,8 +21,8 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { getStorageRoot, getDSL, saveDSL } from '../../storage.js';
-import { loadOverlay, saveOverlay } from '../../storage_overlay.js';
+import { getStorageRoot, getDSL, saveDSL } from '../../infrastructure/storage.js';
+import { loadOverlay, saveOverlay } from '../../infrastructure/storage_overlay.js';
 import { reconcileOverlay, buildCandidates, buildEdgeCandidates, seedOverlayFromDsl, applyOverlay, type OverlayGoal } from '../../domain/overlay.js';
 import { setDesignIntent, type DesignEdgeIntentWrite } from './set_design_intent.js';
 import { renameFile, type RenameFileInput } from '../../tools/rename_file.js';

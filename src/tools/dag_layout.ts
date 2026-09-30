@@ -10,7 +10,7 @@
  */
 
 import type { DesignDSL, ForceParams } from '../domain/types.js';
-import { getDSL, saveDSL } from '../storage.js';
+import { getDSL, saveDSL } from '../infrastructure/storage.js';
 
 export interface DagLayoutInput {
   feature: string;

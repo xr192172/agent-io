@@ -16,7 +16,7 @@
  *   不在模块加载期求值，ESM 循环 import 安全。
  */
 import { TOOL_DEFS } from '../presentation/mcp/server_registry.js';
-import { getDSL, saveDSL } from '../storage.js';
+import { getDSL, saveDSL } from '../infrastructure/storage.js';
 import type { DesignDSL } from '../domain/types.js';
 
 export interface SyncContractsInput {

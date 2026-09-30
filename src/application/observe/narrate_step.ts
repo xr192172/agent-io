@@ -14,7 +14,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { getDSL, saveDSL, getStorageRoot } from '../../storage.js';
+import { getDSL, saveDSL, getStorageRoot } from '../../infrastructure/storage.js';
 import { projectSignature } from '../meta/derive_mind_map.js';
 import { buildScenes, humanOf } from '../../domain/narration.js';
 import type { NarrScene } from '../../domain/narration.js';

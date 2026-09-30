@@ -23,7 +23,7 @@ import { z } from 'zod';
 import { requireStr, wrapData } from '../plumbing.js';
 import type { DiagnoseInput } from '../../infrastructure/analysis/diagnosis/contract.js';
 import { formatDiagnoseText, runDiagnosis } from '../../infrastructure/analysis/diagnosis/diagnose.js';
-import { getDSL, saveDSL } from '../../storage.js';
+import { getDSL, saveDSL } from '../../infrastructure/storage.js';
 import { archiveNode, listArchive } from './archive_node.js';
 import { LANE_IDS, makeCapabilityMapHandler } from './capability_map.js';
 import type { LaneId } from './capability_map.js';

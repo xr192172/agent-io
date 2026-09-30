@@ -7,7 +7,7 @@
  *   - flushBatch：批量去重 + 跨文件调用重解析收尾
  *   - 重复同步未变：syncFile 内部 skipped（node_count=0），不重复解析
  */
-import { DATA_DIR_NAME } from '../../src/data_dir.js';
+import { DATA_DIR_NAME } from '../../src/infrastructure/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

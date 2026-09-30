@@ -8,7 +8,7 @@
  *   - 再改 b → 实际波及 {b,a,d,c} → unexpected={d} → deviation（计划外扩散报警）
  *   - 一次消费：声明被报告消费后，后续报告不再对比
  */
-import { DATA_DIR_NAME } from '../../src/data_dir.js';
+import { DATA_DIR_NAME } from '../../src/infrastructure/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

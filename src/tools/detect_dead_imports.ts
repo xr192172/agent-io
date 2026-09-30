@@ -22,7 +22,7 @@
  * dead_imports 步据此删除；也可单独交付给用户先看报告再拍板。
  */
 
-import { DATA_DIR_NAME } from '../data_dir.js';
+import { DATA_DIR_NAME } from '../infrastructure/data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import {

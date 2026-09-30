@@ -11,7 +11,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
-import { saveDSL, getDSL, deleteFeature, clearAllFeatures } from '../../src/storage';
+import { saveDSL, getDSL, deleteFeature, clearAllFeatures } from '../../src/infrastructure/storage.js';
 import { harvestDecisions } from '../../src/tools/harvest_decisions';
 import type { DesignDSL, SemanticFile, NodeDecision } from '../../src/domain/types';
 

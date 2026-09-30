@@ -12,12 +12,12 @@
  *   或 npm run serve
  */
 
-import { DATA_DIR_NAME } from '../../data_dir.js';
+import { DATA_DIR_NAME } from '../../infrastructure/data_dir.js';
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawn, exec } from 'node:child_process';
-import { saveDSL, getDSL, getLiveDslFile, getLiveFeature, onDslChange } from '../../storage.js';
+import { saveDSL, getDSL, getLiveDslFile, getLiveFeature, onDslChange } from '../../infrastructure/storage.js';
 import { enableObserveFromEnv } from '../../infrastructure/analysis/observe/run_sentinel.js';
 import { judgeEvent } from '../../infrastructure/analysis/observe/judge.js';
 import { queryObserveLog } from '../../infrastructure/analysis/observe/log_query.js';

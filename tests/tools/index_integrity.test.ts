@@ -9,7 +9,7 @@
  *   - 文件被外部改过 ⇒ not_fresh > 0（保鲜路径能看见的那类）
  *   - 待消费自写登记被计入报告
  */
-import { DATA_DIR_NAME } from '../../src/data_dir.js';
+import { DATA_DIR_NAME } from '../../src/infrastructure/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

@@ -39,7 +39,7 @@
  *   另带"注入不含旧名的文件 ⇒ 不该红"的对照项。见文件末「出生证」块。
  */
 
-import { DATA_DIR_NAME } from '../src/data_dir.js';
+import { DATA_DIR_NAME } from '../src/infrastructure/data_dir.js';
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';

@@ -16,7 +16,7 @@
  * 纯文本扫描：不依赖 AST、不写任何文件。
  */
 
-import { DATA_DIR_NAME } from '../../data_dir.js';
+import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { SOURCE_EXTS } from '../parse/index.js';

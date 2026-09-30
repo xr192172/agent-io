@@ -14,7 +14,7 @@
  *   - impact_analysis 集成：.css 变更点 ⇒ 响应带"解析粒度"（闭包结论会低估）；.ts ⇒ 不带
  *   - index_integrity 自带语言能力自述一节
  */
-import { DATA_DIR_NAME } from '../../src/data_dir.js';
+import { DATA_DIR_NAME } from '../../src/infrastructure/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

@@ -16,7 +16,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createFeature } from '../../src/tools/feature_ops';
 import { updateFeature } from '../../src/tools/update_feature';
 import { listSnapshots } from '../../src/tools/snapshot';
-import { clearAllFeatures, getDSL } from '../../src/storage';
+import { clearAllFeatures, getDSL } from '../../src/infrastructure/storage.js';
 
 describe('update_feature - 节点操作', () => {
   beforeEach(() => clearAllFeatures());

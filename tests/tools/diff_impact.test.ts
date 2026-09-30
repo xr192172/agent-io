@@ -10,7 +10,7 @@
  *   - changed 文件不在缓存 → 警告 + 仍列为直接受影响文件
  *   - feature 不存在 → 抛错
  */
-import { DATA_DIR_NAME } from '../../src/data_dir.js';
+import { DATA_DIR_NAME } from '../../src/infrastructure/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

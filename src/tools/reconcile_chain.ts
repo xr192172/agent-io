@@ -24,7 +24,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { getDSL } from '../storage.js';
+import { getDSL } from '../infrastructure/storage.js';
 import { deriveDetailChain } from './derive_chain.js';
 import { queryObserveLog } from '../infrastructure/analysis/observe/log_query.js';
 import { judgeEvent } from '../infrastructure/analysis/observe/judge.js';

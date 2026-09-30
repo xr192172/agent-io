@@ -11,7 +11,7 @@
  *   - 信号：优雅清理后 exit(0)；重复触发只清一次（去抖）
  */
 import { describe, it, expect } from 'vitest';
-import { createLifecycleHandlers } from '../src/lifecycle';
+import { createLifecycleHandlers } from '../src/presentation/mcp/lifecycle.js';
 
 function makeDeps(over: Record<string, unknown> = {}) {
   const logs: string[] = [];

@@ -14,7 +14,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { DesignDSL, DiagramStatus } from '../domain/types.js';
-import { getDSL, saveDSL } from '../storage.js';
+import { getDSL, saveDSL } from '../infrastructure/storage.js';
 
 // ─────────────────────────────────────────────────────────────
 // update_status：手动更新节点/文件状态

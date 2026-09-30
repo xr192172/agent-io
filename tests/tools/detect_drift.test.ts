@@ -13,7 +13,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { TOOL_DEFS } from '../../src/presentation/mcp/server_registry.js';
-import { getFeatureFile } from '../../src/storage.js';
+import { getFeatureFile } from '../../src/infrastructure/storage.js';
 import { detectDrift } from '../../src/tools/detect_drift.js';
 import type { DesignDSL } from '../../src/domain/types.js';
 

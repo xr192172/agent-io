@@ -10,14 +10,14 @@
  *   - 自定义分层（三明治：积木/契约/胶水）+ 层间违规检测（积木引胶水 → 违规）
  *   - parseImportsLight / scanImportEdges / detectLayerViolations 纯函数
  */
-import { DATA_DIR_NAME } from '../../src/data_dir.js';
+import { DATA_DIR_NAME } from '../../src/infrastructure/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect, afterAll } from 'vitest';
 import { importProject } from '../../src/infrastructure/graph/import_project.js';
 import { archLayer, scanImportEdges } from '../../src/tools/arch_layer';
-import { getDSL } from '../../src/storage';
+import { getDSL } from '../../src/infrastructure/storage.js';
 import { openDb } from '../../src/infrastructure/index/db';
 import { parseImportsLight, detectLayerViolations, type LayerDef } from '../../src/tools/layer_detect';
 

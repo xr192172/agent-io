@@ -19,7 +19,7 @@ import { checkGoObserveDeps, goReportSummary, instrumentGoProject, isGoProject, 
 import { buildProbeLedger, clearProbeLedger, collectTsFiles, instrumentProject, ledgerSummary, restoreInstrumented, saveProbeLedger } from '../infrastructure/analysis/observe/instrument.js';
 import { judgeEvents, judgeEventsWithLLM, normalizeEvents, renderJudgeReport } from '../infrastructure/analysis/observe/judge_service.js';
 import { queryObserveLog } from '../infrastructure/analysis/observe/log_query.js';
-import { getDSLByView, getLiveDir } from '../storage.js';
+import { getDSLByView, getLiveDir } from '../infrastructure/storage.js';
 import { archiveNode, listArchive } from './meta/archive_node.js';
 import { backfillScaffold } from './design/backfill.js';
 import { checkConsistency } from '../tools/consistency.js';

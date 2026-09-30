@@ -9,8 +9,8 @@
  */
 import fs from 'node:fs';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { saveDSL, getDSL, clearAllFeatures, getLiveDslFile, listFeatures, deleteFeature } from '../src/storage';
-import { saveOverlay } from '../src/storage_overlay';
+import { saveDSL, getDSL, clearAllFeatures, getLiveDslFile, listFeatures, deleteFeature } from '../src/infrastructure/storage.js';
+import { saveOverlay } from '../src/infrastructure/storage_overlay.js';
 import type { DesignDSL } from '../src/domain/types';
 
 function mkDsl(rev?: number): DesignDSL {

@@ -22,7 +22,7 @@
  * 独立性：现场解析（不依赖 import_project 建的 cache.db），零前置状态。
  */
 
-import { DATA_DIR_NAME } from '../../data_dir.js';
+import { DATA_DIR_NAME } from '../../infrastructure/data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { execSync } from 'node:child_process';

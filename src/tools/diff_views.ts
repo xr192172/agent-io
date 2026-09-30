@@ -22,7 +22,7 @@
  */
 
 import type { DesignDSL, SemanticFile, Symbol, ExpectedApi, Edge, NodeDecision, DecisionHistoryEntry } from '../domain/types.js';
-import { getDSL, getLiveFeature, getBaselineFeature, getArchiveEntryByPath } from '../storage.js';
+import { getDSL, getLiveFeature, getBaselineFeature, getArchiveEntryByPath } from '../infrastructure/storage.js';
 
 // ──────── 输出类型 ────────
 

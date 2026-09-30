@@ -9,7 +9,7 @@
  *   - 查询为空 → 返回空结果
  *   - embedding 配置缺失时 provider=fts 且 hits 由 FTS 填充
  */
-import { DATA_DIR_NAME } from '../../src/data_dir.js';
+import { DATA_DIR_NAME } from '../../src/infrastructure/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

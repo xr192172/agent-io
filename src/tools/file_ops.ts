@@ -3,7 +3,7 @@
  */
 
 import type { DiagramStatus, SemanticFile, ExpectedApi } from '../domain/types.js';
-import { getDSL, saveDSL } from '../storage.js';
+import { getDSL, saveDSL } from '../infrastructure/storage.js';
 import type { EditResult } from './edit_result.js';
 
 // ─────────────────────────────────────────────────────────────

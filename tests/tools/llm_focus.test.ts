@@ -7,13 +7,13 @@
  * - LLM 调用失败 → 降级启发式 + note
  */
 
-import { DATA_DIR_NAME } from '../../src/data_dir.js';
+import { DATA_DIR_NAME } from '../../src/infrastructure/data_dir.js';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { pickKeyNodes, loadLlmConfig, configFilePath, configFileReadPath, getConfigHome } from '../../src/tools/llm_focus';
-import * as storage from '../../src/storage.js';
+import * as storage from '../../src/infrastructure/storage.js';
 
 const CHAIN = [
   { node_id: 'n1', label: '① sanitize', func_name: 'sanitize', description: 'sanitize(s)', is_judgement: false, is_cross: false },

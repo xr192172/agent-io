@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { reconcileChain } from '../../src/tools/reconcile_chain';
-import { saveDSL } from '../../src/storage';
+import { saveDSL } from '../../src/infrastructure/storage.js';
 
 describe('reconcile_chain e2e（中观档：派生 → 缓存 → 事件对账）', () => {
   it('对真实源文件 observe/chain.ts 跑通全管线', async () => {

@@ -18,7 +18,7 @@ import { addEdge, deleteEdge } from '../../src/tools/edge_ops';
 import { addFile, updateFile, deleteFile } from '../../src/tools/file_ops';
 import { addExpectedApi, updateExpectedApi, deleteExpectedApi, setNodeSemantic } from '../../src/tools/api_ops';
 import { batchMoveNodes, batchUpdateStyle, batchDeleteNodes } from '../../src/tools/batch_ops';
-import { clearAllFeatures, getDSL } from '../../src/storage';
+import { clearAllFeatures, getDSL } from '../../src/infrastructure/storage.js';
 
 describe('edit_dsl - 节点增强属性', () => {
   beforeEach(() => clearAllFeatures());

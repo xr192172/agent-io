@@ -7,7 +7,7 @@
  *   ③ 预算/深度停下时 `partial=true` 且 `stopReason` 如实（调用方必须标注覆盖度）
  *   ④ 入边方向也算一块（互相引用）
  */
-import { DATA_DIR_NAME } from '../../src/data_dir.js';
+import { DATA_DIR_NAME } from '../../src/infrastructure/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

@@ -12,7 +12,7 @@
  * 500+ 单测（针对纯函数）不受影响。
  */
 
-import { DATA_DIR_NAME } from '../../data_dir.js';
+import { DATA_DIR_NAME } from '../../infrastructure/data_dir.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { makeCapabilityMapHandler, LANE_IDS, type LaneId } from '../../application/meta/capability_map.js';
@@ -93,7 +93,7 @@ import type { ReasonEvidenceRef } from '../../tools/reason_validator.js';
 import { loadTraceRecords, buildTraceResolver } from '../../tools/trace_evidence.js';
 import { runDiagnosis, formatDiagnoseText } from '../../infrastructure/analysis/diagnosis/diagnose.js';
 import type { DiagnoseInput } from '../../infrastructure/analysis/diagnosis/contract.js';
-import { getDSLByView, getLiveDir, getDSL, saveDSL } from '../../storage.js';
+import { getDSLByView, getLiveDir, getDSL, saveDSL } from '../../infrastructure/storage.js';
 import { resolveCanvasNoteTargets, renderCanvasNotesDigest, markCanvasNotesStatus } from '../../application/meta/derive_mind_map.js';
 import { decideCanvasNotes } from '../../application/meta/llm_decider.js';
 import { listProjectDocs, readProjectDoc, matchDocsForTargets, buildDocsPromptBlock, type DocTargetSet } from '../../application/meta/project_docs.js';

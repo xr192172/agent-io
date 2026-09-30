@@ -13,7 +13,7 @@
  * - 错误：node 不存在 / 源文件缺失 / 无可用函数
  */
 
-import { DATA_DIR_NAME } from '../../src/data_dir.js';
+import { DATA_DIR_NAME } from '../../src/infrastructure/data_dir.js';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -22,7 +22,7 @@ import { deriveDetailChain } from '../../src/tools/derive_chain';
 import { createFeature } from '../../src/tools/feature_ops';
 import { addNode } from '../../src/tools/node_ops';
 import { addFile } from '../../src/tools/file_ops';
-import { clearAllFeatures, getDSL, getLiveDslFile } from '../../src/storage';
+import { clearAllFeatures, getDSL, getLiveDslFile } from '../../src/infrastructure/storage.js';
 
 // ─────────────────────────────────────────────────────────────
 // fixtures

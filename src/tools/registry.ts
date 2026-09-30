@@ -14,7 +14,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { DesignDSL } from '../domain/types.js';
-import { getDataHome } from '../storage.js';
+import { getDataHome } from '../infrastructure/storage.js';
 
 /** 单条产物记录 */
 export interface ArtifactEntry {

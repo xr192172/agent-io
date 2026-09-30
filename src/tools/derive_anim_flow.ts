@@ -15,12 +15,12 @@
  * 幂等：本工具只读既有 detail 节点，重跑清理重建自身前缀的 flows，不动手写 flows。
  */
 
-import { DATA_DIR_NAME } from '../data_dir.js';
+import { DATA_DIR_NAME } from '../infrastructure/data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { AnimationBranch, AnimationError, AnimationFlow, AnimationValueSchema } from '../domain/animation.js';
 import type { DesignDSL, Node } from '../domain/types.js';
-import { getDSL, saveDSL } from '../storage.js';
+import { getDSL, saveDSL } from '../infrastructure/storage.js';
 import { parseFileFull, type ParsedSymbol } from '../infrastructure/parse/index.js';
 import { extractFunctionCfg } from '../infrastructure/parse/cfg.js';
 import { buildCallGraph, pickEntry, walkChain } from './derive_chain.js';

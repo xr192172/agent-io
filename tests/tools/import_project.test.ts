@@ -13,7 +13,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { importProject, readAssemblyBricks } from '../../src/infrastructure/graph/import_project.js';
-import { getDSL, getLiveFeature } from '../../src/storage';
+import { getDSL, getLiveFeature } from '../../src/infrastructure/storage.js';
 import { diffViews } from '../../src/tools/diff_views';
 import { isIndexSkippedFileName, isNoiseFileName } from '../../src/infrastructure/parse/source_exts.js';
 

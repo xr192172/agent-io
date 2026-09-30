@@ -14,10 +14,10 @@
  *   ★ 为什么不能连测试一起删：测试是**行为契约**，死模块可以死，契约必须继续被守。
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { saveDSL } from '../../src/storage';
+import { saveDSL } from '../../src/infrastructure/storage.js';
 import { getDsl } from '../../src/tools/get_dsl';
 import { queryFeature } from '../../src/tools/query_feature';
-import { clearAllFeatures } from '../../src/storage';
+import { clearAllFeatures } from '../../src/infrastructure/storage.js';
 import type { DesignDSL } from '../../src/domain/types';
 
 function makeDSL(feature: string, status: DesignDSL['status']): DesignDSL {

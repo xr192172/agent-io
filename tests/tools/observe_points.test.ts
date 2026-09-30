@@ -6,7 +6,7 @@
  *   ① **key 一定插得出来**：推荐点取自插桩器的 dry-run 站点（probe 字段），不是自己拼的字符串
  *   ② **预算裁剪**：按分数取前 N，超出的如实报 truncated（不搞第二套存储策略）
  */
-import { DATA_DIR_NAME } from '../../src/data_dir.js';
+import { DATA_DIR_NAME } from '../../src/infrastructure/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

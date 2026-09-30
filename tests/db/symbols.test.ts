@@ -5,7 +5,7 @@
  * import 边在目标文件重同步后存活（文件节点 UPSERT 不删除的核心约定）、
  * 符号删除后 FTS 触发器同步、FTS5 trigram 搜索（中文/标识符子串）、removeFile 级联。
  */
-import { DATA_DIR_NAME } from '../../src/data_dir.js';
+import { DATA_DIR_NAME } from '../../src/infrastructure/data_dir.js';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';

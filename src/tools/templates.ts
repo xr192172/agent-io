@@ -12,7 +12,7 @@
  */
 
 import type { DesignDSL, Node, Edge } from '../domain/types.js';
-import { saveDSL, getDSL } from '../storage.js';
+import { saveDSL, getDSL } from '../infrastructure/storage.js';
 
 export interface TemplateInfo {
   id: string;

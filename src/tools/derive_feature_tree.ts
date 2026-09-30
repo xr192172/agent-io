@@ -21,7 +21,7 @@
  */
 
 import { analyzeMonolith } from './analyze_monolith.js';
-import { getDSLByView, saveDSL } from '../storage.js';
+import { getDSLByView, saveDSL } from '../infrastructure/storage.js';
 import { loadLlmConfig, callChat } from './llm_focus.js';
 import { loadExplainConfig } from './explain_gen.js';
 import type { FeatureTree, FeatureNode, FeatureCommunity } from '../domain/types.js';

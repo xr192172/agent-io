@@ -17,7 +17,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
-import { getDSL, getStorageRoot } from '../storage.js';
+import { getDSL, getStorageRoot } from '../infrastructure/storage.js';
 import { gitRootOf } from '../application/cross/project_root.js';
 import { checkConsistency } from './consistency.js';
 

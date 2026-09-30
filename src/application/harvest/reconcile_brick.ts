@@ -34,7 +34,7 @@ import path from 'node:path';
 import readline from 'node:readline';
 import type { BrickManifest } from '../../domain/contract.js';
 import type { EffectTarget } from '../../domain/contract.js';
-import { getStorageRoot } from '../../storage.js';
+import { getStorageRoot } from '../../infrastructure/storage.js';
 
 export interface ReconcileBrickInput {
   /** 积木目录（含 contracts.json + manifest.json；或传 brick_name + box_dir 让工具拼） */
