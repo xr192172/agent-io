@@ -27,6 +27,7 @@ import { injectReplay } from '../../tools/inject_replay.js';
 import { runSimulation, resetSimulation } from '../../tools/simulation.js';
 import { dispatchWatch } from '../../infrastructure/daemon/dispatch.js';
 import { buildCallGraph } from '../../tools/derive_chain.js';
+import { deriveAnimFlow } from '../../tools/derive_anim_flow.js';
 import { deriveMindMap } from './derive_mind_map.js';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -223,7 +224,24 @@ export async function exploreCode(params: { action: ExploreAction; args: Record<
       return toResult(r);
     }
     case 'derive_anim_flow': {
-      const r = { project_dir: requireStr(args, 'project_dir') };
+      // ★★ 2026-10-01（T11 ③，用户裁定"补齐能力"）：**此前这里是纯空壳** ——
+      //   只回显 `project_dir` 却宣告"异步 action 已完成"，**对 agent 说谎**（G7 门 §14.1 的铁证）。
+      //   本 action 的职责见 `derive_anim_flow.ts` 头注释：
+      //   **路线图序 14 —— L3 条件分支 + L4 函数绑定的自动生成层**：
+      //   引擎侧（animation_engine / anim_core）**已实现** L3/L4/L4.5，但 `animations_v2.flows`
+      //   原先只能手写；本实现把已提取的**调用链 + CFG 自动转成 flows**，让那些能力可被自动驱动。
+      //   ⇒ 现在真的调它。★ G7 门会复算"声明的实现符号 == case 里真的调了它"，所以下面这行不能少。
+      const r = await deriveAnimFlow({
+        feature: requireStr(args, 'feature'),
+        // 主干文件节点 id（semantic.files[].id）：flows 的 handler.file_id 与 detail 节点 host 都用它
+        node_id: requireStr(args, 'node_id'),
+        source_path: str(args, 'source_path'),
+        project_root: str(args, 'project_root'),
+        entry: str(args, 'entry'),
+        max_steps: num(args, 'max_steps'),
+        interval: num(args, 'interval'),
+        max_cfg_branches: num(args, 'max_cfg_branches'),
+      });
       return toResult(r, true);
     }
     case 'derive_algorithm': {

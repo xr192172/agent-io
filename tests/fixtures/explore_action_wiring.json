@@ -1,5 +1,5 @@
 {
-  "note": "G7 宣传-实现一致性门的登记表。EXPLORE_ACTIONS 是 explore_code 对 LLM 公开宣传的 action 枚举 ⇒ 宣传什么、LLM 就看到什么。implOf = 该 action 调用的实现符号（必须是 explore_code.ts 从别处 import 的，不能是本地 no-op）。debt = 承认「宣传了但没真干」的 action + 理由，★ 棘轮：条数只许减不许增（实测基线 5 条，见规划书 §14.1）。新增 action 必须①声明实现 或 ②进 debt 并写明理由 —— 这就是「堆新工具」的准入闸。收紧基线：UPDATE_EXPLORE_WIRING=1。",
+  "note": "G7 宣传-实现一致性门的登记表。EXPLORE_ACTIONS 是 explore_code 对 LLM 公开宣传的 action 枚举 ⇒ 宣传什么、LLM 就看到什么。implOf = 该 action 调用的实现符号（必须是 explore_code.ts 从别处 import 的，不能是本地 no-op）。debt = 承认「宣传了但没真干」的 action + 理由，★ 棘轮：条数只许减不许增（实测基线 5 条，见规划书 §14.1（★ 2026-10-01 T11 ③：`derive_anim_flow` **补齐实现**后出账 ⇒ 5 → 4））。新增 action 必须①声明实现 或 ②进 debt 并写明理由 —— 这就是「堆新工具」的准入闸。收紧基线：UPDATE_EXPLORE_WIRING=1。",
   "implOf": {
     "search": "semanticSearch",
     "read": "ensureIndexAroundSeed",
@@ -9,7 +9,7 @@
     "check_monolith": "assessLines",
     "derive_split": "buildSplitPreviewDsl",
     "derive_chain": "buildCallGraph",
-    "derive_anim_flow": null,
+    "derive_anim_flow": "deriveAnimFlow",
     "derive_algorithm": null,
     "derive_mind_map": "deriveMindMap",
     "inject_replay": "injectReplay",
@@ -18,7 +18,6 @@
     "watch": "dispatchWatch"
   },
   "debt": {
-    "derive_anim_flow": "★ 纯空壳：case 块里**没有任何实现调用**，只 `{ project_dir: requireStr(args,'project_dir') }` 回填，工具面却返回「异步 action 已完成」（§14.1 铁证）。被孤立的实现 `deriveAnimFlow()` 本身是活的 ⇒ 要么修接线、要么撤销宣传。",
     "derive_algorithm": "★ 纯空壳：同 `derive_anim_flow`（只回显 project_dir + 谎报已完成）。实现 `deriveAlgorithm()` 也是活的、只是没接线（§14.1）。",
     "check_monolith": "半空壳：调了 `assessLines(0, 300, 600)` —— **总行数硬编码 0**，等于拿空输入去真调，输出无意义（§14.1）。",
     "derive_split": "半空壳：调了 `buildSplitPreviewDsl(project_dir, [], 300, 600)` —— **文件列表硬编码 []**，扫不到任何文件（§14.1）。",

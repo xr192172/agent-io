@@ -16,6 +16,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { deriveAnimFlow } from '../../src/tools/derive_anim_flow';
+import { exploreCode } from '../../src/application/meta/explore_code.js';
 import { deriveDetailChain } from '../../src/tools/derive_chain';
 import { createFeature } from '../../src/tools/feature_ops';
 import { addNode } from '../../src/tools/node_ops';
@@ -293,5 +294,41 @@ describe('derive_anim_flow - 错误', () => {
     await expect(deriveAnimFlow({ feature: 'f_err2', node_id: 'host_node', project_root: tmpDir })).rejects.toThrow(
       /不存在|无法读取/,
     );
+  });
+});
+
+/**
+ * ★★ 2026-10-01（T11 ③，用户裁定"补齐能力"）：**端到端验收**。
+ *
+ * 背景：`explore_code` 的 `case 'derive_anim_flow'` 此前是**纯空壳** ——
+ *   只 `{ project_dir }` 回填、却在工具面宣告"异步 action 已完成"（G7 门的铁证）。
+ *   本次已把它接上 `deriveAnimFlow()`。**本 describe 就是那次接线的验收证据**：
+ *   它走的是**对外那条路**（`exploreCode({action:'derive_anim_flow'})`），不是直接调实现。
+ *
+ * ★ 出生证（内置）：接线前 `data` 只有 `{ project_dir }` ⇒ `data.flows_added` 是 `undefined`
+ *   ⇒ 本测试**必红**。所以它证明的不是"实现能跑"，而是"**宣传的那条路真的通到实现**"。
+ */
+describe('★ action 接线：经 explore_code 真能调到 deriveAnimFlow（不是空壳回显）', () => {
+  it('action=derive_anim_flow 产出真实 flows，且与直接调实现同形', async () => {
+    writeFixture('compose.go', GO_FIXTURE);
+    setupHost('f_wired', 'compose.go');
+    await deriveDetailChain({ feature: 'f_wired', node_id: 'host_node', project_root: tmpDir });
+
+    const viaAction = await exploreCode({
+      action: 'derive_anim_flow',
+      args: { feature: 'f_wired', node_id: 'host_node', project_root: tmpDir },
+    });
+    const d = viaAction.data as { flows_added?: number; flows?: unknown[]; skipped?: string[] };
+
+    // ① 空壳只回显 project_dir ⇒ flows_added 必为 undefined。这里要求它是**真数字**。
+    expect(typeof d.flows_added, '空的 case 体只会回显 { project_dir } ⇒ flows_added 是 undefined').toBe('number');
+    expect(d.flows_added!).toBeGreaterThan(0);
+
+    // ② 与**直接调实现**同形（证明接线没夹带私货、没改语义）
+    const direct = await deriveAnimFlow({ feature: 'f_wired', node_id: 'host_node', project_root: tmpDir });
+    // ★ 直接调会**再生成一遍**（实现是幂等的 upsert，flows 用 id 去重）⇒ 比的是"形"，不是"次数"
+    expect(Array.isArray(d.flows)).toBe(true);
+    expect(Array.isArray(direct.flows)).toBe(true);
+    expect(d.flows!.length).toBeGreaterThan(0);
   });
 });
