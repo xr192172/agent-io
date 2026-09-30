@@ -3741,3 +3741,33 @@ E 才是"三种引用都没有"。把两者混在一起会把"活的入口"误�
 ★ 每一族：**一次提交** ⇒ `renameFiles` 批（自动双向改写 import）+ 全量回归 + `npm run arch`（无新增 error）。
 ★ 验收：**`unclassified` 与规则命中数** —— 层规则逐族点亮（`layer-downward-only` 等），
 **不再需要自写"分类进度"量具**（见 §43 的说明）。
+
+### 44.4 ★★ 搬迁撞到的**第一个真问题**：`renderer/` 有 3 处**反向依赖**（2026-09-30）
+
+原计划把 `renderer/`（14 文件）当"低风险叶子"搬进 `presentation/web/`。**查引用面时发现它不是叶子**：
+
+```
+src/tools/inject_replay.ts   ←  ../renderer/anim_core.js
+src/tools/render_design.ts   ←  ../renderer/html_renderer.js
+src/tools/simulation.ts      ←  ../renderer/simulation_engine.js
+```
+
+⇒ ★ **外壳层被内层 import 了** —— 这正是 `layer-downward-only` 规则要抓的**反向依赖**
+（`application`/`infrastructure` → `presentation`）。搬进 `presentation/web/` 之后，这 3 处**会立刻把那条规则点亮成红**。
+
+★ 所以 `renderer/` **不是一个"搬进去就行"的族**，它逼我们先回答一个**设计问题**：
+
+| 文件 | 是外壳还是内核？ |
+|---|---|
+| `html_renderer.ts` / `simulation_engine.ts` / `anim_core.ts` | ★ `render_design` 生成 HTML/SVG、`simulation` 跑引擎、`inject_replay` 造回放 —— 这些**都被"工具实现"用**，而工具实现在 `application/infrastructure` 侧 |
+| `scripts.ts` / `styles.ts` | 纯前端资源 ⇒ 明确属于 `presentation/web` |
+
+⇒ **可能的切法**（未定）：把"被工具用的渲染能力"下沉到 `infrastructure/render/`，
+只把"**给浏览器看的那一层**（HTML/CSS/交互脚本 + 入口页）"留在 `presentation/web/`。
+
+★★ **这恰好验证了"边搬边修"的必要性** —— **搬的第一步就撞到一个真分层问题**，
+而这个问题**自写门是看不见的**（它没有规则），**dependency-cruiser 会在搬完那一刻立刻报出来**。
+
+★ 处置：**先不动 `renderer/`**；按 §44.3 的顺序从**底座**开始搬 ——
+下一个目标 **①`domain/` ← `src/dsl/`（13 文件 / 104 引用处）**，
+它是纯契约（**没有任何东西被它依赖的循环**），搬它风险最低、收益最大（上层对它的引用一次改完）。
