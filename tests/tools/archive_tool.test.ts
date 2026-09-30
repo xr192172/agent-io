@@ -20,7 +20,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { TOOL_DEFS } from '../../src/server_registry';
 import { clearAllFeatures, deleteFeature, getDSL, listArchiveEntries, saveDSL } from '../../src/storage';
-import type { DesignDSL, SemanticFile } from '../../src/dsl/types';
+import type { DesignDSL, SemanticFile } from '../../src/domain/types';
 
 const def = (name: string) => {
   const d = TOOL_DEFS.find((t) => t.name === name);

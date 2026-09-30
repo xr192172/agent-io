@@ -19,7 +19,7 @@ import { importProject } from '../../src/tools/import_project';
 import { extractContracts } from '../../src/tools/extract_contracts';
 import { openDb } from '../../src/db/db';
 import { getDSL, saveDSL, clearAllFeatures, getLiveDslFile } from '../../src/storage';
-import type { DesignDSL } from '../../src/dsl/types';
+import type { DesignDSL } from '../../src/domain/types';
 
 const roots: string[] = [];
 

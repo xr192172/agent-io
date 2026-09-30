@@ -13,7 +13,7 @@
  */
 import { projectFileDataShape, pinIdentityKeys, deriveCrossFeatureFlow } from './derive_mind_map.js';
 import type { FileIndex } from './derive_mind_map.js';
-import type { TeachPin } from '../dsl/mindmap.js';
+import type { TeachPin } from '../domain/mindmap.js';
 import { roleToType, type ArchifyTreeNode } from './archify_project.js';
 
 const GENERIC_T = /^(string|number|boolean|void|unknown|any|null|undefined|object|array|promise|error|date|buffer|function|map|set|symbol|bigint|never)$/i;

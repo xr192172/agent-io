@@ -18,7 +18,7 @@
 import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
-import type { DesignDSL, Node, Edge } from '../dsl/types.js';
+import type { DesignDSL, Node, Edge } from '../domain/types.js';
 import { getDSL, saveDSL } from '../storage.js';
 import { parseFileFull } from './ts_kernel/index.js';
 import { getProjectView } from './ts_kernel/project_view.js'; // ★ §19②

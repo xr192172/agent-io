@@ -13,7 +13,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import type { DesignDSL, DiagramStatus } from '../dsl/types.js';
+import type { DesignDSL, DiagramStatus } from '../domain/types.js';
 import { getDSL, saveDSL } from '../storage.js';
 
 // ─────────────────────────────────────────────────────────────

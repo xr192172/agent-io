@@ -44,7 +44,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import type { BrickManifest } from '../dsl/contract.js';
+import type { BrickManifest } from '../domain/contract.js';
 import { resolveGoThirdParty, compareGoVersion } from './go_mod.js';
 import { resolveNpmThirdParty, compareNpmVersion, isNonRegistrySpec } from './npm_mod.js';
 import { getStorageRoot } from '../storage.js';

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { renderHTML } from '../../src/renderer/html_renderer';
-import type { DesignDSL } from '../../src/dsl/types';
+import type { DesignDSL } from '../../src/domain/types';
 
 function makeMinimalDSL(): DesignDSL {
   return {

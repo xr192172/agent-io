@@ -25,7 +25,7 @@ import {
   getArchiveDir,
   type ArchiveEntry,
 } from '../../src/storage';
-import type { DesignDSL, SemanticFile, Symbol, NodeDecision } from '../../src/dsl/types';
+import type { DesignDSL, SemanticFile, Symbol, NodeDecision } from '../../src/domain/types';
 
 // ──────── 测试数据工厂 ────────
 

@@ -3,9 +3,9 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtempSync, rmSync, writeFileSync, mkdirSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { reconcileOverlay, applyOverlay, buildCandidates, buildEdgeCandidates, seedOverlayFromDsl, computeFileSignature } from '../../src/dsl/overlay';
-import type { DesignOverlay } from '../../src/dsl/overlay';
-import type { DesignDSL, Node, UserNode } from '../../src/dsl/types';
+import { reconcileOverlay, applyOverlay, buildCandidates, buildEdgeCandidates, seedOverlayFromDsl, computeFileSignature } from '../../src/domain/overlay';
+import type { DesignOverlay } from '../../src/domain/overlay';
+import type { DesignDSL, Node, UserNode } from '../../src/domain/types';
 
 describe('overlay 增量对账（design DSL 不再随真相刷新丢失设计意图）', () => {
   let home: string;

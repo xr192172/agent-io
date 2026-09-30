@@ -9,7 +9,7 @@
  * - 底部导出按钮：序列化 window.__DSL__ → 下载 <feature>.json
  */
 
-import type { DesignDSL, Node, Edge, SemanticFile, Annotation } from '../dsl/types.js';
+import type { DesignDSL, Node, Edge, SemanticFile, Annotation } from '../domain/types.js';
 import { buildStyles } from './styles.js';
 import { buildScript } from './scripts.js';
 import { buildAnimationScript } from './animation_engine.js';
@@ -86,7 +86,7 @@ function computeCanvasSize(dsl: DesignDSL): { width: number; height: number } {
 
 /** 渲染单个 SVG 节点 */
 /** 渲染内容块为 HTML */
-function renderContentBlocks(blocks: import('../dsl/types.js').ContentBlock[]): string {
+function renderContentBlocks(blocks: import('../domain/types.js').ContentBlock[]): string {
   return blocks
     .filter((b) => b.visible !== false)
     .map((block) => {

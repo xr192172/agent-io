@@ -12,7 +12,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { clearAllFeatures, saveDSL, getDSL, getLiveDslFile } from '../../src/storage.js';
 import { reconcileEffects } from '../../src/tools/reconcile_effects.js';
-import type { DesignDSL } from '../../src/dsl/types.js';
+import type { DesignDSL } from '../../src/domain/types.js';
 
 let root = '';
 

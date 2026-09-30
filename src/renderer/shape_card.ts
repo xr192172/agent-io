@@ -14,7 +14,7 @@
  *   - 防爆：嵌套最多 2 层（更深显示 …），对象最多展示 4 个字段（更多显示 …+N）
  */
 
-import type { AnimationValueSchema } from '../dsl/types.js';
+import type { AnimationValueSchema } from '../domain/types.js';
 
 const TYPE_WORDS: Record<AnimationValueSchema['type'], string> = {
   string: '字符串',

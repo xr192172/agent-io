@@ -15,7 +15,7 @@ import { DATA_DIR_NAME, PKG_NAME } from './data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { DesignDSL } from './dsl/types.js';
+import type { DesignDSL } from './domain/types.js';
 
 /**
  * agent-io 包根：从模块自身位置（dist/src/storage.js 或 src/storage.ts）

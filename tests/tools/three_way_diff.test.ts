@@ -24,7 +24,7 @@ import {
   deleteFeature,
   clearAllFeatures,
 } from '../../src/storage';
-import type { DesignDSL, SemanticFile, Symbol } from '../../src/dsl/types';
+import type { DesignDSL, SemanticFile, Symbol } from '../../src/domain/types';
 
 // ──────── 测试数据工厂 ────────
 

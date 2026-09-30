@@ -20,7 +20,7 @@ import { deriveMindMap, getMindMapFile } from './derive_mind_map.js';
 import { loadAgentConfig } from './llm_focus.js';
 import { guidedTour } from './guided_tour.js';
 import type { TourStep } from './guided_tour.js';
-import type { MindMap } from '../dsl/mindmap.js';
+import type { MindMap } from '../domain/mindmap.js';
 import { extractJsonObject } from './explain_gen.js';
 import { deriveFeatureTree } from './derive_feature_tree.js';
 import { openDb } from '../db/db.js';

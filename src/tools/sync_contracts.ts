@@ -17,7 +17,7 @@
  */
 import { TOOL_DEFS } from '../server_registry.js';
 import { getDSL, saveDSL } from '../storage.js';
-import type { DesignDSL } from '../dsl/types.js';
+import type { DesignDSL } from '../domain/types.js';
 
 export interface SyncContractsInput {
   /** feature 名（已存在的 DSL feature） */

@@ -27,7 +27,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import type { DesignDSL, SemanticFile } from '../dsl/types.js';
+import type { DesignDSL, SemanticFile } from '../domain/types.js';
 import { getDSL } from '../storage.js';
 import { parseFileSymbols, ParsedSymbol, isSupportedFile } from './ast_parser.js';
 

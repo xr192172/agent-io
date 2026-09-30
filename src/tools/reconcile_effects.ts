@@ -26,7 +26,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import readline from 'node:readline';
 import { getDSL, saveDSL } from '../storage.js';
-import type { EffectTarget } from '../dsl/contract.js';
+import type { EffectTarget } from '../domain/contract.js';
 
 export interface ReconcileEffectsInput {
   /** 被观测项目根目录（其下 .agent/observe/events-*.jsonl 是事件源） */

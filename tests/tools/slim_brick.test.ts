@@ -22,7 +22,7 @@ import { spawnSync } from 'node:child_process';
 import { describe, it, expect, afterAll } from 'vitest';
 import { harvestFromUrl } from '../../src/tools/harvest_from_url';
 import { slimBrick } from '../../src/tools/slim_brick';
-import type { BrickManifest } from '../../src/dsl/contract';
+import type { BrickManifest } from '../../src/domain/contract';
 
 const goOk = spawnSync('go', ['version'], { encoding: 'utf8' }).status === 0;
 

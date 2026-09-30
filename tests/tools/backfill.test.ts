@@ -17,7 +17,7 @@ import os from 'node:os';
 import { backfillScaffold } from '../../src/tools/backfill';
 import { renderDesign } from '../../src/tools/render_design';
 import { clearAllFeatures, getDSL } from '../../src/storage';
-import type { DesignDSL } from '../../src/dsl/types';
+import type { DesignDSL } from '../../src/domain/types';
 
 function makeDSL(feature: string): DesignDSL {
   return {

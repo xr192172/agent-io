@@ -15,7 +15,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import type { DesignDSL, Node, Edge } from '../dsl/types.js';
+import type { DesignDSL, Node, Edge } from '../domain/types.js';
 import { getDSL, saveDSL } from '../storage.js';
 import { extractFunctionCfg } from './ts_kernel/cfg.js';
 import type { CfgNodeKind } from './ts_kernel/cfg.js';

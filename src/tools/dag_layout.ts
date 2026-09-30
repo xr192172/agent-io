@@ -9,7 +9,7 @@
  * 解决"连线混乱"问题：手动拖拽可能让连线交叉，调用此工具一键整理。
  */
 
-import type { DesignDSL, ForceParams } from '../dsl/types.js';
+import type { DesignDSL, ForceParams } from '../domain/types.js';
 import { getDSL, saveDSL } from '../storage.js';
 
 export interface DagLayoutInput {

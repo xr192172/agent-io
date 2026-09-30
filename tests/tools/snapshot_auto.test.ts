@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { saveDSL } from '../../src/storage';
 import { saveAutoSnapshot, pruneSnapshots, listSnapshots } from '../../src/tools/snapshot';
-import type { DesignDSL } from '../../src/dsl/types';
+import type { DesignDSL } from '../../src/domain/types';
 
 let tmp: string;
 const FEATURE = 'sna_auto';

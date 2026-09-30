@@ -28,7 +28,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { TOOL_DEFS } from '../../src/server_registry';
 import { getDSL, saveDSL } from '../../src/storage';
-import type { DesignDSL } from '../../src/dsl/types';
+import type { DesignDSL } from '../../src/domain/types';
 
 const def = (name: string) => {
   const d = TOOL_DEFS.find((t) => t.name === name);

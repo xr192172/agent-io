@@ -13,7 +13,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { saveDSL, getDSL, deleteFeature, clearAllFeatures } from '../../src/storage';
 import { harvestDecisions } from '../../src/tools/harvest_decisions';
-import type { DesignDSL, SemanticFile, NodeDecision } from '../../src/dsl/types';
+import type { DesignDSL, SemanticFile, NodeDecision } from '../../src/domain/types';
 
 // ──────── 契约（先写 DSL：决策卡 + expected_apis）────────
 

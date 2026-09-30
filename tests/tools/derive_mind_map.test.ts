@@ -12,7 +12,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { deriveMindMap } from '../../src/tools/derive_mind_map';
 import { renderDesign } from '../../src/tools/render_design';
 import { clearAllFeatures } from '../../src/storage';
-import type { DesignDSL } from '../../src/dsl/types';
+import type { DesignDSL } from '../../src/domain/types';
 
 function makeDSL(feature: string, opts: { grouped: boolean }): DesignDSL {
   const modules = opts.grouped

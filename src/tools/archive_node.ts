@@ -12,7 +12,7 @@
  * 溯源）由本工具落地，summary 重写交 LLM 用 diff 增量 + 归档卡裁决（与三方对比哲学一致）。
  */
 
-import type { DesignDSL } from '../dsl/types.js';
+import type { DesignDSL } from '../domain/types.js';
 import {
   getDSL,
   saveDSL,

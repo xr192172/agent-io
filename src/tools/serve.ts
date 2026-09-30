@@ -25,7 +25,7 @@ import { judgeEvents, judgeEventsWithLLM, normalizeEvents, renderJudgeReport } f
 import { judgeGuardLog } from '../observe/judge_guard.js';
 import { importProject } from './import_project.js';
 import { getProjectCacheDb, openDb } from '../db/db.js';
-import { validateDSLJson } from '../dsl/validator.js';
+import { validateDSLJson } from '../domain/validator.js';
 import { saveAutoSnapshot, pruneSnapshots } from './snapshot.js';
 import { dagLayout, forceLayout, gridAlign } from './dag_layout.js';
 import { scaffold } from './scaffold.js';
@@ -56,13 +56,13 @@ import { placeProposals } from './derive_mind_map.js';
 import { getOverview } from './overview.js';
 import { getMindMapFile } from './derive_mind_map.js';
 import { resolveCanvasNoteTargets, renderCanvasNotesDigest, markCanvasNotesStatus } from './derive_mind_map.js';
-import type { MindMap } from '../dsl/mindmap.js';
+import type { MindMap } from '../domain/mindmap.js';
 import { oplAdd, oplLocate, oplDeclare, oplImplement, oplCheck, oplIntegrate, oplList, oplGet, oplAuto } from './opl.js';
 import { traceExecChain, type TraceStepSpec } from './trace_exec.js';
 import { schemas, RESPONSE_SCHEMA_AT, API_VERSION, type ResponseSchemaKey } from '../api/contract.js';
 import { deriveDetailChain } from './derive_chain.js';
 import { reconcileChain } from './reconcile_chain.js';
-import type { DesignDSL } from '../dsl/types.js';
+import type { DesignDSL } from '../domain/types.js';
 import { loadLlmConfig, pickKeyNodes, type ChainNodeInfo } from './llm_focus.js';
 import {
   loadExplainConfig,

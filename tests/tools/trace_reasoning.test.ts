@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { traceReasoning } from '../../src/tools/trace_reasoning';
-import { validateDSL } from '../../src/dsl/validator';
+import { validateDSL } from '../../src/domain/validator';
 
 const fixtures = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'fixtures');
 const agentFile = path.join(fixtures, 'agent_demo.mjs');

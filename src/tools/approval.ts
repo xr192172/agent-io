@@ -8,7 +8,7 @@
  */
 
 import { getDSL, saveDSL } from '../storage.js';
-import type { Annotation, ApprovalStatus, ApprovalHistoryEntry } from '../dsl/types.js';
+import type { Annotation, ApprovalStatus, ApprovalHistoryEntry } from '../domain/types.js';
 
 function now(): string {
   return new Date().toISOString();

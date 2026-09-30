@@ -34,7 +34,7 @@ import { harvestClosure } from './harvest_closure.js';
 import { parseGoModRequires, resolveGoThirdParty } from './go_mod.js';
 import { parseNpmDeps, resolveNpmThirdParty } from './npm_mod.js';
 import { analyzeDeadThirdParty } from './dead_deps.js';
-import type { BrickContract, BrickManifest, ShapeSchema } from '../dsl/contract.js';
+import type { BrickContract, BrickManifest, ShapeSchema } from '../domain/contract.js';
 
 export interface BrickSpec {
   /** 积木名（缺省 = <repo>__<种子文件名>） */

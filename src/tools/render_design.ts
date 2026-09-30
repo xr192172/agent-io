@@ -16,7 +16,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { validateDSLJson } from '../dsl/validator.js';
+import { validateDSLJson } from '../domain/validator.js';
 import { saveDSL, getDataHome } from '../storage.js';
 import { renderHTML } from '../renderer/html_renderer.js';
 import { artifactFromDsl, registerArtifact } from './registry.js';

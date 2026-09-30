@@ -13,7 +13,7 @@
  * 由 html_renderer.ts 拼接为独立 <script> 块注入
  */
 
-import type { DesignDSL } from '../dsl/types.js';
+import type { DesignDSL } from '../domain/types.js';
 import { ANIM_CORE_SOURCE } from './anim_core_bundle.gen.js';
 import { parseApiName } from './anim_core.js';
 

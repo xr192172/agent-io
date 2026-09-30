@@ -297,8 +297,8 @@
   },
   {
     "type": "module",
-    "from": "src/dsl/animation.ts",
-    "to": "src/dsl/animation.ts",
+    "from": "src/domain/animation.ts",
+    "to": "src/domain/animation.ts",
     "rule": {
       "severity": "warn",
       "name": "no-orphans"
@@ -306,8 +306,8 @@
   },
   {
     "type": "module",
-    "from": "src/dsl/annotation.ts",
-    "to": "src/dsl/annotation.ts",
+    "from": "src/domain/annotation.ts",
+    "to": "src/domain/annotation.ts",
     "rule": {
       "severity": "warn",
       "name": "no-orphans"
@@ -315,8 +315,8 @@
   },
   {
     "type": "module",
-    "from": "src/dsl/canvas_note.ts",
-    "to": "src/dsl/canvas_note.ts",
+    "from": "src/domain/canvas_note.ts",
+    "to": "src/domain/canvas_note.ts",
     "rule": {
       "severity": "warn",
       "name": "no-orphans"
@@ -324,8 +324,8 @@
   },
   {
     "type": "module",
-    "from": "src/dsl/contract.ts",
-    "to": "src/dsl/contract.ts",
+    "from": "src/domain/contract.ts",
+    "to": "src/domain/contract.ts",
     "rule": {
       "severity": "warn",
       "name": "no-orphans"
@@ -333,8 +333,8 @@
   },
   {
     "type": "module",
-    "from": "src/dsl/geometry.ts",
-    "to": "src/dsl/geometry.ts",
+    "from": "src/domain/geometry.ts",
+    "to": "src/domain/geometry.ts",
     "rule": {
       "severity": "warn",
       "name": "no-orphans"
@@ -342,8 +342,8 @@
   },
   {
     "type": "module",
-    "from": "src/dsl/mindmap.ts",
-    "to": "src/dsl/mindmap.ts",
+    "from": "src/domain/mindmap.ts",
+    "to": "src/domain/mindmap.ts",
     "rule": {
       "severity": "warn",
       "name": "no-orphans"
@@ -351,8 +351,8 @@
   },
   {
     "type": "module",
-    "from": "src/dsl/reasoning.ts",
-    "to": "src/dsl/reasoning.ts",
+    "from": "src/domain/reasoning.ts",
+    "to": "src/domain/reasoning.ts",
     "rule": {
       "severity": "warn",
       "name": "no-orphans"
@@ -360,8 +360,8 @@
   },
   {
     "type": "module",
-    "from": "src/dsl/semantic.ts",
-    "to": "src/dsl/semantic.ts",
+    "from": "src/domain/semantic.ts",
+    "to": "src/domain/semantic.ts",
     "rule": {
       "severity": "warn",
       "name": "no-orphans"
@@ -369,8 +369,8 @@
   },
   {
     "type": "module",
-    "from": "src/dsl/simulation.ts",
-    "to": "src/dsl/simulation.ts",
+    "from": "src/domain/simulation.ts",
+    "to": "src/domain/simulation.ts",
     "rule": {
       "severity": "warn",
       "name": "no-orphans"
@@ -378,8 +378,8 @@
   },
   {
     "type": "module",
-    "from": "src/dsl/types.ts",
-    "to": "src/dsl/types.ts",
+    "from": "src/domain/types.ts",
+    "to": "src/domain/types.ts",
     "rule": {
       "severity": "warn",
       "name": "no-orphans"

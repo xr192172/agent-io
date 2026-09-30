@@ -15,7 +15,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { getDSL, saveDSL } from '../storage.js';
 import { getStorageRoot } from '../storage.js';
-import type { DesignDSL } from '../dsl/types.js';
+import type { DesignDSL } from '../domain/types.js';
 
 /** 快照存储目录 */
 function getSnapshotsDir(feature: string): string {

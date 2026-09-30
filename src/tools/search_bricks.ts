@@ -23,7 +23,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import type { BrickManifest, ShapeSchema } from '../dsl/contract.js';
+import type { BrickManifest, ShapeSchema } from '../domain/contract.js';
 import { getStorageRoot } from '../storage.js';
 
 export interface SearchBricksInput {

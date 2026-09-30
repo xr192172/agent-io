@@ -32,8 +32,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import readline from 'node:readline';
-import type { BrickManifest } from '../dsl/contract.js';
-import type { EffectTarget } from '../dsl/contract.js';
+import type { BrickManifest } from '../domain/contract.js';
+import type { EffectTarget } from '../domain/contract.js';
 import { getStorageRoot } from '../storage.js';
 
 export interface ReconcileBrickInput {

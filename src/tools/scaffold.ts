@@ -21,7 +21,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import type { DesignDSL, SemanticFile, CodeTemplate, Node, ContentBlock } from '../dsl/types.js';
+import type { DesignDSL, SemanticFile, CodeTemplate, Node, ContentBlock } from '../domain/types.js';
 import { getDSL } from '../storage.js';
 import { snapshotAndRecordSelfWrite, syncSelfWritesSync, toRelPosix } from './write_gate.js';
 

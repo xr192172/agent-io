@@ -20,7 +20,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import type { DesignDSL, SemanticFile, ExpectedApi } from '../dsl/types.js';
+import type { DesignDSL, SemanticFile, ExpectedApi } from '../domain/types.js';
 import { getDSL, saveDSL } from '../storage.js';
 import { parseFileSymbols, isSupportedFile } from './ast_parser.js';
 

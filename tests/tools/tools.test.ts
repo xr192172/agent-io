@@ -18,7 +18,7 @@ import { renderDesign } from '../../src/tools/render_design';
 import { getDsl } from '../../src/tools/get_dsl';
 import { queryFeature } from '../../src/tools/query_feature';
 import { clearAllFeatures } from '../../src/storage';
-import type { DesignDSL } from '../../src/dsl/types';
+import type { DesignDSL } from '../../src/domain/types';
 
 function makeDSL(feature: string, status: DesignDSL['status']): DesignDSL {
   return {

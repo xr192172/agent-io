@@ -17,7 +17,7 @@
  *     allowed_deps 解析顺序：层定义内 allowed_deps → 内置 DEFAULT_ALLOWED_DEPS → 允许一切（不误报）。
  */
 
-import type { DesignDSL, Node, ArchLayer, SemanticFile } from '../dsl/types.js';
+import type { DesignDSL, Node, ArchLayer, SemanticFile } from '../domain/types.js';
 
 /** 层定义：目录/文件名段模式 → 层。首中即止（顺序敏感：更具体的层排前） */
 export interface LayerDef {

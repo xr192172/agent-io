@@ -8,12 +8,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { getFeaturesDir, getDSL } from './storage.js';
-import type { DesignDSL } from './dsl/types.js';
+import type { DesignDSL } from './domain/types.js';
 import type {
   DesignOverlay,
   ReconcileStats,
-} from './dsl/overlay.js';
-import { reconcileOverlay, buildCandidates, buildEdgeCandidates, seedOverlayFromDsl, applyOverlay, statsLine } from './dsl/overlay.js';
+} from './domain/overlay.js';
+import { reconcileOverlay, buildCandidates, buildEdgeCandidates, seedOverlayFromDsl, applyOverlay, statsLine } from './domain/overlay.js';
 
 function getOverlayFile(feature: string): string {
   if (!/^[a-zA-Z0-9_-]+$/.test(feature)) {

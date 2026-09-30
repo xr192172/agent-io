@@ -16,7 +16,7 @@ import path from 'node:path';
 import { execSync } from 'node:child_process';
 import { describe, it, expect, afterAll } from 'vitest';
 import { harvestFromUrl } from '../../src/tools/harvest_from_url';
-import type { BrickManifest } from '../../src/dsl/contract';
+import type { BrickManifest } from '../../src/domain/contract';
 
 const dirs: string[] = [];
 

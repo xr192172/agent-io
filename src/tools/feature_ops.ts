@@ -2,7 +2,7 @@
  * feature 级操作：create_feature / clone_feature
  */
 
-import type { DesignDSL } from '../dsl/types.js';
+import type { DesignDSL } from '../domain/types.js';
 import { getDSL, saveDSL } from '../storage.js';
 import type { EditResult } from './edit_result.js';
 

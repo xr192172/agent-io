@@ -9,7 +9,7 @@
  * 人话仅做名词翻译；绝不发明签名里没有的类型/流程。
  */
 
-import type { TeachPin } from '../dsl/mindmap.js';
+import type { TeachPin } from './mindmap.js';
 
 export interface NarrScene {
   /** 分镜标题（动宾，≤ 10 字） */

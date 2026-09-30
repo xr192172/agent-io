@@ -17,7 +17,7 @@ import type {
   SimulationTrace,
   SimulationNodeMapping,
   Node,
-} from '../dsl/types.js';
+} from '../domain/types.js';
 
 export interface EngineState {
   [key: string]: unknown;

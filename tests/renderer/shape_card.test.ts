@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { schemaToHuman } from '../../src/renderer/shape_card';
-import type { AnimationValueSchema } from '../../src/dsl/types';
+import type { AnimationValueSchema } from '../../src/domain/types';
 
 describe('schemaToHuman - 基本类型', () => {
   it('标量类型中文化', () => {

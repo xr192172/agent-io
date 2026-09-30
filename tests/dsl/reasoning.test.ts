@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { validateDSL } from '../../src/dsl/validator';
-import type { DesignDSL } from '../../src/dsl/types';
+import { validateDSL } from '../../src/domain/validator';
+import type { DesignDSL } from '../../src/domain/types';
 
 /** 构造一个带 reasoning 的最小合法 DSL */
 function makeWithReasoning(): DesignDSL {

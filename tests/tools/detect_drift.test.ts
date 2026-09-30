@@ -15,7 +15,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { TOOL_DEFS } from '../../src/server_registry';
 import { getFeatureFile } from '../../src/storage.js';
 import { detectDrift } from '../../src/tools/detect_drift.js';
-import type { DesignDSL } from '../../src/dsl/types.js';
+import type { DesignDSL } from '../../src/domain/types.js';
 
 function handlerOf(name: string) {
   const def = TOOL_DEFS.find((d) => d.name === name);

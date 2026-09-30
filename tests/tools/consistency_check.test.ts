@@ -15,7 +15,7 @@ import path from 'node:path';
 import { describe, it, expect } from 'vitest';
 import { getFeatureFile } from '../../src/storage.js';
 import { checkConsistency } from '../../src/tools/consistency.js';
-import type { DesignDSL } from '../../src/dsl/types.js';
+import type { DesignDSL } from '../../src/domain/types.js';
 
 function writeFeature(feature: string, expectedSignatures: string[], filePath: string): void {
   const dsl: DesignDSL = {

@@ -27,7 +27,7 @@ import {
   type ImportEdge,
   type LayerViolation,
 } from './layer_detect.js';
-import type { ArchLayer, DesignDSL } from '../dsl/types.js';
+import type { ArchLayer, DesignDSL } from '../domain/types.js';
 import { fileFingerprint, healthKey, readHealthCache, writeHealthCache } from './health_cache.js';
 
 export interface ArchLayerInput {

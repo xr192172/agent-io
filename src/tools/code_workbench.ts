@@ -23,11 +23,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { getStorageRoot, getDSL, saveDSL } from '../storage.js';
 import { loadOverlay, saveOverlay } from '../storage_overlay.js';
-import { reconcileOverlay, buildCandidates, buildEdgeCandidates, seedOverlayFromDsl, applyOverlay, type OverlayGoal } from '../dsl/overlay.js';
+import { reconcileOverlay, buildCandidates, buildEdgeCandidates, seedOverlayFromDsl, applyOverlay, type OverlayGoal } from '../domain/overlay.js';
 import { setDesignIntent, type DesignEdgeIntentWrite } from './set_design_intent.js';
 import { renameFile, type RenameFileInput } from './rename_file.js';
 import { editCode, type EditCodeArgs } from './edit_code.js';
-import type { DesignDSL } from '../dsl/types.js';
+import type { DesignDSL } from '../domain/types.js';
 
 // ─────────────────────────────────────────────────────────────
 // 类型

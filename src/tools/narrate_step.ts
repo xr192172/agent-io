@@ -16,11 +16,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { getDSL, saveDSL, getStorageRoot } from '../storage.js';
 import { projectSignature } from './derive_mind_map.js';
-import { buildScenes, humanOf } from '../dsl/narration.js';
-import type { NarrScene } from '../dsl/narration.js';
-import type { TeachPin } from '../dsl/mindmap.js';
-import type { BrickManifest } from '../dsl/contract.js';
-import type { SemanticFile } from '../dsl/types.js';
+import { buildScenes, humanOf } from '../domain/narration.js';
+import type { NarrScene } from '../domain/narration.js';
+import type { TeachPin } from '../domain/mindmap.js';
+import type { BrickManifest } from '../domain/contract.js';
+import type { SemanticFile } from '../domain/types.js';
 
 export interface NarrateStepInput {
   /** feature 名 */

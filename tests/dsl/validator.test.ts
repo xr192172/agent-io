@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { validateDSL, validateDSLJson } from '../../src/dsl/validator';
-import type { DesignDSL } from '../../src/dsl/types';
+import { validateDSL, validateDSLJson } from '../../src/domain/validator';
+import type { DesignDSL } from '../../src/domain/types';
 
 /** 构造一个最小合法 DSL 用于测试 */
 function makeValid(): DesignDSL {

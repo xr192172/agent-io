@@ -1,6 +1,7 @@
 /**
  * feature_map（可视化地基）测试 —— 把设计画布 src 当狗食现场验证"功能→前端/后端→相似→废弃"
  */
+import fs from 'node:fs';
 import path from 'node:path';
 import { describe, it, expect } from 'vitest';
 import { buildFeatureMap, featureIdOf, sideOfLayer } from '../../src/tools/feature_map';
@@ -25,16 +26,23 @@ describe('feature_map 顶层约定', () => {
 });
 
 describe('feature_map 在 agent-io src 上的真实结果', () => {
-  it('能切出 renderer/tools/dsl 等功能，且 renderer 有前端文件', () => {
+  it('能切出 src/ 下每个顶层目录（★ 与目录名解耦，不写死任一族）', () => {
     const { features, scannedFiles } = buildFeatureMap({ project_dir: path.join(process.cwd()), source_root: SRC });
     expect(scannedFiles).toBeGreaterThan(100);
     const fns = features.map((f) => f.id);
-    expect(fns).toContain('renderer');
-    expect(fns).toContain('tools');
-    expect(fns).toContain('dsl');
-    const renderer = features.find((f) => f.id === 'renderer');
-    // renderer 至少命中一个前端(ui)层文件：html_renderer / anim_core 等目录含 renderer → ui 层
-    expect((renderer?.frontend.length ?? 0) + (renderer?.shared.length ?? 0)).toBeGreaterThan(0);
+    // ★★ 2026-09-30（搬 `dsl → domain` 时红）：原先这里写死 `renderer` / `tools` / `dsl` **三个目录名**
+    //   ⇒ **每搬一族就要改一次测试**（本仓正在按 §44 逐族搬迁）。改为**从盘上读**：
+    //   `src/` 下每个顶层目录都应被切成一个 feature。这样断言仍然具体（漏切某族就红），但**不随搬迁漂移**。
+    const topDirs = fs
+      .readdirSync(SRC, { withFileTypes: true })
+      .filter((d) => d.isDirectory())
+      .map((d) => d.name);
+    expect(topDirs.length, 'src/ 顶层目录数异常（是不是盘上有空目录残留？）').toBeGreaterThan(5);
+    for (const d of topDirs) expect(fns, `顶层目录 ${d} 没被切成 feature`).toContain(d);
+    expect(fns).toContain('root'); // 根文件归 root
+    // 分层识别的有效性：**至少有一族**命中前端或 shared 文件 —— 同样不写死是哪一族
+    const withFrontend = features.filter((f) => f.frontend.length + f.shared.length > 0);
+    expect(withFrontend.length, '没有任何一族命中前端/shared ⇒ 分层识别失效').toBeGreaterThan(0);
   });
 
   it('每组 proven 的 features 都带数组型 frontend/backend/shared（可渲染）', () => {

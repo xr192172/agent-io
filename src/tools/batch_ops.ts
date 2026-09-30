@@ -2,7 +2,7 @@
  * 批量节点操作：batch_move_nodes / batch_update_style / batch_delete_nodes
  */
 
-import type { DiagramStatus } from '../dsl/types.js';
+import type { DiagramStatus } from '../domain/types.js';
 import { getDSL, saveDSL } from '../storage.js';
 import type { EditResult } from './edit_result.js';
 

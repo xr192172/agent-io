@@ -5,7 +5,7 @@
  * 领域拆分：几何层 ./geometry / 语义层 ./semantic / 标注 ./annotation
  *          动画 ./animation / 仿真 ./simulation
  * 本文件保留根类型（DesignDSL/ThemeConfig/ThemeId）并统一再导出全部领域类型，
- * 外部消费者继续从 dsl/types.js 单一入口获取类型。
+ * 外部消费者继续从 domain/types.js 单一入口获取类型。
  */
 
 import type { DiagramStatus, Geometry } from './geometry.js';

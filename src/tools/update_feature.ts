@@ -27,7 +27,7 @@ import { submitApproval, reviewAnnotation } from './approval.js';
 import { saveSnapshot, rollbackSnapshot, deleteSnapshot, saveAutoSnapshot, pruneSnapshots } from './snapshot.js';
 import { dagLayout, forceLayout, gridAlign } from './dag_layout.js';
 import { resetSimulation } from './simulation.js';
-import type { DiagramStatus } from '../dsl/types.js';
+import type { DiagramStatus } from '../domain/types.js';
 
 // ─────────────────────────────────────────────────────────────
 // 类型定义

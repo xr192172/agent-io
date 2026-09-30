@@ -14,7 +14,7 @@
 import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
-import type { AnimationValueSchema, Edge, Node } from '../dsl/types.js';
+import type { AnimationValueSchema, Edge, Node } from '../domain/types.js';
 import { getDSL, saveDSL } from '../storage.js';
 import type { Database } from '../db/db.js';
 import { parseFileFull, isSupported, type ParsedCall, type ParsedSymbol } from './ts_kernel/index.js';

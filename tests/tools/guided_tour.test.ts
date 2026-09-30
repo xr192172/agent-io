@@ -16,7 +16,7 @@ import path from 'node:path';
 import { describe, it, expect, afterAll } from 'vitest';
 import { guidedTour } from '../../src/tools/guided_tour';
 import { saveDSL } from '../../src/storage';
-import type { DesignDSL } from '../../src/dsl/types';
+import type { DesignDSL } from '../../src/domain/types';
 
 const roots: string[] = [];
 

@@ -21,7 +21,7 @@
 
 import { getDSL } from '../storage.js';
 import { classifyError, pickBranch, formatValueShort, buildPresetValue, validateValueSchema } from '../renderer/anim_core.js';
-import type { AnimationError, AnimationFlow, AnimationValueSchema } from '../dsl/types.js';
+import type { AnimationError, AnimationFlow, AnimationValueSchema } from '../domain/types.js';
 
 export interface InjectReplayInput {
   feature: string;

@@ -11,7 +11,7 @@
  * - pipeline: 数据管道（Source → Transform → Sink）
  */
 
-import type { DesignDSL, Node, Edge } from '../dsl/types.js';
+import type { DesignDSL, Node, Edge } from '../domain/types.js';
 import { saveDSL, getDSL } from '../storage.js';
 
 export interface TemplateInfo {

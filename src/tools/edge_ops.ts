@@ -2,7 +2,7 @@
  * 边操作：add_edge / delete_edge
  */
 
-import type { Edge, NodeLayer } from '../dsl/types.js';
+import type { Edge, NodeLayer } from '../domain/types.js';
 import { getDSL, saveDSL } from '../storage.js';
 import type { EditResult } from './edit_result.js';
 

@@ -18,8 +18,8 @@
 import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
-import type { AnimationBranch, AnimationError, AnimationFlow, AnimationValueSchema } from '../dsl/animation.js';
-import type { DesignDSL, Node } from '../dsl/types.js';
+import type { AnimationBranch, AnimationError, AnimationFlow, AnimationValueSchema } from '../domain/animation.js';
+import type { DesignDSL, Node } from '../domain/types.js';
 import { getDSL, saveDSL } from '../storage.js';
 import { parseFileFull, type ParsedSymbol } from './ts_kernel/index.js';
 import { extractFunctionCfg } from './ts_kernel/cfg.js';

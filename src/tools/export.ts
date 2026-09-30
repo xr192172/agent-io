@@ -8,7 +8,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { getDSL } from '../storage.js';
-import type { DesignDSL, Node, Edge } from '../dsl/types.js';
+import type { DesignDSL, Node, Edge } from '../domain/types.js';
 
 function ensureDir(filePath: string): void {
   const dir = path.dirname(filePath);

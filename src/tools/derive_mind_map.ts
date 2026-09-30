@@ -30,9 +30,9 @@ import { loadAgentConfig, callChat } from './llm_focus.js';
 import type { ChatMessage } from './llm_focus.js';
 import { openDb } from '../db/db.js';
 import type { Database } from '../db/db.js';
-import type { DesignDSL, FeatureNode, FeatureTree, SemanticFile, CanvasNote, Node } from '../dsl/types.js';
-import type { MindMap, MindMapNode, TeachStep, TeachPin, TeachFlowEdge, TeachGap, ProposalFeature } from '../dsl/mindmap.js';
-import { buildScenes } from '../dsl/narration.js';
+import type { DesignDSL, FeatureNode, FeatureTree, SemanticFile, CanvasNote, Node } from '../domain/types.js';
+import type { MindMap, MindMapNode, TeachStep, TeachPin, TeachFlowEdge, TeachGap, ProposalFeature } from '../domain/mindmap.js';
+import { buildScenes } from '../domain/narration.js';
 
 export interface DeriveMindMapInput {
   /** feature 名（必填） */

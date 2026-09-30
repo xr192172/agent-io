@@ -2,7 +2,7 @@
  * 语义文件操作：add_file / update_file / delete_file
  */
 
-import type { DiagramStatus, SemanticFile, ExpectedApi } from '../dsl/types.js';
+import type { DiagramStatus, SemanticFile, ExpectedApi } from '../domain/types.js';
 import { getDSL, saveDSL } from '../storage.js';
 import type { EditResult } from './edit_result.js';
 

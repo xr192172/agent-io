@@ -2,7 +2,7 @@
  * 节点操作：add_node / update_node / delete_node
  */
 
-import type { DesignDSL, Node, NodeStyle, NodeContent, DiagramStatus, NodeLayer, NodeShapes, NodeDecision, DecisionHistoryEntry, AnimationValueSchema } from '../dsl/types.js';
+import type { DesignDSL, Node, NodeStyle, NodeContent, DiagramStatus, NodeLayer, NodeShapes, NodeDecision, DecisionHistoryEntry, AnimationValueSchema } from '../domain/types.js';
 import { getDSL, saveDSL } from '../storage.js';
 import type { EditResult } from './edit_result.js';
 

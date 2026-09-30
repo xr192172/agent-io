@@ -39,7 +39,7 @@ import { parseGoImportQualifiers } from './dead_deps.js';
 import { aggregateContracts } from './harvest_from_url.js';
 import { slimTsFile, type TsSlimResult } from './ts_slim.js';
 import { NODE_BUILTINS } from './harvest_closure.js';
-import type { BrickContract, BrickManifest } from '../dsl/contract.js';
+import type { BrickContract, BrickManifest } from '../domain/contract.js';
 
 export interface SlimBrickInput {
   /** 原积木名（盒内 <box_dir>/<brick_name>；须为 Go 积木且带 slim_candidates live 档案） */

@@ -20,8 +20,8 @@ import {
   buildEdgeCandidates,
   seedOverlayFromDsl,
   applyOverlay,
-} from '../dsl/overlay.js';
-import type { OverlayGoal, OverlayEdgeIntent } from '../dsl/overlay.js';
+} from '../domain/overlay.js';
+import type { OverlayGoal, OverlayEdgeIntent } from '../domain/overlay.js';
 
 /** 单条边意图写入：id 优先，其次 from+to 匹配 base 边 */
 export interface DesignEdgeIntentWrite {

@@ -40,12 +40,12 @@ import { listSnapshots } from './snapshot.js';
 import { listTemplates } from './templates.js';
 import { getSimulationState } from './simulation.js';
 import { diffFeatures } from './diff.js';
-import type { Node, Edge } from '../dsl/geometry.js';
-import type { SemanticFile } from '../dsl/semantic.js';
+import type { Node, Edge } from '../domain/geometry.js';
+import type { SemanticFile } from '../domain/semantic.js';
 import { getProjectCacheDb } from '../db/db.js';
 import type { Database } from '../db/db.js';
 import { buildFunctionOutline } from './function_outline.js';
-import type { OverlayGoal } from '../dsl/overlay.js';
+import type { OverlayGoal } from '../domain/overlay.js';
 
 export interface QueryFeatureInput {
   /** 查询类型 */

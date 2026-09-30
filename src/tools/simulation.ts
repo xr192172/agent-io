@@ -9,7 +9,7 @@
 
 import { getDSL } from '../storage.js';
 import { SimulationEngine } from '../renderer/simulation_engine.js';
-import type { Simulation, SimulationTrace } from '../dsl/types.js';
+import type { Simulation, SimulationTrace } from '../domain/types.js';
 
 // 引擎缓存：feature → engine 实例（保持状态跨调用）
 const engineCache = new Map<string, SimulationEngine>();

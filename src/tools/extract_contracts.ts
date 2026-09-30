@@ -35,7 +35,7 @@ import type {
   ShapeSchema,
   ShapeField,
   EffectTarget,
-} from '../dsl/contract.js';
+} from '../domain/contract.js';
 
 export interface ExtractContractsInput {
   /** 被分析项目的根目录（其下 .agent-io/cache.db 是符号缓存） */

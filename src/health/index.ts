@@ -771,7 +771,7 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
       //     · 架构违规问的是**运行时**依赖方向 —— type-only 依赖运行时并不存在，故不构成违规；
       //     · 但 type-only 仍是真实的**编译期消费者**，若把它算成"无人消费"，
       //       orphan_file / unused_export 立刻产生假阳。两个问题问的不是一回事。
-      //   实测效果：本仓 9 条假阳消失（dsl/types.ts 8 条统一再导出 + adapters/types.ts 1 条），
+      //   实测效果：本仓 9 条假阳消失（domain/types.ts 8 条统一再导出 + adapters/types.ts 1 条），
       //   它们**全部**是 `import type`；剩下的违规因此每一条都是真依赖，可逐条解释。
       if (impInfo.typeOnly) continue;
       // 可达根作目标时同按胶水层算（P0-②）：入口是顶层，被入口 import 不是"向上依赖"
