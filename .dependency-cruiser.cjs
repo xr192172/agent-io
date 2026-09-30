@@ -7,7 +7,7 @@
  *   ★ 纪律：**只用基础规则**。自定义规则写多了，这个工具就重新变成自写门，照样漂移。
  *
  * ★★ 当前阶段（2026-09-30，P2 搬迁尚未开始）：
- *   四层目录（`surfaces/ features/ kernel/ dsl/`）**还不存在** ⇒ 带层名的规则**暂为空转**（命中 0）。
+ *   四层目录（`presentation/ application/ infrastructure/ domain/`）**还不存在** ⇒ 带层名的规则**暂为空转**（命中 0）。
  *   它们**故意先放进来**：等 P2 一族一族搬完，对应该族的 `from`/`to` 模式才**开始有对象**，
  *   于是"搬迁进度"就是"规则命中数"—— ★ **不需要再自写一个分类器**。
  *   ⇒ 因此本配置现在**真正生效的是"与目录无关"的那几条**：循环依赖、孤儿文件。
@@ -25,24 +25,24 @@ module.exports = {
       name: 'layer-downward-only',
       severity: 'error',
       comment:
-        '四层只许向下：surfaces → features → kernel → dsl（§4）。★ P2 搬完一族后这条才开始有对象；' +
+        '四层只许向下：presentation → application → infrastructure → domain（§4）。★ P2 搬完一族后这条才开始有对象；' +
         '现在命中 0 是预期的，不是"没问题"。',
-      from: { path: '^src/(features|kernel|dsl)/' },
-      to: { path: '^src/surfaces/' },
+      from: { path: '^src/(application|infrastructure|domain)/' },
+      to: { path: '^src/presentation/' },
     },
     {
-      name: 'features-must-not-reach-kernel-internals',
+      name: 'application-must-not-reach-infrastructure-internals',
       severity: 'error',
-      comment: 'features 只能用 kernel 的公开面，不许深入其内部子目录（§41.3 的"铁律"列）。',
-      from: { path: '^src/features/' },
-      to: { path: '^src/kernel/[^/]+/internal/' },
+      comment: 'application 只能用 infrastructure 的公开面，不许深入其内部子目录（§44 的"铁律"列）。',
+      from: { path: '^src/application/' },
+      to: { path: '^src/infrastructure/[^/]+/internal/' },
     },
     {
-      name: 'dsl-is-self-contained',
+      name: 'domain-is-self-contained',
       severity: 'error',
-      comment: 'dsl 是契约与数据模型，**自洽、不 import 实现**（§4）。',
-      from: { path: '^src/dsl/' },
-      to: { path: '^src/(surfaces|features|kernel)/' },
+      comment: 'domain 是契约与数据模型，**自洽、不 import 实现**（§44）。',
+      from: { path: '^src/domain/' },
+      to: { path: '^src/(presentation|application|infrastructure)/' },
     },
     {
       name: 'no-orphans',
@@ -50,7 +50,7 @@ module.exports = {
       comment:
         '没有被任何东西 import 的模块。★ 用 warn 而非 error：**入口点**（CLI/HTTP/daemon）本来就没人 import。' +
         '真正该报的"死模块"由 knip 单独判（那是它的职责，别在这里重复）。',
-      from: { orphan: true, pathNot: ['^src/(surfaces|daemon)/', '_cli\\.ts$', '^src/server\\.ts$'] },
+      from: { orphan: true, pathNot: ['^src/(presentation|daemon)/', '_cli\\.ts$', '^src/server\\.ts$'] },
       to: {},
     },
   ],

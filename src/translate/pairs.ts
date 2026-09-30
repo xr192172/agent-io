@@ -12,8 +12,13 @@
 import { extractGo, type SkippedDecl } from './go_extractor.js';
 import { renderTsSkeleton, channelShimSource } from './ts_codegen.js';
 import { verifySkeletons, type VerifyIssue } from './verify.js';
-// 项目级翻译出口（re-export 便于统一入口）
-export { translateGoProject, walkGoFiles, type ProjectModule, type ProjectResult } from './project.js';
+// ★★ 2026-09-30（修循环依赖，T-cycle）：这里原有一行
+//   `export { translateGoProject, walkGoFiles, type ProjectModule, type ProjectResult } from './project.js';`
+//   —— 注释写着「re-export 便于统一入口」。它**本身不复用任何东西**，只是转发；
+//   而 `project.ts` 反过来 import 本文件的 `translateGoToTs` ⇒ **两文件成环**
+//   （dependency-cruiser 的 `no-circular` 抓到的 8 个之一）。
+//   ★ 这类"**桶文件造成的环**"是最常见的一种：**转发不是依赖**，删掉转发、让消费者直连即可。
+//   ⇒ 已删；`tool.ts` / `translate_cli.ts` 改为直接从 `./project.js` 引 `translateGoProject`。
 import { buildHolePrompts } from './prompts.js';
 import type { TransUnit } from './unit.js';
 

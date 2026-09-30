@@ -14,7 +14,9 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { translateGoToTs, translateGoProject } from './pairs.js';
+import { translateGoToTs } from './pairs.js';
+// ★ 2026-09-30：同 tool.ts —— 原先从 pairs 引 `translateGoProject`（转发）制造了环，改为直连出处。
+import { translateGoProject } from './project.js';
 import { createPooledHoleTranslator } from './llm.js';
 import { fillUnitsWithRetry } from './fill.js';
 

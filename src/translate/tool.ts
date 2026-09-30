@@ -8,7 +8,10 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { translateGoToTs, translateGoProject } from './pairs.js';
+import { translateGoToTs } from './pairs.js';
+// ★ 2026-09-30：原先从 `./pairs.js` 引 `translateGoProject`（那是 pairs 的**转发**）⇒ 制造了
+//   `pairs ↔ project` 的环（`no-circular` 抓到）。转发已删，这里直连真正的出处。
+import { translateGoProject } from './project.js';
 import { createPooledHoleTranslator } from './llm.js';
 import { fillUnitsWithRetry } from './fill.js';
 import { checkTranslationParity, generateCasesFor } from './verify_behavior.js';

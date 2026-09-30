@@ -287,36 +287,6 @@
     ]
   },
   {
-    "type": "cycle",
-    "from": "src/translate/pairs.ts",
-    "to": "src/translate/project.ts",
-    "unresolvedTo": "./project.js",
-    "dependencyTypes": [
-      "local",
-      "require"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "no-circular"
-    },
-    "cycle": [
-      {
-        "name": "src/translate/project.ts",
-        "dependencyTypes": [
-          "local",
-          "require"
-        ]
-      },
-      {
-        "name": "src/translate/pairs.ts",
-        "dependencyTypes": [
-          "local",
-          "require"
-        ]
-      }
-    ]
-  },
-  {
     "type": "module",
     "from": "src/diagnosis/contract.ts",
     "to": "src/diagnosis/contract.ts",
