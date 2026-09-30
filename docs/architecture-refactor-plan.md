@@ -3771,3 +3771,52 @@ src/tools/simulation.ts      ←  ../renderer/simulation_engine.js
 ★ 处置：**先不动 `renderer/`**；按 §44.3 的顺序从**底座**开始搬 ——
 下一个目标 **①`domain/` ← `src/dsl/`（13 文件 / 104 引用处）**，
 它是纯契约（**没有任何东西被它依赖的循环**），搬它风险最低、收益最大（上层对它的引用一次改完）。
+
+## 45. ★★★ 用户裁定：**CLI 不手写，从唯一真相源投影**（2026-09-30）
+
+> 用户原话：「有很多本身它是既有 MCP 工具又有 CLI 工具的，我的建议是反正我们是有接口的，
+> **把那些 CLI 工具等全部清除只留 MCP 工具**。然后**后续再通过唯一真相源投影出 CLI 工具**。」
+
+### 45.1 目标形态（与仓内既有教条一致）
+- **唯一真相源 = `registry/lanes/*.ts` 的 `ToolDef`** —— ★ MCP 面**本来就已经是从它投影出来的**
+  （`LANE_SOURCES` → `TOOL_DEFS` → `server.registerTool`）⇒ CLI 照**同一条路**投影即可，**不发明新机制**。
+- **投影形态**：**一个通用 CLI 入口**（如 `npm run tool -- <name> --json '{...}'`），
+  按 `TOOL_DEFS` 查名字 → zod 校验入参 → 调 handler → 打印回执。
+  ⇒ ★ **加一个工具自动获得 CLI** ⇒ CLI 与 MCP **永不分叉**（本仓最贵的病就是不这份）。
+- ★ 现状：**没有任何现成的工具投影机制**（`src/tools/gateway.ts` 是 **LLM 供应商网关**，不是这个）。
+
+### 45.2 先量：19 个 CLI 分两类（`.inspect/survey_cli_vs_mcp.mjs`）
+| 类 | 数 | 明细 |
+|---|---|---|
+| **A 与某个注册工具调同一份实现**（⇒ 删了不丢能力） | **9** | `behavior_cli` `cross_repo_cli` `diagnose_cli` `health_cli` `hybrid_cli` `impact_cli` `refactor_judge_cli`（与它们的 MCP 工具同源）+ `brickify_cli` `diagnose_loop_cli`（★ **各自都是更大的"工作台 CLI"**，只是**部分**共享实现） |
+| **B 与任何 lane 无交集**（⇒ CLI-only） | **10** | `archify_cli` `capability_cli` `deprecate_offline_cli` `install_package_cli` `signal_review_cli` `split_stage_cli` `upgrade_cli` `upgrade_rewrite_cli` `instrument_cli` `translate_cli` |
+
+★★ **B 里混着假阴性**（量具的局限，如实记）：`capability_cli` / `instrument_cli` / `translate_cli`
+**对应的注册工具是存在的**（`capability_map` / `observe_instrument` / `translate_go_ts`）——
+只是它们的 CLI 走**另一条入口**（如 `capability_cli` 引 `./capability_matrix`，而 lane 不引它）。
+⇒ **B 的每一项都要人核**，不能按量具直接删。
+
+### 45.3 ★★ 我对**顺序**的意见（与用户原话略有不同）
+用户说「**先全删 CLI，后续再投影**」。★ **我建议反过来**：
+```
+① 先建「通用 CLI 投影」（一个入口覆盖 58 个工具）
+② 再删 A 类里真正同源的 7 个（brickify_cli / diagnose_loop_cli 要单独看：它们是更大的工作台）
+③ B 类 10 个逐项裁决：补 MCP 面 / 归 CLI-only 特殊入口 / 归档
+```
+**理由**：先删后建 ⇒ 中间态是「**功能没了**」——CLI 删了、投影还没建，而 `package.json` 里
+`npm run health` / `npm run capability` 这些**名字还在**（它们会指向不存在的文件）。
+⇒ 这不只是体验问题，正是本仓 §2d 那条「**少做了什么必须可见**」的反面：**删了一个入口却不说**。
+
+★ 另：`package.json` 里 14 个 scripts 指向 `dist/...` ⇒ 删 CLI **必须同步这些 scripts**，
+否则 `npm run <x>` 静默失败（★ 本仓刚因"陈旧 dist"吃过一次同类亏）。
+
+### 45.4 ★★ 附：这个量具本身值得当教案（**连错 3 版才可信**）
+| 版 | 错在哪 | 造成的假读数 |
+|---|---|---|
+| ① | 写死 `'../tools/x.js'` | 19 个 CLI **全空** —— `src/tools/` 内部的同目录引用是 `'./x.js'` |
+| ② | 补 `'./x.js'`，再比字符串 | **仍全空** —— 真实现常在跨目录（`health_cli` 引 `'../health/index.js'`） |
+| ③ | 直接比相对路径字符串 | ★ **仍全空** —— **两边路径基准不同**：`src/tools/health_cli.ts` 引 `'../health/index.js'`，
+而 `src/lanes/cross.ts` 引 `'../../health/index.js'` ⇒ **同一个文件，字符串不等** |
+| ④ | **解析成仓库相对绝对路径**再比 | ✅ 可用；**对照项**（`health_cli` 与 lane `cross` 解析出同一路径）证明不哑 |
+⇒ ★★ **教训**：**判定"两个东西是不是同一个"时，必须先归一化到同一个坐标系**（这里是绝对路径）。
+  相对路径的字符串比较**在两边基准不同时必然出错**，而且**错得安静**（返回"全不重叠"这种看起来很合理的结果）。
