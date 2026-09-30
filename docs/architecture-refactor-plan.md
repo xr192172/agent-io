@@ -3680,3 +3680,64 @@ E 才是"三种引用都没有"。把两者混在一起会把"活的入口"误�
 
 **诚实代价**：依赖数从 12 增加（含传递依赖）；首次接入会报一大批存量（需 `--max-issues` 或 baseline）。
 ★ 但换来的是：**这几条判据从此由外部维护、不随我们的口味漂移。**
+
+## 44. ★★ 四层改用**通用名**（2026-09-30，用户提问触发）—— 且**现在改是免费的**
+
+> 用户问：「我们这个 `surfaces` / `features` / `kernel` / `dsl` 其实都是有**对应的通用名字**的吧？」
+> ⇒ 有，而且**该换**。★ 关键理由：**目录一个字都还没搬（P2 未开始）⇒ 现在改名成本为零**；
+> 一旦搬完再改，就是第二次全仓改名（§20 的教训：不留墓碑 = 改名必须一次做干净）。
+
+### 44.1 决策：对齐 **DDD / Clean Architecture 的四层通用名**
+
+| 现名（§4 定的） | ★ **改用（通用名）** | 语义 | 对应社区标准 |
+|---|---|---|---|
+| `surfaces/` | **`presentation/`** | MCP / CLI / HTTP / daemon 外壳；**只做转发** | DDD `interfaces` / Clean `interface-adapters` |
+| `features/` | **`application/`** | 用例：**一个工具一个文件**，编排 domain + infrastructure | DDD/Clean 的 `application`（use cases） |
+| `kernel/` | **`infrastructure/`** | 解析 / 索引 / 图谱 / 分析器 —— **技术能力**（tree-sitter、fs、db） | DDD `infrastructure` |
+| `dsl/` | **`domain/`** | 契约与数据模型（DesignDSL 语义），**自洽、不 import 实现** | DDD `domain`（领域模型） |
+
+★ 依赖规则不变，**只允许向下**：`presentation → application → infrastructure → domain`。
+
+★★ **一处刻意不照抄**：Clean Architecture 要求 `application` 依赖 `infrastructure` **的接口**（依赖倒置）。
+**本仓不这么做** —— 我们是**分层架构**（layered），`application` 直接用它下一层的 `infrastructure`。
+⇒ 所以**不要用 `interface-adapters` / `ports` / `entities` 这些 Clean 的名字**（会承诺一个我们不兑现的语义）；
+用 **DDD 的四层名**（`presentation / application / infrastructure / domain`）最贴切。
+
+★ **另一处提醒**：`features/` 这个名字在 **FSD（Feature-Sliced Design，前端标准）**里是个**不同含义**的层
+（FSD 的 `features` 在 `entities` 之上）⇒ 用 **`application/`** 可避免混淆。
+
+### 44.2 更新后的完整对照表（**取代 §41.3 的那张**）
+
+| 目标层 | 子层 | 从哪来 | 引用处数（搬迁影响面） |
+|---|---|---|---|
+| `presentation/` | `mcp/` | `src/server.ts`、`src/server_registry.ts`、`src/registry/{types,plumbing,handlers}.ts` | — |
+| | `cli/` | `src/tools/*_cli.ts`（17）+ `src/observe/instrument_cli.ts` | — |
+| | `http/` | `src/tools/serve.ts`、**`src/api/`** | 2 |
+| | `daemon/` | `src/daemon/`（5） | 8 |
+| | `web/` | `src/renderer/`（14，含两个巨型字符串文件） | 10 |
+| `application/` | `<线名>/` × 6 | `src/registry/lanes/{design,refactor,observe,harvest,cross,meta}.ts` | — |
+| | | **`src/tools/`（194）的 A 类 49 个**（§42：恰好被 1 条线 import） | — |
+| `infrastructure/` | `parse/` | `src/tools/ts_kernel/` | — |
+| | `index/` | `src/db/`、`src/tools/index_*.ts`、`src/tools/project_view.ts` | **114** |
+| | `graph/` | `src/tools/{import_graph,dead_deps,import_project}.ts` | — |
+| | `text/` | `src/tools/{refs_text,import_text}.ts` | — |
+| | `analysis/` | `src/health/` `src/impact/` `src/diagnosis/` `src/behavior/` `src/translate/` `src/version_upgrade/` `src/java_refactor/` `src/cross_repo/` `src/hybrid/` `src/observe/`（除 CLI） | 见下表 |
+| `domain/` | — | **`src/dsl/`（13）** | **104** |
+
+### 44.3 ★★ 搬迁顺序：**自下而上**（被依赖越多越先搬）
+
+理由：先搬底座，上层对它的引用**只需改这一次**；反过来搬会把同一个 specifier 改好几遍。
+
+| 序 | 族 | 影响面（引用处） |
+|---|---|---|
+| ① | `domain/` ← `dsl/` | **104** |
+| ② | `infrastructure/index/` ← `db/` | **114** |
+| ③ | `infrastructure/analysis/` ← 9 个分析器目录 | 54+34+29+26+8+6+5+4+3 |
+| ④ | `infrastructure/parse|graph|text/` ← `tools/` 里的内核模块 | —— |
+| ⑤ | `presentation/web/` ← `renderer/` | 10 |
+| ⑥ | `presentation/{cli,http,daemon,mcp}/` | 2+8+… |
+| ⑦ | `application/<线>/` ← `registry/lanes/` + `tools/` 的 A 类 49 个 | ——（最后，因为它依赖上面全部） |
+
+★ 每一族：**一次提交** ⇒ `renameFiles` 批（自动双向改写 import）+ 全量回归 + `npm run arch`（无新增 error）。
+★ 验收：**`unclassified` 与规则命中数** —— 层规则逐族点亮（`layer-downward-only` 等），
+**不再需要自写"分类进度"量具**（见 §43 的说明）。
