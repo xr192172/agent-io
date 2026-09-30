@@ -6,7 +6,7 @@
  * list 数据 + 命令行拦截保证（派生/未知语言在 CLI 层拒绝）。
  */
 import { describe, it, expect } from 'vitest';
-import { collect, rangeOk, verifyAbi, checkPrebuild, ghSource } from '../../src/tools/install_package_cli.js';
+import { collect, rangeOk, verifyAbi, checkPrebuild, ghSource } from '../../src/presentation/cli/install_package_cli.js';
 import { LANGUAGES } from '../../src/infrastructure/parse/languages.js';
 
 describe('install-package 语言包清单', () => {

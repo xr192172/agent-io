@@ -13,7 +13,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { probeInstalledLanguages } from '../infrastructure/parse/probe.js';
+import { probeInstalledLanguages } from '../../infrastructure/parse/probe.js';
 import {
   allCapabilities,
   diagnoseCapabilities,
@@ -21,7 +21,7 @@ import {
   aggregateGaps,
   renderAuditText,
   languageCatalog,
-} from './capability_matrix.js';
+} from '../../tools/capability_matrix.js';
 import './register_capabilities.js'; // 触发默认登记（side-effect import，确保矩阵被填充）
 
 function readArg(name: string): string | undefined {

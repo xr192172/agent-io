@@ -16,23 +16,23 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { buildBrickify, ROLE_LABEL } from './brickify.js';
-import { renderBrickifyWorkbenchHtml } from './render_brickwork.js';
-import { renderBrickifyMindMapHtml } from './render_mindmap.js';
-import { narrateClusters } from './cluster_narrator.js';
-import { renderClusterWorkbenchHtml } from './render_cluster_workbench.js';
-import { renderDepCanvasHtml } from './render_dep_canvas.js';
-import { classifyBricks } from './classify_bricks.js';
-import { renderAnatomyHtml } from './render_anatomy.js';
-import { extractRegistryToolsFromFile } from './registry_extract.js';
-import { extractCliCommands } from './cli_extract.js';
-import { collectFunctions } from './collect_functions.js';
-import { classifyTools } from './classify_tools.js';
-import { renderToolsMapHtml } from './render_tools_map.js';
-import { renderWizardHtml } from './render_wizard.js';
-import { renderWorkbenchHtml } from './render_workbench.js';
-import { registerArtifact } from './registry.js';
-import { buildWorkbenchData, writeWorkbenchDataJson } from './workbench_data.js';
+import { buildBrickify, ROLE_LABEL } from '../../tools/brickify.js';
+import { renderBrickifyWorkbenchHtml } from '../../tools/render_brickwork.js';
+import { renderBrickifyMindMapHtml } from '../../tools/render_mindmap.js';
+import { narrateClusters } from '../../tools/cluster_narrator.js';
+import { renderClusterWorkbenchHtml } from '../../tools/render_cluster_workbench.js';
+import { renderDepCanvasHtml } from '../../tools/render_dep_canvas.js';
+import { classifyBricks } from '../../tools/classify_bricks.js';
+import { renderAnatomyHtml } from '../../tools/render_anatomy.js';
+import { extractRegistryToolsFromFile } from '../../tools/registry_extract.js';
+import { extractCliCommands } from '../../tools/cli_extract.js';
+import { collectFunctions } from '../../tools/collect_functions.js';
+import { classifyTools } from '../../tools/classify_tools.js';
+import { renderToolsMapHtml } from '../../tools/render_tools_map.js';
+import { renderWizardHtml } from '../../tools/render_wizard.js';
+import { renderWorkbenchHtml } from '../../tools/render_workbench.js';
+import { registerArtifact } from '../../tools/registry.js';
+import { buildWorkbenchData, writeWorkbenchDataJson } from '../../tools/workbench_data.js';
 
 function readArg(name: string): string | undefined {
   const i = process.argv.indexOf(name);

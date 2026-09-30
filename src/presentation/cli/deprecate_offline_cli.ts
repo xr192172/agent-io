@@ -5,7 +5,7 @@
  *   node dist/src/tools/deprecate_offline_cli.js --project <dir>
  *        [--plans ./a.ts,./legacy/b] [--files <scope>] [--apply] [--remove-file] [--no-verify]
  */
-import { runDeprecateOffline } from './deprecate_offline.js';
+import { runDeprecateOffline } from '../../tools/deprecate_offline.js';
 
 function readArg(name: string): string | undefined {
   const i = process.argv.indexOf(name);

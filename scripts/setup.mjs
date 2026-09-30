@@ -34,7 +34,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SKILL_SRC = path.join(ROOT, '.trae', 'skills');
 const INSTALL_MCP = path.join(ROOT, 'scripts', 'install_mcp.mjs');
 const INSTRUMENT_CLI = path.join(ROOT, 'dist', 'src', 'presentation', 'cli', 'instrument_cli.js');
-const CAPABILITY_CLI = path.join(ROOT, 'dist', 'src', 'tools', 'capability_cli.js');
+const CAPABILITY_CLI = path.join(ROOT, 'dist', 'src', 'presentation', 'cli', 'capability_cli.js');
 const DEFAULT_AGENT_SKILLS = path.join(ROOT, '..', 'ai-config', 'skills'); // 本地 agent 的 skills 目录
 const EVENT_DIRS_TPL = ['.agent-io/camera', '.agent/camera'];
 
@@ -199,7 +199,7 @@ function runDoctor() {
     } else {
       fail++;
       console.log(no(`能力矩阵：capability_cli 无法运行（capability CLI 报错，缺口无法自检）`));
-      console.log(dim(`   → dist/src/tools/capability_cli.js 是否已构建？跑 npm run build`));
+      console.log(dim(`   → dist/src/presentation/cli/capability_cli.js 是否已构建？跑 npm run build`));
     }
   }
 

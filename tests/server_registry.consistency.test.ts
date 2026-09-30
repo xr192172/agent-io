@@ -50,7 +50,7 @@ const INTERNAL_MODULES: Record<string, { importedBy: string[]; why: string }> = 
     why: 'derive_feature_tree 的底座识别步骤；其对内实现，不单独注册',
   },
   collect_functions: {
-    importedBy: ['src/tools/brickify_cli.ts', 'src/tools/classify_tools.ts'],
+    importedBy: ['src/presentation/cli/brickify_cli.ts', 'src/tools/classify_tools.ts'],
     why: '积木化/分类两个 CLI 共用的函数收集器；不是 MCP 工具',
   },
   contract_gate: {
@@ -115,7 +115,7 @@ const INTERNAL_MODULES: Record<string, { importedBy: string[]; why: string }> = 
     why: 'manage_feature 的 feature 增删改实现（createFeature 等）',
   },
   render_workbench: {
-    importedBy: ['src/tools/brickify_cli.ts'],
+    importedBy: ['src/presentation/cli/brickify_cli.ts'],
     why: '工作台渲染，brickify CLI 的实现细节',
   },
   feature_map: {

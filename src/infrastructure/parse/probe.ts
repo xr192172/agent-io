@@ -24,13 +24,14 @@ import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { LANGUAGES, findLanguageByExt, LanguageEntry } from './languages.js';
 /**
- * ★ 真筛子的**唯一权威**在 `tools/install_package_cli.ts`（它自述「★★ 本仓的『真筛子』」，
- *   `list`/`check`/`install` 三处共用，注释里逐字写着"本地读 / registry 元数据走同一判据，
- *   **不抄第二份**"）。⇒ 这里**复用**，不在内核里再写一份（本仓 G4「同一意图只有一份实现」）。
- *   依赖方向（内核 → 工具 CLI）不理想，但该 CLI 有 main 守卫、import 零副作用；
- *   若日后要归位，应把这个纯函数抽到更底层的共享模块、两边都引它，而不是各自实现。
+ * ★ 真筛子的判据：`./template_compat.js` 的 `templateCompatFromPkgJson`（**唯一权威**）。
+ *   `list`/`check`/`install` 三处共用同一判据（注释里逐字写着"本地读 / registry 元数据走同一判据，
+ *   **不抄第二份**"）⇒ 这里**复用**，不在内核里再写一份（本仓 G4「同一意图只有一份实现」）。
+ *   ★ 2026-09-30：原先它住在 `tools/install_package_cli.ts`（工具 CLI）里，内核去引 CLI 是
+ *   **下层依赖上层**；搬 ⑥ 后架构门的 `layer-downward-only` **真的亮了** ⇒ 按本文件原注释
+ *   自己写下的处置办法，把那个纯函数抽到 `infrastructure/parse/template_compat.ts`，两边都引它。
  */
-import { templateCompatFromPkgJson } from '../../tools/install_package_cli.js';
+import { templateCompatFromPkgJson } from './template_compat.js';
 
 /**
  * 语言包可解析性判定用了两套 resolver，按可用性依次回退：

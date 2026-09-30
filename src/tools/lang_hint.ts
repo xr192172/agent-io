@@ -36,7 +36,7 @@ import {
   levelFor,
   SUPPORT_META,
 } from './capability_matrix.js';
-import { PACK_PINS } from './install_package_cli.js';
+import { PACK_PINS } from '../presentation/cli/install_package_cli.js';
 import './register_capabilities.js'; // side-effect：填充能力声明表（否则缺口数恒为 0）
 
 /** 补齐清单（只读，别改；docs/* 被 .gitignore 忽略，本提示只**指向**它） */
