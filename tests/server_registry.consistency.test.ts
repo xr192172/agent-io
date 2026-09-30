@@ -68,7 +68,6 @@ const INTERNAL_MODULES: Record<string, { importedBy: string[]; why: string }> = 
       'src/tools/deprecate_offline.ts',
       'src/tools/feature_map.ts',
       'src/tools/function_annotation.ts',
-      'src/tools/refactor_judge_cli.ts',
       'src/tools/refactor_pipeline.ts',
     ],
     why: '死 import 检测是多个工具/CLI 共用的分析步骤；本身不是 MCP 工具',

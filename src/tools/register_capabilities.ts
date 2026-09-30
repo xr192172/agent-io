@@ -318,7 +318,9 @@ declareCapability({
     go: 'partial_ast',
   },
   // ★ 2026-09-29 本笔**评估过、决定不纳入** scala/groovy/julia/haskell/elixir（保持 default=unimplemented）。
-  //   ── 第一轮评估（上一笔，真跑证据 = health_cli 打 5 门无 import 的 2 文件夹具）──
+  //   ── 第一轮评估（上一笔；★ 原证据用的是 `health_cli`，该 CLI 已于 2026-09-30 删除
+  //      —— 因为 CLI 已改为**从唯一真相源投影**（`npm run tool -- code_health …`）。
+  //      要复现当时的读数，用投影入口：`npm run tool -- code_health --json '{"project_dir":"<夹具>"}'`）──
   //     · 未使用导出/孤儿文件/分层违规 三处都靠 `imports` 建边（`reverseConsumers` 只由 import 填）
   //       ⇒ 内核这 5 门**无 import 边**（languages.ts 未声明 import_nodes）⇒ **每门每个非胶水文件都被
   //       报成 orphan_file（实测 5 门均 100% 密度、2/2 文件全中）**，这是系统性假阳，不是"部分支持"。
