@@ -15,16 +15,22 @@
 
 ## 待做
 
-- [ ] **T18 ★★ ④ [B] 契约形状的落地（设计已定，见 `docs/tool-chain-contract.md`；台账 §44.15）**
-      *(核实：2026-10-01 用 `node scripts/measure_b_contract.mjs` 量的 —— 42 个 [B]：
-      入参类型 32 种、产物字段组合 37 种、被 ≥2 个共用的只有 1 种 ⇒ **[B] 之间没有共同形态**。)*
-      ⇒ 形状已定：**新增** `Touched { written_files?, read_files?, symbols?, nodes?, feature?, root? }`
-      （**不碰**现有领域字段 —— 实测它们**同名不同义**：`filesWritten: number` 是计数、
-      `written: boolean` 是"是否落盘"、`files` 是报告数组、`box_dir` 是盒根、`success ≠ ok`）。
-      ⇒ **按族落地，一族一提交**（G1/G8 守边界，`UPDATE_TOOL_BEHAVIOR=1` 并记账）：
-      **④-b refactor 族**（`rename_file` `rename_files` `rename_symbol` `rename_symbols` `find_references`）
-      → ④-c design → ④-d harvest（根别名最多）→ ④-e 其余 + **棘轮收紧**（新增 [B] 必须给 `touched`）。
-      ⇒ ★ `Touched` 类型**必须与第一个采用者同笔落**（先建没人用的类型 = 墓碑）。
+- [ ] **T18 ★★ ④ [B] 契约形状的落地（术语表已定，按表重构）**
+      *(核实：2026-10-01 —— `node scripts/measure_b_contract.mjs --glossary`；台账 §44.15~§44.17。)*
+      ⇒ **已定**（不再改口径）：
+      · **受控术语表** = `src/domain/b_terms.ts`（`B_TERMS` + `Touched`），文档 `docs/glossary.md`（生成）；
+        **机检通过**：共用字段名 **58 个 / 未定义 0**；**债务 39 条**（棘轮只许减）。
+      · **规范 vs 现状分开**：含义栏是"从此以后要求它是什么"；现状见 `docs/b-field-dictionary.md`。
+      · 规则：**出现在 ≥2 个 [B] 的字段名必须有定义**；私有字段（占 80%）不约束。
+      **要做的**：
+      · (1) 先定 **④-b 的"统一构造点"做法** —— `rename_symbol` 有 10+ 个 return 点，
+        逐处手加 `touched` 必漏 ⇒ 必须一处算、所有出口都走它（**这是本条的真正难点**）；
+      · (2) 按族把 `Touched` 落上：④-b refactor（`rename_file`/`rename_files`/`rename_symbol`/`rename_symbols`/`find_references`）
+        → ④-c design → ④-d harvest（根别名最多）→ ④-e 其余 + **棘轮收紧**（新增 [B] 必须给 `touched`）；
+      · (3) 按各条的 `fix` **还债**，优先三个最刺眼的：`files`（6 义）/ `stats`（5 义）/ `written`（布尔与列表混用）。
+      **牵连**（每族一笔）：G8 行为快照 `UPDATE_TOOL_BEHAVIOR=1` 并记账；G1 仅当描述/入参 schema 变了才动。
+      ★ **已知一条 warn 会随本项消失**：`arch` 报 `no-orphans: src/domain/b_terms.ts`
+      （契约尚未被 app 采用 ⇒ **故意不藏**；第一个 [B] 用上 `Touched` 后自动消失）。
 
 - [ ] **T15 ★★ 把 CLI-only 的能力注册为 MCP 工具 ⇒ 「CLI-only」这个类别应当**归零****
       *(用户裁定的洞察 2026-09-30：「**工作台为什么不能注册为 MCP 呢**？就是说**同样同时投影为 MCP 和 CLI**，

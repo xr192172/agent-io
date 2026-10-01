@@ -4464,3 +4464,51 @@ src/  application/  domain/  infrastructure/  presentation/  tools/     ← 根�
 其余四个用**新名**（`written_files` / `read_files` / `symbols` / `nodes`）——
 因为 `files` 已被 6 种语义污染、`filesWritten` 是计数、`written` 是布尔、`symbol`/`node_id` 是单数。
 ★ **不并** `box_dir`/`brick_dir`/`slim_dir`/`target_dir`：实测它们是**盒根**，不是项目根（§3 的反例之一）。
+
+---
+
+### 44.17 ★★★ ④ 第三笔：**受控术语表**（用户裁定"先定词，再重构"）
+> 2026-10-01。定义在 **`src/domain/b_terms.ts`**（`B_TERMS` + `Touched`）；文档 **`docs/glossary.md`**（生成）。
+
+用户原话：「**制定一张术语表**，制定一张术语表之后，再去重构整个这些工具的逻辑。
+因为以后也是要做的，这是**技术债**，你不还完的话，以后只会在这个地方**越兜越那个**。」
+
+#### ★★ 关键定性：术语表是**规范性的**，不是描述性的
+- **含义栏 = "从此以后要求它是什么意思"**；**现状**由 `docs/b-field-dictionary.md`（机器生成）负责。
+- 这条定性很重要：它让"定义"不必等现状干净才写 —— 定义先行，重构是对齐定义。
+- 与上一笔的关系：字典是**读数**（会变），术语表是**定义**（不随读数变）。
+
+#### 覆盖范围与机检（为什么是"共用字段名"）
+**出现在 ≥2 个 [B] 里的字段名必须有定义**；只服务 1 个 [B] 的**私有字段不受约束**（实测占 80%）。
+⇒ 这条规则**正中病根**（共用名才会被误读），且**可机检**：
+`node scripts/measure_b_contract.mjs --glossary` —— 生成器**直读 `b_terms.ts` 的 AST**（不依赖构建），
+统计"共用字段名是否都有定义"。
+**实测：共用 58 个 ｜ 有定义 58 ｜ 未定义 0** ✓
+
+#### 债务有了**计数**（这是"还得清"的前提）
+`debt: true` 共 **39** 条（棘轮：只许减不许增）。每条带 `fix`（怎么还）。典型：
+| 词 | 现状 | 处置 |
+|---|---|---|
+| `files`（产物） | **6 种类型** | 拆名：路径表 → `written_files`/`read_files`；报告数组 → `<领域>_reports` |
+| `stats` | **5 种**互不相同的对象 | 各领域改名 `<领域>_stats` |
+| `written` | `boolean`（是否落盘）×4 与 `string[]`（文件表）×1 | 拆：落盘用 `dry_run` 反表达；文件表用 `written_files` |
+| `filesWritten` | `number`（计数） | 改名 `written_file_count` |
+| `dryRun` / `project_root` | 与 `dry_run` / `project_dir` 同义 | 并入 |
+| `data` | 6 个 [B] 拿它当 `unknown` 逃生口 | 逐族收窄，**禁止新增** `data: unknown` |
+
+#### ★ `Touched` 也在这个文件里（④ 的链接口），并附**取舍依据**
+`feature`/`project_dir` 用现成名（数据证明真共用）；其余四个用**新名**
+（`written_files`/`read_files`/`symbols`/`nodes`）—— 因为 `files` 已被 6 种语义污染、
+`filesWritten` 是计数、`written` 是布尔、`symbol`/`node_id` 是单数。**不并** `box_dir`/`brick_dir`
+/`slim_dir`/`target_dir`（实测是**盒根**）。
+
+#### ★ 一个**故意留着**的信号：`arch` 现在有 1 条 warn
+`no-orphans: src/domain/b_terms.ts` —— 目前只有脚本（AST 直读）消费它，**app 图里还没有 importer**。
+- `npm run arch:baseline` 是 **shrink-only**，明确拒绝收编新建违规（"new: 1 => not added"）——
+  ★ **这是对的行为**：不要用基线掩盖。
+- ⇒ **故意不藏它**：这条 warn 就是"**契约还没被采用**"的可视提醒；④-b 让第一个 [B] 用上
+  `Touched` 后它**自动消失**。在此之前 `arch` 仍是 **0 error**（no-orphans 是 warn 级）。
+
+#### 下一笔（清单 T18）
+按术语表**重构**：先定 ④-b 的"统一构造点"做法（`rename_symbol` 有 10+ 个 return 点，
+逐处手加必漏），再按族把 `Touched` 落上；同时按 `fix` 逐条还债（`files`/`stats`/`written` 优先）。

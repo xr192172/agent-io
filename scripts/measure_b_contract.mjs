@@ -21,6 +21,7 @@
  */
 import ts from 'typescript';
 import path from 'node:path';
+import fs from 'node:fs';
 
 const ROOT = process.cwd();
 const cfgPath = ts.findConfigFile(ROOT, ts.sys.fileExists, 'tsconfig.json');
@@ -29,7 +30,9 @@ const parsed = ts.parseJsonConfigFileContent(cfg.config, ts.sys, ROOT);
 const files = parsed.fileNames.filter((f) =>
   path.relative(ROOT, f).split(path.sep).join('/').startsWith('src/application/'),
 );
-const program = ts.createProgram(files, parsed.options);
+/** 术语表模块（`--glossary` 直读它的 AST；★ 不依赖 dist 构建，避免读到陈旧产物） */
+const TERMS_FILE = path.join(ROOT, 'src/domain/b_terms.ts');
+const program = ts.createProgram(fs.existsSync(TERMS_FILE) ? [...files, TERMS_FILE] : files, parsed.options);
 const checker = program.getTypeChecker();
 const toCamel = (s) => s.replace(/_(\w)/g, (_, c) => c.toUpperCase());
 const BAG = /^(Record<string,\s*(unknown|any|never)>|unknown|any|object)$/;
@@ -133,6 +136,85 @@ const count = (get) => rows.reduce((m, r) => ((m[get(r)] = (m[get(r)] ?? 0) + 1)
 
 if (process.argv.includes('--json')) {
   console.log(JSON.stringify(rows, null, 2));
+} else if (process.argv.includes('--glossary')) {
+  /**
+   * ★ 术语表：**直读 `src/domain/b_terms.ts` 的 AST**（不 import 构建产物 ⇒ 不会读到陈旧 dist），
+   *   并且**机检**：「出现在 ≥2 个 [B] 里的字段名」是否都在术语表里。
+   *   ★ 只检这一个方向 —— 表里有词暂时没人用是**允许的**（那是"待采用的标准词"），不算腐。
+   */
+  const tsf = program.getSourceFile(TERMS_FILE);
+  const terms = [];
+  if (tsf) {
+    for (const st of tsf.statements) {
+      if (!ts.isVariableStatement(st)) continue;
+      for (const d of st.declarationList.declarations) {
+        if (!ts.isIdentifier(d.name) || d.name.text !== 'B_TERMS') continue;
+        const init = d.initializer;
+        if (!init || !ts.isObjectLiteralExpression(init)) continue;
+        for (const p of init.properties) {
+          if (!ts.isPropertyAssignment(p)) continue;
+          const nm = ts.isIdentifier(p.name) || ts.isStringLiteral(p.name) ? p.name.text : null;
+          const obj = p.initializer;
+          if (!nm || !ts.isObjectLiteralExpression(obj)) continue;
+          const get = (key) => {
+            for (const q of obj.properties) {
+              if (!ts.isPropertyAssignment(q)) continue;
+              const k = ts.isIdentifier(q.name) || ts.isStringLiteral(q.name) ? q.name.text : null;
+              if (k !== key) continue;
+              const v = q.initializer;
+              if (ts.isStringLiteral(v) || ts.isNoSubstitutionTemplateLiteral(v)) return v.text;
+              if (v.kind === ts.SyntaxKind.TrueKeyword) return 'true';
+              return v.getText();
+            }
+            return null;
+          };
+          terms.push({ name: nm, kind: get('kind'), type: get('type'), meaning: get('meaning') ?? '', debt: get('debt') === 'true', fix: get('fix') });
+        }
+      }
+    }
+  }
+
+  // 共用字段名（入参 ∪ 产物，出现 ≥2 个 [B]）
+  const normT = (s) => s.replace(/\s*\|\s*undefined\b/g, '').trim();
+  const tally = (getF, getT) => {
+    const m = new Map();
+    for (const r of rows) {
+      const F = getF(r), T = getT(r);
+      for (const f of F) {
+        const e = m.get(f) ?? { n: 0, ty: new Set() };
+        e.n++; e.ty.add(normT(T[f] ?? '?'));
+        m.set(f, e);
+      }
+    }
+    return m;
+  };
+  const inShared = tally((r) => r.input.fields, (r) => r.input.fieldTypes);
+  const outShared = tally((r) => r.product.fields, (r) => r.product.fieldTypes);
+  const shared = new Set([...[...inShared.entries()], ...[...outShared.entries()]].filter(([, e]) => e.n >= 2).map(([k]) => k));
+  const known = new Set(terms.map((t) => t.name));
+  const undef = [...shared].filter((k) => !known.has(k)).sort();
+  const debt = terms.filter((t) => t.debt);
+  const KIND_LABEL = { anchor: 'anchor —— 链的接口（下游能拿它当原料）', receipt: 'receipt —— 回执（人读）', state: 'state —— 状态', context: 'context —— 上下文' };
+
+  console.log(`## 术语表（**规范定义**；生成：\`node scripts/measure_b_contract.mjs --glossary\`）\n`);
+  console.log(`> ★ 含义栏是**"从此以后要求它是什么"**，不是现状；现状见 \`docs/b-field-dictionary.md\`。`);
+  console.log(`> 覆盖范围：出现在 **≥2 个 [B]** 里的字段名（只服务 1 个 [B] 的私有字段不受约束 —— 实测占 80%）。`);
+  console.log(`> ★★ **新写 [B] 时字段名从本表选**；表里没有 ⇒ 要么加进来（写含义），要么它是你这个 [B] 的私有字段。\n`);
+  console.log(`**机检**：共用字段名 **${shared.size}** 个 ｜ 表里有定义 **${shared.size - undef.length}** ｜ ★ 未定义 **${undef.length}**`);
+  if (undef.length) console.log(`\n⚠️ 未定义的共用字段名：${undef.map((k) => `\`${k}\``).join(' ')}`);
+  console.log(`\n**债务**：\`debt: true\` **${debt.length}** 条（棘轮：只许减不许增）。\n`);
+  for (const kind of ['anchor', 'receipt', 'state', 'context']) {
+    const g = terms.filter((t) => t.kind === kind);
+    if (!g.length) continue;
+    console.log(`### ${KIND_LABEL[kind]}\n`);
+    console.log('| 术语 | 类型 | 定义 | 债 |');
+    console.log('|---|---|---|---|');
+    for (const t of g) {
+      console.log(`| \`${t.name}\`${t.debt ? ' ★' : ''} | \`${t.type}\` | ${t.meaning} | ${t.fix ? `**${t.fix}**` : ''} |`);
+    }
+    console.log('');
+  }
+  if (undef.length) process.exitCode = 1;
 } else if (process.argv.includes('--dict')) {
   /**
    * ★ 字段字典（**机器生成，不手抄**）：把 42 个 [B] 的入参/产物字段全枚举出来，

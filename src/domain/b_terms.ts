@@ -1,0 +1,265 @@
+/**
+ * [B] 契约的**受控术语表**（glossary）—— ★★ **规范性的，不是描述性的**。
+ *
+ * 用途（用户 2026-10-01 裁定）：
+ *   「**制定一张术语表**，制定一张术语表之后，再去重构整个这些工具的逻辑。
+ *     因为以后也是要做的，这是**技术债**，你不还完的话，以后只会在这个地方越兜越那个。」
+ *
+ * 三条读法：
+ *   1. **含义栏是"我们从今往后要求它是什么"**，不是"现状是什么"。
+ *      现状（42 个 [B] 实际怎么用这些名字）见 `docs/b-field-dictionary.md`（机器生成）。
+ *   2. `debt: true` = **现状与定义不符或一名多义** ⇒ 在拆清之前**不许再新增使用者**。
+ *      债务条数由 `node scripts/measure_b_contract.mjs --glossary` 统计。
+ *   3. **新写 [B] 时，字段名从这个表里选**；表里没有 ⇒ 要么加进来（并写含义），
+ *      要么它只服务你这一个 [B]（私有字段，不进表）。
+ *
+ * 覆盖范围（为什么是这些词）：**出现在 ≥2 个 [B] 里的字段名**必须有一条定义
+ * （只服务 1 个 [B] 的私有字段不约束 —— 实测那占 80%）。
+ *
+ * ★ 本文件被 `scripts/measure_b_contract.mjs` 读取（AST 直读，无需构建）做机检。
+ */
+
+export type BTermKind =
+  /** 链的接口：下游 [B] 能拿它当原料（= `Touched` 的字段） */
+  | 'anchor'
+  /** 回执：给人/agent 读的文本 */
+  | 'receipt'
+  /** 状态：这次调用成不成、落没落盘 */
+  | 'state'
+  /** 上下文：描述"作用在哪"，但不是链的原料 */
+  | 'context';
+
+export interface BTerm {
+  kind: BTermKind;
+  /** 规范类型（写成 TS 类型文本） */
+  type: string;
+  /** ★ 规范定义：这个词**从此以后**是什么 */
+  meaning: string;
+  /** ★ 债：现状与定义不符 / 一名多义。拆清前不许新增使用者 */
+  debt?: true;
+  /** 处置（debt 才有）：拆名 or 并入哪个术语 */
+  fix?: string;
+}
+
+/**
+ * ★★ 链的接口 —— 一次 [B] 调用"动了哪些对象"。
+ *
+ * 为什么是这一组：实测（`docs/b-field-dictionary.md`）42 个 [B] 的产物共 189 个字段名，
+ * 其中 **80% 只服务 1 个 [B]**（私有，不动）；共用那批里又有 21 个是"同一个词指不同东西"
+ * ⇒ **不能靠"名字通用"来造通用层**，只能**新增语义唯一、类型钉死的字段**。
+ *
+ * 每个字段的取舍依据都写在各字段注释里（哪个数据支持它、为什么不复用现成名字）。
+ */
+export interface Touched {
+  /** 作用到的 feature（DSL 活文档单元）。
+   *  依据：入参侧 18 个 [B]、产物侧 12 个已用 `feature: string`（同名同型，真共用） */
+  feature?: string;
+  /** 作用到的**项目根**（一个仓库的根目录）。
+   *  依据：入参侧 17 个 [B] 已用 `project_dir: string`（同名同型，真共用）。
+   *  ★ **不并** `box_dir` / `brick_dir` / `slim_dir` / `target_dir` —— 实测它们是**盒根**，不是项目根。 */
+  project_dir?: string;
+  /** 被**写入/改动**的文件（仓库相对路径，`/` 分隔）。
+   *  ★ 用**新名**：`files` 在产物侧有 **6 种不同语义**（已污染）、`filesWritten` 是 `number`（计数）、
+   *    `written` 是 `boolean`（是否落盘）—— 三个都不能复用。 */
+  written_files?: string[];
+  /** 被**读取**当作输入的文件。★ 与 `written_files` 分开：现有 `files` 恰恰是"路径/报告"混用才坏的。 */
+  read_files?: string[];
+  /** 涉及到的符号 `qualified_name`。★ 新名：既有 `symbol` 是 `string`（单个），链需要全部。 */
+  symbols?: string[];
+  /** 涉及到的 DSL 节点 id。★ 新名：既有 `node_id` 是 `string`（单个）。 */
+  nodes?: string[];
+}
+
+/**
+ * 统一回执/状态的最小面 —— [B] 的产物里这几项按此定义，不再各写各的。
+ */
+export interface BReceipt {
+  /** 一行人读摘要。★ **不是数据**：下游禁止从它解析（要数据就加字段） */
+  message: string;
+  /** 本次调用是否成功完成 */
+  ok: boolean;
+}
+
+// ─────────────────────────────────────────────────────────────
+// 术语表
+// ─────────────────────────────────────────────────────────────
+export const B_TERMS: Record<string, BTerm> = {
+  // ── anchor：链的接口（Touched 的字段）──────────────────────
+  feature: { kind: 'anchor', type: 'string', meaning: 'DSL 的 feature 名（活文档单元）' },
+  project_dir: {
+    kind: 'anchor',
+    type: 'string',
+    meaning: '被分析/改动的**项目根**（一个仓库的根目录）；不是盒根、不是子目录',
+  },
+  written_files: {
+    kind: 'anchor',
+    type: 'string[]',
+    meaning: '被**写入/改动**的文件（仓库相对路径，`/` 分隔）',
+    debt: true,
+    fix: '新词，尚无使用者；由 ④-b refactor 族起逐族采用',
+  },
+  read_files: {
+    kind: 'anchor',
+    type: 'string[]',
+    meaning: '被**读取**作为输入的文件（仓库相对路径）',
+    debt: true,
+    fix: '新词，尚无使用者',
+  },
+  symbols: {
+    kind: 'anchor',
+    type: 'string[]',
+    meaning: '涉及到的符号 `qualified_name`',
+    debt: true,
+    fix: '新词，尚无使用者；与旧 `symbol: string`（单个）并存期间禁止混用',
+  },
+  nodes: {
+    kind: 'anchor',
+    type: 'string[]',
+    meaning: '涉及到的 DSL 节点 id',
+    debt: true,
+    fix: '新词，尚无使用者；与旧 `node_id: string`（单个）并存期间禁止混用',
+  },
+
+  // ── receipt ────────────────────────────────────────────────
+  message: { kind: 'receipt', type: 'string', meaning: '一行人读摘要。★ 不是数据：下游禁止从它解析' },
+  limitations: { kind: 'receipt', type: 'string[]', meaning: '本次调用**做不到什么**（诚实列，不留白）' },
+
+  // ── state ──────────────────────────────────────────────────
+  ok: { kind: 'state', type: 'boolean', meaning: '本次调用**是否成功完成**（领域失败也给 false，理由进 `blocked`）' },
+  blocked: { kind: 'state', type: 'string[]', meaning: '被**阻断**的逐条原因（未落盘时必填，不许空手失败）' },
+  dry_run: { kind: 'state', type: 'boolean', meaning: '本次是**预演**（未落盘）' },
+  dryRun: {
+    kind: 'state',
+    type: 'boolean',
+    meaning: '与 `dry_run` **同义**',
+    debt: true,
+    fix: '并入 `dry_run`（命名统一；全仓只用 `dry_run`）',
+  },
+  skipped: {
+    kind: 'state',
+    type: '{ item: string; why: string }[]',
+    meaning: '被**有意跳过**的条目 + 原因',
+    debt: true,
+    fix: '★ 现状 3 种形状（`{seeds,reason}[]` / `string[]` / `{path,why}[]`）⇒ 统一到定义的形状',
+  },
+  incomplete: {
+    kind: 'state',
+    type: '{ item: string; kind: string; why: string }[]',
+    meaning: '**未完成**的部分 + 原因',
+    debt: true,
+    fix: '★ 现状 2 种形状（`brick_path` 版 / `dsl_path` 版）⇒ 统一到定义的形状',
+  },
+  pending: {
+    kind: 'state',
+    type: 'string[]',
+    meaning: '**尚未处理**的条目',
+    debt: true,
+    fix: '★ 现状 `number`（计数）与 `string[]`（列表）混用 ⇒ 统一为列表；计数另立 `*_count`',
+  },
+
+  // ── context：描述"作用在哪"，不是链的原料 ───────────────────
+  file: { kind: 'context', type: 'string', meaning: '**单个**文件（仓库相对路径）；多个用 `written_files`/`read_files`' },
+  files: {
+    kind: 'context',
+    type: 'string[]',
+    meaning: '★ **已被污染**：产物侧一个名字有 **6 种类型**（`string[]` / `FileContractReport[]` / `BrickFileReconcileReport[]` / `SlimFileReport[]` / `FileReconcileReport[]` / `FileRemoval[]`）',
+    debt: true,
+    fix: '★ **拆名**：路径表 → `written_files`/`read_files`；报告数组 → `<领域>_reports`（如 `contract_reports`）',
+  },
+  box_dir: {
+    kind: 'context',
+    type: 'string',
+    meaning: '**积木盒根**（`<storage>/bricks`）——★ 不是项目根',
+    debt: true,
+    fix: '保留但**必须**与 `project_dir` 区分；禁止当项目根传',
+  },
+  project_root: {
+    kind: 'context',
+    type: 'string',
+    meaning: '与 `project_dir` **同义**',
+    debt: true,
+    fix: '并入 `project_dir`',
+  },
+  source_path: { kind: 'context', type: 'string', meaning: '输入物的来源路径（文件或 URL）' },
+  events_files: { kind: 'context', type: 'string[]', meaning: '观测事件（JSONL）文件路径表' },
+  effect_events: { kind: 'state', type: 'number', meaning: '对账到的事件条数' },
+  indexWriteThrough: { kind: 'state', type: 'WriteThroughOutcome', meaning: '索引写穿结果（快照 + 索引是否同步成功）' },
+  written_to_dsl: { kind: 'state', type: 'boolean', meaning: '本次结果**是否写进了 DSL**（领域状态，不等于落盘）' },
+  written: {
+    kind: 'state',
+    type: 'boolean',
+    meaning: '本次是否**落盘**',
+    debt: true,
+    fix: '★ 现状 `boolean`×4（是否落盘）与 `string[]`×1（文件表）**同名两义** ⇒ 拆：落盘用 `dry_run` 的反面表达，文件表用 `written_files`',
+  },
+  filesWritten: {
+    kind: 'state',
+    type: 'number',
+    meaning: '写入文件的**数量**（计数，不是列表）',
+    debt: true,
+    fix: '改名 `written_file_count`（避免与 `written_files`/`files` 混读）',
+  },
+  stats: {
+    kind: 'receipt',
+    type: 'Record<string, number>',
+    meaning: '本领域的**计数汇总**',
+    debt: true,
+    fix: '★ 现状 **5 种**互不相同的对象 ⇒ 各领域改名为 `<领域>_stats`',
+  },
+  data: {
+    kind: 'context',
+    type: 'unknown',
+    meaning: '工具响应的**载荷**（[C] 层通道用）',
+    debt: true,
+    fix: '★ 现状 6 个 [B] 用它当逃生口（`unknown`）⇒ 逐族收窄成具体类型，禁止新增 `data: unknown`',
+  },
+  meta: {
+    kind: 'context',
+    type: 'Record<string, unknown>',
+    meaning: '本次调用的**元信息**（怎么算的、用了什么策略）',
+    debt: true,
+    fix: '★ 现状 3 种形状 ⇒ 各领域改名 `<领域>_meta`',
+  },
+  summary: {
+    kind: 'receipt',
+    type: 'string',
+    meaning: '一段**人读**总结',
+    debt: true,
+    fix: '★ 现状 `string` 与一个大对象混用 ⇒ 人读用 `message`/`summary: string`，对象改 `<领域>_summary`',
+  },
+  contracts: { kind: 'context', type: 'Record<string, BrickContract>', meaning: '积木契约表（键 = 契约名）' },
+  brick: { kind: 'context', type: 'string', meaning: '积木名（标识）；★ 不是对象', debt: true, fix: '★ 现状 `string` 与一个对象混用 ⇒ 对象改 `brick_detail`' },
+  bricks: { kind: 'context', type: 'BrickSpec[]', meaning: '积木表（装配用规格）', debt: true, fix: '★ 现状入参 `string[] | BrickSpec[]`、产物两种 Report ⇒ 各按语义拆名' },
+  renames: { kind: 'context', type: 'RenameItem[]', meaning: '批量改名条目表', debt: true, fix: '★ 现状 `FileRenameItem[]` 与 `RenameSymbolsItem[]` 两种 ⇒ 统一到 `RenameItem`' },
+  definition: { kind: 'context', type: '{ file: string; kind: string; refs: ReferenceSite[] }', meaning: '符号的**定义点**', debt: true, fix: '★ 现状 2 种形状 ⇒ 统一' },
+  importers: { kind: 'context', type: 'ReferenceFile[]', meaning: '**谁 import 了**目标（文件 + 引用点）', debt: true, fix: '★ 现状 `ReferenceFile[]` 与 `RenameSymbolFileInfo[]` 同义不同型 ⇒ 统一' },
+  externalRefs: { kind: 'context', type: 'ExternalRef[]', meaning: '跨包/跨仓的外部引用' },
+  entries: { kind: 'context', type: 'unknown[]', meaning: '条目表', debt: true, fix: '★ 现状两种不同条目 ⇒ 各领域改名' },
+  literals: { kind: 'context', type: 'unknown[]', meaning: '字符串字面量命中表', debt: true, fix: '★ 现状两种形状 ⇒ 统一' },
+  previews: { kind: 'state', type: 'unknown[]', meaning: '预演结果（逐条）', debt: true, fix: '★ 现状与 `applied` 平行两套（file 版 / symbol 版）⇒ 统一' },
+  applied: { kind: 'state', type: 'unknown[]', meaning: '已落盘的逐条结果', debt: true, fix: '★ 同 `previews`：两套平行形状 ⇒ 统一' },
+  tools: { kind: 'context', type: 'unknown[]', meaning: '工具清单（含各自元信息）', debt: true, fix: '★ 现状 `WizardTool[]` 与 `MappedTool[]` ⇒ 各领域改名' },
+  detail: { kind: 'context', type: 'unknown', meaning: '细节开关/细节内容', debt: true, fix: '★ 现状 `boolean` 与 `string` 混用 ⇒ 拆：开关用 `with_detail`' },
+  view: { kind: 'context', type: 'string', meaning: '视图名（渲染/查询维度）', debt: true, fix: '★ 现状 3 种枚举 ⇒ 各领域改名（如 `render_view` / `query_view`）' },
+  mode: { kind: 'context', type: 'string', meaning: '运行模式（本工具自己的枚举）', debt: true, fix: '★ 现状 3 组互不相同的枚举 ⇒ 各领域改名（如 `classify_mode` / `rename_scope`）' },
+  scope: { kind: 'context', type: 'string', meaning: '作用范围（本工具自己的枚举）', debt: true, fix: '★ 现状 3 组互不相同的枚举 ⇒ 各领域改名' },
+  action: { kind: 'context', type: 'string', meaning: '**面分发参数**：选哪个子动作（属 [C] 层入参，不是领域字段）', debt: true, fix: '保留语义，但**不得**用它当产物的领域字段' },
+  query: { kind: 'context', type: 'string', meaning: '查询意图/查询串（本工具自己的口径）', debt: true, fix: '★ 现状 `string` 与 19 个枚举混用 ⇒ 各领域改名' },
+  node_id: { kind: 'context', type: 'string', meaning: '**单个** DSL 节点 id；多个用 `nodes`', debt: true, fix: '新写 [B] 一律用 `nodes: string[]`' },
+  symbol: { kind: 'context', type: 'string', meaning: '**单个**符号 `qualified_name`；多个用 `symbols`', debt: true, fix: '新写 [B] 一律用 `symbols: string[]`' },
+  brick_name: { kind: 'context', type: 'string', meaning: '积木名（与 `brick` 同指时用本词）', debt: true, fix: '与 `brick` 二选一' },
+  to: { kind: 'context', type: 'string', meaning: '目标值（新名/新路径）' },
+  name: { kind: 'context', type: 'string', meaning: '名称（本工具自己指的那个对象的名字）' },
+  limit: { kind: 'context', type: 'number', meaning: '返回条目上限' },
+  max_depth: { kind: 'context', type: 'number', meaning: '遍历深度上限' },
+  max_steps: { kind: 'context', type: 'number', meaning: '步数上限' },
+  write: { kind: 'context', type: 'boolean', meaning: '**是否真的落盘**（= `dry_run` 的反面）；★ 与 `dry_run` 二选一' },
+  write_dsl: { kind: 'context', type: 'boolean', meaning: '是否写进 DSL（领域开关，不等于落盘）' },
+  report_literals: { kind: 'context', type: 'boolean', meaning: '是否一并报告字符串字面量命中' },
+  args: { kind: 'context', type: 'unknown', meaning: '子动作的参数袋子（★ 只允许在 [C] 分发层出现）', debt: true, fix: '禁止渗进 [B]' },
+  opts: { kind: 'context', type: 'unknown', meaning: '选项袋子（★ 泛型丢失，待类型化）', debt: true, fix: '类型化后按语义改名' },
+  r: { kind: 'context', type: 'unknown', meaning: '值占位（★ 名字无语义）', debt: true, fix: '按语义改名' },
+};
+
+/** ★ 债务计数：`debt: true` 的条数（棘轮：只许减不许增） */
+export const B_TERMS_DEBT = Object.values(B_TERMS).filter((t) => t.debt).length;
