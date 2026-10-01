@@ -17,7 +17,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawn, exec } from 'node:child_process';
-import { saveDSL, getDSL, getLiveDslFile, getLiveFeature, onDslChange, getStorageRoot } from '../../infrastructure/storage.js';
+import { saveDSL, getDSL, getLiveDslFile, getLiveFeature, onDslChange, getStorageRoot, getFeaturesDir } from '../../infrastructure/storage.js';
 import { enableObserveFromEnv } from '../../infrastructure/analysis/observe/run_sentinel.js';
 import { judgeEvent } from '../../infrastructure/analysis/observe/judge.js';
 import { queryObserveLog } from '../../infrastructure/analysis/observe/log_query.js';
@@ -219,7 +219,11 @@ function handleApiLoad(_req: http.IncomingMessage, res: http.ServerResponse): vo
 
 function handleApiFeatures(_req: http.IncomingMessage, res: http.ServerResponse): void {
   try {
-    const featuresDir = path.join(process.cwd(), DATA_DIR_NAME, 'features');
+    // ★ 2026-10-01 修：这里原先把 `features/` 拼成 `<cwd>/.agent-io/features` —— 而**写侧**
+    //   （`storage.ts#saveDSL` → `getFeaturesDir()`）写的是 **`<dataHome>/.agent-io/features`**。
+    //   与账本「结论二」**同型**：`cwd ≠ 包根` 时就是"一边写、另一边读到空"（此处表现为
+    //   `/api/features` 永远返回空列表）。⇒ 改成走**同一个 accessor**，不再自己拼。
+    const featuresDir = getFeaturesDir();
     if (!fs.existsSync(featuresDir)) {
       guard(res, '/api/features', 'features', { features: [] });
       return;

@@ -26,7 +26,14 @@ export interface FingerprintFile {
   rel: string;
 }
 
-function cacheDir(root: string): string {
+/**
+ * 本缓存的根目录：`<root>/.agent-io/cache/health`。
+ *
+ * ★ 2026-10-01（T19）：**导出**它，好让「这份数据归哪个根」成为一处**可见**的声明 ——
+ *   登记表 `tests/fixtures/stage_registry.json` 把 `health_cache.owner` 钉在这个函数上，
+ *   门拿两个不同的根调它、结果必须不同（这正是此前 bug 的判据：旧实现不收 root、偷用 `cwd`）。
+ */
+export function healthCacheDir(root: string): string {
   return path.join(root, DATA_DIR_NAME, 'cache', 'health');
 }
 
@@ -57,7 +64,7 @@ export function singleFileFingerprint(abs: string): string {
 /** 读缓存；无缓存 / 读失败一律返回 null（降级为重新体检） */
 export function readHealthCache<T>(key: string, root: string): T | null {
   try {
-    const p = path.join(cacheDir(root), `${key}.json`);
+    const p = path.join(healthCacheDir(root), `${key}.json`);
     if (!fs.existsSync(p)) return null;
     return JSON.parse(fs.readFileSync(p, 'utf-8')) as T;
   } catch {
@@ -68,7 +75,7 @@ export function readHealthCache<T>(key: string, root: string): T | null {
 /** 写缓存；失败静默（下次重新体检即可） */
 export function writeHealthCache(key: string, data: unknown, root: string): void {
   try {
-    const dir = cacheDir(root);
+    const dir = healthCacheDir(root);
     fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(path.join(dir, `${key}.json`), JSON.stringify(data));
   } catch {

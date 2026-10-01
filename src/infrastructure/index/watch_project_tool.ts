@@ -342,10 +342,20 @@ export interface WatchProjectToolResult {
  * 注：全局 sink 只有一个，多项目同进程 watch 时共用首个项目的流（可接受：serve
  * 场景本来就走全局单文件）。
  */
+/**
+ * 事件 sink 目录（`<projectRoot>/.agent-io/observe`；文件是其中的 `events.jsonl`）。
+ * ★ T19：从 `ensureObserveSink` 里**抽出来并导出** ⇒ 「这份数据归哪个根」成为一处可见声明。
+ * ★★ 注意本函数的**调用方** `ensureObserveSink` 有"全局单 sink"的历史包袱（多项目同进程共用首条流），
+ *   登记表里 `observe_events` 的债务就记在那一点上 —— 那是**语义**问题，不是"根"问题。
+ */
+export function observeEventsDir(projectRoot: string): string {
+  return path.join(path.resolve(projectRoot), DATA_DIR_NAME, 'observe');
+}
+
 function ensureObserveSink(projectRoot: string): void {
   if (process.env.OBSERVE_EVENTS_FILE) return; // serve/哨兵已配置，复用全局
   if (hasGlobalProbeSink()) return;
-  const eventsPath = TSProbeCapture.pathFor(path.join(projectRoot, DATA_DIR_NAME, 'observe'));
+  const eventsPath = TSProbeCapture.pathFor(observeEventsDir(projectRoot));
   setGlobalProbeSink(new TSProbeCapture(eventsPath));
 }
 

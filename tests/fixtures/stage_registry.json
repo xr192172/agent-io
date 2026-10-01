@@ -1,0 +1,198 @@
+{
+  "note": "T19「根的选择」登记表 —— 每份数据声明 owner / inputs / fresh / 唯一产者 / 位置解析器。门：tests/registry/root_declaration.test.ts。★ 为什么需要它：账本（docs/data-ledger.md）实测出「越兜越多」的真正机制不是数据杂，而是【这份数据归哪个根没人定】——同一种数据在三处各挑一个根（projectRoot / dataHome / cwd），写读不碰面。★ 本表把「根」从散文变成可执行判据：owner=project 的，其 resolver 必须【真的用】传进来的 root（门拿两个根跑，结果必须不同——这正是 health_cache 旧 bug 的判据：它忽略入参、偷用 cwd，两个根返回同一个值）。★ 硬纪律：producer 必须是【真导出】（私有函数不算可见的产者）；fresh='none' 必须【选边】—— not-a-cache（本就不是缓存，没有新鲜度概念）或 none-debt（是缓存但确实缺判据，进棘轮只许减）。★ 已知限度：本表是【声明式登记】，不假装能自动发现遗漏（与 G4 同款理由：自动发现'意图重复'不可判定）；发现新数据项 ⇒ 往 stages 里加一条。",
+  "debtBaseline": {
+    "noneDebt": 8,
+    "rootConflicts": 3,
+    "notRegistered": 18
+  },
+  "stages": [
+    {
+      "id": "source_files",
+      "owner": "project",
+      "inputs": [],
+      "fresh": "mtime",
+      "producer": "src/infrastructure/parse/project_view.ts#getProjectView",
+      "resolver": null,
+      "why": "★ 它是**内存产物**（一次遍历得到的文件表，一处算→TTL 缓存→多处取用），没有落在磁盘上的位置 ⇒ 没有独立的『路径解析器』可钉。根由 getProjectView(root) 的第一个参数直接决定。"
+    },
+    {
+      "id": "symbol_index",
+      "owner": "project",
+      "inputs": ["source_files"],
+      "fresh": "content-hash",
+      "producer": "src/infrastructure/index/symbols.ts#syncFile",
+      "resolver": "src/infrastructure/index/db.ts#projectCacheDbPath",
+      "why": "唯一产者是 syncFile（批量入口 syncProject 包一层）；新鲜判据按 content_hash/mtime+size 增量。★ 已是工序形状（ensureProjectIndex → ensureFreshIndex → syncFile 天然递归补齐）。"
+    },
+    {
+      "id": "embedding_cache",
+      "owner": "project",
+      "inputs": ["symbol_index"],
+      "fresh": "none-debt",
+      "producer": "src/application/meta/semantic_search.ts#embedTexts",
+      "resolver": "src/infrastructure/index/db.ts#projectCacheDbPath",
+      "why": "★ 债务（结论五）：写 :162 / 读 :123，**无 TTL、无淘汰、schema 迁移也不清** ⇒ 只增不减。它存在 cache.db 里，所以根与 symbol_index 同。"
+    },
+    {
+      "id": "import_cache",
+      "owner": "dataHome",
+      "inputs": ["source_files"],
+      "fresh": "none-debt",
+      "producer": "src/infrastructure/graph/import_project.ts#importProject",
+      "resolver": "src/infrastructure/index/db.ts#featureCacheDbPath",
+      "why": "★ 2026-10-01（97c9d55 + §44.25）已修掉『同名两根』：写侧（serve.ts）从 cwd 改到 getStorageRoot()，读侧统一走 findCacheDb 的第一级候选 ⇒ 现在**单一根 = dataHome**。★ 为什么归 dataHome 而不是 project：这个库**以 feature 名为键**，而 feature 这个名字空间本身就是 dataHome 的（同一个根的还有 features/<f>.json 存档）—— 账本里原先写的『归一到 project』改判。★ 仍欠『无同步关系』的新鲜判据。"
+    },
+    {
+      "id": "dsl_features",
+      "owner": "dataHome",
+      "inputs": [],
+      "fresh": "mtime",
+      "producer": "src/infrastructure/storage.ts#saveDSL",
+      "resolver": "src/infrastructure/storage.ts#getLiveDslFile",
+      "why": "DSL 三态里的『解析/存档』。★ 三态（agent-io.json 活态 / features/<f>.json 存档 / live/<f>.dsl.json 快照）**不是重复，是三种语义**（读代码更正过，见账本附二的撤回记录）。"
+    },
+    {
+      "id": "dsl_live",
+      "owner": "dataHome",
+      "inputs": ["dsl_features"],
+      "fresh": "none-debt",
+      "producer": "src/infrastructure/storage.ts#saveLiveFeature",
+      "resolver": "src/infrastructure/storage.ts#getLiveFeatureFile",
+      "rootConflict": "★ 同一份数据两个根：`watch_project_tool.ts:430` 显式传 `live_dir: entry.project_dir` ⇒ 落到**被监听项目的根**；其余调用点不传 ⇒ 落 **dataHome**。而 `getLiveFeature(feature)`（serve.ts:321 等）读时也不传 ⇒ 走 dataHome。⇒ **写读双方必须传同一个值，而没有任何东西保证这件事**（`live_dir` 是有意留的可覆盖参数，风险不在参数本身，在「没有一处保证两边一致」）。",
+      "why": "★ 债务：**唯一产者是 import_project**（1417/1427/1466/1474）⇒ 读者拿到 404 就完事，缺了没人补（这正是 T19 第 (4) 步『接上溯源』要解决的第一道工序）。"
+    },
+    {
+      "id": "dsl_baseline",
+      "owner": "dataHome",
+      "inputs": ["dsl_features"],
+      "fresh": "none-debt",
+      "producer": "src/infrastructure/storage.ts#ensureBaseline",
+      "resolver": "src/infrastructure/storage.ts#getBaselineFeatureFile",
+      "rootConflict": "与 `dsl_live` **同一套 `baseDir` 机制、同一个风险**：可被 `live_dir` 覆盖到项目根，而写读两侧不保证传同一个值。",
+      "why": "★ 债务：已有 ensureBaseline（形状对），但**全仓只有 import_project 一处调** ⇒ 读侧（diff_views）不溯源。"
+    },
+    {
+      "id": "archive",
+      "owner": "dataHome",
+      "inputs": [],
+      "fresh": "not-a-cache",
+      "producer": "src/infrastructure/storage.ts#saveArchiveEntry",
+      "resolver": "src/infrastructure/storage.ts#getArchiveEntryFile",
+      "rootConflict": "★ 写读不对称：`archive_node.ts:73` **写时根本不传 baseDir**（⇒ 永远 dataHome），而 `:146` **读时接受 `live_dir`** ⇒ 传了 `live_dir` 的读方**永远读不到**写方写的东西。且工具描述（`meta/index.ts:92`）写的是『条目住在 `<live_dir>/.agent-io/archive/<feature>/`』—— **文档与实现不一致**。",
+      "why": "下线库归档是**里程碑式产物**（append 语义），不当缓存用 ⇒ 没有『新鲜度』概念。"
+    },
+    {
+      "id": "code_snapshots",
+      "owner": "project",
+      "inputs": [],
+      "fresh": "retain-n",
+      "producer": "src/application/refactor/file_snapshot.ts#createFileSnapshot",
+      "resolver": "src/application/refactor/file_snapshot.ts#fileSnapshotsDir",
+      "why": "已带保留策略 MAX_FILE_SNAPSHOTS=20 ⇒ fresh 是『保留最近 N 份』。"
+    },
+    {
+      "id": "behavior_baseline",
+      "owner": "project",
+      "inputs": [],
+      "fresh": "none-debt",
+      "producer": "src/infrastructure/analysis/behavior/index.ts#captureBaseline",
+      "resolver": "src/infrastructure/analysis/behavior/index.ts#baselinePathFor",
+      "why": "★ 债务：缺了 verify 直接 throw（没有『缺了就生成』的路径）。"
+    },
+    {
+      "id": "health_cache",
+      "owner": "project",
+      "inputs": ["source_files"],
+      "fresh": "mtime",
+      "producer": "src/infrastructure/analysis/health_cache.ts#writeHealthCache",
+      "resolver": "src/infrastructure/analysis/health_cache.ts#healthCacheDir",
+      "why": "★ 这道工序**形状本来就对**（miss → 重算 → store），此前唯一的问题是**根错**（写死 cwd ⇒ 跨项目串）。2026-10-01 改成调用方显式传 root ⇒ 本行就是那条判据的锚。"
+    },
+    {
+      "id": "observe_events",
+      "owner": "project",
+      "inputs": [],
+      "fresh": "not-a-cache",
+      "producer": "src/infrastructure/analysis/observe/probe.ts#TSProbeCapture",
+      "resolver": "src/infrastructure/index/watch_project_tool.ts#observeEventsDir",
+      "why": "★ 事件流 append-only ⇒ 没有新鲜度概念。★ 但**另有一笔债（不是根的问题，是语义）**：sink 是全局单例（probe.ts 挂 globalThis）⇒ 多项目同进程会互污，见账本结论三。"
+    },
+    {
+      "id": "observe_ledger",
+      "owner": "project",
+      "inputs": ["observe_events"],
+      "fresh": "not-a-cache",
+      "producer": "src/infrastructure/analysis/observe/instrument.ts#saveProbeLedger",
+      "resolver": "src/infrastructure/analysis/observe/instrument.ts#ledgerPath",
+      "why": "每次插桩产一份，uninstrument 会删 ⇒ 是**运行产物**不是缓存。★ 单独记一笔：MCP 侧只写不读（只有 CLI --ledger 读）。"
+    },
+    {
+      "id": "observe_points",
+      "owner": "project",
+      "inputs": ["source_files"],
+      "fresh": "none-debt",
+      "producer": "src/application/observe/observe_points.ts#recommendObservePoints",
+      "resolver": "src/application/observe/observe_points.ts#observePointsFile",
+      "why": "★ 债务：**仓内无 reader**（靠人工中转）⇒ 一份没有消费者的数据，要么接消费者要么删。"
+    },
+    {
+      "id": "dogfood",
+      "owner": "dataHome",
+      "inputs": [],
+      "fresh": "not-a-cache",
+      "producer": "src/infrastructure/dogfood_stats.ts#recordDogfoodUsage",
+      "resolver": "src/infrastructure/dogfood_stats.ts#dogfoodLogDir",
+      "why": "用量统计是 append-only 流水 ⇒ 没有新鲜度概念。"
+    },
+    {
+      "id": "self_writes",
+      "owner": "project",
+      "inputs": ["source_files"],
+      "fresh": "none-debt",
+      "producer": "src/application/observe/write_gate.ts#recordSelfWrite",
+      "resolver": "src/application/observe/write_gate.ts#selfWritesPath",
+      "why": "★ 债务：它是\"我们自己改了哪些文件\"的**写穿凭证**，读侧消费即清（`pendingSelfWrites`）；但**没有 TTL、没有上限、没有压缩** ⇒ 某文件从未被读时条目会一直留着。"
+    },
+    {
+      "id": "impact_ledger",
+      "owner": "project",
+      "inputs": ["symbol_index"],
+      "fresh": "ttl",
+      "producer": "src/application/meta/impact_ledger_store.ts#saveLedger",
+      "resolver": "src/application/meta/impact_ledger_store.ts#impactLedgerFile",
+      "why": "★ 全仓**少见的**自带新鲜判据的工序：`LEDGER_PENDING_TTL_MS = 24h`（pending 超期即失效）。"
+    },
+    {
+      "id": "output_registry",
+      "owner": "dataHome",
+      "inputs": [],
+      "fresh": "none-debt",
+      "producer": "src/infrastructure/index/registry.ts#registerArtifact",
+      "resolver": "src/infrastructure/index/registry.ts#registryFilePath",
+      "why": "★ 债务：`.registry.json` 是\"产物目录\"登记（`registry.ts:10` 自陈'可随时重建'）⇒ 是衍生索引、理应有新鲜判据，但**没有**：产物删了它不自知。"
+    }
+  ],
+  "notRegisteredYet": {
+    "note": "★ 下这些是**已核实存在、但尚未登记 owner 的数据项**（2026-10-01 由**独立核验子代理**清点、我逐条抽验）。\n它们列在这里而不是硬塞进 stages：**没有核实清楚 owner/producer 的登记行就是一句谎**，比不登记更坏。\n本清单是**棘轮**：条数只许减不许增 —— 每登记一条就删一条。\n★ 这条清单本身的存在就是本门『限度一』的实证：**登记表要人写，门查不了'有没有漏写的'。**",
+    "items": [
+      "`<cwd>/.agent-io/projects/<feature>/` —— serve.ts:431 用 cwd 拼（写读同一处，但根是第三处 cwd）",
+      "`<projectRoot>/docs/*.md` —— 提取的契约文档（harvest/extract_contracts 写）",
+      "`<cwd>/output/*.js|*.d.ts` —— 重构构建产物（refactor_pipeline 的 judge 步骤写；install_package 消费）",
+      "`<dataHome>/bricks/` —— 积木盒（search_bricks 的 box_dir；自包含 manifest.json）",
+      "`<feature>.overlay.json` —— 设计意图 overlay（storage_overlay.saveOverlay 写）★ 与 features/ 同目录",
+      "`<dataHome>/.agent-io/snapshots/<feature>/` —— DSL feature 快照（与代码快照是两回事）",
+      "`<dataHome>/.agent-io/cache/{overview,mindmap,explain,drift,opl,workbench,analyze_monolith,architecture}/` —— 一族摘要缓存（各自独立、根都是 dataHome）",
+      "`<dataHome>/.agent-io/features_html/` —— 渲染产物",
+      "`<live_dir>/<feature>.trace.json` —— handlers.ts:83 读取；trace_evidence 已改读 observe 事件流",
+      "`<dataHome>/gateway/cache.json` —— 网关层缓存",
+      "`<projectRoot>/.agent-io/observe-backup/` —— 插桩前备份（instrument.ts:148 BACKUP_DIR；路径函数是私有的）",
+      "`.agent-io.json` —— 保护清单（protect.ts）★ 注意它**只被读、不被本仓写**（人写的）",
+      "`<configHome>/.agent-io/config.json` —— LLM 配置（userHome；读侧有 dataHome 的 legacy 回落）",
+      "`heap-*.heapsnapshot` —— ★ **只写不读**（堆快照，仓内无消费者）",
+      "`<dataHome>/.agent-io/dict.{global,project}.json` —— 词典",
+      "`<root>/.agent-io/rules/` —— 规则库（rule_library）",
+      "`<projectRoot>/.agent-io/pidfile-*.txt` —— 空目录占位锁",
+      "`.agent/observe/proposals/` —— Go 侧 DSL 仓（TS 不写；daemon 只读）"
+    ]
+  }
+}

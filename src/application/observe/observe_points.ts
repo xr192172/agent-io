@@ -200,6 +200,15 @@ function sliceLines(text: string, startLine: number, endLine: number): string {
 }
 
 /**
+ * 观测点清单文件路径（`<root>/.agent-io/observe-points.json`）。
+ * ★ T19：从 `recommendObservePoints` 里**抽出来并导出** ⇒ 「这份数据归哪个根」成为一处可见声明；
+ *   登记表把它钉在这里，门拿两个不同的根调它、结果必须不同。
+ */
+export function observePointsFile(root: string): string {
+  return path.join(path.resolve(root), DATA_DIR_NAME, 'observe-points.json');
+}
+
+/**
  * 推荐观测点。`write !== false` 时把清单写到 `<root>/.agent-io/observe-points.json`。
  */
 export async function recommendObservePoints(
@@ -428,7 +437,7 @@ export async function recommendObservePoints(
   }
   const truncated = deduped.length - kept.length;
 
-  const pointsFile = path.join(root, DATA_DIR_NAME, 'observe-points.json');
+  const pointsFile = observePointsFile(root);
   const payload = {
     schema: 'agent-io/observe-points/v1',
     generatedAt: new Date().toISOString(),

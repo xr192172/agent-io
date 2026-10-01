@@ -78,14 +78,18 @@ const LEDGER_CLOSED_CAP = 100;
 // 读写
 // ─────────────────────────────────────────────────────────────
 
-function ledgerPath(projectRoot: string): string {
-  return path.join(projectRoot, DATA_DIR_NAME, 'impact', 'ledger.json');
+/**
+ * 影响台账文件路径（`<projectRoot>/.agent-io/impact/ledger.json`）。
+ * ★ T19：从私有改为**导出** ⇒ 「这份数据归哪个根」成为一处可见声明（登记表把它钉在这里）。
+ */
+export function impactLedgerFile(projectRoot: string): string {
+  return path.join(path.resolve(projectRoot), DATA_DIR_NAME, 'impact', 'ledger.json');
 }
 
 /** 读全部条目（新→旧）。文件缺失/损坏返回空（缓存派生物语义，不阻塞调用方） */
 export function loadLedger(projectRoot: string): LedgerEntry[] {
   try {
-    const f = JSON.parse(fs.readFileSync(ledgerPath(projectRoot), 'utf-8')) as LedgerFile;
+    const f = JSON.parse(fs.readFileSync(impactLedgerFile(projectRoot), 'utf-8')) as LedgerFile;
     if (!Array.isArray(f.entries)) return [];
     return f.entries;
   } catch {
@@ -101,8 +105,8 @@ export function saveLedger(projectRoot: string, entries: LedgerEntry[]): void {
     .sort((a, b) => (a.consumed_at ?? a.created_at) < (b.consumed_at ?? b.created_at) ? 1 : -1)
     .slice(0, LEDGER_CLOSED_CAP);
   const file: LedgerFile = { version: 1, entries: [...open, ...closed] };
-  fs.mkdirSync(path.dirname(ledgerPath(projectRoot)), { recursive: true });
-  fs.writeFileSync(ledgerPath(projectRoot), JSON.stringify(file, null, 2), 'utf-8');
+  fs.mkdirSync(path.dirname(impactLedgerFile(projectRoot)), { recursive: true });
+  fs.writeFileSync(impactLedgerFile(projectRoot), JSON.stringify(file, null, 2), 'utf-8');
 }
 
 // ─────────────────────────────────────────────────────────────

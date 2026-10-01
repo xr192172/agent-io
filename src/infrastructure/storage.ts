@@ -67,7 +67,11 @@ export function getStorageRoot(): string {
   return path.join(getDataHome(), DATA_DIR_NAME);
 }
 
-/** feature 持久化目录：<cwd>/.agent-io/features */
+/**
+ * feature 持久化目录：**`<dataHome>/.agent-io/features`**。
+ * ★ 2026-10-01 修注释：原文写的是 `<cwd>/.agent-io/features` —— **与实现不符**（实现一直走
+ *   `getStorageRoot()` = dataHome）。错注释本身就是一种"判据分叉"：它会让读者照着 `<cwd>` 去读。
+ */
 export function getFeaturesDir(): string {
   return path.join(getStorageRoot(), 'features');
 }

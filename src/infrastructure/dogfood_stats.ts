@@ -35,17 +35,18 @@ export interface DogfoodUsage {
 
 const MAX_ERR_LEN = 200;
 
-function logDir(): string {
+/** dogfood 日志目录（`<dataHome>/.agent-io/dogfood`）。★ T19：导出它 ⇒ 「归哪个根」可见（owner: dataHome）。 */
+export function dogfoodLogDir(): string {
   return path.join(getDataHome(), DATA_DIR_NAME, 'dogfood');
 }
 function logFile(): string {
-  return path.join(logDir(), 'usage.jsonl');
+  return path.join(dogfoodLogDir(), 'usage.jsonl');
 }
 
 /** 记录一次工具调用（失败静默，不阻断主流程）。 */
 export function recordDogfoodUsage(u: DogfoodUsage): void {
   try {
-    fs.mkdirSync(logDir(), { recursive: true });
+    fs.mkdirSync(dogfoodLogDir(), { recursive: true });
     fs.appendFileSync(logFile(), JSON.stringify(u) + '\n', 'utf-8');
   } catch {
     /* 记录失败不影响工具主流程 */

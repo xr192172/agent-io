@@ -31,7 +31,22 @@ process.env.AGENT_IO_HOME  ??  getPackageRoot()（自省包根，与 cwd 无关�
 
 ⇒ **这是"越兜越多"的真正机制**：不是数据杂，是**"这份数据归哪个根"没人定**。
 
+> ### ★ 2026-10-01 更新（本节的表述**已被处置**，别照旧读）
+> 上面这张表是**当天上午的实测快照**，保留作为"病根长什么样"的记录。到当天下午：
+> - **健康缓存**：根已改由**调用方显式传**（`health_cache.ts#healthCacheDir(root)`，不再写死 `cwd`）⇒ **不再是第三处根**。
+> - **读侧兜底**：`function_outline.ts:70` 那份候选已并入**唯一权威** `db.ts#findCacheDb`（§44.25，20 处副本 → 4 个具名函数）。
+> - ★ **"根没人定"这件事本身已被处置**：新增登记表 `tests/fixtures/stage_registry.json` +
+>   门 `tests/registry/root_declaration.test.ts` —— **每份数据必须声明 `owner`，且声明要能被"两个根跑一遍"证伪**。
+>   ⇒ 本节标题「目前只对 `cache.db` 成立」**不再成立**：现在**每一份**数据都在册，`owner='project'` 的
+>   由**行为**校验（拿两个不同的根调它的解析器，结果必须不同），`owner='dataHome'` 的由解析器白名单校验。
+
 ## ★★★ 结论二：**同一份数据、两个根 → 直读直空**（硬 bug）
+
+> ### ★ 2026-10-01 更新：**已修**（`97c9d55`）
+> 写侧（`serve.ts`）从 `process.cwd()` 改到 `getStorageRoot()`；读侧并入 `db.ts#findCacheDb` 的第一级候选。
+> ⇒ 现在**单一根 = `dataHome`**（登记表里 `import_cache` 那一行记了为什么归 dataHome 而不是 project：
+> 这个库以 **feature 名**为键，而 feature 这个名字空间本身就是 dataHome 的）。
+> 下面的分析保留作为"写读不碰面"这个失败模式的样本。
 
 `import_cache_<feature>.db`：
 
@@ -153,6 +168,13 @@ ensureStage(id):
 
 ## 工序清单（从本账本导出；★ = 缺东西）
 
+> ### ★ 2026-10-01：本表已**机器化**
+> 下面这张表是**人手抄的早期快照**（保留作对照）。**唯一的机器权威**已经是
+> `tests/fixtures/stage_registry.json` + 门 `tests/registry/root_declaration.test.ts`（15 道工序）。
+> 两者若不一致，**以登记表为准**（它被门校验：产者/解析器必须是**真导出**、`owner='project'` 的解析器
+> 必须**真的用**传进来的根）。★ 别把本表当判据改 —— 要改就改登记表，否则又是"同一份知识两处落点"。
+> 覆盖差异：登记表比本表多一条 `embedding_cache`（账本主表有、工序表漏了）。
+
 | 工序 id | 根 | 上游 | 新鲜判据 | 唯一产者 | 缺什么 |
 |---|---|---|---|---|---|
 | `source_files` | project | —（源） | mtime | `ProjectView` | ✅ 已是工序形状 |
@@ -188,7 +210,9 @@ ensureStage(id):
 3. **归一 `import_cache` 两根** + `health_cache` 改根。
 4. **抽第一道真工序并接上溯源**：让 `dsl_baseline` / `dsl_live` 的**读者**在缺时自动 `ensureStage`
    （现在只有写侧单点补，读侧拿到 null/404 就完事）。
-5. 给 `Stage` 表加一扇门：**每份数据必须声明 `owner` + `inputs` + `fresh`**（这才是 T19 说的"根的选择"门）。
+5. ✅ **已落**（2026-10-01，§44.26）：给 `Stage` 表加了一扇门 —— **每份数据必须声明 `owner` + `inputs` + `fresh`**，
+   而且 `owner` 是**可证伪**的（拿两个不同的根跑它的解析器，结果必须不同）⇒ 这才是 T19 说的"根的选择"门。
+   登记表 `tests/fixtures/stage_registry.json`（15 道工序）+ 门 `tests/registry/root_declaration.test.ts`。
 
 ---
 
@@ -300,3 +324,41 @@ DSL 侧是 `expected_apis[].signature`（**文本**），解析侧是 `nodes.qua
 2. **再摘字段**（`actual_apis` / `actual_deps` 从 `domain/semantic.ts` 与 DSL schema 移除）；
 3. **最后删产者**（`scaffold action=backfill`；`import_project` 里回填 `actual_deps` 的那段）；
 4. **加 `edit_dsl` 的"先读后改"门**（与 `edit_code` 同款；复用 `evidence`/L4 那条机制而不是另发明）。
+
+---
+
+# 附四：**独立核验**（子代理清点 vs 我的抽验）—— 2026-10-01
+
+### 为什么要做这一步
+
+新建的「根声明门」自己声明了**限度一**：*登记表要人写，门能查"写了的是不是真的"，**查不了"有没有漏写的"***。
+⇒ 那就**不能只写在纸上承认** —— 派了一个**独立子代理**（不给它看本账本、也不给它看登记表）
+从 `src/` 源码自己清点一遍"落盘数据 + 根归属"。
+
+### 结论：限度一**不是理论**，是实测
+
+它清出 **≈18 项我没有登记**的数据，以及 **3 处"同一份数据两个根"**（其中 1 处是**真 bug**）。
+★ 这正面说明：**一扇门只保护它册上的东西**。
+
+### 我逐条抽验的结果（★ 不许只信子代理的总结）
+
+| # | 子代理的指控 | 我的抽验 | 处置 |
+|---|---|---|---|
+| ① | `features/<f>.json` **写 dataHome、读 cwd** | ✅ **坐实（真 bug）**：写 = `storage.ts:71 getFeaturesDir()` → `<dataHome>`；读 = `serve.ts:222` → `process.cwd()/.agent-io/features`。与结论二**同型**（`cwd ≠ 包根` ⇒ `/api/features` 永远空）。★ 且 `getFeaturesDir()` 的**注释自己写的是 `<cwd>`**（与实现不符）—— 错注释本身就是一种判据分叉。 | **已修**：读侧改走同一个 accessor `getFeaturesDir()`；注释一并更正 |
+| ② | `live/<f>.dsl.json` / `baseline/<f>.dsl.json` **两个根** | ✅ **坐实**：`watch_project_tool.ts:430` 显式传 `live_dir: entry.project_dir` ⇒ 落**被监听项目的根**；其余调用点不传 ⇒ 落 `dataHome`；`getLiveFeature(feature)` 读时也不传。★ 但 `live_dir` 是**有意留的可覆盖参数**（`design/index.ts:290` 的 schema 就写着"默认 dataHome"）⇒ 风险不在参数，在**没有任何一处保证写读两侧传同一个值**。 | **入册为 `rootConflict`**（不再是散的散文） |
+| ③ | `archive/<f>/<id>.json` 写读不对称 | ✅ **坐实**：`archive_node.ts:73` **写时根本不传 baseDir**（永远 dataHome），`:146` **读时接受 `live_dir`** ⇒ 传了 `live_dir` 的读方**永远读不到**。且工具描述（`meta/index.ts:92`）写的是"条目住在 `<live_dir>/…`"—— **文档与实现不一致**。 | **入册为 `rootConflict`** |
+| ④ | `cache.db` 的三个根（`getDbFile` dataHome / `projectCacheDbPath` project / `findCacheDb` 第三级 cwd） | ✅ 与我 §44.25 的结论一致；第三级 `cwd` 兜底**目前不动**（改它要连"没索引的项目该不该读到 cwd 那个项目的库"一起定） | 已在 §44.25「遗留」记着 |
+| ⑤ | 其余约 15 项（`output/*.js` 构建产物、`bricks/`、`overlay`、`snapshots/`、一族摘要缓存、`config.json` userHome、`heap-*.heapsnapshot` 只写不读…） | ⚠️ **未逐条抽验**（时间与范围所限）—— **如实标注，不当事实用** | 进登记表的 **`notRegisteredYet` 清单**（带证据、**棘轮只许减**） |
+
+### 这一笔对「账本」自己的更正
+
+- **结论二有两处同型兄弟**，不止 `import_cache_` 一处：`features/`（①）与 `archive/`（③）。
+  ① 已修；③ 已入册。⇒ ★ **教训：查"写读不碰面"不能只查当时发现的那一处 —— 要按"同一个 accessor 有没有被绕开"横扫。**
+- 本账本**主表/工序表**仍少列了 ①③ 这两项（已由登记表接管，见摊开的 `notRegisteredYet`）。
+
+### 对「门」的加固（本笔已落）
+
+1. 登记表 15 → **18 道工序**（补 `self_writes` / `impact_ledger` / `output_registry`）。
+2. 新增 **`rootConflict`** 字段 + **棘轮**（当前 3 条：`dsl_live` / `dsl_baseline` / `archive`）
+   —— 根冲突**没法用 `owner` 单值表达**（它本来就是两个根），所以必须**可计数**；写进散文里没人会看见。
+3. 新增 **`notRegisteredYet`** 清单 + **棘轮**（当前 18 条）—— 把"漏写"从**暗处**搬到**明处并计数**。
