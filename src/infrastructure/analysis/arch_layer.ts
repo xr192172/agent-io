@@ -188,7 +188,7 @@ export async function archLayer(input: ArchLayerInput): Promise<ArchLayerResult>
       dslFingerprint(dsl),
       srcFp,
     ]);
-    const cached = readHealthCache<ArchLayerResult>(cacheKey);
+    const cached = readHealthCache<ArchLayerResult>(cacheKey, dsl.source_root ?? process.cwd());
     if (cached) return cached;
   }
 
@@ -259,6 +259,6 @@ export async function archLayer(input: ArchLayerInput): Promise<ArchLayerResult>
     persisted,
     message,
   };
-  if (cacheKey) writeHealthCache(cacheKey, result);
+  if (cacheKey) writeHealthCache(cacheKey, result, dsl.source_root ?? process.cwd());
   return result;
 }

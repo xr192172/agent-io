@@ -23,11 +23,10 @@
  * runtime 字段本阶段不填——静态判定的 confidence 自然受 schema 语义封顶 0.7（由调用方执行）。
  */
 
-import { DATA_DIR_NAME } from '../../infrastructure/data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { getDSL, saveDSL } from '../../infrastructure/storage.js';
-import { getProjectCacheDb, type Database } from '../../infrastructure/index/db.js';
+import { getProjectCacheDb, projectCacheDbPath, type Database } from '../../infrastructure/index/db.js';
 import { buildImportGraph, type ImportGraph } from '../../infrastructure/graph/import_graph.js';
 import type {
   BrickContract,
@@ -518,7 +517,7 @@ export function extractContracts(input: ExtractContractsInput): ExtractContracts
     db = getProjectCacheDb(root);
   } catch (e) {
     throw new Error(
-      `无法打开/创建缓存 ${path.join(root, DATA_DIR_NAME, 'cache.db')}：${(e as Error).message}。` +
+      `无法打开/创建缓存 ${projectCacheDbPath(root)}：${(e as Error).message}。` +
         '（工具入口已在调用前自动冷启建索引，此处多为目录不存在或不可写。）',
     );
   }

@@ -15,12 +15,12 @@
  * 幂等：本工具只读既有 detail 节点，重跑清理重建自身前缀的 flows，不动手写 flows。
  */
 
-import { DATA_DIR_NAME } from '../../infrastructure/data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { AnimationBranch, AnimationError, AnimationFlow, AnimationValueSchema } from '../../domain/animation.js';
 import type { DesignDSL, Node } from '../../domain/types.js';
 import { getDSL, saveDSL } from '../../infrastructure/storage.js';
+import { nearestCacheDb } from '../../infrastructure/index/db.js';
 import { parseFileFull, type ParsedSymbol } from '../../infrastructure/parse/index.js';
 import { extractFunctionCfg } from '../../infrastructure/parse/cfg.js';
 import { buildCallGraph, pickEntry, walkChain } from '../design/derive_chain.js';
@@ -150,14 +150,8 @@ async function readCrossCalls(
 ): Promise<Map<string, string[]>> {
   const byCaller = new Map<string, string[]>();
   const relPath = path.relative(projectRoot, filePath).split(path.sep).join('/') || path.basename(filePath);
-  let dbPath: string | null = null;
-  for (let dir = path.resolve(projectRoot); dir && dir !== path.dirname(dir); dir = path.dirname(dir)) {
-    const cand = path.join(dir, DATA_DIR_NAME, 'cache.db');
-    if (fs.existsSync(cand)) {
-      dbPath = cand;
-      break;
-    }
-  }
+  // ★ 缓存库定位：唯一权威 `db.ts#nearestCacheDb`（本文件此前自持一份"向上逐级找"的循环）
+  const dbPath = nearestCacheDb(projectRoot);
   if (!dbPath) return byCaller;
   try {
     const { openDb } = await import('../../infrastructure/index/db.js');

@@ -72,8 +72,14 @@
       · (3a) ✅ **已落**：`import_cache_<feature>.db` 的**写侧**从 `process.cwd()` 改到 `getStorageRoot()`
         （`serve.ts:392,441`）⇒ 与 3 个读侧（`function_outline.ts:68` / `overview.ts:155` / `derive_mind_map.ts:904`）
         **同根**，修掉"同名两根 ⇒ 写读不碰面"。
-      · (3b) 待做：`health_cache` 的根从 `cwd` 改回 **project**（`health_cache.ts:27`）；
-        以及**给"根"加门**（每份数据声明 `owner`）。
+      · (3b) ✅ **已落**（2026-10-01，台账 §44.25）：「cache.db 定位」收成**唯一权威**——
+        `db.ts` 新增 4 个具名函数（`projectCacheDbPath` / `featureCacheDbPath` / `findCacheDb` / `nearestCacheDb`），
+        **20 处副本 → 4 个具名函数**（K1 已知根 10 / K2 导入缓存 5 / K3 候选搜索 3 / K4 向上逐级 2）；
+        G4 加两族门（`cache-db-path` / `feature-import-cache-path`，**frozen 均空 = 零容忍**），
+        ★ 出生证**实做**（换变量名注入 ⇒ 两族都红 ⇒ 还原），并据此抓出"pattern 写死变量名 ⇒ 假绿"的真缺陷。
+        另：`health_cache` 的根由调用方**显式传**（不再写死 `cwd`）。
+        ★ **仍未做**：**给"根"加门**（每份数据声明 `owner`）—— 那才是"根的选择"的正题；
+        `findCacheDb` 第三级候选仍是 `<cwd>`（本笔**只单点化、没改语义**）。
       · (4) ★ **抽第一道真工序并接上溯源**：让 `dsl_baseline` / `dsl_live` 的**读者**在缺时自动 `ensureStage`
         （现状：只有写侧单点补（`import_project.ts:1479`），读侧拿到 null/404 就完事）；
       · (5) ★★ **补"符号级绑定点"**（用户 2026-10-01 提的"两份数据双向绑定"的真缺口）：

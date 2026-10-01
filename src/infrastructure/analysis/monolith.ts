@@ -710,7 +710,9 @@ export async function checkMonolith(input: CheckMonolithInput): Promise<CheckMon
       maxFiles,
       fp,
     ]);
-    const cached = readHealthCache<CheckMonolithResult>(cacheKey);
+    // ★ T19：根由调用方显式给（不传就用 cwd —— 这与旧行为一致，但**在调用点可见**）
+    const cacheRoot = input.project_dir ?? process.cwd();
+    const cached = readHealthCache<CheckMonolithResult>(cacheKey, cacheRoot);
     if (cached) return cached;
   }
 
@@ -774,6 +776,6 @@ export async function checkMonolith(input: CheckMonolithInput): Promise<CheckMon
     reports: oversized,
     preview_feature: previewFeature,
   };
-  if (cacheKey) writeHealthCache(cacheKey, result);
+  if (cacheKey) writeHealthCache(cacheKey, result, input.project_dir ?? process.cwd());
   return result;
 }

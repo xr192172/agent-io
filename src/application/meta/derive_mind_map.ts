@@ -28,7 +28,7 @@ import { getDSL, getStorageRoot, getPackageRoot } from '../../infrastructure/sto
 import { extractJsonObject } from './explain_gen.js';
 import { loadAgentConfig, callChat } from '../../infrastructure/llm_focus.js';
 import type { ChatMessage } from '../../infrastructure/llm_focus.js';
-import { openDb } from '../../infrastructure/index/db.js';
+import { openDb, findCacheDb } from '../../infrastructure/index/db.js';
 import type { Database } from '../../infrastructure/index/db.js';
 import { fileFacts } from '../../infrastructure/index/file_facts.js';
 import type { DesignDSL, FeatureNode, FeatureTree, SemanticFile, CanvasNote, Node } from '../../domain/types.js';
@@ -906,16 +906,6 @@ interface TeachScript {
   pipeline_like?: { like?: boolean; why?: string };
 }
 
-/** 定位 feature 对应的 cache.db（与 overview/feature_tree 同一套候选逻辑） */
-function findCacheDb(feature: string, dsl: DesignDSL): string | null {
-  const candidates = [
-    path.join(getStorageRoot(), `import_cache_${feature}.db`),
-    dsl.source_root ? path.join(dsl.source_root, DATA_DIR_NAME, 'cache.db') : '',
-    path.join(process.cwd(), DATA_DIR_NAME, 'cache.db'),
-  ].filter(Boolean) as string[];
-  return candidates.find((p) => fs.existsSync(p)) ?? null;
-}
-
 /** 后缀匹配（≥2 段）判断 cache.db 路径是否属于功能文件集合（两套相对根可能前缀不同） */
 function makeFileMatcher(featureRels: string[]): (p: string) => boolean {
   const exact = new Set(featureRels);
@@ -1490,7 +1480,8 @@ async function buildTeachMindMap(
   // LLM 科普编剧：各功能并行（材料含真实调用链证据）
   // db 打不开时 edges=[]，材料仍以职责清单为主（LLM 会标注顺序为推断）
   let db: Database | null = null;
-  const dbFile = findCacheDb(feature, dsl);
+  // ★ 缓存库定位的唯一权威在 `infrastructure/index/db.ts#findCacheDb`（本文件此前自持一份候选逻辑）
+  const dbFile = findCacheDb({ feature, sourceRoot: dsl.source_root });
   /** cache.db 存在却打不开的原因（§2d / §27.5：读不了 ≠ 没有调用数据，不许静默当成"无调用记录"） */
   let dbReadError = '';
   if (dbFile) {

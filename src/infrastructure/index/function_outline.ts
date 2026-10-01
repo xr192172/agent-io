@@ -6,14 +6,13 @@
  * 函数符号与调用边（kind='call'）已由 ts_kernel 提取并落进缓存（syncFile 写 nodes/edges，
  * resolveCrossFileCalls 做跨文件解析），本模块只做「汇聚成大纲」的纯函数，不重新解析代码。
  *
- * 缓存定位顺序（复用 overview.tryDeriveFeatureTree 同款）：
+ * 缓存定位顺序（★ **唯一权威在 `./db.ts` 的 `findCacheDb`**，本模块不自持一份）：
  *   import_cache_<feature>.db（dataHome） > <source_root>/.agent-io/cache.db > cwd/.agent-io/cache.db
  */
-import { DATA_DIR_NAME } from '../data_dir.js';
 import path from 'node:path';
 import fs from 'node:fs';
 import { getStorageRoot, getDSL } from '../storage.js';
-import { openDb, type Database } from './db.js';
+import { openDb, findCacheDb, type Database } from './db.js';
 
 export interface FuncCallRef {
   fn_id: string;
@@ -60,16 +59,6 @@ function symbolNameFromId(nodeId: string): string {
 function filePathFromId(nodeId: string): string {
   const hash = nodeId.lastIndexOf('#');
   return hash === -1 ? nodeId : nodeId.slice(0, hash);
-}
-
-/** 定位给定 feature / source_root 的缓存 db 文件（找不到返回 null）。偏好导入缓存 */
-export function resolveFunctionCacheDb(feature?: string, sourceRoot?: string): string | null {
-  const candidates: string[] = [
-    feature ? path.join(getStorageRoot(), `import_cache_${feature}.db`) : '',
-    sourceRoot ? path.join(sourceRoot, DATA_DIR_NAME, 'cache.db') : '',
-    path.join(process.cwd(), DATA_DIR_NAME, 'cache.db'),
-  ];
-  return candidates.find((p) => p && fs.existsSync(p)) ?? null;
 }
 
 /** 纯函数：从已打开的 db 汇聚函数级大纲。全量返回（不做函数截断——像编译器一样数据完整）。
@@ -203,7 +192,7 @@ function withCacheDb<T>(
   sourceRoot: string | undefined,
   fn: (db: Database) => T,
 ): { ok: boolean; note?: string; data: T } {
-  const dbFile = resolveFunctionCacheDb(feature, sourceRoot);
+  const dbFile = findCacheDb({ feature, sourceRoot });
   if (!dbFile) {
     return { ok: false, note: '未找到函数索引（cache.db / import_cache_*.db）——本视图按 feature 取索引：对本项目跑一次带 feature 的 import_project（或任一读入口）即可建立。', data: undefined as unknown as T };
   }
@@ -231,7 +220,7 @@ export function buildFunctionOutline(feature?: string, sourceRoot?: string, opts
     return { ok: false, outline: { db_file: '', generated_at: Date.now(), functions: [] }, note: res.note };
   }
   const outline = res.data;
-  const dbFile = resolveFunctionCacheDb(feature, sourceRoot);
+  const dbFile = findCacheDb({ feature, sourceRoot });
   outline.db_file = dbFile ?? '';
   outline.feature = feature;
   outline.source_root = sourceRoot;

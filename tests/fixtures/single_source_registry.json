@@ -58,6 +58,20 @@
       }
     },
     {
+      "id": "cache-db-path",
+      "intent": "『已知某个根 ⇒ 该项目的符号缓存文件路径（<root>/.agent-io/cache.db）』与『向上逐级找最近的 cache.db』—— 权威是 db.ts#projectCacheDbPath / nearestCacheDb。2026-10-01 收口前此意图有 **10 处**手拼（db.getProjectCacheDb 内联 / write_gate 另有一份同名函数 / project_root 预检 / harvest_from_url / analyze_monolith / file_facts×2 / extract_contracts / harvest_closure / diff_impact 报错串），改一次根规则要改 10 个地方。★ pattern 只取**带引号的文件名叶子**（不写左侧拼法）：这样无论 `path.join(x, DATA_DIR_NAME, 'cache.db')`、`` `${DATA_DIR_NAME}/cache.db` `` 还是向上找的循环体，只要重新拼一次就命中。",
+      "authority": "src/infrastructure/index/db.ts",
+      "pattern": "'cache.db'",
+      "frozen": {}
+    },
+    {
+      "id": "feature-import-cache-path",
+      "intent": "『feature ⇒ 它的导入缓存 db 路径（<dataHome>/import_cache_<feature>.db）』—— 权威是 db.ts#featureCacheDbPath。收口前 **5 处**各拼一遍（function_outline / overview / derive_mind_map / serve×2）。★ 与 cache-db-path **不同意图**：那个锚在「项目根」，这个锚在 dataHome（本进程的导入缓存），**不许合并**。★ pattern 取模板前缀 `import_cache_${` 而**不写变量名**（★ 出生证实测教训：第一版写死 `import_cache_${feature}.db`，注入用 `import_cache_${f}.db` 就**照绿**——字面模式认不出同义写法，那是假绿）；同时不含 `import_cache_*.db` 那种描述串（星号），故不必为文档串写豁免。",
+      "authority": "src/infrastructure/index/db.ts",
+      "pattern": "import_cache_${",
+      "frozen": {}
+    },
+    {
       "id": "repo-walk",
       "intent": "『这个项目有哪些源码文件』的遍历 —— 权威是 ProjectView（src/infrastructure/parse/project_view.ts，一处算→TTL 缓存→多处取用）。实测此前被 walk 了 29 处（walkSourceFiles 15 + feature_map.scanSourceFiles 6 + observe/instrument.collectTsFiles 8 + monolith 同名遮蔽），每次重 walk 一遍。★ 消费者应取 `getProjectView(root).sourceFiles`，不要自己 walk。",
       "authority": "src/infrastructure/parse/project_view.ts",

@@ -11,12 +11,11 @@
  * 同名不同 receiver 的方法会误连——语义标注阶段由 LLM 修正。
  */
 
-import { DATA_DIR_NAME } from '../../infrastructure/data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { AnimationValueSchema, Edge, Node } from '../../domain/types.js';
 import { getDSL, saveDSL } from '../../infrastructure/storage.js';
-import type { Database } from '../../infrastructure/index/db.js';
+import { nearestCacheDb, type Database } from '../../infrastructure/index/db.js';
 import { parseFileFull, isSupported, type ParsedCall, type ParsedSymbol } from '../../infrastructure/parse/index.js';
 import { extractFunctionCfg } from '../../infrastructure/parse/cfg.js';
 import { KIND_SHAPE } from './derive_algorithm.js';
@@ -472,14 +471,9 @@ export async function deriveDetailChain(input: DeriveChainInput): Promise<Derive
   // cache.db 定位：projectRoot 下没有则向上逐级找（源文件根常是项目根的子目录，如 src/）
   const crossByCaller = new Map<string, string[]>();
   const relPath = path.relative(projectRoot, filePath).split(path.sep).join('/') || path.basename(filePath);
-  let cacheDbPath: string | null = null;
-  for (let dir = path.resolve(projectRoot); dir && dir !== path.dirname(dir); dir = path.dirname(dir)) {
-    const cand = path.join(dir, DATA_DIR_NAME, 'cache.db');
-    if (fs.existsSync(cand)) {
-      cacheDbPath = cand;
-      break;
-    }
-  }
+  // ★ 缓存库定位：唯一权威 `db.ts#nearestCacheDb`（本文件此前自持一份"向上逐级找"的循环，
+  //   与 derive_anim_flow 那份逐字相同）
+  const cacheDbPath = nearestCacheDb(projectRoot);
   if (cacheDbPath) {
     let db: Database | null = null;
     try {

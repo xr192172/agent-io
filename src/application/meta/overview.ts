@@ -23,7 +23,7 @@ import type { TourStep } from '../../infrastructure/index/guided_tour.js';
 import type { MindMap } from '../../domain/mindmap.js';
 import { extractJsonObject } from './explain_gen.js';
 import { deriveFeatureTree } from '../../infrastructure/analysis/derive_feature_tree.js';
-import { openDb } from '../../infrastructure/index/db.js';
+import { openDb, findCacheDb } from '../../infrastructure/index/db.js';
 import { fileFacts } from '../../infrastructure/index/file_facts.js';
 
 export interface OverviewSummary {
@@ -148,16 +148,11 @@ function isFlatMindMap(mm: MindMap): boolean {
 /**
  * 平铺兜底修复：DSL 没有 feature_tree 时用 deriveFeatureTree 现场生成
  * （Louvain 社区 → 按目录/LLM 归并成 3-8 个功能），写回 DSL。
- * cache.db 定位顺序：导入缓存 import_cache_<feature>.db > <source_root>/.agent-io/cache.db
- * > <serve 项目根>/.agent-io/cache.db。找不到任何 db 时静默失败（保持平铺）。
+ * cache.db 定位：★ **唯一权威** `db.ts#findCacheDb`（本文件此前自持一份同款候选逻辑）。
+ * 找不到任何 db 时静默失败（保持平铺）。
  */
 function tryDeriveFeatureTree(feature: string, dsl: { source_root?: string }, genNames: boolean): Promise<boolean> {
-  const candidates: string[] = [
-    path.join(getStorageRoot(), `import_cache_${feature}.db`),
-    dsl.source_root ? path.join(dsl.source_root, DATA_DIR_NAME, 'cache.db') : '',
-    path.join(process.cwd(), DATA_DIR_NAME, 'cache.db'),
-  ].filter(Boolean) as string[];
-  const dbFile = candidates.find((p) => fs.existsSync(p));
+  const dbFile = findCacheDb({ feature, sourceRoot: dsl.source_root });
   if (!dbFile) return Promise.resolve(false);
   let db;
   try {

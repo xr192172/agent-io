@@ -22,7 +22,6 @@
  * 独立性：现场解析（不依赖 import_project 建的 cache.db），零前置状态。
  */
 
-import { DATA_DIR_NAME } from '../../infrastructure/data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
@@ -32,7 +31,7 @@ import { analyzeModuleSource } from '../refactor/rename_symbol.js';
 import { parseFileFull, isSupported, isTsJsExt, resolveExistingPath, SOURCE_EXTS, TS_JS_EXTS, type ParsedImport } from '../../infrastructure/parse/index.js';
 import { readGoModules, type GoModule } from '../../infrastructure/graph/import_project.js';
 import { gitAvailable } from '../../infrastructure/exec_guard.js';
-import { getProjectCacheDb, closeProjectCacheDb, type Database } from '../../infrastructure/index/db.js';
+import { getProjectCacheDb, closeProjectCacheDb, projectCacheDbPath, type Database } from '../../infrastructure/index/db.js';
 import { skipDirSet } from '../../infrastructure/parse/source_exts.js';
 import {
   toRelPath,
@@ -1037,7 +1036,7 @@ async function tryIndexedExpandClosure(
 ): Promise<{ files: string[]; externalRefs: ExternalRef[]; skipped: ScanSkip[] } | null> {
   // 存在性预检：避免 getProjectCacheDb() 在无索引的项目里把空 cache.db 创建出来（否则 Windows 上会持有 EBUSY 锁，
   // 导致 temp 目录测试的 rmSync 抛错，且无意义消耗一次池连接）。
-  const dbFile = path.join(root, DATA_DIR_NAME, 'cache.db');
+  const dbFile = projectCacheDbPath(root);
   if (!fs.existsSync(dbFile)) return null;
 
   let db: Database | null = null;

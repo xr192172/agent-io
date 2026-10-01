@@ -50,7 +50,7 @@
 import { DATA_DIR_NAME } from '../../infrastructure/data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
-import { getProjectCacheDb, beginBatch, endBatch, type Database } from '../../infrastructure/index/db.js';
+import { getProjectCacheDb, beginBatch, endBatch, projectCacheDbPath, type Database } from '../../infrastructure/index/db.js';
 import { syncFile, syncFileSync, removeFile, changedSymbolNames, reopenRefsTo, resolveCrossFileCalls, type SyncStatus, type CrossFileResolveStats } from '../../infrastructure/index/symbols.js';
 import { canParseFileSync } from '../../infrastructure/parse/index.js';
 import { snapshotBeforeWrite, type FileSnapshotMeta } from '../refactor/file_snapshot.js';
@@ -104,11 +104,6 @@ const EMPTY_CROSS = { total: 0, resolved: 0, external: 0, failed: 0 };
 // ─────────────────────────────────────────────────────────────
 // 路径工具
 // ─────────────────────────────────────────────────────────────
-
-/** 项目根的缓存库路径 */
-export function projectCacheDbPath(projectRoot: string): string {
-  return path.join(path.resolve(projectRoot), DATA_DIR_NAME, 'cache.db');
-}
 
 /** 自写登记文件路径 */
 export function selfWritesPath(projectRoot: string): string {

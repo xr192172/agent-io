@@ -21,14 +21,12 @@
  *   2. **连接复用**：读者多在**逐文件循环**里调用 ⇒ 若每次 `openDb` 会开 N 个连接且不关闭
  *      ⇒ 本模块按 dbPath **缓存连接**（与 `db.ts` 的 `projectCachePool` 同一条纪律：**不 close**）。
  *
- * ★ 库的定位：复用既有三级候选（`resolveFunctionCacheDb`：`import_cache_<f>.db`(dataHome) >
+ * ★ 库的定位：复用**唯一权威** `db.ts#findCacheDb`（`import_cache_<f>.db`(dataHome) >
  *   `<source_root>/.agent-io/cache.db` > `<cwd>/.agent-io/cache.db`），**不新造查找顺序**。
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { DATA_DIR_NAME } from '../data_dir.js';
-import { getProjectCacheDb, openDb, type Database } from './db.js';
-import { resolveFunctionCacheDb } from './function_outline.js';
+import { getProjectCacheDb, openDb, findCacheDb, projectCacheDbPath, type Database } from './db.js';
 
 /** 一个文件的**事实**（从解析数据现取；不是 DSL 里的镜像） */
 export interface FileFacts {
@@ -60,8 +58,7 @@ const EMPTY: FileFacts = { apis: [], deps: [], source: null, matched_path: null 
  *   ⇒ 非项目库（`import_cache_<f>.db`）**每次 open**，与既有 `function_outline.ts:212` 同一行为（不缓存）。
  */
 function pickDb(root: string, dbPath: string): Database {
-  const projectDb = path.join(path.resolve(root), DATA_DIR_NAME, 'cache.db');
-  return dbPath === projectDb ? getProjectCacheDb(root) : openDb(dbPath);
+  return dbPath === projectCacheDbPath(root) ? getProjectCacheDb(root) : openDb(dbPath);
 }
 
 /**
@@ -88,7 +85,7 @@ function resolveFilePath(db: Database, fileRel: string): string | null {
 
 /** 取某文件的事实。根 = 项目根（或 source_root） */
 export function fileFacts(root: string, fileRel: string, feature?: string): FileFacts {
-  const dbPath = resolveFunctionCacheDb(feature, root) ?? path.join(root, DATA_DIR_NAME, 'cache.db');
+  const dbPath = findCacheDb({ feature, sourceRoot: root }) ?? projectCacheDbPath(root);
   // ★ 只有"一个候选库都不存在"才返回空事实 —— 那是**合法的"还没建索引"**（调用方据此显示"无"）。
   //   ★★ 其余错误（库损坏 / SQL 失败）**一律抛**：吞掉会变成"显示成没有 API"的**静默错误**，
   //      正是本仓 §2d/§3 明令禁止的失败模式（"少做一点事而不说话"）。

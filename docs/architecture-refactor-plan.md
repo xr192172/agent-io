@@ -4835,3 +4835,85 @@ interface Stage<T> {
 
 #### 仍缺（T20 第 (4) 步）
 `edit_dsl` 的 **"先读后改"门**：改 `semantic.files` 前必须已读该文件的事实（复用 `evidence`/L4，不另发明）。
+
+### 44.25 T19 (3b)：「cache.db 定位」的唯一权威 —— 20 处副本 → 4 个具名函数（2026-10-01）
+
+★★★ **起因是用户的一个提问**：
+> 「像这种**用同一份抽象**的这种事情，如果以后要改抽象的话，是否需要**重新划定抽象的界面**？
+>  **一个用老头像、一个用新头像**，会不会出现这种维护性问题？」
+
+答：**会，而且这里已经发生了。** 收口前，"怎么找到 cache.db" 在 `src/` 里散成 **20 处 / 4 种语义**：
+
+| 语义 | 收口前副本 | 说明 |
+|---|---|---|
+| K1 已知根 ⇒ 路径 | **10 处** | `getProjectCacheDb` 内联 / `write_gate` **另有一份同名 `projectCacheDbPath`** / `project_root` 预检 / `harvest_from_url` / `analyze_monolith` / `file_facts`×2 / `extract_contracts` / `harvest_closure` / `diff_impact`（后三处是报错串） |
+| K2 feature ⇒ 导入缓存 | **5 处** | `function_outline` / `overview` / `derive_mind_map` / `serve`×2 |
+| K3 候选优先级搜索 | **3 处** | `function_outline.resolveFunctionCacheDb` / `overview.tryDeriveFeatureTree` / `derive_mind_map.findCacheDb` |
+| K4 向上逐级找 | **2 处** | `derive_anim_flow` / `derive_chain`（**逐字相同**） |
+
+★ **最刺眼的证据**：`derive_mind_map.findCacheDb` 的注释自己写着"**与 overview/feature_tree 同一套候选逻辑**"
+—— 作者**知道**重复，但没单点化 ⇒ 下次改候选顺序要记住改三处，漏一处就是**口径分叉**。
+★ 第二刺眼：`projectCacheDbPath` 这个名字**长了两遍**（`db.ts` 内联一份 + `write_gate` 导出一份）——
+说明"缺一个函数"不是问题，**"同一个函数各长一遍"**才是。
+
+#### 诊断：维护性为什么会坏（回答用户的提问）
+
+> **改抽象的代价 = 副本数 × 每次还要**现判**"它算哪个变体"**
+
+副本越多，"这次改动到底要不要动它"就越是**每次都要重新拍一次脑袋**。这就是"老头像 / 新头像"：
+不是两个名字不好，而是**没有任何一处能告诉你它们是不是同一个东西**。
+
+#### 解法（★ 不是合并成一个大函数）
+
+**不合并** —— 合并 = 取并集 = **悄悄扩大**某些调用方的搜索面（§2b 铁律，本仓栽过）。
+改为**把变体登记成具名函数**：**名字即语义** ⇒ 日后改抽象**只需看这 4 个名字**，
+不必再逐个调用点去判断归属。差异**有意保留**，但从此**可见**（各自注释写明"为什么与另一个不同"）。
+
+落点 `src/infrastructure/index/db.ts`（"讲数据库的地方"，此前权威却住在 `function_outline.ts` 这个 [B] 文件里 ⇒ 找不到）：
+
+```ts
+projectCacheDbPath(root)                // K1：已知根 ⇒ 算路径（**不查存在**）
+featureCacheDbPath(feature)             // K2：<dataHome>/import_cache_<feature>.db（不查存在）
+findCacheDb({ feature, sourceRoot })    // K3：候选优先级，取第一个**存在**的
+nearestCacheDb(dir)                     // K4：向上逐级，找最近的**存在**的
+```
+
+★ **K1/K2 故意是"纯字符串、不查盘"**：好让调用方在**真正开库之前**先 `existsSync` 预检，
+否则 `getProjectCacheDb` 会在无索引项目里造出空 `cache.db`（Windows 上还持有 EBUSY 锁，
+让临时目录测试的 `rmSync` 失败 —— `project_root.ts` 里记着这笔账）。
+★ **K4 不折进 K3**：K3 有 feature/source_root 这类**已知锚**；K4 只有一个**子目录**。
+把 K4 折进 K3 就得让 K3 接受"任意目录"当锚 ⇒ 那是**扩大** K3 的搜索面。
+
+#### 验证
+
+`tsc` 0（★ **让编译器当量具**：删掉旧 import 后 `tsc` 一次报全 5 处漏改的 `path`/`fs` 引用）｜
+`arch` **312 modules / 0 违规**（18 条已知基线不变，**无新环**）｜
+全量 `test:main` **233 文件通过 / 1 跳过 ｜ 2408 项通过 / 5 跳过 ｜ 0 失败**（与上一笔逐字一致）。
+
+#### 门：G4 加两族（存量不拦，新增即红）
+
+`tests/fixtures/single_source_registry.json` 新增：
+- `cache-db-path`（pattern `'cache.db'`，authority `db.ts`，`frozen: {}`）
+- `feature-import-cache-path`（pattern `import_cache_${`，authority `db.ts`，`frozen: {}`）
+
+★ **两族 frozen 都是空** = **零容忍**（收口当天就归零，没有存量债）。
+
+★★ **出生证（实做，不是声称）**：注入一份**换了变量名**的副本（`path.join(proj, DATA_DIR_NAME, 'cache.db')`
+与 `` `${getStorageRoot()}/import_cache_${anyName}.db` ``）⇒ **两族都变红** ⇒ 探针已删、门恢复绿。
+★ 这一步抓到**一个真缺陷**：第一版 pattern 写死 `import_cache_${feature}.db`，
+用 `include_cache_${f}.db` 注入**照绿** —— **字面模式认不出同义写法 ⇒ 假绿**。
+⇒ 改成变量无关前缀 `import_cache_${`；`cache-db-path` 同理只取**带引号的文件名叶子**，不写左侧拼法。
+» **通用教训**：门的 pattern 要对着"**这个行为的最小充分特征**"写，**不要对着当前那次实现的字面**写。
+
+#### 仍然不同、有意保留的两处（如实记账）
+
+- `storage.ts:35` 的 `while (dir !== path.dirname(dir))` 是**向上找 `package.json`**（定**安装根**），
+  **不是**找 cache.db ⇒ **不同意图，不并**。
+- `getDbFile()` 的 `<dataHome>/cache.db` 与 K1 的 `<root>/.agent-io/cache.db` 是**两个用途**
+  （前者是 dataHome 主缓存，后者是**跟着被分析项目走**的符号缓存）—— `db.ts:138` 早有注释说明。
+
+#### ★ 遗留（未动，属 T19 其余项）
+
+`findCacheDb` 的第三级候选是 **`<cwd>/.agent-io/cache.db`** ⇒ 一个**没有自己索引**的项目会读到
+**cwd 那个项目**的库。这是 T19「根的选择」的正题（每份数据声明的 `owner`），本笔**只做了单点化**，
+**没有改语义**（改语义要连 `owner` 门一起做）。

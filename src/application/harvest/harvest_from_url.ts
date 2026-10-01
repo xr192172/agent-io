@@ -19,14 +19,13 @@
  * 保护：单积木闭包 > max_closure（默认 50）跳过——防止把整个项目端走。
  */
 
-import { DATA_DIR_NAME } from '../../infrastructure/data_dir.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
 import { gitAvailable } from '../../infrastructure/exec_guard.js';
 import { getStorageRoot } from '../../infrastructure/storage.js';
-import { openDb, closeProjectCacheDb, getProjectCacheDb } from '../../infrastructure/index/db.js';
+import { openDb, closeProjectCacheDb, getProjectCacheDb, projectCacheDbPath } from '../../infrastructure/index/db.js';
 import { syncProject } from '../../infrastructure/index/symbols.js';
 import { walkFiles } from '../../infrastructure/graph/import_project.js';
 import { extractContracts, type FileContractReport } from './extract_contracts.js';
@@ -238,7 +237,7 @@ export async function harvestFromUrl(input: HarvestFromUrlInput): Promise<Harves
     const maxClosure = input.max_closure ?? 50;
 
     // ① 索引（walkFiles + syncProject 纯建缓存，不走 importProject——那会写 DSL feature 污染列表）
-    const dbPath = path.join(root, DATA_DIR_NAME, 'cache.db');
+    const dbPath = projectCacheDbPath(root);
     const db = openDb(dbPath);
     let indexed: number;
     try {

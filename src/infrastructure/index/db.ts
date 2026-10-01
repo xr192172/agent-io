@@ -74,6 +74,79 @@ export function getDbFile(): string {
   return path.join(getStorageRoot(), 'cache.db');
 }
 
+// ─────────────────────────────────────────────────────────────
+// cache.db 的**定位** —— ★ 唯一权威：别处不许再自己拼这个路径
+//
+// 2026-10-01（T19 收口）。起因是用户问："**同一个抽象被两处各用一份**，
+// 以后要改抽象时会不会有维护性问题（一个用老头像、一个用新头像）？"
+// —— 实测答案：这里**已经发生了**。收口前"怎么找到 cache.db"在 src/ 里散成
+// **20 处 / 4 种语义**，而且：
+//   · `projectCacheDbPath(root)` 这个名字**长了两遍**（本文件内联一份 + `write_gate` 一份）；
+//   · 「候选优先级搜索」**三份**（`function_outline` / `overview` / `derive_mind_map`），
+//     其中一份的注释自己写着"与 overview/feature_tree 同一套候选逻辑"——作者知道重复，
+//     但没单点化 ⇒ 下次改候选顺序要记住改三处，漏一处就是**口径分叉**；
+//   · 「向上逐级找」**两份**（`derive_anim_flow` / `derive_chain`，逐字相同）。
+//
+// ★ 为什么维护性会坏：**改抽象的代价 = 副本数 × 每次还要现判"它算哪个变体"**。
+//   副本越多，"这次改动到底要不要动它"就越是每次都要重新拍一次脑袋 —— 这就是"老头像/新头像"。
+// ★ 解法**不是**把变体合并成一个"什么都能干"的大函数（那是取并集，会悄悄**扩大**某些调用方的
+//   搜索面，见重构纪律 §2b），而是**把变体登记成具名函数**：**名字即语义** ⇒
+//   日后改抽象只需看这 4 个名字，不必再逐个调用点去判断归属。
+//   差异是**有意保留**的，但从此**可见**（各自注释写明"为什么它与另一个不同"）。
+//
+//   ① projectCacheDbPath(root)              已知根 ⇒ 算路径（不问存在）
+//   ② featureCacheDbPath(feature)           导入缓存路径（不问存在）
+//   ③ findCacheDb({ feature, sourceRoot })  候选优先级：挑第一个**存在**的
+//   ④ nearestCacheDb(dir)                   向上逐级：找最近的**存在**的
+//
+// ★ ①② 是**纯字符串**（不查盘），好让调用方能在**真正开库之前**先 `existsSync` 预检 ——
+//   否则 `getProjectCacheDb` 会在无索引的项目里造出一个空 cache.db（Windows 上还持有 EBUSY 锁，
+//   让临时目录测试的 rmSync 失败；`application/cross/project_root.ts` 里记着这笔账）。
+// ─────────────────────────────────────────────────────────────
+
+/** ① 已知项目根 ⇒ 该项目的符号缓存文件路径（`<root>/.agent-io/cache.db`）。**不查存在**。 */
+export function projectCacheDbPath(root: string): string {
+  return path.join(path.resolve(root), DATA_DIR_NAME, 'cache.db');
+}
+
+/** ② feature 的导入缓存路径（`<dataHome>/import_cache_<feature>.db`）。**不查存在**。 */
+export function featureCacheDbPath(feature: string): string {
+  return path.join(getStorageRoot(), `import_cache_${feature}.db`);
+}
+
+/**
+ * ③ 候选优先级：`import_cache_<feature>.db`(dataHome) > `<sourceRoot>/.agent-io/cache.db`
+ * > `<cwd>/.agent-io/cache.db`，取**第一个存在的**；一个都不存在 ⇒ `null`。
+ *
+ * ★ 为什么这个顺序必须单点：三级候选是**三个不同的锚**——dataHome = 本进程的导入缓存、
+ *   sourceRoot = 被分析的项目、cwd = 兜底。顺序一改，**所有读入口**的命中目标一起变。
+ * ★ 一个候选都没有 ⇒ 返回 null，**不降级**成"用最后一个"（调用方自己决定怎么办）。
+ */
+export function findCacheDb(opts: { feature?: string; sourceRoot?: string } = {}): string | null {
+  const { feature, sourceRoot } = opts;
+  const candidates = [
+    feature ? featureCacheDbPath(feature) : '',
+    sourceRoot ? projectCacheDbPath(sourceRoot) : '',
+    projectCacheDbPath(process.cwd()),
+  ];
+  return candidates.find((p) => p && fs.existsSync(p)) ?? null;
+}
+
+/**
+ * ④ 从 `dir` 起**向上逐级**找最近的 `<dir>/.agent-io/cache.db`；到盘根仍没有 ⇒ `null`。
+ *
+ * ★ 与 ③ 语义**不同，有意不合并**：③ 手里有 feature/source_root 这类**已知锚**；
+ *   ④ 只有一个**子目录**（源文件所在目录常是项目根的子目录，如 `src/`），只能向上找。
+ *   若把 ④ 折进 ③，就得让 ③ 接受"任意目录"当锚 —— 那会**扩大** ③ 的搜索面（取并集的典型坏处）。
+ */
+export function nearestCacheDb(dir: string): string | null {
+  for (let d = path.resolve(dir); d && d !== path.dirname(d); d = path.dirname(d)) {
+    const cand = path.join(d, DATA_DIR_NAME, 'cache.db');
+    if (fs.existsSync(cand)) return cand;
+  }
+  return null;
+}
+
 /**
  * 打开（必要时创建）cache.db 并应用 schema。
  * schema 全部 IF NOT EXISTS，重复打开幂等。
@@ -143,7 +216,7 @@ export function getProjectCacheDb(projectRoot: string): Database {
   const key = path.resolve(projectRoot);
   let db = projectCachePool.get(key);
   if (!db) {
-    db = openDb(path.join(key, DATA_DIR_NAME, 'cache.db'));
+    db = openDb(projectCacheDbPath(key));
     projectCachePool.set(key, db);
   }
   return db;

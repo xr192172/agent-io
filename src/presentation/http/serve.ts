@@ -24,7 +24,7 @@ import { queryObserveLog } from '../../infrastructure/analysis/observe/log_query
 import { judgeEvents, judgeEventsWithLLM, normalizeEvents, renderJudgeReport } from '../../infrastructure/analysis/observe/judge_service.js';
 import { judgeGuardLog } from '../../infrastructure/analysis/observe/judge_guard.js';
 import { importProject } from '../../infrastructure/graph/import_project.js';
-import { getProjectCacheDb, openDb } from '../../infrastructure/index/db.js';
+import { getProjectCacheDb, openDb, featureCacheDbPath } from '../../infrastructure/index/db.js';
 import { validateDSLJson } from '../../domain/validator.js';
 import { saveAutoSnapshot, pruneSnapshots } from '../../application/design/snapshot.js';
 import { dagLayout, forceLayout, gridAlign } from '../../application/design/dag_layout.js';
@@ -389,7 +389,7 @@ async function handleApiImport(req: http.IncomingMessage, res: http.ServerRespon
         return;
       }
       if (!feature) feature = sanitize(path.basename(abs));
-      const cacheDb = openDb(path.join(getStorageRoot(), `import_cache_${feature}.db`));
+      const cacheDb = openDb(featureCacheDbPath(feature));
       let imp;
       try {
         imp = await importProject({
@@ -438,7 +438,7 @@ async function handleApiImport(req: http.IncomingMessage, res: http.ServerRespon
     }
 
     // 缓存 db 固定位置（跨重复导入增量复用），与项目目录生命周期解耦
-    const cacheDb = openDb(path.join(getStorageRoot(), `import_cache_${feature}.db`));
+    const cacheDb = openDb(featureCacheDbPath(feature));
     let imp;
     try {
       imp = await importProject({

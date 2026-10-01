@@ -7,7 +7,10 @@
  *   - 文件未变动（mtime/size 不变）→ 指纹不变 → 缓存命中。
  *   - 阈值参数（warn/crit/flag_cohesive/max_files）也纳入缓存 key，
  *     阈值变了即使文件没变也要重算（报告本就会变）。
- * 缓存根：<cwd>/.agent-io/cache/health/<key>.json（与 live DSL 同根，持久化，重启生效）。
+ * 缓存根：**`<root>/.agent-io/cache/health/<key>.json`** —— ★ 2026-10-01（T19）：`root` **由调用方显式传入**。
+ *   ★★ 此前这里写死 `process.cwd()` —— 那违反"**每项目一份数据**"：cwd 相同就**跨项目串**，
+ *     且与 `cache.db`（用 projectRoot）**根不一致**。现在调用方各自传自己的项目根（`dsl.source_root` /
+ *     `input.project_dir`），**"用哪个根"在调用点一眼可见**，不再藏在本模块里。
  * 失败不致命：任何读写异常静默降级为"重新体检"，绝不影响主流程。
  */
 
@@ -23,8 +26,8 @@ export interface FingerprintFile {
   rel: string;
 }
 
-function cacheDir(): string {
-  return path.join(process.cwd(), DATA_DIR_NAME, 'cache', 'health');
+function cacheDir(root: string): string {
+  return path.join(root, DATA_DIR_NAME, 'cache', 'health');
 }
 
 /** 对一组文件做 (rel,size,mtimeMs) 快照指纹；读不到的文件记 missing（视为已变动） */
@@ -52,9 +55,9 @@ export function singleFileFingerprint(abs: string): string {
 }
 
 /** 读缓存；无缓存 / 读失败一律返回 null（降级为重新体检） */
-export function readHealthCache<T>(key: string): T | null {
+export function readHealthCache<T>(key: string, root: string): T | null {
   try {
-    const p = path.join(cacheDir(), `${key}.json`);
+    const p = path.join(cacheDir(root), `${key}.json`);
     if (!fs.existsSync(p)) return null;
     return JSON.parse(fs.readFileSync(p, 'utf-8')) as T;
   } catch {
@@ -63,9 +66,9 @@ export function readHealthCache<T>(key: string): T | null {
 }
 
 /** 写缓存；失败静默（下次重新体检即可） */
-export function writeHealthCache(key: string, data: unknown): void {
+export function writeHealthCache(key: string, data: unknown, root: string): void {
   try {
-    const dir = cacheDir();
+    const dir = cacheDir(root);
     fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(path.join(dir, `${key}.json`), JSON.stringify(data));
   } catch {
