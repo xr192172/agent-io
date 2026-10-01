@@ -4367,3 +4367,64 @@ src/  application/  domain/  infrastructure/  presentation/  tools/     ← 根�
 | `npm run arch` | **0 违规**（模块 312 → 311），已知基线 **23 → 18**（`new 0 / stale 5`） |
 | 全量 `npm run test:main` | **236 文件通过 / 1 跳过 ｜ 2427 项通过 / 5 跳过 / 0 失败** |
 | `src/tools/` 顶层 | **3 → 2**（`view_inputs.ts` 已钦定保留；`python_refactor/` 是子项目目录，另账） |
+
+---
+
+### 44.15 ★★ ④ 开工第一步：**量清 [B] 的契约现状**（不改代码）+ 实测推翻台账两句前提
+> 2026-10-01。设计/证据落在 **`docs/tool-chain-contract.md`**；量具 **`scripts/measure_b_contract.mjs`**（进仓，可复跑）。
+
+**为什么第一步只是"量"**：④ =「统一 [B] 的契约形状」，是 42 个 [B] × G1/G8 的迁移。
+**形状错了，42 次迁移全错** ⇒ 先有数据，再有形状（本仓一贯的"先有判据，再动代码"）。
+
+#### 人群与量法
+[B] = `application/**` 里"**导出函数名 == 文件名 camelCase**"的那个函数（仓内既有约定，与一致性门同一条）。
+**判据用 TS 编译器的 type checker**（结构化数据），不用正则 —— 因为问的是"**类型**长什么样"。
+★ 量具**先做了出生证**：注入"袋子入参 + message-only 产物"的探针 ⇒ 认成 `bag` / `message-only`；
+对照探针（显式入参 + 结构化产物）⇒ `typed` / `structured`。探针跑完即删。
+
+#### 实测（42 个 [B]）
+| 量 | 值 |
+|---|---|
+| 入参形态 | `typed` 30 ｜ `inline` 6 ｜ `positional` 5 ｜ `none` 1 ｜ **袋子 0** |
+| 产物形态 | **`structured` 42** ｜ `message-only` 0 |
+| 入参**类型名** | **32 种 / 42 个** |
+| 产物**字段组合** | **37 种 / 42 个**；被 ≥2 个共用的只有 **1 种**（`{data,message}` ×6） |
+| 产物里**无任何锚点候选字段**的 [B] | **15 / 42** |
+
+#### ★★ 纠正台账 §20.2 的两句前提（**实测推翻，原话不再当事实用**）
+台账原文：「57 个 `[B]` 各自定义入参、**各自返回 `message`**」。
+- **产物并非 message 串**：42/42 的类型都是结构化的，`message-only` = **0**（多数是 `message` + 若干结构化字段）。
+- **袋子入参 = 0**：`Record<string, unknown>` 那类在 [B] 层**已经不存在**。
+★ 但**结论方向是对的**，只是描述不准 —— 准确说法见下。
+
+#### ★★★ 真正的发现：不是"异名"，是**同名不同义**（第一版量具产出 32 条假阳性）
+第一版量具**只比字段名**（把 `filesWritten` 当 `files` 的同义名）⇒ 报"20 个 [B] 有 32 条异名"。
+**把类型摆出来就露馅了**：
+
+| 字段 | 实测类型 | 真实语义 |
+|---|---|---|
+| `renameFiles.filesWritten` | **`number`** | 写盘**计数**（不是文件列表） |
+| `assembleBricks.written` | **`boolean`** | **是否落盘** |
+| `extractContracts.files` | `FileContractReport[]` | **逐文件报告**（不是路径表） |
+| `searchBricks.box_dir` | `string` | **积木盒根**（不是 project_dir） |
+| `runTests.success` | `boolean` | **"测试全过"的领域判定**（与并存的 `ok` **不同义**） |
+
+⇒ ★★ **[B] 产物里连"字段名"这一层都不可信。**
+⇒ 因此 **"把现有字段改名/合并来统一"这条路是错的**（会把不同语义搅在一起 = 制造判据分叉）。
+★ **新纪律**：**"名字像" ≠ "同义"**。任何"合并同义字段/常量"的动作，**必须先看类型 + 语义**。
+   ⇒ 由这条反向改进了量具：**必须同时报字段类型**（`number` 与 `string[]` 一眼可分）。
+
+#### 形状提案（详见设计文档 §4）
+**不碰现有领域字段**，改为**新增**一个语义唯一、类型钉死的锚点：
+`Touched { written_files?, read_files?, symbols?, nodes?, feature?, root? }` —— 每个 [B] 产物加 `touched?`。
+★ 刻意把"写"与"读"分开：现有 `files` 在不同 [B] 里是报告/计数/路径，混用正是老坑。
+
+#### 目标链（形状的验收对象 —— 没有链，"统一形态"就是为统一而统一）
+`find_references → rename_symbols → edit_code → run_tests`
+现状**接不上**（`rename_symbols` 给的是 `filesWritten: number` / `applied: [...]` / `symbol: string`）；
+有 `Touched` 后 `written_files` + `symbols` 能直接喂下一步。
+
+#### 本笔**不改任何 [B]**（刻意）
+① 形状先要你过一眼（它是"工具链长什么样"，是你的设想）；② 且 `Touched` 类型**必须与第一个采用者同笔落**
+—— 先建一个没人用的类型 = 墓碑，与 §20.1「不留墓碑」相冲。
+⇒ 下一笔：**④-b refactor 族**（4~5 个 [B]，链价值最高、字段最乱）。

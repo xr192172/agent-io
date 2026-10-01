@@ -15,6 +15,17 @@
 
 ## 待做
 
+- [ ] **T18 ★★ ④ [B] 契约形状的落地（设计已定，见 `docs/tool-chain-contract.md`；台账 §44.15）**
+      *(核实：2026-10-01 用 `node scripts/measure_b_contract.mjs` 量的 —— 42 个 [B]：
+      入参类型 32 种、产物字段组合 37 种、被 ≥2 个共用的只有 1 种 ⇒ **[B] 之间没有共同形态**。)*
+      ⇒ 形状已定：**新增** `Touched { written_files?, read_files?, symbols?, nodes?, feature?, root? }`
+      （**不碰**现有领域字段 —— 实测它们**同名不同义**：`filesWritten: number` 是计数、
+      `written: boolean` 是"是否落盘"、`files` 是报告数组、`box_dir` 是盒根、`success ≠ ok`）。
+      ⇒ **按族落地，一族一提交**（G1/G8 守边界，`UPDATE_TOOL_BEHAVIOR=1` 并记账）：
+      **④-b refactor 族**（`rename_file` `rename_files` `rename_symbol` `rename_symbols` `find_references`）
+      → ④-c design → ④-d harvest（根别名最多）→ ④-e 其余 + **棘轮收紧**（新增 [B] 必须给 `touched`）。
+      ⇒ ★ `Touched` 类型**必须与第一个采用者同笔落**（先建没人用的类型 = 墓碑）。
+
 - [ ] **T15 ★★ 把 CLI-only 的能力注册为 MCP 工具 ⇒ 「CLI-only」这个类别应当**归零****
       *(用户裁定的洞察 2026-09-30：「**工作台为什么不能注册为 MCP 呢**？就是说**同样同时投影为 MCP 和 CLI**，
       这样的话就**不用保留为 CLI only** 了。」)*
