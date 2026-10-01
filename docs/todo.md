@@ -42,18 +42,23 @@
       · `package.json` 里 13 个指向 `dist/src/tools/*_cli.js` 的 scripts ⇒ 改为走投影
       · `tests/server_registry.consistency.test.ts` 的 `INTERNAL_MODULES` 登记表要同步（删文件的 `importedBy`）
 
-- [ ] **T14 ★★ 一致性门对 `export async function` 完全失明 —— 实测 **29 个文件**被整类豁免**
-      *(核实：09-30 —— `tests/server_registry.consistency.test.ts:228` 的正则是
-      ``new RegExp(`export\\s+function\\s+${camel}\\b`)``。**实测**：`export function X()` 匹配 ✓，
-      **`export async function X()` 不匹配 ✗**；而 `src/tools/derive_anim_flow.ts:292` 正是
-      `export async function deriveAnimFlow(...)`。*
-      *量具：`.inspect/survey_async_export_blindspot.mjs`（含对照项证明脚本不哑）。)*
-      ⇒ ★★ **命中 29 个 `src/tools/*.ts`**，含 `edit_code` / `explore_code` / `find_references` /
-      `import_project` / `detect_drift` / `derive_mind_map` / `harvest_from_url` / `index_integrity` /
-      `rename_*` / `reconcile_*` … —— 它们的 `isToolImpl` 恒 false ⇒ 门**直接 `continue`**
-      ⇒ 这些工具**丢了注册也报不出来**。
-      ★ 这正是那 7 个死模块能躲过一致性门的原因之一（子 Agent 推断 + **我已独立实测证实**）。
-      ⇒ 修法：正则改成认 `async`（`export\s+(?:async\s+)?function\s+`），**并给门做出生证**（注入一个 async 工具不注册 ⇒ 必须红）。
+- [ ] **T17 ★ `explore_code` 的 `derive_algorithm` action 是空壳（已核实）**
+      *(核实：2026-10-01 做 T14 时顺带读到的 —— `src/application/meta/explore_code.ts` 的
+      `case 'derive_algorithm'` 只有 `{ project_dir: requireStr(args,'project_dir') }` 然后 `toResult(r, true)`，
+      **从不调用** `deriveAlgorithm`；而 `src/application/design/derive_algorithm.ts` 的主函数
+      `deriveAlgorithm` 全仓**只有常量 `KIND_SHAPE` 被 derive_chain 复用**，主函数无调用方。)*
+      ⇒ 同族嫌疑（**未核实完，别当事实用**）：`case 'derive_split'` 传 `[]`、`case 'derive_chain'` 传
+      `buildCallGraph([],[])` —— 两个入参都是空，形似空壳；`derive_anim_flow` 已于 2026-10-01 接真实现。
+      ⇒ 这是 G7（宣传-实现一致性）那一笔：action 宣告了能力却没接实现（对 agent 说谎）。
+
+- [ ] **T10（2026-10-01 重写，原前提已被越过）★ `code_health` 的分层表仍是旧三级，读数已无意义**
+      *(原条目写的是"P2 的验收判据因此判不了"—— ★ **该前提已不成立**：P2 早已搬完，
+      且架构验收判据**已换成 dependency-cruiser**（`.dependency-cruiser.cjs` 的 `layer-downward-only`），
+      不再依赖原来那个 `src/health/` —— 该目录已随 P2 搬成 `src/infrastructure/analysis/health/`。)*
+      ⇒ **还成立的**：`src/infrastructure/analysis/health/index.ts:39` 仍是
+      `export type Layer = 'contract' | 'brick' | 'glue'`（旧三级），而 `code_health` 是**已注册工具**，
+      它的 `layers: {contract,brick,glue,unclassified,violations}` 读数与现在的四层目录**对不上**。
+      ⇒ 要么把表换成四层（`presentation/application/infrastructure/domain`），要么把这段读数**摘掉**（别报假数）。
 
 - [ ] **T13 ★ 第 4 / 5 处 import 解析口径：`rename_file` 的「TS/JS 一份 + Python 一份」**
       *(核实：09-30 做 T12 时顺带撞到 —— `src/tools/rename_file.ts:23` 引的是
@@ -66,26 +71,6 @@
       且 `rename_file` 同时持 **TS/JS 一份 + Python 一份** ⇒ **第五处**。
       ★ 影响（未量）：`rename_file` 判定"某个字面量是否真的解析到被移动文件"时，这些形态**可能漏改**。
       ⇒ 方向：并进内核 `resolveProjectImport`（传真实 `exts`），但**先量差集**再动（改名是正确性敏感路径）。
-
-- [ ] **T11 ★ P2 的真正前置：`src/tools/` 那 157 个"没有归属"的文件，先做身份普查**
-      —— ★ **第一切片已做完（台账 §42）**：194 个顶层文件定性 =
-      **49 工具实现**（可机械归属）/ **17 CLI** / **119 内部 helper**（最大块，**还要再分**）/
-      **1 入口点**（`serve`）/ ★ **7 死代码候选**（`batch_ops` `derive_anim_flow` `get_dsl`
-      `observe_chain_view` `refactor_report` `run_narrate` `view_inputs`）/ **0 无人引用** / **1 需裁决**（`index_freshness`）
-      **剩下的三片**：
-      · (a) ★ **119 个内部 helper 再分**：算法内核 / 工具间共享 / **旧世代遗留**（`archify_*`、`brickify` 那族像上一代工具）
-      · (b) ★ **7 个死代码候选逐个判死**（`get_dsl` 已是强候选：与 `list_features` **同型** —— `handlers` 的 `getDslHandler` 直通 `queryFeature`）
-      · (c) `index_freshness` 归 harvest / observe / 下沉 kernel
-      *(核实：09-30 `.inspect/survey_tool_identity.mjs`；★ 该量具**被打了三次脸**才可信 —— 详见 §42.2)*
-
-- [ ] **T10 ★ 量具的「分层」表还是已废除的旧三级（`contract/brick/glue`），P2 的验收判据因此判不了**
-      *(核实：09-30 实测 —— `src/health/index.ts:39` 的 `Layer` 仍是旧三级；
-      30 条 `layer_violation` 里 **21 条是测试文件 import `server_registry`**，而测试压根不在分层里 ⇒ **假读数**。
-      代码注释逐字：「`surfaces/features/kernel/dsl` 四层。**故意不在 P0 就换** —— 换表留给 P2 落地那一刻」；
-      而台账 §4/P2 的验收写的是「**无新增层违规（用 P0 修好的量具看）**」——
-      ★ **两处口径不一致**：P0-⑤ 实际做的是"分层与 root 无关"（判据 `classifyLayer('server.ts')==='glue'`），**不是换表**。)*
-      ⇒ ★ 这是 **P2 的前置**：不换表，"搬家没搬坏"就没有机器可判的信号。
-      设计要点：新表 + **让"还没搬完的"落进 `unclassified`**（而不是判成违规），这样中间态可测且唯一可收敛。
 
 - [ ] **T4 `unused_export` 对"带 parent 的方法"有盲区**（`symIndex` 只收顶层符号）
       ⇒ 改 `symIndex` 的**收面**。

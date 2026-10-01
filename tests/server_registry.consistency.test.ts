@@ -169,6 +169,55 @@ const INTERNAL_MODULES: Record<string, { importedBy: string[]; why: string }> = 
     importedBy: ['src/application/meta/overview.ts'],
     why: '功能树派生，overview 的实现细节',
   },
+  // ─────────────────────────────────────────────────────────────
+  // ★★ T14 新增的 8 条（2026-10-01）：把"正则不认 async"的盲区补上后**当场掀出来的**。
+  //   它们共同的特征：**有 `export async function <文件名camelCase>()`**，所以此前被整类漏检；
+  //   而它们的真实身份**不是独立 MCP 工具**，是「被兄弟模块 import 的实现零件」——
+  //   正是本表规则 #2 收的那一类。逐条已核过真实的 import 者（门每次跑都会复算）。
+  //   ★ 处置口径：按本门棘轮的要求先问过"能不能被自动判据盖住"——
+  //     答：盖不住。`isAbsorbedByFacade` 只看**工具面（lane index）**的直接 import；
+  //     这 8 条的 import 者都是**别的实现模块**（explore_code / derive_chain / split_stage /
+  //     rename_files / brickify_cli …）⇒ 正是"自动判定盖不到的那一类"。
+  // ─────────────────────────────────────────────────────────────
+  classify_bricks: {
+    importedBy: ['src/presentation/cli/brickify_cli.ts', 'src/application/design/workbench_data.ts'],
+    why: '积木解剖/分类算法：brickify 工作台 CLI 与 workbench_data 共用；不是 MCP 工具',
+  },
+  classify_tools: {
+    importedBy: ['src/presentation/cli/brickify_cli.ts', 'src/presentation/cli/render_tools_map.ts'],
+    why: '工具域分类（TOOL_DOMAINS 那套映射）；brickify_cli / render_tools_map 共用的内部算法',
+  },
+  derive_algorithm: {
+    importedBy: ['src/application/design/derive_chain.ts'],
+    why:
+      '算法结构派生。★ 诚实备注：其主函数 `deriveAlgorithm` **目前无调用方** —— ' +
+      'explore_code 的 `derive_algorithm` 分支仍是空壳（只回显 project_dir）；' +
+      '真正被复用只有常量 `KIND_SHAPE`（derive_chain 引）。属"explore_code 空壳 action"那一笔，已记入 docs/todo.md',
+  },
+  derive_anim_flow: {
+    importedBy: ['src/application/meta/explore_code.ts'],
+    why: 'explore_code 的 `derive_anim_flow` action 实现（2026-10-01 接线，替换原空壳）',
+  },
+  derive_split: {
+    importedBy: ['src/application/design/split_stage.ts'],
+    why: 'split_stage（CLI 引擎）的拆分算法实现；explore_code 的 derive_split 分支另走 monolith.buildSplitPreviewDsl',
+  },
+  rename_file: {
+    importedBy: ['src/application/refactor/rename_files.ts', 'src/application/refactor/rename_symbol.ts'],
+    why: '★ 已注册工具 `rename_files` 的**单数引擎**（注册入口是 rename_files.ts）；注册名 ≠ 文件名',
+  },
+  rename_symbol: {
+    importedBy: [
+      'src/application/refactor/rename_symbols.ts',
+      'src/application/refactor/find_references.ts',
+      'src/application/refactor/symbol_move.ts',
+    ],
+    why: '★ 已注册工具 `rename_symbols` 的**单数引擎**（注册入口是 rename_symbols.ts）；注册名 ≠ 文件名',
+  },
+  semantic_search: {
+    importedBy: ['src/application/meta/explore_code.ts', 'src/presentation/http/serve.ts'],
+    why: 'explore_code 的 `search` action 实现（符号索引/向量/trigram 三层检索内核）；serve 也复用',
+  },
 };
 
 /**
@@ -176,8 +225,13 @@ const INTERNAL_MODULES: Record<string, { importedBy: string[]; why: string }> = 
  *   新增一条 = 手抄清单又长了一行 ⇒ 红。
  *   ⇒ 想加？先问"能不能被 `isAbsorbedByFacade` 或"被兄弟 import"这条判据自动覆盖"；
  *     真盖不住才允许登记，并在**同一次提交**里把基线 +1 并写明理由。
+ *
+ * ★★ 2026-10-01（T14）：17 → 25（+8，一次）。理由见上：补上 `async` 盲区后，
+ *   这 8 个文件第一次被门看见，而它们确实是"被兄弟模块 import 的实现零件"（本表规则 #2 的那一类）。
+ *   ★ 这不是"清单又腐了一格"，而是"门此前**看不见**它们，所以清单里从来没有它们"。
+ *   ⇒ 反向验证：这 8 条**全部**依赖 `export async function` —— 若不修 T14，它们永远不该被登记。
  */
-const INTERNAL_MODULES_BASELINE = 17;
+const INTERNAL_MODULES_BASELINE = 25;
 
 describe('server_registry 一致性', () => {
   it('tool def 元数据齐全：name 唯一、title/description 非空、handler 有效、schema 是合法 zod', () => {
@@ -269,15 +323,24 @@ describe('server_registry 一致性', () => {
       const camel = toCamel(base);
       const content = fs.readFileSync(resolveToolFile(base)!, 'utf-8');
       // 主函数名 == 文件名 camelCase（约定），如 diff_views.ts export diffViews
-      const isToolImpl = new RegExp(`export\\s+function\\s+${camel}\\b`).test(content);
+      // ★★ T14（2026-10-01）：原先只认 `export function` ⇒ **`export async function` 被整类漏掉**。
+      //   实测命中 29 个工具实现（edit_code / explore_code / find_references / import_project /
+      //   detect_drift / derive_mind_map / index_integrity / rename_* / reconcile_* …）
+      //   ⇒ isToolImpl 恒 false ⇒ 本门直接 continue ⇒ **这些工具丢了注册也报不出来**。
+      const isToolImpl = new RegExp(`export\\s+(?:async\\s+)?function\\s+${camel}\\b`).test(content);
       if (!isToolImpl) continue;
       // 注册名约定 = snake_case 文件名；历史命名不一致的（实现模块名 ≠ 注册名）
       // 用 alias 宽松匹配：存在某注册，其实现在该文件里
       const expectName = toSnake(camel);
       if (!new Set(TOOL_DEFS.map((d) => d.name)).has(expectName)) {
+        // ★★ T14 顺带修（同一处方上的另一半）：这里原先拼 `path.join(TOOLS_DIR, …)`，
+        //   而 `TOOLS_DIR = src/tools` 已被 P2 搬空 ⇒ 该查找**恒不命中**，alias 永远 undefined。
+        //   本文件自己的头注（见上「本门原先就栽在"假设实现在 src/tools/ 下"」）正是这个病，
+        //   而这一行**没跟着改干净**。⇒ 复用同一个落点函数 `resolveToolFile()`。
         const alias = TOOL_DEFS.find((d) => {
-          const impl = path.join(TOOLS_DIR, `${d.name}.ts`);
-          return fs.existsSync(impl) && fs.readFileSync(impl, 'utf-8').includes(`export function ${camel}(`);
+          const impl = resolveToolFile(d.name);
+          return impl !== null && fs.readFileSync(impl, 'utf-8')
+            .match(new RegExp(`export\\s+(?:async\\s+)?function\\s+${camel}\\b`)) !== null;
         });
         if (!alias) missing.push(`${base}.ts（主函数 ${camel} 未注册）`);
       }
