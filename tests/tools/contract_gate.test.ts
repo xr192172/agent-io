@@ -10,7 +10,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect, afterAll } from 'vitest';
-import { scanContracts, contractGate } from '../../src/infrastructure/analysis/contract_gate.js';
+import { scanContracts, contractGate } from '../../src/infrastructure/analysis/contract_gate/index.js';
 
 const roots: string[] = [];
 afterAll(() => {

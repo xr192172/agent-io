@@ -5265,3 +5265,67 @@ rename 族 8 文件 138 项，搬迁前后同为 **138**。
 `code_health` 的"未用 import"维度（#11）。
 外加我那份密度扫描的第二梯队：`parse/kernel.ts`(42) / `ts_slim.ts`(26) / `design/brickify.ts`(17) / `design/derive_split.ts`(14)。
 ⇒ 每一处都照本笔的三步走：**量密度 → 拆包 + 注册表 → `arch` 必须仍 0 违规**。
+
+### 44.31 同一形状再落两处：`package_migration`（639 行）与 `contract_gate`（596 行）（2026-10-01）
+
+#### 做法：并行两个执行者 + **把上一笔的坑写进验收判据**
+
+§44.30 的教训是"子代理只跑了 `tsc` + 7 个测试，漏了 `arch` 回归"。**这一笔把它变成了强制验收**：
+
+```
+验收（缺一即失败）：
+  tsc --noEmit                              ⇒ 0
+  npm run arch                              ⇒ ✔ 0 违规 且 EXIT=0   ← ★ 上一笔就是这里翻车
+  全量 test:main                            ⇒ 文件数/项数与改前逐字相同、0 失败
+另加三条硬纪律：零件必须有独立落点（否则成环）/ 不许动 capability_scan 与架构基线 / grep 全仓硬编码旧路径
+```
+★ **结果：两处都没有再出现 `arch` 回归**（337 modules / 0 违规 / EXIT=0）。⇒ **纪律写进验收，比事后补跑有效。**
+
+#### 做完的形状（两处同构）
+
+```
+application/refactor/package_migration/     infrastructure/analysis/contract_gate/
+  index.ts  parts.ts  core.ts                 index.ts  parts.ts  core.ts
+  languages/{registry,go,ts,py}.ts            languages/{registry,ts,go,py,java,cs,c}.ts
+（7 文件 760 行，原 639）                      （10 文件 820 行，原 596）
+```
+- `package_migration`：`cleanAlias` 里的 `if (ext === '.go') … else if ('.py') … else TS` ⇒ **查表**
+- `contract_gate`：`Lang = 'go'|'ts'|'py'|'java'|'cs'|'c'` 六语言；`langSkipSet`/`collectSymbols`/`collectReferences`
+  的 `if (lang === …)` 链 ⇒ **每语言一个包**；★ `langOfFile` 由各包的 `exts` **派生**（不再手写 ext→lang 映射）
+- `docs/adding-a-language.md` §2.0 的 **#2 与 #4 两格**同样由「**代码**」改判为「**数据（注册表）**」
+  ⇒ 12 格里现在只剩 **2 格**是代码驱动（#5 `extract_contracts`、#10 `behavior_baseline`）+ #11 的一个维度
+
+#### ★★★ 门抓对了：G4 拦住了一个**新造的副本**（是门对，不是代码错）
+
+全量回归 **1 红**：`single_source` 的 `[source-extension-static-list]`。
+根因：`contract_gate/languages/ts.ts` 手抄了 `exts: ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs']` ——
+★ **那是 G4「同族副本棘轮」要防的东西，门当场抓住。**
+⇒ 改用内核唯一权威 `TS_JS_EXTS`。**这是我规格里的漏项**（我让它们把 `exts` 放进包，却没说"扩展名要引用权威，不许抄"）。
+★ **顺带修了一个潜在缺口**：手抄那 6 个漏了 `.mts/.cts`，而扫描集 `SOURCE_EXTS` **含**它们
+⇒ 这两个扩展名的文件**会被扫到、却认不出语言**（`langOfFile` 返回 null ⇒ 整份文件跳过）。
+本仓 `docs/todo.md` 的 T5 早就记过这个缺口 ⇒ 改用权威顺手补上。
+（**如实记**：这是一处**有意的行为变化** —— TS 家族认的扩展名 6 → 8。）
+
+#### ★★ 另一个教训：**我自己的验具也有 bug**（差点误报 3 处"没原样保留"）
+
+为验证"逐字不改"，我写了个量具：切出原文件每个函数体 → 归一化 → 哈希对比。结果 `contract_gate` 报
+**3 个函数"找不到"**（`collectSymbols`/`collectReferences`/`langSkipSet`）+ 2 个哈希不同。
+★ 我没有直接采信自己的读数，而是**去定位"从第几个字符开始分叉"** —— 发现：
+- 3 个"找不到"是**我的切分 bug**：链式 `} else if (lang === 'cs') {` 的尾巴被算进了上一个分支体，
+  于是"分支体"永远不可能原样出现在新文件里。**实际三个分支都原样保留**（分叉点精确落在分支末尾）。
+- 2 个哈希不同是**授权的结构改动**（`cleanAlias` 走注册表、`scanOne` 先取包、`langOfFile` 由 `exts` 派生）。
+
+⇒ ★ **与 §44.26/§44.30 同一条**：**验证手段本身先要被验证**。若我直接报"3 处没搬对"，就是一次**假红**。
+
+#### 验证
+
+`tsc` 0 ｜ `arch` **337 modules / 0 违规 / 18 已知 / EXIT=0** ｜ 全量 `test:main`
+**234 文件通过 / 1 跳过 ｜ 2423 项通过 / 5 跳过 ｜ 0 失败**（与改前**逐字相同**）。
+★ 另外 `scripts/capability_scan.mjs` 的 `FEATURE_FILES` 两格也改成**目录**（该表约定本就允许目录）——
+上一笔就是它在 pre-commit 里 ENOENT 挡下提交的。
+
+#### 下一刀
+
+`extract_contracts`（#5）｜ `behavior_baseline`（#10）｜ `code_health` 的未用 import 维度（#11）；
+密度二梯队：`parse/kernel.ts`(26) / `ts_slim.ts`(26) / `derive_split.ts`(14) / `brickify.ts`(14) / `cfg.ts`(14)。
+（量具：`node scripts/lang_density.mjs`）

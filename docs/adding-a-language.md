@@ -163,9 +163,9 @@ npm run install-package list               # 复核：该行从 '–' 变 '✓'
 | # | 能力 id | 分派位置（文件:函数） | 驱动方式 | TS 样板在哪 | 缺口 |
 |---|---|---|---|---|---|
 | 1 | `ast_parse_skeleton` | `ts_kernel/languages.ts: LANGUAGES` + `ts_kernel/kernel.ts: parseFileFull/traverseAndExtract` + `ts_kernel/probe.ts: isLanguageInstalled` | ★ **数据** | `LANGUAGES` 的 `typescript` 行 | 0 |
-| 2 | `package_migration` | `tools/package_migration.ts: cleanAlias`（分派）→ `goAliasEdits`/`tsAliasEdits`/`pyAliasEdits` + `collect{Go,Ts,Py}{Binds,Usage}` | **代码** | `collectTsBinds` / `collectTsUsage` / `tsAliasEdits` | 49 |
+| 2 | `package_migration` | ★★ **数据（注册表）**：`application/refactor/package_migration/languages/registry.ts: PM_LANG_PACKAGES`；`core.ts` 只查表 | ★ **数据（注册表）**（2026-10-01 由"代码"改判） | `languages/go.ts: collectGoAliasEdits` | 49 |
 | 3 | `rename_symbol` | ★★ **数据（注册表）**：`application/refactor/rename_symbol/languages/registry.ts: LANG_PACKAGES`（`ext → LangPackage`）；`core.ts` 只 `findLangPackage(defExt)` 查表 | ★ **数据（注册表）**（2026-10-01 由"代码"改判） | `languages/go.ts: renameGoSymbol`（每语言一个包） | 46 |
-| 4 | `contract_gate` | `tools/contract_gate.ts: langOfFile` → `scanContracts` → `cleanSource`/`collectSymbols`/`langSkipSet`/`collectReferences`/`scanOne` | **代码** | `collectSymbols` 的 ts 分支（默认尾） | 46 |
+| 4 | `contract_gate` | ★★ **数据（注册表）**：`infrastructure/analysis/contract_gate/languages/registry.ts: CG_LANG_PACKAGES`（每包带 `exts`/`reserved`/`globals`/`collectSymbols`/`collectReferences`）；`langOfFile` 由各包 `exts` **派生** | ★ **数据（注册表）**（2026-10-01 由"代码"改判） | `languages/ts.ts: cgTsPackage`（`exts` 用内核权威 `TS_JS_EXTS`，**不要手抄**） | 46 |
 | 5 | `extract_contracts` | `tools/extract_contracts.ts: extractContracts` → `parseShapeFields`/`scanConfigKeys`/`collectModuleVars`/`scanEffectCandidates` | **代码** | `scanTsEmits` + TS 默认路径 | 49 |
 | 6 | `version_upgrade_detection` | `version_upgrade/adapters/registry.ts: adapters` 数组 + `adapterForLang`/`adapterForExt`/`adaptersForFile` | ★ **数据（注册表）** | `version_upgrade/adapters/node.ts: nodeAdapter` | 47 |
 | 7 | `impact_analysis` | `impact/index.ts: buildImpactGraph`（**全文零语言分支**）→ 内核 `ts_kernel/kernel.ts: LANG_ADAPTERS` | ★ **数据（内核表）** | `kernel.ts: LANG_ADAPTERS.typescript` | 46 |

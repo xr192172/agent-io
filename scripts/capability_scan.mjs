@@ -36,12 +36,14 @@ function repoRoot() {
 // ── 功能 id → 实现位置（文件或目录；约定 id 与工程结构对应） ──
 export const FEATURE_FILES = {
   ast_parse_skeleton: ['src/infrastructure/parse'],
-  package_migration: ['src/application/refactor/package_migration.ts'],
+  // ★ 2026-10-01：同 rename_symbol —— 按语言拆成文件夹 ⇒ 这里写**目录**（该表的约定本就允许目录），
+  //   以后再在功能内拆/加文件都不会再断。（上一处是提交时被 pre-commit 钩子的 ENOENT 当场挡下的）
+  package_migration: ['src/application/refactor/package_migration'],
   // ★ 2026-10-01：原来写的是单文件 `rename_symbol.ts`，该文件按语言拆成文件夹后这里就 ENOENT
   //   （**pre-commit 钩子当场挡住提交** —— 这是"改模块形态前先 grep 全仓登记表"那条纪律的第 3 例）。
   //   ⇒ 写成**目录**：以后在这个功能里再拆/加文件，这里都不会再断。
   rename_symbol: ['src/application/refactor/rename_symbol'],
-  contract_gate: ['src/infrastructure/analysis/contract_gate.ts'],
+  contract_gate: ['src/infrastructure/analysis/contract_gate'],
   extract_contracts: ['src/application/harvest/extract_contracts.ts'],
   version_upgrade_detection: ['src/infrastructure/analysis/version_upgrade'],
   impact_analysis: ['src/infrastructure/analysis/impact'],
