@@ -5329,3 +5329,32 @@ application/refactor/package_migration/     infrastructure/analysis/contract_gat
 `extract_contracts`（#5）｜ `behavior_baseline`（#10）｜ `code_health` 的未用 import 维度（#11）；
 密度二梯队：`parse/kernel.ts`(26) / `ts_slim.ts`(26) / `derive_split.ts`(14) / `brickify.ts`(14) / `cfg.ts`(14)。
 （量具：`node scripts/lang_density.mjs`）
+
+#### 44.31 补：核验中**排掉了一条假指控**，但暴露了一条真问题
+
+执行者报告说：`derive_feature_tree.ts` 的 `TOOL_DOMAINS` 用 **basename** 列了 120+ 个模块名
+（含 `rename_symbol` / `contract_gate` / `package_migration`），文件夹化后 basename 变成
+`core`/`index`/`parts`/`go`… ⇒ **会静默失配**，且无门在管。
+
+★ **我没直接采信，也没直接去修 —— 先看它到底走不走得到**：
+
+```
+derive_feature_tree.ts:193  const key = seg[0] === 'tools' ? `tools:${toolDomainOf(f)}` : seg[0];
+derive_feature_tree.ts:207  return seg[0] === 'tools' ? `tools:${toolDomainOf(relPath)}` : seg[0];
+```
+⇒ ★★ **`toolDomainOf` 只在路径以 `tools/` 开头时被调用**；而三个新模块在
+`application/refactor/…` 与 `infrastructure/analysis/…` ⇒ **这条路径根本不可达** ⇒ **不需要改**。
+（★ 若我直接"修"了它，就是**为一个不存在的缺陷引入改动** —— 与 §44.27 那次"差点报假红"同族。）
+
+★★ **但顺着一查，暴露了一条真问题**：`src/tools/` 现在**只剩 2 个条目**
+（`python_refactor/` 目录 + `view_inputs.ts`）—— P2 搬迁早把当年的 `src/tools/*` 搬去了
+`application/` / `infrastructure/`。
+
+⇒ 于是：
+- `TOOL_DOMAINS`（**一张 120+ 模块名的表**）**几乎全是死条目**；
+- `toolDomainOf`（**整个函数**）几乎不可达；
+- 域名归属实际上退化成"只取路径第一段"（`application` / `infrastructure` / `presentation` / `domain`）。
+
+★ 这是**同一个族的第 4 例**（前 3 例见 §44.30 / §44.31）：**"按路径/文件名认模块"的登记表，被搬迁静默架空**。
+差别是这一例**没有报错、没有门、也没人记得** —— 它只是**安静地不再生效**。
+⇒ 已记入 `docs/todo.md`（要么删表、要么改造；**不在本笔范围内**，因为它没有功能影响，删它以单独一笔做才有据可依）。

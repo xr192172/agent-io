@@ -138,6 +138,18 @@
       ★ 门要管的是 **"根的选择"**，**不是**"`.agent-io` 字面量"——实测代码里字面量只有少数几处
       （136 行命中绝大多数是注释）⇒ "字面量被抄多份"不是主要问题。
 
+- [ ] **T21 ★★ `derive_feature_tree.ts` 的 `TOOL_DOMAINS` 已几乎全是死条目（按 basename 认模块，被 P2 搬迁静默架空）**
+      *(核实：2026-10-01 —— 台账 §44.31 补；`node scripts/lang_density.mjs` 无关，靠读代码 + `ls src/tools/`。)*
+      ⇒ **实测**：`src/tools/` 现在**只剩 2 个条目**（`python_refactor/` 目录 + `view_inputs.ts`），
+      而 `toolDomainOf` **只在 `seg[0] === 'tools'` 时被调用**（`derive_feature_tree.ts:193,207`）
+      ⇒ ★ 那张**列了 120+ 个模块名的表**（含 `rename_symbol`/`contract_gate`/`package_migration`）
+      在当前布局下几乎**不可达**；域名归属实际退化成"只取路径第一段"（`application`/`infrastructure`/…）。
+      ⇒ **待做**：先判"这张表还要不要"——① 删（连同 `toolDomainOf`）⇒ 但先确认 `derive_feature_tree` 的
+      功能树质量不靠它；② 改造（域名按新布局重新定义）。★ **判据**：改完跑 `node scripts/lang_density.mjs`
+      无关，要跑 `tests/tools/derive_split.test.ts` + 全量 + **看一份真实功能树**对齐前对齐。
+      ★ 本项属"**同一族的第 4 例**"（前 3 例：`server_registry.consistency` / `capability_scan` / 架构基线）
+      ——"按路径/文件名认模块的登记表被搬迁静默架空"；本笔**没动它**（无功能影响，单独一笔才有据可依）。
+
 - [ ] **T18 ★★ ④ [B] 契约形状的落地（术语表已定，按表重构）**
       *(核实：2026-10-01 —— `node scripts/measure_b_contract.mjs --glossary`；台账 §44.15~§44.17。)*
       ⇒ **已定**（不再改口径）：
