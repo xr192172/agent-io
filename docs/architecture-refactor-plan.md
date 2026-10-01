@@ -4581,3 +4581,57 @@ export async function xxx(input): Promise<TouchedProduct<XResult>> {
    ⇒ 无法给出仓库相对的完整文件表 ⇒ **整项省略**。要覆盖需先让产物**回传 root 与字面量文件表**。
 2. `rename_symbol` / `find_references`：Core 内部**推导出的 root 不进产物** ⇒ `project_dir` 在入参没给时省略。
    （同上一条同源：**根解析的结果没有进入产物**。）
+
+---
+
+### 44.19 ★★★ 数据流水账（data ledger）：用户提出"每项目一个存储 + 缺就自动往下一层取"（2026-10-01）
+> 交付：**`docs/data-ledger.md`**。做法：5 份**只读**盘点并行（DSL 三态 / cache.db / 文件系统 store / 观测仓 / 横向 ensure 面）
+> ＋ **我逐条抽验**（抽验改正了子代理 **3 处**结论）。
+
+用户原话：「每一个项目有一个对应的数据库…数据的内容不是实时的，不是一次性完成的，而是**调用每一个工具
+的时候它从里面取数据和存数据**，然后**哪个数据少了，它就再自动往下一层级去调取这个工具去取数据、存数据**…
+就是需要你去设立一张完整的这个**数据流的字段**，需有什么数据、需要什么数据、**每个数据由什么工具管控**。」
+
+#### ★★★ 结论一：**「每项目一个数据库」目前只对 `cache.db` 成立**（三种根并存）
+`getDataHome()` = `AGENT_IO_HOME ?? getPackageRoot()`（`storage.ts:60`，自省包根、与 cwd 无关）⇒
+`getStorageRoot() = <包根>/.agent-io`。于是：
+| 数据 | 根 | 每项目一份？ |
+|---|---|---|
+| 符号索引 `cache.db` | `<projectRoot>/.agent-io/` | ✅ |
+| DSL 三态 | `<dataHome>/.agent-io/` | ❌ |
+| 健康缓存 | **`<cwd>/.agent-io/cache/health`** | ❌（且**跨项目串**） |
+| 读侧兜底 | `<cwd>/.agent-io/cache.db` | ❌ 第三处 |
+
+⇒ **"越兜越多"的真正机制**：不是数据杂，是「**这份数据归哪个根没人定**」。
+
+#### ★★★ 结论二：同名两根 = 写读不碰面（硬 bug）
+`import_cache_<feature>.db`：写 `process.cwd()`（`serve.ts:392,441`）／读 `getStorageRoot()`（`function_outline.ts:68`）⇒
+`cwd ≠ 包根` 时**一边写、另一边读到空**。且读侧还有一条**三级查找顺序**（`function_outline.ts:66-70`），三份候选**无同步**。
+
+#### ★★★ 结论三：两处**功能级断裂**（观测侧）
+1. `scripts/setup.mjs:39,264` 写 **`.agent/camera`**，对账读 **`.agent/observe`**（`reconcile_effects.ts:111`）⇒ **完全不重叠**
+   ⇒ 官方流程产的事件，`reconcile_*` **永远发现不了**。根因：改名 `camera→observe` 时 `setup.mjs` **漏改**。
+2. 写端激活 **`OBSERVE_EVENTS_FILE`**（`run_sentinel.ts:26`）vs 读端认 **`DS_OBSERVE_EVENTS`**（`observe_trace.ts:43`）
+   ⇒ **无桥接**，按文档设了也白设。
+
+#### ★★ 结论四/五：只写不读与死物
+`project_metadata` 表零读写（`schema.ts:197`）；`observe-ledger.json`（MCP 写/仅 CLI 读）、`observe-points.json`（无 reader）；
+`getArchiveEntry`/`deleteDSL` 死导出；`server_registry.ts:26,79` 5 个死导入；
+`package.json:55` dogfood 指向**陈旧 dist**（**静默跑旧码**）；`embedding_cache` **无失效无淘汰**。
+
+#### ★ 一条**被我自己推翻**的判断（值得记）
+我一度下结论「`data_dir.ts:21` 声称'`.agent-io` 副本由品牌门 + G4 兜底'是**假账 ⇒ 门失明**」。
+**逐条重测后收回**：136 行命中里**绝大多数是注释/描述**；代码里真嵌该字面量的只有少数几处
+（`instrument.ts:148,151`、`reconcile_*.ts:104/111/113` 的 `dirRel`、`protect.ts:46,67`）。
+⇒ **"字面量被抄多份"不是主要问题**；**"接到哪个根"才是**（结论一/二）。
+★ 教训：**报"某模式有多少处"之前，必须先分辨注释与代码** —— 我第一次的 grep 口径（`grep -v "^\s*//"`）
+滤不掉 ` * ` 形式的块注释，读数虚高到 136。
+
+#### 抽验记录（**改正子代理 3 处**，改后写进 `docs/data-ledger.md`）
+- `hasChanges`「零调用」⇒ 实为**生产零调用、仅测试在用**（`index_freshness.test.ts:114,129,170,189`）。
+- 事件路径「三重分裂、互不重叠」⇒ 实为**两处写端：一处通（`watch_project_tool.ts:340` 落在回落目录里）、一处断（`setup.mjs` 的 camera）**。
+- dogfood「指向已不存在」⇒ 该 `dist` 文件**还在**（陈旧）⇒ **静默跑旧码**，比"断"更坏。
+
+#### 纪律（本笔新增，进"下一次别再犯"）
+> **"每项目一份"这种全局不变量，必须有一处把它写成数据（哪份数据属于哪个根）** ——
+> 否则它会像本笔这样：**四种根并存、同一个文件名被接到两个根、写读不碰面，而且都不红**。

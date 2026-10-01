@@ -15,6 +15,27 @@
 
 ## 待做
 
+- [ ] **T19 ★★★ 数据流水账暴露的「根」问题：一份数据只能属于一个根（用户"每项目一存储"的落地前提）**
+      *(核实：2026-10-01 —— 见 `docs/data-ledger.md`（5 份只读盘点 + 我逐条抽验）；台账 §44.19。)*
+      ⇒ ★★ **最要紧**：`getDataHome()` = `AGENT_IO_HOME ?? getPackageRoot()`（`storage.ts:60`）⇒
+      **"每项目一个数据库"目前只对 `cache.db` 成立**；DSL 三态落**包根**、健康缓存落 **`cwd`**、
+      读侧还兜底到第三个 `cwd` ⇒ **三种根并存**。
+      ⇒ **① 定"根"**：每份数据声明它属于哪个根（project / dataHome / 用户主目录），且**同一份数据只能有一个根**。
+      ⇒ **② 修同名两根（硬 bug）**：`import_cache_<feature>.db` —— 写用 `process.cwd()`（`serve.ts:392,441`），
+      读用 `getStorageRoot()`（`function_outline.ts:68`、`overview.ts:155`、`derive_mind_map.ts:904`）
+      ⇒ `cwd ≠ 包根` 时**写读不碰面**。
+      ⇒ **③ 修两处功能级断裂（观测侧）**：
+      · `scripts/setup.mjs:39,264` 仍写 **`.agent/camera`**，而对账读 **`.agent/observe`** ⇒ **完全不重叠**
+        （改名 `camera→observe` 时漏改）；两者都要改到同一个根。
+      · 写端激活 **`OBSERVE_EVENTS_FILE`**（`run_sentinel.ts:26`）vs 读端认 **`DS_OBSERVE_EVENTS`**（`observe_trace.ts:43`）
+        ⇒ **无桥接**，按文档设了也白设。
+      ⇒ **④ 加一扇门**：门要管 **"根的选择"**，**不是**"`.agent-io` 字面量"（实测代码里字面量只有少数几处，
+      136 行命中绝大多数是注释 ⇒ "字面量被抄多份"不是主要问题）。
+      ⇒ **⑤ 顺带清**（各自独立小刀）：死表 `project_metadata`（`schema.ts:197` 零读写）；
+      死导出 `getArchiveEntry`(`storage.ts:246`)/`deleteDSL`(`storage.ts:404`)；
+      `server_registry.ts:26,79` 的 5 个死导入；`package.json:55` dogfood 脚本指向**陈旧 dist**（静默跑旧码）；
+      `embedding_cache` 无失效无淘汰（`semantic_search.ts:162`）。
+
 - [ ] **T18 ★★ ④ [B] 契约形状的落地（术语表已定，按表重构）**
       *(核实：2026-10-01 —— `node scripts/measure_b_contract.mjs --glossary`；台账 §44.15~§44.17。)*
       ⇒ **已定**（不再改口径）：
