@@ -31,6 +31,7 @@ import { renameFile } from './rename_file.js';
 import { resolveProjectRoot, expandClosureDetailed, loadAliasConfig, resolveAliasedImport, type AliasConfig, type ExternalRef } from '../cross/project_root.js';
 import { createProtectGuard } from './protect.js';
 import { missingLanguageHint } from '../../infrastructure/parse/lang_hint.js';
+import { withTouched, type Touched, type TouchedProduct } from '../../domain/b_terms.js';
 
 // ─────────────────────────────────────────────
 // 最小 tree-sitter 节点面（同 Kernel）
@@ -1658,7 +1659,7 @@ export interface RenameSymbolResult {
   blocked?: string[];
 }
 
-export async function renameSymbol(input: RenameSymbolInput): Promise<RenameSymbolResult> {
+async function renameSymbolCore(input: RenameSymbolInput): Promise<RenameSymbolResult> {
   const { file, symbol, to } = input;
   const renameFileIfMatching = !!input.rename_file_if_matching;
   const dryRun = input.dry_run === true;
@@ -1890,4 +1891,31 @@ export async function renameSymbol(input: RenameSymbolInput): Promise<RenameSymb
     ...(fileRenamed !== undefined ? { fileRenamed } : {}),
     ...(fileRenameBlocked !== undefined ? { fileRenameBlocked } : {}),
   };
+}
+
+/** ★ 唯一的构造点：把"我动了什么"集中算一次，所有出口都从这一个地方出去 */
+function touchedOf(input: RenameSymbolInput, r: RenameSymbolResult): Touched {
+  const touched: Touched = {};
+  // project_dir：入参显式给了才有把握（未给时 renameSymbolCore 内部会自动定位 root，
+  //   但那条路径不出现在产物 r 里，构造点取不到 ⇒ 省略）。
+  if (input.project_dir) touched.project_dir = path.resolve(String(input.project_dir));
+  // ★ 只有"真的落定"才给 symbols / written_files（dry_run / 被阻断 / ok:false 一律省略）：
+  //   Touched 描述"调用之后下游能从哪儿接着走" ⇒ 未落定时没有可接的锚点。
+  //   symbols 给"落定后的符号标识"= 新名 input.to（下游拿新名继续操作；给旧名会让链静默接错）。
+  if (r.ok && r.dryRun !== true) {
+    touched.symbols = [input.to];
+    // 落盘路径下写过的文件 = 定义文件（fileRenamed 时其现址是新路径）+ 每个被改写的 importer。
+    const files: string[] = [];
+    if (r.fileRenamed !== undefined) files.push(r.fileRenamed);
+    else if (r.definition) files.push(r.definition.file);
+    for (const im of r.importers ?? []) files.push(im.file);
+    const uniq = [...new Set(files)];
+    if (uniq.length > 0) touched.written_files = uniq;
+  }
+  return touched;
+}
+
+export async function renameSymbol(input: RenameSymbolInput): Promise<TouchedProduct<RenameSymbolResult>> {
+  const r = await renameSymbolCore(input);
+  return withTouched(r, touchedOf(input, r));
 }

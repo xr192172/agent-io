@@ -14,15 +14,25 @@
  * 冻结行保护 / 生成物识别：逐条内部走 rename_file，天然继承（body 文件不套 / importer 命中冻结行 → 该条阻断）。
  */
 
+import path from 'node:path';
 import { renameFile, type RenameFileResult } from './rename_file.js';
 import { resolveProjectRoot } from '../cross/project_root.js';
 import { snapshotBeforeWrite } from './file_snapshot.js';
+import { withTouched, type Touched, type TouchedProduct } from '../../domain/b_terms.js';
 
 export interface FileRenameItem {
   /** 源文件：相对 project_dir 或绝对路径 */
   from: string;
   /** 目标文件：相对 project_dir 或绝对路径 */
   to: string;
+}
+
+export interface RenameFilesInput {
+  /** 目标项目根（可选；缺省各条自动定位；统一定位时传） */
+  project_dir?: string;
+  renames: FileRenameItem[];
+  /** true=只算全部 dry-run 影响面不落盘；默认优先整体校验，全通过才落盘 */
+  dry_run?: boolean;
 }
 
 export interface RenameFilesResult {
@@ -45,13 +55,7 @@ export interface RenameFilesResult {
   blocked?: string[];
 }
 
-export async function renameFiles(input: {
-  /** 目标项目根（可选；缺省各条自动定位；统一定位时传） */
-  project_dir?: string;
-  renames: FileRenameItem[];
-  /** true=只算全部 dry-run 影响面不落盘；默认优先整体校验，全通过才落盘 */
-  dry_run?: boolean;
-}): Promise<RenameFilesResult> {
+async function renameFilesCore(input: RenameFilesInput): Promise<RenameFilesResult> {
   const { renames, dry_run } = input;
   // rename_file 强制要求 project_dir（它不像 rename_symbol 会自动定位根），这里在批量层做一次根解析兜底
   const projectDir = (() => {
@@ -124,4 +128,34 @@ export async function renameFiles(input: {
   }
 
   return { ok: true, previews, applied, filesWritten };
+}
+
+/** ★ 唯一的构造点：把"我动了什么"集中算一次，所有出口都从这一个地方出去 */
+function touchedOf(input: RenameFilesInput, r: RenameFilesResult): Touched {
+  const touched: Touched = {};
+  // project_dir：★ **只从入参取**，入参没给就整项省略（裁定 2026-10-01）——
+  //   这里**刻意不复刻** Core 的根解析（入参优先 → 首条 from 自动定位 → cwd 兜底）：
+  //   ① 复刻 = 同一个判据两处各持一份 ⇒ Core 改了这里不改会**悄悄偏**，而且**不会红**（本仓头号病根）；
+  //   ② 全族口径一致：`rename_symbol` / `find_references` 都只在入参显式给了才填；
+  //   ③ `cwd` 兜底尤其不能要 —— 那会把它变成"**进程当前目录**"，不是本次调用**确立的对象**。
+  if (typeof input.project_dir === 'string' && input.project_dir) {
+    touched.project_dir = path.resolve(input.project_dir);
+  }
+  // ★ 只有真落盘了才给 written_files（dry_run / 被阻断 / ok:false 一律省略）：
+  //   落盘路径下写过的文件 = 每条已应用条目的新文件（result.toRel）+ 各被改写引用的 importer（result.references[].file）。
+  //   两者均为仓库相对路径（实现里经 toPosix(path.relative(...)) 产出）；被搬走的原文件（from）已不存在，不列。
+  if (r.ok && !r.dryRun && r.applied.length > 0) {
+    const written = new Set<string>();
+    for (const a of r.applied) {
+      written.add(a.result.toRel);
+      for (const e of a.result.references) written.add(e.file);
+    }
+    touched.written_files = [...written];
+  }
+  return touched;
+}
+
+export async function renameFiles(input: RenameFilesInput): Promise<TouchedProduct<RenameFilesResult>> {
+  const r = await renameFilesCore(input);
+  return withTouched(r, touchedOf(input, r));
 }

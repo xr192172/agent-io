@@ -43,6 +43,7 @@ import { createProtectGuard } from './protect.js';
 import { writeSourceFiles, type WriteThroughOutcome } from '../observe/write_gate.js';
 import type { ExternalRef } from '../cross/project_root.js';
 import { skipDirSet } from '../../infrastructure/parse/source_exts.js';
+import { withTouched, type Touched, type TouchedProduct } from '../../domain/b_terms.js';
 
 /** 字面量命中的类别：contract=对外工具注册名(破坏契约需人审)；history=tool-convergence 历史记录(保留原貌)；docs=文档；test=测试断言；code=源码字符串 */
 export type LiteralMatchKind = 'contract' | 'history' | 'docs' | 'test' | 'code';
@@ -149,11 +150,59 @@ export interface RenameSymbolsInput {
 }
 
 /** 入口：按「作用域」路由。这是 [C] 唯一要认识的 [B] 符号。 */
-export async function renameSymbols(input: RenameSymbolsInput): Promise<RenameSymbolsResult> {
+async function renameSymbolsCore(input: RenameSymbolsInput): Promise<RenameSymbolsResult> {
   const scope: 'module' | 'local' = input.scope === 'local' ? 'local' : 'module';
   if (scope === 'local') return renameSymbolsLocal(input);
   // module 支（内部再按**语言**路由：.go/.py/.cs/.java/.c/TS）
   return { scope, ...(await renameSymbolsModule(input)) };
+}
+
+/** ★ 唯一的 `touched` 构造点（④-b）：把"这次调用动了什么"集中算一次，所有出口都从这一处出去。 */
+function touchedOf(input: RenameSymbolsInput, r: RenameSymbolsResult): Touched {
+  const touched: Touched = {};
+
+  // project_dir：**作用域类** ⇒ 随时可给。本文件**算过但没有回传**（module 支的 rootDir、local 支的 rootDir 都是局部量）
+  // ⇒ 只有入参显式给了才拿得到；否则省略（不猜）。
+  if (typeof input.project_dir === 'string' && input.project_dir) touched.project_dir = input.project_dir;
+
+  // ★ 对象类字段（symbols / written_files）统一口径（team-lead 2026-10-01 裁定）：
+  //   它们描述「**本次调用之后确立下来的对象**」⇒ 只有**真的落盘**了才给；dry_run / 被阻断 / ok:false ⇒ 整项省略。
+  const landed = r.ok === true && r.dryRun !== true && r.applied.length > 0;
+
+  // symbols：**落定后的符号标识 = 新名**（下游要拿新名接着走；给旧名会让链静默接错）。
+  //   批量 ⇒ 取改名成功那些项的 `to`（module / local 支的 applied[].result 都带 `to`）。
+  if (landed) {
+    const symbols = r.applied
+      .map((a) => a.result.to)
+      .filter((s): s is string => typeof s === 'string' && s.length > 0);
+    if (symbols.length > 0) touched.symbols = [...new Set(symbols)];
+  }
+
+  // written_files：只在**确实落盘**且**能完整枚举**时给。
+  //   - dry_run / ok:false（整体阻断，或落盘中途阻断导致 ok:false）⇒ 不给（见上 `landed`）；
+  //   - apply_literals 额外写了字面量文件（literalFilesWritten>0）时，产物只回计数不回文件表 ⇒ 枚举不全 ⇒ 整项省略；
+  //   - 仅 scope='module'：其 definition/importers/fileRenamed 是**仓库相对路径 + `/`**（rename_symbol.ts 用
+  //     `path.relative(resolvedRoot, …)` + `\\`→`/`）；而 scope='local' 的 file 是**绝对路径**（rename_local.ts:120 `abs(...)`），
+  //     本函数又拿不到解析出的 root ⇒ 无法安全转相对 ⇒ local 支省略。
+  const literalWroteExtra = typeof r.literalFilesWritten === 'number' && r.literalFilesWritten > 0;
+  if (landed && r.scope === 'module' && !literalWroteExtra) {
+    const files = new Set<string>();
+    for (const a of r.applied) {
+      const res = a.result;
+      if (res.definition?.file) files.add(res.definition.file);
+      for (const im of res.importers ?? []) files.add(im.file);
+      if (res.fileRenamed) files.add(res.fileRenamed);
+    }
+    if (files.size > 0) touched.written_files = [...files];
+  }
+
+  return touched;
+}
+
+/** 导出的 [B] 入口：薄壳，唯一职责是把 `touched` 挂到产物上（实现见 `renameSymbolsCore`）。 */
+export async function renameSymbols(input: RenameSymbolsInput): Promise<TouchedProduct<RenameSymbolsResult>> {
+  const r = await renameSymbolsCore(input);
+  return withTouched(r, touchedOf(input, r));
 }
 
 /** module 支的实体（调用级入参去掉 `scope` —— 路由已经选定它了） */

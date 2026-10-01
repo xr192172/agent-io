@@ -24,6 +24,7 @@ import { resolveImportTarget, syncFile, removeFile } from '../../infrastructure/
 import { getProjectCacheDb, closeProjectCacheDb } from '../../infrastructure/index/db.js';
 import { createProtectGuard } from './protect.js';
 import { reopenAndResolveAfterWrite } from '../observe/write_gate.js';
+import { withTouched, type Touched, type TouchedProduct } from '../../domain/b_terms.js';
 
 // 扫描范围内源码扩展名：TS 系全量 + Python（相对导入语义与 TS 同构，复用同一相对路径重算逻辑）。
 // Go 的 import 是模块包路径（非相对文件路径），移动单文件不改变途径名 → 不纳入扫描。
@@ -248,7 +249,7 @@ function collectPythonImportLiterals(node: SyntaxNodeLike, out: Array<{ node: Sy
   }
 }
 
-export async function renameFile(input: RenameFileInput): Promise<RenameFileResult> {
+async function renameFileCore(input: RenameFileInput): Promise<RenameFileResult> {
   const projectRoot = path.resolve(input.project_dir);
   const toAbs = path.isAbsolute(input.to) ? path.resolve(input.to) : path.resolve(projectRoot, input.to);
   const fromAbs = path.isAbsolute(input.from) ? path.resolve(input.from) : path.resolve(projectRoot, input.from);
@@ -418,4 +419,20 @@ export async function renameFile(input: RenameFileInput): Promise<RenameFileResu
   }
 
   return { ok: true, dryRun, fromRel, toRel, moved: true, references, editCount, pending };
+}
+
+/** ★ 唯一的构造点：把"我动了什么"集中算一次，所有出口都从这一个地方出去 */
+function touchedOf(input: RenameFileInput, r: RenameFileResult): Touched {
+  const touched: Touched = { project_dir: path.resolve(input.project_dir) };
+  // ★ 只有真落盘了才给 written_files（dry_run / 被阻断 / ok:false 一律省略）：
+  //   落盘路径下写过的文件 = 移动后的新文件（r.toRel）+ 每个被改写引用的 importer（r.references 的 file 字段）。
+  if (r.ok && !r.dryRun && r.moved) {
+    touched.written_files = [...new Set([r.toRel, ...r.references.map((e) => e.file)])];
+  }
+  return touched;
+}
+
+export async function renameFile(input: RenameFileInput): Promise<TouchedProduct<RenameFileResult>> {
+  const r = await renameFileCore(input);
+  return withTouched(r, touchedOf(input, r));
 }

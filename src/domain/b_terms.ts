@@ -44,6 +44,14 @@ export interface BTerm {
 /**
  * ★★ 链的接口 —— 一次 [B] 调用"动了哪些对象"。
  *
+ * ★★★ **统一口径（2026-10-01 由 ④-b 三个执行者的追问逼出来的，一条规则管全部字段）**：
+ *   `Touched` 描述的是「**这次调用之后，下游能从哪儿接着走**」。所以字段分两类：
+ *   - **作用域类**（`feature` / `project_dir`）：描述"作用在哪"，**任何时候都可给**（不依赖成败）；
+ *   - **对象类**（`written_files` / `read_files` / `symbols` / `nodes`）：描述「**本次调用确立下来的对象**」——
+ *     · **写类** [B]（会落盘的）：**只有真的落盘了才给**；`dry_run` / 被阻断 / `ok:false` ⇒ **整项省略**
+ *       （★ 省略 ≠ 空数组：空数组会被读成"真的没写文件"，省略才是"这次没发生落盘"）；
+ *     · **只读** [B]（只查不改）：照给（读到的文件 / 查到的符号）。
+ *
  * 为什么是这一组：实测（`docs/b-field-dictionary.md`）42 个 [B] 的产物共 189 个字段名，
  * 其中 **80% 只服务 1 个 [B]**（私有，不动）；共用那批里又有 21 个是"同一个词指不同东西"
  * ⇒ **不能靠"名字通用"来造通用层**，只能**新增语义唯一、类型钉死的字段**。
@@ -56,19 +64,62 @@ export interface Touched {
   feature?: string;
   /** 作用到的**项目根**（一个仓库的根目录）。
    *  依据：入参侧 17 个 [B] 已用 `project_dir: string`（同名同型，真共用）。
-   *  ★ **不并** `box_dir` / `brick_dir` / `slim_dir` / `target_dir` —— 实测它们是**盒根**，不是项目根。 */
+   *  ★ **不并** `box_dir` / `brick_dir` / `slim_dir` / `target_dir` —— 实测它们是**盒根**，不是项目根。
+   *  ★ 口径（2026-10-01 由 ④-b 执行者的追问定下）：填**解析后的绝对根**（`path.resolve(...)`），
+   *    不是入参原值（入参可能是相对路径）。 */
   project_dir?: string;
   /** 被**写入/改动**的文件（仓库相对路径，`/` 分隔）。
    *  ★ 用**新名**：`files` 在产物侧有 **6 种不同语义**（已污染）、`filesWritten` 是 `number`（计数）、
-   *    `written` 是 `boolean`（是否落盘）—— 三个都不能复用。 */
+   *    `written` 是 `boolean`（是否落盘）—— 三个都不能复用。
+   *  ★ 口径（2026-10-01 定下）：
+   *    ① 只列**落盘后仍然存在**的文件；被**移动/删除**的旧路径**不列**（下游读不到它）；
+   *    ② **未落盘**时（`dry_run` / 被阻断 / `ok:false`）**省略整个字段** —— 不给空数组
+   *       （空数组会被读成"真的没写文件"，省缺才是"这次没发生落盘"）。 */
   written_files?: string[];
   /** 被**读取**当作输入的文件。★ 与 `written_files` 分开：现有 `files` 恰恰是"路径/报告"混用才坏的。 */
   read_files?: string[];
-  /** 涉及到的符号 `qualified_name`。★ 新名：既有 `symbol` 是 `string`（单个），链需要全部。 */
+  /** 涉及到的符号标识。
+   *  ★ 新名：既有 `symbol` 是 `string`（单个），链需要全部。
+   *  ★ 口径（2026-10-01 核过内核后定下）：**本仓内核的 `qualified_name` 对模块级符号就是裸名**
+   *    （`kernel.ts:366 qualified_name: nameNode.text`），成员才是 `Class.method`（`:399`）。
+   *    ⇒ 填"模块级裸名 / `Class.method`"**都算合格**；★ **跨文件同名**时靠 `written_files`/`read_files` 消歧。
+   *  ★ 值取「**落定后**的符号标识」—— 改名类 [B] 成功时给**新名**（下游要用新名继续操作），未落定则省略。 */
   symbols?: string[];
   /** 涉及到的 DSL 节点 id。★ 新名：既有 `node_id` 是 `string`（单个）。 */
   nodes?: string[];
 }
+
+/**
+ * ★★ [B] 的**统一构造点**（④-b，2026-10-01）—— 解决"`rename_symbol` 有 10+ 个 return 点，
+ * 逐处手加 `touched` 必漏"。
+ *
+ * 用法（每个 [B] 一个**导出薄壳**，一处算、所有出口都从它出去）：
+ *   ```ts
+ *   async function renameSymbolsCore(input: RenameSymbolsInput): Promise<RenameSymbolsResult> {
+ *     ...原实现一字不改（它的每个 return 都不用管 touched）...
+ *   }
+ *   export async function renameSymbols(input: RenameSymbolsInput): Promise<TouchedProduct<RenameSymbolsResult>> {
+ *     const r = await renameSymbolsCore(input);
+ *     return withTouched(r, touchedOf(input, r));   // ★ 唯一的构造点
+ *   }
+ *   ```
+ *
+ * 为什么是"包一层"而不是"每个 return 手加"：
+ *   ① 出口多（实测 6~10+ 个），手加**必漏**；
+ *   ② 漏了不会红 —— `touched` 是可选字段，缺失只是"链接不上"，**静默**。
+ *   ⇒ 包一层让"漏"在结构上不可能。
+ *
+ * ★ 不编造：取不到的锚点**省略该字段**（它们是可选的）；省略 ≠ 填假值。
+ */
+export function withTouched<T extends object>(
+  product: T,
+  touched: Touched,
+): T & { touched: Touched } {
+  return { ...product, touched };
+}
+
+/** `withTouched` 的返回类型：产物 + 链的锚点 */
+export type TouchedProduct<T extends object> = T & { touched: Touched };
 
 /**
  * 统一回执/状态的最小面 —— [B] 的产物里这几项按此定义，不再各写各的。

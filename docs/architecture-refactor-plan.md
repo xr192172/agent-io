@@ -4512,3 +4512,72 @@ src/  application/  domain/  infrastructure/  presentation/  tools/     ← 根�
 #### 下一笔（清单 T18）
 按术语表**重构**：先定 ④-b 的"统一构造点"做法（`rename_symbol` 有 10+ 个 return 点，
 逐处手加必漏），再按族把 `Touched` 落上；同时按 `fix` 逐条还债（`files`/`stats`/`written` 优先）。
+
+---
+
+### 44.18 ★★★ ④-b 落地：refactor 族 5 个 [B] 接上 `Touched`（**用子代理并行**，2026-10-01）
+
+用户提问：「这个任务**使用子代理并行**会不会更好？」⇒ 会，**但只在"每文件"这一层**。
+
+#### 定法先行：**统一构造点**（`withTouched`）
+[`rename_symbol.ts`] 有 **10+ 个 return 点**、[`find_references.ts`] 有一片 early-error 返回 ——
+逐处手加 `touched` **必漏**，而**漏了不会红**（`touched` 可选，缺了只是"链接不上"，**静默**）。
+⇒ 定死一个形状（写进 `b_terms.ts` 的 `withTouched` 文档注释）：
+```ts
+async function xxxCore(input): Promise<XResult> { /* 原实现**一字不改** */ }
+function touchedOf(input, r): Touched { /* ★ 一处算 */ }
+export async function xxx(input): Promise<TouchedProduct<XResult>> {
+  const r = await xxxCore(input);
+  return withTouched(r, touchedOf(input, r));   // ★ 唯一出口
+}
+```
+★ **并行的前提是形状唯一** —— 不定死就派 5 个，会得到 5 种风格，比不做更糟。
+
+#### 分工（**串行的真实约束是"同文件"**）
+| 并行给子代理（1 文件 1 个） | **我串行做** |
+|---|---|
+| `rename_file` `rename_files` `rename_symbol` `rename_symbols` `find_references` | 派活规格、裁定、**逐 diff 核验**、`tsc`/`arch`/全量、快照、台账、提交 |
+派活规格：`.inspect/44b-spec.md`（形状 + 6 条硬约束 + `touchedOf` 填法 + **诚实清单**要求）。
+
+#### ★★★ 子代理**抓到我的错 4 处**（这条纪律这回真赚回来了）
+派活时我要求「**先核实我给的函数名/前提再动手，不一致就停下回报**」。结果：
+1. **import 路径**：我写 `'../../../domain/b_terms.js'` ⇒ 实际只差**两层**（`'../../domain/b_terms.js'`）。
+2. **`RenameFilesInput` 这个类型根本不存在**（该函数入参是**内联匿名类型**，全仓 grep 零命中）—— 我编的。
+3. **`FindReferencesInput` 同样不存在** —— 我编的。
+4. **我给的"允许改动清单"太死**：漏了"补一个缺失的类型名"这种必要项。
+★ 关键：它们**没有照着错的硬凑**，而是**停下要裁定**。⇒ 裁决：`rename_files` **用 A**（补具名类型，纯类型层零行为变化）；
+  `find_references` **批准**用 `Parameters<typeof findReferencesCore>[0]`（不新造对外名字）。
+
+#### ★★★ 它们还逼出一条**真口径**（原本含糊，会埋雷）
+`rename_symbol` 与 `rename_symbols` **各自独立**问出同一件事：
+`b_terms.ts` 写 `symbols` 是 `qualified_name`，但工具给的是**模块级裸名** —— 算不算违规？
+⇒ 我**没拍脑袋**，去核内核：**模块级符号的 `qualified_name` 就是裸名**（`kernel.ts:366`），成员才是 `Class.method`（`:399`）。
+⇒ 顺着追问把整条口径补全（已写进 `b_terms.ts`）：
+> `Touched` 描述「**这次调用之后，下游能从哪儿接着走**」：
+> · **作用域类**（`feature`/`project_dir`）—— 任何时候都可给；
+> · **对象类**（`written_files`/`read_files`/`symbols`/`nodes`）—— 描述「本次调用**确立下来的对象**」：
+>   写类 [B] **只有真落盘才给**（`dry_run`/被阻断/`ok:false` ⇒ **整项省略**，★ 不是空数组）；
+>   只读 [B] 照给（但要 gate 在 `r.ok`）。
+> · 值给**落定后的标识**（改名成功给**新名**）—— 给旧名会让链**静默接错**。
+
+#### ★ 一处我**否掉子代理方案**的地方（它自己担心的对，解法不对）
+`rename_files` 为拿 `project_dir`，**复刻了 Core 的根解析**（入参 → 首条 from 自动定位 → **cwd 兜底**），
+并明确提醒我"这会造成漂移"。⇒ 我采纳**顾虑**、否掉**解法**：改成 **只从入参取，没给就省略**。三条理由：
+① 复刻 = 同一判据两处各持一份 ⇒ Core 改了这里不改会**悄悄偏且不会红**（本仓头号病根）；
+② 全族一致（`rename_symbol`/`find_references` 都只在入参显式给了才填）；
+③ **`cwd` 兜底尤其不能要** —— 那会把 `project_dir` 变成"进程当前目录"，**不是本次调用确立的对象**。
+
+#### 验证（**证明它能用，不是证明它存在**）
+- 新增 `tests/tools/touched_contract.test.ts`（6 项）：**真搭临时项目跑落盘**，断言
+  `written_files` 是**仓库相对**、**含被改写的 importer**、**不含被搬走的旧路径**；
+  `dry_run`/被阻断 ⇒ **对象类整项省略**、作用域类照给；入参没给 `project_dir` ⇒ **省略（不猜 cwd）**。
+- **出生证**：把 `rename_file` 的 gate 改成 `if (true)` ⇒ `dry_run` 那条**只它变红** ⇒ 还原。
+- `tsc` 0 ｜ `arch` **312 modules / 0 违规 / 无 warn**（`b_terms.ts` 有了真 importer，**先前那条 orphan warn 自动消失** ✓）
+  ｜全量 **237 文件 / 2433 项 / 0 失败**。
+- ★ **G8 行为快照无需更新**（实测没红）：G8 的人群**不含**这些"重活"工具 ⇒ 本笔的行为验证靠上面那 6 项新测试。
+
+#### 已知缺口（本族内，留给后续笔）
+1. `rename_symbols` 的 **local 支**（`file` 是绝对路径）与 **apply_literals 支**（只回计数不回文件表）
+   ⇒ 无法给出仓库相对的完整文件表 ⇒ **整项省略**。要覆盖需先让产物**回传 root 与字面量文件表**。
+2. `rename_symbol` / `find_references`：Core 内部**推导出的 root 不进产物** ⇒ `project_dir` 在入参没给时省略。
+   （同上一条同源：**根解析的结果没有进入产物**。）

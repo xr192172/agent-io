@@ -30,6 +30,7 @@ import { buildImportGraph } from '../../infrastructure/graph/import_graph.js';
 import { scanTextMentions } from '../../infrastructure/text/refs_text.js';
 import { getProjectView } from '../../infrastructure/parse/project_view.js'; // ★ §19②
 import type { ScanBounds } from './scan_bounds.js';
+import { withTouched, type Touched, type TouchedProduct } from '../../domain/b_terms.js';
 
 /** 每个文件最多取多少条文本提及（避免单文件刷屏） */
 const TEXT_MENTION_PER_FILE = 3;
@@ -194,7 +195,7 @@ const FIELD_KIND_LABEL: Record<string, string> = {
   'field-decl': '声明',
 };
 
-export async function findReferences(input: {
+async function findReferencesCore(input: {
   /** mode=symbol 必填：定义符号的文件（绝对路径；或相对 project_dir/cwd）。mode=field/type 可选（用于定 scope） */
   file?: string;
   /** mode=symbol 必填：符号名。mode=field 忽略 */
@@ -475,4 +476,48 @@ export async function findReferences(input: {
     bounds,
     literals: input.report_literals ? await scanLiterals(resolvedRoot, symbol!) : undefined,
   };
+}
+
+/**
+ * ★ 唯一的构造点：把"我动了什么"集中算一次，所有出口都从这一个地方出去。
+ *
+ * 本工具**只读不改**（引用/调用方查询）⇒ ★ **绝不填 `written_files`**（没有落盘动作）；
+ * 只填"作用在哪个项目 / 涉及哪个符号 / 读取了哪些输入文件"。
+ *
+ * 入参类型说明：本文件原本把入参写成**匿名内联对象类型**（没有命名的 `FindReferencesInput`），
+ * 为不新增对外名字、也不改 Core 的声明，这里用 `Parameters<typeof findReferencesCore>[0]`
+ * 取同一类型（结构等价，调用方零感知）。
+ */
+function touchedOf(input: Parameters<typeof findReferencesCore>[0], r: FindReferencesResult): Touched {
+  const touched: Touched = {};
+
+  // project_dir：只填**调用方显式给的**项目根（= 实现里的 effectiveRoot / symRoot，见 215 / 286 行）。
+  // 实现内部用 resolveProjectRoot() 推出来的根不在本函数作用域，取不到就省略（不猜）。
+  if (input.project_dir) touched.project_dir = path.resolve(String(input.project_dir));
+
+  // symbols：对象类字段 = "本次调用**确立下来的**对象" ⇒ 必须 gate 在 r.ok：
+  // 查不到符号（ok=false）时什么都没确立，整项省略（与写类"没落盘就不给"同一口径）。
+  // 且**只在 mode=symbol 时填** —— 那时 r.symbol 是被查的**模块级符号名**，
+  // 其 qualified_name 就是裸名（kernel.ts:366）；field/type 模式给的是**字段名/类型名**，
+  // 它们**不是符号**，塞进 symbols 会污染口径 ⇒ 那两种模式省略。
+  if (r.ok && r.mode === 'symbol' && r.symbol) touched.symbols = [r.symbol];
+
+  // read_files：本次**真读过并作为结果给出**的仓库内文件。来源（均为仓库相对 POSIX 路径）：
+  //   - definition.file：定义文件，291 行 readFileSync(fileAbs) 真读过；
+  //   - importers[].file：被扫候选，365 行 readFileSync(f) 真读过；
+  //   - fieldRefs[].file / typeCandidates[].file：field/type 模式的命中文件。
+  // ★ 这是"报告出来的子集"，不是"扫过的全集"（未命中的候选不在产物里）；不假装完整。
+  const read = new Set<string>();
+  if (r.definition?.file) read.add(r.definition.file);
+  for (const f of r.importers ?? []) read.add(f.file);
+  for (const f of r.fieldRefs ?? []) read.add(f.file);
+  for (const c of r.typeCandidates ?? []) read.add(c.file);
+  if (read.size > 0) touched.read_files = [...read];
+
+  return touched;
+}
+
+export async function findReferences(input: Parameters<typeof findReferencesCore>[0]): Promise<TouchedProduct<FindReferencesResult>> {
+  const r = await findReferencesCore(input);
+  return withTouched(r, touchedOf(input, r));
 }
