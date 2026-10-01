@@ -47,8 +47,19 @@ const typeOfProp = (t, name) => {
   if (!p) return '?';
   const d = p.valueDeclaration ?? p.declarations?.[0];
   const n = d?.name ?? p.valueDeclaration;
-  return n ? checker.typeToString(checker.getTypeOfSymbolAtLocation(p, n)) : checker.typeToString(t);
+  try {
+    return n ? checker.typeToString(checker.getTypeOfSymbolAtLocation(p, n)) : checker.typeToString(checker.getTypeOfSymbol(p));
+  } catch {
+    return checker.typeToString(checker.getTypeOfSymbol(p));
+  }
 };
+
+/**
+ * ★★ 比较类型前必须先**归一化可选性**（本量具第二版栽过）：
+ *   `string` 与 `string | undefined` 只是"必填 vs 可选"，**不是语义不同**。
+ *   第一版把 `feature` / `project_dir` / `file` / `node_id` / `symbol` 全判成"同名不同型" —— **全是假阳性**。
+ */
+const normType = (s) => s.replace(/\s*\|\s*undefined\b/g, '').replace(/\bundefined\s*\|\s*/g, '').trim();
 
 /**
  * 锚点候选（**只是候选**）：出现在产物里、可能被下游 [B] 当原料用的字段名。
@@ -84,15 +95,17 @@ for (const f of files) {
     // 入参
     const params = sig.getParameters();
     let input;
-    if (params.length === 0) input = { kind: 'none', text: '', fields: [] };
-    else if (params.length > 1) input = { kind: 'positional', text: `${params.length} 个位置参数`, fields: params.map((p) => p.getName()) };
-    else {
+    if (params.length === 0) input = { kind: 'none', text: '', fields: [], fieldTypes: {} };
+    else if (params.length > 1) {
+      input = { kind: 'positional', text: `${params.length} 个位置参数`, fields: params.map((p) => p.getName()), fieldTypes: {} };
+    } else {
       const p = params[0];
       const d = p.valueDeclaration ?? decl;
       const t = checker.getTypeOfSymbolAtLocation(p, d);
       const s = checker.typeToString(t);
       const kind = BAG.test(s.replace(/\s+/g, ' ')) || s === '{}' || s === 'object' ? 'bag' : s.startsWith('{') ? 'inline' : 'typed';
-      input = { kind, text: s, fields: t.getProperties().map((x) => x.getName()) };
+      const props = t.getProperties().map((x) => x.getName());
+      input = { kind, text: s, fields: props, fieldTypes: Object.fromEntries(props.map((x) => [x, typeOfProp(t, x)])) };
     }
 
     // 产物
@@ -120,6 +133,67 @@ const count = (get) => rows.reduce((m, r) => ((m[get(r)] = (m[get(r)] ?? 0) + 1)
 
 if (process.argv.includes('--json')) {
   console.log(JSON.stringify(rows, null, 2));
+} else if (process.argv.includes('--dict')) {
+  /**
+   * ★ 字段字典（**机器生成，不手抄**）：把 42 个 [B] 的入参/产物字段全枚举出来，
+   *   并机械判定三件事：
+   *     ① 真·共用 = 同名 + **类型唯一** + 出现 ≥2 个 [B] ⇒ 可以直接进通用形态
+   *     ② ★ 同名不同型 = 同名但类型有 ≥2 种 ⇒ **必须人核语义**（就是"同名不同义"的机器证据）
+   *     ③ 只出现在 1 个 [B] 的字段 = 领域字段（用户原话：「它只是为了它这一个功能服务的」）
+   *   ★ 语义**不由本脚本判定** —— 它只把"名字 + 类型 + 出处"摆出来，结论要人读（见文件头反例）。
+   */
+  const build = (side, getFields, getTypes) => {
+    const m = new Map();
+    for (const r of rows) {
+      const fields = getFields(r);
+      const types = getTypes(r);
+      for (const f of fields) {
+        const e = m.get(f) ?? { count: 0, types: new Map(), where: [] };
+        e.count += 1;
+        const t = normType(types[f] ?? '?');
+        e.types.set(t, (e.types.get(t) ?? 0) + 1);
+        e.where.push(r.name);
+        m.set(f, e);
+      }
+    }
+    return m;
+  };
+  const dump = (title, m, getFields, getTypes) => {
+    const all = [...m.entries()].sort((a, b) => b[1].count - a[1].count || a[0].localeCompare(b[0]));
+    const shared = all.filter(([, e]) => e.count >= 2);
+    const unique = all.filter(([, e]) => e.count === 1);
+    const multiType = shared.filter(([, e]) => e.types.size >= 2);
+    console.log(`\n## ${title}（共 ${all.length} 个字段名）\n`);
+    console.log(`- 真·共用（同名 + 类型唯一 + ≥2 个 [B]）：**${shared.length - multiType.length}**`);
+    console.log(`- ★ 同名**不同型**（必须人核语义）：**${multiType.length}**`);
+    console.log(`- 只出现在 1 个 [B]（= 领域字段）：**${unique.length}**\n`);
+    console.log('| 字段名 | [B] 数 | 类型（出现次数） | 判定 |');
+    console.log('|---|---:|---|---|');
+    for (const [f, e] of all) {
+      if (e.count === 1) continue;
+      const ts = [...e.types.entries()].map(([t, n]) => (e.types.size > 1 ? `\`${t}\`×${n}` : `\`${t}\``)).join(' ／ ');
+      const verdict = e.types.size >= 2 ? '★ 同名不同型' : '共用候选';
+      console.log(`| \`${f}\` | ${e.count} | ${ts} | ${verdict} |`);
+    }
+    console.log('\n★ 同名不同型的**全部出处**（逐个看语义）：\n');
+    for (const [f, e] of multiType) {
+      console.log(`- \`${f}\``);
+      for (const [t, n] of e.types) {
+        const who = rows.filter((r) => getFields(r).includes(f) && normType(getTypes(r)[f] ?? '?') === t).map((r) => r.name);
+        console.log(`    - \`${t}\` ×${n} ⇒ ${who.join(', ')}`);
+      }
+    }
+    console.log('\n★ 只服务 1 个 [B] 的字段（领域字段，**不动**）：');
+    console.log('  ' + unique.map(([f]) => f).join(', '));
+  };
+  console.log('# [B] 字段字典（**机器生成**；重生成：`node scripts/measure_b_contract.mjs --dict`）');
+  console.log(`\n人群：${rows.length} 个 [B]（= application/** 里"导出函数名==文件名camelCase"的导出函数）`);
+  const IN_F = (r) => r.input.fields;
+  const IN_T = (r) => r.input.fieldTypes;
+  const OUT_F = (r) => r.product.fields;
+  const OUT_T = (r) => r.product.fieldTypes;
+  dump('入参字段', build('in', IN_F, IN_T), IN_F, IN_T);
+  dump('产物字段', build('out', OUT_F, OUT_T), OUT_F, OUT_T);
 } else if (process.argv.includes('--anchors')) {
   console.log('=== 含"锚点候选"字段的 [B]（★ 名字 + **类型** + 语义由人读）===');
   for (const r of rows.filter((r) => r.product.anchors?.length)) {
