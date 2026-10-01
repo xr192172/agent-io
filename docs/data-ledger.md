@@ -166,31 +166,15 @@ ensureStage(id):
 而且**仓里已经有一道工序天然长这样**：`ensureProjectIndex → ensureFreshIndex → syncFile`
 （`source_files` 变 → 重解析 → 写 `symbol_index`）。所以**不是发明新机制，而是把已有的这一道推广到每一份数据**。
 
-## 工序清单（从本账本导出；★ = 缺东西）
+## 工序清单
 
-> ### ★ 2026-10-01：本表已**机器化**
-> 下面这张表是**人手抄的早期快照**（保留作对照）。**唯一的机器权威**已经是
-> `tests/fixtures/stage_registry.json` + 门 `tests/registry/root_declaration.test.ts`（15 道工序）。
-> 两者若不一致，**以登记表为准**（它被门校验：产者/解析器必须是**真导出**、`owner='project'` 的解析器
-> 必须**真的用**传进来的根）。★ 别把本表当判据改 —— 要改就改登记表，否则又是"同一份知识两处落点"。
-> 覆盖差异：登记表比本表多一条 `embedding_cache`（账本主表有、工序表漏了）。
-
-| 工序 id | 根 | 上游 | 新鲜判据 | 唯一产者 | 缺什么 |
-|---|---|---|---|---|---|
-| `source_files` | project | —（源） | mtime | `ProjectView` | ✅ 已是工序形状 |
-| `symbol_index` | project | `source_files` | hash/mtime | `syncFile` | ✅ 已能被 `ensure*` 递归补齐 |
-| `dsl_features`（DSL 解析/存档） | dataHome | —（源） | 文件 mtime | `saveDSL` | ★ 无 fresh 判据（无 TTL） |
-| `dsl_live`（活态快照） | dataHome | `dsl_features` | ★ **无** | `saveLiveFeature`（**产者只有 `import_project`**） | ★★ **缺了没人补**（读者拿到 404） |
-| `dsl_baseline` | dataHome | `dsl_features` | ★ 无 | `ensureBaseline`（**只有 `import_project.ts:1479` 一处调**） | ★★ 缺了只有 import_project 补 |
-| `archive`（下线库） | dataHome | — | 无 | `saveArchiveEntry` | ★ 无 fresh |
-| `code_snapshots` | project | — | 保留最近 20 | `snapshotBeforeWrite` | ✅ 有保留策略 |
-| `behavior_baseline` | project | —（源：跑函数） | ★ 无 | `captureBaseline` | ★ 缺了 `verify` 直接 throw |
-| `health_cache` | ★ **cwd** | `source_files` | mtime 指纹 | `writeHealthCache` | ★★ **唯一已经是 `miss→重算→store` 的**（形状对、**根错**） |
-| `dogfood` | dataHome | — | 无 | `recordDogfoodUsage` | ★ MCP 侧无读者 |
-| `observe_events` | project | —（源：探针） | 无 | `watch_project_tool.ts:348` | ★ 全局单 sink |
-| `observe_ledger` | project | `observe_events` | 无 | `saveProbeLedger` | ★ MCP 只写不读 |
-| `observe_points` | project | `source_files` | 无 | `recommend_observe_points` | ★ 无 reader |
-| `import_cache` | ★ **两个根** | `source_files` | 无 | `serve.ts`(cwd) **/** `function_outline.ts`(包根) | ★★ 同名两根 |
+> ### ★★ 2026-10-01：**本节那张手抄表已删** —— 它是第二份副本
+> 唯一数据源 = **`src/application/stage_registry.ts` 的 `STAGES`**（一张 typed 表）。
+> 要读表 ⇒ 调 `renderStageTable()`（**它就是本节的渲染器**，不再手抄）；要改 ⇒ 改代码，编译器会管。
+>
+> ★ 为什么删：本仓反复栽在"同一份知识两处落点"（§2b 判据分叉）。手抄表在**当天下午就已经过期**了
+> （它还把 `health_cache` 的根写成 `<cwd>`、把 `import_cache` 写成"两个根"—— 那些**当天上午就修了**）。
+> ★★ 判据：**文档里"手抄一份机器可读的表"，等于给自己造一个必然腐烂的副本。**
 
 ## 剔除清单（"重复实现"与"孤儿"）
 

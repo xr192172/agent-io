@@ -45,15 +45,15 @@ node scripts/contract_docs_gate.mjs
 # ⑩ G8 逐工具行为快照     —— 不退化即可（S1 稳定集 / S2 测量集）
 ./node_modules/.bin/vitest run tests/tool_behavior_snapshot.test.ts
 
-# ⑪ T19「根的选择」门 —— 每份数据声明 owner；判据是**行为**（project 的拿两个根跑必须不同）
-./node_modules/.bin/vitest run tests/registry/root_declaration.test.ts
+# ⑪ T19 工序表门 —— 只查编译器查不了的四件事（id 重复 / 溯源无环 / owner 行为 / 缺了就重做·失败就重试·不兜底）
+./node_modules/.bin/vitest run tests/stages/stage_registry.test.ts
 
 # ⑫ 全量回归（仓内约定：排除 archify）
 ./node_modules/.bin/vitest run --exclude 'tests/tools/archify_*.test.ts'
 ```
 
-**基线**：⑫ 当前应为 **234 文件通过 / 1 跳过 ｜ 2427 项通过 / 5 跳过 ｜ 0 失败**（2026-10-01 实测；上一条记录 219/2269 已过期 —— 此后 T20/T19 两族陆续加了测试）。
-★ 记账口径提醒：**`test:main` 是排除 archify 的数**（234）；若看到 **238 文件 / 2453 项**那是**含 archify 4 个文件 26 项**的口径（`npm test`）。
+**基线**：⑫ 当前应为 **234 文件通过 / 1 跳过 ｜ 2423 项通过 / 5 跳过 ｜ 0 失败**（2026-10-01 实测；上一条记录 219/2269 已过期 —— 此后 T20/T19 两族陆续加了测试）。
+★ 记账口径提醒：**`test:main` 是排除 archify 的数**（234）；若看到 **238 文件 / 2449 项**那是**含 archify 4 个文件 26 项**的口径（`npm test`）。
 两个数都对，别当成回归。任何一笔改动若把这些数字**变少**，先解释清楚再提交。
 
 ★ **G7 是"堆新工具"的准入闸**（用户 2026-09-28 要求）：新增 action 必须①声明它调的实现
