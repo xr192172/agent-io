@@ -1,6 +1,13 @@
 # 统一行尾为 LF：消除 core.autocrlf=true 对混合行尾文件造成的假修改(git status M)
 # 构建/生成脚本(s)一律写 LF；文档也固定 LF，避免 checkout 转 CRLF 后反复误报。
-* text=auto
+#
+# ★★ 2026-10-01（T16）：本文件原先只写 `* text=auto` —— 那**只保证索引是 LF**，
+#   **不保证工作区**：`core.autocrlf=true` 仍会在 checkout 时把工作区翻成 CRLF。
+#   实测证据：`git ls-files --eol` 显示 **i/lf 全覆盖，但 w/crlf 有 188 个**，
+#   于是每次 `git checkout/reset` 都会随机把几条"按 \n 逐字断言"的测试掀红（T16 的成因）。
+#   ⇒ 补 `eol=lf`（它**覆盖** core.autocrlf，是唯一能让工作区也固定 LF 的写法）。
+#   二进制文件不受影响：`text=auto` 会先把它们判为 `-text`，`eol` 不生效。
+* text=auto eol=lf
 
 # 生成物（gen_* 脚本写 \n）
 *.gen.ts text eol=lf
