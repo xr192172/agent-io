@@ -96,9 +96,9 @@ export interface FileInfo {
   lines?: number;
   status?: string;
   layer?: string;
-  /** 关键函数签名（actual_apis 优先，teach 模式喂给 LLM 的实现材料） */
+  /** 关键函数签名（**事实优先**：现取 cache.db；取不到退回 expected_apis。teach 模式喂给 LLM 的实现材料） */
   apis?: string[];
-  /** 实测依赖（semantic.files[].actual_deps 回填）：本文件 import 的项目内文件相对路径 */
+  /** 实测依赖（★ 现取 cache.db 的 import 边；**不再**从 DSL 镜像回填）：本文件 import 的项目内文件相对路径 */
   actual_deps?: string[];
 }
 
@@ -126,11 +126,9 @@ export function buildFileIndex(dsl: DesignDSL): FileIndex {
       lines: f.lines,
       status: f.status,
       layer: f.layer,
-      // 取不到事实就退回意图签名；无 root 时保持旧行为（actual_apis ?? expected_apis）
-      apis: (
-        factApis ?? (root ? (f.expected_apis ?? []).map((a) => a.signature) : (f.actual_apis ?? f.expected_apis ?? []).map((a) => a.signature))
-      ).slice(0, 24),
-      actual_deps: factDeps ?? (root ? undefined : f.actual_deps), // 事实依赖：Archify 等据此建真实 import 边；取不到事实则不留
+      // ★ T20：DSL 里已无 `actual_apis` 镜像 ⇒ 事实取不到就**只用意图**（不再有"读镜像"这条路）
+      apis: (factApis ?? (f.expected_apis ?? []).map((a) => a.signature)).slice(0, 24),
+      actual_deps: factDeps ?? undefined, // 事实依赖：Archify 等据此建真实 import 边；取不到事实则不留
     };
     exact.set(f.path, info);
     const segs = f.path.split('/');

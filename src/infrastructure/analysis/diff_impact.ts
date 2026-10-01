@@ -25,6 +25,7 @@
 
 import { DATA_DIR_NAME } from '../data_dir.js';
 import path from 'node:path';
+import { fileFacts } from '../index/file_facts.js';
 import { getDSL } from '../storage.js';
 import { getProjectCacheDb, type Database } from '../index/db.js';
 
@@ -505,9 +506,13 @@ export function diffImpact(input: DiffImpactInput): DiffImpactResult {
     // 预索引：语义文件 path → 函数名 → API（expected 优先于 actual）
     for (const sf of semanticFiles) {
       if (!sf.path) continue;
+      // ★ T20：actual 不再来自 DSL 镜像 ⇒ 现取事实（唯一入口 fileFacts）
       const apiList: Array<{ sig: string; src: 'expected' | 'actual' }> = [
         ...(sf.expected_apis ?? []).map((a) => ({ sig: a.signature, src: 'expected' as const })),
-        ...(sf.actual_apis ?? []).map((a) => ({ sig: a.signature, src: 'actual' as const })),
+        ...(dsl?.source_root ? fileFacts(dsl.source_root, sf.path, dsl.feature).apis : []).map((a) => ({
+          sig: a.signature ?? a.name,
+          src: 'actual' as const,
+        })),
       ];
       for (const { sig, src } of apiList) {
         const fn = fnNameOf(sig);

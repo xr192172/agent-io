@@ -312,7 +312,6 @@ export async function oplIntegrate(feature: string, id: string): Promise<OplStat
   for (const f of accepted) {
     const abs = path.join(implRoot(feature, id), f.path);
     const src = fs.existsSync(abs) ? fs.readFileSync(abs, 'utf-8') : '';
-    const actualApis = [...extractApis(src).entries()].map(([name, signature]) => ({ name, signature }));
     const fid = `op_${slugify(f.path)}_${id.slice(-4)}`;
     if (!ids.has(fid)) {
       dsl.semantic.files.push({
@@ -320,7 +319,6 @@ export async function oplIntegrate(feature: string, id: string): Promise<OplStat
         path: f.path,
         responsibility: s.title,
         expected_apis: f.apis.map((a) => ({ name: a.name, signature: a.signature })),
-        actual_apis: actualApis,
         status: 'done',
         layer: 'feature',
       });

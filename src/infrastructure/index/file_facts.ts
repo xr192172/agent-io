@@ -121,3 +121,28 @@ export function apiSignaturesOf(root: string, fileRel: string, feature?: string)
     .apis.map((a) => a.signature ?? a.name)
     .filter(Boolean);
 }
+
+/**
+ * ★★ 读者最常用的合并形态：**「意图 ∪ 事实」的 API 表**。
+ *
+ * 为什么做成单点：移除 `actual_apis` 镜像后有 **6 个文件、20+ 处**都在写
+ * `[...(x.expected_apis ?? []), ...(x.actual_apis ?? [])]` —— 让它们各自改成
+ * "去 fileFacts 取事实" = 同一个判据抄 20 遍（正是本仓要消灭的东西）。
+ *
+ * 语义：**先意图、后事实**（与旧顺序一致）；`root`/`fileRel` 缺失或查不到事实 ⇒ 只有意图（不编造）。
+ * ⇒ 与旧行为的关系：`import_project` 落库时 `actual_apis === expected_apis`（`diff_views.ts:793` 的注释
+ *   早就写明了这一点），所以对这类 DSL **新旧等价**；对其它的，事实改为**现取**（这正是本改革的目的）。
+ */
+export function mergedApis(
+  root: string | undefined,
+  fileRel: string | undefined,
+  /** ★ 入参放宽到 `ExpectedApi` 形态（`name` 可选、`signature` 可能缺）—— 免得每个调用点都强转 */
+  expected: ReadonlyArray<{ name?: string; signature?: string }> | undefined,
+  feature?: string,
+  /** ★ 产物与 DSL 的 `ExpectedApi` **可赋值**（`signature` 必填）—— 这样它能直接喂 `diffApis(ExpectedApi[], ExpectedApi[])` */
+): Array<{ name?: string; signature: string }> {
+  const exp = (expected ?? []).map((a) => ({ name: a.name, signature: a.signature ?? a.name ?? '' }));
+  if (!root || !fileRel) return exp;
+  const facts = fileFacts(root, fileRel, feature).apis.map((a) => ({ name: a.name, signature: a.signature ?? a.name }));
+  return [...exp, ...facts];
+}

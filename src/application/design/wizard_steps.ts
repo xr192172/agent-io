@@ -107,7 +107,7 @@ export function wizardSteps(): WizardStep[] {
         { name: 'scaffold', kind: 'mcp', note: '回填骨架（action=backfill）：设计里的占位长成真文件' },
       ],
       input: '新写的代码',
-      output: '设计的 expected_apis = 实际 actual_apis',
+      output: '设计的 expected_apis ↔ 实际实现（事实现取 cache.db，不再镜像进 DSL）',
       doneWhen: '一致性检查不再报"设计与实现不符"',
     },
     {

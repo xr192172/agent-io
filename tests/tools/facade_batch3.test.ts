@@ -91,24 +91,20 @@ describe('第三方单入口 · 工具总数', () => {
   });
 });
 
-describe('scaffold 单入口（action=generate / backfill）', () => {
-  it('已注册；description 写明两个 action + 默认目录 + 默认不覆盖 + backfill 只写 DSL', () => {
+describe('scaffold（从 DSL 生成代码骨架）', () => {
+  it('已注册；description 写明默认目录 + 默认不覆盖', () => {
     const desc = def('scaffold').description;
     expect(desc.length).toBeGreaterThan(80);
-    for (const k of ['action=generate', 'action=backfill', 'scaffold/<feature>', '不覆盖', '只写 DSL']) {
+    // ★ 2026-10-01（T20）：`action=backfill` 已整条剔除（它维护的"事实镜像"不再存在）⇒ 不再断言它
+    for (const k of ['scaffold/<feature>', '不覆盖', '生成代码骨架']) {
       expect(desc, `description 少了「${k}」`).toContain(k);
     }
   });
 
-  it('★ 前置校验：缺 feature / 未知 action ⇒ 明确报错（含可选值）', async () => {
-    const noFeature = await call('scaffold', { action: 'generate' });
+  it('★ 前置校验：缺 feature ⇒ 明确报错', async () => {
+    const noFeature = await call('scaffold', {});
     expect(noFeature.isError).toBe(true);
     expect(noFeature.message).toContain('feature');
-
-    const badAction = await call('scaffold', { action: 'nope', feature: 'x' });
-    expect(badAction.isError).toBe(true);
-    expect(badAction.message).toContain('generate');
-    expect(badAction.message).toContain('backfill');
   });
 
   it('★ 能力不丢 · generate：骨架文件真落盘，回执给出 files + dir', async () => {
@@ -123,18 +119,10 @@ describe('scaffold 单入口（action=generate / backfill）', () => {
     expect(existsSync(path.join(out, 'a.ts'))).toBe(true);
   });
 
-  it('★ 能力不丢 · backfill：解析实现文件回填 actual_apis，回执给出 updates', async () => {
-    seed('sc_bf', { withFile: true });
-    writeFileSync(path.join(work, 'a.ts'), 'export function hello(): void {}\n', 'utf8');
-    const r = await call('scaffold', { action: 'backfill', feature: 'sc_bf', scaffold_dir: work });
-    expect(r.isError).toBe(false);
-    expect(r.data.action).toBe('backfill');
-    expect(r.data.feature).toBe('sc_bf');
-    const updates = r.data.updates as Array<{ id: string; actual_count: number }>;
-    expect(Array.isArray(updates)).toBe(true);
-    expect(updates[0]!.id).toBe('f_a');
-    expect(updates[0]!.actual_count).toBeGreaterThan(0); // 真解析到了 hello()
-  });
+  // ★ 2026-10-01（T20）：原先这里还有一条「能力不丢 · backfill」。
+  //   该能力**按裁定整条剔除**（它的全部存在意义 = 维护 DSL 里的"代码事实镜像"；
+  //   镜像不存在了，产者随之消失 —— 见 docs/data-ledger.md 附三 §4）。
+  //   要事实请走 `explore_code` 或 `query_feature`（现取解析数据）。
 });
 
 describe('design_intent 单入口（action=set / propose）', () => {

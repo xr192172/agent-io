@@ -96,13 +96,19 @@ describe('import_project', () => {
     expect(nodeIds).toContain('dir_src_util');
     expect(nodeIds).toContain('dir_pkg_svc');
 
-    // 语义层：每个文件都有 expected_apis 和 actual_apis（导入即回填）
+    // 语义层：每个文件都有 expected_apis
+    // ★ 2026-10-01（T20）：`actual_apis`/`actual_deps` 已从 DSL **移除** ——
+    //   事实的唯一权威是解析数据 cache.db（`infrastructure/index/file_facts`），
+    //   所以这里**不再断言** DSL 里有事实镜像（那正是被剔除的东西）。
     const svcFile = dsl!.semantic.files.find((f) => f.path === 'pkg/svc/svc.go');
     expect(svcFile).toBeDefined();
     expect(svcFile!.status).toBe('done');
     expect(svcFile!.expected_apis!.length).toBeGreaterThanOrEqual(1);
     expect(svcFile!.expected_apis![0].signature).toContain('GetUser');
-    expect(svcFile!.actual_apis).toEqual(svcFile!.expected_apis);
+    // ★ 本笔要钉的是"**镜像确实被移除了**"：这两个字段不该再出现在 DSL 里。
+    //   （"事实怎么读"由 `tests/tools/file_facts.test.ts` 覆盖 —— 那条测试自带 fixture 库，不依赖索引落点。）
+    expect('actual_apis' in svcFile!).toBe(false);
+    expect('actual_deps' in svcFile!).toBe(false);
   });
 
   it('依赖边应正确解析（相对导入 / Go module / Python 包）', () => {

@@ -15,6 +15,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { getDSL, saveDSL, getStorageRoot } from '../../infrastructure/storage.js';
+import { fileFacts } from '../../infrastructure/index/file_facts.js';
 import { projectSignature } from '../meta/derive_mind_map.js';
 import { buildScenes, humanOf } from '../../domain/narration.js';
 import type { NarrScene } from '../../domain/narration.js';
@@ -61,12 +62,16 @@ function resolveSemanticFile(dsl: { semantic?: { files?: SemanticFile[] } }, fil
     ?? files.find((f) => (f.path ?? '').endsWith('/' + file) || (f.path ?? '').endsWith('/' + path.basename(file)));
 }
 
-/** 契约投影：工序文件 actual_apis[0] 签名 → 输入/输出针脚（== 代码事实） */
-function projectPins(sf: SemanticFile | undefined): { inputs: TeachPin[]; outputs: TeachPin[] } {
+/** 契约投影：工序文件的**事实签名** → 输入/输出针脚（★ T20：事实现取 cache.db，不再读 DSL 镜像） */
+function factsig(root: string | undefined, sf: SemanticFile | undefined, feature: string): string | undefined {
+  if (!root || !sf?.path) return undefined;
+  return fileFacts(root, sf.path, feature).apis[0]?.signature ?? undefined;
+}
+function projectPins(sf: SemanticFile | undefined, sig?: string): { inputs: TeachPin[]; outputs: TeachPin[] } {
   if (!sf) return { inputs: [], outputs: [] };
-  const sig = sf.actual_apis?.[0]?.signature ?? sf.expected_apis?.[0]?.signature;
-  if (!sig) return { inputs: [], outputs: [] };
-  const shape = projectSignature(sig);
+  const use = sig ?? sf.expected_apis?.[0]?.signature;
+  if (!use) return { inputs: [], outputs: [] };
+  const shape = projectSignature(use);
   return shape ? { inputs: shape.ins, outputs: shape.outs } : { inputs: [], outputs: [] };
 }
 
@@ -80,13 +85,14 @@ export function narrateStep(input: NarrateStepInput): NarrateStepResult {
   if (!dsl) throw new Error(`feature "${feature}" 不存在`);
 
   const sf = resolveSemanticFile(dsl, file);
-  const pins = projectPins(sf);
+  const factSig = factsig(dsl.source_root, sf, feature);
+  const pins = projectPins(sf, factSig);
   const responsibility = sf?.responsibility ?? '（该文件无可读职责）';
   const title = input.title || responsibility.split('（')[0] || path.basename(file);
   const detail = input.detail || responsibility;
 
   // ── 叙事分镜（manim 式：进料口→工序→出料口，facts 引真实契约投影数据）──
-  const scenes: NarrScene[] = buildScenes(pins, title, detail, sf?.actual_apis?.[0]?.signature);
+  const scenes: NarrScene[] = buildScenes(pins, title, detail, factSig ?? sf?.expected_apis?.[0]?.signature);
 
   // 钉死保证 + 显式宣告编造红线
   let message = `叙事砖已生成（${pins.inputs.length} 入 / ${pins.outputs.length} 出，模式=rule，数据形态=契约投影）`;

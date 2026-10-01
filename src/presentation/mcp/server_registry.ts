@@ -31,7 +31,6 @@ import { queryFeature } from '../../application/meta/query_feature.js';
 import { updateFeature } from '../../application/design/update_feature.js';
 import { scaffold } from '../../application/design/scaffold.js';
 
-import { backfillScaffold } from '../../application/design/backfill.js';
 import { checkConsistency } from '../../application/design/consistency.js';
 import { detectDrift } from '../../application/design/detect_drift.js';
 import { exploreCode, EXPLORE_ACTIONS } from '../../application/meta/explore_code.js';
@@ -465,7 +464,6 @@ import {
   manageFeatureHandler,
   renderDesignHandler,
   scaffoldHandler,
-  backfillHandler,
   consistencyHandler,
   detectDriftHandler,
   exploreCodeHandler,

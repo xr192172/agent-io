@@ -23,6 +23,7 @@
 
 import type { DesignDSL, SemanticFile, Symbol, ExpectedApi, Edge, NodeDecision, DecisionHistoryEntry } from '../../domain/types.js';
 import { getDSL, getLiveFeature, getBaselineFeature, getArchiveEntryByPath } from '../../infrastructure/storage.js';
+import { mergedApis } from '../../infrastructure/index/file_facts.js';
 
 // ──────── 输出类型 ────────
 
@@ -271,11 +272,11 @@ export function diffViews(input: DiffViewsInput): DiffViewsResult {
     // 计数
     if (df) {
       designSymbols += df.symbols?.length ?? 0;
-      designApis += (df.expected_apis?.length ?? 0) + (df.actual_apis?.length ?? 0);
+      designApis += mergedApis(design?.source_root, df.path, df.expected_apis, feature).length;
     }
     if (lf) {
       liveSymbols += lf.symbols?.length ?? 0;
-      liveApis += (lf.expected_apis?.length ?? 0) + (lf.actual_apis?.length ?? 0);
+      liveApis += mergedApis(live?.source_root, lf.path, lf.expected_apis, feature).length;
     }
 
     if (df && !lf) {
@@ -320,8 +321,8 @@ export function diffViews(input: DiffViewsInput): DiffViewsResult {
       // 两边都有 → 比较差异
       const symDiffs = diffSymbols(df.symbols ?? [], lf.symbols ?? []);
       const apiDiffs = diffApis(
-        [...(df.expected_apis ?? []), ...(df.actual_apis ?? [])],
-        [...(lf.expected_apis ?? []), ...(lf.actual_apis ?? [])],
+        mergedApis(design?.source_root, df.path, df.expected_apis, feature),
+        mergedApis(live?.source_root, lf.path, lf.expected_apis, feature),
       );
 
       const hasChanges = symDiffs.length > 0 || apiDiffs.length > 0 || (df.lines !== lf.lines) || (df.layer !== lf.layer);
@@ -375,11 +376,11 @@ export function diffViews(input: DiffViewsInput): DiffViewsResult {
       const liv = liveByPath.get(path);
 
       const desChanged =
-        fileChanged(base, des) ||
+        fileChanged(base, des, baseline?.source_root, design?.source_root) ||
         fileDecisionChanged(baseline, design, path, base?.id, des?.id) ||
         symbolsDecisionChanged(base, des);
       const livChanged =
-        fileChanged(base, liv) ||
+        fileChanged(base, liv, baseline?.source_root, live?.source_root) ||
         fileDecisionChanged(baseline, live, path, base?.id, liv?.id) ||
         symbolsDecisionChanged(base, liv);
       // desEqLiv：设计 vs 实现语义一致 → converged 非 conflict。
@@ -388,8 +389,8 @@ export function diffViews(input: DiffViewsInput): DiffViewsResult {
       const desEqLiv = symbolsSemanticallyEqual(des?.symbols ?? [], liv?.symbols ?? [])
         && (des?.layer ?? '') === (liv?.layer ?? '')
         && diffApis(
-          [...(des?.expected_apis ?? []), ...(des?.actual_apis ?? [])],
-          [...(liv?.expected_apis ?? []), ...(liv?.actual_apis ?? [])],
+          mergedApis(design?.source_root, des?.path, des?.expected_apis, feature),
+          mergedApis(live?.source_root, liv?.path, liv?.expected_apis, feature),
         ).length === 0
         && !symbolsDecisionChanged(des, liv);
 
@@ -434,13 +435,13 @@ export function diffViews(input: DiffViewsInput): DiffViewsResult {
         live_lines: liv?.lines,
         intent_symbols: diffSymbols(base?.symbols ?? [], des?.symbols ?? []),
         intent_apis: diffApis(
-          [...(base?.expected_apis ?? []), ...(base?.actual_apis ?? [])],
-          [...(des?.expected_apis ?? []), ...(des?.actual_apis ?? [])],
+          mergedApis(baseline?.source_root, base?.path, base?.expected_apis, feature),
+          mergedApis(design?.source_root, des?.path, des?.expected_apis, feature),
         ),
         implement_symbols: diffSymbols(base?.symbols ?? [], liv?.symbols ?? []),
         implement_apis: diffApis(
-          [...(base?.expected_apis ?? []), ...(base?.actual_apis ?? [])],
-          [...(liv?.expected_apis ?? []), ...(liv?.actual_apis ?? [])],
+          mergedApis(baseline?.source_root, base?.path, base?.expected_apis, feature),
+          mergedApis(live?.source_root, liv?.path, liv?.expected_apis, feature),
         ),
         // 决策卡上下文（LLM 裁决的一手资料）：
         // - 基线卡=当初为什么这么定；设计卡=现在为什么改
@@ -670,15 +671,21 @@ export function diffViews(input: DiffViewsInput): DiffViewsResult {
  * 判断两个文件内容是否不同（相对比较用，非严格全等）。
  * 只比较语义相关字段：行数、层级标签、符号、API。两方都不存在视为相同。
  */
-function fileChanged(a: SemanticFile | undefined, b: SemanticFile | undefined): boolean {
+function fileChanged(
+  a: SemanticFile | undefined,
+  b: SemanticFile | undefined,
+  // ★ T20：事实（actual_apis）已不在 DSL 里 ⇒ 要把它算进来就必须知道"去哪儿取"（各侧自己的 source_root）
+  aRoot?: string,
+  bRoot?: string,
+): boolean {
   if (a === b) return false;
   if (!a || !b) return true;
   if (a.lines !== b.lines || a.layer !== b.layer) return true;
   if (diffSymbols(a.symbols ?? [], b.symbols ?? []).length > 0) return true;
   if (
     diffApis(
-      [...(a.expected_apis ?? []), ...(a.actual_apis ?? [])],
-      [...(b.expected_apis ?? []), ...(b.actual_apis ?? [])],
+      mergedApis(aRoot, a.path, a.expected_apis),
+      mergedApis(bRoot, b.path, b.expected_apis),
     ).length > 0
   ) {
     return true;

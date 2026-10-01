@@ -15,7 +15,8 @@
  *   5. 验证跨文件不变式（multi_file_invariants）
  *
  * 与 scaffold(action=backfill) 的区别：
- *   - scaffold(action=backfill)：从代码提取 actual_apis 回写到 DSL
+ *   - （2026-10-01 起该路径已剔除）：原先的 scaffold(action=backfill) 会把代码提取的 API **镜像回填**进 DSL；
+ *     现在事实的唯一权威是解析数据 cache.db（`infrastructure/index/file_facts`）。
  *   - consistency：只读检查，生成报告，不修改 DSL
  *
  * 职责归属（对账语义，与三方对比/基线一致）：

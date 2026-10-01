@@ -1849,11 +1849,11 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
         responsibility: `${f.dir === '.' ? '根目录' : f.dir} — ${apiCount} 个 API（导入自 ${(p?.imports.length || 0)} 个模块）`,
         status: 'done',
         expected_apis: apis,
-        actual_apis: apis,
         symbols: syms.length > 0 ? syms : undefined,
         lines: lineCounts.get(f.rel) ?? 0,
-        // 实测依赖回填：真实 import 的项目内文件相对路径（语义层持有的"实测事实"）
-        ...(depsByFrom.get(f.rel)?.length ? { actual_deps: depsByFrom.get(f.rel)! } : {}),
+        // ★ 2026-10-01（T20）：`actual_apis` / `actual_deps` **不再回填进 DSL** ——
+        //   事实（真实 import / 真实签名）的唯一权威是解析数据 `cache.db`，
+        //   要读请走 `infrastructure/index/file_facts`（DSL 只留 `source_root` 这个"出处"）。
       });
     }
   }

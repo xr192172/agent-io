@@ -4788,3 +4788,50 @@ interface Stage<T> {
 #### 遗留（本笔发现，未改，归 T19/T20）
 `resolveFunctionCacheDb` 的第三级候选是 **`<cwd>/.agent-io/cache.db`** ⇒ **没有自己索引的项目会读到 cwd 那个项目**的库。
 本笔靠"`matched_path` 必须命中"挡了误报，但**根上仍是"根"的问题**。
+
+
+---
+
+### 44.24 T20 第 (2)(3) 步：**摘掉字段 + 剔除产者**（2026-10-01）
+> 第 (1) 步见 §44.23（读者先改完，本步才安全）。
+
+#### 做了什么
+| 项 | 动作 |
+|---|---|
+| `domain/semantic.ts` | **删** `actual_apis` / `actual_deps`（留注释指向唯一入口 `file_facts`） |
+| `scaffold action=backfill` | ★★ **整条剔除** —— 它的**全部存在意义**就是维护那份镜像 ⇒ 镜像没了，产者随之消失 |
+| `application/design/backfill.ts` | **删**（320 行；唯一导出 `backfillScaffold`，唯一调用点就是那个 action） |
+| `import_project.ts` | 删掉 `actual_apis: apis` 与 `actual_deps` 的回填 |
+| `opl.ts` | 删掉往 DSL push 的 `actual_apis` |
+| `handlers.ts` | ★ 删掉 **墓碑壳** `backfillHandler` —— 它的注释自己写着「本壳不再被任何 lane 引用 —— **保留理由**：不牵动 server_registry 的具名导入清单」⇒ 正是"为了省事留墓碑"，与裁定冲突 |
+| `file_facts.ts` | 新增 `mergedApis()` —— 把 `[expected, ...actual]` 这个**6 文件 20+ 处**的合并形态收成**单点** |
+
+#### ★★★ 本笔最重要的一条：**删字段 = 让编译器当量具，它立刻抓出我上一轮的漏**
+我在 §44.23 的"读者清单"里报了 **5 处**。删掉字段后 `tsc` 报 **25 个错**，其中 **15 个来自我完全没列到的读者**：
+`diff_views`（**12 处**）、`narrate_step`（2）、`diff_impact`（1）。
+⇒ ★ **纪律**：**"一个字段的全部消费者"这种问题，别靠 grep 列清单 —— 删掉它、让编译器报。**
+  编译器是**完备**的（无遗漏、无假阳），grep 不是。这一条比本笔改的任何代码都值钱。
+
+#### ★ 另一处顺手抓到的墓碑
+`handlers.ts` 的 `backfillHandler`（见上表）。它**存在**的唯一理由是"不牵动导入清单" ——
+而 `server_registry.ts:467` 其实只是把它列在**具名导入**里、从未使用（`tsc` 的 TS2305 证明）。
+⇒ **"不动它是怕麻烦"从来不是保留理由**（§20.1「墓碑什么都不要留」）。
+
+#### 被删字段的下游语义澄清（`diff_views.ts:793` 的既有注释）
+> `// 上游 DSL 的 actual_apis 常等于 expected_apis（import_project 落库即如此），`
+★ 仓里**早就知道**那份镜像是冗余的（`import_project` 里 `actual_apis: apis` 与 `expected_apis: apis` **是同一个列表**）。
+⇒ 所以对本仓自产的 DSL，新旧**等价**；对 `opl` 那条支路才是真差异（那里它确实不等）。
+
+#### 验证
+`tsc` 0 ｜ `arch` **312 modules / 0 违规** ｜ 全量 **237 文件 / 2434 项 / 0 失败**。
+测试同步（**不是改判据迁就实现**）：
+- **删** `tests/tools/backfill.test.ts`（被测模块已删）；
+- `facade_batch3`：删掉"`action=backfill` 能力不丢"那条（该能力**按裁定**没了）；
+- `import_project.test.ts`：**改断言方向** —— 从"`actual_apis === expected_apis`"改为
+  **断言这两个字段确实不在 DSL 里**（这才是本笔要钉的）；
+- `harvest_decisions.walkthrough`：它把 `comment_files` 指向了**刚被删的 `backfill.ts`** ⇒ 改指现存模块；
+- G1 快照重算（仅 `scaffold` 一条：title/description/删掉的 `action` 枚举与 `scaffold_dir`）。
+★ 顺带把 4 处**已过时的陈述**改掉（含一条**对 agent 可见**的 `query_feature` 描述）。
+
+#### 仍缺（T20 第 (4) 步）
+`edit_dsl` 的 **"先读后改"门**：改 `semantic.files` 前必须已读该文件的事实（复用 `evidence`/L4，不另发明）。

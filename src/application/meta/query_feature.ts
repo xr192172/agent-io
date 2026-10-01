@@ -565,7 +565,7 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
       for (const f of filtered) {
         actualCounts.set(
           f.id,
-          factsRoot ? fileFacts(factsRoot, f.path, dsl.feature).apis.length : (f.actual_apis?.length ?? 0),
+          factsRoot ? fileFacts(factsRoot, f.path, dsl.feature).apis.length : 0,
         );
       }
 
@@ -622,11 +622,11 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
         lines.push('  预期 API: (无)');
       }
 
-      // 已实现 API — 事实来源 = cache.db（无 root 时保持旧行为，读 DSL 镜像）
+      // 已实现 API — 事实来源 = cache.db（★ T20：DSL 里已无镜像可退回 ⇒ 取不到就是空）
       const factsRoot = dsl.source_root ?? input.project_dir;
       const implementedApis: Array<{ signature: string; notes?: string }> = factsRoot
         ? fileFacts(factsRoot, file.path, dsl.feature).apis.map((a) => ({ signature: a.signature ?? a.name, notes: `line ${a.start_line}` }))
-        : (file.actual_apis ?? []).map((a) => ({ signature: a.signature, notes: a.notes }));
+        : [];
       if (implementedApis.length > 0) {
         lines.push('');
         lines.push('  已实现 API:');

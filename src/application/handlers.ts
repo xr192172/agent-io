@@ -21,7 +21,6 @@ import { judgeEvents, judgeEventsWithLLM, normalizeEvents, renderJudgeReport } f
 import { queryObserveLog } from '../infrastructure/analysis/observe/log_query.js';
 import { getDSLByView, getLiveDir } from '../infrastructure/storage.js';
 import { archiveNode, listArchive } from './meta/archive_node.js';
-import { backfillScaffold } from './design/backfill.js';
 import { checkConsistency } from './design/consistency.js';
 import { deriveMindMap } from './meta/derive_mind_map.js';
 import { detectDrift } from './design/detect_drift.js';
@@ -184,18 +183,6 @@ export const scaffoldHandler = wrapData(async (a) => {
   return { message: r.message, data: { files: r.files, dir: r.dir } };
 });
 
-/** 回填实际 API（原独立入口，★ 面收敛第三批已并入 lane `scaffold` 的单入口 action=backfill）。
- *  ★ wrapData（2026-09-29）：[B] 回 `BackfillResult`
- *   = `{ message, feature, updates: BackfillUpdate[] }` —— 逐条回填结果（文件/符号/签名差异）
- *   是**审计产物**，原被 `wrap` 丢掉。
- *  ★ 本壳不再被任何 lane 引用 —— 保留理由同上（不牵动 server_registry 的具名导入清单）。 */
-export const backfillHandler = wrapData(async (a) => {
-  const r = await backfillScaffold({
-    feature: a.feature as string,
-    scaffold_dir: a.scaffold_dir as string | undefined,
-  });
-  return { message: r.message, data: { feature: r.feature, updates: r.updates } };
-});
 
 /** consistency_check：一致性。★ wrapData（2026-09-29）：[B] 回 `ConsistencyResult`
  *   = `{ message, fileResults[], invariantResults[], summary{totals…} }` ——

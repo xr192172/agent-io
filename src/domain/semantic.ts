@@ -70,18 +70,18 @@ export interface SemanticFile {
   /** 职责描述英文版（i18n） */
   responsibility_en?: string;
   expected_apis?: ExpectedApi[];
-  /** 预期依赖路径列表 */
+  /** 预期依赖路径列表（**设计态/意图**） */
   expected_deps?: string[];
-  /** 实际 import 依赖（真实代码扫描回填）：本文件 import 的项目内文件相对路径。
-   *  语义层持有的"实测事实"——区别于 expected_deps(设计态)；Archify/导图/影响面等消费方读它，
-   *  不必再从几何层/派生现猜。 */
-  actual_deps?: string[];
   /** 预期行为描述 */
   expected_behavior?: string;
   /** 文件实现状态：draft=待实现, in_progress=实现中, done=已完成 */
   status?: DiagramStatus;
-  /** 从实际代码中解析出的已实现 API（代码回填时自动填充） */
-  actual_apis?: ExpectedApi[];
+  // ★★ 2026-10-01（T20 第 (2) 步）：`actual_deps` 与 `actual_apis` **已移除**。
+  //   它们是**代码的事实**（权威在 tree-sitter 解析数据 `cache.db`），却被镜像进"意图册"——
+  //   用户原话：「意图册有三项东西，但是有一项东西其实本身就是代码的权威吧」。
+  //   镜像 = 第二份可写副本 = 判据分叉的温床。**要事实请走唯一入口**：
+  //     `src/infrastructure/index/file_facts.ts` 的 `fileFacts(root, fileRel, feature?)`
+  //   （`root` 取 DSL 自带的 `source_root`；DSL 只保留"事实的出处"，不保留事实本身。）
   /** 符号表：常量/类型/变量/类/接口/结构体声明（非函数方法类），含行号，供 LLM 定位代码 */
   symbols?: Symbol[];
   /** 文件行数（import_project 扫描时填充，供单文件化预警/星图 tooltip 从 DSL 读取） */

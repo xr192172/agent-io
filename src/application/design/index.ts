@@ -28,7 +28,6 @@ import { requireStr, wrapData } from '../plumbing.js';
 import path from 'node:path';
 import { getProjectCacheDb } from '../../infrastructure/index/db.js';
 import { getDSL } from '../../infrastructure/storage.js';
-import { backfillScaffold } from './backfill.js';
 import { proposeChange } from './code_workbench.js';
 import { importProject } from '../../infrastructure/graph/import_project.js';
 import type { ImportProjectInput } from '../../infrastructure/graph/import_project.js';
@@ -50,7 +49,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
       'node（单个节点详情，需 node_id，含决策卡与版本史）/ ' +
       'decisions（决策卡目录，按功能线 thread 分组，支持 thread/decision_status 过滤）/ ' +
       'files（语义文件摘要列表，支持 file_layer/file_status 过滤）/ ' +
-      'file（单个文件详情，需 file_id，含 expected_apis/actual_apis/deps）/ ' +
+      'file（单个文件详情，需 file_id，含 expected_apis / expected_deps；★ 已实现 API 不在此——它是**代码的事实**，现取解析数据 cache.db）/ ' +
       'calls（文件调用关系，需 file_id+project_dir，查 cache.db 入/出调用）/ ' +
       'functions（函数级大纲，需 feature，查缓存 db 的目录→文件→函数 + 调用/被调用/回环）/ ' +
       'annotations（标注）/ approvals（审批）/ approval_history（审批历史，需 annotation_id）/ ' +
@@ -203,34 +202,25 @@ export const DESIGN_TOOLS: ToolDef[] = [
 
   {
     name: 'scaffold',
-    title: 'Scaffold: generate code skeleton from DSL / backfill actual_apis from code — single entry',
+    title: 'Scaffold: generate a code skeleton from the DSL',
     description:
-      '「脚手架」统一入口（**2 个注册入口收敛为 1 个入口 + action 分派**；两者操作的是**同一个对象**' +
-      '「脚手架输出目录」——generate 与 backfill 的默认目录**逐字相同** = `<cwd>/scaffold/<feature>/`，' +
-      '共用同一锚点参数 feature，动作互补 = **生成 + 回填**，对应工作流「生成骨架 → LLM 填充实现 → 回填」）。' +
-      'action=generate（默认）：从 DSL semantic 层生成代码骨架。支持语言 .go/.ts/.py/.js/.vue/.tsx。' +
-      '额外生成 INVARIANTS.md 记录跨文件不变式。' +
-      'action=backfill：LLM 写完代码后，解析实现文件中的 API 签名，回填到 DSL semantic.files[].actual_apis，' +
-      '对比 expected_apis 输出差异报告。支持 .go/.ts/.py/.js。' +
-      '★ 安全策略前移（默认值与写入面明写在这里）：generate 输出根目录缺省 `<cwd>/scaffold/<feature>`，' +
-      '已存在文件默认**不覆盖**（`overwrite=true` 才覆盖）；backfill **只写 DSL 的 actual_apis，不改代码**。',
+      '从 DSL semantic 层生成代码骨架（输出根缺省 `<cwd>/scaffold/<feature>`）。支持语言 .go/.ts/.py/.js/.vue/.tsx。' +
+      '额外生成 INVARIANTS.md 记录跨文件不变式。已存在文件默认**不覆盖**（`overwrite=true` 才覆盖）。' +
+      '★ 2026-10-01：原先的 `action=backfill`（把代码解析出的 API 签名**镜像回填进 DSL** 的 `actual_apis`）' +
+      '**已整条剔除** —— 那是"把代码的事实抄进意图册"，是第二份可写副本。要读事实请用 `explore_code`/`query_feature`，' +
+      '它们现取解析数据（唯一入口 `infrastructure/index/file_facts`）。',
     inputSchema: {
-      action: z
-        .enum(['generate', 'backfill'])
-        .default('generate')
-        .describe('generate=从 DSL 生成代码骨架（默认） | backfill=解析实现回填 actual_apis 到 DSL'),
-      feature: z.string().describe('feature 名（2 个 action 共用锚点）'),
+      feature: z.string().describe('feature 名'),
       output_dir: z.string().optional().describe('generate 用：输出根目录（默认 <cwd>/scaffold/<feature>）'),
       overwrite: z.boolean().optional().describe('generate 用：是否覆盖已存在文件（默认 false）'),
       ui_framework: z.enum(['vue', 'react', 'html']).optional().describe('generate 用：UI 骨架类型（覆盖 DSL 配置）'),
-      project_dir: z.string().optional().describe('generate 用：项目根（索引归属），提供时生成物登记为自写（读路径优先同步索引）'),
-      scaffold_dir: z.string().optional().describe('backfill 用：脚手架输出根目录（默认 <cwd>/scaffold/<feature>）'),
+      project_dir: z.string().optional().describe('项目根（索引归属），提供时生成物登记为自写（读路径优先同步索引）'),
     },
     handler: wrapData(async (a) => {
-      const action = (a.action as 'generate' | 'backfill' | undefined) ?? 'generate';
+      const action = 'generate';
       const feature = requireStr(a, 'feature');
 
-      if (action === 'generate') {
+      {
         const r = scaffold({
           feature,
           project_dir: a.project_dir as string | undefined,
@@ -243,12 +233,6 @@ export const DESIGN_TOOLS: ToolDef[] = [
         return { message: r.message, data: { action, files: r.files, dir: r.dir } };
       }
 
-      if (action === 'backfill') {
-        const r = await backfillScaffold({ feature, scaffold_dir: a.scaffold_dir as string | undefined });
-        return { message: r.message, data: { action, feature: r.feature, updates: r.updates } };
-      }
-
-      throw new Error(`scaffold: 未知 action "${String(action)}"（可选值：generate / backfill）`);
     }),
   },
 
