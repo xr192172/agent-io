@@ -24,6 +24,7 @@ import type { MindMap } from '../../domain/mindmap.js';
 import { extractJsonObject } from './explain_gen.js';
 import { deriveFeatureTree } from '../../infrastructure/analysis/derive_feature_tree.js';
 import { openDb } from '../../infrastructure/index/db.js';
+import { fileFacts } from '../../infrastructure/index/file_facts.js';
 
 export interface OverviewSummary {
   /** 一句话：这是什么软件（≤30 字，人话） */
@@ -197,12 +198,18 @@ async function llmSharedDesc(
   const out = new Map<string, string>();
   const cfg = loadAgentConfig();
   if (!cfg) return out;
-  // API 签名材料：精确 → 后缀匹配 semantic.actual_apis（cache.db 与 DSL 路径前缀可能不一致）
+  // API 签名材料：精确 → 后缀匹配。★ 签名事实取自 cache.db（fileFacts），不再读 DSL 里镜像的 actual_apis；
+  //   但 DSL 路径与索引里的 file_path 可能前缀不一致，故仍按"精确 → 后缀"匹配（该逻辑保留）。
   const apiExact = new Map<string, string[]>();
   const apiSuffix = new Map<string, string>();
+  const root = dsl.source_root ?? process.cwd();
   for (const f of dsl.semantic?.files ?? []) {
-    const sigs = (f.actual_apis ?? []).slice(0, 5).map((a) => a.signature).filter(Boolean);
-    if (!f.path || sigs.length === 0) continue;
+    if (!f.path) continue;
+    const sigs = fileFacts(root, f.path, dsl.feature)
+      .apis.slice(0, 5)
+      .map((a) => a.signature)
+      .filter((x): x is string => !!x);
+    if (sigs.length === 0) continue;
     apiExact.set(f.path, sigs);
     const segs = f.path.split('/');
     for (let k = 0; k < segs.length - 1; k++) {
@@ -318,7 +325,13 @@ async function enrichSharedDesc(
     } catch {
       // 缓存写失败不影响当次结果
     }
-  })().finally(() => sharedDescInflight.delete(feature));
+  })()
+    // ★ 不许静默：失败要**可见**（`fileFacts` 会抛 —— 见 index/file_facts.ts 头注释的取舍）。
+    //   也不能让它变成 unhandled rejection：`wait=false` 时没人 await 这条链。
+    .catch((e) => {
+      console.error(`[overview] 功能「${feature}」共享能力介绍生成失败：`, (e as Error)?.message ?? e);
+    })
+    .finally(() => sharedDescInflight.delete(feature));
   if (wait) {
     await run;
   } else if (!sharedDescInflight.has(feature)) {

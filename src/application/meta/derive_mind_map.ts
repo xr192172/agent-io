@@ -30,6 +30,7 @@ import { loadAgentConfig, callChat } from '../../infrastructure/llm_focus.js';
 import type { ChatMessage } from '../../infrastructure/llm_focus.js';
 import { openDb } from '../../infrastructure/index/db.js';
 import type { Database } from '../../infrastructure/index/db.js';
+import { fileFacts } from '../../infrastructure/index/file_facts.js';
 import type { DesignDSL, FeatureNode, FeatureTree, SemanticFile, CanvasNote, Node } from '../../domain/types.js';
 import type { MindMap, MindMapNode, TeachStep, TeachPin, TeachFlowEdge, TeachGap, ProposalFeature } from '../../domain/mindmap.js';
 import { buildScenes } from '../../domain/narration.js';
@@ -110,8 +111,14 @@ export type FileIndex = { exact: Map<string, FileInfo>; bySuffix: Map<string, Fi
 export function buildFileIndex(dsl: DesignDSL): FileIndex {
   const exact = new Map<string, FileInfo>();
   const bySuffix = new Map<string, FileInfo>();
+  // 事实的权威只在解析数据（cache.db）；root 一律取 dsl.source_root（import_project 保证写入）
+  const root = dsl.source_root;
   for (const f of dsl.semantic?.files ?? []) {
     if (!f.path) continue;
+    // 事实现取：facts.source 为 null = 一个候选库都不存在（本轮无索引）⇒ 退回意图（expected_apis）
+    const facts = root ? fileFacts(root, f.path, dsl.feature) : null;
+    const factApis = facts?.source ? facts.apis.map((a) => a.signature ?? a.name).filter(Boolean) : null;
+    const factDeps = facts?.source ? facts.deps : null;
     const info: FileInfo = {
       id: f.id,
       path: f.path,
@@ -119,8 +126,11 @@ export function buildFileIndex(dsl: DesignDSL): FileIndex {
       lines: f.lines,
       status: f.status,
       layer: f.layer,
-      apis: (f.actual_apis ?? f.expected_apis ?? []).slice(0, 24).map((a) => a.signature),
-      actual_deps: f.actual_deps, // 语义层实测依赖：Archify 等据此建真实 import 边，不再靠文件签名猜
+      // 取不到事实就退回意图签名；无 root 时保持旧行为（actual_apis ?? expected_apis）
+      apis: (
+        factApis ?? (root ? (f.expected_apis ?? []).map((a) => a.signature) : (f.actual_apis ?? f.expected_apis ?? []).map((a) => a.signature))
+      ).slice(0, 24),
+      actual_deps: factDeps ?? (root ? undefined : f.actual_deps), // 事实依赖：Archify 等据此建真实 import 边；取不到事实则不留
     };
     exact.set(f.path, info);
     const segs = f.path.split('/');
@@ -2107,9 +2117,15 @@ export async function deriveMindMap(input: DeriveMindMapInput): Promise<DeriveMi
   // 记录已尝试 LLM 提炼的节点，供批量生成描述（增量局部更新时可收窄）
   let llmTargets: Array<{ id: string; label: string; kind: 'feature' | 'community' | 'file'; hint: string }> = [];
   /** 改名/迁移遗留空壳：无导出 API 且个位数行（如 l3.go 仅剩 3 行注释占位）——
-   *  导图不收，避免以"独立卡片"误导（其业务本体已改名迁走、在链上） */
-  const isHuskFile = (f: { lines?: number; actual_apis?: unknown[]; expected_apis?: unknown[] }): boolean =>
-    (f.lines ?? 999) < 10 && !f.actual_apis?.length && !f.expected_apis?.length;
+   *  导图不收，避免以"独立卡片"误导（其业务本体已改名迁走、在链上）。
+   *  "有无 API"以事实为准（fileFacts）；无 root / 无索引可读时退回只看意图（expected_apis）。 */
+  const isHuskFile = (f: { lines?: number; path?: string; expected_apis?: unknown[] }): boolean => {
+    if ((f.lines ?? 999) >= 10) return false;
+    if (f.expected_apis?.length) return false;
+    const facts = dsl.source_root && f.path ? fileFacts(dsl.source_root, f.path, dsl.feature) : null;
+    if (facts && facts.source) return facts.apis.length === 0;
+    return true; // 拿不到事实：只按 expected_apis 判（此处已为空）⇒ 视为空壳
+  };
 
   // AI 设计标注索引（node_id → 标注文本）：DSL 里挂的借鉴/决策标注，
   // 作为文件描述的"增量"段拼进导图——每个模块不只说"是什么"，还说"要变什么"
@@ -2121,8 +2137,13 @@ export async function deriveMindMap(input: DeriveMindMapInput): Promise<DeriveMi
   }
 
   /** 规则合成文件描述：API 摘要（干瘪统计 → 具体函数名）+ AI 增量段（→ 借鉴：…） */
-  const fileDesc = (f: { id: string; path?: string; responsibility?: string; actual_apis?: Array<{ signature: string }>; expected_apis?: Array<{ signature: string }> }): string => {
-    const sigs = (f.actual_apis ?? f.expected_apis ?? []).map((a) => String(a.signature).split('(')[0].trim()).filter(Boolean);
+  const fileDesc = (f: { id: string; path?: string; responsibility?: string; expected_apis?: Array<{ signature: string }> }): string => {
+    // API 摘要取自事实（fileFacts）；取不到事实（无 root / 无索引）退回意图（expected_apis）
+    const facts = dsl.source_root && f.path ? fileFacts(dsl.source_root, f.path, dsl.feature) : null;
+    const factSigs = facts && facts.source ? facts.apis.map((a) => a.signature ?? a.name) : null;
+    const sigs = (factSigs ?? (f.expected_apis ?? []).map((a) => String(a.signature)))
+      .map((s) => String(s).split('(')[0].trim())
+      .filter(Boolean);
     const names = [...new Set(sigs)].slice(0, 3);
     const base = names.length > 0
       ? `API：${names.join(' · ')}${sigs.length > 3 ? ` …（共 ${sigs.length} 个）` : ''}`

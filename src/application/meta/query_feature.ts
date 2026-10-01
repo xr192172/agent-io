@@ -45,6 +45,7 @@ import type { SemanticFile } from '../../domain/semantic.js';
 import { getProjectCacheDb } from '../../infrastructure/index/db.js';
 import type { Database } from '../../infrastructure/index/db.js';
 import { buildFunctionOutline } from '../../infrastructure/index/function_outline.js';
+import { fileFacts } from '../../infrastructure/index/file_facts.js';
 import type { OverlayGoal } from '../../domain/overlay.js';
 
 export interface QueryFeatureInput {
@@ -558,9 +559,19 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
         return { message: `feature "${dsl.feature}" 无语义文件 ${viewTag}`, data: [] };
       }
 
+      // 已实现 API 计数 = 事实（cache.db 中非闭包的 function/method）；无 root 时退回旧行为（读 DSL 镜像）
+      const factsRoot = dsl.source_root ?? input.project_dir;
+      const actualCounts = new Map<string, number>();
+      for (const f of filtered) {
+        actualCounts.set(
+          f.id,
+          factsRoot ? fileFacts(factsRoot, f.path, dsl.feature).apis.length : (f.actual_apis?.length ?? 0),
+        );
+      }
+
       const lines = filtered.map((f, i) => {
         const apiCount = f.expected_apis?.length ?? 0;
-        const actualCount = f.actual_apis?.length ?? 0;
+        const actualCount = actualCounts.get(f.id) ?? 0;
         const symCount = f.symbols?.length ?? 0;
         const status = f.status ?? '-';
         const layer = f.layer ?? '-';
@@ -578,7 +589,7 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
           layer: f.layer,
           lines: f.lines,
           apiCount: f.expected_apis?.length ?? 0,
-          actualCount: f.actual_apis?.length ?? 0,
+          actualCount: actualCounts.get(f.id) ?? 0,
           symbolCount: f.symbols?.length ?? 0,
         })),
       };
@@ -611,11 +622,15 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
         lines.push('  预期 API: (无)');
       }
 
-      // 已实现 API
-      if (file.actual_apis && file.actual_apis.length > 0) {
+      // 已实现 API — 事实来源 = cache.db（无 root 时保持旧行为，读 DSL 镜像）
+      const factsRoot = dsl.source_root ?? input.project_dir;
+      const implementedApis: Array<{ signature: string; notes?: string }> = factsRoot
+        ? fileFacts(factsRoot, file.path, dsl.feature).apis.map((a) => ({ signature: a.signature ?? a.name, notes: `line ${a.start_line}` }))
+        : (file.actual_apis ?? []).map((a) => ({ signature: a.signature, notes: a.notes }));
+      if (implementedApis.length > 0) {
         lines.push('');
         lines.push('  已实现 API:');
-        file.actual_apis.forEach((api, i) => {
+        implementedApis.forEach((api, i) => {
           lines.push(`    ${i + 1}. ${api.signature}${api.notes ? ` — ${api.notes}` : ''}`);
         });
       }

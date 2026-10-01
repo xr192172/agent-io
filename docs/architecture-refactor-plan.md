@@ -4736,3 +4736,55 @@ interface Stage<T> {
 
 #### 施工顺序（**不能反**，清单 T20）
 (1) 先改读者（5 处 → 读 `cache.db`）；(2) 再摘字段；(3) 最后删产者；(4) 加 `edit_dsl` 的"先读后改"门。
+
+
+---
+
+### 44.23 T20 第 (1) 步落地：**事实的唯一入口** `file_facts` + 5 个读者改读事实（2026-10-01）
+> 用 4 个子代理**并行**（一文件一个）＋ 我逐条核验。清单 T20；设计见 `docs/data-ledger.md` 附三。
+
+#### 形状：不上新字段 —— **DSL 自带"事实的出处"**
+`import_project.ts:1399` 逐字：`source_root: input.source_root ?? input.project_dir`
+⇒ **DSL 一定带 `source_root`** ⇒ 读者按 `source_root` + `f.path` 去 `cache.db` 取。
+★ 这正是"意图册只放意图、事实只留出处"的落地 —— **零 schema 改动**。
+
+新建 **`src/infrastructure/index/file_facts.ts`**（唯一读取点）：
+`fileFacts(root, fileRel, feature?) → { apis, deps, source, matched_path }`；
+`apis` ← `nodes`（`kind IN ('function','method') AND is_closure=0`，与 `function_outline` 同口径）；
+`deps` ← `edges`（`kind='import'`）；库的定位**复用既有三级候选** `resolveFunctionCacheDb`，不新造。
+
+#### 改了 5 个读者（`archify_semantics` 无需改 —— 它消费 `buildFileIndex` 的产物）
+`derive_mind_map`（`buildFileIndex`/`isHuskFile`/`fileDesc`）、`overview`（LLM 签名材料）、
+`query_feature`（`actualCount` + "已实现 API"区块）、`opl`（喂 LLM 的上下文）。
+★ `opl.ts:322` 是**写者**（往 DSL push）⇒ **本步不动**，属第 (2)/(3) 步。
+
+#### ★★ 本笔最值钱的部分：accessor 自己被逼出 **3 个真缺陷**（全已修）
+| # | 缺陷 | 谁逼出来的 | 修法 |
+|---|---|---|---|
+| ① | DSL `path` 与 cache.db `file_path` **前缀不一致** ⇒ 查不到 ⇒ 退回意图 ⇒ **等于没改** | `t20-opl` | accessor 内**单点**"先精确、再后缀匹配" |
+| ② | ★★ 后缀匹配**静默给出别处的事实**：查一个**不在**该项目里的 `a.ts`，竟命中本仓 `tests/fixtures/…/a.ts` | **我自己的测试** | 收紧为**唯一才用；有歧义就不猜** |
+| ③ | 我**自造了第二个连接池**且不 close ⇒ Windows 删项目目录 **EBUSY**（正是 `closeProjectCacheDb` 存在的理由） | `t20-overview` | 改为**复用 `db.ts` 的 `projectCachePool`** |
+
+另修两处（也由执行者指出）：
+- `fileFacts` 抛错 遇上 `overview` 的 **fire-and-forget** 链（`.finally` 无 `.catch`）⇒ 补 `.catch(...)`：
+  ★ **失败要可见（console.error），但也不能变成 unhandled rejection**。
+- `query_feature` 的"已实现 API"**丢了行号注记** ⇒ 用 `start_line` **逐字还原 `line N`**（同 `backfill.ts:97`）。
+
+#### ★ 我自己的又一次"兜底"违规，当场被抓
+第一版 accessor 里写了 **3 个 `catch { 返回默认 }`** —— 正是本仓 §2d/§3 禁止的**静默失败**
+（会显示成"这文件没有 API"而不是报错）。改成：**只有"一个候选库都不存在"返回空事实**（合法的"还没建索引"），
+**其余错误一律抛**。★ 抛错的代价 = 必须同时给调用方的 fire-and-forget 补 `.catch` —— **两件事一起做**。
+
+#### 新增门（G8 人群不含这些工具 ⇒ 全绿说明不了行为对）
+`tests/tools/file_facts.test.ts`（**8 项**）：顶层 API 按行序 + import 依赖、**前缀不一致靠后缀兜到**、
+**歧义不猜**（回归 `tests/fixtures/…` 那个反例）、局部闭包排除、文件不在索引 ⇒ `matched_path:null`、
+空项目 ⇒ 空事实、**连接复用**。
+
+#### 验证
+`tsc` 0 ｜ `arch` **313 modules / 0 违规** ｜ 全量 **238 文件 / 2441 项 / 0 失败**。
+★ 附记：**`arch` 紧跟全量测试之后跑会偶发假 warn**（两次实测 315 modules / 2 warnings，重跑即干净）——
+  量具时序问题，别当代码问题查。
+
+#### 遗留（本笔发现，未改，归 T19/T20）
+`resolveFunctionCacheDb` 的第三级候选是 **`<cwd>/.agent-io/cache.db`** ⇒ **没有自己索引的项目会读到 cwd 那个项目**的库。
+本笔靠"`matched_path` 必须命中"挡了误报，但**根上仍是"根"的问题**。

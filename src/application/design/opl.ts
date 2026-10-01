@@ -18,6 +18,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { getDSL, saveDSL, getStorageRoot } from '../../infrastructure/storage.js';
 import { placeProposals, deriveMindMap } from '../meta/derive_mind_map.js';
 import { callChat, loadLlmConfig } from '../../infrastructure/llm_focus.js';
+import { apiSignaturesOf } from '../../infrastructure/index/file_facts.js';
 
 export type OplStatus = 'idea' | 'located' | 'declared' | 'implementing' | 'checked' | 'integrated' | 'failed';
 export type OplLiveState = 'accepted' | 'drift' | 'missing';
@@ -402,9 +403,16 @@ async function llmDeclare(
   if (!cfg) return null;
   const dsl = getDSL(feature);
   const files = (dsl?.semantic?.files ?? []).slice(0, 40);
+  // 事实的权威只在解析数据（cache.db）——读 fileFacts，不再读 DSL 里的 actual_apis 镜像。
+  // root 取 dsl.source_root；取不到根 / 该文件无事实时，退回意图（expected_apis）。
+  const root = dsl?.source_root;
   const context = files.length
     ? files
-        .map((x) => `- ${x.path}：${x.responsibility ?? ''}${x.actual_apis?.length ? `  API=${x.actual_apis.map((a) => `${a.name}${a.signature ? '(' + a.signature + ')' : ''}`).join(', ')}` : ''}`)
+        .map((x) => {
+          const factSigs = root ? apiSignaturesOf(root, x.path, feature) : [];
+          const sigs = factSigs.length ? factSigs : (x.expected_apis ?? []).map((a) => a.signature).filter(Boolean);
+          return `- ${x.path}：${x.responsibility ?? ''}${sigs.length ? `  API=${sigs.join(', ')}` : ''}`;
+        })
         .join('\n')
     : '（该 feature 暂无语义文件清单）';
   const system =
