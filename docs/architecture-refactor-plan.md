@@ -4682,3 +4682,31 @@ interface Stage<T> {
 (3) **归一 `import_cache_` 两处根** + `health_cache` 改根；
 (4) ★ **抽第一道真工序并接上溯源**：让 `dsl_baseline`/`dsl_live` 的**读者**在缺时自动 `ensureStage`；
 (5) `Stage` 表加门：每份数据必须声明 `owner` + `inputs` + `fresh`。
+
+---
+
+### 44.21 ★★ 「区set」认错 + 两份数据与绑定点 + `import_cache_` 归一（2026-10-01）
+
+#### ★★ 认错：用户最早说的「区set / QSET」= **那份 tree-sitter 解析数据**（`cache.db`），我一直当成了 DSL
+他这次说清：「一份是 **DSL 的数据**，一份是**同步的那个整个的 tree-sitter 解析的数据**」。⇒ 上一笔把它当 DSL 是错的。
+
+#### 两份数据的评估（`docs/data-ledger.md` 附二）
+① **两份已在且可按精度消费**：`cache.db`（事实/精确）／DSL（意图/大概）⇒ **不是要新做，是现状**。
+② ★★ **绑定点已经在"文件"这一层**：`semantic.files[]` 同一条目里同时放 `expected_apis`（意图）与
+   `actual_apis`（事实，`scaffold action=backfill` 从解析回填）、`actual_deps`（`import_project.ts:1277`）；
+   `detect_drift` 比的就是这一对。⇒ 绑定点 = **文件路径**。
+③ ★ "双向绑定"应改为「**方向明确的双向派生 + 对账**」：代码→DSL / DSL→代码 / 对账（不写）。
+   ★ 纪律：**任一事实都要能回答"权威在哪边"**；两边都可写 = **判据分叉**。
+④ ★ **真缺的是"符号级绑定点"**（现在只到文件级；符号级无稳定键）——
+   与 ④ 的「符号身份 = (file, name)」**同一个根问题**。
+
+#### ★★ 更正：撤回"DSL 三份重复"（本笔**第二次**过度指控）
+读过 `storage.ts` 后确认：`agent-io.json`(**活态**) / `features/<f>.json`(**存档**) / `live/<f>.dsl.json`(**代码现状快照**)
+**是三种语义**（`getDSL` 用 `feature ===` 严格比对才用活态那份），由 `getDSLByView` 的**视图分层**承载 ⇒ **不是重复**。
+★ 规律：**指控"重复"前必须读两侧的语义（视图/生命周期），不能只看"内容像"。**
+  （第一次犯：把 `.agent-io` 的注释当代码数，读数虚高到 136。）
+
+#### 本笔真落的代码（修一处已坐实的硬 bug）
+`import_cache_<feature>.db`：**写侧** `serve.ts:392,441` 从 `process.cwd()` → **`getStorageRoot()`**，
+与 3 个**读侧**（`function_outline.ts:68` / `overview.ts:155` / `derive_mind_map.ts:904`）**同根** ⇒
+**修掉"同名两根 ⇒ 写读不碰面"**。验证：`tsc` 0 ｜ 全量 **237 文件 / 2433 项 / 0 失败**。

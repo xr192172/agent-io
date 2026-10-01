@@ -29,13 +29,22 @@
       · ✅ 账本：19 个数据项的「谁产/谁消（到 file:line）+ 缺了怎么补 + 何时失效」全表；
         **工序清单**（哪道工序缺 `fresh`/缺"唯一产者"）；**剔除清单**（重复/孤儿）。
       **要做的（一笔一刀）**：
-      · (2) **归一 DSL 三份重复**（`features/` ⟷ `<dataHome>/agent-io.json` ⟷ `live/`）——
-        ★ 这正是用户点名的第一条："**DSL 解析 → 实时盯 TTL → 存档**"；
-      · (3) **归一 `import_cache_<feature>.db` 的两处根**（写 `cwd` / 读 `getStorageRoot()` ⇒ 写读不碰面），
-        并把 `health_cache` 的根从 `cwd` 改回 project；
+      · ~~(2) 归一 DSL 三份重复~~ ✗ **撤回**（2026-10-01 读代码后更正）：`agent-io.json`(活态) / `features/<f>.json`(存档) /
+        `live/<f>.dsl.json`(代码现状快照) **不是重复，是三种语义**，由 `getDSLByView` 的视图分层承载。
+        留下的小问题只有：`agent-io.json` 是**全局单文件**（多 feature 只装最后编辑的那个）。
+        ★ 教训：**指控"重复"前必须读两侧的语义（视图/生命周期），不能只看"内容像"**（本笔第二次犯）。
+      · (3a) ✅ **已落**：`import_cache_<feature>.db` 的**写侧**从 `process.cwd()` 改到 `getStorageRoot()`
+        （`serve.ts:392,441`）⇒ 与 3 个读侧（`function_outline.ts:68` / `overview.ts:155` / `derive_mind_map.ts:904`）
+        **同根**，修掉"同名两根 ⇒ 写读不碰面"。
+      · (3b) 待做：`health_cache` 的根从 `cwd` 改回 **project**（`health_cache.ts:27`）；
+        以及**给"根"加门**（每份数据声明 `owner`）。
       · (4) ★ **抽第一道真工序并接上溯源**：让 `dsl_baseline` / `dsl_live` 的**读者**在缺时自动 `ensureStage`
         （现状：只有写侧单点补（`import_project.ts:1479`），读侧拿到 null/404 就完事）；
-      · (5) 给 `Stage` 表加门：**每份数据必须声明 `owner` + `inputs` + `fresh`**（= 之前说的"根的选择"门）。
+      · (5) ★★ **补"符号级绑定点"**（用户 2026-10-01 提的"两份数据双向绑定"的真缺口）：
+        现在两份数据（DSL=意图 / `cache.db`=事实）**只在文件级配对**（`semantic.files[].path` ⟷ `files.path`，
+        且同一条目里 `expected_apis` / `actual_apis` 并存 —— **这已经是现状**）；
+        **符号级没有稳定键**（DSL 侧是 `signature` **文本**、解析侧是 `qualified_name`）⇒ 只能近似匹配。
+        ★ 这与 ④ 的「符号身份 = (file, name)，不是全局唯一 id」是同一个根问题。
       **★ 账本同时暴露的三件现症（都在这一条的范围内）**：
       · **根的分歧**：`getDataHome()` = `AGENT_IO_HOME ?? getPackageRoot()`（`storage.ts:60`，自省包根、与 cwd 无关）
         ⇒ **"每项目一个数据库"目前只对 `cache.db` 成立**（DSL 三态落**包根**、健康缓存落 **`cwd`**、读侧兜底第三个 `cwd`）。

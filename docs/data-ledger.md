@@ -189,3 +189,60 @@ ensureStage(id):
 4. **抽第一道真工序并接上溯源**：让 `dsl_baseline` / `dsl_live` 的**读者**在缺时自动 `ensureStage`
    （现在只有写侧单点补，读侧拿到 null/404 就完事）。
 5. 给 `Stage` 表加一扇门：**每份数据必须声明 `owner` + `inputs` + `fresh`**（这才是 T19 说的"根的选择"门）。
+
+---
+
+# 附二：**两份数据与"绑定点"** —— 用户提议的评估（2026-10-01）
+
+> 用户提议：「是否需要**同时配备两份数据**？一份是 **DSL 的数据**，一份是**同步的那个整个的 tree-sitter 解析的数据**…
+> **有些工具需要精确数据就直接读解析出来的原数据**；**不需要精确、只要了解大概，就给它 DSL 的数据**。
+> 然后**两份数据是双向绑定的**，是否这样会更好？」
+> ★ 并更正我上一轮的误读：他一开始说的「**区set / QSET**」指的是 **那份解析数据**（我一直当成了 DSL）。
+
+## 结论：**方向对，而且大部分已经在跑了**；但"双向绑定"要改一个说法
+
+### ① 两份数据已在，且**已经可以按精度分级消费**
+| 数据 | 层 | 消费者举例 |
+|---|---|---|
+| `cache.db`（`nodes/edges/files/imports`，源自 tree-sitter） | **事实（精确）** | `find_references` / `diff_impact` / `function_outline` / `analyze_monolith` / `observe_points` … |
+| DSL（`semantic.files[]` 等） | **意图（大概）** | `query_feature` / `diff_views` / `detect_drift` / `consistency_check` |
+
+⇒ 你说的"按需选精度"**不是要新做的东西，是现状**。
+
+### ② ★★ 绑定点**已经在"文件"这一层** —— 而且比"两份平等数据互相绑"更准
+`semantic.files[]` 的同一条目里**同时放两侧**：
+- **意图**：`expected_apis`（人/LLM 写；`sync_contracts` 用注册表回填签名）
+- **事实**：`actual_apis`（由 `scaffold action=backfill` **从解析回填**）、`actual_deps`（`import_project.ts:1277` 回填**真实 import 事实**）
+
+⇒ 绑定点 = **文件路径**（`semantic.files[].path` ⟷ `cache.db.files.path`），
+**配对方式 = 同一条目里 expected/actual 并存**；`detect_drift` 比的正是这一对。
+
+### ③ 所以"双向绑定"应改成：**方向明确的双向派生 + 对账**（写权限不能是双向的）
+| 方向 | 谁 | 说明 |
+|---|---|---|
+| 代码 → DSL | `import_project`（生成）、`scaffold action=backfill`（回填 `actual_apis`）、`sync_contracts`（回填签名） | **派生/回填** |
+| DSL → 代码 | `scaffold action=generate` | **生成**（产物应标"生成物"） |
+| 对账（**不写**） | `detect_drift` / `consistency_check` | 只报漂移 |
+
+★ 纪律：**任一时刻都要能回答"这条事实的权威在哪边"** —— 意图侧权威在 DSL，事实侧权威在解析。
+若允许"任一边都能改另一边"，就是本仓头号病根（**判据分叉**）：同一条事实两处可写 ⇒ 必然漂移。
+
+### ④ ★ 真正缺的是**符号级绑定点**
+现在只到**文件级**（`semantic.files[].path`）。符号级**没有稳定键**：
+DSL 侧是 `expected_apis[].signature`（**文本**），解析侧是 `nodes.qualified_name`（**模块级裸名 / `Class.method`**）
+⇒ 只能按名字/文本**近似**匹配。
+★ 这与 ④ 里发现的「**本仓符号身份 = (file, name)，不是全局唯一 id**」是**同一个根问题**。
+⇒ **要补的是"符号级稳定键"**，不是再加一层数据。
+
+## ★ 更正：撤回"DSL 三份重复"（我上一轮的过度指控）
+读过 `storage.ts` 后确认，那三份**不是重复，是三种语义**：
+| 文件 | 语义 |
+|---|---|
+| `<dataHome>/agent-io.json`（`getLiveDslFile`） | **活态**：当前正在编辑的那个 feature（`getDSL` 用 `feature ===` **严格比对**才用） |
+| `<dataHome>/.agent-io/features/<f>.json` | **存档** |
+| `<dataHome>/.agent-io/live/<f>.dsl.json` | **代码现状快照**（只读；供"设计 vs 代码"对比） |
+⇒ 由 `getDSLByView(feature, 'design'|'live')` 的**视图分层**承载。
+★ 因此原计划 **(2) 归一 DSL 三份 —— 撤回**；留下的**小问题**只是：`agent-io.json` 是**全局单文件**
+（多 feature 时只能装"最后编辑的那个"）。
+★ 这是本笔**第二次**因"只看名字/只看调用面"而过度指控"重复"（第一次是 `.agent-io` 字面量）。
+  **规律：指控"重复"之前，必须读两侧的语义（视图/生命周期），不能只看"内容像"。**

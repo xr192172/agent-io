@@ -17,7 +17,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawn, exec } from 'node:child_process';
-import { saveDSL, getDSL, getLiveDslFile, getLiveFeature, onDslChange } from '../../infrastructure/storage.js';
+import { saveDSL, getDSL, getLiveDslFile, getLiveFeature, onDslChange, getStorageRoot } from '../../infrastructure/storage.js';
 import { enableObserveFromEnv } from '../../infrastructure/analysis/observe/run_sentinel.js';
 import { judgeEvent } from '../../infrastructure/analysis/observe/judge.js';
 import { queryObserveLog } from '../../infrastructure/analysis/observe/log_query.js';
@@ -389,7 +389,7 @@ async function handleApiImport(req: http.IncomingMessage, res: http.ServerRespon
         return;
       }
       if (!feature) feature = sanitize(path.basename(abs));
-      const cacheDb = openDb(path.join(process.cwd(), DATA_DIR_NAME, `import_cache_${feature}.db`));
+      const cacheDb = openDb(path.join(getStorageRoot(), `import_cache_${feature}.db`));
       let imp;
       try {
         imp = await importProject({
@@ -438,7 +438,7 @@ async function handleApiImport(req: http.IncomingMessage, res: http.ServerRespon
     }
 
     // 缓存 db 固定位置（跨重复导入增量复用），与项目目录生命周期解耦
-    const cacheDb = openDb(path.join(process.cwd(), DATA_DIR_NAME, `import_cache_${feature}.db`));
+    const cacheDb = openDb(path.join(getStorageRoot(), `import_cache_${feature}.db`));
     let imp;
     try {
       imp = await importProject({
