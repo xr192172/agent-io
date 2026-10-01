@@ -8,7 +8,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { renameSymbol } from '../../src/application/refactor/rename_symbol.js';
+import { renameSymbol } from '../../src/application/refactor/rename_symbol/index.js';
 
 let tmp: string;
 

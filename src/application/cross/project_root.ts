@@ -27,7 +27,7 @@ import path from 'node:path';
 import { execSync } from 'node:child_process';
 import { homedir } from 'node:os';
 import ts from 'typescript';
-import { analyzeModuleSource } from '../refactor/rename_symbol.js';
+import { analyzeModuleSource } from '../refactor/rename_symbol/languages/typescript.js';
 import { parseFileFull, isSupported, isTsJsExt, resolveExistingPath, SOURCE_EXTS, TS_JS_EXTS, type ParsedImport } from '../../infrastructure/parse/index.js';
 import { readGoModules, type GoModule } from '../../infrastructure/graph/import_project.js';
 import { gitAvailable } from '../../infrastructure/exec_guard.js';

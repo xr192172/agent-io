@@ -5184,3 +5184,84 @@ ensureStage(id, ctx)   // derived：已新鲜⇒返回；否则 ⇒ 处理上游
 ① `lane_no_io` 等 **8 扇 lint 形状的门**仍在（该换 ESLint —— 一份规则两个投影：编辑器 + CI）；
 ② serena 那条**语言智能层的差距**（LSP 插件 vs 我们 `[B]` 里的 if-else）至今没动；
 ③ 序列 ④（按族推完 [B] 契约）、⑤（面收敛）、⑥（清过渡物）都还没开始。
+
+### 44.30 ★★ 参考 serena：按语言拆包 + 注册表 —— `rename_symbol` 1920 行 → 9 个文件（2026-10-01）
+
+#### 用户的话（两点，都对）
+
+> 「和参考项目做对比，我是让你**参考他的工具，注册这些**，看看它的**简洁程度**，然后像是**各语言的实现**的话，
+>  **你不要揪在一个文件里**，你应该这样，某某功能实现的某某语言包，每包就是每个功能它都有一个，
+>  如果和语言有关的话，那就要**创一个此功能的文件夹，在这个文件夹里面去放相对应的语言的包**，
+>  这样的话管理起来是不是比你这一个文件放 N 多行要更方便管理」
+
+#### 参考对象与既有先例
+
+- **serena（参考项目）的实际形状**（§32.3 已记）：工具类只做**声明 + 转发**，语言差异**全部下沉到**
+  `src/solidlsp/language_servers/`（几十个 server）⇒ `rename_symbol` 是**一句转发**。
+- ★★ **本仓其实已经有这个形状**：`src/infrastructure/analysis/version_upgrade/adapters/`
+  （`types.ts` 契约 + `registry.ts` 注册表 + `cgo/csharp/node/python*` 每语言一个文件 + `adapterForExt`）。
+  ⇒ **本笔不发明新机制**，是把**既有形状**用到最该用的那一处。
+
+#### 选哪一处：先量再改
+
+自建量具（语言知识密度 = `getParser`/`findLanguageByExt` 调用 ×3 + 语言名字面量 + 语言专属 AST 节点类型 ×2）：
+
+| score | 行数 | 文件 |
+|---|---|---|
+| **94** | **1921** | ★ `src/application/refactor/rename_symbol.ts` |
+| 42 | 1725 | `src/infrastructure/parse/kernel.ts` |
+| 26 | 444 | `parse/ts_slim.ts` |
+| 17 | 701 | `design/brickify.ts` |
+| 14 | 1104 | `design/derive_split.ts` |
+
+⇒ `rename_symbol` **断层第一**（94 vs 42），且它正是 `docs/adding-a-language.md` §2.0 里唯一的「**代码（最重）**」格。
+
+#### 做完的形状
+
+```
+src/application/refactor/rename_symbol/
+  index.ts          ← 对外 API 再导出（21 个导出**逐条核对，零遗漏**）
+  core.ts           ← 语言无关骨架：编排 renameSymbolCore + renameSymbol（**只 findLangPackage 查表**）
+  parts.ts          ← 语言无关接线层：N / Edit / applyEdits / toOps / collectFilesByExt /
+                       stripQuotes / nameInfo / kindNodeTypes / resolveRel / buildNoExt / TS_EXTS
+                       + ★ `LangPackage` / `LangRenameArgs` 契约
+  languages/
+    registry.ts     ← ★★ **注册表**：`LANG_PACKAGES: { exts, rename }[]` + `findLangPackage(ext)`
+    typescript.ts / go.ts / python.ts / csharp.ts / java.ts / c.ts
+```
+
+★ **加一门语言**：写 `languages/<lang>.ts` + 在 `LANG_PACKAGES` 加一行 ⇒ **`core.ts` 一行都不用改**
+（`docs/adding-a-language.md` §2.0 的那一格的分类已从「**代码（最重）**」改判为「**数据（注册表）**」）。
+
+#### ★★★ 核验过程中抓到的三件事（子代理的总结里**都没有**）
+
+子代理的回报很诚实（含"我哪里不是逐字搬"），但它**只跑了 `tsc` + 7 个测试**。我按"不许只信总结"补跑，抓到：
+
+1. **`arch` 从 0 违规 → 15 违规（14 errors）**。根因：**"大家都要用的零件"放错位置就成环** ——
+   语言包和 `core` 都要 `N`/`applyEdits`/…，而它们住在 `core.ts` ⇒ `core → registry → 包 → core`。
+   ⇒ 抽 `parts.ts` 后 **15 → 2**。
+2. **`project_root` import 了 barrel**，把整棵树拉进环 ⇒ 改指**叶子包** `languages/typescript.js` 后 **2 → 1**。
+   剩下这 1 条是**本来就存在**的环（`project_root ⟷ rename_symbol`），只是文件搬了位置 ⇒
+   基线里那条被判 **stale** ⇒ **原地刷新**（18 条不增不减），`arch` 回到 **✔ 0 违规 / EXIT=0**。
+3. **2 处登记表连带**（子代理不可能知道）：`server_registry.consistency.test.ts` 里
+   `rename_file.importedBy` 指向了已删的 `rename_symbol.ts`；以及该门的
+   「同名 `.ts` 文件」判据**认不出"文件夹形式的模块"** ⇒ 泛化为 **文件 or `index.ts` barrel** 两形态都认
+   （★ 这不是放宽判据：`<name>/index.ts` 就是该模块的入口）。
+
+★ **另一个连带是我自己差点造成的**：`languages/types.ts` 只被 `import type` 引用 ⇒ dep-cruiser 判**孤儿**
+（类型导入不算依赖；既有 `version_upgrade/adapters/types.ts` 就是这么进已知清单的）。
+⇒ 并入 `parts.ts`，**不多一个文件、不动架构基线**。
+
+#### 验证
+
+`tsc` 0 ｜ `arch` **322 modules / 0 违规 / 18 已知 / EXIT=0** ｜ 全量 `test:main`
+**234 文件通过 / 1 跳过 ｜ 2423 项通过 / 5 跳过 ｜ 0 失败**（与搬迁前**逐字相同**：2423）。
+rename 族 8 文件 138 项，搬迁前后同为 **138**。
+
+#### ★ 下一刀的地图（同一个形状，还有 5 处）
+
+`docs/adding-a-language.md` §2.0 的 12 格里，**代码驱动**的还剩：
+`package_migration`（#2）｜ `contract_gate`（#4）｜ `extract_contracts`（#5）｜ `behavior_baseline`（#10）｜
+`code_health` 的"未用 import"维度（#11）。
+外加我那份密度扫描的第二梯队：`parse/kernel.ts`(42) / `ts_slim.ts`(26) / `design/brickify.ts`(17) / `design/derive_split.ts`(14)。
+⇒ 每一处都照本笔的三步走：**量密度 → 拆包 + 注册表 → `arch` 必须仍 0 违规**。

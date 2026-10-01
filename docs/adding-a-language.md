@@ -164,7 +164,7 @@ npm run install-package list               # 复核：该行从 '–' 变 '✓'
 |---|---|---|---|---|---|
 | 1 | `ast_parse_skeleton` | `ts_kernel/languages.ts: LANGUAGES` + `ts_kernel/kernel.ts: parseFileFull/traverseAndExtract` + `ts_kernel/probe.ts: isLanguageInstalled` | ★ **数据** | `LANGUAGES` 的 `typescript` 行 | 0 |
 | 2 | `package_migration` | `tools/package_migration.ts: cleanAlias`（分派）→ `goAliasEdits`/`tsAliasEdits`/`pyAliasEdits` + `collect{Go,Ts,Py}{Binds,Usage}` | **代码** | `collectTsBinds` / `collectTsUsage` / `tsAliasEdits` | 49 |
-| 3 | `rename_symbol` | `tools/rename_symbol.ts: renameSymbol`（`defExt` 分派）→ `renameGoSymbol`/`renamePythonSymbol`/`renameNamespaceSymbol`/`renameCSymbol`；TS 走 `analyzeModuleSource` + 主函数内联闭包 | **代码**（最重） | `analyzeModuleSource` + `renameSymbol` 内 TS 主路径 | 46 |
+| 3 | `rename_symbol` | ★★ **数据（注册表）**：`application/refactor/rename_symbol/languages/registry.ts: LANG_PACKAGES`（`ext → LangPackage`）；`core.ts` 只 `findLangPackage(defExt)` 查表 | ★ **数据（注册表）**（2026-10-01 由"代码"改判） | `languages/go.ts: renameGoSymbol`（每语言一个包） | 46 |
 | 4 | `contract_gate` | `tools/contract_gate.ts: langOfFile` → `scanContracts` → `cleanSource`/`collectSymbols`/`langSkipSet`/`collectReferences`/`scanOne` | **代码** | `collectSymbols` 的 ts 分支（默认尾） | 46 |
 | 5 | `extract_contracts` | `tools/extract_contracts.ts: extractContracts` → `parseShapeFields`/`scanConfigKeys`/`collectModuleVars`/`scanEffectCandidates` | **代码** | `scanTsEmits` + TS 默认路径 | 49 |
 | 6 | `version_upgrade_detection` | `version_upgrade/adapters/registry.ts: adapters` 数组 + `adapterForLang`/`adapterForExt`/`adaptersForFile` | ★ **数据（注册表）** | `version_upgrade/adapters/node.ts: nodeAdapter` | 47 |
@@ -175,9 +175,12 @@ npm run install-package list               # 复核：该行从 '–' 变 '✓'
 | 11 | `code_health` | `health/index.ts: estimateComplexity`（查 `COMPLEXITY_BRANCH_NODES`/`COMPLEXITY_LOGIC_NODES` 表）+ `collectImportBinds` | **混合**（复杂度=数据，未用 import=代码） | 表的 `typescript` 行 + `collectImportBinds` ts 分支 | 48 |
 | 12 | `spring_mvc_layering` | `java_refactor/layering.ts: planSpringLayering/extractJavaTypes` + `java_refactor/executor.ts: javaExecutor` | **代码**，且 **Java 专属（设计如此，非缺口）** | 无（不该有） | 54（假缺口） |
 
-> **一句话结论**：#1/#6/#7/#8 是**数据驱动**（改表/加适配器文件），#11 的复杂度维度也是数据驱动；
-> #2/#3/#4/#5/#10 + #11 的未用 import 维度是**代码驱动**（真的要写语言特有逻辑）。
+> **一句话结论**：#1/#6/#7/#8 是**数据驱动**（改表/加适配器文件），**#3 自 2026-10-01 起也是数据驱动**（加一个语言包文件 + 登记一行），#11 的复杂度维度也是数据驱动；
+> #2/#4/#5/#10 + #11 的未用 import 维度是**代码驱动**（真的要写语言特有逻辑）。
 > **523 里约 1/3 是"加表项"级，约 2/3 是真实重活**（精确拆分见 §3.2）。
+> ★ **#3 的改判过程值得照抄**：原来 6 个语言实现挤在一个 1920 行文件里、主函数是 5 条 `if (defExt === …)` 的 if 链
+> ⇒ 加一门语言要**改核心文件**。拆成 `rename_symbol/languages/<lang>.ts` + 一张 `LANG_PACKAGES` 注册表之后，
+> 加一门语言**核心一行不改**（详见 §2.2）。
 
 ---
 
@@ -199,20 +202,29 @@ npm run install-package list               # 复核：该行从 '–' 变 '✓'
 
 ---
 
-### 2.2 `rename_symbol`（代码驱动）★ 成本最高
+### 2.2 `rename_symbol`（★ 2026-10-01 起：**数据驱动**）
 
 | 项 | 内容 |
 |---|---|
-| 分派点 | `tools/rename_symbol.ts: renameSymbol`（L1660 起）—— 按 `defExt` 分派（`defExt === '.go'` / `'.py'` / `'.cs'` / `'.java'` / `'.c'\|'.h'`），TS 系落主路径 |
-| 各语言实现 | `renameGoSymbol` / `renamePythonSymbol` / `renameNamespaceSymbol`（`.cs`+`.java` 共用）/ `renameCSymbol` —— 每个 100–300 行 |
-| **TS 样板** | `analyzeModuleSource`（`rename_symbol.ts` L143 起，单文件模块级作用域解析：root 作用域 + 遮蔽 + import/reexport 边）+ `renameSymbol` 主路径（闭包扩展 `expandClosureDetailed` + importer 解析 + 别名 `loadAliasConfig`） |
-| 要几处 | **2 处**：① 主函数加一个 `defExt === '<ext>'` 分支；② 写一个 `rename<Lang>Symbol`（照 `renameNamespaceSymbol` 抄骨架——它是"命名空间级类型跨文件"的最通用样板） |
-| 判据 | `tests/tools/rename_symbol.test.ts` + 新增该语言的样例对拍（同包裸引用 / 跨包限定引用 / 别名 / 局部遮蔽四类） |
-| 非 TS 落点的提示 | `rename_symbol.ts` L1707（`文件非 TS 系…`）与 L1764（`无可用 TS 解析器…`）—— 这两处是 §6 要升级的提示 |
+| 分派点 | **`application/refactor/rename_symbol/languages/registry.ts: LANG_PACKAGES`** —— ★ **一张表**。`core.ts` 里 `findLangPackage(defExt)` 查表后 `pkg.rename(args)`；**core 零语言知识** |
+| 各语言实现 | `languages/<lang>.ts` **每语言一个文件**：`typescript.ts` / `go.ts` / `python.ts` / `csharp.ts` / `java.ts` / `c.ts` |
+| **TS 样板** | `languages/go.ts: renameGoSymbol`（最通用的"跨文件同名可见性"样板）；`languages/typescript.ts: renameTsSymbol`（TS 家族，最重） |
+| **要几处** | ★★ **1 处新文件 + 1 行登记**：① 写 `languages/<lang>.ts`（导出 `rename<Lang>Symbol(args: LangRenameArgs)`），② 在 `LANG_PACKAGES` 加一行 `{ exts: ['.xx'], rename: renameXxxSymbol }`。**`core.ts` 一行都不用改**（2026-10-01 之前是"改主函数的 if 链 + 写实现"两处，且每次都要重跑全量+更新基线） |
+| 契约 | `parts.ts` 的 `LangRenameArgs` / `LangPackage`（语言无关接线层；**不是** `languages/types.ts` —— 那样会被 dep-cruiser 判孤儿，见该文件的注释） |
+| 判据 | `tests/tools/rename_symbol.test.ts` + 新增该语言的样例对拍（同包裸引用 / 跨包限定引用 / 别名 / 局部遮蔽四类）+ **`npm run arch` 必须仍 0 违规** |
+| 非 TS 落点的提示 | `core.ts` 的 `文件非 TS 系（…）` 与 `languages/typescript.ts` 的 `无可用 TS 解析器…` —— 这两处是 §6 要升级的提示 |
 
-**点破**：`renameNamespaceSymbol` 的入参是 `{..., ext: '.cs' | '.java'}` —— 即**同一套逻辑用 ext 参数化**。
-后面补 kotlin/swift 这类"包/命名空间 + 类型跨文件"的语言，可**再复用这一份**（不是每次重写）。
-`renameGoSymbol`（296 行）与 `renamePythonSymbol`（119 行）各自处理了本语言的同模块可见性规则，不宜硬套。
+**点破**（2026-10-01 拆分后）：`renameNamespaceSymbol` 仍在 `languages/java.ts` 里，**被 `.cs` 与 `.java` 两个包共用**（同一个 `LangPackage` 挂两个 ext，或两行登记同一实现）
+—— 即**同一套逻辑用 ext 参数化**。后面补 kotlin/swift 这类"包/命名空间 + 类型跨文件"的语言，**再复用这一份**（不是每次重写）。
+`renameGoSymbol` 与 `renamePythonSymbol` 各自处理了本语言的同模块可见性规则，不宜硬套。
+
+★ **拆分时踩到的两个坑**（照抄形状时别重踩）：
+1. **"大家都要用的零件"放错位置就成环**：语言包和 `core` 都要用的 `N` / `applyEdits` / `collectFilesByExt` 等，
+   原来住在 `core.ts` ⇒ `core → registry → 语言包 → core`，`arch` 一次报 **9 条 no-circular**。
+   抽到 `parts.ts` 后回边消失（`core → parts`、`包 → parts`）。**判据：`npm run arch` 必须 0 违规**。
+2. **`project_root` 不要 import barrel**：它只要 `analyzeModuleSource`，却 import 了 `rename_symbol/index.js`
+   ⇒ 把整棵树拉进环。改指**叶子包** `rename_symbol/languages/typescript.js` 后，环从 3 条收缩为**原本就存在的那 1 条**
+   （`project_root ⟷ rename_symbol`，本就登记在 `.dependency-cruiser-known-violations.json` 里）。
 
 ---
 

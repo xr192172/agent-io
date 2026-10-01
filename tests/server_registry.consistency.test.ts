@@ -35,8 +35,27 @@ function findUnder(dir: string, fileName: string): string | null {
 }
 /** 按 basename（不含 .ts）在 `src/` 下找实现文件；找不到返回 null */
 function resolveToolFile(name: string): string | null {
-  if (!_findCache.has(name)) _findCache.set(name, findUnder(SRC_DIR, `${name}.ts`));
+  if (!_findCache.has(name)) {
+    // ★ 2026-10-01：模块可以是「单文件」也可以是「文件夹 + index barrel」
+    //   （`rename_symbol` 已按语言拆成文件夹）⇒ 两种形态都认。
+    //   这不是放宽判据：`<name>/index.ts` 就是该模块的入口。
+    _findCache.set(name, findUnder(SRC_DIR, `${name}.ts`) ?? findFolderModule(SRC_DIR, name));
+  }
   return _findCache.get(name) ?? null;
+}
+/** 找「文件夹形式的模块」：某个名为 `name` 的目录下有 `index.ts` */
+function findFolderModule(dir: string, name: string): string | null {
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (!e.isDirectory()) continue;
+    const p = path.join(dir, e.name);
+    if (e.name === name) {
+      const idx = path.join(p, 'index.ts');
+      if (fs.existsSync(idx)) return idx;
+    }
+    const r = findFolderModule(p, name);
+    if (r) return r;
+  }
+  return null;
 }
 /** 「工具实现」现在住的两处：能力线目录 + CLI/HTTP 面 */
 function toolImplBasenames(): string[] {
@@ -203,7 +222,7 @@ const INTERNAL_MODULES: Record<string, { importedBy: string[]; why: string }> = 
     why: 'split_stage（CLI 引擎）的拆分算法实现；explore_code 的 derive_split 分支另走 monolith.buildSplitPreviewDsl',
   },
   rename_file: {
-    importedBy: ['src/application/refactor/rename_files.ts', 'src/application/refactor/rename_symbol.ts'],
+    importedBy: ['src/application/refactor/rename_files.ts', 'src/application/refactor/rename_symbol/languages/typescript.ts'],
     why: '★ 已注册工具 `rename_files` 的**单数引擎**（注册入口是 rename_files.ts）；注册名 ≠ 文件名',
   },
   rename_symbol: {
@@ -378,7 +397,10 @@ describe('INTERNAL_MODULES 登记表自校验（复算，防手抄清单腐烂�
       for (const f of declared) {
         if (!fs.existsSync(path.join(PKG_ROOT, f))) { bad.push(`${name}: importedBy 里的 ${f} 不存在`); continue; }
         const s = fs.readFileSync(path.join(PKG_ROOT, f), 'utf-8');
-        if (!new RegExp(`from '[^']*/${name}\\.js'`).test(s)) bad.push(`${name}: ${f} 其实没有 import 它`);
+        // ★ 2026-10-01：模块可以是「单文件」也可以是「文件夹 + index barrel」（rename_symbol 已按语言拆成文件夹）
+        //   ⇒ 两种形态都算"真的 import 了它"。这**不是放宽判据**：barrel 就是该模块的入口，
+        //   而 `src/application/refactor/rename_symbol/index.js` 与老的 `rename_symbol.js` 是同一个模块。
+        if (!new RegExp(`from '[^']*/${name}(?:/index)?\\.js'`).test(s)) bad.push(`${name}: ${f} 其实没有 import 它`);
       }
     }
     expect(bad, `INTERNAL_MODULES 的 importedBy 与实际不符：\n  ${bad.join('\n  ')}`).toEqual([]);

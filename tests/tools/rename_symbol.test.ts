@@ -13,7 +13,7 @@ import { describe, it, expect } from 'vitest';
 import { mkdtempSync, writeFileSync, readFileSync, rmSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { renameSymbol, analyzeModuleSource, analyzeGoSource, analyzePythonSource } from '../../src/application/refactor/rename_symbol.js';
+import { renameSymbol, analyzeModuleSource, analyzeGoSource, analyzePythonSource } from '../../src/application/refactor/rename_symbol/index.js';
 
 function mkProj(files: Record<string, string>): string {
   const dir = mkdtempSync(path.join(tmpdir(), 'rs-'));

@@ -36,7 +36,7 @@
 import { DATA_DIR_NAME } from '../../infrastructure/data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
-import { renameSymbol, type RenameSymbolInput, type RenameSymbolResult } from './rename_symbol.js';
+import { renameSymbol, type RenameSymbolInput, type RenameSymbolResult } from './rename_symbol/index.js';
 import { renameLocals, type LocalRenameOutcome } from './rename_local.js';
 import { resolveProjectRoot } from '../cross/project_root.js';
 import { createProtectGuard } from './protect.js';

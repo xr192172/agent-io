@@ -2,7 +2,7 @@
   {
     "type": "cycle",
     "from": "src/application/cross/project_root.ts",
-    "to": "src/application/refactor/rename_symbol.ts",
+    "to": "src/application/refactor/rename_symbol/languages/typescript.ts",
     "unresolvedTo": "../refactor/rename_symbol.js",
     "dependencyTypes": [
       "local",
@@ -14,7 +14,7 @@
     },
     "cycle": [
       {
-        "name": "src/application/refactor/rename_symbol.ts",
+        "name": "src/application/refactor/rename_symbol/languages/typescript.ts",
         "dependencyTypes": [
           "local",
           "require"
