@@ -160,8 +160,11 @@ function tryDeriveFeatureTree(feature: string, dsl: { source_root?: string }, ge
   } catch {
     return Promise.resolve(false);
   }
-  const projectDir = dsl.source_root ?? process.cwd();
-  return deriveFeatureTree({ project_dir: projectDir, feature, db, gen_names: genNames })
+  // ★★ 2026-10-01 删兜底：DSL 没记 source_root ⇒ **这件事做不了**（deriveFeatureTree 要靠它把
+  //   相对路径解析成绝对路径）⇒ 如实**放弃**，保持本函数自己的契约（静默失败＝保持平铺）。
+  //   ★ 不用 cwd：cwd 与被分析项目无关，拿它当根 = 把**另一个项目**的路径当成本项目的。
+  if (!dsl.source_root) return Promise.resolve(false);
+  return deriveFeatureTree({ project_dir: dsl.source_root, feature, db, gen_names: genNames })
     .then((r) => r.features.length > 0)
     .catch(() => false)
     .finally(() => db.close());
@@ -197,7 +200,10 @@ async function llmSharedDesc(
   //   但 DSL 路径与索引里的 file_path 可能前缀不一致，故仍按"精确 → 后缀"匹配（该逻辑保留）。
   const apiExact = new Map<string, string[]>();
   const apiSuffix = new Map<string, string>();
-  const root = dsl.source_root ?? process.cwd();
+  // ★★ 2026-10-01 删兜底：DSL 没记 source_root ⇒ **读不到"事实"**（fileFacts 要根）⇒
+  //   这块是**可选增强**（喂 LLM 的签名材料），不是必答项 ⇒ 如实放弃这一块，别拿 cwd 冒充。
+  if (!dsl.source_root) return out;
+  const root = dsl.source_root;
   for (const f of dsl.semantic?.files ?? []) {
     if (!f.path) continue;
     const sigs = fileFacts(root, f.path, dsl.feature)

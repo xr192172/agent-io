@@ -18,7 +18,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { getDSL, saveDSL } from '../storage.js';
+import { getDSL, saveDSL, requireProjectRoot } from '../storage.js';
 import {
   detectArchLayers,
   detectLayerViolations,
@@ -188,8 +188,13 @@ export async function archLayer(input: ArchLayerInput): Promise<ArchLayerResult>
       dslFingerprint(dsl),
       srcFp,
     ]);
-    const cached = readHealthCache<ArchLayerResult>(cacheKey, dsl.source_root ?? process.cwd());
-    if (cached) return cached;
+    // ★★ 2026-10-01 删兜底：**根不知道 ⇒ 这道【可选】的缓存工序跳过**（不拿 cwd 冒充项目根）。
+    //   本模块自己就把 source_root 当可选（上面 srcFp 那行就是 `dsl.source_root ? … : 'noscan'`），
+    //   所以"没有根"是**正常状态**，不是错误 —— 只是读不了缓存而已。
+    if (cacheKey && dsl.source_root) {
+      const cached = readHealthCache<ArchLayerResult>(cacheKey, dsl.source_root);
+      if (cached) return cached;
+    }
   }
 
   const layered = detectArchLayers(dsl, layers);
@@ -259,6 +264,6 @@ export async function archLayer(input: ArchLayerInput): Promise<ArchLayerResult>
     persisted,
     message,
   };
-  if (cacheKey) writeHealthCache(cacheKey, result, dsl.source_root ?? process.cwd());
+  if (cacheKey && dsl.source_root) writeHealthCache(cacheKey, result, dsl.source_root);
   return result;
 }

@@ -68,6 +68,39 @@ export function getStorageRoot(): string {
 }
 
 /**
+ * ★★ 取「**被分析项目的根**」—— 只接受**同语义**的候选，**绝不兜底到 `cwd`**。
+ *
+ * ─────────────────────────────────────────────────────────────
+ * 由来：用户 2026-10-01 一句「**越兜越多**」
+ * ─────────────────────────────────────────────────────────────
+ * `dsl.source_root ?? process.cwd()` 看起来是"退而求其次"，**其实是换题** ——
+ * `cwd` 与被分析项目**没有任何关系**：它不是"更弱的答案"，是**另一个项目的答案**。
+ * 拿它兜底 ⇒ 一个没有索引的项目会**静默读到 `cwd` 那个项目的数据**。
+ * 而且**兜底会自我繁殖**：因为"反正总有一个能用"，就没人去保证**正确的那个**存在。
+ *
+ * ★ 判据（照这个分，**不要照"有没有 `??`"分**）：
+ * | 写法 | 性质 | 处置 |
+ * |---|---|---|
+ * | `baseDir ?? getDataHome()` | **默认值**（dataHome 是这份数据的合法归属，同一件事） | 留 |
+ * | `input.source_root ?? input.project_dir` | **两个来源、一个语义**（都是"被分析项目的根"） | 留 |
+ * | `xxx ?? process.cwd()` | ★★ **换题** | **删掉 ⇒ 改成本函数（硬失败）** |
+ *
+ * ★ 为什么**硬失败**才是对的：**响亮是接上溯源的前提** ——
+ * 只有"缺"得响亮，才知道该补**哪一道工序**（"缺了就往上溯源"那道链 = T19 第 (4) 步）。
+ * 在那之前，"静默给出别人的数据"比"报错"坏得多。
+ */
+export function requireProjectRoot(cands: Record<string, unknown>): string {
+  for (const [label, v] of Object.entries(cands)) {
+    if (typeof v === 'string' && v.trim()) return v;
+  }
+  throw new Error(
+    `缺少「被分析项目的根」：${Object.keys(cands).join(' / ')} 都是空的。\n` +
+      `★ 这里**故意不兜底到 cwd** —— cwd 是"另一个项目"，不是"更弱的答案"。\n` +
+      `请显式传项目根（import_project 会把它持久化进 DSL 的 source_root）。`,
+  );
+}
+
+/**
  * feature 持久化目录：**`<dataHome>/.agent-io/features`**。
  * ★ 2026-10-01 修注释：原文写的是 `<cwd>/.agent-io/features` —— **与实现不符**（实现一直走
  *   `getStorageRoot()` = dataHome）。错注释本身就是一种"判据分叉"：它会让读者照着 `<cwd>` 去读。
@@ -92,6 +125,8 @@ export function getFeatureFile(feature: string): string {
 
 /** 实际 DSL 目录（动态快照）：<dataHome>/.agent-io/live */
 export function getLiveDir(baseDir?: string): string {
+  // ★ `baseDir ?? getDataHome()` 是**默认值**、不是兜底（判据见 `requireProjectRoot` 上方那张表）：
+  //   dataHome 是这份数据的**合法归属**（同一件事），而 `?? process.cwd()` 是**换题**。
   return path.join(baseDir ?? getDataHome(), DATA_DIR_NAME, 'live');
 }
 
@@ -143,6 +178,8 @@ export function getLiveFeature(feature: string, baseDir?: string): DesignDSL | n
  * 与 baseDir 归位规则和 live 一致（watch_project 监听任意项目时传 project_dir）。
  */
 export function getBaselineDir(baseDir?: string): string {
+  // ★ `baseDir ?? getDataHome()` 是**默认值**、不是兜底（判据见 `requireProjectRoot` 上方那张表）：
+  //   dataHome 是这份数据的**合法归属**（同一件事），而 `?? process.cwd()` 是**换题**。
   return path.join(baseDir ?? getDataHome(), DATA_DIR_NAME, 'baseline');
 }
 
@@ -217,6 +254,8 @@ export interface ArchiveEntry {
 
 /** 下线库目录：<baseDir>/.agent-io/archive/<feature>/ */
 export function getArchiveDir(feature: string, baseDir?: string): string {
+  // ★ `baseDir ?? getDataHome()` 是**默认值**、不是兜底（判据见 `requireProjectRoot` 上方那张表）：
+  //   dataHome 是这份数据的**合法归属**（同一件事），而 `?? process.cwd()` 是**换题**。
   return path.join(baseDir ?? getDataHome(), DATA_DIR_NAME, 'archive', feature);
 }
 

@@ -115,19 +115,25 @@ export function featureCacheDbPath(feature: string): string {
 }
 
 /**
- * ③ 候选优先级：`import_cache_<feature>.db`(dataHome) > `<sourceRoot>/.agent-io/cache.db`
- * > `<cwd>/.agent-io/cache.db`，取**第一个存在的**；一个都不存在 ⇒ `null`。
+ * ③ 候选优先级：`import_cache_<feature>.db`(dataHome) > `<sourceRoot>/.agent-io/cache.db`，
+ * 取**第一个存在的**；一个都不存在 ⇒ `null`。
  *
- * ★ 为什么这个顺序必须单点：三级候选是**三个不同的锚**——dataHome = 本进程的导入缓存、
- *   sourceRoot = 被分析的项目、cwd = 兜底。顺序一改，**所有读入口**的命中目标一起变。
+ * ★ 为什么这个顺序必须单点：两级候选是**两个不同的锚**——dataHome = 本进程的导入缓存、
+ *   sourceRoot = 被分析的项目。顺序一改，**所有读入口**的命中目标一起变。
  * ★ 一个候选都没有 ⇒ 返回 null，**不降级**成"用最后一个"（调用方自己决定怎么办）。
+ *
+ * ★★ 2026-10-01 **删掉了原来的第三级候选 `<cwd>/.agent-io/cache.db`**（用户一句「越兜越多」逼出来的）。
+ *   为什么删：`cwd` 与被分析项目**没有任何关系** —— 它不是"更弱的答案"，是**另一个项目的答案**。
+ *   把它当兜底 ⇒ 一个没有自己索引的项目会**静默读到 cwd 那个项目的数据**。
+ *   ★ 而且兜底会**自我繁殖**：因为"反正总有一个能用"，就没人去保证**正确的那个**存在。
+ *   ⇒ 现在**两级就是两级**，都没有就响亮地返回 null（"响亮是接上溯源的前提"，
+ *     见 `storage.ts#requireProjectRoot` 的注释）。
  */
 export function findCacheDb(opts: { feature?: string; sourceRoot?: string } = {}): string | null {
   const { feature, sourceRoot } = opts;
   const candidates = [
     feature ? featureCacheDbPath(feature) : '',
     sourceRoot ? projectCacheDbPath(sourceRoot) : '',
-    projectCacheDbPath(process.cwd()),
   ];
   return candidates.find((p) => p && fs.existsSync(p)) ?? null;
 }

@@ -27,7 +27,7 @@ import { z } from 'zod';
 import { requireStr, wrapData } from '../plumbing.js';
 import path from 'node:path';
 import { getProjectCacheDb } from '../../infrastructure/index/db.js';
-import { getDSL } from '../../infrastructure/storage.js';
+import { getDSL, requireProjectRoot } from '../../infrastructure/storage.js';
 import { proposeChange } from './code_workbench.js';
 import { importProject } from '../../infrastructure/graph/import_project.js';
 import type { ImportProjectInput } from '../../infrastructure/graph/import_project.js';
@@ -383,7 +383,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
         let project_dir = typeof a.project_dir === 'string' && a.project_dir ? a.project_dir : '';
         if (!project_dir) {
           const dsl = getDSL(feature);
-          project_dir = dsl?.source_root ?? process.cwd();
+          project_dir = requireProjectRoot({ 'dsl.source_root': dsl?.source_root });
         }
         const r = await proposeChange({
           kind: 'dsl_intent',

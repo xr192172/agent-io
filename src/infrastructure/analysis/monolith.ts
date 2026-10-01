@@ -19,7 +19,7 @@ import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { DesignDSL, Node, Edge } from '../../domain/types.js';
-import { getDSL, saveDSL } from '../storage.js';
+import { getDSL, saveDSL, requireProjectRoot } from '../storage.js';
 import { parseFileFull } from '../parse/index.js';
 import { getProjectView } from '../parse/project_view.js'; // ★ §19②
 import type { ParsedSymbol } from '../parse/index.js';
@@ -676,7 +676,7 @@ export async function checkMonolith(input: CheckMonolithInput): Promise<CheckMon
     const dsl = getDSL(input.feature);
     if (!dsl) throw new Error(`feature 不存在: ${input.feature}`);
     // 源码根回退链：显式 base_dir > DSL.source_root（导入时持久化的源码快照）> cwd
-    const baseDir = path.resolve(input.base_dir ?? dsl.source_root ?? process.cwd());
+    const baseDir = path.resolve(requireProjectRoot({ base_dir: input.base_dir, 'dsl.source_root': dsl.source_root }));
     const files = (dsl.semantic?.files ?? []).slice(0, maxFiles);
     for (const sf of files) {
       const abs = path.resolve(baseDir, sf.path);
@@ -710,10 +710,15 @@ export async function checkMonolith(input: CheckMonolithInput): Promise<CheckMon
       maxFiles,
       fp,
     ]);
-    // ★ T19：根由调用方显式给（不传就用 cwd —— 这与旧行为一致，但**在调用点可见**）
-    const cacheRoot = input.project_dir ?? process.cwd();
-    const cached = readHealthCache<CheckMonolithResult>(cacheKey, cacheRoot);
-    if (cached) return cached;
+    // ★★ 2026-10-01 删兜底：**根不知道 ⇒ 这道【可选】的缓存工序跳过**。
+    //   `project_dir` 在 files 模式下**本来就可选**（见输入类型 `project_dir?: string`），
+    //   所以"没有根"是正常状态 ⇒ 不读缓存即可；**绝不拿 cwd 冒充项目根**。
+    if (input.project_dir) {
+      const cached = readHealthCache<CheckMonolithResult>(cacheKey, input.project_dir);
+      if (cached) return cached;
+    } else {
+      cacheKey = null; // 没根 ⇒ 连 key 也不留，写侧就不会用 undefined 去写
+    }
   }
 
   // 逐文件分析
@@ -776,6 +781,6 @@ export async function checkMonolith(input: CheckMonolithInput): Promise<CheckMon
     reports: oversized,
     preview_feature: previewFeature,
   };
-  if (cacheKey) writeHealthCache(cacheKey, result, input.project_dir ?? process.cwd());
+  if (cacheKey && input.project_dir) writeHealthCache(cacheKey, result, input.project_dir);
   return result;
 }

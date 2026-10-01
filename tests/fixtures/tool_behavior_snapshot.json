@@ -91,7 +91,7 @@
   },
   {
     "name": "feature_line",
-    "text": "功能线总览（1 个功能）：\n  - （未归类）：入口 RunDSLCLI，主链 2 步\n---DATA---\n{\"ok\":true,\"features\":[{\"feature\":\"（未归类）\",\"entry\":\"RunDSLCLI\",\"steps\":2}]}",
+    "text": "功能线不可用：未找到函数索引（cache.db / import_cache_*.db）——本视图按 feature 取索引：对本项目跑一次带 feature 的 import_project（或任一读入口）即可建立。\n---DATA---\n{\"ok\":false,\"note\":\"未找到函数索引（cache.db / import_cache_*.db）——本视图按 feature 取索引：对本项目跑一次带 feature 的 import_project（或任一读入口）即可建立。\"}",
     "isError": false
   },
   {

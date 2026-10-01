@@ -19,7 +19,7 @@ import { checkGoObserveDeps, goReportSummary, instrumentGoProject, isGoProject, 
 import { buildProbeLedger, clearProbeLedger, collectTsFiles, instrumentProject, ledgerSummary, restoreInstrumented, saveProbeLedger } from '../infrastructure/analysis/observe/instrument.js';
 import { judgeEvents, judgeEventsWithLLM, normalizeEvents, renderJudgeReport } from '../infrastructure/analysis/observe/judge_service.js';
 import { queryObserveLog } from '../infrastructure/analysis/observe/log_query.js';
-import { getDSLByView, getLiveDir } from '../infrastructure/storage.js';
+import { getDSLByView, getLiveDir, requireProjectRoot } from '../infrastructure/storage.js';
 import { archiveNode, listArchive } from './meta/archive_node.js';
 import { checkConsistency } from './design/consistency.js';
 import { deriveMindMap } from './meta/derive_mind_map.js';
@@ -385,7 +385,7 @@ export const reconcileChainHandler = wrapData(async (a) => {
   const r = await reconcileChain({
     feature: String(input.feature),
     node_id: String(input.node_id),
-    project_dir: String(input.project_dir ?? process.cwd()),
+    project_dir: requireProjectRoot({ project_dir: input.project_dir }),
     events_files: Array.isArray(input.events_files) ? (input.events_files as string[]) : undefined,
     force: input.force === true,
     max_steps: typeof input.max_steps === 'number' ? input.max_steps : undefined,

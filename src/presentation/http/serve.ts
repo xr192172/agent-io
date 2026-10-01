@@ -899,8 +899,13 @@ async function handleApiFunctionRun(req: http.IncomingMessage, res: http.ServerR
       sendError(res, 400, `node_id 需形如 "相对路径/文件#函数名"，收到 "${node_id}"`);
       return;
     }
-    const root = sourceRoot ?? process.cwd();
-    const filePath = path.join(root, fileRel.replace(/\//g, path.sep));
+    // ★★ 2026-10-01 删兜底：没有 source_root ⇒ **不知道去哪个项目找** ⇒ 明确 400。
+    //   绝不拿 cwd 冒充 —— cwd 与被分析项目无关，那样会在**另一个项目**里找同名的文件并找错。
+    if (!sourceRoot) {
+      sendError(res, 400, '缺 source_root：不知道在哪个项目里找这个函数（这里**故意不兜底到 cwd**）');
+      return;
+    }
+    const filePath = path.join(sourceRoot, fileRel.replace(/\//g, path.sep));
     if (!fs.existsSync(filePath)) {
       sendError(res, 404, `函数对应源文件不存在：${filePath}`);
       return;
@@ -962,8 +967,13 @@ async function handleApiFunctionExample(req: http.IncomingMessage, res: http.Ser
       sendError(res, 400, `node_id 需形如 "相对路径/文件#函数名"`);
       return;
     }
-    const root = sourceRoot ?? process.cwd();
-    const filePath = path.join(root, fileRel.replace(/\//g, path.sep));
+    // ★★ 2026-10-01 删兜底：没有 source_root ⇒ **不知道去哪个项目找** ⇒ 明确 400。
+    //   绝不拿 cwd 冒充 —— cwd 与被分析项目无关，那样会在**另一个项目**里找同名的文件并找错。
+    if (!sourceRoot) {
+      sendError(res, 400, '缺 source_root：不知道在哪个项目里找这个函数（这里**故意不兜底到 cwd**）');
+      return;
+    }
+    const filePath = path.join(sourceRoot, fileRel.replace(/\//g, path.sep));
     if (!fs.existsSync(filePath)) {
       sendError(res, 404, `函数对应源文件不存在：${filePath}`);
       return;
