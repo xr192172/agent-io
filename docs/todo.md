@@ -15,6 +15,25 @@
 
 ## 待做
 
+- [ ] **T20 ★★★ 摘掉"事实镜像"：意图册只放意图；一致性靠"编辑时强制读双份"（用户 2026-10-01 指出）**
+      *(核实：2026-10-01 —— `docs/data-ledger.md` **附三**；台账 §44.22。)*
+      ⇒ 用户原话：「**意图册有三项东西，但是有一项东西其实本身就是代码的权威吧**。…编辑人都是同一个，
+      他当然知道自己编辑的是哪一份了。**你只需要在他编辑的时候，让他强制读完双编**不就可以了吗？」
+      ⇒ **定性（已取证）**：`expected_apis` = **意图**（权威在 DSL）；`actual_apis`（`backfill.ts:287` 写）与
+      `actual_deps`（`import_project.ts:1856` 写，注释自陈"**语义层持有真实 import 事实**"）= ★★ **代码的权威**，
+      却**镜像进意图册** ⇒ **第二份可写副本 = 判据分叉的温床**。
+      ⇒ ★ **好消息**：`detect_drift` 跑 `checkConsistency` **直接对代码**（`detect_drift.ts:8`）⇒ **摘镜像不伤对账**。
+      ⇒ ★★ **推论**：`scaffold action=backfill` 的**全部存在意义 = 维护这份镜像** ⇒ 镜像去掉它就该**剔除**。
+      **施工顺序（不能反）**：
+      · (1) **先改读者**（5 处读镜像 → 改读解析数据 `cache.db`）：`derive_mind_map:122,123,2112,2125`、
+        `overview:204`、`query_feature:563,581,615,618`、`opl:322,407`、`archify_semantics:92`；
+      · (2) **再摘字段**：`actual_apis` / `actual_deps` 从 `domain/semantic.ts` 与 DSL schema 移除；
+      · (3) **最后删产者**：`scaffold action=backfill`；`import_project` 里回填 `actual_deps` 的那段；
+      · (4) **加 `edit_dsl` 的"先读后改"门**（本仓已有同款：`explore_code action=read` 是 `edit_code` 的前置，
+        `explore_code.ts:312`）⇒ 改 `semantic.files` 前**必须已读该文件的事实**（现取）；
+        ★ 复用 `evidence`/L4 那条已有机制，**不另发明**。
+      ★ 验收：DSL 里不再有"事实"字段；`scaffold` 只剩 `generate`；漂移在**编辑入口**被挡（而不是事后靠 `detect_drift` 发现）。
+
 - [ ] **T19 ★★★ 数据流水账 → 工序模型（Stage）：剔除重复 + 抽出"每份数据的加工工序"作为真接口**
       *(核实：2026-10-01 —— **`docs/data-ledger.md`**（账本主表 + **附：工序模型** 章节）；台账 §44.19/§44.20。)*
       ⇒ ★★ **用户的纠正（要认账）**：§19 他说"抽接口"，我理解成"抽 [B] 纯函数"，据此得出"实测无事可做 ⇒ 撤销"——

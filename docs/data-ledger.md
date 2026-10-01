@@ -246,3 +246,57 @@ DSL 侧是 `expected_apis[].signature`（**文本**），解析侧是 `nodes.qua
 （多 feature 时只能装"最后编辑的那个"）。
 ★ 这是本笔**第二次**因"只看名字/只看调用面"而过度指控"重复"（第一次是 `.agent-io` 字面量）。
   **规律：指控"重复"之前，必须读两侧的语义（视图/生命周期），不能只看"内容像"。**
+
+---
+
+# 附三：**意图 vs 事实** —— "意图册里有一项本来就是代码的权威"（用户 2026-10-01 指出）
+
+> 用户原话：「**意图册有三项东西，但是有一项东西其实本身就是代码的权威吧**。
+> 然后…**主要是编辑人都是同一个**，他当然知道自己编辑的是哪一份了。
+> **你只需要在他编辑的时候，让他强制读完双编**不就可以了吗？」
+
+## ① 三项的定性（取证）
+
+| 项 | 权威在**哪边** | 现在**存在哪** | 谁写 |
+|---|---|---|---|
+| `semantic.files[].expected_apis` | ★ **意图**（人/LLM） | DSL | `sync_contracts`（回填**签名**）/ `edit_dsl` |
+| `semantic.files[].actual_apis` | ★★ **代码**（tree-sitter 解析） | **DSL（镜像！）** | `scaffold action=backfill`（`backfill.ts:287`） |
+| `semantic.files[].actual_deps` | ★★ **代码** | **DSL（镜像！）** | `import_project`（`import_project.ts:1856`，注释自陈"**语义层持有真实 import 事实**"） |
+
+⇒ **你说对了**：三项里有**两项**（`actual_*`）**本来就是代码的权威**，却被**镜像进意图册**。
+而**镜像 = 第二份可写副本 = 判据分叉的温床**（本仓头号病根）。
+
+## ② 好消息：对账**不依赖**镜像
+`detect_drift` 跑的是 `checkConsistency` **直接对代码**（`detect_drift.ts:8`："expected_apis vs 实际代码"）
+⇒ **摘掉镜像不会伤对账** ✓
+
+## ③ 镜像的读者（= 迁移清单，摘字段前必须先改它们）
+
+| 读者 | 位置 | 读它做什么 |
+|---|---|---|
+| `derive_mind_map` | `:122,123,2112,2125` | mind map 的 `apis` / `actual_deps`（★ 已写 `actual_apis ?? expected_apis` **降级**） |
+| `overview` | `:204` | 摘要里的 API 签名材料 |
+| `query_feature` | `:563,581,615,618` | 查询返回的 `actualCount` 与清单 |
+| `opl` | `:322,407` | raw view 与渲染文案 |
+| `archify_semantics` | `:92` | 用 `actual_deps` 建**真实 import 边** |
+
+⇒ 它们改读**解析数据**（`cache.db`）即可 —— 那本来就是事实的所在地。
+
+## ④ ★★ 一个漂亮的推论：**`scaffold action=backfill` 整个存在意义 = 维护这份镜像**
+`backfill` 的职责就是"LLM 写完代码后，解析实现文件把签名回填到 DSL 的 `actual_apis`"（`design/index.ts:213`）
+—— **镜像去掉，它就没有存在意义了** ⇒ 按"无下游不做兼容层、不留墓碑"⇒ **应剔除**。
+★ 这正是你说的「**剔除**」：不是把镜像改名，是**把它和它的产者一起拿掉**。
+
+## ⑤ ★★ 一致性怎么保证：靠**编辑时强制读双份**，不靠"双向同步"
+你的判断：**编辑人是同一个，他知道自己改的是哪一份** ⇒ 不需要同步机制。
+⇒ **一致性 = 一个"先读后改"的门**：
+- 本仓**已有同款**：`explore_code action=read` 是 `edit_code` 的"**先读后改**"前置（`explore_code.ts:312`）；
+- ⇒ 给 **`edit_dsl` 也加同款前置**：改 `semantic.files` 前**必须已读该文件的事实**（从解析数据现取）。
+★ 这样**没有任何"两份数据要同步"的状态**：意图权威在 DSL、事实权威在解析，
+  **编辑者每次都在看到事实的前提下写意图** ⇒ **漂移在入口就被挡住**（而不是事后靠 `detect_drift` 发现）。
+
+## ⑥ 施工顺序（**不能反**）
+1. **先改读者**（5 处读镜像 → 改读解析数据）——否则摘字段后它们读空；
+2. **再摘字段**（`actual_apis` / `actual_deps` 从 `domain/semantic.ts` 与 DSL schema 移除）；
+3. **最后删产者**（`scaffold action=backfill`；`import_project` 里回填 `actual_deps` 的那段）；
+4. **加 `edit_dsl` 的"先读后改"门**（与 `edit_code` 同款；复用 `evidence`/L4 那条机制而不是另发明）。
