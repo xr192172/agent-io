@@ -52,7 +52,7 @@
     "doctor": "node scripts/setup.mjs --doctor",
     "rebuild": "node scripts/rebuild_feature.mjs",
     "translate": "node dist/src/presentation/cli/translate_cli.js",
-    "dogfood": "node dist/src/tools/dogfood_stats.js",
+    "dogfood": "node dist/src/infrastructure/dogfood_stats.js",
     "brickify": "node dist/src/presentation/cli/brickify_cli.js",
     "signal-review": "node dist/src/presentation/cli/signal_review_cli.js",
     "split-stage": "node dist/src/presentation/cli/split_stage_cli.js",

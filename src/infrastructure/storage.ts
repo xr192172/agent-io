@@ -242,17 +242,6 @@ export function saveArchiveEntry(entry: ArchiveEntry, baseDir?: string): string 
   return id;
 }
 
-/** 读取单个归档条目，不存在返回 null */
-export function getArchiveEntry(feature: string, entryId: string, baseDir?: string): ArchiveEntry | null {
-  const file = getArchiveEntryFile(feature, entryId, baseDir);
-  if (!fs.existsSync(file)) return null;
-  try {
-    return JSON.parse(fs.readFileSync(file, 'utf-8')) as ArchiveEntry;
-  } catch {
-    return null;
-  }
-}
-
 /** 列出某 feature 的全部归档条目（无则空数组） */
 export function listArchiveEntries(feature: string, baseDir?: string): ArchiveEntry[] {
   const dir = getArchiveDir(feature, baseDir);
@@ -398,12 +387,6 @@ export function listFeatures(): DesignDSL[] {
     }
   }
   return dsls.sort((a, b) => a.feature.localeCompare(b.feature));
-}
-
-/** 删除 feature（用于测试清理） */
-export function deleteDSL(feature: string): void {
-  const file = getFeatureFile(feature);
-  if (fs.existsSync(file)) fs.unlinkSync(file);
 }
 
 /**

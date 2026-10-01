@@ -112,3 +112,80 @@ process.env.AGENT_IO_HOME  ??  getPackageRoot()（自省包根，与 cwd 无关�
 2. 修两处**功能级断裂**（`setup.mjs` 的 camera→observe；env 名统一/桥接）。
 3. `import_cache_` 的同名两根合一。
 4. 加一扇**"根的选择"门**（不是"字面量门" —— 实测字面量已单点）。
+
+---
+
+# 附：**工序模型（Stage）** —— 把账本变成"缺了就往上溯源"的链
+
+> 用户原话（2026-10-01）：「有很多**单向的单写或者单读者**功能被重复实现了…
+> 你就只需要**剔除**，并且**抽**，就是**抽出来这一部分功能，把它作为真正的接口**。…
+> 只要**每一项数据的这个形成是正确的**就行了。比如最开始最基础就是 **DSL 的解析**，解析之后我们要实时的
+> **盯 TTL**，把解析数据**存档**起来；然后每一个功能要怎么样，就**在它上面加一步、再加一步、再加一步**；
+> 最后我们只需要把这里面产生的数据**转发出来**即可。**这个数据没有，就往上面去溯源上一级的加工工序**，再往上这样溯源。」
+>
+> ★ 这也是**对我 §19 那次"抽接口"的纠正**：我当时把"接口"理解成"抽 [B] 纯函数"，于是得出"实测无事可做 ⇒ 撤销"。
+> **抽错了对象**。要抽的是**每一份数据的加工工序**（上面那句话里的"加一步"）。
+
+## 形状（一句话：每份数据 = 一道工序）
+
+```ts
+interface Stage<T> {
+  id: string;                    // 数据项 id —— ★ 就是本账本表格里的"数据项"那一列
+  owner: 'project' | 'dataHome' | 'userHome';   // ★ 属于哪个根（**唯一**；对应 T19 的"定根"）
+  inputs: string[];              // 上游数据项 id（★ 溯源图；空数组 = 源工序）
+  fresh(ctx): boolean;           // 新鲜判据（TTL / mtime / 内容指纹 / schema 版本）
+  produce(ctx): Promise<T>;      // 加工（**唯一产者**）
+}
+```
+
+读取 = `ensureStage(id)`：
+
+```
+ensureStage(id):
+  if fresh(id) return read(id)          // 有且新鲜 ⇒ 直接用
+  for up of inputs(id): ensureStage(up) // ★ 缺了就往上溯源上一级加工工序
+  produce(id)                            // 本道工序加工并落盘
+```
+
+⇒ 这正是用户那句「**数据没有，就往上面去溯源上一级的加工工序，再往上溯源**」，
+而且**仓里已经有一道工序天然长这样**：`ensureProjectIndex → ensureFreshIndex → syncFile`
+（`source_files` 变 → 重解析 → 写 `symbol_index`）。所以**不是发明新机制，而是把已有的这一道推广到每一份数据**。
+
+## 工序清单（从本账本导出；★ = 缺东西）
+
+| 工序 id | 根 | 上游 | 新鲜判据 | 唯一产者 | 缺什么 |
+|---|---|---|---|---|---|
+| `source_files` | project | —（源） | mtime | `ProjectView` | ✅ 已是工序形状 |
+| `symbol_index` | project | `source_files` | hash/mtime | `syncFile` | ✅ 已能被 `ensure*` 递归补齐 |
+| `dsl_features`（DSL 解析/存档） | dataHome | —（源） | 文件 mtime | `saveDSL` | ★ 无 fresh 判据（无 TTL） |
+| `dsl_live`（活态快照） | dataHome | `dsl_features` | ★ **无** | `saveLiveFeature`（**产者只有 `import_project`**） | ★★ **缺了没人补**（读者拿到 404） |
+| `dsl_baseline` | dataHome | `dsl_features` | ★ 无 | `ensureBaseline`（**只有 `import_project.ts:1479` 一处调**） | ★★ 缺了只有 import_project 补 |
+| `archive`（下线库） | dataHome | — | 无 | `saveArchiveEntry` | ★ 无 fresh |
+| `code_snapshots` | project | — | 保留最近 20 | `snapshotBeforeWrite` | ✅ 有保留策略 |
+| `behavior_baseline` | project | —（源：跑函数） | ★ 无 | `captureBaseline` | ★ 缺了 `verify` 直接 throw |
+| `health_cache` | ★ **cwd** | `source_files` | mtime 指纹 | `writeHealthCache` | ★★ **唯一已经是 `miss→重算→store` 的**（形状对、**根错**） |
+| `dogfood` | dataHome | — | 无 | `recordDogfoodUsage` | ★ MCP 侧无读者 |
+| `observe_events` | project | —（源：探针） | 无 | `watch_project_tool.ts:348` | ★ 全局单 sink |
+| `observe_ledger` | project | `observe_events` | 无 | `saveProbeLedger` | ★ MCP 只写不读 |
+| `observe_points` | project | `source_files` | 无 | `recommend_observe_points` | ★ 无 reader |
+| `import_cache` | ★ **两个根** | `source_files` | 无 | `serve.ts`(cwd) **/** `function_outline.ts`(包根) | ★★ 同名两根 |
+
+## 剔除清单（"重复实现"与"孤儿"）
+
+| 项 | 判定 | 处置 |
+|---|---|---|
+| `dsl_features` / `<dataHome>/agent-io.json` / `dsl_live` **三份同内容** | 重复 | **归一**：`dsl_features` 为源，`dsl_live` 为派生（带 TTL）；`agent-io.json` 这个"全局单文件"淘汰 |
+| `import_cache_<feature>.db` **两处根** | 重复 | **归一**到 `owner: project` |
+| `health_cache` 用 `cwd` | 根错 | 改为 `owner: project` |
+| `observe_ledger` / `observe_points` / `dogfood`(MCP 侧) | **只写不读** | 要么删，要么接一个消费者（按"每份数据必须有人消"） |
+| `project_metadata` 表 / `getArchiveEntry` / `deleteDSL` / 5 个死导入 | 死物 | ✅ **本笔已剔** |
+
+## 落地顺序（一笔一刀）
+
+1. ✅ **剔死物**（本笔）：`project_metadata` 表、`getArchiveEntry`、`deleteDSL`、`server_registry` 5 个死导入、
+   `package.json` dogfood 脚本路径（**它指向陈旧 dist ⇒ 静默跑旧码**）。
+2. **归一 DSL 三份**（用户点名的第一条：解析 → 盯 TTL → 存档）。
+3. **归一 `import_cache` 两根** + `health_cache` 改根。
+4. **抽第一道真工序并接上溯源**：让 `dsl_baseline` / `dsl_live` 的**读者**在缺时自动 `ensureStage`
+   （现在只有写侧单点补，读侧拿到 null/404 就完事）。
+5. 给 `Stage` 表加一扇门：**每份数据必须声明 `owner` + `inputs` + `fresh`**（这才是 T19 说的"根的选择"门）。

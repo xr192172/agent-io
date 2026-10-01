@@ -4635,3 +4635,50 @@ export async function xxx(input): Promise<TouchedProduct<XResult>> {
 #### 纪律（本笔新增，进"下一次别再犯"）
 > **"每项目一份"这种全局不变量，必须有一处把它写成数据（哪份数据属于哪个根）** ——
 > 否则它会像本笔这样：**四种根并存、同一个文件名被接到两个根、写读不碰面，而且都不红**。
+
+---
+
+### 44.20 ★★★ ④′「抽接口」——**我抽错了对象**（用户纠正）+ 工序模型（Stage）+ 第一刀剔死物（2026-10-01）
+
+#### ★★ 认账：§19 那次"抽接口"，对象错了
+用户原话（本次）：「**这就意味着有很多单向的单写或者单读者功能被重复实现了呀**。那你就只需要**剔除**，
+并且**抽**，就是**抽出来这一部分功能，把它作为真正的接口**。**我之前让你抽接口，就是抽这些东西，但是你没有抽出来**。
+只要**每一项数据的这个形成是正确的**就行了。…最开始最基础就是 **DSL 的解析**，解析之后要实时**盯 TTL**，
+把解析数据**存档**；然后每一个功能要怎么样，就**在它上面加一步、再加一步、再加一步**；
+最后我们只需要把这里面产生的数据**转发出来**即可。**这个数据没有，就往上面去溯源上一级的加工工序**，再往上这样溯源。」
+
+⇒ 我在 §19/§20.2 把"接口"理解成「**抽 [B] 纯函数**」，据此量出"57/64 一对一 ⇒ 无事可做"并**撤销了 ③**。
+**抽错了对象。** 要抽的是**每一份数据的加工工序**（"在上面加一步"）。
+★ 这也解释了为什么当时的量法"看起来很扎实却导出空结论"：**人群选错了**（[B] 不是这个模型的原子，**数据项**才是）。
+
+#### 形状：每份数据 = 一道工序（写进 `docs/data-ledger.md` 的「附：工序模型」）
+```ts
+interface Stage<T> {
+  id: string;                                    // 数据项 id（= 账本表格那一列）
+  owner: 'project' | 'dataHome' | 'userHome';    // 属于哪个根（唯一）
+  inputs: string[];                              // 上游数据项 id（溯源图）
+  fresh(ctx): boolean;                           // TTL / mtime / 内容指纹 / schema 版本
+  produce(ctx): Promise<T>;                      // 加工（唯一产者）
+}
+```
+读 = `ensureStage(id)`：不新鲜 ⇒ **递归 ensure 上游** ⇒ `produce` 落盘。
+★ **不是发明新机制**：`ensureProjectIndex → ensureFreshIndex → syncFile`（`source_files` 变 ⇒ 重解析 ⇒ 写 `symbol_index`）
+**已经天然长这样** ⇒ 把这一道推广到每一份数据即可。
+
+#### 第一刀（本笔已落）：**剔死物**（零风险、且是账本第四/五条的直接产物）
+| 剔了什么 | 依据 |
+|---|---|
+| `project_metadata` 表（`schema.ts`） | 全仓**零读写**（死表） |
+| `getArchiveEntry`（`storage.ts:246`） | 全仓**只有定义** |
+| `deleteDSL`（`storage.ts:404`） | 全仓**只有定义** |
+| `server_registry.ts` 的 5 个死导入 | `listFileSnapshots`/`rollbackFileSnapshot`/`captureBaseline`/`verifyBaseline`/`baselinePathFor` **各只出现 1 次** |
+| `package.json` dogfood 脚本路径 | 原指向 `dist/src/tools/…`；源码已搬 `src/infrastructure/`；**该 dist 还在（陈旧）⇒ 静默跑旧码** |
+
+验证：`tsc` 0 ｜ `arch` 312 modules / 0 违规 ｜ 全量 **237 文件 / 2433 项 / 0 失败**。
+
+#### 后续（一笔一刀，清单 T19）
+(2) **归一 DSL 三份重复**（`features/` ⟷ `<dataHome>/agent-io.json` ⟷ `live/`）—— 用户点名第一条：
+    "**DSL 解析 → 实时盯 TTL → 存档**"；
+(3) **归一 `import_cache_` 两处根** + `health_cache` 改根；
+(4) ★ **抽第一道真工序并接上溯源**：让 `dsl_baseline`/`dsl_live` 的**读者**在缺时自动 `ensureStage`；
+(5) `Stage` 表加门：每份数据必须声明 `owner` + `inputs` + `fresh`。

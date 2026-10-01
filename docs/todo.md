@@ -15,26 +15,38 @@
 
 ## 待做
 
-- [ ] **T19 ★★★ 数据流水账暴露的「根」问题：一份数据只能属于一个根（用户"每项目一存储"的落地前提）**
-      *(核实：2026-10-01 —— 见 `docs/data-ledger.md`（5 份只读盘点 + 我逐条抽验）；台账 §44.19。)*
-      ⇒ ★★ **最要紧**：`getDataHome()` = `AGENT_IO_HOME ?? getPackageRoot()`（`storage.ts:60`）⇒
-      **"每项目一个数据库"目前只对 `cache.db` 成立**；DSL 三态落**包根**、健康缓存落 **`cwd`**、
-      读侧还兜底到第三个 `cwd` ⇒ **三种根并存**。
-      ⇒ **① 定"根"**：每份数据声明它属于哪个根（project / dataHome / 用户主目录），且**同一份数据只能有一个根**。
-      ⇒ **② 修同名两根（硬 bug）**：`import_cache_<feature>.db` —— 写用 `process.cwd()`（`serve.ts:392,441`），
-      读用 `getStorageRoot()`（`function_outline.ts:68`、`overview.ts:155`、`derive_mind_map.ts:904`）
-      ⇒ `cwd ≠ 包根` 时**写读不碰面**。
-      ⇒ **③ 修两处功能级断裂（观测侧）**：
-      · `scripts/setup.mjs:39,264` 仍写 **`.agent/camera`**，而对账读 **`.agent/observe`** ⇒ **完全不重叠**
-        （改名 `camera→observe` 时漏改）；两者都要改到同一个根。
-      · 写端激活 **`OBSERVE_EVENTS_FILE`**（`run_sentinel.ts:26`）vs 读端认 **`DS_OBSERVE_EVENTS`**（`observe_trace.ts:43`）
-        ⇒ **无桥接**，按文档设了也白设。
-      ⇒ **④ 加一扇门**：门要管 **"根的选择"**，**不是**"`.agent-io` 字面量"（实测代码里字面量只有少数几处，
-      136 行命中绝大多数是注释 ⇒ "字面量被抄多份"不是主要问题）。
-      ⇒ **⑤ 顺带清**（各自独立小刀）：死表 `project_metadata`（`schema.ts:197` 零读写）；
-      死导出 `getArchiveEntry`(`storage.ts:246`)/`deleteDSL`(`storage.ts:404`)；
-      `server_registry.ts:26,79` 的 5 个死导入；`package.json:55` dogfood 脚本指向**陈旧 dist**（静默跑旧码）；
-      `embedding_cache` 无失效无淘汰（`semantic_search.ts:162`）。
+- [ ] **T19 ★★★ 数据流水账 → 工序模型（Stage）：剔除重复 + 抽出"每份数据的加工工序"作为真接口**
+      *(核实：2026-10-01 —— **`docs/data-ledger.md`**（账本主表 + **附：工序模型** 章节）；台账 §44.19/§44.20。)*
+      ⇒ ★★ **用户的纠正（要认账）**：§19 他说"抽接口"，我理解成"抽 [B] 纯函数"，据此得出"实测无事可做 ⇒ 撤销"——
+      **抽错了对象**。他要抽的是**每一份数据的加工工序**（他原话："每一个功能就在它上面**加一步**、再加一步"、
+      "这个数据没有，就**往上面去溯源上一级的加工工序**"）。
+      ⇒ **形状**（写进文档）：每份数据 = 一道 `Stage { id, owner(根), inputs(上游), fresh(), produce() }`；
+      读 = `ensureStage(id)`：不新鲜 ⇒ **递归 ensure 上游** ⇒ `produce` 落盘。
+      ★ **不是发明新机制**：`ensureProjectIndex → ensureFreshIndex → syncFile` 这道**已经天然长这样**，把它推广到每一份数据即可。
+      **已经做完的**：
+      · ✅ **第 1 刀：剔死物**——`project_metadata` 死表（`schema.ts` 零读写）、死导出 `getArchiveEntry`/`deleteDSL`、
+        `server_registry.ts` 的 5 个死导入、`package.json` dogfood 脚本路径（原指向**陈旧 dist ⇒ 静默跑旧码**）。
+      · ✅ 账本：19 个数据项的「谁产/谁消（到 file:line）+ 缺了怎么补 + 何时失效」全表；
+        **工序清单**（哪道工序缺 `fresh`/缺"唯一产者"）；**剔除清单**（重复/孤儿）。
+      **要做的（一笔一刀）**：
+      · (2) **归一 DSL 三份重复**（`features/` ⟷ `<dataHome>/agent-io.json` ⟷ `live/`）——
+        ★ 这正是用户点名的第一条："**DSL 解析 → 实时盯 TTL → 存档**"；
+      · (3) **归一 `import_cache_<feature>.db` 的两处根**（写 `cwd` / 读 `getStorageRoot()` ⇒ 写读不碰面），
+        并把 `health_cache` 的根从 `cwd` 改回 project；
+      · (4) ★ **抽第一道真工序并接上溯源**：让 `dsl_baseline` / `dsl_live` 的**读者**在缺时自动 `ensureStage`
+        （现状：只有写侧单点补（`import_project.ts:1479`），读侧拿到 null/404 就完事）；
+      · (5) 给 `Stage` 表加门：**每份数据必须声明 `owner` + `inputs` + `fresh`**（= 之前说的"根的选择"门）。
+      **★ 账本同时暴露的三件现症（都在这一条的范围内）**：
+      · **根的分歧**：`getDataHome()` = `AGENT_IO_HOME ?? getPackageRoot()`（`storage.ts:60`，自省包根、与 cwd 无关）
+        ⇒ **"每项目一个数据库"目前只对 `cache.db` 成立**（DSL 三态落**包根**、健康缓存落 **`cwd`**、读侧兜底第三个 `cwd`）。
+      · **两处观测侧功能级断裂**（与"根"同源，但要单独修）：
+        (a) `scripts/setup.mjs:39,264` 仍写 **`.agent/camera`**，对账读 **`.agent/observe`** ⇒ **完全不重叠**
+            ⇒ 官方流程产的事件，`reconcile_*` **永远发现不了**（改名 `camera→observe` 时 setup 漏改）；
+        (b) 写端激活 **`OBSERVE_EVENTS_FILE`**（`run_sentinel.ts:26`）vs 读端认 **`DS_OBSERVE_EVENTS`**（`observe_trace.ts:43`）
+            ⇒ **无桥接**，按文档设了也白设。
+      · **`embedding_cache` 无失效无淘汰**（`semantic_search.ts:162`）。
+      ★ 门要管的是 **"根的选择"**，**不是**"`.agent-io` 字面量"——实测代码里字面量只有少数几处
+      （136 行命中绝大多数是注释）⇒ "字面量被抄多份"不是主要问题。
 
 - [ ] **T18 ★★ ④ [B] 契约形状的落地（术语表已定，按表重构）**
       *(核实：2026-10-01 —— `node scripts/measure_b_contract.mjs --glossary`；台账 §44.15~§44.17。)*

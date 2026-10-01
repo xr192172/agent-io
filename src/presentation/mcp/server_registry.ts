@@ -23,7 +23,6 @@ import { prewarmKernel } from '../../infrastructure/parse/index.js';
 import { scheduleBackfill, backfillState, isIndexIncomplete } from '../../infrastructure/index/index_backfill.js';
 import { renderGranularityNote } from '../../application/refactor/parse_capability.js';
 import { unknownArgHints, renderArgHints } from '../../infrastructure/parse/arg_suggest.js';
-import { listFileSnapshots, rollbackFileSnapshot } from '../../application/refactor/file_snapshot.js';
 import { recommendObservePoints } from '../../application/observe/observe_points.js';
 import { collectPendingAlertText, dispatchDslEdit } from '../../infrastructure/daemon/dispatch.js';
 import { exportSvg, exportMarkdown } from '../../infrastructure/render/export.js';
@@ -76,7 +75,6 @@ import { analyzeImpact, analyzeHubs } from '../../infrastructure/analysis/impact
 import type { ImpactChangePoint } from '../../infrastructure/analysis/impact/index.js';
 import { compareProjects } from '../../infrastructure/analysis/cross_repo/index.js';
 import { precheckHybrid, VERDICT_LABEL } from '../../infrastructure/analysis/hybrid/index.js';
-import { captureBaseline, verifyBaseline, baselinePathFor } from '../../infrastructure/analysis/behavior/index.js';
 import { analyzeHealth } from '../../infrastructure/analysis/health/index.js';
 import { renameFiles } from '../../application/refactor/rename_files.js';
 import { removeDeadImports, removeDeadImportsWithVerify, type RemoveDeadImportsVerifyOptions } from '../../application/refactor/remove_dead_imports.js';
