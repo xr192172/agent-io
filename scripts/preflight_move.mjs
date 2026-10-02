@@ -74,6 +74,24 @@ const CLASS = [
   [/^docs\//, 'doc'],
 ];
 
+/**
+ * ★★ 这一步是 2026-10-02 做 `deadcode/` 小样时被实测逼出来的（工具自己的缺陷）：
+ *   本工具按**名字**扫，于是把"**同名标识符**"也当成了"引用这个文件"。实测反例：
+ *     · `refactor_langs.ts:61`  `export type RefactorStageKind = 'dead_imports' | 'dead_statements' | …`
+ *       —— 那是**联合类型成员**，不是 import；
+ *     · `tests/fixtures/tool_set_snapshot.json` `"dead_statements": {`
+ *       —— 那是 `refactor_pipeline` 的**步骤名**，不是路径。
+ *   ⇒ 判据：**这一行里，名字是不是"贴着路径写"的**（前面有 `/`、或后面跟着 `.ts`/`.js`/`/index`）。
+ *     不是 ⇒ 单列一档 `同名标识符`，**标出来让人判，不混进"必改清单"**。
+ */
+function looksLikePath(line, k) {
+  return (
+    line.includes('/' + k) ||
+    line.includes(k + '/index') ||
+    ['.ts', '.tsx', '.js', '.mjs', '.cjs'].some((e) => line.includes(k + e))
+  );
+}
+
 const hits = [];
 for (const abs of walk(REPO)) {
   const rel = path.relative(REPO, abs).split(path.sep).join('/');
@@ -85,12 +103,17 @@ for (const abs of walk(REPO)) {
     if (!line.includes(key)) return;
     const isImport = /^\s*(import|export)[\s{*]/.test(line) || /^\s*\}?\s*from\s*['"]/.test(line);
     let kind = CLASS.find(([re]) => re.test(rel))?.[1] ?? (rel.startsWith('src/') ? 'src-other' : 'other');
-    if (isImport && (rel.startsWith('src/') || rel.startsWith('tests/'))) kind = 'tsc-import';
+    if (!looksLikePath(line, key)) {
+      // ★ 名字出现了，但**不是贴着路径写的** ⇒ 多半是运行时标识符（步骤名 / 联合类型成员 / 标题文案）
+      kind = '同名标识符(多半不是路径 · 需人判)';
+    } else if (isImport && (rel.startsWith('src/') || rel.startsWith('tests/'))) {
+      kind = 'tsc-import';
+    }
     hits.push({ rel, line: i + 1, kind, text: line.trim().slice(0, 150) });
   });
 }
 
-const ORDER = ['★ registry(钩子/脚本)', '★ registry(夹具)', '★ registry(架构基线)', 'tsc-import', 'test-ref', 'src-other', 'other', 'doc'];
+const ORDER = ['★ registry(钩子/脚本)', '★ registry(夹具)', '★ registry(架构基线)', 'tsc-import', 'test-ref', 'src-other', 'other', 'doc', '同名标识符(多半不是路径 · 需人判)'];
 const groups = new Map(ORDER.map((k) => [k, []]));
 for (const h of hits) (groups.get(h.kind) ?? groups.set(h.kind, []).get(h.kind)).push(h);
 
@@ -106,7 +129,12 @@ for (const k of [...ORDER, ...[...groups.keys()].filter((x) => !ORDER.includes(x
   console.log();
 }
 const danger = hits.filter((h) => h.kind.startsWith('★'));
-console.log(`小结：${hits.length} 处引用；其中 ★ **tsc 与测试都抓不到** 的 ${danger.length} 处 ——`);
+const sameName = groups.get('同名标识符(多半不是路径 · 需人判)') ?? [];
+console.log(
+  `小结：${hits.length} 处出现；其中 ★ **tsc 与测试都抓不到** 的 ${danger.length} 处` +
+    (sameName.length ? `，另有 ${sameName.length} 处是**同名标识符**（多半不是路径，需人判）` : '') +
+    ' ——',
+);
 console.log(
   danger.length
     ? '⇒ 这些必须在动手前逐个确认：钩子里的会**挡下提交**；基线里的会让 `arch` 判 stale；夹具里的会让门红。'

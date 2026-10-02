@@ -12,7 +12,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect, afterAll, vi } from 'vitest';
-import { detectUnreachableRunsInSource, applyReachabilityRuns, flagDeadStatements, removeDeadStatements } from '../../src/infrastructure/analysis/dead_statements.js';
+import { detectUnreachableRunsInSource, applyReachabilityRuns, flagDeadStatements, removeDeadStatements } from '../../src/infrastructure/analysis/deadcode/dead_statements.js';
 
 const roots: string[] = [];
 afterAll(() => {

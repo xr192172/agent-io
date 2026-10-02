@@ -23,9 +23,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { defaultVerifyCommands, runVerification, type VerifyCommand, type VerificationOutcome } from '../../infrastructure/verify_refactor.js';
-import { flagDeadStatements, applyReachabilityRuns } from '../../infrastructure/analysis/dead_statements.js';
+import { flagDeadStatements, applyReachabilityRuns } from '../../infrastructure/analysis/deadcode/dead_statements.js';
 import { removeImportsFromSource } from './remove_dead_imports.js';
-import { detectDeadImports } from '../../infrastructure/analysis/detect_dead_imports.js';
+import { detectDeadImports } from '../../infrastructure/analysis/deadcode/detect_dead_imports.js';
 import { computeMigrationPlan } from './package_migration/index.js';
 import { parseAstRoot } from '../../infrastructure/parse/index.js';
 import {

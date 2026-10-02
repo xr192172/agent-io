@@ -25,7 +25,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { scanSourceFiles, featureIdOf, sideOfLayer, type FeatureSide } from '../../infrastructure/analysis/feature_map.js';
 import { matchLayer } from '../../infrastructure/analysis/layer_detect.js';
-import { enumerateTsSources } from '../../infrastructure/analysis/detect_dead_imports.js';
+import { enumerateTsSources } from '../../infrastructure/analysis/deadcode/detect_dead_imports.js';
 import { resolveSpecifier } from './brick_bag.js';
 import { getParser } from '../../infrastructure/parse/loader.js';
 import { findLanguageByExt, type LanguageEntry } from '../../infrastructure/parse/languages.js';

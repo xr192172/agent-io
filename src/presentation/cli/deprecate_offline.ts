@@ -32,7 +32,7 @@
 
 import path from 'node:path';
 import fs from 'node:fs';
-import { detectDeadImports, scanProjectSourceFiles } from '../../infrastructure/analysis/detect_dead_imports.js';
+import { detectDeadImports, scanProjectSourceFiles } from '../../infrastructure/analysis/deadcode/detect_dead_imports.js';
 import { removeDeadImportsWithVerify } from '../../application/refactor/remove_dead_imports.js';
 import { parseTsImportQualifiers, parseGoImportQualifiers, stripTsImportLines, qualifierLines, type DeadDepCandidate } from '../../infrastructure/graph/dead_deps.js';
 import { defaultVerifyCommands, runVerification } from '../../infrastructure/verify_refactor.js';

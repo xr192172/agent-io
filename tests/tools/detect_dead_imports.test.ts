@@ -13,7 +13,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect, afterAll } from 'vitest';
-import { detectDeadImports, classifyFileKind, enumerateTsSources } from '../../src/infrastructure/analysis/detect_dead_imports.js';
+import { detectDeadImports, classifyFileKind, enumerateTsSources } from '../../src/infrastructure/analysis/deadcode/detect_dead_imports.js';
 
 const roots: string[] = [];
 afterAll(() => {

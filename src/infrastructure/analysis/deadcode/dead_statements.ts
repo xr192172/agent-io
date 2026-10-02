@@ -23,8 +23,8 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { parseAstRoot, type SyntaxNodeLike } from '../parse/kernel.js';
-import { applyWithVerify, defaultVerifyCommands, runVerification, type VerifyCommand, type VerificationOutcome, type VerifyOutcomeKind } from '../verify_refactor.js';
+import { parseAstRoot, type SyntaxNodeLike } from '../../parse/kernel.js';
+import { applyWithVerify, defaultVerifyCommands, runVerification, type VerifyCommand, type VerificationOutcome, type VerifyOutcomeKind } from '../../verify_refactor.js';
 
 // ─────────────────────────────────────────────
 // 检测：不可达语句 run（纯函数，按源码+扩展名）

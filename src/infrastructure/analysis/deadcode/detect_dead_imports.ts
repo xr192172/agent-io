@@ -22,7 +22,7 @@
  * dead_imports 步据此删除；也可单独交付给用户先看报告再拍板。
  */
 
-import { DATA_DIR_NAME } from '../data_dir.js';
+import { DATA_DIR_NAME } from '../../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import {
@@ -30,7 +30,7 @@ import {
   parseTsImportQualifiers,
   qualifierLines,
   stripTsImportLines,
-} from '../graph/dead_deps.js';
+} from '../../graph/dead_deps.js';
 
 export interface DeadImportCandidate {
   /** 死三方源（Go import 路径 / TS 模块说明符） */
