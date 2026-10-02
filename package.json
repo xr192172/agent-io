@@ -42,7 +42,7 @@
     "agent-io": "dist/src/presentation/mcp/server.js"
   },
   "scripts": {
-    "build": "node scripts/gen_agents.mjs && tsc",
+    "build": "node scripts/gen_agents.mjs && tsc && node scripts/clean_dist.mjs",
     "dev": "node scripts/dev.mjs",
     "start": "node dist/src/presentation/mcp/server.js",
     "serve": "node dist/src/presentation/http/serve.js",
