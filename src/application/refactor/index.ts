@@ -50,6 +50,7 @@ import { isLegalRuleId, loadRules, rulesDir, writeRule } from './rf-rules/rule_l
 import type { Rule } from './rf-rules/rule_library.js';
 import { disambiguationItems, suggestDisambiguationsInFile } from './rf-find/similar_names.js';
 import { moveSymbol } from './rf-rename/symbol_move.js';
+import { structureGap } from '../../infrastructure/analysis/structure/structure_gap.js';
 import { buildRefactorPlan, applyRefactorPlan } from './rf-pipeline/refactor_plan.js';
 import type { RefactorTarget, RefactorPlan } from './rf-pipeline/refactor_plan.js';
 import { diffViewsHandler } from '../handlers.js';
@@ -583,6 +584,59 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       for (const f of r.files) {
         lines.push(`${f.risk === 'high' ? '⚠' : f.risk === 'medium' ? '·' : ' '} [${f.risk}] ${f.file}  (depth=${f.depth}, 被${f.dep_count}个文件依赖)`);
         for (const s of f.sites) lines.push(`      ${s.kind.padEnd(9)} L${s.line}  ${s.detail}`);
+      }
+      return { message: lines.join('\n'), data: r };
+    }),
+  },
+
+  {
+    name: 'structure_gap',
+    // ★ 刻意**不**标 `trustAnnotated`（同族里最容易照抄错的一处）：本工具**不读符号索引**
+    //   ——它只读结构域表 JSON + `readdirSync` 扫目录。而 `trustNoteFor` 报的是"符号索引里有
+    //   陈旧断言"，那对本工具的结论**没有任何影响** ⇒ 标了就是**假告警**（狼来了）。
+    //   `impact_analysis` / `rename_*` 要标，是因为它们的结论走索引闭包。
+    title: 'Structure intent vs reality — domain gap (misplaced / unlisted / missing)',
+    description:
+      '结构意图 vs 现状四态读数：读 `<project_dir>/structure.domains.json`（**域 = 能力的家**，声明"哪个目录算哪个域"）' +
+      '与磁盘现状对账，回答"这次分层/搬家还差多少、下一步该搬什么"。' +
+      '· misplaced = 文件在，但不在目标域 —— **待搬清单**；' +
+      '· unlisted = 文件在，但归属未定 —— **要决定，不要猜**；' +
+      '· missing = 目标声明了某域，但目录还不存在 / 域里没有源码 —— 与 misplaced 一体两面（搬完自然消失）。' +
+      '★ flatDirs 声明"**有意平铺**"的目录（散文件是终态、不报 misplaced，如 domain/ 概念族、CLI 命令面）：' +
+      '它的**子目录必须被登记**，出现了却没登记 ⇒ 报 unlisted —— 这是 flat 唯一的可证伪点，**不是免检白名单**。' +
+      '★ 依赖方向**不归本工具管**（那是 dep-cruiser 的 layer 规则）；配置里的 layer 只是给人读的分类标签。' +
+      '★ 配置**不存在** ⇒ configured:false（**合法状态**：尚未开垦，不是失败）；' +
+      '配置**坏**（JSON 非法 / id 重复 / dir 写成绝对路径）⇒ **直接抛错，不降级成"没配置"**。',
+    inputSchema: {
+      project_dir: z.string().describe('目标项目根目录（绝对路径）—— 读它根下的 structure.domains.json 作为"结构意图"'),
+    },
+    handler: wrapData(async (a) => {
+      // ★ [C] 只转发：读配置（ENOENT⇒null / 坏⇒抛）+ 对账 全在 [B]（structureGap）
+      const r = structureGap(requireStr(a, 'project_dir'));
+      if (!r.configured) {
+        return {
+          message:
+            `项目未声明结构意图（根下 ${r.config_path} 不存在）—— 没有域表就无法判断"该搬什么"、` +
+            `更看不见"already 搬对了吗"。这**不是**错误，是"尚未开垦"：写下 domains（哪些目录是域）` +
+            `与 flatDirs（哪些目录有意平铺）即可开始。`,
+          data: r,
+        };
+      }
+      const lines = [
+        `结构意图 vs 现状 · ${r.domain_count} 个域 + ${r.flat_count} 个平铺目录`,
+        `待搬 ${r.misplaced.length} · 待定归属 ${r.unlisted.length} · 待建域 ${r.missing.length}`,
+      ];
+      const sec = (title: string, items: typeof r.misplaced) => {
+        if (!items.length) return;
+        lines.push('', `${title}（${items.length}）`);
+        for (const it of items.slice(0, 30)) lines.push(`  ${it.path}   ${it.note}`);
+        if (items.length > 30) lines.push(`  …还有 ${items.length - 30} 处`);
+      };
+      sec('★ 待搬（在，但不在目标域）', r.misplaced);
+      sec('unlisted（在，归属未定 —— 要决定，不要猜）', r.unlisted);
+      sec('missing（域目录还不存在 / 域里没有源码）', r.missing);
+      if (!r.misplaced.length && !r.unlisted.length && !r.missing.length) {
+        lines.push('', '⇒ 结构意图与现状一致 ✓（注意：这只说明"**已开垦区**整齐"，不等于"全仓都登记了"）');
       }
       return { message: lines.join('\n'), data: r };
     }),

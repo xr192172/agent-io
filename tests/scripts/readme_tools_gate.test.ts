@@ -5,6 +5,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { analyzeReadmeTools, registryToolNames, readToolSources } from '../../scripts/readme_tools_gate.mjs';
+import { TOOL_DEFS } from '../../src/application/tool_registry.js';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -64,6 +65,11 @@ describe('readme_tools_gate', () => {
     const readme = readFileSync(path.join(repoRoot, 'README.md'), 'utf-8');
     const r = analyzeReadmeTools(regSrc, readme);
     expect(r.changed).toBe(false); // README 数字已与注册表一致，防回归漂移
-    expect(r.actual).toBe(58); // 与 G1 工具集快照、capability_map 同口径（2026-09-29 面收敛第三批：脚手架族 2→1、设计意图族 2→1、内存观测族 2→1 ⇒ 61 → 58）
+    // ★ 2026-10-02：原为 `expect(r.actual).toBe(58)` —— 那是个**会过期的人工数字**（新增工具即红，
+    //   且与 G1 快照、README、capability_map 各存一份 ⇒ 同一判据的 N 份副本）。
+    //   改为与**运行时注册数**比对：这条交叉验证才有独立价值 ——
+    //   `r.actual` 来自对**源码文本**的解析，`TOOL_DEFS.length` 来自**运行时**，
+    //   两者相等说明"文本解析器"没坏（而不是"我抄的数字对上了"）。
+    expect(r.actual).toBe(TOOL_DEFS.length);
   });
 });

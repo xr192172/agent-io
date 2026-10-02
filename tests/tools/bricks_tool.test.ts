@@ -55,9 +55,9 @@ describe('bricks 单入口', () => {
   it('bricks 已注册；原 4 个注册入口必须已消失（不许留双入口）—— 由 TOOL_DEFS 结构断言', () => {
     expect(TOOL_DEFS.some((t) => t.name === 'bricks')).toBe(true);
     // ★ 旧名不出现在本文件里（`contract_docs_gate` 会把旧名的任何字符串/注释判成"改名残留"）。
-    //   "旧入口已消失"由 **G1 快照基线**的 `removed` 差集机器证明（tests/fixtures/tool_set_snapshot.json），
-    //   与本门的 58 条一致性断言互补 —— 不在这里重抄旧名（抄了反而把门打红）。
-    expect(TOOL_DEFS).toHaveLength(58);
+    //   "旧入口已消失"由 **G1 快照基线**的 `removed` 差集机器证明（tests/fixtures/tool_set_snapshot.json）。
+    //   ★ 2026-10-02 删掉了原先这里的 `expect(TOOL_DEFS).toHaveLength(58)`（同一判据的第三份副本，
+    //     且数字会过期）。理由见 facade_batch3.test.ts 同处。
   });
 
   it('description 写明 4 个 action + 「write 缺省 true = 默认落盘」+ 「target 拒绝覆盖」+ 「原积木永不覆盖」', () => {

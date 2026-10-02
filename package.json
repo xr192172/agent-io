@@ -69,6 +69,7 @@
     "demo": "node scripts/demo.mjs",
     "gen:schema": "node scripts/gen_endpoints_schema.mjs",
     "arch": "depcruise src --config .dependency-cruiser.cjs --ignore-known",
+    "structure:gap": "vite-node scripts/structure_gap.mjs",
     "arch:baseline": "depcruise src --config .dependency-cruiser.cjs --baseline --baseline-mode shrink-only",
     "tool": "node dist/src/presentation/cli/cli.js"
   },

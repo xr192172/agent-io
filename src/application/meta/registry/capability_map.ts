@@ -145,6 +145,7 @@ export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
   edit_code: '符号级替换（文件+函数+新函数体，AST 定位）',
   find_references: '查某符号的引用点/外部导入者（影响面前置）',
   impact_analysis: '计算一次改动的变更点/风险面',
+  structure_gap: '结构意图 vs 现状四态读数（域表声明 vs 磁盘）：待搬清单 / 归属未定 / 待建域 —— 回答"这次分层还差多少、下一步搬什么"（判据是域表 + 目录扫描，不读符号索引）',
   remove_dead_imports: '清理未使用 import',
   refactor_pipeline: '整条重构流水线（预览→执行→校验闭环）',
   plan_refactor: '★ 先算清单（只读）：把一批 file+old_text+new_text 算成可审、可复跑、可入账的清单（plan id + 命中级别 + 预览）——"工具链"缺的那一环',

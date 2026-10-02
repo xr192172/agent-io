@@ -5422,3 +5422,125 @@ Pass B（**没动的引用方**）：只有**目标被搬走**时才有理由改
 `gate/`（闸门/自检族）：收 `submit_gate`（提交层完整性：`go:embed` 声明的产物是否存在且已进 git 索引）。
 ★ 与既有 `contract_gate/` **同族但语义不同**（提交完整性 vs 契约对账）—— 
 `contract_gate/` 是既有独立目录，**合并属另一笔**；域表里如实记下这个不一致，而不是把两者硬塞一处。
+
+---
+
+### 44.33 `flat` 表达 + 把「结构缺口」并进产品（2026-10-02）
+
+#### 起因
+
+用户拍板两件：「**可以**」= 同意给域表加 `flatDirs` 表达、登记三个平铺目录；
+「然后刚刚那些重构流程**有没有进入重构工具的价值，如果有，就也合并进 designcanvas 里**」。
+
+#### 一、`flatDirs`：★ 扫描面**第一次伸进 `src/infrastructure` 的子目录**（读数 0 → 6）
+
+登记三个**有意平铺**的目录并给它们一个可证伪点：
+
+| 平铺目录 | 文件数 | 为什么平铺是终态 |
+|---|---|---|
+| `src/domain/` | 14 | 同一层的概念族（animation/annotation/geometry/mindmap…），彼此并列、无父子结构 |
+| `src/presentation/cli/` | 22 | 每文件 = 一条命令，命令之间并列 |
+| `src/infrastructure/` 顶层 | 10 | 横切件（data_dir/storage/git/exec_guard…），被各层共用 |
+
+★★ **关键：`flat` 不是免检白名单** —— 它声明"这里平铺"，因此规定「**flat 目录里再长出的子目录必须被登记**」，
+出现了却没登记 ⇒ 报 `unlisted`。这是它唯一的可证伪点（否则就是一张免检通行证，等于没有判据）。
+
+★★★ **读数从 0 变成 6，不是"搞坏了"，而是"旧全零是假象"**：
+`structure_gap` 原先只能看见「**已经有域在下面**的目录里剩的散文件」，对 `parse/`(24) 这种
+**整块还没开垦**的目录**完全隐形**。加 flat 后扫描面伸进 `src/infrastructure/` 的子目录，于是
+`daemon/ graph/ index/ parse/ render/ text/` 六个容器第一次被报出来。
+
+> ⇒ **旧的"全零"= 「已开垦区的整齐度」，不是「全仓整齐度」**。
+> 这正是「**分子分母是不是同一把尺**」那条纪律的又一实例 —— 读数漂亮时先问"它扫到了多少"。
+
+**出生证（两条，都做了）**：
+- A：往 `src/domain/` 注入一个子目录 ⇒ 6 → 7 ⇒ 还原 ⇒ 回 6 ✓
+- B：把判定改成**双向包含**（`rel.startsWith(dd + '/')`）⇒ flat 自己的 dir 前缀命中所有子目录
+  ⇒ **6 个全漏报、跌到 0** ✓ ⇒ 证明"方向"不是可有可无的实现细节（注释里那句警告是真的）。
+
+#### 二、★ 并入产品的判断（**哪些该并、哪些明确不该并**）
+
+| 本轮临时造的东西 | 判断 | 判据 |
+|---|---|---|
+| `structure_gap` 四态 | ★★ **并** | 补的是"**域**"这一位（用户上一轮直接问过"缺的这一位要不要补进去"）；任何仓都适用 |
+| `preflight_move` 的**分档** | ★ **部分并，且是合并不是新增** | "引用扫描"能力**产品里已有**（`find_references` 的 `scanTextMentions` + `impact_analysis` 的依赖闭包）⇒ **增量只有"分档"**："判据面"（钩子/夹具/基线/文档）里的硬编码路径，依赖图**看不见** |
+| 搬迁时重算相对引用 | ✗ **不并** | `rename_file` **已经在做，且做得比我手工脚本好**：AST 字节偏移定位（不误改注释/字符串）+ `resolveImportTarget` 判"是否真解析到被移动文件" + Python 变体 |
+| `lang_density` | ✗ 不并 | 那是"**本仓该怎么拆包**"的开发量具，不是重构动作 |
+| `stage_registry` | ✗ 不并 | 内部实现（工序注册表） |
+
+★★ **最有价值的一条**：我这轮手工写搬迁脚本时踩的 4 个坑（Pass A/B 混用、改坏夹具意图、
+跳过 preflight、修正遍深度叠加），恰恰说明 **`rename_file` 里已有的那套是对的** ——
+**真缺的不是"再写一个搬家器"，而是"判据面的分档扫描"**。同名能力**先对账再决定并法**，
+否则就是造第二份实现（本仓头号病根）。
+
+#### 三、本笔落成
+
+| 件 | 落点 |
+|---|---|
+| 判据（唯一实现） | `src/infrastructure/analysis/structure/structure_gap.ts`（与既有 7 个结构分析模块同域） |
+| 工具 | `structure_gap`，进 `refactor` lane（与 `impact_analysis` 同类：改前分析） |
+| 测试 | `tests/infrastructure/structure_gap.test.ts`（16 条，含 ★ 出生证配对的 ⑫⑬） |
+| 本地壳 | `scripts/structure_gap.mjs` —— **改成不含任何判据的薄壳**，用 `vite-node` 直接加载源码（`npm run structure:gap`） |
+
+★ 为什么脚本用 `vite-node` 而不是 build 后读 `dist`：MCP 跑的是**冻结的旧 dist**（重构期刻意不动），
+而本仓自己读缺口需要一条**不依赖 dist** 的路。壳里**禁止**写判据 —— 原脚本那套四态已**逐字搬进** `.ts`。
+（实测：vite-node **不**对 `.mjs` 自身的 import 做 `.js`→`.ts` 映射，故壳里的 import 写成**无扩展名**。）
+
+#### 四、★ 一次真实自伤：`trustAnnotated` 照抄错（"名字像"≠"同义"）
+
+我照 `impact_analysis` 抄了 `trustAnnotated: true`。但 `trustNoteFor` 报的是
+「**符号索引**里有陈旧断言」——而 `structure_gap` **根本不读索引**（只读域表 JSON + `readdirSync`）
+⇒ 标了就是**假告警**（狼来了）。**已删**，并在 def 里留注释说明"为什么刻意不标"。
+
+> ⇒ 同族抄写时，**先问"这条判据依赖的那个东西，我依赖吗"**，别按名字抄。
+
+#### 五、对外契约变更记账（要单独拍板的那一类）
+
+- `tests/fixtures/tool_set_snapshot.json`（G1 对外契约）：工具数 **58 → 59**（新增 `structure_gap`）
+- `tests/fixtures/tool_behavior_snapshot.json`（G8 逐工具行为）：**55 → 56**（新增工具的行为记录）
+- `README.md`：`共注册 **58 个 MCP 工具**` → **59**
+- `src/application/meta/registry/capability_map.ts` 的 `WHEN_OVERRIDES`：补 `structure_gap` 的策展文本
+  （`capability_map.test.ts:177` 要求"每个工具都有策展文本"，键数 == `TOOL_DEFS.length`）
+- 变更授权：用户「*如果有，就也合并进 designcanvas 里*」就是拍板；既有 58 个工具的契约**逐字未动**
+
+#### 五-b、★ 连带暴露：本仓「**新增一个工具要改几处**」有 8 处，全靠人撞
+
+本笔一个工具引出的连带红共 **6 处**（比我预想的多一倍），清单如下（**这就是新增工具的实际登记面**）：
+
+| # | 位置 | 本笔处理 |
+|---|---|---|
+| 1 | `tests/fixtures/tool_set_snapshot.json`（G1） | `UPDATE_TOOL_SNAPSHOT=1` 更新 |
+| 2 | `tests/fixtures/tool_behavior_snapshot.json`（G8） | `UPDATE_TOOL_BEHAVIOR=1` 更新 |
+| 3 | `src/application/meta/registry/capability_map.ts` 的 `WHEN_OVERRIDES` | 补策展文本 |
+| 4 | `README.md` 的工具数 | 58 → 59 |
+| 5 | `tests/tools/facade_batch3.test.ts` `toHaveLength(58)` | ★ **删**（见下） |
+| 6 | `tests/tools/{archive_tool,bricks_tool}.test.ts` `toHaveLength(58)` | ★ **删**（同上） |
+| 7 | `tests/scripts/readme_tools_gate.test.ts` `toBe(58)` | 改为 `toBe(TOOL_DEFS.length)`（交叉验证：**源码文本解析数** vs **运行时注册数**） |
+| 8 | `tests/tools/capability_map.test.ts:177` | 无需改（本来就是 `TOOL_DEFS.length`） |
+
+★ **5/6 是同一个数字（58）的三份副本** —— 它们记的是"三族各 2→1，61 → 58"的面收敛成果，
+但那个数字**会过期**（本笔一加工具，三处同时红）。而它们要证明的"旧入口已消失"
+**早已由 G1 的 `removed` 差集机器证明**（且更严：逐字比对 name/title/description/schema）
+⇒ 按 §2b「**过期断言不是门，发现即删**」处置：**删掉**，不留空 `it`
+（`expect(true).toBe(true)` 是另一种空门；且三处删除点都留了指向 G1 的注释）。
+
+> ⇒ **可提取的教训**：判据要**派生**（`TOOL_DEFS.length` / 快照基线），不要人工抄数字 ——
+> 抄一次就是多一份要同步的副本。本笔之后，`58` 这个数字在测试里**只剩快照基线一处**。
+
+#### 六、验证
+
+| 量具 | 结果 |
+|---|---|
+| `npx tsc --noEmit` | EXIT=0 |
+| `tests/infrastructure/structure_gap.test.ts` | 16/16 ✓ |
+| `npm run arch` | ✔ no dependency violations（338 modules / 1274 deps） |
+| 注册六门（consistency / single_source / lane_sources / trust_note / tool_warnings / capability_map / readme_tools） | 全绿 ✓ |
+| `npm run test:main` | **239 文件通过 / 1 跳过 ｜ 2466 项通过 / 5 跳过 ｜ 0 失败**（基线 238/2451 → 239/2466） |
+
+#### 七、下一步（**本笔未做，已定法**）
+
+`preflight_move` 的分档并入 `impact_analysis`：**不新增工具**，而是给它加一档
+"**非依赖引用**（判据面）"——依赖闭包之外、却会在搬迁/改名时静默失效的引用。
+判据面（哪些目录算"判据"而非"源码"）必须**配置化**（`scripts/`、`.githooks/`、`tests/fixtures/`、
+`*-known-violations.json` 都是**本仓**约定，产品不能写死）。
+

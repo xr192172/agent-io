@@ -83,13 +83,14 @@ function seed(feature: string, opts: { withFile?: boolean } = {}) {
   } as unknown as DesignDSL);
 }
 
-describe('第三方单入口 · 工具总数', () => {
-  it('★ 对外工具数 = 58（三族各 2→1，61 → 58）；旧入口的消失由 G1 的 removed 差集证明', () => {
-    // ★ 不在本文件重抄旧注册名（抄了 `contract_docs_gate` 会判"改名残留"）——
-    //   旧名已消失这件事由 tests/fixtures/tool_set_snapshot.json 的 removed 差集钉住（G1）。
-    expect(TOOL_DEFS).toHaveLength(58);
-  });
-});
+// ★ 2026-10-02 删除「对外工具数 = 58」这条断言（原 `expect(TOOL_DEFS).toHaveLength(58)`）。
+//   它记的是"三族各 2→1，61 → 58"的面收敛成果，但那个数字**会过期**：
+//   本笔新增 `structure_gap` ⇒ 58→59，本文件 + archive_tool + bricks_tool **三处同时红**。
+//   ⇒ ① 要在三处同步同一个数字（同一判据的**三份副本**，本仓头号病根）；
+//     ② 它真正要证明的"旧入口已消失"**早已由 G1 的 `removed` 差集机器证明** ——
+//        且更严（逐字比对 name/title/description/schema），唯一数据源 = tests/fixtures/tool_set_snapshot.json；
+//     ③ 按 §2b「**过期断言不是门，发现即删**」处置：面收敛的证据一律以 G1 为准。
+//   ★ 这里**刻意不留**一个空 `it` —— `expect(true).toBe(true)` 是同义反复，那是另一种空门。
 
 describe('scaffold（从 DSL 生成代码骨架）', () => {
   it('已注册；description 写明默认目录 + 默认不覆盖', () => {

@@ -3177,6 +3177,25 @@
     }
   },
   {
+    "name": "structure_gap",
+    "title": "Structure intent vs reality — domain gap (misplaced / unlisted / missing)",
+    "description": "结构意图 vs 现状四态读数：读 `<project_dir>/structure.domains.json`（**域 = 能力的家**，声明\"哪个目录算哪个域\"）与磁盘现状对账，回答\"这次分层/搬家还差多少、下一步该搬什么\"。· misplaced = 文件在，但不在目标域 —— **待搬清单**；· unlisted = 文件在，但归属未定 —— **要决定，不要猜**；· missing = 目标声明了某域，但目录还不存在 / 域里没有源码 —— 与 misplaced 一体两面（搬完自然消失）。★ flatDirs 声明\"**有意平铺**\"的目录（散文件是终态、不报 misplaced，如 domain/ 概念族、CLI 命令面）：它的**子目录必须被登记**，出现了却没登记 ⇒ 报 unlisted —— 这是 flat 唯一的可证伪点，**不是免检白名单**。★ 依赖方向**不归本工具管**（那是 dep-cruiser 的 layer 规则）；配置里的 layer 只是给人读的分类标签。★ 配置**不存在** ⇒ configured:false（**合法状态**：尚未开垦，不是失败）；配置**坏**（JSON 非法 / id 重复 / dir 写成绝对路径）⇒ **直接抛错，不降级成\"没配置\"**。",
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "project_dir": {
+          "type": "string",
+          "description": "目标项目根目录（绝对路径）—— 读它根下的 structure.domains.json 作为\"结构意图\""
+        }
+      },
+      "required": [
+        "project_dir"
+      ],
+      "additionalProperties": {}
+    }
+  },
+  {
     "name": "suggest_renames",
     "title": "Suggest semantic names for short/unmeaningful variables",
     "description": "智能化改名建议：识别文件中短名/无意义局部变量（含形参），结合纯逻辑候选识别 + LLM 命名建议，为每个候选给出 suggested（建议新名）与 reason（理由）。use_llm=true（默认）调 LLM 建议；false 或未配置 LLM 时降级为仅候选识别（suggested 留空）。返回 candidates 含 id/name/kind/parentFunction/refs/declLine/suggested/reason，可直接把 {file, symbol: name, to: suggested} 作为 rename_symbols(scope=\"local\") 的 renames 条目完成批量改名（同文件同名绑定多于一个时再补 decl_line=声明行号；候选里的 declLine 是**行文本**、不是行号）。",

@@ -105,9 +105,10 @@ describe('archive 单入口', () => {
       expect(desc, `description 少了「${k}」`).toContain(k);
     }
     // ★ 旧名不出现在本文件里（`contract_docs_gate` 会把旧名的任何字符串/注释判成"改名残留"）。
-    //   "旧入口已消失"由 **G1 快照基线**的 `removed` 差集机器证明（tests/fixtures/tool_set_snapshot.json）
-    //   与本门的 58 条一致性断言互补 —— 不在这里重抄旧名（抄了反而把门打红）。
-    expect(TOOL_DEFS).toHaveLength(58);
+    //   "旧入口已消失"由 **G1 快照基线**的 `removed` 差集机器证明（tests/fixtures/tool_set_snapshot.json）。
+    //   ★ 2026-10-02 删掉了原先这里的 `expect(TOOL_DEFS).toHaveLength(58)`（它自称与 G1"互补"，
+    //     实际是**同一判据的第三份副本**）：那个数字会过期——新增一个工具就红（本次三处同时红），
+    //     而它要证明的事 G1 已逐字兜住。见 facade_batch3.test.ts 同处的完整理由。
   });
 
   it('★ 前置校验：缺 action / 缺 feature / node 缺 file_path|retire_reason ⇒ 明确报错', async () => {
