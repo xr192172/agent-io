@@ -1,0 +1,25 @@
+{
+  "note": "★ 本仓的「域划分」—— **唯一数据源**：哪个目录算哪个域。它是**架构约定**（意图），不是派生数据，所以跟 `.dependency-cruiser.cjs` 并列放在仓根，而不是塞进 `.agent-io/`（那是派生数据）或 feature DSL（那是 dataHome 级、按功能线一份；域划分是全仓级、owner=project）。★ 依赖方向**不在这里**：那是 `dep-cruiser` 的职责（`layer-downward-only` / `application-must-not-reach-infrastructure-internals` / `domain-is-self-contained`），搬进这里就是第二份副本。★ 实际依赖边也不在这里：从 `cache.db` 现取。",
+  "reading": "node scripts/structure_gap.mjs",
+  "layers": ["presentation", "application", "infrastructure", "domain"],
+
+  "domains": [
+    { "id": "structure", "layer": "infrastructure", "dir": "src/infrastructure/analysis/structure",
+      "note": "项目结构分析：文件→功能→分层；社区圈定、功能树、架构层" },
+    { "id": "deadcode", "layer": "infrastructure", "dir": "src/infrastructure/analysis/deadcode",
+      "note": "死代码检测：死语句 / 死导入" },
+    { "id": "impact", "layer": "infrastructure", "dir": "src/infrastructure/analysis/impact",
+      "note": "变更影响：影响图 + 两个 feature 的差异（**已存在，只收编**）" },
+    { "id": "observe", "layer": "infrastructure", "dir": "src/infrastructure/analysis/observe",
+      "note": "观测：插桩 / 事件 / 执行链追踪与回放（**已存在，只收编**）" },
+    { "id": "health", "layer": "infrastructure", "dir": "src/infrastructure/analysis/health",
+      "note": "代码体检与缓存（**已存在，只收编**）" },
+    { "id": "capability", "layer": "infrastructure", "dir": "src/infrastructure/analysis/capability",
+      "note": "能力矩阵与语言级编程模式识别" },
+    { "id": "refactor", "layer": "infrastructure", "dir": "src/infrastructure/analysis/refactor",
+      "note": "多语言重构执行器契约" }
+  ],
+
+  "unassignedNote": "下表是**有意留白**：还没定归属的现行文件。读数会把它们报成 `unlisted`（= 要决定归属），而不是猜一个域塞进去。",
+  "unassigned": ["role_title", "snapshot_needle", "submit_gate"]
+}
