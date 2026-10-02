@@ -18,10 +18,10 @@
 import fs from 'node:fs';
 import crypto from 'node:crypto';
 import path from 'node:path';
-import { configFileReadPath } from '../../infrastructure/llm_focus.js';
-import { getProjectCacheDb, type Database } from '../../infrastructure/index/db.js';
-import { searchSymbols, type SymbolHit } from '../../infrastructure/index/symbols.js';
-import { ensureFreshIndex } from '../../infrastructure/index/index_freshness.js';
+import { configFileReadPath } from '../../../infrastructure/llm_focus.js';
+import { getProjectCacheDb, type Database } from '../../../infrastructure/index/db.js';
+import { searchSymbols, type SymbolHit } from '../../../infrastructure/index/symbols.js';
+import { ensureFreshIndex } from '../../../infrastructure/index/index_freshness.js';
 
 // ─────────────────────────────────────────────────────────────
 // 配置

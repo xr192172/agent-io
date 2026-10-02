@@ -20,10 +20,10 @@
  *     ⇒ 5 条已知 `no-circular` 由此**结构性消失**，而不是"这次特判放过"。
  */
 import { listToolDefs } from './capability_map.js';
-import { getDSL, saveDSL, getPackageRoot } from '../../infrastructure/storage.js';
+import { getDSL, saveDSL, getPackageRoot } from '../../../infrastructure/storage.js';
 import fs from 'node:fs';
 import path from 'node:path';
-import type { DesignDSL } from '../../domain/types.js';
+import type { DesignDSL } from '../../../domain/types.js';
 
 export interface SyncContractsInput {
   /** feature 名（已存在的 DSL feature） */

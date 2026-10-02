@@ -13,7 +13,7 @@
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { diffViews } from '../../src/application/refactor/diff_views.js';
-import { archiveNode, listArchive } from '../../src/application/meta/archive_node.js';
+import { archiveNode, listArchive } from '../../src/application/meta/archive/archive_node.js';
 import {
   saveDSL,
   getDSL,

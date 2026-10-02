@@ -12,19 +12,19 @@
  *   - LLM 未配置/失败：降级规则版摘要，页面照常可用
  */
 
-import { DATA_DIR_NAME } from '../../infrastructure/data_dir.js';
+import { DATA_DIR_NAME } from '../../../infrastructure/data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
-import { getDSL, getStorageRoot } from '../../infrastructure/storage.js';
+import { getDSL, getStorageRoot } from '../../../infrastructure/storage.js';
 import { deriveMindMap, getMindMapFile } from './derive_mind_map.js';
-import { loadAgentConfig } from '../../infrastructure/llm_focus.js';
-import { guidedTour } from '../../infrastructure/index/guided_tour.js';
-import type { TourStep } from '../../infrastructure/index/guided_tour.js';
-import type { MindMap } from '../../domain/mindmap.js';
+import { loadAgentConfig } from '../../../infrastructure/llm_focus.js';
+import { guidedTour } from '../../../infrastructure/index/guided_tour.js';
+import type { TourStep } from '../../../infrastructure/index/guided_tour.js';
+import type { MindMap } from '../../../domain/mindmap.js';
 import { extractJsonObject } from './explain_gen.js';
-import { deriveFeatureTree } from '../../infrastructure/analysis/structure/derive_feature_tree.js';
-import { openDb, findCacheDb } from '../../infrastructure/index/db.js';
-import { fileFacts } from '../../infrastructure/index/file_facts.js';
+import { deriveFeatureTree } from '../../../infrastructure/analysis/structure/derive_feature_tree.js';
+import { openDb, findCacheDb } from '../../../infrastructure/index/db.js';
+import { fileFacts } from '../../../infrastructure/index/file_facts.js';
 
 export interface OverviewSummary {
   /** 一句话：这是什么软件（≤30 字，人话） */

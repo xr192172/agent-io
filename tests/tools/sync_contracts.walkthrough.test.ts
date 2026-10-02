@@ -10,7 +10,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 //   这与生产路径一致：进程入口（server_registry / cli）启动即加载 tool_registry。
 //   反过来，未加载就调用会**抛错**（不静默回填空表），这正是要的行为。
 import '../../src/application/tool_registry.js';
-import { syncContracts } from '../../src/application/meta/sync_contracts';
+import { syncContracts } from '../../src/application/meta/registry/sync_contracts.ts';
 import { saveDSL, getDSL, clearAllFeatures, deleteFeature } from '../../src/infrastructure/storage.js';
 import type { DesignDSL } from '../../src/domain/types';
 

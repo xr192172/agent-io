@@ -15,7 +15,7 @@
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { saveDSL } from '../../src/infrastructure/storage.js';
-import { queryFeature } from '../../src/application/meta/query_feature.js';
+import { queryFeature } from '../../src/application/meta/explore/query_feature.js';
 import { clearAllFeatures } from '../../src/infrastructure/storage.js';
 import type { DesignDSL } from '../../src/domain/types';
 

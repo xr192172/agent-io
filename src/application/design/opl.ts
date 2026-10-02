@@ -16,7 +16,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { getDSL, saveDSL, getStorageRoot } from '../../infrastructure/storage.js';
-import { placeProposals, deriveMindMap } from '../meta/derive_mind_map.js';
+import { placeProposals, deriveMindMap } from '../meta/view/derive_mind_map.js';
 import { callChat, loadLlmConfig } from '../../infrastructure/llm_focus.js';
 import { apiSignaturesOf } from '../../infrastructure/index/file_facts.js';
 

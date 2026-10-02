@@ -5,7 +5,7 @@
  *   判据（用户裁定「根据他的能力重新重构整个能力线」）：它的能力是
  *   「**以注册表为事实源**，把工具契约回填进 DSL」，这是**元数据 / 注册**的能力，**不是"收割"**；
  *   且它与同样以工具目录为输入的 `capability_map`（在 `meta` 线）**同族**。
- *   ⇒ 一并搬到 `application/meta/sync_contracts.ts`（实现）+ `meta/index.ts`（工具定义）。
+ *   ⇒ 一并搬到 `application/meta/registry/sync_contracts.ts`（实现）+ `meta/index.ts`（工具定义）。
  *   ★ 这同时**消灭了 5 条已知 `no-circular`**（`handlers → sync_contracts → 聚合器 → <线>/index.ts`）：
  *     它的目录改由 `meta/capability_map` 叶子注入（`listToolDefs()`），**不再静态 import 聚合器**。
  *

@@ -19,7 +19,7 @@ import { openDb } from '../../src/infrastructure/index/db';
 import { setGlobalProbeSink, loadTSEvents } from '../../src/infrastructure/analysis/observe/probe';
 import { judgeEvent } from '../../src/infrastructure/analysis/observe/judge';
 import { clearAlertInbox, peekAlerts } from '../../src/infrastructure/alert_inbox.js';
-import { loadLedger } from '../../src/application/meta/impact_ledger_store.js';
+import { loadLedger } from '../../src/application/meta/impact/impact_ledger_store.js';
 
 const roots: string[] = [];
 

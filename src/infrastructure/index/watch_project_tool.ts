@@ -21,11 +21,11 @@ import { importProject } from '../graph/import_project.js';
 import { diffViews, type DiffViewsResult } from '../../application/refactor/diff_views.js';
 import { detectDrift, type DriftData } from '../../application/design/detect_drift.js';
 import { diffImpact } from '../analysis/impact/diff_impact.js';
-import { runImpactReport, readImpactReport, listImpactReports } from '../../application/meta/impact_report.js';
+import { runImpactReport, readImpactReport, listImpactReports } from '../../application/meta/impact/impact_report.js';
 import {
   appendDeclaration, markConsumed, recoverPending, resolveViolation, listLedger, countOpenViolations,
   type LedgerEntry,
-} from '../../application/meta/impact_ledger_store.js';
+} from '../../application/meta/impact/impact_ledger_store.js';
 import { pushAlert } from '../alert_inbox.js';
 import { captureProbe, TSProbeCapture, setGlobalProbeSink, hasGlobalProbeSink } from '../analysis/observe/probe.js';
 import { watchProject, type WatchHandle, type WatchBatchSummary, type ReconcileSummary } from './watch_project.js';

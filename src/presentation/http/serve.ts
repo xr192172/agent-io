@@ -36,7 +36,7 @@ import { watchProject } from '../../infrastructure/index/watch_project.js';
 import { createRebuildThrottler } from '../../infrastructure/index/watch_project_tool.js';
 import { archLayer } from '../../infrastructure/analysis/structure/arch_layer.js';
 import { guidedTour } from '../../infrastructure/index/guided_tour.js';
-import { semanticSearch } from '../../application/meta/semantic_search.js';
+import { semanticSearch } from '../../application/meta/llm/semantic_search.js';
 import { languageConcepts } from '../../infrastructure/analysis/capability/language_concepts.js';
 import { buildDictionaryView, getGlobalDictFile, getProjectDictFile, loadGlobalDict, loadProjectDict, saveGlobalEntry, saveProjectEntry, splitHighlights, validateProjectRoot, type DictEntry } from '../../infrastructure/dictionary.js';
 import { ingestTerm, classifyTerm, generateDictEntry } from './dict_gen.js';
@@ -50,11 +50,11 @@ import { buildFunctionOutline, listFunctionDirs } from '../../infrastructure/ind
 import { getFeatureLine } from '../../application/observe/feature_line.js';
 import { exampleInputFor } from '../../infrastructure/analysis/observe/trace_exec.js';
 import { parseFileFull } from '../../infrastructure/parse/index.js';
-import { deriveMindMap, buildFileIndex } from '../../application/meta/derive_mind_map.js';
-import { placeProposals } from '../../application/meta/derive_mind_map.js';
-import { getOverview } from '../../application/meta/overview.js';
-import { getMindMapFile } from '../../application/meta/derive_mind_map.js';
-import { resolveCanvasNoteTargets, renderCanvasNotesDigest, markCanvasNotesStatus } from '../../application/meta/derive_mind_map.js';
+import { deriveMindMap, buildFileIndex } from '../../application/meta/view/derive_mind_map.js';
+import { placeProposals } from '../../application/meta/view/derive_mind_map.js';
+import { getOverview } from '../../application/meta/view/overview.js';
+import { getMindMapFile } from '../../application/meta/view/derive_mind_map.js';
+import { resolveCanvasNoteTargets, renderCanvasNotesDigest, markCanvasNotesStatus } from '../../application/meta/view/derive_mind_map.js';
 import type { MindMap } from '../../domain/mindmap.js';
 import { oplAdd, oplLocate, oplDeclare, oplImplement, oplCheck, oplIntegrate, oplList, oplGet, oplAuto } from '../../application/design/opl.js';
 import { traceExecChain, type TraceStepSpec } from '../../infrastructure/analysis/observe/trace_exec.js';
@@ -69,7 +69,7 @@ import {
   loadGeneratedNarrations,
   saveGeneratedNarrations,
   getExplainGenFile,
-} from '../../application/meta/explain_gen.js';
+} from '../../application/meta/view/explain_gen.js';
 import {
   listProvidersMasked,
   upsertProvider,
@@ -80,7 +80,7 @@ import {
   hasEnabledProvider,
   handleOpenAICompatRequest,
   type OpenAICompatRequest,
-} from '../../application/meta/gateway.js';
+} from '../../application/meta/llm/gateway.js';
 
 const PORT = parseInt(process.argv[2]) || 3000;
 const PUBLIC_DIR = path.join(process.cwd(), 'output');

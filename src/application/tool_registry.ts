@@ -27,7 +27,7 @@ import { DESIGN_TOOLS } from './design/index.js';
 import { META_TOOLS } from './meta/index.js';
 import { REFACTOR_TOOLS } from './refactor/index.js';
 import { HARVEST_TOOLS } from './harvest/index.js';
-import { bindLaneOf, bindToolDefs, type LaneAssign, type LaneId } from './meta/capability_map.js';
+import { bindLaneOf, bindToolDefs, type LaneAssign, type LaneId } from './meta/registry/capability_map.js';
 import type { ToolDef } from './types.js';
 
 /**

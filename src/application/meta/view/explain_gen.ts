@@ -16,8 +16,8 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { configFileReadPath } from '../../infrastructure/llm_focus.js';
-import { getStorageRoot } from '../../infrastructure/storage.js';
+import { configFileReadPath } from '../../../infrastructure/llm_focus.js';
+import { getStorageRoot } from '../../../infrastructure/storage.js';
 
 // ─────────────────────────────────────────────────────────────
 // 配置

@@ -19,7 +19,7 @@ import { describe, it, expect, afterAll } from 'vitest';
 import { syncProject, mergeSymbolStatus, symbolSpanHash } from '../../src/infrastructure/index/symbols';
 import { openDb, closeAllProjectCacheDbs, type Database } from '../../src/infrastructure/index/db';
 import { diffImpact } from '../../src/infrastructure/analysis/impact/diff_impact.js';
-import { runImpactReport } from '../../src/application/meta/impact_report.js';
+import { runImpactReport } from '../../src/application/meta/impact/impact_report.js';
 
 const roots: string[] = [];
 const dbs: Database[] = [];

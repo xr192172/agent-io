@@ -22,14 +22,14 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { getProjectCacheDb } from '../../infrastructure/index/db.js';
-import { reopenRefsTo, resolveCrossFileCalls } from '../../infrastructure/index/symbols.js';
-import { getProjectView } from '../../infrastructure/parse/project_view.js';
-import { INDEX_SKIP_DIR_EXTRA, isNoiseFileName, isTestFileName, isUnderSkippedDir } from '../../infrastructure/parse/source_exts.js';
-import { hasLiveIndex, pendingSelfWrites } from '../observe/write_gate.js';
-import { backfillState, backfillSummary, isIndexIncomplete } from '../../infrastructure/index/index_backfill.js';
-import { ensureProjectIndex, type IndexState } from '../../infrastructure/index/index_freshness.js';
-import { summarizeLanguagesByTier, type LanguageTierSummary } from '../refactor/parse_capability.js';
+import { getProjectCacheDb } from '../../../infrastructure/index/db.js';
+import { reopenRefsTo, resolveCrossFileCalls } from '../../../infrastructure/index/symbols.js';
+import { getProjectView } from '../../../infrastructure/parse/project_view.js';
+import { INDEX_SKIP_DIR_EXTRA, isNoiseFileName, isTestFileName, isUnderSkippedDir } from '../../../infrastructure/parse/source_exts.js';
+import { hasLiveIndex, pendingSelfWrites } from '../../observe/write_gate.js';
+import { backfillState, backfillSummary, isIndexIncomplete } from '../../../infrastructure/index/index_backfill.js';
+import { ensureProjectIndex, type IndexState } from '../../../infrastructure/index/index_freshness.js';
+import { summarizeLanguagesByTier, type LanguageTierSummary } from '../../refactor/parse_capability.js';
 
 /** 源码文件按类拆分（本体 / 测试 / 噪音）。★ 见 ④ 处的长注释：两把尺差的就是这两个类 */
 export interface FileKindCounts {

@@ -9,8 +9,8 @@
  * 失败策略：任何一步失败都抛错，由调用方决定是否回退到"未收录"提示，不阻塞前端。
  */
 
-import { loadExplainConfig, type ExplainConfig } from '../../application/meta/explain_gen.js';
-import { extractJsonObject } from '../../application/meta/explain_gen.js';
+import { loadExplainConfig, type ExplainConfig } from '../../application/meta/view/explain_gen.js';
+import { extractJsonObject } from '../../application/meta/view/explain_gen.js';
 
 // ─────────────────────────────────────────────────────────────
 // 分类判断

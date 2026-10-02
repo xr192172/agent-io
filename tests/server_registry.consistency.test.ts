@@ -112,7 +112,7 @@ const INTERNAL_MODULES: Record<string, { importedBy: string[]; why: string }> = 
     why: 'derive_feature_tree 的底座识别步骤；其对内实现，不单独注册',
   },
   collect_functions: {
-    importedBy: ['src/presentation/cli/brickify_cli.ts', 'src/application/meta/classify_tools.ts'],
+    importedBy: ['src/presentation/cli/brickify_cli.ts', 'src/application/meta/registry/classify_tools.ts'],
     why: '积木化/分类两个 CLI 共用的函数收集器；不是 MCP 工具',
   },
   contract_gate: {
@@ -137,19 +137,19 @@ const INTERNAL_MODULES: Record<string, { importedBy: string[]; why: string }> = 
   diff_impact: {
     importedBy: [
       'src/infrastructure/analysis/diagnosis/impact_analyzer.ts',
-      'src/application/meta/explore_code.ts',
-      'src/application/meta/impact_report.ts',
+      'src/application/meta/explore/explore_code.ts',
+      'src/application/meta/impact/impact_report.ts',
       'src/presentation/http/serve.ts',
       'src/infrastructure/index/watch_project_tool.ts',
     ],
     why: '变更影响面计算，被 explore_code / impact_report 等复用；不是独立工具',
   },
   guided_tour: {
-    importedBy: ['src/application/meta/explore_code.ts', 'src/application/meta/overview.ts', 'src/presentation/http/serve.ts'],
+    importedBy: ['src/application/meta/explore/explore_code.ts', 'src/application/meta/view/overview.ts', 'src/presentation/http/serve.ts'],
     why: '引导式导览生成，被 explore_code / overview 等复用',
   },
   inject_replay: {
-    importedBy: ['src/application/meta/explore_code.ts'],
+    importedBy: ['src/application/meta/explore/explore_code.ts'],
     why: 'explore_code 的 replay 注入实现',
   },
   language_concepts: {
@@ -185,7 +185,7 @@ const INTERNAL_MODULES: Record<string, { importedBy: string[]; why: string }> = 
     why: 'buildFeatureMap 是 import_project / render_brickwork 等的内部派生助手',
   },
   derive_feature_tree: {
-    importedBy: ['src/application/meta/overview.ts'],
+    importedBy: ['src/application/meta/view/overview.ts'],
     why: '功能树派生，overview 的实现细节',
   },
   // ─────────────────────────────────────────────────────────────
@@ -214,7 +214,7 @@ const INTERNAL_MODULES: Record<string, { importedBy: string[]; why: string }> = 
       '真正被复用只有常量 `KIND_SHAPE`（derive_chain 引）。属"explore_code 空壳 action"那一笔，已记入 docs/todo.md',
   },
   derive_anim_flow: {
-    importedBy: ['src/application/meta/explore_code.ts'],
+    importedBy: ['src/application/meta/explore/explore_code.ts'],
     why: 'explore_code 的 `derive_anim_flow` action 实现（2026-10-01 接线，替换原空壳）',
   },
   derive_split: {
@@ -234,7 +234,7 @@ const INTERNAL_MODULES: Record<string, { importedBy: string[]; why: string }> = 
     why: '★ 已注册工具 `rename_symbols` 的**单数引擎**（注册入口是 rename_symbols.ts）；注册名 ≠ 文件名',
   },
   semantic_search: {
-    importedBy: ['src/application/meta/explore_code.ts', 'src/presentation/http/serve.ts'],
+    importedBy: ['src/application/meta/explore/explore_code.ts', 'src/presentation/http/serve.ts'],
     why: 'explore_code 的 `search` action 实现（符号索引/向量/trigram 三层检索内核）；serve 也复用',
   },
 };
@@ -327,14 +327,29 @@ describe('server_registry 一致性', () => {
     //   这里改用**唯一落点** `tests/helpers/lane_files.ts`（线名从 `LANE_SOURCES` 派生，不另抄名单）；
     //   原先 `readdirSync('src/registry/lanes')` 在目录消失后直接 ENOENT。
     const laneSource = laneTexts().map((t) => t.text).join(String.fromCharCode(10));
-    // ★ 2026-10-01（搬 T11）：lane 与被吸收实现**同目录**了 ⇒ 说明符从 `'/tools/<name>.js'`
-    //   变成 `'./<name>.js'`（或 `'../<线>/<name>.js'` 之类）。判据要跟着"实际的引用形态"走，
-    //   否则会把它误判成"漏注册"（本门原先就栽在"假设实现在 src/tools/ 下"）。
-    const isAbsorbedByFacade = (base: string): boolean =>
-      laneSource.includes(`/tools/${base}.js'`) ||
-      laneSource.includes(`/tools/${base}.js"`) ||
-      laneSource.includes(`'./${base}.js'`) ||
-      laneSource.includes(`'./${base}.js"`);
+    // ★★★ 2026-10-02（第 3 次修）：**改成"看真实文件路径"而不是"看说明符字面"**。
+    //   本门已经被搬动作坏三次了（注释自己记着）：`'/tools/<name>.js'` → `'./<name>.js'` → 现在
+    //   实现按域进了子目录（`'./archive/<name>.js'`、`'./view/<name>.js'`…）⇒ 字面模式**又**失效，
+    //   把「被工具面吸收」误判成「漏注册」。
+    //   ★ 根因：**说明符的字面随文件位置变，而"被谁 import"这件事不变**。
+    //   ⇒ 判据改成：把 lane 里的相对 import **解析到真实的仓内文件**，再看目标文件是不是它。
+    //     这一步与目录层级**无关** —— 以后再搬也不会坏。
+    const laneImportTargets = new Set<string>();
+    for (const { file, text } of laneTexts()) {
+      const dir = path.dirname(file);
+      for (const m of text.matchAll(/['"](\.[^'"]*)['"]/g)) {
+        const spec = m[1];
+        if (!spec.startsWith('.')) continue;
+        const abs = path.resolve(dir, spec).replace(/\.(js|ts|tsx|jsx|mjs|cjs)$/, '');
+        laneImportTargets.add(path.relative(PKG_ROOT, abs).split(path.sep).join('/'));
+      }
+    }
+    const isAbsorbedByFacade = (base: string): boolean => {
+      const f = resolveToolFile(base);
+      if (!f) return false;
+      const modPath = path.relative(PKG_ROOT, f).split(path.sep).join('/').replace(/\.tsx?$/, '');
+      return laneImportTargets.has(modPath);
+    };
 
     for (const base of files) {
       if (base in INTERNAL_MODULES) continue;

@@ -16,7 +16,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import type { BrickifyResult } from '../../application/design/brickify.js';
 import { roleOfFile } from '../../application/design/brickify.js';
-import type { ToolsMapResult, MappedTool } from '../../application/meta/classify_tools.js';
+import type { ToolsMapResult, MappedTool } from '../../application/meta/registry/classify_tools.js';
 
 function esc(s: string): string {
   return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));

@@ -18,7 +18,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { loadLlmConfig, callChat } from '../../infrastructure/llm_focus.js';
-import { loadExplainConfig } from '../meta/explain_gen.js';
+import { loadExplainConfig } from '../meta/view/explain_gen.js';
 import type { BrickifyResult, BrickRole } from './brickify.js';
 import { ROLE_LABEL } from './brickify.js';
 

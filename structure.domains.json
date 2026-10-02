@@ -1,25 +1,108 @@
 {
   "note": "★ 本仓的「域划分」—— **唯一数据源**：哪个目录算哪个域。它是**架构约定**（意图），不是派生数据，所以跟 `.dependency-cruiser.cjs` 并列放在仓根，而不是塞进 `.agent-io/`（那是派生数据）或 feature DSL（那是 dataHome 级、按功能线一份；域划分是全仓级、owner=project）。★ 依赖方向**不在这里**：那是 `dep-cruiser` 的职责（`layer-downward-only` / `application-must-not-reach-infrastructure-internals` / `domain-is-self-contained`），搬进这里就是第二份副本。★ 实际依赖边也不在这里：从 `cache.db` 现取。",
   "reading": "node scripts/structure_gap.mjs",
-  "layers": ["presentation", "application", "infrastructure", "domain"],
-
-  "domains": [
-    { "id": "structure", "layer": "infrastructure", "dir": "src/infrastructure/analysis/structure",
-      "note": "项目结构分析：文件→功能→分层；社区圈定、功能树、架构层" },
-    { "id": "deadcode", "layer": "infrastructure", "dir": "src/infrastructure/analysis/deadcode",
-      "note": "死代码检测：死语句 / 死导入" },
-    { "id": "impact", "layer": "infrastructure", "dir": "src/infrastructure/analysis/impact",
-      "note": "变更影响：影响图 + 两个 feature 的差异（**已存在，只收编**）" },
-    { "id": "observe", "layer": "infrastructure", "dir": "src/infrastructure/analysis/observe",
-      "note": "观测：插桩 / 事件 / 执行链追踪与回放（**已存在，只收编**）" },
-    { "id": "health", "layer": "infrastructure", "dir": "src/infrastructure/analysis/health",
-      "note": "代码体检与缓存（**已存在，只收编**）" },
-    { "id": "capability", "layer": "infrastructure", "dir": "src/infrastructure/analysis/capability",
-      "note": "能力矩阵与语言级编程模式识别" },
-    { "id": "refactor", "layer": "infrastructure", "dir": "src/infrastructure/analysis/refactor",
-      "note": "多语言重构执行器契约" }
+  "layers": [
+    "presentation",
+    "application",
+    "infrastructure",
+    "domain"
   ],
-
-  "unassignedNote": "下表是**有意留白**：还没定归属的现行文件。读数会把它们报成 `unlisted`（= 要决定归属），而不是猜一个域塞进去。",
-  "unassigned": ["role_title", "snapshot_needle", "submit_gate"]
+  "domains": [
+    {
+      "id": "structure",
+      "layer": "infrastructure",
+      "dir": "src/infrastructure/analysis/structure",
+      "note": "项目结构分析：文件→功能→分层；社区圈定、功能树、架构层"
+    },
+    {
+      "id": "deadcode",
+      "layer": "infrastructure",
+      "dir": "src/infrastructure/analysis/deadcode",
+      "note": "死代码检测：死语句 / 死导入"
+    },
+    {
+      "id": "impact",
+      "layer": "infrastructure",
+      "dir": "src/infrastructure/analysis/impact",
+      "note": "变更影响：影响图 + 两个 feature 的差异（**已存在，只收编**）"
+    },
+    {
+      "id": "observe",
+      "layer": "infrastructure",
+      "dir": "src/infrastructure/analysis/observe",
+      "note": "观测：插桩 / 事件 / 执行链追踪与回放（**已存在，只收编**）"
+    },
+    {
+      "id": "health",
+      "layer": "infrastructure",
+      "dir": "src/infrastructure/analysis/health",
+      "note": "代码体检与缓存（**已存在，只收编**）"
+    },
+    {
+      "id": "capability",
+      "layer": "infrastructure",
+      "dir": "src/infrastructure/analysis/capability",
+      "note": "能力矩阵与语言级编程模式识别"
+    },
+    {
+      "id": "refactor",
+      "layer": "infrastructure",
+      "dir": "src/infrastructure/analysis/refactor",
+      "note": "多语言重构执行器契约"
+    },
+    {
+      "id": "meta-view",
+      "layer": "application",
+      "dir": "src/application/meta/view",
+      "note": "派生视图与讲解：总览 / 思维导图 / 动画流 / 三档解释（都是「把代码讲给人听」的派生物）"
+    },
+    {
+      "id": "meta-registry",
+      "layer": "application",
+      "dir": "src/application/meta/registry",
+      "note": "★ 以**工具注册表为唯一事实源**的清点/派生/回填：能力线导航 / 四维标注 / 功能注册面（MCP+CLI 合并）/ CLI 与 MCP 提取器 / 契约回填。这一族共用一个锚点：`server_registry` 的 def 表。"
+    },
+    {
+      "id": "meta-explore",
+      "layer": "application",
+      "dir": "src/application/meta/explore",
+      "note": "查询与探索入口：explore_code（多 action 探索）/ query_feature（按 feature 查询）"
+    },
+    {
+      "id": "meta-impact",
+      "layer": "application",
+      "dir": "src/application/meta/impact",
+      "note": "变更影响：影响台账（申报→消费核对，24h TTL）+ 影响报告（落盘 + 按序号读）。★ 与 infrastructure/analysis/impact（影响图算法）**不同**：这里是「台账与报告」的持久化面。"
+    },
+    {
+      "id": "meta-llm",
+      "layer": "application",
+      "dir": "src/application/meta/llm",
+      "note": "LLM 接入与检索：小网关（薄层）/ 批注工单裁决流 / 语义搜索（向量+trigram）"
+    },
+    {
+      "id": "meta-integrity",
+      "layer": "application",
+      "dir": "src/application/meta/integrity",
+      "note": "索引可信度自检（index_integrity）：一句话回答「你的索引现在可信吗」。★ 目录名用 integrity 而非 index —— `src/application/meta/index.ts` 是 **meta 线的入口**，同名目录会歧义（量具当场报出来了）。"
+    },
+    {
+      "id": "meta-docs",
+      "layer": "application",
+      "dir": "src/application/meta/docs",
+      "note": "项目文档夹（project_docs）：每项目文档夹 → LLM 决策上下文"
+    },
+    {
+      "id": "meta-archive",
+      "layer": "application",
+      "dir": "src/application/meta/archive",
+      "note": "下线库归档（archive_node）：把下线的文件/节点孤立到 archive"
+    }
+  ],
+  "unassignedNote": "下表是**有意留白**：还没定归属的现行文件。读数会把它们报成 `unlisted`（= 要决定归属），而不是猜一个域塞进去。 2026-10-02 第二批：把 application/meta/ 的 20 个散文件纳入域表（8 个域），id 一律带 meta- 前缀以免与已有域重名（如 impact）。",
+  "unassigned": [
+    "role_title",
+    "snapshot_needle",
+    "submit_gate"
+  ]
 }

@@ -13,7 +13,7 @@ import path from 'node:path';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createFeature } from '../../src/application/design/feature_ops.js';
 import { clearAllFeatures, getDSL, saveLiveFeature, getDSLByView, getLiveFeature } from '../../src/infrastructure/storage.js';
-import { queryFeature } from '../../src/application/meta/query_feature.js';
+import { queryFeature } from '../../src/application/meta/explore/query_feature.js';
 import { TOOL_DEFS } from '../../src/application/tool_registry.js';
 
 /** 从 TOOL_DEFS 取指定主工具的 handler */

@@ -23,7 +23,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { loadLlmConfig, callChat, type ChatMessage } from '../../infrastructure/llm_focus.js';
-import { extractJsonObject } from '../meta/explain_gen.js';
+import { extractJsonObject } from '../meta/view/explain_gen.js';
 import type { MixedFileSignal } from './brickify.js';
 
 /** 单簇复核结论 */

@@ -12,7 +12,7 @@
  */
 
 import { loadLlmConfig, callChat, configFilePath } from '../../llm_focus.js';
-import { loadExplainConfig } from '../../../application/meta/explain_gen.js';
+import { loadExplainConfig } from '../../../application/meta/view/explain_gen.js';
 
 /** 单个待生成职责的文件 */
 export interface RoleFileInput {

@@ -17,7 +17,7 @@ import {
   loadGeneratedNarrations,
   saveGeneratedNarrations,
   getExplainGenFile,
-} from '../../src/application/meta/explain_gen.js';
+} from '../../src/application/meta/view/explain_gen.js';
 
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dc-explain-'));
 process.env.AGENT_IO_HOME = root;

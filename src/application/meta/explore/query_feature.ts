@@ -32,21 +32,21 @@
  *   diff             → diff_features    { feature_a, feature_b }
  */
 
-import { getDSLByView, listFeatures as listStoredFeatures } from '../../infrastructure/storage.js';
-import type { DSLView } from '../../infrastructure/storage.js';
-import { listAnnotations } from '../design/annotation_tools.js';
-import { listApprovals, getApprovalHistory } from '../observe/approval.js';
-import { listSnapshots } from '../design/snapshot.js';
-import { listTemplates } from '../design/templates.js';
-import { getSimulationState } from '../design/simulation.js';
-import { diffFeatures } from '../../infrastructure/analysis/impact/diff.js';
-import type { Node, Edge } from '../../domain/geometry.js';
-import type { SemanticFile } from '../../domain/semantic.js';
-import { getProjectCacheDb } from '../../infrastructure/index/db.js';
-import type { Database } from '../../infrastructure/index/db.js';
-import { buildFunctionOutline } from '../../infrastructure/index/function_outline.js';
-import { fileFacts } from '../../infrastructure/index/file_facts.js';
-import type { OverlayGoal } from '../../domain/overlay.js';
+import { getDSLByView, listFeatures as listStoredFeatures } from '../../../infrastructure/storage.js';
+import type { DSLView } from '../../../infrastructure/storage.js';
+import { listAnnotations } from '../../design/annotation_tools.js';
+import { listApprovals, getApprovalHistory } from '../../observe/approval.js';
+import { listSnapshots } from '../../design/snapshot.js';
+import { listTemplates } from '../../design/templates.js';
+import { getSimulationState } from '../../design/simulation.js';
+import { diffFeatures } from '../../../infrastructure/analysis/impact/diff.js';
+import type { Node, Edge } from '../../../domain/geometry.js';
+import type { SemanticFile } from '../../../domain/semantic.js';
+import { getProjectCacheDb } from '../../../infrastructure/index/db.js';
+import type { Database } from '../../../infrastructure/index/db.js';
+import { buildFunctionOutline } from '../../../infrastructure/index/function_outline.js';
+import { fileFacts } from '../../../infrastructure/index/file_facts.js';
+import type { OverlayGoal } from '../../../domain/overlay.js';
 
 export interface QueryFeatureInput {
   /** 查询类型 */

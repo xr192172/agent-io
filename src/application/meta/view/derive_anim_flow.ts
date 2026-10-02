@@ -17,13 +17,13 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import type { AnimationBranch, AnimationError, AnimationFlow, AnimationValueSchema } from '../../domain/animation.js';
-import type { DesignDSL, Node } from '../../domain/types.js';
-import { getDSL, saveDSL } from '../../infrastructure/storage.js';
-import { nearestCacheDb } from '../../infrastructure/index/db.js';
-import { parseFileFull, type ParsedSymbol } from '../../infrastructure/parse/index.js';
-import { extractFunctionCfg } from '../../infrastructure/parse/cfg.js';
-import { buildCallGraph, pickEntry, walkChain } from '../design/derive_chain.js';
+import type { AnimationBranch, AnimationError, AnimationFlow, AnimationValueSchema } from '../../../domain/animation.js';
+import type { DesignDSL, Node } from '../../../domain/types.js';
+import { getDSL, saveDSL } from '../../../infrastructure/storage.js';
+import { nearestCacheDb } from '../../../infrastructure/index/db.js';
+import { parseFileFull, type ParsedSymbol } from '../../../infrastructure/parse/index.js';
+import { extractFunctionCfg } from '../../../infrastructure/parse/cfg.js';
+import { buildCallGraph, pickEntry, walkChain } from '../../design/derive_chain.js';
 
 export interface DeriveAnimFlowInput {
   /** feature 名 */
@@ -154,7 +154,7 @@ async function readCrossCalls(
   const dbPath = nearestCacheDb(projectRoot);
   if (!dbPath) return byCaller;
   try {
-    const { openDb } = await import('../../infrastructure/index/db.js');
+    const { openDb } = await import('../../../infrastructure/index/db.js');
     const db = openDb(dbPath);
     try {
       let rows = db

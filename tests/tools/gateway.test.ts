@@ -27,7 +27,7 @@ import {
   testProvider,
   handleOpenAICompatRequest,
   _resetGatewayCursors,
-} from '../../src/application/meta/gateway.js';
+} from '../../src/application/meta/llm/gateway.js';
 
 let tmpHome: string;
 

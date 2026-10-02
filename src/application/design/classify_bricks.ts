@@ -17,7 +17,7 @@
 import type { BrickifyResult } from './brickify.js';
 import type { ClusterNarratives } from './cluster_narrator.js';
 import { loadLlmConfig, callChat } from '../../infrastructure/llm_focus.js';
-import { loadExplainConfig } from '../meta/explain_gen.js';
+import { loadExplainConfig } from '../meta/view/explain_gen.js';
 import { defaultPipelineTaxonomy, slotIndex, type Taxonomy, type TaxonomySlot } from './taxonomy.js';
 
 export interface ClusterClassification {

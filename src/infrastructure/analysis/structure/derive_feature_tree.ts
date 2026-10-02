@@ -23,7 +23,7 @@
 import { analyzeMonolith } from './analyze_monolith.js';
 import { getDSLByView, saveDSL } from '../../storage.js';
 import { loadLlmConfig, callChat } from '../../llm_focus.js';
-import { loadExplainConfig } from '../../../application/meta/explain_gen.js';
+import { loadExplainConfig } from '../../../application/meta/view/explain_gen.js';
 import type { FeatureTree, FeatureNode, FeatureCommunity } from '../../../domain/types.js';
 
 export interface FeatureTreeInput {

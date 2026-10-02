@@ -30,6 +30,14 @@ import { execSync } from 'node:child_process';
 const REPO = execSync('git rev-parse --show-toplevel', { encoding: 'utf-8' }).trim();
 const CFG = JSON.parse(fs.readFileSync(path.join(REPO, 'structure.domains.json'), 'utf-8'));
 const onlyDomain = process.argv.includes('--domain') ? process.argv[process.argv.indexOf('--domain') + 1] : null;
+
+// ★ id 必须唯一：否则 `--domain <id>` 会静默命中多个、过滤失效（实测教训：加 meta/ 域时
+//   差点造出第二个 id=impact —— 已有的 impact 域在 infrastructure/analysis/ 下）。
+const dupIds = CFG.domains.map((d) => d.id).filter((id, i, a) => a.indexOf(id) !== i);
+if (dupIds.length) {
+  console.error(`✗ structure.domains.json 里有重复的域 id：${[...new Set(dupIds)].join(', ')}`);
+  process.exit(2);
+}
 const asJson = process.argv.includes('--json');
 
 /** 域目录的**父目录**集合：只在这些父目录下判"该不该在域里"（避免全仓乱报） */

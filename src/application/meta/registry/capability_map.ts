@@ -32,7 +32,7 @@
  * 纯数据 + 纯函数（目录取自入参，无 IO）：testable。
  */
 
-import type { ToolDef } from '../types.js';
+import type { ToolDef } from '../../types.js';
 
 export const LANE_IDS = ['design', 'refactor', 'observe', 'harvest', 'cross', 'meta'] as const;
 export type LaneId = (typeof LANE_IDS)[number];

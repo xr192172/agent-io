@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { exploreCode } from '../../src/application/meta/explore_code.js';
+import { exploreCode } from '../../src/application/meta/explore/explore_code.js';
 import { createFeature } from '../../src/application/design/feature_ops.js';
 import { clearAllFeatures } from '../../src/infrastructure/storage.js';
 

@@ -21,19 +21,19 @@
  *   - teach 科普导图 JSON：<storageRoot>/mindmap/<feature>.teach.json（/mindmap/ 交互页的数据源）
  */
 
-import { DATA_DIR_NAME } from '../../infrastructure/data_dir.js';
+import { DATA_DIR_NAME } from '../../../infrastructure/data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
-import { getDSL, getStorageRoot, getPackageRoot } from '../../infrastructure/storage.js';
+import { getDSL, getStorageRoot, getPackageRoot } from '../../../infrastructure/storage.js';
 import { extractJsonObject } from './explain_gen.js';
-import { loadAgentConfig, callChat } from '../../infrastructure/llm_focus.js';
-import type { ChatMessage } from '../../infrastructure/llm_focus.js';
-import { openDb, findCacheDb } from '../../infrastructure/index/db.js';
-import type { Database } from '../../infrastructure/index/db.js';
-import { fileFacts } from '../../infrastructure/index/file_facts.js';
-import type { DesignDSL, FeatureNode, FeatureTree, SemanticFile, CanvasNote, Node } from '../../domain/types.js';
-import type { MindMap, MindMapNode, TeachStep, TeachPin, TeachFlowEdge, TeachGap, ProposalFeature } from '../../domain/mindmap.js';
-import { buildScenes } from '../../domain/narration.js';
+import { loadAgentConfig, callChat } from '../../../infrastructure/llm_focus.js';
+import type { ChatMessage } from '../../../infrastructure/llm_focus.js';
+import { openDb, findCacheDb } from '../../../infrastructure/index/db.js';
+import type { Database } from '../../../infrastructure/index/db.js';
+import { fileFacts } from '../../../infrastructure/index/file_facts.js';
+import type { DesignDSL, FeatureNode, FeatureTree, SemanticFile, CanvasNote, Node } from '../../../domain/types.js';
+import type { MindMap, MindMapNode, TeachStep, TeachPin, TeachFlowEdge, TeachGap, ProposalFeature } from '../../../domain/mindmap.js';
+import { buildScenes } from '../../../domain/narration.js';
 
 export interface DeriveMindMapInput {
   /** feature 名（必填） */

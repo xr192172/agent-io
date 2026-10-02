@@ -17,7 +17,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { getStorageRoot } from '../../infrastructure/storage.js';
+import { getStorageRoot } from '../../../infrastructure/storage.js';
 
 /** 单篇项目文档的索引条目 */
 export interface ProjectDoc {

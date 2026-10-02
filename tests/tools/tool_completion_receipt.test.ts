@@ -3,7 +3,7 @@
  *
  * ★ 为什么**另立一扇门**，而不是把 G7 直接横向扩到全部工具（这是 P-E 的原话，必须说清）：
  *   G7（`tests/tools/explore_action_wiring.test.ts`）的**判据**是"`case '<action>':` 派发块里必须调用
- *   登记表声明的、从别处 import 的实现符号" —— 它读的是 `src/application/meta/explore_code.ts` 的 **switch 结构**。
+ *   登记表声明的、从别处 import 的实现符号" —— 它读的是 `src/application/meta/explore/explore_code.ts` 的 **switch 结构**。
  *   绝大多数工具**没有** action 派发表（一个 handler 对一个工具）⇒ 这套判据**结构上套不上去**。
  *   硬扩只能得到两种坏结果之一：① 对无 action 的工具恒真（空门）；② 靠猜去认"实现"（误伤 + 维护地狱）。
  *   但 G7 背后的**纪律**（"宣传 / 宣称完成 ⇒ 必须有真东西"）是**工具面通则** ⇒

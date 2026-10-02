@@ -16,7 +16,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { getDSL, saveDSL, getStorageRoot } from '../../infrastructure/storage.js';
 import { fileFacts } from '../../infrastructure/index/file_facts.js';
-import { projectSignature } from '../meta/derive_mind_map.js';
+import { projectSignature } from '../meta/view/derive_mind_map.js';
 import { buildScenes, humanOf } from '../../domain/narration.js';
 import type { NarrScene } from '../../domain/narration.js';
 import type { TeachPin } from '../../domain/mindmap.js';
