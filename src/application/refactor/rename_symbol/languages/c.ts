@@ -13,7 +13,7 @@ import path from 'node:path';
 import { getParser } from '../../../../infrastructure/parse/loader.js';
 import { findLanguageByExt } from '../../../../infrastructure/parse/languages.js';
 import { parseContent } from '../../../../infrastructure/parse/kernel.js';
-import { createProtectGuard } from '../../protect.js';
+import { createProtectGuard } from '../../rf-snapshot/protect.js';
 import {
   collectFilesByExt,
   applyEdits,

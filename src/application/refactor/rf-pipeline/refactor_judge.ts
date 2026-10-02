@@ -19,7 +19,7 @@
  * / 大积木缺口等任何候选，统一走 采纳/驳回/上抛。
  */
 
-import { pushAlert } from '../../infrastructure/alert_inbox.js';
+import { pushAlert } from '../../../infrastructure/alert_inbox.js';
 
 export type Verdict = 'adopt' | 'reject' | 'unsure';
 

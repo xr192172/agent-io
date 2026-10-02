@@ -21,7 +21,7 @@ import { ensureProjectIndex, detectStaleIndex } from '../../infrastructure/index
 import { hasLiveIndex } from '../../application/observe/write_gate.js';
 import { prewarmKernel } from '../../infrastructure/parse/index.js';
 import { scheduleBackfill, backfillState, isIndexIncomplete } from '../../infrastructure/index/index_backfill.js';
-import { renderGranularityNote } from '../../application/refactor/parse_capability.js';
+import { renderGranularityNote } from '../../application/refactor/rf-parse/parse_capability.js';
 import { unknownArgHints, renderArgHints } from '../../infrastructure/parse/arg_suggest.js';
 import { recommendObservePoints } from '../../application/observe/observe_points.js';
 import { collectPendingAlertText, dispatchDslEdit } from '../../infrastructure/daemon/dispatch.js';
@@ -34,11 +34,11 @@ import { scaffold } from '../../application/design/scaffold.js';
 import { checkConsistency } from '../../application/design/consistency.js';
 import { detectDrift } from '../../application/design/detect_drift.js';
 import { exploreCode, EXPLORE_ACTIONS } from '../../application/meta/explore/explore_code.js';
-import { editCode } from '../../application/refactor/edit_code.js';
+import { editCode } from '../../application/refactor/rf-edit/edit_code.js';
 import { importProject } from '../../infrastructure/graph/import_project.js';
 import type { ImportProjectInput } from '../../infrastructure/graph/import_project.js';
 import { manageFeature, MANAGE_ACTIONS } from '../../application/design/manage_feature.js';
-import { diffViews } from '../../application/refactor/diff_views.js';
+import { diffViews } from '../../application/refactor/rf-view/diff_views.js';
 import { archiveNode, listArchive } from '../../application/meta/archive/archive_node.js';
 import { setDesignIntent } from '../../application/design/set_design_intent.js';
 import { harvestDecisions } from '../../application/observe/harvest_decisions.js';
@@ -63,9 +63,9 @@ import type { HarvestFromUrlInput } from '../../application/harvest/harvest_from
 import { slimBrick } from '../../application/harvest/slim_brick.js';
 import type { SlimBrickInput } from '../../application/harvest/slim_brick.js';
 import { renameMany, type RenameItem } from '../../infrastructure/parse/ast_rename.js';
-import { renameSymbols } from '../../application/refactor/rename_symbols.js';
-import { moveSymbol } from '../../application/refactor/symbol_move.js';
-import { findReferences } from '../../application/refactor/find_references.js';
+import { renameSymbols } from '../../application/refactor/rf-rename/rename_symbols.js';
+import { moveSymbol } from '../../application/refactor/rf-rename/symbol_move.js';
+import { findReferences } from '../../application/refactor/rf-find/find_references.js';
 import { runTests } from '../../application/observe/run_tests.js';
 // （`tools/stale_check` 的导入已随 P-F 删除：本文件不再直接消费它 —— 三个 stale 告警各自
 //   探测，`stale_check.formatStaleText` 仍由 lanes/observe.ts 的 `run_tests` 前置提示使用。）
@@ -75,16 +75,16 @@ import type { ImpactChangePoint } from '../../infrastructure/analysis/impact/ind
 import { compareProjects } from '../../infrastructure/analysis/cross_repo/index.js';
 import { precheckHybrid, VERDICT_LABEL } from '../../infrastructure/analysis/hybrid/index.js';
 import { analyzeHealth } from '../../infrastructure/analysis/health/index.js';
-import { renameFiles } from '../../application/refactor/rename_files.js';
-import { removeDeadImports, removeDeadImportsWithVerify, type RemoveDeadImportsVerifyOptions } from '../../application/refactor/remove_dead_imports.js';
-import { runRefactorPipeline } from '../../application/refactor/refactor_pipeline.js';
-import { planFunctionAnnotation, scanFileAnnotations } from '../../application/refactor/function_annotation.js';
+import { renameFiles } from '../../application/refactor/rf-rename/rename_files.js';
+import { removeDeadImports, removeDeadImportsWithVerify, type RemoveDeadImportsVerifyOptions } from '../../application/refactor/rf-edit/remove_dead_imports.js';
+import { runRefactorPipeline } from '../../application/refactor/rf-pipeline/refactor_pipeline.js';
+import { planFunctionAnnotation, scanFileAnnotations } from '../../application/refactor/rf-annotate/function_annotation.js';
 import { getFeatureLine } from '../../application/observe/feature_line.js';
 import { proposeChange } from '../../application/design/code_workbench.js';
-import { suggestRenames, type SuggestOptions } from '../../application/refactor/ast_suggest.js';
-import { suggestDisambiguations, disambiguationItems } from '../../application/refactor/similar_names.js';
-import { runRefactorJudge } from '../../application/refactor/refactor_judge.js';
-import type { JudgeIssue, JudgeDecision } from '../../application/refactor/refactor_judge.js';
+import { suggestRenames, type SuggestOptions } from '../../application/refactor/rf-find/ast_suggest.js';
+import { suggestDisambiguations, disambiguationItems } from '../../application/refactor/rf-find/similar_names.js';
+import { runRefactorJudge } from '../../application/refactor/rf-pipeline/refactor_judge.js';
+import type { JudgeIssue, JudgeDecision } from '../../application/refactor/rf-pipeline/refactor_judge.js';
 import { validateReason } from '../../application/observe/reason_validator.js';
 import type { ReasonEvidenceRef } from '../../application/observe/reason_validator.js';
 import { runDiagnosis, formatDiagnoseText } from '../../infrastructure/analysis/diagnosis/diagnose.js';
@@ -100,7 +100,7 @@ import { queryObserveLog } from '../../infrastructure/analysis/observe/log_query
 import { memoryObserveHandler, memoryTargetsHandler } from '../../application/observe/memory_observe.js';
 import { translateGoTsHandler } from '../../infrastructure/analysis/translate/tool.js';
 import { extractGo } from '../../infrastructure/analysis/translate/go_extractor.js';
-import { extractRule } from '../../application/refactor/rule_extract.js';
+import { extractRule } from '../../application/refactor/rf-rules/rule_extract.js';
 import {
   loadRules,
   writeRule,
@@ -109,7 +109,7 @@ import {
   hasPositiveFixture,
   rulesDir,
   type Rule,
-} from '../../application/refactor/rule_library.js';
+} from '../../application/refactor/rf-rules/rule_library.js';
 import {
   collectRuleTargets,
   applyRulesToFiles,
@@ -118,7 +118,7 @@ import {
   ratchetDelta,
   runFixtures,
   type ApplySummary,
-} from '../../application/refactor/rule_apply.js';
+} from '../../application/refactor/rf-rules/rule_apply.js';
 import { observeTrace } from '../../application/observe/observe_trace.js';
 import { normalizeEvents, judgeEvents, judgeEventsWithLLM, renderJudgeReport } from '../../infrastructure/analysis/observe/judge_service.js';
 import { TSComparator, renderTSDiffReport, type TSDLDecl, type TSDiffReport } from '../../infrastructure/analysis/observe/contract.js';

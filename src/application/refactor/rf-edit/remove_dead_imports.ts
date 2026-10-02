@@ -22,9 +22,9 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import type { DeadDepCandidate } from '../../infrastructure/graph/dead_deps.js';
-import { applyWithVerify, defaultVerifyCommands, runVerification, type VerifyCommand, type VerificationOutcome, type VerifyOutcomeKind } from '../../infrastructure/verify_refactor.js';
-import { snapshotAndRecordSelfWrite, syncSelfWritesSync, type WriteThroughOutcome } from '../observe/write_gate.js';
+import type { DeadDepCandidate } from '../../../infrastructure/graph/dead_deps.js';
+import { applyWithVerify, defaultVerifyCommands, runVerification, type VerifyCommand, type VerificationOutcome, type VerifyOutcomeKind } from '../../../infrastructure/verify_refactor.js';
+import { snapshotAndRecordSelfWrite, syncSelfWritesSync, type WriteThroughOutcome } from '../../observe/write_gate.js';
 
 // ─────────────────────────────────────────────
 // 纯函数：单文件删除指向 target 的 import 语句

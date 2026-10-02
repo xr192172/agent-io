@@ -19,15 +19,15 @@
  *   - **不改文件就不报成功**：apply 返回逐文件三态计数，回执如实说明。
  */
 
-import { DATA_DIR_NAME } from '../../infrastructure/data_dir.js';
+import { DATA_DIR_NAME } from '../../../infrastructure/data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
-import { SOURCE_EXTS } from '../../infrastructure/parse/index.js';
-import { matchRule, instantiateReplace } from '../../infrastructure/parse/rule_match.js';
-import { applyMatch as applyOneMatch } from '../../infrastructure/parse/rule_match.js';
+import { SOURCE_EXTS } from '../../../infrastructure/parse/index.js';
+import { matchRule, instantiateReplace } from '../../../infrastructure/parse/rule_match.js';
+import { applyMatch as applyOneMatch } from '../../../infrastructure/parse/rule_match.js';
 import { loadRules, baselinePath, rulesDir, type Rule } from './rule_library.js';
-import { splitLines, leadingWs } from '../../infrastructure/parse/rule_tokens.js';
-import { skipDirSet } from '../../infrastructure/parse/source_exts.js';
+import { splitLines, leadingWs } from '../../../infrastructure/parse/rule_tokens.js';
+import { skipDirSet } from '../../../infrastructure/parse/source_exts.js';
 
 /* ─────────────────── 三态结果 ─────────────────── */
 

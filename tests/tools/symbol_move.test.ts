@@ -9,7 +9,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { moveSymbol } from '../../src/application/refactor/symbol_move.js';
+import { moveSymbol } from '../../src/application/refactor/rf-rename/symbol_move.js';
 import { analyzeModuleSource } from '../../src/application/refactor/rename_symbol/index.js';
 import { getProjectCacheDb, closeAllProjectCacheDbs } from '../../src/infrastructure/index/db.js';
 import { searchSymbols } from '../../src/infrastructure/index/symbols.js';

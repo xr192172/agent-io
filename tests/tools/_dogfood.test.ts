@@ -2,7 +2,7 @@ import { it } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { findSimilarNames } from '../../src/application/refactor/similar_names.js';
+import { findSimilarNames } from '../../src/application/refactor/rf-find/similar_names.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const files = [

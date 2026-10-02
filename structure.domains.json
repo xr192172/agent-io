@@ -97,9 +97,63 @@
       "layer": "application",
       "dir": "src/application/meta/archive",
       "note": "下线库归档（archive_node）：把下线的文件/节点孤立到 archive"
+    },
+    {
+      "id": "rf-rename",
+      "layer": "application",
+      "dir": "src/application/refactor/rf-rename",
+      "note": "改名族：文件改名（单/批）/ 局部变量改名 / 模块级符号改名的**工具入口** / 跨文件移符号"
+    },
+    {
+      "id": "rf-find",
+      "layer": "application",
+      "dir": "src/application/refactor/rf-find",
+      "note": "查找与建议：引用查找（含 field/type 结构引用引擎）/ 相似名聚类 / 短变量命名建议"
+    },
+    {
+      "id": "rf-edit",
+      "layer": "application",
+      "dir": "src/application/refactor/rf-edit",
+      "note": "编辑与边界：符号级编辑 / 统一落盘适配 / 死导入清理 / 扫描边界契约"
+    },
+    {
+      "id": "rf-rules",
+      "layer": "application",
+      "dir": "src/application/refactor/rf-rules",
+      "note": "规则族：规则库 / 规则提取 / 规则应用"
+    },
+    {
+      "id": "rf-pipeline",
+      "layer": "application",
+      "dir": "src/application/refactor/rf-pipeline",
+      "note": "流水线与裁决：确定性重构管线 / 可评审可重放的改装计划 / LLM 评审闸"
+    },
+    {
+      "id": "rf-snapshot",
+      "layer": "application",
+      "dir": "src/application/refactor/rf-snapshot",
+      "note": "快照与保护：代码文件回滚快照 / 冻结行保护"
+    },
+    {
+      "id": "rf-view",
+      "layer": "application",
+      "dir": "src/application/refactor/rf-view",
+      "note": "视图对比：设计视图 vs 实际代码快照"
+    },
+    {
+      "id": "rf-annotate",
+      "layer": "application",
+      "dir": "src/application/refactor/rf-annotate",
+      "note": "函数语义注释：扫描覆盖 → LLM 补全 → body 指纹同步过期"
+    },
+    {
+      "id": "rf-parse",
+      "layer": "application",
+      "dir": "src/application/refactor/rf-parse",
+      "note": "解析能力自述（按语言如实声明索引能力）"
     }
   ],
-  "unassignedNote": "下表是**有意留白**：还没定归属的现行文件。读数会把它们报成 `unlisted`（= 要决定归属），而不是猜一个域塞进去。 2026-10-02 第二批：把 application/meta/ 的 20 个散文件纳入域表（8 个域），id 一律带 meta- 前缀以免与已有域重名（如 impact）。",
+  "unassignedNote": "下表是**有意留白**：还没定归属的现行文件。读数会把它们报成 `unlisted`（= 要决定归属），而不是猜一个域塞进去。 2026-10-02 第二批：把 application/meta/ 的 20 个散文件纳入域表（8 个域），id 一律带 meta- 前缀以免与已有域重名（如 impact）。 2026-10-02 第三批：把 application/refactor/ 的 24 个散文件纳入域表（9 个域，id 带 rf- 前缀）。★ `rename_symbol/` 与 `package_migration/` 保持原位 —— 它们是「功能内按实现分包」，不是域。",
   "unassigned": [
     "role_title",
     "snapshot_needle",

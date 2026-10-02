@@ -14,7 +14,7 @@ import path from 'node:path';
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { importProject, readAssemblyBricks } from '../../src/infrastructure/graph/import_project.js';
 import { getDSL, getLiveFeature } from '../../src/infrastructure/storage.js';
-import { diffViews } from '../../src/application/refactor/diff_views.js';
+import { diffViews } from '../../src/application/refactor/rf-view/diff_views.js';
 import { isIndexSkippedFileName, isNoiseFileName } from '../../src/infrastructure/parse/source_exts.js';
 
 let fixtureRoot: string;

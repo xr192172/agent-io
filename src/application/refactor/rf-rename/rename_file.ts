@@ -18,13 +18,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { readdirSync } from 'node:fs';
-import { parseAstRoot, type SyntaxNodeLike } from '../../infrastructure/parse/kernel.js';
-import { TS_JS_EXTS } from '../../infrastructure/parse/index.js';
-import { resolveImportTarget, syncFile, removeFile } from '../../infrastructure/index/symbols.js';
-import { getProjectCacheDb, closeProjectCacheDb } from '../../infrastructure/index/db.js';
-import { createProtectGuard } from './protect.js';
-import { reopenAndResolveAfterWrite } from '../observe/write_gate.js';
-import { withTouched, type Touched, type TouchedProduct } from '../../domain/b_terms.js';
+import { parseAstRoot, type SyntaxNodeLike } from '../../../infrastructure/parse/kernel.js';
+import { TS_JS_EXTS } from '../../../infrastructure/parse/index.js';
+import { resolveImportTarget, syncFile, removeFile } from '../../../infrastructure/index/symbols.js';
+import { getProjectCacheDb, closeProjectCacheDb } from '../../../infrastructure/index/db.js';
+import { createProtectGuard } from '../rf-snapshot/protect.js';
+import { reopenAndResolveAfterWrite } from '../../observe/write_gate.js';
+import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
 // 扫描范围内源码扩展名：TS 系全量 + Python（相对导入语义与 TS 同构，复用同一相对路径重算逻辑）。
 // Go 的 import 是模块包路径（非相对文件路径），移动单文件不改变途径名 → 不纳入扫描。
@@ -158,16 +158,16 @@ function newPySpecifier(importerRel: string, newRelNoExt: string): string {
 function importSourceLiteral(node: SyntaxNodeLike): { startIndex: number; text: string; inner: string } | null {
   const lit = stringLiteral(node.childForFieldName('source'));
   if (lit) return lit;
-  // require('./x') / require.resolve('./x') / **import('./x')**：call_expression 没有 source 字段，
+  // require('../x') / require.resolve('../x') / **import('../x')**：call_expression 没有 source 字段，
   // 需从 arguments 取。
   //
   // ★★ 2026-09-30（T12）：原先正则只有 `require(\.resolve)?` ⇒ **不认 `import(...)`**。
   //   后果（实测）：搬 `src/dsl/` → `src/domain/` 时，`src/renderer/html_renderer.ts:89` 的
-  //   `function renderContentBlocks(blocks: import('../dsl/types.js').ContentBlock[])`
+  //   `function renderContentBlocks(blocks: import('../../dsl/types.js').ContentBlock[])`
   //   **没被改写** ⇒ `tsc` 报 `TS2307: Cannot find module '../dsl/types.js'`。
   //   ★ 实测该写法在 tree-sitter（typescript）下的节点形状：
   //     `member_expression > call_expression(function=`import` 关键字节点, arguments=(string))`
-  //   —— 与动态 `import('./x')` **同一个形状**，所以这一条同时覆盖"类型位置的内联 import"与"动态 import"。
+  //   —— 与动态 `import('../x')` **同一个形状**，所以这一条同时覆盖"类型位置的内联 import"与"动态 import"。
   //   ★ 这是个**定时炸弹**：全仓 5 处这种写法，另 4 处只是恰好还没搬到 ⇒ 不修的话每族搬迁都会踩。
   if (node.type === 'call_expression') {
     const fn = node.childForFieldName('function');

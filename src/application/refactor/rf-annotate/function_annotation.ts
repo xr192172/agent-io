@@ -20,9 +20,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
-import { parseFileFull } from '../../infrastructure/parse/index.js';
-import { loadLlmConfig, callChat } from '../../infrastructure/llm_focus.js';
-import { scanProjectSourceFiles } from '../../infrastructure/analysis/deadcode/detect_dead_imports.js';
+import { parseFileFull } from '../../../infrastructure/parse/index.js';
+import { loadLlmConfig, callChat } from '../../../infrastructure/llm_focus.js';
+import { scanProjectSourceFiles } from '../../../infrastructure/analysis/deadcode/detect_dead_imports.js';
 
 /** 注释里的 body 指纹标记前缀 */
 export const FNHASH_PREFIX = '@fnhash';

@@ -13,7 +13,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect, afterAll, vi } from 'vitest';
 import { runVerification, defaultVerifyCommands, applyWithVerify, type VerifyCommand } from '../../src/infrastructure/verify_refactor.js';
-import { removeDeadImportsWithVerify, type RemoveDeadImportsVerifyResult } from '../../src/application/refactor/remove_dead_imports.js';
+import { removeDeadImportsWithVerify, type RemoveDeadImportsVerifyResult } from '../../src/application/refactor/rf-edit/remove_dead_imports.js';
 
 const roots: string[] = [];
 afterAll(() => {

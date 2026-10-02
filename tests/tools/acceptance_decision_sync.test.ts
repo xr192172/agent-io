@@ -12,7 +12,7 @@
  * 验收方式：看 console 输出的完整 diff 消息。
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { diffViews } from '../../src/application/refactor/diff_views.js';
+import { diffViews } from '../../src/application/refactor/rf-view/diff_views.js';
 import { archiveNode, listArchive } from '../../src/application/meta/archive/archive_node.js';
 import {
   saveDSL,

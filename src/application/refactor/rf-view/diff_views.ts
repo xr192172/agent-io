@@ -21,9 +21,9 @@
  * 输出结构化数据供 LLM 分析 + 可读摘要。
  */
 
-import type { DesignDSL, SemanticFile, Symbol, ExpectedApi, Edge, NodeDecision, DecisionHistoryEntry } from '../../domain/types.js';
-import { getDSL, getLiveFeature, getBaselineFeature, getArchiveEntryByPath } from '../../infrastructure/storage.js';
-import { mergedApis } from '../../infrastructure/index/file_facts.js';
+import type { DesignDSL, SemanticFile, Symbol, ExpectedApi, Edge, NodeDecision, DecisionHistoryEntry } from '../../../domain/types.js';
+import { getDSL, getLiveFeature, getBaselineFeature, getArchiveEntryByPath } from '../../../infrastructure/storage.js';
+import { mergedApis } from '../../../infrastructure/index/file_facts.js';
 
 // ──────── 输出类型 ────────
 

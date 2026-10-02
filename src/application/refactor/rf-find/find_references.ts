@@ -19,18 +19,18 @@
 
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { resolveProjectRoot, loadAliasConfig, resolveAliasedImport, resolveLangImport } from '../cross/project_root.js';
-import { analyzeModuleSource, resolveRel, buildNoExt } from './rename_symbol/index.js';
-import { camelToSnake, scanLiteralOccurrences, type RawLiteralMatch } from './rename_symbols.js';
+import { resolveProjectRoot, loadAliasConfig, resolveAliasedImport, resolveLangImport } from '../../cross/project_root.js';
+import { analyzeModuleSource, resolveRel, buildNoExt } from '../rename_symbol/index.js';
+import { camelToSnake, scanLiteralOccurrences, type RawLiteralMatch } from '../rf-rename/rename_symbols.js';
 import { collectFieldRefs, collectTypeConstructCandidates, type FieldRefFile, type TypeConstructCandidate } from './field_refs.js';
-import { parseFileFull } from '../../infrastructure/parse/index.js';
-import { getProjectCacheDb } from '../../infrastructure/index/db.js';
-import { ensureProjectIndex } from '../../infrastructure/index/index_freshness.js';
-import { buildImportGraph } from '../../infrastructure/graph/import_graph.js';
-import { scanTextMentions } from '../../infrastructure/text/refs_text.js';
-import { getProjectView } from '../../infrastructure/parse/project_view.js'; // ★ §19②
-import type { ScanBounds } from './scan_bounds.js';
-import { withTouched, type Touched, type TouchedProduct } from '../../domain/b_terms.js';
+import { parseFileFull } from '../../../infrastructure/parse/index.js';
+import { getProjectCacheDb } from '../../../infrastructure/index/db.js';
+import { ensureProjectIndex } from '../../../infrastructure/index/index_freshness.js';
+import { buildImportGraph } from '../../../infrastructure/graph/import_graph.js';
+import { scanTextMentions } from '../../../infrastructure/text/refs_text.js';
+import { getProjectView } from '../../../infrastructure/parse/project_view.js'; // ★ §19②
+import type { ScanBounds } from '../rf-edit/scan_bounds.js';
+import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
 /** 每个文件最多取多少条文本提及（避免单文件刷屏） */
 const TEXT_MENTION_PER_FILE = 3;
@@ -226,7 +226,7 @@ async function findReferencesCore(input: {
     if (typeof v !== 'string' || v.trim() === '') throw new Error(`缺少必需参数 ${what}：${how}`);
     return v;
   };
-  const EXAMPLE_FILE = `'src/application/refactor/find_references.ts'`;
+  const EXAMPLE_FILE = `'src/application/refactor/rf-find/find_references.ts'`;
   if (input.mode === 'type') {
     reqStr(input.file, 'file', `mode=type 需要 file（类型定义文件）。例：{mode:'type', file:${EXAMPLE_FILE}, symbol:'FindReferencesResult'}`);
     reqStr(input.symbol, 'symbol', `mode=type 需要 symbol（类型名）。例：{mode:'type', file:${EXAMPLE_FILE}, symbol:'FindReferencesResult'}`);

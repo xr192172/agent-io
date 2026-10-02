@@ -44,13 +44,13 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { parseFileFull, parseAstRoot, type ParsedSymbol } from '../../infrastructure/parse/index.js';
-import { syncFile } from '../../infrastructure/index/symbols.js';
-import { getProjectCacheDb } from '../../infrastructure/index/db.js';
-import { splitKeepEnds, detectEol, isBlankLine } from '../../infrastructure/parse/line_utils.js';
-import { snapshotBeforeWrite } from './file_snapshot.js';
-import { reopenAndResolveAfterWrite, reopenNote } from '../observe/write_gate.js';
-import { locateReplaceText, realignNewTextTo, FUZZY_LEVEL_LABEL } from '../../infrastructure/parse/fuzzy_match.js';
+import { parseFileFull, parseAstRoot, type ParsedSymbol } from '../../../infrastructure/parse/index.js';
+import { syncFile } from '../../../infrastructure/index/symbols.js';
+import { getProjectCacheDb } from '../../../infrastructure/index/db.js';
+import { splitKeepEnds, detectEol, isBlankLine } from '../../../infrastructure/parse/line_utils.js';
+import { snapshotBeforeWrite } from '../rf-snapshot/file_snapshot.js';
+import { reopenAndResolveAfterWrite, reopenNote } from '../../observe/write_gate.js';
+import { locateReplaceText, realignNewTextTo, FUZZY_LEVEL_LABEL } from '../../../infrastructure/parse/fuzzy_match.js';
 
 export type EditCodeOp = 'replace' | 'insert' | 'delete' | 'range' | 'replace_text';
 

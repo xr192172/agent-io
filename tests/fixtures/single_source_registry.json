@@ -27,7 +27,7 @@
       "pattern": "'.ts', '.tsx', '.js'",
       "frozen": {
         "src/infrastructure/graph/import_project.ts": 1,
-        "src/application/refactor/rename_symbols.ts": 1,
+        "src/application/refactor/rf-rename/rename_symbols.ts": 1,
         "src/application/harvest/slim_brick.ts": 1,
         "src/infrastructure/parse/import_resolve.ts": 1
       }

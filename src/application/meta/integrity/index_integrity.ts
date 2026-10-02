@@ -29,7 +29,7 @@ import { INDEX_SKIP_DIR_EXTRA, isNoiseFileName, isTestFileName, isUnderSkippedDi
 import { hasLiveIndex, pendingSelfWrites } from '../../observe/write_gate.js';
 import { backfillState, backfillSummary, isIndexIncomplete } from '../../../infrastructure/index/index_backfill.js';
 import { ensureProjectIndex, type IndexState } from '../../../infrastructure/index/index_freshness.js';
-import { summarizeLanguagesByTier, type LanguageTierSummary } from '../../refactor/parse_capability.js';
+import { summarizeLanguagesByTier, type LanguageTierSummary } from '../../refactor/rf-parse/parse_capability.js';
 
 /** 源码文件按类拆分（本体 / 测试 / 噪音）。★ 见 ④ 处的长注释：两把尺差的就是这两个类 */
 export interface FileKindCounts {

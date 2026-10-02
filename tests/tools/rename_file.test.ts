@@ -12,7 +12,7 @@ import { describe, it, expect } from 'vitest';
 import { mkdtempSync, writeFileSync, readFileSync, rmSync, mkdirSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { renameFile } from '../../src/application/refactor/rename_file.js';
+import { renameFile } from '../../src/application/refactor/rf-rename/rename_file.js';
 import { closeProjectCacheDb } from '../../src/infrastructure/index/db';
 
 function mkProj(files: Record<string, string>): string {

@@ -85,7 +85,7 @@ describe('P-A 门 · 写工具回执必须走 ---DATA--- 通道', () => {
   });
 
   it('edit_code 的回执字段声明存在（防被删）+ 外层包装是"从入参派生"', () => {
-    const src = fs.readFileSync(path.join(REPO, 'src', 'application', 'refactor', 'edit_code.ts'), 'utf8');
+    const src = fs.readFileSync(path.join(REPO, 'src', 'application', 'refactor', 'rf-edit', 'edit_code.ts'), 'utf8');
     for (const k of ['ok: boolean', 'dry_run: boolean', 'written: boolean']) {
       expect(src, 'EditReceipt 少了字段声明 ' + k).toContain(k);
     }

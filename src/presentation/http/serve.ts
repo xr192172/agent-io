@@ -31,7 +31,7 @@ import { dagLayout, forceLayout, gridAlign } from '../../application/design/dag_
 import { scaffold } from '../../application/design/scaffold.js';
 import { checkConsistency } from '../../application/design/consistency.js';
 import { diffImpact } from '../../infrastructure/analysis/impact/diff_impact.js';
-import { diffViews } from '../../application/refactor/diff_views.js';
+import { diffViews } from '../../application/refactor/rf-view/diff_views.js';
 import { watchProject } from '../../infrastructure/index/watch_project.js';
 import { createRebuildThrottler } from '../../infrastructure/index/watch_project_tool.js';
 import { archLayer } from '../../infrastructure/analysis/structure/arch_layer.js';

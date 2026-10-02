@@ -11,7 +11,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { editCode } from '../../src/application/refactor/edit_code.js';
+import { editCode } from '../../src/application/refactor/rf-edit/edit_code.js';
 import { parseFileFull } from '../../src/infrastructure/parse/index.js';
 import { getProjectCacheDb, closeAllProjectCacheDbs } from '../../src/infrastructure/index/db.js';
 import { searchSymbols, getFileParse } from '../../src/infrastructure/index/symbols.js';

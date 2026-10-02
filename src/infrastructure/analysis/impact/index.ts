@@ -23,7 +23,7 @@
 import path from 'node:path';
 import { parseFileFull, listSupportedExtensions, resolveProjectImport, type ParsedSymbol } from '../../parse/index.js';
 import { codeSourceExts, partitionByCodeLang } from '../../parse/source_exts.js';
-import { boundsSkipFromExcluded, type ScanBounds } from '../../../application/refactor/scan_bounds.js';
+import { boundsSkipFromExcluded, type ScanBounds } from '../../../application/refactor/rf-edit/scan_bounds.js';
 import { collectSourceFiles } from '../version_upgrade/detect.js';
 
 // ── 对外类型 ─────────────────────────────────────────────────

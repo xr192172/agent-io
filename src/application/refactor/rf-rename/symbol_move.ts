@@ -26,7 +26,7 @@ import {
   analyzeModuleSource,
   resolveRel,
   buildNoExt,
-} from './rename_symbol/index.js';
+} from '../rename_symbol/index.js';
 import {
   resolveProjectRoot,
   expandClosureDetailed,
@@ -34,14 +34,14 @@ import {
   resolveAliasedImport,
   type AliasConfig,
   type ExternalRef,
-} from '../cross/project_root.js';
-import { parseAstRoot, TS_JS_EXTS } from '../../infrastructure/parse/index.js';
-import { syncFile } from '../../infrastructure/index/symbols.js';
-import { getProjectCacheDb } from '../../infrastructure/index/db.js';
-import { splitKeepEnds, detectEol, isBlankLine } from '../../infrastructure/parse/line_utils.js';
-import { snapshotBeforeWrite } from './file_snapshot.js';
-import { reopenAndResolveAfterWrite } from '../observe/write_gate.js';
-import type { ScanBounds } from './scan_bounds.js';
+} from '../../cross/project_root.js';
+import { parseAstRoot, TS_JS_EXTS } from '../../../infrastructure/parse/index.js';
+import { syncFile } from '../../../infrastructure/index/symbols.js';
+import { getProjectCacheDb } from '../../../infrastructure/index/db.js';
+import { splitKeepEnds, detectEol, isBlankLine } from '../../../infrastructure/parse/line_utils.js';
+import { snapshotBeforeWrite } from '../rf-snapshot/file_snapshot.js';
+import { reopenAndResolveAfterWrite } from '../../observe/write_gate.js';
+import type { ScanBounds } from '../rf-edit/scan_bounds.js';
 
 // ─────────────────────────────────────────────
 // 类型
@@ -94,7 +94,7 @@ export interface MoveSymbolResult {
    *   —— 收进 `bounds.skipped`（原字段名 `skipped`，本笔收成统一形状，内容一字未改）。
    *   跳过 = "可能漏掉一个引用本符号的 importer" ⇒ 移动后它的 import 可能仍指向旧文件。
    *   原来 `expandClosureDetailed` 已经报出这个数组，本文件却**直接丢弃** ⇒ 静默少改。
-   * 形状与挂载层见 `src/application/refactor/scan_bounds.ts`。
+   * 形状与挂载层见 `src/application/refactor/rf-edit/scan_bounds.ts`。
    */
   bounds?: ScanBounds;
   /** 传了 to_symbol 但 v1 未启用改名 */
@@ -377,7 +377,7 @@ export async function moveSymbol(input: MoveSymbolInput): Promise<MoveSymbolResu
     }
     const sourcesToRedirect: string[] = [];
     for (const [s, edges] of bySrc) {
-      // 星号转发（export * from './source'）
+      // 星号转发（export * from '../source'）
       if (edges.some((e) => e.star)) {
         blocked.push(`${path.basename(fAbs)} 用 export * 从源文件转发，无法按名重定向 import 目标`);
         continue;

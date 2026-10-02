@@ -10,7 +10,7 @@
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { createProtectGuard } from '../../protect.js';
+import { createProtectGuard } from '../../rf-snapshot/protect.js';
 import {
   collectFilesByExt,
   applyEdits,

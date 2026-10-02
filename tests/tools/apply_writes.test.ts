@@ -17,9 +17,9 @@ import path from 'node:path';
 import { describe, it, expect, afterAll } from 'vitest';
 import { importProject } from '../../src/infrastructure/graph/import_project.js';
 import { openDb } from '../../src/infrastructure/index/db';
-import { applyWrites } from '../../src/application/refactor/apply_writes.js';
-import { rollbackFileSnapshot, listFileSnapshots } from '../../src/application/refactor/file_snapshot.js';
-import { renameLocals } from '../../src/application/refactor/rename_local.js';
+import { applyWrites } from '../../src/application/refactor/rf-edit/apply_writes.js';
+import { rollbackFileSnapshot, listFileSnapshots } from '../../src/application/refactor/rf-snapshot/file_snapshot.js';
+import { renameLocals } from '../../src/application/refactor/rf-rename/rename_local.js';
 import { hasLiveIndex } from '../../src/application/observe/write_gate.js';
 
 const roots: string[] = [];

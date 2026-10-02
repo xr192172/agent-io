@@ -13,7 +13,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { exploreCode } from '../../src/application/meta/explore/explore_code.js';
-import { editCode } from '../../src/application/refactor/edit_code.js';
+import { editCode } from '../../src/application/refactor/rf-edit/edit_code.js';
 import { closeProjectCacheDb } from '../../src/infrastructure/index/db';
 
 interface ReadData {

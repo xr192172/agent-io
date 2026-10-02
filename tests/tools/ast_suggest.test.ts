@@ -11,7 +11,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { analyzeLocals, renameMany, type LocalBinding } from '../../src/infrastructure/parse/ast_rename.js';
-import { findSuggestCandidates, suggestRenames, type SuggestCandidate } from '../../src/application/refactor/ast_suggest.js';
+import { findSuggestCandidates, suggestRenames, type SuggestCandidate } from '../../src/application/refactor/rf-find/ast_suggest.js';
 
 async function findByName(src: string, name: string, nth = 0): Promise<LocalBinding> {
   const locals = await analyzeLocals(src);

@@ -23,7 +23,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { TOOL_DEFS } from '../../src/application/tool_registry.js';
-import { listFileSnapshots, rollbackFileSnapshot } from '../../src/application/refactor/file_snapshot.js';
+import { listFileSnapshots, rollbackFileSnapshot } from '../../src/application/refactor/rf-snapshot/file_snapshot.js';
 
 const def = (name: string) => {
   const d = TOOL_DEFS.find((t) => t.name === name);

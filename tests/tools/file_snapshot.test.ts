@@ -24,8 +24,8 @@ import {
   pruneFileSnapshots,
   snapshotBeforeWrite,
   fileSnapshotsDir,
-} from '../../src/application/refactor/file_snapshot.js';
-import { editCode } from '../../src/application/refactor/edit_code.js';
+} from '../../src/application/refactor/rf-snapshot/file_snapshot.js';
+import { editCode } from '../../src/application/refactor/rf-edit/edit_code.js';
 
 const roots: string[] = [];
 

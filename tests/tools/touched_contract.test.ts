@@ -13,8 +13,8 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { mkdtempSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { renameFiles } from '../../src/application/refactor/rename_files.js';
-import { renameFile } from '../../src/application/refactor/rename_file.js';
+import { renameFiles } from '../../src/application/refactor/rf-rename/rename_files.js';
+import { renameFile } from '../../src/application/refactor/rf-rename/rename_file.js';
 import { closeProjectCacheDb } from '../../src/infrastructure/index/db';
 
 const dirs: string[] = [];

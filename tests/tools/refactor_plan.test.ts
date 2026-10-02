@@ -18,7 +18,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { TOOL_DEFS } from '../../src/application/tool_registry.js';
 import { closeAllProjectCacheDbs } from '../../src/infrastructure/index/db.js';
-import type { ApplyPlanResult, RefactorPlan } from '../../src/application/refactor/refactor_plan.js';
+import type { ApplyPlanResult, RefactorPlan } from '../../src/application/refactor/rf-pipeline/refactor_plan.js';
 
 let dir: string;
 

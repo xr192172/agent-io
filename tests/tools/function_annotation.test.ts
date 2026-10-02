@@ -3,7 +3,7 @@
  * 只测纯逻辑（scanFileAnnotations / applyAnnotationsToSource），不触发 LLM。
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { scanFileAnnotations, applyAnnotationsToSource, type FnTarget } from '../../src/application/refactor/function_annotation.js';
+import { scanFileAnnotations, applyAnnotationsToSource, type FnTarget } from '../../src/application/refactor/rf-annotate/function_annotation.js';
 import os from 'node:os';
 import path from 'node:path';
 import fs from 'node:fs';

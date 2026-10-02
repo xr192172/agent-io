@@ -11,7 +11,7 @@ import { describe, it, expect } from 'vitest';
 import { mkdtempSync, writeFileSync, readFileSync, rmSync, mkdirSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { renameFiles } from '../../src/application/refactor/rename_files.js';
+import { renameFiles } from '../../src/application/refactor/rf-rename/rename_files.js';
 import { closeProjectCacheDb } from '../../src/infrastructure/index/db';
 
 function mkProj(files: Record<string, string>): string {

@@ -23,7 +23,7 @@ import {
   DEFAULT_ANNOTATION_LAYERS,
 } from '../../src/infrastructure/analysis/java_refactor/layering.js';
 import { javaVerifyCommands, javaExecutor, buildSpringMvcStage } from '../../src/infrastructure/analysis/java_refactor/executor.js';
-import { runRefactorPipeline } from '../../src/application/refactor/refactor_pipeline.js';
+import { runRefactorPipeline } from '../../src/application/refactor/rf-pipeline/refactor_pipeline.js';
 
 const roots: string[] = [];
 afterAll(() => {

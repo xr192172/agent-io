@@ -16,9 +16,9 @@
 
 import path from 'node:path';
 import { renameFile, type RenameFileResult } from './rename_file.js';
-import { resolveProjectRoot } from '../cross/project_root.js';
-import { snapshotBeforeWrite } from './file_snapshot.js';
-import { withTouched, type Touched, type TouchedProduct } from '../../domain/b_terms.js';
+import { resolveProjectRoot } from '../../cross/project_root.js';
+import { snapshotBeforeWrite } from '../rf-snapshot/file_snapshot.js';
+import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
 export interface FileRenameItem {
   /** 源文件：相对 project_dir 或绝对路径 */

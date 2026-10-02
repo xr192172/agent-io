@@ -116,7 +116,7 @@ const INTERNAL_MODULES: Record<string, { importedBy: string[]; why: string }> = 
     why: '积木化/分类两个 CLI 共用的函数收集器；不是 MCP 工具',
   },
   contract_gate: {
-    importedBy: ['src/application/refactor/refactor_pipeline.ts'],
+    importedBy: ['src/application/refactor/rf-pipeline/refactor_pipeline.ts'],
     why: 'refactor_pipeline 的契约闸门检查步骤；不是 MCP 工具',
   },
   dag_layout: {
@@ -129,8 +129,8 @@ const INTERNAL_MODULES: Record<string, { importedBy: string[]; why: string }> = 
       'src/application/design/brick_bag.ts',
       'src/presentation/cli/deprecate_offline.ts',
       'src/infrastructure/analysis/structure/feature_map.ts',
-      'src/application/refactor/function_annotation.ts',
-      'src/application/refactor/refactor_pipeline.ts',
+      'src/application/refactor/rf-annotate/function_annotation.ts',
+      'src/application/refactor/rf-pipeline/refactor_pipeline.ts',
     ],
     why: '死 import 检测是多个工具/CLI 共用的分析步骤；本身不是 MCP 工具',
   },
@@ -222,14 +222,14 @@ const INTERNAL_MODULES: Record<string, { importedBy: string[]; why: string }> = 
     why: 'split_stage（CLI 引擎）的拆分算法实现；explore_code 的 derive_split 分支另走 monolith.buildSplitPreviewDsl',
   },
   rename_file: {
-    importedBy: ['src/application/refactor/rename_files.ts', 'src/application/refactor/rename_symbol/languages/typescript.ts'],
+    importedBy: ['src/application/refactor/rf-rename/rename_files.ts', 'src/application/refactor/rename_symbol/languages/typescript.ts'],
     why: '★ 已注册工具 `rename_files` 的**单数引擎**（注册入口是 rename_files.ts）；注册名 ≠ 文件名',
   },
   rename_symbol: {
     importedBy: [
-      'src/application/refactor/rename_symbols.ts',
-      'src/application/refactor/find_references.ts',
-      'src/application/refactor/symbol_move.ts',
+      'src/application/refactor/rf-rename/rename_symbols.ts',
+      'src/application/refactor/rf-find/find_references.ts',
+      'src/application/refactor/rf-rename/symbol_move.ts',
     ],
     why: '★ 已注册工具 `rename_symbols` 的**单数引擎**（注册入口是 rename_symbols.ts）；注册名 ≠ 文件名',
   },
@@ -303,7 +303,7 @@ describe('server_registry 一致性', () => {
         : Object.keys((raw ?? {}) as Record<string, unknown>);
     expect(values.length, 'op 枚举解析失败（zod 内部结构变了？）').toBeGreaterThan(0);
 
-    // 实现侧的 op 联合（与 src/application/refactor/edit_code.ts 的 EditCodeOp 保持一致）
+    // 实现侧的 op 联合（与 src/application/refactor/rf-edit/edit_code.ts 的 EditCodeOp 保持一致）
     const implOps = ['replace', 'insert', 'delete', 'range', 'replace_text'];
     const missing = implOps.filter((o) => !values.includes(o));
     expect(missing, `实现支持但 schema 未暴露（从 MCP 面不可达）：${missing.join(', ')}`).toEqual([]);

@@ -17,10 +17,10 @@
  */
 
 import path from 'node:path';
-import { findLanguageByExt, type LanguageEntry } from '../../infrastructure/parse/languages.js';
-import { LANG_ADAPTERS } from '../../infrastructure/parse/kernel.js';
-import { isExtSupported } from '../../infrastructure/parse/probe.js';
-import { missingLanguageHint } from '../../infrastructure/parse/lang_hint.js';
+import { findLanguageByExt, type LanguageEntry } from '../../../infrastructure/parse/languages.js';
+import { LANG_ADAPTERS } from '../../../infrastructure/parse/kernel.js';
+import { isExtSupported } from '../../../infrastructure/parse/probe.js';
+import { missingLanguageHint } from '../../../infrastructure/parse/lang_hint.js';
 
 /** 解析层级：call = 调用级（最深） / symbol = 仅符号定义 / none = 不解析 */
 export type ParseTier = 'call' | 'symbol' | 'none';

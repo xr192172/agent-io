@@ -19,9 +19,9 @@ import path from 'node:path';
 import { getParser } from '../../../../infrastructure/parse/loader.js';
 import { findLanguageByExt } from '../../../../infrastructure/parse/languages.js';
 import { parseContent, isTypeOnlyModuleStatement } from '../../../../infrastructure/parse/kernel.js';
-import { renameFile } from '../../rename_file.js';
+import { renameFile } from '../../rf-rename/rename_file.js';
 import { expandClosureDetailed, loadAliasConfig, resolveAliasedImport, type AliasConfig } from '../../../cross/project_root.js';
-import { createProtectGuard } from '../../protect.js';
+import { createProtectGuard } from '../../rf-snapshot/protect.js';
 import { missingLanguageHint } from '../../../../infrastructure/parse/lang_hint.js';
 import {
   applyEdits,

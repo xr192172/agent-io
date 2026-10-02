@@ -25,7 +25,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { TOOL_DEFS } from '../../src/application/tool_registry.js';
-import { rulesDir } from '../../src/application/refactor/rule_library.js';
+import { rulesDir } from '../../src/application/refactor/rf-rules/rule_library.js';
 
 const def = (name: string) => {
   const d = TOOL_DEFS.find((t) => t.name === name);

@@ -33,17 +33,17 @@
  * 与本工具是上下游（它们出建议，本工具落盘），同样不聚合。
  */
 
-import { DATA_DIR_NAME } from '../../infrastructure/data_dir.js';
+import { DATA_DIR_NAME } from '../../../infrastructure/data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
-import { renameSymbol, type RenameSymbolInput, type RenameSymbolResult } from './rename_symbol/index.js';
+import { renameSymbol, type RenameSymbolInput, type RenameSymbolResult } from '../rename_symbol/index.js';
 import { renameLocals, type LocalRenameOutcome } from './rename_local.js';
-import { resolveProjectRoot } from '../cross/project_root.js';
-import { createProtectGuard } from './protect.js';
-import { writeSourceFiles, type WriteThroughOutcome } from '../observe/write_gate.js';
-import type { ExternalRef } from '../cross/project_root.js';
-import { skipDirSet } from '../../infrastructure/parse/source_exts.js';
-import { withTouched, type Touched, type TouchedProduct } from '../../domain/b_terms.js';
+import { resolveProjectRoot } from '../../cross/project_root.js';
+import { createProtectGuard } from '../rf-snapshot/protect.js';
+import { writeSourceFiles, type WriteThroughOutcome } from '../../observe/write_gate.js';
+import type { ExternalRef } from '../../cross/project_root.js';
+import { skipDirSet } from '../../../infrastructure/parse/source_exts.js';
+import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
 /** 字面量命中的类别：contract=对外工具注册名(破坏契约需人审)；history=tool-convergence 历史记录(保留原貌)；docs=文档；test=测试断言；code=源码字符串 */
 export type LiteralMatchKind = 'contract' | 'history' | 'docs' | 'test' | 'code';
