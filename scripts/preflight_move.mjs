@@ -69,7 +69,9 @@ const CLASS = [
   [/^scripts\//, '★ registry(钩子/脚本)'],
   [/^\.githooks\//, '★ registry(钩子/脚本)'],
   [/^tests\/fixtures\//, '★ registry(夹具)'],
-  [/^\.dependency-cruiser-known-violations\.json$/, '★ registry(架构基线)'],
+  // ★ 2026-10-03 删除 `[/^\.dependency-cruiser-known-violations\.json$/, '★ registry(架构基线)']`：
+  //   那份"已批准的违规清单"**已整体删除**（见 .dependency-cruiser.cjs 与台账 §44.37）——
+  //   它 18 条里 8 条已过期（44%），而 `arch` 一直拿它把 2 条**真环**盖成了"✔ 无违规"。
   [/^tests\//, 'test-ref'],
   [/^docs\//, 'doc'],
 ];

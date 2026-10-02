@@ -373,3 +373,16 @@ P2 四族搬迁 / P3 抽字符串 / P4 工具名拍板 / G1 复杂度阈值标�
 
       ★ 顺序建议：先做**纯扫描**的（`brand_residue` / `literal_table`）—— 它们**无判断成分**，一次成功率最高；
       **最后**啃 `single_source`。
+
+- [ ] **T26 ★★ `arch` 现在**如实报 2 条真环** —— 删掉「已批准违规清单」后才看得见**
+      *(核实：删 `.dependency-cruiser-known-violations.json`(213 行) + 删 `no-orphans` 规则 + 去掉 `--ignore-known`
+      后跑 `npm run arch` ⇒ **2 errors / 0 warnings**。见台账 §44.37。)*
+
+      | # | 环 | 性质 | 修法方向 |
+      |---|---|---|---|
+      | 1 | `application/observe/write_gate.ts` → `infrastructure/index/index_backfill.ts` → `index_freshness.ts` → `write_gate.ts` | ★ **跨层成环**（application ↔ infrastructure） | 先把"落盘内核"与"索引保鲜"的调用方向定下来：**谁调谁**，再把其中一边的依赖倒过来 |
+      | 2 | `application/cross/project_root.ts` → `application/refactor/rename_symbol/languages/typescript.ts` →（经 `parts.ts`）→ `project_root.ts` | ★ **两个 application 域互相依赖** | 主因是 `project_root.ts:30` 那个 **value** import（`analyzeModuleSource`）；`parts.ts:13` 的两条 type import 是最后一环（`dependencyTypesNot: ['type-only']` **对环不能逐边过滤**，所以那条 type 不能算"已排除"） |
+
+      ★★ **这两条一直存在**，只是被那份清单盖成了 `✔ no dependency violations found`。
+      ⇒ **别再"记进基线"** —— 要么修掉，要么**如实报着**（那份清单本身已证明会腐：**18 条里 8 条过期，44%**）。
+      ★ 判据（本笔定的）：**留「规则」和「现算」，删「存下来的结论」**。

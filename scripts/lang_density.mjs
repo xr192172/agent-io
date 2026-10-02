@@ -83,4 +83,5 @@ for (const r of rows) {
 }
 console.log(`\n命中 ${rows.length} 个文件。★ 目标形状：<功能>/languages/<lang>.ts + registry.ts`);
 console.log('★ 带「已是目标形状」标记的行**不要拆** —— 它们就是拆完的样子。');
-console.log('★ 拆完必须跑 `npm run arch`（0 违规）——"大家都要用的零件"放错位置会成环。');
+console.log('★ 拆完跑 `npm run arch` 看有没有**新**环 —— "大家都要用的零件"放错位置会成环。');
+console.log('  ★ 当前基线：**2 条待修的真环**（不是 0）—— 2026-10-03 删掉那份"已批准违规清单"后才看得见。');

@@ -198,4 +198,7 @@ for (const [f] of changed) {
   fs.writeFileSync(path.join(ROOT, f), text);
 }
 console.log(`\n✓ 已同步 ${changed.size} 个文件`);
-console.log('提醒：还要跑 `npx depcruise src --config .dependency-cruiser.cjs --baseline` 重收架构基线（它带绝对路径）。');
+// ★ 2026-10-03：原先这里提醒"重收架构基线"——那份基线（+ 维护它的 arch_baseline_remap.mjs 104 行）
+//   已整体删除：它是"存下来的结论"，18 条里 8 条过期，还把 2 条真环盖成了"✔ 无违规"。
+//   ⇒ 现在只需要**如实看** `npm run arch` 的输出。
+console.log('提醒：跑 `npm run arch` 看有没有**新**环（当前基线：2 条待修的真环，非 0）。');

@@ -58,15 +58,14 @@ module.exports = {
       from: { path: '^src/application/(observe|cross|design|meta|refactor|harvest)/index\\.ts$' },
       to: { dependencyTypes: ['core'], path: '^(node:)?fs(/promises)?$' },
     },
-    {
-      name: 'no-orphans',
-      severity: 'warn',
-      comment:
-        '没有被任何东西 import 的模块。★ 用 warn 而非 error：**入口点**（CLI/HTTP/daemon）本来就没人 import。' +
-        '真正该报的"死模块"由 knip 单独判（那是它的职责，别在这里重复）。',
-      from: { orphan: true, pathNot: ['^src/(presentation|daemon)/', '_cli\\.ts$', '^src/server\\.ts$'] },
-      to: {},
-    },
+    // ★★ 2026-10-03 **删除 `no-orphans` 整条规则**（不是加豁免，是删规则）：
+    //   它当时报了 16 条"孤儿"，实测**几乎全是假阳性** —— `src/domain/*` 的领域模型、
+    //   各 `types.ts` / `contract.ts` 都是**只被 `import type` 引用**的，而本配置
+    //   `tsPreCompilationDeps: false` ⇒ **type 引用不算依赖** ⇒ 它们看起来"没人 import"。
+    //   ★ 而且本文件上方那句注释早就写明：「真正该报的"死模块"由 **knip 单独判**
+    //     （**那是它的职责，别在这里重复**）」—— 它**本来就承认这是重复劳动**。
+    //   ⇒ 与其养一份"孤儿白名单"（**那是存下来的结论，会过期**：本轮实测 known-violations
+    //     里 18 条有 **8 条已过期 = 44%**），不如**删掉这条规则**，把这份判断交还给 knip。
   ],
   options: {
     doNotFollow: { path: 'node_modules' },
