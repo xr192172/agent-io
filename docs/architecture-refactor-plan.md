@@ -5731,3 +5731,102 @@ MCP 修好后（§44.34），用户说：「**这个项目也有 cli 工具吧�
 | `node scripts/structure_gap.mjs` | 待搬 **0** ／ 待定归属 **6 → 5**（`text/` 登记成域后不再是"未登记子目录"） |
 | `tests/infrastructure/structure_gap.test.ts` | 17/17 ✓（含新加的 ⑮） |
 | `npm run test:main` | **239 文件通过 / 1 跳过 ｜ 2467 项通过 / 5 跳过 ｜ 0 失败** |
+
+---
+
+### 44.36 ★★★ 「夹具不是被框架替代了吗」—— 删掉一扇**哑了很久**的手写门，换成 8 行框架规则（2026-10-03）
+
+#### 起因（用户的原话）
+
+> 「**我说的狗食是用工具自己开发自己，不是你那些夹具**，我感觉你把大部分的时间花在了维护夹具上了。
+>  在传统开发里它们或许代表开发质量，但现在我们的工具应该替代掉它们，**并且这些夹具不是已经被框架替代了吗**？
+>  我觉得不要任何夹具，直接开发会不会更好，我们的工具本身也覆盖了测试吧，那个夹具你一直在修，
+>  **而且一层叠一层，就好像在不断自指一样无穷无尽**，而且拖慢项目进度，每过一段时间又修一次，
+>  不如抛弃掉这些没有实际意义的夹具，**有问题直接用工具去扫**」
+
+#### 一、先把账摆出来（用户说的"一层叠一层"**有确切对象**）
+
+| 项 | 读数 |
+|---|---|
+| 手工登记表夹具 | **6 张 / 20.6 KB**（`brand_residue_registry` 2.4K｜`single_source_registry` 8.2K｜`literal_table_registry` 2.9K｜`lane_no_io` 1.6K｜`explore_action_wiring` 1.9K｜`tool_completion_receipt` 5.4K） |
+| 消费它们的点 | **8 个**（`tests/helpers/source_scan.ts` + 5 扇门 + `scripts/move_finish.mjs`） |
+| 门体系规模 | **4,605 行**（tests 根下 15 扇 + registry 5 + scripts 3 + helpers） |
+| `tests/tools/` | **156 个文件**测 59 个工具 |
+
+#### 二、★★ 立刻就找到一扇**哑门**（本轮最硬的证据）
+
+`tests/registry/lane_no_io.test.ts`（**247 行**，配 `tests/fixtures/lane_no_io.json`）：
+判据是「**lane 文件里不许出现文件 IO**」（IO 只能在 [B]，否则"落盘"多一份没走写闸的实现）。
+
+**但它扫的根是 `src/registry/lanes/*.ts` —— 该目录早随 P1c/P2 搬迁消失**（lane 文件现在住在
+`src/application/<线>/index.ts`）⇒ **它扫到 0 个文件、恒绿、哑了很久**。
+每次全量它都"通过"，实际什么都没守。
+
+> ★ 这是「被搬动作坏」家族的**第 11 例**，而且**长在门自己身上** —— 与 §44.36 之前那例
+> （`_dogfood.test.ts` 静默跳过不存在的路径）同型。
+> ★★ **我上一轮盘点时还把它列进"有效的门"的规模统计里** —— 因为"它在测试里是绿的"。
+
+#### 三、换载体：手写门 → **框架规则**（8 行）
+
+加一条 `dep-cruiser` 规则（**声明式**，`from`/`to` 正则 —— 搬迁不改规则，所以不会再腐）：
+
+```js
+{ name: 'lane-must-not-io', severity: 'error',
+  from: { path: '^src/application/(observe|cross|design|meta|refactor|harvest)/index\.ts$' },
+  to:   { dependencyTypes: ['core'], path: '^(node:)?fs(/promises)?$' } }
+```
+
+**净减**：247 行门 + 1.6 KB 登记表 → **8 行规则**。删除 `lane_no_io.test.ts` + `lane_no_io.json`。
+
+#### 四、★★★ 过程里的两个坑（**两个都靠"出生证"逮住**，不注入就发现不了）
+
+**坑 1：第一版规则是哑的。** 注入 `import fs from 'node:fs';` 后 `arch` **仍然全绿**。
+查因：**dep-cruiser 走"TS 编译后"分析 ⇒ 未使用的 import 被 elide** ⇒ 该文件的依赖数**纹丝不动**（仍 12 条）。
+对照：`cross/index.ts` 的 `node:path` 能被看见，只因它**真被用了**。
+
+**坑 2：想开 `tsPreCompilationDeps: true` 补救，代价更大。**
+一开就冒出 **7 条 type-only 假环**（`src/domain/` 里一片 `types ↔ geometry/animation/semantic` 的
+`import type` 互引）。给 4 条规则加 `dependencyTypesNot: ['type-only']` 后滤掉 6 条，
+**仍残留 1 条**（`…/rename_symbol/languages/typescript.ts → parts.ts → project_root.ts`）——
+因为 **`dependencyTypesNot` 对"环"不能逐边过滤**（环是图层面的判定）。
+⇒ **回退开关**。结论写进配置注释：那类情形（**import 了不用**）**交给 `tsc` 的 `noUnusedLocals`** 更合适，
+**别让框架的一个全局开关去背一个窄判据**。
+
+**最终出生证（通过）**：
+
+```
+① 干净状态：✔ no dependency violations found
+② 注入 import { readFileSync } from 'node:fs'; void readFileSync;  ⇒
+   error lane-must-not-io: src/application/meta/index.ts → fs      ← 红了 ✓
+③ 还原
+```
+
+★ 如实记下**这条规则的边界**：它只能抓「**被使用**的文件 IO import」；
+「import 了但没用」靠 `tsc`（那是 tsconfig 的事，框架分工）。**别把它当成比原门更宽 —— 是更窄但不会腐。**
+
+#### 五、★★★ 本轮真正的产出：一条**可执行的判据**（回答"哪些夹具该抛弃"）
+
+> **一个夹具 / 一扇门该不该留，看它保护的那个判据是「扫描出来的」还是「执行出来的」：**
+>
+> | 判据的形态 | 例子 | 处置 |
+> |---|---|---|
+> | **扫描**（某模式在哪出现几次 / 某路径是否存在 / 某结构是否一致 / 某 import 是否出现） | 上面 **6 张登记表全覆盖**；`brand_residue`；`duplicate_literal_tables`；`explore_action_wiring`；`lane_no_io` | ★★ **一律换成框架规则或工具**（`dep-cruiser` / 编译器 / 一个 action）。**手写门与登记表都删** |
+> | **执行**（给输入、断言输出） | `tests/tools/` 里大多数；`edit_code` 的行为 | 工具**替代不了**（要跑才知道）⇒ 留；但**别再叠层**（不加棘轮、不加"证明门有效的门"） |
+>
+> ⇒ 用户那句「**有问题直接用工具去扫**」正是第一行；而「夹具被框架替代」在本仓**早已是写进配置头注的裁定**
+> （`.dependency-cruiser.cjs` 开篇：「自写门**会漂移**（本仓活证：43 条手抄名单 / 20 条豁免名单 /
+> `INTERNAL_MODULES` 三处腐烂）；本工具的规则是声明式模式 —— 加文件不用改规则，**因此不会腐**」）。
+> **`lane_no_io` 只是没跟上这条裁定的一扇**。
+
+★ 同族先例（本仓已做过、且成功）：`stage_registry.json`(198) + `root_declaration.test.ts`(647) → 换成
+`stage_registry.ts` 的 typed 表（§44.29）；扫描边界门 + 43 条手抄登记表 → 直接删（`a1a7def`）；
+`capability_map.LANE_OF` → 删、改派生（P1c）。**方向早定了，剩这 6 张表没走完。**
+
+#### 验证
+
+| 量具 | 结果 |
+|---|---|
+| `npx tsc --noEmit` | EXIT=0 |
+| `npm run arch` | **0 违规**（新规则在位） |
+| `lane-must-not-io` 出生证 | 注入真 IO ⇒ 红 ✓ ／ 干净 ⇒ 绿 ✓ |
+| `npm run test:main` | **238 文件通过 / 1 跳过 ｜ 2455 项通过 / 5 跳过 ｜ 0 失败**（上一轮 239/2467 ⇒ **少了 1 个文件 / 12 项**，就是删掉那扇哑门） |

@@ -1,6 +1,0 @@
-{
-  "note": "lane 无 IO 门（tests/registry/lane_no_io.test.ts）的判据登记表。\n\n判据：`src/registry/lanes/*.ts` 是 [C] 层 —— 它的职责是**路由**（把 MCP 入参交给 [B] 内核），不是自己读写文件。一个 lane 文件里出现文件 IO，就意味着「落盘」这件事又多了一份没走写闸（无写前快照 ⇒ 不可撤回；无索引写穿 ⇒ 读到的索引可能已旧）的实现 —— 这正是用户诊断的『接口性收敛收敛不起来』：`rename_symbols` 是薄转发（落盘在 [B]），而 `rename_many` 自己 readFileSync/writeFileSync。\n\n起点（2026-09-29 实测，内化前）：refactor.ts 6 处（readFileSync×3 + writeFileSync×3）、cross.ts 1 处（readFileSync）。另有 existsSync 各 1 处（同一判据下也算 IO）。本笔已**逐处内化**（见 commit 信息）⇒ frozen 收到空表 = 零容忍。\n\n棘轮纪律（本仓惯例）：**存量不拦、新增即红**。若将来某处 lane 确实必须自己做 IO（例如它本质是 [A] 层的合法读），把它写进 allow 并写明**非空理由**（门会校验理由长度与文件存在性）—— 不要图省事往 frozen 里塞新数。\n\n★ pattern 是判据的**唯一来源**：门拿它 `new RegExp(pattern)` 直接扫（不存在『登记表里一套、门里另一套』）。",
-  "pattern": "\\b(?:readFile|readFileSync|writeFile|writeFileSync|appendFile|appendFileSync|renameSync|unlinkSync|rmSync|rmdirSync|mkdirSync|copyFileSync|readdirSync|existsSync|statSync|lstatSync|realpathSync|createReadStream|createWriteStream|fs\\.promises)\\b",
-  "frozen": {},
-  "allow": {}
-}

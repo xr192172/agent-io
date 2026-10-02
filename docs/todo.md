@@ -354,3 +354,22 @@ P2 四族搬迁 / P3 抽字符串 / P4 工具名拍板 / G1 复杂度阈值标�
       ★ **`src/tools/` 还有 4 个活文件**（不是残留）：`python_refactor/{index,dead_imports,verify_commands}.ts`
       + `view_inputs.ts`，分别被 `rf-pipeline/refactor_pipeline.ts:44`、`analysis/structure/feature_map.ts:25`、
       `tests/tools/view_inputs.test.ts` import ⇒ **T11"工具都搬走了"的说法不准确**。
+
+- [ ] **T25 ★★★ 6 张手工登记表逐张换载体（判据：**扫描类一律换成框架规则或工具**）**
+      *(核实：2026-10-03 —— 见台账 §44.36；已用 `lane_no_io` 做完整小样，净减 247 行 + 1.6 KB。)*
+
+      ★ 判据（本轮定）：**看它保护的判据是"扫描"还是"执行"** ——
+      **扫描**（某模式在哪出现几次 / 某路径是否存在 / 某结构是否一致）⇒ ★★ **一律换框架规则或工具**，门与登记表都删；
+      **执行**（给输入断言输出）⇒ 工具替不了，留。
+
+      | 登记表 | 大小 | 判据形态 | 替代方案 | 状态 |
+      |---|---|---|---|---|
+      | `lane_no_io.json` | 1.6K | 扫描（某 import 是否出现） | ✅ **已换** `dep-cruiser` 规则 `lane-must-not-io`（8 行） | ✅ 已做 |
+      | `brand_residue_registry.json` | 2.4K | 扫描（文本里有没有旧品牌串） | 一个「扫旧品牌串」的 action（可复用 `explore_code` 的文本扫） | ⏳ |
+      | `literal_table_registry.json` | 2.9K | 扫描（同一字面量表出现几次） | 同上 | ⏳ |
+      | `explore_action_wiring.json` | 1.9K | 扫描（action → 实现接线） | ★ **本可派生**（从 lane 的 def 表算出来）—— §2b 早就记过"这两件事本来可以是数据" | ⏳ |
+      | `tool_completion_receipt.json` | 5.4K | 扫描（handler 是否回 data） | 从 `TOOL_DEFS` 派生（跑一遍 handler 看回执形态） | ⏳ |
+      | `single_source_registry.json` | **8.2K** | **半扫描半判断**（"什么算同族"要人判） | ★ 最难的一张：**存量清单必须由工具算**，但"同族"的界定可能仍要留一个**小的**人工白名单 | ⏳ |
+
+      ★ 顺序建议：先做**纯扫描**的（`brand_residue` / `literal_table`）—— 它们**无判断成分**，一次成功率最高；
+      **最后**啃 `single_source`。

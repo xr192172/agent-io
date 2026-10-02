@@ -19,7 +19,7 @@ module.exports = {
       severity: 'error',
       comment: '循环依赖：难测、难改、初始化顺序玄学。★ 与目录结构无关，现在就有真实价值。',
       from: {},
-      to: { circular: true },
+      to: { circular: true, dependencyTypesNot: ['type-only'] },
     },
     {
       name: 'layer-downward-only',
@@ -28,21 +28,35 @@ module.exports = {
         '四层只许向下：presentation → application → infrastructure → domain（§4）。★ P2 搬完一族后这条才开始有对象；' +
         '现在命中 0 是预期的，不是"没问题"。',
       from: { path: '^src/(application|infrastructure|domain)/' },
-      to: { path: '^src/presentation/' },
+      to: { path: '^src/presentation/', dependencyTypesNot: ['type-only'] },
     },
     {
       name: 'application-must-not-reach-infrastructure-internals',
       severity: 'error',
       comment: 'application 只能用 infrastructure 的公开面，不许深入其内部子目录（§44 的"铁律"列）。',
       from: { path: '^src/application/' },
-      to: { path: '^src/infrastructure/[^/]+/internal/' },
+      to: { path: '^src/infrastructure/[^/]+/internal/', dependencyTypesNot: ['type-only'] },
     },
     {
       name: 'domain-is-self-contained',
       severity: 'error',
       comment: 'domain 是契约与数据模型，**自洽、不 import 实现**（§44）。',
       from: { path: '^src/domain/' },
-      to: { path: '^src/(presentation|application|infrastructure)/' },
+      to: { path: '^src/(presentation|application|infrastructure)/', dependencyTypesNot: ['type-only'] },
+    },
+    {
+      name: 'lane-must-not-io',
+      severity: 'error',
+      comment:
+        '[C] 层（`application/<线>/index.ts`，即 lane 文件）**只管路由**，不许自己读写文件 —— IO 只能在 [B]。' +
+        '一个 lane 里出现文件 IO，意味着"落盘"多了一份**没走写闸**的实现（无写前快照 ⇒ 不可撤回；' +
+        '无索引写穿 ⇒ 读完可能读到旧索引）—— 这正是"接口性收敛**收敛不起来**"的形状（用户 2026-09-29 诊断）。' +
+        '★ 本规则**替代**了原先的手写门 `tests/registry/lane_no_io.test.ts`(247 行) + 登记表 ' +
+        '`tests/fixtures/lane_no_io.json`：那扇门守的是 `src/registry/lanes/*.ts`，而该目录早已随搬迁消失 ' +
+        '⇒ 它**扫到 0 个文件、恒绿、哑了很久**（2026-10-03 发现）。判据留着，载体换成依赖规则 —— ' +
+        '搬迁不改规则，所以不会再腐。',
+      from: { path: '^src/application/(observe|cross|design|meta|refactor|harvest)/index\\.ts$' },
+      to: { dependencyTypes: ['core'], path: '^(node:)?fs(/promises)?$' },
     },
     {
       name: 'no-orphans',
@@ -58,6 +72,19 @@ module.exports = {
     doNotFollow: { path: 'node_modules' },
     exclude: { path: '(^|/)(node_modules|dist|\\.inspect|\\.agent-io)/' },
     tsConfig: { fileName: 'tsconfig.json' },
+    /**
+     * ★★ 2026-10-03 试过开 `true`（想让 `lane-must-not-io` 连"import 了 fs 但没用"也抓到），
+     *   **实测代价大于收益，已回退为 false**：
+     *   · 收益：能看见"未使用 / 仅类型"的 import；
+     *   · 代价：`no-circular` 的 `dependencyTypesNot: ['type-only']` **对环不能逐边过滤** ⇒
+     *     当场冒出 **7 条 type-only 假环**（`src/domain/` 里一片 `types ↔ geometry/animation` 的
+     *     互引 type），逐条滤掉后**仍残留 1 条**（`…/languages/typescript.ts → parts.ts → project_root.ts`）。
+     *   ⇒ 结论：那类情形（import 了不用）**交给 `tsc` 的 `noUnusedLocals`** 更合适 ——
+     *     别让框架的一个**全局**开关去背一个**窄**判据。
+     *   ★ 下面几条规则的 `dependencyTypesNot: ['type-only']` **保留**：本配置下它无害，
+     *     且万一将来真开了这个开关，`import type` 不会变成假环（兜底，不是装饰）。
+     */
+    tsPreCompilationDeps: false,
     reporterOptions: { text: { highlightFocused: true } },
   },
 };

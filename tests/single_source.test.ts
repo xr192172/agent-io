@@ -74,8 +74,9 @@ function walkTs(dir: string, out: string[] = []): string[] {
 }
 
 /** 注释行判定与"跳过注释后数模式"的判定，已抽到 `tests/helpers/source_scan.ts`（唯一实现）——
- *  lane 无 IO 门（`tests/registry/lane_no_io.test.ts`）用的是**同一套**，两份各一套必然分叉。
- *  这里再导出，只为不改动既有调用点与单测。 */
+ *  ★ 2026-10-03：同源的「lane 无 IO 门」**已删除**（它守着早已消失的 `src/registry/lanes/`，
+ *    扫到 0 个文件、恒绿、哑了很久）；那条判据的载体换成了 `.dependency-cruiser.cjs` 的
+ *    `lane-must-not-io` 规则。这里再导出，只为不改动既有调用点与单测。 */
 import { countOccurrences, isCommentLine } from './helpers/source_scan.js';
 export { countOccurrences, isCommentLine };
 
