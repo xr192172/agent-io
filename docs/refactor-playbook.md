@@ -65,6 +65,27 @@ node scripts/contract_docs_gate.mjs
 
 > 核心：**先有判据，再动代码**。没有判据的搬迁，验收只能靠人看 diff —— 而 71k 行的 diff 没人看得完。
 
+### 第 0 步（2026-10-01 新增，实测一天踩了 4 次）：**搬之前先跑 `preflight_move`**
+
+```bash
+node scripts/preflight_move.mjs <将被移动的相对路径> [新路径]
+```
+
+它按**"谁抓得到"**把全仓引用分档，★ **重点是把 tsc 抓不到的那一类单独标出来**：
+
+| 档 | 谁抓得到 | 踩过的实例 |
+|---|---|---|
+| `tsc-import` | `tsc --noEmit` 当场报 | 改就行，**不会漏** |
+| ★ `registry(钩子/脚本)` | **只在提交时炸**（pre-commit ENOENT 挡下）或**运行时** | `scripts/capability_scan.mjs` 的 `FEATURE_FILES` |
+| ★ `registry(夹具)` / `registry(架构基线)` | 跑测试时红 / `arch` 判 stale | `server_registry.consistency` 的 `importedBy`；`.dependency-cruiser-known-violations.json` 的环 |
+| `test-ref` / `doc` | 测试慢抓 / 靠人同步 | — |
+
+★ **它不覆盖、但同样会炸的两件事**（工具输出里也会提醒）：
+1. **门的判据可能认不出"文件夹形式的模块"**（只认 `<name>.ts`）⇒ 泛化成 `文件 or <name>/index.ts` 两形态都认。
+2. **依赖环会随文件位置变化** ⇒ 搬完**必须**跑 `npm run arch`（0 违规 / EXIT=0）。
+
+★ 配套量具：`node scripts/lang_density.mjs`（决定"下一刀拆哪个文件"）。
+
 | 步 | 动作 | 判据 / 产出 |
 |---|---|---|
 | 1 | **先量** | 把"要动的东西"量出来：行数、副本数、口径、真实调用面。**不许凭印象**。命令见 §3 |
