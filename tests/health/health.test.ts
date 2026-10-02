@@ -1,20 +1,26 @@
 /**
  * health —— 代码健康度单元测试
  *
- * 夹具：tests/fixtures/codehealth-fixture（5 文件三层）
+ * 夹具：tests/fixtures/codehealth-fixture（5 文件，**旧三层命名** contracts/bricks/glue）
  *   src/contracts/models.ts      契约层：User(被积木/胶水引用) / Order(未使用导出)
- *   src/contracts/bad_contract.ts 契约层违规：反向依赖积木层(分层违规) + 自身无消费者(孤儿) + ScoreBand/bandOf 未使用导出
+ *   src/contracts/bad_contract.ts 契约层：反向依赖积木层(旧口径下的分层违规) + 自身无消费者(孤儿) + ScoreBand/bandOf 未使用导出
  *   src/bricks/user_service.ts   积木层：computeScore/superComplex(被胶水消费) / unusedFn(未使用导出) /
  *                                 Order 未使用 import / superComplex 高复杂度
  *   src/bricks/orphan.ts         积木层孤立模块：孤儿文件 + legacyHelper 未使用导出
- *   src/glue/app.ts              胶水层：入口，正常消费积木/契约（零问题）
+ *   src/glue/app.ts              胶水层：入口（夹具注释声明），正常消费积木/契约
  *
- * 预期体检结果：
+ * ★ 2026-10-03 判据重写后的**口径变化**（下面期望值全部据此，别按旧注释倒推）：
+ *   · 层定义换成**真实四层目录** `src/<domain|infrastructure|application|presentation>/`；
+ *     本夹具的 `contracts`/`bricks`/`glue` **都不在其中** ⇒ 5 个文件全部 `classifyLayer → null` ⇒ 记 `layers.outside`。
+ *   · 因此原来的 `layer_violation ×1`（contract→brick）**不再成立**（两端都不在四层里 ⇒ 不判违规）。
+ *   · 入口不再靠"层"免于孤儿：`app.ts` 无 package.json，须由调用方显式喂 `reachableRoots` 才不被报 orphan。
+ *
+ * 预期体检结果（注入入口根 `src/glue/app.ts` 后）：
  *   unused_export ×5（Order / ScoreBand / bandOf / unusedFn / legacyHelper）
  *   unused_import ×1（user_service 的 Order）
  *   orphan_file  ×2（bad_contract + orphan）
  *   high_complexity ×1（superComplex）
- *   layer_violation ×1（bad_contract：契约 0 依赖积木 1）
+ *   layer_violation ×0（四层口径下 contracts/bricks 不在四层里，见上）
  */
 
 import { describe, it, expect } from 'vitest';
@@ -26,16 +32,25 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const fixtureRoot = path.join(here, '..', 'fixtures', 'codehealth-fixture');
 const esmFixtureRoot = path.join(here, '..', 'fixtures', 'codehealth-esm-fixture');
 
-describe('health: 分层分类（路径启发式）', () => {
-  it('契约/胶水命中特征，其余默认积木', () => {
-    expect(classifyLayer('src/contracts/models.ts')).toBe('contract');
-    expect(classifyLayer('src/contracts/bad_contract.ts')).toBe('contract');
-    expect(classifyLayer('src/glue/app.ts')).toBe('glue');
-    expect(classifyLayer('src/bricks/user_service.ts')).toBe('brick');
-    expect(classifyLayer('src/bricks/orphan.ts')).toBe('brick');
-    // 未命中特征 → 积木
-    expect(classifyLayer('src/foo.ts')).toBe('brick');
-    expect(classifyLayer('src/presentation/http/helper.ts')).toBe('brick');
+/**
+ * 夹具入口（相对各自 root）。
+ * ★ 新判据下"入口免于 orphan"**只**来自 `options.reachableRoots`；两个夹具都**没有 package.json**
+ *   ⇒ `detectReachableRoots` 探不到，只能按夹具自身注释显式喂入（`src/glue/app.ts` = 声明的入口）。
+ */
+const FIXTURE_ENTRY = 'src/glue/app.ts';
+
+describe('health: 分层分类（四层目录）', () => {
+  it('只认 src/<四层>/；不在其中的路径（含旧三层命名）一律 null', () => {
+    // 命中四层 → 返回层名（按**目录**，不是按文件名猜）
+    expect(classifyLayer('src/domain/models.ts')).toBe('domain');
+    expect(classifyLayer('src/infrastructure/db.ts')).toBe('infrastructure');
+    expect(classifyLayer('src/application/use_case.ts')).toBe('application');
+    expect(classifyLayer('src/presentation/http/helper.ts')).toBe('presentation');
+    // 不在 `src/<四层>/` 下 → null（★ 旧实现会命中特征或兜底成 contract/brick/glue）
+    expect(classifyLayer('src/contracts/models.ts')).toBe(null); // 本夹具用的旧三层命名
+    expect(classifyLayer('src/glue/app.ts')).toBe(null);
+    expect(classifyLayer('src/bricks/user_service.ts')).toBe(null);
+    expect(classifyLayer('src/foo.ts')).toBe(null); // 旧实现兜底 'brick'（已删除的能力）
   });
 });
 
@@ -80,24 +95,29 @@ describe('health: 未使用 import 提取', () => {
 });
 
 describe('health: 夹具整体体检', () => {
-  it('五个文件三层 + 各类问题数量精确匹配', async () => {
-    const r = await analyzeHealth(fixtureRoot);
+  it('五个文件 + 各类问题数量精确匹配（注入入口根后）', async () => {
+    const r = await analyzeHealth(fixtureRoot, { reachableRoots: [FIXTURE_ENTRY] });
     expect(r.fileCount).toBe(5);
-    // unclassified（P0-⑤，2026-09-28）：2 个 bricks/ 文件未命中任何层特征 ⇒ 落兜底积木层。
-    // 单列它 = 让「规则是否已退化」可见（实测本仓 src 是 281/309 未分类）。
-    expect(r.layers).toEqual({ contract: 2, brick: 2, glue: 1, unclassified: 2, violations: 1 });
+    // ★ 层统计换成真实四层：夹具目录是 contracts/bricks/glue（旧三层命名），**都不在四层里**
+    //   ⇒ 5 个文件全部落 `outside`、四层计数全 0、violations 0（旧值 contract2/brick2/glue1/unclassified2/violations1 已废）。
+    expect(r.layers).toEqual({
+      domain: 0, infrastructure: 0, application: 0, presentation: 0, outside: 5, violations: 0,
+    });
+    // ★ counts 现为**必填 6 键**（新增 circular_dependency）；夹具无环 ⇒ 0。
+    //   layer_violation 由 1 → 0：contracts/bricks 不在四层里 ⇒ contract→brick 不判违规（见文件头说明）。
     expect(r.counts).toEqual({
       unused_export: 5,
       unused_import: 1,
       orphan_file: 2,
       high_complexity: 1,
-      layer_violation: 1,
+      layer_violation: 0,
+      circular_dependency: 0,
     });
-    expect(r.issues).toHaveLength(10);
+    expect(r.issues).toHaveLength(9); // 5 未用导出 + 1 未用 import + 2 孤儿 + 1 高复杂度（原 10 少的那条是旧分层违规）
   });
 
   it('问题清单逐条定位（文件/类型/符号）', async () => {
-    const r = await analyzeHealth(fixtureRoot);
+    const r = await analyzeHealth(fixtureRoot, { reachableRoots: [FIXTURE_ENTRY] });
     const by = (kind: string) => r.issues.filter((i) => i.kind === kind);
 
     // 未使用导出
@@ -128,12 +148,12 @@ describe('health: 夹具整体体检', () => {
     expect(complex[0].symbol).toBe('superComplex');
     expect(Number(complex[0].evidence)).toBeGreaterThan(10);
 
-    // 分层违规
+    // 分层违规 —— ★ 四层口径下**为 0**：bad_contract(`src/contracts/`) → user_service(`src/bricks/`)
+    //   两端的 classifyLayer 都是 null（`contracts`/`bricks` 不在四层里）⇒ 判据**主动不判**这条依赖。
+    //   所以这里断言的是"不再报"，而不是旧实现的 bad_contract 那条 error。这是判据改口径的如实结果，
+    //   不是把断言放宽：夹具目录仍是旧三层命名，本身就落在四层之外（见文件头说明）。
     const viol = by('layer_violation');
-    expect(viol).toHaveLength(1);
-    expect(viol[0].file).toBe('src/contracts/bad_contract.ts');
-    expect(viol[0].severity).toBe('error');
-    expect(viol[0].evidence).toBe('src/bricks/user_service.ts');
+    expect(viol).toHaveLength(0);
   });
 
   it('健康分/等级/摘要 + 复杂度 Top 含 superComplex', async () => {
@@ -173,11 +193,15 @@ describe('health: NodeNext ESM 的 `.js` 后缀 import（回归门，2026-09-28�
   //   ⇒ parent/child 双双被判孤儿（orphan_file=2），且分层违规恒为 0（量具空转）。
   // 旧夹具 codehealth-fixture 用的是【无后缀】import，故该缺陷长期未被测试覆盖。
   it('沿 `.js` 后缀 import 连成链 → 无孤儿文件、链路被看见', async () => {
-    const r = await analyzeHealth(esmFixtureRoot);
+    // ★ 注入入口根（夹具无 package.json）：新判据下入口靠 `reachableRoots` 免于 orphan；
+    //   不注入则 app.ts 本身被判孤儿（orphan_file=1），那是与"链是否连上"无关的干扰项。
+    const r = await analyzeHealth(esmFixtureRoot, { reachableRoots: [FIXTURE_ENTRY] });
     expect(r.fileCount).toBe(3);
+    // 链路 app→parent→child 只要有一条 `.js` 解析不到，下游文件就会变孤儿 ⇒ 0 才是链连上的证据。
     expect(r.counts.orphan_file).toBe(0);
     expect(r.counts.layer_violation).toBe(0);
-    expect(r.layers.glue).toBe(1);
-    expect(r.layers.brick).toBe(2);
+    // ★ 旧断言 `layers.glue===1 / layers.brick===2` 已废：夹具目录是 glue/bricks（旧三层命名），
+    //   不在新四层里 ⇒ 3 个文件全记 `outside`。层计数不再表达"链长"，孤儿数才是本门的证据。
+    expect(r.layers.outside).toBe(3);
   });
 });

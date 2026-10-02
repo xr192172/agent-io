@@ -36,14 +36,28 @@ import { collectSourceFiles } from '../version_upgrade/detect.js';
 
 // ── 对外类型 ─────────────────────────────────────────────────
 
-export type Layer = 'contract' | 'brick' | 'glue';
+/**
+ * ★★ 2026-10-03 **重写**：层定义从三分类路径启发式（`contract`/`brick`/`glue`）换成
+ * **真实四层目录**（`presentation` / `application` / `infrastructure` / `domain`）。
+ *
+ * 为什么必须换（漏洞实证）：
+ *   · 旧表靠 `CONTRACT_HINTS` / `GLUE_HINTS` 两条正则**猜**，注释自己就写着
+ *     「实测 279/303（92%）落在这里 ⇒ 这个分级**几乎不携带信息**」—— 当时只把它单列出来"可见"，没修；
+ *   · 2026-10-03 实测：**813/859 = 95%** 落兜底，13 条 `layer_violation` 里 **10 条在 `tests/`／夹具**
+ *     （旧实现把测试也按路径拉进来判层）；
+ *   · 而本仓**早就是四层**，`.dependency-cruiser.cjs` 的规则用的就是四层 ⇒ ★ **同一件事两套口径**，
+ *     正是本仓头号病根「判据分叉」的又一实例。
+ */
+export type Layer = 'domain' | 'infrastructure' | 'application' | 'presentation';
 
 export type HealthKind =
   | 'unused_export'
   | 'unused_import'
   | 'orphan_file'
   | 'high_complexity'
-  | 'layer_violation';
+  | 'layer_violation'
+  /** ★ 2026-10-03 新增：**循环依赖**（A→B→A）。见 `findCycles` 的说明 —— 这是本工具原先**完全缺失**的一维。 */
+  | 'circular_dependency';
 
 export type HealthSeverity = 'error' | 'warn' | 'info';
 
@@ -74,15 +88,27 @@ export interface HealthReport {
   /** 超阈值函数（按复杂度降序，最多 top 个） */
   complexity: ComplexityEntry[];
   /**
-   * 分层统计。
-   * `unclassified` = 未命中任何层特征、落到兜底 brick 的文件数（P0-⑤，2026-09-28）。
+   * 分层统计 —— ★ 2026-10-03 **重写为真实四层**（`presentation/application/infrastructure/domain`）。
    *
-   * ★ 为什么要单列它：brick 同时兼任「正面特征命中」与「什么都没命中」两个角色，
-   *   实测本仓 279/303（92%）落在这里 ⇒ 这个分级几乎不携带信息，却看不出来。
-   *   单列后「规则是否已退化」变成一个可读的数，而不是沉默的兜底。
-   *   （同款设计见 `capability_map` 的「未归线」段：看得见，而非静默消失。）
+   * ★★ 旧实现是**三分类路径启发式**（`contract` / `brick` / `glue`，靠 `CONTRACT_HINTS`/`GLUE_HINTS`
+   *   正则猜），注释里**自己就承认过它退化了**（原文：「实测本仓 279/303（92%）落在这里 ⇒
+   *   这个分级**几乎不携带信息**，却看不出来」）—— 当时的处置只是**单列 `unclassified` 让它可见**，
+   *   没有修。实测代价（2026-10-03）：`813/859 = 95%` 落兜底，13 条 `layer_violation` 里
+   *   **10 条在 `tests/` 与 `tests/fixtures/`**（旧实现把测试也拉进来按路径猜层）。
+   *
+   * ★ 现在**按目录判层**，与 `.dependency-cruiser.cjs` 的层规则**同一口径**（判据不许分叉）。
+   *   `outside` = **不在四层里**的文件数（`tests/` / `scripts/` / `go-observe/` / 仓库根散文件…）
+   *   —— 它们**不参与**分层违规判定，但**如实计数**（保留"口径收紧不许静默"的设计）。
    */
-  layers: { contract: number; brick: number; glue: number; unclassified: number; violations: number };
+  layers: {
+    domain: number;
+    infrastructure: number;
+    application: number;
+    presentation: number;
+    /** 不在 `src/<四层>/` 里的文件（测试/脚本/其它语言子项目/go 侧…）—— 不判层，但如实计数 */
+    outside: number;
+    violations: number;
+  };
   /** 0-100 健康分 + 等级；`N/A` = 没有可评的输入（0 个源文件），**不是满分** */
   score: number;
   grade: 'A' | 'B' | 'C' | 'D' | 'N/A';
@@ -121,70 +147,102 @@ export interface HealthOptions {
 
 // ── 分层分类 ─────────────────────────────────────────────────
 
-const CONTRACT_HINTS: RegExp[] = [
-  /\/contracts?\//,
-  /\/types\//,
-  /\/interfaces?\//,
-  /\/dto\//,
-  /(^|\/)types\.(ts|tsx|js|mjs)$/,
-  /\.types\./,
-  /_types\./,
-  /\.d\.ts$/,
-];
-
-const GLUE_HINTS: RegExp[] = [
-  /\/glue\//,
-  /\/routes?\//,
-  /\/middleware\//,
-  /\/config\//,
-  /\/entry\//,
-  /(^|\/)main\.(ts|tsx|js|jsx|mjs)$/,
-  /(^|\/)app\.(ts|tsx|js|jsx)$/,
-  /(^|\/)server(\.|$)/,
-  /_cli\.(ts|js|mjs)$/,
-  /server_registry\./,
-  /hub\.mjs$/,
-];
-
-const LAYER_ORDER: Record<Layer, number> = { contract: 0, brick: 1, glue: 2 };
+/**
+ * ★★ 2026-10-03 **整块替换**：旧的两条"路径启发式"正则（`CONTRACT_HINTS` / `GLUE_HINTS`）
+ * 连同它们的兜底逻辑一起删除 —— 见 `classifyLayer` 的注释（为什么要换、代价是多少）。
+ *
+ * 现在**只认一个事实**：这个文件在不在 `src/<四层>/` 下。
+ * 正则从**路径段**取层名（不是"猜"）：`src/application/meta/index.ts` ⇒ `application`。
+ * ★ 用 `(?:^|\/)src\/` 锚定，避免把 `tests/fixtures/foo/src/domain/x.ts` 这类**夹具里的 src** 误判成真源码 ——
+ *   夹具**不该**参与本仓的分层判定（旧实现正是把 `tests/fixtures/**` 一起判了）。
+ *   ⇒ 所以要求"`src/` 之前没有别的路径段"：见 `classifyLayer` 里的 `^src/` 判定。
+ */
+const LAYER_SEGMENT_RE = /^src\/(domain|infrastructure|application|presentation)\//;
 
 /**
- * ★ P2 之后改这一张表（P0-⑤，2026-09-28）。
- *
- * 目标形态（见 `docs/architecture-refactor-plan.md` §4）是
- * `surfaces / features / kernel / dsl` 四层。**故意不在 P0 就换** —— 因为 P2 会分批搬迁
- * 71k 行，中间态下新规则会把「还没搬完」全部判成违规，直接毁掉 P0 的验收口径
- * 「层违规非空且**每条可解释**」。所以 P0 只做两件事（见下），换表留给 P2 落地那一刻。
+ * 层序：**数字越大越靠上**。只许「依赖 ≤ 自身」（向下或同层）。
+ * ★ 与 `.dependency-cruiser.cjs` 的 `layer-downward-only` **同一口径**（判据不许分叉）。
  */
+const LAYER_ORDER: Record<Layer, number> = { domain: 0, infrastructure: 1, application: 2, presentation: 3 };
 
-/** 是否命中某一层的**正面**特征（未命中 = 落兜底 brick，见 `unclassified`） */
-export function layerMatched(rel: string): boolean {
-  const p = normalizeForMatch(rel);
-  return CONTRACT_HINTS.some((re) => re.test(p)) || GLUE_HINTS.some((re) => re.test(p));
+/**
+ * 按**目录**判层 —— 只认 `src/<层>/…`，返回四层之一。
+ *
+ * @returns `Layer`；**`null` = 不在四层里**（`tests/`、`scripts/`、`go-observe/`、仓库根散文件、
+ *          以及 `tests/fixtures/**\/src/...` 这类**夹具里的 src**）⇒ **不参与分层违规判定**。
+ *
+ * ★ 为什么返回 `null` 而不是"兜底也算一层"（旧实现在这里吃了大亏）：
+ *   旧实现没命中正则就**默认 `brick`** ⇒ 813/859（95%）落兜底 ⇒ 分级不携带信息；
+ *   而且它把所有 `tests/` 也拉进来判 ⇒ 13 条违规里 **10 条在测试/夹具**。
+ *   "**不在四层里**"是一个**如实的事实**，不是"默认归到某一层"——两者必须分开（同 `layers.outside`）。
+ *
+ * ★ 为什么按目录而不是路径启发式：本仓**早就是四层**，`.dependency-cruiser.cjs` 的规则用的就是它。
+ *   靠 `/server\./`、`/types\./` 这类正则**猜**层，是**另一套口径** ⇒ 判据分叉（本仓头号病根）。
+ */
+export function classifyLayer(rel: string): Layer | null {
+  const p = rel.replace(/\\/g, '/').replace(/^\.\//, '');
+  const m = LAYER_SEGMENT_RE.exec(p);
+  return (m?.[1] as Layer) ?? null;
 }
 
 /**
- * ★ 规范化：补一个前导 `/`，使**根级文件与深层文件同判**（P0-⑤，2026-09-28）。
+ * Tarjan 强连通分量（**迭代版**，不递归 —— 本仓有 300+ 节点的图，递归版会爆栈）。
  *
- * 修的是实测到的一个缺陷：旧实现把正则直接打在 `rel` 上，而 `GLUE_HINTS` 里
- * `/\/server(\.|$)/`、`/\/routes?\//`、`/\/config\//` 这些都**要求前导斜杠** ⇒
- * `classifyLayer('src/server.ts')` 判 glue，`classifyLayer('server.ts')` 判 brick。
- * 即：**同一个文件，因为调用方传的 root 不同而分层不同**：
- *   `analyzeHealth('src')`（rel 无 `src/` 前缀）与 `analyzeHealth('.')`（rel 有）读数不一致。
- * 量具的读数不该取决于你从哪一级目录调用它。补前导 `/` 后两条路径同判。
+ * @returns 每个"成环的"分量（size ≥ 2，或 size 1 且自环）的成员数组。
  *
- * 注：`CONTRACT_HINTS` 里 `/(^|\/)types\.…$/` 这类本来就两种写法都覆盖，补 `/` 不改变其行为。
+ * ★ 2026-10-03 新增：这是本工具原先**完全缺失**的一维（`HealthKind` 里没有 cycle）。
+ *   为什么必须有：环是"改不动、初始化顺序玄学"的结构性病灶，而它**在搬迁期间会静默产生**
+ *   （跨层互引一次就成环）。实测本仓有 **2 条真环**一直存在，却因为
+ *   ① 本工具不报环、② dep-cruiser 的豁免清单把它盖住 ⇒ **没人知道**，直到豁免清单被删。
  */
-function normalizeForMatch(rel: string): string {
-  return rel.startsWith('/') ? rel : `/${rel}`;
-}
+function findCycles(nodes: readonly string[], edges: ReadonlyMap<string, ReadonlySet<string>>): string[][] {
+  const index = new Map<string, number>();
+  const low = new Map<string, number>();
+  const onStack = new Set<string>();
+  const stack: string[] = [];
+  const out: string[][] = [];
+  let counter = 0;
 
-/** 按路径启发式给文件分层（未命中任何层特征 → 默认积木层） */
-export function classifyLayer(rel: string): Layer {
-  const p = normalizeForMatch(rel);
-  if (CONTRACT_HINTS.some((re) => re.test(p))) return 'contract';
-  if (GLUE_HINTS.some((re) => re.test(p))) return 'glue';
-  return 'brick';
+  for (const root of nodes) {
+    if (index.has(root)) continue;
+    const work: Array<{ node: string; iter: Iterator<string> }> = [];
+    const push = (n: string): void => {
+      index.set(n, counter);
+      low.set(n, counter);
+      counter += 1;
+      stack.push(n);
+      onStack.add(n);
+      work.push({ node: n, iter: (edges.get(n) ?? new Set<string>()).values() });
+    };
+    push(root);
+    while (work.length > 0) {
+      const top = work[work.length - 1]!;
+      const next = top.iter.next();
+      if (!next.done) {
+        const w = next.value;
+        if (!index.has(w)) push(w);
+        else if (onStack.has(w)) low.set(top.node, Math.min(low.get(top.node)!, index.get(w)!));
+        continue;
+      }
+      work.pop();
+      const v = top.node;
+      if (work.length > 0) {
+        const parent = work[work.length - 1]!.node;
+        low.set(parent, Math.min(low.get(parent)!, low.get(v)!));
+      }
+      if (low.get(v) === index.get(v)) {
+        const comp: string[] = [];
+        for (;;) {
+          const w = stack.pop()!;
+          onStack.delete(w);
+          comp.push(w);
+          if (w === v) break;
+        }
+        if (comp.length > 1 || (edges.get(v)?.has(v) ?? false)) out.push(comp.reverse());
+      }
+    }
+  }
+  return out;
 }
 
 // ── 复杂度（tree-sitter AST 遍历计数）────────────────────────
@@ -669,8 +727,8 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
 
   const issues: HealthIssue[] = [];
   const complexityEntries: ComplexityEntry[] = [];
-  const layers: { contract: number; brick: number; glue: number; unclassified: number; violations: number } = {
-    contract: 0, brick: 0, glue: 0, unclassified: 0, violations: 0,
+  const layers: HealthReport['layers'] = {
+    domain: 0, infrastructure: 0, application: 0, presentation: 0, outside: 0, violations: 0,
   };
   /** 可达根（P0-②）：调用方喂入的项目内相对路径，规范成无前导 `./` 的形态再比 */
   const roots = new Set((options.reachableRoots ?? []).map((r) => r.replace(/^\.\//, '')));
@@ -679,10 +737,13 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
     // P0-②：入口文件按胶水层算。它不是「积木」——它被外界（package.json / bin）调起，
     //   天然没有项目内消费者；旧逻辑当 brick ⇒ 既报 orphan 又可能报 layer_violation（实测 2 条假阳）。
     const isRoot = roots.has(p.rel);
-    const layer: Layer = isRoot ? 'glue' : classifyLayer(p.rel);
-    layers[layer] += 1;
-    // P0-⑤：单列「未命中任何层特征」的兜底文件数，让规则退化可见（见 HealthReport.layers 注释）
-    if (layer === 'brick' && !layerMatched(p.rel)) layers.unclassified += 1;
+    // ★ 2026-10-03 重写：层按**目录**判（`src/<层>/…`），**`null` = 不在四层里** ⇒ 不计数（记 `outside`）、不判违规。
+    //   旧实现是 `isRoot ? 'glue' : classifyLayer(p.rel)` —— 入口特判成"胶水层"。
+    //   现在**不需要这个特判**：入口天然就在 `src/presentation/`（四层之一），`classifyLayer` 会如实判它。
+    //   （`isRoot` 仍用于 orphan 判定：入口天然没有项目内消费者。）
+    const layer = classifyLayer(p.rel);
+    if (layer) layers[layer] += 1;
+    else layers.outside += 1;
     const content = contentByRel.get(p.rel) ?? '';
     const contentLines = content.split('\n');
     const internal = internalRefs.get(p.rel) ?? new Set();
@@ -730,10 +791,12 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
       });
     }
 
-    // ── 维度1c：孤儿文件（无任何项目内消费者 + 非胶水层）──
-    // ★ 可达根（P0-②）已在上面被归入 glue 层，故天然不会落到这里 —— 无需再判 isRoot。
-    //   实测本仓修掉 2 条假阳：daemon/daemon.ts（npm run daemon）、tools/serve.ts（npm run serve）。
-    if (consumers.size === 0 && layer !== 'glue') {
+    // ── 维度1c：孤儿文件（无任何项目内消费者 + **不是可达根**）──
+    // ★ 2026-10-03：判据从「非 `glue` 层」改为「**不是可达根**」。旧实现把两件事混在了一起 ——
+    //   它先把入口特判成 `glue` 层，再用 `layer !== 'glue'` 把入口排除在孤儿之外。
+    //   现在：**层 = 文件在哪**（事实，按目录判）；**是不是入口 = 可达根**（由调用方从 package.json 喂入）。
+    //   两个判据分开，各用各的 —— 而且"presentation 层的文件都不算孤儿"本来就是错的（那一层也有内部模块）。
+    if (consumers.size === 0 && !isRoot) {
       issues.push({
         kind: 'orphan_file',
         severity: 'info',
@@ -774,8 +837,13 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
       //   实测效果：本仓 9 条假阳消失（domain/types.ts 8 条统一再导出 + adapters/types.ts 1 条），
       //   它们**全部**是 `import type`；剩下的违规因此每一条都是真依赖，可逐条解释。
       if (impInfo.typeOnly) continue;
-      // 可达根作目标时同按胶水层算（P0-②）：入口是顶层，被入口 import 不是"向上依赖"
-      const targetLayer: Layer = roots.has(targetRel) ? 'glue' : classifyLayer(targetRel);
+      // ★ 2026-10-03：两端都按**目录**判层；**任一端不在四层里 ⇒ 不判**（`tests/`、`scripts/`、
+      //   `go-observe/`、以及 `tests/fixtures/**/src/...` 这类夹具里的 src）。
+      //   旧实现对"可达根作目标"特判成 `glue` 层（理由：入口在顶层，被入口 import 不算向上依赖）。
+      //   现在**不需要**这个特例：入口天然落在 `presentation`（四层里最高的一层），
+      //   任何指向它的依赖本来就该被看见 —— 旧特判是旧层表的补丁。
+      const targetLayer = classifyLayer(targetRel);
+      if (!layer || !targetLayer) continue;
       if (LAYER_ORDER[targetLayer] > LAYER_ORDER[layer]) {
         layers.violations += 1;
         issues.push({
@@ -783,16 +851,52 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
           severity: 'error',
           file: p.rel,
           line: impInfo.line,
-          message: `分层违规：${layer} 层依赖高层 ${targetLayer} 层（${targetRel}）`,
+          message: `分层违规：${layer} 依赖更高层 ${targetLayer}（${targetRel}）`,
           evidence: targetRel,
         });
       }
     }
   }
 
+  // ── 维度4：循环依赖（★ 2026-10-03 新增，本工具原先完全没有这一维）──────────────
+  //
+  // ★ 数据来源：**直接复用上面已算好的 `layerImports`**（文件 → 项目内 import 目标），
+  //   不另建图、不读 cache.db —— 走查过的信息不重来（本工具既有约定）。
+  // ★ 范围：只取**四层内**的节点（`classifyLayer` 非 null）⇒ `tests/` / `scripts/` / 夹具不参与，
+  //   与分层违规同一口径（那条也曾因把 tests 拉进来判而信噪比极差）。
+  // ★ 为什么用 SCC 而不是"找一条路径"：Tarjan 给出**成环的强连通分量**，
+  //   一个分量报**一条**，不会把同一个环按不同起点重复计数。
+  const cycleNodes = new Set(files.map((f) => f.rel).filter((rel) => classifyLayer(rel) !== null));
+  const graph = new Map<string, Set<string>>();
+  for (const rel of cycleNodes) {
+    const outs = new Set<string>();
+    for (const [target, info] of layerImports.get(rel) ?? []) {
+      // ★★ 与**分层违规同一口径**：`import type` 不算依赖（TS 运行时擦除 —— 见 profile 里那条注释）。
+      //
+      //   实测教训（2026-10-03，本维刚写出来时）：不排除 type-only 会多报 **2 条假环** ——
+      //   `src/domain/types ↔ geometry/animation/semantic/simulation` 与 `mindmap ↔ narration`
+      //   全是 `import type` 互引。后果是**同一份依赖数据在两个工具里读出不同的环**
+      //   （本工具 4 条 vs dep-cruiser 2 条）⇒ 那正是本仓头号病根「判据分叉」的又一次现形。
+      //   排除后两边**逐条对齐**（`write_gate ↔ index_backfill ↔ index_freshness`、
+      //   `project_root ↔ rename_symbol/languages/typescript`）。
+      if (info.typeOnly) continue;
+      if (cycleNodes.has(target)) outs.add(target);
+    }
+    graph.set(rel, outs);
+  }
+  for (const comp of findCycles([...cycleNodes], graph)) {
+    issues.push({
+      kind: 'circular_dependency',
+      severity: 'error',
+      file: comp[0]!,
+      message: `循环依赖（${comp.length} 个文件成环）：${[...comp, comp[0]!].join(' → ')}`,
+      evidence: comp.join(' → '),
+    });
+  }
+
   complexityEntries.sort((a, b) => b.complexity - a.complexity);
   const counts: Record<HealthKind, number> = {
-    unused_export: 0, unused_import: 0, orphan_file: 0, high_complexity: 0, layer_violation: 0,
+    unused_export: 0, unused_import: 0, orphan_file: 0, high_complexity: 0, layer_violation: 0, circular_dependency: 0,
   };
   for (const i of issues) counts[i.kind] += 1;
 
@@ -825,13 +929,17 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
   const summary =
     files.length === 0
       ? `无输入（0 个源文件）—— 本次读数不代表健康，grade=N/A。请检查 root 是否存在、扩展名是否被内核支持。`
-      : `健康度 ${score.value} 分（${grade}）：${counts.layer_violation} 分层违规 / ` +
+      : `健康度 ${score.value} 分（${grade}）：${counts.circular_dependency} 循环依赖 / ` +
+        `${counts.layer_violation} 分层违规 / ` +
         `${counts.high_complexity} 高复杂度 / ${counts.unused_export} 未使用导出 / ` +
         `${counts.unused_import} 未使用 import / ${counts.orphan_file} 孤儿文件` +
-        `　[密度 违规 ${density(counts.layer_violation)} · 复杂度 ${density(counts.high_complexity)} · ` +
+        `　[密度 环 ${density(counts.circular_dependency)} · 违规 ${density(counts.layer_violation)} · 复杂度 ${density(counts.high_complexity)} · ` +
         `孤儿 ${density(counts.orphan_file)} · 未用导出 ${density(counts.unused_export)} · ` +
         `未用 import ${density(counts.unused_import)}]` +
-        `　[分层 契约 ${layers.contract} / 积木 ${layers.brick}（其中未分类 ${layers.unclassified}）/ 胶水 ${layers.glue}]` +
+        // ★ 2026-10-03：分层改为**真实四层**（按目录）。`outside` = 不在 `src/<四层>/` 下的文件，
+        //   **如实计数但不判违规**（旧实现在这里用三分类启发式兜底 ⇒ 95% 落 brick、还把 tests 拉进来判）。
+        `　[分层 domain ${layers.domain} / infrastructure ${layers.infrastructure} / application ${layers.application} / presentation ${layers.presentation}` +
+        `　｜四层外(不判层) ${layers.outside}｜违规 ${layers.violations}]` +
         // ★ 口径可见性（非空才出现）：被"代码语言"口径排除的文件说清楚，别静默消失。
         (nonCodeExts.length > 0
           ? `　[口径 非代码语言未计入源码：${nonCodeExts.map((e) => `${e.ext}×${e.count}`).join(' ')}]`
@@ -863,6 +971,10 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
  */
 const SCORE_SPEC: Record<HealthKind, { w: number; fullAt: number }> = {
   layer_violation: { w: 30, fullAt: 15 },
+  // ★ 2026-10-03 新增：**循环依赖**。权重给到与分层违规同级 —— 环是"改不动、初始化顺序玄学"的
+  //   结构性病灶（本仓搬迁期间实测会**静默产生**新环：跨层互引一次就成环）。
+  //   `fullAt: 10` = 有 10 条环就扣满这一维（本仓当前实测 2 条 ⇒ 扣 5 分）。
+  circular_dependency: { w: 30, fullAt: 10 },
   high_complexity: { w: 25, fullAt: 30 },
   orphan_file: { w: 20, fullAt: 10 },
   unused_export: { w: 15, fullAt: 50 },

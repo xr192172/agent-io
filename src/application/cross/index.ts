@@ -173,7 +173,9 @@ export const CROSS_TOOLS: ToolDef[] = [
       const lines = [
         `代码健康度 · ${r.root}`,
         `${r.fileCount} 个文件 → 健康分 ${r.score}（${r.grade}）`,
-        `分层：胶水 ${r.layers.glue} / 积木 ${r.layers.brick}（其中未分类 ${r.layers.unclassified}）/ 契约 ${r.layers.contract} / 违规 ${r.layers.violations}`,
+        `分层（四层，按目录）: domain ${r.layers.domain} / infrastructure ${r.layers.infrastructure} / application ${r.layers.application} / presentation ${r.layers.presentation}` +
+          `　｜四层外(不判层) ${r.layers.outside}｜违规 ${r.layers.violations}`,
+        `循环依赖: ${r.counts.circular_dependency}`,
         r.summary,
         '',
         '—— 问题清单 ——',

@@ -6042,3 +6042,71 @@ grep+脚本手动硬改」的文档。**这才是"一份项目文档"的正确�
 | `npm run arch` | **2 errors**（与搬迁前一致 ⇒ **没有新增环**） |
 | `node scripts/structure_gap.mjs` | 待搬 **0** ／ 待定归属 **5** |
 | `npm run test:main` | **237 文件通过 / 1 跳过 ｜ 2444 项通过 / 5 跳过 ｜ 0 失败** |
+
+---
+
+### 44.40 ★★★ 重写 `code_health`：分层换四层 + 补环检测 —— 「这说明工具有漏洞吧」（2026-10-03）
+
+#### 起因（用户原话）
+
+> 「**这说明工具有漏洞吧，你看看还有什么漏洞，怎么补强，我希望你重写一下这个工具**」
+
+#### 一、漏洞清单（审实现得出，每条带证据）
+
+| # | 漏洞 | 证据 |
+|---|---|---|
+| 1 | ★★★ **分层口径过期**：用 P2 之前的三分类路径启发式（`contract` / `brick` / `glue`，靠两条正则**猜**） | `LAYER_ORDER` 三值；**注释自陈**「实测本仓 279/303（92%）落在这里 ⇒ 这个分级**几乎不携带信息**」—— 当时的处置只是**单列 `unclassified` 让它可见**，**没修**。2026-10-03 实测 **813/859 = 95%** 落兜底 |
+| 2 | ★★★ **没有"环"检测** | 5 个 `HealthKind` 里无 cycle；实测 dep-cruiser 报的 2 条真环，它**一条都不报** |
+| 3 | ★★ **口径混入 `tests/` 与夹具** | 13 条 `layer_violation` 里 **8 条在 `tests/`、2 条在 `tests/fixtures/`**（旧实现把测试也按路径"猜层"） |
+| 4 | ★★ **与 dep-cruiser 判据分叉**（同一件事两套口径） | dep-cruiser 按四层目录；它按三分类路径 ⇒ 本仓头号病根 |
+
+#### 二、重写（做了什么）
+
+| 改动 | 旧 | 新 |
+|---|---|---|
+| 层类型 | `'contract' \| 'brick' \| 'glue'` | **`'domain' \| 'infrastructure' \| 'application' \| 'presentation'`**（与 `.dependency-cruiser.cjs` **同一口径**） |
+| 判层 | 两条正则**猜** + 兜底 brick | `classifyLayer()` **只认 `src/<层>/`（目录）**；**`null` = 不在四层里** |
+| `layers` 字段 | `{contract, brick, glue, unclassified, violations}` | `{domain, infrastructure, application, presentation, outside, violations}`（`outside` **如实计数但不判违规**） |
+| **新增维度** | — | ★ **`circular_dependency`**（Tarjan SCC，**迭代版**，不递归）；数据**复用已算好的 `layerImports`** —— 不另建图、不读 cache.db |
+| 入口豁免 | 靠"特判成 `glue` 层" | 靠 **`options.reachableRoots`**（"是不是入口"是事实，不该让"层"兼职表达） |
+| 渲染 | `[分层 契约/积木/胶水]` | `[分层 domain/infrastructure/application/presentation｜四层外(不判层) N｜违规 N]` + `循环依赖: N` |
+
+★ 改判据**没有用 grep 列消费者** —— 先动类型，**让 `tsc` 列全**（12 个错 / 5 处）✓
+
+#### 三、★★★ 对账时发现的**口径不一致**（本笔最值得记的一处）
+
+第一版环检测**没排除 `import type`** ⇒ 报 **4 条环**；而 dep-cruiser 报 **2 条**。
+差异逐条查：多出的 2 条**全在 `src/domain/`**（`types ↔ geometry/animation/semantic/simulation`、
+`mindmap ↔ narration`）—— **全是 `import type` 互引**。
+而**分层违规那一段本来就排除了 type-only**（`if (impInfo.typeOnly) continue`）
+⇒ **同一个文件里，两份依赖数据两套口径** —— 正是本仓头号病根「判据分叉」。
+修：环检测**同样排除 type-only** ⇒ 两边**逐条对齐**（2 条：`write_gate ↔ index_backfill ↔ index_freshness`；
+`project_root ↔ rename_symbol/languages/typescript`）✓
+
+#### 四、效果（同一命令、同一项目、前后对比）
+
+| 读数 | 重写前 | 重写后 |
+|---|---|---|
+| 分层 | 契约 6 / **积木 813（未分类 813）** / 胶水 40 | **domain 14 ／ infrastructure 141 ／ application 127 ／ presentation 36 ｜四层外 541** |
+| 兜底不明 | **95% 落 brick** | **0**（每层 + `outside` 全有归属） |
+| 分层违规 | 13（**10 条在测试/夹具**） | **9**（全在 `src/`） |
+| **环** | **0（不报）** | **2** ✓（与 dep-cruiser **逐条一致**） |
+
+#### 五、配套：补一个夹具 + 救一条空门
+
+1. ★★ **补了四层夹具** `tests/fixtures/codehealth-four-layer-fixture`（6 个文件**全在四层里**；
+   `src/domain/leaky.ts` **向上** import `application` ⇒ 1 条违规；`src/infrastructure/{a,b}.ts` 互引 ⇒ 1 条环）。
+   **为什么必须补**：原有 3 个夹具全是**旧三层命名** ⇒ 新口径下 `classifyLayer` 一律 `null`
+   ⇒ **这两维在测试层是"无门的"**（改坏了不会红）。★ 这个缺口是**执行者如实报出来的**，不是我想到的。
+   **出生证**：拿掉 `leaky.ts` 的向上 import ⇒ 该用例当场红（其余 30 条照过）✓
+2. ★ **一条退化成空门的旧断言**：`G5 · 分层判定与调用 root 无关` —— 新口径是"**相对 root** 的目录位置"
+   ⇒ 那条性质**已不存在**，且夹具非四层 ⇒ 那个断言**平凡成立**。
+   改成**钉住新语义**（`src/domain/x.ts` → `domain`，而 `domain/x.ts` → `null`；夹具层面则断言 `outside` 一致）。
+
+#### 验证
+
+| 量具 | 结果 |
+|---|---|
+| `npx tsc --noEmit` | 0 |
+| `npx vitest run tests/health` | **31/31**（含新增 2 条 + 出生证） |
+| `npm run test:main` | **237 文件通过 / 1 跳过 ｜ 2446 项通过 / 5 跳过 ｜ 0 失败**（G8 行为基线按规程更新过：`code_health` 的输出**这次是有意变更** —— 这正是它存在的意义） |
