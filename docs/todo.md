@@ -322,3 +322,35 @@ P2 四族搬迁 / P3 抽字符串 / P4 工具名拍板 / G1 复杂度阈值标�
 （哪些外部路径引用了本仓）⇒ 逐个 `fs.existsSync` + 检查里面出现的本仓路径是否还存在。
 ★ 难点：清单本身是**仓外的**，所以它必须被**抄进仓内**（这正是"唯一数据源"要付的代价：
 要么承认它管不到，要么把它纳入一个有人维护的表）。**别让它继续散在没人看的地方。**
+
+- [ ] **T24 ★★★ 结构收口：还有 110+ 个散文件没归位；而且量具有大片盲区（2026-10-02 盘点）**
+      *(核实：全仓 `find src -type d` + `ls -p | grep -v / | grep -c '\.ts$'` 逐目录数；域表 `structure.domains.json` 逐条比对。)*
+      ⇒ `src/` 下 **322 个 .ts**；域表 25 个域 + 3 个平铺目录。
+      **未开垦的散文件（`domains`/`flatDirs` 都没覆盖的目录，直属 .ts）**：
+
+      | 目录 | 直属 .ts | 备注 |
+      |---|---|---|
+      | `src/application/design/` | **34** | 最大一块 |
+      | `src/infrastructure/parse/` | **22** | ★ 已确认是**跨域错放**（内核族 10 该留、6 个归位、3 组成对） |
+      | `src/application/observe/` | 15 | |
+      | `src/infrastructure/index/` | 11 | |
+      | `src/application/harvest/` | 8 | |
+      | `src/infrastructure/analysis/version_upgrade/` | 6 | |
+      | `src/infrastructure/render/` | 5 | |
+      | `src/presentation/http/archify/` | 4 | |
+      | `src/application/`（顶层） | 5 | ⚠️ `handlers`/`plumbing`/`tool_registry`/`types`/`stage_registry` —— **像 `parse/index.ts` 一样可能是合理的"入口+基础设施"，要先判再动** |
+      | `src/presentation/{http,daemon}/`、`src/infrastructure/graph/` | 各 3 | |
+      | **合计** | **≈110+**（含子目录则更多） | |
+
+      ★★ **量具盲区（本轮新发现，比"散文件"更值得修）**：
+      `src/infrastructure/analysis/` 下有 **16 个子目录，域表只登记了 7 个**
+      （已登记：`structure` `deadcode` `impact` `observe` `health` `capability` `refactor`）。
+      另外 **9 个**（`behavior` `contract_gate` `cross_repo` `diagnosis` `gate` `hybrid` `java_refactor`
+      `translate` `version_upgrade`）**`structure_gap` 完全看不见** ——
+      因为它只扫**散文件**，不扫"**还没登记的（已分好的）子目录**"。
+      ⇒ 与 §44.33「旧的读数全零是**假象**」**同一条**：**量具报的是它扫得到的那个面**。
+      ⇒ **修法**（未做）：让读数也扫"域目录的**父目录**下的子目录"，未登记 ⇒ 报 `unlisted`。
+
+      ★ **`src/tools/` 还有 4 个活文件**（不是残留）：`python_refactor/{index,dead_imports,verify_commands}.ts`
+      + `view_inputs.ts`，分别被 `rf-pipeline/refactor_pipeline.ts:44`、`analysis/structure/feature_map.ts:25`、
+      `tests/tools/view_inputs.test.ts` import ⇒ **T11"工具都搬走了"的说法不准确**。
