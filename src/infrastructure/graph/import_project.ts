@@ -34,7 +34,7 @@ import type { ParsedImport } from '../parse/index.js';
 import { countLines, assessLines } from '../analysis/structure/monolith.js';
 import type { Database } from '../index/db.js';
 import { syncProject, getFileParse, pruneDeletedFiles } from '../index/symbols.js';
-import { generateFileRoleTitles } from '../analysis/role_title.js';
+import { generateFileRoleTitles } from '../analysis/structure/role_title.js';
 
 export interface ImportProjectInput {
   /** 目标项目根目录（绝对路径或相对 cwd） */

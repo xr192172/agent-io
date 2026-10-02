@@ -18,7 +18,7 @@
 import { semanticSearch } from './semantic_search.js';
 import { ensureProjectIndex, ensureIndexAroundSeed } from '../../infrastructure/index/index_freshness.js';
 import { scheduleBackfill, backfillState, backfillSummary } from '../../infrastructure/index/index_backfill.js';
-import { diffImpact } from '../../infrastructure/analysis/diff_impact.js';
+import { diffImpact } from '../../infrastructure/analysis/impact/diff_impact.js';
 import { archLayer } from '../../infrastructure/analysis/structure/arch_layer.js';
 import type { LayerDef } from '../../infrastructure/analysis/structure/layer_detect.js';
 import { guidedTour } from '../../infrastructure/index/guided_tour.js';

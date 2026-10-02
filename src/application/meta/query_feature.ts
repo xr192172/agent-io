@@ -39,7 +39,7 @@ import { listApprovals, getApprovalHistory } from '../observe/approval.js';
 import { listSnapshots } from '../design/snapshot.js';
 import { listTemplates } from '../design/templates.js';
 import { getSimulationState } from '../design/simulation.js';
-import { diffFeatures } from '../../infrastructure/analysis/diff.js';
+import { diffFeatures } from '../../infrastructure/analysis/impact/diff.js';
 import type { Node, Edge } from '../../domain/geometry.js';
 import type { SemanticFile } from '../../domain/semantic.js';
 import { getProjectCacheDb } from '../../infrastructure/index/db.js';

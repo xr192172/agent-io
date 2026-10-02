@@ -3,8 +3,8 @@
  * 非代表性整针丢弃；支持注入自定义判定器。
  */
 import { describe, it, expect } from 'vitest';
-import type { RunTrace, RunTreeNode } from '../../src/infrastructure/analysis/run_trace_replay.js';
-import { sampleNeedles } from '../../src/infrastructure/analysis/snapshot_needle.js';
+import type { RunTrace, RunTreeNode } from '../../src/infrastructure/analysis/observe/run_trace_replay.js';
+import { sampleNeedles } from '../../src/infrastructure/analysis/observe/snapshot_needle.js';
 
 function frame(probe: string, inV: unknown, outV: unknown, children: RunTreeNode[] = []): RunTreeNode {
   return { frame_id: 0, parent_id: 0, probe, in: inV, out: outV, dur_ms: 1, start_ms: 0, children };

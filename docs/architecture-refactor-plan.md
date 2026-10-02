@@ -5358,3 +5358,67 @@ derive_feature_tree.ts:207  return seg[0] === 'tools' ? `tools:${toolDomainOf(re
 ★ 这是**同一个族的第 4 例**（前 3 例见 §44.30 / §44.31）：**"按路径/文件名认模块"的登记表，被搬迁静默架空**。
 差别是这一例**没有报错、没有门、也没人记得** —— 它只是**安静地不再生效**。
 ⇒ 已记入 `docs/todo.md`（要么删表、要么改造；**不在本笔范围内**，因为它没有功能影响，删它以单独一笔做才有据可依）。
+
+### 44.32 结构域表收口：`infrastructure/analysis/` 19 个散文件**全部收进 8 个域**（2026-10-02）
+
+#### 起因与形状
+
+用户提案：「**不要一层层搬** —— 抽象成 DSL、读它找没实现/没接线、再接好线」。
+核实后精确化为：**缺的不是"DSL 更细"，是"结构意图没有落点"**（现有 DSL 是 feature 级、owner=dataHome；
+域划分是全仓级、owner=project ⇒ 它和 `.dependency-cruiser.cjs` 同级，是**仓内的架构约定**）。
+⇒ 落成两件（§44.31 已立）：`structure.domains.json`（唯一数据源）+ `scripts/structure_gap.mjs`（四态读数）。
+
+#### 七笔搬完（含子代理并行/串行混合调度）
+
+| 批次 | 域 | 文件 | 提交 |
+|---|---|---|---|
+| 小样 | `deadcode/` | dead_statements(390) + detect_dead_imports(272) | `3f562db` |
+| 并行① | `capability/` | capability_matrix(183) + language_concepts(332) | `14c1bf5` |
+| 并行② | `refactor/` | refactor_langs(208) | 同上 |
+| 串行③ | `health/` + `structure/` | health_cache(90) + analyze_monolith(789) + monolith(786) + derive_feature_tree(479) + feature_map(324) + layer_detect(303) + arch_layer(269) | `1c0aba5` |
+| 串行④ | `structure/` + `observe/` + `gate/` + `impact/` | role_title(128) + snapshot_needle(92) + submit_gate(151) + diff(223) + diff_impact(626) + trace_exec(601) + run_trace_replay(146) | 本笔 |
+
+★★ **读数从 19 到 0**：`misplaced 16 → 0`、`unlisted 3 → 0`、`missing 4 → 0` ⇒ **`结构意图与现状一致 ✓`**。
+验收每笔都过：`tsc` 0 ｜ `arch` ✔ 0 违规 / 337 modules ｜ 全量 **234 文件 / 2423 项 / 0 失败**（与改前逐字相同）。
+
+#### ★★★ 调度的真实约束（不是"任务像不像同一类"，而是"改写文件集合是否相交"）
+
+- 算**冲突面**发现 `serve.ts` / `import_project.ts` / `explore_code.ts` 是**超级 hub**（几乎每个域都要改它们）
+  ⇒ 逐对检查后**只有 `capability/` 与 `refactor/` 的引用方不相交** ⇒ 那两组**并行**，其余**串行**。
+- ★ **根因**：「全量验收」是**全局资源**，并发跑会互相看到对方的半成品 ⇒ **假红**。
+  故给子代理的硬纪律是：**只跑 `tsc` + 自己模块的测试；不跑全量、不跑 `arch`**，全局验收由我统一跑。
+  ⇒ 效果：**从 16 到 11 的并行批次里，没有一次假红。**
+
+#### ★★★ 搬迁工具：从"手抄映射表"升级为"**解析→映射→重表达**"
+
+```
+target = normalize(join(解析目录, spec)); mapped = OLD2NEW[target] ?? None
+Pass A（**被搬的文件自身**）：它自己动了 ⇒ **所有**相对说明符都要重表达（target = mapped ?? 原目标）
+Pass B（**没动的引用方**）：只有**目标被搬走**时才有理由改（mapped is None ⇒ **一个字都不改**）
+```
+★ **两个 pass 的规则不同** —— 这是本轮唯一真正的算法要点，也是我连错两次的地方：
+1. 第一版对 Pass B 也做"顺手归一化" ⇒ 把测试夹具里**模拟的**字符串
+   `"import { A } from '../tools/verify_refactor'"`（模拟 `sub/live.ts`）改成了 `'./verify_refactor'`
+   ⇒ **破坏夹具意图**，`deprecate_offline.test.ts` 红。★ **教训：搬迁工具只该做搬迁。**
+2. 第二版把"只在 mapped 时才改"这条规则**也套用到 Pass A** ⇒ 被搬文件里指向**没搬的**模块的 import
+   （如 `'../storage.js'`）**没被重表达** ⇒ `tsc` 一片红。★ **教训：两个 pass 的规则必须分开写。**
+3. 另有一次操作失误：把"修正遍"跑在**已被改过一遍**的文件上 ⇒ 深度叠加两次
+   ⇒ 回滚重来（★ 回滚注意：`health/` / `observe/` / `impact/` / `structure/` 都是**已有域目录**，
+   只能删搬进去的那几个文件，不能整目录删）。
+
+★ **机械变换 > 手抄清单**的实证：手抄计划漏了 3 个引用方（`register_capabilities.ts` / `tests/helpers/r5_gate.ts` /
+`deprecate_offline.test.ts`），机械匹配全找出来了。
+
+#### 收尾发现（记为 todo）
+
+- **T22**（子代理预检捞出）：`scripts/rebuild_feature.mjs:27–30` 的 import **全指向 P2 之前的旧布局**
+  （`dist/src/tools/*`、`dist/src/db/db.js`），现在还能跑**只因 `dist/` 是 09-30 的旧构建** ⇒ **下次 build 就断**。
+  与 T19 修掉的 dogfood 脚本同型；属"硬编码旧路径被搬迁静默架空"家族的**第 5 例**（前 4 见 §44.30/§44.31）。
+- **T21**（同族第 4 例）：`TOOL_DOMAINS`（120+ 模块名的表）**几乎全是死条目**（`tools/` 早被搬走），
+  且 `toolDomainOf` 只在 `tools/` 前缀下才被调用 ⇒ **不可达**（详见 §44.31 补）。
+
+#### 新增域
+
+`gate/`（闸门/自检族）：收 `submit_gate`（提交层完整性：`go:embed` 声明的产物是否存在且已进 git 索引）。
+★ 与既有 `contract_gate/` **同族但语义不同**（提交完整性 vs 契约对账）—— 
+`contract_gate/` 是既有独立目录，**合并属另一笔**；域表里如实记下这个不一致，而不是把两者硬塞一处。

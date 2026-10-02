@@ -11,8 +11,8 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { parseRunTraces, type RunTreeNode, type RunTrace } from '../../infrastructure/analysis/run_trace_replay.js';
-import { sampleNeedles, type SamplingNeedle } from '../../infrastructure/analysis/snapshot_needle.js';
+import { parseRunTraces, type RunTreeNode, type RunTrace } from '../../infrastructure/analysis/observe/run_trace_replay.js';
+import { sampleNeedles, type SamplingNeedle } from '../../infrastructure/analysis/observe/snapshot_needle.js';
 
 export interface ObserveTraceCfg {
   /** 录制事件文件（JSONL 绝对/相对路径）。缺省自动找探针 sink：DS_OBSERVE_EVENTS > os.tmpdir()/dsh_events.jsonl > cwd/runs.jsonl */

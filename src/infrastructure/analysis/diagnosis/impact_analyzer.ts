@@ -10,7 +10,7 @@
  * 只读，不改任何缓存/DSL。
  */
 
-import { diffImpact } from '../diff_impact.js';
+import { diffImpact } from '../impact/diff_impact.js';
 import type { Impact } from './contract.js';
 
 export interface ImpactInput {

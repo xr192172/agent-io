@@ -45,7 +45,7 @@ import { pythonExecutor } from '../../tools/python_refactor/index.js';
 import { javaExecutor } from '../../infrastructure/analysis/java_refactor/executor.js';
 import type { JudgeIssue } from './refactor_judge.js';
 import { scanContracts, diffContracts, type ContractSnapshot, type ScanContractsOptions, type UndefinedRef } from '../../infrastructure/analysis/contract_gate/index.js';
-import { checkEmbedSubmissions, type SubmitCheckResult } from '../../infrastructure/analysis/submit_gate.js';
+import { checkEmbedSubmissions, type SubmitCheckResult } from '../../infrastructure/analysis/gate/submit_gate.js';
 import { planFunctionAnnotation } from './function_annotation.js';
 import { syncSelfWrites, recordSelfWrite, writeThroughLine } from '../observe/write_gate.js';
 

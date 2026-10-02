@@ -20,7 +20,7 @@ import { getProjectCacheDb } from './db.js';
 import { importProject } from '../graph/import_project.js';
 import { diffViews, type DiffViewsResult } from '../../application/refactor/diff_views.js';
 import { detectDrift, type DriftData } from '../../application/design/detect_drift.js';
-import { diffImpact } from '../analysis/diff_impact.js';
+import { diffImpact } from '../analysis/impact/diff_impact.js';
 import { runImpactReport, readImpactReport, listImpactReports } from '../../application/meta/impact_report.js';
 import {
   appendDeclaration, markConsumed, recoverPending, resolveViolation, listLedger, countOpenViolations,

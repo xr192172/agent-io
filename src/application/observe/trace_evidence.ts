@@ -34,7 +34,7 @@ import { defaultEventsCandidates } from './observe_trace.js';
 import {
   loadRunTracesFromText,
   type RunTreeNode,
-} from '../../infrastructure/analysis/run_trace_replay.js';
+} from '../../infrastructure/analysis/observe/run_trace_replay.js';
 import type { ReasonEvidenceRef, ReasonEvidenceResolver } from './reason_validator.js';
 
 // ─────────────────────────────────────────────────────────────

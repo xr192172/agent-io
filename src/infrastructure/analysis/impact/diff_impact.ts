@@ -24,9 +24,9 @@
  */
 
 import path from 'node:path';
-import { fileFacts } from '../index/file_facts.js';
-import { getDSL } from '../storage.js';
-import { getProjectCacheDb, projectCacheDbPath, type Database } from '../index/db.js';
+import { fileFacts } from '../../index/file_facts.js';
+import { getDSL } from '../../storage.js';
+import { getProjectCacheDb, projectCacheDbPath, type Database } from '../../index/db.js';
 
 export type ImpactDirection = 'callers' | 'callees' | 'both';
 export type EdgeKind = 'call' | 'type_ref' | 'import';

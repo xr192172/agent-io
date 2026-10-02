@@ -14,7 +14,7 @@
 import { DATA_DIR_NAME } from '../../infrastructure/data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
-import { diffImpact, type DiffImpactResult, type ImpactDirection } from '../../infrastructure/analysis/diff_impact.js';
+import { diffImpact, type DiffImpactResult, type ImpactDirection } from '../../infrastructure/analysis/impact/diff_impact.js';
 
 // ─────────────────────────────────────────────────────────────
 // 类型
