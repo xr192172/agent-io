@@ -21,7 +21,7 @@ import {
   aggregateGaps,
   renderAuditText,
   languageCatalog,
-} from '../../infrastructure/analysis/capability_matrix.js';
+} from '../../infrastructure/analysis/capability/capability_matrix.js';
 import '../../infrastructure/parse/register_capabilities.js'; // 触发默认登记（side-effect import，确保矩阵被填充）
 
 function readArg(name: string): string | undefined {

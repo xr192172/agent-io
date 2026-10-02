@@ -21,8 +21,8 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import type { VerifyCommand } from '../verify_refactor.js';
-import { skipDirSet } from '../parse/source_exts.js';
+import type { VerifyCommand } from '../../verify_refactor.js';
+import { skipDirSet } from '../../parse/source_exts.js';
 
 // ─────────────────────────────────────────────
 // 步骤配置（与 runRefactorPipeline.steps 对齐，供执行器判定是否启用）

@@ -25,7 +25,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import type { PackageMigrationSpec, RunningChangePlan } from '../../../infrastructure/analysis/refactor_langs.js';
+import type { PackageMigrationSpec, RunningChangePlan } from '../../../infrastructure/analysis/refactor/refactor_langs.js';
 import {
   DEFAULT_EXTS,
   DEFAULT_SKIP,

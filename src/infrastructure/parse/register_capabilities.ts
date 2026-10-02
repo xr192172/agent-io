@@ -13,7 +13,7 @@
  * 无需改动 audit 主流程。
  */
 
-import { declareCapability } from '../../infrastructure/analysis/capability_matrix.js';
+import { declareCapability } from '../../infrastructure/analysis/capability/capability_matrix.js';
 
 /** 通用性：一棵语言解析产出的能力（符号/import/调用边/类型引用）——凡是 ts_kernel 能解析的语言都 full_ast */
 declareCapability({

@@ -17,8 +17,8 @@
  */
 import { describe, it, expect } from 'vitest';
 import { missingLanguageHint, capabilityGaps } from '../../src/infrastructure/parse/lang_hint.js';
-import { diagnoseCapabilities, aggregateGaps } from '../../src/infrastructure/analysis/capability_matrix.js';
-import { languageCatalog } from '../../src/infrastructure/analysis/capability_matrix.js';
+import { diagnoseCapabilities, aggregateGaps } from '../../src/infrastructure/analysis/capability/capability_matrix.js';
+import { languageCatalog } from '../../src/infrastructure/analysis/capability/capability_matrix.js';
 import { findLanguageByExt } from '../../src/infrastructure/parse/languages.js';
 import { isExtSupported } from '../../src/infrastructure/parse/probe.js';
 

@@ -18,7 +18,7 @@ import {
   diagnoseCapabilities,
   aggregateGaps,
   _resetRegistry,
-} from '../../src/infrastructure/analysis/capability_matrix.js';
+} from '../../src/infrastructure/analysis/capability/capability_matrix.js';
 import { LANGUAGES } from '../../src/infrastructure/parse/languages.js';
 
 describe('capability_matrix', () => {

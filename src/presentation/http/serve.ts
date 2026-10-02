@@ -37,7 +37,7 @@ import { createRebuildThrottler } from '../../infrastructure/index/watch_project
 import { archLayer } from '../../infrastructure/analysis/arch_layer.js';
 import { guidedTour } from '../../infrastructure/index/guided_tour.js';
 import { semanticSearch } from '../../application/meta/semantic_search.js';
-import { languageConcepts } from '../../infrastructure/analysis/language_concepts.js';
+import { languageConcepts } from '../../infrastructure/analysis/capability/language_concepts.js';
 import { buildDictionaryView, getGlobalDictFile, getProjectDictFile, loadGlobalDict, loadProjectDict, saveGlobalEntry, saveProjectEntry, splitHighlights, validateProjectRoot, type DictEntry } from '../../infrastructure/dictionary.js';
 import { ingestTerm, classifyTerm, generateDictEntry } from './dict_gen.js';
 import { readRegistry, updateArtifact } from '../../infrastructure/index/registry.js';

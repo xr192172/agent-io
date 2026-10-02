@@ -18,7 +18,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect, afterAll, beforeEach, afterEach } from 'vitest';
 import { runRefactorPipeline } from '../../src/application/refactor/refactor_pipeline.js';
-import { RefactorLangRegistry, type LanguageRefactorExecutor } from '../../src/infrastructure/analysis/refactor_langs.js';
+import { RefactorLangRegistry, type LanguageRefactorExecutor } from '../../src/infrastructure/analysis/refactor/refactor_langs.js';
 import { openDb } from '../../src/infrastructure/index/db';
 import { syncSelfWrites, syncSelfWritesSync, pendingSelfWrites } from '../../src/application/observe/write_gate.js';
 import { importProject } from '../../src/infrastructure/graph/import_project.js';

@@ -23,7 +23,7 @@ import {
   DEFAULT_LANGS,
   type PipelineResult,
 } from '../../src/application/refactor/refactor_pipeline.js';
-import { RefactorLangRegistry, type LanguageRefactorExecutor } from '../../src/infrastructure/analysis/refactor_langs.js';
+import { RefactorLangRegistry, type LanguageRefactorExecutor } from '../../src/infrastructure/analysis/refactor/refactor_langs.js';
 import { type VerifyCommand } from '../../src/infrastructure/verify_refactor.js';
 
 const roots: string[] = [];

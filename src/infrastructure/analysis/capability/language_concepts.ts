@@ -14,7 +14,7 @@
  */
 
 import path from 'node:path';
-import { getProjectCacheDb, type Database } from '../index/db.js';
+import { getProjectCacheDb, type Database } from '../../index/db.js';
 
 // ─────────────────────────────────────────────────────────────
 // 概念定义

@@ -35,7 +35,7 @@ import {
   languageCatalog,
   levelFor,
   SUPPORT_META,
-} from '../analysis/capability_matrix.js';
+} from '../analysis/capability/capability_matrix.js';
 import { PACK_PINS } from './package_pins.js';
 import './register_capabilities.js'; // side-effect：填充能力声明表（否则缺口数恒为 0）
 

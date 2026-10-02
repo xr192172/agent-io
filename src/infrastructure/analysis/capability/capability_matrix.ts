@@ -19,7 +19,7 @@
  * 纯数据 + 纯函数：零副作用、无 IO。testable。
  */
 
-import { LANGUAGES, type LanguageEntry } from '../parse/languages.js';
+import { LANGUAGES, type LanguageEntry } from '../../parse/languages.js';
 
 // ─────────────────────────────────────────────
 // 支持度枚举（一门语言对一个功能的具体程度）

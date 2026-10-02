@@ -40,7 +40,7 @@ import {
   type DeadStatementsStepCfg,
   type PackageMigrationStepCfg,
   type PackageMigrationSpec,
-} from '../../infrastructure/analysis/refactor_langs.js';
+} from '../../infrastructure/analysis/refactor/refactor_langs.js';
 import { pythonExecutor } from '../../tools/python_refactor/index.js';
 import { javaExecutor } from '../../infrastructure/analysis/java_refactor/executor.js';
 import type { JudgeIssue } from './refactor_judge.js';
@@ -56,7 +56,7 @@ export type {
   RefactorStageExecutor,
   RefactorStageKind,
   RefactorStepsCfg,
-} from '../../infrastructure/analysis/refactor_langs.js';
+} from '../../infrastructure/analysis/refactor/refactor_langs.js';
 
 // ─────────────────────────────────────────────
 // 类型

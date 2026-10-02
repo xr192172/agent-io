@@ -14,7 +14,7 @@ import type {
   RefactorStageComputeArgs,
   RunningChangePlan,
   RefactorStageExecutor,
-} from '../refactor_langs.js';
+} from '../refactor/refactor_langs.js';
 import type { VerifyCommand } from '../../verify_refactor.js';
 import { buildSpringMvcLayeringPlan, collectJavaFiles } from './layering.js';
 
