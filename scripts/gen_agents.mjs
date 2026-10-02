@@ -137,6 +137,24 @@ ${renameTable}
 - 改文档 ≠ 改写历史：\`docs/tool-convergence\` 的历史决策/核验记录是事实，保留原貌，变更用**追加记录**表达，不要把旧记录改成新名。
 - 改生成物先改源头：AGENTS.md 由 \`scripts/gen_agents.mjs\` 从 \`TRIGGER_ROWS\` 生成，改工具名要改源头而非生成物本体。
 
+## 品牌串约定（旧名不许新增）
+
+本仓已从 \`DesignCanvas\` 改名为 \`AgentIO\`（包名 \`agent-io\`）。
+**新增的代码 / 注释 / 文档里不许出现旧品牌串**：\`design-canvas\` / \`DESIGN_CANVAS\` / \`design_canvas\` / \`DesignCanvas\`。
+
+★ **例外（历史记录，必须保留原貌）**：\`docs/architecture-refactor-plan.md\`、\`docs/tool-convergence.md\`、
+\`docs/refactor-playbook.md\` —— 它们记的是"**在那个名字下发生的事**"，改掉即**篡改历史**
+（与上一节「改文档 ≠ 改写历史」同一条）。
+
+★ **怎么查——现算，不要养登记表**：需要时用 \`explore_code action=search\`，或直接
+
+\`\`\`bash
+grep -rn "design-canvas\\|DESIGN_CANVAS\\|design_canvas\\|DesignCanvas" src/ tests/ docs/
+\`\`\`
+
+**不要**再为它建"登记表 + 棘轮 + 门"：那类**存下来的结论会过期**（2026-10-03 实测同类清单
+过期率 44%），而**这一节就是那份约定本身**。
+
 ## 工具自检（强约束）
 
 - 本仓库 MCP 工具依赖 \`dist/\` 构建产物。改了 \`src/\` 下的代码，**必须**先

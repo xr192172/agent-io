@@ -5915,3 +5915,61 @@ x 2 dependency violations (2 errors, 0 warnings). 338 modules, 1274 dependencies
 | `npm run arch` | **2 errors**（**如实**；不再是那份清单给的假 0） |
 | 删除物 | 213 行清单 + 104 行脚本 + 3 处提示 |
 | `npm run test:main` | **238 文件通过 / 1 跳过 ｜ 2455 项通过 / 5 跳过 ｜ 0 失败**（删豁免清单**不动测试**，读数与上一轮一致——这本身是一条证据：那份清单和测试无关，它只影响"你怎么读 `arch`"） |
+
+---
+
+### 44.38 ★★ 「维护一份项目文档就够的东西，你干嘛四处下蛋」—— 品牌门 → `AGENTS.md` 一节（2026-10-03）
+
+#### 起因（用户原话）
+
+> 「工具也有 **smartread 还是 smartedit** 之类的东西，好像是**完美覆盖了读写需求**的吧，
+>  而且**怎么还有手工登记表，明明维护一份项目文档就够的东西，你干嘛四处下蛋**，
+>  **框架我当时是让你参考他们的目录设计的，这个保留即可，其它也全删了**」
+
+#### 一、先核实"读写工具是否覆盖"（用户第一问）
+
+| 入口 | 覆盖 |
+|---|---|
+| `explore_code` | **search / read / diff_impact / arch_layer / guided_tour / check_monolith / derive_split / derive_chain / …** |
+| `edit_code` | **replace / insert / delete / range / replace_text** |
+
+⇒ ★ **读写确已覆盖**，而且 `explore_code` 的 `read` 就是 `edit_code` 的"先读后改"前置、**行号同基准**。
+⇒ 用户那句"明明可以获取**第一手资料**"成立：**这两个工具是"现算"的**。
+
+#### 二、品牌门 → 文档一节（本笔做的）
+
+`tests/brand_residue.test.ts`（**334 行**）+ `tests/fixtures/brand_residue_registry.json`：
+判据是"**扫全仓找旧品牌串**" —— 纯扫描。而**扫描能现算**（`explore_code action=search`，或一条 `grep`）。
+
+⇒ **删掉门与表**，把**意图**（含那 3 条"历史文档必须保留原貌"的例外）写进 **`AGENTS.md`** ——
+★ 那份**每次会话都读**、且**开篇第一句**就写着「让日常开发动作走项目自带 MCP 工具，而不是用
+grep+脚本手动硬改」的文档。**这才是"一份项目文档"的正确落点。**
+
+★ **踩到的连带**：`AGENTS.md` 是 `scripts/gen_agents.mjs` **整体生成**的（`writeFileSync(OUT, generated)`）
+⇒ **手改会被 `npm run build` / pre-commit 冲掉**。必须**改源头**（文件自己就写着「改生成物先改源头」）。
+本笔改的是 `gen_agents.mjs` 的模板，再 `node scripts/gen_agents.mjs` 重建。
+
+#### 三、剩余「存下来的结论」清单（**6 个 JSON / 202,200 字节**）—— 下一批
+
+| 文件 | 字节 | 性质 |
+|---|---|---|
+| `tool_set_snapshot.json` | **161,630** | G1 对外契约快照（"上次的 name/title/description/schema"） |
+| `tool_behavior_snapshot.json` | 23,046 | G8 逐工具行为快照 |
+| `single_source_registry.json` | 8,224 | 同族副本登记 + 棘轮 |
+| `tool_completion_receipt.json` | 5,444 | 回执完整性登记 |
+| `literal_table_registry.json` | 2,936 | 重复字面量表登记 |
+| `explore_action_wiring.json` | 1,920 | action → 实现接线登记 |
+
+★ 另有 **21 个门文件**（`tests/*.test.ts` 11 + `tests/registry/` 4 + `tests/scripts/` 3 + …）。
+
+⇒ 按本笔判据（**留规则与现算、删存下来的结论**）逐张处理；**顺序**：先纯扫描的
+（`literal_table` / `explore_action_wiring` / `tool_completion_receipt`）→ 再快照（G1/G8）→
+最后 `single_source_registry`（它含"什么算同族"的人工判断）。
+
+#### 验证
+
+| 量具 | 结果 |
+|---|---|
+| `node scripts/gen_agents.mjs` | AGENTS.md 重建，新节在位 ✓ |
+| 删除物 | `brand_residue.test.ts`(334 行) + `brand_residue_registry.json`(2.4 KB) |
+| `npm run test:main` | **237 文件通过 / 1 跳过 ｜ 2444 项通过 / 5 跳过 ｜ 0 失败**（上一轮 238/2455 ⇒ 少的正是品牌门：**1 文件 / 11 项**） |
