@@ -32,8 +32,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { LANGUAGES } from '../../infrastructure/parse/languages.js';
-import { templateCompatFromPkgJson, type TemplateCompat } from '../../infrastructure/parse/template_compat.js';
-import { PACK_PINS } from '../../infrastructure/parse/package_pins.js';
+import { templateCompatFromPkgJson, type TemplateCompat } from '../../infrastructure/packages/template_compat.js';
+import { PACK_PINS } from '../../infrastructure/packages/package_pins.js';
 
 
 /**

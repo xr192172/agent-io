@@ -31,7 +31,7 @@ import { LANGUAGES, findLanguageByExt, LanguageEntry } from './languages.js';
  *   **下层依赖上层**；搬 ⑥ 后架构门的 `layer-downward-only` **真的亮了** ⇒ 按本文件原注释
  *   自己写下的处置办法，把那个纯函数抽到 `infrastructure/parse/template_compat.ts`，两边都引它。
  */
-import { templateCompatFromPkgJson } from './template_compat.js';
+import { templateCompatFromPkgJson } from '../packages/template_compat.js';
 
 /**
  * 语言包可解析性判定用了两套 resolver，按可用性依次回退：

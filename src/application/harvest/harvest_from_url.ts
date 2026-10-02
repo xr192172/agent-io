@@ -30,8 +30,8 @@ import { syncProject } from '../../infrastructure/index/symbols.js';
 import { walkFiles } from '../../infrastructure/graph/import_project.js';
 import { extractContracts, type FileContractReport } from './extract_contracts.js';
 import { harvestClosure } from './harvest_closure.js';
-import { parseGoModRequires, resolveGoThirdParty } from '../../infrastructure/parse/go_mod.js';
-import { parseNpmDeps, resolveNpmThirdParty } from '../../infrastructure/parse/npm_mod.js';
+import { parseGoModRequires, resolveGoThirdParty } from '../../infrastructure/packages/go_mod.js';
+import { parseNpmDeps, resolveNpmThirdParty } from '../../infrastructure/packages/npm_mod.js';
 import { analyzeDeadThirdParty } from '../../infrastructure/graph/dead_deps.js';
 import type { BrickContract, BrickManifest, ShapeSchema } from '../../domain/contract.js';
 

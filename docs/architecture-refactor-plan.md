@@ -5973,3 +5973,72 @@ grep+脚本手动硬改」的文档。**这才是"一份项目文档"的正确�
 | `node scripts/gen_agents.mjs` | AGENTS.md 重建，新节在位 ✓ |
 | 删除物 | `brand_residue.test.ts`(334 行) + `brand_residue_registry.json`(2.4 KB) |
 | `npm run test:main` | **237 文件通过 / 1 跳过 ｜ 2444 项通过 / 5 跳过 ｜ 0 失败**（上一轮 238/2455 ⇒ 少的正是品牌门：**1 文件 / 11 项**） |
+
+---
+
+### 44.39 ★★ 实测「工具能不能覆盖框架的规则」——**不能，所以留着**；清理告一段落（2026-10-03）
+
+#### 用户的问题
+
+> 「**那两条规则管的东西我们的工具不能覆盖吗，不能的话就留着**，然后**继续完成清理和重构**，
+>  我还等着继续深化开发本项目呢」
+
+#### 一、实测（跑工具，不猜）
+
+`code_health`（自述管"分层违规"）实跑读数：
+
+```
+859 个文件 → 健康分 31（D）
+分层：胶水 40 / 积木 813（其中未分类 813）/ 契约 6 / 违规 13
+违例构成：588 high_complexity ｜ 423 orphan_file ｜ 319 unused_export ｜ 228 unused_import ｜ 13 layer_violation
+```
+
+**13 条 `layer_violation` 逐条看**：**8 条在 `tests/`、2 条在 `tests/fixtures/`**，
+而且它说的是**它自己的一套分类**（brick / glue / contract），**不是** dep-cruiser 的"四层方向"。
+
+**那 2 条真环涉及的 4 个文件**（`write_gate` / `project_root` / `index_freshness` / `index_backfill`）
+在输出里确实出现 —— 但**都是别的类型**（complexity / unused_export / orphan）。★ **它不报"环"。**
+
+#### 二、结论：5 条规则**一条都不能替代**
+
+| dep-cruiser 规则 | 工具覆盖？ | 处置 |
+|---|---|---|
+| `no-circular`（环） | ✗ | **留** |
+| `layer-downward-only`（四层方向） | ✗（`code_health` 的"分层"是**另一套分类**） | **留** |
+| `application-must-not-reach-infrastructure-internals` | ✗ | **留** |
+| `domain-is-self-contained` | ✗ | **留** |
+| `lane-must-not-io` | ✗ | **留** |
+
+⇒ 按用户裁定的「**能覆盖就删、不能覆盖就留**」⇒ **全部保留** ✓
+
+★ 两者是**互补**不是替代：
+
+| | 覆盖面 | 口径 |
+|---|---|---|
+| `code_health` | 复杂度 / 孤儿 / 未用导出 / 未用 import / **它自己的分层** | **把 `tests/` 与 `tests/fixtures/` 也算进去**（13 条里 10 条在测试/夹具 ⇒ 信噪比低） |
+| `dep-cruiser` | 环 / 四层方向 / 域自洽 | **只扫 `src/`**（5 条规则，读数干净） |
+
+#### 三、清理**告一段落**（这是本笔的另一个决定）
+
+剩余 6 张登记表（202 KB）**暂不删** —— 它们管的判据（重复字面量表 / 回执通道 / action 接线 / 契约快照）
+**工具同样覆盖不了**，按同一条原则**留着**；等 `code_health` 之类的工具把那些面扫进去，再删。
+
+**本日清理的战果**（按 git diff 统计）：删除 3 大件 + 若干提示，
+`c0330f4`（-263/+161）、`2896799`（-331/+116）、`b611ab5`（-352/+94）⇒ **净减约 475 行**，
+且**少了两整类维护动作**（架构基线的重收 / 品牌串的 allowFiles 维护）。
+
+#### 四、回到重构主线
+
+新建域 **`src/infrastructure/packages/`**（域表 **26 域 + 3 平铺**）——
+从 `parse/` 归位 4 个"**包与依赖**"面文件：`go_mod` / `npm_mod`（三方依赖归并 + 版本比较，
+服务 `assemble_bricks` 的积木拼装）、`package_pins` / `template_compat`（装包的 ABI 钉版与模板兼容，
+两者都从 `install_package_cli` 抽出）。联动改写 **12 处**引用。★ `parse/` **22 → 18**。
+
+#### 验证
+
+| 量具 | 结果 |
+|---|---|
+| `npx tsc --noEmit` | EXIT=0 |
+| `npm run arch` | **2 errors**（与搬迁前一致 ⇒ **没有新增环**） |
+| `node scripts/structure_gap.mjs` | 待搬 **0** ／ 待定归属 **5** |
+| `npm run test:main` | **237 文件通过 / 1 跳过 ｜ 2444 项通过 / 5 跳过 ｜ 0 失败** |
