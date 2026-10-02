@@ -31,9 +31,12 @@ const REPO = execSync('git rev-parse --show-toplevel', { encoding: 'utf-8' }).tr
 const CFG = JSON.parse(fs.readFileSync(path.join(REPO, 'structure.domains.json'), 'utf-8'));
 const onlyDomain = process.argv.includes('--domain') ? process.argv[process.argv.indexOf('--domain') + 1] : null;
 
+const FLAT = CFG.flatDirs ?? [];
+
 // ★ id 必须唯一：否则 `--domain <id>` 会静默命中多个、过滤失效（实测教训：加 meta/ 域时
 //   差点造出第二个 id=impact —— 已有的 impact 域在 infrastructure/analysis/ 下）。
-const dupIds = CFG.domains.map((d) => d.id).filter((id, i, a) => a.indexOf(id) !== i);
+//   ★ 查重要跨 `domains` 与 `flatDirs` 一起查 —— 两边共用一个命名空间（`--domain` 要能命中两者）。
+const dupIds = [...CFG.domains, ...FLAT].map((d) => d.id).filter((id, i, a) => a.indexOf(id) !== i);
 if (dupIds.length) {
   console.error(`✗ structure.domains.json 里有重复的域 id：${[...new Set(dupIds)].join(', ')}`);
   process.exit(2);
@@ -88,6 +91,30 @@ for (const parent of parents) {
   }
 }
 
+// ★ flat 目录**不是免检**：它声明了「这里是平铺的」，所以它的**子目录必须被登记**。
+//   —— 这是 `flat` 唯一的可证伪点；否则 flat 就只是个「免检白名单」，等于没有判据。
+//   判「子目录 S 被登记了吗」：存在某条目的 dir D 满足 `D === S` 或 `D` 以 `S/` 开头（域在它下面）。
+//   ★ 注意**不能**把 flat 自己的 dir 拿来做祖先包含 —— 否则 `src/infrastructure/parse` 会被
+//     `src/infrastructure` 前缀命中，6 个未登记容器全部漏报（本段的出生证就是为抓这个写的）。
+if (!onlyDomain) {
+  const declaredDirs = [...CFG.domains.map((d) => d.dir), ...FLAT.map((f) => f.dir)];
+  for (const f of FLAT) {
+    const abs = path.join(REPO, f.dir);
+    if (!fs.existsSync(abs)) continue;
+    for (const e of fs.readdirSync(abs, { withFileTypes: true })) {
+      if (!e.isDirectory()) continue;
+      const rel = `${f.dir}/${e.name}`;
+      const declared = declaredDirs.some((dd) => dd === rel || dd.startsWith(rel + '/'));
+      if (!declared) {
+        unlisted.push({
+          file: `${rel}/`,
+          note: `flat 目录 ${f.id}(${f.dir}) 里长出的子目录，**没登记** —— 要么给它登记（域，或它自己也是 flat），要么这个目录不该标 flat`,
+        });
+      }
+    }
+  }
+}
+
 const report = { misplaced, unlisted, missing };
 
 if (asJson) {
@@ -99,7 +126,8 @@ if (asJson) {
     console.log();
   };
   console.log(`\n=== structure_gap：结构意图 vs 现状 ===`);
-  console.log(`域表: structure.domains.json（${CFG.domains.length} 个域；父目录 ${[...parents].join(', ')}）\n`);
+  console.log(`域表: structure.domains.json（${CFG.domains.length} 个域 + ${FLAT.length} 个平铺目录；父目录 ${[...parents].join(', ')}）`);
+  console.log(`平铺（flatDirs，散文件是**终态**、不报 misplaced）: ${FLAT.map((f) => f.dir).join(', ') || '(无)'}\n`);
   sec('★ misplaced（在，但不在目标域 —— 这就是待搬清单）', misplaced, '');
   sec('unlisted（在，归属未定 —— 要决定，不要猜）', unlisted, '');
   sec('missing（域目录还不存在 / 域里没有文件 —— 与 misplaced 一体两面）', missing, '');
