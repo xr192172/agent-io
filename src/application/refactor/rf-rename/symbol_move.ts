@@ -38,7 +38,7 @@ import {
 import { parseAstRoot, TS_JS_EXTS } from '../../../infrastructure/parse/index.js';
 import { syncFile } from '../../../infrastructure/index/symbols.js';
 import { getProjectCacheDb } from '../../../infrastructure/index/db.js';
-import { splitKeepEnds, detectEol, isBlankLine } from '../../../infrastructure/parse/line_utils.js';
+import { splitKeepEnds, detectEol, isBlankLine } from '../../../infrastructure/text/line_utils.js';
 import { snapshotBeforeWrite } from '../rf-snapshot/file_snapshot.js';
 import { reopenAndResolveAfterWrite } from '../../observe/write_gate.js';
 import type { ScanBounds } from '../rf-edit/scan_bounds.js';

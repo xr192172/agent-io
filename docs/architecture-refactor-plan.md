@@ -5642,3 +5642,92 @@ Error [ERR_MODULE_NOT_FOUND]: Cannot find module 'dist/application/observe/index
 
 ★ 还剩一步**只有你能做**：在 WorkBuddy 里**重连 `agent-io` 这个 MCP** —— server 进程由客户端
 spawn，我重建了 dist 也改好了配置，但客户端要重新拉起它才会生效。
+
+---
+
+### 44.35 ★★ 用 CLI 通道跑通了「真的用工具搬文件」（2026-10-02）
+
+#### 起因
+
+MCP 修好后（§44.34），用户说：「**这个项目也有 cli 工具吧，主要我现在在远程操作，重启不了，
+你用 cli 版本的工具试试吧**」。
+
+★★ **关键**：CLI 面**不依赖 MCP 客户端 spawn** —— 它是
+`node dist/src/presentation/cli/cli.js`，从**唯一真相源**（`application/<线名>/index.ts` 的 `ToolDef`）
+投影出来，与 MCP 面**同源**：
+
+- `cli list` ｜ `cli <name> --json '{...}'` ｜ `--input args.json` ｜ stdin
+- ★ 它走**同一个 `invokeTool()`** ⇒ **保鲜 / 告警 / 狗食统计结构上自动获得**
+  （实测：调 `structure_gap` 时自动附了 `STALE_INDEX` 告警，**并在告警里给出下一步的 fix**）
+
+⇒ **远程 / 无法重启客户端的场景，CLI 就是那条通路。**
+（这也是它当初被造出来的理由之一，见 `src/presentation/cli/cli.ts` 头注：手写 CLI 全都缺保鲜/告警。）
+
+#### 一、第一次真的用 `rename_files`（而不是替它写脚本）
+
+- 搬迁 1：`src/infrastructure/parse/line_utils.ts` → `src/infrastructure/text/line_utils.ts`
+- 搬迁 2：`src/infrastructure/parse/register_capabilities.ts` → `src/infrastructure/analysis/capability/`
+
+`dry_run` 输出的**就是引用面清单**（每处含 `fromSource` / `toSource`）：
+
+```
+- src/infrastructure/parse/register_capabilities.ts → src/infrastructure/analysis/capability/register_capabilities.ts
+    改 src/infrastructure/parse/lang_hint.ts：./register_capabilities.js → ../analysis/capability/register_capabilities.js
+    改 src/presentation/cli/capability_cli.ts：../../infrastructure/parse/... → ../../infrastructure/analysis/capability/...
+    改 tests/tools/capability_matrix.test.ts：…（两处）
+```
+
+落地后**用 `git diff` 复核**（★ 不只看它的自述）：4 处 import **只改 source 字符串，具名部分一字未动**；
+**任意深度**的相对路径都重算正确（`./x.js` → `../analysis/capability/x.js`）。
+`tsc` 0 ／ `arch` 0 违规 ／ 全量 0 失败。
+
+#### 二、★★★ 它推翻了我自己在同一轮里下的推断
+
+同一轮我先读了 `index_integrity`，它报：
+
+> **测试**文件 147 个未入索引 —— 这是索引器 `include_tests=false` 的有意结果。
+> ★ 但**改名 / find_references 会看不到测试里的引用** ⇒ 需要时传 `include_tests=true` 重建。
+
+于是我**推断**：「`rename_files` 的引用重写走 `db/symbols` ⇒ 索引残缺 ⇒ 它会**静默少改**。」
+
+**实测：它抓到了 `tests/tools/capability_matrix.test.ts` 里那两处** —— 而那文件**没入索引**。
+⇒ 它的引用面**不只有符号索引**（还有文本补召回 / 直接扫 AST）。
+
+> ★ 这条推断是错的。而且这是本轮的**第三次**"拿推断当事实"（前两次见 §44.34）。
+> **再写一遍纪律**：`index_integrity` 的告警说的是"**那个探针覆盖的面**"，
+> **不等于**"所有工具都会漏"——**要判断某个工具会不会漏，得实测那个工具。**
+
+#### 三、顺带确认：`parse/` 的真问题是「**跨域错放**」，不是「没分域」
+
+读 24 个文件**各自的自述**之后（不是按名字猜），`parse/` 混了三类东西：
+
+| 类 | 文件 | 判据（各自自述） |
+|---|---|---|
+| **解析内核**（该留） | `kernel` `languages` `loader` `probe` `lang_hint` `ast_parser` `ast_rename` `import_resolve` `import_text` `index` | 都是 tree-sitter / AST / import 解析本体 |
+| **明确错放**（该归位） | `line_utils` ✅已走 · `register_capabilities` ✅已走 · `cfg`（CFG 提取）· `project_view`（项目走查视图）· `arg_suggest`（参数纠错）· `ts_slim`（瘦身剪刀） | 自述与所在目录**不是一回事** |
+| **成对/成族**（必须整族走） | `go_mod`+`npm_mod`（依赖归并）· `package_pins`+`template_compat`（都从 `install_package_cli` 抽出）· `rule_match`+`rule_tokens`（规则匹配器） | 两两同源，**分开搬会把它们拆散** |
+
+⇒ **下一批的正确做法**：先在域表里**写下目标**（这些族各归哪个域）→ 再用 `rename_files` **一族一次**搬。
+**不要边看边搬**（那正是 §44.32 里"手抄映射表"的教训）。
+
+★ 本笔顺带把 `src/infrastructure/text/` **登记为域**（`refs_text` + `line_utils` 同属"文本面"）。
+
+#### 四、本笔我自己的**两个失误**（都是当场被读数抓出来的）
+
+1. ★★ **判据 bug：`domains` 的 dirname 推导与 `flatDirs` 打架。**
+   把 `src/infrastructure/text/` 登记成域的那一刻，它的 dirname `src/infrastructure` 进了 `parents`
+   ⇒ 量具开始扫那个目录的直属散文件 ⇒ 读数 **待搬 0 → 10** —— 而那 10 个横切件**早已被 `flatDirs`
+   声明为"有意平铺"**（详见 `structure_gap.ts` 里的注释）。修：`parents` **扣掉 flat 目录本身**。
+   ★ 已加测试 ⑮ + **出生证**（去掉那个 `.filter` ⇒ **只有 ⑮ 变红**，其余 16 条照过 ⇒ 它测的正是这一条）。
+2. ★ **跑全量期间改了源码** ⇒ 那一轮全量报的 ⑮ 红是**假红**（测试读到的是"注入期"的文件）。
+   ⇒ **跑全量时要冻结源码**；改源码期间跑出来的全量读数**无效，必须重跑**。
+
+#### 验证
+
+| 量具 | 结果 |
+|---|---|
+| `npx tsc --noEmit` | EXIT=0 |
+| `npm run arch` | 0 违规（338 modules / 1274 deps） |
+| `node scripts/structure_gap.mjs` | 待搬 **0** ／ 待定归属 **6 → 5**（`text/` 登记成域后不再是"未登记子目录"） |
+| `tests/infrastructure/structure_gap.test.ts` | 17/17 ✓（含新加的 ⑮） |
+| `npm run test:main` | **239 文件通过 / 1 跳过 ｜ 2467 项通过 / 5 跳过 ｜ 0 失败** |

@@ -30,7 +30,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { detectEol } from '../../../infrastructure/parse/line_utils.js';
+import { detectEol } from '../../../infrastructure/text/line_utils.js';
 import { locateReplaceText } from '../../../infrastructure/parse/fuzzy_match.js';
 import { planReplaceText, editCode, type EditBatchItem } from '../rf-edit/edit_code.js';
 

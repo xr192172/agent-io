@@ -112,9 +112,36 @@ export function scanFile(rel, root) {
   };
 }
 
+/**
+ * 找 `register_capabilities.ts` —— **按 basename 递归查，不写死路径**。
+ *
+ * ★ 2026-10-02 实测的教训（本仓"被搬动作坏"家族的一员，而且**正中** `preflight_move` 的
+ *   「★ registry(钩子/脚本)」那一档）：
+ *   这里原先是硬编码 `src/infrastructure/parse/register_capabilities.ts`。该文件当天被归位到
+ *   `src/infrastructure/analysis/capability/` ⇒ 本脚本 ENOENT ⇒ **pre-commit 当场把提交挡下**。
+ *   ★ 更要记的是：**那次我没跑 `preflight_move` 就直接搬了** —— 老坑重踩。
+ * ⇒ 改成按 basename 查：它搬去哪都找得到。名字不唯一才是异常（抛错，不猜）。
+ */
+function findCapabilityRegistry(root) {
+  const hits = [];
+  const walk = (dir, depth) => {
+    if (depth > 8) return;
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      if (e.name === 'node_modules' || e.name.startsWith('.')) continue;
+      const p = path.join(dir, e.name);
+      if (e.isDirectory()) walk(p, depth + 1);
+      else if (e.name === 'register_capabilities.ts') hits.push(p);
+    }
+  };
+  walk(path.join(root, 'src'), 0);
+  if (hits.length === 0) throw new Error(`找不到 register_capabilities.ts（在 ${root}/src 下递归查）`);
+  if (hits.length > 1) throw new Error(`register_capabilities.ts 有 ${hits.length} 个，无法判定用哪个：\n  ${hits.join('\n  ')}`);
+  return hits[0];
+}
+
 /** 从 register_capabilities.ts 提取某 id 的声明（文本正则，不 import TS） */
 export function capDecl(id, root) {
-  const reg = readFileSync(path.join(root, 'src/infrastructure/parse/register_capabilities.ts'), 'utf-8');
+  const reg = readFileSync(findCapabilityRegistry(root), 'utf-8');
   const start = reg.indexOf(`id: '${id}'`);
   if (start < 0) return null;
   const block = reg.slice(start, start + 1600);

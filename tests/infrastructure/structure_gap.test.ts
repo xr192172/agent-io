@@ -154,6 +154,23 @@ describe('structure_gap · flat 不是免检（★ 出生证在这里）', () =>
     const r = structureGap(root);
     expect(r.unlisted).toEqual([]);
   });
+
+  it('⑮ ★ 域落在某个 flat 目录下时，该 flat 目录的散文件**仍不报 misplaced**（两条声明不许打架）', () => {
+    // ★ 出生证来源（2026-10-02 实测）：把 `src/infrastructure/text/` 登记成域的那一刻，
+    //   它的 dirname `src/infrastructure` 进了 parents ⇒ 量具开始扫那个目录的直属散文件
+    //   ⇒ 读数「待搬 0 → **10**」—— 而那 10 个横切件**早已被 flatDirs 声明为"有意平铺"**。
+    //   即：`domains` 的 dirname 推导与 `flatDirs` 的声明**打架**了。
+    //   修法是 `parents` 扣掉 flat 目录本身；去掉那个 `.filter(...)`，本用例立刻红。
+    w('src/core/keeper.ts'); // flat 目录里的成员（终态，不是缺口）
+    w('src/core/text/refs.ts'); // 域落在 flat 目录下面
+    wCfg({
+      domains: [{ id: 'text', dir: 'src/core/text' }],
+      flatDirs: [{ id: 'core', dir: 'src/core' }],
+    });
+    const r = structureGap(root);
+    expect(r.misplaced).toEqual([]);
+    expect(r.unlisted).toEqual([]);
+  });
 });
 
 describe('structure_gap · 本仓自洽', () => {

@@ -165,7 +165,16 @@ export function computeStructureGap(projectDir: string, cfg: StructureDomainsCon
   }
 
   // ② misplaced / unlisted：只看**域目录的父目录下、直接堆放**的文件（那才是"没分类"）
-  const parents = [...new Set(cfg.domains.map((d) => path.posix.dirname(d.dir)))].sort();
+  //    ★★ 必须**扣掉 flatDirs 声明的目录**（2026-10-02 实测的真缺口）：
+  //      只要有一条域的 `dir` 落在 `src/infrastructure/` 下（如 `src/infrastructure/text`），
+  //      它的 dirname 就把 `src/infrastructure` 带进 parents ⇒ 量具开始扫那个目录的直属散文件
+  //      ⇒ 报 `misplaced`。**可那个目录早已被 flatDirs 声明为"有意平铺"**（那 10 个横切件是终态）
+  //      ⇒ 两条声明打架：一边说"散文件是成员"，一边把它们算成"该搬的缺口"。
+  //      实测证据：把 `text/` 登记成域的那一刻，读数 待搬 0 → **10**（全是 flat 目录里的成员）。
+  const flatSet = new Set(flat.map((f) => f.dir));
+  const parents = [...new Set(cfg.domains.map((d) => path.posix.dirname(d.dir)))]
+    .filter((p) => !flatSet.has(p))
+    .sort();
   for (const parent of parents) {
     for (const name of sourceFileNames(absOf(projectDir, parent))) {
       const stem = name.replace(/\.[^.]*$/, '');

@@ -51,6 +51,12 @@
       "note": "多语言重构执行器契约"
     },
     {
+      "id": "text",
+      "layer": "infrastructure",
+      "dir": "src/infrastructure/text",
+      "note": "文本面（两层共用同一批行号/文本基准）：`refs_text` = 文本提及扫描（改名与引用查询的**补召回**，专治「AST 看不见的引用」）；`line_utils` = 行分割与行尾处理的**单一基准**（`explore_code(read)` 的返回行号 与 `edit_code(range)` 的 start/end **必须同基准** —— 曾经各自实现，导致 LLM 拿 read 的行号去 edit 会替换错行，被语法门拦下）。★ `line_utils` 于 2026-10-02 从 `infrastructure/parse/` **归位**到这里：它不做解析，是纯文本面。"
+    },
+    {
       "id": "meta-view",
       "layer": "application",
       "dir": "src/application/meta/view",

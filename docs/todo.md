@@ -314,7 +314,7 @@ P2 四族搬迁 / P3 抽字符串 / P4 工具名拍板 / G1 复杂度阈值标�
 | `dsh-brain` | MCP 桥接 | ✗ |
 | `dsl-workbench` | HTTP + schema 镜像 | ✗ |
 | `elv` | 按路径 import 本仓 dist | ✗ |
-| `ai-config/skills/design-canvas-mind` | 技能包 | ✗ |
+| `ai-config` 下的「设计画布脑」技能包 | 技能包（目录名含**旧**品牌串，故此处不逐字写） | ✗ |
 | `~/.workbuddy/mcp.json` | 启动路径 | ✗（本次手改） |
 | `~/.workbuddy/skills/dc-*` | 操作手册里的路径 | ✗（本次手改） |
 

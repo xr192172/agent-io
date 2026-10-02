@@ -30,7 +30,10 @@ function rmForce(dir) {
 
 /** 构造一个 register_capabilities.ts（含指定 id 的声明片段） */
 function writeCapReg(dir, decls) {
-  const p = path.join(dir, 'src/infrastructure/parse/register_capabilities.ts');
+  // ★ 2026-10-02：路径跟着真实位置走（`parse/` → `analysis/capability/`）。
+  //   夹具路径其实**不再耦合**了 —— `capDecl` 已改成按 basename 递归查，
+  //   放哪都能找到；这里对齐真实结构只是为了不误导读者。
+  const p = path.join(dir, 'src/infrastructure/analysis/capability/register_capabilities.ts');
   mkdirSync(path.dirname(p), { recursive: true });
   writeFileSync(p, decls, 'utf-8');
 }

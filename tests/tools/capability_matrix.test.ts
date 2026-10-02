@@ -98,7 +98,7 @@ describe('capability_matrix', () => {
 
   it('默认登记：关键功能契约存在且支持度正确', async () => {
     _resetRegistry();
-    await import('../../src/infrastructure/parse/register_capabilities.js');
+    await import('../../src/infrastructure/analysis/capability/register_capabilities.js');
     const ids = allCapabilities().map((c) => c.id);
     for (const expectId of [
       'ast_parse_skeleton', 'package_migration', 'rename_symbol', 'contract_gate', 'extract_contracts',
@@ -125,7 +125,7 @@ describe('capability_matrix', () => {
 
   it('默认登记的覆盖语言全命中 LANGUAGES（无笔误）', async () => {
     _resetRegistry();
-    await import('../../src/infrastructure/parse/register_capabilities.js');
+    await import('../../src/infrastructure/analysis/capability/register_capabilities.js');
     const known = new Set(LANGUAGES.map((l) => l.name));
     for (const c of allCapabilities()) {
       for (const entry of Object.keys(c.overrides ?? {})) {
