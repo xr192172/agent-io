@@ -20,7 +20,7 @@
  */
 
 import path from 'node:path';
-import { openDb, projectCacheDbPath, type Database } from '../index/db.js';
+import { openDb, projectCacheDbPath, type Database } from '../../index/db.js';
 
 // ─────────────────────────────────────────────────────────────
 // 类型

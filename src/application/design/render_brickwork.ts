@@ -13,7 +13,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { buildFeatureMap } from '../../infrastructure/analysis/feature_map.js';
+import { buildFeatureMap } from '../../infrastructure/analysis/structure/feature_map.js';
 import { assembleBrickBagWithCall, type BrickBag, type Brick } from './brick_bag.js';
 import { buildBrickify, type BrickifyResult, type Community, type MixedFileSignal } from './brickify.js';
 

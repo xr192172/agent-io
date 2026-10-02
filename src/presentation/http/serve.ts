@@ -34,7 +34,7 @@ import { diffImpact } from '../../infrastructure/analysis/diff_impact.js';
 import { diffViews } from '../../application/refactor/diff_views.js';
 import { watchProject } from '../../infrastructure/index/watch_project.js';
 import { createRebuildThrottler } from '../../infrastructure/index/watch_project_tool.js';
-import { archLayer } from '../../infrastructure/analysis/arch_layer.js';
+import { archLayer } from '../../infrastructure/analysis/structure/arch_layer.js';
 import { guidedTour } from '../../infrastructure/index/guided_tour.js';
 import { semanticSearch } from '../../application/meta/semantic_search.js';
 import { languageConcepts } from '../../infrastructure/analysis/capability/language_concepts.js';
@@ -42,8 +42,8 @@ import { buildDictionaryView, getGlobalDictFile, getProjectDictFile, loadGlobalD
 import { ingestTerm, classifyTerm, generateDictEntry } from './dict_gen.js';
 import { readRegistry, updateArtifact } from '../../infrastructure/index/registry.js';
 import { proposeChange, listChanges, approveChange, rejectChange } from '../../application/design/code_workbench.js';
-import { checkMonolith } from '../../infrastructure/analysis/monolith.js';
-import type { FileMonolithReport } from '../../infrastructure/analysis/monolith.js';
+import { checkMonolith } from '../../infrastructure/analysis/structure/monolith.js';
+import type { FileMonolithReport } from '../../infrastructure/analysis/structure/monolith.js';
 import { runArchifyPipeline } from './archify/archify_pipeline.js';
 import { adaptIRTree } from './archify/archify_project.js';
 import { buildFunctionOutline, listFunctionDirs } from '../../infrastructure/index/function_outline.js';
@@ -586,7 +586,7 @@ async function handleApiMonolith(req: http.IncomingMessage, res: http.ServerResp
   try {
     const body = await readBody(req);
     const params = JSON.parse(body.toString('utf-8') || '{}');
-    const input: import('../../infrastructure/analysis/monolith.js').CheckMonolithInput = {
+    const input: import('../../infrastructure/analysis/structure/monolith.js').CheckMonolithInput = {
       warn_lines: typeof params.warn_lines === 'number' ? params.warn_lines : undefined,
       crit_lines: typeof params.crit_lines === 'number' ? params.crit_lines : undefined,
       max_files: typeof params.max_files === 'number' ? params.max_files : undefined,

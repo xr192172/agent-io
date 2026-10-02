@@ -18,7 +18,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { getDSL, saveDSL, requireProjectRoot } from '../storage.js';
+import { getDSL, saveDSL, requireProjectRoot } from '../../storage.js';
 import {
   detectArchLayers,
   detectLayerViolations,
@@ -27,8 +27,8 @@ import {
   type ImportEdge,
   type LayerViolation,
 } from './layer_detect.js';
-import type { ArchLayer, DesignDSL } from '../../domain/types.js';
-import { fileFingerprint, healthKey, readHealthCache, writeHealthCache } from './health_cache.js';
+import type { ArchLayer, DesignDSL } from '../../../domain/types.js';
+import { fileFingerprint, healthKey, readHealthCache, writeHealthCache } from '../health/health_cache.js';
 
 export interface ArchLayerInput {
   /** feature 名 */

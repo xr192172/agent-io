@@ -18,8 +18,8 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import type { FeatureMapResult, FeatureSide } from '../../infrastructure/analysis/feature_map.js';
-import { scanSourceFiles } from '../../infrastructure/analysis/feature_map.js';
+import type { FeatureMapResult, FeatureSide } from '../../infrastructure/analysis/structure/feature_map.js';
+import { scanSourceFiles } from '../../infrastructure/analysis/structure/feature_map.js';
 import { enumerateTsSources } from '../../infrastructure/analysis/deadcode/detect_dead_imports.js';
 
 export interface BrickFileGroups {

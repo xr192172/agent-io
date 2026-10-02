@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect } from 'vitest';
-import { buildFeatureMap, featureIdOf, sideOfLayer } from '../../src/infrastructure/analysis/feature_map.js';
+import { buildFeatureMap, featureIdOf, sideOfLayer } from '../../src/infrastructure/analysis/structure/feature_map.js';
 
 const SRC = path.join(process.cwd(), 'src');
 

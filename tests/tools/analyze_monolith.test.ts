@@ -20,7 +20,7 @@ import {
   buildCallGraphFromCache,
   scoreAnchors,
   labelPropagation,
-} from '../../src/infrastructure/analysis/analyze_monolith.js';
+} from '../../src/infrastructure/analysis/structure/analyze_monolith.js';
 
 let root: string;
 let db: Database | null = null;

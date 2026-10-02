@@ -108,7 +108,7 @@ const toSnake = (s: string) => s.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerC
  */
 const INTERNAL_MODULES: Record<string, { importedBy: string[]; why: string }> = {
   analyze_monolith: {
-    importedBy: ['src/infrastructure/analysis/derive_feature_tree.ts'],
+    importedBy: ['src/infrastructure/analysis/structure/derive_feature_tree.ts'],
     why: 'derive_feature_tree 的底座识别步骤；其对内实现，不单独注册',
   },
   collect_functions: {
@@ -128,7 +128,7 @@ const INTERNAL_MODULES: Record<string, { importedBy: string[]; why: string }> = 
       'src/application/design/brickify.ts',
       'src/application/design/brick_bag.ts',
       'src/presentation/cli/deprecate_offline.ts',
-      'src/infrastructure/analysis/feature_map.ts',
+      'src/infrastructure/analysis/structure/feature_map.ts',
       'src/application/refactor/function_annotation.ts',
       'src/application/refactor/refactor_pipeline.ts',
     ],

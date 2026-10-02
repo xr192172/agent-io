@@ -138,6 +138,18 @@
       ★ 门要管的是 **"根的选择"**，**不是**"`.agent-io` 字面量"——实测代码里字面量只有少数几处
       （136 行命中绝大多数是注释）⇒ "字面量被抄多份"不是主要问题。
 
+- [ ] **T22 ★★ `scripts/rebuild_feature.mjs` 指向早已不存在的旧布局（`dist/src/tools/*`、`dist/src/db/db.js`）—— 靠陈旧 dist 掩盖**
+      *(核实：2026-10-02，由搬迁子代理的预检捞到；我独立复核 `scripts/rebuild_feature.mjs:27–30`。)*
+      ⇒ **实测**：它 `import { importProject } from '../dist/src/tools/import_project.js'`（27）、
+      `derive_mind_map`（28）、`derive_feature_tree`（29）、`openDb` from `'../dist/src/db/db.js'`（30）
+      —— ★ 这四条**都指向 P2 搬迁之前的目录布局**，而源码里这些路径**早就不存在**。
+      ⇒ 它现在**还能跑**，只因为 `dist/` 是 **09-30 的旧构建**（里面还留着那时的目录）⇒ **下一次 `npm run build` 就会断**。
+      ★ 与 T19 第 1 刀修掉的 `package.json` dogfood 脚本**同型**：**陈旧产物掩盖断链 ⇒ 静默跑旧码**。
+      ⇒ **待做**：把这些 import 改指当前布局（`dist/src/infrastructure/analysis/structure/derive_feature_tree.js` 等），
+      并顺手确认 `rebuild_feature` 是否还该存在。★ 判据：`npm run build && node scripts/rebuild_feature.mjs <某feature>` 真跑通。
+      ★ 属"**硬编码旧路径被搬迁静默架空**"家族的**第 5 例**（前 4：`server_registry.consistency` / `capability_scan` /
+      架构基线 / `TOOL_DOMAINS`）—— 但这一例**破得最彻底**（连 dist 的布局都是旧的）。
+
 - [ ] **T21 ★★ `derive_feature_tree.ts` 的 `TOOL_DOMAINS` 已几乎全是死条目（按 basename 认模块，被 P2 搬迁静默架空）**
       *(核实：2026-10-01 —— 台账 §44.31 补；`node scripts/lang_density.mjs` 无关，靠读代码 + `ls src/tools/`。)*
       ⇒ **实测**：`src/tools/` 现在**只剩 2 个条目**（`python_refactor/` 目录 + `view_inputs.ts`），

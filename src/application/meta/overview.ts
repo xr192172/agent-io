@@ -22,7 +22,7 @@ import { guidedTour } from '../../infrastructure/index/guided_tour.js';
 import type { TourStep } from '../../infrastructure/index/guided_tour.js';
 import type { MindMap } from '../../domain/mindmap.js';
 import { extractJsonObject } from './explain_gen.js';
-import { deriveFeatureTree } from '../../infrastructure/analysis/derive_feature_tree.js';
+import { deriveFeatureTree } from '../../infrastructure/analysis/structure/derive_feature_tree.js';
 import { openDb, findCacheDb } from '../../infrastructure/index/db.js';
 import { fileFacts } from '../../infrastructure/index/file_facts.js';
 
