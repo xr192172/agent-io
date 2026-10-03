@@ -47,7 +47,7 @@ import { requireProjectRoot, getDSL, ensureBaseline, getBaselineFeatureFile, get
 import { projectCacheDbPath, getProjectCacheDb } from '../infrastructure/index/db.js';
 import { ensureProjectIndex } from '../infrastructure/index/index_freshness.js';
 import { getProjectView, invalidateProjectView } from '../infrastructure/project_view.js';
-import { observePointsFile, recommendObservePoints } from './observe/observe_points.js';
+import { observePointsFile, recommendObservePoints } from './observe/capture/observe_points.js';
 
 // ─────────────────────────────────────────────────────────────
 // 类型：`StageId` 是**字面量联合** ⇒ `inputs` 写错一个 id 就编译不过

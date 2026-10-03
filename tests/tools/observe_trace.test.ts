@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { observeTrace, loadNeedles, loadEventsText } from '../../src/application/observe/observe_trace.js';
+import { observeTrace, loadNeedles, loadEventsText } from '../../src/application/observe/capture/observe_trace.js';
 
 /** 一段可被 parseRunTraces 解析的录制事件（enter/exit + trace/frame/parent） */
 function sampleEvents(): string {

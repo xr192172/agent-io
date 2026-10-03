@@ -16,10 +16,10 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { deriveAlgorithm } from '../../src/application/design/derive_algorithm.js';
-import { createFeature } from '../../src/application/design/feature_ops.js';
-import { addNode } from '../../src/application/design/node_ops.js';
-import { addFile } from '../../src/application/design/file_ops.js';
+import { deriveAlgorithm } from '../../src/application/design/derive/derive_algorithm.js';
+import { createFeature } from '../../src/application/design/dsl_ops/feature_ops.js';
+import { addNode } from '../../src/application/design/dsl_ops/node_ops.js';
+import { addFile } from '../../src/application/design/dsl_ops/file_ops.js';
 import { clearAllFeatures, getDSL, getLiveDslFile } from '../../src/infrastructure/storage.js';
 
 let tmpDir: string;

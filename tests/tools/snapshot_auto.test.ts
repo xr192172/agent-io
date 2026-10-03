@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { saveDSL } from '../../src/infrastructure/storage.js';
-import { saveAutoSnapshot, pruneSnapshots, listSnapshots } from '../../src/application/design/snapshot.js';
+import { saveAutoSnapshot, pruneSnapshots, listSnapshots } from '../../src/application/design/lifecycle/snapshot.js';
 import type { DesignDSL } from '../../src/domain/types';
 
 let tmp: string;

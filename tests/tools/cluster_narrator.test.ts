@@ -15,12 +15,12 @@ import {
   narrateClusters,
   collectNarrUnits,
   fallbackNarrative,
-} from '../../src/application/design/cluster_narrator.js';
+} from '../../src/application/design/bricks/cluster_narrator.js';
 import {
   clusterEdgesOf,
   renderClusterWorkbenchHtml,
 } from '../../src/presentation/cli/render_cluster_workbench.js';
-import { buildBrickify, type BrickifyResult } from '../../src/application/design/brickify.js';
+import { buildBrickify, type BrickifyResult } from '../../src/application/design/bricks/brickify.js';
 
 function makeTmp(): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'narrator-'));

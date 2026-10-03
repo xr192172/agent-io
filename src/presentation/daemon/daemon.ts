@@ -27,7 +27,7 @@ import { fileURLToPath } from 'node:url';
 import { watchProjectTool, listActiveWatches, setWatchToolEventListener } from '../../infrastructure/index/watch_project_tool.js';
 import { setAlertListener, alertsSince, pushAlert } from '../../infrastructure/alert_inbox.js';
 import { saveDSL, getDSL, onDslChange } from '../../infrastructure/storage.js';
-import { updateFeature } from '../../application/design/update_feature.js';
+import { updateFeature } from '../../application/design/dsl_ops/update_feature.js';
 import { createDaemonServer, type DslWriteRequest, type DslWriteResult } from './server.js';
 import { probeDaemon, daemonPort } from '../../infrastructure/daemon/client.js';
 import { startMemoryWatch } from './memory_watch.js';

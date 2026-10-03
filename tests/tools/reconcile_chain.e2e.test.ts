@@ -2,7 +2,7 @@ import { describe, it } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { reconcileChain } from '../../src/application/observe/reconcile_chain.js';
+import { reconcileChain } from '../../src/application/observe/reconcile/reconcile_chain.js';
 import { saveDSL } from '../../src/infrastructure/storage.js';
 
 describe('reconcile_chain e2e（中观档：派生 → 缓存 → 事件对账）', () => {

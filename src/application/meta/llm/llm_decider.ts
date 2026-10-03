@@ -24,7 +24,7 @@ import path from 'node:path';
 import { getDSL, saveDSL } from '../../../infrastructure/storage.js';
 import { loadLlmConfig, callChat, type LlmConfig, type ChatMessage } from '../../../infrastructure/llm_focus.js';
 import { resolveCanvasNoteTargets, markCanvasNotesStatus, type ResolvedCanvasNote } from '../view/derive_mind_map.js';
-import { proposeChange, type ChangeKind, type ChangeOp } from '../../design/code_workbench.js';
+import { proposeChange, type ChangeKind, type ChangeOp } from '../../design/workbench/code_workbench.js';
 import { listProjectDocs, buildDocsPromptBlock, type DocTargetSet } from '../docs/project_docs.js';
 import { hasEnabledProvider, chatViaGateway } from './gateway.js';
 

@@ -16,13 +16,13 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { buildBrickify, ROLE_LABEL } from '../../application/design/brickify.js';
-import { renderBrickifyWorkbenchHtml } from '../../application/design/render_brickwork.js';
+import { buildBrickify, ROLE_LABEL } from '../../application/design/bricks/brickify.js';
+import { renderBrickifyWorkbenchHtml } from '../../application/design/bricks/render_brickwork.js';
 import { renderBrickifyMindMapHtml } from './render_mindmap.js';
-import { narrateClusters } from '../../application/design/cluster_narrator.js';
+import { narrateClusters } from '../../application/design/bricks/cluster_narrator.js';
 import { renderClusterWorkbenchHtml } from './render_cluster_workbench.js';
 import { renderDepCanvasHtml } from './render_dep_canvas.js';
-import { classifyBricks } from '../../application/design/classify_bricks.js';
+import { classifyBricks } from '../../application/design/bricks/classify_bricks.js';
 import { renderAnatomyHtml } from './render_anatomy.js';
 import { extractRegistryToolsFromFile } from '../../application/meta/registry/registry_extract.js';
 import { extractCliCommands } from '../../application/meta/registry/cli_extract.js';
@@ -32,7 +32,7 @@ import { renderToolsMapHtml } from './render_tools_map.js';
 import { renderWizardHtml } from './render_wizard.js';
 import { renderWorkbenchHtml } from './render_workbench.js';
 import { registerArtifact } from '../../infrastructure/index/registry.js';
-import { buildWorkbenchData, writeWorkbenchDataJson } from '../../application/design/workbench_data.js';
+import { buildWorkbenchData, writeWorkbenchDataJson } from '../../application/design/workbench/workbench_data.js';
 
 function readArg(name: string): string | undefined {
   const i = process.argv.indexOf(name);

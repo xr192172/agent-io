@@ -27,7 +27,7 @@ import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import { importProject } from '../src/infrastructure/graph/import_project.js';
 import { openDb, closeAllProjectCacheDbs } from '../src/infrastructure/index/db';
 import { detectStaleIndex } from '../src/infrastructure/index/index_freshness.js';
-import { recordSelfWrite } from '../src/application/observe/write_gate.js';
+import { recordSelfWrite } from '../src/application/observe/runtime/write_gate.js';
 import { registerAllTools, staleIndexWarning, resetStaleIndexWarningCache } from '../src/presentation/mcp/server_registry.js';
 import { emitWarnings, resetWarningDelivery, WARNINGS_MARKER, type WireWarning } from '../src/presentation/mcp/tool_warnings.js';
 

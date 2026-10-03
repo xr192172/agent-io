@@ -26,13 +26,13 @@ function makeDSL(feature: string): DesignDSL {
       nodes: [
         { id: 'f0', x: 0, y: 0, width: 200, height: 60, label: '入口' },
         // 先写 DSL：harvest_decisions 契约文件（预期签名将与 registry 对齐）
-        { id: 'f_harvest_decisions', x: 0, y: 0, width: 200, height: 60, label: 'src/application/observe/harvest_decisions.ts' },
+        { id: 'f_harvest_decisions', x: 0, y: 0, width: 200, height: 60, label: 'src/application/harvest/harvest_decisions.ts' },
       ],
       edges: [],
     },
     semantic: {
       files: [
-        { id: 'f_harvest_decisions', path: 'src/application/observe/harvest_decisions.ts', responsibility: '决策卡补录：提取候选' },
+        { id: 'f_harvest_decisions', path: 'src/application/harvest/harvest_decisions.ts', responsibility: '决策卡补录：提取候选' },
       ],
     },
   };
@@ -55,7 +55,7 @@ describe('sync_contracts 走查（契约回填）', () => {
     const r = syncContracts({ feature: 'sync_demo' });
 
     const saved = getDSL('sync_demo')!;
-    const f = saved.semantic!.files.find((x) => x.path === 'src/application/observe/harvest_decisions.ts')!;
+    const f = saved.semantic!.files.find((x) => x.path === 'src/application/harvest/harvest_decisions.ts')!;
     expect(f.expected_apis?.length).toBeGreaterThanOrEqual(1);
     // 签名用注册名（snake_case，与 MCP 工具名一致），参数来自 registry zod（含可选标记）
     const api = f.expected_apis!.find((a) => a.signature.includes('harvest_decisions'))!;
@@ -78,7 +78,7 @@ describe('sync_contracts 走查（契约回填）', () => {
 
     const r = syncContracts({ feature: 'sync_demo2', include_all: true });
     const saved = getDSL('sync_demo2')!;
-    expect(saved.semantic!.files.some((f) => f.path === 'src/application/observe/harvest_decisions.ts')).toBe(true);
+    expect(saved.semantic!.files.some((f) => f.path === 'src/application/harvest/harvest_decisions.ts')).toBe(true);
     // geometry 节点与契约文件对齐（file.id ↔ node.id）
     for (const f of saved.semantic!.files) {
       expect(saved.geometry!.nodes.some((n) => n.id === f.id), `node 缺失: ${f.id}`).toBe(true);
@@ -91,7 +91,7 @@ describe('sync_contracts 走查（契约回填）', () => {
     syncContracts({ feature: 'sync_demo' });
     const r2 = syncContracts({ feature: 'sync_demo' });
     const saved = getDSL('sync_demo')!;
-    const f = saved.semantic!.files.find((x) => x.path === 'src/application/observe/harvest_decisions.ts')!;
+    const f = saved.semantic!.files.find((x) => x.path === 'src/application/harvest/harvest_decisions.ts')!;
     const count = f.expected_apis!.filter((a) => a.signature.includes('harvest_decisions')).length;
     expect(count).toBe(1); // 幂等：同一签名只存在一条
     expect(r2.updated_files).toEqual([]);

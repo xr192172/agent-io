@@ -11,7 +11,7 @@
  *
  * 只提醒不动手（不杀进程/不强 GC/不重启），避免误判误伤。目标自动由 memory_observe(action=targets) 扫描所得（可覆盖新增 gen）。
  */
-import { MemSample, sampleRemote, memoryTargetsHandler } from '../../application/observe/memory_observe.js';
+import { MemSample, sampleRemote, memoryTargetsHandler } from '../../application/observe/capture/memory_observe.js';
 import { pushAlert } from '../../infrastructure/alert_inbox.js';
 
 const MB = (b: number): number => Math.round(b / 1048576);

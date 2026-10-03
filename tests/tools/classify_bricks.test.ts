@@ -8,10 +8,10 @@
  * LLM 真调用不做单测（成本+不确定性）；启发式路径即"分类层缺席"契约。
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { classifyByRule, classifyBricks } from '../../src/application/design/classify_bricks.js';
-import { defaultPipelineTaxonomy } from '../../src/application/design/taxonomy.js';
+import { classifyByRule, classifyBricks } from '../../src/application/design/bricks/classify_bricks.js';
+import { defaultPipelineTaxonomy } from '../../src/application/design/bricks/taxonomy.js';
 import { renderAnatomyHtml } from '../../src/presentation/cli/render_anatomy.js';
-import type { BrickifyResult } from '../../src/application/design/brickify.js';
+import type { BrickifyResult } from '../../src/application/design/bricks/brickify.js';
 
 function brick(id: string, subClusters: Array<{ sid: string; files: string[] }>): BrickifyResult['bricks'][number] {
   const allFiles = subClusters.flatMap((s) => s.files);

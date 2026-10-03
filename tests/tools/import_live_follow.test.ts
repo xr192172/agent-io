@@ -13,7 +13,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect } from 'vitest';
 import { importProject } from '../../src/infrastructure/graph/import_project.js';
-import { checkConsistency } from '../../src/application/design/consistency.js';
+import { checkConsistency } from '../../src/application/design/intent/consistency.js';
 import { getDSL, getLiveFeature, clearAllFeatures } from '../../src/infrastructure/storage.js';
 
 function makeProject(): string {

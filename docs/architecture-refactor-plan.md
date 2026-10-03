@@ -6259,3 +6259,76 @@ grep+脚本手动硬改」的文档。**这才是"一份项目文档"的正确�
 | `npx tsc --noEmit` | 0 |
 | `npm run arch` | 2 errors（不变） |
 | `npm run test:main` | **217 文件通过 / 1 跳过 ｜ 2171 项通过 / 5 跳过 ｜ 0 失败** |
+
+---
+
+### 44.43 ★★★ 「摆成目标的样子，再顺链追」—— design(34) + observe(15) 全部分域（2026-10-03）
+
+#### 用户给的节奏（本笔照做）
+
+> 「**你把这些功能全都摆成了我们预想中的情况**，之后你**再一个个测过去**，如果发现某一个功能不行，
+>  你再用这个我们本身的工具去读它，你也能**直接读到整条链**，路上什么地方有问题，然后你再去改就好了。
+>  根本用不上这些夹具去保证一步步的那个精确，…**而不是说现在这样在中途不断的被别的事物打扰**，
+>  然后一直达不到最后的终极。」
+
+⇒ **节奏改了**：每批只跑 `tsc` + `arch`（免费、秒级）；**全量测试搬到"一轮搬完再跑"**。
+（这也正好接上 §44.42 清掉夹具之后的状态：**没有东西在中途拦我**了。）
+
+#### 一、`application/design`：34 → 6 个域（顶层只留 `index.ts` barrel）
+
+分域依据是**读出来的依赖团 + 职责**（`explore_code action=read` 读头 + 内部 import 图），不是按文件名猜：
+
+| 域 | 数 | 依据 |
+|---|---|---|
+| **`dsl_ops/`** | 9 | 改 DSL 的操作原语。`edit_result`（编辑结果契约）**被 6 个依赖 ⇒ 底座**；`node_ops`/`edge_ops`/`file_ops`/`api_ops`/`feature_ops` 是五类原子操作；**`update_feature` 是聚合点**（一次 `edit_dsl` 串起五个）+ `status_tools` + `annotation_tools` |
+| **`bricks/`** | 7 | `brickify` **被 7 个依赖 ⇒ 底座**；`brick_bag`/`classify_bricks`/`cluster_narrator`/`render_brickwork`/`signal_review` + ★ **`taxonomy`**（自述"软件解剖学分类法"，与"分类"同族） |
+| **`lifecycle/`** | 7 | 功能生命周期：`manage_feature`/`wizard_steps`/`templates`/`snapshot`/`simulation`/`split_stage`/`scaffold` |
+| **`derive/`** | 4 | 推导族（`derive_algorithm`/`derive_chain`/`derive_split`/`opl`）—— **只推不改** |
+| **`workbench/`** | 3 | 协作工作台：`code_workbench`（变更审批）/`workbench_data`（数据契约层）/`dag_layout`（布局） |
+| **`intent/`** | 3 | 意图 / 漂移 / 一致：`set_design_intent`/`detect_drift`/`consistency` |
+
+#### 二、`application/observe`：15 → 3 个域 + **1 个跨线归位**
+
+| 域 | 数 | 内容 |
+|---|---|---|
+| `observe/capture/` | 6 | 记忆观测 / 叙述 / **观测点推荐** / 调用链回放 / 证据层 / **功能线** |
+| `observe/reconcile/` | 4 | 链对账 / 效应对账 / **四层抗偷懒校验链** / 人审审批 |
+| `observe/runtime/` | 3 | **写闸** / STALE BUILD 检测 / 跑测试 |
+| ★ `application/harvest/` | +1 | **`harvest_decisions` 归位** —— 它本来就是 `HARVEST_TOOLS` 里的工具，**一直住在 observe 线**（错线） |
+
+**读数**：`rename_files` 两批共 **47 条**、联动引用 **≈102 处**；域表 **27 → 36 域**；
+`structure_gap` 待搬 **0** ／ 待定归属 **5**；`tsc` 0；`arch` **仍 2 errors**（**没有新增环**）。
+
+★ 工具还处理了一个**混合批次**的棘手情形：搬 `templates.ts` 进 `lifecycle/` 时，把**已经搬进去的**
+`lifecycle/manage_feature.ts` 的 `../templates.js` 正确改成了 `./templates.js`（`consistency` 同理）——
+**同一批里"已搬过的文件"的相对路径也重算对了**。
+
+#### 三、★★★ 「一轮搬完再测」抓到的 3 个真问题（**全在测试侧，不在产物侧**）
+
+**① 工具够不到 `vi.mock()` 的路径 —— 这是一条真实的工具边界。**
+`tests/daemon/memory_watch.test.ts:7` 写的是 `vi.mock('../../src/application/observe/memory_observe.js')`。
+它**是字符串参数**、不是 import 语句 ⇒ `rename_file` **只改 import/require** ⇒ **够不到它**
+⇒ mock 指向已不存在的文件 ⇒ **mock 静默失效** ⇒ 被测的是**真函数** ⇒
+`vi.mocked(sampleRemote).mockImplementation is not a function`。
+> ⇒ **通则**：**"字符串里写的路径"是搬迁工具覆盖不到的面**（同族还有：`known-violations` 的路径、
+> `capability_scan` 的硬编码、`single_source_registry` 的 `authority`）。
+> 顺链追（跑全量 → 看报错 → 定位）是本仓唯一能发现它们的方式 —— 这正是用户说的那套。
+
+**② 测试里硬编码的实现路径**（`sync_contracts.walkthrough` 4 处写死 `observe/harvest_decisions.ts`）
+—— ★ 而 **`sync_contracts` 的 `resolveImplPath()` 是 `findUnder(src, name + '.ts')`（按 basename 递归找）**
+⇒ **工具本身不会因搬迁过期**，红的是**测试里写死的旧路径**。
+
+**③ 门里的登记表也把路径当数据**（`server_registry.consistency.test.ts` 的 `INTERNAL_MODULES.importedBy`，8 条）
+—— 与 `single_source_registry` 同病。★ 这条**仍然值得单独收口**（改成后缀/派生），
+但本轮只做"让门转绿"：8 条路径改对。
+
+三处修好：consistency **10/10** ／ memory_watch **5/5** ／ sync_contracts **4/4**。
+
+#### 验证
+
+| 量具 | 结果 |
+|---|---|
+| `npx tsc --noEmit` | 0 |
+| `npm run arch` | **2 errors**（与搬迁前一致 ⇒ 无新增环） |
+| `node scripts/structure_gap.mjs` | 待搬 **0** ／ 待定归属 **5**（36 域 + 3 平铺） |
+| `npm run test:main` | **217 文件通过 / 1 跳过 ｜ 2171 项通过 / 5 跳过 ｜ 0 失败** |

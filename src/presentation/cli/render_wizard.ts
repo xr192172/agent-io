@@ -16,7 +16,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { wizardSteps, ROLE_LABEL, type WizardStep } from '../../application/design/wizard_steps.js';
+import { wizardSteps, ROLE_LABEL, type WizardStep } from '../../application/design/lifecycle/wizard_steps.js';
 
 function esc(s: string): string {
   return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));

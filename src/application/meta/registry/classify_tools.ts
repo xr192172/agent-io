@@ -14,10 +14,10 @@
  */
 
 import type { FunctionEntry } from './collect_functions.js';
-import type { BrickifyResult } from '../../design/brickify.js';
+import type { BrickifyResult } from '../../design/bricks/brickify.js';
 import { loadLlmConfig, callChat } from '../../../infrastructure/llm_focus.js';
 import { loadExplainConfig } from '../view/explain_gen.js';
-import { defaultPipelineTaxonomy, type Taxonomy } from '../../design/taxonomy.js';
+import { defaultPipelineTaxonomy, type Taxonomy } from '../../design/bricks/taxonomy.js';
 
 export interface ToolDomain {
   id: string;

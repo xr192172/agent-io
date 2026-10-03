@@ -15,7 +15,7 @@ import {
   loadObservedTraceRecords,
   resolveTraceEvidence,
   buildTraceResolver,
-} from '../../src/application/observe/trace_evidence.js';
+} from '../../src/application/observe/capture/trace_evidence.js';
 
 /** 一段真实形状的录制事件（order.Place → pay.Charge → inv.Reserve，3 层）。 */
 const EVENTS = [

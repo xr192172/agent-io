@@ -13,9 +13,9 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { createFeature } from '../../src/application/design/feature_ops.js';
-import { updateFeature } from '../../src/application/design/update_feature.js';
-import { listSnapshots } from '../../src/application/design/snapshot.js';
+import { createFeature } from '../../src/application/design/dsl_ops/feature_ops.js';
+import { updateFeature } from '../../src/application/design/dsl_ops/update_feature.js';
+import { listSnapshots } from '../../src/application/design/lifecycle/snapshot.js';
 import { clearAllFeatures, getDSL } from '../../src/infrastructure/storage.js';
 
 describe('update_feature - 节点操作', () => {

@@ -4,7 +4,12 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-vi.mock('../../src/application/observe/memory_observe.js', () => ({
+// ★ 2026-10-03：`memory_observe.ts` 搬进 `observe/capture/` 后，**这里曾漏改** ——
+//   因为 `vi.mock(...)` 的参数是**字符串**、不是 import 语句，`rename_file` **只改 import/require**
+//   ⇒ mock 路径指向已不存在的文件 ⇒ mock 静默失效 ⇒ 被测的是**真函数** ⇒
+//   `vi.mocked(sampleRemote).mockImplementation is not a function`（全量跑出来才发现）。
+//   ★ 教训：**搬迁时"字符串里写的路径"是工具覆盖不到的面**，要顺着报错回来补。
+vi.mock('../../src/application/observe/capture/memory_observe.js', () => ({
   sampleRemote: vi.fn(),
   memoryTargetsHandler: vi.fn(),
 }));
@@ -14,9 +19,9 @@ vi.mock('../../src/infrastructure/alert_inbox.js', async (orig) => {
 });
 
 import { judgeLeak, startMemoryWatch } from '../../src/presentation/daemon/memory_watch.js';
-import { sampleRemote, memoryTargetsHandler } from '../../src/application/observe/memory_observe.js';
+import { sampleRemote, memoryTargetsHandler } from '../../src/application/observe/capture/memory_observe.js';
 import { pushAlert } from '../../src/infrastructure/alert_inbox.js';
-import type { MemSample } from '../../src/application/observe/memory_observe.js';
+import type { MemSample } from '../../src/application/observe/capture/memory_observe.js';
 
 const MB = 1048576;
 const mk = (rssMB: number, heapMB: number, extMB = 0): MemSample => ({

@@ -8,8 +8,8 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { manageFeature } from '../../src/application/design/manage_feature.js';
-import { createFeature } from '../../src/application/design/feature_ops.js';
+import { manageFeature } from '../../src/application/design/lifecycle/manage_feature.js';
+import { createFeature } from '../../src/application/design/dsl_ops/feature_ops.js';
 import { clearAllFeatures, getDSL, saveLiveFeature, getLiveFeature } from '../../src/infrastructure/storage.js';
 
 describe('manage_feature', () => {

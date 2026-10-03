@@ -34,11 +34,11 @@
 
 import { getDSLByView, listFeatures as listStoredFeatures } from '../../../infrastructure/storage.js';
 import type { DSLView } from '../../../infrastructure/storage.js';
-import { listAnnotations } from '../../design/annotation_tools.js';
-import { listApprovals, getApprovalHistory } from '../../observe/approval.js';
-import { listSnapshots } from '../../design/snapshot.js';
-import { listTemplates } from '../../design/templates.js';
-import { getSimulationState } from '../../design/simulation.js';
+import { listAnnotations } from '../../design/dsl_ops/annotation_tools.js';
+import { listApprovals, getApprovalHistory } from '../../observe/reconcile/approval.js';
+import { listSnapshots } from '../../design/lifecycle/snapshot.js';
+import { listTemplates } from '../../design/lifecycle/templates.js';
+import { getSimulationState } from '../../design/lifecycle/simulation.js';
 import { diffFeatures } from '../../../infrastructure/analysis/impact/diff.js';
 import type { Node, Edge } from '../../../domain/geometry.js';
 import type { SemanticFile } from '../../../domain/semantic.js';

@@ -12,7 +12,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import { saveDSL, getDSL, deleteFeature, clearAllFeatures } from '../../src/infrastructure/storage.js';
-import { harvestDecisions } from '../../src/application/observe/harvest_decisions.js';
+import { harvestDecisions } from '../../src/application/harvest/harvest_decisions.js';
 import type { DesignDSL, SemanticFile, NodeDecision } from '../../src/domain/types';
 
 // ──────── 契约（先写 DSL：决策卡 + expected_apis）────────

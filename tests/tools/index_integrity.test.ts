@@ -17,7 +17,7 @@ import { describe, it, expect, afterAll } from 'vitest';
 import { importProject } from '../../src/infrastructure/graph/import_project.js';
 import { openDb } from '../../src/infrastructure/index/db';
 import { indexIntegrity, renderIntegrity, repairStaleResolvedRefs } from '../../src/application/meta/integrity/index_integrity.js';
-import { recordSelfWrite } from '../../src/application/observe/write_gate.js';
+import { recordSelfWrite } from '../../src/application/observe/runtime/write_gate.js';
 
 const roots: string[] = [];
 

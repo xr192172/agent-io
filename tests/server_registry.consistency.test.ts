@@ -120,13 +120,13 @@ const INTERNAL_MODULES: Record<string, { importedBy: string[]; why: string }> = 
     why: 'refactor_pipeline 的契约闸门检查步骤；不是 MCP 工具',
   },
   dag_layout: {
-    importedBy: ['src/presentation/http/serve.ts', 'src/application/design/update_feature.ts'],
+    importedBy: ['src/presentation/http/serve.ts', 'src/application/design/dsl_ops/update_feature.ts'],
     why: 'DAG 布局算法（serve 渲染 + update_feature 共用）；纯算法模块',
   },
   detect_dead_imports: {
     importedBy: [
-      'src/application/design/brickify.ts',
-      'src/application/design/brick_bag.ts',
+      'src/application/design/bricks/brickify.ts',
+      'src/application/design/bricks/brick_bag.ts',
       'src/presentation/cli/deprecate_offline.ts',
       'src/infrastructure/analysis/structure/feature_map.ts',
       'src/application/refactor/rf-annotate/function_annotation.ts',
@@ -173,7 +173,7 @@ const INTERNAL_MODULES: Record<string, { importedBy: string[]; why: string }> = 
     why: '向导步骤生成，render_wizard 的实现细节',
   },
   feature_ops: {
-    importedBy: ['src/application/design/manage_feature.ts'],
+    importedBy: ['src/application/design/lifecycle/manage_feature.ts'],
     why: 'manage_feature 的 feature 增删改实现（createFeature 等）',
   },
   render_workbench: {
@@ -181,7 +181,7 @@ const INTERNAL_MODULES: Record<string, { importedBy: string[]; why: string }> = 
     why: '工作台渲染，brickify CLI 的实现细节',
   },
   feature_map: {
-    importedBy: ['src/application/design/brickify.ts', 'src/application/design/brick_bag.ts', 'src/application/design/render_brickwork.ts'],
+    importedBy: ['src/application/design/bricks/brickify.ts', 'src/application/design/bricks/brick_bag.ts', 'src/application/design/bricks/render_brickwork.ts'],
     why: 'buildFeatureMap 是 import_project / render_brickwork 等的内部派生助手',
   },
   derive_feature_tree: {
@@ -199,7 +199,7 @@ const INTERNAL_MODULES: Record<string, { importedBy: string[]; why: string }> = 
   //     rename_files / brickify_cli …）⇒ 正是"自动判定盖不到的那一类"。
   // ─────────────────────────────────────────────────────────────
   classify_bricks: {
-    importedBy: ['src/presentation/cli/brickify_cli.ts', 'src/application/design/workbench_data.ts'],
+    importedBy: ['src/presentation/cli/brickify_cli.ts', 'src/application/design/workbench/workbench_data.ts'],
     why: '积木解剖/分类算法：brickify 工作台 CLI 与 workbench_data 共用；不是 MCP 工具',
   },
   classify_tools: {
@@ -207,7 +207,7 @@ const INTERNAL_MODULES: Record<string, { importedBy: string[]; why: string }> = 
     why: '工具域分类（TOOL_DOMAINS 那套映射）；brickify_cli / render_tools_map 共用的内部算法',
   },
   derive_algorithm: {
-    importedBy: ['src/application/design/derive_chain.ts'],
+    importedBy: ['src/application/design/derive/derive_chain.ts'],
     why:
       '算法结构派生。★ 诚实备注：其主函数 `deriveAlgorithm` **目前无调用方** —— ' +
       'explore_code 的 `derive_algorithm` 分支仍是空壳（只回显 project_dir）；' +
@@ -218,7 +218,7 @@ const INTERNAL_MODULES: Record<string, { importedBy: string[]; why: string }> = 
     why: 'explore_code 的 `derive_anim_flow` action 实现（2026-10-01 接线，替换原空壳）',
   },
   derive_split: {
-    importedBy: ['src/application/design/split_stage.ts'],
+    importedBy: ['src/application/design/lifecycle/split_stage.ts'],
     why: 'split_stage（CLI 引擎）的拆分算法实现；explore_code 的 derive_split 分支另走 monolith.buildSplitPreviewDsl',
   },
   rename_file: {

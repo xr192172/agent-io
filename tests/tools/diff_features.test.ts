@@ -9,8 +9,8 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { diffFeatures } from '../../src/infrastructure/analysis/impact/diff.js';
-import { createFeature } from '../../src/application/design/feature_ops.js';
-import { addNode } from '../../src/application/design/node_ops.js';
+import { createFeature } from '../../src/application/design/dsl_ops/feature_ops.js';
+import { addNode } from '../../src/application/design/dsl_ops/node_ops.js';
 import { clearAllFeatures, getDSL, saveLiveFeature } from '../../src/infrastructure/storage.js';
 
 describe('diff_features 视图对比', () => {

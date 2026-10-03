@@ -14,8 +14,8 @@
 
 import path from 'node:path';
 import fs from 'node:fs';
-import type { BrickifyResult } from '../../application/design/brickify.js';
-import { roleOfFile } from '../../application/design/brickify.js';
+import type { BrickifyResult } from '../../application/design/bricks/brickify.js';
+import { roleOfFile } from '../../application/design/bricks/brickify.js';
 import type { ToolsMapResult, MappedTool } from '../../application/meta/registry/classify_tools.js';
 
 function esc(s: string): string {

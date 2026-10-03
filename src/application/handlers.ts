@@ -21,25 +21,25 @@ import { judgeEvents, judgeEventsWithLLM, normalizeEvents, renderJudgeReport } f
 import { queryObserveLog } from '../infrastructure/analysis/observe/log_query.js';
 import { getDSLByView, getLiveDir, requireProjectRoot } from '../infrastructure/storage.js';
 import { archiveNode, listArchive } from './meta/archive/archive_node.js';
-import { checkConsistency } from './design/consistency.js';
+import { checkConsistency } from './design/intent/consistency.js';
 import { deriveMindMap } from './meta/view/derive_mind_map.js';
-import { detectDrift } from './design/detect_drift.js';
+import { detectDrift } from './design/intent/detect_drift.js';
 import { diffViews } from './refactor/rf-view/diff_views.js';
 import { EXPLORE_ACTIONS, exploreCode } from './meta/explore/explore_code.js';
 import { exportMarkdown, exportSvg } from '../infrastructure/render/export.js';
-import { harvestDecisions } from './observe/harvest_decisions.js';
-import { manageFeature } from './design/manage_feature.js';
-import { observeTrace } from './observe/observe_trace.js';
+import { harvestDecisions } from './harvest/harvest_decisions.js';
+import { manageFeature } from './design/lifecycle/manage_feature.js';
+import { observeTrace } from './observe/capture/observe_trace.js';
 import { queryFeature } from './meta/explore/query_feature.js';
-import { validateReason } from './observe/reason_validator.js';
-import type { ReasonEvidenceRef } from './observe/reason_validator.js';
-import { reconcileChain } from './observe/reconcile_chain.js';
-import type { ReconcileChainInput } from './observe/reconcile_chain.js';
-import { scaffold } from './design/scaffold.js';
-import { setDesignIntent } from './design/set_design_intent.js';
+import { validateReason } from './observe/reconcile/reason_validator.js';
+import type { ReasonEvidenceRef } from './observe/reconcile/reason_validator.js';
+import { reconcileChain } from './observe/reconcile/reconcile_chain.js';
+import type { ReconcileChainInput } from './observe/reconcile/reconcile_chain.js';
+import { scaffold } from './design/lifecycle/scaffold.js';
+import { setDesignIntent } from './design/intent/set_design_intent.js';
 import { syncContracts } from './meta/registry/sync_contracts.js';
-import { buildTraceResolver, loadObservedTraceRecords } from './observe/trace_evidence.js';
-import { updateFeature } from './design/update_feature.js';
+import { buildTraceResolver, loadObservedTraceRecords } from './observe/capture/trace_evidence.js';
+import { updateFeature } from './design/dsl_ops/update_feature.js';
 
 // ─────────────────────────────────────────────────────────────
 // 8 个主工具 handler

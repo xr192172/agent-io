@@ -23,7 +23,7 @@ import { getDSL, saveDSL } from '../../../infrastructure/storage.js';
 import { nearestCacheDb } from '../../../infrastructure/index/db.js';
 import { parseFileFull, type ParsedSymbol } from '../../../infrastructure/parse/index.js';
 import { extractFunctionCfg } from '../../../infrastructure/analysis/structure/cfg.js';
-import { buildCallGraph, pickEntry, walkChain } from '../../design/derive_chain.js';
+import { buildCallGraph, pickEntry, walkChain } from '../../design/derive/derive_chain.js';
 
 export interface DeriveAnimFlowInput {
   /** feature 名 */

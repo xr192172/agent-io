@@ -15,10 +15,10 @@
 
 import path from 'node:path';
 import fs from 'node:fs';
-import type { BrickifyResult } from '../../application/design/brickify.js';
-import { roleOfFile } from '../../application/design/brickify.js';
-import type { ClusterNarratives } from '../../application/design/cluster_narrator.js';
-import type { AnatomyResult } from '../../application/design/classify_bricks.js';
+import type { BrickifyResult } from '../../application/design/bricks/brickify.js';
+import { roleOfFile } from '../../application/design/bricks/brickify.js';
+import type { ClusterNarratives } from '../../application/design/bricks/cluster_narrator.js';
+import type { AnatomyResult } from '../../application/design/bricks/classify_bricks.js';
 
 function esc(s: string): string {
   return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));

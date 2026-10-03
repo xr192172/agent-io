@@ -28,13 +28,13 @@ import { requireStr, wrapData } from '../plumbing.js';
 import path from 'node:path';
 import { getProjectCacheDb } from '../../infrastructure/index/db.js';
 import { getDSL, requireProjectRoot } from '../../infrastructure/storage.js';
-import { proposeChange } from './code_workbench.js';
+import { proposeChange } from './workbench/code_workbench.js';
 import { importProject } from '../../infrastructure/graph/import_project.js';
 import type { ImportProjectInput } from '../../infrastructure/graph/import_project.js';
-import { MANAGE_ACTIONS } from './manage_feature.js';
-import { buildBrickifyPreview } from './render_brickwork.js';
-import { scaffold } from './scaffold.js';
-import { setDesignIntent } from './set_design_intent.js';
+import { MANAGE_ACTIONS } from './lifecycle/manage_feature.js';
+import { buildBrickifyPreview } from './bricks/render_brickwork.js';
+import { scaffold } from './lifecycle/scaffold.js';
+import { setDesignIntent } from './intent/set_design_intent.js';
 import { consistencyHandler, detectDriftHandler, editDslHandler, getDslHandler, manageFeatureHandler, renderDesignHandler } from '../handlers.js';
 import type { ToolDef } from '../types.js';
 

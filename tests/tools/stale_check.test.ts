@@ -8,7 +8,7 @@ import { describe, it, expect } from 'vitest';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, utimesSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { checkStaleBuild, formatStaleText } from '../../src/application/observe/stale_check.js';
+import { checkStaleBuild, formatStaleText } from '../../src/application/observe/runtime/stale_check.js';
 
 function mkProj(files: Record<string, string>): string {
   const dir = mkdtempSync(path.join(tmpdir(), 'stale-'));

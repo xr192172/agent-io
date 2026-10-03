@@ -19,7 +19,7 @@ import path from 'node:path';
 import { getProjectCacheDb } from './db.js';
 import { importProject } from '../graph/import_project.js';
 import { diffViews, type DiffViewsResult } from '../../application/refactor/rf-view/diff_views.js';
-import { detectDrift, type DriftData } from '../../application/design/detect_drift.js';
+import { detectDrift, type DriftData } from '../../application/design/intent/detect_drift.js';
 import { diffImpact } from '../analysis/impact/diff_impact.js';
 import { runImpactReport, readImpactReport, listImpactReports } from '../../application/meta/impact/impact_report.js';
 import {

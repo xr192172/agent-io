@@ -7,7 +7,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { layoutCanvas, renderDepCanvasHtml } from '../../src/presentation/cli/render_dep_canvas.js';
-import type { BrickifyResult } from '../../src/application/design/brickify.js';
+import type { BrickifyResult } from '../../src/application/design/bricks/brickify.js';
 
 function brick(id: string, subIds: string[], opts?: { degenerate?: boolean }): BrickifyResult['bricks'][number] {
   const files = subIds.flatMap((sid) =>

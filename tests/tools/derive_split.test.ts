@@ -16,7 +16,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { spawnSync } from 'node:child_process';
-import { deriveSplit } from '../../src/application/design/derive_split.js';
+import { deriveSplit } from '../../src/application/design/derive/derive_split.js';
 
 // Go 工具链检测：macOS/部分环境默认无 go 在 PATH，真实编译+测试验收用例需降级跳过
 const goOk = spawnSync('go', ['version'], { encoding: 'utf8' }).status === 0;

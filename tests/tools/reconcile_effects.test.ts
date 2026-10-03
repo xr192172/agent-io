@@ -11,7 +11,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { clearAllFeatures, saveDSL, getDSL, getLiveDslFile } from '../../src/infrastructure/storage.js';
-import { reconcileEffects } from '../../src/application/observe/reconcile_effects.js';
+import { reconcileEffects } from '../../src/application/observe/reconcile/reconcile_effects.js';
 import type { DesignDSL } from '../../src/domain/types.js';
 
 let root = '';

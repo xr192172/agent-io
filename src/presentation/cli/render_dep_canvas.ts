@@ -22,9 +22,9 @@
 
 import path from 'node:path';
 import fs from 'node:fs';
-import type { BrickifyResult, BrickifyBrick, BrickSubCluster } from '../../application/design/brickify.js';
-import { roleOfFile } from '../../application/design/brickify.js';
-import type { ClusterNarratives } from '../../application/design/cluster_narrator.js';
+import type { BrickifyResult, BrickifyBrick, BrickSubCluster } from '../../application/design/bricks/brickify.js';
+import { roleOfFile } from '../../application/design/bricks/brickify.js';
+import type { ClusterNarratives } from '../../application/design/bricks/cluster_narrator.js';
 
 // ─────────────────────────────────────────────────────────────
 // 布局（mock 没有的"运算逻辑"）

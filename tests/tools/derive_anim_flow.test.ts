@@ -17,10 +17,10 @@ import path from 'node:path';
 import os from 'node:os';
 import { deriveAnimFlow } from '../../src/application/meta/view/derive_anim_flow.js';
 import { exploreCode } from '../../src/application/meta/explore/explore_code.js';
-import { deriveDetailChain } from '../../src/application/design/derive_chain.js';
-import { createFeature } from '../../src/application/design/feature_ops.js';
-import { addNode } from '../../src/application/design/node_ops.js';
-import { addFile } from '../../src/application/design/file_ops.js';
+import { deriveDetailChain } from '../../src/application/design/derive/derive_chain.js';
+import { createFeature } from '../../src/application/design/dsl_ops/feature_ops.js';
+import { addNode } from '../../src/application/design/dsl_ops/node_ops.js';
+import { addFile } from '../../src/application/design/dsl_ops/file_ops.js';
 import { clearAllFeatures, getDSL, getLiveDslFile } from '../../src/infrastructure/storage.js';
 
 let tmpDir: string;

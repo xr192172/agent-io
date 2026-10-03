@@ -14,7 +14,7 @@ import path from 'node:path';
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { TOOL_DEFS } from '../../src/application/tool_registry.js';
 import { getFeatureFile } from '../../src/infrastructure/storage.js';
-import { detectDrift } from '../../src/application/design/detect_drift.js';
+import { detectDrift } from '../../src/application/design/intent/detect_drift.js';
 import type { DesignDSL } from '../../src/domain/types.js';
 
 function handlerOf(name: string) {

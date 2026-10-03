@@ -24,9 +24,9 @@ import type { LayerDef } from '../../../infrastructure/analysis/structure/layer_
 import { guidedTour } from '../../../infrastructure/index/guided_tour.js';
 import { assessLines, buildSplitPreviewDsl } from '../../../infrastructure/analysis/structure/monolith.js';
 import { injectReplay } from '../../../infrastructure/render/inject_replay.js';
-import { runSimulation, resetSimulation } from '../../design/simulation.js';
+import { runSimulation, resetSimulation } from '../../design/lifecycle/simulation.js';
 import { dispatchWatch } from '../../../infrastructure/daemon/dispatch.js';
-import { buildCallGraph } from '../../design/derive_chain.js';
+import { buildCallGraph } from '../../design/derive/derive_chain.js';
 import { deriveAnimFlow } from '../view/derive_anim_flow.js';
 import { deriveMindMap } from '../view/derive_mind_map.js';
 import fs from 'node:fs';

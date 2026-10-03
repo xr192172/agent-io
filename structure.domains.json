@@ -116,6 +116,60 @@
       "note": "下线库归档（archive_node）：把下线的文件/节点孤立到 archive"
     },
     {
+      "id": "design-dsl-ops",
+      "layer": "application",
+      "dir": "src/application/design/dsl_ops",
+      "note": "**改 DSL 的操作原语族**：`edit_result`（编辑结果契约，被 6 个依赖 ⇒ 底座）+ `node_ops` / `edge_ops` / `file_ops` / `api_ops` / `feature_ops`（五类操作的原子实现）+ `update_feature`（**聚合点**，一次 `edit_dsl` 调它串起上面五个）+ `status_tools`（状态回填）+ `annotation_tools`（人审标注）。★ 2026-10-03 从 `application/design/` 收进本域（依赖团 = edit_result）。"
+    },
+    {
+      "id": "design-bricks",
+      "layer": "application",
+      "dir": "src/application/design/bricks",
+      "note": "**积木族**：`brickify`（底座，被 7 个依赖）/ `brick_bag`（积木盒）/ `classify_bricks`（分类）/ `cluster_narrator`（簇叙述）/ `render_brickwork`（积木墙渲染）/ `signal_review`（信号复核）/ `taxonomy`（**软件解剖学分类法** —— 自顶向下的先验骨架，与「分类」同族）。"
+    },
+    {
+      "id": "design-workbench",
+      "layer": "application",
+      "dir": "src/application/design/workbench",
+      "note": "**协作工作台**：`code_workbench`（代码变更审批：LLM/前端提提案 → 干跑预览 → 人批）/ `workbench_data`（工作台的**数据契约层**，v1 冻结）/ `dag_layout`（布局算法：多种布局，供渲染与工作台共用）。"
+    },
+    {
+      "id": "design-derive",
+      "layer": "application",
+      "dir": "src/application/design/derive",
+      "note": "**推导族**（从代码/DSL 推出结构，不改任何东西）：`derive_algorithm`（函数体 → 算法图，底座）+ `derive_chain`（调用链）+ `derive_split`（拆分预览）+ `opl`（Optimization Pipeline Loop：人加待改进 → 下探 → 改 DSL → 改代码 → 反上来接入导图）。"
+    },
+    {
+      "id": "design-lifecycle",
+      "layer": "application",
+      "dir": "src/application/design/lifecycle",
+      "note": "**功能生命周期族**：`manage_feature`（建/克隆/模板/列/删）/ `wizard_steps`（新功能向导七步）/ `templates`（预置架构模板，生成设计起点）/ `snapshot`（DSL 时间点快照）/ `simulation`（设计仿真验证）/ `split_stage`（分阶段拆分）/ `scaffold`（从 DSL 生成代码骨架）。"
+    },
+    {
+      "id": "observe-capture",
+      "layer": "application",
+      "dir": "src/application/observe/capture",
+      "note": "**观测采集族**：`memory_observe`（外部进程内存观测，CDP 外连）/ `narrate_step`（把一步观测叙述成可读记录）/ `observe_points`（**推荐该在哪打观测点**：AST/索引语义打分，不做全量插桩）/ `observe_trace`（读录制调用链回放：从 events.jsonl 重建调用树）/ `trace_evidence`（调用链的**证据层**，被 `observe_trace` + `reason_validator` 共用）/ `feature_line`（**功能线**：每功能搭一条可读主链 —— 入口 → 依次调用 → 关键路径，纯推导不执行）。"
+    },
+    {
+      "id": "observe-reconcile",
+      "layer": "application",
+      "dir": "src/application/observe/reconcile",
+      "note": "**对账族**：`reconcile_chain`（沿效应链逐级对账契约）/ `reconcile_effects`（对账函数·模块的**实际效应**与契约）/ `reason_validator`（变更原因的「四层抗偷懒校验链」—— 让 agent 在 `edit_dsl` 时留下「为什么改」）/ `approval`（人审·审批工作流：提交审批 + 审标注）。"
+    },
+    {
+      "id": "observe-runtime",
+      "layer": "application",
+      "dir": "src/application/observe/runtime",
+      "note": "**运行时治理族**：`write_gate`（**写闸**：把「写源码」与「索引保鲜」合成同一件事 —— 用户 2026-09-14「我们自己改的，我们自己登记」）/ `stale_check`（STALE BUILD 检测：源码比编译产物新，文件级精确 —— 防「改了 src 忘了 build，跑的却是旧 dist」）/ `run_tests`（跑测试并汇总，结构化失败定位）。"
+    },
+    {
+      "id": "design-intent",
+      "layer": "application",
+      "dir": "src/application/design/intent",
+      "note": "**意图 / 漂移 / 一致性族**：`set_design_intent`（设计意图 why：goals + edge_intents，或 propose 审批卡）/ `detect_drift`（DSL 与代码的语义漂移）/ `consistency`（expected_apis vs 实际实现的一致性检查，`detect_drift` 的底座）。"
+    },
+    {
       "id": "rf-rename",
       "layer": "application",
       "dir": "src/application/refactor/rf-rename",

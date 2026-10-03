@@ -13,7 +13,7 @@ import { extractRegistryTools } from '../../src/application/meta/registry/regist
 import { collectFunctions, type FunctionEntry } from '../../src/application/meta/registry/collect_functions.js';
 import { classifyTools, defaultDomains } from '../../src/application/meta/registry/classify_tools.js';
 import { renderToolsMapHtml } from '../../src/presentation/cli/render_tools_map.js';
-import type { BrickifyResult } from '../../src/application/design/brickify.js';
+import type { BrickifyResult } from '../../src/application/design/bricks/brickify.js';
 
 const FIXTURE_SRC = `import fs from 'node:fs';
 import { buildBrickify } from './tools/brickify_cli.js';
