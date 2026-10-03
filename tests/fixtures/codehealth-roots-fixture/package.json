@@ -1,5 +1,0 @@
-{
-  "name": "codehealth-roots-fixture",
-  "private": true,
-  "scripts": { "run": "node dist/src/orphan_entry.js" }
-}
