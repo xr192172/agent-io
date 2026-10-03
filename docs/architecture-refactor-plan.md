@@ -6332,3 +6332,66 @@ grep+脚本手动硬改」的文档。**这才是"一份项目文档"的正确�
 | `npm run arch` | **2 errors**（与搬迁前一致 ⇒ 无新增环） |
 | `node scripts/structure_gap.mjs` | 待搬 **0** ／ 待定归属 **5**（36 域 + 3 平铺） |
 | `npm run test:main` | **217 文件通过 / 1 跳过 ｜ 2171 项通过 / 5 跳过 ｜ 0 失败** |
+
+---
+
+### 44.44 ★★ 「这个边界是什么造成的，有扩展的价值吗」—— 白名单扩到 `vi.mock`（2026-10-03）
+
+#### 用户的两问，逐个答
+
+**① 这个边界是什么造成的？**
+
+读 `rename_file.ts` 的实现（不是猜）：它按「**AST 形态 + 被调函数名**」认路径，只认三种形态 ——
+
+| 形态 | 例子 |
+|---|---|
+| `import_statement` | `import x from './a.js'` |
+| `export_statement` | `export { x } from './a.js'` |
+| `call_expression`，**且函数名匹配** `/^(require(\.resolve)?|import)$/` | `require('./a.js')` · `import('./a.js')` |
+
+⇒ **`vi.mock('...')` 的被调函数名是 `vi.mock`**（`member_expression`）⇒ **不在白名单里** ⇒ 够不到。
+
+★ 而且这**是第二次同类**：注释里记着 T12（2026-09-30）就是"白名单漏了 `import(...)`"，
+当时还写了"**这是个定时炸弹**……不修的话每族搬迁都会踩"。**这次是 `vi.mock` 那颗。**
+
+**② 有扩展的价值吗？—— 有，但价值面很窄、成本极低。**
+
+实测规模：`vi.mock(` **2 处真代码**（都在 `tests/daemon/memory_watch.test.ts`）· `vi.importActual`/`doMock` **0 处** ·
+dynamic `import()` **14 处（早已覆盖）**。
+
+⇒ 收益只有 2 处，但**成本是白名单加一批名字**，且**零误判风险**（`vi.mock` 的第 1 参数**必然是**模块说明符）。
+
+#### 处置
+
+白名单扩到「**语法 / 框架规定『这个参数就是模块说明符』**」的一族：
+
+```
+require(.resolve) · import() · vi.mock/doMock/unmock/importActual/importMock
+```
+
+★ **刻意不扩**到"业务代码里自己写的路径字符串"（`FEATURE_FILES = ['src/…']` 那种）：那类**无法判断
+"这个字符串是不是路径"**，泛化必误改。它们的正解是——**别把路径存成数据**（`sync_contracts.resolveImplPath()`
+按 basename 现算，就天然不会因搬迁过期）。
+
+⇒ ★★ 于是"边界"判据清晰了：
+
+| 位置 | 工具能否认 | 处置 |
+|---|---|---|
+| **语法/框架规定"这里是模块说明符"** | ★ **能**（形态 + 名字可枚举） | **该覆盖**（本笔扩了 `vi.*`） |
+| **业务代码自定义的路径字符串** | ✗ 不能（认不出"这是路径"） | **改成现算/派生**，不靠工具改 |
+
+**出生证**（实跑）：临时项目里 `vi.mock('../src/a.js')` + `import`，搬 `src/a.ts → src/sub/a.ts` ⇒
+
+```
+moved: true | editCount: 2
+vi.mock 行 → vi.mock('../src/sub/a.js', () => ({ a: 2 }));   ✅ 被改写
+（`import { vi } from 'vitest'` 的**包名**没被误改 ✓）
+```
+
+#### 验证
+
+| 量具 | 结果 |
+|---|---|
+| 出生证探针 | ✅ `vi.mock` 路径被改写；包名不误改 |
+| `npm run build` | 通过（`clean_dist` 顺手删了 57 个孤儿产物） |
+| `npm run test:main` | **217 文件通过 / 1 跳过 ｜ 2171 项通过 / 5 跳过 ｜ 0 失败**（扩展白名单**没改坏任何东西**） |

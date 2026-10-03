@@ -169,9 +169,21 @@ function importSourceLiteral(node: SyntaxNodeLike): { startIndex: number; text: 
   //     `member_expression > call_expression(function=`import` 关键字节点, arguments=(string))`
   //   —— 与动态 `import('../x')` **同一个形状**，所以这一条同时覆盖"类型位置的内联 import"与"动态 import"。
   //   ★ 这是个**定时炸弹**：全仓 5 处这种写法，另 4 处只是恰好还没搬到 ⇒ 不修的话每族搬迁都会踩。
+  //
+  // ★★ 2026-10-03（**第二次同类**）：白名单又漏了 **`vi.mock(...)`**（vitest 的模块 mock）。
+  //   实测：搬 `application/observe/memory_observe.ts` 进 `observe/capture/` 后，
+  //   `tests/daemon/memory_watch.test.ts` 的 `vi.mock('.../observe/memory_observe.js')` **没被改**
+  //   ⇒ mock 指向已不存在的文件 ⇒ **mock 静默失效** ⇒ 被测的是**真函数**
+  //   ⇒ 报 `vi.mocked(sampleRemote).mockImplementation is not a function`（**跑全量才暴露**）。
+  //   ★ 根因与 T12 同一条：**本函数按「AST 形态 + 被调函数名」认路径**，名字不在白名单里就够不到。
+  //   ⇒ 白名单扩到"**语法/框架规定『这个参数就是模块说明符』**"的一族（可枚举、零误判）：
+  //      `require(.resolve)` · `import()` · `vi.mock/doMock/unmock/importActual/importMock`。
+  //   ★ **不**扩到"业务代码里自己写的路径字符串"（如 `FEATURE_FILES = ['src/…']`）——
+  //     那类无法判断"这个字符串是不是路径"，泛化会引入误改；它们的正解是**别把路径存成数据**
+  //     （见 `sync_contracts.resolveImplPath()`：按 basename 现算，天然不会因搬迁过期）。
   if (node.type === 'call_expression') {
     const fn = node.childForFieldName('function');
-    if (fn && /^(require(\.resolve)?|import)$/.test(fn.text.trim())) {
+    if (fn && /^(require(\.resolve)?|import|vi\.(?:mock|doMock|unmock|importActual|importMock))$/.test(fn.text.trim())) {
       const args = node.childForFieldName('arguments');
       if (args) {
         for (let i = 0; i < args.childCount; i++) {
