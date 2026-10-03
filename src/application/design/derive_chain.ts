@@ -17,7 +17,7 @@ import type { AnimationValueSchema, Edge, Node } from '../../domain/types.js';
 import { getDSL, saveDSL } from '../../infrastructure/storage.js';
 import { nearestCacheDb, type Database } from '../../infrastructure/index/db.js';
 import { parseFileFull, isSupported, type ParsedCall, type ParsedSymbol } from '../../infrastructure/parse/index.js';
-import { extractFunctionCfg } from '../../infrastructure/parse/cfg.js';
+import { extractFunctionCfg } from '../../infrastructure/analysis/structure/cfg.js';
 import { KIND_SHAPE } from './derive_algorithm.js';
 
 export interface DeriveChainInput {

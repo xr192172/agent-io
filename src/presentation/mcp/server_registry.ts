@@ -22,7 +22,7 @@ import { hasLiveIndex } from '../../application/observe/write_gate.js';
 import { prewarmKernel } from '../../infrastructure/parse/index.js';
 import { scheduleBackfill, backfillState, isIndexIncomplete } from '../../infrastructure/index/index_backfill.js';
 import { renderGranularityNote } from '../../application/refactor/rf-parse/parse_capability.js';
-import { unknownArgHints, renderArgHints } from '../../infrastructure/parse/arg_suggest.js';
+import { unknownArgHints, renderArgHints } from '../../infrastructure/text/arg_suggest.js';
 import { recommendObservePoints } from '../../application/observe/observe_points.js';
 import { collectPendingAlertText, dispatchDslEdit } from '../../infrastructure/daemon/dispatch.js';
 import { exportSvg, exportMarkdown } from '../../infrastructure/render/export.js';

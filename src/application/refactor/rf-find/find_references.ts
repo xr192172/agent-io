@@ -28,7 +28,7 @@ import { getProjectCacheDb } from '../../../infrastructure/index/db.js';
 import { ensureProjectIndex } from '../../../infrastructure/index/index_freshness.js';
 import { buildImportGraph } from '../../../infrastructure/graph/import_graph.js';
 import { scanTextMentions } from '../../../infrastructure/text/refs_text.js';
-import { getProjectView } from '../../../infrastructure/parse/project_view.js'; // ★ §19②
+import { getProjectView } from '../../../infrastructure/project_view.js'; // ★ §19②
 import type { ScanBounds } from '../rf-edit/scan_bounds.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 

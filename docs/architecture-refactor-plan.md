@@ -6110,3 +6110,76 @@ grep+脚本手动硬改」的文档。**这才是"一份项目文档"的正确�
 | `npx tsc --noEmit` | 0 |
 | `npx vitest run tests/health` | **31/31**（含新增 2 条 + 出生证） |
 | `npm run test:main` | **237 文件通过 / 1 跳过 ｜ 2446 项通过 / 5 跳过 ｜ 0 失败**（G8 行为基线按规程更新过：`code_health` 的输出**这次是有意变更** —— 这正是它存在的意义） |
+
+---
+
+### 44.41 ★★★ 「放弃夹具那一套，用工具重构、直读第一线」—— 搬完 `parse/` 并让登记表**不再因搬迁过期**（2026-10-03）
+
+#### 起因（用户原话）
+
+> 「现在，**放弃你的夹具那一套**，**用这个项目本身的工具进行重构**，
+>   **直读第一线代码现状**而不是你的夹具产生的二手信息」
+
+#### 一、完全按"用工具读第一线"做的归属判定
+
+**没有**读我以前的摘要/夹具/快照，而是用**工具**读：
+
+`explore_code action=read`（每个文件头 16 行）→ 拿到真实职责；`impact_analysis`（6 个变更点一次）→ 拿到**真实消费者**：
+
+| 文件 | 工具报的直接消费者 | 判定归属 |
+|---|---|---|
+| `project_view.ts` | `index/symbols`（`invalidateProjectView`）· `index/index_freshness`（`getProjectView`）· `index/index_backfill` | ★ **横切基础件** ⇒ `src/infrastructure/` 顶层 |
+| `arg_suggest.ts` | `presentation/mcp/server_registry`（`renderArgHints`） | 文本相似度（Levenshtein）⇒ `infrastructure/text/` |
+| `cfg.ts` | `application/design/derive_algorithm` + `derive_chain`（`extractFunctionCfg`） | 结构分析（函数级控制流）⇒ `analysis/structure/` |
+| `ts_slim.ts` | `application/harvest/slim_brick`（`slimTsFile`） | ★ **死代码剪枝**（"只剪明确判定为死的"）⇒ `analysis/deadcode/` |
+| `rule_match.ts` + `rule_tokens.ts` | `application/refactor/rf-rules`（`rule_apply` / `rule_extract`） | 模式匹配引擎 ⇒ ★ **新域 `infrastructure/rules/`** |
+
+**结果**：`rename_files` 一次搬 6 条、联动 **24 处**引用；`parse/` **18 → 12**（剩下的全是内核族）。
+域表 **26 → 27 域**（新增 `rules`）。`tsc` 0 ／ `arch` **仍是 2 errors**（**没有新增环**）。
+
+#### 二、★★★ 顺手抓到的：**夹具产生的假红**（本笔最有价值的一段）
+
+搬完 `ts_slim.ts` / `project_view.ts` 后，G4 门**红了**，而且是这么报的：
+
+```
+[repo-walk] 出现**新的**同族副本（权威：src/infrastructure/parse/project_view.ts）。
+  src/infrastructure/project_view.ts
+登记表引用了不存在的文件（搬迁后请更新登记表）：type-only-module-statement: src/infrastructure/parse/ts_slim.ts
+```
+
+**实际上一个副本都没新增** —— 只是那文件换了个目录。门把「**同一个文件的新路径**」
+当成了「**新副本**」，还附带一条"引用了不存在的文件"。
+
+**只改那 2 个路径字符串，门立刻转绿** ⇒ 诊断确认：**纯属"路径存进了登记表"**。
+
+⇒ ★ **这正是用户说的「夹具产生的二手信息」** —— 而且它比"过期"更坏：**它会主动撒谎**
+（指控你新增了副本），让人去查一个不存在的问题。
+
+#### 三、修法：**把路径从数据里拿掉**（不是"每次搬完手工改路径"）
+
+| | 旧 | 新 |
+|---|---|---|
+| 登记表里的 `authority` / `frozen` / `allow` 的 key | **全路径**（`src/infrastructure/parse/ts_slim.ts`） | ★ **"末两段"后缀**（`deadcode/ts_slim.ts`） |
+| 门怎么用它 | `r === family.authority` / `fs.existsSync(path.join(REPO, f))` | ★ 新增 `resolveBySuffix()`：**在 `src/` 下现算路径**，**唯一**才用 |
+
+★ `resolveBySuffix` 的三条硬规矩：**0 个 ⇒ 抛**（文件没了）／**≥2 个 ⇒ 抛**（后缀写太短）／**恰好 1 个 ⇒ 用**。
+★ **搬迁不改后缀** ⇒ 这张表**不会再因搬家而过期**；表里保留的只有**意图**（`intent`）与**判据**（`pattern`）。
+
+**出生证**：把某条 `authority` 改成 `index.ts` ⇒ 门当场抛
+`后缀「index.ts」匹配到 17 个文件，无法判定（请写长一点）` ✓（还原后 18/18 绿）
+
+#### 四、界面的诚实说明
+
+★ 这次**没有把整张表退场**（那是另一笔：把 `intent` 挪进文档、`pattern` 完全现算）。
+本笔做的是**让它不再撒谎、不再挡路**——因为**它现在挡着重构**。
+（"整表退场"仍在 todo 的 T25 里。）
+
+#### 验证
+
+| 量具 | 结果 |
+|---|---|
+| `npx tsc --noEmit` | 0 |
+| `npm run arch` | **2 errors**（与搬迁前一致 ⇒ 无新增环） |
+| `node scripts/structure_gap.mjs` | 待搬 **0** ／ 待定归属 **5**（27 域 + 3 平铺） |
+| `tests/single_source.test.ts` | **18/18**（含出生证） |
+| `npm run test:main` | **237 文件通过 / 1 跳过 ｜ 2446 项通过 / 5 跳过 ｜ 0 失败** |

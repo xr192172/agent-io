@@ -30,9 +30,9 @@
  * import 它才整文件剔除（有人副作用 import 的空模块不能删路径）。
  */
 
-import { getParser } from './loader.js';
-import { findLanguageByExt, type LanguageEntry } from './languages.js';
-import { parseContent } from './kernel.js';
+import { getParser } from '../../parse/loader.js';
+import { findLanguageByExt, type LanguageEntry } from '../../parse/languages.js';
+import { parseContent } from '../../parse/kernel.js';
 
 /** tree-sitter SyntaxNode（kernel 的 SyntaxNodeLike 未导出，这里最小面） */
 interface NodeLike {

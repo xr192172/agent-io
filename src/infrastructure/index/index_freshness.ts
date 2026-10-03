@@ -38,7 +38,7 @@ import {
 } from './symbols.js';
 import { walkFiles } from '../graph/import_project.js';
 import { buildTextImportIndex, importLookupKeys } from '../text/refs_text.js';
-import { getProjectView } from '../parse/project_view.js'; // ★ §19②
+import { getProjectView } from '../project_view.js'; // ★ §19②
 import { pendingSelfWrites } from '../../application/observe/write_gate.js';
 
 /** 索引可用性状态（诚实口径：不假装完整） */

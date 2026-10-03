@@ -38,7 +38,7 @@ import { isIndexIncomplete } from './index_backfill.js';
 import { skipDirSet } from '../parse/source_exts.js';
 // ★ watcher 挂钩（§19）：**有 watcher 时由事件驱动失效**，TTL 只是没有 watcher 时的兜底。
 //   enqueue 是 fs.watch 回调归一后的**唯一入口** ⇒ 挂这一处即覆盖全部变更事件。
-import { invalidateProjectView } from '../parse/project_view.js';
+import { invalidateProjectView } from '../project_view.js';
 
 // ─────────────────────────────────────────────────────────────
 // 过滤规则（与 import_project 对齐，另加 .agent-io 防反馈循环）

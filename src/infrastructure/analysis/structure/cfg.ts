@@ -16,8 +16,8 @@
  * 由父级在连接下一节点时物化——分支的"否"边由此自然落到汇合点。
  */
 
-import { parseAstRoot } from './kernel.js';
-import type { SyntaxNodeLike } from './kernel.js';
+import { parseAstRoot } from '../../parse/kernel.js';
+import type { SyntaxNodeLike } from '../../parse/kernel.js';
 
 // ─────────────────────────────────────────────────────────────
 // 公开类型

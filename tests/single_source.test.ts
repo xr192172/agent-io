@@ -80,15 +80,58 @@ function walkTs(dir: string, out: string[] = []): string[] {
 import { countOccurrences, isCommentLine } from './helpers/source_scan.js';
 export { countOccurrences, isCommentLine };
 
-/** 扫描全 src，返回 文件 → 命中数（仅非零；已排除权威文件） */
+/**
+ * ★★ 2026-10-03 新增：登记表里**不再存全路径**，改存「**能唯一定位的后缀**」，在门内**现算**路径。
+ *
+ * 为什么（这是一次真实的假红换来的）：搬 `ts_slim.ts` / `project_view.ts` 时，门报
+ *   「出现**新的**同族副本（权威：`src/infrastructure/parse/project_view.ts`）」
+ *   —— 而**实际上一个副本都没新增**，只是那文件换了个目录。
+ *   门把"**同一个文件的新路径**"当成了"**新副本**"，还附带「登记表引用了不存在的文件」。
+ *   ⇒ 只改路径两个字符串，门立刻转绿：**诊断确认，纯属路径过期**。
+ *
+ * ★ 结论（也是本仓那条判据的又一次应用）：**路径是"会过期的结论"，不该存进登记表**。
+ *   表里存后缀（`parse/kernel.ts` / `health/index.ts` / `project_view.ts`），门来解析 ——
+ *   **搬迁不改后缀 ⇒ 这张表不会再因搬家而过期**。
+ *
+ * ★ 后缀必须**唯一**：0 个（文件没了）或 ≥2 个（后缀写太短，如只用 `index.ts`）都**抛错**，绝不猜。
+ */
+const _suffixCache = new Map<string, string>();
+export function resolveBySuffix(suffix: string, repoRoot = REPO): string {
+  const key = `${repoRoot}::${suffix}`;
+  const cached = _suffixCache.get(key);
+  if (cached) return cached;
+  const hits = walkTs(path.join(repoRoot, 'src'))
+    .map((abs) => path.relative(repoRoot, abs).split(path.sep).join('/'))
+    .filter((r) => r === suffix || r.endsWith('/' + suffix));
+  if (hits.length === 0) throw new Error(`登记表里的后缀「${suffix}」在 src/ 下找不到任何文件`);
+  if (hits.length > 1) {
+    throw new Error(`登记表里的后缀「${suffix}」匹配到 ${hits.length} 个文件，无法判定（请写长一点）：\n  ${hits.join('\n  ')}`);
+  }
+  _suffixCache.set(key, hits[0]!);
+  return hits[0]!;
+}
+
+/**
+ * 路径 → **"末两段"后缀**（`src/infrastructure/parse/kernel.ts` → `parse/kernel.ts`）。
+ * ★ 与登记表里的写法**同一规则**（表用后缀、门用后缀 ⇒ 比对才能对上；
+ *   而"末两段"在搬迁时不变 ⇒ 基线不会因为搬家而假红）。
+ */
+function suffixOf(rel: string): string {
+  return rel.replace(/^src\//, '').split('/').slice(-2).join('/');
+}
+
+/** 扫描全 src，返回 文件 → 命中数（仅非零；已排除权威文件）。key 是**后缀**（与 frozen 同口径） */
 export function scanFamily(family: Family, srcDir = SRC, repoRoot = REPO): Record<string, number> {
+  // ★ 登记表里的 authority / allow 都是**后缀** ⇒ 先现算成真实路径（唯一性由 resolveBySuffix 保证）
+  const authorityRel = family.authority ? resolveBySuffix(family.authority, repoRoot) : null;
+  const allowRels = new Set(Object.keys(family.allow ?? {}).map((k) => resolveBySuffix(k, repoRoot)));
   const hits: Record<string, number> = {};
   for (const abs of walkTs(srcDir)) {
     const r = path.relative(repoRoot, abs).split(path.sep).join('/');
-    if (family.authority && r === family.authority) continue;
-    if (family.allow && r in family.allow) continue; // ★ 带理由的豁免（见家族 allow）
+    if (authorityRel && r === authorityRel) continue;
+    if (allowRels.has(r)) continue; // ★ 带理由的豁免（见家族 allow）
     const n = countOccurrences(fs.readFileSync(abs, 'utf8'), family.pattern);
-    if (n > 0) hits[r] = n;
+    if (n > 0) hits[suffixOf(r)] = n;
   }
   return hits;
 }
@@ -187,10 +230,11 @@ describe('G4 · 同族副本棘轮（存量不拦，新增即红）', () => {
       expect(f.id, '家族缺 id').toBeTruthy();
       expect(f.pattern, `${f.id} 缺 pattern`).toBeTruthy();
       expect(f.intent.length, `${f.id} 的 intent 太短，写不清"同的是什么意图"`).toBeGreaterThan(10);
-      // ★ 豁免必须带**非空理由**，且文件真实存在（否则就是"用豁免掩盖分叉"）
+      // ★ 豁免必须带**非空理由**，且文件真实存在（否则就是"用豁免掩盖分叉"）。
+      //   ★ 2026-10-03：key 改存**后缀**（`../../src/x.ts` 这类全路径会因搬迁过期）⇒ 走 resolveBySuffix 现算。
       for (const [file, why] of Object.entries(f.allow ?? {})) {
         expect(why?.trim().length ?? 0, `${f.id} 对 ${file} 的豁免没写理由`).toBeGreaterThan(10);
-        expect(fs.existsSync(path.join(REPO, file)), `${f.id} 豁免了一个不存在的文件：${file}`).toBe(true);
+        expect(resolveBySuffix(file), `${f.id} 豁免了一个不存在的文件：${file}`).toBeTruthy();
       }
     }
     expect(new Set(reg.families.map((f) => f.id)).size).toBe(reg.families.length);
@@ -214,7 +258,16 @@ describe('G4 · 同族副本棘轮（存量不拦，新增即红）', () => {
         return;
       }
 
-      const d = ratchetDiff(family.frozen, actual, (f) => fs.existsSync(path.join(REPO, f)));
+      // ★ frozen 的 key 也是**后缀** ⇒ "这个副本还在不在"要现算（找不到 ⇒ 视为已消失，
+      //   由 ratchetDiff 归入 cleared，并在下方"不留已消失的文件"里要求收紧基线）。
+      const d = ratchetDiff(family.frozen, actual, (f) => {
+        try {
+          resolveBySuffix(f);
+          return true;
+        } catch {
+          return false;
+        }
+      });
 
       expect(
         d.added,
@@ -243,13 +296,18 @@ describe('G4 · 同族副本棘轮（存量不拦，新增即红）', () => {
     });
   }
 
-  it('登记表里不留已消失的文件（P2 搬迁后必须同步登记表）', () => {
+  it('登记表里不留已消失的文件（基线只许减不许增）', () => {
     const stale: string[] = [];
     for (const f of readRegistry().families) {
       for (const file of Object.keys(f.frozen)) {
-        if (!fs.existsSync(path.join(REPO, file))) stale.push(`${f.id}: ${file}`);
+        // ★ key 是**后缀** ⇒ 用 resolveBySuffix 现算；找不到（或后缀不唯一）⇒ 视为已消失
+        try {
+          resolveBySuffix(file);
+        } catch {
+          stale.push(`${f.id}: ${file}`);
+        }
       }
     }
-    expect(stale, `登记表引用了不存在的文件（搬迁后请更新登记表）：\n  ${stale.join('\n  ')}`).toEqual([]);
+    expect(stale, `登记表引用了**已找不到**的文件（搬迁后请收紧基线：UPDATE_SINGLE_SOURCE=1）：\n  ${stale.join('\n  ')}`).toEqual([]);
   });
 });

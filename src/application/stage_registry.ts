@@ -46,7 +46,7 @@ import fs from 'node:fs';
 import { requireProjectRoot, getDSL, ensureBaseline, getBaselineFeatureFile, getFeatureFile } from '../infrastructure/storage.js';
 import { projectCacheDbPath, getProjectCacheDb } from '../infrastructure/index/db.js';
 import { ensureProjectIndex } from '../infrastructure/index/index_freshness.js';
-import { getProjectView, invalidateProjectView } from '../infrastructure/parse/project_view.js';
+import { getProjectView, invalidateProjectView } from '../infrastructure/project_view.js';
 import { observePointsFile, recommendObservePoints } from './observe/observe_points.js';
 
 // ─────────────────────────────────────────────────────────────

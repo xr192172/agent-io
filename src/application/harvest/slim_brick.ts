@@ -37,7 +37,7 @@ import { resolveGoThirdParty } from '../../infrastructure/packages/go_mod.js';
 import { resolveNpmThirdParty } from '../../infrastructure/packages/npm_mod.js';
 import { parseGoImportQualifiers } from '../../infrastructure/graph/dead_deps.js';
 import { aggregateContracts } from './harvest_from_url.js';
-import { slimTsFile, type TsSlimResult } from '../../infrastructure/parse/ts_slim.js';
+import { slimTsFile, type TsSlimResult } from '../../infrastructure/analysis/deadcode/ts_slim.js';
 import { NODE_BUILTINS } from './harvest_closure.js';
 import type { BrickContract, BrickManifest } from '../../domain/contract.js';
 

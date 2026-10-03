@@ -57,6 +57,12 @@
       "note": "包与依赖面：`go_mod` / `npm_mod` = go.mod 与 package.json 的**三方依赖归并与版本比较**（服务 `assemble_bricks` 的积木拼装 —— MVS 取高、冲突留档）；`package_pins` / `template_compat` = **装包**用的 ABI 钉版表与模板兼容性判据（两者都从 `presentation/cli/install_package_cli.ts` 抽出）。★ 2026-10-03 从 `infrastructure/parse/` **归位**到这里：它们不做解析，是**包管理**。"
     },
     {
+      "id": "rules",
+      "layer": "infrastructure",
+      "dir": "src/infrastructure/rules",
+      "note": "规则匹配引擎：`rule_match` = `$hole` 元变量 + `...` 省略号（对齐 **GritQL** 的能力子集，二层匹配：块级粗筛→窗口级精配）；`rule_tokens` = 行/token 小工具（被 `rule_apply` / `rule_extract` / 测试**共用**，单独成模块是为了避免三处各写一遍造成口径漂移）。★ 2026-10-03 从 `infrastructure/parse/` **归位**：它们不做解析，是**模式匹配**；消费方是 `rules` 工具（`application/refactor/rf-rules`）。"
+    },
+    {
       "id": "text",
       "layer": "infrastructure",
       "dir": "src/infrastructure/text",      "note": "文本面（两层共用同一批行号/文本基准）：`refs_text` = 文本提及扫描（改名与引用查询的**补召回**，专治「AST 看不见的引用」）；`line_utils` = 行分割与行尾处理的**单一基准**（`explore_code(read)` 的返回行号 与 `edit_code(range)` 的 start/end **必须同基准** —— 曾经各自实现，导致 LLM 拿 read 的行号去 edit 会替换错行，被语法门拦下）。★ `line_utils` 于 2026-10-02 从 `infrastructure/parse/` **归位**到这里：它不做解析，是纯文本面。"

@@ -21,7 +21,7 @@ import path from 'node:path';
 import type { DesignDSL, Node, Edge } from '../../../domain/types.js';
 import { getDSL, saveDSL, requireProjectRoot } from '../../storage.js';
 import { parseFileFull } from '../../parse/index.js';
-import { getProjectView } from '../../parse/project_view.js'; // ★ §19②
+import { getProjectView } from '../../project_view.js'; // ★ §19②
 import type { ParsedSymbol } from '../../parse/index.js';
 import { fileFingerprint, healthKey, readHealthCache, writeHealthCache } from '../health/health_cache.js';
 import { skipDirSet } from '../../parse/source_exts.js';

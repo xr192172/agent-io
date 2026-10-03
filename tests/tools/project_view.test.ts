@@ -16,7 +16,7 @@ import {
   projectViewStats,
   resetProjectViewForTest,
   PROJECT_VIEW_TTL_MS,
-} from '../../src/infrastructure/parse/project_view.js';
+} from '../../src/infrastructure/project_view.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.join(here, '..', '..');
