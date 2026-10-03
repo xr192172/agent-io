@@ -94,6 +94,55 @@ function looksLikePath(line, k) {
   );
 }
 
+/**
+ * ★★★ 2026-10-03 新增一档：**漏网 —— 工具改不到的、指向被搬文件的模块说明符**。
+ *
+ * 为什么必须有（实测两次同源事故）：
+ *   `rename_file` 按「**AST 形态 + 被调函数名**」认路径，只认
+ *   `import … from` / `export … from` / `require()` / `import()` / `vi.mock()` 这些**语法或框架规定的位置**。
+ *   实测撞过两次：T12（白名单漏 `import(...)`，`tsc` 报 TS2307）与 2026-10-03（漏 `vi.mock`，
+ *   mock 静默失效 ⇒ 被测的是真函数 ⇒ **跑全量才暴露**）。
+ *   ⇒ 与其"每撞一次补一个名字"，不如**搬迁前先把这类位置扫出来**。
+ *
+ * ★ 判据（刻意做到**与项目无关**，工具要能放到任何项目用）：
+ *   1. 只认**相对路径**形态的字符串字面量（`'./x'` / `'../x'`）；
+ *   2. **剥掉扩展名后**，把它按"该文件所在目录"解析 —— 结果等于被搬文件（也剥扩展名）
+ *      ⇒ 它**就是**一个指向被搬文件的模块引用；
+ *      ★ 剥扩展名 ⇒ **不假定任何扩展名清单**（别的项目的自定义后缀同样认）。
+ *   3. ★ 再排除"**明显不是模块引用**"的位置：`path.` / `spawn` / `exec` / `readFile` / `writeFile` /
+ *      `cwd` 这类**文件系统或命令行**的实参 —— 它们也长成 `'../x'`，但改了是错的
+ *      （实测那 55 处"像路径却不在 import 里"的字符串，**全是**这类）。
+ *
+ * ★ 它落在**输出的一片独立区**里，且标注为「必须手改」—— 与"tsc 抓得到"的那档分开，
+ *   因为这一档**没有任何自动化会替你发现**（这正是它存在的理由）。
+ */
+function specsTargetingOld(oldRel, repoRoot) {
+  const oldNoExt = oldRel.replace(/\.[^./]+$/, '');
+  const NOT_A_SPEC = /(path\.(resolve|join|dirname|relative|normalize|isAbsolute)|spawn|exec|readFile|writeFile|existsSync|mkdir|cwd\()/;
+  const COVERED = /(\bfrom\s*['"]|\brequire(\.resolve)?\s*\(|\bimport\s*\(|\bvi\.(mock|doMock|unmock|importActual|importMock)\s*\()/;
+  const out = [];
+  for (const abs of walk(repoRoot)) {
+    const rel = path.relative(repoRoot, abs).split(path.sep).join('/');
+    if (/\.(json|md)$/.test(rel)) continue; // 只扫代码；JSON/文档由别的档管
+    const src = fs.readFileSync(abs, 'utf-8');
+    if (!src.includes('/')) continue;
+    src.split('\n').forEach((line, i) => {
+      if (COVERED.test(line)) return; // 工具能改的形态，不在这里报
+      if (NOT_A_SPEC.test(line)) return; // fs / CLI 实参，改了是错的
+      for (const m of line.matchAll(/['"](\.\.?\/[^'"]*)['"]/g)) {
+        const spec = m[1];
+        if (!/\.[A-Za-z]/.test(spec)) continue; // 没有扩展名 ⇒ 不敢判（宁漏不误报）
+        const resolved = path.posix
+          .normalize(path.posix.join(path.posix.dirname(rel), spec))
+          .replace(/\.[^./]+$/, '');
+        if (resolved !== oldNoExt) continue;
+        out.push({ rel, line: i + 1, text: line.trim().slice(0, 150) });
+      }
+    });
+  }
+  return out;
+}
+
 const hits = [];
 for (const abs of walk(REPO)) {
   const rel = path.relative(REPO, abs).split(path.sep).join('/');
@@ -142,6 +191,18 @@ console.log(
     ? '⇒ 这些必须在动手前逐个确认：钩子里的会**挡下提交**；基线里的会让 `arch` 判 stale；夹具里的会让门红。'
     : '⇒ 没有"抓不到"的引用（但请仍确认 tests/ 与 docs/）。',
 );
+// ── ★★★ 新档：**漏网**（工具改不到的、指向被搬文件的模块说明符）──────────────────
+//   它与上面所有档都不同：上面那些是"工具/门**能**抓到、只是抓它的地方不同"，
+//   而这一档是"**没有任何自动化会告诉你**"—— 所以它单列、且标 `★★★`。
+const uncovered = specsTargetingOld(oldPath, REPO);
+if (uncovered.length) {
+  console.log(`\n★★★ [漏网] ${uncovered.length} 处 —— **工具改不到，必须手改**（搬迁后没有任何自动化会提示你）：`);
+  for (const h of uncovered.slice(0, 20)) console.log(`      ${h.rel}:${h.line}  ${h.text}`);
+  if (uncovered.length > 20) console.log(`      …还有 ${uncovered.length - 20} 处`);
+} else {
+  console.log('\n✅ [漏网] 0 处 —— 没有"工具覆盖不到、却指向被搬文件的引用"。');
+}
+
 console.log('\n★ 另两件本工具**不覆盖**、但同样会在搬迁时炸的事（今天都遇到了）：');
 console.log('   1. 门的**判据**可能认不出"文件夹形式的模块"（只认 `<name>.ts`）⇒ 要泛化成 文件 or `<name>/index.ts`。');
 console.log('   2. 新增/移动文件会让**依赖环变化** ⇒ 搬完必须跑 `npm run arch`（0 违规）。');
