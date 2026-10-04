@@ -1,9 +1,7 @@
 /**
  * AnimCore —— 动画引擎纯逻辑核心（无 DOM / 无 Node API 依赖）
  *
- * 双重消费（单源）：
- * 1. vitest 直接 import 本文件做单元测试（tests/renderer/anim_core.test.ts）
- * 2. 构建期 scripts/gen_anim_core_bundle.mjs 用 TypeScript transpileModule
+ * 单一消费：构建期 scripts/gen_anim_core_bundle.mjs 用 TypeScript transpileModule
  *    编译为 ES2015、剥离 export，生成 anim_core_bundle.gen.ts（字符串常量），
  *    由 animation_engine.ts 内联进浏览器动画脚本
  *

@@ -68,6 +68,36 @@
       "dir": "src/infrastructure/text",      "note": "文本面（两层共用同一批行号/文本基准）：`refs_text` = 文本提及扫描（改名与引用查询的**补召回**，专治「AST 看不见的引用」）；`line_utils` = 行分割与行尾处理的**单一基准**（`explore_code(read)` 的返回行号 与 `edit_code(range)` 的 start/end **必须同基准** —— 曾经各自实现，导致 LLM 拿 read 的行号去 edit 会替换错行，被语法门拦下）。★ `line_utils` 于 2026-10-02 从 `infrastructure/parse/` **归位**到这里：它不做解析，是纯文本面。"
     },
     {
+      "id": "parse",
+      "layer": "infrastructure",
+      "dir": "src/infrastructure/parse",
+      "note": "tree-sitter 解析内核（12 个文件）：`kernel` = parseFile 统一接口；`languages` / `probe` / `loader` / `source_exts` = 语言包探测与「什么算源码/测试/噪音」的**单点判据**；`ast_parser` / `ast_rename` / `import_resolve` / `import_text` / `fuzzy_match` / `lang_hint` = 具体解析与改写。★ 这是**符号/import/调用边的唯一权威来源** —— 产品里凡要判「这段代码是什么」都该走这里，不该自己写正则。"
+    },
+    {
+      "id": "index",
+      "layer": "infrastructure",
+      "dir": "src/infrastructure/index",
+      "note": "符号索引与 `cache.db`（11 个文件）：`db` / `schema` = 库与建表；`symbols` / `file_facts` = 解析结果的**增量写入**；`watch_project` / `index_backfill` / `index_freshness` = 保鲜与回填；`function_outline` / `guided_tour` / `registry` = 基于索引的派生读数。"
+    },
+    {
+      "id": "graph",
+      "layer": "infrastructure",
+      "dir": "src/infrastructure/graph",
+      "note": "文件级依赖图与项目导入（3 个文件 / 2708 行）：`import_graph` = 从 cache.db 建 import 邻接表的**共享构建器**（多个消费方共用一张图，避免各建一份造成口径不同）；`import_project` = 扫现有项目→自动生成初始 DSL；`dead_deps` = 值级可达性判死依赖。"
+    },
+    {
+      "id": "render",
+      "layer": "infrastructure",
+      "dir": "src/infrastructure/render",
+      "note": "渲染纯逻辑核心（5 个文件）：`anim_core` / `dataflow_core` / `simulation_engine` = 动画与数据流推演，**不依赖 DOM / Node API**（故构建期可被 bundle 内联进浏览器，也可被直接引用）；`export` / `inject_replay` = 导出与注入回放。"
+    },
+    {
+      "id": "daemon",
+      "layer": "infrastructure",
+      "dir": "src/infrastructure/daemon",
+      "note": "daemon 的**客户端侧**（2 个文件）：`client` = MCP/CLI 与 daemon（127.0.0.1:7600）通信的薄封装 + 健康探测；`dispatch` = watch 转发与**降级**（daemon 在 → 转发到单实例权威；不在 → 进程内兜底）。★ daemon 的服务端入口在 `presentation/daemon/`，本域只管「怎么跟它说话」。"
+    },
+    {
       "id": "meta-view",
       "layer": "application",
       "dir": "src/application/meta/view",
@@ -241,7 +271,7 @@
       "id": "infra-shared",
       "layer": "infrastructure",
       "dir": "src/infrastructure",
-      "note": "基础设施横切件（10 个文件）：data_dir / storage / git / exec_guard / dictionary / alert_inbox …。被各层共用、彼此无父子关系 ⇒ 平铺是终态。★ 它**同时是容器**：`analysis/ parse/ index/ render/ graph/ daemon/ text/` 才是待分域的目录。**flat 只说「直属 .ts 是成员」，不管子目录** —— 子目录按 domains 条目各自判（未登记的会被报出来）。"
+      "note": "基础设施横切件（11 个文件）：data_dir / storage / storage_overlay / git / exec_guard / dictionary / alert_inbox / dogfood_stats / llm_focus / project_view / verify_refactor。被各层共用、彼此无父子关系 ⇒ 平铺是终态。★ 它**同时是容器**：`analysis/` 与 `parse/ index/ render/ graph/ daemon/ packages/ rules/ text/` 是**已登记的子域**（2026-10-04 收口，unlisted 归零）。**flat 只说「直属 .ts 是成员」，不管子目录** —— 子目录按 domains 条目各自判。"
     }
   ],
   "flatNote": "★ `flatDirs` 与 `domains` 的区别，一句话：**`domains[i].dir` 里的散文件「要么已搬完、要么就是待搬的缺口」；`flatDirs[i].dir` 里的散文件「就是终态」**。 所以 flat 不是「免检」：它的作用是①把这三个目录**纳入视野**（否则量具对它们是瞎的）；②规定「**flat 目录里再长出的子目录必须被登记**」—— 出现了却没登记就是缺口，读数会报 `unlisted`。★ 判据的来源：`infrastructure/` 顶层这 10 个文件如果按容器判，会永远挂在待搬清单上，而「它们本来就该平铺」这个意图**在原表里没地方写** ⇒ 这就是缺的那一位。",

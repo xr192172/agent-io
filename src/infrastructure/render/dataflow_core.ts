@@ -1,8 +1,8 @@
 /**
  * 数据流追踪核心逻辑（L5a 静态推演，纯逻辑单源）
  *
- * 双消费：被 scripts/gen_anim_core_bundle.mjs 内联进浏览器 IIFE（运行时），
- * 也被 vitest 直接 import（单测）。不依赖 DOM / DSL 类型，只操作普通对象。
+ * 消费：被 scripts/gen_anim_core_bundle.mjs 内联进浏览器 IIFE（运行时）。
+ * 不依赖 DOM / DSL 类型，只操作普通对象。
  *
  * 语义（v1 静态推演，不执行代码）：
  *   - 用户向入口节点注入一个数据值

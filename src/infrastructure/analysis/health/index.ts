@@ -45,8 +45,9 @@ import { collectSourceFiles } from '../version_upgrade/detect.js';
  *     「实测 279/303（92%）落在这里 ⇒ 这个分级**几乎不携带信息**」—— 当时只把它单列出来"可见"，没修；
  *   · 2026-10-03 实测：**813/859 = 95%** 落兜底，13 条 `layer_violation` 里 **10 条在 `tests/`／夹具**
  *     （旧实现把测试也按路径拉进来判层）；
- *   · 而本仓**早就是四层**，`.dependency-cruiser.cjs` 的规则用的就是四层 ⇒ ★ **同一件事两套口径**，
- *     正是本仓头号病根「判据分叉」的又一实例。
+ *   · 而本仓**早就是四层**，当时的 `dependency-cruiser` 规则用的也是四层 ⇒ ★ **同一件事两套口径**，
+ *     正是本仓头号病根「判据分叉」的又一实例。（那套规则已于 2026-10-04 随框架整体移除
+ *     ⇒ 分层的**判据现在只有本文件这一份**，分叉面消失。）
  */
 export type Layer = 'domain' | 'infrastructure' | 'application' | 'presentation';
 
@@ -96,7 +97,8 @@ export interface HealthReport {
    *   没有修。实测代价（2026-10-03）：`813/859 = 95%` 落兜底，13 条 `layer_violation` 里
    *   **10 条在 `tests/` 与 `tests/fixtures/`**（旧实现把测试也拉进来按路径猜层）。
    *
-   * ★ 现在**按目录判层**，与 `.dependency-cruiser.cjs` 的层规则**同一口径**（判据不许分叉）。
+   * ★ 现在**按目录判层**；这是本仓分层判据的**唯一实现**（曾与 `dependency-cruiser` 的规则两套
+   *   并存，那套已于 2026-10-04 移除 ⇒ 不再有分叉面）。
    *   `outside` = **不在四层里**的文件数（`tests/` / `scripts/` / `go-observe/` / 仓库根散文件…）
    *   —— 它们**不参与**分层违规判定，但**如实计数**（保留"口径收紧不许静默"的设计）。
    */
@@ -161,7 +163,8 @@ const LAYER_SEGMENT_RE = /^src\/(domain|infrastructure|application|presentation)
 
 /**
  * 层序：**数字越大越靠上**。只许「依赖 ≤ 自身」（向下或同层）。
- * ★ 与 `.dependency-cruiser.cjs` 的 `layer-downward-only` **同一口径**（判据不许分叉）。
+ * ★ 认层口径见本文件 `classifyLayer`：**本仓唯一一份**（原 `dependency-cruiser` 的
+ *   `layer-downward-only` 与之同口径，已于 2026-10-04 随框架整体移除）。
  */
 const LAYER_ORDER: Record<Layer, number> = { domain: 0, infrastructure: 1, application: 2, presentation: 3 };
 
@@ -176,7 +179,7 @@ const LAYER_ORDER: Record<Layer, number> = { domain: 0, infrastructure: 1, appli
  *   而且它把所有 `tests/` 也拉进来判 ⇒ 13 条违规里 **10 条在测试/夹具**。
  *   "**不在四层里**"是一个**如实的事实**，不是"默认归到某一层"——两者必须分开（同 `layers.outside`）。
  *
- * ★ 为什么按目录而不是路径启发式：本仓**早就是四层**，`.dependency-cruiser.cjs` 的规则用的就是它。
+ * ★ 为什么按目录而不是路径启发式：本仓**早就是四层**，目录本身就是这个事实的载体。
  *   靠 `/server\./`、`/types\./` 这类正则**猜**层，是**另一套口径** ⇒ 判据分叉（本仓头号病根）。
  */
 export function classifyLayer(rel: string): Layer | null {
