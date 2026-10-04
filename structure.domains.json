@@ -271,7 +271,7 @@
       "id": "infra-shared",
       "layer": "infrastructure",
       "dir": "src/infrastructure",
-      "note": "基础设施横切件（11 个文件）：data_dir / storage / storage_overlay / git / exec_guard / dictionary / alert_inbox / dogfood_stats / llm_focus / project_view / verify_refactor。被各层共用、彼此无父子关系 ⇒ 平铺是终态。★ 它**同时是容器**：`analysis/` 与 `parse/ index/ render/ graph/ daemon/ packages/ rules/ text/` 是**已登记的子域**（2026-10-04 收口，unlisted 归零）。**flat 只说「直属 .ts 是成员」，不管子目录** —— 子目录按 domains 条目各自判。"
+      "note": "基础设施横切件（12 个文件）：data_dir / storage / storage_overlay / git / exec_guard / dictionary / alert_inbox / dogfood_stats / llm_focus / project_view / verify_refactor / **scan_bounds**。被各层共用、彼此无父子关系 ⇒ 平铺是终态。★ 它**同时是容器**：`analysis/` 与 `parse/ index/ render/ graph/ daemon/ packages/ rules/ text/` 是**已登记的子域**（2026-10-04 收口，unlisted 归零）。**flat 只说「直属 .ts 是成员」，不管子目录** —— 子目录按 domains 条目各自判。★ `scan_bounds` 于 2026-10-04 从 `application/refactor/rf-edit/` 下沉到此（它是零依赖的纯契约：两个 interface + 一个纯函数，却被放在某条 refactor 子线里，导致 infrastructure 反向 import application）。"
     }
   ],
   "flatNote": "★ `flatDirs` 与 `domains` 的区别，一句话：**`domains[i].dir` 里的散文件「要么已搬完、要么就是待搬的缺口」；`flatDirs[i].dir` 里的散文件「就是终态」**。 所以 flat 不是「免检」：它的作用是①把这三个目录**纳入视野**（否则量具对它们是瞎的）；②规定「**flat 目录里再长出的子目录必须被登记**」—— 出现了却没登记就是缺口，读数会报 `unlisted`。★ 判据的来源：`infrastructure/` 顶层这 10 个文件如果按容器判，会永远挂在待搬清单上，而「它们本来就该平铺」这个意图**在原表里没地方写** ⇒ 这就是缺的那一位。",

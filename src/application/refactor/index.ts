@@ -54,7 +54,7 @@ import { structureGap } from '../../infrastructure/analysis/structure/structure_
 import { buildRefactorPlan, applyRefactorPlan } from './rf-pipeline/refactor_plan.js';
 import type { RefactorTarget, RefactorPlan } from './rf-pipeline/refactor_plan.js';
 import { diffViewsHandler } from '../handlers.js';
-import type { ScanBounds } from './rf-edit/scan_bounds.js';
+import type { ScanBounds } from '../../infrastructure/scan_bounds.js';
 import type { ToolDef } from '../types.js';
 
 // ★ 2026-09-29（面收敛第二批）：本文件原先自带一个**私有** `requireStr` 守卫，本笔把它上提到
@@ -247,7 +247,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
           parts.push(`  ${p.ok ? '✓' : '✗'} ${p.item.file} 的 ${p.item.symbol} → ${p.item.to}${note ? ` —— ${note}` : ''}`);
           for (const b of p.blocked ?? []) parts.push(`\t✗ 跳过：${b}`);
         }
-        // ★ 统一「扫描边界」（唯一落点：`src/application/refactor/rf-edit/scan_bounds.ts`）：局部支**无跨文件闭包**，
+        // ★ 统一「扫描边界」（唯一落点：`src/infrastructure/scan_bounds.ts`）：局部支**无跨文件闭包**，
         //   边界就是"逐条目所在文件"；跳过项 = 被拒的那些条目（名字歧义/撞名/非法名…）。
         const localBounds: ScanBounds = {
           scope: '文件内局部绑定（作用域隔离，不跨文件；无 import 闭包扩展）',
@@ -298,7 +298,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         return lines.join('\n');
       };
       /**
-       * ★ 统一「扫描边界」（唯一落点：`src/application/refactor/rf-edit/scan_bounds.ts`）。
+       * ★ 统一「扫描边界」（唯一落点：`src/infrastructure/scan_bounds.ts`）。
        *   scope = 两条候选来源（import 反向闭包 + report_literals 的文本扫描）；
        *   scanned.files = 各条目**闭包分析到的文件数**（定义文件 1 + 它解析到的 importer 数，逐条累加）；
        *   skipped = 上面那份去重清单。

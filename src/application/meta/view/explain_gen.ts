@@ -16,81 +16,8 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { configFileReadPath } from '../../../infrastructure/llm_focus.js';
+import type { ExplainConfig } from '../../../infrastructure/llm_focus.js';
 import { getStorageRoot } from '../../../infrastructure/storage.js';
-
-// ─────────────────────────────────────────────────────────────
-// 配置
-// ─────────────────────────────────────────────────────────────
-
-export interface ExplainConfig {
-  apiKey: string;
-  model: string;
-  baseURL: string;
-}
-
-const DEFAULT_DS_BASE_URL = 'https://api.deepseek.com/v1';
-const DEFAULT_DS_MODEL = 'deepseek-v4-flash';
-const DEFAULT_AGNES_BASE_URL = 'https://apihub.agnes-ai.com/v1';
-const DEFAULT_AGNES_MODEL = 'agnes-2.0-flash';
-
-/** 读取讲解文案生成配置。优先级：DeepSeek 环境变量 > config.json explain 段 > Agnes 环境变量。无 key 返回 null。 */
-export function loadExplainConfig(): ExplainConfig | null {
-  // DeepSeek（首选后端）
-  const dsEnv: Partial<ExplainConfig> = {};
-  if (process.env.DEEPSEEK_API_KEY) dsEnv.apiKey = process.env.DEEPSEEK_API_KEY;
-  if (process.env.DEEPSEEK_BASE_URL) dsEnv.baseURL = process.env.DEEPSEEK_BASE_URL;
-  if (process.env.DEEPSEEK_MODEL) dsEnv.model = process.env.DEEPSEEK_MODEL;
-
-  // Agnes（兼容后端）
-  const agnesEnv: Partial<ExplainConfig> = {};
-  if (process.env.AGNES_API_KEY) agnesEnv.apiKey = process.env.AGNES_API_KEY;
-  if (process.env.AGNES_BASE_URL) agnesEnv.baseURL = process.env.AGNES_BASE_URL;
-  if (process.env.AGNES_MODEL) agnesEnv.model = process.env.AGNES_MODEL;
-
-  let fileCfg: Partial<ExplainConfig> = {};
-  const cfgPath = configFileReadPath();
-  if (fs.existsSync(cfgPath)) {
-    try {
-      const raw = JSON.parse(fs.readFileSync(cfgPath, 'utf-8'));
-      if (raw && raw.explain) {
-        fileCfg = {
-          apiKey: raw.explain.apiKey,
-          model: raw.explain.model,
-          baseURL: raw.explain.baseURL,
-        };
-      }
-    } catch {
-      // config 损坏：忽略，走环境变量/无配置
-    }
-  }
-
-  // 1) DeepSeek 环境变量
-  if (dsEnv.apiKey) {
-    return {
-      apiKey: dsEnv.apiKey,
-      model: dsEnv.model ?? DEFAULT_DS_MODEL,
-      baseURL: (dsEnv.baseURL ?? DEFAULT_DS_BASE_URL).replace(/\/+$/, ''),
-    };
-  }
-  // 2) config.json explain 段（默认落到 DeepSeek）
-  if (fileCfg.apiKey) {
-    return {
-      apiKey: fileCfg.apiKey,
-      model: fileCfg.model ?? DEFAULT_DS_MODEL,
-      baseURL: (fileCfg.baseURL ?? DEFAULT_DS_BASE_URL).replace(/\/+$/, ''),
-    };
-  }
-  // 3) Agnes 环境变量（兼容）
-  if (agnesEnv.apiKey) {
-    return {
-      apiKey: agnesEnv.apiKey,
-      model: agnesEnv.model ?? DEFAULT_AGNES_MODEL,
-      baseURL: (agnesEnv.baseURL ?? DEFAULT_AGNES_BASE_URL).replace(/\/+$/, ''),
-    };
-  }
-  return null;
-}
 
 // ─────────────────────────────────────────────────────────────
 // 三档角色文案生成

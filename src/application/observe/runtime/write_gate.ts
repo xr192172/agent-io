@@ -47,7 +47,7 @@
  *     （索引是增强，不是写盘的前提）。
  */
 
-import { DATA_DIR_NAME } from '../../../infrastructure/data_dir.js';
+import { selfWritesPath, SELF_WRITE_TTL_MS, readSelfWrites, type SelfWriteEntry } from '../../../infrastructure/index/self_writes.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { getProjectCacheDb, beginBatch, endBatch, projectCacheDbPath, type Database } from '../../../infrastructure/index/db.js';
@@ -105,11 +105,6 @@ const EMPTY_CROSS = { total: 0, resolved: 0, external: 0, failed: 0 };
 // 路径工具
 // ─────────────────────────────────────────────────────────────
 
-/** 自写登记文件路径 */
-export function selfWritesPath(projectRoot: string): string {
-  return path.join(path.resolve(projectRoot), DATA_DIR_NAME, 'self-writes.json');
-}
-
 /** 把绝对/相对路径统一成"相对项目根的 posix 路径"；已在根外则返回 null（不参与索引，避免键污染） */
 export function toRelPosix(projectRoot: string, p: string): string | null {
   const root = path.resolve(projectRoot);
@@ -141,29 +136,13 @@ export function hasLiveIndex(projectRoot: string): boolean {
 // ─────────────────────────────────────────────────────────────
 // L1b：自写登记（同步、便宜；给 await 不了的工具用）
 // ─────────────────────────────────────────────────────────────
+//
+// 读侧原语（selfWritesPath / SELF_WRITE_TTL_MS / readSelfWrites / pendingSelfWrites /
+// SelfWriteEntry）已下沉到 `infrastructure/index/self_writes.ts`（消「下层 import 上层」
+// 的分层违规），本文件从那里 import 使用；此处只保留**写**（writeSelfWrites / recordSelfWrite）。
 
-/** 自写登记条目的有效期：够读路径消费到即可，过期自然消失（避免文件无限长大） */
-export const SELF_WRITE_TTL_MS = 10 * 60 * 1000;
-/** 自写登记最多保留多少条（安全阀） */
+/** 自写登记最多保留多少条（安全阀）；只被写侧 recordSelfWrite 用，故留在本文件 */
 export const SELF_WRITE_MAX = 500;
-
-interface SelfWriteEntry {
-  at: number;
-  files: string[];
-  note?: string;
-}
-
-/** 读登记文件（坏数据当空，绝不抛；索引是增强不是前提） */
-function readSelfWrites(root: string): SelfWriteEntry[] {
-  try {
-    const raw = fs.readFileSync(selfWritesPath(root), 'utf-8');
-    const parsed = JSON.parse(raw) as { writes?: SelfWriteEntry[] };
-    const list = Array.isArray(parsed?.writes) ? parsed.writes : [];
-    return list.filter((e) => e && Array.isArray(e.files) && typeof e.at === 'number');
-  } catch {
-    return [];
-  }
-}
 
 function writeSelfWrites(root: string, list: SelfWriteEntry[]): void {
   const p = selfWritesPath(root);
@@ -201,22 +180,6 @@ export function recordSelfWrite(projectRoot: string, files: readonly string[], n
   kept.push({ at: now, files: rels, ...(note ? { note } : {}) });
   writeSelfWrites(root, kept.slice(-SELF_WRITE_MAX));
   return rels.length;
-}
-
-/**
- * 取**待消费**的自写登记（去重后的相对路径），供读路径优先同步。
- * 不过期项不会被清掉 —— 消费方要幂等（按 hash 判定），这里只做"提示"。
- */
-export function pendingSelfWrites(projectRoot: string, opts: { maxAgeMs?: number } = {}): string[] {
-  const root = path.resolve(projectRoot);
-  const ttl = opts.maxAgeMs ?? SELF_WRITE_TTL_MS;
-  const now = Date.now();
-  const out = new Set<string>();
-  for (const e of readSelfWrites(root)) {
-    if (now - e.at >= ttl) continue;
-    for (const f of e.files) out.add(f);
-  }
-  return [...out];
 }
 
 // ─────────────────────────────────────────────────────────────

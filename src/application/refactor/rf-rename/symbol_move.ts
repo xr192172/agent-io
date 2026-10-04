@@ -41,7 +41,7 @@ import { getProjectCacheDb } from '../../../infrastructure/index/db.js';
 import { splitKeepEnds, detectEol, isBlankLine } from '../../../infrastructure/text/line_utils.js';
 import { snapshotBeforeWrite } from '../rf-snapshot/file_snapshot.js';
 import { reopenAndResolveAfterWrite } from '../../observe/runtime/write_gate.js';
-import type { ScanBounds } from '../rf-edit/scan_bounds.js';
+import type { ScanBounds } from '../../../infrastructure/scan_bounds.js';
 
 // ─────────────────────────────────────────────
 // 类型
@@ -94,7 +94,7 @@ export interface MoveSymbolResult {
    *   —— 收进 `bounds.skipped`（原字段名 `skipped`，本笔收成统一形状，内容一字未改）。
    *   跳过 = "可能漏掉一个引用本符号的 importer" ⇒ 移动后它的 import 可能仍指向旧文件。
    *   原来 `expandClosureDetailed` 已经报出这个数组，本文件却**直接丢弃** ⇒ 静默少改。
-   * 形状与挂载层见 `src/application/refactor/rf-edit/scan_bounds.ts`。
+   * 形状与挂载层见 `src/infrastructure/scan_bounds.ts`。
    */
   bounds?: ScanBounds;
   /** 传了 to_symbol 但 v1 未启用改名 */

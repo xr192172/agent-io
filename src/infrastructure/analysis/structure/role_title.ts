@@ -11,8 +11,7 @@
  * 现状（只显示文件名），不阻塞导入流程。
  */
 
-import { loadLlmConfig, callChat, configFilePath } from '../../llm_focus.js';
-import { loadExplainConfig } from '../../../application/meta/view/explain_gen.js';
+import { loadLlmConfig, callChat, configFilePath, loadExplainConfig } from '../../llm_focus.js';
 
 /** 单个待生成职责的文件 */
 export interface RoleFileInput {

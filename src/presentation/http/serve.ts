@@ -62,9 +62,8 @@ import { schemas, RESPONSE_SCHEMA_AT, API_VERSION, type ResponseSchemaKey } from
 import { deriveDetailChain } from '../../application/design/derive/derive_chain.js';
 import { reconcileChain } from '../../application/observe/reconcile/reconcile_chain.js';
 import type { DesignDSL } from '../../domain/types.js';
-import { loadLlmConfig, pickKeyNodes, type ChainNodeInfo } from '../../infrastructure/llm_focus.js';
+import { loadLlmConfig, pickKeyNodes, loadExplainConfig, type ChainNodeInfo } from '../../infrastructure/llm_focus.js';
 import {
-  loadExplainConfig,
   generateModuleNarrations,
   loadGeneratedNarrations,
   saveGeneratedNarrations,
