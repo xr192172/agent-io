@@ -6,11 +6,20 @@
  * 统一收敛到这里；core 只做 `findLangPackage(defExt)` 查表。
  *
  * ★ 行为等价性：各语言包 ext 互不相交（`.c`/`.h` 同 C 包），查表与 if 链等价。
+ *
+ * ★★ 文件命名规则（2026-10-05 统一，T28）：**文件名 = 该包主导扩展名去掉点**（`ts` / `py` / `cs`
+ *   / `go` / `java` / `c`），与 `contract_gate/languages/` 的 `Lang` 短码、`package_migration/languages/`
+ *   的文件名**三者一致**。本包原先叫 `typescript.ts` / `python.ts` / `csharp.ts`（长名），
+ *   与另两张表（短码）不同 ⇒ **同一门语言三套写法**，按名字跨模块定位一首语言做不到
+ *   （T28 的原症状）。取**短码**而不是长名的理由：① 短码 = `exts[0].slice(1)` ⇒ **可派生的**，
+ *   不需要再维护一张名字表（本仓「不写名字表」那条纪律）；② `contract_gate` 的 `Lang`
+ *   是**被代码读的类型**，它用短码；③ 另两处语言代号（`derive_chain` / `trace_exec`）也是短码。
+ *   ★ TS/JS 家族仍叫 `ts`（它覆盖 `TS_JS_EXTS`，与 `contract_gate` 的同名包一致）。
  */
 import { TS_JS_EXTS } from '../../../../infrastructure/parse/index.js';
-import { renameTsSymbol } from './typescript.js';
+import { renameTsSymbol } from './ts.js';
 import { renameGoSymbol } from './go.js';
-import { renamePythonSymbol } from './python.js';
+import { renamePythonSymbol } from './py.js';
 import { renameNamespaceSymbol } from './java.js';
 import { renameCSymbol } from './c.js';
 import type { LangPackage } from '../parts.js';

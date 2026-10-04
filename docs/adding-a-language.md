@@ -164,7 +164,7 @@ npm run install-package list               # 复核：该行从 '–' 变 '✓'
 |---|---|---|---|---|---|
 | 1 | `ast_parse_skeleton` | `ts_kernel/languages.ts: LANGUAGES` + `ts_kernel/kernel.ts: parseFileFull/traverseAndExtract` + `ts_kernel/probe.ts: isLanguageInstalled` | ★ **数据** | `LANGUAGES` 的 `typescript` 行 | 0 |
 | 2 | `package_migration` | ★★ **数据（注册表）**：`infrastructure/analysis/package_migration/languages/registry.ts: PM_LANG_PACKAGES`；`core.ts` 只查表 | ★ **数据（注册表）**（2026-10-01 由"代码"改判） | `languages/go.ts: collectGoAliasEdits` | 49 |
-| 3 | `rename_symbol` | ★★ **数据（注册表）**：`application/refactor/rename_symbol/languages/registry.ts: LANG_PACKAGES`（`ext → LangPackage`）；`core.ts` 只 `findLangPackage(defExt)` 查表 | ★ **数据（注册表）**（2026-10-01 由"代码"改判） | `languages/go.ts: renameGoSymbol`（每语言一个包） | 46 |
+| 3 | `rename_symbol` | ★★ **数据（注册表）**：`infrastructure/analysis/rename_symbol/languages/registry.ts: LANG_PACKAGES`（`ext → LangPackage`）；`core.ts` 只 `findLangPackage(defExt)` 查表 | ★ **数据（注册表）**（2026-10-01 由"代码"改判） | `languages/go.ts: renameGoSymbol`（每语言一个包） | 46 |
 | 4 | `contract_gate` | ★★ **数据（注册表）**：`infrastructure/analysis/contract_gate/languages/registry.ts: CG_LANG_PACKAGES`（每包带 `exts`/`reserved`/`globals`/`collectSymbols`/`collectReferences`）；`langOfFile` 由各包 `exts` **派生** | ★ **数据（注册表）**（2026-10-01 由"代码"改判） | `languages/ts.ts: cgTsPackage`（`exts` 用内核权威 `TS_JS_EXTS`，**不要手抄**） | 46 |
 | 5 | `extract_contracts` | `tools/extract_contracts.ts: extractContracts` → `parseShapeFields`/`scanConfigKeys`/`collectModuleVars`/`scanEffectCandidates` | **代码** | `scanTsEmits` + TS 默认路径 | 49 |
 | 6 | `version_upgrade_detection` | `version_upgrade/adapters/registry.ts: adapters` 数组 + `adapterForLang`/`adapterForExt`/`adaptersForFile` | ★ **数据（注册表）** | `version_upgrade/adapters/node.ts: nodeAdapter` | 47 |
@@ -178,6 +178,25 @@ npm run install-package list               # 复核：该行从 '–' 变 '✓'
 > **一句话结论**：#1/#6/#7/#8 是**数据驱动**（改表/加适配器文件），**#3 自 2026-10-01 起也是数据驱动**（加一个语言包文件 + 登记一行），#11 的复杂度维度也是数据驱动；
 > #2/#4/#5/#10 + #11 的未用 import 维度是**代码驱动**（真的要写语言特有逻辑）。
 > **523 里约 1/3 是"加表项"级，约 2/3 是真实重活**（精确拆分见 §3.2）。
+
+★★ **但这几张注册表不是同一张表的几份副本 —— 不要合并**（2026-10-05 核实，T28 的结论）。
+它们按 **key 的权威来源**分属**四套不同词汇**，合并 = 把不同轴的东西改成同一个名字：
+
+| 表 | key 是 | 权威来源 |
+|---|---|---|
+| `package_migration/languages/` · `rename_symbol/languages/` | **扩展名** | 文件系统（`.py` / `.cs` / `.ts`…） |
+| `contract_gate/languages/` | **语言短码** `go ts py java cs c` | `parts.ts: Lang` —— 本仓的**类型**，被代码读 |
+| `version_upgrade/adapters/` | **工具链/运行时** `node python csharp java go c` | **外部工具**（`node -v` / `.nvmrc` / `pyproject.toml`）★ `node` **不是语言**，是 npm 那一套 |
+| `ts_kernel/kernel.ts: LANG_ADAPTERS`（#7/#8 背后那张） | **tree-sitter 语法名** `python` `c_sharp` `typescript` `tsx` `javascript`… | ★ **外部强加，不许改** |
+
+⇒ **唯一真该统一的**是 `rename_symbol/languages/` 的文件名（原 `typescript.ts` / `python.ts` / `csharp.ts`
+→ `ts.ts` / `py.ts` / `cs.ts`）—— **已完成**（2026-10-05，T28）：
+现在它与 `package_migration/languages/`、`contract_gate/languages/` **这三张同一轴的表，文件名逐字一致**。
+★ 规则：**文件名 = 该包主导扩展名去掉点**（可派生，不再维护名字表）。
+
+★ 另有**第 5 处**根本不属于"语言包表"：`refactor/refactor_langs.ts` 的 `RefactorLangRegistry`
+是**可变的运行时注册表**（`register()` / `get()`），其 `lang` 可以是**多语言组合**（`ts_go`，
+一个管线执行器同时管 TS+Go 混项目）⇒ 与上面任何一张都不是同一个东西，**不参与命名统一**。
 > ★ **#3 的改判过程值得照抄**：原来 6 个语言实现挤在一个 1920 行文件里、主函数是 5 条 `if (defExt === …)` 的 if 链
 > ⇒ 加一门语言要**改核心文件**。拆成 `rename_symbol/languages/<lang>.ts` + 一张 `LANG_PACKAGES` 注册表之后，
 > 加一门语言**核心一行不改**（详见 §2.2）。
@@ -206,13 +225,14 @@ npm run install-package list               # 复核：该行从 '–' 变 '✓'
 
 | 项 | 内容 |
 |---|---|
-| 分派点 | **`application/refactor/rename_symbol/languages/registry.ts: LANG_PACKAGES`** —— ★ **一张表**。`core.ts` 里 `findLangPackage(defExt)` 查表后 `pkg.rename(args)`；**core 零语言知识** |
-| 各语言实现 | `languages/<lang>.ts` **每语言一个文件**：`typescript.ts` / `go.ts` / `python.ts` / `csharp.ts` / `java.ts` / `c.ts` |
-| **TS 样板** | `languages/go.ts: renameGoSymbol`（最通用的"跨文件同名可见性"样板）；`languages/typescript.ts: renameTsSymbol`（TS 家族，最重） |
+| 分派点 | **`infrastructure/analysis/rename_symbol/languages/registry.ts: LANG_PACKAGES`** —— ★ **一张表**。`core.ts` 里 `findLangPackage(defExt)` 查表后 `pkg.rename(args)`；**core 零语言知识** |
+| 各语言实现 | `languages/<lang>.ts` **每语言一个文件**：`ts.ts` / `go.ts` / `py.ts` / `cs.ts` / `java.ts` / `c.ts` |
+| ★★ **文件名规则**（2026-10-05 统一，T28） | **文件名 = 该包主导扩展名去掉点**（短码）。原先叫 `typescript.ts` / `python.ts` / `csharp.ts`（长名），与 `contract_gate/languages/`、`package_migration/languages/` **这两张同一轴的表不一致** ⇒ 同一门语言三套写法。**取短码的理由**：短码 = `exts[0].slice(1)` **可派生**（不必再维护名字表）· `contract_gate` 的 `Lang` 是被代码读的类型且用短码 · 另两处语言代号（`derive_chain` / `trace_exec`）也是短码。★ **注意：`version_upgrade/adapters/` 不适用这条** —— 它的 key 是**工具链/运行时**（`node` 不是语言，是 `npm`/`.nvmrc` 那一套），见 §2.6。 |
+| **TS 样板** | `languages/go.ts: renameGoSymbol`（最通用的"跨文件同名可见性"样板）；`languages/ts.ts: renameTsSymbol`（TS 家族，最重） |
 | **要几处** | ★★ **1 处新文件 + 1 行登记**：① 写 `languages/<lang>.ts`（导出 `rename<Lang>Symbol(args: LangRenameArgs)`），② 在 `LANG_PACKAGES` 加一行 `{ exts: ['.xx'], rename: renameXxxSymbol }`。**`core.ts` 一行都不用改**（2026-10-01 之前是"改主函数的 if 链 + 写实现"两处，且每次都要重跑全量+更新基线） |
 | 契约 | `parts.ts` 的 `LangRenameArgs` / `LangPackage`（语言无关接线层；**不是** `languages/types.ts` —— 那样会被 dep-cruiser 判孤儿，见该文件的注释） |
 | 判据 | `tests/tools/rename_symbol.test.ts` + 新增该语言的样例对拍（同包裸引用 / 跨包限定引用 / 别名 / 局部遮蔽四类）+ **`npm run arch` 必须仍 0 违规** |
-| 非 TS 落点的提示 | `core.ts` 的 `文件非 TS 系（…）` 与 `languages/typescript.ts` 的 `无可用 TS 解析器…` —— 这两处是 §6 要升级的提示 |
+| 非 TS 落点的提示 | `core.ts` 的 `文件非 TS 系（…）` 与 `languages/ts.ts` 的 `无可用 TS 解析器…` —— 这两处是 §6 要升级的提示 |
 
 **点破**（2026-10-01 拆分后）：`renameNamespaceSymbol` 仍在 `languages/java.ts` 里，**被 `.cs` 与 `.java` 两个包共用**（同一个 `LangPackage` 挂两个 ext，或两行登记同一实现）
 —— 即**同一套逻辑用 ext 参数化**。后面补 kotlin/swift 这类"包/命名空间 + 类型跨文件"的语言，**再复用这一份**（不是每次重写）。
@@ -223,7 +243,7 @@ npm run install-package list               # 复核：该行从 '–' 变 '✓'
    原来住在 `core.ts` ⇒ `core → registry → 语言包 → core`，`arch` 一次报 **9 条 no-circular**。
    抽到 `parts.ts` 后回边消失（`core → parts`、`包 → parts`）。**判据：`npm run arch` 必须 0 违规**。
 2. **`project_root` 不要 import barrel**：它只要 `analyzeModuleSource`，却 import 了 `rename_symbol/index.js`
-   ⇒ 把整棵树拉进环。改指**叶子包** `rename_symbol/languages/typescript.js` 后，环从 3 条收缩为**原本就存在的那 1 条**
+   ⇒ 把整棵树拉进环。改指**叶子包** `rename_symbol/languages/ts.js` 后，环从 3 条收缩为**原本就存在的那 1 条**
    （`project_root ⟷ rename_symbol`，本就登记在 `.dependency-cruiser-known-violations.json` 里）。
 
 ---

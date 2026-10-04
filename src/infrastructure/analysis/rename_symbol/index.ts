@@ -41,9 +41,9 @@ export type { ImportEdge, ModuleRef, ModuleAnalysis } from '../../../infrastruct
 export { analyzeGoSource, renameGoSymbol } from './languages/go.js';
 export type { GoModuleAnalysis } from './languages/go.js';
 
-export { analyzePythonSource, renamePythonSymbol } from './languages/python.js';
+export { analyzePythonSource, renamePythonSymbol } from './languages/py.js';
 
-export { analyzeCSharpSource } from './languages/csharp.js';
+export { analyzeCSharpSource } from './languages/cs.js';
 
 export { analyzeJavaSource, renameNamespaceSymbol } from './languages/java.js';
 

@@ -1,7 +1,7 @@
 /**
  * rename_symbol · Java（+ C#/Java 共享的命名空间改名执行器）
  *
- * `analyzeJavaSource` 由 `csharp.ts` 的 `makeNamespaceAnalyzer` 工厂产出；
+ * `analyzeJavaSource` 由 `cs.ts` 的 `makeNamespaceAnalyzer` 工厂产出；
  * `renameNamespaceSymbol` 是 C#/Java 共用的跨文件改名执行器（复用 Python 的原子扫描骨架）：
  *   - def 文件：定义处 + 同文件裸引用
  *   - 同模块文件（package/namespace 路径相等）→ 裸引用
@@ -18,7 +18,7 @@ import {
   type RenameSymbolFileInfo,
   type RenameSymbolResult,
 } from '../parts.js';
-import { makeNamespaceAnalyzer, analyzeCSharpSource } from './csharp.js';
+import { makeNamespaceAnalyzer, analyzeCSharpSource } from './cs.js';
 
 export const analyzeJavaSource = makeNamespaceAnalyzer({
   ext: '.java',
