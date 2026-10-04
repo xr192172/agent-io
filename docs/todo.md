@@ -167,12 +167,20 @@
         都是 [C] 形态）⇒ **不接 `touched`**。
       · ⏳ (2) 续：**④-d harvest → ④-e 其余** + 棘轮收紧。★ 每族照 ④-b 的办法：
         **先定形状 → 1 文件 1 个子代理并行 → 我串行核验/验证/提交**。
-      · ✅ **(3) 还债：7 个里已改 5 个（2026-10-05，commit `c55f607`）** ——
+      · ✅ **(3) 还债：7/7 全部完成**（commit `c55f607` + `ed4a5b4` + `98618be`）——
         `files`(报告数组) ⇒ `contract_reports` / `reconcile_reports` / `removal_reports`；
-        `stats` ⇒ `contract_stats` / `closure_stats` / `reconcile_stats`；`written`(文件表那一义) ⇒ `written_files`。
-        ★ 判据是**类型 + 语义**（3 处 `files` 经查全是**报告数组**，不是路径表 ⇒ 一律 `<领域>_reports`）。
-        **剩 2 个在 design 族**（`deriveAlgorithm.stats` / `scaffold.files`）—— 需单开一笔（避开与 ④-c 撞车）。
-        ★★ **全改完再一起摘 `b_terms.ts` 里那三条 `debt: true` 标记。**
+        `stats` ⇒ `contract_stats` / `closure_stats` / `reconcile_stats` / `algorithm_stats`；
+        `written`(文件表那一义) ⇒ `written_files`；`scaffold.files`(`string[]` **路径表**) ⇒ `written_files`。
+        ★ 判据是**类型 + 语义**：**3 处 `files` 是报告数组**（⇒ `<领域>_reports`）而 **`scaffold.files` 是路径表**
+        （⇒ `written_files`）—— ★★ **同名不同义，不能套同一个目标名**（我一度怀疑执行者判错，查类型后是我错）。
+        ⇒ **只读量具独立复核：全仓 37 个 [B] 零个带旧名** ⇒ 已摘掉 `b_terms.ts` 那三条 `debt: true`
+        （**改标"已退役，禁止再新增使用者"** —— 不是删条目，删了后来人就没拦的）。
+        ⇒ ★ 顺手补了两个**一直是洞**的词条：`touched`（**14 个 [B] 在用却不在表里**！）与 `error`
+        （`runTests` / `watchProjectTool` 同名同型）。机检归零：**42 / 42 / ★未定义 0**。
+      · ★★ **(4) 的尾巴（2026-10-05，commit `4ee95dd`）**：`213d316` 给产物加的 `root` 字段**被机检当场抓出**
+        —— 受控词表里这个概念的**唯一名字是 `project_dir`** ⇒ **我自己造了一个判据分叉**
+        ⇒ 已全部改名为 `project_dir`（4 文件）。
+        ★ **这条值得记住**：受控词表**不是文档、是机器判据** —— 我引入分叉 20 分钟后它就把我抓了。
       · (4) ★ **④-b 暴露的同源缺口**（都在"**Core 内部算出的东西没进产物**"这一点上）：
         · `rename_symbols` 的 local 支 / apply_literals 支 ⇒ 给不出仓库相对的完整文件表 ⇒ 只能整项省略；
         · `rename_symbol` / `find_references` ⇒ 入参没给 `project_dir` 时，Core 推导出的根拿不到 ⇒ 只能省略。
@@ -446,12 +454,6 @@
         `read_files` / `written_files`（★ 判据是类型 + 语义，不是名字）。
       ★ 它不在 `application/**` ⇒ **按 `dc-add-tool` 的 [B] 定义它不是 [B]**（是 infrastructure 里的产物类型），
         所以本轮 5 个 [B] 的清单里没有它 —— 但它同样是"被污染的名字"，属同一族债。
-
-- [ ] **T45 ★ 术语表机检报出 2 个未定义共用字段名：`error` / `touched`**（2026-10-05 首次非零）
-      *(核实：`node scripts/measure_b_contract.mjs` 的**机检**行，实测 `共用 42 / 有定义 40 / ★未定义 2`。)*
-      ⇒ 含义：这两个名字被 **≥2 个 [B]** 用作字段名，却**不在 `B_TERMS`**（受控词表）里。
-      ★ `touched` **正是 T18 的契约字段** ⇒ 它的含义应在 T18 落地时一并写进 `B_TERMS`（而不是留个洞）。
-      ⇒ `error` 需先查是哪两个 [B] 在用、是不是同一件事（★ 按纪律：**不看清类型与语义不许合并**）。
 
 - [ ] **T42 ★★ 结构重排三案（独立结构评审 2026-10-05；"层"这根轴清楚，"层内靠什么切"没有统一口径）**
       *(核实：独立子代理只读目录结构后报告；我复核了 `ls src/presentation/cli/`（22 文件）与行数。)*
