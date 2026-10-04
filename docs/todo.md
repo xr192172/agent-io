@@ -490,6 +490,50 @@
         `tsc` 0；`npm run build` 0；`npm run structure:gap` 三态仍全 0。
       ⇒ ★ 与 **T41**（报错口吻）不同族：这是**死路清尾**，属"删族"的尾巴（见 `dc-remove-tool` §一）。
 
+- [ ] **T48 ★ `rename_symbol` 的 C# 语言包缺「冻结行保护」（独立评审顺带发现，2026-10-05）**
+      *(核实：`grep -c protect src/application/refactor/rename_symbol/languages/*.ts`
+       ⇒ c=2 / go=2 / java=2 / python=4 / typescript=3 / **csharp=0**。)*
+      ⇒ 其余 5 个语言包都 import `createProtectGuard`（冻结行守卫），**只有 C# 没有**。
+      ⇒ ★ **定性**：这是**既有缺口**（**不是** T42 引入），但含义是"**C# 文件里的冻结行不会被保护**"
+      （冻结行 = 人标了"别动"的行）⇒ 改 C# 符号时可能**改动人明确标记过不能动的行**。
+      ⇒ 待查：是**有意**（C# 语言包后加、那时还没 protect？）还是**漏了**。★ 判据：读 C# 包的改动路径，
+        看它有没有别的方式守冻结行；若无 ⇒ 补 `createProtectGuard`（与 go/java 同形）。
+
+- [ ] **T49 ★★ T42 方案 B 2b 的剩余三步（B / C / D）—— ★ 顺序与风险已定（独立评审 2026-10-05）**
+      *(核实：见 T42「方案 B 第二步 2b」与本次评审报告。)*
+      ⇒ ★★ **最关键的认知（改变优先级）**：**合规收益全部来自"三件手术"**；
+        **把 `rename_symbol/` 物理搬走本身不产生任何合规收益**（手术做完后，引擎**留在 application 也是 0 违规**）。
+        ⇒ **手术是主线，搬家是收尾。**
+      ⇒ 四步（**每步一提交 + build 绿**）：
+        · **A ✅ 已做**：`protect.ts` → `infrastructure/analysis/refactor/protect.ts`（纯搬家，7 处引用）。
+        · **B ⏳**：`project_root.ts` 下沉 ⇒ ★ **整文件搬**（评审实测：`expandClosureDetailed` 内部依赖它绝大部分，
+          "只切几件" ≈ 沉 80% 却**造出两个落点**）。**外部消费者 8 个**要改路径
+          （`cross/index.ts:18` · `design/intent/detect_drift.ts:21` · `find/field_refs.ts:27` ·
+          `find/find_references.ts:22` · `rename/rename_files.ts:19` · `rename/rename_symbols.ts:41/44` ·
+          `rename/symbol_move.ts:37` · `presentation/mcp/server_registry.ts:62`）。
+          ★ 目标目录**待裁定**：`infrastructure/analysis/refactor/`（零新域，但它不只服务 refactor）vs
+          新开 `infrastructure/analysis/closure/`（名实相符，多一条域表记录）。
+        · **C ⏳（唯一行为改动，风险最高）**：断开 **engine → 应用层库**（`languages/typescript.ts:22` → `rename/rename_file`）。
+          ★ 措辞修正（评审）：`rename_file` **不是 MCP 入口**（工具是 `rename_symbols`/`rename_files`），
+            它是**应用层库**，被那两个工具 + `code_workbench` 复用；★ 而它自己又 import
+            `observe/runtime/write_gate` + `file_snapshot` ⇒ **引擎调它会把整个 application 层拖进内核**。
+          ⇒ 方案 **C1（拆出去）**：`rename_symbols` 在符号改名成功后自己调 `renameFile`；引擎删掉
+            `rename_file_if_matching` 入参 / `fileRenamed` / `fileRenameBlocked` 产物与相关 `touchedOf`。
+            ★ **失败语义要逐字保持**（仅当 `renameFileIfMatching && basename(defAbs,ext)===symbol`；
+            dry_run 只填计划路径不动盘；写盘时 `fr.ok && fr.moved` 才算成功，否则记 `blocked` 但**整体仍 ok:true**）。
+          ⇒ 方案 **C2（端口注入，评审说"无测试时更保值"）**：内核定义 `FileRenamer` 端口、工具注入真实现
+            ⇒ **零行为改动**地消掉静态边。代价：多一层间接 + "何时联动"策略仍在内核。
+          ⇒ ★★ **评审的最重要警告**：**C 是唯一的行为改动，而本仓无测试、CI 只剩 build**
+            ⇒ **机械搬家 tsc 能兜住，行为改动没有任何自动兜底** ⇒
+            **"该不该做"的真分歧不是架构，而是"行为改动怎么验"**：
+            动工前**必须先定一个可复现的人工对拍**（例：挑一个"文件名 = 主导出符号名"的真实文件，
+            改名前 `dry_run` 记 `fileRenamed`/`importers`，改后逐条比）；**没有它，不动 C**。
+        · **D ⏳**：搬 `rename_symbol/` + 域表（★ 连带必改：`rf-rename-symbol` 的 dir+layer · `cross` 域（移走 project_root）·
+          `refactor` 域 note · 以及 `structure.domains.json:380` 的 `unassignedNote` 里"rename_symbol/ 与
+          package_migration/ 保持原位"**那句已过时**）。
+      ⇒ ★ **入边是 3 条不是 2 条**（我漏了 `find/find_references.ts:23` 取 `analyzeModuleSource/resolveRel/buildNoExt`）
+        ⇒ 搬家时这条也要改，且说明 `index.ts` **必须继续导出这三个符号**。
+
 - [ ] **T47 ★ 「自定位工具」的 `touched.project_dir` 可能是 cwd（口径待定，2026-10-05）**
       *(核实：`index_integrity --json '{}'` 实测 `"touched":{"project_dir":"D:\\project_develop\\design-canvas"}`
        —— 那是**本仓 cwd**，不是调用方想查的项目。)*
