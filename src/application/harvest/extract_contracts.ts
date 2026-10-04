@@ -35,6 +35,7 @@ import type {
   ShapeField,
   EffectTarget,
 } from '../../domain/contract.js';
+import { withTouched, type Touched, type TouchedProduct } from '../../domain/b_terms.js';
 
 export interface ExtractContractsInput {
   /** 被分析项目的根目录（其下 .agent-io/cache.db 是符号缓存） */
@@ -510,7 +511,7 @@ function scanEffectCandidates(source: string, language: string): EffectCandidate
 
 // ── 主流程 ────────────────────────────────────────────────────────
 
-export function extractContracts(input: ExtractContractsInput): ExtractContractsResult {
+function extractContractsCore(input: ExtractContractsInput): ExtractContractsResult {
   const { project_dir, feature, write_dsl = true } = input;
   const root = path.resolve(project_dir);
 
@@ -673,4 +674,42 @@ export function extractContracts(input: ExtractContractsInput): ExtractContracts
     },
     message,
   };
+}
+
+/**
+ * ★ 唯一的构造点：把"我动了什么"集中算一次，所有出口都从这一个地方出去。
+ *
+ * 口径（`Touched` 两类字段，见 domain/b_terms.ts:42-89）：
+ *   - 作用域类（`project_dir` / `feature`）：随时可给，不依赖成败；
+ *   - 对象类（`written_files` / `read_files` / `symbols` / `nodes`）：只有**真发生**才给，否则整项省略。
+ */
+function touchedOf(input: ExtractContractsInput, r: ExtractContractsResult): Touched {
+  const touched: Touched = {};
+
+  // project_dir：★ 填**解析后的绝对根**（= Core 里 `path.resolve(project_dir)`，见 515 行）——
+  //   与产物顶层 `project_dir` 同值（顶层那份额外的重复见报告单列项）。
+  touched.project_dir = path.resolve(input.project_dir);
+  // feature：作用域类，随时可给；入参没给则省略（本 [B] 的 feature 是可选的）。
+  if (input.feature) touched.feature = input.feature;
+
+  // read_files：本次**逐文件读取源码**作为输入的文件。来源（唯一可取现成量）：
+  //   `contract_reports[].path` = Core 543-608 行对 `graph.files`（闭包内每个文件）
+  //   `fs.readFileSync(path.join(root, f.rel))` 处理的文件（相对项目根、POSIX 分隔）。
+  // ★ 这是「报告出来的子集」：读失败的（文件已删）同名条目也在此列——产物区分不出读成功与否，
+  //   不假装更精确。`extractShapes` 另读了形状文件（249-284 行），但那段未进产物 ⇒ 收不进来。
+  const read = new Set<string>();
+  for (const rep of r.contract_reports) if (rep.path) read.add(rep.path);
+  if (read.size > 0) touched.read_files = [...read];
+
+  // ★ 不给 written_files：本 [B] 只把契约写进 **DSL**（`saveDSL`，629 行），产物用
+  //   `written_to_dsl:boolean` 表达该领域状态——★ **DSL 不是文件**，不能据此填 `written_files`
+  //   （否则下游会把 DSL 存储当成"被改动的源码文件"去读）。本 [B] 不改任何项目文件。
+  // ★ 不给 symbols / nodes：形状名（r.name）与 DSL 文件节点 id 都未进产物，无现成量可取 ⇒ 省略，不猜。
+
+  return touched;
+}
+
+export function extractContracts(input: ExtractContractsInput): TouchedProduct<ExtractContractsResult> {
+  const r = extractContractsCore(input);
+  return withTouched(r, touchedOf(input, r));
 }

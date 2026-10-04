@@ -19,6 +19,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
 import { gitAvailable } from '../../infrastructure/exec_guard.js';
+import { withTouched, type Touched, type TouchedProduct } from '../../domain/b_terms.js';
 
 export type HarvestSource = 'doc' | 'gitlog' | 'comment';
 
@@ -199,7 +200,7 @@ function scanComments(files: string[]): HarvestCandidate[] {
 
 // ──────── 主入口 ────────
 
-export function harvestDecisions(input: HarvestInput): HarvestResult {
+function harvestDecisionsCore(input: HarvestInput): HarvestResult {
   const { feature } = input;
   const limit = input.limit ?? 30;
   const gitRoot = input.git_root ?? process.cwd();
@@ -240,4 +241,51 @@ export function harvestDecisions(input: HarvestInput): HarvestResult {
     '用法: LLM review 上述候选（核对出处/原文），定稿后通过 edit_dsl / 决策卡工具写入 DSL（status: active）。',
   ];
   return { message: lines.join('\n'), feature, candidates };
+}
+
+/**
+ * ★ 唯一的构造点：把"我动了什么"集中算一次，所有出口都从这一个地方出去。
+ *
+ * 口径（`Touched` 两类字段，见 domain/b_terms.ts:42-89）：
+ *   - 作用域类（`project_dir` / `feature`）：随时可给，不依赖成败；
+ *   - 对象类（`written_files` / `read_files` / `symbols` / `nodes`）：只有**真发生**才给，否则整项省略。
+ */
+function touchedOf(input: HarvestInput, r: HarvestResult): Touched {
+  const touched: Touched = {};
+
+  // feature：作用域类，随时可给（入参必填）。★ 产物顶层**也有** `feature`，属"同一事实两个名字"
+  //   （见报告单列项）。
+  touched.feature = input.feature;
+
+  // ★ 不给 project_dir：入参里**没有** project_dir —— 只有 `doc_dir`（默认 <cwd>/docs）与
+  //   `git_root`（默认 <cwd>）。二者都不是"被分析项目的根"，且缺省会回落 `process.cwd()`
+  //   （那是"进程当前目录"，不是本次调用**确立的对象**）。按"不猜"口径 ⇒ **整项省略**。
+
+  // read_files：本次**真读**作为输入的文件。来源：`r.candidates` 的出处字段（doc/comment 两种
+  //   候选分别对应 `scanDocs` 142 行 / `scanComments` 175 行的 `fs.readFileSync`）：
+  //     · source='comment' → `file_path` 即被读源码文件（已为相对路径，186 行 path.relative(cwd, f)）；
+  //     · source='doc'     → `ref` 形如 `<rel>:<行号>`（154 行），去掉末尾 `:<数字>` 得文件路径；
+  //     · source='gitlog'  → `ref` 是 `git:<hash>`，不对应文件 ⇒ 跳过。
+  //   ★ 两点如实标注：(a) 这是"**有命中**的文件的子集"，读过但无设计意图命中的 md 不在内；
+  //   (b) 路径基准是 `process.cwd()`（见 154/186 行），**不保证等于仓库相对路径**（本 [B] 无 project_dir 锚点）。
+  const read = new Set<string>();
+  for (const c of r.candidates) {
+    if (c.source === 'comment') {
+      if (c.file_path) read.add(c.file_path.replace(/\\/g, '/'));
+    } else if (c.source === 'doc') {
+      const m = /^(.*):\d+$/.exec(c.ref);
+      if (m && m[1]) read.add(m[1].replace(/\\/g, '/'));
+    }
+  }
+  if (read.size > 0) touched.read_files = [...read];
+
+  // ★ 不给 written_files：本 [B] 只产出 draft 候选，**不写任何文件/DSL**（LLM review 定稿后再另行写入）。
+  // ★ 不给 symbols / nodes：候选里没有符号 / DSL 节点标识可取。
+
+  return touched;
+}
+
+export function harvestDecisions(input: HarvestInput): TouchedProduct<HarvestResult> {
+  const r = harvestDecisionsCore(input);
+  return withTouched(r, touchedOf(input, r));
 }

@@ -24,6 +24,7 @@ import path from 'node:path';
 import { getDSL } from '../../infrastructure/storage.js';
 import { getProjectCacheDb, projectCacheDbPath, type Database } from '../../infrastructure/index/db.js';
 import { buildImportGraph } from '../../infrastructure/graph/import_graph.js';
+import { withTouched, type Touched, type TouchedProduct } from '../../domain/b_terms.js';
 
 export interface HarvestClosureInput {
   /** 被分析项目的根目录（其下 .agent-io/cache.db 是符号缓存） */
@@ -140,7 +141,7 @@ function toRel(root: string, p: string): string {
   return path.relative(root, abs).split(path.sep).join('/');
 }
 
-export function harvestClosure(input: HarvestClosureInput): HarvestClosureResult {
+function harvestClosureCore(input: HarvestClosureInput): HarvestClosureResult {
   const { project_dir, files, feature, include_callers = false, max_depth = 30 } = input;
   const root = path.resolve(project_dir);
   const warnings: string[] = [];
@@ -434,4 +435,45 @@ export function harvestClosure(input: HarvestClosureInput): HarvestClosureResult
     },
     message,
   };
+}
+
+/**
+ * ★ 唯一的构造点：把"我动了什么"集中算一次，所有出口都从这一个地方出去。
+ *
+ * 口径（`Touched` 两类字段，见 domain/b_terms.ts:42-89）：
+ *   - 作用域类（`project_dir` / `feature`）：随时可给，不依赖成败；
+ *   - 对象类（`written_files` / `read_files` / `symbols` / `nodes`）：只有**真发生**才给，否则整项省略。
+ */
+function touchedOf(input: HarvestClosureInput, r: HarvestClosureResult): Touched {
+  const touched: Touched = {};
+
+  // project_dir：★ 填**解析后的绝对根**（= Core 里 `path.resolve(project_dir)`，见 145 行）；
+  //   与产物顶层 `project_dir` 同值（顶层那份重复见报告单列项）。
+  touched.project_dir = path.resolve(input.project_dir);
+  // feature：作用域类，随时可给；入参没给则省略（本 [B] 的 feature 是可选的）。
+  //   ★ 产物顶层**没有** feature，此项不构成"同一事实两个名字"。
+  if (input.feature) touched.feature = input.feature;
+
+  // nodes：本次由 `feature` 的语义层映射出的 **DSL 文件节点 id**（`internal_files[].dsl_node_id`，
+  //   来源 Core 394-395 行 `semanticPathToNodeId.get(p)`）。它是"本次涉及的 DSL 节点"的确立事实，
+  //   下游可直接据此接上 DSL 侧。取不到（未给 feature / 未命中语义层）⇒ 整项省略，不给空数组。
+  const nodes = new Set<string>();
+  for (const f of r.internal_files) if (f.dsl_node_id) nodes.add(f.dsl_node_id);
+  if (nodes.size > 0) touched.nodes = [...nodes];
+
+  // ★★ 不给 read_files —— 已**读代码判定**，不是"照名字填"：
+  //   本 [B] 的 `internal_files`（闭包结果）**不是"读过的文件"**。整条闭包由 `cache.db` 的
+  //   `files`/`edges`/`imports` 表经 `buildImportGraph` 的**索引推算**得出（见 187 行），
+  //   实现里**没有**逐文件 `readFileSync` 被闭包文件。真正读磁盘的只有两处，且都不进产物：
+  //     ① `readGoModules(root)`（import_graph.ts:68）读 go.mod —— 那是依赖清单，不是闭包对象；
+  //     ② go:embed 补全（302-309 行）只读闭包内 .go 文件的源码。
+  //   把 `internal_files` 塞进 `read_files` 会谎称"读了这些文件"，污染口径 ⇒ **省略**。
+  // ★ 不给 written_files：本 [B] 只读不写（无落盘动作）。
+
+  return touched;
+}
+
+export function harvestClosure(input: HarvestClosureInput): TouchedProduct<HarvestClosureResult> {
+  const r = harvestClosureCore(input);
+  return withTouched(r, touchedOf(input, r));
 }
