@@ -16,10 +16,10 @@
 
 import path from 'node:path';
 import fs from 'node:fs';
-import type { BrickifyResult } from '../../application/design/bricks/brickify.js';
-import type { AnatomyResult } from '../../application/design/bricks/classify_bricks.js';
-import type { ClusterNarratives } from '../../application/design/bricks/cluster_narrator.js';
-import { buildWorkbenchData, type WorkbenchData, type WorkbenchIssue, type WorkbenchSlot } from '../../application/design/workbench/workbench_data.js';
+import type { BrickifyResult } from '../../../application/design/bricks/brickify.js';
+import type { AnatomyResult } from '../../../application/design/bricks/classify_bricks.js';
+import type { ClusterNarratives } from '../../../application/design/bricks/cluster_narrator.js';
+import { buildWorkbenchData, type WorkbenchData, type WorkbenchIssue, type WorkbenchSlot } from '../../../application/design/workbench/workbench_data.js';
 import { WORKBENCH_SHELL_CSS } from './workbench_shell_css.js';
 
 function esc(s: string): string {

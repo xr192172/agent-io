@@ -15,9 +15,9 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import type { BrickifyResult, BrickSubCluster, BrickifyBrick } from '../../application/design/bricks/brickify.js';
-import { roleOfFile } from '../../application/design/bricks/brickify.js';
-import type { ClusterNarratives } from '../../application/design/bricks/cluster_narrator.js';
+import type { BrickifyResult, BrickSubCluster, BrickifyBrick } from '../../../application/design/bricks/brickify.js';
+import { roleOfFile } from '../../../application/design/bricks/brickify.js';
+import type { ClusterNarratives } from '../../../application/design/bricks/cluster_narrator.js';
 
 const ROLE_CLS: Record<string, string> = { brick: 'r-brick', contract: 'r-contract', glue: 'r-glue' };
 const ROLE_TXT: Record<string, string> = { brick: '功能', contract: '契约', glue: '胶水' };

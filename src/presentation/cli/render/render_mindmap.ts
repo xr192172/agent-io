@@ -9,7 +9,7 @@
  */
 
 import path from 'node:path';
-import type { BrickifyResult, Community, BrickSubCluster, BrickifyBrick } from '../../application/design/bricks/brickify.js';
+import type { BrickifyResult, Community, BrickSubCluster, BrickifyBrick } from '../../../application/design/bricks/brickify.js';
 
 /** 渲染树节点（序列化进 <script>，JS 递归展开） */
 export interface MNode {

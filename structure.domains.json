@@ -349,7 +349,13 @@
       "id": "cli-surface",
       "layer": "presentation",
       "dir": "src/presentation/cli",
-      "note": "CLI 入口面（22 个文件）：render_* / *cli.ts。每个文件 = 一条命令，命令之间**并列**、不互相拥有 ⇒ 平铺是终态。"
+      "note": "CLI 入口面（14 个文件）：`cli.ts` + 各 `*_cli.ts` + `deprecate_offline.ts`（被 `*_cli` 引用的逻辑）。每个文件 = 一条命令，命令之间**并列**、不互相拥有 ⇒ 平铺是终态。★ 2026-10-05 拆出 `cli/render/`（见 `cli-render`）：原 22 文件里 7 个 renderer + 1 个 CSS 是「被 `brickify_cli` 引用的**渲染子库**」，不是命令 ⇒ 它们让本条 note 的理由（\"每个文件 = 一条命令\"）**对它们不成立**；拆掉后本条才**真的是**平铺终态。"
+    },
+    {
+      "id": "cli-render",
+      "layer": "presentation",
+      "dir": "src/presentation/cli/render",
+      "note": "渲染子库（8 个文件）：brickify 工作台的 HTML 渲染器（`render_anatomy` / `render_cluster_workbench` / `render_dep_canvas` / `render_mindmap` / `render_tools_map` / `render_wizard` / `render_workbench`）+ 工作台壳 CSS 原样快照（`workbench_shell_css`，1175 行）。★ 它们**不是命令入口** —— 唯一引用者是 `cli/brickify_cli.ts`。2026-10-05 从 `presentation/cli/` 拆出（T42 方案 A）。"
     },
     {
       "id": "infra-shared",
