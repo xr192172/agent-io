@@ -1,7 +1,11 @@
 # [B] 契约术语表（**受控词表**）
 
-> 权威定义在 **`src/domain/b_terms.ts`**（`B_TERMS` + `Touched`）；本文件由它**生成**：
-> `node scripts/measure_b_contract.mjs --glossary > docs/glossary.md`
+> 权威定义在 **`src/domain/b_terms.ts`**（`B_TERMS` + `Touched`）。
+> ★★ **本文件不是纯生成的**：生成器（`node scripts/measure_b_contract.mjs --glossary`）只产出
+>   下面「## 术语表」那一节；**开头这几段与「三条读法 / 为什么要它」是手写的**（用户 2026-10-01 裁定）。
+>   ⇒ **不要直接 `--glossary > docs/glossary.md`** —— 那会把上面几段**静默冲掉**
+>   （2026-10-05 实测丢过一次：10703 → 8915 字节）。**安全重生成** = 只替换「## 术语表」那一节，
+>   手写部分原样保留（`head -n <术语表前一行> 旧文件 > 新 && 生成器输出 >> 新`）。
 > 生成器**直读源码 AST**（不依赖构建 ⇒ 不会读到陈旧 dist）。
 >
 > ## 三条读法（用户 2026-10-01 裁定）
@@ -29,9 +33,11 @@
 > 覆盖范围：出现在 **≥2 个 [B]** 里的字段名（只服务 1 个 [B] 的私有字段不受约束 —— 实测占 80%）。
 > ★★ **新写 [B] 时字段名从本表选**；表里没有 ⇒ 要么加进来（写含义），要么它是你这个 [B] 的私有字段。
 
-**机检**：共用字段名 **58** 个 ｜ 表里有定义 **58** ｜ ★ 未定义 **0**
+**机检**：共用字段名 **42** 个 ｜ 表里有定义 **40** ｜ ★ 未定义 **2**
 
-**债务**：`debt: true` **39** 条（棘轮：只许减不许增）。
+⚠️ 未定义的共用字段名：`error` `touched`
+
+**债务**：`debt: true` **38** 条（棘轮：只许减不许增）。
 
 ### anchor —— 链的接口（下游能拿它当原料）
 
@@ -78,7 +84,6 @@
 |---|---|---|---|
 | `file` | `string` | **单个**文件（仓库相对路径）；多个用 `written_files`/`read_files` |  |
 | `files` ★ | `string[]` | ★ **已被污染**：产物侧一个名字有 **6 种类型**（`string[]` / `FileContractReport[]` / `BrickFileReconcileReport[]` / `SlimFileReport[]` / `FileReconcileReport[]` / `FileRemoval[]`） | **★ **拆名**：路径表 → `written_files`/`read_files`；报告数组 → `<领域>_reports`（如 `contract_reports`）** |
-| `box_dir` ★ | `string` | **积木盒根**（`<storage>/bricks`）——★ 不是项目根 | **保留但**必须**与 `project_dir` 区分；禁止当项目根传** |
 | `project_root` ★ | `string` | 与 `project_dir` **同义** | **并入 `project_dir`** |
 | `source_path` | `string` | 输入物的来源路径（文件或 URL） |  |
 | `events_files` | `string[]` | 观测事件（JSONL）文件路径表 |  |

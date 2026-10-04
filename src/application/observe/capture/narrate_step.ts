@@ -5,22 +5,21 @@
  *   「进料口 → 工序 → 出料口」，三段式，数据形态（input/output 针脚）由契约投影
  *   （actual_apis[0] 签名 → projectSignature）产生，是代码事实、非 LLM 编造。
  *
- * 使用自有 MCP 抽取、登记为「砖」接入积木体系：
- *   - 盒内写 manifest.json（BrickManifest 契约）
+ * 使用自有 MCP 抽取、登记为「砖」：
  *   - DSL semantic 落一条 brick_narr_* 条目 → 思维导图「🧱 已验证积木」区自动出卡
+ *     ★ 2026-10-05：原先还写一份**盒内** manifest.json（BrickManifest）；积木盒族已删
+ *       ⇒ 那份产物**无消费者**，已停写（同一次还删掉了它的目录创建）。
  *
  * 忠实纪律：分镜的 facts 逐条引用真实针脚与签名；人话只做名词翻译，不发明类型/流程。
  */
 
-import fs from 'node:fs';
 import path from 'node:path';
-import { getDSL, saveDSL, getStorageRoot } from '../../../infrastructure/storage.js';
+import { getDSL, saveDSL } from '../../../infrastructure/storage.js';
 import { fileFacts } from '../../../infrastructure/index/file_facts.js';
 import { projectSignature } from '../../meta/view/derive_mind_map.js';
 import { buildScenes, humanOf } from '../../../domain/narration.js';
 import type { NarrScene } from '../../../domain/narration.js';
 import type { TeachPin } from '../../../domain/mindmap.js';
-import type { BrickManifest } from '../../../domain/contract.js';
 import type { SemanticFile } from '../../../domain/types.js';
 
 export interface NarrateStepInput {
@@ -49,7 +48,6 @@ export interface NarrateStepResult {
   brick?: {
     id: string;
     name: string;
-    manifest: string;
     message: string;
   };
   message: string;
@@ -99,34 +97,13 @@ export function narrateStep(input: NarrateStepInput): NarrateStepResult {
   let brick: NarrateStepResult['brick'];
 
   if (write) {
-    // ── 1) 盒内登记：BrickManifest 契约 ──
-    const boxRoot = path.join(getStorageRoot(), 'bricks');
+    // ★ 2026-10-05：**不再写 `<storage>/bricks/<name>/manifest.json`**。
+    //   积木盒那一族（search / assemble / slim / reconcile）已删 ⇒ 那个盒内产物
+    //   **已无任何消费者工具**，写了只会造一堆没人读的文件（且每次调用都建目录）。
+    //   叙事砖**真正的消费口**是下面这条 DSL 条目（导图「🧱 已验证积木」区出卡）。
     const brickName = `${feature}-narr-${slug(file)}`;
-    const brickDir = path.join(boxRoot, brickName);
-    fs.mkdirSync(brickDir, { recursive: true });
-    const manifest: BrickManifest = {
-      name: brickName,
-      schema_version: 1,
-      description: `把「${title}」讲成人话的叙事砖：进料口→工序→出料口，数据形态来自契约投影（非 LLM 编造）。`,
-      seed_files: [file],
-      closure: { internal: [], external: [] },
-      aggregate: {
-        exposes: pins.inputs.length + pins.outputs.length > 0
-          ? [...pins.inputs, ...pins.outputs].map((p) => ({ name: p.n, kind: 'struct' as const, fields: [], origin: 'ast' as const }))
-          : [],
-        consumes: pins.inputs.map((p) => ({ name: p.n, kind: 'struct' as const, fields: [], origin: 'ast' as const })),
-        emits: scenes.map((s) => s.title),
-        reads_config: [],
-        irreversible_effects: 0,
-      },
-      acceptance: {
-        effect_check: `人打开该叙事砖，能看明白「${title}」这一步吃了什么、做什么、吐出什么（分镜 facts 逐条对应真实签名针脚）。`,
-      },
-    };
-    const manifestFile = path.join(brickDir, 'manifest.json');
-    fs.writeFileSync(manifestFile, JSON.stringify(manifest, null, 2), 'utf-8');
 
-    // ── 2) DSL semantic 落 brick_narr_* 条目 → 导图「🧱 已验证积木」区出卡 ──
+    // ── 登记：DSL semantic 落 brick_narr_* 条目 → 导图「🧱 已验证积木」区出卡 ──
     const bid = `brick_narr_${slug(file)}`;
     dsl.semantic = dsl.semantic ?? { files: [] };
     const existed = dsl.semantic.files.some((f) => f.id === bid);
@@ -141,8 +118,8 @@ export function narrateStep(input: NarrateStepInput): NarrateStepResult {
       });
       saveDSL(dsl, 'mcp');
     }
-    brick = { id: bid, name: brickName, manifest: manifestFile, message: `${manifestFile}`, };
-    message += `，并已登记为砖（${brickName}），进思维导图积木区（${existed ? '已存在，复用' : '新增'}）`;
+    brick = { id: bid, name: brickName, message: `DSL 条目 ${bid}（导图「🧱 已验证积木」区出卡）` };
+    message += `，并已登记为叙事砖（${bid}），进思维导图积木区（${existed ? '已存在，复用' : '新增'}）`;
   }
 
   return { feature, file, title, pins, scenes, mode: 'rule', brick, message };

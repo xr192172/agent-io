@@ -62,7 +62,8 @@ export interface Touched {
   feature?: string;
   /** 作用到的**项目根**（一个仓库的根目录）。
    *  依据：入参侧 17 个 [B] 已用 `project_dir: string`（同名同型，真共用）。
-   *  ★ **不并** `box_dir` / `brick_dir` / `slim_dir` / `target_dir` —— 实测它们是**盒根**，不是项目根。
+   *  ★ **不并** `target_dir`（它是**目标目录**，不是"被分析项目的根"）—— 2026-10-01 实测的
+   *    同类还有 `box_dir` / `brick_dir` / `slim_dir`，但**它们已随积木盒族一起删除**（2026-10-05）。
    *  ★ 口径（2026-10-01 由 ④-b 执行者的追问定下）：填**解析后的绝对根**（`path.resolve(...)`），
    *    不是入参原值（入参可能是相对路径）。 */
   project_dir?: string;
@@ -214,13 +215,6 @@ export const B_TERMS: Record<string, BTerm> = {
     meaning: '★ **已被污染**：产物侧一个名字有 **6 种类型**（`string[]` / `FileContractReport[]` / `BrickFileReconcileReport[]` / `SlimFileReport[]` / `FileReconcileReport[]` / `FileRemoval[]`）',
     debt: true,
     fix: '★ **拆名**：路径表 → `written_files`/`read_files`；报告数组 → `<领域>_reports`（如 `contract_reports`）',
-  },
-  box_dir: {
-    kind: 'context',
-    type: 'string',
-    meaning: '**积木盒根**（`<storage>/bricks`）——★ 不是项目根',
-    debt: true,
-    fix: '保留但**必须**与 `project_dir` 区分；禁止当项目根传',
   },
   project_root: {
     kind: 'context',

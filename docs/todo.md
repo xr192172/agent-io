@@ -388,6 +388,23 @@
       ⇒ ★ **未核实项**（文档 §10 已列）：WASM CM 的真实成熟度（未查各语言支持矩阵）· uniffi/napi 的许可证
         （若 adopt，按 `oss-prior-art-first` §3.5 必须先看许可）· "⑤ 无通用解"是判断而非查到的结论（**实验 1 可证伪它**）。
 
+- [ ] **T44 ★ 清掉「拼装区黑箱折叠」这条死路（生产者已删 ⇒ 代码在但永不触发）**
+      *(核实：2026-10-05 —— 查 `readAssemblyBricks` 的真 import 与调用点。)*
+      ⇒ `src/infrastructure/graph/import_project.ts` 的 `readAssemblyBricks()`（读拼装区 `assembly.json`）
+        + 它的唯一调用点（`import_project.ts:1113` 的 `brickFolds`）+ `derive_mind_map.ts` 里对应的
+        「积木折叠 / 黑盒卡片」分支 + `BrickFoldInfo` 类型 + `BrickManifest['aggregate']` 依赖。
+      ⇒ **为什么是死路**：`assembly.json` 的**生产者是 `assemble_bricks`**，已在 `75e66d0` 删除
+        ⇒ 该文件永不出现 ⇒ `readAssemblyBricks` **恒返回 `[]`** ⇒ 整条分支是死代码。
+      ⇒ **判据**：`grep -rn "readAssemblyBricks\|BrickFoldInfo\|assembly\.json" src` 应只剩删除后的零引用；
+        `tsc` 0；`npm run build` 0；`npm run structure:gap` 三态仍全 0。
+      ⇒ ★ 与 **T41**（报错口吻）不同族：这是**死路清尾**，属"删族"的尾巴（见 `dc-remove-tool` §一）。
+
+- [ ] **T45 ★ 术语表机检报出 2 个未定义共用字段名：`error` / `touched`**（2026-10-05 首次非零）
+      *(核实：`node scripts/measure_b_contract.mjs` 的**机检**行，实测 `共用 42 / 有定义 40 / ★未定义 2`。)*
+      ⇒ 含义：这两个名字被 **≥2 个 [B]** 用作字段名，却**不在 `B_TERMS`**（受控词表）里。
+      ★ `touched` **正是 T18 的契约字段** ⇒ 它的含义应在 T18 落地时一并写进 `B_TERMS`（而不是留个洞）。
+      ⇒ `error` 需先查是哪两个 [B] 在用、是不是同一件事（★ 按纪律：**不看清类型与语义不许合并**）。
+
 - [ ] **T42 ★★ 结构重排三案（独立结构评审 2026-10-05；"层"这根轴清楚，"层内靠什么切"没有统一口径）**
       *(核实：独立子代理只读目录结构后报告；我复核了 `ls src/presentation/cli/`（22 文件）与行数。)*
       ⇒ **方案 A ✅ 已做（2026-10-05，commit `2a5c353`）**：拆 `presentation/cli/` —— 8 个
