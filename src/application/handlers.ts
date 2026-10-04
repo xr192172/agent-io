@@ -24,7 +24,7 @@ import { archiveNode, listArchive } from './meta/archive/archive_node.js';
 import { checkConsistency } from './design/intent/consistency.js';
 import { deriveMindMap } from './meta/view/derive_mind_map.js';
 import { detectDrift } from './design/intent/detect_drift.js';
-import { diffViews } from './refactor/rf-view/diff_views.js';
+import { diffViews } from './refactor/diff_views/diff_views.js';
 import { EXPLORE_ACTIONS, exploreCode } from './meta/explore/explore_code.js';
 import { exportMarkdown, exportSvg } from '../infrastructure/render/export.js';
 import { harvestDecisions } from './harvest/harvest_decisions.js';

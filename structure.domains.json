@@ -60,7 +60,7 @@
       "id": "rules",
       "layer": "infrastructure",
       "dir": "src/infrastructure/rules",
-      "note": "规则匹配引擎：`rule_match` = `$hole` 元变量 + `...` 省略号（对齐 **GritQL** 的能力子集，二层匹配：块级粗筛→窗口级精配）；`rule_tokens` = 行/token 小工具（被 `rule_apply` / `rule_extract` / 测试**共用**，单独成模块是为了避免三处各写一遍造成口径漂移）。★ 2026-10-03 从 `infrastructure/parse/` **归位**：它们不做解析，是**模式匹配**；消费方是 `rules` 工具（`application/refactor/rf-rules`）。"
+      "note": "规则匹配引擎：`rule_match` = `$hole` 元变量 + `...` 省略号（对齐 **GritQL** 的能力子集，二层匹配：块级粗筛→窗口级精配）；`rule_tokens` = 行/token 小工具（被 `rule_apply` / `rule_extract` / 测试**共用**，单独成模块是为了避免三处各写一遍造成口径漂移）。★ 2026-10-03 从 `infrastructure/parse/` **归位**：它们不做解析，是**模式匹配**；消费方是 `rules` 工具（`application/refactor/rule_library`）。"
     },
     {
       "id": "text",
@@ -200,64 +200,64 @@
       "note": "**意图 / 漂移 / 一致性族**：`set_design_intent`（设计意图 why：goals + edge_intents，或 propose 审批卡）/ `detect_drift`（DSL 与代码的语义漂移）/ `consistency`（expected_apis vs 实际实现的一致性检查，`detect_drift` 的底座）。"
     },
     {
-      "id": "rf-rename",
+      "id": "rename",
       "layer": "application",
-      "dir": "src/application/refactor/rf-rename",
+      "dir": "src/application/refactor/rename",
       "note": "改名族：文件改名（单/批）/ 局部变量改名 / 模块级符号改名的**工具入口** / 跨文件移符号"
     },
     {
-      "id": "rf-find",
+      "id": "find",
       "layer": "application",
-      "dir": "src/application/refactor/rf-find",
+      "dir": "src/application/refactor/find",
       "note": "查找与建议：引用查找（含 field/type 结构引用引擎）/ 相似名聚类 / 短变量命名建议"
     },
     {
-      "id": "rf-edit",
+      "id": "edit",
       "layer": "application",
-      "dir": "src/application/refactor/rf-edit",
+      "dir": "src/application/refactor/edit",
       "note": "编辑与边界：符号级编辑 / 统一落盘适配 / 死导入清理 / 扫描边界契约"
     },
     {
-      "id": "rf-rules",
+      "id": "rule_library",
       "layer": "application",
-      "dir": "src/application/refactor/rf-rules",
+      "dir": "src/application/refactor/rule_library",
       "note": "规则族：规则库 / 规则提取 / 规则应用"
     },
     {
-      "id": "rf-pipeline",
+      "id": "pipeline",
       "layer": "application",
-      "dir": "src/application/refactor/rf-pipeline",
+      "dir": "src/application/refactor/pipeline",
       "note": "流水线与裁决：确定性重构管线 / 可评审可重放的改装计划 / LLM 评审闸"
     },
     {
-      "id": "rf-snapshot",
+      "id": "snapshot",
       "layer": "application",
-      "dir": "src/application/refactor/rf-snapshot",
+      "dir": "src/application/refactor/snapshot",
       "note": "快照与保护：代码文件回滚快照 / 冻结行保护"
     },
     {
-      "id": "rf-view",
+      "id": "diff_views",
       "layer": "application",
-      "dir": "src/application/refactor/rf-view",
+      "dir": "src/application/refactor/diff_views",
       "note": "视图对比：设计视图 vs 实际代码快照"
     },
     {
-      "id": "rf-annotate",
+      "id": "annotate",
       "layer": "application",
-      "dir": "src/application/refactor/rf-annotate",
+      "dir": "src/application/refactor/annotate",
       "note": "函数语义注释：扫描覆盖 → LLM 补全 → body 指纹同步过期"
     },
     {
-      "id": "rf-parse",
+      "id": "parse_capability",
       "layer": "application",
-      "dir": "src/application/refactor/rf-parse",
+      "dir": "src/application/refactor/parse_capability",
       "note": "解析能力自述（按语言如实声明索引能力）"
     },
     {
       "id": "cross",
       "layer": "application",
       "dir": "src/application/cross",
-      "note": "跨项目/跨语言能力线（index.ts 即该线归属的唯一来源）：`project_root` = 项目根自动定位（向上找 .git → 退化到 manifest）+ 沿 import 边的动态闭包边界，消除「必须显式传 project_dir」的使用摩擦，被 rename_symbol / rf-find / rf-rename / detect_drift 等多处复用。"
+      "note": "跨项目/跨语言能力线（index.ts 即该线归属的唯一来源）：`project_root` = 项目根自动定位（向上找 .git → 退化到 manifest）+ 沿 import 边的动态闭包边界，消除「必须显式传 project_dir」的使用摩擦，被 rename_symbol / find / rename / detect_drift 等多处复用。"
     },
     {
       "id": "harvest",
@@ -269,7 +269,7 @@
       "id": "rf-rename-symbol",
       "layer": "application",
       "dir": "src/application/refactor/rename_symbol",
-      "note": "模块级符号跨文件改名**引擎**：`core`（语言无关骨架：编辑应用 / 相对 import 解析 / 作用域栈）+ `parts`（语言无关接线层）+ `languages/{registry,typescript,go,python,java,c,csharp}`（语言包）。★ `parts` 单独成文件是为断 `core → languages/registry → 语言包 → core` 的环（实测曾 9 条）。★ 与 `rf-rename` 域不同：那里的工具是**入口**，本域是**引擎**。"
+      "note": "模块级符号跨文件改名**引擎**：`core`（语言无关骨架：编辑应用 / 相对 import 解析 / 作用域栈）+ `parts`（语言无关接线层）+ `languages/{registry,typescript,go,python,java,c,csharp}`（语言包）。★ `parts` 单独成文件是为断 `core → languages/registry → 语言包 → core` 的环（实测曾 9 条）。★ 与 `rename` 域不同：那里的工具是**入口**，本域是**引擎**。"
     },
     {
       "id": "rf-package-migration",
@@ -355,7 +355,7 @@
       "id": "infra-shared",
       "layer": "infrastructure",
       "dir": "src/infrastructure",
-      "note": "基础设施横切件（12 个文件）：data_dir / storage / storage_overlay / git / exec_guard / dictionary / alert_inbox / dogfood_stats / llm_focus / project_view / verify_refactor / **scan_bounds**。被各层共用、彼此无父子关系 ⇒ 平铺是终态。★ 它**同时是容器**：`analysis/` 与 `parse/ index/ render/ graph/ daemon/ packages/ rules/ text/` 是**已登记的子域**（2026-10-04 收口，unlisted 归零）。**flat 只说「直属 .ts 是成员」，不管子目录** —— 子目录按 domains 条目各自判。★ `scan_bounds` 于 2026-10-04 从 `application/refactor/rf-edit/` 下沉到此（它是零依赖的纯契约：两个 interface + 一个纯函数，却被放在某条 refactor 子线里，导致 infrastructure 反向 import application）。"
+      "note": "基础设施横切件（12 个文件）：data_dir / storage / storage_overlay / git / exec_guard / dictionary / alert_inbox / dogfood_stats / llm_focus / project_view / verify_refactor / **scan_bounds**。被各层共用、彼此无父子关系 ⇒ 平铺是终态。★ 它**同时是容器**：`analysis/` 与 `parse/ index/ render/ graph/ daemon/ packages/ rules/ text/` 是**已登记的子域**（2026-10-04 收口，unlisted 归零）。**flat 只说「直属 .ts 是成员」，不管子目录** —— 子目录按 domains 条目各自判。★ `scan_bounds` 于 2026-10-04 从 `application/refactor/edit/` 下沉到此（它是零依赖的纯契约：两个 interface + 一个纯函数，却被放在某条 refactor 子线里，导致 infrastructure 反向 import application）。"
     },
     {
       "id": "flat-application",

@@ -18,7 +18,7 @@ import { DATA_DIR_NAME } from '../../../infrastructure/data_dir.js';
 import path from 'node:path';
 import { getProjectCacheDb } from '../../../infrastructure/index/db.js';
 import { importProject } from '../../../infrastructure/graph/import_project.js';
-import { diffViews, type DiffViewsResult } from '../../refactor/rf-view/diff_views.js';
+import { diffViews, type DiffViewsResult } from '../../refactor/diff_views/diff_views.js';
 import { detectDrift, type DriftData } from '../../design/intent/detect_drift.js';
 import { diffImpact } from '../../../infrastructure/analysis/impact/diff_impact.js';
 import { runImpactReport, readImpactReport, listImpactReports } from '../../meta/impact/impact_report.js';

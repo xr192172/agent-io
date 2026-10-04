@@ -155,7 +155,7 @@ function hashSetsOf(rows: Array<{ qualified_name: string; sym_hash: string | nul
  * ★ 可选 `exts`（T13）：透传给 `resolveImportPath` 的候选扩展名表。**默认不传时走
  *   `IMPORT_EXTS`（行为与历史逐字一致）** —— 本函数的既有消费者（`applyParsedToIndex`
  *   的 import 边、`findCrossFileTarget` 的跨文件解析）都保持默认口径，不受本参数影响。
- *   传入方（`rf-rename/rename_file.ts`）是为了让"TS/JS 家族"与内核注册表的扩展名口径对齐：
+ *   传入方（`rename/rename_file.ts`）是为了让"TS/JS 家族"与内核注册表的扩展名口径对齐：
  *   `IMPORT_EXTS` 不含 `.mts/.cts`，而 `TS_JS_EXTS` 含 ⇒ 不传就会漏认这两种文件的引用。
  *   ★ 只传 `exts` 而非 `indexFiles`：index 回退（`./foo` → `./foo/index.ts`）语义未变。
  */

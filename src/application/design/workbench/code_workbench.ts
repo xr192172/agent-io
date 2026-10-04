@@ -25,8 +25,8 @@ import { getStorageRoot, getDSL, saveDSL } from '../../../infrastructure/storage
 import { loadOverlay, saveOverlay } from '../../../infrastructure/storage_overlay.js';
 import { reconcileOverlay, buildCandidates, buildEdgeCandidates, seedOverlayFromDsl, applyOverlay, type OverlayGoal } from '../../../domain/overlay.js';
 import { setDesignIntent, type DesignEdgeIntentWrite } from '../intent/set_design_intent.js';
-import { renameFile, type RenameFileInput } from '../../refactor/rf-rename/rename_file.js';
-import { editCode, type EditCodeArgs } from '../../refactor/rf-edit/edit_code.js';
+import { renameFile, type RenameFileInput } from '../../refactor/rename/rename_file.js';
+import { editCode, type EditCodeArgs } from '../../refactor/edit/edit_code.js';
 import type { DesignDSL } from '../../../domain/types.js';
 
 // ─────────────────────────────────────────────────────────────
@@ -206,7 +206,7 @@ async function previewEditRange(project_dir: string, op: ChangeOp): Promise<{ di
     },
   ];
   // 官方 dry-run（验证语法门 + 取区间穿透告警）
-  const { editCode: ec } = await import('../../refactor/rf-edit/edit_code.js');
+  const { editCode: ec } = await import('../../refactor/edit/edit_code.js');
   const dry = await ec(
     Object.assign({ project_dir, file, op: 'range', start, end, code: op.code, dry_run: true } as EditCodeArgs),
   );
@@ -237,7 +237,7 @@ async function previewSplitPlan(project_dir: string, op: ChangeOp): Promise<{ di
     { file, kind: 'replace', before, after, note: `1 行 → ${added.length} 行（顶部插入拆分标记）` },
   ];
   // 官方 dry-run（验证语法门 + 区间穿透告警）
-  const { editCode: ec } = await import('../../refactor/rf-edit/edit_code.js');
+  const { editCode: ec } = await import('../../refactor/edit/edit_code.js');
   const dry = await ec(
     Object.assign({ project_dir, file, op: 'range', start, end, code, dry_run: true } as EditCodeArgs),
   );

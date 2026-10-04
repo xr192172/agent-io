@@ -34,7 +34,7 @@ const SPEC_PLAIN_RE = /^[A-Za-z_$][\w$]*$/;
  *     · `cli_extract`：把 CLI 文件里引用的 handler 反查回模块（同样是**本地名**）。
  *   而本函数原先（两份逐字相同的旧实现）只收 `as` **前面**的远名 ⇒ 一旦有人写成
  *   `import { applyMatch as applyOneMatch } from './rule_match.js'`，查 `applyOneMatch` 就会落空。
- *   实测本仓已有 4 处带别名的相对具名 import（如 `src/application/refactor/rf-rules/rule_apply.ts:26`），
+ *   实测本仓已有 4 处带别名的相对具名 import（如 `src/application/refactor/rule_library/rule_apply.ts:26`），
  *   只是都不在"被反查"的位置上 —— 属**潜伏**缺陷。
  *   两名字都收是**严格增量**：旧行为（远名可用）保留，新行为（本地名也可用）补上，不丢任何能力。
  *   （与本模块"轻量文本快照、宁可多收"的定位一致；真要区分远名/本地名请走 AST。）

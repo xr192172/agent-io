@@ -35,7 +35,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { parseFileFull, type ParsedSymbol } from '../../../infrastructure/parse/index.js';
 import { splitKeepEnds } from '../../../infrastructure/text/line_utils.js';
-import { matchSymbols, describeSymbol } from '../../refactor/rf-edit/edit_code.js';
+import { matchSymbols, describeSymbol } from '../../refactor/edit/edit_code.js';
 
 export const EXPLORE_ACTIONS = [
   'search',

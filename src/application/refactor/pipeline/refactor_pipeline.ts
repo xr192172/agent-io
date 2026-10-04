@@ -24,7 +24,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { defaultVerifyCommands, runVerification, type VerifyCommand, type VerificationOutcome } from '../../../infrastructure/verify_refactor.js';
 import { flagDeadStatements, applyReachabilityRuns } from '../../../infrastructure/analysis/deadcode/dead_statements.js';
-import { removeImportsFromSource } from '../rf-edit/remove_dead_imports.js';
+import { removeImportsFromSource } from '../edit/remove_dead_imports.js';
 import { detectDeadImports } from '../../../infrastructure/analysis/deadcode/detect_dead_imports.js';
 import { computeMigrationPlan } from '../package_migration/index.js';
 import { parseAstRoot } from '../../../infrastructure/parse/index.js';
@@ -46,7 +46,7 @@ import { javaExecutor } from '../../../infrastructure/analysis/refactor/langs/ja
 import type { JudgeIssue } from './refactor_judge.js';
 import { scanContracts, diffContracts, type ContractSnapshot, type ScanContractsOptions, type UndefinedRef } from '../../../infrastructure/analysis/contract_gate/index.js';
 import { checkEmbedSubmissions, type SubmitCheckResult } from '../../../infrastructure/analysis/gate/submit_gate.js';
-import { planFunctionAnnotation } from '../rf-annotate/function_annotation.js';
+import { planFunctionAnnotation } from '../annotate/function_annotation.js';
 import { syncSelfWrites, recordSelfWrite, writeThroughLine } from '../../observe/runtime/write_gate.js';
 
 // re-export 契约类型（向后兼容：外部可从本模块取用）

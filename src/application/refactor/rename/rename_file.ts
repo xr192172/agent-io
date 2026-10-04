@@ -22,7 +22,7 @@ import { parseAstRoot, type SyntaxNodeLike } from '../../../infrastructure/parse
 import { TS_JS_EXTS } from '../../../infrastructure/parse/index.js';
 import { resolveImportTarget, syncFile, removeFile } from '../../../infrastructure/index/symbols.js';
 import { getProjectCacheDb, closeProjectCacheDb } from '../../../infrastructure/index/db.js';
-import { createProtectGuard } from '../rf-snapshot/protect.js';
+import { createProtectGuard } from '../snapshot/protect.js';
 import { reopenAndResolveAfterWrite } from '../../observe/runtime/write_gate.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 

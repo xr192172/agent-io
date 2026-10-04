@@ -48,7 +48,7 @@ import { parseFileFull, parseAstRoot, type ParsedSymbol } from '../../../infrast
 import { syncFile } from '../../../infrastructure/index/symbols.js';
 import { getProjectCacheDb } from '../../../infrastructure/index/db.js';
 import { splitKeepEnds, detectEol, isBlankLine } from '../../../infrastructure/text/line_utils.js';
-import { snapshotBeforeWrite } from '../rf-snapshot/file_snapshot.js';
+import { snapshotBeforeWrite } from '../snapshot/file_snapshot.js';
 import { reopenAndResolveAfterWrite, reopenNote, toRelPosix } from '../../observe/runtime/write_gate.js';
 import { locateReplaceText, realignNewTextTo, FUZZY_LEVEL_LABEL } from '../../../infrastructure/parse/fuzzy_match.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';

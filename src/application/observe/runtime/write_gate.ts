@@ -53,7 +53,7 @@ import path from 'node:path';
 import { getProjectCacheDb, beginBatch, endBatch, projectCacheDbPath, type Database } from '../../../infrastructure/index/db.js';
 import { syncFile, syncFileSync, removeFile, changedSymbolNames, reopenRefsTo, resolveCrossFileCalls, type SyncStatus, type CrossFileResolveStats } from '../../../infrastructure/index/symbols.js';
 import { canParseFileSync } from '../../../infrastructure/parse/index.js';
-import { snapshotBeforeWrite, type FileSnapshotMeta } from '../../refactor/rf-snapshot/file_snapshot.js';
+import { snapshotBeforeWrite, type FileSnapshotMeta } from '../../refactor/snapshot/file_snapshot.js';
 import { isIndexIncomplete } from '../../../infrastructure/index/index_backfill.js';
 
 // ─────────────────────────────────────────────────────────────

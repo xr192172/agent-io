@@ -21,7 +21,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { resolveProjectRoot, loadAliasConfig, resolveAliasedImport, resolveLangImport } from '../../cross/project_root.js';
 import { analyzeModuleSource, resolveRel, buildNoExt } from '../rename_symbol/index.js';
-import { camelToSnake, scanLiteralOccurrences, type RawLiteralMatch } from '../rf-rename/rename_symbols.js';
+import { camelToSnake, scanLiteralOccurrences, type RawLiteralMatch } from '../rename/rename_symbols.js';
 import { collectFieldRefs, collectTypeConstructCandidates, type FieldRefFile, type TypeConstructCandidate } from './field_refs.js';
 import { parseFileFull } from '../../../infrastructure/parse/index.js';
 import { getProjectCacheDb } from '../../../infrastructure/index/db.js';
@@ -234,7 +234,7 @@ async function findReferencesCore(input: {
     if (typeof v !== 'string' || v.trim() === '') throw new Error(`缺少必需参数 ${what}：${how}`);
     return v;
   };
-  const EXAMPLE_FILE = `'src/application/refactor/rf-find/find_references.ts'`;
+  const EXAMPLE_FILE = `'src/application/refactor/find/find_references.ts'`;
   if (input.mode === 'type') {
     reqStr(input.file, 'file', `mode=type 需要 file（类型定义文件）。例：{mode:'type', file:${EXAMPLE_FILE}, symbol:'FindReferencesResult'}`);
     reqStr(input.symbol, 'symbol', `mode=type 需要 symbol（类型名）。例：{mode:'type', file:${EXAMPLE_FILE}, symbol:'FindReferencesResult'}`);

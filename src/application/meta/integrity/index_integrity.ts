@@ -30,7 +30,7 @@ import { hasLiveIndex } from '../../observe/runtime/write_gate.js';
 import { pendingSelfWrites } from '../../../infrastructure/index/self_writes.js';
 import { backfillState, backfillSummary, isIndexIncomplete } from '../../../infrastructure/index/index_backfill.js';
 import { ensureProjectIndex, type IndexState } from '../../../infrastructure/index/index_freshness.js';
-import { summarizeLanguagesByTier, type LanguageTierSummary } from '../../refactor/rf-parse/parse_capability.js';
+import { summarizeLanguagesByTier, type LanguageTierSummary } from '../../refactor/parse_capability/parse_capability.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
 /** 源码文件按类拆分（本体 / 测试 / 噪音）。★ 见 ④ 处的长注释：两把尺差的就是这两个类 */

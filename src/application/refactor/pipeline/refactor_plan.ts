@@ -32,7 +32,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { detectEol } from '../../../infrastructure/text/line_utils.js';
 import { locateReplaceText } from '../../../infrastructure/parse/fuzzy_match.js';
-import { planReplaceText, editCode, type EditBatchItem } from '../rf-edit/edit_code.js';
+import { planReplaceText, editCode, type EditBatchItem } from '../edit/edit_code.js';
 
 /** 一次目标替换：文件内一次**唯一**文本替换（与 `edit_code(targets[])` 同形状） */
 export interface RefactorTarget {
