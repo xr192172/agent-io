@@ -16,6 +16,7 @@ import path from 'node:path';
 import { buildFeatureMap } from '../../../infrastructure/analysis/structure/feature_map.js';
 import { assembleBrickBagWithCall, type BrickBag, type Brick } from './brick_bag.js';
 import { buildBrickify, type BrickifyResult, type Community, type MixedFileSignal } from './brickify.js';
+import { getStorageRoot } from '../../../infrastructure/storage.js';
 
 const SIDE_LABEL: Record<string, string> = { frontend: '前端', backend: '后端', shared: '通用' };
 const SIDE_COLOR: Record<string, string> = { frontend: '#2563eb', backend: '#d97706', shared: '#6b7280' };
@@ -252,8 +253,7 @@ export function buildSandboxPreview(opts: { project_dir: string; source_root?: s
   const featureMap = buildFeatureMap({ project_dir: opts.project_dir, source_root: opts.source_root });
   const bag = assembleBrickBagWithCall(featureMap);
   const html = renderBrickworkHtml(bag);
-  const srcRoot = path.resolve(opts.source_root ?? path.resolve(opts.project_dir));
-  const out = path.resolve(opts.out_file ?? path.join(path.dirname(srcRoot), '..', 'docs', 'sandbox_preview.html'));
+  const out = path.resolve(opts.out_file ?? path.join(getStorageRoot(), 'docs', 'sandbox_preview.html'));
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, html, 'utf-8');
   return out;
@@ -647,8 +647,7 @@ export function buildWorkbenchPreview(opts: { project_dir: string; source_root?:
   const featureMap = buildFeatureMap({ project_dir: opts.project_dir, source_root: opts.source_root });
   const bag = assembleBrickBagWithCall(featureMap);
   const html = renderWorkbenchHtml(bag);
-  const srcRoot = path.resolve(opts.source_root ?? path.resolve(opts.project_dir));
-  const out = path.resolve(opts.out_file ?? path.join(path.dirname(srcRoot), '..', 'docs', 'workbench_preview.html'));
+  const out = path.resolve(opts.out_file ?? path.join(getStorageRoot(), 'docs', 'workbench_preview.html'));
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, html, 'utf-8');
   return out;
@@ -820,8 +819,7 @@ footer ul{margin:0;color:var(--muted);font-size:11px;padding-left:18px;display:f
 export async function buildBrickifyPreview(opts: { project_dir: string; source_root?: string; out_file?: string }): Promise<string> {
   const result = await buildBrickify({ project_dir: opts.project_dir, source_root: opts.source_root });
   const html = renderBrickifyWorkbenchHtml(result);
-  const srcRoot = path.resolve(opts.source_root ?? path.resolve(opts.project_dir));
-  const out = path.resolve(opts.out_file ?? path.join(path.dirname(srcRoot), '..', 'docs', 'brickify_preview.html'));
+  const out = path.resolve(opts.out_file ?? path.join(getStorageRoot(), 'docs', 'brickify_preview.html'));
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, html, 'utf-8');
   return out;
