@@ -117,6 +117,17 @@ function isDuplicate(a: CrossRepoSym[], b: CrossRepoSym[]): boolean {
 export async function compareProjects(aRoot: string, bRoot: string): Promise<CrossRepoReport> {
   const [a, b] = await Promise.all([buildProjectIndex(aRoot), buildProjectIndex(bRoot)]);
 
+  // ★ 读不到任何源码 ⇒ **报错**，绝不返回一份全 0 报告（2026-10-05，用户体检实测坐实）。
+  //   为什么必须抛：全 0 会被读成「两项目真的没有冲突」；而 `hybrid_precheck` 更会据此判
+  //   `verdict=ok`（"可直接融合"）—— 那是一条**假阳性**，会直接误导融合决策。
+  //   失败就是失败，不要降级（与 plumbing.requireStr 的 P-D 纪律同源，只是这里守的是"根可读"而非"参数存在"）。
+  if (a.fileCount === 0 || b.fileCount === 0) {
+    const bad = [a.fileCount === 0 ? `A（${a.root}）` : '', b.fileCount === 0 ? `B（${b.root}）` : '']
+      .filter(Boolean)
+      .join('、');
+    throw new Error(`项目 ${bad} 未读到任何源码文件 —— 请确认根目录正确、且含可解析的源码。空索引不等于「无冲突」`);
+  }
+
   const conflicts: SymbolCollision[] = [];
   const duplicates: SymbolCollision[] = [];
   const aOnly: string[] = [];

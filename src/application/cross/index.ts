@@ -11,7 +11,7 @@
  *   否则本文件 import 它们就会成环（server_registry → lanes → server_registry）。
  */
 import { z } from 'zod';
-import { wrap, wrapData } from '../plumbing.js';
+import { wrap, wrapData, requireStr } from '../plumbing.js';
 import path from 'node:path';
 import { compareProjects } from '../../infrastructure/analysis/cross_repo/index.js';
 import { analyzeHealth } from '../../infrastructure/analysis/health/index.js';
@@ -80,7 +80,7 @@ export const CROSS_TOOLS: ToolDef[] = [
       project_dir_b: z.string().describe('项目 B 根目录（绝对路径）'),
     },
     handler: wrapData(async (a) => {
-      const r = await compareProjects(String(a.project_dir_a), String(a.project_dir_b));
+      const r = await compareProjects(requireStr(a, 'project_dir_a'), requireStr(a, 'project_dir_b'));
       const fmtSym = (defs: Array<{ file: string; signature: string }>) => defs.map((d) => `${d.file}  ${d.signature}`).join(' ; ');
       const lines = [
         `跨项目符号索引 · ${r.aRoot} ↔ ${r.bRoot}`,
@@ -118,7 +118,7 @@ export const CROSS_TOOLS: ToolDef[] = [
       project_dir_b: z.string().describe('项目 B 根目录（绝对路径）'),
     },
     handler: wrapData(async (a) => {
-      const r = await precheckHybrid(String(a.project_dir_a), String(a.project_dir_b));
+      const r = await precheckHybrid(requireStr(a, 'project_dir_a'), requireStr(a, 'project_dir_b'));
       const fmtSym = (defs: Array<{ file: string; signature: string }>) => defs.map((d) => `${d.file}  ${d.signature}`).join(' ; ');
       const lines = [
         `项目杂交预检 · ${r.aRoot} ↔ ${r.bRoot}`,
@@ -162,12 +162,13 @@ export const CROSS_TOOLS: ToolDef[] = [
       top: z.number().int().optional().describe('复杂度清单最多列多少个（默认 10）'),
     },
     handler: wrapData(async (a) => {
-      const r = await analyzeHealth(String(a.project_dir), {
+      const root = requireStr(a, 'project_dir');
+      const r = await analyzeHealth(root, {
         complexityThreshold: a.complexity_threshold == null ? undefined : Number(a.complexity_threshold),
         top: a.top == null ? undefined : Number(a.top),
         // P0-②：入口文件（package.json 的 bin / main / `node <路径>` script）喂给分析器，
         // 否则它们会被当成无人消费的 dead code + "积木依赖胶水"（实测本仓 2 条假阳）。
-        reachableRoots: detectReachableRoots(String(a.project_dir)).roots,
+        reachableRoots: detectReachableRoots(root).roots,
       });
       const sevMark: Record<string, string> = { error: '✗', warn: '!', info: '·' };
       const lines = [
