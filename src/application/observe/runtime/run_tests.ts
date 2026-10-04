@@ -57,16 +57,28 @@ export function runTests(input: { project_dir?: string; filter?: string; timeout
     );
   }
 
-  // 判定方式：读目标项目 package.json 的 scripts.test（npm 是所有 JS 项目的统一入口）。
+  // 判定方式：读目标项目 package.json 的 scripts.test。
+  // ★ 这是**我们选择的口径**，不是「所有项目都这样」：npm 生态全体（npm/pnpm/yarn/bun 项目、
+  //   以及用 vitest/jest/mocha/node:test 的项目）都把测试入口声明在这里；跨语言没有统一入口。
+  //   其它生态（Go 的 `go test`、Python 的 pytest、Java 的 mvn test…）本工具**不做推断**，
+  //   如实报错并指路，而不是猜一个命令去跑。
   let pkg: { scripts?: Record<string, string> } | undefined;
   try {
     pkg = JSON.parse(fs.readFileSync(path.join(cwd, 'package.json'), 'utf-8')) as { scripts?: Record<string, string> };
   } catch {
-    return fail(`无法读取目标项目 package.json（${path.join(cwd, 'package.json')}）；本工具按 npm scripts.test 运行测试。`);
+    return fail(
+      `无法读取目标项目 package.json（${path.join(cwd, 'package.json')}）。` +
+        `本工具的口径：以 package.json 的 scripts.test 作为测试入口（npm 生态的通用约定）。` +
+        `若目标项目不是 npm 生态（Go / Python / Java 等），本工具**不代为推断**命令 —— ` +
+        `请直接运行其原生测试命令（go test ./... / pytest / mvn test）。`,
+    );
   }
   const testScript = pkg.scripts?.test;
   if (typeof testScript !== 'string' || testScript.trim() === '') {
-    return fail('目标项目 package.json 无 scripts.test（或为空），无法确定如何运行测试。');
+    return fail(
+      `目标项目 package.json 存在，但没有 scripts.test（或为空）—— 无法确定如何运行测试。` +
+        `本工具不会去猜一个命令来跑（猜错会产出"看起来跑了测试"的假读数）；请在 package.json 里补 scripts.test。`,
+    );
   }
 
   const args = ['test'];
