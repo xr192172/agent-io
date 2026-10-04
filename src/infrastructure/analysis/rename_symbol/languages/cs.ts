@@ -32,14 +32,16 @@ const CSHARP_RULES: NamespaceLangRules = {
   moduleDecl: { nodeType: 'namespace_declaration', childTypes: ['qualified_name', 'identifier'] },
   importDecl: {
     nodeType: 'using_directive',
-    // ★★ 等价性说明（这是本笔最容易改坏的一处，故写明）：实测 `using_directive` 的子节点是
-    //   `using`(**关键字**, 匿名) / `identifier|qualified_name` / `;`。而**原实现取的就是第一个子节点**
-    //   （`n.child(0)`，不看类型）⇒ 得到 `alias = 'using'`，恰好通过下面的 `aliasOk`
-    //   ⇒ 本笔 `childTypes: null`（= 取第一个子节点）**逐字保持该行为**。
-    //   ★ 连"每条 `using` 都会往 `imports` 里塞一条 `{alias:'using', path:'using'}`"这个**既有怪相**
-    //     也一并保留 —— 它是**潜伏坑**（`imports` 在 java/cs 这两条路径上"只产不读"），
-    //     修它是**改共享形状的语义**，属另一笔（见 `docs/todo.md`），不在本笔。
-    childTypes: null,
+    // ★★ 2026-10-05（T53）**修正**：这里原先写 `childTypes: null`（= 取第一个子节点、不看类型），
+    //   忠实照搬了改前的 `n.child(0)` 行为 —— 而实测 `using_directive` 的子节点是
+    //   `using`(**关键字**,匿名) / `identifier|qualified_name` / `;`
+    //   ⇒ 取到的是**关键字本身**，`alias='using'` 恰好通过下面的 `aliasOk`
+    //   ⇒ **每写一条 `using` 就多一条垃圾** `{alias:'using', path:'using'}`。
+    //   ★ 当时不改是因为那一笔的判据是"行为**逐字**不变"（已用三案例字节级对照证明）；
+    //     本笔单独修，判据换成"`imports` 里不再出现 `alias === 'using'`"，且
+    //     **改名的产物必须仍与改前逐字相同**（因为 `renameNamespaceSymbol` **不读 `imports`**）。
+    //   ★ 子结构实测与 Java 侧同形（那边一直是按类型挑）⇒ 两门语言的规则现在写法一致。
+    childTypes: ['qualified_name', 'identifier'],
     aliasOk: (alias) => /^[A-Za-z_][\w$]*$/.test(alias),
   },
   qualifiedRefNodes: ['qualified_name'],
