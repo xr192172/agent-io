@@ -13,10 +13,12 @@
  * LLM 缺席/失败 → 关键词启发式降级；命中不了 → 诚实进 unclassified。
  */
 
+import path from 'node:path';
 import type { FunctionEntry } from './collect_functions.js';
 import type { BrickifyResult } from '../../design/bricks/brickify.js';
 import { loadLlmConfig, callChat, loadExplainConfig } from '../../../infrastructure/llm_focus.js';
 import { defaultPipelineTaxonomy, type Taxonomy } from '../../design/bricks/taxonomy.js';
+import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
 export interface ToolDomain {
   id: string;
@@ -188,7 +190,7 @@ async function annotateByLlm(
  * 主入口：统一功能条目（MCP+CLI）→ 四维标注 + 映射到积木实现簇。
  * implModules → 簇映射是确定性的（brickify 文件集精确匹配），匹配不上如实上报。
  */
-export async function classifyTools(
+async function classifyToolsCore(
   tools: FunctionEntry[],
   r: BrickifyResult,
   opts: { taxonomy?: Taxonomy; domains?: ToolDomain[] } = {},
@@ -265,4 +267,24 @@ export async function classifyTools(
       unmatchedTotal > 0 ? `${unmatchedTotal} 个触达模块未匹配到积木文件（非 src/ 下或动态引用）` : '',
     ].filter(Boolean),
   };
+}
+
+/** ★ 唯一的构造点：把"我动了什么"集中算一次，所有出口都从这一个地方出去 */
+function touchedOf(r: BrickifyResult): Touched {
+  const touched: Touched = {};
+  // 作用域类 project_dir：真源 = **入参 BrickifyResult.meta.project_dir**（与 classify_bricks.ts
+  //   touchedOf 同根锚点，见 classify_bricks.ts:278-285）—— 不是兜底 cwd，也不是 opts（opts 只有
+  //   taxonomy / domains）。本工具无 feature 概念 ⇒ 不给 feature。
+  //   ★ 不落盘（纯标注，不写文件）⇒ 不给 written_files（省略 ≠ 空数组）。
+  if (r.meta?.project_dir) touched.project_dir = path.resolve(r.meta.project_dir);
+  return touched;
+}
+
+export async function classifyTools(
+  tools: FunctionEntry[],
+  r: BrickifyResult,
+  opts: { taxonomy?: Taxonomy; domains?: ToolDomain[] } = {},
+): Promise<TouchedProduct<ToolsMapResult>> {
+  const res = await classifyToolsCore(tools, r, opts);
+  return withTouched(res, touchedOf(r));
 }

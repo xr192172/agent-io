@@ -363,12 +363,25 @@ function toRel(root: string, p: string): string {
  *   - `read_files`：本次读的事件文件（Core 177-179 行解析、126 行真读）⇒ 转仓库相对；
  *   - **不给 `written_files`**：本 [B] 只 `saveDSL` 写回 DSL（落 `<dataHome>/.agent-io/**`，
  *     不在仓库里）⇒ "仓库相对路径"给不出（不把绝对路径塞进"仓库相对"槽位）。
+ *
+ * ★ 根内守卫（T18，2026-10-05）：Core 179 行发现事件文件时用的是 `path.resolve(f)`——**以 cwd 为基**，
+ *   而本处 `toRel` 以 `root`（project_dir）为基。当调用方传**相对** `events_files` 且 `cwd ≠ project_dir`
+ *   时两者基不一致，算出的"仓库相对"会**错位**、甚至产出 `../…`（那就不是仓库相对了）。
+ *   ⇒ 只放行**确实落在 root 内**（相对路径不以 `..` 走出根）的文件；不落根内的一律**不列**
+ *   （★ 宁可少列，不塞 `../…`）；若**全部**都在根外 ⇒ **整项省略**。
  */
 function touchedOf(input: ReconcileEffectsInput, r: ReconcileEffectsResult): Touched {
   const root = path.resolve(input.project_dir);
   const touched: Touched = { project_dir: root, feature: input.feature };
 
-  const reads = [...new Set(r.events_files.map((f) => toRel(root, f)))];
+  const reads = [
+    ...new Set(
+      r.events_files
+        .map((f) => toRel(root, f))
+        // 相对路径走出根（`..` 段）⇒ 不是仓库相对，丢弃；其余（含根内子路径）保留
+        .filter((rel) => !rel.split('/').includes('..')),
+    ),
+  ];
   if (reads.length > 0) touched.read_files = reads;
 
   return touched;

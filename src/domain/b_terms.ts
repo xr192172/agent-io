@@ -144,7 +144,8 @@ export const B_TERMS: Record<string, BTerm> = {
   written_files: {
     kind: 'anchor',
     type: 'string[]',
-    meaning: '被**写入/改动**的文件（仓库相对路径，`/` 分隔）',
+    meaning:
+      '被**写入/改动**的文件（仓库相对路径，`/` 分隔）。★ 只列「**本次操作对被操作对象产生的工作产物**」；★ **排除工具自有的状态/账本/索引目录**（如被分析项目内的 `.agent-io/**`）——那是工具的内部数据，不是工作产物；★ 写在 `<dataHome>`（工具数据主目录）下的 DSL/存档/导图 JSON **本就不是仓库相对** ⇒ 从来不给。',
     debt: true,
     fix: '新词，尚无使用者；由 ④-b refactor 族起逐族采用',
   },
