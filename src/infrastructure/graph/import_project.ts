@@ -422,8 +422,9 @@ export function buildIndex(files: FileEntry[]): {
  *
  * ★★ 2026-09-30（T2 内化）：**四层规则已交给内核唯一实现** `resolveProjectImport`
  *   （relative / python-dot / dotted / bare-name），本函数只剩两处**它专有**的东西：
- *    ① **Go 包 = 多目标**（该目录下**全部**文件）—— 内核的 `go-module` 层只给**单目标代表**
- *       （那是给 health/impact 那种"唯一定位"用的）⇒ 多文件展开留在本地；
+ *    ① **Go 包 = 多目标**（该目录下**全部**文件）—— 内核**不再有** `go-module` 层
+ *       （★ 2026-10-04 该层已删：无调用方、且"单目标代表"与 Go 多文件包语义不符 ⇒ 多文件展开
+ *        本就该留在本地。见 import_resolve.ts 的 `ProjectImportOptions` 注释）；
  *    ② **目录形式兜底**：`import './dir'` → 该目录下 `index|__init__|mod` 的**正则**匹配
  *       （扩展名不限）；内核的 `INDEX_FILES` 是**固定清单**（`index.{ts,tsx,js,jsx}`），
  *       覆盖不到 `__init__.py` / `mod.go` ⇒ 这条**策略**留在本地。
@@ -457,7 +458,7 @@ export function resolveImport(
     }
   }
 
-  // ② 四层解析规则：内核唯一实现（不传 goModules —— 那层只要单目标代表，见上）
+  // ② 四层解析规则：内核唯一实现（★ 2026-10-04：内核的 `go-module` 层已删，Go 多目标见 ①）
   const hit = resolveProjectImport(importer.rel, imp.source, rels, { exts });
   if (hit.rel) {
     const entry = byRel.get(hit.rel);

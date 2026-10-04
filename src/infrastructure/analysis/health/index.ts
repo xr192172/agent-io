@@ -623,7 +623,8 @@ const TYPE_ONLY_IMPORT_RE = /^\s*import\s+type\b/;
  * 解析 import source 到项目内文件 —— 【唯一实现入口】。
  *
  * ★ 候选生成与分层口径已上移到 `tools/ts_kernel/import_resolve.ts` 的 `resolveProjectImport`（2026-09-30）：
- *   同一份逻辑覆盖 relative / python-dot / dotted / bare-name / go-module / package-dir 六层，
+ *   同一份逻辑覆盖 relative / python-dot / dotted / bare-name / package-dir **五层**
+ *   （★ 2026-10-04：原第 5 层 `go-module` 已删 —— 无调用方、语义与 Go 多文件包不符，见 import_resolve.ts 注释），
  *   消解了 health/impact 各持私有实现的口径分叉（分叉 A/B/C）。
  *   此处只做薄包装：调内核 + 取 `.rel`，不引入新策略。
  */
@@ -688,7 +689,30 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
     }
     for (const c of p.parsed.calls) {
       if (c.resolved) continue;
-      const cands = (symIndex.get(c.callee) ?? []).filter((x) => x.rel !== p.rel);
+      // ★★ 2026-10-04（T4）：调用边的 callee 是**裸名** —— `Helper.twice(3)` 的内核产出是
+      //   `{ callee: 'twice', callee_expr: 'Helper.twice' }`（实测，见 T4 取证），而 `twice`
+      //   带 parent **不进 `symIndex`**（本 map 只收顶层符号）⇒ 裸名 `twice` 查空 ⇒ **这条调用边
+      //   整个丢掉** ⇒ 外层顶层 `Helper` 既不在 internalRefs 也不在 crossRefs ⇒ 被误报
+      //   `unused_export`（实测夹具 `C:/tmp/t4fix` 复现：`helper.ts:1 Helper` 假阳）。
+      //   ⇒ 兜底：裸名不唯一时，取 `callee_expr` 的**第一段**（receiver 根，`Helper.twice`→`Helper`）
+      //     再查一次顶层符号。取法与 `translate/project.ts` 的前缀提取**同式**
+      //     （`/^([A-Za-z_$][\w$]*)\./`）。
+      //   ★★ **唯一命中是硬约束**（`cands.length === 1`）：放宽它会把"局部变量名恰好等于别处
+      //     顶层导出"当成真引用 ⇒ **掩盖真 dead code**，而**掩盖（漏报）比假阳更坏**。
+      //   ★★ 且**只认本文件真正 import 过的 provider 文件**（`layerImports.get(p.rel)`）——
+      //     这条是实测逼出来的（2026-10-04）：只按"receiver 根全局唯一"兜底时，本仓
+      //     `scripts/**.mjs` / `dogfood/*.mjs` / `third_party/archify/**` / `go-*/main.go` 共 **24 个
+      //     独立脚本被误连**（它们的导出名恰好与别处某局部变量的接收者同名）⇒ `orphan_file` 51→27，
+      //     全是**掩盖**。加上"消费者 import 过该 provider 文件"这道闸后，这些独立脚本无人 import
+      //     ⇒ 兜底不触发 ⇒ 读数不再漂移。语义与 `impact.resolveCallTarget` 的"前缀必须连到某个
+      //     项目内文件才信任"一致（那里用 fileBindings，TS 系 `bindings` 为空故此处用 import 边等价代偿）。
+      const bare = (symIndex.get(c.callee) ?? []).filter((x) => x.rel !== p.rel);
+      const lm = layerImports.get(p.rel);
+      const root = c.callee_expr.match(/^([A-Za-z_$][\w$]*)\./)?.[1];
+      const receiver = root && root !== c.callee
+        ? (symIndex.get(root) ?? []).filter((x) => x.rel !== p.rel && lm?.has(x.rel))
+        : [];
+      const cands = bare.length === 1 ? bare : receiver;
       if (cands.length !== 1) continue;
       let s = crossRefs.get(cands[0].rel);
       if (!s) {

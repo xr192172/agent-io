@@ -120,7 +120,8 @@ const TYPE_KINDS = new Set<ParsedSymbol['kind']>(['interface', 'type', 'class'])
  * 解析 import source 到项目内文件 —— 【唯一实现入口】。
  *
  * ★ 候选生成与分层口径已上移到 `tools/ts_kernel/import_resolve.ts` 的 `resolveProjectImport`（2026-09-30）：
- *   覆盖 relative / python-dot / dotted / bare-name / go-module / package-dir 六层，
+ *   覆盖 relative / python-dot / dotted / bare-name / package-dir **五层**
+ *   （★ 2026-10-04：原第 5 层 `go-module` 已删 —— 无调用方、语义与 Go 多文件包不符，见 import_resolve.ts 注释），
  *   消解了 impact 原来持私有 `resolveImportFile` + `resolvePackageImportDir` 的口径分叉（分叉 C）。
  *   此处只做薄包装：调内核 + 取 `.rel`，不引入新策略。
  */

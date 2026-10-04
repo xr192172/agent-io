@@ -701,6 +701,12 @@ src/hello.ts 共 3 行，显示 L1-L3
   **被 `wrap` 丢弃**，agent 只拿到 message。**正是** `plumbing.ts` `wrap` 丢 `data` 的实例（§21 ②"产物是结构化数据不是 message"未达标）。
 - 对比 `explore_code` 用 **`wrapData`** ⇒ `---DATA---` 正常到达。**同一仓、两种外壳，产物可见性不同**——收敛 `wrap`/`wrapData` 是一笔独立改动（未在本笔动）。
 
+> ★ **2026-10-04 更正（追加，不改上文）**：上面两条是**当笔实测的当时状态**；此后那笔"独立改动"**已经完成**，两条均已过时：
+>
+> - `find_references` **已由 `wrap` 迁到 `wrapData`**（现 `src/application/refactor/index.ts` 的 handler，`FindReferencesResult` 的 `data` 现已经 `---DATA---` 到达 agent）——"被 `wrap` 丢弃"**不再成立**。
+> - `wrap`/`wrapData` **已收敛**（本日实测，非照抄）：工具定义线（`src/application/*/index.ts`）`handler: wrapData(` = **43** 处、`handler: wrap(` = **0** 处；全仓残留 `wrap(` = **3** 处，全在 `src/application/handlers.ts`（`editDslHandler` / `renderDesignHandler` / `observeJudgeHandler`），且三处均**刻意保留**（其结果类型无 `data` 字段，`wrap` 丢的正是空集，见各 handler 上方注释）。
+> - 故本文标题"属另一笔（未动）"与"收敛是一笔独立改动（未在本笔动）"**已过期**；原文保留仅供追溯，**现状口径以上述实测为准**。
+
 ***
 
 ## 9. 工具设计规范（Tool Design Rules）

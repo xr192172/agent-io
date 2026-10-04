@@ -22,11 +22,13 @@ import { diffImpact } from '../../../infrastructure/analysis/impact/diff_impact.
 import { archLayer } from '../../../infrastructure/analysis/structure/arch_layer.js';
 import type { LayerDef } from '../../../infrastructure/analysis/structure/layer_detect.js';
 import { guidedTour } from '../../../infrastructure/index/guided_tour.js';
-import { assessLines, buildSplitPreviewDsl } from '../../../infrastructure/analysis/structure/monolith.js';
+import { checkMonolith } from '../../../infrastructure/analysis/structure/monolith.js';
 import { injectReplay } from '../../../infrastructure/render/inject_replay.js';
 import { runSimulation, resetSimulation } from '../../design/lifecycle/simulation.js';
 import { dispatchWatch } from '../../dispatch.js';
-import { buildCallGraph } from '../../design/derive/derive_chain.js';
+import { deriveAlgorithm } from '../../design/derive/derive_algorithm.js';
+import { deriveDetailChain } from '../../design/derive/derive_chain.js';
+import { deriveSplit, type DeriveSplitInput } from '../../design/derive/derive_split.js';
 import { deriveAnimFlow } from '../view/derive_anim_flow.js';
 import { deriveMindMap } from '../view/derive_mind_map.js';
 import fs from 'node:fs';
@@ -212,16 +214,55 @@ export async function exploreCode(params: { action: ExploreAction; args: Record<
       return toResult(r);
     }
     case 'check_monolith': {
-      const r = assessLines(0, 300, 600);
-      return toResult(r);
+      // ★ 2026-10-04（T17）：此前是纯空壳 —— `assessLines(0,300,600)` 恒返回 'ok'，
+      //   从不调用 checkMonolith，**对 agent 说谎**（宣告"巨石分析"却永远给 'ok'）。
+      //   现在真的调它：扫描 project_dir / feature / files 之一，出报告 + 拆分建议（只读）。
+      const r = await checkMonolith({
+        project_dir: str(args, 'project_dir'),
+        feature: str(args, 'feature'),
+        base_dir: str(args, 'base_dir'),
+        files: args['files'] as string[] | undefined,
+        warn_lines: num(args, 'warn_lines'),
+        crit_lines: num(args, 'crit_lines'),
+        flag_cohesive: bool(args, 'flag_cohesive'),
+        max_files: num(args, 'max_files'),
+        no_cache: bool(args, 'no_cache'),
+        save_preview: bool(args, 'save_preview'),
+        preview_feature: str(args, 'preview_feature'),
+      });
+      return toResult(r, true);
     }
     case 'derive_split': {
-      const r = buildSplitPreviewDsl(requireStr(args, 'project_dir'), [], 300, 600);
+      // ★ 2026-10-04（T17）：此前是纯空壳 —— 把 project_dir 当 feature 传、reports 恒传 `[]`，
+      //   buildSplitPreviewDsl 恒产**空几何**。现接上同名真实现 `derive_split.ts#deriveSplit`
+      //   （dry_run 默认 true = 只出草稿不落盘；dry_run=false 才写文件并跑编译/测试级验收）。
+      const r = await deriveSplit({
+        project_dir: requireStr(args, 'project_dir'),
+        target_file: requireStr(args, 'target_file'),
+        symbols: (args['symbols'] as string[]) ?? [],
+        new_file: str(args, 'new_file'),
+        dry_run: bool(args, 'dry_run'),
+        verify_compile: bool(args, 'verify_compile'),
+        verify_test: bool(args, 'verify_test'),
+        re_export_extracted: bool(args, 're_export_extracted'),
+        subsplit: args['subsplit'] as DeriveSplitInput['subsplit'],
+      });
       return toResult(r, true);
     }
     case 'derive_chain': {
-      const r = buildCallGraph([], []);
-      return toResult(r);
+      // ★ 2026-10-04（T17）：此前是纯空壳 —— 只调辅助函数 `buildCallGraph([],[])`，恒返回空 Map。
+      //   现接上主函数 `derive_chain.ts#deriveDetailChain`（detail 变形链：函数骨架 + 调用图 → DSL）。
+      const r = await deriveDetailChain({
+        feature: requireStr(args, 'feature'),
+        node_id: requireStr(args, 'node_id'),
+        source_path: str(args, 'source_path'),
+        project_root: str(args, 'project_root'),
+        entry: str(args, 'entry'),
+        max_steps: num(args, 'max_steps'),
+        max_branches: num(args, 'max_branches'),
+        max_cross: num(args, 'max_cross'),
+      });
+      return toResult(r, true);
     }
     case 'derive_anim_flow': {
       // ★★ 2026-10-01（T11 ③，用户裁定"补齐能力"）：**此前这里是纯空壳** ——
@@ -245,7 +286,16 @@ export async function exploreCode(params: { action: ExploreAction; args: Record<
       return toResult(r, true);
     }
     case 'derive_algorithm': {
-      const r = { project_dir: requireStr(args, 'project_dir') };
+      // ★ 2026-10-04（T17）：此前是纯空壳 —— 只回显 `{project_dir}`，从不调用 deriveAlgorithm。
+      //   现接上同名真实现 `derive_algorithm.ts#deriveAlgorithm`（单函数体 → CFG 算法图，写回 DSL detail 层）。
+      const r = await deriveAlgorithm({
+        feature: requireStr(args, 'feature'),
+        node_id: requireStr(args, 'node_id'),
+        function: requireStr(args, 'function'),
+        source_path: str(args, 'source_path'),
+        project_root: str(args, 'project_root'),
+        max_depth: num(args, 'max_depth'),
+      });
       return toResult(r, true);
     }
     case 'derive_mind_map': {

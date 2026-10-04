@@ -62,6 +62,19 @@ export const META_TOOLS: ToolDef[] = [
       `action: ${EXPLORE_ACTIONS.join(' / ')}。` +
       '语义搜索/读取/影响分析/架构分层/导览/巨石分析/拆分/变形链/动画流/算法/注入回放/仿真/文件监听。' +
       'args 为各 action 的具体参数。' +
+      '★ 按需选用与必填项（缺任一项即报错，别空调）：' +
+      '巨石体检用 check_monolith（给 project_dir|feature|files 之一）；' +
+      '看单函数内部流程用 derive_algorithm（给 feature+node_id+function）；' +
+      '看函数间调用链用 derive_chain（给 feature+node_id）；' +
+      '拆文件用 derive_split（给 project_dir+target_file+symbols；dry_run 默认 true 只出草稿、false 才落盘）；' +
+      '读文件内容用 read（硬必填 file）；' +
+      '盯文件变更用 watch（硬必填 project_dir）；' +
+      '看模块导览用 guided_tour（硬必填 feature）；' +
+      '生成模块思维导图用 derive_mind_map（硬必填 feature）；' +
+      '跑事件仿真用 run_simulation（硬必填 feature）；' +
+      '复位仿真用 reset_simulation（硬必填 feature）；' +
+      '注入回放用 inject_replay（硬必填 feature+flow_id）；' +
+      '看动画流用 derive_anim_flow（硬必填 feature+node_id）。' +
       'read 是 edit_code 的"先读后改"前置：按符号定位（symbol，+parent 消歧，+context 附带上下文）' +
       '或行区间（start/end，1-based 含端点）读文件，返回带真实行号的内容；' +
       '返回的 start/end/行号与 edit_code(op=range) 同基准（line_utils.splitKeepEnds 下标+1=行号），' +
@@ -70,8 +83,8 @@ export const META_TOOLS: ToolDef[] = [
       '一次 read 同时拿到正文+文件地图，symbols:false 可关。' +
       'search 三层路由：标识符查询（如 normalizeCode / Calc.reset）→ 精确符号索引（provider=exact，零向量开销）；' +
       '自然语言意图 → 语义向量相似度；无 embedding 配置/失败 → FTS trigram 降级。' +
-      'search 必填 args.project_dir（目标项目根目录，缺省报错）+ args.query，可选 top_k；' +
-      'arch_layer/diff_impact 等同样需要 project_dir。' +
+      'search 必填 args.project_dir（目标项目根目录，缺省报错）+ args.query（空则返回『查询为空』提示），可选 top_k；' +
+      'diff_impact 必填 project_dir + feature；arch_layer 必填 feature（不吃 project_dir）。' +
       'watch 支持 impact_on_change=true：文件变更后自动生成影响报告（一行摘要入 alerts，' +
       'action=status 查看未读提醒，action=impact + seq 取全文；报告持久落盘 .agent-io/impact/）。' +
       '改代码前建议 action=declare + files 登记预告（Impact Ledger）：改后自动对比实际波及，' +

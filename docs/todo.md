@@ -138,40 +138,6 @@
       ★ 门要管的是 **"根的选择"**，**不是**"`.agent-io` 字面量"——实测代码里字面量只有少数几处
       （136 行命中绝大多数是注释）⇒ "字面量被抄多份"不是主要问题。
 
-- [ ] **T22 ★★ `scripts/rebuild_feature.mjs` 指向早已不存在的旧布局（`dist/src/tools/*`、`dist/src/db/db.js`）—— 靠陈旧 dist 掩盖**
-      *(核实：2026-10-02，由搬迁子代理的预检捞到；我独立复核 `scripts/rebuild_feature.mjs:27–30`。)*
-      ⇒ **实测**：它 `import { importProject } from '../dist/src/tools/import_project.js'`（27）、
-      `derive_mind_map`（28）、`derive_feature_tree`（29）、`openDb` from `'../dist/src/db/db.js'`（30）
-      —— ★ 这四条**都指向 P2 搬迁之前的目录布局**，而源码里这些路径**早就不存在**。
-      ⇒ 它现在**还能跑**，只因为 `dist/` 是 **09-30 的旧构建**（里面还留着那时的目录）⇒ **下一次 `npm run build` 就会断**。
-      ★ 与 T19 第 1 刀修掉的 `package.json` dogfood 脚本**同型**：**陈旧产物掩盖断链 ⇒ 静默跑旧码**。
-      ⇒ **待做**：把这些 import 改指当前布局（`dist/src/infrastructure/analysis/structure/derive_feature_tree.js` 等），
-      并顺手确认 `rebuild_feature` 是否还该存在。★ 判据：`npm run build && node scripts/rebuild_feature.mjs <某feature>` 真跑通。
-      ★ 属"**硬编码旧路径被搬迁静默架空**"家族的**第 5 例**（前 4：`server_registry.consistency` / `capability_scan` /
-      架构基线 / `TOOL_DOMAINS`）—— 但这一例**破得最彻底**（连 dist 的布局都是旧的）。
-
-- [ ] **T21 ★★ `derive_feature_tree.ts` 的 `TOOL_DOMAINS` 已几乎全是死条目（按 basename 认模块，被 P2 搬迁静默架空）**
-      *(核实：2026-10-01 —— 台账 §44.31 补；`node scripts/lang_density.mjs` 无关，靠读代码 + `ls src/tools/`。)*
-      ⇒ **实测（2026-10-01）**：`src/tools/` 当时只剩 2 个条目（`python_refactor/` 目录 + `view_inputs.ts`），
-      而 `toolDomainOf` **只在 `seg[0] === 'tools'` 时被调用**（`derive_feature_tree.ts:193,207`）
-      ⇒ ★ 那张**列了 120+ 个模块名的表**（含 `rename_symbol`/`contract_gate`/`package_migration`）
-      在当前布局下几乎**不可达**；域名归属实际退化成"只取路径第一段"（`application`/`infrastructure`/…）。
-      ★★ **2026-10-04 更新（T27 收口后，严重度已到底）**：`python_refactor/` 已搬到
-      `infrastructure/analysis/refactor/langs/python/`，`view_inputs.ts` 已归 `presentation/http/archify/`
-      ⇒ **`src/tools/` 目录不再存在** ⇒ `seg[0] === 'tools'` **永不成立** ⇒
-      **`toolDomainOf` 整个函数 + 那张 120+ 行的表：**
-      ① **永远不会被进入**；② 函数内那条 python 前缀分支**即使改对了也永不命中**
-      ⇒ **现在是彻底的死代码**（T27 期间执行者 C 主动报出："我改了那行，但它已不可达"——
-      那行前缀是**我下令改**的，即**我的指令制造了一条死规则**；已决定删掉，作为 T27 收尾）。
-      ⇒ **待做（就一件事：删干净）**：删除 `toolDomainOf` + `TOOL_DOMAINS` 表 + `:194/:207` 两处守卫与调用点。
-      ★ **删前必做**：确认 `derive_feature_tree` 的功能树质量**不靠它**（用**一份真实功能树**对齐改前/改后）。
-      ★ 本项属"**同一族的第 4 例**"（前 3 例：`server_registry.consistency` / `capability_scan` / 架构基线）
-      ——「**按路径/文件名认模块的登记表被搬迁静默架空**」。
-      ★★ **第 5 例已经来了**：`structure_gap` 自己的 `unlisted` 判据（原版只扫 `flatDirs` 的子目录
-      ⇒ 报 0 假绿，真实 17 个未登记）。同一族、同一病。
-      ⇒ ⇒ **这已经是一个模式，不是偶发**：**凡是"把路径/名字写成表"的地方，搬迁一次就会静默失效一次。**
-      值得单开一条**通则**（见 T31）。
-
 - [ ] **T18 ★★ ④ [B] 契约形状的落地（术语表已定，按表重构）**
       *(核实：2026-10-01 —— `node scripts/measure_b_contract.mjs --glossary`；台账 §44.15~§44.17。)*
       ⇒ **已定**（不再改口径）：
@@ -222,15 +188,6 @@
       · `package.json` 里 13 个指向 `dist/src/tools/*_cli.js` 的 scripts ⇒ 改为走投影
       · `tests/server_registry.consistency.test.ts` 的 `INTERNAL_MODULES` 登记表要同步（删文件的 `importedBy`）
 
-- [ ] **T17 ★ `explore_code` 的 `derive_algorithm` action 是空壳（已核实）**
-      *(核实：2026-10-01 做 T14 时顺带读到的 —— `src/application/meta/explore_code.ts` 的
-      `case 'derive_algorithm'` 只有 `{ project_dir: requireStr(args,'project_dir') }` 然后 `toResult(r, true)`，
-      **从不调用** `deriveAlgorithm`；而 `src/application/design/derive_algorithm.ts` 的主函数
-      `deriveAlgorithm` 全仓**只有常量 `KIND_SHAPE` 被 derive_chain 复用**，主函数无调用方。)*
-      ⇒ 同族嫌疑（**未核实完，别当事实用**）：`case 'derive_split'` 传 `[]`、`case 'derive_chain'` 传
-      `buildCallGraph([],[])` —— 两个入参都是空，形似空壳；`derive_anim_flow` 已于 2026-10-01 接真实现。
-      ⇒ 这是 G7（宣传-实现一致性）那一笔：action 宣告了能力却没接实现（对 agent 说谎）。
-
 - [ ] **T13 ★ 第 4 / 5 处 import 解析口径：`rename_file` 的「TS/JS 一份 + Python 一份」**
       *(核实：09-30 做 T12 时顺带撞到 —— `src/tools/rename_file.ts:23` 引的是
       **`src/db/symbols.ts:155` 的 `resolveImportTarget(projectRoot, fromRel, source)`**：
@@ -243,37 +200,26 @@
       ★ 影响（未量）：`rename_file` 判定"某个字面量是否真的解析到被移动文件"时，这些形态**可能漏改**。
       ⇒ 方向：并进内核 `resolveProjectImport`（传真实 `exts`），但**先量差集**再动（改名是正确性敏感路径）。
 
-- [ ] **T4 `unused_export` 对"带 parent 的方法"有盲区**（`symIndex` 只收顶层符号）
-      ⇒ 改 `symIndex` 的**收面**。
-      ★ 做完这条，`code_health` 纳入 scala/groovy/julia/haskell/elixir 那 5 门的**判据二**才可能达标。
-      *(核实：09-29 实测 `Helper.twice(3)` 的被调 `twice` 挂 object 下进不了 symIndex)*
-
-- [ ] **T5 注册表 `typescript` 条目缺 `.mts/.cts`**（现由 `TS_JS_EXTS` 保底不丢，但注册表本身该补）。
-      *(核实：09-29 逐扩展名差集)*
-
-- [ ] **T6 `resolveProjectImport` 的 `go-module` 层无任何调用方**
-      （health/impact 都不传 `goModules`），且与第 6 层 `package-dir` 有**有意的不对称**
-      （前者取目录内首个文件 / 后者要求恰好一个）⇒ **要么接上、要么删层**，别让它悬着。
-      *(核实：09-29 全仓 grep 调用点)*
-
-- [ ] **T7 `docs/tool-convergence.md` §8.5 已过时** —— 仍记着「`wrap`/`wrapData` 未收敛，属另一笔」，
-      实测已收敛（lanes `wrapData` 42 处 / `wrap` 0 处）。⇒ 改一句指向或删该段。
-      *(核实：09-30 实测计数)*
-
-- [ ] **T8 把「待核实」那 11 条逐条核实**：真的逾期 ⇒ 上「待做」；已还清 ⇒ **删掉**。
-      *(核实方式：逐条去代码/门里取证，不许只读散文)*
+- [ ] **T32 ★ README 子标题工具计数无门、已漂**（2026-10-04 由 T8 核验升级）。
+      *(核实：`README.md:113` 的「共注册 **N**」有 `scripts/readme_tools_gate.mjs` 自愈守着（当前 59=59 ✓），
+      但**子标题里的中文计数无门**。实测 `README.md:155`「专项工具（**34 个**）」，而该段表内 `` | `tool` | `` 实为 **44** 行 ⇒ **漂 10**；
+      `:143`「主工具（7 个）」= 7 行、`:115`「能力导航（1 个）」= 1 行，当前一致。)*
+      ⇒ 方向：把自愈从「共注册」扩到子标题计数，**或**去掉子标题里的数字（只留"精选"语义）。
 
 ---
 
 ## 待核实（**不是欠账，不许当事实用**）
 
-来源：09-30 一次「扫旧节号里的'遗留/待办'」的梳理。★ **该梳理交回 21 条、全标 `open`，
-核验后当场证伪 2 条** ⇒ 所以这里只当**线索**：
+来源：09-30 一次「扫旧节号里的'遗留/待办'」的梳理。
 
-G3 分层方向门 / G4 可达性门 / G5 README 计数自愈 / P-A 回执稳定字段 / P-D 入参校验统一 /
-P-G 实测补齐 / `symbol_move` 1 处 null 契约 / `project_root` 5 处兜底 /
-`refs_text` specifierCandidates / `explore_code` 5 个空壳 action / 仓库资产索引 /
-P2 四族搬迁 / P3 抽字符串 / P4 工具名拍板 / G1 复杂度阈值标定 / orphan 剩 7 个待判
+★★ **2026-10-04 逐条核验（grp-docs，代码级取证）**：原列 **16 条**（注：任务标题写的“11 条”与实际条数不符）。
+逐条到代码/门/工具取证后：**14 条已还清或已被既有条目覆盖 ⇒ 删**（逐条证据见核验回执 / commit 历史；
+含 `G3/G4 门`、`P-A/P-D/P-G`、`symbol_move`/`project_root`、`refs_text`、`仓库资产索引`、`P2`、`P3`、
+`G1 复杂度阈值`、`orphan 7 个`、`explore_code 空壳`），**1 条升级为待做**（`G5 README 计数自愈` ⇒ 见上 T32）。
+**剩 1 条决策项**：
+
+- `P4 工具名拍板` —— 是否真改 `mcp__design-canvas__*` 工具名（会断 DSH 现有会话与桥接）⇒ **需用户拍板**；
+  若真改名，`DELETED_TOOLS` 墓碑（老调用返回 warning 而非 unknown tool）尚需实现。
 
 ---
 
@@ -387,12 +333,66 @@ P2 四族搬迁 / P3 抽字符串 / P4 工具名拍板 / G1 复杂度阈值标�
         `infrastructure/index/self_writes.ts`（写侧留在 `write_gate`）——
         这是**"把放错层的东西归位"顺带解掉的环**，不是专门去倒依赖。
         ★ 值得记：**归位比倒依赖便宜**。
-      · **仍在**：`application/cross/project_root.ts` →
-        `application/refactor/rename_symbol/languages/typescript.ts` →（经 `parts.ts`）→ `project_root.ts`
-        （**两个 application 域互相依赖**）。
-        ⇒ 主因是 `project_root.ts` 里对 `analyzeModuleSource` 的 **value** import；
-        `parts.ts` 那两条 **type** import 不算（环检测排除 type-only）。
+      · **仍在**：`application/cross/project_root.ts` ⇄
+        `application/refactor/rename_symbol/languages/typescript.ts`（**两个 application 域互相依赖**）。
+        ★★ **2026-10-04 更正（原记录写错了）**：原文写"经 `parts.ts`、那两条 type import 不算" ——
+        **实测不对**。**回边是 `typescript.ts:23` 的 value import**：
+        `import { expandClosureDetailed, loadAliasConfig, resolveAliasedImport, type AliasConfig } from '../../../cross/project_root.js'`
+        —— 同句里 `type AliasConfig` 是 type-only，但**另 3 个是 value** ⇒ **整条算 value 边**。
+        ⇒ 这是**双向 value 环**，不是"一向 value、一向 type"。
+        （`parts.ts:13` 那两条 type import **确实是** type-only、已被排除，**但它不是那条回边**。）
+        ★ 教训：**这条错记录在清单上躺了很久** —— 又一例「**存下来的结论会腐**」。
+        ⇒ **方案已定**：把 `analyzeModuleSource`（+ `ImportEdge/ModuleRef/ModuleAnalysis` + 3 个私有助手）
+        **下沉到 `infrastructure/parse/`** —— 它**只依赖 infrastructure** ⇒ 下沉后两边都向下；
+        且 `project_root` **从未再导出**它 ⇒ 那批消费者**一个都不用动**。
+        ★★ **次序：先做这条，再做 T28**（T28 要动 `languages/`；先下沉则 T28 少搬一个文件）。
 
       ★★ 当初的结论仍然有效：**别再"记进基线"** —— 要么修掉，要么**如实报着**。
       （那份"已批准违规清单"本身的死法已证明：**18 条里 8 条过期，44%**。）
+
+- [ ] **T33 ★★ `analyzeModuleSource` 的 `imports` 漏默认导入 —— 与 `parseFileFull` 差 190/323 文件（2026-10-04 实测）**
+      *(核实：一次搬迁侦察时用**全仓 323 个文件逐文件对差集**测出，**非读码断言**。
+      与 T26 同一轮侦察，但**是两条不同的事**。)*
+      ⇒ **190 个文件**的 `imports` 两边不一致，**差异全部是 `analyzeModuleSource` 漏掉「默认导入」**
+        （`import fs from 'node:fs'` 这种形态）。
+      ⇒ **影响面**：凡用它的 `imports` 建「导入边 / 依赖闭包」的地方**都可能漏边** ——
+        `project_root` 的闭包计算正是使用者之一。
+      ⇒ ★ **要不要改是另一笔**，且它**是行为变更**（会**多收**默认导入边 ⇒ 闭包更全）
+        ⇒ **必须按「行为变更」单独验收**，不能混进纯重构（改了会让一批闭包结果变化）。
+      ⇒ ★ **不要与 T26 合并**：T26 只求「消掉那条环」，本条求「分析器本身对不对」；
+        混在一起会把两件事的验收判据搅在一起。
+      ★ 取证方式（**值得复用**）：**全仓逐文件对差集** —— 比"读代码断言"强得多。
+
+- [ ] **T34 ★ `explore_code` 的异步 action 外层 message 恒为「异步 action 已完成」（2026-10-04 T17 时发现）**
+      *(核实：T17 给 4 个 action 接上真实现后，外层 message 仍是那个固定串；
+      真实文本经 `toResult(r, true)` 的 `---DATA---` 通道落在 `data.message` 里。)*
+      ⇒ ★★ **先定性，别误当 bug**：它**不构成"说谎"** —— 真实文本**确实到达模型**（走 `---DATA---`）。
+        问题只是**外层摘要不具体**（模型若不读 `data`，就只看到"已完成"三个字）。
+        ⇒ 属**可读性**问题，**不是一致性**问题（G7 那一族抓的是"宣告了却没实现"，这条**实现了**）。
+      ⇒ 改法（若要改）：把真文本提到外层 ⇒ **会动 `toResult(r, true)` 的口径** ⇒
+        影响**所有**用它的 action（`diff_impact` / `arch_layer` / `derive_mind_map`，
+        加上 T17 新接的 `check_monolith` / `derive_algorithm` / `derive_chain` / `derive_split`）。
+      ★ 这是**"要么全改、要么不改"**的那种改动 —— **改一半 = 同一件事两套口径**（本仓头号病根）。
+
+- [ ] **T35 ★★ 「tool description ↔ 实现入参」没有判据 —— 光 `explore_code` 一个文件就累积了 10 处分叉（2026-10-04）**
+      *(核实：T17 那一轮，在 `explore_code` **一个文件**里连抓到 10 处「描述与实现分叉」。)*
+      ⇒ **10 处分三档**（★ 分档很重要：三档的修法与优先级不同，混在一起就没法逐条处置）：
+        · **说错 1 条**：`meta/index.ts` 说「`arch_layer` 需要 `project_dir`」，
+          而它**根本不吃** `project_dir`（真必填是 `feature`）⇒ 模型照这句传 = **传了不吃、漏了必需**。
+        · **缺漏 8 条**：`read` / `watch` / `guided_tour` / `derive_mind_map` / `inject_replay` /
+          `run_simulation` / `reset_simulation` / `derive_anim_flow`
+          —— **实现硬要某个必填，描述没写** ⇒ 模型不传就报「缺参数 x」。
+          （★ 条数**待确认**是"逐 case 核出来的全集"还是"抽查撞见的" —— 这个区别决定要不要再扫。）
+        · **措辞偏严 1 条**：`search` 的 `query` —— 描述写成"必填"，实际**空则温和返回**。
+      ⇒ ★★ **共同后果：一调就废**（description 是**模型唯一的入口**）。
+        与 T17 那 4 个空壳**后果相同、原因不同**（一个没实现、一个没说清）。
+      ⇒ **待做（两件，别混）**：
+        1. **先把 `explore_code` 扫干净**（在进行中）；
+        2. ★ **考虑立一个判据**：「**description 点名的必填**」vs「**实现真吃的必填**」逐条对账。
+           若可机械判定（从 `requireStr(args,'x')` 一类调用点 + 从 description 文本提取），
+           就能把这类问题**从"撞见"变成"必被发现"**。
+           ★★ **但先答一个问题：能不能做到「不误报」？** 做不到就**别立** ——
+             一扇会假阳的门会**训练人忽略它**（比没有更坏）。
+      ★ 归属：**T31 那一族**（"存下来的说法会腐"），但它**腐在"模型入口"上** ⇒
+        **危害比数据类更直接**（数据错了能查，入口错了模型连试都试不对）。
 

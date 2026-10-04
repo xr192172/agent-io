@@ -24,10 +24,10 @@
  *   默认 feature=agent-io，src=agent-io 包根/src
  */
 import path from 'node:path';
-import { importProject } from '../dist/src/tools/import_project.js';
-import { deriveMindMap } from '../dist/src/tools/derive_mind_map.js';
-import { deriveFeatureTree } from '../dist/src/tools/derive_feature_tree.js';
-import { openDb } from '../dist/src/db/db.js';
+import { importProject } from '../dist/src/infrastructure/graph/import_project.js';
+import { deriveMindMap } from '../dist/src/application/meta/view/derive_mind_map.js';
+import { deriveFeatureTree } from '../dist/src/infrastructure/analysis/structure/derive_feature_tree.js';
+import { openDb } from '../dist/src/infrastructure/index/db.js';
 import { getPackageRoot, getStorageRoot } from '../dist/src/infrastructure/storage.js';
 
 const args = process.argv.slice(2);

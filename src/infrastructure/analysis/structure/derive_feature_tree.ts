@@ -11,9 +11,8 @@
  *     文件 → 主导社区 → 功能 的归属映射（file_map）。
  *
  * 归并策略（目录优先，结构保真——功能树必须对得上实际项目、符合人类阅读习惯）：
- *   - 社区按"成员文件主导目录"聚成功能（domain/infrastructure/presentation/registry/observe… 各成功能，
- *     tools 大桶再按能力域拆成 8 类，杜绝"工具"一口大锅）；
- *   - 零社区的目录（纯定义/配置/入口文件，如 dsl 类型、db 存储、daemon 守护、tools 脚本）
+ *   - 社区按"成员文件主导目录"聚成功能（domain/infrastructure/presentation/registry/observe… 各成功能）；
+ *   - 零社区的目录（纯定义/配置/入口文件，如 dsl 类型、db 存储、daemon 守护）
  *     按目录直挂补成功能，不凭空消失；
  *   - gen_names=true（配置了 LLM）时 LLM 只做**命名润色**（目录分组 → 中文功能名），
  *     不重新归并——避免 LLM 按猜的业务语义把目录打散/吞并，导致对不上实际项目。
@@ -77,82 +76,6 @@ const DIR_FEATURE_NAMES: Record<string, string> = {
 };
 
 /**
- * tools/ 能力域（对齐 classify_tools 8 域）：tools 大桶按文件名归类入能力域。
- * 判定：显式清单（tools 目录真实文件名，确定性、可审计、对得上实际项目）优先；
- * 未列出的新文件用关键词打分兜底（honest 默认归 query——多数读/查类工具落这里）。
- */
-export const TOOL_DOMAINS: Array<{ id: string; label: string; files: string[]; kws: string[] }> = [
-  {
-    id: 'design', label: '设计编辑',
-    files: ['render_design', 'render_brickwork', 'render_dep_canvas', 'render_workbench', 'render_cluster_workbench', 'code_workbench', 'workbench_data', 'workbench_page', 'workbench_shell_css', 'scaffold', 'backfill', 'wizard_steps', 'simulation', 'dag_layout', 'templates', 'overlay', 'serve', 'annotation_tools'],
-    kws: ['render_brickwork', 'workbench', 'wizard', 'scaffold', 'simulation', 'dag_layout', 'annotation'],
-  },
-  {
-    id: 'query', label: '查询理解',
-    files: ['query_feature', 'list_features', 'explore_code', 'diff', 'diff_views', 'diff_impact', 'semantic_search', 'search_bricks', 'snapshot', 'dict_gen', 'dictionary', 'language_concepts', 'role_title', 'feature_map', 'guided_tour', 'status_tools', 'ast_parser', 'layer_detect', 'arch_layer', 'monolith', 'analyze_monolith', 'derive_feature_tree', 'derive_mind_map', 'derive_reasoning', 'derive_chain', 'derive_algorithm', 'derive_anim_flow', 'llm_focus', 'explain_gen', 'impact_ledger_store'],
-    kws: ['query', 'explore', 'diff', 'search', 'snapshot', 'dict', 'language_concepts', 'role_title', 'feature_map', 'guided_tour', 'status_', 'monolith', 'derive_', 'ast_parser', 'layer_detect', 'arch_'],
-  },
-  {
-    id: 'refactor', label: '重构治理',
-    files: ['refactor_pipeline', 'rename_symbol', 'rename_file', 'refactor_langs', 'refactor_judge', 'refactor_judge_cli', 'remove_dead_imports', 'detect_dead_imports', 'dead_deps', 'dead_statements', 'ts_slim', 'slim_brick', 'assemble_bricks', 'extract_contracts', 'reconcile_brick', 'reconcile_effects', 'package_migration', 'ast_rename', 'ast_suggest', 'similar_names', 'verify_refactor', 'deprecate_offline', 'deprecate_offline_cli', 'split_stage', 'split_stage_cli', 'derive_split', 'brickify', 'brickify_cli', 'classify_bricks', 'brick_bag'],
-    kws: ['rename', 'refactor', 'dead', 'slim', 'brick', 'contract', 'reconcile', 'migration', 'similar', 'deprecate', 'split_', 'verify_refactor'],
-  },
-  {
-    id: 'observe', label: '观测质检',
-    files: ['reconcile_chain', 'cluster_narrator', 'narrate_step', 'consistency', 'trace_evidence', 'trace_exec', 'inject_replay', 'dogfood_stats', 'index_freshness', 'alert_inbox'],
-    kws: ['observe', 'reconcile_chain', 'narrat', 'consistency', 'trace', 'replay', 'dogfood', 'signal_', 'instrument'],
-  },
-  {
-    id: 'judge', label: '治理裁决',
-    files: ['approval', 'submit_gate', 'contract_gate', 'reason_validator', 'signal_review', 'signal_review_cli'],
-    kws: ['approval', 'submit_gate', 'gate', 'validat', 'review'],
-  },
-  {
-    id: 'edit', label: '代码编辑',
-    files: ['edit_code', 'edit_result', 'file_ops', 'api_ops', 'node_ops', 'edge_ops', 'feature_ops', 'update_feature', 'manage_feature', 'git', 'go_mod', 'npm_mod'],
-    kws: ['edit_', '_ops', 'update_', 'manage_'],
-  },
-  {
-    id: 'harvest', label: '逆向采集',
-    files: ['import_project', 'watch_project', 'watch_project_tool', 'harvest_closure', 'harvest_from_url', 'collect_functions', 'registry_extract', 'cli_extract', 'import_graph'],
-    kws: ['watch_', 'harvest', 'collect_functions', 'extract'],
-  },
-  {
-    id: 'export', label: '交付导出',
-    files: ['export', 'render_mindmap', 'render_anatomy', 'render_tools_map', 'render_wizard', 'registry', 'capability_matrix', 'capability_cli', 'overview', 'opl', 'register_capabilities', 'taxonomy', 'impact_report'],
-    kws: ['export', 'render_mindmap', 'render_anatomy', 'render_tools_map', 'render_wizard', 'registry', 'capability', 'overview', 'register_', 'taxonomy'],
-  },
-  {
-    id: 'kernel', label: '工具内核',
-    files: ['ts_kernel/cfg', 'ts_kernel/loader', 'ts_kernel/kernel', 'ts_kernel/languages', 'ts_kernel/index', 'ts_kernel/probe'],
-    kws: ['ts_kernel', 'cfg', 'loader', 'kernel', 'languages', 'probe'],
-  },
-];
-
-/** tools/ 下文件 → 能力域 id（子目录先定家，再显式清单，最后关键词打分兜底） */
-export function toolDomainOf(relPath: string): string {
-  const nf = normPath(relPath);
-  // 子目录整体定家：解析内核是工具执行内核，python 执行器是重构子项目（避免同目录被拆到两个功能）
-  // ★ 2026-09-30：内核已从 `tools/ts_kernel/` 搬到 `infrastructure/parse/`（§44.3 ④）。
-  //   这类"按仓库相对路径前缀判断"的字符串**改名工具改不到**（见台账 §44.5(1)）——
-  //   同批用 `grep -rn "startsWith('tools/"` 全仓扫过，只有这一处。
-  // ★ 2026-10-04（T27）：python 执行器已从 `tools/python_refactor/` 收敛到
-  //   `infrastructure/analysis/refactor/langs/python/` ⇒ 前缀随之更新（**同一处坑的第二次**）。
-  if (nf.startsWith('infrastructure/parse/')) return 'kernel';
-  if (nf.startsWith('infrastructure/analysis/refactor/langs/python/')) return 'refactor';
-  const base = (nf.split('/').pop() ?? '').replace(/\.tsx?$/, '').replace(/\.go$/, '').toLowerCase();
-  for (const d of TOOL_DOMAINS) if (d.files.includes(base)) return d.id;
-  let best = 'query';
-  let bestHits = 0;
-  for (const d of TOOL_DOMAINS) {
-    let hits = 0;
-    for (const k of d.kws) if (base.includes(k)) hits++;
-    if (hits > bestHits) { bestHits = hits; best = d.id; }
-  }
-  return best;
-}
-
-/**
  * 全局基础设施文件：真身是数据层/协议层/服务层（dsl/db/daemon/根级 storage/server），
  * 不应随调用边被吸进业务社区——文件归属按目录直挂，不跟社区走。
  */
@@ -182,7 +105,7 @@ function isTestPath(p: string): boolean {
   return nf.startsWith('tests/') || /\.(test|spec)\.[a-z0-9]+$/i.test(base) || /_test\.(go|ts|js|tsx|jsx)$/i.test(base);
 }
 
-/** 社区 → 规则归并主键：tools 桶按能力域，根级归"基础服务"，其余按首段目录 */
+/** 社区 → 规则归并主键：根级归"基础服务"，其余按首段目录 */
 function communityKeyOf(c: { files: string[] }): string {
   if (c.files.length === 0) return 'root-svc';
   const counts = new Map<string, number>();
@@ -191,7 +114,7 @@ function communityKeyOf(c: { files: string[] }): string {
     if (isTestPath(f)) continue;
     testOnly = false;
     const seg = normPath(f).split('/');
-    const key = seg.length > 1 ? (seg[0] === 'tools' ? `tools:${toolDomainOf(f)}` : seg[0]) : 'root-svc';
+    const key = seg.length > 1 ? seg[0] : 'root-svc';
     counts.set(key, (counts.get(key) ?? 0) + 1);
   }
   if (testOnly) return 'tests';
@@ -201,28 +124,23 @@ function communityKeyOf(c: { files: string[] }): string {
   return best;
 }
 
-/** 单个文件 → 规则归并主键（目录/能力域维度）：tools → tools:<domain>，根级 → root-svc，其余按首段目录 */
+/** 单个文件 → 规则归并主键（目录维度）：根级 → root-svc，其余按首段目录 */
 function fileKeyOf(relPath: string): string {
   const seg = normPath(relPath).split('/');
   if (seg.length === 1) return 'root-svc';
-  return seg[0] === 'tools' ? `tools:${toolDomainOf(relPath)}` : seg[0];
+  return seg[0];
 }
 
 /** 规则归并主键 → 功能展示名 */
 function ruleLabelOf(key: string): string {
-  if (key.startsWith('tools:')) {
-    const d = TOOL_DOMAINS.find((x) => x.id === key.slice('tools:'.length));
-    return d ? d.label : '工具集';
-  }
   if (key === 'root-svc') return '基础服务';
   return DIR_FEATURE_NAMES[key] ?? key;
 }
 
 /**
  * 规则兜底归并：社区按"成员文件主导目录"聚成功能（先目录聚）；
- *   - tools/ 大桶按能力域再拆（design/query/refactor/observe/judge/edit/harvest/export）
  *   - 根级文件（storage/server…）聚成"基础服务"，消除"(根)"伪功能
- * 功能名用中文（DIR_FEATURE_NAMES / 能力域 label），符合人类阅读习惯。
+ * 功能名用中文（DIR_FEATURE_NAMES），符合人类阅读习惯。
  */
 function groupByDir(
   comms: Array<{ id: number; name: string; files: string[]; est_lines: number; symbol_count: number }>,

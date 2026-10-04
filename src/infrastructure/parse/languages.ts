@@ -67,7 +67,11 @@ export const LANGUAGES: LanguageEntry[] = [
   // 跨文件 type_ref 解析（resolveCrossFileCalls 的 typeNamesByFile 只认
   // interface/type/class 节点）此前定位不到 type alias，dead_deps live 集
   // 永远缺它们 → 剪刀误剪（ua_theme_engine 的 PresetId/HeadingFont 实证）
-  { name: 'typescript', pkg: 'typescript', exts: ['.ts'], kind: 'code', symbol_nodes: ['function_declaration', 'class_declaration', 'abstract_class_declaration', 'interface_declaration', 'type_alias_declaration', 'enum_declaration', 'method_definition'], import_nodes: ['import_statement', 'export_statement'], field_map: { name: 'name', parameters: 'parameters', return_type: 'return_type' } },
+  // ★ 2026-10-04 补全：`.mts`（ESM）/`.cts`（CJS）是 tree-sitter-typescript 同一套语法的
+  //   模块扩展名，与 `.ts` 同类。此前注册表只写 `['.ts']`，靠 `source_exts.ts` 的 `TS_JS_EXTS`
+  //   保底才没在 `SOURCE_EXTS` 里丢文件；但 `findLanguageByExt`/`isExtSupported`/`listSupportedExts`
+  //   走的是**本注册表** ⇒ 这两类文件此前对内核"不受支持"。补进注册表后口径一致（见 source_exts.ts 注释）。
+  { name: 'typescript', pkg: 'typescript', exts: ['.ts', '.mts', '.cts'], kind: 'code', symbol_nodes: ['function_declaration', 'class_declaration', 'abstract_class_declaration', 'interface_declaration', 'type_alias_declaration', 'enum_declaration', 'method_definition'], import_nodes: ['import_statement', 'export_statement'], field_map: { name: 'name', parameters: 'parameters', return_type: 'return_type' } },
   { name: 'tsx', pkg: 'tsx', exts: ['.tsx'], kind: 'code', symbol_nodes: ['function_declaration', 'class_declaration', 'abstract_class_declaration', 'interface_declaration', 'type_alias_declaration', 'enum_declaration', 'method_definition'], import_nodes: ['import_statement', 'export_statement'], field_map: { name: 'name', parameters: 'parameters', return_type: 'return_type' } },
   { name: 'javascript', pkg: 'javascript', exts: ['.js', '.mjs', '.cjs'], kind: 'code', symbol_nodes: ['function_declaration', 'class_declaration', 'method_definition'], import_nodes: ['import_statement', 'export_statement'], field_map: { name: 'name', parameters: 'parameters' } },
   { name: 'jsx', pkg: 'jsx', exts: ['.jsx'], kind: 'code', symbol_nodes: ['function_declaration', 'class_declaration', 'method_definition'], import_nodes: ['import_statement', 'export_statement'], field_map: { name: 'name', parameters: 'parameters' } },

@@ -23,7 +23,7 @@
  *   `resolveImportPath` = **纯相对路径**候选生成（`.js`→`.ts` 剥扩展名 + index 回退），
  *   被 `db.resolveImportTarget` / `tools/rename_file.ts` 复用，行为不许变。
  *   `resolveProjectImport` = **工程内 import 边**的多层口径（relative / python-dot /
- *   dotted / bare-name / go-module / package-dir），是 health/impact 的唯一入口。
+ *   dotted / bare-name / package-dir），是 health/impact 的唯一入口。
  *
  * ★ 两处待统一（本笔不做）：
  *   · `import_project.resolveImport` 仍持一份**多目标（0..n）**版本 —— 下一步统一
@@ -148,7 +148,7 @@ export function resolveExistingPath(
 // ── resolveProjectImport：工程内 import 边的唯一实现（2026-09-30） ──────────────────────
 
 /** 命中的**层**：这条边是哪条口径建起来的（回执可见性用） */
-export type ProjectImportLayer = 'relative' | 'python-dot' | 'dotted' | 'bare-name' | 'go-module' | 'package-dir';
+export type ProjectImportLayer = 'relative' | 'python-dot' | 'dotted' | 'bare-name' | 'package-dir';
 
 export interface ProjectImportHit {
   /** 命中项目内文件（相对项目根、posix）；null = 指向项目外 / 无法唯一定位 */
@@ -159,10 +159,20 @@ export interface ProjectImportHit {
   tried: readonly string[];
 }
 
-export interface ProjectImportOptions extends ResolvePathOptions {
-  /** Go module 前缀表（可选；health/impact 不传 ⇒ `go-module` 层不触发） */
-  goModules?: readonly { module: string; dir: string }[];
-}
+/**
+ * `resolveProjectImport` 的选项 —— 与 `ResolvePathOptions` 同形。
+ *
+ * ★ 2026-10-04：原 `goModules` 字段（及它驱动的 `go-module` 层）已删除。
+ *   取证：全仓三处调用点 `import_project.ts:461` / `impact/index.ts:128` / `health/index.ts:631`
+ *   都只传 `{ exts }`，**无一传 `goModules`** ⇒ 该分支恒不进入（静态取证：grep 全仓
+ *   `resolveProjectImport` 调用点 + `goModules` 赋值点，无测试传它）。
+ *   且语义与消费者不符：`go-module` 层取目录内**首个**文件，而 Go 包是**多文件**——
+ *   `import_project` 因此**自持**多目标 Go 解析（`import_project.ts:450` 取全部文件）；
+ *   health/impact 若接上只会把包内其余文件误报成孤儿 ⇒ 单目标代表对谁都不对。
+ *   与 `package-dir` 层「恰好一个」的**不对称**（前者取首个、后者要唯一）也是同一病根：
+ *   该层从未被真实消费者校准过。删掉它**不可能改变任何可观测行为**（分支恒不进入）。
+ */
+export type ProjectImportOptions = ResolvePathOptions;
 
 /**
  * 把一条 import source 解析到**项目内文件** —— 【唯一实现】。
@@ -174,11 +184,13 @@ export interface ProjectImportOptions extends ResolvePathOptions {
  *   3. `dotted`       : `^[\w][\w.]*$` 且含 `.`  → 点分模块 → `/` 路径，试**每个可能的包根**
  *                        （项目根 + 导入者上方逐层 ⇒ Maven 布局 `src/main/java/` 也能命中）
  *   4. `bare-name`    : `^[\w]+$`  → 先导入者同目录，再项目根
- *   5. `go-module`    : `goModules` 匹配前缀 → 目标目录内首个文件
- *   6. `package-dir`  : 其余（含 `a/b` 形式）→ 照抄 impact 的 resolvePackageImportDir 语义（宁漏不错）
+ *   5. `package-dir`  : 其余（含 `a/b` 形式）→ 照抄 impact 的 resolvePackageImportDir 语义（宁漏不错）
+ *
+ * ★ 2026-10-04：原第 5 层 `go-module` 已删除（无任何调用方传 `goModules` ⇒ 恒不进入；
+ *   且"取目录内首个文件"与 Go 多文件包语义不符，见 `ProjectImportOptions` 注释）。
  *
  * ★★ 层间是**串行假设**，不是互斥分类（`2`~`4` 未命中**继续往下试**，只 `1` 早退）：
- *   这六层是"这条串**可能**用的是哪种语言约定"的**假设表** —— 我们并不知道它属于哪种，
+ *   这五层是"这条串**可能**用的是哪种语言约定"的**假设表** —— 我们并不知道它属于哪种，
  *   所以某一层没命中**不等于**"它指向项目外"，只是"这个假设不成立"。旧 `impact` 就是这么做的
  *   （`resolveImportFile` 失败后串行回退 `resolvePackageImportDir`），串行是**既定语义**。
  *   ★ 为什么 `relative` 例外：`./x` 是一个**已知缺失**的文件（语法上就写明按路径找），
@@ -259,26 +271,7 @@ export function resolveProjectImport(
     // 未命中 ⇒ **继续往下试**（层间是串行假设，见函数头注）
   }
 
-  // 5. go-module
-  if (options?.goModules) {
-    for (const gm of options.goModules) {
-      if (source === gm.module || source.startsWith(gm.module + '/')) {
-        const sub = source.slice(gm.module.length).replace(/^\//, '');
-        // ★ 必须先剥前导 `/` 再 join：`path.posix.join('', '/core/pkg')` 得到的是**绝对路径**
-        //   `/core/pkg`，而 `rels` 里的键是项目相对路径 ⇒ 永远匹配不到（该层此前恒 null）。
-        const targetDir = sub ? path.posix.join(gm.dir, sub) : gm.dir;
-        // 取该目录下按路径排序的第一个文件作代表（多文件展开是 import_project 的事）
-        const hits = [...rels].filter((r) => r.startsWith(targetDir + '/') || r === targetDir);
-        if (hits.length > 0) {
-          const hit = hits.sort()[0];
-          tried.push(hit);
-          return { rel: hit, layer: 'go-module', tried };
-        }
-      }
-    }
-  }
-
-  // 6. package-dir：照抄 impact/index.ts resolvePackageImportDir（宁漏不错）
+  // 5. package-dir：照抄 impact/index.ts resolvePackageImportDir（宁漏不错）
   {
     const seg = source.split('/').filter(Boolean);
     if (seg.length > 0) {
