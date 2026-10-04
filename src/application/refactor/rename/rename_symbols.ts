@@ -36,7 +36,7 @@
 import { DATA_DIR_NAME } from '../../../infrastructure/data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
-import { renameSymbol, type RenameSymbolInput, type RenameSymbolResult } from '../rename_symbol/index.js';
+import { renameSymbol, type RenameSymbolInput, type RenameSymbolResult } from '../../../infrastructure/analysis/rename_symbol/index.js';
 import { renameLocals, type LocalRenameOutcome } from './rename_local.js';
 import { renameFile } from './rename_file.js';
 import { resolveProjectRoot } from '../../../infrastructure/analysis/project_root/index.js';

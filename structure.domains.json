@@ -267,8 +267,8 @@
     },
     {
       "id": "rf-rename-symbol",
-      "layer": "application",
-      "dir": "src/application/refactor/rename_symbol",
+      "layer": "infrastructure",
+      "dir": "src/infrastructure/analysis/rename_symbol",
       "note": "模块级符号跨文件改名**引擎**：`core`（语言无关骨架：编辑应用 / 相对 import 解析 / 作用域栈）+ `parts`（语言无关接线层）+ `languages/{registry,typescript,go,python,java,c,csharp}`（语言包）。★ `parts` 单独成文件是为断 `core → languages/registry → 语言包 → core` 的环（实测曾 9 条）。★ 与 `rename` 域不同：那里的工具是**入口**，本域是**引擎**。"
     },
     {

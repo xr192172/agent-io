@@ -26,7 +26,7 @@ import {
   analyzeModuleSource,
   resolveRel,
   buildNoExt,
-} from '../rename_symbol/index.js';
+} from '../../../infrastructure/analysis/rename_symbol/index.js';
 import {
   resolveProjectRoot,
   expandClosureDetailed,
