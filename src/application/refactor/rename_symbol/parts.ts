@@ -125,6 +125,12 @@ export interface RenameSymbolResult {
   fileRenameBlocked?: string[];
   /** 阻断理由（ok=false 时给出全部） */
   blocked?: string[];
+  /**
+   * ★ 本次**解析出的项目根**（实况 = `effectiveRoot ?? resolveProjectRoot(fileAbs)`）——
+   *   Core 内部早就定位了它（此前只在手里、没进产物）；T18：把它回传给构造点与下游反查。
+   *   作用域类字段（= `Touched.project_dir` 的产物来源）：随时可给，不依赖成败。
+   */
+  root?: string;
 }
 
 // ─────────────────────────────────────────────

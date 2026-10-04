@@ -92,7 +92,9 @@ async function renameSymbolCore(input: RenameSymbolInput): Promise<RenameSymbolR
   // ── 语言包统一调度：go / python / C# / Java / C·C++ / TS·JS 家族（ext 互不相交，查表等价原 if 链）──
   const pkg = findLangPackage(defExt);
   if (pkg) {
-    return pkg.rename({ file: defAbs, symbol, to, dryRun, resolvedRoot, blocked, renameFileIfMatching, skipped, aliasCfg });
+    const r = await pkg.rename({ file: defAbs, symbol, to, dryRun, resolvedRoot, blocked, renameFileIfMatching, skipped, aliasCfg });
+    // ★ T18：回传 Core 内部已定位的根（此前只在手里、没进产物）—— 不改语言包产物，只在本层补 root。
+    return { ...r, root: resolvedRoot };
   }
 
   // ★ P11：以前只写"暂只支持 TS/JS"——不可执行。补上"装什么包 / 照哪份清单 / 现缺口多少"。
@@ -102,6 +104,7 @@ async function renameSymbolCore(input: RenameSymbolInput): Promise<RenameSymbolR
     symbol,
     to,
     filesWritten: 0,
+    root: resolvedRoot,
     blocked: [`文件非 TS 系（${defExt}），跨文件改名暂只支持 TS/JS 模块级符号。${missingLanguageHint(defExt, 'rename_symbol')}`],
   };
 }
@@ -109,9 +112,13 @@ async function renameSymbolCore(input: RenameSymbolInput): Promise<RenameSymbolR
 /** ★ 唯一的构造点：把"我动了什么"集中算一次，所有出口都从这一个地方出去 */
 function touchedOf(input: RenameSymbolInput, r: RenameSymbolResult): Touched {
   const touched: Touched = {};
-  // project_dir：入参显式给了才有把握（未给时 renameSymbolCore 内部会自动定位 root，
-  //   但那条路径不出现在产物 r 里，构造点取不到 ⇒ 省略）。
-  if (input.project_dir) touched.project_dir = path.resolve(String(input.project_dir));
+  // project_dir（作用域类 ⇒ 随时可给）：**优先取入参**（调用方声明的根）；
+  //   入参没给则取**产物里的 root**（Core 内部已定位到的根，见 r.root）；两者都取不到才省略（不猜、不兜底 cwd）。
+  if (input.project_dir) {
+    touched.project_dir = path.resolve(String(input.project_dir));
+  } else if (r.root) {
+    touched.project_dir = r.root;
+  }
   // ★ 只有"真的落定"才给 symbols / written_files（dry_run / 被阻断 / ok:false 一律省略）：
   //   Touched 描述"调用之后下游能从哪儿接着走" ⇒ 未落定时没有可接的锚点。
   //   symbols 给"落定后的符号标识"= 新名 input.to（下游拿新名继续操作；给旧名会让链静默接错）。

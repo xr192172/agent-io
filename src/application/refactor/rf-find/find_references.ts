@@ -173,6 +173,13 @@ export interface FindReferencesResult {
   bounds?: ScanBounds;
   /** 阻断/非模块级符号等理由 */
   blocked?: string[];
+  /**
+   * ★ 本次**解析出的项目根**（symbol 模式：`symRoot ?? resolveProjectRoot(fileAbs)` 的实况）——
+   *   Core 内部早就定位了它（此前只在手里、没进产物）；T18：回传给构造点与下游反查。
+   *   作用域类字段（= `Touched.project_dir` 的产物来源）：随时可给，不依赖成败。
+   *   ★ field / type 模式不解析根（直接吃调用方给的 project_dir）⇒ 那两种模式本字段省略。
+   */
+  root?: string;
 }
 
 function lineOf(src: string, offset: number): number {
@@ -296,15 +303,15 @@ async function findReferencesCore(input: {
     // 非 TS target（跨语言，如 Java）：语言内核确认符号定义于此文件（类/方法/函数均可，不做"模块级声明"约束）
     const pf = await parseFileFull(path.basename(fileAbs), defSrc);
     if (!pf || !pf.symbols.some((s) => s.name === symbol!)) {
-      return { ok: false, symbol: symbol!, mode, importerCount: 0, blocked: [`"${symbol}" 未在 ${path.basename(fileAbs)} 中找到定义`] };
+      return { ok: false, symbol: symbol!, mode, importerCount: 0, root: resolvedRoot, blocked: [`"${symbol}" 未在 ${path.basename(fileAbs)} 中找到定义`] };
     }
   }
   const kind = def?.rootKinds.get(symbol!);
   if (isTsDef) {
-    if (!def) return { ok: false, symbol: symbol!, mode, importerCount: 0, blocked: ['定义文件解析失败'] };
-    if (!kind) return { ok: false, symbol: symbol!, mode, importerCount: 0, blocked: [`"${symbol}" 不是该文件的模块级声明`] };
+    if (!def) return { ok: false, symbol: symbol!, mode, importerCount: 0, root: resolvedRoot, blocked: ['定义文件解析失败'] };
+    if (!kind) return { ok: false, symbol: symbol!, mode, importerCount: 0, root: resolvedRoot, blocked: [`"${symbol}" 不是该文件的模块级声明`] };
     if (kind === 'import' || kind === 'reexport' || kind === 'exported') {
-      return { ok: false, symbol: symbol!, mode, importerCount: 0, blocked: [`"${symbol}" 在 ${path.basename(fileAbs)} 中是 import 绑定，请在定义文件上查询`] };
+      return { ok: false, symbol: symbol!, mode, importerCount: 0, root: resolvedRoot, blocked: [`"${symbol}" 在 ${path.basename(fileAbs)} 中是 import 绑定，请在定义文件上查询`] };
     }
   }
   const declOffset = (isTsDef && def ? def.rootOffsets.get(symbol!) ?? 0 : 0);
@@ -326,6 +333,7 @@ async function findReferencesCore(input: {
       symbol: symbol!,
       mode,
       importerCount: 0,
+      root: resolvedRoot,
       blocked: [
         `索引建不出来：${resolvedRoot} 下没有可解析的源码（或解析器缺失），因此拿不到 import 反闭包。` +
           `为避免全仓逐文件即时解析导致的卡顿与内存暴涨，find_references / safe_rename 不回退到时即扫描——` +
@@ -341,6 +349,7 @@ async function findReferencesCore(input: {
       symbol: symbol!,
       mode,
       importerCount: 0,
+      root: resolvedRoot,
       blocked: [`索引反闭包过大（${candidates.length} 个候选文件，上限 4000）。请收窄项目规模或核实索引是否越界（如误把依赖建进索引）。`],
     };
   }
@@ -473,6 +482,7 @@ async function findReferencesCore(input: {
     definition: { file: (path.relative(resolvedRoot, fileAbs) || fileAbs).replace(/\\/g, '/'), kind: kind ?? 'module', refs: defRefs },
     importers,
     importerCount: importers.length,
+    root: resolvedRoot,
     bounds,
     literals: input.report_literals ? await scanLiterals(resolvedRoot, symbol!) : undefined,
   };
@@ -491,9 +501,13 @@ async function findReferencesCore(input: {
 function touchedOf(input: Parameters<typeof findReferencesCore>[0], r: FindReferencesResult): Touched {
   const touched: Touched = {};
 
-  // project_dir：只填**调用方显式给的**项目根（= 实现里的 effectiveRoot / symRoot，见 215 / 286 行）。
-  // 实现内部用 resolveProjectRoot() 推出来的根不在本函数作用域，取不到就省略（不猜）。
-  if (input.project_dir) touched.project_dir = path.resolve(String(input.project_dir));
+  // project_dir：**优先取入参**（调用方声明的根，= 实现里的 effectiveRoot / symRoot，见 215 / 286 行）；
+  //   入参没给则取**产物里的 root**（Core 内部用 resolveProjectRoot() 推出来的根，见 r.root，symbol 模式才有）；两者都取不到才省略（不猜）。
+  if (input.project_dir) {
+    touched.project_dir = path.resolve(String(input.project_dir));
+  } else if (r.root) {
+    touched.project_dir = r.root;
+  }
 
   // symbols：对象类字段 = "本次调用**确立下来的**对象" ⇒ 必须 gate 在 r.ok：
   // 查不到符号（ok=false）时什么都没确立，整项省略（与写类"没落盘就不给"同一口径）。

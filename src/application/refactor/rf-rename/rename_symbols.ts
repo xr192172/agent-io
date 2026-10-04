@@ -132,6 +132,12 @@ export interface RenameSymbolsResult {
    * 这是"静默撒谎"，比报错危险得多。有了这个字段，调用方能明确知道"下一步读是可信的"。
    */
   indexWriteThrough?: WriteThroughOutcome;
+  /**
+   * ★ 本次**解析出的项目根**（module 支的 `rootDir` / local 支的 `rootDir`）——
+   *   两支各自在内部定位过它（此前只在手里、没进产物）；T18：回传给构造点与下游反查。
+   *   作用域类字段（= `Touched.project_dir` 的产物来源）：随时可给，不依赖成败。
+   */
+  root?: string;
 }
 
 /** `rename_symbols` 的**调用级入参**（[C] 逐字转发；语义见 `renameSymbols` 的文档与 `scope` 注释） */
@@ -161,9 +167,17 @@ async function renameSymbolsCore(input: RenameSymbolsInput): Promise<RenameSymbo
 function touchedOf(input: RenameSymbolsInput, r: RenameSymbolsResult): Touched {
   const touched: Touched = {};
 
-  // project_dir：**作用域类** ⇒ 随时可给。本文件**算过但没有回传**（module 支的 rootDir、local 支的 rootDir 都是局部量）
-  // ⇒ 只有入参显式给了才拿得到；否则省略（不猜）。
-  if (typeof input.project_dir === 'string' && input.project_dir) touched.project_dir = input.project_dir;
+  // project_dir（**作用域类** ⇒ 随时可给）：**优先取入参**（调用方声明的根）；
+  //   入参没给则取**产物里的 root**（module 支 / local 支内部已定位到的根，见 r.root）；两者都取不到才省略（不猜、不兜底 cwd）。
+  // ★ 2026-10-05 修正：入参**必须 `path.resolve`** —— 契约（`b_terms.ts` 的 `Touched.project_dir`）明文
+  //   「填**解析后的绝对根**，不是入参原值」。此处原先是**原样透传**，于是同一个契约字段在
+  //   `rename_symbol` / `find_references`（两者一直 `path.resolve`）与 `rename_symbols`（原样）之间**口径不一致**
+  //   —— 实测：传 `project_dir:"."` 时前者给 `C:\tmp\pj51`、后者给 `"."`。属**既有的判据分叉**，本笔收口。
+  if (typeof input.project_dir === 'string' && input.project_dir) {
+    touched.project_dir = path.resolve(input.project_dir);
+  } else if (r.root) {
+    touched.project_dir = r.root;
+  }
 
   // ★ 对象类字段（symbols / written_files）统一口径（team-lead 2026-10-01 裁定）：
   //   它们描述「**本次调用之后确立下来的对象**」⇒ 只有**真的落盘**了才给；dry_run / 被阻断 / ok:false ⇒ 整项省略。
@@ -178,20 +192,30 @@ function touchedOf(input: RenameSymbolsInput, r: RenameSymbolsResult): Touched {
     if (symbols.length > 0) touched.symbols = [...new Set(symbols)];
   }
 
-  // written_files：只在**确实落盘**且**能完整枚举**时给。
-  //   - dry_run / ok:false（整体阻断，或落盘中途阻断导致 ok:false）⇒ 不给（见上 `landed`）；
-  //   - apply_literals 额外写了字面量文件（literalFilesWritten>0）时，产物只回计数不回文件表 ⇒ 枚举不全 ⇒ 整项省略；
-  //   - 仅 scope='module'：其 definition/importers/fileRenamed 是**仓库相对路径 + `/`**（rename_symbol.ts 用
-  //     `path.relative(resolvedRoot, …)` + `\\`→`/`）；而 scope='local' 的 file 是**绝对路径**（rename_local.ts:120 `abs(...)`），
-  //     本函数又拿不到解析出的 root ⇒ 无法安全转相对 ⇒ local 支省略。
-  const literalWroteExtra = typeof r.literalFilesWritten === 'number' && r.literalFilesWritten > 0;
-  if (landed && r.scope === 'module' && !literalWroteExtra) {
+  // written_files：只在**确实落盘**时给，填**仓库相对路径 + `/`**。
+  //   ★ T18(4)：产物里现在带 `root`（module 支 / local 支各自定位的根）⇒ 三种来源都能归一成仓库相对：
+  //     - module 支：各条目 result 的 definition/importers/fileRenamed 本就是仓库相对（rename_symbol.ts 用 path.relative(resolvedRoot,…)）；
+  //     - local 支：result.definition.file 是**绝对路径**（rename_local.ts:120 `abs(...)`）⇒ 用 r.root 转相对；
+  //     - apply_literals：额外落盘的字面量文件**已可由产物枚举**（literals[].matches[] 带 file + decision='apply'）
+  //       —— 仅在**确实有字面量落盘**（literalFilesWritten>0）时纳入（report_literals 只扫不写，其 decision 也可能是 'apply'）。
+  //   r.root 取不到时保持原样（module 支本就相对）；无任何可枚举文件才整项省略。
+  if (landed) {
+    const toRepoRel = (f: string): string => {
+      if (!r.root || !f) return f;
+      const abs = path.isAbsolute(f) ? f : path.resolve(r.root, f);
+      return path.relative(path.resolve(r.root), abs).split(path.sep).join('/') || f;
+    };
     const files = new Set<string>();
     for (const a of r.applied) {
       const res = a.result;
-      if (res.definition?.file) files.add(res.definition.file);
-      for (const im of res.importers ?? []) files.add(im.file);
-      if (res.fileRenamed) files.add(res.fileRenamed);
+      if (res.definition?.file) files.add(toRepoRel(res.definition.file));
+      for (const im of res.importers ?? []) files.add(toRepoRel(im.file));
+      if (res.fileRenamed) files.add(toRepoRel(res.fileRenamed));
+    }
+    if (typeof r.literalFilesWritten === 'number' && r.literalFilesWritten > 0) {
+      for (const item of r.literals ?? []) {
+        for (const m of item.matches) if (m.decision === 'apply') files.add(toRepoRel(m.file));
+      }
     }
     if (files.size > 0) touched.written_files = [...files];
   }
@@ -257,10 +281,10 @@ async function renameSymbolsModule(input: Omit<RenameSymbolsInput, 'scope'>): Pr
   const externalRefs = previews.flatMap((p) => p.result?.externalRefs ?? []);
 
   // 任一阻断 → 整体不落盘，给预览报告
-  if (!allOk) return { ok: false, dryRun: true, previews, applied: [], filesWritten: 0, blocked: ['至少一个条目被阻断→整体未落盘'], literals, ...(externalRefs.length ? { externalRefs } : {}) };
+  if (!allOk) return { ok: false, dryRun: true, previews, applied: [], filesWritten: 0, blocked: ['至少一个条目被阻断→整体未落盘'], literals, ...(rootDir ? { root: rootDir } : {}), ...(externalRefs.length ? { externalRefs } : {}) };
 
   // dry_run 显式要求 → 只预览
-  if (dry_run === true) return { ok: true, dryRun: true, previews, applied: [], filesWritten: 0, literals, ...(externalRefs.length ? { externalRefs } : {}) };
+  if (dry_run === true) return { ok: true, dryRun: true, previews, applied: [], filesWritten: 0, literals, ...(rootDir ? { root: rootDir } : {}), ...(externalRefs.length ? { externalRefs } : {}) };
 
   // 阶段 2：全部通过 → 逐条真落盘（串行；前面改动导致后续阻断则中止并据实报告）
   //
@@ -299,6 +323,7 @@ async function renameSymbolsModule(input: Omit<RenameSymbolsInput, 'scope'>): Pr
           blocked: [`条目 ${i}（${item.file} 的 ${item.symbol}→${item.to}）实际落盘时被阻断：${(result.blocked || []).join('；')}。已应用 ${applied.length} 条，之后条目未执行`],
           literals,
           literalFilesWritten,
+          ...(rootDir ? { root: rootDir } : {}),
         };
       }
       filesWritten += result.filesWritten;
@@ -318,7 +343,7 @@ async function renameSymbolsModule(input: Omit<RenameSymbolsInput, 'scope'>): Pr
       literals = fresh;
     }
 
-    return { ok: true, previews, applied, filesWritten, ...(literalFilesWritten ? { literalFilesWritten } : {}), literals, ...(externalRefs.length ? { externalRefs } : {}) };
+    return { ok: true, previews, applied, filesWritten, ...(literalFilesWritten ? { literalFilesWritten } : {}), literals, ...(rootDir ? { root: rootDir } : {}), ...(externalRefs.length ? { externalRefs } : {}) };
   };
 
   // 项目根算不出来（既没显式给 project_dir、也定位不到）→ 退化为直写：
@@ -414,6 +439,7 @@ async function renameSymbolsLocal(input: RenameSymbolsInput): Promise<RenameSymb
     previews,
     applied,
     filesWritten: r.filesWritten,
+    root: rootDir,
     ...(r.blocked?.length ? { blocked: r.blocked } : {}),
     indexWriteThrough:
       r.index ?? {
