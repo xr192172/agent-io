@@ -50,6 +50,8 @@ export const DESIGN_TOOLS: ToolDef[] = [
       'decisions（决策卡目录，按功能线 thread 分组，支持 thread/decision_status 过滤）/ ' +
       'files（语义文件摘要列表，支持 file_layer/file_status 过滤）/ ' +
       'file（单个文件详情，需 file_id，含 expected_apis / expected_deps；★ 已实现 API 不在此——它是**代码的事实**，现取解析数据 cache.db）/ ' +
+      'digest（每文件一行的紧凑认知索引：F:职责 | R:关系 | A:契约 | S:高熵决策，需 feature；' +
+      '★ 只读**派生视图**——从已有 DSL 字段现渲染、不落盘、不新增真相源，上下文紧张时一遍读完）/ ' +
       'calls（文件调用关系，需 file_id+project_dir，查 cache.db 入/出调用）/ ' +
       'functions（函数级大纲，需 feature，查缓存 db 的目录→文件→函数 + 调用/被调用/回环）/ ' +
       'annotations（标注）/ approvals（审批）/ approval_history（审批历史，需 annotation_id）/ ' +
@@ -58,10 +60,10 @@ export const DESIGN_TOOLS: ToolDef[] = [
       'view: design（默认，活态设计）/ live（实际代码快照，仅 query=dsl/nodes/edges/node/files/file 生效，用于对比设计 vs 代码现状）。',
     inputSchema: {
       query: z
-        .enum(['dsl', 'features', 'nodes', 'edges', 'node', 'decisions', 'files', 'file', 'calls', 'functions', 'annotations', 'approvals', 'approval_history', 'snapshots', 'templates', 'simulation_state', 'diff', 'goals', 'edge_intents'])
-        .describe('查询类型：dsl=完整DSL, features=feature列表, nodes=节点摘要, edges=边摘要, node=节点详情, decisions=决策目录(按功能线分组), files=文件摘要, file=文件详情, calls=调用关系, functions=函数级大纲(目录→文件→函数+调用/被调用/回环), annotations=标注, approvals=审批, approval_history=审批历史, snapshots=快照, templates=模板, simulation_state=仿真状态, diff=对比, goals=结构化目标(meta.goals), edge_intents=边级意图(edge.intent)'),
+        .enum(['dsl', 'features', 'nodes', 'edges', 'node', 'decisions', 'files', 'file', 'digest', 'calls', 'functions', 'annotations', 'approvals', 'approval_history', 'snapshots', 'templates', 'simulation_state', 'diff', 'goals', 'edge_intents'])
+        .describe('查询类型：dsl=完整DSL, features=feature列表, nodes=节点摘要, edges=边摘要, node=节点详情, decisions=决策目录(按功能线分组), files=文件摘要, file=文件详情, digest=每文件一行紧凑认知索引(F职责/R关系/A契约/S高熵决策,只读派生), calls=调用关系, functions=函数级大纲(目录→文件→函数+调用/被调用/回环), annotations=标注, approvals=审批, approval_history=审批历史, snapshots=快照, templates=模板, simulation_state=仿真状态, diff=对比, goals=结构化目标(meta.goals), edge_intents=边级意图(edge.intent)'),
       view: z.enum(['design', 'live']).default('design').describe('视图层级：design=设计视图（默认），live=实际代码快照'),
-      feature: z.string().optional().describe('feature 名（nodes/edges/node/decisions/files/file/annotations/approvals 等需要）'),
+      feature: z.string().optional().describe('feature 名（nodes/edges/node/decisions/files/file/digest/annotations/approvals 等需要）'),
       node_id: z.string().optional().describe('query=node 时：节点 ID'),
       thread: z.string().optional().describe('query=decisions 时：按功能线过滤（不传=全部，按 thread 分组输出）'),
       decision_status: z.enum(['active', 'superseded', 'draft']).optional().describe('query=decisions 时：按决策状态过滤（active=生效中/superseded=已迭代/draft=草案）'),

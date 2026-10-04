@@ -12,6 +12,8 @@
  *   - node：获取单个节点详情（需 node_id）
  *   - files：列出所有语义文件摘要（id/path/responsibility/status/lines）
  *   - file：获取单个文件详情（需 file_id，含 expected_apis/actual_apis/deps/symbols）
+ *   - digest：每文件一行紧凑认知索引（F:职责 | R:关系 | A:契约 | S:高熵决策）——
+ *             语义层的**只读派生视图**，上下文紧张时一遍读完；不落盘、不新增真相源
  *   - calls：查询文件的调用关系（需 file_id + project_dir，显示入/出调用）
  *
  * query 类型与参数映射：
@@ -22,6 +24,7 @@
  *   node             → get_node         { feature, node_id }
  *   files            → list_files       { feature, layer?, status? }
  *   file             → get_file         { feature, file_id }
+ *   digest           → 一行式认知索引   { feature }（语义层派生视图，只读）
  *   calls            → get_calls        { feature, file_id, project_dir }
  *   annotations      → list_annotations { feature, node_id?, severity?, unresolved_only? }
  *   approvals        → list_approvals   { feature, status?, assignee? }
@@ -47,6 +50,7 @@ import type { Database } from '../../../infrastructure/index/db.js';
 import { buildFunctionOutline } from '../../../infrastructure/index/function_outline.js';
 import { fileFacts } from '../../../infrastructure/index/file_facts.js';
 import type { OverlayGoal } from '../../../domain/overlay.js';
+import type { BrickContract } from '../../../domain/contract.js';
 
 export interface QueryFeatureInput {
   /** 查询类型 */
@@ -59,6 +63,7 @@ export interface QueryFeatureInput {
     | 'decisions'
     | 'files'
     | 'file'
+    | 'digest'
     | 'calls'
     | 'functions'
     | 'annotations'
@@ -70,7 +75,7 @@ export interface QueryFeatureInput {
     | 'diff'
     | 'goals'
     | 'edge_intents';
-  /** feature 名（dsl/nodes/edges/node/decisions/files/file/annotations/approvals/approval_history/snapshots/simulation_state 必填；features/templates 忽略；diff 用 feature_a/feature_b） */
+  /** feature 名（dsl/nodes/edges/node/decisions/files/file/digest/annotations/approvals/approval_history/snapshots/simulation_state 必填；features/templates 忽略；diff 用 feature_a/feature_b） */
   feature?: string;
   /** node：节点 ID */
   node_id?: string;
@@ -193,6 +198,38 @@ function filePathFromId(nodeId: string): string {
   // 反 sanitize：_ 恢复为路径分隔符（import_project 中 sanitize 把非 [a-zA-Z0-9_-] 替换为 _）
   // 但这是不可逆的，只能展示原始 nodeId
   return raw;
+}
+
+/** 保序去重（派生视图内部折叠重复项；不引入新判据） */
+function dedupePreserve(xs: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const x of xs) {
+    if (!x || seen.has(x)) continue;
+    seen.add(x);
+    out.push(x);
+  }
+  return out;
+}
+
+/** 紧凑列表：超长时截断并**标注省略数**（不静默丢） */
+function compactList(xs: string[], cap = 5): string {
+  return xs.length <= cap ? xs.join('/') : `${xs.slice(0, cap).join('/')}…+${xs.length - cap}`;
+}
+
+/** 积木契约 → 一行紧凑提示（只投影 `contract` 已有字段，缺项不补、不推断） */
+function contractHint(c: BrickContract): string {
+  const eff = c.effects;
+  const parts: string[] = [`role=${c.role?.class ?? '?'}`];
+  const writes = (eff?.writes ?? []).map((e) => e.target);
+  const holds = (eff?.holds ?? []).map((e) => e.target);
+  const emits = eff?.emits ?? [];
+  const config = eff?.reads_config ?? [];
+  if (writes.length) parts.push(`writes=${compactList(writes)}`);
+  if (holds.length) parts.push(`holds=${compactList(holds)}`);
+  if (emits.length) parts.push(`emits=${compactList(emits)}`);
+  if (config.length) parts.push(`config=${compactList(config)}`);
+  return `契约(${parts.join(', ')})`;
 }
 
 export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
@@ -665,6 +702,75 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
       };
     }
 
+    // ── 一行式认知索引（AOCI 形状的**派生视图**：只读、不落盘、不新增真相源）──
+    //   F:职责  ← 语义层 responsibility
+    //   R:关系  ← 已有依赖事实（语义层 expected_deps ∪ cache.db import 事实，走 fileFacts 唯一入口，不新算）
+    //   A:契约  ← 语义层 expected_apis 签名（逐条）
+    //   S:高熵决策 ← 语义层**非显然**字段（expected_behavior / contract / 非活跃 lifecycle）
+    //   标签位 [TAG] ← layer（架构层 id，等价 AOCI 的标签槽；无则不填）
+    //   ★ 段缺则省略（宁缺毋造）；权威仍为 cache.db + DSL，本视图随时可重生成。
+    case 'digest': {
+      if (!input.feature) {
+        throw new Error(
+          'query "digest"（每文件一行认知索引）需要 feature 参数：请传要投影的语义层 feature 名，' +
+            '如 get_dsl {query:"digest", feature:"<name>"}。',
+        );
+      }
+      const dsl = loadDSL(input);
+      const files = dsl.semantic?.files ?? [];
+      if (files.length === 0) {
+        return {
+          message: `feature "${dsl.feature}" 的语义层没有文件（semantic.files 为空），无可投影的一行式索引 ${viewTag}`,
+          data: [],
+        };
+      }
+      // 依赖事实的根 = DSL 自带的 source_root（import_project 保证写入）；缺则退回显式 project_dir。
+      const factsRoot = dsl.source_root ?? input.project_dir;
+      const lines: string[] = [
+        `══ feature "${dsl.feature}" 一行式认知索引 ${viewTag}（语义层派生视图·只读·不落盘）══`,
+        `  ${files.length} 文件 · 由当前 DSL 现渲染（可随时重生成；权威仍为 cache.db + DSL）`,
+        '',
+      ];
+      const cards: Array<Record<string, unknown>> = [];
+      for (const f of files) {
+        const seg: string[] = [];
+        // F ← responsibility（无则不填占位）
+        const resp = typeof f.responsibility === 'string' ? f.responsibility.trim() : '';
+        if (resp) seg.push(`F:${resp}`);
+        // R ← 已有依赖事实：设计意图 expected_deps ∪ cache.db 真实 import 边
+        const factsDeps = factsRoot ? fileFacts(factsRoot, f.path, dsl.feature).deps : [];
+        const rels = dedupePreserve([...(f.expected_deps ?? []), ...factsDeps]);
+        if (rels.length) seg.push(`R:${rels.join(', ')}`);
+        // A ← expected_apis 签名（逐条；无则省略）
+        const sigs = (f.expected_apis ?? [])
+          .map((a) => a.signature)
+          .filter((s): s is string => typeof s === 'string' && s.trim() !== '');
+        if (sigs.length) seg.push(`A:${sigs.join(' ; ')}`);
+        // S ← 语义层非显然字段（有啥填啥，没有就省略）
+        const s: string[] = [];
+        if (f.expected_behavior?.trim()) s.push(f.expected_behavior.trim());
+        if (f.contract) s.push(contractHint(f.contract));
+        if (f.lifecycle && f.lifecycle.status !== 'active') {
+          s.push(`生命周期=${f.lifecycle.status}${f.lifecycle.merged_into ? `→${f.lifecycle.merged_into}` : ''}`);
+        }
+        if (s.length) seg.push(`S:${s.join(' ; ')}`);
+        const tag = f.layer ? `[${f.layer}]` : '';
+        const body = seg.length ? seg.join(' | ') : '(语义层无 F/R/A/S 字段可投影)';
+        lines.push(`${f.path}${tag}: ${body}`);
+        cards.push({
+          id: f.id,
+          path: f.path,
+          layer: f.layer ?? null,
+          responsibility: resp || null,
+          deps: rels,
+          apis: sigs,
+          decisions: s,
+        });
+      }
+      lines.push('', '(需要单文件细节：query=file + file_id；需要实现事实：query=files / query=calls)');
+      return { message: lines.join('\n'), data: cards };
+    }
+
     // ── 细粒度查询：调用关系 ──────────────────────────────────
     case 'calls': {
       const dsl = loadDSL(input);
@@ -867,6 +973,10 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
     }
 
     default:
-      throw new Error(`未知 query 类型: ${(input as { query: string }).query}`);
+      // ★ 无参/错参给人话错误（不吐 `undefined`，也不抛 Node 原始异常）
+      throw new Error(
+        `未知 query 类型: ${String((input as { query?: unknown }).query ?? '') || '(未传)'}。` +
+          `请传 query 参数（常用：dsl / features / nodes / edges / files / file / digest / calls / functions）。`,
+      );
   }
 }
