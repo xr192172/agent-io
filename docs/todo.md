@@ -566,47 +566,6 @@
       ★ 它不在 `application/**` ⇒ **按 `dc-add-tool` 的 [B] 定义它不是 [B]**（是 infrastructure 里的产物类型），
         所以本轮 5 个 [B] 的清单里没有它 —— 但它同样是"被污染的名字"，属同一族债。
 
-- [ ] **T42 ★★ 结构重排三案（独立结构评审 2026-10-05；"层"这根轴清楚，"层内靠什么切"没有统一口径）**
-      *(核实：独立子代理只读目录结构后报告；我复核了 `ls src/presentation/cli/`（22 文件）与行数。)*
-      ⇒ **方案 A ✅ 已做（2026-10-05，commit `2a5c353`）**：拆 `presentation/cli/` —— 8 个
-        （7 个 `render_*` + `workbench_shell_css`）移入 `cli/render/`，改 19 处相对路径 +
-        `brickify_cli.ts` 的 7 条 import；域表加 `cli-render`（55 → 56 域 + 7 平铺）。
-        ★ 拆的理由不是"看着乱"：域表那条 `cli-surface` 的 note 原本自称"每个文件 = 一条命令 ⇒ 平铺是终态"，
-        **而那 7 个 renderer 不是命令**（唯一引用者是 `brickify_cli`）⇒ 那条 note 一直是用错的理由背书。
-        *验收：tsc 0 / build 0 / structure:gap 三态全 0 / `brickify_cli` 无参打印 usage。*
-      ⇒ **方案 B ⏳ 第一步 ✅ 已做（2026-10-05，commit `b01ae48`）**：9 个 `rf-*` 目录去冗余前缀
-        （`annotate` `edit` `find` `pipeline` `rename` `snapshot` **`parse_capability`** **`rule_library`** **`diff_views`**）；
-        **实测引用 70 处 / 26 文件**（台账原记 68 处 —— 我的第一版口径 59 漏了 `rf-*` 互引）。
-        ★★ **三处名字是被"跨模型评审"救下来的**：初版 `parse/` `rules/` 会让域表 **id 重复**，
-          而 `structure_gap.ts:130` **对重复 id 直接 throw** ⇒ **`structure:gap` 会当场崩溃**（我逐条亲验坐实）。
-        *验收：tsc 0 · build 0 · 结构三态全 0 · 全量 56 工具零坏签名 · 残留 grep 0（含域表 note 正文 5 处）。*
-      ⇒ **方案 B ✅ 第二步 2a 已做（2026-10-05，commit `f81d215`）**：`package_migration/` 下沉到
-        `infrastructure/analysis/package_migration/`（**零 application 依赖**，入边只 1 处）。
-        ★ 同结构先例：`infrastructure/analysis/contract_gate/`。
-        ★★ **执行者纠正了我的一个错误前提**：我指示它"目录深度变了、内部 import 全要重写"，
-          它核完停下：`src/application/refactor/X` 与 `src/infrastructure/analysis/X` 在 src 下**同为 3 段**
-          ⇒ 内部 `../../../infrastructure/…` **恰好仍解析到同一目标**（并验了 3 个目标真实存在）
-          ⇒ **照我的指示改会把好 import 改坏**。
-          ⇒ 教训（今日第二次同类）：**"深度变了"要数段数，不要凭"看起来更深"下结论。**
-      ⇒ **方案 B ✅ 第二步 2b 四步全部完成**（A `01573f0` / B `1bb9d93` / C1 `14961f9` / D `fd88a66`）：
-        · **A** 沉 `protect.ts`（它住在工具目录里，5 个语言包都用）→ `infrastructure/analysis/refactor/`
-        · **B** 沉 `project_root.ts`（1279 行 / 15 个改动点）→ `infrastructure/analysis/project_root/`（**新立 `project-root` 域**）
-        · **C1** 把「**文件联动改名**」从引擎**上收到工具层** ⇒ **切断了唯一那条「引擎 → 应用层库」的反向边**
-          ★ 用户裁定：「**行为改变就改变呗**……**如果你行为不能改变的话，那我不就只能在屎上雕花了？**」
-          ⇒ **"本仓无测试 ⇒ 别改行为"是错的推理**：行为改变**不是代价，是修复**；无测试**不是否决理由，是要补的证据**。
-          ★ 验收 = 与改前基线**逐项对照**（`ok`/`filesWritten`/`fileRenamed`/顶层 `written_files`/磁盘真值 全一致；
-          仅"内层"那条变，已判定可接受）。
-        · **D** `rename_symbol/`（10 文件）→ `infrastructure/analysis/rename_symbol/`
-          ★★ **这一步的意义**：域表那句「**那里的工具是入口，本域是引擎**」**第一次变成事实** ——
-          `application/refactor/` 现在**恰好只剩 9 个工具目录 + `index.ts`**。
-        ⇒ ★ **A→B→C→D 的顺序正是关键**：D 之前**实测**引擎外向依赖已全是 `infrastructure/*`+`domain/*`
-          ⇒ **D 是纯搬家**（若直接搬，就会先主动制造一轮 `infrastructure → application` 违规再去修）。
-        *验收：tsc 0 · build 0 · 三态全 0 · `layer_violation 0` / `circular_dependency 0` · 全量 56 工具零坏签名 · 真调确认联动仍工作。*
-      ⇒ ✅ **另修一笔**（`d490891`）：`written_files` **不再列"被联动改名后已不存在"的旧名**
-        （它是**同一次调用里两层口径打架**：引擎 per-item 只列一个、工具层却两个都列）。★ 两条对照证明修法是**有区分力**的。
-      ⇒ ★ 另核实：`rf-rename ⟷ rename_symbol` 有**目录级双向边**（两条边都验了），
-        但**文件级环不闭合**（`rename_file.ts` 不 import `rename_symbol(s)`）⇒ **"零环"不是假绿**。
-
 > ★★ **上面 T37/T38/T39 是 2026-10-05 体检**当场**修掉的三笔**（已进 commit 历史，故不在此列）：
 > `f2e9066` cross 线假阳性 + P-D 守卫漏接 · `94987c4` 补齐 18 工具缺参守卫（**59 工具零坏签名**）
 > · `25ab56c` `render_brickwork` 默认输出归位 `<agent-io>/docs/`。
