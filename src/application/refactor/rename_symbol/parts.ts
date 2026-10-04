@@ -10,44 +10,19 @@
 import { readdirSync, type Dirent } from 'node:fs';
 import path from 'node:path';
 import { TS_JS_EXTS } from '../../../infrastructure/parse/index.js';
+import { TS_EXTS, type NodeType } from '../../../infrastructure/parse/ast_node.js';
 import type { AliasConfig, ExternalRef } from '../../cross/project_root.js';
 
 // ─────────────────────────────────────────────
-// 最小 tree-sitter 节点面（同 Kernel）
+// 最小 tree-sitter 节点面 + 小工具（`N` / `NodeType` / `TS_EXTS` / `stripQuotes` / `nameInfo`）
+//
+// ★ 下沉到 infrastructure/parse（2026-10-04，T26）：模块级作用域解析 `analyzeModuleSource`
+//   移到 `infrastructure/parse/module_analysis.ts` 后，若它继续从这里取原语，就会新造
+//   `infrastructure → application` 回边（用一条违规换一条环，方向反了）。
+//   ⇒ 原语下沉到 `infrastructure/parse/ast_node.js`，本文件**向下复用并再导出** ——
+//   单一落点、不复制两份；语言包与 core 的取用路径（`../parts.js`）保持不变。
 // ─────────────────────────────────────────────
-export interface N {
-  type: string;
-  text: string;
-  startIndex: number;
-  endIndex: number;
-  childCount: number;
-  child(i: number): N | null;
-  childForFieldName(f: string): N | null;
-}
-
-/** TS/JS 家族扩展名 —— 来自内核唯一权威（`ts_kernel/source_exts.ts`） */
-export const TS_EXTS = new Set<string>(TS_JS_EXTS);
-
-/** 值/类型引用区分 */
-export type NodeType = 'value' | 'type';
-
-/** 去引号（跨语言共用的小工具） */
-export function stripQuotes(s: string): string {
-  s = s.trim();
-  if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'")) || (s.startsWith('`') && s.endsWith('`'))) return s.slice(1, -1);
-  return s;
-}
-
-/** 结合符（field 'name'，兜底首 identifier）返回 { text, offset } 或无 */
-export function nameInfo(n: N): { text: string; offset: number } | null {
-  const dir = n.childForFieldName('name');
-  if (dir && (dir.type === 'identifier' || dir.type === 'type_identifier' || dir.type === 'property_identifier')) return { text: dir.text, offset: dir.startIndex };
-  for (let i = 0; i < n.childCount; i++) {
-    const c = n.child(i);
-    if (c && (c.type === 'identifier' || c.type === 'type_identifier')) return { text: c.text, offset: c.startIndex };
-  }
-  return null;
-}
+export { TS_EXTS, stripQuotes, nameInfo, type N, type NodeType } from '../../../infrastructure/parse/ast_node.js';
 
 /**
  * 递归收集项目根下指定扩展名文件。

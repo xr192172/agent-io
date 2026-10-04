@@ -34,8 +34,9 @@ export type {
   RenameSymbolResult,
 } from './core.js';
 
-export { analyzeModuleSource } from './languages/typescript.js';
-export type { ImportEdge, ModuleRef, ModuleAnalysis } from './languages/typescript.js';
+// ★ 模块级作用域解析已下沉到 infrastructure（2026-10-04，T26）；对外契约不变，仍从这里取用。
+export { analyzeModuleSource } from '../../../infrastructure/parse/module_analysis.js';
+export type { ImportEdge, ModuleRef, ModuleAnalysis } from '../../../infrastructure/parse/module_analysis.js';
 
 export { analyzeGoSource, renameGoSymbol } from './languages/go.js';
 export type { GoModuleAnalysis } from './languages/go.js';

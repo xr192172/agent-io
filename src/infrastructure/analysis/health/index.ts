@@ -911,6 +911,9 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
       //   （本工具 4 条 vs dep-cruiser 2 条）⇒ 那正是本仓头号病根「判据分叉」的又一次现形。
       //   排除后两边**逐条对齐**（`write_gate ↔ index_backfill ↔ index_freshness`、
       //   `project_root ↔ rename_symbol/languages/typescript`）。
+      //   ★ 2026-10-04（T26）后：上列第二条 `project_root ↔ rename_symbol/languages/typescript`
+      //     已消失 —— `analyzeModuleSource` 下沉到 `infrastructure/parse/module_analysis.ts`，
+      //     `project_root` 不再反向依赖特性内的语言包。原观测保留于此（改文档 ≠ 改写历史）。
       if (info.typeOnly) continue;
       if (cycleNodes.has(target)) outs.add(target);
     }

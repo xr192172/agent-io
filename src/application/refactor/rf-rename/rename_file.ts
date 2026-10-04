@@ -433,8 +433,9 @@ async function renameFileCore(input: RenameFileInput): Promise<RenameFileResult>
       if (!lit) continue;
       if (isMoved) {
         // 被移动文件：只重锚定相对导入到原解析目标（新位置→同一文件）
+        // ★ 同样传 `TS_JS_EXTS`（理由见下方主扫描分支的注释）——被移动文件自身的 `.mts/.cts` 引用也要认。
         if (!lit.inner.startsWith('.')) continue;
-        const targetRel = isPy ? resolvePythonTarget(projectRoot, importerRel, lit.inner) : resolveImportTarget(projectRoot, importerRel, lit.inner);
+        const targetRel = isPy ? resolvePythonTarget(projectRoot, importerRel, lit.inner) : resolveImportTarget(projectRoot, importerRel, lit.inner, TS_JS_EXTS);
         if (!targetRel || targetRel === fromRel) continue;
         const targetNoExt = targetRel.replace(/\.[^.]+$/, '');
         const toSource = isPy ? newPySpecifier(toRel, targetNoExt) : newSpecifier(toRel, lit.inner, targetNoExt);
@@ -442,7 +443,18 @@ async function renameFileCore(input: RenameFileInput): Promise<RenameFileResult>
         ownEdits.push({ pos: lit.startIndex, len: lit.text.length, quote: isPy ? '' : lit.text[0], toSource });
         continue;
       }
-      const targetRel = isPy ? resolvePythonTarget(projectRoot, importerRel, lit.inner) : resolveImportTarget(projectRoot, importerRel, lit.inner);
+      // ★ 相对性门：与上方 `isMoved` 分支**同口径**（照抄 `!lit.inner.startsWith('.')`，不另发明一套）。
+      //   两处做的是同一件事（判"这个字面量是否真解析到被移动文件"），`isMoved` 分支早有这门槛、
+      //   主扫描分支漏了 ⇒ 同一文件内两套口径（判据分叉）。
+      //   ★ 行为变更（T13）：`resolveImportTarget` **不判相对性**，裸包名会被 `dirname+join` 解析成本地
+      //   文件（实测 `import 'Helper'` + 同目录 `Helper.ts` ⇒ 命中）⇒ 加门后"裸包名 + 同目录同名文件"
+      //   **不再被改写**（原会被误改）。非相对字面量本就不该算"指向被移动文件的相对引用"，故收窄误改面。
+      if (!lit.inner.startsWith('.')) continue;
+      // ★ 非 Python 分支必须传 `TS_JS_EXTS`（不传则 `resolveImportTarget` 默认走 `IMPORT_EXTS`，
+      //   那份 **不含 `.mts/.cts`**）—— 否则 `import './foo.mjs'`（NodeNext ESM 引 `.mts` 的写法）
+      //   会解析不到目标 ⇒ 该引用**静默不被改写**。`TS_JS_EXTS` 是本仓"TS/JS 家族扩展名"的
+      //   单一真相源（`parse/source_exts.ts`，本文件已 import），**不在此另抄一份字面数组**。
+      const targetRel = isPy ? resolvePythonTarget(projectRoot, importerRel, lit.inner) : resolveImportTarget(projectRoot, importerRel, lit.inner, TS_JS_EXTS);
       if (targetRel !== fromRel) continue; // 不是指向被移动文件 → 不碰
       // 生成新规范字，保留老引用扩展名风格
       const toSource = isPy ? newPySpecifier(importerRel, toNoExt) : newSpecifier(importerRel, lit.inner, toNoExt);

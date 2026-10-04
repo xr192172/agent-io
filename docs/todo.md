@@ -188,18 +188,6 @@
       · `package.json` 里 13 个指向 `dist/src/tools/*_cli.js` 的 scripts ⇒ 改为走投影
       · `tests/server_registry.consistency.test.ts` 的 `INTERNAL_MODULES` 登记表要同步（删文件的 `importedBy`）
 
-- [ ] **T13 ★ 第 4 / 5 处 import 解析口径：`rename_file` 的「TS/JS 一份 + Python 一份」**
-      *(核实：09-30 做 T12 时顺带撞到 —— `src/tools/rename_file.ts:23` 引的是
-      **`src/db/symbols.ts:155` 的 `resolveImportTarget(projectRoot, fromRel, source)`**：
-      `return resolveImportPath(fromRel, source, (c) => fs.existsSync(path.join(projectRoot, c)))`
-      —— ★ 它只是内核 `resolveImportPath` 的**薄包装，且没传 `exts`** ⇒ 走 `IMPORT_EXTS` 默认
-      ⇒ **只认 TS/JS 系扩展名**；子目录 import / 点分模块 / 裸名**都不认**。
-      而 `rename_file.ts:297,305` 对 Python **另走本地 `resolvePythonTarget`**。)*
-      ⇒ ★ 这是 §38 收口那三份（health / impact / import_project）之外的**第四处**，
-      且 `rename_file` 同时持 **TS/JS 一份 + Python 一份** ⇒ **第五处**。
-      ★ 影响（未量）：`rename_file` 判定"某个字面量是否真的解析到被移动文件"时，这些形态**可能漏改**。
-      ⇒ 方向：并进内核 `resolveProjectImport`（传真实 `exts`），但**先量差集**再动（改名是正确性敏感路径）。
-
 - [ ] **T32 ★ README 子标题工具计数无门、已漂**（2026-10-04 由 T8 核验升级）。
       *(核实：`README.md:113` 的「共注册 **N**」有 `scripts/readme_tools_gate.mjs` 自愈守着（当前 59=59 ✓），
       但**子标题里的中文计数无门**。实测 `README.md:155`「专项工具（**34 个**）」，而该段表内 `` | `tool` | `` 实为 **44** 行 ⇒ **漂 10**；
@@ -321,35 +309,6 @@
       ★ 顺序建议：先做**纯扫描**的（`brand_residue` / `literal_table`）—— 它们**无判断成分**，一次成功率最高；
       **最后**啃 `single_source`。
 
-- [ ] **T26 ★ 还剩 1 条真环：两个 application 域互相依赖（2026-10-04 更新）**
-      *(核实：`code_health --json` ⇒ `circular_dependency: 1`，逐条打印确认。见台账 §44.37。)*
-      ★ **判据换载体**：`dependency-cruiser` 已于 2026-10-04 **随框架整体移除**，
-      环检测现由 `code_health` 用 Tarjan SCC **现算**（且排除 `import type`，与分层违规同一口径）
-      —— 与当初 dep-cruiser 的读数**逐条对齐**过 ⇒ **不存在第二份口径**。
-
-      ⇒ **原来的 2 条现在只剩 1 条**：
-      · ~~`write_gate.ts` → `index_backfill.ts` → `index_freshness.ts` → `write_gate.ts`（跨层成环）~~
-        ⇒ **已消失**。成因：S1-3 把 self-writes 的**读**原语下沉到
-        `infrastructure/index/self_writes.ts`（写侧留在 `write_gate`）——
-        这是**"把放错层的东西归位"顺带解掉的环**，不是专门去倒依赖。
-        ★ 值得记：**归位比倒依赖便宜**。
-      · **仍在**：`application/cross/project_root.ts` ⇄
-        `application/refactor/rename_symbol/languages/typescript.ts`（**两个 application 域互相依赖**）。
-        ★★ **2026-10-04 更正（原记录写错了）**：原文写"经 `parts.ts`、那两条 type import 不算" ——
-        **实测不对**。**回边是 `typescript.ts:23` 的 value import**：
-        `import { expandClosureDetailed, loadAliasConfig, resolveAliasedImport, type AliasConfig } from '../../../cross/project_root.js'`
-        —— 同句里 `type AliasConfig` 是 type-only，但**另 3 个是 value** ⇒ **整条算 value 边**。
-        ⇒ 这是**双向 value 环**，不是"一向 value、一向 type"。
-        （`parts.ts:13` 那两条 type import **确实是** type-only、已被排除，**但它不是那条回边**。）
-        ★ 教训：**这条错记录在清单上躺了很久** —— 又一例「**存下来的结论会腐**」。
-        ⇒ **方案已定**：把 `analyzeModuleSource`（+ `ImportEdge/ModuleRef/ModuleAnalysis` + 3 个私有助手）
-        **下沉到 `infrastructure/parse/`** —— 它**只依赖 infrastructure** ⇒ 下沉后两边都向下；
-        且 `project_root` **从未再导出**它 ⇒ 那批消费者**一个都不用动**。
-        ★★ **次序：先做这条，再做 T28**（T28 要动 `languages/`；先下沉则 T28 少搬一个文件）。
-
-      ★★ 当初的结论仍然有效：**别再"记进基线"** —— 要么修掉，要么**如实报着**。
-      （那份"已批准违规清单"本身的死法已证明：**18 条里 8 条过期，44%**。）
-
 - [ ] **T33 ★★ `analyzeModuleSource` 的 `imports` 漏默认导入 —— 与 `parseFileFull` 差 190/323 文件（2026-10-04 实测）**
       *(核实：一次搬迁侦察时用**全仓 323 个文件逐文件对差集**测出，**非读码断言**。
       与 T26 同一轮侦察，但**是两条不同的事**。)*
@@ -395,4 +354,18 @@
              一扇会假阳的门会**训练人忽略它**（比没有更坏）。
       ★ 归属：**T31 那一族**（"存下来的说法会腐"），但它**腐在"模型入口"上** ⇒
         **危害比数据类更直接**（数据错了能查，入口错了模型连试都试不对）。
+
+- [ ] **T36 ★ `completionCandidates` 的「是否已带 import 级扩展名」判定不被 `exts` 覆盖（2026-10-04 T13 时发现）**
+      *(核实：T13 实测 —— 显式 `import './mod.mts'` / `'./mod.cts'`：**改前 null、改后仍 null**。)*
+      ⇒ **根因**：`infrastructure/parse/import_resolve.ts` 的 `completionCandidates` 用**模块级常量
+        `IMPORT_EXT_SET`**（= `IMPORT_EXTS`，**不含 `.mts/.cts`**）判断"该说明符是否**已带** import 级扩展名"，
+        而这个判断**不被 `exts` 参数覆盖** ⇒ `.mts/.cts` 显式说明符走"无扩展名补全"分支
+        ⇒ 生成 `mod.mts.ts` 之类 ⇒ **恒 null**。
+      ⇒ **影响面有限**：NodeNext 真实写法是 `import './mod.mjs'`（指向 `.mts`）—— **这条能解析**
+        （`.mjs` ∈ `IMPORT_EXT_SET`，剥扩展名后按 `exts` 补全含 `.mts`）。**只有直接写 `.mts/.cts` 才漏。**
+      ⇒ ★ **该修**：令 ext 判定集合 = `IMPORT_EXTS ∪ options.exts`。
+      ⇒ ★★ **为什么不能"影响面小就算了"**：T13 已让 `exts` 能影响**补全**，
+        却**不能影响「是否已带扩展名」的判定** ⇒ **同一个参数只生效一半 = 判据分叉**。
+        **半修比不修更坏**（它看起来像修好了）。
+      ★ 与 **T13** 同源（同一件事的两个面）：T13 已做（wrapper 收 `exts` + 相对性门），本条是剩下的那一半。
 

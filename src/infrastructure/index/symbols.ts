@@ -149,11 +149,26 @@ function hashSetsOf(rows: Array<{ qualified_name: string; sym_hash: string | nul
  *   本份原先是最正确的一份（注释逐字写着"再 strip 扩展名重试"），但它只是三份复制中的一份，
  *   另两份（health / impact）漏了这步、且修正从未横向传播 ⇒ 详见该模块头部说明。
  *   与 health/impact 版的差别**只剩 `exists` 谓词**：这里查真实文件系统，它们查内存集合。
- *   ⚠️ 本层**不判相对性** —— 本函数还被 `tools/rename_file.ts:295,303` 当
+ *   ⚠️ 本层**不判相对性** —— 本函数还被 `tools/rename_file.ts` 当
  *   "路径字面量 → 项目内文件"的通用工具复用，在此加门会静默改变 rename_file 的行为。
+ *
+ * ★ 可选 `exts`（T13）：透传给 `resolveImportPath` 的候选扩展名表。**默认不传时走
+ *   `IMPORT_EXTS`（行为与历史逐字一致）** —— 本函数的既有消费者（`applyParsedToIndex`
+ *   的 import 边、`findCrossFileTarget` 的跨文件解析）都保持默认口径，不受本参数影响。
+ *   传入方（`rf-rename/rename_file.ts`）是为了让"TS/JS 家族"与内核注册表的扩展名口径对齐：
+ *   `IMPORT_EXTS` 不含 `.mts/.cts`，而 `TS_JS_EXTS` 含 ⇒ 不传就会漏认这两种文件的引用。
+ *   ★ 只传 `exts` 而非 `indexFiles`：index 回退（`./foo` → `./foo/index.ts`）语义未变。
  */
-export function resolveImportTarget(projectRoot: string, fromRel: string, source: string): string | null {
-  return resolveImportPath(fromRel, source, (c) => fs.existsSync(path.join(projectRoot, c)));
+export function resolveImportTarget(
+  projectRoot: string,
+  fromRel: string,
+  source: string,
+  exts?: readonly string[],
+): string | null {
+  // ★ `exts ? { exts } : {}` 而非 `{ exts }`：`completionCandidates` 对 `exts: undefined`
+  //   兜底到 `IMPORT_EXTS`，但对**空数组不兜底**（会只剩 index 候选）——见 import_resolve.ts
+  //   resolveProjectImport 的同款注释。这里区分 undefined 与 []，调用方漏传时不会静默失能。
+  return resolveImportPath(fromRel, source, (c) => fs.existsSync(path.join(projectRoot, c)), exts ? { exts } : {});
 }
 
 // ─────────────────────────────────────────────────────────────
