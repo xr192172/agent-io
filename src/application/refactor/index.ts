@@ -25,7 +25,7 @@
  *   `{message, feature}`，压根没有 data）、`render_design` / `observe_judge`（data 与 message 逐字重复）。
  */
 import { z } from 'zod';
-import { requireStr, wrapData } from '../plumbing.js';
+import { requireArr, requireStr, wrapData } from '../plumbing.js';
 import path from 'node:path';
 import { analyzeHubs, analyzeImpact } from '../../infrastructure/analysis/impact/index.js';
 import type { ImpactChangePoint } from '../../infrastructure/analysis/impact/index.js';
@@ -107,7 +107,17 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       feature: z.string().describe('feature 名'),
       live_dir: z.string().optional().describe('live 视图的 baseDir（可选，默认 dataHome），与 import_project 的 live_dir 一致'),
     },
-    handler: diffViewsHandler,
+    handler: async (args) => {
+      // ★ 入口缺参守卫（CLI 面不做 zod 校验）：feature 是 schema 必填，缺失时原 handler 会把
+      //   undefined 传进 diffViews ⇒ 静默返回全 0（假结果）；这里当场报「缺参数」。
+      //   （本工具的 handler 落在 handlers.ts（diffViewsHandler），不在本文件，故以「守一道 + 委托」补齐。）
+      try {
+        requireStr(args, 'feature');
+      } catch (e) {
+        return { text: (e as Error).message, isError: true };
+      }
+      return diffViewsHandler(args);
+    },
   },
 
   {
@@ -157,7 +167,17 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         .describe('★ 批量（P-B）：一次调用对多文件做唯一文本替换。每项等价于一次 op=replace_text；逐项独立回报；给了非空 targets ⇒ 忽略 file/op/symbol/code/old_text/new_text'),
       atomic: z.boolean().optional().describe('★ 批量专用原子性：true=任一项失败则整批不落盘（全成或全不成）；缺省 false=逐项独立（一项失败不影响其余）。dry_run 天然不落盘'),
     },
-    handler: wrapData(async (a) => editCode(a as never)),
+    handler: wrapData(async (a) => {
+      // ★ 入口缺参守卫（CLI 面不做 zod 校验）：project_dir 两条路径都必填；
+      //   file/op 仅**单文件路径**必填 —— targets 批量路径按 description「传 targets 时
+      //   忽略 file/op 等单文件参数」本就允许省略 ⇒ 只在非批量时守，避免拒掉合法批量调用。
+      requireStr(a, 'project_dir');
+      if (!Array.isArray(a.targets)) {
+        requireStr(a, 'file');
+        requireStr(a, 'op');
+      }
+      return editCode(a as never);
+    }),
   },
 
   {
@@ -198,10 +218,19 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       report_literals: z.boolean().optional().describe('★ 仅 scope=module：true=扫描旧符号 snake 变体的字面量引用清单（错误提示/README 等纯字符串），仅报告不改动'),
     },
     handler: wrapData(async (a) => {
+      // ★ 入口缺参守卫（CLI 面不做 zod 校验）：renames 是 schema 必填数组，缺失时原 handler
+      //   直接 `a.renames.map(...)` ⇒ `Cannot read properties of undefined (reading 'map')`。
+      const renames = requireArr(a, 'renames', '[{file, symbol, to}]') as Array<{
+        file: string;
+        symbol: string;
+        to: string;
+        decl_line?: number;
+        rename_file_if_matching?: boolean;
+      }>;
       const r = await renameSymbols({
         project_dir: typeof a.project_dir === 'string' && a.project_dir ? a.project_dir : undefined,
         scope: a.scope === 'local' ? 'local' : 'module',
-        renames: (a.renames as Array<{ file: string; symbol: string; to: string; decl_line?: number; rename_file_if_matching?: boolean }>).map((x) => ({
+        renames: renames.map((x) => ({
           file: String(x.file),
           symbol: String(x.symbol),
           to: String(x.to),
@@ -360,9 +389,12 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       dry_run: z.boolean().optional().describe('true=只算全部 dry-run 影响面不落盘（默认：先整体校验，全通过才落盘）'),
     },
     handler: wrapData(async (a) => {
+      // ★ 入口缺参守卫（CLI 面不做 zod 校验）：renames 是 schema 必填数组，缺失时原 handler
+      //   直接 `a.renames.map(...)` ⇒ `Cannot read properties of undefined (reading 'map')`。
+      const renames = requireArr(a, 'renames', '[{from, to}]') as Array<{ from: string; to: string }>;
       const r = await renameFiles({
         project_dir: typeof a.project_dir === 'string' && a.project_dir ? a.project_dir : undefined,
-        renames: (a.renames as Array<{ from: string; to: string }>).map((x) => ({ from: String(x.from), to: String(x.to) })),
+        renames: renames.map((x) => ({ from: String(x.from), to: String(x.to) })),
         dry_run: a.dry_run === true,
       });
       const fmt = (p: { from: string; to: string }, res?: { references: Array<{ file: string; fromSource: string; toSource: string }> }): string => {
@@ -405,17 +437,22 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       dry_run: z.boolean().optional().describe('true=只出结构化预览不落盘（默认：先整体校验，全通过才落盘）'),
     },
     handler: wrapData(async (a) => {
+      // ★ 入口缺参守卫（CLI 面不做 zod 校验）：file/symbol/to_file 是 schema 必填，
+      //   缺失时原 `String(undefined)==='undefined'` 会拼成假路径 / 空实体名（静默错）。
+      const file = requireStr(a, 'file');
+      const symbol = requireStr(a, 'symbol');
+      const to_file = requireStr(a, 'to_file');
       const r = await moveSymbol({
         project_dir: typeof a.project_dir === 'string' && a.project_dir ? a.project_dir : undefined,
-        file: String(a.file),
-        symbol: String(a.symbol),
-        to_file: String(a.to_file),
+        file,
+        symbol,
+        to_file,
         to_symbol: typeof a.to_symbol === 'string' && a.to_symbol ? a.to_symbol : undefined,
         dry_run: a.dry_run === true,
       });
       if (!r.ok) {
         return {
-          message: `移动被阻断（${r.dryRun ? '整体未落盘' : ''}）：\n` + (r.blocked || []).join('\n') +
+          message: `移动被阻断${r.dryRun ? '（整体未落盘）' : ''}：\n` + (r.blocked || []).join('\n') +
             (r.toSymbolDeferred ? '\n⚠ to_symbol 改名未启用，改名请走 safe_rename。' : ''),
           data: r,
         };
@@ -559,7 +596,9 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       max_depth: z.number().optional().describe('闭包最大距离（默认不限）'),
     },
     handler: wrapData(async (a) => {
-      const root = String(a.project_dir);
+      // ★ 入口缺参守卫（CLI 面不做 zod 校验）：project_dir 是 schema 必填 —— 缺失时原
+      //   `String(undefined)` ⇒ `影响面报告 · undefined / 变更点 0 个 / 零波及`（假结果，比报错更坏）。
+      const root = requireStr(a, 'project_dir');
       if (a.hubs) {
         const h = await analyzeHubs(root, typeof a.top === 'number' ? a.top : 10);
         const lines = [`风险热区盘点 · ${root}（${h.fileCount} 文件 / ${h.edgeCount} 依赖边）`, '按"被直接依赖数"排序 —— 改这些文件会炸最多下游', ''];
@@ -690,12 +729,14 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         .describe('true 启用改前/改后验证闭环；{commands} 自定义验证命令；缺省只执行不验证'),
     },
     handler: wrapData(async (a) => {
-      const { project_dir, dead, verify } = a;
+      // ★ 缺根时此前会静默回「无可删除的死 import」（其实一个文件都没扫）—— 先守根。
+      const project_dir = requireStr(a, 'project_dir');
+      const { dead, verify } = a;
       if (!Array.isArray(dead) || dead.length === 0) {
         return { message: '无可删除的死 import（dead 列表为空）', data: { files: [], files_changed: 0, statements_removed: 0, verification: { enabled: Boolean(verify), outcome: 'no_change', baseline: null, after: null } } };
       }
       const r = removeDeadImportsWithVerify({
-        project_dir: String(project_dir),
+        project_dir,
         dead,
         verify: verify as RemoveDeadImportsVerifyOptions['verify'] | undefined,
       });
@@ -739,7 +780,9 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       mode: z.enum(['apply', 'dry_run', 'scan']).optional().default('apply').describe('apply=生成并写盘；dry_run=生成但只预览；scan=只读报告'),
     },
     handler: wrapData(async (a) => {
-      const project_dir = String(a.project_dir);
+      // ★ 入口缺参守卫（CLI 面不做 zod 校验）：project_dir 是 schema 必填 —— 缺失时原
+      //   `String(undefined)` ⇒ 静默「扫描 0 个函数 / 0 个文件」（假成功）。
+      const project_dir = requireStr(a, 'project_dir');
       const mode = (a.mode as string | undefined) || 'apply';
       const files = Array.isArray(a.files) ? a.files.map((f) => String(f)) : undefined;
       // ★ 不再在 [C] 里 existsSync 过滤：`planFunctionAnnotation`（[B]）逐文件已有**同一道**存在性检查，
@@ -905,7 +948,8 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         .describe('true 启用统一验证闭环；{commands} 自定义命令；缺省/verify=false 仅落盘不验证'),
     },
     handler: wrapData(async (a) => {
-      const project_dir = String(a.project_dir);
+      // ★ 缺根时此前会静默回「共 0 步 / 全局 通过」（假绿）—— 先守根。
+      const project_dir = requireStr(a, 'project_dir');
       const steps = a.steps as
         | {
             dead_imports?: { enabled?: boolean; dead?: Array<{ source: string; files: string[] }> };
@@ -997,6 +1041,10 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       use_llm: z.boolean().optional().default(true).describe('是否用 LLM 生成命名建议（默认 true；false/未配置 LLM 则降级为仅候选识别）'),
     },
     handler: wrapData(async (a) => {
+      // ★ 入口缺参守卫（CLI 面不做 zod 校验）：project_dir / file 是 schema 必填，
+      //   缺失时原 handler 会抛 `The "path" argument must be of type string`（Node 原始异常）。
+      const project_dir = requireStr(a, 'project_dir');
+      const file = requireStr(a, 'file');
       const opts: SuggestOptions = {
         max: typeof a.max === 'number' ? a.max : undefined,
         minLen: typeof a.min_len === 'number' ? a.min_len : undefined,
@@ -1004,8 +1052,8 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       };
       // ★ [C] 只转发：解析 file → 读源码 → 建议 全在 [B]（suggestRenamesInFile）
       const result = await suggestRenamesInFile({
-        project_dir: String(a.project_dir),
-        file: a.file as string,
+        project_dir,
+        file,
         opts,
       });
       return {
@@ -1035,17 +1083,21 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       use_llm: z.boolean().optional().default(true).describe('是否用 LLM 生成消歧新名（默认 true；false/未配置 LLM 则降级为仅聚类）'),
     },
     handler: wrapData(async (a) => {
+      // ★ 入口缺参守卫（CLI 面不做 zod 校验）：project_dir / file 是 schema 必填，
+      //   缺失时原 handler 会抛 `The "path" argument must be of type string`（Node 原始异常）。
+      const project_dir = requireStr(a, 'project_dir');
+      const file = requireStr(a, 'file');
       const opts = {
         maxClusters: typeof a.max_clusters === 'number' ? a.max_clusters : undefined,
         llm: a.use_llm === false ? null : undefined,
       };
       // ★ [C] 只转发：解析 file → 读源码 → 聚类+消歧 全在 [B]（suggestDisambiguationsInFile）
       const result = await suggestDisambiguationsInFile({
-        project_dir: String(a.project_dir),
-        file: a.file as string,
+        project_dir,
+        file,
         opts,
       });
-      const items = disambiguationItems(result, String(a.file));
+      const items = disambiguationItems(result, file);
       return {
         message:
           `识别到 ${result.clusters.length} 个相似名聚类；` +

@@ -190,8 +190,10 @@ export const DESIGN_TOOLS: ToolDef[] = [
       output_path: z.string().optional().describe('输出 HTML 路径（默认 <agent-io>/docs/brickify_preview.html）'),
     },
     handler: wrapData(async (a) => {
+      // ★ 缺根时此前抛 `paths[0]` 原始异常 —— 先守根。
+      const project_dir = requireStr(a, 'project_dir');
       const out = await buildBrickifyPreview({
-        project_dir: a.project_dir as string,
+        project_dir,
         source_root: a.source_root as string | undefined,
         out_file: a.output_path as string | undefined,
       });
@@ -302,16 +304,18 @@ export const DESIGN_TOOLS: ToolDef[] = [
     //   `message` 字段刻意**不放进 data**：[B] 的结果里嵌的就是同一份回执文本，
     //   再塞进 `---DATA---` 只是逐字重复（体积翻倍、零信息增量）。
     handler: wrapData(async (a) => {
+      const project_dir = requireStr(a, 'project_dir');
+      const feature = requireStr(a, 'feature');
       // MCP 路径默认连项目级符号缓存（<project_dir>/.agent-io/cache.db）：
       // 不连则 importProject 走无缓存路径，符号缓存永远不更新（增量 re-parse 失效）。
       // 开库失败（只读目录等）降级为无缓存导入，不阻断导入本身。
       let cacheDb;
       try {
-        cacheDb = getProjectCacheDb(path.resolve(a.project_dir as string));
+        cacheDb = getProjectCacheDb(path.resolve(project_dir));
       } catch {
         cacheDb = undefined;
       }
-      const r = await importProject({ ...(a as unknown as ImportProjectInput), cache_db: cacheDb });
+      const r = await importProject({ ...(a as unknown as ImportProjectInput), project_dir, feature, cache_db: cacheDb });
       const { message, ...data } = r;
       return { message, data };
     }),

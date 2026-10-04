@@ -71,6 +71,20 @@ export function requireStr(a: Record<string, unknown>, key: string): string {
   return v;
 }
 
+/**
+ * 缺必填**数组**参数 ⇒ **当场报错**（同 `requireStr` 的 P-D 纪律，只是这里守的是"是数组"）。
+ *
+ * ★ 2026-10-05：与 `requireStr` 同一个洞的另一半 —— `rename_symbols` / `rename_files` /
+ *   `harvest_closure` 等直接 `a.renames.map(...)` / `a.files.map(...)`，缺参时抛的是
+ *   `Cannot read properties of undefined (reading 'map')`（Node 原始异常，用户看不懂）。
+ *   `hint` 用来在报错里给出该字段的**形状**（例：`[{file, symbol, to}]`），比只报名字有用。
+ */
+export function requireArr(a: Record<string, unknown>, key: string, hint: string): unknown[] {
+  const v = a[key];
+  if (!Array.isArray(v)) throw new Error(`缺参数 "${key}"：${hint}`);
+  return v;
+}
+
 // ─────────────────────────────────────────────────────────────
 // 输入 schema 包装
 // ─────────────────────────────────────────────────────────────

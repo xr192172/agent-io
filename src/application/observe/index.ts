@@ -22,7 +22,7 @@
  *   否则本文件 import 它们就会成环（server_registry → lanes → server_registry）。
  */
 import { z } from 'zod';
-import { wrap, wrapData } from '../plumbing.js';
+import { wrap, wrapData, requireStr } from '../plumbing.js';
 import path from 'node:path';
 import { baselinePathFor, captureBaseline, verifyBaseline } from '../../infrastructure/analysis/behavior/index.js';
 import { rebuildChains } from '../../infrastructure/analysis/observe/chain.js';
@@ -85,7 +85,9 @@ export const OBSERVE_TOOLS: ToolDef[] = [
       write_dsl: z.boolean().optional().describe('false=只对账预演不写回，默认 true'),
     },
     handler: wrapData(async (a) => {
-      const r = await reconcileEffects(a as unknown as ReconcileEffectsInput);
+      const project_dir = requireStr(a, 'project_dir');
+      const feature = requireStr(a, 'feature');
+      const r = await reconcileEffects({ ...(a as unknown as ReconcileEffectsInput), project_dir, feature });
       return { message: r.message, data: r };
     }),
   },
@@ -108,7 +110,9 @@ export const OBSERVE_TOOLS: ToolDef[] = [
       write: z.boolean().optional().describe('false 只预演不落盘（不写砖不登记，默认 true）'),
     },
     handler: wrapData(async (a) => {
-      const r = narrateStep(a as unknown as NarrateStepInput);
+      const feature = requireStr(a, 'feature');
+      const file = requireStr(a, 'file');
+      const r = narrateStep({ ...(a as unknown as NarrateStepInput), feature, file });
       return { message: r.message, data: r };
     }),
   },
@@ -257,6 +261,7 @@ export const OBSERVE_TOOLS: ToolDef[] = [
       write: z.boolean().optional().describe('false=只返回不落盘（默认 true，写 observe-points.json）'),
     },
     handler: wrapData(async (a) => {
+      const project_dir = requireStr(a, 'project_dir');
       const input = a as unknown as {
         project_dir: string;
         focus?: string;
@@ -265,7 +270,7 @@ export const OBSERVE_TOOLS: ToolDef[] = [
         max_files?: number;
         write?: boolean;
       };
-      const root = path.resolve(input.project_dir);
+      const root = path.resolve(project_dir);
       // ★ 零前置：索引为空就地冷启（推荐器建立在索引之上）
       const { db } = await ensureProjectIndex(root);
       const r = await recommendObservePoints(db, root, {
@@ -416,7 +421,7 @@ export const OBSERVE_TOOLS: ToolDef[] = [
       max_steps: z.number().optional().describe('主链最大步数（默认 24）'),
     },
     handler: wrapData(async (a) => {
-      const feature = String(a.feature ?? '');
+      const feature = requireStr(a, 'feature');
       const sourceRoot = a.project_dir ? String(a.project_dir) : undefined;
       const opts = { target: a.target ? String(a.target) : undefined, maxSteps: typeof a.max_steps === 'number' ? a.max_steps : undefined };
       const r = getFeatureLine(feature, sourceRoot, opts);

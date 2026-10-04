@@ -175,7 +175,9 @@ export const META_TOOLS: ToolDef[] = [
       max_depth: z.number().optional().describe('调用链追溯深度（默认 3）'),
     },
     handler: wrapData(async (a) => {
-      const input = a as unknown as DiagnoseInput;
+      const project_dir = requireStr(a, 'project_dir');
+      const symptom = requireStr(a, 'symptom');
+      const input = { ...(a as unknown as DiagnoseInput), project_dir, symptom };
       const out = await runDiagnosis(input);
       return { message: formatDiagnoseText(out), data: out };
     }),

@@ -29,7 +29,7 @@
  *   否则本文件 import 它们就会成环（server_registry → lanes → server_registry）。
  */
 import { z } from 'zod';
-import { requireStr, wrapData } from '../plumbing.js';
+import { requireStr, requireArr, wrapData } from '../plumbing.js';
 import path from 'node:path';
 import { assembleBricks } from './assemble_bricks.js';
 import type { AssembleBricksInput } from './assemble_bricks.js';
@@ -65,7 +65,14 @@ export const HARVEST_TOOLS: ToolDef[] = [
       limit: z.number().optional().describe('git 日志条数上限，默认 30'),
       comment_files: z.array(z.string()).optional().describe('要提取注释的源码文件（绝对路径）'),
     },
-    handler: harvestDecisionsHandler,
+    // ★ CLI 面绕过 zod 必填校验：缺 feature 时 [B] 会把 undefined 拼进扫描路径/git 命令（泄漏 git 原始报错）。
+    //   本层只加守卫；随后**原样**委托已包装的 harvestDecisionsHandler（其 isError 语义保持不变）。
+    handler: wrapData(async (a) => {
+      const feature = requireStr(a, 'feature');
+      const r = await harvestDecisionsHandler({ ...a, feature });
+      if (r.isError) throw new Error(r.text);
+      return { message: r.text };
+    }),
   },
 
   {
@@ -88,9 +95,12 @@ export const HARVEST_TOOLS: ToolDef[] = [
       max_depth: z.number().optional().describe('BFS 深度上限（默认 30，传递闭包天然有界）'),
     },
     handler: wrapData(async (a) => {
-      const input = a as unknown as HarvestClosureInput;
+      // ★ CLI 面绕过 zod 必填校验：缺 project_dir/files 时会把 undefined 交给 path.resolve / files.map（Node 原始异常）。
+      const project_dir = requireStr(a, 'project_dir');
+      const files = requireArr(a, 'files', "['src/a.ts']");
+      const input = { ...(a as unknown as HarvestClosureInput), project_dir, files: files as string[] };
       // ★ 零前置：闭包沿 import 边算，空缓存先就地冷启
-      await ensureProjectIndex(path.resolve(input.project_dir));
+      await ensureProjectIndex(path.resolve(project_dir));
       const r = harvestClosure(input);
       return { message: r.message, data: r };
     }),
@@ -118,9 +128,11 @@ export const HARVEST_TOOLS: ToolDef[] = [
       write_dsl: z.boolean().optional().describe('false=只读预演不写回，默认 true'),
     },
     handler: wrapData(async (a) => {
-      const input = a as unknown as ExtractContractsInput;
+      // ★ CLI 面绕过 zod 必填校验：缺 project_dir 时 path.resolve(undefined) 抛 Node 原始异常。
+      const project_dir = requireStr(a, 'project_dir');
+      const input = { ...(a as unknown as ExtractContractsInput), project_dir };
       // ★ 零前置：空缓存就地冷启（契约提取建立在符号/AST 索引之上）
-      await ensureProjectIndex(path.resolve(input.project_dir));
+      await ensureProjectIndex(path.resolve(project_dir));
       const r = extractContracts(input);
       return { message: r.message, data: r };
     }),
@@ -159,7 +171,9 @@ export const HARVEST_TOOLS: ToolDef[] = [
       write: z.boolean().optional().describe('false=dry-run 只预演不入盒，默认 true'),
     },
     handler: wrapData(async (a) => {
-      const r = await harvestFromUrl(a as unknown as HarvestFromUrlInput);
+      // ★ CLI 面绕过 zod 必填校验：缺 source 时会把 undefined 交给 git clone，泄漏 shell 原始报错。
+      const source = requireStr(a, 'source');
+      const r = await harvestFromUrl({ ...(a as unknown as HarvestFromUrlInput), source });
       return { message: r.message, data: r };
     }),
   },
