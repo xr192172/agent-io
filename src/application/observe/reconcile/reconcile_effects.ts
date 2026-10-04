@@ -68,11 +68,13 @@ export interface ReconcileEffectsResult {
   events_files: string[];
   /** 读到的 effect 事件总数（过滤后） */
   effect_events: number;
-  files: FileReconcileReport[];
+  /** 逐文件对账报告（★ 新名：旧 `files` 一名 6 义；报告数组统一 `<领域>_reports`） */
+  reconcile_reports: FileReconcileReport[];
   /** 契约不完整告警（候选外观测）汇总 */
   incomplete: Array<{ dsl_path: string; kind: string; target: string }>;
   written_to_dsl: boolean;
-  stats: {
+  /** 本领域计数汇总（★ 新名：旧 `stats` 一名 5 义） */
+  reconcile_stats: {
     files_matched: number;
     candidates_confirmed: number;
     newly_observed: number;
@@ -182,10 +184,10 @@ export async function reconcileEffects(input: ReconcileEffectsInput): Promise<Re
       feature: input.feature,
       events_files: [],
       effect_events: 0,
-      files: [],
+      reconcile_reports: [],
       incomplete: [],
       written_to_dsl: false,
-      stats: { files_matched: 0, candidates_confirmed: 0, newly_observed: 0, unobserved: 0 },
+      reconcile_stats: { files_matched: 0, candidates_confirmed: 0, newly_observed: 0, unobserved: 0 },
       message: `未发现事件文件（${path.join(root, '.agent', 'observe')} 下无 events-*.jsonl）。先插桩（instrument --effects）并运行项目产生观测。`,
     };
   }
@@ -197,10 +199,10 @@ export async function reconcileEffects(input: ReconcileEffectsInput): Promise<Re
       feature: input.feature,
       events_files: eventsFiles,
       effect_events: 0,
-      files: [],
+      reconcile_reports: [],
       incomplete: [],
       written_to_dsl: false,
-      stats: { files_matched: 0, candidates_confirmed: 0, newly_observed: 0, unobserved: 0 },
+      reconcile_stats: { files_matched: 0, candidates_confirmed: 0, newly_observed: 0, unobserved: 0 },
       message: `事件文件中无 level=effect 事件（读 ${eventsFiles.length} 个文件）。需用 instrument --effects 重新插桩后运行。`,
     };
   }
@@ -334,10 +336,10 @@ export async function reconcileEffects(input: ReconcileEffectsInput): Promise<Re
     feature: input.feature,
     events_files: eventsFiles,
     effect_events: events.length,
-    files: reports,
+    reconcile_reports: reports,
     incomplete,
     written_to_dsl: written,
-    stats: {
+    reconcile_stats: {
       files_matched: reports.length,
       candidates_confirmed: confirmedTotal,
       newly_observed: newlyTotal,

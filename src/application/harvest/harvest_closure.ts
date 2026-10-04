@@ -76,7 +76,8 @@ export interface HarvestClosureResult {
    *  闭包的纯类型文件不在内。dead_deps 判 TS 顶层 const 活性、剪刀 const
    *  判活、失控限额都以此为准 */
   value_files: string[];
-  stats: {
+  /** 本领域计数汇总（★ 新名：旧 `stats` 一名 5 义） */
+  closure_stats: {
     seed_count: number;
     internal_count: number;
     value_reachable_count: number;
@@ -422,7 +423,7 @@ export function harvestClosure(input: HarvestClosureInput): HarvestClosureResult
     internal_files,
     external,
     value_files: [...valueReach].filter((p) => reached.has(p)).sort(),
-    stats: {
+    closure_stats: {
       seed_count: seedCachePaths.length,
       internal_count: closurePaths.length,
       value_reachable_count: valueCount,

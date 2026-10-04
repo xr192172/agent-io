@@ -18,10 +18,10 @@
  *   ① 写前快照（**一次**，含全部文件 ⇒ 一次改动 = 一份快照 = 一个撤回点）
  *   ② 逐文件写
  *   ③ 逐文件 `syncFile` 写穿 + 引用方重算（`writeSourceFiles` 内建）
- *   ④ 结构化 receipt（`written` / `snapshot_id` / `index_synced` / `blocked`）
+ *   ④ 结构化 receipt（`written_files` / `snapshot_id` / `index_synced` / `blocked`）
  *
  * 语义边界（★ 别想当然）：
- *   - `dryRun: true` ⇒ **完全不碰盘**（不快照、不写、不同步），返回**同构**回执但 `written: []`。
+ *   - `dryRun: true` ⇒ **完全不碰盘**（不快照、不写、不同步），返回**同构**回执但 `written_files: []`。
  *   - 项目**没有索引**时不会凭空建库（闸的纪律）：`index.mode === 'skipped'`，
  *     此时 `index_synced` 为**空数组**（"没同步" ≠ "同步了但没更新"—— 后者是 `updated:false`）。
  *   - 逐文件判决只在索引写穿**真的跑了**（`index.mode === 'synced'`）时才给。
@@ -42,8 +42,9 @@ export interface WriteItem {
 export interface WriteReceipt {
   /** 落盘动作本身是否完成（=false ⇒ 见 `blocked`）。**不**代表索引已同步 —— 那看 `index`。 */
   ok: boolean;
-  /** 真的落盘的文件（相对 `projectRoot` 的 posix 路径；`dryRun` 时为 `[]`） */
-  written: string[];
+  /** 真的落盘的文件（相对 `projectRoot` 的 posix 路径；`dryRun` 时为 `[]`）。
+   *  ★ 新名：旧 `written` 与 4 个 boolean「是否落盘」同名两义；路径表统一 `written_files`。 */
+  written_files: string[];
   /** 写前快照 id（撤回通道凭据；`dryRun` / 文件不存在 / 快照失败时缺省） */
   snapshot_id?: string;
   /** 索引写穿的完整回执（闸的口径；`null` = 没做/没索引） */
@@ -81,11 +82,11 @@ export async function applyWrites(
   }
 
   if (outside.length > 0) {
-    return { ok: false, written: [], index: null, index_synced: [], blocked: outside };
+    return { ok: false, written_files: [], index: null, index_synced: [], blocked: outside };
   }
-  if (byRel.size === 0) return { ok: true, written: [], index: null, index_synced: [] };
+  if (byRel.size === 0) return { ok: true, written_files: [], index: null, index_synced: [] };
   // ★ 干跑：不碰盘（不快照、不写、不同步），但回执结构不变
-  if (opts.dryRun === true) return { ok: true, written: [], index: null, index_synced: [] };
+  if (opts.dryRun === true) return { ok: true, written_files: [], index: null, index_synced: [] };
 
   const written = [...byRel.keys()];
   const updatedByRel = new Map<string, boolean>();
@@ -103,7 +104,7 @@ export async function applyWrites(
 
   return {
     ok: true,
-    written,
+    written_files: written,
     ...(report.snapshot?.id ? { snapshot_id: report.snapshot.id } : {}),
     index: report.index,
     // ★ 只有**真进了逐文件同步循环**（`mode === 'synced'`）才有逐文件判决。

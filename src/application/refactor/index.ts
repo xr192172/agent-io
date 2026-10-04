@@ -733,7 +733,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       const project_dir = requireStr(a, 'project_dir');
       const { dead, verify } = a;
       if (!Array.isArray(dead) || dead.length === 0) {
-        return { message: '无可删除的死 import（dead 列表为空）', data: { files: [], files_changed: 0, statements_removed: 0, verification: { enabled: Boolean(verify), outcome: 'no_change', baseline: null, after: null } } };
+        return { message: '无可删除的死 import（dead 列表为空）', data: { removal_reports: [], files_changed: 0, statements_removed: 0, verification: { enabled: Boolean(verify), outcome: 'no_change', baseline: null, after: null } } };
       }
       const r = removeDeadImportsWithVerify({
         project_dir,
@@ -754,8 +754,8 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         parts.push(`\t[$kind] 基线=${v.baseline?.status ?? '-'} 改后=${v.after?.status ?? '-'}`);
         if (v.detail) parts.push(`\t详情：${v.detail}`);
       }
-      if (r.files.length === 0) parts.push('\t没有命中任何可操作的文件（输入 dead 清单的文件均非 TS/Go 系）。');
-      for (const f of r.files) {
+      if (r.removal_reports.length === 0) parts.push('\t没有命中任何可操作的文件（输入 dead 清单的文件均非 TS/Go 系）。');
+      for (const f of r.removal_reports) {
         const detail = f.removals.filter((x) => x.changed).map((x) => `${x.source}×${x.removed}`).join('、') || '无变更';
         parts.push(`\t- ${f.file}（${f.lang}）：${detail}`);
       }
@@ -801,7 +801,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
           [...r.absToNew].map(([abs, content]) => ({ file: abs, content })),
           { note: 'annotate_functions' },
         );
-        const written = receipt.written.length;
+        const written = receipt.written_files.length;
         const parts = [
           `函数语义注释完成：扫描 ${s.scanned} 个函数 / ${s.files} 个文件；`,
           `已有注释 ${s.with_comment}，缺失 ${s.missing}，过期 ${s.stale}；`,
@@ -1374,7 +1374,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
             writes.map((o) => ({ file: o.file, content: o.after as string })),
             { note: `rules(apply:${use.map((r) => r.id).join(',')})` },
           );
-          lines.push(``, `已写盘 ${receipt.written.length} 个文件（走写闸：写前快照 + 索引写穿保鲜）。`);
+          lines.push(``, `已写盘 ${receipt.written_files.length} 个文件（走写闸：写前快照 + 索引写穿保鲜）。`);
         } else {
           lines.push(``, `（dry_run：未写盘。确认后传 dry_run=false 落盘）`);
         }

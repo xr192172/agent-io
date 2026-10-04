@@ -72,10 +72,12 @@ export interface ExtractContractsResult {
   project_dir: string;
   feature?: string;
   written_to_dsl: boolean;
-  files: FileContractReport[];
+  /** 逐文件契约报告（★ 新名：旧 `files` 一名 6 义；报告数组统一 `<领域>_reports`） */
+  contract_reports: FileContractReport[];
   /** return_contracts=true 时填充：path → BrickContract 全量本体（编排层内部消费） */
   contracts?: Record<string, BrickContract>;
-  stats: {
+  /** 本领域计数汇总（★ 新名：旧 `stats` 一名 5 义） */
+  contract_stats: {
     total: number;
     business: number;
     functional: number;
@@ -654,9 +656,9 @@ export function extractContracts(input: ExtractContractsInput): ExtractContracts
     project_dir: root,
     feature,
     written_to_dsl: written,
-    files: reports,
+    contract_reports: reports,
     ...(input.return_contracts ? { contracts: Object.fromEntries(contracts) } : {}),
-    stats: {
+    contract_stats: {
       total: reports.length,
       business,
       functional,

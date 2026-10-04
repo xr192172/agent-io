@@ -219,7 +219,7 @@ export async function renameLocals(input: {
     dryRun,
     items,
     changedFiles,
-    filesWritten: receipt.written.length,
+    filesWritten: receipt.written_files.length,
     ...(receipt.snapshot_id ? { snapshotId: receipt.snapshot_id } : {}),
     index: receipt.index,
   };

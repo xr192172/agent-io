@@ -201,7 +201,8 @@ export interface FileRemoval {
 }
 
 export interface RemoveDeadImportResult {
-  files: FileRemoval[];
+  /** 逐文件移除报告（★ 新名：旧 `files` 一名 6 义；报告数组统一 `<领域>_reports`） */
+  removal_reports: FileRemoval[];
   files_changed: number;
   statements_removed: number;
   /**
@@ -283,7 +284,7 @@ function computeChanges(opts: {
   return {
     absToNew,
     originals,
-    result: { files: filesOut, files_changed: absToNew.size, statements_removed: statementsRemoved },
+    result: { removal_reports: filesOut, files_changed: absToNew.size, statements_removed: statementsRemoved },
   };
 }
 
@@ -378,7 +379,7 @@ export function removeDeadImportsWithVerify(opts: RemoveDeadImportsVerifyOptions
   if (ver.outcome === 'baseline_fail') {
     // 地基黄：一个都不写
     return {
-      files: [], files_changed: 0, statements_removed: 0,
+      removal_reports: [], files_changed: 0, statements_removed: 0,
       verification: { enabled: true, outcome: 'baseline_fail', baseline: ver.baseline, after: null, detail: ver.baseline?.detail },
       indexWriteThrough: idx,
     };
