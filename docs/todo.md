@@ -577,17 +577,24 @@
           ⇒ 内部 `../../../infrastructure/…` **恰好仍解析到同一目标**（并验了 3 个目标真实存在）
           ⇒ **照我的指示改会把好 import 改坏**。
           ⇒ 教训（今日第二次同类）：**"深度变了"要数段数，不要凭"看起来更深"下结论。**
-      ⇒ **方案 B ⏳ 第二步 2b（待做）：`rename_symbol/` 下沉** —— 三处阻塞（已实测）：
-        ① `cross/project_root`（应用层**兄弟线**，用到 6 个导出）
-        ② ~~`snapshot/protect`（**住在工具目录里**，5 个语言包都用）~~ ✅ **已修（A 步）**：
-           `protect.ts` 已下沉到 `infrastructure/analysis/refactor/protect.ts`（7 处引用同步；
-           ★ `layer_violation` / `circular_dependency` 均为 **0 → 0**，同一把尺）
-        ③ ★★ **引擎反向调工具**（`languages/typescript.ts:22` → `rename/rename_file`，
-           用途是"**文件联动改名**"，注释自称"增量增强、失败不阻断"）⇒ 断开它是**行为重构**，需单独验。
-        ⇒ 前置顺序：① `protect` 沉 infrastructure ② `project_root` 相关下沉 ③ 断开 engine→tool。
-        ★ 方案**正在独立评审**（按今日新立的规矩：动手前先让独立一遍审我的判断）。
-        ★ 另核实：`rf-rename ⟷ rename_symbol` 有**目录级双向边**（两条边都验了），
-          但**文件级环不闭合**（`rename_file.ts` 不 import `rename_symbol(s)`）⇒ **"零环"不是假绿**。
+      ⇒ **方案 B ✅ 第二步 2b 四步全部完成**（A `01573f0` / B `1bb9d93` / C1 `14961f9` / D `fd88a66`）：
+        · **A** 沉 `protect.ts`（它住在工具目录里，5 个语言包都用）→ `infrastructure/analysis/refactor/`
+        · **B** 沉 `project_root.ts`（1279 行 / 15 个改动点）→ `infrastructure/analysis/project_root/`（**新立 `project-root` 域**）
+        · **C1** 把「**文件联动改名**」从引擎**上收到工具层** ⇒ **切断了唯一那条「引擎 → 应用层库」的反向边**
+          ★ 用户裁定：「**行为改变就改变呗**……**如果你行为不能改变的话，那我不就只能在屎上雕花了？**」
+          ⇒ **"本仓无测试 ⇒ 别改行为"是错的推理**：行为改变**不是代价，是修复**；无测试**不是否决理由，是要补的证据**。
+          ★ 验收 = 与改前基线**逐项对照**（`ok`/`filesWritten`/`fileRenamed`/顶层 `written_files`/磁盘真值 全一致；
+          仅"内层"那条变，已判定可接受）。
+        · **D** `rename_symbol/`（10 文件）→ `infrastructure/analysis/rename_symbol/`
+          ★★ **这一步的意义**：域表那句「**那里的工具是入口，本域是引擎**」**第一次变成事实** ——
+          `application/refactor/` 现在**恰好只剩 9 个工具目录 + `index.ts`**。
+        ⇒ ★ **A→B→C→D 的顺序正是关键**：D 之前**实测**引擎外向依赖已全是 `infrastructure/*`+`domain/*`
+          ⇒ **D 是纯搬家**（若直接搬，就会先主动制造一轮 `infrastructure → application` 违规再去修）。
+        *验收：tsc 0 · build 0 · 三态全 0 · `layer_violation 0` / `circular_dependency 0` · 全量 56 工具零坏签名 · 真调确认联动仍工作。*
+      ⇒ ✅ **另修一笔**（`d490891`）：`written_files` **不再列"被联动改名后已不存在"的旧名**
+        （它是**同一次调用里两层口径打架**：引擎 per-item 只列一个、工具层却两个都列）。★ 两条对照证明修法是**有区分力**的。
+      ⇒ ★ 另核实：`rf-rename ⟷ rename_symbol` 有**目录级双向边**（两条边都验了），
+        但**文件级环不闭合**（`rename_file.ts` 不 import `rename_symbol(s)`）⇒ **"零环"不是假绿**。
       ⇒ **方案 C ⏳ 待做**：`infrastructure/analysis/` 下 15 个子目录名语域重叠、无索引 ⇒ 合并单文件目录 + 补说明。
 
 > ★★ **上面 T37/T38/T39 是 2026-10-05 体检**当场**修掉的三笔**（已进 commit 历史，故不在此列）：
