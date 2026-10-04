@@ -252,6 +252,90 @@
       "layer": "application",
       "dir": "src/application/refactor/rf-parse",
       "note": "解析能力自述（按语言如实声明索引能力）"
+    },
+    {
+      "id": "cross",
+      "layer": "application",
+      "dir": "src/application/cross",
+      "note": "跨项目/跨语言能力线（index.ts 即该线归属的唯一来源）：`project_root` = 项目根自动定位（向上找 .git → 退化到 manifest）+ 沿 import 边的动态闭包边界，消除「必须显式传 project_dir」的使用摩擦，被 rename_symbol / rf-find / rf-rename / detect_drift 等多处复用。"
+    },
+    {
+      "id": "harvest",
+      "layer": "application",
+      "dir": "src/application/harvest",
+      "note": "积木收割线（index.ts 即该线归属的唯一来源）：`harvest_closure`（拎取闭包：internal/external/evidence）/ `extract_contracts`（契约提取：role + shapes + effects）/ `harvest_from_url`（抽取编排：浅 clone → 索引 → 选积木 → 闭包 → 入盒）/ `assemble_bricks`+`search_bricks`+`slim_brick`+`reconcile_brick`+`classify_bricks`（货架检索 / 拼装 / 瘦身 / 对账）/ `harvest_decisions`（决策卡候选补录）。"
+    },
+    {
+      "id": "rf-rename-symbol",
+      "layer": "application",
+      "dir": "src/application/refactor/rename_symbol",
+      "note": "模块级符号跨文件改名**引擎**：`core`（语言无关骨架：编辑应用 / 相对 import 解析 / 作用域栈）+ `parts`（语言无关接线层）+ `languages/{registry,typescript,go,python,java,c,csharp}`（语言包）。★ `parts` 单独成文件是为断 `core → languages/registry → 语言包 → core` 的环（实测曾 9 条）。★ 与 `rf-rename` 域不同：那里的工具是**入口**，本域是**引擎**。"
+    },
+    {
+      "id": "rf-package-migration",
+      "layer": "application",
+      "dir": "src/application/refactor/package_migration",
+      "note": "包改名 / 提级线（对外仅两条导出）：`core`（语言无关骨架，`computeMigrationPlan` 纯计算、**绝不落盘**；落盘 / 验证 / 回滚交 `refactor_pipeline`）+ `parts`（接线层，断环同 rename_symbol）+ `languages/{registry,go,ts,py}`（语言包）。"
+    },
+    {
+      "id": "daemon-server",
+      "layer": "presentation",
+      "dir": "src/presentation/daemon",
+      "note": "daemon 的**服务端侧**（与 `infrastructure/daemon` 的客户端侧成对）：`daemon` = 常驻宿主进程入口（127.0.0.1:7600；watch 注册表跨会话存活 + 单实例权威 + 游标制多客户端告警）/ `server` = 它的 HTTP+SSE 端点（仅绑 127.0.0.1 + Host 头校验防 DNS rebinding；handler 全注入、不持业务状态）/ `memory_watch` = 常驻内存看门狗（持续采样 → 阈值判定 → pushAlert 自提醒，**只提醒不动手**）。"
+    },
+    {
+      "id": "mcp-surface",
+      "layer": "presentation",
+      "dir": "src/presentation/mcp",
+      "note": "MCP 接入面：`server` = stdio MCP 入口 / `server_registry` = 工具注册表（★ **工具 → 线归属的唯一事实源**，`LANE_SOURCES` 把各 `application/<线>/index.ts` 接到线 id）/ `lifecycle` = 长驻 server 的进程级稳定性兜底（unhandledRejection 保活；uncaughtException/SIGINT 先清 watch 句柄 + SQLite 锁再退出）/ `tool_warnings` = 跨工具告警的结构化通道 + 两级呈现（首次全文、之后摘要）。"
+    },
+    {
+      "id": "archify-r5",
+      "layer": "presentation",
+      "dir": "src/presentation/http/archify",
+      "note": "R5 Archify 渲染线（**已挂起，暂不开发**）：`archify_semantics`（编辑 IR 树 → 语义面）/ `archify_mappers`（语义面 → 5 类图的官方 candidate）/ `archify_pipeline`（语义面 → 5 类图各一张；validate 不达 showcase 只回诊断、**绝不造几何**）/ `archify_project`（编辑 IR 树 ↔ Archify 数据层契约适配 + 视觉令牌，只读非投影）。★ 对外端点 `POST /api/archify-demo` 在 `presentation/http/serve.ts`。★ **中性数据层 `view_inputs.ts` 也归本域**（README + 架构规划书 §11.5 钦定保留；`src` 内零 importer，消费者是**外仓** dsl-workbench 前端 ⇒ **按依赖亲和归类，不按 importer 数**）。"
+    },
+    {
+      "id": "behavior",
+      "layer": "infrastructure",
+      "dir": "src/infrastructure/analysis/behavior",
+      "note": "行为基线（金丝雀测试对比）：从契约签名骨架生成 harness，改动前后各跑一次对比，补「动态闸只答跑得动、答不了返回值 / 副作用悄悄变了」的缺口。工作流 capture → 改代码 → verify；支持 python（顶层 exec）+ node 家族（transpileModule 转 CJS 后 require）。★ 消费者**跨 3 个不同域**（observe / translate·verify_behavior / version_upgrade·adapters/node）⇒ 独立能力，不是某域的一个面。"
+    },
+    {
+      "id": "contract-gate",
+      "layer": "infrastructure",
+      "dir": "src/infrastructure/analysis/contract_gate",
+      "note": "契约对账闸门（重构前预拦「符号失配」）：扫描被改动文件，判定每个 `X.` 形式「包 / 接收者引用」的裸标识符是否有定义来源（本文件声明 ∪ import 别名 ∪ 局部名 ∪ 全局白名单），未定义记 danger。**轻量飞刀**，只查这一类跨引用失配，不做 tsc/vet 的完整类型检查 —— 由编译 / 测试权威兜底。★ 按语言拆：`core`（语言无关编排）+ `parts`（接线层，断环）+ `languages/{registry,ts,go,py,java,cs,c}`。"
+    },
+    {
+      "id": "cross-repo",
+      "layer": "infrastructure",
+      "dir": "src/infrastructure/analysis/cross_repo",
+      "note": "跨项目符号索引（项目杂交的**地基**）：对两仓各建一次顶层符号集合 → 求交（同名不同签 = 真冲突 / 同名同签 = 双胞胎）+ 求差（aOnly/bOnly = 安全迁移候选）。供 rename_symbol / package_migration / impact 的跨项目版复用，也是 `hybrid` 的第一支柱。纯内存、零共享状态。"
+    },
+    {
+      "id": "diagnosis",
+      "layer": "infrastructure",
+      "dir": "src/infrastructure/analysis/diagnosis",
+      "note": "一键诊断流水线：`symptom_parser`（症状 → 结构化）→ `candidate_locator`（→ cache.db 按 exact/file/anchor/fts 分级）→ `chain_tracer`（沿 call/type_ref/import 双向 BFS 建证据链）→ `impact_analyzer`（复用 diffImpact 算影响面）→ `root_cause_aggregator`（规则引擎先跑 + LLM 可选，**LLM 只解释不造证据**）→ `repair`（白名单内行级补丁，old_text 不信 LLM）+ `verifier`（**只给验证命令建议、不代跑**）。`diagnose` 是唯一知道各步顺序的编排器。"
+    },
+    {
+      "id": "hybrid",
+      "layer": "infrastructure",
+      "dir": "src/infrastructure/analysis/hybrid",
+      "note": "项目杂交预检（融合可行性报告）：站在 `cross-repo` 之上把「会不会撞名」扩成三维 —— 符号冲突（复用 `compareProjects`）/ 依赖冲突（读两仓根级 manifest 版本范围）/ 功能重叠（双胞胎符号）；输出 verdict（可直接融合 / 需处理 / 必须先解决符号冲突）+ 各维明细 + 理由。"
+    },
+    {
+      "id": "translate",
+      "layer": "infrastructure",
+      "dir": "src/infrastructure/analysis/translate",
+      "note": "Go→TS 半自动翻译线（三段式落地）：`go_extractor`（tree-sitter 萃取 → trans_unit 待译契约）→ `ts_codegen`（机械骨架生成，**签名焊死、函数体留孔**）→ `fill`/`llm`（LLM 逐孔填充；AGNES key 池轮换内联）+ `verify`（语法静态闸）/ `verify_behavior`（复用 `behavior` 金丝雀做 Go↔TS 行为对拍）；`project`（项目级：枚举 .go → 模块树 + 跨文件 import）、`referenced`/`const_eval`/`fixers`/`unit`；`pairs`（TRANSLATE_PAIRS 注册表：新 (src,dst) 只挂一张表）。入口 `tool.ts`（translate_go_ts handler）。"
+    },
+    {
+      "id": "version-upgrade",
+      "layer": "infrastructure",
+      "dir": "src/infrastructure/analysis/version_upgrade",
+      "note": "版本升级契约差检测（**通用内核 + 语言适配器**）：阶段 A `toolchain`（工具链版本盘点 vs 本机）/ B `features`（语言特性契约差）/ C `removed`（废弃·移除 API）/ D `rewrite`（局部重写计划）；`gate` = 静态闸（编译级）+ 动态闸（运行时探针）；`detect` = 按子项目扫描的共享编排（供 `upgrade_cli` / `upgrade_rewrite_cli` 复用）；语言差异**全下沉到 `adapters/`**。★ 通用内核**不 import 具体适配器**，只经 registry 取。"
     }
   ],
   "flatDirs": [
@@ -272,6 +356,24 @@
       "layer": "infrastructure",
       "dir": "src/infrastructure",
       "note": "基础设施横切件（12 个文件）：data_dir / storage / storage_overlay / git / exec_guard / dictionary / alert_inbox / dogfood_stats / llm_focus / project_view / verify_refactor / **scan_bounds**。被各层共用、彼此无父子关系 ⇒ 平铺是终态。★ 它**同时是容器**：`analysis/` 与 `parse/ index/ render/ graph/ daemon/ packages/ rules/ text/` 是**已登记的子域**（2026-10-04 收口，unlisted 归零）。**flat 只说「直属 .ts 是成员」，不管子目录** —— 子目录按 domains 条目各自判。★ `scan_bounds` 于 2026-10-04 从 `application/refactor/rf-edit/` 下沉到此（它是零依赖的纯契约：两个 interface + 一个纯函数，却被放在某条 refactor 子线里，导致 infrastructure 反向 import application）。"
+    },
+    {
+      "id": "flat-application",
+      "layer": "application",
+      "dir": "src/application",
+      "note": "应用层横切件（**6** 个文件）：handlers / plumbing / tool_registry / stage_registry / types / **dispatch**。被各工具线共用、彼此无父子 ⇒ 平铺是终态。★ 登记它**是必需的**：只要 `application/` 下新增任一域（如 cross / harvest），量具就会把 `src/application/` 当成「域的父目录」去扫它的直属文件 ⇒ 不登记则它们全变 `misplaced`（实测：登记 cross + harvest 后 misplaced 2 → 7；补上本条后回到 2）。★ `dispatch` 于 2026-10-04 从 `application/observe/` 挪到此处：它被 **3 条线**消费（design 经 `handlers.dispatchDslEdit` / meta 经 `explore_code.dispatchWatch` / mcp 经 `server_registry.collectPendingAlertText`），是真正的**跨线调度件**，留在 observe 里反而会让 design 线依赖 observe 内部 —— 这也消掉了 T29 的归属歧义。"
+    },
+    {
+      "id": "http-surface",
+      "layer": "presentation",
+      "dir": "src/presentation/http",
+      "note": "HTTP 服务面（3 个终态文件）：`serve` = 轻量 HTTP 服务器（静态文件 + `/api/save|load|events` 的 SSE，外加 `/api/archify-demo` 等派生端点）/ `contract` = 响应契约**单源**（zod 定义，顶层带 `_api` 版本字段，生成 `schema/endpoints.schema.json` 供跨仓前端校验）/ `dict_gen` = 伪维基词典的 LLM 生成与分类后端。★ 三者并列、无父子 ⇒ 平铺终态；R5 渲染子包 `archify/` 另立为 `archify-r5` **域**（flat 的语义要求：子目录必须被登记）。"
+    },
+    {
+      "id": "submit-gate",
+      "layer": "infrastructure",
+      "dir": "src/infrastructure/analysis/gate",
+      "note": "提交层完整性自检（`go:embed` / 产物提交）：检查每个 `//go:embed` 点声明的产物 ① 是否在磁盘存在 ② 是否已进 git 索引 —— 任一失败即「新克隆 build 断点」。**单文件、单消费者**（`refactor_pipeline` 收尾调用）、无对外契约 ⇒ 平铺终态，**不立为域**。"
     }
   ],
   "flatNote": "★ `flatDirs` 与 `domains` 的区别，一句话：**`domains[i].dir` 里的散文件「要么已搬完、要么就是待搬的缺口」；`flatDirs[i].dir` 里的散文件「就是终态」**。 所以 flat 不是「免检」：它的作用是①把这三个目录**纳入视野**（否则量具对它们是瞎的）；②规定「**flat 目录里再长出的子目录必须被登记**」—— 出现了却没登记就是缺口，读数会报 `unlisted`。★ 判据的来源：`infrastructure/` 顶层这 10 个文件如果按容器判，会永远挂在待搬清单上，而「它们本来就该平铺」这个意图**在原表里没地方写** ⇒ 这就是缺的那一位。",

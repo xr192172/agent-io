@@ -6,7 +6,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import type { VerifyCommand } from '../../infrastructure/verify_refactor.js';
+import type { VerifyCommand } from '../../../../verify_refactor.js';
 
 export function pyVerifyCommands(cwd: string): VerifyCommand[] {
   const hasPyProject = fs.existsSync(path.join(cwd, 'pyproject.toml'));

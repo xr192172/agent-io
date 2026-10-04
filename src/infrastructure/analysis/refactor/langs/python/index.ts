@@ -7,7 +7,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import type { LanguageRefactorExecutor, RefactorStageComputeArgs, RunningChangePlan } from '../../infrastructure/analysis/refactor/refactor_langs.js';
+import type { LanguageRefactorExecutor, RefactorStageComputeArgs, RunningChangePlan } from '../../refactor_langs.js';
 import { detectDeadPyImports, removePyImportsFromSource } from './dead_imports.js';
 import { pyVerifyCommands } from './verify_commands.js';
 

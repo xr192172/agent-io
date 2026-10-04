@@ -14,8 +14,8 @@ import type {
   RefactorStageComputeArgs,
   RunningChangePlan,
   RefactorStageExecutor,
-} from '../refactor/refactor_langs.js';
-import type { VerifyCommand } from '../../verify_refactor.js';
+} from '../../refactor_langs.js';
+import type { VerifyCommand } from '../../../../verify_refactor.js';
 import { buildSpringMvcLayeringPlan, collectJavaFiles } from './layering.js';
 
 /** spring_mvc_layering 步骤 compute：纯计算（不落盘），产出迁移计划；落盘/验证/回滚交管线。 */

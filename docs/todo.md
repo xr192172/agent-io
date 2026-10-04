@@ -152,15 +152,25 @@
 
 - [ ] **T21 ★★ `derive_feature_tree.ts` 的 `TOOL_DOMAINS` 已几乎全是死条目（按 basename 认模块，被 P2 搬迁静默架空）**
       *(核实：2026-10-01 —— 台账 §44.31 补；`node scripts/lang_density.mjs` 无关，靠读代码 + `ls src/tools/`。)*
-      ⇒ **实测**：`src/tools/` 现在**只剩 2 个条目**（`python_refactor/` 目录 + `view_inputs.ts`），
+      ⇒ **实测（2026-10-01）**：`src/tools/` 当时只剩 2 个条目（`python_refactor/` 目录 + `view_inputs.ts`），
       而 `toolDomainOf` **只在 `seg[0] === 'tools'` 时被调用**（`derive_feature_tree.ts:193,207`）
       ⇒ ★ 那张**列了 120+ 个模块名的表**（含 `rename_symbol`/`contract_gate`/`package_migration`）
       在当前布局下几乎**不可达**；域名归属实际退化成"只取路径第一段"（`application`/`infrastructure`/…）。
-      ⇒ **待做**：先判"这张表还要不要"——① 删（连同 `toolDomainOf`）⇒ 但先确认 `derive_feature_tree` 的
-      功能树质量不靠它；② 改造（域名按新布局重新定义）。★ **判据**：改完跑 `node scripts/lang_density.mjs`
-      无关，要跑 `tests/tools/derive_split.test.ts` + 全量 + **看一份真实功能树**对齐前对齐。
+      ★★ **2026-10-04 更新（T27 收口后，严重度已到底）**：`python_refactor/` 已搬到
+      `infrastructure/analysis/refactor/langs/python/`，`view_inputs.ts` 已归 `presentation/http/archify/`
+      ⇒ **`src/tools/` 目录不再存在** ⇒ `seg[0] === 'tools'` **永不成立** ⇒
+      **`toolDomainOf` 整个函数 + 那张 120+ 行的表：**
+      ① **永远不会被进入**；② 函数内那条 python 前缀分支**即使改对了也永不命中**
+      ⇒ **现在是彻底的死代码**（T27 期间执行者 C 主动报出："我改了那行，但它已不可达"——
+      那行前缀是**我下令改**的，即**我的指令制造了一条死规则**；已决定删掉，作为 T27 收尾）。
+      ⇒ **待做（就一件事：删干净）**：删除 `toolDomainOf` + `TOOL_DOMAINS` 表 + `:194/:207` 两处守卫与调用点。
+      ★ **删前必做**：确认 `derive_feature_tree` 的功能树质量**不靠它**（用**一份真实功能树**对齐改前/改后）。
       ★ 本项属"**同一族的第 4 例**"（前 3 例：`server_registry.consistency` / `capability_scan` / 架构基线）
-      ——"按路径/文件名认模块的登记表被搬迁静默架空"；本笔**没动它**（无功能影响，单独一笔才有据可依）。
+      ——「**按路径/文件名认模块的登记表被搬迁静默架空**」。
+      ★★ **第 5 例已经来了**：`structure_gap` 自己的 `unlisted` 判据（原版只扫 `flatDirs` 的子目录
+      ⇒ 报 0 假绿，真实 17 个未登记）。同一族、同一病。
+      ⇒ ⇒ **这已经是一个模式，不是偶发**：**凡是"把路径/名字写成表"的地方，搬迁一次就会静默失效一次。**
+      值得单开一条**通则**（见 T31）。
 
 - [ ] **T18 ★★ ④ [B] 契约形状的落地（术语表已定，按表重构）**
       *(核实：2026-10-01 —— `node scripts/measure_b_contract.mjs --glossary`；台账 §44.15~§44.17。)*
@@ -314,23 +324,6 @@ P2 四族搬迁 / P3 抽字符串 / P4 工具名拍板 / G1 复杂度阈值标�
 ★ 难点：清单本身是**仓外的**，所以它必须被**抄进仓内**（这正是"唯一数据源"要付的代价：
 要么承认它管不到，要么把它纳入一个有人维护的表）。**别让它继续散在没人看的地方。**
 
-- [ ] **T27 ★★ 结构收口的**剩余**：`structure_gap` 报 17 个目录未登记（2026-10-04）**
-      *(核实：`npm run structure:gap` ⇒ `unlisted: 17` / `misplaced: 0` / `missing: 0`。)*
-      ⇒ 域表已从 25 → **41 个域 + 3 个平铺**，原来那 **110+ 个散文件已全部归位**；
-      **剩下的 17 个是"未登记的家"**（不是散文件，是整目录）：
-      · **`src/tools/`** —— ★ T11 曾声称"工具实现已全部搬离"，**实测还剩 4 个活文件**
-        （`python_refactor/{index,dead_imports,verify_commands}.ts` + `view_inputs.ts`，分别被
-        `application/refactor/rf-pipeline/refactor_pipeline.ts:44` 与
-        `infrastructure/analysis/structure/feature_map.ts:25` 引用）。
-      · `application/{cross,harvest}` · `application/refactor/{rename_symbol,package_migration}`
-      · `presentation/{daemon,http,mcp}`
-      · `infrastructure/analysis/{behavior,contract_gate,cross_repo,diagnosis,gate,hybrid,
-        java_refactor,translate,version_upgrade}`
-      ⇒ 每个要么登记（域 / flat），要么它不该在那里。
-      ★ 判据本身 2026-10-04 修好了：原版 `structure_gap` 只扫 `flatDirs` 的子目录（**1 个容器**），
-      漏了 `application/` / `infrastructure/analysis/` / `presentation/` / `src/tools`
-      ⇒ 报 `unlisted: 0` 的**假绿**（真实 17 个）。修法就是本条目当初写的"扫父目录下的子目录"。
-
 - [ ] **T28 ★★ 同一个概念，四套目录名 + 三种文件名（独立结构评审 2026-10-04 指出）**
       *(核实：`ls` 四处语言适配目录 + 逐文件比对。)*
       ⇒ **4 个平行的语言适配表**：3 个叫 `languages/`（`package_migration` / `rename_symbol` /
@@ -342,13 +335,26 @@ P2 四族搬迁 / P3 抽字符串 / P4 工具名拍板 / G1 复杂度阈值标�
       ★ 另：`application/refactor/` 下 **9 个 `rf-*` 连字符目录名是全仓唯一**的连字符风格
       （其余一律 snake_case），且 `rf-` 前缀在 `refactor/` 内冗余（读作 "refactor-refactor-edit"）。
 
-- [ ] **T29 ★ `dispatch.ts` 归 `application/observe/` 存疑（2026-10-04）**
-      *(核实：S1-4 执行者主动交代，**不是**我事后才发现。)*
-      ⇒ 它的 `dispatchDslEdit`（`edit_dsl` 写转发）是**跨线**的 —— design 线也在用，
-      严格说它不属于 observe。归 observe 的理由是它与 `dispatchWatch` / `isDaemonAvailable`
-      共用同一个 daemon 探测。
-      ⇒ **要么**挪到 `application/` 根级，**要么**在文件头注里写明"它为什么在 observe"。
-      （两个都很便宜；只要把歧义消掉，任一即可。）
+- [ ] **T31 ★★★ 通则：「凡把路径/名字写成表的地方，搬迁一次就静默失效一次」（2026-10-04 立）**
+      *(核实：本清单同一族**已 5 例**，逐条见 T21 正文 + 台账 §44.31 / §44.37 / §44.40。)*
+      ⇒ **5 例**：
+        1. `server_registry.consistency` —— 假设「实现在 `src/tools/<name>.ts`」
+        2. `capability_scan` —— 按路径认模块
+        3. 架构基线（`.dependency-cruiser-known-violations.json`，**18 条里 8 条过期，44%**）
+        4. `derive_feature_tree.ts` 的 `TOOL_DOMAINS` —— 120+ 行的名字表（T21）
+        5. ★ **`structure_gap` 自己的 `unlisted` 判据** —— 只扫 `flatDirs` 的子目录（**1 个容器**）
+           ⇒ 报 `0` 假绿，真实 **17 个**未登记（2026-10-04 修）
+      ⇒ **共同形状**：一张「名字 → 某个判断」的表（或一段把路径写死的前缀判断），
+        在**布局没变的当天是对的**，在**第一次搬迁之后静默变成错的** —— 而且**不报错、不变红**。
+      ⇒ **通则（要落地成纪律）**：
+        · **不写「名字表」**：能从 ① 运行时数据 / ② 结构化 API / ③ AST 拿到的，**不要抄成表**
+          （判据优先级见 AGENTS.md 那一节；本仓 L1/L2/L3 已收口一部分，L4 仍散着）
+        · **非写名字不可时，配一个"这个名字还在不在"的检查**，且该检查必须**现算**、**不落基线**
+        · ★★ **搬迁之后必须重跑所有"按名字认东西"的判据** ——
+          这正是「每次搬迁后跑 `structure:gap` + `code_health` + 逐个工具试用」这条纪律的**真正理由**
+          （不是为了走形式，是因为**这一类判据会静默失效**，而只有重跑才发现）
+      ★ 与之配套的**两条已生效纪律**（在 AGENTS.md）：① **不许留墓碑**（失效的表要删，不是注释掉）；
+        ② **「读数为 0」先问「扫描面 = 管辖面吗」**（第 5 例就是扫描面少了 4 个容器）。
 
 - [ ] **T25 ★★★ 6 张手工登记表逐张换载体（判据：**扫描类一律换成框架规则或工具**）**
       *(核实：2026-10-03 —— 见台账 §44.36；已用 `lane_no_io` 做完整小样，净减 247 行 + 1.6 KB。)*

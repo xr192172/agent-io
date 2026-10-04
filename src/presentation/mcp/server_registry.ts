@@ -24,7 +24,7 @@ import { scheduleBackfill, backfillState, isIndexIncomplete } from '../../infras
 import { renderGranularityNote } from '../../application/refactor/rf-parse/parse_capability.js';
 import { unknownArgHints, renderArgHints } from '../../infrastructure/text/arg_suggest.js';
 import { recommendObservePoints } from '../../application/observe/capture/observe_points.js';
-import { collectPendingAlertText, dispatchDslEdit } from '../../application/observe/dispatch.js';
+import { collectPendingAlertText, dispatchDslEdit } from '../../application/dispatch.js';
 import { exportSvg, exportMarkdown } from '../../infrastructure/render/export.js';
 import { deriveMindMap } from '../../application/meta/view/derive_mind_map.js';
 import { queryFeature } from '../../application/meta/explore/query_feature.js';

@@ -24,7 +24,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { watchProjectTool, listActiveWatches, setWatchToolEventListener } from '../../application/observe/watch_project_tool.js';
+import { watchProjectTool, listActiveWatches, setWatchToolEventListener } from '../../application/observe/runtime/watch_project_tool.js';
 import { setAlertListener, alertsSince, pushAlert } from '../../infrastructure/alert_inbox.js';
 import { saveDSL, getDSL, onDslChange } from '../../infrastructure/storage.js';
 import { updateFeature } from '../../application/design/dsl_ops/update_feature.js';

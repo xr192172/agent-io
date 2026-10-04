@@ -22,7 +22,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { matchLayer } from './layer_detect.js';
 import { detectDeadImports, type DeadImportCandidate } from '../deadcode/detect_dead_imports.js';
-import { detectDeadPyImports, type DetectPyDeadImportsResult } from '../../../tools/python_refactor/dead_imports.js';
+import { detectDeadPyImports, type DetectPyDeadImportsResult } from '../refactor/langs/python/dead_imports.js';
 import { skipDirSet } from '../../parse/source_exts.js';
 
 export type FeatureSide = 'frontend' | 'backend' | 'shared';
