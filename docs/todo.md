@@ -524,17 +524,21 @@
         ★★ **三处名字是被"跨模型评审"救下来的**：初版 `parse/` `rules/` 会让域表 **id 重复**，
           而 `structure_gap.ts:130` **对重复 id 直接 throw** ⇒ **`structure:gap` 会当场崩溃**（我逐条亲验坐实）。
         *验收：tsc 0 · build 0 · 结构三态全 0 · 全量 56 工具零坏签名 · 残留 grep 0（含域表 note 正文 5 处）。*
-      ⇒ **方案 B ⏳ 第二步（待做）：角色归位** —— `refactor/` 下现混着**两种角色**：
-        ① **能力内核**（`core`+`parts`+`languages/`）：`rename_symbol/` · `package_migration/`
-        ② **工具实现组**（第一步改完的那 9 个）
-        ★ 仓库**自己已经把这句话写进域表**（`rf-rename-symbol` 的 note 逐字：「与 `rf-rename` 域不同：
-          **那里的工具是入口，本域是引擎**」）—— 只是没人照着它动。
-        ⇒ 目标态：**内核归位到 `infrastructure/analysis/<capability>/`**（与同类先例 `contract_gate` 并排）。
-        ⇒ ★ **不能一次做完**（硬证据）：`rename_symbol` 下沉会连出
-          `application/cross/project_root` + `observe/runtime/write_gate` + `rename_symbol/languages/*` →
-          `snapshot/protect` 的连锁，且会造成 **infrastructure → application 反向依赖**（违反分层）。
-          ★ `package_migration` 是自由的（零 application 依赖），但**与 `rename_symbol` 留到同一步**以免中间态。
-        ⇒ ★ 另核实：`rf-rename ⟷ rename_symbol` 有**目录级双向边**（两条边都验了），
+      ⇒ **方案 B ✅ 第二步 2a 已做（2026-10-05，commit `f81d215`）**：`package_migration/` 下沉到
+        `infrastructure/analysis/package_migration/`（**零 application 依赖**，入边只 1 处）。
+        ★ 同结构先例：`infrastructure/analysis/contract_gate/`。
+        ★★ **执行者纠正了我的一个错误前提**：我指示它"目录深度变了、内部 import 全要重写"，
+          它核完停下：`src/application/refactor/X` 与 `src/infrastructure/analysis/X` 在 src 下**同为 3 段**
+          ⇒ 内部 `../../../infrastructure/…` **恰好仍解析到同一目标**（并验了 3 个目标真实存在）
+          ⇒ **照我的指示改会把好 import 改坏**。
+          ⇒ 教训（今日第二次同类）：**"深度变了"要数段数，不要凭"看起来更深"下结论。**
+      ⇒ **方案 B ⏳ 第二步 2b（待做）：`rename_symbol/` 下沉** —— 三处阻塞（已实测）：
+        ① `cross/project_root`（应用层**兄弟线**，用到 6 个导出）② `snapshot/protect`（**住在工具目录里**，5 个语言包都用）
+        ③ ★★ **引擎反向调工具**（`languages/typescript.ts:22` → `rename/rename_file`，
+           用途是"**文件联动改名**"，注释自称"增量增强、失败不阻断"）⇒ 断开它是**行为重构**，需单独验。
+        ⇒ 前置顺序：① `protect` 沉 infrastructure ② `project_root` 相关下沉 ③ 断开 engine→tool。
+        ★ 方案**正在独立评审**（按今日新立的规矩：动手前先让独立一遍审我的判断）。
+        ★ 另核实：`rf-rename ⟷ rename_symbol` 有**目录级双向边**（两条边都验了），
           但**文件级环不闭合**（`rename_file.ts` 不 import `rename_symbol(s)`）⇒ **"零环"不是假绿**。
       ⇒ **方案 C ⏳ 待做**：`infrastructure/analysis/` 下 15 个子目录名语域重叠、无索引 ⇒ 合并单文件目录 + 补说明。
 
