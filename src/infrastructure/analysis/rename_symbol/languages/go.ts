@@ -21,24 +21,10 @@ import {
   toOps,
   stripQuotes,
   type N,
+  type GoModuleAnalysis,
   type RenameSymbolFileInfo,
   type RenameSymbolResult,
 } from '../parts.js';
-
-export interface GoModuleAnalysis {
-  /** 包级定义名 → 声明 identifier/type_identifier 字节偏移 */
-  rootOffsets: Map<string, number>;
-  /** 包级定义名 → kind */
-  rootKinds: Map<string, string>;
-  /** 引用到该包级符号的裸标识符偏移（不含定义处本身） */
-  refs: Map<string, number[]>;
-  /** 定义的符号集合（去重，供改名时确定当前文件是否定义） */
-  defined: Set<string>;
-  /** import：本地名（别名或路径末段）→ 包路径（引包方跨包引用判定用） */
-  imports: Array<{ alias: string; path: string }>;
-  /** 选择器引用：`pkg.Symbol` 的 operand → field 引用偏移列表（跨包 pkg.Sym 改名用） */
-  selections: Map<string, Array<{ field: string; fieldOffset: number }>>;
-}
 
 const GO_DEF_NODE_TYPES = new Set(['function_declaration', 'type_spec', 'const_spec', 'var_spec']);
 

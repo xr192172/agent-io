@@ -211,3 +211,33 @@ export interface LangPackage {
   /** 跨文件改名的**唯一入口** */
   rename(args: LangRenameArgs): Promise<RenameSymbolResult>;
 }
+
+// ─────────────────────────────────────────────
+// 模块级符号分析形状（本族**五个语言包共用**：go / py / c / java / cs）
+// ★★ 2026-10-05（T28 续）从 `languages/go.ts` **搬到这里**。原因：
+//   `c.ts` 与 `py.ts` 都写着 `import type { GoModuleAnalysis } from './go.js'`
+//   —— 一个**谁也不属于**的共享形状，定义却住在 Go 的文件里
+//   ⇒ 「一个文件 = 一门语言」这条目录规则下，那是**跨语言污染**（删掉 go.ts 会让 py 编译不过）。
+//   搬到语言无关接线层后，`languages/*.ts` 之间**零 import**。
+//
+// ★ 名字沿用 Go 引入时的 `GoModuleAnalysis`（**没改**）：本仓已有一个 **形状相近但不同** 的
+//   `ModuleAnalysis`（`infrastructure/parse/module_analysis.ts:58`，TS 家族用，refs 是 `ModuleRef[]`
+//   且带 `exportRefs`），本形状的 refs 是 `Map<string, number[]>` 并多了 `selections`。
+//   ⇒ 改名成 `ModuleAnalysis` 会**撞名且把两个不同形状搅在一起**；改名成第三个新名字则要动
+//     5 处引用却买不到判据上的收益。**留名，但把事实写在这里。**
+//   ★ 两个形状"几乎一样"本身值得单独议（疑近重复）—— 已入 `docs/todo.md` 待核实。
+// ─────────────────────────────────────────────
+export interface GoModuleAnalysis {
+  /** 包级定义名 → 声明 identifier/type_identifier 字节偏移 */
+  rootOffsets: Map<string, number>;
+  /** 包级定义名 → kind */
+  rootKinds: Map<string, string>;
+  /** 引用到该包级符号的裸标识符偏移（不含定义处本身） */
+  refs: Map<string, number[]>;
+  /** 定义的符号集合（去重，供改名时确定当前文件是否定义） */
+  defined: Set<string>;
+  /** import：本地名（别名或路径末段）→ 包路径（引包方跨包引用判定用） */
+  imports: Array<{ alias: string; path: string }>;
+  /** 选择器引用：`pkg.Symbol` 的 operand → field 引用偏移列表（跨包 pkg.Sym 改名用） */
+  selections: Map<string, Array<{ field: string; fieldOffset: number }>>;
+}

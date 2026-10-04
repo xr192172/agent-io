@@ -22,7 +22,7 @@ import {
   type RenameSymbolFileInfo,
   type RenameSymbolResult,
 } from '../parts.js';
-import type { GoModuleAnalysis } from './go.js';
+import type { GoModuleAnalysis } from '../parts.js';
 
 export async function analyzeCLanguage(src: string): Promise<GoModuleAnalysis | null> {
   const parser = await getParser('.c', findLanguageByExt('.c')!);

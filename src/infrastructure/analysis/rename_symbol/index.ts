@@ -39,12 +39,12 @@ export { analyzeModuleSource } from '../../../infrastructure/parse/module_analys
 export type { ImportEdge, ModuleRef, ModuleAnalysis } from '../../../infrastructure/parse/module_analysis.js';
 
 export { analyzeGoSource, renameGoSymbol } from './languages/go.js';
-export type { GoModuleAnalysis } from './languages/go.js';
+export type { GoModuleAnalysis } from './parts.js';
 
 export { analyzePythonSource, renamePythonSymbol } from './languages/py.js';
 
-export { analyzeCSharpSource } from './languages/cs.js';
+export { analyzeCSharpSource, renameCSharpSymbol } from './languages/cs.js';
 
-export { analyzeJavaSource, renameNamespaceSymbol } from './languages/java.js';
+export { analyzeJavaSource, renameJavaSymbol } from './languages/java.js';
 
 export { analyzeCLanguage, renameCSymbol } from './languages/c.js';

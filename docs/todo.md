@@ -379,6 +379,39 @@
       ⇒ ★ 本轮**只改了 T28 所辖的那几处**（`rename_symbol` 的注册表路径 —— 那是**我自己的 T42-D 改搬坏的**）
         与语言包文件名；**整篇刷新是另一笔**。
 
+- [ ] **T51 ★★ 「一个文件 = 一门语言」这条目录规则**没有机器判据**（2026-10-05，T28 续时立）**
+      *(核实：改前 `rename_symbol/languages/` 的实际形状 —— `cs.ts` 导出工厂给 `java.ts` 用、
+       `java.ts` 导出引擎给 `.cs` 的注册项用；两者**互相 import**，`py.ts`/`c.ts` 又
+       `import type … from './go.js'`。已全修，规则写进 `registry.ts` 头注 + `docs/adding-a-language.md` §2.2。)*
+      ⇒ **为什么值得单列**：★ **现有两把尺都看不见这种形状** ——
+        · `code_health` 的 `循环依赖` **不抓**（`java.ts → cs.ts` 是**单向**，不成环）；
+        · `code_health` 的 `分层违规` **不抓**（两个文件同在 `infrastructure/`）。
+        · dep-cruiser 已在 `7bcc364` **整体移除** ⇒ 没有"8 行框架规则"这条路可走。
+      ⇒ 而它**很容易再长回来**：下一个给 `rename_symbol` 加语言的人（或 LLM），
+        看到 Java/C# 的算法像，顺手就会让一个文件同时服务两门语言。
+      ⇒ 方向（**按 T25 的判据：扫描类 ⇒ 换成工具，不建门/登记表**）：
+        给 `code_health` 加一个维度，判据 = **`application/**` 与 `infrastructure/**` 下
+        "同名目录里，文件 A 是否 import 了同目录的另一个语言文件"**（可泛化为更普适的一条：
+        **同目录兄弟文件之间的横向 import**）。★ 泛化版更值钱 —— 本仓别处可能也有。
+
+- [ ] **T52 ★ `rename_symbol` 里两个"模块级符号分析"形状近乎重复（T28 续时顺带发现，未判断）**
+      *(核实：逐字段对比两处定义 —— `parts.ts: GoModuleAnalysis` vs
+       `infrastructure/parse/module_analysis.ts:58 ModuleAnalysis`。)*
+
+      | | `parts.ts: GoModuleAnalysis`（go/py/c/java/cs 用） | `parse/module_analysis.ts: ModuleAnalysis`（TS 家族用） |
+      |---|---|---|
+      | `rootOffsets` | `Map<string, number>` | 同 |
+      | `rootKinds` | `Map<string, string>` | 同 |
+      | `imports` | `Array<{alias, path}>` | `ImportEdge[]`（**不同形状**） |
+      | 引用 | `refs: Map<string, number[]>` + `selections` | `rootRefs: ModuleRef[]` + `exportRefs` |
+
+      ⇒ ★★ **"名字像"的地方这次是"形状像"**：前两个字段逐字相同、后两个不同
+        ⇒ 与 T18 的 `files`（同名不同义）**是同一族的第二个方向**。
+      ⇒ **未判断**：该不该合并？（合并要把两种 refs 表示统一 ⇒ **是行为变更**，不是重命名）
+        · 反对：两者服务不同家族，且 TS 家族需要 `exportRefs`（re-export）而本形状需要 `selections`（`X.sym`）；
+        · 赞成：`rootOffsets/rootKinds` 逐字相同 ⇒ 至少要判断"是不是同一份地基被抄了两遍"。
+      ⇒ **待定，不预设结论，也不动。** 已在 `parts.ts` 的 `GoModuleAnalysis` 上方记明这层关系。
+
 - [ ] **T31 ★★★ 通则：「凡把路径/名字写成表的地方，搬迁一次就静默失效一次」（2026-10-04 立）**
       *(核实：本清单同一族**已 5 例**，逐条见 T21 正文 + 台账 §44.31 / §44.37 / §44.40。)*
       ⇒ **5 例**：
@@ -508,51 +541,6 @@
       ⇒ **判据**：`grep -rn "readAssemblyBricks\|BrickFoldInfo\|assembly\.json" src` 应只剩删除后的零引用；
         `tsc` 0；`npm run build` 0；`npm run structure:gap` 三态仍全 0。
       ⇒ ★ 与 **T41**（报错口吻）不同族：这是**死路清尾**，属"删族"的尾巴（见 `dc-remove-tool` §一）。
-
-- [ ] **T48 ★ `rename_symbol` 的 C# 语言包缺「冻结行保护」（独立评审顺带发现，2026-10-05）**
-      *(核实：`grep -c protect src/application/refactor/rename_symbol/languages/*.ts`
-       ⇒ c=2 / go=2 / java=2 / python=4 / typescript=3 / **csharp=0**。)*
-      ⇒ 其余 5 个语言包都 import `createProtectGuard`（冻结行守卫），**只有 C# 没有**。
-      ⇒ ★ **定性**：这是**既有缺口**（**不是** T42 引入），但含义是"**C# 文件里的冻结行不会被保护**"
-      （冻结行 = 人标了"别动"的行）⇒ 改 C# 符号时可能**改动人明确标记过不能动的行**。
-      ⇒ 待查：是**有意**（C# 语言包后加、那时还没 protect？）还是**漏了**。★ 判据：读 C# 包的改动路径，
-        看它有没有别的方式守冻结行；若无 ⇒ 补 `createProtectGuard`（与 go/java 同形）。
-
-- [ ] **T49 ★★ T42 方案 B 2b 的剩余三步（B / C / D）—— ★ 顺序与风险已定（独立评审 2026-10-05）**
-      *(核实：见 T42「方案 B 第二步 2b」与本次评审报告。)*
-      ⇒ ★★ **最关键的认知（改变优先级）**：**合规收益全部来自"三件手术"**；
-        **把 `rename_symbol/` 物理搬走本身不产生任何合规收益**（手术做完后，引擎**留在 application 也是 0 违规**）。
-        ⇒ **手术是主线，搬家是收尾。**
-      ⇒ 四步（**每步一提交 + build 绿**）：
-        · **A ✅ 已做**：`protect.ts` → `infrastructure/analysis/refactor/protect.ts`（纯搬家，7 处引用）。
-        · **B ✅ 已做**（`1bb9d93`）：`project_root.ts`（**1279 行 / 15 个改动点**）→
-          `infrastructure/analysis/project_root/index.ts`（**新立 `project-root` 域**；
-          ★ 没塞进 `analysis/refactor/` —— 它跨 cross/design/refactor×4/presentation，**不服务单一能力**）。
-          ★ 执行者**主动标注"我的 code_health 读数来自旧 dist、仅供参考"**（并跑 `index_integrity({refresh:true})` 保鲜）
-          ⇒ 主控**用新构建复测**：`layer_violation 0` / `circular_dependency 0` ✓
-          ⇒ ★ **读数与"尺子版本"绑定，尺子旧了就要说** —— 这是应有的姿势。
-        · ★★ **A+B 之后得到一个决定性结论（实测）**：引擎的外向依赖**只剩 `infrastructure/*` + `domain/*`（全向下）**，
-          外加 **唯一一条应用层边 = `../../rename/rename_file.js`** ⇒ **C 就是 D 之前的最后一道门**（不是推断）。
-        · **C ⏳（唯一行为改动，风险最高）**：断开 **engine → 应用层库**（`languages/typescript.ts:22` → `rename/rename_file`）。
-          ★ 措辞修正（评审）：`rename_file` **不是 MCP 入口**（工具是 `rename_symbols`/`rename_files`），
-            它是**应用层库**，被那两个工具 + `code_workbench` 复用；★ 而它自己又 import
-            `observe/runtime/write_gate` + `file_snapshot` ⇒ **引擎调它会把整个 application 层拖进内核**。
-          ⇒ 方案 **C1（拆出去）**：`rename_symbols` 在符号改名成功后自己调 `renameFile`；引擎删掉
-            `rename_file_if_matching` 入参 / `fileRenamed` / `fileRenameBlocked` 产物与相关 `touchedOf`。
-            ★ **失败语义要逐字保持**（仅当 `renameFileIfMatching && basename(defAbs,ext)===symbol`；
-            dry_run 只填计划路径不动盘；写盘时 `fr.ok && fr.moved` 才算成功，否则记 `blocked` 但**整体仍 ok:true**）。
-          ⇒ 方案 **C2（端口注入，评审说"无测试时更保值"）**：内核定义 `FileRenamer` 端口、工具注入真实现
-            ⇒ **零行为改动**地消掉静态边。代价：多一层间接 + "何时联动"策略仍在内核。
-          ⇒ ★★ **评审的最重要警告**：**C 是唯一的行为改动，而本仓无测试、CI 只剩 build**
-            ⇒ **机械搬家 tsc 能兜住，行为改动没有任何自动兜底** ⇒
-            **"该不该做"的真分歧不是架构，而是"行为改动怎么验"**：
-            动工前**必须先定一个可复现的人工对拍**（例：挑一个"文件名 = 主导出符号名"的真实文件，
-            改名前 `dry_run` 记 `fileRenamed`/`importers`，改后逐条比）；**没有它，不动 C**。
-        · **D ⏳**：搬 `rename_symbol/` + 域表（★ 连带必改：`rf-rename-symbol` 的 dir+layer · `cross` 域（移走 project_root）·
-          `refactor` 域 note · 以及 `structure.domains.json:380` 的 `unassignedNote` 里"rename_symbol/ 与
-          package_migration/ 保持原位"**那句已过时**）。
-      ⇒ ★ **入边是 3 条不是 2 条**（我漏了 `find/find_references.ts:23` 取 `analyzeModuleSource/resolveRel/buildNoExt`）
-        ⇒ 搬家时这条也要改，且说明 `index.ts` **必须继续导出这三个符号**。
 
 - [ ] **T47 ★ 「自定位工具」的 `touched.project_dir` 可能是 cwd（口径待定，2026-10-05）**
       *(核实：`index_integrity --json '{}'` 实测 `"touched":{"project_dir":"D:\\project_develop\\design-canvas"}`

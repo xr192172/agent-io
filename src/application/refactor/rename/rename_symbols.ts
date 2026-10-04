@@ -8,8 +8,8 @@
  *                         renameSymbol()
  *                           ├─ '.go'  → renameGoSymbol()
  *                           ├─ '.py'  → renamePythonSymbol()
- *                           ├─ '.cs'  → renameNamespaceSymbol(ext='.cs')
- *                           ├─ '.java'→ renameNamespaceSymbol(ext='.java')
+ *                           ├─ '.cs'  → renameCSharpSymbol()   ┐ 共用引擎
+ *                           ├─ '.java'→ renameJavaSymbol()     ┘ (namespace_family)
  *                           ├─ '.c'/'.h' → renameCSymbol()
  *                           └─ 其余 TS 系 → 模块符号引用图（本文件下半部）
  * ```
