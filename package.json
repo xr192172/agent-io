@@ -26,7 +26,7 @@
     "ai-agent"
   ],
   "engines": {
-    "node": ">=18"
+    "node": ">=22.5"
   },
   "files": [
     "dist/src/presentation/mcp/server.js",
@@ -61,15 +61,10 @@
     "install-package": "node dist/src/presentation/cli/install_package_cli.js",
     "diagnose": "node dist/src/presentation/cli/cli.js diagnose",
     "diagnose-loop": "node dist/src/presentation/cli/diagnose_loop_cli.js",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:main": "vitest run --exclude 'tests/tools/archify_*.test.ts'",
-    "test:r5": "vitest run tests/tools/archify_demo.test.ts tests/tools/archify_mappers.test.ts tests/tools/archify_project.test.ts tests/tools/archify_semantics.test.ts",
     "hub": "node scripts/hub.mjs",
     "demo": "node scripts/demo.mjs",
     "gen:schema": "node scripts/gen_endpoints_schema.mjs",
-    "arch": "depcruise src --config .dependency-cruiser.cjs",
-    "structure:gap": "vite-node scripts/structure_gap.mjs",
+    "structure:gap": "node scripts/structure_gap.mjs",
     "tool": "node dist/src/presentation/cli/cli.js"
   },
   "dependencies": {
@@ -119,9 +114,6 @@
   },
   "devDependencies": {
     "@types/node": "^22.20.1",
-    "dependency-cruiser": "^18.4.0",
-    "playwright": "^1.62.0",
-    "typescript": "^5.4.0",
-    "vitest": "^1.6.0"
+    "typescript": "^5.4.0"
   }
 }

@@ -2,9 +2,10 @@
 /**
  * structure_gap 的**本地壳** —— 判据**全在** `src/infrastructure/analysis/structure/structure_gap.ts`（唯一实现）。
  *
- * ★ 为什么还留这个壳，而不是直接删：
- *   MCP 跑的是 **dist 旧构建**（重构期间刻意不动它）⇒ 本仓自己读缺口时，需要一条
- *   **不依赖 dist** 的路。本壳用 `vite-node`（本仓已有）把源码里的实现直接跑起来。
+ * ★ 2026-10-04 改：**去掉 `vite-node`**，本壳直接读 `dist/`。
+ *   原因：`vite-node` 是 vitest 的传递依赖 —— 用户裁定「把框架全删掉」后它一并消失。
+ *   走 dist 反而更对：MCP 跑的就是 dist ⇒ **本地读数与产品读数同一份代码**（判据真正唯一）。
+ *   代价：跑之前要 `npm run build`（没 build 就如实报错，不静默降级）。
  *
  * ★★ 判据**禁止**写在本文件里（这是本仓头号病根「判据分叉」的典型形态）：
  *   2026-10-02 本文件原本自带一整套四态判据，产品化时已**逐字搬进** `structure_gap.ts`。
@@ -15,11 +16,8 @@
  */
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-// ★ 这里刻意**不写 `.js` 扩展名**：本壳由 vite-node 跑（不是 tsc），
-//   而 vite-node 对 **`.mjs` 里**的 import 不做「`.js` → `.ts`」映射（实测报 ERR_LOAD_URL）。
-//   去掉扩展名 ⇒ 走 vite 的 `resolve.extensions`（含 `.ts`）⇒ 能直接加载源码。
-//   （源码内部那些 `./x.js` 的 import 不受影响 —— 它们出自 `.ts` 文件，vite 会映射。）
-import { structureGap } from '../src/infrastructure/analysis/structure/structure_gap';
+// ★ 从 `dist/` 读（与 MCP 跑的是同一份产物）⇒ 必须带 `.js` 扩展名（Node ESM 不做扩展名推断）。
+import { structureGap } from '../dist/src/infrastructure/analysis/structure/structure_gap.js';
 
 const argv = process.argv.slice(2);
 const asJson = argv.includes('--json');
@@ -52,5 +50,5 @@ if (asJson) {
       ? '⇒ 结构意图与现状一致 ✓（★ 这只说明"已开垦区整齐"，不等于"全仓都登记了"）'
       : `⇒ 待处置：**${r.misplaced.length} 个待搬** + **${r.unlisted.length} 个待定归属**；另有 ${r.missing.length} 个**待建域**（搬完自然消失）`,
   );
-  console.log('★ 搬完记得：node scripts/preflight_move.mjs <旧> <新> → npm run arch（0 违规）→ 全量。\n');
+  console.log('★ 搬完记得：node scripts/preflight_move.mjs <旧> <新> → 用 code_health 看环与分层违规 → 逐个工具试用一遍。\n');
 }

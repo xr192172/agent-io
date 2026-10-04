@@ -99,17 +99,11 @@ function targets() {
       else if (exts.some((x) => e.name.endsWith(x))) out.push(p.split(path.sep).join('/'));
     }
   };
-  walk('tests', ['.ts', '.json', '.mjs']);
   walk('scripts', ['.ts', '.mjs', '.json']);
   // 根目录的 json / mjs / config
-  // ★★ 2026-09-30 实战补漏（首次真跑就中）：vitest 会在根目录留一堆
-  //   `vitest.config.ts.timestamp-*.mjs`（已在 .gitignore 里，本仓现存 96 个）——
-  //   它们**不是源码**，却混进根目录扫描并被报成"去 src 前缀"形态 ⇒ 纯噪音。
-  //   ★ 教训：出生证探针只喂了 `tests/` 下的文件，**没走根目录那条分支** ⇒ 探针覆盖不到真输入面。
   for (const e of fs.readdirSync(ROOT, { withFileTypes: true })) {
     if (!e.isFile() || e.name.startsWith('.')) continue;
     if (/\.(json|mjs|cjs|ts)$/.test(e.name) === false) continue;
-    if (e.name.includes('.timestamp-')) continue; // vitest 临时文件（gitignored）
     out.push(e.name);
   }
   return out;

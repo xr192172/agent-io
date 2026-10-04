@@ -9,7 +9,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # ─── TS 主工程：测试 + 类型检查（跨平台矩阵） ───
+  # ─── TS 主工程：类型检查 + 构建 + 零依赖闸门（跨平台矩阵） ───
+  # ★ 2026-10-04：原「单元测试（vitest）」一步已删 —— 框架整体移除（见提交说明）。
+  #   留下的闸门全是 `scripts/*.mjs` 零依赖脚本，它们不依赖任何测试框架。
   node-test:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -24,11 +26,6 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: npm
           cache-dependency-path: package-lock.json
-      # derive_split 等测试含真实 Go 编译/测试验收闭环，macOS runner 默认无 go in PATH，
-      # 显式安装保证 Go 场景在所有平台都被真正执行（而非 skipIf 降级跳过）
-      - uses: actions/setup-go@v5
-        with:
-          go-version: "stable"
       - name: 安装依赖
         run: npm ci
       # 质量闸门（防 skip hook / 纯本地校验漏网）：build 后跑，因契约闸门需 dist 的 ts_kernel
@@ -49,8 +46,6 @@ jobs:
       - name: archify vendor 自检（renderer + schema + example 三件套完整）
         if: ${{ env.AGENT_IO_R5_SKIP != '1' }}
         run: node third_party/archify/bin/archify.mjs doctor
-      - name: 单元测试（vitest）
-        run: npm test
 
   # ─── Go 插桩组件：go-observe / go-slim ───
   go-test:

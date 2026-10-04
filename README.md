@@ -308,21 +308,25 @@ npm run diagnose-loop -- --project <项目目录> --symptom "<症状>"
 
 执行流程：基线快照（改前自动提交）→ 建立符号缓存 → 诊断（规则 + LLM 双引擎）→ LLM 行级补丁（修改白名单 + 行号越界校验 + 审批展示真实 diff）→ 运行项目测试验证：通过则精确提交补丁文件，失败则自动回退。
 
-## 测试与验证
+## 验证方式
+
+本项目**不设单元测试套件**（2026-10-04 裁定）。验证靠三条，全部零测试框架依赖：
 
 ```bash
-npm test              # vitest 全量
-npm run test:main     # 只跑主线（排除 R5 线：tests/tools/archify_*.test.ts）
-npm run test:r5       # 只跑 R5 线（archify 渲染管线）
-AGENT_IO_R5_SKIP=1 npm test # 全量但把 R5 线挂起（见下方"挂起的线"）
-npm run doctor        # 环境体检 + 能力缺口
+npm run build                            # 类型检查 + 构建（tsc 是第一道闸门）
+npm run doctor                           # 环境体检 + 能力缺口
+npm run tool -- <工具名> --json '{...}'   # 真调一个工具 —— 这才是唯一有意义的验收
 ```
+
+CI 另跑 5 道**零依赖闸门**（`scripts/contract_docs_gate.mjs` / `readme_tools_gate.mjs` /
+`capability_scan.mjs` + STALE BUILD 自检 + archify vendor 自检），它们都是 `.mjs` 脚本，
+不引入任何测试框架。
 
 ## 挂起的线
 
-* **R5（archify 渲染线）已挂起**：保留在仓内、暂不开发，以免影响主线。开关 `AGENT_IO_R5_SKIP=1`
-  可整线挂起其 28 项测试。**对外契约（`/api/archify-demo`）与中性数据层
-  （`view_inputs.ts`）不受挂起影响，仍由 CI 守着。** 详见 [docs/r5-archify-hung.md](docs/r5-archify-hung.md)。
+* **R5（archify 渲染线）已挂起**：保留在仓内、暂不开发，以免影响主线。
+  **对外契约（`/api/archify-demo`）与中性数据层（`view_inputs.ts`）不受挂起影响。**
+  详见 [docs/r5-archify-hung.md](docs/r5-archify-hung.md)。
 
 ## 技术栈
 
@@ -333,8 +337,6 @@ npm run doctor        # 环境体检 + 能力缺口
 * **渲染器**：HTML 字符串拼接（零构建链，产物单文件自包含）
 
 * **Schema 校验**：ajv + ajv-formats
-
-* **测试**：vitest
 
 ## Agent 指引
 

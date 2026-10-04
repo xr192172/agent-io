@@ -15,15 +15,13 @@ src/
   db/         符号缓存（tree-sitter 产物的持久化）
 go-observe/    Go 版 observe 探针/裁决（独立小模块）
 go-slim/      Go 积木瘦身器（编译器式死码剪枝）
-tests/        与 src 同构的 vitest 测试目录
 ```
 
 ## 开发环境
 
 ```bash
 npm install
-npm run build   # 先构建（渲染器 bundle + tsc）
-npm test        # vitest 全量
+npm run build   # 构建（gen bundle + tsc）
 npm run doctor  # 环境体检 + 能力矩阵缺口自检
 ```
 
@@ -31,15 +29,17 @@ npm run doctor  # 环境体检 + 能力矩阵缺口自检
 
 ### 提交前必须过
 
-1. **每个新工具 = 实现 + 注册 + 测试**。工具在 `src/tools/` 实现，经 `register_capabilities.ts` 注册，`tests/tools/` 下必有对应测试，否则 CI 会失败。
+1. **每个新工具 = 实现 + 注册**。工具经 `register_capabilities.ts` 注册；注册与实现的一致性由零依赖闸门 `scripts/capability_scan.mjs` 守着（CI 会跑）。
 2. **优先用现有 AST 根基，不要手写正则**。`ts_kernel`（tree-sitter）是符号/import/调用边/类型引用的唯一权威来源。确实有 regex_fallback 的场景，请在能力矩阵里标注并说明原因。
-3. **测试不得依赖真实 LLM**。CI 环境无 key，LLM 相关的用例要么 mock 外呼、要么在无配置时优雅降级/跳过。参考 `tests/tools/dict_gen.test.ts` 的写法。
-4. **Go 相关测试**要处理「环境无 go」的情况：用 `spawnSync('go', ['version'])` 探测，缺失时 `describe.skipIf` 降级，而不是直接失败。macOS runner 默认没有 go 在 PATH。
-5. **保持能力矩阵诚实**：新增能力或修正缺口时同步更新 `capability` 输出，不要留下「未落地但假装可用」的窟窿。
+3. **保持能力矩阵诚实**：新增能力或修正缺口时同步更新 `capability` 输出，不要留下「未落地但假装可用」的窟窿。
+4. **改完自己验**（★ 2026-10-04 裁定，取代原「每个工具必有单测」）：
+   `npm run build` → `npm run doctor` → 用 `npm run tool -- <工具名>` **真调一遍**。
+   本项目**不设单元测试套件** —— 验证靠「把功能摆成目标的样子，再一个个工具试用过去，哪里有 bug 就修哪里」。
+   理由：59% 的历史提交在动 `tests/`，而同期真实功能提交只有 189 个；框架的维护成本超过了它的收益。
 
 ### 代码风格
 
-- TypeScript + ESM（`"type": "module"`），Node ≥ 18。
+- TypeScript + ESM（`"type": "module"`），Node ≥ 22.5（`node:sqlite` 为内置模块，无第三方原生依赖）。
 - 每个工具文件顶部用中文写清「输入 / 行为 / 输出 / 边界」，新读者第一眼要知道这个工具干什么。
 - 双向绑定是项目灵魂：改 DSL 格式、改 schema 时，必须同步 `schema/design_dsl.schema.json`、校验器、渲染器、文档四件套。
 

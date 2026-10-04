@@ -13,22 +13,18 @@
 import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
-import { createRequire } from 'node:module';
-import type { DatabaseSync as DatabaseSyncType } from 'node:sqlite';
+import { DatabaseSync } from 'node:sqlite';
 import { getStorageRoot } from '../storage.js';
 import { SCHEMA_SQL } from './schema.js';
 
-// node:sqlite 用 createRequire 运行时加载而非静态 import：
-// vitest 1.x 自带的 Vite 5 内建模块清单不认识 node:sqlite（Node 22.5 才加入），
-// 静态 import 会被它剥掉 node: 前缀当文件路径解析而报错；
-// createRequire 绕过静态分析，tsc 构建产物与运行时行为完全一致。
-const nodeRequire = createRequire(import.meta.url);
-const { DatabaseSync } = nodeRequire('node:sqlite') as {
-  DatabaseSync: new (dbFile: string) => DatabaseSyncType;
-};
+// ★ 2026-10-04：从 `createRequire` 绕路**改回静态 import**。
+//   原来绕的原因**只有一个**：vitest 1.x 自带的 Vite 5 内建模块清单不认识 `node:sqlite`
+//   （Node 22.5 才加入），会把 `node:` 前缀剥掉当文件路径解析 ⇒ 只能靠 createRequire
+//   躲开静态分析。用户裁定「把框架全删掉」后 Vite 不复存在 ⇒ **这个绕路连同它的理由一起消失**。
+//   （依赖 Node 22.5+，见 package.json 的 `engines`。）
 
-/** 统一 re-export，调用方从本模块取类型，绕不开 Vite 的静态 import 问题 */
-export type Database = DatabaseSyncType;
+/** 统一 re-export，调用方从本模块取类型 */
+export type Database = DatabaseSync;
 
 // ─────────────────────────────────────────────────────────────
 // 批量事务（嵌套安全）

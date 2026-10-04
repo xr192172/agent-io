@@ -1,5 +1,5 @@
 {
-  "note": "★ 本仓的「域划分」—— **唯一数据源**：哪个目录算哪个域。它是**架构约定**（意图），不是派生数据，所以跟 `.dependency-cruiser.cjs` 并列放在仓根，而不是塞进 `.agent-io/`（那是派生数据）或 feature DSL（那是 dataHome 级、按功能线一份；域划分是全仓级、owner=project）。★ 依赖方向**不在这里**：那是 `dep-cruiser` 的职责（`layer-downward-only` / `application-must-not-reach-infrastructure-internals` / `domain-is-self-contained`），搬进这里就是第二份副本。★ 实际依赖边也不在这里：从 `cache.db` 现取。",
+  "note": "★ 本仓的「域划分」—— **唯一数据源**：哪个目录算哪个域。它是**架构约定**（意图），不是派生数据，所以放在仓根，而不是塞进 `.agent-io/`（那是派生数据）或 feature DSL（那是 dataHome 级、按功能线一份；域划分是全仓级、owner=project）。★ 依赖方向**不在这里**：它由 `code_health` 工具**现算**（分层违规 + 循环依赖），不落成第二份名单 —— 2026-10-04 之前这一条外包给 dependency-cruiser，那个框架已移除。★ 实际依赖边也不在这里：从 `cache.db` 现取。",
   "reading": "node scripts/structure_gap.mjs",
   "layers": [
     "presentation",

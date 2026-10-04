@@ -286,12 +286,19 @@ npm run diagnose-loop -- --project <project-dir> --symptom "<symptom>"
 
 Flow: baseline snapshot (auto-commit before changes) → build symbol cache → diagnose (rule + LLM dual engine) → LLM line-level patch (modification whitelist + line-range validation + approval showing the real diff) → run the project's tests: on pass, commit exactly the patched files; on failure, roll back automatically.
 
-## Testing & Verification
+## Verification
+
+This project **ships no unit-test suite** (decided 2026-10-04). Verification is three steps, all
+free of any test-framework dependency:
 
 ```bash
-npm test              # Full vitest suite
-npm run doctor        # Environment health check + capability gaps
+npm run build                            # type check + build (tsc is the first gate)
+npm run doctor                           # environment health check + capability gaps
+npm run tool -- <tool> --json '{...}'    # actually invoke a tool — the only meaningful acceptance
 ```
+
+CI additionally runs 5 zero-dependency gates (`scripts/*.mjs` + the STALE BUILD self-check +
+archify vendor doctor); none of them require a test framework.
 
 ## Tech Stack
 
@@ -299,7 +306,6 @@ npm run doctor        # Environment health check + capability gaps
 - **AST parsing**: tree-sitter (Go / TypeScript / Python / JavaScript), language packs detected at runtime
 - **Renderer**: HTML string assembly (zero build chain, self-contained single-file output)
 - **Schema validation**: ajv + ajv-formats
-- **Testing**: vitest
 
 ## Agent Guidance
 
