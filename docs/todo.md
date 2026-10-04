@@ -344,6 +344,10 @@
       的收益（台账 §44.30 参考 serena 时定的）。命名漂移把它吃掉了。
       ★ 另：`application/refactor/` 下 **9 个 `rf-*` 连字符目录名是全仓唯一**的连字符风格
       （其余一律 snake_case），且 `rf-` 前缀在 `refactor/` 内冗余（读作 "refactor-refactor-edit"）。
+      ⇒ ✅ **这一半已做**（2026-10-05，commit `b01ae48`，T42 方案 B 第一步）：9 个 `rf-*` 已去掉冗余前缀、
+        统一 snake_case（并修正三处会撞域 id 的坏名）。
+      ⇒ ⏳ **本条的另一半仍在**：上面那 **4 个平行的语言适配表**（`languages/` ×3 + `adapters/` ×1）
+        与**同一门语言多种写法**（`py.ts` vs `python.ts` 等）**未动**。
 
 - [ ] **T31 ★★★ 通则：「凡把路径/名字写成表的地方，搬迁一次就静默失效一次」（2026-10-04 立）**
       *(核实：本清单同一族**已 5 例**，逐条见 T21 正文 + 台账 §44.31 / §44.37 / §44.40。)*
@@ -503,9 +507,25 @@
         ★ 拆的理由不是"看着乱"：域表那条 `cli-surface` 的 note 原本自称"每个文件 = 一条命令 ⇒ 平铺是终态"，
         **而那 7 个 renderer 不是命令**（唯一引用者是 `brickify_cli`）⇒ 那条 note 一直是用错的理由背书。
         *验收：tsc 0 / build 0 / structure:gap 三态全 0 / `brickify_cli` 无参打印 usage。*
-      ⇒ **方案 B**：`application/refactor/` 同层两套命名 + 单文件 `index.ts` 已 1479 行；
-        统一命名（68 处路径引用，靠编译器兜底）。★ 与 **T28** 的 `rf-*` 命名是同一族，**同一次做**。
-      ⇒ **方案 C**：`infrastructure/analysis/` 下 15 个子目录名语域重叠、无索引 ⇒ 合并单文件目录 + 补说明。
+      ⇒ **方案 B ⏳ 第一步 ✅ 已做（2026-10-05，commit `b01ae48`）**：9 个 `rf-*` 目录去冗余前缀
+        （`annotate` `edit` `find` `pipeline` `rename` `snapshot` **`parse_capability`** **`rule_library`** **`diff_views`**）；
+        **实测引用 70 处 / 26 文件**（台账原记 68 处 —— 我的第一版口径 59 漏了 `rf-*` 互引）。
+        ★★ **三处名字是被"跨模型评审"救下来的**：初版 `parse/` `rules/` 会让域表 **id 重复**，
+          而 `structure_gap.ts:130` **对重复 id 直接 throw** ⇒ **`structure:gap` 会当场崩溃**（我逐条亲验坐实）。
+        *验收：tsc 0 · build 0 · 结构三态全 0 · 全量 56 工具零坏签名 · 残留 grep 0（含域表 note 正文 5 处）。*
+      ⇒ **方案 B ⏳ 第二步（待做）：角色归位** —— `refactor/` 下现混着**两种角色**：
+        ① **能力内核**（`core`+`parts`+`languages/`）：`rename_symbol/` · `package_migration/`
+        ② **工具实现组**（第一步改完的那 9 个）
+        ★ 仓库**自己已经把这句话写进域表**（`rf-rename-symbol` 的 note 逐字：「与 `rf-rename` 域不同：
+          **那里的工具是入口，本域是引擎**」）—— 只是没人照着它动。
+        ⇒ 目标态：**内核归位到 `infrastructure/analysis/<capability>/`**（与同类先例 `contract_gate` 并排）。
+        ⇒ ★ **不能一次做完**（硬证据）：`rename_symbol` 下沉会连出
+          `application/cross/project_root` + `observe/runtime/write_gate` + `rename_symbol/languages/*` →
+          `snapshot/protect` 的连锁，且会造成 **infrastructure → application 反向依赖**（违反分层）。
+          ★ `package_migration` 是自由的（零 application 依赖），但**与 `rename_symbol` 留到同一步**以免中间态。
+        ⇒ ★ 另核实：`rf-rename ⟷ rename_symbol` 有**目录级双向边**（两条边都验了），
+          但**文件级环不闭合**（`rename_file.ts` 不 import `rename_symbol(s)`）⇒ **"零环"不是假绿**。
+      ⇒ **方案 C ⏳ 待做**：`infrastructure/analysis/` 下 15 个子目录名语域重叠、无索引 ⇒ 合并单文件目录 + 补说明。
 
 > ★★ **上面 T37/T38/T39 是 2026-10-05 体检**当场**修掉的三笔**（已进 commit 历史，故不在此列）：
 > `f2e9066` cross 线假阳性 + P-D 守卫漏接 · `94987c4` 补齐 18 工具缺参守卫（**59 工具零坏签名**）
