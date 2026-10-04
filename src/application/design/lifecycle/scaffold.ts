@@ -41,7 +41,8 @@ export interface ScaffoldInput {
 
 export interface ScaffoldResult {
   message: string;
-  files: string[];
+  /** 生成落盘的文件路径表（★ 新名：旧 `files` 一名 6 义；路径表统一 `written_files`） */
+  written_files: string[];
   dir: string;
 }
 
@@ -816,7 +817,7 @@ function scaffoldCore(input: ScaffoldInput): ScaffoldResult {
     'INVARIANTS.md 记录了跨文件不变式和全局行为约束。',
   ].join('\n');
 
-  return { message, files: generatedFiles, dir: outDir };
+  return { message, written_files: generatedFiles, dir: outDir };
 }
 
 /** ★ 唯一的构造点：把"我动了什么"集中算一次，所有出口都从这一个地方出去 */
@@ -827,12 +828,12 @@ function touchedOf(input: ScaffoldInput, r: ScaffoldResult): Touched {
   //   （output_dir 是产物输出目录，可能就是 `<cwd>/scaffold/<feature>`，不是被分析的项目根）。
   touched.feature = input.feature;
   if (input.project_dir) touched.project_dir = path.resolve(input.project_dir);
-  // 对象类 written_files：**只列真落盘的**（r.files 里带 "(跳过，已存在)" 的项未写 ⇒ 剔除）。
+  // 对象类 written_files：**只列真落盘的**（r.written_files 里带 "(跳过，已存在)" 的项未写 ⇒ 剔除）。
   //   契约要求**仓库相对路径** ⇒ 以 project_dir 为基换算（复用本文件已用的 toRelPosix）。★ 没给
   //   project_dir 时省略整个字段——不把绝对路径塞进"仓库相对"槽位（那是换口径，不是更弱的答案）。
   if (input.project_dir) {
     const written = new Set<string>();
-    for (const f of r.files) {
+    for (const f of r.written_files) {
       if (f.endsWith(' (跳过，已存在)')) continue;
       const rel = toRelPosix(input.project_dir, f);
       if (rel) written.add(rel);

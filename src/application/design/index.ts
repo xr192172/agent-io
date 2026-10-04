@@ -232,9 +232,9 @@ export const DESIGN_TOOLS: ToolDef[] = [
           overwrite: a.overwrite as boolean | undefined,
           ui_framework: a.ui_framework as 'vue' | 'react' | 'html' | undefined,
         });
-        // ★ 回执编排：files（生成的文件清单）与 dir（输出根）是 agent 后续要引用的机器可读产物，
-        //   旧入口用 wrapData 时已在回；本笔保持同名同义。
-        return { message: r.message, data: { action, files: r.files, dir: r.dir } };
+        // ★ 回执编排：written_files（生成的文件路径表）与 dir（输出根）是 agent 后续要引用的机器可读产物，
+        //   旧入口用 wrapData 时已在回（★ 2026-10-05 随 [B] 还债把 `files` 拆成 `written_files`）。
+        return { message: r.message, data: { action, written_files: r.written_files, dir: r.dir } };
       }
 
     }),

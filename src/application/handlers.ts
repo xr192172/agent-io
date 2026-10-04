@@ -168,8 +168,9 @@ export const renderDesignHandler = wrap(async (a) => {
 
 /** 生成骨架（原独立入口，★ 面收敛第三批已并入 lane `scaffold` 的单入口 action=generate）。
  *  ★ wrapData（2026-09-29）：[B] `scaffold` 回 `ScaffoldResult`
- *   = `{ message, files: string[], dir }` —— `files`（生成的文件清单）与 `dir` 原被 `wrap` 丢掉，
+ *   = `{ message, written_files: string[], dir }` —— `written_files`（生成的文件路径表）与 `dir` 原被 `wrap` 丢掉，
  *   agent 只能从"1. 2. 3. …"编号散文里正则抠路径。`message` 不放进 data（同一份回执文本，重复无益）。
+ *  ★ 2026-10-05 随 [B] 还债：旧 `files` 一名 6 义 ⇒ 路径表统一 `written_files`。
  *  ★ 本壳不再被任何 lane 引用（编排内联进 `lanes/design.ts` 的 `scaffold` entry）——
  *   保留只为不牵动 `server_registry.ts` 的具名导入清单（该文件另有一批同类死导入，属独立卫生笔）。 */
 export const scaffoldHandler = wrapData(async (a) => {
@@ -180,7 +181,7 @@ export const scaffoldHandler = wrapData(async (a) => {
     overwrite: a.overwrite as boolean | undefined,
     ui_framework: a.ui_framework as 'vue' | 'react' | 'html' | undefined,
   });
-  return { message: r.message, data: { files: r.files, dir: r.dir } };
+  return { message: r.message, data: { written_files: r.written_files, dir: r.dir } };
 });
 
 

@@ -41,8 +41,8 @@ export interface DeriveAlgorithmResult {
   edges_created: number;
   truncated: boolean;
   dead_code: boolean;
-  /** 控制流节点分类计数 */
-  stats: { steps: number; branches: number; loops: number; returns: number; throws: number; handlers: number };
+  /** 控制流节点分类计数（★ 新名：旧 `stats` 一名 5 义；各领域统一 `<领域>_stats`） */
+  algorithm_stats: { steps: number; branches: number; loops: number; returns: number; throws: number; handlers: number };
 }
 
 /** CFG 节点类型 → 渲染形状（tone 为语义色，渲染器映射到主题变量：error=红 success=绿 warning=橙）
@@ -178,7 +178,7 @@ async function deriveAlgorithmCore(input: DeriveAlgorithmInput): Promise<DeriveA
     edges_created: newEdges.length,
     truncated: cfg.truncated,
     dead_code: cfg.deadCode,
-    stats: {
+    algorithm_stats: {
       steps: kindCount('step'),
       branches: kindCount('branch'),
       loops: kindCount('loop'),
