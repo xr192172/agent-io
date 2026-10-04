@@ -12,8 +12,9 @@
  *   - 它按"块的形状"判定：若机器块被删掉（结构化通道消失），`rounds` 里就没有块 ⇒ 门会**变绿**
  *     （抓不到）。这一条由**另一条结构断言**兜：`server_registry` 的注入点必须走 `emitWarnings`。
  *
- * ★ 出生证（tests/helpers/gate_probe.ts）：① 注入"重复长文本" ⇒ 门变红；
- *   ② 对照项：用**真实链路**（真 stale 项目连调两轮）⇒ 门不变红。
+ * ★ 自证方式（2026-10-04 改）：**直接断言**，不经任何 helper。
+ *   「注入一个错 ⇒ 断言门红」这件事，在这个门里注入物是**内存里的轮次数组**，
+ *   连写盘都没有 —— 用普通 `expect` 一行就说清，不需要"必定还原"那套文件兜底。
  */
 import { DATA_DIR_NAME } from '../../src/infrastructure/data_dir.js';
 import fs from 'node:fs';
@@ -21,7 +22,6 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect, afterAll } from 'vitest';
-import { expectGateGoesRed, expectGateStaysGreen } from '../helpers/gate_probe';
 import { WARNINGS_MARKER, warningBlock, emitWarnings, resetWarningDelivery, type WireWarning } from '../../src/presentation/mcp/tool_warnings.js';
 import { staleIndexWarning, resetStaleIndexWarningCache } from '../../src/presentation/mcp/server_registry.js';
 import { importProject } from '../../src/infrastructure/graph/import_project.js';
@@ -89,27 +89,7 @@ describe('门 · 告警长文本不得跨轮重复（结构化判定，无正则
     expect(detectRepeatedWarningDetail([roundWith([full]), roundWith([full])]).length).toBe(1);
   });
 
-  it('★ 出生证（正面）：注入"两轮都带长文本" ⇒ 门**变红**', () => {
-    const duplicated = [
-      roundWith([{ code: 'STALE_INDEX', summary: 'S', detail: 'D', fix: 'F' }]),
-      roundWith([{ code: 'STALE_INDEX', summary: 'S', detail: 'D', fix: 'F' }]),
-    ];
-    let injected: string[] | null = null;
-    expectGateGoesRed({
-      name: '告警长文本不得跨轮重复',
-      mutate: () => {
-        injected = duplicated;
-      },
-      run: () => detectRepeatedWarningDetail(injected ?? []),
-      isRed: (bad) => bad.length > 0,
-      render: (bad) => JSON.stringify(bad),
-      restore: () => {
-        injected = null;
-      },
-    });
-  });
-
-  it('★ 出生证（对照项）：**真实链路**（真 stale 项目连调两轮）⇒ 门**不变红**', async () => {
+  it('★ 真实链路：真 stale 项目连调两轮 ⇒ 不得重复带长文本', async () => {
     // 真实陈旧条件：建好索引 → 绕过写闸改文件（只比 size+mtime ⇒ 必须改大小）
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'warnnoise-'));
     roots.push(root);
@@ -122,31 +102,18 @@ describe('门 · 告警长文本不得跨轮重复（结构化判定，无正则
     resetStaleIndexWarningCache();
     resetWarningDelivery();
 
-    let rounds: string[] = [];
-    expectGateStaysGreen({
-      name: '告警长文本不得跨轮重复（真实链路对照）',
-      mutate: () => {
-        // 前置已把项目改旧（真陈旧条件）；这里只把"本轮读数"归零，保证 run 拿到的是全新一轮
-        rounds = [];
-      },
-      run: () => {
-        // 两轮**真实**调用（走 registerAllTools 同一条路径：生产方 → emitWarnings）：
-        // 第 1 轮应全文、第 2 轮应只剩摘要 ⇒ 门不变红
-        for (let i = 0; i < 2; i++) {
-          const e = emitWarnings([staleIndexWarning(gateRoot)]);
-          rounds.push(roundWith(e.warnings));
-        }
-        return detectRepeatedWarningDetail(rounds);
-      },
-      isRed: (bad) => bad.length > 0,
-      render: (bad) => JSON.stringify(bad),
-      restore: () => {
-        resetWarningDelivery();
-        resetStaleIndexWarningCache();
-      },
-    });
-    // 诚实标注：这一轮里确实拿到了告警（否则"不变红"只是"什么都没测到"）
-    expect(rounds.some((t) => t.includes(WARNINGS_MARKER)), '两轮都没产出告警块 ⇒ 对照项是空转的').toBe(true);
+    // 两轮**真实**调用（走 registerAllTools 同一条路径：生产方 → emitWarnings）：
+    // 第 1 轮应全文、第 2 轮应只剩摘要
+    const rounds: string[] = [];
+    for (let i = 0; i < 2; i++) {
+      const e = emitWarnings([staleIndexWarning(gateRoot)]);
+      rounds.push(roundWith(e.warnings));
+    }
+    // ★ 先证"下面那条断言不是空转"：确实产出了告警块。否则 rounds 全无块 ⇒ detect 必然返回 []
+    //   ⇒ 断言恒真（这正是本仓踩过的"同义反复不是门"）。
+    expect(rounds.some((t) => t.includes(WARNINGS_MARKER)), '两轮都没产出告警块 ⇒ 后面那条断言是空转的').toBe(true);
+    const bad = detectRepeatedWarningDetail(rounds);
+    expect(bad, `真实链路报出重复长文本：${JSON.stringify(bad)}`).toEqual([]);
   });
 
   it('★ 结构断言：注入点必须走 emitWarnings（防"结构化通道被绕过、退回字符串拼接"）', () => {

@@ -16,11 +16,10 @@ export default defineConfig({
     },
     // 全局 setup：AGENT_IO_HOME 指向临时目录，隔离测试对活态 DSL 的写入
     setupFiles: ['tests/setup.ts'],
-    // ★ 全局前置：清掉上一轮可能遗留的「门出生证注入物」（`__gate_probe*`）。
-    //   必须在所有测试之前、且在**没有并发**的位置做 —— 否则门的**棘轮断言**
-    //   （它先于出生证执行、且不用 helper）会看到遗留物而**假红**。
-    //   详见 tests/helpers/global_setup.ts 的注释（含 2026-09-29 的实测证据）。
-    globalSetup: ['tests/helpers/global_setup.ts'],
+    // ★ 2026-10-04 删掉了 `globalSetup`（原用途：清上一轮「门出生证探针」的注入物残留）。
+    //   它服务的 `tests/helpers/gate_probe.ts` 整套已删 —— 理由见该次提交。
+    //   一句话：那个 helper 的存在前提是「门靠往盘上注入文件来证明自己会红」，
+    //   而真正用到它的唯一一扇门，注入物只是**内存里的数组**，根本不需要文件级还原。
     // 共享 storage 目录（.agent-io/features/），多文件并行会相互清理
     // 改为单线程串行跑，避免测试间状态污染
     pool: 'forks',
