@@ -58,8 +58,6 @@ export interface FlatDirDecl extends StructureDomainDecl {}
 export interface StructureDomainsConfig {
   domains: StructureDomainDecl[];
   flatDirs?: FlatDirDecl[];
-  /** 有意留白：归属还没定的文件名（不含扩展名）。读数把它们报成 `unlisted` 而不是猜一个域 */
-  unassigned?: string[];
 }
 
 export interface StructureGapItem {
@@ -152,7 +150,6 @@ export function readStructureConfig(projectDir: string): StructureDomainsConfig 
 /** 对账：意图（配置）vs 现状（磁盘）。纯函数，不写盘、不兜底。 */
 export function computeStructureGap(projectDir: string, cfg: StructureDomainsConfig): StructureGapReport {
   const flat = cfg.flatDirs ?? [];
-  const unassigned = new Set(cfg.unassigned ?? []);
   const declaredDirs = [...cfg.domains, ...flat].map((d) => d.dir);
   const misplaced: StructureGapItem[] = [];
   const unlisted: StructureGapItem[] = [];
@@ -188,8 +185,7 @@ export function computeStructureGap(projectDir: string, cfg: StructureDomainsCon
       const stem = name.replace(/\.[^.]*$/, '');
       if (stem === 'index') continue; // 父目录自己的 barrel 合法
       const rel = path.posix.join(parent, name);
-      if (unassigned.has(stem)) unlisted.push({ path: rel, note: '在配置的 unassigned 里 —— 归属未定' });
-      else misplaced.push({ path: rel, note: `${stem} 没进任何域目录` });
+      misplaced.push({ path: rel, note: `${stem} 没进任何域目录` });
     }
   }
 

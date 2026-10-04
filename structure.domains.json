@@ -378,15 +378,9 @@
     {
       "id": "submit-gate",
       "layer": "infrastructure",
-      "dir": "src/infrastructure/analysis/gate",
-      "note": "提交层完整性自检（`go:embed` / 产物提交）：检查每个 `//go:embed` 点声明的产物 ① 是否在磁盘存在 ② 是否已进 git 索引 —— 任一失败即「新克隆 build 断点」。**单文件、单消费者**（`refactor_pipeline` 收尾调用）、无对外契约 ⇒ 平铺终态，**不立为域**。"
+      "dir": "src/infrastructure/analysis/submit_gate",
+      "note": "提交层完整性自检（`go:embed` / 产物提交）：检查每个 `//go:embed` 点声明的产物 ① 是否在磁盘存在 ② 是否已进 git 索引 —— 任一失败即「新克隆 build 断点」。**单文件、单消费者**（`refactor_pipeline` 收尾调用）、无对外契约 ⇒ 平铺终态，**不立为域**。★ 2026-10-05 由 `analysis/gate/submit_gate.ts` 搬到 `analysis/submit_gate/index.ts`：旧目录名 `gate/` 是**属名**（「闸门」这一大类），却只装了 `submit` 一个**种**，且 `contract_gate/`（契约对账闸门）才是与它并列的另一实例 ⇒ 属名被一个种占住是命名错位。搬到 `submit_gate/index.ts` 后与另 3 个单文件目录（`behavior/` · `cross_repo/` · `project_root/`）同形，且 **`dir` 目录名与 `id` 终于同名**（`submit_gate` ↔ `submit-gate`，仅 `_`/`-` 之别）。"
     }
   ],
-  "flatNote": "★ `flatDirs` 与 `domains` 的区别，一句话：**`domains[i].dir` 里的散文件「要么已搬完、要么就是待搬的缺口」；`flatDirs[i].dir` 里的散文件「就是终态」**。 所以 flat 不是「免检」：它的作用是①把这三个目录**纳入视野**（否则量具对它们是瞎的）；②规定「**flat 目录里再长出的子目录必须被登记**」—— 出现了却没登记就是缺口，读数会报 `unlisted`。★ 判据的来源：`infrastructure/` 顶层这 10 个文件如果按容器判，会永远挂在待搬清单上，而「它们本来就该平铺」这个意图**在原表里没地方写** ⇒ 这就是缺的那一位。",
-  "unassignedNote": "下表是**有意留白**：还没定归属的现行文件。读数会把它们报成 `unlisted`（= 要决定归属），而不是猜一个域塞进去。 2026-10-02 第二批：把 application/meta/ 的 20 个散文件纳入域表（8 个域），id 一律带 meta- 前缀以免与已有域重名（如 impact）。 2026-10-02 第三批：把 application/refactor/ 的 24 个散文件纳入域表（9 个域，id 带 rf- 前缀）。★ `rename_symbol/` 与 `package_migration/` 保持原位 —— 它们是「功能内按实现分包」，不是域。 2026-10-02 第四批：加 `flatDirs` 表达 + 登记 domain/ 、presentation/cli/、infrastructure/ 三个平铺目录。★ 加完之后读数**从 0 变成 6** —— 那不是「搞坏了」，而是**扫描面第一次伸到 `src/infrastructure` 的子目录**：`daemon/ graph/ index/ parse/ render/ text/` 六个容器此前对量具完全隐形（parse 一家就 24 个散文件）。**旧的全零是「已开垦区的整齐度」，不是「全仓整齐度」** —— 这正是「分子分母是不是同一把尺」那条纪律的又一实例。",
-  "unassigned": [
-    "role_title",
-    "snapshot_needle",
-    "submit_gate"
-  ]
+  "flatNote": "★ `flatDirs` 与 `domains` 的区别，一句话：**`domains[i].dir` 里的散文件「要么已搬完、要么就是待搬的缺口」；`flatDirs[i].dir` 里的散文件「就是终态」**。 所以 flat 不是「免检」：它的作用是①把这三个目录**纳入视野**（否则量具对它们是瞎的）；②规定「**flat 目录里再长出的子目录必须被登记**」—— 出现了却没登记就是缺口，读数会报 `unlisted`。★ 判据的来源：`infrastructure/` 顶层这 10 个文件如果按容器判，会永远挂在待搬清单上，而「它们本来就该平铺」这个意图**在原表里没地方写** ⇒ 这就是缺的那一位。"
 }
