@@ -359,15 +359,14 @@ export const OBSERVE_TOOLS: ToolDef[] = [
 
   {
     name: 'run_tests',
-    title: 'Run tests and return structured failures',
+    title: 'Run tests and return exit code plus output tail',
     description:
-      '跑测试并返回结构化失败定位（替代"跑 npm test 看长文本再 grep 失败"）。' +
-      'filter 传单个测试文件/名称 → 秒级定向回归；省略跑全量（耗时，适合提交前检查）。' +
-      '返回 total/passed/failed + 每个失败的 {file, test, messages}，可据此直接定位到代码。' +
-      '依赖目标项目已装 vitest（本仓库自带）。',
+      '跑目标项目的测试（走 package.json 的 scripts.test，以退出码判成败，退出码 0 ⇒ 成功）。' +
+      'filter 传单个测试文件/名称 → `npm test -- <filter>` 定向回归；省略跑全量（耗时，适合提交前检查）。' +
+      '失败时返回 exitCode + stdout/stderr 的尾部（截断，仅尾部），不解析任何框架私有格式，通用适配 vitest/jest/node:test 等。',
     inputSchema: {
       project_dir: z.string().optional().describe('目标项目根（默认 cwd）'),
-      filter: z.string().optional().describe('测试文件/名称过滤（如 tests/tools/find_references.test.ts）'),
+      filter: z.string().optional().describe('测试文件/名称过滤（如 tests/tools/find_references.test.ts），经 npm test -- 透传'),
       timeout_ms: z.number().optional().describe('超时毫秒（默认 120000）'),
     },
     handler: wrapData(async (a) => {
@@ -391,16 +390,13 @@ export const OBSERVE_TOOLS: ToolDef[] = [
       }
       const parts = [
         ...(staleHint ? [staleHint, ''] : []),
-        r.success
-          ? `${r.filter ? `[定向]` : `[全量]`} 测试通过：${r.passed}/${r.total} 通过（${r.total} 个用例）`
-          : `${r.filter ? `[定向]` : `[全量]`} 测试失败：${r.passed}/${r.total} 通过，${r.failed} 个失败`,
+        `${r.filter ? '[定向]' : '[全量]'} ${r.command}`,
+        r.timedOut ? '结果：超时（进程已终止）' : r.success ? '退出码 0 → 测试通过' : `退出码 ${r.exitCode} → 测试失败`,
       ];
-      for (const f of r.failures.slice(0, 20)) {
-        parts.push(`\t❌ ${f.file} › ${f.test}`);
-        const firstMsg = (f.messages.find((m) => m && m.trim()) || '').split('\n')[0];
-        if (firstMsg) parts.push(`\t  ${firstMsg.trim()}`);
-      }
-      if (r.failures.length > 20) parts.push(`\t… 还有 ${r.failures.length - 20} 个失败（详见 outputFile）`);
+      if (r.filterNote) parts.push(`filter：${r.filterNote}`);
+      if (r.stdoutTail.trim()) parts.push('—— stdout（仅尾部）——', r.stdoutTail.trimEnd());
+      if (r.stderrTail.trim()) parts.push('—— stderr（仅尾部）——', r.stderrTail.trimEnd());
+      if (r.outputTruncated) parts.push('（输出过长，已截断，仅保留尾部）');
       return { message: parts.join('\n'), data: r };
     }),
   },

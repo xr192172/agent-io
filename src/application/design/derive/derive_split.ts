@@ -721,7 +721,7 @@ async function runTest(
     return { command, ok: r.ok, output: r.output };
   }
   // TypeScript
-  let pkg: { scripts?: Record<string, string>; devDependencies?: Record<string, string>; dependencies?: Record<string, string> } | undefined;
+  let pkg: { scripts?: Record<string, string> } | undefined;
   try {
     pkg = JSON.parse(readFileSync(path.join(projectDir, 'package.json'), 'utf8'));
   } catch {
@@ -730,9 +730,9 @@ async function runTest(
   if (!pkg?.scripts?.test) {
     return { command: 'npm test', ok: true, output: '', skipped: 'package.json 无 test 脚本，跳过 TS 测试级验收' };
   }
-  const useVitest = !!(pkg.devDependencies?.vitest || pkg.dependencies?.vitest);
   const files = [targetRel, newRel].map((f) => shq(f)).join(' ');
-  const command = useVitest ? `npx vitest run ${files}` : 'npm test';
+  // 通用形式：不绑定 vitest，经 npm 标准透传把两个文件追加到 scripts.test（`npm test -- <files>`）。
+  const command = `npm test -- ${files}`;
   const r = await runShell(command, projectDir);
   return { command, ok: r.ok, output: r.output };
 }
