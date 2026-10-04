@@ -14,21 +14,21 @@
  * 供 LLM 在交互中直接开启"项目保鲜"，两者共享 cache.db 与 live/ 目录。
  */
 
-import { DATA_DIR_NAME } from '../data_dir.js';
+import { DATA_DIR_NAME } from '../../infrastructure/data_dir.js';
 import path from 'node:path';
-import { getProjectCacheDb } from './db.js';
-import { importProject } from '../graph/import_project.js';
-import { diffViews, type DiffViewsResult } from '../../application/refactor/rf-view/diff_views.js';
-import { detectDrift, type DriftData } from '../../application/design/intent/detect_drift.js';
-import { diffImpact } from '../analysis/impact/diff_impact.js';
-import { runImpactReport, readImpactReport, listImpactReports } from '../../application/meta/impact/impact_report.js';
+import { getProjectCacheDb } from '../../infrastructure/index/db.js';
+import { importProject } from '../../infrastructure/graph/import_project.js';
+import { diffViews, type DiffViewsResult } from '../refactor/rf-view/diff_views.js';
+import { detectDrift, type DriftData } from '../design/intent/detect_drift.js';
+import { diffImpact } from '../../infrastructure/analysis/impact/diff_impact.js';
+import { runImpactReport, readImpactReport, listImpactReports } from '../meta/impact/impact_report.js';
 import {
   appendDeclaration, markConsumed, recoverPending, resolveViolation, listLedger, countOpenViolations,
   type LedgerEntry,
-} from '../../application/meta/impact/impact_ledger_store.js';
-import { pushAlert } from '../alert_inbox.js';
-import { captureProbe, TSProbeCapture, setGlobalProbeSink, hasGlobalProbeSink } from '../analysis/observe/probe.js';
-import { watchProject, type WatchHandle, type WatchBatchSummary, type ReconcileSummary } from './watch_project.js';
+} from '../meta/impact/impact_ledger_store.js';
+import { pushAlert } from '../../infrastructure/alert_inbox.js';
+import { captureProbe, TSProbeCapture, setGlobalProbeSink, hasGlobalProbeSink } from '../../infrastructure/analysis/observe/probe.js';
+import { watchProject, type WatchHandle, type WatchBatchSummary, type ReconcileSummary } from '../../infrastructure/index/watch_project.js';
 
 // ─────────────────────────────────────────────────────────────
 // rebuild 节流器（纯逻辑，可注入 timer 测试）

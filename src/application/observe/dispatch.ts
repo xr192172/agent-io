@@ -12,11 +12,11 @@
  *     daemon 游标拉取（权威路径）合并，daemon alert 也能借 MCP 响应送达
  */
 
-import { probeDaemon, postWatch, postDsl, fetchAlertsSince } from './client.js';
-import { takeAlerts } from '../alert_inbox.js';
+import { probeDaemon, postWatch, postDsl, fetchAlertsSince } from '../../infrastructure/daemon/client.js';
+import { takeAlerts } from '../../infrastructure/alert_inbox.js';
 
-import type { WatchProjectToolInput, WatchProjectToolResult } from '../index/watch_project_tool.js';
-import { watchProjectTool } from '../index/watch_project_tool.js';
+import type { WatchProjectToolInput, WatchProjectToolResult } from './watch_project_tool.js';
+import { watchProjectTool } from './watch_project_tool.js';
 
 const PROBE_TTL_MS = 30_000;
 let daemonCache: { alive: boolean; checkedAt: number } | null = null;

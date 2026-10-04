@@ -33,7 +33,7 @@ import { checkConsistency } from '../../application/design/intent/consistency.js
 import { diffImpact } from '../../infrastructure/analysis/impact/diff_impact.js';
 import { diffViews } from '../../application/refactor/rf-view/diff_views.js';
 import { watchProject } from '../../infrastructure/index/watch_project.js';
-import { createRebuildThrottler } from '../../infrastructure/index/watch_project_tool.js';
+import { createRebuildThrottler } from '../../application/observe/watch_project_tool.js';
 import { archLayer } from '../../infrastructure/analysis/structure/arch_layer.js';
 import { guidedTour } from '../../infrastructure/index/guided_tour.js';
 import { semanticSearch } from '../../application/meta/llm/semantic_search.js';
