@@ -318,9 +318,8 @@ npm run doctor                           # 环境体检 + 能力缺口
 npm run tool -- <工具名> --json '{...}'   # 真调一个工具 —— 这才是唯一有意义的验收
 ```
 
-CI 另跑 5 道**零依赖闸门**（`scripts/contract_docs_gate.mjs` / `readme_tools_gate.mjs` /
-`capability_scan.mjs` + STALE BUILD 自检 + archify vendor 自检），它们都是 `.mjs` 脚本，
-不引入任何测试框架。
+CI 另跑 `archify vendor doctor`（守第三方 vendor 的 renderer + schema + example 三件套完整）
+与 Go 组件（go-observe / go-slim）的编译与测试。
 
 ## 挂起的线
 

@@ -29,7 +29,7 @@ npm run doctor  # 环境体检 + 能力矩阵缺口自检
 
 ### 提交前必须过
 
-1. **每个新工具 = 实现 + 注册**。工具经 `register_capabilities.ts` 注册；注册与实现的一致性由零依赖闸门 `scripts/capability_scan.mjs` 守着（CI 会跑）。
+1. **每个新工具 = 实现 + 注册**。工具经 `register_capabilities.ts` 注册；实现与注册必须一致。
 2. **优先用现有 AST 根基，不要手写正则**。`ts_kernel`（tree-sitter）是符号/import/调用边/类型引用的唯一权威来源。确实有 regex_fallback 的场景，请在能力矩阵里标注并说明原因。
 3. **保持能力矩阵诚实**：新增能力或修正缺口时同步更新 `capability` 输出，不要留下「未落地但假装可用」的窟窿。
 4. **改完自己验**（★ 2026-10-04 裁定，取代原「每个工具必有单测」）：

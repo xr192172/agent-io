@@ -50,5 +50,5 @@ if (asJson) {
       ? '⇒ 结构意图与现状一致 ✓（★ 这只说明"已开垦区整齐"，不等于"全仓都登记了"）'
       : `⇒ 待处置：**${r.misplaced.length} 个待搬** + **${r.unlisted.length} 个待定归属**；另有 ${r.missing.length} 个**待建域**（搬完自然消失）`,
   );
-  console.log('★ 搬完记得：node scripts/preflight_move.mjs <旧> <新> → 用 code_health 看环与分层违规 → 逐个工具试用一遍。\n');
+  console.log('★ 搬完记得：用 code_health 看环与分层违规 → 逐个工具试用一遍。\n');
 }

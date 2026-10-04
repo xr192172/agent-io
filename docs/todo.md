@@ -333,28 +333,6 @@
         加上 T17 新接的 `check_monolith` / `derive_algorithm` / `derive_chain` / `derive_split`）。
       ★ 这是**"要么全改、要么不改"**的那种改动 —— **改一半 = 同一件事两套口径**（本仓头号病根）。
 
-- [ ] **T35 ★★ 「tool description ↔ 实现入参」没有判据 —— 光 `explore_code` 一个文件就累积了 10 处分叉（2026-10-04）**
-      *(核实：T17 那一轮，在 `explore_code` **一个文件**里连抓到 10 处「描述与实现分叉」。)*
-      ⇒ **10 处分三档**（★ 分档很重要：三档的修法与优先级不同，混在一起就没法逐条处置）：
-        · **说错 1 条**：`meta/index.ts` 说「`arch_layer` 需要 `project_dir`」，
-          而它**根本不吃** `project_dir`（真必填是 `feature`）⇒ 模型照这句传 = **传了不吃、漏了必需**。
-        · **缺漏 8 条**：`read` / `watch` / `guided_tour` / `derive_mind_map` / `inject_replay` /
-          `run_simulation` / `reset_simulation` / `derive_anim_flow`
-          —— **实现硬要某个必填，描述没写** ⇒ 模型不传就报「缺参数 x」。
-          （★ 条数**待确认**是"逐 case 核出来的全集"还是"抽查撞见的" —— 这个区别决定要不要再扫。）
-        · **措辞偏严 1 条**：`search` 的 `query` —— 描述写成"必填"，实际**空则温和返回**。
-      ⇒ ★★ **共同后果：一调就废**（description 是**模型唯一的入口**）。
-        与 T17 那 4 个空壳**后果相同、原因不同**（一个没实现、一个没说清）。
-      ⇒ **待做（两件，别混）**：
-        1. **先把 `explore_code` 扫干净**（在进行中）；
-        2. ★ **考虑立一个判据**：「**description 点名的必填**」vs「**实现真吃的必填**」逐条对账。
-           若可机械判定（从 `requireStr(args,'x')` 一类调用点 + 从 description 文本提取），
-           就能把这类问题**从"撞见"变成"必被发现"**。
-           ★★ **但先答一个问题：能不能做到「不误报」？** 做不到就**别立** ——
-             一扇会假阳的门会**训练人忽略它**（比没有更坏）。
-      ★ 归属：**T31 那一族**（"存下来的说法会腐"），但它**腐在"模型入口"上** ⇒
-        **危害比数据类更直接**（数据错了能查，入口错了模型连试都试不对）。
-
 - [ ] **T36 ★ `completionCandidates` 的「是否已带 import 级扩展名」判定不被 `exts` 覆盖（2026-10-04 T13 时发现）**
       *(核实：T13 实测 —— 显式 `import './mod.mts'` / `'./mod.cts'`：**改前 null、改后仍 null**。)*
       ⇒ **根因**：`infrastructure/parse/import_resolve.ts` 的 `completionCandidates` 用**模块级常量
