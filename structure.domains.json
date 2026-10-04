@@ -273,8 +273,8 @@
     },
     {
       "id": "rf-package-migration",
-      "layer": "application",
-      "dir": "src/application/refactor/package_migration",
+      "layer": "infrastructure",
+      "dir": "src/infrastructure/analysis/package_migration",
       "note": "包改名 / 提级线（对外仅两条导出）：`core`（语言无关骨架，`computeMigrationPlan` 纯计算、**绝不落盘**；落盘 / 验证 / 回滚交 `refactor_pipeline`）+ `parts`（接线层，断环同 rename_symbol）+ `languages/{registry,go,ts,py}`（语言包）。"
     },
     {

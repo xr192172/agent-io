@@ -26,7 +26,7 @@ import { defaultVerifyCommands, runVerification, type VerifyCommand, type Verifi
 import { flagDeadStatements, applyReachabilityRuns } from '../../../infrastructure/analysis/deadcode/dead_statements.js';
 import { removeImportsFromSource } from '../edit/remove_dead_imports.js';
 import { detectDeadImports } from '../../../infrastructure/analysis/deadcode/detect_dead_imports.js';
-import { computeMigrationPlan } from '../package_migration/index.js';
+import { computeMigrationPlan } from '../../../infrastructure/analysis/package_migration/index.js';
 import { parseAstRoot } from '../../../infrastructure/parse/index.js';
 import {
   RefactorLangRegistry,
