@@ -168,7 +168,15 @@
         ⇒ **做法**：给三个结果类型各加一个 root 字段并在**原处赋值**，然后 `touchedOf` 改成**优先取产物里的 root**、
           入参给了则仍以入参为准（入参是"调用方声明的根"，产物是"实际定位到的根"—— 两者不一致时**以入参为先**，
           但产物里的要保留，供下游反查）。
-        ⇒ 判据：`project_dir` 在"入参没给"时**也能给出来**（改前一律省略）；`written_files` 在 local 支也能给出。
+        ⇒ 判据：`project_dir` 在"入参没给"时**也能给出**（改前一律省略）；`written_files` 在 local 支也能给出。
+        ★★ **✅ 已做（2026-10-05，commit `213d316`）**：三个结果类型各加 `root` 并**在原处赋值**；
+          `touchedOf` 改「入参优先 → 否则产物 `r.root`」；`written_files` 在 module（含 apply_literals）与 local 支
+          都能给（**实测** local 支真落盘 → `written_files:["src/local.ts"]`）。
+          **顺带收口一处既有的判据分叉**：三处对入参的处理原本不一致 —— `rename_symbol`/`find_references`
+          一直 `path.resolve`，而 `rename_symbols` **原样透传**（实测传 `"."` 时前者给绝对、后者给 `"."`）⇒
+          已统一为**绝对根**（契约明文要求）。
+          **仍给不出**的出口 = "在解析根**之前**就 return"的那几个（新名非法/空列表/type 模式…），未上移根解析。
+          ★ 另记：**无标记文件的项目里根解析会降级到"文件所在目录"**（`resolveProjectRoot` 既有行为，非本笔引入）。
       **牵连**（每族一笔）：G8 行为快照 `UPDATE_TOOL_BEHAVIOR=1` 并记账；G1 仅当描述/入参 schema 变了才动。
       ★ ④-b 实测：**G8 人群不含这些"重活"工具** ⇒ 加 `touched` 不会动 G8 快照（行为验证改由新测试承担）。
       ★ **已知一条 warn 会随本项消失**：`arch` 报 `no-orphans: src/domain/b_terms.ts`
