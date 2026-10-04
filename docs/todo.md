@@ -416,6 +416,20 @@
         · 赞成：`rootOffsets/rootKinds` 逐字相同 ⇒ 至少要判断"是不是同一份地基被抄了两遍"。
       ⇒ **待定，不预设结论，也不动。** 已在 `parts.ts` 的 `GoModuleAnalysis` 上方记明这层关系。
 
+- [ ] **T53 ★ C# `using_directive` 的路径取法取到了**关键字本身**（潜伏坑；2026-10-05 参数化 `namespace_family` 时实测发现）**
+      *(核实：**问解析器**（不读码猜）—— `using_directive` 的子节点是
+       `using`（**关键字**，匿名）/ `identifier|qualified_name` / `;`；而该分支取的是 **`n.child(0)`（不看类型）**
+       ⇒ `alias = 'using'`，恰好通过 `/^[A-Za-z_][\w$]*$/` 的空值/合法性检查。)*
+      ⇒ **后果**：每写一条 `using X;`，`imports` 里就多一条 `{alias:'using', path:'using'}`。
+      ⇒ ★★ **为什么现在还不构成 bug**：`imports` 在 java/cs 这两条路径上**只产不读** ——
+        `renameNamespaceSymbol` 只消费 `refs`/`selections`/`rootOffsets`/`rootKinds`；
+        而 `analyzeCSharpSource` / `analyzeJavaSource` **全仓零外部消费者**（grep 实测）。
+        ⇒ 所以它是**潜伏坑**：**谁将来第一个去读 java/cs 的 `imports`，就会拿到这条垃圾**（而且不会报错）。
+      ⇒ 处置：让 `using_directive` 的取法与 `namespace_declaration` **同形**（按类型挑
+        `qualified_name|identifier`），并补一条**真调判据**（断言 `imports` 里不存在 `alias === 'using'`）。
+      ⇒ ★ **为什么不在参数化那一笔里顺手改**：那会**改一个共享形状的语义**，而那一笔的判据是
+        "**行为逐字不变**"（已用三案例**字节级**对照证明）—— 两件事混在一起就各自都没法验收。
+
 - [ ] **T31 ★★★ 通则：「凡把路径/名字写成表的地方，搬迁一次就静默失效一次」（2026-10-04 立）**
       *(核实：本清单同一族**已 5 例**，逐条见 T21 正文 + 台账 §44.31 / §44.37 / §44.40。)*
       ⇒ **5 例**：

@@ -2,42 +2,65 @@
  * rename_symbol · C#
  *
  * C# 是「命名空间一族」的成员（另一成员是 Java）。本文件**只放 C# 特有的东西**：
- *   · `analyzeCSharpSource` —— 顶层类型分析器（节点类型表是 C# 的）
- *   · `moduleOf`            —— C# 的模块声明取法（`namespace A.B`）
- *   · `renameCSharpSymbol`  —— 把上面两样 + `label` 注入共用引擎
+ *   · `CSHARP_RULES` —— **C# 的全部语法事实**（顶层类型节点 / 模块声明 / using 声明 / 限定引用 /
+ *     模块作用域 / `moduleOf`）。★ 引擎`namespace_family.ts`**不认识这些**，它们只在这里。
+ *   · `analyzeCSharpSource` —— 由规则造出的顶层类型分析器
+ *   · `renameCSharpSymbol` / `csPackage`
  * ★ 与 Java **共用的算法**（分析器工厂 + 跨文件改名引擎）住在 `../namespace_family.ts`
- *   —— 那里的头注解释了为什么它必须在 `languages/` **外面**（两个语言文件曾经互相
- *   import、各自装着对方的零件）。本文件与 `java.ts` **零 import**。
+ *   —— 那里的头注解释了为什么它必须在 `languages/` **外面**。本文件与 `java.ts` **零 import**。
  *
  * C# 语义（与 Python 的"模块=命名空间"同构，但跨文件限定引用形态不同）：
  *   - 顶层类型（class/interface/struct/enum/record）是"模块级符号"，同命名空间内直接可见
  *   - 跨文件引用：同命名空间 → 裸名；跨命名空间 → `Qualified.Name`（qualified_name）
  * 分析结果复用 `GoModuleAnalysis` 结构：
- *   rootOffsets/refs/defined → 顶层类型 + 同文件裸引用
+ *   rootOffsets/rootKinds/refs → 顶层类型 + 同文件裸引用
  *   imports      → namespace 声明 + using（末段做同模块判定）
  *   selections   → `X.sym` 限定引用（key=限定符末段，field=符号名）
  *
  * ★ 命名注意：本文件的导出是 `renameCSharpSymbol`（C#）。
  *   别与 `languages/c.ts` 的 `renameCSymbol`（**C 语言**）混淆 —— 一个词之差，两门语言。
  */
-import { makeNamespaceAnalyzer, renameNamespaceSymbol, type NamespaceLangSpec } from '../namespace_family.js';
+import { makeNamespaceAnalyzer, renameNamespaceSymbol, type NamespaceLangRules, type NamespaceLangSpec } from '../namespace_family.js';
 import type { LangPackage, LangRenameArgs, RenameSymbolResult } from '../parts.js';
 
-export const analyzeCSharpSource = makeNamespaceAnalyzer({
+/** C# 的语法规则（**本语言的全部语法事实**，引擎对此零知识）。 */
+const CSHARP_RULES: NamespaceLangRules = {
   ext: '.cs',
+  label: 'C#',
   typeNodes: ['class_declaration', 'interface_declaration', 'struct_declaration', 'enum_declaration', 'record_declaration'],
-  idType: 'identifier',
-});
-
-/** C# 的模块声明取法：`namespace A.B` */
-const moduleOf = (src: string): string => {
-  const m = src.match(/\bnamespace\s+([\w.]+)/);
-  return m ? m[1] : '';
+  idTypes: ['identifier', 'type_identifier'],
+  moduleDecl: { nodeType: 'namespace_declaration', childTypes: ['qualified_name', 'identifier'] },
+  importDecl: {
+    nodeType: 'using_directive',
+    // ★★ 等价性说明（这是本笔最容易改坏的一处，故写明）：实测 `using_directive` 的子节点是
+    //   `using`(**关键字**, 匿名) / `identifier|qualified_name` / `;`。而**原实现取的就是第一个子节点**
+    //   （`n.child(0)`，不看类型）⇒ 得到 `alias = 'using'`，恰好通过下面的 `aliasOk`
+    //   ⇒ 本笔 `childTypes: null`（= 取第一个子节点）**逐字保持该行为**。
+    //   ★ 连"每条 `using` 都会往 `imports` 里塞一条 `{alias:'using', path:'using'}`"这个**既有怪相**
+    //     也一并保留 —— 它是**潜伏坑**（`imports` 在 java/cs 这两条路径上"只产不读"），
+    //     修它是**改共享形状的语义**，属另一笔（见 `docs/todo.md`），不在本笔。
+    childTypes: null,
+    aliasOk: (alias) => /^[A-Za-z_][\w$]*$/.test(alias),
+  },
+  qualifiedRefNodes: ['qualified_name'],
+  moduleScope: {
+    parentTypes: ['compilation_unit', 'program'],
+    listTypes: ['declaration_list'],
+    grandparentTypes: ['namespace_declaration', 'compilation_unit', 'program'],
+  },
+  /** C# 的模块声明取法：`namespace A.B` */
+  moduleOf: (src) => {
+    const m = src.match(/\bnamespace\s+([\w.]+)/);
+    return m ? m[1] : '';
+  },
 };
 
-const CSHARP: NamespaceLangSpec = { ext: '.cs', label: 'C#', moduleOf, analyze: analyzeCSharpSource };
+export const analyzeCSharpSource = makeNamespaceAnalyzer(CSHARP_RULES);
 
-/** C# 的跨文件符号改名（= 共用引擎 + C# 的 ext/label/moduleOf/analyze） */
+/** 引擎要的完整描述 = 语法规则 + 分析器（分析器由规则造出，故在此拼上） */
+const CSHARP: NamespaceLangSpec = { ...CSHARP_RULES, analyze: analyzeCSharpSource };
+
+/** C# 的跨文件符号改名（= 共用引擎 + C# 的完整描述） */
 export const renameCSharpSymbol = (args: LangRenameArgs): Promise<RenameSymbolResult> =>
   renameNamespaceSymbol(CSHARP, args);
 
