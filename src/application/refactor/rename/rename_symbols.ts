@@ -38,11 +38,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { renameSymbol, type RenameSymbolInput, type RenameSymbolResult } from '../rename_symbol/index.js';
 import { renameLocals, type LocalRenameOutcome } from './rename_local.js';
+import { renameFile } from './rename_file.js';
 import { resolveProjectRoot } from '../../../infrastructure/analysis/project_root/index.js';
 import { createProtectGuard } from '../../../infrastructure/analysis/refactor/protect.js';
 import { writeSourceFiles, type WriteThroughOutcome } from '../../observe/runtime/write_gate.js';
 import type { ExternalRef } from '../../../infrastructure/analysis/project_root/index.js';
-import { skipDirSet } from '../../../infrastructure/parse/source_exts.js';
+import { skipDirSet, TS_JS_EXTS } from '../../../infrastructure/parse/source_exts.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
 /** 字面量命中的类别：contract=对外工具注册名(破坏契约需人审)；history=tool-convergence 历史记录(保留原貌)；docs=文档；test=测试断言；code=源码字符串 */
@@ -93,6 +94,25 @@ export interface RenameSymbolsItem {
   rename_file_if_matching?: boolean;
 }
 
+/**
+ * 模块支（`scope='module'`）单条的产物 = 引擎产物（`RenameSymbolResult`）+ **工具层补出的文件联动产物**。
+ *
+ * ★ T42 2b-C1（2026-10-05）：`fileRenamed` / `fileRenameBlocked` 原本是**引擎**字段
+ *   （`rename_symbol/languages/typescript.ts` 内部直接调文件改名）。现联动**上收到工具**：
+ *   「文件名 = 主导出符号名」是**项目约定**、改文件名是**文件系统操作** —— 两样都是编排层
+ *   的知识；语言包（引擎）不该知道"文件可以被改名"。契约回到一句话：
+ *   「给定 file+symbol+to，算出要改哪些文件、每处改什么」。
+ *   ⇒ 字段名**沿用**（下游读数路径不变的），但落在**工具自己的产物**上
+ *   （`previews[].result` / `applied[].result`）。
+ *   ★ 语义**逐字保持**：dry-run 只给计划中的新相对路径（不动盘）；真落盘失败**不阻断**整体（ok 仍 true）。
+ */
+export type ModuleSymbolRenameResult = RenameSymbolResult & {
+  /** 联动改名后的新路径（仓库相对 POSIX；dry-run 下为计划值）；未开启联动 / 未命中 / 未落定时缺省 */
+  fileRenamed?: string;
+  /** 文件联动失败理由（符号已改名成功、仅联动未执行时给出；★ 不阻断整体 ok） */
+  fileRenameBlocked?: string[];
+};
+
 export interface RenameSymbolsResult {
   ok: boolean;
   /** 本次走的**作用域分支**（回执永远自报家门，免得调用方靠猜） */
@@ -105,10 +125,10 @@ export interface RenameSymbolsResult {
     item: RenameSymbolsItem;
     ok: boolean;
     blocked?: string[];
-    result?: RenameSymbolResult;
+    result?: ModuleSymbolRenameResult;
   }>;
   /** 真正落盘的条目（dry_run 时为 []; 部分成功后剩余被阻断时自此据实返回） */
-  applied: Array<{ index: number; item: RenameSymbolsItem; result: RenameSymbolResult }>;
+  applied: Array<{ index: number; item: RenameSymbolsItem; result: ModuleSymbolRenameResult }>;
   /** 实际落盘文件总数 */
   filesWritten: number;
   /** 整体阻断理由（ok=false 时给出全部） */
@@ -195,7 +215,8 @@ function touchedOf(input: RenameSymbolsInput, r: RenameSymbolsResult): Touched {
 
   // written_files：只在**确实落盘**时给，填**仓库相对路径 + `/`**。
   //   ★ T18(4)：产物里现在带 `project_dir`（module 支 / local 支各自定位的根）⇒ 三种来源都能归一成仓库相对：
-  //     - module 支：各条目 result 的 definition/importers/fileRenamed 本就是仓库相对（rename_symbol.ts 用 path.relative(resolvedRoot,…)）；
+  //     - module 支：各条目 result 的 definition/importers 由引擎给（rename_symbol.ts 用 path.relative(resolvedRoot,…)），
+  //       `fileRenamed` 由**本工具层**的联动算出（同在仓库相对 POSIX 口径）——三者本就是仓库相对；
   //     - local 支：result.definition.file 是**绝对路径**（rename_local.ts:120 `abs(...)`）⇒ 用 r.project_dir 转相对；
   //     - apply_literals：额外落盘的字面量文件**已可由产物枚举**（literals[].matches[] 带 file + decision='apply'）
   //       —— 仅在**确实有字面量落盘**（literalFilesWritten>0）时纳入（report_literals 只扫不写，其 decision 也可能是 'apply'）。
@@ -228,6 +249,36 @@ function touchedOf(input: RenameSymbolsInput, r: RenameSymbolsResult): Touched {
 export async function renameSymbols(input: RenameSymbolsInput): Promise<TouchedProduct<RenameSymbolsResult>> {
   const r = await renameSymbolsCore(input);
   return withTouched(r, touchedOf(input, r));
+}
+
+/**
+ * ★ 文件联动（**工具层**关切，T42 2b-C1 从引擎上收）：算「符号=文件主导出 ⇒ 文件也该改名」的计划。
+ *
+ * 触发条件（与旧引擎实现**逐字一致**）：
+ *   ① `item.rename_file_if_matching === true`；
+ *   ② 定义文件去扩展名的 basename === `item.symbol`（文件名 = 旧符号名 = "文件主导出"约定）；
+ *   ③ 定义文件属 **TS/JS 家族**（★ 旧实现里该联动**只**在 TS 语言包里实现 ⇒ 加此门才叫逐字一致，
+ *      否则会给 Go/Python 等加上它们从来不做的文件改名，那是**扩了行为**而非搬位置）。
+ * ★ **只算路径、不动盘** —— dry-run / 真落盘由调用方按同一份计划决定。
+ * @param fallbackRoot 引擎逐条回传的 `res.project_dir` 取不到时的退路（调用级 rootDir / projectDir）。
+ */
+function planLinkedFileRename(
+  item: RenameSymbolsItem,
+  res: RenameSymbolResult,
+  fallbackRoot: string | undefined,
+): { root: string; fromAbs: string; toAbs: string; relNew: string } | null {
+  if (item.rename_file_if_matching !== true || !res.ok || !res.definition?.file) return null;
+  // 用引擎**逐条回传**的项目根（`res.project_dir`）—— 与旧引擎内部用的 `resolvedRoot` 同源，
+  // 保证 relNew 的相对基准逐字一致；取不到才退到调用级 rootDir/projectDir。
+  const root = res.project_dir ?? fallbackRoot;
+  if (!root) return null;
+  const defAbs = path.resolve(root, res.definition.file);
+  const defExt = path.extname(defAbs);
+  if (!(TS_JS_EXTS as readonly string[]).includes(defExt)) return null;
+  if (path.basename(defAbs, defExt) !== item.symbol) return null;
+  const toAbs = path.join(path.dirname(defAbs), item.to + defExt);
+  const relNew = (path.relative(root, toAbs) || toAbs).split(path.sep).join('/');
+  return { root, fromAbs: defAbs, toAbs, relNew };
 }
 
 /** module 支的实体（调用级入参去掉 `scope` —— 路由已经选定它了） */
@@ -273,7 +324,10 @@ async function renameSymbolsModule(input: Omit<RenameSymbolsInput, 'scope'>): Pr
   let allOk = true;
   for (let i = 0; i < renames.length; i++) {
     const item = renames[i];
-    const result = await renameSymbol({ project_dir: projectDir, file: item.file, symbol: item.symbol, to: item.to, rename_file_if_matching: item.rename_file_if_matching === true, dry_run: true });
+    const result: ModuleSymbolRenameResult = await renameSymbol({ project_dir: projectDir, file: item.file, symbol: item.symbol, to: item.to, dry_run: true });
+    // ★ 文件联动（dry-run）：只算**计划中的新文件名**、不动盘 —— 仍要出现在预览里（与旧引擎同语义）。
+    const linkPlan = planLinkedFileRename(item, result, rootDir ?? projectDir);
+    if (linkPlan) result.fileRenamed = linkPlan.relNew;
     previews.push({ index: i, item: item, ok: result.ok, blocked: result.ok ? undefined : result.blocked, result: result });
     if (!result.ok) allOk = false;
   }
@@ -314,7 +368,7 @@ async function renameSymbolsModule(input: Omit<RenameSymbolsInput, 'scope'>): Pr
     let filesWritten = 0;
     for (let i = 0; i < renames.length; i++) {
       const item = renames[i];
-      const result = await renameSymbol({ project_dir: projectDir, file: item.file, symbol: item.symbol, to: item.to, rename_file_if_matching: item.rename_file_if_matching === true, dry_run: false });
+      const result: ModuleSymbolRenameResult = await renameSymbol({ project_dir: projectDir, file: item.file, symbol: item.symbol, to: item.to, dry_run: false });
       if (!result.ok) {
         return {
           ok: false,
@@ -328,6 +382,14 @@ async function renameSymbolsModule(input: Omit<RenameSymbolsInput, 'scope'>): Pr
         };
       }
       filesWritten += result.filesWritten;
+      // ★ 文件联动（真落盘）：**符号已改名成功之后**才做（顺序与旧引擎一致：先符号、后文件）。
+      //   联动**非阻断** —— 失败只记理由，整体仍 ok:true（这条语义逐字保持）。
+      const linkPlan = planLinkedFileRename(item, result, rootDir ?? projectDir);
+      if (linkPlan) {
+        const fr = await renameFile({ project_dir: linkPlan.root, from: linkPlan.fromAbs, to: linkPlan.toAbs, dry_run: false });
+        if (fr.ok && fr.moved) result.fileRenamed = linkPlan.relNew;
+        else result.fileRenameBlocked = fr.blocked?.length ? fr.blocked : ['文件联动未执行（rename_file 返回未移动）'];
+      }
       if (result.definition?.file) touched.push(result.definition.file);
       for (const im of result.importers ?? []) touched.push(im.file);
       applied.push({ index: i, item: item, result: result });

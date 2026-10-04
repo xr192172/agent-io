@@ -119,10 +119,6 @@ export interface RenameSymbolResult {
    * 不做静默跳过：以前这些位置是"catch 里只留一句注释"/"catch 后直接 continue"（调用方无感）。
    */
   skipped?: Array<{ path: string; why: string }>;
-  /** 联动文件名（rename_file_if_matching 且文件名=符号名时，被同步改名的新路径） */
-  fileRenamed?: string;
-  /** 文件联动阻断理由（符号已改名成功，仅文件联动失败时给出） */
-  fileRenameBlocked?: string[];
   /** 阻断理由（ok=false 时给出全部） */
   blocked?: string[];
   /**
@@ -203,8 +199,6 @@ export interface LangRenameArgs {
   dryRun: boolean;
   resolvedRoot: string;
   blocked: string[];
-  /** TS/JS 家族专用：符号=文件主导出时是否联动把文件改名为 to */
-  renameFileIfMatching: boolean;
   /** TS/JS 家族专用：本次"少做了什么"（就地追加，最终随结果返回） */
   skipped: Array<{ path: string; why: string }>;
   /** TS/JS 家族专用：tsconfig 路径别名配置（无 tsconfig 时为 null） */

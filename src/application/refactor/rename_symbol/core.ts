@@ -54,8 +54,6 @@ export interface RenameSymbolInput {
   symbol: string;
   /** 新符号名（必须为合法标识符） */
   to: string;
-  /** true=当符号是文件主导出（文件名=符号名）时，联动把文件也改名为 to（增量，默认 false 不改） */
-  rename_file_if_matching?: boolean;
   /** true=只算结构化 diff 不落盘（dry-run 预览）；默认 false 直接改写文件 */
   dry_run?: boolean;
 }
@@ -64,7 +62,6 @@ export interface RenameSymbolInput {
 
 async function renameSymbolCore(input: RenameSymbolInput): Promise<RenameSymbolResult> {
   const { file, symbol, to } = input;
-  const renameFileIfMatching = !!input.rename_file_if_matching;
   const dryRun = input.dry_run === true;
   const blocked: string[] = [];
   /** §2d：本次"少做了什么"（被跳过的 importer + 闭包扩展自己报的 skipped），非空才随结果返回 */
@@ -92,7 +89,7 @@ async function renameSymbolCore(input: RenameSymbolInput): Promise<RenameSymbolR
   // ── 语言包统一调度：go / python / C# / Java / C·C++ / TS·JS 家族（ext 互不相交，查表等价原 if 链）──
   const pkg = findLangPackage(defExt);
   if (pkg) {
-    const r = await pkg.rename({ file: defAbs, symbol, to, dryRun, resolvedRoot, blocked, renameFileIfMatching, skipped, aliasCfg });
+    const r = await pkg.rename({ file: defAbs, symbol, to, dryRun, resolvedRoot, blocked, skipped, aliasCfg });
     // ★ T18：回传 Core 内部已定位的根（此前只在手里、没进产物）—— 不改语言包产物，只在本层补 project_dir。
     return { ...r, project_dir: resolvedRoot };
   }
@@ -124,10 +121,11 @@ function touchedOf(input: RenameSymbolInput, r: RenameSymbolResult): Touched {
   //   symbols 给"落定后的符号标识"= 新名 input.to（下游拿新名继续操作；给旧名会让链静默接错）。
   if (r.ok && r.dryRun !== true) {
     touched.symbols = [input.to];
-    // 落盘路径下写过的文件 = 定义文件（fileRenamed 时其现址是新路径）+ 每个被改写的 importer。
+    // 落盘路径下写过的文件 = 定义文件 + 每个被改写的 importer。
+    // ★ 文件联动改名已上收工具层（T42 2b-C1）⇒ 引擎产物里不再有"联动后的新路径"，
+    //   本层也就只登记自己真正写过的那两个来源。
     const files: string[] = [];
-    if (r.fileRenamed !== undefined) files.push(r.fileRenamed);
-    else if (r.definition) files.push(r.definition.file);
+    if (r.definition) files.push(r.definition.file);
     for (const im of r.importers ?? []) files.push(im.file);
     const uniq = [...new Set(files)];
     if (uniq.length > 0) touched.written_files = uniq;

@@ -7,8 +7,10 @@
  *   `ModuleAnalysis` 与私有助手）**已下沉到 `infrastructure/parse/module_analysis.ts`**。
  *   原因：`infrastructure/analysis/project_root/index.ts`（共享工具层）反向 import 本文件 ⇒ 层次倒挂，
  *   并与本文件对外层 `cross` 的 value import 构成**双向 value 环**。
- *   该解析只依赖基础设施（解析器/节点原语），与 `project_root` / `renameFile` / `protect` 无关
- *   （那三样只在 `renameTsSymbol` 里用）⇒ 它本就应该在 infrastructure。
+ *   该解析只依赖基础设施（解析器/节点原语），与 `project_root` / `protect` 无关
+ *   （那两样只在 `renameTsSymbol` 里用）⇒ 它本就应该在 infrastructure。
+ *   ★ 2026-10-05（T42 2b-C1）：文件联动改名已从本文件**上收**到工具层
+ *   （`rename/rename_symbols.ts`）—— 引擎不再知道"文件可以被改名"这件事。
  *   `rename_symbol/index.ts` 仍按原契约再导出 `analyzeModuleSource` 与三个类型。
  *
  * 正确性机制（关键）：
@@ -19,7 +21,6 @@
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { renameFile } from '../../rename/rename_file.js';
 import { expandClosureDetailed, loadAliasConfig, resolveAliasedImport, type AliasConfig } from '../../../../infrastructure/analysis/project_root/index.js';
 import { createProtectGuard } from '../../../../infrastructure/analysis/refactor/protect.js';
 import { missingLanguageHint } from '../../../../infrastructure/parse/lang_hint.js';
@@ -40,11 +41,8 @@ import type { LangRenameArgs } from '../parts.js';
 // ─────────────────────────────────────────────
 // TS/JS 跨文件改名执行器（原 core 收尾那段，整体搬入）
 // ─────────────────────────────────────────────
-export async function renameTsSymbol(
-  args: LangRenameArgs & { renameFileIfMatching: boolean; skipped: Array<{ path: string; why: string }>; aliasCfg: AliasConfig | null },
-): Promise<RenameSymbolResult> {
-  const { file: defAbs, symbol, to, dryRun, resolvedRoot, blocked, renameFileIfMatching, skipped, aliasCfg } = args;
-  const defExt = path.extname(defAbs);
+export async function renameTsSymbol(args: LangRenameArgs): Promise<RenameSymbolResult> {
+  const { file: defAbs, symbol, to, dryRun, resolvedRoot, blocked, skipped, aliasCfg } = args;
 
   const defSrc = readFileSync(defAbs, 'utf-8');
   const def = await analyzeModuleSource(defSrc, defAbs);
@@ -183,29 +181,8 @@ export async function renameTsSymbol(
     importers.push({ file: (path.relative(resolvedRoot, f) || f).replace(/\\/g, '/'), edits: edits.filter((e) => e.len > 0).length, note, ops: toOps(src, edits) });
   }
 
-  // 联动改名文件：当符号是文件主导出（文件名=符号名）且开启 rename_file_if_matching 时，
-  // 符号已改名成功，把文件路径也同步为 to（保持"文件名=主导出"约定）。
-  // 文件联动是增量增强：失败不阻断符号改名，仅记录理由。
-  let fileRenamed: string | undefined;
-  let fileRenameBlocked: string[] | undefined;
-  if (renameFileIfMatching) {
-    const defBase = path.basename(defAbs, defExt);
-    if (defBase === symbol) {
-      const newPath = path.join(path.dirname(defAbs), to + defExt);
-      const relNew = (path.relative(resolvedRoot, newPath) || newPath).replace(/\\/g, '/');
-      if (dryRun) {
-        // dry-run：只出计划中的文件名，不做真实迁移
-        fileRenamed = relNew;
-      } else {
-        const fr = await renameFile({ project_dir: resolvedRoot, from: defAbs, to: newPath, dry_run: false });
-        if (fr.ok && fr.moved) {
-          fileRenamed = relNew;
-        } else {
-          fileRenameBlocked = fr.blocked?.length ? fr.blocked : ['文件联动未执行（rename_file 返回未移动）'];
-        }
-      }
-    }
-  }
+  // 联动改名文件：符号改名后是否把文件名也同步为 to，是**工具层**的关切（项目约定：
+  // 文件名=主导出），引擎不再参与 —— 见 `rename/rename_symbols.ts`。
 
   return {
     ok: true,
@@ -217,7 +194,5 @@ export async function renameTsSymbol(
     filesWritten,
     ...(closure.externalRefs.length > 0 ? { externalRefs: closure.externalRefs } : {}),
     ...(skipped.length + closure.skipped.length > 0 ? { skipped: [...skipped, ...closure.skipped] } : {}),
-    ...(fileRenamed !== undefined ? { fileRenamed } : {}),
-    ...(fileRenameBlocked !== undefined ? { fileRenameBlocked } : {}),
   };
 }
