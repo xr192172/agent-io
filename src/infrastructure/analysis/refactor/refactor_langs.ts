@@ -96,9 +96,19 @@ export interface FileMove {
 }
 
 export interface RunningChangePlan {
-  /** 待落盘的"最终路径" → 新源码。若该文件参与了移动，key 是其 to（移动后路径） */
+  /**
+   * 待落盘的**最终路径** → 新源码。若该文件参与了移动，key 是其 **to**（移动后路径）。
+   *
+   * ★★ **key 必须是绝对路径**（2026-10-05 明写，因为原先只写"最终路径"⇒ 有人给了相对路径）：
+   *   落盘方（`refactor_pipeline` / `remove_dead_imports` / `dead_statements` 的自落盘支）
+   *   是**直接 `fs.writeFileSync(key, …)`、不解析**的 ⇒ 相对 key 会落到 **`process.cwd()`**。
+   *   实测事故：`package_migration` 给被移动文件塞了相对 key ⇒
+   *   ① 改名内容写进调用方 cwd ② **本项目内那批文件的改写整批丢失** ③ 管线仍报 `ok:true`（假绿）。
+   *   ★ 另三个产出方（`dead_imports` / `dead_statements` / `function_annotation` / `python` / `java` 各支）
+   *     用的都是绝对路径 —— 当时唯一违约的就是 `package_migration`。**这条契约就是防第二次。**
+   */
   absToNew: Map<string, string>;
-  /** 预读的原始内容（apply 前盘上内容；回滚用）。key = 移动前/原始路径 */
+  /** 预读的原始内容（apply 前盘上内容；回滚用）。key = 移动前/原始路径（**绝对**） */
   originals: Map<string, string>;
   /** 文件移动 from→to（先移动，再写 absToNew 内容） */
   moves?: FileMove[];
