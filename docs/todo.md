@@ -141,14 +141,17 @@
 - [ ] **T18 ★★ ④ [B] 契约形状的落地（术语表已定，按表重构）**
       *(核实：2026-10-01 —— `node scripts/measure_b_contract.mjs --glossary`；台账 §44.15~§44.17。)*
       ⇒ **已定**（不再改口径）：
-      · **受控术语表** = `src/domain/b_terms.ts`（`B_TERMS` + `Touched`），文档 `docs/glossary.md`（生成）；
-        **机检通过**：共用字段名 **58 个 / 未定义 0**；**债务 39 条**（棘轮只许减）。
+      · **受控术语表** = `src/domain/b_terms.ts`（`B_TERMS` + `Touched`），文档 `docs/glossary.md`（生成）。
+        ★ 机检（`node scripts/measure_b_contract.mjs`）：**共用字段名 42 / 有定义 40 / 未定义 2**；**债务 38 条**。
+        （数字 2026-10-05 更新：原记 `58/0/39` 是删族**之前**的读数；[B] 数因删族而减少 ⇒ **这类数字别手抄**。
+        ★ 那 2 个未定义的是 `error` / `touched` —— 见 **T45**。）
       · **规范 vs 现状分开**：含义栏是"从此以后要求它是什么"；现状见 `docs/b-field-dictionary.md`。
       · 规则：**出现在 ≥2 个 [B] 的字段名必须有定义**；私有字段（占 80%）不约束。
       **要做的**：
       · ~~(1) 先定 ④-b 的"统一构造点"做法~~ ✅ **④-b 已完成**（`withTouched` 统一构造点；见台账 §44.18）：
-        `rename_file` / `rename_files` / `rename_symbol` / `rename_symbols` / `find_references` 五个 [B] 已接上 `Touched`，
-        新增 `tests/tools/touched_contract.test.ts`（6 项真行为验证 + 出生证）。
+        `rename_file` / `rename_files` / `rename_symbol` / `rename_symbols` / `find_references` 五个 [B] 已接上 `Touched`。
+        ★ 当年那支出生证测试（`tests/tools/touched_contract.test.ts`）**已随测试框架整体移除**（2026-10-05）
+        ⇒ 现在验证靠**真调工具**（`node dist/.../cli.js <tool> --json '{...}'`）。
       · (2) **接着按族推**：④-c design → ④-d harvest（根别名最多）→ ④-e 其余 + **棘轮收紧**
         （新增 [B] 必须给 `touched`）。★ 每族照 ④-b 的办法：**先定形状 → 1 文件 1 个子代理并行 → 我串行核验/验证/提交**。
       · (3) 按各条的 `fix` **还债**，优先三个最刺眼的：`files`（6 义）/ `stats`（5 义）/ `written`（布尔与列表混用）。
@@ -156,6 +159,16 @@
         · `rename_symbols` 的 local 支 / apply_literals 支 ⇒ 给不出仓库相对的完整文件表 ⇒ 只能整项省略；
         · `rename_symbol` / `find_references` ⇒ 入参没给 `project_dir` 时，Core 推导出的根拿不到 ⇒ 只能省略。
         ⇒ 处置：让产物**回传 root / 字面量文件表**（属"产物形态"的改动，单列一笔）。
+        ★★ **2026-10-05 已定位到具体落点**（下一步是机械的）：
+        - 结果类型：`RenameSymbolResult`（`rename_symbol/parts.ts:105`）· `FindReferencesResult`（`rf-find/find_references.ts:151`）
+          · `RenameSymbolsResult`（`rf-rename/rename_symbols.ts:97`）—— 三者**都没有** root 字段。
+        - 根**在手里但没回传**：`rename_symbol/core.ts:112-114`（注释自陈"内部会自动定位 root，但那条路径不出现在产物里"）
+          · `rename_symbols.ts:164-166`（module 支/local 支各有一个局部 `rootDir`）
+          · `find_references.ts:289` 的 `resolvedRoot`（= `symRoot ?? resolveProjectRoot(fileAbs)`）。
+        ⇒ **做法**：给三个结果类型各加一个 root 字段并在**原处赋值**，然后 `touchedOf` 改成**优先取产物里的 root**、
+          入参给了则仍以入参为准（入参是"调用方声明的根"，产物是"实际定位到的根"—— 两者不一致时**以入参为先**，
+          但产物里的要保留，供下游反查）。
+        ⇒ 判据：`project_dir` 在"入参没给"时**也能给出来**（改前一律省略）；`written_files` 在 local 支也能给出。
       **牵连**（每族一笔）：G8 行为快照 `UPDATE_TOOL_BEHAVIOR=1` 并记账；G1 仅当描述/入参 schema 变了才动。
       ★ ④-b 实测：**G8 人群不含这些"重活"工具** ⇒ 加 `touched` 不会动 G8 快照（行为验证改由新测试承担）。
       ★ **已知一条 warn 会随本项消失**：`arch` 报 `no-orphans: src/domain/b_terms.ts`
