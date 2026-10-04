@@ -15,6 +15,47 @@
 
 ## 待做
 
+- [ ] **T54 ★★★ 补「管道」—— 让**入参端**接受**产物端**的锚点字段（缺口已量化，2026-10-05 实测）**
+      *(核实：2026-10-05 用户提出「哪怕只有一两个积木，框架也应该能把这两个拼在一起跑起来」⇒ 用它自己的判据量了一次。)*
+      ⇒ **量法**：① 把 56 个工具的**顶层入参名**全列出来（读 schema）；② 真调抽验；
+        ③ 跑 `node scripts/measure_b_contract.mjs` 看 `[B]` 的入参/产物形态。
+      ⇒ **读数（全部实测）**：
+
+      | 项 | 值 |
+      |---|---|
+      | 工具总数 | **56** |
+      | ★ **同时接受 `{project_dir, feature}` 的** | **10（18%）** —— `import_project` `scaffold` `extract_contracts` `get_dsl` `feature_line` `design_intent` `reconcile_effects` `reconcile_chain` `harvest_closure` `read_project_docs` |
+      | 只认 `project_dir` 的 | ≈**30**（真调证实 `code_health` / `remove_dead_imports` **直接拒绝 `feature`**） |
+      | 要 `{file, symbol}` 的 | **5**（`find_references` `rename_symbols` `move_symbol` `impact_analysis` `go_originals`） |
+      | ★ `[B]` 的**入参类型** | **28 种 / 37 个 `[B]`**（≈1:1 ⇒ **各写各的**） |
+      | ★ `[B]` 的**产物字段组合** | **33 种 / 37 个**（被 ≥2 个共用的只有 2 种） |
+
+      ⇒ ★★ **缺口的精确形状**：积木 A 交出 `{project_dir, feature}`（= `touched` 的**作用域类**字段），
+        而**只有 18% 的下游能接住**；其余要么**丢掉 `feature` 这个作用域**（退到整个项目粒度）、
+        要么要 `{file, symbol}` —— **必须由调用方从 feature 里再挑一次对象**。
+        ⇒ 那个"再挑一次"就是**今天的手工拼接**，而**每个下游都要重做一遍**。
+      ⇒ **方向（不发明新机制）**：`Touched` 已经是**产物端**的契约（T18 六字段：
+        `feature?` `project_dir?` `written_files?` `read_files?` `symbols?` `nodes?`）——
+        **让入参端也认同一套** ⇒ **入参形状 = 产物形状** ⇒ 那就是 Unix 的 `|`。
+        ★ **可达判据**：把"同时接受 `{project_dir, feature}` 的工具数"从 **10/56 提到 56/56**。
+      ⇒ ★ **反面对照（说明为什么它值钱）**：`import_project` 的产物实测是
+        `{"feature":"jvprobe","files_parsed":3,"symbols_found":1,…}` ——
+        **只有计数、没有内容**（文件名/符号名一个都没给）⇒ 下游拿不到任何可操作对象，
+        唯一可用的是 `feature` 这个**句柄** ⇒ **句柄必须能被消费，否则链断在第一环。**
+
+- [ ] **T55 ★ `measure_b_contract.mjs` 的「产物字段组合」口径**漏了经 `withTouched` 构造的产物**（真调与量具冲突，2026-10-05 实测）**
+      *(核实：量具报「产物字段组合 33 种 / 37 个 `[B]`，被 ≥2 个共用的只有 2 种，其中×2 `{data,message,touched}`」；
+       而**真调抽验 4/4 命中** —— `rename_symbols` · `find_references` · `extract_contracts` · `harvest_closure`
+       的 `DATA` 里**都有 `touched`**。)*
+      ⇒ ★★ **量具在低估 `touched` 的覆盖**（推测：它只读**内联对象字面量**的字段，
+        而 T18 之后多数 `[B]` 是**返回命名类型**或**经 `withTouched` 统一构造**的 ⇒ 量具看不到）。
+      ⇒ ★ 这正是今天反复出现的那条毛病，**而且这次犯的是我自己的量具**：
+        **计数类取证前先问「我数的东西是判据，还是判据的影子？」**
+        （同族：T48 用 `grep -c protect` 数出"缺保护"，实为影子。）
+      ⇒ 处置：修量具的口径（或让它**以真调产物为准**），并把这条写进量具头部。
+      ⇒ ★ **在修之前，`touched` 的覆盖率一律以真调为准**；且 T54 的读数**不依赖这条**
+        （T54 的 10/56 是**直接读 schema** 得来的，且已真调抽验）。
+
 - [ ] **T20 ★★★ 摘掉"事实镜像"：意图册只放意图；一致性靠"编辑时强制读双份"（用户 2026-10-01 指出）**
       *(核实：2026-10-01 —— `docs/data-ledger.md` **附三**；台账 §44.22。)*
       ⇒ 用户原话：「**意图册有三项东西，但是有一项东西其实本身就是代码的权威吧**。…编辑人都是同一个，
