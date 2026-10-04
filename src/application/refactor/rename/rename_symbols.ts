@@ -230,7 +230,13 @@ function touchedOf(input: RenameSymbolsInput, r: RenameSymbolsResult): Touched {
     const files = new Set<string>();
     for (const a of r.applied) {
       const res = a.result;
-      if (res.definition?.file) files.add(toRepoRel(res.definition.file));
+      // ★ 2026-10-05 修：定义文件若被「文件联动」改名（`fileRenamed` 有值），**盘上只剩新名**
+      //   ⇒ **只列新名，不列已不存在的旧名**。依据三条：
+      //   ① 口径「只列本次操作对**被操作对象**产生的**工作产物**」—— 旧名已被本操作删除；
+      //   ② 同族 `rename_file` 的收据也是**只列新名 + importers，从不列 fromRel**（同一个惯例）；
+      //   ③ ★ 修前这里与**引擎自己的 per-item 收据**打架：引擎是 `if fileRenamed … else if definition`
+      //      （只列一个），本层却两个都列 ⇒ **同一次调用里两层口径不一致**（判据分叉）。
+      if (!res.fileRenamed && res.definition?.file) files.add(toRepoRel(res.definition.file));
       for (const im of res.importers ?? []) files.add(toRepoRel(im.file));
       if (res.fileRenamed) files.add(toRepoRel(res.fileRenamed));
     }
