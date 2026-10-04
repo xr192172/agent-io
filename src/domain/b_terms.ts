@@ -212,9 +212,8 @@ export const B_TERMS: Record<string, BTerm> = {
   files: {
     kind: 'context',
     type: 'string[]',
-    meaning: '★ **已被污染**：产物侧一个名字有 **6 种类型**（`string[]` / `FileContractReport[]` / `BrickFileReconcileReport[]` / `SlimFileReport[]` / `FileReconcileReport[]` / `FileRemoval[]`）',
-    debt: true,
-    fix: '★ **拆名**：路径表 → `written_files`/`read_files`；报告数组 → `<领域>_reports`（如 `contract_reports`）',
+    meaning: '★ **已退役**（2026-10-05）：全仓 [B] 已清零，**禁止再新增使用者**',
+    fix: '路径表 → `written_files` / `read_files`；报告数组 → `<领域>_reports`（如 `contract_reports` / `removal_reports`）',
   },
   project_root: {
     kind: 'context',
@@ -222,6 +221,22 @@ export const B_TERMS: Record<string, BTerm> = {
     meaning: '与 `project_dir` **同义**',
     debt: true,
     fix: '并入 `project_dir`',
+  },
+  /**
+   * ★ 2026-10-05 补（T45 机检报出的"未定义共用字段名"）：它被 **14 个 [B]** 采用却不在表里。
+   *   它是 **T18 的契约本体** —— 所以含义栏写的是"从此以后要求它是什么"，不是现状。
+   */
+  touched: {
+    kind: 'receipt',
+    type: 'Touched（本文件导出的接口；6 个字段全可选）',
+    meaning: '**本次调用"动了什么"的统一小票**（T18）：跨 [B] 的**唯一收据**，供下游接链',
+    fix: '新接 [B] 一律 `withTouched(r, touchedOf(input, r))`（单构造点）；★ **纯数据 / 纯计算 [B] 例外**（它们没有"本次动了什么"）',
+  },
+  /** ★ 2026-10-05 补：实测 `runTests` / `watchProjectTool` **同名同型**（`string | undefined`）共用。 */
+  error: {
+    kind: 'state',
+    type: 'string | undefined',
+    meaning: '失败原因（**人话**，给人 / LLM 读；**不是**异常对象）',
   },
   source_path: { kind: 'context', type: 'string', meaning: '输入物的来源路径（文件或 URL）' },
   events_files: { kind: 'context', type: 'string[]', meaning: '观测事件（JSONL）文件路径表' },
@@ -231,9 +246,8 @@ export const B_TERMS: Record<string, BTerm> = {
   written: {
     kind: 'state',
     type: 'boolean',
-    meaning: '本次是否**落盘**',
-    debt: true,
-    fix: '★ 现状 `boolean`×4（是否落盘）与 `string[]`×1（文件表）**同名两义** ⇒ 拆：落盘用 `dry_run` 的反面表达，文件表用 `written_files`',
+    meaning: '★ **已退役**（2026-10-05）：全仓 [B] 已清零，**禁止再新增使用者**',
+    fix: '文件表用 `written_files`；"是否落盘"用 `dry_run` 的反面表达（或直接报 `written_files` 的有无）',
   },
   filesWritten: {
     kind: 'state',
@@ -245,9 +259,8 @@ export const B_TERMS: Record<string, BTerm> = {
   stats: {
     kind: 'receipt',
     type: 'Record<string, number>',
-    meaning: '本领域的**计数汇总**',
-    debt: true,
-    fix: '★ 现状 **5 种**互不相同的对象 ⇒ 各领域改名为 `<领域>_stats`',
+    meaning: '★ **已退役**（2026-10-05）：全仓 [B] 已清零，**禁止再新增使用者**',
+    fix: '各领域改名为 `<领域>_stats`（如 `contract_stats` / `closure_stats` / `algorithm_stats`）',
   },
   data: {
     kind: 'context',

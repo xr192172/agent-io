@@ -33,11 +33,9 @@
 > 覆盖范围：出现在 **≥2 个 [B]** 里的字段名（只服务 1 个 [B] 的私有字段不受约束 —— 实测占 80%）。
 > ★★ **新写 [B] 时字段名从本表选**；表里没有 ⇒ 要么加进来（写含义），要么它是你这个 [B] 的私有字段。
 
-**机检**：共用字段名 **42** 个 ｜ 表里有定义 **40** ｜ ★ 未定义 **2**
+**机检**：共用字段名 **42** 个 ｜ 表里有定义 **42** ｜ ★ 未定义 **0**
 
-⚠️ 未定义的共用字段名：`error` `touched`
-
-**债务**：`debt: true` **38** 条（棘轮：只许减不许增）。
+**债务**：`debt: true` **35** 条（棘轮：只许减不许增）。
 
 ### anchor —— 链的接口（下游能拿它当原料）
 
@@ -56,7 +54,8 @@
 |---|---|---|---|
 | `message` | `string` | 一行人读摘要。★ 不是数据：下游禁止从它解析 |  |
 | `limitations` | `string[]` | 本次调用**做不到什么**（诚实列，不留白） |  |
-| `stats` ★ | `Record<string, number>` | 本领域的**计数汇总** | **★ 现状 **5 种**互不相同的对象 ⇒ 各领域改名为 `<领域>_stats`** |
+| `touched` | `Touched（本文件导出的接口；6 个字段全可选）` | **本次调用"动了什么"的统一小票**（T18）：跨 [B] 的**唯一收据**，供下游接链 | **新接 [B] 一律 `withTouched(r, touchedOf(input, r))`（单构造点）；★ **纯数据 / 纯计算 [B] 例外**（它们没有"本次动了什么"）** |
+| `stats` | `Record<string, number>` | ★ **已退役**（2026-10-05）：全仓 [B] 已清零，**禁止再新增使用者** | **各领域改名为 `<领域>_stats`（如 `contract_stats` / `closure_stats` / `algorithm_stats`）** |
 | `summary` ★ | `string` | 一段**人读**总结 | **★ 现状 `string` 与一个大对象混用 ⇒ 人读用 `message`/`summary: string`，对象改 `<领域>_summary`** |
 
 ### state —— 状态
@@ -70,10 +69,11 @@
 | `skipped` ★ | `{ item: string; why: string }[]` | 被**有意跳过**的条目 + 原因 | **★ 现状 3 种形状（`{seeds,reason}[]` / `string[]` / `{path,why}[]`）⇒ 统一到定义的形状** |
 | `incomplete` ★ | `{ item: string; kind: string; why: string }[]` | **未完成**的部分 + 原因 | **★ 现状 2 种形状（`brick_path` 版 / `dsl_path` 版）⇒ 统一到定义的形状** |
 | `pending` ★ | `string[]` | **尚未处理**的条目 | **★ 现状 `number`（计数）与 `string[]`（列表）混用 ⇒ 统一为列表；计数另立 `*_count`** |
+| `error` | `string | undefined` | 失败原因（**人话**，给人 / LLM 读；**不是**异常对象） |  |
 | `effect_events` | `number` | 对账到的事件条数 |  |
 | `indexWriteThrough` | `WriteThroughOutcome` | 索引写穿结果（快照 + 索引是否同步成功） |  |
 | `written_to_dsl` | `boolean` | 本次结果**是否写进了 DSL**（领域状态，不等于落盘） |  |
-| `written` ★ | `boolean` | 本次是否**落盘** | **★ 现状 `boolean`×4（是否落盘）与 `string[]`×1（文件表）**同名两义** ⇒ 拆：落盘用 `dry_run` 的反面表达，文件表用 `written_files`** |
+| `written` | `boolean` | ★ **已退役**（2026-10-05）：全仓 [B] 已清零，**禁止再新增使用者** | **文件表用 `written_files`；"是否落盘"用 `dry_run` 的反面表达（或直接报 `written_files` 的有无）** |
 | `filesWritten` ★ | `number` | 写入文件的**数量**（计数，不是列表） | **改名 `written_file_count`（避免与 `written_files`/`files` 混读）** |
 | `previews` ★ | `unknown[]` | 预演结果（逐条） | **★ 现状与 `applied` 平行两套（file 版 / symbol 版）⇒ 统一** |
 | `applied` ★ | `unknown[]` | 已落盘的逐条结果 | **★ 同 `previews`：两套平行形状 ⇒ 统一** |
@@ -83,7 +83,7 @@
 | 术语 | 类型 | 定义 | 债 |
 |---|---|---|---|
 | `file` | `string` | **单个**文件（仓库相对路径）；多个用 `written_files`/`read_files` |  |
-| `files` ★ | `string[]` | ★ **已被污染**：产物侧一个名字有 **6 种类型**（`string[]` / `FileContractReport[]` / `BrickFileReconcileReport[]` / `SlimFileReport[]` / `FileReconcileReport[]` / `FileRemoval[]`） | **★ **拆名**：路径表 → `written_files`/`read_files`；报告数组 → `<领域>_reports`（如 `contract_reports`）** |
+| `files` | `string[]` | ★ **已退役**（2026-10-05）：全仓 [B] 已清零，**禁止再新增使用者** | **路径表 → `written_files` / `read_files`；报告数组 → `<领域>_reports`（如 `contract_reports` / `removal_reports`）** |
 | `project_root` ★ | `string` | 与 `project_dir` **同义** | **并入 `project_dir`** |
 | `source_path` | `string` | 输入物的来源路径（文件或 URL） |  |
 | `events_files` | `string[]` | 观测事件（JSONL）文件路径表 |  |
