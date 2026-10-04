@@ -1,5 +1,5 @@
 /**
- * cross 线（5 个工具）—— ★ **本文件即该线归属的唯一来源**。
+ * cross 线（4 个工具）—— ★ **本文件即该线归属的唯一来源**。
  *
  * ★ P1b（2026-09-28）：按当时 `capability_map.LANE_OF` 的归属从 `TOOL_DEFS` 切分而来，
  *   条目**逐字搬移**，只加了 `export const CROSS_TOOLS` 外壳 —— 归属自此由文件路径表达。
@@ -15,7 +15,6 @@ import { wrap, wrapData, requireStr } from '../plumbing.js';
 import path from 'node:path';
 import { compareProjects } from '../../infrastructure/analysis/cross_repo/index.js';
 import { analyzeHealth } from '../../infrastructure/analysis/health/index.js';
-import { VERDICT_LABEL, precheckHybrid } from '../../infrastructure/analysis/hybrid/index.js';
 import { detectReachableRoots } from './project_root.js';
 import { extractGoFromFile } from '../../infrastructure/analysis/translate/go_extractor.js';
 import { translateGoTsHandler } from '../../infrastructure/analysis/translate/tool.js';
@@ -73,7 +72,7 @@ export const CROSS_TOOLS: ToolDef[] = [
       '①冲突清单（同名不同签 = 真冲突，杂交前需改名/错位，附两侧定义文件与签名）；' +
       '②双胞胎（同名同签 = 语义重复，可去重一个）；' +
       '③迁移范围 aOnly/bOnly（只在一方的顶层符号 = 搬到对侧不撞名的安全候选）。' +
-      '是 rename_symbol / package_migration / impact_analysis 跨项目版与 hybrid_precheck 的符号层地基。' +
+      '是 rename_symbol / package_migration / impact_analysis 跨项目版与跨项目符号层的地基。' +
       '顶层符号 = 所有模块级符号（未显式 export 的也计入，保守超集）。',
     inputSchema: {
       project_dir_a: z.string().describe('项目 A 根目录（绝对路径）'),
@@ -99,48 +98,6 @@ export const CROSS_TOOLS: ToolDef[] = [
       if (r.aOnly.length > 0) lines.push(`  ${r.aOnly.join(', ')}`);
       lines.push('', `■ 迁移范围：B→A 候选 ${r.bOnly.length} 个`);
       if (r.bOnly.length > 0) lines.push(`  ${r.bOnly.join(', ')}`);
-      return { message: lines.join('\n'), data: r };
-    }),
-  },
-
-  {
-    name: 'hybrid_precheck',
-    title: 'Hybrid precheck - three-dimension fusion feasibility report',
-    description:
-      '项目杂交预检（两个项目能不能融合）：站在 cross_repo_symbol_index 之上做三维体检。' +
-      '①符号冲突（同名不同签 = 真冲突，杂交后互相遮蔽，需改名/错位）；' +
-      '②功能重叠（同名同签双胞胎 = 语义重复，可去重一个）；' +
-      '③依赖冲突（读两仓根级 manifest package.json/go.mod/pyproject.toml/requirements.txt，同名依赖版本范围不一致）。' +
-      '输出 verdict：ok 可直接融合 / fix 处理后融合 / blocked 必须先解决符号冲突，附理由清单。' +
-      'v1 边界：依赖冲突按版本范围字符串不等判定（^18 vs ~18 也报，宁多报不漏报）；manifest 只读根级。',
-    inputSchema: {
-      project_dir_a: z.string().describe('项目 A 根目录（绝对路径）'),
-      project_dir_b: z.string().describe('项目 B 根目录（绝对路径）'),
-    },
-    handler: wrapData(async (a) => {
-      const r = await precheckHybrid(requireStr(a, 'project_dir_a'), requireStr(a, 'project_dir_b'));
-      const fmtSym = (defs: Array<{ file: string; signature: string }>) => defs.map((d) => `${d.file}  ${d.signature}`).join(' ; ');
-      const lines = [
-        `项目杂交预检 · ${r.aRoot} ↔ ${r.bRoot}`,
-        `判定：${VERDICT_LABEL[r.verdict]}（${r.verdict}）`,
-        ...r.reasons.map((x) => `  · ${x}`),
-        '',
-        `■ 符号冲突 ${r.symbolConflicts.length}（同名不同签，杂交前需改名/错位）`,
-      ];
-      for (const c of r.symbolConflicts) {
-        lines.push(`  ! ${c.name}`, `      A: ${fmtSym(c.a)}`, `      B: ${fmtSym(c.b)}`);
-      }
-      if (r.symbolConflicts.length === 0) lines.push('  （无）');
-      lines.push('', `■ 功能重叠 ${r.symbolDuplicates.length}（同名同签双胞胎，可去重一个）`);
-      for (const c of r.symbolDuplicates) lines.push(`  = ${c.name}   A: ${c.a[0].file} ↔ B: ${c.b[0].file}`);
-      if (r.symbolDuplicates.length === 0) lines.push('  （无）');
-      lines.push('', `■ 依赖版本冲突 ${r.deps.conflicts.length}`);
-      for (const c of r.deps.conflicts) lines.push(`  ! ${c.name}   ${c.version}   [${c.source}]`);
-      if (r.deps.conflicts.length === 0) lines.push('  （无）');
-      lines.push('', `■ 依赖共享 ${r.deps.shared.length} / 仅A ${r.deps.aOnly.length} / 仅B ${r.deps.bOnly.length}`);
-      if (r.deps.shared.length > 0) lines.push(`  共享: ${r.deps.shared.map((d) => d.name).join(', ')}`);
-      if (r.deps.aOnly.length > 0) lines.push(`  仅A: ${r.deps.aOnly.map((d) => d.name).join(', ')}`);
-      if (r.deps.bOnly.length > 0) lines.push(`  仅B: ${r.deps.bOnly.map((d) => d.name).join(', ')}`);
       return { message: lines.join('\n'), data: r };
     }),
   },

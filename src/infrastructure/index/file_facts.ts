@@ -53,7 +53,7 @@ const EMPTY: FileFacts = { apis: [], deps: [], source: null, matched_path: null 
  * ★★ 复用**既有**的连接池，**不另造一个**（2026-10-01 当场改）：
  *   第一版我在这里自建了 `Map<dbPath, Database>` 且"刻意不 close" —— 结果：
  *   Windows 上删项目目录 **EBUSY**（`db.ts` 的 `closeProjectCacheDb` 存在的**唯一理由**就是这个，
- *   见它的注释："harvest_from_url 收尾删临时目录前释放…"。自造第二个池 = 把那个坑重挖一遍。
+ *   见它的注释："收尾删项目/临时目录前释放文件句柄…"。自造第二个池 = 把那个坑重挖一遍。
  *   ⇒ 走 `projectCachePool`：它的 close 机制现成，测试侧 `closeAllProjectCacheDbs()` 一并管住。
  *   ⇒ 非项目库（`import_cache_<f>.db`）**每次 open**，与既有 `function_outline.ts:212` 同一行为（不缓存）。
  */

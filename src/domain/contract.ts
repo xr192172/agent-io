@@ -130,7 +130,7 @@ export interface BrickManifest {
    * 验收判据（Phase 2.8 四层验证模型）。
    * 测试用例是点采样，正确性是全称命题——invariants 用铁律断言补全称性，
    * effect_check 把语义层锚定到人类眼见为实。
-   * 重抽保留：harvest_from_url 覆盖快照时原样继承本字段（人工沉淀不随重抽丢失）。
+   * 重抽保留：覆盖快照时原样继承本字段（人工沉淀不随重抽丢失）。
    */
   acceptance?: {
     /**
@@ -211,28 +211,28 @@ export interface BrickManifest {
     }>;
     /** 静态可达性分析的已知盲区（读报告前必看） */
     limitations: string[];
-    /** live 符号明细（file → 顶层符号名）——go-slim 剪刀的 keep 集；重抽刷新 */
+    /** live 符号明细（file → 顶层符号名）——瘦身剪刀的 keep 集；重抽刷新 */
     live_symbols_by_file?: Record<string, string[]>;
     /** live 类型名全集——剪刀侧方法挂靠规则输入（类型的全部方法随类型活） */
     live_type_names?: string[];
   };
   /**
-   * -slim 衍生积木溯源（bricks(action=slim) 产出，Phase 6）。
-   * 原积木永不覆盖；衍生积木是机器产物，可随时重生成（删除后重跑 bricks(action=slim)）。
+   * -slim 衍生积木溯源（瘦身产出，Phase 6）。
+   * 原积木永不覆盖；衍生积木是机器产物，可随时重生成（删除后可重跑瘦身）。
    */
   derived_from?: {
     brick: string;
     slimmed_at: string;
     files_before: number;
     files_after: number;
-    /** 顶层声明数（go-slim 报告口径，≈符号口径） */
+    /** 顶层声明数（瘦身剪刀报告口径，≈符号口径） */
     symbols_before: number;
     symbols_after: number;
     /** go.mod require 模块清单前后对比 */
     deps_before: string[];
     deps_after: string[];
   };
-  /** 瘦身验证档案（四层验证渐进填充：build=bricks(action=slim) --verify_build；源测试/observe/效果验收后续）。
+  /** 瘦身验证档案（四层验证渐进填充：build=瘦身 --verify_build；源测试/observe/效果验收后续）。
    *  skipped = TS 贫困编译降级（typescript 包不可用/无源文件）——工具链缺席不是产物失败 */
   slim_verification?: {
     build?: { status: 'pass' | 'fail' | 'skipped'; at: string; detail?: string };

@@ -36,13 +36,13 @@ The project follows a **frontend/backend separation** architecture:
 
 ## Core Capabilities
 
-One thread runs through everything: **any code → bricks (production) → trusted assembly (quality control)**. The **contract** is the single shared interface between the two ends — the brick line produces contracts, the verification line validates them.
+One thread runs through everything: **any code → contract-bearing bricks → verified contracts**. The **contract** is the single shared interface between the two ends — the brick line produces contracts, the verification line validates them.
 
 | Capability | Description | Representative tools |
 |---|---|---|
 | **Visual protocol layer** | DSL read/write/edit, design view vs. actual code snapshot diff, built-in render fallback | `get_dsl` / `edit_dsl` / `manage_feature` / `render_design` / `diff_views` |
 | **Code understanding** | Project import, semantic search, impact analysis, architecture layering, monolith splitting, algorithm/dataflow derivation | `import_project` / `explore_code` |
-| **Brick system** | Harvest code from any source (URL / local project) into contract-bearing bricks: extraction, slimming, search, and assembly | `harvest_from_url` / `harvest_closure` / `extract_contracts` / `bricks` |
+| **Brick system** | Harvest code from any source into contract-bearing bricks: closure extraction, contract extraction, decision-card recovery (the brick-box / assembly family was removed on 2026-10-05; design docs kept in `docs/`) | `harvest_closure` / `extract_contracts` / `harvest_decisions` |
 | **Runtime verification** | Reconcile contracts and behavior baselines against actual runtime observations, forming a "commit only if verified, roll back on failure" gate | `observe_instrument` / `observe_judge` / `reconcile_chain` / `reconcile_effects` |
 | **Generation / backfill / consistency** | Generate code skeleton from DSL, backfill contracts from implementation, output consistency reports | `scaffold` / `consistency_check` |
 | **Deterministic refactoring (no rework)** | Symbol-level editing (never matches wrong), bulk/cross-file renaming, dead code removal, diff review before applying, rollback on failure | `edit_code` / `rename_*` / `refactor_pipeline` |
@@ -104,7 +104,7 @@ Your browser opens `http://localhost:3000/workbench`: the left canvas is an inte
 
 ## MCP Tool Reference
 
-A total of **58 MCP tools** are registered, organized into "capability navigation + primary tools + specialized tools": `capability_map` provides layered capability-lane navigation, primary tools provide unified entry points, specialized tools each do one job. The tables below are a curated subset, not the full list — the authoritative count comes from `TOOL_DEFS` in `src/server_registry.ts`.
+A total of **56 MCP tools** are registered, organized into "capability navigation + primary tools + specialized tools": `capability_map` provides layered capability-lane navigation, primary tools provide unified entry points, specialized tools each do one job. The tables below are a curated subset, not the full list — the authoritative count comes from `TOOL_DEFS` in `src/server_registry.ts`.
 
 ### Capability navigation (1)
 
@@ -126,7 +126,7 @@ A total of **58 MCP tools** are registered, organized into "capability navigatio
 { "lane": "refactor" }  // refactor / rename
 { "lane": "observe" }   // observe / verify
 { "lane": "harvest" }   // contract / closure harvesting
-{ "lane": "cross" }     // cross-repo / hybrid / health
+{ "lane": "cross" }     // cross-repo / health
 { "lane": "meta" }      // meta-info / exploration
 ```
 
@@ -146,7 +146,7 @@ A total of **58 MCP tools** are registered, organized into "capability navigatio
 | `consistency_check` | Compare expected contracts against actual code; output a consistency report and cross-file invariants (read-only) |
 | `explore_code` | Code understanding entry: semantic search, impact analysis, architecture layering, monolith detection, split suggestions, algorithm/dataflow derivation, simulation replay, etc. |
 
-### Specialized tools (41)
+### Specialized tools (36)
 
 **Code understanding**
 
@@ -163,11 +163,9 @@ A total of **58 MCP tools** are registered, organized into "capability navigatio
 | Tool | Purpose |
 |------|------|
 | `harvest_closure` | Harvest bricks together with their transitive import closure |
-| `harvest_from_url` | Harvest bricks from a git URL / local project into the brick bag |
 | `harvest_decisions` | Reverse-extract design decisions from project records |
 | `extract_contracts` | Extract brick contracts (role / shapes / effects) |
 | `reconcile_effects` | Reconcile effect candidates against runtime observations |
-| `bricks` | Unified brick-box entry (search=browse/query bricks·read-only / assemble=assemble boxed bricks into a new project·write / slim=slim a brick into a derived brick·write / reconcile=reconcile brick contracts against observe events·write) |
 | `narrate_step` | Narrate a pipeline step as a governed narration brick |
 
 **Runtime verification (Observe)**
@@ -241,7 +239,6 @@ Java projects, Python dead-code cleanup on Python projects; apply / verify / rol
 |------|------|
 | `impact_analysis` | Pre-change risk-closure report: change points → reverse reachable closure, output affected files and risk ranking (`hubs=true` for hot-spot survey) |
 | `cross_repo_symbol_index` | Cross-project symbol index: intersection of top-level symbols = conflicts / twins, difference = migration scope |
-| `hybrid_precheck` | Project hybrid precheck: symbol conflicts + dependency version conflicts + feature overlap → verdict ok / fix / blocked |
 | `behavior_baseline` | Behavior baseline: canary harness runs sample cases and records a snapshot, verify after changes to confirm "does it work" |
 | `code_health` | Code health score: dead code / cyclomatic complexity / layering violations → health score + issue list |
 

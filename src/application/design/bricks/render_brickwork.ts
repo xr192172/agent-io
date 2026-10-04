@@ -1,7 +1,7 @@
 /**
  * render_brickwork —— 沙盘视图渲染（后端数据线路的渲染段）
  *
- * 消费 BrickBag（bricks(action=assemble) 的产物）→ 生成自包含 HTML 沙盘：
+ * 消费 BrickBag（沙盘数据线路的产物）→ 生成自包含 HTML 沙盘：
  *    - 每块积木 = 一张卡片（按 total 定宽；顶条按主导侧配色）
  *    - 卡片内三侧文件计数 ±（前端蓝/后端橙/通用灰）、重复家族 chip、废弃红标
  *    - 积木间连线：similar 虚线（蓝色，线宽∝score）；call 实线（灰，箭头）

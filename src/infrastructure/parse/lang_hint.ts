@@ -59,7 +59,6 @@ const CAP_SECTION: Record<string, string> = {
   version_upgrade_detection: '§2.6 version_upgrade_detection',
   impact_analysis: '§2.7 impact_analysis',
   cross_repo_symbol_index: '§2.8 cross_repo_symbol_index',
-  hybrid_precheck: '§2.9 hybrid_precheck',
   behavior_baseline: '§2.10 behavior_baseline',
   code_health: '§2.11 code_health',
   spring_mvc_layering: '§2.12 spring_mvc_layering',

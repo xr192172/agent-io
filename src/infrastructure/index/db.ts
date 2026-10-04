@@ -236,7 +236,7 @@ export function closeAllProjectCacheDbs(): void {
   projectCachePool.clear();
 }
 
-/** 关闭单个项目的池化缓存连接（harvest_from_url 收尾删临时目录前释放文件句柄，Windows EBUSY） */
+/** 关闭单个项目的池化缓存连接（收尾删项目/临时目录前释放文件句柄，Windows EBUSY） */
 export function closeProjectCacheDb(projectRoot: string): void {
   const key = path.resolve(projectRoot);
   const db = projectCachePool.get(key);

@@ -116,7 +116,7 @@ declareCapability({
 });
 
 // ─────────────────────────────────────────────
-// 版本升级线 + 影响面/跨仓/杂交/行为/健康（自 feat/version-upgrade 移植，2026-09）
+// 版本升级线 + 影响面/跨仓/行为/健康（自 feat/version-upgrade 移植，2026-09）
 // ─────────────────────────────────────────────
 
 /** 版本升级契约差检测：工具链声明扫描 + 语言特性/废弃 API 检测 */
@@ -233,37 +233,6 @@ declareCapability({
     // 2026-09-29 本笔：同内核表落地 scala/groovy/julia/haskell/elixir 5 门。本能力要的是
     //   「顶层导出符号」，5 门均实测非空（scala/groovy/julia/elixir 的 object/class/module 即顶层符号，
     //   haskell 顶层 function）⇒ 两仓符号求交/求差可用（读数见提交信息）。
-    scala: 'full_ast',
-    groovy: 'full_ast',
-    julia: 'full_ast',
-    haskell: 'full_ast',
-    elixir: 'full_ast',
-  },
-});
-
-/** 项目杂交预检：符号冲突 + 依赖冲突 + 功能重叠 */
-declareCapability({
-  id: 'hybrid_precheck',
-  label: '项目杂交预检（符号冲突 + 依赖冲突 + 功能重叠）',
-  desc: '两个项目根：①顶层导出符号冲突（复用 cross_repo_symbol_index）②依赖版本冲突（读根级 manifest）③功能重叠（同名同签双胞胎）→ verdict ok/fix/blocked',
-  default: 'unimplemented',
-  overrides: {
-    go: 'full_ast',
-    typescript: 'full_ast',
-    tsx: 'full_ast',
-    javascript: 'full_ast',
-    jsx: 'full_ast',
-    python: 'full_ast',
-    java: 'full_ast',
-    c_sharp: 'full_ast',
-    c: 'full_ast',
-    // 2026-09-29 P0：内核 LANG_ADAPTERS 补 cpp/ruby/kotlin（符号支柱随内核表生效）
-    //   ★ 依赖支柱仍只认 package.json/go.mod/pyproject.toml/requirements.txt（§2.9 是独立一笔）
-    cpp: 'full_ast',
-    ruby: 'full_ast',
-    kotlin: 'full_ast',
-    // 2026-09-29 本笔：同内核表落地 scala/groovy/julia/haskell/elixir 5 门（符号支柱随内核表生效；
-    //   冲突/双胞胎判定要的顶层符号，5 门实测非空）。依赖支柱不受影响（sbt/gradle 等 manifest 仍未接）。
     scala: 'full_ast',
     groovy: 'full_ast',
     julia: 'full_ast',

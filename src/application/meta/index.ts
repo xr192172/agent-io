@@ -386,7 +386,7 @@ export const META_TOOLS: ToolDef[] = [
     title: '能力线导航：agent-io 工具分层地图',
     description:
       '统一能力线入口（只读导航，无副作用）。无参返回完整分层清单：6 条能力线（design 设计 / refactor 重构 / ' +
-      'observe 观测 / harvest 契约采集 / cross 跨仓杂交健康 / meta 元信息）× 每条线内工具及其适用时机；' +
+      'observe 观测 / harvest 契约采集 / cross 跨仓翻译健康 / meta 元信息）× 每条线内工具及其适用时机；' +
       '传 lane 只看某条线。agent 在不确定用哪个工具前，优先调它分层定位，再进入具体工具。' +
       '高频工具（get_dsl / edit_dsl / explore_code / rename_symbols / rename_files / find_references）始终直接可用，无需先经本工具。',
     inputSchema: {

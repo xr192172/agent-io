@@ -14,7 +14,6 @@ src/
   daemon/     MCP 常驻服务 / 事件分发
   db/         符号缓存（tree-sitter 产物的持久化）
 go-observe/    Go 版 observe 探针/裁决（独立小模块）
-go-slim/      Go 积木瘦身器（编译器式死码剪枝）
 ```
 
 ## 开发环境

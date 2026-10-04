@@ -370,13 +370,32 @@
       ⇒ `observe_log` 传**不存在**的日志文件 → 静默「（无匹配事件）」⇒ 会让人以为"跑过了、没内容"。
       ⇒ `manage_feature` create/clone/delete 的参数要塞进 **`args` 子对象**，可 schema 里又有个顶层
         `feature`；报错说「缺少 feature」但顶层就有 ⇒ **自相矛盾**。
-      ⇒ `harvest_from_url` 描述说默认落盘，实测**默认走 dry-run**（`written:false`）⇒ 口径不一致。
+      ~~⇒ `harvest_from_url` 描述说默认落盘，实测默认走 dry-run ⇒ 口径不一致。~~
+        ★ 2026-10-05：该工具已随"积木盒族"删除 ⇒ 此条**随之消失**，不必再修。
+
+- [ ] **T43 ★★ 前沿研究：通用多语言组件框架（若重开 ⇒ 先做三个"最小可证伪实验"）**
+      *(核实：2026-10-05 用户裁定"积木线/项目融合线作为万能框架实现不了 ⇒ 删代码、留设计文档"。)*
+      ⇒ **文档**：`docs/frontier-universal-framework.md`（原始设想逐字保留 + 六层解剖 + 阵亡记录 +
+      三个实验 + 术语检索表 + 证据分级）。**这份文档本身就是这件"研究"的产物，本条只挂它的"下一步"。**
+      ⇒ 六层解剖的结论：**① 跨语言运行时（WASM Component Model / GraalVM）· ② 绑定生成（SWIG/uniffi）·
+      ③ 多语言构建（Bazel）· ④ 依赖统一 都有更强的主人 ⇒ 不自造；⑤"什么算一块积木" 与 ⑥"契约本身"
+      才是空格子**（而 ⑥ 就是本仓的 **T18**）。
+      ⇒ ★ **三个实验（都不必自造框架）**：
+        **实验 0（半天，最便宜）** 用 WASM CM 官方教程走通 Rust 组件 + Python 宿主 ⇒ **若卡住则 ① 层死心**；
+        **实验 1（现在就能做，用保留下来的 `harvest_closure` + `extract_contracts`）** 对真项目抽 1 个候选积木，
+        **量化"人工改判率"**（> 50% ⇒ "从任意项目抽零件"是假命题）；
+        **实验 2** 只挑一对一语言（TS↔Python），用 napi-rs / PyO3 做"同一份契约 → 两端绑定"，**判据=不写一行 glue**。
+      ⇒ ★ **未核实项**（文档 §10 已列）：WASM CM 的真实成熟度（未查各语言支持矩阵）· uniffi/napi 的许可证
+        （若 adopt，按 `oss-prior-art-first` §3.5 必须先看许可）· "⑤ 无通用解"是判断而非查到的结论（**实验 1 可证伪它**）。
 
 - [ ] **T42 ★★ 结构重排三案（独立结构评审 2026-10-05；"层"这根轴清楚，"层内靠什么切"没有统一口径）**
       *(核实：独立子代理只读目录结构后报告；我复核了 `ls src/presentation/cli/`（22 文件）与行数。)*
-      ⇒ **方案 A（推荐先做，代价最小）**：拆 `presentation/cli/` —— 22 文件 / 6525 行混 4 类
-        （含 **1175 行 CSS** 在 `workbench_shell_css.ts`）⇒ 拆成 `cli/` + `cli/render/`。
-        **只需改 1 个文件 + 移动 8 个文件，外部零影响。**
+      ⇒ **方案 A ✅ 已做（2026-10-05，commit `2a5c353`）**：拆 `presentation/cli/` —— 8 个
+        （7 个 `render_*` + `workbench_shell_css`）移入 `cli/render/`，改 19 处相对路径 +
+        `brickify_cli.ts` 的 7 条 import；域表加 `cli-render`（55 → 56 域 + 7 平铺）。
+        ★ 拆的理由不是"看着乱"：域表那条 `cli-surface` 的 note 原本自称"每个文件 = 一条命令 ⇒ 平铺是终态"，
+        **而那 7 个 renderer 不是命令**（唯一引用者是 `brickify_cli`）⇒ 那条 note 一直是用错的理由背书。
+        *验收：tsc 0 / build 0 / structure:gap 三态全 0 / `brickify_cli` 无参打印 usage。*
       ⇒ **方案 B**：`application/refactor/` 同层两套命名 + 单文件 `index.ts` 已 1479 行；
         统一命名（68 处路径引用，靠编译器兜底）。★ 与 **T28** 的 `rf-*` 命名是同一族，**同一次做**。
       ⇒ **方案 C**：`infrastructure/analysis/` 下 15 个子目录名语域重叠、无索引 ⇒ 合并单文件目录 + 补说明。

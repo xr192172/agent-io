@@ -6,7 +6,7 @@
  *   （actual_apis[0] 签名 → projectSignature）产生，是代码事实、非 LLM 编造。
  *
  * 使用自有 MCP 抽取、登记为「砖」接入积木体系：
- *   - 盒内写 manifest.json（BrickManifest 契约，可被 bricks(action=search) 检索）
+ *   - 盒内写 manifest.json（BrickManifest 契约）
  *   - DSL semantic 落一条 brick_narr_* 条目 → 思维导图「🧱 已验证积木」区自动出卡
  *
  * 忠实纪律：分镜的 facts 逐条引用真实针脚与签名；人话只做名词翻译，不发明类型/流程。
@@ -99,7 +99,7 @@ export function narrateStep(input: NarrateStepInput): NarrateStepResult {
   let brick: NarrateStepResult['brick'];
 
   if (write) {
-    // ── 1) 盒内登记：BrickManifest 契约（可被 bricks(action=search) 检索）──
+    // ── 1) 盒内登记：BrickManifest 契约 ──
     const boxRoot = path.join(getStorageRoot(), 'bricks');
     const brickName = `${feature}-narr-${slug(file)}`;
     const brickDir = path.join(boxRoot, brickName);

@@ -45,8 +45,8 @@ export interface ExtractContractsInput {
   files?: string[];
   /** 默认 true：feature 提供时写回 DSL；false = 只读预演（dry-run） */
   write_dsl?: boolean;
-  /** true 时结果携带 contracts（path→BrickContract 全量本体）。编排层（harvest_from_url）
-   *  内部消费用；MCP 直接调用勿开——大项目全量契约会撑爆返回 token */
+  /** true 时结果携带 contracts（path→BrickContract 全量本体）。编排层内部消费用；
+   *  MCP 直接调用勿开——大项目全量契约会撑爆返回 token */
   return_contracts?: boolean;
 }
 

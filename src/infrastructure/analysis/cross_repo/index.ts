@@ -7,8 +7,7 @@
  *      - 同名同签   = 双胞胎（语义重复，可去重一个）
  *   2. 求差（只在一方）→ aOnly / bOnly = 迁移范围：搬过去不会撞名的安全候选
  *
- * 供 rename_symbol / package_migration / impact_analysis 的跨项目版复用，
- * 也是 hybrid_precheck 的第一支柱（符号冲突检测）。
+ * 供 rename_symbol / package_migration / impact_analysis 的跨项目版复用（符号冲突检测）。
  *
  * v1 边界（诚实标注）：
  *   - "顶层符号"复用 impact 的 nameIndex（parent 为空的所有模块级符号），
@@ -118,8 +117,7 @@ export async function compareProjects(aRoot: string, bRoot: string): Promise<Cro
   const [a, b] = await Promise.all([buildProjectIndex(aRoot), buildProjectIndex(bRoot)]);
 
   // ★ 读不到任何源码 ⇒ **报错**，绝不返回一份全 0 报告（2026-10-05，用户体检实测坐实）。
-  //   为什么必须抛：全 0 会被读成「两项目真的没有冲突」；而 `hybrid_precheck` 更会据此判
-  //   `verdict=ok`（"可直接融合"）—— 那是一条**假阳性**，会直接误导融合决策。
+  //   为什么必须抛：全 0 会被读成「两项目真的没有冲突」—— 那是一条**假阳性**，会直接误导融合决策。
   //   失败就是失败，不要降级（与 plumbing.requireStr 的 P-D 纪律同源，只是这里守的是"根可读"而非"参数存在"）。
   if (a.fileCount === 0 || b.fileCount === 0) {
     const bad = [a.fileCount === 0 ? `A（${a.root}）` : '', b.fileCount === 0 ? `B（${b.root}）` : '']
