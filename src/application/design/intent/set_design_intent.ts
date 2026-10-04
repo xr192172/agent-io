@@ -22,6 +22,7 @@ import {
   applyOverlay,
 } from '../../../domain/overlay.js';
 import type { OverlayGoal, OverlayEdgeIntent } from '../../../domain/overlay.js';
+import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
 /** 单条边意图写入：id 优先，其次 from+to 匹配 base 边 */
 export interface DesignEdgeIntentWrite {
@@ -52,7 +53,7 @@ export interface SetDesignIntentResult {
   unmatched: Array<{ id?: string; from?: string; to?: string; reason?: string }>;
 }
 
-export function setDesignIntent(input: SetDesignIntentInput): SetDesignIntentResult {
+function setDesignIntentCore(input: SetDesignIntentInput): SetDesignIntentResult {
   const dsl = getDSL(input.feature);
   if (!dsl) throw new Error(`feature "${input.feature}" 不存在`);
 
@@ -110,4 +111,15 @@ export function setDesignIntent(input: SetDesignIntentInput): SetDesignIntentRes
   const msg = [...(unmatched.length ? ['[部分写入]'] : []), ...parts].join(' · ');
 
   return { message: msg, feature: input.feature, goals: goals?.length ?? 0, edges_written, unmatched };
+}
+
+/** ★ 唯一的构造点：把"我动了什么"集中算一次，所有出口都从这一个地方出去 */
+function touchedOf(input: SetDesignIntentInput): Touched {
+  // 只给作用域类 feature：本次写的是 **overlay + DSL 意图**（不是源文件）⇒ 不给 written_files。
+  return { feature: input.feature };
+}
+
+export function setDesignIntent(input: SetDesignIntentInput): TouchedProduct<SetDesignIntentResult> {
+  const r = setDesignIntentCore(input);
+  return withTouched(r, touchedOf(input));
 }

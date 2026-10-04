@@ -19,6 +19,7 @@ import type { DesignDSL, Node, Edge } from '../../../domain/types.js';
 import { getDSL, saveDSL } from '../../../infrastructure/storage.js';
 import { extractFunctionCfg } from '../../../infrastructure/analysis/structure/cfg.js';
 import type { CfgNodeKind } from '../../../infrastructure/analysis/structure/cfg.js';
+import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
 export interface DeriveAlgorithmInput {
   feature: string;
@@ -64,7 +65,7 @@ export const KIND_SHAPE: Record<
 const COL_GAP = 280;
 const ROW_GAP = 104;
 
-export async function deriveAlgorithm(input: DeriveAlgorithmInput): Promise<DeriveAlgorithmResult> {
+async function deriveAlgorithmCore(input: DeriveAlgorithmInput): Promise<DeriveAlgorithmResult> {
   const { feature, node_id, function: funcName, max_depth = 3 } = input;
   const projectRoot = input.project_root ? path.resolve(input.project_root) : process.cwd();
 
@@ -186,4 +187,22 @@ export async function deriveAlgorithm(input: DeriveAlgorithmInput): Promise<Deri
       handlers: kindCount('handler'),
     },
   };
+}
+
+/** ★ 唯一的构造点：把"我动了什么"集中算一次，所有出口都从这一个地方出去 */
+function touchedOf(input: DeriveAlgorithmInput): Touched {
+  const touched: Touched = {};
+  // 作用域类（⇒ 随时可给，不依赖成败）：
+  //   feature 必填入参；project_dir 取入参 project_root（★ 只认入参显式给的根，**不**兜底 cwd，
+  //   也不拿语义里"默认 cwd"当根——那会变成"进程当前目录"，不是本次调用确立的作用域）。
+  touched.feature = input.feature;
+  if (input.project_root) touched.project_dir = path.resolve(input.project_root);
+  // ★ 刻意**不给** nodes：产物里的 nodes_created / edges_created 是 `number`（计数），
+  //   而 Touched.nodes 是 `string[]`（节点 id 表）——名字像 ≠ 同义，硬塞会污染口径。
+  return touched;
+}
+
+export async function deriveAlgorithm(input: DeriveAlgorithmInput): Promise<TouchedProduct<DeriveAlgorithmResult>> {
+  const r = await deriveAlgorithmCore(input);
+  return withTouched(r, touchedOf(input));
 }

@@ -77,7 +77,11 @@ export async function dispatchDslEdit(
       if (r.conflict) {
         throw new Error(r.message ?? `DSL 冲突：feature "${feature}" 已被他人更新。`);
       }
-      return { result: { message: r.message ?? `已更新 ${feature}（rev ${r.rev}）`, feature }, viaDaemon: true };
+      // ★ 2026-10-05：daemon 路径**也必须带上 `touched`**。否则会出现
+      //   「同一工具、**有没有 daemon**决定 `touched` 在不在」的**判据分叉**（本仓头号病根）。
+      //   daemon 侧只知道 feature（写的是 DSL、不是文件 ⇒ 本就没有 written_files），
+      //   而本地 [B] 的 `touchedOf` 在同样情形下产出的也正是 `{ feature }` ⇒ 两边**逐字一致**。
+      return { result: { message: r.message ?? `已更新 ${feature}（rev ${r.rev}）`, feature, touched: { feature } }, viaDaemon: true };
     } catch (e) {
       // 显式冲突（乐观锁拒绝）不降级——必须让 LLM rebase，绝不静默覆盖
       if (isDslConflictError(e)) throw e;

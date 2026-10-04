@@ -20,6 +20,7 @@ import { execSync } from 'node:child_process';
 import { getDSL, getStorageRoot } from '../../../infrastructure/storage.js';
 import { gitRootOf } from '../../cross/project_root.js';
 import { checkConsistency } from './consistency.js';
+import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
 export interface DetectDriftInput {
   /** feature 名 */
@@ -92,7 +93,7 @@ function gitChangedFiles(root: string, ref: string): string[] {
 
 const norm = (p: string): string => path.resolve(p).toLowerCase();
 
-export async function detectDrift(input: DetectDriftInput): Promise<DriftData & { message: string }> {
+async function detectDriftCore(input: DetectDriftInput): Promise<DriftData & { message: string }> {
   const { feature, code_dir, mode = 'check' } = input;
 
   if (mode === 'status') {
@@ -221,4 +222,27 @@ export async function detectDrift(input: DetectDriftInput): Promise<DriftData & 
   lines.push('', '  (台账已持久化，可用 mode=status 复读；改代码后再跑一次即可看到新漂移)');
 
   return { message: lines.join('\n'), ...data };
+}
+
+/** ★ 唯一的构造点：把"我动了什么"集中算一次，所有出口都从这一个地方出去 */
+function touchedOf(input: DetectDriftInput): Touched {
+  const touched: Touched = {};
+  // 作用域类（⇒ 随时可给，不依赖成败）：
+  touched.feature = input.feature;
+  // project_dir：★ **只认前两项真源** —— 入参 code_dir，或 DSL 的 source_root。
+  //   ★ 刻意**不**复刻 Core 的第三项兜底 `path.join(process.cwd(),'scaffold',feature)`：
+  //     那是"换了个题"（指向 scaffold 生成目录，不是被分析的项目根），不是"更弱的答案"——
+  //     落到它上面时**省略整个字段**，绝不当成根填进去。
+  if (input.code_dir) {
+    touched.project_dir = path.resolve(input.code_dir);
+  } else {
+    const dsl = getDSL(input.feature);
+    if (dsl?.source_root) touched.project_dir = path.resolve(dsl.source_root);
+  }
+  return touched;
+}
+
+export async function detectDrift(input: DetectDriftInput): Promise<TouchedProduct<DriftData & { message: string }>> {
+  const r = await detectDriftCore(input);
+  return withTouched(r, touchedOf(input));
 }

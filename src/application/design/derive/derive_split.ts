@@ -31,6 +31,7 @@ import { tmpdir } from 'node:os';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { parseFileFull, parseAstRoot, ParsedSymbol } from '../../../infrastructure/parse/index.js';
+import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -1096,9 +1097,42 @@ async function runSubSplit(input: DeriveSplitInput): Promise<DeriveSplitResult> 
  *  - 单次模式：抽取 target_file 里 symbols 指定的符号到新文件（沿用原语义）。
  *  - 编排模式：输入含 subsplit 时，消费社区内子拆分计划，自动对每个类型单元二次拆分。
  */
-export async function deriveSplit(input: DeriveSplitInput): Promise<DeriveSplitResult> {
+async function deriveSplitCore(input: DeriveSplitInput): Promise<DeriveSplitResult> {
   if (input.subsplit && input.subsplit.length > 0) {
     return runSubSplit(input);
   }
   return splitOnce(input);
+}
+
+/** ★ 唯一的构造点：把"我动了什么"集中算一次，所有出口都从这一个地方出去 */
+function touchedOf(input: DeriveSplitInput, r: DeriveSplitResult): Touched {
+  const touched: Touched = {};
+  // 作用域类（⇒ 随时可给）：project_dir 是必填入参，解析成绝对根（契约明文要求 path.resolve）。
+  touched.project_dir = path.resolve(input.project_dir);
+  // 对象类 written_files：**只有真落盘才给**（dry_run / 被回滚 / 失败 ⇒ 整项省略，不给空数组）。
+  //   ★ 判别"是否落盘"的真源 = 产物 r.dry_run（Core 的 dryRun = input.dry_run ?? true，默认预演）。
+  if (!r.dry_run) {
+    const written = new Set<string>();
+    if (r.subsplit && r.subsplit.length > 0) {
+      // 编排模式：只列**拆分成功**（未被回滚）的类型单元产物（target_file 原文件 + new_file 新文件，均仓库相对）。
+      for (const s of r.subsplit) {
+        if (s.ok) {
+          if (s.target_file) written.add(s.target_file);
+          if (s.new_file) written.add(s.new_file);
+        }
+      }
+    } else if (!r.rolled_back && r.new_file) {
+      // 单次模式：new_file 非空 = 走过了成功路径（fail() 早退时 new_file=''，未写任何文件）；
+      //   rolled_back=true = 验收失败已回滚（原文件复原、新文件删除）⇒ 不列。
+      if (r.target_file) written.add(r.target_file);
+      written.add(r.new_file);
+    }
+    if (written.size > 0) touched.written_files = [...written];
+  }
+  return touched;
+}
+
+export async function deriveSplit(input: DeriveSplitInput): Promise<TouchedProduct<DeriveSplitResult>> {
+  const r = await deriveSplitCore(input);
+  return withTouched(r, touchedOf(input, r));
 }

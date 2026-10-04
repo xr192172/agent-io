@@ -17,6 +17,33 @@ export function textOut(text: string, isError = false) {
   return { content: [{ type: 'text' as const, text }], isError };
 }
 
+/**
+ * 合成 [B] 产物的**机器可读载荷**（含 `touched` 小票）。
+ *
+ * ★★ 为什么两个包装器都必须走这里（2026-10-05，**实测的真缺陷**，不是风格问题）：
+ *   `Touched`（"本次动了什么"）是**跨 [B] 的统一契约**（`domain/b_terms.ts`），但它挂在 [B] 产物的**顶层**；
+ *   而 `wrap` 只回 `message`、`wrapData` 只序列化 `r.data` ⇒ 产物顶层的 `touched` 会在 **[C] 层静默丢掉**。
+ *   **实测**：`detect_drift` / `edit_dsl` 用裸 `wrap` ⇒ 子代理刚给它们的 [B] 接上的 `touched`
+ *   **压根没出现在输出里**（同一批里用 `wrapData` + `data: r` 的工具则正常）。
+ *   ⇒ 处置：**在两个出口处统一合成**（结构保证）——**不是**"要求每个 handler 记得 `data: r`"（那是自觉）。
+ *
+ * 规则（可预测、不改既有形状）：
+ *   - 无 `data` 且无 `touched` ⇒ `undefined`（包装器退回"只回 message"，`wrap` 语义不变）。
+ *   - 有 `data`、无 `touched` ⇒ **原样返回 `r.data`**（既有 DATA 形状逐字不变）。
+ *   - 有 `touched` + `data` 是**普通对象** ⇒ `{...data, touched}`（**加法**，不动既有键）。
+ *   - 有 `touched` + 其它（`data` 为数组/标量/缺失）⇒ `{data, touched}`（`JSON.stringify` 会丢掉
+ *     值为 `undefined` 的键 ⇒ 于是自然退化成 `{"touched":…}`）。
+ */
+function machinePayload(r: { data?: unknown; touched?: unknown }): unknown {
+  const hasTouched = r.touched !== undefined;
+  if (r.data === undefined) return hasTouched ? { touched: r.touched } : undefined;
+  if (!hasTouched) return r.data;
+  const isPlainObject = typeof r.data === 'object' && r.data !== null && !Array.isArray(r.data);
+  return isPlainObject
+    ? { ...(r.data as Record<string, unknown>), touched: r.touched }
+    : { data: r.data, touched: r.touched };
+}
+
 /** 包装一个同步/异步纯函数调用为 handler（统一 try/catch；陈旧构建警告由 registerAllTools 统一注入，避免重复） */
 export function wrap(
   fn: (args: Record<string, unknown>) => { message: string; data?: unknown } | Promise<{ message: string; data?: unknown }>,
@@ -24,7 +51,10 @@ export function wrap(
   return async (args) => {
     try {
       const r = await fn(args);
-      return { text: r.message };
+      // ★ 产物带 `touched` 时**必须**让它出现在机器通道里（否则契约在 [C] 层静默丢失，见 machinePayload 头注）。
+      const payload = machinePayload(r as { data?: unknown; touched?: unknown });
+      if (payload === undefined) return { text: r.message };
+      return { text: [r.message, '---DATA---', JSON.stringify(payload)].join('\n') };
     } catch (e) {
       return { text: (e as Error).message, isError: true };
     }
@@ -40,9 +70,10 @@ export function wrapData(
       const r = await fn(args);
       const parts: string[] = [];
       if (r.message) parts.push(r.message);
-      if (r.data !== undefined) {
+      const payload = machinePayload(r as { data?: unknown; touched?: unknown });
+      if (payload !== undefined) {
         parts.push('---DATA---');
-        parts.push(JSON.stringify(r.data));
+        parts.push(JSON.stringify(payload));
       }
       return { text: parts.join('\n') };
     } catch (e) {

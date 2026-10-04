@@ -28,6 +28,7 @@ import { saveSnapshot, rollbackSnapshot, deleteSnapshot, saveAutoSnapshot, prune
 import { dagLayout, forceLayout, gridAlign } from '../workbench/dag_layout.js';
 import { resetSimulation } from '../lifecycle/simulation.js';
 import type { DiagramStatus } from '../../../domain/types.js';
+import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
 // ─────────────────────────────────────────────────────────────
 // 类型定义
@@ -94,7 +95,7 @@ export interface UpdateFeatureInput {
 // 主入口
 // ─────────────────────────────────────────────────────────────
 
-export function updateFeature(input: UpdateFeatureInput): EditResult {
+function updateFeatureCore(input: UpdateFeatureInput): EditResult {
   const { feature, operations } = input;
 
   if (!operations || operations.length === 0) {
@@ -133,6 +134,18 @@ export function updateFeature(input: UpdateFeatureInput): EditResult {
     ].join('\n'),
     feature,
   };
+}
+
+/** ★ 唯一的构造点：把"我动了什么"集中算一次，所有出口都从这一个地方出去 */
+function touchedOf(input: UpdateFeatureInput): Touched {
+  // 只给作用域类 feature：本工具改的是 **DSL（活文档）不是文件** ⇒ **不给 written_files**
+  //   （在 DSL 内存模型上落 saveDSL，不对应"仓库相对路径的源文件"；硬填会把"改了设计"谎报成"改了源码文件"）。
+  return { feature: input.feature };
+}
+
+export function updateFeature(input: UpdateFeatureInput): TouchedProduct<EditResult> {
+  const r = updateFeatureCore(input);
+  return withTouched(r, touchedOf(input));
 }
 
 // ─────────────────────────────────────────────────────────────

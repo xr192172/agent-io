@@ -14,10 +14,12 @@
  * 交叉验证信号（limitations）：分类学 vs 依赖分层的倒挂提示。
  */
 
+import path from 'node:path';
 import type { BrickifyResult } from './brickify.js';
 import type { ClusterNarratives } from './cluster_narrator.js';
 import { loadLlmConfig, callChat, loadExplainConfig } from '../../../infrastructure/llm_focus.js';
 import { defaultPipelineTaxonomy, slotIndex, type Taxonomy, type TaxonomySlot } from './taxonomy.js';
+import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
 export interface ClusterClassification {
   slot: string;
@@ -196,7 +198,7 @@ function crossValidate(
  * 主入口：功能簇 → 解剖学槽位归类，产出泳道视图（槽位→积木分组→簇，供渲染直接吃）。
  * LLM 缺席/失败 → 关键词启发式降级；启发式也命不中 → 诚实"未归类"桶。
  */
-export async function classifyBricks(
+async function classifyBricksCore(
   r: BrickifyResult,
   narratives: ClusterNarratives | undefined,
   opts: ClassifyOptions = {},
@@ -270,4 +272,23 @@ export async function classifyBricks(
       llmOk === 0 ? 'LLM 未配置/失败，当前为关键词启发式归类（mode=rule），置信度有限' : '',
     ].filter(Boolean),
   };
+}
+
+/** ★ 唯一的构造点：把"我动了什么"集中算一次，所有出口都从这一个地方出去 */
+function touchedOf(r: BrickifyResult): Touched {
+  const touched: Touched = {};
+  // 作用域类 project_dir：真源 = **入参 BrickifyResult.meta.project_dir**（brickify 产物里既有的项目根，
+  //   见 brickify.ts 的 BrickifyResult.meta）—— 不是兜底 cwd，也不是 opts（opts 只有 taxonomy）。
+  //   本工具无 feature 概念 ⇒ 不给 feature。
+  if (r.meta?.project_dir) touched.project_dir = path.resolve(r.meta.project_dir);
+  return touched;
+}
+
+export async function classifyBricks(
+  r: BrickifyResult,
+  narratives: ClusterNarratives | undefined,
+  opts: ClassifyOptions = {},
+): Promise<TouchedProduct<AnatomyResult>> {
+  const res = await classifyBricksCore(r, narratives, opts);
+  return withTouched(res, touchedOf(r));
 }

@@ -24,6 +24,7 @@ import path from 'node:path';
 import type { DesignDSL, SemanticFile, CodeTemplate, Node, ContentBlock } from '../../../domain/types.js';
 import { getDSL } from '../../../infrastructure/storage.js';
 import { snapshotAndRecordSelfWrite, syncSelfWritesSync, toRelPosix } from '../../observe/runtime/write_gate.js';
+import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
 export interface ScaffoldInput {
   /** feature 名 */
@@ -661,7 +662,7 @@ function generateInvariants(dsl: DesignDSL): string {
 // 主函数
 // ─────────────────────────────────────────────────────────────
 
-export function scaffold(input: ScaffoldInput): ScaffoldResult {
+function scaffoldCore(input: ScaffoldInput): ScaffoldResult {
   const { feature, output_dir, overwrite, ui_framework: inputUiFramework } = input;
 
   const dsl = getDSL(feature);
@@ -816,4 +817,32 @@ export function scaffold(input: ScaffoldInput): ScaffoldResult {
   ].join('\n');
 
   return { message, files: generatedFiles, dir: outDir };
+}
+
+/** ★ 唯一的构造点：把"我动了什么"集中算一次，所有出口都从这一个地方出去 */
+function touchedOf(input: ScaffoldInput, r: ScaffoldResult): Touched {
+  const touched: Touched = {};
+  // 作用域类（⇒ 随时可给）：feature 必填入参；
+  //   project_dir 只认入参 project_dir（= 索引归属的项目根）—— ★ **不拿 output_dir 冒充**
+  //   （output_dir 是产物输出目录，可能就是 `<cwd>/scaffold/<feature>`，不是被分析的项目根）。
+  touched.feature = input.feature;
+  if (input.project_dir) touched.project_dir = path.resolve(input.project_dir);
+  // 对象类 written_files：**只列真落盘的**（r.files 里带 "(跳过，已存在)" 的项未写 ⇒ 剔除）。
+  //   契约要求**仓库相对路径** ⇒ 以 project_dir 为基换算（复用本文件已用的 toRelPosix）。★ 没给
+  //   project_dir 时省略整个字段——不把绝对路径塞进"仓库相对"槽位（那是换口径，不是更弱的答案）。
+  if (input.project_dir) {
+    const written = new Set<string>();
+    for (const f of r.files) {
+      if (f.endsWith(' (跳过，已存在)')) continue;
+      const rel = toRelPosix(input.project_dir, f);
+      if (rel) written.add(rel);
+    }
+    if (written.size > 0) touched.written_files = [...written];
+  }
+  return touched;
+}
+
+export function scaffold(input: ScaffoldInput): TouchedProduct<ScaffoldResult> {
+  const r = scaffoldCore(input);
+  return withTouched(r, touchedOf(input, r));
 }
