@@ -6466,3 +6466,110 @@ vi.mock 行 → vi.mock('../src/sub/a.js', () => ({ a: 2 }));   ✅ 被改写
 |---|---|
 | `node scripts/preflight_move.mjs <file>` | 三面判据全对 |
 | `npx tsc --noEmit` | 0（脚本改动不影响） |
+
+---
+
+### 44.46 ★★★ 「正则是不是必须的？该 AST 的地方你用了正则」—— 实证 + 同生态对照片（2026-10-04）
+
+#### 用户的原话
+
+> 「散在正则里。正则这个东西我一直在说。**很难用啊**，就是你非常喜欢依赖正则，但是你**的正则用得很糟糕，喜欢四处乱放**。
+>  然后**喜欢用单一的正则去替代可能性非常多、需要解析的文件**。
+>  包括前面的 AST，**有很多明明 AST 解析得更好的，你非要手写正则**。
+>  这里面的话，**这个正则是不是必须正则，而不是 AST**。」
+
+#### 一、他的指控成立，而且我自己的探针**实证**了
+
+`rename_file.ts` 原来那行（**它就是该用 AST 的地方**）：
+
+```ts
+if (fn && /^(require(\.resolve)?|import|vi\.(?:mock|…))$/.test(fn.text.trim())) { … }
+```
+
+★ `fn` **本来就是 AST 节点**，我却把它降级成**文本**再正则匹配。探针四例（2026-10-04）：
+
+| 源码 | `fn.text`（节点文本） | AST 取到的名字 | **旧正则判定** |
+|---|---|---|---|
+| `vi.mock('./a.js')` | `vi.mock` | `vi.mock` | ✅ |
+| ★ `vi . mock('./b.js')` | `vi . mock` | **`vi.mock`** | ❌ **漏** |
+| `require.resolve('./c.js')` | `require.resolve` | `require.resolve` | ✅ |
+| ★ `vi .mock("./d.js")`（含**换行+tab**） | `vi\n\t.mock` | **`vi.mock`** | ❌ **漏** |
+
+⇒ ★★ **AST 4/4 对，正则 2/4 错**，而且**错的时候是静默的**（那处引用根本不会被改写、没有任何提示）。
+`vi . mock(...)` 是**合法 JS**（格式化工具、手写、跨行都会产生）。
+
+★★ **本仓其实早就表过态**（两处，都没传到这行代码上）：
+- `rename_file.ts` 头注：「`parseAstRoot` 定位 import 源字面量的字节偏移，**避免正则误改**注释/字符串」
+- `kernel.ts` 的 `SyntaxNodeLike.isNamed` 注释：「关键字 type 也是纯字母，**`\w` 正则无法区分**」
+
+#### 二、判据：**什么时候该 AST，什么时候正则不是罪**
+
+| 场合 | 用什么 | 理由 |
+|---|---|---|
+| 判"**某个语法结构**"（调用/成员访问/字符串字面量/声明） | ★ **读 AST 结构** | 语法是**结构**，把它拍平成文本再匹配 = **主动丢信息** |
+| 判"**文本里有没有某个模式**"（注释/文档/日志/无语法处） | 正则 | 那些地方本来就没有语法 |
+| ★ **扫描前的"粗筛定位"** | **正则** | ★ **TS 官方自己也这么干**（见下），关键是**粗筛之后要用结构确认** |
+
+#### 三、改法：AST 结构 + **显式的表**
+
+```ts
+const SPECIFIER_APIS: ReadonlySet<string> = new Set([
+  'require', 'require.resolve', 'import',                    // 语言级
+  'vi.mock', 'vi.doMock', 'vi.unmock', 'vi.importActual', …  // vitest
+]);
+const name = calleeName(fn);   // ★ 读 AST：identifier / member_expression(object, property) / import 关键字节点
+if (SPECIFIER_APIS.has(name)) { … }
+```
+
+★ **改造中我自己踩了一个坑（被测试抓回来）**：`import('./x')` 的函数节点 **`type === "import"`**（tree-sitter 的**关键字节点**），
+**不是 `identifier`** ⇒ 我第一版只认 identifier/member_expression，**把 `import()` 全漏了**（旧代码用 `fn.text` 恰好兜住）。
+`tests/tools/rename_file.test.ts` 的 **T12 用例**当场红了 ⇒ **那一版是把"文本兜底"改成"纯结构"时弄丢的**。
+⇒ 补：`/^[A-Za-z_$][\w$]*$/` 兜底（只接受单个词，且结果**只用于查表**，不会误判）。
+
+#### 四、同生态对照片（子代理调研，逐条带出处）
+
+| 问 | 答（有出处） |
+|---|---|
+| **serena 有这个工具吗** | ★ **有，但只在 JetBrains 后端**（LSP 后端无 move）；引用查找走 **LSP `textDocument/references`**，对字符串字面量路径**无任何特判**；边界只在它的评测文档里被侧面承认（LSP 只给代码引用，找字符串/注释要靠 `rg`） |
+| **LSP 会不会含字符串路径** | ★★ **TS 只认文法级模块说明符**（`import`/`export … from`、`import x = require()`、`require()`、`import()`、类型位 `import("…")`），**不含 `vi.mock`/`expect`** —— 有 TS v5.4.5 **源码级铁证**（`program.ts` / `getEditsForFileRename.ts` / `findAllReferences.ts`） |
+| **别的开源怎么做** | jscodeshift 无关；ts-morph 的"字符串引用"数据源**仍是 TS 的 `sourceFile.imports`**；comby/ast-grep/gritql 无引用语义；**IntelliJ 的 Move File 只有 `Search for references`**（"Search for text occurrences" 在 Rename File / Move Class 才有）—— ★ **纠正了我原先的记忆**；VS Code 只更新 import |
+| **"按能否解析判"有先例吗** | ★ **有**：`ts-shove`（宽松调用启发式 + **解析到项目内文件才改**）、`eslint-plugin-jest` 的 `valid-mock-module-path`（固定 API + 解析） |
+| **注册/插件化的表** | 通用工具**未找到**；最接近 **vitest `hoistMocksPlugin`** 的可配置方法名数组（`utilsObjectNames` / `hoistableMockMethodNames`） |
+
+★★ **TS 官方自己的做法值得记**：`collectDynamicImportOrRequireCalls` 用**正则 `/import\|require/g` 定位**，
+再**判节点类型**确认 ⇒ **"正则粗筛 + 结构确认"**。**所以问题不在"用没用正则"，在"有没有结构确认"。**
+
+#### 五、顺带补的一个真缺口：`vi.mock(import('./x'))`
+
+**出处 1（官方文档，硬）**：vitest.dev《Mocking Modules》WARNING 逐字：
+> 「**Always pass `import('./db.js')` rather than a plain string `'./db.js'`.** … **As a bonus, if you rename
+>  or move the file in your IDE, the import path will be updated automatically. If you use a string, you
+>  lose both the type safety and the automatic refactoring.**」
+
+**出处 2（由来）**：vitest-dev/vitest **#5671**「Mock module with import(path) to be resistant to file renaming」
+(zirkelc, 2024-05-05)：「the import statements are updated **but the mocks are not**. That means
+**suddenly, the tests fail and it may not be obvious why**.」（"Suggested solution" 是**提议者提的**，非官方定论。）
+
+⇒ 既然官方**明文推荐**这个写法，工具就**必须认**：`vi.mock(import('./x'))` 的第 1 实参是**调用**不是字面量。
+新增 `literalOfSpecifierArg()` **穿透 `import(...)`/`await`** ⇒ 实测三种写法全改：
+
+```
+vi.mock(import('../src/sub/a.js'), …)        ✓
+vi.mock(await import('../src/sub/a.js'), …)  ✓
+vi.mock('../src/sub/a.js', …)                ✓
+```
+
+#### 六、★ 我这一轮自己犯的错（必须记）
+
+我把调研结论（serena / ts-shove / #5671 的日期 / IntelliJ 的两个勾选项）**先写进了代码注释，而那时子代理还没回来**——
+**把"我推断的"写成了"我读到的"**。发现后**逐条回查**：大体属实，但**"官方给出的解法"这句措辞过强**
+（issue 里那条是**提议者**的 Suggested solution；**官方文档的 WARNING 才是硬出处**）⇒ 注释已改成**双出处 + 标明哪个是提议**。
+
+#### 验证
+
+| 量具 | 结果 |
+|---|---|
+| 探针（四例） | AST 4/4 对 / 正则 2/4 错 |
+| 探针（三种 `vi.mock` 写法） | ✅ 三条都改（含 `import()` 与 `await import()`） |
+| `npx tsc --noEmit` | 0 |
+| `npm run test:main` | **217 文件通过 / 1 跳过 ｜ 2171 项通过 / 5 跳过 ｜ 0 失败** |

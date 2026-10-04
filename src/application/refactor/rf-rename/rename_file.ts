@@ -154,8 +154,121 @@ function newPySpecifier(importerRel: string, newRelNoExt: string): string {
   return dots + modulePart;
 }
 
-/** 提取一个 import 语句源字面量（TS/JS）：返回 { text(含引号), inner, startIndex } 或 null */
-function importSourceLiteral(node: SyntaxNodeLike): { startIndex: number; text: string; inner: string } | null {
+/**
+ * 「**这个 API 的第 1 个参数是模块说明符**」—— 一份**显式的表**（取代原先散在正则里的白名单）。
+ *
+ * ★★ 为什么**只能**这样枚举（两次实测换来的，别再想着"放宽成按参数像不像路径判"）：
+ *   `expect('./a.js')` 与 `vi.mock('./a.js')` **字面完全一样** —— 一个是**数据**、一个是**引用**。
+ *   全仓实测：把判据放宽成"任何函数调用的第 1 实参是相对路径"⇒ 命中 44 处，
+ *   其中 **8 处 `expect(`（测试断言里的字符串）+ 2 处 `URL(` + 1 处注释里的例子** ⇒ **误伤**。
+ *   ⇒ **唯一的区分依据就是"被谁调用"**。所以"枚举 API 名"是这个问题**绕不开的形态**，不是偷懒。
+ *
+ * ★ 为什么"模块引用"这个属性**在世界里就是关系、不是值**：
+ *   同一个字符串 `'./a.js'` 可以是模块说明符（`from` / `require` / `vi.mock`）、
+ *   也可以是 fs 路径实参（`path.resolve(x, './a.js')`）、命令行参数（`spawnSync('go', ['./...'])`）、
+ *   断言数据（`expect('./a.js')`）。**光看值判不出来**。
+ *
+ * ★ 换测试框架 / 换语言包时，**在这里加一行**即可（不是"注册框架"——是"登记一个约定"）。
+ */
+const SPECIFIER_APIS: ReadonlySet<string> = new Set<string>([
+  // ── 语言级：CommonJS / dynamic import（`import()` 也覆盖"类型位置的内联 import"）──
+  'require',
+  'require.resolve',
+  'import',
+  // ── vitest 的模块 mock 族（本仓用 vitest）──
+  'vi.mock',
+  'vi.doMock',
+  'vi.unmock',
+  'vi.importActual',
+  'vi.importMock',
+  // 用 jest 之类就再加：'jest.mock' / 'jest.unmock' / 'jest.doMock' …
+]);
+
+/**
+ * 取"被调函数"的**结构化名字**：`vi.mock` / `require.resolve` / `import` / `myMock`。
+ *
+ * ★★ **必须走 AST 结构，不能拿 `fn.text` 去正则匹配** —— 实测（2026-10-04，探针四例）：
+ *
+ *   | 源码                        | `fn.text`（节点文本） | AST 取到的名字 | 旧正则判定 |
+ *   |---|---|---|---|
+ *   | `vi.mock('./a.js')`         | `vi.mock`              | `vi.mock`      | ✅ |
+ *   | `vi . mock('./b.js')`       | `vi . mock`            | `vi.mock`      | ❌ **漏** |
+ *   | `require.resolve('./c.js')` | `require.resolve`      | `require.resolve` | ✅ |
+ *   | `vi .mock("./d.js")`（含换行+tab） | `vi\n\t.mock`  | `vi.mock`      | ❌ **漏** |
+ *
+ *   ⇒ **AST 4/4 对，正则 2/4 错**，而且错的时候**静默**（那处引用**不会被改写**，没有任何提示）。
+ *   `vi . mock(...)` 是**合法 JS**（格式化工具、手写、跨行都会产生）。
+ *
+ * ★ 本仓内核早就表过这个态（`SyntaxNodeLike.isNamed` 的注释）：
+ *   「关键字 type 也是纯字母，**`\w` 正则无法区分**」—— 凡是**有语法结构**的地方，就该读结构。
+ */
+function calleeName(fn: SyntaxNodeLike | null): string | null {
+  if (!fn) return null;
+  if (fn.type === 'identifier') return fn.text; // 如 require / myMock
+  if (fn.type === 'member_expression') {
+    const obj = fn.childForFieldName('object')?.text ?? '';
+    const prop = fn.childForFieldName('property')?.text ?? '';
+    return obj && prop ? `${obj}.${prop}` : null;
+  }
+  // ★★ `import(...)` 的函数节点 **`type === 'import'`**（tree-sitter 的**关键字节点**），
+  //   **不是 `identifier`** —— 实测（2026-10-04，探针三例）：
+  //     `import('./a.js')`        ⇒ fnType=`import`,      fnText=`import`
+  //     `import('./b.js').T`（类型位置内联）⇒ 同上
+  //     `require('./c.js')`       ⇒ fnType=`identifier`,  fnText=`require`
+  //   ⇒ 只认 identifier/member_expression 会**静默漏掉所有 `import()`**（2026-10-04 那笔改造就踩了，
+  //     靠 `tests/tools/rename_file.test.ts` 的 T12 用例抓回来 —— **那一版是我把文本兜底改成结构时弄丢的**）。
+  //   兜底：**单个词**才接受（防 `a . b` 这类混合形态混进来）；★ 结果只用于查 `SPECIFIER_APIS` 表
+  //   （表里只有约定名）⇒ 即便放宽也不会误判。
+  return /^[A-Za-z_$][\w$]*$/.test(fn.text) ? fn.text : null;
+}
+
+/**
+ * 取"某个实参里的模块说明符字面量"，并能**穿透 `import(...)` 这层包装**。
+ *
+ * ★★ 为什么需要穿透（2026-10-04 查证）：**vitest 官方文档明确推荐写 `vi.mock(import('./x'))`**。
+ *
+ *   **出处 1（官方文档，硬）**：vitest.dev《Mocking Modules》的 WARNING 逐字：
+ *     「**Always pass `import('./db.js')` rather than a plain string `'./db.js'`.**
+ *       When you use `import()`, TypeScript can infer the module's types…
+ *       **As a bonus, if you rename or move the file in your IDE, the import path will be
+ *       updated automatically. If you use a string, you lose both the type safety and the
+ *       automatic refactoring.**」
+ *     ⇒ ★ 官方**明文说"用字符串会失去自动重构"** —— 等于承认这是生态盲区，并把 `import()` 当逃生舱。
+ *
+ *   **出处 2（由来，issue）**：vitest-dev/vitest **#5671**「Mock module with import(path) to be
+ *     resistant to file renaming」(zirkelc, 2024-05-05) 逐字：
+ *     「the import statements are updated **but the mocks are not**. That means **suddenly, the
+ *       tests fail and it may not be obvious why**.」
+ *     —— ★ 这正是本仓 2026-10-03 实测撞到的同一件事（`vi.mocked(...).mockImplementation is not
+ *     a function`，跑全量才暴露）。该 issue 的 **"Suggested solution" 是提议者提的**（不是官方定论）。
+ *
+ *   ⇒ 两种写法都要认：`vi.mock(import('./x'))` / `vi.mock(await import('./x'))`。
+ */
+function literalOfSpecifierArg(
+  node: SyntaxNodeLike | null,
+  depth = 0,
+): { startIndex: number; text: string; inner: string } | null {
+  if (!node || depth > 3) return null;
+  const direct = stringLiteral(node);
+  if (direct) return direct;
+  // 剥一层包装（`await import(...)` / `(import(...))` / `import(...) as X`）—— 都只有一个"被包住的表达式"
+  const unwrapField = node.childForFieldName('argument');
+  const inner = unwrapField ?? node.child(1) ?? node.child(0);
+  if (node.type !== 'call_expression' && inner) return literalOfSpecifierArg(inner, depth + 1);
+  // `import('./x')` 本身：取它自己的实参，再进一层
+  if (node.type === 'call_expression' && calleeName(node.childForFieldName('function')) === 'import') {
+    const args = node.childForFieldName('arguments');
+    if (args) {
+      for (let i = 0; i < args.childCount; i += 1) {
+        const got = literalOfSpecifierArg(args.child(i), depth + 1);
+        if (got) return got;
+      }
+    }
+  }
+  return null;
+}
+
+/** 提取一个 import 语句源字面量（TS/JS）：返回 { text(含引号), inner, startIndex } 或 null */function importSourceLiteral(node: SyntaxNodeLike): { startIndex: number; text: string; inner: string } | null {
   const lit = stringLiteral(node.childForFieldName('source'));
   if (lit) return lit;
   // require('../x') / require.resolve('../x') / **import('../x')**：call_expression 没有 source 字段，
@@ -182,12 +295,16 @@ function importSourceLiteral(node: SyntaxNodeLike): { startIndex: number; text: 
   //     那类无法判断"这个字符串是不是路径"，泛化会引入误改；它们的正解是**别把路径存成数据**
   //     （见 `sync_contracts.resolveImplPath()`：按 basename 现算，天然不会因搬迁过期）。
   if (node.type === 'call_expression') {
-    const fn = node.childForFieldName('function');
-    if (fn && /^(require(\.resolve)?|import|vi\.(?:mock|doMock|unmock|importActual|importMock))$/.test(fn.text.trim())) {
+    // ★★ 2026-10-04：原来是 `fn.text.trim()` + 一条正则 —— **那是把已有语法结构降级成文本再匹配**，
+    //   实测会**静默漏**（`vi . mock('./x')` / 跨行的 `vi .mock(...)`，见 `calleeName` 的注释）。
+    //   改成读 AST 结构 + 查 `SPECIFIER_APIS` 表 ⇒ 与空白、书写风格、跨行都无关。
+    if (SPECIFIER_APIS.has(calleeName(node.childForFieldName('function')) ?? '')) {
       const args = node.childForFieldName('arguments');
       if (args) {
         for (let i = 0; i < args.childCount; i++) {
-          const lit2 = stringLiteral(args.child(i));
+          // ★ 用 `literalOfSpecifierArg` 而不是 `stringLiteral`：穿透 `vi.mock(import('./x'))`
+          //   —— 那是 **vitest 官方推荐的写法**（见该函数的注释与 issue #5671）。
+          const lit2 = literalOfSpecifierArg(args.child(i));
           if (lit2) return lit2;
         }
       }

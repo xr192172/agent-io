@@ -119,7 +119,11 @@ function looksLikePath(line, k) {
 function specsTargetingOld(oldRel, repoRoot) {
   const oldNoExt = oldRel.replace(/\.[^./]+$/, '');
   const NOT_A_SPEC = /(path\.(resolve|join|dirname|relative|normalize|isAbsolute)|spawn|exec|readFile|writeFile|existsSync|mkdir|cwd\()/;
-  const COVERED = /(\bfrom\s*['"]|\brequire(\.resolve)?\s*\(|\bimport\s*\(|\bvi\.(mock|doMock|unmock|importActual|importMock)\s*\()/;
+  // ★★ 与 `src/application/refactor/rf-rename/rename_file.ts` 的 `SPECIFIER_APIS` **同源**（那是权威）：
+  //   本脚本是**文本级**扫描（不做 AST），所以这里只能用正则近似 —— 故**刻意写宽**（容忍 `vi . mock(` 这类空白）：
+  //   宽了只会把"其实已覆盖"的报成"漏网"（人是看得到的假阳性，无害）；
+  //   窄了会把"真漏网"咽掉（那是静默失效，正是本档要消灭的东西）。**宁可假阳性。**
+  const COVERED = /(\bfrom\s*['"]|\brequire\s*(?:\.\s*resolve\s*)?\(|\bimport\s*\(|\bvi\s*\.\s*(?:mock|doMock|unmock|importActual|importMock)\s*\()/;
   const out = [];
   for (const abs of walk(repoRoot)) {
     const rel = path.relative(repoRoot, abs).split(path.sep).join('/');
