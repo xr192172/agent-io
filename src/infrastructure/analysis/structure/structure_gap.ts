@@ -19,8 +19,12 @@
  *   `missing`   目标声明了某域，但那个目录还不存在/域里没有源码 —— 与 misplaced 一体两面：
  *               搬迁完成 ⇒ 目录出现、misplaced 归零、本项自然消失；若并不打算建 ⇒ 配置写错。
  *
- * ★ `flatDirs`（有意平铺的目录）**不是免检白名单**：它声明"这里的散文件是终态"，因此它的
- *   **子目录必须被登记** —— 出现了却没登记 ⇒ 报 `unlisted`。这是 flat 唯一的可证伪点。
+ * ★★ `unlisted` 的判据（★★ 2026-10-04 **重写** —— 原版在报假绿）：**任何**目录都必须是
+ *   「域」或「某个域的祖先容器」，两者都不是 ⇒ 报 `unlisted`。
+ *   原版只遍历 `flatDirs` 的子目录 ⇒ **只覆盖了 `src/infrastructure` 一个容器**，
+ *   其余 4 个容器的子目录从未被查过 ⇒ 读数 `unlisted: 0` 而实际有 **23 个目录**没登记。
+ *   ★ 教训：判据的**扫描面**必须与它声称的**管辖面**一致 —— 声称管"整仓结构"却只扫了一个容器，
+ *     就是"保险自己失效"。详见 ③ 段注释。
  *
  * ★ 两种"没有"必须分开（否则就是兜底）：
  *   · 配置文件**不存在** ⇒ `configured:false`（**这是合法状态**：项目没声明结构意图，不是失败）
@@ -185,23 +189,44 @@ export function computeStructureGap(projectDir: string, cfg: StructureDomainsCon
     }
   }
 
-  // ③ flat 目录**不是免检**：它声明了"这里是平铺的"，所以它的子目录必须被登记
-  //    ★ 判"子目录已登记"的**方向**很重要：`dd === rel || dd.startsWith(rel + '/')`（登记项在它下面）。
-  //      若反向也认（`rel.startsWith(dd + '/')`），flat 自己的 dir 会前缀命中**所有**子目录
-  //      ⇒ 6 个未登记容器全部漏报（本判据的出生证就是为抓这个写的）。
-  for (const f of flat) {
-    const dirAbs = absOf(projectDir, f.dir);
-    if (!fs.existsSync(dirAbs)) continue;
+  // ③ 未被登记的目录 = **归属未定的家**（★★ 2026-10-04 重写，原判据报假绿）
+  //    ★ 原判据只遍历 `flatDirs` 的子目录 ⇒ 实际只覆盖了 `src/infrastructure` **一个**容器，
+  //      而 `src/application` / `src/infrastructure/analysis` / `src/presentation` / `src/tools`
+  //      这 4 个容器的子目录**从未被检查** ⇒ 读数 `unlisted: 0` 是**假绿**。
+  //      （实测：真有 23 个目录、约 90 个源码文件不在任何域里；`src/tools/` 尤其扎眼 ——
+  //        T11 声称"工具实现已全部搬离 src/tools/"，实际还剩 4 个文件。）
+  //    ★ 正确判据**与 flat 无关**：对声明的根整棵树递归，一个目录 D 只有两种活法 ——
+  //        (a) 它自己被登记（`dd === D`）
+  //        (b) 它是某个登记项的**祖先**（`dd.startsWith(D + '/')`，即纯容器）
+  //      两者都不满足 ⇒ D 就是"没人要的家" ⇒ 报，并**不再深入**（整体处置它，子目录命运随之而定）。
+  //    ★ 为什么判"已登记"的方向必须是「登记项在它下面」：若反向也认（`D.startsWith(dd + '/')`），
+  //      `src` 会前缀命中**所有**目录 ⇒ 整条判据恒真、永远报 0（恒真的门不是门）。
+  const isDeclared = (rel: string): boolean => declaredDirs.includes(rel);
+  const isContainer = (rel: string): boolean => declaredDirs.some((dd) => dd.startsWith(`${rel}/`));
+  const roots = [...new Set(declaredDirs.map((d) => d.split('/')[0]))].sort();
+  const walkForUncovered = (rel: string): void => {
+    const dirAbs = absOf(projectDir, rel);
+    if (!fs.existsSync(dirAbs)) return;
     for (const e of fs.readdirSync(dirAbs, { withFileTypes: true }).sort((a, b) => (a.name < b.name ? -1 : 1))) {
       if (!e.isDirectory()) continue;
-      const rel = path.posix.join(f.dir, e.name);
-      if (declaredDirs.some((dd) => dd === rel || dd.startsWith(`${rel}/`))) continue;
+      const child = path.posix.join(rel, e.name);
+      if (isContainer(child)) {
+        // ★★ **容器优先**：只要有登记项（域或 flat）落在它下面，就**必须进去继续查它的子目录**。
+        //   ★ 为什么 `flatDirs` 的成员也必须递归：flat 的语义正是「直属 .ts 是终态，
+        //     **子目录必须被登记**」—— 它是容器，不是叶子。把它当"已登记就跳过"是本判据的
+        //     第三个盲区（前两个：只看 flat 的子目录、容器被跳过不递归）：
+        //     `src/infrastructure` 是 flat ⇒ 被跳过 ⇒ `analysis/` 下 9 个未登记子域全部漏报。
+        walkForUncovered(child);
+        continue;
+      }
+      if (isDeclared(child)) continue; // 纯域（其下再没有子域）⇒ 叶，其内部由 ① / ② 判
       unlisted.push({
-        path: `${rel}/`,
-        note: `flat 目录 ${f.id}(${f.dir}) 里长出的子目录，没登记 —— 要么给它登记（域，或它自己也是 flat），要么这个目录不该标 flat`,
+        path: `${child}/`,
+        note: '没在任何域里登记 —— 既不是域，也不是某个域的祖先容器。要么给它登记（域 / flat），要么它不该在这里',
       });
     }
-  }
+  };
+  for (const r of roots) walkForUncovered(r);
 
   return {
     config_path: STRUCTURE_CONFIG_BASENAME,
