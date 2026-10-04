@@ -152,9 +152,27 @@
         `rename_file` / `rename_files` / `rename_symbol` / `rename_symbols` / `find_references` 五个 [B] 已接上 `Touched`。
         ★ 当年那支出生证测试（`tests/tools/touched_contract.test.ts`）**已随测试框架整体移除**（2026-10-05）
         ⇒ 现在验证靠**真调工具**（`node dist/.../cli.js <tool> --json '{...}'`）。
-      · (2) **接着按族推**：④-c design → ④-d harvest（根别名最多）→ ④-e 其余 + **棘轮收紧**
-        （新增 [B] 必须给 `touched`）。★ 每族照 ④-b 的办法：**先定形状 → 1 文件 1 个子代理并行 → 我串行核验/验证/提交**。
-      · (3) 按各条的 `fix` **还债**，优先三个最刺眼的：`files`（6 义）/ `stats`（5 义）/ `written`（布尔与列表混用）。
+      · ✅ **(2) ④-c design 族已做（2026-10-05，commit `f4e21c6`）**：7 个 [B] 接上（`deriveAlgorithm` / `deriveSplit`
+        / `updateFeature` / `detectDrift` / `setDesignIntent` / `scaffold` / `classifyBricks`）。
+        ★★ **本笔最重要的不是那 7 个 [B]，而是抓到并修掉了一个洞**——
+        `Touched` 挂在 [B] 产物**顶层**，而 **`wrap` 只回 message、`wrapData` 只序列化 `r.data`**
+        ⇒ **产物顶层的 `touched` 会在 [C] 层静默丢掉**（实测 `detect_drift` / `edit_dsl` 用裸 `wrap` ⇒ 压根没输出）。
+        已在 `plumbing.ts` 用 `machinePayload()` **两个包装器共用**收口；并补了 `dispatch.ts` 的
+        **daemon 路径**（它重建 `{message, feature}` ⇒ 会造出"有没有 daemon 决定 touched 在不在"的分叉）。
+        ⇒ **纪律（新）**：**[B] 接了契约 ≠ 交付；还要看 [C] 是否把它透出去。**
+        ⇒ **棘轮口径建议收窄**：「新增 [B] 必须给 `touched`」应改为
+        「**除非它不产生"本次动了什么"（纯计算/纯数据）—— 那种要在 `B_TERMS` 里显式登记为例外**」，
+        否则会逼人造假字段（实例：`wizardSteps` 静态表 / `dagLayout` 纯计算）。
+        ⇒ 并记：**`manageFeature` 是 [C] 级分派器，不是 [B]**（入参 `{action,args}` + 产物 `{message,data:unknown}`
+        都是 [C] 形态）⇒ **不接 `touched`**。
+      · ⏳ (2) 续：**④-d harvest → ④-e 其余** + 棘轮收紧。★ 每族照 ④-b 的办法：
+        **先定形状 → 1 文件 1 个子代理并行 → 我串行核验/验证/提交**。
+      · ✅ **(3) 还债：7 个里已改 5 个（2026-10-05，commit `c55f607`）** ——
+        `files`(报告数组) ⇒ `contract_reports` / `reconcile_reports` / `removal_reports`；
+        `stats` ⇒ `contract_stats` / `closure_stats` / `reconcile_stats`；`written`(文件表那一义) ⇒ `written_files`。
+        ★ 判据是**类型 + 语义**（3 处 `files` 经查全是**报告数组**，不是路径表 ⇒ 一律 `<领域>_reports`）。
+        **剩 2 个在 design 族**（`deriveAlgorithm.stats` / `scaffold.files`）—— 需单开一笔（避开与 ④-c 撞车）。
+        ★★ **全改完再一起摘 `b_terms.ts` 里那三条 `debt: true` 标记。**
       · (4) ★ **④-b 暴露的同源缺口**（都在"**Core 内部算出的东西没进产物**"这一点上）：
         · `rename_symbols` 的 local 支 / apply_literals 支 ⇒ 给不出仓库相对的完整文件表 ⇒ 只能整项省略；
         · `rename_symbol` / `find_references` ⇒ 入参没给 `project_dir` 时，Core 推导出的根拿不到 ⇒ 只能省略。
@@ -419,6 +437,15 @@
       ⇒ **判据**：`grep -rn "readAssemblyBricks\|BrickFoldInfo\|assembly\.json" src` 应只剩删除后的零引用；
         `tsc` 0；`npm run build` 0；`npm run structure:gap` 三态仍全 0。
       ⇒ ★ 与 **T41**（报错口吻）不同族：这是**死路清尾**，属"删族"的尾巴（见 `dc-remove-tool` §一）。
+
+- [ ] **T46 ★ `dead_statements.ts` 里还有第 7 种 `files`（还债的尾巴，2026-10-05 由执行者上报）**
+      *(核实：`grep -n "files" src/infrastructure/analysis/deadcode/dead_statements.ts` —— 实测 **3 处**。)*
+      ⇒ 同一文件里：`files?: string[]`（:199，**路径表**语义待定）· `files: DeadStatementsChange[]`（:258，**报告数组**）
+        · `files: DeadStatementReport[]`（:273，**报告数组**）。
+      ⇒ 处置：两个报告数组 ⇒ `<领域>_reports`；那个 `string[]` **先查是"读过"还是"写过"的路径**再定
+        `read_files` / `written_files`（★ 判据是类型 + 语义，不是名字）。
+      ★ 它不在 `application/**` ⇒ **按 `dc-add-tool` 的 [B] 定义它不是 [B]**（是 infrastructure 里的产物类型），
+        所以本轮 5 个 [B] 的清单里没有它 —— 但它同样是"被污染的名字"，属同一族债。
 
 - [ ] **T45 ★ 术语表机检报出 2 个未定义共用字段名：`error` / `touched`**（2026-10-05 首次非零）
       *(核实：`node scripts/measure_b_contract.mjs` 的**机检**行，实测 `共用 42 / 有定义 40 / ★未定义 2`。)*
