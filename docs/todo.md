@@ -173,19 +173,30 @@
         **显式重建** ⇒ 丢掉顶层 `touched`（实测 `diff_views` 的 DATA 里确实没有）⇒ 已转发。
         ⇒ 并量清全貌：`handlers.ts` 里**只有 2 个**这种形态（另一个 `observeTraceHandler` 属"不该给"）。
 
-★★★ **④-e 的判定表（2026-10-05，经"跨模型对账"修正）**
+★★★ **④-e 的判定表（2026-10-05；★ 经两次独立复核修正）**
 
-**不该给 `touched` 的 8 个**（三类）：
+**不该给 `touched` 的 7 个**（三类）：
 - **① [C] 级分派器（3）**：`manageFeature` · `exploreCode` · `queryFeature`
   ⇒ ★★ **判据（比"有没有 switch"锋利）**：**入参 `{action/query + 袋子}`** **并且** **产物 `data: unknown`**。
   （`editCode` 也用 `op` **if 链**分派，但产物是 **`{message; data: EditReceipt}`（有类型）** ⇒ **不是这一类**。）
   ⇒ 正确做法：`touched` 由**被分派到的真 [B]** 携带，分派器**转发**即可，不自己拼。
-- **② 纯数据 / 纯计算（3）**：`wizardSteps`（无入参静态表）· `classifyTools` · `collectFunctions`。
+- **② 纯数据 / 纯计算（2）**：`wizardSteps`（无入参静态表）· `collectFunctions`。
 - **③ 根只能靠 `cwd` 兜底（2）**：`observeTrace` · `runTests` —— ★ 本仓**禁 cwd 兜底**（cwd 是"另一个项目"）
   ⇒ 根**算给不出**；且二者无仓库相对的对象。
 
-**该给（29，含已做的 14）**。★ **棘轮口径的完整例外**：
+**该给（30）**。★ **棘轮口径的完整例外**：
 「新增 [B] 必须给 `touched`，**除非**它是 **(a) 纯数据/纯计算** 或 **(b) [C] 级分派器** —— 两种都要在 `B_TERMS` 里显式登记」。
+
+★★ **`classifyTools` 曾被误判进"纯数据"（2026-10-05，commit `b8371ad` 修正）**：
+`classifyTools(tools, **r: BrickifyResult**, opts)` —— ★ **它和 `classifyBricks` 拿的是同一个 `BrickifyResult`**，
+有**一模一样的现成根锚点**（`r.meta.project_dir`）⇒ 一个判"该给"一个判"不该给"**自相矛盾**。
+★ **我的病根**：只看量具报的"3 个位置参数 `[tools, r, opts]`"，**没去看 `r` 是什么类型**。
+⇒ **教训：位置参数更要把类型看清**（具名参数至少名字带提示）。
+★ 且它**只有一个调用方**（`brickify_cli.ts:185`），那条 CLI **不打印 `touched`** ⇒ 是**给未来接链用的**，今天观察不到。
+
+★ **另一条更值钱的（同类，本笔才修）**：`watchProjectTool.declare` **真写** `<projectRoot>/.agent-io/impact/ledger.json`
+（**确实在仓库内**），却不给 `written_files`，理由**只写在代码注释里** ⇒
+**「判据正在被使用，却没写进契约 ⇒ 下一个人会分叉。」** ⇒ **已把"排除 `.agent-io/**`"明文写进 `b_terms` 的 `written_files` 词条。**
 
 ★★ **一条全局口径（对账时由另一模型提出、我核实后采纳）**：
 **`saveDSL` 落 `<dataHome>/.agent-io/**`（不在仓库里）**，而 `written_files` 口径写死「**仓库相对路径**」
