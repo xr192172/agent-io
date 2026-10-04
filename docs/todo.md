@@ -577,7 +577,10 @@
           ⇒ **照我的指示改会把好 import 改坏**。
           ⇒ 教训（今日第二次同类）：**"深度变了"要数段数，不要凭"看起来更深"下结论。**
       ⇒ **方案 B ⏳ 第二步 2b（待做）：`rename_symbol/` 下沉** —— 三处阻塞（已实测）：
-        ① `cross/project_root`（应用层**兄弟线**，用到 6 个导出）② `snapshot/protect`（**住在工具目录里**，5 个语言包都用）
+        ① `cross/project_root`（应用层**兄弟线**，用到 6 个导出）
+        ② ~~`snapshot/protect`（**住在工具目录里**，5 个语言包都用）~~ ✅ **已修（A 步）**：
+           `protect.ts` 已下沉到 `infrastructure/analysis/refactor/protect.ts`（7 处引用同步；
+           ★ `layer_violation` / `circular_dependency` 均为 **0 → 0**，同一把尺）
         ③ ★★ **引擎反向调工具**（`languages/typescript.ts:22` → `rename/rename_file`，
            用途是"**文件联动改名**"，注释自称"增量增强、失败不阻断"）⇒ 断开它是**行为重构**，需单独验。
         ⇒ 前置顺序：① `protect` 沉 infrastructure ② `project_root` 相关下沉 ③ 断开 engine→tool。

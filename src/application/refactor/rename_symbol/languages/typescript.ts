@@ -21,7 +21,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { renameFile } from '../../rename/rename_file.js';
 import { expandClosureDetailed, loadAliasConfig, resolveAliasedImport, type AliasConfig } from '../../../cross/project_root.js';
-import { createProtectGuard } from '../../snapshot/protect.js';
+import { createProtectGuard } from '../../../../infrastructure/analysis/refactor/protect.js';
 import { missingLanguageHint } from '../../../../infrastructure/parse/lang_hint.js';
 import { analyzeModuleSource, type ModuleAnalysis } from '../../../../infrastructure/parse/module_analysis.js';
 import {
