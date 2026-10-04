@@ -221,15 +221,6 @@
       `buildCallGraph([],[])` —— 两个入参都是空，形似空壳；`derive_anim_flow` 已于 2026-10-01 接真实现。
       ⇒ 这是 G7（宣传-实现一致性）那一笔：action 宣告了能力却没接实现（对 agent 说谎）。
 
-- [ ] **T10（2026-10-01 重写，原前提已被越过）★ `code_health` 的分层表仍是旧三级，读数已无意义**
-      *(原条目写的是"P2 的验收判据因此判不了"—— ★ **该前提已不成立**：P2 早已搬完，
-      且架构验收判据**已换成 dependency-cruiser**（`.dependency-cruiser.cjs` 的 `layer-downward-only`），
-      不再依赖原来那个 `src/health/` —— 该目录已随 P2 搬成 `src/infrastructure/analysis/health/`。)*
-      ⇒ **还成立的**：`src/infrastructure/analysis/health/index.ts:39` 仍是
-      `export type Layer = 'contract' | 'brick' | 'glue'`（旧三级），而 `code_health` 是**已注册工具**，
-      它的 `layers: {contract,brick,glue,unclassified,violations}` 读数与现在的四层目录**对不上**。
-      ⇒ 要么把表换成四层（`presentation/application/infrastructure/domain`），要么把这段读数**摘掉**（别报假数）。
-
 - [ ] **T13 ★ 第 4 / 5 处 import 解析口径：`rename_file` 的「TS/JS 一份 + Python 一份」**
       *(核实：09-30 做 T12 时顺带撞到 —— `src/tools/rename_file.ts:23` 引的是
       **`src/db/symbols.ts:155` 的 `resolveImportTarget(projectRoot, fromRel, source)`**：
@@ -323,37 +314,41 @@ P2 四族搬迁 / P3 抽字符串 / P4 工具名拍板 / G1 复杂度阈值标�
 ★ 难点：清单本身是**仓外的**，所以它必须被**抄进仓内**（这正是"唯一数据源"要付的代价：
 要么承认它管不到，要么把它纳入一个有人维护的表）。**别让它继续散在没人看的地方。**
 
-- [ ] **T24 ★★★ 结构收口：还有 110+ 个散文件没归位；而且量具有大片盲区（2026-10-02 盘点）**
-      *(核实：全仓 `find src -type d` + `ls -p | grep -v / | grep -c '\.ts$'` 逐目录数；域表 `structure.domains.json` 逐条比对。)*
-      ⇒ `src/` 下 **322 个 .ts**；域表 25 个域 + 3 个平铺目录。
-      **未开垦的散文件（`domains`/`flatDirs` 都没覆盖的目录，直属 .ts）**：
+- [ ] **T27 ★★ 结构收口的**剩余**：`structure_gap` 报 17 个目录未登记（2026-10-04）**
+      *(核实：`npm run structure:gap` ⇒ `unlisted: 17` / `misplaced: 0` / `missing: 0`。)*
+      ⇒ 域表已从 25 → **41 个域 + 3 个平铺**，原来那 **110+ 个散文件已全部归位**；
+      **剩下的 17 个是"未登记的家"**（不是散文件，是整目录）：
+      · **`src/tools/`** —— ★ T11 曾声称"工具实现已全部搬离"，**实测还剩 4 个活文件**
+        （`python_refactor/{index,dead_imports,verify_commands}.ts` + `view_inputs.ts`，分别被
+        `application/refactor/rf-pipeline/refactor_pipeline.ts:44` 与
+        `infrastructure/analysis/structure/feature_map.ts:25` 引用）。
+      · `application/{cross,harvest}` · `application/refactor/{rename_symbol,package_migration}`
+      · `presentation/{daemon,http,mcp}`
+      · `infrastructure/analysis/{behavior,contract_gate,cross_repo,diagnosis,gate,hybrid,
+        java_refactor,translate,version_upgrade}`
+      ⇒ 每个要么登记（域 / flat），要么它不该在那里。
+      ★ 判据本身 2026-10-04 修好了：原版 `structure_gap` 只扫 `flatDirs` 的子目录（**1 个容器**），
+      漏了 `application/` / `infrastructure/analysis/` / `presentation/` / `src/tools`
+      ⇒ 报 `unlisted: 0` 的**假绿**（真实 17 个）。修法就是本条目当初写的"扫父目录下的子目录"。
 
-      | 目录 | 直属 .ts | 备注 |
-      |---|---|---|
-      | `src/application/design/` | **34** | 最大一块 |
-      | `src/infrastructure/parse/` | **22** | ★ 已确认是**跨域错放**（内核族 10 该留、6 个归位、3 组成对） |
-      | `src/application/observe/` | 15 | |
-      | `src/infrastructure/index/` | 11 | |
-      | `src/application/harvest/` | 8 | |
-      | `src/infrastructure/analysis/version_upgrade/` | 6 | |
-      | `src/infrastructure/render/` | 5 | |
-      | `src/presentation/http/archify/` | 4 | |
-      | `src/application/`（顶层） | 5 | ⚠️ `handlers`/`plumbing`/`tool_registry`/`types`/`stage_registry` —— **像 `parse/index.ts` 一样可能是合理的"入口+基础设施"，要先判再动** |
-      | `src/presentation/{http,daemon}/`、`src/infrastructure/graph/` | 各 3 | |
-      | **合计** | **≈110+**（含子目录则更多） | |
+- [ ] **T28 ★★ 同一个概念，四套目录名 + 三种文件名（独立结构评审 2026-10-04 指出）**
+      *(核实：`ls` 四处语言适配目录 + 逐文件比对。)*
+      ⇒ **4 个平行的语言适配表**：3 个叫 `languages/`（`package_migration` / `rename_symbol` /
+      `contract_gate`），1 个叫 `adapters/`（`version_upgrade`）。
+      **同一门语言多种写法**：Python = `py.ts` vs `python.ts`；C# = `cs.ts` vs `csharp.ts`；
+      TS = `ts.ts` vs `typescript.ts`。**注册入口**：三处 `registry.ts`，第四处叫 `refactor_langs.ts`。
+      ⇒ 按名字跨模块定位一门语言**做不到** —— 而"加一门语言 = 加一个文件 + 注册一行"本该是这条结构
+      的收益（台账 §44.30 参考 serena 时定的）。命名漂移把它吃掉了。
+      ★ 另：`application/refactor/` 下 **9 个 `rf-*` 连字符目录名是全仓唯一**的连字符风格
+      （其余一律 snake_case），且 `rf-` 前缀在 `refactor/` 内冗余（读作 "refactor-refactor-edit"）。
 
-      ★★ **量具盲区（本轮新发现，比"散文件"更值得修）**：
-      `src/infrastructure/analysis/` 下有 **16 个子目录，域表只登记了 7 个**
-      （已登记：`structure` `deadcode` `impact` `observe` `health` `capability` `refactor`）。
-      另外 **9 个**（`behavior` `contract_gate` `cross_repo` `diagnosis` `gate` `hybrid` `java_refactor`
-      `translate` `version_upgrade`）**`structure_gap` 完全看不见** ——
-      因为它只扫**散文件**，不扫"**还没登记的（已分好的）子目录**"。
-      ⇒ 与 §44.33「旧的读数全零是**假象**」**同一条**：**量具报的是它扫得到的那个面**。
-      ⇒ **修法**（未做）：让读数也扫"域目录的**父目录**下的子目录"，未登记 ⇒ 报 `unlisted`。
-
-      ★ **`src/tools/` 还有 4 个活文件**（不是残留）：`python_refactor/{index,dead_imports,verify_commands}.ts`
-      + `view_inputs.ts`，分别被 `rf-pipeline/refactor_pipeline.ts:44`、`analysis/structure/feature_map.ts:25`、
-      `tests/tools/view_inputs.test.ts` import ⇒ **T11"工具都搬走了"的说法不准确**。
+- [ ] **T29 ★ `dispatch.ts` 归 `application/observe/` 存疑（2026-10-04）**
+      *(核实：S1-4 执行者主动交代，**不是**我事后才发现。)*
+      ⇒ 它的 `dispatchDslEdit`（`edit_dsl` 写转发）是**跨线**的 —— design 线也在用，
+      严格说它不属于 observe。归 observe 的理由是它与 `dispatchWatch` / `isDaemonAvailable`
+      共用同一个 daemon 探测。
+      ⇒ **要么**挪到 `application/` 根级，**要么**在文件头注里写明"它为什么在 observe"。
+      （两个都很便宜；只要把歧义消掉，任一即可。）
 
 - [ ] **T25 ★★★ 6 张手工登记表逐张换载体（判据：**扫描类一律换成框架规则或工具**）**
       *(核实：2026-10-03 —— 见台账 §44.36；已用 `lane_no_io` 做完整小样，净减 247 行 + 1.6 KB。)*
@@ -374,15 +369,24 @@ P2 四族搬迁 / P3 抽字符串 / P4 工具名拍板 / G1 复杂度阈值标�
       ★ 顺序建议：先做**纯扫描**的（`brand_residue` / `literal_table`）—— 它们**无判断成分**，一次成功率最高；
       **最后**啃 `single_source`。
 
-- [ ] **T26 ★★ `arch` 现在**如实报 2 条真环** —— 删掉「已批准违规清单」后才看得见**
-      *(核实：删 `.dependency-cruiser-known-violations.json`(213 行) + 删 `no-orphans` 规则 + 去掉 `--ignore-known`
-      后跑 `npm run arch` ⇒ **2 errors / 0 warnings**。见台账 §44.37。)*
+- [ ] **T26 ★ 还剩 1 条真环：两个 application 域互相依赖（2026-10-04 更新）**
+      *(核实：`code_health --json` ⇒ `circular_dependency: 1`，逐条打印确认。见台账 §44.37。)*
+      ★ **判据换载体**：`dependency-cruiser` 已于 2026-10-04 **随框架整体移除**，
+      环检测现由 `code_health` 用 Tarjan SCC **现算**（且排除 `import type`，与分层违规同一口径）
+      —— 与当初 dep-cruiser 的读数**逐条对齐**过 ⇒ **不存在第二份口径**。
 
-      | # | 环 | 性质 | 修法方向 |
-      |---|---|---|---|
-      | 1 | `application/observe/write_gate.ts` → `infrastructure/index/index_backfill.ts` → `index_freshness.ts` → `write_gate.ts` | ★ **跨层成环**（application ↔ infrastructure） | 先把"落盘内核"与"索引保鲜"的调用方向定下来：**谁调谁**，再把其中一边的依赖倒过来 |
-      | 2 | `application/cross/project_root.ts` → `application/refactor/rename_symbol/languages/typescript.ts` →（经 `parts.ts`）→ `project_root.ts` | ★ **两个 application 域互相依赖** | 主因是 `project_root.ts:30` 那个 **value** import（`analyzeModuleSource`）；`parts.ts:13` 的两条 type import 是最后一环（`dependencyTypesNot: ['type-only']` **对环不能逐边过滤**，所以那条 type 不能算"已排除"） |
+      ⇒ **原来的 2 条现在只剩 1 条**：
+      · ~~`write_gate.ts` → `index_backfill.ts` → `index_freshness.ts` → `write_gate.ts`（跨层成环）~~
+        ⇒ **已消失**。成因：S1-3 把 self-writes 的**读**原语下沉到
+        `infrastructure/index/self_writes.ts`（写侧留在 `write_gate`）——
+        这是**"把放错层的东西归位"顺带解掉的环**，不是专门去倒依赖。
+        ★ 值得记：**归位比倒依赖便宜**。
+      · **仍在**：`application/cross/project_root.ts` →
+        `application/refactor/rename_symbol/languages/typescript.ts` →（经 `parts.ts`）→ `project_root.ts`
+        （**两个 application 域互相依赖**）。
+        ⇒ 主因是 `project_root.ts` 里对 `analyzeModuleSource` 的 **value** import；
+        `parts.ts` 那两条 **type** import 不算（环检测排除 type-only）。
 
-      ★★ **这两条一直存在**，只是被那份清单盖成了 `✔ no dependency violations found`。
-      ⇒ **别再"记进基线"** —— 要么修掉，要么**如实报着**（那份清单本身已证明会腐：**18 条里 8 条过期，44%**）。
-      ★ 判据（本笔定的）：**留「规则」和「现算」，删「存下来的结论」**。
+      ★★ 当初的结论仍然有效：**别再"记进基线"** —— 要么修掉，要么**如实报着**。
+      （那份"已批准违规清单"本身的死法已证明：**18 条里 8 条过期，44%**。）
+
