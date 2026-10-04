@@ -307,8 +307,19 @@ if (process.argv.includes('--json')) {
   console.log(`产物形态: ${JSON.stringify(count((r) => r.product.kind))}`);
   console.log('');
   console.log(`★ 入参类型：${inTypes.size} 种不同名字 / ${rows.length} 个 [B]   ⇒ 越接近 1:1 越说明"各写各的"`);
-  console.log(`★ 产物字段组合：${outShapes.size} 种 / ${rows.length} 个 [B]；被 ≥2 个共用的只有 ${shared.length} 种`);
+  console.log(`★ 产物字段组合：${outShapes.size} 种 / ${rows.length} 个 [B]；**字段集合完全相同**的只有 ${shared.length} 种`);
   if (shared.length) for (const [k, n] of shared) console.log(`     ×${n}  {${k}}`);
+  // ★★ 单列「按字段的覆盖率」：**这才是"能不能接链"的判据**。
+  //    上面那行是"字段集合完全相同的组合有几种" —— 它**不是覆盖率**，
+  //    2026-10-05 实测：我曾把 `×2 {data,message,touched}` 读成"只有 2 个 [B] 带 touched"，
+  //    真相是 30/37（见下）。★ 摘要容易被误读 ⇒ 把真正的判据摆在它旁边。
+  const cov = (where, keys) =>
+    keys.map((k) => `${k} ${rows.filter((r) => (r[where].fields ?? []).includes(k)).length}/${rows.length}`).join(' · ');
+  console.log('★★ 按字段覆盖率（★ 这一行才是"能不能接链"的判据）：');
+  console.log(`   产物端：${cov('product', ['touched', 'project_dir', 'feature', 'written_files', 'read_files', 'symbols', 'nodes'])}`);
+  console.log(`   入参端：${cov('input', ['project_dir', 'feature', 'files', 'symbols', 'file', 'node_id'])}`);
+  console.log('   ⇒ ★ 入参端**没有一个**收 `touched` 这个对象；两端只共享**扁平字段名**（project_dir / feature …）');
+  console.log('   ⇒ ★ 也就是说：产物端把作用域塞进 `touched`，入参端却只认平铺的 — 这正是"链要手工拼"的地方。');
   const noAnchor = rows.filter((r) => !r.product.anchors?.length);
   console.log(`★ 产物里**没有任何锚点候选字段**的 [B]：${noAnchor.length}/${rows.length}（下游最难接）`);
   console.log(`     ${noAnchor.map((r) => r.name).join(', ')}`);
