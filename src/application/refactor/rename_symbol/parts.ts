@@ -129,8 +129,9 @@ export interface RenameSymbolResult {
    * ★ 本次**解析出的项目根**（实况 = `effectiveRoot ?? resolveProjectRoot(fileAbs)`）——
    *   Core 内部早就定位了它（此前只在手里、没进产物）；T18：把它回传给构造点与下游反查。
    *   作用域类字段（= `Touched.project_dir` 的产物来源）：随时可给，不依赖成败。
+   *   ★ 字段名 = 受控词表的 `project_dir`（原 `root` 不在词表里 ⇒ 同一事实两个名字，2026-10-05 收口）。
    */
-  root?: string;
+  project_dir?: string;
 }
 
 // ─────────────────────────────────────────────

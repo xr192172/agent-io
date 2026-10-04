@@ -93,8 +93,8 @@ async function renameSymbolCore(input: RenameSymbolInput): Promise<RenameSymbolR
   const pkg = findLangPackage(defExt);
   if (pkg) {
     const r = await pkg.rename({ file: defAbs, symbol, to, dryRun, resolvedRoot, blocked, renameFileIfMatching, skipped, aliasCfg });
-    // ★ T18：回传 Core 内部已定位的根（此前只在手里、没进产物）—— 不改语言包产物，只在本层补 root。
-    return { ...r, root: resolvedRoot };
+    // ★ T18：回传 Core 内部已定位的根（此前只在手里、没进产物）—— 不改语言包产物，只在本层补 project_dir。
+    return { ...r, project_dir: resolvedRoot };
   }
 
   // ★ P11：以前只写"暂只支持 TS/JS"——不可执行。补上"装什么包 / 照哪份清单 / 现缺口多少"。
@@ -104,7 +104,7 @@ async function renameSymbolCore(input: RenameSymbolInput): Promise<RenameSymbolR
     symbol,
     to,
     filesWritten: 0,
-    root: resolvedRoot,
+    project_dir: resolvedRoot,
     blocked: [`文件非 TS 系（${defExt}），跨文件改名暂只支持 TS/JS 模块级符号。${missingLanguageHint(defExt, 'rename_symbol')}`],
   };
 }
@@ -113,11 +113,11 @@ async function renameSymbolCore(input: RenameSymbolInput): Promise<RenameSymbolR
 function touchedOf(input: RenameSymbolInput, r: RenameSymbolResult): Touched {
   const touched: Touched = {};
   // project_dir（作用域类 ⇒ 随时可给）：**优先取入参**（调用方声明的根）；
-  //   入参没给则取**产物里的 root**（Core 内部已定位到的根，见 r.root）；两者都取不到才省略（不猜、不兜底 cwd）。
+  //   入参没给则取**产物里的 project_dir**（Core 内部已定位到的根，见 r.project_dir）；两者都取不到才省略（不猜、不兜底 cwd）。
   if (input.project_dir) {
     touched.project_dir = path.resolve(String(input.project_dir));
-  } else if (r.root) {
-    touched.project_dir = r.root;
+  } else if (r.project_dir) {
+    touched.project_dir = r.project_dir;
   }
   // ★ 只有"真的落定"才给 symbols / written_files（dry_run / 被阻断 / ok:false 一律省略）：
   //   Touched 描述"调用之后下游能从哪儿接着走" ⇒ 未落定时没有可接的锚点。
