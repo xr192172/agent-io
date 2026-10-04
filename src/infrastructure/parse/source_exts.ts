@@ -182,13 +182,19 @@ const TEST_FILE_RE = /(_test\.go$|\.test\.[tj]sx?$|\.spec\.[tj]sx?$|test_.*\.py$
  *
  * ★ 为什么把后一条并进来（2026-09-28，本文件头注说的"病根长在量具自己身上"的同一处）：
  *   vitest / vite 启动时会把 `vitest.config.ts`（vite 则是 `vite.config.ts`）**转译**成
- *   `<config>.ts.timestamp-<ms>-<hash>.mjs` 落在**仓库根**，且**不总清理**（实测一次连出 5 个）。
+ *   `<config>.ts.timestamp-<ms>-<hash>.mjs` 落在**仓库根**，且**不清理**。
+ *   ★★ 2026-10-04 实测：本仓根积压了 **147 个**（未跟踪，故一直没人看见）——单次"连出 5 个"
+ *     是低估，它随每次启动累加，进程被强杀（全量测试超时）的那次一定漏。
+ *   ★★ 同日本仓**根因已修**：`vitest.config.ts` → **`vitest.config.mjs`**（纯 JS 无需转译），
+ *     实测跑完仓根 `timestamp-*` = **0**。⇒ 本仓不再产生这类垃圾。
  *   它扩展名是 `.mjs` ⇒ 落进 `TS_JS_EXTS`，于是**索引器把它当源码收进去**：
  *   正文含绝对路径（`file:///D:/…/node_modules/vitest/...`），是**纯噪音**，不是项目源码。
  *   它一度还让品牌残留门周期性假红（门侧已单独跳过；索引侧就是这里）。
  *   同族产物：`vite.config.ts` 走**同一机制**（Vite 的 config 打包临时文件），故模式写成
  *   **形状匹配**（`*.timestamp-<数字>-<字母数字>.mjs`）而非只盯 `vitest.config` 一个名字。
- *   ★ 只加这一种形状，不做宽泛忽略（本仓纪律：跳过面越宽越容易悄悄吞掉真源码）。
+ *   ★ 为什么根因修了还留这条：**工具要能放到任何项目**——别人的仓未必修过根因，
+ *     而"这个形状不是源码"是跨仓成立的。只加这一种形状，不做宽泛忽略
+ *     （本仓纪律：跳过面越宽越容易悄悄吞掉真源码）。
  */
 const NOISE_FILE_RE = /(\.min\.js$|\.d\.ts$|\.gen\.[tj]sx?$|\.tmp$|\.temp$|\.crswap$|\.crdownload$|\.swp$|\.swo$|\.swx$|\.bak$|\.orig$|\.rej$|\.timestamp-\d+-\w+\.mjs$|~$)/;
 
