@@ -34,6 +34,7 @@ import { fileFacts } from '../../../infrastructure/index/file_facts.js';
 import type { DesignDSL, FeatureNode, FeatureTree, SemanticFile, CanvasNote, Node } from '../../../domain/types.js';
 import type { MindMap, MindMapNode, TeachStep, TeachPin, TeachFlowEdge, TeachGap, ProposalFeature } from '../../../domain/mindmap.js';
 import { buildScenes } from '../../../domain/narration.js';
+import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
 export interface DeriveMindMapInput {
   /** feature 名（必填） */
@@ -2087,7 +2088,7 @@ export async function placeProposals(feature: string): Promise<PlaceProposalsRes
 }
 
 /** 构建思维导图（规则骨架 + 可选 LLM 描述） */
-export async function deriveMindMap(input: DeriveMindMapInput): Promise<DeriveMindMapResult> {
+async function deriveMindMapCore(input: DeriveMindMapInput): Promise<DeriveMindMapResult> {
   const { feature, gen_descriptions = false, max_files_per_community = 20 } = input;
   const dsl = getDSL(feature);
   if (!dsl) throw new Error(`feature "${feature}" 不存在，请先 render_design 或 import_project 创建`);
@@ -2475,6 +2476,28 @@ export async function deriveMindMap(input: DeriveMindMapInput): Promise<DeriveMi
   ].filter(Boolean).join('\n');
 
   return { feature, mode, mind_map: mindMap, jsonFile, message };
+}
+
+/**
+ * ★ 唯一的构造点：把"我动了什么"集中算一次，所有出口都从这一个地方出去。
+ *
+ * 口径（`Touched` 两类字段，见 domain/b_terms.ts:42-89）：
+ *   - 作用域类（`feature`）：随时可给，不依赖成败；
+ *   - 对象类（`written_files` / ...）：只有**真发生**才给，否则整项省略。
+ */
+function touchedOf(input: DeriveMindMapInput): Touched {
+  // 只给作用域类 feature。
+  // ★ `written_files` **给不出**：本 [B] 的落盘是 `jsonFile`，它是 **dataHome 下的绝对路径**
+  //   （Core :66-70 `path.join(getStorageRoot(), 'mindmap', ...)`，产物顶层 `jsonFile` 同为绝对），
+  //   **不在仓库里** ⇒ 不满足"仓库相对路径"口径（不能塞绝对路径换口径）。
+  // ★ `nodes` 也不给：`mind_map` 里的节点 id（root/community_*/文件节点）是**导图 JSON 的节点**，
+  //   不是 DSL 节点 id（口径见 b_terms.ts:87）——名字像 ≠ 同义，不得混填。
+  return { feature: input.feature };
+}
+
+export async function deriveMindMap(input: DeriveMindMapInput): Promise<TouchedProduct<DeriveMindMapResult>> {
+  const r = await deriveMindMapCore(input);
+  return withTouched(r, touchedOf(input));
 }
 
 // ─────────────────────────────────────────────────────────────

@@ -24,7 +24,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { DeadDepCandidate } from '../../../infrastructure/graph/dead_deps.js';
 import { applyWithVerify, defaultVerifyCommands, runVerification, type VerifyCommand, type VerificationOutcome, type VerifyOutcomeKind } from '../../../infrastructure/verify_refactor.js';
-import { snapshotAndRecordSelfWrite, syncSelfWritesSync, type WriteThroughOutcome } from '../../observe/runtime/write_gate.js';
+import { snapshotAndRecordSelfWrite, syncSelfWritesSync, toRelPosix, type WriteThroughOutcome } from '../../observe/runtime/write_gate.js';
+import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
 // ─────────────────────────────────────────────
 // 纯函数：单文件删除指向 target 的 import 语句
@@ -288,7 +289,7 @@ function computeChanges(opts: {
   };
 }
 
-export function removeDeadImports(opts: {
+function removeDeadImportsCore(opts: {
   project_dir: string;
   dead: DeadDepCandidate[];
 }): RemoveDeadImportResult {
@@ -307,6 +308,43 @@ export function removeDeadImports(opts: {
   for (const [abs, newSrc] of absToNew) fs.writeFileSync(abs, newSrc, 'utf-8');
   const idxSync = syncSelfWritesSync(opts.project_dir, files);
   return { ...result, indexWriteThrough: idxSync ?? idxPre };
+}
+
+/**
+ * ★ 唯一的构造点：把"我动了什么"集中算一次，所有出口都从这一个地方出去。
+ *
+ * - 作用域类 `project_dir`：入参必填 ⇒ 随时可给（`path.resolve` 成绝对根）。
+ * - 对象类 `written_files`：**只有真落盘才给**。判据 = `changed` 的那批文件：
+ *   Core 只有在 `absToNew.size > 0` 时才走到 `writeFileSync`（:296 早退 ⇒ 没改动、没落盘）；
+ *   而 `absToNew` 恰是"内容真的变了"的文件集，与 `removal_reports[].changed === true` 同一批。
+ *   `changed` 为空 ⇒ 整项省略（省略 ≠ 空数组）。
+ * - 值口径 = **仓库相对 POSIX**：`removal_reports[].file` 是 `path.relative(proj, abs)`（Windows 下带 `\`），
+ *   故一律经闸的 `toRelPosix(project_dir, file)` 归一（★ 根外文件返回 null ⇒ 不塞，见 scaffold 同款判据）。
+ *
+ * ★ 旁路提示：`removeDeadImportsWithVerify` 在**未启用验证 / 探测不出命令**两条路径上
+ *   `{ ...removeDeadImports(opts), ... }` —— 那两条路径**确实落了盘**（无回滚），故随之携带的
+ *   `touched` 是**准确**的；其主路径用 `c.result`（不带 touched）。本笔按范围**不改**该函数。
+ */
+function touchedOf(opts: { project_dir: string }, r: RemoveDeadImportResult): Touched {
+  const touched: Touched = { project_dir: path.resolve(opts.project_dir) };
+  if (r.files_changed > 0) {
+    const written = new Set<string>();
+    for (const rep of r.removal_reports) {
+      if (!rep.changed) continue;
+      const rel = toRelPosix(opts.project_dir, rep.file);
+      if (rel) written.add(rel);
+    }
+    if (written.size > 0) touched.written_files = [...written];
+  }
+  return touched;
+}
+
+export function removeDeadImports(opts: {
+  project_dir: string;
+  dead: DeadDepCandidate[];
+}): TouchedProduct<RemoveDeadImportResult> {
+  const r = removeDeadImportsCore(opts);
+  return withTouched(r, touchedOf(opts, r));
 }
 
 // ─────────────────────────────────────────────

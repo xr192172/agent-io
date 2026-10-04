@@ -21,6 +21,7 @@ import {
   listArchiveEntries,
   type ArchiveEntry,
 } from '../../../infrastructure/storage.js';
+import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
 export interface ArchiveNodeInput {
   /** feature 名 */
@@ -44,7 +45,7 @@ export interface ArchiveNodeResult {
 }
 
 /** 归档一个文件节点：存档 DSL 快照 → 从设计 DSL 移除 → 目标文件记 merged_from */
-export function archiveNode(input: ArchiveNodeInput): ArchiveNodeResult {
+function archiveNodeCore(input: ArchiveNodeInput): ArchiveNodeResult {
   const { feature, file_path, retire_reason, merged_into } = input;
   if (!file_path || !retire_reason?.trim()) {
     throw new Error('archive(action=node) 需要 file_path 与 retire_reason（为什么下线，必填）');
@@ -126,6 +127,26 @@ export function archiveNode(input: ArchiveNodeInput): ArchiveNodeResult {
     archived_decision: archivedDecision,
     removed_from_dsl: true,
   };
+}
+
+/**
+ * ★ 唯一的构造点：把"我动了什么"集中算一次，所有出口都从这一个地方出去。
+ *
+ * 口径（`Touched` 两类字段，见 domain/b_terms.ts:42-89）：
+ *   - 作用域类（`feature`）：随时可给，不依赖成败；
+ *   - 对象类（`written_files` / `read_files` / `symbols` / `nodes`）：只有**真发生**才给，否则整项省略。
+ */
+function touchedOf(input: ArchiveNodeInput): Touched {
+  // 只给作用域类 feature：本次落盘的是**下线库快照 + DSL**（均在 dataHome 下、不在仓库里）
+  //   ⇒ `written_files` 给不出（不满足"仓库相对路径"口径，不能塞绝对路径换口径）。
+  // ★ 对象类一律省略：被删的 DSL 节点 id（`removedId = file.id`，见 Core 82 行）**未进产物**，
+  //   本构造点拿不到它 ⇒ `nodes` 不给；也没有读到仓库文件 ⇒ `read_files` 不给。
+  return { feature: input.feature };
+}
+
+export function archiveNode(input: ArchiveNodeInput): TouchedProduct<ArchiveNodeResult> {
+  const r = archiveNodeCore(input);
+  return withTouched(r, touchedOf(input));
 }
 
 export interface ListArchiveInput {

@@ -234,7 +234,10 @@ export const diffViewsHandler = wrapData(async (a) => {
     feature: a.feature as string,
     live_dir: a.live_dir as string | undefined,
   });
-  return { message: r.message, data: r.data };
+  // ★ 2026-10-05：**必须显式转发 `touched`** —— 本行原先只取 `r.message` / `r.data`，
+  //   而 `touched` 挂在 [B] 产物的**顶层** ⇒ 会被静默丢掉（实测 `diff_views` 的 DATA 里没有 `touched`）。
+  //   ⇒ 见 `plumbing.ts` 的 `machinePayload` 头注：**[B] 接了契约 ≠ 交付，还要看 [C] 是否把它透出去**。
+  return { message: r.message, data: r.data, touched: r.touched };
 });
 
 /** 下线归档的单动作壳（原两入口之一）。

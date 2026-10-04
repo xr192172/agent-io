@@ -31,6 +31,7 @@ import { pendingSelfWrites } from '../../../infrastructure/index/self_writes.js'
 import { backfillState, backfillSummary, isIndexIncomplete } from '../../../infrastructure/index/index_backfill.js';
 import { ensureProjectIndex, type IndexState } from '../../../infrastructure/index/index_freshness.js';
 import { summarizeLanguagesByTier, type LanguageTierSummary } from '../../refactor/rf-parse/parse_capability.js';
+import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
 /** 源码文件按类拆分（本体 / 测试 / 噪音）。★ 见 ④ 处的长注释：两把尺差的就是这两个类 */
 export interface FileKindCounts {
@@ -159,7 +160,7 @@ export function repairStaleResolvedRefs(
  * @param opts.refresh true = 先跑一次保鲜（`ensureProjectIndex`）再报告；默认 false（纯只读）
  * @param opts.sample  抽样条数上限（默认 20）
  */
-export async function indexIntegrity(opts: {
+async function indexIntegrityCore(opts: {
   project_dir: string;
   refresh?: boolean;
   sample?: number;
@@ -438,6 +439,30 @@ export async function indexIntegrity(opts: {
     trustworthy,
     summary,
   };
+}
+
+/**
+ * ★ 唯一的构造点：把"我动了什么"集中算一次，所有出口都从这一个地方出去。
+ *
+ * 口径（`Touched` 两类字段，见 domain/b_terms.ts:42-89）：
+ *   - 作用域类（`project_dir`）：随时可给，不依赖成败；
+ *   - 对象类（`written_files` / `read_files` / `symbols` / `nodes`）：只有**真发生**才给，否则整项省略。
+ */
+function touchedOf(opts: { project_dir: string }): Touched {
+  // project_dir：★ 填**解析后的绝对根**（= Core `path.resolve(opts.project_dir)`，与产物顶层
+  //   `project_root` 同值）—— 作用域类，随时可给。
+  // ★ 对象类一律省略：本 [B] 读写的是 `cache.db`（dataHome 下），**不是仓库文件** ⇒
+  //   `written_files` / `read_files` 给不出；它也不确立任何符号/DSL 节点对象 ⇒ `symbols` / `nodes` 不给。
+  return { project_dir: path.resolve(opts.project_dir) };
+}
+
+export async function indexIntegrity(opts: {
+  project_dir: string;
+  refresh?: boolean;
+  sample?: number;
+}): Promise<TouchedProduct<IndexIntegrityResult>> {
+  const r = await indexIntegrityCore(opts);
+  return withTouched(r, touchedOf(opts));
 }
 
 /** 人读多行（供工具结果直接呈现） */

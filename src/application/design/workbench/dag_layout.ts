@@ -11,6 +11,7 @@
 
 import type { DesignDSL, ForceParams } from '../../../domain/types.js';
 import { getDSL, saveDSL } from '../../../infrastructure/storage.js';
+import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
 export interface DagLayoutInput {
   feature: string;
@@ -61,7 +62,7 @@ function assertFlatLayoutSafe(dsl: DesignDSL, algo: string): void {
   }
 }
 
-export function dagLayout(input: DagLayoutInput): { message: string; rank_count: number; edge_crossings: number } {
+function dagLayoutCore(input: DagLayoutInput): { message: string; rank_count: number; edge_crossings: number } {
   const {
     feature,
     direction = 'horizontal',
@@ -281,6 +282,23 @@ export function dagLayout(input: DagLayoutInput): { message: string; rank_count:
     rank_count: sortedRanks.length,
     edge_crossings: edgeCrossings,
   };
+}
+
+/**
+ * ★ 唯一的构造点：把"我动了什么"集中算一次。
+ *
+ * 只给作用域类 `feature`：
+ *   - 本 [B] **会回写 DSL**（`saveDSL` → `<dataHome>/.agent-io/**`，不在仓库里）⇒ `written_files` 给不出；
+ *   - 不给 `nodes`：`rank_count` / `edge_crossings` 是 **number 计数**，不是 DSL 节点 id
+ *     （名字里有 "rank"/"edge" 但与 `nodes` 不同义）。
+ */
+function touchedOf(input: DagLayoutInput): Touched {
+  return { feature: input.feature };
+}
+
+export function dagLayout(input: DagLayoutInput): TouchedProduct<ReturnType<typeof dagLayoutCore>> {
+  const r = dagLayoutCore(input);
+  return withTouched(r, touchedOf(input));
 }
 
 /** 计算边的交叉数（简化版） */

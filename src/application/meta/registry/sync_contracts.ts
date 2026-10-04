@@ -24,6 +24,7 @@ import { getDSL, saveDSL, getPackageRoot } from '../../../infrastructure/storage
 import fs from 'node:fs';
 import path from 'node:path';
 import type { DesignDSL } from '../../../domain/types.js';
+import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
 export interface SyncContractsInput {
   /** feature 名（已存在的 DSL feature） */
@@ -102,7 +103,7 @@ function resolveImplPath(name: string): string | null {
   return found ? path.relative(root, found).split(path.sep).join('/') : null;
 }
 
-export function syncContracts(input: SyncContractsInput): SyncContractsResult {
+function syncContractsCore(input: SyncContractsInput): SyncContractsResult {
   const dsl = getDSL(input.feature);
   if (!dsl) throw new Error(`feature ${input.feature} 不存在，请先写 DSL 或 import_project`);
   const includeAll = input.include_all ?? false;
@@ -183,4 +184,25 @@ export function syncContracts(input: SyncContractsInput): SyncContractsResult {
     /** 解析不到实现文件、因而未参与回填的工具名（**显式**，不静默） */
     unresolved,
   };
+}
+
+/**
+ * ★ 唯一的构造点：把"我动了什么"集中算一次，所有出口都从这一个地方出去。
+ *
+ * 口径（`Touched` 两类字段，见 domain/b_terms.ts:42-89）：
+ *   - 作用域类（`feature`）：随时可给，不依赖成败；
+ *   - 对象类（`written_files` / ...）：只有**真发生**才给，否则整项省略。
+ */
+function touchedOf(input: SyncContractsInput): Touched {
+  // 只给作用域类 feature。
+  // ★★ **绝不给 written_files** —— `added_files` / `updated_files` 名字像"写了这些文件"，
+  //   实际是**回填进 DSL 的语义文件条目路径**（Core :140 / :148 只 push 进 `files` 数组，
+  //   随后 `saveDSL` 落 dataHome），**磁盘上根本没写这些文件**（名字像 ≠ 同义）。
+  //   本 [B] 唯一的落盘是 `saveDSL`（dataHome 下、不在仓库里）⇒ 给不出"仓库相对"的 written_files。
+  return { feature: input.feature };
+}
+
+export function syncContracts(input: SyncContractsInput): TouchedProduct<SyncContractsResult> {
+  const r = syncContractsCore(input);
+  return withTouched(r, touchedOf(input));
 }

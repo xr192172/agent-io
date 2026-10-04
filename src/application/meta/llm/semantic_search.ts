@@ -22,6 +22,7 @@ import { configFileReadPath } from '../../../infrastructure/llm_focus.js';
 import { getProjectCacheDb, type Database } from '../../../infrastructure/index/db.js';
 import { searchSymbols, type SymbolHit } from '../../../infrastructure/index/symbols.js';
 import { ensureFreshIndex } from '../../../infrastructure/index/index_freshness.js';
+import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
 // ─────────────────────────────────────────────────────────────
 // 配置
@@ -287,7 +288,7 @@ function symbolText(row: { name: string; qualified_name: string; file_path: stri
  *      命中即返回，零 embedding 开销（AI 查代码绝大多数是"知道符号名要定位"）；
  *   2. semantic——自然语言意图或标识符未命中（拼错名时语义相近符号仍有价值）→ 向量相似度；
  *   3. fts——无 embedding 配置 / API 失败自动降级 trigram 全文检索。 */
-export async function semanticSearch(input: SemanticSearchInput): Promise<SemanticSearchResult> {
+async function semanticSearchCore(input: SemanticSearchInput): Promise<SemanticSearchResult> {
   const query = input.query.trim();
   const limit = input.limit ?? 20;
   // 默认 min_score=0.3：滤掉语义无关的低分噪音（exact/fts 路径不受影响，仅 semantic 路径过滤）
@@ -402,6 +403,32 @@ export async function semanticSearch(input: SemanticSearchInput): Promise<Semant
     // embedding 失败（网络/限流/模型错误）→ 降级 FTS
     return ftsFallback(db, query, limit, rows.length, (e as Error).message, freshNote);
   }
+}
+
+/**
+ * ★ 唯一的构造点：把"我动了什么"集中算一次，所有出口都从这一个地方出去。
+ *
+ * 口径（`Touched` 两类字段，见 domain/b_terms.ts:42-89）：
+ *   - 作用域类（`project_dir`）：随时可给，不依赖成败；
+ *   - 对象类（`symbols`）：只读 [B] 照给"查到的符号"（b_terms.ts:51）。
+ */
+function touchedOf(input: SemanticSearchInput, r: SemanticSearchResult): Touched {
+  // project_dir：★ 填**解析后的绝对根**（= Core `path.resolve(input.project_dir)`，见 :311/:320）。
+  const touched: Touched = { project_dir: path.resolve(input.project_dir) };
+  // symbols：★★ **有争议**（见交付报告）——本 [B] 是**只读**工具，按 b_terms:51「只读 [B] 照给
+  //   （读到的文件 / 查到的符号）」，把它查到的符号（`hits[].qualified_name`）照给。
+  //   ★ 反对意见：hits 是"按 min_score 截断的**查询结果**"，不是"本次确立的对象"。
+  //   ★ 支持意见：下游确实可从这里接着走（据此 find_references / 改名 / 读文件），
+  //     且"空的 hits"与"没查"在产物里已可区分（空 hits ⇒ size 0 ⇒ 整项省略）。
+  const symbols = new Set<string>();
+  for (const h of r.hits) if (h.qualified_name) symbols.add(h.qualified_name);
+  if (symbols.size > 0) touched.symbols = [...symbols];
+  return touched;
+}
+
+export async function semanticSearch(input: SemanticSearchInput): Promise<TouchedProduct<SemanticSearchResult>> {
+  const r = await semanticSearchCore(input);
+  return withTouched(r, touchedOf(input, r));
 }
 
 function ftsFallback(

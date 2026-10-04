@@ -49,8 +49,9 @@ import { syncFile } from '../../../infrastructure/index/symbols.js';
 import { getProjectCacheDb } from '../../../infrastructure/index/db.js';
 import { splitKeepEnds, detectEol, isBlankLine } from '../../../infrastructure/text/line_utils.js';
 import { snapshotBeforeWrite } from '../rf-snapshot/file_snapshot.js';
-import { reopenAndResolveAfterWrite, reopenNote } from '../../observe/runtime/write_gate.js';
+import { reopenAndResolveAfterWrite, reopenNote, toRelPosix } from '../../observe/runtime/write_gate.js';
 import { locateReplaceText, realignNewTextTo, FUZZY_LEVEL_LABEL } from '../../../infrastructure/parse/fuzzy_match.js';
+import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
 export type EditCodeOp = 'replace' | 'insert' | 'delete' | 'range' | 'replace_text';
 
@@ -998,7 +999,7 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
  * 内层若给了更细的 `data`（如 `replace_text` 的 `hit`/`symbol_diff`）则合并保留。
  * ★ P-B：`targets` 非空 ⇒ 分派到批量编排（自带完整回执）。
  */
-export async function editCode(args: EditCodeArgs): Promise<{ message: string; data: EditReceipt }> {
+async function editCodeCore(args: EditCodeArgs): Promise<{ message: string; data: EditReceipt }> {
   if (Array.isArray(args.targets)) return editCodeBatch(args);
   const r = await editCodeInner(args);
   const base: EditReceipt = {
@@ -1009,4 +1010,45 @@ export async function editCode(args: EditCodeArgs): Promise<{ message: string; d
     written: args.dry_run !== true,
   };
   return { message: r.message, data: { ...base, ...((r.data as Partial<EditReceipt>) ?? {}) } };
+}
+
+/**
+ * ★ 唯一的构造点：把"我动了什么"集中算一次，所有出口都从这一个地方出去。
+ *
+ * ★★ 陷阱（已核实）：**批量模式**产物顶层 `data.file` 是拼串 `` `${n} files` ``（:984）——
+ *   看着像路径、实为**文案**。故：
+ *   - 批量模式（`Array.isArray(args.targets)`）**整项省略 `written_files`**（不拿那串文案凑），
+ *     也省略 `symbols`（批量是逐文件 `replace_text`，没有"目标符号"这一维）。
+ *   - **只有单文件模式**才回填 `written_files`，且必须**真落盘**（`r.data.written === true`）。
+ */
+function touchedOf(args: EditCodeArgs, r: { message: string; data: EditReceipt }): Touched {
+  const touched: Touched = {};
+  // 作用域类（⇒ 随时可给，不依赖成败）：入参 project_dir 必填 ⇒ 解析成绝对根。
+  touched.project_dir = path.resolve(args.project_dir);
+
+  const single = !Array.isArray(args.targets);
+  // 对象类（⇒ 只有真发生才给）：单文件 + 真落盘，才谈"写了哪个文件 / 涉及哪个符号"。
+  //   dry_run / 校验失败（throw，走不到这里）⇒ 整项省略（省略 ≠ 空数组）。
+  if (single && r.data.written === true) {
+    // written_files：口径 = **仓库相对 POSIX**。复用闸的 `toRelPosix`（同族现成助手，scaffold 同款判据）：
+    //   ★ 根外文件返回 null ⇒ **不塞**（本工具的政策 #3 允许写根外文件，但那种路径没有"仓库相对"形式，
+    //   塞绝对路径 = 换口径而非更弱的答案，故省略该文件；见交付报告"有条件省略"）。
+    const rel = toRelPosix(path.resolve(args.project_dir), args.file);
+    if (rel) touched.written_files = [rel];
+    // symbols（可选）：value 取"**落定后**的符号标识"（b_terms 口径）。
+    //   · replace：新代码必须仍解析出同名符号（:768 已校验）⇒ 落定后仍在，可作下游锚点；
+    //   · insert：`args.symbol` 是**锚点符号**（插入点之前/之后的那个），落定后仍在 ⇒ 可给；
+    //   · delete：目标符号**被删掉**，落定后已不存在 ⇒ **不给**（给了会指向一个已消失的锚点）；
+    //   · range / replace_text：本就没有 `symbol` 维度 ⇒ 省略。
+    if (typeof args.symbol === 'string' && args.symbol && args.op !== 'delete') {
+      touched.symbols = [args.symbol];
+    }
+  }
+
+  return touched;
+}
+
+export async function editCode(args: EditCodeArgs): Promise<TouchedProduct<{ message: string; data: EditReceipt }>> {
+  const r = await editCodeCore(args);
+  return withTouched(r, touchedOf(args, r));
 }

@@ -21,6 +21,7 @@ import { buildScenes, humanOf } from '../../../domain/narration.js';
 import type { NarrScene } from '../../../domain/narration.js';
 import type { TeachPin } from '../../../domain/mindmap.js';
 import type { SemanticFile } from '../../../domain/types.js';
+import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
 export interface NarrateStepInput {
   /** feature 名 */
@@ -76,7 +77,7 @@ function projectPins(sf: SemanticFile | undefined, sig?: string): { inputs: Teac
 const slug = (s: string): string =>
   s.toLowerCase().replace(/[^a-z0-9\u4e00-\u9fa5]+/gi, '-').replace(/^-+|-+$/g, '').slice(0, 24) || 'step';
 
-export function narrateStep(input: NarrateStepInput): NarrateStepResult {
+function narrateStepCore(input: NarrateStepInput): NarrateStepResult {
   const { feature, file } = input;
   const write = input.write !== false;
   const dsl = getDSL(feature);
@@ -123,4 +124,22 @@ export function narrateStep(input: NarrateStepInput): NarrateStepResult {
   }
 
   return { feature, file, title, pins, scenes, mode: 'rule', brick, message };
+}
+
+/**
+ * ★ 唯一的构造点：把"我动了什么"集中算一次。
+ *
+ * 只给作用域类 `feature`：
+ *   - 不给 `written_files`：`write=true` 时只 `saveDSL` 写 DSL semantic 条目
+ *     （落 `<dataHome>/.agent-io/**`，不在仓库里）⇒ "仓库相对路径"给不出；
+ *   - 不给 `nodes`：`brick` 是 **DSL semantic 条目**（dsl.semantic.files 里那条 `brick_narr_*`），
+ *     不是 geometry 节点 ⇒ 名字像"节点"但不满足 `nodes`（DSL 节点 id）的语义。
+ */
+function touchedOf(input: NarrateStepInput): Touched {
+  return { feature: input.feature };
+}
+
+export function narrateStep(input: NarrateStepInput): TouchedProduct<NarrateStepResult> {
+  const r = narrateStepCore(input);
+  return withTouched(r, touchedOf(input));
 }

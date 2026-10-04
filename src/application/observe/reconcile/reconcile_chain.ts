@@ -30,6 +30,7 @@ import { queryObserveLog } from '../../../infrastructure/analysis/observe/log_qu
 import { judgeEvent } from '../../../infrastructure/analysis/observe/judge.js';
 import { rebuildChains, matchChainDecl, type TSChainObs } from '../../../infrastructure/analysis/observe/chain.js';
 import { loadTSEvents, type TSEvent } from '../../../infrastructure/analysis/observe/probe.js';
+import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
 export interface ReconcileChainInput {
   /** DSL feature 名 */
@@ -182,7 +183,7 @@ function bare(s: string): string {
 // 主入口：中观档编排
 // ─────────────────────────────────────────────────────────────
 
-export async function reconcileChain(input: ReconcileChainInput): Promise<ReconcileChainResult> {
+async function reconcileChainCore(input: ReconcileChainInput): Promise<ReconcileChainResult> {
   const { feature, node_id } = input;
   const projectRoot = path.resolve(input.project_dir);
 
@@ -309,4 +310,38 @@ export async function reconcileChain(input: ReconcileChainInput): Promise<Reconc
     not_run,
     message: lines.join('\n'),
   };
+}
+
+/** 相对项目根归一化为 posix（接受相对/绝对；与 harvest_closure / diff_impact 同规） */
+function toRel(root: string, p: string): string {
+  const abs = path.isAbsolute(p) ? p : path.join(root, p);
+  return path.relative(root, abs).split(path.sep).join('/');
+}
+
+/**
+ * ★ 唯一的构造点：把"我动了什么"集中算一次。
+ *
+ * 口径（`Touched` 两类字段）：作用域类随时可给；对象类只列**本次真涉及**的，取不到整项省略。
+ */
+function touchedOf(input: ReconcileChainInput, r: ReconcileChainResult): Touched {
+  const projectRoot = path.resolve(input.project_dir);
+  const touched: Touched = { feature: input.feature, project_dir: projectRoot };
+
+  // nodes：本次读出的 detail 链节点 id（Core 213 行 readDerivedChain → chain[].node_id）。
+  const nodes = [...new Set(r.chain.map((c) => c.node_id))];
+  if (nodes.length > 0) touched.nodes = nodes;
+
+  // read_files：宿主源文件（本次对账的链挂点）+ 命中事件的观测文件（Core 224-232 行真读）；
+  //   均为绝对路径 ⇒ 转**仓库相对**（相对被观测项目根 projectRoot）。
+  const reads = new Set<string>();
+  if (r.host_file) reads.add(toRel(projectRoot, r.host_file));
+  for (const f of r.events.files) reads.add(toRel(projectRoot, f));
+  if (reads.size > 0) touched.read_files = [...reads];
+
+  return touched;
+}
+
+export async function reconcileChain(input: ReconcileChainInput): Promise<TouchedProduct<ReconcileChainResult>> {
+  const r = await reconcileChainCore(input);
+  return withTouched(r, touchedOf(input, r));
 }

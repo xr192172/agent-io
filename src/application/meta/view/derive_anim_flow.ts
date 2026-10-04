@@ -24,6 +24,7 @@ import { nearestCacheDb } from '../../../infrastructure/index/db.js';
 import { parseFileFull, type ParsedSymbol } from '../../../infrastructure/parse/index.js';
 import { extractFunctionCfg } from '../../../infrastructure/analysis/structure/cfg.js';
 import { buildCallGraph, pickEntry, walkChain } from '../../design/derive/derive_chain.js';
+import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
 export interface DeriveAnimFlowInput {
   /** feature 名 */
@@ -283,7 +284,7 @@ function extractFunctionErrors(funcSrc: string, lang: string, toNode: string): A
   return errors;
 }
 
-export async function deriveAnimFlow(input: DeriveAnimFlowInput): Promise<DeriveAnimFlowResult> {
+async function deriveAnimFlowCore(input: DeriveAnimFlowInput): Promise<DeriveAnimFlowResult> {
   const { feature, node_id } = input;
   const projectRoot = input.project_root ? path.resolve(input.project_root) : process.cwd();
   const interval = input.interval ?? 4000;
@@ -483,4 +484,47 @@ export async function deriveAnimFlow(input: DeriveAnimFlowInput): Promise<Derive
     skipped,
     cross_flows: crossFlows,
   };
+}
+
+/**
+ * ★ 唯一的构造点：把"我动了什么"集中算一次，所有出口都从这一个地方出去。
+ *
+ * 口径（`Touched` 两类字段，见 domain/b_terms.ts:42-89）：
+ *   - 作用域类（`feature` / `project_dir`）：随时可给，不依赖成败；
+ *   - 对象类（`nodes`）：本次**真生成**的 flow 端点；没生成 ⇒ 整项省略。
+ */
+function touchedOf(input: DeriveAnimFlowInput, r: DeriveAnimFlowResult): Touched {
+  const touched: Touched = { feature: input.feature };
+
+  // project_dir：★ **仅调用方显式给 `project_root` 时**才给（取 `path.resolve` 后的绝对根）。
+  //   Core :289 `input.project_root ? path.resolve(...) : process.cwd()` —— 默认走 cwd 的分支
+  //   **不给**（cwd 是"另一个项目"，不是"更弱的答案"，不许兜底）。
+  if (input.project_root) touched.project_dir = path.resolve(input.project_root);
+
+  // nodes：本工具本次生成的 flow 端点（detail 节点 id）——`flows[].{from,to}`（Core :345-347 / :431）。
+  //   跨文件 flow 的端点同样已合进 `r.flows`（`:431` push 的是 fromId / node_id）。取不到 ⇒ 省略。
+  const nodes = new Set<string>();
+  for (const f of r.flows) {
+    if (f.from) nodes.add(f.from);
+    if (f.to) nodes.add(f.to);
+  }
+  for (const f of r.cross_flows) {
+    if (f.from) nodes.add(f.from);
+    if (f.to) nodes.add(f.to);
+  }
+  if (nodes.size > 0) touched.nodes = [...nodes];
+
+  // ★★ 不给 read_files —— 已**追码判定**（见交付报告第 2 项）：
+  //   被读取的源文件 `filePath`（Core :300-307）是 `path.join(projectRoot, ...)` / 绝对路径，
+  //   **不是"仓库相对 POSIX"**；全文件里唯一的 repo-relative 化只出现在 `message` 字符串内
+  //   （`:447` `path.relative(projectRoot, filePath).split(path.sep).join('/')`），
+  //   不是产物里的结构化字段；且 `projectRoot` 在默认 cwd 时不成立、还可能是仓库**子目录**
+  //   （见 :143 注释"源文件根常是项目根子目录"）⇒ 追不到可靠口径 ⇒ 不给。
+
+  return touched;
+}
+
+export async function deriveAnimFlow(input: DeriveAnimFlowInput): Promise<TouchedProduct<DeriveAnimFlowResult>> {
+  const r = await deriveAnimFlowCore(input);
+  return withTouched(r, touchedOf(input, r));
 }

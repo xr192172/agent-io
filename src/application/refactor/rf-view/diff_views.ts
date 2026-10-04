@@ -24,6 +24,7 @@
 import type { DesignDSL, SemanticFile, Symbol, ExpectedApi, Edge, NodeDecision, DecisionHistoryEntry } from '../../../domain/types.js';
 import { getDSL, getLiveFeature, getBaselineFeature, getArchiveEntryByPath } from '../../../infrastructure/storage.js';
 import { mergedApis } from '../../../infrastructure/index/file_facts.js';
+import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
 // ──────── 输出类型 ────────
 
@@ -230,7 +231,7 @@ export interface DiffViewsResult {
 /**
  * 执行双视图对比（baseline 存在时升级为三方对比）
  */
-export function diffViews(input: DiffViewsInput): DiffViewsResult {
+function diffViewsCore(input: DiffViewsInput): DiffViewsResult {
   const { feature, live_dir } = input;
 
   // 1. 加载三个视图（baseline 与 live 同目录归位：baseDir = live_dir）
@@ -663,6 +664,22 @@ export function diffViews(input: DiffViewsInput): DiffViewsResult {
         : undefined,
     },
   };
+}
+
+/** ★ 唯一的构造点：把"我动了什么"集中算一次，所有出口都从这一个地方出去 */
+function touchedOf(input: DiffViewsInput): Touched {
+  // 只给**作用域类** feature：本 [B] 是**只读对比**——它读的是同一 feature 的
+  // baseline / design / live 三个 DSL 视图（**存储**，不是源文件）⇒ ★ 对象类字段**给不出**：
+  //   · written_files / read_files：本次没写、也没读源文件（读的是 DSL）；
+  //   · symbols / nodes：产物里虽然满是符号/节点 diff，但那是"**两侧差集**"，
+  //     不是"本次调用确立下来的对象" ⇒ 塞进 symbols/nodes 会把"差异"错当"锚点"。
+  // feature 为必填入参 ⇒ 随时可给（不依赖成败；查不到视图时 data.design_exists=false 也照给）。
+  return { feature: input.feature };
+}
+
+export function diffViews(input: DiffViewsInput): TouchedProduct<DiffViewsResult> {
+  const r = diffViewsCore(input);
+  return withTouched(r, touchedOf(input));
 }
 
 // ──────── 辅助函数 ────────

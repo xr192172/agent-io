@@ -27,6 +27,7 @@ import path from 'node:path';
 import readline from 'node:readline';
 import { getDSL, saveDSL } from '../../../infrastructure/storage.js';
 import type { EffectTarget } from '../../../domain/contract.js';
+import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
 export interface ReconcileEffectsInput {
   /** 被观测项目根目录（其下 .agent/observe/events-*.jsonl 是事件源） */
@@ -172,7 +173,7 @@ function holdMatches(observedTarget: string, candidateTarget: string): boolean {
   return false;
 }
 
-export async function reconcileEffects(input: ReconcileEffectsInput): Promise<ReconcileEffectsResult> {
+async function reconcileEffectsCore(input: ReconcileEffectsInput): Promise<ReconcileEffectsResult> {
   const root = path.resolve(input.project_dir);
   const eventsFiles = input.events_files?.length
     ? input.events_files.map((f) => path.resolve(f))
@@ -347,4 +348,33 @@ export async function reconcileEffects(input: ReconcileEffectsInput): Promise<Re
     },
     message,
   };
+}
+
+/** 相对项目根归一化为 posix（接受相对/绝对；与 harvest_closure / diff_impact 同规） */
+function toRel(root: string, p: string): string {
+  const abs = path.isAbsolute(p) ? p : path.join(root, p);
+  return path.relative(root, abs).split(path.sep).join('/');
+}
+
+/**
+ * ★ 唯一的构造点：把"我动了什么"集中算一次。
+ *
+ *   - 作用域类 `project_dir` / `feature`：随时可给；
+ *   - `read_files`：本次读的事件文件（Core 177-179 行解析、126 行真读）⇒ 转仓库相对；
+ *   - **不给 `written_files`**：本 [B] 只 `saveDSL` 写回 DSL（落 `<dataHome>/.agent-io/**`，
+ *     不在仓库里）⇒ "仓库相对路径"给不出（不把绝对路径塞进"仓库相对"槽位）。
+ */
+function touchedOf(input: ReconcileEffectsInput, r: ReconcileEffectsResult): Touched {
+  const root = path.resolve(input.project_dir);
+  const touched: Touched = { project_dir: root, feature: input.feature };
+
+  const reads = [...new Set(r.events_files.map((f) => toRel(root, f)))];
+  if (reads.length > 0) touched.read_files = reads;
+
+  return touched;
+}
+
+export async function reconcileEffects(input: ReconcileEffectsInput): Promise<TouchedProduct<ReconcileEffectsResult>> {
+  const r = await reconcileEffectsCore(input);
+  return withTouched(r, touchedOf(input, r));
 }

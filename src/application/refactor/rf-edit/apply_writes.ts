@@ -32,6 +32,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { writeSourceFiles, toRelPosix, type WriteThroughOutcome } from '../../observe/runtime/write_gate.js';
+import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
 /** 一项待落盘的改写：目标文件（相对 `projectRoot` 或绝对路径）+ 新内容全文 */
 export interface WriteItem {
@@ -63,7 +64,7 @@ export interface WriteReceipt {
  * @param opts.dryRun true=只走流程、不碰盘
  * @param opts.note   快照/回执里的人读说明（如 `rename_symbols(scope=local):src/a.ts`）
  */
-export async function applyWrites(
+async function applyWritesCore(
   projectRoot: string,
   items: readonly WriteItem[],
   opts: { dryRun?: boolean; note?: string } = {},
@@ -115,4 +116,37 @@ export async function applyWrites(
         ? written.map((rel) => ({ file: rel, updated: updatedByRel.get(rel) === true }))
         : [],
   };
+}
+
+/**
+ * ★ 唯一的构造点：把"我动了什么"集中算一次，所有出口都从这一个地方出去。
+ *
+ * 本 [B] 是**落盘内核**（只写不改别的）：
+ *   - 作用域类 `project_dir`：入参 `projectRoot` 是必需参数 ⇒ 随时可给（`path.resolve` 成绝对根）。
+ *   - 对象类 `written_files`：**只有真落盘才给**。判据取**产物自身**：`r.ok && r.written_files.length > 0`
+ *     —— 三个"没落盘"的出口都天然被它挡掉：
+ *       · 根外文件（:85，`ok:false`，`written_files:[]`）；
+ *       · 无可写项（:87，`ok:true` 但空）；
+ *       · `dryRun`（:89，`ok:true` 但空）。
+ *       ⇒ 不另立 `if (dryRun)` 判据（那会把同一个事实两处各判一次）。
+ *   - 值**直接复用**产物里的 `written_files`：它本就是 `toRelPosix(root, it.file)` 的键（仓库相对 POSIX），
+ *     与 `Touched.written_files` 口径**逐字一致**（无需再转一次）。
+ *
+ * ★★ 已知重复：产物**顶层**已有一个规范名 `written_files`（:47）⇒ 本次调用后同一份路径表会**出现两次**
+ *   （顶层一份 + `touched` 里一份）。**仍然加** —— `touched` 是"下游只读一个统一处"的收据，不能残缺；
+ *   顶层那份将来应移交/退役（见交付报告）。
+ */
+function touchedOf(projectRoot: string, r: WriteReceipt): Touched {
+  const touched: Touched = { project_dir: path.resolve(projectRoot) };
+  if (r.ok && r.written_files.length > 0) touched.written_files = r.written_files;
+  return touched;
+}
+
+export async function applyWrites(
+  projectRoot: string,
+  items: readonly WriteItem[],
+  opts: { dryRun?: boolean; note?: string } = {},
+): Promise<TouchedProduct<WriteReceipt>> {
+  const r = await applyWritesCore(projectRoot, items, opts);
+  return withTouched(r, touchedOf(projectRoot, r));
 }

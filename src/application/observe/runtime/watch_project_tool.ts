@@ -29,6 +29,7 @@ import {
 import { pushAlert } from '../../../infrastructure/alert_inbox.js';
 import { captureProbe, TSProbeCapture, setGlobalProbeSink, hasGlobalProbeSink } from '../../../infrastructure/analysis/observe/probe.js';
 import { watchProject, type WatchHandle, type WatchBatchSummary, type ReconcileSummary } from '../../../infrastructure/index/watch_project.js';
+import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
 // ─────────────────────────────────────────────────────────────
 // rebuild 节流器（纯逻辑，可注入 timer 测试）
@@ -954,7 +955,7 @@ function ledgerWatch(input: WatchProjectToolInput): WatchProjectToolResult {
   };
 }
 
-export async function watchProjectTool(input: WatchProjectToolInput): Promise<WatchProjectToolResult> {
+async function watchProjectToolCore(input: WatchProjectToolInput): Promise<WatchProjectToolResult> {
   const action = input.action ?? 'start';
   if (action === 'status') return statusWatch(input.project_dir);
   if (action === 'stop') return stopWatch(input.project_dir);
@@ -962,6 +963,30 @@ export async function watchProjectTool(input: WatchProjectToolInput): Promise<Wa
   if (action === 'ledger') return ledgerWatch(input);
   if (action === 'declare') return declareWatch(input);
   return startWatch(input);
+}
+
+/**
+ * ★ 唯一的构造点：把"我动了什么"集中算一次。
+ *
+ *   - 作用域类 `project_dir`（= 产物 `project_dir`，`path.resolve`）/ `feature`：随时可给，不依赖 action 成败。
+ *   - ★★ **不给 `written_files`（口径判断，见交付报告）**：本 [B] 的写入只发生在两类位置，均**不该**进本契约：
+ *       ① `declare` 同步写 `<projectRoot>/.agent-io/impact/ledger.json`（+ 观测 `events.jsonl`）——
+ *          字面在项目根下、满足"仓库相对"，但它们是**工具自有的台账/观测数据**，不是本次操作确立、
+ *          供下游接着操作的"工作产物对象"；`written_files` 的契约角色（b_terms.ts:70-77，含给 `symbols`
+ *          跨文件消歧）会被 `.agent-io` 数据文件污染。
+ *       ② `start` 且 `impact_on_change` 时 `doWork` 写的 `rp-<seq>.json` —— 由**常驻 watcher 后台异步**
+ *          产生（不在本次调用窗口内），根本无法归属到"本次调用"。
+ *     且本 [B] 是 6 个 action 的分发面，多数 action 零写入 ⇒ 单列 `written_files` 会误导。
+ */
+function touchedOf(input: WatchProjectToolInput): Touched {
+  const touched: Touched = { project_dir: path.resolve(input.project_dir) };
+  if (input.feature) touched.feature = input.feature;
+  return touched;
+}
+
+export async function watchProjectTool(input: WatchProjectToolInput): Promise<TouchedProduct<WatchProjectToolResult>> {
+  const r = await watchProjectToolCore(input);
+  return withTouched(r, touchedOf(input));
 }
 
 /** 关闭全部监听（测试隔离 / 进程退出时调用） */
