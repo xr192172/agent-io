@@ -145,6 +145,17 @@ export async function computeMigrationPlan(opts: MigrationPlanOptions): Promise<
     if (fs.existsSync(srcDirAbs)) walk(srcDirAbs);
   }
 
+  /**
+   * 一个**原始绝对路径**在本次计划里的**最终绝对路径**（被移动 ⇒ 移动后；未移动 ⇒ 原路径）。
+   * ★ 存在的理由：`movedAbsToRel` 的 value 是**相对** `proj` 的（其它用途要相对形式），
+   *   而 `RunningChangePlan.absToNew` 的契约是**绝对** key ⇒ 必须在这里统一，
+   *   不能把它漏给下游（下游直接拿 key 写盘）。
+   */
+  const finalAbsOf = (fileAbs: string): string => {
+    const rel = movedAbsToRel.get(fileAbs);
+    return rel === undefined ? fileAbs : path.resolve(proj, rel);
+  };
+
   const files = collectSourceFiles(proj, exts, skipDirs);
   const absToNew = new Map<string, string>();
   const originals = new Map<string, string>();
@@ -184,22 +195,30 @@ export async function computeMigrationPlan(opts: MigrationPlanOptions): Promise<
     }
 
     if (s !== src) {
-      // 移动后的文件以移动后路径为 key；未移动以原路径为 key
-      const key = movedAbsToRel.get(fileAbs) ?? fileAbs;
+      // ★★ key 一律是**绝对路径**（契约见 `RunningChangePlan.absToNew`：管线把 key 直接
+      //    `fs.writeFileSync(abs, …)`，**不解析**）——
+      //    2026-10-05 实测缺陷：这里原先给"被移动文件"塞的是 `movedAbsToRel` 的**相对**值（`pkg/a.go`），
+      //    于是 ① 那些改名写去了 `process.cwd()`（往调用方 cwd 里长出一份目录树）
+      //    ② **本项目内被移动文件的内容改写整批丢失**（`package v2` 没变成 `package pkg`）
+      //    ③ 管线仍报 `ok:true` ⇒ **假绿**。绝对/相对混用是本笔要消掉的分叉。
+      const key = finalAbsOf(fileAbs);
       absToNew.set(key, s);
       originals.set(fileAbs, src);
     } else if (movedAbsToRel.has(fileAbs)) {
       // 无内容改写但发生了移动：仍计入计划（absToNew 里放原样内容，便于管线计数/回滚）
-      const key = movedAbsToRel.get(fileAbs)!;
+      const key = finalAbsOf(fileAbs);
       absToNew.set(key, src);
       originals.set(fileAbs, src);
     }
   }
 
   // 撞名守卫：内容落盘目标若已是盘上现存文件（且非本计划移动目标），视为撞名
+  // ★ `movedAbsToRel` 的 **key** 是移动前、**value** 是移动后（相对）⇒ 判"这个 key 是不是
+  //   某次移动的目标"要比 **values**（原写成 `.has(key)` 比 keys，恒为 false —— 一并修正）。
+  const moveTargetAbs = new Set([...movedAbsToRel.values()].map((rel) => path.resolve(proj, rel)));
   for (const key of absToNew.keys()) {
     if (fs.existsSync(key)) {
-      const alreadyMovedTarget = movedAbsToRel.has(key); // 已是某移动的目标 → 正常覆盖
+      const alreadyMovedTarget = moveTargetAbs.has(key); // 已是某移动的目标 → 正常覆盖
       if (!alreadyMovedTarget && !originals.has(key)) {
         throw new Error(`包/目录迁移撞名：内容写入目标已存在 ${path.relative(proj, key)}`);
       }
