@@ -347,3 +347,41 @@
         **半修比不修更坏**（它看起来像修好了）。
       ★ 与 **T13** 同源（同一件事的两个面）：T13 已做（wrapper 收 `exts` + 相对性门），本条是剩下的那一半。
 
+- [ ] **T40 ★★ 三处「隐藏前置」没写进任何工具描述（独立体检 2026-10-05，用户要求"从头逐个测"）**
+      *(核实：体检小队用 `AGENT_IO_HOME` 隔离 + 临时项目 `C:/tmp/...` **逐个真调** 59 工具后报告；
+       我复核了第 3 条（`server_registry.ts:301` 逐字）。)*
+      ⇒ **1. DSL 数据锚定「包安装根」，不是你的项目目录。** 不设 `AGENT_IO_HOME` 时任何 cwd 都在
+        读写**同一个**数据目录 ⇒ 多项目互相看见。**最容易被误伤，却不在任何工具描述里。**
+      ⇒ **2. 符号索引会被"顺手"自动建。** 第一次 `find_references` 就在被分析项目里生 `.agent-io/cache.db`
+        （没先让你 `import_project`）；而 `feature_line` 却要求"先跑一次带 feature 的 import_project"
+        ⇒ **三处口径不一样**。
+      ⇒ **3. 「每次调用前保鲜」只认 4 个参数名**（`project_dir / project_root / root / dir`，
+        `server_registry.ts:301` 的 `projectRootArg`）⇒ 用 `project_dir_a`（cross/hybrid）、
+        `target`（observe_instrument）、`source_root`（render_brickwork）、`file`（find_references）
+        的工具**拿不到自动保鲜**，结果可能悄悄是旧的。
+      ⇒ 方向：① 把 `AGENT_IO_HOME` 的语义写进 `capability_map`（新用户第一站）；
+      ② 三条索引前置口径收成一句一致的话；③ `projectRootArg` 的判定面与各工具真参数名对齐
+      （要么扩它、要么让工具参数名统一）。
+
+- [ ] **T41 ★ 四处「报错说了等于没说 / 与描述不符」（独立体检 2026-10-05）**
+      *(核实：体检小队逐条真调，报错原文已存 `docs/tool-handbook.md` §7.5/§7.6。)*
+      ⇒ `behavior_baseline` / `narrate_step` 报错串里混 `undefined` 占位
+        （例 `…/undefined/.agent-io/behavior/undefined__undefined.json`），**看着像 bug**。
+      ⇒ `observe_log` 传**不存在**的日志文件 → 静默「（无匹配事件）」⇒ 会让人以为"跑过了、没内容"。
+      ⇒ `manage_feature` create/clone/delete 的参数要塞进 **`args` 子对象**，可 schema 里又有个顶层
+        `feature`；报错说「缺少 feature」但顶层就有 ⇒ **自相矛盾**。
+      ⇒ `harvest_from_url` 描述说默认落盘，实测**默认走 dry-run**（`written:false`）⇒ 口径不一致。
+
+- [ ] **T42 ★★ 结构重排三案（独立结构评审 2026-10-05；"层"这根轴清楚，"层内靠什么切"没有统一口径）**
+      *(核实：独立子代理只读目录结构后报告；我复核了 `ls src/presentation/cli/`（22 文件）与行数。)*
+      ⇒ **方案 A（推荐先做，代价最小）**：拆 `presentation/cli/` —— 22 文件 / 6525 行混 4 类
+        （含 **1175 行 CSS** 在 `workbench_shell_css.ts`）⇒ 拆成 `cli/` + `cli/render/`。
+        **只需改 1 个文件 + 移动 8 个文件，外部零影响。**
+      ⇒ **方案 B**：`application/refactor/` 同层两套命名 + 单文件 `index.ts` 已 1479 行；
+        统一命名（68 处路径引用，靠编译器兜底）。★ 与 **T28** 的 `rf-*` 命名是同一族，**同一次做**。
+      ⇒ **方案 C**：`infrastructure/analysis/` 下 15 个子目录名语域重叠、无索引 ⇒ 合并单文件目录 + 补说明。
+
+> ★★ **上面 T37/T38/T39 是 2026-10-05 体检**当场**修掉的三笔**（已进 commit 历史，故不在此列）：
+> `f2e9066` cross 线假阳性 + P-D 守卫漏接 · `94987c4` 补齐 18 工具缺参守卫（**59 工具零坏签名**）
+> · `25ab56c` `render_brickwork` 默认输出归位 `<agent-io>/docs/`。
+
