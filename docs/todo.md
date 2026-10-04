@@ -506,13 +506,14 @@
         ⇒ **手术是主线，搬家是收尾。**
       ⇒ 四步（**每步一提交 + build 绿**）：
         · **A ✅ 已做**：`protect.ts` → `infrastructure/analysis/refactor/protect.ts`（纯搬家，7 处引用）。
-        · **B ⏳**：`project_root.ts` 下沉 ⇒ ★ **整文件搬**（评审实测：`expandClosureDetailed` 内部依赖它绝大部分，
-          "只切几件" ≈ 沉 80% 却**造出两个落点**）。**外部消费者 8 个**要改路径
-          （`cross/index.ts:18` · `design/intent/detect_drift.ts:21` · `find/field_refs.ts:27` ·
-          `find/find_references.ts:22` · `rename/rename_files.ts:19` · `rename/rename_symbols.ts:41/44` ·
-          `rename/symbol_move.ts:37` · `presentation/mcp/server_registry.ts:62`）。
-          ★ 目标目录**待裁定**：`infrastructure/analysis/refactor/`（零新域，但它不只服务 refactor）vs
-          新开 `infrastructure/analysis/closure/`（名实相符，多一条域表记录）。
+        · **B ✅ 已做**（`1bb9d93`）：`project_root.ts`（**1279 行 / 15 个改动点**）→
+          `infrastructure/analysis/project_root/index.ts`（**新立 `project-root` 域**；
+          ★ 没塞进 `analysis/refactor/` —— 它跨 cross/design/refactor×4/presentation，**不服务单一能力**）。
+          ★ 执行者**主动标注"我的 code_health 读数来自旧 dist、仅供参考"**（并跑 `index_integrity({refresh:true})` 保鲜）
+          ⇒ 主控**用新构建复测**：`layer_violation 0` / `circular_dependency 0` ✓
+          ⇒ ★ **读数与"尺子版本"绑定，尺子旧了就要说** —— 这是应有的姿势。
+        · ★★ **A+B 之后得到一个决定性结论（实测）**：引擎的外向依赖**只剩 `infrastructure/*` + `domain/*`（全向下）**，
+          外加 **唯一一条应用层边 = `../../rename/rename_file.js`** ⇒ **C 就是 D 之前的最后一道门**（不是推断）。
         · **C ⏳（唯一行为改动，风险最高）**：断开 **engine → 应用层库**（`languages/typescript.ts:22` → `rename/rename_file`）。
           ★ 措辞修正（评审）：`rename_file` **不是 MCP 入口**（工具是 `rename_symbols`/`rename_files`），
             它是**应用层库**，被那两个工具 + `code_workbench` 复用；★ 而它自己又 import
