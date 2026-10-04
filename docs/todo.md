@@ -165,8 +165,37 @@
         否则会逼人造假字段（实例：`wizardSteps` 静态表 / `dagLayout` 纯计算）。
         ⇒ 并记：**`manageFeature` 是 [C] 级分派器，不是 [B]**（入参 `{action,args}` + 产物 `{message,data:unknown}`
         都是 [C] 形态）⇒ **不接 `touched`**。
-      · ⏳ (2) 续：**④-d harvest → ④-e 其余** + 棘轮收紧。★ 每族照 ④-b 的办法：
-        **先定形状 → 1 文件 1 个子代理并行 → 我串行核验/验证/提交**。
+      · ✅ **(2) ④-d harvest 族已做（`61850ce`）**：`extractContracts` / `harvestClosure` / `harvestDecisions`。
+        ★ `extractContracts` 的 `written_to_dsl` 是"**写了 DSL**"、**不等于写过文件** ⇒ 不给 `written_files`。
+      · ✅ **(2) 续：④-e 其余三条线（15 个 [B]）已完成（`03bb32e`）** —— **T18 铺满**。
+        ★ 只读量具独立复核：**已接 29 / 待接 8，待接的正是判定表里那 8 个"不该给"**。
+        ★★ 本笔又抓到「[C] 层丢小票」的**第 2 处**：`diffViewsHandler` 原先 `{message: r.message, data: r.data}`
+        **显式重建** ⇒ 丢掉顶层 `touched`（实测 `diff_views` 的 DATA 里确实没有）⇒ 已转发。
+        ⇒ 并量清全貌：`handlers.ts` 里**只有 2 个**这种形态（另一个 `observeTraceHandler` 属"不该给"）。
+
+★★★ **④-e 的判定表（2026-10-05，经"跨模型对账"修正）**
+
+**不该给 `touched` 的 8 个**（三类）：
+- **① [C] 级分派器（3）**：`manageFeature` · `exploreCode` · `queryFeature`
+  ⇒ ★★ **判据（比"有没有 switch"锋利）**：**入参 `{action/query + 袋子}`** **并且** **产物 `data: unknown`**。
+  （`editCode` 也用 `op` **if 链**分派，但产物是 **`{message; data: EditReceipt}`（有类型）** ⇒ **不是这一类**。）
+  ⇒ 正确做法：`touched` 由**被分派到的真 [B]** 携带，分派器**转发**即可，不自己拼。
+- **② 纯数据 / 纯计算（3）**：`wizardSteps`（无入参静态表）· `classifyTools` · `collectFunctions`。
+- **③ 根只能靠 `cwd` 兜底（2）**：`observeTrace` · `runTests` —— ★ 本仓**禁 cwd 兜底**（cwd 是"另一个项目"）
+  ⇒ 根**算给不出**；且二者无仓库相对的对象。
+
+**该给（29，含已做的 14）**。★ **棘轮口径的完整例外**：
+「新增 [B] 必须给 `touched`，**除非**它是 **(a) 纯数据/纯计算** 或 **(b) [C] 级分派器** —— 两种都要在 `B_TERMS` 里显式登记」。
+
+★★ **一条全局口径（对账时由另一模型提出、我核实后采纳）**：
+**`saveDSL` 落 `<dataHome>/.agent-io/**`（不在仓库里）**，而 `written_files` 口径写死「**仓库相对路径**」
+⇒ **凡"只写 DSL/存档/导图 JSON"的 [B]，`written_files` 一律给不出**（塞绝对路径 = **换口径**）。
+★ 例外要**按事实判**：`watchProjectTool.declare` 写的 `ledger.json` **确实在项目根下** ⇒ 那条理由**对它不成立**；
+  它的 `written_files` 仍判**不给**，理由换成：**那是工具自有的内部数据**（非"本次操作对被操作对象的工作产物"）
+  + `rp-*.json` 由**常驻 watcher 异步产生、不在本次调用窗口内** ⇒ **归属不了本次调用**。
+
+★ ★★ **"跨模型对账"抓到了我两处误判**（详见 `.inspect` 与项目记忆）：
+`dagLayout` 我当"纯计算"、**实际它 `saveDSL` 回写 DSL**；`editCode` 我当"分派器"、**实际产物有类型**。
       · ✅ **(3) 还债：7/7 全部完成**（commit `c55f607` + `ed4a5b4` + `98618be`）——
         `files`(报告数组) ⇒ `contract_reports` / `reconcile_reports` / `removal_reports`；
         `stats` ⇒ `contract_stats` / `closure_stats` / `reconcile_stats` / `algorithm_stats`；
@@ -445,6 +474,17 @@
       ⇒ **判据**：`grep -rn "readAssemblyBricks\|BrickFoldInfo\|assembly\.json" src` 应只剩删除后的零引用；
         `tsc` 0；`npm run build` 0；`npm run structure:gap` 三态仍全 0。
       ⇒ ★ 与 **T41**（报错口吻）不同族：这是**死路清尾**，属"删族"的尾巴（见 `dc-remove-tool` §一）。
+
+- [ ] **T47 ★ 「自定位工具」的 `touched.project_dir` 可能是 cwd（口径待定，2026-10-05）**
+      *(核实：`index_integrity --json '{}'` 实测 `"touched":{"project_dir":"D:\\project_develop\\design-canvas"}`
+       —— 那是**本仓 cwd**，不是调用方想查的项目。)*
+      ⇒ 根因：`index_integrity.ts:168` 的 Core 是 `path.resolve(opts.project_dir)` —— **`undefined` 时 `path.resolve` 会落到 cwd**。
+      ⇒ ★ **定性（重要）**：这是它**既有的"自定位"行为**（工具描述里写了"会自定位项目"），**不是本笔引入**。
+        但 `touched` 的口径是「**作用域类字段，填解析后的绝对根**」——当那个根是 cwd 时，
+        下游拿到 `touched.project_dir` 会以为"这是调用方声明的项目"。
+      ⇒ 待定两选一：(a) 让自定位工具**显式标注"根来源"**（自定位 vs 委派）；(b) 给 `Touched` **加一个字段**表达它。
+        ★ 按纪律「**跨模块统一形态时不要动既有字段名；要统一就新增语义唯一、类型钉死的东西**」⇒ 倾向 (b)。
+      ⇒ 波及面待量：全仓还有哪些 [B] 的根是"可自定位"的（`index_integrity` · `run_tests` · `observe_trace` 已知 3 处）。
 
 - [ ] **T46 ★ `dead_statements.ts` 里还有第 7 种 `files`（还债的尾巴，2026-10-05 由执行者上报）**
       *(核实：`grep -n "files" src/infrastructure/analysis/deadcode/dead_statements.ts` —— 实测 **3 处**。)*
