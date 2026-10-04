@@ -19,7 +19,7 @@
 
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { resolveProjectRoot, loadAliasConfig, resolveAliasedImport, resolveLangImport } from '../../cross/project_root.js';
+import { resolveProjectRoot, loadAliasConfig, resolveAliasedImport, resolveLangImport } from '../../../infrastructure/analysis/project_root/index.js';
 import { analyzeModuleSource, resolveRel, buildNoExt } from '../rename_symbol/index.js';
 import { camelToSnake, scanLiteralOccurrences, type RawLiteralMatch } from '../rename/rename_symbols.js';
 import { collectFieldRefs, collectTypeConstructCandidates, type FieldRefFile, type TypeConstructCandidate } from './field_refs.js';

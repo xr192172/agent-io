@@ -27,12 +27,12 @@ import path from 'node:path';
 import { execSync } from 'node:child_process';
 import { homedir } from 'node:os';
 import ts from 'typescript';
-import { analyzeModuleSource } from '../../infrastructure/parse/module_analysis.js';
-import { parseFileFull, isSupported, isTsJsExt, resolveExistingPath, SOURCE_EXTS, TS_JS_EXTS, type ParsedImport } from '../../infrastructure/parse/index.js';
-import { readGoModules, type GoModule } from '../../infrastructure/graph/import_project.js';
-import { gitAvailable } from '../../infrastructure/exec_guard.js';
-import { getProjectCacheDb, closeProjectCacheDb, projectCacheDbPath, type Database } from '../../infrastructure/index/db.js';
-import { skipDirSet } from '../../infrastructure/parse/source_exts.js';
+import { analyzeModuleSource } from '../../parse/module_analysis.js';
+import { parseFileFull, isSupported, isTsJsExt, resolveExistingPath, SOURCE_EXTS, TS_JS_EXTS, type ParsedImport } from '../../parse/index.js';
+import { readGoModules, type GoModule } from '../../graph/import_project.js';
+import { gitAvailable } from '../../exec_guard.js';
+import { getProjectCacheDb, closeProjectCacheDb, projectCacheDbPath, type Database } from '../../index/db.js';
+import { skipDirSet } from '../../parse/source_exts.js';
 import {
   toRelPath,
   hasAnyIndexedFiles,
@@ -40,7 +40,7 @@ import {
   getResolvedImportSources,
   getRawImportsOfFile,
   findFilesImportingAnySource,
-} from '../../infrastructure/index/symbols.js';
+} from '../../index/symbols.js';
 
 /** 本地源扩展名（闭包只收这些）—— ★ 来自内核唯一权威 `SOURCE_EXTS`（`ts_kernel/source_exts.ts`）。
  *  此前就地手写并与 rename_symbol/rename_file 的清单"对齐"——靠人记得对齐 ⇒ 已在 G4 登记表登记收敛。 */

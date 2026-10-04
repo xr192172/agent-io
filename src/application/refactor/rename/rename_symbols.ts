@@ -38,10 +38,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { renameSymbol, type RenameSymbolInput, type RenameSymbolResult } from '../rename_symbol/index.js';
 import { renameLocals, type LocalRenameOutcome } from './rename_local.js';
-import { resolveProjectRoot } from '../../cross/project_root.js';
+import { resolveProjectRoot } from '../../../infrastructure/analysis/project_root/index.js';
 import { createProtectGuard } from '../../../infrastructure/analysis/refactor/protect.js';
 import { writeSourceFiles, type WriteThroughOutcome } from '../../observe/runtime/write_gate.js';
-import type { ExternalRef } from '../../cross/project_root.js';
+import type { ExternalRef } from '../../../infrastructure/analysis/project_root/index.js';
 import { skipDirSet } from '../../../infrastructure/parse/source_exts.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 

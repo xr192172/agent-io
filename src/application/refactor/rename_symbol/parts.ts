@@ -11,7 +11,7 @@ import { readdirSync, type Dirent } from 'node:fs';
 import path from 'node:path';
 import { TS_JS_EXTS } from '../../../infrastructure/parse/index.js';
 import { TS_EXTS, type NodeType } from '../../../infrastructure/parse/ast_node.js';
-import type { AliasConfig, ExternalRef } from '../../cross/project_root.js';
+import type { AliasConfig, ExternalRef } from '../../../infrastructure/analysis/project_root/index.js';
 
 // ─────────────────────────────────────────────
 // 最小 tree-sitter 节点面 + 小工具（`N` / `NodeType` / `TS_EXTS` / `stripQuotes` / `nameInfo`）

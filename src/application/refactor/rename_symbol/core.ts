@@ -9,7 +9,7 @@
  * 语言分支不再内联 if 链，改为委托给 `languages/registry.ts` 的 `findLangPackage(defExt)`。
  */
 import path from 'node:path';
-import { resolveProjectRoot, loadAliasConfig, type ExternalRef } from '../../cross/project_root.js';
+import { resolveProjectRoot, loadAliasConfig, type ExternalRef } from '../../../infrastructure/analysis/project_root/index.js';
 import { missingLanguageHint } from '../../../infrastructure/parse/lang_hint.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 import { findLangPackage } from './languages/registry.js';

@@ -59,7 +59,7 @@ import { findReferences } from '../../application/refactor/find/find_references.
 import { runTests } from '../../application/observe/runtime/run_tests.js';
 // （`tools/stale_check` 的导入已随 P-F 删除：本文件不再直接消费它 —— 三个 stale 告警各自
 //   探测，`stale_check.formatStaleText` 仍由 lanes/observe.ts 的 `run_tests` 前置提示使用。）
-import { detectReachableRoots } from '../../application/cross/project_root.js';
+import { detectReachableRoots } from '../../infrastructure/analysis/project_root/index.js';
 import { analyzeImpact, analyzeHubs } from '../../infrastructure/analysis/impact/index.js';
 import type { ImpactChangePoint } from '../../infrastructure/analysis/impact/index.js';
 import { compareProjects } from '../../infrastructure/analysis/cross_repo/index.js';

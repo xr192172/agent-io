@@ -5,7 +5,7 @@
  *
  * ★ 2026-10-04（T26）：模块级作用域解析 `analyzeModuleSource`（及其 `ImportEdge` / `ModuleRef` /
  *   `ModuleAnalysis` 与私有助手）**已下沉到 `infrastructure/parse/module_analysis.ts`**。
- *   原因：`application/cross/project_root.ts`（共享工具层）反向 import 本文件 ⇒ 层次倒挂，
+ *   原因：`infrastructure/analysis/project_root/index.ts`（共享工具层）反向 import 本文件 ⇒ 层次倒挂，
  *   并与本文件对外层 `cross` 的 value import 构成**双向 value 环**。
  *   该解析只依赖基础设施（解析器/节点原语），与 `project_root` / `renameFile` / `protect` 无关
  *   （那三样只在 `renameTsSymbol` 里用）⇒ 它本就应该在 infrastructure。
@@ -20,7 +20,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { renameFile } from '../../rename/rename_file.js';
-import { expandClosureDetailed, loadAliasConfig, resolveAliasedImport, type AliasConfig } from '../../../cross/project_root.js';
+import { expandClosureDetailed, loadAliasConfig, resolveAliasedImport, type AliasConfig } from '../../../../infrastructure/analysis/project_root/index.js';
 import { createProtectGuard } from '../../../../infrastructure/analysis/refactor/protect.js';
 import { missingLanguageHint } from '../../../../infrastructure/parse/lang_hint.js';
 import { analyzeModuleSource, type ModuleAnalysis } from '../../../../infrastructure/parse/module_analysis.js';

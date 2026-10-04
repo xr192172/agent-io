@@ -257,7 +257,7 @@
       "id": "cross",
       "layer": "application",
       "dir": "src/application/cross",
-      "note": "跨项目/跨语言能力线（index.ts 即该线归属的唯一来源）：`project_root` = 项目根自动定位（向上找 .git → 退化到 manifest）+ 沿 import 边的动态闭包边界，消除「必须显式传 project_dir」的使用摩擦，被 rename_symbol / find / rename / detect_drift 等多处复用。"
+      "note": "跨项目/跨语言能力线（index.ts 即该线归属的唯一来源）：`translate_go_ts` 等 4 条工具。★ 2026-10-05（T42 方案 B 第 2b 步）：原 `project_root`（项目根自动定位 + import 动态闭包边界）已**归位**到 `infrastructure/analysis/project_root/`（另立 `project-root` 域）—— 它自身只 import infrastructure、且无模块反向 import 它，本就不属应用层。"
     },
     {
       "id": "harvest",
@@ -312,6 +312,12 @@
       "layer": "infrastructure",
       "dir": "src/infrastructure/analysis/cross_repo",
       "note": "跨项目符号索引：对两仓各建一次顶层符号集合 → 求交（同名不同签 = 真冲突 / 同名同签 = 双胞胎）+ 求差（aOnly/bOnly = 安全迁移候选）。供 rename_symbol / package_migration / impact 的跨项目版复用。纯内存、零共享状态。"
+    },
+    {
+      "id": "project-root",
+      "layer": "infrastructure",
+      "dir": "src/infrastructure/analysis/project_root",
+      "note": "项目根自动定位 + import 动态闭包边界（消除「必须显式传 project_dir」的使用摩擦）：向上找 `.git` → 退化到 manifest；沿 import 边算闭包。★ 2026-10-05（T42 方案 B 第 2b 步）从 `application/cross/`（`project_root.ts`）**归位**到此：它自身只 import infrastructure，且无任何模块反向 import 它（infrastructure 内仅注释提及）⇒ 归位不造环。★ 但它的消费者**跨 cross / design / refactor×4 / presentation**（十余处）⇒ 不服务单一能力，**该有自己的域**，故独立登记而非塞进 `analysis/refactor/`。"
     },
     {
       "id": "diagnosis",

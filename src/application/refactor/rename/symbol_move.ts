@@ -34,7 +34,7 @@ import {
   resolveAliasedImport,
   type AliasConfig,
   type ExternalRef,
-} from '../../cross/project_root.js';
+} from '../../../infrastructure/analysis/project_root/index.js';
 import { parseAstRoot, TS_JS_EXTS } from '../../../infrastructure/parse/index.js';
 import { syncFile } from '../../../infrastructure/index/symbols.js';
 import { getProjectCacheDb } from '../../../infrastructure/index/db.js';

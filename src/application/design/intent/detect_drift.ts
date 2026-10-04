@@ -18,7 +18,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
 import { getDSL, getStorageRoot } from '../../../infrastructure/storage.js';
-import { gitRootOf } from '../../cross/project_root.js';
+import { gitRootOf } from '../../../infrastructure/analysis/project_root/index.js';
 import { checkConsistency } from './consistency.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 

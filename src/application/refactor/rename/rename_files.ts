@@ -16,7 +16,7 @@
 
 import path from 'node:path';
 import { renameFile, type RenameFileResult } from './rename_file.js';
-import { resolveProjectRoot } from '../../cross/project_root.js';
+import { resolveProjectRoot } from '../../../infrastructure/analysis/project_root/index.js';
 import { snapshotBeforeWrite } from '../snapshot/file_snapshot.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 

@@ -97,7 +97,7 @@ export function getDbFile(): string {
 //
 // ★ ①② 是**纯字符串**（不查盘），好让调用方能在**真正开库之前**先 `existsSync` 预检 ——
 //   否则 `getProjectCacheDb` 会在无索引的项目里造出一个空 cache.db（Windows 上还持有 EBUSY 锁，
-//   让临时目录测试的 rmSync 失败；`application/cross/project_root.ts` 里记着这笔账）。
+//   让临时目录测试的 rmSync 失败；`infrastructure/analysis/project_root/index.ts` 里记着这笔账）。
 // ─────────────────────────────────────────────────────────────
 
 /** ① 已知项目根 ⇒ 该项目的符号缓存文件路径（`<root>/.agent-io/cache.db`）。**不查存在**。 */

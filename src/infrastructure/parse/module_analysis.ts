@@ -15,7 +15,7 @@
  *   `isTypeOnlyModuleStatement` + `ast_node` 原语），与 `project_root` / `renameFile` / `protect`
  *   无关（那三样只在跨文件改名执行器 `renameTsSymbol` 里用）。它原先被错误地放在
  *   `application/refactor/rename_symbol/languages/typescript.ts`（特性内部），
- *   而 `application/cross/project_root.ts`（共享工具层）却反向 import 它 —— 层次倒挂，
+ *   而 `infrastructure/analysis/project_root/index.ts`（共享工具层）却反向 import 它 —— 层次倒挂，
  *   并与该文件自身对外层 `cross` 的 value import 构成**双向 value 环**。
  *   下沉到 infrastructure 后，依赖方向回到「共享工具 → 基础设施」。
  */
