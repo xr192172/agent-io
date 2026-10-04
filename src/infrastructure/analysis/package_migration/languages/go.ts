@@ -6,7 +6,7 @@
  */
 import { parseAstRoot } from '../../../../infrastructure/parse/index.js';
 import type { SyntaxNodeLike } from '../../../../infrastructure/parse/index.js';
-import { stripQuotes, type AliasEdit } from '../parts.js';
+import { stripQuotes, type AliasEdit, type PmLangPackage } from '../parts.js';
 
 /** 收集 `from` 在该文件中作为 `exactPath` 的 import 别名声明点。 */
 function collectGoImportAliasEdits(
@@ -78,7 +78,7 @@ function collectGoSelectorEdits(node: SyntaxNodeLike, from: string, to: string):
  * （如 v2.Get）却被正则无差别地 `\bfrom\.` 改掉」的根因。
  * 返回 { ok:false } 表示解析失败（语言包缺失/退化环境），调用方据此回退正则。
  */
-export async function goAliasEdits(
+async function goAliasEdits(
   src: string,
   exactPath: string,
   from: string,
@@ -96,3 +96,12 @@ export async function goAliasEdits(
   if (to && to !== from) edits.push(...collectGoSelectorEdits(root, from, to));
   return { ok: true, edits };
 }
+
+/**
+ * ★ 本语言包 —— `exts` 与实现**同文件**（与 `contract_gate` 同形）：
+ * 注册表只 import 并收集，**不再把 `exts` 写在别处**。
+ */
+export const goPackage: PmLangPackage = {
+  exts: ['.go'],
+  collect: (a) => goAliasEdits(a.src, a.exactPath, a.from, a.to, a.fileAbs),
+};

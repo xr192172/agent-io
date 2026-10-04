@@ -7,28 +7,20 @@
  *
  * ★ 行为等价性：各语言包 ext 互不相交，查表与 if 链等价（else → 正则回退由 core 处理）。
  */
-import { TS_JS_EXTS } from '../../../../infrastructure/parse/index.js';
-import { goAliasEdits } from './go.js';
-import { tsAliasEdits } from './ts.js';
-import { pyAliasEdits } from './py.js';
+import { goPackage } from './go.js';
+import { tsPackage } from './ts.js';
+import { pyPackage } from './py.js';
 import type { PmLangPackage } from '../parts.js';
 
 export type { PmLangPackage };
 
-export const PM_LANG_PACKAGES: readonly PmLangPackage[] = [
-  {
-    exts: ['.go'],
-    collect: (a) => goAliasEdits(a.src, a.exactPath, a.from, a.to, a.fileAbs),
-  },
-  {
-    exts: TS_JS_EXTS,
-    collect: (a) => tsAliasEdits(a.src, a.exactPath, a.from, a.to, a.fileAbs),
-  },
-  {
-    exts: ['.py'],
-    collect: (a) => pyAliasEdits(a.src, a.exactPath, a.from, a.to, a.fileAbs),
-  },
-];
+/**
+ * ★★ 这张表现在是**纯收集**（2026-10-05，与 `contract_gate/languages/registry.ts` 同形）：
+ *   每个语言包**自带 `exts`**（就在它自己那个文件里），本表只把它们排好序。
+ *   ⇒ 好处：**「让某个文件去服务别的扩展名」在结构上不可能** —— 要改一个包的 `exts`，
+ *     必须进那个语言的文件。（改前 `exts` 写在本表、impl 写在语言文件里，是**分居两处**。）
+ */
+export const PM_LANG_PACKAGES: readonly PmLangPackage[] = [goPackage, tsPackage, pyPackage];
 
 export function findPmLangPackage(ext: string): PmLangPackage | undefined {
   return PM_LANG_PACKAGES.find((p) => p.exts.includes(ext));

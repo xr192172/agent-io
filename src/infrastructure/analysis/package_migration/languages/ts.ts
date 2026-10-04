@@ -5,7 +5,8 @@
  */
 import { parseAstRoot } from '../../../../infrastructure/parse/index.js';
 import type { SyntaxNodeLike } from '../../../../infrastructure/parse/index.js';
-import { stripQuotes, type AliasEdit } from '../parts.js';
+import { stripQuotes, type AliasEdit, type PmLangPackage } from '../parts.js';
+import { TS_JS_EXTS } from '../../../../infrastructure/parse/source_exts.js';
 
 /** 收集 TS 中「目标 source 的 import」引入的绑定名 identifier 节点（default/namespace/named）。 */
 function collectTsBinds(
@@ -85,7 +86,7 @@ function collectTsUsage(node: SyntaxNodeLike, from: string, to: string): AliasEd
 }
 
 /** TS 家族 AST 守卫 + 精确替换（对齐 Go 语义）。 */
-export async function tsAliasEdits(
+async function tsAliasEdits(
   src: string,
   exactPath: string,
   from: string,
@@ -105,3 +106,13 @@ export async function tsAliasEdits(
   if (to && to !== from) edits.push(...collectTsUsage(r.root, from, to));
   return { ok: true, edits };
 }
+
+/**
+ * ★ 本语言包 —— `exts` 与实现**同文件**（与 `contract_gate` 同形）：
+ * 注册表只 import 并收集，**不再把 `exts` 写在别处**。
+ * ★ TS/JS 家族用内核权威 `TS_JS_EXTS`（**不要手抄**那 8 个扩展名）。
+ */
+export const tsPackage: PmLangPackage = {
+  exts: TS_JS_EXTS,
+  collect: (a) => tsAliasEdits(a.src, a.exactPath, a.from, a.to, a.fileAbs),
+};

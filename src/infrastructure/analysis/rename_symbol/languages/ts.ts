@@ -25,6 +25,7 @@ import { expandClosureDetailed, loadAliasConfig, resolveAliasedImport, type Alia
 import { createProtectGuard } from '../../../../infrastructure/analysis/refactor/protect.js';
 import { missingLanguageHint } from '../../../../infrastructure/parse/lang_hint.js';
 import { analyzeModuleSource, type ModuleAnalysis } from '../../../../infrastructure/parse/module_analysis.js';
+import { TS_JS_EXTS } from '../../../../infrastructure/parse/source_exts.js';
 import {
   applyEdits,
   toOps,
@@ -36,7 +37,7 @@ import {
   type RenameSymbolFileInfo,
   type RenameSymbolResult,
 } from '../parts.js';
-import type { LangRenameArgs } from '../parts.js';
+import type { LangPackage, LangRenameArgs } from '../parts.js';
 
 // ─────────────────────────────────────────────
 // TS/JS 跨文件改名执行器（原 core 收尾那段，整体搬入）
@@ -196,3 +197,13 @@ export async function renameTsSymbol(args: LangRenameArgs): Promise<RenameSymbol
     ...(skipped.length + closure.skipped.length > 0 ? { skipped: [...skipped, ...closure.skipped] } : {}),
   };
 }
+
+/**
+ * ★ 本语言包 —— `exts` 与实现**同文件**（与 `contract_gate` 同形）：
+ * 注册表只 import 并收集，**不再把 `exts` 写在别处**。
+ * ★ TS/JS 家族用内核权威 `TS_JS_EXTS`（**不要手抄**那 8 个扩展名）。
+ */
+export const tsPackage: LangPackage = {
+  exts: TS_JS_EXTS,
+  rename: (a) => renameTsSymbol(a),
+};

@@ -21,7 +21,7 @@
  *   别与 `languages/c.ts` 的 `renameCSymbol`（**C 语言**）混淆 —— 一个词之差，两门语言。
  */
 import { makeNamespaceAnalyzer, renameNamespaceSymbol, type NamespaceLangSpec } from '../namespace_family.js';
-import type { LangRenameArgs, RenameSymbolResult } from '../parts.js';
+import type { LangPackage, LangRenameArgs, RenameSymbolResult } from '../parts.js';
 
 export const analyzeCSharpSource = makeNamespaceAnalyzer({
   ext: '.cs',
@@ -40,3 +40,13 @@ const CSHARP: NamespaceLangSpec = { ext: '.cs', label: 'C#', moduleOf, analyze: 
 /** C# 的跨文件符号改名（= 共用引擎 + C# 的 ext/label/moduleOf/analyze） */
 export const renameCSharpSymbol = (args: LangRenameArgs): Promise<RenameSymbolResult> =>
   renameNamespaceSymbol(CSHARP, args);
+
+/**
+ * ★ 本语言包 —— `exts` 与实现**同文件**（与 `contract_gate` 同形）：
+ * 注册表只 import 并收集，**不再把 `exts` 写在别处**。
+ * ⇒ 好处：**"让这个文件去服务别的扩展名"在结构上不可能**（这正是改前 `cs.ts`/`java.ts` 交叉污染的根因）。
+ */
+export const csPackage: LangPackage = {
+  exts: ['.cs'],
+  rename: (a) => renameCSharpSymbol(a),
+};

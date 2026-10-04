@@ -22,7 +22,7 @@ import {
   type RenameSymbolFileInfo,
   type RenameSymbolResult,
 } from '../parts.js';
-import type { GoModuleAnalysis } from '../parts.js';
+import type { GoModuleAnalysis, LangPackage } from '../parts.js';
 
 export async function analyzeCLanguage(src: string): Promise<GoModuleAnalysis | null> {
   const parser = await getParser('.c', findLanguageByExt('.c')!);
@@ -209,3 +209,13 @@ export async function renameCSymbol(args: {
     ...(skipped.length > 0 ? { skipped } : {}),
   };
 }
+
+/**
+ * ★ 本语言包 —— `exts` 与实现**同文件**（与 `contract_gate` 同形）：
+ * 注册表只 import 并收集，**不再把 `exts` 写在别处**。
+ * ★ C 与 C++ 共用本包（`.c` / `.h`；**不是** C#——见 `cs.ts`）。
+ */
+export const cPackage: LangPackage = {
+  exts: ['.c', '.h'],
+  rename: (a) => renameCSymbol({ file: a.file, symbol: a.symbol, to: a.to, dryRun: a.dryRun, resolvedRoot: a.resolvedRoot, blocked: a.blocked }),
+};

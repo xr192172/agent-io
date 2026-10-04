@@ -31,42 +31,32 @@
  *   ★ 注意：**`code_health` 抓不到改前那种形状**（单向 import 不成环，也不是分层违规）
  *     ⇒ 这条规则目前**只在文档与头注里**，没有机器判据（见 `docs/todo.md`）。
  */
-import { TS_JS_EXTS } from '../../../../infrastructure/parse/index.js';
-import { renameTsSymbol } from './ts.js';
-import { renameGoSymbol } from './go.js';
-import { renamePythonSymbol } from './py.js';
-import { renameCSharpSymbol } from './cs.js';
-import { renameJavaSymbol } from './java.js';
-import { renameCSymbol } from './c.js';
+import { tsPackage } from './ts.js';
+import { goPackage } from './go.js';
+import { pyPackage } from './py.js';
+import { csPackage } from './cs.js';
+import { javaPackage } from './java.js';
+import { cPackage } from './c.js';
 import type { LangPackage } from '../parts.js';
 
 export type { LangPackage };
 
+/**
+ * ★★ 这张表现在是**纯收集**（2026-10-05，与 `contract_gate/languages/registry.ts` 同形）：
+ *   每个语言包**自带 `exts`**（就在它自己那个文件里），本表只把它们排好序。
+ *   ⇒ 好处：**「让某个文件去服务别的扩展名」在结构上不可能** —— 要改一个包的 `exts`，
+ *     必须进那个语言的文件。（改前正是靠"`exts` 写在注册表、impl 写在语言文件里"分居两处，
+ *     才让 `cs.ts`/`java.ts` 能互相给对方干活而不被任何东西拦下。）
+ *   ★ 各包 `exts` 互不相交（`.ts/.tsx/…` 家族 / `.go` / `.py` / `.cs` / `.java` / `.c`+`.h`）
+ *     ⇒ **顺序无关**（`findLangPackage` 取首个命中）。
+ */
 export const LANG_PACKAGES: readonly LangPackage[] = [
-  {
-    exts: TS_JS_EXTS,
-    rename: (a) => renameTsSymbol(a),
-  },
-  {
-    exts: ['.go'],
-    rename: (a) => renameGoSymbol({ file: a.file, symbol: a.symbol, to: a.to, dryRun: a.dryRun, resolvedRoot: a.resolvedRoot, blocked: a.blocked }),
-  },
-  {
-    exts: ['.py'],
-    rename: (a) => renamePythonSymbol({ file: a.file, symbol: a.symbol, to: a.to, dryRun: a.dryRun, resolvedRoot: a.resolvedRoot, blocked: a.blocked }),
-  },
-  {
-    exts: ['.cs'],
-    rename: (a) => renameCSharpSymbol(a),
-  },
-  {
-    exts: ['.java'],
-    rename: (a) => renameJavaSymbol(a),
-  },
-  {
-    exts: ['.c', '.h'],
-    rename: (a) => renameCSymbol({ file: a.file, symbol: a.symbol, to: a.to, dryRun: a.dryRun, resolvedRoot: a.resolvedRoot, blocked: a.blocked }),
-  },
+  tsPackage,
+  goPackage,
+  pyPackage,
+  csPackage,
+  javaPackage,
+  cPackage,
 ];
 
 export function findLangPackage(ext: string): LangPackage | undefined {

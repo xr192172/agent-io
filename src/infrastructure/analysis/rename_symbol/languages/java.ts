@@ -16,7 +16,7 @@
  *   - 冻结行保护 + 原子性（任一阻断 → 整体不落盘）
  */
 import { makeNamespaceAnalyzer, renameNamespaceSymbol, type NamespaceLangSpec } from '../namespace_family.js';
-import type { LangRenameArgs, RenameSymbolResult } from '../parts.js';
+import type { LangPackage, LangRenameArgs, RenameSymbolResult } from '../parts.js';
 
 export const analyzeJavaSource = makeNamespaceAnalyzer({
   ext: '.java',
@@ -35,3 +35,13 @@ const JAVA: NamespaceLangSpec = { ext: '.java', label: 'Java', moduleOf, analyze
 /** Java 的跨文件符号改名（= 共用引擎 + Java 的 ext/label/moduleOf/analyze） */
 export const renameJavaSymbol = (args: LangRenameArgs): Promise<RenameSymbolResult> =>
   renameNamespaceSymbol(JAVA, args);
+
+/**
+ * ★ 本语言包 —— `exts` 与实现**同文件**（与 `contract_gate` 同形）：
+ * 注册表只 import 并收集，**不再把 `exts` 写在别处**。
+ * ⇒ 好处：**"让这个文件去服务别的扩展名"在结构上不可能**（这正是改前 `cs.ts`/`java.ts` 交叉污染的根因）。
+ */
+export const javaPackage: LangPackage = {
+  exts: ['.java'],
+  rename: (a) => renameJavaSymbol(a),
+};

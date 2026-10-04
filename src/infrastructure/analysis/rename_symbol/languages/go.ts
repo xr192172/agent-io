@@ -20,8 +20,9 @@ import {
   applyEdits,
   toOps,
   stripQuotes,
-  type N,
   type GoModuleAnalysis,
+  type LangPackage,
+  type N,
   type RenameSymbolFileInfo,
   type RenameSymbolResult,
 } from '../parts.js';
@@ -298,3 +299,13 @@ export async function renameGoSymbol(args: {
     ...(skipped.length > 0 ? { skipped } : {}),
   };
 }
+
+/**
+ * ★ 本语言包 —— `exts` 与实现**同文件**（与 `contract_gate` 同形）：
+ * 注册表只 import 并收集，**不再把 `exts` 写在别处**。
+ * ⇒ 好处：**"让这个文件去服务别的扩展名"在结构上不可能**（这正是改前 `cs.ts`/`java.ts` 交叉污染的根因）。
+ */
+export const goPackage: LangPackage = {
+  exts: ['.go'],
+  rename: (a) => renameGoSymbol({ file: a.file, symbol: a.symbol, to: a.to, dryRun: a.dryRun, resolvedRoot: a.resolvedRoot, blocked: a.blocked }),
+};

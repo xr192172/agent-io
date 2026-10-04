@@ -5,7 +5,7 @@
  */
 import { parseAstRoot } from '../../../../infrastructure/parse/index.js';
 import type { SyntaxNodeLike } from '../../../../infrastructure/parse/index.js';
-import type { AliasEdit } from '../parts.js';
+import type { AliasEdit, PmLangPackage } from '../parts.js';
 
 /** `from <module> import …` 的模块路径（点分）。 */
 function pyFromModule(stmt: SyntaxNodeLike): string | null {
@@ -96,7 +96,7 @@ function collectPyUsage(node: SyntaxNodeLike, from: string, to: string): AliasEd
 }
 
 /** Python AST 守卫 + 精确替换（对齐 Go 语义）。 */
-export async function pyAliasEdits(
+async function pyAliasEdits(
   src: string,
   exactPath: string,
   from: string,
@@ -116,3 +116,12 @@ export async function pyAliasEdits(
   if (to && to !== from) edits.push(...collectPyUsage(r.root, from, to));
   return { ok: true, edits };
 }
+
+/**
+ * ★ 本语言包 —— `exts` 与实现**同文件**（与 `contract_gate` 同形）：
+ * 注册表只 import 并收集，**不再把 `exts` 写在别处**。
+ */
+export const pyPackage: PmLangPackage = {
+  exts: ['.py'],
+  collect: (a) => pyAliasEdits(a.src, a.exactPath, a.from, a.to, a.fileAbs),
+};
