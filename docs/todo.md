@@ -244,6 +244,14 @@
         · **真调验收**（隔离 `AGENT_IO_HOME` + 2 文件夹具）：无证据改 `file` 断言 ⇒ **被拒**（错文给出下一步）；
           带文件证据 ⇒ **通过并真落盘**；`type=status` 无证据 ⇒ **通过**（边界成立）；
         · 工具描述已同步（`weight` 与 `evidence.type` 两处）。
+        · ★★ **未覆盖（2026-10-05 独立核验发现，待判）**：本闸**只管 `edit_dsl` 这一条路**。写 `semantic.files`
+          （含 `path`/`responsibility`/`expected_apis`/`layer`/`contract` 等"代码是什么"的断言）**还有别的入口**：
+          **6 个 MCP 工具**（`import_project` / `sync_contracts` / `extract_contracts` / `reconcile_effects` /
+          `narrate_step` / `archive_node`）+ `explore_code` 的 `arch_layer`·`check_monolith` + **HTTP 写口**。
+          ★ 其中**大多数是"代码驱动的产者"**（它们本来就在读代码/事件）⇒ 不覆盖**合理**；
+          但 **`serve.ts:175` 的 `/api/dsl`（前端 POST 整份 DSL）是既有的大洞** —— 它**同时跳过** T20 闸门、
+          L1–L4 与 `view=live` 护栏（只剩 rev 乐观锁）⇒ 同一个"改设计"动作有两条路、两道不同的闸（**判据分叉**）。
+          ⇒ 待判：给它补等价闸，还是收口成"只此一个写入口"。
       ⇒ ★ **另记一条既有隐患**（本笔发现，未改）：`resolveFunctionCacheDb` 的第三级候选是 **`<cwd>/.agent-io/cache.db`**
         ⇒ 一个**没有自己索引**的项目会读到 **cwd 那个项目**的库。本笔靠"`matched_path` 必须命中"挡了误报，
         但**根上仍是 T19 的"根"问题**，应在 T19 里一并收口。
