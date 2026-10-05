@@ -39,22 +39,53 @@ jobs:
         if: ${{ env.AGENT_IO_R5_SKIP != '1' }}
         run: node third_party/archify/bin/archify.mjs doctor
 
-  # ─── Go 插桩组件：observe-lang-go / go-slim ───
+  # ─── Go 语言包（observe）：源码插桩 + 进程内采集 ───
   go-test:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        module: [observe-lang-go, go-slim]
+        module: [observe-lang-go]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
           go-version: "stable"
-          cache-dependency-path: ${{ matrix.module }}/go.sum
+          # ★ 不设 cache-dependency-path：该 module 无 require（纯标准库）⇒ 没有 go.sum。
+          #   指向不存在的路径是脆弱依赖（某些 setup-go 版本会直接失败），故不设。
       - name: 编译
         run: go build ./...
         working-directory: ${{ matrix.module }}
       - name: Go 测试
         run: go test ./...
         working-directory: ${{ matrix.module }}
+
+  # ─── 总门（2026-10-05 接入）：npm run verify ───
+  #
+  # ★ 为什么单独一个 job，而不是塞进 node-test：
+  #   `verify` 的 Go 两道门需要 Go 工具链，而 node-test 的矩阵里没有 setup-go
+  #   ⇒ 放那里两道 Go 门会 SKIP，而 **verify 在有门 SKIP 时返回 2**（刻意区别于 0）
+  #   ⇒ 那个 job 会永远红。**这正是 verify 三态设计的用意：跑不了要说成跑不了。**
+  #
+  # ★ 它在 CI 上**新增**的覆盖（其余与既有 job 重叠）：
+  #   · mcp_scan          —— 59 个工具的入参/出参签名（坏签名 ⇒ LLM 一定调错）
+  #   · measure_b_contract —— b 项契约的未定义占位符
+  #   另含 tsc（node-test 的 build 已覆盖）与 Go build/vet（go-test 已覆盖）。
+  #   ★ **不重加已被裁掉的门**：ci.yml 原注释记载 2026-10-05 移除了「契约变更 / README 工具数 /
+  #     能力矩阵 / STALE BUILD」等零依赖闸门（用户裁定"不再自养门"）—— verify **不含**它们。
+  #   ★ 也不含 `go test`（那由 go-test job 负责）⇒ **verify 不是"全部检查"，是"提交前的总门"**。
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "stable"
+      - run: npm ci
+      - name: 总门（ts 类型 / 59 工具签名 / b 项契约 / Go 编译 / Go vet）
+        run: npm run verify
