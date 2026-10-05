@@ -25,7 +25,6 @@ import path from 'node:path';
 import ignore from 'ignore';
 import type { Ignore } from 'ignore';
 import type { DesignDSL, Node, Edge, SemanticFile, ExpectedApi, Symbol } from '../../domain/types.js';
-import type { BrickManifest } from '../../domain/contract.js';
 import { saveDSL, saveLiveFeature, ensureBaseline, getDSL } from '../storage.js';
 import { mergeDesignLayer } from '../storage_overlay.js';
 import { detectArchLayers } from '../analysis/structure/layer_detect.js';
@@ -104,8 +103,6 @@ export interface ImportProjectResult {
   skipped: string[];
   /** 缓存增量统计（仅 cache_db 提供时存在）：hits=未变命中 reparsed=重解析 failed=失败 */
   cache?: { hits: number; reparsed: number; failed: number };
-  /** 积木折叠数（拼装区 assembly.json 命中时 >0；积木=单符号黑盒节点，内部文件不进 DSL） */
-  bricks_folded?: number;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -160,11 +157,6 @@ const LANG_COLORS: Record<string, { bg: string; color: string }> = {
 };
 const DEFAULT_FILE_COLOR = { bg: '#37474f', color: '#eceff1' };
 const DIR_STYLE = { bg: '#152141', color: '#90caf9' };
-
-/** 积木黑盒节点尺寸/配色（紫色系：已治理验证资产，区别于普通目录/文件） */
-const BRICK_W = 280;
-const BRICK_H = 84;
-const BRICK_STYLE = { bg: '#3e2a63', color: '#d1c4e9' };
 
 // ─────────────────────────────────────────────────────────────
 // 文件扫描
@@ -475,52 +467,6 @@ export function resolveImport(
     }
   }
   return [];
-}
-
-// ─────────────────────────────────────────────────────────────
-// 积木折叠（拼装区黑盒化）：assembly.json 出生证明 → DSL 单符号节点
-// ─────────────────────────────────────────────────────────────
-
-/** assembly.json 出生证明里的积木条目（拼装时写入的契约投影） */
-export interface BrickFoldInfo {
-  name: string;
-  /** 拼装区内落位根（恒带尾斜杠，如 'go_logging/'） */
-  dest_root: string;
-  /** 积木人话一句话 */
-  description?: string;
-  /** 聚合契约（exposes/consumes/emits——黑盒节点的接口事实） */
-  aggregate?: BrickManifest['aggregate'];
-}
-
-/**
- * 读拼装区出生证明（assembly.json）的积木清单。
- * 设计动机：拼装区里已治理积木对 DSL/LLM 是黑盒——检索不进内部、
- * 语义层只见契约投影（exposes/consumes/emits），除非 observe 检出异常才深挖。
- * 诚实边界：无出生证明 / JSON 损坏 → 空数组，退化为普通项目全量解析
- * （不因证明损坏而拒绝解析，也不猜积木边界）。
- */
-export function readAssemblyBricks(root: string): BrickFoldInfo[] {
-  const p = path.join(root, 'assembly.json');
-  if (!fs.existsSync(p)) return [];
-  try {
-    const a = JSON.parse(fs.readFileSync(p, 'utf-8')) as {
-      bricks?: Array<{ name?: unknown; dest_root?: unknown; description?: unknown; aggregate?: unknown }>;
-    };
-    if (!Array.isArray(a?.bricks)) return [];
-    const out: BrickFoldInfo[] = [];
-    for (const b of a.bricks) {
-      if (!b || typeof b.name !== 'string' || typeof b.dest_root !== 'string') continue;
-      out.push({
-        name: b.name,
-        dest_root: b.dest_root.endsWith('/') ? b.dest_root : `${b.dest_root}/`,
-        description: typeof b.description === 'string' ? b.description : undefined,
-        aggregate: (b.aggregate ?? undefined) as BrickFoldInfo['aggregate'],
-      });
-    }
-    return out;
-  } catch {
-    return [];
-  }
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -1104,36 +1050,10 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
     }
   }
 
-  // ── 积木折叠（拼装区黑盒化）──
-  // 拼装区根的 assembly.json（拼装出生证明）记录每个积木的
-  // dest_root 与契约投影（description/aggregate）。据此把积木折叠成 DSL
-  // 单符号节点：内部文件不进 geometry/semantic——LLM 检索 DSL 不再看
-  // 已治理功能的内部细节（减少检索负担），接口事实只读契约投影；
-  // 唯一事实来源仍是盒内 manifest，assembly.json 只是拼装时点的快照。
-  const brickFolds = readAssemblyBricks(root);
-  const brickByPrefix = new Map<string, BrickFoldInfo>();
-  for (const b of brickFolds) brickByPrefix.set(b.dest_root, b);
-  /** 文件归属积木判定（rel 以 '<dest_root>' 开头即积木内部文件） */
-  const brickOf = (rel: string): BrickFoldInfo | null => {
-    const slash = rel.indexOf('/');
-    if (slash === -1) return null;
-    return brickByPrefix.get(rel.slice(0, slash + 1)) ?? null;
-  };
-
   // 1. 扫描文件（被 gitignore 的一律不扫——references/_archive/缓存等参考堆不进来）
   const gitignore = collectGitignore(root);
   let absFiles = walkFiles(root, effectiveIncludeTests, input.include_archive ?? false, gitignore);
   const skipped: string[] = [];
-  // 拼装区：积木内部文件排序靠后——黑盒无需优先解析符号，
-  // max_files 截断时优先保 glue/外部文件（黑盒边界边不因截断而断）
-  if (brickFolds.length > 0) {
-    absFiles = [...absFiles].sort((a, b) => {
-      const aB = brickOf(toPosix(path.relative(root, a))) ? 1 : 0;
-      const bB = brickOf(toPosix(path.relative(root, b))) ? 1 : 0;
-      if (aB !== bB) return aB - bB;
-      return a < b ? -1 : a > b ? 1 : 0;
-    });
-  }
   // 截断前的完整列表——pruneDeletedFiles 的比对基准（拿截断后列表会误删）
   const walkedAll = absFiles;
   if (absFiles.length > max_files) {
@@ -1148,7 +1068,6 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
     const rel = toPosix(path.relative(root, abs));
     return { rel, abs, ext: path.extname(abs), dir: path.posix.dirname(rel) };
   });
-  const brickFilesTotal = files.filter((f) => brickOf(f.rel)).length;
   const index = buildIndex(files);
   for (const c of index.collisions) skipped.push(`同名碰撞: ${c}`);
   const goModules = readGoModules(root);
@@ -1197,8 +1116,7 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
     if (syms.length > 50) {
       skipped.push(`${rel}: 符号数 ${syms.length} 超上限，仅收录前 50 个 API`);
     }
-    // 黑盒内部符号不计入（报告口径 = DSL/LLM 可见面；积木符号在盒内 manifest）
-    if (!brickOf(rel)) symbolsFound += funcApis.length;
+    symbolsFound += funcApis.length;
     parsed.set(rel, { symbols: funcApis, nonFuncSymbols, imports: imps });
   };
 
@@ -1282,11 +1200,10 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
     depsByFrom.get(fr)!.push(to);
   }
 
-  // ── 3.5 节点 ID 与积木折叠分流（须在 functional_mode / 目录树 / 边聚合前）──
+  // ── 3.5 节点 ID（须在 functional_mode / 目录树 / 边聚合前）──
   const sanitize = (s: string): string => s.replace(/[^a-zA-Z0-9_-]/g, '_');
   const fileNodeId = (rel: string): string => `file_${sanitize(rel)}`;
   const dirNodeId = (rel: string): string => `dir_${sanitize(rel)}`;
-  const brickNodeId = (name: string): string => `brick_${sanitize(name)}`;
   /** 设计模式下：返回文件所属的顶级目录节点 ID（root 的直接子目录） */
   const topDirNodeId = (rel: string): string => {
     const slash = rel.indexOf('/');
@@ -1294,91 +1211,7 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
     return dirNodeId(rel.slice(0, slash));
   };
 
-  /**
-   * 依赖边三分流：积木内部边（黑盒吞掉）/ 折叠边（积木↔外部，端点重定向
-   * 到积木节点）/ 普通边（两端皆外部，走原有 lca 聚合）。
-   */
-  const plainDeps: Array<[string, string]> = [];
-  const foldedDeps: Array<{ from: string; to: string }> = [];
-  for (const [fromRel, toRel] of fileDeps) {
-    const fb = brickOf(fromRel);
-    const tb = brickOf(toRel);
-    if (fb && fb === tb) continue; // 积木内部边：黑盒内部不可见
-    if (!fb && !tb) {
-      plainDeps.push([fromRel, toRel]);
-      continue;
-    }
-    foldedDeps.push({
-      from: fb ? brickNodeId(fb.name) : fromRel,
-      to: tb ? brickNodeId(tb.name) : toRel,
-    });
-  }
-  /** 折叠边外部端的节点 id：根散文件=文件节点；深层文件=顶级目录容器（与 lca 聚合同一降级语义） */
-  const foldPeerId = (rel: string): string | null => {
-    if (input.design_mode && !rel.includes('/')) return null; // design_mode 忽略根散文件依赖（与原逻辑一致）
-    const slash = rel.indexOf('/');
-    return slash === -1 ? fileNodeId(rel) : dirNodeId(rel.slice(0, slash));
-  };
-  const brickEdgeAgg = new Map<string, { from: string; to: string; n: number }>();
-  const brickLayoutDeps: Array<[string, string]> = [];
-  for (const { from, to } of foldedDeps) {
-    const fromId = from.startsWith('brick_') ? from : foldPeerId(from);
-    const toId = to.startsWith('brick_') ? to : foldPeerId(to);
-    if (!fromId || !toId || fromId === toId) continue;
-    const key = `${fromId}|${toId}`;
-    const cur = brickEdgeAgg.get(key);
-    if (cur) cur.n++;
-    else brickEdgeAgg.set(key, { from: fromId, to: toId, n: 1 });
-    if (!brickLayoutDeps.some(([a, b]) => a === fromId && b === toId)) brickLayoutDeps.push([fromId, toId]);
-  }
-
-  /** 积木黑盒节点 + 语义层条目（契约投影自 assembly.json；坐标由调用方回填） */
-  const buildBrickNode = (b: BrickFoldInfo): { node: Node; semantic: SemanticFile } => {
-    const agg = b.aggregate;
-    const members = files.filter((f) => brickOf(f.rel)?.name === b.name);
-    const lines = members.reduce((s, f) => s + (lineCounts.get(f.rel) ?? 0), 0);
-    const apis: ExpectedApi[] = (agg?.exposes ?? []).slice(0, 50).map((s) => ({
-      signature:
-        `${s.kind} ${s.name}` +
-        (s.fields.length > 0
-          ? `：${s.fields.slice(0, 5).map((f) => f.name).join('、')}${s.fields.length > 5 ? ' …' : ''}`
-          : ''),
-      line: 0,
-      notes: `origin: ${s.origin}${s.fields.length > 0 ? `，${s.fields.length} 成员` : ''}`,
-    }));
-    const node: Node = {
-      id: brickNodeId(b.name),
-      label: `🧱 ${b.name} · ${members.length} 文件`,
-      x: 0,
-      y: 0,
-      width: BRICK_W,
-      height: BRICK_H,
-      type: 'module',
-      status: 'done',
-      title: b.description,
-      description: b.dest_root,
-      style: { ...BRICK_STYLE, borderRadius: 8 },
-      attributes: agg
-        ? {
-            exposes: agg.exposes.map((e) => e.name).join(', ') || '—',
-            consumes: agg.consumes.map((c) => c.name).join(', ') || '—',
-            emits: agg.emits.join(', ') || '—',
-            irreversible_effects: agg.irreversible_effects,
-          }
-        : undefined,
-    };
-    const semantic: SemanticFile = {
-      id: brickNodeId(b.name),
-      path: b.dest_root,
-      responsibility: b.description
-        ? `${b.description}（积木黑盒：${members.length} 文件折叠，契约投影自 assembly.json）`
-        : `积木黑盒：${members.length} 文件折叠（契约投影自 assembly.json）`,
-      status: 'done',
-      expected_apis: apis.length > 0 ? apis : undefined,
-      lines,
-    };
-    return { node, semantic };
-  };
+  const plainDeps: Array<[string, string]> = [...fileDeps];
 
   // 6.0 布局/语义产出（目录路径用；functional_mode 提前产出并返回）
   let nodes: Node[] = [];
@@ -1431,14 +1264,12 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
     if (input.gen_roles) {
       const roleFiles = input.design_mode || input.functional_mode
         ? semanticFiles
-            // 积木黑盒条目不进 LLM 职责生成（title=盒内 description 事实，不由 LLM 重述）
-            .filter((sf) => sf.path && !sf.id.startsWith('brick_'))
+            .filter((sf) => sf.path)
             .map((sf) => {
               const p = sf.path!.endsWith('/') ? sf.path!.slice(0, -1) : sf.path!;
               return { path: p, dir: sf.path === '' ? '根' : p, apis: (sf.expected_apis ?? []).map((s) => s.signature) };
             })
         : files
-            .filter((f) => !brickOf(f.rel))
             .map((f) => ({
               path: f.rel,
               dir: f.dir === '.' ? '根' : f.dir,
@@ -1481,8 +1312,6 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
 
     const dirCount = nodes.filter((n) => n.type === 'module').length;
     const oversized = files
-      // 积木内部文件不做单文件化预警（黑盒内部已四层验证，报告不报盒内事务）
-      .filter((f) => !brickOf(f.rel))
       .map((f) => ({ rel: f.rel, lines: lineCounts.get(f.rel) ?? 0 }))
       .filter((x) => assessLines(x.lines) !== 'ok')
       .sort((a, b) => b.lines - a.lines);
@@ -1490,9 +1319,6 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       `已导入项目 → feature "${feature}"${input.design_mode ? '（设计模式：聚合文件到目录层级）' : input.functional_mode ? '（功能模式：按调用图社区聚合）' : ''}`,
       `项目根: ${path.resolve(input.project_dir)}`,
       `文件: ${files.length} 个 → ${nodes.length} 节点（符号 ${symbolsFound} 个，依赖 ${fileDeps.length} 条→渲染 ${renderedDepEdges} 条，模块节点 ${dirCount} 个）`,
-      brickFolds.length > 0
-        ? `积木折叠: ${brickFolds.length} 个黑盒节点（${brickFilesTotal} 文件折叠进盒，接口契约投影自 assembly.json；异常时再深挖盒内）`
-        : null,
       cacheStats ? `缓存: 命中 ${cacheStats.hits} / 重解析 ${cacheStats.reparsed} / 失败 ${cacheStats.failed}` : null,
       goModules.length > 0 ? `Go modules: ${goModules.map((g) => g.module).join(', ')}` : null,
       oversized.length > 0
@@ -1515,15 +1341,12 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       dirs_created: dirCount,
       skipped,
       cache: cacheStats,
-      bricks_folded: brickFolds.length > 0 ? brickFolds.length : undefined,
     };
   };
 
   // 6.1 功能模式：按调用图社区做功能性聚合，产出功能模块节点并提前返回
   if (input.functional_mode) {
-    // 积木内部文件不参与社区检测（黑盒）；依赖用普通边（折叠边单独聚合）。
-    // 积木折叠时跳过 skill 管线（analyze_monolith 自行读盘会把盒内文件吸进社区）
-    const externalFiles = files.filter((f) => !brickOf(f.rel));
+    const externalFiles = [...files];
     const res = await buildFunctionalLayout(
       externalFiles,
       plainDeps,
@@ -1532,56 +1355,12 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       input.project_dir,
       !!input.gen_roles,
       input.cache_db,
-      brickFolds.length === 0,
     );
     nodes = res.nodes;
     edges = res.edges;
     semanticFiles = res.semanticFiles;
     rootSize = res.size;
     renderedDepEdges = res.edges.length;
-
-    // 积木黑盒节点：功能模块布局下方横排一行（坐标独立于社区布局）
-    if (brickFolds.length > 0) {
-      const rowY = res.size.h + 100;
-      let xCursor = 0;
-      for (const b of brickFolds) {
-        const { node, semantic } = buildBrickNode(b);
-        node.x = xCursor;
-        node.y = rowY;
-        nodes.push(node);
-        semanticFiles.push(semantic);
-        xCursor += BRICK_W + COL_GAP;
-      }
-      rootSize = { w: Math.max(res.size.w, xCursor - COL_GAP), h: rowY + BRICK_H };
-
-      // brick ↔ 功能模块 边：semanticFiles.path（成员文件清单）反查文件归属模块
-      const fileToModule = new Map<string, string>();
-      for (const sf of res.semanticFiles) {
-        for (const r of sf.path.split(', ')) fileToModule.set(r, sf.id);
-      }
-      const bagg = new Map<string, { from: string; to: string; n: number }>();
-      for (const { from, to } of foldedDeps) {
-        const fromId = from.startsWith('brick_') ? from : fileToModule.get(from);
-        const toId = to.startsWith('brick_') ? to : fileToModule.get(to);
-        if (!fromId || !toId || fromId === toId) continue;
-        const key = `${fromId}|${toId}`;
-        const cur = bagg.get(key);
-        if (cur) cur.n++;
-        else bagg.set(key, { from: fromId, to: toId, n: 1 });
-      }
-      const bSorted = [...bagg.values()].sort((x, y) => x.from.localeCompare(y.from) || x.to.localeCompare(y.to));
-      for (const { from, to, n } of bSorted) {
-        edges.push({
-          id: `dep_${sanitize(from)}_${sanitize(to)}`,
-          from,
-          to,
-          label: n > 1 ? `imports ×${n}` : 'imports',
-          type: 'dashed',
-          style: n > 3 ? { strokeWidth: 2 } : undefined,
-        });
-      }
-      renderedDepEdges += bSorted.length;
-    }
     return await finalizeDsl();
   }
 
@@ -1607,9 +1386,6 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
     return d;
   };
   for (const f of files) {
-    // 积木内部文件不进目录树（黑盒折叠——积木根目录不生成 dir 容器，
-    // 由 brick 单符号节点代表）
-    if (brickOf(f.rel)) continue;
     ensureDir(f.dir === '.' ? '' : f.dir).files.push(f);
   }
   // 子树文件数自底向上统计（目录排序用）
@@ -1621,7 +1397,7 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
   };
   computeSubtree(rootDir);
 
-  // 5. 节点 ID 生成器已上移至 3.5（积木折叠分流依赖；functional_mode 分支亦用）
+  // 5. 节点 ID 生成器已上移至 3.5（functional_mode 分支亦用）
 
   // 6. 布局（后序：先内层目录，尺寸向上传递）
   // 注：nodes/edges/semanticFiles 已在 6.0 声明为外层可变量，此处沿用
@@ -1668,13 +1444,6 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
           items.push(fileLayout.get(f.rel)!);
         }
       }
-      // 积木黑盒参与根级布局（拼装区：积木与 glue 目录平级；布局拓扑含折叠边）
-      if (dir.rel === '') {
-        for (const b of brickFolds) {
-          items.push({ id: brickNodeId(b.name), w: BRICK_W, h: BRICK_H, x: 0, y: 0 });
-        }
-        for (const [a, b] of brickLayoutDeps) localDeps.push([a, b]);
-      }
       // 局部依赖：两端都在本目录直接子级
       const ownerOf = (rel: string): string => {
         if (dir.files.some((f) => f.rel === rel)) return fileNodeId(rel);
@@ -1696,8 +1465,6 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
           const rel = files.find((f) => fileNodeId(f.rel) === item.id)!.rel;
           fileLayout.get(rel)!.x = item.x;
           fileLayout.get(rel)!.y = item.y;
-        } else if (item.id.startsWith('brick_')) {
-          brickOffset.set(item.id, { x: item.x, y: item.y });
         } else {
           const subRel = [...dirByRel.values()].find((d) => d.rel !== '' && dirNodeId(d.rel) === item.id)!.rel;
           dirOffset.set(subRel, { x: item.x, y: item.y });
@@ -1760,8 +1527,6 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
 
   const dirContentOffset = new Map<string, { dx: number; dy: number; w: number; h: number }>();
   const dirOffset = new Map<string, { x: number; y: number }>();
-  /** 积木黑盒节点局部坐标（根级 item，accumulate 后回填） */
-  const brickOffset = new Map<string, { x: number; y: number }>();
 
   // 根级布局：把根目录当作一个组（不生成根容器）
   rootSize = layoutDir(rootDir);
@@ -1798,28 +1563,9 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
   };
   accumulate('', MARGIN, MARGIN);
 
-  // 积木黑盒节点（普通/design 模式；functional 已在提前返回分支处理）：
-  // 单符号 + 契约投影（exposes/consumes/emits 进 attributes，接口面进语义层）
-  for (const b of brickFolds) {
-    const { node, semantic } = buildBrickNode(b);
-    nodes.push(node);
-    semanticFiles.push(semantic);
-  }
-
-  // 积木黑盒节点坐标回填：根级 item 局部坐标 + 根内容原点（根无容器，内容原点 = MARGIN）
-  for (const [id, off] of brickOffset) {
-    const n = nodes.find((x) => x.id === id);
-    if (n) {
-      n.x = Math.round(off.x + MARGIN);
-      n.y = Math.round(off.y + MARGIN);
-    }
-  }
-
   // 8. 文件节点 + 边 + 语义层（设计模式：每个目录聚合所有子文件符号）
   if (!input.design_mode) {
     for (const f of files) {
-      // 积木内部文件：黑盒折叠，无节点无语义条目（由 brick 单符号节点代表）
-      if (brickOf(f.rel)) continue;
       const p = parsed.get(f.rel);
       const apis = p?.symbols || [];
       const syms = p?.nonFuncSymbols || [];
@@ -1943,20 +1689,7 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
     });
   }
 
-  // 积木折叠边：brick ↔ 顶级节点（已聚合；积木内部边在分流阶段吞掉）
-  const brickSorted = [...brickEdgeAgg.values()].sort((x, y) => x.from.localeCompare(y.from) || x.to.localeCompare(y.to));
-  for (const { from, to, n } of brickSorted) {
-    edges.push({
-      id: `dep_${sanitize(from)}_${sanitize(to)}`,
-      from,
-      to,
-      label: n > 1 ? `imports ×${n}` : 'imports',
-      type: 'dashed',
-      style: n > 3 ? { strokeWidth: 2 } : undefined,
-    });
-  }
-
-  renderedDepEdges = directEdges.length + aggSorted.length + brickSorted.length;
+  renderedDepEdges = directEdges.length + aggSorted.length;
 
   // 9. 组装 DSL + 落盘 + 报告（目录路径收尾，功能模式已提前返回）
   return await finalizeDsl();
