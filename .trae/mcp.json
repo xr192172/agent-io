@@ -1,9 +1,9 @@
 {
   "mcpServers": {
-    "design-canvas": {
+    "agent-io": {
       "command": "node",
       "args": [
-        "${workspaceFolder}/dist/src/server.js"
+        "${workspaceFolder}/dist/src/presentation/mcp/server.js"
       ]
     }
   }

@@ -168,6 +168,17 @@
         2. ★ **符号名没有结构化出口**：上游只给 `symbolCount: 1`（**计数**），
            要拿名字得另找路 ⇒ 下游 `find_references.symbol` **无从填起**（只能由人/LLM 从散文里抠）。
 
+      ⇒ ★★★ **2026-10-05 侦察（code-explorer 子代理）后修正：不能只改 `get_dsl(files)` 这一处** ——
+        ・ `get_dsl(query='files')` 的条目是**报告条目**（`query_feature.ts:621-631`：`id/path/responsibility/
+          status/layer/lines/apiCount/actualCount/symbolCount`），**符号与 API 只给计数、不给名字** ⇒
+          就算把 `path` 改成 `file`，下游 `find_references.symbol` **仍无从填** ⇒ 链还是接不上（= **半修**）；
+        ・ 只改投影会造出**同一工具内同义不同名**：`query='file'` 返回整份 `SemanticFile`，其 `path` 被
+          `schema/design_dsl.schema.json:179,185` 的 `required` **钉死**（那是**与前端的对外契约**）⇒
+          要两端对齐就绕不开"改类型名 / 改 DSL schema"这个**对外契约决策**；
+        ・ `path` **不在受控词表**（`b_terms.ts` 无此词条），而 `file` 是 `anchor`（`:262`）。
+        ⇒ **前置件（未做）**：先定"文件路径这个词全仓统一叫什么"（若改 `SemanticFile.path`，牵连 schema + 前端 + fixture），
+          再谈 `get_dsl` 投影跟随；**在此之前不动**。
+
       ⇒ ★★ **所以 T54 的第一步不是改 56 个工具的 schema，而是**把"接力键"登记进受控词表****
         （`src/domain/b_terms.ts` 已经是"**同一个概念只能有一个名字**"的机器判据）：
         现在它只管 `[B]` **产物**的字段名，**不管入参、也不管上游产物的字段名** ⇒
@@ -206,6 +217,15 @@
       · (4) **加 `edit_dsl` 的"先读后改"门**（本仓已有同款：`explore_code action=read` 是 `edit_code` 的前置，
         `explore_code.ts:312`）⇒ 改 `semantic.files` 前**必须已读该文件的事实**（现取）；
         ★ 复用 `evidence`/L4 那条已有机制，**不另发明**。
+        ★★ **2026-10-05 核实后未动 —— 待你一句话定"门"还是"自动前置"**，核实结果三条：
+        ① 落点 = `editDslHandler`（`handlers.ts:59-113`）**全 DSL 写入口**（daemon 路径同受
+           `dispatchDslEdit`）⇒ 让 `semantic.files` 的 `evidence` **条件必填**属**输入契约变更**；
+        ② "已读"**当前无既定编码**：`ReasonEvidenceRef.type` 是**钉死的联合**
+           （`reason_validator.ts:36-39`：`'trace'|'diff'|'node'|'edge'|'metric'`）⇒ 三种落法各有代价：
+           **新增一种 type**（动输入契约）/ **复用 `diff` 并绑 `fileFacts()` 现取** /
+           按 skill「design-canvas-mind」的反射走**自动前置**（缺前置自动取，**不报错甩锅**）；
+        ③ 与 2026-10-05「**不养门**」裁定的关系**要先判**：那条裁定举的三例都是**脚本/清单类**
+           （拦截型脚本、对账判据、棘轮/基线），本项是**工具内运行时前置** —— 是否同一类，需你定。
       ⇒ ★ **另记一条既有隐患**（本笔发现，未改）：`resolveFunctionCacheDb` 的第三级候选是 **`<cwd>/.agent-io/cache.db`**
         ⇒ 一个**没有自己索引**的项目会读到 **cwd 那个项目**的库。本笔靠"`matched_path` 必须命中"挡了误报，
         但**根上仍是 T19 的"根"问题**，应在 T19 里一并收口。
@@ -517,13 +537,25 @@
 | `dsl-workbench` | HTTP + schema 镜像 | ✗ |
 | `elv` | 按路径 import 本仓 dist | ✗ |
 | `ai-config` 下的「设计画布脑」技能包 | 技能包（目录名含**旧**品牌串，故此处不逐字写） | ✗ |
-| `~/.workbuddy/mcp.json` | 启动路径 | ✗（本次手改） |
-| `~/.workbuddy/skills/dc-*` | 操作手册里的路径 | ✗（本次手改） |
+| **MCP client 配置**（`.trae/` · `~/.claude.json` · `~/.cursor` · `~/.codex` · `~/.github` · `.vscode` …） | 启动路径 + server 名 | ✅ **2026-10-05 已有判据**（见下） |
+| `~/.workbuddy/mcp.json` | 启动路径 | ✅（同族；实测该文件本来就是对的） |
+| `~/.workbuddy/skills/dc-*` | 操作手册里的路径 | ✗ |
 
-**建议**（未做）：写一个 `scripts/check_external_refs.mjs`，读**一份仓内的清单**
+★★ **2026-10-05 已收口一个切片（MCP client 配置面）**：`scripts/install_mcp.mjs` 增强为**六态**
+（`missing｜present｜configured｜stale｜not-installed｜corrupt`）+ **换名即清旧键**（`LEGACY_KEYS`，JSON/TOML 同）
++ **陈旧条目检出并重写**（逐字段比对，`${workspaceFolder}` 归一）；**入口默认值也修正**（旧值
+`dist/src/server.js` **从来不存在** —— 本仓 `.trae/mcp.json` 就是这么坏的）；并落 `package.json` 的
+`mcp:install` / `mcp:check`。
+**实测**：修好本仓 `.trae/mcp.json`（旧品牌键 `design-canvas` + 不存在的入口），覆盖 5 个已安装 client，
+3 个未安装的被 `probe` 拦下（**不再误造目录**）；第二次跑全部 `configured`（**幂等**）。
+★ **仍未做**：`dsh-brain` / `dsl-workbench` / `elv` / 技能包 —— 那几面**还是没判据**。
+
+**建议**（未做，**只针对非 MCP 配置的下游**）：写一个 `scripts/check_external_refs.mjs`，读**一份仓内的清单**
 （哪些外部路径引用了本仓）⇒ 逐个 `fs.existsSync` + 检查里面出现的本仓路径是否还存在。
 ★ 难点：清单本身是**仓外的**，所以它必须被**抄进仓内**（这正是"唯一数据源"要付的代价：
 要么承认它管不到，要么把它纳入一个有人维护的表）。**别让它继续散在没人看的地方。**
+★ ★ **但先看有没有更省的形状**：MCP 这面这次的解法是"**把判据做进写入器本身**"（`install_mcp` 自己检陈旧 +
+清旧键），比"另立一张下游清单 + 再写个检测脚本"省得多 ⇒ 其余下游**先判能不能照此办**，再决定要不要那张清单。
 
 - [ ] **T50 ★ `docs/adding-a-language.md` 的路径大面积过期（≈47 处指向已不存在的路径）**
       *(核实：2026-10-05 —— 逐模式 `grep -c`：`src/tools/` ×15 · `tests/tools/` ×15 ·

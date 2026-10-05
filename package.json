@@ -65,6 +65,8 @@
     "demo": "node scripts/demo.mjs",
     "gen:schema": "node scripts/gen_endpoints_schema.mjs",
     "structure:gap": "node scripts/structure_gap.mjs",
+    "mcp:install": "node scripts/install_mcp.mjs",
+    "mcp:check": "node scripts/install_mcp.mjs --check",
     "tool": "node dist/src/presentation/cli/cli.js"
   },
   "dependencies": {
