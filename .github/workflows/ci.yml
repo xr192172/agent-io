@@ -51,8 +51,12 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: "stable"
-          # ★ 不设 cache-dependency-path：该 module 无 require（纯标准库）⇒ 没有 go.sum。
-          #   指向不存在的路径是脆弱依赖（某些 setup-go 版本会直接失败），故不设。
+          # ★ `cache: false` 是必需的，不是优化：该 module **无 require**（纯标准库）⇒ 仓里没有 go.sum。
+          #   而 setup-go 的 `cache` **默认就是 true**，此时它会去找 go.sum，找不到就**让步骤失败**：
+          #     "Restore cache failed: Dependencies file is not found ... Supported file pattern: go.sum"
+          #   ⚠ 我第一版改法是"去掉 cache-dependency-path"，那只是让它回退到默认查找 ⇒ **照样失败**
+          #   （这次真跑 CI 才暴露：本地 `go build`/`go vet` 全绿，看不出这个差别）。
+          cache: false
       - name: 编译
         run: go build ./...
         working-directory: ${{ matrix.module }}
@@ -86,6 +90,9 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: "stable"
+          # ★ 同 go-test：仓里没有 go.sum（该 module 纯标准库）⇒ 必须显式关掉缓存，
+          #   否则 setup-go 默认去找 go.sum、找不到就让本步骤失败。
+          cache: false
       - run: npm ci
       - name: 总门（ts 类型 / 59 工具签名 / b 项契约 / Go 编译 / Go vet）
         run: npm run verify
