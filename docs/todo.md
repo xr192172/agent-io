@@ -1052,3 +1052,39 @@
             选 ① 的后果要说清：**等于没人在审批时看代码**。
          ③ 缺 LLM 时 ⇒ **照搬 Go 的 freeze（建议）** —— 这是本仓少见的**正确**失败模式：
             不静默、不假装通过、明说"判定继续用旧版"，且冻结可恢复。
+
+      ✅ **P4 步骤 5 已落（2026-10-05 本笔）**：四层全部就位，`approve` 子命令的 TS 侧已具备。
+         **按 2026-10-05 用户拍板执行**：① LLM 判 deviation ⇒ **冻结（B 方案）**；
+         ② decl 复核判据 = **① 声明自洽性**；③ 缺 LLM ⇒ **照搬 Go 的 freeze**。
+         新增三个文件：
+         · `verify_gate.ts` —— L1 `verifyRuleRegression`（判据直接用 P1 立的 `OBSERVE_RULE_IDS`）+
+           L3 `verifyLLMCoverage` + L4 `finalizeDecls` + `mergeLoopDecls`
+         · `decl_review.ts` —— L2 decl 级 LLM 复核（**新写**，Go 生产代码零实现 ⇒ 无可抄）
+         · `approve_gated.ts` —— 编排 + 冻结处置
+         ★ **三处与 Go 的有意分歧**（均为用户裁定，非技术偏好）：
+         ① **LLM 判非 ok 的声明一律拒绝定稿**，不再"半放行"。
+            Go 的真实行为：复核判 deviation 的声明**带着 `needs-llm-review`/`proposed` 进入权威
+            `dsl.json`**，提案却整体标 approved；而代价是**静默**（不报错、不留痕、没人会看那个标记）。
+            ⇒ 权威 `dsl.json` 里**不出现未经复核的声明**。**这会让 TS/Go 行为分叉，已显式登记。**
+         ② **`status:'locked'` 不被降级**。Go `finalizeDecls` 对有谓词的声明无条件写
+            `status="verified"` ⇒ 种子 `silentErrorDiscardDSL()` 自己声明的 `locked`
+            （`llm_judge.go:118`："种子声明：v1 内建，被视为定稿锁定"）会被抹掉。
+            本实现把 `locked` 当**终态**：只填 `verified_by`、保留 `status`。
+            （★ 全仓目前**无任何消费者**读 `status` —— 又一处"声明式的东西不落地"，
+              但既然要保留语义就不该在第一处抹掉。）
+         ③ `needs-llm-review` 状态已不可达（① 之后），改为**显式抛错**而非静默标记。
+         ★ **实测撞到并修掉一个静默陷阱（Go 原设计）**：
+           Go 的定稿分两种来源（`proposal.go:196-208`）：`manual`/`llm-revise` 提案 ⇒ **整集替换**，
+           `loop` 增量提案 ⇒ 按键合并。⇒ **一次 `manual` 审批若只带 1 条声明，其余全部契约（含种子）
+           会被静默 wipe**。实测确实如此：`dsl.json` 从 2 条变 1 条，**不报错、提案照样标 approved**。
+           这是 Go 的原设计（调用方责任：manual 必须带全集），本实现**照搬不拦**（拦它会误伤合法的
+           "故意精简"）⇒ 但按"不许静默"原则**把丢失数写进审计证据**（新增 `droppedDeclCount`），
+           提案的 `verified_by` 与 `dsl.history.jsonl` 的 `verification` **两处都留痕**，事后可查、`git log` 可见。
+           实测：带全集 ⇒ 无警告；只带 1 条 ⇒ 两处均出现「⚠ 整集替换丢失 1 条既有声明」。
+         ★ L2 的判据落地（用户选①）：prompt 明确"**只判这条声明本身是否可判定/是否成立，
+           不判代码、不判事件**"（代码对不对由 `judge` 事件判定与 `reconcile` 链路对账负责，职责不重叠）。
+           ⚠ 已在代码里写明选①的后果：**等于没人在审批时看代码**。
+           LLM 调用为**显式 opt-in**（`useLlm` 缺省 false）⇒ 缺省下无谓词提案一律冻结，不静默放行。
+         另照搬并登记：`mergeLoopDecls` **按键整条替换**（非字段级 merge、冲突无告警）、
+         及其**疑似 bug**（当前集同键重复时只有最后一条进索引 ⇒ 前面那些永远不会被覆盖）——
+         不修的理由：修它会改变现有 `dsl.json` 的合并结果（行为变更），已在案上登记不静默。
