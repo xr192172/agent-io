@@ -34,6 +34,9 @@ vitest.config.ts.timestamp-*.mjs
 agent-io.json
 # Observe DSL 仓库（运行时生成：{projectRoot}/.agent/observe/dsl.json + history）
 .agent/
+# IDE / 助手本地产物（会话报告、brain 缓存等）—— 不属于仓库源码
+.codebuddy/
+
 # Go 编译产物
 *.exe
 
