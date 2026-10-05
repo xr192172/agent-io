@@ -18,16 +18,12 @@
 //
 // v2 分级采集 runtime（Tiered，见 tiered.go）：本文件的全量 JSONL Sink 作为
 // 可选的"全量镜像"模式保留（conformance/调试）；生产默认走 Tiered
-//（计数器+直方图+环形缓冲，平时零磁盘）。
+// （计数器+直方图+环形缓冲，平时零磁盘）。
 package probe
 
 import (
-	"bufio"
-	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"sync"
@@ -36,12 +32,12 @@ import (
 
 // Event is one data snapshot captured at a probe point.
 type Event struct {
-	Probe    string         `json:"probe"`              // probe point id, e.g. "save.writefile"
-	Time     time.Time      `json:"time"`               // capture timestamp
-	Source   string         `json:"source"`             // where the expectation comes from: static-rule / llm-design / runtime-invariant
-	Fields   map[string]any `json:"fields"`             // captured values (err, path, bytes, benign...)
-	TraceID  string         `json:"trace_id,omitempty"` // c7: 整条调用链共享的 trace id
-	FrameID  uint64         `json:"frame_id,omitempty"` // c7: 本帧唯一 id（每次调用一个）
+	Probe    string         `json:"probe"`               // probe point id, e.g. "save.writefile"
+	Time     time.Time      `json:"time"`                // capture timestamp
+	Source   string         `json:"source"`              // where the expectation comes from: static-rule / llm-design / runtime-invariant
+	Fields   map[string]any `json:"fields"`              // captured values (err, path, bytes, benign...)
+	TraceID  string         `json:"trace_id,omitempty"`  // c7: 整条调用链共享的 trace id
+	FrameID  uint64         `json:"frame_id,omitempty"`  // c7: 本帧唯一 id（每次调用一个）
 	ParentID uint64         `json:"parent_id,omitempty"` // c7: 父调用帧 id（0=根）
 }
 
@@ -78,10 +74,6 @@ type Sink struct {
 
 	devPath string
 	devMB   int64
-
-	judge    *Judge     // fast-path rule judge; nil disables deviation extraction
-	llmJudge *LLMJudge // slow-path LLM re-check on rule-flagged deviations; nil = rule-only
-	llmu     sync.RWMutex // guards llmJudge (SetLLMJudge may run outside the sink's mu)
 
 	rl *rateLimiter
 }
@@ -152,37 +144,15 @@ func (s *Sink) SetDeviationMB(n int64) *Sink {
 }
 
 // SetJudge attaches the fast-path rule judge used to pick deviations out of a
-// rotating slot before it is cleared. nil disables extraction.
-func (s *Sink) SetJudge(j *Judge) *Sink {
-	s.judge = j
-	return s
-}
 
 // SetLLMJudge attaches the slow-path LLM re-check. When non-nil, rule-flagged
 // deviations are sent to the LLM for behavior-level confirmation before being
 // preserved; the LLM verdict (ok/deviation) overrides the rule verdict. nil
 // keeps rule-only extraction. Takes precedence over the global judge installed
-// via SetGlobalLLMJudge.
-func (s *Sink) SetLLMJudge(j *LLMJudge) *Sink {
-	s.llmu.Lock()
-	s.llmJudge = j
-	s.llmu.Unlock()
-	return s
-}
 
 // llmJudgeFor returns the active LLM judge: the one explicitly attached via
 // SetLLMJudge wins; otherwise falls back to the globally installed judge.
 // This decouples the assembly order — main.go creates the Sink before the
-// Router exists, bootstrap wires the judge later.
-func (s *Sink) llmJudgeFor() *LLMJudge {
-	s.llmu.RLock()
-	j := s.llmJudge
-	s.llmu.RUnlock()
-	if j != nil {
-		return j
-	}
-	return GetGlobalLLMJudge()
-}
 
 // Emit serializes and appends one event. Rate-limited per probe; over-rate
 // events are dropped so the ring stays bounded. Rotation happens in-place when
@@ -234,10 +204,6 @@ func (s *Sink) rotateLocked(now time.Time) error {
 	nextIdx := (s.activeIdx + 1) % s.maxFiles
 	nextPath := s.filePath(nextIdx)
 
-	var extractErr error
-	if s.judge != nil {
-		extractErr = s.extractLocked(nextPath, now)
-	}
 	fh, err := os.OpenFile(nextPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o644)
 	if err != nil {
 		return err
@@ -245,76 +211,10 @@ func (s *Sink) rotateLocked(now time.Time) error {
 	s.fh = fh
 	s.size = 0
 	s.activeIdx = nextIdx
-	return extractErr
-}
-
-// extractLocked reads a ring slot line by line, judges each event with the
-// fast-path rules, and appends deviations to devPath. Best-effort: corrupt
-// lines are skipped; the slot is still cleared by the caller afterwards.
-//
-// 2026-08-16 超长行修复：改用 bufio.Reader.ReadBytes 逐行读取而非
-// bufio.Scanner——Scanner 有 1MB 行上限，遇到超长事件行（实测探针捕获整段
-// LLM 流式消息可达 10MB+）会 ErrTooLong 直接中止抽离，导致该槽位剩余偏差
-// 全部静默丢失。ReadBytes 无固定行上限，长行最多多占一点内存，不打断抽离。
-func (s *Sink) extractLocked(path string, now time.Time) error {
-	fh, err := os.Open(path)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil
-		}
-		return err
-	}
-	defer fh.Close()
-
-	br := bufio.NewReaderSize(fh, 64*1024)
-	for {
-		line, err := br.ReadBytes('\n')
-		if len(line) > 0 {
-			line = bytes.TrimSpace(line)
-			if len(line) > 0 {
-				var ev Event
-				if json.Unmarshal(line, &ev) != nil {
-					continue // corrupt line — not extractable
-				}
-				v := s.judge.JudgeEvent(ev)
-				if v.Result != "deviation" {
-					continue
-				}
-				// 慢车道：LLM 行为级复核（同步，最坏 j.timeout 阻塞轮转）。
-				// LLM 判 ok → 规则误报被纠正，不保留；判 deviation → 保留并用
-				// LLM 的 rule/reason 覆盖；调用失败 → 降级保留（安全侧，宁多留不漏报）。
-				if j := s.llmJudgeFor(); j != nil {
-					lv, lerr := j.JudgeEvent(context.Background(), ev)
-					if lerr == nil && lv.Result == "ok" {
-						continue // LLM 纠正了规则误报
-					}
-					if lerr == nil && lv.Result == "deviation" {
-						v.Rule = lv.Rule
-						v.Reason = lv.Reason
-					}
-					// lerr != nil → 保留规则版判定（降级）
-				}
-				if err := s.appendDeviationLocked(DeviationEntry{
-					Event:  ev,
-					Rule:   v.Rule,
-					Reason: v.Reason,
-					At:     now,
-				}); err != nil {
-					return err
-				}
-			}
-		}
-		if err != nil {
-			if err == io.EOF {
-				return nil
-			}
-			return err
-		}
-	}
+	return nil
 }
 
 // appendDeviationLocked appends one deviation to devPath, rotating the
-// deviation file to deviations.jsonl.1 when it exceeds devMB.
 func (s *Sink) appendDeviationLocked(entry DeviationEntry) error {
 	if s.devPath == "" {
 		return nil

@@ -1331,3 +1331,35 @@
          ★ 记一次**测试夹具失败**：我最初想用 `.cmd` 遮蔽真 go，Node 在 Windows 上不带 shell 找不到
            `.cmd` ⇒ 探测落到真 go 1.26.4 ⇒ "判为可用"。**是夹具坏了，不是判据坏了** ——
            但正是这个失败把 ① ② 两个 bug 挖了出来。
+
+      ✅ **P2 步骤 2 + P6：Go 侧只剩「插桩 + 进程内采集」（2026-10-05 本笔，合一化收尾）**
+         `observe-lang-go/` 从 42 个文件降到 **19 个**，删掉的是**已搬到 TS 的判定层 + DSL 仓库 + 审批 + CLI**。
+         ★ 删之前**逐个查依赖**（不凭印象）：`RunDSLCLI` 的调用方只有 CLI 入口自己；
+           `RebuildChains` 的调用方只有 `aggregator.go`（它本身也删）；`exportIncident` **有真实调用者**
+           （`trace.go:113`）⇒ **必须留**。
+         删掉的（24 项）：`cmd/observe-dsl`、`probe/{dsl_cli,dsl_store,proposal,loop,ledger_loader,
+         contract,comparator,aggregator,actual_loader,judge_client,llm_judge,chain}.go` + 对应 11 个测试
+         + `e2e_smoke.ps1`。
+         ★ 连带三处**装配期钩子**也已删（它们是判定层插进 runtime 的接口，判定搬走即死）：
+         · `Sink.SetJudge` / `SetLLMJudge` / `llmJudgeFor`
+         · `probe.go` 的 `extractLocked` 整个函数（"轮转前用判定挑出偏差"，判定没了它永不触发）
+         · `global.go` 的 `globalLLMJudge` 字段 + `SetGlobalLLMJudge` / `GetGlobalLLMJudge`
+         ⚠ **保留的**：`appendDeviationLocked` / `DeviationEntry` / `devPath` / `SetDeviationMB`
+           （黑匣子 incident 机制仍在用，`trace.go:113` 调 `exportIncident`）。
+         ★ **测试不是跟着功能一起删**：逐个判"测的是已删功能还是仍留功能" ——
+           删 4 个（`TestSinkEmitAndJudge` / `TestSinkRotationExtractsDeviations` /
+           `TestExtractLockedSurvivesOversizeLine` / `TestJudgeLogSurvivesOversizeLine`），
+           **保留 `TestSinkRateLimitDrops`**（限速仍在）。`probe_test.go` 从 193 行降到 34 行。
+
+         ★★ 记一次**编译不通过替我抓错**的价值：删完第一轮 `go build` 报
+           `probe.go:82 undefined: Judge` 等 4 处 ⇒ 正是"runtime 里有判定层注入钩子"这件事
+           **被编译器指出来**，而不是靠我读码猜到。后续每一处删除都由 build/vet 兜底。
+         ★ 记两次**我的操作失误**（都被校验挡住或被 build 抓住）：
+         ① 删 `extractLocked` 调用点时**按行号改，切片后行号偏移** ⇒ 把 `return nil` 插到了函数外
+            （`probe.go:218`）⇒ 靠"看现场 214/218 两行原文"定位并修正。
+         ② 清理测试文件 import 时**凭猜测删** `os`/`strings`/`filepath` ⇒ 实际都在用
+            ⇒ 改为**逐个按"body 里是否真的 `pkg.` 引用"判定**（并承认"本轮不删冗余的，避免又判断错"）。
+            ⇒ 教训与本轮前面一致：**删除类操作要按"实际引用"判，不要按"看起来像"判**。
+         ⚠ 顺带核实：`gofmt -l` 报 10 个未格式化文件，其中**只有 3 个是本笔改的**（已格式化），
+           其余 7 个**在 HEAD 就没格式化**（抽查 `cmd/instrument/main.go`、`internal/instrument/instrument.go`、
+           `probe/trace.go` 均确认）⇒ 属历史遗留，**不在本笔范围内动**。
