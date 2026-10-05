@@ -892,13 +892,37 @@
         P2 让 Go 远端判定唯一化后删 Go 本地判定；P3 收链重建重复 + 裁决两处语义分叉；
         P4 把 `loop`（ledger 折叠 + 提案 + 阈值 0.1/1/2）搬到 TS；P5 裁决三条悬空规则；
         P6 `observe-dsl` 瘦身为只剩插桩（**建议整个删掉**，插桩已有 `go run ./cmd/instrument` 这条路在跑）；
-        P7 **把 Go 纳入 CI**（`npm test` 目前完全不编译不测 Go ⇒ 上面任何重构都没有验证网）。
+        P7 **把 Go 纳入 CI** ⇒ ✅ **本笔已落**（见下）。
       ⇒ **顺带记录三个基础设施缺陷**：
         ① `go-observe/build/` **不存在且没有任何脚本产出它**（`e2e_smoke.ps1:18` 输出到 `$env:TEMP`），
            `.gitignore:6/38` 双忽略 ⇒ `daemon.ts:201` 的候选路径是**死路径**。
         ② 缺二进制时 `daemon.ts:238-244` 把 ENOENT 与"事件流不存在"混为一谈 ⇒ `loop-skipped`
            **静默失效，无日志无告警**（对照 `go_instrument.ts:65/74/86` 三种失败都响亮）。
         ③ `go.mod:9` = `module go-observe`（**非可解析路径，无 domain 前缀**）—— 跨仓复用会成问题。
-      ⇒ **需人拍板三件**（文档第五节）：两处语义分叉采哪边（我建议采 TS，它是已在 59 工具跑通的那个）；
-        `observe-dsl` 是否整个删；三条悬空规则（known-spread / unplanned-spread / blast-radius）是补齐三边都有
-        还是就留 TS 一份。
+      ⇒ **✅ 2026-10-05 用户已拍板**：
+        ① 两处语义分叉 **采 TS 行为**（P3 按此执行）。
+        ② `observe-dsl` ⇒ **先别急着删**：核实发现它既不是人用的入口（零 CLI/MCP/HTTP 暴露、`package.json` 0 命中，
+           唯一执行者是 `daemon.ts:223` 防抖自动触发），**也不是插桩的后端**（daemon 只调 `loop`；真插桩走
+           `go_instrument.ts:70` 的 `go run ./cmd/instrument`）。它真正独有的是**提案工作流 + 版本化 DSL 存储**
+           （`proposal.go` 385 行 + `dsl_store.go` 236 行 + `loop.go` 254 + `ledger_loader.go` 211 ≈ **1086 行，含两个验证门**），
+           且 `reconcile_chain.ts:107` / `reconcile_effects.ts:130` 注释明写「`.agent/` 是 **go-observe 自己的** DSL 仓库」
+           ⇒ **TS 侧有两个 reconcile 工具正在读 Go 侧拥有的数据格式**。
+           ⇒ **结论：不能直接删，必须先做 P4 把这 1086 行搬过来，搬完才能删。**
+        ③ 三条悬空规则 ⇒ 裁定 **都留、判定统一到 `judge.ts:110` 那张表**（该表已存在，是 `rules: Array<...> = [...]`）：
+           `blast-radius` 与 `unplanned-spread` **已经是表里的活规则**（删它们是减能力）；`known-spread` 不是"悬空该删"，
+           而是**跟着 `loop` 一起搬**（`impact/ledger.json` 是它唯一数据源）⇒ 搬完自然有消费者，把 `knownSpread` 推进表即可。
+      ⇒ ✅ **P7 已落（本笔）**：`scripts/verify.mjs` + `npm run verify` —— 本仓**唯一的总门**。
+        ★ 缘起比"给 Go 补个门"大得多：加它之前 **26 条 npm script 里没有 `test`，也没有任何测试框架**；
+          能挡回归的只有 `tsc` 与 `mcp_scan` 两道，且**每次都是人手敲** ⇒ 漏跑不会有人知道。
+          本仓多起"声明了但没人接线"（704 行 TS 移植从未接线、`SilentErrorDiscard` 三份、`go-observe/build/` 死路径、
+          缺二进制时 `loop-skipped` 静默失效）**很可能都是"没人跑门"的结果，而不是"跑了没发现"**。
+        ★ **三态而非两态**（本仓反复犯的病是"缺工具链就静默跳过 ⇒ 假绿灯"，这里不能重犯）：
+          PASS→0 / FAIL→1 / **SKIP→2**（刻意区别于 0）⇒ 返回 0 的含义被收紧为"每一道门都真的跑过并通过"。
+        ★ 顺带查明既有各门的真实成色（此前我误报过一项，已更正）：
+          `mcp_scan` **是真门**（`bad.length ? 1 : 0`）；`measure_b_contract` 仅在"有未定义占位符"时失败；
+          `structure_gap` 结尾是 **`process.exit(0)` 无条件** ⇒ **永远不可能失败，是报告不是门**
+          （把它当门会给 CI 一种"结构已核对"的假安全性，故 verify 只把它当报告打印、不计入判定）；
+          而我上一轮口头提到的 `.codebuddy/capability-check.mjs` **并不存在**（当时读到的 exit=1 是文件缺失，不是"有未平项"）。
+        ⇒ 三态全部实证：临时注入类型错误 ⇒ **FAIL / exit 1**；临时把 Go 门 `need` 指向不存在的工具链 ⇒ **SKIP / exit 2**；
+          清理后 ⇒ **PASS / exit 0**。（★ 测 SKIP 时我一度用 `Select-Object -First` 截断管道读 `$LASTEXITCODE`，
+          读出 0 是**测量错误**——`-First` 会提前终止管道杀掉 npm；改用不截断管道后得到真实的 2。）
