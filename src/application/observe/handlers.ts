@@ -18,6 +18,7 @@ import {
   renderInstrumentReport,
   renderUninstrumentReport,
 } from '../../infrastructure/analysis/observe/observe_langs.js';
+import { DesignDSLStore, defaultDSLDir } from '../../infrastructure/analysis/observe/dsl_store.js';
 import { queryObserveLog } from '../../infrastructure/analysis/observe/log_query.js';
 import { getDSLByView, getLiveDir, requireProjectRoot } from '../../infrastructure/storage.js';
 import { observeTrace } from '.././observe/capture/observe_trace.js';
@@ -100,10 +101,46 @@ export const observeJudgeHandler = wrap(async (a) => {
   const useLlm = a.use_llm === true || a.use_llm === 'true' || a.use_llm === '1';
   const report = useLlm ? await judgeEventsWithLLM(norm, true) : judgeEvents(norm);
 
-  // P2 链路契约：decls 提供时重建实测链 + Comparator 全量对比（探针级 + 链路级）
+  // ★ 2026-10-05：设计对比的 decls **默认从项目自己的 dsl.json 读**，不必由调用方自带。
+  //
+  //   为什么加这个（这是"LLM 想知道哪里没纳入设计"这条路能通的前提）：
+  //     此前只有 Go 的 `observe-dsl show` 能读 `dsl.json`，**TS 侧没有任何工具读它**
+  //     （`DesignDSLStore` 只被 `run_loop` / `approve_gated` 用，没暴露给任何 handler）
+  //     ⇒ 而 `decls` 是**入参** ⇒ LLM 要问"哪些探针还没被设计覆盖"必须**先知道 DSL 里有什么**，
+  //       那时它无从得知 ⇒ 这条路是**断的**（P4 收尾时发现，此前误判为"搬过来就等价"）。
+  //
+  //   判据（照 `requireProjectRoot` 的既定纪律 `storage.ts:92-100`）：
+  //     · **显式 `project_root`**，**故意不兜底到 cwd** —— cwd 是"另一个项目"，不是"更弱的答案"（原文）
+  //     · 显式传 `decls` ⇒ 用它（要对着假设的声明集判，就显式传）
+  //     · 两者都没给 ⇒ **保持逐事件判定**，但**如实说明**为什么没做设计对比 + 怎么开启
+  const explicitDecls = Array.isArray(a.decls) && a.decls.length > 0 ? (a.decls as TSDLDecl[]) : undefined;
+  let decls = explicitDecls;
+  let declsNote = '';
+  if (!decls) {
+    const root = typeof a.project_root === 'string' && a.project_root.trim() ? a.project_root.trim() : '';
+    if (!root) {
+      declsNote =
+        '\n⚠ 未做设计对比：没传 decls 也没有 project_root。要对比"哪些探针还没纳入设计"，' +
+        '传 project_root（会自动读 <root>/.agent/observe/dsl.json）或直接传 decls。' +
+        '（本轮只做了逐事件规则判定。）';
+    } else {
+      const loaded = new DesignDSLStore(defaultDSLDir(root)).load();
+      if (loaded && loaded.decls.length > 0) {
+        decls = loaded.decls;
+        declsNote = `\ndecls 来源：<${root}>/.agent/observe/dsl.json（v${loaded.version}，${loaded.decls.length} 条声明）`;
+      } else {
+        declsNote =
+          `\n⚠ 未做设计对比：<${root}>/.agent/observe/dsl.json ${loaded ? '是空的' : '不存在'}。` +
+          '（本轮只做了逐事件规则判定。要建声明先跑一次 loop，它会播种 v1 种子。）';
+      }
+    }
+  } else {
+    declsNote = '\ndecls 来源：调用方显式传入';
+  }
+
+  // P2 链路契约：decls 可得时重建实测链 + Comparator 全量对比（探针级 + 链路级）
   let diff: TSDiffReport | undefined;
   let chainsNote = '';
-  const decls = Array.isArray(a.decls) ? (a.decls as TSDLDecl[]) : undefined;
   if (decls && decls.length > 0) {
     const { chains, dropped } = rebuildChains(norm);
     const comp = new TSComparator();
@@ -115,9 +152,9 @@ export const observeJudgeHandler = wrap(async (a) => {
     chainsNote = `\n链路重建: ${chains.length} 条链${dropped > 0 ? `（超预算丢弃 ${dropped} 条）` : ''}`;
   }
 
-  const merged = diff ? { ...report, diff } : report;
+  const merged = diff ? { ...report, diff, decls_source: declsNote.trim() } : { ...report, decls_source: declsNote.trim() };
   const text = a.text === true || a.text === '1'
-    ? renderJudgeReport(report) + (diff ? `\n\n${renderTSDiffReport(diff)}${chainsNote}` : '')
+    ? renderJudgeReport(report) + (diff ? `\n\n${renderTSDiffReport(diff)}${chainsNote}` : '') + declsNote
     : JSON.stringify(merged);
   return { message: text, data: merged };
 });

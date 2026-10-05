@@ -8,8 +8,21 @@
  * ## 它做什么（照搬 Go `:78-242` 的七步）
  *   1. 读观测事件         2. 聚合为事实画像        3. 加载权威设计 DSL（不存在则播种 v1）
  *   4. 对比出偏差         4.2 台账折叠（方向 D）   4.5 可选 LLM 行为级复核
- *   5. 触发判定（三维度任一显著即触发）             6a. 未声明探针 → 补契约提案
- *   6b. 累犯波及模式 → `design:impact-known-spread` 提案（方向 D 核心回流）
+ *   5. 触发判定（三维度任一显著即触发）
+ *   6. 累犯波及模式 → `design:impact-known-spread` 提案（方向 D 核心回流）
+ *
+ * ★ 2026-10-05：**6a「未声明探针自动补契约」已删**（连同只服务它的 `buildProbeFacts` /
+ *   `expectFromObs` / `sanitizeRuleSuffix`）。三条理由：
+ *   ① **它起草的东西按我们自己的门就该被拒**：6a 生成的 expect 形如
+ *      「被观测到 N 次（…观测事实…），需以契约锁定其行为」—— 只描述**过去**、不含任何**可违反的条件**；
+ *      而 L2 复核门（判据①声明自洽性）第 1 条问的正是"expect 是否给出了可判定的条件"
+ *      ⇒ 6a 批量生产的正是门要拒的东西，**修活它等于造一批注定被冻结的提案**。
+ *   ② **它把观测抄成契约，是复读不是设计**。真正的起草路径是 `ApproveGated`
+ *      （LLM 复核 → 人工 approve），那条路已经在。
+ *   ③ 它在真实运行下**从未工作过**（种子的全局声明让 `undesigned` 恒为 0），
+ *      且 Go 的测试为了测它必须**绕开真实种子**（`loop_test.go:20` / `p2_test.go:123` 注释自陈）。
+ *   ⇒ 「哪些探针缺声明」这个**发现**能力没丢：由 `compare()` 的 `undesigned` 清单承担，且已修好
+ *     （见 `contract.ts` pass 2）。LLM 通过 `observe_judge` 读它 → 自己起草 → 走审批门。
  *
  * ## 与 Go 的三处**有意分歧**（均已核实）
  *
@@ -32,12 +45,6 @@
  *    —— 从 `.agent/observe` 上溯两级、且是**裸字面量**。本实现改由
  *    `analyzeLedger(projectRoot)` 内部走 `impactLedgerFile()`（P4 步骤 2 已收拢）⇒ **该字面量消失**。
  *
- * ## 照搬的三个辅助函数
- *   · `buildProbeFacts`（Go `aggregator.go:91-105`）—— ★ TS 的 `TSProbeObs` **没有 `facts` 字段**
- *     （P4 步骤 2 侦察已指出），而 `expectFromObs` 依赖它 ⇒ 本文件补上，否则生成的 expect 会少信息
- *   · `expectFromObs`（Go `:254-260`）—— facts 用 `；` 连接
- *   · `sanitizeRuleSuffix`（Go `:263-276`）—— 逐 rune：`.` `/` `\` 空格 → `-`，
- *     非 `[a-zA-Z0-9-]` → `-`
  */
 
 import fs from 'node:fs';
@@ -52,7 +59,11 @@ import { OBSERVE_RULE_IDS } from './judge.js';
 export interface LoopOptions {
   /** 事件偏差率阈值（violated / eventCount），缺省 0.1 */
   minDeviationRate?: number;
-  /** 未声明探针数阈值，缺省 1 */
+  /**
+   * 未声明探针数阈值，缺省 1。
+   * ★ 它现在**只参与触发判定，不产出提案**（6a 已删）⇒ 触发了也可能这轮 0 提案（走 loop-done）。
+   *   保留它的理由："设计不完整"本身是值得让人看一眼的信号，不该因为不再自动补契约就一并忽略。
+   */
   minUndesigned?: number;
   /** 台账累犯门槛，缺省 2 */
   minRepeatSpreads?: number;
@@ -79,37 +90,6 @@ function withDefaults(o: LoopOptions): Required<Omit<LoopOptions, 'useLlm'>> & {
     minRepeatSpreads: o.minRepeatSpreads ?? 2,
     useLlm: o.useLlm ?? false,
   };
-}
-
-// ─────────────────────────────────────────────────────────────
-// 照搬的三个辅助函数
-// ─────────────────────────────────────────────────────────────
-
-/** 人类可读事实摘要（照搬 Go `aggregator.go:91-105`）。★ TS 的 `TSProbeObs` 无 `facts` 字段，此处补上。 */
-export function buildProbeFacts(obs: TSProbeObs): string[] {
-  const f: string[] = [];
-  if (obs.errs === 0) f.push('所有事件 err 均为 nil');
-  else f.push(`${obs.errs}/${obs.count} 事件捕获到非空 err`);
-  if (obs.benigns > 0) f.push(`${obs.benigns} 个错误标记为良性`);
-  if (obs.ops.length > 0) f.push(`覆盖 op: ${obs.ops.join(', ')}`);
-  return f;
-}
-
-/** 从观测画像生成契约的期望描述（照搬 Go `:254-260`，facts 用 `；` 连接）。 */
-export function expectFromObs(obs: TSProbeObs | undefined): string {
-  if (!obs || obs.count === 0) return '该探针被观测到，需申明其行为契约';
-  return `被观测到 ${obs.count} 次（${buildProbeFacts(obs).join('；')}），需以契约锁定其行为`;
-}
-
-/** 探针名 → 可作 rule 后缀的合法串（照搬 Go `:263-276`，逐 rune 判定）。 */
-export function sanitizeRuleSuffix(s: string): string {
-  let b = '';
-  for (const r of s) {
-    if (r === '.' || r === '/' || r === '\\' || r === ' ') b += '-';
-    else if (/[a-zA-Z0-9-]/.test(r)) b += r;
-    else b += '-';
-  }
-  return b;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -203,34 +183,6 @@ export async function runLoop(
   res.triggered = true;
 
   const ps = new ProposalStore(dataDir);
-
-  // ── 6a. 未声明探针 → 补契约提案 ──
-  // ⚠⚠ **实测发现：这一分支在种子存在时永远不会产出提案**（2026-10-05，P4 步骤 6）
-  //   根因链：种子 `silentErrorDiscardDSL()` 的 `probe` 是 **''（全局声明）**
-  //   ⇒ `contract.ts:146-147` / Go `comparator.go:104` 的"全局声明匹配所有探针"语义
-  //   ⇒ **任何探针都被算作"已覆盖"** ⇒ `undesigned` 恒为 0 ⇒ 本分支恒空转。
-  //   实证：同一条事件流，种子 `probe=''` ⇒ undesigned=0；改成 `probe='fs.writeFile'`
-  //   ⇒ undesigned=2（明细 another.one / brand.new）。
-  //   ★ Go 侧**同样**如此 ⇒ 这不是移植引入的，是**该能力从 seed 定义那天起就没工作过**。
-  //   ★ 种子的空 probe **语义上是对的**（"在本来会静默丢弃错误的位置"本就是全局陈述），
-  //     真问题在比较器：**一条全局声明会抑制掉全部 undesigned 发现**。
-  //   ⇒ 正确语义应是"没有**显式指名**该探针的声明 ⇒ undesigned"，与全局声明无关。
-  //     **本笔不改**：那会动到判定层（已验证路径），属独立决策。已登记在 docs/todo.md。
-  const obsByProbe = new Map<string, TSProbeObs>(actual.map((p) => [p.probe, p]));
-  for (const dev of res.report.deviations) {
-    if (dev.kind !== 'undesigned') continue; // 只对未声明探针补契约；违反/未观测交人工复核
-    // ★ Go 侧 `Deviation.Probe` 是裸 `string`，为空时会生成 `design:observe-` 这种**畸形 rule id**
-    //   （TS 侧 `TSDeviation.probe` 是可选的，类型系统会拦住，但 Go 拦不住）⇒ 这里显式跳过。
-    if (!dev.probe) continue;
-    const decl: TSDLDecl = {
-      rule: `design:observe-${sanitizeRuleSuffix(dev.probe)}`,
-      probe: dev.probe,
-      expect: expectFromObs(obsByProbe.get(dev.probe)),
-      origin: 'runtime-observe',
-      status: 'proposed',
-    };
-    res.proposals.push(ps.create([decl], `loop: 补全未声明探针 ${dev.probe}`, 'loop'));
-  }
 
   // ── 6b. 累犯波及模式 → design:impact-known-spread 提案（方向 D 核心回流）──
   if (res.ledger && res.ledger.repeatSpreads.length > 0) {

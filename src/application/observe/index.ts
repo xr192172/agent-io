@@ -176,9 +176,13 @@ export const OBSERVE_TOOLS: ToolDef[] = [
       decls: z
         .array(z.record(z.string(), z.unknown()))
         .optional()
-        .describe('设计声明数组（dsl.json 的 decls 形状：rule/probe/expect/constraint/chain）。chain=["a","b","c"] 声明调用序，触发链路判定；不传则仅逐事件判定'),
+        .describe('设计声明数组（dsl.json 的 decls 形状：rule/probe/expect/constraint/chain/origin/verified_by/status）。chain=["a","b","c"] 声明调用序，触发链路判定。**不传则自动从 <project_root>/.agent/observe/dsl.json 读当前权威声明**（要对着假设的声明集判才显式传）'),
       text: z.boolean().optional().describe('true=返回人类可读报告；false=返回 JSON（默认 JSON）'),
       use_llm: z.boolean().optional().describe('true=对可疑事件做 LLM 行为级复核（默认 false 纯规则秒判）'),
+      project_root: z
+        .string()
+        .optional()
+        .describe('被分析项目的根目录。**不传则不做设计对比**（只做逐事件规则判定）—— 故意不兜底 cwd（cwd 是另一个项目）。传了就会自动读 <root>/.agent/observe/dsl.json 并给出 undesigned（哪些探针还没纳入设计）清单'),
     },
     handler: observeJudgeHandler,
   },

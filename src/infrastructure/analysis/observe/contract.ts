@@ -170,10 +170,21 @@ export class TSComparator {
     }
 
     // 2. 未声明探针（链路声明也算覆盖——根探针被声明即非末声明行为）
+    //
+    // ★ 2026-10-05（P4 收尾）修正：**全局声明（`probe:""`）不再算"覆盖"。**
+    //   原判据含 `!d.probe ||` ⇒ 种子的 `silentErrorDiscardDSL()`（probe 为空，本就是全局陈述）
+    //   会把**每一个**探针都算作"已覆盖" ⇒ `undesigned` **恒为 0**
+    //   ⇒ 连"报告里的『未声明 N』"都是**假话**（明明有未声明的探针），并让 loop 的 6a 分支恒空转
+    //   （Go 侧同样如此：`comparator.go:140`、`loop_test.go:20` 的注释都写明了"全局声明会覆盖所有探针"）。
+    //
+    //   **为什么这次只改这一处、而 pass 1 的全局匹配保留**：
+    //     · pass 1（违反/未观测）**需要**全局匹配 —— 种子契约的作用就是"在**任何**会静默丢错的位置"
+    //       都能抓到错误；改成必须指名探针会让种子失效。
+    //     · pass 2（未声明）问的是另一个问题："这个探针**自己**有没有被设计过？"
+    //       一条全局声明没有对任何具体探针做出**可判定的**规定 ⇒ 不该算它被覆盖。
+    //   ⇒ 两个 pass 语义不同、判据不同，这是**刻意区分**，不是遗漏。
     for (const p of actualObs) {
-      const covered = design.decls.some(
-        (d) => !d.probe || d.probe === p.probe || (d.chain && d.chain.includes(p.probe)),
-      );
+      const covered = design.decls.some((d) => d.probe === p.probe || (d.chain && d.chain.includes(p.probe)));
       if (!covered) {
         report.undesigned++;
         report.deviations.push({
