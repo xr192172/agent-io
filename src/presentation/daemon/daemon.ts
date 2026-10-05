@@ -18,7 +18,7 @@
  * 事后诊断（进程已死但 pidfile 残留 → 覆盖）。
  */
 
-import { DATA_DIR_NAME } from '../../infrastructure/data_dir.js';
+import { DATA_DIR_NAME, GO_OBSERVE_DIR_NAME } from '../../infrastructure/data_dir.js';
 import { execFile } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -212,7 +212,10 @@ function scheduleLoopTrigger(projectDir: string, broadcast: (event: string, data
   loopCooldown.set(projectDir, now);
   loopRunning = true;
 
-  const dataDir = path.join(projectDir, '.agent', 'observe');
+  // ★ 两个目录名**不是笔误，是两个程序各自的仓库**（分工见 data_dir.ts 的两张表）：
+  //   · `.agent/observe` = go-observe 的 DSL 仓库（dsl.json / proposals/ / actual.dsl.json）—— 必须与 Go 侧一致，改了断集成
+  //   · `.agent-io/`      = agent-io 自己的（事件流 / 台账）
+  const dataDir = path.join(projectDir, GO_OBSERVE_DIR_NAME, 'observe');
   const proposalsDir = path.join(dataDir, 'proposals');
   const before = new Set(fs.existsSync(proposalsDir) ? fs.readdirSync(proposalsDir) : []);
   const eventsPath = path.join(projectDir, DATA_DIR_NAME, 'observe', 'events.jsonl');

@@ -72,7 +72,7 @@ export function readHealthCache<T>(key: string, root: string): T | null {
   }
 }
 
-/** 写缓存；失败静默（下次重新体检即可） */
+/** 写缓存；失败静默（下次重新体检即可）。写完顺手裁剪（见 {@link pruneHealthCache}）。 */
 export function writeHealthCache(key: string, data: unknown, root: string): void {
   try {
     const dir = healthCacheDir(root);
@@ -81,10 +81,70 @@ export function writeHealthCache(key: string, data: unknown, root: string): void
   } catch {
     // 缓存写失败不致命
   }
+  // ★ 裁剪与写**分离**：写失败不该连带裁剪失败，反之亦然（同仓 pruneFileSnapshots 的写法）
+  try {
+    pruneHealthCache(root);
+  } catch {
+    /* 裁剪失败不影响主流程 */
+  }
 }
 
 /** 构造缓存 key：prefix + 若干片段（feature/参数/指纹），统一清洗成安全文件名 */
 export function healthKey(prefix: string, parts: Array<string | number | boolean>): string {
   const safe = (s: string | number | boolean) => String(s).replace(/[^a-zA-Z0-9_-]/g, '_');
   return [prefix, ...parts.map(safe)].join('_');
+}
+
+/**
+ * 缓存目录里最多留几份报告（按 mtime 倒序保留最新的）。
+ *
+ * ★ 为什么要上限（本函数 2026-10-05 加，之前**完全没有**）：
+ *   缓存 key 里含 `fileFingerprint` —— 而它把 `Math.round(mtimeMs)` 编进指纹
+ *   ⇒ **任何一次保存 / 切分支 / `git checkout` 都会产生一个新 key**。
+ *   命中逻辑本身没问题（实测连跑 4 次文件数不变、确实命中），问题是**旧 key 的文件永不删除**：
+ *   实测本仓 `.agent-io/cache/health/` 堆到 **2014 个** `.json`，占 `.agent-io/` 全部 2933 个文件的 69%。
+ *   ⇒ 缓存变成了"只增不减的历史堆积"，而它本该是"最近一次体检结果"。
+ *
+ * ★ 为什么不写进 `readHealthCache`：淘汰是**写侧**的职责（读的时候顺手删会让人 surprising）。
+ *   同仓已有同形状的先例可抄：`refactor/snapshot/file_snapshot.ts` 的 `pruneFileSnapshots`
+ *   （`MAX_FILE_SNAPSHOTS = 20`）+ `design/lifecycle/snapshot.ts` 的 `pruneSnapshots`
+ *   ⇒ 「写完就裁剪」是本仓既有纪律，此处只是补齐，不是新造机制。
+ */
+export const MAX_HEALTH_CACHE_FILES = 20;
+
+/**
+ * 裁剪超出保留份数的旧缓存（按 mtime 倒序保留最新 `max` 份；返回删除个数）。
+ *
+ * ★ 判据用 **mtime** 而不是 key 名：key 是指纹，指纹不可排序（只能"等于/不等"），
+ *   而"哪份更新"只能问文件系统。删不掉的文件**静默跳过**（与 `pruneFileSnapshots` 同策：
+ *   缓存清理永远不该阻断体检主流程）。
+ */
+export function pruneHealthCache(root: string, max = MAX_HEALTH_CACHE_FILES): number {
+  const dir = healthCacheDir(root);
+  if (!fs.existsSync(dir)) return 0;
+  let names: string[];
+  try {
+    names = fs.readdirSync(dir).filter((n) => n.endsWith('.json'));
+  } catch {
+    return 0;
+  }
+  const ranked = names
+    .map((name) => {
+      try {
+        return { name, mtimeMs: fs.statSync(path.join(dir, name)).mtimeMs };
+      } catch {
+        return { name, mtimeMs: 0 };
+      }
+    })
+    .sort((a, b) => b.mtimeMs - a.mtimeMs);
+  let n = 0;
+  for (const old of ranked.slice(max)) {
+    try {
+      fs.rmSync(path.join(dir, old.name), { force: true });
+      n++;
+    } catch {
+      /* 删不掉不影响主流程 */
+    }
+  }
+  return n;
 }

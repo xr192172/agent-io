@@ -25,6 +25,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { getDSL } from '../../../infrastructure/storage.js';
+import { DATA_DIR_NAME, GO_OBSERVE_DIR_NAME } from '../../../infrastructure/data_dir.js';
 import { deriveDetailChain } from '../../design/derive/derive_chain.js';
 import { queryObserveLog } from '../../../infrastructure/analysis/observe/log_query.js';
 import { judgeEvent } from '../../../infrastructure/analysis/observe/judge.js';
@@ -99,19 +100,34 @@ export interface ReconcileChainResult {
 // 工具方法
 // ─────────────────────────────────────────────────────────────
 
-/** 自动发现事件文件：.agent/observe + .agent-io/observe（与 reconcile_effects 对齐） */
+/**
+ * 自动发现事件文件：**只扫权威位置** `<root>/.agent-io/observe/`（与 reconcile_effects 对齐）。
+ *
+ * ★ 2026-10-05：此前是 `for (const dirRel of ['.agent/observe', '.agent-io/observe'])` ——
+ *   两个目录名都试。实测 `.agent/` 是 **go-observe 自己的** DSL 仓库（`dsl.json` / `proposals/` /
+ *   `actual.dsl.json`；权威依据 `go-observe/cmd/observe-dsl/main.go:30,34` 与 `probe/dsl_cli.go:12,450`），
+ *   事件流由 TS 探针写在 `.agent-io/observe/`。⇒ `.agent/observe` 分支是上一代布局的兼容残留，
+ *   按 `data_dir.ts「没有下游就不要兼容层」` 删掉；真有文件时由 {@link legacyEventFiles} 在报告里指路。
+ */
 function discoverEventFiles(root: string): string[] {
-  const out: string[] = [];
-  for (const dirRel of ['.agent/observe', '.agent-io/observe']) {
-    const dir = path.join(root, ...dirRel.split('/'));
-    if (!fs.existsSync(dir)) continue;
-    for (const name of fs.readdirSync(dir)) {
-      if (name.startsWith('events') && name.endsWith('.jsonl')) {
-        out.push(path.join(dir, name));
-      }
-    }
-  }
-  return out.sort();
+  const dir = path.join(root, DATA_DIR_NAME, 'observe');
+  if (!fs.existsSync(dir)) return [];
+  return fs
+    .readdirSync(dir)
+    .filter((name) => name.startsWith('events') && name.endsWith('.jsonl'))
+    .map((name) => path.join(dir, name))
+    .sort();
+}
+
+/** 上一代布局的遗留事件文件（`.agent/observe/events*.jsonl`）—— 只用于**报告时指路**，不做兼容读取。 */
+function legacyEventFiles(root: string): string[] {
+  const dir = path.join(root, GO_OBSERVE_DIR_NAME, 'observe');
+  if (!fs.existsSync(dir)) return [];
+  return fs
+    .readdirSync(dir)
+    .filter((name) => name.startsWith('events') && name.endsWith('.jsonl'))
+    .map((name) => path.join(dir, name))
+    .sort();
 }
 
 /** 定位宿主源文件绝对路径（绝对直用；相对先 project_root，回退 project_root/src） */
@@ -218,6 +234,9 @@ async function reconcileChainCore(input: ReconcileChainInput): Promise<Reconcile
 
   // ── 自动发现事件文件 + 按链文件过滤 → 这条链的真跑事件 ──
   const eventFiles = input.events_files?.length ? input.events_files : discoverEventFiles(projectRoot);
+  // ★ 未显式给 events_files 且权威位置没命中时，若上一代布局（.agent/observe/）有事件，如实指路
+  //   （`.agent/` 归 go-observe 装 dsl.json/proposals，不是事件流落点 —— 见 discoverEventFiles 的说明）
+  const legacyFiles = input.events_files?.length || eventFiles.length > 0 ? [] : legacyEventFiles(projectRoot);
   const chainFiles = [...new Set(chain.map((c) => path.basename(c.file) || c.file))];
   const events: TSEvent[] = [];
   let totalEvents = 0;
@@ -278,6 +297,12 @@ async function reconcileChainCore(input: ReconcileChainInput): Promise<Reconcile
     ...chain.map((c) => `  ${c.step}. ${c.name}${c.signature ? `  ${c.signature}` : ''}${c.is_cross ? ' ·跨文件' : ''}`),
     '',
     `真跑事件：该链命中 ${chainEvents.length} 条${not_run ? '（无事件 —— 该链尚未真跑，先跑一遍再对账）' : ''}  |  事件文件：${hitFiles.length ? hitFiles.join(', ') : '无'}`,
+    ...(legacyFiles.length > 0
+      ? [
+          `⚠ 上一代布局 ${legacyFiles.join('、')} 里有事件文件，本次**未读**（事件流权威位置是 ${path.join(projectRoot, DATA_DIR_NAME, 'observe')}；「.agent/」归 go-observe，装 dsl.json/proposals）。` +
+            `请重新插桩（instrument）让事件写到权威位置，或用 events_files 显式指定这几个文件。`,
+        ]
+      : []),
     ...(observed.length > 0
       ? ['', `实测调用链 ${observed.length} 条：`, ...observed.map((o) => `  trace=${o.trace_id} [${o.sequence.join(' → ')}] errs=${o.errs}`)]
       : []),
