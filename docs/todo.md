@@ -972,3 +972,34 @@
         步骤 5 `ApproveGated` + `freeze` + **新写 decl 级 LLM 复核通道**（`judgeEventsWithLLM` 语义不匹配，
           它只对 deviation 事件复核、不是"逐条无谓词声明"复核）⇒ 这一步才允许删 approve
         步骤 6 `RunLoop` 全量 + 改 `daemon.ts:218-226` 的 spawn 路径
+
+      ✅ **P4 步骤 3 已落（2026-10-05 本笔）**：`DesignDSLStore` 全量搬到
+        `infrastructure/analysis/observe/dsl_store.ts`（Go `dsl_store.go` 236 行的对应物）。
+        照搬：版本化 + **快照式**审计（`dsl.history.jsonl` append-only、坏行跳过按 Go `List` 语义）、
+        原子写纪律（tmp + rename）、`save(null)` 沿用当前声明裸拷贝、**回滚也是一次新版本写入**
+        （version 单调递增 ⇒ 审计链不被破坏）、空声明集拒绝、回滚目标不存在时错误里带**可用版本列表**。
+        目录权威走 `defaultDSLDir()` = `path.join(projectRoot, GO_OBSERVE_DIR_NAME, 'observe')`
+        —— 与 Go `cmd/observe-dsl/main.go:30,34` 和 `daemon.ts:218` **三处同源**，不新造字面量。
+        种子 `silentErrorDiscardDSL()` 逐字段照搬 Go `llm_judge.go:111-120`，含 `status:'locked'`
+        （种子视为定稿锁定、不走提案修订 —— P4 步骤 5 的 `ApproveGated` 要用这条）。
+        ★ **跨语言兼容已实测**（P4 唯一真正的跨语言必需项）：Go `llm_judge.go:91 LLMJudge.LoadDSL`
+          至今仍在读同一份 `dsl.json`（`probe` 是**编译进被测 Go 进程内**的采集 runtime，运行时读声明）
+          ⇒ TS 产出的目录/文件名/JSON 字段名/时间格式必须与 Go 逐字兼容，否则 **Go 插桩过的工程读不到声明**。
+          实测：TS 建仓 seed→save→save(null)→rollback 落盘后，用一个按 Go struct 写的（含 `omitempty` 纪律）
+          读取器读同一份文件，得到 `version=4` + 4 条历史，**八个字段全部正确解析**
+          （`origin`/`verified_by`/`status`/`from_version`/`verification`/`action`/`source`/`at`）。
+          时间格式：Go `time.Time` 的 JSON 形态是 RFC3339，TS `toISOString()` 同为 UTC RFC3339 ⇒ 格式兼容，
+          差别只在纳秒 vs 毫秒，对"审计时间"这个用途无影响。
+        ★ ★ **实测推翻我自己写进注释的一条判据（已改正，推翻过程留在注释里）**：
+          我最初写"Windows 的 `os.Rename` 不会覆盖已存在文件，故需先 unlink"并当成三条"有意分歧"之一。
+          **实测不成立**：本机上 Node 的 `fs.renameSync` 与 Go 的 `os.Rename` **都能成功覆盖**
+          （把 A 改名到已存在的 B 上，B 内容变成 A，err=nil）⇒ 那个 unlink 重试是**防御性兜底，
+          不是 bug 修复**。判据纪律同 `data_dir.ts:20`/`storage.ts:86`/`derive_anim_flow.ts:500` ——
+          那几处把判据写在出事的地方，而**本处曾把未验证的判据当成事实写进注释**。改前先测。
+        ★ 顺带记下 **Go 侧一处"声明与实际不符"（照搬未修正，留在案上）**：
+          `HistoryEntry.Action` 注释声明 `seed|save|approve|rollback` 四态，但 **`rollback` 永远不会出现**
+          —— Go `:171` 的 `Rollback` 调 `Save(decls, reason, "rollback")`，那个 `"rollback"` 落在
+          **source** 形参上，而 `Save`(`:114`) 恒以 `SaveMeta{Action:"save"}` 调用
+          ⇒ 回滚落盘实为 `action=save, source=rollback`（Go 侧读取器证实历史第 4 条正是如此）。
+          与本仓"声明式的东西不落地"同类。**不在本笔改**：改它要动 Go 侧同名字段，
+          且会让 TS/Go 两侧审计口径一起变，属跨语言决策。
