@@ -79,25 +79,27 @@ export const CHAIN_EDGES: readonly ChainEdge[] = [
     note: '两端逐字同名；★ 但只有**按 feature 工作**的 [B] 该收它（全项目工具不需要，别硬塞）',
   },
 
-  // ── 链 §5 的第一环：find_references → rename_symbols（已真跑）──
-  {
-    from: 'find_references',
-    fromKey: 'read_files',
-    to: 'rename_symbols',
-    toPath: 'renames[].file',
-    cardinality: 'single',
-    evidence: 'verified',
-    note: '实测夹具里 read_files 只有一个元素（= 符号定义处）⇒ 取 [0] 即**确定**，无需选择',
-  },
-  {
-    from: 'find_references',
-    fromKey: 'symbols',
-    to: 'rename_symbols',
-    toPath: 'renames[].symbol',
-    cardinality: 'single',
-    evidence: 'verified',
-    note: '同上：symbols 单元素 ⇒ 取 [0] 确定；★ 多元素时必须由调用方挑（`pick`）',
-  },
+  // ── ★★ 2026-10-05：原先这里放了两条标 `verified` 的边 ──
+  //   `find_references.touched.read_files[0] → renames[].file`
+  //   `find_references.touched.symbols[0]    → renames[].symbol`
+  //   **两条都被真跑证伪、已撤掉**。证伪用的两个夹具（都在 `C:/tmp/`，不进仓）：
+  //
+  //   ① mode=field 反例（`C:/tmp/t28field2/`：`zeta.ts` 声明 `config`，`alpha.ts` 只消费 `config.retries`）：
+  //      `touched = {project_dir, read_files:["src/alpha.ts","src/zeta.ts"]}`
+  //      ⇒ **`read_files[0]` 是纯消费文件（alpha.ts），不是定义文件**；
+  //      ⇒ `symbols` **整项省略**（`definition` 也省略 —— 它只在 mode=symbol 的成功出口才赋值）。
+  //   ② ★★ 更坏的一条：**顶层 `symbol` 在 mode=field 下装的是"字段名"（`"retries"`）而不是符号名**
+  //      ⇒ "**`find_references` 的『符号』槽位是复用的**" —— mode=symbol 装符号、mode=field 装字段名。
+  //      ⇒ ★ **任何"无条件"的接法都错**（拿它去喂改名工具 = 把字段名当符号名，**静默接错**）。
+  //
+  //   ★★ 教训（比这两条边值钱）：**"实测夹具里恰好单元素"不是契约** ——
+  //      `read_files` 排在首位只靠 `find_references.ts:526` 那句 `read.add(r.definition.file)`
+  //      写在 `:527-529` 之前 + `Set` 的插入序；**没有类型 / schema / 测试 / 文档**把它写下来
+  //      （`b_terms.ts:95` 的类型就是 `string[]`，没写"第 0 个是定义"）。
+  //      ⇒ 顺序一变就**静默接错** ⇒ 这正是"把偶然当契约"。
+  //
+  //   ★ 正确的锚点应当是**单数、且只在真有定义时给**：见下方 `CHAIN_EDGES_PENDING` 里的
+  //      `definition_file` 一条 —— 那才是"无条件"能宣称的东西。
 ];
 
 /**
@@ -105,6 +107,18 @@ export const CHAIN_EDGES: readonly ChainEdge[] = [
  * ★ 单独一张表 —— 让"没验"这件事**在读数里看得见**，而不是混进 `CHAIN_EDGES` 冒充已验证。
  */
 export const CHAIN_EDGES_PENDING: readonly ChainEdge[] = [
+  {
+    from: 'find_references',
+    fromKey: 'definition_file',
+    to: 'rename_symbols',
+    toPath: 'renames[].file',
+    cardinality: 'single',
+    evidence: 'pending',
+    note:
+      '★ 这是**补上正确锚点后**的链第一环（2026-10-05）：`definition_file` 是**单数、只在真有定义时给** ⇒ 可无条件宣称。' +
+      '证据：`definition` 只在 mode=symbol 成功出口赋值；`mode=field` 真跑确认整项省略。' +
+      '★ 但仍**不是零字段名翻译**（`definition_file` ≠ `file`）；要真零翻译得连下游 locator 一起改语义名 —— 未定。',
+  },
   {
     from: 'rename_symbols',
     fromKey: 'written_files',

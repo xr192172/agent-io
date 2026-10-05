@@ -529,6 +529,15 @@ function touchedOf(input: Parameters<typeof findReferencesCore>[0], r: FindRefer
   for (const c of r.typeCandidates ?? []) read.add(c.file);
   if (read.size > 0) touched.read_files = [...read];
 
+  // ★★ definition_file：**本次这个符号的定义在哪个文件**（单数）—— 与 `read_files` **不是一回事**。
+  //   ★ 为什么必须单立一栏（2026-10-05 真跑证伪）：我曾用 `read_files[0]` 当"定义文件"来接链，
+  //     **`mode=field` 下它是纯消费文件**（声明在另一个文件里）⇒ 那条接法**静默接错**。
+  //     `read_files` 排首位只靠上面那句 `add(r.definition.file)` 写在前面 + `Set` 插入序，
+  //     **没有任何类型/测试保证**。
+  //   ★ 本栏不同：`definition` 只在 **mode=symbol 的成功出口**才被赋值（`core` 的 `:483`），
+  //     ⇒ **它出现 = 真的确立了定义** ⇒ 可**无条件宣称**。★ `mode=field` 下整项省略。
+  if (r.definition?.file) touched.definition_file = r.definition.file;
+
   return touched;
 }
 

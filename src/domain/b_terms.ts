@@ -102,6 +102,19 @@ export interface Touched {
   symbols?: string[];
   /** 涉及到的 DSL 节点 id。★ 新名：既有 `node_id` 是 `string`（单个）。 */
   nodes?: string[];
+  /**
+   * ★★ **本次操作的那个对象所在的文件** —— 单数，**只在真有"定义文件"时给**（省略 = 没有）。
+   *
+   * ★ 为什么要它（2026-10-05 实测教训）：`find_references` 的产物既有 `read_files`（**读了哪些**，集合·无序）
+   *   又有"符号定义在哪个文件"（`data.definition.file`）—— 二者**不是一回事**。
+   *   我曾把 `read_files[0]` 当成"定义文件"来接链，**真跑证伪**：
+   *   `mode=field` 下 `read_files[0]` 是**纯消费文件**（声明在另一个文件里），而 `definition` **整项省略**。
+   *   ⇒ `read_files[0]` 排首位只靠"某句 `add` 写在前面 + Set 插入序"，**没有任何类型/测试保证**。
+   *   ★ 而 `definition_file` 不同：**它只在真有定义时出现** ⇒ 它的存在本身就是断言 ⇒ **可无条件宣称**。
+   * ★ 与 `read_files` 的分工：`read_files` = "我读了哪些"（凭据，给人/审计）；
+   *   `definition_file` = "**主语**在哪个文件"（给下游当定位入参）。
+   */
+  definition_file?: string;
 }
 
 /**
@@ -185,6 +198,17 @@ export const B_TERMS: Record<string, BTerm> = {
     meaning: '涉及到的 DSL 节点 id',
     debt: true,
     fix: '新词，尚无使用者；与旧 `node_id: string`（单个）并存期间禁止混用',
+  },
+  definition_file: {
+    kind: 'anchor',
+    type: 'string',
+    meaning:
+      '**本次操作的那个对象所在的文件**（仓库相对路径，`/` 分隔）。★ 与 `read_files` **不是一回事**：' +
+      '`read_files` 是"我读了哪些"（集合、无序、凭据）；本词是"**主语**在哪个文件"（单数、定位）。' +
+      '★ **只在真有"定义文件"时给，省略 = 没有** ⇒ 它的"存在"本身就是断言，可无条件宣称。' +
+      '★ 反例（2026-10-05 真跑）：拿 `read_files[0]` 当定义文件是**错的** —— `mode=field` 下它是纯消费文件。',
+    debt: true,
+    fix: '新词，首个采用者 = `find_references`（从产物里已有的 `data.definition.file` 补进 `touched`）',
   },
 
   // ── receipt ────────────────────────────────────────────────
