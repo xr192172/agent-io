@@ -56,18 +56,6 @@ export type BehaviorLang = 'python' | 'node' | 'go' | 'java' | 'csharp' | 'c';
  *  ★ P11（2026-09-29）：抛错文案追加**可执行**提示（装什么包 / 照哪份清单 / 现缺口多少）。
  *    `behavior_baseline` 要的不是 tree-sitter 解析器，而是该语言的**工具链 + harness**，
  *    所以提示里的"装包"会指向该能力的清单小节（§2.10），而不是让人去装个 tree-sitter 包。 */
-export function langOfFile(file: string): BehaviorLang {
-  const ext = path.extname(file).toLowerCase();
-  if (ext === '.py') return 'python';
-  if (NODE_EXTS.includes(ext)) return 'node';
-  if (GO_EXTS.includes(ext)) return 'go';
-  if (JAVA_EXTS.includes(ext)) return 'java';
-  if (CS_EXTS.includes(ext)) return 'csharp';
-  if (C_EXTS.includes(ext)) return 'c';
-  throw new Error(
-    `不支持的脚本语言（${ext}）：行为基线支持 .py / ${NODE_EXTS.join(' / ')} / .go / .java / .cs / .c。${missingLanguageHint(ext, 'behavior_baseline')}`,
-  );
-}
 
 export type BehaviorVerdict = 'same' | 'diff' | 'error';
 
@@ -360,113 +348,11 @@ try {
 // ── harness 执行 ─────────────────────────────────────────────
 
 /** 写临时 python harness 并真跑目标文件，解析单行 JSON 输出 */
-function runPythonHarness(spec: BehaviorSpec): BehaviorRun {
-  const targetAbs = path.resolve(spec.project_dir, spec.file);
-  let content = '';
-  try {
-    content = fs.readFileSync(targetAbs, 'utf-8');
-  } catch {
-    // 文件缺失：哈希取空串，进程级失败信息由 harness 自身读不到时给出
-  }
-  const hash = crypto.createHash('sha256').update(content).digest('hex').slice(0, 12);
-
-  const tmp = path.join(os.tmpdir(), `dc-beh-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.py`);
-  fs.writeFileSync(tmp, harnessSource(spec), 'utf-8');
-  try {
-    const r = spawnSync(PY, [tmp], { encoding: 'utf-8', timeout: spec.timeout_ms ?? 60_000, windowsHide: true, maxBuffer: 8 * 1024 * 1024 });
-    // 超时被终止时 Node 会同时置 error=ETIMEDOUT 与 signal=SIGTERM —— 必须先判 signal：
-    // 超时是"死循环/环境卡顿"的硬信号，归 error；先判 error 会把超时误报成"python 不可用"
-    if (r.signal) {
-      return { file_abs: targetAbs, file_hash: hash, source: '', stdout: '', results: [], error: `运行超时被终止（${r.signal}），疑似死循环` };
-    }
-    if (r.error) {
-      return { file_abs: targetAbs, file_hash: hash, source: '', stdout: '', results: [], error: `python 不可用/执行异常: ${r.error.message}` };
-    }
-    const last = `${r.stdout || ''}`.trim().split(/\r?\n/).filter(Boolean).pop() ?? '';
-    let parsed: { source?: string; stdout?: string; results?: BehaviorSampleResult[]; error?: string };
-    try {
-      parsed = JSON.parse(last);
-    } catch {
-      return { file_abs: targetAbs, file_hash: hash, source: '', stdout: '', results: [], error: `harness 输出解析失败: ${`${r.stderr || ''}`.trim().slice(0, 300) || '无输出'}` };
-    }
-    if (parsed.error) {
-      return { file_abs: targetAbs, file_hash: hash, source: '', stdout: '', results: [], error: parsed.error };
-    }
-    return {
-      file_abs: targetAbs,
-      file_hash: hash,
-      source: parsed.source ?? '',
-      stdout: parsed.stdout ?? '',
-      results: parsed.results ?? [],
-    };
-  } finally {
-    try {
-      fs.rmSync(tmp, { force: true });
-    } catch {
-      // Windows 上留给 OS 清理
-    }
-  }
-}
 
 /**
  * node 家族：父进程转译 TS/JS → CJS（读"当前磁盘"），写临时 CJS + runner，
  * spawn node 子进程执行，解析单行 JSON 输出。与 python 分支同一份输出契约，diff 共用。
  */
-function runNodeHarness(spec: BehaviorSpec): BehaviorRun {
-  const targetAbs = path.resolve(spec.project_dir, spec.file);
-  let content = '';
-  try {
-    content = fs.readFileSync(targetAbs, 'utf-8');
-  } catch {
-    // 文件缺失：哈希取空串，转译空源 → 顶层函数缺失的进程级错误
-  }
-  const hash = crypto.createHash('sha256').update(content).digest('hex').slice(0, 12);
-
-  const tr = transpileToCjs(targetAbs, content);
-  if ('error' in tr) {
-    return { file_abs: targetAbs, file_hash: hash, source: '', stdout: '', results: [], error: tr.error };
-  }
-
-  const tmpBase = `dc-beh-node-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-  const tmpCjs = path.join(os.tmpdir(), `${tmpBase}.cjs`);
-  const tmpRunner = path.join(os.tmpdir(), `${tmpBase}.mjs`);
-  fs.writeFileSync(tmpCjs, tr.js, 'utf-8');
-  fs.writeFileSync(tmpRunner, nodeRunnerSource(spec), 'utf-8');
-  try {
-    const r = spawnSync(process.execPath, [tmpRunner, tmpCjs], { encoding: 'utf-8', timeout: spec.timeout_ms ?? 60_000, windowsHide: true, maxBuffer: 8 * 1024 * 1024 });
-    if (r.signal) {
-      return { file_abs: targetAbs, file_hash: hash, source: '', stdout: '', results: [], error: `运行超时被终止（${r.signal}），疑似死循环` };
-    }
-    if (r.error) {
-      return { file_abs: targetAbs, file_hash: hash, source: '', stdout: '', results: [], error: `node 不可用/执行异常: ${r.error.message}` };
-    }
-    const last = `${r.stdout || ''}`.trim().split(/\r?\n/).filter(Boolean).pop() ?? '';
-    let parsed: { source?: string; stdout?: string; results?: BehaviorSampleResult[]; error?: string };
-    try {
-      parsed = JSON.parse(last);
-    } catch {
-      return { file_abs: targetAbs, file_hash: hash, source: '', stdout: '', results: [], error: `harness 输出解析失败: ${`${r.stderr || ''}`.trim().slice(0, 300) || '无输出'}` };
-    }
-    if (parsed.error) {
-      return { file_abs: targetAbs, file_hash: hash, source: '', stdout: '', results: [], error: parsed.error };
-    }
-    return {
-      file_abs: targetAbs,
-      file_hash: hash,
-      source: parsed.source ?? '',
-      stdout: parsed.stdout ?? '',
-      results: parsed.results ?? [],
-    };
-  } finally {
-    for (const p of [tmpCjs, tmpRunner]) {
-      try {
-        fs.rmSync(p, { force: true });
-      } catch {
-        // Windows 上留给 OS 清理
-      }
-    }
-  }
-}
 
 // ── harness 生成：编译语言（Go/Java/C#/C）───────────────
 //
@@ -684,46 +570,6 @@ const TOOLCHAIN_INSTALL: Record<string, string> = {
 };
 
 /** Go：临时模块 + 目标文件(改写为 package x) + 反射 main；`go run .` */
-function runGoHarness(spec: BehaviorSpec): BehaviorRun {
-  const targetAbs = path.resolve(spec.project_dir, spec.file);
-  let content = '';
-  try {
-    content = fs.readFileSync(targetAbs, 'utf-8');
-  } catch {
-    /* 文件缺失 */
-  }
-  const hash = crypto.createHash('sha256').update(content).digest('hex').slice(0, 12);
-  const goIssue = toolchainIssue('go', '1.21');
-  if (goIssue) {
-    return { file_abs: targetAbs, file_hash: hash, source: '', stdout: '', results: [], error: missingToolchainHint('go', goIssue, TOOLCHAIN_INSTALL.go!) };
-  }
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dc-beh-go-'));
-  try {
-    fs.mkdirSync(path.join(tmp, 'x'), { recursive: true });
-    fs.writeFileSync(path.join(tmp, 'go.mod'), 'module harness\n\ngo 1.21\n');
-    fs.writeFileSync(path.join(tmp, 'x', 'x.go'), rewritePackageClause(content, 'x'), 'utf-8');
-    fs.writeFileSync(path.join(tmp, 'main.go'), goRunnerSource(spec), 'utf-8');
-    const r = spawnSync('go', ['run', '.'], { cwd: tmp, encoding: 'utf-8', timeout: spec.timeout_ms ?? 120_000, windowsHide: true, maxBuffer: 16 * 1024 * 1024 });
-    if (r.error) {
-      return { file_abs: targetAbs, file_hash: hash, source: '', stdout: '', results: [], error: `go 执行异常: ${r.error.message}` };
-    }
-    const last = `${r.stdout || ''}`.trim().split(/\r?\n/).filter(Boolean).pop() ?? '';
-    let parsed: { results?: BehaviorSampleResult[]; error?: string };
-    try {
-      parsed = JSON.parse(last);
-    } catch {
-      return { file_abs: targetAbs, file_hash: hash, source: '', stdout: '', results: [], error: `go harness 输出解析失败: ${`${r.stderr || ''}`.trim().slice(0, 300) || '无输出'}` };
-    }
-    if (parsed.error) return { file_abs: targetAbs, file_hash: hash, source: '', stdout: '', results: [], error: parsed.error };
-    return { file_abs: targetAbs, file_hash: hash, source: '', stdout: '', results: parsed.results ?? [] };
-  } finally {
-    try {
-      fs.rmSync(tmp, { recursive: true, force: true });
-    } catch {
-      // Windows 留给 OS
-    }
-  }
-}
 
 /** 把 BehaviorCase 数组转成 Java/C# 的 Object[][] 字面量（数字→Double、字符串/布尔原样） */
 function javaLiteralArgs(cases: BehaviorCase[]): string {
@@ -822,44 +668,6 @@ function parsePipeLines(stdout: string): BehaviorSampleResult[] {
 }
 
 /** Java：临时包 p + 目标类 + Main；javac -d + java */
-function runJavaHarness(spec: BehaviorSpec): BehaviorRun {
-  const targetAbs = path.resolve(spec.project_dir, spec.file);
-  let content = '';
-  try {
-    content = fs.readFileSync(targetAbs, 'utf-8');
-  } catch {
-    /* 文件缺失 */
-  }
-  const hash = crypto.createHash('sha256').update(content).digest('hex').slice(0, 12);
-  const jIssue = toolchainIssue('java', '1.8');
-  if (jIssue) {
-    return { file_abs: targetAbs, file_hash: hash, source: '', stdout: '', results: [], error: missingToolchainHint('java', jIssue, TOOLCHAIN_INSTALL.java!) };
-  }
-  const className = path.basename(targetAbs).replace(/\.java$/i, '');
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dc-beh-java-'));
-  const pj = path.join(tmp, 'p');
-  fs.mkdirSync(pj, { recursive: true });
-  try {
-    fs.writeFileSync(path.join(pj, `${className}.java`), rewritePackageClause(content, 'p'), 'utf-8');
-    fs.writeFileSync(path.join(pj, 'Main.java'), javaRunnerSource(spec, className), 'utf-8');
-    const out = path.join(tmp, 'out');
-    fs.mkdirSync(out, { recursive: true });
-    const c = spawnSync('javac', ['-encoding', 'UTF-8', '-d', out, path.join(pj, `${className}.java`), path.join(pj, 'Main.java')], { encoding: 'utf-8', timeout: 120_000, windowsHide: true, maxBuffer: 8 * 1024 * 1024 });
-    if (c.status !== 0) {
-      return { file_abs: targetAbs, file_hash: hash, source: '', stdout: '', results: [], error: `javac 编译失败: ${`${c.stderr || ''}`.trim().slice(0, 300) || '无输出'}` };
-    }
-    const r = spawnSync('java', ['-cp', out, 'p.Main'], { encoding: 'utf-8', timeout: spec.timeout_ms ?? 60_000, windowsHide: true, maxBuffer: 8 * 1024 * 1024 });
-    if (r.signal) return { file_abs: targetAbs, file_hash: hash, source: '', stdout: '', results: [], error: `运行超时被终止（${r.signal}）` };
-    if (r.error) return { file_abs: targetAbs, file_hash: hash, source: '', stdout: '', results: [], error: `java 执行异常: ${r.error.message}` };
-    const stdout = `${r.stdout || ''}`;
-    if (stdout.includes('ERR|fn-not-found')) {
-      return { file_abs: targetAbs, file_hash: hash, source: '', stdout: '', results: [], error: `top-level function not found: ${spec.function}` };
-    }
-    return { file_abs: targetAbs, file_hash: hash, source: '', stdout: '', results: parsePipeLines(stdout) };
-  } finally {
-    try { fs.rmSync(tmp, { recursive: true, force: true }); } catch { /* OS */ }
-  }
-}
 
 /** C#：临时 csproj + 目标类 + Program.cs（反射 assembly 按名定位静态方法）；dotnet run */
 function csProjSource(): string {
@@ -915,35 +723,6 @@ public class MainClass {
   }
 }
 `;
-}
-function runCsHarness(spec: BehaviorSpec): BehaviorRun {
-  const targetAbs = path.resolve(spec.project_dir, spec.file);
-  let content = '';
-  try { content = fs.readFileSync(targetAbs, 'utf-8'); } catch { /* 文件缺失 */ }
-  const hash = crypto.createHash('sha256').update(content).digest('hex').slice(0, 12);
-  const csIssue = toolchainIssue('csharp', '6.0');
-  if (csIssue) {
-    return { file_abs: targetAbs, file_hash: hash, source: '', stdout: '', results: [], error: missingToolchainHint('csharp', csIssue, TOOLCHAIN_INSTALL.csharp!) };
-  }
-  const className = path.basename(targetAbs).replace(/\.cs$/i, '') || 'Target';
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dc-beh-cs-'));
-  try {
-    fs.writeFileSync(path.join(tmp, 'harness.csproj'), csProjSource(), 'utf-8');
-    fs.writeFileSync(path.join(tmp, 'Target.cs'), content, 'utf-8');
-    fs.writeFileSync(path.join(tmp, 'Program.cs'), csRunnerSource(spec, className), 'utf-8');
-    const r = spawnSync('dotnet', ['run', '--project', tmp, '-v', 'q'], { encoding: 'utf-8', timeout: spec.timeout_ms ?? 120_000, windowsHide: true, maxBuffer: 16 * 1024 * 1024 });
-    if (r.error) return { file_abs: targetAbs, file_hash: hash, source: '', stdout: '', results: [], error: `dotnet 执行异常: ${r.error.message}` };
-    const stdout = `${r.stdout || ''}`;
-    if (stdout.includes('ERR|fn-not-found')) {
-      return { file_abs: targetAbs, file_hash: hash, source: '', stdout: '', results: [], error: `top-level function not found: ${spec.function}` };
-    }
-    if (stdout.trim() !== '' && !stdout.includes('|')) {
-      return { file_abs: targetAbs, file_hash: hash, source: '', stdout: '', results: [], error: `dotnet harness 无有效输出: ${`${r.stderr || ''}`.trim().slice(0, 300) || stdout.trim().slice(0, 200)}` };
-    }
-    return { file_abs: targetAbs, file_hash: hash, source: '', stdout: '', results: parsePipeLines(stdout) };
-  } finally {
-    try { fs.rmSync(tmp, { recursive: true, force: true }); } catch { /* OS */ }
-  }
 }
 
 /** C：同步正则推断目标函数参数类型（保持 runHarness 同步签名，与 Go/Java/C# 一致） */
@@ -1003,47 +782,8 @@ ${cases}
 }
 
 /** C：生成 harness.c + 目标函数一起编译运行；无 cc/gcc → 报不可用 */
-function runCHarness(spec: BehaviorSpec): BehaviorRun {
-  const targetAbs = path.resolve(spec.project_dir, spec.file);
-  let content = '';
-  try { content = fs.readFileSync(targetAbs, 'utf-8'); } catch { /* 文件缺失 */ }
-  const hash = crypto.createHash('sha256').update(content).digest('hex').slice(0, 12);
-  const cc = toolAvailable('cc') ? 'cc' : toolAvailable('gcc') ? 'gcc' : null;
-  if (!cc) {
-    return { file_abs: targetAbs, file_hash: hash, source: '', stdout: '', results: [], error: missingToolchainHint('c', cc === null ? '未安装' : '不可用', 'cc / gcc（Linux: build-essential；macOS: xcode-select --install；Windows: MSYS2 或 mingw-w64）') };
-  }
-  const paramTypes = cParamTypes(content, spec.function);
-  if (!paramTypes.length) {
-    return { file_abs: targetAbs, file_hash: hash, source: '', stdout: '', results: [], error: `无法从源码推断目标函数 ${spec.function} 的参数类型` };
-  }
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dc-beh-c-'));
-  try {
-    fs.writeFileSync(path.join(tmp, 'target.c'), content, 'utf-8');
-    fs.writeFileSync(path.join(tmp, 'harness.c'), cHarnessSource(spec, paramTypes), 'utf-8');
-    const exe = path.join(tmp, 'a.out');
-    const c = spawnSync(cc, ['-w', '-o', exe, path.join(tmp, 'harness.c'), path.join(tmp, 'target.c')], { encoding: 'utf-8', timeout: 120_000, windowsHide: true, maxBuffer: 8 * 1024 * 1024 });
-    if (c.status !== 0) {
-      return { file_abs: targetAbs, file_hash: hash, source: '', stdout: '', results: [], error: `C 编译失败: ${`${c.stderr || ''}`.trim().slice(0, 300) || '无输出'}` };
-    }
-    const r = spawnSync(exe, [], { encoding: 'utf-8', timeout: spec.timeout_ms ?? 60_000, windowsHide: true, maxBuffer: 8 * 1024 * 1024 });
-    if (r.error) return { file_abs: targetAbs, file_hash: hash, source: '', stdout: '', results: [], error: `C 执行异常: ${r.error.message}` };
-    return { file_abs: targetAbs, file_hash: hash, source: '', stdout: '', results: parsePipeLines(`${r.stdout || ''}`) };
-  } finally {
-    try { fs.rmSync(tmp, { recursive: true, force: true }); } catch { /* OS */ }
-  }
-}
 
 /** 按目标文件语言分支执行 harness */
-export function runHarness(spec: BehaviorSpec): BehaviorRun {
-  switch (langOfFile(spec.file)) {
-    case 'python': return runPythonHarness(spec);
-    case 'node': return runNodeHarness(spec);
-    case 'go': return runGoHarness(spec);
-    case 'java': return runJavaHarness(spec);
-    case 'csharp': return runCsHarness(spec);
-    case 'c': return runCHarness(spec);
-  }
-}
 
 // ── 基线路径规则 ─────────────────────────────────────────────
 
@@ -1143,4 +883,268 @@ export function diffRuns(before: BehaviorRun, after: BehaviorRun): BehaviorDiff 
   const message =
     verdict === 'same' ? `行为一致：${matched} 个 case 全部 same（含 stdout）` : `行为差异：${changed}/${matched} 个 case 变化`;
   return { verdict, matched, changed, details, message };
+}
+
+
+// ─────────────────────────────────────────────────────────────
+// 语言包（2026-10-05，P6 之后的可扩展性收口）
+//
+// 动机是**实打实的重复成本**：2026-10-05 那次"把工具链缺失提示改好"要改 **5 个调用点**
+// —— 因为 6 个 harness 各自抄了一份「读文件→算 hash→查工具链→建临时工程→跑→解析→清理→拼返回」。
+// ⇒ 收成「**共享执行器（纪律）+ 语言包（差异）**」。与 `refactor_langs` / `observe_langs` 同一形态。
+//
+// ★ 结构性收益一（**这是本笔的真正价值，不是省行数**）：
+//   原先 **3 个 harness 缺 `r.signal` 检查**（go / csharp / c）。而 python 那里写着：
+//     「超时被终止时 Node 会同时置 error=ETIMEDOUT 与 signal=SIGTERM —— 必须先判 signal」
+//   ⇒ 那 3 个语言会把**超时误报成"执行异常"**，且没有任何测试能发现（都要真跑一遍才撞上）。
+//   现在 signal-then-error 的顺序**只存在于共享执行器里一处** ⇒ 这种分叉**不可能再发生**。
+//
+// ★ 结构性收益二：加一门语言 = **加一个包对象**（不是改 switch + 改 if 链 + 改 5 处提示文案）。
+//   仍需新写的只有**该语言的金丝雀反射源码**（`harnessSource` 那类）—— 那是真正不可复用的部分。
+// ─────────────────────────────────────────────────────────────
+
+/** 一门语言在"行为基线"里的适配包。 */
+interface BehaviorLangPack {
+  lang: BehaviorLang;
+  /** 命中的扩展名（`langOfFile` 与 `missingLanguageHint` 都读它 ⇒ 单一事实源） */
+  exts: string[];
+  /** 工具链探测：null = 可用；否则给出可执行原因（进 `missingToolchainHint`）。 */
+  toolchain(): string | null;
+  /** 该语言的默认超时（Go 编译慢，单独放宽）。 */
+  timeoutMs(spec: BehaviorSpec): number;
+  /** 写临时工程 → 返回「可选编译步骤 + 怎么跑」。 */
+  build(ctx: BuildCtx): BuiltPlan;
+  /** 解析 harness 输出。返回 `{error}` 即视为失败。 */
+  parse(stdout: string): BehaviorSampleResult[] | { error: string };
+  /** 跑挂（spawn 层面失败）时的文案。 */
+  execError(e: unknown): string;
+  /** 语言专属的前置检查（如 C# 缺输出有效性）。返回错误串则直接失败。 */
+  postCheck?(stdout: string): string | null;
+}
+
+interface BuildCtx {
+  /** 临时目录（执行器已建好）。 */
+  tmp: string;
+  spec: BehaviorSpec;
+  /** 目标文件全文（不存在则空串）。 */
+  content: string;
+  /** 目标文件绝对路径。 */
+  targetAbs: string;
+  /** 写文件（相对临时目录，**自动建父目录**）。 */
+  write(rel: string, content: string): void;
+}
+
+interface BuiltPlan {
+  /** 可选的编译/构建步骤（javac / cc）。 */
+  compile?: { cmd: string; args: string[]; errPrefix: string };
+  run: { cmd: string; args: string[]; cwd?: string };
+}
+
+/** 失败时的统一返回形状（6 处曾各抄一份）。 */
+function failRun(fileAbs: string, hash: string, error: string): BehaviorRun {
+  return { file_abs: fileAbs, file_hash: hash, source: '', stdout: '', results: [], error };
+}
+
+/**
+ * 共享执行器：所有语言跑 harness 的**同一条纪律**。
+ * 顺序是刻意排的，见 {@link BehaviorLangPack} 上方关于 `r.signal` 的说明。
+ */
+function runWithLangPack(spec: BehaviorSpec, pack: BehaviorLangPack): BehaviorRun {
+  const targetAbs = path.resolve(spec.project_dir, spec.file);
+  let content = '';
+  try {
+    content = fs.readFileSync(targetAbs, 'utf-8');
+  } catch {
+    // 文件缺失：哈希取空串，进程级失败信息由 harness 自身给出（6 个 harness 原本都是这个约定）
+  }
+  const hash = crypto.createHash('sha256').update(content).digest('hex').slice(0, 12);
+
+  const issue = pack.toolchain();
+  if (issue) return failRun(targetAbs, hash, missingToolchainHint(pack.lang, issue, TOOLCHAIN_INSTALL[pack.lang] ?? ''));
+
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), `dc-beh-${pack.lang}-`));
+  try {
+    const plan = pack.build({ tmp, spec, content, targetAbs, write: (rel, c) => {
+        const abs = path.join(tmp, rel);
+        fs.mkdirSync(path.dirname(abs), { recursive: true });
+        fs.writeFileSync(abs, c, 'utf-8');
+      } });
+
+    if (plan.compile) {
+      const c = spawnSync(plan.compile.cmd, plan.compile.args, { cwd: tmp, encoding: 'utf-8', timeout: pack.timeoutMs(spec), windowsHide: true, maxBuffer: 8 * 1024 * 1024 });
+      if (c.status !== 0) {
+        return failRun(targetAbs, hash, `${plan.compile.errPrefix}失败: ${firstLine(c.stderr) || firstLine(c.stdout) || `退出码 ${c.status}`}`);
+      }
+    }
+
+    const r = spawnSync(plan.run.cmd, plan.run.args, { cwd: plan.run.cwd ?? tmp, encoding: 'utf-8', timeout: pack.timeoutMs(spec), windowsHide: true, maxBuffer: 8 * 1024 * 1024 });
+
+    // ★ 顺序要紧：超时被终止时 Node **同时**置 error=ETIMEDOUT 与 signal=SIGTERM。
+    //   先判 error 会把"死循环/环境卡顿"这个硬信号误报成"语言不可用"（python 处的原注释）。
+    if (r.signal) return failRun(targetAbs, hash, `运行超时被终止（${r.signal}）—— 目标函数可能是死循环或环境卡顿`);
+    if (r.error) return failRun(targetAbs, hash, pack.execError(r.error));
+
+    const stdout = `${r.stdout || ''}`;
+    const post = pack.postCheck?.(stdout);
+    if (post) return failRun(targetAbs, hash, post);
+
+    const parsed = pack.parse(stdout);
+    if ('error' in parsed) return failRun(targetAbs, hash, parsed.error);
+    return { file_abs: targetAbs, file_hash: hash, source: '', stdout: '', results: parsed };
+  } finally {
+    try {
+      fs.rmSync(tmp, { recursive: true, force: true });
+    } catch {
+      // Windows 留给 OS
+    }
+  }
+}
+
+function firstLine(s: string | undefined | null): string {
+  return `${s ?? ''}`.trim().split(/\r?\n/).filter(Boolean)[0] ?? '';
+}
+
+/** 末行 JSON 解析（python / node / go / java 原本各抄一份）。 */
+function parseJsonTail(stdout: string, langLabel: string): BehaviorSampleResult[] | { error: string } {
+  const last = stdout.trim().split(/\r?\n/).filter(Boolean).pop() ?? '';
+  let parsed: { results?: BehaviorSampleResult[]; error?: string };
+  try {
+    parsed = JSON.parse(last);
+  } catch {
+    return { error: `${langLabel} harness 输出解析失败: ${last.slice(0, 160)}` };
+  }
+  if (parsed.error) return { error: parsed.error };
+  return parsed.results ?? [];
+}
+
+// ── 六个包 ─────────────────────────────────────────────────────────────
+
+const pythonPack: BehaviorLangPack = {
+  lang: 'python',
+  exts: ['.py'],
+  toolchain: () => toolchainIssue('python', undefined),
+  timeoutMs: (spec) => spec.timeout_ms ?? 60_000,
+  build: ({ spec, write }) => {
+    // 单文件形态：harness 源码内联目标文件整体（顶层 exec，模块级依赖可用）
+    write('main.py', harnessSource(spec));
+    return { run: { cmd: PY, args: ['main.py'] } };
+  },
+  parse: (s) => parseJsonTail(s, 'python'),
+  execError: (e) => `python 不可用/执行异常: ${(e as Error).message}`,
+};
+
+const nodePack: BehaviorLangPack = {
+  lang: 'node',
+  exts: [...NODE_EXTS],
+  toolchain: () => toolchainIssue('node', undefined),
+  timeoutMs: (spec) => spec.timeout_ms ?? 60_000,
+  build: ({ spec, content, targetAbs, write }) => {
+    const tr = transpileToCjs(targetAbs, content);
+    if ('error' in tr) throw new Error(tr.error); // 交由执行器的 finally 清理
+    write('target.cjs', tr.js);
+    write('runner.mjs', nodeRunnerSource(spec));
+    return { run: { cmd: process.execPath, args: ['runner.mjs', 'target.cjs'] } };
+  },
+  parse: (s) => parseJsonTail(s, 'node'),
+  execError: (e) => `node 不可用/执行异常: ${(e as Error).message}`,
+};
+
+const goPack: BehaviorLangPack = {
+  lang: 'go',
+  exts: [...GO_EXTS],
+  toolchain: () => toolchainIssue('go', '1.21'),
+  timeoutMs: (spec) => spec.timeout_ms ?? 120_000, // 编译慢，单独放宽
+  build: ({ spec, content, write }) => {
+    write('go.mod', 'module harness\n\ngo 1.21\n');
+    write('x/x.go', rewritePackageClause(content, 'x'));
+    write('main.go', goRunnerSource(spec));
+    return { run: { cmd: 'go', args: ['run', '.'] } };
+  },
+  parse: (s) => parseJsonTail(s, 'go'),
+  execError: (e) => `go 执行异常: ${(e as Error).message}`,
+};
+
+const javaPack: BehaviorLangPack = {
+  lang: 'java',
+  exts: [...JAVA_EXTS],
+  toolchain: () => toolchainIssue('java', '1.8'),
+  timeoutMs: (spec) => spec.timeout_ms ?? 60_000,
+  build: ({ spec, content, targetAbs, write }) => {
+    const className = path.basename(targetAbs).replace(/\.java$/i, '');
+    write(`p/${className}.java`, rewritePackageClause(content, 'p'));
+    write('p/Main.java', javaRunnerSource(spec, className));
+    return {
+      compile: { cmd: 'javac', args: ['-encoding', 'UTF-8', '-d', 'p', `p/${className}.java`, 'p/Main.java'], errPrefix: 'Java 编译' },
+      run: { cmd: 'java', args: ['-cp', 'p', 'p.Main'] },
+    };
+  },
+  parse: (s) => parseJsonTail(s, 'java'),
+  execError: (e) => `java 不可用/执行异常: ${(e as Error).message}`,
+};
+
+const csharpPack: BehaviorLangPack = {
+  lang: 'csharp',
+  exts: [...CS_EXTS],
+  toolchain: () => toolchainIssue('csharp', '6.0'),
+  timeoutMs: (spec) => spec.timeout_ms ?? 120_000, // dotnet 首次还原慢
+  build: ({ spec, content, targetAbs, write }) => {
+    const className = path.basename(targetAbs).replace(/\.cs$/i, '') || 'Target';
+    write('harness.csproj', csProjSource());
+    write('Target.cs', content);
+    write('Program.cs', csRunnerSource(spec, className));
+    return { run: { cmd: 'dotnet', args: ['run', '--project', '.', '-v', 'q'] } };
+  },
+  // C# 走管道行协议（不是末行 JSON）—— 原实现如此，保持不变
+  parse: (s) => parsePipeLines(s),
+  execError: (e) => `dotnet 执行异常: ${(e as Error).message}`,
+  postCheck: (s) => {
+    if (s.includes('ERR|fn-not-found')) return 'top-level function not found（该语言要求顶层函数）';
+    if (s.trim() !== '' && !s.includes('|')) return 'dotnet harness 无有效输出';
+    return null;
+  },
+};
+
+const cPack: BehaviorLangPack = {
+  lang: 'c',
+  exts: [...C_EXTS],
+  // C 认 cc 或 gcc（任一可用即可）—— 保留原有的"二选一"语义
+  toolchain: () => (toolAvailable('cc') || toolAvailable('gcc') ? null : '未安装'),
+  timeoutMs: (spec) => spec.timeout_ms ?? 60_000,
+  build: ({ spec, content, targetAbs, tmp, write }) => {
+    const fn = path.basename(targetAbs);
+    const paramTypes = cParamTypes(content, spec.function);
+    if (!paramTypes.length) throw new Error(`无法从源码推断目标函数 ${spec.function} 的参数类型（C 无类型反射）`);
+    write('target.c', content);
+    write('harness.c', cHarnessSource(spec, paramTypes));
+    return {
+      compile: { cmd: toolAvailable('cc') ? 'cc' : 'gcc', args: ['-w', '-o', 'a.out', 'harness.c', 'target.c'], errPrefix: 'C 编译' },
+      run: { cmd: path.join(tmp, 'a.out'), args: [], cwd: tmp },
+    };
+  },
+  parse: (s) => parsePipeLines(s),
+  execError: (e) => `C 运行失败: ${(e as Error).message}`,
+};
+
+/** 全部语言包（★ 单一事实源：扩展名、工具链、跑法、解析法都在这里）。 */
+const BEHAVIOR_PACKS: readonly BehaviorLangPack[] = [pythonPack, nodePack, goPack, javaPack, csharpPack, cPack];
+
+function packOf(lang: BehaviorLang): BehaviorLangPack {
+  const p = BEHAVIOR_PACKS.find((x) => x.lang === lang);
+  if (!p) throw new Error(`内部不一致：语言包表里没有 ${lang}`);
+  return p;
+}
+
+/** 按文件扩展名判定 harness 语言（未知扩展 → 抛错，不静默猜）。 */
+export function langOfFile(file: string): BehaviorLang {
+  const ext = path.extname(file).toLowerCase();
+  for (const p of BEHAVIOR_PACKS) if (p.exts.includes(ext)) return p.lang;
+  const supported = BEHAVIOR_PACKS.map((p) => p.exts.map((e) => (e === '.py' || e === '.go' || e === '.java' || e === '.cs' || e === '.c' ? e : e)).join(' / ')).join(' / ');
+  throw new Error(
+    `不支持的脚本语言（${ext}）：行为基线支持 ${supported}。${missingLanguageHint(ext, 'behavior_baseline')}`,
+  );
+}
+
+/** 按目标文件语言分支执行 harness（★ 表驱动，不再是 switch）。 */
+export function runHarness(spec: BehaviorSpec): BehaviorRun {
+  return runWithLangPack(spec, packOf(langOfFile(spec.file)));
 }

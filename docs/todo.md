@@ -1363,3 +1363,24 @@
          ⚠ 顺带核实：`gofmt -l` 报 10 个未格式化文件，其中**只有 3 个是本笔改的**（已格式化），
            其余 7 个**在 HEAD 就没格式化**（抽查 `cmd/instrument/main.go`、`internal/instrument/instrument.go`、
            `probe/trace.go` 均确认）⇒ 属历史遗留，**不在本笔范围内动**。
+
+      ✅ **behavior harness 表驱动化（2026-10-05 本笔）** —— 6 个 `runXxxHarness` → 「共享执行器 + 6 个语言包」
+         动机是**实打实的重复成本**：上一笔"把工具链缺失提示改好"要改 **5 个调用点**，
+         因为 6 个 harness 各自抄了一份「读文件→算 hash→查工具链→建临时工程→跑→解析→清理→拼返回」。
+         ★★ **顺带修掉一个真 bug（结构性消失，不是逐处补）**：
+           原先 **3 个 harness 缺 `r.signal` 检查**（go / csharp / c）。而 python 处的注释写着
+           「超时被终止时 Node 会同时置 error=ETIMEDOUT 与 signal=SIGTERM —— **必须先判 signal**」
+           ⇒ 那 3 个语言会把**超时误报成"执行异常"**（死循环被当成语言不可用），且**没有任何测试能发现**。
+           现在 signal-then-error 的顺序**只存在于共享执行器里一处**（实测 `if (r.signal)` 全仓唯一）
+           ⇒ 这种分叉**不可能再发生**。这才是本笔的真正价值，不是省行数。
+         表驱动带来的：加一门语言 = **加一个包对象**（不再改 switch + 改 if 链 + 改 5 处提示文案）。
+         仍需新写的只有**该语言的金丝雀反射源码**（`harnessSource` 那类）—— 真正不可复用的部分。
+         形态与 `refactor_langs` / `observe_langs` 一致（`BEHAVIOR_PACKS` 是扩展名/工具链/跑法/解析法的**单一事实源**，
+         `langOfFile` 与 `runHarness` 都改成查表）。
+         ⚠ **两处刻意的差异**（不是统一成一样）：C# 与 C 走**管道行协议**（`parsePipeLines`）而非末行 JSON；
+           C 认 `cc` **或** `gcc`（二选一）；Go/dotnet 超时放宽到 120s（编译/首次还原慢）。
+         ★ **先立安全网再动活代码**：重构前先造 Go 夹具跑通 capture/verify 4 条（`ret:"5"` / `verdict:same`），
+           重构后**逐项比对语义字段全部一致**（`results` / `verdict` / `matched` / `file_hash` / `baseline.results`）。
+         ★ **安全网真的抓到了一处**：`write()` 最初没建父目录 ⇒ `x/x.go` 写不进去（Go harness 原本显式 `mkdirSync('x')`）
+           ⇒ 4 条全 FAIL。**这就是先跑基线的价值** —— 否则这个错误会安静地留在重构里。
+         行数 1147 → 1151（**没省行**，但换来了"加语言是数据改动"与"分叉不可能再发生"）。
