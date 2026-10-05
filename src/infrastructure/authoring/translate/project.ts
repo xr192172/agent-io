@@ -9,7 +9,6 @@
  * Go stdlib / 外部类型不硬解、同名冲突不 import，均记 diagnostic。
  */
 
-import { DATA_DIR_NAME } from '../../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import ts from 'typescript';

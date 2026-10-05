@@ -21,7 +21,6 @@
  *   - teach 科普导图 JSON：<storageRoot>/mindmap/<feature>.teach.json（/mindmap/ 交互页的数据源）
  */
 
-import { DATA_DIR_NAME } from '../../../infrastructure/data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { getDSL, getStorageRoot, getPackageRoot } from '../../../infrastructure/storage.js';

@@ -427,7 +427,7 @@
       "id": "flat-application",
       "layer": "application",
       "dir": "src/application",
-      "note": "应用层横切件（**7** 个文件）：handlers / plumbing / tool_registry / stage_registry / types / **dispatch** / **write_gate**。被各工具线共用、彼此无父子 ⇒ 平铺是终态。★ 登记它**是必需的**：只要 `application/` 下新增任一域（如 cross / harvest），量具就会把 `src/application/` 当成「域的父目录」去扫它的直属文件 ⇒ 不登记则它们全变 `misplaced`（实测：登记 cross + harvest 后 misplaced 2 → 7；补上本条后回到 2）。★ `dispatch` 于 2026-10-04 从 `application/observe/` 挪到此处：它被 **3 条线**消费（design 经 `handlers.dispatchDslEdit` / meta 经 `explore_code.dispatchWatch` / mcp 经 `server_registry.collectPendingAlertText`），是真正的**跨线调度件**，留在 observe 里反而会让 design 线依赖 observe 内部 —— 这也消掉了 T29 的归属歧义。★ ★ `write_gate` 于 2026-10-05 从 `application/observe/runtime/` 挪到此处，**判据与 dispatch 同型**（逐字复述）：它被 **11 处 / 4 条线 + presentation** 消费，是**全项目写源码的统一闸门**（快照 → 真写 → 索引写穿 + 自写登记），留在 observe 里会让 design / refactor / meta 三条线都去依赖 observe 内部。搬后 `observe/runtime/` 只剩 3 个文件（run_tests / stale_check / watch_project_tool），全是 observe 线自己的东西。",
+      "note": "应用层横切件（**6** 个文件）：handlers 已于 2026-10-05 按线拆走（见下方 lane-* 四条）/ plumbing / tool_registry / stage_registry / types / **dispatch** / **write_gate**。被各工具线共用、彼此无父子 ⇒ 平铺是终态。★ 登记它**是必需的**：只要 `application/` 下新增任一域（如 cross / harvest），量具就会把 `src/application/` 当成「域的父目录」去扫它的直属文件 ⇒ 不登记则它们全变 `misplaced`（实测：登记 cross + harvest 后 misplaced 2 → 7；补上本条后回到 2）。★ `dispatch` 于 2026-10-04 从 `application/observe/` 挪到此处：它被 **3 条线**消费（design 经 `handlers.dispatchDslEdit` / meta 经 `explore_code.dispatchWatch` / mcp 经 `server_registry.collectPendingAlertText`），是真正的**跨线调度件**，留在 observe 里反而会让 design 线依赖 observe 内部 —— 这也消掉了 T29 的归属歧义。★ `write_gate` 于 2026-10-05 从 `application/observe/runtime/` 挪到此处，**判据与 dispatch 同型**：它被 **11 处 / 4 条线 + presentation** 消费，是全项目写源码的统一闸门。★ ★ `application/handlers.ts` 已于 2026-10-05 **整体拆掉**（15 个 handler 按线分给 design/meta/observe/refactor/harvest 各自己的 `handlers.ts`）—— 那个文件是 5 条线共用的枢纽，`application/` 与每个 lane 互为消费方 = **目录级环**（文件级无环，所以 code_health 报 0 是对的，但目录才是导航单位）。拆后各线自足：给一条线加工具只动那条线内的文件。",
       "role": "engine"
     },
     {
@@ -443,6 +443,34 @@
       "dir": "src/infrastructure/analysis/submit_gate",
       "note": "提交层完整性自检（`go:embed` / 产物提交）：检查每个 `//go:embed` 点声明的产物 ① 是否在磁盘存在 ② 是否已进 git 索引 —— 任一失败即「新克隆 build 断点」。**单文件、单消费者**（`refactor_pipeline` 收尾调用）、无对外契约 ⇒ 平铺终态，**不立为域**。★ 2026-10-05 由 `analysis/gate/submit_gate.ts` 搬到 `analysis/submit_gate/index.ts`：旧目录名 `gate/` 是**属名**（「闸门」这一大类），却只装了 `submit` 一个**种**，且 `contract_gate/`（契约对账闸门）才是与它并列的另一实例 ⇒ 属名被一个种占住是命名错位。搬到 `submit_gate/index.ts` 后与另 3 个单文件目录（`behavior/` · `cross_repo/` · `project_root/`）同形，且 **`dir` 目录名与 `id` 终于同名**（`submit_gate` ↔ `submit-gate`，仅 `_`/`-` 之别）。",
       "role": "analysis"
+    },
+    {
+      "id": "lane-design",
+      "layer": "application",
+      "role": "capability",
+      "dir": "src/application/design",
+      "note": "`design` 线（设计 / 活文档）的**根**：`index.ts` = 该线的 ToolDef 表（工具注册的唯一事实源），`handlers.ts` = 该线的工具入参适配层（★ 2026-10-05 从跨 5 线的 `application/handlers.ts` 拆来）。两者都是「被本线 index.ts 消费、彼此无父子」的**直属成员** ⇒ 平铺是终态，不另立子域。它下面另有 6 个**已登记的子域**（各自进 domains）—— ★ flat 只说「直属 .ts 是成员」，不管子目录。★ 登记它**是必需的**（同 `flat-application` 的理由）：lane 根是子域的父目录，不登记则量具会把它的直属文件判成 misplaced（实测：本笔加 `handlers.ts` 的那一刻立刻报出 4 条）。"
+    },
+    {
+      "id": "lane-meta",
+      "layer": "application",
+      "role": "capability",
+      "dir": "src/application/meta",
+      "note": "`meta` 线（元信息 / 导航 / 文档）的**根**：`index.ts` = 该线的 ToolDef 表（工具注册的唯一事实源），`handlers.ts` = 该线的工具入参适配层（★ 2026-10-05 从跨 5 线的 `application/handlers.ts` 拆来）。两者都是「被本线 index.ts 消费、彼此无父子」的**直属成员** ⇒ 平铺是终态，不另立子域。它下面另有 8 个**已登记的子域**（各自进 domains）—— ★ flat 只说「直属 .ts 是成员」，不管子目录。★ 登记它**是必需的**（同 `flat-application` 的理由）：lane 根是子域的父目录，不登记则量具会把它的直属文件判成 misplaced（实测：本笔加 `handlers.ts` 的那一刻立刻报出 4 条）。"
+    },
+    {
+      "id": "lane-observe",
+      "layer": "application",
+      "role": "capability",
+      "dir": "src/application/observe",
+      "note": "`observe` 线（观测 / 对账）的**根**：`index.ts` = 该线的 ToolDef 表（工具注册的唯一事实源），`handlers.ts` = 该线的工具入参适配层（★ 2026-10-05 从跨 5 线的 `application/handlers.ts` 拆来）。两者都是「被本线 index.ts 消费、彼此无父子」的**直属成员** ⇒ 平铺是终态，不另立子域。它下面另有 3 个**已登记的子域**（各自进 domains）—— ★ flat 只说「直属 .ts 是成员」，不管子目录。★ 登记它**是必需的**（同 `flat-application` 的理由）：lane 根是子域的父目录，不登记则量具会把它的直属文件判成 misplaced（实测：本笔加 `handlers.ts` 的那一刻立刻报出 4 条）。"
+    },
+    {
+      "id": "lane-refactor",
+      "layer": "application",
+      "role": "capability",
+      "dir": "src/application/refactor",
+      "note": "`refactor` 线（重构 / 改名 / 编辑）的**根**：`index.ts` = 该线的 ToolDef 表（工具注册的唯一事实源），`handlers.ts` = 该线的工具入参适配层（★ 2026-10-05 从跨 5 线的 `application/handlers.ts` 拆来）。两者都是「被本线 index.ts 消费、彼此无父子」的**直属成员** ⇒ 平铺是终态，不另立子域。它下面另有 9 个**已登记的子域**（各自进 domains）—— ★ flat 只说「直属 .ts 是成员」，不管子目录。★ 登记它**是必需的**（同 `flat-application` 的理由）：lane 根是子域的父目录，不登记则量具会把它的直属文件判成 misplaced（实测：本笔加 `handlers.ts` 的那一刻立刻报出 4 条）。"
     }
   ],
   "flatNote": "★ `flatDirs` 与 `domains` 的区别，一句话：**`domains[i].dir` 里的散文件「要么已搬完、要么就是待搬的缺口」；`flatDirs[i].dir` 里的散文件「就是终态」**。 所以 flat 不是「免检」：它的作用是①把这三个目录**纳入视野**（否则量具对它们是瞎的）；②规定「**flat 目录里再长出的子目录必须被登记**」—— 出现了却没登记就是缺口，读数会报 `unlisted`。★ 判据的来源：`infrastructure/` 顶层这 10 个文件如果按容器判，会永远挂在待搬清单上，而「它们本来就该平铺」这个意图**在原表里没地方写** ⇒ 这就是缺的那一位。",

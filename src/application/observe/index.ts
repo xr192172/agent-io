@@ -37,7 +37,7 @@ import { reconcileEffects } from './reconcile/reconcile_effects.js';
 import type { ReconcileEffectsInput } from './reconcile/reconcile_effects.js';
 import { runTests } from './runtime/run_tests.js';
 import { checkStaleBuild, formatStaleText } from './runtime/stale_check.js';
-import { observeInstrumentHandler, observeJudgeHandler, observeLogHandler, observeTraceHandler, reconcileChainHandler } from '../handlers.js';
+import { observeInstrumentHandler, observeJudgeHandler, observeLogHandler, observeTraceHandler, reconcileChainHandler } from './handlers.js';
 import { fileURLToPath } from 'node:url';
 import type { ToolDef } from '../types.js';
 

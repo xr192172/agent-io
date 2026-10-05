@@ -12,124 +12,18 @@
  * 500+ 单测（针对纯函数）不受影响。
  */
 
-import { DATA_DIR_NAME } from '../../infrastructure/data_dir.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { makeCapabilityMapHandler, LANE_IDS, type LaneId } from '../../application/meta/registry/capability_map.js';
-import { indexIntegrity, renderIntegrity } from '../../application/meta/integrity/index_integrity.js';
 import { ensureProjectIndex, detectStaleIndex } from '../../infrastructure/index/index_freshness.js';
 import { hasLiveIndex } from '../../application/write_gate.js';
-import { prewarmKernel } from '../../infrastructure/parse/index.js';
 import { scheduleBackfill, backfillState, isIndexIncomplete } from '../../infrastructure/index/index_backfill.js';
-import { renderGranularityNote } from '../../application/refactor/parse_capability/parse_capability.js';
 import { unknownArgHints, renderArgHints } from '../../infrastructure/text/arg_suggest.js';
-import { recommendObservePoints } from '../../application/observe/capture/observe_points.js';
 import { collectPendingAlertText, dispatchDslEdit } from '../../application/dispatch.js';
-import { exportSvg, exportMarkdown } from '../../infrastructure/render/export.js';
-import { deriveMindMap } from '../../application/meta/view/derive_mind_map.js';
-import { queryFeature } from '../../application/meta/explore/query_feature.js';
-import { updateFeature } from '../../application/design/dsl_ops/update_feature.js';
-import { scaffold } from '../../application/design/lifecycle/scaffold.js';
 
-import { checkConsistency } from '../../application/design/intent/consistency.js';
-import { detectDrift } from '../../application/design/intent/detect_drift.js';
-import { exploreCode, EXPLORE_ACTIONS } from '../../application/meta/explore/explore_code.js';
-import { editCode } from '../../application/refactor/edit/edit_code.js';
-import { importProject } from '../../infrastructure/graph/import_project.js';
-import type { ImportProjectInput } from '../../infrastructure/graph/import_project.js';
-import { manageFeature, MANAGE_ACTIONS } from '../../application/design/lifecycle/manage_feature.js';
-import { diffViews } from '../../application/refactor/diff_views/diff_views.js';
-import { archiveNode, listArchive } from '../../application/meta/archive/archive_node.js';
-import { setDesignIntent } from '../../application/design/intent/set_design_intent.js';
-import { harvestDecisions } from '../../application/harvest/harvest_decisions.js';
-import { syncContracts } from '../../application/meta/registry/sync_contracts.js';
-import { harvestClosure } from '../../application/harvest/harvest_closure.js';
-import type { HarvestClosureInput } from '../../application/harvest/harvest_closure.js';
-import { extractContracts } from '../../application/harvest/extract_contracts.js';
-import type { ExtractContractsInput } from '../../application/harvest/extract_contracts.js';
-import { reconcileEffects } from '../../application/observe/reconcile/reconcile_effects.js';
-import type { ReconcileEffectsInput } from '../../application/observe/reconcile/reconcile_effects.js';
-import { narrateStep } from '../../application/observe/capture/narrate_step.js';
-import type { NarrateStepInput } from '../../application/observe/capture/narrate_step.js';
-import { buildBrickifyPreview } from '../../application/design/bricks/render_brickwork.js';
-import { renameMany, type RenameItem } from '../../infrastructure/parse/ast_rename.js';
-import { renameSymbols } from '../../application/refactor/rename/rename_symbols.js';
-import { moveSymbol } from '../../application/refactor/rename/symbol_move.js';
-import { findReferences } from '../../application/refactor/find/find_references.js';
-import { runTests } from '../../application/observe/runtime/run_tests.js';
 // （`tools/stale_check` 的导入已随 P-F 删除：本文件不再直接消费它 —— 三个 stale 告警各自
 //   探测，`stale_check.formatStaleText` 仍由 lanes/observe.ts 的 `run_tests` 前置提示使用。）
-import { detectReachableRoots } from '../../infrastructure/analysis/project_root/index.js';
-import { analyzeImpact, analyzeHubs } from '../../infrastructure/analysis/impact/index.js';
-import type { ImpactChangePoint } from '../../infrastructure/analysis/impact/index.js';
-import { compareProjects } from '../../infrastructure/analysis/cross_repo/index.js';
-import { analyzeHealth } from '../../infrastructure/analysis/health/index.js';
-import { renameFiles } from '../../application/refactor/rename/rename_files.js';
-import { removeDeadImports, removeDeadImportsWithVerify, type RemoveDeadImportsVerifyOptions } from '../../application/refactor/edit/remove_dead_imports.js';
-import { runRefactorPipeline } from '../../application/refactor/pipeline/refactor_pipeline.js';
-import { planFunctionAnnotation, scanFileAnnotations } from '../../application/refactor/annotate/function_annotation.js';
-import { getFeatureLine } from '../../application/observe/capture/feature_line.js';
-import { proposeChange } from '../../application/design/workbench/code_workbench.js';
-import { suggestRenames, type SuggestOptions } from '../../application/refactor/find/ast_suggest.js';
-import { suggestDisambiguations, disambiguationItems } from '../../application/refactor/find/similar_names.js';
-import { runRefactorJudge } from '../../application/refactor/pipeline/refactor_judge.js';
-import type { JudgeIssue, JudgeDecision } from '../../application/refactor/pipeline/refactor_judge.js';
-import { validateReason } from '../../application/observe/reconcile/reason_validator.js';
-import type { ReasonEvidenceRef } from '../../application/observe/reconcile/reason_validator.js';
-import { runDiagnosis, formatDiagnoseText } from '../../infrastructure/analysis/diagnosis/diagnose.js';
-import type { DiagnoseInput } from '../../infrastructure/analysis/diagnosis/contract.js';
-import { getDSLByView, getLiveDir, getDSL, saveDSL } from '../../infrastructure/storage.js';
-import { resolveCanvasNoteTargets, renderCanvasNotesDigest, markCanvasNotesStatus } from '../../application/meta/view/derive_mind_map.js';
-import { decideCanvasNotes } from '../../application/meta/llm/llm_decider.js';
-import { listProjectDocs, readProjectDoc, matchDocsForTargets, buildDocsPromptBlock, type DocTargetSet } from '../../application/meta/docs/project_docs.js';
-import { listProvidersMasked, upsertProvider, deleteProvider, getStats, resetStats, testProvider } from '../../application/meta/llm/gateway.js';
 import { getProjectCacheDb } from '../../infrastructure/index/db.js';
 import { recordDogfoodUsage } from '../../infrastructure/dogfood_stats.js';
-import { queryObserveLog } from '../../infrastructure/analysis/observe/log_query.js';
-import { memoryObserveHandler, memoryTargetsHandler } from '../../application/observe/capture/memory_observe.js';
-import { translateGoTsHandler } from '../../infrastructure/authoring/translate/tool.js';
-import { extractGo } from '../../infrastructure/authoring/translate/go_extractor.js';
-import { extractRule } from '../../application/refactor/rule_library/rule_extract.js';
-import {
-  loadRules,
-  writeRule,
-  isLegalRuleId,
-  hasNegativeFixture,
-  hasPositiveFixture,
-  rulesDir,
-  type Rule,
-} from '../../application/refactor/rule_library/rule_library.js';
-import {
-  collectRuleTargets,
-  applyRulesToFiles,
-  loadBaseline,
-  writeBaseline,
-  ratchetDelta,
-  runFixtures,
-  type ApplySummary,
-} from '../../application/refactor/rule_library/rule_apply.js';
-import { observeTrace } from '../../application/observe/capture/observe_trace.js';
-import { normalizeEvents, judgeEvents, judgeEventsWithLLM, renderJudgeReport } from '../../infrastructure/analysis/observe/judge_service.js';
-import { TSComparator, renderTSDiffReport, type TSDLDecl, type TSDiffReport } from '../../infrastructure/analysis/observe/contract.js';
-import { rebuildChains } from '../../infrastructure/analysis/observe/chain.js';
-import { reconcileChain } from '../../application/observe/reconcile/reconcile_chain.js';
-import type { ReconcileChainInput } from '../../application/observe/reconcile/reconcile_chain.js';
-import {
-  instrumentProject,
-  collectTsFiles,
-  restoreInstrumented,
-  buildProbeLedger,
-  saveProbeLedger,
-  clearProbeLedger,
-  ledgerSummary,
-} from '../../infrastructure/analysis/observe/instrument.js';
-import {
-  isGoProject,
-  instrumentGoProject,
-  restoreGoProject,
-  goReportSummary,
-  checkGoObserveDeps,
-} from '../../infrastructure/analysis/observe/go_instrument.js';
 import path from 'node:path';
 import { statSync, readFileSync, writeFileSync, readdirSync, existsSync, type Dirent } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -447,27 +341,6 @@ export function trustNoteFor(rawRoot: string | null): string {
 import type { ToolDef } from '../../application/types.js';
 import { looseInputSchema, textOut, wrap, wrapData } from '../../application/plumbing.js';
 import { emitWarnings, type ToolWarning } from './tool_warnings.js';
-import {
-  getDslHandler,
-  editDslHandler,
-  manageFeatureHandler,
-  renderDesignHandler,
-  scaffoldHandler,
-  consistencyHandler,
-  detectDriftHandler,
-  exploreCodeHandler,
-  diffViewsHandler,
-  archiveNodeHandler,
-  syncContractsHandler,
-  setDesignIntentHandler,
-  listArchiveHandler,
-  harvestDecisionsHandler,
-  observeLogHandler,
-  observeTraceHandler,
-  observeJudgeHandler,
-  reconcileChainHandler,
-  observeInstrumentHandler,
-} from '../../application/handlers.js';
 
 // 对外仍从本模块导出（原 `export interface ToolDef` 的公开 API 位置不变）
 export type { ToolDef };

@@ -1,0 +1,228 @@
+/**
+ * design 线的工具入参适配层（handler）—— ★ 2026-10-05 从 `application/handlers.ts` 按线拆出。
+ *
+ * 为什么要拆：原来 15 个 handler 挤在一个跨 5 条线的文件里，而 5 个 lane 的 `index.ts` 都 import 它
+ * ⇒ `application/` 与每个 lane **互为消费方**（目录级环：文件级无环，所以 code_health 报 0 是对的，
+ *   但**目录**才是人导航的单位）。拆开后每条线自足：给这条线加工具只动这条线内的文件。
+ *
+ * 本文件由 `edit_code`（AST 取边界）从原文件逐符号搬入，**不是手抄**；tsc 是闸门。
+ */
+
+import { wrap, wrapData } from '.././plumbing.js';
+import { dispatchDslEdit } from '.././dispatch.js';
+import { getDSLByView, getLiveDir, requireProjectRoot } from '../../infrastructure/storage.js';
+import { checkConsistency } from '.././design/intent/consistency.js';
+import { deriveMindMap } from '.././meta/view/derive_mind_map.js';
+import { detectDrift } from '.././design/intent/detect_drift.js';
+import { exportMarkdown, exportSvg } from '../../infrastructure/render/export.js';
+import { manageFeature } from '.././design/lifecycle/manage_feature.js';
+import { queryFeature } from '.././meta/explore/query_feature.js';
+import { fileFacts } from '../../infrastructure/index/file_facts.js';
+import { validateReason } from '.././observe/reconcile/reason_validator.js';
+import type { ReasonEvidenceRef } from '.././observe/reconcile/reason_validator.js';
+import { buildTraceResolver, loadObservedTraceRecords } from '.././observe/capture/trace_evidence.js';
+import { updateFeature } from '.././design/dsl_ops/update_feature.js';
+
+/** consistency_check：一致性。★ wrapData（2026-09-29）：[B] 回 `ConsistencyResult`
+ *   = `{ message, fileResults[], invariantResults[], summary{totals…} }` ——
+ *   逐文件 API 匹配明细 + 不变式结果 + **计数摘要**原被 `wrap` 丢掉（agent 无从机器判定"过没过"）。 */
+export const consistencyHandler = wrapData(async (a) => {
+  const r = await checkConsistency({
+    feature: a.feature as string,
+    code_dir: a.code_dir as string | undefined,
+  });
+  return {
+    message: r.message,
+    data: { fileResults: r.fileResults, invariantResults: r.invariantResults, summary: r.summary },
+  };
+});
+
+/** detect_drift：活文档↔代码漂移检测（代码变更 → 提示 DSL 过时/欠实现），持久化台账 */
+export const detectDriftHandler = wrapData(async (a) => {
+  return detectDrift({
+    feature: a.feature as string,
+    code_dir: a.code_dir as string | undefined,
+    scope: a.scope as 'changed' | 'all' | undefined,
+    since_ref: a.since_ref as string | undefined,
+    mode: a.mode as 'check' | 'status' | undefined,
+  });
+});
+
+/** edit_dsl：统一写操作（复用 updateFeature，Step A 扩展后覆盖更多写动作）
+ * ★ 刻意保留 `wrap`（2026-09-29 逐处复核）：[B] 一路到 [C] 的结果类型 `EditResult`
+ *   （`src/tools/edit_result.ts`）**结构上只有 `{ message, feature }`，没有 `data` 字段**——
+ *   `dispatchDslEdit` 的两条路径（daemon / 本地 updateFeature）都只造这两个键
+ *   ⇒ 这里没有任何结构化产物被通道丢掉，`wrap` 是**对的那一个**，不换。
+ *   （若将 [B] 补出 `data`，本处再随之升级；那是动 [B] 的契约，不在本笔范围。） */
+export const editDslHandler = wrap(async (a) => {
+  // 视图写护栏：live 是代码快照，只能由 import/watch 重建，禁止手改
+  if (a.view === 'live') {
+    throw new Error(
+      '实际视图（view=live）是代码快照，只读，请勿手改。要改请用 view=design（设计视图）；' +
+        '要重建实际视图请用 import_project 工具（全量导入），增量监听用 explore_code action=watch。',
+    );
+  }
+  // 活文档：变更原因校验（L1-L4）。weight=routine → 轻量写路径（level=3，仍有 L1/L2/L3，
+  // 跳过 L4 证据回溯），给日常维护放行；默认 normal → 全链强闸。
+  const reason = (a.reason as string | undefined) ?? '';
+  const evidence = (a.evidence as ReasonEvidenceRef[] | undefined) ?? [];
+  const level = a.weight === 'routine' ? 3 : 4;
+  const dsl = getDSLByView(a.feature as string, 'design');
+  const entityIds: string[] = [];
+  if (dsl) {
+    for (const n of dsl.geometry?.nodes ?? []) entityIds.push(n.id);
+    for (const e of dsl.geometry?.edges ?? []) entityIds.push(e.id);
+    for (const f of dsl.semantic?.files ?? []) {
+      if (f.id) entityIds.push(f.id);
+      if (f.path) entityIds.push(f.path);
+    }
+  }
+  // ── ★★ T20 第 (4) 步（2026-10-05）：写「代码是什么」的断言前，必须**现取**该文件的事实 ──
+  //   为什么：DSL 里的 `actual_apis` / `actual_deps` 镜像**已移除**（事实权威只剩 `cache.db`）
+  //   ⇒ 那改 `semantic.files`（`path` / `responsibility` / `expected_apis`）就是在**写"代码是什么"的断言**
+  //     ⇒ 必须先去读权威（`fileFacts`）；否则就是**凭想象写设计**（用户 2026-10-01：「编辑时强制读双编」）。
+  //   触发面（**只有这两类**；逐条核过 `update_feature.ts` 的 `switch (op.type)`）：
+  //     · `type=file`（增/改/删文件条目）· `type=api`（改 `file.expected_apis`）
+  //   免触发（**逐条说清"为什么它不算"**）：`type=status` / `binding`（**流程态**，不断言代码）、
+  //     `type=snapshot op=rollback`（**整份恢复**，没有"目标文件"可归因）、
+  //     node / edge / annotation / approval / layout / simulation（本就不碰 `semantic.files`）。
+  //   ★ 不兜底：DSL **有** `source_root`（= 有代码权威可读）却取不到事实 ⇒ **响亮抛**；
+  //     DSL **没有** `source_root`（纯设计 / 新建 feature，代码侧还不存在）⇒ 这条**不适用**（没有权威可读）。
+  //   ★ 与 `weight` 无关：routine 可以跳 L4 的"为什么改"回溯，但**跳不过**"改文件断言前先现取"。
+  const FILE_ASSERT_OPS = new Set(['file', 'api']);
+  const ops =
+    (a.operations as Array<{ op?: string; type?: string; id?: string; data?: Record<string, unknown> }> | undefined) ??
+    [];
+  const sourceRoot = dsl?.source_root;
+  const normRef = (s: string): string => s.replace(/\\/g, '/').replace(/^\.\//, '');
+  /** ★「现取」= 真的从 `cache.db` 把这个文件的事实取到了（`matched_path` 非空） */
+  const factsOf = (rel: string) => fileFacts(String(sourceRoot), rel, a.feature as string | undefined);
+  const targetFiles: string[] = [];
+  for (const op of ops) {
+    if (!FILE_ASSERT_OPS.has(String(op.type ?? ''))) continue;
+    const byId = op.id ? dsl?.semantic?.files?.find((f) => f.id === op.id)?.path : undefined;
+    const byData = typeof op.data?.['path'] === 'string' ? String(op.data['path']) : undefined;
+    const p = byId ?? byData;
+    if (p && !targetFiles.includes(p)) targetFiles.push(p);
+  }
+  if (sourceRoot && targetFiles.length > 0) {
+    const misses = targetFiles.filter((p) => {
+      const seen = factsOf(p).matched_path !== null;                              // 现取到事实
+      const claimed = evidence.some((ev) => normRef(String(ev.ref)) === normRef(p)); // 在 evidence 里声明
+      return !seen || !claimed;
+    });
+    if (misses.length > 0) {
+      throw new Error(
+        `改 semantic.files 前必须**现取**该文件的事实（T20 第 (4) 步）：${misses.join(' / ')} 缺「现取到事实 + 在 evidence 里声明」。` +
+          `怎么做：先读它的事实（get_dsl(query:'file', file_id:…) 或 fileFacts(root, '${misses[0]}')），` +
+          `再把该文件的**仓库相对路径**作为 evidence 的一条 ref 传进来（例：evidence=[{type:'node', ref:'${misses[0]}'}]）。` +
+          `★ 为什么：DSL 已不存事实镜像（actual_apis / actual_deps 已移除）⇒ 事实只能**现取**。`,
+      );
+    }
+  }
+
+  // L4 证据回溯：源 = **observe 线真实录制的事件**（JSONL，`observe_instrument` 的探针落盘，
+  // 候选项与 `observe_trace` 同源）。★ 2026-10-01：原先读 `<live_dir>/<feature>.trace.json`，
+  // 而那份文件全仓只有一个产者 —— 已被撤掉的 `tools/trace_reasoning.ts`（零接触自动插桩），
+  // 且它写的 token 是"行数"这个合成代理值。改读事件后，验的是**真实测量**（dur_ms），代价是
+  // 证据不再与 feature 绑定（事件是会话级的）。
+  // 没有录制事件 → 无法回溯 → evidence 一律打回（宁缺毋滥，杜绝编造证据进库）。
+  // routine 轻量路径跳过此步（level=3，不加载事件）。
+  let traceResolver:
+    | { exists?: (ev: ReasonEvidenceRef) => boolean; traceRefs?: string[] }
+    | undefined;
+  if (level >= 4) {
+    const { records } = loadObservedTraceRecords();
+    traceResolver = records.length > 0 ? buildTraceResolver(records) : undefined;
+  }
+  /**
+   * ★ 2026-10-05（T20 第 (4) 步）：`exists` **扩成两类可回溯证据** ——
+   *   ① 运行事件（`trace`，既有）；② **仓库文件的事实**（新增：`ref` 归一后能被 `fileFacts` **现取**到）。
+   *   ★ 为什么必须一起扩：否则调用方为满足上面那条前置而传的**文件证据**会被 L4 打回（`exists` 只认 `trace`），
+   *     而且"有 evidence 却无 resolver"那条分支在**无录制事件**时会**误伤整个调用**。
+   *   ★ 边界（只影响什么）：仅使 L4 **多接受一类可回溯证据** —— 既有判据一条不放宽、一条不删。
+   */
+  const existsFn = (ev: ReasonEvidenceRef): boolean =>
+    (traceResolver?.exists?.(ev) ?? false) ||
+    (sourceRoot ? factsOf(normRef(String(ev.ref))).matched_path !== null : false);
+  const v = validateReason({
+    reason,
+    evidence,
+    level,
+    resolver: {
+      entityIds,
+      exists: existsFn,
+      traceRefs: traceResolver?.traceRefs,
+    },
+  });
+  if (!v.ok) {
+    throw new Error(`变更原因校验未通过（L${v.layer}）：${v.error}`);
+  }
+  // 写收敛（方向 E）：daemon 可用则转发单写者队列执行（乐观锁 + 读改写互斥），
+  // 否则本地 updateFeature（现状降级）。冲突时抛错，LLM 据此 rebase，绝不静默覆盖。
+  const { result } = await dispatchDslEdit(a as unknown as Record<string, unknown>, (input) => updateFeature(input as never));
+  return result;
+});
+
+// ─────────────────────────────────────────────────────────────
+// 8 个主工具 handler
+// ─────────────────────────────────────────────────────────────
+
+/** get_dsl：只读查询（复用 queryFeature）。
+ * ★ 用 wrapData：queryFeature 返回 `{ message, data? }` —— data 是查询的结构化产物
+ *   （dsl / nodes / edges / files / functions …），wrap 会在通道层静默丢弃它。 */
+export const getDslHandler = wrapData(async (a) => queryFeature(a as never));
+
+/** manage_feature：生命周期。★ wrapData：manageFeature 返回 `{ message, data? }`（create/list 等的结构化产物） */
+export const manageFeatureHandler = wrapData(async (a) => manageFeature(a as never));
+
+/** render_design：渲染思维导图/HTML/SVG/Markdown（format 参数聚合导出；view 决定渲染设计或实际视图）
+ * ★ 刻意保留 `wrap`（2026-09-29 逐处复核）：把四个分支的 [B] 结果逐字段拆开看过后，
+ *   **换成 `wrapData` 的净收益为零，代价是回执被淹**：
+ *     · 非重复字段 = 产物路径（`htmlFile` / `file` / `jsonFile`）+ `feature`
+ *       —— 这些**已逐字出现在 message 里**（`已渲染：<path>` / `已导出 SVG：<path>` /
+ *       `L3 结构骨架已生成：<jsonFile>`）⇒ 放进 `---DATA---` 只是第二遍；
+ *     · [B] 的四个结果类型都**自带 `message` 字段**（与回执同一份文本）⇒ `data: r` 会逐字重复；
+ *     · 唯一不冗余的字段是 `mind_map`（整棵树）—— 它是**超大对象**（节点数随项目规模线性增长），
+ *       且 `deriveMindMap` 已经把它**落盘到 message 给出的 `jsonFile`**（agent 可按路径读）
+ *       ⇒ 直接塞进回执是"淹掉回执"，正是 §2d 说的那种"为了好看而加的东西"。
+ *   ⇒ 保留 `wrap`；**这不是漏迁，是逐字段算过后的判定**（不刷假账）。 */
+export const renderDesignHandler = wrap(async (a) => {
+  // 默认 mindmap：现行思维导图架构（root → 功能分组 → 文件）。
+  // ★ 2026-09-30：原 `format=html`（自包含单文件设计画布·星图）**已删除** ——
+  //   它是 lane 自己标注"仅调试用"的旧路径、渲染效果差；前端（dsl-workbench）自取数据渲染。
+  //   详见 `lanes/design.ts` 的 tool description 与台账 §44.9。
+  const format = typeof a.format === 'string' ? a.format : 'mindmap';
+  const feature = a.feature as string;
+  const output_path = typeof a.output_path === 'string' ? a.output_path : undefined;
+  if (format === 'mindmap') {
+    if (!feature) throw new Error('render_design mindmap 模式需要 feature（从存储读取设计 DSL 派生）');
+    const r = await deriveMindMap({ feature, gen_descriptions: false });
+    // 空导图：DSL 无 semantic.files 时导图就是空的。
+    // ★ 原先这里会「降级渲染设计画布」把产物凑出来；那条路径已随自包含 HTML 一起删除
+    //   ⇒ 改为**如实报告为空 + 给补数据的方向**。§2d：失败就说失败，不假装有产物。
+    if ((r.mind_map.root.children ?? []).length === 0) {
+      return {
+        message:
+          `⚠ 思维导图为空：DSL 的 semantic.files 还没有内容。\n${r.message}\n` +
+          `提示：先 import_project 或 edit_dsl 补充 semantic.files 后再派生思维导图。`,
+      };
+    }
+    return {
+      message:
+        r.message +
+        `\n交互版（人机共笔：⊕ 新增分支 / 双击批注 / 保存回写 DSL）：http://localhost:3000/mindmap/${feature}`,
+    };
+  }
+  if (format === 'svg') {
+    const r = exportSvg({ feature, output_path });
+    return { message: r.message };
+  }
+  if (format === 'markdown') {
+    const r = exportMarkdown({ feature, output_path });
+    return { message: r.message };
+  }
+  // ★ 到不了这里：`format` 已被 lane 的 zod 枚举约束在 mindmap|svg|markdown 内。
+  //   仍**显式抛错**而不是静默返回 —— 不写兜底（§3），真越界要响。
+  throw new Error(`render_design 不支持的 format：${String(format)}（只支持 mindmap / svg / markdown）`);
+});

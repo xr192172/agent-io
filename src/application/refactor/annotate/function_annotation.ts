@@ -18,7 +18,6 @@
  *   - 重构管线 stage（compute 纯计算返回 {absToNew, originals, units}，落盘/验证/回滚由管线负责）
  */
 import fs from 'node:fs';
-import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { parseFileFull } from '../../../infrastructure/parse/index.js';
 import { loadLlmConfig, callChat } from '../../../infrastructure/llm_focus.js';

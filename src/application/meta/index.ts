@@ -63,7 +63,7 @@ import { indexIntegrity, renderIntegrity } from './integrity/index_integrity.js'
 import { decideCanvasNotes } from './llm/llm_decider.js';
 import { buildDocsPromptBlock, listProjectDocs, matchDocsForTargets, readProjectDoc } from './docs/project_docs.js';
 import type { DocTargetSet } from './docs/project_docs.js';
-import { exploreCodeHandler, syncContractsHandler } from '../handlers.js';
+import { exploreCodeHandler, syncContractsHandler } from './handlers.js';
 import type { ToolDef } from '../types.js';
 
 

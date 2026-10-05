@@ -20,7 +20,6 @@
  * 不引入跨仓状态。
  */
 
-import path from 'node:path';
 import { parseFileFull, listSupportedExtensions, resolveProjectImport, type ParsedSymbol } from '../../parse/index.js';
 import { codeSourceExts, partitionByCodeLang } from '../../parse/source_exts.js';
 import { boundsSkipFromExcluded, type ScanBounds } from '../../scan_bounds.js';

@@ -53,7 +53,7 @@ import { moveSymbol } from './rename/symbol_move.js';
 import { structureGap } from '../../infrastructure/analysis/structure/structure_gap.js';
 import { buildRefactorPlan, applyRefactorPlan } from './pipeline/refactor_plan.js';
 import type { RefactorTarget, RefactorPlan } from './pipeline/refactor_plan.js';
-import { diffViewsHandler } from '../handlers.js';
+import { diffViewsHandler } from './handlers.js';
 import type { ScanBounds } from '../../infrastructure/scan_bounds.js';
 import type { ToolDef } from '../types.js';
 

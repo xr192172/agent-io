@@ -15,7 +15,6 @@
  *   - 建议仅作参考（suggestion），不落盘改代码——拆分决策权在人/LLM
  */
 
-import { DATA_DIR_NAME } from '../../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { DesignDSL, Node, Edge } from '../../../domain/types.js';
@@ -24,7 +23,6 @@ import { parseFileFull } from '../../parse/index.js';
 import { getProjectView } from '../../project_view.js'; // ★ §19②
 import type { ParsedSymbol } from '../../parse/index.js';
 import { fileFingerprint, healthKey, readHealthCache, writeHealthCache } from '../health/health_cache.js';
-import { skipDirSet } from '../../parse/source_exts.js';
 
 // ─────────────────────────────────────────────────────────────
 // 类型

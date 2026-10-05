@@ -30,7 +30,6 @@
  * 最后在文件顶部补 import。幂等：已注入过探针的文件跳过（检测探针标记）。
  */
 
-import { DATA_DIR_NAME } from '../../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseAstRoot } from '../../parse/kernel.js';

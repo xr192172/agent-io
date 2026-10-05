@@ -18,7 +18,6 @@
  *   - 其他包导入（npm 包、标准库）→ 外部依赖，跳过
  */
 
-import { DATA_DIR_NAME } from '../data_dir.js';
 import { INDEX_SKIP_DIR_EXTRA, isIndexSkippedFileName, shouldSkipDir } from '../parse/source_exts.js';
 import fs from 'node:fs';
 import path from 'node:path';

@@ -32,7 +32,7 @@ import type { ExtractContractsInput } from './extract_contracts.js';
 import { harvestClosure } from './harvest_closure.js';
 import type { HarvestClosureInput } from './harvest_closure.js';
 import { ensureProjectIndex } from '../../infrastructure/index/index_freshness.js';
-import { harvestDecisionsHandler } from '../handlers.js';
+import { harvestDecisionsHandler } from './handlers.js';
 import type { ToolDef } from '../types.js';
 
 export const HARVEST_TOOLS: ToolDef[] = [

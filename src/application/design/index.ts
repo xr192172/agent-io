@@ -47,7 +47,7 @@ import { reviewSignals } from './bricks/signal_review.js';
 import { runSplitStage } from './lifecycle/split_stage.js';
 import { scaffold } from './lifecycle/scaffold.js';
 import { setDesignIntent } from './intent/set_design_intent.js';
-import { consistencyHandler, detectDriftHandler, editDslHandler, getDslHandler, manageFeatureHandler, renderDesignHandler } from '../handlers.js';
+import { consistencyHandler, detectDriftHandler, editDslHandler, getDslHandler, manageFeatureHandler, renderDesignHandler } from './handlers.js';
 import type { ToolDef } from '../types.js';
 
 export const DESIGN_TOOLS: ToolDef[] = [

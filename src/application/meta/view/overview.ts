@@ -12,7 +12,6 @@
  *   - LLM 未配置/失败：降级规则版摘要，页面照常可用
  */
 
-import { DATA_DIR_NAME } from '../../../infrastructure/data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { getDSL, getStorageRoot } from '../../../infrastructure/storage.js';

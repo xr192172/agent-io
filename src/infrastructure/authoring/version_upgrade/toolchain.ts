@@ -12,7 +12,6 @@
  * 只做"盘点/报告"，不做任何改写——改写是版本升级闭环的后续阶段。
  */
 
-import { DATA_DIR_NAME } from '../../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
