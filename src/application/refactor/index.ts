@@ -663,7 +663,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       }
       const lines = [
         `结构意图 vs 现状 · ${r.domain_count} 个域 + ${r.flat_count} 个平铺目录`,
-        `待搬 ${r.misplaced.length} · 待定归属 ${r.unlisted.length} · 待建域 ${r.missing.length} · 声明与位置打架 ${r.misnested.length}`,
+        `待搬 ${r.misplaced.length} · 待定归属 ${r.unlisted.length} · 待建域 ${r.missing.length} · 声明与位置打架 ${r.misnested.length} · 未标 role ${r.unclassified.length}`,
       ];
       const sec = (title: string, items: typeof r.misplaced) => {
         if (!items.length) return;
@@ -677,16 +677,17 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       // ★ misnested 单列且排在最前：它不是"缺声明"，是"**声明说它是独立域、位置说它是别人的子目录**"
       //   —— 本仓头号病根（同一份知识两处落点）在目录结构上的形态。只有量具能发现它。
       sec('⚠ 声明与位置打架（role=capability 的域，却住在另一个域/混装筐里 —— 拆不拆请拍板）', r.misnested);
-      if (!r.misplaced.length && !r.unlisted.length && !r.missing.length && !r.misnested.length) {
+      sec('○ 未标 role（不参与 misnested 判定 —— 能被省略的判据一定被省略，故让它显形）', r.unclassified);
+      if (!r.misplaced.length && !r.unlisted.length && !r.missing.length && !r.misnested.length && !r.unclassified.length) {
         lines.push('', '⇒ 结构意图与现状一致 ✓（注意：这只说明"**已开垦区**整齐"，不等于"全仓都登记了"）');
-      } else if (r.misnested.length) {
-        lines.push(
-          '',
-          `⇒ 待处置：${r.misplaced.length ? `**${r.misplaced.length} 个待搬** + ` : ''}` +
-            `${r.unlisted.length ? `**${r.unlisted.length} 个待定归属**；` : ''}` +
-            `另有 **${r.misnested.length} 处声明与位置打架**（不是缺声明 —— 域表已登记，只是位置与 role 不配；` +
-            `改 position 只需搬目录 + 改 dir，改 role 只需改一个字，**先想清楚哪个是真的**）。`,
-        );
+      } else {
+        const parts2: string[] = [];
+        if (r.misplaced.length) parts2.push(`**${r.misplaced.length} 个待搬**`);
+        if (r.unlisted.length) parts2.push(`**${r.unlisted.length} 个待定归属**`);
+        if (r.missing.length) parts2.push(`**${r.missing.length} 个待建域**`);
+        if (r.misnested.length) parts2.push(`**${r.misnested.length} 处声明与位置打架**（域表已登记，只是位置与 role 不配；改 position 要搬目录 + 改 dir，改 role 只改一个字 —— 先想清楚哪个是真的）`);
+        if (r.unclassified.length) parts2.push(`**${r.unclassified.length} 个没标 role**（它们正安静地退出 misnested 判定）`);
+        lines.push('', `⇒ 待处置：${parts2.join('；')}`);
       }
       return { message: lines.join('\n'), data: r };
     }),

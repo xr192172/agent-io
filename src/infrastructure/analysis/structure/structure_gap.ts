@@ -101,6 +101,24 @@ export interface StructureGapReport {
   /** 域目录还不存在 / 域里没有源码 —— 与 misplaced 一体两面 */
   missing: StructureGapItem[];
   /**
+   * **没写 role 的声明条目**（`domains[]` + `flatDirs[]` 合起来，2026-10-05 新增）。
+   *
+   * ★ 为什么单列一态，而不是让"缺 role"抛（2026-10-05 实测后的判据）：
+   *   · **非法 role（写错值）** ⇒ `assertConfig` 抛 —— 那是**笔误**，且会让该域静默退出判定 = 假绿。
+   *   · **缺 role** ⇒ **不抛** —— 本文件是按 `project_dir` 读的，**别的项目**写 `{id, dir}` 完全合法
+   *     （本仓自己也可能是别人拷贝过去的），抛会把它们**打断**。
+   *   ⇒ 两者必须分开：**错 = 硬失败，缺 = 可见**。
+   *
+   * ★ 为什么"可见"比"抛"更能防退化（本条是这条判据存在的理由）：
+   *   `role` 之所以有判据能力，前提是**每个域都写了 role**。若"没写"等于"退出判定"，
+   *   那么**能被省略的判据一定被省略** —— 新加一个域忘了写 role，它就静默退出 misnested 判定，
+   *   而读数看上去仍然是"0 个问题" = 假绿。
+   *   ⇒ 所以 `role?:` 虽是可选类型，但**"没写"必须在这里显形**，让"补一个 role"成为一件看得见的事。
+   *   ⇒ 本仓目标值：`unclassified` = 0（本仓 55 域 + 7 平铺现已全填）。
+   */
+  unclassified: StructureGapItem[];
+
+  /**
    * **声明为独立域、却物理住在另一个域目录里**（2026-10-05 新增）。
    *
    * ★ 这条与 misplaced / unlisted 是**不同的病**：
@@ -206,6 +224,18 @@ export function computeStructureGap(projectDir: string, cfg: StructureDomainsCon
   const unlisted: StructureGapItem[] = [];
   const missing: StructureGapItem[] = [];
   const misnested: StructureGapItem[] = [];
+
+  // ⓪⓪ unclassified：**没写 role** 的声明条目（domains + flatDirs）——
+  //    显形的理由见 StructureGapReport.unclassified：「能被省略的判据一定被省略」，
+  //    所以"没写"不能等于"安静地退出判定"，必须在这里被看见。
+  const unclassified: StructureGapItem[] = [];
+  for (const d of [...cfg.domains, ...flat]) {
+    if (d.role) continue;
+    unclassified.push({
+      path: d.dir,
+      note: `没写 role ⇒ **不参与 misnested 判定**（判定"你是否被错放在别人的筐里"得先知道你是能力还是分析）。补一个 role（${DOMAIN_ROLES.join(' / ')}）就能让它进入判定`,
+    });
+  }
 
   // ⓪ misnested：声明为独立域、却住在另一个域里（2026-10-05 新增，见 StructureGapReport.misnested）
   //    ★ 放在最前面，因为它比 misplaced/unlisted 更根本：那两个是"缺声明"，这个是"声明打架"。
@@ -335,6 +365,7 @@ export function computeStructureGap(projectDir: string, cfg: StructureDomainsCon
     misplaced,
     unlisted,
     missing,
+    unclassified,
     misnested,
   };
 }
@@ -351,6 +382,7 @@ export function structureGap(projectDir: string): StructureGapResult {
       misplaced: [],
       unlisted: [],
       missing: [],
+      unclassified: [],
       misnested: [],
     };
   }

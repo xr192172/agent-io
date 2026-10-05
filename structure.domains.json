@@ -399,43 +399,50 @@
       "id": "domain-model",
       "layer": "domain",
       "dir": "src/domain",
-      "note": "领域模型（14 个文件）：animation / annotation / geometry / mindmap / narration / overlay / contract / semantic …。★ 它们是**同一层的概念族**，彼此并列、没有父子结构 ⇒ 平铺是**终态**，不是「还没分域」。"
+      "note": "领域模型（14 个文件）：animation / annotation / geometry / mindmap / narration / overlay / contract / semantic …。★ 它们是**同一层的概念族**，彼此并列、没有父子结构 ⇒ 平铺是**终态**，不是「还没分域」。",
+      "role": "engine"
     },
     {
       "id": "cli-surface",
       "layer": "presentation",
       "dir": "src/presentation/cli",
-      "note": "CLI 入口面（14 个文件）：`cli.ts` + 各 `*_cli.ts` + `deprecate_offline.ts`（被 `*_cli` 引用的逻辑）。每个文件 = 一条命令，命令之间**并列**、不互相拥有 ⇒ 平铺是终态。★ 2026-10-05 拆出 `cli/render/`（见 `cli-render`）：原 22 文件里 7 个 renderer + 1 个 CSS 是「被 `brickify_cli` 引用的**渲染子库**」，不是命令 ⇒ 它们让本条 note 的理由（\"每个文件 = 一条命令\"）**对它们不成立**；拆掉后本条才**真的是**平铺终态。"
+      "note": "CLI 入口面（14 个文件）：`cli.ts` + 各 `*_cli.ts` + `deprecate_offline.ts`（被 `*_cli` 引用的逻辑）。每个文件 = 一条命令，命令之间**并列**、不互相拥有 ⇒ 平铺是终态。★ 2026-10-05 拆出 `cli/render/`（见 `cli-render`）：原 22 文件里 7 个 renderer + 1 个 CSS 是「被 `brickify_cli` 引用的**渲染子库**」，不是命令 ⇒ 它们让本条 note 的理由（\"每个文件 = 一条命令\"）**对它们不成立**；拆掉后本条才**真的是**平铺终态。",
+      "role": "capability"
     },
     {
       "id": "cli-render",
       "layer": "presentation",
       "dir": "src/presentation/cli/render",
-      "note": "渲染子库（8 个文件）：brickify 工作台的 HTML 渲染器（`render_anatomy` / `render_cluster_workbench` / `render_dep_canvas` / `render_mindmap` / `render_tools_map` / `render_wizard` / `render_workbench`）+ 工作台壳 CSS 原样快照（`workbench_shell_css`，1175 行）。★ 它们**不是命令入口** —— 唯一引用者是 `cli/brickify_cli.ts`。2026-10-05 从 `presentation/cli/` 拆出（T42 方案 A）。"
+      "note": "渲染子库（8 个文件）：brickify 工作台的 HTML 渲染器（`render_anatomy` / `render_cluster_workbench` / `render_dep_canvas` / `render_mindmap` / `render_tools_map` / `render_wizard` / `render_workbench`）+ 工作台壳 CSS 原样快照（`workbench_shell_css`，1175 行）。★ 它们**不是命令入口** —— 唯一引用者是 `cli/brickify_cli.ts`。2026-10-05 从 `presentation/cli/` 拆出（T42 方案 A）。",
+      "role": "engine"
     },
     {
       "id": "infra-shared",
       "layer": "infrastructure",
       "dir": "src/infrastructure",
-      "note": "基础设施横切件（12 个文件）：data_dir / storage / storage_overlay / git / exec_guard / dictionary / alert_inbox / dogfood_stats / llm_focus / project_view / verify_refactor / **scan_bounds**。被各层共用、彼此无父子关系 ⇒ 平铺是终态。★ 它**同时是容器**：`analysis/` 与 `parse/ index/ render/ graph/ daemon/ packages/ rules/ text/` 是**已登记的子域**（2026-10-04 收口，unlisted 归零）。**flat 只说「直属 .ts 是成员」，不管子目录** —— 子目录按 domains 条目各自判。★ `scan_bounds` 于 2026-10-04 从 `application/refactor/edit/` 下沉到此（它是零依赖的纯契约：两个 interface + 一个纯函数，却被放在某条 refactor 子线里，导致 infrastructure 反向 import application）。"
+      "note": "基础设施横切件（12 个文件）：data_dir / storage / storage_overlay / git / exec_guard / dictionary / alert_inbox / dogfood_stats / llm_focus / project_view / verify_refactor / **scan_bounds**。被各层共用、彼此无父子关系 ⇒ 平铺是终态。★ 它**同时是容器**：`analysis/` 与 `parse/ index/ render/ graph/ daemon/ packages/ rules/ text/` 是**已登记的子域**（2026-10-04 收口，unlisted 归零）。**flat 只说「直属 .ts 是成员」，不管子目录** —— 子目录按 domains 条目各自判。★ `scan_bounds` 于 2026-10-04 从 `application/refactor/edit/` 下沉到此（它是零依赖的纯契约：两个 interface + 一个纯函数，却被放在某条 refactor 子线里，导致 infrastructure 反向 import application）。",
+      "role": "engine"
     },
     {
       "id": "flat-application",
       "layer": "application",
       "dir": "src/application",
-      "note": "应用层横切件（**6** 个文件）：handlers / plumbing / tool_registry / stage_registry / types / **dispatch**。被各工具线共用、彼此无父子 ⇒ 平铺是终态。★ 登记它**是必需的**：只要 `application/` 下新增任一域（如 cross / harvest），量具就会把 `src/application/` 当成「域的父目录」去扫它的直属文件 ⇒ 不登记则它们全变 `misplaced`（实测：登记 cross + harvest 后 misplaced 2 → 7；补上本条后回到 2）。★ `dispatch` 于 2026-10-04 从 `application/observe/` 挪到此处：它被 **3 条线**消费（design 经 `handlers.dispatchDslEdit` / meta 经 `explore_code.dispatchWatch` / mcp 经 `server_registry.collectPendingAlertText`），是真正的**跨线调度件**，留在 observe 里反而会让 design 线依赖 observe 内部 —— 这也消掉了 T29 的归属歧义。"
+      "note": "应用层横切件（**6** 个文件）：handlers / plumbing / tool_registry / stage_registry / types / **dispatch**。被各工具线共用、彼此无父子 ⇒ 平铺是终态。★ 登记它**是必需的**：只要 `application/` 下新增任一域（如 cross / harvest），量具就会把 `src/application/` 当成「域的父目录」去扫它的直属文件 ⇒ 不登记则它们全变 `misplaced`（实测：登记 cross + harvest 后 misplaced 2 → 7；补上本条后回到 2）。★ `dispatch` 于 2026-10-04 从 `application/observe/` 挪到此处：它被 **3 条线**消费（design 经 `handlers.dispatchDslEdit` / meta 经 `explore_code.dispatchWatch` / mcp 经 `server_registry.collectPendingAlertText`），是真正的**跨线调度件**，留在 observe 里反而会让 design 线依赖 observe 内部 —— 这也消掉了 T29 的归属歧义。",
+      "role": "engine"
     },
     {
       "id": "http-surface",
       "layer": "presentation",
       "dir": "src/presentation/http",
-      "note": "HTTP 服务面（3 个终态文件）：`serve` = 轻量 HTTP 服务器（静态文件 + `/api/save|load|events` 的 SSE，外加 `/api/archify-demo` 等派生端点）/ `contract` = 响应契约**单源**（zod 定义，顶层带 `_api` 版本字段，生成 `schema/endpoints.schema.json` 供跨仓前端校验）/ `dict_gen` = 伪维基词典的 LLM 生成与分类后端。★ 三者并列、无父子 ⇒ 平铺终态；R5 渲染子包 `archify/` 另立为 `archify-r5` **域**（flat 的语义要求：子目录必须被登记）。"
+      "note": "HTTP 服务面（3 个终态文件）：`serve` = 轻量 HTTP 服务器（静态文件 + `/api/save|load|events` 的 SSE，外加 `/api/archify-demo` 等派生端点）/ `contract` = 响应契约**单源**（zod 定义，顶层带 `_api` 版本字段，生成 `schema/endpoints.schema.json` 供跨仓前端校验）/ `dict_gen` = 伪维基词典的 LLM 生成与分类后端。★ 三者并列、无父子 ⇒ 平铺终态；R5 渲染子包 `archify/` 另立为 `archify-r5` **域**（flat 的语义要求：子目录必须被登记）。",
+      "role": "capability"
     },
     {
       "id": "submit-gate",
       "layer": "infrastructure",
       "dir": "src/infrastructure/analysis/submit_gate",
-      "note": "提交层完整性自检（`go:embed` / 产物提交）：检查每个 `//go:embed` 点声明的产物 ① 是否在磁盘存在 ② 是否已进 git 索引 —— 任一失败即「新克隆 build 断点」。**单文件、单消费者**（`refactor_pipeline` 收尾调用）、无对外契约 ⇒ 平铺终态，**不立为域**。★ 2026-10-05 由 `analysis/gate/submit_gate.ts` 搬到 `analysis/submit_gate/index.ts`：旧目录名 `gate/` 是**属名**（「闸门」这一大类），却只装了 `submit` 一个**种**，且 `contract_gate/`（契约对账闸门）才是与它并列的另一实例 ⇒ 属名被一个种占住是命名错位。搬到 `submit_gate/index.ts` 后与另 3 个单文件目录（`behavior/` · `cross_repo/` · `project_root/`）同形，且 **`dir` 目录名与 `id` 终于同名**（`submit_gate` ↔ `submit-gate`，仅 `_`/`-` 之别）。"
+      "note": "提交层完整性自检（`go:embed` / 产物提交）：检查每个 `//go:embed` 点声明的产物 ① 是否在磁盘存在 ② 是否已进 git 索引 —— 任一失败即「新克隆 build 断点」。**单文件、单消费者**（`refactor_pipeline` 收尾调用）、无对外契约 ⇒ 平铺终态，**不立为域**。★ 2026-10-05 由 `analysis/gate/submit_gate.ts` 搬到 `analysis/submit_gate/index.ts`：旧目录名 `gate/` 是**属名**（「闸门」这一大类），却只装了 `submit` 一个**种**，且 `contract_gate/`（契约对账闸门）才是与它并列的另一实例 ⇒ 属名被一个种占住是命名错位。搬到 `submit_gate/index.ts` 后与另 3 个单文件目录（`behavior/` · `cross_repo/` · `project_root/`）同形，且 **`dir` 目录名与 `id` 终于同名**（`submit_gate` ↔ `submit-gate`，仅 `_`/`-` 之别）。",
+      "role": "analysis"
     }
   ],
   "flatNote": "★ `flatDirs` 与 `domains` 的区别，一句话：**`domains[i].dir` 里的散文件「要么已搬完、要么就是待搬的缺口」；`flatDirs[i].dir` 里的散文件「就是终态」**。 所以 flat 不是「免检」：它的作用是①把这三个目录**纳入视野**（否则量具对它们是瞎的）；②规定「**flat 目录里再长出的子目录必须被登记**」—— 出现了却没登记就是缺口，读数会报 `unlisted`。★ 判据的来源：`infrastructure/` 顶层这 10 个文件如果按容器判，会永远挂在待搬清单上，而「它们本来就该平铺」这个意图**在原表里没地方写** ⇒ 这就是缺的那一位。",
@@ -448,5 +455,6 @@
   "roleNote": "★ role 是**机器可读**的，同层的 note 是散文（给人读）—— 两者并存是有意的：note 讲「为什么」，role 让工具能读。\n★ **能派生的绝不声明**：依赖边 / 循环 / 分层违规全部现算（见本表 note 与 code_health）。role 之所以进表，是因为它**算不出来** —— analysis/translate 与 analysis/structure 的 import 结构可以一模一样，但一个产出新文件、一个只产判断。\n★ **2026-10-05 口径纠正（第一版判错过）**：初版把 capability 定义成「有对外工具面」，于是 impact/observe/health/diagnosis 全被判成 capability —— 但它们既有工具面、产物又全是判断，两条定义自相矛盾。**已按「产物是不是新东西」重判**。这条教训写在这里，是因为它正是「判据要能被反驳」的现场：四个域的判读我改了四遍才站住。",
   "containers": {
     "src/infrastructure/authoring": "**面向用户代码产出/改写**的能力容器（2026-10-05 新增）。★ 与 `analysis/` 的分工：analysis 只读代码、只产判断；authoring 产出新文件（新代码 / harness / 基线）。★ 这条线是 structure_gap 的 misnested 判据量出来的，不是人列的。"
-  }
+  },
+  "roleWhyFlat": "★ flatDirs 的 role 取自**它们自己 note 里已写明的性质**，不是新判据：note 说「每个文件=一条命令」⇒ capability（cli-surface）；说「被 X 引用、不是命令」⇒ engine（cli-render）；说「自检/产判断」⇒ analysis（submit-gate）；说「被各层共用」⇒ engine（其余三个）。★ 判据只有一条：**note 里怎么说，就怎么填** —— 免得 role 与 note 打架（那又是一次判据分叉）。"
 }

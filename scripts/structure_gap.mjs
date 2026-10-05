@@ -45,14 +45,19 @@ if (asJson) {
   sec('unlisted（在，归属未定 —— 要决定，不要猜）', r.unlisted);
   sec('missing（域目录还不存在 / 域里没有源码 —— 与 misplaced 一体两面）', r.missing);
   sec('⚠ misnested（role=capability 的域，却住在另一个域/混装筐里 —— 拆不拆请拍板）', r.misnested);
+  sec('○ unclassified（没写 role ⇒ 不参与 misnested 判定 —— 能被省略的判据一定被省略，故让它显形）', r.unclassified);
   const todo = r.misplaced.length + r.unlisted.length;
-  const clean = todo + r.missing.length + r.misnested.length === 0;
+  const clean = todo + r.missing.length + r.misnested.length + r.unclassified.length === 0;
+  const bits = [];
+  if (r.misplaced.length) bits.push(`**${r.misplaced.length} 个待搬**`);
+  if (r.unlisted.length) bits.push(`**${r.unlisted.length} 个待定归属**`);
+  if (r.missing.length) bits.push(`${r.missing.length} 个**待建域**（搬完自然消失）`);
+  if (r.misnested.length) bits.push(`**${r.misnested.length} 处声明与位置打架**（域表已登记，只是位置与 role 不配 —— 搬目录 or 改 role，先想清楚哪个是真的）`);
+  if (r.unclassified.length) bits.push(`**${r.unclassified.length} 个没标 role**（正安静地退出 misnested 判定）`);
   console.log(
     clean
       ? '⇒ 结构意图与现状一致 ✓（★ 这只说明"已开垦区整齐"，不等于"全仓都登记了"）'
-      : `⇒ 待处置：**${r.misplaced.length} 个待搬** + **${r.unlisted.length} 个待定归属**` +
-          `${r.missing.length ? `；${r.missing.length} 个**待建域**（搬完自然消失）` : ''}` +
-          `${r.misnested.length ? `；**${r.misnested.length} 处声明与位置打架**（域表已登记，只是位置与 role 不配 —— 搬目录 or 改 role，先想清楚哪个是真的）` : ''}`,
+      : `⇒ 待处置：${bits.join('；')}`,
   );
   console.log('★ 搬完记得：用 code_health 看环与分层违规 → 逐个工具试用一遍。\n');
 }
