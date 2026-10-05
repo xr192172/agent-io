@@ -6,6 +6,6 @@
 // agent-io 主链路做代码异味探查。
 //
 // 仅依赖标准库（自包含，可独立构建），与 go-trace 一致。
-module go-observe
+module github.com/xr192172/agent-io/observe-lang-go
 
 go 1.26

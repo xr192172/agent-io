@@ -16,7 +16,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"go-observe/internal/instrument"
+	"github.com/xr192172/agent-io/observe-lang-go/internal/instrument"
 )
 
 // cliSite / cliFile / cliReport 是 CLI 契约 JSON 结构（SPEC §2）。

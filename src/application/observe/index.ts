@@ -73,7 +73,7 @@ export const OBSERVE_TOOLS: ToolDef[] = [
     title: 'Reconcile effect candidates with observe runtime observation',
     description:
       '积木契约动静对账（Brick Harvest Phase 2c 合龙）：读 <project>/.agent/observe/events-*.jsonl 中' +
-      '的 effect 事件（go-observe instrument --effects 插桩产生），与 DSL 契约候选对账——' +
+      '的 effect 事件（Go 语言包（observe-lang-go）instrument --effects 插桩产生），与 DSL 契约候选对账——' +
       '命中转正（origin ast→runtime）、候选外新观测补进契约并记 incomplete 告警（静态漏了）、' +
       '未触发候选保持 ast（不证伪），并填充 contract.runtime（call_count/top_callers/observed_targets/last_seen）。' +
       '前置链：import_project → extract_contracts → instrument --effects → 运行项目 → 本工具。' +
@@ -214,13 +214,13 @@ export const OBSERVE_TOOLS: ToolDef[] = [
     name: 'observe_instrument',
     title: 'Auto-instrument or restore a TS/Go project',
     description:
-      '对目标项目全自动插桩，按语言分派：Go 工程走 go-observe（go/ast 注入 camprobe.Capture，函数出/入/return/catch/IO）；' +
+      '对目标项目全自动插桩，按语言分派：Go 工程走 observe-lang-go 语言包（go/ast 注入 camprobe.Capture，函数出/入/return/catch/IO）；' +
       'TS 工程走 TS AST（captureProbe）。均幂等（已含探针文件跳过）。' +
       'action=uninstrument|restore 一键全拔（从自动备份拷回原文件、删备份目录）。' +
       'dry_run=true 只预览不写盘。写盘前自动备份，git 可兜底。' +
       'TS 写盘后自动生成探针台账（.agent-io/observe-ledger.json）；Go 写盘后可用 --restore 还原。' +
       '契约模式：contract_probes 传探针 id 数组则只注入这些探针点；缺省=探索模式全量插桩。' +
-      'Go 运行前提：被测工程须能 import `go-observe/probe`（其 go.mod 需 replace/require 指向本仓 go-observe）。',
+      'Go 运行前提：被测工程须能 import `github.com/xr192172/agent-io/observe-lang-go/probe`（其 go.mod 需 replace/require 指向本仓 observe-lang-go）。',
     inputSchema: {
       action: z
         .enum(['instrument', 'uninstrument', 'restore'])

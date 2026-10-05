@@ -104,7 +104,7 @@ export interface HealthReport {
    *
    * ★ 现在**按目录判层**；这是本仓分层判据的**唯一实现**（曾与 `dependency-cruiser` 的规则两套
    *   并存，那套已于 2026-10-04 移除 ⇒ 不再有分叉面）。
-   *   `outside` = **不在四层里**的文件数（`tests/` / `scripts/` / `go-observe/` / 仓库根散文件…）
+   *   `outside` = **不在四层里**的文件数（`tests/` / `scripts/` / `observe-lang-go/` / 仓库根散文件…）
    *   —— 它们**不参与**分层违规判定，但**如实计数**（保留"口径收紧不许静默"的设计）。
    */
   layers: {
@@ -176,7 +176,7 @@ const LAYER_ORDER: Record<Layer, number> = { domain: 0, infrastructure: 1, appli
 /**
  * 按**目录**判层 —— 只认 `src/<层>/…`，返回四层之一。
  *
- * @returns `Layer`；**`null` = 不在四层里**（`tests/`、`scripts/`、`go-observe/`、仓库根散文件、
+ * @returns `Layer`；**`null` = 不在四层里**（`tests/`、`scripts/`、`observe-lang-go/`、仓库根散文件、
  *          以及 `tests/fixtures/**\/src/...` 这类**夹具里的 src**）⇒ **不参与分层违规判定**。
  *
  * ★ 为什么返回 `null` 而不是"兜底也算一层"（旧实现在这里吃了大亏）：
@@ -870,7 +870,7 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
       //   它们**全部**是 `import type`；剩下的违规因此每一条都是真依赖，可逐条解释。
       if (impInfo.typeOnly) continue;
       // ★ 2026-10-03：两端都按**目录**判层；**任一端不在四层里 ⇒ 不判**（`tests/`、`scripts/`、
-      //   `go-observe/`、以及 `tests/fixtures/**/src/...` 这类夹具里的 src）。
+      //   `observe-lang-go/`、以及 `tests/fixtures/**/src/...` 这类夹具里的 src）。
       //   旧实现对"可达根作目标"特判成 `glue` 层（理由：入口在顶层，被入口 import 不算向上依赖）。
       //   现在**不需要**这个特例：入口天然落在 `presentation`（四层里最高的一层），
       //   任何指向它的依赖本来就该被看见 —— 旧特判是旧层表的补丁。

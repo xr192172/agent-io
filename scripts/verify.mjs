@@ -7,7 +7,7 @@
  *   实际能挡住回归的只有 `tsc` 与 `mcp_scan` 两道，而**每次都是人手敲**——
  *   于是"跑一遍看看"没有单一入口，漏跑不会有人知道。
  *   这直接解释了本仓多起"声明了但没人接线"的问题：704 行 TS 移植从未接线、
- *   `SilentErrorDiscard` 三份、`go-observe/build/` 死路径、缺二进制时 `loop-skipped` 静默失效
+ *   `SilentErrorDiscard` 三份、`observe-lang-go/build/` 死路径、缺二进制时 `loop-skipped` 静默失效
  *   —— **这些全都可能是"没人跑门"的结果，而不是"跑了没发现"。**
  *
  * ★ 三态而不是两态（本仓反复犯的病是"缺工具链就静默跳过 ⇒ 假绿灯"，这里不能重犯）：
@@ -35,8 +35,8 @@ const GATES = [
   { name: 'ts 类型', kind: 'gate', cmd: 'npx', args: ['tsc', '--noEmit'], why: '类型错 ⇒ 运行时必错' },
   { name: 'MCP 工具签名', kind: 'gate', cmd: 'node', args: ['scripts/mcp/mcp_scan.mjs'], why: '59 个工具的入参/出参契约（坏签名 ⇒ LLM 一定调错）' },
   { name: 'b 项契约占位符', kind: 'gate', cmd: 'node', args: ['scripts/measure_b_contract.mjs'], why: '量具：有未定义占位符即失败' },
-  { name: 'Go 编译', kind: 'gate', cmd: 'go', args: ['build', './...'], cwd: 'go-observe', need: 'go', why: '★ go-observe 此前**零门**：它一直是 TS 侧之外的盲区（go.mod 无 require ⇒ 标准库项目）' },
-  { name: 'Go 静态检查', kind: 'gate', cmd: 'go', args: ['vet', './...'], cwd: 'go-observe', need: 'go', why: '同上；vet 过了才谈得上"改 Go 代码有反馈"' },
+  { name: 'Go 编译', kind: 'gate', cmd: 'go', args: ['build', './...'], cwd: 'observe-lang-go', need: 'go', why: '★ Go 语言包（observe-lang-go）此前**零门**：它一直是 TS 侧之外的盲区（go.mod 无 require ⇒ 标准库项目）' },
+  { name: 'Go 静态检查', kind: 'gate', cmd: 'go', args: ['vet', './...'], cwd: 'observe-lang-go', need: 'go', why: '同上；vet 过了才谈得上"改 Go 代码有反馈"' },
   { name: '结构意图 gap', kind: 'report', cmd: 'node', args: ['scripts/structure_gap.mjs'], why: '★ 只作报告：它的结尾是 process.exit(0)，**永远不可能失败** ⇒ 不计入判定' },
 ];
 

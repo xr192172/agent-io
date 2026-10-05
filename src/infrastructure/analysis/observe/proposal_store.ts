@@ -1,7 +1,7 @@
 /**
  * proposal_store —— 修订提案的**持久化仓库**（2026-10-05，P4 步骤 4）
  *
- * 搬迁自 `go-observe/probe/proposal.go` 的 **CRUD 部分**（`:23-157` + `:301-341`）。
+ * 搬迁自 `observe-lang-go/probe/proposal.go` 的 **CRUD 部分**（`:23-157` + `:301-341`）。
  * ⚠ **不搬 `ApproveGated`/`freeze`/两个验证门**（`:161-298`）—— 那是 P4 步骤 5，
  *   且是全 P4 唯一有真风险的一块（需新写 decl 级 LLM 复核通道），本笔刻意不碰。
  *

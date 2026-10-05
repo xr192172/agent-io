@@ -1,7 +1,7 @@
 /**
  * observe_langs —— **观察侧的语言包缝**（2026-10-05 立）
  *
- * ★ 为什么立这道缝（这是「go-observe 与 TS 版 observe 合一化」的第一步，也是唯一能解死结的那一步）：
+ * ★ 为什么立这道缝（这是「Go 语言包与 TS 侧 observe 合一化」的第一步，也是唯一能解死结的那一步）：
  *   此前 `observe_instrument` 的语言分派是 handler 里一个**硬编码的 `if (isGoProject(target))`**，
  *   两门语言各写一段 ~35 行、**结构逐字相同**的报告渲染（`✗ file error` / `+ file N 探针点` /
  *   `完成：a 新插桩 / b 跳过 / c 失败，共 d 探针点`）—— 想加第三门语言就得把这两段再抄一遍。
@@ -253,7 +253,7 @@ export const goObservePack: ObserveLangPack = {
   inProcess: false,
   limitations: [
     '需要 Go 工具链（`go run ./cmd/instrument`）；缺 Go 时**响亮失败**，不是静默跳过。',
-    '被插桩工程须在 go.mod 接 go-observe（replace 到本仓路径），否则插桩后编译不过 —— 报告的「运行前提」段会提示。',
+    '被插桩工程须在 go.mod 接 observe-lang-go 语言包（replace 到本仓路径），否则插桩后编译不过 —— 报告的「运行前提」段会提示。',
   ],
   manifestFiles: ['go.mod'],
   async instrument(root, opts) {
@@ -271,7 +271,7 @@ export const goObservePack: ObserveLangPack = {
       files: out.files.map((f) => ({ file: f.file, sites: f.sites, error: f.error })),
       preflight:
         deps.needs_replace || deps.needs_require
-          ? `工程尚未接 go-observe。可在 go.mod 补：\n       ${deps.require_line}\n       ${deps.replace_line}`
+          ? `工程尚未接 observe-lang-go 语言包。可在 go.mod 补：\n       ${deps.require_line}\n       ${deps.replace_line}`
           : deps.note,
     };
   },
@@ -282,7 +282,7 @@ export const goObservePack: ObserveLangPack = {
       restored,
       restoredFiles: [],
       ledgerCleared: false,
-      note: '被插桩工程内对 go-observe 的 replace/require 需自行清理（本操作不触碰 go.mod）。',
+      note: '被插桩工程内对 observe-lang-go 的 replace/require 需自行清理（本操作不触碰 go.mod）。',
     };
   },
 };

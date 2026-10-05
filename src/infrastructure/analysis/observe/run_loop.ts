@@ -1,7 +1,7 @@
 /**
  * run_loop —— 观测闭环编排（2026-10-05，P4 步骤 6）
  *
- * 搬迁自 `go-observe/probe/loop.go`（254 行）。这是 observe 合一化的**最后一块**：
+ * 搬迁自 `observe-lang-go/probe/loop.go`（254 行）。这是 observe 合一化的**最后一块**：
  * 搬完它，TS 侧就能独立完成"事件 → 偏差 → 提案"闭环，
  * Go 的 9 条 DSL 子命令（show/history/rollback/seed/propose/proposals/approve/reject/loop）全部可删。
  *

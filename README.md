@@ -323,7 +323,7 @@ npm run tool -- <工具名> --json '{...}'   # 真调一个工具 —— 这才�
 ```
 
 CI 另跑 `archify vendor doctor`（守第三方 vendor 的 renderer + schema + example 三件套完整）
-与 Go 组件（go-observe）的编译与测试。
+与 Go 语言包（observe-lang-go）的编译与测试。
 
 ## 挂起的线
 

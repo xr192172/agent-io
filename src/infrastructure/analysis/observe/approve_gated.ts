@@ -1,7 +1,7 @@
 /**
  * approve_gated —— 提案审批的**编排**（2026-10-05，P4 步骤 5）
  *
- * 搬迁自 `go-observe/probe/proposal.go:161-226`（`ApproveGated`）+ `:257-267`（`freeze`）。
+ * 搬迁自 `observe-lang-go/probe/proposal.go:161-226`（`ApproveGated`）+ `:257-267`（`freeze`）。
  * 四层全部就位后，本文件只做串接与**冻结处置**。
  *
  * ## 流程（照搬 Go 的编排，处置按 2026-10-05 用户裁定的 B 方案改严）

@@ -13,7 +13,7 @@ src/
   diagnosis/  症状 → 根因 → 修复 → 验证 的审闭环
   daemon/     MCP 常驻服务 / 事件分发
   db/         符号缓存（tree-sitter 产物的持久化）
-go-observe/    Go 版 observe 探针/裁决（独立小模块）
+observe-lang-go/  observe 的 Go 语言包：源码插桩 + 进程内采集（独立小模块）
 ```
 
 ## 开发环境

@@ -1,7 +1,7 @@
 /**
  * verify_gate —— 提案审批的**验证门**（2026-10-05，P4 步骤 5）
  *
- * 搬迁自 `go-observe/probe/proposal.go` 的 L1 / L3 / L4 三层
+ * 搬迁自 `observe-lang-go/probe/proposal.go` 的 L1 / L3 / L4 三层
  * （`VerifyRuleRegression` :354-370、`verifyLLMCoverage` :271-288、
  *  `finalizeDecls` :391-418、`freeze` :257-267、`mergeLoopDecls` :231-253）。
  * L2（decl 级 LLM 复核）在 `decl_review.ts`（新写，Go 侧无实现可抄 —— 见该文件头）。

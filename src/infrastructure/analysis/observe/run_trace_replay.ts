@@ -1,5 +1,5 @@
 /**
- * run_trace_replay：从录制帧（runs.jsonl，go-observe 的 WithRunRecorder 产出）
+ * run_trace_replay：从录制帧（runs.jsonl，Go 语言包（observe-lang-go）的 WithRunRecorder 产出）
  * 重建"一次操作"的调用树，供逐步回放。
  *
  * 每行是带 trace_id / frame_id / parent_id 的 enter/exit/catch 帧：

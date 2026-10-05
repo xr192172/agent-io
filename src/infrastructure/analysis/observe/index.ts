@@ -26,8 +26,8 @@ export type {
 } from './contract.js';
 export { enableObserveFromEnv } from './run_sentinel.js';
 // ★ 2026-09-28 剪枝：原先此处再导出 v2 分级采集 runtime（`tiered` / `trace` / `export_incident`，
-//   共 704 行）—— 它们是"对齐 go-observe 的 TS 侧移植"，但**从未接线**：
+//   共 704 行）—— 它们是"对齐 Go 语言包的 TS 侧移植"，但**从未接线**：
 //   全仓（含测试）没有任何真实消费者，只有本 barrel 再导出。
-//   Go 侧（`go-observe/probe/tiered.go` 等）仍在用，死的是这份 TS 移植。
+//   Go 侧（`observe-lang-go/probe/tiered.go` 等）仍在用，死的是这份 TS 移植。
 //   口径：可达闭包（本仓已有机器判据）之外 ⇒ 剪；需要时 git 里还在。
 //   同批剪掉 `online_loader/`（4 个 .mjs，263 行，零引用）。

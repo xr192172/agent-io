@@ -1,5 +1,5 @@
 /**
- * Observe 链路重建 · TypeScript 实现（对齐 go-observe/probe/chain.go，P2）
+ * Observe 链路重建 · TypeScript 实现（对齐 `observe-lang-go/probe/chain.go`，P2）
  *
  * 从事件流的 trace 三元组（trace_id/frame_id/parent_id）重建跨函数调用链，
  * 供 TSComparator 做链路级偏差分析（chain-broken）。与 Go 侧语义逐条对齐：

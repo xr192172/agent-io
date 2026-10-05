@@ -1,7 +1,7 @@
 /**
  * dsl_store —— 设计 DSL 的**版本化持久化仓库**（2026-10-05，P4 步骤 3）
  *
- * 搬迁自 `go-observe/probe/dsl_store.go`（236 行）。**跨语言逐字兼容是硬要求**：
+ * 搬迁自 `observe-lang-go/probe/dsl_store.go`（236 行）。**跨语言逐字兼容是硬要求**：
  * Go 侧 `llm_judge.go:91 LLMJudge.LoadDSL` 至今仍在读同一份 `dsl.json`（`probe` 是插桩后
  * 编译进被测 Go 进程内的采集 runtime，它在运行时读声明）⇒ 本文件产出的**目录、文件名、
  * JSON 字段名、时间格式**必须与 Go 侧完全一致，否则 Go 插桩过的工程会读不到声明。

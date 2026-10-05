@@ -172,22 +172,11 @@ const LOOP_TIMEOUT_MS = 60_000;
 const loopCooldown = new Map<string, number>();
 let loopRunning = false;
 
-/**
- * ★ 从**任意模块位置**向上找仓库根：按**路标** `go-observe/`（本仓独有目录）判定，**不数层级**。
- *
- * 为什么导出：原先这里写死「`dist/src/daemon/daemon.js` → 上溯 **3** 级」，
- * 本文件随 §44.3 ⑥ 搬到 `dist/src/presentation/daemon/` 后层级变成 **4** ⇒ **静默算错**
- * （指到 `dist/` ⇒ 找不到二进制 ⇒ 悄悄退回 PATH）。导出后**可被测试钉住**。
- * ★ 这类"按层级数推路径"的知识**改名工具抓不到** —— 台账 §44.7 的形态清单里叫「⑥ 数层级」。
- */
-export 
-/** observe-dsl 二进制定位：env 显式指定 → 仓库内 build 产物 → PATH */
-
 /** 事件驱动 loop：violated 后防抖触发，产出新提案则 pushAlert + SSE 广播
  *
  * ★ 2026-10-05（P2 之后的接线收口）：**从 spawn Go 二进制改成调用 TS `runLoop`**。
  *   改前是 `execFile(findObserveDslBin(), ['--project-root',…, 'loop', …])`，
- *   而 `findObserveDslBin` 的仓库内候选路径 `go-observe/build/observe-dsl.exe`
+ *   而 `findObserveDslBin` 的仓库内候选路径 `observe-lang-go/build/observe-dsl.exe`
  *   **从来不存在、也没有任何脚本产出它**（P0 侦察核实：`.gitignore:6/38` 双忽略，
  *   `e2e_smoke.ps1:18` 输出到 `$env:TEMP`）⇒ 实际只有 `AGENT_IO_OBSERVE_DSL_BIN`
  *   或 PATH 生效 ⇒ **这条方向 D 闭环在多数部署下是静默不执行的**。

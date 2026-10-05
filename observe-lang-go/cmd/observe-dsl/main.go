@@ -1,6 +1,6 @@
 // observe-dsl：Observe 设计 DSL 仓库 + 观测画像 + 偏差对比的命令行入口。
 //
-// 用法（在 go-observe 模块根运行）：
+// 用法（在 observe-lang-go 模块根运行）：
 //   go run ./cmd/observe-dsl --project-root <projectRoot> seed
 //   go run ./cmd/observe-dsl --project-root <projectRoot> actual <events.jsonl>
 //   go run ./cmd/observe-dsl --project-root <projectRoot> diff
@@ -12,7 +12,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"go-observe/probe"
+	"github.com/xr192172/agent-io/observe-lang-go/probe"
 )
 
 func main() {

@@ -59,7 +59,7 @@ function dirOf(p: string): string {
 
 /**
  * 顶层目录 → 中文功能名（规则归并时功能名符合人类阅读习惯，而非裸目录名）。
- * 未列出的目录保持原名（如 go-observe、go-slim 等外部子项目）。
+ * 未列出的目录保持原名（如 observe-lang-go 等外部子项目）。
  */
 const DIR_FEATURE_NAMES: Record<string, string> = {
   dsl: 'DSL 协议定义',
@@ -247,7 +247,7 @@ export async function deriveFeatureTree(
   });
   // 语义基准：live 视图（功能树是"实际代码结构"的产物，必须对齐 cache.db 索引的代码快照）。
   // 不能用设计视图（design）：设计视图是人工/历史拼装态，可能混入跨项目残留文件
-  //（曾因 cwd 漂移把 go-observe、observe-conformance 等并进来），命中率闸门会误判"不相关"而拒生成。
+  //（曾因 cwd 漂移把 observe-lang-go、observe-conformance 等并进来），命中率闸门会误判"不相关"而拒生成。
   const liveDsl = input.feature ? getDSLByView(input.feature, 'live') : null;
   const semanticFiles = liveDsl?.semantic?.files ?? [];
 

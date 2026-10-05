@@ -1,7 +1,7 @@
 /**
  * ledger_fold —— impact ledger 的**折叠分析**（2026-10-05，P4 步骤 2）
  *
- * 搬迁自 `go-observe/probe/ledger_loader.go`（211 行），**只搬 TS 侧缺的增量**。
+ * 搬迁自 `observe-lang-go/probe/ledger_loader.go`（211 行），**只搬 TS 侧缺的增量**。
  * 侦察核实这是 P4 里**零风险的一块**：
  *   · `LedgerEntry` 不用重定义 —— `application/meta/impact/impact_ledger_store.ts:31` 已有**更全**的镜像
  *     （多一个 `resolution` 字段），本文件直接 import。

@@ -22,7 +22,7 @@ import (
 	"strings"
 	"time"
 
-	"go-observe/internal/instrument"
+	"github.com/xr192172/agent-io/observe-lang-go/internal/instrument"
 )
 
 // RunDSLCLI 处理 observe-dsl 子命令。args 为 observe-dsl 之后的参数（可能含
@@ -702,7 +702,7 @@ func dslInstrument(args []string, dataDir string) bool {
 	}
 
 	if probeImport == "" {
-		probeImport = "go-observe/probe"
+		probeImport = "github.com/xr192172/agent-io/observe-lang-go/probe"
 	}
 
 	// 模式：默认契约模式（读 DSL 声明探针），--explore 全量无脑插桩。

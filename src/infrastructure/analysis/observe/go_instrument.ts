@@ -1,13 +1,13 @@
 /**
- * go_instrument —— 把 go-observe 的 Go 插桩器桥接进 agent-io 工具面。
+ * go_instrument —— 把 observe-lang-go 的 Go 插桩器桥接进 agent-io 工具面。
  *
  * 背景：observe_instrument 原本只支持 TS（instrumentProject，往 .ts 插 captureProbe）；
- * Go 工程的自动插桩（go-observe：go/ast 注入 camprobe.Capture）退在同一仓库但没接线。
- * 本模块把它接上：检测是否 Go 工程 → 驱动 `go run ./cmd/instrument`（go-observe）→
+ * Go 工程的自动插桩（observe-lang-go：go/ast 注入 camprobe.Capture）退在同一仓库但没接线。
+ * 本模块把它接上：检测是否 Go 工程 → 驱动 `go run ./cmd/instrument`（observe-lang-go）→
  * 解析统一报告 {files:[{file,sites:[{line,kind,level,probe}]}], restored}。
  *
- * 运行前提：被测 Go 工程须能编译含 `import camprobe "go-observe/probe"` 的代码，
- * 即需在其 go.mod 加 replace/require 指向 go-observe（插桩本身不校验，编译时见）。
+ * 运行前提：被测 Go 工程须能编译含 `import camprobe "observe-lang-go/probe"` 的代码，
+ * 即需在其 go.mod 加 replace/require 指向 observe-lang-go（插桩本身不校验，编译时见）。
  */
 
 import { DATA_DIR_NAME } from '../../data_dir.js';
@@ -49,20 +49,30 @@ export function isGoProject(root: string): boolean {
   } catch { return false; }
 }
 
-/** 定位 go-observe 模块目录（含 go.mod 的 go-observe）。env AGENT_IO_GO_OBSERVE_DIR 优先。 */
+/**
+ * 定位 observe 的 **Go 语言包**目录（含 go.mod 的 `observe-lang-go`）。
+ *
+ * ★ 2026-10-05 改名：`observe-lang-go/` → `observe-lang-go/`。理由：合一化后 Go 侧只剩两件事
+ *   （Go 源码 AST 插桩 + 同编译单元采集 runtime）—— 它是**observe 的一个语言包**，
+ *   不是"observe 的 Go 实现"。原名把"语言"当成了"角色"，与 P0 立的语言包架构矛盾。
+ *   ★ 同时把 module path 从 `observe-lang-go`（**非可解析路径、无 domain 前缀**，
+ *     是 P0 登记的基础设施缺陷）改成可解析的 `github.com/xr192172/agent-io/observe-lang-go`。
+ *   ⚠ 改名**当时零迁移成本**（已核实：无已插桩工程、无 observe-backup 备份目录、
+ *     本仓 Go 源码里 `camprobe` import 0 处）—— 若将来已有插桩工程，改 module path 会打断它们。
+ */
 export function goObserveDir(): string {
   if (process.env.AGENT_IO_GO_OBSERVE_DIR && fs.existsSync(path.join(process.env.AGENT_IO_GO_OBSERVE_DIR, 'go.mod'))) {
     return process.env.AGENT_IO_GO_OBSERVE_DIR;
   }
   let dir = path.dirname(fileURLToPath(import.meta.url));
   for (let i = 0; i < 8; i++) {
-    const cand = path.join(dir, 'go-observe');
+    const cand = path.join(dir, 'observe-lang-go');
     if (fs.existsSync(path.join(cand, 'go.mod'))) return cand;
     const parent = path.dirname(dir);
     if (parent === dir) break;
     dir = parent;
   }
-  throw new Error('未定位 go-observe 模块目录（可设环境变量 AGENT_IO_GO_OBSERVE_DIR）');
+  throw new Error('未定位 observe 的 Go 语言包目录 observe-lang-go/（可设环境变量 AGENT_IO_GO_OBSERVE_DIR）');
 }
 
 function runGo(moduleDir: string, args: string[], timeoutMs = 60000): Promise<string> {
@@ -75,7 +85,7 @@ function runGo(moduleDir: string, args: string[], timeoutMs = 60000): Promise<st
       if (settled) return;
       settled = true;
       p.kill('SIGKILL');
-      reject(new Error(`go-observe 插桩执行超时（${timeoutMs}ms）`));
+      reject(new Error(`observe-lang-go 插桩执行超时（${timeoutMs}ms）`));
     }, timeoutMs);
     p.stdout.on('data', (d) => (out += d));
     p.stderr.on('data', (d) => (err += d));
@@ -103,7 +113,7 @@ function parseReport(raw: string): GoInstrumentOut {
   }
 }
 
-/** 对 Go 工程插桩（或 dry-run）。返回与 go-observe CLI 一致的报告。 */
+/** 对 Go 工程插桩（或 dry-run）。返回与 observe-lang-go CLI 一致的报告。 */
 export async function instrumentGoProject(root: string, opts: GoInstrumentOptions = {}): Promise<GoInstrumentOut> {
   const mod = goObserveDir();
   const args = ['run', './cmd/instrument', root];
@@ -137,15 +147,15 @@ export function goReportSummary(rep: GoInstrumentOut): { totalSites: number; ins
 }
 
 // ─────────────────────────────────────────────
-// 被测 Go 工程接 go-observe（go.mod replace/require）
-// instrument 注入 `import camprobe "go-observe/probe"`，被测工程须能解析该模块，
+// 被测 Go 工程接 observe-lang-go（go.mod replace/require）
+// instrument 注入 `import camprobe "observe-lang-go/probe"`，被测工程须能解析该模块，
 // 否则插桩后编译报错。本函数检查/补连接（默认 dry-run 预览，可实际写）。
 // ─────────────────────────────────────────────
 
-const GO_OBSERVE_MODULE = 'go-observe';
+const GO_OBSERVE_MODULE = 'github.com/xr192172/agent-io/observe-lang-go';
 
 export interface GoDepsCheck {
-  /** 是否需要补 replace（false=工程已能解析 go-observe） */
+  /** 是否需要补 replace（false=工程已能解析 observe-lang-go） */
   needs_replace: boolean;
   /** 是否需要补 require */
   needs_require: boolean;
@@ -156,7 +166,7 @@ export interface GoDepsCheck {
   note?: string;
 }
 
-/** 检查被测工程 go.mod 是否已能解析 go-observe（有 require + 有 replace 指向 go-observe）。 */
+/** 检查被测工程 go.mod 是否已能解析 observe-lang-go（有 require + 有 replace 指向 observe-lang-go）。 */
 export function checkGoObserveDeps(root: string, moduleDir?: string): GoDepsCheck {
   const modPath = path.join(root, 'go.mod');
   let src = '';
@@ -169,20 +179,20 @@ export function checkGoObserveDeps(root: string, moduleDir?: string): GoDepsChec
   const hasReplace = new RegExp(`replace\\s+${GO_OBSERVE_MODULE}\\s*=>`).test(src);
   const needsReplace = !hasReplace;
   if (!needsRequire && !needsReplace) {
-    return { needs_replace: false, needs_require: false, note: 'go.mod 已含 go-observe 的 require 与 replace，可直接编译插桩后代码' };
+    return { needs_replace: false, needs_require: false, note: 'go.mod 已含 observe-lang-go 的 require 与 replace，可直接编译插桩后代码' };
   }
   const goDir = moduleDir ?? (() => { try { return goObserveDir(); } catch { return ''; } })();
-  const replacePath = goDir ? JSON.stringify(goDir.replace(/\\/g, '/')) : `<go-observe 模块目录>`;
+  const replacePath = goDir ? JSON.stringify(goDir.replace(/\\/g, '/')) : `<observe-lang-go 模块目录>`;
   return {
     needs_replace: needsReplace,
     needs_require: needsRequire,
     require_line: `require ${GO_OBSERVE_MODULE} v0.0.0`,
     replace_line: `replace ${GO_OBSERVE_MODULE} => ${replacePath}`,
-    note: `待补 require + replace（指向 ${goDir || 'go-observe 模块目录'}）`,
+    note: `待补 require + replace（指向 ${goDir || 'observe-lang-go 模块目录'}）`,
   };
 }
 
-/** 补桥：把 go-observe 的 require/replace 追加到被测工程 go.mod（默认 dry-run 只返回将写内容）。
+/** 补桥：把 observe-lang-go 的 require/replace 追加到被测工程 go.mod（默认 dry-run 只返回将写内容）。
  *  返回是否实际写盘 changed。 */
 export function ensureGoObserveIntegration(root: string, moduleDir?: string, write = false): { changed: boolean; check: GoDepsCheck } {
   const check = checkGoObserveDeps(root, moduleDir);

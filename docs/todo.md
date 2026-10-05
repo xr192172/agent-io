@@ -1232,3 +1232,55 @@
            清单 `["brand.new.probe","fs.writeFile"]` ⇒ **种子不再抑制它，报告变诚实**
            （且 `violated=1` ⇒ **种子在全局声明下仍能抓违反**，证明"只改 pass 2"的判断正确）
          · 显式 `decls` ⇒ `decls_source` 标"调用方显式传入"，按假设集判
+
+      ✅ **改名：`go-observe/` → `observe-lang-go/`（2026-10-05 本笔，用户提问触发）**
+         用户问："为什么还叫 go-observe，不是和 ts 侧的合并了吗，为什么不叫通用名" —— **该问是对的**。
+         ★ 理由：合一化后 Go 侧只剩两件事 —— **Go 源码 AST 插桩**（`go/ast`，TS 解析不了 Go）
+           与**编译进被测进程内的采集 runtime**。它是**observe 的一个语言包**，
+           不是"observe 的 Go 实现"。原名把**语言**当成了**角色**，与 P0 立的语言包架构矛盾。
+         同时把 Go module path 从 `go-observe`（★ **非可解析路径、无 domain 前缀**，
+           是 P0 登记的基础设施缺陷）改成可解析的 `github.com/xr192172/agent-io/observe-lang-go`。
+         ⚠ **改名当时零迁移成本**（已逐项核实，不是推测）：
+           · `.agent-io/observe-backup` 与 `.agent/observe-backup` **都不存在**（无插桩备份）
+           · 本仓 Go 源码里 `camprobe` import **0 处**（无已插桩工程）
+           · 34 处 `camprobe`/`observe:instrumented` 全是**注入器自己写的字符串常量**
+         ⇒ 所以用户提的"import 不是有 rename 工具吗"其实用不上：改的是 **module path + 目录名**，
+           不是符号；`rename_symbols` 改的是符号（`.go → renameGoSymbol()`）。
+           全在本仓内机械改完，`go build`/`go vet`/`go test` 三道全绿即证。
+         ⚠ 若将来已有插桩工程，改 module path 会**打断它们**（源码里的 import + 用户 go.mod 的
+           require/replace 都指向旧路径）⇒ 届时必须先做迁移预案。
+
+         ★★ **顺带修掉两个"改完 tsc 没抓到"的问题**（都是本轮自己造成的）：
+         ① **上笔把 `daemon.ts` 改坏了**：删 `resolveRepoRoot` / `findObserveDslBin` 时
+            留下了**悬空的 `export` 关键字** + 两个孤儿文档注释。它恰好贴在
+            `function scheduleLoopTrigger` 之前 ⇒ **把本该私有的内部函数变成了导出**
+            （实测编译产物只导出这一个符号）。**`tsc` 完全没报错** ——
+            `export function f()` 本身是合法的。
+            ⚠ 这就是"只跑类型门不看语义"的典型漏网：门全绿、代码却是错的。
+            已删掉那 11 行垃圾（删前**逐行校验区间内无正常代码**），并复核导出面已收回。
+         ② **`.github/workflows/ci.yml` 里有个 module 矩阵引用旧名**
+            （`module: [go-observe, go-slim]`）—— 改名前没注意到它的存在，
+            不改则 **CI 直接坏**。已改为 `observe-lang-go`。
+            ⚠ 同类风险：改名时**必须查配置/脚本/CI，不能只查源码**。
+
+         改名按引用性质分三类处理（**部分改名就是"声明与实际不符"**）：
+         · **功能性**（不改就坏）：`scripts/verify.mjs` 的 `cwd`（两道 Go 门的执行目录）、
+           `ci.yml` 的 module 矩阵、`go_instrument.ts` 的目录定位 `path.join(dir,'go-observe')`
+           与写进用户 `go.mod` 的 module 常量、`observe_langs.ts` / `observe/index.ts` 里
+           **LLM 可见的工具描述与 go.mod 提示**（LLM 会照着做，必须改）
+         · **已不成立的断言**（内容变了）："`go-observe` 拥有 `.agent/observe/`" ——
+           合一化后权威在 TS 侧 `DesignDSLStore`，已改写 `data_dir.ts` 的两张表、
+           两个 reconcile 的注释与**用户可见报错文案**
+         · **搬迁来源路径**（路径失效）：`搬迁自 go-observe/probe/X.go` 等 6 处已更新为新路径
+         · **正确的历史陈述**（**刻意不改**）：`probe.go:10` 那句"2026-08-18 回迁归位到**当时的**
+           go-observe 模块，现目录 observe-lang-go" —— 它记的正是改名这件事，改了就失真。
+           `docs/` 下 7 个文件同理（是本轮合一化的历史记录，改等于 falsify 记录）。
+
+         验证
+         · `npm run verify` 5 道门全绿 exit 0 · tsc EXIT=0 · mcp_scan 59 工具零坏签名
+         · Go 侧：`go build ./...` 0 / `go vet ./...` 0 / `go test ./...` **全绿**（2 个包，
+           包名已是 `github.com/xr192172/agent-io/observe-lang-go/...`）
+         · `goObserveDir()` 实测能定位到新目录且含 `go.mod` ⇒ TS 侧定位逻辑未断
+         · ★ **端到端真调** `observe_instrument` 走 Go 语言包：仍识别出 4 个探针点，
+           且 go.mod 提示已指向新路径与可解析 module
+           （`require github.com/xr192172/agent-io/observe-lang-go v0.0.0`）

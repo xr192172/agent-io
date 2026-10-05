@@ -10,7 +10,7 @@
 //   - event ：IO 写盘（op）
 //   - deep  ：函数内部变量赋值（默认关闭，enableDeep 放大）
 //
-// 依赖：被测项目须能 import 本探针包（默认 go-observe/probe）。
+// 依赖：被测项目须能 import 本探针包（默认 github.com/xr192172/agent-io/observe-lang-go/probe）。
 package instrument
 
 import (
@@ -54,7 +54,7 @@ type Result struct {
 
 // Options 是插桩配置。
 type Options struct {
-	// ProbeImport 是被插桩代码 import 的探针包路径（默认 go-observe/probe）。
+	// ProbeImport 是被插桩代码 import 的探针包路径（默认 github.com/xr192172/agent-io/observe-lang-go/probe）。
 	ProbeImport string
 	// Write 是否实际写盘；false 只做 dry-run 报告（默认 true）。
 	Write bool
@@ -221,7 +221,7 @@ func InstrumentFile(file string, opts Options) (Result, error) {
 
 	probeImport := opts.ProbeImport
 	if probeImport == "" {
-		probeImport = "go-observe/probe"
+		probeImport = "github.com/xr192172/agent-io/observe-lang-go/probe"
 	}
 
 	fileRel := filepath.ToSlash(relPath(backupRoot, file))

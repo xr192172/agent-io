@@ -25,7 +25,8 @@
 export const DATA_DIR_NAME = '.agent-io';
 
 /**
- * ★★ go-observe（`go-observe/`，Go 实现的 observe 侧）**自己的**数据目录名。
+ * ★★ **设计 DSL 仓库**的数据目录名（★ 2026-10-05 合一化后权威已在本仓 TS 侧，
+ *   Go 语言包只负责插桩与进程内采集，不再拥有这份仓库）。
  *
  * ★ 为什么它与 {@link DATA_DIR_NAME} **刻意不同名**（2026-10-05 补声明，此前是 4 处裸字面量）：
  *   两个目录**装的是两样东西、归两个程序所有**，不是同一份数据的两个副本：
@@ -33,12 +34,12 @@ export const DATA_DIR_NAME = '.agent-io';
  * | 目录 | 归谁 | 装什么 | 谁写 |
  * |---|---|---|---|
  * | `<root>/.agent-io/` | agent-io（TS） | 事件流 `observe/events.jsonl`、影响台账 `impact/ledger.json`、符号索引 `cache.db`、设计存档… | TS 探针 / agent-io 工具 |
- * | `<root>/.agent/observe/` | **go-observe（Go）** | 设计 DSL `dsl.json`、修订提案 `proposals/`、观测画像 `actual.dsl.json` | `observe-dsl` 子命令 |
+ * | `<root>/.agent/observe/` | **本仓 TS 侧**（Go 语言包已不再拥有它） | 设计 DSL `dsl.json`、修订提案 `proposals/`、观测画像 `actual.dsl.json` | `observe-dsl` 子命令 |
  *
  *   权威依据在 Go 侧（**跨语言约定，改这里必须同步改那里**）：
- *   · `go-observe/cmd/observe-dsl/main.go:30,34` — `--project-root` → `filepath.Join(root, ".agent", "observe")`；缺省回退 cwd
- *   · `go-observe/probe/dsl_cli.go:12` —「dataDir 指向设计 DSL 仓库目录（{projectRoot}/.agent/observe）」
- *   · `go-observe/probe/dsl_cli.go:450` — 台账在 `{projectRoot}/.agent-io/impact/`（**从 dataDir 上溯两级**再进 `.agent-io`）
+ *   · `observe-lang-go/cmd/observe-dsl/main.go:30,34`（旧 Go CLI，★ 待 P6 删除）— `--project-root` → `filepath.Join(root, ".agent", "observe")`；缺省回退 cwd
+ *   · `observe-lang-go/probe/dsl_cli.go:12`（旧 Go CLI，待 P6 删除） —「dataDir 指向设计 DSL 仓库目录（{projectRoot}/.agent/observe）」
+ *   · `observe-lang-go/probe/dsl_cli.go:450`（旧 Go CLI，待 P6 删除） — 台账在 `{projectRoot}/.agent-io/impact/`（**从 dataDir 上溯两级**再进 `.agent-io`）
  *     ⇒ 上溯两级正好回到项目根，这行代码本身就证明了两个目录名是**刻意分工**，不是笔误。
  *
  * ★ 因此本仓对这两个名字的纪律是**「各自单点 + 说清分工」**，**不是「收口成一个」**：

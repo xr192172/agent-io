@@ -104,8 +104,8 @@ export interface ReconcileChainResult {
  * 自动发现事件文件：**只扫权威位置** `<root>/.agent-io/observe/`（与 reconcile_effects 对齐）。
  *
  * ★ 2026-10-05：此前是 `for (const dirRel of ['.agent/observe', '.agent-io/observe'])` ——
- *   两个目录名都试。实测 `.agent/` 是 **go-observe 自己的** DSL 仓库（`dsl.json` / `proposals/` /
- *   `actual.dsl.json`；权威依据 `go-observe/cmd/observe-dsl/main.go:30,34` 与 `probe/dsl_cli.go:12,450`），
+ *   两个目录名都试。实测 `.agent/` 是**设计 DSL 仓库**（★ 合一化后由 TS 侧 `DesignDSLStore` 拥有）（`dsl.json` / `proposals/` /
+ *   `actual.dsl.json`；布局依据 `data_dir.ts:36-41`（旧实现为 Go CLI `main.go:30,34` / `dsl_cli.go:12,450`，待 P6 删除）），
  *   事件流由 TS 探针写在 `.agent-io/observe/`。⇒ `.agent/observe` 分支是上一代布局的兼容残留，
  *   按 `data_dir.ts「没有下游就不要兼容层」` 删掉；真有文件时由 {@link legacyEventFiles} 在报告里指路。
  */
@@ -235,7 +235,7 @@ async function reconcileChainCore(input: ReconcileChainInput): Promise<Reconcile
   // ── 自动发现事件文件 + 按链文件过滤 → 这条链的真跑事件 ──
   const eventFiles = input.events_files?.length ? input.events_files : discoverEventFiles(projectRoot);
   // ★ 未显式给 events_files 且权威位置没命中时，若上一代布局（.agent/observe/）有事件，如实指路
-  //   （`.agent/` 归 go-observe 装 dsl.json/proposals，不是事件流落点 —— 见 discoverEventFiles 的说明）
+  //   （`.agent/` 归设计 DSL 仓库装 dsl.json/proposals，不是事件流落点 —— 见 discoverEventFiles 的说明）
   const legacyFiles = input.events_files?.length || eventFiles.length > 0 ? [] : legacyEventFiles(projectRoot);
   const chainFiles = [...new Set(chain.map((c) => path.basename(c.file) || c.file))];
   const events: TSEvent[] = [];
@@ -299,7 +299,7 @@ async function reconcileChainCore(input: ReconcileChainInput): Promise<Reconcile
     `真跑事件：该链命中 ${chainEvents.length} 条${not_run ? '（无事件 —— 该链尚未真跑，先跑一遍再对账）' : ''}  |  事件文件：${hitFiles.length ? hitFiles.join(', ') : '无'}`,
     ...(legacyFiles.length > 0
       ? [
-          `⚠ 上一代布局 ${legacyFiles.join('、')} 里有事件文件，本次**未读**（事件流权威位置是 ${path.join(projectRoot, DATA_DIR_NAME, 'observe')}；「.agent/」归 go-observe，装 dsl.json/proposals）。` +
+          `⚠ 上一代布局 ${legacyFiles.join('、')} 里有事件文件，本次**未读**（事件流权威位置是 ${path.join(projectRoot, DATA_DIR_NAME, 'observe')}；「.agent/」是设计 DSL 仓库，装 dsl.json/proposals）。` +
             `请重新插桩（instrument）让事件写到权威位置，或用 events_files 显式指定这几个文件。`,
         ]
       : []),

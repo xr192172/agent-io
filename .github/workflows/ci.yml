@@ -39,13 +39,13 @@ jobs:
         if: ${{ env.AGENT_IO_R5_SKIP != '1' }}
         run: node third_party/archify/bin/archify.mjs doctor
 
-  # ─── Go 插桩组件：go-observe / go-slim ───
+  # ─── Go 插桩组件：observe-lang-go / go-slim ───
   go-test:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        module: [go-observe, go-slim]
+        module: [observe-lang-go, go-slim]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5

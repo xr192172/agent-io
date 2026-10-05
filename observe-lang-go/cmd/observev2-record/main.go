@@ -14,7 +14,7 @@ import (
 	"fmt"
 	"os"
 
-	"go-observe/probe"
+	"github.com/xr192172/agent-io/observe-lang-go/probe"
 )
 
 func main() {

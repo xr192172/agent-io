@@ -3,7 +3,7 @@
  *
  * "动静结合"主线的合龙动作：
  *   静（extract_contracts，origin='ast'）：AST 扫出的 effects 候选——"疑似"
- *   动（observe effect 探针）：go-observe --effects 插桩，运行时 Capture
+ *   动（observe effect 探针）：observe-lang-go 语言包 --effects 插桩，运行时 Capture
  *       {level:'effect', kind, target, op}——"实锤"
  *   对账（本工具）：读 <project>/.agent/observe/events-*.jsonl，按文件聚合 effect
  *   事件，与 DSL 契约（SemanticFile.contract.effects）对账：
@@ -126,8 +126,8 @@ function listEventFiles(dir: string): string[] {
  * 自动发现事件文件：**只扫权威位置** `<root>/.agent-io/observe/`。
  *
  * ★ 2026-10-05：此前这里写的是 `for (const dirRel of ['.agent/observe', '.agent-io/observe'])`
- *   —— 两个目录名都试一遍。实测 `.agent/` 是 **go-observe 自己的** DSL 仓库
- *   （`dsl.json` / `proposals/` / `actual.dsl.json`，权威依据 `go-observe/cmd/observe-dsl/main.go:30,34`
+ *   ★ 合一化后 `.agent/` 是**设计 DSL 仓库**（由 TS 侧 `DesignDSLStore` 拥有）
+ *   （`dsl.json` / `proposals/` / `actual.dsl.json`；布局依据 `data_dir.ts:36-41`，旧实现为 Go CLI `main.go:30,34`
  *   与 `probe/dsl_cli.go:12,450`），**不是事件流的落点**；事件流由 TS 探针写在 `.agent-io/observe/`
  *   （见 `probe.ts` 头注）、并由 `daemon.ts` 显式作 `eventsPath` 传给 Go。
  *   ⇒ `.agent/observe` 分支是**上一代布局的兼容残留**。按 `data_dir.ts` 的纪律
@@ -202,11 +202,11 @@ async function reconcileEffectsCore(input: ReconcileEffectsInput): Promise<Recon
 
   if (eventsFiles.length === 0) {
     // ★ 零事件分支：若上一代布局（.agent/observe/）里确有事件文件，如实指路而不是静默当没有
-    //   （`.agent/` 是 go-observe 的 DSL 仓库，不是事件流落点 —— 见 discoverEventFiles 的说明）。
+    //   （`.agent/` 是设计 DSL 仓库，不是事件流落点 —— 见 discoverEventFiles 的说明）。
     const legacy = input.events_files?.length ? [] : legacyEventFiles(root);
     const legacyNote =
       legacy.length > 0
-        ? ` ★ 注意：上一代布局 ${legacy.join('、')} 里有事件文件 —— 事件流的权威位置是 ${path.join(root, DATA_DIR_NAME, 'observe')}（「.agent/」归 go-observe，装 dsl.json/proposals）；请重新插桩（instrument --effects）让事件写到权威位置，或用 events_files 显式指定这几个文件。`
+        ? ` ★ 注意：上一代布局 ${legacy.join('、')} 里有事件文件 —— 事件流的权威位置是 ${path.join(root, DATA_DIR_NAME, 'observe')}（「.agent/」是设计 DSL 仓库，装 dsl.json/proposals）；请重新插桩（instrument --effects）让事件写到权威位置，或用 events_files 显式指定这几个文件。`
         : '';
     return {
       project_dir: root,
