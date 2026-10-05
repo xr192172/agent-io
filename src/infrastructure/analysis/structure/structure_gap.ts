@@ -42,11 +42,33 @@ import { SOURCE_EXTS, isSourceExt, isNoiseFileName } from '../../parse/source_ex
 /** 结构意图的配置文件名（与 `.dependency-cruiser.cjs` 同级：**架构约定**，不是派生数据） */
 export const STRUCTURE_CONFIG_BASENAME = 'structure.domains.json';
 
+/**
+ * 域的**角色**（2026-10-05 加，机器可读）。
+ *
+ * ★ 为什么它值得被声明，而 `note`（散文）不行：
+ *   「我想找 X 的实现，该不该进这个目录」这个问题，**AST 算不出来** ——
+ *   `analysis/translate` 与 `analysis/structure` 的 import 结构可以一模一样，
+ *   但**一个是我要用的功能、一个是工具内部的计算**。这就是"找错起点"的根因，
+ *   而它恰好属于"只能靠人判断"那一类 ⇒ 该声明。
+ *
+ * ★ 与"能派生的绝不声明"是同一条纪律的两面：**依赖边 / 循环 / 分层违规一律现算**
+ *   （见 `code_health`），本表只放算不出来的东西。
+ */
+export type DomainRole = 'capability' | 'analysis' | 'engine' | 'adapter';
+
+/** 角色词表（配置里 `roles` 字段可自带说明；这里只认这四个值 —— 非法值在 assertConfig 里抛） */
+export const DOMAIN_ROLES: readonly DomainRole[] = ['capability', 'analysis', 'engine', 'adapter'];
+
 /** 一条域声明：`dir` 里的散文件「要么已搬完、要么就是待搬的缺口」 */
 export interface StructureDomainDecl {
   id: string;
-  /** 分类标签（给人读；**不参与判定** —— 依赖方向是 dep-cruiser 的职责） */
+  /** 分类标签（给人读；**不参与判定** —— 依赖方向由 `code_health` 现算） */
   layer?: string;
+  /**
+   * 域的角色（**参与判定** ⇒ 与 `layer` 不同）。缺省 = `undefined` ⇒ 该域不参与 misnested 判定
+   * （老配置没有这一轴时不应报出噪声；想要判据生效就在配置里补 role）。
+   */
+  role?: DomainRole;
   /** 域目录，相对 project_dir，**正斜杠** */
   dir: string;
   note?: string;
@@ -58,6 +80,8 @@ export interface FlatDirDecl extends StructureDomainDecl {}
 export interface StructureDomainsConfig {
   domains: StructureDomainDecl[];
   flatDirs?: FlatDirDecl[];
+  /** 角色词表（**只给人读**，判定用的是上面的 `DOMAIN_ROLES` 常量 —— 与 layers 同策） */
+  roles?: Record<string, string>;
 }
 
 export interface StructureGapItem {
@@ -76,6 +100,22 @@ export interface StructureGapReport {
   unlisted: StructureGapItem[];
   /** 域目录还不存在 / 域里没有源码 —— 与 misplaced 一体两面 */
   missing: StructureGapItem[];
+  /**
+   * **声明为独立域、却物理住在另一个域目录里**（2026-10-05 新增）。
+   *
+   * ★ 这条与 misplaced / unlisted 是**不同的病**：
+   *   · misplaced  = 「这里有个东西没归类」⇒ **缺声明**
+   *   · unlisted   = 「这个家没人要」⇒ **缺声明**
+   *   · misnested  = 「声明说它是独立域，位置说它是别人的子目录」⇒ **声明与现状分叉**
+   *     —— 正是本仓的头号病根，而且这一类**只有量具能发现**：读代码的人看到
+   *     `analysis/translate/` 会以为它是"分析的一部分"，只有把它和 `role: capability`
+   *     放在一起看，才看得出声明与位置在打架。
+   *
+   * 判据：`role === 'capability'` 的域，其 `dir` 的父目录**不得**是另一个已登记的域。
+   * 容器（父目录下没有自己的域声明，如 `src/infrastructure/analysis/`）**不算违规**
+   * —— 那是合法的分层容器；只有"父目录本身就是个域"才报。
+   */
+  misnested: StructureGapItem[];
 }
 
 /** 顶层入口的返回：多一个 `configured` —— 项目**没声明**结构意图时，四态都是空数组 */
@@ -126,6 +166,17 @@ function assertConfig(cfg: StructureDomainsConfig, configPath: string): void {
   const ids = all.map((d) => d.id);
   const dup = [...new Set(ids.filter((x, i) => ids.indexOf(x) !== i))];
   if (dup.length) throw new Error(`${configPath}: 域 id 重复 —— ${dup.join(', ')}（读数按 id 索引，重复后无法对应目录）`);
+
+  // ★ role 非法必须**抛**，不能静默忽略（2026-10-05）：role 是**参与判定**的一轴 ——
+  //   写错一个值会让该域悄悄退出 misnested 判定，而读数看上去仍然是"0 个问题" ⇒ 假绿。
+  //   这与 layer 的处置刻意不同：layer 不参与判定，写错只影响可读性；role 参与判定，必须硬失败。
+  const badRole = all.filter((d) => d.role !== undefined && !DOMAIN_ROLES.includes(d.role));
+  if (badRole.length) {
+    throw new Error(
+      `${configPath}: role 非法 —— ${badRole.map((d) => `${d.id}="${String(d.role)}"`).join(', ')}。` +
+        `只允许 ${DOMAIN_ROLES.join(' / ')}（少写 = 不参与 misnested 判定，不是错；写错 = 该域静默退出判定 = 假绿）`,
+    );
+  }
 }
 
 /**
@@ -154,6 +205,55 @@ export function computeStructureGap(projectDir: string, cfg: StructureDomainsCon
   const misplaced: StructureGapItem[] = [];
   const unlisted: StructureGapItem[] = [];
   const missing: StructureGapItem[] = [];
+  const misnested: StructureGapItem[] = [];
+
+  // ⓪ misnested：声明为独立域、却住在另一个域里（2026-10-05 新增，见 StructureGapReport.misnested）
+  //    ★ 放在最前面，因为它比 misplaced/unlisted 更根本：那两个是"缺声明"，这个是"声明打架"。
+  //    判据：role==='capability' 且父目录**本身是个已登记的域**（容器不算）。
+  //    举本仓实例：`translate` / `version_upgrade` / `behavior` / `cross-repo` 都在
+  //    `src/infrastructure/analysis/` 下，而那个目录本身不是域 ⇒ 它是合法容器？
+  //    不 —— `analysis/` 之所以是"筐"，是因为它下面的 17 个域里 7 个是 capability。
+  //    ⇒ 所以判据要看**同一父目录下的角色构成**：父目录自己不是域，但**它下面的域有 capability**
+  //    ⇒ 这个父目录就是"按角色混装"的筐，报出来让人决定拆不拆。
+  // ★ `dirSet` 只收 **domains**，**不含 flatDirs**（2026-10-05 实测假阳后修）：
+  //   flatDir 的语义是「直属 .ts 是终态」—— 它是**平铺声明**，不是"一个域"。
+  //   把它当域判 ⇒ `src/application/{cross,harvest}`（父 = flatDir `src/application`）
+  //   与 `src/presentation/http/archify`（父 = flatDir `src/presentation/http`）全被误报。
+  const domainDirSet = new Set(cfg.domains.map((d) => d.dir));
+  const byParent = new Map<string, StructureDomainDecl[]>();
+  for (const d of cfg.domains) {
+    if (!d.role) continue;
+    const parent = path.posix.dirname(d.dir);
+    const bucket = byParent.get(parent) ?? [];
+    bucket.push(d);
+    byParent.set(parent, bucket);
+  }
+  for (const [parent, kids] of [...byParent].sort((a, b) => (a[0] < b[0] ? -1 : 1))) {
+    const selfIsDomain = domainDirSet.has(parent);
+    if (selfIsDomain) {
+      // 父目录自己是个域，却又在里面装 capability 域 ⇒ 声明打架（无歧义，直接报）
+      for (const k of kids.filter((x) => x.role === 'capability')) {
+        misnested.push({
+          path: k.dir,
+          note: `声明为 role=capability（用户可见的能力），却住在域 \`${parent}\` 里面 —— 要么它该独立成容器，要么 \`${parent}\` 该改名（属名被一个种占住是命名错位）`,
+        });
+      }
+      continue;
+    }
+    // 父目录是**容器**（合法分层）—— 只在"它同时装了 analysis 与 capability"时报：
+    // 那说明这个容器是按"看起来像"而不是按"角色"分组的 ⇒ analysis/ 就是这一类。
+    const roles = new Set(kids.map((x) => x.role));
+    if (roles.has('capability') && roles.has('analysis')) {
+      const caps = kids.filter((x) => x.role === 'capability').map((x) => x.id);
+      const ans = kids.filter((x) => x.role === 'analysis').map((x) => x.id);
+      for (const k of kids.filter((x) => x.role === 'capability')) {
+        misnested.push({
+          path: k.dir,
+          note: `role=capability 域，却与 ${ans.length} 个 role=analysis 域同住 \`${parent}/\` —— 这是"按外观分组"的筐（能力 ${caps.join('/')} 与分析 ${ans.join('/')} 混装），拆不拆请拍板`,
+        });
+      }
+    }
+  }
 
   // ① missing：域目录还不存在 / 域里没有源码
   for (const d of cfg.domains) {
@@ -235,6 +335,7 @@ export function computeStructureGap(projectDir: string, cfg: StructureDomainsCon
     misplaced,
     unlisted,
     missing,
+    misnested,
   };
 }
 
@@ -250,6 +351,7 @@ export function structureGap(projectDir: string): StructureGapResult {
       misplaced: [],
       unlisted: [],
       missing: [],
+      misnested: [],
     };
   }
   return { configured: true, ...computeStructureGap(projectDir, cfg) };

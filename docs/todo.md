@@ -836,28 +836,6 @@
 > · `25ab56c` `render_brickwork` 默认输出归位 `<agent-io>/docs/`。
 
 
-- [ ] **T48 ★ 目录声明表 `structure.domains.json` 缺「角色」一轴 ⇒ `analysis/` 是筐（2026-10-05 逐文件扫描发现，待拍板）**
-      *(依据：`git ls-files` 500 文件全量清点 + 逐文件归位扫描；报告 `.codebuddy/agent-io-目录归位与数据流转扫描.md`。)*
-      ⇒ **事实**：`domains[]` 现有 4 个字段 `id`/`layer`/`dir`/`note`，其中 `note` 是**中文散文** ⇒ 机器读不出来。
-        而 55 个域里 `dir` 含 `analysis` 的有 17 个，其中 **`translate`（2672 行/14 文件）· `version_upgrade`（1107/14）
-        · `behavior`（1054/1）· `refactor` · `cross-repo` · `project-root`** —— **声明上它们是独立域，位置上它们是 `analysis/` 的子目录**。
-        ⇒ `structure_gap` 只查「声明的 dir 存不存在 / 有没有未登记目录」，**不查这个 dir 的父目录语义对不对** ⇒ 声明与现状分叉（本仓第一号病根）。
-      ⇒ **提案（两步，先声明后搬）**：
-        ① `domains[]` 加两个**机器可读**字段：`role`（`capability`｜`analysis`｜`adapter`｜`facade`｜`engine`）
-           与 `visible_to`（谁能 import 它）。**判据：能派生的绝不声明**（依赖边/循环/死代码全部现算，
-           这条已经写在 `structure.domains.json` 的 `note` 里，本次只是把它落到字段上）。
-           ★ 为什么 `role` 值得声明：它**算不出来** —— `analysis/translate` 与 `analysis/structure` 的 import 结构可以一模一样，
-           但**一个是我要用的功能、一个是工具内部的计算**。这就是"找错起点"的根因。
-        ② 让 `structure_gap` 多报一条：**`role: capability` 的域，其 `dir` 的父目录不得是另一个域** ⇒
-           **量具自己**指出该搬哪几个（预期就是 translate / version_upgrade / behavior），而不是靠人列清单。
-      ⇒ ★ **第 ① 步落地之前不要动目录**：加了 `role`，"该搬哪几个"就从判断变成**量具输出**。
-      ⇒ 顺带发现、本批**未做**（都是"声明已承认、位置没跟上"）：
-        `layers` 字段声明 4 层但 `domains[]` 实际只用 3 层（`domain` 靠 `flatDirs` 的 `domain-model` 兜）；
-        `application/handlers.ts`（533 行 / 19 个 handler）被 5 个 lane 的 `index.ts` 引用且反向 import 5 个 lane
-        ⇒ **目录级环**（文件级无环，`code_health` 报 0 是对的），且它是 **presentation 的活错放在 application**；
-        `observe/runtime/write_gate.ts` 被 **11 文件跨 4 lane** 引用（refactor 8 / design 2 / meta 1），
-        它是"全项目写盘闸门"却藏在 observe 下面 ⇒ 换名换位。
-
 - [ ] **T49 ★ 「写用户源码」没有单一可检查通道（2026-10-05 逐文件扫描发现，待拍板）**
       ⇒ **事实**：`write_gate.writeSourceFiles` / `applyWrites` / `snapshotAndRecordSelfWrite` 覆盖了主干
         （`scaffold` · `rename_symbols` · `rename_local` · `edit_code`→`applyWrites` · `remove_dead_imports` · `refactor_pipeline`），
@@ -872,7 +850,7 @@
         **无 dry-run 档、静默改盘 39 个文件 / 176 条 import**（含 `.inspect/**` 探针目录），已 `git checkout` 还原。
         若"写源码必过 `write_gate`"成立 ⇒ 闸门处即可挂"dry-run 默认"，这类事故**在入口被拦**而不是事后靠回执读出来。
 
-- [ ] **T50 `go-observe` 与 TS 版 `analysis/observe/` 是同一件事的两套实现，规则各自漂移且零 CI（2026-10-05 逐文件扫描发现）**
+- [ ] **T57 `go-observe` 与 TS 版 `analysis/observe/` 是同一件事的两套实现，规则各自漂移且零 CI（2026-10-05 逐文件扫描发现）**
       ⇒ **事实**：与 TS 版**同名符号 ≥18 个**（`baseProbeName` · `RebuildChains` · `isSubsequence` · `matchChainDecl`
         · `SilentErrorDiscard` · `JudgeEvent` · `Verdict` · `DSLDecl` · `DeviationKind` 四态 · 链预算 `512/4096/128` …）。
         **判定规则两边各自写死字面量、不共享**：TS 的 `IMPACT_BLAST_RADIUS_LIMIT=50`（`judge.ts:55`）**Go 侧全仓 0 命中**；
