@@ -77,15 +77,60 @@ const typeOfProp = (t, name) => {
 const normType = (s) => s.replace(/\s*\|\s*undefined\b/g, '').replace(/\bundefined\s*\|\s*/g, '').trim();
 
 /**
- * 锚点候选（**只是候选**）：出现在产物里、可能被下游 [B] 当原料用的字段名。
- * ★ 不作为"欠账清单"用 —— 语义是否一致要逐个人读（见文件头）。
+ * 读 `src/domain/b_terms.ts` 的 AST（**不 import 构建产物** ⇒ 不会读到陈旧 dist）。
+ * ★ 2026-10-05：从 `--glossary` 分支里**提出来**，好让"锚点名"也由它派生（见下）——
+ *   原先本文件**另持一份手抄的 `ANCHOR_CANDIDATES`**，里面还留着已删/已退役的名字
+ *   （`box_dir` / `brick_dir` / `slim_dir` / `written` / `filesWritten`）⇒ **判据分叉**。
  */
-const ANCHOR_CANDIDATES = new Set([
-  'feature', 'project_dir', 'project_root', 'box_dir', 'brick_dir', 'target_dir', 'slim_dir',
-  'files', 'written', 'filesWritten', 'files_changed', 'added_files', 'updated_files',
-  'written_to_dsl', 'moved', 'applied', 'files_written',
-  'symbol', 'symbols', 'node_id', 'nodes', 'previews',
-]);
+function readTerms() {
+  const tsf = program.getSourceFile(TERMS_FILE);
+  const out = [];
+  if (!tsf) return out;
+  for (const st of tsf.statements) {
+    if (!ts.isVariableStatement(st)) continue;
+    for (const d of st.declarationList.declarations) {
+      if (!ts.isIdentifier(d.name) || d.name.text !== 'B_TERMS') continue;
+      const init = d.initializer;
+      if (!init || !ts.isObjectLiteralExpression(init)) continue;
+      for (const p of init.properties) {
+        if (!ts.isPropertyAssignment(p)) continue;
+        const nm = ts.isIdentifier(p.name) || ts.isStringLiteral(p.name) ? p.name.text : null;
+        const obj = p.initializer;
+        if (!nm || !ts.isObjectLiteralExpression(obj)) continue;
+        const get = (key) => {
+          for (const q of obj.properties) {
+            if (!ts.isPropertyAssignment(q)) continue;
+            const k = ts.isIdentifier(q.name) || ts.isStringLiteral(q.name) ? q.name.text : null;
+            if (k !== key) continue;
+            const v = q.initializer;
+            if (ts.isStringLiteral(v) || ts.isNoSubstitutionTemplateLiteral(v)) return v.text;
+            if (v.kind === ts.SyntaxKind.TrueKeyword) return 'true';
+            return v.getText();
+          }
+          return null;
+        };
+        out.push({ name: nm, kind: get('kind'), type: get('type'), meaning: get('meaning') ?? '', debt: get('debt') === 'true', fix: get('fix') });
+      }
+    }
+  }
+  return out;
+}
+
+const TERMS = readTerms();
+/** ★ 权威来源 = 词表。**不再手抄**任何"锚点名"。 */
+const TERM_NAMES = new Set(TERMS.map((t) => t.name));
+/** 词表里登记为「链的接口」的词（`kind: 'anchor'`） */
+const ANCHOR_NAMES = new Set(TERMS.filter((t) => t.kind === 'anchor').map((t) => t.name));
+/** 已退役：不许再新增使用者的词（词表里带"已退役"字样的） */
+const RETIRED_NAMES = new Set(TERMS.filter((t) => (t.meaning ?? '').includes('已退役')).map((t) => t.name));
+
+/**
+ * 产物侧「锚点候选」的判定（2026-10-05 改）：
+ *   ① 词表登记为 anchor 的（**权威**）；或
+ *   ② **不在词表里** 的字段名 —— 它们正是**候选异名 / 候选接力键**（该收口 or 该登记），
+ *      由摘要里那一节机械列出，**不再靠手抄名单**。
+ */
+const isAnchorCandidate = (p) => ANCHOR_NAMES.has(p) || !TERM_NAMES.has(p);
 
 const rows = [];
 for (const f of files) {
@@ -137,7 +182,7 @@ for (const f of files) {
         text: rtText,
         fields: props,
         fieldTypes: Object.fromEntries(props.map((p) => [p, typeOfProp(rt, p)])),
-        anchors: props.filter((p) => ANCHOR_CANDIDATES.has(p)),
+        anchors: props.filter((p) => isAnchorCandidate(p)),
       };
     }
     rows.push({ name, file: path.relative(ROOT, f).split(path.sep).join('/'), input, product });
@@ -154,38 +199,7 @@ if (process.argv.includes('--json')) {
    *   并且**机检**：「出现在 ≥2 个 [B] 里的字段名」是否都在术语表里。
    *   ★ 只检这一个方向 —— 表里有词暂时没人用是**允许的**（那是"待采用的标准词"），不算腐。
    */
-  const tsf = program.getSourceFile(TERMS_FILE);
-  const terms = [];
-  if (tsf) {
-    for (const st of tsf.statements) {
-      if (!ts.isVariableStatement(st)) continue;
-      for (const d of st.declarationList.declarations) {
-        if (!ts.isIdentifier(d.name) || d.name.text !== 'B_TERMS') continue;
-        const init = d.initializer;
-        if (!init || !ts.isObjectLiteralExpression(init)) continue;
-        for (const p of init.properties) {
-          if (!ts.isPropertyAssignment(p)) continue;
-          const nm = ts.isIdentifier(p.name) || ts.isStringLiteral(p.name) ? p.name.text : null;
-          const obj = p.initializer;
-          if (!nm || !ts.isObjectLiteralExpression(obj)) continue;
-          const get = (key) => {
-            for (const q of obj.properties) {
-              if (!ts.isPropertyAssignment(q)) continue;
-              const k = ts.isIdentifier(q.name) || ts.isStringLiteral(q.name) ? q.name.text : null;
-              if (k !== key) continue;
-              const v = q.initializer;
-              if (ts.isStringLiteral(v) || ts.isNoSubstitutionTemplateLiteral(v)) return v.text;
-              if (v.kind === ts.SyntaxKind.TrueKeyword) return 'true';
-              return v.getText();
-            }
-            return null;
-          };
-          terms.push({ name: nm, kind: get('kind'), type: get('type'), meaning: get('meaning') ?? '', debt: get('debt') === 'true', fix: get('fix') });
-        }
-      }
-    }
-  }
-
+  const terms = TERMS;   // ★ 复用模块级 readTerms()（原先在这里 inline 再读一遍 AST）
   // 共用字段名（入参 ∪ 产物，出现 ≥2 个 [B]）
   const normT = (s) => s.replace(/\s*\|\s*undefined\b/g, '').trim();
   const tally = (getF, getT) => {
@@ -320,6 +334,32 @@ if (process.argv.includes('--json')) {
   console.log(`   入参端：${cov('input', ['project_dir', 'feature', 'files', 'symbols', 'file', 'node_id'])}`);
   console.log('   ⇒ ★ 入参端**没有一个**收 `touched` 这个对象；两端只共享**扁平字段名**（project_dir / feature …）');
   console.log('   ⇒ ★ 也就是说：产物端把作用域塞进 `touched`，入参端却只认平铺的 — 这正是"链要手工拼"的地方。');
+  // ★★ 接力键：词表里 `kind === 'anchor'` 的词在两端各覆盖多少；以及**不在词表**的候选异名。
+  //    ★ 2026-10-05（T54 第一步）：本节的目的是把"该收口的名字"**机械列出来**，
+  //      替代原先那份**手抄的** `ANCHOR_CANDIDATES`（它会腐：里面留着已删家族的 `box_dir`/`brick_dir`/`slim_dir`）。
+  const tally = (get) => {
+    const m = new Map();
+    for (const r of rows) for (const f of get(r) ?? []) m.set(f, (m.get(f) ?? 0) + 1);
+    return m;
+  };
+  const prodNames = tally((r) => r.product.fields);
+  const inNames = tally((r) => r.input.fields);
+  console.log('★★ 接力键（词表 `kind: "anchor"` 的词）两端覆盖：');
+  for (const k of [...ANCHOR_NAMES].sort()) {
+    console.log(`     ${k.padEnd(16)} 入参 ${String(inNames.get(k) ?? 0).padStart(2)} · 产物 ${String(prodNames.get(k) ?? 0).padStart(2)}`);
+  }
+  const odd = (m) => [...m.entries()].filter(([n, c]) => !TERM_NAMES.has(n) && c >= 2).sort((a, b) => b[1] - a[1]);
+  const op = odd(prodNames);
+  const oi = odd(inNames);
+  console.log(`★ 候选异名（**不在词表**、且出现在 ≥2 个 [B]）：产物侧 ${op.length} 个 · 入参侧 ${oi.length} 个`);
+  if (op.length) console.log(`     产物：${op.map(([n, c]) => `${n}×${c}`).join(' · ')}`);
+  if (oi.length) console.log(`     入参：${oi.map(([n, c]) => `${n}×${c}`).join(' · ')}`);
+  console.log('     ⇒ ★ 这些要么**登记进词表**、要么**收口到已有的 anchor**（同义异名 = 判据分叉）');
+  const retiredIn = (m) => [...new Set([...m.keys()].filter((n) => RETIRED_NAMES.has(n)))];
+  console.log(`★ **已退役词**的使用 —— 产物侧：${retiredIn(prodNames).join(' · ') || '（无 ✓）'} ｜ 入参侧：${retiredIn(inNames).join(' · ') || '（无）'}`);
+  console.log('     ⇒ ★ 词表的"退役"多数是**分侧**的（例：`files` 是**产物侧**退役 —— 产物必须用 `written_files`/`read_files`，');
+  console.log('        而**入参侧**"限定本次处理哪几个文件"是正当用法）⇒ 两边分开看，别把入参侧的合法用法读成违规。');
+  console.log('');
   const noAnchor = rows.filter((r) => !r.product.anchors?.length);
   console.log(`★ 产物里**没有任何锚点候选字段**的 [B]：${noAnchor.length}/${rows.length}（下游最难接）`);
   console.log(`     ${noAnchor.map((r) => r.name).join(', ')}`);

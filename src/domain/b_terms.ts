@@ -15,16 +15,32 @@
  *
  * 覆盖范围（为什么是这些词）：**出现在 ≥2 个 [B] 里的字段名**必须有一条定义
  * （只服务 1 个 [B] 的私有字段不约束 —— 实测那占 80%）。
+ *
+ * ★★ **接力键规则**（2026-10-05 立，T54 第一步）—— `kind: 'anchor'` 的词是**链的接口**：
+ *   **上游产物给出什么名字，下游入参就用什么名字。**
+ *   · **产物侧** = `Touched` 的字段；**入参侧** = 工具接受的那几个名字（两者是**同一批名字**）。
+ *   · ★ **判据：不许同义异名**。实测反例（2026-10-05）：
+ *     `get_dsl(query='files')` 产出的每个条目用 **`path`** 指文件，而 `find_references` 的入参叫 **`file`**
+ *     ⇒ 中间必须由**调用方翻译**一次，而**翻译会错** ⇒ 这就是"链接不上"的实体。
+ *   · ★ 单数/复数是**同一族的两种形态**：`file` ↔ `written_files`/`read_files`、
+ *     `symbol` ↔ `symbols`、`node_id` ↔ `nodes`（词表已写明"新写 [B] 一律用复数"）。
+ *   · ★ 量具 `measure_b_contract.mjs` 会**机械列出**「不在本表、但出现在 ≥2 个 [B] 的字段名」
+ *     ⇒ 那就是**候选异名 / 候选接力键**，逐条判"收口"还是"登记"。
  */
 
 export type BTermKind =
-  /** 链的接口：下游 [B] 能拿它当原料（= `Touched` 的字段） */
+  /**
+   * ★★ **链的接口** —— 下游 [B] 能拿它当原料（见文件头「接力键规则」）。
+   *   · **产物侧**：就是 `Touched` 的字段（`feature` / `project_dir` / `written_files` / …）
+   *   · **入参侧**：工具**接受**的这些名字（`project_dir` / `feature` / `file` / `symbol` …）
+   *   ⇒ ★ **两端必须同名**；不许同义异名（实测 `path` vs `file` 就是反例）。
+   */
   | 'anchor'
   /** 回执：给人/agent 读的文本 */
   | 'receipt'
   /** 状态：这次调用成不成、落没落盘 */
   | 'state'
-  /** 上下文：描述"作用在哪"，但不是链的原料 */
+  /** 上下文：描述"作用在哪"，但**不是链的原料**（如 `action` / `query` 这种本工具自己的口径） */
   | 'context';
 
 export interface BTerm {
@@ -208,13 +224,23 @@ export const B_TERMS: Record<string, BTerm> = {
     fix: '★ 现状 `number`（计数）与 `string[]`（列表）混用 ⇒ 统一为列表；计数另立 `*_count`',
   },
 
-  // ── context：描述"作用在哪"，不是链的原料 ───────────────────
-  file: { kind: 'context', type: 'string', meaning: '**单个**文件（仓库相对路径）；多个用 `written_files`/`read_files`' },
+  // ── anchor（续）：**单数形式**的接力键（★ 2026-10-05 T54 第一步从 `context` 改判过来）──
+  //   ★ 改判理由：它们是**链的原料**，不是"上下文" —— `find_references` / `rename_symbols` /
+  //     `move_symbol` / `impact_analysis` 的入参就是 `{file, symbol}`；上游 `get_dsl(files)`
+  //     产出的也是"一个个文件"。原先归 `context` ⇒ **词表自己就没承认它们是链的接口**
+  //     ⇒ 于是没人有义务让两端同名（实测：上游吐 `path`、下游收 `file`）。
+  file: { kind: 'anchor', type: 'string', meaning: '**单个**文件（仓库相对路径）；同一族的复数形式是 `written_files` / `read_files`' },
   files: {
     kind: 'context',
     type: 'string[]',
-    meaning: '★ **已退役**（2026-10-05）：全仓 [B] 已清零，**禁止再新增使用者**',
-    fix: '路径表 → `written_files` / `read_files`；报告数组 → `<领域>_reports`（如 `contract_reports` / `removal_reports`）',
+    meaning:
+      '★ **入参侧**：本次操作**限定在这几个文件**上（输入范围，仓库相对路径）—— 这是**合法**的用法。' +
+      '★ **产物侧**：**已退役**（2026-10-05）—— 产物里表达"改了/读了哪些文件"必须用 `written_files` / `read_files`；' +
+      '**禁止在产物里新增使用者**。',
+    fix:
+      '★ 2026-10-05 更正：原写"全仓 [B] 已清零、禁止再新增使用者"，**那句话只对产物成立** —— ' +
+      '实测入参侧仍有 3 个 [B] 在用（`extract_contracts` / `harvest_closure` / `watch_project_tool`），' +
+      '那是"限定范围"的正当输入，**不退役**。产物侧：路径表 → `written_files` / `read_files`；报告数组 → `<领域>_reports`。',
   },
   project_root: {
     kind: 'context',
@@ -302,8 +328,8 @@ export const B_TERMS: Record<string, BTerm> = {
   scope: { kind: 'context', type: 'string', meaning: '作用范围（本工具自己的枚举）', debt: true, fix: '★ 现状 3 组互不相同的枚举 ⇒ 各领域改名' },
   action: { kind: 'context', type: 'string', meaning: '**面分发参数**：选哪个子动作（属 [C] 层入参，不是领域字段）', debt: true, fix: '保留语义，但**不得**用它当产物的领域字段' },
   query: { kind: 'context', type: 'string', meaning: '查询意图/查询串（本工具自己的口径）', debt: true, fix: '★ 现状 `string` 与 19 个枚举混用 ⇒ 各领域改名' },
-  node_id: { kind: 'context', type: 'string', meaning: '**单个** DSL 节点 id；多个用 `nodes`', debt: true, fix: '新写 [B] 一律用 `nodes: string[]`' },
-  symbol: { kind: 'context', type: 'string', meaning: '**单个**符号 `qualified_name`；多个用 `symbols`', debt: true, fix: '新写 [B] 一律用 `symbols: string[]`' },
+  node_id: { kind: 'anchor', type: 'string', meaning: '**单个** DSL 节点 id；同一族的复数形式是 `nodes`', debt: true, fix: '新写 [B] 一律用 `nodes: string[]`' },
+  symbol: { kind: 'anchor', type: 'string', meaning: '**单个**符号 `qualified_name`；同一族的复数形式是 `symbols`', debt: true, fix: '新写 [B] 一律用 `symbols: string[]`' },
   brick_name: { kind: 'context', type: 'string', meaning: '积木名（与 `brick` 同指时用本词）', debt: true, fix: '与 `brick` 二选一' },
   to: { kind: 'context', type: 'string', meaning: '目标值（新名/新路径）' },
   name: { kind: 'context', type: 'string', meaning: '名称（本工具自己指的那个对象的名字）' },
