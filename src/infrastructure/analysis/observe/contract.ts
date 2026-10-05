@@ -13,6 +13,7 @@
 import fs from 'node:fs';
 import type { TSEvent, ExtraFields } from './probe.js';
 import { matchChainDecl, type TSChainObs } from './chain.js';
+import { observeRulePredicate } from './judge.js';
 
 /** TS 侧 DSL 声明，与 schema definitions.DSLDecl 对齐。 */
 export interface TSDLDecl {
@@ -59,9 +60,6 @@ export interface TSDiffReport {
   chain_broken: number;
 }
 
-/** 违反判定谓词：event → {result, reason}。 */
-export type RulePredicate = (ev: TSEvent) => { result: 'ok' | 'deviation'; reason: string };
-
 /** 单探针观测画像（与 Go ProbeObs 对齐）。 */
 export interface TSProbeObs {
   probe: string;
@@ -74,17 +72,14 @@ export interface TSProbeObs {
 
 /** TS 判定哨兵：design(权威) vs actual(观测) → 三类偏差。 */
 export class TSComparator {
-  private preds = new Map<string, RulePredicate>();
-
-  registerPredicate(rule: string, pred: RulePredicate): this {
-    this.preds.set(rule, pred);
-    return this;
-  }
-
-  registerDefaultPredicates(): this {
-    this.preds.set('design:silent-error-discard', silentErrorDiscardTS);
-    return this;
-  }
+  /**
+   * 谓词来源**唯一**：`judge.ts` 的 `OBSERVE_RULE_TABLE`。
+   * ★ 2026-10-05 拆掉了这里原本的第二个注册表（`private preds` + `registerPredicate` +
+   *   `registerDefaultPredicates`）—— 它只注册 1 条规则、且用的是本文件里第 3 份字面量重复的
+   *   `silentErrorDiscardTS`，而 `judge.ts:110` 的判定链注册的是 3 条。**两处注册表各自维护**，
+   *   意味着"哪些规则可被规则秒判"在两个文件里有两个答案。
+   * ★ 故 `register*` 两个方法一并删除（唯一调用方 `handlers.ts` 已改直构）。
+   */
 
   /** 读 dsl.json（权威设计 DSL）。文件不存在返回 null。 */
   static loadDesign(path: string): TSDesignDSLDoc | null {
@@ -151,7 +146,7 @@ export class TSComparator {
         });
         continue;
       }
-      const pred = this.preds.get(d.rule);
+      const pred = observeRulePredicate(d.rule);
       if (!pred) continue; // 无确定性谓词 → 不臆造违反（交 LLM 复核）
       for (const ev of matched) {
         const { result, reason } = pred(ev);
@@ -209,29 +204,6 @@ export class TSComparator {
     const rank = (k: DeviationKind) => (k === 'unobserved' ? 0 : k === 'undesigned' ? 2 : 1);
     report.deviations.sort((a, b) => rank(a.kind) - rank(b.kind));
     return report;
-  }
-}
-
-/** silent-error-discard 谓词的 TS 实现（与 Go 语义逐条对齐）。 */
-export function silentErrorDiscardTS(ev: TSEvent): { result: 'ok' | 'deviation'; reason: string } {
-  const errStr = ev.fields['err'];
-  if (typeof errStr !== 'string' || errStr === '') {
-    return { result: 'ok', reason: 'err is nil — nothing was discarded' };
-  }
-  const op = typeof ev.fields['op'] === 'string' ? (ev.fields['op'] as string) : '';
-  switch (op) {
-    case 'remove':
-    case 'remove-tmp':
-    case 'cleanup':
-      if (ev.fields['benign'] === true) {
-        return { result: 'ok', reason: 'benign: os.IsNotExist on cleanup — nothing to clean' };
-      }
-      return { result: 'deviation', reason: `cleanup error silently discarded: "${errStr}"` };
-    default: // writefile / save / mkdirall — no error is benign
-      return {
-        result: 'deviation',
-        reason: `non-benign error silently discarded (op=${op || '<none>'}): "${errStr}"`,
-      };
   }
 }
 

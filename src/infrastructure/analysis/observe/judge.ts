@@ -35,7 +35,7 @@ export function silentErrorDiscard(ev: TSEvent): JudgeVerdict {
     case 'remove':
     case 'remove-tmp':
     case 'cleanup':
-      if (ev.fields['benign']) {
+      if (ev.fields['benign'] === true) {
         return { probe: ev.probe, rule: 'design:silent-error-discard', result: 'ok', reason: 'benign: os.IsNotExist on cleanup — nothing to clean', fields: ev.fields };
       }
       return { probe: ev.probe, rule: 'design:silent-error-discard', result: 'deviation', reason: `cleanup error silently discarded: "${errStr}"`, fields: ev.fields };
@@ -101,13 +101,50 @@ export function impactUnplannedSpread(ev: TSEvent): JudgeVerdict {
   return { probe: ev.probe, rule: 'design:impact-unplanned-spread', result: 'ok', reason: `impact within declared preview (${actual}/${expected} files)`, fields: ev.fields };
 }
 
+// ─────────────────────────────────────────────────────────────
+// 规则注册表（**本仓唯一的规则真相源**，2026-10-05 立）
+// ─────────────────────────────────────────────────────────────
+// ★ 为什么要它：此前规则散在**两处**——`judge.ts:110` 的 `rules` 默认参数（3 条）
+//   与 `contract.ts:84` `TSComparator.registerDefaultPredicates` 的实例 map（1 条）。
+//   两处各自维护、各自注册，同一条 `design:silent-error-discard` 还各有一份**字面量重复的谓词**。
+//   ⇒ 本表是唯一的注册点；`TSComparator` 与 `judgeEvent` 都从这里取。
+//
+// ★ 收拢时**采纳 TS 侧的行为**（2026-10-05 用户裁定「留 TS」）：本次只把 TS 两份拷贝里
+//   `benign` 严格性的漂移统一为 Go 的严格 `=== true`，**不动另外两处已裁定的语义分叉**
+//   （TS 跳过链路声明 / 链路探针算已覆盖）—— 那是 P3 的范围。
+
+/** 一条规则的注册项。`label` 供提案审批时生成人读证据用。 */
+export interface ObserveRuleSpec {
+  rule: string;
+  label: string;
+  pred: (ev: TSEvent) => JudgeVerdict;
+}
+
+/** 全部已注册规则（顺序即优先级）。 */
+export const OBSERVE_RULE_TABLE: readonly ObserveRuleSpec[] = [
+  { rule: 'design:silent-error-discard', label: '静默错误丢弃', pred: silentErrorDiscard },
+  { rule: 'design:impact-unplanned-spread', label: '计划外扩散（impact ledger）', pred: impactUnplannedSpread },
+  { rule: 'design:impact-blast-radius', label: '变更影响爆炸半径', pred: impactBlastRadius },
+];
+
+/** 判定链默认顺序（供 `judgeEvent` 用）。 */
+export const DEFAULT_OBSERVE_RULES: ReadonlyArray<(ev: TSEvent) => JudgeVerdict> = OBSERVE_RULE_TABLE.map((r) => r.pred);
+
+/** 按 rule id 取谓词；未注册返回 undefined（P4 的回归门靠这个区分"可规则秒判"与"需 LLM/人工复核"）。 */
+export function observeRulePredicate(rule: string): ((ev: TSEvent) => JudgeVerdict) | undefined {
+  return OBSERVE_RULE_TABLE.find((r) => r.rule === rule)?.pred;
+}
+
+/** 已注册的 rule id 清单。 */
+export const OBSERVE_RULE_IDS: readonly string[] = OBSERVE_RULE_TABLE.map((r) => r.rule);
+
 /**
  * 对单条事件执行全部已注册规则判定，返回首条命中偏差的判定（无偏差则 ok）。
  * 规则顺序即优先级。
  */
 export function judgeEvent(
   ev: TSEvent,
-  rules: Array<(e: TSEvent) => JudgeVerdict> = [silentErrorDiscard, impactUnplannedSpread, impactBlastRadius],
+  rules: Array<(e: TSEvent) => JudgeVerdict> = [...DEFAULT_OBSERVE_RULES],
 ): JudgeVerdict {
   for (const rule of rules) {
     const v = rule(ev);

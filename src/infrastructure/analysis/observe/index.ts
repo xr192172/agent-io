@@ -15,7 +15,7 @@
 export { TSProbeCapture, loadTSEvents } from './probe.js';
 export { setGlobalProbeSink, captureProbe } from './probe.js';
 export type { TSEvent, ExtraFields } from './probe.js';
-export { TSComparator, silentErrorDiscardTS, renderTSDiffReport } from './contract.js';
+export { TSComparator, renderTSDiffReport } from './contract.js';
 export type {
   TSDLDecl,
   TSDesignDSLDoc,
@@ -23,7 +23,6 @@ export type {
   DeviationKind,
   TSDiffReport,
   TSProbeObs,
-  RulePredicate,
 } from './contract.js';
 export { enableObserveFromEnv } from './run_sentinel.js';
 // ★ 2026-09-28 剪枝：原先此处再导出 v2 分级采集 runtime（`tiered` / `trace` / `export_incident`，

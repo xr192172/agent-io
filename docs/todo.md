@@ -888,7 +888,16 @@
       ⇒ ★ **好消息：要做的路由有一半已经存在** —— `go-observe/probe/judge_client.go:126` 已经会
         `POST OBSERVE_JUDGE_URL` → TS `serve.ts:2744` → `judge_service.ts`；只是无 env 时落回本地判定。
         ⇒ 收拢顺序必须是**先让远端成为唯一路径、再删本地那份**（否则中途无判定可用）。
-      ⇒ **P1 → P7 待做**（详见文档第四节）：P1 删 TS 第 3 份 `SilentErrorDiscard`（`contract.ts:216-236`）；
+      ⇒ **P1 ✅ 已落（2026-10-05 本笔）**：删掉 TS 第 3 份 `silentErrorDiscardTS` + **拆掉 `contract.ts` 里那个第二规则注册表**
+        （`private preds` / `registerPredicate` / `registerDefaultPredicates`）⇒ 规则注册**收拢为 `judge.ts` 的
+        `OBSERVE_RULE_TABLE` 一处**，`TSComparator` 改走 `observeRulePredicate(rule)`。
+        ★ 顺带统一了一处已发生的漂移：`benign` 严格性从「真值即算」改为**严格 `=== true`**（与 Go `contract.go:99` 一致）
+          ⇒ 实测行为变化：`benign:"true"`（字符串）/`benign:1`（数字）**从放行变成偏差**。
+        ★ 这张表正是 P4 的 `VerifyRuleRegression` 需要的"与判定同源"的注册点（此前谓词表被锁在实例 map 里外部拿不到，
+          而 Go 侧 `comparator.go:79-80` 注释把"判定与回归门同源"写成了核心不变量）⇒ P4 的硬前置已清。
+        ★ 另记录一处**保留的差异**（非漂移）：空 `op` 的文案 canonical 印 `op=`（`judge.ts:43`），
+          被删的第 3 份曾印 `op=<none>`。`op=` 与 Go `contract.go:104` 的 `%s` 一致 ⇒ 取 `op=`。
+      ⇒ **P2 → P7 待做**（详见文档第四节）：
         P2 让 Go 远端判定唯一化后删 Go 本地判定；P3 收链重建重复 + 裁决两处语义分叉；
         P4 把 `loop`（ledger 折叠 + 提案 + 阈值 0.1/1/2）搬到 TS；P5 裁决三条悬空规则；
         P6 `observe-dsl` 瘦身为只剩插桩（**建议整个删掉**，插桩已有 `go run ./cmd/instrument` 这条路在跑）；

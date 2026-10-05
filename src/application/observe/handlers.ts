@@ -106,7 +106,7 @@ export const observeJudgeHandler = wrap(async (a) => {
   const decls = Array.isArray(a.decls) ? (a.decls as TSDLDecl[]) : undefined;
   if (decls && decls.length > 0) {
     const { chains, dropped } = rebuildChains(norm);
-    const comp = new TSComparator().registerDefaultPredicates();
+    const comp = new TSComparator();
     diff = comp.compare(
       { version: 1, updated_at: new Date().toISOString(), decls },
       TSComparator.aggregate(norm),
