@@ -31,8 +31,19 @@
  */
 import path from 'node:path';
 
-/** 可被 import 直接指向的源码扩展名（按优先级）。 */
-export const IMPORT_EXTS = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs'] as const;
+/**
+ * 可被 import 直接指向的源码扩展名（按优先级）。
+ *
+ * ★ 与 `TS_JS_EXTS`（`source_exts.ts`）的关系：**本集合是其子集** —— 即「TS/JS 家族里
+ *   可被 import 指向的那部分」。**不是另一套同名清单**（过去漏了 `.mts/.cts` 没回填，
+ *   2026-10-05 T36 补齐）。改本表前先看 `TS_JS_EXTS`：家族新增扩展名时须同步评估本表。
+ *
+ * ★ `.mts`/`.cts` **追加在末尾**（非插中间）：现有 6 项的**相对优先级一字不动**，
+ *   只让"原本补不到的现在能补到"。代价（如实记）：当 `./x`（无扩展名）且同目录
+ *   `x.mts` 与 `x.mjs` **同时存在**时 `.mjs` 先命中；今天该歧义**不存在**
+ *   （`.mts` 根本不在候选里）⇒ 选末尾是最小改动。
+ */
+export const IMPORT_EXTS = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.mts', '.cts'] as const;
 
 /** 目录级 import（`./foo` → `./foo/index.ts`）的候选文件名。 */
 export const INDEX_FILES = ['index.ts', 'index.tsx', 'index.js', 'index.jsx'] as const;
@@ -67,7 +78,8 @@ export interface ResolvePathOptions {
  *   import 带 `.js`）等于**基本解析不动**，而它正是 `expandClosure` 无索引回退路径的底座。
  *
  * 顺序即优先级：
- *   `base` 带 import 级扩展名（`.ts/.tsx/.js/.jsx/.mjs/.cjs`）：
+ *   `base` 带 import 级扩展名（判定集合 = `IMPORT_EXTS`，现含 `.mts/.cts` —— T36 已定，
+ *     见 `IMPORT_EXTS` 注释；★ 该判定**不**被 `options.exts` 覆盖，`exts` 只影响补全）：
  *     `base` 原样 → `bare + exts…`（**剥扩展名重试**：NodeNext ESM 源码写 `.js` 指向产物）→ `bare/index…`
  *   否则（无扩展名 / 非 import 级扩展名）：
  *     `exts…` 补全 → `base/index…`
@@ -86,6 +98,10 @@ export function completionCandidates(base: string, options: ResolvePathOptions =
   const exts = options.exts ?? IMPORT_EXTS;
   const indexFiles = options.indexFiles ?? INDEX_FILES;
   const baseExt = path.posix.extname(base);
+  // ★ T36 已定（2026-10-05）：判定集合 = `IMPORT_EXTS`（`.mts/.cts` 已纳入，**不**在 `exts` 里补）。
+  //   曾试过放宽为 `IMPORT_EXTS ∪ exts` —— **否决**：那会让 `exts` 里的一切（`.go/.py`…）翻进
+  //   "剥扩展名重试"，实测 `resolveToFile` 出现**跨语言**同名回退（`util.go` → 命中 `util.ts`）= 新错。
+  //   ⇒ 正确修法是"把 `.mts/.cts` 补进 `IMPORT_EXTS`"，影响面仅这两者（见 `IMPORT_EXTS` 注释）。
   const isImportExt = IMPORT_EXT_SET.has(baseExt);
   const out: string[] = [];
   if (isImportExt) {
