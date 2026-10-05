@@ -1088,3 +1088,43 @@
          另照搬并登记：`mergeLoopDecls` **按键整条替换**（非字段级 merge、冲突无告警）、
          及其**疑似 bug**（当前集同键重复时只有最后一条进索引 ⇒ 前面那些永远不会被覆盖）——
          不修的理由：修它会改变现有 `dsl.json` 的合并结果（行为变更），已在案上登记不静默。
+
+      ✅ **P4 步骤 6 已落（2026-10-05 本笔）**：`RunLoop` 搬到 `infrastructure/analysis/observe/run_loop.ts`
+        （Go `loop.go` 254 行）。**P4 至此全部搬完** —— TS 侧已能独立完成
+        「事件 → 偏差 → 提案」闭环，Go 的 9 条 DSL 子命令（show/history/rollback/seed/propose/
+        proposals/approve/reject/loop）全部可删（P6）。
+        照搬七步：读事件 → 聚合画像 → 加载权威 DSL → 对比偏差 → 4.2 台账折叠 → 4.5 可选 LLM →
+        5 触发判定（0.1/1/2 三阈值）→ 6a 未声明探针补契约 → 6b 累犯模式回流 known-spread。
+        补搬了 `buildProbeFacts`（Go `aggregator.go:91-105`）—— ★ TS 的 `TSProbeObs` **没有 `facts` 字段**，
+        而 `expectFromObs` 依赖它，不补则生成的 expect 会少信息。
+        ★ **与 Go 的三处有意分歧**：
+        ① `SeedDefault()` 的播种副作用**照搬但标注** —— Go `:99` 读 DSL 前会播种，而 `loop.go:8` 自己的头注
+          「绝不触碰权威 dsl.json」**自相矛盾**；播种是 load-bearing（不播种则 load 失败、整个 loop 报错），
+          故照搬并把副作用写明，**不静默**。是否摘出去属独立议题（未决）。
+        ② **LLM 复核改为本地直调**，不再绕一圈 HTTP 回到自己
+          （Go `:126-131` 是 `NewJudgeClient("")` → POST 到 `serve.ts:2744`，未设 env 时**静默降级** ——
+          正是本仓反复出现的假绿灯）。失败仍诚实标 `llmDegraded`、不阻断（照搬降级语义）。
+        ③ 台账路径改由 `analyzeLedger(projectRoot)` 内部走 `impactLedgerFile()` ⇒ Go `dsl_cli.go:450`
+          那个"从 `.agent/observe` 上溯两级"的**裸字面量**彻底消失。
+        ★ **跨语言逐项对拍通过**（同一份 2 事件 + 2 台账条目的夹具，Go 与 TS 全部一致）：
+            event_count=2 bad_lines=0 probes=2
+            probe=fs.writeFile count=1 errs=1 ops=[writefile]   （两边同）
+            ledger total=2 consumed=2 violated=2 rate=1.0000    （两边同）
+            repeat src/a.ts times=2 spread=[src/x.ts src/y.ts] （两边同）
+            event_rate=0.5000 (violated=1/2)                    （两边同）
+        ★ 另补两处守卫（Go 侧拦不住）：
+        · `dev.probe` 为空时**跳过 6a** —— Go 的 `Deviation.Probe` 是裸 `string`，为空会生成
+          `design:observe-` 这种**畸形 rule id**。
+        · 事件流的**坏行数显式记进 `skipReason`**（照搬是不阻断，但也不隐藏）。
+
+      ⚠⚠ **本笔实测撞出：6a「未声明探针自动补契约」是一条死分支，Go 和 TS 都从未工作过**
+        根因链：种子 `silentErrorDiscardDSL()` 的 `probe` 是 **''（全局声明）**
+        ⇒ `contract.ts:146-147` / Go `comparator.go:104`（注释原文"全局声明：匹配所有探针"）的语义
+        ⇒ **任何探针都被算作"已覆盖"** ⇒ `undesigned` 恒为 0 ⇒ 6a 恒空转（阈值/分支/代码都在，但永不产出）。
+        实证：同一条事件流，种子 `probe=''` ⇒ `undesigned=0`；改成 `probe='fs.writeFile'`
+        ⇒ `undesigned=2`（明细 `another.one` / `brand.new`）。
+        ★ 种子的空 probe **语义上是对的**（"在本来会静默丢弃错误的位置"本就是全局陈述）；
+          真问题在比较器：**一条全局声明会抑制掉全部 undesigned 发现**。
+        ⇒ 正确语义应是「没有**显式指名**该探针的声明 ⇒ undesigned」，与全局声明无关。
+        ⇒ **本笔不改**：那会动到判定层（已在 59 工具里验证过的路径），属独立决策。
+          已在 `run_loop.ts` 的 6a 段落就地标注死分支与完整根因链，**不静默**。
