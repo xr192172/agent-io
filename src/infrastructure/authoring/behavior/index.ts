@@ -588,11 +588,100 @@ func normRet(rv reflect.Value) string {
 `;
 }
 
-/** 工具链探测：命令存在且可执行 */
+/** 工具链探测：命令存在且可执行（**不判版本** —— 保持"有/没有"这个判据本身简单）。 */
 function toolAvailable(cmd: string): boolean {
-  const r = spawnSync(cmd, ['--version'], { encoding: 'utf-8', timeout: 15_000, windowsHide: true });
-  return !r.error;
+  return toolchainIssue(cmd, undefined) === null;
 }
+
+/**
+ * 工具链可用性：存在 **且版本够**。
+ *
+ * ★ 2026-10-05 收紧：原先只看"命令存在"。那样会出现一种**最难查的情况** ——
+ *   项目要求 Go 1.22（`go.mod` 的 `go 1.22`）、机器上是 1.20 ⇒ 探测判"可用"
+ *   ⇒ 跑下去给用户一坨编译错误，而真实原因是**版本不够**。
+ *   用户看到编译错误只会去改代码，不会想到"该升 Go"。
+ *   ⇒ 判据仍是"有/没有"这一个布尔（**不引入第三态**），只是把"有"的定义收紧为"够用"。
+ *   两种情况都报"工具链不可用"，只是**文案要说清是没装还是版本不够**。
+ *
+ * @returns null = 可用；否则返回可执行的原因说明
+ */
+function toolchainIssue(cmd: string, minVersion: string | undefined, probeArgs?: string[]): string | null {
+  // ★ Windows 上必须带 shell：Node 不带 shell **找不到 `.cmd`/`.bat`**（scoop/winget/自建 wrapper 都是这种）
+  const shell = process.platform === 'win32';
+  const args = probeArgs ?? TOOLCHAIN_PROBE[cmd] ?? ['--version'];
+  const r = spawnSync(cmd, args, { encoding: 'utf-8', timeout: 15_000, windowsHide: true, shell });
+  const out = `${r.stdout ?? ''}${r.stderr ?? ''}`;
+
+  // ① 存在性：**不靠 `r.error`**。带 shell 时 cmd.exe 本身会成功执行、内层命令失败时
+  //    `r.error` 仍是 null（实测：不存在的命令会走到这里被判成"可用" ⇒ 假绿灯）。
+  //    改为要求"能解析出版本号" —— 只有真工具链才会应答我们用的那个子命令。
+  const got = /(\d+)\.(\d+)/.exec(out);
+  if (!got) {
+    // ★ **两处刻意不按文案判"没装"**，因为文案在这台机器上不可靠：
+    //   ① Windows 用 OEM 代码页输出**本地化**消息，Node 按 UTF-8 解码成乱码
+    //      （实测 `no-such-tool-xyz` 的"不是内部或外部命令"解出来是一片乱码）
+    //      ⇒ 按中/英文案匹配会**静默失效**（我先写了正则，测出来才发现不匹配）。
+    //   ② 各语言"没装"的措辞本身就不同。
+    //   改用**结构性事实**。这也是为什么上面要有 `TOOLCHAIN_PROBE` 表：
+    //   配对了子命令后，真工具链必然退出 0（实测 `go version`→0、`node --version`→0），找不到则退出 1。
+    if (r.error || r.status !== 0) return '未安装';
+    // 退出码 0 却认不出版本 ⇒ 工具在、但没按我们问的方式应答 ⇒ **仍不判为可用**（宁可误报不可用）
+    return '已找到但认不出版本';
+  }
+  if (!minVersion) return null;
+  const [ma, mi] = minVersion.split('.').map((n) => Number(n) || 0);
+  const [ga, gi] = [Number(got[1]), Number(got[2])];
+  if (ga > ma || (ga === ma && gi >= mi)) return null;
+  return `版本 ${got[1]}.${got[2]}，低于需要的 ${minVersion}`;
+}
+
+/**
+ * 「没有对应工具链」的可执行提示（2026-10-05）。
+ *
+ * ★ 形态**刻意照抄** `infrastructure/parse/lang_hint.ts` 的"可执行提示"四要件：
+ *   ① 缺哪个语言的哪个能力 ② 装什么 ③ 照哪份清单补 ④ 现场事实
+ *   **不新增任何持久状态** —— 与 tree-sitter 缺失提示同一种形态（无状态、按次判定：
+ *   对上了就不报）。★ 这一点是 2026-10-05 讨论的结论：曾提议过做
+ *   `available/degraded/unavailable` 三态以便"度量缺口"，**被否** ——
+ *   那要为每个工具的结果类型、每个调用方、每份报告都加字段，
+ *   而产出的数字没人要；**这是"能报"被升级成"要记账"的典型反面案例**。
+ *
+ * @param lang     语言 id（如 `go`）
+ * @param reason   `toolchainIssue` 的返回值；`null` 表示可用（本函数不处理）
+ * @param install  该语言的安装指引（一句话，含官方渠道）
+ */
+export function missingToolchainHint(lang: string, reason: string, install: string): string {
+  return (
+    `此工具没有 ${lang} 对应的**工具链**（${reason}）⇒ 无法运行 ${lang} 行为基线。\n` +
+    `  装什么：${install}\n` +
+    `  照哪份清单补：docs/adding-a-language.md §2.10（behavior_baseline 的 harness 与工具链）\n` +
+    `  ★ 这不是"${lang} 门没实现"—— 门实现了，缺的是这台机器上的 ${lang} 工具链。`
+  );
+}
+
+/**
+ * 各语言的**探测子命令**与版本解析。
+ * ★ 为什么要按语言给不同 args：`--version` 并非 universally supported ——
+ *   实测真 `go --version` **退出码 2**（Go 只有 `go version`），若拿退出码判存在性就会误判。
+ * ★ 与 `TOOLCHAIN_INSTALL` 并列单点维护，避免每个 harness 各写一遍。
+ */
+const TOOLCHAIN_PROBE: Record<string, string[]> = {
+  go: ['version'],        // go version go1.22.0 linux/amd64
+  java: ['-version'],     // javac 21.0.1
+  csharp: ['--version'],   // 8.0.100
+  python: ['--version'],   // Python 3.11.7
+  node: ['--version'],     // v20.11.0
+  c: ['--version'],        // gcc (GCC) 13.2.0
+};
+
+/** 各语言的工具链安装指引（单点维护，避免每个 harness 各写一遍）。 */
+const TOOLCHAIN_INSTALL: Record<string, string> = {
+  go: 'https://go.dev/dl/ （或 `mise use go@latest`；已有项目请尊重其 go.mod 声明的版本）',
+  python: 'https://docs.python.org/3/using/windows.html ｜ `uv python install`（PEP 723 脚本可零安装运行）',
+  node: '已随本仓运行（node）；若缺：https://nodejs.org/ ｜ `mise use node@lts`',
+  java: 'https://adoptium.net/ （Temurin JDK）｜ `mise use java@lts`',
+  csharp: 'https://dotnet.microsoft.com/download ｜ `mise use dotnet@lts`',
+};
 
 /** Go：临时模块 + 目标文件(改写为 package x) + 反射 main；`go run .` */
 function runGoHarness(spec: BehaviorSpec): BehaviorRun {
@@ -604,8 +693,9 @@ function runGoHarness(spec: BehaviorSpec): BehaviorRun {
     /* 文件缺失 */
   }
   const hash = crypto.createHash('sha256').update(content).digest('hex').slice(0, 12);
-  if (!toolAvailable('go')) {
-    return { file_abs: targetAbs, file_hash: hash, source: '', stdout: '', results: [], error: 'go 工具链不可用（未安装 go），无法运行 Go 行为基线' };
+  const goIssue = toolchainIssue('go', '1.21');
+  if (goIssue) {
+    return { file_abs: targetAbs, file_hash: hash, source: '', stdout: '', results: [], error: missingToolchainHint('go', goIssue, TOOLCHAIN_INSTALL.go!) };
   }
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dc-beh-go-'));
   try {
@@ -741,8 +831,9 @@ function runJavaHarness(spec: BehaviorSpec): BehaviorRun {
     /* 文件缺失 */
   }
   const hash = crypto.createHash('sha256').update(content).digest('hex').slice(0, 12);
-  if (!toolAvailable('javac')) {
-    return { file_abs: targetAbs, file_hash: hash, source: '', stdout: '', results: [], error: 'javac/java 工具链不可用，无法运行 Java 行为基线' };
+  const jIssue = toolchainIssue('java', '1.8');
+  if (jIssue) {
+    return { file_abs: targetAbs, file_hash: hash, source: '', stdout: '', results: [], error: missingToolchainHint('java', jIssue, TOOLCHAIN_INSTALL.java!) };
   }
   const className = path.basename(targetAbs).replace(/\.java$/i, '');
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dc-beh-java-'));
@@ -830,8 +921,9 @@ function runCsHarness(spec: BehaviorSpec): BehaviorRun {
   let content = '';
   try { content = fs.readFileSync(targetAbs, 'utf-8'); } catch { /* 文件缺失 */ }
   const hash = crypto.createHash('sha256').update(content).digest('hex').slice(0, 12);
-  if (!toolAvailable('dotnet')) {
-    return { file_abs: targetAbs, file_hash: hash, source: '', stdout: '', results: [], error: 'dotnet 工具链不可用，无法运行 C# 行为基线' };
+  const csIssue = toolchainIssue('csharp', '6.0');
+  if (csIssue) {
+    return { file_abs: targetAbs, file_hash: hash, source: '', stdout: '', results: [], error: missingToolchainHint('csharp', csIssue, TOOLCHAIN_INSTALL.csharp!) };
   }
   const className = path.basename(targetAbs).replace(/\.cs$/i, '') || 'Target';
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dc-beh-cs-'));
@@ -918,7 +1010,7 @@ function runCHarness(spec: BehaviorSpec): BehaviorRun {
   const hash = crypto.createHash('sha256').update(content).digest('hex').slice(0, 12);
   const cc = toolAvailable('cc') ? 'cc' : toolAvailable('gcc') ? 'gcc' : null;
   if (!cc) {
-    return { file_abs: targetAbs, file_hash: hash, source: '', stdout: '', results: [], error: 'cc/gcc 工具链不可用，无法运行 C 行为基线' };
+    return { file_abs: targetAbs, file_hash: hash, source: '', stdout: '', results: [], error: missingToolchainHint('c', cc === null ? '未安装' : '不可用', 'cc / gcc（Linux: build-essential；macOS: xcode-select --install；Windows: MSYS2 或 mingw-w64）') };
   }
   const paramTypes = cParamTypes(content, spec.function);
   if (!paramTypes.length) {
