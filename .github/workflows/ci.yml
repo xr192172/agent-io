@@ -94,5 +94,12 @@ jobs:
           #   否则 setup-go 默认去找 go.sum、找不到就让本步骤失败。
           cache: false
       - run: npm ci
+      # ★ 必须先 build：`mcp_scan` 那道门要读 `dist/src/presentation/cli/cli.js`
+      #   （它故意走 CLI 入口而不是直接调 `invokeTool`，因为 CLI 不做 zod 校验 ——
+      #     守卫有没有接上，只有走 CLI 入口才看得见 ⇒ 这个 dist 依赖是**设计如此**，不是将就）。
+      #   ⚠ 我第一版 verify job 只跑 `npm ci` 就直接 verify ⇒ CI 上没有 dist ⇒ 那道门必然失败。
+      #   **本地跑不出来**：本地一路都在 build，dist 一直在。
+      - name: 构建（mcp_scan 需要 dist/）
+        run: npm run build
       - name: 总门（ts 类型 / 59 工具签名 / b 项契约 / Go 编译 / Go vet）
         run: npm run verify
