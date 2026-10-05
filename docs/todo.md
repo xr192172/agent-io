@@ -543,20 +543,6 @@
         加上 T17 新接的 `check_monolith` / `derive_algorithm` / `derive_chain` / `derive_split`）。
       ★ 这是**"要么全改、要么不改"**的那种改动 —— **改一半 = 同一件事两套口径**（本仓头号病根）。
 
-- [ ] **T36 ★ `completionCandidates` 的「是否已带 import 级扩展名」判定不被 `exts` 覆盖（2026-10-04 T13 时发现）**
-      *(核实：T13 实测 —— 显式 `import './mod.mts'` / `'./mod.cts'`：**改前 null、改后仍 null**。)*
-      ⇒ **根因**：`infrastructure/parse/import_resolve.ts` 的 `completionCandidates` 用**模块级常量
-        `IMPORT_EXT_SET`**（= `IMPORT_EXTS`，**不含 `.mts/.cts`**）判断"该说明符是否**已带** import 级扩展名"，
-        而这个判断**不被 `exts` 参数覆盖** ⇒ `.mts/.cts` 显式说明符走"无扩展名补全"分支
-        ⇒ 生成 `mod.mts.ts` 之类 ⇒ **恒 null**。
-      ⇒ **影响面有限**：NodeNext 真实写法是 `import './mod.mjs'`（指向 `.mts`）—— **这条能解析**
-        （`.mjs` ∈ `IMPORT_EXT_SET`，剥扩展名后按 `exts` 补全含 `.mts`）。**只有直接写 `.mts/.cts` 才漏。**
-      ⇒ ★ **该修**：令 ext 判定集合 = `IMPORT_EXTS ∪ options.exts`。
-      ⇒ ★★ **为什么不能"影响面小就算了"**：T13 已让 `exts` 能影响**补全**，
-        却**不能影响「是否已带扩展名」的判定** ⇒ **同一个参数只生效一半 = 判据分叉**。
-        **半修比不修更坏**（它看起来像修好了）。
-      ★ 与 **T13** 同源（同一件事的两个面）：T13 已做（wrapper 收 `exts` + 相对性门），本条是剩下的那一半。
-
 - [ ] **T40 ★★ 三处「隐藏前置」没写进任何工具描述（独立体检 2026-10-05，用户要求"从头逐个测"）**
       *(核实：体检小队用 `AGENT_IO_HOME` 隔离 + 临时项目 `C:/tmp/...` **逐个真调** 59 工具后报告；
        我复核了第 3 条（`server_registry.ts:301` 逐字）。)*
@@ -603,17 +589,6 @@
         **实验 2** 只挑一对一语言（TS↔Python），用 napi-rs / PyO3 做"同一份契约 → 两端绑定"，**判据=不写一行 glue**。
       ⇒ ★ **未核实项**（文档 §10 已列）：WASM CM 的真实成熟度（未查各语言支持矩阵）· uniffi/napi 的许可证
         （若 adopt，按 `oss-prior-art-first` §3.5 必须先看许可）· "⑤ 无通用解"是判断而非查到的结论（**实验 1 可证伪它**）。
-
-- [ ] **T44 ★ 清掉「拼装区黑箱折叠」这条死路（生产者已删 ⇒ 代码在但永不触发）**
-      *(核实：2026-10-05 —— 查 `readAssemblyBricks` 的真 import 与调用点。)*
-      ⇒ `src/infrastructure/graph/import_project.ts` 的 `readAssemblyBricks()`（读拼装区 `assembly.json`）
-        + 它的唯一调用点（`import_project.ts:1113` 的 `brickFolds`）+ `derive_mind_map.ts` 里对应的
-        「积木折叠 / 黑盒卡片」分支 + `BrickFoldInfo` 类型 + `BrickManifest['aggregate']` 依赖。
-      ⇒ **为什么是死路**：`assembly.json` 的**生产者是 `assemble_bricks`**，已在 `75e66d0` 删除
-        ⇒ 该文件永不出现 ⇒ `readAssemblyBricks` **恒返回 `[]`** ⇒ 整条分支是死代码。
-      ⇒ **判据**：`grep -rn "readAssemblyBricks\|BrickFoldInfo\|assembly\.json" src` 应只剩删除后的零引用；
-        `tsc` 0；`npm run build` 0；`npm run structure:gap` 三态仍全 0。
-      ⇒ ★ 与 **T41**（报错口吻）不同族：这是**死路清尾**，属"删族"的尾巴（见 `dc-remove-tool` §一）。
 
 - [ ] **T47 ★ 「自定位工具」的 `touched.project_dir` 可能是 cwd（口径待定，2026-10-05）**
       *(核实：`index_integrity --json '{}'` 实测 `"touched":{"project_dir":"D:\\project_develop\\design-canvas"}`
