@@ -3,10 +3,12 @@
  *
  * ★★ 为什么需要它（2026-10-05 实测）：
  *   `Touched`（产物端的锚点契约）**统一过、也是活的** —— 各键都有人产
- *   （`feature 21/31 · project_dir 22/31 · written_files 19/31 · symbols 8/31 · nodes 10/31`
- *    —— ★ `read_files` 已于 2026-10-05 撤出，详见下方注释），
- *   而且**链在数据上已经通了**：实测 `find_references.touched` 能**零字段名翻译**地
- *   构造出 `rename_symbols` 的入参，并跑通。
+ *   （`feature 19/31 · project_dir 21/31 · written_files 8/31 · symbols 4/31 · nodes 3/31 · file 1/31`
+ *    —— ★ `read_files` 已于 2026-10-05 撤出、`definition_file` 同日改名为 `file`，详见下方注释；
+ *    ★★ 这组数字 2026-10-05 **改过口径**：旧版量具按**裸词**扫函数体 ⇒ 把注释/局部变量也算进去
+ *      （影子），如 `written_files` 报 19 而真实 8；现在的口径是**字段访问 / 属性键**，读数可信），
+ *   而且**链在数据上已经通了**：实测 `find_references.touched`（含 `file` / `symbols`）能**零字段名翻译**地
+ *   构造出 `rename_symbols` 的入参并跑通（2026-10-05 真跑 ⇒ 见 `CHAIN_EDGES` 里那条 `verified`）。
  *   ★ **但那个接法只活在"那一次对话"里** —— 没有任何东西**承载**它 ⇒
  *   每一次都得由调用方（人或 LLM）**自己回忆字段名、自己挑元素** ⇒ **这正是会出错的地方**。
  *   ⇒ 本表把它变成**数据**：`上游 → touched 的哪个键 → 下游入参的哪个位置`。
@@ -97,12 +99,32 @@ export const CHAIN_EDGES: readonly ChainEdge[] = [
   //      （`b_terms.ts:95` 的类型就是 `string[]`，没写"第 0 个是定义"）。
   //      ⇒ 顺序一变就**静默接错** ⇒ 这正是"把偶然当契约"。
   //
-  //   ★ 正确的锚点应当是**单数、且只在真有定义时给**：见下方 `CHAIN_EDGES_PENDING` 里的
-  //      `definition_file` 一条 —— 那才是"无条件"能宣称的东西。
+  //   ★ 正确的锚点应当是**单数、且只在真有定义时给** ⇒ 那才是"无条件"能宣称的东西。
+  //     2026-10-05 已落地并按此**真跑**（见下面那条 `verified` 边）。
   //
   //   ★★ 2026-10-05 续（T56 ④-1）：`read_files` **字段本身已从 `Touched` 撤出**（零消费者）。
   //      ⇒ 上面这些"从 `read_files` 接"的讨论**从此是历史记录**（它不再出现在任何产物里）；
   //        它原先的定位应是"**剪贴板 / 变量**"，不是"链的接口"。
+
+  // ── ★★ 2026-10-05 真跑通的第一条**对象类**边（原挂 `CHAIN_EDGES_PENDING`，现升级 `verified`）──
+  //   夹具：`$TEMP/agentio_chain_probe/`（2 个 TS 文件；不进仓，用完即删）
+  //   ① `find_references {project_dir, file:"src/a.ts", symbol:"dupName"}`
+  //      ⇒ `touched = {project_dir, symbols:["dupName"], file:"src/a.ts"}`   ← ★ 字段名就是 `file`
+  //   ② 用它 `touched.file` + `touched.symbols[0]` **零字段名翻译**地构造
+  //      `rename_symbols {project_dir, renames:[{file, symbol, to:"renamedDup"}]}` ⇒ **跑通**
+  //      （落盘 2 个文件：定义 + import + 用法全改；下游 `touched.written_files` 亦照给）
+  {
+    from: 'find_references',
+    fromKey: 'file',
+    to: 'rename_symbols',
+    toPath: 'renames[].file',
+    cardinality: 'single',
+    evidence: 'verified',
+    note:
+      '★ 真跑（2026-10-05）：`touched.file`（单数、只在真有定义时给）→ `renames[].file` **逐字同名、零翻译**；' +
+      '`touched.symbols[0]` → `renames[].symbol` 同理。★ 前提：`definition` 只在 mode=symbol 成功出口赋值 ⇒ ' +
+      '`mode=field` 下 `file` **整项省略**（别当它总有）。',
+  },
 ];
 
 /**
@@ -110,18 +132,8 @@ export const CHAIN_EDGES: readonly ChainEdge[] = [
  * ★ 单独一张表 —— 让"没验"这件事**在读数里看得见**，而不是混进 `CHAIN_EDGES` 冒充已验证。
  */
 export const CHAIN_EDGES_PENDING: readonly ChainEdge[] = [
-  {
-    from: 'find_references',
-    fromKey: 'definition_file',
-    to: 'rename_symbols',
-    toPath: 'renames[].file',
-    cardinality: 'single',
-    evidence: 'pending',
-    note:
-      '★ 这是**补上正确锚点后**的链第一环（2026-10-05）：`definition_file` 是**单数、只在真有定义时给** ⇒ 可无条件宣称。' +
-      '证据：`definition` 只在 mode=symbol 成功出口赋值；`mode=field` 真跑确认整项省略。' +
-      '★ 但仍**不是零字段名翻译**（`definition_file` ≠ `file`）；要真零翻译得连下游 locator 一起改语义名 —— 未定。',
-  },
+  // ★ 2026-10-05：原第一条（`find_references.touched.file → rename_symbols.renames[].file`）**已真跑并升级**
+  //   进上面的 `CHAIN_EDGES`（`evidence: 'verified'`）⇒ 已从本表移出。
   {
     from: 'rename_symbols',
     fromKey: 'written_files',

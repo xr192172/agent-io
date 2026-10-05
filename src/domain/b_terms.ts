@@ -19,11 +19,16 @@
  * ★★ **接力键规则**（2026-10-05 立，T54 第一步）—— `kind: 'anchor'` 的词是**链的接口**：
  *   **上游产物给出什么名字，下游入参就用什么名字。**
  *   · **产物侧** = `Touched` 的字段；**入参侧** = 工具接受的那几个名字（两者是**同一批名字**）。
- *   · ★ **判据：不许同义异名**。实测反例（2026-10-05）：
- *     `get_dsl(query='files')` 产出的每个条目用 **`path`** 指文件，而 `find_references` 的入参叫 **`file`**
- *     ⇒ 中间必须由**调用方翻译**一次，而**翻译会错** ⇒ 这就是"链接不上"的实体。
- *   · ★ 单数/复数是**同一族的两种形态**：`file` ↔ `written_files`、
- *     `symbol` ↔ `symbols`、`node_id` ↔ `nodes`（词表已写明"新写 [B] 一律用复数"）。
+ *   · ★ **判据：不许同义异名**。★ 但**反过来也成立**：**"看起来不一致"可能根本不是同一件事**。
+ *     ★★ 2026-10-05 复核**推翻了本表原先举的那个反例**（原写"`get_dsl(files)` 用 `path`、下游用 `file` ⇒ 同义异名"）：
+ *       `path` 是**事实字段**（`SemanticFile.path` = 相对路径，且被 `schema/design_dsl.schema.json` 的 `required` 钉死）；
+ *       `file` 是**定位器**（`find_references` 入参注释明文"**绝对路径**；或相对 project_dir/cwd"）
+ *       ⇒ **不是同义异名，是两类东西**；硬对齐名字 = 把"事实字段"与"定位器"搅成一个名字
+ *       （本仓头号病根的**反方向**：不是同名不同义，是**不同义被误当同名**）。
+ *       ⇒ 要收口就收**同类**：`file`（下游定位器）↔ `Touched.file`（产物侧同一件事）—— 已于同日收口。
+ *   · ★ 单数/复数是**同一族的两种形态**：`symbol` ↔ `symbols`、`node_id` ↔ `nodes`。
+ *     ★ 而 **`file` 是通用单数定位器** —— `written_files`（写过的）/ `read_files`（读过的，已退役）虽与之同族，
+ *       但各自带**加工语义**，**不等于** `file`。
  *   · ★ 量具 `measure_b_contract.mjs` 会**机械列出**「不在本表、但出现在 ≥2 个 [B] 的字段名」
  *     ⇒ 那就是**候选异名 / 候选接力键**，逐条判"收口"还是"登记"。
  */
@@ -105,17 +110,22 @@ export interface Touched {
   /**
    * ★★ **本次操作的那个对象所在的文件** —— 单数，**只在真有"定义文件"时给**（省略 = 没有）。
    *
-   * ★ 为什么要它（2026-10-05 实测教训）：`find_references` 的产物既有 `read_files`（**读了哪些**，集合·无序）
-   *   又有"符号定义在哪个文件"（`data.definition.file`）—— 二者**不是一回事**。
+   * ★ 名字取 **`file`**（= 入参侧锚点：`find_references` 的入参就叫 `file`）⇒ 上游给 `touched.file`、
+   *   下游收 `renames[].file`，**零字段名翻译**。
+   *   ★ 2026-10-05 改名记录：本字段原先叫 `definition_file`（当日新加、1 产者 0 消费者），
+   *     为"出口名 = 入口名"改为 `file`；旧名**已作废，不再使用**。
+   *
+   * ★ 为什么要单立一栏（2026-10-05 实测教训）：`find_references` 的产物既有"我读了哪些"（当时的 `read_files`，
+   *   集合·无序）又有"符号定义在哪个文件"（`data.definition.file`）—— 二者**不是一回事**。
    *   我曾把 `read_files[0]` 当成"定义文件"来接链，**真跑证伪**：
-   *   `mode=field` 下 `read_files[0]` 是**纯消费文件**（声明在另一个文件里），而 `definition` **整项省略**。
+   *   `mode=field` 下它是**纯消费文件**（声明在另一个文件里），而 `definition` **整项省略**。
    *   ⇒ `read_files[0]` 排首位只靠"某句 `add` 写在前面 + Set 插入序"，**没有任何类型/测试保证**。
-   *   ★ 而 `definition_file` 不同：**它只在真有定义时出现** ⇒ 它的存在本身就是断言 ⇒ **可无条件宣称**。
-   * ★ 与（已撤出的）`read_files` 的分工：`read_files` = "我读了哪些"（凭据，给人/审计）——
-   *   ★ 它**已于 2026-10-05 从 `Touched` 撤出**（改判为"剪贴板"，不进链的接口）；
-   *   `definition_file` = "**主语**在哪个文件"（给下游当定位入参），★ **留** —— 它是**单数定位锚点**，不是凭据。
+   *   ★ 本栏不同：**只在真有定义时出现**（`definition` 只在 `mode=symbol` 成功出口赋值）⇒
+   *     **它的"存在"本身就是断言** ⇒ **可无条件宣称**。★ `mode=field` 下整项省略。
+   * ★ 与已撤出的 `read_files` 的分工：`read_files` = "我读了哪些"（凭据，给人/审计）—— ★ 已于 2026-10-05
+   *   从 `Touched` 撤出（改判为"剪贴板"，不进链的接口）；本字段 = "**主语**在哪个文件"（给下游当定位入参）。
    */
-  definition_file?: string;
+  file?: string;
 }
 
 /**
@@ -205,17 +215,8 @@ export const B_TERMS: Record<string, BTerm> = {
     debt: true,
     fix: '新词，尚无使用者；与旧 `node_id: string`（单个）并存期间禁止混用',
   },
-  definition_file: {
-    kind: 'anchor',
-    type: 'string',
-    meaning:
-      '**本次操作的那个对象所在的文件**（仓库相对路径，`/` 分隔）。★ 与（已撤出的）`read_files` **不是一回事**：' +
-      '`read_files` 是"我读了哪些"（集合、无序、凭据）；本词是"**主语**在哪个文件"（单数、定位）。' +
-      '★ **只在真有"定义文件"时给，省略 = 没有** ⇒ 它的"存在"本身就是断言，可无条件宣称。' +
-      '★ 反例（2026-10-05 真跑）：拿 `read_files[0]` 当定义文件是**错的** —— `mode=field` 下它是纯消费文件。',
-    debt: true,
-    fix: '新词，首个采用者 = `find_references`（从产物里已有的 `data.definition.file` 补进 `touched`）',
-  },
+  // ★ 2026-10-05：原 `definition_file` 词条**已删** —— 该字段（当日新加、1 产者 0 消费者）为「出口名 = 入口名」
+  //   改名为 `file`（词条见本表下方 anchor 续段），见 `Touched.file` 的注释；**旧名作废**，不留会误导的别名。
 
   // ── receipt ────────────────────────────────────────────────
   message: { kind: 'receipt', type: 'string', meaning: '一行人读摘要。★ 不是数据：下游禁止从它解析' },
@@ -256,10 +257,16 @@ export const B_TERMS: Record<string, BTerm> = {
 
   // ── anchor（续）：**单数形式**的接力键（★ 2026-10-05 T54 第一步从 `context` 改判过来）──
   //   ★ 改判理由：它们是**链的原料**，不是"上下文" —— `find_references` / `rename_symbols` /
-  //     `move_symbol` / `impact_analysis` 的入参就是 `{file, symbol}`；上游 `get_dsl(files)`
-  //     产出的也是"一个个文件"。原先归 `context` ⇒ **词表自己就没承认它们是链的接口**
-  //     ⇒ 于是没人有义务让两端同名（实测：上游吐 `path`、下游收 `file`）。
-  file: { kind: 'anchor', type: 'string', meaning: '**单个**文件（仓库相对路径）；同一族的复数形式是 `written_files`' },
+  //     `move_symbol` / `impact_analysis` 的入参就是 `{file, symbol}`。
+  //   ★★ 2026-10-05 更正：原写"上游 `get_dsl(files)` 吐 `path`、下游收 `file` ⇒ 同义异名" ——
+  //     经复核那是**两类东西**（`path` = 事实字段、`file` = 定位器，详见文件头「接力键规则」）⇒ 该说法已撤。
+  file: {
+    kind: 'anchor',
+    type: 'string',
+    meaning:
+      '**通用单数定位器**：一个文件（仓库相对路径）。★ 产物侧的同一件事见 `Touched.file`（本次操作的那个对象所在的文件）；' +
+      '★ 与 `written_files`（**写过的**）/ `read_files`（**读过的**，已退役）同族但**不同义** —— 那两个各带加工语义。',
+  },
   files: {
     kind: 'context',
     type: 'string[]',

@@ -139,7 +139,9 @@ G8 行为快照 `UPDATE_TOOL_BEHAVIOR=1` **并记账**。
 `read_files` 由 `kind: 'anchor'` **改判为 `context` 并标"已退役（产物侧）"**。
 原 5 个产者（`find_references` / `extract_contracts` / `reconcile_effects` / `reconcile_chain` /
 `harvest_decisions`）各自那段聚合**一并删除**（不留死代码）。`Touched` 现存字段：
-`feature` / `project_dir` / `written_files` / `symbols` / `nodes` / `definition_file`。
+`feature` / `project_dir` / `written_files` / `symbols` / `nodes` / `file`
+（★ 末项 2026-10-05 由 `definition_file` **改名**为 `file` —— 目的：让 `touched.file` 与下游入参
+`rename_symbols.renames[].file` **逐字同名、零字段名翻译**；该边已真跑并升级 `verified`）。
 
 **为什么**（用户 2026-10-05 的两类判据）：
 

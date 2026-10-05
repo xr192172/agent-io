@@ -31,6 +31,7 @@ import { harvestDecisions } from './harvest/harvest_decisions.js';
 import { manageFeature } from './design/lifecycle/manage_feature.js';
 import { observeTrace } from './observe/capture/observe_trace.js';
 import { queryFeature } from './meta/explore/query_feature.js';
+import { fileFacts } from '../infrastructure/index/file_facts.js';
 import { validateReason } from './observe/reconcile/reason_validator.js';
 import type { ReasonEvidenceRef } from './observe/reconcile/reason_validator.js';
 import { reconcileChain } from './observe/reconcile/reconcile_chain.js';
@@ -79,6 +80,50 @@ export const editDslHandler = wrap(async (a) => {
       if (f.path) entityIds.push(f.path);
     }
   }
+  // ── ★★ T20 第 (4) 步（2026-10-05）：写「代码是什么」的断言前，必须**现取**该文件的事实 ──
+  //   为什么：DSL 里的 `actual_apis` / `actual_deps` 镜像**已移除**（事实权威只剩 `cache.db`）
+  //   ⇒ 那改 `semantic.files`（`path` / `responsibility` / `expected_apis`）就是在**写"代码是什么"的断言**
+  //     ⇒ 必须先去读权威（`fileFacts`）；否则就是**凭想象写设计**（用户 2026-10-01：「编辑时强制读双编」）。
+  //   触发面（**只有这两类**；逐条核过 `update_feature.ts` 的 `switch (op.type)`）：
+  //     · `type=file`（增/改/删文件条目）· `type=api`（改 `file.expected_apis`）
+  //   免触发（**逐条说清"为什么它不算"**）：`type=status` / `binding`（**流程态**，不断言代码）、
+  //     `type=snapshot op=rollback`（**整份恢复**，没有"目标文件"可归因）、
+  //     node / edge / annotation / approval / layout / simulation（本就不碰 `semantic.files`）。
+  //   ★ 不兜底：DSL **有** `source_root`（= 有代码权威可读）却取不到事实 ⇒ **响亮抛**；
+  //     DSL **没有** `source_root`（纯设计 / 新建 feature，代码侧还不存在）⇒ 这条**不适用**（没有权威可读）。
+  //   ★ 与 `weight` 无关：routine 可以跳 L4 的"为什么改"回溯，但**跳不过**"改文件断言前先现取"。
+  const FILE_ASSERT_OPS = new Set(['file', 'api']);
+  const ops =
+    (a.operations as Array<{ op?: string; type?: string; id?: string; data?: Record<string, unknown> }> | undefined) ??
+    [];
+  const sourceRoot = dsl?.source_root;
+  const normRef = (s: string): string => s.replace(/\\/g, '/').replace(/^\.\//, '');
+  /** ★「现取」= 真的从 `cache.db` 把这个文件的事实取到了（`matched_path` 非空） */
+  const factsOf = (rel: string) => fileFacts(String(sourceRoot), rel, a.feature as string | undefined);
+  const targetFiles: string[] = [];
+  for (const op of ops) {
+    if (!FILE_ASSERT_OPS.has(String(op.type ?? ''))) continue;
+    const byId = op.id ? dsl?.semantic?.files?.find((f) => f.id === op.id)?.path : undefined;
+    const byData = typeof op.data?.['path'] === 'string' ? String(op.data['path']) : undefined;
+    const p = byId ?? byData;
+    if (p && !targetFiles.includes(p)) targetFiles.push(p);
+  }
+  if (sourceRoot && targetFiles.length > 0) {
+    const misses = targetFiles.filter((p) => {
+      const seen = factsOf(p).matched_path !== null;                              // 现取到事实
+      const claimed = evidence.some((ev) => normRef(String(ev.ref)) === normRef(p)); // 在 evidence 里声明
+      return !seen || !claimed;
+    });
+    if (misses.length > 0) {
+      throw new Error(
+        `改 semantic.files 前必须**现取**该文件的事实（T20 第 (4) 步）：${misses.join(' / ')} 缺「现取到事实 + 在 evidence 里声明」。` +
+          `怎么做：先读它的事实（get_dsl(query:'file', file_id:…) 或 fileFacts(root, '${misses[0]}')），` +
+          `再把该文件的**仓库相对路径**作为 evidence 的一条 ref 传进来（例：evidence=[{type:'node', ref:'${misses[0]}'}]）。` +
+          `★ 为什么：DSL 已不存事实镜像（actual_apis / actual_deps 已移除）⇒ 事实只能**现取**。`,
+      );
+    }
+  }
+
   // L4 证据回溯：源 = **observe 线真实录制的事件**（JSONL，`observe_instrument` 的探针落盘，
   // 候选项与 `observe_trace` 同源）。★ 2026-10-01：原先读 `<live_dir>/<feature>.trace.json`，
   // 而那份文件全仓只有一个产者 —— 已被撤掉的 `tools/trace_reasoning.ts`（零接触自动插桩），
@@ -93,13 +138,23 @@ export const editDslHandler = wrap(async (a) => {
     const { records } = loadObservedTraceRecords();
     traceResolver = records.length > 0 ? buildTraceResolver(records) : undefined;
   }
+  /**
+   * ★ 2026-10-05（T20 第 (4) 步）：`exists` **扩成两类可回溯证据** ——
+   *   ① 运行事件（`trace`，既有）；② **仓库文件的事实**（新增：`ref` 归一后能被 `fileFacts` **现取**到）。
+   *   ★ 为什么必须一起扩：否则调用方为满足上面那条前置而传的**文件证据**会被 L4 打回（`exists` 只认 `trace`），
+   *     而且"有 evidence 却无 resolver"那条分支在**无录制事件**时会**误伤整个调用**。
+   *   ★ 边界（只影响什么）：仅使 L4 **多接受一类可回溯证据** —— 既有判据一条不放宽、一条不删。
+   */
+  const existsFn = (ev: ReasonEvidenceRef): boolean =>
+    (traceResolver?.exists?.(ev) ?? false) ||
+    (sourceRoot ? factsOf(normRef(String(ev.ref))).matched_path !== null : false);
   const v = validateReason({
     reason,
     evidence,
     level,
     resolver: {
       entityIds,
-      exists: traceResolver?.exists,
+      exists: existsFn,
       traceRefs: traceResolver?.traceRefs,
     },
   });

@@ -361,7 +361,20 @@ if (process.argv.includes('--json')) {
   //   而真调一看 `find_references` 的 `touched` = `{project_dir, symbols:["Kk"], read_files:["com/a/Kk.java"]}`。
   //   ⇒ 这一节**必须单列**：扫各 [B] 的 `touchedOf` **函数体**，看它填了哪些键。
   {
-    const KEYS = ['feature', 'project_dir', 'written_files', 'symbols', 'nodes'];
+    // ★ 2026-10-05：补上 `file` —— 原 `definition_file` 已改名（见 T54）。★ 此前这个数组**不含**它，
+    //   所以本节**一直量不到**那个字段的产出（盲区）；改名时一并补上。
+    const KEYS = ['feature', 'project_dir', 'written_files', 'symbols', 'nodes', 'file'];
+    /**
+     * ★★ 匹配口径（2026-10-05 修）：**按"字段访问 / 属性键"匹配，不按裸词**。
+     *   旧实现是 `new RegExp('\\b' + k + '\\b')` —— 那会把**局部变量、注释、入参名**也算进来（量到影子）。
+     *   实测：刚给 `file` 补进 KEYS 时就报出 `file 7/31`，而真实产者只有 1 个
+     *   （`find_references.ts` 的 `touched.file = …`）⇒ 其余 6 个是 `const file = …` / `r.definition.file` 之类。
+     *   ⇒ 现在要求命中以下任一种形态（[B] 的 `touchedOf` 只会用这两种写法）：
+     *     · `touched.<键>`（赋值式）
+     *     · `<键>:` 或 `{ <键>,`（对象字面量式 —— `return { … }` 或 `withTouched(r, { … })`）
+     */
+    const hitOf = (body, k) =>
+      new RegExp(`touched\\.${k}\\b`).test(body) || new RegExp(`(?:^|[{,\\s])${k}\\s*[,:}]`, 'm').test(body);
     const bodyOf = (src) => {
       const i = src.indexOf('touchedOf');
       if (i < 0) return null;
@@ -374,7 +387,7 @@ if (process.argv.includes('--json')) {
       const sf = program.getSourceFile(f);
       const body = bodyOf(sf ? sf.getFullText() : '');
       if (!body) continue;
-      hits.push({ f: path.relative(ROOT, f).replace(/\\/g, '/'), got: KEYS.filter((k) => new RegExp(`\\b${k}\\b`).test(body)) });
+      hits.push({ f: path.relative(ROOT, f).replace(/\\/g, '/'), got: KEYS.filter((k) => hitOf(body, k)) });
     }
     console.log(`★★★ \`touched\` **内部各键**的产出覆盖（扫 \`touchedOf\` 函数体；${hits.length} 个 [B] 有它）：`);
     for (const k of KEYS) {

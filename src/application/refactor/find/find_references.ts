@@ -521,14 +521,15 @@ function touchedOf(input: Parameters<typeof findReferencesCore>[0], r: FindRefer
   //   自己从 `definition` / `importers` / `fieldRefs` / `typeCandidates` 里取即可）⇒
   //   **不占「链的接口」**。原先把四处 file 收成一个 Set 的聚合**随契约撤出一起删除**（不留死代码）。
 
-  // ★★ definition_file：**本次这个符号的定义在哪个文件**（单数）。
+  // ★★ `file`：**本次这个符号的定义在哪个文件**（单数）—— 名字与下游入参 `file` **逐字同名**
+  //   （2026-10-05 由 `definition_file` 改名；旧名作废）。
   //   ★ 为什么必须单立一栏（2026-10-05 真跑证伪）：我曾用"读到的文件列表的第 0 个"当"定义文件"来接链，
   //     **`mode=field` 下它是纯消费文件**（声明在另一个文件里）⇒ 那条接法**静默接错**。
   //     （那个列表就是现已撤出的 `read_files`；它让定义文件排首位，只靠 `add(r.definition.file)`
   //      写在前面 + `Set` 插入序，**没有任何类型/测试保证**。）
   //   ★ 本栏不同：`definition` 只在 **mode=symbol 的成功出口**才被赋值（`core` 的 `:483`），
   //     ⇒ **它出现 = 真的确立了定义** ⇒ 可**无条件宣称**。★ `mode=field` 下整项省略。
-  if (r.definition?.file) touched.definition_file = r.definition.file;
+  if (r.definition?.file) touched.file = r.definition.file;
 
   return touched;
 }

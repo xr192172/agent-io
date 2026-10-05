@@ -99,7 +99,9 @@ export const DESIGN_TOOLS: ToolDef[] = [
       'layout.apply data.algo=dag|force|grid；simulation.reset 无参）。' +
       'view: design（默认，改设计视图）/ live（拒绝写入，实际代码快照只能由 import/watch 重建）。' +
       'weight: normal（默认）/ routine。routine=轻量写路径：跳过 L4 证据回溯（仍留 L1-L3 防空话/套话/泛谈），' +
-      '适合日常维护（补节点/改职责描述/加标注/改属性），不必先跑代码留 trace 证据；改架构/契约等重改请用 normal 全链强闸。',
+      '适合日常维护（补节点/改职责描述/加标注/改属性），不必先跑代码留 trace 证据；改架构/契约等重改请用 normal 全链强闸。' +
+      '★ 但**改 `semantic.files` 的 op（`type=file` / `type=api`）两档都要先"现取该文件的事实"**：' +
+      'DSL 已不存事实镜像（actual_apis/actual_deps 已移除）⇒ 事实只能现取，须把该文件路径作为 evidence 的 ref 传进来。',
     inputSchema: {
       feature: z.string().describe('feature 名'),
       view: z.enum(['design', 'live']).default('design').describe('视图层级：design=设计视图（默认）；live=实际代码快照，只读，拒绝写入'),
@@ -132,10 +134,15 @@ export const DESIGN_TOOLS: ToolDef[] = [
           z.object({
             type: z
               .enum(['trace', 'diff', 'node', 'edge', 'metric'])
-              .describe("证据类型，当前 L4 支持 'trace'（真实执行记录）"),
+              .describe(
+                "证据类型：L4 支持 ① 'trace'（真实执行记录）② **指向仓库文件的 ref**（程序按 fileFacts **现取**事实验证）—— 改 semantic.files 时必须给后者",
+              ),
             ref: z
               .string()
-              .describe("trace 证据的 ref：探针名（全名或末段短名），或 '<探针名>@dur>N'（声明该函数实际耗时超 N ms，程序按真实录制事件复算）"),
+              .describe(
+                "ref：① trace 证据 = 探针名（全名或末段短名），或 '<探针名>@dur>N'（声明该函数实际耗时超 N ms，程序按真实录制事件复算）；" +
+                  "② 文件证据 = 该文件的**仓库相对路径**（程序用 fileFacts 现取验证；改 semantic.files 时必填）",
+              ),
           }),
         )
         .optional()

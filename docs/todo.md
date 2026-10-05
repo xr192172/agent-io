@@ -74,6 +74,15 @@
 
 - [ ] **T54 ★★★ 补「管道」—— 让「接力键」在**入参端**也能被接住（缺口已量化，2026-10-05 实测）**
       *(核实：2026-10-05 用户提出「哪怕只有一两个积木，框架也应该能把这两个拼在一起跑起来」⇒ 用它自己的判据量了一次。)*
+      ★★ **2026-10-05 本轮已落**（回执见 commit 历史）：① 「接力键」已进受控词表（`file`/`symbol`/`node_id` ⇒ `anchor`）；
+        ② `Touched.definition_file` **改名 `file`**（1 产者 0 消费者）⇒ `touched.file` → `renames[].file`
+        **逐字同名、零字段名翻译**，该边**已真跑并升级 `verified`**（夹具 `$TEMP/agentio_chain_probe`：
+        定义 + import + 用法全部改对）；③ ★ **撤掉一条假反例** —— 原写"`get_dsl(files)` 吐 `path`、下游收 `file`
+        ⇒ 同义异名"，**错**：`path` 是**事实字段**（被 `schema/design_dsl.schema.json` 的 `required` 钉死）、
+        `file` 是**定位器**（注释明文"绝对路径；或相对 project_dir/cwd"）⇒ **两类东西**，硬对齐 = 判据分叉的**反方向**。
+      ★★ **剩下**：按"能跑通几条真实链"这个判据继续（`rename_symbols → edit_code`、`edit_code → run_tests`…），
+        跑通一条记一条。★ 另记一条**能力缺口**（非命名问题）：`get_dsl(query='files')` 的投影**只给计数不给符号名**
+        （`apiCount` / `symbolCount`）⇒ 下游 `find_references.symbol` **无从填**；要接得先补"符号名的结构化出口"。
       ⇒ **量法**：① 把 56 个工具的**顶层入参名**全列出来（读 schema）；② 真调抽验；
         ③ 跑 `node scripts/measure_b_contract.mjs`（**已被 T55 补上"按字段覆盖率"**）看 `[B]` 两端。
       ⇒ **读数（全部实测）**：
@@ -128,10 +137,13 @@
           它内部六个键**完全量不到**。**于是"`symbols`/`read_files`/`nodes` 产物端 0/37"是假读数。**
         · ★ **真调一眼**：`find_references` 的 `touched` = `{project_dir, symbols:["Kk"], read_files:["com/a/Kk.java"]}`
           ⇒ **`symbols` / `read_files` 一直在产**。
-        · ★★ **真读数（源码级，扫 `touchedOf` 函数体；31 个 [B] 有它）**：
-          `feature 21/31 · project_dir 22/31 · written_files 19/31 · read_files 10/31 · symbols 8/31 · nodes 10/31`
-          ⇒ **六键全都有人产**。
-        · ★★★ **量具已补上这一节**（扫 `touchedOf` 函数体报六键覆盖），并在源码里写下这次误判。
+        · ★★ **真读数（源码级，扫 `touchedOf` 函数体；31 个 [B] 有它；★ 2026-10-05 口径已修正）**：
+          `feature 19/31 · project_dir 21/31 · written_files 8/31 · symbols 4/31 · nodes 3/31 · file 1/31`
+          ⇒ **各键都有人产**。
+          ★ 旧读数（`feature 21 · project_dir 22 · written_files 19 · read_files 10 · symbols 8 · nodes 10`）是**影子**：
+            旧量具按**裸词**扫函数体（把注释 / 局部变量也算进去，如 `written_files` 报 19 而真实 8）；
+            现口径 = 「**字段访问 / 属性键**」。
+        · ★★★ **量具已补上这一节**（扫 `touchedOf` 函数体报各键覆盖），并在源码里写下这次误判。
       ⇒ ★★★★★ **链实证（真跑，2026-10-05）**：
         `find_references` → 用它的 `touched` **直接构造** `rename_symbols` 的入参
         （`read_files[0]`→`file`、`symbols[0]`→`symbol`，**零字段名翻译**）→ **跑通**
@@ -214,18 +226,24 @@
         ★★ **删字段 = 让编译器当量具**：`tsc` 立刻报 25 个错，其中 **15 个来自上一轮"读者清单"完全没列到的读者**
         （`diff_views` 12 处 / `narrate_step` 2 / `diff_impact` 1）⇒ **别用 grep 列消费者清单**。
         ★ 新增 `file_facts.mergedApis()`：把 `[expected, ...actual]` 这个 6 文件 20+ 处的形态收成单点。
-      · (4) **加 `edit_dsl` 的"先读后改"门**（本仓已有同款：`explore_code action=read` 是 `edit_code` 的前置，
-        `explore_code.ts:312`）⇒ 改 `semantic.files` 前**必须已读该文件的事实**（现取）；
-        ★ 复用 `evidence`/L4 那条已有机制，**不另发明**。
-        ★★ **2026-10-05 核实后未动 —— 待你一句话定"门"还是"自动前置"**，核实结果三条：
-        ① 落点 = `editDslHandler`（`handlers.ts:59-113`）**全 DSL 写入口**（daemon 路径同受
-           `dispatchDslEdit`）⇒ 让 `semantic.files` 的 `evidence` **条件必填**属**输入契约变更**；
-        ② "已读"**当前无既定编码**：`ReasonEvidenceRef.type` 是**钉死的联合**
-           （`reason_validator.ts:36-39`：`'trace'|'diff'|'node'|'edge'|'metric'`）⇒ 三种落法各有代价：
-           **新增一种 type**（动输入契约）/ **复用 `diff` 并绑 `fileFacts()` 现取** /
-           按 skill「design-canvas-mind」的反射走**自动前置**（缺前置自动取，**不报错甩锅**）；
-        ③ 与 2026-10-05「**不养门**」裁定的关系**要先判**：那条裁定举的三例都是**脚本/清单类**
-           （拦截型脚本、对账判据、棘轮/基线），本项是**工具内运行时前置** —— 是否同一类，需你定。
+      · (4) ✅ **已落**（2026-10-05）：**改 `semantic.files` 前必须"现取"该文件的事实**
+        —— 落点 `editDslHandler`（`handlers.ts`，`validateReason` **之前**）：
+        · **触发面**（**只有两类**，逐条核过 `update_feature.ts` 的 `switch (op.type)`）：
+          `type=file`（增/改/删文件条目）· `type=api`（改 `file.expected_apis`）；
+        · **免触发**（逐条说清"为什么不算"）：`type=status` / `binding`（**流程态**，不断言代码）、
+          `type=snapshot op=rollback`（**整份恢复**，没有"目标文件"可归因）、
+          node / edge / annotation / approval / layout / simulation（本就不碰 `semantic.files`）；
+        · **判据**：目标文件必须 ① `fileFacts(root, path, feature).matched_path` **非空**（真的现取到事实）
+          ② 且在 `evidence` 里有一条 ref 指向它；★ **两档 weight 都适用** —— routine 跳得过 L4 的"为什么改"，
+          **跳不过**这条（镜像已摘 ⇒ 事实只能现取）；
+        · ★ **不兜底**：DSL **有** `source_root` 却取不到事实 ⇒ **响亮抛**；DSL **没有** `source_root`
+          （纯设计 / 新建 feature，代码侧还不存在）⇒ 这条**不适用**（没有权威可读）；
+        · ★ 顺带把 L4 的 `resolver.exists` **扩成两类可回溯证据**（运行事件 `trace` / **仓库文件事实 `fileFacts`**）
+          —— 否则为满足上面这条而传的文件证据会被 L4 打回，且"有 evidence 却无 resolver"那条分支在
+          **无录制事件**时会**误伤整个调用**；边界 = 仅**多接受一类证据**，既有判据一条不放宽；
+        · **真调验收**（隔离 `AGENT_IO_HOME` + 2 文件夹具）：无证据改 `file` 断言 ⇒ **被拒**（错文给出下一步）；
+          带文件证据 ⇒ **通过并真落盘**；`type=status` 无证据 ⇒ **通过**（边界成立）；
+        · 工具描述已同步（`weight` 与 `evidence.type` 两处）。
       ⇒ ★ **另记一条既有隐患**（本笔发现，未改）：`resolveFunctionCacheDb` 的第三级候选是 **`<cwd>/.agent-io/cache.db`**
         ⇒ 一个**没有自己索引**的项目会读到 **cwd 那个项目**的库。本笔靠"`matched_path` 必须命中"挡了误报，
         但**根上仍是 T19 的"根"问题**，应在 T19 里一并收口。
