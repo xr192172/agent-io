@@ -33,6 +33,7 @@
  */
 
 import type { ToolDef } from '../../types.js';
+import { renderChainWiring } from '../../../domain/chain_wiring.js';
 
 export const LANE_IDS = ['design', 'refactor', 'observe', 'harvest', 'cross', 'meta'] as const;
 export type LaneId = (typeof LANE_IDS)[number];
@@ -433,6 +434,9 @@ export function makeCapabilityMapHandler(getCatalog: () => readonly ToolCatalogE
       }
       return { text: `${header}${renderLaneText(lanes, [lane])}`.trim() };
     }
-    return { text: `${header}${renderLaneText(lanes)}${renderUnassigned(unassigned)}`.trim() };
+    // ★★ 链的接法（2026-10-05）：把"上一步的产物怎么喂下一步的入参"摆在这里 ——
+    //   它是**新用户第一站**，所以 LLM 一眼就能看到接法，**不必回忆字段名、不必数下标**。
+    //   ★ 只在全量视图（不带 lane）追加：看单条线时不需要这张表。
+    return { text: `${header}${renderLaneText(lanes)}${renderUnassigned(unassigned)}${renderChainWiring()}`.trim() };
   };
 }
