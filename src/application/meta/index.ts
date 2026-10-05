@@ -28,13 +28,21 @@
  *   否则本文件 import 它们就会成环（server_registry → lanes → server_registry）。
  */
 import { z } from 'zod';
+import path from 'node:path';
 import { requireStr, wrapData } from '../plumbing.js';
 import type { DiagnoseInput } from '../../infrastructure/analysis/diagnosis/contract.js';
 import { formatDiagnoseText, runDiagnosis } from '../../infrastructure/analysis/diagnosis/diagnose.js';
 import { getDSL, saveDSL } from '../../infrastructure/storage.js';
+import { readStructureConfig } from '../../infrastructure/analysis/structure/structure_gap.js';
 import { archiveNode, listArchive } from './archive/archive_node.js';
-import { LANE_IDS, listToolDefs, makeCapabilityMapHandler } from './registry/capability_map.js';
-import type { LaneId } from './registry/capability_map.js';
+import {
+  bindDomains,
+  LANE_IDS,
+  listToolDefs,
+  makeCapabilityMapHandler,
+  resetDomainsForTest,
+} from './registry/capability_map.js';
+import type { DomainNavView, LaneId } from './registry/capability_map.js';
 // ★ T15 切片（2026-10-05）：`capability_audit` 的核心（与 `capability_cli` 同源）。
 import { probeInstalledLanguages } from '../../infrastructure/parse/probe.js';
 import {
@@ -406,14 +414,48 @@ export const META_TOOLS: ToolDef[] = [
       '统一能力线入口（只读导航，无副作用）。无参返回完整分层清单：6 条能力线（design 设计 / refactor 重构 / ' +
       'observe 观测 / harvest 契约采集 / cross 跨仓翻译健康 / meta 元信息）× 每条线内工具及其适用时机；' +
       '传 lane 只看某条线。agent 在不确定用哪个工具前，优先调它分层定位，再进入具体工具。' +
+      '★ 2026-10-05 新增「实现地图」段：工具注册在哪个文件 ≠ **实现住在哪个目录** —— ' +
+      '该段按线列出 `structure.domains.json` 里该线下的域（dir + role + note 首句），' +
+      '用来回答「我要改 X 的实现，该进哪个目录」。传 project_dir 才读得到（读的是该项目的域表）。' +
       '高频工具（get_dsl / edit_dsl / explore_code / rename_symbols / rename_files / find_references）始终直接可用，无需先经本工具。',
     inputSchema: {
       lane: z
         .enum([...LANE_IDS] as [LaneId, ...LaneId[]])
         .optional()
         .describe('只看指定能力线；省略返回全部 6 线'),
+      project_dir: z
+        .string()
+        .optional()
+        .describe('要读**哪个项目**的域表（structure.domains.json）；省略 = 不读，实现地图段会明说"该项目未声明结构意图"而不是给空表'),
     },
-    handler: makeCapabilityMapHandler(() => listToolDefs()),
+    handler: wrapData(async (a) => {
+      // 域表**在调用期现取**（不注入、不缓存）：它是**按 project_dir 读的项目级声明**，
+      // 而本仓自己那份结构意图与被分析项目无关 ⇒ 缓存它就是把两个项目混成一份（判据分叉）。
+      // 与「ts_kernel 现取、不建镜像」同策。
+      let domains: DomainNavView[] | null = null;
+      let readNote = '';
+      const pd = typeof a.project_dir === 'string' && a.project_dir ? a.project_dir : undefined;
+      if (pd) {
+        try {
+          const cfg = readStructureConfig(path.resolve(pd));
+          domains = cfg ? [...cfg.domains, ...(cfg.flatDirs ?? [])] : null;
+          if (!cfg) readNote = '（该项目根下没有 structure.domains.json）';
+        } catch (e) {
+          // 域表坏了**不许**让整个导航挂掉：导航的主体（哪条线/哪个工具）不依赖它
+          readNote = `（域表读取失败，已跳过实现地图段：${(e as Error).message.slice(0, 120)}）`;
+          domains = null;
+        }
+      } else {
+        readNote = '（未传 project_dir ⇒ 不知道要读哪个项目的域表）';
+      }
+      bindDomains(domains);
+      try {
+        const r = await makeCapabilityMapHandler(() => listToolDefs())(a, readNote);
+        return { message: r.text, data: { lanes: LANE_IDS, domains: domains?.length ?? 0, read_note: readNote } };
+      } finally {
+        resetDomainsForTest();
+      }
+    }),
   },
 
   {

@@ -135,7 +135,8 @@ export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
   manage_feature: 'feature 生命周期：create/clone/template/list/delete',
   render_design: '渲染并保存设计图（完整 DSL 模式产物）',
   render_brickwork: '渲染积木墙视图',
-  scaffold: '脚手架统一入口（action=generate=从设计图生成代码骨架 / backfill=写完代码回填实际 API 签名）',
+  scaffold: '脚手架生成（action=generate）', // ★ 2026-10-05 更正：原说明写 action=generate / backfill，
+  //   而 backfill 已随 T20 整条删除 ⇒ 教了一个不存在的 action。
   consistency_check: '设计 DSL 与代码语义一致性体检',
   detect_drift: '检测 DSL 与代码语义漂移',
   import_project: '扫描代码项目生成 DSL（文件节点+调用边+符号语义层）',
@@ -179,7 +180,9 @@ export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
   translate_go_ts: '跨语言翻译：Go→TS 半自动（机械骨架+验证闸；fill 用 LLM 逐孔填；verify 跑行为对拍）',
   go_originals: '读 Go 源文件顶层符号原文（ground truth）：翻译/评审时对照 Go 原文，不对着 TS 壳猜',
   explore_code: '代码理解统一入口（search/check_monolith/run_simulation/watch）',
-  diagnose: '诊断能力缺口（多语言矩阵）',
+  // ★ 2026-10-05 更正：第一轮实测发现这条写的是 capability_audit 的活（"诊断能力缺口（多语言矩阵）"）⇒
+  //   agent 照它去选 diagnose 会得到完全无关的结果。正确口径 = diagnosis 域 note 的第一句。
+  diagnose: '症状 → 根因 + 证据链 + 影响面 + 修复建议（不知道是哪条线坏了时先用它定位）',
   canvas_notes: '画布人审标注的读取/渲染',
   archive: '下线库统一入口（action=node/list）—— node：把文件下线归档（写，不可逆，立即落盘，无 dry_run，重复归档被拒）+ 合并记录；list：列某 feature 的下线库归档条目（只读）',
   gateway_provider: 'LLM 网关供应商/Key 池说明与状态',
@@ -264,6 +267,97 @@ function resolveAssign(assign?: Readonly<Record<string, LaneAssign>>): Readonly<
 }
 
 // ─────────────────────────────────────────────────────────────
+// 域表注入（2026-10-05）：让 role / note 真正被消费 —— 回答"实现住在哪个目录"
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * 一条域声明的**导航视图**（只取导航要用的字段；来源 `structure.domains.json`）。
+ *
+ * ★ 为什么要有这个（2026-10-05 逐文件扫描后的动因）：
+ *   导航此前只答一件事 —— 「**用哪个工具**」；但真正让人卡住的是第二件 ——
+ *   「**这个工具的实现住在哪个目录**」。`analysis/` 下面混着 11 个域，
+ *   你想找 Go→TS 翻译的实现，只能靠猜（这就是"找错起点"的根因）。
+ *   ⇒ 域表里已经写好了每个域的 `role` 与 `note`，**把它们读出来接进导航**，
+ *     `role` 就从"给量具看的注释"变成**在选工具那一刻起作用的判据**。
+ */
+export interface DomainNavView {
+  id: string;
+  layer?: string;
+  role?: string;
+  dir: string;
+  note?: string;
+}
+
+/** 注入的域表（null = 还没注入 / 该项目没声明结构意图）。同一注入模式，不新建机制。 */
+let _domains: readonly DomainNavView[] | null = null;
+
+/**
+ * 注入域表。由**调用方**（`meta/index.ts` 的 capability_map handler，它手上有 `project_dir`）
+ * 在调用前读 `structure.domains.json` 后送进来。
+ *
+ * ★ 为什么是注入而不是本文件自己读：① 本模块是**无 IO 的纯模块**（见文件头）——
+ *   自己读会把 IO 引进所有消费者；② 与 `_toolDefs` / `_laneOf` 同一模式，不新造第三种接线。
+ * ★ 没注入不是错误：**该项目没声明结构意图**是合法状态（`structureGap` 的 `configured:false`），
+ *   此时导航**降级为只答"用哪个工具"**并说明原因 —— 而不是给一个空的"实现地图"骗人。
+ */
+export function bindDomains(domains: readonly DomainNavView[] | null): void {
+  _domains = domains;
+}
+
+/** 取本次调用要用的域表（null = 没注入 / 没声明结构意图 —— 两种"没有"都归到这里，导航会明说）。 */
+export function listDomains(): readonly DomainNavView[] | null {
+  return _domains;
+}
+
+/** 测试隔离用：清掉注入的域表 */
+export function resetDomainsForTest(): void {
+  _domains = null;
+}
+
+/**
+ * 某条能力线下面的域（按 `dir` 的层数降序 ⇒ 越具体的域排越前）。
+ *
+ * ★ 判据：**从域表自己派生**，不引第二份映射表 ——
+ *   「工具注册在 `application/<lane>/index.ts`」是本仓既有约定（`LANE_SOURCES` 的注释就是这么写的），
+ *   所以"这条线有哪些域" = 域表里 `layer === 'application'` 且第 3 段目录名 = lane id 的那些。
+ *   ⇒ lane id 与域表都是**各自唯一的事实源**，本函数只做**连接**，不持有第三份清单。
+ *   ★ 为什么不用 `LANE_SOURCES`：它在 `tool_registry.ts`，而本模块**不能 import 注册表**
+ *     （`server_registry ⇄ capability_map` 循环，见文件头），而且它给的是 `ToolDef[]`、**不是路径**。
+ */
+export function domainsOfLane(lane: LaneId, all: readonly DomainNavView[]): DomainNavView[] {
+  return all
+    .filter((d) => d.dir?.startsWith('src/application/') && d.dir.split('/')[2] === lane)
+    .sort((a, b) => b.dir.split('/').length - a.dir.split('/').length || (a.dir < b.dir ? -1 : 1));
+}
+
+/** 域表的一段导航文本（按 lane 分组；role 打头，让"这是能力还是基建"先看到）。 */
+export function renderDomainText(lanes: readonly Lane[], all: readonly DomainNavView[] | null, why = ''): string {
+  if (!all || all.length === 0) {
+    return (
+      `\n▢ 实现地图：${why || '**该项目未声明结构意图**（根下没有 structure.domains.json）'}` +
+      ' ⇒ 只能答「用哪个工具」，答不了「实现住在哪个目录」。' +
+      '要补的话：写下 domains（哪些目录是域，各带 role 与一句 note）即可。'
+    );
+  }
+  const lines: string[] = [
+    '',
+    '▢ 实现地图（工具注册在哪个文件 ≠ 实现住在哪个目录 —— 这份是「去哪儿找」）',
+    ...(why ? [`  （${why}）`] : []),
+  ];
+  for (const lane of lanes) {
+    const ds = domainsOfLane(lane.id, all);
+    if (!ds.length) continue;
+    lines.push(`  ◆ ${lane.id}（${ds.length} 个域）`);
+    for (const d of ds) {
+      const role = d.role ?? '未标 role';
+      const note = (d.note ?? '').split(/[。；]/)[0].trim();
+      lines.push(`      ${role.padEnd(10)} ${d.dir}${note ? ` —— ${note}` : ''}`);
+    }
+  }
+  return lines.join('\n');
+}
+
+// ─────────────────────────────────────────────────────────────
 // 派生（纯函数）
 // ─────────────────────────────────────────────────────────────
 
@@ -322,8 +416,32 @@ export function buildLanes(
 export function describeForNav(t: ToolCatalogEntry, max = 60): string {
   const raw = (t.description ?? '').replace(/\s+/g, ' ').trim();
   if (!raw) return t.title?.trim() || t.name;
-  const m = raw.match(/^[\s\S]*?[。.；;]/);
-  let s = (m ? m[0] : raw).trim();
+  // ★ 2026-10-05 修两处（都是第一轮实测在导航里看出来的）：
+  //   ① 原判据在**第一个** `。.；;` 处切 ⇒ 会切在括号**内部**，切出
+  //      `**能力矩阵自检**（缺口清单；` 这种**括号没闭合**的半句。
+  //   ② `.` 会切在**标识符内部** ⇒ 「读 `a.b` 三个文件」被切成「读 `a.」。
+  //      （这一条原判据也有，不是本次新引入。）
+  //   ⇒ 改成两个判据：**终止符要在括号配平处**，且 **`.` 只有不在单词中间时才算句子结束**。
+  //   一句话：**切完必须是个能独立读的句子**，不是"恰好遇到的分隔符"。
+  // ★ 用 \u0060 而不是裸反引号：裸反引号在本会话里已多次破坏构建（模板串内、脚本内），
+  //   而这里只需要一个「成对包裹符」字符 —— 转义后源码里一个裸反引号都不剩。
+  const TICK = '\u0060';
+  const OPEN = '（「『【《([{' + TICK;
+  const CLOSE = '）」』】》)]}' + TICK;
+  const isWord = (c: string | undefined): boolean => !!c && /[A-Za-z0-9_$\u4e00-\u9fff]/.test(c);
+  let depth = 0;
+  let cut = -1;
+  for (let i = 0; i < raw.length; i++) {
+    const c = raw[i]!;
+    if (OPEN.includes(c)) depth++;
+    else if (CLOSE.includes(c)) depth = Math.max(0, depth - 1);
+    else if (depth === 0) {
+      if ('。；;'.includes(c)) { cut = i + 1; break; }
+      // `.` 只在"后面不是单词"时才是句末（否则是 a.b / v1.2 / node:fs 的一部分）
+      if (c === '.' && !isWord(raw[i + 1])) { cut = i + 1; break; }
+    }
+  }
+  let s = (cut > 0 ? raw.slice(0, cut) : raw).trim();
   if (s.length > max) s = s.slice(0, max - 1).trimEnd() + '…';
   return s;
 }
@@ -419,6 +537,7 @@ export interface CapabilityMapInput {
 export function makeCapabilityMapHandler(getCatalog: () => readonly ToolCatalogEntry[]) {
   return async function capabilityMapHandler(
     args: Record<string, unknown>,
+    domainReadNote = '',
   ): Promise<{ text: string; isError?: boolean }> {
     const { lanes, unassigned } = buildLanes(getCatalog());
     const lane = args.lane as LaneId | undefined;
@@ -432,11 +551,25 @@ export function makeCapabilityMapHandler(getCatalog: () => readonly ToolCatalogE
       if (!LANE_IDS.includes(lane)) {
         return { text: `未知能力线 "${lane}"。可选：${LANE_IDS.join(' / ')}。`, isError: true };
       }
-      return { text: `${header}${renderLaneText(lanes, [lane])}`.trim() };
+      // ★ 单线视图也带实现地图：看某条线时正是"这个工具的实现住在哪"最想知道的时候
+      const doms = renderDomainText(lanes.filter((l) => l.id === lane), listDomains(), domainReadNote);
+      return { text: `${header}${renderLaneText(lanes, [lane])}${doms}`.trim() };
     }
     // ★★ 链的接法（2026-10-05）：把"上一步的产物怎么喂下一步的入参"摆在这里 ——
     //   它是**新用户第一站**，所以 LLM 一眼就能看到接法，**不必回忆字段名、不必数下标**。
     //   ★ 只在全量视图（不带 lane）追加：看单条线时不需要这张表。
-    return { text: `${header}${renderLaneText(lanes)}${renderUnassigned(unassigned)}${renderChainWiring()}`.trim() };
+    //
+    // ★★ 2026-10-05 修一个**既有**的渲染 bug：原来写的是
+    //   `` `${header}${renderLaneText(…)}${renderUnassigned(…)}${renderChainWiring()}` .trim() ``
+    //   —— `.trim()` 挂在**模板字面量**上，于是它把 `renderChainWiring()` 的**前导两个换行**剥掉了
+    //   ⇒「── 链的接法」永远**粘**在前一段末尾（同理会粘住未归线段/实现地图段）。
+    //   本轮加「实现地图」段时它第一次被人看见 —— ★ 又一条「加东西才会暴露的旧缺陷」。
+    //   ⇒ 修法：先拼成**数组**、滤掉空段、join，最后对**整体** trim。
+    return {
+      text: [header, renderLaneText(lanes), renderDomainText(lanes, listDomains(), domainReadNote), renderUnassigned(unassigned), renderChainWiring()]
+        .filter((s) => s && s.length > 0)
+        .join('')
+        .trim(),
+    };
   };
 }
