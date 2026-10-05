@@ -541,7 +541,14 @@ func dslLog(args []string) bool {
 	}
 	defer f.Close()
 
-	judge := NewJudgeClient("")
+	// ★ 2026-10-05（P2）：显式选择**本地**判定，不走默认的"响亮失败"。
+	//   理由：`log` 是**人读的日志视图**（`observe-dsl log --file <path>`），
+	//   语义已被 TS 侧 `log_query.ts` 接管并经 `serve.ts:265` 暴露为 HTTP
+	//   （见 P4 侦察：`log` 是 Go 侧**最早**被 TS 吸收的一条子命令）。
+	//   为"列一下异常事件"而要求先起一个 HTTP 判定服务不合理 ⇒ 此处**显式** opt-in 本地。
+	//   代价自己承担：本地只有 1 条规则，看不到 impact 域的两条（对"看日志"这个用途影响有限）。
+	//   ⚠ 本条子命令计划在 P6 删除（Go 的 9 条 DSL 子命令收口），届时连同这个 opt-in 一起消失。
+	judge := NewLocalJudgeClient()
 	parsed, perr := loadEvents(f)
 	if perr != nil {
 		fmt.Fprintf(os.Stderr, "observe-dsl log: %v\n", perr)

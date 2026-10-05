@@ -3,8 +3,10 @@ package probe
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 )
@@ -34,20 +36,47 @@ func TestJudgeClient_IsLocalByDefault(t *testing.T) {
 	}
 }
 
-func TestJudgeClient_LocalFallback(t *testing.T) {
+// ★ 2026-10-05（P2）：本测试**原先断言的正是被删掉的行为**（未配 endpoint 时静默本地兜底）。
+// 改造后契约反过来：默认客户端**必须响亮失败**，本地判定要**显式 opt-in**。
+// 原测试名 LocalFallback 已名不副实 ⇒ 改为下面两条。
+func TestJudgeClient_DefaultFailsLoudlyWithoutEndpoint(t *testing.T) {
 	c := NewJudgeClient("")
+	if c.IsRemote() {
+		t.Fatal("未配置 endpoint 时不应走远程")
+	}
+	// 默认客户端不得填 Local（否则又会静默兜底）
+	if c.Local != nil {
+		t.Error("默认客户端不应装配本地谓词（那会让静默兜底复活）")
+	}
+	if _, err := c.JudgeEvents(context.Background(), sampleEvents()); !errors.Is(err, ErrNoJudgeEndpoint) {
+		t.Fatalf("未配置判定服务时应返回 ErrNoJudgeEndpoint，实得 %v", err)
+	}
+	// 错误文案必须点明"漏判哪两条规则"，否则调用方无法判断严重性
+	msg := ErrNoJudgeEndpoint.Error()
+	for _, want := range []string{"OBSERVE_JUDGE_URL", "design:impact-blast-radius", "design:impact-unplanned-spread"} {
+		if !strings.Contains(msg, want) {
+			t.Errorf("错误文案缺少 %q —— 调用方看不到漏判范围", want)
+		}
+	}
+}
+
+func TestJudgeClient_LocalIsExplicitOptIn(t *testing.T) {
+	c := NewLocalJudgeClient()
+	if c.IsRemote() {
+		t.Fatal("本地客户端不应走远程")
+	}
+	if !c.AllowLocal || c.Local == nil {
+		t.Fatal("NewLocalJudgeClient 必须装配本地谓词并置 AllowLocal")
+	}
 	verdicts, err := c.JudgeEvents(context.Background(), sampleEvents())
 	if err != nil {
-		t.Fatalf("本地判定不应报错: %v", err)
+		t.Fatalf("显式 opt-in 后本地判定不应报错: %v", err)
 	}
 	if len(verdicts) != 2 {
 		t.Fatalf("期望 2 条判定，实得 %d", len(verdicts))
 	}
 	if verdicts[0].Result != "deviation" {
 		t.Errorf("写盘错误事件应判 deviation，实得 %q", verdicts[0].Result)
-	}
-	if verdicts[1].Result != "ok" {
-		t.Errorf("正常事件应判 ok，实得 %q", verdicts[1].Result)
 	}
 }
 

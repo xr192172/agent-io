@@ -1128,3 +1128,37 @@
         ⇒ 正确语义应是「没有**显式指名**该探针的声明 ⇒ undesigned」，与全局声明无关。
         ⇒ **本笔不改**：那会动到判定层（已在 59 工具里验证过的路径），属独立决策。
           已在 `run_loop.ts` 的 6a 段落就地标注死分支与完整根因链，**不静默**。
+
+      ✅ **P2 步骤 1 已落（2026-10-05 本笔）**：Go 侧判定**静默降级 → 响亮失败**。
+         ★ **实测查出这不是"优雅降级"，是"假绿灯 + 漏判"**（同三条事件，Go 本地 vs TS 远端）：
+             impact.report（爆炸半径 100 / 阈值 50）→ Go: **ok, rule=""**   TS: deviation
+             impact.spread（计划外扩散）             → Go: **ok, rule=""**   TS: deviation
+             fs.cleanup（err 丢弃）                 → Go: deviation        TS: deviation
+           根因：`judge_client.go` 原 `:52-53` 的 `NewJudgeClient` 只 `AddRule` 了 **1 条**
+           （`design:silent-error-discard`），而 TS 的 `OBSERVE_RULE_TABLE`（P1 立的）有 **3 条**
+           ⇒ **整个 impact 域的判定在未设 env 时全部失效**，且输出**看不出任何异常**
+           （`rule` 是空串，没有"未覆盖"提示）。
+           ⚠ 最讽刺的一层：`watch_project_tool.ts:507-526` 正在产出 `impact.*` 事件喂这条链路
+           ⇒ **最需要判定的那批事件，恰好是 Go 漏判的那批**。
+           ⚠ 文件头原注释「保证离线/单测环境仍可用」是**误导** —— 它没提"本地只有 1/3 的规则"这个实际代价。
+         改造（`go-observe/probe/judge_client.go`）：
+         · 新增 `ErrNoJudgeEndpoint`：未配 `OBSERVE_JUDGE_URL` 且未显式 opt-in ⇒ **返回错误**。
+           错误文案**必须点明漏判哪两条规则**（`design:impact-blast-radius`、
+           `design:impact-unplanned-spread`）—— 否则调用方无法判断严重性（已写成断言）。
+         · `NewJudgeClient` 不再填 `Local`（填了会让静默兜底复活）。
+         · 新增 `NewLocalJudgeClient()` 作为**显式 opt-in**：`AllowLocal` 标志 + 构造函数名
+           都让"这是本地弱判定"在调用点可见，漏判后果由调用方自己承担。
+         **调用点处置**（逐个核实，不靠推断）：
+         · `loop.go:127` **本来就有 `IsRemote()` 守卫**（不设 env 时直接标 `LLMDegraded`，
+           走不到错误路径）⇒ **未被打断**，行为不变。
+         · `dsl_cli.go:544`（`dslLog`）原本无条件调 `JudgeEvents` ⇒ 改为**显式 `NewLocalJudgeClient()`**。
+           理由：它是**人读的日志视图**（`observe-dsl log --file <path>`），语义早已被 TS `log_query.ts`
+           接管并经 `serve.ts:265` 暴露 —— 为"列一下异常事件"而要求先起 HTTP 判定服务不合理。
+           该子命令计划在 P6 删除，届时连同这个 opt-in 一起消失。
+         ★ **Go 全量测试通过**（`go build` 0 / `go vet` 0 / `go test ./...` 全绿）。
+           ⚠ 其中 **5 个测试原本断言的正是被删掉的行为**（4 × `TestDSLLog_*` + `TestJudgeClient_LocalFallback`）
+           ⇒ 它们编码的是**旧的假绿**。已改为断言新契约：
+           `TestJudgeClient_DefaultFailsLoudlyWithoutEndpoint`（默认必须 `errors.Is(err, ErrNoJudgeEndpoint)`
+           且 `Local == nil`，并断言错误文案含三条关键串）+ `TestJudgeClient_LocalIsExplicitOptIn`。
+           **原测试名 `LocalFallback` 已名不副实，故改名而非保留** —— 避免以后有人按名字
+           理解成"仍支持自动兜底"。
