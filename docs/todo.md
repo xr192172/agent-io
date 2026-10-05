@@ -850,20 +850,6 @@
         **无 dry-run 档、静默改盘 39 个文件 / 176 条 import**（含 `.inspect/**` 探针目录），已 `git checkout` 还原。
         若"写源码必过 `write_gate`"成立 ⇒ 闸门处即可挂"dry-run 默认"，这类事故**在入口被拦**而不是事后靠回执读出来。
 
-- [ ] **T57 `go-observe` 与 TS 版 `analysis/observe/` 是同一件事的两套实现，规则各自漂移且零 CI（2026-10-05 逐文件扫描发现）**
-      ⇒ **事实**：与 TS 版**同名符号 ≥18 个**（`baseProbeName` · `RebuildChains` · `isSubsequence` · `matchChainDecl`
-        · `SilentErrorDiscard` · `JudgeEvent` · `Verdict` · `DSLDecl` · `DeviationKind` 四态 · 链预算 `512/4096/128` …）。
-        **判定规则两边各自写死字面量、不共享**：TS 的 `IMPACT_BLAST_RADIUS_LIMIT=50`（`judge.ts:55`）**Go 侧全仓 0 命中**；
-        Go 的 `design:impact-known-spread`（`ledger_loader.go:164`）TS 侧没有。两边**注释互指**（"与 Go SilentErrorDiscard 语义对齐"）
-        ⇒ **语义对齐靠人工逐字比对**。
-      ⇒ 且 `go-observe/go.mod` 存在，但 **`package.json` 零引用、`scripts/**` 零引用** ⇒ `npm test` **不编译它、不测它**。
-        TS 侧 barrel 自己招了（`analysis/observe/index.ts:29-33`）：v2 分级采集的 TS 移植 704 行
-        "是从 go-observe 移植……**但从未接线**……死的是这份 TS 移植"。
-      ⇒ **待决断（是决策不是搬砖）**：要么明确"规则以 Go 为权威"并把 TS 侧对齐，要么删掉 TS 侧 704 行死移植。
-        现状是**两边规则各自漂移 + 没有一条 CI 会发现**。
-      ⇒ ★ **本批已做的相关收敛**（同属"两处落点"族，已落）：`.agent` 与 `.agent-io` 两个目录名**不是副本而是两个程序的仓库**，
-        已在 `data_dir.ts` 补声明 + `GO_OBSERVE_DIR_NAME` 收口 4 处裸字面量（详见下方回执）。
-
 - [ ] **T58 ★ CLI 的 `key=value` 解析吃不下 Windows 绝对路径（已复现多次，唯一确证的一条）**
       *(2026-10-05 实测：`cli.js structure_gap project_dir=D:/project_develop/design-canvas` 直接回 `缺参数 project_dir`；本轮有 4 处验证都得绕开 CLI 改走产品路径。`mcp_scan` 走空参所以没暴露。)*
       ⇒ 危害：CLI 是 AGENTS.md 推荐的改名/验证通道，但**凡带盘符或路径的调用都失败** ⇒ agent 会误判成「工具坏了」并改去手改/grep —— 正好绕开本仓最想让人用的那条路。
@@ -883,3 +869,36 @@
         ② 同一次实验里，我的**回搬清单**用 `existsSync(原路径)` 过滤，而被搬走的文件在原路径本就不存在 ⇒ 恰恰把它们排除掉了 ⇒ 4 个文件永久留在 `_scale/`（`tsc` 仍 EXIT=0，也是靠 `git status` 才看出来）。
         ⇒ 教训：**「树能编译」不等于「树是对的」**；搬移类实验的收尾必须 `git status` 逐条对，不能只看 tsc。
 
+
+- [ ] **T57 ★★ observe 合一化：Go 子实现降级为「语言包」（2026-10-05 用户裁定，已落 P0）**
+      *(起因：**历史事故** —— 当时只打算做一个 observe，但会话同时管理两个项目、混淆了需求，
+        因上下文窗口原因做了两个一样的东西（只是语言不同）。目标：合一化 + 按语言加载语言包 +
+        注册工具只做路由转发薄壳。完整证据与分阶段计划见 `docs/observe-unification.md`。)*
+      ✅ **P0 已落（本笔）**：`infrastructure/analysis/observe/observe_langs.ts` —— `ObserveLangPack` +
+        `ObserveLangRegistry`，形状**照抄** `refactor_langs.ts`（本仓既有的多语言模式，不新造第二套）；
+        `observe_instrument` 从硬编码 `if (isGoProject(target))` 改成挑包 + **一份**渲染。
+        handler 240 → 188 行（两段逐字重复的报告渲染收成一份）。
+      ⇒ **P0 顺带证伪了一个前提**（此前我与你都以为 Go 侧强在"运行时"）：
+        穷举 `os/exec`/`syscall`/`ptrace`/`--inspect` attach ⇒ **0 真实命中**，`go.mod` 无 require。
+        Go 真正独有的只有两项：**Go 源码 AST 插桩**（`go/ast` + missing-return/`<-ch` 等编译期规则）
+        与**同编译单元采集 runtime**（环形缓冲/限速/黑匣子）—— 这两项必须留，其余都是重复。
+      ⇒ **重复已漂移（不是"还没漂"）**：`SilentErrorDiscard` **3 份**（`benign` 严格性 Go 严格 / TS 真值即算）；
+        `Comparator` **语义分叉**（TS 跳过链路声明、Go 不跳；TS 把链路探针算已覆盖、Go 误报 undesigned）；
+        链重建时间精度 Go `UnixNano()` / TS `Date.parse` 毫秒。两边注释还互指"逐条对齐"。
+      ⇒ ★ **好消息：要做的路由有一半已经存在** —— `go-observe/probe/judge_client.go:126` 已经会
+        `POST OBSERVE_JUDGE_URL` → TS `serve.ts:2744` → `judge_service.ts`；只是无 env 时落回本地判定。
+        ⇒ 收拢顺序必须是**先让远端成为唯一路径、再删本地那份**（否则中途无判定可用）。
+      ⇒ **P1 → P7 待做**（详见文档第四节）：P1 删 TS 第 3 份 `SilentErrorDiscard`（`contract.ts:216-236`）；
+        P2 让 Go 远端判定唯一化后删 Go 本地判定；P3 收链重建重复 + 裁决两处语义分叉；
+        P4 把 `loop`（ledger 折叠 + 提案 + 阈值 0.1/1/2）搬到 TS；P5 裁决三条悬空规则；
+        P6 `observe-dsl` 瘦身为只剩插桩（**建议整个删掉**，插桩已有 `go run ./cmd/instrument` 这条路在跑）；
+        P7 **把 Go 纳入 CI**（`npm test` 目前完全不编译不测 Go ⇒ 上面任何重构都没有验证网）。
+      ⇒ **顺带记录三个基础设施缺陷**：
+        ① `go-observe/build/` **不存在且没有任何脚本产出它**（`e2e_smoke.ps1:18` 输出到 `$env:TEMP`），
+           `.gitignore:6/38` 双忽略 ⇒ `daemon.ts:201` 的候选路径是**死路径**。
+        ② 缺二进制时 `daemon.ts:238-244` 把 ENOENT 与"事件流不存在"混为一谈 ⇒ `loop-skipped`
+           **静默失效，无日志无告警**（对照 `go_instrument.ts:65/74/86` 三种失败都响亮）。
+        ③ `go.mod:9` = `module go-observe`（**非可解析路径，无 domain 前缀**）—— 跨仓复用会成问题。
+      ⇒ **需人拍板三件**（文档第五节）：两处语义分叉采哪边（我建议采 TS，它是已在 59 工具跑通的那个）；
+        `observe-dsl` 是否整个删；三条悬空规则（known-spread / unplanned-spread / blast-radius）是补齐三边都有
+        还是就留 TS 一份。

@@ -12,9 +12,12 @@ import { wrap, wrapData } from '.././plumbing.js';
 import { rebuildChains } from '../../infrastructure/analysis/observe/chain.js';
 import { TSComparator, renderTSDiffReport } from '../../infrastructure/analysis/observe/contract.js';
 import type { TSDLDecl, TSDiffReport } from '../../infrastructure/analysis/observe/contract.js';
-import { checkGoObserveDeps, goReportSummary, instrumentGoProject, isGoProject, restoreGoProject } from '../../infrastructure/analysis/observe/go_instrument.js';
-import { buildProbeLedger, clearProbeLedger, collectTsFiles, instrumentProject, ledgerSummary, restoreInstrumented, saveProbeLedger } from '../../infrastructure/analysis/observe/instrument.js';
 import { judgeEvents, judgeEventsWithLLM, normalizeEvents, renderJudgeReport } from '../../infrastructure/analysis/observe/judge_service.js';
+import {
+  observeLangs,
+  renderInstrumentReport,
+  renderUninstrumentReport,
+} from '../../infrastructure/analysis/observe/observe_langs.js';
 import { queryObserveLog } from '../../infrastructure/analysis/observe/log_query.js';
 import { getDSLByView, getLiveDir, requireProjectRoot } from '../../infrastructure/storage.js';
 import { observeTrace } from '.././observe/capture/observe_trace.js';
@@ -36,98 +39,43 @@ export const observeInstrumentHandler = wrapData(async (a) => {
     ? (a.contract_probes as string[])
     : undefined;
 
-  // Go 工程 → 桥接 go-observe（自动注入 camprobe.Capture）：插桩/还原统一出口。
-  if (isGoProject(target)) {
-    const lines = [`Observe Go 插桩（go-observe） ${dryRun ? 'DRY-RUN' : 'WRITE'} → ${target}`];
-    const data: Record<string, unknown> = {};
-    try {
-      if (unintrument) {
-        const restored = await restoreGoProject(target);
-        if (restored === 0) {
-          return { message: 'Observe Go 一键全拔：未找到备份（可能从未插桩，或备份已删除）。', data: [] };
-        }
-        return {
-          message: `Observe Go 一键全拔：已还原 ${restored} 个文件并删除备份目录。\n` +
-            `  目标：${target}\n  提示：被插桩工程内对 go-observe 的 reduce/require 需自行清理（本操作不触碰 go.mod）。`,
-          data: { restored },
-        };
-      }
-      const rep = await instrumentGoProject(target, { dryRun, deep: a.deep === true, effects: a.effects === true, contractProbes });
-      const mode = contractProbes ? `契约模式（${contractProbes.length} 个探针）` : '探索模式（全量插桩）';
-      lines.push(`  [${mode}] ${rep.files.length} 个 .go 文件参与扫描`);
-      for (const f of rep.files) {
-        if (f.error) lines.push(`  ✗ ${f.file}  ${f.error}`);
-        else if (f.sites.length > 0) lines.push(`  + ${f.file}  ${dryRun ? '将注入' : '注入'} ${f.sites.length} 探针点`);
-      }
-      const s = goReportSummary(rep);
-      lines.push(`  完成：${s.instrumented} 新插桩 / ${s.skipped} 已含探针跳过 / ${s.errors} 失败，共 ${s.totalSites} 探针点`);
-      data.report = rep;
-      if (dryRun) lines.push('  DRY-RUN 未写盘。传 dry_run=false 实际改写源码（备份在 .agent-io/observe-backup，随时可还原）。');
-      // 运行前提预检：工程能否 import go-observe（否则插桩后编译报错）
-      const deps = checkGoObserveDeps(target);
-      lines.push(deps.needs_replace || deps.needs_require
-        ? `  运行前提：工程尚未接 go-observe。可在 go.mod 补：
-       ${deps.require_line}
-       ${deps.replace_line}`
-        : `  运行前提：${deps.note}`);
-      return { message: lines.join('\n'), data };
-    } catch (e) {
-      return {
-        message: `Observe Go 插桩失败：${(e as Error).message}`,
-        data,
-        isError: true,
-      };
-    }
-  }
-
-  if (unintrument) {
-    const restored = restoreInstrumented(target);
-    const cleared = clearProbeLedger(target);
-    if (restored.length === 0 && !cleared) {
-      return { message: 'Observe 一键全拔：未找到备份与台账，无需还原（可能从未插桩，或备份已删）。', data: [] };
-    }
+  // ★ 2026-10-05：语言分派从**硬编码的 `if (isGoProject(target))`** 改成**语言包注册表**
+  //   （`infrastructure/analysis/observe/observe_langs.ts`），本 handler 退化成**薄壳**：挑包 → 调包 → 一份渲染。
+  //   原先这里是两段 ~35 行、**结构逐字相同**的报告渲染（Go 分支 / TS 分支），加第三门语言就得再抄一遍。
+  //   挑包判据照 `refactor_langs`：`manifest` 优先（`package.json` vs `go.mod`），判不出再退到「有该语言源文件」。
+  const pack = observeLangs.pick(target);
+  if (!pack) {
+    const known = observeLangs.list().map((p) => `${p.lang}(${p.label})`).join('、');
     return {
       message:
-        `Observe 一键全拔：已还原 ${restored.length} 个文件并删除备份目录${cleared ? '，已清理探针台账' : ''}。\n` +
-        restored.map((f) => `  ↺ ${f}`).join('\n'),
-      data: { restored, ledger_cleared: cleared },
+        `未找到匹配 \`${target}\` 的观察语言包 —— 目标项目里既没有已登记的 manifest，也没有已知语言的源文件。\n` +
+        `  已注册：${known}\n` +
+        `  ⇒ 要支持新语言：在 \`infrastructure/analysis/observe/observe_langs.ts\` 注册一个 \`ObserveLangPack\`。`,
+      data: [],
     };
   }
 
-  const files = collectTsFiles(target);
-  const results = await instrumentProject(target, { projectRoot, write: !dryRun, contractProbes, scope: a.scope === true });
-  let totalSites = 0;
-  let instrumented = 0;
-  let skipped = 0;
-  let errors = 0;
-  const mode = contractProbes ? `契约模式（${contractProbes.length} 个探针）` : '探索模式（全量插桩）';
-  const lines = [`Observe 插桩 [${mode}] ${dryRun ? 'DRY-RUN' : 'WRITE'} → ${target}`, `  扫描 ${files.length} 个 .ts 文件`];
-  for (const r of results) {
-    if (r.error) {
-      errors++;
-      lines.push(`  ✗ ${r.file}  ${r.error}`);
-    } else if (r.sites.length > 0) {
-      instrumented++;
-      totalSites += r.sites.length;
-      lines.push(`  + ${r.file}  ${dryRun ? '将注入' : '注入'} ${r.sites.length} 探针点`);
-    } else {
-      skipped++;
+  try {
+    if (unintrument) {
+      const rep = await pack.uninstrument(target);
+      return { message: renderUninstrumentReport(rep), data: rep };
     }
+    const rep = await pack.instrument(target, {
+      dryRun,
+      projectRoot,
+      contractProbes,
+      scope: a.scope === true,
+      deep: a.deep === true,
+      effects: a.effects === true,
+    });
+    return {
+      message: renderInstrumentReport(rep, { target, contractProbes }).join('\n'),
+      data: { report: rep, ledger: rep.ledger?.raw },
+    };
+  } catch (e) {
+    // ★ 包自己已经**响亮失败**过了（Go 缺工具链 / 目录不存在）⇒ 这里只补一句是哪个语言包，不吞、不改写。
+    return { message: `Observe 插桩失败（语言包 ${pack.lang}）：${(e as Error).message}`, data: {} };
   }
-  lines.push(`  完成：${instrumented} 新插桩 / ${skipped} 已含探针跳过 / ${errors} 失败，共 ${totalSites} 探针点`);
-  if (dryRun) lines.push('  DRY-RUN 未写盘。传 dry_run=false 实际改写源码（git 可兜底，幂等）。');
-
-  // 写盘插桩成功后记账：生成探针台账 + 统计，随 data 返回供上层查看/一键全拔联动
-  const data: Record<string, unknown> = { results };
-  if (!dryRun && totalSites > 0) {
-    const ledger = buildProbeLedger(results, target);
-    const ledgerFile = saveProbeLedger(target, ledger);
-    data.ledger = ledger;
-    data.ledger_file = ledgerFile;
-    lines.push(`  探针台账已记账 → ${ledgerFile}`);
-    lines.push(`  统计：${ledgerSummary(ledger)}`);
-  }
-  return { message: lines.join('\n'), data };
 });
 
 /** observe_judge：对一批事件执行偏差判定。decls（可选）提供时额外执行 P2 链路契约判定——
