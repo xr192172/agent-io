@@ -55,6 +55,9 @@ const TRIGGER_ROWS = [
   ['把 Go 项目/文件翻成 TS', '`translate_go_ts`', '机械骨架+验证闸（默认）；fill 用 AGNES key 池 LLM 逐孔填函数体；verify 对纯函数跑 Go↔TS 行为对拍'],
   ['改完一个函数，验证"跑得对不对"', '`behavior_baseline`', '金丝雀 harness：样例输入跑一次 capture 快照，改后 verify 对比'],
   ['选材/体检，评估项目健康度', '`code_health`', '死代码/圈复杂度/分层违规 → 健康分 + 问题清单'],
+  // ★ T15 切片（2026-10-05）：把原先 CLI-only 的「混合文件解耦」与「能力矩阵自检」接进 MCP 面。
+  ['把一个混合文件拆成独立文件（解耦）', '`signal_review` → `split_stage`', '`signal_review` 先 LLM 复核出「采纳簇」（LLM 不可用时**诚实降级**、不伪造结论），`split_stage` 再按簇切文件（**默认 dry-run**，`apply=true` 才落盘，带编译/测试级验收 + 失败回滚）'],
+  ['查语言支持度 / 该补哪个功能或哪门语言', '`capability_audit`', '语言 × 功能的 AST 覆盖缺口清单（只读纯计算）；★ 与 `capability_map`（**工具导航**）不是一回事'],
 ];
 
 // 改名场景表（静态，不随 build 频率变）
