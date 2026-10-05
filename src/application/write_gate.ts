@@ -1,13 +1,17 @@
 /**
  * write_gate —— **我们自己改的，我们自己登记**：把「写源码」与「索引保鲜」合成同一件事
  *
- * 为什么需要它（用户 2026-09-14）：
- *   「通过了我们这个工具修改了以后的……能不能**监视这些工具**？改了的部分才是改了，
- *     就不需要说后台那样做。」
- * 对。`fs.watch` 是在**猜**"什么变了"；而**我们自己写的文件，我们本来就知道**。
- * 靠猜必然有延迟、有漏事件（目录整树删除只发一次事件、编辑器原子保存会丢 rename……）；
- * 靠登记则零延迟、零遗漏。
+ * ★ 2026-10-05 从 `application/observe/runtime/` 搬到**本层根**（`application/write_gate.ts`）——
+ *   判据与 2026-10-04 `dispatch` 的那次同型，逐字复述那条：**它被多条线消费**（现 11 处 / 4 条线 +
+ *   presentation），**留在 observe 里反而让 design / refactor / meta 依赖 observe 内部**。
+ *   而 `application/` 根的 flatDirs 声明写的就是「应用层横切件，被各工具线共用、彼此无父子 ⇒ 平铺是终态」
+ *   ⇒ 本文件正是这一类，搬进来是**归位**不是新增目录。
+ *   搬后 `application/observe/runtime/` 只剩 3 个文件（run_tests / stale_check / watch_project_tool），
+ *   全是 observe 线自己的东西。
+ *   ★ 同步更新：`structure.domains.json` 的 `flat-application` note（文件数 6 → 7）。
+ *   ★ 用项目自带的 `rename_files` 搬的（联动 11 处 import 说明符），不是手改。
  *
+ * 为什么需要它（用户 2026-09-14）：
  * ─────────────────────────────────────────────────────────────
  * 核心不变量（整个索引层只服务这一个目标）
  * ─────────────────────────────────────────────────────────────
@@ -47,14 +51,14 @@
  *     （索引是增强，不是写盘的前提）。
  */
 
-import { selfWritesPath, SELF_WRITE_TTL_MS, readSelfWrites, type SelfWriteEntry } from '../../../infrastructure/index/self_writes.js';
+import { selfWritesPath, SELF_WRITE_TTL_MS, readSelfWrites, type SelfWriteEntry } from '../infrastructure/index/self_writes.js';
 import fs from 'node:fs';
 import path from 'node:path';
-import { getProjectCacheDb, beginBatch, endBatch, projectCacheDbPath, type Database } from '../../../infrastructure/index/db.js';
-import { syncFile, syncFileSync, removeFile, changedSymbolNames, reopenRefsTo, resolveCrossFileCalls, type SyncStatus, type CrossFileResolveStats } from '../../../infrastructure/index/symbols.js';
-import { canParseFileSync } from '../../../infrastructure/parse/index.js';
-import { snapshotBeforeWrite, type FileSnapshotMeta } from '../../refactor/snapshot/file_snapshot.js';
-import { isIndexIncomplete } from '../../../infrastructure/index/index_backfill.js';
+import { getProjectCacheDb, beginBatch, endBatch, projectCacheDbPath, type Database } from '../infrastructure/index/db.js';
+import { syncFile, syncFileSync, removeFile, changedSymbolNames, reopenRefsTo, resolveCrossFileCalls, type SyncStatus, type CrossFileResolveStats } from '../infrastructure/index/symbols.js';
+import { canParseFileSync } from '../infrastructure/parse/index.js';
+import { snapshotBeforeWrite, type FileSnapshotMeta } from './refactor/snapshot/file_snapshot.js';
+import { isIndexIncomplete } from '../infrastructure/index/index_backfill.js';
 
 // ─────────────────────────────────────────────────────────────
 // 索引写穿的结果类型（一个类型 + 可选字段：调用方统一渲染，不用分三种形状）

@@ -47,7 +47,7 @@ import type { JudgeIssue } from './refactor_judge.js';
 import { scanContracts, diffContracts, type ContractSnapshot, type ScanContractsOptions, type UndefinedRef } from '../../../infrastructure/analysis/contract_gate/index.js';
 import { checkEmbedSubmissions, type SubmitCheckResult } from '../../../infrastructure/analysis/submit_gate/index.js';
 import { planFunctionAnnotation } from '../annotate/function_annotation.js';
-import { syncSelfWrites, recordSelfWrite, writeThroughLine } from '../../observe/runtime/write_gate.js';
+import { syncSelfWrites, recordSelfWrite, writeThroughLine } from '../../write_gate.js';
 
 // re-export 契约类型（向后兼容：外部可从本模块取用）
 export type {

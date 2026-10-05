@@ -24,7 +24,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { DeadDepCandidate } from '../../../infrastructure/graph/dead_deps.js';
 import { applyWithVerify, defaultVerifyCommands, runVerification, type VerifyCommand, type VerificationOutcome, type VerifyOutcomeKind } from '../../../infrastructure/verify_refactor.js';
-import { snapshotAndRecordSelfWrite, syncSelfWritesSync, toRelPosix, type WriteThroughOutcome } from '../../observe/runtime/write_gate.js';
+import { snapshotAndRecordSelfWrite, syncSelfWritesSync, toRelPosix, type WriteThroughOutcome } from '../../write_gate.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
 // ─────────────────────────────────────────────

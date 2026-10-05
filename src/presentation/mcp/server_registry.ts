@@ -18,7 +18,7 @@ import { z } from 'zod';
 import { makeCapabilityMapHandler, LANE_IDS, type LaneId } from '../../application/meta/registry/capability_map.js';
 import { indexIntegrity, renderIntegrity } from '../../application/meta/integrity/index_integrity.js';
 import { ensureProjectIndex, detectStaleIndex } from '../../infrastructure/index/index_freshness.js';
-import { hasLiveIndex } from '../../application/observe/runtime/write_gate.js';
+import { hasLiveIndex } from '../../application/write_gate.js';
 import { prewarmKernel } from '../../infrastructure/parse/index.js';
 import { scheduleBackfill, backfillState, isIndexIncomplete } from '../../infrastructure/index/index_backfill.js';
 import { renderGranularityNote } from '../../application/refactor/parse_capability/parse_capability.js';

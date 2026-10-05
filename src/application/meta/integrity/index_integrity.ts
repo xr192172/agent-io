@@ -26,7 +26,7 @@ import { getProjectCacheDb } from '../../../infrastructure/index/db.js';
 import { reopenRefsTo, resolveCrossFileCalls } from '../../../infrastructure/index/symbols.js';
 import { getProjectView } from '../../../infrastructure/project_view.js';
 import { INDEX_SKIP_DIR_EXTRA, isNoiseFileName, isTestFileName, isUnderSkippedDir } from '../../../infrastructure/parse/source_exts.js';
-import { hasLiveIndex } from '../../observe/runtime/write_gate.js';
+import { hasLiveIndex } from '../../write_gate.js';
 import { pendingSelfWrites } from '../../../infrastructure/index/self_writes.js';
 import { backfillState, backfillSummary, isIndexIncomplete } from '../../../infrastructure/index/index_backfill.js';
 import { ensureProjectIndex, type IndexState } from '../../../infrastructure/index/index_freshness.js';

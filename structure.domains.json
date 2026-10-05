@@ -427,7 +427,7 @@
       "id": "flat-application",
       "layer": "application",
       "dir": "src/application",
-      "note": "应用层横切件（**6** 个文件）：handlers / plumbing / tool_registry / stage_registry / types / **dispatch**。被各工具线共用、彼此无父子 ⇒ 平铺是终态。★ 登记它**是必需的**：只要 `application/` 下新增任一域（如 cross / harvest），量具就会把 `src/application/` 当成「域的父目录」去扫它的直属文件 ⇒ 不登记则它们全变 `misplaced`（实测：登记 cross + harvest 后 misplaced 2 → 7；补上本条后回到 2）。★ `dispatch` 于 2026-10-04 从 `application/observe/` 挪到此处：它被 **3 条线**消费（design 经 `handlers.dispatchDslEdit` / meta 经 `explore_code.dispatchWatch` / mcp 经 `server_registry.collectPendingAlertText`），是真正的**跨线调度件**，留在 observe 里反而会让 design 线依赖 observe 内部 —— 这也消掉了 T29 的归属歧义。",
+      "note": "应用层横切件（**7** 个文件）：handlers / plumbing / tool_registry / stage_registry / types / **dispatch** / **write_gate**。被各工具线共用、彼此无父子 ⇒ 平铺是终态。★ 登记它**是必需的**：只要 `application/` 下新增任一域（如 cross / harvest），量具就会把 `src/application/` 当成「域的父目录」去扫它的直属文件 ⇒ 不登记则它们全变 `misplaced`（实测：登记 cross + harvest 后 misplaced 2 → 7；补上本条后回到 2）。★ `dispatch` 于 2026-10-04 从 `application/observe/` 挪到此处：它被 **3 条线**消费（design 经 `handlers.dispatchDslEdit` / meta 经 `explore_code.dispatchWatch` / mcp 经 `server_registry.collectPendingAlertText`），是真正的**跨线调度件**，留在 observe 里反而会让 design 线依赖 observe 内部 —— 这也消掉了 T29 的归属歧义。★ ★ `write_gate` 于 2026-10-05 从 `application/observe/runtime/` 挪到此处，**判据与 dispatch 同型**（逐字复述）：它被 **11 处 / 4 条线 + presentation** 消费，是**全项目写源码的统一闸门**（快照 → 真写 → 索引写穿 + 自写登记），留在 observe 里会让 design / refactor / meta 三条线都去依赖 observe 内部。搬后 `observe/runtime/` 只剩 3 个文件（run_tests / stale_check / watch_project_tool），全是 observe 线自己的东西。",
       "role": "engine"
     },
     {

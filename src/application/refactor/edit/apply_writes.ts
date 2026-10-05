@@ -31,7 +31,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { writeSourceFiles, toRelPosix, type WriteThroughOutcome } from '../../observe/runtime/write_gate.js';
+import { writeSourceFiles, toRelPosix, type WriteThroughOutcome } from '../../write_gate.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
 /** 一项待落盘的改写：目标文件（相对 `projectRoot` 或绝对路径）+ 新内容全文 */

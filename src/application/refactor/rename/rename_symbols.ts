@@ -41,7 +41,7 @@ import { renameLocals, type LocalRenameOutcome } from './rename_local.js';
 import { renameFile } from './rename_file.js';
 import { resolveProjectRoot } from '../../../infrastructure/analysis/project_root/index.js';
 import { createProtectGuard } from '../../../infrastructure/analysis/refactor/protect.js';
-import { writeSourceFiles, type WriteThroughOutcome } from '../../observe/runtime/write_gate.js';
+import { writeSourceFiles, type WriteThroughOutcome } from '../../write_gate.js';
 import type { ExternalRef } from '../../../infrastructure/analysis/project_root/index.js';
 import { skipDirSet, TS_JS_EXTS } from '../../../infrastructure/parse/source_exts.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';

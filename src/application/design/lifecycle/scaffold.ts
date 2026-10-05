@@ -23,7 +23,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { DesignDSL, SemanticFile, CodeTemplate, Node, ContentBlock } from '../../../domain/types.js';
 import { getDSL } from '../../../infrastructure/storage.js';
-import { snapshotAndRecordSelfWrite, syncSelfWritesSync, toRelPosix } from '../../observe/runtime/write_gate.js';
+import { snapshotAndRecordSelfWrite, syncSelfWritesSync, toRelPosix } from '../../write_gate.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
 export interface ScaffoldInput {
