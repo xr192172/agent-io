@@ -1003,3 +1003,31 @@
           ⇒ 回滚落盘实为 `action=save, source=rollback`（Go 侧读取器证实历史第 4 条正是如此）。
           与本仓"声明式的东西不落地"同类。**不在本笔改**：改它要动 Go 侧同名字段，
           且会让 TS/Go 两侧审计口径一起变，属跨语言决策。
+
+      ✅ **P4 步骤 4 已落（2026-10-05 本笔）**：`ProposalStore` CRUD 搬到
+        `infrastructure/analysis/observe/proposal_store.ts`（Go `proposal.go:23-157` + `:301-341`）。
+        ⚠ **刻意不搬 `ApproveGated`/`freeze`/两个验证门**（`:161-298`）—— 那是步骤 5 且是全 P4
+        唯一有真风险的一块（需新写 decl 级 LLM 复核通道），本笔不碰。
+        照搬：**提案权与写盘权分离**（提案只描述"想改成什么"，绝不触碰权威 `dsl.json`）、
+        `validateDecls`（声明集非空 + 每条 rule/expect 去空白后非空，错误文案带**第几条**）、
+        `list` 按创建时间升序且**同刻以 id 字典序决胜**、**坏文件跳过**（一个坏 JSON 不该让整份列表读不出来）、
+        目录不存在返回 `[]`、`reject` 的**状态机守卫**（仅 pending 可拒，错误文案带现状态）。
+        ★ **两处有意分歧**（均已核实、已在文件头登记）：
+        ① **ID 精度**：Go `nextProposalID`(`:64-67`) 用 `UnixNano`（纳秒）+ `atomic.Int64` 进程内序列；
+          JS `Date.now()` 只有**毫秒** ⇒ 照搬会让同毫秒创建的提案只靠 seq 决胜。
+          本实现保留 `proposal-<ms>-<%04d seq>` 形状（与 Go 一致，便于人工比对与 Go 侧读取）+ 进程内序列兜底，
+          `%04d` 补零保证**字典序 == 数值序**。
+          **已知局限（Go 侧同款，非本笔引入）**：序列是进程内的，跨进程/重启后 seq 归 1
+          ⇒ 同毫秒 ID 唯一性不保证（Go 靠纳秒精度天然规避，TS 靠 seq）。
+          **不修**：修它要引入持久序列或 UUID，超出"照搬"范围；且 `List` 的二级排序键已保证**排序确定**。
+          ★ **实测**：一次创建 3 条，其中两条落在**同一毫秒** `1791207198899`
+          ⇒ Go 与 TS 都按 id 决胜排成 `...-0002 → ...-0003`，tie-break 兜住了精度退化。
+        ② **`write` 改原子写**：Go `proposal.go:315-324` 是裸 `os.WriteFile`，而它自己的
+          `dsl_store.go:201-214` 用 tmp+rename ⇒ **Go 侧自身不一致**。本实现复用 `dsl_store` 的纪律，
+          跨语言 JSON 格式不变。已登记；若要严格对齐可退回裸写。
+        ★ **跨语言兼容实测**：TS 产出的 `proposals/*.json` 由 Go 用自己的 struct（含 `omitempty` 纪律）读取，
+          **10 个字段全部正确解析**（id/created_at/source/reason/decls/status/reviewed_at/reviewer），
+          且 **Go 侧也跳过了同一个坏文件**、**排序结果与 TS 完全一致**。
+          为什么必需：`daemon.ts:249` 广播的「observe-dsl proposals 查看」直接 diff 这个目录，
+          Go 的 `dsl_cli.go:66` 也读它 ⇒ 格式必须与 Go 逐字兼容。
+        另记：`.tmp` 残留文件在 `list` 里被显式排除（Go 靠扩展名过滤自然排除，TS 侧多一条显式守卫）。
