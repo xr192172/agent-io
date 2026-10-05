@@ -897,7 +897,7 @@
           而 Go 侧 `comparator.go:79-80` 注释把"判定与回归门同源"写成了核心不变量）⇒ P4 的硬前置已清。
         ★ 另记录一处**保留的差异**（非漂移）：空 `op` 的文案 canonical 印 `op=`（`judge.ts:43`），
           被删的第 3 份曾印 `op=<none>`。`op=` 与 Go `contract.go:104` 的 `%s` 一致 ⇒ 取 `op=`。
-      ⇒ **P2 → P7 待做**（详见文档第四节）：
+      ⇒ **P4 步骤 1+2 待做**（详见文档第四节）：
         P2 让 Go 远端判定唯一化后删 Go 本地判定；P3 收链重建重复 + 裁决两处语义分叉；
         P4 把 `loop`（ledger 折叠 + 提案 + 阈值 0.1/1/2）搬到 TS；P5 裁决三条悬空规则；
         P6 `observe-dsl` 瘦身为只剩插桩（**建议整个删掉**，插桩已有 `go run ./cmd/instrument` 这条路在跑）；
@@ -935,3 +935,40 @@
         ⇒ 三态全部实证：临时注入类型错误 ⇒ **FAIL / exit 1**；临时把 Go 门 `need` 指向不存在的工具链 ⇒ **SKIP / exit 2**；
           清理后 ⇒ **PASS / exit 0**。（★ 测 SKIP 时我一度用 `Select-Object -First` 截断管道读 `$LASTEXITCODE`，
           读出 0 是**测量错误**——`-First` 会提前终止管道杀掉 npm；改用不截断管道后得到真实的 2。）
+      ✅ **P4 步骤 1+2 已落（2026-10-05 本笔）**：
+        · 步骤 1 剩余半：扩 `TSSDLDecl` 三字段（`origin`/`verified_by`/`status`）—— Go `llm_judge.go:45` 的
+          `DSLDecl` 有 8 字段、TS 此前只 5 个。侦察指出这三个是**审计链载体**（`finalizeDecls` 靠
+          `status`/`verified_by` 记复核结论、`HistoryEntry` 靠 `origin` 记谁写的）⇒ 不补齐则 TS 一旦接手
+          审批，**门证据无处落**。（另半——谓词表提到模块级——已在 P1 完成。）
+        · 步骤 2：新增 `infrastructure/analysis/observe/ledger_fold.ts`（只搬 TS 增量，不重定义已有物）
+          ⇒ 复用 `impact_ledger_store.ts` 的 `LedgerEntry`（比 Go 镜像多 `resolution` 字段）与 `loadLedger`；
+          只搬 Go 侧缺的四块：`analyzeLedger`/`foldEntries`（折叠）、`knownSpreadDecl`（累犯→声明）、
+          `parseKnownSpread`/`sameSpreadSet`/`joinQuoted`（去重与文案）。
+          ★ **顺带消掉一个裸字面量**：Go 的 ledger 默认路径在 `dsl_cli.go:450` 拼成
+            `filepath.Join(dataDir, "..", "..", ".agent-io", "impact", "ledger.json")`（从 `.agent/observe`
+            上溯两级、且不在任何常量里）⇒ 改走 `impactLedgerFile(projectRoot)` 后该字面量消失。
+          ★ 三条**容易被"顺手优化"掉**的折叠语义，已写进文件头钉住：
+            ① `consumed` 判据是 `consumed_at` 非空、**不是** `status` ⇒ 偏差率可能 > 1，这是既有约定不是 bug
+            ② `resolved` **算历史违反**（"发生过"本身是设计信号）
+            ③ 归因是**保守超集**：无法精确归到单源（Go 注释明说）⇒ 每个 declared file 各记一次、塞完整
+              unexpected 并集。代价是高估，方向是"宁可高估不漏判"。
+          ★ 记录一处**有意不逐字对齐**：Go `%q` 对控制字符转义为 `\x..`，TS `JSON.stringify` 为 `\u00xx`
+            ⇒ 按 `JSON.stringify` 取（与本仓其余 JSON 文案一致），不为逐字对齐手写 Go 转义器。
+          ★ **跨语言对拍已做**：同一份 10 条台账夹具，Go 与 TS 跑出**逐字节相同**的结果
+            （`total=10 consumed=9 violated=8 rate=0.8889` + 三个累犯模式全同）⇒ 这是"照搬"的硬证据，
+            不是只靠读码声称。TS 侧另有分支覆盖实测：consumed/violated 五分支、门槛 2/3/4、
+            排序（3次→3次字典序→2次）、constraint 往返、`sameSpreadSet` 真/假、rule 不匹配返 null。
+
+      ⇒ ★★ **纠正上一轮排错了的顺序**（证据 `loop.go:108`）：
+        Go 的 `loop.go:108` 调 `NewComparator().RegisterDefaultPredicates().Compare(...)`
+        ⇒ **Go 的 `loop` 依赖 Go 的 Comparator**，P2 删 Comparator 会**直接打断 `loop`**，而 `loop` 正是
+        P4 步骤 6 要搬的东西。**故正确顺序是 P4 → P2，不是 P2 → P4。**
+        另注：`loop.go:131` 走的是 `JudgeEventsLLM`（远端），却在未设 `OBSERVE_JUDGE_URL` 时**静默落回本地判定**
+        ⇒ 这是本仓反复出现的假绿灯，P2 第一步要处理的正是它。
+
+      ⇒ **P4 步骤 3-6 与 P2 待做**（详见文档第四节）：
+        步骤 3 `DesignDSLStore` 全量（搬完可删 Go `dsl_store.go` + `dsl_cli` 的 show/history/rollback/seed）
+        步骤 4 `ProposalStore` CRUD（搬完可删 propose/proposals/reject）
+        步骤 5 `ApproveGated` + `freeze` + **新写 decl 级 LLM 复核通道**（`judgeEventsWithLLM` 语义不匹配，
+          它只对 deviation 事件复核、不是"逐条无谓词声明"复核）⇒ 这一步才允许删 approve
+        步骤 6 `RunLoop` 全量 + 改 `daemon.ts:218-226` 的 spawn 路径

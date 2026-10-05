@@ -24,6 +24,18 @@ export interface TSDLDecl {
   /** 链路契约（P2）：声明的调用序（探针名）。非空时走链路判定——声明的
    * 调用序必须是某条实测链的子序列（未声明的中间帧不算偏差）。 */
   chain?: string[];
+
+  // ── 以下三字段 2026-10-05 补齐（P4 硬前置）────────────────────────────
+  // Go 侧 `llm_judge.go:45` 的 `DSLDecl` 有 8 个字段，TS 侧此前只有 5 个，缺这三个。
+  // 它们不是"可选的元信息"：`finalizeDecls`（Go `proposal.go:391`）靠 `status`/`verified_by`
+  // 记录**每条声明的复核结论**，`HistoryEntry`（`dsl_store.go:37`）靠 `origin` 记录**谁写的**。
+  // ⇒ 不补齐，TS 侧一旦接手审批，**门证据无处落**。
+  /** 声明来源（如 `runtime-observe` = 运行时观测折叠生成；`manual` = 人工写入）。 */
+  origin?: string;
+  /** 复核证据串（Go 侧同名字段）；冻结时为 `frozen: <原因>`。 */
+  verified_by?: string;
+  /** 生命周期：`proposed`（待复核）/ `locked`（已定稿）/ `proposed` + verified_by 含 needs-llm-review。 */
+  status?: string;
 }
 
 /** TS 侧设计 DSL 文档（dsl.json）。 */
