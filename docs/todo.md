@@ -66,6 +66,28 @@
           **让"选完之后"那一步有统一的名字** —— 即 `Touched` 的**单数对象形态**。
         · ★ `Touched` 现状：**作用域类**（`feature`/`project_dir`）✓ 齐；**对象类**四个全是**集合**
           （`written_files`/`read_files`/`symbols`/`nodes`）⇒ ★ **缺"单数对象"**（`file`/`symbol`/`node_id`）。
+      ⇒ ★★★★★ **2026-10-05 第三轮：上面整段**作废** —— 我用的读数有假（用户提示"我们统一过一次出参入参"）**：
+        · **根源：量具 `measure_b_contract.mjs` 只量产物**顶层**字段，而 `touched` 是个**对象** ⇒
+          它内部六个键**完全量不到**。**于是"`symbols`/`read_files`/`nodes` 产物端 0/37"是假读数。**
+        · ★ **真调一眼**：`find_references` 的 `touched` = `{project_dir, symbols:["Kk"], read_files:["com/a/Kk.java"]}`
+          ⇒ **`symbols` / `read_files` 一直在产**。
+        · ★★ **真读数（源码级，扫 `touchedOf` 函数体；31 个 [B] 有它）**：
+          `feature 21/31 · project_dir 22/31 · written_files 19/31 · read_files 10/31 · symbols 8/31 · nodes 10/31`
+          ⇒ **六键全都有人产**。
+        · ★★★ **量具已补上这一节**（扫 `touchedOf` 函数体报六键覆盖），并在源码里写下这次误判。
+      ⇒ ★★★★★ **链实证（真跑，2026-10-05）**：
+        `find_references` → 用它的 `touched` **直接构造** `rename_symbols` 的入参
+        （`read_files[0]`→`file`、`symbols[0]`→`symbol`，**零字段名翻译**）→ **跑通**
+        （定义 + 2 个 importer 全部改名）✓
+      ⇒ ★★★★ **⇒ 结论（第三轮，取代前两轮）**：
+        **`Touched` 就是那张"表"（已有、且是活的）；链在**数据上**已经通了。**
+        缺的**不是**数据、**不是**形态，而是两样：
+        1. **"从集合里选一个"的统一表达** —— 实证里唯一的手工动作就是取 `[0]`；
+           ★ 而 **Unix 里那也是 `$1` / `xargs`，选择永远由调用方给** ⇒ 这一格**本来就不该自动**，
+           缺的是**把它写成明文的约定**（"上游给 N 个，调用方逐个喂；用 `touched.<key>[i]`"）。
+        2. **`docs/tool-chain-contract.md` §5 那条链从来没验过** —— 文档写了
+           `find_references → rename_symbols → edit_code → run_tests`，但**没有一条真跑验收**。
+           ★ 今天这条实证就是**第一块砖**。
       ⇒ ★★ **判据（★ 2026-10-05 修正：不能是"覆盖率 100%"）**：
         原写成"10/56 → 56/56"，**但"每个工具都收 `feature`"是错的** ——
         `translate_go_ts` 这类与 feature 无关的工具**不该收**（硬塞 = **造兜底**，本仓明令禁止）。

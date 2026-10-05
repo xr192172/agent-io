@@ -334,6 +334,33 @@ if (process.argv.includes('--json')) {
   console.log(`   入参端：${cov('input', ['project_dir', 'feature', 'files', 'symbols', 'file', 'node_id'])}`);
   console.log('   ⇒ ★ 入参端**没有一个**收 `touched` 这个对象；两端只共享**扁平字段名**（project_dir / feature …）');
   console.log('   ⇒ ★ 也就是说：产物端把作用域塞进 `touched`，入参端却只认平铺的 — 这正是"链要手工拼"的地方。');
+  // ★★★ 关键：上面那一节的产物字段是**顶层**的，而 `touched` 是个**对象** ⇒ 它内部的六个键**上面完全看不到**。
+  //   2026-10-05 实测教训：我曾据此断言"`symbols`/`read_files` 产物端 0/37"，**整轮结论作废** ——
+  //   而真调一看 `find_references` 的 `touched` = `{project_dir, symbols:["Kk"], read_files:["com/a/Kk.java"]}`。
+  //   ⇒ 这一节**必须单列**：扫各 [B] 的 `touchedOf` **函数体**，看它填了哪些键。
+  {
+    const KEYS = ['feature', 'project_dir', 'written_files', 'read_files', 'symbols', 'nodes'];
+    const bodyOf = (src) => {
+      const i = src.indexOf('touchedOf');
+      if (i < 0) return null;
+      const rest = src.slice(i);
+      const end = rest.indexOf('\n}\n');
+      return end > 0 ? rest.slice(0, end) : rest.slice(0, 3000);
+    };
+    const hits = [];
+    for (const f of files) {
+      const sf = program.getSourceFile(f);
+      const body = bodyOf(sf ? sf.getFullText() : '');
+      if (!body) continue;
+      hits.push({ f: path.relative(ROOT, f).replace(/\\/g, '/'), got: KEYS.filter((k) => new RegExp(`\\b${k}\\b`).test(body)) });
+    }
+    console.log(`★★★ \`touched\` **内部六键**的产出覆盖（扫 \`touchedOf\` 函数体；${hits.length} 个 [B] 有它）：`);
+    for (const k of KEYS) {
+      console.log(`     ${k.padEnd(15)} ${String(hits.filter((h) => h.got.includes(k)).length).padStart(2)} / ${hits.length}`);
+    }
+    console.log('     ⇒ ★ 这一个读数**上面几节都量不到** —— 上方"产物字段"只到 `touched` 这一层为止，不会下钻。');
+    console.log('');
+  }
   // ★★ 接力键：词表里 `kind === 'anchor'` 的词在两端各覆盖多少；以及**不在词表**的候选异名。
   //    ★ 2026-10-05（T54 第一步）：本节的目的是把"该收口的名字"**机械列出来**，
   //      替代原先那份**手抄的** `ANCHOR_CANDIDATES`（它会腐：里面留着已删家族的 `box_dir`/`brick_dir`/`slim_dir`）。
