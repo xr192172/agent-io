@@ -77,6 +77,27 @@ const typeOfProp = (t, name) => {
 const normType = (s) => s.replace(/\s*\|\s*undefined\b/g, '').replace(/\bundefined\s*\|\s*/g, '').trim();
 
 /**
+ * ★ 把一个初始化表达式**折成一行字符串**（能折就折，不能折返回 `null`）。
+ *
+ * 为什么必须有它（2026-10-05 实测）：词表里好些 `meaning`/`fix` 是**多行拼接**
+ *   （`'第一句' + '第二句' + …`）。旧实现直接 `v.getText()` ⇒ 把**缩进和换行原样吐进 markdown 表格**
+ *   ⇒ **一行被撑成多行、表格散架**（`definition_file` / `read_files` / `files` 都是这种写法，
+ *   而上一版生成物里那份 `definition_file` **根本没生成过** ⇒ 这个洞一直没人碰）。
+ *   ⇒ 判据：**AST 里的字符串拼接是语法结构，按结构折**（不是正则去拼）。
+ */
+function foldStringLiteral(v) {
+  if (!v) return null;
+  if (ts.isStringLiteral(v) || ts.isNoSubstitutionTemplateLiteral(v)) return v.text;
+  if (ts.isParenthesizedExpression(v)) return foldStringLiteral(v.expression);
+  if (ts.isBinaryExpression(v) && v.operatorToken.kind === ts.SyntaxKind.PlusToken) {
+    const l = foldStringLiteral(v.left);
+    const r = foldStringLiteral(v.right);
+    return l === null || r === null ? null : l + r;
+  }
+  return null;
+}
+
+/**
  * 读 `src/domain/b_terms.ts` 的 AST（**不 import 构建产物** ⇒ 不会读到陈旧 dist）。
  * ★ 2026-10-05：从 `--glossary` 分支里**提出来**，好让"锚点名"也由它派生（见下）——
  *   原先本文件**另持一份手抄的 `ANCHOR_CANDIDATES`**，里面还留着已删/已退役的名字
@@ -103,7 +124,8 @@ function readTerms() {
             const k = ts.isIdentifier(q.name) || ts.isStringLiteral(q.name) ? q.name.text : null;
             if (k !== key) continue;
             const v = q.initializer;
-            if (ts.isStringLiteral(v) || ts.isNoSubstitutionTemplateLiteral(v)) return v.text;
+            const folded = foldStringLiteral(v);   // ★ 多行拼接折成一行（否则撑断 markdown 表格）
+            if (folded !== null) return folded;
             if (v.kind === ts.SyntaxKind.TrueKeyword) return 'true';
             return v.getText();
           }
@@ -330,16 +352,16 @@ if (process.argv.includes('--json')) {
   const cov = (where, keys) =>
     keys.map((k) => `${k} ${rows.filter((r) => (r[where].fields ?? []).includes(k)).length}/${rows.length}`).join(' · ');
   console.log('★★ 按字段覆盖率（★ 这一行才是"能不能接链"的判据）：');
-  console.log(`   产物端：${cov('product', ['touched', 'project_dir', 'feature', 'written_files', 'read_files', 'symbols', 'nodes'])}`);
+  console.log(`   产物端：${cov('product', ['touched', 'project_dir', 'feature', 'written_files', 'symbols', 'nodes'])}`);
   console.log(`   入参端：${cov('input', ['project_dir', 'feature', 'files', 'symbols', 'file', 'node_id'])}`);
   console.log('   ⇒ ★ 入参端**没有一个**收 `touched` 这个对象；两端只共享**扁平字段名**（project_dir / feature …）');
   console.log('   ⇒ ★ 也就是说：产物端把作用域塞进 `touched`，入参端却只认平铺的 — 这正是"链要手工拼"的地方。');
-  // ★★★ 关键：上面那一节的产物字段是**顶层**的，而 `touched` 是个**对象** ⇒ 它内部的六个键**上面完全看不到**。
+  // ★★★ 关键：上面那一节的产物字段是**顶层**的，而 `touched` 是个**对象** ⇒ 它内部的键**上面完全看不到**。
   //   2026-10-05 实测教训：我曾据此断言"`symbols`/`read_files` 产物端 0/37"，**整轮结论作废** ——
   //   而真调一看 `find_references` 的 `touched` = `{project_dir, symbols:["Kk"], read_files:["com/a/Kk.java"]}`。
   //   ⇒ 这一节**必须单列**：扫各 [B] 的 `touchedOf` **函数体**，看它填了哪些键。
   {
-    const KEYS = ['feature', 'project_dir', 'written_files', 'read_files', 'symbols', 'nodes'];
+    const KEYS = ['feature', 'project_dir', 'written_files', 'symbols', 'nodes'];
     const bodyOf = (src) => {
       const i = src.indexOf('touchedOf');
       if (i < 0) return null;
@@ -354,7 +376,7 @@ if (process.argv.includes('--json')) {
       if (!body) continue;
       hits.push({ f: path.relative(ROOT, f).replace(/\\/g, '/'), got: KEYS.filter((k) => new RegExp(`\\b${k}\\b`).test(body)) });
     }
-    console.log(`★★★ \`touched\` **内部六键**的产出覆盖（扫 \`touchedOf\` 函数体；${hits.length} 个 [B] 有它）：`);
+    console.log(`★★★ \`touched\` **内部各键**的产出覆盖（扫 \`touchedOf\` 函数体；${hits.length} 个 [B] 有它）：`);
     for (const k of KEYS) {
       console.log(`     ${k.padEnd(15)} ${String(hits.filter((h) => h.got.includes(k)).length).padStart(2)} / ${hits.length}`);
     }
@@ -384,7 +406,7 @@ if (process.argv.includes('--json')) {
   console.log('     ⇒ ★ 这些要么**登记进词表**、要么**收口到已有的 anchor**（同义异名 = 判据分叉）');
   const retiredIn = (m) => [...new Set([...m.keys()].filter((n) => RETIRED_NAMES.has(n)))];
   console.log(`★ **已退役词**的使用 —— 产物侧：${retiredIn(prodNames).join(' · ') || '（无 ✓）'} ｜ 入参侧：${retiredIn(inNames).join(' · ') || '（无）'}`);
-  console.log('     ⇒ ★ 词表的"退役"多数是**分侧**的（例：`files` 是**产物侧**退役 —— 产物必须用 `written_files`/`read_files`，');
+  console.log('     ⇒ ★ 词表的"退役"多数是**分侧**的（例：`files` 是**产物侧**退役 —— 产物必须用 `written_files`，');
   console.log('        而**入参侧**"限定本次处理哪几个文件"是正当用法）⇒ 两边分开看，别把入参侧的合法用法读成违规。');
   console.log('');
   const noAnchor = rows.filter((r) => !r.product.anchors?.length);

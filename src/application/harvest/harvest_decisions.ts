@@ -248,9 +248,9 @@ function harvestDecisionsCore(input: HarvestInput): HarvestResult {
  *
  * 口径（`Touched` 两类字段，见 domain/b_terms.ts:42-89）：
  *   - 作用域类（`project_dir` / `feature`）：随时可给，不依赖成败；
- *   - 对象类（`written_files` / `read_files` / `symbols` / `nodes`）：只有**真发生**才给，否则整项省略。
+ *   - 对象类（`written_files` / `symbols` / `nodes`）：只有**真发生**才给，否则整项省略。
  */
-function touchedOf(input: HarvestInput, r: HarvestResult): Touched {
+function touchedOf(input: HarvestInput): Touched {
   const touched: Touched = {};
 
   // feature：作用域类，随时可给（入参必填）。★ 产物顶层**也有** `feature`，属"同一事实两个名字"
@@ -261,23 +261,11 @@ function touchedOf(input: HarvestInput, r: HarvestResult): Touched {
   //   `git_root`（默认 <cwd>）。二者都不是"被分析项目的根"，且缺省会回落 `process.cwd()`
   //   （那是"进程当前目录"，不是本次调用**确立的对象**）。按"不猜"口径 ⇒ **整项省略**。
 
-  // read_files：本次**真读**作为输入的文件。来源：`r.candidates` 的出处字段（doc/comment 两种
-  //   候选分别对应 `scanDocs` 142 行 / `scanComments` 175 行的 `fs.readFileSync`）：
-  //     · source='comment' → `file_path` 即被读源码文件（已为相对路径，186 行 path.relative(cwd, f)）；
-  //     · source='doc'     → `ref` 形如 `<rel>:<行号>`（154 行），去掉末尾 `:<数字>` 得文件路径；
-  //     · source='gitlog'  → `ref` 是 `git:<hash>`，不对应文件 ⇒ 跳过。
-  //   ★ 两点如实标注：(a) 这是"**有命中**的文件的子集"，读过但无设计意图命中的 md 不在内；
-  //   (b) 路径基准是 `process.cwd()`（见 154/186 行），**不保证等于仓库相对路径**（本 [B] 无 project_dir 锚点）。
-  const read = new Set<string>();
-  for (const c of r.candidates) {
-    if (c.source === 'comment') {
-      if (c.file_path) read.add(c.file_path.replace(/\\/g, '/'));
-    } else if (c.source === 'doc') {
-      const m = /^(.*):\d+$/.exec(c.ref);
-      if (m && m[1]) read.add(m[1].replace(/\\/g, '/'));
-    }
-  }
-  if (read.size > 0) touched.read_files = [...read];
+  // ★ 不给 read_files（2026-10-05，T56 ④-1）：它是"剪贴板"不是链的接口 ⇒ 已从 `Touched` 撤出。
+  //   ★ 原先那段（从 `r.candidates` 的 doc/comment 出处字段反推文件）**随契约撤出一起删除**。
+  //     ★ 顺带消掉一个既有隐患：那条路径**基准是 `process.cwd()`**（`scanDocs` 154 行 /
+  //       `scanComments` 186 行），**不保证等于仓库相对路径**（本 [B] 本就没有 project_dir 锚点）
+  //       —— 撤出后这个"口径违反词表定义"的出口不再存在。
 
   // ★ 不给 written_files：本 [B] 只产出 draft 候选，**不写任何文件/DSL**（LLM review 定稿后再另行写入）。
   // ★ 不给 symbols / nodes：候选里没有符号 / DSL 节点标识可取。
@@ -287,5 +275,5 @@ function touchedOf(input: HarvestInput, r: HarvestResult): Touched {
 
 export function harvestDecisions(input: HarvestInput): TouchedProduct<HarvestResult> {
   const r = harvestDecisionsCore(input);
-  return withTouched(r, touchedOf(input, r));
+  return withTouched(r, touchedOf(input));
 }

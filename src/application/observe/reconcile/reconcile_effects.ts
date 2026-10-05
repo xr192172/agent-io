@@ -350,44 +350,21 @@ async function reconcileEffectsCore(input: ReconcileEffectsInput): Promise<Recon
   };
 }
 
-/** 相对项目根归一化为 posix（接受相对/绝对；与 harvest_closure / diff_impact 同规） */
-function toRel(root: string, p: string): string {
-  const abs = path.isAbsolute(p) ? p : path.join(root, p);
-  return path.relative(root, abs).split(path.sep).join('/');
-}
-
 /**
  * ★ 唯一的构造点：把"我动了什么"集中算一次。
  *
  *   - 作用域类 `project_dir` / `feature`：随时可给；
- *   - `read_files`：本次读的事件文件（Core 177-179 行解析、126 行真读）⇒ 转仓库相对；
+ *   - **不给 `read_files`**（2026-10-05，T56 ④-1）：它是"剪贴板"不是链的接口 ⇒ 已从 `Touched` 撤出。
+ *     ★ 原先那套"事件文件转仓库相对 + 根内守卫（T18）"**随契约撤出一起删除**（不留死代码）——
+ *       下游要那批文件，直接读产物的 `events_files` 即可（读工具只吃路径，不关心是不是源码）。
  *   - **不给 `written_files`**：本 [B] 只 `saveDSL` 写回 DSL（落 `<dataHome>/.agent-io/**`，
  *     不在仓库里）⇒ "仓库相对路径"给不出（不把绝对路径塞进"仓库相对"槽位）。
- *
- * ★ 根内守卫（T18，2026-10-05）：Core 179 行发现事件文件时用的是 `path.resolve(f)`——**以 cwd 为基**，
- *   而本处 `toRel` 以 `root`（project_dir）为基。当调用方传**相对** `events_files` 且 `cwd ≠ project_dir`
- *   时两者基不一致，算出的"仓库相对"会**错位**、甚至产出 `../…`（那就不是仓库相对了）。
- *   ⇒ 只放行**确实落在 root 内**（相对路径不以 `..` 走出根）的文件；不落根内的一律**不列**
- *   （★ 宁可少列，不塞 `../…`）；若**全部**都在根外 ⇒ **整项省略**。
  */
-function touchedOf(input: ReconcileEffectsInput, r: ReconcileEffectsResult): Touched {
-  const root = path.resolve(input.project_dir);
-  const touched: Touched = { project_dir: root, feature: input.feature };
-
-  const reads = [
-    ...new Set(
-      r.events_files
-        .map((f) => toRel(root, f))
-        // 相对路径走出根（`..` 段）⇒ 不是仓库相对，丢弃；其余（含根内子路径）保留
-        .filter((rel) => !rel.split('/').includes('..')),
-    ),
-  ];
-  if (reads.length > 0) touched.read_files = reads;
-
-  return touched;
+function touchedOf(input: ReconcileEffectsInput): Touched {
+  return { project_dir: path.resolve(input.project_dir), feature: input.feature };
 }
 
 export async function reconcileEffects(input: ReconcileEffectsInput): Promise<TouchedProduct<ReconcileEffectsResult>> {
   const r = await reconcileEffectsCore(input);
-  return withTouched(r, touchedOf(input, r));
+  return withTouched(r, touchedOf(input));
 }

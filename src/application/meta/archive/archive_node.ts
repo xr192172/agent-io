@@ -134,13 +134,13 @@ function archiveNodeCore(input: ArchiveNodeInput): ArchiveNodeResult {
  *
  * 口径（`Touched` 两类字段，见 domain/b_terms.ts:42-89）：
  *   - 作用域类（`feature`）：随时可给，不依赖成败；
- *   - 对象类（`written_files` / `read_files` / `symbols` / `nodes`）：只有**真发生**才给，否则整项省略。
+ *   - 对象类（`written_files` / `symbols` / `nodes`）：只有**真发生**才给，否则整项省略。
  */
 function touchedOf(input: ArchiveNodeInput): Touched {
   // 只给作用域类 feature：本次落盘的是**下线库快照 + DSL**（均在 dataHome 下、不在仓库里）
   //   ⇒ `written_files` 给不出（不满足"仓库相对路径"口径，不能塞绝对路径换口径）。
   // ★ 对象类一律省略：被删的 DSL 节点 id（`removedId = file.id`，见 Core 82 行）**未进产物**，
-  //   本构造点拿不到它 ⇒ `nodes` 不给；也没有读到仓库文件 ⇒ `read_files` 不给。
+  //   本构造点拿不到它 ⇒ `nodes` 不给；也没有读到仓库文件 ⇒ 对象类不再给任何项。
   return { feature: input.feature };
 }
 

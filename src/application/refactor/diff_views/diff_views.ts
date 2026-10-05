@@ -670,7 +670,7 @@ function diffViewsCore(input: DiffViewsInput): DiffViewsResult {
 function touchedOf(input: DiffViewsInput): Touched {
   // 只给**作用域类** feature：本 [B] 是**只读对比**——它读的是同一 feature 的
   // baseline / design / live 三个 DSL 视图（**存储**，不是源文件）⇒ ★ 对象类字段**给不出**：
-  //   · written_files / read_files：本次没写、也没读源文件（读的是 DSL）；
+  //   · written_files：本次没写源文件（读的是 DSL）；
   //   · symbols / nodes：产物里虽然满是符号/节点 diff，但那是"**两侧差集**"，
   //     不是"本次调用确立下来的对象" ⇒ 塞进 symbols/nodes 会把"差异"错当"锚点"。
   // feature 为必填入参 ⇒ 随时可给（不依赖成败；查不到视图时 data.design_exists=false 也照给）。

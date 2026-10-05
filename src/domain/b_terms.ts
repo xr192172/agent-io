@@ -22,7 +22,7 @@
  *   · ★ **判据：不许同义异名**。实测反例（2026-10-05）：
  *     `get_dsl(query='files')` 产出的每个条目用 **`path`** 指文件，而 `find_references` 的入参叫 **`file`**
  *     ⇒ 中间必须由**调用方翻译**一次，而**翻译会错** ⇒ 这就是"链接不上"的实体。
- *   · ★ 单数/复数是**同一族的两种形态**：`file` ↔ `written_files`/`read_files`、
+ *   · ★ 单数/复数是**同一族的两种形态**：`file` ↔ `written_files`、
  *     `symbol` ↔ `symbols`、`node_id` ↔ `nodes`（词表已写明"新写 [B] 一律用复数"）。
  *   · ★ 量具 `measure_b_contract.mjs` 会**机械列出**「不在本表、但出现在 ≥2 个 [B] 的字段名」
  *     ⇒ 那就是**候选异名 / 候选接力键**，逐条判"收口"还是"登记"。
@@ -61,7 +61,9 @@ export interface BTerm {
  * ★★★ **统一口径（2026-10-01 由 ④-b 三个执行者的追问逼出来的，一条规则管全部字段）**：
  *   `Touched` 描述的是「**这次调用之后，下游能从哪儿接着走**」。所以字段分两类：
  *   - **作用域类**（`feature` / `project_dir`）：描述"作用在哪"，**任何时候都可给**（不依赖成败）；
- *   - **对象类**（`written_files` / `read_files` / `symbols` / `nodes`）：描述「**本次调用确立下来的对象**」——
+ *   - **对象类**（`written_files` / `symbols` / `nodes`）：描述「**本次调用确立下来的对象**」——
+ *     ★ `read_files` **已于 2026-10-05 撤出**（T56 ④-1）—— 它是**剪贴板**（下游自己读/扫即可），
+ *       **不该占「链的接口」**这一格（它原先**无人消费**的根本原因就在这里）。
  *     · **写类** [B]（会落盘的）：**只有真的落盘了才给**；`dry_run` / 被阻断 / `ok:false` ⇒ **整项省略**
  *       （★ 省略 ≠ 空数组：空数组会被读成"真的没写文件"，省略才是"这次没发生落盘"）；
  *     · **只读** [B]（只查不改）：照给（读到的文件 / 查到的符号）。
@@ -91,13 +93,11 @@ export interface Touched {
    *    ② **未落盘**时（`dry_run` / 被阻断 / `ok:false`）**省略整个字段** —— 不给空数组
    *       （空数组会被读成"真的没写文件"，省缺才是"这次没发生落盘"）。 */
   written_files?: string[];
-  /** 被**读取**当作输入的文件。★ 与 `written_files` 分开：现有 `files` 恰恰是"路径/报告"混用才坏的。 */
-  read_files?: string[];
   /** 涉及到的符号标识。
    *  ★ 新名：既有 `symbol` 是 `string`（单个），链需要全部。
    *  ★ 口径（2026-10-01 核过内核后定下）：**本仓内核的 `qualified_name` 对模块级符号就是裸名**
    *    （`kernel.ts:366 qualified_name: nameNode.text`），成员才是 `Class.method`（`:399`）。
-   *    ⇒ 填"模块级裸名 / `Class.method`"**都算合格**；★ **跨文件同名**时靠 `written_files`/`read_files` 消歧。
+   *    ⇒ 填"模块级裸名 / `Class.method`"**都算合格**；★ **跨文件同名**时靠 `written_files` 消歧。
    *  ★ 值取「**落定后**的符号标识」—— 改名类 [B] 成功时给**新名**（下游要用新名继续操作），未落定则省略。 */
   symbols?: string[];
   /** 涉及到的 DSL 节点 id。★ 新名：既有 `node_id` 是 `string`（单个）。 */
@@ -111,8 +111,9 @@ export interface Touched {
    *   `mode=field` 下 `read_files[0]` 是**纯消费文件**（声明在另一个文件里），而 `definition` **整项省略**。
    *   ⇒ `read_files[0]` 排首位只靠"某句 `add` 写在前面 + Set 插入序"，**没有任何类型/测试保证**。
    *   ★ 而 `definition_file` 不同：**它只在真有定义时出现** ⇒ 它的存在本身就是断言 ⇒ **可无条件宣称**。
-   * ★ 与 `read_files` 的分工：`read_files` = "我读了哪些"（凭据，给人/审计）；
-   *   `definition_file` = "**主语**在哪个文件"（给下游当定位入参）。
+   * ★ 与（已撤出的）`read_files` 的分工：`read_files` = "我读了哪些"（凭据，给人/审计）——
+   *   ★ 它**已于 2026-10-05 从 `Touched` 撤出**（改判为"剪贴板"，不进链的接口）；
+   *   `definition_file` = "**主语**在哪个文件"（给下游当定位入参），★ **留** —— 它是**单数定位锚点**，不是凭据。
    */
   definition_file?: string;
 }
@@ -179,11 +180,16 @@ export const B_TERMS: Record<string, BTerm> = {
     fix: '新词，尚无使用者；由 ④-b refactor 族起逐族采用',
   },
   read_files: {
-    kind: 'anchor',
+    kind: 'context',
     type: 'string[]',
-    meaning: '被**读取**作为输入的文件（仓库相对路径）',
-    debt: true,
-    fix: '新词，尚无使用者',
+    meaning:
+      '被**读取**作为输入的文件（仓库相对路径）。★ **已退役（产物侧，2026-10-05，T56 ④-1）**：' +
+      '它是**剪贴板 / 变量**，**不该占「链的接口」**这一格 —— 下游要文件列表自己读/扫即可' +
+      '（读工具只吃路径，不关心是源码还是事件）⇒ 已从 `Touched` 撤出；**禁止在产物里新增使用者**。',
+    fix:
+      '2026-10-05 撤出 `Touched`：原 5 个产者（`find_references` / `extract_contracts` / `reconcile_effects` / ' +
+      '`reconcile_chain` / `harvest_decisions`）已全部移除该项；其值改由调用方**从上游产物的自有字段里取**' +
+      '（= "剪贴板"那一格，见 T56 ④-2）。',
   },
   symbols: {
     kind: 'anchor',
@@ -203,7 +209,7 @@ export const B_TERMS: Record<string, BTerm> = {
     kind: 'anchor',
     type: 'string',
     meaning:
-      '**本次操作的那个对象所在的文件**（仓库相对路径，`/` 分隔）。★ 与 `read_files` **不是一回事**：' +
+      '**本次操作的那个对象所在的文件**（仓库相对路径，`/` 分隔）。★ 与（已撤出的）`read_files` **不是一回事**：' +
       '`read_files` 是"我读了哪些"（集合、无序、凭据）；本词是"**主语**在哪个文件"（单数、定位）。' +
       '★ **只在真有"定义文件"时给，省略 = 没有** ⇒ 它的"存在"本身就是断言，可无条件宣称。' +
       '★ 反例（2026-10-05 真跑）：拿 `read_files[0]` 当定义文件是**错的** —— `mode=field` 下它是纯消费文件。',
@@ -253,18 +259,18 @@ export const B_TERMS: Record<string, BTerm> = {
   //     `move_symbol` / `impact_analysis` 的入参就是 `{file, symbol}`；上游 `get_dsl(files)`
   //     产出的也是"一个个文件"。原先归 `context` ⇒ **词表自己就没承认它们是链的接口**
   //     ⇒ 于是没人有义务让两端同名（实测：上游吐 `path`、下游收 `file`）。
-  file: { kind: 'anchor', type: 'string', meaning: '**单个**文件（仓库相对路径）；同一族的复数形式是 `written_files` / `read_files`' },
+  file: { kind: 'anchor', type: 'string', meaning: '**单个**文件（仓库相对路径）；同一族的复数形式是 `written_files`' },
   files: {
     kind: 'context',
     type: 'string[]',
     meaning:
       '★ **入参侧**：本次操作**限定在这几个文件**上（输入范围，仓库相对路径）—— 这是**合法**的用法。' +
-      '★ **产物侧**：**已退役**（2026-10-05）—— 产物里表达"改了/读了哪些文件"必须用 `written_files` / `read_files`；' +
-      '**禁止在产物里新增使用者**。',
+      '★ **产物侧**：**已退役**（2026-10-05）—— 产物里表达"改了哪些文件"必须用 `written_files`' +
+      '（"读了哪些"现已是"剪贴板"、不进产物：`read_files` 亦已退役）；**禁止在产物里新增使用者**。',
     fix:
       '★ 2026-10-05 更正：原写"全仓 [B] 已清零、禁止再新增使用者"，**那句话只对产物成立** —— ' +
       '实测入参侧仍有 3 个 [B] 在用（`extract_contracts` / `harvest_closure` / `watch_project_tool`），' +
-      '那是"限定范围"的正当输入，**不退役**。产物侧：路径表 → `written_files` / `read_files`；报告数组 → `<领域>_reports`。',
+      '那是"限定范围"的正当输入，**不退役**。产物侧：路径表 → `written_files`（`read_files` 已退役）；报告数组 → `<领域>_reports`。',
   },
   project_root: {
     kind: 'context',

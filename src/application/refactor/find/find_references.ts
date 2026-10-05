@@ -517,23 +517,15 @@ function touchedOf(input: Parameters<typeof findReferencesCore>[0], r: FindRefer
   // 它们**不是符号**，塞进 symbols 会污染口径 ⇒ 那两种模式省略。
   if (r.ok && r.mode === 'symbol' && r.symbol) touched.symbols = [r.symbol];
 
-  // read_files：本次**真读过并作为结果给出**的仓库内文件。来源（均为仓库相对 POSIX 路径）：
-  //   - definition.file：定义文件，291 行 readFileSync(fileAbs) 真读过；
-  //   - importers[].file：被扫候选，365 行 readFileSync(f) 真读过；
-  //   - fieldRefs[].file / typeCandidates[].file：field/type 模式的命中文件。
-  // ★ 这是"报告出来的子集"，不是"扫过的全集"（未命中的候选不在产物里）；不假装完整。
-  const read = new Set<string>();
-  if (r.definition?.file) read.add(r.definition.file);
-  for (const f of r.importers ?? []) read.add(f.file);
-  for (const f of r.fieldRefs ?? []) read.add(f.file);
-  for (const c of r.typeCandidates ?? []) read.add(c.file);
-  if (read.size > 0) touched.read_files = [...read];
+  // ★ `read_files` **已撤出**（2026-10-05，T56 ④-1）：它是"剪贴板"（下游要文件列表，
+  //   自己从 `definition` / `importers` / `fieldRefs` / `typeCandidates` 里取即可）⇒
+  //   **不占「链的接口」**。原先把四处 file 收成一个 Set 的聚合**随契约撤出一起删除**（不留死代码）。
 
-  // ★★ definition_file：**本次这个符号的定义在哪个文件**（单数）—— 与 `read_files` **不是一回事**。
-  //   ★ 为什么必须单立一栏（2026-10-05 真跑证伪）：我曾用 `read_files[0]` 当"定义文件"来接链，
+  // ★★ definition_file：**本次这个符号的定义在哪个文件**（单数）。
+  //   ★ 为什么必须单立一栏（2026-10-05 真跑证伪）：我曾用"读到的文件列表的第 0 个"当"定义文件"来接链，
   //     **`mode=field` 下它是纯消费文件**（声明在另一个文件里）⇒ 那条接法**静默接错**。
-  //     `read_files` 排首位只靠上面那句 `add(r.definition.file)` 写在前面 + `Set` 插入序，
-  //     **没有任何类型/测试保证**。
+  //     （那个列表就是现已撤出的 `read_files`；它让定义文件排首位，只靠 `add(r.definition.file)`
+  //      写在前面 + `Set` 插入序，**没有任何类型/测试保证**。）
   //   ★ 本栏不同：`definition` 只在 **mode=symbol 的成功出口**才被赋值（`core` 的 `:483`），
   //     ⇒ **它出现 = 真的确立了定义** ⇒ 可**无条件宣称**。★ `mode=field` 下整项省略。
   if (r.definition?.file) touched.definition_file = r.definition.file;

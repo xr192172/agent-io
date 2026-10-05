@@ -446,13 +446,13 @@ async function indexIntegrityCore(opts: {
  *
  * 口径（`Touched` 两类字段，见 domain/b_terms.ts:42-89）：
  *   - 作用域类（`project_dir`）：随时可给，不依赖成败；
- *   - 对象类（`written_files` / `read_files` / `symbols` / `nodes`）：只有**真发生**才给，否则整项省略。
+ *   - 对象类（`written_files` / `symbols` / `nodes`）：只有**真发生**才给，否则整项省略。
  */
 function touchedOf(opts: { project_dir: string }): Touched {
   // project_dir：★ 填**解析后的绝对根**（= Core `path.resolve(opts.project_dir)`，与产物顶层
   //   `project_root` 同值）—— 作用域类，随时可给。
   // ★ 对象类一律省略：本 [B] 读写的是 `cache.db`（dataHome 下），**不是仓库文件** ⇒
-  //   `written_files` / `read_files` 给不出；它也不确立任何符号/DSL 节点对象 ⇒ `symbols` / `nodes` 不给。
+  //   `written_files` 给不出；它也不确立任何符号/DSL 节点对象 ⇒ `symbols` / `nodes` 不给。
   return { project_dir: path.resolve(opts.project_dir) };
 }
 

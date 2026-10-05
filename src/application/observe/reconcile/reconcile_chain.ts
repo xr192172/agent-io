@@ -312,31 +312,20 @@ async function reconcileChainCore(input: ReconcileChainInput): Promise<Reconcile
   };
 }
 
-/** 相对项目根归一化为 posix（接受相对/绝对；与 harvest_closure / diff_impact 同规） */
-function toRel(root: string, p: string): string {
-  const abs = path.isAbsolute(p) ? p : path.join(root, p);
-  return path.relative(root, abs).split(path.sep).join('/');
-}
-
 /**
  * ★ 唯一的构造点：把"我动了什么"集中算一次。
  *
  * 口径（`Touched` 两类字段）：作用域类随时可给；对象类只列**本次真涉及**的，取不到整项省略。
+ * ★ **不给 `read_files`**（2026-10-05，T56 ④-1）：它是"剪贴板"不是链的接口 ⇒ 已从 `Touched` 撤出。
+ *   原先那套"宿主源文件 + 事件文件 转仓库相对"**随契约撤出一起删除**（下游读产物的 `host_file` /
+ *   `events.files` 即可）。
  */
 function touchedOf(input: ReconcileChainInput, r: ReconcileChainResult): Touched {
-  const projectRoot = path.resolve(input.project_dir);
-  const touched: Touched = { feature: input.feature, project_dir: projectRoot };
+  const touched: Touched = { feature: input.feature, project_dir: path.resolve(input.project_dir) };
 
   // nodes：本次读出的 detail 链节点 id（Core 213 行 readDerivedChain → chain[].node_id）。
   const nodes = [...new Set(r.chain.map((c) => c.node_id))];
   if (nodes.length > 0) touched.nodes = nodes;
-
-  // read_files：宿主源文件（本次对账的链挂点）+ 命中事件的观测文件（Core 224-232 行真读）；
-  //   均为绝对路径 ⇒ 转**仓库相对**（相对被观测项目根 projectRoot）。
-  const reads = new Set<string>();
-  if (r.host_file) reads.add(toRel(projectRoot, r.host_file));
-  for (const f of r.events.files) reads.add(toRel(projectRoot, f));
-  if (reads.size > 0) touched.read_files = [...reads];
 
   return touched;
 }

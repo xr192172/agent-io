@@ -44,9 +44,12 @@
 | `feature` | `string` | DSL 的 feature 名（活文档单元） |  |
 | `project_dir` | `string` | 被分析/改动的**项目根**（一个仓库的根目录）；不是盒根、不是子目录 |  |
 | `written_files` ★ | `string[]` | 被**写入/改动**的文件（仓库相对路径，`/` 分隔）。★ 只列「**本次操作对被操作对象产生的工作产物**」；★ **排除工具自有的状态/账本/索引目录**（如被分析项目内的 `.agent-io/**`）——那是工具的内部数据，不是工作产物；★ 写在 `<dataHome>`（工具数据主目录）下的 DSL/存档/导图 JSON **本就不是仓库相对** ⇒ 从来不给。 | **新词，尚无使用者；由 ④-b refactor 族起逐族采用** |
-| `read_files` ★ | `string[]` | 被**读取**作为输入的文件（仓库相对路径） | **新词，尚无使用者** |
 | `symbols` ★ | `string[]` | 涉及到的符号 `qualified_name` | **新词，尚无使用者；与旧 `symbol: string`（单个）并存期间禁止混用** |
 | `nodes` ★ | `string[]` | 涉及到的 DSL 节点 id | **新词，尚无使用者；与旧 `node_id: string`（单个）并存期间禁止混用** |
+| `definition_file` ★ | `string` | **本次操作的那个对象所在的文件**（仓库相对路径，`/` 分隔）。★ 与（已撤出的）`read_files` **不是一回事**：`read_files` 是"我读了哪些"（集合、无序、凭据）；本词是"**主语**在哪个文件"（单数、定位）。★ **只在真有"定义文件"时给，省略 = 没有** ⇒ 它的"存在"本身就是断言，可无条件宣称。★ 反例（2026-10-05 真跑）：拿 `read_files[0]` 当定义文件是**错的** —— `mode=field` 下它是纯消费文件。 | **新词，首个采用者 = `find_references`（从产物里已有的 `data.definition.file` 补进 `touched`）** |
+| `file` | `string` | **单个**文件（仓库相对路径）；同一族的复数形式是 `written_files` |  |
+| `node_id` ★ | `string` | **单个** DSL 节点 id；同一族的复数形式是 `nodes` | **新写 [B] 一律用 `nodes: string[]`** |
+| `symbol` ★ | `string` | **单个**符号 `qualified_name`；同一族的复数形式是 `symbols` | **新写 [B] 一律用 `symbols: string[]`** |
 
 ### receipt —— 回执（人读）
 
@@ -82,8 +85,8 @@
 
 | 术语 | 类型 | 定义 | 债 |
 |---|---|---|---|
-| `file` | `string` | **单个**文件（仓库相对路径）；多个用 `written_files`/`read_files` |  |
-| `files` | `string[]` | ★ **已退役**（2026-10-05）：全仓 [B] 已清零，**禁止再新增使用者** | **路径表 → `written_files` / `read_files`；报告数组 → `<领域>_reports`（如 `contract_reports` / `removal_reports`）** |
+| `read_files` | `string[]` | 被**读取**作为输入的文件（仓库相对路径）。★ **已退役（产物侧，2026-10-05，T56 ④-1）**：它是**剪贴板 / 变量**，**不该占「链的接口」**这一格 —— 下游要文件列表自己读/扫即可（读工具只吃路径，不关心是源码还是事件）⇒ 已从 `Touched` 撤出；**禁止在产物里新增使用者**。 | **2026-10-05 撤出 `Touched`：原 5 个产者（`find_references` / `extract_contracts` / `reconcile_effects` / `reconcile_chain` / `harvest_decisions`）已全部移除该项；其值改由调用方**从上游产物的自有字段里取**（= "剪贴板"那一格，见 T56 ④-2）。** |
+| `files` | `string[]` | ★ **入参侧**：本次操作**限定在这几个文件**上（输入范围，仓库相对路径）—— 这是**合法**的用法。★ **产物侧**：**已退役**（2026-10-05）—— 产物里表达"改了哪些文件"必须用 `written_files`（"读了哪些"现已是"剪贴板"、不进产物：`read_files` 亦已退役）；**禁止在产物里新增使用者**。 | **★ 2026-10-05 更正：原写"全仓 [B] 已清零、禁止再新增使用者"，**那句话只对产物成立** —— 实测入参侧仍有 3 个 [B] 在用（`extract_contracts` / `harvest_closure` / `watch_project_tool`），那是"限定范围"的正当输入，**不退役**。产物侧：路径表 → `written_files`（`read_files` 已退役）；报告数组 → `<领域>_reports`。** |
 | `project_root` ★ | `string` | 与 `project_dir` **同义** | **并入 `project_dir`** |
 | `source_path` | `string` | 输入物的来源路径（文件或 URL） |  |
 | `events_files` | `string[]` | 观测事件（JSONL）文件路径表 |  |
@@ -105,8 +108,6 @@
 | `scope` ★ | `string` | 作用范围（本工具自己的枚举） | **★ 现状 3 组互不相同的枚举 ⇒ 各领域改名** |
 | `action` ★ | `string` | **面分发参数**：选哪个子动作（属 [C] 层入参，不是领域字段） | **保留语义，但**不得**用它当产物的领域字段** |
 | `query` ★ | `string` | 查询意图/查询串（本工具自己的口径） | **★ 现状 `string` 与 19 个枚举混用 ⇒ 各领域改名** |
-| `node_id` ★ | `string` | **单个** DSL 节点 id；多个用 `nodes` | **新写 [B] 一律用 `nodes: string[]`** |
-| `symbol` ★ | `string` | **单个**符号 `qualified_name`；多个用 `symbols` | **新写 [B] 一律用 `symbols: string[]`** |
 | `brick_name` ★ | `string` | 积木名（与 `brick` 同指时用本词） | **与 `brick` 二选一** |
 | `to` | `string` | 目标值（新名/新路径） |  |
 | `name` | `string` | 名称（本工具自己指的那个对象的名字） |  |

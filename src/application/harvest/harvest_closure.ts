@@ -442,7 +442,7 @@ function harvestClosureCore(input: HarvestClosureInput): HarvestClosureResult {
  *
  * 口径（`Touched` 两类字段，见 domain/b_terms.ts:42-89）：
  *   - 作用域类（`project_dir` / `feature`）：随时可给，不依赖成败；
- *   - 对象类（`written_files` / `read_files` / `symbols` / `nodes`）：只有**真发生**才给，否则整项省略。
+ *   - 对象类（`written_files` / `symbols` / `nodes`）：只有**真发生**才给，否则整项省略。
  */
 function touchedOf(input: HarvestClosureInput, r: HarvestClosureResult): Touched {
   const touched: Touched = {};
@@ -461,13 +461,8 @@ function touchedOf(input: HarvestClosureInput, r: HarvestClosureResult): Touched
   for (const f of r.internal_files) if (f.dsl_node_id) nodes.add(f.dsl_node_id);
   if (nodes.size > 0) touched.nodes = [...nodes];
 
-  // ★★ 不给 read_files —— 已**读代码判定**，不是"照名字填"：
-  //   本 [B] 的 `internal_files`（闭包结果）**不是"读过的文件"**。整条闭包由 `cache.db` 的
-  //   `files`/`edges`/`imports` 表经 `buildImportGraph` 的**索引推算**得出（见 187 行），
-  //   实现里**没有**逐文件 `readFileSync` 被闭包文件。真正读磁盘的只有两处，且都不进产物：
-  //     ① `readGoModules(root)`（import_graph.ts:68）读 go.mod —— 那是依赖清单，不是闭包对象；
-  //     ② go:embed 补全（302-309 行）只读闭包内 .go 文件的源码。
-  //   把 `internal_files` 塞进 `read_files` 会谎称"读了这些文件"，污染口径 ⇒ **省略**。
+  // ★ `read_files` **已撤出**（2026-10-05，T56 ④-1）⇒ 不再需要在此论证"闭包文件不是读过的文件"。
+  //   （那条判定仍成立：`internal_files` 是 `cache.db` 索引推算，不是逐文件 `readFileSync`。）
   // ★ 不给 written_files：本 [B] 只读不写（无落盘动作）。
 
   return touched;

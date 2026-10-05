@@ -514,13 +514,6 @@ function touchedOf(input: DeriveAnimFlowInput, r: DeriveAnimFlowResult): Touched
   }
   if (nodes.size > 0) touched.nodes = [...nodes];
 
-  // ★★ 不给 read_files —— 已**追码判定**（见交付报告第 2 项）：
-  //   被读取的源文件 `filePath`（Core :300-307）是 `path.join(projectRoot, ...)` / 绝对路径，
-  //   **不是"仓库相对 POSIX"**；全文件里唯一的 repo-relative 化只出现在 `message` 字符串内
-  //   （`:447` `path.relative(projectRoot, filePath).split(path.sep).join('/')`），
-  //   不是产物里的结构化字段；且 `projectRoot` 在默认 cwd 时不成立、还可能是仓库**子目录**
-  //   （见 :143 注释"源文件根常是项目根子目录"）⇒ 追不到可靠口径 ⇒ 不给。
-
   return touched;
 }
 

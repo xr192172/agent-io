@@ -2,8 +2,9 @@
  * 链的**接法表** —— 「上一步的产物，怎么喂给下一步的入参」。
  *
  * ★★ 为什么需要它（2026-10-05 实测）：
- *   `Touched`（产物端的锚点契约）**统一过、也是活的** —— 六键都有人产
- *   （`feature 21/31 · project_dir 22/31 · written_files 19/31 · read_files 10/31 · symbols 8/31 · nodes 10/31`），
+ *   `Touched`（产物端的锚点契约）**统一过、也是活的** —— 各键都有人产
+ *   （`feature 21/31 · project_dir 22/31 · written_files 19/31 · symbols 8/31 · nodes 10/31`
+ *    —— ★ `read_files` 已于 2026-10-05 撤出，详见下方注释），
  *   而且**链在数据上已经通了**：实测 `find_references.touched` 能**零字段名翻译**地
  *   构造出 `rename_symbols` 的入参，并跑通。
  *   ★ **但那个接法只活在"那一次对话"里** —— 没有任何东西**承载**它 ⇒
@@ -50,13 +51,11 @@ export interface ChainEdge {
 /**
  * ★★★ 链边表。
  *
- * **唯一一条 `verified` 的来源**（2026-10-05 真跑）：
- * ```
- * find_references.touched = {project_dir, symbols:["Kk"], read_files:["com/a/Kk.java"]}
- *   → 零字段名翻译地构造 rename_symbols 入参：
- *     {project_dir: t.project_dir, renames:[{file: t.read_files[0], symbol: t.symbols[0], to:"Renamed"}]}
- *   → 跑通 ✓（定义 + 2 个 importer 全部改名）
- * ```
+ * ★ **本表最早的两条对象类边**（`read_files[0] → file` / `symbols[0] → symbol`）**已被真跑证伪、撤掉**
+ *   （证伪过程见下方注释）；`read_files` 本身也已于 2026-10-05 从 `Touched` **撤出**
+ *   （它是"剪贴板"，**不该占链的接口** —— T56 ④-1，它零消费者）。
+ *   ⇒ 现在 `CHAIN_EDGES` 里只剩**两条作用域类**的 `verified`（`project_dir` / `feature`）；
+ *     对象类的边一律在 `CHAIN_EDGES_PENDING` 里**待验**。
  */
 export const CHAIN_EDGES: readonly ChainEdge[] = [
   // ── 作用域类：两端逐字同名，任何 [B] 之间直通（已验：17/17 按 feature 工作的 [B] 都接受 feature）──
@@ -100,6 +99,10 @@ export const CHAIN_EDGES: readonly ChainEdge[] = [
   //
   //   ★ 正确的锚点应当是**单数、且只在真有定义时给**：见下方 `CHAIN_EDGES_PENDING` 里的
   //      `definition_file` 一条 —— 那才是"无条件"能宣称的东西。
+  //
+  //   ★★ 2026-10-05 续（T56 ④-1）：`read_files` **字段本身已从 `Touched` 撤出**（零消费者）。
+  //      ⇒ 上面这些"从 `read_files` 接"的讨论**从此是历史记录**（它不再出现在任何产物里）；
+  //        它原先的定位应是"**剪贴板 / 变量**"，不是"链的接口"。
 ];
 
 /**
