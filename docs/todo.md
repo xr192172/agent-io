@@ -457,8 +457,43 @@
 - [ ] **T15 ★★ 把 CLI-only 的能力注册为 MCP 工具 ⇒ 「CLI-only」这个类别应当**归零****
       *(用户裁定的洞察 2026-09-30：「**工作台为什么不能注册为 MCP 呢**？就是说**同样同时投影为 MCP 和 CLI**，
       这样的话就**不用保留为 CLI only** 了。」)*
-      ⇒ ★ 唯一真相源 = **MCP 注册**（`registry/lanes/*.ts` 的 `ToolDef`）⇒ CLI 是**投影出来的**。
+      ⇒ ★ 唯一真相源 = **MCP 注册**（★ **2026-10-05 更正路径**：`src/application/<lane>/index.ts` 的
+      `ToolDef` 数组 —— 旧文写的 `registry/lanes/*.ts` **不存在**；`application/tool_registry.ts:43-52`
+      汇总，`server_registry.ts:570` 循环注册，`cli.ts` **自动投影全部工具**）⇒ CLI 是**投影出来的**。
       所以「CLI-only」这个类别**根本不该存在** —— 它只说明**能力被藏在了 MCP 面之外**。
+      ★★ **2026-10-05 重新盘点（两轮子代理并行侦察，旧文约 60% 失效）**：
+      · ✅ 加一个工具**只需往对应 lane 的 `index.ts` 塞一条 `ToolDef`**（汇总/注册/CLI 投影全自动）；
+        `capability_map` 的导航策展可选；`mcp_scan` 动态取名单；`structure.domains.json` 只管目录、不管工具。
+      · ❌ 旧文的"只需删 CLI"三个**全部不成立**（逐 flag 核对）：`capability_cli`（`capability_map` 是
+        **工具导航**、不是语言能力矩阵 —— **名字像 ≠ 同义**）、`instrument_cli`（`--ledger` 无对应 action）、
+        `translate_cli`（`--holes` / `--out` / `--batch-size` 无对应）。
+      · ❌ `archify_cli` **不是真 CLI**（无 argv，是**库**，被 `archify_pipeline.ts:14` import）。
+      · ✅ 真 CLI 共 **11 个**：`brickify_cli` `capability_cli` `deprecate_offline_cli` `diagnose_loop_cli`
+        `install_package_cli` `instrument_cli` `signal_review_cli` `split_stage_cli` `translate_cli`
+        `upgrade_cli` `upgrade_rewrite_cli`（`cli.ts` 是投影本体，另计）。
+      **✅ 已落（2026-10-05 第一片：2 + 1 个工具）—— 工具数 56 → 59**：
+      · `signal_review`（拆分链第一棒 / LLM 复核）+ `split_stage`（最后一棒 / 默认 dry-run）⇒ 入 **design** 线；
+        `capability_audit`（语言×功能缺口自检）⇒ 入 **meta** 线。
+      · **真调通过**（隔离 `AGENT_IO_HOME` + 2 文件夹具）：三个工具都跑通；`signal_review → split_stage`
+        **链是通的**（落报告 → 消费报告 → dry-run 输出 0 采纳簇）；手写缺 `clusters` 的报告给了**说得清的错**
+        （原先核心抛**裸 TypeError** ⇒ 已补形状守卫）；`capability_audit` 报「已安装 20 门 / 缺口 128 对」。
+      · ★ **未验**：`split_stage` 的 `apply=true`（真落盘 + 回滚兜底）—— 因 LLM 撞 **429 限流**、本轮没有"采纳簇"。
+      · 同批文档：`README.md`（59 个；子标题 41 → **51**，并声明"表是**精选子集**、权威计数以 `TOOL_DEFS` 为准"
+        ⇒ **顺带治了 T32 的漂**）、`README.en.md`（59）、`AGENTS.md` 触发点表补两行（源 = `gen_agents.mjs`）。
+      **剩下（按"能真跑验证 + 不夹带未拍板契约"排序）**：
+      1. **`brickify_cli`（11 类产物）** —— ★ **先定形状**：新立 `brickify`，还是给 `render_brickwork` 加
+         `artifacts` 枚举？（后者符合"复用已有结构"，但两者会重叠 ⇒ **要拍板**）
+      2. **`diagnose_loop_cli`** —— ★★ **硬障碍**：默认路径用 `readline` **交互提问**（MCP 无法应答），
+         且会 `git commit` 用户仓库、`execSync` 跑测试、大范围改盘 ⇒ **边界必须先定**
+         （建议只暴露"诊断 + 补丁 diff 预览"，apply/commit 留给显式授权路径）
+      3. **`instrument_cli`** —— 先给 `observe_instrument` 补 `action=ledger`（现枚举只有 `instrument|uninstrument|restore`）
+      4. **`translate_cli`** —— 先给 `translate_go_ts` 补 `holes` / 单文件 `out` / `batchSize`（zod schema 未暴露）
+      5. **`deprecate_offline_cli`** —— ★ **层问题**：核心 `runDeprecateOffline` 住在 **`presentation/cli/`** 里
+         ⇒ 注册前得先把它搬到 application/infrastructure（属"修形状"，不是包一层）
+      6. `upgrade_cli` / `upgrade_rewrite_cli`（后者会编辑 + 验证 + 提交）、以及
+         `signal_review_cli` / `split_stage_cli` 这两个 **CLI 的去留**（能力已归零，CLI 是否留作 argv 便利）
+      7. **`install_package_cli` ⇒ 判为一次性运维脚本**（`spawn npm install/uninstall` 改环境 + 联网；
+         且 MCP 面 `lang_hint.ts:117,147,149` **主动指引用户去跑它**）⇒ **保留、不注册**
       **要做的事**（两个方向合流）：
       · ① `brickify_cli`（**11 个输出产物的积木工作台**）与 `diagnose_loop_cli`（一键诊断闭环，`--apply` 会改代码）
         ⇒ 注册为 MCP 工具（它们**不是**别的工具的 CLI，是独立能力）
@@ -475,11 +510,13 @@
           **`src/presentation/cli/instrument_cli.ts`**（§44.2 归属）。
         · `archify_cli` / `install_package_cli` 也是**真 CLI**（有 argv 解析），别按"库"处理。
         其余**注册为 MCP 工具**（或明确判为"一次性运维脚本"，给理由）
-      **牵连**（必须同一次做，否则门会红）：
-      · `tests/fixtures/tool_set_snapshot.json`（58 个工具）⇒ `UPDATE_TOOL_SNAPSHOT=1` **并记账**（对外契约变更）
-      · `README.md` / `AGENTS.md` 要提及新工具名（否则 `readme_tools_gate` 红）
-      · `package.json` 里 13 个指向 `dist/src/tools/*_cli.js` 的 scripts ⇒ 改为走投影
-      · `tests/server_registry.consistency.test.ts` 的 `INTERNAL_MODULES` 登记表要同步（删文件的 `importedBy`）
+      **牵连**（★ 2026-10-05 重盘：**原列四条全部已不存在**，别再照做）：
+      · `tests/fixtures/tool_set_snapshot.json` ⇒ `tests/` **整体已移除**（2026-10-04）⇒ **没有**快照门
+      · "`readme_tools_gate` 会红" ⇒ 该脚本**已删**（属"门"，2026-10-05 用户裁定「不养门」）⇒ **不会红**
+      · `package.json` 指向 `dist/src/tools/*_cli.js` ⇒ 现为 `dist/src/presentation/cli/*_cli.js`
+      · `tests/server_registry.consistency.test.ts` 的 `INTERNAL_MODULES` ⇒ 同上，测试框架已整体移除
+      ⇒ **真牵连只有两条**（本轮都已做）：**README 计数**（手工维护、无门）与
+      **`AGENTS.md` 触发点表**（改源头 `scripts/gen_agents.mjs`，`npm run build` 重建）。
 
 - [ ] **T32 ★ README 子标题工具计数无门、已漂**（2026-10-04 由 T8 核验升级）。
       *(核实：`README.md:113` 的「共注册 **N**」有 `scripts/readme_tools_gate.mjs` 自愈守着（当前 59=59 ✓），

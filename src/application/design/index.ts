@@ -1,5 +1,11 @@
 /**
- * design 线（10 个工具）—— ★ **本文件即该线归属的唯一来源**。
+ * design 线（12 个工具）—— ★ **本文件即该线归属的唯一来源**。
+ *
+ * ★ 2026-10-05（T15 切片）：本线 10 → 12 —— 把「混合文件解耦」这对能力从 **CLI-only** 接进 MCP 面：
+ *   `signal_review`（LLM 复核 = 拆分链第一棒）+ `split_stage`（按簇拆分执行 = 最后一棒）。
+ *   判据：它们原先只存在于 `signal_review_cli` / `split_stage_cli`（argv 薄壳），而**核心函数本来就在**
+ *   `./bricks/signal_review` 与 `./lifecycle/split_stage` ⇒ 属"**能力被藏在 MCP 面之外**"，注册即归零
+ *   （两个 CLI 保留为投影面，不删 —— 删了会丢它们的 argv 便利，且非本次目标）。
  *
  * ★ P1b（2026-09-28）：按当时 `capability_map.LANE_OF` 的归属从 `TOOL_DEFS` 切分而来，
  *   条目**逐字搬移**，只加了 `export const DESIGN_TOOLS` 外壳 —— 归属自此由文件路径表达。
@@ -25,6 +31,7 @@
  */
 import { z } from 'zod';
 import { requireStr, wrapData } from '../plumbing.js';
+import fs from 'node:fs';
 import path from 'node:path';
 import { getProjectCacheDb } from '../../infrastructure/index/db.js';
 import { getDSL, requireProjectRoot } from '../../infrastructure/storage.js';
@@ -33,6 +40,11 @@ import { importProject } from '../../infrastructure/graph/import_project.js';
 import type { ImportProjectInput } from '../../infrastructure/graph/import_project.js';
 import { MANAGE_ACTIONS } from './lifecycle/manage_feature.js';
 import { buildBrickifyPreview } from './bricks/render_brickwork.js';
+// ★ T15 切片（2026-10-05）：把「混合文件解耦」这对能力从 CLI 面接进 MCP 面 ——
+//   两者共用同一批 application 层核心（与 `brickify_cli` / `split_stage_cli` 同源），CLI 只是 argv 薄壳。
+import { buildBrickify } from './bricks/brickify.js';
+import { reviewSignals } from './bricks/signal_review.js';
+import { runSplitStage } from './lifecycle/split_stage.js';
 import { scaffold } from './lifecycle/scaffold.js';
 import { setDesignIntent } from './intent/set_design_intent.js';
 import { consistencyHandler, detectDriftHandler, editDslHandler, getDslHandler, manageFeatureHandler, renderDesignHandler } from '../handlers.js';
@@ -208,6 +220,133 @@ export const DESIGN_TOOLS: ToolDef[] = [
       });
       const fileUrl = `file:///${out.replace(/\\/g, '/')}`;
       return { message: `已生成依赖驱动功能社区工作台：${out}\n（浏览器打开 ${fileUrl} 查看积木社区/混合文件诊断）` };
+    }),
+  },
+
+  {
+    // ★ T15 切片（2026-10-05）：原先只存在于 `signal_review_cli`（CLI-only）⇒ 能力被藏在 MCP 面之外。
+    name: 'signal_review',
+    title: 'Review mixed-file decoupling signals (LLM)',
+    description:
+      '混合文件解耦信号的**LLM 复核**（"拆分链"第一棒）：先跑 brickify 取 `mixed_files` 信号' +
+      '（一个文件里多功能 = 解耦候选），再逐信号喂 LLM（读文件全文 + 注释）⇒ 逐簇产出【采纳/驳回 + 功能名 + 理由】。' +
+      '判据：独立使用者 / 独立演进 / 文档证据 ⇒ 工具函数簇**驳回**；新旧世代并存且注释明言 ⇒ **采纳**。' +
+      '★ LLM 不可用（未配置 apiKey）时**诚实降级**：`llm_available=false`，原样返回信号、**不伪造复核结论**。' +
+      '产物（`signals_scanned` + `review.reviews`）可直接喂 `split_stage`（给 `report_path` 落盘即可）。',
+    inputSchema: {
+      project_dir: z.string().describe('目标项目根目录'),
+      source_root: z.string().optional().describe('源码根目录（默认 = project_dir）'),
+      only: z.array(z.string()).optional().describe('只复核这几个文件（仓库相对路径）；省略 = 全部混合文件信号'),
+      timeout_ms: z.number().optional().describe('单次 LLM 调用超时（毫秒）'),
+      max_source_chars: z.number().optional().describe('喂给 LLM 的单文件最大字符数（防大文件淹上下文）'),
+      report_path: z
+        .string()
+        .optional()
+        .describe('把报告落到该路径（JSON：`{signals_scanned, review}`，正是 split_stage 要吃的形态）'),
+    },
+    handler: wrapData(async (a) => {
+      const project_dir = requireStr(a, 'project_dir');
+      const source_root = a.source_root as string | undefined;
+      const brick = await buildBrickify({ project_dir, source_root });
+      if (brick.mixed_files.length === 0) {
+        return {
+          message: `无混合文件解耦信号（扫了 ${brick.meta.scanned_files} 个文件）⇒ 无需复核。`,
+          data: { signals_scanned: [], review: null, llm_available: true },
+        };
+      }
+      const only = (a.only as string[] | undefined) ?? [];
+      const result = await reviewSignals({
+        project_dir,
+        source_root,
+        signals: brick.mixed_files,
+        timeout_ms: a.timeout_ms as number | undefined,
+        max_source_chars: a.max_source_chars as number | undefined,
+        only: only.length ? only : undefined,
+      });
+      if (!result) {
+        return {
+          message:
+            `LLM 不可用（未配置 apiKey）⇒ **未复核**：${brick.mixed_files.length} 个信号原样返回，` +
+            '没有编造"采纳/驳回"结论（诚实降级）。',
+          data: { signals_scanned: brick.mixed_files, review: null, llm_available: false },
+        };
+      }
+      const report_path = a.report_path as string | undefined;
+      let written: string | undefined;
+      if (report_path) {
+        written = path.resolve(report_path);
+        fs.mkdirSync(path.dirname(written), { recursive: true });
+        fs.writeFileSync(written, JSON.stringify({ signals_scanned: brick.mixed_files, review: result }, null, 2), 'utf-8');
+      }
+      return {
+        message:
+          `${result.meta.total_signals} 个信号 → ${result.meta.actionable} 个需拆(采纳) / ${result.meta.rejected} 个驳回。` +
+          (written ? `\n报告已落盘：${written}（可直接喂 split_stage）` : ''),
+        data: { signals_scanned: brick.mixed_files, review: result, llm_available: true, ...(written ? { report_path: written } : {}) },
+      };
+    }),
+  },
+
+  {
+    // ★ T15 切片（2026-10-05）：原先只存在于 `split_stage_cli`（CLI-only）。
+    name: 'split_stage',
+    title: 'Split adopted concept clusters into separate files',
+    description:
+      '拆分执行器（"拆分链"最后一棒）：消费 `signal_review` 的报告，把复核判**采纳**的概念簇**按簇切出独立文件**。' +
+      '★ **默认 dry_run 只出草稿**（`apply=true` 才真落盘）；落盘由 `derive_split` 内置的编译/测试级验收 + 失败回滚兜底。' +
+      '报告形态：`{signals_scanned: [...], review: {reviews: [...]}}`（即 `signal_review` 的 `report_path` 产物）。',
+    inputSchema: {
+      project_dir: z.string().describe('目标项目根目录'),
+      report_path: z.string().describe('signal_review 的报告 JSON 路径'),
+      source_root: z.string().optional().describe('源码根目录（默认 = project_dir）'),
+      apply: z.boolean().optional().describe('true = 真落盘；省略/false = dry-run 只出草稿（**默认**）'),
+      re_export_extracted: z.boolean().optional().describe('拆分后是否补 re-export（默认 true）'),
+      max_symbols: z.number().optional().describe('单簇最大符号数（超过则不拆，防超大簇乱切）'),
+    },
+    handler: wrapData(async (a) => {
+      const project_dir = requireStr(a, 'project_dir');
+      const reportPath = path.resolve(requireStr(a, 'report_path'));
+      let report: { signals_scanned?: unknown; review?: { reviews?: unknown } };
+      try {
+        report = JSON.parse(fs.readFileSync(reportPath, 'utf8')) as typeof report;
+      } catch (e) {
+        throw new Error(`无法读取报告 ${reportPath}：${(e as Error).message}`);
+      }
+      const signals = (report.signals_scanned ?? []) as never[];
+      const reviews = (report.review?.reviews ?? []) as never[];
+      if (signals.length === 0 || reviews.length === 0) {
+        return { message: '报告内无信号 / 无复核结论 ⇒ 无可拆。', data: { total_plans: 0, total_splits: 0, applied: 0, items: [] } };
+      }
+      // ★ 报告形状守卫（2026-10-05 真调踩到）：手写的报告若缺 `signals[].clusters`，核心会在
+      //   `clusters.length` 处抛**裸 TypeError**（`Cannot read properties of undefined`）——
+      //   属本仓 T41「报错说了等于没说」那一类。这里先响亮说清"哪一条、缺什么、该从哪来"。
+      const badIdx = (signals as Array<{ file?: string; clusters?: unknown }>).findIndex((s) => !Array.isArray(s?.clusters));
+      if (badIdx >= 0) {
+        const at = (signals as Array<{ file?: string }>)[badIdx];
+        throw new Error(
+          `报告不合法：signals_scanned[${badIdx}]${at?.file ? `（${at.file}）` : ''} 缺 \`clusters\`。` +
+            '请用 `signal_review` 产出的报告（传 `report_path` 即可）—— 那批信号来自 brickify 的 `mixed_files`，' +
+            '`split_stage` 靠它的 `clusters` 才知道每个文件里哪些簇可拆；手写报告接不上。',
+        );
+      }
+      const dry_run = a.apply !== true; // ★ 默认 dry-run（与 CLI 的 `--apply` 语义一致）
+      const result = await runSplitStage({
+        project_dir,
+        source_root: a.source_root as string | undefined,
+        signals,
+        reviews,
+        dry_run,
+        re_export_extracted: a.re_export_extracted !== false,
+        max_symbols: a.max_symbols as number | undefined,
+      });
+      const rolled = result.items?.some((i) => i.status === 'rolled_back');
+      return {
+        message:
+          (result.message ? `${result.message}\n` : '') +
+          `采纳 ${result.total_plans} 簇 → 拆出 ${result.total_splits} 簇，成功 ${result.applied}${rolled ? '，**有回滚**' : ''}；` +
+          (dry_run ? 'dry-run：未写文件（确认草稿后传 apply=true）' : '已落盘'),
+        data: result,
+      };
     }),
   },
 

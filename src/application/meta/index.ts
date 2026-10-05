@@ -1,5 +1,10 @@
 /**
- * meta 线（9 个工具）—— ★ **本文件即该线归属的唯一来源**。
+ * meta 线（10 个工具）—— ★ **本文件即该线归属的唯一来源**。
+ *
+ * ★ 2026-10-05（T15 切片）：本线 9 → 10 —— `capability_audit`（语言×功能能力矩阵缺口自检）从
+ *   **CLI-only**（`capability_cli`）接进 MCP 面。★ 顺带更正 T15 的一条误判：原先以为
+ *   `capability_cli` 的等价物 `capability_map` 已存在、可删 CLI —— **错**：`capability_map` 是
+ *   「6 条能力线 × 工具」的**工具导航**，本工具审的是**语言支持度**（功能×语言），两者只有名字像。
  *
  * ★ 2026-10-01（④-2 按能力改判整条线）：本线 8 → 9 —— `sync_contracts` 从 `harvest` 线**改判**进来
  *   （与 `capability_map` 同族：都以"工具注册表"为事实源）。实现文件 `meta/sync_contracts.ts`。
@@ -30,6 +35,19 @@ import { getDSL, saveDSL } from '../../infrastructure/storage.js';
 import { archiveNode, listArchive } from './archive/archive_node.js';
 import { LANE_IDS, listToolDefs, makeCapabilityMapHandler } from './registry/capability_map.js';
 import type { LaneId } from './registry/capability_map.js';
+// ★ T15 切片（2026-10-05）：`capability_audit` 的核心（与 `capability_cli` 同源）。
+import { probeInstalledLanguages } from '../../infrastructure/parse/probe.js';
+import {
+  allCapabilities,
+  aggregateGaps,
+  diagnoseCapabilities,
+  diagnoseCapabilitiesByEntries,
+  languageCatalog,
+  renderAuditText,
+} from '../../infrastructure/analysis/capability/capability_matrix.js';
+// ★ 触发默认登记（**side-effect import**，确保矩阵被填充）—— 与 `capability_cli` 同款；
+//   漏了它会报"空矩阵"（`allCapabilities().length === 0`），那是**静默少报**而不是报错。
+import '../../infrastructure/analysis/capability/register_capabilities.js';
 import { markCanvasNotesStatus, renderCanvasNotesDigest, resolveCanvasNoteTargets } from './view/derive_mind_map.js';
 import { EXPLORE_ACTIONS } from './explore/explore_code.js';
 import { deleteProvider, getStats, listProvidersMasked, resetStats, upsertProvider } from './llm/gateway.js';
@@ -396,6 +414,53 @@ export const META_TOOLS: ToolDef[] = [
         .describe('只看指定能力线；省略返回全部 6 线'),
     },
     handler: makeCapabilityMapHandler(() => listToolDefs()),
+  },
+
+  {
+    // ★ T15 切片（2026-10-05）：原先只存在于 `capability_cli`（CLI-only）⇒ 能力被藏在 MCP 面之外。
+    //   ★ 顺带更正一条误判：T15 原写"`capability_cli` 的 MCP 等价物已存在（`capability_map`）⇒ 只需删 CLI"。
+    //     **错** —— 两者只有名字像：`capability_map` 是「6 条能力线 × 工具」的**工具导航**（零语言），
+    //     本工具审的是「功能 × 语言」的**支持度矩阵**（`diagnoseCapabilities`）。删 CLI 会丢一个能力。
+    name: 'capability_audit',
+    title: '能力矩阵自检：语言 × 功能的 AST 覆盖缺口',
+    description:
+      '**能力矩阵自检**（缺口清单；只读、纯计算、不改任何代码）：对语言名单（或只对**已安装**的 tree-sitter ' +
+      '语言包）逐功能审计 AST 覆盖度，汇总「功能 × 语言」缺口 ⇒ 可直接给 LLM 做"补哪个功能、补哪门语言"的决策输入。' +
+      '★ 与 `capability_map` **不是一回事**：那个是「6 条能力线 × 工具」的**工具导航**，本工具审的是**语言支持度**。' +
+      '★ `installed_only=true` 更贴近"眼下真能跑的语言"；省略则为语言名单全量（含未装包的语言）。',
+    inputSchema: {
+      installed_only: z.boolean().optional().describe('true = 只审已安装的 tree-sitter 语言包；省略 = 语言名单全量'),
+      gaps_only: z.boolean().optional().describe('true = 只回缺口汇总（不返回全量矩阵文本，省上下文）'),
+    },
+    handler: wrapData(async (a) => {
+      const useInstalled = a.installed_only === true;
+      const langNames = useInstalled
+        ? diagnoseCapabilitiesByEntries(probeInstalledLanguages())
+        : diagnoseCapabilities(languageCatalog().map((l) => l.name));
+      const gaps = aggregateGaps(langNames);
+      const totalNeed = Object.values(gaps).reduce((x, y) => x + y.length, 0);
+      const capabilities = allCapabilities().map((c) => ({
+        id: c.id,
+        label: c.label,
+        default: c.default,
+        overrides: c.overrides,
+      }));
+      const scope = useInstalled
+        ? `已安装语言（${probeInstalledLanguages().length} 门）`
+        : `语言名单全量（${languageCatalog().length} 门）`;
+      return {
+        message:
+          `能力矩阵审计（${scope}）：` +
+          (totalNeed === 0
+            ? '✅ 无缺口：所有功能对该语言名单均为 AST 全量'
+            : `🔧 缺口总计 ${totalNeed} 个「功能×语言」对`) +
+          `\n已登记功能 ${capabilities.length} 项。`,
+        data:
+          a.gaps_only === true
+            ? { scope, totalNeed, gaps }
+            : { scope, totalNeed, gaps, matrix_text: renderAuditText(langNames), capabilities },
+      };
+    }),
   },
 
   {
