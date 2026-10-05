@@ -1162,3 +1162,31 @@
            且 `Local == nil`，并断言错误文案含三条关键串）+ `TestJudgeClient_LocalIsExplicitOptIn`。
            **原测试名 `LocalFallback` 已名不副实，故改名而非保留** —— 避免以后有人按名字
            理解成"仍支持自动兜底"。
+
+      ✅ **(a) daemon 接线已收口（2026-10-05 本笔）**：`daemon.ts` 的方向 D 闭环
+         **从 spawn Go 二进制改成调用 TS `runLoop`**。
+         改前是 `execFile(findObserveDslBin(), ['--project-root',…, 'loop', …])`，而
+         `findObserveDslBin` 的仓库内候选路径 `go-observe/build/observe-dsl.exe`
+         **从来不存在、也没有任何脚本产出它**（P0 侦察已核实）⇒ 实际只有
+         `AGENT_IO_OBSERVE_DSL_BIN` 或 PATH 生效 ⇒ **这条闭环在多数部署下是静默不执行的**。
+         一并清掉两个因此变成孤儿的函数（`findObserveDslBin` / `resolveRepoRoot`，
+         后者只被前者调用）与失效 import（`execFile` / `fileURLToPath`）—— 不留死代码。
+         ★ **换实现方式顺带从根上消掉两个老问题**（不是"顺手修"，是必然结果）：
+         ① **ENOENT 与"事件流不存在"被混为一谈**（旧 `:238-244` 拿
+            `!fs.existsSync(eventsPath)` 去解释**所有**失败 ⇒ 二进制缺失/权限错/崩溃全被报成
+            "尚无 observe 事件流"）。现在 `runLoop` 返回**结构化结果**
+            （`skipReason` / `triggered` / `proposals`）⇒ 失败与"没事件"**在类型上就是两件事**。
+         ② **超时保护不能跟着 spawn 一起消失**：`execFile` 的 `timeout` 是白送的，
+            换成 Promise 后**显式补回** `withTimeout`（超时后不取消底层工作、只放弃等待，
+            因为 runLoop 只做文件 I/O，默认不开 LLM）。
+         **刻意保持不变的**（避免打断下游）：广播事件名 `loop-started` / `loop-skipped` /
+         `loop-proposal` / `loop-done` **四个全部沿用**；`loopCooldown` 防抖与 `loopRunning`
+         互斥照旧。唯一改了文案：提示里的「observe-dsl proposals 查看」改为指向 TS 侧工具
+         （`reconcile_proposals`）；`loop-started` 的载荷从 `bin` 改为 `engine:'ts'`。
+         实测三场景：① 无事件流 ⇒ `loop-skipped` 且 reason 清晰（**不再被当成失败**）
+         ② 有事件流 ⇒ 触发并产出 1 条 `design:impact-known-spread` 提案（6b）
+         ③ 重复触发 ⇒ 6b 靠 pending 去重、**不堆叠**（新增文件 0）⇒ 走 `loop-done`
+         ⇒ **旧契约四个事件名实测全部保持**（`true`）。
+         ★ 顺带记录一次**我自己犯的测试错**：第一版测试里 `before` 快照被三个场景复用，
+         而真实代码每次触发都重新快照 ⇒ 场景 3 误判成"新增 1 个文件"、`loop-done` 分支没被覆盖。
+         已改为每次触发各自快照（对齐 `scheduleLoopTrigger` 的真实语义）后四个分支全覆盖。

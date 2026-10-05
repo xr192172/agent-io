@@ -19,11 +19,10 @@
  */
 
 import { DATA_DIR_NAME, GO_OBSERVE_DIR_NAME } from '../../infrastructure/data_dir.js';
-import { execFile } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { runLoop } from '../../infrastructure/analysis/observe/run_loop.js';
 import { watchProjectTool, listActiveWatches, setWatchToolEventListener } from '../../application/observe/runtime/watch_project_tool.js';
 import { setAlertListener, alertsSince, pushAlert } from '../../infrastructure/alert_inbox.js';
 import { saveDSL, getDSL, onDslChange } from '../../infrastructure/storage.js';
@@ -181,29 +180,30 @@ let loopRunning = false;
  * （指到 `dist/` ⇒ 找不到二进制 ⇒ 悄悄退回 PATH）。导出后**可被测试钉住**。
  * ★ 这类"按层级数推路径"的知识**改名工具抓不到** —— 台账 §44.7 的形态清单里叫「⑥ 数层级」。
  */
-export function resolveRepoRoot(fromUrl: string): string {
-  const here = path.dirname(fileURLToPath(fromUrl));
-  let dir = here;
-  for (let i = 0; i < 8; i++) {
-    if (fs.existsSync(path.join(dir, 'go-observe'))) return dir;
-    const parent = path.dirname(dir);
-    if (parent === dir) break;
-    dir = parent;
-  }
-  return here; // 找不到路标 ⇒ 退回自身所在目录（与旧行为一致的"保守失败"）
-}
-
+export 
 /** observe-dsl 二进制定位：env 显式指定 → 仓库内 build 产物 → PATH */
-function findObserveDslBin(): string {
-  if (process.env.AGENT_IO_OBSERVE_DSL_BIN) return process.env.AGENT_IO_OBSERVE_DSL_BIN;
-  const exe = process.platform === 'win32' ? 'observe-dsl.exe' : 'observe-dsl';
-  const repoRoot = resolveRepoRoot(import.meta.url);
-  const candidate = path.join(repoRoot, 'go-observe', 'build', exe);
-  if (fs.existsSync(candidate)) return candidate;
-  return exe; // 交给 PATH
-}
 
-/** 事件驱动 loop：violated 后防抖触发，产出新提案则 pushAlert + SSE 广播 */
+/** 事件驱动 loop：violated 后防抖触发，产出新提案则 pushAlert + SSE 广播
+ *
+ * ★ 2026-10-05（P2 之后的接线收口）：**从 spawn Go 二进制改成调用 TS `runLoop`**。
+ *   改前是 `execFile(findObserveDslBin(), ['--project-root',…, 'loop', …])`，
+ *   而 `findObserveDslBin` 的仓库内候选路径 `go-observe/build/observe-dsl.exe`
+ *   **从来不存在、也没有任何脚本产出它**（P0 侦察核实：`.gitignore:6/38` 双忽略，
+ *   `e2e_smoke.ps1:18` 输出到 `$env:TEMP`）⇒ 实际只有 `AGENT_IO_OBSERVE_DSL_BIN`
+ *   或 PATH 生效 ⇒ **这条方向 D 闭环在多数部署下是静默不执行的**。
+ *
+ *   换 TS 之后顺带**从根上消掉两个老问题**（都不是"顺手修"，是换实现方式的必然结果）：
+ *   ① **ENOENT 与"事件流不存在"被混为一谈**（旧 `:238-244`）：
+ *      旧代码拿 `!fs.existsSync(eventsPath)` 去解释**所有**失败 ⇒ 二进制缺失、权限错、
+ *      崩溃全都被报成"尚无 observe 事件流"。现在 `runLoop` 返回**结构化结果**
+ *      （`skipReason` / `triggered` / `proposals`），失败与"没事件"**在类型上就是两件事**。
+ *   ② **超时保护不能跟着 spawn 一起消失**：`execFile` 的 `timeout` 是白送的，
+ *      换成 Promise 后必须显式补 —— 见下面 `withTimeout`。
+ *
+ *   保留不变的部分（避免打断下游）：广播事件名 `loop-started` / `loop-skipped` /
+ *   `loop-proposal` / `loop-done` 全部沿用；`loopCooldown` 防抖与 `loopRunning` 互斥照旧。
+ *   唯一改了文案：提示里的「observe-dsl proposals 查看」改为指向 TS 侧工具。
+ */
 function scheduleLoopTrigger(projectDir: string, broadcast: (event: string, data: unknown) => void): void {
   const now = Date.now();
   const last = loopCooldown.get(projectDir) ?? 0;
@@ -213,55 +213,69 @@ function scheduleLoopTrigger(projectDir: string, broadcast: (event: string, data
   loopRunning = true;
 
   // ★ 两个目录名**不是笔误，是两个程序各自的仓库**（分工见 data_dir.ts 的两张表）：
-  //   · `.agent/observe` = go-observe 的 DSL 仓库（dsl.json / proposals/ / actual.dsl.json）—— 必须与 Go 侧一致，改了断集成
+  //   · `.agent/observe` = 设计 DSL 仓库（dsl.json / proposals/）—— 必须与 Go 侧一致，改了断插桩集成
   //   · `.agent-io/`      = agent-io 自己的（事件流 / 台账）
   const dataDir = path.join(projectDir, GO_OBSERVE_DIR_NAME, 'observe');
   const proposalsDir = path.join(dataDir, 'proposals');
   const before = new Set(fs.existsSync(proposalsDir) ? fs.readdirSync(proposalsDir) : []);
   const eventsPath = path.join(projectDir, DATA_DIR_NAME, 'observe', 'events.jsonl');
-  const ledgerPath = path.join(projectDir, DATA_DIR_NAME, 'impact', 'ledger.json');
-  const bin = findObserveDslBin();
-  const args = [
-    '--project-root', projectDir,
-    'loop', eventsPath,
-    '--ledger', ledgerPath,
-  ];
 
-  broadcast('loop-started', { project_dir: projectDir, bin, at: new Date().toISOString() });
-  execFile(
-    bin,
-    args,
-    { timeout: LOOP_TIMEOUT_MS, windowsHide: true, maxBuffer: 4 * 1024 * 1024 },
-    (err, stdout, stderr) => {
+  broadcast('loop-started', { project_dir: projectDir, engine: 'ts', at: new Date().toISOString() });
+
+  withTimeout(
+    runLoop(eventsPath, dataDir, projectDir),
+    LOOP_TIMEOUT_MS,
+    `loop 超过 ${LOOP_TIMEOUT_MS}ms 未完成（已放弃等待；daemon 不被阻塞）`,
+  )
+    .then((res) => {
       loopRunning = false;
-      try {
-        if (err) {
-          // 常见：events.jsonl 尚不存在（项目还没产生 observe 事件）——不算错，静默跳过
-          const notReady = !fs.existsSync(eventsPath);
-          const reason = notReady ? '尚无 observe 事件流（events.jsonl 不存在）' : String(err.message).split('\n')[0];
-          broadcast('loop-skipped', { project_dir: projectDir, reason });
-          return;
-        }
-        // proposals/ 在第一份提案产生前不存在——容错为空集合
-        const after = new Set(fs.existsSync(proposalsDir) ? fs.readdirSync(proposalsDir) : []);
-        const newProposals = [...after].filter((f) => !before.has(f));
-        if (newProposals.length > 0) {
-          const line = `[loop 回流] ${projectDir} 产生 ${newProposals.length} 条新提案（${newProposals.map((p) => p.replace('.json', '')).join(', ')}）· observe-dsl proposals 查看，approve 后并入设计 DSL`;
-          pushAlert({ project_dir: projectDir, seq: 0, line, created_at: new Date().toISOString() });
-          broadcast('loop-proposal', { project_dir: projectDir, proposals: newProposals, at: new Date().toISOString() });
-        } else {
-          broadcast('loop-done', { project_dir: projectDir, proposals: 0, at: new Date().toISOString() });
-        }
-        if (stderr && stderr.trim()) {
-          console.warn('[loop:stderr]', stderr.trim().split('\n')[0]);
-        }
-      } catch (e) {
-        // 回调内任何异常都不能波及 daemon 宿主进程
-        console.warn('[loop] 结果处理失败:', (e as Error).message);
-        broadcast('loop-skipped', { project_dir: projectDir, reason: (e as Error).message });
+      // 「没有事件流」与「真失败」现在天然分开：前者由 runLoop 自己给出 skipReason。
+      if (res.skipReason && !res.triggered && res.proposals.length === 0 && res.report.event_count === 0) {
+        broadcast('loop-skipped', { project_dir: projectDir, reason: res.skipReason });
+        return;
       }
-    },
-  );
+      if (!res.triggered) {
+        broadcast('loop-skipped', { project_dir: projectDir, reason: res.skipReason ?? '未触发演进' });
+        return;
+      }
+      const after = new Set(fs.existsSync(proposalsDir) ? fs.readdirSync(proposalsDir) : []);
+      const newProposals = [...after].filter((f) => !before.has(f));
+      if (newProposals.length > 0) {
+        const line =
+          `[loop 回流] ${projectDir} 产生 ${newProposals.length} 条新提案` +
+          `（${newProposals.map((p) => p.replace('.json', '')).join(', ')}）· ` +
+          `用 reconcile_proposals 查看、approve 后并入设计 DSL`;
+        pushAlert({ project_dir: projectDir, seq: 0, line, created_at: new Date().toISOString() });
+        broadcast('loop-proposal', { project_dir: projectDir, proposals: newProposals, at: new Date().toISOString() });
+      } else {
+        broadcast('loop-done', { project_dir: projectDir, proposals: 0, at: new Date().toISOString() });
+      }
+    })
+    .catch((e: Error) => {
+      loopRunning = false;
+      // ★ 失败**响亮**：不再把任何错误都归因成"事件流还不存在"。
+      console.warn('[loop] 执行失败:', e.message);
+      broadcast('loop-skipped', { project_dir: projectDir, reason: `loop 执行失败：${e.message}` });
+    });
+}
+
+/** 给 Promise 加超时（换掉 execFile 后必须显式补回的保护）。
+ *  ⚠ 超时后**不取消**底层工作，只放弃等待 —— runLoop 只做文件 I/O（默认不开 LLM），
+ *     放弃等待即可保证 daemon 不会被拖住。 */
+function withTimeout<T>(p: Promise<T>, ms: number, msg: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error(msg)), ms);
+    p.then(
+      (v) => {
+        clearTimeout(t);
+        resolve(v);
+      },
+      (e) => {
+        clearTimeout(t);
+        reject(e);
+      },
+    );
+  });
 }
 
 // ─────────────────────────────────────────────────────────────
