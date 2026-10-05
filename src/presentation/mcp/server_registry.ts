@@ -87,8 +87,8 @@ import { getProjectCacheDb } from '../../infrastructure/index/db.js';
 import { recordDogfoodUsage } from '../../infrastructure/dogfood_stats.js';
 import { queryObserveLog } from '../../infrastructure/analysis/observe/log_query.js';
 import { memoryObserveHandler, memoryTargetsHandler } from '../../application/observe/capture/memory_observe.js';
-import { translateGoTsHandler } from '../../infrastructure/analysis/translate/tool.js';
-import { extractGo } from '../../infrastructure/analysis/translate/go_extractor.js';
+import { translateGoTsHandler } from '../../infrastructure/authoring/translate/tool.js';
+import { extractGo } from '../../infrastructure/authoring/translate/go_extractor.js';
 import { extractRule } from '../../application/refactor/rule_library/rule_extract.js';
 import {
   loadRules,

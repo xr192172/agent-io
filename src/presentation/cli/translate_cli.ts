@@ -14,11 +14,11 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { translateGoToTs } from '../../infrastructure/analysis/translate/pairs.js';
+import { translateGoToTs } from '../../infrastructure/authoring/translate/pairs.js';
 // ★ 2026-09-30：同 tool.ts —— 原先从 pairs 引 `translateGoProject`（转发）制造了环，改为直连出处。
-import { translateGoProject } from '../../infrastructure/analysis/translate/project.js';
-import { createPooledHoleTranslator } from '../../infrastructure/analysis/translate/llm.js';
-import { fillUnitsWithRetry } from '../../infrastructure/analysis/translate/fill.js';
+import { translateGoProject } from '../../infrastructure/authoring/translate/project.js';
+import { createPooledHoleTranslator } from '../../infrastructure/authoring/translate/llm.js';
+import { fillUnitsWithRetry } from '../../infrastructure/authoring/translate/fill.js';
 
 function readArg(name: string): string | undefined {
   const i = process.argv.indexOf(name);

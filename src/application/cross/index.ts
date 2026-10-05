@@ -16,8 +16,8 @@ import path from 'node:path';
 import { compareProjects } from '../../infrastructure/analysis/cross_repo/index.js';
 import { analyzeHealth } from '../../infrastructure/analysis/health/index.js';
 import { detectReachableRoots } from '../../infrastructure/analysis/project_root/index.js';
-import { extractGoFromFile } from '../../infrastructure/analysis/translate/go_extractor.js';
-import { translateGoTsHandler } from '../../infrastructure/analysis/translate/tool.js';
+import { extractGoFromFile } from '../../infrastructure/authoring/translate/go_extractor.js';
+import { translateGoTsHandler } from '../../infrastructure/authoring/translate/tool.js';
 import type { ToolDef } from '../types.js';
 
 export const CROSS_TOOLS: ToolDef[] = [

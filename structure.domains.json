@@ -25,21 +25,21 @@
     {
       "id": "impact",
       "layer": "infrastructure",
-      "role": "capability",
+      "role": "analysis",
       "dir": "src/infrastructure/analysis/impact",
       "note": "变更影响：影响图 + 两个 feature 的差异（**已存在，只收编**）"
     },
     {
       "id": "observe",
       "layer": "infrastructure",
-      "role": "capability",
+      "role": "analysis",
       "dir": "src/infrastructure/analysis/observe",
       "note": "观测：插桩 / 事件 / 执行链追踪与回放（**已存在，只收编**）"
     },
     {
       "id": "health",
       "layer": "infrastructure",
-      "role": "capability",
+      "role": "analysis",
       "dir": "src/infrastructure/analysis/health",
       "note": "代码体检与缓存（**已存在，只收编**）"
     },
@@ -348,8 +348,8 @@
       "id": "behavior",
       "layer": "infrastructure",
       "role": "capability",
-      "dir": "src/infrastructure/analysis/behavior",
-      "note": "行为基线（金丝雀测试对比）：从契约签名骨架生成 harness，改动前后各跑一次对比，补「动态闸只答跑得动、答不了返回值 / 副作用悄悄变了」的缺口。工作流 capture → 改代码 → verify；支持 python（顶层 exec）+ node 家族（transpileModule 转 CJS 后 require）。★ 消费者**跨 3 个不同域**（observe / translate·verify_behavior / version_upgrade·adapters/node）⇒ 独立能力，不是某域的一个面。"
+      "dir": "src/infrastructure/authoring/behavior",
+      "note": "行为基线（金丝雀）：从契约签名生成 harness，改动前后各跑一次对拍。★ 2026-10-05 从 `analysis/behavior` 搬来 —— 同上，它生成 harness 并跑子进程"
     },
     {
       "id": "contract-gate",
@@ -375,7 +375,7 @@
     {
       "id": "diagnosis",
       "layer": "infrastructure",
-      "role": "capability",
+      "role": "analysis",
       "dir": "src/infrastructure/analysis/diagnosis",
       "note": "一键诊断流水线：`symptom_parser`（症状 → 结构化）→ `candidate_locator`（→ cache.db 按 exact/file/anchor/fts 分级）→ `chain_tracer`（沿 call/type_ref/import 双向 BFS 建证据链）→ `impact_analyzer`（复用 diffImpact 算影响面）→ `root_cause_aggregator`（规则引擎先跑 + LLM 可选，**LLM 只解释不造证据**）→ `repair`（白名单内行级补丁，old_text 不信 LLM）+ `verifier`（**只给验证命令建议、不代跑**）。`diagnose` 是唯一知道各步顺序的编排器。"
     },
@@ -383,15 +383,15 @@
       "id": "translate",
       "layer": "infrastructure",
       "role": "capability",
-      "dir": "src/infrastructure/analysis/translate",
-      "note": "Go→TS 半自动翻译线（三段式落地）：`go_extractor`（tree-sitter 萃取 → trans_unit 待译契约）→ `ts_codegen`（机械骨架生成，**签名焊死、函数体留孔**）→ `fill`/`llm`（LLM 逐孔填充；AGNES key 池轮换内联）+ `verify`（语法静态闸）/ `verify_behavior`（复用 `behavior` 金丝雀做 Go↔TS 行为对拍）；`project`（项目级：枚举 .go → 模块树 + 跨文件 import）、`referenced`/`const_eval`/`fixers`/`unit`；`pairs`（TRANSLATE_PAIRS 注册表：新 (src,dst) 只挂一张表）。入口 `tool.ts`（translate_go_ts handler）。"
+      "dir": "src/infrastructure/authoring/translate",
+      "note": "面向用户代码**产出/改写**的能力：Go→TS 半自动翻译（机械骨架 + LLM 逐孔填 + 行为对拍）。★ 2026-10-05 从 `analysis/translate` 搬来 —— 它产出新文件、不是判断，住在 analysis/ 下与 role 不配（structure_gap misnested 曾报它）"
     },
     {
       "id": "version-upgrade",
       "layer": "infrastructure",
       "role": "capability",
-      "dir": "src/infrastructure/analysis/version_upgrade",
-      "note": "版本升级契约差检测（**通用内核 + 语言适配器**）：阶段 A `toolchain`（工具链版本盘点 vs 本机）/ B `features`（语言特性契约差）/ C `removed`（废弃·移除 API）/ D `rewrite`（局部重写计划）；`gate` = 静态闸（编译级）+ 动态闸（运行时探针）；`detect` = 按子项目扫描的共享编排（供 `upgrade_cli` / `upgrade_rewrite_cli` 复用）；语言差异**全下沉到 `adapters/`**。★ 通用内核**不 import 具体适配器**，只经 registry 取。"
+      "dir": "src/infrastructure/authoring/version_upgrade",
+      "note": "版本升级契约差检测与改写（静态门 / 动态门 / 6 语言适配器表）。★ 2026-10-05 从 `analysis/version_upgrade` 搬来 —— 同上，它改写代码"
     }
   ],
   "flatDirs": [
@@ -440,10 +440,13 @@
   ],
   "flatNote": "★ `flatDirs` 与 `domains` 的区别，一句话：**`domains[i].dir` 里的散文件「要么已搬完、要么就是待搬的缺口」；`flatDirs[i].dir` 里的散文件「就是终态」**。 所以 flat 不是「免检」：它的作用是①把这三个目录**纳入视野**（否则量具对它们是瞎的）；②规定「**flat 目录里再长出的子目录必须被登记**」—— 出现了却没登记就是缺口，读数会报 `unlisted`。★ 判据的来源：`infrastructure/` 顶层这 10 个文件如果按容器判，会永远挂在待搬清单上，而「它们本来就该平铺」这个意图**在原表里没地方写** ⇒ 这就是缺的那一位。",
   "roles": {
-    "capability": "用户可见的能力（有对外工具/CLI 面）。★ 判据「找 X 的实现该不该进这个目录」；它的父目录不得是另一个域（由 structure_gap 检查）",
-    "analysis": "只对内：分析/体检/闸门/死代码检测。产物是「判断」不是「功能」（无对外工具面，只被能力域消费）",
-    "engine": "基础设施：解析/索引/存储/渲染/辅助判定，被别的域调用",
-    "adapter": "跨语言/跨外部系统的适配层"
+    "capability": "面向用户代码**产出或改动东西**的域：翻译出 TS 文件 / 改写升级 / 生成 harness+基线 / 改 DSL / 改代码。★ 判据是**产物是不是新东西**，不是「有没有工具面」—— code_health 与 impact_analysis 都有工具面，但产物是判断 ⇒ 归 analysis",
+    "analysis": "**只读代码、只产出判断**的域：体检 / 影响面 / 漂移 / 契约对账 / 死代码 / 跨仓冲突。★ 判据：读得多、写得少；它的返回值是「报告/计数/布尔」，不是新文件",
+    "engine": "被别的域调用的基础设施：解析 / 索引 / 存储 / 渲染 / 语言包 / 辅助判定",
+    "adapter": "跨语言、跨外部系统的适配层"
   },
-  "roleNote": "★ role 是**机器可读**的，而同层的 note 是散文（给人读）—— 两者并存是有意的：note 讲清「为什么」，role 让工具能读。★ **能派生的绝不声明**：依赖边/循环/分层违规全部现算（见本表 note 与 code_health），role 之所以值得声明，是因为它**算不出来** —— analysis/translate 与 analysis/structure 的 import 结构可以一模一样，但一个是我要用的功能、一个是工具内部的计算。\n★ 角色是**按对外工具面**判的，不按「重不重要」：有 MCP/CLI 工具面的 ⇒ capability；只被能力域调用、产出判断或中间量的 ⇒ analysis / engine。所以 `deadcode`（无自己的工具面，只被 refactor_pipeline 消费）是 analysis 而不是 capability，`parse_capability`（只给工具出一句能力提示）是 engine。"
+  "roleNote": "★ role 是**机器可读**的，同层的 note 是散文（给人读）—— 两者并存是有意的：note 讲「为什么」，role 让工具能读。\n★ **能派生的绝不声明**：依赖边 / 循环 / 分层违规全部现算（见本表 note 与 code_health）。role 之所以进表，是因为它**算不出来** —— analysis/translate 与 analysis/structure 的 import 结构可以一模一样，但一个产出新文件、一个只产判断。\n★ **2026-10-05 口径纠正（第一版判错过）**：初版把 capability 定义成「有对外工具面」，于是 impact/observe/health/diagnosis 全被判成 capability —— 但它们既有工具面、产物又全是判断，两条定义自相矛盾。**已按「产物是不是新东西」重判**。这条教训写在这里，是因为它正是「判据要能被反驳」的现场：四个域的判读我改了四遍才站住。",
+  "containers": {
+    "src/infrastructure/authoring": "**面向用户代码产出/改写**的能力容器（2026-10-05 新增）。★ 与 `analysis/` 的分工：analysis 只读代码、只产判断；authoring 产出新文件（新代码 / harness / 基线）。★ 这条线是 structure_gap 的 misnested 判据量出来的，不是人列的。"
+  }
 }

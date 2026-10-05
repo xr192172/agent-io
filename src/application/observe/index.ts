@@ -24,7 +24,7 @@
 import { z } from 'zod';
 import { wrap, wrapData, requireStr } from '../plumbing.js';
 import path from 'node:path';
-import { baselinePathFor, captureBaseline, verifyBaseline } from '../../infrastructure/analysis/behavior/index.js';
+import { baselinePathFor, captureBaseline, verifyBaseline } from '../../infrastructure/authoring/behavior/index.js';
 import { rebuildChains } from '../../infrastructure/analysis/observe/chain.js';
 import { getFeatureLine } from './capture/feature_line.js';
 import { ensureProjectIndex } from '../../infrastructure/index/index_freshness.js';
