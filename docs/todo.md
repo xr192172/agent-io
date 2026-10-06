@@ -655,48 +655,6 @@
 
 
 
-- [ ] **T33 ★★ `analyzeModuleSource` 的 `imports` 漏默认导入 —— 与 `parseFileFull` 差 190/323 文件（2026-10-04 实测）**
-      *(核实：一次搬迁侦察时用**全仓 323 个文件逐文件对差集**测出，**非读码断言**。
-      与 T26 同一轮侦察，但**是两条不同的事**。)*
-      ⇒ **190 个文件**的 `imports` 两边不一致，**差异全部是 `analyzeModuleSource` 漏掉「默认导入」**
-        （`import fs from 'node:fs'` 这种形态）。
-      ⇒ ★★★ **2026-10-05 隔离实测更正（三处，全部推翻/收窄了我原来的说法）**：
-        · **source 级不一致 187 → 2**（317 个候选文件；补上默认导入后只剩 2 个 `side-effect` 文件：
-          `infrastructure/parse/lang_hint.ts` · `presentation/cli/capability_cli.ts` 各缺一条
-          `register_capabilities.js` 副作用边）。
-        · ★★ **原写"`project_root` 的闭包计算正是使用者之一" —— 实测不成立**：
-          闭包 **0 变化**（10 个种子 × 有索引口径 = 304 文件、4 个种子 × 无索引口径 = 317 文件，**新增 0/减少 0**）。
-          **机制**：快路径读 `cache.db` 的 `imports` 表，而**该表由 `parseFileFull` 写**
-          ⇒ 本来就带默认导入边；回退全扫的 `included` 恒等于全项目文件集。
-          ⇒ **"补默认导入 ⇒ 闭包更全"是错的**。
-        · ★★ **真实影响面是 `binding` 级**：**186/317 文件的 `rootOffsets`** 缺导入本地名 ——
-          `default` 缺 **348** 个、`namespace` 别名缺 **2** 个（named 缺 0）。
-          ⇒ ★ **真正的爆炸半径 = `analyzeModuleSource` 的「直接消费者」**
-          （`rename_symbol` / `find_references` / `symbol_move` / `health` 这些**读 `rootOffsets` 的地方**），
-          **不是闭包**。⇒ **正在量**（见下）。
-        · ★ 另立一条：**`namespace_import` 的 `alias` 字段在本仓 tree-sitter 取空**
-          （`childForFieldName('alias')` 拿不到）—— 独立缺陷，见新条目。
-        ⇒ ★★★ **"真正的爆炸半径"已量（2026-10-05，我亲自量的）—— 结论是「影响很小」**：
-          `analyzeModuleSource` 的**真实调用点只有 4 处**（其余是注释与再导出）：
-          `find_references.ts:301,451` · `symbol_move.ts:272,299,356` ·
-          `project_root/index.ts:760,983,1221` · `rename_symbol/languages/ts.ts:49,94`。
-          而**读 `rootOffsets` 的只有 2 处**，且两处都是「**按名字取一个偏移**」：
-          `find_references.ts:318`（`def.rootOffsets.get(symbol!) ?? 0`）·
-          `ts.ts:57`（`def.rootOffsets.get(symbol)!`）。
-          ⇒ ★★ `symbol` 是**用户指定、要改名的那个符号名**，**它绝不会是"从别处 import 进来的本地名"** ——
-          `rename_symbol` 那条路**已有拒绝逻辑**挡着（真调原文：
-          「`"foo"` 在 b.ts 中是 **import 绑定而非声明**，请在它的定义文件上发起改名」）。
-          ⇒ **缺的那些默认导入本地名（`fs`/`path`/…）走不到这两处**。
-        ⇒ **定性（诚实）：binding 级缺口是本仓当前的「理论缺陷」，未观测到任何错误结论。**
-          ★ 因此**优先级低于** `side-effect` 那两条（那两条是**真的少一条依赖边**）。
-          ★ 若将来有消费者按「这个文件里有没有 `fs` 这个名字」做判断，它就会浮上来 —— **那时再修**，
-          别现在为一个没有观测影响的缺口改一个共享解析器的行为（那是**过度改动**）。
-      ⇒ ★ **要不要改是另一笔**，且它**是行为变更**（会**多收**默认导入边 ⇒ 闭包更全）
-        ⇒ **必须按「行为变更」单独验收**，不能混进纯重构（改了会让一批闭包结果变化）。
-      ⇒ ★ **不要与 T26 合并**：T26 只求「消掉那条环」，本条求「分析器本身对不对」；
-        混在一起会把两件事的验收判据搅在一起。
-      ★ 取证方式（**值得复用**）：**全仓逐文件对差集** —— 比"读代码断言"强得多。
-
 - [ ] **T34 ★ `explore_code` 的异步 action 外层 message 恒为「异步 action 已完成」（2026-10-04 T17 时发现）**
       *(核实：T17 给 4 个 action 接上真实现后，外层 message 仍是那个固定串；
       真实文本经 `toResult(r, true)` 的 `---DATA---` 通道落在 `data.message` 里。)*

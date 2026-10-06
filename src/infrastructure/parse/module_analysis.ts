@@ -140,6 +140,28 @@ export async function analyzeModuleSource(src: string, filePath = 'file.ts'): Pr
     //   逐字相同的 `/^\s*import\s+type\b/`，于是 `export type … from` 的盲区在两处各存活一次。
     const typeOnly = isTypeOnlyModuleStatement(node.text);
     const pushEdge = (e: Omit<ImportEdge, 'typeOnly'>) => imports.push({ ...e, typeOnly });
+
+    // ── ★★ 已知缺口（2026-10-06 按 T33 的实测登记在此 —— **故意不修**，理由与触发条件见下）──
+    //  · **默认导入的本地名不进 `rootOffsets`**：`import fs from 'node:fs'` 的 `fs`
+    //    （tree-sitter 里它是 `import_clause` 的**裸 `identifier`**，既不是 `import_specifier`
+    //     也不是 `namespace_import` ⇒ 本函数从不 declare 它）；`import * as ns from 'x'` 的 `ns` 同理，
+    //     且那是**语法事实**而非笔误：tree-sitter-typescript 的 `namespace_import` 规则是
+    //     `seq('*', 'as', $.identifier)` ⇒ **没有命名字段** ⇒ 下面 `childForFieldName('alias')` **恒取 null**。
+    //    ⇒ 实测面：**186/317 文件**的 `rootOffsets` 缺导入本地名
+    //      （default 缺 **348** 个、namespace 别名缺 **2** 个；named 缺 **0**）。
+    //  · ★ **为什么现在不修**（T33 已量化 —— 别凭"看着不对"就改）：全仓**读 `rootOffsets` 的只有 2 处**
+    //    —— `find_references.ts` 的 `def.rootOffsets.get(symbol!) ?? 0` 与
+    //    `rename_symbol/languages/ts.ts` 的 `def.rootOffsets.get(symbol)!`；而 `symbol` 是
+    //    **用户指定要改名的那个符号名**，它**绝不会是"从别处 import 进来的本地名"**
+    //    （`rename_symbol` 那条路已有拒绝逻辑挡着：`… 在 x.ts 中是 import 绑定而非声明，
+    //    请在它的定义文件上发起改名`）⇒ **缺的那些名字走不到这两处**。
+    //    ⇒ 修它是**行为变更**（多填 map 条目）却**买不到观测收益** = 本仓说的**过度改动**。
+    //  · ★ **触发条件**（满足其一就该修，那时它是真缺陷）：
+    //      (a) 出现**按名字查询**的消费者（如"这个文件里有没有 `fs` 这个名字"）；
+    //      (b) 出现**遍历 `rootOffsets`** 的逻辑（多填条目会直接改变其结果）。
+    //    ★ 届时按**行为变更单独验收**，且**别与 T26 混做**（T26 只求"消掉那条环"，求的不是"分析器对不对"）。
+    // ─────────────────────────────────────────────
+
     // 遍历 import 子句（import_clause / namespace_import / named_imports / default）
     const walkClause = (n: N, depth = 0): void => {
       if (depth > 20) return;
@@ -164,7 +186,20 @@ export async function analyzeModuleSource(src: string, filePath = 'file.ts'): Pr
         if (c && c.type !== 'source') walkClause(c, depth + 1);
       }
     };
+    const before = imports.length;
     walkClause(node);
+    // ★★ 2026-10-06（T33 里"优先级更高"的那条）：**纯 side-effect import 也要建边**。
+    //   形态：`import './register_capabilities.js'`（无 import_clause）—— 上面的 walkClause
+    //   找不到任何说明符 ⇒ 原先**一条边都不建**。
+    //   ★ 但它是**真实的依赖边**（引它就是为了执行副作用），且 `parseFileFull` 那边**本来就有**：
+    //   `kernel.extractImportSources` 走表项 `importSourceField`，**只要语句有 `source` 字段就返回一条**
+    //   ⇒ 两边口径不一致，正是本仓头号病根「判据分叉」的又一实例。
+    //   ★ 实测差异面（317 个候选文件逐文件对差集）：**只有 2 个** ——
+    //   `infrastructure/parse/lang_hint.ts` · `presentation/cli/capability_cli.ts`，
+    //   各缺一条 `register_capabilities.js` 副作用边。
+    if (imports.length === before) {
+      pushEdge({ source, remoteName: null, remoteOffset: null, localName: null, star: false, isReexport: false });
+    }
   };
 
   const handleExport = (node: N): void => {
