@@ -1,6 +1,12 @@
 /**
  * deprecate_offline —— 废弃积木下线链（C 链，P2）
  *
+ * ★ 2026-10-06（T15 第 5 项）：本文件从 `src/presentation/cli/` **归位**到
+ *   `src/application/refactor/deprecate_offline/`。它一直住在 `cli/` 里，但它 import 的是
+ *   `application/refactor/edit/remove_dead_imports` ⇒ **它本来就是 application 层的能力**，
+ *   不是"一条命令"（`deprecate_offline_cli.ts` 才是命令）。判据见 `structure.domains.json`
+ *   的 `cli-surface` note：那条平铺规则是"**每个文件 = 一条命令**"。
+ *
  * 承接 brickify / feature_map 的废弃证据（DeprecationEvidence.deadSources：某 source
  * 仅被"导入但未使用"的文件引用），把**项目内自研源码模块**真正下线。
  *
@@ -32,11 +38,11 @@
 
 import path from 'node:path';
 import fs from 'node:fs';
-import { detectDeadImports, scanProjectSourceFiles } from '../../infrastructure/analysis/deadcode/detect_dead_imports.js';
-import { removeDeadImportsWithVerify } from '../../application/refactor/edit/remove_dead_imports.js';
-import { parseTsImportQualifiers, parseGoImportQualifiers, stripTsImportLines, qualifierLines, type DeadDepCandidate } from '../../infrastructure/graph/dead_deps.js';
-import { defaultVerifyCommands, runVerification } from '../../infrastructure/verify_refactor.js';
-import { SOURCE_EXTS } from '../../infrastructure/parse/index.js';
+import { detectDeadImports, scanProjectSourceFiles } from '../../../infrastructure/analysis/deadcode/detect_dead_imports.js';
+import { removeDeadImportsWithVerify } from '../edit/remove_dead_imports.js';
+import { parseTsImportQualifiers, parseGoImportQualifiers, stripTsImportLines, qualifierLines, type DeadDepCandidate } from '../../../infrastructure/graph/dead_deps.js';
+import { defaultVerifyCommands, runVerification } from '../../../infrastructure/verify_refactor.js';
+import { SOURCE_EXTS } from '../../../infrastructure/parse/index.js';
 
 // 扫描纳入的源码扩展名：★ 来自内核唯一权威 `SOURCE_EXTS`（`ts_kernel/source_exts.ts`），
 // 不再就地手写（此前这里 7 个，仓内同一问题另有 5 份不同答案 ⇒ 口径随工具而变）。

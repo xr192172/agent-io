@@ -448,8 +448,25 @@
          以及"骨架过不了验证闸 ⇒ 不落盘"那一支（需一个过不了闸的 Go 样本）。
          ⇒ ★ **`translate_cli` 至此升进 (A) 级**（能力已 100% 在 MCP 面）⇒ 它的**去留**成为与
          `signal_review_cli` / `split_stage_cli` 同类的**待拍板**问题（删它要动 `package.json:55` 的 script）。
-      5. **`deprecate_offline_cli`** —— ★ **层问题**：核心 `runDeprecateOffline` 住在 **`presentation/cli/`** 里
-         ⇒ 注册前得先把它搬到 application/infrastructure（属"修形状"，不是包一层）
+      5. ✅ **已落（2026-10-06）**：把核心 `deprecate_offline.ts`（434 行、`runDeprecateOffline` 本体）从
+         `src/presentation/cli/` **归位**到 **`src/application/refactor/deprecate_offline/deprecate_offline.ts`**
+         （`deprecate_offline_cli.ts` 留在原地 —— 它才是"一条命令"）。
+         ★ **判据不是我的直觉，是两处既有声明**：① 它自己 import 的是
+         `application/refactor/edit/remove_dead_imports` ⇒ **它本就是 application 层的能力**；
+         ② `structure.domains.json` 的 `cli-surface` note 那条平铺规则是"**每个文件 = 一条命令**"
+         —— 而它当年是被**明文豁免**写进那条 note 的（"`cli.ts` + 各 `*_cli.ts` + `deprecate_offline.ts`"），
+         与 `cli/render/` 当年同型。
+         ⇒ **改法**：`git mv`（留历史）+ 4 处 `../../infrastructure/` 深度 +1、跨工具引用改同线相对
+         （`../edit/remove_dead_imports.js`）+ 头注写清"为什么它不住 cli/"；并**在域表里新立一个域**
+         （`deprecate_offline` · layer=application · role=capability）+ 清掉 `cli-surface` note 里那条豁免（14 → 13）。
+         **实测**：搬后真跑 CLI（`--project .` dry-run）⇒「扫描 1770 文件 → 0 个死源…」✓；
+         `structure_gap` 复测 **"结构意图与现状一致 ✓"**（`misplaced` / `unlisted` / `missing` 全空 ⇒ 没引入新缺口）；
+         总门五道全 PASS。
+         ★ **如实记**：`structure_gap` **改前也报"一致 ✓"** —— 因为旧 note **明文认领**了那个文件
+         ⇒ **这把尺子看不见"意图本身写错"这种缺口**（它只对账"声明 vs 磁盘"，不对账"声明合不合理"）。
+         ⇒ ★ **下一步（未做）**：**注册 `deprecate_offline` 为 MCP 工具**（这才是 T15 的目的）——
+         ★ 且注册要按棘轮给 `touched`：它会**写文件**（`written_files`）且有**根**（`project_dir`）
+         ⇒ 属"该给"，不是例外。
       6. `upgrade_cli` / `upgrade_rewrite_cli`（后者会编辑 + 验证 + 提交）、以及
          `signal_review_cli` / `split_stage_cli` 这两个 **CLI 的去留**（能力已归零，CLI 是否留作 argv 便利）
       7. **`install_package_cli` ⇒ 判为一次性运维脚本**（`spawn npm install/uninstall` 改环境 + 联网；

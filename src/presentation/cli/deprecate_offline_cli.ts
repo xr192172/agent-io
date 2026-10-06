@@ -5,7 +5,8 @@
  *   node dist/src/presentation/cli/deprecate_offline_cli.js --project <dir>
  *        [--plans ./a.ts,./legacy/b] [--files <scope>] [--apply] [--remove-file] [--no-verify]
  */
-import { runDeprecateOffline } from './deprecate_offline.js';
+// ★ 2026-10-06（T15 第 5 项）：核心已归位到 application 层（本文件只是 argv 包装）。
+import { runDeprecateOffline } from '../../application/refactor/deprecate_offline/deprecate_offline.js';
 
 function readArg(name: string): string | undefined {
   const i = process.argv.indexOf(name);

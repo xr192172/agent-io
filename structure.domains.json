@@ -296,6 +296,13 @@
       "note": "解析能力自述（按语言如实声明索引能力）"
     },
     {
+      "id": "deprecate_offline",
+      "layer": "application",
+      "role": "capability",
+      "dir": "src/application/refactor/deprecate_offline",
+      "note": "废弃积木下线链（C 链）：承接 brickify / feature_map 的废弃证据（某 source 仅被\"导入但未使用\"引用），把项目内自研源码模块真正下线 —— 清各处死 import + 可选物理删除 + 编译级验收（移除后编译仍绿才算无活跃消费）+ 失败自动回滚。★ dry_run 缺省；`remove_file` 是唯一物理删文件开关（需人拍板）。★ 2026-10-06（T15 第 5 项）从 `src/presentation/cli/` 归位（它 import `application/refactor/edit` ⇒ 本就是 application 层的能力）。"
+    },
+    {
       "id": "cross",
       "layer": "application",
       "role": "capability",
@@ -406,7 +413,7 @@
       "id": "cli-surface",
       "layer": "presentation",
       "dir": "src/presentation/cli",
-      "note": "CLI 入口面（14 个文件）：`cli.ts` + 各 `*_cli.ts` + `deprecate_offline.ts`（被 `*_cli` 引用的逻辑）。每个文件 = 一条命令，命令之间**并列**、不互相拥有 ⇒ 平铺是终态。★ 2026-10-05 拆出 `cli/render/`（见 `cli-render`）：原 22 文件里 7 个 renderer + 1 个 CSS 是「被 `brickify_cli` 引用的**渲染子库**」，不是命令 ⇒ 它们让本条 note 的理由（\"每个文件 = 一条命令\"）**对它们不成立**；拆掉后本条才**真的是**平铺终态。",
+      "note": "CLI 入口面（13 个文件）：`cli.ts`（投影本体）+ 各 `*_cli.ts`。每个文件 = 一条命令，命令之间**并列**、不互相拥有 ⇒ 平铺是终态。★ 2026-10-05 拆出 `cli/render/`（见 `cli-render`）：原 22 文件里 7 个 renderer + 1 个 CSS 是「被 `brickify_cli` 引用的**渲染子库**」，不是命令 ⇒ 它们让本条 note 的理由（\"每个文件 = 一条命令\"）**对它们不成立**；拆掉后本条才**真的是**平铺终态。★ 2026-10-06 又把 `deprecate_offline.ts`（434 行、`runDeprecateOffline` 本体）搬去 `src/application/refactor/deprecate_offline/`（见新域 `deprecate_offline`）—— 它不是命令、是**被 `deprecate_offline_cli` 引用的能力**（且它 import `application/refactor/edit` ⇒ 本就在 application 层），与 `cli/render/` 同型。",
       "role": "capability"
     },
     {
