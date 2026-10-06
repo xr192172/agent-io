@@ -761,14 +761,6 @@
         ★ 按纪律「**跨模块统一形态时不要动既有字段名；要统一就新增语义唯一、类型钉死的东西**」⇒ 倾向 (b)。
       ⇒ 波及面待量：全仓还有哪些 [B] 的根是"可自定位"的（`index_integrity` · `run_tests` · `observe_trace` 已知 3 处）。
 
-- [ ] **T46 ★ `dead_statements.ts` 里还有第 7 种 `files`（还债的尾巴，2026-10-05 由执行者上报）**
-      *(核实：`grep -n "files" src/infrastructure/analysis/deadcode/dead_statements.ts` —— 实测 **3 处**。)*
-      ⇒ 同一文件里：`files?: string[]`（:199，**路径表**语义待定）· `files: DeadStatementsChange[]`（:258，**报告数组**）
-        · `files: DeadStatementReport[]`（:273，**报告数组**）。
-      ⇒ 处置：两个报告数组 ⇒ `<领域>_reports`；那个 `string[]` **先查是"读过"还是"写过"的路径**再定
-        `read_files` / `written_files`（★ 判据是类型 + 语义，不是名字）。
-      ★ 它不在 `application/**` ⇒ **按 `dc-add-tool` 的 [B] 定义它不是 [B]**（是 infrastructure 里的产物类型），
-        所以本轮 5 个 [B] 的清单里没有它 —— 但它同样是"被污染的名字"，属同一族债。
 
 > ★★ **上面 T37/T38/T39 是 2026-10-05 体检**当场**修掉的三笔**（已进 commit 历史，故不在此列）：
 > `f2e9066` cross 线假阳性 + P-D 守卫漏接 · `94987c4` 补齐 18 工具缺参守卫（**59 工具零坏签名**）

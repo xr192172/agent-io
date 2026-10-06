@@ -18,13 +18,19 @@
  *     的区间里都不再出现（不会被可达代码读到）才删；否则停（保持整句不动）。
  *   - 遇到 export/labeled 一律停；解析失败的文件整文件跳过、一个都不改。
  *
- * 验证闭环：与 remove_dead_imports 同构——改前基线必须绿，改后重验，回归自动回滚。
+ * ★ 本模块**只提供"纯计算"**两件：检测（`flagDeadStatements`）+ 按行区间裁剪
+ *   （`applyReachabilityRuns`）。**执行与验证闭环**（apply → 改后重验 → 回归回滚）
+ *   **由 `refactor_pipeline` 管线承担** —— 那是管线头注的明令（"各执行器只提供纯计算，
+ *   由管线统一闭环"），否则会**双重验证**、白跑两遍全量 build。
+ *
+ *   ★ 2026-10-06（T46）：正因如此，原先自带的 `removeDeadStatements`（含 `applyWithVerify`
+ *   的一体式执行器）已**随零消费者删除** —— 它是"管线化之前"的遗留：管线走
+ *   `flagDeadStatements` + 自己 apply，**从不调用它**（全仓零引用）。
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseAstRoot, type SyntaxNodeLike } from '../../parse/kernel.js';
-import { applyWithVerify, defaultVerifyCommands, runVerification, type VerifyCommand, type VerificationOutcome, type VerifyOutcomeKind } from '../../verify_refactor.js';
 
 // ─────────────────────────────────────────────
 // 检测：不可达语句 run（纯函数，按源码+扩展名）
@@ -246,146 +252,3 @@ export function applyReachabilityRuns(src: string, runs: DeadStatementRun[]): { 
   return { removed: new Set([...kill].filter((i) => i >= 0 && i < lines.length)).size, changed: out !== src, output: out };
 }
 
-export interface DeadStatementsChange {
-  file: string;
-  lang: 'go' | 'ts';
-  runs: DeadStatementRun[];
-  removed: number;
-  changed: boolean;
-}
-
-export interface RemoveDeadStatementsResult {
-  files: DeadStatementsChange[];
-  files_changed: number;
-  statements_removed: number;
-  verification?: {
-    enabled: boolean;
-    outcome: VerifyOutcomeKind;
-    baseline: VerificationOutcome | null;
-    after: VerificationOutcome | null;
-    rolled_back?: boolean;
-    detail?: string;
-  };
-}
-
-export interface RemoveDeadStatementsOptions {
-  project_dir: string;
-  files: DeadStatementReport[];
-  /** true/缺省 = 执行；false = 只报告；缺省 false */
-  write?: boolean;
-  verify?: boolean | { commands?: VerifyCommand[] };
-  verifyImpl?: (o: { cwd: string; commands: VerifyCommand[] }) => VerificationOutcome;
-}
-
-function computeDeadStatementsChanges(opts: RemoveDeadStatementsOptions): {
-  absToNew: Map<string, string>;
-  originals: Map<string, string>;
-  changes: DeadStatementsChange[];
-} {
-  const proj = path.resolve(opts.project_dir);
-  const filesOut: DeadStatementsChange[] = [];
-  const absToNew = new Map<string, string>();
-  const originals = new Map<string, string>();
-  let statementsRemoved = 0;
-
-  for (const rep of opts.files ?? []) {
-    const abs = path.isAbsolute(rep.file) ? path.resolve(rep.file) : path.resolve(proj, rep.file);
-    if (!rep.runs || rep.runs.length === 0) {
-      filesOut.push({ file: path.relative(proj, abs) || abs, lang: rep.lang, runs: rep.runs ?? [], removed: 0, changed: false });
-      continue;
-    }
-    let src: string;
-    try {
-      src = fs.readFileSync(abs, 'utf-8');
-      originals.set(abs, src);
-    } catch (e) {
-      throw new Error(`读取文件失败（原子性：未写任何文件）：${abs} — ${(e as Error).message}`);
-    }
-    const res = applyReachabilityRuns(src, rep.runs);
-    statementsRemoved += res.removed;
-    if (res.changed) absToNew.set(abs, res.output);
-    filesOut.push({ file: path.relative(proj, abs) || abs, lang: rep.lang, runs: rep.runs, removed: res.removed, changed: res.changed });
-  }
-
-  return {
-    absToNew,
-    originals,
-    changes: filesOut,
-  };
-}
-
-export function removeDeadStatements(opts: RemoveDeadStatementsOptions): RemoveDeadStatementsResult {
-  const write = opts.write ?? false; // 缺省只报告（人与工具链先可见）
-  void write;
-  const c = computeDeadStatementsChanges(opts);
-
-  // 只报告：不落盘
-  if (opts.write !== true) {
-    const changedCount = [...c.absToNew.keys()].length;
-    return {
-      files: c.changes,
-      files_changed: changedCount,
-      statements_removed: c.changes.reduce((s, f) => s + f.removed, 0),
-    };
-  }
-
-  // 执行：先算落盘结果（比 compute 多一次 originals 已就绪），再决定是否写盘
-  const enabled = opts.verify === true || (typeof opts.verify === 'object' && opts.verify !== null);
-  if (!enabled) {
-    for (const [abs, newSrc] of c.absToNew) fs.writeFileSync(abs, newSrc, 'utf-8');
-    return {
-      files: c.changes,
-      files_changed: c.absToNew.size,
-      statements_removed: c.changes.reduce((s, f) => s + f.removed, 0),
-    };
-  }
-
-  const cwd = path.resolve(opts.project_dir);
-  const commands: VerifyCommand[] =
-    (typeof opts.verify === 'object' && opts.verify.commands) ||
-    defaultVerifyCommands(cwd);
-  if (commands.length === 0) {
-    for (const [abs, newSrc] of c.absToNew) fs.writeFileSync(abs, newSrc, 'utf-8');
-    return {
-      files: c.changes,
-      files_changed: c.absToNew.size,
-      statements_removed: c.changes.reduce((s, f) => s + f.removed, 0),
-      verification: { enabled: true, outcome: 'not_verifiable', baseline: null, after: null },
-    };
-  }
-
-  const run = opts.verifyImpl ?? runVerification;
-  const ver = applyWithVerify({
-    cwd,
-    commands,
-    verify: run,
-    apply: () => {
-      if (c.absToNew.size === 0) return false;
-      for (const [abs, newSrc] of c.absToNew) fs.writeFileSync(abs, newSrc, 'utf-8');
-      return true;
-    },
-    rollback: () => {
-      for (const [abs, orig] of c.originals) fs.writeFileSync(abs, orig, 'utf-8');
-    },
-  });
-
-  if (ver.outcome === 'baseline_fail') {
-    return {
-      files: [], files_changed: 0, statements_removed: 0,
-      verification: { enabled: true, outcome: 'baseline_fail', baseline: ver.baseline, after: null, detail: ver.baseline?.detail },
-    };
-  }
-  if (ver.outcome === 'no_change') {
-    return { files: c.changes, files_changed: 0, statements_removed: 0, verification: { enabled: true, outcome: 'no_change', baseline: ver.baseline, after: ver.after } };
-  }
-  if (ver.outcome === 'regression_rolled_back') {
-    return {
-      files: c.changes, files_changed: c.absToNew.size, statements_removed: c.changes.reduce((s, f) => s + f.removed, 0),
-      verification: { enabled: true, outcome: 'regression_rolled_back', baseline: ver.baseline, after: ver.after, rolled_back: true, detail: ver.after?.detail },
-    };
-  }
-  return {
-    files: c.changes, files_changed: c.absToNew.size, statements_removed: c.changes.reduce((s, f) => s + f.removed, 0),
-    verification: { enabled: true, outcome: 'applied_verified', baseline: ver.baseline, after: ver.after },
-  };
-}
