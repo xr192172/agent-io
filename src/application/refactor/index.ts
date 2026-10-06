@@ -30,6 +30,7 @@ import path from 'node:path';
 import { analyzeHubs, analyzeImpact } from '../../infrastructure/analysis/impact/index.js';
 import type { ImpactChangePoint } from '../../infrastructure/analysis/impact/index.js';
 import { suggestRenamesInFile } from './find/ast_suggest.js';
+import { deprecateOffline, type DeprecateOfflinePlan } from './deprecate_offline/deprecate_offline.js';
 import type { SuggestOptions } from './find/ast_suggest.js';
 import { applyWrites } from './edit/apply_writes.js';
 import { editCode } from './edit/edit_code.js';
@@ -699,6 +700,54 @@ export const REFACTOR_TOOLS: ToolDef[] = [
     }),
   },
 
+  {
+    name: 'deprecate_offline',
+    title: 'Deprecate & retire internally-authored modules (dead-import cleanup + compile-level verification)',
+    description:
+      '废弃积木**下线链**（C 链）：承接 dead_deps / brickify 的废弃证据，把**项目内自研源码模块**真正下线。' +
+      '三问式判据：① **是自研积木吗**（source 能 resolve 成项目内 .ts/.go 实体；三方包/内置模块不参与 —— 那是清依赖，不是下线积木）；' +
+      '② **无活跃消费吗**（移除各消费者死 import 后跑**编译级验收**：编译仍绿 ⇒ 无活跃消费者，比静态扫描更可信；' +
+      '一旦回归 ⇒ **自动回滚**并判定「有活跃消费」）；' +
+      '③ **真删还是仅清引用**（`remove_file` 才物理删除模块文件本体；其它动作只清各处死 import）。' +
+      '★ **安全默认**：`dry_run` 缺省 **true** ⇒ 只出候选报告、一个字节都不落盘；要真落盘必须显式 `dry_run:false`，' +
+      '物理删文件还要**再给** `remove_file:true` —— **两道闸**，与 CLI 的 `--apply` / `--remove-file` 一一对应。' +
+      '`plans` 显式指定下线清单（不给 = 从全量死源里筛「项目内自研源」）；' +
+      '`files` 收窄扫描视野（★ 它会**同时**收窄候选判定与「物理删硬闸门」的视野 ⇒ 若漏掉仍在消费该模块的文件，' +
+      '硬闸门可能计数为 0（视觉盲区）⇒ 只建议用于 dry-run 收敛；真物理下线时请**省略**它，让硬闸门覆盖全库，别靠兜底擦屁股）。' +
+      '★ 与 `remove_dead_imports` 是**两个对象**（不聚合）：那个只清死 import、不判定能不能下线；本工具做的是「下线裁决 + 验收 + 可选物理删」。',
+    inputSchema: {
+      project_dir: z.string().describe('目标项目根目录（绝对或相对 cwd）'),
+      plans: z
+        .array(
+          z.object({
+            source: z.string().describe('废弃模块说明符（与 dead_deps 的 source 同口径，如 ./legacy/old）'),
+            note: z.string().optional().describe('人工判定注记（当前仅透传报告）'),
+          }),
+        )
+        .optional()
+        .describe('显式下线清单；省略 = 从 dead_deps 全量里筛「项目内自研源」'),
+      files: z.array(z.string()).optional().describe('扫描范围（相对/绝对文件清单）；省略 = 整库递归。★ 会同时收窄候选判定与物理删硬闸门的视野 ⇒ 只建议 dry-run 用'),
+      dry_run: z.boolean().optional().describe('true=只出候选报告不落盘（**默认 true** —— 缺省落在安全那侧）；要真落盘必须显式 false'),
+      remove_file: z.boolean().optional().describe('是否物理删除模块文件本体（仅对「无活跃消费」者生效；与 dry_run:false 合起来才真删）'),
+      verify: z.boolean().optional().describe('编译级验收（改前基线 + 改后重验 + 回归自动回滚）；默认 = !dry_run'),
+    },
+    handler: wrapData(async (a) => {
+      // ★ 入口缺参守卫（CLI 面不做 zod 校验）：project_dir 缺了会让 path.resolve(undefined) 抛**裸 TypeError**。
+      requireStr(a, 'project_dir');
+      const r = await deprecateOffline({
+        project_dir: String(a.project_dir),
+        plans: Array.isArray(a.plans) ? (a.plans as DeprecateOfflinePlan[]) : undefined,
+        files: Array.isArray(a.files) ? a.files.map(String) : undefined,
+        dry_run: a.dry_run !== false,
+        remove_file: a.remove_file === true,
+        verify: typeof a.verify === 'boolean' ? a.verify : undefined,
+      });
+      // ★ 人读 `message` 与机器载荷**分开**：`data` 里**不含 message** —— 否则同一段长文本进两份、白吃上下文。
+      //   `touched` 随 `...rest` 一起进 data（`machinePayload` 的规则：data 是普通对象时把顶层 touched 并进去）。
+      const { message, ...rest } = r;
+      return { message, data: rest };
+    }),
+  },
   {
     name: 'remove_dead_imports',
     title: 'Remove dead imports reported by dead_deps',

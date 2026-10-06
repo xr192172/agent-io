@@ -464,9 +464,37 @@
          总门五道全 PASS。
          ★ **如实记**：`structure_gap` **改前也报"一致 ✓"** —— 因为旧 note **明文认领**了那个文件
          ⇒ **这把尺子看不见"意图本身写错"这种缺口**（它只对账"声明 vs 磁盘"，不对账"声明合不合理"）。
-         ⇒ ★ **下一步（未做）**：**注册 `deprecate_offline` 为 MCP 工具**（这才是 T15 的目的）——
-         ★ 且注册要按棘轮给 `touched`：它会**写文件**（`written_files`）且有**根**（`project_dir`）
-         ⇒ 属"该给"，不是例外。
+         ⇒ ★★ **已注册为 MCP 工具（2026-10-06，同批）—— 工具数 59 → 60**：
+           · `deprecateOffline`（★ **函数名 = 文件名 camelCase** 是**量具的 [B] 判定口径**，不是随手起的名）；
+             核心转私有；`touched` 在**唯一构造点** `touchedOf` 里出来：`project_dir`（作用域类 ⇒ 随时可给）
+             + `written_files`（对象类 ⇒ **只在真落定时给**）。
+           · ★★ **`written_files` 的取数不重写判据**：那条主路径（`removeDeadImportsWithVerify`）**不自带
+             `touched`**，但它带着 `removal_reports[].changed` —— 与 `remove_dead_imports.touchedOf` **同一判据**
+             ⇒ 把那个判据**抽出来导出**成 `writtenFilesOf()`，**两处共用一把尺**（自己再写一遍过滤器＝造第二份判据）。
+           · ★ **净变动只有执行处知道**：`sink` 在"改动**真的留住**"的两处记账（基线黄 / 编译回归已回滚 ⇒ 不记）；
+             事后从 `items` 反推会**把回滚的也算成改过 ＝ 撒谎**。
+           · 缺省落**安全那侧**：`dry_run` 缺省 true；要真落盘得显式 `dry_run:false`，物理删还要 `remove_file:true`
+             （**两道闸**，与 CLI 的 `--apply` / `--remove-file` 一一对应）；[C] 层补了 `requireStr` 守卫。
+           · 文档牵连（T15 明列的那两条）：README ×2 计数 **59 → 60**、`gen_agents.mjs` 触发点表 +1 行（build 重建 `AGENTS.md`）。
+           **实测四档（真跑 CLI，夹具 `$TEMP/t60a` / `t60b`）**：① 空参 ⇒ `缺参数 "project_dir"`（不是裸 TypeError）
+           ② **dry-run（缺省）** ⇒ `touched` 只有 `project_dir`、**夹具一个字节未改**、`data.items` 1 条
+           ③ **apply** ⇒ ★ `touched={project_dir, written_files:["src/consumer.ts"]}` + `offlined=1` +
+           消费者的死 import **真被删掉** ④ `remove_file:true` ⇒ **模块文件真被物理删除** +
+           `written_files` 含被删的 `src/dead.ts` + `status="file_removed"`。
+           ★ 量具：**[B] 人群 37 → 38 · 已接 31/38 · 该给未给＝真债 0**（棘轮认了它）。总门五道全 PASS。
+         ⇒ ★★★ **同批挖出三条真缺陷（★ 本轮不改** —— 各需一个决策，且都落在"验证 / 候选识别"这一层）**：
+           · **(a) `resolveConsumerSource` 不认 TS 的 `.js` 说明符**：候选表是 `[base, base+ext…, base/index+ext…]`
+             ⇒ `import … from './x.js'`（**本仓全仓的写法**）**resolve 不到 `x.ts`** ⇒ 该 source 被判"非自研"
+             ⇒ **静默漏报候选**（★ 我造夹具时踩到的就是这个：`./dead.js` ⇒ 0 候选；改成 `./dead` ⇒ 1 候选）。
+           · **(b) `defaultVerifyCommands` 给 `npm test` 硬加 `-- --run`**（**假定 vitest**）⇒ 非 vitest 项目
+             **基线恒失败** ⇒ 一切 verify 门下的 apply **都做不了**。★ 且这行是**测试框架整体移除**（2026-10-04）
+             之后的**遗留**（本仓 `package.json` 今天已无 `test` script）。
+           · **(c) `npx tsc --noEmit` 会假通过**：项目没装 `typescript` 时 npx 解析到 npm 上那个**同名假包**
+             （打印 "This is not the tsc command you are looking for"）并**退出 0** ⇒ 基线 tsc 闸**形同没有**
+             （实测 detail 就是 `[tsc noEmit] pass` + 那段假包文案）。
+             ⇒ 三条都**有原始输出为证**（见对应 commit）。★ (b)(c) 在**同一条函数**里，且 (b) 笼罩**所有** verify 工具
+             ⇒ 建议**下一批一起修**，但先各自定判据：(a) 是否加 `.js→.ts` 归一？(b) 是否只在检出 vitest 时才加 `--run`？
+             (c) 是否只在本地装了 `typescript` 时才把 tsc 放进命令组？
       6. `upgrade_cli` / `upgrade_rewrite_cli`（后者会编辑 + 验证 + 提交）、以及
          `signal_review_cli` / `split_stage_cli` 这两个 **CLI 的去留**（能力已归零，CLI 是否留作 argv 便利）
       7. **`install_package_cli` ⇒ 判为一次性运维脚本**（`spawn npm install/uninstall` 改环境 + 联网；

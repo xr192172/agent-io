@@ -40,6 +40,7 @@ const TRIGGER_ROWS = [
   ['改一段代码（函数体/range）', '`edit_code`', '按符号/行号定位改写'],
   ['理解一串代码/结构', '`explore_code`', '只读、即时答案'],
   ['清理无效 import', '`remove_dead_imports`', '剪刀剪 dead_deps'],
+  ['**废弃/下线**一个自研模块（清死 import + 可选物理删文件）', '`deprecate_offline`', '三问判据：自研吗 + 无活跃消费吗（**编译级验收**，回归自动回滚）+ 真删还是只清引用；★ **缺省 dry_run**，要真落盘得显式 `dry_run:false`、物理删还要再给 `remove_file:true`（两道闸）'],
   ['给函数补/维护语义化注释（缺失补、body 变了重注）', '`annotate_functions`', 'TS/JS + Go 函数语义注释：扫覆盖→LLM 补→@fnhash body 指纹同步过期；mode=scan/dry_run/apply；也可开 refactor_pipeline 的 function_annotation 步'],
   ['把一个功能搭成一条主链 / 沿线看这功能怎么走', '`feature_line`', '功能线：每功能挑入口函数→沿功能内调用边走成主链；target 留空返回全功能 入口+链长 总览；沿线单步运行用 trace-exec'],
   ['要改设计意图(why)前先请人批', '`design_intent`（action=propose）', 'LLM 代拟「意图改写」审批卡：propose 只算前后 intent diff 不写盘；人在工作台「代码审批」approve 后才真写 DSL（reject 则丢弃）'],

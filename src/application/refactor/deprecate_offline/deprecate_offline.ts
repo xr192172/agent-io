@@ -39,10 +39,11 @@
 import path from 'node:path';
 import fs from 'node:fs';
 import { detectDeadImports, scanProjectSourceFiles } from '../../../infrastructure/analysis/deadcode/detect_dead_imports.js';
-import { removeDeadImportsWithVerify } from '../edit/remove_dead_imports.js';
+import { removeDeadImportsWithVerify, writtenFilesOf } from '../edit/remove_dead_imports.js';
 import { parseTsImportQualifiers, parseGoImportQualifiers, stripTsImportLines, qualifierLines, type DeadDepCandidate } from '../../../infrastructure/graph/dead_deps.js';
 import { defaultVerifyCommands, runVerification } from '../../../infrastructure/verify_refactor.js';
 import { SOURCE_EXTS } from '../../../infrastructure/parse/index.js';
+import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
 // 扫描纳入的源码扩展名：★ 来自内核唯一权威 `SOURCE_EXTS`（`ts_kernel/source_exts.ts`），
 // 不再就地手写（此前这里 7 个，仓内同一问题另有 5 份不同答案 ⇒ 口径随工具而变）。
@@ -100,6 +101,16 @@ export interface DeprecateOfflineResult {
   offlined: number;
   items: DeprecateOfflineItem[];
   message: string;
+}
+
+/**
+ * `written_files` 的**记账槽**：**只在"改动真的留住了"的地方填** ——
+ * 具体是两处（见 `deprecateOfflineCore` 里的两处 `sink.written`），而不是"汇总时猜一遍"。
+ * ★ 为什么要有它：净变动只有**执行处**知道（回滚会把改动恢复 ⇒ 那时净变动是零），
+ *   事后从 `items` 反推会**把已回滚的也算成改过** —— 那是撒谎。
+ */
+export interface DeprecateSink {
+  written?: string[];
 }
 
 // ─────────────────────────────────────────────
@@ -293,7 +304,8 @@ export function hasActiveReference(project_dir: string, moduleRel: string, scann
 // 下线执行
 // ─────────────────────────────────────────────
 
-export async function runDeprecateOffline(opts: DeprecateOfflineOptions): Promise<DeprecateOfflineResult> {
+/** 纯计算核心（**不导出**）：只算产物，不给契约；契约由下面的 {@link deprecateOffline} 一处构造。 */
+async function deprecateOfflineCore(opts: DeprecateOfflineOptions, sink: DeprecateSink): Promise<DeprecateOfflineResult> {
   const proj = path.resolve(opts.project_dir);
   const dryRun = opts.dry_run ?? true;
   const removeFile = opts.remove_file ?? false;
@@ -349,6 +361,14 @@ export async function runDeprecateOffline(opts: DeprecateOfflineOptions): Promis
   const verify = opts.verify ?? true;
   const rem = removeDeadImportsWithVerify({ project_dir: proj, dead: targeted, verify });
   const v = rem.verification;
+  // ★ 2026-10-06（注册为 MCP 工具）：**在知道结局的地方记账**。
+  //   ★ 取数用 `writtenFilesOf` —— 那是"这次真改了哪些文件"的**唯一判据**（从
+  //     `remove_dead_imports.ts` 的 `touchedOf` 里抽出来共用的那把尺）：这条主路径不自带
+  //     `touched`（它用 `c.result`），**自己再写一遍过滤器就是造第二份判据**。
+  //   ★ 只在改动**真的留住**时记：基线黄 / 编译回归已回滚 ⇒ 净零，不记（见 `touchedOf` 的判据）。
+  if (v.outcome === 'applied_verified' || v.outcome === 'not_verifiable') {
+    sink.written = writtenFilesOf(proj, rem);
+  }
   const bySource = new Map(items.map((i) => [i.source, i] as const));
 
   if (v.outcome === 'baseline_fail') {
@@ -414,6 +434,8 @@ export async function runDeprecateOffline(opts: DeprecateOfflineOptions): Promis
       const after = runVerification({ cwd: proj, commands });
       if (after.status === 'pass') {
         for (const it of items) if (trulyRemovable.has(it.module_file!)) it.status = 'file_removed';
+        // ★ 物理删除**留住**了才记（另一支是"删后编译回归 ⇒ 已恢复源文件" ⇒ 不记）。
+        sink.written = [...(sink.written ?? []), ...trulyRemovable];
       } else {
         for (const [f, src] of backups) fs.writeFileSync(path.join(proj, f), src, 'utf-8');
         for (const it of items)
@@ -437,4 +459,35 @@ export async function runDeprecateOffline(opts: DeprecateOfflineOptions): Promis
   }
   const anyRolledBack = items.some((i) => i.status === 'rolled_back');
   return { ok: !anyRolledBack, dry_run: false, remove_file: removeFile, candidates: items.length, offlined, items, message: lines.join('\n') };
+}
+
+// ─────────────────────────────────────────────
+// 契约（`touched`）—— ★ 唯一构造点，所有出口都从这一处出去
+// ─────────────────────────────────────────────
+
+/**
+ * ★ 唯一的 `touched` 构造点。
+ *
+ * 判据（与 `rename_symbol` 的 `touchedOf` **同一口径**）：
+ *   · `project_dir` 是**作用域类** ⇒ **随时可给**（被拒 / 未落盘 / dry-run 都给）；
+ *   · `written_files` 是**对象类** ⇒ **只在真落定时给**：`dry_run` ⇒ 没落盘；基线黄 / 编译回归
+ *     已回滚 ⇒ 改动被恢复、**净零** ⇒ 不给。★ 这个判断**不在这里做**，而在执行处填 `sink`
+ *     （只有那里知道结局）—— 这里只负责"槽里有就写出去"。
+ */
+function touchedOf(opts: DeprecateOfflineOptions, r: DeprecateOfflineResult, sink: DeprecateSink): Touched {
+  const touched: Touched = {};
+  if (opts.project_dir) touched.project_dir = path.resolve(opts.project_dir);
+  if (!r.dry_run && sink.written && sink.written.length > 0) touched.written_files = sink.written;
+  return touched;
+}
+
+/**
+ * `deprecate_offline` 的**对外唯一入口**（[B]）：产物 + `touched`。
+ * ★ 函数名 = 文件名 camelCase 是**量具的 [B] 判定口径**（`application/**` 里"函数名 == 文件名
+ *   camelCase"的导出函数）⇒ 名字不是随手起的：改成别的名字，棘轮就看不见这个工具了。
+ */
+export async function deprecateOffline(opts: DeprecateOfflineOptions): Promise<TouchedProduct<DeprecateOfflineResult>> {
+  const sink: DeprecateSink = {};
+  const r = await deprecateOfflineCore(opts, sink);
+  return withTouched(r, touchedOf(opts, r, sink));
 }

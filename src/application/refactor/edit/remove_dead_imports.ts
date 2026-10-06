@@ -327,16 +327,31 @@ function removeDeadImportsCore(opts: {
  */
 function touchedOf(opts: { project_dir: string }, r: RemoveDeadImportResult): Touched {
   const touched: Touched = { project_dir: path.resolve(opts.project_dir) };
-  if (r.files_changed > 0) {
-    const written = new Set<string>();
-    for (const rep of r.removal_reports) {
-      if (!rep.changed) continue;
-      const rel = toRelPosix(opts.project_dir, rep.file);
-      if (rel) written.add(rel);
-    }
-    if (written.size > 0) touched.written_files = [...written];
-  }
+  const written = writtenFilesOf(opts.project_dir, r);
+  if (written.length > 0) touched.written_files = written;
   return touched;
+}
+
+/**
+ * ★★ 「**这次真的改了哪些文件**」的唯一判据（2026-10-06 从上面的 `touchedOf` 里**抽出来并导出**）。
+ *
+ * 判据 = `removal_reports[].changed === true` 的那批 —— Core 只在 `absToNew.size > 0` 时才走到
+ * `writeFileSync`，而 `absToNew` 恰是"内容真的变了"的文件集，与 `changed` **同一批**。
+ * 值口径 = **仓库相对 POSIX**（`toRelPosix` 归一；根外文件返回 null ⇒ 不塞）。
+ *
+ * ★ 为什么必须**唯一**：`deprecate_offline` 复用的正是 `removeDeadImportsWithVerify`，
+ *   而那条主路径**不自带 `touched`**（它用 `c.result`，见上面 `touchedOf` 的旁路提示）
+ *   ⇒ 它要算"改了哪些文件"时**必须用同一把尺**，否则同一件事会长出第二份判据（本仓头号病根）。
+ */
+export function writtenFilesOf(projectDir: string, r: RemoveDeadImportResult): string[] {
+  if (r.files_changed <= 0) return [];
+  const written = new Set<string>();
+  for (const rep of r.removal_reports) {
+    if (!rep.changed) continue;
+    const rel = toRelPosix(projectDir, rep.file);
+    if (rel) written.add(rel);
+  }
+  return [...written];
 }
 
 export function removeDeadImports(opts: {
