@@ -216,32 +216,57 @@ export function getBaselineFeature(feature: string, baseDir?: string): DesignDSL
 }
 
 /**
- * ★★ **读侧统一取根**（2026-10-06，T19 的形状决策 —— 三候选**实测**后选定「由 feature 反查」）。
+ * 视图（`live` / `baseline`）的**取根候选链**（顺序 = 优先级）：`explicit` > DSL 的 `source_root` > `dataHome`。
  *
- * ## 为什么需要它
- * `live` / `baseline` 的 `baseDir` 是**可选参数**、缺省落 `getDataHome()`；而 ★ **写侧
- * （`import_project`）会传 `input.live_dir`**（`watch_project` 监听任意项目时 = **那个项目的根**，
- * 见 `saveLiveFeature` 的注释）⇒ **读侧若拿不到同一个根，就会静默读不到**（实测：返回 `null`、不抛）。
+ * ★★ 2026-10-06（T19）：这是「根从哪来」的**唯一单点**。
  *
- * ## 三候选（2026-10-06 隔离实测，过程见 `docs/todo.md` 的 T19）
- * · **(a) 入参透传（现状）** —— ❌ 全仓**已有 4~5 种取根口径**（`live_dir` / feature-only ⇒ dataHome /
- *   `requireProjectRoot` ⇒ 项目根）⇒ 靠调用方自觉；实测「写侧在项目根、读侧没传」⇒ **返回 null**。
- * · **(b) 由 feature 反查（本函数）** —— ✅ 实测**读到**；且 `getDSL` **不依赖 baseDir**
- *   ⇒ **无循环依赖**。
- * · **(c) 收口 dataHome** —— ⚠ 要连**写侧 5 处**一起搬，且会**丢掉**「live 与该项目 `cache.db`
- *   同目录归位」这个**已有设计意图**（`saveLiveFeature` 的注释就是为它写的）。
- * ⇒ **选 (b)**。
+ * ## 为什么是**候选链**，而不是"选一个根"
+ * 写侧有两种模式，**都真实存在**：
+ *   · **落 `dataHome`**：`import_project` 未传 `live_dir`（★ 实测本仓 4 个 feature **全是这种**：
+ *     `live` / `baseline` 都在 `<dataHome>/.agent-io/`，而 `dsl.source_root` 指向的仓里**没有**）；
+ *   · **落项目根**：传了 `live_dir`（`watch_project` 监听任意项目时 = 那个项目的根，
+ *     见 `saveLiveFeature` 的注释）。
+ *   ⇒ 任何"二选一猜一个"都必然让**另一种模式读不到**。
+ *   ★★ 本笔正是**修正我自己上一版**：上一版写成" `explicit` 否则 `dsl.source_root`"这个**二选一**，
+ *   实测把上面**第一种（更常见的）模式读成了 `null`** —— `getDSLByView(feature, 'live')` 由「读到」变「读不到」。
+ *   ⇒ 正解 = 与 `db.ts#findCacheDb`（两级锚、**取第一个存在的**）、`defaultEventsCandidates`（录制事件候选）
+ *   **同一形状**：列候选、**取第一个"文件存在"的**。
  *
- * ## 语义（★ 边界写清，不许静默）
- * · `explicit` 给了 ⇒ **以它为准**（调用方明确知道根）；
- * · 没给 ⇒ 反查 DSL 的 `source_root`；
- * · **两者都拿不到 ⇒ 返回 `null`** —— 调用方**必须响亮处理**（别静默落 dataHome，那正是本函数要消灭的行为）。
- *   ★ 本函数**只负责"根从哪来"**，**不负责"拿不到怎么办"**（那是调用方的语义：容忍 or 抛）。
+ * ## 边界（写清，免得再被"统一"掉）
+ * · **读** ⇒ {@link getLiveFeatureResolved} / {@link getBaselineFeatureResolved}（按候选链取第一个存在的）；
+ * · **写** ⇒ **不新造落点**：已有就写在它已在的那处，都没有才落 `dataHome`（见 `stage_registry` 的 `produce`）；
+ * · **删** ⇒ 候选链上**每一处都删**（`deleteFeature`）—— 删除的语义是"**一处都不留**"。
  */
-export function resolveViewBaseDir(feature: string, explicit?: string): string | null {
-  if (explicit) return explicit;
-  const dsl = getDSL(feature);
-  return dsl?.source_root ?? null;
+export function viewBaseDirCandidates(feature: string, explicit?: string): string[] {
+  const out: string[] = [];
+  if (explicit) out.push(explicit);
+  const sr = getDSL(feature)?.source_root;
+  if (sr) out.push(sr);
+  out.push(getDataHome());
+  return [...new Set(out.map((d) => path.resolve(d)))];
+}
+
+/** 按候选链读某个视图文件：**取第一个"文件存在"的根**；都没有 ⇒ `null`（不抛，容忍度与改前一致）。 */
+function readViewAtCandidates<T>(
+  feature: string,
+  explicit: string | undefined,
+  fileAt: (base: string) => string,
+  readAt: (base: string) => T | null,
+): T | null {
+  for (const base of viewBaseDirCandidates(feature, explicit)) {
+    if (fs.existsSync(fileAt(base))) return readAt(base);
+  }
+  return null;
+}
+
+/** 读 `live` 视图（**按候选链找**，不猜单一根）。 */
+export function getLiveFeatureResolved(feature: string, explicit?: string): DesignDSL | null {
+  return readViewAtCandidates(feature, explicit, (b) => getLiveFeatureFile(feature, b), (b) => getLiveFeature(feature, b));
+}
+
+/** 读 `baseline` 视图（**按候选链找**，不猜单一根）。 */
+export function getBaselineFeatureResolved(feature: string, explicit?: string): DesignDSL | null {
+  return readViewAtCandidates(feature, explicit, (b) => getBaselineFeatureFile(feature, b), (b) => getBaselineFeature(feature, b));
 }
 
 /**
@@ -440,12 +465,10 @@ export function getDSLByView(feature: string, view: DSLView = 'design'): DesignD
   // ★★ 2026-10-06（T19 收口）：读 `live` 视图时**不再裸调 `getLiveFeature(feature)`** ——
   //   那会落 `dataHome`，而**写侧（`import_project`）可能把它写在被监听项目的根**
   //   （`watch_project` 监听任意项目时）⇒ **静默读不到**（隔离实测复现：返回 null，不抛）。
-  //   ⇒ 改用**读侧统一取根** `resolveViewBaseDir`（**入参优先 → 否则反查 DSL 的 `source_root`**）。
+  //   ⇒ 改用**候选链** `getLiveFeatureResolved`（`explicit` > `dsl.source_root` > `dataHome`，取第一个存在的）。
   //   ★ 本函数**一处修、四处受益**：调用方有 `derive_feature_tree`（live 语义基准）·
   //     `diffFeatures`（view_a/view_b）· `query_feature`（`view` 入参）· `design` handlers。
-  return view === 'live'
-    ? getLiveFeature(feature, resolveViewBaseDir(feature) ?? undefined)
-    : getDSL(feature);
+  return view === 'live' ? getLiveFeatureResolved(feature) : getDSL(feature);
 }
 
 /** 列出所有已保存的 feature，按 feature 名升序 */
@@ -476,6 +499,9 @@ export function listFeatures(): DesignDSL[] {
  * 3. 若活态文件（agent-io.json）当前对应此 feature，一并删除，避免残留陈旧活态视图
  */
 export function deleteFeature(feature: string): void {
+  // ★ 先算**视图根的候选链**（它要反查 `getDSL(feature).source_root`）—— 必须赶在下面删掉
+  //   feature 存档**之前**算，否则反查不到、又只剩 `dataHome` 一处（就是原来的 bug）。
+  const viewBases = viewBaseDirCandidates(feature);
   const file = getFeatureFile(feature);
   if (fs.existsSync(file)) fs.unlinkSync(file);
 
@@ -483,12 +509,15 @@ export function deleteFeature(feature: string): void {
   const overlayFile = path.join(getFeaturesDir(), `${feature}.overlay.json`);
   if (fs.existsSync(overlayFile)) fs.unlinkSync(overlayFile);
 
-  const liveFile = getLiveFeatureFile(feature);
-  if (fs.existsSync(liveFile)) fs.unlinkSync(liveFile);
-
-  // 连带删除基线快照（契约创立时刻的 fork）
-  const baselineFile = getBaselineFeatureFile(feature);
-  if (fs.existsSync(baselineFile)) fs.unlinkSync(baselineFile);
+  // ★★ 2026-10-06（T19）：live / baseline **候选链上每一处都删** —— 原先只删
+  //   `getLiveFeatureFile(feature)`（隐含 `dataHome`）⇒ 快照若落在被监听项目的根（传过 `live_dir`
+  //   的那种模式）就**删不到、留残**。删除的语义就是"**一处都不留**"。
+  for (const base of viewBases) {
+    const liveFile = getLiveFeatureFile(feature, base);
+    if (fs.existsSync(liveFile)) fs.unlinkSync(liveFile);
+    const baselineFile = getBaselineFeatureFile(feature, base);
+    if (fs.existsSync(baselineFile)) fs.unlinkSync(baselineFile);
+  }
 
   // 连带删除下线库归档（孤立节点的历史研究材料）
   clearArchiveEntries(feature);

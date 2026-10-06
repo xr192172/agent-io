@@ -43,7 +43,7 @@
  */
 
 import fs from 'node:fs';
-import { requireProjectRoot, getDSL, ensureBaseline, getBaselineFeatureFile, getFeatureFile, resolveViewBaseDir } from '../infrastructure/storage.js';
+import { requireProjectRoot, getDSL, ensureBaseline, getBaselineFeatureFile, getFeatureFile, viewBaseDirCandidates } from '../infrastructure/storage.js';
 import { projectCacheDbPath, getProjectCacheDb } from '../infrastructure/index/db.js';
 import { ensureProjectIndex } from '../infrastructure/index/index_freshness.js';
 import { getProjectView, invalidateProjectView } from '../infrastructure/project_view.js';
@@ -156,9 +156,12 @@ export const STAGES: readonly Stage[] = [
     owner: 'dataHome',
     inputs: ['dsl_features'],
     note: '设计基线（共同祖先）快照',
+    // ★ 与**读侧同一候选链**：报**第一个存在的**；都不存在 ⇒ 报优先级最高那个（"它该在哪"）。
     locate: (ctx) => {
       const feature = needFeature(ctx);
-      return getBaselineFeatureFile(feature, resolveViewBaseDir(feature) ?? undefined);
+      const bases = viewBaseDirCandidates(feature);
+      const hit = bases.find((b) => fs.existsSync(getBaselineFeatureFile(feature, b)));
+      return getBaselineFeatureFile(feature, hit ?? bases[0]);
     },
     produce: async (ctx) => {
       const feature = needFeature(ctx);
@@ -169,8 +172,12 @@ export const STAGES: readonly Stage[] = [
       //   `ensureBaseline(dsl)` 都**只用 feature**（隐含 `dataHome`），而**真实写侧**
       //   （`import_project`）传的是 `input.live_dir`（`watch_project` 监听任意项目时
       //   = **那个项目的根**）⇒ **同一份数据两条线各持一份根**（判据分叉）。
-      //   ⇒ 统一走 `resolveViewBaseDir`（入参优先 → 否则反查 DSL 的 `source_root`）。
-      ensureBaseline(dsl, resolveViewBaseDir(feature) ?? undefined);
+      //   ⇒ 走**同一候选链**，但 ★ **写侧不新造落点**：**已有就写在它已在的那处**，
+      //     都没有才落 `dataHome`（写侧的默认位置）。★ 刻意**不**写 `source_root` —— 那会给
+      //     "从没在项目根放过 baseline"的 feature **凭空造出第二份**，正是本仓要防的"同一份数据两处落点"。
+      const bases = viewBaseDirCandidates(feature);
+      const existing = bases.find((b) => fs.existsSync(getBaselineFeatureFile(feature, b)));
+      ensureBaseline(dsl, existing);
     },
   },
   {

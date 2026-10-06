@@ -22,7 +22,7 @@
  */
 
 import type { DesignDSL, SemanticFile, Symbol, ExpectedApi, Edge, NodeDecision, DecisionHistoryEntry } from '../../../domain/types.js';
-import { getDSL, getLiveFeature, getBaselineFeature, getArchiveEntryByPath, resolveViewBaseDir } from '../../../infrastructure/storage.js';
+import { getDSL, getLiveFeatureResolved, getBaselineFeatureResolved, getArchiveEntryByPath } from '../../../infrastructure/storage.js';
 import { mergedApis } from '../../../infrastructure/index/file_facts.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
@@ -239,13 +239,16 @@ function diffViewsCore(input: DiffViewsInput): DiffViewsResult {
   //   `live_dir`** ⇒ 调用方没传时落 `dataHome`，而 ★ **写侧（`import_project`）会把它写在
   //   被监听项目的根** ⇒ **静默读不到**（隔离实测复现：`getLiveFeature(feature)` 返回 `null`、
   //   而 `getLiveFeature(feature, dsl.source_root)` 读得到）。
-  //   ⇒ 改用**统一取根** `resolveViewBaseDir`：**入参优先 → 否则反查 DSL 的 `source_root`**。
+  //   ⇒ 改用**候选链** `getLiveFeatureResolved` / `getBaselineFeatureResolved`
+  //     （`explicit` > `dsl.source_root` > `dataHome`，**取第一个"文件存在"的**）。
+  //   ★★ 2026-10-06 补正：**候选链，不是"二选一"** —— 我上一版写成" `explicit` 否则 `dsl.source_root`"，
+  //     实测把**更常见的模式读成了 null**（本仓 4 个 feature 的 live/baseline **都在 dataHome**，
+  //     而 `dsl.source_root` 指向的仓里没有）⇒ 猜一个必然让另一种模式静默读不到。
   //   ★ 本笔**只修「根从哪来」**，**不改「拿不到怎么办」**（仍容忍 `null`，与改前同）——
   //     "找不到该响亮还是容忍"是`diff_views` 自己的语义决策，属下一步。
   const design = getDSL(feature);
-  const viewBase = resolveViewBaseDir(feature, live_dir) ?? undefined;
-  const live = getLiveFeature(feature, viewBase);
-  const baseline = getBaselineFeature(feature, viewBase);
+  const live = getLiveFeatureResolved(feature, live_dir);
+  const baseline = getBaselineFeatureResolved(feature, live_dir);
 
   // 构建结果
   const designFiles = design?.semantic?.files ?? [];
