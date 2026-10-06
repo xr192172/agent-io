@@ -656,29 +656,36 @@
 
 
 
-- [ ] **T66 ⚠ 「入口层保鲜」对**入参里没有项目根**的工具整层失效（T65 自我更正后立，2026-10-06）**
+- [ ] **T66 ⚠ 「入口保鲜」与「陈旧告警」**两道保障都依赖 4 个项目根参数名**（已核：当前无实例，属结构隐患）**
       *(★ 本条**替代 T65** —— T65 的结论「`cross_repo_symbol_index` 拿不到保鲜是真问题」**被自己实测推翻**：
        `compareProjects` → `buildProjectIndex` → `buildImpactGraph`，而后者是**现场全扫 + 全解析**
        （`collectSourceFiles` 读盘 + 逐个 `parseFileFull`，见 `impact/index.ts:132-144`）—— **不读 `cache.db`**
-       ⇒ 它每次都是新鲜结果，**不需要保鲜**；「两个根都要保鲜」那套修法讨论因此作废。)*
-      ⇒ **真问题的正确定义**（本笔收窄）：`invokeTool`（唯一入口）的保鲜靠 `projectRootArg(a)`，
-        而它只认 `project_dir` / `project_root` / `root` / `dir` 四个名字
-        ⇒ **入参里没有这 4 个名字的工具**，无论读不读 `cache.db`，**都拿不到入口保鲜**。
-        实测：59 个工具里 **18 个**属于此类。
-      ⇒ ★ **待核清单**（这 18 个里，**既读 `cache.db`、入参又无根**的才是真受影响者）：
-        · ★ `explore_code`（`explore_code.ts` **在 28 个 cache.db 读者名单里**；入参只有 `action` + `args`，
-          而它各 action 是**直接调实现函数**（如 `checkMonolith(...)`）**不走 `invokeTool`**
-          ⇒ 入口保鲜对它**整层失效**）—— **高优先核**；
-        · `harvest_decisions`（入参 `feature` / `doc_dir` / `git_root`；`harvest/index.ts` 在读者名单里）；
-        · `consistency_check` / `detect_drift`（入参 `feature` / `code_dir`）—— `detect_drift` 的
-          `touched.project_dir` 取自 `input.code_dir ?? dsl.source_root` ⇒ 它的「根」是**从 DSL 推**的，
-          未必等于「索引归属的项目根」。
-      ⇒ ★ **下一个动作**（不是修法）：逐个核实上述 4 个 —— 读的是 `cache.db` 还是**现场解析**
-        （`buildImpactGraph` 那种），以及它们的根与「索引归属根」是否一致。**核完再定修法**
-        （把「入参形状」硬塞进那 4 个名字里是治标；根上是「这些工具根本不接项目根」）。
-      ⇒ ★ 已做的一半：`capability_map` 的描述里**如实写明**该限制 + 给 workaround
-        （先显式调 `index_integrity({project_dir, refresh:true})`）⇒ **不再静默**；
-        而 `staleIndexWarning`（陈旧告警）对它们**仍生效** —— 那是**标注层**，不依赖参数名。
+       ⇒ 每次都是新鲜结果、**不需要保鲜**；「两个根都要保鲜」那套修法讨论因此作废。)*
+      ⇒ **形状**：`presentation/mcp/server_registry.ts` 的 `invokeTool`（唯一入口）有两道索引保障，
+        **都用同一个 `projectRootArg(a)`**（只认 `project_dir` / `project_root` / `root` / `dir`）：
+        · `firstContactBackfill(rootArg)`（首次接触后台建索引）—— `null` ⇒ 不建；
+        · `staleIndexWarning(rootArg)`（陈旧标注）—— ★ 函数**第一行就是 `if (!rawRoot) return null`**（静默）。
+        ⇒ **入参里没有这 4 个名字的工具，两道保障同时失效**（59 个工具里 **18 个**属于此类）。
+        ★ 本笔**更正了上一轮我自己写错的半句**（原文说「标注层不依赖参数名 ⇒ 仍生效」—— 错，它同样依赖）。
+      ⇒ ★★ **已核实：当前无实例**（这 18 个里没有一个「读 `cache.db` 却又不自己保鲜」）：
+        · `explore_code` —— **自己就接**（`case 'diff_impact'` 里 `await ensureProjectIndex(impactRoot)`，
+          注释写着「**零前置**」；`observe_points` 的 handler 同款）；
+        · `cross_repo_symbol_index` —— **现场全扫**（见上）；
+        · `harvest_decisions` —— 从**文档 / git 日志 / 注释**提决策卡、**不读 `cache.db`**
+          （`harvest/index.ts` 的 `ensureProjectIndex` 属 `harvest_closure` / `extract_contracts`，那两个有 `project_dir`）；
+        · `observe_log` / `observe_trace` —— 读 **events.jsonl**（`observe/index.ts` 的 `ensureProjectIndex`
+          属 `recommendObservePoints`）；
+        · `consistency_check` / `detect_drift` —— `DSL ↔ 代码`对比（入参 `feature` / `code_dir`）；
+        · `design/index.ts` 的 `getProjectCacheDb` —— 只服务 **`import_project`**（那个工具有 `project_dir`）。
+      ⇒ ★ **为什么仍留此条**（不是「待核」，是**结构性隐患**）：形状本身没变 —— «保障靠参数名» ⇒
+        将来任何**新**的无根工具只要读索引，就会**同时**丢掉保鲜**与**告警（**静默**读到旧图）。
+      ⇒ 待定修法（**形状决策**）：
+        (a) 扩 `projectRootArg` 认更多名字 ⇒ 治标（越认越多，正是 `storage.ts` 记过的「**越兜越多**」教训）；
+        (b) ★ 让**读索引的那一层**（`getProjectCacheDb` / `findCacheDb`）**自己取根并保鲜**
+          —— 结构保证，不靠调用方参数名（代价：那一层要知道「谁在调」）；
+        (c) 让**工具声明**自己的根参数名（`ToolDef` 加一个字段）⇒ 显式、类型钉死。
+      ⇒ ★ 本笔已在 `capability_map` 的「★ 通用前置」③ 里**如实写明**该限制 + workaround
+        （显式先调 `index_integrity({project_dir, refresh:true})`）⇒ **不再静默**。
 
 - [ ] **T43 ★★ 前沿研究：通用多语言组件框架（若重开 ⇒ 先做三个"最小可证伪实验"）**
       *(核实：2026-10-05 用户裁定"积木线/项目融合线作为万能框架实现不了 ⇒ 删代码、留设计文档"。)*
