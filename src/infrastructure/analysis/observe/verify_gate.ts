@@ -55,8 +55,12 @@
  */
 
 import { OBSERVE_RULE_IDS } from './judge.js';
-import { KNOWN_SPREAD_RULE, parseKnownSpread, type KnownSpreadConstraint, type SpreadPattern } from './ledger_fold.js';
+import { KNOWN_SPREAD_RULE } from './ledger_fold.js';
 import type { TSDLDecl } from './contract.js';
+// ★ `declKey`（声明的身份键）来自 `proposal_store`：2026-10-06 把本文件的私有 `mergeKey` 移了出去，
+//   因为 `validateDecls`（入口查"键重复"）也要用它 —— 两处各留一份就是判据分叉。
+//   方向 `verify_gate → proposal_store` 本就不成环（`approve_gated` 同时 import 两者）。
+import { declKey } from './proposal_store.js';
 
 // ─────────────────────────────────────────────────────────────
 // L1 规则回归门（照搬 Go :345-386）
@@ -212,12 +216,6 @@ export function rejectedByReview(decls: TSDLDecl[], llmVerdicts: DeclVerdict[]):
 // loop 增量提案的按键合并（照搬 Go :231-253）
 // ─────────────────────────────────────────────────────────────
 
-/** 合并键：rule+probe；known-spread 另加 constraint.source（照搬 Go `:233-238`）。 */
-function mergeKey(d: TSDLDecl): string {
-  const c: KnownSpreadConstraint | null = d.rule === KNOWN_SPREAD_RULE ? parseKnownSpread(d) : null;
-  return c ? `${d.rule}|${c.source}` : `${d.rule}|${d.probe ?? ''}`;
-}
-
 /**
  * 把 loop 增量提案合并进当前权威集（**不整集替换**）。
  *
@@ -225,21 +223,24 @@ function mergeKey(d: TSDLDecl): string {
  * 但 loop 增量提案只带**单条**声明 ⇒ 整集替换会 wipe 掉其余全部契约（含种子）
  * ⇒ 故按键合并：**键存在则整条替换**（非字段级 merge），键不存在则追加。
  *
- * ★ 照搬的既有行为（知情即可，不在本笔改）：
- *   · **冲突无告警、无记录** —— 整条替换掉旧的，不留痕
- *   · ⚠ **一个疑似 bug**：`:239-242` 先扫当前集建键索引，若当前集内**同键重复**，
- *     只有**最后一条**进索引 ⇒ **前面那些永远不会被覆盖**。
- *     不修的理由：修它会改变现有 `dsl.json` 的合并结果（属行为变更），
- *     且当前 `dsl.json` 由种子 + 审批生成，同键重复本不该出现。**已在案上登记。**
+ * ★ 键的唯一来源 = `proposal_store.declKey`（一般规则 `rule|probe`；
+ *   known-spread 用 `rule|constraint.source`）—— 本函数不再自带一份（原名 `mergeKey`）。
+ *
+ * ★ 2026-10-06 结掉此前登记的"疑似 bug"（同键重复时只有最后一条进索引 ⇒ 前面永远不会被覆盖）：
+ *   **不在合并处去重**（那会把调用方的意图猜掉），而是在**入口拒绝** ——
+ *   `validateDecls`（`create` 与 `approve` 都经过的唯一校验点）已加"键唯一"守卫，
+ *   同键重复的声明集**根本进不来**。实测与理由见 `proposal_store.validateDecls`。
+ *   ★ 仍照搬的既有行为：冲突**无告警、无记录**（整条替换掉旧的，不留痕）。
+ *   ★ 既有 `dsl.json` 里的历史重复**不清**（清理要动存量，属独立决定）。
  */
 export function mergeLoopDecls(current: TSDLDecl[], incoming: TSDLDecl[]): TSDLDecl[] {
   const out = current.map((d) => ({ ...d }));
   const idx = new Map<string, number>();
   for (let i = 0; i < out.length; i++) {
-    idx.set(mergeKey(out[i]!), i); // 同键重复：后者覆盖前者索引（与 Go 同）
+    idx.set(declKey(out[i]!), i); // 若存量已有同键重复：后者覆盖前者索引（与 Go 同）
   }
   for (const d of incoming) {
-    const k = mergeKey(d);
+    const k = declKey(d);
     const at = idx.get(k);
     if (at === undefined) {
       idx.set(k, out.length);

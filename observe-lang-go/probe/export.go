@@ -84,20 +84,21 @@ func (t *Tiered) ExportSkipped() map[string]int64 {
 
 // incidentHeader 是开箱文件首行：自描述现场快照。
 type incidentHeader struct {
-	Type     string                       `json:"type"` // "incident"
-	TraceID  string                       `json:"trace_id"`
-	Probe    string                       `json:"probe"`
-	Err      string                       `json:"err"`
-	At       time.Time                    `json:"at"`
-	Counters []CountersSnapshot           `json:"counters"`  // 触发时全量计数器
-	Histos   []HistogramSnapshot          `json:"histograms"` // 触发探针的耗时形态
-	Ambient  int                          `json:"ambient"`    // 环境窗口条数
-	Chain    int                          `json:"chain"`      // 同 trace_id 链路事件条数
+	Type     string              `json:"type"` // "incident"
+	TraceID  string              `json:"trace_id"`
+	Probe    string              `json:"probe"`
+	Err      string              `json:"err"`
+	At       time.Time           `json:"at"`
+	Counters []CountersSnapshot  `json:"counters"`   // 触发时全量计数器
+	Histos   []HistogramSnapshot `json:"histograms"` // 触发探针的耗时形态
+	Ambient  int                 `json:"ambient"`    // 环境窗口条数
+	Chain    int                 `json:"chain"`      // 同 trace_id 链路事件条数
 }
 
 // exportIncident 打开黑匣子：扫环形缓冲一整圈，抽出
-//   1. 同 trace_id 的链路事件（c7 验收：各层窗口 trace id 一致）
-//   2. catch 前最近 ambientWindow 条任意事件（现场环境）
+//  1. 同 trace_id 的链路事件（c7 验收：各层窗口 trace id 一致）
+//  2. catch 前最近 ambientWindow 条任意事件（现场环境）
+//
 // 加 incidentHeader 头行，写成单个 JSONL 文件；目录超出保留数删最旧。
 func (t *Tiered) exportIncident(sp *Scope, err error) {
 	dir := t.incidentDir

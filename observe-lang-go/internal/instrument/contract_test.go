@@ -42,7 +42,7 @@ func TestMatchProbe(t *testing.T) {
 	}{
 		{"v2.sessionsDir.mkdirall", true},
 		{"demo.Save.writefile", true},
-		{"demo.Save.enter", false},       // 未声明
+		{"demo.Save.enter", false},        // 未声明
 		{"demo.MkdirAll.mkdirall", false}, // 函数不匹配
 		{"v2.sessionsDir.enter", false},   // suffix 不匹配
 	}

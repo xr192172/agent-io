@@ -33,13 +33,13 @@ var frameSeq atomic.Uint64
 // Scope 承载一次函数调用的采集作用域：enter/exit 配对（耗时→直方图）、
 // catch 触发错误开箱导出。
 type Scope struct {
-	t         *Tiered
-	probe     string // 基础探针名，如 "svc.Handle"（enter/exit/catch 加后缀）
-	traceID   string
-	frameID   uint64
-	parentID  uint64
-	start     time.Time
-	exported  atomic.Bool // Catch 已触发导出（一帧只导一次）
+	t        *Tiered
+	probe    string // 基础探针名，如 "svc.Handle"（enter/exit/catch 加后缀）
+	traceID  string
+	frameID  uint64
+	parentID uint64
+	start    time.Time
+	exported atomic.Bool // Catch 已触发导出（一帧只导一次）
 }
 
 type scopeCtxKey struct{}

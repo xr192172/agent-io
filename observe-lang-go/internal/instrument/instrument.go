@@ -340,7 +340,6 @@ func packageLineEnd(src string, fset *token.FileSet, f *ast.File) int {
 	return len(src)
 }
 
-
 // terminatesFunction 判断语句是否可能使函数不落出（return / 无限循环 / 全分支返回）。
 // 用于决定是否在函数体末尾补出口探针——在这些语句之后插任何语句都是不可达代码，
 // Go 编译器会报 "missing return"。

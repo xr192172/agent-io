@@ -28,9 +28,9 @@ type cliSite struct {
 }
 
 type cliFile struct {
-	File  string   `json:"file"`
+	File  string    `json:"file"`
 	Sites []cliSite `json:"sites"`
-	Error *string  `json:"error"`
+	Error *string   `json:"error"`
 }
 
 type cliReport struct {
