@@ -447,7 +447,7 @@ function toast(msg) {
   clearTimeout(toast._h); toast._h = setTimeout(() => t.classList.remove('show'), 2200);
 }
 document.getElementById('btnRegen').addEventListener('click', () => toast('演示按钮：重新生成请跑 brickify_cli --dsl-workbench'));
-document.getElementById('btnSync').addEventListener('click', () => toast('演示按钮：定稿同步走 edit_dsl / scaffold(action=backfill) 管线'));
+document.getElementById('btnSync').addEventListener('click', () => toast('演示按钮：定稿同步走 edit_dsl 管线（★ scaffold(action=backfill) 已随 T20 删除）'));
 // 提交你的看法 → 真实批注通道（serve + LLM 网关）：无后端/无 LLM 明确停用，不假装执行
 function fbFeature() { try { return new URLSearchParams(location.search).get('feature') || ''; } catch (e) { return ''; } }
 document.getElementById('btnSend').addEventListener('click', async () => {

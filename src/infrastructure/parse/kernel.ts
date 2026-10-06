@@ -8,7 +8,8 @@
  *   2. 自动探测本地已装的语言包（probe）
  *   3. 动态加载（loader）+ 缓存
  *   4. 失败优雅降级（返回空数组，不抛）
- *   5. 可被多个工具共享（consistency / backfill / 未来的 lint/format）
+ *   5. 可被多个工具共享（consistency / health / 未来的 lint/format）
+ *      ★ 原举例的 `backfill` 已随 T20 删除（2026-10-06 更正——举例也不能指着不存在的东西）
  *
  * 用法：
  *   import { parseFile, listSupportedLanguages } from './ts_kernel';

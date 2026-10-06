@@ -3,8 +3,9 @@
  *
  * ★★ 为什么需要它（2026-10-01，用户裁定）：
  *   DSL 的 `semantic.files[].actual_apis` / `actual_deps` 是**代码的事实**，
- *   却被 `scaffold action=backfill`（`backfill.ts:287`）与 `import_project`（`import_project.ts:1856`）
- *   **镜像进意图册**。用户原话：「**意图册有三项东西，但是有一项东西其实本身就是代码的权威吧**」。
+ *   却被 `scaffold action=backfill` ★（该 action 与它的实现 `backfill.ts` **均已随 T20 删除**，
+ *   本注释仅记历史；去处见 `docs/todo.md` 的 T20）与 `import_project` **镜像进意图册**。
+ *   用户原话：「**意图册有三项东西，但是有一项东西其实本身就是代码的权威吧**」。
  *   ⇒ **事实的权威只在解析数据里**；DSL 只放**意图**（`expected_apis`）。
  *   ⇒ 原先读那份镜像的 5 个读者，改读**这里**。
  *

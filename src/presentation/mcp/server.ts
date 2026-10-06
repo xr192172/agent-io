@@ -46,8 +46,9 @@ const server = new McpServer(
       '\n   - {op:"update",type:"binding",id:"<node_id>",data:{file_id,sync_status?}} 绑定节点与语义文件' +
       '\n   - {op:"update",type:"status",id:"<node_id>",data:{status}} 更新状态（同步 file 并重算 feature 状态）' +
       '\n\n3. 代码生成：scaffold 从设计图 semantic 层生成代码骨架（签名 + TODO + import），LLM 在骨架上填充实现。' +
-      '\n\n4. 状态回填：LLM 写完代码后，调用 scaffold（action=backfill）自动解析实际 API 签名回填到 DSL。' +
-      '\n   然后 scaffold 扫描 TODO 残留量自动推断状态，或 edit_dsl 的 status 操作手动标记。' +
+      '\n\n4. 状态推断：scaffold 扫描 TODO 残留量自动推断实现状态，或 edit_dsl 的 status 操作手动标记。' +
+      '\n   ★ 注意：原先这步是「调用 scaffold（action=backfill）把实际 API 签名回填进 DSL」—— 该能力已于 2026-10-01 随 T20「摘掉事实镜像」**整条删除**（`scaffold.action` 现在只有 `generate`）。' +
+      '\n   要「实际签名」这类事实请**现取**：consistency_check（设计↔代码一致性）或 explore_code 的相关 action；事实**不再镜像进 DSL**。' +
       '\n   render_design 重新渲染后节点颜色随状态变化：灰=待实现, 橙=实现中, 绿=已完成。' +
       '\n\n5. 人审流程：人类在浏览器双击节点添加标注 → get_dsl（query:"annotations"）读取 → LLM 迭代修改 → edit_dsl(op=resolve,type=annotation) 关闭。' +
       '\n\n6. 自动布局：edit_dsl(op=apply,type=layout) 一键整理画布（data.algo=dag 拓扑排序 / force 力导向 / grid 网格对齐），避免连线混乱。' +

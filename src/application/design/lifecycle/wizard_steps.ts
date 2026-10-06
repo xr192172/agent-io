@@ -100,11 +100,11 @@ export function wizardSteps(): WizardStep[] {
       id: 'harvest',
       no: 5,
       label: '采集回填',
-      desc: '把实际写的代码采回设计——expected_apis 对齐 actual，设计不再是空想。',
+      desc: '把实际写的代码采回设计——核对 expected_apis 与实现是否一致，设计不再是空想。',
       role: 'flow',
       tools: [
         { name: 'harvest_closure', kind: 'mcp', note: '采集实现闭包（种子→依赖→外部）回设计' },
-        { name: 'scaffold', kind: 'mcp', note: '回填骨架（action=backfill）：设计里的占位长成真文件' },
+        { name: 'consistency_check', kind: 'mcp', note: '校验设计↔实现是否一致（★ 事实不再回填进 DSL —— 原先的 scaffold(action=backfill) 已于 2026-10-01 随 T20 删除）' },
       ],
       input: '新写的代码',
       output: '设计的 expected_apis ↔ 实际实现（事实现取 cache.db，不再镜像进 DSL）',
