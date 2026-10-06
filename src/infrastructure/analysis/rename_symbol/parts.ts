@@ -225,7 +225,19 @@ export interface LangPackage {
 //   且带 `exportRefs`），本形状的 refs 是 `Map<string, number[]>` 并多了 `selections`。
 //   ⇒ 改名成 `ModuleAnalysis` 会**撞名且把两个不同形状搅在一起**；改名成第三个新名字则要动
 //     5 处引用却买不到判据上的收益。**留名，但把事实写在这里。**
-//   ★ 两个形状"几乎一样"本身值得单独议（疑近重复）—— 已入 `docs/todo.md` 待核实。
+//
+// ★★ 2026-10-06（T52 结案）：两者**不合并**，判定依据已核实（本段原写"疑近重复，已入 todo
+//   待核实"，现已结案 —— 不留悬空标记）：
+//   · 字段交集只有 `rootOffsets` / `rootKinds` 两个，**其余全不同**：本形状多 `defined`/`selections`
+//     而少 `exportRefs`；`imports` 一边是 `{alias, path}`，一边是 7 字段的 `ImportEdge`
+//     （含 `star`/`isReexport`/`typeOnly` —— TS 的 re-export 语义）。
+//   · ★★ **该不该合并的真正判据是"构造逻辑"，不是"类型形状"** —— 而构造逻辑**零可合并部分**：
+//     两边**语法节点零交集**（本族走 `import_spec` / `selector_expression` / `GO_DEF_NODE_TYPES`，
+//     TS 侧走 `import_clause` / `namespace_import` / `export_specifier`）；
+//     且 ★ **核心机制不同**：TS 侧有**作用域栈**（`stack` / `lookupIsRoot`，服务"局部遮蔽不算引用"），
+//     本族**没有作用域栈**（按"包级定义 vs 裸引用"二分）。
+//   · 唯一"逐字相同"的是两行 `const rootOffsets/rootKinds = new Map(...)` **初始化**
+//     ⇒ 抽公共类型只省 2 行 × 2 处，却要动两个文件与 5 处引用 ⇒ **买不到判据上的收益**。
 // ─────────────────────────────────────────────
 export interface GoModuleAnalysis {
   /** 包级定义名 → 声明 identifier/type_identifier 字节偏移 */

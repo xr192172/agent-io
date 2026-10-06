@@ -654,23 +654,6 @@
       ⇒ ★ 本笔倾向 (c)：零新工具、零门，且**如实**（不假装活文档不会漂）。
 
 
-- [ ] **T52 ★ `rename_symbol` 里两个"模块级符号分析"形状近乎重复（T28 续时顺带发现，未判断）**
-      *(核实：逐字段对比两处定义 —— `parts.ts: GoModuleAnalysis` vs
-       `infrastructure/parse/module_analysis.ts:58 ModuleAnalysis`。)*
-
-      | | `parts.ts: GoModuleAnalysis`（go/py/c/java/cs 用） | `parse/module_analysis.ts: ModuleAnalysis`（TS 家族用） |
-      |---|---|---|
-      | `rootOffsets` | `Map<string, number>` | 同 |
-      | `rootKinds` | `Map<string, string>` | 同 |
-      | `imports` | `Array<{alias, path}>` | `ImportEdge[]`（**不同形状**） |
-      | 引用 | `refs: Map<string, number[]>` + `selections` | `rootRefs: ModuleRef[]` + `exportRefs` |
-
-      ⇒ ★★ **"名字像"的地方这次是"形状像"**：前两个字段逐字相同、后两个不同
-        ⇒ 与 T18 的 `files`（同名不同义）**是同一族的第二个方向**。
-      ⇒ **未判断**：该不该合并？（合并要把两种 refs 表示统一 ⇒ **是行为变更**，不是重命名）
-        · 反对：两者服务不同家族，且 TS 家族需要 `exportRefs`（re-export）而本形状需要 `selections`（`X.sym`）；
-        · 赞成：`rootOffsets/rootKinds` 逐字相同 ⇒ 至少要判断"是不是同一份地基被抄了两遍"。
-      ⇒ **待定，不预设结论，也不动。** 已在 `parts.ts` 的 `GoModuleAnalysis` 上方记明这层关系。
 
 - [ ] **T33 ★★ `analyzeModuleSource` 的 `imports` 漏默认导入 —— 与 `parseFileFull` 差 190/323 文件（2026-10-04 实测）**
       *(核实：一次搬迁侦察时用**全仓 323 个文件逐文件对差集**测出，**非读码断言**。
