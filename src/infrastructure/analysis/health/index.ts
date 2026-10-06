@@ -63,7 +63,14 @@ export type HealthKind =
   | 'high_complexity'
   | 'layer_violation'
   /** ★ 2026-10-03 新增：**循环依赖**（A→B→A）。见 `findCycles` 的说明 —— 这是本工具原先**完全缺失**的一维。 */
-  | 'circular_dependency';
+  | 'circular_dependency'
+  /**
+   * ★ 2026-10-06 新增（T51）：**同目录横向 import** ——
+   * 「**一个文件 = 一门语言**」的载体目录（`languages/` / `adapters/`）里，
+   * 除收集器外的文件依赖了**同目录的兄弟文件**。
+   * 判据为何**刻意窄**、以及为什么它必须单列（既有两把尺都看不见），见「维度5」实现处的长注释。
+   */
+  | 'sibling_import';
 
 export type HealthSeverity = 'error' | 'warn' | 'info';
 
@@ -929,9 +936,65 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
     });
   }
 
+  // ── 维度5：同目录横向 import（★ 2026-10-06 新增，T51）────────────────────────
+  //
+  // ★ 判据（**刻意窄**，理由见下）：「一个文件 = 一门语言」的**载体目录**里，
+  //   **除收集器/共享文件外**的 `.ts` **不得依赖同目录的兄弟文件**。
+  //
+  // ## 立的理由（实测反例，2026-10-05 T28 续）
+  //   `rename_symbol/languages/` 改前的形状：`cs.ts` 导出工厂给 `java.ts` 用、`java.ts`
+  //   导出引擎给 `.cs` 的注册项用（**互相 import**），`py.ts`/`c.ts` 又 `import type … from './go.js'`。
+  //   ⇒ 后果不是"丑"，而是**一个文件同时服务两门语言** —— 注册表可以悄悄让 A 语言的函数
+  //     去服务 B 的扩展名。★ 包对象归位后，"改 `exts` 必须进那个语言的文件"已在结构上堵住一半；
+  //     剩下的这一半（**语言文件互相 import**）**至今没有任何尺子看得见** —— 这就是本维。
+  //
+  // ## ★★ 为什么既有的两把尺都看不见它
+  //   · `circular_dependency` **不抓**：`java.ts → cs.ts` 是**单向**，不成环；
+  //   · `layer_violation` **不抓**：两个文件同在 `infrastructure/`，没有层差；
+  //   · 而 `dependency-cruiser` 已于 `7bcc364` **整体移除** ⇒ 没有"8 行框架规则"这条路可走。
+  //
+  // ## ★★ 为什么**不能**泛化成"任何同目录兄弟之间的横向 import"（推翻此前的设想）
+  //   实测本仓**遍地**是 `{core,parts,index}.ts` 互引（`rename_symbol/`、`contract_gate/`…），
+  //   那是**有意的分层**（core 调 parts），不是混装。泛化后**一加就报一片** ⇒ 假阳淹没真信号
+  //   （与 `layer_violation` 当年"把 tests 拉进来判"、`orphan_file` 兜底误连 24 个脚本是同一教训）。
+  //   ⇒ 故扫描面**只**取"一个文件 = 一门语言"的载体目录，白名单是收集器/barrel/共享类型三类。
+  const LANG_DIR = /(^|\/)(languages|adapters)\/$/;
+  /** 载体目录里允许依赖兄弟的文件：收集器 / barrel / 共享类型（目录约定本身是显式的）。 */
+  const SIBLING_OK = new Set(['registry.ts', 'index.ts', 'types.ts']);
+  for (const [rel, outs] of layerImports) {
+    const slash = rel.lastIndexOf('/');
+    if (slash < 0) continue;
+    const dir = rel.slice(0, slash + 1);
+    if (!LANG_DIR.test(dir)) continue;
+    const self = rel.slice(slash + 1);
+    if (SIBLING_OK.has(self)) continue;
+    for (const [target, info] of outs) {
+      if (!target.startsWith(dir)) continue; // 只看同目录（`../parts.js` 这类天然跳过）
+      const other = target.slice(dir.length);
+      if (other.includes('/')) continue; // 同目录直系文件，不含子目录
+      if (SIBLING_OK.has(other)) continue; // 依赖收集器 / barrel / 共享类型 ⇒ 合法
+      // ★★ 与维度3/4**有意相反**：这里**不排除 `import type`**。
+      //   理由：本维防的是"**零件混装**"，而 `import type { GoModuleAnalysis } from './go.js'`
+      //   正是 T51 记下的**真实违规形态之一**（一个谁也不属于的共享形状，定义却住在 Go 的文件里）。
+      //   ⇒ 类型依赖**在这个问题上同样是依赖**。★ 别把这条"统一"掉。
+      issues.push({
+        kind: 'sibling_import',
+        severity: 'warn',
+        file: rel,
+        line: info.line,
+        message:
+          `同目录横向 import：「一个文件 = 一门语言」的载体目录（${dir}）里，` +
+          `${self} 依赖了兄弟文件 ${other}` +
+          (info.typeOnly ? '（`import type` —— 本维按"零件混装"计，类型依赖同样算）' : ''),
+        evidence: target,
+      });
+    }
+  }
+
   complexityEntries.sort((a, b) => b.complexity - a.complexity);
   const counts: Record<HealthKind, number> = {
     unused_export: 0, unused_import: 0, orphan_file: 0, high_complexity: 0, layer_violation: 0, circular_dependency: 0,
+    sibling_import: 0,
   };
   for (const i of issues) counts[i.kind] += 1;
 
@@ -967,10 +1030,11 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
       : `健康度 ${score.value} 分（${grade}）：${counts.circular_dependency} 循环依赖 / ` +
         `${counts.layer_violation} 分层违规 / ` +
         `${counts.high_complexity} 高复杂度 / ${counts.unused_export} 未使用导出 / ` +
-        `${counts.unused_import} 未使用 import / ${counts.orphan_file} 孤儿文件` +
+        `${counts.unused_import} 未使用 import / ${counts.orphan_file} 孤儿文件 / ` +
+        `${counts.sibling_import} 同目录横向 import` +
         `　[密度 环 ${density(counts.circular_dependency)} · 违规 ${density(counts.layer_violation)} · 复杂度 ${density(counts.high_complexity)} · ` +
         `孤儿 ${density(counts.orphan_file)} · 未用导出 ${density(counts.unused_export)} · ` +
-        `未用 import ${density(counts.unused_import)}]` +
+        `未用 import ${density(counts.unused_import)} · 横向 ${density(counts.sibling_import)}]` +
         // ★ 2026-10-03：分层改为**真实四层**（按目录）。`outside` = 不在 `src/<四层>/` 下的文件，
         //   **如实计数但不判违规**（旧实现在这里用三分类启发式兜底 ⇒ 95% 落 brick、还把 tests 拉进来判）。
         `　[分层 domain ${layers.domain} / infrastructure ${layers.infrastructure} / application ${layers.application} / presentation ${layers.presentation}` +
@@ -1010,6 +1074,10 @@ const SCORE_SPEC: Record<HealthKind, { w: number; fullAt: number }> = {
   //   结构性病灶（本仓搬迁期间实测会**静默产生**新环：跨层互引一次就成环）。
   //   `fullAt: 10` = 有 10 条环就扣满这一维（本仓当前实测 2 条 ⇒ 扣 5 分）。
   circular_dependency: { w: 30, fullAt: 10 },
+  // ★ 2026-10-06 新增（T51）：**同目录横向 import**。权重给**低**（`w: 10`）——
+  //   它是**目录约定**违规（`warn` 级，不破坏运行时语义），与"环/分层违规"那种结构病灶不同级。
+  //   且本仓当前**实测 0 条** ⇒ 加这一维不该动现有分数。`fullAt: 20` = 有 20 条就扣满。
+  sibling_import: { w: 10, fullAt: 20 },
   high_complexity: { w: 25, fullAt: 30 },
   orphan_file: { w: 20, fullAt: 10 },
   unused_export: { w: 15, fullAt: 50 },
