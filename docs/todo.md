@@ -870,12 +870,9 @@
         ⇒ 教训：**「树能编译」不等于「树是对的」**；搬移类实验的收尾必须 `git status` 逐条对，不能只看 tsc。
 
 
-- [ ] **T57 残余 —— observe 合一化已全部落（P0–P7），只剩这四件未决/未处理**
-      *(回执见 commit 历史与 `docs/observe-unification.md`（含新增 §七「P5 实际落地」）；
+- [ ] **T57 残余 —— observe 合一化已全部落（P0–P7），只剩这三件未决/未处理**
+      *(回执见 commit 历史与 `docs/observe-unification.md`（含 §七「P5 实际落地」）；
        `observe-lang-go/` 已从 42 个文件降到 21 个，只剩插桩 + 进程内采集 runtime。)*
-      · **loop 里的播种副作用未决**：`run_loop` 读 DSL 前会 `seedDefault()`，而该文件头注自称
-        「绝不触碰权威 dsl.json」⇒ **注释与实践自相矛盾**（播种是 load-bearing：不播种则 load
-        失败、整轮 loop 报错）。照搬时已就地标注、不静默。**是否摘出去属独立议题。**
       · **`status` / `verified_by` 全仓无消费者**：审批门（`finalizeDecls`）在认真填这两个审计字段，
         但**没有任何读者** ⇒ 又一处"声明式的东西不落地"。（2026-10-06 新填的 `data-consumed`
         同此 —— 登记在案，不假装它有消费者。）

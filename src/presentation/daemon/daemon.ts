@@ -218,6 +218,12 @@ function scheduleLoopTrigger(projectDir: string, broadcast: (event: string, data
   )
     .then((res) => {
       loopRunning = false;
+      // ★ 播种可见（2026-10-06，结掉 run_loop 头注 ① 那个"未决"）：`dsl.json` 此前不存在
+      //   ⇒ 本轮替它建了 v1 种子起点。这是**唯一**的 bootstrap 路径，且只发生一次
+      //   ⇒ 必须让人/agent 看得见（此前 `seedDefault()` 的返回值被丢弃 ⇒ 完全静默）。
+      if (res.seeded) {
+        console.log(`[loop] ${projectDir} 此前没有 dsl.json ⇒ 已播 v1 种子契约（此后不再触碰既有权威）`);
+      }
       // 「没有事件流」与「真失败」现在天然分开：前者由 runLoop 自己给出 skipReason。
       if (res.skipReason && !res.triggered && res.proposals.length === 0 && res.report.event_count === 0) {
         broadcast('loop-skipped', { project_dir: projectDir, reason: res.skipReason });

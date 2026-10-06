@@ -26,11 +26,21 @@
  *
  * ## 与 Go 的三处**有意分歧**（均已核实）
  *
- * ① **`SeedDefault()` 的副作用被保留，但如实标注**
+ * ① **`SeedDefault()` 的副作用：保留，且已定论**（2026-10-06 结掉此前挂着的"未决"）
  *    Go `:99` 在读 DSL 前调 `SeedDefault()`，而 `dsl.json` 不存在时它会**新建文件 + 写一条 history**。
- *    ⚠ 这与 `loop.go:8` 自己的头注「**绝不触碰权威 dsl.json**」**自相矛盾**。
- *    本实现**照搬这个播种**（它是 load-bearing：不播种则 `load()` 失败、整个 loop 报错），
- *    但把副作用写明在此，**不静默**。是否该把播种从 loop 里摘出去，属独立议题（未决）。
+ *    ⚠ 这与 `loop.go:8` 自己的头注「**绝不触碰权威 dsl.json**」**看着打架，但两句可以同时为真** ——
+ *      歧义出在措辞：`seedDefault()` 的实现是 `if (existsSync(path)) return false`（`dsl_store.ts`）
+ *      ⇒ 它**只写"尚未存在的起点"，绝不改已存在的权威**。所以那句应读作
+ *      「**不改已存在的**权威」；播种管的是"你还没建，我先给你一个起点"。
+ *
+ *    ★★ **为什么不摘掉它**（这是本项定论的关键）：`dsl.json` 的**唯一 bootstrap 路径就是这一处**
+ *      ——`seedDefault()` 全仓唯一调用者即本行；而 `approve` 需要先有提案、提案又由 loop 产
+ *      ⇒ 摘掉 = **全新项目的 observe 闭环永远起不来**（死锁：loop 需要 `dsl.json`，
+ *        而它只能由 loop 创建）。那不是"净化"，是**砍掉初始化**。
+ *
+ *    ★ 真正该修的是**副作用没有出口**：`seedDefault()` 有 `boolean` 返回值，而先前这里**丢弃了它**
+ *      ⇒ "我替你建了 v1 种子"这件事**没有任何出口**（静默）。现已接住并记进 `LoopResult.seeded`，
+ *      由 daemon 打一行日志（`daemon.scheduleLoopTrigger`）。
  *
  * ② **LLM 复核默认走"诚实降级"，且不再依赖外部 HTTP 服务**
  *    Go `:126-131`：`NewJudgeClient("")` ⇒ 未设 `OBSERVE_JUDGE_URL` 时 `IsRemote()` 为 false
@@ -73,6 +83,15 @@ export interface LoopOptions {
 
 export interface LoopResult {
   report: TSDiffReport;
+  /**
+   * 本轮**真的播种了** v1 种子（`dsl.json` 此前不存在）。
+   *
+   * ★ 为什么要有这个字段：`seedDefault()` 的返回值先前被**丢弃** ⇒ 「我替这个项目建了设计契约的
+   *   起点」这件事完全不可见（静默）—— 而它是一次性的、影响后续所有判定的动作。
+   *   `undefined` / `false` = 没有播种（文件已存在，`seedDefault()` 幂等跳过）。
+   * 消费者：`daemon.scheduleLoopTrigger`（打一行日志，让人/agent 看得见）。
+   */
+  seeded?: boolean;
   ledger?: LedgerStats;
   triggered: boolean;
   skipReason?: string;
@@ -132,9 +151,10 @@ export async function runLoop(
   const actual = TSComparator.aggregate(events);
   if (skipped > 0) res.skipReason = `⚠ 事件流有 ${skipped} 行无法解析，已跳过（不阻断本轮）`;
 
-  // ── 3. 加载权威设计 DSL（① 不存在则播种 v1，副作用已标注）──
+  // ── 3. 加载权威设计 DSL（不存在则播种 v1）──
+  // ★ **接住返回值**：不再丢弃"这次真的播种了"这个事实（见头注 ① 与 `LoopResult.seeded`）。
   const store = new DesignDSLStore(dataDir);
-  store.seedDefault();
+  if (store.seedDefault()) res.seeded = true;
   const design: TSDesignDSLDoc = store.loadOrThrow();
 
   // ── 4. 对比出偏差 ──
