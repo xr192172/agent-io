@@ -35,6 +35,9 @@
 import type { ToolDef } from '../../types.js';
 import { renderChainWiring, CHAINS, hopsOf, SCOPE_PATHS, type Chain, type HopVerdict } from '../../../domain/chain_wiring.js';
 import { B_TERMS } from '../../../domain/b_terms.js';
+// ★★ 2026-10-06：工具「面」= 同一个注册表的**视图**（只裁"列出来"，不裁"能不能调"）。
+//   ★ 依赖单向：本模块调它；它只 `import type` 本模块（类型导入被擦除 ⇒ 无运行时环）。
+import { renderFaces } from './tool_faces.js';
 
 export const LANE_IDS = ['design', 'refactor', 'observe', 'harvest', 'cross', 'meta'] as const;
 export type LaneId = (typeof LANE_IDS)[number];
@@ -697,6 +700,9 @@ export function makeCapabilityMapHandler(getCatalog: () => readonly ToolCatalogE
         // ★★ 2026-10-06：链的**完整判定**（表侧对象边 × 下游要不要对象）——
         //   接在"链的接法"之后：先看**怎么接**，再看**接到哪一步就断了**。
         renderChainVerdicts(catalog),
+        // ★★ 2026-10-06：工具「面」（同一个注册表的**视图**）——
+        //   `direct` 名单由本模块的 `LANE_META` 提供（避免反向 import 成环）；名字零手写。
+        renderFaces(catalog, LANE_META.flatMap((m) => m.direct)),
       ]
         .filter((s) => s && s.length > 0)
         .join('')
