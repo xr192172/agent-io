@@ -50,6 +50,7 @@ import {
   LANE_IDS,
   listToolDefs,
   makeCapabilityMapHandler,
+  collectInputKeys,
   resetDomainsForTest,
 } from './registry/capability_map.js';
 import type { DomainNavView, LaneId } from './registry/capability_map.js';
@@ -468,7 +469,18 @@ export const META_TOOLS: ToolDef[] = [
       }
       bindDomains(domains);
       try {
-        const r = await makeCapabilityMapHandler(() => listToolDefs())(a, readNote);
+        // ★★ 2026-10-06：注入目录时**顺带算好**每个工具的"声明入参名（**深层**收集）"——
+        //   供 `capability_map` 的「链的完整判定」判"**下游要不要对象类入参**"。
+        //   ★ 为什么必须在这层算：只有这里拿得到 `ToolDef`（含 zod schema）；
+        //     `domain` 反向依赖 `application` 是分层违规 ⇒ 表侧判定只能做到一半。
+        const r = await makeCapabilityMapHandler(() =>
+          listToolDefs().map((d) => ({
+            name: d.name,
+            title: d.title,
+            description: d.description,
+            inputKeys: collectInputKeys(d.inputSchema),
+          })),
+        )(a, readNote);
         return { message: r.text, data: { lanes: LANE_IDS, domains: domains?.length ?? 0, read_note: readNote } };
       } finally {
         resetDomainsForTest();

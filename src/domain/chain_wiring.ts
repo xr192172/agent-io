@@ -323,8 +323,12 @@ export function verifiedEdgesBetween(from: string, to: string): readonly ChainEd
   );
 }
 
-/** 作用域锚点的入参位置：**几乎任何段都能通** ⇒ 必要不充分，**不算"对象交接"**。 */
-const SCOPE_PATHS = new Set(['project_dir', 'feature']);
+/**
+ * 作用域锚点的入参位置：**几乎任何段都能通** ⇒ 必要不充分，**不算"对象交接"**。
+ * ★ **导出**（2026-10-06）：`application` 层的完整判定（`capability_map`）必须用**同一份**口径
+ *   —— 否则「什么是作用域锚点」就有了第二份副本（本仓头号病根）。
+ */
+export const SCOPE_PATHS = new Set(['project_dir', 'feature']);
 
 /** 一段的判定 —— ★ **只报事实**，不判生死。 */
 export interface HopVerdict {

@@ -33,7 +33,8 @@
  */
 
 import type { ToolDef } from '../../types.js';
-import { renderChainWiring } from '../../../domain/chain_wiring.js';
+import { renderChainWiring, CHAINS, hopsOf, SCOPE_PATHS, type Chain, type HopVerdict } from '../../../domain/chain_wiring.js';
+import { B_TERMS } from '../../../domain/b_terms.js';
 
 export const LANE_IDS = ['design', 'refactor', 'observe', 'harvest', 'cross', 'meta'] as const;
 export type LaneId = (typeof LANE_IDS)[number];
@@ -43,6 +44,14 @@ export interface ToolCatalogEntry {
   name: string;
   title?: string;
   description?: string;
+  /**
+   * ★★ 该工具**声明入参**里的**全部属性名**（**深层**收集，含数组元素对象里的键）—— 2026-10-06 加。
+   * ★ 为什么必须"深层"：`rename_symbols` 的对象入参**不在顶层** —— 它是
+   *   `renames: z.array(z.object({ file, symbol, to }))` ⇒ 只看顶层键会得到 `renames`（一个 `context` 词）
+   *   ⇒ **判成"下游不要对象"（假阴性）**。★ 与记过的 `touched` 盲区**同一个病：量具只量到顶层**。
+   * ★ 由 `application/meta/index.ts` 在注入目录时用 {@link collectInputKeys} 算好（那层拿得到 zod）。
+   */
+  inputKeys?: readonly string[];
 }
 
 export interface LaneTool {
@@ -531,6 +540,118 @@ export interface CapabilityMapInput {
 }
 
 /**
+ * ★★ 从一个 [B] 的**声明入参**里**深层**收集全部属性名（2026-10-06）。
+ *
+ * ★ 为什么必须"深层"：`rename_symbols` 的对象入参**不在顶层** ——
+ *   `renames: z.array(z.object({ file, symbol, to }))` ⇒ 只看顶层键得到的是 `renames`（`context` 词）
+ *   ⇒ **判成"下游不要对象"（假阴性）**。★ 与记过的 `touched` 盲区同一个病：**量具只量到顶层**。
+ *
+ * ★ 实现：走 zod 的 `_def`，**只读结构、不跑校验**；取不到的形态**直接跳过**（宁可少收，也不猜）。
+ *   ★★ **必须同时兼容 v3 与 v4**（本仓 `package.json` 写的是 `^3.25.0 || ^4.0.0`，实测装的是 **4.4.3**）：
+ *     · **v3**：`ZodArray` 的元素在 `_def.type`；`_def.typeName` 才是类型名。
+ *     · **v4**：`ZodArray` 的元素在 **`_def.element`**，而 `_def.type` 变成了**类型名字符串**。
+ *   ⇒ 第一版只走 `_def.type` ⇒ **数组那一层没下去、而且不报错**（静默少收 ⇒ `renames[]` 里的
+ *     `file`/`symbol` 收不到 ⇒ `rename_symbols` 被误判成"不要对象"）。
+ *     ★ 是**探针**（手写同形 schema 跑一遍）抓到的，不是读代码看出来的 —— **先问解析器不猜**。
+ *   顶层 `inputSchema` 的**键**本身就是顶层入参名 ⇒ 单独收一遍。
+ */
+export function collectInputKeys(schema: unknown): string[] {
+  if (!schema || typeof schema !== 'object') return [];
+  const top = schema as Record<string, unknown>;
+  const out = new Set<string>(Object.keys(top));
+  const walk = (t: unknown, d: number): void => {
+    if (!t || d > 8) return;
+    const shape = (t as { shape?: unknown }).shape as Record<string, unknown> | undefined;
+    if (shape && typeof shape === 'object' && !Array.isArray(shape)) {
+      for (const [k, v] of Object.entries(shape)) {
+        out.add(k);
+        walk(v, d + 1);
+      }
+      return;
+    }
+    const def = (t as { _def?: Record<string, unknown> })._def;
+    if (!def) return;
+    // ★ 逐一走**已知承载子类型**的字段（v3 与 v4 取并集）——
+    //   `type`（v3 的 array/innerType 位置；v4 退化成字符串 ⇒ 无害 no-op）
+    //   `element`（v4 的 ZodArray）、`innerType`（optional/nullable/default/effects）、
+    //   `valueType`（record）、`options` / `items`（union / tuple）
+    walk(def.type, d + 1);
+    walk(def.element, d + 1);
+    walk(def.innerType, d + 1);
+    walk(def.valueType, d + 1);
+    for (const key of ['options', 'items'] as const) {
+      const arr = def[key];
+      if (Array.isArray(arr)) for (const o of arr) walk(o, d + 1);
+    }
+  };
+  for (const v of Object.values(top)) walk(v, 0);
+  return [...out].sort();
+}
+
+/** 某 [B] 的**对象类入参**名（= 声明入参（深）∩ 词表 `anchor` − **作用域锚点**）。 */
+export function objectInputsOf(name: string, catalog: readonly ToolCatalogEntry[]): readonly string[] {
+  const keys = catalog.find((c) => c.name === name)?.inputKeys ?? [];
+  // ★ 作用域锚点用**同一份** `SCOPE_PATHS`（`domain/chain_wiring.ts` 导出）—— 别在这里再写一遍。
+  return keys.filter((k) => B_TERMS[k]?.kind === 'anchor' && !SCOPE_PATHS.has(k));
+}
+
+/** 一段的**完整**判定（表侧对象边 + 下游要不要对象）。 */
+export interface ChainHopVerdict extends HopVerdict {
+  /** 下游这一段**要**的对象类入参（它要什么） */
+  wants: readonly string[];
+  /** 上游这一段**能喂**的对象键（表侧已验证边的 `fromKey`） */
+  fed: readonly string[];
+  /**
+   * · `no-need` = 下游**本就不要**对象入参（如 `run_tests` 只吃 `project_dir`）⇒ **不算缺口**
+   * · `ok`      = 下游要对象，且表里有已验证的对象边喂它
+   * · `gap`     = ★ **下游要对象，而上游没有已验证的对象边** ⇒ **真缺口**
+   */
+  state: 'ok' | 'no-need' | 'gap';
+}
+
+/** 逐段完整判定。 */
+export function chainVerdictsOf(chain: Chain, catalog: readonly ToolCatalogEntry[]): readonly ChainHopVerdict[] {
+  return hopsOf(chain).map((h) => {
+    const wants = objectInputsOf(h.to, catalog);
+    const fed = [...new Set(h.objectEdges.map((e) => e.fromKey))];
+    const state: ChainHopVerdict['state'] = wants.length === 0 ? 'no-need' : fed.length > 0 ? 'ok' : 'gap';
+    return { ...h, wants, fed, state };
+  });
+}
+
+/**
+ * ★★★ 链的**完整判定** —— 补齐"表侧"缺的那一半：「**下游到底要不要对象类入参**」。
+ *
+ * ★ 为什么落点在这里（`application` 层）而不是 `chain_wiring.ts`（`domain`）：
+ *   只有这层拿得到 `ToolDef`（`domain` 反向依赖 `application` 是分层违规）。
+ * ★ 口径：`no-need` **不算缺口** —— 末段（如 `run_tests`）本来就不要对象入参，
+ *   若把它算成缺口，`refactor` 链会被**误报**（这正是"表侧判定"做不到、必须补这半边的理由）。
+ */
+export function renderChainVerdicts(catalog: readonly ToolCatalogEntry[]): string {
+  const lines = CHAINS.map((c) => {
+    const hops = chainVerdictsOf(c, catalog);
+    const gap = hops.find((h) => h.state === 'gap');
+    const detail = hops
+      .map((h) => {
+        const what =
+          h.state === 'no-need'
+            ? '不要对象'
+            : `${h.state === 'ok' ? '✓' : '✗'} 要[${h.wants.join(',')}] ← 喂[${h.fed.join(',') || '—'}]`;
+        return `${h.from}→${h.to}: ${what}`;
+      })
+      .join(' · ');
+    return `    ${c.name.padEnd(14)} ${gap ? `✗ 第 ${gap.hop} 段**真缺口**` : '✓ 无缺口'}\n${' '.repeat(19)}${detail}`;
+  });
+  return (
+    '\n\n── 链的完整判定（★ 表侧对象边 × **下游要不要对象**）──\n' +
+    lines.join('\n') +
+    '\n  ★ `no-need` = 下游**本就不要**对象（如 `run_tests` 只吃 `project_dir`）⇒ **不算缺口**；' +
+    '\n    `gap` = **下游要对象、上游没有已验证的对象边** ⇒ 真缺口。' +
+    '\n  ★ 本段用 `ToolDef` 的**声明入参**（深层收集）判"要不要"，表侧口径见 `chain_wiring.ts`。'
+  );
+}
+
+/**
  * handler 工厂：目录由 server_registry 注入（避免循环 import）。
  * @param getCatalog 取真实注册目录（如 () => TOOL_DEFS）
  */
@@ -539,7 +660,8 @@ export function makeCapabilityMapHandler(getCatalog: () => readonly ToolCatalogE
     args: Record<string, unknown>,
     domainReadNote = '',
   ): Promise<{ text: string; isError?: boolean }> {
-    const { lanes, unassigned } = buildLanes(getCatalog());
+    const catalog = getCatalog();
+    const { lanes, unassigned } = buildLanes(catalog);
     const lane = args.lane as LaneId | undefined;
     const toolCount = lanes.reduce((n, l) => n + l.tools.length, 0) + unassigned.length;
     const header =
@@ -566,7 +688,16 @@ export function makeCapabilityMapHandler(getCatalog: () => readonly ToolCatalogE
     //   本轮加「实现地图」段时它第一次被人看见 —— ★ 又一条「加东西才会暴露的旧缺陷」。
     //   ⇒ 修法：先拼成**数组**、滤掉空段、join，最后对**整体** trim。
     return {
-      text: [header, renderLaneText(lanes), renderDomainText(lanes, listDomains(), domainReadNote), renderUnassigned(unassigned), renderChainWiring()]
+      text: [
+        header,
+        renderLaneText(lanes),
+        renderDomainText(lanes, listDomains(), domainReadNote),
+        renderUnassigned(unassigned),
+        renderChainWiring(),
+        // ★★ 2026-10-06：链的**完整判定**（表侧对象边 × 下游要不要对象）——
+        //   接在"链的接法"之后：先看**怎么接**，再看**接到哪一步就断了**。
+        renderChainVerdicts(catalog),
+      ]
         .filter((s) => s && s.length > 0)
         .join('')
         .trim(),
