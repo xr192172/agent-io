@@ -22,6 +22,9 @@ import { collectPendingAlertText, dispatchDslEdit } from '../../application/disp
 // ★★ 2026-10-06：「下一棒」提示 —— 链的接法（`CHAIN_EDGES`）+ 机器段标记（**单点**，别硬编码）
 import { renderNextHops, nextHopsOf } from '../../domain/chain_wiring.js';
 import { DATA_MARKER } from '../../application/plumbing.js';
+// ★★ 2026-10-06：「面」—— 目录口径（`catalogOf`，单点）+ 面的机算（`facesOf`）+ 各线 direct 白名单
+import { catalogOf, LANE_META } from '../../application/meta/registry/capability_map.js';
+import { facesOf } from '../../application/meta/registry/tool_faces.js';
 
 // （`tools/stale_check` 的导入已随 P-F 删除：本文件不再直接消费它 —— 三个 stale 告警各自
 //   探测，`stale_check.formatStaleText` 仍由 lanes/observe.ts 的 `run_tests` 前置提示使用。）
@@ -457,8 +460,93 @@ export async function invokeTool(
   return { text: withNext + argHints + emission.text + firstContactNote + trustNote + alertNote + emission.block, isError: r.isError };
 }
 
+/**
+ * ★★★ MCP 的「面」（2026-10-06，用户裁定）
+ *
+ * 用户原话（意思）：「**原工具面其实不用暴露在 MCP 里面，只需要留一个单独的入口、集中在一起就够了**」。
+ *
+ * ★ 为什么这条比"裁 `listTools`"对：实测本仓用的 SDK（`server/mcp.js`）——
+ *   `ListTools` handler（`:67-68`）与 `CallTool` handler（`:100-102`）读**同一张** `_registeredTools`
+ *   ⇒ **"只不列、仍可调"做不到**；而"**不注册**"恰好是 SDK 支持的形态（`:626` 还有 `delete`）。
+ *
+ * ★★ 默认 `all` = **与改造前逐字等价**（61 个全注册、**不注册**入口）⇒ 不打断现有下游
+ *   （`dsh-brain` / `dsl-workbench` / `elv` / `ai-config/skills/design-canvas-mind`）。
+ *   要收敛就设 `AGENT_IO_MCP_FACE=composed`：只注册**编排面** + **一个原子入口**。
+ */
+export const ATOMIC_ENTRY_NAME = 'atomic_call';
+
+/** 当前 MCP 面。★ 用 env 而非常量 —— "把这一部分做成可配置的"是需求本人。 */
+export function mcpFace(): 'all' | 'composed' {
+  return process.env.AGENT_IO_MCP_FACE === 'composed' ? 'composed' : 'all';
+}
+
+/** 编排面 = `facesOf` 算出的 `composed`（`direct` ∪ 派生链）—— ★ 零手写。 */
+function composedDefs(): ToolDef[] {
+  const faces = facesOf(catalogOf(TOOL_DEFS), LANE_META.flatMap((m) => m.direct));
+  const names = new Set(faces.find((f) => f.id === 'composed')?.names ?? []);
+  return TOOL_DEFS.filter((d) => names.has(d.name));
+}
+
+/**
+ * 原子面入口：**一个**工具，能 `list` / `describe` / `call` 全部原子工具。
+ *
+ * ★★★ 它**不是 `[B]`**，**故意不走那 7 处登记面**（见技能 `dc-add-tool` §一）——
+ *   因为它**必须**调 `invokeTool`（唯一咽喉点：保鲜 / 告警 / 狗食统计都挂在那儿），
+ *   而 `invokeTool` 住 `presentation/`；若把它做成 `application` 层的 `[B]`，
+ *   `application` 就得 import `presentation` ⇒ **分层违规**。
+ *   ⇒ ★ **它是传输层的收敛口，不是领域能力。**
+ * ★ 因此它**不在 `TOOL_DEFS` 里** ⇒ `mcp_scan` 那道门量不到它（那道门的对象是 `[B]` 的契约）；
+ *   也**不能**经 CLI 投影调用（CLI 从 `TOOL_DEFS` 找 def）—— ★ 这是**有意**的：
+ *   CLI 本来就是"全量可脚本化"的那个面，不需要入口。
+ */
+function registerAtomicEntry(server: McpServer, exposedNames: ReadonlySet<string>): void {
+  server.registerTool(
+    ATOMIC_ENTRY_NAME,
+    {
+      title: 'Atomic face entry (list / describe / call)',
+      description:
+        '原子面入口 —— 本会话的 MCP 面是「编排面」，**其余原子工具只能经这里走**。' +
+        'action=list 列全部原子工具名（带 * 的是已直接暴露的）；describe 取某个的入参名清单；' +
+        'call 调它（args 原样透传，入参校验由被调工具自己做）。拿不准就先 list、再 describe、最后 call。',
+      inputSchema: {
+        action: z.enum(['list', 'describe', 'call']).optional(),
+        tool: z.string().optional(),
+        args: z.record(z.string(), z.unknown()).optional(),
+      },
+    },
+    async (raw) => {
+      const a = (raw ?? {}) as { action?: 'list' | 'describe' | 'call'; tool?: string; args?: Record<string, unknown> };
+      const action = a.action ?? 'list';
+      if (action === 'list') {
+        const lines = TOOL_DEFS.map((d) => `${exposedNames.has(d.name) ? '*' : ' '} ${d.name}`);
+        return textOut(
+          `原子工具共 ${TOOL_DEFS.length} 个（带 * 的**也**已在 MCP 面直接可用；其余经 ` +
+            `${ATOMIC_ENTRY_NAME} action=call 调）：\n${lines.join('\n')}`,
+        );
+      }
+      const name = a.tool;
+      if (!name) return textOut(`action=${action} 需要 tool（先用 action=list）`, true);
+      if (name === ATOMIC_ENTRY_NAME) return textOut('拒绝：不能经入口调入口自己（防自递归）', true);
+      const def = TOOL_DEFS.find((d) => d.name === name);
+      if (!def) return textOut(`没有这个工具："${name}"。先 action=list 看名字。`, true);
+      if (action === 'describe') {
+        const keys = catalogOf([def])[0]?.inputKeys ?? [];
+        return textOut(
+          `${def.name} — ${def.title}\n${def.description}\n` +
+            `入参名（**深层**收集，含数组元素里的键）：${keys.join(', ') || '（无）'}\n` +
+            `★ 类型 / 必填以描述为准；缺参会被人话错误挡回（不会静默）。`,
+        );
+      }
+      const r = await invokeTool(def, a.args ?? {});
+      return textOut(`[${def.name}] ${r.text}`, r.isError);
+    },
+  );
+}
+
 export function registerAllTools(server: McpServer): void {
-  for (const def of TOOL_DEFS) {
+  const face = mcpFace();
+  const exposed = face === 'composed' ? composedDefs() : TOOL_DEFS;
+  for (const def of exposed) {
     server.registerTool(
       def.name,
       { title: def.title, description: def.description, inputSchema: looseInputSchema(def.inputSchema) as unknown as z.ZodRawShape },
@@ -468,6 +556,8 @@ export function registerAllTools(server: McpServer): void {
       },
     );
   }
+  // ★ 收敛面：额外注册**一个**原子入口（= 原工具面的唯一通道）。
+  if (face === 'composed') registerAtomicEntry(server, new Set(exposed.map((d) => d.name)));
 }
 
 

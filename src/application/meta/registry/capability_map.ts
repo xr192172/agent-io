@@ -591,6 +591,20 @@ export function collectInputKeys(schema: unknown): string[] {
   return [...out].sort();
 }
 
+/**
+ * ★★ 把注册表转成「面 / 完整判定」要用的目录（**单点**，2026-10-06）。
+ * ★ 为什么立它：`collectInputKeys` 的调用原先**会散在两处**（`meta/index.ts` 的注入点 +
+ *   `server_registry` 按面过滤时）⇒ 再抄一份就是第三份（本仓头号病根：判据分叉）。
+ */
+export function catalogOf(defs: readonly ToolDef[]): ToolCatalogEntry[] {
+  return defs.map((d) => ({
+    name: d.name,
+    title: d.title,
+    description: d.description,
+    inputKeys: collectInputKeys(d.inputSchema),
+  }));
+}
+
 /** 某 [B] 的**对象类入参**名（= 声明入参（深）∩ 词表 `anchor` − **作用域锚点**）。 */
 export function objectInputsOf(name: string, catalog: readonly ToolCatalogEntry[]): readonly string[] {
   const keys = catalog.find((c) => c.name === name)?.inputKeys ?? [];
