@@ -820,11 +820,6 @@
         **无 dry-run 档、静默改盘 39 个文件 / 176 条 import**（含 `.inspect/**` 探针目录），已 `git checkout` 还原。
         若"写源码必过 `write_gate`"成立 ⇒ 闸门处即可挂"dry-run 默认"，这类事故**在入口被拦**而不是事后靠回执读出来。
 
-- [ ] **T58 ★ CLI 的 `key=value` 解析吃不下 Windows 绝对路径（已复现多次，唯一确证的一条）**
-      *(2026-10-05 实测：`cli.js structure_gap project_dir=D:/project_develop/design-canvas` 直接回 `缺参数 project_dir`；本轮有 4 处验证都得绕开 CLI 改走产品路径。`mcp_scan` 走空参所以没暴露。)*
-      ⇒ 危害：CLI 是 AGENTS.md 推荐的改名/验证通道，但**凡带盘符或路径的调用都失败** ⇒ agent 会误判成「工具坏了」并改去手改/grep —— 正好绕开本仓最想让人用的那条路。
-      ⇒ 待定：解析器要不要支持 `--key=value` / 引号包裹 / 直接收一段 JSON？（现状是 `name --json '{...}'` 才稳）
-
 - [ ] **T59 ⚠ `rename_files` 批量的成本模型没写进描述（已量出，未修）**
       *(2026-10-05 实测 4/8/16/29 四档，隔离 AGENT_IO_HOME + 真跑，每档都 `git status` 复核树状态)*
       ⇒ ★ **成本 ∝ 被改写的引用数，不是条目数**：0 处引用的「搬回」只要 **0.7s**；42 处引用的「搬去」要 **52–178s**。
