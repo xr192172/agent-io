@@ -155,6 +155,36 @@ export const CHAIN_EDGES: readonly ChainEdge[] = [
       '`mode=field` 下 `file` **整项省略**（别当它总有）。',
   },
 
+  // ── ★★ 2026-10-06：`find_references` → `move_symbol`（**第 4/5 条对象类边**）真跑升级 ──
+  //   ★ 来源：用机算出的"待验边候选"清单（`objectInputsOf` ∩ 无入边）⇒ `move_symbol` 要 `[file, symbol]`。
+  {
+    from: 'find_references',
+    fromKey: 'file',
+    to: 'move_symbol',
+    toPath: 'file',
+    cardinality: 'single',
+    evidence: 'verified',
+    note:
+      '★ 真跑（2026-10-06，夹具 `C:/tmp/t54chain3`）：`touched.file` → `move_symbol.file` **逐字同名、零翻译**，' +
+      '`touched.symbols[0]` → `move_symbol.symbol` 同理，`touched.project_dir` → `project_dir`（通用边）⇒ `ok=true`，' +
+      '落盘 3 文件（新建 `src/moved.ts` + 清空源文件 + 重定向 `src/c.ts` 的 import `./a.js` → `./moved`）。' +
+      '★★ **前提（试了三次夹具才逼出来）**：`move_symbol` 要求**被搬的符号是别人从该文件唯一取用的东西**' +
+      '（每条 import 语句只引它一个）—— 否则报「一条 import 语句从源文件同时引入其它符号，无法整条重定向」' +
+      '⇒ **那是合法限制，不是接线问题**（前两次 `ok:false` 全是夹具不满足它，不是边不成立）。' +
+      '★ 它同时是**链的终点**：**没有 `touchedOf`** ⇒ 交不出棒（想继续接就得先给它补 `touchedOf`）。',
+  },
+  {
+    from: 'find_references',
+    fromKey: 'symbols',
+    to: 'move_symbol',
+    toPath: 'symbol',
+    cardinality: 'pick',
+    evidence: 'verified',
+    note:
+      '★ 真跑（2026-10-06，同夹具、同一批参数）：`touched.symbols[0]` → `move_symbol.symbol`。' +
+      '★ `pick`：一次操作可能涉及多个符号 ⇒ 下标由调用方给。',
+  },
+
   // ── ★★ 2026-10-06：§5 第二环的两条对象类边，**真跑升级**进本表（原在 `CHAIN_EDGES_PENDING`）──
   {
     from: 'rename_symbols',
