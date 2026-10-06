@@ -655,16 +655,6 @@
 
 
 
-- [ ] **T34 ★ `explore_code` 的异步 action 外层 message 恒为「异步 action 已完成」（2026-10-04 T17 时发现）**
-      *(核实：T17 给 4 个 action 接上真实现后，外层 message 仍是那个固定串；
-      真实文本经 `toResult(r, true)` 的 `---DATA---` 通道落在 `data.message` 里。)*
-      ⇒ ★★ **先定性，别误当 bug**：它**不构成"说谎"** —— 真实文本**确实到达模型**（走 `---DATA---`）。
-        问题只是**外层摘要不具体**（模型若不读 `data`，就只看到"已完成"三个字）。
-        ⇒ 属**可读性**问题，**不是一致性**问题（G7 那一族抓的是"宣告了却没实现"，这条**实现了**）。
-      ⇒ 改法（若要改）：把真文本提到外层 ⇒ **会动 `toResult(r, true)` 的口径** ⇒
-        影响**所有**用它的 action（`diff_impact` / `arch_layer` / `derive_mind_map`，
-        加上 T17 新接的 `check_monolith` / `derive_algorithm` / `derive_chain` / `derive_split`）。
-      ★ 这是**"要么全改、要么不改"**的那种改动 —— **改一半 = 同一件事两套口径**（本仓头号病根）。
 
 - [ ] **T65 ⚠ `cross_repo_symbol_index` 拿不到自动保鲜（T40 第③条实测收窄后的**唯一真问题**，2026-10-06）**
       *(T40 的「三处隐藏前置没写进描述」**已解决**：三条已写进 `capability_map` 的「★ 通用前置」段 ——

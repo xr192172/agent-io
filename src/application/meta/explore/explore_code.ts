@@ -86,6 +86,25 @@ function errMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
 }
 
+/**
+ * 统一回执包装。
+ *
+ * ★★ 2026-10-06（**T34 结案**）：`isAsync=true` 时外层 `message` **恒为**「异步 action 已完成」——
+ *   这是**有意**的（外层只是**摘要位**），**不是 bug**，且**别只改一半**：
+ *   · **不算"说谎"**：真实文本经 `---DATA---` 通道**确实到达模型**（在 `data` 里）。
+ *     它属"宣告了却没实现"那一族（G7）吗？**不属** —— 那些 action 是真实现了的。
+ *   · 唯一代价是**可读性**：模型若不读 `data`，就只看到「已完成」三个字。
+ *   · ★ **改法只有"全改"**：本文件 `toResult(r, true)` 共 **10 处**调用点
+ *     （`diff_impact` / `arch_layer` / `check_monolith` / `derive_split` / `derive_chain` /
+ *      `derive_anim_flow` / `derive_algorithm` / `derive_mind_map` / `inject_replay` / `watch`），
+ *     而每处的 `r` 结构**各不相同**（**没有共同摘要字段**）⇒ 只能逐处挑一句话提上来。
+ *     **改一半 = 同一件事两套口径**（本仓头号病根）。
+ *   · 更通用的落点在 `invokeTool`（唯一入口，把 data 的摘要提到外层）—— 但那会动**全部 59 个工具**
+ *     的对外回执口径 ⇒ 面更大，须按**行为变更**单独验收。
+ *   ⇒ **当前判断：不改**（可读性问题，不是一致性问题；`---DATA---` 已保证真文本可达）。
+ *     触发条件（满足其一再改）：出现「模型不读 `data` 因而漏看结论」的**实测**案例；
+ *     或新前端需要一个可读的单行摘要。
+ */
 function toResult(r: unknown, isAsync = false): { message: string; data: unknown } {
   return {
     message: isAsync ? '异步 action 已完成' : '',
