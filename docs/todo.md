@@ -656,26 +656,29 @@
 
 
 
-- [ ] **T65 ⚠ `cross_repo_symbol_index` 拿不到自动保鲜（T40 第③条实测收窄后的**唯一真问题**，2026-10-06）**
-      *(T40 的「三处隐藏前置没写进描述」**已解决**：三条已写进 `capability_map` 的「★ 通用前置」段 ——
-       ① `AGENT_IO_HOME` 语义（DSL 数据锚定包安装根、不设则多项目互见）；
-       ② 符号索引会被「顺手」自动建（第一次 `find_references` 就生 `.agent-io/cache.db`）；
-       ③ 保鲜只认 4 个项目根参数名 + workaround。)*
-      ⇒ ★ **实测收窄**（遍历 59 个工具的 `inputSchema`，18 个无那 4 个名字）—— T40 原文举的例子**基本都不成立**：
-        · `render_brickwork`(`source_root`) / `observe_instrument`(`target`) / `find_references`(`file`)
-          **都同时有 `project_dir`** ⇒ 能保鲜，**不是实例**（原文记错）；
-        · `translate_go_ts` 的 `projectDir`（驼峰）**不需要保鲜** —— 它是「**要翻译的** Go 项目目录」，
-          只枚举 `.go`、**不读符号索引**；它只是**命名风格异类**（本仓 `arg_suggest.ts` 已把
-          `projectDir` 当作 `project_dir` 的「**最常见的错法**」处理）；
-        · ★ **`consistency_check` / `detect_drift` 的 `code_dir`** 待判（是否等于「被分析项目根」）；
-        · ★★ **`cross_repo_symbol_index` 真受影响**：它走 `compareProjects` ⇒ 读**两个项目的符号索引**，
-          而 `project_dir_a` / `project_dir_b` 都不在那 4 个名字里 ⇒ **两个根都不被保鲜**。
-      ⇒ 待定修法（**形状决策，需拍板**）：
-        (a) 扩 `projectRootArg` 认 `*_a`/`*_b` ⇒ 只保鲜 A，「两个根」语义仍不完整；
-        (b) **跨项目工具自己保鲜两个根**（各自 `ensureProjectIndex`）—— ★ 语义最完整，倾向这条；
-        (c) 改参数名（`project_dir` + `project_dir_second`）⇒ 仍不解决「要保鲜两个」。
-      ⇒ ★ 本笔已在 `capability_map` 描述里**如实写明该限制 + 给 workaround**
-        （先显式调 `index_integrity({project_dir, refresh:true})`）⇒ **不再静默**；修法是增强，不是救火。
+- [ ] **T66 ⚠ 「入口层保鲜」对**入参里没有项目根**的工具整层失效（T65 自我更正后立，2026-10-06）**
+      *(★ 本条**替代 T65** —— T65 的结论「`cross_repo_symbol_index` 拿不到保鲜是真问题」**被自己实测推翻**：
+       `compareProjects` → `buildProjectIndex` → `buildImpactGraph`，而后者是**现场全扫 + 全解析**
+       （`collectSourceFiles` 读盘 + 逐个 `parseFileFull`，见 `impact/index.ts:132-144`）—— **不读 `cache.db`**
+       ⇒ 它每次都是新鲜结果，**不需要保鲜**；「两个根都要保鲜」那套修法讨论因此作废。)*
+      ⇒ **真问题的正确定义**（本笔收窄）：`invokeTool`（唯一入口）的保鲜靠 `projectRootArg(a)`，
+        而它只认 `project_dir` / `project_root` / `root` / `dir` 四个名字
+        ⇒ **入参里没有这 4 个名字的工具**，无论读不读 `cache.db`，**都拿不到入口保鲜**。
+        实测：59 个工具里 **18 个**属于此类。
+      ⇒ ★ **待核清单**（这 18 个里，**既读 `cache.db`、入参又无根**的才是真受影响者）：
+        · ★ `explore_code`（`explore_code.ts` **在 28 个 cache.db 读者名单里**；入参只有 `action` + `args`，
+          而它各 action 是**直接调实现函数**（如 `checkMonolith(...)`）**不走 `invokeTool`**
+          ⇒ 入口保鲜对它**整层失效**）—— **高优先核**；
+        · `harvest_decisions`（入参 `feature` / `doc_dir` / `git_root`；`harvest/index.ts` 在读者名单里）；
+        · `consistency_check` / `detect_drift`（入参 `feature` / `code_dir`）—— `detect_drift` 的
+          `touched.project_dir` 取自 `input.code_dir ?? dsl.source_root` ⇒ 它的「根」是**从 DSL 推**的，
+          未必等于「索引归属的项目根」。
+      ⇒ ★ **下一个动作**（不是修法）：逐个核实上述 4 个 —— 读的是 `cache.db` 还是**现场解析**
+        （`buildImpactGraph` 那种），以及它们的根与「索引归属根」是否一致。**核完再定修法**
+        （把「入参形状」硬塞进那 4 个名字里是治标；根上是「这些工具根本不接项目根」）。
+      ⇒ ★ 已做的一半：`capability_map` 的描述里**如实写明**该限制 + 给 workaround
+        （先显式调 `index_integrity({project_dir, refresh:true})`）⇒ **不再静默**；
+        而 `staleIndexWarning`（陈旧告警）对它们**仍生效** —— 那是**标注层**，不依赖参数名。
 
 - [ ] **T43 ★★ 前沿研究：通用多语言组件框架（若重开 ⇒ 先做三个"最小可证伪实验"）**
       *(核实：2026-10-05 用户裁定"积木线/项目融合线作为万能框架实现不了 ⇒ 删代码、留设计文档"。)*
