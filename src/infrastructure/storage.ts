@@ -216,6 +216,35 @@ export function getBaselineFeature(feature: string, baseDir?: string): DesignDSL
 }
 
 /**
+ * ★★ **读侧统一取根**（2026-10-06，T19 的形状决策 —— 三候选**实测**后选定「由 feature 反查」）。
+ *
+ * ## 为什么需要它
+ * `live` / `baseline` 的 `baseDir` 是**可选参数**、缺省落 `getDataHome()`；而 ★ **写侧
+ * （`import_project`）会传 `input.live_dir`**（`watch_project` 监听任意项目时 = **那个项目的根**，
+ * 见 `saveLiveFeature` 的注释）⇒ **读侧若拿不到同一个根，就会静默读不到**（实测：返回 `null`、不抛）。
+ *
+ * ## 三候选（2026-10-06 隔离实测，过程见 `docs/todo.md` 的 T19）
+ * · **(a) 入参透传（现状）** —— ❌ 全仓**已有 4~5 种取根口径**（`live_dir` / feature-only ⇒ dataHome /
+ *   `requireProjectRoot` ⇒ 项目根）⇒ 靠调用方自觉；实测「写侧在项目根、读侧没传」⇒ **返回 null**。
+ * · **(b) 由 feature 反查（本函数）** —— ✅ 实测**读到**；且 `getDSL` **不依赖 baseDir**
+ *   ⇒ **无循环依赖**。
+ * · **(c) 收口 dataHome** —— ⚠ 要连**写侧 5 处**一起搬，且会**丢掉**「live 与该项目 `cache.db`
+ *   同目录归位」这个**已有设计意图**（`saveLiveFeature` 的注释就是为它写的）。
+ * ⇒ **选 (b)**。
+ *
+ * ## 语义（★ 边界写清，不许静默）
+ * · `explicit` 给了 ⇒ **以它为准**（调用方明确知道根）；
+ * · 没给 ⇒ 反查 DSL 的 `source_root`；
+ * · **两者都拿不到 ⇒ 返回 `null`** —— 调用方**必须响亮处理**（别静默落 dataHome，那正是本函数要消灭的行为）。
+ *   ★ 本函数**只负责"根从哪来"**，**不负责"拿不到怎么办"**（那是调用方的语义：容忍 or 抛）。
+ */
+export function resolveViewBaseDir(feature: string, explicit?: string): string | null {
+  if (explicit) return explicit;
+  const dsl = getDSL(feature);
+  return dsl?.source_root ?? null;
+}
+
+/**
  * fork 基线：仅在基线尚不存在时写入（契约创立时刻的一次性快照）。
  * 已在 live 更新（import/watch）时调用，保证基线锚定首次导入，不随代码演进漂移。
  */

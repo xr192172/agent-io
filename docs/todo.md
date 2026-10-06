@@ -365,7 +365,28 @@
         ⇒ ★★ 结论：**"接读者"这一步卡在形状决策上、不是卡在代码量上** —— 先定"baseDir 从哪来、谁传给读侧"
           （候选：(a) 入参透传（现状，靠调用方自觉）· (b) 由 feature 反查 · (c) 收口到 dataHome 一处、
           不再按项目分居），**定了再接**；否则就是原文说的"接一个更快的分叉"。
-        ★ 本笔**只核清、不动代码**：这是形状决策，不是随手能改的（且改它要连着 `watch_project` 的写入口一起看）。
+        ★ 本笔原本**只核清、不动代码**（形状决策）⇒ ★★ **2026-10-06 补：按用户的方法「做几个副本实测」
+        做了三个实验，选定 (b) 并落地**：
+        · **实验 1（复现）**：写侧落项目根 + 读侧**不传** `baseDir` ⇒ `getLiveFeature(feature)`
+          返回 **`null`（静默）**，而 `getLiveFeature(feature, 项目根)` 读得到。
+        · **实验 2（(b) 可行性）**：`getDSL(feature).source_root` **正是写侧那个根**（实测取到），
+          且 `getDSL` **不依赖 `baseDir`** ⇒ **无循环依赖**。
+        · **实验 3（三候选同场景对比）**：**(a)** ⇒ **null** ❌；**(b)** ⇒ **读到** ✅；
+          **(c)** ⇒ 也 null（**须把写侧 5 处一起搬**才一致，且会**丢掉**「与该项目的 `cache.db`
+          同目录归位」这个**已有设计意图**——`saveLiveFeature` 的注释就是为它写的）。
+        · ★ **选 (b)**。顺带查出「根」的口径**至少有 4~5 种**（`import_project` 传 `live_dir` /
+          `diff_views` 传 `live_dir` / `stage_registry` feature-only ⇒ dataHome / `design`·`observe`
+          handlers 用 `requireProjectRoot` ⇒ **项目根** / `storage.ts` 内部一处 ⇒ dataHome）
+          ⇒ **判据分叉的教科书案例**。
+        · ✅ **已落**：`storage.ts` 新增**读侧统一取根** `resolveViewBaseDir(feature, explicit?)`
+          （**入参优先 → 否则反查 DSL 的 `source_root`**；**两者都拿不到 ⇒ 返回 `null`、调用方必须响亮处理**）；
+          `diff_views.ts` 改用它。★ 本笔**只修「根从哪来」、不改「拿不到怎么办」**（仍容忍 `null`，与改前同）。
+        · **实测验收**（隔离夹具，`AGENT_IO_HOME` 隔离、用完即删）：造 `design=1 文件 /
+          live=2 文件（**写在项目根**）` ⇒ `diff_views` **不传 `live_dir`** ⇒ 输出「实际视图: **2 文件**」
+          （**改前是 0**）✅；本仓回归正常；总门五道全 PASS。
+        ⇒ ★ **剩下**（下笔）：`stage_registry` 的 `dsl_baseline.locate` / `produce` 仍是 **feature-only**
+          口径 ⇒ 应改用同一单点；`storage.ts` 内部那处（`getLiveFeatureFile(feature)` / `getBaselineFeatureFile(feature)`
+          不传 baseDir）同样该收口。
       · (5) ★★ **补"符号级绑定点"**（用户 2026-10-01 提的"两份数据双向绑定"的真缺口）：
         现在两份数据（DSL=意图 / `cache.db`=事实）**只在文件级配对**（`semantic.files[].path` ⟷ `files.path`，
         且同一条目里 `expected_apis` / `actual_apis` 并存 —— **这已经是现状**）；
