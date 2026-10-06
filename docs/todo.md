@@ -529,9 +529,19 @@
                ⇒ 连带清掉这条口径带出来的**悬空引用**：`design/index.ts` 那句"保留 CLI 以留 argv 便利"（写时就错，
                  且那两个 CLI 上一批已删）、`translate_go_ts` 描述里的 `translate_cli`、`detect.ts` /
                  `adapters/registry.ts` / `translate/pairs.ts` / `meta/registry/cli_extract.ts` 里的旧 CLI 名。
-         ⇒ ★ **剩下的 5 个**：`cli.ts`（**投影本体**）+ **2 个正当例外**（`install_package_cli` 判为一次性运维脚本；
-           `diagnose_loop_cli` 要 `readline` 交互 —— **MCP 无法应答**）+ **2 个"能力还没注册"**
-           （`archify_cli` / `brickify_cli` ⇒ ★ brickify 要先定形状）。手写 CLI 至此 **13 → 5**。
+         ⇒ ✅ **同批再收一个"错位文件"**：`archify_cli` **根本不是在说 CLI** —— 无 argv、无 `main()`、
+           无 `process.exit`，只有导出函数（T15 早先那条"**不是真 CLI，是库**"是对的；后来把它列进
+           "能力还没注册"是**列错了**）。它的**唯一消费者**是 `http/archify/archify_pipeline`（域 `archify-r5`）
+           ⇒ **归位**到该域并改名 `archify_runner`（与 `deprecate_offline` / `cli/render/` 同笔法）。
+           ★ 它的能力面是 **HTTP 端点 `POST /api/archify-demo`**（5 类 showcase 图），**不是 CLI-only**
+           ⇒ 不在"待注册"之列；"要不要给它一个 MCP 工具"是**能力决策**（与 `render_brickwork` /
+           `render_design` 有重叠），**单列待拍板**。
+           ★ 搬深一层顺手补掉一处**脆弱假设**：`vendoredArchifyRoot()` 靠"从自身目录上溯找 `third_party`"，
+           原层数 6 在旧位置（`presentation/cli/`）余 1 层，搬深一层后仓根正好落在第 6 次上溯 ⇒ **0 余量**
+           （再深一层就静默失效）⇒ 提到 8 并在注释里写明；实测产物态 `resolveArchifyRoot()` 仍返回 `<repo>/third_party`。
+         ⇒ ★ **剩下的 4 个**：`cli.ts`（**投影本体**）+ **2 个正当例外**（`install_package_cli` 判为一次性运维脚本；
+           `diagnose_loop_cli` 要 `readline` 交互 —— **MCP 无法应答**）+ **1 个"能力还没注册"**（`brickify_cli`）。
+           手写 CLI 面至此 **13 → 4**（删 8 个 + 归位 1 个）。
          ⇒ ★ **`translate_cli` 至此升进 (A) 级**（能力已 100% 在 MCP 面）⇒ 它的**去留**成为与
          `signal_review_cli` / `split_stage_cli` 同类的**待拍板**问题（删它要动 `package.json:55` 的 script）。
       5. ✅ **已落（2026-10-06）**：把核心 `deprecate_offline.ts`（434 行、`runDeprecateOffline` 本体）从

@@ -356,7 +356,7 @@
       "layer": "presentation",
       "role": "capability",
       "dir": "src/presentation/http/archify",
-      "note": "R5 Archify 渲染线（**已挂起，暂不开发**）：`archify_semantics`（编辑 IR 树 → 语义面）/ `archify_mappers`（语义面 → 5 类图的官方 candidate）/ `archify_pipeline`（语义面 → 5 类图各一张；validate 不达 showcase 只回诊断、**绝不造几何**）/ `archify_project`（编辑 IR 树 ↔ Archify 数据层契约适配 + 视觉令牌，只读非投影）。★ 对外端点 `POST /api/archify-demo` 在 `presentation/http/serve.ts`。★ **中性数据层 `view_inputs.ts` 也归本域**（README + 架构规划书 §11.5 钦定保留；`src` 内零 importer，消费者是**外仓** dsl-workbench 前端 ⇒ **按依赖亲和归类，不按 importer 数**）。"
+      "note": "R5 Archify 渲染线（**已挂起，暂不开发**）：`archify_semantics`（编辑 IR 树 → 语义面）/ `archify_mappers`（语义面 → 5 类图的官方 candidate）/ `archify_pipeline`（语义面 → 5 类图各一张；validate 不达 showcase 只回诊断、**绝不造几何**）/ `archify_project`（编辑 IR 树 ↔ Archify 数据层契约适配 + 视觉令牌，只读非投影）。★ 2026-10-06 归位：`archify_runner`（Archify 官方命令的进程封装 —— validate / deliver）从 `presentation/cli/` 搬进本域并改名 —— 它**不是命令**（无 argv、只有导出函数），原先住在 `cli-surface`（那条规则是「每个文件 = 一条命令」）是**错位**；其唯一消费者就是同域的 `archify_pipeline`。★ 对外端点 `POST /api/archify-demo` 在 `presentation/http/serve.ts`。★ **中性数据层 `view_inputs.ts` 也归本域**（README + 架构规划书 §11.5 钦定保留；`src` 内零 importer，消费者是**外仓** dsl-workbench 前端 ⇒ **按依赖亲和归类，不按 importer 数**）。"
     },
     {
       "id": "behavior",
@@ -420,7 +420,7 @@
       "id": "cli-surface",
       "layer": "presentation",
       "dir": "src/presentation/cli",
-      "note": "CLI 入口面（**5 个文件**；★ 2026-10-06 由 13 删到 5，见本 note 末）：`cli.ts`（投影本体）+ 各 `*_cli.ts`。每个文件 = 一条命令，命令之间**并列**、不互相拥有 ⇒ 平铺是终态。★ 2026-10-05 拆出 `cli/render/`（见 `cli-render`）：原 22 文件里 7 个 renderer + 1 个 CSS 是「被 `brickify_cli` 引用的**渲染子库**」，不是命令 ⇒ 它们让本条 note 的理由（\"每个文件 = 一条命令\"）**对它们不成立**；拆掉后本条才**真的是**平铺终态。★ 2026-10-06 又把 `deprecate_offline.ts`（434 行、`runDeprecateOffline` 本体）搬去 `src/application/refactor/deprecate_offline/`（见新域 `deprecate_offline`）—— 它不是命令、是**被 `deprecate_offline_cli` 引用的能力**（且它 import `application/refactor/edit` ⇒ 本就在 application 层），与 `cli/render/` 同型。★ 2026-10-06（T15）：手写 CLI **13 → 5**（先后删 8 个 —— `capability_cli` / `instrument_cli` / `signal_review_cli` / `split_stage_cli` / `translate_cli` / `deprecate_offline_cli` / `upgrade_cli` / `upgrade_rewrite_cli`）—— 能力一律归位到 **MCP 注册**（`ToolDef` 数组），argv 面由 `cli.js <工具名>` **投影**提供 ⇒ 手写 `*_cli.ts` 只是**同一入口的第二份副本**。现存 5 个：`cli.ts`（投影本体）+ `archify_cli` / `brickify_cli` / `diagnose_loop_cli` / `install_package_cli`。",
+      "note": "CLI 入口面（**4 个文件**；★ 2026-10-06 由 13 降到 4，见本 note 末）：`cli.ts`（投影本体）+ 各 `*_cli.ts`。每个文件 = 一条命令，命令之间**并列**、不互相拥有 ⇒ 平铺是终态。★ 2026-10-05 拆出 `cli/render/`（见 `cli-render`）：原 22 文件里 7 个 renderer + 1 个 CSS 是「被 `brickify_cli` 引用的**渲染子库**」，不是命令 ⇒ 它们让本条 note 的理由（\"每个文件 = 一条命令\"）**对它们不成立**；拆掉后本条才**真的是**平铺终态。★ 2026-10-06 又把 `deprecate_offline.ts`（434 行、`runDeprecateOffline` 本体）搬去 `src/application/refactor/deprecate_offline/`（见新域 `deprecate_offline`）—— 它不是命令、是**被 `deprecate_offline_cli` 引用的能力**（且它 import `application/refactor/edit` ⇒ 本就在 application 层），与 `cli/render/` 同型。★ 2026-10-06（T15）：手写 CLI 面 **13 → 4**（先后**删 8 个** + **归位 1 个** —— 删的是 `capability_cli` / `instrument_cli` / `signal_review_cli` / `split_stage_cli` / `translate_cli` / `deprecate_offline_cli` / `upgrade_cli` / `upgrade_rewrite_cli`）—— 能力一律归位到 **MCP 注册**（`ToolDef` 数组），argv 面由 `cli.js <工具名>` **投影**提供 ⇒ 手写 `*_cli.ts` 只是**同一入口的第二份副本**。现存 4 个：`cli.ts`（投影本体）+ `brickify_cli` / `diagnose_loop_cli` / `install_package_cli`。（★ 上面那「**归位 1 个**」= `archify_cli`：**它不是命令** —— 无 argv、无 `main()`、只有导出函数 ⇒ 住在本域属**错位**，已搬到其唯一消费者所在域 `archify-r5` 并改名 `archify_runner`。）",
       "role": "capability"
     },
     {

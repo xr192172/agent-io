@@ -1,5 +1,10 @@
 /**
- * archify_cli —— Archify 官方命令的进程封装（validate / deliver，showcase 质量）
+ * archify_runner —— Archify 官方命令的进程封装（validate / deliver，showcase 质量）
+ *
+ * ★ 2026-10-06（T15）**归位 + 改名**：原名 `presentation/cli/archify_cli.ts`，但它**不是命令** ——
+ *   无 argv、无 `main()`、无 `process.exit`，只有导出函数；而 `cli-surface` 那条域规则是
+ *   「**每个文件 = 一条命令**」，它对不上（与 `cli/render/`、`deprecate_offline.ts` 当年同型）。
+ *   它的**唯一消费者**是 `archify_pipeline`（同域 `archify-r5`）⇒ 搬到消费者旁边，并去掉误导性的 `_cli`。
  *
  * 这是把 Archify 当内置能力的执行触点：定位 CLI、用官方 validate/deliver 判定 showcase 产出。
  * validate 不达要求只带回诊断，不做几何修补。
@@ -18,16 +23,19 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-/** 本文件所在目录（src/tools 或 dist/src/tools） */
+/** 本文件所在目录（源码态 `src/presentation/http/archify`，产物态 `dist/src/presentation/http/archify`） */
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 
 /**
  * 仓内 archify 的父目录（即含 archify/ 的根）：
  * 从 HERE 逐级上溯找含 `third_party/archify/bin/archify.mjs` 的目录。找不到 → ''。
+ * ★ 层数 8 是**给新位置留的余量**（2026-10-06 归位前它住在 `presentation/cli/`，那时 6 够用且余 1 层；
+ *   搬深一层后仓根落在**第 6 次**上溯 ⇒ 0 层余量，再深一层就会**静默**失效）。
+ *   实测：产物态下 `resolveArchifyRoot()` 返回 `<repo>/third_party`（该笔提交里的验收读数）。
  */
 function vendoredArchifyRoot(): string {
   let dir = HERE;
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < 8; i++) {
     const candidate = path.join(dir, 'third_party');
     if (fs.existsSync(path.join(candidate, 'archify', 'bin', 'archify.mjs'))) return candidate;
     const parent = path.dirname(dir);
