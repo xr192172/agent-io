@@ -112,7 +112,7 @@
       ⇒ 积木 A 交出 `{project_dir, feature}`，**只有 18% 的工具能接住**；其余要么丢掉 `feature`
         （退到整个项目粒度）、要么要 `{file, symbol}` —— **必须由调用方从 feature 里再挑一次对象**。
         那个"再挑一次"就是**今天的手工拼接**，而**每个下游都要重做一遍**。
-      ⇒ **方向（不发明新机制）**：`Touched` 已是**产物端**契约（T18 六字段）。缺口是它**没对称到入参端**。
+      ⇒ **方向（不发明新机制）**：`Touched` 已是**产物端**契约（`src/domain/b_terms.ts` 的 `Touched`，六字段）。缺口是它**没对称到入参端**。
         ⇒ **让入参端接受同一批字段名**（`project_dir` / `feature` / `files` / `symbols` …）就是管道。
       ⇒ ★★★ **2026-10-05 第二轮量测：我第一轮的两个口径都错了（逐个更正）**：
         · **"只有 10/56 接受 `{project_dir, feature}`" —— 错口径。**
@@ -437,168 +437,6 @@
       ★ 门要管的是 **"根的选择"**，**不是**"`.agent-io` 字面量"——实测代码里字面量只有少数几处
       （136 行命中绝大多数是注释）⇒ "字面量被抄多份"不是主要问题。
 
-- [ ] **T18 ★★ ④ [B] 契约形状的落地（术语表已定，按表重构）**
-      *(核实：2026-10-01 —— `node scripts/measure_b_contract.mjs --glossary`；台账 §44.15~§44.17。)*
-      ⇒ **已定**（不再改口径）：
-      · **受控术语表** = `src/domain/b_terms.ts`（`B_TERMS` + `Touched`），文档 `docs/glossary.md`（生成）。
-        ★ 机检（`node scripts/measure_b_contract.mjs`）：它输出的是 **[B] 37 个 / 入参类型 28 种 /
-          产物字段组合 33 种 / `touched` 内部各键覆盖 / 接力键两端覆盖**（**不含**下面那两个汇总数字）。
-          ★ **词表债务以 `B_TERMS_DEBT` 为准 = 34**（2026-10-06 实测：该导出是 `number`，值 34；
-          逐条 `Object.values(B_TERMS).filter(t => t.debt === true).length` 同为 **34**）。
-        （★ **2026-10-06 更正**：原写「共用字段名 42 / 有定义 40 / 未定义 2；**债务 38 条**」——
-          · 「债务 38」与 `B_TERMS_DEBT` 的实测值 **34** **不符** ⇒ 已按实测改成 34；
-          · 「42 / 40 / 2」这组数字**不在**该量具输出里，而本条目下方 (3) 段自己记的是
-            「机检归零：**42 / 42 / 未定义 0**」⇒ **同一条目两处读数不一致**（(3) 段还说明了
-            那 2 个未定义的是 `error` / `touched`、后来补上了）⇒ 头部这组旧读数**作废**。
-          ⇒ 教训仍照下面那句：**这类数字别手抄**（要写就写"怎么跑出来的 + 跑出来是什么"）。）
-      · **规范 vs 现状分开**：含义栏是"从此以后要求它是什么"；现状见 `docs/b-field-dictionary.md`。
-      · 规则：**出现在 ≥2 个 [B] 的字段名必须有定义**；私有字段（占 80%）不约束。
-      **要做的**：
-      · ~~(1) 先定 ④-b 的"统一构造点"做法~~ ✅ **④-b 已完成**（`withTouched` 统一构造点；见台账 §44.18）：
-        `rename_file` / `rename_files` / `rename_symbol` / `rename_symbols` / `find_references` 五个 [B] 已接上 `Touched`。
-        ★ 当年那支出生证测试（`tests/tools/touched_contract.test.ts`）**已随测试框架整体移除**（2026-10-05）
-        ⇒ 现在验证靠**真调工具**（`node dist/.../cli.js <tool> --json '{...}'`）。
-      · ✅ **(2) ④-c design 族已做（2026-10-05，commit `f4e21c6`）**：7 个 [B] 接上（`deriveAlgorithm` / `deriveSplit`
-        / `updateFeature` / `detectDrift` / `setDesignIntent` / `scaffold` / `classifyBricks`）。
-        ★★ **本笔最重要的不是那 7 个 [B]，而是抓到并修掉了一个洞**——
-        `Touched` 挂在 [B] 产物**顶层**，而 **`wrap` 只回 message、`wrapData` 只序列化 `r.data`**
-        ⇒ **产物顶层的 `touched` 会在 [C] 层静默丢掉**（实测 `detect_drift` / `edit_dsl` 用裸 `wrap` ⇒ 压根没输出）。
-        已在 `plumbing.ts` 用 `machinePayload()` **两个包装器共用**收口；并补了 `dispatch.ts` 的
-        **daemon 路径**（它重建 `{message, feature}` ⇒ 会造出"有没有 daemon 决定 touched 在不在"的分叉）。
-        ⇒ **纪律（新）**：**[B] 接了契约 ≠ 交付；还要看 [C] 是否把它透出去。**
-        ⇒ **棘轮口径（★★ 2026-10-06 已定稿；原文是"建议收窄"）**：「新增 [B] 必须给 `touched`」改为
-        「**除非**它是 **(a) 纯数据 / 纯计算** 或 **(b) [C] 级分派器** 或 **(c) 根只能靠 `cwd` 兜底**
-        （本仓**禁** cwd 兜底）—— **三种都必须登记**」，否则会逼人造假字段
-        （实例：`wizardSteps` 静态表 / `dagLayout` 纯计算 / `runTests` 无仓库相对对象）。
-        ★★ **登记处 = `src/domain/b_terms.ts` 的 `B_TOUCHED_EXEMPT`**（2026-10-06 立，**7 条**）。
-        ★ **为什么不塞进 `B_TERMS`**：那是**字段级**词表（键 = 字段名），而例外是**工具级**（键 = [B] 名）
-        ⇒ 混在一张表里会让「字段名」与「工具名」共用一个命名空间 —— 正是本仓最忌的「一名多义」。
-        ★ 注意量具那行「产物里**没有任何锚点候选字段**的 [B]：**8/37**」是**机械读数**，与本表的
-        **7 条**（人判定例外）**判据不同 ⇒ 不相等**：例 `editCode` 在量具那 8 个里、却**不在**表里
-        —— 它的产物是 `{message; data: EditReceipt}`（有类型）⇒ 它**该给、只是还没给**（"待接"，非"例外"）。
-        ⇒ ✅ **已落（2026-10-06）**：`measure_b_contract.mjs` **已读 `B_TOUCHED_EXEMPT`**（★ 与 `B_TERMS`
-        一样**直读 AST**、不 import 构建产物 —— 那是量具的既有设计原则），把棘轮报成**三类**：
-        **已接 30 / 37 · 已登记例外 7 · 该给未给＝真债 0**（**30 + 7 = 37**，闭合）。
-        ★ 并加了两项**防腐**：例外表里的**陈旧项**（已不在当前 [B] 里）会被点名（当前 0 个）。
-        ★★ **实测交叉核对推翻了我原先举的例子**：我原写「例 `editCode` 在那 8 个里却不在例外表
-        ⇒ 它该给、还没给」—— **错**（真债 = 0 ⇒ 它**已接**）。真实关系是：**量具那行的 "8" 数的是
-        "产物里有没有候选锚点"，本表 "7" 数的是"有没有 `touchedOf`" ⇒ 两个数字必然不相等**
-        （`diffViews` / `editCode` / `renameFiles` 在 8 里但**已接**；`wizardSteps` / `runTests`
-        在表里但**根本没有 `touchedOf`**）⇒ 量具与 `b_terms.ts` 两处注释**均已更正**。
-        ⇒ 并记：**`manageFeature` 是 [C] 级分派器，不是 [B]**（入参 `{action,args}` + 产物 `{message,data:unknown}`
-        都是 [C] 形态）⇒ **不接 `touched`**。
-      · ✅ **(2) ④-d harvest 族已做（`61850ce`）**：`extractContracts` / `harvestClosure` / `harvestDecisions`。
-        ★ `extractContracts` 的 `written_to_dsl` 是"**写了 DSL**"、**不等于写过文件** ⇒ 不给 `written_files`。
-      · ✅ **(2) 续：④-e 其余三条线（15 个 [B]）已完成（`03bb32e`）** —— **T18 铺满**。
-        ★ 只读量具独立复核：**已接 29 / 待接 8，待接的正是判定表里那 8 个"不该给"**。
-        ★★ 本笔又抓到「[C] 层丢小票」的**第 2 处**：`diffViewsHandler` 原先 `{message: r.message, data: r.data}`
-        **显式重建** ⇒ 丢掉顶层 `touched`（实测 `diff_views` 的 DATA 里确实没有）⇒ 已转发。
-        ⇒ 并量清全貌：`handlers.ts` 里**只有 2 个**这种形态（另一个 `observeTraceHandler` 属"不该给"）。
-
-★★★ **④-e 的判定表（2026-10-05；★ 经两次独立复核修正）**
-
-**不该给 `touched` 的 7 个**（三类）：
-- **① [C] 级分派器（3）**：`manageFeature` · `exploreCode` · `queryFeature`
-  ⇒ ★★ **判据（比"有没有 switch"锋利）**：**入参 `{action/query + 袋子}`** **并且** **产物 `data: unknown`**。
-  （`editCode` 也用 `op` **if 链**分派，但产物是 **`{message; data: EditReceipt}`（有类型）** ⇒ **不是这一类**。）
-  ⇒ 正确做法：`touched` 由**被分派到的真 [B]** 携带，分派器**转发**即可，不自己拼。
-- **② 纯数据 / 纯计算（2）**：`wizardSteps`（无入参静态表）· `collectFunctions`。
-- **③ 根只能靠 `cwd` 兜底（2）**：`observeTrace` · `runTests` —— ★ 本仓**禁 cwd 兜底**（cwd 是"另一个项目"）
-  ⇒ 根**算给不出**；且二者无仓库相对的对象。
-
-**该给（30）**。★ **棘轮口径的完整例外**：
-「新增 [B] 必须给 `touched`，**除非**它是 **(a) 纯数据/纯计算** 或 **(b) [C] 级分派器** —— 两种都要在 `B_TERMS` 里显式登记」。
-
-★★ **`classifyTools` 曾被误判进"纯数据"（2026-10-05，commit `b8371ad` 修正）**：
-`classifyTools(tools, **r: BrickifyResult**, opts)` —— ★ **它和 `classifyBricks` 拿的是同一个 `BrickifyResult`**，
-有**一模一样的现成根锚点**（`r.meta.project_dir`）⇒ 一个判"该给"一个判"不该给"**自相矛盾**。
-★ **我的病根**：只看量具报的"3 个位置参数 `[tools, r, opts]`"，**没去看 `r` 是什么类型**。
-⇒ **教训：位置参数更要把类型看清**（具名参数至少名字带提示）。
-★ 且它**只有一个调用方**（`brickify_cli.ts:185`），那条 CLI **不打印 `touched`** ⇒ 是**给未来接链用的**，今天观察不到。
-
-★ **另一条更值钱的（同类，本笔才修）**：`watchProjectTool.declare` **真写** `<projectRoot>/.agent-io/impact/ledger.json`
-（**确实在仓库内**），却不给 `written_files`，理由**只写在代码注释里** ⇒
-**「判据正在被使用，却没写进契约 ⇒ 下一个人会分叉。」** ⇒ **已把"排除 `.agent-io/**`"明文写进 `b_terms` 的 `written_files` 词条。**
-
-★★ **一条全局口径（对账时由另一模型提出、我核实后采纳）**：
-**`saveDSL` 落 `<dataHome>/.agent-io/**`（不在仓库里）**，而 `written_files` 口径写死「**仓库相对路径**」
-⇒ **凡"只写 DSL/存档/导图 JSON"的 [B]，`written_files` 一律给不出**（塞绝对路径 = **换口径**）。
-★ 例外要**按事实判**：`watchProjectTool.declare` 写的 `ledger.json` **确实在项目根下** ⇒ 那条理由**对它不成立**；
-  它的 `written_files` 仍判**不给**，理由换成：**那是工具自有的内部数据**（非"本次操作对被操作对象的工作产物"）
-  + `rp-*.json` 由**常驻 watcher 异步产生、不在本次调用窗口内** ⇒ **归属不了本次调用**。
-
-★ ★★ **"跨模型对账"抓到了我两处误判**（详见 `.inspect` 与项目记忆）：
-`dagLayout` 我当"纯计算"、**实际它 `saveDSL` 回写 DSL**；`editCode` 我当"分派器"、**实际产物有类型**。
-      · ✅ **(3) 还债：7/7 全部完成**（commit `c55f607` + `ed4a5b4` + `98618be`）——
-        `files`(报告数组) ⇒ `contract_reports` / `reconcile_reports` / `removal_reports`；
-        `stats` ⇒ `contract_stats` / `closure_stats` / `reconcile_stats` / `algorithm_stats`；
-        `written`(文件表那一义) ⇒ `written_files`；`scaffold.files`(`string[]` **路径表**) ⇒ `written_files`。
-        ★ 判据是**类型 + 语义**：**3 处 `files` 是报告数组**（⇒ `<领域>_reports`）而 **`scaffold.files` 是路径表**
-        （⇒ `written_files`）—— ★★ **同名不同义，不能套同一个目标名**（我一度怀疑执行者判错，查类型后是我错）。
-        ⇒ **只读量具独立复核：全仓 37 个 [B] 零个带旧名** ⇒ 已摘掉 `b_terms.ts` 那三条 `debt: true`
-        （**改标"已退役，禁止再新增使用者"** —— 不是删条目，删了后来人就没拦的）。
-        ⇒ ★ 顺手补了两个**一直是洞**的词条：`touched`（**14 个 [B] 在用却不在表里**！）与 `error`
-        （`runTests` / `watchProjectTool` 同名同型）。机检归零：**42 / 42 / ★未定义 0**。
-      · ★★ **(4) 的尾巴（2026-10-05，commit `4ee95dd`）**：`213d316` 给产物加的 `root` 字段**被机检当场抓出**
-        —— 受控词表里这个概念的**唯一名字是 `project_dir`** ⇒ **我自己造了一个判据分叉**
-        ⇒ 已全部改名为 `project_dir`（4 文件）。
-        ★ **这条值得记住**：受控词表**不是文档、是机器判据** —— 我引入分叉 20 分钟后它就把我抓了。
-      · (4) ★ **④-b 暴露的同源缺口**（都在"**Core 内部算出的东西没进产物**"这一点上）：
-        · `rename_symbols` 的 local 支 / apply_literals 支 ⇒ 给不出仓库相对的完整文件表 ⇒ 只能整项省略；
-        · `rename_symbol` / `find_references` ⇒ 入参没给 `project_dir` 时，Core 推导出的根拿不到 ⇒ 只能省略。
-        ⇒ 处置：让产物**回传 root / 字面量文件表**（属"产物形态"的改动，单列一笔）。
-        ★★ **2026-10-05 已定位到具体落点**（下一步是机械的）：
-        - 结果类型：`RenameSymbolResult`（`rename_symbol/parts.ts:105`）· `FindReferencesResult`（`rf-find/find_references.ts:151`）
-          · `RenameSymbolsResult`（`rf-rename/rename_symbols.ts:97`）—— 三者**都没有** root 字段。
-        - 根**在手里但没回传**：`rename_symbol/core.ts:112-114`（注释自陈"内部会自动定位 root，但那条路径不出现在产物里"）
-          · `rename_symbols.ts:164-166`（module 支/local 支各有一个局部 `rootDir`）
-          · `find_references.ts:289` 的 `resolvedRoot`（= `symRoot ?? resolveProjectRoot(fileAbs)`）。
-        ⇒ **做法**：给三个结果类型各加一个 root 字段并在**原处赋值**，然后 `touchedOf` 改成**优先取产物里的 root**、
-          入参给了则仍以入参为准（入参是"调用方声明的根"，产物是"实际定位到的根"—— 两者不一致时**以入参为先**，
-          但产物里的要保留，供下游反查）。
-        ⇒ 判据：`project_dir` 在"入参没给"时**也能给出**（改前一律省略）；`written_files` 在 local 支也能给出。
-        ★★ **✅ 已做（2026-10-05，commit `213d316`）**：三个结果类型各加 `root` 并**在原处赋值**；
-          `touchedOf` 改「入参优先 → 否则产物 `r.root`」；`written_files` 在 module（含 apply_literals）与 local 支
-          都能给（**实测** local 支真落盘 → `written_files:["src/local.ts"]`）。
-          **顺带收口一处既有的判据分叉**：三处对入参的处理原本不一致 —— `rename_symbol`/`find_references`
-          一直 `path.resolve`，而 `rename_symbols` **原样透传**（实测传 `"."` 时前者给绝对、后者给 `"."`）⇒
-          已统一为**绝对根**（契约明文要求）。
-          ★★ **✅ "解析根之前就 return"那几个出口已全部上移根解析**（2026-10-06）：
-            ① `rename_symbol/core.ts` 的**基础校验**（新名非法 / 同名）—— 根解析上移到它之前，
-               两个出口的产物与 `previews[].result` 都带上 `project_dir`；
-            ② `rename_symbols` **module 支**的"列表为空 / 重复条目"两个出口 —— `rootDir` 上移到校验之前
-               （★ 其 IIFE 里的 `renames[0]` **必须改成 `renames?.[0]`**：上移后 `renames` 可能 `undefined`，
-               原写法搬上来会 TypeError —— 差点踩）；
-            ③ `rename_symbols` **local 支**的"不支持字面量"出口 —— `rootDir` 上移到它之前。
-            ★ 顺手把 `projectDir` 分支**归一成绝对路径**（契约明文要求"解析后的绝对根"；原写法传 `"."` 时
-              产物给 `"."`。`touchedOf` 那边本就 `path.resolve`，故只是**产物面**收口）。
-            ★ **空列表且无入参 ⇒ 仍省略**：没有第一条 `file` 就没有锚点，**不兜底 cwd**（本仓禁）。
-            ★ **实测七档**（真跑 `rename_symbols`，同时看产物 / `touched` / `previews[].result` 三个取根点）：
-              ① 新名非法（无入参）⇒ **三者都有**绝对根（`previews[].result` 那格是 `core.ts` 修复的直接证据）
-              ② 同名 ⇒ 同 ③ 空列表（无入参）⇒ **三格全无**（有意）④ 空列表（给 `"."`）⇒ **有**（新增）
-              ⑤ 重复条目 ⇒ **有**（新增）⑥ local + `report_literals` ⇒ **有**（新增）
-              ⑦ 正常 `dry_run` 单条 ⇒ 有 `project_dir` + 预览正常（**无回归**）。总门五道全 PASS。
-          ⇒ ✅ **同一笔续做完了（`mode=type` / `mode=field`）** —— ★ 实测发现它比"少个字段"**严重得多**：
-            **不是给不出 `project_dir`，是静默扫描了错的项目**。根原为 `effectiveRoot ?? cwd`
-            ⇒ 不给 `project_dir` 时**拿 `cwd` 当项目根**。**隔离夹具实测**（`file` 指向夹具、cwd = 本仓）：
-            改前返回的是**本仓里的 3 处假候选**（`render_brickwork.ts:44` 等与目标类型毫无关系的对象
-            字面量）+ `touched:{}`；改后返回**夹具里那 3 处真构造点**（`a.ts:L6/L9/L13`）✅
-            —— 正是本仓禁的「**cwd 是另一个项目**」。
-            ★ 修法：**取根与 `file` 解析分开** —— 根改为"显式 → **由 `file` 反查**（与 symbol 模式同源）→
-              都没有才 `cwd`（今天只剩 `mode=field` 不传 `file` 那一种）"；★ 并**断环**：两个收集器都会
-              用各自的 `project_dir` 去解析**相对**的 `file`（`path.resolve(resolvedRoot, input.file)`），
-              若根换成"由这个 file 反查出来的"而 `file` 仍是相对的 ⇒ **二次解析错位** ⇒ 统一传**绝对** `fileAbs`。
-            ★ **`project_dir` 只在"有锚点"时才写进产物**（显式给了，或由 file 反查出来了）——
-              `mode=field` 不传 `file` 且无 `project_dir` 时**仍省略**（不把 cwd 猜测泄进契约）。
-            ★ **实测五档**：A（type，绝对 file、无入参）⇒ **夹具真候选 + 报根** ✅ · B（type，给根）⇒ 与 A 同 ✅
-              · C（field，给根）⇒ 报根 ✅ · D（field，无锚点）⇒ **仍省略** ✅ · E（type，给根）⇒ 不变 ✅。
-            ★ 已知降级（与 symbol 模式同源、非本笔引入）：**无标记文件的项目**里 `resolveProjectRoot` 会
-              降级到"文件所在目录" ⇒ 根比"项目根"窄。
-          ★ 另记：**无标记文件的项目里根解析会降级到"文件所在目录"**（`resolveProjectRoot` 既有行为，非本笔引入）。
-      **牵连**（每族一笔）：G8 行为快照 `UPDATE_TOOL_BEHAVIOR=1` 并记账；G1 仅当描述/入参 schema 变了才动。
-      ★ ④-b 实测：**G8 人群不含这些"重活"工具** ⇒ 加 `touched` 不会动 G8 快照（行为验证改由新测试承担）。
-      ★ **已知一条 warn 会随本项消失**：`arch` 报 `no-orphans: src/domain/b_terms.ts`
-      （契约尚未被 app 采用 ⇒ **故意不藏**；第一个 [B] 用上 `Touched` 后自动消失）。
 
 - [ ] **T15 ★★ 把 CLI-only 的能力注册为 MCP 工具 ⇒ 「CLI-only」这个类别应当**归零****
       *(用户裁定的洞察 2026-09-30：「**工作台为什么不能注册为 MCP 呢**？就是说**同样同时投影为 MCP 和 CLI**，
@@ -721,7 +559,7 @@
   ⇒ 前 3 处是**同一个概念的三份定义**（且词汇本就不同：一处含 `java/cs/c`，两处只有 `go/ts/py`）；
     后 2 处**根本不是一个概念**（`vue`/`react` 是框架、`node` 是运行时）
     ⇒ ★★ **不许一把抓去合并** —— 这是本仓「**名字像 ≠ 同义**」那条纪律的**又一实例**
-    （正例可对照 T18 的 `files`：同名却三种语义）。
+    （正例可对照 `Touched` 里**已退役**的 `files`：同名却三种语义）。
   ⇒ **未判断的**：前 3 处要不要收口成一个共享类型？
     **反对**：分属 3 层，收口引入跨层耦合；每个联合只有 3~6 个字面量、**没有独立的读取器**。
     **赞成**：同类词表分散 ⇒ 加一门语言要改 3 处（与 T28 想解决的"命名漂移"同源）。
@@ -852,7 +690,7 @@
         ★ 本仓三条腿（接口统一 / 模型填语义 / 判据守门）里，**缺的是第一条腿的另一半 = 入参形状 + 管道**。
       ⇒ 六层解剖的结论：**① 跨语言运行时（WASM Component Model / GraalVM）· ② 绑定生成（SWIG/uniffi）·
       ③ 多语言构建（Bazel）· ④ 依赖统一 都有更强的主人 ⇒ 不自造；⑤"什么算一块积木" 与 ⑥"契约本身"
-      才是空格子**（而 ⑥ 就是本仓的 **T18**）。
+      才是空格子**（⑥ 在本仓**已有落地**：产物端 `Touched` 契约 + 受控词表 + 量具棘轮，2026-10-06 结案）。
       ⇒ ★ **三个实验（都不必自造框架）**：
         **实验 0（半天，最便宜）** 用 WASM CM 官方教程走通 Rust 组件 + Python 宿主 ⇒ **若卡住则 ① 层死心**；
         **实验 1（现在就能做，用保留下来的 `harvest_closure` + `extract_contracts`）** 对真项目抽 1 个候选积木，
