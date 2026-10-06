@@ -216,10 +216,15 @@ export const CHAIN_EDGES_PENDING: readonly ChainEdge[] = [
   //     · 环C `find_references`（只带 A/B 能给出的 `project_dir` + `feature`）⇒ ❌ **报错**：
   //       `缺少必需参数 file：mode=symbol（默认）需要 file（定义符号的文件）`。
   //   ⇒ **证伪点 = 环C**：`extract_contracts` **交不出棒**，链在此断（不是"待验"，是**形态上不成立**）。
-  //   ⇒ ★ **可行动结论**：要让这条链成立，得给 `extract_contracts` 一个**对象类锚点**——
-  //     而它"确立的对象"其实是 **DSL 契约节点** ⇒ 信息**在 DSL 里**，只是**没被投影进产物**
-  //     （产物给的是 `contract_reports[].path` —— 那是**事实字段 `path`**，不是锚点 `file`）。
-  //     ★ 这是**能力缺口（产物没投影）**，不是命名问题 ⇒ **别用改字段名去凑**（同 §5 那条老教训）。
+  //   ⇒ ★★ **结论更正（2026-10-06 复核，推翻本段初稿）**：初稿写「给 `extract_contracts` 补一个
+  //     对象类锚点即可让它成链」—— **不成立**。复核实测：`find_references` 要的是 **`file` + `symbol`**
+  //     **两个**对象入参，而 `extract_contracts` 的产物里**既没有定位器、也没有符号名**
+  //     （`contract_reports[]` 只有 `path`（**事实字段**）/`role`/`fan_in`/`fan_out`/`shape_count`/`effects`；
+  //      `contract_stats` 全是计数）⇒ **补一个锚点补不上两个缺口**。
+  //     ★ 更准确的定性：`extract_contracts` 是**终端分析工具**（产物交给 DSL / 交给人，不交给符号级下游）
+  //       ⇒ **`import_project → extract_contracts → find_references` 根本不是一条链**，
+  //       它只是三个工具**共用作用域锚点**（`project_dir` / `feature`）而已。
+  //     ⇒ 教训：**「看起来连得上」≠「是链」** —— 判它要看**下游要不要对象类入参**（见 `CHAINS` 的判据）。
   //
   //   ★★ 顺带发现（**通配边的隐含前提**）：`ANY_TOOL` 那两条边（`project_dir` / `feature`）的成立前提是
   //     "**上游有 `touched`**"，而下面两类上游**没有**：
@@ -241,6 +246,141 @@ export function chainExprOf(e: ChainEdge): string {
   return e.cardinality === 'single' ? `touched.${e.fromKey}` : `touched.${e.fromKey}[i]`;
 }
 
+/**
+ * ★★★ 链 = **一等公民**（2026-10-06，M1 第一步：把「链」从**散文**变成**可判定的数据**）。
+ *
+ * ★ 为什么要它：在此之前 `CHAIN_EDGES` 只是**一张两条边的表**（A→B），而"**一条链**"只活在
+ *   `docs/tool-chain-contract.md` 的散文里 ⇒ **没有任何东西能机器判定"这条链通不通"** ⇒
+ *   "跑通一条记一条"全靠人记（**记漏、记错都静默**）—— 正是本文件开头说的那个病。
+ *
+ * ★★ 判定的**唯一判据** = `CHAIN_EDGES`：逐段查 `(A → B)` 有没有**对象类**的 `verified` 边
+ *   （★ 作用域边 `project_dir` / `feature` **恒有** ⇒ **剔出判定**，理由见 `verifiedEdgesBetween` 上的实测教训）。
+ *   ★ **只查表** —— 故判"通"是**必要不充分**：它说"每段都有已验证边"，**不等于**"整条链真跑过"。
+ *     整条链有没有真跑过，**另记**在 `evidence`（同 `CHAIN_EDGES` 的口径：**不许把没跑的写成跑过**）。
+ * ★ **没做的事（下一步）**：本判定**不查"下游到底要不要对象类入参"** —— 那需要 `ToolDef`
+ *   （属 `application` 层），而本文件在 `domain`，**不能反向依赖**。⇒ 现状下"作用域锚点能通"
+ *   会让一条**其实没有对象交接**的链也显示"每段有边"（`import_project → extract_contracts → …`
+ *   就是这种：它只共用 `project_dir` / `feature`）。
+ */
+export interface Chain {
+  /** 链名（人读，唯一） */
+  readonly name: string;
+  /** 有序的 [B] 序列（`steps[i] → steps[i+1]` 是一段） */
+  readonly steps: readonly string[];
+  /** ★ **整条链真跑过没有**（`verified` = 每一段都真跑过；`pending` = 还没人跑） */
+  readonly evidence: 'verified' | 'pending';
+  /** 证据一句话（`verified` 必填，写清"怎么验的"） */
+  readonly note: string;
+}
+
+/**
+ * ★★ 链表。★ 每加一条都要有**真跑**结论才许写 `verified`。
+ */
+export const CHAINS: readonly Chain[] = [
+  {
+    name: 'refactor',
+    steps: ['find_references', 'rename_symbols', 'edit_code', 'run_tests'],
+    evidence: 'verified',
+    note:
+      '§5 那条链（= `docs/tool-chain-contract.md` §5）。三环真跑：两条对象类边升级 `verified`；' +
+      '第四段（`edit_code → run_tests`）真跑**证伪**了"拿 `written_files` 当 `project_dir`"，' +
+      '**正确接法** = `touched.project_dir`（通用边，已 `verified`）⇒ 机器判"每段都有已验证边" ✓，与真跑一致。' +
+      '★ 但第四段想要的那件事（"只跑本次改动相关的测试"）**仍未实现**：`run_tests.filter` 要**测试文件/名称**，' +
+      '而 `written_files` 是**源文件** ⇒ 中间缺"源文件 → 对应测试"的映射（**能力缺口**，今天没有工具给）。',
+  },
+  {
+    name: 'design-import',
+    steps: ['import_project', 'extract_contracts', 'find_references'],
+    evidence: 'verified',
+    note:
+      '2026-10-06 真跑 ⇒ **断在第 2 段**（`extract_contracts → find_references`）：**无已验证边**，' +
+      '真跑时 `find_references` 报"缺少必需参数 file"。★ 且它**根本不是一条链**：' +
+      '`extract_contracts` 是**终端分析工具**，产物里既无定位器也无符号名 ⇒ 交接不出对象。' +
+      '★ 这条链记的是"**看起来连得上 ≠ 是链**"这个反例。',
+  },
+];
+
+/**
+ * `(A → B)` 之间**已验证**的边（含通配 `ANY_TOOL`）。
+ * ★ 一处定义，别在别处再写一遍这个过滤（那是第二份副本）。
+ *
+ * ★★★ **2026-10-06 实测教训：本判定第一版是「恒真」的（同轮发现、同轮修）** ——
+ *   第一版用 `verifiedEdgesBetween(from, to).length === 0` 判"这段断没断"，
+ *   而表里有两条 `ANY_TOOL → ANY_TOOL` 的**通配边**（`project_dir` / `feature`）⇒
+ *   **任何一段都能匹配上** ⇒ 判定**恒真**、**一条链也断不了**。
+ *   ★ **证据不是我推出来的**：它当时给 `design-import` 判的是"✓ 每段都有已验证边"，
+ *     而**同一天的真跑已证明这条链在 `extract_contracts → find_references` 处断**
+ *     （`find_references` 报"缺少必需参数 file"）⇒ **机器与真跑打架 ⇒ 机器是假的**。
+ *   ⇒ 修法：**把"作用域边"从判定里剔出去** —— 它们（`project_dir` / `feature`）几乎**任何段都有**
+ *     ⇒ **必要不充分、不承载对象**。判定只报**对象类边**（见 {@link SCOPE_PATHS} / {@link hopsOf}）。
+ *   ★★ 但**仍不判生死**："该段下游到底要不要对象类入参"需要 `ToolDef`（`application` 层），
+ *     本文件（`domain`）取不到 ⇒ 故只报**事实（对象类边几条）**，
+ *     而"通没通"那条**真跑结论另记在 `CHAINS[].note`**（那里才是权威）。
+ */
+export function verifiedEdgesBetween(from: string, to: string): readonly ChainEdge[] {
+  return CHAIN_EDGES.filter(
+    (e) => e.evidence === 'verified' && (e.from === from || e.from === ANY_TOOL) && (e.to === to || e.to === ANY_TOOL),
+  );
+}
+
+/** 作用域锚点的入参位置：**几乎任何段都能通** ⇒ 必要不充分，**不算"对象交接"**。 */
+const SCOPE_PATHS = new Set(['project_dir', 'feature']);
+
+/** 一段的判定 —— ★ **只报事实**，不判生死。 */
+export interface HopVerdict {
+  hop: number;
+  from: string;
+  to: string;
+  /** ★ 该段**除作用域外**的已验证边（= "下游要的对象"有没有人喂）。**这才是链的判据。** */
+  objectEdges: readonly ChainEdge[];
+}
+
+/** 逐段判定。 */
+export function hopsOf(chain: Chain): readonly HopVerdict[] {
+  const out: HopVerdict[] = [];
+  for (let i = 0; i + 1 < chain.steps.length; i++) {
+    const from = chain.steps[i];
+    const to = chain.steps[i + 1];
+    out.push({
+      hop: i + 1,
+      from,
+      to,
+      objectEdges: verifiedEdgesBetween(from, to).filter((e) => !SCOPE_PATHS.has(e.toPath)),
+    });
+  }
+  return out;
+}
+
+/**
+ * 链上**第一处"一个对象类边都没有"**的段；全都有则 `null`。
+ * ★ **这是信号，不是判决**：末段（如 `run_tests`）**本来就不要对象入参** ⇒ 它报 0 未必是断
+ *   （`refactor` 链的第 3 段就是这种）⇒ 要定论必须知道下游的入参形状（`ToolDef`，下一步）。
+ */
+export function objectGapOf(chain: Chain): HopVerdict | null {
+  return hopsOf(chain).find((h) => h.objectEdges.length === 0) ?? null;
+}
+
+/** 渲染链表（给 `capability_map` 用）。 */
+export function renderChains(max = 20): string {
+  const lines = CHAINS.slice(0, max).map((c) => {
+    const hops = hopsOf(c)
+      .map((h) => `${h.from}→${h.to}: ${h.objectEdges.length}`)
+      .join(' · ');
+    const gap = objectGapOf(c);
+    const status = gap
+      ? `⚠ 第 ${gap.hop} 段**无对象类边**（${gap.from} → ${gap.to}）`
+      : '✓ 每段都有对象类边';
+    return `    ${c.name.padEnd(14)} [${c.evidence}] ${c.steps.join(' → ')}\n${' '.repeat(19)}${status}｜对象类边数 ${hops}`;
+  });
+  return (
+    '\n\n── 链（★ 一等公民：逐段查 `CHAIN_EDGES` 的**对象类**边；作用域边恒有 ⇒ 不进判定）──\n' +
+    lines.join('\n') +
+    '\n  ★ 本判定**只查表**，且**只报事实**（对象类边几条，不是"通/断"）：' +
+    '\n    "下游到底要不要对象类入参"需要 `ToolDef`（`application` 层）⇒ 那是下一步。' +
+    '\n  ★★ 通没通，**只看 `[verified]`** —— 那是整条链的真跑结论，权威在 `CHAINS[].note`。'
+  );
+}
+
 /** 渲染成人读列表（给 `capability_map` 用）—— ★ 给"谁读得到"，也给"**怎么写出来**"。 */
 export function renderChainWiring(max = 20): string {
   const line = (e: ChainEdge): string => {
@@ -259,6 +399,7 @@ export function renderChainWiring(max = 20): string {
       : '  ⏳ 待验：**空**（§5 那条链的每一环都已真跑过；★ 第 2 条链 `import_project → extract_contracts → find_references` 已于 2026-10-06 **真跑 ⇒ 接不上**（环C 缺 `file`），记录见本文件 `CHAIN_EDGES_PENDING`；新验出来的边加进本表）。\n') +
     '  ★ 用法：把左边那串表达式**原样**填进右边的入参位置（它就是"上一次的产物"的地址）；\n' +
     '    标"单元素"的**直接取**即确定；标"多元素"的**下标由你给**（`[i]` 就是"从列表里选一个" ——\n' +
-    '    选择是语义判断 ⇒ **永远由调用方给**；本表只负责给它一个统一的名字）。'
+    '    选择是语义判断 ⇒ **永远由调用方给**；本表只负责给它一个统一的名字）。' +
+    renderChains(max)
   );
 }
