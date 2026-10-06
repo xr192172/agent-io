@@ -759,20 +759,6 @@
       ② 三条索引前置口径收成一句一致的话；③ `projectRootArg` 的判定面与各工具真参数名对齐
       （要么扩它、要么让工具参数名统一）。
 
-- [ ] **T41 ★ 四处「报错说了等于没说 / 与描述不符」（独立体检 2026-10-05）**
-      *(核实：体检小队逐条真调，报错原文已存 `docs/tool-handbook.md` §7.5/§7.6。)*
-      ⇒ **① `behavior_baseline` 报错串里混 `undefined` 占位**（例 `…/undefined/.agent-io/behavior/undefined__undefined.json`），
-        **看着像 bug**。★ **2026-10-06 更正：只剩它一个** —— `narrate_step` **已修**（改用
-        `plumbing.requireStr`，其注释明言"绝不把 undefined 拼进路径"）；`behavior_baseline` 仍在用
-        `String(a.project_dir)` / `String(a.file)` 拼路径（`application/observe/index.ts`）。
-      ⇒ **② `observe_log` 传不存在的日志文件 → 静默「（无匹配事件）」** ⇒ 会让人以为"跑过了、没内容"。
-        （`log_query.ts` 对 `!existsSync` 直接返回空 entries，调用方据此打"无匹配事件" ⇒ 两件事不可区分。）
-      ⇒ **③ `manage_feature` 参数要塞进 `args` 子对象，报错说「缺少 feature」** ⇒ 这句**仍成立**。
-        ★ **2026-10-06 更正："schema 里又有个顶层 `feature` ⇒ 自相矛盾"不成立** ——
-        今天的 schema 只有 `action` + `args`（`application/design/index.ts`），**顶层没有 `feature`**。
-        ⇒ 剩下的问题只是"报错文案没告诉人该放进 `args`"。
-      ~~⇒ `harvest_from_url` 描述说默认落盘，实测默认走 dry-run ⇒ 口径不一致。~~
-        ★ 2026-10-05：该工具已随"积木盒族"删除 ⇒ 此条**随之消失**，不必再修。
 
 - [ ] **T43 ★★ 前沿研究：通用多语言组件框架（若重开 ⇒ 先做三个"最小可证伪实验"）**
       *(核实：2026-10-05 用户裁定"积木线/项目融合线作为万能框架实现不了 ⇒ 删代码、留设计文档"。)*

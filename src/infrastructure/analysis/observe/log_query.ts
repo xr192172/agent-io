@@ -40,6 +40,13 @@ export interface LogQueryResult {
   anomalyCount: number;
   skipped: number;
   entries: LogEntry[];
+  /**
+   * ★ 2026-10-06（T41 ②）：**事件文件根本不存在**（与"存在但无匹配事件"是两件事）。
+   *
+   * 原先两者都表现为 `entries: []`（调用方一律打「（无匹配事件）」）⇒ 传错路径的人会以为
+   * "跑过了、没内容"，而真相是"这个文件压根不在"。本字段把它**如实上报**给调用方。
+   */
+  missing?: boolean;
 }
 
 const norm = (s: string): string => s.replaceAll('\\', '/');
@@ -78,7 +85,9 @@ function toEntry(ev: TSEvent): LogEntry {
  */
 export function queryObserveLog(eventsPath: string, opts: LogQueryOptions = {}): LogQueryResult {
   if (!fs.existsSync(eventsPath)) {
-    return { eventsPath, total: 0, anomalyCount: 0, skipped: 0, entries: [] };
+    // ★ 2026-10-06（T41 ②）：如实标出 `missing` ⇒ 调用方可以说"文件不存在"，
+    //   而不是把"传错路径"伪装成"无匹配事件"。
+    return { eventsPath, total: 0, anomalyCount: 0, skipped: 0, entries: [], missing: true };
   }
   const { events, skipped } = loadTSEvents(eventsPath);
 

@@ -81,7 +81,13 @@ export function manageFeature(input: ManageFeatureInput): ManageFeatureResult {
   function req(k: string): string {
     const x = args[k];
     if (typeof x !== 'string' || x.length === 0) {
-      throw new Error(`manage_feature action="${action}" 缺少必填参数 "${k}"`);
+      // ★ 2026-10-06（T41 ③）：补上"该放哪"。原先只说"缺少必填参数"，而调用方很可能
+      //   **已经在顶层传了** `feature`（schema 里并没有顶层 `feature`，它必须放进 `args`）
+      //   ⇒ 报错看着自相矛盾。现在把正确形状直接写出来。
+      throw new Error(
+        `manage_feature action="${action}" 缺少必填参数 "${k}"` +
+          `（★ 参数需放在 args 子对象里：{"action":"${action}","args":{"${k}":...}}）`,
+      );
     }
     return x;
   }

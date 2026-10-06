@@ -191,7 +191,13 @@ export const observeLogHandler = wrapData(async (a) => {
   const lines = [
     `Observe 日志 [${r.eventsPath}]`,
     `  事件 ${r.total} · 偏差 ${r.anomalyCount} · 跳过 ${r.skipped} · 返回 ${r.entries.length} 条`,
-    ...(r.entries.length === 0 ? ['  （无匹配事件）'] : []),
+    // ★ 2026-10-06（T41 ②）：**"文件不存在"与"存在但无匹配"必须分开说** ——
+    //   原先两者都打「（无匹配事件）」⇒ 会把"传错路径"伪装成"跑过了、没内容"。
+    ...(r.missing
+      ? [`  ⚠ 事件文件不存在：${r.eventsPath}（★ 这不是"无匹配事件"—— 这个文件压根不在；请检查 events_file）`]
+      : r.entries.length === 0
+        ? ['  （无匹配事件）']
+        : []),
   ];
   for (const e of r.entries) {
     const mark = e.result === 'deviation' ? '✗' : '✓';

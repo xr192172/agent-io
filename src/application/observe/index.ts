@@ -311,10 +311,15 @@ export const OBSERVE_TOOLS: ToolDef[] = [
       baseline: z.string().optional().describe('基线 JSON 路径覆盖（缺省 <project_dir>/.agent-io/behavior/<file>__<func>.json）'),
     },
     handler: wrapData(async (a) => {
+      // ★ 2026-10-06（T41 ①）：这三个参数原先走 `String(a.xxx)` —— 缺失时得到**字面量 "undefined"**，
+      //   于是报错串里出现 `…/undefined/.agent-io/behavior/undefined__undefined.json`
+      //   （**看着像 bug，而不是"缺参数"**）。CLI 路径**不做 zod 校验**（见 `mcp_scan` 的 note）
+      //   ⇒ 这道守卫是必要的。同族的 `narrate_step` 早已改用 `requireStr`（其注释明言
+      //   "绝不把 undefined 拼进路径 —— 规划书 §16.4 P-D"），此处对齐。
       const spec = {
-        project_dir: String(a.project_dir),
-        file: String(a.file),
-        function: String(a.function),
+        project_dir: requireStr(a, 'project_dir'),
+        file: requireStr(a, 'file'),
+        function: requireStr(a, 'function'),
         cases: Array.isArray(a.cases)
           ? (a.cases as Array<Record<string, unknown>>).map((c) => ({
               name: String(c.name),
@@ -323,7 +328,7 @@ export const OBSERVE_TOOLS: ToolDef[] = [
             }))
           : [],
       };
-      const bp = a.baseline ? String(a.baseline) : baselinePathFor(String(a.project_dir), String(a.file), String(a.function));
+      const bp = a.baseline ? String(a.baseline) : baselinePathFor(spec.project_dir, spec.file, spec.function);
 
       if (a.action === 'capture') {
         const b = captureBaseline(spec, bp);
