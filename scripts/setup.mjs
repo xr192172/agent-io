@@ -4,7 +4,7 @@
  *
  * 定位：把已存在但彼此断开的环节合成一条命令。复用既有 CLI，不重造：
  *   - MCP 安装      → 复用 scripts/install_mcp.mjs（写 9 个 client 配置）
- *   - TS 静态插桩   → 复用 dist/src/presentation/cli/instrument_cli.js（幂等，--uninstrument 还原）
+ *   - TS 静态插桩   → 复用**投影入口** `cli.js observe_instrument`（幂等；action=uninstrument 还原）
  *   - skill 安装    → 本脚本新增：把 .trae/skills/ 拷进目标 agent skills 目录
  *   - 事件目录规约   → 本脚本新增：确保 <target>/.agent-io/observe 存在
  *                   （这正是 reconcile_chain/discoverEventFiles 自动发现的**唯一**权威位置）
@@ -33,8 +33,15 @@ import { spawnSync } from 'node:child_process';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SKILL_SRC = path.join(ROOT, '.trae', 'skills');
 const INSTALL_MCP = path.join(ROOT, 'scripts', 'install_mcp.mjs');
-const INSTRUMENT_CLI = path.join(ROOT, 'dist', 'src', 'presentation', 'cli', 'instrument_cli.js');
-const CAPABILITY_CLI = path.join(ROOT, 'dist', 'src', 'presentation', 'cli', 'capability_cli.js');
+/**
+ * ★ 2026-10-06（T15）：本脚本原先直接 spawn 两个**手写 CLI**（`instrument_cli.js` / `capability_cli.js`）
+ *   —— 那是"能力被藏在 MCP 面之外"的同一族。两者现在都**已注册为 MCP 工具**
+ *   （`observe_instrument` / `capability_audit`）⇒ 改走**投影出的统一入口** `cli.js <工具名>`
+ *   （唯一真相源 = `ToolDef`）。
+ *   ★ 顺带：`cli.js` 是**唯一调用入口** `invokeTool()` 的通道 —— 保鲜 / 首触 / 纠错 / 狗食 / 告警注入
+ *     都在那一层统一，手写 CLI **从来拿不到**（见 `cli.ts` 头注里那段实测）。
+ */
+const CLI = path.join(ROOT, 'dist', 'src', 'presentation', 'cli', 'cli.js');
 const DEFAULT_AGENT_SKILLS = path.join(ROOT, '..', 'ai-config', 'skills'); // 本地 agent 的 skills 目录
 /**
  * 事件落点的**唯一权威目录**（相对目标项目根）。
@@ -105,6 +112,30 @@ const dim = (s) => `\x1b[2m${s}\x1b[0m`;
 const ok = (s) => `\x1b[32m✓\x1b[0m ${s}`;
 const no = (s) => `\x1b[31m✗\x1b[0m ${s}`;
 const warn = (s) => `\x1b[33m•\x1b[0m ${s}`;
+
+/**
+ * 从**投影 CLI** 的 stdout 里取机器段（`---DATA---` 之后那一行 JSON）。
+ *
+ * ★ 为什么要有它：`cli.js` 的输出是「人读 message + `---DATA---` + 机器 JSON」两段式
+ *   （见 `application/plumbing.ts` 的 `wrapData` / `machinePayload`）⇒ 想读数据就按这个约定取，
+ *   **别自己另发明一份**（那正是第二份口径）。
+ * ★ 取不到 ⇒ 返回 `null`（调用方按"没读到"处理，**不假装读到**）。
+ */
+function parseDataSection(stdout) {
+  const text = String(stdout || '');
+  const i = text.indexOf('---DATA---');
+  if (i < 0) return null;
+  for (const line of text.slice(i + 10).split('\n')) {
+    const t = line.trim();
+    if (!t.startsWith('{')) continue;
+    try {
+      return JSON.parse(t);
+    } catch {
+      /* 非那行 */
+    }
+  }
+  return null;
+}
 
 function runNode(script, argv, opts = {}) {
   if (DRY) { console.log(`[dry-run] node ${script} ${argv.join(' ')}`); return null; }
@@ -187,12 +218,11 @@ function runDoctor() {
   // 6) 能力矩阵缺口（工具自身的「功能×语言」支持度）。纯计算，不依赖目标项目；
   //    搭载 doctor 后，复语言能力缺口随体检一并可见——补哪个功能、补哪门语言有据可依。
   {
-    const aside = path.join(os.tmpdir(), `dc-cap-${process.pid}.json`);
-    const r = runNode(CAPABILITY_CLI, ['--installed', '--json', aside]);
-    if (r && r.status === 0 && fs.existsSync(aside)) {
-      let data = null;
-      try { data = JSON.parse(fs.readFileSync(aside, 'utf-8')); } catch { data = null; }
-      fs.rmSync(aside, { force: true });
+    // ★ 2026-10-06（T15）：改走**投影入口**（`cli.js capability_audit`），不再 spawn 手写 CLI、
+    //   也不再用临时文件转一手 —— 机器段就在 stdout 的 `---DATA---` 之后，直接读它。
+    const r = runNode(CLI, ['capability_audit', '--json', JSON.stringify({ installed_only: true })]);
+    const data = parseDataSection(r?.stdout);
+    if (r && r.status === 0 && data) {
       const totalNeed = data?.totalNeed ?? 0;
       if (totalNeed === 0) {
         pass++;
@@ -213,8 +243,8 @@ function runDoctor() {
       }
     } else {
       fail++;
-      console.log(no(`能力矩阵：capability_cli 无法运行（capability CLI 报错，缺口无法自检）`));
-      console.log(dim(`   → dist/src/presentation/cli/capability_cli.js 是否已构建？跑 npm run build`));
+      console.log(no(`能力矩阵：capability_audit 无法运行（工具报错，缺口无法自检）`));
+      console.log(dim(`   → dist 是否已构建？跑 npm run build；再看 node scripts/setup.mjs --doctor 的原始报错`));
     }
   }
 
@@ -265,11 +295,17 @@ async function runSetup() {
 
   // 4) 静态插桩（幂等；目标为 TS 时）
   if (INSTRUMENT || UNINSTRUMENT) {
-    const argv = UNINSTRUMENT ? [T, '--uninstrument'] : [T];
+    // ★ target 一律传**绝对路径**：工具的 `target` 对相对路径的拼接不可靠
+    //   （实测 `target=observe-lang-go` ⇒ 报 `open <cwd>/observe-lang-go/observe-lang-go` 失败；
+    //    绝对的同一目标 ⇒ 正常扫 12 个源文件）。★ 该缺陷已记进清单，不在本笔修。
+    const args = UNINSTRUMENT
+      ? { action: 'uninstrument', target: path.resolve(T) }
+      : { target: path.resolve(T) };
     const label = UNINSTRUMENT ? '还原插桩' : '静态插桩';
     actions.push(label);
     if (!DRY) {
-      const r = spawnSync(process.execPath, [INSTRUMENT_CLI, ...argv], { cwd: ROOT, encoding: 'utf-8' });
+      // ★ 走投影入口；output 是「message + ---DATA--- + 机器段」，原样转给人看（不裁剪、不美化）。
+      const r = spawnSync(process.execPath, [CLI, 'observe_instrument', '--json', JSON.stringify(args)], { cwd: ROOT, encoding: 'utf-8' });
       console.log((r.stdout || '') + (r.stderr || ''));
     }
   }

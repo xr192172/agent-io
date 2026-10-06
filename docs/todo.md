@@ -463,8 +463,26 @@
              ★★ 而当时三档读数**看起来还都"通过"**（布尔没生效却不报错、字符串字段本来就该收到字符串）
              —— **"看起来验过了"最危险的地方**。⇒ 教训：**读声明的类型，别按脑里的印象写**；
              且**要设计"不生效就会喊"的验收**（本次靠"布尔该产出的东西有没有出现"才抓住）。
-         ⇒ 于是 **6 个"能力已全在 MCP"的 wrapper 现在可以删**（`package.json` 的 script 与
-           `setup.mjs` 的硬依赖改走 `cli.js <工具名>`）：「CLI-only」在这一档归零。
+         ⇒ ✅ **已删（2026-10-06，同批）—— 手写 CLI 13 → 7**：`instrument_cli` / `capability_cli` /
+           `signal_review_cli` / `split_stage_cli` / `translate_cli` / `deprecate_offline_cli`
+           **六个文件 `git rm`**（`dist` 的 12 个孤儿产物随之被 `clean_dist` 清掉）。
+           · **前置（先迁调用方，不然删了就坏）**：`package.json` 的 **6 条 script** 与 `scripts/setup.mjs`
+             的两处硬依赖（`INSTRUMENT_CLI` / `CAPABILITY_CLI`）全部改走**投影入口** `cli.js <工具名>`。
+             ★ 顺带治了 setup.mjs 的"临时文件转一手"：现在加了个 `parseDataSection()` 直接读
+             **`---DATA---`** 之后的机器段（那是 `plumbing.ts` 的既有约定，**不是新造的第二份口径**）。
+           · **逐 flag 核对（删文件的判据）**：六个 wrapper 的 flag **全部 ⊆ schema**；唯一"没有对应"的是
+             `capability_cli --json <file>` —— ★ 那是**输出去向**（数据在 stdout 的机器段里），**不是能力**。
+           · **真跑验收**：`capability_audit`（`totalNeed:128` 与旧 CLI 读数**一致**）✓ · `signal_review` /
+             `split_stage` 空参给可读「缺参数 "project_dir"」✓ · `translate_go_ts … holes=true` ✓ ·
+             `observe_instrument target=<TS 夹具> dry_run=true` ⇒「将注入 2 探针点」**且夹具未被改** ✓ ·
+             **`npm run doctor`**（走迁移后的 setup.mjs）⇒「能力矩阵：已装语言下 128 个缺口」✓。
+           · ★★ **顺带挖到一条真缺陷（记下、未修）**：`observe_instrument` 的 **`target` 用相对路径**时
+             路径拼接错 —— 实测 `target=observe-lang-go` ⇒ `open <cwd>/observe-lang-go/observe-lang-go` 失败；
+             **绝对的同一目标 ⇒ 正常**（`语言包：go · 扫描 12 个源文件 · 将注入 9/34 探针点`）。
+             ⇒ 已在 `setup.mjs` 里**传绝对路径**兜住（`path.resolve(T)`），但工具侧该修（或在 schema 写明"要绝对"）。
+         ⇒ ★ **剩下的 7 个**：`cli.ts`（**投影本体**）+ **2 个正当例外**（`install_package_cli` 判为一次性
+           运维脚本；`diagnose_loop_cli` 要 `readline` 交互 —— **MCP 无法应答**）+ **4 个"能力还没注册"**
+           （`archify_cli` / `brickify_cli` / `upgrade_cli` / `upgrade_rewrite_cli`）⇒ 下一步：注册（brickify 要先定形状）。
          ⇒ ★ **`translate_cli` 至此升进 (A) 级**（能力已 100% 在 MCP 面）⇒ 它的**去留**成为与
          `signal_review_cli` / `split_stage_cli` 同类的**待拍板**问题（删它要动 `package.json:55` 的 script）。
       5. ✅ **已落（2026-10-06）**：把核心 `deprecate_offline.ts`（434 行、`runDeprecateOffline` 本体）从

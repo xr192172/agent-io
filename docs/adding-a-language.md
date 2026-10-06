@@ -76,7 +76,7 @@
 
 ```bash
 npm run capability        # 全量 55 门语言的缺口自检
-npm run capability -- --installed   # 只看已装语言包的语言
+npm run capability -- installed_only=true   # 只看已装语言包的语言
 npm run verify            # ★ 今天的**唯一总门**（三态；见顶部现状块 B）
 ```
 
@@ -530,7 +530,7 @@ npm run build
 
 # ③ 判据：缺口数必须下降
 npm run capability
-npm run capability -- --installed     # 只看已装语言（doctor 用的就是这条）
+npm run capability -- installed_only=true     # 只看已装语言（doctor 用的就是这条）
 node scripts/capability_scan.mjs --check   # 库存一致性门，退出码 0
 ```
 
@@ -544,7 +544,7 @@ node scripts/capability_scan.mjs --check   # 库存一致性门，退出码 0
 | 改了 | 今天怎么验 |
 |---|---|
 | `LANGUAGES` / `LANG_ADAPTERS` | 对**真实样例文件**跑一遍解析（`parseFileFull` 或相应能力），肉眼对 `symbols`/`calls` 是否非空、`end_line`/`qualified_name` 是否正确 |
-| 装包 / 清单 | `npm run install-package list` + `npm run capability -- --installed` |
+| 装包 / 清单 | `npm run install-package list` + `npm run capability -- installed_only=true` |
 | 矩阵 / 声明 | `npm run capability` —— **缺口数必须下降，这是唯一直接判据**；另可用 MCP 工具 `capability_audit` |
 | `rename_symbol` / `contract_gate` / `extract_contracts` / `code_health` / `behavior_baseline` | 各自拿真实样例跑一次（**无对拍测试**）；四类引用形态（同包裸引用 / 跨包限定引用 / 别名 / 局部遮蔽）要**手工各试一类** |
 | `version_upgrade` | `npm run doctor` + 拿一个真实旧项目跑一次检测 |
@@ -564,7 +564,7 @@ node scripts/capability_scan.mjs --check   # 库存一致性门，退出码 0
 
 ### 5.4 doctor 已内置缺口自检
 
-`scripts/setup.mjs`（`npm run doctor`）第 6 段已经跑 `capability_cli --installed --json` 并打印缺口
+`scripts/setup.mjs`（`npm run doctor`）第 6 段已经跑 `cli.js capability_audit --json '{installed_only:true}'` 并打印缺口
 （**缺口不算 fail**，只给 warn —— 设计如此：新语言/新功能待补是正常状态）。
 ⇒ 补完一门语言后，`npm run doctor` 的"能力矩阵"行数字应下降。
 
