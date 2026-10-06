@@ -131,7 +131,7 @@ function readTerms() {
           }
           return null;
         };
-        out.push({ name: nm, kind: get('kind'), type: get('type'), meaning: get('meaning') ?? '', debt: get('debt') === 'true', fix: get('fix') });
+        out.push({ name: nm, kind: get('kind'), type: get('type'), meaning: get('meaning') ?? '', debt: get('debt') === 'true', fix: get('fix'), retired: get('retired') });
       }
     }
   }
@@ -186,8 +186,20 @@ const TOUCHED_EXEMPT = readTouchedExempt();
 const TERM_NAMES = new Set(TERMS.map((t) => t.name));
 /** 词表里登记为「链的接口」的词（`kind: 'anchor'`） */
 const ANCHOR_NAMES = new Set(TERMS.filter((t) => t.kind === 'anchor').map((t) => t.name));
-/** 已退役：不许再新增使用者的词（词表里带"已退役"字样的） */
-const RETIRED_NAMES = new Set(TERMS.filter((t) => (t.meaning ?? '').includes('已退役')).map((t) => t.name));
+/**
+ * 已退役：不许再新增使用者的词 —— ★★ 读**结构化字段 `retired`**，**不再读散文**。
+ *
+ * ★ 旧实现 = `TERMS.filter(t => (t.meaning ?? '').includes('已退役'))` ⇒ **拿文本当行为**：
+ *   实测（2026-10-06）`file` 词条的注释里提到"`read_files`（读过的，已退役）"
+ *   ⇒ **`file` 自己被判成已退役**（假阳性），摘要报出「已退役词仍在被用：产物侧 file」。
+ * ⇒ 真判据 = `b_terms.ts` 的 `retired?: 'product' | 'input' | 'both'`（**分侧**，见 `BTerm` 注释）。
+ * ★ 分侧很重要：`files` 只退役**产物侧**，其入参侧"限定本次处理哪几个文件"是**正当用法**。
+ */
+const RETIRED_SIDE = new Map(TERMS.filter((t) => t.retired).map((t) => [t.name, t.retired]));
+const isRetiredOn = (side) => (name) => {
+  const r = RETIRED_SIDE.get(name);
+  return r === side || r === 'both';
+};
 
 /**
  * 产物侧「锚点候选」的判定（2026-10-05 改）：
@@ -486,8 +498,8 @@ if (process.argv.includes('--json')) {
   if (op.length) console.log(`     产物：${op.map(([n, c]) => `${n}×${c}`).join(' · ')}`);
   if (oi.length) console.log(`     入参：${oi.map(([n, c]) => `${n}×${c}`).join(' · ')}`);
   console.log('     ⇒ ★ 这些要么**登记进词表**、要么**收口到已有的 anchor**（同义异名 = 判据分叉）');
-  const retiredIn = (m) => [...new Set([...m.keys()].filter((n) => RETIRED_NAMES.has(n)))];
-  console.log(`★ **已退役词**的使用 —— 产物侧：${retiredIn(prodNames).join(' · ') || '（无 ✓）'} ｜ 入参侧：${retiredIn(inNames).join(' · ') || '（无）'}`);
+  const retiredIn = (m, side) => [...new Set([...m.keys()].filter(isRetiredOn(side)))];
+  console.log(`★ **已退役词**的使用 —— 产物侧：${retiredIn(prodNames, 'product').join(' · ') || '（无 ✓）'} ｜ 入参侧：${retiredIn(inNames, 'input').join(' · ') || '（无 ✓）'}`);
   console.log('     ⇒ ★ 词表的"退役"多数是**分侧**的（例：`files` 是**产物侧**退役 —— 产物必须用 `written_files`，');
   console.log('        而**入参侧**"限定本次处理哪几个文件"是正当用法）⇒ 两边分开看，别把入参侧的合法用法读成违规。');
   console.log('');

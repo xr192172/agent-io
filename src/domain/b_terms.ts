@@ -58,6 +58,21 @@ export interface BTerm {
   debt?: true;
   /** 处置（debt 才有）：拆名 or 并入哪个术语 */
   fix?: string;
+  /**
+   * ★★ **已退役**：不许再新增使用者 —— ★ 必须写成**这个字段**，**不能靠散文里写"已退役"三个字**。
+   *
+   * ★ 为什么（2026-10-06 实测假阳性）：量具原先用 `meaning.includes('已退役')` 判退役，
+   *   而 `file` 词条的注释里恰好提到"`read_files`（读过的，已退役）"
+   *   ⇒ **`file` 自己被判成"已退役"**，摘要里报出「已退役词仍在被用：产物侧 file」
+   *     （★ `file` 确实在被用，**但它没退役** —— 它是活的 anchor）。
+   *   ⇒ 正是本仓头号病根的老形态：**拿文本当行为**（把判据的影子当成判据）。
+   *   ⇒ 判据必须是**结构**（本字段）；散文只许解释、不许判定。
+   *
+   * · `'product'` = 只退役**产物侧**（★ 入参侧可能仍合法 —— 如 `files`：入参"限定本次处理哪几个文件"是正当用法）
+   * · `'input'`   = 只退役**入参侧**
+   * · `'both'`    = 两侧都退役
+   */
+  retired?: 'product' | 'input' | 'both';
 }
 
 /**
@@ -200,6 +215,7 @@ export const B_TERMS: Record<string, BTerm> = {
       '2026-10-05 撤出 `Touched`：原 5 个产者（`find_references` / `extract_contracts` / `reconcile_effects` / ' +
       '`reconcile_chain` / `harvest_decisions`）已全部移除该项；其值改由调用方**从上游产物的自有字段里取**' +
       '（= "剪贴板"那一格，见 T56 ④-2）。',
+    retired: 'product',
   },
   symbols: {
     kind: 'anchor',
@@ -278,6 +294,7 @@ export const B_TERMS: Record<string, BTerm> = {
       '★ 2026-10-05 更正：原写"全仓 [B] 已清零、禁止再新增使用者"，**那句话只对产物成立** —— ' +
       '实测入参侧仍有 3 个 [B] 在用（`extract_contracts` / `harvest_closure` / `watch_project_tool`），' +
       '那是"限定范围"的正当输入，**不退役**。产物侧：路径表 → `written_files`（`read_files` 已退役）；报告数组 → `<领域>_reports`。',
+    retired: 'product',
   },
   project_root: {
     kind: 'context',
@@ -312,6 +329,7 @@ export const B_TERMS: Record<string, BTerm> = {
     type: 'boolean',
     meaning: '★ **已退役**（2026-10-05）：全仓 [B] 已清零，**禁止再新增使用者**',
     fix: '文件表用 `written_files`；"是否落盘"用 `dry_run` 的反面表达（或直接报 `written_files` 的有无）',
+    retired: 'both',
   },
   filesWritten: {
     kind: 'state',
@@ -325,6 +343,7 @@ export const B_TERMS: Record<string, BTerm> = {
     type: 'Record<string, number>',
     meaning: '★ **已退役**（2026-10-05）：全仓 [B] 已清零，**禁止再新增使用者**',
     fix: '各领域改名为 `<领域>_stats`（如 `contract_stats` / `closure_stats` / `algorithm_stats`）',
+    retired: 'both',
   },
   data: {
     kind: 'context',
