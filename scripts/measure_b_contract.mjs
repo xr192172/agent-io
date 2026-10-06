@@ -138,7 +138,50 @@ function readTerms() {
   return out;
 }
 
+/**
+ * ★★ 读 `src/domain/b_terms.ts` 的 `B_TOUCHED_EXEMPT`（**同样直读 AST**，理由同 `readTerms`：
+ *   不 import 构建产物 ⇒ 不会读到陈旧 dist）。
+ *
+ * 2026-10-06（T18 定稿）：棘轮口径从「新增 [B] 必须给 `touched`」改为
+ *   「**除非**它是 (a) 纯数据/纯计算 或 (b) [C] 级分派器 或 (c) 根只能靠 cwd 兜底 —— **三种都要登记**」
+ *   ⇒ 登记的**唯一数据源**就是这张表。
+ * ★ **为什么量具必须读它、而不是在本文件里抄一份清单**：手抄清单**必腐** —— 本文件原先就持一份
+ *   手抄的 `ANCHOR_CANDIDATES`，里面留着已删的 `box_dir` / `brick_dir` / `slim_dir`（见 `readTerms` 注释）。
+ * ★ 为什么这张表**不并进 `B_TERMS`**：那是**字段级**词表（键 = 字段名），而例外是**工具级**（键 = [B] 名）
+ *   ⇒ 混一张表会让「字段名」与「工具名」共用一个命名空间（一名多义）。
+ */
+function readTouchedExempt() {
+  const tsf = program.getSourceFile(TERMS_FILE);
+  const out = new Map();
+  if (!tsf) return out;
+  for (const st of tsf.statements) {
+    if (!ts.isVariableStatement(st)) continue;
+    for (const d of st.declarationList.declarations) {
+      if (!ts.isIdentifier(d.name) || d.name.text !== 'B_TOUCHED_EXEMPT') continue;
+      const init = d.initializer;
+      if (!init || !ts.isObjectLiteralExpression(init)) continue;
+      for (const p of init.properties) {
+        if (!ts.isPropertyAssignment(p)) continue;
+        const nm = ts.isIdentifier(p.name) || ts.isStringLiteral(p.name) ? p.name.text : null;
+        const obj = p.initializer;
+        if (!nm || !ts.isObjectLiteralExpression(obj)) continue;
+        let kind = null;
+        for (const q of obj.properties) {
+          if (!ts.isPropertyAssignment(q)) continue;
+          const k = ts.isIdentifier(q.name) || ts.isStringLiteral(q.name) ? q.name.text : null;
+          if (k !== 'kind') continue;
+          kind = foldStringLiteral(q.initializer) ?? q.initializer.getText();
+        }
+        out.set(nm, kind ?? '?');
+      }
+    }
+  }
+  return out;
+}
+
 const TERMS = readTerms();
+/** ★ 例外清单的唯一数据源（工具级）—— 棘轮报告靠它区分「已登记例外」与「真债」。 */
+const TOUCHED_EXEMPT = readTouchedExempt();
 /** ★ 权威来源 = 词表。**不再手抄**任何"锚点名"。 */
 const TERM_NAMES = new Set(TERMS.map((t) => t.name));
 /** 词表里登记为「链的接口」的词（`kind: 'anchor'`） */
@@ -394,6 +437,32 @@ if (process.argv.includes('--json')) {
       console.log(`     ${k.padEnd(15)} ${String(hits.filter((h) => h.got.includes(k)).length).padStart(2)} / ${hits.length}`);
     }
     console.log('     ⇒ ★ 这一个读数**上面几节都量不到** —— 上方"产物字段"只到 `touched` 这一层为止，不会下钻。');
+    console.log('');
+
+    // ★★ 2026-10-06（T18 定稿）：把棘轮变成**可执行**的 —— 三类分开报：
+    //   **已接 · 已登记例外（`B_TOUCHED_EXEMPT`） · 该给未给（真债）**。
+    //   判据：`hits` 里的文件 = 有 `touchedOf`（= 已接）；例外读**唯一数据源**（同一文件里的另一张表）。
+    //   ★ 用 `file` 关联（`hits` 只记文件、`rows` 记到函数；本仓 [B] 与文件基本 1:1）。
+    //   ★ 本节的 8/37 与例外表的 7 条**判据不同 ⇒ 不相等**，故**必须分开报**（见下面的脚注）。
+    const hitFiles = new Set(hits.map((h) => h.f));
+    const missing = rows.filter((r) => !hitFiles.has(r.file));
+    const exempted = missing.filter((r) => TOUCHED_EXEMPT.has(r.name));
+    const debt = missing.filter((r) => !TOUCHED_EXEMPT.has(r.name));
+    console.log('★★ 棘轮（「新增 [B] 必须给 `touched`」的**三类**，2026-10-06 T18 定稿）：');
+    console.log(`     已接            ${rows.length - missing.length} / ${rows.length}`);
+    console.log(`     已登记例外      ${exempted.length}${exempted.length ? '（' + exempted.map((r) => r.name).join(', ') + '）' : ''}`);
+    console.log(`     该给未给＝真债  ${debt.length}${debt.length ? '（' + debt.map((r) => r.name).join(', ') + '）' : ''}`);
+    const staleExempt = [...TOUCHED_EXEMPT.keys()].filter((n) => !rows.some((r) => r.name === n));
+    if (staleExempt.length) {
+      console.log(`     ⚠ 例外表的**陈旧项**（已不在当前 [B] 里，表会腐 ⇒ 请核对）：${staleExempt.join(', ')}`);
+    }
+    console.log('     ⇒ ★ 判据：`真债` **只许减不许增**（棘轮）。★ 而「已登记例外（7）」与上一行');
+    console.log('       「**产物里没有任何锚点候选字段**的 [B]：8/37」**判据不同 ⇒ 必然不相等**：');
+    console.log('         · 在 8 里、却**不在**例外表的（如 `diffViews` / `editCode` / `renameFiles`）');
+    console.log('           ⇒ 它们**已接 `touched`**（见上面那节的 `hits`），只是**产物里没有"锚点候选"字段** —— 两回事；');
+    console.log('         · 在例外表里、却**不在** 8 里的（`wizardSteps` / `runTests`）');
+    console.log('           ⇒ 它们**根本没有 `touchedOf`**，自然不会出现在"扫 `touchedOf`"的那一列。');
+    console.log('       ⇒ 一句话：**8 数的是"产物有没有候选锚点"，7 数的是"有没有 `touchedOf`"** —— 别把两个数字对着看。');
     console.log('');
   }
   // ★★ 接力键：词表里 `kind === 'anchor'` 的词在两端各覆盖多少；以及**不在词表**的候选异名。
