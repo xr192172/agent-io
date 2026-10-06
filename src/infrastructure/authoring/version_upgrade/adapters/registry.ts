@@ -56,7 +56,7 @@ export const ALL_ADAPTER_EXTS: Set<string> = new Set(adapters.flatMap((a) => a.s
  * 它们的返回类型是 `LanguageAdapter | undefined`，改成 `| string` 会让**全部调用点**
  * 都要处理 string 分支（`adapterForExt(ext)?.featureRules` 这种 `?.` 语义直接失效）
  * —— 提示升级不该以破坏契约/类型为代价。故另开一个独立入口，
- * 由"确实遇到了未覆盖扩展名"的调用点（如 `upgrade_cli` 的未覆盖段）按需调用。
+ * 由"确实遇到了未覆盖扩展名"的调用点（如 `upgrade` 工具的未覆盖段）按需调用。
  */
 export function adapterMissHint(extOrLang: string): string {
   const e = extOrLang.startsWith('.') ? extOrLang : `.${extOrLang}`;

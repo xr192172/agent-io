@@ -5,7 +5,10 @@
  *   `signal_review`（LLM 复核 = 拆分链第一棒）+ `split_stage`（按簇拆分执行 = 最后一棒）。
  *   判据：它们原先只存在于 `signal_review_cli` / `split_stage_cli`（argv 薄壳），而**核心函数本来就在**
  *   `./bricks/signal_review` 与 `./lifecycle/split_stage` ⇒ 属"**能力被藏在 MCP 面之外**"，注册即归零
- *   （两个 CLI 保留为投影面，不删 —— 删了会丢它们的 argv 便利，且非本次目标）。
+ *   ★（2026-10-06 更正）当时写的"两个 CLI 保留为投影面，不删 —— 删了会丢 argv 便利"**理由不成立**：
+ *     CLI 面本来就由 `cli.js <工具名>` **投影**提供（`package.json` 的 script 也早已改指投影），
+ *     手写 `*_cli.ts` 只是**同一入口的第二份副本** ⇒ 那两个 CLI 随后**已删**。
+ *     ★ 判据是「**唯一真相源 = `ToolDef`，MCP 与 CLI 都是它的投影**」，不是"留一份方便"。
  *
  * ★ P1b（2026-09-28）：按当时 `capability_map.LANE_OF` 的归属从 `TOOL_DEFS` 切分而来，
  *   条目**逐字搬移**，只加了 `export const DESIGN_TOOLS` 外壳 —— 归属自此由文件路径表达。
@@ -41,7 +44,7 @@ import type { ImportProjectInput } from '../../infrastructure/graph/import_proje
 import { MANAGE_ACTIONS } from './lifecycle/manage_feature.js';
 import { buildBrickifyPreview } from './bricks/render_brickwork.js';
 // ★ T15 切片（2026-10-05）：把「混合文件解耦」这对能力从 CLI 面接进 MCP 面 ——
-//   两者共用同一批 application 层核心（与 `brickify_cli` / `split_stage_cli` 同源），CLI 只是 argv 薄壳。
+//   两者共用同一批 application 层核心（与 `brickify_cli` 同源；`split_stage_cli` 已于 2026-10-06 删除），CLI 只是 argv 薄壳。
 import { buildBrickify } from './bricks/brickify.js';
 import { reviewSignals } from './bricks/signal_review.js';
 import { runSplitStage } from './lifecycle/split_stage.js';

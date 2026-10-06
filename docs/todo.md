@@ -519,12 +519,19 @@
              ② **会提交该仓库** —— 基线步骤把工作区**原有改动一并提交**（实测：夹具里那处未提交的 `notes.txt`、
                 连同运行期冒出来的 `.agent-io/cache.db*` 都被基线提交了）。⇒ **待拍板候选**（本批不动，属行为/契约决定）：
                 要不要给 `apply` 一个"不自动基线提交"的开关？
-           ★ **这两个 CLI 因此升进 (A) 级**（能力 100% 在 MCP 面，且**无 `package.json` script 牵连** ⇒ 可直接 `git rm`）；
-             本批**只注册、未删**（与上一批"删 6 个"分笔，各自留证）。
-         ⇒ ★ **剩下的 7 个（文件数不变，但构成变了）**：`cli.ts`（**投影本体**）+ **2 个正当例外**
-           （`install_package_cli` 判为一次性运维脚本；`diagnose_loop_cli` 要 `readline` 交互 —— **MCP 无法应答**）
-           + **2 个"能力还没注册"**（`archify_cli` / `brickify_cli` ⇒ ★ brickify 要先定形状）
-           + **2 个"已注册待删"**（`upgrade_cli` / `upgrade_rewrite_cli`）。
+           ★ **这两个 CLI 随即已删（2026-10-06，同批）**：能力 100% 在 MCP 面，且**无 `package.json` script 牵连**
+             ⇒ 直接 `git rm`；argv 面由 `cli.js upgrade` **投影**提供。
+             ★★ **同批更正一条写错的口径**（我上一笔把"CLI 去留"写成了**拍板项**，那是**退步**）：仓里早就定了
+               「**唯一真相源 = `ToolDef`（MCP 注册），CLI 与 MCP 都是它的投影**」—— 所以
+               ① `cli.js <工具名>` **就是** CLI 面（argv 便利由投影给，连 `key=value` 按 schema 转型都是投影③补的）；
+               ② 手写 `*_cli.ts` 是**同一入口的第二份副本** ⇒ 该删，`package.json` 的 script 只是**改指投影**
+                  （机械迁移，不是"要不要留便利"的裁决 —— 上一批对 6 条 script 正是这么干的）。
+               ⇒ 连带清掉这条口径带出来的**悬空引用**：`design/index.ts` 那句"保留 CLI 以留 argv 便利"（写时就错，
+                 且那两个 CLI 上一批已删）、`translate_go_ts` 描述里的 `translate_cli`、`detect.ts` /
+                 `adapters/registry.ts` / `translate/pairs.ts` / `meta/registry/cli_extract.ts` 里的旧 CLI 名。
+         ⇒ ★ **剩下的 5 个**：`cli.ts`（**投影本体**）+ **2 个正当例外**（`install_package_cli` 判为一次性运维脚本；
+           `diagnose_loop_cli` 要 `readline` 交互 —— **MCP 无法应答**）+ **2 个"能力还没注册"**
+           （`archify_cli` / `brickify_cli` ⇒ ★ brickify 要先定形状）。手写 CLI 至此 **13 → 5**。
          ⇒ ★ **`translate_cli` 至此升进 (A) 级**（能力已 100% 在 MCP 面）⇒ 它的**去留**成为与
          `signal_review_cli` / `split_stage_cli` 同类的**待拍板**问题（删它要动 `package.json:55` 的 script）。
       5. ✅ **已落（2026-10-06）**：把核心 `deprecate_offline.ts`（434 行、`runDeprecateOffline` 本体）从
@@ -589,10 +596,12 @@
                · **(a)** dry-run ⇒「1 个死源 → **1 个可下线自研积木候选**」✅（改前是 **0**）
                · **端到端 apply** ⇒「1 候选 → 下线 1，回滚 0」+ `written_files:["src/consumer.ts"]` + 死 import **真被删** ✅
                · **端到端 `remove_file`** ⇒ `dead.ts` **真被物理删除** + `written_files` 含它 ✅
-      6. ✅ `upgrade_cli` / `upgrade_rewrite_cli` **已注册为 MCP 工具 `upgrade`**（2026-10-06，本批；工具数 60 → 61）
-         ⇒ 两者升进 (A) 级（**可删**）——**待删清单**现在有 4 个：`upgrade_cli` / `upgrade_rewrite_cli`
-         （★ **无 script 牵连**，可直接 `git rm`）；而 `signal_review_cli` / `split_stage_cli` / `translate_cli`
-         三个的**去留仍待拍板**（能力已归零；删它们要动 `package.json` 的 script ⇒ 那是"要不要留 argv 便利"的裁决）
+      6. ✅ `upgrade_cli` / `upgrade_rewrite_cli` **已注册为 MCP 工具 `upgrade` 并已删除**（2026-10-06，同批；工具数 60 → 61）
+         ★★ **并更正一条过期口径**：这段原写「`signal_review_cli` / `split_stage_cli` / `translate_cli` 三个的**去留
+         仍待拍板**（删它们要动 `package.json` 的 script）」—— **三处都过期**：那两个 CLI 上一批（`e60e8e7`）**已删**，
+         `package.json` 的 script 也早已**改指投影**（`cli.js <工具名>`）。**「CLI 去留」不是拍板项**：
+         CLI 面由投影提供，手写 `*_cli.ts` 只是同一入口的第二份副本 ⇒ 一律删；
+         唯一真拍板项仍是 **`brickify` 的形状**（新立 `brickify` vs 给 `render_brickwork` 加 `artifacts` 枚举）
       7. **`install_package_cli` ⇒ 判为一次性运维脚本**（`spawn npm install/uninstall` 改环境 + 联网；
          且 MCP 面 `lang_hint.ts:117,147,149` **主动指引用户去跑它**）⇒ **保留、不注册**
       ★★ **第三轮盘点（2026-10-06，独立子代理逐个 flag 复核）—— 结论：上面这张"剩下"清单基本准确，

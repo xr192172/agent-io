@@ -1,8 +1,12 @@
 /**
  * cli_extract —— CLI 入口提取器（功能清单的另一半真相层）
  *
- * 用户定调（2026-08-25）：有些功能只有 CLI 没有 MCP（signal_review_cli 等），
+ * 用户定调（2026-08-25）：有些功能只有 CLI 没有 MCP（当时举例 signal_review_cli），
  * 有些只有 MCP。功能中心必须把两种入口统一采集，才能成为完整的功能注册面。
+ *
+ * ★ 2026-10-06（T15）后记：那条「CLI-only」通道已基本归零 —— 手写 CLI 从 13 删到 5，能力一律归位到
+ *   **MCP 注册**（`ToolDef`），argv 面由 `cli.js <工具名>` 投影提供。本提取器仍保留：
+ *   它采集的是**尚未注册**的能力（当前还剩几个手写 CLI），不是"两种入口并存"的长期形态。
  *
  * 本模块纯确定性（零 LLM）：
  *   - 扫描 tools/ 下 *_cli.ts（约定式 CLI 入口）
@@ -56,7 +60,7 @@ export function extractCliCommands(dir: string): CliExtractResult {
   for (const f of files) {
     const src = fs.readFileSync(path.join(abs, f), 'utf-8');
 
-    // 头注释首行「signal_review_cli —— 人话描述（…）」
+    // 头注释首行「xxx_cli —— 人话描述（…）」（例：仍存在的手写 CLI `brickify_cli`）
     const head = src.match(/^\/\*\*\s*\n\s*\*\s*([A-Za-z_]+)\s*[—-]{1,2}\s*(.+)/);
     const name = (head?.[1] ?? f.replace(/\.ts$/, '')).replace(/_cli$/, '');
     const desc = head?.[2]?.replace(/\*\/.*/, '').trim() ?? '';

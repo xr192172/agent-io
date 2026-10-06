@@ -1,5 +1,6 @@
 /**
- * detect：版本升级契约差 · 共享检测编排（供 upgrade_cli / upgrade_rewrite_cli 复用）—— 通用内核
+ * detect：版本升级契约差 · 共享检测编排（供 `upgrade` 工具复用；原 upgrade_cli / upgrade_rewrite_cli
+ * 两个 CLI 已于 2026-10-06 删除 —— 能力归位到 `application/meta/upgrade/upgrade.ts`）—— 通用内核
  *
  * 把"按子项目扫描"的编排逻辑从 CLI 抽出来，语言差异全部委托给适配器注册表：
  *   1. 工具链声明（阶段 A）→ 每个子项目声明什么运行时版本

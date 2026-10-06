@@ -174,7 +174,7 @@
       "layer": "application",
       "role": "capability",
       "dir": "src/application/meta/upgrade",
-      "note": "版本升级契约差：工具链 / 语言特性 / 废弃-移除 API 检测（**只读**）+ 局部重写闭环（应用 → 验证 → 提交/回退，回退依赖 git）。★ 两个动作审的是**同一操作对象** ⇒ 合成单入口 `upgrade`（action=scan/apply，依据 `docs/tool-convergence.md` §2.0「按操作对象聚合」）。★ 核心原先被两个 CLI（`upgrade_cli` / `upgrade_rewrite_cli`）**独占** ⇒ 2026-10-06 按 T15 归位到本域，两个 CLI 退化成薄壳。★ 与 `infrastructure/authoring/version_upgrade`（检测/闸/重写的**算法面**）不同：这里是「工具面 + 闭环编排」。"
+      "note": "版本升级契约差：工具链 / 语言特性 / 废弃-移除 API 检测（**只读**）+ 局部重写闭环（应用 → 验证 → 提交/回退，回退依赖 git）。★ 两个动作审的是**同一操作对象** ⇒ 合成单入口 `upgrade`（action=scan/apply，依据 `docs/tool-convergence.md` §2.0「按操作对象聚合」）。★ 核心原先被两个 CLI（`upgrade_cli` / `upgrade_rewrite_cli`）**独占** ⇒ 2026-10-06 按 T15 归位到本域，两个 CLI 随后**已删除**（argv 面由 `cli.js upgrade` 投影提供 —— 唯一真相源是 `ToolDef`，CLI 与 MCP 都是它的投影）。★ 与 `infrastructure/authoring/version_upgrade`（检测/闸/重写的**算法面**）不同：这里是「工具面 + 闭环编排」。"
     },
     {
       "id": "design-dsl-ops",
@@ -420,7 +420,7 @@
       "id": "cli-surface",
       "layer": "presentation",
       "dir": "src/presentation/cli",
-      "note": "CLI 入口面（13 个文件）：`cli.ts`（投影本体）+ 各 `*_cli.ts`。每个文件 = 一条命令，命令之间**并列**、不互相拥有 ⇒ 平铺是终态。★ 2026-10-05 拆出 `cli/render/`（见 `cli-render`）：原 22 文件里 7 个 renderer + 1 个 CSS 是「被 `brickify_cli` 引用的**渲染子库**」，不是命令 ⇒ 它们让本条 note 的理由（\"每个文件 = 一条命令\"）**对它们不成立**；拆掉后本条才**真的是**平铺终态。★ 2026-10-06 又把 `deprecate_offline.ts`（434 行、`runDeprecateOffline` 本体）搬去 `src/application/refactor/deprecate_offline/`（见新域 `deprecate_offline`）—— 它不是命令、是**被 `deprecate_offline_cli` 引用的能力**（且它 import `application/refactor/edit` ⇒ 本就在 application 层），与 `cli/render/` 同型。",
+      "note": "CLI 入口面（**5 个文件**；★ 2026-10-06 由 13 删到 5，见本 note 末）：`cli.ts`（投影本体）+ 各 `*_cli.ts`。每个文件 = 一条命令，命令之间**并列**、不互相拥有 ⇒ 平铺是终态。★ 2026-10-05 拆出 `cli/render/`（见 `cli-render`）：原 22 文件里 7 个 renderer + 1 个 CSS 是「被 `brickify_cli` 引用的**渲染子库**」，不是命令 ⇒ 它们让本条 note 的理由（\"每个文件 = 一条命令\"）**对它们不成立**；拆掉后本条才**真的是**平铺终态。★ 2026-10-06 又把 `deprecate_offline.ts`（434 行、`runDeprecateOffline` 本体）搬去 `src/application/refactor/deprecate_offline/`（见新域 `deprecate_offline`）—— 它不是命令、是**被 `deprecate_offline_cli` 引用的能力**（且它 import `application/refactor/edit` ⇒ 本就在 application 层），与 `cli/render/` 同型。★ 2026-10-06（T15）：手写 CLI **13 → 5**（先后删 8 个 —— `capability_cli` / `instrument_cli` / `signal_review_cli` / `split_stage_cli` / `translate_cli` / `deprecate_offline_cli` / `upgrade_cli` / `upgrade_rewrite_cli`）—— 能力一律归位到 **MCP 注册**（`ToolDef` 数组），argv 面由 `cli.js <工具名>` **投影**提供 ⇒ 手写 `*_cli.ts` 只是**同一入口的第二份副本**。现存 5 个：`cli.ts`（投影本体）+ `archify_cli` / `brickify_cli` / `diagnose_loop_cli` / `install_package_cli`。",
       "role": "capability"
     },
     {

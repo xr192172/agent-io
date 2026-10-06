@@ -18,7 +18,8 @@ import { verifySkeletons, type VerifyIssue } from './verify.js';
 //   而 `project.ts` 反过来 import 本文件的 `translateGoToTs` ⇒ **两文件成环**
 //   （dependency-cruiser 的 `no-circular` 抓到的 8 个之一）。
 //   ★ 这类"**桶文件造成的环**"是最常见的一种：**转发不是依赖**，删掉转发、让消费者直连即可。
-//   ⇒ 已删；`tool.ts` / `translate_cli.ts` 改为直接从 `./project.js` 引 `translateGoProject`。
+//   ⇒ 已删；`tool.ts` 改为直接从 `./project.js` 引 `translateGoProject`（当时还有 `translate_cli.ts`，
+//     该 CLI 已于 2026-10-06 删除 —— 能力与 argv 面都归位到「MCP 注册 + `cli.js` 投影」）。
 import { buildHolePrompts } from './prompts.js';
 import type { TransUnit } from './unit.js';
 
