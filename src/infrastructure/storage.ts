@@ -437,7 +437,15 @@ export type DSLView = 'design' | 'live';
  * - live：走 getLiveFeature（实际代码快照，只读），用于对比"设计 vs 代码现状"
  */
 export function getDSLByView(feature: string, view: DSLView = 'design'): DesignDSL | null {
-  return view === 'live' ? getLiveFeature(feature) : getDSL(feature);
+  // ★★ 2026-10-06（T19 收口）：读 `live` 视图时**不再裸调 `getLiveFeature(feature)`** ——
+  //   那会落 `dataHome`，而**写侧（`import_project`）可能把它写在被监听项目的根**
+  //   （`watch_project` 监听任意项目时）⇒ **静默读不到**（隔离实测复现：返回 null，不抛）。
+  //   ⇒ 改用**读侧统一取根** `resolveViewBaseDir`（**入参优先 → 否则反查 DSL 的 `source_root`**）。
+  //   ★ 本函数**一处修、四处受益**：调用方有 `derive_feature_tree`（live 语义基准）·
+  //     `diffFeatures`（view_a/view_b）· `query_feature`（`view` 入参）· `design` handlers。
+  return view === 'live'
+    ? getLiveFeature(feature, resolveViewBaseDir(feature) ?? undefined)
+    : getDSL(feature);
 }
 
 /** 列出所有已保存的 feature，按 feature 名升序 */

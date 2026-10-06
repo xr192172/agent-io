@@ -43,7 +43,7 @@
  */
 
 import fs from 'node:fs';
-import { requireProjectRoot, getDSL, ensureBaseline, getBaselineFeatureFile, getFeatureFile } from '../infrastructure/storage.js';
+import { requireProjectRoot, getDSL, ensureBaseline, getBaselineFeatureFile, getFeatureFile, resolveViewBaseDir } from '../infrastructure/storage.js';
 import { projectCacheDbPath, getProjectCacheDb } from '../infrastructure/index/db.js';
 import { ensureProjectIndex } from '../infrastructure/index/index_freshness.js';
 import { getProjectView, invalidateProjectView } from '../infrastructure/project_view.js';
@@ -156,13 +156,21 @@ export const STAGES: readonly Stage[] = [
     owner: 'dataHome',
     inputs: ['dsl_features'],
     note: '设计基线（共同祖先）快照',
-    locate: (ctx) => getBaselineFeatureFile(needFeature(ctx)),
+    locate: (ctx) => {
+      const feature = needFeature(ctx);
+      return getBaselineFeatureFile(feature, resolveViewBaseDir(feature) ?? undefined);
+    },
     produce: async (ctx) => {
       const feature = needFeature(ctx);
       const dsl = getDSL(feature);
       // ★ 上游（源）声称在、却取不到内容 ⇒ 抛。**不兜底**：不拿别的 feature 的 DSL 顶替。
       if (!dsl) throw new Error(`工序 dsl_baseline：feature "${feature}" 的设计 DSL 取不到`);
-      ensureBaseline(dsl);
+      // ★★ 2026-10-06（T19 收口）：**读 / 写用同一取根口径**。原先 `locate` 与这里的
+      //   `ensureBaseline(dsl)` 都**只用 feature**（隐含 `dataHome`），而**真实写侧**
+      //   （`import_project`）传的是 `input.live_dir`（`watch_project` 监听任意项目时
+      //   = **那个项目的根**）⇒ **同一份数据两条线各持一份根**（判据分叉）。
+      //   ⇒ 统一走 `resolveViewBaseDir`（入参优先 → 否则反查 DSL 的 `source_root`）。
+      ensureBaseline(dsl, resolveViewBaseDir(feature) ?? undefined);
     },
   },
   {

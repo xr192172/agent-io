@@ -384,9 +384,16 @@
         · **实测验收**（隔离夹具，`AGENT_IO_HOME` 隔离、用完即删）：造 `design=1 文件 /
           live=2 文件（**写在项目根**）` ⇒ `diff_views` **不传 `live_dir`** ⇒ 输出「实际视图: **2 文件**」
           （**改前是 0**）✅；本仓回归正常；总门五道全 PASS。
-        ⇒ ★ **剩下**（下笔）：`stage_registry` 的 `dsl_baseline.locate` / `produce` 仍是 **feature-only**
-          口径 ⇒ 应改用同一单点；`storage.ts` 内部那处（`getLiveFeatureFile(feature)` / `getBaselineFeatureFile(feature)`
-          不传 baseDir）同样该收口。
+        ⇒ ✅ **剩下的也收了（同批）**：
+        · `stage_registry` 的 `dsl_baseline.locate` / `produce` 已改用**同一单点**（读 / 写同口径）；
+        · ★★ 并挖出**同一个病的第 5 个入口、且是共用入口**：`getDSLByView(feature, 'live')` 原先也
+          **裸调** `getLiveFeature(feature)` ⇒ **一处修、四处受益**（`derive_feature_tree` 的 live 语义基准 ·
+          `diffFeatures` 的 view_a/view_b · `query_feature` 的 `view` 入参 · `design` handlers）。
+          **实测**：`getDSLByView(demo,'live')` 的文件数 **0 → 2**（夹具：live 写在项目根）✅。
+        · ★ **仍未收口的一处**（如实记）：`storage.ts` 的 `deleteFeature` 用
+          `getLiveFeatureFile(feature)` / `getBaselineFeatureFile(feature)`（**不传 baseDir**）去**删**文件
+          ⇒ 若 live / baseline 在项目根，**删不到**（残留）；但它属「**删除**语义」（要连"该删哪些根"一起定），
+          **本笔不动**。
       · (5) ★★ **补"符号级绑定点"**（用户 2026-10-01 提的"两份数据双向绑定"的真缺口）：
         现在两份数据（DSL=意图 / `cache.db`=事实）**只在文件级配对**（`semantic.files[].path` ⟷ `files.path`，
         且同一条目里 `expected_apis` / `actual_apis` 并存 —— **这已经是现状**）；
