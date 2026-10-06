@@ -505,7 +505,14 @@
       2. **`diagnose_loop_cli`** —— ★★ **硬障碍**：默认路径用 `readline` **交互提问**（MCP 无法应答），
          且会 `git commit` 用户仓库、`execSync` 跑测试、大范围改盘 ⇒ **边界必须先定**
          （建议只暴露"诊断 + 补丁 diff 预览"，apply/commit 留给显式授权路径）
-      3. **`instrument_cli`** —— 先给 `observe_instrument` 补 `action=ledger`（现枚举只有 `instrument|uninstrument|restore`）
+      3. ✅ **已落（2026-10-06）**：`instrument_cli --ledger` 已接进 MCP —— 给 `observe_instrument` 补了
+         `action='ledger'`（枚举原先只有 `instrument|uninstrument|restore`）。实现在
+         `application/observe/handlers.ts` 的**只读分支**（复用 `loadProbeLedger` / `ledgerSummary`，
+         **不碰任何写盘 / 备份路径**）；`message` 给人读台账（与 CLI 逐行一致）、`data` 给
+         `{root, ledger, summary}`（`ledger:null` = 未找到台账 ⇒ **不抛错**，"没插过桩"是正常状态）。
+         实测：`{"action":"ledger"}` ⇒ 明说「未找到台账…」+ 结构化 data；`{"action":"restore"}` **回归正常**。
+         ⚠ **那个 CLI 文件本身仍在**（删它要连同 `package.json:51` 的 script 与
+         `scripts/setup.mjs:36,253-257` 的**硬依赖**一起改）—— 属下一批。
       4. **`translate_cli`** —— 先给 `translate_go_ts` 补 `holes` / 单文件 `out` / `batchSize`（zod schema 未暴露）
       5. **`deprecate_offline_cli`** —— ★ **层问题**：核心 `runDeprecateOffline` 住在 **`presentation/cli/`** 里
          ⇒ 注册前得先把它搬到 application/infrastructure（属"修形状"，不是包一层）
@@ -513,6 +520,25 @@
          `signal_review_cli` / `split_stage_cli` 这两个 **CLI 的去留**（能力已归零，CLI 是否留作 argv 便利）
       7. **`install_package_cli` ⇒ 判为一次性运维脚本**（`spawn npm install/uninstall` 改环境 + 联网；
          且 MCP 面 `lang_hint.ts:117,147,149` **主动指引用户去跑它**）⇒ **保留、不注册**
+      ★★ **第三轮盘点（2026-10-06，独立子代理逐个 flag 复核）—— 结论：上面这张"剩下"清单基本准确，
+        本笔只补两件它没写的**：
+      · ★ **「删 / 改前必改清单」**（上面第 6 项的"CLI 去留"必须先看这个）：`package.json` 有 **9 条**
+        script 指向这些 CLI（`:51` instrument · `:55` translate · `:57` brickify · `:58` signal-review ·
+        `:59` split-stage · `:60` deprecate-offline · `:61` capability · `:62` install-package ·
+        `:64` diagnose-loop；★ `upgrade_cli` / `upgrade_rewrite_cli` **未登记 script**）；
+        ★★ **`scripts/setup.mjs` 是同仓的硬调用者**（`:36` `INSTRUMENT_CLI` · `:37` `CAPABILITY_CLI` ·
+        `:176` 跑 `capability_cli --installed --json` · `:253-257` spawn `INSTRUMENT_CLI`）
+        ⇒ **这两个 CLI 不能直接删**（删前先让 `setup.mjs` 改走 `cli.js <工具名>`）；
+        ★ `README.md` / `README.en.md` 对外宣传了 `diagnose-loop` 等 CLI 名 ⇒ 改要同步文档。
+      · ✅ **三个 (A) 级「能力已全在 MCP」再确认**（逐 flag 核对 ⇒ 可据此删 CLI **文件**）：
+        `capability_cli`（全在 `capability_audit`：`installed_only` + 结构化 data）·
+        `signal_review_cli`（6 个 flag 全对应 `signal_review` 入参）·
+        `split_stage_cli`（6 个 flag 全对应 `split_stage`，含 `--no-reexport` = `re_export_extracted:false`）。
+        ★ 但仍建议**与上面那份"必改清单"同批做**（否则破坏 script / `setup.mjs`）。
+      · ⚠ 另记（第 1 项定形状时要按这个来）：`brickify_cli` 的 11 类产物里**只有 `--out` 有 MCP 对应**
+        （`render_brickwork` 的 `output_path`），其余 10 个（`--json` / `--mindmap` / `--workbench` /
+        `--sandbox` / `--anatomy` / `--tools-map` / `--wizard` / `--dsl-workbench` / `--workbench-data` /
+        `--narrate`）**无任何出口**。
       **要做的事**（两个方向合流）：
       · ① `brickify_cli`（**11 个输出产物的积木工作台**）与 `diagnose_loop_cli`（一键诊断闭环，`--apply` 会改代码）
         ⇒ 注册为 MCP 工具（它们**不是**别的工具的 CLI，是独立能力）

@@ -8,6 +8,7 @@
  * 本文件由 `edit_code`（AST 取边界）从原文件逐符号搬入，**不是手抄**；tsc 是闸门。
  */
 
+import path from 'node:path';
 import { wrap, wrapData } from '.././plumbing.js';
 import { rebuildChains } from '../../infrastructure/analysis/observe/chain.js';
 import { TSComparator, renderTSDiffReport } from '../../infrastructure/analysis/observe/contract.js';
@@ -20,6 +21,8 @@ import {
   renderInstrumentReport,
   renderUninstrumentReport,
 } from '../../infrastructure/analysis/observe/observe_langs.js';
+// ★ 2026-10-06（T15）：探针台账的读取与摘要 —— 原先是 CLI-only 的 `instrument_cli --ledger`。
+import { loadProbeLedger, ledgerSummary } from '../../infrastructure/analysis/observe/instrument.js';
 import { DesignDSLStore, defaultDSLDir } from '../../infrastructure/analysis/observe/dsl_store.js';
 import { queryObserveLog } from '../../infrastructure/analysis/observe/log_query.js';
 import { getDSLByView, getLiveDir, requireProjectRoot } from '../../infrastructure/storage.js';
@@ -34,6 +37,37 @@ export const observeInstrumentHandler = wrapData(async (a) => {
   if (!target) {
     throw new Error('observe_instrument 需要 target 参数：传要插桩的项目目录。');
   }
+
+  // ★★ 2026-10-06（T15）：`action=ledger` —— 查看探针台账（一次插桩的全部探针点 + 统计）。
+  //   为什么补它：本仓盘点「真 CLI 共 11 个」时，`instrument_cli --ledger` 是那个 CLI **唯一**
+  //   没有 MCP 对应的一项（action 枚举原先只有 `instrument|uninstrument|restore`）
+  //   ⇒ 直接删那个 CLI 会**丢掉一个能力**（它不是"多余的投影"）。
+  //   本处接的是**只读**分支，复用 CLI 的同一实现（`loadProbeLedger` / `ledgerSummary`），
+  //   不碰任何写盘/备份路径。
+  //   ★ 输出形状：`message` = 人读台账（与 CLI 逐行一致）；`data` = `{ root, ledger, summary }`。
+  //     `ledger: null` = 未找到台账 ⇒ **不抛错**（"没插过桩 / 已全拔"是正常状态，不是失败）。
+  if (a.action === 'ledger') {
+    const ledgerRoot = path.resolve(target);
+    const ledger = loadProbeLedger(ledgerRoot);
+    if (!ledger) {
+      return {
+        message: `=== Observe 探针台账 [${ledgerRoot}] ===\n未找到台账（可能从未插桩，或已一键全拔清理）。`,
+        data: { root: ledgerRoot, ledger: null, summary: null },
+      };
+    }
+    const summary = ledgerSummary(ledger);
+    const lines = [
+      `=== Observe 探针台账 [${ledgerRoot}] ===`,
+      `插桩时间：${ledger.instrumentedAt}`,
+      `统计：${summary}`,
+      '── 明细（探针点）──',
+      ...ledger.sites.map(
+        (s) => `  ${path.relative(ledgerRoot, s.file) || s.file} L${s.line} [${s.kind}/${s.level}] ${s.injected.trim().split('\n')[0]}`,
+      ),
+    ];
+    return { message: lines.join('\n'), data: { root: ledgerRoot, ledger, summary } };
+  }
+
   const unintrument = a.action === 'uninstrument' || a.action === 'restore';
   const dryRun = a.dry_run === true || a.dry_run === 'true' || a.dry_run === '1';
   const projectRoot = a.project_root as string | undefined;

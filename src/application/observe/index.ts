@@ -217,16 +217,17 @@ export const OBSERVE_TOOLS: ToolDef[] = [
       '对目标项目全自动插桩，按语言分派：Go 工程走 observe-lang-go 语言包（go/ast 注入 camprobe.Capture，函数出/入/return/catch/IO）；' +
       'TS 工程走 TS AST（captureProbe）。均幂等（已含探针文件跳过）。' +
       'action=uninstrument|restore 一键全拔（从自动备份拷回原文件、删备份目录）。' +
+      'action=ledger 只读查看探针台账（一次插桩的全部探针点 + 统计），不写盘。' +
       'dry_run=true 只预览不写盘。写盘前自动备份，git 可兜底。' +
-      'TS 写盘后自动生成探针台账（.agent-io/observe-ledger.json）；Go 写盘后可用 --restore 还原。' +
+      'TS 写盘后自动生成探针台账（.agent-io/observe-ledger.json），用 action=ledger 只读查看；Go 写盘后可用 action=restore 还原。' +
       '契约模式：contract_probes 传探针 id 数组则只注入这些探针点；缺省=探索模式全量插桩。' +
       'Go 运行前提：被测工程须能 import `github.com/xr192172/agent-io/observe-lang-go/probe`（其 go.mod 需 replace/require 指向本仓 observe-lang-go）。',
     inputSchema: {
       action: z
-        .enum(['instrument', 'uninstrument', 'restore'])
+        .enum(['instrument', 'uninstrument', 'restore', 'ledger'])
         .optional()
-        .describe('instrument=插桩（默认）；uninstrument/restore=一键全拔（还原+清备份）'),
-      target: z.string().describe('要插桩/还原的目标项目目录'),
+        .describe('instrument=插桩（默认）；uninstrument/restore=一键全拔（还原+清备份）；ledger=只看探针台账（只读，不写盘）'),
+      target: z.string().describe('要插桩 / 还原 / 查台账的目标项目目录'),
       dry_run: z.boolean().optional().describe('true=只预览探针点不写盘（默认 false）'),
       contract_probes: z
         .array(z.string())
