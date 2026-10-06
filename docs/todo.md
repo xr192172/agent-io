@@ -374,26 +374,37 @@
         · **实验 3（三候选同场景对比）**：**(a)** ⇒ **null** ❌；**(b)** ⇒ **读到** ✅；
           **(c)** ⇒ 也 null（**须把写侧 5 处一起搬**才一致，且会**丢掉**「与该项目的 `cache.db`
           同目录归位」这个**已有设计意图**——`saveLiveFeature` 的注释就是为它写的）。
-        · ★ **选 (b)**。顺带查出「根」的口径**至少有 4~5 种**（`import_project` 传 `live_dir` /
+        · ★ **选 (b)** —— ★★ **但 (b) 那个"二选一"形状随后被实测推翻，已改成「候选链」**（见下「已落」段）：
+          顺带查出「根」的口径**至少有 4~5 种**（`import_project` 传 `live_dir` /
           `diff_views` 传 `live_dir` / `stage_registry` feature-only ⇒ dataHome / `design`·`observe`
           handlers 用 `requireProjectRoot` ⇒ **项目根** / `storage.ts` 内部一处 ⇒ dataHome）
           ⇒ **判据分叉的教科书案例**。
-        · ✅ **已落**：`storage.ts` 新增**读侧统一取根** `resolveViewBaseDir(feature, explicit?)`
-          （**入参优先 → 否则反查 DSL 的 `source_root`**；**两者都拿不到 ⇒ 返回 `null`、调用方必须响亮处理**）；
-          `diff_views.ts` 改用它。★ 本笔**只修「根从哪来」、不改「拿不到怎么办」**（仍容忍 `null`，与改前同）。
-        · **实测验收**（隔离夹具，`AGENT_IO_HOME` 隔离、用完即删）：造 `design=1 文件 /
-          live=2 文件（**写在项目根**）` ⇒ `diff_views` **不传 `live_dir`** ⇒ 输出「实际视图: **2 文件**」
-          （**改前是 0**）✅；本仓回归正常；总门五道全 PASS。
+        · ✅ **已落（含一次自我修正）**：`storage.ts` 的取根单点从"二选一"改成**候选链** ——
+          `viewBaseDirCandidates(feature, explicit)`（`explicit` > `dsl.source_root` > `dataHome`，去重）
+          + `getLiveFeatureResolved` / `getBaselineFeatureResolved`（**取第一个「文件存在」的**）。
+          ★ 与 `db.ts#findCacheDb`（两级锚、取第一个存在的）、`defaultEventsCandidates`（录制事件候选）
+          **同款形状**。★ **为什么要改**：上一版是" `explicit` 否则 `dsl.source_root`"这个**二选一**，
+          而写侧**两种模式都真实存在**（未传 `live_dir` ⇒ 落 `dataHome`；传了 ⇒ 落项目根）⇒
+          猜一个必然让另一种**静默读不到**：★ **实测本仓 4 个 feature 的 live/baseline 全在 dataHome**，
+          而 `dsl.source_root` 指向的仓里没有 ⇒ 上一版把 `getDSLByView(f, live)` 由「读到」变成 **`null`**。
+          并据此定清三种语义：**读**=候选链取第一个存在的 · **写**=**不新造落点**（已有就写在它已在的那处，
+          都没有才落 `dataHome`；刻意不写 `source_root`，否则给"从没在项目根放过 baseline"的 feature
+          **凭空造出第二份**）· **删**=候选链上**每一处都删**。
+        · **实测验收**（真跑；夹具在 `$TEMP` + `AGENT_IO_HOME` 隔离，用完即删）：
+          ① `diff_views` 不传 `live_dir`（live 写在项目根）⇒ 输出「实际视图: **2 文件**」（改前 0）✅
+          ② ★ **真实环境 4 个 feature ⇒ 4/4 读到 ✅**（即修正了上面那个回归）
+          ③ 夹具**模式A（live 在 dataHome）/ 模式B（live 在项目根）都读到 ✅**
+          ④ `deleteFeature`：live@项目根 与 live@dataHome **两处都删净** ✅；总门五道全 PASS。
         ⇒ ✅ **剩下的也收了（同批）**：
-        · `stage_registry` 的 `dsl_baseline.locate` / `produce` 已改用**同一单点**（读 / 写同口径）；
+        · `stage_registry` 的 `dsl_baseline.locate` / `produce` 已改用**同一候选链**
+          （`locate` 报第一个存在的；`produce` ★ **不新造落点** —— 已有就写在它已在的那处）；
         · ★★ 并挖出**同一个病的第 5 个入口、且是共用入口**：`getDSLByView(feature, 'live')` 原先也
           **裸调** `getLiveFeature(feature)` ⇒ **一处修、四处受益**（`derive_feature_tree` 的 live 语义基准 ·
           `diffFeatures` 的 view_a/view_b · `query_feature` 的 `view` 入参 · `design` handlers）。
           **实测**：`getDSLByView(demo,'live')` 的文件数 **0 → 2**（夹具：live 写在项目根）✅。
-        · ★ **仍未收口的一处**（如实记）：`storage.ts` 的 `deleteFeature` 用
-          `getLiveFeatureFile(feature)` / `getBaselineFeatureFile(feature)`（**不传 baseDir**）去**删**文件
-          ⇒ 若 live / baseline 在项目根，**删不到**（残留）；但它属「**删除**语义」（要连"该删哪些根"一起定），
-          **本笔不动**。
+        · ✅ **原先「仍未收口」的 `deleteFeature` 也已收口**（同批）：它原先只删
+          `getLiveFeatureFile(feature)`（隐含 `dataHome`）⇒ 快照落在项目根时**删不到、留残**；
+          现按候选链**逐处删**，且候选链**赶在删 feature 存档之前**算（否则反查不到 `source_root`）。
       · (5) ★★ **补"符号级绑定点"**（用户 2026-10-01 提的"两份数据双向绑定"的真缺口）：
         现在两份数据（DSL=意图 / `cache.db`=事实）**只在文件级配对**（`semantic.files[].path` ⟷ `files.path`，
         且同一条目里 `expected_apis` / `actual_apis` 并存 —— **这已经是现状**）；
