@@ -30,7 +30,7 @@
 >
 > - 已落地样板：`gateway_provider`（list/upsert/delete/stats）、`canvas_notes`（read/mark/decide）、`manage_feature`（create/clone/template/list/delete）。
 >
-> - 反面教训：`camera_*`（instrument/judge/log/chain\_recon）**不聚合**——看似同对象，实为不同抽象层（基础动作/判定/查询/编排），且被 `mcp_tools.test` 显式锚定，强行合并违背契约。
+> - 反面教训：`camera_*`（instrument/judge/log/chain\_recon）**不聚合**——看似同对象，实为不同抽象层（基础动作/判定/查询/编排）；★ 此处依据是**判据的第二维（同抽象层）独立成立** —— 强行合并会造出"一个入口横跨四层"的分发壳，违背"按操作对象聚合"的初衷（2026-10-06 更正：原记的锚定依据 `mcp_tools.test` 已随测试框架整体移除，结论不变）。
 
 ### 第一层 · LLM 能力域（给 MCP 工具）
 
