@@ -157,6 +157,34 @@ function guard(
   sendJson(res, status, tagged);
 }
 
+/**
+ * POST /api/save —— **浏览器画布存盘**（serve 侧的写口）。
+ *
+ * ## ★ 2026-10-06 决定：本路径**进入退役名单**（用户裁定）
+ * 原话：「那份前端（`output/`）**也该退役了**，我找到了更好的产品形式，后续会重新开发。」
+ * ⇒ 因此**不再为它做契约改造** —— 例如把 `_dsl_rev` 改成必填（那要前端配合，
+ *   而前端已无心力维护）。**这个决定本身就是本笔要留的东西。**
+ *
+ * ## ⚠ 它的已知缺口（照实留在这里，本笔**不修**，理由见上）
+ *   · **rev 乐观锁是可选**：浏览器不带 `_dsl_rev` ⇒ `baseRev=undefined` ⇒ `saveDSL` **跳过校验**
+ *     （`storage.ts` 原文"省略则不做校验（保留旧直写语义，兼容既有 30 处调用）"）。
+ *   · **它不走 daemon 的串行队列**（`edit_dsl` 走）⇒ 与 MCP 编辑**并发时可能静默覆盖**。
+ *   · 它**没有** `edit_dsl` 的 T20「现取事实」闸与 `view=live` 护栏 —— ★ 那是**有意的**：
+ *     人要向自己证明"我读过代码"没有意义；T20 防的是 **LLM 凭空断言代码事实**。
+ *     （此前 todo 把这条判成"判据分叉"，**判断有误，已更正**。）
+ *
+ * ## ★★ 给"重新开发的新前端"的指引（本笔最要紧的一句）
+ *   新前端**不要**再开一条直写 `saveDSL` 的路 —— 请复用 **daemon 的串行队列**
+ *   （`POST /api/dsl` 的 `ops` 形态，见 `daemon/dslWriteHandler`：单写者 + 依赖区域分桶 +
+ *    乐观锁，结构性消除"最后写者胜"）。否则会**再造一条弱闸通道**（本仓已因此踩过一次）。
+ *   确认新前端不再用它之后，本路径（连同 `source='browser'` 语义）可**整体删除**。
+ *
+ * ## 存量语义（未被本笔改动）
+ *   乐观锁（方向 F）：浏览器提交的 DSL 携带其基于的 `_dsl_rev`；磁盘当前 rev 若已被他人
+ *   （MCP/其他会话）推进，则拒绝本次覆盖，返回 409 + `current_rev` 供浏览器 rebase。
+ *   传 `'browser'` source：冲突分支在 `saveDSL` 抛错前不触发 SSE reload，且成功后以
+ *   `'browser'` 回调，浏览器据此跳过自身刷新。
+ */
 async function handleApiSave(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
   try {
     const body = await readBody(req);
@@ -168,12 +196,16 @@ async function handleApiSave(req: http.IncomingMessage, res: http.ServerResponse
       return;
     }
 
-    // 乐观锁（方向 F）：浏览器提交的 DSL 携带其基于的 _dsl_rev。
-    // 磁盘当前 rev 若已被他人（MCP/其他会话）推进，则拒绝本次覆盖，
-    // 返回 409 + current_rev 供浏览器拿到最新 base 后 rebase，杜绝「最后写者胜」。
-    // 传入 'browser' source：冲突分支在 saveDSL 抛错前不会触发 SSE reload，
-    // 且 saveDSL 内部成功后以 'browser' source 回调，浏览器据此跳过自身刷新。
     const baseRev = result.dsl._dsl_rev;
+    // ★ 不静默（2026-10-06）：未带 `_dsl_rev` ⇒ 本次是**无并发校验的直写**，可能与 MCP 编辑
+    //   互相覆盖。不改行为（前端待退役、不做契约改造），但让它**在日志里可见** ——
+    //   "出问题时能查" 与 "什么都看不见" 是两回事（本仓一贯的"不许静默"）。
+    if (baseRev === undefined) {
+      console.warn(
+        `[/api/save] feature "${result.dsl.feature}" 未携带 _dsl_rev ⇒ 无并发校验直写` +
+          `（可能与 MCP/edit_dsl 的改动互相覆盖；该路径已在退役名单上）`,
+      );
+    }
     try {
       saveDSL(result.dsl, 'browser', baseRev);
     } catch (e) {
