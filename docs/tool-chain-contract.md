@@ -157,6 +157,57 @@ G8 行为快照 `UPDATE_TOOL_BEHAVIOR=1` **并记账**。
 **同批被顺带消掉的**：`harvest_decisions` 的 `read_files` 曾**违反词表定义**
 （词表写"仓库相对路径"，而它的路径基准是 `process.cwd()`）—— 该出口撤出后，这个违反**不再存在**。
 
-**未做的（下一步，见 T56 ④-2）**：**"剪贴板 / 变量"这一格本身** —— 即"某个值被选中后，
-能原样填进下游"。★ 它**今天仍不存在**（`chain_wiring` 的 `cardinality: 'pick'` 只说了"要挑"，
-但**"挑出来的那个值"没有任何实体承载**）。
+**✅ 该格已于 2026-10-06 补上名字** —— 见 §9：`touched.<键>[i]` 就是"挑出来的那个值"的**表达式**，
+且由 `chain_wiring.ts` 的 `chainExprOf()` **一处生成**（不再"没有任何实体承载"）。
+
+---
+
+## 9. 追加记录：§5 那条链**真跑验收** + 「选一个」的明文表达（2026-10-06）
+
+> ★ 本节是**追加记录**（§5 那段"现在为什么接不上 / 有 `Touched` 后链在类型上成立"保留原貌 ——
+> 它记的是当时的判断）；结论在此更新。
+>
+> ★ 判据的**源头**是用户 2026-10-05 的原话（照录，别转述）：
+> 「**有可被再利用的价值时，才有被当做『出参』的意义。否则把它当变量、当剪贴板直接剪贴给下一个。**」
+> 「**通用工具本身可以读所有的文件吧？不管它是事件集还是源码集**」＋「**为什么不直接从 AST 里读呢？**」
+
+**做了什么**：把 §5 那条链（`find_references → rename_symbols → edit_code → run_tests`）**真跑了一遍**，
+逐条核 `src/domain/chain_wiring.ts` 里挂着的那三条 `pending` 边。夹具 `$TEMP/t54chain`
+（2 个 TS 文件 + 一个恒过 `scripts.test`；不进仓、用完即删），全程**零字段名翻译**
+（上游 `touched` 的键名**逐字**当下游入参名）。
+
+| 边 | 结果 |
+|---|---|
+| `rename_symbols.written_files → edit_code.file` | ✅ **成立**（挑 `[1]` 放进 `file` + `op=replace_text` ⇒ `ok=true`） |
+| `rename_symbols.symbols → edit_code.symbol` | ✅ **成立**（`symbols[0]` + `op=replace` ⇒ `ok=true`） |
+| `edit_code.written_files → run_tests.project_dir` | ❌ **证伪、撤掉**（把**文件**当**根**传 ⇒ `无法读取目标项目 package.json（…\src\b.ts\package.json）`） |
+
+`rename_symbols`（`Kk → KkRenamed`，真落盘 2 文件）给出的 `touched`：
+`{project_dir, symbols:["KkRenamed"], written_files:["src/a.ts","src/b.ts"]}`。
+
+★ **两个必须先说的前提**（否则**静默改错文件**）：
+- `edit_code.file` 是**相对 `project_dir`** 解析的，而 `written_files` 是**仓库相对** ⇒
+  **必须同时把 `touched.project_dir`（通用边）传过去**，让两者同基准。
+- `run_tests.project_dir` 要的是**根**：正确接法是 `touched.project_dir`（通用边，已 `verified`）——
+  §5 把它写成"从 `written_files` 接"，**形态上就不成立**。
+
+**「选一个」这一格（旧称"剪贴板 / 变量"）今天的形态 = 一个表达式，不是一个新字段**：
+
+```
+cardinality: 'single'  ⇒  touched.<键>        // 集合确定只有一个 ⇒ 取即确定
+cardinality: 'pick'    ⇒  touched.<键>[i]     // 可能有多个    ⇒ 下标由调用方给
+```
+
+★ 由 `chain_wiring.ts` 的 `chainExprOf()` **一处生成**（`renderChainWiring` 也用它 ⇒ 读数里直接印表达式）。
+★ **它不进 `Touched`**：那是"**怎么引用**"，不是"**多一个字段**"—— 加字段会再造一个"通用袋子"。
+★ **为什么"选"永远由调用方给**：选择是**语义判断**、不是数据搬运（Unix 的"万能"同样不包括自动选 ——
+`grep` 就是在选，`$1` / `xargs` 也都是调用方给的）。我们只负责给它**一个统一的名字**。
+
+**已知的能力缺口（★ 不是命名问题，别用改字段名去凑）**：§5 想要的那件事——
+"**只跑本次改动相关的测试**"——今天接不上：`run_tests.filter` 要的是**测试文件 / 名称**，
+而 `written_files` 是**源文件** ⇒ 中间缺一步"**源文件 → 对应测试**"的映射（今天没有任何工具给这个映射）。
+
+**没做的**：`get_dsl(query='files')` 只给 `symbolCount` **不给符号名** ⇒ `find_references.symbol` 无从填。
+★ 但它卡在一个**更大的决策**上：`SemanticFile.path` 是 `schema/design_dsl.schema.json` 钉死的
+**对外契约**字段，而受控词表里"文件路径"这个词是 `file` ⇒ **先定"文件路径全仓统一叫什么"，
+再谈让 `get_dsl` 投影跟随**；★ **在此之前不动**（见清单 T54）。

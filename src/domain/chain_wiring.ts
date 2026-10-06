@@ -21,6 +21,28 @@
  *
  * ★ 与 `docs/tool-chain-contract.md` §5 的关系：§5 是**散文里的目标链**
  *   （`find_references → rename_symbols → edit_code → run_tests`），本文件是它的**可消费形态**。
+ *
+ * ★★★ 「**从集合里选一个**」这一格的**明文约定**（2026-10-06）—— 本表唯一"要你自己动手"之处：
+ *
+ *   表达式形（**这就是那一格的名字**）：
+ *     · `cardinality: 'single'` ⇒ 取 `touched.<键>`      （只有一个，取即确定）
+ *     · `cardinality: 'pick'`   ⇒ 取 `touched.<键>[i]`   （可能有多个，**下标由你给**）
+ *   ★ 例：`touched.written_files[1]` = 上游这次改的第 2 个文件。
+ *
+ *   ★ **为什么"选"永远由调用方给**（不是我们偷懒）：选择是**语义判断**、不是数据搬运 ——
+ *     Unix 的"万能"同样不包括自动选（`grep` 就是在选；`$1` / `xargs` 也是调用方给的）。
+ *     我们只负责**给它一个统一的名字**（上面那三点式），不负责替他选。
+ *   ★ 例外是 `single`：**集合确定只有一个元素**（如 `find_references.touched.file`）⇒ 那一步**无需选择**。
+ *
+ * ★★ **2026-10-06 真跑验收（§5 那条链，夹具 `$TEMP/t54chain`，全程零字段名翻译）**：
+ *   `rename_symbols`（`Kk → KkRenamed`，真落盘 2 文件）给出
+ *   `touched = {project_dir, symbols:["KkRenamed"], written_files:["src/a.ts","src/b.ts"]}` ⇒
+ *   · `written_files[1] → edit_code.file` ✅ **成立**（`ok=true`；下标 i=1 由调用方给）
+ *   · `symbols[0] → edit_code.symbol`（`op=replace`）✅ **成立**（`ok=true`）
+ *   · `edit_code.written_files → run_tests.project_dir` ❌ **证伪**（把**文件**当**根**传 ⇒
+ *     `无法读取目标项目 package.json（…\src\b.ts\package.json）`）；★ 正确接法是
+ *     `touched.project_dir → run_tests.project_dir`（= 通用边，已 `verified`）。
+ *   ⇒ 三条 `pending` **全部有了结论**：两条升级 `verified`、一条证伪撤掉；`pending` 表已清空。
  */
 import type { Touched } from './b_terms.js';
 
@@ -42,7 +64,10 @@ export interface ChainEdge {
   /**
    * 上游那个键是**集合**；这条边怎么把集合变成下游要的单个：
    * · `single` —— 集合**只有一个元素**时**确定** ⇒ 直接取，**无需选择**
+   *   ⇒ 表达式 `touched.<fromKey>`
    * · `pick`   —— 集合可能有多个 ⇒ **由调用方挑一个**（= 「从上一步的列表里选」）
+   *   ⇒ 表达式 `touched.<fromKey>[i]`（**下标由调用方给**；选择是语义判断，不自动化）
+   * ★ 表达式**只由 {@link chainExprOf} 一处生成**（别在别处手抄这个形态 —— 那是第二份副本）。
    */
   readonly cardinality: 'single' | 'pick';
   readonly evidence: 'verified' | 'pending';
@@ -56,8 +81,12 @@ export interface ChainEdge {
  * ★ **本表最早的两条对象类边**（`read_files[0] → file` / `symbols[0] → symbol`）**已被真跑证伪、撤掉**
  *   （证伪过程见下方注释）；`read_files` 本身也已于 2026-10-05 从 `Touched` **撤出**
  *   （它是"剪贴板"，**不该占链的接口** —— T56 ④-1，它零消费者）。
- *   ⇒ 现在 `CHAIN_EDGES` 里只剩**两条作用域类**的 `verified`（`project_dir` / `feature`）；
+ *   ⇒ 2026-10-05 时本表只剩**两条作用域类**的 `verified`（`project_dir` / `feature`），
  *     对象类的边一律在 `CHAIN_EDGES_PENDING` 里**待验**。
+ * ★★ **2026-10-06：`CHAIN_EDGES_PENDING` 已清空**（原有三条全部真跑出了结论）—— 两条对象类边
+ *   （`rename_symbols.written_files → edit_code.file` · `…symbols → edit_code.symbol`）**升级进本表**；
+ *   第三条（`edit_code.written_files → run_tests.project_dir`）**证伪撤掉**（留证见下方注释）。
+ *   ⇒ 至此 §5 那条链（`find_references → rename_symbols → edit_code → run_tests`）**每一环都验过了**。
  */
 export const CHAIN_EDGES: readonly ChainEdge[] = [
   // ── 作用域类：两端逐字同名，任何 [B] 之间直通（已验：17/17 按 feature 工作的 [B] 都接受 feature）──
@@ -125,23 +154,20 @@ export const CHAIN_EDGES: readonly ChainEdge[] = [
       '`touched.symbols[0]` → `renames[].symbol` 同理。★ 前提：`definition` 只在 mode=symbol 成功出口赋值 ⇒ ' +
       '`mode=field` 下 `file` **整项省略**（别当它总有）。',
   },
-];
 
-/**
- * ★ **待验**的边：`docs/tool-chain-contract.md` §5 写了链，但**一条都没真跑过**。
- * ★ 单独一张表 —— 让"没验"这件事**在读数里看得见**，而不是混进 `CHAIN_EDGES` 冒充已验证。
- */
-export const CHAIN_EDGES_PENDING: readonly ChainEdge[] = [
-  // ★ 2026-10-05：原第一条（`find_references.touched.file → rename_symbols.renames[].file`）**已真跑并升级**
-  //   进上面的 `CHAIN_EDGES`（`evidence: 'verified'`）⇒ 已从本表移出。
+  // ── ★★ 2026-10-06：§5 第二环的两条对象类边，**真跑升级**进本表（原在 `CHAIN_EDGES_PENDING`）──
   {
     from: 'rename_symbols',
     fromKey: 'written_files',
     to: 'edit_code',
     toPath: 'file',
     cardinality: 'pick',
-    evidence: 'pending',
-    note: '§5 写的第二环；`written_files` 在改多文件时会多元素 ⇒ 必须挑',
+    evidence: 'verified',
+    note:
+      '★ 真跑（2026-10-06，夹具 `$TEMP/t54chain`）：`rename_symbols`（`Kk→KkRenamed`，真落盘 2 文件）给 ' +
+      '`touched.written_files=["src/a.ts","src/b.ts"]` ⇒ 调用方挑 `[1]` 放进 `edit_code.file`（`op=replace_text`）' +
+      ' ⇒ `ok=true`。★★ **前提（不满足会静默改错文件）**：`edit_code.file` 是**相对 `project_dir`** 解析的，' +
+      '而 `written_files` 是**仓库相对** ⇒ **必须同时把 `touched.project_dir`（通用边）传过去**，让两者同基准。',
   },
   {
     from: 'rename_symbols',
@@ -149,34 +175,65 @@ export const CHAIN_EDGES_PENDING: readonly ChainEdge[] = [
     to: 'edit_code',
     toPath: 'symbol',
     cardinality: 'pick',
-    evidence: 'pending',
-    note: '§5 写的第二环',
-  },
-  {
-    from: 'edit_code',
-    fromKey: 'written_files',
-    to: 'run_tests',
-    toPath: 'project_dir',
-    cardinality: 'single',
-    evidence: 'pending',
-    note: '§5 的最后一环；`run_tests` 收的是项目根而非文件 —— **很可能这条边不成立**，待验',
+    evidence: 'verified',
+    note:
+      '★ 真跑（2026-10-06，同夹具）：`touched.symbols=["KkRenamed"]` ⇒ `symbols[0]` 放进 `edit_code.symbol`' +
+      '（`op=replace` + 调用方给的 `code`）⇒ `ok=true`。★ 之所以是 `pick`：一次批量改 N 个符号就有 N 个。' +
+      '★ `symbols` 装的是**新名**（下游拿新名继续操作；给旧名会让链静默接错）。',
   },
 ];
 
-/** 渲染成人读列表（给 `capability_map` 用）—— ★ 只给"谁读得到"，不给"怎么用"。 */
+/**
+ * ★ **待验**的边：`docs/tool-chain-contract.md` §5 写了链，但**一条都没真跑过**。
+ * ★ 单独一张表 —— 让"没验"这件事**在读数里看得见**，而不是混进 `CHAIN_EDGES` 冒充已验证。
+ */
+export const CHAIN_EDGES_PENDING: readonly ChainEdge[] = [
+  // ★★★ 2026-10-06：**本表已清空** —— 原有三条全部真跑出了结论：
+  //   · `rename_symbols.written_files → edit_code.file`   ⇒ ✅ **成立**，已升级进 `CHAIN_EDGES`；
+  //   · `rename_symbols.symbols → edit_code.symbol`       ⇒ ✅ **成立**，已升级进 `CHAIN_EDGES`；
+  //   · `edit_code.written_files → run_tests.project_dir` ⇒ ❌ **证伪、撤掉**（见下证伪记录）。
+  //   ★ 保留"空表"而不是删掉这个导出：`renderChainWiring` 仍在读它，且**它下次该重新有内容**
+  //     （§5 那条链只是第一条；别的链还没人真跑）。
+  //
+  // ── 证伪记录（★ **撤掉的边必须留证**，否则下一个人会重新写一遍同一张表）──
+  //   `edit_code.touched.written_files → run_tests.project_dir`（2026-10-06 真跑，夹具 `$TEMP/t54chain`）：
+  //   把 `written_files[0]`（= `src/b.ts`，一个**文件**）当 `run_tests.project_dir`（一个**根**）传 ⇒
+  //   `ok=false`，报 `无法读取目标项目 package.json（…\src\b.ts\package.json）`。
+  //   ⇒ **文件 ≠ 根**：这条边**形态上就不成立**（不是"待验"）。
+  //   ★ **正确接法** = `touched.project_dir → run_tests.project_dir`（**通用边**，已 `verified`）⇒ 真跑 `ok=true`。
+  //   ★ 而 §5 想要的那件事（"只跑本次改动相关的测试"）**今天仍接不上**：`run_tests.filter` 要的是
+  //     **测试文件 / 名称**，`written_files` 是**源文件** ⇒ 中间缺一步"**源文件 → 对应测试**"的映射
+  //     （今天没有任何工具给这个映射）⇒ 那是**能力缺口**，不是命名问题，**别用改字段名去凑**。
+];
+
+/**
+ * 「这一格的**表达式**」—— ★★ **全仓唯一一处**定义"选一个"怎么写（别在别处手抄）。
+ *
+ * · `single` ⇒ `touched.<键>`（只有一个，取即确定）
+ * · `pick`   ⇒ `touched.<键>[i]`（可能有多个，**下标由调用方给** —— 选择是语义判断，不自动化）
+ */
+export function chainExprOf(e: ChainEdge): string {
+  return e.cardinality === 'single' ? `touched.${e.fromKey}` : `touched.${e.fromKey}[i]`;
+}
+
+/** 渲染成人读列表（给 `capability_map` 用）—— ★ 给"谁读得到"，也给"**怎么写出来**"。 */
 export function renderChainWiring(max = 20): string {
   const line = (e: ChainEdge): string => {
-    const arrow = `touched.${e.fromKey}`;
-    const card = e.cardinality === 'single' ? '单元素·直接取' : '多元素·调用方挑一个';
-    return `    ${e.from.padEnd(17)} ──${arrow.padEnd(22)}──▶ ${e.to} · ${e.toPath.padEnd(22)} （${card}）`;
+    const arrow = chainExprOf(e);
+    const card = e.cardinality === 'single' ? '单元素·直接取' : '多元素·下标由你给';
+    // ★ 宽度按**最长那串表达式**留：`touched.written_files[i]` = 24 字符 + 2 空格（否则 `[i]` 会挤到箭头上）
+    return `    ${e.from.padEnd(17)} ──${arrow.padEnd(26)}──▶ ${e.to} · ${e.toPath.padEnd(22)} （${card}）`;
   };
   const verified = CHAIN_EDGES.slice(0, max).map(line).join('\n');
   const pending = CHAIN_EDGES_PENDING.slice(0, max).map(line).join('\n');
   return (
     '\n\n── 链的接法（上一步的产物 → 下一步的入参）──\n' +
     '  ★ 已实测（可直接用；touched 是**产物端**统一过的那张契约）：\n' + verified + '\n' +
-    '  ⏳ 待验（文档写了链，但**一条都没真跑过** —— 用之前先自己核）：\n' + pending + '\n' +
-    '  ★ 用法：上一步的 touched.<键> 里挑一项，放进下一步入参的对应位置；\n' +
-    '    标"单元素"的**直接取**即确定；标"多元素"的**必须由你挑一个**（这就是"从列表里选"）。'
+    (pending.length > 0
+      ? '  ⏳ 待验（文档写了链，但**一条都没真跑过** —— 用之前先自己核）：\n' + pending + '\n'
+      : '  ⏳ 待验：**空**（§5 那条链的每一环都已真跑过；别的链还没人跑 ⇒ 新验出来的边加进本表）。\n') +
+    '  ★ 用法：把左边那串表达式**原样**填进右边的入参位置（它就是"上一次的产物"的地址）；\n' +
+    '    标"单元素"的**直接取**即确定；标"多元素"的**下标由你给**（`[i]` 就是"从列表里选一个" ——\n' +
+    '    选择是语义判断 ⇒ **永远由调用方给**；本表只负责给它一个统一的名字）。'
   );
 }
