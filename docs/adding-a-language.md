@@ -10,6 +10,48 @@
 
 ---
 
+> ★★ **2026-10-06 现状核对（读本文前先读这段）**
+> 本文是 2026-09 的活指南。**它的工作流仍然有效**（加语言 = 改 `LANGUAGES` + `LANG_ADAPTERS`
+> + 装包 + 看缺口），**但路径前缀与验证闭环已多处失效** —— 逐处核对结论如下。
+>
+> **A. 路径前缀变了**（`src/` 顶层今天只有 `application/ domain/ infrastructure/ presentation/` 四层）
+>
+> | 本文写的 | 今天的真实位置 |
+> |---|---|
+> | `src/tools/ts_kernel/{languages,kernel,probe}.ts` | `src/infrastructure/parse/{languages,kernel,probe}.ts` |
+> | `src/tools/register_capabilities.ts` / `capability_matrix.ts` | `src/infrastructure/analysis/capability/…` |
+> | `src/tools/rename_symbol.ts` | `src/infrastructure/analysis/rename_symbol/{core,index,parts,languages/*}.ts` |
+> | `src/tools/contract_gate.ts` | `src/infrastructure/analysis/contract_gate/{core,parts,languages/*}.ts` |
+> | `src/tools/package_migration.ts` | `src/infrastructure/analysis/package_migration/{core,index,parts,languages/*}.ts` |
+> | `src/tools/parse_capability.ts` | `src/application/refactor/parse_capability/parse_capability.ts` |
+> | `src/tools/extract_contracts.ts` | `src/application/harvest/extract_contracts.ts` |
+> | `src/tools/install_package_cli.ts` | `src/presentation/cli/install_package_cli.ts`（`PACK_PINS` 另住 `src/infrastructure/packages/package_pins.ts`） |
+> | `src/tools/scan_bounds.ts` | `src/infrastructure/scan_bounds.ts` |
+> | `src/tools/{refactor_pipeline,refactor_langs}.ts` | `src/application/refactor/pipeline/refactor_pipeline.ts` / `src/infrastructure/analysis/refactor/refactor_langs.ts` |
+> | `src/{health,behavior,impact}/` | `src/infrastructure/analysis/health/` · `src/infrastructure/authoring/behavior/` · `src/infrastructure/analysis/impact/` |
+> | `src/version_upgrade/**` · `tools/java_refactor/*` | `src/infrastructure/authoring/version_upgrade/**` · `src/infrastructure/analysis/refactor/langs/java/*` |
+> | §2.0 总表里**不带 `src/` 前缀**的那些 | ★ **只差一个 `src/` 前缀，其余仍准** |
+>
+> **B. 本文让你跑的命令，哪些今天不存在**
+>
+> | 本文写的 | 今天 |
+> |---|---|
+> | `node scripts/capability_scan.mjs --check` | ★ **该脚本已被有意删除**（判据见 `AGENTS.md`：产出只是"提示你去看某个文件"的脚本就该删）⇒ 今天的等价物：`npm run capability`（缺口统计，**没有 `--check`**）、MCP 工具 `capability_audit`。⚠ **它当年那条"抓声明写得比实现窄"的判据今天没有任何自动门在盯**（见 §5.3） |
+> | `npm run test -- tests/…`（§5.2 整表 + 附录 B） | ★ **`tests/` 与测试框架已整体移除**，`package.json` 里也没有 `test` script ⇒ 今天的**唯一总门**是 `npm run verify`（`scripts/verify.mjs`，三态 PASS/FAIL/SKIP⇒0/1/2） |
+> | `npm run arch` | 不存在（`.dependency-cruiser*` 整族已移除） |
+> | `find src/tools -name '*.ts'` | `src/tools` 不存在 ⇒ 等价写法 `find src -name '*.ts'` |
+>
+> **C. 内容层已变（不只是路径）**
+> · `hybrid_precheck` **整个能力已删除**（`src/application/harvest/index.ts` 自陈"同笔删除 cross 线的
+>   `hybrid_precheck`、`go-slim/` 剪刀及其派生死代码"）⇒ §2.0 的"12 能力"、§3.x 的"523 缺口"
+>   这组数字**已无法对账**（`register_capabilities.ts` 今天只有 **11** 条 `declareCapability`）。
+> · **仍准、值得保留**的：§0.1 两层架构、§2.0 注册表四套 key 的辨析、§2.2"包对象住语言文件里"的理由、
+>   §5.3 三条"诚实的边界"、§6 的接口设计（`missingLanguageHint` 已落地 `src/infrastructure/parse/lang_hint.ts`）。
+>
+> **D. 结论**：**骨架留、路径按 A 表换算、验证一律走 `npm run verify`**。
+
+---
+
 ## 0. 一页速览
 
 ### 0.1 两层架构（这是理解一切的地图）
@@ -35,17 +77,14 @@
 ```bash
 npm run capability        # 全量 55 门语言的缺口自检
 npm run capability -- --installed   # 只看已装语言包的语言
-node scripts/capability_scan.mjs --check   # ★ 已有门：会抓"声明写得比实现窄"
+npm run verify            # ★ 今天的**唯一总门**（三态；见顶部现状块 B）
 ```
 
-★ **`capability_scan.mjs --check` 实测输出**（EXIT=0，2 条 info 级待决，不阻断）：
-
-```
-[capability_scan] 2 条语义待决提示（不阻断，建议人工确认）：
-  · impact_analysis: 实现含全语言解析 API（见 src/impact/index.ts）→ 对所有已装语言生效；
-    声明只覆盖 typescript/tsx/javascript/jsx/go/python/java/c_sharp/c，请确认是否写窄
-  · code_health:（同上，声明只覆盖 8 门）
-```
+★ **原本这里有第三道门**：`node scripts/capability_scan.mjs --check` —— 它专门抓
+「**声明写得比实现窄**」（例：`impact_analysis` 实现含全语言解析 API，而声明只覆盖
+ts/js/go/python/java/c_sharp/c ⇒ 假缺口；`code_health` 同）。
+**该脚本已于 2026-10-05 被有意删除**（判据见 `AGENTS.md`：产出只是"提示你去看某个文件"的脚本就该删）
+⇒ ⚠ **这条判据今天没有任何自动门在盯**，只能靠人读 §5.3。**它的位置已由 `npm run verify` 取代**。
 
 ⇒ **本仓已经有一台机器在盯"声明 vs 实现"的漂移**，而且它盯的正是 §4.3 那类假缺口。
 补语言/补声明时**先跑它**：它绿 + `npm run capability` 缺口下降，才算闭环。
@@ -495,21 +534,22 @@ npm run capability -- --installed     # 只看已装语言（doctor 用的就是
 node scripts/capability_scan.mjs --check   # 库存一致性门，退出码 0
 ```
 
-### 5.2 每类改动的对拍测试（别只信 capability 数字）
+### 5.2 每类改动的**人工**对拍（★ 2026-10-06：原表整张失效，已重写）
 
-| 改了 | 必须跑 |
+⚠ **原表列的是"改了 X 必须跑 `npm run test -- tests/…`"** —— 而 ★ **`tests/` 目录与测试框架已整体移除**、
+`package.json` 里**没有 `test` script** ⇒ **那张表今天一条也执行不了**（其 11 个条目涉及的 12 个测试文件
+全部不存在）。故本节改为**如实的人工对拍清单**：验证靠"拿真实样例跑一遍 + 肉眼对结果"，
+机器能给的只有 `npm run verify` 与 `npm run capability` 的缺口数。
+
+| 改了 | 今天怎么验 |
 |---|---|
-| `LANGUAGES` / `LANG_ADAPTERS` | `npm run test -- tests/tools/lang_adapters.test.ts tests/tools/ts_kernel.test.ts tests/tools/ts_kernel_bindings.test.ts` |
-| 装包/清单 | `npm run test -- tests/tools/install_package.test.ts` |
-| 矩阵/声明 | `npm run test -- tests/tools/capability_matrix.test.ts tests/tools/capability_map.test.ts` |
-| `rename_symbol` | `npm run test -- tests/tools/rename_symbol.test.ts tests/tools/rename_symbols.test.ts` |
-| `contract_gate` | `npm run test -- tests/tools/contract_gate.test.ts` |
-| `extract_contracts` | `npm run test -- tests/tools/extract_contracts.test.ts` |
-| `code_health` | `npm run test -- tests/health/` |
-| `behavior_baseline` | `npm run test -- tests/behavior/` |
-| `impact`/`cross_repo`/`hybrid` | `npm run test -- tests/impact/ tests/cross_repo/ tests/hybrid/` |
-| `version_upgrade` | `npm run test -- tests/version_upgrade`（实测目录存在：`adapters.test.ts`/`features.test.ts`/`gate.test.ts`/`removed.test.ts`/`rewrite.test.ts`）+ `npm run doctor` |
-| 解析层级（call/symbol/none） | `npm run test -- tests/tools/parse_capability.test.ts` |
+| `LANGUAGES` / `LANG_ADAPTERS` | 对**真实样例文件**跑一遍解析（`parseFileFull` 或相应能力），肉眼对 `symbols`/`calls` 是否非空、`end_line`/`qualified_name` 是否正确 |
+| 装包 / 清单 | `npm run install-package list` + `npm run capability -- --installed` |
+| 矩阵 / 声明 | `npm run capability` —— **缺口数必须下降，这是唯一直接判据**；另可用 MCP 工具 `capability_audit` |
+| `rename_symbol` / `contract_gate` / `extract_contracts` / `code_health` / `behavior_baseline` | 各自拿真实样例跑一次（**无对拍测试**）；四类引用形态（同包裸引用 / 跨包限定引用 / 别名 / 局部遮蔽）要**手工各试一类** |
+| `version_upgrade` | `npm run doctor` + 拿一个真实旧项目跑一次检测 |
+| 解析层级（`call`/`symbol`/`none`） | 看 `parse_capability.ts: tierForLanguage` 的产出 —— 它**从内核表实测推导**，比矩阵可信 |
+| **一切** | ★ **`npm run verify`**（本仓唯一总门：ts 类型 / MCP 工具签名 / b 项契约 / Go 编译 / Go 静态检查，三态 PASS/FAIL/SKIP） |
 
 ### 5.3 ★ 诚实的边界（capability 数字的三个坑）
 
@@ -629,22 +669,28 @@ export function missingLanguageHint(ext: string, capabilityId?: string): string;
 | 只动了 | 命令 | 期望 |
 |---|---|---|
 | `LANGUAGES` + 装包 | `npm run install-package list` → `npm run capability` | 该语言 `ast_parse_skeleton` 亮；`--installed` 里它进名单 |
-| `LANG_ADAPTERS` 加行 | 对样例跑 `parseFileFull` | `calls` 非空；`tests/tools/lang_adapters.test.ts` 绿 |
+| `LANG_ADAPTERS` 加行 | 对**真实样例**跑 `parseFileFull` | `calls` 非空（★ 原表引的 `tests/tools/lang_adapters.test.ts` 已随 `tests/` 移除 ⇒ 只能肉眼对） |
 | 声明 `overrides` | `npm run capability` | 对应缺口数**减少**（这是唯一直接判据） |
-| 语义能力（写函数） | 该能力的对拍测试 + 真实样例 | 结果正确（`npm run capability` 只是附带） |
-| 一切 | `npm run build && npm run test && node scripts/capability_scan.mjs --check` | 全绿 |
+| 语义能力（写函数） | 拿**真实样例**跑一次 | 结果正确（`npm run capability` 只是附带） |
+| 一切 | ★ `npm run verify` | 五道门全绿 / exit 0（★ 原写的 `npm run test` 与 `capability_scan.mjs --check` 均已不存在） |
 
 ## 附录 C · 本次实测的关键数字（供后续引用）
 
+> ★★ **2026-10-06 时效核对（本表采集于 2026-09，部分已不可复现）**：
+> · **能力数 12 ⇒ 今天 11**（`hybrid_precheck` **整个能力已删除**；`register_capabilities.ts` 现有
+>   11 条 `declareCapability`）⇒ **"缺口总数 523"已无法对账**（它的分母含已删能力）。
+> · **`src/tools` 行数那一行不可复现**（该目录今天不存在，见顶部现状块 A）。
+> · 其余数字**引用前请重跑 `npm run capability` 复核**。
+
 | 量 | 值 | 怎么来的 |
 |---|---|---|
-| 语言总数 | 55 | `npm run capability` 头部「语言名单全量（55 门）」 |
-| 能力数 | 12 | `npm run capability` 尾部功能名单 |
-| 缺口总数 | 523 | 同上 |
+| 语言总数 | 55（**需复核**） | `npm run capability` 头部「语言名单全量（55 门）」 |
+| 能力数 | ~~12~~ ⇒ **11**（2026-10-06） | `npm run capability` 尾部功能名单（已删 `hybrid_precheck`） |
+| 缺口总数 | ~~523~~ ⇒ **已无法对账**（分母含已删能力） | 同上 |
 | 有 `callNode`（调用级）的语言 | **11**（ts, tsx, js, jsx, go, python, java, c, c_sharp, rust, php） | `LANG_ADAPTERS` 实测遍历 |
 | 有 `extractImportSources`（import 边）的语言 | **7**（go, python, java, c, c_sharp, rust, php；TS 系走 `kernel.ts: extractImportSources` 通用分支，实际 11） | 同上 |
 | 仅符号级的语言 | **44** | 55 − 11 |
-| `src/tools` 行数 | 73,323 | `find src/tools -name '*.ts' \| xargs wc -l` |
-| `src` 总行数 | 111,870 | 同上 |
-| `rename_symbol.ts` 行数 | 1,881 | `wc -l` |
-| 全仓含语言字面量分支的文件 | **19** 个 / **78** 处 | `grep -rE "=== '(go\|python\|java\|…)'"`（不含 `defExt === '.go'` 这类扩展名比较） |
+| ~~`src/tools` 行数~~ | **不可复现**（目录已不存在） | 原为 `find src/tools -name '*.ts' \| xargs wc -l` |
+| `src` 总行数 | 111,870（**过时**：目录结构已变，口径不可复现） | 同上 |
+| `rename_symbol.ts` 行数 | 1,881（**过时**：该文件已拆成 `rename_symbol/{core,index,parts,languages/*}`） | `wc -l` |
+| 全仓含语言字面量分支的文件 | **19** 个 / **78** 处（**需重数**） | `grep -rE "=== '(go\|python\|java\|…)'"`（不含 `defExt === '.go'` 这类扩展名比较） |
