@@ -383,3 +383,44 @@ export const B_TERMS: Record<string, BTerm> = {
 
 /** ★ 债务计数：`debt: true` 的条数（棘轮：只许减不许增） */
 export const B_TERMS_DEBT = Object.values(B_TERMS).filter((t) => t.debt).length;
+
+/**
+ * ★★ **`touched` 的例外清单**（2026-10-06 定稿 —— T18 的棘轮口径从「建议收窄」改为**已定**）。
+ *
+ * ## 口径
+ * 棘轮原话是「**新增 [B] 必须给 `touched`**」。但那条会**逼人造假字段** —— 实例：`wizardSteps`
+ * （无入参静态表）与 `dagLayout`（纯计算）**没有"本次动了什么"可报**。⇒ 定稿为：
+ * 「新增 [B] 必须给 `touched`，**除非**它是 **(a) 纯数据 / 纯计算** 或 **(b) [C] 级分派器**
+ *   或 **(c) 根只能靠 `cwd` 兜底**（本仓**禁** cwd 兜底 ⇒ 根算不出来）；**三种都必须登记在本表**。」
+ *
+ * ## 为什么是这张表、而不是塞进 `B_TERMS`
+ * `B_TERMS` 是**字段级**词表（键 = 字段名，回答"这个名字是什么意思"）；本表是**工具级**
+ * （键 = [B] 函数名，回答"这个工具为什么不给 `touched`"）。
+ * ★ 粒度不同 ⇒ 混进一张表会让"**字段名**"与"**工具名**"共用一个命名空间 —— 正是本仓最忌的
+ * 「一名多义」。**两张表、两个命名空间。**
+ *
+ * ## 与量具的关系（★ 两个数字不同是正常的）
+ * `scripts/measure_b_contract.mjs` 报的「**产物里没有任何锚点候选字段的 [B]：8/37**」是**机械读数**；
+ * 本表是**人判定的例外**（7 个）。判据不同 ⇒ 不相等：
+ * 例 `editCode` 在量具那 8 个里、但**不在**本表 —— 它的产物是 `{message; data: EditReceipt}`（**有类型**）、
+ * 不属分派器类 ⇒ 它**该给**，只是**还没给**（属"待接"，不是"例外"）。
+ * ⇒ 量具该报的是**三类分开**：**已接 · 已登记例外 · 该给未给（真债）**。
+ */
+export const B_TOUCHED_EXEMPT: Record<
+  string,
+  { kind: 'dispatcher' | 'pure' | 'no-root'; why: string }
+> = {
+  // ── (b) [C] 级分派器（3）──
+  //    ★★ 判据（比"有没有 switch"锋利）：**入参 `{action/query + 袋子}`** **并且** **产物 `data: unknown`**。
+  //    （`editCode` 也用 `op` 的 if 链分派，但产物是 `{message; data: EditReceipt}`（**有类型**）⇒ **不是这一类**。）
+  //    ⇒ 正确做法：`touched` 由**被分派到的真 [B]** 携带，分派器**转发**即可、不自己拼。
+  manageFeature: { kind: 'dispatcher', why: '入参 {action,args} + 产物 data:unknown ⇒ [C] 级分派器' },
+  exploreCode: { kind: 'dispatcher', why: '入参 {action,args} + 产物 data:unknown ⇒ [C] 级分派器' },
+  queryFeature: { kind: 'dispatcher', why: '入参 {query,…} + 产物 data:unknown ⇒ [C] 级分派器' },
+  // ── (a) 纯数据 / 纯计算（2）──
+  wizardSteps: { kind: 'pure', why: '无入参静态表 ⇒ 没有"本次动了什么"可报' },
+  collectFunctions: { kind: 'pure', why: '纯计算（把一个文件里的函数收集出来）⇒ 不产生动作' },
+  // ── (c) 根只能靠 cwd 兜底（2）──
+  observeTrace: { kind: 'no-root', why: '根只能靠 cwd 兜底（本仓禁 cwd）；且无仓库相对的对象' },
+  runTests: { kind: 'no-root', why: '根只能靠 cwd 兜底（本仓禁 cwd）；且无仓库相对的对象' },
+};
