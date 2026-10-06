@@ -537,11 +537,6 @@
       ⇒ **真牵连只有两条**（本轮都已做）：**README 计数**（手工维护、无门）与
       **`AGENTS.md` 触发点表**（改源头 `scripts/gen_agents.mjs`，`npm run build` 重建）。
 
-- [ ] **T32 ★ README 子标题工具计数无门、已漂**（2026-10-04 由 T8 核验升级）。
-      *(核实：`README.md:113` 的「共注册 **N**」有 `scripts/readme_tools_gate.mjs` 自愈守着（当前 59=59 ✓），
-      但**子标题里的中文计数无门**。实测 `README.md:155`「专项工具（**34 个**）」，而该段表内 `` | `tool` | `` 实为 **44** 行 ⇒ **漂 10**；
-      `:143`「主工具（7 个）」= 7 行、`:115`「能力导航（1 个）」= 1 行，当前一致。)*
-      ⇒ 方向：把自愈从「共注册」扩到子标题计数，**或**去掉子标题里的数字（只留"精选"语义）。
 
 ---
 
@@ -552,7 +547,8 @@
 ★★ **2026-10-04 逐条核验（grp-docs，代码级取证）**：原列 **16 条**（注：任务标题写的“11 条”与实际条数不符）。
 逐条到代码/门/工具取证后：**14 条已还清或已被既有条目覆盖 ⇒ 删**（逐条证据见核验回执 / commit 历史；
 含 `G3/G4 门`、`P-A/P-D/P-G`、`symbol_move`/`project_root`、`refs_text`、`仓库资产索引`、`P2`、`P3`、
-`G1 复杂度阈值`、`orphan 7 个`、`explore_code 空壳`），**1 条升级为待做**（`G5 README 计数自愈` ⇒ 见上 T32）。
+`G1 复杂度阈值`、`orphan 7 个`、`explore_code 空壳`），**1 条升级为待做**（`G5 README 计数自愈`
+⇒ **2026-10-06 已由"去掉标题里的数字"结构性解决**（那个数字先后写过 34/41/51，都不等于行数）⇒ 条目已销）。
 **剩 1 条决策项**：
 
 - `P4 工具名拍板` —— 是否真改 `mcp__design-canvas__*` 工具名（会断 DSH 现有会话与桥接）⇒ **需用户拍板**；
@@ -690,46 +686,6 @@
         · 赞成：`rootOffsets/rootKinds` 逐字相同 ⇒ 至少要判断"是不是同一份地基被抄了两遍"。
       ⇒ **待定，不预设结论，也不动。** 已在 `parts.ts` 的 `GoModuleAnalysis` 上方记明这层关系。
 
-- [ ] **T31 ★★★ 通则：「凡把路径/名字写成表的地方，搬迁一次就静默失效一次」（2026-10-04 立）**
-      *(核实：本清单同一族**已 5 例**，逐条见 T21 正文 + 台账 §44.31 / §44.37 / §44.40。)*
-      ⇒ **5 例**：
-        1. `server_registry.consistency` —— 假设「实现在 `src/tools/<name>.ts`」
-        2. `capability_scan` —— 按路径认模块
-        3. 架构基线（`.dependency-cruiser-known-violations.json`，**18 条里 8 条过期，44%**）
-        4. `derive_feature_tree.ts` 的 `TOOL_DOMAINS` —— 120+ 行的名字表（T21）
-        5. ★ **`structure_gap` 自己的 `unlisted` 判据** —— 只扫 `flatDirs` 的子目录（**1 个容器**）
-           ⇒ 报 `0` 假绿，真实 **17 个**未登记（2026-10-04 修）
-      ⇒ **共同形状**：一张「名字 → 某个判断」的表（或一段把路径写死的前缀判断），
-        在**布局没变的当天是对的**，在**第一次搬迁之后静默变成错的** —— 而且**不报错、不变红**。
-      ⇒ **通则（要落地成纪律）**：
-        · **不写「名字表」**：能从 ① 运行时数据 / ② 结构化 API / ③ AST 拿到的，**不要抄成表**
-          （判据优先级见 AGENTS.md 那一节；本仓 L1/L2/L3 已收口一部分，L4 仍散着）
-        · **非写名字不可时，配一个"这个名字还在不在"的检查**，且该检查必须**现算**、**不落基线**
-        · ★★ **搬迁之后必须重跑所有"按名字认东西"的判据** ——
-          这正是「每次搬迁后跑 `structure:gap` + `code_health` + 逐个工具试用」这条纪律的**真正理由**
-          （不是为了走形式，是因为**这一类判据会静默失效**，而只有重跑才发现）
-      ★ 与之配套的**两条已生效纪律**（在 AGENTS.md）：① **不许留墓碑**（失效的表要删，不是注释掉）；
-        ② **「读数为 0」先问「扫描面 = 管辖面吗」**（第 5 例就是扫描面少了 4 个容器）。
-
-- [ ] **T25 ★★★ 6 张手工登记表逐张换载体（判据：**扫描类一律换成框架规则或工具**）**
-      *(核实：2026-10-03 —— 见台账 §44.36；已用 `lane_no_io` 做完整小样，净减 247 行 + 1.6 KB。)*
-
-      ★ 判据（本轮定）：**看它保护的判据是"扫描"还是"执行"** ——
-      **扫描**（某模式在哪出现几次 / 某路径是否存在 / 某结构是否一致）⇒ ★★ **一律换框架规则或工具**，门与登记表都删；
-      **执行**（给输入断言输出）⇒ 工具替不了，留。
-
-      | 登记表 | 大小 | 判据形态 | 替代方案 | 状态 |
-      |---|---|---|---|---|
-      | `lane_no_io.json` | 1.6K | 扫描（某 import 是否出现） | ✅ **已换** `dep-cruiser` 规则 `lane-must-not-io`（8 行） | ✅ 已做 |
-      | `brand_residue_registry.json` | 2.4K | 扫描（文本里有没有旧品牌串） | 一个「扫旧品牌串」的 action（可复用 `explore_code` 的文本扫） | ⏳ |
-      | `literal_table_registry.json` | 2.9K | 扫描（同一字面量表出现几次） | 同上 | ⏳ |
-      | `explore_action_wiring.json` | 1.9K | 扫描（action → 实现接线） | ★ **本可派生**（从 lane 的 def 表算出来）—— §2b 早就记过"这两件事本来可以是数据" | ⏳ |
-      | `tool_completion_receipt.json` | 5.4K | 扫描（handler 是否回 data） | 从 `TOOL_DEFS` 派生（跑一遍 handler 看回执形态） | ⏳ |
-      | `single_source_registry.json` | **8.2K** | **半扫描半判断**（"什么算同族"要人判） | ★ 最难的一张：**存量清单必须由工具算**，但"同族"的界定可能仍要留一个**小的**人工白名单 | ⏳ |
-
-      ★ 顺序建议：先做**纯扫描**的（`brand_residue` / `literal_table`）—— 它们**无判断成分**，一次成功率最高；
-      **最后**啃 `single_source`。
-
 - [ ] **T33 ★★ `analyzeModuleSource` 的 `imports` 漏默认导入 —— 与 `parseFileFull` 差 190/323 文件（2026-10-04 实测）**
       *(核实：一次搬迁侦察时用**全仓 323 个文件逐文件对差集**测出，**非读码断言**。
       与 T26 同一轮侦察，但**是两条不同的事**。)*
@@ -789,8 +745,12 @@
       ⇒ **1. DSL 数据锚定「包安装根」，不是你的项目目录。** 不设 `AGENT_IO_HOME` 时任何 cwd 都在
         读写**同一个**数据目录 ⇒ 多项目互相看见。**最容易被误伤，却不在任何工具描述里。**
       ⇒ **2. 符号索引会被"顺手"自动建。** 第一次 `find_references` 就在被分析项目里生 `.agent-io/cache.db`
-        （没先让你 `import_project`）；而 `feature_line` 却要求"先跑一次带 feature 的 import_project"
-        ⇒ **三处口径不一样**。
+        （没先让你 `import_project`）。
+        ★ **2026-10-06 更正**：原写"而 `feature_line` 却要求先跑一次带 feature 的 import_project
+        ⇒ **三处口径不一样**" —— 核实后**该前提不成立**：`feature_line` 的 `project_dir` 是**可选**，
+        描述为"缺省按 feature 的导入缓存"，**未见**"先 import_project"字样；同线的
+        `recommend_observe_points` 反而**明写"无需先 import_project"**。
+        ⇒ **保留下来的事实只有一条**：索引会被"顺手"自动建（这件事本身仍该写进工具描述）。
       ⇒ **3. 「每次调用前保鲜」只认 4 个参数名**（`project_dir / project_root / root / dir`，
         `server_registry.ts:301` 的 `projectRootArg`）⇒ 用 `project_dir_a`（cross/hybrid）、
         `target`（observe_instrument）、`source_root`（render_brickwork）、`file`（find_references）
@@ -801,11 +761,16 @@
 
 - [ ] **T41 ★ 四处「报错说了等于没说 / 与描述不符」（独立体检 2026-10-05）**
       *(核实：体检小队逐条真调，报错原文已存 `docs/tool-handbook.md` §7.5/§7.6。)*
-      ⇒ `behavior_baseline` / `narrate_step` 报错串里混 `undefined` 占位
-        （例 `…/undefined/.agent-io/behavior/undefined__undefined.json`），**看着像 bug**。
-      ⇒ `observe_log` 传**不存在**的日志文件 → 静默「（无匹配事件）」⇒ 会让人以为"跑过了、没内容"。
-      ⇒ `manage_feature` create/clone/delete 的参数要塞进 **`args` 子对象**，可 schema 里又有个顶层
-        `feature`；报错说「缺少 feature」但顶层就有 ⇒ **自相矛盾**。
+      ⇒ **① `behavior_baseline` 报错串里混 `undefined` 占位**（例 `…/undefined/.agent-io/behavior/undefined__undefined.json`），
+        **看着像 bug**。★ **2026-10-06 更正：只剩它一个** —— `narrate_step` **已修**（改用
+        `plumbing.requireStr`，其注释明言"绝不把 undefined 拼进路径"）；`behavior_baseline` 仍在用
+        `String(a.project_dir)` / `String(a.file)` 拼路径（`application/observe/index.ts`）。
+      ⇒ **② `observe_log` 传不存在的日志文件 → 静默「（无匹配事件）」** ⇒ 会让人以为"跑过了、没内容"。
+        （`log_query.ts` 对 `!existsSync` 直接返回空 entries，调用方据此打"无匹配事件" ⇒ 两件事不可区分。）
+      ⇒ **③ `manage_feature` 参数要塞进 `args` 子对象，报错说「缺少 feature」** ⇒ 这句**仍成立**。
+        ★ **2026-10-06 更正："schema 里又有个顶层 `feature` ⇒ 自相矛盾"不成立** ——
+        今天的 schema 只有 `action` + `args`（`application/design/index.ts`），**顶层没有 `feature`**。
+        ⇒ 剩下的问题只是"报错文案没告诉人该放进 `args`"。
       ~~⇒ `harvest_from_url` 描述说默认落盘，实测默认走 dry-run ⇒ 口径不一致。~~
         ★ 2026-10-05：该工具已随"积木盒族"删除 ⇒ 此条**随之消失**，不必再修。
 
