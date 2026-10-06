@@ -31,6 +31,16 @@ export interface DogfoodUsage {
   ms: number;
   /** 失败时的错误消息（截断） */
   err?: string;
+  /**
+   * ★★ **本次回执里给了几条「下一棒」**（缺省 / 0 = 没给）—— 2026-10-06 加。
+   *
+   * ★ 为什么记它（用户裁定：「**先不做收敛**，靠**最后的狗食**去收敛」）：
+   *   做减法不能靠"看列表里有什么"，得靠**频率**这个读数 —— 正是用户问的
+   *   「**什么时候使用频率高**」。
+   * ★ 口径 = `nextHopsOf(tool).length`（**具体对象边**的条数）；
+   *   **不含**"全称规则"那 2 行（那是背景规则，不随工具变 ⇒ 记了也不区分工具）。
+   */
+  nextHops?: number;
 }
 
 const MAX_ERR_LEN = 200;
@@ -67,6 +77,8 @@ export interface DogfoodToolStat {
   failed: number;
   /** 按子动作聚合（explore_code.action / edit_code.op）；无子动作的记在 key='—' */
   by_action: Record<string, DogfoodActionStat>;
+  /** ★ 带「下一棒」提示的调用数（**频率的分子**）—— 收敛的原料，见 `DogfoodUsage.nextHops` */
+  hinted: number;
 }
 
 export interface DogfoodSnapshot {
@@ -88,7 +100,7 @@ export function snapshotDogfoodStats(): DogfoodSnapshot {
   const ensureTool = (tool: string): DogfoodToolStat => {
     let t = tools.get(tool);
     if (!t) {
-      t = { tool, calls: 0, ok: 0, failed: 0, by_action: {} };
+      t = { tool, calls: 0, ok: 0, failed: 0, by_action: {}, hinted: 0 };
       tools.set(tool, t);
     }
     return t;
@@ -112,6 +124,8 @@ export function snapshotDogfoodStats(): DogfoodSnapshot {
         t.calls++;
         if (r.ok) t.ok++;
         else t.failed++;
+        // ★ 频率的分子：本次回执里**真给了**"下一棒"的次数（0/缺省 = 没给）
+        if (typeof r.nextHops === 'number' && r.nextHops > 0) t.hinted++;
         const a = statFor(t, r.action ?? '—');
         a.calls++;
         if (r.ok) a.ok++;
@@ -151,6 +165,13 @@ export function renderDogfoodSnapshot(s: DogfoodSnapshot): string {
       }
     }
   }
+  // ★★ 2026-10-06：「下一棒」提示的**频率** —— 用户裁定"收敛靠狗食"，这就是那份原料。
+  const hinted = s.tools.reduce((n, t) => n + t.hinted, 0);
+  if (hinted > 0) {
+    const pct = s.total > 0 ? Math.round((hinted / s.total) * 100) : 0;
+    lines.push('');
+    lines.push(`★ 「下一棒」提示：**${hinted} / ${s.total}** 次调用带提示（${pct}%）—— 按工具看"频率"就是收敛的原料。`);
+  }
   return lines.join('\n');
 }
 
@@ -164,6 +185,9 @@ export function renderDogfoodSummary(s: DogfoodSnapshot): string {
     const rate = t.calls > 0 ? `${Math.round((t.ok / t.calls) * 100)}%` : '—';
     lines.push(`${k}: ${t.calls} 次 (成功 ${t.ok} / 失败 ${t.failed} / 成功率 ${rate})`);
   }
+  // ★ 简洁口径也带上频率（只在真给过提示时才出现，免得给没接链的人加噪音）
+  const hinted = s.tools.filter((t) => t.hinted > 0).map((t) => `${t.tool}: ${t.hinted}/${t.calls}`);
+  if (hinted.length) lines.push(`★ 带「下一棒」提示：${hinted.join(' · ')}`);
   return lines.join('\n');
 }
 

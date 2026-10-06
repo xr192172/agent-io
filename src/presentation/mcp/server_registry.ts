@@ -20,7 +20,7 @@ import { scheduleBackfill, backfillState, isIndexIncomplete } from '../../infras
 import { unknownArgHints, renderArgHints } from '../../infrastructure/text/arg_suggest.js';
 import { collectPendingAlertText, dispatchDslEdit } from '../../application/dispatch.js';
 // ★★ 2026-10-06：「下一棒」提示 —— 链的接法（`CHAIN_EDGES`）+ 机器段标记（**单点**，别硬编码）
-import { renderNextHops } from '../../domain/chain_wiring.js';
+import { renderNextHops, nextHopsOf } from '../../domain/chain_wiring.js';
 import { DATA_MARKER } from '../../application/plumbing.js';
 
 // （`tools/stale_check` 的导入已随 P-F 删除：本文件不再直接消费它 —— 三个 stale 告警各自
@@ -423,6 +423,9 @@ export async function invokeTool(
         : undefined,
     ok: !r.isError,
     ms: Date.now() - t0,
+    // ★★ 2026-10-06：把「本次给了几条下一棒」也记下来 —— 用户裁定"收敛靠狗食"，这就是那份原料
+    //   （能答"什么时候使用频率高"）。★ 0 时记 undefined（= 没给），免得日志里全是 0 的噪音。
+    nextHops: nextHopsOf(def.name).length || undefined,
     err: r.isError ? (r.text ?? '').slice(0, 200) : undefined,
   });
   // 响应注入（顺序即拼接顺序）：① 参数纠错（Did you mean）② 陈旧告警家族（BUILD/SOURCE/INDEX，
