@@ -292,21 +292,18 @@ async function renameSymbolsModule(input: Omit<RenameSymbolsInput, 'scope'>): Pr
   const projectDir = typeof input.project_dir === 'string' && input.project_dir ? input.project_dir : undefined;
   const blocked: string[] = [];
 
-  if (!renames || renames.length === 0) return { ok: false, dryRun: true, previews: [], applied: [], filesWritten: 0, blocked: ['批量列表为空'] };
-
-  // 跨条目基础校验：同 file+symbol 重复
-  const seenKeys = new Set<string>();
-  for (const it of renames) {
-    const key = `${it.file}\u0000${it.symbol}`;
-    if (seenKeys.has(key)) blocked.push(`重复条目：${it.file} 的 ${it.symbol}`);
-    seenKeys.add(key);
-  }
-  if (blocked.length > 0) return { ok: false, dryRun: true, previews: [], applied: [], filesWritten: 0, blocked };
-
-  // report_literals：扫描每个旧符号 snake 变体的字面量命中（只报告不改动）
+  // ★★ 2026-10-06（T18 的 (4) 尾巴）：**根解析上移到基础校验之前** —— 原先"列表为空 / 重复条目"
+  //   两个出口在 `rootDir` 之前 return ⇒ 产物没有 `project_dir` ⇒ `touchedOf` 只能省。
+  //   ★ 两个细节：
+  //     · **空列表不猜根**：`renames[0]` 不存在 ⇒ 只有**调用方显式给的** `projectDir` 可用
+  //       （无锚点就省略，**不兜底 cwd** —— 本仓禁 cwd 兜底）；
+  //     · ★ 上移后 `renames` 可能是 `undefined` ⇒ 这里**必须用 `renames?.[0]`**（原写法
+  //       `renames[0]` 在原位置安全，搬上来就会 TypeError）。
+  //   ★ 顺带把 `projectDir` 分支**归一成绝对路径**：`Touched.project_dir` 的契约明文要求
+  //     "解析后的绝对根"，而此处原先**原样透传**（传 `"."` 时产物给 `"."`）。
   const rootDir = (() => {
-    if (projectDir) return projectDir;
-    if (renames[0]?.file) {
+    if (projectDir) return path.resolve(projectDir);
+    if (renames?.[0]?.file) {
       try {
         return resolveProjectRoot(renames[0].file);
       } catch {
@@ -315,6 +312,23 @@ async function renameSymbolsModule(input: Omit<RenameSymbolsInput, 'scope'>): Pr
     }
     return undefined;
   })();
+
+  if (!renames || renames.length === 0) {
+    return { ok: false, dryRun: true, previews: [], applied: [], filesWritten: 0, blocked: ['批量列表为空'], ...(rootDir ? { project_dir: rootDir } : {}) };
+  }
+
+  // 跨条目基础校验：同 file+symbol 重复
+  const seenKeys = new Set<string>();
+  for (const it of renames) {
+    const key = `${it.file}\u0000${it.symbol}`;
+    if (seenKeys.has(key)) blocked.push(`重复条目：${it.file} 的 ${it.symbol}`);
+    seenKeys.add(key);
+  }
+  if (blocked.length > 0) {
+    return { ok: false, dryRun: true, previews: [], applied: [], filesWritten: 0, blocked, ...(rootDir ? { project_dir: rootDir } : {}) };
+  }
+
+  // report_literals：扫描每个旧符号 snake 变体的字面量命中（只报告不改动）
   let literals: RenameSymbolsResult['literals'];
   let literalFilesWritten = 0;
   const wantLiteral = input.report_literals === true || input.apply_literals === true;
@@ -458,24 +472,34 @@ function localItemResult(it: LocalRenameOutcome, dryRun: boolean): RenameSymbolR
 async function renameSymbolsLocal(input: RenameSymbolsInput): Promise<RenameSymbolsResult> {
   const empty = { scope: 'local' as const, dryRun: true, previews: [], applied: [], filesWritten: 0 };
   const renames = input.renames;
-  if (!renames || renames.length === 0) return { ...empty, ok: false, blocked: ['批量列表为空'] };
+  // ★ 空列表**不猜根**：没有第一条 `file` 就没有锚点 ⇒ 只有**调用方显式给的** `project_dir` 可用
+  //   （本仓禁 cwd 兜底；`touchedOf` 也会优先取入参，这里只是让**产物**也如实带上）。
+  if (!renames || renames.length === 0) {
+    return { ...empty, ok: false, blocked: ['批量列表为空'], ...(input.project_dir ? { project_dir: path.resolve(input.project_dir) } : {}) };
+  }
+
+  // 项目根：显式给了就用；缺省按第一条 file 自动定位（与 module 支的兜底同源，都用 resolveProjectRoot）
+  // ★★ 2026-10-06（T18 的 (4) 尾巴）：**整段上移到下面那个"不支持字面量"出口之前** —— 原先它在
+  //   那个出口**之后** return ⇒ 产物没有 `project_dir`（"根在手里却没进产物"的出口之一）。
+  //   ★ 并把 `input.project_dir` 分支**归一成绝对路径**（契约明文要求"解析后的绝对根"；
+  //     原写法在**正常出口**也会把 `"."` 原样当 `project_dir` 报出去）。
+  const first = String(renames[0].file);
+  const rootDir =
+    typeof input.project_dir === 'string' && input.project_dir
+      ? path.resolve(input.project_dir)
+      : resolveProjectRoot(path.isAbsolute(first) ? first : path.resolve(process.cwd(), first));
+
   if (input.report_literals === true || input.apply_literals === true) {
     return {
       ...empty,
       ok: false,
+      project_dir: rootDir,
       blocked: [
         'scope=local 不支持字面量引用扫描（report_literals / apply_literals）：那扫的是**模块级符号名**在项目文本里的 snake 字面量（对外契约名/文档串），局部变量不进对外契约' +
           ' ⇒ 如需请用 scope=module',
       ],
     };
   }
-
-  // 项目根：显式给了就用；缺省按第一条 file 自动定位（与 module 支的兜底同源，都用 resolveProjectRoot）
-  const first = String(renames[0].file);
-  const rootDir =
-    typeof input.project_dir === 'string' && input.project_dir
-      ? input.project_dir
-      : resolveProjectRoot(path.isAbsolute(first) ? first : path.resolve(process.cwd(), first));
 
   const r = await renameLocals({
     root: rootDir,

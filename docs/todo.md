@@ -563,7 +563,27 @@
           **顺带收口一处既有的判据分叉**：三处对入参的处理原本不一致 —— `rename_symbol`/`find_references`
           一直 `path.resolve`，而 `rename_symbols` **原样透传**（实测传 `"."` 时前者给绝对、后者给 `"."`）⇒
           已统一为**绝对根**（契约明文要求）。
-          **仍给不出**的出口 = "在解析根**之前**就 return"的那几个（新名非法/空列表/type 模式…），未上移根解析。
+          ★★ **✅ "解析根之前就 return"那几个出口已全部上移根解析**（2026-10-06）：
+            ① `rename_symbol/core.ts` 的**基础校验**（新名非法 / 同名）—— 根解析上移到它之前，
+               两个出口的产物与 `previews[].result` 都带上 `project_dir`；
+            ② `rename_symbols` **module 支**的"列表为空 / 重复条目"两个出口 —— `rootDir` 上移到校验之前
+               （★ 其 IIFE 里的 `renames[0]` **必须改成 `renames?.[0]`**：上移后 `renames` 可能 `undefined`，
+               原写法搬上来会 TypeError —— 差点踩）；
+            ③ `rename_symbols` **local 支**的"不支持字面量"出口 —— `rootDir` 上移到它之前。
+            ★ 顺手把 `projectDir` 分支**归一成绝对路径**（契约明文要求"解析后的绝对根"；原写法传 `"."` 时
+              产物给 `"."`。`touchedOf` 那边本就 `path.resolve`，故只是**产物面**收口）。
+            ★ **空列表且无入参 ⇒ 仍省略**：没有第一条 `file` 就没有锚点，**不兜底 cwd**（本仓禁）。
+            ★ **实测七档**（真跑 `rename_symbols`，同时看产物 / `touched` / `previews[].result` 三个取根点）：
+              ① 新名非法（无入参）⇒ **三者都有**绝对根（`previews[].result` 那格是 `core.ts` 修复的直接证据）
+              ② 同名 ⇒ 同 ③ 空列表（无入参）⇒ **三格全无**（有意）④ 空列表（给 `"."`）⇒ **有**（新增）
+              ⑤ 重复条目 ⇒ **有**（新增）⑥ local + `report_literals` ⇒ **有**（新增）
+              ⑦ 正常 `dry_run` 单条 ⇒ 有 `project_dir` + 预览正常（**无回归**）。总门五道全 PASS。
+          ⇒ ★ **仍剩一处（未做，单列）**：`find_references` 的 **`mode=type` / `mode=field`** —— 它们
+            **不解析根、直接落 `cwd`**（`effectiveRoot ?? path.resolve(process.cwd())`）⇒ 产物**给不出**
+            `project_dir`（如实省略）；但更该留意的是**根本身可能是错的**（本仓禁 cwd 兜底）。
+            ★ 修法方向：`file` 在场时**由它反查根**（与 symbol 模式同源），随后就能给出 `project_dir`
+            —— 属**行为变更**（会改 `collectTypeConstructCandidates` / `collectFieldRefs` 拿到的根）
+            ⇒ 需**单独验收**，不与本笔混做。
           ★ 另记：**无标记文件的项目里根解析会降级到"文件所在目录"**（`resolveProjectRoot` 既有行为，非本笔引入）。
       **牵连**（每族一笔）：G8 行为快照 `UPDATE_TOOL_BEHAVIOR=1` 并记账；G1 仅当描述/入参 schema 变了才动。
       ★ ④-b 实测：**G8 人群不含这些"重活"工具** ⇒ 加 `touched` 不会动 G8 快照（行为验证改由新测试承担）。

@@ -67,10 +67,11 @@ async function renameSymbolCore(input: RenameSymbolInput): Promise<RenameSymbolR
   /** §2d：本次"少做了什么"（被跳过的 importer + 闭包扩展自己报的 skipped），非空才随结果返回 */
   const skipped: Array<{ path: string; why: string }> = [];
 
-  // 基础校验
-  if (!/^[A-Za-z_$][\w$]*$/.test(to)) return { ok: false, symbol, to, filesWritten: 0, blocked: ['新名非法：' + to] };
-  if (symbol === to) return { ok: false, symbol, to, filesWritten: 0, blocked: ['新名与旧名相同：' + symbol] };
-
+  // ★★ 2026-10-06（T18 的 (4) 尾巴）：**根解析上移到基础校验之前**。原先"新名非法 / 同名"这两个
+  //   出口在 `resolvedRoot` 之前 return ⇒ 产物没有 `project_dir` ⇒ `touchedOf` 只能省 —— 这是
+  //   "**根在手里却没进产物**"的最后几个出口之一。
+  //   ★ 为什么该给：`project_dir` 是**作用域类**字段（`b_terms` 的 `Touched.project_dir`：
+  //     "随时可给、不依赖成败"）⇒ **被拒绝的调用同样该告诉下游"是在哪个项目里被拒的"**。
   const effectiveRoot = input.project_dir ? path.resolve(String(input.project_dir)) : undefined;
   // file 解析：绝对路径直接用；相对路径优先相对项目根（若显式给），否则相对 cwd
   const fileAbs = path.isAbsolute(file)
@@ -78,9 +79,14 @@ async function renameSymbolCore(input: RenameSymbolInput): Promise<RenameSymbolR
     : effectiveRoot
       ? path.resolve(effectiveRoot, String(file))
       : path.resolve(process.cwd(), String(file));
-  const defAbs = fileAbs;
   // 项目根：显式传则用；否则自动定位（git 根→manifest→file 目录），消除"必须先知 project_dir"的摩擦
   const resolvedRoot = effectiveRoot ?? resolveProjectRoot(fileAbs);
+
+  // 基础校验（★ 放在根解析**之后** —— 见上面的说明）
+  if (!/^[A-Za-z_$][\w$]*$/.test(to)) return { ok: false, symbol, to, filesWritten: 0, project_dir: resolvedRoot, blocked: ['新名非法：' + to] };
+  if (symbol === to) return { ok: false, symbol, to, filesWritten: 0, project_dir: resolvedRoot, blocked: ['新名与旧名相同：' + symbol] };
+
+  const defAbs = fileAbs;
   // tsconfig 路径别名（@/ 等）：闭包扩展与 importer 匹配共用同一份，保证"拉进闭包"与"命中改名"一致
   const aliasCfg = loadAliasConfig(resolvedRoot);
 
