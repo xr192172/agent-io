@@ -33,10 +33,23 @@ import type { ReconcileChainInput } from '.././observe/reconcile/reconcile_chain
 /** observe_instrument：对目标项目全自动插桩 / 还原（复用 instrumentProject/restoreInstrumented）。
  * ★ wrapData：handler 回 `data`（results / ledger / 还原清单），wrap 会静默丢弃。 */
 export const observeInstrumentHandler = wrapData(async (a) => {
-  const target = a.target as string | undefined;
-  if (!target) {
+  const targetArg = a.target as string | undefined;
+  if (!targetArg) {
     throw new Error('observe_instrument 需要 target 参数：传要插桩的项目目录。');
   }
+
+  // ★★ 2026-10-06（T15 尾账）：`target` 在**入口归一成绝对路径**再往下传 —— 本 handler 唯一的取根处。
+  //   为什么必须在**入口**（而不是各语言包自己修一遍）：Go 包的插桩是
+  //   `spawn('go', ['run', './cmd/instrument', root, …], { cwd: goObserveDir() })`
+  //   —— ★ **子进程的 cwd 是语言包目录**，而 `root` 是**位置参数**
+  //   ⇒ 相对 target 会被按**那个**目录解析。
+  //   **实测**（改前）：`target=observe-lang-go`（相对）⇒
+  //     `Observe 插桩失败（语言包 go）：instrument: open <repo>\observe-lang-go\observe-lang-go`
+  //     （★ **多拼一层** —— 正是"相对路径原样下传"），而**绝对的同一目标完全正常**
+  //     （扫描 12 源文件 / 将注入 9+34 探针点）⇒ 这类错只在相对路径下出现，属"静默错位"。
+  //   ★ 基准 = **调用方 cwd**（本仓 `project_dir` / `file` 等入参的既有口径），
+  //     既不是语言包目录、也不是 `project_root`。
+  const target = path.resolve(targetArg);
 
   // ★★ 2026-10-06（T15）：`action=ledger` —— 查看探针台账（一次插桩的全部探针点 + 统计）。
   //   为什么补它：本仓盘点「真 CLI 共 11 个」时，`instrument_cli --ledger` 是那个 CLI **唯一**
@@ -47,7 +60,7 @@ export const observeInstrumentHandler = wrapData(async (a) => {
   //   ★ 输出形状：`message` = 人读台账（与 CLI 逐行一致）；`data` = `{ root, ledger, summary }`。
   //     `ledger: null` = 未找到台账 ⇒ **不抛错**（"没插过桩 / 已全拔"是正常状态，不是失败）。
   if (a.action === 'ledger') {
-    const ledgerRoot = path.resolve(target);
+    const ledgerRoot = target; // 已在入口归一为绝对路径（原先这里再 resolve 一次 —— 同一件事写两处）
     const ledger = loadProbeLedger(ledgerRoot);
     if (!ledger) {
       return {

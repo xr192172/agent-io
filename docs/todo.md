@@ -476,10 +476,24 @@
              `split_stage` 空参给可读「缺参数 "project_dir"」✓ · `translate_go_ts … holes=true` ✓ ·
              `observe_instrument target=<TS 夹具> dry_run=true` ⇒「将注入 2 探针点」**且夹具未被改** ✓ ·
              **`npm run doctor`**（走迁移后的 setup.mjs）⇒「能力矩阵：已装语言下 128 个缺口」✓。
-           · ★★ **顺带挖到一条真缺陷（记下、未修）**：`observe_instrument` 的 **`target` 用相对路径**时
-             路径拼接错 —— 实测 `target=observe-lang-go` ⇒ `open <cwd>/observe-lang-go/observe-lang-go` 失败；
-             **绝对的同一目标 ⇒ 正常**（`语言包：go · 扫描 12 个源文件 · 将注入 9/34 探针点`）。
-             ⇒ 已在 `setup.mjs` 里**传绝对路径**兜住（`path.resolve(T)`），但工具侧该修（或在 schema 写明"要绝对"）。
+           · ✅ **同批修掉（2026-10-06）**：`observe_instrument` 的 **`target` 用相对路径**时被**按错基准解析**
+             —— ★ 根因**不是"拼接写错"**，而是**相对路径原样下传给了 cwd=语言包目录的子进程**：
+             `instrumentGoProject` 把 `root` 当**位置参数**交给
+             `spawn('go', ['run','./cmd/instrument',root, …], { cwd: goObserveDir() })`
+             ⇒ 相对 `root` 被按**语言包目录**解析。**改前实测**：`target=observe-lang-go`（相对）⇒
+             `Observe 插桩失败（语言包 go）：instrument: open <repo>\observe-lang-go\observe-lang-go`（**多拼一层**）；
+             **绝对的同一目标 ⇒ 正常**（`扫描 12 个源文件 · 将注入 9/34`）—— 这类错**只在相对路径下出现**。
+             ⇒ **修法**：在 **handler 入口一处**归一成绝对（`path.resolve(targetArg)`，基准 = **调用方 cwd**，
+             与 `project_dir` / `file` 等入参同口径），三个出口（instrument / uninstrument / ledger）共用它；
+             ★ 那个**台账分支原先自己又 `path.resolve` 一次** ⇒ 一并去掉（同一件事写两处）；并在
+             `go_instrument.instrumentGoProject` 钉住"`root` 必须绝对"这一前置。
+             ⇒ **改后实测四档**：**A** 相对 `target=observe-lang-go` ⇒ **通过**（`语言包：go · 扫描 12 个源文件`
+             + 将注入 9/34/13）· **B** 绝对同一目标 ⇒ **逐字不变**（回归）✓ · **C** 相对 + `action=ledger`
+             ⇒ 正常（报**绝对**台账根 + 「未找到台账」）✓ · **D** 相对 TS 目标 `src/domain`
+             ⇒ `语言包：ts_js · 扫描 15 个源文件` ✓（TS 包不受影响）。总门五道全 PASS；dry-run **无落盘残留**已核。
+             ★ **如实记**：改后**报表头**对相对入参会打印**绝对**路径（改前原样回显相对串）—— 方向是更准（报的是真目标）。
+             ★ 另一处**同类嫌疑已核不成立**：`project_root` **不下传**子进程（只在进程内用）⇒ 无此问题。
+             ★ schema 的 `target` 描述补上了口径（"绝对，或相对 cwd"）。
          ⇒ ★ **剩下的 7 个**：`cli.ts`（**投影本体**）+ **2 个正当例外**（`install_package_cli` 判为一次性
            运维脚本；`diagnose_loop_cli` 要 `readline` 交互 —— **MCP 无法应答**）+ **4 个"能力还没注册"**
            （`archify_cli` / `brickify_cli` / `upgrade_cli` / `upgrade_rewrite_cli`）⇒ 下一步：注册（brickify 要先定形状）。

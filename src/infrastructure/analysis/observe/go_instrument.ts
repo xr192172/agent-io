@@ -113,7 +113,11 @@ function parseReport(raw: string): GoInstrumentOut {
   }
 }
 
-/** 对 Go 工程插桩（或 dry-run）。返回与 observe-lang-go CLI 一致的报告。 */
+/** 对 Go 工程插桩（或 dry-run）。返回与 observe-lang-go CLI 一致的报告。
+ * ★ `root` **必须是绝对路径**（或调用方已归一）：它作为**位置参数**传给 `go run`，
+ *   而那个子进程的 `cwd` 是**语言包目录**（`goObserveDir()`）⇒ 相对路径会被按**语言包目录**解析
+ *   （实测会多拼一层：`open <repo>\observe-lang-go\observe-lang-go`）。
+ *   归一在 `application/observe/handlers.ts` 入口一处完成（改这里前先看那段注释）。 */
 export async function instrumentGoProject(root: string, opts: GoInstrumentOptions = {}): Promise<GoInstrumentOut> {
   const mod = goObserveDir();
   const args = ['run', './cmd/instrument', root];

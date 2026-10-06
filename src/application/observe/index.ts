@@ -227,7 +227,7 @@ export const OBSERVE_TOOLS: ToolDef[] = [
         .enum(['instrument', 'uninstrument', 'restore', 'ledger'])
         .optional()
         .describe('instrument=插桩（默认）；uninstrument/restore=一键全拔（还原+清备份）；ledger=只看探针台账（只读，不写盘）'),
-      target: z.string().describe('要插桩 / 还原 / 查台账的目标项目目录'),
+      target: z.string().describe('要插桩 / 还原 / 查台账的目标项目目录（绝对，或相对 cwd —— 入口会归一为绝对再交给语言包）'),
       dry_run: z.boolean().optional().describe('true=只预览探针点不写盘（默认 false）'),
       contract_probes: z
         .array(z.string())
