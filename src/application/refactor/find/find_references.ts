@@ -177,7 +177,11 @@ export interface FindReferencesResult {
    * ★ 本次**解析出的项目根**（symbol 模式：`symRoot ?? resolveProjectRoot(fileAbs)` 的实况）——
    *   Core 内部早就定位了它（此前只在手里、没进产物）；T18：回传给构造点与下游反查。
    *   作用域类字段（= `Touched.project_dir` 的产物来源）：随时可给，不依赖成败。
-   *   ★ field / type 模式不解析根（直接吃调用方给的 project_dir）⇒ 那两种模式本字段省略。
+   *   ★★ 2026-10-06（T18 的 (4) 尾巴）：**type / field 模式也解析根了** —— 原先它们直接落 `cwd`
+   *   （本仓禁 cwd 兜底）⇒ 实测会**扫描到别的项目并返回假候选**（见 `findReferencesCore` 顶部注释）。
+   *   现在与 symbol 模式**同源**：`显式 project_dir ?? resolveProjectRoot(file)`。
+   *   ★ **仍省略的唯一情形**：`mode=field` **不传 `file`** 且不给 `project_dir` —— 那时无任何锚点、
+   *   根只能落 `cwd` ⇒ **不写进产物**（不猜、不兜底；"响亮报错"还是"保持 cwd"是另一个决策）。
    *   ★ 字段名 = 受控词表的 `project_dir`（原 `root` 不在词表里 ⇒ 同一事实两个名字，2026-10-05 收口）。
    */
   project_dir?: string;
@@ -221,7 +225,28 @@ async function findReferencesCore(input: {
   project_dir?: string;
 }): Promise<FindReferencesResult> {
   const effectiveRoot = input.project_dir ? path.resolve(String(input.project_dir)) : undefined;
-  const projectDir = effectiveRoot ?? path.resolve(process.cwd());
+  // ★★ 2026-10-06（T18 的 (4) 尾巴 · type/field 模式）：**`file` 的解析基准**与**项目根**是两件事。
+  //   · `fileAbsForRoot` 的基准 = 显式 `project_dir`，否则 `cwd`（这是 `file` 参数自身的既有口径：
+  //     "绝对路径；或相对 project_dir/cwd"）；
+  //   · **项目根** = 显式 → **由 `fileAbsForRoot` 反查**（★ 与 symbol 模式的 `resolvedRoot` 同源）→
+  //     都没有才 `cwd`（今天只剩 `mode=field` 不传 `file` 那一种）。
+  //   ★ 为什么必须改：原先 `projectDir = effectiveRoot ?? cwd` ⇒ **不给 `project_dir` 时 type 模式把
+  //     `cwd` 当项目根**。实测（隔离夹具：`file` 指向夹具、cwd=本仓）⇒ 返回的是**本仓里的 3 处假候选**
+  //     （`render_brickwork.ts:44` 等与目标类型毫无关系的对象字面量）—— 正是本仓禁的「cwd 是另一个项目」。
+  //     改由 file 反查后，同一调用返回**目标项目里那 3 处真构造点** ✅。
+  //   ★ **断环**：两个收集器都会用各自的 `project_dir` 去解析**相对**的 `file`
+  //     （`path.resolve(resolvedRoot, input.file)`）⇒ 若把根换成"由这个 file 反查出来的"，而 `file`
+  //     仍是相对路径，就会**二次解析错位**。故下面统一传**绝对** `fileAbsForRoot`。
+  //   ★ 已知降级（与 symbol 模式同源、非本笔引入）：**无标记文件的项目**里 `resolveProjectRoot`
+  //     会降级到"文件所在目录" ⇒ 根比"项目根"窄。
+  const fileAbsForRoot = input.file
+    ? path.isAbsolute(input.file)
+      ? path.resolve(input.file)
+      : path.resolve(effectiveRoot ?? process.cwd(), input.file)
+    : undefined;
+  const projectDir = effectiveRoot ?? (fileAbsForRoot ? resolveProjectRoot(fileAbsForRoot) : path.resolve(process.cwd()));
+  /** 根是否**有锚点**（显式给了，或由 `file` 反查出来了）—— 只有有锚点才敢把 `project_dir` 写进产物。 */
+  const rootAnchored = !!(effectiveRoot ?? fileAbsForRoot);
 
   // ── 入参前置校验（§16.4 P-D，2026-09-28）──
   // file / symbol / field 是「**模式相关必填**」——schema 里只能标 optional（symbol 模式要 file+symbol，
@@ -247,11 +272,11 @@ async function findReferencesCore(input: {
 
   // type 模式：形如某类型的对象字面量构造候选（启发式，找成员交叠 ≥ min_hit）
   if (input.mode === 'type') {
-    const file = input.file as string; // 缺参已在上方前置校验 throw
     const symbol = input.symbol as string;
     const { members, candidates } = await collectTypeConstructCandidates({
       project_dir: projectDir,
-      file,
+      // ★ 传**绝对**路径（断环，理由见上面 `fileAbsForRoot` 的注释）。
+      file: fileAbsForRoot as string,
       symbol,
       scope: input.scope === 'all' ? 'all' : 'closure',
       min_hit: input.min_hit,
@@ -261,6 +286,7 @@ async function findReferencesCore(input: {
       symbol,
       mode: 'type',
       importerCount: 0,
+      ...(rootAnchored ? { project_dir: projectDir } : {}),
       typeMembers: members,
       typeCandidates: candidates,
       literals: input.report_literals ? await scanLiterals(projectDir, symbol) : undefined,
@@ -274,7 +300,9 @@ async function findReferencesCore(input: {
     const fieldRefs = await collectFieldRefs({
       project_dir: projectDir,
       field,
-      file: input.file,
+      // ★ 同 type 模式：有锚点就传**绝对** file（断环）；`file` 缺席时仍 `undefined`
+      //   （那时根只能落 `cwd`，而 `project_dir` 也**不进产物** —— 见 `rootAnchored`）。
+      file: fileAbsForRoot,
       scope: input.scope === 'all' ? 'all' : 'closure',
     });
     return {
@@ -282,6 +310,7 @@ async function findReferencesCore(input: {
       symbol: field,
       mode: 'field',
       importerCount: 0,
+      ...(rootAnchored ? { project_dir: projectDir } : {}),
       fieldRefs,
       literals: input.report_literals ? await scanLiterals(projectDir, field) : undefined,
       blocked: fieldRefs.length === 0 ? ['项目中未找到对该字段的引用'] : undefined,

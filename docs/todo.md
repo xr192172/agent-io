@@ -578,12 +578,22 @@
               ② 同名 ⇒ 同 ③ 空列表（无入参）⇒ **三格全无**（有意）④ 空列表（给 `"."`）⇒ **有**（新增）
               ⑤ 重复条目 ⇒ **有**（新增）⑥ local + `report_literals` ⇒ **有**（新增）
               ⑦ 正常 `dry_run` 单条 ⇒ 有 `project_dir` + 预览正常（**无回归**）。总门五道全 PASS。
-          ⇒ ★ **仍剩一处（未做，单列）**：`find_references` 的 **`mode=type` / `mode=field`** —— 它们
-            **不解析根、直接落 `cwd`**（`effectiveRoot ?? path.resolve(process.cwd())`）⇒ 产物**给不出**
-            `project_dir`（如实省略）；但更该留意的是**根本身可能是错的**（本仓禁 cwd 兜底）。
-            ★ 修法方向：`file` 在场时**由它反查根**（与 symbol 模式同源），随后就能给出 `project_dir`
-            —— 属**行为变更**（会改 `collectTypeConstructCandidates` / `collectFieldRefs` 拿到的根）
-            ⇒ 需**单独验收**，不与本笔混做。
+          ⇒ ✅ **同一笔续做完了（`mode=type` / `mode=field`）** —— ★ 实测发现它比"少个字段"**严重得多**：
+            **不是给不出 `project_dir`，是静默扫描了错的项目**。根原为 `effectiveRoot ?? cwd`
+            ⇒ 不给 `project_dir` 时**拿 `cwd` 当项目根**。**隔离夹具实测**（`file` 指向夹具、cwd = 本仓）：
+            改前返回的是**本仓里的 3 处假候选**（`render_brickwork.ts:44` 等与目标类型毫无关系的对象
+            字面量）+ `touched:{}`；改后返回**夹具里那 3 处真构造点**（`a.ts:L6/L9/L13`）✅
+            —— 正是本仓禁的「**cwd 是另一个项目**」。
+            ★ 修法：**取根与 `file` 解析分开** —— 根改为"显式 → **由 `file` 反查**（与 symbol 模式同源）→
+              都没有才 `cwd`（今天只剩 `mode=field` 不传 `file` 那一种）"；★ 并**断环**：两个收集器都会
+              用各自的 `project_dir` 去解析**相对**的 `file`（`path.resolve(resolvedRoot, input.file)`），
+              若根换成"由这个 file 反查出来的"而 `file` 仍是相对的 ⇒ **二次解析错位** ⇒ 统一传**绝对** `fileAbs`。
+            ★ **`project_dir` 只在"有锚点"时才写进产物**（显式给了，或由 file 反查出来了）——
+              `mode=field` 不传 `file` 且无 `project_dir` 时**仍省略**（不把 cwd 猜测泄进契约）。
+            ★ **实测五档**：A（type，绝对 file、无入参）⇒ **夹具真候选 + 报根** ✅ · B（type，给根）⇒ 与 A 同 ✅
+              · C（field，给根）⇒ 报根 ✅ · D（field，无锚点）⇒ **仍省略** ✅ · E（type，给根）⇒ 不变 ✅。
+            ★ 已知降级（与 symbol 模式同源、非本笔引入）：**无标记文件的项目**里 `resolveProjectRoot` 会
+              降级到"文件所在目录" ⇒ 根比"项目根"窄。
           ★ 另记：**无标记文件的项目里根解析会降级到"文件所在目录"**（`resolveProjectRoot` 既有行为，非本笔引入）。
       **牵连**（每族一笔）：G8 行为快照 `UPDATE_TOOL_BEHAVIOR=1` 并记账；G1 仅当描述/入参 schema 变了才动。
       ★ ④-b 实测：**G8 人群不含这些"重活"工具** ⇒ 加 `touched` 不会动 G8 快照（行为验证改由新测试承担）。
