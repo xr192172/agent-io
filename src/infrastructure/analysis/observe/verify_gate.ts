@@ -34,6 +34,18 @@
  * ③ `verified_by` 的取值三态里**删掉了 `needs-llm-review`**
  *    它在 ① 之后已不可达（能走到 `finalizeDecls` 就意味着每条无谓词声明都拿到了 `ok`）。
  *    保留成一个**显式抛错**而不是静默标记，是 ① 的直接推论。
+ *
+ * ## ★ 2026-10-06（P5）补：**数据型声明**不受"需 LLM 复核"对待
+ *
+ * `design:impact-known-spread` 与"无谓词的悬空规则"**不是一回事**：它不是等待某个谓词来判它，
+ * 而是**已被另一条规则消费** —— 它是 `design:impact-unplanned-spread` 的**减项**
+ * （已承认的耦合从事件的 `unexpected_files` 里扣除，见 `judge.ObserveRuleCtx`）。
+ *
+ * ⇒ 若仍按"无谓词 ⇒ 需 LLM 复核"处理，后果是**整条链空转**：loop 产出的 known-spread 提案
+ *   默认被冻结 ⇒ 声明进不了权威 `dsl.json` ⇒ 那条扣减的输入**恒为空**、功能等于没做
+ *   （与搬迁前"有生成无消费者"是同一形态，只是换了位置）。
+ * ⇒ 处置：登记进 {@link DATA_DECL_RULES}，与谓词规则一样算"可确定性判定"，
+ *   但 `verified_by` 记 `data-consumed` 以标明它属**数据型**（不借用 `rule-regression`）。
  */
 
 import { OBSERVE_RULE_IDS } from './judge.js';
@@ -44,17 +56,33 @@ import type { TSDLDecl } from './contract.js';
 // L1 规则回归门（照搬 Go :345-386）
 // ─────────────────────────────────────────────────────────────
 
-/** 规则回归输出：声明集里哪些规则有确定性谓词可"秒判"，哪些只能靠 LLM/人工复核。 */
+/** 规则回归输出：声明集里哪些规则有确定性判定可"秒判"，哪些只能靠 LLM/人工复核。 */
 export interface RuleRegression {
   /** 检查的声明总数（★ 不去重 —— Go `:356` 就是 `len(decls)`） */
   checked: number;
-  /** 有确定性谓词的声明数 */
+  /** 有确定性判定的声明数（有谓词，或属**数据型声明** —— 见 {@link DATA_DECL_RULES}） */
   covered: number;
-  /** 无谓词、需 LLM/人工复核的 rule（**去重 + 字典序**） */
+  /** 无确定性判定、需 LLM/人工复核的 rule（**去重 + 字典序**） */
   uncovered: string[];
 }
 
-const registeredRules = (): Set<string> => new Set(OBSERVE_RULE_IDS);
+/**
+ * **数据型声明规则**：它们不作为独立谓词进判定链，而是作为**另一条规则的判定输入**。
+ *   · `design:impact-known-spread` —— 它是 `design:impact-unplanned-spread` 的**减项**
+ *     （已被设计承认的耦合从事件的 `unexpected_files` 里扣除，见 `judge.ObserveRuleCtx`）。
+ *
+ * ★ 2026-10-06（P5）为什么必须在这里登记：数据型声明同样是**可确定性判定**的
+ *   —— 判定发生在**消费它的那条规则**里。若不算它 covered，后果是**整条链空转**：
+ *     ① loop 源源不断产出的 known-spread 提案，每次审批都因"无谓词"被判 `uncovered`
+ *        ⇒ 默认（无 LLM）**直接冻结**；
+ *     ② 声明永远进不了权威 `dsl.json` ⇒ 上面那条扣减的输入**恒为空**，功能等于没做。
+ *   ⇒ 登记后它与谓词规则一样"秒判可通过"，`verified_by` 另用 `data-consumed` 标明来历
+ *     （它不是"有谓词判它"，而是"被另一条规则消费"—— 不用 `rule-regression` 那个词，
+ *      避免"声明与实际不符"）。
+ */
+const DATA_DECL_RULES: ReadonlySet<string> = new Set([KNOWN_SPREAD_RULE]);
+
+const registeredRules = (): Set<string> => new Set([...OBSERVE_RULE_IDS, ...DATA_DECL_RULES]);
 
 /**
  * 规则可判定性回归（照搬 Go `:354-370`）。
@@ -139,6 +167,14 @@ export function finalizeDecls(decls: TSDLDecl[], reg: RuleRegression, llmVerdict
 
   return decls.map((d) => {
     const out: TSDLDecl = { ...d };
+    if (DATA_DECL_RULES.has(d.rule)) {
+      // ★ 数据型声明（P5，2026-10-06）：它的判据是"被另一条规则消费"（known-spread 是
+      //   unplanned-spread 的减项），不是"它自己有谓词" ⇒ 用 `data-consumed` 标明来历，
+      //   不借用 `rule-regression` 那个词（否则声明与实际不符）。
+      out.verified_by = 'data-consumed';
+      if (out.status !== 'locked') out.status = 'verified';
+      return out;
+    }
     if (preds.has(d.rule)) {
       out.verified_by = 'rule-regression';
       // ② locked 是终态：只填证据，不降级状态

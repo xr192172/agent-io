@@ -13,6 +13,8 @@ import { rebuildChains } from '../../infrastructure/analysis/observe/chain.js';
 import { TSComparator, renderTSDiffReport } from '../../infrastructure/analysis/observe/contract.js';
 import type { TSDLDecl, TSDiffReport } from '../../infrastructure/analysis/observe/contract.js';
 import { judgeEvents, judgeEventsWithLLM, normalizeEvents, renderJudgeReport } from '../../infrastructure/analysis/observe/judge_service.js';
+import type { ObserveRuleCtx } from '../../infrastructure/analysis/observe/judge.js';
+import { knownSpreadIndex } from '../../infrastructure/analysis/observe/ledger_fold.js';
 import {
   observeLangs,
   renderInstrumentReport,
@@ -99,7 +101,11 @@ export const observeJudgeHandler = wrap(async (a) => {
   const { events: norm, error } = normalizeEvents(events);
   if (error) throw new Error(error);
   const useLlm = a.use_llm === true || a.use_llm === 'true' || a.use_llm === '1';
-  const report = useLlm ? await judgeEventsWithLLM(norm, true) : judgeEvents(norm);
+
+  // ★ 2026-10-06（P5）：**decls 的计算从"判定之后"上移到"判定之前"**。
+  //   原因：逐事件判定现在要扣掉"已被设计承认的耦合"（known-spread 声明，见 `judge.ObserveRuleCtx`），
+  //   而那份"已承认耦合"表只能从 decls 折叠出来。原先顺序是"先判定、后算 decls"
+  //   ⇒ 扣减**永远拿不到输入**（功能形同不存在）。顺序换过后，下面 `report` 一并带上 `judgeCtx`。
 
   // ★ 2026-10-05：设计对比的 decls **默认从项目自己的 dsl.json 读**，不必由调用方自带。
   //
@@ -137,6 +143,14 @@ export const observeJudgeHandler = wrap(async (a) => {
   } else {
     declsNote = '\ndecls 来源：调用方显式传入';
   }
+
+  // 声明侧上下文：`decls` 为 undefined（既没传 decls、也没给 project_root）⇒ **不给 ctx**
+  // ⇒ 规则按原样判、并在文案里**明说"未扣已承认耦合"**（不静默当作"无已承认耦合"处理）。
+  const judgeCtx: ObserveRuleCtx | undefined = decls
+    ? { acknowledgedSpreads: knownSpreadIndex(decls) }
+    : undefined;
+
+  const report = useLlm ? await judgeEventsWithLLM(norm, true, judgeCtx) : judgeEvents(norm, judgeCtx);
 
   // P2 链路契约：decls 可得时重建实测链 + Comparator 全量对比（探针级 + 链路级）
   let diff: TSDiffReport | undefined;

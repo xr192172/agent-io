@@ -127,6 +127,33 @@ export function parseKnownSpread(d: TSDLDecl): KnownSpreadConstraint | null {
   };
 }
 
+/**
+ * 把声明集里的 known-spread 声明折叠成**已承认耦合查询表**：`source → 已承认的越界文件集合`。
+ *
+ * ★ 这是 P5 的**适配层**，职责单一：把"声明"翻译成"judge 层吃得下的领域数据"
+ *   （`ObserveRuleCtx.acknowledgedSpreads`）。judge 层因此**不必认识 `TSDLDecl`**
+ *   —— 否则会与 `contract.ts` 成环、或让同一份类型出现第二份定义。
+ *
+ * ★ 为什么不看 `status`：权威 `dsl.json` 里只装**已批准**的声明（提案经 `approveGated` 才写入）
+ *   ⇒ 读到即"已承认"。若再按 `status` 过滤，就是**为同一个判据造第二条口径**（本仓头号病根）。
+ *
+ * ★ 同 source 多条声明 ⇒ 取**并集**（多条都是"已承认"，合起来才是该源的全部已承认耦合）。
+ */
+export function knownSpreadIndex(decls: readonly TSDLDecl[]): Map<string, Set<string>> {
+  const idx = new Map<string, Set<string>>();
+  for (const d of decls) {
+    const c = parseKnownSpread(d);
+    if (!c) continue;
+    let set = idx.get(c.source);
+    if (!set) {
+      set = new Set<string>();
+      idx.set(c.source, set);
+    }
+    for (const f of c.spread) set.add(f);
+  }
+  return idx;
+}
+
 function joinComma(parts: string[]): string {
   return parts.join('、');
 }

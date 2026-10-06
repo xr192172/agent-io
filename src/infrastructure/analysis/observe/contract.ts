@@ -13,7 +13,8 @@
 import fs from 'node:fs';
 import type { TSEvent, ExtraFields } from './probe.js';
 import { matchChainDecl, type TSChainObs } from './chain.js';
-import { observeRulePredicate } from './judge.js';
+import { observeRulePredicate, type ObserveRuleCtx } from './judge.js';
+import { knownSpreadIndex } from './ledger_fold.js';
 
 /** TS 侧 DSL 声明，与 schema definitions.DSLDecl 对齐。 */
 export interface TSDLDecl {
@@ -139,6 +140,13 @@ export class TSComparator {
     const obsEvents = new Map<string, TSEvent[]>();
     for (const p of actualObs) obsEvents.set(p.probe, p.events);
 
+    // ★ 判定上下文（2026-10-06，P5）：把 known-spread 声明折叠成"已承认耦合"表，供
+    //   `impactUnplannedSpread` 扣减（已承认的越界不该再报计划外扩散）。
+    //   在循环外构造一次（纯计算、不落盘 ⇒ 符合"能现取就别存副本"）。
+    //   ★ 即便一条 known-spread 声明都没有，这里也是**空 Map**（= 已对账、无已承认耦合），
+    //     与"拿不到声明集（undefined）"是两件事（见 `judge.ObserveRuleCtx`）。
+    const judgeCtx: ObserveRuleCtx = { acknowledgedSpreads: knownSpreadIndex(design.decls) };
+
     // 1. 设计声明的覆盖 + 违反检查
     for (const d of design.decls) {
       if (d.chain && d.chain.length > 0) continue; // 链路契约走第 3 段，不参与探针级判定
@@ -161,7 +169,7 @@ export class TSComparator {
       const pred = observeRulePredicate(d.rule);
       if (!pred) continue; // 无确定性谓词 → 不臆造违反（交 LLM 复核）
       for (const ev of matched) {
-        const { result, reason } = pred(ev);
+        const { result, reason } = pred(ev, judgeCtx);
         if (result === 'deviation') {
           report.violated++;
           report.deviations.push({ kind: 'violated', rule: d.rule, probe: ev.probe, detail: reason });

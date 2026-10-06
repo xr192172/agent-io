@@ -52,6 +52,11 @@
 
 ⇒ **三条判定规则（known-spread / unplanned-spread / blast-radius）各自只在一边存在，且都不完整。**
 
+★ **2026-10-06 已解决，且原判断被修正了一半**（详见文末「七、P5 实际落地」）：
+`unplanned-spread` / `blast-radius` 的"不完备"是**Go 侧单边缺失**，随 P2/P6 删掉 Go 判定层后不复存在；
+而 `known-spread` **不是"缺一条规则"**，它是 `unplanned-spread` 的**减项**（判定消费端缺失）——
+把它当"第 4 条规则"注册，会让同一条事件被两条规则**反着判**。
+
 ### 构建与运行耦合（决定"能不能自动化验证"）
 
 - `go.mod:9` = `module go-observe`（**非可解析路径，无 domain 前缀**）；`:11` = `go 1.26`；**无 `require`**。
@@ -95,14 +100,17 @@ observe_instrument（注册工具 = 薄壳路由）
 
 | 阶段 | 做什么 | 风险 | 状态 |
 |---|---|---|---|
-| **P0 已落** | **立语言包缝**：`observe_langs.ts`（`ObserveLangPack` + `ObserveLangRegistry`，照 `refactor_langs` 形状）；handler 从硬编码 `if (isGoProject)` 改成挑包 + 一份渲染 | 低 | ✅ 本笔 |
-| **P1** | 收掉 `SilentErrorDiscard` 的**第 3 份**（`contract.ts:216-236` 删，引用改指 `judge.ts`）；顺手统一 `benign` 严格性（采 Go 的严格 `== true`） | 低 | 待做 |
-| **P2** | **让 Go 的远端判定成为唯一路径**（`judge_client.go`：无 `OBSERVE_JUDGE_URL` 时**响亮失败**而不是落回本地），然后删 Go 本地判定（`contract.go` 的 `JudgeEvent`/`SilentErrorDiscard`/`RenderReport`、`comparator.go` 的 `Compare`/`DeviationKind`） | **中**（Go 无 CI 验证 ⇒ 只能靠"跑得起来"证明） | 待做 |
-| **P3** | 删 TS 侧重复：链重建保留一份（`chain.ts` 为 canonical，Go 侧删）；**裁决两处语义分叉**（TS 跳过链路声明 / 链路探针算已覆盖 —— 我建议**采 TS 行为**，因为它是已在 59 工具里跑通的那个） | 中 | 待做 |
-| **P4** | `loop` 从 Go 搬到 TS（`ledger.json` 折叠 + 提案生成 + 阈值 0.1/1/2）；顺带消掉**悬空的 known-spread**（要么补 TS 消费端，要么连提案一起搬过来并接上） | 中 | 待做 |
-| **P5** | 裁决三条只在一边存在的规则：`known-spread` / `unplanned-spread` / `blast-radius` —— 目标是**三者在同一份注册表里都能被声明与判定** | 中 | 待决断 |
-| **P6** | Go 侧只剩「语言包」两件事：`internal/instrument`（插桩）+ `probe`（同编译单元 runtime）。`dsl_cli.go` 瘦身为 `instrument` 一条子命令（或直接删，让 `go_instrument.ts` 走 `go run ./cmd/instrument` —— **它现在就是这么跑的**） | 中 | 待做 |
-| **P7** | **把 Go 纳入门禁** ⇒ ✅ **已落**（`scripts/verify.mjs` + `npm run verify`，三态 PASS/FAIL/SKIP⇒0/1/2） | 低 | ✅ 本笔 |
+| **P0** | **立语言包缝**：`observe_langs.ts`（`ObserveLangPack` + `ObserveLangRegistry`，照 `refactor_langs` 形状）；handler 从硬编码 `if (isGoProject)` 改成挑包 + 一份渲染 | 低 | ✅ |
+| **P1** | 收掉 `SilentErrorDiscard` 的**第 3 份**（`contract.ts:216-236` 删，引用改指 `judge.ts`）；顺手统一 `benign` 严格性（采 Go 的严格 `== true`） | 低 | ✅ |
+| **P2** | **让 Go 的远端判定成为唯一路径**（`judge_client.go`：无 `OBSERVE_JUDGE_URL` 时**响亮失败**而不是落回本地），然后删 Go 本地判定（`contract.go` 的 `JudgeEvent`/`SilentErrorDiscard`/`RenderReport`、`comparator.go` 的 `Compare`/`DeviationKind`） | **中**（Go 无 CI 验证 ⇒ 只能靠"跑得起来"证明） | ✅ |
+| **P3** | 删 TS 侧重复：链重建保留一份（`chain.ts` 为 canonical，Go 侧删）；**裁决两处语义分叉**（TS 跳过链路声明 / 链路探针算已覆盖 —— 采 TS 行为，因为它是已在 59 工具里跑通的那个） | 中 | ✅ |
+| **P4** | `loop` 从 Go 搬到 TS（`ledger.json` 折叠 + 提案生成 + 阈值 0.1/1/2） | 中 | ✅ |
+| **P5** | ★★ **原目标已被修正**（见 §七）：原写"裁决三条只在一边存在的规则，目标是三者在同一份注册表里都能被声明与判定"。实情是 `unplanned-spread` / `blast-radius` **本来就是表内的活规则**（删它们是减能力），而 `known-spread` **不该是第 4 条规则** —— 它是 `unplanned-spread` 的**减项** ⇒ 要补的是它的**判定消费端** | 中 | ✅ |
+| **P6** | Go 侧只剩「语言包」两件事：`internal/instrument`（插桩）+ `probe`（同编译单元 runtime）。`dsl_cli.go` 瘦身为 `instrument` 一条子命令（或直接删）—— ★ 实际做法是**整删**（`e9a31a7`）：插桩走 `go_instrument.ts` 的 `go run ./cmd/instrument`，本就不依赖它 | 中 | ✅ |
+| **P7** | **把 Go 纳入门禁**（`scripts/verify.mjs` + `npm run verify`，三态 PASS/FAIL/SKIP⇒0/1/2） | 低 | ✅ |
+
+⇒ **P0–P7 全部已落** —— `observe-lang-go/` 从 42 个文件降到 21 个（只剩插桩 + 进程内采集 runtime），
+判定层 / DSL 仓库 / 审批 / loop 全在 TS 侧，且 TS 侧**已能独立完成「事件 → 偏差 → 提案 → 审批 → 定稿」闭环**。
 
 ## 五、需要人拍板的三件事（✅ 2026-10-05 全部已裁定，见各条）
 
@@ -133,3 +141,106 @@ observe_instrument（注册工具 = 薄壳路由）
   · Go 还原 ⇒ `一键全拔（go）：未找到备份与台账`
 - ★ 顺带验证了一个失败路径：Go 夹具被我写坏时（PowerShell 转义把 `\` 写进 `.go`），
   工具**逐文件报出解析错误并计入"1 失败"，没有抛异常** —— 这正是统一形状想要的行为。
+
+## 七、P5 实际落地（2026-10-06）：`known-spread` 是 `unplanned-spread` 的**减项**，不是第 4 条规则
+
+### 症状（搬迁后的形态，与搬迁前同病不同位）
+
+`design:impact-known-spread` 声明**有生成、有审批、有存储，就是没有判定消费**：
+
+- 生成：`ledger_fold.knownSpreadDecl()` ← `run_loop` 6b（台账累犯模式回流）
+- 审批：`approve_gated`
+- 存储：权威 `dsl.json`
+- 判定：**零消费** —— 它不在 `OBSERVE_RULE_TABLE`（表里 3 条），`compare` 第 1 段拿到它走
+  `if (!pred) continue`（`contract.ts`）⇒ **既不判违反**；第 2 段因 `probe='impact.spread'`
+  命中而被算"已覆盖"；第 3 段无 `chain` 跳过。
+- ⇒ 后果：声明写了**等于没写**。下次同一源又波及同一文件，`impactUnplannedSpread`
+  照样喊「计划外扩散」⇒ 用户每次被同一件事叫醒。
+
+### ★ 关键判断修正（原目标错在哪）
+
+原计划（§四 P5 行）写的是「裁决三条规则，目标是**三者在同一份注册表里都能被声明与判定**」。
+**这句话本身是错的** —— 它把一体两面当成了两条并列规则：
+
+| | 问的问题 |
+|---|---|
+| `unplanned-spread` | 「越界了吗？」 |
+| `known-spread` 声明 | 「这部分越界**我认了**」 |
+
+⇒ 若把 known-spread 注册成第 4 条谓词，**同一条事件会被两条规则各判一次、结论相反**
+（unplanned 报违反 / known 报 ok）⇒ 又一次判据分叉（本仓头号病根）。
+⇒ 真正要改的是 `unplanned-spread` 的**判定输入**：已承认的越界要**扣除**后再看净越界。
+
+### 落点（形状 1）
+
+| 改动 | 文件 | 说明 |
+|---|---|---|
+| `ObserveRuleCtx`（谓词**可选**上下文） | `judge.ts` | 放的是**领域数据** `acknowledgedSpreads: Map<source, Set<file>>`，**不是 `TSDLDecl[]`** ⇒ judge 层不认识 DSL 类型（① 避免与 `contract.ts` 成环 import；② 避免同一份类型出现第二份定义） |
+| 扣减逻辑 | `judge.ts` `impactUnplannedSpread(ev, ctx?)` | 净越界 = `unexpected_files − 已承认耦合`；净空 ⇒ `ok`，非空 ⇒ `deviation`（文案标出"另有 N 个已承认，已扣除"） |
+| 适配层 | `ledger_fold.ts` `knownSpreadIndex(decls)` | 声明 → 领域数据。**不看 `status`**（权威 `dsl.json` 只装已批准声明，读到即"已承认"；再按 status 过滤就是给同一判据造第二条口径） |
+| 构造 ctx | `contract.ts` `compare` | 循环**外**构造一次（纯计算、不落盘） |
+| 透传 | `judge_service.ts` `judgeEvents(events, ctx?)` / `judgeEventsWithLLM(events, useLlm, ctx?)` | |
+| ★ 顺序修正 | `handlers.ts` `observeJudgeHandler` | **decls 的计算从"判定之后"上移到"判定之前"** —— 原先顺序下扣减**永远拿不到输入**（功能形同不存在） |
+| loop | `run_loop.ts` | LLM 复核那步传 ctx |
+
+### ★ `undefined` 与"空 Map"是两件事（不许混为一谈）
+
+- `ctx` / `acknowledgedSpreads` 为 **`undefined`** = **拿不到声明侧信息**（实时逐事件 / 日志查询路径
+  没有 `dsl.json`）⇒ 规则按原样判，但**文案必须明说**「⚠ 未扣已承认耦合：无声明集」（不许静默）；
+- **空 Map** = **已对账**，结论就是"没有任何已承认耦合" ⇒ 文案**不**提示未扣减。
+
+### ★ 必要配套：`verify_gate` 的 `DATA_DECL_RULES`
+
+不做它则**整条链空转**：known-spread 无谓词 ⇒ 审批时被判 `uncovered` ⇒ 默认（无 LLM）
+**直接冻结** ⇒ 声明永远进不了权威 `dsl.json` ⇒ 上面那条扣减的**输入恒为空**。
+⇒ 登记为**数据型声明规则**：与谓词规则一样算"可确定性判定"（判定发生在**消费它的那条规则**里），
+但 `verified_by` 记 `data-consumed`（不是 `rule-regression`）—— 不能借用"有谓词判它"那个词。
+
+### 定位方式**不是启发式**（一处本来就容易搞错的地方）
+
+一开始怀疑"`impact.spread` 事件没有 `source` ⇒ 声明与事件对不上号 ⇒ 只能启发式桥接"。
+**核实后不成立**：`source` 的定义就是"某条 ledger 条目 `declared_files` 里的一个成员"
+（`foldEntries` 逐字如此），而事件**自带 `declared_files`**（`watch_project_tool.ts` 写入）
+⇒ `event.declared_files × ctx.acknowledgedSpreads` 是**精确桥**（同一份数据、同一个名字）。
+⇒ 因此**不需要**给事件补字段、也不改 `observe_contract.schema.json`。
+
+### 实测（真调，非读码声称）
+
+| 档 | 输入 | 结果 |
+|---|---|---|
+| 1 | 声明 `source=src/a.ts, spread=[src/x.ts]` + 事件越界 `[src/x.ts]` | `deviation=0`、`diff.violated=0` ⇒ **扣减生效**（不再报） |
+| 2 | **同一事件**但不给声明集（对照） | `deviation=1`、rule=`impact-unplanned-spread`，文案带「⚠ 未扣已承认耦合：无声明集」|
+| 3 | 同声明 + 事件越界 `[src/x.ts, src/z.ts]` | `deviation=1`，**只报 `src/z.ts`**，文案带「另有 1 个已由设计契约承认，已扣除」|
+| 配套 A | `verifyRuleRegression([known-spread 声明])` | `uncovered=[]`、`covered=1` ⇒ 不再被判"需 LLM 复核" |
+| 配套 B | `finalizeDecls` | `verified_by=data-consumed`、`status=verified` |
+| 配套 C | 同 source 两条声明 | 索引取**并集** `["src/x.ts","src/y.ts"]` |
+| 配套 D | 无 known-spread 的声明集 | 索引 `size=0`（空 Map ≠ undefined） |
+| 回归 | `silent-error-discard`（`op=writefile, err=ENOENT`） | 仍 `deviation=1`，文案不变 |
+| 端到端 | `runLoop` 跑一轮 | `triggered=true violated=0 undesigned=1`（未坏） |
+| 总门 | `npm run verify` | **五道全 PASS / exit 0** |
+
+### 顺带清掉的两样零消费者物（不留墓碑）
+
+- `judgeEvent(ev, rules?)` 的 **`rules` 形参**：全仓**零调用方**（所有调用点都是 `judgeEvent(ev)`），
+  留着它还会逼出 `judgeEvent(ev, undefined, ctx)` 这种占位调用 ⇒ 删；
+- 随之零消费者的 `DEFAULT_OBSERVE_RULES` ⇒ 一并删（规则链顺序的唯一来源 = `OBSERVE_RULE_TABLE`）。
+
+### ⚠ 如实登记：`compare` 是**声明驱动**，与本笔的扣减只有一半交集
+
+`compare` 第 1 段是「**遍历 DSL 里的声明**，逐条跑它 rule 的谓词」⇒ 若 DSL 里**没有**
+`design:impact-unplanned-spread` 声明，`compare` 根本不会调用该谓词（因此也不会报它）。
+所以扣减在 `compare` 路径上"当且仅当 DSL 里有那条声明时"才可见 —— 这是**既有语义**（本笔未改）。
+本笔真正让扣减可见的主路径是 **`judgeEvents`**（`observe_judge` 的逐事件报告，实测档 1–3 就是它）。
+两条路径语义不同（一条规则驱动、一条声明驱动）这件事**登记在此**，留给后续判断要不要收口。
+
+### 本笔撞到的两处环境事实（不属本笔代码，但影响验证读数）
+
+- **`node_modules` 当时是空的**（0 个包）⇒ `npm run build` 直接失败、`mcp_scan` /
+  `measure_b_contract` 报 `ERR_MODULE_NOT_FOUND`。**那两道门不是代码红，是依赖缺失**；
+  装齐依赖后总门五道全 PASS。
+- ★★ **`scripts/verify.mjs` 的 ts 门存在假绿灯**：它调 `npx tsc --noEmit`，而在 `typescript`
+  未安装时 `npx` 会取到 npm 上的 **`tsc` 占位包**（输出「This is not the tsc command you are
+  looking for」）并**退出 0** ⇒ 总门报 `PASS` 却**什么都没编译**。
+  这与 verify 自己设计的三态（缺工具链 ⇒ SKIP / 退出 2）自相矛盾。
+  **本笔未修**（超出 P5 范围）：待定是给它加 `need` 探测，还是直接调
+  `node <本地 typescript>/bin/tsc`。

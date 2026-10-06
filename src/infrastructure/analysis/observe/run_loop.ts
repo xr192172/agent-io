@@ -52,7 +52,7 @@ import { TSComparator, type TSDLDecl, type TSDesignDSLDoc, type TSProbeObs, type
 import { loadTSEvents } from './probe.js';
 import { DesignDSLStore } from './dsl_store.js';
 import { ProposalStore, PROPOSAL_PENDING, type Proposal } from './proposal_store.js';
-import { analyzeLedger, knownSpreadDecl, parseKnownSpread, sameSpreadSet, type LedgerStats } from './ledger_fold.js';
+import { analyzeLedger, knownSpreadDecl, knownSpreadIndex, parseKnownSpread, sameSpreadSet, type LedgerStats } from './ledger_fold.js';
 import { judgeEventsWithLLM, type JudgeEntryWithLLM } from './judge_service.js';
 import { OBSERVE_RULE_IDS } from './judge.js';
 
@@ -149,7 +149,9 @@ export async function runLoop(
   if (opt.useLlm) {
     res.llmRun = true;
     try {
-      const r = await judgeEventsWithLLM(events, true);
+      // ★ 传声明侧上下文（P5）：loop 握有权威 DSL ⇒ 逐事件判定也能扣掉"已承认耦合"，
+      //   否则 loop 会对着已承认的耦合反复报「计划外扩散」。
+      const r = await judgeEventsWithLLM(events, true, { acknowledgedSpreads: knownSpreadIndex(design.decls) });
       // entries 的静态类型是 JudgeEntry（无 llm 字段），但开了 useLlm 时运行期是 WithLLM
       for (const e of r.entries as JudgeEntryWithLLM[]) {
         if (e.llm) res.llmVerdicts.push(e.llm);

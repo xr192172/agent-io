@@ -16,7 +16,7 @@
  *   GET  /api/observe/judge   从 OBSERVE_EVENTS_FILE 读全部事件判定（等价 Go JudgeLogFile）
  */
 
-import { judgeEvent, type JudgeVerdict } from './judge.js';
+import { judgeEvent, type JudgeVerdict, type ObserveRuleCtx } from './judge.js';
 import { callChat, loadLlmConfig } from '../../llm_focus.js';
 import type { TSEvent } from './probe.js';
 
@@ -64,9 +64,15 @@ export function normalizeEvents(input: unknown): { events: TSEvent[]; error?: st
   return { events };
 }
 
-/** 对一批事件执行判定，返回逐条结果与汇总。 */
-export function judgeEvents(events: TSEvent[]): JudgeResult {
-  const entries: JudgeEntry[] = events.map((ev) => ({ verdict: judgeEvent(ev), event: ev }));
+/**
+ * 对一批事件执行判定，返回逐条结果与汇总。
+ *
+ * @param ctx 可选的**声明侧上下文**（2026-10-06，P5）：有它 ⇒ 需要声明信息的规则
+ *   （目前是 `impact-unplanned-spread` 扣减已承认耦合）才能生效；没有 ⇒ 那些规则照原样判，
+ *   但会在文案里**明说未做扣减**（不许静默）。见 `judge.ObserveRuleCtx`。
+ */
+export function judgeEvents(events: TSEvent[], ctx?: ObserveRuleCtx): JudgeResult {
+  const entries: JudgeEntry[] = events.map((ev) => ({ verdict: judgeEvent(ev, ctx), event: ev }));
   const deviation = entries.filter((e) => e.verdict.result === 'deviation').length;
   return { total: entries.length, ok: entries.length - deviation, deviation, entries };
 }
@@ -79,8 +85,9 @@ export function judgeEvents(events: TSEvent[]): JudgeResult {
 export async function judgeEventsWithLLM(
   events: TSEvent[],
   useLlm = false,
+  ctx?: ObserveRuleCtx,
 ): Promise<JudgeResult> {
-  const base = judgeEvents(events);
+  const base = judgeEvents(events, ctx);
   if (!useLlm) return base;
 
   const cfg = loadLlmConfig();
