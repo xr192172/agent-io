@@ -426,14 +426,23 @@ export function deriveObjectChains(minLen = 2, maxLen = 6): string[][] {
 /**
  * 本工具**所有**已验真的出边（= "下一棒"）。
  *
- * ★ 只取**两端都具体**的边：**排除通配边**（`ANY_TOOL`）——
- *   它们说的是"任何工具都能接"，对**具体某个**工具就是噪音（每条都要列 61 个下游），
- *   而且它们本来就已经写在接法表里当**背景规则**了。
+ * ★ 只取**两端都具体**的边：**排除通配边**（`ANY_TOOL`）。
+ *   ★★ **为什么不展开它（不是"提前收敛"，是"展开会失真"）**：
+ *     通配边是一条**全称命题**（「**任何** [B] 的 `touched.project_dir` 能喂**任何** [B] 的 `project_dir`」），
+ *     它**忠实的渲染就是"任何工具"四个字**。展开成 `61 × 2` 行 = 把 **1 条规则伪装成 122 条候选**，
+ *     而**信息量恰好为零** —— 每个工具都在里面 ⇒ 狗食从它身上**看不出任何区别**（这正是"要减"的东西）。
+ *     ⇒ 正确的给法 = **规则提一次**（见 `renderNextHops` 末尾那行脚注 + 接法表里的两行），
+ *       **不按工具展开**。
  * ★ 用途（2026-10-06，用户裁定「**先不收敛，所有有可能的下一棒都给它**」）：
  *   在**回执通道**里告诉调用方"从这一步能接哪几棒、用什么表达式"。
  */
 export function nextHopsOf(tool: string): readonly ChainEdge[] {
   return CHAIN_EDGES.filter((e) => e.evidence === 'verified' && e.from === tool && e.to !== ANY_TOOL);
+}
+
+/** 本工具**适用**的通配边（= 全称规则）。★ 只用于"提一次"，**不展开**。 */
+export function universalHopsOf(): readonly ChainEdge[] {
+  return CHAIN_EDGES.filter((e) => e.evidence === 'verified' && e.from === ANY_TOOL);
 }
 
 /**
@@ -454,7 +463,11 @@ export function renderNextHops(tool: string): string {
   return (
     '\n── 下一棒（★ **提示**，不是链的接口：本工具**全部**已验证出边，先全给、不收敛）──\n' +
     lines.join('\n') +
-    '\n    ★ 想接才用；不接就直接结束。'
+    '\n    ★ 想接才用；不接就直接结束。' +
+    '\n    ★ 另有**全称规则**（**提一次、不展开**，展开就是"每个工具都能接每个工具"= 零信息量）：\n' +
+    universalHopsOf()
+      .map((e) => `      ${chainExprOf(e)} → 任何 [B] · ${e.toPath}`)
+      .join('\n')
   );
 }
 
