@@ -79,18 +79,43 @@ export function defaultVerifyCommands(cwd: string): VerifyCommand[] {
     ];
   }
   if (hasPackageJson) {
-    const cmds: VerifyCommand[] = [{ label: 'tsc noEmit', cmd: 'npx', args: ['tsc', '--noEmit'] }];
+    const cmds: VerifyCommand[] = [];
+    // ★★ 2026-10-06（T15 尾账 (c)）：**只在本地真的装了 `typescript` 时才放 tsc**。
+    //   原先**无条件**放 `npx tsc --noEmit` —— 而项目没装 typescript 时，npx 会解析到 npm 上那个
+    //   **同名假包**（打印 "This is not the tsc command you are looking for"）并**退出 0**
+    //   ⇒ 这一格**看起来 pass、实际什么都没验**（实测：夹具上 baseline detail 就是
+    //   `[tsc noEmit] pass` + 那段假包文案）⇒ 基线/回归判据**形同没有**。
+    //   ★ 判据用"**本地装了没**"而不是"package.json 里声明了没"：声明了却没装（`npm ci` 没跑过）
+    //     同样会走 npx 的下载/假包那条路。
+    if (fs.existsSync(path.join(cwd, 'node_modules', 'typescript'))) {
+      cmds.push({ label: 'tsc noEmit', cmd: 'npx', args: ['tsc', '--noEmit'] });
+    }
     let scripts: Record<string, string> | undefined;
+    let deps: Record<string, string> = {};
     try {
       const pkg = JSON.parse(fs.readFileSync(path.join(cwd, 'package.json'), 'utf-8')) as {
         scripts?: Record<string, string>;
+        dependencies?: Record<string, string>;
+        devDependencies?: Record<string, string>;
       };
       scripts = pkg.scripts;
+      deps = { ...(pkg.dependencies ?? {}), ...(pkg.devDependencies ?? {}) };
     } catch {
       scripts = undefined;
     }
     if (scripts && typeof scripts.test === 'string') {
-      cmds.push({ label: 'npm test', cmd: 'npm', args: ['test', '--', '--run'], timeoutMs: 600_000 });
+      // ★★ 2026-10-06（T15 尾账 (b)）：`-- --run` **只在检出 vitest 时才加**。
+      //   原先**无条件**加 ⇒ 任何**非 vitest** 项目的 `npm test` 都多收一个 `--run`
+      //   ⇒ 脚本不认这个参数就**基线恒失败** ⇒ 一切 verify 门下的 apply **都做不了**
+      //   （实测：夹具 `node -e …` ⇒ `[npm test] exit 9` + `node: --run requires an argument`）。
+      //   ★ 而"加 `--run`"的本意只是"别让 vitest 进 watch 把验证挂住" ⇒ 那顾虑**只对 vitest 成立**。
+      //   ★ 另记：这一行还是**测试框架整体移除**（2026-10-04）之后的遗留（本仓今天已无 test script）。
+      const isVitest = typeof deps.vitest === 'string' || fs.existsSync(path.join(cwd, 'node_modules', 'vitest'));
+      cmds.push(
+        isVitest
+          ? { label: 'npm test', cmd: 'npm', args: ['test', '--', '--run'], timeoutMs: 600_000 }
+          : { label: 'npm test', cmd: 'npm', args: ['test'], timeoutMs: 600_000 },
+      );
     }
     return cmds;
   }

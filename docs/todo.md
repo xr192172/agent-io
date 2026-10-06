@@ -482,7 +482,7 @@
            消费者的死 import **真被删掉** ④ `remove_file:true` ⇒ **模块文件真被物理删除** +
            `written_files` 含被删的 `src/dead.ts` + `status="file_removed"`。
            ★ 量具：**[B] 人群 37 → 38 · 已接 31/38 · 该给未给＝真债 0**（棘轮认了它）。总门五道全 PASS。
-         ⇒ ★★★ **同批挖出三条真缺陷（★ 本轮不改** —— 各需一个决策，且都落在"验证 / 候选识别"这一层）**：
+         ⇒ ★★★ **同批挖出三条真缺陷（都落在"验证 / 候选识别"层）—— ✅ 当晚已修，见下**：
            · **(a) `resolveConsumerSource` 不认 TS 的 `.js` 说明符**：候选表是 `[base, base+ext…, base/index+ext…]`
              ⇒ `import … from './x.js'`（**本仓全仓的写法**）**resolve 不到 `x.ts`** ⇒ 该 source 被判"非自研"
              ⇒ **静默漏报候选**（★ 我造夹具时踩到的就是这个：`./dead.js` ⇒ 0 候选；改成 `./dead` ⇒ 1 候选）。
@@ -492,9 +492,24 @@
            · **(c) `npx tsc --noEmit` 会假通过**：项目没装 `typescript` 时 npx 解析到 npm 上那个**同名假包**
              （打印 "This is not the tsc command you are looking for"）并**退出 0** ⇒ 基线 tsc 闸**形同没有**
              （实测 detail 就是 `[tsc noEmit] pass` + 那段假包文案）。
-             ⇒ 三条都**有原始输出为证**（见对应 commit）。★ (b)(c) 在**同一条函数**里，且 (b) 笼罩**所有** verify 工具
-             ⇒ 建议**下一批一起修**，但先各自定判据：(a) 是否加 `.js→.ts` 归一？(b) 是否只在检出 vitest 时才加 `--run`？
-             (c) 是否只在本地装了 `typescript` 时才把 tsc 放进命令组？
+             ⇒ 三条都**有原始输出为证**（见对应 commit）。★ (b)(c) 在**同一条函数**里，且 (b) 笼罩**所有** verify 工具。
+             ⇒ ✅ **三条已修（同批第二笔）**，判据都是"**别猜：要么有证据，要么把选择交给调用方**"：
+               · **(a)** 候选表加"**去掉 `.js`/`.mjs`/`.cjs`/`.jsx` 后再试各源扩展名**"（★ 仍**先按字面试**：真有
+                 `x.js` 在场就按 `.js` 命中 —— 不越权改语义）；
+               · **(b)** `--run` **只在检出 vitest 时**才加（`deps.vitest` 或本地装了 `vitest`）：加它的本意只是
+                 "别让 vitest 进 watch 把验证挂住"，那顾虑**只对 vitest 成立**；其余项目**原样跑 `npm test`**
+                 （★ 不替用户改命令）；
+               · **(c)** tsc **只在本地真的装了 `typescript` 时**才进命令组（★ 判据用"**装了没**"而不是"声明了没"：
+                 声明了却没装（`npm ci` 没跑过）同样会走 npx 的下载/假包那条路）。
+                 ★ 副作用（**方向是更安全**）：两样都不成立（没 ts / 没 test）⇒ 命令组**为空** ⇒ 各调用方按
+                 "**不可自动验证**"如实降级 —— `deprecate_offline` 会**拒绝物理删文件**，而不是去信任一个假通过的闸。
+             **实测（一体式：夹具用 node 建、★ 用 `.js` 说明符 + test 脚本**不认** `--run` + 没装 typescript）**：
+               · 命令组：夹具 ⇒ `["npm test :: npm test"]`（**无 tsc、无 `--run`**）✅ · 本仓 ⇒ `["tsc noEmit :: npx tsc --noEmit"]`
+                 （**不变**，无回归）✅
+               · 夹具基线 `status` **pass** ✅（改前是 `[npm test] exit 9`）
+               · **(a)** dry-run ⇒「1 个死源 → **1 个可下线自研积木候选**」✅（改前是 **0**）
+               · **端到端 apply** ⇒「1 候选 → 下线 1，回滚 0」+ `written_files:["src/consumer.ts"]` + 死 import **真被删** ✅
+               · **端到端 `remove_file`** ⇒ `dead.ts` **真被物理删除** + `written_files` 含它 ✅
       6. `upgrade_cli` / `upgrade_rewrite_cli`（后者会编辑 + 验证 + 提交）、以及
          `signal_review_cli` / `split_stage_cli` 这两个 **CLI 的去留**（能力已归零，CLI 是否留作 argv 便利）
       7. **`install_package_cli` ⇒ 判为一次性运维脚本**（`spawn npm install/uninstall` 改环境 + 联网；

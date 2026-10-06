@@ -164,7 +164,19 @@ export function resolveConsumerSource(project_dir: string, consumerRel: string, 
   }
   const absConsumer = path.resolve(project_dir, consumerRel);
   const base = path.resolve(path.dirname(absConsumer), source.replace(/\\/g, '/'));
-  const cands = [base, ...SOURCE_EXTS.map((e) => base + e), ...SOURCE_EXTS.map((e) => path.join(base, 'index' + e))];
+  // ★★ 2026-10-06（T15 尾账 (a)）：**认 TS/ESM 的 `.js` 说明符**。
+  //   `import … from './x.js'` 在 TS 源码里指的是**编译产物**，源文件其实是 `x.ts`
+  //   —— ★ 而**本仓全仓就是这么写的**。原先候选表只有 `base` / `base+ext` / `base/index+ext`
+  //   ⇒ `./x.js` **一个也不命中** ⇒ 该 source 被判"非项目内自研" ⇒ **静默漏报候选**
+  //   （实测：夹具写 `./dead.js` ⇒ **0 个可下线候选**；改成 `./dead` ⇒ **1 个**）。
+  //   ★ 顺序仍是"**先按字面试**"：真有 `x.js` 在场就按 `.js` 命中（不越权改语义）。
+  const stem = base.replace(/\.(js|mjs|cjs|jsx)$/i, '');
+  const cands = [
+    base,
+    ...SOURCE_EXTS.map((e) => base + e),
+    ...(stem === base ? [] : SOURCE_EXTS.map((e) => stem + e)),
+    ...SOURCE_EXTS.map((e) => path.join(base, 'index' + e)),
+  ];
   for (const c of cands) {
     try {
       if (fs.existsSync(c) && fs.statSync(c).isFile()) {
