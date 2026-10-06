@@ -206,6 +206,52 @@ Unix 内核**不知道** `ls` / `ffmpeg` / `nginx` 在干什么，**也不妨碍
 ⇒ 这个想法**不需要万能框架**，它在**单语言**里就成立，且已经有价值（死代码/闭包最小化）。
 ★ **阵亡的是"盒子"，不是这条思路。**
 
+### 6.3 ★ 搁置（**不是阵亡**）：`brickify` 的产物面该以什么形状注册（2026-10-06 侦察结论）
+
+★ **为什么登记在这一节**：`brickify` 正是 §1 那句「拿到一个项目，**先积木化**」的代码承载
+（`application/design/bricks/brickify.ts` 头注逐字记着 2026-08-24 的洞见），所以它的
+**产物形状**问题属于「框架只给插槽、语义由模型填」那条线（§5.2 的**版本 B**）
+⇒ **版本 B 重启前不动** —— 这正是"搁置"而不是"阵亡"的理由（东西还活着，只是不裁它）。
+
+**触发**：T15「『CLI-only』应当归零」的最后一格。清单原把它写成一个**二选一**
+（新立 `brickify` **vs** 给 `render_brickwork` 加 `artifacts` 枚举，理由是"两者会重叠"）。
+
+**侦察（读源实测，2026-10-06）—— 结论：那个二选一的问法本身就偏了**：
+
+1. `brickify_cli` **不是一个能力，是一条 11 类产物的管线**（每个 flag 一类）：控制台摘要 ·
+   `--json` 完整数据报告 · `--out` 社区工作台 HTML · `--mindmap` 分层导图 · `--workbench` 簇级工作台 ·
+   `--sandbox` 画布沙盘 · `--anatomy` 解剖泳道 · `--tools-map` 功能中心 · `--wizard` 新功能向导 ·
+   `--dsl-workbench` DSL 协作工作台 · `--workbench-data` 工作台数据契约 v1。
+2. **`--out` 那个核心产物 MCP 已有**：`render_brickwork` 的 handler 调 `buildBrickifyPreview`，
+   而它 = `buildBrickify(...)` + `renderBrickifyWorkbenchHtml(result)` + 写盘 —— 与 `brickify_cli --out`
+   **逐字同一对函数**。⇒ "两个工具重叠"不成立：已有的那个**就是**这一格。
+3. ★★ **9/11 类产物的消费者不是 agent**（源注释逐字）：`--dsl-workbench` 自注册进产物注册表 ——
+   「唯一前端出口 `/workbench` 的 feature-meta 靠 registry 发现 iframe 画布产物」；
+   `--workbench-data` 是「**前端窗口B 的对接物**」（契约 v1 冻结）；`--tools-map` / `--wizard` 是前端页物；
+   其余 4 类是人读 HTML（"浏览器打开验收"）。
+4. ⇒ **真正"agent 够不着"的只有一类**：`--json` 的**结构化报告**。
+
+**历史裁定（都在册，但都不是"注册形状"）**：
+
+| 出处 | 裁定 |
+|---|---|
+| `docs/tool-convergence.md` §2（操作面表） | `brickify_cli` = 「**积木装配的终端形态**」，对应能力域 refactor / harvest |
+| 同文 Phase 1 · B 组核验 | 候选组 `render_dsl` / `render_sandbox` ⇒ 输入 / 产物 / handler **完全独立** ⇒ **判不合并** |
+| 同文 §5.5 命名审计 | 候选方向 `render_sandbox` → `render_brickwork`（按对象改名）⇒ **已执行** |
+
+**三档形状与代价（备查，重启时再裁）**：
+
+| 档 | 形状 | 代价 |
+|---|---|---|
+| (a) | 只把 `--json` 报告接进 MCP（作 `render_brickwork` 的 `data` 段） | 最小；不动工具数、不跨对象 ★ 倾向 |
+| (b) | 8 类 HTML + `--workbench-data` 维持 CLI / 端点（它们是前端 / 人的交付口） | 0；但要在文档里写明"**它们不是 agent 面**" |
+| (c) | 新立 `brickify`（`artifacts: enum[]`）全塞 MCP | ⚠ 一个入口横跨 8 类产物 + 跨 bricks / workbench / registry **三个域**，与 §2.0「按操作对象聚合」冲突；还要背 `--narrate` 的 LLM 依赖 |
+
+**牵连（真动时要一起改，先记下）**：`presentation/cli/render/render_workbench.ts:449` 的前端壳里
+**逐字**有「重新生成请跑 `brickify_cli --dsl-workbench`」的 UI 提示；`package.json` 的 `brickify` script
+是**裸入口**（不带参会 `exit 2` 打 usage）；`cli/render/`（7 个 renderer）是"被 `brickify_cli` 引用的
+渲染子库"、已按同一条判据拆成独立域。
+
 ---
 
 ## 7. 如果重开：三个**最小可证伪**实验（都不必自造框架）
