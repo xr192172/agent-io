@@ -884,16 +884,4 @@
       · **Go 侧 7 个文件未 `gofmt`**：`gofmt -l` 报 10 个，其中 3 个已随那笔一起格式化，剩 7 个在
         HEAD 就没格式化 ⇒ 历史遗留，不影响功能。
 
-- [ ] **T61 ★★ `scripts/verify.mjs` 的 ts 门有假绿灯（2026-10-06 核实，未修）**
-      *(核实：本机 `node_modules` 为空时跑 `npm run verify`，ts 门报 **PASS**（5606ms），
-       而实际执行的是 npm 上的 **`tsc` 占位包**（输出「This is not the tsc command you are
-       looking for」）且**退出 0** ⇒ **什么都没编译**。)*
-      ⇒ 根因：该门用 `npx tsc --noEmit`。`typescript` 未安装时 `npx` 会去取同名占位包，
-        而占位包**以 0 退出** ⇒ 门被"通过"。
-      ⇒ ★ 危害：这正是本仓最反对的**假绿灯**，而且发生在**唯一的总门**上 —— 它让
-        「返回 0 = 每一道门都真跑过并通过」这句承诺在缺依赖时不成立，也与它自己设计的三态
-        （缺工具链 ⇒ SKIP / 退出 2）**自相矛盾**。
-      ⇒ 待定两条路：(a) 给 ts 门加 `need` 探测（与 Go 门同款，缺 typescript ⇒ SKIP）；
-        (b) 直接调本地编译器 `node node_modules/typescript/bin/tsc`（缺文件即 FAIL，最响亮）。
-        ★ 倾向 (b)：把"依赖没装"变成**响亮失败**，而 (a) 会把它降级成 SKIP（可能被忽略）。
 

@@ -238,9 +238,15 @@ observe_instrument（注册工具 = 薄壳路由）
 - **`node_modules` 当时是空的**（0 个包）⇒ `npm run build` 直接失败、`mcp_scan` /
   `measure_b_contract` 报 `ERR_MODULE_NOT_FOUND`。**那两道门不是代码红，是依赖缺失**；
   装齐依赖后总门五道全 PASS。
-- ★★ **`scripts/verify.mjs` 的 ts 门存在假绿灯**：它调 `npx tsc --noEmit`，而在 `typescript`
-  未安装时 `npx` 会取到 npm 上的 **`tsc` 占位包**（输出「This is not the tsc command you are
-  looking for」）并**退出 0** ⇒ 总门报 `PASS` 却**什么都没编译**。
-  这与 verify 自己设计的三态（缺工具链 ⇒ SKIP / 退出 2）自相矛盾。
-  **本笔未修**（超出 P5 范围）：待定是给它加 `need` 探测，还是直接调
-  `node <本地 typescript>/bin/tsc`。
+- ★★ **`scripts/verify.mjs` 的 ts 门曾有假绿灯** —— **2026-10-06 已修（T61）**：
+  它原调 `npx tsc --noEmit`，而在 `typescript` 未安装时 `npx` 会取到 npm 上的 **`tsc` 占位包**
+  （输出「This is not the tsc command you are looking for」）并**退出 0** ⇒ 总门报 `PASS`
+  却**什么都没编译**（与它自己设计的三态「缺工具链 ⇒ SKIP / 退出 2」自相矛盾）。
+  ⇒ 现改为直接调**本地编译器**：`localTsc()` 用 `createRequire().resolve('typescript')` 取主入口
+  再拼 `../bin/tsc`（**不硬编码路径** —— hoist / pnpm / 嵌套三种布局都对），命令用
+  `process.execPath` 跑它的 JS 入口；**拿不到编译器时 FAIL 而不是 SKIP**
+  （SKIP 留给可选外部工具链如 Go；typescript 是本仓 devDependency，缺它 = 依赖没装）。
+  ★ 修的过程中实测撞出第二个坑，已写进代码注释：`process.execPath` 在本机是
+  `C:\Program Files\nodejs\node.exe`（**含空格**），经 `shell:true`（cmd.exe）会被截成
+  `C:\Program` ⇒ 门在 **13ms** 内以"退出码 1"失败、**看着像类型错其实是没跑起来**
+  ⇒ 该门显式 `shell:false`（本仓其余门仍需 `shell:true`，因为 `go`/`npx` 是 `.cmd`）。
