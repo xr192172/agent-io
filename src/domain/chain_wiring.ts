@@ -204,6 +204,31 @@ export const CHAIN_EDGES_PENDING: readonly ChainEdge[] = [
   //   ★ 而 §5 想要的那件事（"只跑本次改动相关的测试"）**今天仍接不上**：`run_tests.filter` 要的是
   //     **测试文件 / 名称**，`written_files` 是**源文件** ⇒ 中间缺一步"**源文件 → 对应测试**"的映射
   //     （今天没有任何工具给这个映射）⇒ 那是**能力缺口**，不是命名问题，**别用改字段名去凑**。
+  //
+  // ── ★★ 2026-10-06（第 2 条链）真跑记录：`import_project → extract_contracts → find_references` ──
+  //   ★ 结论：**这条链接不上**；而且它**本来就不是一条"对象类"链** —— 逐环真跑（夹具 `C:/tmp/t54chain2`，
+  //     2 个 TS 文件；三环都经 CLI `cli <name> k=v` 真调，非推断）：
+  //     · 环A `import_project` ⇒ 产物**没有 `touched`**：它住 `src/infrastructure/graph/`，
+  //       **不在量具的 [B] 人群（`application/**`）里**，全文件 `grep touchedOf` = **0**。
+  //       ⇒ 能往下传的只有产物顶层那个 `feature`（**纯字段、不是链的接口** = "剪贴板"那一格）。
+  //     · 环B `extract_contracts` ⇒ `touched = {project_dir, feature}` —— **只有两条作用域锚点，
+  //       没有任何对象类锚点**（源码自陈：不给 read_files / written_files / symbols / nodes，理由"取不到就不猜"）。
+  //     · 环C `find_references`（只带 A/B 能给出的 `project_dir` + `feature`）⇒ ❌ **报错**：
+  //       `缺少必需参数 file：mode=symbol（默认）需要 file（定义符号的文件）`。
+  //   ⇒ **证伪点 = 环C**：`extract_contracts` **交不出棒**，链在此断（不是"待验"，是**形态上不成立**）。
+  //   ⇒ ★ **可行动结论**：要让这条链成立，得给 `extract_contracts` 一个**对象类锚点**——
+  //     而它"确立的对象"其实是 **DSL 契约节点** ⇒ 信息**在 DSL 里**，只是**没被投影进产物**
+  //     （产物给的是 `contract_reports[].path` —— 那是**事实字段 `path`**，不是锚点 `file`）。
+  //     ★ 这是**能力缺口（产物没投影）**，不是命名问题 ⇒ **别用改字段名去凑**（同 §5 那条老教训）。
+  //
+  //   ★★ 顺带发现（**通配边的隐含前提**）：`ANY_TOOL` 那两条边（`project_dir` / `feature`）的成立前提是
+  //     "**上游有 `touched`**"，而下面两类上游**没有**：
+  //     · 7 个**已登记豁免**的 [B]（`B_TOUCHED_EXEMPT`：分派器 / 纯计算 / 无根）—— 没有 `touchedOf`；
+  //     · **`application/` 之外**的工具（如 `import_project`，住 `infrastructure/`）—— 不进量具人群，同样没有。
+  //     ⇒ 这两条边**对它们并不成立**（对 `import_project` 尤其明显：它连 `touched` 对象都没有）。
+  //     ★ **本次不改这两条边**：那是"**对谁成立**"的**范围**问题、不是形态问题；且收紧前先要有人读量
+  //       "到底多少 [B] 真的产 `touched.feature` / `.project_dir`"（今天读数：`feature` 19/33 · `project_dir` 22/33）
+  //       —— 记在此处，**别凭感觉收紧或放宽**。
 ];
 
 /**
@@ -231,7 +256,7 @@ export function renderChainWiring(max = 20): string {
     '  ★ 已实测（可直接用；touched 是**产物端**统一过的那张契约）：\n' + verified + '\n' +
     (pending.length > 0
       ? '  ⏳ 待验（文档写了链，但**一条都没真跑过** —— 用之前先自己核）：\n' + pending + '\n'
-      : '  ⏳ 待验：**空**（§5 那条链的每一环都已真跑过；别的链还没人跑 ⇒ 新验出来的边加进本表）。\n') +
+      : '  ⏳ 待验：**空**（§5 那条链的每一环都已真跑过；★ 第 2 条链 `import_project → extract_contracts → find_references` 已于 2026-10-06 **真跑 ⇒ 接不上**（环C 缺 `file`），记录见本文件 `CHAIN_EDGES_PENDING`；新验出来的边加进本表）。\n') +
     '  ★ 用法：把左边那串表达式**原样**填进右边的入参位置（它就是"上一次的产物"的地址）；\n' +
     '    标"单元素"的**直接取**即确定；标"多元素"的**下标由你给**（`[i]` 就是"从列表里选一个" ——\n' +
     '    选择是语义判断 ⇒ **永远由调用方给**；本表只负责给它一个统一的名字）。'
