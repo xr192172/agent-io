@@ -40,6 +40,10 @@ export async function translateGoTsHandler(args: Record<string, unknown>): Promi
   const tscVerify = args.tscVerify === true;
   const maxRetries = typeof args.maxRetries === 'number' ? args.maxRetries : 2;
   const batchSize = typeof args.batchSize === 'number' ? args.batchSize : undefined;
+  // ★ 2026-10-06（T15 第 4 项）：这两个原先**只在 `translate_cli` 的 argv 里**
+  //   ⇒ 「能力被藏在了 MCP 面之外」（CLI 的 flag 有、zod schema 没有 ⇒ agent 无从调用）。
+  const holes = args.holes === true;
+  const out = typeof args.out === 'string' && args.out ? args.out : undefined;
 
   // 项目级：一次翻译整个 Go 项目
   const projectDir = String(args.projectDir ?? '');
@@ -96,8 +100,40 @@ export async function translateGoTsHandler(args: Record<string, unknown>): Promi
     notes.push(`行为对拍（Go↔TS，需 go 工具链）：${parity.message}`);
   }
 
+  // ★ `--holes`（CLI 的同一件事）：把每个待填孔给 LLM 的 prompt 一并返回。
+  //   ★ 门与 CLI **逐字一致**（CLI：`wantHoles && !wantLlm`）：fill 时那些 prompt 已被消费。
+  //     ⇒ **刻意不发明第二种口径**（同一个名字在不同面里必须是同一个意思）。
+  const holePrompts = holes && !fill ? r.holePrompts : [];
+  if (holePrompts.length > 0) notes.push(`待填孔 prompt：${holePrompts.length} 条（见 data.hole_prompts）`);
+
+  // ★ `--out`（CLI 的同一件事）：单文件模式落盘。★★ 两条**照抄 CLI 的规则**（不然会静默丢东西）：
+  //   ① 目标已存在且**未 fill** ⇒ **不覆盖**（CLI 原话："防止丢弃已填的函数体"）；
+  //   ② 机械骨架验证闸未过（`r.issues`）⇒ **整份不落盘**（CLI 的"原子性，避免半成品"）。
+  let outPath: string | undefined;
+  if (out) {
+    const outAbs = path.resolve(out);
+    if (r.issues.length > 0) {
+      notes.push(`未落盘：机械骨架验证闸未过（原子性，避免半成品）⇒ ${outAbs}`);
+    } else if (fs.existsSync(outAbs) && !fill) {
+      notes.push(`未落盘：目标已存在，不覆盖（防止丢弃已填的函数体）⇒ ${outAbs}`);
+    } else {
+      fs.mkdirSync(path.dirname(outAbs), { recursive: true });
+      fs.writeFileSync(outAbs, output, 'utf-8');
+      outPath = outAbs;
+      notes.push(`已写入 ${outAbs}`);
+    }
+  }
+
   const header = `Go→TS 萃取 ${units.length} 个单元${fill ? '（已按 LLM 填充）' : ''}`;
-  return { message: [header, ...notes, '', r.output ? output : '（无单元）'].join('\n'), data: { unit_ids: units.map((u) => u.id), output } };
+  return {
+    message: [header, ...notes, '', r.output ? output : '（无单元）'].join('\n'),
+    data: {
+      unit_ids: units.map((u) => u.id),
+      output,
+      ...(holePrompts.length > 0 ? { hole_prompts: holePrompts } : {}),
+      ...(outPath ? { out_path: outPath } : {}),
+    },
+  };
 }
 
 /** 对已填充的纯函数跑对拍；返回可读汇总（含失败原因） */

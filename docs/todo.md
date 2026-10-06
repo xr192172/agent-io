@@ -432,7 +432,22 @@
          实测：`{"action":"ledger"}` ⇒ 明说「未找到台账…」+ 结构化 data；`{"action":"restore"}` **回归正常**。
          ⚠ **那个 CLI 文件本身仍在**（删它要连同 `package.json:51` 的 script 与
          `scripts/setup.mjs:36,253-257` 的**硬依赖**一起改）—— 属下一批。
-      4. **`translate_cli`** —— 先给 `translate_go_ts` 补 `holes` / 单文件 `out` / `batchSize`（zod schema 未暴露）
+      4. ✅ **已落（2026-10-06）**：给 `translate_go_ts` 补了 `holes` / 单文件 `out` / `batchSize` 三个入参
+         （原先**只在 `translate_cli` 的 argv 里** ⇒ 能力被藏在 MCP 面之外）。★ 三条**逐字照 CLI 的规则**，
+         并且照抄了 CLI 的**两条隐性契约**：**`--holes` 只在 `fill=false` 时给**（fill 时那些 prompt 已被消费
+         —— 同一名字在两面必须是同一个意思，**不发明第二种口径**）、**`--out` 的防覆盖**（目标已存在且未 fill
+         ⇒ 不覆盖，"防止丢弃已填的函数体"）与**闸不过不落盘**（"原子性，避免半成品"）。
+         ★ 顺带把 `verify` 的**同名两义**写进描述（**projectDir 模式** = 全工程 tsc 门禁 · **单文件模式** =
+         行为对拍）—— 原文只写了后半句，属"判据正在被使用、却没写进契约"。
+         **实测六档**：① 空参回归**不变**（仍"需要 file=… 或 projectDir=…"）② `{file}` 基线 5 单元、无 prompts
+         ③ `{file,holes:true}` ⇒ `data.hole_prompts` **4 条** + message 一行提示
+         ④ ★ **与 CLI `--holes` 对拍：CLI 印 4 个 / MCP 给 4 条 ⇒ 一致** ⑤ `{file,out}` ⇒ **真落盘 560 B** +
+         `data.out_path`；**再跑一次 ⇒「未落盘：目标已存在，不覆盖…」且文件未被改** ⑥ `{projectDir,batchSize:3}`
+         ⇒「Go 项目翻译：12 个模块」（该档只读：不给 `outDir` ⇒ 不落盘）。
+         ★ **未跑（如实记，只按代码核对）**：`holes` 与 `fill:true` **同时给**那一档（需 LLM key 池）；
+         以及"骨架过不了验证闸 ⇒ 不落盘"那一支（需一个过不了闸的 Go 样本）。
+         ⇒ ★ **`translate_cli` 至此升进 (A) 级**（能力已 100% 在 MCP 面）⇒ 它的**去留**成为与
+         `signal_review_cli` / `split_stage_cli` 同类的**待拍板**问题（删它要动 `package.json:55` 的 script）。
       5. **`deprecate_offline_cli`** —— ★ **层问题**：核心 `runDeprecateOffline` 住在 **`presentation/cli/`** 里
          ⇒ 注册前得先把它搬到 application/infrastructure（属"修形状"，不是包一层）
       6. `upgrade_cli` / `upgrade_rewrite_cli`（后者会编辑 + 验证 + 提交）、以及
