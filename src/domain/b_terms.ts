@@ -375,6 +375,23 @@ export const B_TERMS: Record<string, BTerm> = {
   externalRefs: { kind: 'context', type: 'ExternalRef[]', meaning: '跨包/跨仓的外部引用' },
   entries: { kind: 'context', type: 'unknown[]', meaning: '条目表', debt: true, fix: '★ 现状两种不同条目 ⇒ 各领域改名' },
   literals: { kind: 'context', type: 'unknown[]', meaning: '字符串字面量命中表', debt: true, fix: '★ 现状两种形状 ⇒ 统一' },
+  /**
+   * ★ 2026-10-06 补（门「b 项契约占位符」**先红后绿**逼出来的）：它出现在 **2 个 [B]**、却不在表里。
+   *
+   * ★★ **登记前已核类型 + 语义**（本仓纪律：**"名字像" ≠ "同义"**）⇒ 实测**同名不同义**：
+   *   · `harvestDecisions.candidates` = **`HarvestCandidate[]`**（**条目表**，draft 决策候选）
+   *   · `deprecateOffline.candidates` = **`number`**（**计数**，= 可下线候选的个数）
+   *   ⇒ 与已登记的 `filesWritten`（`number`，计数）↔ `files`（列表）是**同一族的老毛病**。
+   */
+  candidates: {
+    kind: 'context',
+    type: 'unknown[]',
+    meaning: '**待定的候选项**（本工具自己指的那类候选）',
+    debt: true,
+    fix:
+      '★ 实测**同名不同义** ⇒ 各领域改名：条目表 → `<领域>_candidates`（如 `decision_candidates`）；' +
+      '计数 → `candidate_count`（同 `filesWritten` → `written_file_count` 的口径）。拆清之前禁止新增使用者。',
+  },
   previews: { kind: 'state', type: 'unknown[]', meaning: '预演结果（逐条）', debt: true, fix: '★ 现状与 `applied` 平行两套（file 版 / symbol 版）⇒ 统一' },
   applied: { kind: 'state', type: 'unknown[]', meaning: '已落盘的逐条结果', debt: true, fix: '★ 同 `previews`：两套平行形状 ⇒ 统一' },
   tools: { kind: 'context', type: 'unknown[]', meaning: '工具清单（含各自元信息）', debt: true, fix: '★ 现状 `WizardTool[]` 与 `MappedTool[]` ⇒ 各领域改名' },

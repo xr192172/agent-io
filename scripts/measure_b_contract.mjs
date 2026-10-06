@@ -1,7 +1,11 @@
 /**
  * ★★ 2026-10-05：本脚本是**生成器**，不是「门」—— 它**产出**两份文档：
  *   `docs/glossary.md`（术语表）与 `docs/b-field-dictionary.md`（[B] 字段字典）。
- *   它**不拦截**任何提交、**不只提示**你去看某个文件 ⇒ 不属"过度工程化的门"那一类。
+ *   它**不是**"只提示你去看某个文件"的提示器 —— 它**有产出物**（两份文档）⇒ 该留、不该删。
+ *   ★★ 2026-10-06 更正：**它确实是一道门** —— `verify.mjs` 把它登记为门「b 项契约占位符」
+ *      （why：「有未定义占位符即失败」），而**此前默认模式从不设退出码**
+ *      （全文件只有 `--glossary` 分支设过 `exitCode`）⇒ **那道门永远 PASS**，正是本仓最反对的**假绿灯**
+ *      （而且就长在**门自己**身上）。现默认模式在有「未定义的共用字段名」时置 `exitCode = 1`。
  *
  *   ★ 曾有"把量具一并删掉"的提案把它删了 —— **理由不成立，已恢复**。
  *     删掉它的后果不是"少一个提示"，而是：那两份文档的数据还在仓里，
@@ -507,5 +511,21 @@ if (process.argv.includes('--json')) {
   console.log(`★ 产物里**没有任何锚点候选字段**的 [B]：${noAnchor.length}/${rows.length}（下游最难接）`);
   console.log(`     ${noAnchor.map((r) => r.name).join(', ')}`);
   console.log('');
+  /**
+   * ★★ 2026-10-06：**这道门要真的能红**。
+   *   实测（改前）：`node scripts/measure_b_contract.mjs` 在**存在未定义共用字段名**（`candidates`）时
+   *   仍返回 **0** ⇒ `verify.mjs` 的门「b 项契约占位符」**永远 PASS**（假绿灯，且长在门自己身上）。
+   *   判据 = 上面那节算出的「**不在词表**、且出现在 **≥2 个 [B]**」的字段名（= 未定义的共用字段名）。
+   *   ★ 与 `--glossary` 分支的 `undef` 是**同一判据**（那处从 `tally` 算、此处从 `odd` 算，两者等价）
+   *     ⇒ **改一处要同时改另一处**（否则又是一份判据分叉）。
+   */
+  const undefShared = [...new Set([...op.map(([n]) => n), ...oi.map(([n]) => n)])].sort();
+  if (undefShared.length) {
+    console.error(
+      `\n✗ 未定义的共用字段名 ${undefShared.length} 个：${undefShared.map((n) => `\`${n}\``).join(' ')}\n` +
+        '  ⇒ ★ 出现在 ≥2 个 [B] 的字段名**必须在词表里有定义**（要么登记进 `B_TERMS`、要么收口到已有 anchor）。',
+    );
+    process.exitCode = 1;
+  }
   console.log('（细节：--anchors 看锚点候选 + 类型；--json 拿全部）');
 }
