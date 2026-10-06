@@ -149,7 +149,7 @@ export const OBSERVE_TOOLS: ToolDef[] = [
       '不给 trace_id：返回链路清单（trace_id、帧数、根函数、信号），供挑哪针展开。' +
       '给 trace_id：展开该针完整调用树（文本树 + 结构化 JSON）。' +
       'keep=all 返回全部链路不过滤（弥合默认 judge 丢纯对话长针的偏差）。' +
-      'events_path 缺省自动找探针 sink：DS_OBSERVE_EVENTS > 系统临时目录 dsh_events.jsonl > cwd/runs.jsonl。',
+      'events_path 缺省自动找探针 sink：OBSERVE_EVENTS_FILE > DS_OBSERVE_EVENTS > 系统临时目录 dsh_events.jsonl > cwd/runs.jsonl。',
     inputSchema: {
       events_path: z.string().optional().describe('录制事件 JSONL 路径；缺省自动找探针 sink（dsh_events.jsonl / runs.jsonl）'),
       events_text: z.string().optional().describe('内联事件文本，优先于 events_path（调试用）'),

@@ -402,11 +402,26 @@
       **★ 账本同时暴露的三件现症（都在这一条的范围内）**：
       · **根的分歧**：`getDataHome()` = `AGENT_IO_HOME ?? getPackageRoot()`（`storage.ts:60`，自省包根、与 cwd 无关）
         ⇒ **"每项目一个数据库"目前只对 `cache.db` 成立**（DSL 三态落**包根**、健康缓存落 **`cwd`**、读侧兜底第三个 `cwd`）。
-      · **两处观测侧功能级断裂**（与"根"同源，但要单独修）：
-        (a) `scripts/setup.mjs:39,264` 仍写 **`.agent/camera`**，对账读 **`.agent/observe`** ⇒ **完全不重叠**
-            ⇒ 官方流程产的事件，`reconcile_*` **永远发现不了**（改名 `camera→observe` 时 setup 漏改）；
-        (b) 写端激活 **`OBSERVE_EVENTS_FILE`**（`run_sentinel.ts:26`）vs 读端认 **`DS_OBSERVE_EVENTS`**（`observe_trace.ts:43`）
-            ⇒ **无桥接**，按文档设了也白设。
+      · ✅ **两处观测侧功能级断裂已修**（2026-10-06，与"根"同源但单独一笔）：
+        (a) ✅ `scripts/setup.mjs` 写 **`.agent/camera`**、对账读 **`.agent-io/observe`** ⇒ **完全不重叠**
+            ⇒ 官方流程产的事件，`reconcile_*` **永远发现不了**（改名 `camera→observe` 时 setup 漏改）。
+            ★ 实测比原记**更宽**：`camera` 漏改**共 7 处**（`:9` `:23` `:39` `:132` `:160` `:161` `:264`），
+            且**两个叶子名都错**（不只 `.agent/` 那半）—— `EVENT_DIRS_TPL` 原为
+            `['.agent-io/camera', '.agent/camera']`；★ 还挖出**第三处同类**：`:160-161` 查插桩备份用的是
+            `.agent-io/camera-backup`，而真名是 **`.agent-io/observe-backup`**（`instrument.ts:147` 的 `BACKUP_DIR`）
+            ⇒ doctor 的「已插桩」判定**恒失败**（插了也说没插）。
+            ⇒ 修法：`EVENT_DIRS_TPL = ['.agent-io/observe']`（唯一权威位置）；且 **`--run` 的 sink 落点
+            从该常量派生**（`path.join(T, ...EVENT_DIRS_TPL[0].split('/'))`）—— 本脚本当初就是**手抄目录名**
+            才漏改的，派生后**下次改名不会再漏**；doctor 的两条文案也一并从常量派生 / 更正。
+        (b) ✅ 写端激活 **`OBSERVE_EVENTS_FILE`**（`run_sentinel.ts:26`）vs 读端只认 **`DS_OBSERVE_EVENTS`**
+            ⇒ **无桥接**，按文档设了也白设。⇒ 在**唯一候选点** `observe_trace.defaultEventsCandidates`
+            收口（`observe_trace` 与 `trace_evidence.loadObservedTraceRecords` 两处都经它 ⇒ **一处改、两处生效**）：
+            **两个名字都认、写端优先**（`OBSERVE_EVENTS_FILE` > `DS_OBSERVE_EVENTS` > tmpdir > cwd）；
+            MCP 工具描述与两处报错文案同步。
+        ★ **实测验收**：(a) `setup --dry-run --run` ⇒ `mkdir <target>\.agent-io\observe` + sink 落同处
+          （改前是 `.agent/camera`）；(b) **只设** `OBSERVE_EVENTS_FILE` 调 `observe_trace`
+          ⇒ 输出 `录制调用链回放 […\events.jsonl]`（改前报「未发现默认录制文件」），
+          而控制组（不设 env）仍报该错 ⇒ **对照干净**（`tmpdir/dsh_events.jsonl` 实测不存在，不干扰）。
       · **`embedding_cache` 无失效无淘汰**（`semantic_search.ts:162`）。
       ★ 门要管的是 **"根的选择"**，**不是**"`.agent-io` 字面量"——实测代码里字面量只有少数几处
       （136 行命中绝大多数是注释）⇒ "字面量被抄多份"不是主要问题。

@@ -6,8 +6,8 @@
  *   - MCP 安装      → 复用 scripts/install_mcp.mjs（写 9 个 client 配置）
  *   - TS 静态插桩   → 复用 dist/src/presentation/cli/instrument_cli.js（幂等，--uninstrument 还原）
  *   - skill 安装    → 本脚本新增：把 .trae/skills/ 拷进目标 agent skills 目录
- *   - 事件目录规约   → 本脚本新增：确保 <target>/.agent-io/camera + .agent/camera 存在
- *                   （这两处正是 reconcile_chain.discoverEventFiles 自动发现的两个事件源）
+ *   - 事件目录规约   → 本脚本新增：确保 <target>/.agent-io/observe 存在
+ *                   （这正是 reconcile_chain/discoverEventFiles 自动发现的**唯一**权威位置）
  *   - 跑一轮出事件  → 本脚本新增：带 OBSERVE_EVENTS_FILE sink 跑用户给的命令，产出真事件
  *   - 体检报告      → 本脚本新增：doctor 逐项检测就绪度，给可执行提示，不静默
  *
@@ -20,7 +20,7 @@
  *   node scripts/setup.mjs --help
  *
  * 目标项目：
- *   要拿 agent-io 对账的那个项目（其 .agent/camera / .agent-io/camera 是事件源）。
+ *   要拿 agent-io 对账的那个项目（其 .agent-io/observe 是事件源）。
  *   默认当前目录。
  */
 
@@ -36,7 +36,19 @@ const INSTALL_MCP = path.join(ROOT, 'scripts', 'install_mcp.mjs');
 const INSTRUMENT_CLI = path.join(ROOT, 'dist', 'src', 'presentation', 'cli', 'instrument_cli.js');
 const CAPABILITY_CLI = path.join(ROOT, 'dist', 'src', 'presentation', 'cli', 'capability_cli.js');
 const DEFAULT_AGENT_SKILLS = path.join(ROOT, '..', 'ai-config', 'skills'); // 本地 agent 的 skills 目录
-const EVENT_DIRS_TPL = ['.agent-io/camera', '.agent/camera'];
+/**
+ * 事件落点的**唯一权威目录**（相对目标项目根）。
+ *
+ * ★★ 2026-10-06（T19 现症 a）：此前是 `['.agent-io/camera', '.agent/camera']` —— `camera` 是
+ *   2026-08 `camera_* → observe_*` 改名时**本脚本漏改**的残留，**两个叶子名都错**：
+ *   `reconcile_chain.ts:112-120` / `reconcile_effects.ts:138-140` 的 `discoverEventFiles()`
+ *   **只扫 `<root>/.agent-io/observe/`**（且其注释逐字写着 `.agent/observe` 分支已按
+ *   「没有下游就不要兼容层」**有意删除**）。
+ *   ⇒ 后果：**官方流程（本脚本 `--run`）产的事件，`reconcile_*` 永远发现不了**。
+ *   ★ `.agent/` 是**设计 DSL 仓库**（归 `DesignDSLStore`）、**不是**事件流落点 ⇒ 不再列入。
+ *   ★ 落点一律**从本常量派生**（见 `--run` 那一步的 evDir），避免下次改名再漏改一处。
+ */
+const EVENT_DIRS_TPL = ['.agent-io/observe'];
 
 // ── 参数解析 ──
 const args = process.argv.slice(2);
@@ -129,7 +141,7 @@ function runDoctor() {
   const evTotal = countEvents();
   if (evFiles.length === 0) {
     fail++;
-    console.log(no(`事件源：无（<target>/.agent-io/camera 与 .agent/camera 均无 events*.jsonl）`));
+    console.log(no(`事件源：无（<target>/${EVENT_DIRS_TPL[0]} 下无 events*.jsonl）`));
     console.log(dim(`   → reconcile_chain/trace-exec 面对本项目会一直 not_run。先跑：`));
     console.log(dim(`     node scripts/setup.mjs ${T} --instrument --run "<项目入口命令>"`));
   } else {
@@ -157,8 +169,11 @@ function runDoctor() {
 
   // 4) 插桩状态
   {
-    const backup = path.join(T, '.agent-io', 'camera-backup');
-    if (fs.existsSync(backup)) { pass++; console.log(ok(`插桩：目标已插桩（备份在 .agent-io/camera-backup）`)); }
+    // ★ 2026-10-06（T19 现症 a 的同类第三处）：备份目录真名是 `.agent-io/observe-backup`
+    //   （`instrument.ts:147` 的 `BACKUP_DIR`）。本处原写 `camera-backup` ⇒ **恒不存在**，
+    //   于是 doctor 的「已插桩」判定**永远失败**（删了插桩也照样说未插桩）。
+    const backup = path.join(T, '.agent-io', 'observe-backup');
+    if (fs.existsSync(backup)) { pass++; console.log(ok(`插桩：目标已插桩（备份在 .agent-io/observe-backup）`)); }
     else { console.log(warn(`插桩：目标未见插桩备份（可 --instrument 加探针，或仅用运行态 sink 经 --run 产事件）`)); }
   }
 
@@ -239,7 +254,7 @@ async function runSetup() {
     }
   }
 
-  // 3) 事件目录规约（reconcile_chain 自动发现的这两处）
+  // 3) 事件目录规约（reconcile_chain 自动发现的**唯一**权威位置）
   for (const rel of EVENT_DIRS_TPL) {
     const dir = path.join(T, ...rel.split('/'));
     if (fs.existsSync(dir)) continue;
@@ -259,9 +274,12 @@ async function runSetup() {
     }
   }
 
-  // 5) 跑一轮出真事件（带 OBSERVE_EVENTS_FILE sink）
+  // 5) 跑一轮出真事件（带 OBSERVE_EVENTS_FILE sink —— ★ 它正是 `run_sentinel.enableObserveFromEnv`
+  //    认的那个**写端**变量；而读端原先只认 DS_OBSERVE_EVENTS ⇒ 已在该唯一候选点桥接，见
+  //    observe_trace.ts 的 defaultEventsCandidates）
   if (RUN) {
-    const evDir = path.join(T, '.agent', 'camera');
+    // ★ 落点**从 EVENT_DIRS_TPL 派生**（不写字面量）：否则下次改名又会漏改一处 —— 本处就是这么漏的。
+    const evDir = path.join(T, ...EVENT_DIRS_TPL[0].split('/'));
     const evFile = path.join(evDir, `events-${Date.now().toString(36)}.jsonl`);
     actions.push(`run "${RUN}" with events sink → ${evFile}`);
     console.log(dim(`事件 sink → ${path.relative(process.cwd(), evFile)}`));

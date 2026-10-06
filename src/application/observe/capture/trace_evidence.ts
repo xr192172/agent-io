@@ -117,7 +117,7 @@ export function loadTraceRecords(file: string): TraceRecord[] {
 
 /**
  * 按 **observe 线与 `observe_trace` 相同**的候选顺序找录制事件
- * （`DS_OBSERVE_EVENTS` > `os.tmpdir()/dsh_events.jsonl` > `<cwd>/runs.jsonl`）。
+ * （`OBSERVE_EVENTS_FILE` > `DS_OBSERVE_EVENTS` > `os.tmpdir()/dsh_events.jsonl` > `<cwd>/runs.jsonl`）。
  *
  * ★ 找不到就返回 `source: null` 而**不抛**：L4 的"不可回溯"该由 reason_validator 的 L4 前置判
  *   （它会把"带 evidence 却没解析器"当成**编造/空挂**打回，见 reason_validator.ts）。

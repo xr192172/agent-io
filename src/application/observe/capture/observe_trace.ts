@@ -15,7 +15,7 @@ import { parseRunTraces, type RunTreeNode, type RunTrace } from '../../../infras
 import { sampleNeedles, type SamplingNeedle } from '../../../infrastructure/analysis/observe/snapshot_needle.js';
 
 export interface ObserveTraceCfg {
-  /** 录制事件文件（JSONL 绝对/相对路径）。缺省自动找探针 sink：DS_OBSERVE_EVENTS > os.tmpdir()/dsh_events.jsonl > cwd/runs.jsonl */
+  /** 录制事件文件（JSONL 绝对/相对路径）。缺省自动找探针 sink：OBSERVE_EVENTS_FILE > DS_OBSERVE_EVENTS > os.tmpdir()/dsh_events.jsonl > cwd/runs.jsonl */
   events_path?: string;
   /** 内联事件文本（优先于 events_path；调试/测试用，避免落盘） */
   events_text?: string;
@@ -37,9 +37,22 @@ export interface ObserveTraceResult {
   selected?: SamplingNeedle;
 }
 
-/** 缺省录制文件候选：env DS_OBSERVE_EVENTS > 系统临时目录 dsh_events.jsonl > cwd/runs.jsonl */
+/**
+ * 缺省录制文件候选。★ **这是「录制事件在哪儿」的唯一候选点** —— `observe_trace` 与
+ * `trace_evidence.loadObservedTraceRecords` 两处都经这里 ⇒ 一处改、两处生效。
+ *
+ * ★★ 2026-10-06（T19 现症 b）：**加上写端那个变量名**。此前读端**只认 `DS_OBSERVE_EVENTS`**，
+ *   而**写端（真正决定事件落到哪儿的那个）用的是 `OBSERVE_EVENTS_FILE`**
+ *   （`run_sentinel.enableObserveFromEnv` 靠它激活全局 sink；`serve.ts` 的 `/api/observe/log`、
+ *   `scripts/setup.mjs --run` 也都用它）⇒ **同一个东西两个名字、无桥接** ⇒「按文档设了也白设」。
+ *   ⇒ 在**唯一候选点**收口：**两个名字都认，写端优先**（它才实际决定了落点）。
+ *
+ * 顺序：`OBSERVE_EVENTS_FILE`（写端） > `DS_OBSERVE_EVENTS`（读端手填的历史名）
+ *      > 系统临时目录 `dsh_events.jsonl` > `<cwd>/runs.jsonl`。
+ */
 export function defaultEventsCandidates(cwd = process.cwd()): string[] {
   return [
+    process.env.OBSERVE_EVENTS_FILE,
     process.env.DS_OBSERVE_EVENTS,
     path.join(os.tmpdir(), 'dsh_events.jsonl'),
     path.join(cwd, 'runs.jsonl'),
@@ -58,7 +71,7 @@ export function loadEventsText(cfg: ObserveTraceCfg, cwd = process.cwd()): { tex
   const hit = defaultEventsCandidates(cwd).find((p) => fs.existsSync(p));
   if (!hit) {
     throw new Error(
-      '未提供 events_path / events_text，且未发现默认录制文件（DS_OBSERVE_EVENTS / os.tmpdir()/dsh_events.jsonl / cwd/runs.jsonl）。' +
+      '未提供 events_path / events_text，且未发现默认录制文件（OBSERVE_EVENTS_FILE / DS_OBSERVE_EVENTS / os.tmpdir()/dsh_events.jsonl / cwd/runs.jsonl）。' +
       '请先录一发（探针插桩跑一次操作）再读回放。',
     );
   }
