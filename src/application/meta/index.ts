@@ -1,5 +1,12 @@
 /**
- * meta 线（10 个工具）—— ★ **本文件即该线归属的唯一来源**。
+ * meta 线（11 个工具）—— ★ **本文件即该线归属的唯一来源**。
+ *
+ * ★ 2026-10-06（T15 切片）：本线 10 → 11 —— `upgrade`（版本升级契约差：检测 + 局部重写闭环）从
+ *   **CLI-only**（`upgrade_cli` 五阶段检测 / `upgrade_rewrite_cli` git 验证回退闭环）接进 MCP 面。
+ *   ★ 两个 CLI 收成**一个入口**的依据：它们审的是**同一操作对象**「项目的版本升级契约差」
+ *     （后者把前者的检测**整段再跑一遍**，只多"计划 + 应用闭环"）⇒ 动作互补 = 读（`scan`）+ 写（`apply`），
+ *     按 `docs/tool-convergence.md` §2.0「按操作对象聚合」合一。核心归位到 `meta/upgrade/upgrade.ts`，
+ *     两个 CLI **退化成薄壳**（与 `deprecate_offline` 同笔法）。
  *
  * ★ 2026-10-05（T15 切片）：本线 9 → 10 —— `capability_audit`（语言×功能能力矩阵缺口自检）从
  *   **CLI-only**（`capability_cli`）接进 MCP 面。★ 顺带更正 T15 的一条误判：原先以为
@@ -35,6 +42,9 @@ import { formatDiagnoseText, runDiagnosis } from '../../infrastructure/analysis/
 import { getDSL, saveDSL } from '../../infrastructure/storage.js';
 import { readStructureConfig } from '../../infrastructure/analysis/structure/structure_gap.js';
 import { archiveNode, listArchive } from './archive/archive_node.js';
+// ★ T15 切片（2026-10-06）：版本升级契约差（检测 + 局部重写闭环）—— 核心与两个 CLI 同源，
+//   现归位到 `meta/upgrade/upgrade.ts`（见本文件头注）。
+import { upgradeHandler } from './upgrade/upgrade.js';
 import {
   bindDomains,
   LANE_IDS,
@@ -567,5 +577,41 @@ export const META_TOOLS: ToolDef[] = [
     }),
     // refresh:false 必须是**纯只读**（否则它报告的是"修完之后"，不是"LLM 马上要读到的"）
     noAutoFresh: true,
+  },
+
+  {
+    // ★ T15 切片（2026-10-06）：本能力原先**只活在两个 CLI 里**（`upgrade_cli` 五阶段检测 /
+    //   `upgrade_rewrite_cli` 的 git 验证回退闭环）⇒ 能力被藏在 MCP 面之外。
+    //   ★ 收成**一个入口**的依据见 `meta/upgrade/upgrade.ts` 头注（同一操作对象 + 动作互补）。
+    name: 'upgrade',
+    title: '版本升级契约差：工具链/语言特性/废弃 API 检测 + 局部重写闭环（git 验证回退）',
+    description:
+      '**版本升级契约差**（一个入口两个动作）。`action=scan`（缺省，**只读**）：' +
+      '① 工具链版本盘点（`pom.xml` / `build.gradle` / `.nvmrc` / `.tool-versions` / `go.mod` / `engines` 的声明版本 vs 本机探测）' +
+      '② 语言特性契约差（以声明版本为边界，报"用了超过声明版本的特性" = 编译会失败的那部分，附行号 + 重写建议）' +
+      '③ 废弃/移除 API（如 JDK 11 起移除的 JAXB/JAX-WS/JAF，附替代方案）' +
+      '④ 未覆盖扩展名（★ 扫到却没有适配器 ⇒ **这些文件没被检查，不等于没问题** —— 少做事必须可见）。' +
+      '可选两道闸（都缺省关）：`gate=true` 静态闸（编译级：Python `ast.parse feature_version` / Java `javac --release`）；' +
+      '`dynamic=true` 动态闸（运行级：★ **会真跑被测源码**）。' +
+      '`action=apply`（**写**，闭环）：按 `edits` 精确串替换（★ 歧义/未命中 ⇒ **整批拒绝、一个文件都不改**）' +
+      '→ 改前基线提交 → 验证（按项目形态探测 build/test）→ 通过则精确提交；**失败则 git 回退**到改写前。' +
+      '★ `apply` 两处如实说：① 前置 `project_dir` 必须是 **git 仓库**（回退靠 git）；' +
+      '② 它**会提交该仓库** —— 基线步骤把工作区**原有改动一并提交**（既有行为），验证通过后再精确提交本次改动文件。' +
+      '★ 与 `deprecate_offline`（死代码下线）/ `contract_gate`（积木契约）**不是一回事**：本工具管的是**版本边界**。',
+    inputSchema: {
+      project_dir: z.string().describe('目标项目根目录（绝对或相对 cwd）'),
+      action: z
+        .enum(['scan', 'apply'])
+        .optional()
+        .describe('scan=只报告（缺省）；apply=局部重写闭环（需 edits，且 project_dir 须是 git 仓库）'),
+      gate: z.boolean().optional().describe('scan 用：附加静态闸（编译级契约差；Python / Java 单文件可查）'),
+      dynamic: z.boolean().optional().describe('scan 用：附加动态闸（★ 真跑被测源码；Python / Java）'),
+      edits: z
+        .array(z.object({ file: z.string(), from: z.string(), to: z.string() }))
+        .optional()
+        .describe('apply 用：编辑清单（精确串替换；歧义/未命中整批拒绝）。建议先跑 action=scan、照它的 data.plan 取建议'),
+      skip_verify: z.boolean().optional().describe('apply 用：跳过验证（★ 未验证的改动不自动提交）'),
+    },
+    handler: upgradeHandler,
   },
 ];

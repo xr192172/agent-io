@@ -104,7 +104,7 @@ Your browser opens `http://localhost:3000/workbench`: the left canvas is an inte
 
 ## MCP Tool Reference
 
-A total of **60 MCP tools** are registered, organized into "capability navigation + primary tools + specialized tools": `capability_map` provides layered capability-lane navigation, primary tools provide unified entry points, specialized tools each do one job. The tables below are a curated subset, not the full list — the authoritative count comes from `TOOL_DEFS` in `src/server_registry.ts`.
+A total of **61 MCP tools** are registered, organized into "capability navigation + primary tools + specialized tools": `capability_map` provides layered capability-lane navigation, primary tools provide unified entry points, specialized tools each do one job. The tables below are a curated subset, not the full list — the authoritative count comes from `TOOL_DEFS` in `src/server_registry.ts`.
 
 ### Capability navigation (1)
 
@@ -146,7 +146,7 @@ A total of **60 MCP tools** are registered, organized into "capability navigatio
 | `consistency_check` | Compare expected contracts against actual code; output a consistency report and cross-file invariants (read-only) |
 | `explore_code` | Code understanding entry: semantic search, impact analysis, architecture layering, monolith detection, split suggestions, algorithm/dataflow derivation, simulation replay, etc. |
 
-### Specialized tools (36)
+### Specialized tools (37)
 
 **Code understanding**
 
@@ -206,6 +206,8 @@ Java projects, Python dead-code cleanup on Python projects; apply / verify / rol
 |------|------|
 | `refactor_judge` | LLM review gate: accept / reject / escalate uncertain items |
 | `diagnose` | Symptom → root cause analysis: locate candidates → trace call chain → assess impact → aggregate root cause → suggest verification |
+
+| `upgrade` | **Version-upgrade contract diff** (single entry, two actions): `scan` (read-only) reports "declared toolchain versions vs local runtimes / language features beyond the declared boundary / removed-deprecated APIs / uncovered extensions (unchecked files are stated, not hidden)", with optional `gate` (compile-level) and `dynamic` (runtime-level, ★ really runs the source) gates; `apply` runs the closed loop: exact string replacement → pre-edit baseline commit → verification → **commit on pass, git rollback on fail** (★ requires `project_dir` to be a git repo; the baseline commit **also sweeps in pre-existing working-tree changes**) |
 
 **Design intent (overlay)**
 

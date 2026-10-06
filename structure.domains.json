@@ -170,6 +170,13 @@
       "note": "下线库归档（archive_node）：把下线的文件/节点孤立到 archive"
     },
     {
+      "id": "meta-upgrade",
+      "layer": "application",
+      "role": "capability",
+      "dir": "src/application/meta/upgrade",
+      "note": "版本升级契约差：工具链 / 语言特性 / 废弃-移除 API 检测（**只读**）+ 局部重写闭环（应用 → 验证 → 提交/回退，回退依赖 git）。★ 两个动作审的是**同一操作对象** ⇒ 合成单入口 `upgrade`（action=scan/apply，依据 `docs/tool-convergence.md` §2.0「按操作对象聚合」）。★ 核心原先被两个 CLI（`upgrade_cli` / `upgrade_rewrite_cli`）**独占** ⇒ 2026-10-06 按 T15 归位到本域，两个 CLI 退化成薄壳。★ 与 `infrastructure/authoring/version_upgrade`（检测/闸/重写的**算法面**）不同：这里是「工具面 + 闭环编排」。"
+    },
+    {
       "id": "design-dsl-ops",
       "layer": "application",
       "role": "capability",

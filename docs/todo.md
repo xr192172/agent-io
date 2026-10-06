@@ -494,9 +494,37 @@
              ★ **如实记**：改后**报表头**对相对入参会打印**绝对**路径（改前原样回显相对串）—— 方向是更准（报的是真目标）。
              ★ 另一处**同类嫌疑已核不成立**：`project_root` **不下传**子进程（只在进程内用）⇒ 无此问题。
              ★ schema 的 `target` 描述补上了口径（"绝对，或相对 cwd"）。
-         ⇒ ★ **剩下的 7 个**：`cli.ts`（**投影本体**）+ **2 个正当例外**（`install_package_cli` 判为一次性
-           运维脚本；`diagnose_loop_cli` 要 `readline` 交互 —— **MCP 无法应答**）+ **4 个"能力还没注册"**
-           （`archify_cli` / `brickify_cli` / `upgrade_cli` / `upgrade_rewrite_cli`）⇒ 下一步：注册（brickify 要先定形状）。
+         ⇒ ✅ **`upgrade_cli` / `upgrade_rewrite_cli` 已注册（2026-10-06，本批）—— 工具数 60 → 61、meta 线 10 → 11**：
+           两者收成**一个入口** `upgrade`（`action=scan` 只读五阶段 / `action=apply` 闭环）—— ★ 依据
+           `docs/tool-convergence.md` §2.0「**按操作对象聚合**」：它们审的是**同一操作对象**「项目的版本升级契约差」
+           （后者把前者的检测**整段再跑一遍**，只多"计划 + 应用闭环"）⇒ 动作互补（读 / 写）。
+           核心**归位**到 `src/application/meta/upgrade/upgrade.ts`：原先那两段（渲染 + 闭环）住在 presentation
+           的 CLI 里，MCP 面若复用就是**下层依赖上层**；且与 `deprecate_offline` 同笔法 ——
+           **核心住能力层，CLI 退化成薄壳**（薄壳里只剩"argv → 调用 → 打印"）。
+           ★ **实测八档（真跑；夹具全在 `$TEMP`）**：
+             ① `scan`（node 夹具 `engines.node=12`）⇒ `toolchains: node12->v22.18.0/ok` + 命中
+                `src/a.js:2 可选链 ?.`(since 14) + `src/a.js:3 new Buffer(...)`(deprecated) ✅
+             ② **空调用**（签名门口径）⇒ stdout `缺参数 "project_dir"` + **非零退出**（= `mcp_scan` 的"合格 A"）✅
+             ③ `apply`（夹具 A：`npm test` 通过）⇒ contract 1/1 · plan 2 条 · **baseline 已提交** ·
+                `changed_files:["src/a.js"]` · `verify.status=pass` · **commit.committed=true** · 编辑真落盘 ✅
+             ④ `apply`（夹具 B：`npm test` 失败）⇒ `verify.status=fail` · `rollback=true` · **无最终提交**
+                （`git log` 只有 baseline+init）· 文件**真回退**（`src/a.js` 干净）✅
+                ★ 追查掉一个**假警报**：回退后逐字节比对报"不一致"，实为 **Windows `autocrlf` 的换行归一**
+                  （`\n` → `\r\n`）⇒ **内容语义相同**（差点误记成"回退失效"）。
+             ⑤ `apply` 缺 `edits` ⇒ 给人话 + 指路 `action=scan` 的 `data.plan` ✅
+             ⑥ 非 git 目录上 `apply` ⇒ `refused: not_a_git_repo` + 明确理由 ✅
+             ⑦ 薄壳 `upgrade_cli --json` 与 MCP `scan` 的 `data` **逐字同形**（同源实现的直接证据）✅
+             ⑧ 薄壳 `upgrade_rewrite_cli` 仅报告模式 ⇒ 正常（含"局部重写建议"与提示行）✅
+           ★ **两处如实记的副作用**（已写进工具描述，不美化）：`apply` ① 前置 `project_dir` 须是 **git 仓库**；
+             ② **会提交该仓库** —— 基线步骤把工作区**原有改动一并提交**（实测：夹具里那处未提交的 `notes.txt`、
+                连同运行期冒出来的 `.agent-io/cache.db*` 都被基线提交了）。⇒ **待拍板候选**（本批不动，属行为/契约决定）：
+                要不要给 `apply` 一个"不自动基线提交"的开关？
+           ★ **这两个 CLI 因此升进 (A) 级**（能力 100% 在 MCP 面，且**无 `package.json` script 牵连** ⇒ 可直接 `git rm`）；
+             本批**只注册、未删**（与上一批"删 6 个"分笔，各自留证）。
+         ⇒ ★ **剩下的 7 个（文件数不变，但构成变了）**：`cli.ts`（**投影本体**）+ **2 个正当例外**
+           （`install_package_cli` 判为一次性运维脚本；`diagnose_loop_cli` 要 `readline` 交互 —— **MCP 无法应答**）
+           + **2 个"能力还没注册"**（`archify_cli` / `brickify_cli` ⇒ ★ brickify 要先定形状）
+           + **2 个"已注册待删"**（`upgrade_cli` / `upgrade_rewrite_cli`）。
          ⇒ ★ **`translate_cli` 至此升进 (A) 级**（能力已 100% 在 MCP 面）⇒ 它的**去留**成为与
          `signal_review_cli` / `split_stage_cli` 同类的**待拍板**问题（删它要动 `package.json:55` 的 script）。
       5. ✅ **已落（2026-10-06）**：把核心 `deprecate_offline.ts`（434 行、`runDeprecateOffline` 本体）从
@@ -561,8 +589,10 @@
                · **(a)** dry-run ⇒「1 个死源 → **1 个可下线自研积木候选**」✅（改前是 **0**）
                · **端到端 apply** ⇒「1 候选 → 下线 1，回滚 0」+ `written_files:["src/consumer.ts"]` + 死 import **真被删** ✅
                · **端到端 `remove_file`** ⇒ `dead.ts` **真被物理删除** + `written_files` 含它 ✅
-      6. `upgrade_cli` / `upgrade_rewrite_cli`（后者会编辑 + 验证 + 提交）、以及
-         `signal_review_cli` / `split_stage_cli` 这两个 **CLI 的去留**（能力已归零，CLI 是否留作 argv 便利）
+      6. ✅ `upgrade_cli` / `upgrade_rewrite_cli` **已注册为 MCP 工具 `upgrade`**（2026-10-06，本批；工具数 60 → 61）
+         ⇒ 两者升进 (A) 级（**可删**）——**待删清单**现在有 4 个：`upgrade_cli` / `upgrade_rewrite_cli`
+         （★ **无 script 牵连**，可直接 `git rm`）；而 `signal_review_cli` / `split_stage_cli` / `translate_cli`
+         三个的**去留仍待拍板**（能力已归零；删它们要动 `package.json` 的 script ⇒ 那是"要不要留 argv 便利"的裁决）
       7. **`install_package_cli` ⇒ 判为一次性运维脚本**（`spawn npm install/uninstall` 改环境 + 联网；
          且 MCP 面 `lang_hint.ts:117,147,149` **主动指引用户去跑它**）⇒ **保留、不注册**
       ★★ **第三轮盘点（2026-10-06，独立子代理逐个 flag 复核）—— 结论：上面这张"剩下"清单基本准确，
