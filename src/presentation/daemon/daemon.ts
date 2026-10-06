@@ -239,13 +239,13 @@ function scheduleLoopTrigger(projectDir: string, broadcast: (event: string, data
         // ★ 2026-10-06：**删掉悬空指引**。原文案写「用 `reconcile_proposals` 查看」，
         //   但该工具**从未注册过**（59 个工具清单里 `proposal` 零命中）—— `760dc63` 改文案时
         //   编了一个名字（它的注释还自陈"改为指向 TS 侧工具"）。
-        //   现改为**指向真实存在的东西**（提案文件本身），并**如实说明当前没有入口**
-        //   （`approveGated` 零调用方，见 todo T62）—— 宁可说"没有"，也不给一个假名字。
+        //   ⇒ 现指向**真实存在的出口**：审批开在 HTTP（T62 已补，2026-10-06），
+        //     与 `code_workbench` 的 `/api/code/*` 同形；`reviewer` 必填（第三方会话身份）。
         const line =
           `[loop 回流] ${projectDir} 产生 ${newProposals.length} 条新提案` +
           `（${newProposals.map((p) => p.replace('.json', '')).join(', ')}）· ` +
-          `落在 ${path.join(dataDir, 'proposals')} 下；` +
-          `★ 目前**没有** MCP 工具能列出/审批它们（审批编排 approveGated 无入口，见 todo T62）`;
+          `查看 GET /api/observe/proposals ｜ 通过 POST /api/observe/proposals/approve` +
+          `（body: project_dir / id / reviewer；落盘目录 ${path.join(dataDir, 'proposals')}）`;
         pushAlert({ project_dir: projectDir, seq: 0, line, created_at: new Date().toISOString() });
         broadcast('loop-proposal', { project_dir: projectDir, proposals: newProposals, at: new Date().toISOString() });
       } else {

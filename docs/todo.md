@@ -878,27 +878,6 @@
       · **Go 侧 7 个文件未 `gofmt`**：`gofmt -l` 报 10 个，其中 3 个已随那笔一起格式化，剩 7 个在
         HEAD 就没格式化 ⇒ 历史遗留，不影响功能。
 
-- [ ] **T62 ★★★ observe 提案「审批」无入口 —— `approveGated` 是孤儿函数（2026-10-06 核实）**
-      *(核实三条，互相独立：① 全仓 `approveGated` 的引用**只有定义与注释**，零调用方；
-       ② 59 个 MCP 工具里 `proposal` / `approve` **零命中**；③ `serve.ts` 的
-       `/api/code/approve|reject` 是 **`design_intent` 的"代码审批"**（`code_workbench.js`），
-       **与 observe 提案无关**。)*
-      ⇒ **后果（严重）**：observe 闭环断在**倒数第二步** —— loop 能产提案（daemon 自动跑），
-        但**没有任何入口能批准/驳回** ⇒ 提案永远停在 `pending` ⇒ 声明永远进不了权威 `dsl.json`。
-      ⇒ ★★ **这让我刚落的 P5 在真实运行下不生效**：known-spread 的扣减输入
-        （`knownSpreadIndex(decls)`）**永远是空 Map**（当时的三档验证是"直接给 decls"，**绕过了提案链路** —— 这是我的验证盲点）。
-        ⚠ 并更正一句我说过头的话：「TS 侧已能独立完成 事件→偏差→提案→**审批→定稿** 闭环」
-        —— **审批与定稿都没有入口**，实际只到"提案"。
-      ⇒ **形状待拍板**：
-        · (a) ★ 照 **`code_workbench` 的形状**给 observe 提案接 HTTP + 工作台入口
-          —— 判据：本仓"审批"的**既有先例就是它**（LLM 起草 → **人**批准，`design_intent` 的
-          propose/approve/reject 三态与 observe 的 `approve`/`reject`/`propose` 一一对应）；
-        · (b) 注册 MCP 工具（如 `observe_proposals`：list / approve / reject）—— 快，但
-          "**agent 批准自己的提案**"语义弱，与人审批的意图不符；
-        · (c) 只做只读出口（列出提案及其 `verified_by` / `verification` 证据），审批入口另议。
-      ⇒ **连带（三条都要做）**：① 提案级审计证据曾在 Go `dsl_cli list/show` 有出口
-        （`已验证: …` / `验证门证据: …`），随 CLI 删除而丢失 ⇒ 补出口时一并带回来；
-        ② `daemon` 那句提示已改为指向**真实路径**并如实说明无入口（原写的 `reconcile_proposals`
-        **从未注册过**，是 `760dc63` 改文案时编的名字 —— 已删）。
+
 
 

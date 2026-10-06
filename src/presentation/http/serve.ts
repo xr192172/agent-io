@@ -23,6 +23,9 @@ import { judgeEvent } from '../../infrastructure/analysis/observe/judge.js';
 import { queryObserveLog } from '../../infrastructure/analysis/observe/log_query.js';
 import { judgeEvents, judgeEventsWithLLM, normalizeEvents, renderJudgeReport } from '../../infrastructure/analysis/observe/judge_service.js';
 import { judgeGuardLog } from '../../infrastructure/analysis/observe/judge_guard.js';
+import { ProposalStore } from '../../infrastructure/analysis/observe/proposal_store.js';
+import { DesignDSLStore, defaultDSLDir } from '../../infrastructure/analysis/observe/dsl_store.js';
+import { approveGated } from '../../infrastructure/analysis/observe/approve_gated.js';
 import { importProject } from '../../infrastructure/graph/import_project.js';
 import { getProjectCacheDb, openDb, featureCacheDbPath } from '../../infrastructure/index/db.js';
 import { validateDSLJson } from '../../domain/validator.js';
@@ -1688,6 +1691,134 @@ async function handleApiCodeReject(req: http.IncomingMessage, res: http.ServerRe
   }
 }
 
+// ─────────────────────────────────────────────────────────────
+// Observe 提案：列出 / 审批 / 驳回（2026-10-06，T62）
+// ─────────────────────────────────────────────────────────────
+// ★ 为什么开在 **HTTP** 而不是 MCP 工具：审批的语义是「**谁**批准了这条声明」——
+//   本仓既有先例正是 `code_workbench` 的 `/api/code/approve|reject`（LLM 起草 → **人**批准），
+//   而 observe 的提案三态（propose / approve / reject）与它一一对应。
+//   做成 MCP 工具会退化成"**agent 批准自己的提案**"，语义弱。
+//   实测背景：`approveGated` 此前**全仓零调用方** ⇒ 提案永远停在 pending、声明进不了权威 DSL。
+//
+// ★★ 为「**第三方会话审批**」留位（用户 2026-10-06 指明方向：目标是 AI 自动化，
+//   未来会增补第三方会话审批）：`reviewer` 是**自由文本且必填** —— 它记的就是
+//   "哪个会话 / 哪个系统批的"（会话 id / 系统名 / 用户名皆可）。
+//   `approveGated(…, reviewer)` 与 `Proposal.reviewer` 字段本就为此存在（Go 时代就有）。
+//   ⇒ 将来接第三方（别的会话、IM、CI）只需按**同一 body** 调这两个 POST，**本层不必改**。
+//
+// ★ 状态码口径（与 `/api/code/*` 的"catch 全 500"**有意不同**，故在此写明）：
+//   参数缺失 / 路径越界 ⇒ **400**（客户端参数错）；状态机冲突（提案非 pending / 不存在）⇒ **409**；
+//   其余意外 ⇒ **500**。
+
+/** observe 提案仓库目录（复用 `defaultDSLDir`，不新造字面量 —— 它与 daemon 同源）。 */
+function observeDataDir(projectDir: string): string {
+  return defaultDSLDir(projectDir);
+}
+
+/** 取并校验 `project_dir`；不合法时已写好 400 响应并返回 null。 */
+function readObserveProjectDir(raw: string, context: string, res: http.ServerResponse): string | null {
+  if (!raw) {
+    sendError(res, 400, '缺少 project_dir');
+    return null;
+  }
+  try {
+    return validateProjectRoot(raw, context);
+  } catch (e) {
+    sendError(res, 400, (e as Error).message);
+    return null;
+  }
+}
+
+/** GET /api/observe/proposals?project_dir=…：列出提案（含审批证据 `verified_by` / `verification`）。
+ *  ★ 这个出口是**补回来的**：Go 时代由 `dsl_cli list/show` 打印这些证据（`已验证: …` /
+ *    `验证门证据: …`），CLI 在 `e9a31a7` 删除后该出口断了 —— 而 daemon 的提示还指着一个
+ *    从未注册过的 `reconcile_proposals`。 */
+async function handleApiObserveProposals(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
+  try {
+    const url = new URL(req.url!, 'http://localhost');
+    const project_dir = readObserveProjectDir(url.searchParams.get('project_dir') || '', '/api/observe/proposals project_dir', res);
+    if (!project_dir) return;
+    const proposals = new ProposalStore(observeDataDir(project_dir)).list();
+    sendJson(res, 200, { success: true, project_dir, proposals });
+  } catch (e) {
+    sendError(res, 500, (e as Error).message);
+  }
+}
+
+/** POST /api/observe/proposals/approve {project_dir, id, reviewer, use_llm?}
+ *  ⇒ 走 `approveGated` 四层门（L1 规则回归 / L2 decl 级 LLM 复核 / L3 覆盖校验 / L4 定稿）。
+ *    ★ `use_llm` 缺省 false ⇒ 存在无谓词声明时**冻结**（不静默放行）—— 那是刻意的默认。 */
+async function handleApiObserveApprove(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
+  try {
+    const body = await readBody(req);
+    const params = JSON.parse(body.toString('utf-8'));
+    const id = String(params.id || '');
+    const reviewer = String(params.reviewer || '').trim();
+    const project_dir = readObserveProjectDir(String(params.project_dir || ''), '/api/observe/proposals/approve project_dir', res);
+    if (!project_dir) return;
+    if (!id) {
+      sendError(res, 400, '缺少 id');
+      return;
+    }
+    // ★ reviewer 必填：审批必须自报身份（第三方会话 / 系统名 / 用户名）—— 审计链不能有空。
+    if (!reviewer) {
+      sendError(
+        res,
+        400,
+        '缺少 reviewer：审批必须声明审批者身份（会话 id / 系统名 / 用户名）。' +
+          '★ 这是为"第三方会话审批"留的位 —— 换会话调用时只改这个值，接口形状不变。',
+      );
+      return;
+    }
+    const dataDir = observeDataDir(project_dir);
+    let r: Awaited<ReturnType<typeof approveGated>>;
+    try {
+      r = await approveGated(new ProposalStore(dataDir), new DesignDSLStore(dataDir), id, reviewer, params.use_llm === true);
+    } catch (e) {
+      // 状态机守卫（仅 pending 可审批）/ 提案不存在 ⇒ 业务冲突，不是 500
+      sendError(res, 409, `审批未通过：${(e as Error).message}`);
+      return;
+    }
+    sendJson(res, 200, { success: !r.frozen, frozen: r.frozen, version: r.version, reason: r.reason, proposal: r.proposal });
+  } catch (e) {
+    sendError(res, 500, (e as Error).message);
+  }
+}
+
+/** POST /api/observe/proposals/reject {project_dir, id, reviewer}
+ *  ⇒ 仅 pending 可驳回；**权威 dsl.json 完全不动**。
+ *  （与 `approveGated` 的"冻结"不同：冻结是**门**拒绝了提案，并留下机器可读的冻结原因。） */
+async function handleApiObserveReject(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
+  try {
+    const body = await readBody(req);
+    const params = JSON.parse(body.toString('utf-8'));
+    const id = String(params.id || '');
+    const reviewer = String(params.reviewer || '').trim();
+    const project_dir = readObserveProjectDir(String(params.project_dir || ''), '/api/observe/proposals/reject project_dir', res);
+    if (!project_dir) return;
+    if (!id) {
+      sendError(res, 400, '缺少 id');
+      return;
+    }
+    if (!reviewer) {
+      sendError(res, 400, '缺少 reviewer：驳回同样要记"谁驳的"（第三方会话 / 系统名 / 用户名）。');
+      return;
+    }
+    const ps = new ProposalStore(observeDataDir(project_dir));
+    let proposal;
+    try {
+      ps.reject(id, reviewer);
+      proposal = ps.get(id);
+    } catch (e) {
+      sendError(res, 409, `驳回未通过：${(e as Error).message}`);
+      return;
+    }
+    sendJson(res, 200, { success: true, proposal });
+  } catch (e) {
+    sendError(res, 500, (e as Error).message);
+  }
+}
+
 /** POST /api/semantic-search：全项目符号语义搜索（序号8） */
 async function handleApiSemanticSearch(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
   try {
@@ -2700,6 +2831,8 @@ export async function startServer(port?: number): Promise<void> {
         url.startsWith('/api/mind-map') || url.startsWith('/api/canvas-notes') ||
         url.startsWith('/api/code/approve') || url.startsWith('/api/code/reject') ||
         url.startsWith('/api/code/propose') || url.startsWith('/api/gateway') ||
+        // ★ observe 提案审批/驳回会**写权威 dsl.json**（或改提案状态）⇒ 必须同受 Origin 校验（T62）
+        url.startsWith('/api/observe/proposals/approve') || url.startsWith('/api/observe/proposals/reject') ||
         url.startsWith('/api/reveal-file'));
     if (isWriteApi && !isSafeOrigin(origin)) {
       sendError(res, 403, '跨域写入被拒绝：仅允许本机 localhost 来源调用写入 API');
@@ -3008,6 +3141,23 @@ export async function startServer(port?: number): Promise<void> {
       return;
     }
 
+    // Observe 提案（T62）：★ 具体路径放在前面（`/api/observe/proposals` 用了 startsWith，
+    // 而 `/api/observe/proposals/approve` 也是它的前缀 —— 顺序 + method 双保险）。
+    if (url.startsWith('/api/observe/proposals/approve') && method === 'POST') {
+      void handleApiObserveApprove(req, res);
+      return;
+    }
+
+    if (url.startsWith('/api/observe/proposals/reject') && method === 'POST') {
+      void handleApiObserveReject(req, res);
+      return;
+    }
+
+    if (url.startsWith('/api/observe/proposals') && method === 'GET') {
+      void handleApiObserveProposals(req, res);
+      return;
+    }
+
     // 小网关：设置页接口（供应商/Key 池/用量）
     if (url.startsWith('/api/gateway')) {
       void handleApiGateway(req, res, method, url);
@@ -3089,6 +3239,10 @@ export async function startServer(port?: number): Promise<void> {
       console.log(`  - 一致性检查 API: POST /api/consistency`);
       console.log(`  - 数据/API 引擎（前端统一为 dsl-workbench，不再渲染自包含 HTML）`);
       console.log(`    - 代码审批 API: 列出 /api/code/workbench ｜ 提案 /api/code/propose ｜ 通过 /api/code/approve ｜ 驳回 /api/code/reject`);
+      console.log(
+        `    - Observe 提案 API: 列出 GET /api/observe/proposals?project_dir=… ｜ 通过 POST /api/observe/proposals/approve ｜ 驳回 POST /api/observe/proposals/reject` +
+          `（body 需 project_dir / id / reviewer —— reviewer 是审批者身份，为第三方会话审批留位）`,
+      );
       console.log(`    - feature 元数据 API: GET /api/feature-meta`);
       console.log(`  - 变更影响分析 API: POST /api/diff-impact`);
       console.log(`  - 巨石体检/拆分任务单 API: POST /api/monolith, POST /api/split_plan`);

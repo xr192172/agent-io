@@ -250,3 +250,69 @@ observe_instrument（注册工具 = 薄壳路由）
   `C:\Program Files\nodejs\node.exe`（**含空格**），经 `shell:true`（cmd.exe）会被截成
   `C:\Program` ⇒ 门在 **13ms** 内以"退出码 1"失败、**看着像类型错其实是没跑起来**
   ⇒ 该门显式 `shell:false`（本仓其余门仍需 `shell:true`，因为 `go`/`npx` 是 `.cmd`）。
+
+## 八、T62：补上「审批入口」—— 这一步不做，P5 等于没做（2026-10-06）
+
+### 症状（比"没有只读出口"严重得多）
+
+`approveGated`（P4 步骤 5 的审批编排）**全仓零调用方** —— 引用只有定义与注释；
+59 个 MCP 工具里 `proposal` / `approve` **零命中**；`serve.ts` 的 `/api/code/approve|reject`
+是 **`design_intent` 的"代码审批"**（`code_workbench.js`），与 observe 提案无关。
+
+⇒ **observe 闭环断在倒数第二步**：loop 能产提案（daemon 自动跑），但**没有任何入口能批准/驳回**
+⇒ 提案永远停在 `pending` ⇒ 声明永远进不了权威 `dsl.json`。
+
+### ★ 它让已落地的 P5 在真实运行下不生效（真跑量化）
+
+| | 读数 |
+|---|---|
+| loop 产提案 | `proposals=1`、`status=pending`、`proposal_decls=[design:impact-known-spread]` |
+| 权威 `dsl.json` | `decls=[design:silent-error-discard]`（**没有** known-spread） |
+| `knownSpreadIndex(权威).size` | **0** ⇒ 扣减输入恒为空 |
+| 同一事件判定 | **真实链路 `deviation`** ／ 假如已审批 `ok` |
+
+⚠ 此前 P5 的"三档验证"是**直接给 `decls`**、**绕过了提案链路** —— 那是验证盲点。
+⚠ 同时更正一句说过头的话：「TS 侧已能独立完成 事件→偏差→提案→**审批→定稿** 闭环」
+—— 审批与定稿**都没有入口**，实际只到"提案"。（与 P4 收尾时发现 `DesignDSLStore`
+没暴露给任何 handler **同族**：搬了没出口。）
+
+### 落地（2026-10-06 用户拍板：选 (a)；★ 并明确"目标是 AI 自动化、未来要增补第三方会话审批"）
+
+开在 **HTTP**（照 `code_workbench` 的形状），**不做成 MCP 工具**：
+
+| 路由 | 作用 |
+|---|---|
+| `GET /api/observe/proposals?project_dir=…` | 列出提案（含 `verified_by` / `verification` 证据）—— ★ 补回 Go `dsl_cli list/show` 丢掉的出口 |
+| `POST /api/observe/proposals/approve` | `{project_dir, id, reviewer, use_llm?}` ⇒ 走 `approveGated` 四层门 |
+| `POST /api/observe/proposals/reject` | `{project_dir, id, reviewer}` ⇒ 仅 pending 可拒，**权威不动** |
+
+★ **`reviewer` 自由文本且必填** —— 它记的就是"**哪个会话 / 哪个系统批的**"。
+`approveGated(…, reviewer)` 与 `Proposal.reviewer` 本就为此存在（Go 时代就有）
+⇒ 将来接第三方（别的会话、IM、CI）**只需按同一 body 调**，本层不必改。
+★ 不做 MCP 工具的理由：那会退化成"**agent 批准自己的提案**"，语义弱。
+★ 安全：三条路由都进 `isWriteApi`（浏览器跨域写入须过 Origin 校验）；
+而 `isSafeOrigin(undefined) === true`（源码原文"非浏览器直接请求（curl/self）放行"）
+⇒ **无 Origin 头的第三方会话可直调** —— 与目标一致。
+★ 状态码口径与 `/api/code/*` 的"catch 全 500"**有意不同**（已在代码里写明）：
+参数/路径错 ⇒ **400**；状态机冲突（非 pending / 不存在）⇒ **409**；其余 ⇒ 500。
+
+### 实测（起真 serve + 真 HTTP，端到端）
+
+| 步骤 | 读数 |
+|---|---|
+| `GET /api/observe/proposals` | `count=1`、`status=pending`、`rule=design:impact-known-spread` |
+| `POST …/approve`（**缺 `reviewer`**） | **400** + 文案「审批必须声明审批者身份（会话 id / 系统名 / 用户名）」 |
+| `POST …/approve`（**缺 `expect` 的畸形声明**） | **409**「审批未通过：第 1 条声明缺少 expect」⇒ ★ **`validateDecls` 那道门真在工作**，且权威未被动 |
+| `POST …/approve`（正常，`reviewer=session:dsh-42`） | `success=true`、`frozen=false`、`version=1`、`reviewer=session:dsh-42` |
+| 权威 `dsl.json` | `rules=design:impact-known-spread`、`verified_by=data-consumed` / `status=verified` |
+| ★ **扣减是否生效** | `knownSpreadIndex.size=1`、判定 **`ok`（fully acknowledged）**（此前是 `deviation`） |
+| `POST …/reject`（`reviewer=session:im-7`） | `success=true`、`status=rejected`、`reviewer=session:im-7` |
+| 重复 `reject` | **409**（状态机守卫） |
+
+⇒ ★★ **P5 至此才真正闭环**：提案 → 审批（HTTP）→ 权威 `dsl.json`（带 `data-consumed`）
+→ 扣减生效（同一事件由 `deviation` 变 `ok`）。
+
+### 连带修掉的一处（否则又是"声明与实际不符"）
+
+`daemon` 的 loop 回流提示：上一笔刚把它从**假工具名**（`reconcile_proposals` —— 从未注册过，
+`760dc63` 改文案时编的名字）改成"如实说明没有入口"；**本笔有了真出口** ⇒ 提示改指这两条 HTTP 路由。
