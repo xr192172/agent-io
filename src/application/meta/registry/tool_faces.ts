@@ -7,10 +7,19 @@
  *   ⇒ 既然链是**原子面之上的投影**，那"两面"就不是两个实体 ⇒ 我原先提的"两个 MCP 端点"是**过度设计**。
  *   正解 = **一个注册表 + N 个视图开关**，而这**正是本仓已有的形状**（一个 `ToolDef` ⇒ MCP / CLI / 导航 三投影）。
  *
- * ★★★ **铁律：只裁「列出来」，不裁「能不能调」。**
- *   原子面暴露的目的是"**能调**"（第三方拿原子能力**自己组合**），编排面的目的是"**好选**"（降噪音）。
- *   ⇒ 视图**只过滤 `listTools`**；未列出的工具**必须仍可调用** —— 否则"别人自己组合"当场断掉，
- *     那正是这个项目存在的意义。
+ * ★★★ **实现方式（2026-10-06 实测更正 —— 本模块初稿写的"只裁 listTools、不裁 callTool"是错的）**：
+ *   **那做不到**：MCP SDK 的 `ListTools` handler 与 `CallTool` handler 读的是**同一张** `_registeredTools`
+ *   （`node_modules/@modelcontextprotocol/sdk/dist/esm/server/mcp.js` `:67-68` / `:100-102` / `:649`）
+ *   ⇒ **要么都暴露、要么都不能调**。
+ *   ⇒ **真做法 = 「不注册」那些工具 + 留一个原子入口**（`atomic_call`，见
+ *     `presentation/mcp/server_registry.ts`）：原子能力**仍然可达**（经入口的 list / describe / call），
+ *     只是**不再逐个占 MCP 面**。★ 我们**测过**：`face=all` 61 工具 / 87,379 字符；
+ *     `face=composed` 9 工具 / 19,681 字符 ⇒ **载荷 -77.5%**。
+ *
+ * ★★ **编排面的两半，依据根本不同**（读数里分开印）：
+ *   · **派生链那一半** —— `deriveObjectChains()` 算的，**验出一条新边它就自己长**；
+ *   · **`direct` 白名单那一半** —— ★ **2026-08 手写的策展表，无用量依据**（待用数据替换）。
+ *   ⇒ 所以"**零手写**"**只对派生那一半成立**（初稿把两半混成一句，也是不准确的）。
  *
  * ★★ **零手写**：编排面的名单**由数据算出**（导航 direct 白名单 ∪ 派生链涉及的原子工具），
  *   不许再手写一份清单（那就是判据分叉的入口）。
@@ -73,7 +82,7 @@ export function facesOf(catalog: readonly ToolCatalogEntry[], directNames: reado
     mk(
       'composed',
       '编排面',
-      '导航 direct 白名单 ∪ 派生链涉及的原子工具。★ **机器算出、零手写**（`deriveObjectChains()` + `direct`）。',
+      '两半拼的：① 派生链涉及的原子工具（**机器算的**）② `direct` 白名单（★ **2026-08 手写策展，无用量依据**）。',
       composed,
     ),
   ];
@@ -87,12 +96,21 @@ export function renderFaces(catalog: readonly ToolCatalogEntry[], directNames: r
     return `    ${f.label}（${f.id}）列出 ${String(f.names.length).padStart(2)} 个　${f.desc}${drift}`;
   });
   const drift = faces.filter((f) => f.unknown.length);
+
+  // ★★ 2026-10-06：把编排面的**两半分开报**（依据不同）—— 原先写「零手写」是**不准确的**。
+  const chainTools = uniq(deriveObjectChains().flat());
+  const directOnly = uniq(directNames).filter((n) => !chainTools.includes(n));
+
   return (
-    '\n\n── 工具「面」（★ 同一个注册表的**视图**；**只裁"列出来"，不裁"能不能调"**）──\n' +
+    '\n\n── 工具「面」（★ 同一个注册表的**视图**）──\n' +
     lines.join('\n') +
-    '\n  ★★ **铁律**：视图只过滤 `listTools`；**未列出的工具必须仍可调用** ——' +
-    '\n     否则"拿原子能力自己组合"当场断掉（那是本项目存在的意义）。' +
-    '\n  ★ 编排面**零手写**（机器从 `direct` + `deriveObjectChains()` 算出）⇒ 验出一条新边，它自己就长。' +
+    '\n  ★★ **实现方式（2026-10-06 实测更正）**：**不是**"裁 `listTools`" —— 那**做不到**：' +
+    '\n     MCP SDK 的 `ListTools` 与 `CallTool` handler 读的是**同一张** `_registeredTools`。' +
+    '\n     真做法 = **不注册**那些工具 + **留一个原子入口**（`atomic_call`）—— 即用户方案。' +
+    '\n  ★★ **编排面 = 两半拼的，依据根本不同**：' +
+    `\n     · 派生链那一半（${chainTools.length} 个：${chainTools.join(', ')}）—— **机器算的**，验出一条新边它就自己长；` +
+    `\n     · 「direct」白名单那一半（${directOnly.length} 个：${directOnly.join(', ')}）—— ★ **2026-08 手写的策展表，无用量依据**。` +
+    '\n     ⇒ ★ 所以「**零手写**」**只对派生那一半成立**；`direct` 那半是**待用数据替换的手写副本**。' +
     (drift.length
       ? '\n  ⚠ **跨层漂移**：上面标了"未注册"的名字，是 `CHAIN_EDGES` / `LANE_META` 里手写的，与注册表脱节了。'
       : '\n  ✓ 无跨层漂移（两个面列出的名字全在注册表里）。')

@@ -35,7 +35,8 @@
 import type { ToolDef } from '../../types.js';
 import { renderChainWiring, CHAINS, hopsOf, SCOPE_PATHS, type Chain, type HopVerdict } from '../../../domain/chain_wiring.js';
 import { B_TERMS } from '../../../domain/b_terms.js';
-// ★★ 2026-10-06：工具「面」= 同一个注册表的**视图**（只裁"列出来"，不裁"能不能调"）。
+// ★★ 2026-10-06：工具「面」= 同一个注册表的**视图**（实现方式 = **不注册** + 一个原子入口 `atomic_call`；
+//   ★ 注意：不是"裁 listTools" —— 那做不到，理由见 `tool_faces.ts` 模块头的实测更正）。
 //   ★ 依赖单向：本模块调它；它只 `import type` 本模块（类型导入被擦除 ⇒ 无运行时环）。
 import { renderFaces } from './tool_faces.js';
 
