@@ -385,6 +385,57 @@ export function renderChains(max = 20): string {
   );
 }
 
+/**
+ * ★★ 从**已验证的对象边**枚举**候选链**（2026-10-06，M1：从"手写"走向"派生"）。
+ *
+ * ★ 只取**两端都具体**的对象边：**排除通配边**（`ANY_TOOL`）—— 它们既会让枚举**爆炸**，
+ *   又正是上一次"恒真判定"的根因（见 `verifiedEdgesBetween` 上的实测教训）。
+ * ★ 结果是**候选**，**不是"已验证链"**：它只证明"每段都有对象边"，**没有真跑过**。
+ *   ⇒ `CHAINS` 那种"手写的、带真跑结论的链"**仍然要留**：两者回答的是不同问题 ——
+ *     派生回答"**还能拼出哪些**"，手写回答"**哪条真的跑通过**"。
+ * ★ 校验（本函数的出生证，2026-10-06 实测）：派生集合**包含**手写 `refactor` 链的**对象段**
+ *   `[find_references, rename_symbols, edit_code]`，且**不含** `design-import`（它一条对象边都没有）
+ *   —— 与"那条链真跑断在 `extract_contracts → find_references`"**一致**。
+ */
+export function deriveObjectChains(minLen = 2, maxLen = 6): string[][] {
+  const arcs = CHAIN_EDGES.filter(
+    (e) => e.evidence === 'verified' && e.from !== ANY_TOOL && e.to !== ANY_TOOL && !SCOPE_PATHS.has(e.toPath),
+  );
+  const next = new Map<string, string[]>();
+  // ★★ **邻接表必须去重**：同一对 (A → B) 可能挂着**多条对象边**
+  //   （例：`rename_symbols → edit_code` 就有 `written_files→file` 与 `symbols→symbol` 两条）
+  //   ⇒ 不去重会让**同一条链被枚举多次**（本函数第一版实测输出了两个相同的 `[find_references, rename_symbols, edit_code]`）。
+  //   ★ 又是"**静默多收**"的同族：不报错，只是多算。
+  for (const a of arcs) next.set(a.from, [...new Set([...(next.get(a.from) ?? []), a.to])]);
+  const hasIn = new Set(arcs.map((a) => a.to));
+  const starts = [...next.keys()].filter((k) => !hasIn.has(k));
+  const out: string[][] = [];
+  const walk = (path: string[]): void => {
+    if (path.length >= minLen) out.push([...path]);
+    if (path.length >= maxLen) return;
+    for (const nxt of next.get(path[path.length - 1]) ?? []) {
+      if (path.includes(nxt)) continue; // 防环
+      walk([...path, nxt]);
+    }
+  };
+  // ★ 全图都有入度时（纯环）没有"起点" ⇒ 从每个节点起，免得**静默空结果**。
+  for (const s of starts.length > 0 ? starts : [...next.keys()]) walk([s]);
+  return out;
+}
+
+/** 渲染**派生的**候选链（区别于 `CHAINS` 里手写、带真跑结论的那两条）。 */
+export function renderDerivedChains(): string {
+  const chains = deriveObjectChains();
+  const body = chains.length
+    ? chains.map((c) => `    ${c.join(' → ')}`).join('\n')
+    : '    （**空**：已验证的对象边还连不成链）';
+  return (
+    '\n\n── 可派生链（★ 从**已验证对象边**枚举；**候选**，没真跑过）──\n' +
+    body +
+    '\n  ★ 判据：只连**两端都具体**的对象边（**排除通配边** ⇒ 否则恒真、且枚举爆炸）。'
+  );
+}
+
 /** 渲染成人读列表（给 `capability_map` 用）—— ★ 给"谁读得到"，也给"**怎么写出来**"。 */
 export function renderChainWiring(max = 20): string {
   const line = (e: ChainEdge): string => {
@@ -404,6 +455,7 @@ export function renderChainWiring(max = 20): string {
     '  ★ 用法：把左边那串表达式**原样**填进右边的入参位置（它就是"上一次的产物"的地址）；\n' +
     '    标"单元素"的**直接取**即确定；标"多元素"的**下标由你给**（`[i]` 就是"从列表里选一个" ——\n' +
     '    选择是语义判断 ⇒ **永远由调用方给**；本表只负责给它一个统一的名字）。' +
-    renderChains(max)
+    renderChains(max) +
+    renderDerivedChains()
   );
 }
