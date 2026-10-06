@@ -54,7 +54,7 @@ export function wrap(
       // ★ 产物带 `touched` 时**必须**让它出现在机器通道里（否则契约在 [C] 层静默丢失，见 machinePayload 头注）。
       const payload = machinePayload(r as { data?: unknown; touched?: unknown });
       if (payload === undefined) return { text: r.message };
-      return { text: [r.message, '---DATA---', JSON.stringify(payload)].join('\n') };
+      return { text: [r.message, DATA_MARKER, JSON.stringify(payload)].join('\n') };
     } catch (e) {
       return { text: (e as Error).message, isError: true };
     }
@@ -62,6 +62,17 @@ export function wrap(
 }
 
 /** 同 wrap，但 data 一并序列化进文本（---DATA--- 分隔），避免只回显 message 导致静默丢数据 */
+/**
+ * ★★ 机器载荷段的**唯一**标记（2026-10-06 单点化）。
+ *
+ * ★ 为什么立它：这个字面量原先**硬编码在两处**（`wrap` 与 `wrapData`），而
+ *   `presentation` 侧（`invokeTool`）也要靠它做"插在机器段**之前**"的注入 ——
+ *   再不单点化就会出现**第三份**（本仓头号病根：判据分叉）。
+ * ★ 解析约定（既有，别破坏）：`text.split('---DATA---')[1]` 的头一段即 JSON；
+ *   ⇒ 任何新增的注入都**插在它之前**，**不要**追加到它之后（那会污染 `JSON.parse`）。
+ */
+export const DATA_MARKER = '---DATA---';
+
 export function wrapData(
   fn: (args: Record<string, unknown>) => { message: string; data?: unknown } | Promise<{ message: string; data?: unknown }>,
 ): ToolDef['handler'] {
@@ -72,7 +83,7 @@ export function wrapData(
       if (r.message) parts.push(r.message);
       const payload = machinePayload(r as { data?: unknown; touched?: unknown });
       if (payload !== undefined) {
-        parts.push('---DATA---');
+        parts.push(DATA_MARKER);
         parts.push(JSON.stringify(payload));
       }
       return { text: parts.join('\n') };

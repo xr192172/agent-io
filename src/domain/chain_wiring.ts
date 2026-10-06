@@ -423,6 +423,41 @@ export function deriveObjectChains(minLen = 2, maxLen = 6): string[][] {
   return out;
 }
 
+/**
+ * 本工具**所有**已验真的出边（= "下一棒"）。
+ *
+ * ★ 只取**两端都具体**的边：**排除通配边**（`ANY_TOOL`）——
+ *   它们说的是"任何工具都能接"，对**具体某个**工具就是噪音（每条都要列 61 个下游），
+ *   而且它们本来就已经写在接法表里当**背景规则**了。
+ * ★ 用途（2026-10-06，用户裁定「**先不收敛，所有有可能的下一棒都给它**」）：
+ *   在**回执通道**里告诉调用方"从这一步能接哪几棒、用什么表达式"。
+ */
+export function nextHopsOf(tool: string): readonly ChainEdge[] {
+  return CHAIN_EDGES.filter((e) => e.evidence === 'verified' && e.from === tool && e.to !== ANY_TOOL);
+}
+
+/**
+ * 渲染"下一棒"（给 `invokeTool` 的**回执通道**用）。
+ *
+ * ★★ **不进产物**：它既不是契约（下游不会用它重算）、也不是剪贴板 —— 它是**提示**。
+ *   塞进产物会同时干两件坏事：在契约里掺提示 + 让所有不接链的调用一起变胖。
+ * ★ 无出边 ⇒ 返回**空串**（完全不注入）—— 今天 61 个工具里只有 3 个有出边。
+ * ★★ **按边列全、不合并**（用户裁定：先不收敛）：同一下游有两条边就列两行。
+ */
+export function renderNextHops(tool: string): string {
+  const edges = nextHopsOf(tool);
+  if (edges.length === 0) return '';
+  const lines = edges.map((e) => {
+    const card = e.cardinality === 'single' ? '直接取' : '**下标由你给**';
+    return `    ${chainExprOf(e).padEnd(26)} → ${e.to} · ${e.toPath}　（${card}）`;
+  });
+  return (
+    '\n── 下一棒（★ **提示**，不是链的接口：本工具**全部**已验证出边，先全给、不收敛）──\n' +
+    lines.join('\n') +
+    '\n    ★ 想接才用；不接就直接结束。'
+  );
+}
+
 /** 渲染**派生的**候选链（区别于 `CHAINS` 里手写、带真跑结论的那两条）。 */
 export function renderDerivedChains(): string {
   const chains = deriveObjectChains();

@@ -19,6 +19,9 @@ import { hasLiveIndex } from '../../application/write_gate.js';
 import { scheduleBackfill, backfillState, isIndexIncomplete } from '../../infrastructure/index/index_backfill.js';
 import { unknownArgHints, renderArgHints } from '../../infrastructure/text/arg_suggest.js';
 import { collectPendingAlertText, dispatchDslEdit } from '../../application/dispatch.js';
+// ★★ 2026-10-06：「下一棒」提示 —— 链的接法（`CHAIN_EDGES`）+ 机器段标记（**单点**，别硬编码）
+import { renderNextHops } from '../../domain/chain_wiring.js';
+import { DATA_MARKER } from '../../application/plumbing.js';
 
 // （`tools/stale_check` 的导入已随 P-F 删除：本文件不再直接消费它 —— 三个 stale 告警各自
 //   探测，`stale_check.formatStaleText` 仍由 lanes/observe.ts 的 `run_tests` 前置提示使用。）
@@ -437,7 +440,18 @@ export async function invokeTool(
   // ★ 只回**合成好的文本**（含注入的告警块），**不在这里包 MCP 形状** ——
   //   「怎么呈现」是各面自己的事：MCP 面用 `textOut(...)` 包成 `{content:[...]}`，
   //   CLI 面直接打到 stdout。★ 这样两个面共用的就是**同一份合成逻辑**（唯一真相源）。
-  return { text: r.text + argHints + emission.text + firstContactNote + trustNote + alertNote + emission.block, isError: r.isError };
+  // ⑦ ★★ 2026-10-06：「下一棒」提示（用户裁定：**先不收敛，所有有可能的下一棒都给它**）。
+  //    ★ 插在 `---DATA---` **之前**：既有解析 `text.split('---DATA---')[1]` **不受影响**，
+  //      且机器块（`---WARNINGS---`）仍是最末 —— **别追加到末尾**，那会污染 `JSON.parse`。
+  //    ★ 只在**有已验证出边**的工具上注入（今天 61 个里只有 3 个：find_references /
+  //      rename_symbols / edit_code），其余工具文本**一个字符都不变**。
+  //    ★★ 它**不进产物**：既不是契约（下游不会用它重算）、也不是剪贴板 —— 是**提示**。
+  const nextNote = renderNextHops(def.name);
+  const withNext =
+    nextNote && r.text.includes(DATA_MARKER)
+      ? r.text.replace(DATA_MARKER, () => nextNote + '\n' + DATA_MARKER)
+      : r.text + nextNote;
+  return { text: withNext + argHints + emission.text + firstContactNote + trustNote + alertNote + emission.block, isError: r.isError };
 }
 
 export function registerAllTools(server: McpServer): void {
