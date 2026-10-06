@@ -22,8 +22,11 @@
  *   2. **连接复用**：读者多在**逐文件循环**里调用 ⇒ 若每次 `openDb` 会开 N 个连接且不关闭
  *      ⇒ 本模块按 dbPath **缓存连接**（与 `db.ts` 的 `projectCachePool` 同一条纪律：**不 close**）。
  *
- * ★ 库的定位：复用**唯一权威** `db.ts#findCacheDb`（`import_cache_<f>.db`(dataHome) >
- *   `<source_root>/.agent-io/cache.db` > `<cwd>/.agent-io/cache.db`），**不新造查找顺序**。
+ * ★ 库的定位：复用**唯一权威** `db.ts#findCacheDb`（**两级**：`import_cache_<f>.db`(dataHome) >
+ *   `<source_root>/.agent-io/cache.db`），**不新造查找顺序**。
+ *   ★ 2026-10-06 更正：本注释原写着**三级**（多一个 `<cwd>/.agent-io/cache.db`），与 `db.ts` 的
+ *   现状**不符** —— 那个第三级已于 2026-10-01 删除（「越兜越多」的裁定，见 `db.ts#findCacheDb`）。
+ *   这是**派生注释没跟上真源**的老毛病（把唯一权威的候选列表在别处抄了一遍）。
  */
 import fs from 'node:fs';
 import path from 'node:path';
