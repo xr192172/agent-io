@@ -25,7 +25,7 @@ import path from 'node:path';
 import { runLoop } from '../../infrastructure/analysis/observe/run_loop.js';
 import { watchProjectTool, listActiveWatches, setWatchToolEventListener } from '../../application/observe/runtime/watch_project_tool.js';
 import { setAlertListener, alertsSince, pushAlert } from '../../infrastructure/alert_inbox.js';
-import { saveDSL, getDSL, onDslChange } from '../../infrastructure/storage.js';
+import { getDSL } from '../../infrastructure/storage.js';
 import { updateFeature } from '../../application/design/dsl_ops/update_feature.js';
 import { createDaemonServer, type DslWriteRequest, type DslWriteResult } from './server.js';
 import { probeDaemon, daemonPort } from '../../infrastructure/daemon/client.js';
@@ -74,7 +74,9 @@ function regionsOverlap(a: string[], b: string[]): boolean {
  *  - 带 ops（edit_dsl 原始入参）：daemon 在串行队列内读最新 DSL → 执行 updateFeature
  *    （结果落盘，rev 自增底层处理）→ SSE 广播 dsl-changed。由于读改写全部发生在
  *    daemon 同一进程的串行队列内，进程内绝不并发直写 —— 「最后写者胜」被结构性消除。
- *  - 不带 ops（bdsl 完整提交）：以 base_dsl_rev 乐观锁校验后 saveDSL。
+ *  ★ 2026-10-06：**「整份 dsl 提交」形态已删**（零调用方；且它是唯一能直写整份 DSL 的
+ *    旁路 —— 见 `DslWriteRequest` 的注释）。现在**只有 `ops` 一种形态**，一律经
+ *    `updateFeature` 读改写，与 MCP 侧 `edit_dsl` 语义一致。
  *
  * 乐观锁：客户端（LLM）先从 get_dsl 拿到 base_rev，编辑后带同一 base_rev 提交。
  *  daemon 在执行前比对磁盘当前 rev，不一致即冲突拒绝（返回 current_rev 供 rebase），
@@ -115,18 +117,13 @@ function dslWriteHandler(req: DslWriteRequest): Promise<DslWriteResult> {
     });
   }
   try {
-    if (ops && typeof ops === 'object') {
-      // edit_dsl 原始入参：在 daemon 进程内执行读改写（updateFeature 内部 saveDSL 落盘）
-      const r = updateFeature(ops as never);
-      // 写成功后记录该 feature 的最新依赖区域（供后续提交重叠判断）
-      lastTouchedByFeature.set(feature, touched);
-      return Promise.resolve({ ok: true, rev: getDSL(feature)?._dsl_rev ?? currentRev + 1, touched, message: r.message });
-    }
-    // 完整提交形态：乐观锁已校验，saveDSL 带 currentRev 保证落盘 rev 匹配；
-    // 该形态影响面未知，记录为全局域（后续任何写都视为重叠，保守）
-    saveDSL(req.dsl as never, req.source ?? 'daemon', currentRev);
-    lastTouchedByFeature.set(feature, []);
-    return Promise.resolve({ ok: true, rev: currentRev + 1, touched, message: `已保存 ${feature}（rev ${currentRev + 1}）` });
+    // ★ 2026-10-06：「整份 dsl 提交」分支已删（理由见函数头注释与 `DslWriteRequest`）——
+    //   它**零调用方**，且是唯一能**直写整份 DSL**、跳过 MCP 侧 T20 闸与 view 护栏的旁路。
+    //   现在只剩 `ops` 一种形态 ⇒ 必经 `updateFeature`（内部 `saveDSL` 落盘），语义与 `edit_dsl` 一致。
+    const r = updateFeature(ops as never);
+    // 写成功后记录该 feature 的最新依赖区域（供后续提交重叠判断）
+    lastTouchedByFeature.set(feature, touched);
+    return Promise.resolve({ ok: true, rev: getDSL(feature)?._dsl_rev ?? currentRev + 1, touched, message: r.message });
   } catch (e) {
     return Promise.resolve({
       ok: false,

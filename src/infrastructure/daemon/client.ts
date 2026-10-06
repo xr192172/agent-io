@@ -80,7 +80,6 @@ export async function postDsl(
   req: {
     feature: string;
     ops?: Record<string, unknown>;
-    dsl?: Record<string, unknown>;
     base_dsl_rev?: number;
     source?: string;
   },

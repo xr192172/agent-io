@@ -244,14 +244,31 @@
         · **真调验收**（隔离 `AGENT_IO_HOME` + 2 文件夹具）：无证据改 `file` 断言 ⇒ **被拒**（错文给出下一步）；
           带文件证据 ⇒ **通过并真落盘**；`type=status` 无证据 ⇒ **通过**（边界成立）；
         · 工具描述已同步（`weight` 与 `evidence.type` 两处）。
-        · ★★ **未覆盖（2026-10-05 独立核验发现，待判）**：本闸**只管 `edit_dsl` 这一条路**。写 `semantic.files`
+        · ★★ **未覆盖（2026-10-05 独立核验发现）**：本闸**只管 `edit_dsl` 这一条路**。写 `semantic.files`
           （含 `path`/`responsibility`/`expected_apis`/`layer`/`contract` 等"代码是什么"的断言）**还有别的入口**：
           **6 个 MCP 工具**（`import_project` / `sync_contracts` / `extract_contracts` / `reconcile_effects` /
           `narrate_step` / `archive_node`）+ `explore_code` 的 `arch_layer`·`check_monolith` + **HTTP 写口**。
-          ★ 其中**大多数是"代码驱动的产者"**（它们本来就在读代码/事件）⇒ 不覆盖**合理**；
-          但 **`serve.ts:175` 的 `/api/dsl`（前端 POST 整份 DSL）是既有的大洞** —— 它**同时跳过** T20 闸门、
-          L1–L4 与 `view=live` 护栏（只剩 rev 乐观锁）⇒ 同一个"改设计"动作有两条路、两道不同的闸（**判据分叉**）。
-          ⇒ 待判：给它补等价闸，还是收口成"只此一个写入口"。
+          ★ 其中**大多数是"代码驱动的产者"**（它们本来就在读代码/事件）⇒ 不覆盖**合理**。
+          · ✅ **2026-10-06 已收口一片**：daemon `/api/dsl` 的**「整份 dsl 提交」形态已删**（`server.ts` 的
+            `DslWriteRequest` / `daemon.ts` 的 `dslWriteHandler`）。理由：它**零调用方**
+            （唯一调用方 `dispatch.ts: postDsl` 只传 `ops`），却是**唯一能直写整份 DSL 的旁路**
+            （跳过本闸与 `view=live` 护栏）⇒ 删后该管道只剩 `ops`（必经 `updateFeature`），与 MCP 侧语义一致。
+            实测：整份 `dsl` ⇒ **400**（文案说明已删）；`ops` ⇒ 仍受理（409「operations 不能为空」）；空 body ⇒ 400。
+          · ★★ **同时更正本条目此前两处记错**（2026-10-06 逐处核实）：
+            ① **位置错了**：原文写「`serve.ts:175` 的 `/api/dsl`」—— 实际 `serve.ts:160` 的那个是
+               **`POST /api/save`**；真正的 `/api/dsl` 在 **daemon**（`server.ts:130` + `daemon.ts` 的
+               `dslWriteHandler`），而它只是 `edit_dsl` 的**下游**（`dispatch.ts:76` 转发），**不是旁路**。
+            ② **性质错了**：原文判断「同一个'改设计'动作有两条路、两道不同的闸（判据分叉）」——
+               实为**面向不同写主体**：`edit_dsl`（`source='mcp'`，LLM）经 daemon **串行队列**（单写者，
+               结构性消除"最后写者胜"）；`/api/save`（`source='browser'`，人）直写 `saveDSL`。
+               ★ 要求两者同一道闸**本身就是错的**：人要向自己证明"我读过代码"没有意义。
+          · ⚠ **仍未做的两件**（比原来的"待判"更准确）：
+            (i) **并发保护不对称**：`/api/save`（人的路）**没有串行队列**，而 rev 乐观锁是**可选**的
+                （`storage.ts` 原文"省略则不做校验（保留旧直写语义，兼容既有 30 处调用）"）
+                ⇒ 浏览器保存与 LLM 编辑并发时**可能静默覆盖**。修法待定：让 `/api/save` 也进 daemon 队列？
+                还是 rev 必填？—— 后者会**打断前端**，而**前端在仓外**（`output/` 被 gitignore）无法验证。
+            (ii) T20 闸留在 `editDslHandler`（MCP 面）⇒ 直接 POST daemon `/api/dsl` 带 `ops` **仍能绕过它**。
+                要不要把闸下沉到 `updateFeature`（**层问题**：evidence 是 MCP 面的输入契约）**未定**。
       ⇒ ★ **另记一条既有隐患**（本笔发现，未改）：`resolveFunctionCacheDb` 的第三级候选是 **`<cwd>/.agent-io/cache.db`**
         ⇒ 一个**没有自己索引**的项目会读到 **cwd 那个项目**的库。本笔靠"`matched_path` 必须命中"挡了误报，
         但**根上仍是 T19 的"根"问题**，应在 T19 里一并收口。

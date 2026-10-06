@@ -35,15 +35,18 @@ function enqueueDslWrite<T>(key: string, fn: () => Promise<T>): Promise<T> {
   return run;
 }
 
-/** POST /api/dsl 的入参（单写者提交 DSL，base_dsl_rev 乐观锁）
- *  两种形态：ops（edit_dsl 原始入参，daemon 内执行读改写）或 dsl（完整提交）二选一
+/**
+ * POST /api/dsl 的入参（单写者提交 DSL，base_dsl_rev 乐观锁）。
+ *
+ * ★ 2026-10-06：**只剩 `ops` 一种形态**（此前的 `dsl`「整份提交」已删）。
+ *   删的理由：它**零调用方**（唯一调用方 `dispatch.ts: postDsl` 传的是 `ops`），
+ *   却是**唯一能直写整份 DSL 的旁路** —— 跳过 `edit_dsl` 的 T20「现取事实」闸与
+ *   `view=live` 护栏。删掉后本管道与 MCP 侧语义一致（都经 `updateFeature` 读改写）。
  */
 export interface DslWriteRequest {
   feature: string;
   /** edit_dsl 原始入参（含 action/feature/各 op 参数），daemon 内执行 updateFeature */
   ops?: Record<string, unknown>;
-  /** 完整 DSL 提交形态 */
-  dsl?: Record<string, unknown>;
   base_dsl_rev?: number;
   source?: string;
 }
@@ -137,10 +140,16 @@ export function createDaemonServer(handlers: DaemonServerHandlers, opts: { port?
         void (async () => {
           try {
             const input = body ? (JSON.parse(body) as DslWriteRequest) : ({} as DslWriteRequest);
-            const hasPayload = (typeof input.dsl === 'object' && input.dsl) || (typeof input.ops === 'object' && input.ops);
+            // ★ 2026-10-06：只认 `ops` 形态（整份 `dsl` 提交已删 —— 零调用方，且它跳过
+            //   `edit_dsl` 的 T20「现取事实」闸与 view 护栏）。详见 `DslWriteRequest` 注释。
+            const hasPayload = typeof input.ops === 'object' && input.ops;
             if (typeof input.feature !== 'string' || !input.feature.trim() || !hasPayload) {
               res.writeHead(400, { 'content-type': 'application/json' });
-              res.end(JSON.stringify({ error: 'feature 与 (dsl 或 ops) 必填' }));
+              res.end(
+                JSON.stringify({
+                  error: 'feature 与 ops 必填（整份 dsl 提交形态已于 2026-10-06 删除：它零调用方，且能绕过 MCP 侧闸门）',
+                }),
+              );
               return;
             }
             if (!handlers.dslWrite) {
