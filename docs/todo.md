@@ -698,16 +698,6 @@
       ⇒ ★ **未核实项**（文档 §10 已列）：WASM CM 的真实成熟度（未查各语言支持矩阵）· uniffi/napi 的许可证
         （若 adopt，按 `oss-prior-art-first` §3.5 必须先看许可）· "⑤ 无通用解"是判断而非查到的结论（**实验 1 可证伪它**）。
 
-- [ ] **T47 ★ 「自定位工具」的 `touched.project_dir` 可能是 cwd（口径待定，2026-10-05）**
-      *(核实：`index_integrity --json '{}'` 实测 `"touched":{"project_dir":"D:\\project_develop\\design-canvas"}`
-       —— 那是**本仓 cwd**，不是调用方想查的项目。)*
-      ⇒ 根因：`index_integrity.ts:168` 的 Core 是 `path.resolve(opts.project_dir)` —— **`undefined` 时 `path.resolve` 会落到 cwd**。
-      ⇒ ★ **定性（重要）**：这是它**既有的"自定位"行为**（工具描述里写了"会自定位项目"），**不是本笔引入**。
-        但 `touched` 的口径是「**作用域类字段，填解析后的绝对根**」——当那个根是 cwd 时，
-        下游拿到 `touched.project_dir` 会以为"这是调用方声明的项目"。
-      ⇒ 待定两选一：(a) 让自定位工具**显式标注"根来源"**（自定位 vs 委派）；(b) 给 `Touched` **加一个字段**表达它。
-        ★ 按纪律「**跨模块统一形态时不要动既有字段名；要统一就新增语义唯一、类型钉死的东西**」⇒ 倾向 (b)。
-      ⇒ 波及面待量：全仓还有哪些 [B] 的根是"可自定位"的（`index_integrity` · `run_tests` · `observe_trace` 已知 3 处）。
 
 
 > ★★ **上面 T37/T38/T39 是 2026-10-05 体检**当场**修掉的三笔**（已进 commit 历史，故不在此列）：

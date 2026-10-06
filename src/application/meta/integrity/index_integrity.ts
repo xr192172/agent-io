@@ -444,20 +444,35 @@ async function indexIntegrityCore(opts: {
 /**
  * ★ 唯一的构造点：把"我动了什么"集中算一次，所有出口都从这一个地方出去。
  *
- * 口径（`Touched` 两类字段，见 domain/b_terms.ts:42-89）：
- *   - 作用域类（`project_dir`）：随时可给，不依赖成败；
+ * 口径（`Touched` 两类字段，见 domain/b_terms.ts）：
+ *   - 作用域类（`project_dir`）：**只在调用方显式给了根时才给**（见下）；
  *   - 对象类（`written_files` / `symbols` / `nodes`）：只有**真发生**才给，否则整项省略。
  */
-function touchedOf(opts: { project_dir: string }): Touched {
-  // project_dir：★ 填**解析后的绝对根**（= Core `path.resolve(opts.project_dir)`，与产物顶层
-  //   `project_root` 同值）—— 作用域类，随时可给。
-  // ★ 对象类一律省略：本 [B] 读写的是 `cache.db`（dataHome 下），**不是仓库文件** ⇒
-  //   `written_files` 给不出；它也不确立任何符号/DSL 节点对象 ⇒ `symbols` / `nodes` 不给。
+function touchedOf(opts: { project_dir: string; project_dir_explicit?: boolean }): Touched {
+  // ★★ 2026-10-06（T47）：`project_dir` **只在调用方显式给了才填**。原先这里无条件填
+  //   `path.resolve(opts.project_dir)`，而本工具的入参 `project_dir` 是**可选**的
+  //   （省略 ⇒ handler 兜底 `process.cwd()`，那是**有意的「自定位」**，描述里也这么写）
+  //   ⇒ 那个 cwd 被当成"调用方声明的项目根"填进 `touched`，**冒充了一个本次调用并未声明的对象**。
+  //
+  //   ★ 全族同口径：本仓 **14 个** `touched.project_dir` 构造点里，其余 13 个都守着
+  //     「不猜、不兜底 cwd」—— `rename_files.ts:136-140` 的裁定逐字写着
+  //     「**`cwd` 兜底尤其不能要** —— 那会把它变成'**进程当前目录**'，不是本次调用**确立的对象**」；
+  //     `derive_anim_flow` / `derive_algorithm` / `scaffold` 三处也各写了同款理由。
+  //     ⇒ 本处是**唯一漏跟**的那个（判据分叉），本笔收口。
+  //
+  //   ★ 信息**不会丢**：本产物顶层另有 `project_root`（= Core 里 `path.resolve(...)` 的结果）
+  //     **照给**自定位后的真实根；此处省略只是**不让它冒充**"调用方声明的对象"。
+  //   ★ 对象类一律省略：本 [B] 读写的是 `cache.db`（dataHome 下），**不是仓库文件** ⇒
+  //     `written_files` 给不出；它也不确立任何符号/DSL 节点对象 ⇒ `symbols` / `nodes` 不给。
+  if (opts.project_dir_explicit === false) return {};
   return { project_dir: path.resolve(opts.project_dir) };
 }
 
 export async function indexIntegrity(opts: {
   project_dir: string;
+  /** ★ 调用方是否**显式**给了 `project_dir`：`false` ⇒ `touched.project_dir` 整项省略（见 {@link touchedOf}）。
+   *  缺省 `true`（保守：直接调本函数、未经"自定位兜底"的调用方，视为显式给了根）。 */
+  project_dir_explicit?: boolean;
   refresh?: boolean;
   sample?: number;
 }): Promise<TouchedProduct<IndexIntegrityResult>> {

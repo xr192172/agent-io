@@ -551,9 +551,15 @@ export const META_TOOLS: ToolDef[] = [
     //   IndexIntegrityResult（trustworthy / counts / refs.stale_resolved / issues …
     //   索引可信度是**结构化产物**）在通道层丢掉，agent 只能读散文。
     handler: wrapData(async (a) => {
-      const dir = typeof a.project_dir === 'string' && a.project_dir ? a.project_dir : process.cwd();
+      // ★ T47（2026-10-06）：本工具的入参 `project_dir` 是**可选**的，省略即用 cwd「自定位」读索引
+      //   （**既有行为**，描述里明说）—— 但必须把"是否显式"如实传给 Core：否则那个 cwd 会被填进
+      //   `touched.project_dir`，**冒充**成"调用方声明的项目根"（全族其余 13 处都守着
+      //   「不兜底 cwd」，见 `index_integrity.touchedOf` 的长注释）。
+      const explicit = typeof a.project_dir === 'string' && a.project_dir !== '';
+      const dir = explicit ? (a.project_dir as string) : process.cwd();
       const r = await indexIntegrity({
         project_dir: dir,
+        project_dir_explicit: explicit,
         ...(a.refresh === true ? { refresh: true } : {}),
         ...(typeof a.sample === 'number' ? { sample: a.sample } : {}),
       });
