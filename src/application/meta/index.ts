@@ -417,7 +417,15 @@ export const META_TOOLS: ToolDef[] = [
       '★ 2026-10-05 新增「实现地图」段：工具注册在哪个文件 ≠ **实现住在哪个目录** —— ' +
       '该段按线列出 `structure.domains.json` 里该线下的域（dir + role + note 首句），' +
       '用来回答「我要改 X 的实现，该进哪个目录」。传 project_dir 才读得到（读的是该项目的域表）。' +
-      '高频工具（get_dsl / edit_dsl / explore_code / rename_symbols / rename_files / find_references）始终直接可用，无需先经本工具。',
+      '高频工具（get_dsl / edit_dsl / explore_code / rename_symbols / rename_files / find_references）始终直接可用，无需先经本工具。' +
+      '★ 通用前置（2026-10-06 新增 —— 这三条**不属于任何单个工具**，但用任何工具前都成立）：' +
+      '① **DSL 数据锚定「包安装根」，不是你的项目目录**：不设 `AGENT_IO_HOME` 时，**任何 cwd** 都读写同一个数据目录 ' +
+      '⇒ 多个项目会**互相看见**。要隔离，请在调用前设 `AGENT_IO_HOME=<某个目录>`。' +
+      '② **符号索引会被「顺手」自动建**：第一次 `find_references` 之类就在**被分析项目里**生成 `.agent-io/cache.db`，' +
+      '不必先 `import_project`（但你可以预期它会写盘）。' +
+      '③ **「每次调用前保鲜」只认 4 个项目根参数名**：`project_dir` / `project_root` / `root` / `dir`。' +
+      '用别的名字（如 `cross_repo_symbol_index` 的 `project_dir_a` / `project_dir_b`）就**拿不到自动保鲜** ' +
+      '⇒ 结果可能**悄悄是旧的**；此时请显式先调 `index_integrity({project_dir, refresh:true})`。',
     inputSchema: {
       lane: z
         .enum([...LANE_IDS] as [LaneId, ...LaneId[]])

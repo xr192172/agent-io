@@ -666,26 +666,26 @@
         加上 T17 新接的 `check_monolith` / `derive_algorithm` / `derive_chain` / `derive_split`）。
       ★ 这是**"要么全改、要么不改"**的那种改动 —— **改一半 = 同一件事两套口径**（本仓头号病根）。
 
-- [ ] **T40 ★★ 三处「隐藏前置」没写进任何工具描述（独立体检 2026-10-05，用户要求"从头逐个测"）**
-      *(核实：体检小队用 `AGENT_IO_HOME` 隔离 + 临时项目 `C:/tmp/...` **逐个真调** 59 工具后报告；
-       我复核了第 3 条（`server_registry.ts:301` 逐字）。)*
-      ⇒ **1. DSL 数据锚定「包安装根」，不是你的项目目录。** 不设 `AGENT_IO_HOME` 时任何 cwd 都在
-        读写**同一个**数据目录 ⇒ 多项目互相看见。**最容易被误伤，却不在任何工具描述里。**
-      ⇒ **2. 符号索引会被"顺手"自动建。** 第一次 `find_references` 就在被分析项目里生 `.agent-io/cache.db`
-        （没先让你 `import_project`）。
-        ★ **2026-10-06 更正**：原写"而 `feature_line` 却要求先跑一次带 feature 的 import_project
-        ⇒ **三处口径不一样**" —— 核实后**该前提不成立**：`feature_line` 的 `project_dir` 是**可选**，
-        描述为"缺省按 feature 的导入缓存"，**未见**"先 import_project"字样；同线的
-        `recommend_observe_points` 反而**明写"无需先 import_project"**。
-        ⇒ **保留下来的事实只有一条**：索引会被"顺手"自动建（这件事本身仍该写进工具描述）。
-      ⇒ **3. 「每次调用前保鲜」只认 4 个参数名**（`project_dir / project_root / root / dir`，
-        `server_registry.ts:301` 的 `projectRootArg`）⇒ 用 `project_dir_a`（cross/hybrid）、
-        `target`（observe_instrument）、`source_root`（render_brickwork）、`file`（find_references）
-        的工具**拿不到自动保鲜**，结果可能悄悄是旧的。
-      ⇒ 方向：① 把 `AGENT_IO_HOME` 的语义写进 `capability_map`（新用户第一站）；
-      ② 三条索引前置口径收成一句一致的话；③ `projectRootArg` 的判定面与各工具真参数名对齐
-      （要么扩它、要么让工具参数名统一）。
-
+- [ ] **T65 ⚠ `cross_repo_symbol_index` 拿不到自动保鲜（T40 第③条实测收窄后的**唯一真问题**，2026-10-06）**
+      *(T40 的「三处隐藏前置没写进描述」**已解决**：三条已写进 `capability_map` 的「★ 通用前置」段 ——
+       ① `AGENT_IO_HOME` 语义（DSL 数据锚定包安装根、不设则多项目互见）；
+       ② 符号索引会被「顺手」自动建（第一次 `find_references` 就生 `.agent-io/cache.db`）；
+       ③ 保鲜只认 4 个项目根参数名 + workaround。)*
+      ⇒ ★ **实测收窄**（遍历 59 个工具的 `inputSchema`，18 个无那 4 个名字）—— T40 原文举的例子**基本都不成立**：
+        · `render_brickwork`(`source_root`) / `observe_instrument`(`target`) / `find_references`(`file`)
+          **都同时有 `project_dir`** ⇒ 能保鲜，**不是实例**（原文记错）；
+        · `translate_go_ts` 的 `projectDir`（驼峰）**不需要保鲜** —— 它是「**要翻译的** Go 项目目录」，
+          只枚举 `.go`、**不读符号索引**；它只是**命名风格异类**（本仓 `arg_suggest.ts` 已把
+          `projectDir` 当作 `project_dir` 的「**最常见的错法**」处理）；
+        · ★ **`consistency_check` / `detect_drift` 的 `code_dir`** 待判（是否等于「被分析项目根」）；
+        · ★★ **`cross_repo_symbol_index` 真受影响**：它走 `compareProjects` ⇒ 读**两个项目的符号索引**，
+          而 `project_dir_a` / `project_dir_b` 都不在那 4 个名字里 ⇒ **两个根都不被保鲜**。
+      ⇒ 待定修法（**形状决策，需拍板**）：
+        (a) 扩 `projectRootArg` 认 `*_a`/`*_b` ⇒ 只保鲜 A，「两个根」语义仍不完整；
+        (b) **跨项目工具自己保鲜两个根**（各自 `ensureProjectIndex`）—— ★ 语义最完整，倾向这条；
+        (c) 改参数名（`project_dir` + `project_dir_second`）⇒ 仍不解决「要保鲜两个」。
+      ⇒ ★ 本笔已在 `capability_map` 描述里**如实写明该限制 + 给 workaround**
+        （先显式调 `index_integrity({project_dir, refresh:true})`）⇒ **不再静默**；修法是增强，不是救火。
 
 - [ ] **T43 ★★ 前沿研究：通用多语言组件框架（若重开 ⇒ 先做三个"最小可证伪实验"）**
       *(核实：2026-10-05 用户裁定"积木线/项目融合线作为万能框架实现不了 ⇒ 删代码、留设计文档"。)*
@@ -740,13 +740,6 @@
         若"写源码必过 `write_gate`"成立 ⇒ 闸门处即可挂"dry-run 默认"，这类事故**在入口被拦**而不是事后靠回执读出来。
 
 
-- [ ] **T60 ⚠ 一次不可复现的「apply 无输出」故障 —— 归因已撤回，等复现**
-      *(2026-10-05 首次搬 29 个文件时：apply 跑了 545s、输出为空、我的 runner 报 `[ERR] len=0`，而当时 `tsc --noEmit` 是 EXIT=0 ⇒ 树自洽、**看不出停了**，只能靠数盘上文件才发现少了 6 个。因为 runner 没打印 `signal`，我一度归因成「`rename_files` 静默半途」并写进了 commit 与清单。)*
-      ⇒ ★ **同一条目 29 个文件重跑：178s / exit 0 / len=41727 —— 故障不复现**（同机器、同隔离 home）⇒「工具会静默半途」这个结论**证据不足，已撤回**。
-      ⇒ ★ 真正的教训有两条，都已落地：
-        ① **我的 runner 报 `[ERR]` 却不打印 `signal`/`error`** —— `status===null` 是**被信号杀**（Windows 上常见 OOM/强杀），不是「工具回执为空」。不修这个 Instrumentation，就会把「我的测试环境被杀」误判成「产品有 bug」—— ★ 这正是本仓头号病根「判据分叉」在**测试层**的形态。
-        ② 同一次实验里，我的**回搬清单**用 `existsSync(原路径)` 过滤，而被搬走的文件在原路径本就不存在 ⇒ 恰恰把它们排除掉了 ⇒ 4 个文件永久留在 `_scale/`（`tsc` 仍 EXIT=0，也是靠 `git status` 才看出来）。
-        ⇒ 教训：**「树能编译」不等于「树是对的」**；搬移类实验的收尾必须 `git status` 逐条对，不能只看 tsc。
 
 
 - [ ] **T63 ★★ 新前端接入：走 daemon 串行队列，别再开直写路（2026-10-06 用户告知旧前端待退役）**
