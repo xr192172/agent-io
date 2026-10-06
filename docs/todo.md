@@ -349,6 +349,23 @@
         `dsl_baseline` 的读者（`diff_views.ts:239`）、`dsl_live` 的读者（`serve.ts:321`、`diff_views.ts:237`）。
         ★ 注意 `dsl_live` 目前是 **`pending`**（产者要 `import_project`，且带 `baseDir` 可覆盖 ⇒
         接之前必须先定"写读两侧怎么保证同一个根"，否则接上就是接一个**更快的分叉**）。
+        ★★ **2026-10-06 把这个前提核清了（实测，且它比原话更宽）** —— 「同一个根」的具体形状：
+        · **写侧**：`saveLiveFeature(dsl, baseDir?)` / `saveBaselineFeature(...)` 的 `baseDir` **可选**、
+          **缺省 = `getDataHome()`**；而 ★ **`watch_project` 监听任意项目时会传 `project_dir`**
+          ⇒ live / baseline 落到**被监听项目的根**（`storage.ts` 的 `getLiveDir` / `getBaselineDir`
+          注释逐字如此："baseDir 可选：指定写入的项目根（默认 dataHome）… watch_project 监听任意项目时传 project_dir"）。
+        · **读侧**：`diff_views.ts` 用的是**入参 `live_dir`**
+          （`getLiveFeature(feature, live_dir)` / `getBaselineFeature(feature, live_dir)`，且其注释写着
+          "baseline 与 live **同目录归位：baseDir = live_dir**"）。
+        ⇒ ★ "写读同根"的判据 = **读侧必须拿到写侧那个 baseDir**：缺省时两侧都落 dataHome（**一致 ✅**），
+          而"**watch 过某个项目**"之后 ⇒ **写侧搬去了项目根、读侧还在 dataHome** ⇒ **静默读不到**（这正是要定的事）。
+        ⇒ ★★ **且它不只影响 `dsl_live`**：`getBaselineDir` 的注释写着"与 baseDir 归位规则**和 live 一致**"
+          ⇒ `dsl_baseline` **同款**。★ 而工序表里 `dsl_baseline.locate` / `produce` 都**只用 `feature`**
+          （⇒ 隐含 dataHome）⇒ **工序表的口径与"watch 过项目"的现实不一致**（同一份数据两条线各持一份根）。
+        ⇒ ★★ 结论：**"接读者"这一步卡在形状决策上、不是卡在代码量上** —— 先定"baseDir 从哪来、谁传给读侧"
+          （候选：(a) 入参透传（现状，靠调用方自觉）· (b) 由 feature 反查 · (c) 收口到 dataHome 一处、
+          不再按项目分居），**定了再接**；否则就是原文说的"接一个更快的分叉"。
+        ★ 本笔**只核清、不动代码**：这是形状决策，不是随手能改的（且改它要连着 `watch_project` 的写入口一起看）。
       · (5) ★★ **补"符号级绑定点"**（用户 2026-10-01 提的"两份数据双向绑定"的真缺口）：
         现在两份数据（DSL=意图 / `cache.db`=事实）**只在文件级配对**（`semantic.files[].path` ⟷ `files.path`，
         且同一条目里 `expected_apis` / `actual_apis` 并存 —— **这已经是现状**）；
