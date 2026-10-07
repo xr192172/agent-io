@@ -25,7 +25,7 @@ import { runImpactReport, readImpactReport, listImpactReports } from '../../meta
 import {
   appendDeclaration, markConsumed, recoverPending, resolveViolation, listLedger, countOpenViolations,
   type LedgerEntry,
-} from '../../meta/impact/impact_ledger_store.js';
+} from '../../../infrastructure/analysis/impact/impact_ledger_store.js';
 import { pushAlert } from '../../../infrastructure/alert_inbox.js';
 import { captureProbe, TSProbeCapture, setGlobalProbeSink, hasGlobalProbeSink } from '../../../infrastructure/analysis/observe/probe.js';
 import { watchProject, type WatchHandle, type WatchBatchSummary, type ReconcileSummary } from '../../../infrastructure/index/watch_project.js';
