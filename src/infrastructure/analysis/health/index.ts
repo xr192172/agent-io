@@ -526,6 +526,15 @@ export async function extractNamedImports(filePath: string, source: string): Pro
  * AST 版：收集全文件 identifier/type_identifier 使用集（排除 import 绑定声明自身的字节偏移），
  * 绑定名不在使用集即未使用。比正则回退更准：字符串/注释里的同名文本不算引用；
  * re-export（export { X }）的 X 是 identifier 会进使用集 → 正确不报。
+ *
+ * ★★ 2026-10-07 边界（别把它和「同名家族」混为一谈）：本函数是【**绑定级**】判据
+ *   —— 「某个具体名字在本文件里没被用到」。
+ *   最常被混淆的是 `infrastructure/analysis/deadcode/detect_dead_imports.ts`（管线 `dead_imports`
+ *   步用的那个）：那是【**源级**】判据 —— 要求「某 import 源的**全部**本地绑定都零出现」才算死，
+ *   且对 Go `_`/`.`、TS 副作用导入、re-export、语法不认识一律**恒活**（宁漏报不误删）。
+ *   ⇒ 两者**粒度不同、保守方向不同**，数字对不上是正常的（实测：本函数 45 条，管线那只报 1 条）。
+ *   ★ 别因为名字里都有「死 import」就以为它们是同一判据的两份副本 ——
+ *     **「看起来像同一个判据」 ≠ 「同一个判据」：先看粒度与保守方向。**
  */
 export async function unusedImportsIn(filePath: string, source: string): Promise<NamedImportRef[]> {
   const ast = await parseAstRoot(filePath, source);
