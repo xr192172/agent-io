@@ -60,7 +60,9 @@ import type { ToolDef } from '../types.js';
 
 // ★ 2026-09-29（面收敛第二批）：本文件原先自带一个**私有** `requireStr` 守卫，本笔把它上提到
 //   `registry/plumbing.ts`（跨 lane 共用）—— 因为 `lanes/harvest.ts` 的新入口 `bricks` 也要用它，
-//   留在原地等于长出第二份副本（G4 要消灭的形态）。函数体与错误文案**逐字未改**。
+//   留在原地等于长出第二份副本。
+//   ★ 2026-10-07：原写「（G4 要消灭的形态）」—— G4 已于 2026-10-03 有意删除，**没有东西会替你消灭它**，
+//     只能靠改的时候当场看出来。函数体与错误文案**逐字未改**。
 
 /** `plan_refactor` 产出的清单形状（`apply_refactor_plan` 的入参 schema —— 逐字接受上一环的 data） */
 const refactorPlanSchema = z.object({

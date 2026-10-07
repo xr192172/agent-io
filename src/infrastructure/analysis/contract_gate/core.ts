@@ -84,7 +84,8 @@ export interface ScanContractsOptions {
  * 此前此处手写 12 个，而同一问题在仓内还有 5 份不同答案（deprecate_offline 7 / package_migration 8 /
  * refs_text 11 / rule_apply 14 / project_root 15）⇒ "某个扩展名的文件要不要分析"取决于
  * **你碰巧调了哪个工具**。统一到权威的并集后**只增不减**（原 12 个是并集的真子集）。
- * 同族副本的登记与棘轮见 `tests/single_source.test.ts`。
+ * 同族副本**没有登记表也没有棘轮**了 —— ★ 2026-10-07：原指向 `tests/single_source.test.ts`，
+ * 该文件（连同登记表）已于 2026-10-03 有意删除（用户裁定：不要免疫系统）。**别去找它，也别重建。**
  */
 const SRC_EXT = SOURCE_EXTS;
 

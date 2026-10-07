@@ -91,7 +91,9 @@ export function wrapData(
  *
  * ★ 2026-09-29（面收敛第二批）从 `lanes/refactor.ts` 的**文件内私有**函数上提到本模块：
  *   `lanes/harvest.ts` 的新入口 `bricks` 也要用同一把守卫，留在原地就会长出**第二份副本**
- *   —— 那正是 G4（`tests/single_source.test.ts` 同族副本棘轮）要消灭的东西。
+ *   —— 那正是「同一意图只有一份实现」要消灭的东西。
+ *   ★ 2026-10-07：原写「G4（`tests/single_source.test.ts` 同族副本棘轮）」—— **该棘轮已不存在**
+ *     （2026-10-03 有意删除，用户裁定：免疫系统无法自我修正、维护无休止 ⇒ 不要重建）。别再引用它当兜底。
  *   ⇒ 上提到**跨 lane 共用的基础设施**（本文件与 `types.ts` / `handlers.ts` 同层）。
  *   ★ 未收编的第三份：`src/application/meta/explore/explore_code.ts` 里有一个同名私有实现 —— 它在 `[B]` 层，
  *     不在本笔（只改 `src/registry/**`）的边界内，**登记但不改**（见 commit message「没验什么」）。

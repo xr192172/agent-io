@@ -642,7 +642,8 @@ const TYPE_KINDS = new Set<ParsedSymbol['kind']>(['interface', 'type', 'class'])
  *   内核那条回答"这条**依赖边**要不要算进依赖图"，覆盖 `export type … from` 与全 `type` 内联说明符；
  *   本条回答"这条 import 要不要参与**未使用报告**"，只认 `import type …` 语句形式。
  *   两个问题不同 ⇒ 判据不同。**别顺手把它们合并**，除非同时决定改报告策略。
- *   该差别已登记在 `tests/fixtures/single_source_registry.json`（G4 同族登记表）。
+ *   该差别**没有登记在任何登记表里** —— ★ 2026-10-07：原写「已登记在 `tests/fixtures/single_source_registry.json`」，
+ * 而该登记表（连同 G4 门）已于 2026-10-03 有意删除（用户裁定：不要免疫系统）。**那句承诺是空的。**
  */
 const TYPE_ONLY_IMPORT_RE = /^\s*import\s+type\b/;
 
