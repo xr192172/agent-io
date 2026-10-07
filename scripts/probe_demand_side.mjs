@@ -32,6 +32,6 @@ for (const d of TOOL_DEFS) {
 }
 
 const rows = [...mentions.entries()].sort((a, b) => b[1].size - a[1].size || a[0].localeCompare(b[0]));
-console.log(`注册工具 ${tools.length} 个；描述里提到"非注册工具名"的候选标识符 ${rows.length} 个`);
+console.log(`注册工具 ${tools.size} 个；描述里提到"非注册工具名"的候选标识符 ${rows.length} 个`);
 console.log('★ 下面**交人读**：像【工具名/模块名】的多半是缺口；像【产物字段/action/op】的不是。\n');
 for (const [t, by] of rows) console.log(`  ${t.padEnd(26)} ← ${[...by].join(', ')}`);
