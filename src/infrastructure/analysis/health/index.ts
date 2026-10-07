@@ -543,7 +543,24 @@ export async function extractNamedImports(filePath: string, source: string): Pro
  * 两个入口（async / sync）只是「怎么拿到 root」不同，**事实只算一遍** ——
  * 这是「报告口径（health）」与「删除口径（deadcode）」共用一份实现的地基（步骤②-b/②-c）。
  */
-function unusedImportsFromRoot(root: SyntaxNodeLike, langName: string): NamedImportRef[] {
+/**
+ * ★★ 2026-10-08：**绑定事实**——每个 import 绑定「模块 + 名字 + **是否被用到**」。
+ *
+ * 这是「报告口径」与「删除口径」共用的**唯一事实**，两个消费者各自**投影**：
+ *   · 报告侧（health）：取 `!used` ⇒ 「未使用 import」；
+ *   · 删除侧（deadcode）：按 `module` 分组 ⇒ 「该模块的绑定是否**全**未用」。
+ *
+ * ★ 为什么事实要带 `used`（而不是只给未用的那些）：删除侧需要「全未用」这个**量词**，
+ *   只拿到未用集合就分不清「这个模块还有别的在用绑定」。
+ */
+export interface ImportBindingFact {
+  line: number;
+  module: string;
+  name: string;
+  used: boolean;
+}
+
+function importBindingFactsFromRoot(root: SyntaxNodeLike, langName: string): ImportBindingFact[] {
   const binds = collectImportBinds(root, langName);
   if (binds.length === 0) return [];
   const bindingRanges = new Set(binds.map((b) => b.startIndex));
@@ -561,33 +578,38 @@ function unusedImportsFromRoot(root: SyntaxNodeLike, langName: string): NamedImp
     }
   };
   walk(root);
-  return binds.filter((b) => !used.has(b.name)).map((b) => ({ line: b.line, module: b.module, name: b.name }));
+  return binds.map((b) => ({ line: b.line, module: b.module, name: b.name, used: used.has(b.name) }));
+}
+
+/** 投影：事实 → 「未使用 import」（两个入口共用这一处投影） */
+function unusedRefOf(f: ImportBindingFact): NamedImportRef {
+  return { line: f.line, module: f.module, name: f.name };
 }
 
 /** 入口①（**报告口径**，async）：拿不到 root 时退回**正则**（现有行为，逐字保持不变） */
 export async function unusedImportsIn(filePath: string, source: string): Promise<NamedImportRef[]> {
   const ast = await parseAstRoot(filePath, source);
   if (!ast) return unusedImportsInRegex(source);
-  return unusedImportsFromRoot(ast.root, ast.langName);
+  return importBindingFactsFromRoot(ast.root, ast.langName)
+    .filter((f) => !f.used)
+    .map(unusedRefOf);
 }
 
 /**
- * 入口②（**删除口径**，sync）★ 2026-10-08 新增。
+ * ★ 2026-10-08 ②-c 新增：**全量绑定事实**（含 `used`）—— 删除侧要的就是这个形态。
  *
- * 为什么要有它：删除决策（`deadcode/detect_dead_imports`）处在 **sync** 上下文
- * （改 async 会往 `buildFeatureMap` 等同步调用方**蔓延**）⇒ 它只能走同步解析。
- *
- * ★ 契约（与 `parseAstRootSync` 同向）：拿不到 root（未预热 / 语言不认识 / 解析失败）⇒ **返回 null**。
- *   调用方**必须按「看不懂」保守处理**（当作「都还在用」），**绝不当作「没有未用 import」**。
- *
- * ★★ 为什么这里**不退回正则**（与入口① 有意不同）：正则判死比 AST 松，
- *   把它用在**删除**上是**危险方向** —— 宁可这一轮什么都不删，也不许删错。
+ * ★ 契约：拿不到 root（未预热 / 语言不认识 / 解析失败）⇒ **返回 null**。
+ *   调用方**必须按「看不懂」保守处理**（当作都还在用），**绝不当作「没有未用 import」**。
  */
-export function unusedImportsInSync(filePath: string, source: string): NamedImportRef[] | null {
+export function importBindingFactsSync(filePath: string, source: string): ImportBindingFact[] | null {
   const ast = parseAstRootSync(filePath, source);
   if (!ast) return null;
-  return unusedImportsFromRoot(ast.root, ast.langName);
+  return importBindingFactsFromRoot(ast.root, ast.langName);
 }
+
+// ★ 2026-10-08：原先这里还有一个 `unusedImportsInSync`（②-b 为删除侧准备的「未用 import」入口）——
+//   ②-c 落地后发现删除侧真正需要的是**全量绑定事实**（要判「该模块是否**全**未用」这个量词），
+//   于是它改读 `importBindingFactsSync` ⇒ 本入口**没有任何消费者** ⇒ 按「不留墓碑」删掉。
 
 /** 正则回退：逐行提取命名 import（TS/JS/Python/Java 各形态） */
 export function extractNamedImportsRegex(source: string): NamedImportRef[] {

@@ -46,17 +46,32 @@ import { prewarmKernel } from '../../infrastructure/parse/index.js';
  * 放在**唯一调用入口**（MCP 与 CLI 逐字同路径）⇒ 一处覆盖两面；
  * `prewarmStarted` 保证只起一次；`void` ⇒ **不阻塞本次调用**。
  */
-let prewarmStarted = false;
-function ensureKernelPrewarmed(): void {
-  if (prewarmStarted) return;
-  prewarmStarted = true;
-  void prewarmKernel()
-    .then((r) =>
-      console.error(
-        `[ts_kernel] prewarm: ${r.warmed} 个解析器就绪${r.missing.length ? `（缺 ${r.missing.length} 个语言包）` : ''}`,
-      ),
-    )
-    .catch((e) => console.error(`[ts_kernel] prewarm 失败：${e instanceof Error ? e.message : String(e)}`));
+let prewarmPromise: Promise<void> | null = null;
+
+/**
+ * ★★ 2026-10-08 **修正**：预热必须**可等待**，不能 fire-and-forget。
+ *
+ * 为什么（实测回归）：原版是 `void prewarmKernel()...`（不阻塞本次调用）——
+ * 但 **CLI 每次调用都是「第一次调用」**（一次进程一个工具调用）⇒ 处理器执行时预 warm
+ * 还没完成 ⇒ `getParserSync` 仍为 null ⇒ **依赖同步 AST 的路径全部拿不到事实**。
+ * 后果实测：`dead_imports` 的删除侧（②-c 刚换成共享绑定事实）**一个 import 都不删了，且不报错**
+ * —— 又一个「不报错的错」（静默少删）。
+ *
+ * 所以：**首次调用等它一次**（此后所有调用都命中缓存的 Promise）。
+ * 代价：本进程第一次工具调用慢一点（一次性）；收益：同步 AST 路径**真的**可用。
+ * ★ 失败也**不吞**（落 stderr）—— 但那会让依赖它的路径退回保守（少删），方向是安全的。
+ */
+function ensureKernelPrewarmed(): Promise<void> {
+  if (!prewarmPromise) {
+    prewarmPromise = prewarmKernel()
+      .then((r) =>
+        console.error(
+          `[ts_kernel] prewarm: ${r.warmed} 个解析器就绪${r.missing.length ? `（缺 ${r.missing.length} 个语言包）` : ''}`,
+        ),
+      )
+      .catch((e) => console.error(`[ts_kernel] prewarm 失败：${e instanceof Error ? e.message : String(e)}`));
+  }
+  return prewarmPromise;
 }
 import path from 'node:path';
 import { statSync, readFileSync, writeFileSync, readdirSync, existsSync, type Dirent } from 'node:fs';
@@ -432,7 +447,8 @@ export async function invokeTool(
   //     只会重复全盘走查 + 触发 MAX_ADDS_PER_REFRESH 噪音；"在建 ⇒ 可能不全"由 firstContactNote 标注。
   // ★ 2026-10-08：预热在**每次调用**都检查（只真起一次）—— 放这儿是为了与「逐调用保鲜」同一处，
   //   不另开生命周期钩子（本仓没有启动钩子，见上一段的注释教训）。
-  ensureKernelPrewarmed();
+  // ★ 2026-10-08：**等它一次**（不是 fire-and-forget）—— 否则同步 AST 路径在本轮不可用（见函数注释）。
+  await ensureKernelPrewarmed();
   if (rootArg && !def.noAutoFresh) {
     try {
       if (hasLiveIndex(rootArg) && !isIndexIncomplete(rootArg)) await ensureProjectIndex(rootArg, { bootstrap: false });

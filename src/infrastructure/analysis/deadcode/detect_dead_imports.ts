@@ -31,6 +31,9 @@ import {
   qualifierLines,
   stripTsImportLines,
 } from '../../graph/dead_deps.js';
+// ★ 2026-10-08 ②-c：TS 的「哪个绑定被用了」不再自己扫文本 —— 改用**与报告口径同一份**绑定事实。
+//   同一层（infrastructure）内的兄弟目录互引，不构成分层违规。
+import { importBindingFactsSync } from '../health/index.js';
 
 export interface DeadImportCandidate {
   /** 死三方源（Go import 路径 / TS 模块说明符） */
@@ -158,7 +161,7 @@ export function scanProjectSourceFiles(project_dir: string, files?: string[]): s
  * 单源判定：src 中某 import 源是否文件内零引用。
  * 返回 true = 死候选（可删）；false = 活（保守保留）。
  */
-function isSourceDead(src: string, source: string, lang: 'go' | 'ts'): boolean {
+function isSourceDead(abs: string, src: string, source: string, lang: 'go' | 'ts'): boolean {
   if (lang === 'go') {
     const quals = parseGoImportQualifiers(src).get(source);
     if (!quals || quals.length === 0) return false; // 解析失败 → 活
@@ -168,13 +171,15 @@ function isSourceDead(src: string, source: string, lang: 'go' | 'ts'): boolean {
     return !quals.some((q) => qualifierLines(src, q, 'go').length > 0);
   }
 
-  // TS：先剥 import/require 语句行（避免 import 行自身含绑定名假"出现"）
-  const scan = stripTsImportLines(src);
-  const quals = parseTsImportQualifiers(src, source);
-  if (quals === null) return false; // 副作用/re-export/语法不认识 → 恒活
-  if (quals.length === 0) return false;
-  // 裸名扫描（'ts' 模式不剥注释 → 只多活，安全向）
-  return !quals.some((q) => qualifierLines(scan, q, 'ts').length > 0);
+  // ── TS：★ 2026-10-08 ②-c 换层级 —— 不再扫文本，改读**共享绑定事实**（与报告口径同一份实现）──
+  //   判据与旧文本版一致：该源在本文件的绑定**全部**未被用到才算死。
+  const facts = importBindingFactsSync(abs, src);
+  // 拿不到事实 ⇒ **当作活**（保守）—— 宁可不删，也不许删错。
+  if (facts === null) return false;
+  const mine = facts.filter((f) => f.module === source);
+  // 该源在本文件没有任何绑定 ⇒ 副作用导入 / re-export 形态 ⇒ **恒活**（与旧版同向）
+  if (mine.length === 0) return false;
+  return mine.every((f) => !f.used);
 }
 
 /**
@@ -312,7 +317,7 @@ export function detectDeadImports(opts: DetectDeadImportsOptions): DetectDeadImp
 
     const rel = path.relative(proj, abs) || abs;
     for (const source of sourcesOfFile) {
-      if (!isSourceDead(src, source, lang)) continue;
+      if (!isSourceDead(abs, src, source, lang)) continue;
       // ★ 2026-10-08 闸②：**判死 ≠ 可删**。(b) 这是不是该源最后一个引用点？ 且 (a) 它加载有没有效果？
       //   两条同时成立 ⇒ 删了会改行为 ⇒ 进 needsReview，**绝不自动删**。
       if (gatedByLoadEffects(proj, rel, source, importersOf, contentByRel)) {
