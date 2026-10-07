@@ -26,7 +26,8 @@ import { LANGUAGES, findLanguageByExt, LanguageEntry } from './languages.js';
 /**
  * ★ 真筛子的判据：`./template_compat.js` 的 `templateCompatFromPkgJson`（**唯一权威**）。
  *   `list`/`check`/`install` 三处共用同一判据（注释里逐字写着"本地读 / registry 元数据走同一判据，
- *   **不抄第二份**"）⇒ 这里**复用**，不在内核里再写一份（本仓 G4「同一意图只有一份实现」）。
+ *   **不抄第二份**"）⇒ 这里**复用**，不在内核里再写一份（「同一意图只有一份实现」）。
+ *   ★ 2026-10-07：原文把这条挂在「本仓 G4」上 —— G4 已于 2026-10-03 有意删除 ⇒ **它现在是一条纪律，不是一个门**。
  *   ★ 2026-09-30：原先它住在 `tools/install_package_cli.ts`（工具 CLI）里，内核去引 CLI 是
  *   **下层依赖上层**；搬 ⑥ 后架构门的 `layer-downward-only` **真的亮了** ⇒ 按本文件原注释
  *   自己写下的处置办法，把那个纯函数抽到 `infrastructure/parse/template_compat.ts`，两边都引它。

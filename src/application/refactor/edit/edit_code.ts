@@ -833,13 +833,18 @@ async function editCodeInner(args: EditCodeArgs): Promise<{ message: string; dat
   }
   if (op === 'insert') {
     const anchor = args.symbol ? `（锚点 ${args.symbol} 之后）` : '（文件末尾）';
+    // ★ 2026-10-07 修：原先的条件里带了 `o.start_line === s.start_line` —— 错在**把位置当成了身份**。
+    //   插入会让**插入点之后的每个符号行号整体下移** ⇒ 它们 start_line 全都不再相等 ⇒
+    //   全被当成「新符号」（实测：只插 1 个函数，列表却列了 19 条，其中全是既有符号）。
+    //   符号的身份是 **qualified_name**，位置只是它的属性。口径与同文件的 `symbolDiff` 对齐
+    //   （那里也只比 qualified_name + 内容 hash，从不比行号）。
+    const fresh = reparsed.symbols.filter((s) => !parsed.symbols.some((o) => o.qualified_name === s.qualified_name));
     return {
       message:
         `✓ 已插入 ${relPath}${anchor}，符号 ${before} → ${after}，索引已重建（${sync.status}${reopenNote(_rw)}）${diffNote}${repairNote}\n` +
-        `新符号:\n` + reparsed.symbols
-          .filter((s) => !parsed.symbols.some((o) => o.qualified_name === s.qualified_name && o.start_line === s.start_line))
-          .map((s) => `  + ${describeSymbol(s)}`)
-          .join('\n'),
+        (fresh.length
+          ? `新符号:\n` + fresh.map((s) => `  + ${describeSymbol(s)}`).join('\n')
+          : `新符号:（无 —— 本次插入没有产生任何新 qualified_name）`),
     };
   }
   return {

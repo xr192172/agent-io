@@ -1544,6 +1544,39 @@ export function parseContent(parser: ParserLike, content: string): TreeLike {
  * AST 级解析入口：供控制流（CFG）等结构化分析使用。
  * 与 parseFileFull 同一 parse 管线（含 32KB callback 规避），失败返回 null。
  */
+/**
+ * ★★ 2026-10-08 新增：`parseAstRoot` 的**同步孪生**。
+ *
+ * 为什么需要它（这是「删除侧从文本判据升到 AST」缺的那一块）：
+ *   本仓有两条消费 AST 的路径 ——
+ *     · **报告口径**（`health`）走 async，随便 await；
+ *     · **删除决策**（`deadcode/detect_dead_imports`）处在 **sync** 上下文里
+ *       （改 async 会往 `buildFeatureMap` 等同步调用方**蔓延**）。
+ *   此前**只有 async 入口** ⇒ 删除侧只能退回**文本判据**（`qualifierLines`）。
+ *
+ * 前置：Parser 已预热。`prewarmKernel()` 自 2026-10-08 起已在**唯一调用入口**接上
+ *   （此前那句「进程启动预热」只写在注释里、没人调 ⇒ 本函数会恒返回 null）。
+ *
+ * ★ 未预热 / 语言不认识 / 解析抛错 ⇒ **返回 null**。
+ *   调用方**必须按「看不懂」保守处理**（当作「活」），**绝不当作「无引用」** —— 那是会删错的方向。
+ */
+export function parseAstRootSync(
+  filePath: string,
+  content: string,
+): { root: SyntaxNodeLike; langName: string } | null {
+  const ext = path.extname(filePath);
+  const lang = findLanguageByExt(ext);
+  if (!lang) return null;
+  const parser = getParserSync(ext);
+  if (!parser) return null;
+  try {
+    const tree = parseContent(parser as ParserLike, content);
+    return { root: tree.rootNode, langName: lang.name };
+  } catch {
+    return null;
+  }
+}
+
 export async function parseAstRoot(
   filePath: string,
   content: string,

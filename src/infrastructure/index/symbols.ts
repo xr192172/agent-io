@@ -215,6 +215,19 @@ function syncFilePrelude(db: Database, projectRoot: string, absPath: string): Pr
     | { content_hash: string; norm_hash: string | null }
     | undefined;
   if (existing && existing.content_hash === hash) {
+    // ★ 2026-10-07 修：**内容没变也要把 stat 回写**。
+    //   缺陷（实测）：这里直接 return skipped，`files.modified_at` 仍停在旧值 ⇒
+    //   纯 **mtime 变更**（touch / git checkout 还原 / 编辑器「保存但没改」）会让
+    //   `detectStaleIndex`（判据 = size + mtimeMs）**永远**判它陈旧，**只增不减**；
+    //   更糟的是它自己开的药方也治不好 —— 实测 `index_integrity({refresh:true})` 跑完，
+    //   新鲜度仍报「不一致 N」，紧接着的读工具照样发 STALE_INDEX。
+    //   正解：`size`/`modified_at` 是**文件的 stat 事实**，与「内容是否变」无关 ⇒
+    //   内容没变也要把这行刷新，让保鲜探测能收敛。
+    db.prepare('UPDATE files SET size = $s, modified_at = $m WHERE path = $p').run({
+      s: stat.size,
+      m: Math.round(stat.mtimeMs),
+      p: rel,
+    });
     return { ok: false, early: { path: rel, status: 'skipped', node_count: 0, edge_count: 0 } };
   }
 

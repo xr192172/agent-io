@@ -60,7 +60,9 @@ import type { ToolDef } from '../types.js';
 
 // ★ 2026-09-29（面收敛第二批）：本文件原先自带一个**私有** `requireStr` 守卫，本笔把它上提到
 //   `registry/plumbing.ts`（跨 lane 共用）—— 因为 `lanes/harvest.ts` 的新入口 `bricks` 也要用它，
-//   留在原地等于长出第二份副本（G4 要消灭的形态）。函数体与错误文案**逐字未改**。
+//   留在原地等于长出第二份副本。
+//   ★ 2026-10-07：原写「（G4 要消灭的形态）」—— G4 已于 2026-10-03 有意删除，**没有东西会替你消灭它**，
+//     只能靠改的时候当场看出来。函数体与错误文案**逐字未改**。
 
 /** `plan_refactor` 产出的清单形状（`apply_refactor_plan` 的入参 schema —— 逐字接受上一环的 data） */
 const refactorPlanSchema = z.object({
@@ -419,7 +421,10 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         return { message: parts.join('\n'), data: r };
       }
       const parts = [
-        r.dryRun ? `[批量文件改名 dry-run 预览·未落盘] 共 ${r.previews.length} 条` : `批量文件改名完成：${r.previews.length} 条，联动改写引用 ${r.filesWritten} 处`,
+        // ★ 2026-10-07：本行原写「联动改写引用 ${r.filesWritten} 处」—— 但 filesWritten 已统一为
+        //   「落盘文件数」（与 rename_local / rename_symbols 同口径）⇒ 这里据实改成「个文件」。
+        //   引用改写处数不再由该字段承担（逐条明细就在下面 parts 里，逐条可见）。
+        r.dryRun ? `[批量文件改名 dry-run 预览·未落盘] 共 ${r.previews.length} 条` : `批量文件改名完成：${r.previews.length} 条，落盘 ${r.filesWritten} 个文件`,
       ];
       for (const p of r.previews) parts.push(fmt(p, p.result).replace(/\n/g, '\n\t'));
       return { message: parts.join('\n'), data: r };
@@ -1071,7 +1076,11 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       });
 
       const parts = [
-        `确定性重构管线完成：全局 ${r.ok ? '通过' : '已停（存在回滚）'}，`,
+        // ★ 2026-10-07：给了 steps 却一步没计划上时，**不许**打「完成/通过」——那是空转报成功。
+        r.blocked?.length
+          ? '确定性重构管线**一步也没执行**（入参形状问题）：'
+          : `确定性重构管线完成：全局 ${r.ok ? '通过' : '已停（存在回滚）'}，`,
+        ...(r.blocked ?? []),
         `共 ${r.planned_steps} 步，${r.total_files_changed} 个文件被改写，`,
         `删除 ${r.total_units_removed} 单位（import 语句×文件 / 死语句文件数）。`,
         `基线=${r.baseline?.status ?? '未验证'}`,
@@ -1084,7 +1093,9 @@ export const REFACTOR_TOOLS: ToolDef[] = [
           : s.outcome === 'not_verifiable' ? '未启用验证，已落盘'
           : '未启用';
         parts.push(`\t[${s.label}] ${s.outcome}——${kind}（改动 ${s.files_changed} 文件，${s.units_removed} 单位）`);
-        if (!r.ok && s.outcome === 'rolled_back') parts.push(`\t\t回滚详情：${s.detail}`);
+        // ★ 2026-10-08：`detail` 不止回滚有 —— 闸② 拦下的原因也走这里。
+        //   原先只在 rolled_back 时渲染 ⇒ 闸② 的理由算出来了却**没人看见**（静默）。
+        if (s.detail) parts.push(`\t\t${s.outcome === 'rolled_back' ? '回滚详情：' : ''}${s.detail}`);
       }
       return { message: parts.join('\n'), data: r };
     }),

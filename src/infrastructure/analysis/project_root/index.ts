@@ -43,7 +43,7 @@ import {
 } from '../../index/symbols.js';
 
 /** 本地源扩展名（闭包只收这些）—— ★ 来自内核唯一权威 `SOURCE_EXTS`（`ts_kernel/source_exts.ts`）。
- *  此前就地手写并与 rename_symbol/rename_file 的清单"对齐"——靠人记得对齐 ⇒ 已在 G4 登记表登记收敛。 */
+ *  此前就地手写并与 rename_symbol/rename_file 的清单"对齐"——靠人记得对齐 ⇒ **没有登记表**（G4 已于 2026-10-03 有意删除，用户裁定不要免疫系统）—— 该收敛靠人当场看。 */
 const SRC_EXTS = new Set<string>(SOURCE_EXTS);
 
 /** 跳过的目录名（闭包扫描绝不进入） */
@@ -278,7 +278,7 @@ function absIsFile(p: string): boolean | 'unknown' {
  *   也是 `expandClosure` 无索引回退路径的底座 ⇒ 盲区会让闭包漏文件
  *   （`rename_symbol` / `find_references` / `symbol_move` 在无索引或跨根场景下可能漏改）。
  *   ★ 与内核那三处（db/health/impact）是**同一族**：都在回答"specifier → 项目内哪个文件"。
- *   同族副本的登记与棘轮见 `tests/single_source.test.ts`。
+ *   同族副本**没有登记表也没有棘轮**了 —— ★ 2026-10-07：原指向 `tests/single_source.test.ts`，已于 2026-10-03 有意删除。**别去找它，也别重建。**
  */
 export function resolveToFile(p: string): string | null {
   // 用 posix 形态做候选计算（统一分隔符），命中后再换回本机分隔符 —— 调用方按原样字符串比较路径

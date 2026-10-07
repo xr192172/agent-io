@@ -231,6 +231,39 @@ async function readArgs(): Promise<Record<string, unknown>> {
   return {};
 }
 
+// ── <name> --schema：入参自述 ─────────────────────────────────────────────
+// ★ 2026-10-07 新增（用户反馈第 4 条：入参形状不统一，每次都得裸调一次去"试缺哪个参数"）。
+//   一处自述，免得调用方（尤其 LLM）反复试错。类型名取自 zod 的 _def.type / _def.typeName。
+// ★ 名字**不叫** `ZodLike` —— 本文件已有一个（`{ safeParse }`），它是「只要 safeParse、不引 zod 类型」的意思。
+//   这里要读的字段更多，另起一名，避免撞名（实测撞名会 TS2300 duplicate identifier）。
+type ZodFieldMeta = { isOptional?: () => boolean; description?: string; _def?: { description?: string; type?: string; typeName?: string } };
+const fieldDesc = (s: ZodFieldMeta): string => s.description ?? s._def?.description ?? '';
+const fieldType = (s: ZodFieldMeta): string => String(s._def?.type ?? s._def?.typeName ?? '?');
+if (argv.includes('--schema')) {
+  const schema = (def.inputSchema ?? {}) as Record<string, ZodFieldMeta>;
+  const rows = Object.entries(schema).map(([k, s]) => ({
+    k,
+    required: s.isOptional?.() === false,
+    type: fieldType(s),
+    desc: fieldDesc(s),
+  }));
+  const fmt = (r: (typeof rows)[number]) => `  ${r.required ? '*' : ' '} ${r.k.padEnd(16)} ${r.type.padEnd(12)} ${r.desc}`;
+  const req = rows.filter((r) => r.required);
+  const opt = rows.filter((r) => !r.required);
+  process.stdout.write(
+    [
+      `${def.name} 的入参（* = 必填；类型按声明转换；嵌套/数组请用 --json）`,
+      '',
+      ...req.map(fmt),
+      ...(opt.length ? ['', '可选:', ...opt.map(fmt)] : []),
+      '',
+      `调法: cli ${def.name} --json '{${req.map((r) => `"${r.k}":…`).join(', ')}}'`,
+      '',
+    ].join('\n'),
+  );
+  process.exit(0);
+}
+
 let args: Record<string, unknown>;
 try {
   args = await readArgs();
@@ -240,5 +273,25 @@ try {
 
 // ★ 走**唯一调用入口** —— 保鲜 / 首触 / 纠错 / 狗食 / 告警注入全在这里，与 MCP 面逐字同路径。
 const r = await invokeTool(def, args);
-process.stdout.write(r.text.endsWith('\n') ? r.text : r.text + '\n');
+// ★ 2026-10-07：缺参数时**把该工具的全部必填项一并列出**。原先一次只报一个 ⇒
+//   调用方要反复裸调去"试"缺哪个（用户反馈第 4 条的现场）。
+// ★ 提示**前置**、不追加在末尾 —— 末尾要留给 `---WARNINGS---` / `---DATA---` 机器块
+//   （尾部必须是可直接 JSON.parse 的片段，追加会把那个契约破坏掉）。
+let outText = r.text;
+const miss = /缺参数\s*"([^"]+)"/.exec(outText);
+if (miss) {
+  const schema = (def.inputSchema ?? {}) as Record<string, ZodFieldMeta>;
+  const keyList = (wantReq: boolean) =>
+    Object.entries(schema)
+      .filter(([, s]) => (s.isOptional?.() === false) === wantReq)
+      .map(([k]) => k)
+      .join(', ') || '（无）';
+  outText =
+    `✗ 缺参数 "${miss[1]}"\n` +
+    `  ${def.name} 必填: ${keyList(true)}\n` +
+    `  可选: ${keyList(false)}\n` +
+    `  全量自述: cli ${def.name} --schema\n\n` +
+    outText;
+}
+process.stdout.write(outText.endsWith('\n') ? outText : outText + '\n');
 process.exit(r.isError ? 1 : 0);

@@ -35,7 +35,7 @@
  */
 
 import { parseFileFull, parseAstRoot, listSupportedExtensions, resolveProjectImport, type ParsedSymbol, type SyntaxNodeLike } from '../../parse/index.js';
-import { codeSourceExts, partitionByCodeLang } from '../../parse/source_exts.js';
+import { codeSourceExts, isTestFileName, partitionByCodeLang } from '../../parse/source_exts.js';
 import { boundsSkipFromExcluded, type ScanBounds } from '../../scan_bounds.js';
 import { collectSourceFiles } from '../../authoring/version_upgrade/detect.js';
 
@@ -198,6 +198,26 @@ export function classifyLayer(rel: string): Layer | null {
   const p = rel.replace(/\\/g, '/').replace(/^\.\//, '');
   const m = LAYER_SEGMENT_RE.exec(p);
   return (m?.[1] as Layer) ?? null;
+}
+
+/**
+ * 这个文件该不该参与**死代码维度**（未用导出 / 孤儿文件）的判定。
+ *
+ * ★ 为什么需要它（2026-10-07 实测假阳）：
+ *   测试文件（`*_test.go` / `*.test.ts` / `*.spec.ts` / `test_*.py`）由 **test runner** 调起 ——
+ *   它们**本来就**"没有项目内消费者、也不被别的模块 import"，那是**设计如此**，不是 dead code。
+ *   旧读数把它们整批报成 `orphan_file` / `unused_export`（实测本仓 37 孤儿、213 未用导出里
+ *   **大量是 `*_test.go`**）⇒ 健康分被污染（36 分/D 是**假读数**）。
+ *
+ * ★ 与 `layer_violation` 当年"把 tests 拉进来判"是**同一教训**：**判据要能区分**。
+ * ★ 复用 `isTestFileName`（文件名判据的**唯一落点**，见 `parse/source_exts.ts`），
+ *   不再在这里另写一份测试文件正则 —— 那会是**判据分叉**。
+ *
+ * @param rel 项目内相对路径（函数内部只取 basename 交给 `isTestFileName`）
+ */
+export function judgesDeadCode(rel: string): boolean {
+  const base = rel.replace(/\\/g, '/').split('/').pop() ?? rel;
+  return !isTestFileName(base);
 }
 
 /**
@@ -506,6 +526,15 @@ export async function extractNamedImports(filePath: string, source: string): Pro
  * AST 版：收集全文件 identifier/type_identifier 使用集（排除 import 绑定声明自身的字节偏移），
  * 绑定名不在使用集即未使用。比正则回退更准：字符串/注释里的同名文本不算引用；
  * re-export（export { X }）的 X 是 identifier 会进使用集 → 正确不报。
+ *
+ * ★★ 2026-10-07 边界（别把它和「同名家族」混为一谈）：本函数是【**绑定级**】判据
+ *   —— 「某个具体名字在本文件里没被用到」。
+ *   最常被混淆的是 `infrastructure/analysis/deadcode/detect_dead_imports.ts`（管线 `dead_imports`
+ *   步用的那个）：那是【**源级**】判据 —— 要求「某 import 源的**全部**本地绑定都零出现」才算死，
+ *   且对 Go `_`/`.`、TS 副作用导入、re-export、语法不认识一律**恒活**（宁漏报不误删）。
+ *   ⇒ 两者**粒度不同、保守方向不同**，数字对不上是正常的（实测：本函数 45 条，管线那只报 1 条）。
+ *   ★ 别因为名字里都有「死 import」就以为它们是同一判据的两份副本 ——
+ *     **「看起来像同一个判据」 ≠ 「同一个判据」：先看粒度与保守方向。**
  */
 export async function unusedImportsIn(filePath: string, source: string): Promise<NamedImportRef[]> {
   const ast = await parseAstRoot(filePath, source);
@@ -622,7 +651,8 @@ const TYPE_KINDS = new Set<ParsedSymbol['kind']>(['interface', 'type', 'class'])
  *   内核那条回答"这条**依赖边**要不要算进依赖图"，覆盖 `export type … from` 与全 `type` 内联说明符；
  *   本条回答"这条 import 要不要参与**未使用报告**"，只认 `import type …` 语句形式。
  *   两个问题不同 ⇒ 判据不同。**别顺手把它们合并**，除非同时决定改报告策略。
- *   该差别已登记在 `tests/fixtures/single_source_registry.json`（G4 同族登记表）。
+ *   该差别**没有登记在任何登记表里** —— ★ 2026-10-07：原写「已登记在 `tests/fixtures/single_source_registry.json`」，
+ * 而该登记表（连同 G4 门）已于 2026-10-03 有意删除（用户裁定：不要免疫系统）。**那句承诺是空的。**
  */
 const TYPE_ONLY_IMPORT_RE = /^\s*import\s+type\b/;
 
@@ -650,7 +680,18 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
   //   已知好的夹具从 100/A 掉到 80/B。合成点 = 内核唯一权威 `codeSourceExts`（可解析 ∩ 代码语言）。
   //   走查仍按"可解析"全集**一次走完**，再分拣：源码进分析，非代码只进下面的"看得见的统计"
   //   （口径收紧不许静默 —— 同 `layers.unclassified` 的设计）。
-  const { code: files, nonCodeExts } = partitionByCodeLang(collectSourceFiles(root, parseable));
+    // ★ 2026-10-07：**排除 `third_party/`** —— 那是**别人的代码**，不是我们的源码。
+  //   为什么（实测）：不排除时 `third_party/archify/renderers/shared/generated-validators.mjs`
+  //   报出**圈复杂度 3619**，直接进我们的健康分 ⇒ 读数被第三方污染（健康分是假象）。
+  //   ★ 为什么是「调用方显式追加」而不是加进 `SKIP_DIR_BASE`：
+  //     本仓 L3 目录判据的规矩是「**基础集无争议，用途/调用方专属项由调用方显式追加**」
+  //     （不许取并集 —— 那会悄悄扩大跳过面）。`third_party` 正是某类工具的用途专属项。
+  //   ★ 顺带覆盖面：全仓只有 2 个 `generated-*` 文件，**都在 `third_party/` 里** ⇒
+  //     本条一并解决"生成物算源码"，**不需要**再往 `NOISE_FILE_RE` 里加规则
+  //     （遵循本仓「有实据再加，不预留」的既有纪律）。
+  const { code: files, nonCodeExts } = partitionByCodeLang(
+    collectSourceFiles(root, parseable, new Set(['third_party']))
+  );
   const rels = new Set(files.map((f) => f.rel));
   const parses = await Promise.all(
     files.map(async (f) => ({ rel: f.rel, parsed: await parseFileFull(f.rel, f.content) })),
@@ -788,6 +829,9 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
     const internal = internalRefs.get(p.rel) ?? new Set();
     const external = crossRefs.get(p.rel) ?? new Set();
     const consumers = reverseConsumers.get(p.rel) ?? new Set();
+    // ★ 2026-10-07：死代码维度（未用导出 / 孤儿文件）**不适用于测试文件** ——
+    //   它们由 test runner 调起，天然"无项目内消费者"，那是设计如此而不是 dead code。
+    const deadCodeApplies = judgesDeadCode(p.rel);
 
     // ── 维度1a：未使用导出（项目内无任何引用 → potential dead；外部消费者不可见）──
     for (const s of p.parsed.symbols) {
@@ -804,7 +848,7 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
         ].join('\n');
         used = new RegExp(`\\b${s.name}\\b`).test(rest);
       }
-      if (!used) {
+      if (deadCodeApplies && !used) {
         issues.push({
           kind: 'unused_export',
           severity: 'info',
@@ -835,7 +879,7 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
     //   它先把入口特判成 `glue` 层，再用 `layer !== 'glue'` 把入口排除在孤儿之外。
     //   现在：**层 = 文件在哪**（事实，按目录判）；**是不是入口 = 可达根**（由调用方从 package.json 喂入）。
     //   两个判据分开，各用各的 —— 而且"presentation 层的文件都不算孤儿"本来就是错的（那一层也有内部模块）。
-    if (consumers.size === 0 && !isRoot) {
+    if (deadCodeApplies && consumers.size === 0 && !isRoot) {
       issues.push({
         kind: 'orphan_file',
         severity: 'info',

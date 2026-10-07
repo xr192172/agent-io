@@ -25,7 +25,7 @@
  *      代价是单个源文件的扩散面会被高估 —— 宁可高估也不漏判，这是有意的取舍。
  */
 
-import { loadLedger, type LedgerEntry } from '../../../application/meta/impact/impact_ledger_store.js';
+import { loadLedger, type LedgerEntry } from '../impact/impact_ledger_store.js';
 import type { TSDLDecl } from './contract.js';
 
 /** 一个"累犯模式"：同一源文件反复引发计划外扩散。 */

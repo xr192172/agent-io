@@ -40,6 +40,19 @@ export interface DeadImportCandidate {
   reason: 'no_reference';
 }
 
+/**
+ * ★ 2026-10-08 闸②：**判死但不许删**的项。
+ *
+ * 为什么另立一个类型、而不是扩 `DeadImportCandidate.reason` 的枚举：
+ * `dead` 会被喂给 `DeadDepCandidate[]`（`dead_deps.ts`）⇒ 扩枚举等于动了那条既有的下游合同
+ * （实测：扩完 tsc 立刻报 reason 不兼容）。本仓规矩是**新增一个语义唯一、类型钉死的东西**。
+ */
+export interface NeedsReviewCandidate {
+  source: string;
+  files: string[];
+  reason: 'last_importer_with_load_effects';
+}
+
 export interface DetectDeadImportsOptions {
   project_dir: string;
   /** 显式文件清单（相对或绝对路径）；缺省递归扫全部 TS/Go 源 */
@@ -48,6 +61,14 @@ export interface DetectDeadImportsOptions {
 
 export interface DetectDeadImportsResult {
   dead: DeadImportCandidate[];
+  /**
+   * ★ 2026-10-08 闸②：**判死但不许删**的项。
+   *   判据（两条同时成立）：(b) 这条是该源**最后一个**引用点 —— 删了它该源就不再被任何文件加载；
+   *   且 (a) 该源**加载时会产生可观察效果**。⇒ 删了会改行为 ⇒ 交人/LLM 复核，绝不自动删。
+   *   ★ 为什么不能只靠「恒活豁免」：那只覆盖 import **自身**的形态（无绑定/副作用导入/re-export），
+   *     而带绑定的 `import { h } from './side'` 完全可能正是**唯一让 side.ts 被加载**的原因。
+   */
+  needsReview?: NeedsReviewCandidate[];
   /** 参与扫描的文件数 */
   scanned: number;
   /** 规则说明（供报告） */
@@ -160,6 +181,85 @@ function isSourceDead(src: string, source: string, lang: 'go' | 'ts'): boolean {
  * 文件级死 import 检测：扫描项目源文件，聚合出死候选（source → files）。
  * 只返回"文件内零引用"的源；同一源可能在多个文件死（皆记入 files）。
  */
+const TS_TRY_EXTS = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs'];
+
+/**
+ * 项目内**相对说明符** → 相对 project_dir 的文件路径；解析不到 / 裸包名 / `node:` ⇒ null。
+ * ★ 就地写而不复用 application 的 `resolveSpecifier`（后者在 `brick_bag.ts`）——
+ *   infrastructure 引 application 是**分层违规**（本仓 2026-10-07 刚修过一处同类）。
+ * ★ 裸包名一律返回 null ⇒ 闸② 不覆盖外部依赖（见 limitations，v1 有意如此）。
+ */
+function resolveInProject(proj: string, fromRel: string, spec: string): string | null {
+  if (!spec.startsWith('.')) return null;
+  const base = path.resolve(proj, path.dirname(fromRel), spec);
+  const tries = [base, ...TS_TRY_EXTS.map((e) => base + e), ...TS_TRY_EXTS.map((e) => path.join(base, 'index' + e))];
+  for (const t of tries) {
+    try {
+      if (fs.statSync(t).isFile()) return path.relative(proj, t).replace(/\\/g, '/');
+    } catch {
+      /* 不存在就试下一个 */
+    }
+  }
+  return null;
+}
+
+/**
+ * 该模块**加载时是否可能产生可观察效果**（保守：证明不了纯 ⇒ 算有效果）。
+ *
+ * 为什么需要它：删掉某模块**最后一个**引用点 ⇒ 该模块不再被求值 ⇒ 它顶层干了什么就都不发生了。
+ *
+ * ★ v1 用**文本判据**（不是不想用 AST，是这里的约束决定的）：本函数在**同步**上下文被调用，
+ *   而内核 AST 入口要么是 async（会牵动 3 个同步调用点）、要么走 `getParserSync` 需**预热**
+ *   —— 没预热会返回 null，若那时判「无效果」就会**静默多删**（最坏的方向）。
+ *   ⇒ 宁可文本 + 保守。层级升级与绑定判定一起放进第②步（一次只改一样）。
+ *
+ * 判据（剥离注释后逐行看；**认不出的一律算有效果**）：
+ *   · `import 'x'`（无 clause）⇒ 有效果（会把 x 一并加载）
+ *   · `export … from 'x'` ⇒ 有效果（re-export 会加载 x）
+ *   · 纯声明 `export function|class|interface|type|enum` ⇒ 无
+ *   · `export const|let|var` 且初始化器是**裸字面量/标识符** ⇒ 无；否则（含调用）⇒ 有效果
+ *   · 任何其它顶层语句（表达式语句、调用、赋值…）⇒ 有效果
+ */
+function hasLoadEffects(src: string): boolean {
+  const stripped = stripTsComments(src);
+  for (const rawLine of stripped.split('\n')) {
+    const line = rawLine.trim();
+    if (line === '' || line === '}' || line === '};' || line === ');') continue;
+    if (/^import\s+['"]/.test(line)) return true;
+    if (/^export\s+.*\bfrom\s+['"]/.test(line)) return true;
+    if (/^export\s+(default\s+)?(declare\s+)?(abstract\s+)?(function|class|interface|type|enum)\b/.test(line)) continue;
+    const decl = /^(export\s+)?(declare\s+)?(const|let|var)\s+[A-Za-z_$][\w$]*\s*=\s*([^;]+);?\s*$/.exec(line);
+    if (decl) {
+      const init = decl[3].trim();
+      // 裸字面量 / 裸标识符 / 取反的字面量 ⇒ 视为纯；含括号或跨行（认不出）⇒ 有效果
+      if (/^-?[\w$.]+$/.test(init) || /^-?(['"`]|\d|true$|false$|null$)/.test(init)) continue;
+      return true;
+    }
+    return true;
+  }
+  return false;
+}
+
+/**
+ * 闸②：(b) 最后引用点 **且** (a) 目标模块加载有效果 ⇒ 不许删。
+ * ★ 注意顺序：先判 (b) —— 它不是最后引用点时**直接放行**，连目标模块都不用读。
+ */
+function gatedByLoadEffects(
+  proj: string,
+  fromRel: string,
+  source: string,
+  importersOf: Map<string, Set<string>>,
+  contentByRel: Map<string, string>,
+): boolean {
+  const importers = importersOf.get(source);
+  if (!importers || importers.size !== 1) return false; // (b) 不成立 ⇒ 无害
+  const targetRel = resolveInProject(proj, fromRel, source);
+  if (targetRel === null) return false; // 外部依赖 ⇒ 本闸 v1 不覆盖（见 limitations）
+  const tsrc = contentByRel.get(targetRel);
+  if (tsrc === undefined) return false; // 目标不在本次扫描集内（例如被 noise 过滤）⇒ 不拦
+  return hasLoadEffects(tsrc);
+}
+
 export function detectDeadImports(opts: DetectDeadImportsOptions): DetectDeadImportsResult {
   const proj = path.resolve(opts.project_dir);
   const absFiles = scanProjectSourceFiles(proj, opts.files);
@@ -171,6 +271,30 @@ export function detectDeadImports(opts: DetectDeadImportsOptions): DetectDeadImp
       return null;
     }
   };
+
+  // ── 第 0 遍（★ 2026-10-08 闸②-b 需要）：**全部 import 者**（不管用没用）+ 内容缓存 ──
+  //   为什么单独一遍：闸② 问的是「删了之后这个源还有没有别人加载」⇒ 必须知道**全体**引用面，
+  //   而下面那遍只记「判死」的那些，看不见全体。
+  const contentByRel = new Map<string, string>();
+  const importersOf = new Map<string, Set<string>>();
+  for (const abs of absFiles) {
+    const src0 = readSrc(abs);
+    if (src0 === null) continue;
+    const lang0 = langOf(abs);
+    if (!lang0) continue;
+    const rel0 = path.relative(proj, abs) || abs;
+    contentByRel.set(rel0, src0);
+    const srcs0 = lang0 === 'go' ? [...parseGoImportQualifiers(src0).keys()] : enumerateTsSources(src0);
+    for (const s of srcs0) {
+      let set = importersOf.get(s);
+      if (!set) {
+        set = new Set();
+        importersOf.set(s, set);
+      }
+      set.add(rel0);
+    }
+  }
+  const reviewAgg = new Map<string, { files: string[]; seen: Set<string> }>();
 
   for (const abs of absFiles) {
     const src = readSrc(abs);
@@ -186,14 +310,28 @@ export function detectDeadImports(opts: DetectDeadImportsOptions): DetectDeadImp
       sourcesOfFile = enumerateTsSources(src);
     }
 
+    const rel = path.relative(proj, abs) || abs;
     for (const source of sourcesOfFile) {
       if (!isSourceDead(src, source, lang)) continue;
+      // ★ 2026-10-08 闸②：**判死 ≠ 可删**。(b) 这是不是该源最后一个引用点？ 且 (a) 它加载有没有效果？
+      //   两条同时成立 ⇒ 删了会改行为 ⇒ 进 needsReview，**绝不自动删**。
+      if (gatedByLoadEffects(proj, rel, source, importersOf, contentByRel)) {
+        let r = reviewAgg.get(source);
+        if (!r) {
+          r = { files: [], seen: new Set() };
+          reviewAgg.set(source, r);
+        }
+        if (!r.seen.has(rel)) {
+          r.seen.add(rel);
+          r.files.push(rel);
+        }
+        continue;
+      }
       let a = agg.get(source);
       if (!a) {
         a = { files: [], seen: new Set() };
         agg.set(source, a);
       }
-      const rel = path.relative(proj, abs) || abs;
       if (!a.seen.has(rel)) {
         a.seen.add(rel);
         a.files.push(rel);
@@ -215,8 +353,16 @@ export function detectDeadImports(opts: DetectDeadImportsOptions): DetectDeadImp
   }
   dead.sort((x, y) => (x.source < y.source ? -1 : 1));
 
+  const needsReview: NeedsReviewCandidate[] = [];
+  for (const [source, r] of reviewAgg) {
+    if (r.files.length === 0) continue;
+    needsReview.push({ source, files: r.files.sort(), reason: 'last_importer_with_load_effects' });
+  }
+  needsReview.sort((x, y) => (x.source < y.source ? -1 : 1));
+
   return {
     dead,
+    needsReview,
     scanned: absFiles.length,
     fileKind,
     byKind,
@@ -225,6 +371,9 @@ export function detectDeadImports(opts: DetectDeadImportsOptions): DetectDeadImp
       'Go 空导入/点导入与 TS 副作用导入/re-export 恒活（import 即执行副作用，绝不误删）',
       '判定仅见文件内部，未做跨文件可达性——保守漏报多于误报；删除前请先过验证闭环',
       '来源分类纯路径判定：fixture/generated/snapshot 多为夹具/产物噪音，真实可清项以 src/test 为主，仍建议逐个过验证',
+      '★ 闸②（needsReview）：该源是最后一个引用点【且】加载可能有效果 ⇒ 不自动删。',
+      '★ 闸② 的已知边界（v1，有意如此）：① 只覆盖**项目内相对说明符**，外部依赖（裸包名 / node:）不覆盖；',
+      '   ② 有效果判定是**文本保守**近似（认不出即算有效果）；③ 只看目标模块**自身**，未展开它的 import 闭包。',
     ],
   };
 }

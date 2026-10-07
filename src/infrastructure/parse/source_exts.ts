@@ -23,7 +23,7 @@
  *     · `NODE_RUNNABLE_EXTS`—— 转译后能交给 node 子进程执行的（是上面那个的**真子集**）
  *     · `SOURCE_EXTS`       —— 项目内"可被扫描/分析"的源码（多语言并集）
  *     · ★ `CODE_LANG_EXTS`  —— "**什么算源码**"（按语言类别派生，见「代码语言」一节）
- *   **不属于本模块**（问题不同，继续各留在调用点，但已在 `tests/single_source_registry.json` 登记）：
+ *   **不属于本模块**（问题不同，继续各留在调用点，但**没有**登记表了 —— ★ 2026-10-07：原写「已在 `tests/single_source_registry.json` 登记」，该表已于 2026-10-03 有意删除）：
  *     · `rename_symbols` 的文本扫描清单（含 `.json/.md/.yml/.html/.css` —— 那些是**可读文本**，不是源码）
  *     · `import_resolve.IMPORT_EXTS`（**可被 import 指向**的东西，含 `.json` 场景是合法的）
  */

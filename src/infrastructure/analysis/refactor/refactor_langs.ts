@@ -114,6 +114,14 @@ export interface RunningChangePlan {
   moves?: FileMove[];
   /** 删除的单位数；缺省由管线按步骤退化 */
   units?: number;
+  /**
+   * ★ 2026-10-08 闸②：**判死但不予删除**的项（该源是最后一个引用点 且 加载可能有效果）。
+   *
+   * 与 `absToNew` 无关 —— 这些**不进计划**，单独带出来只为让报告说清「为什么没删」。
+   * ★ 为什么必须有：否则 `no_change` 与「闸② 拦下了」在报告里长得**一模一样** ⇒ 静默
+   *   （本仓「不报错的错」家族：闸拦了却不说话）。
+   */
+  needsReview?: Array<{ source: string; files: string[]; reason: string }>;
 }
 
 export interface RefactorStageComputeArgs {

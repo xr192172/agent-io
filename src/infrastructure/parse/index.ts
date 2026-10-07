@@ -6,6 +6,7 @@ export {
   parseFileFull,
   parseFileFullSync,
   parserReadyForFile,
+  parseAstRootSync,
   canParseFileSync,
   prewarmKernel,
   parseAstRoot,

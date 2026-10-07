@@ -30,6 +30,34 @@ import { facesOf } from '../../application/meta/registry/tool_faces.js';
 //   探测，`stale_check.formatStaleText` 仍由 lanes/observe.ts 的 `run_tests` 前置提示使用。）
 import { getProjectCacheDb } from '../../infrastructure/index/db.js';
 import { recordDogfoodUsage } from '../../infrastructure/dogfood_stats.js';
+import { prewarmKernel } from '../../infrastructure/parse/index.js';
+
+/**
+ * ★★ 2026-10-08 补：**把注释承诺的「进程启动预热」真的接上**。
+ *
+ * 实测：`prewarmKernel(` 在 `src/` 下**一个调用点都没有**（只在 `kernel.ts` 被定义），
+ * 而 `write_gate` / `symbols` / `scaffold` / `remove_dead_imports` 的注释**都**在说
+ * 「进程启动 `prewarmKernel()` 预热后，同步工具可走同步路径」——**那句承诺是空的**
+ * （与 G4 同形：文档说做了，实际没做）。
+ *
+ * 后果：`parseFileFullSync` 恒返回 `解析器未预热`、`canParseFileSync` 恒 false ⇒
+ * **同步解析路径从来没通过** ⇒ 同步工具只能退化（这也是仓里到处是文本回退的根因之一）。
+ *
+ * 放在**唯一调用入口**（MCP 与 CLI 逐字同路径）⇒ 一处覆盖两面；
+ * `prewarmStarted` 保证只起一次；`void` ⇒ **不阻塞本次调用**。
+ */
+let prewarmStarted = false;
+function ensureKernelPrewarmed(): void {
+  if (prewarmStarted) return;
+  prewarmStarted = true;
+  void prewarmKernel()
+    .then((r) =>
+      console.error(
+        `[ts_kernel] prewarm: ${r.warmed} 个解析器就绪${r.missing.length ? `（缺 ${r.missing.length} 个语言包）` : ''}`,
+      ),
+    )
+    .catch((e) => console.error(`[ts_kernel] prewarm 失败：${e instanceof Error ? e.message : String(e)}`));
+}
 import path from 'node:path';
 import { statSync, readFileSync, writeFileSync, readdirSync, existsSync, type Dirent } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -402,6 +430,9 @@ export async function invokeTool(
   //   纪律：bootstrap:false —— 绝不因为一次调用就冷启建索引；失败静默（结果里仍有陈旧告警兜底）。
   //   ★ 后台续建在建时跳过（isIndexIncomplete）：后台循环本来就在持续同步，逐调用保鲜
   //     只会重复全盘走查 + 触发 MAX_ADDS_PER_REFRESH 噪音；"在建 ⇒ 可能不全"由 firstContactNote 标注。
+  // ★ 2026-10-08：预热在**每次调用**都检查（只真起一次）—— 放这儿是为了与「逐调用保鲜」同一处，
+  //   不另开生命周期钩子（本仓没有启动钩子，见上一段的注释教训）。
+  ensureKernelPrewarmed();
   if (rootArg && !def.noAutoFresh) {
     try {
       if (hasLiveIndex(rootArg) && !isIndexIncomplete(rootArg)) await ensureProjectIndex(rootArg, { bootstrap: false });

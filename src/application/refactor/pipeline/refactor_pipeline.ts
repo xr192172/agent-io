@@ -146,6 +146,9 @@ export interface PipelineResult {
   changed_files: string[];
   /** 提交层自检结果（submitCheck 开启时）；null = 未开启 */
   submit_check?: SubmitCheckResult | null;
+  /** ★ 2026-10-07：调用方给了 steps 却**一步都没计划上** —— 这是入参形状问题，必须报出来而不是报「通过」。
+   *  与同仓其它工具（RenameFilesResult / RenameSymbolsResult）的 `blocked?: string[]` 同构。 */
+  blocked?: string[];
 }
 
 // ─────────────────────────────────────────────
@@ -191,9 +194,14 @@ function computeDeadImportsPlan(
 ): RunningChangePlan {
   // 一键：未显式给出清单 → 自动文件级检测（同 dead_statements 的"自动扫"语义）
   let resolved = dead ?? [];
+  let needsReview: RunningChangePlan['needsReview'];
   if (resolved.length === 0) {
     const det = detectDeadImports({ project_dir: proj });
     resolved = det.dead.map((c) => ({ source: c.source, files: c.files }));
+    // ★ 2026-10-08 闸②：判死但**不予删除**的项也要带出去（不进计划，只供报告说明）。
+    needsReview = det.needsReview?.length
+      ? det.needsReview.map((c) => ({ source: c.source, files: c.files, reason: c.reason }))
+      : undefined;
   }
 
   const absToNew = new Map<string, string>();
@@ -242,7 +250,7 @@ function computeDeadImportsPlan(
       originals.set(abs, sources.get(abs)!);
     }
   }
-  return { absToNew, originals, units };
+  return { absToNew, originals, units, needsReview };
 }
 
 // ─────────────────────────────────────────────
@@ -282,7 +290,11 @@ function buildDefaultLangs(): RefactorLangRegistry {
     stages: [
       {
         kind: 'dead_imports',
-        label: '[ts] dead import 移除',
+        // ★ 2026-10-07 改名：原名「dead import 移除」与 code_health 的 unused_import 看着同级，
+        //   实则**更严** —— 本步用的是它的**严格子集**：要求「该 import 源的**全部**本地绑定
+        //   都没被用到」才算死，且副作用导入 / re-export 恒活。名字里带上条件强度，
+        //   免得下次又被当成「同一个判据的两份副本」。
+        label: '[ts] 整源未用 import 移除（保守：副作用/re-export 恒活）',
         compute: (a) => computeDeadImportsPlan(a.project_dir, a.dead ?? [], 'ts'),
         limitations: [
           'TS 保守：副作用导入 / re-export / 语法不认识恒活（import 即执行副作用），绝不误删',
@@ -311,7 +323,8 @@ function buildDefaultLangs(): RefactorLangRegistry {
     stages: [
       {
         kind: 'dead_imports',
-        label: '[go] dead import 移除',
+        // ★ 同上：Go 侧的恒活类是空导入 `_` 与点导入 `.`（import 即执行副作用）。
+        label: '[go] 整源未用 import 移除（保守：`_` / `.` 恒活）',
         compute: (a) => computeDeadImportsPlan(a.project_dir, a.dead ?? [], 'go'),
         limitations: [
           'Go 保守：空导入 _ / 点导入 . 恒活（import 即执行副作用），绝不误删',
@@ -479,6 +492,28 @@ export async function runRefactorPipeline(opts: PipelineOptions): Promise<Pipeli
   const stepList = collectSteps(executors, opts.steps);
   const planned = stepList.filter((s) => s.enabled).length;
 
+  // ★ 2026-10-07：**给了 steps 却一步都没计划上 ⇒ 必须报出来，不许报「通过」**。
+  //   实测现场：传 steps:{dead_imports:true}（形状错 —— 真实形状是 { <stepId>: { enabled: true } }）
+  //   ⇒ zod 静默按 default(false) 走 ⇒ 一步没做，回执却是「全局 通过 · 0 步 · ok:true」。
+  //   「我要求了步骤、它一步没做、却报成功」= 本仓头号病根（不报错的错）家族。
+  if (planned === 0 && opts.steps != null && Object.keys(opts.steps).length > 0) {
+    return {
+      ok: false,
+      stages: [],
+      total_files_changed: 0,
+      total_units_removed: 0,
+      baseline: null,
+      planned_steps: 0,
+      changed_files: [],
+      submit_check: null,
+      blocked: [
+        `你给了 steps（键：${Object.keys(opts.steps).join(', ')}），但没有任何一步被计划上 ⇒ 一步都不会执行。`,
+        `多半是入参形状问题：steps 的值不是布尔，而是形如 { <stepId>: { enabled: true, ... } } 的对象。`,
+        `用 cli refactor_pipeline --schema 看形状；内置 stepId：dead_imports / dead_statements / package_migration / function_annotation。`,
+      ],
+    };
+  }
+
   const commands: VerifyCommand[] =
     (typeof opts.verify === 'object' && opts.verify.commands) ||
     (opts.verify === true ? dominantVerifyCommands(executors, cwd) : []);
@@ -551,9 +586,19 @@ export async function runRefactorPipeline(opts: PipelineOptions): Promise<Pipeli
 
     const plan = await compute();
     const moves = plan.moves ?? [];
+    // ★ 2026-10-08 闸②：把「判死但不删」的原因拼成一句 —— 否则 `no_change` 与
+    //   「闸② 拦下了」在报告里长得一样（静默）。
+    const nrAll = plan.needsReview ?? [];
+    const nrDetail = nrAll.length
+      ? `闸② 拦下 ${nrAll.length} 项（该源是最后一个引用点 且 加载可能有效果 ⇒ 不自动删）：` +
+        nrAll.map((x) => `${x.source} ← ${(x.files ?? []).join(', ')}`).join(' | ')
+      : undefined;
     // 无改动判定：既没内容改写、也没文件移动，才算 no_change
     if (plan.absToNew.size === 0 && moves.length === 0) {
-      r.stages.push({ id, label, index, outcome: 'no_change', files_changed: 0, units_removed: 0 });
+      r.stages.push({
+        id, label, index, outcome: 'no_change', files_changed: 0, units_removed: 0,
+        ...(nrDetail ? { detail: nrDetail } : {}),
+      });
       return;
     }
 
@@ -665,6 +710,7 @@ export async function runRefactorPipeline(opts: PipelineOptions): Promise<Pipeli
     await finalize({
       id, label, index, outcome: 'applied',
       files_changed: changedCount, units_removed: units,
+      ...(nrDetail ? { detail: nrDetail } : {}),
       baseline, after,
     });
   }

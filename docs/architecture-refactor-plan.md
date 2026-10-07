@@ -160,7 +160,7 @@ question：一份就够，为什么会有 20 处静态扩展名清单？以下�
 | G1 | 工具集快照 | `registerAllTools` 导出的 (name, schema) 列表与基线逐字相同 | ✅ 已在跑（P1 前置，`tests/server_registry.tool_snapshot.test.ts`，基线 `tests/fixtures/tool_set_snapshot.json`，67 工具） |
 | G2 | README 工具数 | 既有 `scripts/readme_tools_gate.mjs` ⇒ 67=67 | ✅ 已在跑 |
 | G3 | 分层方向 | 依赖只允许向下；`import type` 不计 | 待建（P0；③ 已在 `health` 落地，门未建） |
-| G4 | 单一实现 | 同族实现（解析器/工具表/内核路径）不得有第二份 | ✅ 已在跑（棘轮：存量不拦、**新增即红**，`tests/single_source.test.ts` + 登记表 `tests/fixtures/single_source_registry.json`） |
+| G4 | 单一实现 | 同族实现（解析器/工具表/内核路径）不得有第二份 | ⛔ **已弃用（有意删除，2026-10-03，用户裁定）—— 不要重建。** 随整个夹具体系一起清退（`ba46d40`）。<br>用户裁定原话：*「这个免疫系统**无法自己修正自己**……你又要不停的花时间去维护它，但又不能把它维护到理想状态。所以我把这个免疫系统删了。**你不要再去搞这个免疫系统，不需要，我们不需要，你一条条修过去就可以。**」*<br>⇒ 同类副本改靠**逐条查、逐条修**（人/LLM 当场看得见证据），**不靠棘轮**。 |
 | G5 | 量具有效性 | 同一量具在"已知好"与"已知坏"夹具上给出**不同**读数 | ✅ 已在跑（P0，`tests/health/health-validity.test.ts`，含**反饱和**与**空输入**断言） |
 | G6 | 回归 | 205 文件 / 2137 测试全绿 | ✅ 已在跑 |
 
