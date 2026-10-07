@@ -185,6 +185,38 @@ export const CHAIN_EDGES: readonly ChainEdge[] = [
       '★ `pick`：一次操作可能涉及多个符号 ⇒ 下标由调用方给。',
   },
 
+  // ── ★★ 2026-10-07：`find_references` → `impact_analysis`（**第 6/7 条对象类边**）真跑升级 ──
+  //   ★ 来源：机算的"待验边候选"（要 `file`+`symbol` 却无入边）。
+  {
+    from: 'find_references',
+    fromKey: 'file',
+    to: 'impact_analysis',
+    toPath: 'change_points[].file',
+    cardinality: 'single',
+    evidence: 'verified',
+    note:
+      '★ 真跑（2026-10-07，夹具 `C:/tmp/t54chain3`）：`touched.file` → `change_points[0].file` **键名逐字同名**；' +
+      '`touched.symbols[0]` → `change_points[0].symbol` 同理；`touched.project_dir` → `project_dir`（通用边）' +
+      '⇒ 回执正常、报告正常（受影响文件 1 个）。' +
+      '★★ **这一条澄清了"零字段名翻译"的边界**：调用方要**包一层数组**（`change_points[]`）—— ' +
+      '**键名没变，变的是"住在哪个容器里"**。⇒ **零字段名翻译 ≠ 零结构包装**；' +
+      '容器形态是**下游的契约**（上游决定不了），由 `toPath` 这一维表达。' +
+      '★ 它是**链的终点**：产物里**没有 `touched`**（只有 root / changePoints / files / total + fell_back）' +
+      '⇒ 能进不能出（与 `move_symbol` 同类）。' +
+      '★ 它自己还会**诚实降级**：符号级消费方解析失败时置 `fell_back: true` 并整文件闭包兜底（那是它对自己能力的标注，不是链的问题）。',
+  },
+  {
+    from: 'find_references',
+    fromKey: 'symbols',
+    to: 'impact_analysis',
+    toPath: 'change_points[].symbol',
+    cardinality: 'pick',
+    evidence: 'verified',
+    note:
+      '★ 同批真跑（2026-10-07，同一次调用）：`touched.symbols[0]` → `change_points[0].symbol`。' +
+      '★ `pick`：一次可能涉及**多个变更点** ⇒ 下标由调用方给。',
+  },
+
   // ── ★★ 2026-10-06：§5 第二环的两条对象类边，**真跑升级**进本表（原在 `CHAIN_EDGES_PENDING`）──
   {
     from: 'rename_symbols',
