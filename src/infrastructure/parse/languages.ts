@@ -40,8 +40,22 @@ export type LangKind = 'code' | 'data' | 'markup' | 'style' | 'doc';
 export interface LanguageEntry {
   /** 语言显示名（go / typescript / ...） */
   name: string;
-  /** npm 包名（tree-sitter-{pkg}） */
+  /**
+   * npm 包名。**默认按 `tree-sitter-{pkg}` 派生**（见 loader）。
+   * ★★ 2026-10-08：派生在「**一门语法住在别人的包里**」时表达不出来 —— 那种情况用下面的 `pkgSpec`。
+   */
   pkg: string;
+  /**
+   * ★★ 2026-10-08 新增：**显式模块说明符**（覆盖 `tree-sitter-{pkg}` 的派生）。
+   *
+   * 为什么必须有（实测）：`tsx` / `jsx` **不是独立的 npm 包** ——
+   *   · TSX 语法住在 `tree-sitter-typescript` 里（该包同时导出 `typescript` 与 `tsx`）；
+   *   · JSX 语法就在 `tree-sitter-javascript` 里。
+   * 而派生名会去找 `tree-sitter-tsx` / `tree-sitter-jsx`（**两个都不存在**）⇒
+   *   这两个扩展名**永远解析不出来**（且被静默归入 unknown，看不见）。
+   * ★ 派生是「约定/猜测」，显式是「事实」——**猜不出来的时候必须能写下来**。
+   */
+  pkgSpec?: string;
   /** 支持的文件扩展名（含 .） */
   exts: string[];
   /** ★ 语言类别：`code` = 算源码；`data`/`markup`/`style`/`doc` = 不算（判据见模块注释） */
@@ -72,9 +86,9 @@ export const LANGUAGES: LanguageEntry[] = [
   //   保底才没在 `SOURCE_EXTS` 里丢文件；但 `findLanguageByExt`/`isExtSupported`/`listSupportedExts`
   //   走的是**本注册表** ⇒ 这两类文件此前对内核"不受支持"。补进注册表后口径一致（见 source_exts.ts 注释）。
   { name: 'typescript', pkg: 'typescript', exts: ['.ts', '.mts', '.cts'], kind: 'code', symbol_nodes: ['function_declaration', 'class_declaration', 'abstract_class_declaration', 'interface_declaration', 'type_alias_declaration', 'enum_declaration', 'method_definition'], import_nodes: ['import_statement', 'export_statement'], field_map: { name: 'name', parameters: 'parameters', return_type: 'return_type' } },
-  { name: 'tsx', pkg: 'tsx', exts: ['.tsx'], kind: 'code', symbol_nodes: ['function_declaration', 'class_declaration', 'abstract_class_declaration', 'interface_declaration', 'type_alias_declaration', 'enum_declaration', 'method_definition'], import_nodes: ['import_statement', 'export_statement'], field_map: { name: 'name', parameters: 'parameters', return_type: 'return_type' } },
+  { name: 'tsx', pkg: 'tsx', pkgSpec: 'tree-sitter-typescript', exts: ['.tsx'], kind: 'code', symbol_nodes: ['function_declaration', 'class_declaration', 'abstract_class_declaration', 'interface_declaration', 'type_alias_declaration', 'enum_declaration', 'method_definition'], import_nodes: ['import_statement', 'export_statement'], field_map: { name: 'name', parameters: 'parameters', return_type: 'return_type' } },
   { name: 'javascript', pkg: 'javascript', exts: ['.js', '.mjs', '.cjs'], kind: 'code', symbol_nodes: ['function_declaration', 'class_declaration', 'method_definition'], import_nodes: ['import_statement', 'export_statement'], field_map: { name: 'name', parameters: 'parameters' } },
-  { name: 'jsx', pkg: 'jsx', exts: ['.jsx'], kind: 'code', symbol_nodes: ['function_declaration', 'class_declaration', 'method_definition'], import_nodes: ['import_statement', 'export_statement'], field_map: { name: 'name', parameters: 'parameters' } },
+  { name: 'jsx', pkg: 'jsx', pkgSpec: 'tree-sitter-javascript', exts: ['.jsx'], kind: 'code', symbol_nodes: ['function_declaration', 'class_declaration', 'method_definition'], import_nodes: ['import_statement', 'export_statement'], field_map: { name: 'name', parameters: 'parameters' } },
   { name: 'vue', pkg: 'vue', exts: ['.vue'], kind: 'code', symbol_nodes: ['export_statement'], field_map: { name: 'name' } },
   { name: 'html', pkg: 'html', exts: ['.html', '.htm'], kind: 'markup', symbol_nodes: ['script_element'], field_map: { name: 'name' } },
   { name: 'css', pkg: 'css', exts: ['.css'], kind: 'style', symbol_nodes: ['rule_set'], field_map: { name: 'name' } },

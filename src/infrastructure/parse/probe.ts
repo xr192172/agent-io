@@ -129,7 +129,10 @@ let unloadable = new Set<string>();
 export function isLanguageInstalled(pkgName: string): boolean {
   if (loadable.has(pkgName)) return true;
   if (unloadable.has(pkgName)) return false;
-  if (resolvedIsLoadable('tree-sitter-' + pkgName)) {
+  // ★ 2026-10-08：显式 pkgSpec 优先 —— 否则 tsx/jsx 会被判成「没装」
+  //   （派生名找的是不存在的 tree-sitter-tsx / tree-sitter-jsx）。
+  const entry = LANGUAGES.find((l) => l.pkg === pkgName);
+  if (resolvedIsLoadable(entry?.pkgSpec ?? 'tree-sitter-' + pkgName)) {
     loadable.add(pkgName);
     return true;
   }
