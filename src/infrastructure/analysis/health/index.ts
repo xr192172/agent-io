@@ -670,7 +670,18 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
   //   已知好的夹具从 100/A 掉到 80/B。合成点 = 内核唯一权威 `codeSourceExts`（可解析 ∩ 代码语言）。
   //   走查仍按"可解析"全集**一次走完**，再分拣：源码进分析，非代码只进下面的"看得见的统计"
   //   （口径收紧不许静默 —— 同 `layers.unclassified` 的设计）。
-  const { code: files, nonCodeExts } = partitionByCodeLang(collectSourceFiles(root, parseable));
+    // ★ 2026-10-07：**排除 `third_party/`** —— 那是**别人的代码**，不是我们的源码。
+  //   为什么（实测）：不排除时 `third_party/archify/renderers/shared/generated-validators.mjs`
+  //   报出**圈复杂度 3619**，直接进我们的健康分 ⇒ 读数被第三方污染（健康分是假象）。
+  //   ★ 为什么是「调用方显式追加」而不是加进 `SKIP_DIR_BASE`：
+  //     本仓 L3 目录判据的规矩是「**基础集无争议，用途/调用方专属项由调用方显式追加**」
+  //     （不许取并集 —— 那会悄悄扩大跳过面）。`third_party` 正是某类工具的用途专属项。
+  //   ★ 顺带覆盖面：全仓只有 2 个 `generated-*` 文件，**都在 `third_party/` 里** ⇒
+  //     本条一并解决"生成物算源码"，**不需要**再往 `NOISE_FILE_RE` 里加规则
+  //     （遵循本仓「有实据再加，不预留」的既有纪律）。
+  const { code: files, nonCodeExts } = partitionByCodeLang(
+    collectSourceFiles(root, parseable, new Set(['third_party']))
+  );
   const rels = new Set(files.map((f) => f.rel));
   const parses = await Promise.all(
     files.map(async (f) => ({ rel: f.rel, parsed: await parseFileFull(f.rel, f.content) })),
