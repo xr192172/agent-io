@@ -35,7 +35,7 @@
  */
 
 import { parseFileFull, parseAstRoot, listSupportedExtensions, resolveProjectImport, type ParsedSymbol, type SyntaxNodeLike } from '../../parse/index.js';
-import { codeSourceExts, partitionByCodeLang } from '../../parse/source_exts.js';
+import { codeSourceExts, isTestFileName, partitionByCodeLang } from '../../parse/source_exts.js';
 import { boundsSkipFromExcluded, type ScanBounds } from '../../scan_bounds.js';
 import { collectSourceFiles } from '../../authoring/version_upgrade/detect.js';
 
@@ -198,6 +198,26 @@ export function classifyLayer(rel: string): Layer | null {
   const p = rel.replace(/\\/g, '/').replace(/^\.\//, '');
   const m = LAYER_SEGMENT_RE.exec(p);
   return (m?.[1] as Layer) ?? null;
+}
+
+/**
+ * 这个文件该不该参与**死代码维度**（未用导出 / 孤儿文件）的判定。
+ *
+ * ★ 为什么需要它（2026-10-07 实测假阳）：
+ *   测试文件（`*_test.go` / `*.test.ts` / `*.spec.ts` / `test_*.py`）由 **test runner** 调起 ——
+ *   它们**本来就**"没有项目内消费者、也不被别的模块 import"，那是**设计如此**，不是 dead code。
+ *   旧读数把它们整批报成 `orphan_file` / `unused_export`（实测本仓 37 孤儿、213 未用导出里
+ *   **大量是 `*_test.go`**）⇒ 健康分被污染（36 分/D 是**假读数**）。
+ *
+ * ★ 与 `layer_violation` 当年"把 tests 拉进来判"是**同一教训**：**判据要能区分**。
+ * ★ 复用 `isTestFileName`（文件名判据的**唯一落点**，见 `parse/source_exts.ts`），
+ *   不再在这里另写一份测试文件正则 —— 那会是**判据分叉**。
+ *
+ * @param rel 项目内相对路径（函数内部只取 basename 交给 `isTestFileName`）
+ */
+export function judgesDeadCode(rel: string): boolean {
+  const base = rel.replace(/\\/g, '/').split('/').pop() ?? rel;
+  return !isTestFileName(base);
 }
 
 /**
@@ -788,6 +808,9 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
     const internal = internalRefs.get(p.rel) ?? new Set();
     const external = crossRefs.get(p.rel) ?? new Set();
     const consumers = reverseConsumers.get(p.rel) ?? new Set();
+    // ★ 2026-10-07：死代码维度（未用导出 / 孤儿文件）**不适用于测试文件** ——
+    //   它们由 test runner 调起，天然"无项目内消费者"，那是设计如此而不是 dead code。
+    const deadCodeApplies = judgesDeadCode(p.rel);
 
     // ── 维度1a：未使用导出（项目内无任何引用 → potential dead；外部消费者不可见）──
     for (const s of p.parsed.symbols) {
@@ -804,7 +827,7 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
         ].join('\n');
         used = new RegExp(`\\b${s.name}\\b`).test(rest);
       }
-      if (!used) {
+      if (deadCodeApplies && !used) {
         issues.push({
           kind: 'unused_export',
           severity: 'info',
@@ -835,7 +858,7 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
     //   它先把入口特判成 `glue` 层，再用 `layer !== 'glue'` 把入口排除在孤儿之外。
     //   现在：**层 = 文件在哪**（事实，按目录判）；**是不是入口 = 可达根**（由调用方从 package.json 喂入）。
     //   两个判据分开，各用各的 —— 而且"presentation 层的文件都不算孤儿"本来就是错的（那一层也有内部模块）。
-    if (consumers.size === 0 && !isRoot) {
+    if (deadCodeApplies && consumers.size === 0 && !isRoot) {
       issues.push({
         kind: 'orphan_file',
         severity: 'info',
