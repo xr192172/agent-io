@@ -49,7 +49,13 @@ export interface RenameFilesResult {
   }>;
   /** 真正落盘的条目（dry_run 时为 []; 部分成功后剩余被阻断时自此据实返回） */
   applied: Array<{ index: number; from: string; to: string; result: RenameFileResult }>;
-  /** 累计引用改写处数（跨条可能重复计入同一 importer 的多次命中） */
+  /**
+   * ★ 口径与全仓一致（`rename_local` / `rename_symbols` 同义）：**真的落盘的文件数**（`dry_run` ⇒ 0）。
+   *
+   * 2026-10-07 修正：本字段原先存的是「累计引用改写**处数**」—— 注释与字段名**互相矛盾**，
+   * 且同一份回执里 `touched.written_files` 有 3 条而本字段报 2：两个数说的根本不是一回事。
+   * 现在与下层 `renameFile()` 返回的 `filesWritten` 同口径（那也是 `rename_symbols` 的用法）。
+   */
   filesWritten: number;
   /** 整体阻断理由（ok=false 时给出全部） */
   blocked?: string[];
@@ -123,7 +129,12 @@ async function renameFilesCore(input: RenameFilesInput): Promise<RenameFilesResu
         blocked: [`条目 ${i}（${item.from}→${item.to}）实际落盘时被阻断：${(result.blocked || []).join('；')}。已应用 ${applied.length} 条，之后条目未执行`],
       };
     }
-    filesWritten += result.references.length;
+    // ★ 2026-10-07：原先 += result.references.length（**引用处数**）—— 名字与注释互相矛盾，
+    //   且同一份回执里 touched.written_files 有 3 条而本字段报 2：两个数说的不是一回事。
+    //   现改为**据实算真·落盘文件数**：被移动的那个文件（moved）+ 被改写引用涉及的 importer（去重）。
+    //   （RenameFileResult 本身没有 filesWritten 字段，但 moved 与 references 都是现成的数据 ——
+    //     实测一次移动报 moved=1 + 2 个 distinct importer = 3，与 touched.written_files 对得上。）
+    filesWritten += (result.moved ? 1 : 0) + new Set(result.references.map((x) => x.file)).size;
     applied.push({ index: i, from: item.from, to: item.to, result });
   }
 

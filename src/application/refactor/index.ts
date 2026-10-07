@@ -419,7 +419,10 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         return { message: parts.join('\n'), data: r };
       }
       const parts = [
-        r.dryRun ? `[批量文件改名 dry-run 预览·未落盘] 共 ${r.previews.length} 条` : `批量文件改名完成：${r.previews.length} 条，联动改写引用 ${r.filesWritten} 处`,
+        // ★ 2026-10-07：本行原写「联动改写引用 ${r.filesWritten} 处」—— 但 filesWritten 已统一为
+        //   「落盘文件数」（与 rename_local / rename_symbols 同口径）⇒ 这里据实改成「个文件」。
+        //   引用改写处数不再由该字段承担（逐条明细就在下面 parts 里，逐条可见）。
+        r.dryRun ? `[批量文件改名 dry-run 预览·未落盘] 共 ${r.previews.length} 条` : `批量文件改名完成：${r.previews.length} 条，落盘 ${r.filesWritten} 个文件`,
       ];
       for (const p of r.previews) parts.push(fmt(p, p.result).replace(/\n/g, '\n\t'));
       return { message: parts.join('\n'), data: r };
