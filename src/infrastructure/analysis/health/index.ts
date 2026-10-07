@@ -34,7 +34,7 @@
  *     宁漏不误报；跨文件的模块级调用仍会漏——报 info 级仅提示，不自动删）。
  */
 
-import { parseFileFull, parseAstRoot, listSupportedExtensions, resolveProjectImport, type ParsedSymbol, type SyntaxNodeLike } from '../../parse/index.js';
+import { parseFileFull, parseAstRoot, parseAstRootSync, listSupportedExtensions, resolveProjectImport, type ParsedSymbol, type SyntaxNodeLike } from '../../parse/index.js';
 import { codeSourceExts, isTestFileName, partitionByCodeLang } from '../../parse/source_exts.js';
 import { boundsSkipFromExcluded, type ScanBounds } from '../../scan_bounds.js';
 import { collectSourceFiles } from '../../authoring/version_upgrade/detect.js';
@@ -536,16 +536,21 @@ export async function extractNamedImports(filePath: string, source: string): Pro
  *   ★ 别因为名字里都有「死 import」就以为它们是同一判据的两份副本 ——
  *     **「看起来像同一个判据」 ≠ 「同一个判据」：先看粒度与保守方向。**
  */
-export async function unusedImportsIn(filePath: string, source: string): Promise<NamedImportRef[]> {
-  const ast = await parseAstRoot(filePath, source);
-  if (!ast) return unusedImportsInRegex(source);
-  const binds = collectImportBinds(ast.root, ast.langName);
+/**
+ * ★★ 2026-10-08 抽出：**绑定事实的唯一实现**。
+ *
+ * 给它一个**已解析好的 root**，它答「这个文件里哪些命名 import 没被用到」。
+ * 两个入口（async / sync）只是「怎么拿到 root」不同，**事实只算一遍** ——
+ * 这是「报告口径（health）」与「删除口径（deadcode）」共用一份实现的地基（步骤②-b/②-c）。
+ */
+function unusedImportsFromRoot(root: SyntaxNodeLike, langName: string): NamedImportRef[] {
+  const binds = collectImportBinds(root, langName);
   if (binds.length === 0) return [];
   const bindingRanges = new Set(binds.map((b) => b.startIndex));
   const used = new Set<string>();
   const walk = (n: SyntaxNodeLike): void => {
-    // import/using 子树内部不是"使用点"（命名空间段如 System.IO 会误当成使用）——
-    // 绑定名使用情况由"其它位置的引用"判定，绑定自身已按 startIndex 排除
+    // import/using 子树内部不是「使用点」（命名空间段如 System.IO 会误当成使用）——
+    // 绑定名使用情况由「其它位置的引用」判定，绑定自身已按 startIndex 排除
     if (n.type === 'import_statement' || n.type === 'import_declaration' || n.type === 'import_from_statement' || n.type === 'using_directive') return;
     if (n.type === 'identifier' || n.type === 'type_identifier') {
       if (!bindingRanges.has(n.startIndex ?? -1)) used.add(n.text);
@@ -555,8 +560,33 @@ export async function unusedImportsIn(filePath: string, source: string): Promise
       if (c) walk(c);
     }
   };
-  walk(ast.root);
+  walk(root);
   return binds.filter((b) => !used.has(b.name)).map((b) => ({ line: b.line, module: b.module, name: b.name }));
+}
+
+/** 入口①（**报告口径**，async）：拿不到 root 时退回**正则**（现有行为，逐字保持不变） */
+export async function unusedImportsIn(filePath: string, source: string): Promise<NamedImportRef[]> {
+  const ast = await parseAstRoot(filePath, source);
+  if (!ast) return unusedImportsInRegex(source);
+  return unusedImportsFromRoot(ast.root, ast.langName);
+}
+
+/**
+ * 入口②（**删除口径**，sync）★ 2026-10-08 新增。
+ *
+ * 为什么要有它：删除决策（`deadcode/detect_dead_imports`）处在 **sync** 上下文
+ * （改 async 会往 `buildFeatureMap` 等同步调用方**蔓延**）⇒ 它只能走同步解析。
+ *
+ * ★ 契约（与 `parseAstRootSync` 同向）：拿不到 root（未预热 / 语言不认识 / 解析失败）⇒ **返回 null**。
+ *   调用方**必须按「看不懂」保守处理**（当作「都还在用」），**绝不当作「没有未用 import」**。
+ *
+ * ★★ 为什么这里**不退回正则**（与入口① 有意不同）：正则判死比 AST 松，
+ *   把它用在**删除**上是**危险方向** —— 宁可这一轮什么都不删，也不许删错。
+ */
+export function unusedImportsInSync(filePath: string, source: string): NamedImportRef[] | null {
+  const ast = parseAstRootSync(filePath, source);
+  if (!ast) return null;
+  return unusedImportsFromRoot(ast.root, ast.langName);
 }
 
 /** 正则回退：逐行提取命名 import（TS/JS/Python/Java 各形态） */
