@@ -1093,7 +1093,9 @@ export const REFACTOR_TOOLS: ToolDef[] = [
           : s.outcome === 'not_verifiable' ? '未启用验证，已落盘'
           : '未启用';
         parts.push(`\t[${s.label}] ${s.outcome}——${kind}（改动 ${s.files_changed} 文件，${s.units_removed} 单位）`);
-        if (!r.ok && s.outcome === 'rolled_back') parts.push(`\t\t回滚详情：${s.detail}`);
+        // ★ 2026-10-08：`detail` 不止回滚有 —— 闸② 拦下的原因也走这里。
+        //   原先只在 rolled_back 时渲染 ⇒ 闸② 的理由算出来了却**没人看见**（静默）。
+        if (s.detail) parts.push(`\t\t${s.outcome === 'rolled_back' ? '回滚详情：' : ''}${s.detail}`);
       }
       return { message: parts.join('\n'), data: r };
     }),

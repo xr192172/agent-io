@@ -194,9 +194,14 @@ function computeDeadImportsPlan(
 ): RunningChangePlan {
   // 一键：未显式给出清单 → 自动文件级检测（同 dead_statements 的"自动扫"语义）
   let resolved = dead ?? [];
+  let needsReview: RunningChangePlan['needsReview'];
   if (resolved.length === 0) {
     const det = detectDeadImports({ project_dir: proj });
     resolved = det.dead.map((c) => ({ source: c.source, files: c.files }));
+    // ★ 2026-10-08 闸②：判死但**不予删除**的项也要带出去（不进计划，只供报告说明）。
+    needsReview = det.needsReview?.length
+      ? det.needsReview.map((c) => ({ source: c.source, files: c.files, reason: c.reason }))
+      : undefined;
   }
 
   const absToNew = new Map<string, string>();
@@ -245,7 +250,7 @@ function computeDeadImportsPlan(
       originals.set(abs, sources.get(abs)!);
     }
   }
-  return { absToNew, originals, units };
+  return { absToNew, originals, units, needsReview };
 }
 
 // ─────────────────────────────────────────────
@@ -581,9 +586,19 @@ export async function runRefactorPipeline(opts: PipelineOptions): Promise<Pipeli
 
     const plan = await compute();
     const moves = plan.moves ?? [];
+    // ★ 2026-10-08 闸②：把「判死但不删」的原因拼成一句 —— 否则 `no_change` 与
+    //   「闸② 拦下了」在报告里长得一样（静默）。
+    const nrAll = plan.needsReview ?? [];
+    const nrDetail = nrAll.length
+      ? `闸② 拦下 ${nrAll.length} 项（该源是最后一个引用点 且 加载可能有效果 ⇒ 不自动删）：` +
+        nrAll.map((x) => `${x.source} ← ${(x.files ?? []).join(', ')}`).join(' | ')
+      : undefined;
     // 无改动判定：既没内容改写、也没文件移动，才算 no_change
     if (plan.absToNew.size === 0 && moves.length === 0) {
-      r.stages.push({ id, label, index, outcome: 'no_change', files_changed: 0, units_removed: 0 });
+      r.stages.push({
+        id, label, index, outcome: 'no_change', files_changed: 0, units_removed: 0,
+        ...(nrDetail ? { detail: nrDetail } : {}),
+      });
       return;
     }
 
@@ -695,6 +710,7 @@ export async function runRefactorPipeline(opts: PipelineOptions): Promise<Pipeli
     await finalize({
       id, label, index, outcome: 'applied',
       files_changed: changedCount, units_removed: units,
+      ...(nrDetail ? { detail: nrDetail } : {}),
       baseline, after,
     });
   }
