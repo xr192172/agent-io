@@ -285,7 +285,11 @@ function buildDefaultLangs(): RefactorLangRegistry {
     stages: [
       {
         kind: 'dead_imports',
-        label: '[ts] dead import 移除',
+        // ★ 2026-10-07 改名：原名「dead import 移除」与 code_health 的 unused_import 看着同级，
+        //   实则**更严** —— 本步用的是它的**严格子集**：要求「该 import 源的**全部**本地绑定
+        //   都没被用到」才算死，且副作用导入 / re-export 恒活。名字里带上条件强度，
+        //   免得下次又被当成「同一个判据的两份副本」。
+        label: '[ts] 整源未用 import 移除（保守：副作用/re-export 恒活）',
         compute: (a) => computeDeadImportsPlan(a.project_dir, a.dead ?? [], 'ts'),
         limitations: [
           'TS 保守：副作用导入 / re-export / 语法不认识恒活（import 即执行副作用），绝不误删',
@@ -314,7 +318,8 @@ function buildDefaultLangs(): RefactorLangRegistry {
     stages: [
       {
         kind: 'dead_imports',
-        label: '[go] dead import 移除',
+        // ★ 同上：Go 侧的恒活类是空导入 `_` 与点导入 `.`（import 即执行副作用）。
+        label: '[go] 整源未用 import 移除（保守：`_` / `.` 恒活）',
         compute: (a) => computeDeadImportsPlan(a.project_dir, a.dead ?? [], 'go'),
         limitations: [
           'Go 保守：空导入 _ / 点导入 . 恒活（import 即执行副作用），绝不误删',
