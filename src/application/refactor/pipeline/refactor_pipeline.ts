@@ -146,6 +146,9 @@ export interface PipelineResult {
   changed_files: string[];
   /** 提交层自检结果（submitCheck 开启时）；null = 未开启 */
   submit_check?: SubmitCheckResult | null;
+  /** ★ 2026-10-07：调用方给了 steps 却**一步都没计划上** —— 这是入参形状问题，必须报出来而不是报「通过」。
+   *  与同仓其它工具（RenameFilesResult / RenameSymbolsResult）的 `blocked?: string[]` 同构。 */
+  blocked?: string[];
 }
 
 // ─────────────────────────────────────────────
@@ -478,6 +481,28 @@ export async function runRefactorPipeline(opts: PipelineOptions): Promise<Pipeli
   const executors = langs.forProject(cwd);
   const stepList = collectSteps(executors, opts.steps);
   const planned = stepList.filter((s) => s.enabled).length;
+
+  // ★ 2026-10-07：**给了 steps 却一步都没计划上 ⇒ 必须报出来，不许报「通过」**。
+  //   实测现场：传 steps:{dead_imports:true}（形状错 —— 真实形状是 { <stepId>: { enabled: true } }）
+  //   ⇒ zod 静默按 default(false) 走 ⇒ 一步没做，回执却是「全局 通过 · 0 步 · ok:true」。
+  //   「我要求了步骤、它一步没做、却报成功」= 本仓头号病根（不报错的错）家族。
+  if (planned === 0 && opts.steps != null && Object.keys(opts.steps).length > 0) {
+    return {
+      ok: false,
+      stages: [],
+      total_files_changed: 0,
+      total_units_removed: 0,
+      baseline: null,
+      planned_steps: 0,
+      changed_files: [],
+      submit_check: null,
+      blocked: [
+        `你给了 steps（键：${Object.keys(opts.steps).join(', ')}），但没有任何一步被计划上 ⇒ 一步都不会执行。`,
+        `多半是入参形状问题：steps 的值不是布尔，而是形如 { <stepId>: { enabled: true, ... } } 的对象。`,
+        `用 cli refactor_pipeline --schema 看形状；内置 stepId：dead_imports / dead_statements / package_migration / function_annotation。`,
+      ],
+    };
+  }
 
   const commands: VerifyCommand[] =
     (typeof opts.verify === 'object' && opts.verify.commands) ||

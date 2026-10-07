@@ -1076,7 +1076,11 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       });
 
       const parts = [
-        `确定性重构管线完成：全局 ${r.ok ? '通过' : '已停（存在回滚）'}，`,
+        // ★ 2026-10-07：给了 steps 却一步没计划上时，**不许**打「完成/通过」——那是空转报成功。
+        r.blocked?.length
+          ? '确定性重构管线**一步也没执行**（入参形状问题）：'
+          : `确定性重构管线完成：全局 ${r.ok ? '通过' : '已停（存在回滚）'}，`,
+        ...(r.blocked ?? []),
         `共 ${r.planned_steps} 步，${r.total_files_changed} 个文件被改写，`,
         `删除 ${r.total_units_removed} 单位（import 语句×文件 / 死语句文件数）。`,
         `基线=${r.baseline?.status ?? '未验证'}`,
