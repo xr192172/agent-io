@@ -37,6 +37,8 @@ import {
 } from '../../../infrastructure/analysis/project_root/index.js';
 import { parseAstRoot, TS_JS_EXTS } from '../../../infrastructure/parse/index.js';
 import { syncFile } from '../../../infrastructure/index/symbols.js';
+// ★ 「调用即备料」：产物端统一契约（`Touched` 在 domain，application 单向依赖它 ✓）
+import type { Touched } from '../../../domain/b_terms.js';
 import { getProjectCacheDb } from '../../../infrastructure/index/db.js';
 import { splitKeepEnds, detectEol, isBlankLine } from '../../../infrastructure/text/line_utils.js';
 import { snapshotBeforeWrite } from '../snapshot/file_snapshot.js';
@@ -79,6 +81,11 @@ export interface MoveSymbolResult {
   to_file: string;
   filesWritten: number;
   dryRun?: boolean;
+  /**
+   * ★★ 「调用即备料」（2026-10-07）：本次调用**确立下来的对象**（统一契约，见 `Touched`）。
+   *   ⇒ 下游**零查询**就能接棒（此前本工具是"能进不能出"的**链终点**）。
+   */
+  touched?: Touched;
   /** 源文件删除信息 */
   source?: { file: string; removed: string[]; startLine: number; endLine: number };
   /** 目标文件插入信息 */
@@ -237,7 +244,37 @@ async function findTopLevelDeclRange(
 // 主流程
 // ─────────────────────────────────────────────
 
+/**
+ * ★★★ 「调用即备料」（2026-10-07，用户裁定）—— **对外入口**。
+ *   每次调用都顺手把"这次真正确立的对象"投影成**统一契约** `touched`（下游零查询、零翻译）。
+ *   ★★ 只**投影已有数据**，不新算、不猜 ⇒ 包装层不碰核心的内部局部量。
+ */
 export async function moveSymbol(input: MoveSymbolInput): Promise<MoveSymbolResult> {
+  const r = await moveSymbolCore(input);
+  return { ...r, touched: touchedOfMove(input, r) };
+}
+
+/**
+ * 把一次 move 的产物**投影**成 `Touched`（口径与 `find_references.touchedOf` **同一份**）。
+ *
+ * ★ `project_dir`：优先取**入参**（填**解析后的绝对根**）；入参没给 ⇒ **省略（不猜）** ——
+ *   核心里的 `resolvedRoot` 是内部局部量，包装层取不到，**也不该为它去改 8 个早期 return**。
+ * ★ `symbols`：**只在 `ok`** —— 被阻断时什么都没确立（与"没落盘就不给"同一口径）。
+ * ★ `written_files`：**只在真落盘**（`ok` 且非 `dry_run`）**且非空**时给；
+ *   `dry_run` / 被阻断 ⇒ **整项省略**（★ 不给空数组 —— 空数组会被读成"真的没写文件"）。
+ *   ★ 口径①校验：`affectedFiles` = 源文件 + 目标 + 各 importer，**都仍存在**（move 只删符号、不删文件）✓。
+ */
+function touchedOfMove(input: MoveSymbolInput, r: MoveSymbolResult): Touched {
+  const t: Touched = {};
+  if (input.project_dir) t.project_dir = path.resolve(String(input.project_dir));
+  if (r.ok) {
+    t.symbols = [r.symbol];
+    if (!r.dryRun && r.affectedFiles && r.affectedFiles.length > 0) t.written_files = r.affectedFiles;
+  }
+  return t;
+}
+
+async function moveSymbolCore(input: MoveSymbolInput): Promise<MoveSymbolResult> {
   const blocked: string[] = [];
   const dryRun = input.dry_run === true;
 

@@ -217,6 +217,33 @@ export const CHAIN_EDGES: readonly ChainEdge[] = [
       '★ `pick`：一次可能涉及**多个变更点** ⇒ 下标由调用方给。',
   },
 
+  // ── ★★★ 2026-10-07：`move_symbol` → `rename_symbols`（**第 8/9 条对象类边**）──
+  //   ★★ 这两条边是「**调用即备料**」的直接产物：`move_symbol` 此前**没有 `touched`**
+  //      （= 链的**终点**，能进不能出）⇒ 给它补上"把已有产物投影成统一契约"之后，它才**交得出棒**。
+  //   ⇒ 一条改动让链**长了一整个深度**（`find_references → move_symbol → rename_symbols`）。
+  {
+    from: 'move_symbol',
+    fromKey: 'written_files',
+    to: 'rename_symbols',
+    toPath: 'renames[].file',
+    cardinality: 'pick',
+    evidence: 'verified',
+    note:
+      '★ 真跑（2026-10-07，夹具 `C:/tmp/t54chain3`）：`touched.written_files[i]` → `renames[].file`，' +
+      '`touched.symbols[0]` → `renames[].symbol`，`touched.project_dir` → `project_dir` ⇒ `ok=true`（搬完接着改名）。' +
+      '★★ **语义**：`written_files` = 源文件 + 目标文件 + 各 importer 三者的**有序**清单 ⇒ ' +
+      '**"符号现在住哪个文件"要挑**（本例 `[1]` = 搬到的那个新文件）—— 与"选择永远由调用方给"同一口径。',
+  },
+  {
+    from: 'move_symbol',
+    fromKey: 'symbols',
+    to: 'rename_symbols',
+    toPath: 'renames[].symbol',
+    cardinality: 'pick',
+    evidence: 'verified',
+    note: '★ 同批真跑（2026-10-07，同一次调用）：`touched.symbols[0]` → `renames[].symbol`。★ `pick`：同批可能有多个符号。',
+  },
+
   // ── ★★ 2026-10-06：§5 第二环的两条对象类边，**真跑升级**进本表（原在 `CHAIN_EDGES_PENDING`）──
   {
     from: 'rename_symbols',
