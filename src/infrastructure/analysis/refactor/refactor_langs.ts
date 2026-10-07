@@ -122,6 +122,9 @@ export interface RunningChangePlan {
    *   （本仓「不报错的错」家族：闸拦了却不说话）。
    */
   needsReview?: Array<{ source: string; files: string[]; reason: string }>;
+  /** ★★ 2026-10-08 三态之第三态：**没判出来**的项（拿不到解析事实）—— 与 needsReview 分开。
+   *  它不进计划、不删；带出来只为让报告说清「我们没算」，而不是让它冒充「在用」。 */
+  unjudged?: Array<{ source: string; files: string[] }>;
 }
 
 export interface RefactorStageComputeArgs {

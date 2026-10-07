@@ -56,6 +56,12 @@ export interface NeedsReviewCandidate {
   reason: 'last_importer_with_load_effects';
 }
 
+/** ★ 三态里的第三态：**没判出来**（拿不到解析事实）—— 不删，且必须可见。 */
+export interface UnjudgedCandidate {
+  source: string;
+  files: string[];
+}
+
 export interface DetectDeadImportsOptions {
   project_dir: string;
   /** 显式文件清单（相对或绝对路径）；缺省递归扫全部 TS/Go 源 */
@@ -72,6 +78,15 @@ export interface DetectDeadImportsResult {
    *     而带绑定的 `import { h } from './side'` 完全可能正是**唯一让 side.ts 被加载**的原因。
    */
   needsReview?: NeedsReviewCandidate[];
+  /**
+   * ★★ 2026-10-08 三态：**没判出来**的项（拿不到解析事实：未预热 / 解析失败 / 语言不认识）。
+   *
+   * ★ 与 `needsReview` **分开**：那个是「判死但风险高，不许删」，这个是「**根本没判出来**」。
+   * ★ 为什么必须报出来：把它折叠进「活」等于**把错误信息喂给下游** —— 下游会以为
+   *   「这条算过了、没问题」，而真相是「我们没算」。
+   * ★★ 它的**计数就是解析能力的量具**：>0 ⇒ 有东西没算到；目标压到 0。
+   */
+  unjudged?: UnjudgedCandidate[];
   /** 参与扫描的文件数 */
   scanned: number;
   /** 规则说明（供报告） */
@@ -161,25 +176,42 @@ export function scanProjectSourceFiles(project_dir: string, files?: string[]): s
  * 单源判定：src 中某 import 源是否文件内零引用。
  * 返回 true = 死候选（可删）；false = 活（保守保留）。
  */
-function isSourceDead(abs: string, src: string, source: string, lang: 'go' | 'ts'): boolean {
+/**
+ * ★★★ 2026-10-08 三态化：**判死 / 判活 / 判不出来**。
+ *
+ * 为什么必须是三态（用户当日的批评，原话意思）：
+ *   「保守当活，就是**把错误信息喂给下游**。做保守是不是意味着我们还有没算到的东西？」
+ *
+ * ⇒ 「**约束不许删**」与「**谎报在用**」是两件事：
+ *   · **砍的方向**要保守 —— 删除不可逆 ⇒ **只许 `dead` 删**；
+ *   · **说的方向不许折叠** —— 拿不到解析事实时必须说 `unknown`，**不许冒充 `alive`**。
+ *
+ * ★ 本仓既有的正确形态就是三态：`verify.mjs` 的 0/1/**2=SKIP**（「有门跑不了」不冒充「通过」）、
+ *   `Touched` 的「省略 ≠ 填假值」。本条把同一纪律落到这里。
+ * ★★ 副产物：**`unknown` 的计数就是「解析能力」的量具**（目标：压到 0）。
+ *   （实测本仓 324 个 TS 源文件：unknown = 0 —— 但**此前这个 0 是不可见的**，因为被折叠成了 alive。）
+ */
+type SourceVerdict = 'dead' | 'alive' | 'unknown';
+
+function judgeSource(abs: string, src: string, source: string, lang: 'go' | 'ts'): SourceVerdict {
   if (lang === 'go') {
     const quals = parseGoImportQualifiers(src).get(source);
-    if (!quals || quals.length === 0) return false; // 解析失败 → 活
-    // 空/点导入：副作用，恒活
-    if (quals.some((q) => q === '_' || q === '.')) return false;
+    // ★ 解析不出限定符 ⇒ **unknown**（原写成「活」= 冒充：可能是副作用导入，也可能是解析失败）
+    if (!quals || quals.length === 0) return 'unknown';
+    // 空/点导入：副作用 ⇒ **恒活**。这是**真判断**，不是保守 —— 它确实「在用」（用途就是被加载）
+    if (quals.some((q) => q === '_' || q === '.')) return 'alive';
     // 任一候选限定符有 `Q.` 成员访问 → 活；全部零出现 → 死
-    return !quals.some((q) => qualifierLines(src, q, 'go').length > 0);
+    return quals.some((q) => qualifierLines(src, q, 'go').length > 0) ? 'alive' : 'dead';
   }
 
-  // ── TS：★ 2026-10-08 ②-c 换层级 —— 不再扫文本，改读**共享绑定事实**（与报告口径同一份实现）──
-  //   判据与旧文本版一致：该源在本文件的绑定**全部**未被用到才算死。
+  // ── TS：读**共享绑定事实**（与报告口径同一份实现，见 ②-c）──
   const facts = importBindingFactsSync(abs, src);
-  // 拿不到事实 ⇒ **当作活**（保守）—— 宁可不删，也不许删错。
-  if (facts === null) return false;
+  // ★ 拿不到事实 ⇒ **unknown**（原写成「活」= 把「我没算」冒充成「它在用」）
+  if (facts === null) return 'unknown';
   const mine = facts.filter((f) => f.module === source);
-  // 该源在本文件没有任何绑定 ⇒ 副作用导入 / re-export 形态 ⇒ **恒活**（与旧版同向）
-  if (mine.length === 0) return false;
-  return mine.every((f) => !f.used);
+  // 该源在本文件没有任何绑定 ⇒ 副作用导入 / re-export ⇒ **真·恒活**（不是保守）
+  if (mine.length === 0) return 'alive';
+  return mine.every((f) => !f.used) ? 'dead' : 'alive';
 }
 
 /**
@@ -300,6 +332,9 @@ export function detectDeadImports(opts: DetectDeadImportsOptions): DetectDeadImp
     }
   }
   const reviewAgg = new Map<string, { files: string[]; seen: Set<string> }>();
+  // ★ 三态的第三态：**没判出来**的项（拿不到解析事实）。与 reviewAgg **分开** ——
+  //   那个是「判死但风险高」，这个是「根本没判出来」。名字像 ≠ 同义。
+  const unjudgedAgg = new Map<string, { files: string[]; seen: Set<string> }>();
 
   for (const abs of absFiles) {
     const src = readSrc(abs);
@@ -317,7 +352,21 @@ export function detectDeadImports(opts: DetectDeadImportsOptions): DetectDeadImp
 
     const rel = path.relative(proj, abs) || abs;
     for (const source of sourcesOfFile) {
-      if (!isSourceDead(abs, src, source, lang)) continue;
+      const verdict = judgeSource(abs, src, source, lang);
+      // ★ 三态：只有 `dead` 才进「可删」；`unknown` **不删**，但**单独收**（不许折叠成 alive）
+      if (verdict === 'unknown') {
+        let u = unjudgedAgg.get(source);
+        if (!u) {
+          u = { files: [], seen: new Set() };
+          unjudgedAgg.set(source, u);
+        }
+        if (!u.seen.has(rel)) {
+          u.seen.add(rel);
+          u.files.push(rel);
+        }
+        continue;
+      }
+      if (verdict !== 'dead') continue;
       // ★ 2026-10-08 闸②：**判死 ≠ 可删**。(b) 这是不是该源最后一个引用点？ 且 (a) 它加载有没有效果？
       //   两条同时成立 ⇒ 删了会改行为 ⇒ 进 needsReview，**绝不自动删**。
       if (gatedByLoadEffects(proj, rel, source, importersOf, contentByRel)) {
@@ -365,8 +414,17 @@ export function detectDeadImports(opts: DetectDeadImportsOptions): DetectDeadImp
   }
   needsReview.sort((x, y) => (x.source < y.source ? -1 : 1));
 
+  // ★ 第三态：**没判出来** —— 必须报出来（不许静默当成「在用」）
+  const unjudged: UnjudgedCandidate[] = [];
+  for (const [source, u] of unjudgedAgg) {
+    if (u.files.length === 0) continue;
+    unjudged.push({ source, files: u.files.sort() });
+  }
+  unjudged.sort((x, y) => (x.source < y.source ? -1 : 1));
+
   return {
     dead,
+    unjudged,
     needsReview,
     scanned: absFiles.length,
     fileKind,
@@ -377,6 +435,8 @@ export function detectDeadImports(opts: DetectDeadImportsOptions): DetectDeadImp
       '判定仅见文件内部，未做跨文件可达性——保守漏报多于误报；删除前请先过验证闭环',
       '来源分类纯路径判定：fixture/generated/snapshot 多为夹具/产物噪音，真实可清项以 src/test 为主，仍建议逐个过验证',
       '★ 闸②（needsReview）：该源是最后一个引用点【且】加载可能有效果 ⇒ 不自动删。',
+      '★★ 三态（unjudged）：拿不到解析事实 ⇒ 报 unjudged，**不删也不冒充「在用」**；',
+      '   它的计数是「解析能力」的量具（实测本仓 TS 侧当前为 0；一旦 >0 就是有东西没算到）。',
       '★ 闸② 的已知边界（v1，有意如此）：① 只覆盖**项目内相对说明符**，外部依赖（裸包名 / node:）不覆盖；',
       '   ② 有效果判定是**文本保守**近似（认不出即算有效果）；③ 只看目标模块**自身**，未展开它的 import 闭包。',
     ],

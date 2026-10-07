@@ -195,6 +195,7 @@ function computeDeadImportsPlan(
   // 一键：未显式给出清单 → 自动文件级检测（同 dead_statements 的"自动扫"语义）
   let resolved = dead ?? [];
   let needsReview: RunningChangePlan['needsReview'];
+  let unjudged: RunningChangePlan['unjudged'];
   if (resolved.length === 0) {
     const det = detectDeadImports({ project_dir: proj });
     resolved = det.dead.map((c) => ({ source: c.source, files: c.files }));
@@ -202,6 +203,8 @@ function computeDeadImportsPlan(
     needsReview = det.needsReview?.length
       ? det.needsReview.map((c) => ({ source: c.source, files: c.files, reason: c.reason }))
       : undefined;
+    // ★ 三态之第三态：**没判出来**的项 —— 同样带出去（它更要说出来）
+    unjudged = det.unjudged?.length ? det.unjudged.map((c) => ({ source: c.source, files: c.files })) : undefined;
   }
 
   const absToNew = new Map<string, string>();
@@ -250,7 +253,7 @@ function computeDeadImportsPlan(
       originals.set(abs, sources.get(abs)!);
     }
   }
-  return { absToNew, originals, units, needsReview };
+  return { absToNew, originals, units, needsReview, unjudged };
 }
 
 // ─────────────────────────────────────────────
@@ -589,10 +592,20 @@ export async function runRefactorPipeline(opts: PipelineOptions): Promise<Pipeli
     // ★ 2026-10-08 闸②：把「判死但不删」的原因拼成一句 —— 否则 `no_change` 与
     //   「闸② 拦下了」在报告里长得一样（静默）。
     const nrAll = plan.needsReview ?? [];
-    const nrDetail = nrAll.length
-      ? `闸② 拦下 ${nrAll.length} 项（该源是最后一个引用点 且 加载可能有效果 ⇒ 不自动删）：` +
-        nrAll.map((x) => `${x.source} ← ${(x.files ?? []).join(', ')}`).join(' | ')
-      : undefined;
+    const ujAll = plan.unjudged ?? [];
+    const detailParts: string[] = [];
+    if (nrAll.length)
+      detailParts.push(
+        `闸② 拦下 ${nrAll.length} 项（该源是最后一个引用点 且 加载可能有效果 ⇒ 不自动删）：` +
+          nrAll.map((x) => `${x.source} ← ${(x.files ?? []).join(', ')}`).join(' | '),
+      );
+    // ★★ 第三态必须**明说**：没判出来 ≠ 在用。
+    if (ujAll.length)
+      detailParts.push(
+        `★ 没判出来 ${ujAll.length} 项（拿不到解析事实 ⇒ **不删、也不冒充在用**）：` +
+          ujAll.map((x) => `${x.source} ← ${(x.files ?? []).join(', ')}`).join(' | '),
+      );
+    const nrDetail = detailParts.length ? detailParts.join(' ； ') : undefined;
     // 无改动判定：既没内容改写、也没文件移动，才算 no_change
     if (plan.absToNew.size === 0 && moves.length === 0) {
       r.stages.push({
