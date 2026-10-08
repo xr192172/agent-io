@@ -96,3 +96,84 @@ const extOf = (p) => path.extname(p);
 const cross = oc1.filter((k) => { const [a, b] = k.split('\t'); return extOf(a) !== extOf(b); });
 console.log(`  其中**跨语言**的: ${cross.length} / ${oc1.length}  ← 可疑度最高`);
 for (const k of cross.slice(0, 8)) console.log('    ' + k.replace('\t', '  →  '));
+
+// ─────────────── 逐条归因 ───────────────
+// 用**可判定的判据**给每条差异归类（不靠"看着像"）：
+//   · imported：consumer 在图里有到 provider 的 **import 边** ⇒ 这条 call 是**强证据**（有依赖关系支撑）
+//   · weak    ：没有 import 边 ⇒ 只能来自"裸名→全局唯一"兜底 ⇒ **弱证据**（正是上一轮逮到假边的那条路）
+//   · stale   ：consumer 文件 mtime **晚于**它的索引时点 ⇒ 索引里那份可能已过期
+// 说明：`files.indexed_at` 是**毫秒数**（不是 ISO 串）——上一版我按 ISO 解析，恒 NaN（坏的），这里按毫秒比。
+const fsmod = await import('node:fs');
+const mtimeOf = (rel) => { try { return fsmod.statSync(path.join(REPO, rel)).mtimeMs; } catch { return null; } };
+const isStale = (rel) => { const t = idxTimes.get(rel); const m = mtimeOf(rel); return typeof t === 'number' && m !== null && m > t + 1000; };
+const bucket = (arr, hasImportFn) => {
+  const c = { weak: [], strong: [], staleOnly: [] };
+  for (const k of arr) {
+    const [a, b] = k.split('\t');
+    const imp = hasImportFn(a, b);
+    if (imp) c.strong.push(k);
+    else if (isStale(a) || isStale(b)) c.staleOnly.push(k);
+    else c.weak.push(k);
+  }
+  return c;
+};
+const bl = bucket(oc1, (a, b) => live.has(`${a}\t${b}`));
+const bi = bucket(oc2, (a, b) => idxPairs.has(`${a}\t${b}`));
+console.log('\n★ 逐条归因（判据：有没有 import 边支撑 / 索引是否过期）');
+console.log(`  只在图 ${oc1.length}：弱证据（无 import 边）${bl.weak.length} · 强证据 ${bl.strong.length} · 仅索引过期可解释 ${bl.staleOnly.length}`);
+console.log(`  只在索引 ${oc2.length}：弱证据 ${bi.weak.length} · 强证据（索引侧有 import 边）${bi.strong.length} · 仅过期 ${bi.staleOnly.length}`);
+console.log('  只在图的**弱证据**样例（最该查的）:');
+for (const k of bl.weak.slice(0, 8)) {
+  const [a, b] = k.split('\t');
+  console.log(`    ${k.replace('\t', '  →  ')}   [${extOf(a)}→${extOf(b)}]${isStale(a) ? ' （consumer 晚于索引时点）' : ''}`);
+}
+
+// ★★ 弱证据**不能一刀切**：**Go 同一 package 内文件互不 import 却可互调** ⇒ 同目录的 go→go 多半**合法**。
+//   按"同目录 / 跨目录"分档，才看得出**真正要查的**还剩多少。
+const dirOf = (p) => path.posix.dirname(p);
+const pl = bl.weak.map((k) => k.split('\t'));
+const sameDir = pl.filter(([a, b]) => dirOf(a) === dirOf(b));
+const crossDir = pl.filter(([a, b]) => dirOf(a) !== dirOf(b));
+const byLang = (arr) => { const m = new Map(); for (const [a, b] of arr) { const k2 = extOf(a) + '→' + extOf(b); m.set(k2, (m.get(k2) ?? 0) + 1); } return [...m].sort((x, y) => y[1] - x[1]); };
+console.log(`\n★ 弱证据 ${bl.weak.length} 条再分档：**同目录 ${sameDir.length}** · **跨目录 ${crossDir.length}**`);
+console.log(`  同目录的按扩展名: ${byLang(sameDir).map(([k2, n]) => `${k2}×${n}`).join('  ')}`);
+console.log(`     ⇒ Go 同目录 = 同一 package（合法）；.ts/.mjs 同目录仍可疑`);
+console.log(`  跨目录的按扩展名: ${byLang(crossDir).map(([k2, n]) => `${k2}×${n}`).join('  ')}`);
+console.log('  跨目录弱证据样例（**最像假边**）:');
+for (const [a, b] of crossDir.slice(0, 8)) console.log(`    ${a}  →  ${b}`);
+console.log(`\n★ 反向（只在索引 ${oc2.length} 条 = **图漏了的**）样例:`);
+for (const k of oc2.slice(0, 6)) console.log('    ' + k.replace('\t', '  →  '));
+
+// ─────────────── ★★ 关键一问：那 66 条跨目录弱证据，"无 import 边"到底是 **call 假** 还是 **import 漏**？──
+// 判据：**亲自重解析 consumer**，把它的 import 逐条解析成项目内文件；看 provider 在不在里面。
+//   · 在 ⇒ consumer **确实 import 了** provider，而图的 import 边里没有 ⇒ **import 边漏了**（另一类缺陷）
+//   · 不在 ⇒ consumer **根本没 import** provider ⇒ 这条 call 只能来自"全局同名唯一"⇒ **假边**
+const k2mod = await import('file://' + path.join(REPO, 'dist/src/infrastructure/parse/index.js').replace(/\\/g, '/'));
+const { codeSourceExts: cse } = await import('file://' + path.join(REPO, 'dist/src/infrastructure/parse/source_exts.js').replace(/\\/g, '/'));
+const EXTS2 = cse(k2mod.listSupportedExtensions());
+const relSet = new Set([...g.rels]);
+const consumerImports = new Map();
+async function importsOf(rel) {
+  if (consumerImports.has(rel)) return consumerImports.get(rel);
+  const code = fsmod.readFileSync(path.join(REPO, rel), 'utf8');
+  const pr2 = await k2mod.parseFileFull(path.join(REPO, rel), code);
+  const out = new Set();
+  for (const im of pr2.imports || []) {
+    if (im.type_only) continue;
+    const h = k2mod.resolveProjectImport(rel, im.source, relSet, { exts: EXTS2 });
+    if (h.rel) out.add(h.rel);
+  }
+  consumerImports.set(rel, out);
+  return out;
+}
+let realImport = 0, fakeCall = 0;
+const realList = [], fakeList = [];
+for (const [a, b] of crossDir) {
+  const imps = await importsOf(a);
+  if (imps.has(b)) { realImport++; realList.push([a, b]); } else { fakeCall++; fakeList.push([a, b]); }
+}
+console.log(`\n★★ 66 条跨目录弱证据的真相（重解析 consumer 的 import 亲自核）：`);
+console.log(`   · consumer **确实 import 了** provider ⇒ **import 边漏了**（另一类缺陷）: ${realImport} 条`);
+console.log(`   · consumer **根本没 import** ⇒ 这条 call 只能来自"全局同名唯一"⇒ **假边**: ${fakeCall} 条`);
+console.log('   假边样例:'); for (const [a, b] of fakeList.slice(0, 6)) console.log(`     ${a}  →  ${b}`);
+console.log('   import 漏了样例:'); for (const [a, b] of realList.slice(0, 6)) console.log(`     ${a}  →  ${b}`);

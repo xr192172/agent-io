@@ -203,17 +203,23 @@ export async function buildImpactGraph(root: string): Promise<GraphResult> {
       return null;
     }
     // 裸标识符 `computeSum`：保底走"全局唯一"（多候选时不建边，防误报）
-    // ★★ 2026-10-08 修：**再加一道「同语言族」闸**。
-    //   实测假边（靠"现扫 vs 索引库"两条独立路径对照逮到）：
-    //   `observe-lang-go/probe/tiered.go` 把**局部变量** `opt` 当函数调，而全仓恰好只有
-    //   `src/presentation/cli/cli.ts` 导出名为 `opt` 的顶层符号 ⇒ 连出一条 **Go → TS** 的边。
-    //   本文件头注写着这条兜底的用意是「重名时不建边（**避免误报**）」⇒ 跨语言误连正违背该意图。
-    //   判据：**TS/JS 家族内部互通**（`.ts`↔`.mjs` 等本来就是一套工具链）；其余语言**要求扩展名相同**。
+    // ★★ 2026-10-08 修（两道闸）：
+    //   ① **同语言族**（TS/JS 家族互通；其余要求扩展名相同）—— 杀掉跨语言误连
+    //      （实测：`observe-lang-go/probe/tiered.go` 把**局部变量** `opt` 当函数调，
+    //        全仓恰好只 `src/presentation/cli/cli.ts` 导出 `opt` ⇒ 连出 **Go → TS**）
+    //   ② **必须有依赖关系支撑**：consumer 有到 provider 的 import 边，**或**两者**同目录**
+    //      （Go/Python 等"同包"语义：同目录文件互不 import 却可互调）。
+    //      ★ 为什么要有 ②：把 91 条差异**逐条重解析 consumer 的 import 亲自核**过 ——
+    //        **66 条跨目录的，consumer 根本没 import provider** ⇒ 只能是"全局同名唯一"匹配来的**假边**。
+    //      本文件头注写着该兜底是为了「重名时不建边（**避免误报**）」⇒ 无依赖支撑的边正违背该意图。
     if (providerOfSymbol && providerOfSymbol.length === 1 && providerOfSymbol[0].rel !== consumer) {
+      const prov = providerOfSymbol[0].rel;
       const ea = path.extname(consumer);
-      const eb = path.extname(providerOfSymbol[0].rel);
+      const eb = path.extname(prov);
       const sameFamily = isTsJsExt(ea) && isTsJsExt(eb) ? true : ea === eb;
-      if (sameFamily) return providerOfSymbol[0].rel;
+      const imported = edges.get(consumer)?.has(prov) ?? false;
+      const sameDir = path.posix.dirname(consumer) === path.posix.dirname(prov);
+      if (sameFamily && (imported || sameDir)) return prov;
     }
     return null;
   };
