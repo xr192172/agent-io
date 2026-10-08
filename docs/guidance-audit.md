@@ -97,18 +97,51 @@ grep 读数（全仓）：
 ```
 ⇒ **渲染模型与语义模型焊在同一个文件里**：人/LLM 为了读懂"结构"，必须先趟过像素。
 
-★ 但**工具层已经好了一半**：`get_dsl query=dsl` 已经输出「─ 几何层 ─ / ─ 语义层 ─」两段人读视图。
-真正的问题在两处：
-1. **`---DATA---` 原始载荷**（LLM 真去动手时吃的那份）里坐标与颜色仍占大头；
-2. **节点 id 是 `file_src_core_format_ts` 这种拼接串** —— 读到要先解码，而人读的名字在 `label` 里。
+★★★ **但本节初稿写错了，这里更正（当天自查，也是本文最重要的一处）**：
 
-**未修**（本轮只体检 + 修引导）。候选方向（**未实现，等裁定**）：
-- ① 给 `get_dsl` 加一个 `query=outline`：只出 `path → 职责 → API 签名`，**零坐标**；
-- ② 节点 id 与人读名解耦：id 保持稳定机器键，**视图层一律印 `path`**。
+初稿我写「工具层已经好了一半：`get_dsl query=dsl` 输出了几何层/语义层两段人读视图」，
+并建议「给 `get_dsl` 加一个 `query=outline`：只出 `path → 职责 → API 签名`，**零坐标**」。
+
+**那是重复造已存在的东西。** 实测（`get_dsl --json '{"query":"digest","feature":"..."}'` 真跑）：
+
+```
+══ feature "wga_syncwarm_2" 一行式认知索引（语义层派生视图·只读·不落盘）══
+src/auth.ts[core]:     F:核心层 · src — 1 个 API（导入自 0 个模块） | A:login(user: string): boolean
+src/service.ts[service]: F:服务层 · src — 1 个 API（导入自 1 个模块） | R:src/auth.ts | A:handle(u: string): boolean
+```
+
+**`query=digest` 就是 AOCI 形状的 F/R/A/S 视图，四个段全都实现好了** —— 源码注释（`meta/explore/query_feature.ts:718`）
+自己写着「一行式认知索引（**AOCI 形状**的派生视图：只读、不落盘、不新增真相源）」，并给出逐段映射：
+`F:` ← `responsibility`；`R:` ← `expected_deps ∪ cache.db import 事实`（走 `fileFacts` 唯一入口，**不新算**）；
+`A:` ← `expected_apis` 签名；`S:` ← 高熵字段（`expected_behavior` / `contract` / 非活跃 `lifecycle`）；
+标签位 `[layer]` **等价 AOCI 的标签槽**；**段缺则省略（宁缺毋造）**。
+
+⇒ **所以"DSL 不直观"不是缺能力 —— 是那个能力没被任何一处点名**：
+
+| 载体 | 点了 `digest` 的名吗 |
+|---|---|
+| `get_dsl` 的 query 描述 | 20 个 query 值挤在**一个字符串**里，`digest` 排第 9 |
+| `capability_map` 的策展文本（`WHEN_OVERRIDES`） | ❌ 手挑了 4 个（`DSL/features/decisions/simulation_state`），**digest 不在其中** |
+| `README.md` 的 `get_dsl` 行 | ❌ |
+| `.trae/skills/design-canvas-router` | ❌ |
+
+★ 这是个**比"不够"更贵的错**：能力建好了、能用、还建得挺对，**但三处引导全都没点名** ⇒
+**连我（写引导体检的人）都会提议再造一个**。**少点名的代价 > 多写几个字的代价。**
+
+**已修（本轮）**：`WHEN_OVERRIDES.get_dsl` 点名 `digest`；README 的 `get_dsl` 行点名；
+router §A 新增一行「"这些文件都是干什么的" → `get_dsl query=digest`」。
+
+**仍未修**（原候选 ② 仍在，且与 `digest` 无关）：
+- 节点 id 是 `file_src_core_format_ts` 这种拼接串 —— 读到要先解码，而人读的名字在 `label` 里；
+  `digest` 这一路已经用 `path` 回避了它，**但 `---DATA---` 原始载荷与其他 query 仍未回避**。
+- `---DATA---` 原始载荷里坐标与颜色仍占大头（LLM 真去动手时吃的那份）。
 
 ## 五、没做 / 未验（诚实清单）
 
-- **DSL 直观性一条未改**，只给了 §四那两个候选方向。
+- **DSL 的"读法"本身一行代码没改** —— 但改的是**引导**：`digest` 这条已经存在的好视图，
+  原先三处引导全不点名，现已补上（§四更正）。★ 真正的候选（节点 id 与人读名解耦）**未动**。
+- ★★ **我犯了一次"重复造轮子"**（就在本文 §四）：先看不见 `digest`、再提议造 `outline`。
+  根因正是本仓那条老纪律 —— **说"没有"之前先 grep/翻 docs**（§2.7）。**本轮我自己违了一次。**
 - 引导的**其余载体没全量核名**：README 的 61 工具表、`docs/tool-handbook.md` 都还没逐个对过真名。
 - ★ ★ **快照抓不到本次改动**：`tool-surface` 观测点量的是 `TOOL_DEFS`（61 个工具的契约），
   **不含 `facesOf` 的面成员** ⇒ "哪几个工具露给 LLM"变了，**没有任何东西会变红**

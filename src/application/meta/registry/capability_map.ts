@@ -154,7 +154,13 @@ export const LANE_META: ReadonlyArray<Omit<Lane, 'tools'>> = [
  */
 export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
   index_integrity: '索引可信度自检：陈旧断言 / 未保鲜文件 / 覆盖度 —— 判断"现在读到的索引能不能当真"，可选 refresh 顺手保鲜',
-  get_dsl: '统一只读入口，query 参数查 DSL/features/decisions/simulation_state',
+  // ★★ 2026-10-08 更正：旧文只列了 `DSL/features/decisions/simulation_state` —— **20 个 query 里手挑了 4 个**，
+  //   而**最能一眼看懂一个 feature 的那个（`digest`）恰好没被点到名**。
+  //   实测后果：`digest`（一行式认知索引，AOCI 形状的 F/R/A/S 派生视图）早就实现并可用，
+  //   但**导航不点名、README 不点名、router 不点名** ⇒ 我上一轮甚至**提议再造一个 `query=outline`**
+  //   （= 重复造已存在的东西）。⇒ 策展文本**少点名**的代价，比多写几个字贵得多。
+  get_dsl:
+    '统一只读入口，query 参数查 DSL/features/nodes/edges/file/decisions/digest（一行式认知索引 F/R/A/S —— 想知道"这些文件都是干什么的"先看它）/calls/functions/diff/goals 等 20 种',
   edit_dsl: '统一写入口，operations 批量增删改节点/边/文件/API/binding/status',
   manage_feature: 'feature 生命周期：create/clone/template/list/delete',
   render_design: '渲染并保存设计图（完整 DSL 模式产物）',

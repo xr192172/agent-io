@@ -41,7 +41,10 @@ README / 本 router / mind 都**没写过一次** ⇒ **谁都不会想到"有�
 
 ### A · 画图 / 活文档
 - 原始诉求是「建底 / 出图 / 全项目对账」→ `import_project` → `render_design` → `reconcile_effects`
-- 只是「改一版图 / 查当前图」→ `get_dsl`（读）+ `edit_dsl`（写，批量操作，原子回滚）
+- ★★ **"这些文件都是干什么的？"、"先给我个总览" → `get_dsl query=digest`**
+  （一行式认知索引：`路径[层]: F:职责 | R:关系 | A:契约 | S:高熵决策`，AOCI 形状的**派生视图**，只读不落盘。
+  ★ 它**早就实现了**，却长期没人点名 ⇒ 别再造一个"outline"）
+- 只是「改一版图 / 查当前图」→ `get_dsl`（读，另有 `query=dsl` 给"几何层/语义层"两段人读视图）+ `edit_dsl`（写，批量操作，原子回滚）
 - **要写"为什么"（目标 / 方向 / "A 为何依赖 B" / 边界归属）→ `design_intent`**（落到 ③ overlay）。
   ★ 改 why、改方向这类**该由人拍板**的变更走 `action=propose`（**只出 before/after 提案、不写盘**，
   人 approve 才落）；确定要改的直接 `action=set`。→ 见第零层那张表
