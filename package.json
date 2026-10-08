@@ -82,7 +82,8 @@
     "grammar:verify-frozen": "node scripts/grammar_shim.mjs verify-frozen",
     "probe:extract": "node scripts/probe_extract_quality.mjs",
     "probe:extract-hard": "node scripts/probe_extract_hard.mjs",
-    "probe:xfile": "node scripts/probe_xfile_resolve.mjs"
+    "probe:xfile": "node scripts/probe_xfile_resolve.mjs",
+    "probe:closure": "node scripts/probe_closure_multi.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
