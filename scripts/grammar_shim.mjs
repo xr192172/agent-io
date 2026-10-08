@@ -120,12 +120,33 @@ async function fetchSrc(name) {
   throw new Error(`未知来源 kind=${e.from.kind}`);
 }
 
-async function build(name) {
+/** ★ 从**冻结副本**取源（不联网）：解析 vendor/grammars/sources/<lang>.tar.gz 到本地暂存目录。
+ *  这是"我们自己的副本"的**验收**：冻结件必须能独立重建。 */
+async function extractFrozen(name) {
+  const tgz = path.join(REPO, 'vendor', 'grammars', 'sources', `${name}.tar.gz`);
+  if (!fs.existsSync(tgz)) throw new Error(`没有冻结件：vendor/grammars/sources/${name}.tar.gz`);
+  const dir = path.join(REPO, '.inspect', 'frozen-src', name);
+  fs.mkdirSync(dir, { recursive: true });
+  const toPosix = (p) => p.split(path.sep).join('/');
+  const r = await run('tar', ['-xzf', toPosix(path.relative(REPO, tgz)), '-C', toPosix(path.relative(REPO, dir))], REPO, 600000, false);
+  if (!r.ok) throw new Error(`解冻结件失败: ${r.out.split('\n').filter(Boolean).slice(-2).join(' | ').slice(0, 140)}`);
+  // ★ 语法目录**不一定就在归档根**：`grammarPath` 由冻结脚本写进 PROVENANCE
+  //   （`ocaml` 那类需要 `../common/`，归档根是包根而不是语法目录）。
+  const prov = JSON.parse(fs.readFileSync(path.join(dir, 'PROVENANCE.json'), 'utf8'));
+  return path.join(dir, prov.grammarPath ?? '.');}
+
+async function build(name, opts = {}) {
   const e = table[name];
   // ★ 已撤下的（disabled）：**跳过**，不当失败 —— 否则每次 build-all 都会为它报一次假红。
   //   但也不是"静默跳过"：如实说清为什么。
   if (e.disabled) return { name, ok: false, skipped: true, why: '已撤下（disabled）: ' + (e.disabledWhy ?? '') };
-  const grammarDir = await fetchSrc(name);
+  const grammarDir = opts.frozen ? await extractFrozen(name) : await fetchSrc(name);
+  return compileAndProbe(name, grammarDir);
+}
+
+/** 取到源之后的那半段：验 ABI → 写 binding.c/gyp → node-gyp → **真加载**。build 与 build-frozen 共用。 */
+async function compileAndProbe(name, grammarDir) {
+  const e = table[name];
   const parserC = path.join(grammarDir, 'src', 'parser.c');
   if (!fs.existsSync(parserC)) return { name, ok: false, why: `没有 src/parser.c（取到的目录：${path.relative(REPO, grammarDir)}）` };
   const abi = readAbi(parserC);
@@ -215,10 +236,26 @@ if (cmd === 'list') {
 } else if (cmd === 'fetch') {
   console.log('取源 ->', await fetchSrc(arg));
 } else if (cmd === 'build') {
-  const r = await build(arg);
+  const r = await build(arg, { frozen: process.argv.includes('--frozen') });
   // ★ 失败时**顺带打 JSON** —— 因为我已经吃过一次"报错是空的"的亏（沉默的失败）。
-  console.log(r.ok ? `✅ ${arg} ABI ${r.abi} root=${r.root}` : `❌ ${arg} ${r.why}\n   raw=${JSON.stringify(r)}`);
+  const tag = process.argv.includes('--frozen') ? '（源取自冻结副本，未联网）' : '';
+  console.log(r.ok ? `✅ ${arg} ABI ${r.abi} root=${r.root}${tag}` : `❌ ${arg} ${r.why}\n   raw=${JSON.stringify(r)}`);
   process.exitCode = r.ok ? 0 : 1;
+} else if (cmd === 'verify-frozen') {
+  // ★ 「我们自己的副本」的验收：**只用冻结件**重建，逐门真加载。
+  const out = [];
+  for (const k of Object.keys(table)) {
+    if (table[k].disabled) continue;
+    if (!fs.existsSync(path.join(REPO, 'vendor', 'grammars', 'sources', `${k}.tar.gz`))) {
+      console.log(`  ·  ${k} 没有冻结件`); continue;
+    }
+    const r = await build(k, { frozen: true });
+    out.push(r);
+    console.log(r.ok ? `  ✅ ${k.padEnd(9)} ABI ${r.abi} root=${r.root}` : `  ❌ ${k.padEnd(9)} ${r.why}`);
+  }
+  const pass = out.filter((r) => r.ok).length;
+  console.log(`\n只用冻结副本重建：${pass}/${out.length} 通过`);
+  process.exitCode = pass === out.length && out.length > 0 ? 0 : 1;
 } else if (cmd === 'build-all') {
   const out = [];
   for (const k of Object.keys(table)) {

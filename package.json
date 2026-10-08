@@ -77,7 +77,9 @@
     "grammar:pins": "node scripts/grammar_shim.mjs pins",
     "grammar:verify": "node scripts/verify_grammar_rebuild.mjs",
     "roster:merge": "python scripts/merge_language_roster.py",
-    "roster:diff": "python scripts/diff_language_rosters.py"
+    "roster:diff": "python scripts/diff_language_rosters.py",
+    "grammar:freeze": "python scripts/freeze_grammar_sources.py",
+    "grammar:verify-frozen": "node scripts/grammar_shim.mjs verify-frozen"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",

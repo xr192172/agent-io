@@ -52,3 +52,33 @@ npm run grammar:build-all         # 表里所有
 `SOURCES.json` 里 git 来源的都带 `rev`（commit hash）—— 取源时按它 `fetch --depth 1` 再 checkout，
 **取完当场校验 HEAD 必须等于钉的那个 hash**，不等就报错。
 （不钉的话，"重建"只是"拉 default 分支最新"，哪天上游一动，重编出来就不是同一份东西了。）
+
+npm 来源的按**版本号**钉（`from.pkg@from.version`），`rev` 记为 `null` —— 不许拿别的仓的 HEAD 冒充。
+
+## ★ 我们自己的冻结副本（上游改了也不慌）
+
+`vendor/grammars/sources/<lang>.tar.gz` —— 每门在册语法的**构建必需件冻结副本**（合计约 **2.8 MB**）。
+
+里面只放**编译器真正会读到的**文件：`parser.c`、`scanner.*`、以及它们 `#include` 到的**本地**头
+（含语法自带的 `src/tree_sitter/*.h`，以及像 `../common/scanner.h` 这种跨目录引用），
+再加 `grammar.json` + `LICENSE`，外加一份 `PROVENANCE.json`
+（repo / rev / ABI / 符号 / `grammarPath` / 每个文件的 sha256）。
+
+★ **为什么只冻这 8 门**：全部 244 个仓的源码树 = **1433 MB**（仅 `parser.c` 就 812 MB），进仓不现实。
+  清单里另外 483 门**继续用 rev 钉**；上游删仓才会痛，那时按需冻即可。
+
+```bash
+npm run grammar:freeze          # 重新冻结（按 include 闭包收集，不靠手写清单）
+npm run grammar:verify-frozen   # ★ 验收：**只用冻结件**重建全部在册语法 + 真加载
+```
+
+### ★★ 这道验收不是形式 —— 它当场逼出三个真缺陷
+
+1. 只冻 `parser.c` ⇒ 报 `cannot open include file 'tree_sitter/parser.h'`（**8/8 全挂**）
+2. 补上运行时头之后，`vue`（引 `./tree_sitter_html/scanner.cc`）与 `ocaml`（引 `../../../common/scanner.h`）
+   仍然失败 ⇒ **归档根必须取"能覆盖全部所需文件的最小公共目录"**，否则路径带 `..`，tar 直接拒绝
+   （`Member name contains '..'`）⇒ 解都解不出来
+3. `crystal` 用的是**尖括号**形式 `#include <tree_sitter/parser.h>` ⇒ 只跟引号形式会**漏掉头文件**
+
+⇒ 所以冻结脚本**照 include 图走，不靠手写清单**；
+而"这份副本到底能不能独立重建"由 `grammar:verify-frozen` **每次实跑**（当前 8/8 通过）。
