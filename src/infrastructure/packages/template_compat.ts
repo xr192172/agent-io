@@ -48,9 +48,65 @@
  */
 export type TemplateCompat = 'ok' | 'incompatible' | 'unknown';
 
-/** 纯函数：从 package.json 内容判模板兼容（本地读 / registry 元数据走同一判据，不抄第二份）
- *  @param opts.hasBuiltBinding 本地只见得到的一条事实：**该包自己就带着已构建的 native 产物**
- *         （`build/Release/*.node` 在盘上）。`null` = 不知道（registry 元数据那条路就没有这条事实）。 */
+/**
+ * ★★ 本层的**唯一概念**：这个包的**绑定属于哪一代**。
+ *
+ * 判据的靶子是「它导出的是不是核心认的 **N-API 语言对象**」，而这**只**取决于"绑定是哪一代"——
+ * "模板长什么样""install 脚本叫什么"都只是它的**影子**。
+ * ⇒ 做成**穷尽的枚举**，而不是几条布尔的组合：原先这里是
+ * `usesNan` / `installScript` / `hasBuiltBinding` 三条事实在**一条 if 链**里排队，
+ * 读的人分不清谁是判据、谁是线索（2026-10-08 用户点出"别再打补丁"之后收成这个形状）。
+ */
+export type BindingGeneration =
+  | 'nan'             // 老 `nan.h` 模板：`require` 可能成功，但 `setLanguage` 抛 Invalid language object
+  | 'napi-template'   // `node-addon-api` + `node-gyp-build`（prebuildify）⇒ 标准 N-API 语言对象
+  | 'self-built'      // 包**自带已构建产物**（本仓用通用 N-API 绑定从语法源码编出来的那批）⇒ 同样导出语言对象
+  | 'no-napi-export'; // 三者皆非：无 `nan`、无 `node-gyp-build` 脚本、也没有自带产物
+// ★ **没有 `'unknown'` 成员**（2026-10-08 自己纠正）：代际只在**有事实可判**时才存在；
+//   "拿不到清单"是**入口层**的状态（`templateCompatFromPkgJson(null)` ⇒ 直接 'unknown'），
+//   不该由分类器冒出——否则 `install-package check` 会对"装了但元数据缺 `dependencies`"的包
+//   说出「？未装」那句**错话**（我的第一版这么干了，是**行为降级**，已改回）。
+
+/** 判"代际"所需的**事实** —— 三条来源不同：清单里两条、**本地磁盘**一条 */
+export interface BindingFacts {
+  /** 依赖里写着 `nan`？`null` = 拿不到清单（未装 / registry 查不到）—— **不许当成 false** */
+  usesNan: boolean | null;
+  /** `scripts.install` 的值；`null` = 没有这个脚本 */
+  installScript: string | null;
+  /** ★ 本地看得见：包自带 `build/Release/*.node`？`null` = 不知道（registry 元数据那条路拿不到这条事实） */
+  hasBuiltBinding: boolean | null;
+}
+
+/**
+ * ★★ **唯一分类处**：事实 → 代际。顺序即优先级，理由逐条写在下面（别再往调用方散落 if）。
+ * 本仓任何地方要判"这个包能不能载入"，都**只**调 `bindingGenerationOf` 或 `bindingVerdictOf`。
+ */
+export function bindingGenerationOf(f: BindingFacts): BindingGeneration {
+  if (f.usesNan === true) return 'nan';                 // ① **因果判据**：NAN ≠ N-API（核心 0.21 只认后者）
+  if (f.hasBuiltBinding === true) return 'self-built';  // ② **直接证据**：产物在盘上 ⇒ 比"模板指纹"硬
+  if (f.installScript === 'node-gyp-build') return 'napi-template'; // ③ **模板指纹**（最弱的一条）
+  // ★ `usesNan === null`（拿不到 `dependencies`）**不**改判：退回指纹继续判（= 本文件旧有的"② 级"行为）。
+  return 'no-napi-export';
+}
+
+/** ★ 代际 → verdict：**穷尽映射**（5 → 3）。枚举加成员时，TS 会在这里报缺分支 —— 这就是要的效果。 */
+export function bindingVerdictOf(gen: BindingGeneration): TemplateCompat {
+  switch (gen) {
+    case 'napi-template':
+    case 'self-built':
+      return 'ok';
+    case 'nan':
+    case 'no-napi-export':
+      return 'incompatible';
+  }
+}
+
+/**
+ * 纯函数：从 package.json 内容判模板兼容（本地读 / registry 元数据走**同一判据**，不抄第二份）。
+ * ★ 这是**入口形态①**（手上有清单）；手上只有事实时用 `templateCompatFromFacts`（形态②）。
+ * @param opts.hasBuiltBinding 本地只见得到的一条事实：该包自带已构建的 native 产物。
+ *        `null` = 不知道（registry 元数据那条路没有这条事实）。
+ */
 export function templateCompatFromPkgJson(
   j: Record<string, unknown> | null,
   opts?: { hasBuiltBinding?: boolean | null },
@@ -65,34 +121,25 @@ export function templateCompatFromPkgJson(
 }
 
 /**
- * ★ 同一判据的**第二个入口形态**：手上不是一份清单、而是**两个事实**时用它。
+ * ★ **入口形态②**：手上不是一份清单、而是**三条事实**时用它。
  *
  * 为什么需要（实测逼出来的）：`install-package check` 问的是 **registry 元数据**，而
  * `npm view x version scripts.install dependencies --json` 把字段**拍平**成 `'scripts.install'`
- * 这种**带点的键**（与本地 package.json 的嵌套形状不同）。为了复用 `templateCompatFromPkgJson`
- * 去现造一份假清单 = **拿形状去骗判据**（正是本仓 §2.3 那条病）。⇒ 判据收到"两个事实"这一层，
- * 两种形态都喂它，**只有一份逻辑**。
+ * 这种**带点的键**（与本地 package.json 的嵌套形状不同）。为了复用形态①去现造一份假清单
+ * = **拿形状去骗判据**（正是本仓 §2.3 那条病）。⇒ 判据落到"事实"这一层，两种形态都喂它，**只有一份逻辑**。
  * @param usesNan      依赖里有没有 `nan`（`null` = 上游没声明 dependencies / 取不到）
  * @param installScript `scripts.install` 的值（`null` = 没有这个脚本）
- * @param hasBuiltBinding ★ 2026-10-08 新增的第**三**条事实：**该包自带已构建的 native 产物**
- *        （`<pkg>/build/Release/*.node` 就在盘上）。`null` = 不知道（registry 那条路拿不到）。
+ * @param hasBuiltBinding 该包是否**自带已构建产物**（`<pkg>/build/Release/*.node` 在盘上）；
+ *        `null` = 不知道（registry 那条路拿不到）。★ 这条是 2026-10-08 加的：
+ *        本仓自建的那批（`agent-io-grammar-*`）既无 `nan`、也没有 `node-gyp-build` 脚本，
+ *        但它们**真带产物、真加载 8/8 通过** ⇒ 旧判据把它们判死 ⇒ **整门语言的功能走不到**（`isSupported` 返 false）。
  */
 export function templateCompatFromFacts(
   usesNan: boolean | null,
   installScript: string | null,
   hasBuiltBinding: boolean | null = null,
 ): TemplateCompat {
-  // ★ 因果判据优先：依赖 `nan`（NAN 绑定）⇒ 核心 0.21 只认 N-API 语言对象 ⇒ 必失败。
-  if (usesNan === true) return 'incompatible';
-  // ★★ 2026-10-08：**"自带已构建产物"排在"模板指纹"之前** —— 产物在盘上是**直接证据**，
-  //   而 `scripts.install` 长什么样只是**指纹**（本文件上面自己就把它标成"② 级（模板指纹）"）。
-  //   由来（实测）：我们自己用**通用 N-API 绑定**从语法源码编出来的 8 个包（`agent-io-grammar-*`）
-  //   既无 `nan`、也没有 `node-gyp-build` 安装脚本 ⇒ 旧判据判它们 `incompatible`
-  //   ⇒ `isSupported(扩展名)` 返回 false ⇒ **整门语言的功能是死的**（注册表里在、真加载也过，功能却走不到）。
-  //   而那 8 个包的真加载是**逐门验过的 8/8 通过**。
-  if (hasBuiltBinding === true) return 'ok';
-  // ② 级（模板指纹）：既不是 NAN、也没有 node-gyp-build 安装脚本 ⇒ 拿不到 N-API 语言对象。
-  return installScript === 'node-gyp-build' ? 'ok' : 'incompatible';
+  return bindingVerdictOf(bindingGenerationOf({ usesNan, installScript, hasBuiltBinding }));
 }
 
 /**
@@ -108,12 +155,25 @@ export function usesNanBinding(j: Record<string, unknown> | null): boolean | nul
 
 /**
  * 兼容性**人读一句** —— **唯一落点**：`list` / `check` / `install` / `lang_hint` 都调它，别各写一份。
- * @param compat  verdict（`templateCompatFromPkgJson` 的产物）
+ * @param compat verdict（`bindingVerdictOf` 的产物）
  * @param usesNan 该包是不是 NAN 绑定（`null` = 拿不到清单）—— 决定"为什么不可用"那句怎么写
+ * @param gen    ★ 可选：有**代际**时按代际说（能区分"自带产物"那一路）；不传则退回旧的两参措辞
+ *               （`lang_hint.ts` 只传两个参数，保持兼容）。
  */
-export function templateCompatReason(compat: TemplateCompat, usesNan: boolean | null): string {
+export function templateCompatReason(
+  compat: TemplateCompat,
+  usesNan: boolean | null,
+  gen?: BindingGeneration,
+): string {
   if (compat === 'unknown') return '？未装（离线判不出，用 `check <lang>` 查 registry 元数据）';
-  if (compat === 'ok') return '✅ 模板兼容（node-gyp-build ⇒ N-API 语言对象）';
+  if (compat === 'ok') {
+    return gen === 'self-built'
+      ? '✅ 可用（本仓自建：用通用 N-API 绑定从语法源码编出，**自带产物**）'
+      : '✅ 模板兼容（node-gyp-build ⇒ N-API 语言对象）';
+  }
+  if (gen === 'no-napi-export') {
+    return '❌ 载入必失败：既无 `nan`、也无 `node-gyp-build` 安装脚本、更没有自带产物 ⇒ 拿不到 N-API 语言对象';
+  }
   return usesNan === true
     ? '❌ 载入必失败：依赖 `nan`（NAN 绑定）⇒ 核心 tree-sitter 0.21 只认 N-API 语言对象，`setLanguage` 抛 Invalid language object'
     : '❌ 载入必失败：没有 `node-gyp-build` 安装脚本（多为老 nan.h 模板）';
