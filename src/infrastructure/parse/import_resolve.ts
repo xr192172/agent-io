@@ -94,37 +94,66 @@ export interface ResolvePathOptions {
  *   `resolveImportTarget` 的既有调用方（含 `tools/rename_file.ts`）行为漂移。
  *   该怪癖已由 `tests/tools/import_resolve.test.ts` 钉住。
  */
+/**
+ * 「补全策略」—— **只有两种**，由 `base` 的扩展名唯一决定（T36 那条线就住在这里，只此一处）。
+ *
+ * · `strip-and-retry`：`base` 带**import 级扩展名**（TS/JS 系，判定集合 = `IMPORT_EXTS`）。
+ *   这类写法是"NodeNext 源码里写 `.js` 指产物"的**可重定向模块说明符** ⇒ 先试字面，再**剥掉扩展名**试其它。
+ * · `append-only`：其余（无扩展名，或 `.go`/`.sol`/`.py` 这类**真实业务扩展名**）。
+ *   此时扩展名是**路径的一部分** ⇒ **不剥**，只在追加方向试。
+ *
+ * ★ T36（2026-10-05）否决过"把调用方的 `exts` 也并进策略判据"：那会让 `.go/.py` 也翻进"剥扩展名重试"
+ *   ⇒ 实测 `resolveToFile` 出现**跨语言**同名回退（`util.go` 命中 `util.ts`）。
+ *   ⇒ 策略判据**只**认 `IMPORT_EXTS`，与 `exts` 无关（`exts` 只决定"往哪些扩展名补"）。
+ */
+type CompletionStrategy = 'strip-and-retry' | 'append-only';
+
+/** 生成候选所需的全部输入（把三个可选参数的缺省**在一处**落地，生成器只读它） */
+interface CompletionInput {
+  base: string;
+  baseExt: string;
+  exts: readonly string[];
+  indexFiles: readonly string[];
+  bareBaseFirst: boolean;
+}
+
+/** ① 字面候选（`base` 原样）—— 三种策略下**各自**成立的收法，理由各写一行 */
+function literalCandidates({ base, baseExt, exts, bareBaseFirst }: CompletionInput, strategy: CompletionStrategy): string[] {
+  if (strategy === 'strip-and-retry') return [base]; // 模块说明符：字面本来就是第一候选
+  if (bareBaseFirst) return [base]; // 调用方显式要求（它手上已是拼好的路径）
+  // 真实扩展名且**是已知源码扩展名** ⇒ 字面路径就是它本身（`./a.sol` → `a.sol`）。
+  // ★ 不剥：只在"该扩展名确实在已知集合里"时收，因此不可能造出假边（只有文件真存在才命中）。
+  return baseExt !== '' && exts.includes(baseExt) ? [base] : [];
+}
+
+/** ② 补全候选（同一路径的其它可能文件名） */
+function completionFor({ base, baseExt, exts }: CompletionInput, strategy: CompletionStrategy): string[] {
+  return strategy === 'strip-and-retry'
+    ? exts.map((e) => base.slice(0, -baseExt.length) + e) // 剥掉 import 级扩展名再补
+    : exts.map((e) => base + e); // 追加
+}
+
+/** ③ 目录 index 候选（`./foo` → `./foo/index.ts`） */
+function indexFor({ base, baseExt, indexFiles }: CompletionInput, strategy: CompletionStrategy): string[] {
+  const stem = strategy === 'strip-and-retry' ? base.slice(0, -baseExt.length) : base;
+  return indexFiles.map((f) => `${stem}/${f}`);
+}
+
 export function completionCandidates(base: string, options: ResolvePathOptions = {}): string[] {
-  const exts = options.exts ?? IMPORT_EXTS;
-  const indexFiles = options.indexFiles ?? INDEX_FILES;
-  const baseExt = path.posix.extname(base);
-  // ★ T36 已定（2026-10-05）：判定集合 = `IMPORT_EXTS`（`.mts/.cts` 已纳入，**不**在 `exts` 里补）。
-  //   曾试过放宽为 `IMPORT_EXTS ∪ exts` —— **否决**：那会让 `exts` 里的一切（`.go/.py`…）翻进
-  //   "剥扩展名重试"，实测 `resolveToFile` 出现**跨语言**同名回退（`util.go` → 命中 `util.ts`）= 新错。
-  //   ⇒ 正确修法是"把 `.mts/.cts` 补进 `IMPORT_EXTS`"，影响面仅这两者（见 `IMPORT_EXTS` 注释）。
-  const isImportExt = IMPORT_EXT_SET.has(baseExt);
-  const out: string[] = [];
-  if (isImportExt) {
-    out.push(base);
-    const bare = base.slice(0, -baseExt.length);
-    for (const e of exts) out.push(bare + e);
-    for (const f of indexFiles) out.push(`${bare}/${f}`);
-  } else {
-    // ★★ 2026-10-08：`base` **原样**也纳入 —— 当它的扩展名 ∈ 调用方给的 `exts` 时。
-    //
-    // 为什么：`import "./a.sol"` 这类**自带真实扩展名**的写法，在旧判据下 `base` 根本不会成为候选
-    //   （判定集合只有 `IMPORT_EXTS` = TS/JS 系）⇒ **恒解析不到**（实测 solidity：`./a.sol` → null）。
-    //
-    // ★ 与 T36 否决的那条**不是一回事**（别混）：T36 否决的是"放宽为 `IMPORT_EXTS ∪ exts`"，
-    //   那会让 `exts` 里的一切翻进「**剥扩展名重试**」⇒ 跨语言同名回退（`util.go` → 命中 `util.ts`）。
-    //   本条**不剥**，只把**字面路径本身**加进候选 ⇒ **只有那个文件真的存在时才会命中**，不可能造出假边。
-    if (options.bareBaseFirst || (baseExt !== '' && exts.includes(baseExt))) out.push(base);
-    // ★ 非 import 级扩展名（如显式 `.go`/`.rs`）**不剥** —— 与旧三份实现逐字一致；
-    //   需要"剥任意扩展名重试"是另一个策略，别顺手加进来（会让 health/impact 行为漂移）。
-    for (const e of exts) out.push(base + e);
-    for (const f of indexFiles) out.push(`${base}/${f}`);
-  }
-  return out.filter((c) => !c.startsWith('..'));
+  const input: CompletionInput = {
+    base,
+    baseExt: path.posix.extname(base),
+    exts: options.exts ?? IMPORT_EXTS,
+    indexFiles: options.indexFiles ?? INDEX_FILES,
+    bareBaseFirst: options.bareBaseFirst === true,
+  };
+  const strategy: CompletionStrategy = IMPORT_EXT_SET.has(input.baseExt) ? 'strip-and-retry' : 'append-only';
+  // 顺序即优先级：**字面 → 补全 → 目录 index**（三类各由上面一个具名生成器产出）。
+  return [
+    ...literalCandidates(input, strategy),
+    ...completionFor(input, strategy),
+    ...indexFor(input, strategy),
+  ].filter((c) => !c.startsWith('..'));
 }
 
 /**
