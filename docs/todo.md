@@ -956,19 +956,6 @@
 
 ---
 
-- [ ] **T72 ★★★ 「区域（Scope）」：把已有的 5 种分组轴接到"作用域"上**
-      *(核实：2026-10-09 实测 —— `sub_dsl`(子图) / `swimlane`(泳道) / `arch_layer`(架构层) / `layer`(层次) /
-       `host`(宿主) 这**五个分组轴全都在**（`src/domain/geometry.ts:115/119/129/131/133`），
-       但它们**只服务画布与查询过滤**（`get_dsl` 的 `layer` / `type` / `file_layer` 参数）；
-       **没有一条接到"作用域"上** —— `consistency_check` / `detect_drift` 只按 **feature** 报，
-       `edit_code` / `scaffold` 只要 **file / symbol**。)*
-      ⇒ **背景（用户 2026-10-09 口述的目标工作流）**：*"可以任意圈定项目范围，然后重写……对比项目现状与设计，
-        得到区别的地方，然后**分区域**将它重写。"*
-      ⇒ **形状**：一个 **`Scope` 的表达**（能指"哪一片"）+ 一个**解析器**（scope → 文件/节点集合）。
-        ★ 关键约束：**解析必须确定**（同一 scope 两次解析结果相同）—— 否则"这块我改过了"无从谈起。
-        ★ 现有分组轴里，`sub_dsl` 是**嵌套**的（子图里还有子图）⇒ 解析要定义"含不含后代"。
-      ⇒ **判据**：给一个 scope ⇒ 解析出**确定的文件集合**；同一输入跑两次**逐字相同**。
-
 - [ ] **T73 ★★ 「差异块」：把 per-file 差异聚成"可重写的区域块"**
       *(核实：2026-10-09 实测 —— `consistency_check` 报 `fileResults[]`（**每文件**一条）、
        `detect_drift` 报"欠实现文件"清单；**两者都以文件为粒度**，且**退出码恒 0**（报告，不是门）。)*
@@ -980,9 +967,28 @@
       *(核实：2026-10-09 实测 —— `NodeDecision.acceptance`（`domain/geometry.ts:164`）是**自由文本**、
        **无执行者**；而 `consistency_check` / `detect_drift` **退出码恒 0**。
        ⇒ 于是"照设计重写实际"这条链上，**唯一没有执行者的一环就是验收**。)*
+      ★ **地形已勘（2026-10-09 只读子代理产出，带行号，下次别重勘）**：
+      · **退出码通路**（判据"改代码 ⇒ 退出码非 0"就落在这）：`presentation/cli/cli.ts:297`
+        `process.exit(r.isError ? 1 : 0)`；而 `isError` **只由 handler 抛异常**（`application/plumbing.ts:48/76`
+        的 `wrap`/`wrapData` 在 catch 里置位）**或显式返回 `{isError:true}`** 产生
+        ⇒ **正常返回结果的工具永远退 0**（`consistency_check`/`detect_drift` 就是 `wrapData` 正常返回）。
+      · **一致性检查可直调**：`application/design/intent/consistency.ts:245`
+        `checkConsistency(input: {feature; code_dir?})`（类型 `:73-77`，出参 `:35-48`）；
+        它**不是纯函数**（读 `getDSL` + fs），但 `detect_drift.ts:118` **已经直接 import 调用**过 ⇒ 有先例。
+      · **符号判定入口**：`infrastructure/index/file_facts.ts:91` `fileFacts(root,file,feature?)`、
+        `:120` `apiSignaturesOf`、`:137` `mergedApis`；`infrastructure/index/symbols.ts:940` `getFileParse`、
+        `:962` `searchSymbols`；现解析用 `infrastructure/parse/ast_parser.ts:28` `parseFileSymbols`。
+      · ★★ **依赖边的口径坑（必须先定，否则 `edge-exists/absent` 判错）**：三处来源 —
+        `semantic.files[].expected_deps`（**设计意图**，`domain/semantic.ts:74`）·
+        `geometry.edges[]`（import_project 落的**快照投影**，`infrastructure/graph/import_project.ts:1668-1689`）·
+        `fileFacts().deps`（**现取事实**，`infrastructure/index/file_facts.ts:110-114` 读 `cache.db` 的 `edges kind='import'`）。
+        ⇒ **"当前真实" = `fileFacts().deps`**；但 ★ 它**只为 TS/JS 相对导入写**
+        （`infrastructure/index/symbols.ts:388` `if (imp.kind !== 'relative') continue`）⇒ **不含 Go/Python 包导入**；
+        要全覆盖得走 `infrastructure/graph/import_graph.ts:54` `buildImportGraph`。
+      · **决策卡读写路径**：唯一写入口 = `edit_dsl` 的 `type=node` add/update（底层 `addNode`/`updateNode`
+        经 `applyDecisionWrite`）；`acceptance` **唯一被读取展示的点** = `meta/explore/query_feature.ts:442`。
       ⇒ **形状**：`acceptance` 从自由文本升级为 **`Expectation[]`**（`edge-exists` / `edge-absent` /
-        `symbol-exists` / `file-exists` / `signature-matches`）；判定器**复用既有判据**（依赖图 / 符号表 /
-        `consistency_check` 已有的签名比对），**不新造解析**。
+        `symbol-exists` / `file-exists` / `signature-matches`）；判定器**复用上面那三套入口**，**不新造解析**。
       ⇒ **判据**：一个**真决策**挂上 acceptance ⇒ 改代码 ⇒ **指令退出码非 0**（现在恒 0）。★ 只作**报告 + 可选门**。
       ⇒ ★★ **为什么它是命门**：没有验收，"分区域重写"就变成**自信地改坏**——链上别的环错了能看见，这一环错了看不见。
 

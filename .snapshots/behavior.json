@@ -1,6 +1,6 @@
 {
  "_meta": {
-  "takenAt": "2026-10-08T14:27:50.168Z",
+  "takenAt": "2026-10-08T16:52:32.583Z",
   "env": {
    "core": "0.21.1",
    "node": "v22.22.2",
@@ -290,6 +290,7 @@
      "description": "统一只读入口：通过 query 参数查询 DSL 数据。query: dsl（完整 DSL JSON）/ features（所有 feature 列表）/ nodes（节点摘要列表，支持 layer/type 过滤）/ edges（边摘要列表，支持 layer 过滤）/ node（单个节点详情，需 node_id，含决策卡与版本史）/ decisions（决策卡目录，按功能线 thread 分组，支持 thread/decision_status 过滤）/ files（语义文件摘要列表，支持 file_layer/file_status 过滤；★ 每项出 `file`（仓库相对路径）与 `symbols`（**实际符号的 qualified_name**，取 cache.db 事实、不再是计数）—— 这两个词就是 find_references 的入参词，可直接接力）/ file（单个文件详情，需 file_id，含 expected_apis / expected_deps；★ 已实现 API 不在此——它是**代码的事实**，现取解析数据 cache.db）/ digest（每文件一行的紧凑认知索引：F:职责 | R:关系 | A:契约 | S:高熵决策，需 feature；★ 只读**派生视图**——从已有 DSL 字段现渲染、不落盘、不新增真相源，上下文紧张时一遍读完）/ calls（文件调用关系，需 file_id+project_dir，查 cache.db 入/出调用）/ functions（函数级大纲，需 feature，查缓存 db 的目录→文件→函数 + 调用/被调用/回环）/ annotations（标注）/ approvals（审批）/ approval_history（审批历史，需 annotation_id）/ snapshots（快照）/ templates（模板）/ simulation_state（仿真状态）/ diff（对比，需 feature_a+feature_b）/ goals（结构化目标，meta.goals）/ edge_intents（边级意图，edge.intent）。view: design（默认，活态设计）/ live（实际代码快照，仅 query=dsl/nodes/edges/node/files/file 生效，用于对比设计 vs 代码现状）。",
      "inputKeys": [
       "query",
+      "scope",
       "view",
       "feature",
       "node_id",
@@ -760,9 +761,10 @@
    "wide": [
     {
      "name": "get_dsl",
-     "params": 21,
+     "params": 22,
      "keys": [
       "query",
+      "scope",
       "view",
       "feature",
       "node_id",

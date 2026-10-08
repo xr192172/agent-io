@@ -49,6 +49,8 @@ import { getProjectCacheDb } from '../../../infrastructure/index/db.js';
 import type { Database } from '../../../infrastructure/index/db.js';
 import { buildFunctionOutline } from '../../../infrastructure/index/function_outline.js';
 import { fileFacts } from '../../../infrastructure/index/file_facts.js';
+// ★★ scope（圈定范围）的**文法与解析只在那一处** —— 本文件只调它、并渲染（T72）
+import { resolveScopeText, formatScope } from '../../../domain/scope.js';
 import type { OverlayGoal } from '../../../domain/overlay.js';
 import type { BrickContract } from '../../../domain/contract.js';
 
@@ -64,6 +66,7 @@ export interface QueryFeatureInput {
     | 'files'
     | 'file'
     | 'digest'
+    | 'scope'
     | 'calls'
     | 'functions'
     | 'annotations'
@@ -79,6 +82,12 @@ export interface QueryFeatureInput {
   feature?: string;
   /** node：节点 ID */
   node_id?: string;
+  /**
+   * ★★ scope：**圈定范围**的一行表达式（2026-10-09，T72）。
+   * 文法与解析**唯一落点**在 `src/domain/scope.ts`（这里只转手，**不重写一份语法**）：
+   * `all` · `layer:main` · `swimlane:<id>` · `arch_layer:<id>` · `subtree:<node_id>[!]` · `nodes:a,b` · `files:p1,p2`
+   */
+  scope?: string;
   /** decisions：按功能线过滤（不传=全部，按 thread 分组输出） */
   thread?: string;
   /** decisions：按状态过滤（active/superseded/draft；不传=全部） */
@@ -713,6 +722,38 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
         message: [`feature "${dsl.feature}" 文件详情 ${viewTag}`, '', ...lines].join('\n'),
         data: file,
       };
+    }
+
+    // ── ★★ 圈定范围（T72，2026-10-09）：把 DSL 里已有的四个分组轴
+    //    （`layer` / `swimlane` / `arch_layer` / `sub_dsl`）接到**一个统一的 `Scope`** 上，
+    //    并解析成**确定的文件集合** —— 这是用户那条"对比现状与设计 ⇒ 分区域重写"工作流的**第一跳**。
+    //    ★★ 文法与解析**只在 `src/domain/scope.ts` 一处**；这里只负责**渲染**（别在这儿再写一份语法）。
+    //    ★ 空集必须当场说出来 —— "看起来框住了、其实什么也没有"是最危险的那类静默失败。
+    case 'scope': {
+      if (!input.feature) {
+        throw new Error(
+          'query "scope"（圈定范围）需要 feature 参数：请传要框的 feature 名，如 ' +
+            'get_dsl {query:"scope", feature:"<name>", scope:"layer:main"}。',
+        );
+      }
+      const dsl = loadDSL(input);
+      const r = resolveScopeText(dsl, input.scope ?? 'all');
+      const body: string[] = [
+        `  命中节点 ${r.node_ids.length} 个 · 其中**文件节点** ${r.file_ids.length} 个 · 作用面 ${r.paths.length} 个路径`,
+      ];
+      if (r.paths.length) {
+        body.push('', '  作用面（仓库相对路径，已排序）：');
+        for (const p of r.paths) body.push(`    ${p}`);
+      }
+      if (r.notes.length) {
+        body.push('', '  ★ 说明（**不许静默**：没命中 / 被跳过 / 没下钻都在这里）：');
+        for (const n of r.notes) body.push(`    · ${n}`);
+      }
+      body.push(
+        '',
+        '  ★ 本 scope 由**纯函数**解析（同一输入两次结果**逐字相同**）—— 下游"分区域重写 / 对账"的稳定命名就以它为准。',
+      );
+      return { message: [`══ scope ${formatScope(r.scope)} ${viewTag} ══`, '', ...body].join('\n'), data: r };
     }
 
     // ── 一行式认知索引（AOCI 形状的**派生视图**：只读、不落盘、不新增真相源）──
