@@ -1,110 +1,118 @@
 # 本仓语言注册表 · 名册与状态（2026-10-08 实测）
 
-> 判据：逐条 `import` 该语言的包 → `new Parser().setLanguage(lang)` → `parse("a")`。
-> **不是**"装了没有"、也**不是** registry 元数据 —— 是**真加载**。
-> 复跑：`.inspect/roster_status.mjs`（会重写 `.inspect/roster_status.json`）。
-> ★ 这是**某一天的事实快照**，不是门、不设棘轮。
+> 判据：**每门语言单独起一个子进程**，`import` 该语言的包 → `setLanguage` → `parse`。
+> **不是**"装了没有"，也**不是** registry 元数据 —— 是**真加载**。
+> ★ 为什么一门一进程：同进程连加载 40+ 个原生模块会让进程**无声猝死**（实测），单独跑却正常。
+> 复跑：`.inspect/roster_isolated.mjs`。**这不是门、不设棘轮**，是某一天的事实快照。
 
-## 总账：55 条 → **25 条真能用**
+## 总账：55 条 → **31 条真能用**
 
 | 档 | 条数 | 含义 |
 |---|---|---|
-| **A** | 25 | ✅ 真能用（真 import + setLanguage + parse 通过） |
-| **B** | 9 | ❌ 装了但载入失败（上游是 NAN 绑定，核心 0.21 只认 N-API） |
-| **C** | 4 | · npm 上有、本机没装 |
-| **D** | 8 | ★ 无 npm 包，但**有 GitHub 源码**（含 `src/parser.c`） |
-| **E** | 9 | ？既没有可用 npm 包，也没有本地源码 |
+| **A** | 31 | ✅ 真能用（真 import + setLanguage + parse 通过） |
+| **B** | 7 | ❌ 装了但载入失败 |
+| **C** | 10 | · npm 上有包、本机没装 |
+| **D** | 4 | ★ 无可用 npm 包，但**本机有语法源码** |
+| **E** | 2 | ？既没有可用 npm 包，也没有本机源码 |
+| **X** | 1 | ⚠ 进程异常（判不出） |
 
 ★ 上游清单是 **440 个解析器条目**（见 `tree-sitter-parsers-census.md`）——本仓只登记 55 条，
-  **"上游有多少"和"我们能用多少"是两个数**，别混。
+  **"上游有多少"和"我们能用多少"是两个数**。
 
-## ✅ 真能用（真 import + setLanguage + parse 通过）（25）
+## ✅ 真能用（真 import + setLanguage + parse 通过）（31）
 
-> 本仓现在**就能解析**这些后缀。
+> 本仓**现在就能解析**这些后缀。★ 标「自建」的是用**通用 N-API 绑定**从语法源码在本机编出来的。
 
-| 语言 | 后缀 | 深适配 | 包 / 说明 |
-|---|---|---|---|
-| `bash` | `.sh .bash` |  | `tree-sitter-bash@0.21.0`（本机装的） |
-| `c` | `.c .h` | ★ | `tree-sitter-c@0.21.4`（本机装的） |
-| `c_sharp` | `.cs` | ★ | `tree-sitter-c-sharp@0.21.3`（本机装的） |
-| `cpp` | `.cpp .cc .cxx .hpp .hh .hxx` | ★ | `tree-sitter-cpp@0.23.4`（本机装的） |
-| `css` | `.css` |  | `tree-sitter-css@0.21.1`（本机装的） |
-| `elixir` | `.ex .exs` |  | `tree-sitter-elixir@0.3.5`（本机装的） |
-| `go` | `.go` | ★ | `tree-sitter-go@0.21.2`（本机装的） |
-| `groovy` | `.groovy` | ★ | `tree-sitter-groovy@0.1.2`（本机装的） |
-| `haskell` | `.hs` | ★ | `tree-sitter-haskell@0.23.1`（本机装的） |
-| `html` | `.html .htm` |  | `tree-sitter-html@0.23.2`（本机装的） |
-| `java` | `.java` | ★ | `tree-sitter-java@0.23.5`（本机装的） |
-| `javascript` | `.js .mjs .cjs` | ★ | `tree-sitter-javascript@0.21.4`（本机装的） |
-| `json` | `.json` |  | `tree-sitter-json@0.24.8`（本机装的） |
-| `jsx` | `.jsx` | ★ | （已装，可用） |
-| `julia` | `.jl` | ★ | `tree-sitter-julia@0.23.1`（本机装的） |
-| `kotlin` | `.kt .kts` | ★ | `tree-sitter-kotlin@0.3.8`（本机装的） |
-| `php` | `.php` | ★ | `tree-sitter-php@0.23.12`（本机装的） |
-| `python` | `.py` | ★ | `tree-sitter-python@0.21.0`（本机装的） |
-| `ruby` | `.rb` |  | `tree-sitter-ruby@0.23.1`（本机装的） |
-| `rust` | `.rs` | ★ | `tree-sitter-rust@0.21.0`（本机装的） |
-| `scala` | `.scala .sc` | ★ | `tree-sitter-scala@0.24.0`（本机装的） |
-| `scss` | `.scss` |  | `tree-sitter-scss@1.0.0`（本机装的） |
-| `solidity` | `.sol` |  | `tree-sitter-solidity@1.2.11`（本机装的） |
-| `tsx` | `.tsx` | ★ | `tree-sitter-typescript@0.21.2`（本机装的） |
-| `typescript` | `.ts .mts .cts` | ★ | `tree-sitter-typescript@0.21.2`（本机装的） |
+| 语言 | 包 / 说明 |
+|---|---|
+| `bash` | `tree-sitter-bash` |
+| `c` | `tree-sitter-c` |
+| `c_sharp` | `tree-sitter-c-sharp` |
+| `cpp` | `tree-sitter-cpp` |
+| `crystal` | `agent-io-grammar-crystal` **自建**（通用 N-API 绑定） |
+| `css` | `tree-sitter-css` |
+| `elixir` | `tree-sitter-elixir` |
+| `fish` | `agent-io-grammar-fish` **自建**（通用 N-API 绑定） |
+| `go` | `tree-sitter-go` |
+| `groovy` | `tree-sitter-groovy` |
+| `haskell` | `tree-sitter-haskell` |
+| `html` | `tree-sitter-html` |
+| `java` | `tree-sitter-java` |
+| `javascript` | `tree-sitter-javascript` |
+| `json` | `tree-sitter-json` |
+| `jsx` | `tree-sitter-javascript` |
+| `julia` | `tree-sitter-julia` |
+| `kotlin` | `tree-sitter-kotlin` |
+| `php` | `tree-sitter-php` |
+| `python` | `tree-sitter-python` |
+| `r` | `agent-io-grammar-r` **自建**（通用 N-API 绑定） |
+| `ruby` | `tree-sitter-ruby` |
+| `rust` | `tree-sitter-rust` |
+| `scala` | `tree-sitter-scala` |
+| `scss` | `tree-sitter-scss` |
+| `solidity` | `tree-sitter-solidity` |
+| `toml` | `agent-io-grammar-toml` **自建**（通用 N-API 绑定） |
+| `tsx` | `tree-sitter-typescript` |
+| `typescript` | `tree-sitter-typescript` |
+| `vhdl` | `agent-io-grammar-vhdl` **自建**（通用 N-API 绑定） |
+| `vue` | `agent-io-grammar-vue` **自建**（通用 N-API 绑定） |
 
-## ❌ 装了但载入失败（上游是 NAN 绑定，核心 0.21 只认 N-API）（9）
+## ❌ 装了但载入失败（7）
 
-> 这些是**坏账**：不是"没装"，是**装了也没用**。
+> 上游是 NAN 绑定，或本机没有可用 prebuild / 现场编译失败。
 
-| 语言 | 后缀 | 深适配 | 包 / 说明 |
-|---|---|---|---|
-| `cue` | `.cue` |  | `tree-sitter-cue`（NAN 绑定 ⇒ 载入失败） |
-| `dart` | `.dart` |  | `tree-sitter-dart`（NAN 绑定 ⇒ 载入失败） |
-| `lua` | `.lua` |  | `tree-sitter-lua`（NAN 绑定 ⇒ 载入失败） |
-| `markdown` | `.md .markdown` |  | `tree-sitter-markdown`（NAN 绑定 ⇒ 载入失败） |
-| `sql` | `.sql` |  | `tree-sitter-sql`（NAN 绑定 ⇒ 载入失败） |
-| `toml` | `.toml` |  | `tree-sitter-toml`（NAN 绑定 ⇒ 载入失败） |
-| `vue` | `.vue` |  | `tree-sitter-vue`（NAN 绑定 ⇒ 载入失败） |
-| `yaml` | `.yaml .yml` |  | `tree-sitter-yaml`（NAN 绑定 ⇒ 载入失败） |
-| `zig` | `.zig` |  | `tree-sitter-zig`（NAN 绑定 ⇒ 载入失败） |
+| 语言 | 包 / 说明 |
+|---|---|
+| `cue` | `tree-sitter-cue` —— BAD Invalid language object |
+| `dart` | `tree-sitter-dart` —— BAD Invalid language object |
+| `markdown` | `tree-sitter-markdown` —— BAD Invalid language object |
+| `sql` | `tree-sitter-sql` —— BAD Invalid language object |
+| `swift` | `tree-sitter-swift` —— BAD No native build was found for platform=win32 arch=x64 ru |
+| `yaml` | `tree-sitter-yaml` —— BAD Invalid language object |
+| `zig` | `tree-sitter-zig` —— BAD Invalid language object |
 
-## · npm 上有、本机没装（4）
+## · npm 上有包、本机没装（10）
 
-> 可以直接装（装前先 `install-package check <lang>` 看 peer 与模板）。
+> 可以装（装前先 `install-package check <lang>` 看 peer 与模板）。
 
-| 语言 | 后缀 | 深适配 | 包 / 说明 |
-|---|---|---|---|
-| `fsharp` | `.fs .fsx` |  | `tree-sitter-fsharp`（可装） |
-| `ocaml` | `.ml .mli` |  | `tree-sitter-ocaml`（可装） |
-| `perl` | `.pl .pm` |  | `tree-sitter-perl`（可装） |
-| `powershell` | `.ps1 .psm1` |  | `tree-sitter-powershell`（可装） |
+| 语言 | 包 / 说明 |
+|---|---|
+| `clojure` | `tree-sitter-clojure` |
+| `fsharp` | `tree-sitter-fsharp` |
+| `graphql` | `tree-sitter-graphql` |
+| `latex` | `tree-sitter-latex` |
+| `ocaml` | `tree-sitter-ocaml` |
+| `perl` | `tree-sitter-perl` |
+| `powershell` | `tree-sitter-powershell` |
+| `scheme` | `tree-sitter-scheme` |
+| `verilog` | `tree-sitter-verilog` |
+| `xml` | `tree-sitter-xml` |
 
-## ★ 无 npm 包，但**有 GitHub 源码**（含 `src/parser.c`）（8）
+## ★ 无可用 npm 包，但**本机有语法源码**（4）
 
-> 可以自建（写一个通用 N-API 绑定 + 编 parser.c）。
+> 可用通用 N-API 绑定自建（ABI 必须 13/14）。
 
-| 语言 | 后缀 | 深适配 | 包 / 说明 |
-|---|---|---|---|
-| `crystal` | `.cr` |  | 源码 `.inspect/ts-bundle/gh/crystal` |
-| `erlang` | `.erl .hrl` |  | 源码 `.inspect/ts-bundle/gh/erlang` |
-| `fish` | `.fish` |  | 源码 `.inspect/ts-bundle/gh/fish` |
-| `nim` | `.nim` |  | 源码 `.inspect/ts-bundle/gh/nim` |
-| `r` | `.r .R` |  | 源码 `.inspect/ts-bundle/gh/r` |
-| `rego` | `.rego` |  | 源码 `.inspect/ts-bundle/gh/rego` |
-| `tcl` | `.tcl` |  | 源码 `.inspect/ts-bundle/gh/tcl` |
-| `vhdl` | `.vhdl .vhd` |  | 源码 `.inspect/ts-bundle/gh/vhdl` |
+| 语言 | 包 / 说明 |
+|---|---|
+| `erlang` | `（无）` |
+| `nim` | `（无）` |
+| `rego` | `（无）` |
+| `tcl` | `（无）` |
 
-## ？既没有可用 npm 包，也没有本地源码（9）
+## ？既没有可用 npm 包，也没有本机源码（2）
 
 > 要么去上游找仓，要么自己开发。
 
-| 语言 | 后缀 | 深适配 | 包 / 说明 |
-|---|---|---|---|
-| `clojure` | `.clj .cljs` |  | ERR: Cannot find module './build/Release/tree |
-| `graphql` | `.graphql .gql` |  | ERR: Cannot find module './build/Release/tree |
-| `latex` | `.tex` |  | ERR: Cannot find module './build/Release/tree |
-| `less` | `.less` |  | n/a |
-| `protobuf` | `.proto` |  | n/a |
-| `scheme` | `.scm .ss` |  | ERR: Cannot find module './build/Release/tree |
-| `swift` | `.swift` |  | ERR: No native build was found for platform=w |
-| `verilog` | `.v .sv` |  | ERR: Cannot find module '../../build/Release/ |
-| `xml` | `.xml` |  | ERR: Cannot find module './build/Release/tree |
+| 语言 | 包 / 说明 |
+|---|---|
+| `less` | `（无）` |
+| `protobuf` | `（无）` |
+
+## ⚠ 进程异常（判不出）（1）
+
+> 多半是**量具/环境**问题，不是这门语言的问题 —— 单独复跑确认。
+
+| 语言 | 包 / 说明 |
+|---|---|
+| `lua` | `agent-io-grammar-lua` |
 
