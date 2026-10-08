@@ -32,9 +32,15 @@
  * 纯数据 + 纯函数（目录取自入参，无 IO）：testable。
  */
 
+import fs from 'node:fs';
+import path from 'node:path';
 import type { ToolDef } from '../../types.js';
 import { renderChainWiring, CHAINS, hopsOf, SCOPE_PATHS, type Chain, type HopVerdict } from '../../../domain/chain_wiring.js';
 import { B_TERMS } from '../../../domain/b_terms.js';
+// ★ 只取两个常量/函数（`DATA_DIR_NAME` 是零依赖常量模块；`getDataHome` 是数据归口的唯一入口）——
+//   「读之前先看哪儿」那一段要**指出文件在不在**，这是导航该知道的最少信息。
+import { getDataHome } from '../../../infrastructure/storage.js';
+import { DATA_DIR_NAME } from '../../../infrastructure/data_dir.js';
 // ★★ 2026-10-06：工具「面」= 同一个注册表的**视图**（实现方式 = **不注册** + 一个原子入口 `atomic_call`；
 //   ★ 注意：不是"裁 listTools" —— 那做不到，理由见 `tool_faces.ts` 模块头的实测更正）。
 //   ★ 依赖单向：本模块调它；它只 `import type` 本模块（类型导入被擦除 ⇒ 无运行时环）。
@@ -139,6 +145,37 @@ export const LANE_META: ReadonlyArray<Omit<Lane, 'tools'>> = [
     direct: ['explore_code', 'capability_map'],
   },
 ];
+
+/**
+ * ★★ 「读之前先看哪儿」段（2026-10-09，`docs/todo.md` T68 的收尾）。
+ *
+ * 把 `MANIFEST.txt`（**卷声明**）与 `COGNITION.txt`（**一行式认知索引**）摆到导航**最前面** ——
+ * 因为这两个文件此前**都只住在别处、没有任何引导点名**：
+ *   · 卷声明只住 `src/infrastructure/storage_overlay.ts` 的一句注释；README / router / mind **三处都不写**；
+ *   · 一行式认知索引虽然早就实现（`get_dsl query=digest`），也在 `WHEN_OVERRIDES` / README / router **全不点名**
+ *     ⇒ ★ 实测代价：**连着四轮没人看见它**，我甚至提议再造一个同功能的 `query=outline`。
+ *   ⇒ 修法不是"再写文档"，而是**让第一站自己把两份文件摆出来**（file 通道 ⇒ 顺路就看见）。
+ *
+ * ★★ **刻意不在这里判过期**：过期的唯一判据是 `scripts/gen_cognition.mjs` 的 **body-sha**，
+ *   在这里再算一遍 = **同一条判据住两处**（本仓头号病）。⇒ 这里**只指路**："文件在哪、怎么判、怎么重生成"。
+ * ★ 也不读文件内容（只 `existsSync`）—— 导航是高频入口，别让它做重活。
+ */
+function renderVolumesNote(): string {
+  const home = getDataHome();
+  const dataDir = path.join(home, DATA_DIR_NAME);
+  const hasManifest = fs.existsSync(path.join(home, 'MANIFEST.txt'));
+  const hasCognition = fs.existsSync(path.join(dataDir, 'COGNITION.txt'));
+  const mark = (b: boolean) => (b ? '✅ 在' : '— 未生成');
+  return (
+    `\n── 读之前先看哪儿（这两个文件**都不是真相**，真相是 ${DATA_DIR_NAME}/features/<f>.json + .overlay.json）──\n` +
+    `  MANIFEST.txt             ${mark(hasManifest)}  卷声明（哪几卷 · 谁是真相 · 谁能改 · 谁会被重生成）` +
+    ` ⇒ 改过卷布局跑 \`npm run manifest\`、判漂 \`manifest:check\`\n` +
+    `  ${DATA_DIR_NAME}/COGNITION.txt  ${mark(hasCognition)}  一行式认知索引 \`路径[层]: F:职责 | R:关系 | A:契约 | S:高熵决策\`` +
+    ` ⇒ **可能过期**，判过期 \`npm run cognition:check\`、重生成 \`npm run cognition\`（等价 \`get_dsl query=digest\`）\n` +
+    // ★ 位置口径必须写明：两个文件为什么一个进 Git 一个不进，否则下一个人会把它们"统一"掉（那是判据分叉的入口）
+    `  ★ 位置口径：MANIFEST 在**仓根**（低 churn ⇒ 进 Git）；COGNITION 在 ${DATA_DIR_NAME}/（高 churn ⇒ **不进 Git**）\n`
+  );
+}
 
 /**
  * ★ 只保留**策展文本**（`when`）。lane 归属**不在这里**。
@@ -710,7 +747,11 @@ export function makeCapabilityMapHandler(getCatalog: () => readonly ToolCatalogE
       }
       // ★ 单线视图也带实现地图：看某条线时正是"这个工具的实现住在哪"最想知道的时候
       const doms = renderDomainText(lanes.filter((l) => l.id === lane), listDomains(), domainReadNote);
-      return { text: `${header}${renderLaneText(lanes, [lane])}${doms}`.trim() };
+      // ★★ 2026-10-09：**单线视图也要带「读之前先看哪儿」** ——
+      //   实测漏了一次：初版只加在全量视图那条 return 上，而**单线视图走的是另一条分支**
+      //   ⇒ 恰恰是"定位时最常走"的那条路看不见这两份文件。
+      //   ★ 教训同本仓旧账：「加东西只加一处，另一处静默地没有」。
+      return { text: `${header}${renderVolumesNote()}${renderLaneText(lanes, [lane])}${doms}`.trim() };
     }
     // ★★ 链的接法（2026-10-05）：把"上一步的产物怎么喂下一步的入参"摆在这里 ——
     //   它是**新用户第一站**，所以 LLM 一眼就能看到接法，**不必回忆字段名、不必数下标**。
@@ -725,6 +766,8 @@ export function makeCapabilityMapHandler(getCatalog: () => readonly ToolCatalogE
     return {
       text: [
         header,
+        // ★★ 2026-10-09：**"读之前先看哪儿"** —— 摆在最前（本工具自我定位就是"新用户第一站"）。
+        renderVolumesNote(),
         renderLaneText(lanes),
         renderDomainText(lanes, listDomains(), domainReadNote),
         renderUnassigned(unassigned),
