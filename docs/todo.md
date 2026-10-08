@@ -945,8 +945,14 @@
         文件头写 **`#Generated-From: feature=<f> dsl_rev=<n> sha256=<hash>`**
         （`_dsl_rev` 今天只当**乐观锁**用，此处**借来当派生指纹** ⇒ ★ 须在类型注释里标清"一名两义"）。
       ⇒ **判据**：① 与 `query=digest` 输出**逐字一致**；② 改 DSL 后不重生成 ⇒ 文件头印「**已过期，请重生成**」。
-      ⇒ ★★ **需你拍板**：**它进不进 Git** —— 影响 4 个下游仓（`dsh-brain` / `dsl-workbench` / `elv` /
-        `ai-config/skills/design-canvas-mind`）⇒ **属对外契约变更，不自行决定**。
+      ⇒ ★★ **用户已裁定（2026-10-09）：不进 Git** —— 判据 = **变更频率**（它随每次代码改动而变 ⇒ churn 高）。
+        对照 `MANIFEST.txt`（只在卷布局变时变 ⇒ churn 低 ⇒ **进 Git**）⇒ **声明进 Git，快照不进。**
+      ⇒ ★ **本轮已落**：`scripts/gen_cognition.mjs` + `npm run cognition` / `cognition:check`。三条取舍：
+        ① **不自己排版**（把 `get_dsl query=digest` 的文本原样取回）⇒ "逐字一致"是**结构保证**；
+        ② **哈希"渲染出的 body"而不是 DSL 文件**（改坐标不该判过期 —— 快照仍准确）；
+        ③ 过期**由读者判**（静态文件不可能自己知道），文件头**常驻自白**。
+        **出生证**：改一个 `responsibility` ⇒ `--check` 报「已过期」exit 1；还原 ⇒ 0。
+      ⇒ 余下：`capability_map` 顶部点名 + 判过期（这才是"被看见"的那一半）。
 
 - [ ] **T69 ★★ 合并形态 S3：上限预算 —— 把 L1 扩成双边 + 配额单点**
       *(核实：2026-10-08 实测我们**只有下限**（`MIN_REASON_CHARS = 6`，见 `reason_validator.ts:73`），
