@@ -56,7 +56,10 @@ const server = new McpServer(
       '\n   仿真器是事件驱动状态机，不是动画播放器。用于验证"数据流入 → 规则触发 → 状态变化"是否符合预期。' +
       '\n\n8. 项目导入：import_project 扫描代码项目生成 DSL（文件节点+调用边+符号语义层），design_mode/functional_mode 聚合为设计草图。' +
       '\n\n9. 单文件体检：explore_code(action=check_monolith) 扫描文件行数，超阈值文件自动做 Louvain 社区发现，给出功能内聚拆分建议（仅建议不改代码）。' +
-      '\n\n10. 文件索引优先（Agent 第一性路径）：查/改代码时优先 get_dsl(query:"files",feature) 拿语义文件列表（含架构层/API 数/行数），' +
+      '\n\n10. 文件索引优先（Agent 第一性路径）：查/改代码时优先 get_dsl(query:"files",feature) 拿语义文件列表' +
+      '（含架构层/API 数/行数，★ 以及**实际符号名** data[].symbols）——' +
+      '★ 每项的 `file`（仓库相对路径）与 `symbols`（qualified_name）**就是** find_references / edit_code / rename_symbols 的入参词' +
+      '（受控词表同名同义）⇒ **可直接接力，不必翻译字段名**；' +
       '再 query:"file" 拿单文件详情（含 API 签名+行号+deps）直达修改点。' +
       '定位符号用 explore_code(action=search)：标识符查询自动走精确符号索引（provider=exact，零向量开销），自然语言意图才走向量。' +
       '修改用 edit_code（符号级替换：文件+函数名+新函数体，AST 定位防改错行/改错函数，编辑后自动重建索引）；' +

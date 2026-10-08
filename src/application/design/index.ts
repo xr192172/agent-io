@@ -63,7 +63,9 @@ export const DESIGN_TOOLS: ToolDef[] = [
       'nodes（节点摘要列表，支持 layer/type 过滤）/ edges（边摘要列表，支持 layer 过滤）/ ' +
       'node（单个节点详情，需 node_id，含决策卡与版本史）/ ' +
       'decisions（决策卡目录，按功能线 thread 分组，支持 thread/decision_status 过滤）/ ' +
-      'files（语义文件摘要列表，支持 file_layer/file_status 过滤）/ ' +
+      'files（语义文件摘要列表，支持 file_layer/file_status 过滤；★ 每项出 `file`（仓库相对路径）与 `symbols`' +
+      '（**实际符号的 qualified_name**，取 cache.db 事实、不再是计数）—— 这两个词就是 find_references 的入参词，' +
+      '可直接接力）/ ' +
       'file（单个文件详情，需 file_id，含 expected_apis / expected_deps；★ 已实现 API 不在此——它是**代码的事实**，现取解析数据 cache.db）/ ' +
       'digest（每文件一行的紧凑认知索引：F:职责 | R:关系 | A:契约 | S:高熵决策，需 feature；' +
       '★ 只读**派生视图**——从已有 DSL 字段现渲染、不落盘、不新增真相源，上下文紧张时一遍读完）/ ' +

@@ -596,38 +596,51 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
         return { message: `feature "${dsl.feature}" 无语义文件 ${viewTag}`, data: [] };
       }
 
-      // 已实现 API 计数 = 事实（cache.db 中非闭包的 function/method）；无 root 时退回旧行为（读 DSL 镜像）
+      // 已实现的符号 = 事实（cache.db 中非闭包的 function/method）；无 root 时退回旧行为（读 DSL 镜像）
+      //
+      // ★★ 2026-10-08（T54「符号名没有结构化出口」那一半）：**过去这里只留计数**
+      //   （`…apis.length`）⇒ 本工具是 LLM 查代码的**第一站**（见 `mcp/server.ts` 的第 10 条），
+      //   而它给出的符号**只有个数、没有名字** ⇒ 下游 `find_references.symbol`
+      //   （受控词表里的 `anchor`，值 = `qualified_name`）**无从填起**，只能由人/LLM 从散文行里抠。
+      //   `fileFacts` 本来就把名字带回来了（`apis[].qualified_name`）—— **丢掉的是投影，不是能力**。
+      //   ⇒ 现在按**受控词表**的名字与类型出：`symbols: string[]`（`b_terms.ts` 里的复数形态）。
       const factsRoot = dsl.source_root ?? input.project_dir;
-      const actualCounts = new Map<string, number>();
+      const actualSymbols = new Map<string, string[]>();
       for (const f of filtered) {
-        actualCounts.set(
+        actualSymbols.set(
           f.id,
-          factsRoot ? fileFacts(factsRoot, f.path, dsl.feature).apis.length : 0,
+          factsRoot ? fileFacts(factsRoot, f.path, dsl.feature).apis.map((a) => a.qualified_name) : [],
         );
       }
 
       const lines = filtered.map((f, i) => {
         const apiCount = f.expected_apis?.length ?? 0;
-        const actualCount = actualCounts.get(f.id) ?? 0;
-        const symCount = f.symbols?.length ?? 0;
+        const actualCount = actualSymbols.get(f.id)?.length ?? 0;
         const status = f.status ?? '-';
         const layer = f.layer ?? '-';
         const linesInfo = f.lines ? ` ${f.lines}行` : '';
-        return `${i + 1}. [${f.id}] ${f.path} (${status}, ${layer}, ${apiCount} 预期API/${actualCount} 已实现, ${symCount} 符号${linesInfo})`;
+        return `${i + 1}. [${f.id}] ${f.path} (${status}, ${layer}, ${apiCount} 预期API/${actualCount} 已实现符号${linesInfo})`;
       });
       const summary = `文件总数: ${files.length}，匹配: ${filtered.length}`;
       return {
         message: [`feature "${dsl.feature}" 文件列表 ${viewTag}`, summary, '', ...lines].join('\n'),
         data: filtered.map((f) => ({
           id: f.id,
-          path: f.path,
+          // ★★ `file`，不是 `path`：本投影是给**调用方（LLM）**用的**定位器**面 ——
+          //   受控词表里"文件路径"这个词是 `file`（`anchor`），而 `find_references` 正收这个词
+          //   ⇒ 同一件事不再需要一次字段名翻译（T54「同一个东西两个名字」那一半）。
+          //   ★ 这与**不动** `SemanticFile.path` 不矛盾：那是 DSL 侧的**事实字段**
+          //   （`schema/design_dsl.schema.json` 的 `required`）。事实叫 `path`，定位器叫 `file`；
+          //   本投影本来就是一层转写（它已经丢掉 `responsibility_en` / `expected_deps` 等）。
+          file: f.path,
           responsibility: f.responsibility,
           status: f.status,
           layer: f.layer,
           lines: f.lines,
           apiCount: f.expected_apis?.length ?? 0,
-          actualCount: actualCounts.get(f.id) ?? 0,
-          symbolCount: f.symbols?.length ?? 0,
+          // ★ 过去这里是 `actualCount` + `symbolCount` **两个派生计数**（都 = `symbols.length`）
+          //   ⇒ 删。**派生值不另立字段**（"不留过渡物"；要数就 `.length`）。
+          symbols: actualSymbols.get(f.id) ?? [],
         })),
       };
     }

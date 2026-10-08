@@ -284,7 +284,7 @@ DSL 侧是 `expected_apis[].signature`（**文本**），解析侧是 `nodes.qua
 |---|---|---|
 | `derive_mind_map` | `:122,123,2112,2125` | mind map 的 `apis` / `actual_deps`（★ 已写 `actual_apis ?? expected_apis` **降级**） |
 | `overview` | `:204` | 摘要里的 API 签名材料 |
-| `query_feature` | `:563,581,615,618` | 查询返回的 `actualCount` 与清单 |
+| `query_feature` | `:563,581,615,618` | 查询返回的**实际符号**（`data[].symbols` = `fileFacts(...).apis[].qualified_name`；★ 2026-10-08 前只返回 `actualCount` 计数，名字被丢掉了） |
 | `opl` | `:322,407` | raw view 与渲染文案 |
 | `archify_semantics` | `:92` | 用 `actual_deps` 建**真实 import 边** |
 

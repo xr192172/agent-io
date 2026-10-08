@@ -30,10 +30,23 @@
         run_tests`）**每一环都验过了**。★ 「**从集合里选一个**」这一格也补上了**明文表达** `touched.<键>[i]`
         （`chainExprOf()` **一处生成**、`renderChainWiring` 直接印出来 ⇒ **新用户第一站看得见**）。
         证据 / 两个"必须先说的前提" / 缺口，见 `docs/tool-chain-contract.md` §9。
-      ★★ **仍未做（"剩下"的第 2 条，卡在更大的决策上）**：`get_dsl(query='files')` 的投影**只给计数不给符号名**
-        （`apiCount` / `symbolCount`）⇒ 下游 `find_references.symbol` **无从填**。★ 但它绕不开
-        "**文件路径全仓统一叫什么**"（`SemanticFile.path` 是 `schema/design_dsl.schema.json` 钉死的**对外契约**
-        字段，而受控词表里"文件路径"这个词是 `file`）⇒ **先定名、再谈让投影跟随；在此之前不动**。
+      ✅ **2026-10-08 已闭环**：`get_dsl(query='files')` 的机器段改成出
+        `file`（仓库相对路径）+ `symbols: string[]`（**实际符号的 `qualified_name`**，取自 `cache.db` 的
+        `fileFacts(...).apis`）；两个派生计数（`actualCount` / `symbolCount`）**删掉**（要数就 `.length`）。
+        ★ 真跑（夹具 `fx-chain`：`import_project` 建索引 ⇒ `get_dsl(query=files)` ⇒ 拿 `data[0]` **零翻译**喂下游）：
+        ```
+        data[0] = {"file":"src/lib.ts","symbols":["helper","unusedOne"]}
+          ⇒ find_references {project_dir, file:"src/lib.ts", symbol:"helper"}
+          ⇒ 定义 src/lib.ts（function），1 个 import 方：src/main.ts 行 1,4        ✓ exit 0
+        ```
+        唯一手工动作 = 取 `[0]`（= 上面第 1 条那个"**选**"，本就该由调用方给）。
+        ★ 与 `SemanticFile.path` 的关系：**不动它** —— 那是 DSL 侧的**事实字段**（`schema` 的 `required`）。
+        **事实叫 `path`、定位器叫 `file`**；本投影本来就是一层的**转写**（它早已丢掉 `responsibility_en`
+        / `expected_deps`），不是镜像 ⇒ 让转写层说**消费者要学的那个词**，不是把事实字段改名。
+      ★ **仍剩（这才是本条的判据）**：原判据是"**能跑通几条真实链**"（见下面的「判据」段）
+        ⇒ 现已跑通 **1 条**（`import_project → get_dsl(query=files) → find_references`）
+        ⇒ 按原判据**还要再跑通 1–2 条**（例如 `import_project → extract_contracts → find_references`）。
+        **跑通一条记一条**；不追求"每个工具都收 `feature`"那种一刀切（那是造兜底）。
       ★ **一条已证伪、别再重写**的接法：`edit_code.written_files → run_tests.project_dir`（文件 ≠ 根）；
         §5 想的那件事（"**只跑本次改动相关的测试**"）缺的是"**源文件 → 对应测试**"的映射
         —— **能力缺口，不是命名问题**，别用改字段名去凑。
@@ -128,11 +141,12 @@
         | B `get_dsl(files)` | `[{"id":…,"path":"com/a/Kk.java","apiCount":1,"symbolCount":1,…}]` | A 的 `feature` ✓ | ★ **机器段是结构化的** ⇒ 比预想好 |
         | C `find_references` | —— | `{file, symbol}` | ★ **两个真缺口**（见下） |
 
-        ★★ **两个真缺口**（这才是"管道"的最小可修形态）：
-        1. ★ **同一个东西两个名字**：上游吐 `path`，下游要 `file` ⇒
-           **判据分叉的经典形态**（本仓头号病根）⇒ 每次接线都要调用方翻译，**而翻译会错**。
-        2. ★ **符号名没有结构化出口**：上游只给 `symbolCount: 1`（**计数**），
-           要拿名字得另找路 ⇒ 下游 `find_references.symbol` **无从填起**（只能由人/LLM 从散文里抠）。
+        ★★ **两个真缺口** —— ✅ **均已于 2026-10-08 闭合**（回执见本条目上方的「已闭环」段）：
+        1. ✅ **同一个东西两个名字**（上游吐 `path`、下游要 `file`）⇒ 投影改出 `file`；
+           ★ `SemanticFile.path` **不动**（事实字段 vs 定位器，是两类东西，硬改名才是判据分叉的反方向）。
+        2. ✅ **符号名没有结构化出口**（上游只给 `symbolCount: 1`）⇒ 投影改出 `symbols`
+           （`apis[].qualified_name`）。★ 典型形态：**丢掉的是投影，不是能力** ——
+           `fileFacts` 早就把名字带回来了，只是被 `.length` 收成了一个数。
 
       ⇒ ★★★ **2026-10-05 侦察（code-explorer 子代理）后修正：不能只改 `get_dsl(files)` 这一处** ——
         ・ `get_dsl(query='files')` 的条目是**报告条目**（`query_feature.ts:621-631`：`id/path/responsibility/
