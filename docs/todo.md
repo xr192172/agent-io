@@ -915,6 +915,56 @@
         "闸下沉到 `updateFeature`"（层问题：evidence 是 MCP 面输入契约）还是"daemon 侧另加一道"。
       · 相关资料：`handleApiSave` 头注（决定与缺口写在**代码现场**）；`docs/todo.md` 的 T20 条目。
 
+---
+
+- [ ] **T67 ★★★ 合并形态 S1：`MANIFEST.txt` —— 卷声明，把"三个层"从注释里请出来**
+      *(核实：2026-10-08 实测「`overlay 独立保留` / `base 可再生成` 全仓**只在 `src/infrastructure/storage_overlay.ts` 一处**；
+       `README` 的 `三个`=0 / `acceptance`=0；`design-canvas-router` 的 `overlay`=0；`design-canvas-mind` 的 `overlay`=0 / `base`=0
+       ⇒ **三处引导全不写** ⇒ 用户与我都"不会想到它有三个"。)*
+      ⇒ **形状**：一份 10~20 行纯文本，**只有声明、没有数据**（数据仍在原处 ⇒ **不新增真相源**）：
+        `#Format-Version: agent-io/volumes-v1`（治"DSL 格式漂了没处看"）·
+        `#Volume: id=live|base|overlay|archive|cognition  mode=… regen=… path=…` ·
+        `#Quota: F<=200 R<=300 A<=300 S<=600`（治"只有下限没有上限"）·
+        `#Admission:` **指向已有的 L1–L4**（`reason_validator.ts`）——★ **声明已有的，不新造一个**。
+      ⇒ **判据**：① 生成物与磁盘实况一致（**列出不存在的卷 ⇒ 报错，不静默**）；
+        ② 只读它**能答出"谁是真相、谁能改、谁会被重生成"**。
+      ⇒ ★ **未定**：住**仓根**（LLM 一眼看见，但污染别人的仓）还是 `.agent-io/`（干净，但**今天是 gitignore 的 ⇒ 又没人看得见**）。
+      ⇒ 设计：`docs/convergent-product-form.md`。
+
+- [ ] **T68 ★★ 合并形态 S2：`COGNITION.txt` —— `query=digest` 的落盘形态（带派生指纹）**
+      *(核实：2026-10-08 实测 `get_dsl query=digest` **已实现**（AOCI 形状 F/R/A/S，真跑出 `F`/`R`/`A`）；
+       但 **`WHEN_OVERRIDES.get_dsl` 手挑了 4 个 query、README、router 三处全不点名它** ⇒ 我上一轮甚至提议再造一个 `query=outline`。)*
+      ⇒ **形状**：把 `digest` 的产物落成仓根一份可进 Git 的文本；**同一渲染器，不许第二份实现**；
+        文件头写 **`#Generated-From: feature=<f> dsl_rev=<n> sha256=<hash>`**
+        （`_dsl_rev` 今天只当**乐观锁**用，此处**借来当派生指纹** ⇒ ★ 须在类型注释里标清"一名两义"）。
+      ⇒ **判据**：① 与 `query=digest` 输出**逐字一致**；② 改 DSL 后不重生成 ⇒ 文件头印「**已过期，请重生成**」。
+      ⇒ ★★ **需你拍板**：**它进不进 Git** —— 影响 4 个下游仓（`dsh-brain` / `dsl-workbench` / `elv` /
+        `ai-config/skills/design-canvas-mind`）⇒ **属对外契约变更，不自行决定**。
+
+- [ ] **T69 ★★ 合并形态 S3：上限预算 —— 把 L1 扩成双边 + 配额单点**
+      *(核实：2026-10-08 实测我们**只有下限**（`MIN_REASON_CHARS = 6`，见 `reason_validator.ts:73`），
+       **人写文本无上限**；而 AOCI 是 `#S quota: C9-8≤600 C7-4≤200 C3-1≤50`（上限，且声明为 machine-contract）。)*
+      ⇒ **形状**：`#Quota` 的数值**只住一处**；L1 从"≥N"扩成"**N≤x≤M**"（超限**拒绝写入**，不截断、不静默）。
+      ⇒ **判据**：① 超上限**拒绝写入**并给出人话错误；② **把配额改一处 ⇒ 两处行为同时变**（证明只有一处）。
+      ⇒ ★ 依赖 T67（配额声明住在 MANIFEST）。
+
+- [ ] **T70 ★ 合并形态 S4：认知丢失探针（"LLM 忘了读过"）**
+      *(核实：2026-10-08 实测——我们**有同一个病**（上下文一压缩，LLM 就忘了"有三个层"，本轮实证）；
+       而 AOCI 有明写判据：`cognition loss measured; declare context_compaction: call aoci_overview with refresh_reasons=[…]`。)*
+      ⇒ **形状**：复用既有 `snap:*` 观测，量"读一遍 `COGNITION.txt` 的字节数 vs 阈值"，超阈值即在 `capability_map` 顶部提示。
+      ⇒ **判据**：**阈值内不提示、超阈值必提示**（两个状态读数**必须不同** —— 本仓 G5 的教训：
+        *"一个在两种状态下读数相同的指标，不是判据，是常量"*）。
+      ⇒ ★ 依赖 T68（要有那份产物才量得出大小）。
+
+- [ ] **T71 ★★ 合并形态 S5：面上锁 —— 把 `facesOf()` 的输出记进快照**
+      *(核实：2026-10-08 实测「面成员变化**没有任何东西会变红**」——我把 `import_project`/`design_intent`/`capability_map`
+       加进 `LANE_META.direct`，编排面 9→12 个，而 `npm run snap:diff` **仍 6/6 全绿**
+       （`tool-surface` 观测点量的是 `TOOL_DEFS` 的 61 个契约，**不含面成员**）。)*
+      ⇒ **形状**：快照多一个观测点（`facesOf()` 输出的面→名单映射）。
+      ⇒ **判据**：**把 `import_project` 从 `direct` 拿掉 ⇒ `snap:diff` 变红**。
+      ⇒ ★ 注意本仓规则：**不建门、不建 fixture、不建棘轮基线**（`todo.md` 规则 4）—— 本条是**扩观测点**，
+        不是建门；**若你判它越界，就撤掉本条**。
+
 
 
 

@@ -92,7 +92,9 @@
     "snap:take": "node scripts/snapshot.mjs take",
     "snap:diff": "node scripts/snapshot.mjs diff",
     "probe:tool-smells": "node scripts/probe_tool_smells.mjs",
-    "probe:tool-surface": "node scripts/probe_tool_surface.mjs"
+    "probe:tool-surface": "node scripts/probe_tool_surface.mjs",
+    "manifest": "node scripts/gen_manifest.mjs",
+    "manifest:check": "node scripts/gen_manifest.mjs --check"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
