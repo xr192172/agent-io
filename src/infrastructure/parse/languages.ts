@@ -211,3 +211,20 @@ export const LANGUAGES: LanguageEntry[] = [
 export function findLanguageByExt(ext: string): LanguageEntry | undefined {
   return LANGUAGES.find((l) => l.exts.includes(ext));
 }
+
+/**
+ * 该语言包的**模块说明符** —— 「显式 `pkgSpec` 优先，否则按 `tree-sitter-{pkg}` 派生」的**唯一落点**。
+ *
+ * ★ 2026-10-08：这条派生原先**散在两处**（`loader.loadLanguage` 的 `await import(...)`、
+ *   `probe.isLanguageInstalled` 的 `resolvedIsLoadable(...)`）。两处都写对了**不代表第三处也会写对**
+ *   —— 而下一处（「这个后缀该补哪个包」的可执行提示）正需要它。同一个问题的第二份实现
+ *   = 本仓头号病根「判据分叉」的起点 ⇒ 在加第三处**之前**先收成这里一份。
+ *
+ * ★ 签名收成 `(pkg, pkgSpec?)` 而不是 `(LanguageEntry)`：调用方有两种 ——
+ *   ① 手上**有注册表表项**（`languageModuleSpec(l.pkg, l.pkgSpec)`）；
+ *   ② 手上只有**一个裸包名**（`probe.isLanguageInstalled` 在注册表里查不到时会拿 pkgName 直接拼，
+ *      那条路径也得走**同一条规则**）。收成表项类型会把 ② 挡在门外、逼它自己再拼一次。
+ */
+export function languageModuleSpec(pkg: string, pkgSpec?: string): string {
+  return pkgSpec ?? `tree-sitter-${pkg}`;
+}

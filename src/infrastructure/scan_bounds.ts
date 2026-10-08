@@ -98,10 +98,26 @@ export interface ScanBounds {
  * 若连"有几个、是什么"都不说，就是「**缺失是沉默的**」。
  * 原先 `health` / `impact` 各持一份 `{ext, count}[]`（`excludedNonCode`）；本笔把它收进
  * 统一形状的族级 `skipped`（`count` 保留，`ext` 落进 `path` 模式 ⇒ 无损），**一处实现**。
+ *
+ * ★ 2026-10-08：`code_health` 的第二类「没读到的后缀」（**没有对应解析器**的那些）也走这里 ——
+ *   同一形状、同一落点，只是逐条 `why` 不同（见函数体注释）。
  */
 export function boundsSkipFromExcluded(
-  excluded: ReadonlyArray<{ ext: string; count: number }>,
+  excluded: ReadonlyArray<{ ext: string; count: number; why?: string }>,
   why = '非代码语言扩展名：不进调用 / 依赖图（口径收紧的可见性；文件真实存在，只是不算源码）',
 ): ScanSkip[] {
-  return excluded.map((e) => ({ path: `**/*${e.ext}`, why, count: e.count }));
+  // ★ 2026-10-08：`why` 支持**逐条覆盖**（`e.why ?? why`）。
+  //   起因：`code_health` 的第二类「没读到的后缀」**逐后缀原因不同** ——
+  //     `**/*.swift` 是「注册表有这门口语、只是包没装（补 `npm i tree-sitter-swift` 就能读）」；
+  //     `**/*.png` 是「注册表里没这门口语」。
+  //   一句统一的 why 会把两者抹平 ⇒ 调用方只能另写一个映射函数（= 本函数的第二份实现）。
+  //   加一个可选字段，比多一处实现便宜。
+  return excluded.map((e) => ({
+    // ★ 空扩展名（`Makefile` / `LICENSE` / 无后缀文件）**不能落成 `**/*`** ——
+    //   那读起来像「整个仓库都跳过了」，与事实（只有**这些没后缀的**）正好相反。
+    //   给它一个说得出口的族名（这里本来就是「一族多个」的粒度，不是真 glob）。
+    path: e.ext === '' ? '**/*（无后缀文件）' : `**/*${e.ext}`,
+    why: e.why ?? why,
+    count: e.count,
+  }));
 }

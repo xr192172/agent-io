@@ -11,7 +11,7 @@
  */
 
 import type Parser from 'tree-sitter';
-import { LanguageEntry } from './languages.js';
+import { LanguageEntry, languageModuleSpec } from './languages.js';
 
 type Language = unknown;
 type ParserInstance = Parser;
@@ -56,7 +56,7 @@ export async function loadLanguage(lang: LanguageEntry): Promise<Language | null
     //   tsx 的语法住在 `tree-sitter-typescript` 里，而 `tree-sitter-tsx` 这个包**不存在**。
     //   原先这里写死派生名 ⇒ 紧随其后那段「按 pkg 取 bag.tsx」的**正确逻辑从来没被执行过**
     //   （import 先抛了）—— 它就是**死代码**，只是没人发现（症状是静默的：该扩展名全体 unknown）。
-    const mod = await import(lang.pkgSpec ?? `tree-sitter-${lang.pkg}`);
+    const mod = await import(languageModuleSpec(lang.pkg, lang.pkgSpec));
     // 部分包导出 default，部分导出命名
     const language = (mod as { default?: unknown }).default ?? mod;
 

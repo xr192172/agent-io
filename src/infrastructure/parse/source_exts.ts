@@ -29,7 +29,7 @@
  */
 
 import path from 'node:path';
-import { LANGUAGES } from './languages.js';
+import { LANGUAGES, findLanguageByExt, languageModuleSpec } from './languages.js';
 
 /** TS/JS 家族：同一套 tree-sitter AST、同一套 ESM/CJS 语义。顺序即解析优先级（`.ts` 优先于编译产物 `.js`）。 */
 export const TS_JS_EXTS = ['.ts', '.tsx', '.js', '.jsx', '.mts', '.cts', '.mjs', '.cjs'] as const;
@@ -139,6 +139,33 @@ export function excludedNonCodeExts(parseableExts: readonly string[]): string[] 
  * 用途：调用方**一次走查**就能既拿到源码、又拿到"有哪些东西被口径排除"（可见性），
  *   不必为了统计再走一遍目录（也避免第二份目录走查实现）。
  */
+/**
+ * 「扫到、但**没被本次走查收下**」的扩展名 → **可执行的事实**：注册表里有这门口语吗？缺哪个包？
+ *
+ * ★ 为什么要有它：走查（`collectSourceFiles`）只能报「`{ext}× N` 没被收下」这个**事实**，
+ *   而**原因**分两种，处置完全不同 ——
+ *     · 注册表里有这门口语，只是**语言包没装/载不入** ⇒ 补 `npm i <pkg>` 就能读（**可执行**）；
+ *     · 注册表里根本没这门口语 ⇒ 不是「装个包」能解决的（要么补进 `languages.ts`，要么它本就不是源码）。
+ *   二者混成一句「未读 N 个文件」= 让调用方**无从下手**（本仓的「缺失必须是可行动的」那条）。
+ *
+ * ★ 判据**派生自注册表**（`findLanguageByExt` + `languageModuleSpec`），**不手抄任何包名**：
+ *   加一门语言 = 只加数据，这里的回答自动跟上。
+ */
+export interface UnmatchedExtFact {
+  ext: string;
+  /** 注册表里的语言名（没登记这门口语 ⇒ `null`） */
+  lang: string | null;
+  /** 该语言包应装的模块说明符（没登记 ⇒ `null`）—— 可执行提示 = `npm i <pkg>` */
+  pkg: string | null;
+}
+
+/** 把一个「没被收下的扩展名」翻译成可行动的事实（纯函数；见 `UnmatchedExtFact` 的立论） */
+export function describeUnmatchedExt(ext: string): UnmatchedExtFact {
+  const l = findLanguageByExt(ext);
+  if (!l) return { ext, lang: null, pkg: null };
+  return { ext, lang: l.name, pkg: languageModuleSpec(l.pkg, l.pkgSpec) };
+}
+
 export function partitionByCodeLang<T extends { rel: string }>(
   files: readonly T[],
 ): { code: T[]; nonCodeExts: Array<{ ext: string; count: number }> } {

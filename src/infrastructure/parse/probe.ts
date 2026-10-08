@@ -22,7 +22,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
-import { LANGUAGES, findLanguageByExt, LanguageEntry } from './languages.js';
+import { LANGUAGES, findLanguageByExt, languageModuleSpec, LanguageEntry } from './languages.js';
 /**
  * ★ 真筛子的判据：`./template_compat.js` 的 `templateCompatFromPkgJson`（**唯一权威**）。
  *   `list`/`check`/`install` 三处共用同一判据（注释里逐字写着"本地读 / registry 元数据走同一判据，
@@ -132,7 +132,8 @@ export function isLanguageInstalled(pkgName: string): boolean {
   // ★ 2026-10-08：显式 pkgSpec 优先 —— 否则 tsx/jsx 会被判成「没装」
   //   （派生名找的是不存在的 tree-sitter-tsx / tree-sitter-jsx）。
   const entry = LANGUAGES.find((l) => l.pkg === pkgName);
-  if (resolvedIsLoadable(entry?.pkgSpec ?? 'tree-sitter-' + pkgName)) {
+  // ★ 派生走**唯一落点**（`languageModuleSpec`）—— 注册表里查不到表项时，同一条规则作用在裸包名上。
+  if (resolvedIsLoadable(languageModuleSpec(pkgName, entry?.pkgSpec))) {
     loadable.add(pkgName);
     return true;
   }

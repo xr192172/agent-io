@@ -35,7 +35,7 @@
  */
 
 import { parseFileFull, parseAstRoot, parseAstRootSync, listSupportedExtensions, resolveProjectImport, type ParsedSymbol, type SyntaxNodeLike } from '../../parse/index.js';
-import { codeSourceExts, isTestFileName, partitionByCodeLang } from '../../parse/source_exts.js';
+import { codeSourceExts, isTestFileName, partitionByCodeLang, describeUnmatchedExt, type UnmatchedExtFact } from '../../parse/source_exts.js';
 import { boundsSkipFromExcluded, type ScanBounds } from '../../scan_bounds.js';
 import { collectSourceFiles } from '../../authoring/version_upgrade/detect.js';
 
@@ -721,6 +721,25 @@ function resolveImportFile(fromRel: string, source: string, rels: Set<string>, e
   return resolveProjectImport(fromRel, source, rels, { exts }).rel;
 }
 
+/**
+ * 「这个后缀为什么没被读」的**可执行**说法（纯函数）。
+ *
+ * ★ 为什么要分两句而不是一句「未读」：两种原因的**处置完全不同** ——
+ *   有表项 ⇒ 补一个包就能读（**可执行**）；没表项 ⇒ 补包无用，要么补进 `languages.ts`，
+ *   要么它本就**不是源码**（`.png`/`.lock`）。一句话抹平这两者 = 让读的人无从下手。
+ */
+function unreadWhy(u: UnmatchedExtFact & { count: number }): string {
+  if (u.pkg) {
+    return `没读到（缺解析器）：注册表里有这门口语（${u.lang}），语言包 ${u.pkg} 没装或载不入 ⇒ 补：npm i ${u.pkg}`;
+  }
+  // ★ 空扩展名**单列一句**：它和「注册表里没这门口语」不是同一回事 ——
+  //   没有后缀 ⇒ 内核**按后缀挑解析器**这件事本身无从下手（不是缺一门语言）。
+  //   ★ 实测踩到（本仓首跑）：不单列时它渲染成裸的 `×3`，读的人根本不知道那是什么。
+  return u.ext === ''
+    ? '没读到（无后缀）：这些文件没有扩展名（Makefile / LICENSE 之类），内核按后缀挑解析器 ⇒ 挑不出来'
+    : `没读到（非源码后缀）：语言注册表里没有 ${u.ext} 这门口语，内核不认识它`;
+}
+
 export async function analyzeHealth(root: string, options: HealthOptions = {}): Promise<HealthReport> {
   const threshold = options.complexityThreshold ?? 10;
   const top = options.top ?? 10;
@@ -741,9 +760,20 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
   //   ★ 顺带覆盖面：全仓只有 2 个 `generated-*` 文件，**都在 `third_party/` 里** ⇒
   //     本条一并解决"生成物算源码"，**不需要**再往 `NOISE_FILE_RE` 里加规则
   //     （遵循本仓「有实据再加，不预留」的既有纪律）。
+  // ★★ 2026-10-08：**「没读到的文件」按后缀报出来**（用户直接提的需求）。
+  //   走查只收 `parseable`（= **装了且有解析器**的扩展名）里的文件，其余一律 `continue` 且
+  //   **连数都不数** ⇒ 回执里那句「我扫了 N 个文件」是一句**无法证伪**的话（少了什么，谁也不知道）。
+  //   实测本项目：`prewarm` 报「36 个解析器就绪 ★ 另有 33 门语言注册了但没装」⇒
+  //   这 33 门口语的文件（`.css/.md/.yml/.sql/.proto/.swift/...`）此前**全部静默消失**。
+  //   ⇒ 接上走查的 `unmatched` 钩子，逐后缀报出，并给出**可执行**的原因（缺哪个包）。
+  const unmatchedExts = new Map<string, number>();
   const { code: files, nonCodeExts } = partitionByCodeLang(
-    collectSourceFiles(root, parseable, new Set(['third_party']))
+    collectSourceFiles(root, parseable, new Set(['third_party']), unmatchedExts)
   );
+  // 后缀 → {语言名, 该装的包}（**派生自注册表**，不手抄）；**按文件数降序**（读的人先看大头）。
+  const unparsed = [...unmatchedExts.entries()]
+    .map(([ext, count]) => ({ ...describeUnmatchedExt(ext), count }))
+    .sort((a, b) => (b.count === a.count ? (a.ext < b.ext ? -1 : 1) : b.count - a.count));
   const rels = new Set(files.map((f) => f.rel));
   const parses = await Promise.all(
     files.map(async (f) => ({ rel: f.rel, parsed: await parseFileFull(f.rel, f.content) })),
@@ -1120,6 +1150,21 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
   const density = (n: number): string =>
     files.length === 0 ? '—' : `${((n / files.length) * 100).toFixed(1)}/百文件`;
 
+  // ★ 「没读到的后缀」在 summary 里只放**前几个**（给人/LLM 一眼看）；**全量在 `bounds.skipped`**（给机器）。
+  //   ★ 截断**必须说出来**（`…余 N 种`）—— 静默截断会让上面那句「我扫了 N 个」重新变成不可证伪。
+  //   ★ 带 `（缺pkg）` 的才是**可执行**的（补个包装上就能读）；不带的是「注册表里没这门口语」。
+  const UNREAD_SHOWN = 6;
+  const unreadLine =
+    unparsed.length === 0
+      ? ''
+      : `　[未读后缀（无解析器）${unparsed
+          .slice(0, UNREAD_SHOWN)
+          // ★ 空扩展名要有说得出口的标签 —— 否则这一项印出来是裸的 `×3`，读的人不知道那是什么。
+          .map((u) => `${u.ext === '' ? '（无后缀）' : u.ext}×${u.count}${u.pkg ? `(缺${u.pkg})` : ''}`)
+          .join(' ')}` +
+        (unparsed.length > UNREAD_SHOWN ? ` …余 ${unparsed.length - UNREAD_SHOWN} 种` : '') +
+        `｜合计 ${unparsed.reduce((n, u) => n + u.count, 0)} 个文件本次没读；逐条见 bounds.skipped]`;
+
   const summary =
     files.length === 0
       ? `无输入（0 个源文件）—— 本次读数不代表健康，grade=N/A。请检查 root 是否存在、扩展名是否被内核支持。`
@@ -1138,7 +1183,11 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
         // ★ 口径可见性（非空才出现）：被"代码语言"口径排除的文件说清楚，别静默消失。
         (nonCodeExts.length > 0
           ? `　[口径 非代码语言未计入源码：${nonCodeExts.map((e) => `${e.ext}×${e.count}`).join(' ')}]`
-          : '');
+          : '') +
+        // ★★ 2026-10-08：**「没读到的」第二类 —— 连解析器都没有**。
+        //   与上面那类是**两回事**（上面是「有解析器、但按代码语言口径不算源码」；这里是**根本没读**）
+        //   ⇒ 分两类显示、**不合并**：处置完全不同（一类是设计如此，一类要补包）。
+        unreadLine;
 
   return {
     root,
@@ -1154,7 +1203,21 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
     bounds: {
       scope: '全项目源码文件（AST 解析 + 调用/类型/import 边；源码集 = 可解析 ∩ 代码语言）',
       scanned: { files: files.length },
-      ...(nonCodeExts.length > 0 ? { skipped: boundsSkipFromExcluded(nonCodeExts) } : {}),
+      // ★ 两类「没读到的」都落这里（**同一形状、同一落点**）：
+      //   ① 没对应**解析器**的（本次新增 —— 遍历到了但没读到，按后缀报出来）
+      //   ② 有解析器、但按**代码语言**口径不算源码的（原 `nonCodeExts`）
+      //   ★ 两者**按构造互斥**（①=`ext ∉ parseable`，②=`ext ∈ parseable`）⇒ 不会出现两条同 `path`。
+      //   ★ 一类都没有 ⇒ **整键省略**（`skipped: []` 是「说了句空话」，本仓纪律是「没有就不说」）。
+      ...(nonCodeExts.length > 0 || unparsed.length > 0
+        ? {
+            skipped: [
+              ...boundsSkipFromExcluded(
+                unparsed.map((u) => ({ ext: u.ext, count: u.count, why: unreadWhy(u) })),
+              ),
+              ...boundsSkipFromExcluded(nonCodeExts),
+            ],
+          }
+        : {}),
     },
   };
 }
