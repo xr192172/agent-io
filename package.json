@@ -70,7 +70,10 @@
     "net:probe": "node scripts/net_probe.mjs",
     "mcp:install": "node scripts/install_mcp.mjs",
     "mcp:check": "node scripts/install_mcp.mjs --check",
-    "tool": "node dist/src/presentation/cli/cli.js"
+    "tool": "node dist/src/presentation/cli/cli.js",
+    "grammar:list": "node scripts/grammar_shim.mjs list",
+    "grammar:build": "node scripts/grammar_shim.mjs build",
+    "grammar:build-all": "node scripts/grammar_shim.mjs build-all"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",

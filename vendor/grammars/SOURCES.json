@@ -1,0 +1,71 @@
+{
+  "lua": {
+    "from": {
+      "kind": "npm",
+      "pkg": "tree-sitter-lua",
+      "version": "2.1.3"
+    },
+    "note": "上游是 NAN 绑定；parser.c 是 ABI 13"
+  },
+  "toml": {
+    "from": {
+      "kind": "npm",
+      "pkg": "tree-sitter-toml",
+      "version": "0.5.1"
+    },
+    "note": "上游是 NAN 绑定；ABI 13"
+  },
+  "vue": {
+    "from": {
+      "kind": "npm",
+      "pkg": "tree-sitter-vue",
+      "version": "0.2.1"
+    },
+    "note": "上游是 NAN 绑定；ABI 13"
+  },
+  "swift": {
+    "from": {
+      "kind": "npm",
+      "pkg": "tree-sitter-swift",
+      "version": "0.6.0"
+    },
+    "note": "上游 N-API 但 prebuild 不含 win32-x64；ABI 14"
+  },
+  "ocaml": {
+    "from": {
+      "kind": "npm",
+      "pkg": "tree-sitter-ocaml",
+      "version": "0.24.2",
+      "subpath": "grammars/ocaml"
+    },
+    "note": "★ 包里有两份语法（实现/接口），这里选**实现**那份；.mli 会解析不佳（已知局限）"
+  },
+  "r": {
+    "from": {
+      "kind": "git",
+      "repo": "https://github.com/r-lib/tree-sitter-r"
+    },
+    "note": "无可用 npm 包；从 GitHub 取源码，ABI 13/14"
+  },
+  "fish": {
+    "from": {
+      "kind": "git",
+      "repo": "https://github.com/ram02z/tree-sitter-fish"
+    },
+    "note": "无可用 npm 包；从 GitHub 取源码，ABI 13/14"
+  },
+  "crystal": {
+    "from": {
+      "kind": "git",
+      "repo": "https://github.com/will/tree-sitter-crystal"
+    },
+    "note": "无可用 npm 包；从 GitHub 取源码，ABI 13/14"
+  },
+  "vhdl": {
+    "from": {
+      "kind": "git",
+      "repo": "https://github.com/alemuller/tree-sitter-vhdl"
+    },
+    "note": "无可用 npm 包；从 GitHub 取源码，ABI 13/14"
+  }
+}
