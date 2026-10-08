@@ -471,8 +471,19 @@ interface LangImportAdapter {
   /**
    * 调用表达式无字段的语法（实测 kotlin/julia：`call_expression` 的 `"fields": {}`，
    * 被调表达式就是**第一个命名子节点**）。
+   * ★ 若被调表达式是**匿名/内联节点**（`isNamed=false`），这条会取不到 —— 用 `calleeChildIndex`。
    */
   calleeIsFirstChild?: boolean;
+  /**
+   * ★ 被调表达式在**第 N 个子节点**上（不管命名与否）。
+   *
+   * 由来（2026-10-08 实测，crystal）：`obj.bar` 的 `method_call` 第一个子节点是
+   * `alias($.property, '')` 的**内联节点**（`isNamed=false`、`type=''`、`text='obj.bar'`）
+   * ⇒ `calleeIsFirstChild`（走 `firstNamedChild`）会跳过它 ⇒ 取不到被调名。
+   * 与 `calleeIsFirstChild` 的区别只在"算不算匿名节点"；两者都取到后走同一条
+   * "尾部标识符"收尾（`obj.bar` → `bar`）。
+   */
+  calleeChildIndex?: number;
   /**
    * 体的候选【字段名】；未声明则用 DEFAULT_BODY_FIELDS（'body'/'suite' 两个通用命名）。
    * 实测：Haskell 体在 `match`（局部绑定在 `binds`）、Elixir 体在 `do_block`。
@@ -483,6 +494,16 @@ interface LangImportAdapter {
    * 的 `"fields": {}`，体是 `function_body`/`class_body` 子节点）。
    */
   bodyNodeTypes?: string[];
+  /**
+   * ★ 体字段的值**本身就是一条语句**（不是一个语句块）—— 返回 `[体节点]` 而不是"体的子节点"。
+   *
+   * 由来（2026-10-08 实测，ocaml）：`let foo () = bar ()` 的 `let_binding`，其 `body` 字段
+   * **就是那次调用**（`application_expression`），没有块的包裹。而默认取法（`bodyFields`）
+   * 返回的是"体节点的**子节点**"⇒ 把 `application_expression` 本身丢掉了 ⇒ **调用边全丢**。
+   * 与 `bodyIsSelf` 的区别：`bodyIsSelf` 是"符号节点自己就是体"（julia），
+   * 本条是"**体字段指向的节点自己**就是一条语句"。
+   */
+  bodyIsExpression?: boolean;
   /**
    * 体就是**本节点自身**（实测 julia：定义节点的子节点按序即体语句，没有包裹节点）。
    * `resolveName` 命中的那个直接子节点（如 `signature`）会被跳过——否则签名里的
@@ -1103,6 +1124,79 @@ export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
       ['arguments', 'alias'], // defmodule App
     ],
   },
+
+  // ══════════════════════════════════════════════════════════════════════════════
+  // ★ 2026-10-08：补 5 门"符号早就提得出来、却一条调用边都没有"的语言。
+  //   做法：6 个并行子代理**逐门实测语法树**（原始 walk + node-types.json）产出事实，
+  //   本笔按事实串行落到这张表（同一文件不能并行改 —— 会静默丢改动）。
+  //   ★ 只声明调用相关字段：`resolveName` 先用注册表的 `field_map.name`，
+  //     所以**不会**改变这些语言已有的符号行为（逐条核对过 `a?.` 都是可选使用）。
+  // ══════════════════════════════════════════════════════════════════════════════
+  bash: {
+    // 实测：`bar` 就是 `command` 节点，被调名在 **`name` 字段**（→ command_name → word）。
+    //   `bar arg1` 只多出 `argument` 字段，`name` 不变 ⇒ 取法不受参数影响。
+    //   ★ 必须用字段：若取整节点文本会得 `bar arg1`，尾部标识符正则反取成 `arg1`。
+    //   node-types.json: node_modules/tree-sitter-bash/src/node-types.json L794(command) / L827(name 字段)
+    callNode: 'command',
+    calleeFields: ['name'],
+    // ★ 不接 import：`source ./a.sh` / `. ./a.sh` 与普通命令**同型**（同一 `command`，name=source/`.`），
+    //   没有专用导入节点 ⇒ 把 `command` 塞进 import_nodes 会让**每条命令**都成依赖候选（类别错误）。
+  },
+  fish: {
+    // 实测：`bar` 是 `command`，被调名在 **`name` 字段**（→ word）。带 `$x` 只多 `argument` 字段。
+    //   node-types.json: .inspect/grammar-src/fish/tree-sitter-fish/src/node-types.json L240 / L297(name 字段)
+    callNode: 'command',
+    calleeFields: ['name'],
+    // ★ 必须声明：`function_definition` **没有 body 字段** —— 它的命名子节点直接就是
+    //   `word`(函数名) + `command`(体语句)。实测 `body` 字段为 null ⇒ 默认取法拿不到体 ⇒ calls=0。
+    bodyIsSelf: true,
+    // 不接 import：`source ./a.fish` 与普通命令同型（node-types 里**零** import/source 类节点）。
+  },
+  ocaml: {
+    // ★ 实测：OCaml 的调用是**函数应用**（`bar ()`）⇒ 节点是 `application_expression`，**不是** call_expression。
+    //   被调函数在 **`function` 字段**；参数在 multiple 的 `argument` 字段。
+    //   ★ 必须用字段：`bar a b` 是**单个** application_expression ⇒ 若取整节点文本，
+    //     尾部标识符会误取最后一个**参数**。
+    //   「应用」与「纯引用」的区分：应用有 `application_expression` 包裹；裸引用只是 value_path/value_name。
+    //   node-types.json: 语法仓 src/node-types.json L1082(application_expression) / L1100(function 字段)
+    callNode: 'application_expression',
+    calleeFields: ['function'],
+    // ★ 必须声明：`let_binding` 的 `body` 字段**就是那条表达式**（`bar ()`），没有块包裹。
+    //   默认取法返回"体的子节点"⇒ 会把 application_expression 本身丢掉 ⇒ 调用边全丢（实测 calls=0）。
+    bodyIsExpression: true,
+  },
+  solidity: {
+    // 实测：`bar()` → `call_expression`，被调名在 **`function` 字段**
+    //   （该字段是个 `expression` 包裹节点，其 `.text` 即 `bar` / `a.b`）⇒ 内核取 .text + 尾标识符即可。
+    //   实测 `name`/`callee`/`method`/`target`/`receiver`/`arguments` 字段**全为 null**。
+    //   node-types.json: node_modules/tree-sitter-solidity/src/node-types.json L369 / L372(function 字段)
+    callNode: 'call_expression',
+    calleeFields: ['function'],
+  },
+  crystal: {
+    // ★ 实测（子代理逐字段探测 + 本笔复验）：被调名在 `method_call` 的**第 0 个子节点**上，
+    //   而那是个 `alias($.property, '')` 的**内联节点**（`isNamed=false`、`type=''`、`text='obj.bar'`）
+    //   ⇒ `calleeIsFirstChild`（走 firstNamedChild）**取不到** ⇒ 必须用 `calleeChildIndex: 0`。
+    //   `method_call` 唯一的具名字段是 `arg`（参数），`name`/`object`/`receiver`/`method` 实测全 null。
+    // ★★ 这个语法有个**上游固有限制**（实测，非本仓问题）：`method_call` 规则里
+    //   `alias($.property,'')` 是**必需项** ⇒ **裸调用**不提调用节点：
+    //   `bar` → `local_variable`、`bar()` → `ERROR`；只有带 receiver 的 `self.bar` / `obj.bar` 才成 `method_call`。
+    //   证据：grammar.js L474-487；上游副本逐字节一致。
+    callNode: 'method_call',
+    calleeChildIndex: 0,
+    // ★ 实测：`method_definition` 也**没有 body 字段**（body/suite 皆 null），命名子节点就是
+    //   `identifier`(方法名) + `method_call`(体语句) ⇒ 与 fish 同形，用 `bodyIsSelf`
+    //   （名字那个直接子节点由 `nameIndex` 跳过）。
+    bodyIsSelf: true,
+  },
+  swift: {
+    // ★ 实测：`call_expression` 的 `"fields": {}`（**零字段**）⇒ 被调表达式是**第一个命名子节点**
+    //   （`bar()` → simple_identifier "bar"）。11 个候选字段实测全 null。
+    //   ★ 已知边界（子代理实测，未处理）：泛型调用 `generic<Int>(3)` 落成 `constructor_expression`
+    //     而非 call_expression ⇒ **即使加了本条也提不出边**；`arr[0]()` 的尾标识符会失真成 `arr`。
+    callNode: 'call_expression',
+    calleeIsFirstChild: true,
+  },
 };
 
 /** 取某语言 import 的 source 列表（深适配查注册表；简单字段走 importSourceField） */
@@ -1171,6 +1265,14 @@ function symbolKind(node: SyntaxNodeLike, lang: LanguageEntry, parent?: string):
  */
 function bodyChildren(node: SyntaxNodeLike, lang: LanguageEntry, nameIndex: number | null): SyntaxNodeLike[] | null {
   const a = LANG_ADAPTERS[lang.name];
+  // ★ 先判"体字段的值**自身**就是一条语句"（ocaml 的 `let foo () = bar ()`）——
+  //   必须排在下面按 bodyFields 取"体的子节点"之前，否则那条调用节点会被丢掉。
+  if (a?.bodyIsExpression) {
+    for (const f of a?.bodyFields ?? DEFAULT_BODY_FIELDS) {
+      const c = node.childForFieldName(f);
+      if (c) return [c];
+    }
+  }
   for (const f of a?.bodyFields ?? DEFAULT_BODY_FIELDS) {
     const c = node.childForFieldName(f);
     if (c) {
@@ -1236,6 +1338,8 @@ function extractCallee(callNode: SyntaxNodeLike, langName: string): { name: stri
     }
   }
   if (!fn && a?.calleeIsFirstChild) fn = firstNamedChild(callNode);
+  // ★ 匿名/内联的被调表达式（crystal 的 `alias($.property,'')`）：按**子节点序号**取，不管命名与否。
+  if (!fn && typeof a?.calleeChildIndex === 'number') fn = callNode.child(a.calleeChildIndex);
   if (!fn) return null;
   // 对象与方法名分离的语法（Java/Groovy 的 method_invocation.object）→ 拼回 qualified 前缀供 is-target 用
   const obj = a?.calleeObjectField ? callNode.childForFieldName(a.calleeObjectField) : null;

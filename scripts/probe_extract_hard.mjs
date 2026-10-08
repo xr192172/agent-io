@@ -35,12 +35,16 @@ const S = {
   scala: ['.scala', 'object T {\n  def foo() = { bar() }\n  def bar() = {}\n}\n', ['foo', 'bar'], 'bar'],
   groovy: ['.groovy', 'def foo() { bar() }\ndef bar() {}\n', ['foo', 'bar'], 'bar'],
   elixir: ['.ex', 'defmodule M do\n  def foo do\n    bar()\n  end\n\n  def bar do\n  end\nend\n', ['foo', 'bar'], 'bar'],
-  haskell: ['.hs', 'foo = bar\nbar = 1\n', ['foo', 'bar'], 'bar'],
+  // ★ 2026-10-08 更正样本：haskell 的调用是**函数应用**（`apply` 节点），而 adapter 声明的正是
+  //   `callNode: 'apply'`。上一版我写的 `foo = bar` 是个 `bind`（**根本不是应用**）⇒ ✗ 假红是我样本的错。
+  haskell: ['.hs', 'bar x = x\nfoo = bar 1\n', ['foo', 'bar'], 'bar'],
   bash: ['.sh', 'bar() { :; }\nfoo() { bar; }\n', ['foo', 'bar'], 'bar'],
   julia: ['.jl', 'function foo()\n  bar()\nend\n\nfunction bar()\nend\n', ['foo', 'bar'], 'bar'],
   r: ['.r', 'bar <- function() {}\nfoo <- function() { bar() }\n', ['foo', 'bar'], 'bar'],
   fish: ['.fish', 'function bar\nend\n\nfunction foo\n  bar\nend\n', ['foo', 'bar'], 'bar'],
-  crystal: ['.cr', 'def bar\nend\n\ndef foo\n  bar\nend\n', ['foo', 'bar'], 'bar'],
+  // ★ 2026-10-08 更正样本：crystal 的**裸调用不产调用节点**（实测 `bar`→local_variable、`bar()`→ERROR），
+  //   只有带 receiver 的 `self.bar` 才成 `method_call`（上游 grammar 固有限制：`alias($.property,'')` 是必需项）。
+  crystal: ['.cr', 'class Foo\n  def bar\n  end\n\n  def foo\n    self.bar\n  end\nend\n', ['foo', 'bar'], 'bar'],
   swift: ['.swift', 'func bar() {}\nfunc foo() { bar() }\n', ['foo', 'bar'], 'bar'],
   ocaml: ['.ml', 'let bar () = ()\nlet foo () = bar ()\n', ['foo', 'bar'], 'bar'],
   solidity: ['.sol', 'contract C {\n  function bar() public {}\n  function foo() public { bar(); }\n}\n', ['foo', 'bar'], 'bar'],
