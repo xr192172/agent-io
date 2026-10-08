@@ -1,0 +1,21 @@
+#AgentIO-MANIFEST: 1
+#Format-Version: agent-io/volumes-v1
+#
+# 本文件**只声明，不放数据**（数据仍在各自路径）—— 它回答四个问题：
+#   哪几卷 · 谁是真相 · 谁能改（mode） · 谁会被重新生成（regen）
+# ★ mode 三个词别混：readonly=只读 | regenerable=**会被重新生成**（别把决策写这儿）
+#                    | human-authored=人写的**永不被覆盖** | append-only=只增 | derived=现算的，不是真相
+#
+#Volume: id=live      mode=readonly       regen=scan         state=present path=.agent-io/live/<feature>.dsl.json
+#Volume: id=baseline  mode=readonly       regen=snapshot     state=present path=.agent-io/baseline/<feature>.dsl.json
+#Volume: id=base      mode=regenerable    regen=scan|write   state=present path=.agent-io/features/<feature>.json
+#Volume: id=overlay   mode=human-authored regen=never        state=present path=.agent-io/features/<feature>.overlay.json
+#Volume: id=archive   mode=append-only    regen=never        state=absent  path=.agent-io/archive/<feature>/
+#Volume: id=cognition mode=derived        regen=base+overlay state=absent  path=.agent-io/COGNITION.txt
+#Volume: id=index     mode=derived        regen=scan         state=present path=.agent-io/cache.db
+#Volume: id=drift     mode=derived        regen=check        state=present path=.agent-io/drift/<feature>.drift.json
+#Volume: id=snapshots mode=append-only    regen=never        state=present path=.agent-io/code-snapshots/
+#
+#Quota: F<=200 R<=300 A<=300 S<=600
+#Admission: L1-L4（见 src/application/observe/reconcile/reason_validator.ts）—— ★ 我们已有的写入闸，不是新造的
+#Derived-From: 本文件由 scripts/gen_manifest.mjs 依磁盘实况生成；--check 可对账

@@ -928,7 +928,14 @@
         `#Admission:` **指向已有的 L1–L4**（`reason_validator.ts`）——★ **声明已有的，不新造一个**。
       ⇒ **判据**：① 生成物与磁盘实况一致（**列出不存在的卷 ⇒ 报错，不静默**）；
         ② 只读它**能答出"谁是真相、谁能改、谁会被重生成"**。
-      ⇒ ★ **未定**：住**仓根**（LLM 一眼看见，但污染别人的仓）还是 `.agent-io/`（干净，但**今天是 gitignore 的 ⇒ 又没人看得见**）。
+      ⇒ ★ **已定（2026-10-08）**：住 **仓根**（`<project>/MANIFEST.txt`），判据 = **变更频率低**
+        （只在"卷布局变了"时变；实测 21 行 ~1.5KB）⇒ **进 Git 可 diff、可评审、走"读文件"这个原生通道**。
+        `--in-data-dir` 保留给不想让仓根多文件的场合。
+        ★★ **理由（用户追问"我们现在的设计达得到简化 LLM 读取的目的吗"）**：这是「**file 通道 vs tool 通道**」之别 ——
+          tool 通道要求 **服务在跑 + 知道工具存在 + 20 个 query 里挑对**；实测 `query=digest` 早就实现且能用，
+          `capability_map`/README/router **三处全不点名** ⇒ **连着四轮没人看见**。
+      ⇒ ★ **本轮已落**：`scripts/gen_manifest.mjs` + `npm run manifest` / `manifest:check`，
+        出生证两方向都验过（磁盘多卷 ⇒ 红；声明谎报 ⇒ 红；还原 ⇒ 绿）。**余下：`capability_map` 顶部点名它。**
       ⇒ 设计：`docs/convergent-product-form.md`。
 
 - [ ] **T68 ★★ 合并形态 S2：`COGNITION.txt` —— `query=digest` 的落盘形态（带派生指纹）**

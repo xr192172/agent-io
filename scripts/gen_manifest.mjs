@@ -15,18 +15,33 @@
  *    （本仓教训：同一判据住两处、各持一份）。
  *
  * ## 用法
- *   node scripts/gen_manifest.mjs [--project <dir>] [--stdout] [--check]
- *   · 默认：写出 `<project>/.agent-io/MANIFEST.txt`
+ *   node scripts/gen_manifest.mjs [--project <dir>] [--in-data-dir] [--stdout] [--check]
+ *   · 默认：写出 **`<project>/MANIFEST.txt`（仓根）** —— ★ 见下面"**为什么默认放仓根**"
+ *   · `--in-data-dir`：写进 `<project>/.agent-io/MANIFEST.txt`（不想让仓根多一个文件时用）
  *   · `--stdout`：只打印，不写盘（看将要写什么）
  *   · `--check`：**不写盘**，只对账；不一致 ⇒ 退出 1
  *   · `--project` 缺省 = cwd（★ 本仓禁 `cwd` 兜底，但**这是一个显式 CLI 工具**，
  *     它的"项目"就是操作者站的地方，与在工具内部偷偷 `?? process.cwd()` 不是一回事）
+ *
+ * ## ★★ 为什么默认写**仓根**（2026-10-08 用户追问"我们现在的设计达得到简化 LLM 读取的目的吗"）
+ * 因为**这份声明存在的唯一理由就是"被看见"**：
+ *   · 放 `.agent-io/` ⇒ 那目录在目标仓里是 **gitignore 的** ⇒ **文件在，但等于不在**（`ls` / README 都碰不到）；
+ *   · 放**仓根** ⇒ LLM 读仓时**走它本来就在走的通道**（读文件），**不必先知道"有个工具、该调哪个 query"**。
+ * ★ 这就是「**file 通道** vs **tool 通道**」之别：tool 通道要求 **服务在跑 + 知道工具存在 + 20 个 query 里挑对**。
+ *   实测代价：`query=digest` **早就实现且能用**，却在 `capability_map` / README / router **三处都不点名**
+ *   ⇒ **我自己连着四轮都没看见它**，还提议再造一个同功能的 `query=outline`。**这就是 tool 通道的失败模式。**
+ * ★ 它**只有 ~1.4KB / 21 行，且只在"卷的布局变了"时才变**（罕见）
+ *   ⇒ **churn 低 ⇒ 适合进 Git**（可 diff、可评审）。
+ *   ★ 对照 `COGNITION.txt`：**随每次代码改动而变 ⇒ churn 高 ⇒ 不进 Git**，靠工具现渲染。
+ *   ⇒ ★★ **判据 = 变更频率**（不是"重要不重要"）。
  */
 import fs from 'node:fs';
 import path from 'node:path';
 
 const DATA_DIR = '.agent-io';
 const FORMAT_VERSION = 'agent-io/volumes-v1';
+/** ★ 声明文件自身的落点：**仓根**（理由见文件头"为什么默认放仓根"）。`--in-data-dir` 可改回数据目录。 */
+const MANIFEST_NAME = 'MANIFEST.txt';
 
 /**
  * ★ 卷表（**唯一一处**）。`present` 判据 = 该 `probe` 路径在磁盘上存在。
@@ -38,15 +53,15 @@ const FORMAT_VERSION = 'agent-io/volumes-v1';
  *   · `derived`         —— 从别的卷**现算**出来，随时可重生成，**不是真相**。
  */
 const VOLUMES = [
-  { id: 'live',      mode: 'readonly',       regen: 'scan',          probe: 'live',              path: 'live/<feature>.dsl.json' },
-  { id: 'baseline',  mode: 'readonly',       regen: 'snapshot',      probe: 'baseline',          path: 'baseline/<feature>.dsl.json' },
-  { id: 'base',      mode: 'regenerable',    regen: 'scan|write',    probe: 'features',          path: 'features/<feature>.json' },
-  { id: 'overlay',   mode: 'human-authored', regen: 'never',         probe: 'features',          path: 'features/<feature>.overlay.json' },
-  { id: 'archive',   mode: 'append-only',    regen: 'never',         probe: 'archive',           path: 'archive/<feature>/' },
-  { id: 'cognition', mode: 'derived',        regen: 'base+overlay',  probe: 'COGNITION.txt',     path: 'COGNITION.txt' },
-  { id: 'index',     mode: 'derived',        regen: 'scan',          probe: 'cache.db',          path: 'cache.db' },
-  { id: 'drift',     mode: 'derived',        regen: 'check',         probe: 'drift',             path: 'drift/<feature>.drift.json' },
-  { id: 'snapshots', mode: 'append-only',    regen: 'never',         probe: 'code-snapshots',    path: 'code-snapshots/' },
+  { id: 'live',      mode: 'readonly',       regen: 'scan',          probe: 'live',              path: `${DATA_DIR}/live/<feature>.dsl.json` },
+  { id: 'baseline',  mode: 'readonly',       regen: 'snapshot',      probe: 'baseline',          path: `${DATA_DIR}/baseline/<feature>.dsl.json` },
+  { id: 'base',      mode: 'regenerable',    regen: 'scan|write',    probe: 'features',          path: `${DATA_DIR}/features/<feature>.json` },
+  { id: 'overlay',   mode: 'human-authored', regen: 'never',         probe: 'features',          path: `${DATA_DIR}/features/<feature>.overlay.json` },
+  { id: 'archive',   mode: 'append-only',    regen: 'never',         probe: 'archive',           path: `${DATA_DIR}/archive/<feature>/` },
+  { id: 'cognition', mode: 'derived',        regen: 'base+overlay',  probe: 'COGNITION.txt',     path: `${DATA_DIR}/COGNITION.txt` },
+  { id: 'index',     mode: 'derived',        regen: 'scan',          probe: 'cache.db',          path: `${DATA_DIR}/cache.db` },
+  { id: 'drift',     mode: 'derived',        regen: 'check',         probe: 'drift',             path: `${DATA_DIR}/drift/<feature>.drift.json` },
+  { id: 'snapshots', mode: 'append-only',    regen: 'never',         probe: 'code-snapshots',    path: `${DATA_DIR}/code-snapshots/` },
 ];
 
 /** ★ 草案配额（T69 会把它变成单点常量 + L1 双边执行；本轮只**声明**它，不执行）。 */
@@ -58,6 +73,8 @@ const valOf = (n) => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : 
 
 const projectDir = path.resolve(valOf('--project') ?? process.cwd());
 const dataDir = path.join(projectDir, DATA_DIR);
+/** ★ 声明文件落点：**默认仓根**（`--in-data-dir` 改回数据目录）。只在这里算一次。 */
+const manifestPath = path.join(flag('--in-data-dir') ? dataDir : projectDir, MANIFEST_NAME);
 
 /** 卷在磁盘上存在吗？—— ★ 判据只有这一处（`VOLUMES[].probe` 存在性） */
 export function volumeState(v) {
@@ -94,9 +111,8 @@ export function renderManifest() {
 
 /** --check：拿磁盘上那份去对账（★ 只报差异，不改盘） */
 export function checkManifest() {
-  const file = path.join(dataDir, 'MANIFEST.txt');
-  if (!fs.existsSync(file)) return { ok: false, why: `MANIFEST.txt 不存在（${file}）⇒ 先跑一次生成`, stale: [], missing: [], undeclared: [] };
-  const onDisk = fs.readFileSync(file, 'utf8');
+  if (!fs.existsSync(manifestPath)) return { ok: false, why: `MANIFEST.txt 不存在（${manifestPath}）⇒ 先跑一次生成`, stale: [], missing: [], undeclared: [] };
+  const onDisk = fs.readFileSync(manifestPath, 'utf8');
   const declared = new Map();
   for (const m of onDisk.matchAll(/^#Volume: id=(\S+)[^\n]*state=(\S+)/gm)) declared.set(m[1], m[2]);
   const missing = [], stale = [];
@@ -128,9 +144,8 @@ if (flag('--check')) {
   process.exit(r.ok ? 0 : 1);
 }
 
-fs.mkdirSync(dataDir, { recursive: true });
-const out = path.join(dataDir, 'MANIFEST.txt');
-fs.writeFileSync(out, rendered, 'utf8');
-console.log(`已写出 ${out}（${rendered.length} 字符 / ${rendered.split('\n').length - 1} 行）`);
+fs.mkdirSync(path.dirname(manifestPath), { recursive: true });
+fs.writeFileSync(manifestPath, rendered, 'utf8');
+console.log(`已写出 ${manifestPath}（${rendered.length} 字符 / ${rendered.split('\n').length - 1} 行）`);
 const state = VOLUMES.map((v) => `${v.id}=${volumeState(v)}`).join(' ');
 console.log(`卷状态：${state}`);

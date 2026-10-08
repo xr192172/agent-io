@@ -41,28 +41,36 @@
    └─ archive/<f>/               下线库             （只增；含完整 DSL 快照 + 决策卡）
 ```
 
-### 2.2 `MANIFEST.txt` = **把"三个层"从注释里请出来**
+### 2.2 `MANIFEST.txt` = **把"三个层"从注释里请出来**（★ 落**仓根**）
 
 ★ 直接治上一轮实证的病：**"三个 DSL"这条心智全仓只住在 `storage_overlay.ts` 的注释里**，
 README / router / mind **三处都不写** ⇒ 谁都不会想到有三个。
 
-草案（★ **全篇只有声明，没有数据** ⇒ **不新增真相源**）：
+★★ **为什么必须放仓根（用户追问"我们现在的设计达得到简化 LLM 读取的目的吗"的答案）**：
+这是「**file 通道**」与「**tool 通道**」之别 ——
 
-```
-#AgentIO-MANIFEST: 1
-#Format-Version: agent-io/volumes-v1
-#Volume: id=live       mode=readonly        regen=scan          path=live/<feature>.dsl.json
-#Volume: id=base       mode=regenerable     regen=scan|write    path=features/<feature>.json
-#Volume: id=overlay    mode=human-authored  regen=never         path=features/<feature>.overlay.json
-#Volume: id=archive    mode=append-only     regen=never         path=archive/<feature>/
-#Volume: id=cognition  mode=derived         from=base+overlay   path=COGNITION.txt
-#Quota: F<=200 R<=300 A<=300 S<=600
-#Admission: L1-L4 (see src/application/observe/reconcile/reason_validator.ts)
-```
+| | file 通道（放仓根） | tool 通道（只做 `query=digest`） |
+|---|---|---|
+| LLM 怎么拿到 | **读文件**（它本来就在读仓） | **调工具** |
+| 前置要求 | 无 | **服务在跑 + 知道工具有没有 + 20 个 query 里挑对** |
+| 实测结局 | — | ★ `query=digest` **早就实现且能用**，三处引导全不点名 ⇒ **我自己连着四轮没看见**，还提议再造一个 `query=outline` |
 
-- `#Format-Version:` ⇒ 治"**DSL 格式漂了没处看**"（吸收 AOCI 第 1 条）；
-- `#Quota:` ⇒ 治"**没有上限预算**"（吸收 AOCI 第 2 条；**分级思路取自它**，数值是我们的口径）；
-- `#Admission:` ⇒ 不吸收它的做法，**指向我们已经更强的那道闸**（L1–L4）——**声明我们已有的，而不是新造一个**。
+⇒ **所以"我们现在的设计"达得到渲染这一半，达不到"被看见"那一半。** 声明文件正是补那一半。
+
+草案（★ **全篇只有声明，没有数据** ⇒ **不新增真相源**）：见仓根 `MANIFEST.txt`（21 行 / ~1.5KB，由 `npm run manifest` 生成）：
+
+- `#Format-Version: agent-io/volumes-v1` ⇒ 治"**DSL 格式漂了没处看**"（吸收 AOCI 第 1 条）；
+- `#Quota:` ⇒ 治"**没有上限预算**"（吸收 AOCI 第 2 条；级数思路取自它，数值是我们的口径）；
+- `#Admission:` ⇒ 不吸收它的做法，**指向我们已经更强的那道闸**（L1–L4）——**声明已有的，而不是新造一个**。
+
+★★ **进 Git 的判据 = 变更频率**（不是"重要不重要"）：
+
+| 文件 | 变更频率 | 进 Git？ |
+|---|---|---|
+| `MANIFEST.txt` | **只在"卷的布局变了"时变**（罕见；本仓实测 21 行 ~1.5KB） | ✅ **进**（可 diff、可评审、**走原生通道**） |
+| `COGNITION.txt` | **随每次代码改动而变** | ❌ **不进**（churn 高；靠工具现渲染，见 §2.3） |
+
+★ 这就是"**为什么 MANIFEST 进 Git 而 COGNITION 不进**"的完整答案 —— 一句话：**它俩的差异不在价值，在 churn。**
 
 ### 2.3 `COGNITION.txt` = `query=digest` 的落盘形态
 
@@ -130,5 +138,5 @@ S3/S5 独立可并行；S4 依赖 S2 的产物大小。
 - **未量**：一个真实仓库的 `COGNITION.txt` 会有多大（我们的 4 个现存 feature 太小，量了也不代表）。
 - **未验**：`_dsl_rev` 借来当"派生指纹"够不够 —— 它的语义是**乐观锁（写冲突检测）**，
   **借来当指纹属于复用**，得在类型注释里标清，否则又是"一名两义"。
-- 未验 `MANIFEST.txt` 该住**仓根**还是 `.agent-io/` 下（住仓根 ⇒ LLM 一眼看见，但要污染别人的仓；
-  住 `.agent-io/` ⇒ 干净，但.**agent-io/ 今天是 gitignore 的** ⇒ 又没人看得见）。**这条没定。**
+- ★ **已定（2026-10-08）**：`MANIFEST.txt` 住**仓根**，**判据 = 变更频率低**（只在卷布局变时变，实测 21 行 ~1.5KB）。
+  `--in-data-dir` 保留给"不想让仓根多一个文件"的场合。
