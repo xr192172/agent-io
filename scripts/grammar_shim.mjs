@@ -122,6 +122,9 @@ async function fetchSrc(name) {
 
 async function build(name) {
   const e = table[name];
+  // ★ 已撤下的（disabled）：**跳过**，不当失败 —— 否则每次 build-all 都会为它报一次假红。
+  //   但也不是"静默跳过"：如实说清为什么。
+  if (e.disabled) return { name, ok: false, skipped: true, why: '已撤下（disabled）: ' + (e.disabledWhy ?? '') };
   const grammarDir = await fetchSrc(name);
   const parserC = path.join(grammarDir, 'src', 'parser.c');
   if (!fs.existsSync(parserC)) return { name, ok: false, why: `没有 src/parser.c（取到的目录：${path.relative(REPO, grammarDir)}）` };
@@ -218,8 +221,56 @@ if (cmd === 'list') {
   process.exitCode = r.ok ? 0 : 1;
 } else if (cmd === 'build-all') {
   const out = [];
-  for (const k of Object.keys(table)) { const r = await build(k); out.push(r); console.log(r.ok ? `✅ ${k} ABI ${r.abi} root=${r.root}` : `❌ ${k} ${r.why}`); }
-  console.log(`\n通过 ${out.filter((r) => r.ok).length}/${out.length}`);
+  for (const k of Object.keys(table)) {
+    const r = await build(k);
+    out.push(r);
+    console.log(r.skipped ? `·  ${k} 跳过 —— ${r.why}` : r.ok ? `✅ ${k} ABI ${r.abi} root=${r.root}` : `❌ ${k} ${r.why}`);
+  }
+  const pass = out.filter((r) => r.ok).length, skip = out.filter((r) => r.skipped).length;
+  console.log(`\n通过 ${pass} · 跳过 ${skip} · 失败 ${out.length - pass - skip} / ${out.length}`);
+} else if (cmd === 'pins') {
+  // ★ 「统一到某一个版本」的**校验**：声明（PINS.json）必须与**现实**对得上。
+  const pinsPath = path.join(REPO, 'vendor', 'grammars', 'PINS.json');
+  const pins = JSON.parse(fs.readFileSync(pinsPath, 'utf8'));
+  const apiH = path.join(TS_INCLUDE, 'tree_sitter', 'api.h');
+  const api = fs.readFileSync(apiH, 'utf8');
+  const grab = (n) => { const m = api.match(new RegExp(`#define\\s+${n}\\s+(\\d+)`)); return m ? Number(m[1]) : null; };
+  const coreVer = JSON.parse(fs.readFileSync(path.join(REPO, 'node_modules', 'tree-sitter', 'package.json'), 'utf8')).version;
+  const win = [grab('TREE_SITTER_MIN_COMPATIBLE_LANGUAGE_VERSION'), grab('TREE_SITTER_LANGUAGE_VERSION')];
+  const rows = [],
+    bad = [];
+  rows.push(['核心版本', pins.core.version, coreVer, pins.core.version === coreVer]);
+  rows.push(['ABI 窗口', JSON.stringify(pins.core.abiWindow), JSON.stringify(win), JSON.stringify(pins.core.abiWindow) === JSON.stringify(win)]);
+  rows.push(['在册语言数', String(pins.grammarsInScope.length), String(Object.keys(table).filter((k) => !table[k].disabled).length),
+    pins.grammarsInScope.length === Object.keys(table).filter((k) => !table[k].disabled).length]);
+  for (const [what, want, got, ok] of rows) {
+    console.log(`  ${ok ? '✅' : '❌'} ${what.padEnd(12)} 声明=${want}  现实=${got}`);
+    if (!ok) bad.push(what);
+  }
+  // 每门在册语法的 ABI（有源码才读得到；没有就标"未取源"）
+  for (const n of pins.grammarsInScope) {
+    const e = table[n];
+    // ★ 路径要**认 subpath** —— ocaml 的 parser.c 在 package/grammars/ocaml/src/ 下，
+    //   上一版只顾了 package/src/ 与 <repo>/src/，于是它被误报成"未取源"。
+    const roots = e.from.kind === 'npm'
+      ? [path.join(SRCROOT, n, 'package', e.from.subpath ?? '')]
+      : [path.join(SRCROOT, n, path.basename(e.from.repo), e.from.subpath ?? '')];
+    const f = roots.map((r) => path.join(r, 'src', 'parser.c')).find((x) => fs.existsSync(x))
+      ?? (fs.existsSync(roots[0]) ? (function walk(d) {
+        for (const x of fs.readdirSync(d, { withFileTypes: true })) {
+          const p = path.join(d, x.name);
+          if (x.isDirectory()) { const r2 = walk(p); if (r2) return r2; }
+        }
+        return fs.existsSync(path.join(d, 'src', 'parser.c')) ? path.join(d, 'src', 'parser.c') : null;
+      })(roots[0]) : null);
+    if (!f) { console.log(`  ·  ${n.padEnd(12)} 未取源（跳过 ABI 核对 —— 跑过 build ${n} 才有）`); continue; }
+    const abi = readAbi(f);
+    const ok = abi >= win[0] && abi <= win[1];
+    console.log(`  ${ok ? '✅' : '❌'} ${n.padEnd(12)} ABI=${abi}`);
+    if (!ok) bad.push(n);
+  }
+  console.log(bad.length ? `\n❌ ${bad.length} 项与声明不符` : '\n✅ 声明与现实一致');
+  process.exitCode = bad.length ? 1 : 0;
 } else if (cmd === 'install') {
   console.log(install(arg) ? `已装进 vendor/grammars/${arg} 并声明 file: 依赖` : `没有产物可装（先 build ${arg}）`);
 } else {

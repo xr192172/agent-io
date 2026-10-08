@@ -73,7 +73,9 @@
     "tool": "node dist/src/presentation/cli/cli.js",
     "grammar:list": "node scripts/grammar_shim.mjs list",
     "grammar:build": "node scripts/grammar_shim.mjs build",
-    "grammar:build-all": "node scripts/grammar_shim.mjs build-all"
+    "grammar:build-all": "node scripts/grammar_shim.mjs build-all",
+    "grammar:pins": "node scripts/grammar_shim.mjs pins",
+    "grammar:verify": "node scripts/verify_grammar_rebuild.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",

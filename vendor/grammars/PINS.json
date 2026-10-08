@@ -1,0 +1,32 @@
+{
+  "_note": "把这一整套钉到「某一个版本」的**唯一声明处**。改这里 = 换基座，要连带重编 vendor/grammars（`npm run grammar:build-all`）并重跑 `npm run grammar:pins` 校验。",
+  "core": {
+    "package": "tree-sitter",
+    "version": "0.21.1",
+    "abiWindow": [
+      13,
+      14
+    ],
+    "abiSource": "node_modules/tree-sitter/vendor/tree-sitter/lib/include/tree_sitter/api.h 的两个 #define",
+    "why": "生成语法时 CLI 的版本号会写进 parser.c 的表头 = ABI。核心**向后兼容、不向前兼容** ⇒ 窗口是区间 [min, max]，不是 \">= min\"。超界的表现是**静默**（那段 RangeError 只造不抛）。"
+  },
+  "builtOn": {
+    "platform": "win32-x64",
+    "node": "22.22.2",
+    "toolchain": "MSVC (VS2019 16.11)"
+  },
+  "grammarsInScope": [
+    "crystal",
+    "fish",
+    "ocaml",
+    "r",
+    "swift",
+    "toml",
+    "vhdl",
+    "vue"
+  ],
+  "grammarsDisabled": [
+    "lua"
+  ],
+  "pinnedAt": "2026-10-08"
+}
