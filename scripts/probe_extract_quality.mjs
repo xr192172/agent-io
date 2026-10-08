@@ -85,6 +85,8 @@ for (const [lang, s] of Object.entries(S)) {
   rows.push({ lang, kind: s.kind ?? 'code', verdict: bad.length ? `⚠ ${bad.map(([w]) => w).join('/')}未提` : '✅ 三项都对', syms, imps, calls, err: r.error });
 }
 
+// ★ `--json`：只吐**可比较的 JSON**（供 `snap:take/diff` 观测；无时间戳/无绝对路径 ⇒ 确定）
+if (process.argv.includes('--json')) { console.log(JSON.stringify(rows)); process.exit(0); }
 fs.writeFileSync(path.join(REPO, '.inspect', 'extract-quality.json'), JSON.stringify(rows, null, 1));
 
 const ok = rows.filter((r) => r.verdict.startsWith('✅')).length;

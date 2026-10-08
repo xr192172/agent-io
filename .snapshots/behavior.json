@@ -1,0 +1,1935 @@
+{
+ "_meta": {
+  "takenAt": "2026-10-08T14:06:01.651Z",
+  "env": {
+   "core": "0.21.1",
+   "node": "v22.22.2",
+   "platform": "win32-x64"
+  },
+  "obsCount": 4
+ },
+ "obs": {
+  "completion-candidates": [
+   {
+    "base": "./a",
+    "opts": {},
+    "candidates": [
+     "./a.ts",
+     "./a.tsx",
+     "./a.js",
+     "./a.jsx",
+     "./a.mjs",
+     "./a.cjs",
+     "./a.mts",
+     "./a.cts",
+     "./a/index.ts",
+     "./a/index.tsx",
+     "./a/index.js",
+     "./a/index.jsx"
+    ]
+   },
+   {
+    "base": "./a",
+    "opts": {
+     "exts": [
+      ".go",
+      ".py"
+     ]
+    },
+    "candidates": [
+     "./a.go",
+     "./a.py",
+     "./a/index.ts",
+     "./a/index.tsx",
+     "./a/index.js",
+     "./a/index.jsx"
+    ]
+   },
+   {
+    "base": "./a",
+    "opts": {
+     "exts": [
+      ".go",
+      ".py"
+     ],
+     "bareBaseFirst": true
+    },
+    "candidates": [
+     "./a",
+     "./a.go",
+     "./a.py",
+     "./a/index.ts",
+     "./a/index.tsx",
+     "./a/index.js",
+     "./a/index.jsx"
+    ]
+   },
+   {
+    "base": "./a",
+    "opts": {
+     "indexFiles": [
+      "idx.ts"
+     ]
+    },
+    "candidates": [
+     "./a.ts",
+     "./a.tsx",
+     "./a.js",
+     "./a.jsx",
+     "./a.mjs",
+     "./a.cjs",
+     "./a.mts",
+     "./a.cts",
+     "./a/idx.ts"
+    ]
+   },
+   {
+    "base": "./a",
+    "opts": {
+     "exts": [
+      ".sol"
+     ],
+     "indexFiles": []
+    },
+    "candidates": [
+     "./a.sol"
+    ]
+   },
+   {
+    "base": "./a",
+    "opts": {
+     "exts": [
+      ".ts",
+      ".js"
+     ],
+     "bareBaseFirst": true,
+     "indexFiles": [
+      "index.ts"
+     ]
+    },
+    "candidates": [
+     "./a",
+     "./a.ts",
+     "./a.js",
+     "./a/index.ts"
+    ]
+   },
+   {
+    "base": "./a.ts",
+    "opts": {},
+    "candidates": [
+     "./a.ts",
+     "./a.ts",
+     "./a.tsx",
+     "./a.js",
+     "./a.jsx",
+     "./a.mjs",
+     "./a.cjs",
+     "./a.mts",
+     "./a.cts",
+     "./a/index.ts",
+     "./a/index.tsx",
+     "./a/index.js",
+     "./a/index.jsx"
+    ]
+   },
+   {
+    "base": "./a.ts",
+    "opts": {
+     "exts": [
+      ".go",
+      ".py"
+     ]
+    },
+    "candidates": [
+     "./a.ts",
+     "./a.go",
+     "./a.py",
+     "./a/index.ts",
+     "./a/index.tsx",
+     "./a/index.js",
+     "./a/index.jsx"
+    ]
+   },
+   {
+    "base": "./a.ts",
+    "opts": {
+     "exts": [
+      ".go",
+      ".py"
+     ],
+     "bareBaseFirst": true
+    },
+    "candidates": [
+     "./a.ts",
+     "./a.go",
+     "./a.py",
+     "./a/index.ts",
+     "./a/index.tsx",
+     "./a/index.js",
+     "./a/index.jsx"
+    ]
+   },
+   {
+    "base": "./a.ts",
+    "opts": {
+     "indexFiles": [
+      "idx.ts"
+     ]
+    },
+    "candidates": [
+     "./a.ts",
+     "./a.ts",
+     "./a.tsx",
+     "./a.js",
+     "./a.jsx",
+     "./a.mjs",
+     "./a.cjs",
+     "./a.mts",
+     "./a.cts",
+     "./a/idx.ts"
+    ]
+   },
+   {
+    "base": "./a.ts",
+    "opts": {
+     "exts": [
+      ".sol"
+     ],
+     "indexFiles": []
+    },
+    "candidates": [
+     "./a.ts",
+     "./a.sol"
+    ]
+   },
+   {
+    "base": "./a.ts",
+    "opts": {
+     "exts": [
+      ".ts",
+      ".js"
+     ],
+     "bareBaseFirst": true,
+     "indexFiles": [
+      "index.ts"
+     ]
+    },
+    "candidates": [
+     "./a.ts",
+     "./a.ts",
+     "./a.js",
+     "./a/index.ts"
+    ]
+   },
+   {
+    "base": "./a.js",
+    "opts": {},
+    "candidates": [
+     "./a.js",
+     "./a.ts",
+     "./a.tsx",
+     "./a.js",
+     "./a.jsx",
+     "./a.mjs",
+     "./a.cjs",
+     "./a.mts",
+     "./a.cts",
+     "./a/index.ts",
+     "./a/index.tsx",
+     "./a/index.js",
+     "./a/index.jsx"
+    ]
+   },
+   {
+    "base": "./a.js",
+    "opts": {
+     "exts": [
+      ".go",
+      ".py"
+     ]
+    },
+    "candidates": [
+     "./a.js",
+     "./a.go",
+     "./a.py",
+     "./a/index.ts",
+     "./a/index.tsx",
+     "./a/index.js",
+     "./a/index.jsx"
+    ]
+   },
+   {
+    "base": "./a.js",
+    "opts": {
+     "exts": [
+      ".go",
+      ".py"
+     ],
+     "bareBaseFirst": true
+    },
+    "candidates": [
+     "./a.js",
+     "./a.go",
+     "./a.py",
+     "./a/index.ts",
+     "./a/index.tsx",
+     "./a/index.js",
+     "./a/index.jsx"
+    ]
+   },
+   {
+    "base": "./a.js",
+    "opts": {
+     "indexFiles": [
+      "idx.ts"
+     ]
+    },
+    "candidates": [
+     "./a.js",
+     "./a.ts",
+     "./a.tsx",
+     "./a.js",
+     "./a.jsx",
+     "./a.mjs",
+     "./a.cjs",
+     "./a.mts",
+     "./a.cts",
+     "./a/idx.ts"
+    ]
+   },
+   {
+    "base": "./a.js",
+    "opts": {
+     "exts": [
+      ".sol"
+     ],
+     "indexFiles": []
+    },
+    "candidates": [
+     "./a.js",
+     "./a.sol"
+    ]
+   },
+   {
+    "base": "./a.js",
+    "opts": {
+     "exts": [
+      ".ts",
+      ".js"
+     ],
+     "bareBaseFirst": true,
+     "indexFiles": [
+      "index.ts"
+     ]
+    },
+    "candidates": [
+     "./a.js",
+     "./a.ts",
+     "./a.js",
+     "./a/index.ts"
+    ]
+   },
+   {
+    "base": "./a.mts",
+    "opts": {},
+    "candidates": [
+     "./a.mts",
+     "./a.ts",
+     "./a.tsx",
+     "./a.js",
+     "./a.jsx",
+     "./a.mjs",
+     "./a.cjs",
+     "./a.mts",
+     "./a.cts",
+     "./a/index.ts",
+     "./a/index.tsx",
+     "./a/index.js",
+     "./a/index.jsx"
+    ]
+   },
+   {
+    "base": "./a.mts",
+    "opts": {
+     "exts": [
+      ".go",
+      ".py"
+     ]
+    },
+    "candidates": [
+     "./a.mts",
+     "./a.go",
+     "./a.py",
+     "./a/index.ts",
+     "./a/index.tsx",
+     "./a/index.js",
+     "./a/index.jsx"
+    ]
+   },
+   {
+    "base": "./a.mts",
+    "opts": {
+     "exts": [
+      ".go",
+      ".py"
+     ],
+     "bareBaseFirst": true
+    },
+    "candidates": [
+     "./a.mts",
+     "./a.go",
+     "./a.py",
+     "./a/index.ts",
+     "./a/index.tsx",
+     "./a/index.js",
+     "./a/index.jsx"
+    ]
+   },
+   {
+    "base": "./a.mts",
+    "opts": {
+     "indexFiles": [
+      "idx.ts"
+     ]
+    },
+    "candidates": [
+     "./a.mts",
+     "./a.ts",
+     "./a.tsx",
+     "./a.js",
+     "./a.jsx",
+     "./a.mjs",
+     "./a.cjs",
+     "./a.mts",
+     "./a.cts",
+     "./a/idx.ts"
+    ]
+   },
+   {
+    "base": "./a.mts",
+    "opts": {
+     "exts": [
+      ".sol"
+     ],
+     "indexFiles": []
+    },
+    "candidates": [
+     "./a.mts",
+     "./a.sol"
+    ]
+   },
+   {
+    "base": "./a.mts",
+    "opts": {
+     "exts": [
+      ".ts",
+      ".js"
+     ],
+     "bareBaseFirst": true,
+     "indexFiles": [
+      "index.ts"
+     ]
+    },
+    "candidates": [
+     "./a.mts",
+     "./a.ts",
+     "./a.js",
+     "./a/index.ts"
+    ]
+   },
+   {
+    "base": "./a.go",
+    "opts": {},
+    "candidates": [
+     "./a.go.ts",
+     "./a.go.tsx",
+     "./a.go.js",
+     "./a.go.jsx",
+     "./a.go.mjs",
+     "./a.go.cjs",
+     "./a.go.mts",
+     "./a.go.cts",
+     "./a.go/index.ts",
+     "./a.go/index.tsx",
+     "./a.go/index.js",
+     "./a.go/index.jsx"
+    ]
+   },
+   {
+    "base": "./a.go",
+    "opts": {
+     "exts": [
+      ".go",
+      ".py"
+     ]
+    },
+    "candidates": [
+     "./a.go",
+     "./a.go.go",
+     "./a.go.py",
+     "./a.go/index.ts",
+     "./a.go/index.tsx",
+     "./a.go/index.js",
+     "./a.go/index.jsx"
+    ]
+   },
+   {
+    "base": "./a.go",
+    "opts": {
+     "exts": [
+      ".go",
+      ".py"
+     ],
+     "bareBaseFirst": true
+    },
+    "candidates": [
+     "./a.go",
+     "./a.go.go",
+     "./a.go.py",
+     "./a.go/index.ts",
+     "./a.go/index.tsx",
+     "./a.go/index.js",
+     "./a.go/index.jsx"
+    ]
+   },
+   {
+    "base": "./a.go",
+    "opts": {
+     "indexFiles": [
+      "idx.ts"
+     ]
+    },
+    "candidates": [
+     "./a.go.ts",
+     "./a.go.tsx",
+     "./a.go.js",
+     "./a.go.jsx",
+     "./a.go.mjs",
+     "./a.go.cjs",
+     "./a.go.mts",
+     "./a.go.cts",
+     "./a.go/idx.ts"
+    ]
+   },
+   {
+    "base": "./a.go",
+    "opts": {
+     "exts": [
+      ".sol"
+     ],
+     "indexFiles": []
+    },
+    "candidates": [
+     "./a.go.sol"
+    ]
+   },
+   {
+    "base": "./a.go",
+    "opts": {
+     "exts": [
+      ".ts",
+      ".js"
+     ],
+     "bareBaseFirst": true,
+     "indexFiles": [
+      "index.ts"
+     ]
+    },
+    "candidates": [
+     "./a.go",
+     "./a.go.ts",
+     "./a.go.js",
+     "./a.go/index.ts"
+    ]
+   },
+   {
+    "base": "./a.sol",
+    "opts": {},
+    "candidates": [
+     "./a.sol.ts",
+     "./a.sol.tsx",
+     "./a.sol.js",
+     "./a.sol.jsx",
+     "./a.sol.mjs",
+     "./a.sol.cjs",
+     "./a.sol.mts",
+     "./a.sol.cts",
+     "./a.sol/index.ts",
+     "./a.sol/index.tsx",
+     "./a.sol/index.js",
+     "./a.sol/index.jsx"
+    ]
+   },
+   {
+    "base": "./a.sol",
+    "opts": {
+     "exts": [
+      ".go",
+      ".py"
+     ]
+    },
+    "candidates": [
+     "./a.sol.go",
+     "./a.sol.py",
+     "./a.sol/index.ts",
+     "./a.sol/index.tsx",
+     "./a.sol/index.js",
+     "./a.sol/index.jsx"
+    ]
+   },
+   {
+    "base": "./a.sol",
+    "opts": {
+     "exts": [
+      ".go",
+      ".py"
+     ],
+     "bareBaseFirst": true
+    },
+    "candidates": [
+     "./a.sol",
+     "./a.sol.go",
+     "./a.sol.py",
+     "./a.sol/index.ts",
+     "./a.sol/index.tsx",
+     "./a.sol/index.js",
+     "./a.sol/index.jsx"
+    ]
+   },
+   {
+    "base": "./a.sol",
+    "opts": {
+     "indexFiles": [
+      "idx.ts"
+     ]
+    },
+    "candidates": [
+     "./a.sol.ts",
+     "./a.sol.tsx",
+     "./a.sol.js",
+     "./a.sol.jsx",
+     "./a.sol.mjs",
+     "./a.sol.cjs",
+     "./a.sol.mts",
+     "./a.sol.cts",
+     "./a.sol/idx.ts"
+    ]
+   },
+   {
+    "base": "./a.sol",
+    "opts": {
+     "exts": [
+      ".sol"
+     ],
+     "indexFiles": []
+    },
+    "candidates": [
+     "./a.sol",
+     "./a.sol.sol"
+    ]
+   },
+   {
+    "base": "./a.sol",
+    "opts": {
+     "exts": [
+      ".ts",
+      ".js"
+     ],
+     "bareBaseFirst": true,
+     "indexFiles": [
+      "index.ts"
+     ]
+    },
+    "candidates": [
+     "./a.sol",
+     "./a.sol.ts",
+     "./a.sol.js",
+     "./a.sol/index.ts"
+    ]
+   },
+   {
+    "base": "a",
+    "opts": {},
+    "candidates": [
+     "a.ts",
+     "a.tsx",
+     "a.js",
+     "a.jsx",
+     "a.mjs",
+     "a.cjs",
+     "a.mts",
+     "a.cts",
+     "a/index.ts",
+     "a/index.tsx",
+     "a/index.js",
+     "a/index.jsx"
+    ]
+   },
+   {
+    "base": "a",
+    "opts": {
+     "exts": [
+      ".go",
+      ".py"
+     ]
+    },
+    "candidates": [
+     "a.go",
+     "a.py",
+     "a/index.ts",
+     "a/index.tsx",
+     "a/index.js",
+     "a/index.jsx"
+    ]
+   },
+   {
+    "base": "a",
+    "opts": {
+     "exts": [
+      ".go",
+      ".py"
+     ],
+     "bareBaseFirst": true
+    },
+    "candidates": [
+     "a",
+     "a.go",
+     "a.py",
+     "a/index.ts",
+     "a/index.tsx",
+     "a/index.js",
+     "a/index.jsx"
+    ]
+   },
+   {
+    "base": "a",
+    "opts": {
+     "indexFiles": [
+      "idx.ts"
+     ]
+    },
+    "candidates": [
+     "a.ts",
+     "a.tsx",
+     "a.js",
+     "a.jsx",
+     "a.mjs",
+     "a.cjs",
+     "a.mts",
+     "a.cts",
+     "a/idx.ts"
+    ]
+   },
+   {
+    "base": "a",
+    "opts": {
+     "exts": [
+      ".sol"
+     ],
+     "indexFiles": []
+    },
+    "candidates": [
+     "a.sol"
+    ]
+   },
+   {
+    "base": "a",
+    "opts": {
+     "exts": [
+      ".ts",
+      ".js"
+     ],
+     "bareBaseFirst": true,
+     "indexFiles": [
+      "index.ts"
+     ]
+    },
+    "candidates": [
+     "a",
+     "a.ts",
+     "a.js",
+     "a/index.ts"
+    ]
+   },
+   {
+    "base": "a.ts",
+    "opts": {},
+    "candidates": [
+     "a.ts",
+     "a.ts",
+     "a.tsx",
+     "a.js",
+     "a.jsx",
+     "a.mjs",
+     "a.cjs",
+     "a.mts",
+     "a.cts",
+     "a/index.ts",
+     "a/index.tsx",
+     "a/index.js",
+     "a/index.jsx"
+    ]
+   },
+   {
+    "base": "a.ts",
+    "opts": {
+     "exts": [
+      ".go",
+      ".py"
+     ]
+    },
+    "candidates": [
+     "a.ts",
+     "a.go",
+     "a.py",
+     "a/index.ts",
+     "a/index.tsx",
+     "a/index.js",
+     "a/index.jsx"
+    ]
+   },
+   {
+    "base": "a.ts",
+    "opts": {
+     "exts": [
+      ".go",
+      ".py"
+     ],
+     "bareBaseFirst": true
+    },
+    "candidates": [
+     "a.ts",
+     "a.go",
+     "a.py",
+     "a/index.ts",
+     "a/index.tsx",
+     "a/index.js",
+     "a/index.jsx"
+    ]
+   },
+   {
+    "base": "a.ts",
+    "opts": {
+     "indexFiles": [
+      "idx.ts"
+     ]
+    },
+    "candidates": [
+     "a.ts",
+     "a.ts",
+     "a.tsx",
+     "a.js",
+     "a.jsx",
+     "a.mjs",
+     "a.cjs",
+     "a.mts",
+     "a.cts",
+     "a/idx.ts"
+    ]
+   },
+   {
+    "base": "a.ts",
+    "opts": {
+     "exts": [
+      ".sol"
+     ],
+     "indexFiles": []
+    },
+    "candidates": [
+     "a.ts",
+     "a.sol"
+    ]
+   },
+   {
+    "base": "a.ts",
+    "opts": {
+     "exts": [
+      ".ts",
+      ".js"
+     ],
+     "bareBaseFirst": true,
+     "indexFiles": [
+      "index.ts"
+     ]
+    },
+    "candidates": [
+     "a.ts",
+     "a.ts",
+     "a.js",
+     "a/index.ts"
+    ]
+   },
+   {
+    "base": "./dir/a",
+    "opts": {},
+    "candidates": [
+     "./dir/a.ts",
+     "./dir/a.tsx",
+     "./dir/a.js",
+     "./dir/a.jsx",
+     "./dir/a.mjs",
+     "./dir/a.cjs",
+     "./dir/a.mts",
+     "./dir/a.cts",
+     "./dir/a/index.ts",
+     "./dir/a/index.tsx",
+     "./dir/a/index.js",
+     "./dir/a/index.jsx"
+    ]
+   },
+   {
+    "base": "./dir/a",
+    "opts": {
+     "exts": [
+      ".go",
+      ".py"
+     ]
+    },
+    "candidates": [
+     "./dir/a.go",
+     "./dir/a.py",
+     "./dir/a/index.ts",
+     "./dir/a/index.tsx",
+     "./dir/a/index.js",
+     "./dir/a/index.jsx"
+    ]
+   },
+   {
+    "base": "./dir/a",
+    "opts": {
+     "exts": [
+      ".go",
+      ".py"
+     ],
+     "bareBaseFirst": true
+    },
+    "candidates": [
+     "./dir/a",
+     "./dir/a.go",
+     "./dir/a.py",
+     "./dir/a/index.ts",
+     "./dir/a/index.tsx",
+     "./dir/a/index.js",
+     "./dir/a/index.jsx"
+    ]
+   },
+   {
+    "base": "./dir/a",
+    "opts": {
+     "indexFiles": [
+      "idx.ts"
+     ]
+    },
+    "candidates": [
+     "./dir/a.ts",
+     "./dir/a.tsx",
+     "./dir/a.js",
+     "./dir/a.jsx",
+     "./dir/a.mjs",
+     "./dir/a.cjs",
+     "./dir/a.mts",
+     "./dir/a.cts",
+     "./dir/a/idx.ts"
+    ]
+   },
+   {
+    "base": "./dir/a",
+    "opts": {
+     "exts": [
+      ".sol"
+     ],
+     "indexFiles": []
+    },
+    "candidates": [
+     "./dir/a.sol"
+    ]
+   },
+   {
+    "base": "./dir/a",
+    "opts": {
+     "exts": [
+      ".ts",
+      ".js"
+     ],
+     "bareBaseFirst": true,
+     "indexFiles": [
+      "index.ts"
+     ]
+    },
+    "candidates": [
+     "./dir/a",
+     "./dir/a.ts",
+     "./dir/a.js",
+     "./dir/a/index.ts"
+    ]
+   },
+   {
+    "base": "./dir/a.ts",
+    "opts": {},
+    "candidates": [
+     "./dir/a.ts",
+     "./dir/a.ts",
+     "./dir/a.tsx",
+     "./dir/a.js",
+     "./dir/a.jsx",
+     "./dir/a.mjs",
+     "./dir/a.cjs",
+     "./dir/a.mts",
+     "./dir/a.cts",
+     "./dir/a/index.ts",
+     "./dir/a/index.tsx",
+     "./dir/a/index.js",
+     "./dir/a/index.jsx"
+    ]
+   },
+   {
+    "base": "./dir/a.ts",
+    "opts": {
+     "exts": [
+      ".go",
+      ".py"
+     ]
+    },
+    "candidates": [
+     "./dir/a.ts",
+     "./dir/a.go",
+     "./dir/a.py",
+     "./dir/a/index.ts",
+     "./dir/a/index.tsx",
+     "./dir/a/index.js",
+     "./dir/a/index.jsx"
+    ]
+   },
+   {
+    "base": "./dir/a.ts",
+    "opts": {
+     "exts": [
+      ".go",
+      ".py"
+     ],
+     "bareBaseFirst": true
+    },
+    "candidates": [
+     "./dir/a.ts",
+     "./dir/a.go",
+     "./dir/a.py",
+     "./dir/a/index.ts",
+     "./dir/a/index.tsx",
+     "./dir/a/index.js",
+     "./dir/a/index.jsx"
+    ]
+   },
+   {
+    "base": "./dir/a.ts",
+    "opts": {
+     "indexFiles": [
+      "idx.ts"
+     ]
+    },
+    "candidates": [
+     "./dir/a.ts",
+     "./dir/a.ts",
+     "./dir/a.tsx",
+     "./dir/a.js",
+     "./dir/a.jsx",
+     "./dir/a.mjs",
+     "./dir/a.cjs",
+     "./dir/a.mts",
+     "./dir/a.cts",
+     "./dir/a/idx.ts"
+    ]
+   },
+   {
+    "base": "./dir/a.ts",
+    "opts": {
+     "exts": [
+      ".sol"
+     ],
+     "indexFiles": []
+    },
+    "candidates": [
+     "./dir/a.ts",
+     "./dir/a.sol"
+    ]
+   },
+   {
+    "base": "./dir/a.ts",
+    "opts": {
+     "exts": [
+      ".ts",
+      ".js"
+     ],
+     "bareBaseFirst": true,
+     "indexFiles": [
+      "index.ts"
+     ]
+    },
+    "candidates": [
+     "./dir/a.ts",
+     "./dir/a.ts",
+     "./dir/a.js",
+     "./dir/a/index.ts"
+    ]
+   },
+   {
+    "base": "../x",
+    "opts": {},
+    "candidates": []
+   },
+   {
+    "base": "../x",
+    "opts": {
+     "exts": [
+      ".go",
+      ".py"
+     ]
+    },
+    "candidates": []
+   },
+   {
+    "base": "../x",
+    "opts": {
+     "exts": [
+      ".go",
+      ".py"
+     ],
+     "bareBaseFirst": true
+    },
+    "candidates": []
+   },
+   {
+    "base": "../x",
+    "opts": {
+     "indexFiles": [
+      "idx.ts"
+     ]
+    },
+    "candidates": []
+   },
+   {
+    "base": "../x",
+    "opts": {
+     "exts": [
+      ".sol"
+     ],
+     "indexFiles": []
+    },
+    "candidates": []
+   },
+   {
+    "base": "../x",
+    "opts": {
+     "exts": [
+      ".ts",
+      ".js"
+     ],
+     "bareBaseFirst": true,
+     "indexFiles": [
+      "index.ts"
+     ]
+    },
+    "candidates": []
+   },
+   {
+    "base": "../../z",
+    "opts": {},
+    "candidates": []
+   },
+   {
+    "base": "../../z",
+    "opts": {
+     "exts": [
+      ".go",
+      ".py"
+     ]
+    },
+    "candidates": []
+   },
+   {
+    "base": "../../z",
+    "opts": {
+     "exts": [
+      ".go",
+      ".py"
+     ],
+     "bareBaseFirst": true
+    },
+    "candidates": []
+   },
+   {
+    "base": "../../z",
+    "opts": {
+     "indexFiles": [
+      "idx.ts"
+     ]
+    },
+    "candidates": []
+   },
+   {
+    "base": "../../z",
+    "opts": {
+     "exts": [
+      ".sol"
+     ],
+     "indexFiles": []
+    },
+    "candidates": []
+   },
+   {
+    "base": "../../z",
+    "opts": {
+     "exts": [
+      ".ts",
+      ".js"
+     ],
+     "bareBaseFirst": true,
+     "indexFiles": [
+      "index.ts"
+     ]
+    },
+    "candidates": []
+   }
+  ],
+  "binding-generation": [
+   {
+    "usesNan": true,
+    "installScript": "node-gyp-build",
+    "hasBuiltBinding": true,
+    "gen": "nan",
+    "verdict": "incompatible"
+   },
+   {
+    "usesNan": true,
+    "installScript": "node-gyp-build",
+    "hasBuiltBinding": false,
+    "gen": "nan",
+    "verdict": "incompatible"
+   },
+   {
+    "usesNan": true,
+    "installScript": "node-gyp-build",
+    "hasBuiltBinding": null,
+    "gen": "nan",
+    "verdict": "incompatible"
+   },
+   {
+    "usesNan": true,
+    "installScript": "other-script",
+    "hasBuiltBinding": true,
+    "gen": "nan",
+    "verdict": "incompatible"
+   },
+   {
+    "usesNan": true,
+    "installScript": "other-script",
+    "hasBuiltBinding": false,
+    "gen": "nan",
+    "verdict": "incompatible"
+   },
+   {
+    "usesNan": true,
+    "installScript": "other-script",
+    "hasBuiltBinding": null,
+    "gen": "nan",
+    "verdict": "incompatible"
+   },
+   {
+    "usesNan": true,
+    "installScript": null,
+    "hasBuiltBinding": true,
+    "gen": "nan",
+    "verdict": "incompatible"
+   },
+   {
+    "usesNan": true,
+    "installScript": null,
+    "hasBuiltBinding": false,
+    "gen": "nan",
+    "verdict": "incompatible"
+   },
+   {
+    "usesNan": true,
+    "installScript": null,
+    "hasBuiltBinding": null,
+    "gen": "nan",
+    "verdict": "incompatible"
+   },
+   {
+    "usesNan": false,
+    "installScript": "node-gyp-build",
+    "hasBuiltBinding": true,
+    "gen": "self-built",
+    "verdict": "ok"
+   },
+   {
+    "usesNan": false,
+    "installScript": "node-gyp-build",
+    "hasBuiltBinding": false,
+    "gen": "napi-template",
+    "verdict": "ok"
+   },
+   {
+    "usesNan": false,
+    "installScript": "node-gyp-build",
+    "hasBuiltBinding": null,
+    "gen": "napi-template",
+    "verdict": "ok"
+   },
+   {
+    "usesNan": false,
+    "installScript": "other-script",
+    "hasBuiltBinding": true,
+    "gen": "self-built",
+    "verdict": "ok"
+   },
+   {
+    "usesNan": false,
+    "installScript": "other-script",
+    "hasBuiltBinding": false,
+    "gen": "no-napi-export",
+    "verdict": "incompatible"
+   },
+   {
+    "usesNan": false,
+    "installScript": "other-script",
+    "hasBuiltBinding": null,
+    "gen": "no-napi-export",
+    "verdict": "incompatible"
+   },
+   {
+    "usesNan": false,
+    "installScript": null,
+    "hasBuiltBinding": true,
+    "gen": "self-built",
+    "verdict": "ok"
+   },
+   {
+    "usesNan": false,
+    "installScript": null,
+    "hasBuiltBinding": false,
+    "gen": "no-napi-export",
+    "verdict": "incompatible"
+   },
+   {
+    "usesNan": false,
+    "installScript": null,
+    "hasBuiltBinding": null,
+    "gen": "no-napi-export",
+    "verdict": "incompatible"
+   },
+   {
+    "usesNan": null,
+    "installScript": "node-gyp-build",
+    "hasBuiltBinding": true,
+    "gen": "self-built",
+    "verdict": "ok"
+   },
+   {
+    "usesNan": null,
+    "installScript": "node-gyp-build",
+    "hasBuiltBinding": false,
+    "gen": "napi-template",
+    "verdict": "ok"
+   },
+   {
+    "usesNan": null,
+    "installScript": "node-gyp-build",
+    "hasBuiltBinding": null,
+    "gen": "napi-template",
+    "verdict": "ok"
+   },
+   {
+    "usesNan": null,
+    "installScript": "other-script",
+    "hasBuiltBinding": true,
+    "gen": "self-built",
+    "verdict": "ok"
+   },
+   {
+    "usesNan": null,
+    "installScript": "other-script",
+    "hasBuiltBinding": false,
+    "gen": "no-napi-export",
+    "verdict": "incompatible"
+   },
+   {
+    "usesNan": null,
+    "installScript": "other-script",
+    "hasBuiltBinding": null,
+    "gen": "no-napi-export",
+    "verdict": "incompatible"
+   },
+   {
+    "usesNan": null,
+    "installScript": null,
+    "hasBuiltBinding": true,
+    "gen": "self-built",
+    "verdict": "ok"
+   },
+   {
+    "usesNan": null,
+    "installScript": null,
+    "hasBuiltBinding": false,
+    "gen": "no-napi-export",
+    "verdict": "incompatible"
+   },
+   {
+    "usesNan": null,
+    "installScript": null,
+    "hasBuiltBinding": null,
+    "gen": "no-napi-export",
+    "verdict": "incompatible"
+   }
+  ],
+  "xfile-resolve": [
+   {
+    "lang": "typescript",
+    "srcs": [
+     "./a"
+    ],
+    "hits": [
+     {
+      "src": "./a",
+      "rel": "a.ts",
+      "layer": "relative"
+     }
+    ],
+    "want": "a.ts",
+    "verdict": "✅ 解析正确"
+   },
+   {
+    "lang": "javascript",
+    "srcs": [
+     "./a"
+    ],
+    "hits": [
+     {
+      "src": "./a",
+      "rel": "a.js",
+      "layer": "relative"
+     }
+    ],
+    "want": "a.js",
+    "verdict": "✅ 解析正确"
+   },
+   {
+    "lang": "tsx",
+    "srcs": [
+     "./a"
+    ],
+    "hits": [
+     {
+      "src": "./a",
+      "rel": "a.tsx",
+      "layer": "relative"
+     }
+    ],
+    "want": "a.tsx",
+    "verdict": "✅ 解析正确"
+   },
+   {
+    "lang": "python",
+    "srcs": [
+     ".a"
+    ],
+    "hits": [
+     {
+      "src": ".a",
+      "rel": "a.py",
+      "layer": "python-dot"
+     }
+    ],
+    "want": "a.py",
+    "verdict": "✅ 解析正确"
+   },
+   {
+    "lang": "crystal",
+    "srcs": [
+     "./a"
+    ],
+    "hits": [
+     {
+      "src": "./a",
+      "rel": "a.cr",
+      "layer": "relative"
+     }
+    ],
+    "want": "a.cr",
+    "verdict": "✅ 解析正确"
+   },
+   {
+    "lang": "solidity",
+    "srcs": [
+     "./a.sol"
+    ],
+    "hits": [
+     {
+      "src": "./a.sol",
+      "rel": "a.sol",
+      "layer": "relative"
+     }
+    ],
+    "want": "a.sol",
+    "verdict": "✅ 解析正确"
+   },
+   {
+    "lang": "c",
+    "srcs": [
+     "a.h"
+    ],
+    "hits": [
+     {
+      "src": "a.h",
+      "rel": "a.h",
+      "layer": "package-dir"
+     }
+    ],
+    "want": "a.h",
+    "verdict": "✅ 解析正确"
+   },
+   {
+    "lang": "cpp",
+    "srcs": [
+     "a.h"
+    ],
+    "hits": [
+     {
+      "src": "a.h",
+      "rel": "a.h",
+      "layer": "package-dir"
+     }
+    ],
+    "want": "a.h",
+    "verdict": "✅ 解析正确"
+   },
+   {
+    "lang": "ocaml",
+    "srcs": [
+     "A"
+    ],
+    "hits": [
+     {
+      "src": "A",
+      "rel": null,
+      "layer": null
+     }
+    ],
+    "want": null,
+    "verdict": "✅ 解析正确"
+   }
+  ],
+  "extract-minimal": [
+   {
+    "lang": "typescript",
+    "kind": "code",
+    "verdict": "✅ 三项都对",
+    "syms": [
+     "foo"
+    ],
+    "imps": [
+     "./m"
+    ],
+    "calls": [
+     "bar"
+    ]
+   },
+   {
+    "lang": "tsx",
+    "kind": "code",
+    "verdict": "✅ 三项都对",
+    "syms": [
+     "foo"
+    ],
+    "imps": [
+     "react"
+    ],
+    "calls": [
+     "bar"
+    ]
+   },
+   {
+    "lang": "javascript",
+    "kind": "code",
+    "verdict": "✅ 三项都对",
+    "syms": [
+     "foo"
+    ],
+    "imps": [
+     "./m"
+    ],
+    "calls": [
+     "bar"
+    ]
+   },
+   {
+    "lang": "jsx",
+    "kind": "code",
+    "verdict": "✅ 三项都对",
+    "syms": [
+     "foo"
+    ],
+    "imps": [
+     "react"
+    ],
+    "calls": [
+     "bar"
+    ]
+   },
+   {
+    "lang": "go",
+    "kind": "code",
+    "verdict": "✅ 三项都对",
+    "syms": [
+     "foo"
+    ],
+    "imps": [
+     "fmt"
+    ],
+    "calls": [
+     "bar"
+    ]
+   },
+   {
+    "lang": "python",
+    "kind": "code",
+    "verdict": "✅ 三项都对",
+    "syms": [
+     "foo"
+    ],
+    "imps": [
+     "os",
+     "a"
+    ],
+    "calls": [
+     "bar"
+    ]
+   },
+   {
+    "lang": "java",
+    "kind": "code",
+    "verdict": "✅ 三项都对",
+    "syms": [
+     "T",
+     "foo"
+    ],
+    "imps": [
+     "a.b.C"
+    ],
+    "calls": [
+     "bar"
+    ]
+   },
+   {
+    "lang": "c",
+    "kind": "code",
+    "verdict": "✅ 三项都对",
+    "syms": [
+     "foo"
+    ],
+    "imps": [
+     "a.h"
+    ],
+    "calls": [
+     "bar"
+    ]
+   },
+   {
+    "lang": "cpp",
+    "kind": "code",
+    "verdict": "✅ 三项都对",
+    "syms": [
+     "foo"
+    ],
+    "imps": [
+     "a.h"
+    ],
+    "calls": [
+     "bar"
+    ]
+   },
+   {
+    "lang": "c_sharp",
+    "kind": "code",
+    "verdict": "✅ 三项都对",
+    "syms": [
+     "T",
+     "Foo"
+    ],
+    "imps": [
+     "A.B"
+    ],
+    "calls": [
+     "Bar"
+    ]
+   },
+   {
+    "lang": "rust",
+    "kind": "code",
+    "verdict": "✅ 三项都对",
+    "syms": [
+     "foo"
+    ],
+    "imps": [
+     "a::b"
+    ],
+    "calls": [
+     "bar"
+    ]
+   },
+   {
+    "lang": "kotlin",
+    "kind": "code",
+    "verdict": "✅ 三项都对",
+    "syms": [
+     "foo"
+    ],
+    "imps": [
+     "a.b"
+    ],
+    "calls": [
+     "bar"
+    ]
+   },
+   {
+    "lang": "ruby",
+    "kind": "code",
+    "verdict": "⚠ import/调用未提",
+    "syms": [
+     "foo"
+    ],
+    "imps": [],
+    "calls": []
+   },
+   {
+    "lang": "php",
+    "kind": "code",
+    "verdict": "✅ 三项都对",
+    "syms": [
+     "foo"
+    ],
+    "imps": [
+     "A\\B"
+    ],
+    "calls": [
+     "bar"
+    ]
+   },
+   {
+    "lang": "scala",
+    "kind": "code",
+    "verdict": "✅ 三项都对",
+    "syms": [
+     "T",
+     "foo"
+    ],
+    "imps": [
+     "a.b"
+    ],
+    "calls": [
+     "bar"
+    ]
+   },
+   {
+    "lang": "groovy",
+    "kind": "code",
+    "verdict": "✅ 三项都对",
+    "syms": [
+     "foo"
+    ],
+    "imps": [
+     "a.b"
+    ],
+    "calls": [
+     "bar"
+    ]
+   },
+   {
+    "lang": "elixir",
+    "kind": "code",
+    "verdict": "⚠ import未提",
+    "syms": [
+     "foo"
+    ],
+    "imps": [],
+    "calls": [
+     "bar"
+    ]
+   },
+   {
+    "lang": "haskell",
+    "kind": "code",
+    "verdict": "⚠ 调用未提",
+    "syms": [
+     "foo"
+    ],
+    "imps": [
+     "Data.List"
+    ],
+    "calls": []
+   },
+   {
+    "lang": "bash",
+    "kind": "code",
+    "verdict": "⚠ import未提",
+    "syms": [
+     "foo"
+    ],
+    "imps": [],
+    "calls": [
+     "bar"
+    ]
+   },
+   {
+    "lang": "julia",
+    "kind": "code",
+    "verdict": "✅ 三项都对",
+    "syms": [
+     "foo"
+    ],
+    "imps": [
+     "A"
+    ],
+    "calls": [
+     "bar"
+    ]
+   },
+   {
+    "lang": "r",
+    "kind": "code",
+    "verdict": "⚠ 符号/import/调用未提",
+    "syms": [
+     "function"
+    ],
+    "imps": [],
+    "calls": []
+   },
+   {
+    "lang": "fish",
+    "kind": "code",
+    "verdict": "⚠ import未提",
+    "syms": [
+     "foo"
+    ],
+    "imps": [],
+    "calls": [
+     "bar"
+    ]
+   },
+   {
+    "lang": "crystal",
+    "kind": "code",
+    "verdict": "✅ 三项都对",
+    "syms": [
+     "bar",
+     "foo"
+    ],
+    "imps": [
+     "a"
+    ],
+    "calls": [
+     "bar"
+    ]
+   },
+   {
+    "lang": "swift",
+    "kind": "code",
+    "verdict": "⚠ import未提",
+    "syms": [
+     "foo"
+    ],
+    "imps": [],
+    "calls": [
+     "bar"
+    ]
+   },
+   {
+    "lang": "ocaml",
+    "kind": "code",
+    "verdict": "✅ 三项都对",
+    "syms": [
+     "foo"
+    ],
+    "imps": [
+     "A"
+    ],
+    "calls": [
+     "bar"
+    ]
+   },
+   {
+    "lang": "solidity",
+    "kind": "code",
+    "verdict": "✅ 三项都对",
+    "syms": [
+     "C",
+     "foo"
+    ],
+    "imps": [
+     "./a.sol"
+    ],
+    "calls": [
+     "bar"
+    ]
+   },
+   {
+    "lang": "vhdl",
+    "kind": "partial",
+    "verdict": "✅ 三项都对",
+    "syms": [
+     "e"
+    ],
+    "imps": [],
+    "calls": []
+   },
+   {
+    "lang": "json",
+    "kind": "data",
+    "verdict": "n/a（数据/标记语言，无符号/import/调用概念）",
+    "syms": [],
+    "imps": [],
+    "calls": []
+   },
+   {
+    "lang": "toml",
+    "kind": "data",
+    "verdict": "n/a（数据/标记语言，无符号/import/调用概念）",
+    "syms": [],
+    "imps": [],
+    "calls": []
+   },
+   {
+    "lang": "css",
+    "kind": "data",
+    "verdict": "n/a（数据/标记语言，无符号/import/调用概念）",
+    "syms": [],
+    "imps": [],
+    "calls": []
+   },
+   {
+    "lang": "scss",
+    "kind": "data",
+    "verdict": "n/a（数据/标记语言，无符号/import/调用概念）",
+    "syms": [],
+    "imps": [],
+    "calls": []
+   },
+   {
+    "lang": "html",
+    "kind": "data",
+    "verdict": "n/a（数据/标记语言，无符号/import/调用概念）",
+    "syms": [],
+    "imps": [],
+    "calls": []
+   },
+   {
+    "lang": "vue",
+    "kind": "data",
+    "verdict": "n/a（数据/标记语言，无符号/import/调用概念）",
+    "syms": [],
+    "imps": [],
+    "calls": []
+   }
+  ]
+ }
+}

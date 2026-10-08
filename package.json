@@ -87,7 +87,10 @@
     "probe:impact": "node scripts/probe_impact_reverse.mjs",
     "probe:edges": "node scripts/probe_edge_diff.mjs",
     "probe:verdict": "node scripts/probe_verdict_grid.mjs",
-    "probe:cc-equiv": "node scripts/probe_cc_equiv.mjs"
+    "probe:cc-equiv": "node scripts/probe_cc_equiv.mjs",
+    "snap:list": "node scripts/snapshot.mjs list",
+    "snap:take": "node scripts/snapshot.mjs take",
+    "snap:diff": "node scripts/snapshot.mjs diff"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",

@@ -7,6 +7,14 @@ const OLD = (usesNan, install, built) =>
   : built === true ? 'ok'
   : install === 'node-gyp-build' ? 'ok' : 'incompatible';
 
+// ★ `--json`：吐**事实 → 代际 → verdict** 的全组合（供快照观测）
+if (process.argv.includes('--json')) {
+  const out = [];
+  for (const un of [true, false, null]) for (const ins of ['node-gyp-build', 'other-script', null]) for (const b of [true, false, null])
+    out.push({ usesNan: un, installScript: ins, hasBuiltBinding: b, gen: tc.bindingGenerationOf({ usesNan: un, installScript: ins, hasBuiltBinding: b }), verdict: tc.bindingVerdictOf(tc.bindingGenerationOf({ usesNan: un, installScript: ins, hasBuiltBinding: b })) });
+  console.log(JSON.stringify(out));
+  process.exit(0);
+}
 const V = [true, false, null];
 const S = ['node-gyp-build', 'other-script', null];
 const B = [true, false, null];

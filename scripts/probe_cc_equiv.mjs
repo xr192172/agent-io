@@ -43,6 +43,13 @@ const OPTS = [
   { exts: ['.ts', '.js'], bareBaseFirst: true, indexFiles: ['index.ts'] },
 ];
 
+// ★ `--json`：吐**新侧**在每个组合下的候选数组（供快照观测；顺序即行为 ⇒ 保留原序）
+if (process.argv.includes('--json')) {
+  const combos = [];
+  for (const b of BASES) for (const o of OPTS) combos.push({ base: b, opts: o, candidates: ir.completionCandidates(b, o) });
+  console.log(JSON.stringify(combos));
+  process.exit(0);
+}
 let n = 0, diff = 0;
 const bad = [];
 for (const b of BASES) {

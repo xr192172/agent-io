@@ -65,6 +65,8 @@ for (const [lang, c] of Object.entries(CASES)) {
   });
 }
 
+// ★ `--json`：只吐可比较的 JSON（供快照观测）；`hits` 里的路径都是**项目内相对路径** ⇒ 与机器无关
+if (process.argv.includes('--json')) { console.log(JSON.stringify(rows)); process.exit(0); }
 fs.writeFileSync(path.join(REPO, '.inspect', 'xfile-resolve.json'), JSON.stringify(rows, null, 1));
 const ok = rows.filter((r) => r.verdict.startsWith('✅')).length;
 console.log('跨文件 import 解析（从我们自己的 import 提取结果出发）：\n');
