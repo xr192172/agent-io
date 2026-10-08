@@ -189,14 +189,17 @@ export function missingLanguageHint(ext: string, capabilityId?: string): string 
           `\`tree-sitter-css\` 的 latest 0.25.0 要核心 \`tree-sitter ^0.25.0\` ⇒ 装了当场 ERESOLVE，` +
           `而**同核心线**的 0.21.0 真能载入 ⇒ 按**钉版**装（\`install-package install <lang>\`）；` +
           `② 上游同样带 nan ⇒ 那才叫死包，**装 / 重装都无用**，只能等上游换模板或照 ${DOC} 自己编一份`
-        : `装包：${spec}，或 npm run install-package install ${registered.name}${SIEVE_HINT}` +
-          // ★★ 2026-10-08：**先确认这个包真的存在** —— 实测注册表里有一批语言的**派生包名在 npm 上查不到**
-          //   （`f-sharp` ⇒ 真名 `tree-sitter-fsharp`；另有 erlang / r / less / fish / crystal / vhdl /
-          //   tcl / protobuf / rego / nim 等**连真名都没找到**）。不提醒的话，这句话会让人去装一个
-          //   **不存在的包** —— 与 `lang_hint.ts` 头注批的那类"不诚实提示"同族。
-          `。★ **先确认包存在**：npm run install-package check ${registered.name}` +
-          `（实测有若干语言我们派生的包名在 npm 上查不到，例：「f-sharp」的真名是 tree-sitter-fsharp）` +
-          `⇒ 那种情况先给该表项补 pkgSpec 修名，再谈装什么`;
+        : // ★★★ 2026-10-08 **用户纠正**（原话意思）：
+          //   「我让你加提示的意思是**让你提醒 LLM 自己去查上游、去查找对应的语言包，然后自己进行开发**。
+          //     不是让你去**像之前这样写一个首拼**，然后自己去调用。」
+          //   ⇒ 本条**不再给拼接出来的包名**（`tree-sitter-${registered.pkg}` 只是**约定**，
+          //     实测 55 条里 11 条不成立）——**改成给 LLM 一份「去哪儿查、查什么、找不到怎么办」的动作**。
+          `装包：**别按名字猜** —— 按这三步去查：` +
+          `① npm run install-package check ${registered.name}（读 registry 元数据；判据=有没有 nan / 是不是 node-gyp-build）；` +
+          `② npm 上没有 ⇒ 去 **tree-sitter 官方解析器清单**找它的仓库 ` +
+          `（github.com/tree-sitter/tree-sitter/wiki/List-of-parsers，实测 440 门），本仓 npm run install-package index 也列 GitHub 分发索引；` +
+          `③ 找到了 ⇒ 照 ${DOC} 接上（约定名不成立时给表项补 pkgSpec 写真名）；` +
+          `**找不到就直接自己开发一份**（照同一份文档第 ① 层）`;
   } else {
     packText = `装包：${mod} 已装（不是缺包；若解析仍失败按钉版重装：npm run install-package install ${registered.name}）`;
   }
