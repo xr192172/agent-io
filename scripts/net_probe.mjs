@@ -82,11 +82,14 @@ const score = (label) => table.filter((t) => String(t.routes[label].code).starts
 const ranked = routes.map((r) => ({ ...r, score: score(r.label) })).sort((a, b) => b.score - a.score);
 const best = ranked[0];
 const total = TARGETS.length + 1;
+const tied = ranked.filter((r) => r.score === best.score);
+// ★ 平局要说"两条都通"，不能说"只有一条路全通" —— 判决词说不准，就等于探针在撒谎。
 const verdict =
   best.score === 0 ? '❌ **没有一条路通** —— 先连梯子/换节点，别改 git 配置'
+  : tied.length > 1 && best.score === total ? `✅ **两条路都全通**（${tied.map((r) => r.label).join(' / ')}）—— 随便挑`
+  : tied.length > 1 ? `⚠ 最高分并列（${tied.map((r) => r.label).join(' / ')}，各 ${best.score}/${total}）`
   : best.score === total ? `✅ 只有一条路全通：**${best.label}**`
-  : best.score > 0 ? `⚠ 部分通：**${best.label}**（${best.score}/${total}）—— 另一条路有目标不通`
-  : '❓ 判不出';
+  : `⚠ 部分通：**${best.label}**（${best.score}/${total}）—— 另一条路有目标不通`;
 
 if (asJson) {
   console.log(JSON.stringify({ gitProxy, npmRegistry, candidates, table, gitRoutes, best: { label: best.label, score: best.score }, total }, null, 1));

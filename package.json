@@ -88,7 +88,6 @@
   "optionalDependencies": {
     "agent-io-grammar-crystal": "file:vendor/grammars/crystal",
     "agent-io-grammar-fish": "file:vendor/grammars/fish",
-    "agent-io-grammar-lua": "file:vendor/grammars/lua",
     "agent-io-grammar-ocaml": "file:vendor/grammars/ocaml",
     "agent-io-grammar-r": "file:vendor/grammars/r",
     "agent-io-grammar-swift": "file:vendor/grammars/swift",

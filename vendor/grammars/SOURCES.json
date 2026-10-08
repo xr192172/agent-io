@@ -43,28 +43,32 @@
   "r": {
     "from": {
       "kind": "git",
-      "repo": "https://github.com/r-lib/tree-sitter-r"
+      "repo": "https://github.com/r-lib/tree-sitter-r",
+      "rev": "58a22794466c0fc15b0d3b40531db751593721e8"
     },
     "note": "无可用 npm 包；从 GitHub 取源码，ABI 13/14"
   },
   "fish": {
     "from": {
       "kind": "git",
-      "repo": "https://github.com/ram02z/tree-sitter-fish"
+      "repo": "https://github.com/ram02z/tree-sitter-fish",
+      "rev": "b7f1d682941e0c62dfcd6bf9ef481638351bab16"
     },
     "note": "无可用 npm 包；从 GitHub 取源码，ABI 13/14"
   },
   "crystal": {
     "from": {
       "kind": "git",
-      "repo": "https://github.com/will/tree-sitter-crystal"
+      "repo": "https://github.com/will/tree-sitter-crystal",
+      "rev": "15597b307b18028b04d288561f9c29794621562b"
     },
     "note": "无可用 npm 包；从 GitHub 取源码，ABI 13/14"
   },
   "vhdl": {
     "from": {
       "kind": "git",
-      "repo": "https://github.com/alemuller/tree-sitter-vhdl"
+      "repo": "https://github.com/alemuller/tree-sitter-vhdl",
+      "rev": "a3b2d84990527c7f8f4ae219c332c00c33d2d8e5"
     },
     "note": "无可用 npm 包；从 GitHub 取源码，ABI 13/14"
   }

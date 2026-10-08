@@ -77,8 +77,30 @@ async function fetchSrc(name) {
   if (e.from.kind === 'git') {
     const dst = path.join(dir, path.basename(e.from.repo));
     if (!fs.existsSync(dst)) {
-      // ★ 走"配置里的代理"还是"绕开代理"，**两条都试**（一天里两条路各挂过一次的实测教训）。
-      //   别把哪条写死。这也是 `npm run net:probe` 的结论落地：先探路，再走。
+      // ★ 有 `rev` 就**钉到那个 revision** —— 否则"重建"只是"从 default 分支拉最新的"，
+      //   哪天上游一动，重编出来的就不是同一份东西了（"可复现"变成谎话）。
+      const useShell = process.platform === 'win32';
+      if (e.from.rev) {
+        await run('git', ['init', '--quiet', dst], REPO, 120000, useShell);
+        await run('git', ['-C', dst, 'remote', 'add', 'origin', e.from.repo], REPO, 120000, useShell);
+        let fetched = false, lastErr = '';
+        // 同样两条路都试（代理 / 绕开代理）
+        for (const a of [[], ['-c', 'http.proxy=', '-c', 'https.proxy=']]) {
+          const r = await run('git', [...a, '-C', dst, 'fetch', '--depth', '1', 'origin', e.from.rev], REPO, 600000, useShell);
+          if (r.ok) { fetched = true; break; }
+          lastErr = (r.out.split('\n').filter(Boolean).pop() || '').slice(0, 90);
+        }
+        if (!fetched) { fs.rmSync(dst, { recursive: true, force: true }); throw new Error(`fetch ${e.from.rev} 两条路都失败：${lastErr}`); }
+        const co = await run('git', ['-C', dst, 'checkout', '--quiet', 'FETCH_HEAD'], REPO, 120000, useShell);
+        if (!co.ok) throw new Error(`checkout ${e.from.rev} 失败`);
+        // ★ 钉了就得**验**：结果必须真等于钉的那个 hash（否则"钉了"也是假账）
+        const got = (await run('git', ['-C', dst, 'rev-parse', 'HEAD'], REPO, 60000, useShell)).out.trim();
+        if (!got.startsWith(e.from.rev)) throw new Error(`钉的 revision 对不上：要 ${e.from.rev}，得到 ${got.slice(0, 12)}`);
+        console.log(`  （按钉住的 revision 取源：${e.from.rev.slice(0, 12)}）`);
+        return path.join(dst, e.from.subpath ?? '');
+      }
+      // 没钉：退化成"拉 default 分支最新"，并**明说**这一点
+      console.log('  ⚠ SOURCES.json 里没钉 revision ⇒ 拉的是 default 分支最新（重建不保证逐字节一致）');
       const attempts = [
         { label: '按 git 配置（走 ~/.gitconfig 的代理）', args: [] },
         { label: '绕开代理', args: ['-c', 'http.proxy=', '-c', 'https.proxy='] },
@@ -140,12 +162,19 @@ NAPI_MODULE(NODE_GYP_MODULE_NAME, Init)
   const b = await run(process.execPath, [NODE_GYP, 'rebuild'], pkgDir);
   const nodeFile = path.join(pkgDir, 'build', 'Release', `tree_sitter_${name}_binding.node`);
   if (!fs.existsSync(nodeFile)) {
-    const err = b.out.split('\n').filter((l) => /error C|fatal error|LNK|error MSB/.test(l)).slice(0, 1).join('');
-    return { name, ok: false, why: '编译失败: ' + (err || '').slice(0, 110) };
+    // ★ 上一版这里会**报一个空原因**（筛选不到编译错误行时 why 就是空的）—— 那是"沉默的失败"。
+    //   改成：筛到就用筛到的，筛不到就**带出输出的尾部**，绝不留空。
+    const hit = b.out.split('\n').filter((l) => /error C|fatal error|LNK|error MSB/.test(l)).slice(0, 1).join('');
+    const tail = b.out.split('\n').filter(Boolean).slice(-3).join(' | ');
+    return { name, ok: false, why: '编译失败: ' + (hit || tail || '（node-gyp 无输出，且产物不在）').slice(0, 150) };
   }
   // ★ 真加载（子进程，避免同进程多原生模块互扰）
   const p = await probe(nodeFile);
-  return { name, ok: p.out.startsWith('OK'), abi, sym, scanner: !!scanner, root: p.out.slice(3), nodeFile, why: p.out.startsWith('OK') ? null : p.out };
+  // ★★ 子进程**可能一个字都不吐**（加载它的时候把进程弄挂了）—— 实测 lua 就是这样。
+  //   上一版这时 `why` 会是空串 ⇒ 报"❌ lua "（空原因）= 沉默的失败。这里补上退出码。
+  const why = p.out.startsWith('OK') ? null
+    : (p.out || `真加载的子进程没有输出（退出码 ${p.code}${p.err ? '：' + p.err : ''}）—— 这个包可能把加载它的进程弄挂了`);
+  return { name, ok: p.out.startsWith('OK'), abi, sym, scanner: !!scanner, root: p.out.slice(3), nodeFile, why };
 }
 
 const probe = (target) => new Promise((res) => {
@@ -153,7 +182,7 @@ const probe = (target) => new Promise((res) => {
     fs.writeFileSync(PROBE, `import Parser from 'tree-sitter';\nimport { createRequire } from 'node:module';\nconst req = createRequire(import.meta.url);\ntry { const p = new Parser(); p.setLanguage(req(process.argv[2])); console.log('OK ' + p.parse('x').rootNode.type); } catch (e) { console.log('BAD ' + ((e && e.message) || '').slice(0, 70)); }\n`);
   }
   execFile(process.execPath, [PROBE, target], { timeout: 90000, maxBuffer: 1 << 20 },
-    (e, o) => res({ out: (o || '').trim() }));
+    (e, o, se) => res({ out: (o || '').trim(), code: e ? (e.code ?? (e.killed ? 'killed' : '?')) : 0, err: (se || '').trim().slice(0, 70) }));
 });
 
 function install(name) {
@@ -184,7 +213,8 @@ if (cmd === 'list') {
   console.log('取源 ->', await fetchSrc(arg));
 } else if (cmd === 'build') {
   const r = await build(arg);
-  console.log(r.ok ? `✅ ${arg} ABI ${r.abi} root=${r.root}` : `❌ ${arg} ${r.why}`);
+  // ★ 失败时**顺带打 JSON** —— 因为我已经吃过一次"报错是空的"的亏（沉默的失败）。
+  console.log(r.ok ? `✅ ${arg} ABI ${r.abi} root=${r.root}` : `❌ ${arg} ${r.why}\n   raw=${JSON.stringify(r)}`);
   process.exitCode = r.ok ? 0 : 1;
 } else if (cmd === 'build-all') {
   const out = [];

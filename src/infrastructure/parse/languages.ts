@@ -185,7 +185,11 @@ export const LANGUAGES: LanguageEntry[] = [
   //   ★ 2026-09-29 补 import 边（本笔）：`import` 是**专用**节点，带 module/alias/names 字段
   //   （grammar/module.js L59）。★ 与 elixir 正相反：这里是真 import 声明节点，故可以声明。
   { name: 'haskell', pkg: 'haskell', exts: ['.hs'], kind: 'code', symbol_nodes: ['function', 'bind', 'class', 'data_type', 'newtype'], import_nodes: ['import'], field_map: { name: 'name' } },
-  { name: 'lua', pkg: 'lua', pkgSpec: 'agent-io-grammar-lua', exts: ['.lua'], kind: 'code', symbol_nodes: ['function_declaration'], field_map: { name: 'name', parameters: 'parameters' } },
+  // ★★ 2026-10-08 实测：`lua` 在 npm 上的包是 **NAN 绑定**（装了载入失败）；
+  //   我们自建的 `agent-io-grammar-lua`（parser.c ABI 13）**单独跑 2ms 通过**，
+  //   但**进程里已有别的原生模块时会把进程挂死**（实测：同进程第 3 个加载就挂）⇒
+  //   **撤下**（一个能把宿主弄挂的包，比一个'载入失败'的包更坏）。⇒ 这门语言当前**没有可用解析器**。
+  { name: 'lua', pkg: 'lua', pkgSpec: null, exts: ['.lua'], kind: 'code', symbol_nodes: ['function_declaration'], field_map: { name: 'name', parameters: 'parameters' } },
   { name: 'perl', pkg: 'perl', exts: ['.pl', '.pm'], kind: 'code', symbol_nodes: ['subroutine_declaration_statement'], field_map: { name: 'name' } },
   // ★ 2026-10-08 核实：派生名 `tree-sitter-r` 在 npm 上**不存在**，也没找到可用的 node 原生真名
   //   （只有别的生态的产物：`@lumis-sh/wasm-*` / `@arborium/*` / `@treelight/*` / `@lotsa/verdant-lang-*`
