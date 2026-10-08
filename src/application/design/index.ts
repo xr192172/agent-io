@@ -420,6 +420,15 @@ export const DESIGN_TOOLS: ToolDef[] = [
             '★ 不给 = 与原来完全一致（全量报告）；给了 ⇒ 只报该范围内的差异，**且按区域聚成块**。' +
             '★ 块名稳定（同一片区域任何时候同一个名字）⇒ 可当"这块我改过了/还在欠账"的钥匙。',
         ),
+      fail_on_violation: z
+        .boolean()
+        .optional()
+        .describe(
+          '★ 验收阻断开关（T74）。默认 false = **只报告、退出码恒 0**。' +
+            'true ⇒ 若决策卡上的 `expectations` 有**判定为不满足**的，**抛错并让调用方退出非 0**（唯一的失败通路）。' +
+            '★ 只对"不满足"阻断；"**判不了（unsupported）**"不计入（否则 Go/Python 上没法用）——' +
+            '但判不了的条数会同时出现在报告与抛出的错误里，**不许它悄悄溜过**。',
+        ),
     },
     handler: consistencyHandler,
   },

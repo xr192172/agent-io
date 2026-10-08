@@ -1,6 +1,6 @@
 {
  "_meta": {
-  "takenAt": "2026-10-08T16:55:59.925Z",
+  "takenAt": "2026-10-08T17:46:54.086Z",
   "env": {
    "core": "0.21.1",
    "node": "v22.22.2",
@@ -107,7 +107,8 @@
      "inputKeys": [
       "feature",
       "code_dir",
-      "scope"
+      "scope",
+      "fail_on_violation"
      ]
     },
     {

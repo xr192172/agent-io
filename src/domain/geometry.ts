@@ -162,6 +162,17 @@ export interface NodeDecision {
   consequences?: string;
   /** 验收标准：怎么算做好了（可观测） */
   acceptance?: string;
+  /**
+   * ★★★ **可判定的验收**（2026-10-09，T74）—— `acceptance` 那句话里**能被机器判定的那一部分**。
+   *
+   * ★ **不是 `acceptance` 的替代**：后者是给人读的一句话（保留、不动）；本字段是它的**可执行子集**。
+   *   一句话里判不了的（"代码要更清晰"）**不许硬塞进来** —— 那只会造出"永远绿"的假项。
+   * ★ 为什么需要它（实测）：`acceptance` 此前是**自由文本、无任何程序读它**，
+   *   而 `consistency_check` / `detect_drift` **退出码恒 0** ⇒ "照设计重写实际"这条链上
+   *   **唯一没有执行者的一环就是验收**（别的环错了看得见，它错了看不见）。
+   * ★ 形状与判据见 `src/domain/expectation.ts`；判定器在 `application/design/intent/expectations.ts`。
+   */
+  expectations?: import('./expectation.js').Expectation[];
   /** 生效状态：active=当前生效（默认）；superseded=已被新版取代（历史版不删，进 decision_history）；draft=讨论中未定稿 */
   status?: 'active' | 'superseded' | 'draft';
   /** 功能线：同类决策的聚合标签（如"内存治理"/"链路追踪"），query decisions 按此分组，相似功能线合并视图 */

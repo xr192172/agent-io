@@ -5,6 +5,8 @@
 import type { DesignDSL, Node, NodeStyle, NodeContent, DiagramStatus, NodeLayer, NodeShapes, NodeDecision, DecisionHistoryEntry, AnimationValueSchema } from '../../../domain/types.js';
 import { getDSL, saveDSL } from '../../../infrastructure/storage.js';
 import type { EditResult } from './edit_result.js';
+// ★★ 2026-10-09（T74）：`expectations` 会被程序判 ⇒ 写进来时校验（坏形状响亮拒绝）
+import { assertValidExpectations } from '../../../domain/expectation.js';
 
 /** 形状卡轻校验：type 枚举 + properties/items 递归（防止渲染垃圾） */
 function assertValidSchema(s: AnimationValueSchema, path: string): void {
@@ -74,6 +76,8 @@ export function addNode(input: AddNodeInput): EditResult {
     throw new Error(`host 节点 "${host}" 不存在`);
   }
   if (shapes) assertValidShapes(shapes);
+  // ★★ 2026-10-09（T74）：与 update 路径同一个校验（`expectations` 是会被程序判的字段）
+  if (decision?.expectations !== undefined) assertValidExpectations(decision.expectations);
 
   const style: NodeStyle = {};
   if (bg) style.bg = bg;
@@ -180,6 +184,9 @@ export function applyDecisionWrite(
   if (next === null) return { decision: undefined, decision_history: undefined };
 
   const now = opts?.now ?? new Date().toISOString();
+  // ★★ 2026-10-09（T74）：`expectations` 是**会被程序判**的字段 ⇒ 写进来时必须**响亮拒绝**坏形状，
+  //   不许"存进去了但判定器读不懂"（那会变成一条永远不判的假验收）。
+  if (next.expectations !== undefined) assertValidExpectations(next.expectations);
   // 新决策：时间戳恒打；author 传入才打（不伪造）
   const decision: NodeDecision = opts?.author ? { ...next, author: opts.author, updated_at: now } : { ...next, updated_at: now };
 

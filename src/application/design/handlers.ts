@@ -26,6 +26,9 @@ import { updateFeature } from '.././design/dsl_ops/update_feature.js';
 //   `scope.ts` 是"圈定范围"的**文法与解析唯一落点**；`diff_blocks.ts` 是"归块"的纯函数。
 import { resolveScopeText, formatScope } from '../../domain/scope.js';
 import { buildDiffBlocks, type FileDiff } from '../../domain/diff_blocks.js';
+// ★★ 2026-10-09（T74）：验收执行 —— 类型/格式化在 domain，判定器在 application（domain 不许 import infrastructure）
+import { collectExpectations, describeExpectation } from '../../domain/expectation.js';
+import { judgeExpectations } from './intent/expectations.js';
 
 /** consistency_check：一致性。★ wrapData（2026-09-29）：[B] 回 `ConsistencyResult`
  *   = `{ message, fileResults[], invariantResults[], summary{totals…} }` ——
@@ -36,20 +39,61 @@ export const consistencyHandler = wrapData(async (a) => {
     code_dir: a.code_dir as string | undefined,
   });
 
+  // ★★★ 2026-10-09（T74）：「**验收执行**」—— 决策卡上的 `expectations` 逐条判。
+  //   为什么在这儿：本工具就是"设计 ↔ 代码"的对账；`expectations` 是人写的验收标准，
+  //   两者同一个动作（拿设计去问代码）。**不另起一个工具**（少一个面、少一处登记）。
+  //   ★ 判不了的单列 `unsupported`（既不算过也不算不过）—— 见 `intent/expectations.ts` 纪律 2。
+  const feature = a.feature as string;
+  const dsl = getDSLByView(feature, 'design');
+  const expItems = dsl ? collectExpectations(dsl) : [];
+  const expRoot = dsl?.source_root ?? (typeof a.code_dir === 'string' ? a.code_dir : '');
+  const exp = expItems.length && expRoot && dsl ? await judgeExpectations(expRoot, expItems) : null;
+  const expNotes: string[] = [];
+  if (expItems.length && !expRoot) {
+    expNotes.push('决策卡上有 `expectations`，但**拿不到项目根**（`dsl.source_root` 与 `code_dir` 都没有）⇒ **一条都没判**（不是"都通过"）');
+  }
+  if (dsl && expItems.length === 0) {
+    const withAcceptance = (dsl.geometry?.nodes ?? []).filter((n) => n.decision?.acceptance?.trim()).length;
+    if (withAcceptance) {
+      expNotes.push(
+        `有 **${withAcceptance} 个**决策卡写了 \`acceptance\`（一句话），但**没有一条可判定的 \`expectations\`** ` +
+          `⇒ 验收**仍无人执行**。★ 这是允许的，但要知道：判不了的东西，重写完也验不了。`,
+      );
+    }
+  }
+  // ★ 阻断通路：**唯一的失败路径是抛错**（`cli.ts:297` 的 `r.isError ? 1 : 0` 只认它）。
+  //   ★ 只对 `fail` 阻断，**不对 `unsupported` 阻断**（判不了 ≠ 不过；在 Go/Python 上阻断会让门没法用）
+  //     —— 但 unsupported 的条数会同时出现在**报告**与**抛出的错误里**，不许它悄悄溜过。
+  if (a.fail_on_violation === true && exp && exp.failed > 0) {
+    throw new Error(
+      `验收未通过（fail_on_violation=true）：${exp.failed} 条 expectations **判定为不满足**\n` +
+        exp.items
+          .filter((x) => x.verdict === 'fail')
+          .map((x) => `  · [${x.node_id}] ${describeExpectation(x.expectation)} —— ${x.detail}`)
+          .join('\n') +
+        (exp.unsupported ? `\n★ 另有 ${exp.unsupported} 条**判不了（unsupported）**，未计入阻断 —— 但它们**不是通过**。` : ''),
+    );
+  }
+
   // ★★ 2026-10-09（T73）：「**差异块**」—— 把 per-file 差异折成"**可重写的区域块**"。
   //   ★ 不给 `scope` ⇒ **与改造前逐字等价**（原样返回三个字段，行为零变化）。
   //   ★ 给 `scope` ⇒ 只在框定范围内对账，并把差异按**可命名区域**聚成块（块名由 `formatScope` 生成，
   //     见 `domain/diff_blocks.ts` 纪律 1：块名必须稳定，才谈得上"这块我上轮改过了"）。
   const scopeText = typeof a.scope === 'string' && a.scope.trim() ? a.scope.trim() : '';
   if (!scopeText) {
-    return {
-      message: r.message,
-      data: { fileResults: r.fileResults, invariantResults: r.invariantResults, summary: r.summary },
+    // ★ 不给 scope ⇒ **差异块那部分与改造前逐字等价**；只是多带一节「验收执行」（`expectation_results`）。
+    const expSection = renderExpectationsSection(exp, expNotes);
+    const data: Record<string, unknown> = {
+      fileResults: r.fileResults,
+      invariantResults: r.invariantResults,
+      summary: r.summary,
     };
+    if (exp) data.expectation_results = { checked: exp.checked, passed: exp.passed, failed: exp.failed, unsupported: exp.unsupported, items: exp.items, notes: exp.notes };
+    else if (expNotes.length) data.expectation_results = { checked: 0, passed: 0, failed: 0, unsupported: 0, items: [], notes: expNotes };
+    return { message: expSection ? `${r.message}\n${expSection}` : r.message, data };
   }
 
-  const feature = a.feature as string;
-  const dsl = getDSLByView(feature, 'design');
+  // ★ scope 分支要 DSL：没有就拿不到"哪一片" ⇒ 响亮报错（不静默退化成"全量"）
   if (!dsl) throw new Error(`feature "${feature}" 不存在（视图: design）⇒ 无法解析 scope`);
   const sc = resolveScopeText(dsl, scopeText);
 
@@ -108,9 +152,44 @@ export const consistencyHandler = wrapData(async (a) => {
       clean_files: d.clean_files,
       notes: allNotes,
       summary: r.summary,
+      ...(exp
+        ? { expectation_results: { checked: exp.checked, passed: exp.passed, failed: exp.failed, unsupported: exp.unsupported, items: exp.items, notes: exp.notes } }
+        : expNotes.length
+          ? { expectation_results: { checked: 0, passed: 0, failed: 0, unsupported: 0, items: [], notes: expNotes } }
+          : {}),
     },
   };
 });
+
+/**
+ * 「验收执行」那一节的人话渲染（★ **唯一一处** —— 不许在两个 return 里各拼一遍，
+ * 那正是本仓最忌的"同一格式住两处"）。返回空串 = 这一 feature 没有任何 expectations 相关的事。
+ */
+function renderExpectationsSection(
+  // ★ 判定器是 async ⇒ 这里要 `Awaited<>`（否则拿到的是 Promise）
+  exp: Awaited<ReturnType<typeof judgeExpectations>> | null,
+  notes: readonly string[],
+): string {
+  if (!exp && !notes.length) return '';
+  const L: string[] = ['', '── 验收执行（决策卡上的 expectations）──'];
+  if (exp) {
+    L.push(
+      `  检查项 ${exp.checked} 条 · **通过 ${exp.passed}** · **不满足 ${exp.failed}** · **判不了 ${exp.unsupported}**`,
+    );
+    for (const it of exp.items) {
+      const mark = it.verdict === 'pass' ? '✅' : it.verdict === 'fail' ? '❌' : '⚠';
+      L.push(`    ${mark} [${it.node_id}] ${describeExpectation(it.expectation)}`);
+      L.push(`        ${it.detail}`);
+    }
+    for (const n of exp.notes) L.push(`  ★ ${n}`);
+  }
+  for (const n of notes) L.push(`  ★ ${n}`);
+  L.push(
+    '  ★ 本工具**默认不改退出码**（上面"不满足"再多也 exit 0）；要它阻断请传 `fail_on_violation=true`' +
+      '（★ 只对**不满足**阻断，`判不了` 不计入 —— 否则 Go/Python 上就没法用了）。',
+  );
+  return L.join('\n');
+}
 
 /** detect_drift：活文档↔代码漂移检测（代码变更 → 提示 DSL 过时/欠实现），持久化台账 */
 export const detectDriftHandler = wrapData(async (a) => {

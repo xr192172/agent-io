@@ -956,34 +956,35 @@
 
 ---
 
-- [ ] **T74 ★★★ 「验收执行」—— 整条链的命门**
-      *(核实：2026-10-09 实测 —— `NodeDecision.acceptance`（`domain/geometry.ts:164`）是**自由文本**、
-       **无执行者**；而 `consistency_check` / `detect_drift` **退出码恒 0**。
-       ⇒ 于是"照设计重写实际"这条链上，**唯一没有执行者的一环就是验收**。)*
-      ★ **地形已勘（2026-10-09 只读子代理产出，带行号，下次别重勘）**：
-      · **退出码通路**（判据"改代码 ⇒ 退出码非 0"就落在这）：`presentation/cli/cli.ts:297`
-        `process.exit(r.isError ? 1 : 0)`；而 `isError` **只由 handler 抛异常**（`application/plumbing.ts:48/76`
-        的 `wrap`/`wrapData` 在 catch 里置位）**或显式返回 `{isError:true}`** 产生
-        ⇒ **正常返回结果的工具永远退 0**（`consistency_check`/`detect_drift` 就是 `wrapData` 正常返回）。
-      · **一致性检查可直调**：`application/design/intent/consistency.ts:245`
-        `checkConsistency(input: {feature; code_dir?})`（类型 `:73-77`，出参 `:35-48`）；
-        它**不是纯函数**（读 `getDSL` + fs），但 `detect_drift.ts:118` **已经直接 import 调用**过 ⇒ 有先例。
-      · **符号判定入口**：`infrastructure/index/file_facts.ts:91` `fileFacts(root,file,feature?)`、
-        `:120` `apiSignaturesOf`、`:137` `mergedApis`；`infrastructure/index/symbols.ts:940` `getFileParse`、
-        `:962` `searchSymbols`；现解析用 `infrastructure/parse/ast_parser.ts:28` `parseFileSymbols`。
-      · ★★ **依赖边的口径坑（必须先定，否则 `edge-exists/absent` 判错）**：三处来源 —
-        `semantic.files[].expected_deps`（**设计意图**，`domain/semantic.ts:74`）·
-        `geometry.edges[]`（import_project 落的**快照投影**，`infrastructure/graph/import_project.ts:1668-1689`）·
-        `fileFacts().deps`（**现取事实**，`infrastructure/index/file_facts.ts:110-114` 读 `cache.db` 的 `edges kind='import'`）。
-        ⇒ **"当前真实" = `fileFacts().deps`**；但 ★ 它**只为 TS/JS 相对导入写**
-        （`infrastructure/index/symbols.ts:388` `if (imp.kind !== 'relative') continue`）⇒ **不含 Go/Python 包导入**；
-        要全覆盖得走 `infrastructure/graph/import_graph.ts:54` `buildImportGraph`。
-      · **决策卡读写路径**：唯一写入口 = `edit_dsl` 的 `type=node` add/update（底层 `addNode`/`updateNode`
-        经 `applyDecisionWrite`）；`acceptance` **唯一被读取展示的点** = `meta/explore/query_feature.ts:442`。
-      ⇒ **形状**：`acceptance` 从自由文本升级为 **`Expectation[]`**（`edge-exists` / `edge-absent` /
-        `symbol-exists` / `file-exists` / `signature-matches`）；判定器**复用上面那三套入口**，**不新造解析**。
-      ⇒ **判据**：一个**真决策**挂上 acceptance ⇒ 改代码 ⇒ **指令退出码非 0**（现在恒 0）。★ 只作**报告 + 可选门**。
-      ⇒ ★★ **为什么它是命门**：没有验收，"分区域重写"就变成**自信地改坏**——链上别的环错了能看见，这一环错了看不见。
+- [ ] **T75 ★★★ 「决策卡重建即丢」—— 人写的 `decision` 只落 base，不落 overlay（2026-10-09 出生证当场抓到）**
+      *(核实：2026-10-09 实测 —— ① 用 `edit_dsl` 给节点写含 `expectations` 的决策卡；
+       ② 跑一次 `import_project`（重建 base）；③ 再查：*
+       *`features/t74.json` 里**该节点已无 `decision`**；`features/t74.overlay.json` 是 `{"version":1,"feature":"t74","anchors":{}}` —— **空的**。)*
+      ⇒ ★★ **这与 overlay 存在的全部理由直接矛盾**：`src/infrastructure/storage_overlay.ts:4` 原文
+        「与 base 分离，**base 可再生成，overlay 独立保留**」；
+        且 `OverlayAnchor` **本来就有 `decision` / `decision_history` 字段**（`domain/overlay.ts:42/45`）
+        ⇒ **设计本意就是"决策住在 overlay"**，而现状是**没落过去**。
+      ⇒ **定位**：`edit_dsl` → `updateFeature` 结尾 `saveDSL(dsl)`（`dsl_ops/update_feature.ts:389`）
+        —— **只写 base**；全仓写 overlay 的只有
+        `intent/set_design_intent.ts:101`（goals/edge_intents）与 `workbench/code_workbench.ts`（提案）。
+        ⇒ `import_project` 走 `mergeDesignLayer`（`infrastructure/graph/import_project.ts:1252`）时会
+        "读旧 overlay + reconcile 到新 base"，但旧 overlay 里**本来就没有决策** ⇒ **一重建就丢**。
+      ⇒ ★★★ **为什么这条最痛**：它是**目标工作流的地基**。
+        "照设计重写实际"要求**人写的意图能在多次重建之间活下来**；
+        现在你写下"这块应该怎样"（含验收标准）**一 re-import 就没了** ⇒ **T74 的机制即使对了，输入也会蒸发**。
+      ⇒ **形状（建议，待裁定）**：让 `decision` 的写入**同时落 overlay**（或改为"只落 overlay + 应用回 base"）。
+        ★ 关键约束：**不许两处都当真源** —— 只能有一个"决策的家"（按本仓既有裁定 = overlay），
+        base 上的 `decision` 必须是**应用结果**而非独立副本。
+      ⇒ **判据**：① 写决策 ⇒ 查 overlay **能看到它**；② 跑 `import_project` ⇒ **决策仍在**；
+        ③ 再跑一次对账 ⇒ `expectations` 仍能判出同样的结论。
+
+- [ ] **T76 ★★ 验收判据在"索引旧"时一律判不了 ⇒ 需要一个"重建索引再判"的既定动作**
+      *(核实：2026-10-09 出生证 —— 改了源码后，依赖类检查（`edge-exists`/`edge-absent`）**全部判不了**，
+       原因是依赖边只能取自索引、而索引比源码旧（守卫见 `application/design/intent/expectations.ts` 的
+       `indexStaleFor`）。★ 这是**有意**的（宁可说判不了，不拿旧事实说通过），但**用起来别扭**。)*
+      ⇒ **形状**：一个显式的"判之前先保鲜"动作（或让对账工具自己按需重建索引并**说明它重建了**）。
+      ⇒ **判据**：改源码 ⇒ 直接跑对账 ⇒ ① 要么给出"判不了"并**明确告知怎么修**；② 要么自动保鲜且**报告它做了**。
+        ★ 两者都不能是"静默地用旧事实给个结论"。
 
 - [ ] **T69 ★★ 合并形态 S3：上限预算 —— 把 L1 扩成双边 + 配额单点**
       *(核实：2026-10-08 实测我们**只有下限**（`MIN_REASON_CHARS = 6`，见 `reason_validator.ts:73`），
