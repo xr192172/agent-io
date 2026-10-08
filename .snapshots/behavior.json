@@ -1,6 +1,6 @@
 {
  "_meta": {
-  "takenAt": "2026-10-08T16:52:32.583Z",
+  "takenAt": "2026-10-08T16:55:59.925Z",
   "env": {
    "core": "0.21.1",
    "node": "v22.22.2",
@@ -103,10 +103,11 @@
     {
      "name": "consistency_check",
      "title": "Check design-code consistency",
-     "description": "对比 DSL 定义的 expected_apis 与实际代码实现，生成一致性报告（已实现/缺失/签名不匹配/代码新增），并验证跨文件不变式。只读检查。",
+     "description": "对比 DSL 定义的 expected_apis 与实际代码实现，生成一致性报告（已实现/缺失/签名不匹配/代码新增），并验证跨文件不变式。只读检查。★ 传 `scope` ⇒ 只在**框定范围内**对账，并把差异折成「**差异块**」（块名稳定，由 `formatScope` 生成）—— 这就是\"对比现状与设计 ⇒ 分区域重写\"里**拿到区别的那一步**。",
      "inputKeys": [
       "feature",
-      "code_dir"
+      "code_dir",
+      "scope"
      ]
     },
     {
@@ -922,12 +923,7 @@
      "params": 2
     }
    ],
-   "thin": [
-    {
-     "name": "consistency_check",
-     "len": 75
-    }
-   ],
+   "thin": [],
    "order": {
     "verbFirst": [
      "apply_refactor_plan",

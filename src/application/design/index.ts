@@ -405,10 +405,21 @@ export const DESIGN_TOOLS: ToolDef[] = [
     title: 'Check design-code consistency',
     description:
       '对比 DSL 定义的 expected_apis 与实际代码实现，生成一致性报告（已实现/缺失/签名不匹配/代码新增），' +
-      '并验证跨文件不变式。只读检查。',
+      '并验证跨文件不变式。只读检查。' +
+      '★ 传 `scope` ⇒ 只在**框定范围内**对账，并把差异折成「**差异块**」' +
+      '（块名稳定，由 `formatScope` 生成）—— 这就是"对比现状与设计 ⇒ 分区域重写"里**拿到区别的那一步**。',
     inputSchema: {
       feature: z.string().describe('feature 名'),
       code_dir: z.string().optional(),
+      scope: z
+        .string()
+        .optional()
+        .describe(
+          '可选：**圈定范围**（文法唯一落点在 src/domain/scope.ts）：all | layer:main|error|detail | ' +
+            'swimlane:<id> | arch_layer:<id> | subtree:<node_id>[!] | nodes:a,b | files:p1,p2（尾 / 按前缀）。' +
+            '★ 不给 = 与原来完全一致（全量报告）；给了 ⇒ 只报该范围内的差异，**且按区域聚成块**。' +
+            '★ 块名稳定（同一片区域任何时候同一个名字）⇒ 可当"这块我改过了/还在欠账"的钥匙。',
+        ),
     },
     handler: consistencyHandler,
   },

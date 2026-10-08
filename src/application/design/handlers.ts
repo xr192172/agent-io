@@ -22,6 +22,10 @@ import { validateReason } from '.././observe/reconcile/reason_validator.js';
 import type { ReasonEvidenceRef } from '.././observe/reconcile/reason_validator.js';
 import { buildTraceResolver, loadObservedTraceRecords } from '.././observe/capture/trace_evidence.js';
 import { updateFeature } from '.././design/dsl_ops/update_feature.js';
+// ★★ 2026-10-09（T73）：差异块 —— 把 per-file 差异折成"可重写的区域块"。
+//   `scope.ts` 是"圈定范围"的**文法与解析唯一落点**；`diff_blocks.ts` 是"归块"的纯函数。
+import { resolveScopeText, formatScope } from '../../domain/scope.js';
+import { buildDiffBlocks, type FileDiff } from '../../domain/diff_blocks.js';
 
 /** consistency_check：一致性。★ wrapData（2026-09-29）：[B] 回 `ConsistencyResult`
  *   = `{ message, fileResults[], invariantResults[], summary{totals…} }` ——
@@ -31,9 +35,80 @@ export const consistencyHandler = wrapData(async (a) => {
     feature: a.feature as string,
     code_dir: a.code_dir as string | undefined,
   });
+
+  // ★★ 2026-10-09（T73）：「**差异块**」—— 把 per-file 差异折成"**可重写的区域块**"。
+  //   ★ 不给 `scope` ⇒ **与改造前逐字等价**（原样返回三个字段，行为零变化）。
+  //   ★ 给 `scope` ⇒ 只在框定范围内对账，并把差异按**可命名区域**聚成块（块名由 `formatScope` 生成，
+  //     见 `domain/diff_blocks.ts` 纪律 1：块名必须稳定，才谈得上"这块我上轮改过了"）。
+  const scopeText = typeof a.scope === 'string' && a.scope.trim() ? a.scope.trim() : '';
+  if (!scopeText) {
+    return {
+      message: r.message,
+      data: { fileResults: r.fileResults, invariantResults: r.invariantResults, summary: r.summary },
+    };
+  }
+
+  const feature = a.feature as string;
+  const dsl = getDSLByView(feature, 'design');
+  if (!dsl) throw new Error(`feature "${feature}" 不存在（视图: design）⇒ 无法解析 scope`);
+  const sc = resolveScopeText(dsl, scopeText);
+
+  const norm = (p: string): string => p.replace(/\\/g, '/').replace(/^\.\//, '');
+  const inScope = new Set(sc.paths);
+  const sel = r.fileResults.filter((fr) => inScope.has(norm(fr.file.path)));
+  // ★ 不许静默：scope 命中、但对账结果里没有的文件（例如不在语义层）要说出来
+  const seen = new Set(sel.map((fr) => norm(fr.file.path)));
+  const notChecked = sc.paths.filter((p) => !seen.has(p));
+
+  const files: FileDiff[] = sel.map((fr) => ({
+    path: norm(fr.file.path),
+    arch_layer: fr.file.layer,
+    missing: fr.apis.filter((x) => x.status === 'missing').length,
+    mismatched: fr.apis.filter((x) => x.status === 'mismatched').length,
+    unexpected: fr.apis.filter((x) => x.status === 'unexpected').length,
+  }));
+  // ★ scope 比 `arch_layer` 更窄时（files: / subtree: / nodes:），再按层切没有意义 ⇒ 整个 scope 作一块
+  const narrower = sc.scope.kind === 'files' || sc.scope.kind === 'subtree' || sc.scope.kind === 'nodes';
+  const d = buildDiffBlocks(files, sc.scope, narrower ? 'scope' : 'arch_layer');
+  const nDiff = files.filter((f) => f.missing + f.mismatched + f.unexpected > 0).length;
+
+  const lines = [
+    `══ 差异块 scope ${formatScope(sc.scope)} ══`,
+    '',
+    `  范围内文件 ${sel.length} 个 · **有差异 ${nDiff} 个** · 无差异 ${d.clean_files.length} 个 · 产出块 ${d.blocks.length} 个`,
+  ];
+  if (d.blocks.length) {
+    lines.push('', '  块（★ 块名稳定 ⇒ 可直接当"分区域重写"的工作单元）：');
+    for (const b of d.blocks) {
+      const { missing, mismatched, unexpected } = b.counts;
+      lines.push(
+        `    [${b.region}]  差异 ${missing + mismatched + unexpected} 条` +
+          `（缺实现 ${missing} / 签名不符 ${mismatched} / 代码新增 ${unexpected}） · ${b.files.length} 个文件`,
+      );
+      for (const f of b.files) lines.push(`        ${f}`);
+    }
+  }
+  if (d.clean_files.length) lines.push('', `  范围内已对齐（无差异）：${d.clean_files.join(', ')}`);
+  const allNotes = [...sc.notes, ...d.notes];
+  if (notChecked.length) allNotes.push(`scope 命中但对账结果里没有（可能不在语义层）：${notChecked.join(', ')}`);
+  if (allNotes.length) {
+    lines.push('', '  ★ 说明（**不许静默**）：');
+    for (const n of allNotes) lines.push(`    · ${n}`);
+  }
+  lines.push(
+    '',
+    '  ★ 块的排序键只由稳定量构成（差异总数 ↓，同数按区域名字典序）⇒ 无关改动不会让块乱跳。',
+    '  ★ 本工具**仍不改退出码**（差异再多也 exit 0）—— 它是**报告**；要"会红"是 T74（验收执行）的事。',
+  );
   return {
-    message: r.message,
-    data: { fileResults: r.fileResults, invariantResults: r.invariantResults, summary: r.summary },
+    message: lines.join('\n'),
+    data: {
+      scope: sc,
+      blocks: d.blocks,
+      clean_files: d.clean_files,
+      notes: allNotes,
+      summary: r.summary,
+    },
   };
 });
 
