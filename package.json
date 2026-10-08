@@ -75,7 +75,9 @@
     "grammar:build": "node scripts/grammar_shim.mjs build",
     "grammar:build-all": "node scripts/grammar_shim.mjs build-all",
     "grammar:pins": "node scripts/grammar_shim.mjs pins",
-    "grammar:verify": "node scripts/verify_grammar_rebuild.mjs"
+    "grammar:verify": "node scripts/verify_grammar_rebuild.mjs",
+    "roster:merge": "python scripts/merge_language_roster.py",
+    "roster:diff": "python scripts/diff_language_rosters.py"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
