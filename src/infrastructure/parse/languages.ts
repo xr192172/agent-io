@@ -227,8 +227,12 @@ export const LANGUAGES: LanguageEntry[] = [
   //   （只有别的生态的产物：`@lumis-sh/wasm-*` / `@arborium/*` / `@treelight/*` / `@lotsa/verdant-lang-*`
   //   都是 wasm 或宿主插件，**不是** node 的 tree-sitter 语言对象）⇒ 显式声明 `pkgSpec: null`。
   //   ★ 这不是"我们没装"，是**上游没有** —— 要让提示说得出这句话，而不是给一个装不上的包名。
-  { name: 'crystal', pkg: 'crystal', pkgSpec: 'agent-io-grammar-crystal', exts: ['.cr'], kind: 'code', symbol_nodes: ['method_def'], field_map: { name: 'name' } },
-  { name: 'ocaml', pkg: 'ocaml', pkgSpec: 'agent-io-grammar-ocaml', exts: ['.ml', '.mli'], kind: 'code', symbol_nodes: ['let_binding'], field_map: { name: 'name' } },
+  // ★ 2026-10-08 更正：`method_def` **不是** crystal 的节点名（取不到 ⇒ 这门语言永远提不出符号）。
+  //   实测真实节点：`def foo … end` ⇒ `method_definition[name=foo]`（见 `.inspect/dbg4.mjs`）。
+  { name: 'crystal', pkg: 'crystal', pkgSpec: 'agent-io-grammar-crystal', exts: ['.cr'], kind: 'code', symbol_nodes: ['method_definition'], field_map: { name: 'name' } },
+  // ★ 2026-10-08 更正：`let_binding` 的**字段不叫 `name`**，实测是 `pattern`（指向 `value_name`「foo」）。
+  //   原来写 `{name:'name'}` ⇒ 字段取不到 ⇒ symbols 为空（节点找得到、名字取不到）。
+  { name: 'ocaml', pkg: 'ocaml', pkgSpec: 'agent-io-grammar-ocaml', exts: ['.ml', '.mli'], kind: 'code', symbol_nodes: ['let_binding'], field_map: { name: 'pattern' } },
   // ★★ 2026-10-08 修：**派生名不存在**。`pkg: 'f-sharp'` ⇒ 派生 `tree-sitter-f-sharp`，
   //   而 npm 上**没有这个包**（实测 `npm view tree-sitter-f-sharp` ⇒ E404）—— 真名是
   //   **`tree-sitter-fsharp`**（实测存在，N-API：`node-gyp-build`、无 `nan`；但它 latest 的

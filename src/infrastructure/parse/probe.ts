@@ -98,6 +98,19 @@ function nearestPackageJson(entryFile: string): string | null {
  * ★ 兜底（筛子只读清单，故有误判风险）：过了筛子却仍载入失败的（版本漂移等），
  *   `loader.loadLanguage` 会**记一次** warning 并把该包缓存为不可用（同一包不刷屏）。
  */
+/** ★ 该包的 package.json 旁边有没有**已构建的 native 产物**（`build/Release/*.node` 在盘上）。
+ *  这是本地才拿得到的一条事实，喂给**同一个判据**（`templateCompatFromPkgJson` 的 `opts`），
+ *  不另立第二份判据。由来：我们自己编的 `agent-io-grammar-*` 没有 install 脚本却有产物，
+ *  被旧判据判死 ⇒ `isSupported(ext)` 假 ⇒ **整门语言的功能走不到**（8/8 真加载明明通过）。 */
+function hasBuiltBindingNear(pkgJsonPath: string): boolean {
+  const rel = path.join(path.dirname(pkgJsonPath), 'build', 'Release');
+  try {
+    return fs.existsSync(rel) && fs.readdirSync(rel).some((f) => f.endsWith('.node'));
+  } catch {
+    return false;
+  }
+}
+
 export function isLoadablePackage(pkgJsonPath: string): boolean {
   let pkg: Record<string, unknown>;
   try {
@@ -105,7 +118,8 @@ export function isLoadablePackage(pkgJsonPath: string): boolean {
   } catch {
     return false; // 清单读不出/坏了 ⇒ 不能声称可用
   }
-  return templateCompatFromPkgJson(pkg) === 'ok';
+  // ★ 把"本地看得见的那条事实"一并交给判据（产物在盘上 ⇒ 比"模板指纹"更硬）
+  return templateCompatFromPkgJson(pkg, { hasBuiltBinding: hasBuiltBindingNear(pkgJsonPath) }) === 'ok';
 }
 
 /** 该裸包名解析到的入口所属包是否过了真筛子（解析不到 ⇒ false） */

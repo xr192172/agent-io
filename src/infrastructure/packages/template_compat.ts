@@ -48,11 +48,20 @@
  */
 export type TemplateCompat = 'ok' | 'incompatible' | 'unknown';
 
-/** 纯函数：从 package.json 内容判模板兼容（本地读 / registry 元数据走同一判据，不抄第二份） */
-export function templateCompatFromPkgJson(j: Record<string, unknown> | null): TemplateCompat {
+/** 纯函数：从 package.json 内容判模板兼容（本地读 / registry 元数据走同一判据，不抄第二份）
+ *  @param opts.hasBuiltBinding 本地只见得到的一条事实：**该包自己就带着已构建的 native 产物**
+ *         （`build/Release/*.node` 在盘上）。`null` = 不知道（registry 元数据那条路就没有这条事实）。 */
+export function templateCompatFromPkgJson(
+  j: Record<string, unknown> | null,
+  opts?: { hasBuiltBinding?: boolean | null },
+): TemplateCompat {
   if (!j) return 'unknown';
   const scripts = j.scripts as Record<string, unknown> | undefined;
-  return templateCompatFromFacts(usesNanBinding(j), typeof scripts?.install === 'string' ? scripts.install : null);
+  return templateCompatFromFacts(
+    usesNanBinding(j),
+    typeof scripts?.install === 'string' ? scripts.install : null,
+    opts?.hasBuiltBinding ?? null,
+  );
 }
 
 /**
@@ -65,10 +74,23 @@ export function templateCompatFromPkgJson(j: Record<string, unknown> | null): Te
  * 两种形态都喂它，**只有一份逻辑**。
  * @param usesNan      依赖里有没有 `nan`（`null` = 上游没声明 dependencies / 取不到）
  * @param installScript `scripts.install` 的值（`null` = 没有这个脚本）
+ * @param hasBuiltBinding ★ 2026-10-08 新增的第**三**条事实：**该包自带已构建的 native 产物**
+ *        （`<pkg>/build/Release/*.node` 就在盘上）。`null` = 不知道（registry 那条路拿不到）。
  */
-export function templateCompatFromFacts(usesNan: boolean | null, installScript: string | null): TemplateCompat {
+export function templateCompatFromFacts(
+  usesNan: boolean | null,
+  installScript: string | null,
+  hasBuiltBinding: boolean | null = null,
+): TemplateCompat {
   // ★ 因果判据优先：依赖 `nan`（NAN 绑定）⇒ 核心 0.21 只认 N-API 语言对象 ⇒ 必失败。
   if (usesNan === true) return 'incompatible';
+  // ★★ 2026-10-08：**"自带已构建产物"排在"模板指纹"之前** —— 产物在盘上是**直接证据**，
+  //   而 `scripts.install` 长什么样只是**指纹**（本文件上面自己就把它标成"② 级（模板指纹）"）。
+  //   由来（实测）：我们自己用**通用 N-API 绑定**从语法源码编出来的 8 个包（`agent-io-grammar-*`）
+  //   既无 `nan`、也没有 `node-gyp-build` 安装脚本 ⇒ 旧判据判它们 `incompatible`
+  //   ⇒ `isSupported(扩展名)` 返回 false ⇒ **整门语言的功能是死的**（注册表里在、真加载也过，功能却走不到）。
+  //   而那 8 个包的真加载是**逐门验过的 8/8 通过**。
+  if (hasBuiltBinding === true) return 'ok';
   // ② 级（模板指纹）：既不是 NAN、也没有 node-gyp-build 安装脚本 ⇒ 拿不到 N-API 语言对象。
   return installScript === 'node-gyp-build' ? 'ok' : 'incompatible';
 }
