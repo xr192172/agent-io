@@ -46,16 +46,23 @@ export interface LanguageEntry {
    */
   pkg: string;
   /**
-   * ★★ 2026-10-08 新增：**显式模块说明符**（覆盖 `tree-sitter-{pkg}` 的派生）。
+   * ★★ 2026-10-08：**显式模块说明符** —— 三态，别混：
+   *   · **未写**（`undefined`）⇒ 按约定派生 `tree-sitter-{pkg}`（**约定成立的才允许不写**）；
+   *   · **字符串** ⇒ 显式真名（约定**不成立**时必须写：`tsx`→`tree-sitter-typescript`、
+   *     `fsharp`→`tree-sitter-fsharp`）；
+   *   · **`null`** ⇒ **本仓没有登记可用的 npm 包**（派生名在 npm 上不存在，也没找到可用的真名）。
+   *     这不是"我们没装"，是"上游没有"⇒ 不许再让调用方去猜一个包名（见 §派生为何不可信）。
    *
-   * 为什么必须有（实测）：`tsx` / `jsx` **不是独立的 npm 包** ——
-   *   · TSX 语法住在 `tree-sitter-typescript` 里（该包同时导出 `typescript` 与 `tsx`）；
-   *   · JSX 语法就在 `tree-sitter-javascript` 里。
-   * 而派生名会去找 `tree-sitter-tsx` / `tree-sitter-jsx`（**两个都不存在**）⇒
-   *   这两个扩展名**永远解析不出来**（且被静默归入 unknown，看不见）。
-   * ★ 派生是「约定/猜测」，显式是「事实」——**猜不出来的时候必须能写下来**。
+   * ★ 为什么必须有（实测，2026-10-08 逐条查了 npm）：
+   *   `tsx` / `jsx` **不是独立的 npm 包** —— TSX 住在 `tree-sitter-typescript` 里，
+   *   JSX 住在 `tree-sitter-javascript` 里；`f-sharp` 的派生名 `tree-sitter-f-sharp`
+   *   **E404**，真名是 `tree-sitter-fsharp`。
+   *   另有 **10 条**（`erlang r less nim crystal vhdl tcl protobuf rego fish`）
+   *   派生名在 npm 上也**不存在**（详见各条注释的核实结果）。
+   * ★★ **派生是「约定/猜测」，显式是「事实」** —— 猜不出来的时候必须能写下来；
+   *   而"猜"这件事本身**要能一眼看见**（所以未写 = 派生，而不是"我默认它对"）。
    */
-  pkgSpec?: string;
+  pkgSpec?: string | null;
   /** 支持的文件扩展名（含 .） */
   exts: string[];
   /** ★ 语言类别：`code` = 算源码；`data`/`markup`/`style`/`doc` = 不算（判据见模块注释） */
@@ -93,7 +100,11 @@ export const LANGUAGES: LanguageEntry[] = [
   { name: 'html', pkg: 'html', exts: ['.html', '.htm'], kind: 'markup', symbol_nodes: ['script_element'], field_map: { name: 'name' } },
   { name: 'css', pkg: 'css', exts: ['.css'], kind: 'style', symbol_nodes: ['rule_set'], field_map: { name: 'name' } },
   { name: 'scss', pkg: 'scss', exts: ['.scss'], kind: 'style', symbol_nodes: ['rule_set'], field_map: { name: 'name' } },
-  { name: 'less', pkg: 'less', exts: ['.less'], kind: 'style', symbol_nodes: ['rule_set'], field_map: { name: 'name' } },
+  // ★ 2026-10-08 核实：派生名 `tree-sitter-less` 在 npm 上**不存在**，也没找到可用的 node 原生真名
+  //   （只有别的生态的产物：`@lumis-sh/wasm-*` / `@arborium/*` / `@treelight/*` / `@lotsa/verdant-lang-*`
+  //   都是 wasm 或宿主插件，**不是** node 的 tree-sitter 语言对象）⇒ 显式声明 `pkgSpec: null`。
+  //   ★ 这不是"我们没装"，是**上游没有** —— 要让提示说得出这句话，而不是给一个装不上的包名。
+  { name: 'less', pkg: 'less', pkgSpec: null, exts: ['.less'], kind: 'style', symbol_nodes: ['rule_set'], field_map: { name: 'name' } },
 
   // === 后端语言 ===
   { name: 'go', pkg: 'go', exts: ['.go'], kind: 'code', symbol_nodes: ['function_declaration', 'method_declaration', 'type_declaration', 'type_spec'], import_nodes: ['import_spec'], field_map: { name: 'name', parameters: 'parameters', return_type: 'result', receiver: 'receiver' } },
@@ -148,7 +159,11 @@ export const LANGUAGES: LanguageEntry[] = [
   //     （形如已有的 `symbolDispatch`，那正是 elixir 符号侧用的同一机制），并让上述 return 改为
   //     "命中但无源 ⇒ 继续下滑"。本笔**未做**（见提交信息「没验什么」），故不声明。
   { name: 'elixir', pkg: 'elixir', exts: ['.ex', '.exs'], kind: 'code', symbol_nodes: ['call'], field_map: { name: 'name' } },
-  { name: 'erlang', pkg: 'erlang', exts: ['.erl', '.hrl'], kind: 'code', symbol_nodes: ['function_clause'], field_map: { name: 'name' } },
+  // ★ 2026-10-08 核实：派生名 `tree-sitter-erlang` 在 npm 上**不存在**，也没找到可用的 node 原生真名
+  //   （只有别的生态的产物：`@lumis-sh/wasm-*` / `@arborium/*` / `@treelight/*` / `@lotsa/verdant-lang-*`
+  //   都是 wasm 或宿主插件，**不是** node 的 tree-sitter 语言对象）⇒ 显式声明 `pkgSpec: null`。
+  //   ★ 这不是"我们没装"，是**上游没有** —— 要让提示说得出这句话，而不是给一个装不上的包名。
+  { name: 'erlang', pkg: 'erlang', pkgSpec: null, exts: ['.erl', '.hrl'], kind: 'code', symbol_nodes: ['function_clause'], field_map: { name: 'name' } },
   // ★ 2026-09-29 新增：实测（haskell 0.23.1）函数体在 **match** 字段（局部绑定在 binds），
   //   旧内核只认 'body'/'suite' ⇒ 下不了体 ⇒ 调用边恒空。真节点名是 function/bind（不是
   //   旧表项的 function_declaration/type_declaration，那两个在该 grammar 里不存在）。
@@ -158,12 +173,23 @@ export const LANGUAGES: LanguageEntry[] = [
   { name: 'haskell', pkg: 'haskell', exts: ['.hs'], kind: 'code', symbol_nodes: ['function', 'bind', 'class', 'data_type', 'newtype'], import_nodes: ['import'], field_map: { name: 'name' } },
   { name: 'lua', pkg: 'lua', exts: ['.lua'], kind: 'code', symbol_nodes: ['function_declaration'], field_map: { name: 'name', parameters: 'parameters' } },
   { name: 'perl', pkg: 'perl', exts: ['.pl', '.pm'], kind: 'code', symbol_nodes: ['subroutine_declaration_statement'], field_map: { name: 'name' } },
-  { name: 'r', pkg: 'r', exts: ['.r', '.R'], kind: 'code', symbol_nodes: ['function_definition'], field_map: { name: 'name' } },
+  // ★ 2026-10-08 核实：派生名 `tree-sitter-r` 在 npm 上**不存在**，也没找到可用的 node 原生真名
+  //   （只有别的生态的产物：`@lumis-sh/wasm-*` / `@arborium/*` / `@treelight/*` / `@lotsa/verdant-lang-*`
+  //   都是 wasm 或宿主插件，**不是** node 的 tree-sitter 语言对象）⇒ 显式声明 `pkgSpec: null`。
+  //   ★ 这不是"我们没装"，是**上游没有** —— 要让提示说得出这句话，而不是给一个装不上的包名。
+  //   ★ 社区有 scoped 包（`@davisvaughan/tree-sitter-r@1.3.0` / `@eagleoutice/tree-sitter-r@1.1.2`），
+  //     但**未核实**（模板 / peer / 维护状况都没验）⇒ **不写进注册表**（写了就是另一种「想当然」）。
+  { name: 'r', pkg: 'r', pkgSpec: null, exts: ['.r', '.R'], kind: 'code', symbol_nodes: ['function_definition'], field_map: { name: 'name' } },
   { name: 'dart', pkg: 'dart', exts: ['.dart'], kind: 'code', symbol_nodes: ['function_signature', 'class_definition'], field_map: { name: 'name', parameters: 'parameters' } },
 
   // === 脚本/Shell ===
   { name: 'bash', pkg: 'bash', exts: ['.sh', '.bash'], kind: 'code', symbol_nodes: ['function_definition'], field_map: { name: 'name' } },
-  { name: 'fish', pkg: 'fish', exts: ['.fish'], kind: 'code', symbol_nodes: ['function_definition'], field_map: { name: 'name' } },
+  // ★ 2026-10-08 核实：派生名 `tree-sitter-fish` 在 npm 上**不存在**，也没找到可用的 node 原生真名
+  //   （只有别的生态的产物：`@lumis-sh/wasm-*` / `@arborium/*` / `@treelight/*` / `@lotsa/verdant-lang-*`
+  //   都是 wasm 或宿主插件，**不是** node 的 tree-sitter 语言对象）⇒ 显式声明 `pkgSpec: null`。
+  //   ★ 这不是"我们没装"，是**上游没有** —— 要让提示说得出这句话，而不是给一个装不上的包名。
+  //   ★ 同上：社区有 `@esdmr/tree-sitter-fish@3.7.1-2` / `@ndonfris/tree-sitter-fish@3.6.0`，**未核实**。
+  { name: 'fish', pkg: 'fish', pkgSpec: null, exts: ['.fish'], kind: 'code', symbol_nodes: ['function_definition'], field_map: { name: 'name' } },
   { name: 'powershell', pkg: 'powershell', exts: ['.ps1', '.psm1'], kind: 'code', symbol_nodes: ['function_statement'], field_map: { name: 'name' } },
 
   // === 数据/配置 ===
@@ -174,8 +200,16 @@ export const LANGUAGES: LanguageEntry[] = [
 
   // === 系统/底层 ===
   { name: 'zig', pkg: 'zig', exts: ['.zig'], kind: 'code', symbol_nodes: ['FnDecl'], field_map: { name: 'name' } },
-  { name: 'nim', pkg: 'nim', exts: ['.nim'], kind: 'code', symbol_nodes: ['proc_def'], field_map: { name: 'name' } },
-  { name: 'crystal', pkg: 'crystal', exts: ['.cr'], kind: 'code', symbol_nodes: ['method_def'], field_map: { name: 'name' } },
+  // ★ 2026-10-08 核实：派生名 `tree-sitter-nim` 在 npm 上**不存在**，也没找到可用的 node 原生真名
+  //   （只有别的生态的产物：`@lumis-sh/wasm-*` / `@arborium/*` / `@treelight/*` / `@lotsa/verdant-lang-*`
+  //   都是 wasm 或宿主插件，**不是** node 的 tree-sitter 语言对象）⇒ 显式声明 `pkgSpec: null`。
+  //   ★ 这不是"我们没装"，是**上游没有** —— 要让提示说得出这句话，而不是给一个装不上的包名。
+  { name: 'nim', pkg: 'nim', pkgSpec: null, exts: ['.nim'], kind: 'code', symbol_nodes: ['proc_def'], field_map: { name: 'name' } },
+  // ★ 2026-10-08 核实：派生名 `tree-sitter-crystal` 在 npm 上**不存在**，也没找到可用的 node 原生真名
+  //   （只有别的生态的产物：`@lumis-sh/wasm-*` / `@arborium/*` / `@treelight/*` / `@lotsa/verdant-lang-*`
+  //   都是 wasm 或宿主插件，**不是** node 的 tree-sitter 语言对象）⇒ 显式声明 `pkgSpec: null`。
+  //   ★ 这不是"我们没装"，是**上游没有** —— 要让提示说得出这句话，而不是给一个装不上的包名。
+  { name: 'crystal', pkg: 'crystal', pkgSpec: null, exts: ['.cr'], kind: 'code', symbol_nodes: ['method_def'], field_map: { name: 'name' } },
   { name: 'ocaml', pkg: 'ocaml', exts: ['.ml', '.mli'], kind: 'code', symbol_nodes: ['let_binding'], field_map: { name: 'name' } },
   // ★★ 2026-10-08 修：**派生名不存在**。`pkg: 'f-sharp'` ⇒ 派生 `tree-sitter-f-sharp`，
   //   而 npm 上**没有这个包**（实测 `npm view tree-sitter-f-sharp` ⇒ E404）—— 真名是
@@ -195,9 +229,17 @@ export const LANGUAGES: LanguageEntry[] = [
   { name: 'clojure', pkg: 'clojure', exts: ['.clj', '.cljs'], kind: 'code', symbol_nodes: ['list_lit'], field_map: { name: 'name' } },
   { name: 'scheme', pkg: 'scheme', exts: ['.scm', '.ss'], kind: 'code', symbol_nodes: ['list'], field_map: { name: 'name' } },
   { name: 'solidity', pkg: 'solidity', exts: ['.sol'], kind: 'code', symbol_nodes: ['contract_declaration', 'function_definition'], field_map: { name: 'name' } },
-  { name: 'vhdl', pkg: 'vhdl', exts: ['.vhdl', '.vhd'], kind: 'code', symbol_nodes: ['entity_declaration'], field_map: { name: 'name' } },
+  // ★ 2026-10-08 核实：派生名 `tree-sitter-vhdl` 在 npm 上**不存在**，也没找到可用的 node 原生真名
+  //   （只有别的生态的产物：`@lumis-sh/wasm-*` / `@arborium/*` / `@treelight/*` / `@lotsa/verdant-lang-*`
+  //   都是 wasm 或宿主插件，**不是** node 的 tree-sitter 语言对象）⇒ 显式声明 `pkgSpec: null`。
+  //   ★ 这不是"我们没装"，是**上游没有** —— 要让提示说得出这句话，而不是给一个装不上的包名。
+  { name: 'vhdl', pkg: 'vhdl', pkgSpec: null, exts: ['.vhdl', '.vhd'], kind: 'code', symbol_nodes: ['entity_declaration'], field_map: { name: 'name' } },
   { name: 'verilog', pkg: 'verilog', exts: ['.v', '.sv'], kind: 'code', symbol_nodes: ['module_declaration'], field_map: { name: 'name' } },
-  { name: 'tcl', pkg: 'tcl', exts: ['.tcl'], kind: 'code', symbol_nodes: ['proc_statement'], field_map: { name: 'name' } },
+  // ★ 2026-10-08 核实：派生名 `tree-sitter-tcl` 在 npm 上**不存在**，也没找到可用的 node 原生真名
+  //   （只有别的生态的产物：`@lumis-sh/wasm-*` / `@arborium/*` / `@treelight/*` / `@lotsa/verdant-lang-*`
+  //   都是 wasm 或宿主插件，**不是** node 的 tree-sitter 语言对象）⇒ 显式声明 `pkgSpec: null`。
+  //   ★ 这不是"我们没装"，是**上游没有** —— 要让提示说得出这句话，而不是给一个装不上的包名。
+  { name: 'tcl', pkg: 'tcl', pkgSpec: null, exts: ['.tcl'], kind: 'code', symbol_nodes: ['proc_statement'], field_map: { name: 'name' } },
 
   // === 文档/标记 ===
   { name: 'markdown', pkg: 'markdown', exts: ['.md', '.markdown'], kind: 'doc', symbol_nodes: ['section', 'atx_heading'], field_map: { name: 'name' } },
@@ -207,9 +249,17 @@ export const LANGUAGES: LanguageEntry[] = [
   // ★ groovy 的表项已上移到"后端语言"一节（与 scala/kotlin 同区，便于对照；旧位置的表项已删，
   //   否则同一门语言在表里出现两次、后者静默胜出）
   { name: 'graphql', pkg: 'graphql', exts: ['.graphql', '.gql'], kind: 'code', symbol_nodes: ['object_type_definition', 'field_definition'], field_map: { name: 'name' } },
-  { name: 'protobuf', pkg: 'protobuf', exts: ['.proto'], kind: 'code', symbol_nodes: ['message', 'service'], field_map: { name: 'name' } },
+  // ★ 2026-10-08 核实：派生名 `tree-sitter-protobuf` 在 npm 上**不存在**，也没找到可用的 node 原生真名
+  //   （只有别的生态的产物：`@lumis-sh/wasm-*` / `@arborium/*` / `@treelight/*` / `@lotsa/verdant-lang-*`
+  //   都是 wasm 或宿主插件，**不是** node 的 tree-sitter 语言对象）⇒ 显式声明 `pkgSpec: null`。
+  //   ★ 这不是"我们没装"，是**上游没有** —— 要让提示说得出这句话，而不是给一个装不上的包名。
+  { name: 'protobuf', pkg: 'protobuf', pkgSpec: null, exts: ['.proto'], kind: 'code', symbol_nodes: ['message', 'service'], field_map: { name: 'name' } },
   { name: 'sql', pkg: 'sql', exts: ['.sql'], kind: 'code', symbol_nodes: ['create_statement'], field_map: { name: 'name' } },
-  { name: 'rego', pkg: 'rego', exts: ['.rego'], kind: 'code', symbol_nodes: ['rule'], field_map: { name: 'name' } },
+  // ★ 2026-10-08 核实：派生名 `tree-sitter-rego` 在 npm 上**不存在**，也没找到可用的 node 原生真名
+  //   （只有别的生态的产物：`@lumis-sh/wasm-*` / `@arborium/*` / `@treelight/*` / `@lotsa/verdant-lang-*`
+  //   都是 wasm 或宿主插件，**不是** node 的 tree-sitter 语言对象）⇒ 显式声明 `pkgSpec: null`。
+  //   ★ 这不是"我们没装"，是**上游没有** —— 要让提示说得出这句话，而不是给一个装不上的包名。
+  { name: 'rego', pkg: 'rego', pkgSpec: null, exts: ['.rego'], kind: 'code', symbol_nodes: ['rule'], field_map: { name: 'name' } },
   { name: 'cue', pkg: 'cue', exts: ['.cue'], kind: 'code', symbol_nodes: ['field'], field_map: { name: 'name' } },
 ];
 
@@ -231,7 +281,11 @@ export function findLanguageByExt(ext: string): LanguageEntry | undefined {
  *   ② 手上只有**一个裸包名**（`probe.isLanguageInstalled` 在注册表里查不到时会拿 pkgName 直接拼，
  *      那条路径也得走**同一条规则**）。收成表项类型会把 ② 挡在门外、逼它自己再拼一次。
  */
-export function languageModuleSpec(pkg: string, pkgSpec?: string): string {
+export function languageModuleSpec(pkg: string, pkgSpec?: string | null): string | null {
+  // ★★ 2026-10-08：三态（见 `pkgSpec` 的字段注释）。
+  //   `null` 是**事实**（本仓未登记可用包）⇒ **必须能返回 null**；返回一个编出来的包名
+  //   就是"想当然的拼接"，而调用方会拿它去 `npm i` / `import`（都必然失败）。
+  if (pkgSpec === null) return null;
   return pkgSpec ?? `tree-sitter-${pkg}`;
 }
 
@@ -247,7 +301,8 @@ export function languageModuleSpec(pkg: string, pkgSpec?: string): string {
  * ⇒ **"查不到"与"没有可用版本"是两回事**，而手拼会把前者伪装成后者（给出一条装不上的建议）。
  * ★ 收口方式：调用方把 `pkg` 名交给本函数，**不要再自己拼**。
  */
-export function moduleSpecOfPkg(pkg: string): string {
+export function moduleSpecOfPkg(pkg: string): string | null {
   const l = LANGUAGES.find((x) => x.pkg === pkg);
-  return languageModuleSpec(pkg, l?.pkgSpec);
+  if (!l) return `tree-sitter-${pkg}`; // 表里没有 ⇒ 只能按约定派生（调用方自己负责核对）
+  return languageModuleSpec(l.pkg, l.pkgSpec);
 }

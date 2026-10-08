@@ -133,7 +133,9 @@ export function isLanguageInstalled(pkgName: string): boolean {
   //   （派生名找的是不存在的 tree-sitter-tsx / tree-sitter-jsx）。
   const entry = LANGUAGES.find((l) => l.pkg === pkgName);
   // ★ 派生走**唯一落点**（`languageModuleSpec`）—— 注册表里查不到表项时，同一条规则作用在裸包名上。
-  if (resolvedIsLoadable(languageModuleSpec(pkgName, entry?.pkgSpec))) {
+  const spec = languageModuleSpec(pkgName, entry?.pkgSpec);
+  // ★ 本仓未登记可用包（表项写了 `pkgSpec: null`）⇒ **这门语言不可能可用**，不必去 resolve。
+  if (spec !== null && resolvedIsLoadable(spec)) {
     loadable.add(pkgName);
     return true;
   }
@@ -172,8 +174,10 @@ export interface LanguagePackageStatus {
  *   提示文案要的是后者 —— 它得说出**版本**与**为什么**。
  * ★ 判据复用 `templateCompatFromPkgJson`（**真筛子的唯一权威**）⇒ 不另写第二份。
  */
-export function languagePackageStatus(moduleSpec: string): LanguagePackageStatus {
+export function languagePackageStatus(moduleSpec: string | null): LanguagePackageStatus {
   const empty: LanguagePackageStatus = { state: 'absent', version: null, usesNan: null, pkgJson: null };
+  // ★ `null` = 本仓未登记可用包 ⇒ 与「没装」**不是同一件事**，调用方要先分辨（见 `lang_hint`）。
+  if (moduleSpec === null) return empty;
   const entry = resolvePackage(moduleSpec);
   if (entry === null) return empty;
   const pj = nearestPackageJson(entry);

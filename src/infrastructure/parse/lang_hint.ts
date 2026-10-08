@@ -159,6 +159,13 @@ export function missingLanguageHint(ext: string, capabilityId?: string): string 
     packText = `装包：本能力不吃 tree-sitter 包（它要的是${runtimeSide}），前置是该语言运行时/工具链本机可用`;
   } else if (!registered) {
     packText = '装包：注册表里还没有它（languages.ts: LANGUAGES 无此扩展名，得先加表项才有包名）';
+  } else if (mod === null) {
+    // ★★ 2026-10-08：**「本仓没有登记可用的包」是第三种情况** —— 它不是「缺个包」（装什么都救不了），
+    //   所以**不许再报一个包名**（那正是「想当然的拼接」：派生出来的名字在 npm 上根本不存在）。
+    packText =
+      `装包：**本仓未登记可用的 npm 包**（实测派生名 tree-sitter-${registered.pkg} 在 npm 上不存在，` +
+      `也没找到可用的 node 原生真名）⇒ 两条路：① 照 ${DOC} 自己补一份；② 若这门口语短期不做，` +
+      `把该表项从 LANGUAGES 里摘掉（留着它就等于对外宣称「支持」，而实际永远解析不出来）`;
   } else if (!installed) {
     const pin = PACK_PINS[registered.pkg];
     const spec = pin ? `${mod}@${pin}` : `${mod}@latest（未登记钉版）`;

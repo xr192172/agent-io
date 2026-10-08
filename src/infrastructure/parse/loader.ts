@@ -56,7 +56,11 @@ export async function loadLanguage(lang: LanguageEntry): Promise<Language | null
     //   tsx 的语法住在 `tree-sitter-typescript` 里，而 `tree-sitter-tsx` 这个包**不存在**。
     //   原先这里写死派生名 ⇒ 紧随其后那段「按 pkg 取 bag.tsx」的**正确逻辑从来没被执行过**
     //   （import 先抛了）—— 它就是**死代码**，只是没人发现（症状是静默的：该扩展名全体 unknown）。
-    const mod = await import(languageModuleSpec(lang.pkg, lang.pkgSpec));
+    const spec = languageModuleSpec(lang.pkg, lang.pkgSpec);
+    if (spec === null) {
+      throw new Error(`语言 ${lang.name} 在本仓没有登记可用的 npm 包（languages.ts 的 pkgSpec: null）`);
+    }
+    const mod = await import(spec);
     // 部分包导出 default，部分导出命名
     const language = (mod as { default?: unknown }).default ?? mod;
 

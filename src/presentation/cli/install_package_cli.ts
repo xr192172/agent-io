@@ -75,7 +75,9 @@ export interface LangPackRow {
 
 /** 本机是否有该包的平台预编译产物（node_modules/tree-sitter-{pkg}/prebuilds/<plat>-<arch>/*.node） */
 export function hasHostPrebuild(pkg: string): boolean {
-  const dir = path.join(findNodeModulesRoot(), moduleSpecOfPkg(pkg), 'prebuilds', `${process.platform}-${process.arch}`);
+  const spec = moduleSpecOfPkg(pkg);
+  if (spec === null) return false; // 本仓未登记可用包 ⇒ 没有 prebuild 可言
+  const dir = path.join(findNodeModulesRoot(), spec, 'prebuilds', `${process.platform}-${process.arch}`);
   try {
     return fs.readdirSync(dir).some((f) => f.endsWith('.node'));
   } catch {
@@ -129,9 +131,12 @@ export function registryInstallScript(pkg: string): {
   error?: string;
 } {
   const none = { script: null, version: null, usesNan: null, peer: null };
+  // ★ 本仓未登记可用包 ⇒ 不必去问 registry（那个包名本身就不存在）⇒ 如实说"上游没有"。
+  const spec = moduleSpecOfPkg(pkg);
+  if (spec === null) return { ...none, missing: true, error: '本仓未登记可用的 npm 包（languages.ts: pkgSpec: null）' };
   const r = spawnSync(
     process.platform === 'win32' ? 'npm.cmd' : 'npm',
-    ['view', moduleSpecOfPkg(pkg), 'version', 'scripts.install', 'dependencies', 'peerDependencies', '--json'],
+    ['view', spec, 'version', 'scripts.install', 'dependencies', 'peerDependencies', '--json'],
     {
       encoding: 'utf-8',
       shell: process.platform === 'win32',
@@ -185,6 +190,16 @@ export function registryInstallScript(pkg: string): {
 
 /** 派生语言：没有独立 npm 包，语法随父包（如 tsx 随 tree-sitter-typescript、jsx 随 tree-sitter-javascript）。不可独立安装。 */
 const DERIVED: Record<string, string> = { tsx: 'typescript', jsx: 'javascript' };
+
+/**
+ * ★ 2026-10-08：**按语言名**读它已装包的清单。`null` 兼指「本仓未登记可用包」与「没装」——
+ *   调用方手上一般已有 `installed`/`local === 'unknown'` 可分辨（`list`/`check` 都带着）。
+ *   为什么要有它：本仓没有一个能拼的包名时，**不许**再拼一个出来（那就是「想当然」）。
+ */
+function readLangPkgJson(pkg: string): Record<string, any> | null {
+  const spec = moduleSpecOfPkg(pkg);
+  return spec === null ? null : readPkgJson(spec);
+}
 
 /** 读某 npm 包的 package.json（node_modules/{name}/package.json），不存在返回 null */
 function readPkgJson(name: string): Record<string, any> | null {
@@ -250,7 +265,7 @@ export function rangeOk(range: string, version: string): boolean {
  * 返回告警列表（空=兼容）。
  */
 export function verifyAbi(pkg: string): string[] {
-  const j = readPkgJson(moduleSpecOfPkg(pkg));
+  const j = readLangPkgJson(pkg);
   if (!j) return [];
   const core = coreTreeSitterVersion();
   if (!core) return [`${pkg}: 无法读取核心 tree-sitter 版本，跳过 ABI 校验`];
@@ -264,8 +279,10 @@ export function verifyAbi(pkg: string): string[] {
 
 /** 平台 prebuild 提示：检查 package 是否带当前平台的预编译 .node（缺则 install 时可能现场 node-gyp 编译） */
 export function checkPrebuild(pkg: string): string[] {
+  const spec = moduleSpecOfPkg(pkg);
+  if (spec === null) return [`${pkg}: 本仓未登记可用的 npm 包（languages.ts: pkgSpec: null）⇒ 没有 prebuild 可言`];
   const nm = findNodeModulesRoot();
-  const dir = path.join(nm, moduleSpecOfPkg(pkg));
+  const dir = path.join(nm, spec);
   const plat = process.platform; // win32 / darwin / linux
   const arch = process.arch; // x64 / arm64
   const tag = `${plat}-${arch}`;
@@ -286,8 +303,10 @@ export function checkPrebuild(pkg: string): string[] {
 function isInstalled(pkg: string): { installed: boolean; version?: string } {
   // 纯 fs 探 node_modules/tree-sitter-{pkg}/package.json（ESM 无 require；口径与 ts_kernel/probe 一致）。
   // 从模块位置（dist/src/tools/install_package_cli.js）和 cwd 向上找最近的 node_modules（同 probe.getNodeModulesRoot）。
+  const spec = moduleSpecOfPkg(pkg);
+  if (spec === null) return { installed: false };
   const nm = findNodeModulesRoot();
-  const dir = path.join(nm, moduleSpecOfPkg(pkg));
+  const dir = path.join(nm, spec);
   try {
     const j = JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf-8'));
     return { installed: true, version: typeof j.version === 'string' ? j.version : undefined };
@@ -329,7 +348,8 @@ export function collect(): LangPackRow[] {
     //   未装的包拿不到清单（要么联网查 registry，要么不猜）⇒ 'unknown'
     // ★★ 2026-10-08：连 `usesNan`（**因果判据**）一起留下 —— 「为什么不可用」那句要靠它才说得准
     //   （原先那句话把"模板非 node-gyp-build"当原因，那是**影子**；真因是 NAN 绑定）。
-    const localJson = installed ? readPkgJson(moduleSpecOfPkg(parent ?? l.pkg)) : null;
+    const specOfRow = moduleSpecOfPkg(parent ?? l.pkg);
+    const localJson = installed && specOfRow !== null ? readPkgJson(specOfRow) : null;
     const compat = templateCompatFromPkgJson(localJson);
     rows.push({
       lang: l.name,
@@ -368,7 +388,7 @@ export function installPrecheck(targets: string[], rows: LangPackRow[]): string[
     const r = findRowByName(rows, t);
     if (!r) continue;
     const realPkg = DERIVED[r.pkg] ?? r.pkg;
-    const local = templateCompatFromPkgJson(readPkgJson(moduleSpecOfPkg(realPkg)));
+    const local = templateCompatFromPkgJson(readLangPkgJson(realPkg));
     if (local === 'ok') continue;
     if (local === 'incompatible') {
       out.push(`${r.lang}（tree-sitter-${r.pkg}）：本地已装包 scripts.install ≠ 'node-gyp-build' ⇒ **老 nan.h 模板，载入必失败**`);
@@ -473,7 +493,7 @@ function main(): void {
         process.exit(1);
       }
       const realPkg = DERIVED[r.pkg] ?? r.pkg;
-      const localJson = readPkgJson(moduleSpecOfPkg(realPkg));
+      const localJson = readLangPkgJson(realPkg);
       const local = templateCompatFromPkgJson(localJson);
       // ★★ 2026-10-08 修一个**真缺陷**（用户追问"怎么会是死包呢"引出的）：
       //   原先 `local === 'incompatible'` 就**直接下结论、从不问上游** ⇒ 于是
