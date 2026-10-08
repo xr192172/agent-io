@@ -110,7 +110,7 @@ export const LANGUAGES: LanguageEntry[] = [
   { name: 'tsx', pkg: 'tsx', pkgSpec: 'tree-sitter-typescript', exts: ['.tsx'], kind: 'code', symbol_nodes: ['function_declaration', 'class_declaration', 'abstract_class_declaration', 'interface_declaration', 'type_alias_declaration', 'enum_declaration', 'method_definition'], import_nodes: ['import_statement', 'export_statement'], field_map: { name: 'name', parameters: 'parameters', return_type: 'return_type' } },
   { name: 'javascript', pkg: 'javascript', exts: ['.js', '.mjs', '.cjs'], kind: 'code', symbol_nodes: ['function_declaration', 'class_declaration', 'method_definition'], import_nodes: ['import_statement', 'export_statement'], field_map: { name: 'name', parameters: 'parameters' } },
   { name: 'jsx', pkg: 'jsx', pkgSpec: 'tree-sitter-javascript', exts: ['.jsx'], kind: 'code', symbol_nodes: ['function_declaration', 'class_declaration', 'method_definition'], import_nodes: ['import_statement', 'export_statement'], field_map: { name: 'name', parameters: 'parameters' } },
-  { name: 'vue', pkg: 'vue', exts: ['.vue'], kind: 'code', symbol_nodes: ['export_statement'], field_map: { name: 'name' } },
+  { name: 'vue', pkg: 'vue', pkgSpec: 'agent-io-grammar-vue', exts: ['.vue'], kind: 'code', symbol_nodes: ['export_statement'], field_map: { name: 'name' } },
   { name: 'html', pkg: 'html', exts: ['.html', '.htm'], kind: 'markup', symbol_nodes: ['script_element'], field_map: { name: 'name' } },
   { name: 'css', pkg: 'css', exts: ['.css'], kind: 'style', symbol_nodes: ['rule_set'], field_map: { name: 'name' } },
   { name: 'scss', pkg: 'scss', exts: ['.scss'], kind: 'style', symbol_nodes: ['rule_set'], field_map: { name: 'name' } },
@@ -185,7 +185,7 @@ export const LANGUAGES: LanguageEntry[] = [
   //   ★ 2026-09-29 补 import 边（本笔）：`import` 是**专用**节点，带 module/alias/names 字段
   //   （grammar/module.js L59）。★ 与 elixir 正相反：这里是真 import 声明节点，故可以声明。
   { name: 'haskell', pkg: 'haskell', exts: ['.hs'], kind: 'code', symbol_nodes: ['function', 'bind', 'class', 'data_type', 'newtype'], import_nodes: ['import'], field_map: { name: 'name' } },
-  { name: 'lua', pkg: 'lua', exts: ['.lua'], kind: 'code', symbol_nodes: ['function_declaration'], field_map: { name: 'name', parameters: 'parameters' } },
+  { name: 'lua', pkg: 'lua', pkgSpec: 'agent-io-grammar-lua', exts: ['.lua'], kind: 'code', symbol_nodes: ['function_declaration'], field_map: { name: 'name', parameters: 'parameters' } },
   { name: 'perl', pkg: 'perl', exts: ['.pl', '.pm'], kind: 'code', symbol_nodes: ['subroutine_declaration_statement'], field_map: { name: 'name' } },
   // ★ 2026-10-08 核实：派生名 `tree-sitter-r` 在 npm 上**不存在**，也没找到可用的 node 原生真名
   //   （只有别的生态的产物：`@lumis-sh/wasm-*` / `@arborium/*` / `@treelight/*` / `@lotsa/verdant-lang-*`
@@ -193,7 +193,7 @@ export const LANGUAGES: LanguageEntry[] = [
   //   ★ 这不是"我们没装"，是**上游没有** —— 要让提示说得出这句话，而不是给一个装不上的包名。
   //   ★ 社区有 scoped 包（`@davisvaughan/tree-sitter-r@1.3.0` / `@eagleoutice/tree-sitter-r@1.1.2`），
   //     但**未核实**（模板 / peer / 维护状况都没验）⇒ **不写进注册表**（写了就是另一种「想当然」）。
-  { name: 'r', pkg: 'r', pkgSpec: null, exts: ['.r', '.R'], kind: 'code', symbol_nodes: ['function_definition'], field_map: { name: 'name' } },
+  { name: 'r', pkg: 'r', pkgSpec: 'agent-io-grammar-r', exts: ['.r', '.R'], kind: 'code', symbol_nodes: ['function_definition'], field_map: { name: 'name' } },
   { name: 'dart', pkg: 'dart', exts: ['.dart'], kind: 'code', symbol_nodes: ['function_signature', 'class_definition'], field_map: { name: 'name', parameters: 'parameters' } },
 
   // === 脚本/Shell ===
@@ -203,13 +203,13 @@ export const LANGUAGES: LanguageEntry[] = [
   //   都是 wasm 或宿主插件，**不是** node 的 tree-sitter 语言对象）⇒ 显式声明 `pkgSpec: null`。
   //   ★ 这不是"我们没装"，是**上游没有** —— 要让提示说得出这句话，而不是给一个装不上的包名。
   //   ★ 同上：社区有 `@esdmr/tree-sitter-fish@3.7.1-2` / `@ndonfris/tree-sitter-fish@3.6.0`，**未核实**。
-  { name: 'fish', pkg: 'fish', pkgSpec: null, exts: ['.fish'], kind: 'code', symbol_nodes: ['function_definition'], field_map: { name: 'name' } },
+  { name: 'fish', pkg: 'fish', pkgSpec: 'agent-io-grammar-fish', exts: ['.fish'], kind: 'code', symbol_nodes: ['function_definition'], field_map: { name: 'name' } },
   { name: 'powershell', pkg: 'powershell', exts: ['.ps1', '.psm1'], kind: 'code', symbol_nodes: ['function_statement'], field_map: { name: 'name' } },
 
   // === 数据/配置 ===
   { name: 'json', pkg: 'json', exts: ['.json'], kind: 'data', symbol_nodes: ['object'], field_map: { name: 'name' } },
   { name: 'yaml', pkg: 'yaml', exts: ['.yaml', '.yml'], kind: 'data', symbol_nodes: ['block_mapping'], field_map: { name: 'name' } },
-  { name: 'toml', pkg: 'toml', exts: ['.toml'], kind: 'data', symbol_nodes: ['pair'], field_map: { name: 'name' } },
+  { name: 'toml', pkg: 'toml', pkgSpec: 'agent-io-grammar-toml', exts: ['.toml'], kind: 'data', symbol_nodes: ['pair'], field_map: { name: 'name' } },
   { name: 'xml', pkg: 'xml', exts: ['.xml'], kind: 'data', symbol_nodes: ['element'], field_map: { name: 'name' } },
 
   // === 系统/底层 ===
@@ -223,7 +223,7 @@ export const LANGUAGES: LanguageEntry[] = [
   //   （只有别的生态的产物：`@lumis-sh/wasm-*` / `@arborium/*` / `@treelight/*` / `@lotsa/verdant-lang-*`
   //   都是 wasm 或宿主插件，**不是** node 的 tree-sitter 语言对象）⇒ 显式声明 `pkgSpec: null`。
   //   ★ 这不是"我们没装"，是**上游没有** —— 要让提示说得出这句话，而不是给一个装不上的包名。
-  { name: 'crystal', pkg: 'crystal', pkgSpec: null, exts: ['.cr'], kind: 'code', symbol_nodes: ['method_def'], field_map: { name: 'name' } },
+  { name: 'crystal', pkg: 'crystal', pkgSpec: 'agent-io-grammar-crystal', exts: ['.cr'], kind: 'code', symbol_nodes: ['method_def'], field_map: { name: 'name' } },
   { name: 'ocaml', pkg: 'ocaml', exts: ['.ml', '.mli'], kind: 'code', symbol_nodes: ['let_binding'], field_map: { name: 'name' } },
   // ★★ 2026-10-08 修：**派生名不存在**。`pkg: 'f-sharp'` ⇒ 派生 `tree-sitter-f-sharp`，
   //   而 npm 上**没有这个包**（实测 `npm view tree-sitter-f-sharp` ⇒ E404）—— 真名是
@@ -247,7 +247,7 @@ export const LANGUAGES: LanguageEntry[] = [
   //   （只有别的生态的产物：`@lumis-sh/wasm-*` / `@arborium/*` / `@treelight/*` / `@lotsa/verdant-lang-*`
   //   都是 wasm 或宿主插件，**不是** node 的 tree-sitter 语言对象）⇒ 显式声明 `pkgSpec: null`。
   //   ★ 这不是"我们没装"，是**上游没有** —— 要让提示说得出这句话，而不是给一个装不上的包名。
-  { name: 'vhdl', pkg: 'vhdl', pkgSpec: null, exts: ['.vhdl', '.vhd'], kind: 'code', symbol_nodes: ['entity_declaration'], field_map: { name: 'name' } },
+  { name: 'vhdl', pkg: 'vhdl', pkgSpec: 'agent-io-grammar-vhdl', exts: ['.vhdl', '.vhd'], kind: 'code', symbol_nodes: ['entity_declaration'], field_map: { name: 'name' } },
   { name: 'verilog', pkg: 'verilog', exts: ['.v', '.sv'], kind: 'code', symbol_nodes: ['module_declaration'], field_map: { name: 'name' } },
   // ★ 2026-10-08 核实：派生名 `tree-sitter-tcl` 在 npm 上**不存在**，也没找到可用的 node 原生真名
   //   （只有别的生态的产物：`@lumis-sh/wasm-*` / `@arborium/*` / `@treelight/*` / `@lotsa/verdant-lang-*`
