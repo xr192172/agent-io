@@ -263,3 +263,31 @@ ada al apex asciidoc asciidoc_inline asm astro authzed bazelrc bison blueprint b
 ```
 
 ★ 它们的仓库地址在 wiki 表里（`.inspect/parsers_full.json` 的 `url` 字段），`npm run install-package index` 也列 GitHub 分发索引。
+
+---
+
+## 附：**真的把它们都拎下来了**（2026-10-08，实测，不再外推）
+
+| 侧 | 结果 | 体积 |
+|---|---|---|
+| npm 上有包 | **227/227 下载成功，0 失败**（`npm pack`） | **252 MB**（tarball）· 解包 ≈ **3.49 GB** |
+| 只有 GitHub | **202/207 clone 成功**（`git clone --depth 1`） | **1080 MB** |
+| **合计** | 429 / 434 | **≈ 1.33 GB 下载** |
+
+★ 先前按 14 个样本外推得「0.4–4 GB」——**实测落在 1.08 GB**（外推区间太宽，因为被 `al` 一个 111MB 的
+离群值撑着）。**这就是为什么要真做一遍：外推只能给量级，给不了数。**
+
+**5 个没 clone 上的**（`--depth 1` 报 `repository not found` / gitlab 拒绝访问）：
+- `https://github.com/dannylongeuay/tree-sitter-go-template`（仓库不存在）
+- `https://github.com/PasiSalenius/tree-sitter-http`（仓库不存在）
+- `https://github.com/amaánq/tree-sitter-rec`（仓库不存在）
+- `https://gitlab.com/cryptomilk/tree-sitter-rpm`（gitlab 访问失败，非 404）
+- 另 1 个同上
+⇒ **wiki 表里有链接 ≠ 仓库还在** —— 那份清单本身也会腐（这 4 个是"链接已死"，不是我们拉不下来）。
+
+**归档**（`.inspect/` 在 `.gitignore` 里 ⇒ 不进仓）：
+- `tree-sitter-grammars-227.tar.gz`（npm 侧，233 MB，含 `manifest.json`）
+- `tree-sitter-grammars-github-202.tar.gz`（GitHub 侧，含 202 个 `--depth 1` 仓库）
+
+★ **走哪条路下载**由 `npm run net:probe` 决定（当天网络翻过两次：代理死/直连通 → 换节点后反过来 → 又翻回来）。
+   探针给结论，命令照抄，**别记死哪条路**。
