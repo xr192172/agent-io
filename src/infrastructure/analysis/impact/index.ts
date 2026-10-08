@@ -181,8 +181,38 @@ export async function buildImpactGraph(root: string): Promise<GraphResult> {
     }
   }
 
-  // 辅助：对 consumer 文件内未解析调用，按「前缀→目标文件」或「全局唯一」找出唯一候选 provider 文件。
-  // 返回 provider 相对路径（命中）或 null。
+  /**
+   * 跨文件调用边 —— **只在"作用域可达"可证时才建**（宁漏不错，与本文件头注同一取向）。
+   *
+   * 「作用域可达」只有三种**证据**（精度从高到低，见下面的 `reachable`）：
+   *   ① **前缀绑定**：`svc.Process` 的 `svc` 经 import bindings **唯一**连到某文件，且该文件确实导出 `Process`；
+   *   ② **显式依赖**：裸名 —— provider 是 consumer 的 **import 目标**（有 import 边）；
+   *   ③ **同包语义**：裸名 —— provider 与 consumer **同目录且同语言**
+   *      （Go/Python 等"同包"：同目录文件互不 import 却合法互调；**跨语言同目录不算**）。
+   * ②③ 还要求"全局唯一"（`providerOfSymbol` 恰好一个）：重名时**宁可不建边**。
+   *
+   * ★ 为什么长成这样（历史，别再退回"兜底+叠闸"的形状）：
+   *   原来这里是「裸名 → 全局同名唯一」一条兜底。2026-10-08 用**两条独立路径对照**
+   *   （现扫 `buildImpactGraph` vs 索引库 `edges`）逮到 91 条只有现扫有的边；
+   *   逐条归因（有没有依赖支撑 / 索引是否过期 / 同目录）后核实 **66 条是假边** ——
+   *   例：`observe-lang-go/probe/tiered.go` 把**局部变量** `opt` 当函数调，
+   *   而全仓恰好只有 `src/presentation/cli/cli.ts` 导出 `opt` ⇒ 连出一条 **Go → TS** 的边。
+   *   ⇒ 单有"同名唯一"**不构成**调用证据；必须有上面三种之一。
+   *   ★ 家族检查（TS/JS 家族互通）**内嵌进 ③ 的"同语言"**，不再单列一道闸。
+   */
+  // ★★ 「**目录即包**」是 **Go/Python 等**的语义 —— **TS/JS 家族没有**（它们必须显式 import）。
+  //   2026-10-08 实测踩到：`scripts/gen_agents.mjs` 未 import 任何本地文件，但它有个未解析调用 `pad`，
+  //   而**同目录**的 `scripts/net_probe.mjs` 恰好导出一个顶层符号 `pad` ⇒ 造出一条**假边**。
+  //   （反例正是 Go：同目录文件互不 import 却**合法互调**，那 5 条 `.go→.go` 必须保留。）
+  const isSamePackage = (a: string, b: string): boolean => {
+    const ea = path.extname(a);
+    const eb = path.extname(b);
+    if (isTsJsExt(ea) || isTsJsExt(eb)) return false;   // ★ TS/JS 家族：只认显式 import（②）
+    return ea === eb && path.posix.dirname(a) === path.posix.dirname(b);
+  };
+  const reachable = (consumer: string, prov: string): boolean =>
+    (edges.get(consumer)?.has(prov) ?? false) || isSamePackage(consumer, prov);
+
   const resolveCallTarget = (
     consumer: string,
     expr: string,
@@ -190,38 +220,18 @@ export async function buildImpactGraph(root: string): Promise<GraphResult> {
     providerOfSymbol: Array<{ rel: string; sym: ParsedSymbol }> | undefined,
   ): string | null => {
     const dot = expr.indexOf('.');
-    // 带前缀引用 `svc.Process` → 前缀必须连到某个项目内文件才信任
     if (dot >= 0) {
-      const prefix = expr.slice(0, dot);
-      const cands = fileBindings.get(consumer)?.get(prefix);
-      if (cands && cands.size === 1) {
-        const prov = [...cands][0];
-        // 目标文件确实导出该 callee → 精确建边
-        if (nameIndex.get(callee)?.some((c) => c.rel === prov)) return prov;
-      }
-      // 前缀解析不到唯一目标 → 不建边（无法确证，宁不漏错）
-      return null;
+      // ① 前缀绑定：前缀必须**唯一**连到某个项目内文件，且该文件**确实导出** callee
+      const cands = fileBindings.get(consumer)?.get(expr.slice(0, dot));
+      if (!cands || cands.size !== 1) return null;
+      const prov = [...cands][0];
+      if (prov === consumer) return null;
+      return nameIndex.get(callee)?.some((c) => c.rel === prov) ? prov : null;
     }
-    // 裸标识符 `computeSum`：保底走"全局唯一"（多候选时不建边，防误报）
-    // ★★ 2026-10-08 修（两道闸）：
-    //   ① **同语言族**（TS/JS 家族互通；其余要求扩展名相同）—— 杀掉跨语言误连
-    //      （实测：`observe-lang-go/probe/tiered.go` 把**局部变量** `opt` 当函数调，
-    //        全仓恰好只 `src/presentation/cli/cli.ts` 导出 `opt` ⇒ 连出 **Go → TS**）
-    //   ② **必须有依赖关系支撑**：consumer 有到 provider 的 import 边，**或**两者**同目录**
-    //      （Go/Python 等"同包"语义：同目录文件互不 import 却可互调）。
-    //      ★ 为什么要有 ②：把 91 条差异**逐条重解析 consumer 的 import 亲自核**过 ——
-    //        **66 条跨目录的，consumer 根本没 import provider** ⇒ 只能是"全局同名唯一"匹配来的**假边**。
-    //      本文件头注写着该兜底是为了「重名时不建边（**避免误报**）」⇒ 无依赖支撑的边正违背该意图。
-    if (providerOfSymbol && providerOfSymbol.length === 1 && providerOfSymbol[0].rel !== consumer) {
-      const prov = providerOfSymbol[0].rel;
-      const ea = path.extname(consumer);
-      const eb = path.extname(prov);
-      const sameFamily = isTsJsExt(ea) && isTsJsExt(eb) ? true : ea === eb;
-      const imported = edges.get(consumer)?.has(prov) ?? false;
-      const sameDir = path.posix.dirname(consumer) === path.posix.dirname(prov);
-      if (sameFamily && (imported || sameDir)) return prov;
-    }
-    return null;
+    // ②③ 裸名：先要求"候选唯一"，再要求"作用域可达"
+    const prov = providerOfSymbol?.length === 1 ? providerOfSymbol[0].rel : null;
+    if (!prov || prov === consumer) return null;
+    return reachable(consumer, prov) ? prov : null;
   };
 
   const edges: EdgeMap = new Map();

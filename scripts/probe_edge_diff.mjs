@@ -139,6 +139,7 @@ console.log(`\n★ 弱证据 ${bl.weak.length} 条再分档：**同目录 ${same
 console.log(`  同目录的按扩展名: ${byLang(sameDir).map(([k2, n]) => `${k2}×${n}`).join('  ')}`);
 console.log(`     ⇒ Go 同目录 = 同一 package（合法）；.ts/.mjs 同目录仍可疑`);
 console.log(`  跨目录的按扩展名: ${byLang(crossDir).map(([k2, n]) => `${k2}×${n}`).join('  ')}`);
+console.log('  ★ 全部弱证据（7 条）:'); for (const [a, b] of pl) console.log('     ' + a + '  →  ' + b);
 console.log('  跨目录弱证据样例（**最像假边**）:');
 for (const [a, b] of crossDir.slice(0, 8)) console.log(`    ${a}  →  ${b}`);
 console.log(`\n★ 反向（只在索引 ${oc2.length} 条 = **图漏了的**）样例:`);
