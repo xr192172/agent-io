@@ -165,6 +165,8 @@ export async function buildImpactGraph(root: string): Promise<GraphResult> {
     }
     for (const imp of p.parsed.imports) {
       if (!imp.bindings || imp.bindings.length === 0) continue;
+      // ★ 同上一处：type-only 在运行时**没有绑定**（擦除）⇒ 不该拿它去连调用边的前缀。
+      if (imp.type_only) continue;
       const target = resolveImportTarget(p.rel, imp.source, rels, exts);
       if (!target) continue;
       for (const b of imp.bindings) {
@@ -221,6 +223,15 @@ export async function buildImpactGraph(root: string): Promise<GraphResult> {
   for (const p of parses) {
     // import 边（相对优先；包路径回退——多语言 import 连到项目内文件）
     for (const imp of p.parsed.imports) {
+      // ★★ 2026-10-08 修：**type-only 不算依赖边** ——
+      //   口径在本仓是**四处一致**的意图：`project_root/index.ts:1102`（`if (imp.type_only) continue; // TS import type：运行时擦除、不算边`）、
+      //   `harvest_closure.ts:362`、`dead_deps.ts:419`、`health/index.ts:841` 都读了；
+      //   **只有本文件没读** ⇒ 同一个意图两处实现、口径分叉（本仓头号病）。
+      //   ★ 怎么发现的：拿"现扫的图"对"索引库的边"（两条独立路径）——
+      //     实测 `src/infrastructure/parse/languages.ts` 的依赖者 **现扫 17 / 索引 16**，
+      //     差的那一个正是 `parse/index.ts` 的 `export type { LanguageEntry } from './languages.js'`
+      //     （索引库里它的 `type_only=1`，故不进 edges）。
+      if (imp.type_only) continue;
       const target = resolveImportTarget(p.rel, imp.source, rels, exts);
       if (!target) continue;
       addEdge(p.rel, target, { kind: 'import', line: imp.line, detail: `import '${imp.source}'`, target_file: target });

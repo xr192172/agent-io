@@ -83,7 +83,8 @@
     "probe:extract": "node scripts/probe_extract_quality.mjs",
     "probe:extract-hard": "node scripts/probe_extract_hard.mjs",
     "probe:xfile": "node scripts/probe_xfile_resolve.mjs",
-    "probe:closure": "node scripts/probe_closure_multi.mjs"
+    "probe:closure": "node scripts/probe_closure_multi.mjs",
+    "probe:impact": "node scripts/probe_impact_reverse.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
