@@ -10,6 +10,19 @@
  *   `behavior/index.ts: langOfFile` / `tools/parse_capability.ts: granularityOf`；
  * 另有 `tools/contract_gate.ts: scanContracts` 一处**静默跳过**（`if (!l) continue`）。
  *
+ * ★★ 2026-10-08 又发现一个**反向**的坑（本笔自己踩的）：`code_health` 报「未读后缀」时，
+ *   我**又手写了一句**「补：npm i tree-sitter-markdown」—— 而本机 `tree-sitter-markdown@0.7.1`
+ *   **就在磁盘上**、只是过不了真筛子 ⇒ **那句建议是错的（装 / 重装都无用）**。
+ *   ⇒ 已把 `code_health` 改成**调本函数**（判据只有一个落点），并在这里把
+ *     「**没装**」与「**装了但是死包**」**分开说**（判据来自 `probe.languagePackagePresence`）。
+ *   ★ 教训：**"缺什么"这件事，第二处手写就一定会说谎** —— 哪怕刚写完另一半。
+ *
+ * ✅ 截至 2026-10-08：上面那 6 处**全部**已改调本函数 —— `kernel.ts:1628`（加载失败）、
+ *   `rename_symbol/core.ts:111` + `languages/ts.ts:104`、`behavior/index.ts:1143`、
+ *   `parse_capability.ts:65`、`contract_gate/core.ts:284`、`adapters/registry.ts:63`；
+ *   **`code_health` 的「未读后缀」是最后一个补上的消费者**（同一天先是我手写了一版错的）。
+ *   ⇒ 那一段的"现状"是**历史注记**，别再当现行状态读。
+ *
  * 本模块把那句话升级成**四要件一句话**（不给四行废话，也不刷屏）：
  *   ① 缺哪个语言的哪个能力（ext 反查语言名；capabilityId 可选）
  *   ② 装什么包（`tree-sitter-<pkg>` ★ 含钉版；不在注册表则直说"注册表里还没有它"）
@@ -26,8 +39,8 @@
  *   即使编号漂移，用 id 也能搜到（比裸编号稳，比裸文件名准）。
  */
 
-import { findLanguageByExt } from './languages.js';
-import { isExtSupported } from './probe.js';
+import { findLanguageByExt, languageModuleSpec } from './languages.js';
+import { isExtSupported, languagePackagePresence } from './probe.js';
 import {
   aggregateGaps,
   diagnoseCapabilities,
@@ -144,7 +157,15 @@ export function missingLanguageHint(ext: string, capabilityId?: string): string 
   } else if (!installed) {
     const pin = PACK_PINS[registered.pkg];
     const spec = pin ? `tree-sitter-${registered.pkg}@${pin}` : `tree-sitter-${registered.pkg}@latest（未登记钉版）`;
-    packText = `装包：${spec}，或 npm run install-package install ${registered.name}${SIEVE_HINT}`;
+    // ★★ 2026-10-08：「**没装**」与「**装了但是死包**」必须分开说 —— 见本文件头注那条反向的坑。
+    //   判据取自 probe 的**唯一落点** `languagePackagePresence`（真筛子住那儿），此处不重判。
+    packText =
+      languagePackagePresence(languageModuleSpec(registered.pkg, registered.pkgSpec)) === 'incompatible'
+        ? `装包：**本机已装** tree-sitter-${registered.pkg}，但它**过不了真筛子**（模板非 node-gyp-build）` +
+          `⇒ 载入必失败，**装 / 重装都无用**。要真读它只有两条路：` +
+          `① 等上游换模板（先 \`npm run install-package check ${registered.name}\` 联网查 registry）；` +
+          `② 自己编一份（照 ${DOC}）`
+        : `装包：${spec}，或 npm run install-package install ${registered.name}${SIEVE_HINT}`;
   } else {
     packText = `装包：tree-sitter-${registered.pkg} 已装（不是缺包；若解析仍失败按钉版重装：npm run install-package install ${registered.name}）`;
   }

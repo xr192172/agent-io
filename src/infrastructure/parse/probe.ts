@@ -141,6 +141,23 @@ export function isLanguageInstalled(pkgName: string): boolean {
   return false;
 }
 
+/**
+ * ★★ 2026-10-08：「**没装**」与「**装了但是死包**」是**两件事** —— 处置相反。
+ *
+ * 由来（本笔自己踩的，实测）：`code_health` 报「未读后缀」时我顺手写了一句
+ * 「补：npm i tree-sitter-markdown」；而本机 `tree-sitter-markdown@0.7.1`
+ * **就在磁盘上**，只是模板不适配（`install-package list` 明写 ❌ 模板不兼容 ⇒ 载入必失败）
+ * ⇒ **那句建议是错的**：装 / 重装都无用（正是 `lang_hint.ts` 头注批过的"不诚实提示"）。
+ *
+ * 判据**复用本文件的真筛子**（`resolvedIsLoadable`）⇒ 不另立第二份。参数收**模块说明符**
+ * （就是 `languageModuleSpec(...)` 那个串，也是 `describeUnmatchedExt().pkg` 给的那个），
+ * 这样调用方**不必**再知道「pkg 名 / 说明符」的区别。
+ */
+export function languagePackagePresence(moduleSpec: string): 'usable' | 'incompatible' | 'absent' {
+  if (resolvePackage(moduleSpec) === null) return 'absent'; // 解析不到 = 磁盘上没有
+  return resolvedIsLoadable(moduleSpec) ? 'usable' : 'incompatible'; // 在，但过不了真筛子
+}
+
 /** 探测可用的语言（LANGUAGES 中可解析且过真筛子的子集） */
 export function probeInstalledLanguages(): LanguageEntry[] {
   return LANGUAGES.filter((l) => isLanguageInstalled(l.pkg));

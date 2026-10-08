@@ -37,6 +37,8 @@
 import { parseFileFull, parseAstRoot, parseAstRootSync, listSupportedExtensions, resolveProjectImport, type ParsedSymbol, type SyntaxNodeLike } from '../../parse/index.js';
 import { codeSourceExts, isTestFileName, partitionByCodeLang, describeUnmatchedExt, type UnmatchedExtFact } from '../../parse/source_exts.js';
 import { boundsSkipFromExcluded, type ScanBounds } from '../../scan_bounds.js';
+import { missingLanguageHint } from '../../parse/lang_hint.js';
+import { languagePackagePresence } from '../../parse/probe.js';
 import { collectSourceFiles } from '../../authoring/version_upgrade/detect.js';
 
 // ── 对外类型 ─────────────────────────────────────────────────
@@ -730,7 +732,14 @@ function resolveImportFile(fromRel: string, source: string, rels: Set<string>, e
  */
 function unreadWhy(u: UnmatchedExtFact & { count: number }): string {
   if (u.pkg) {
-    return `没读到（缺解析器）：注册表里有这门口语（${u.lang}），语言包 ${u.pkg} 没装或载不入 ⇒ 补：npm i ${u.pkg}`;
+    // ★★ 2026-10-08：**改调 `lang_hint` 的既有实现**，不再自己拼一句。
+    //   为什么（本笔自己犯的错，实测抓到）：我原先写「补：npm i tree-sitter-markdown」——
+    //   而本机 `tree-sitter-markdown@0.7.1` **就在磁盘上**，只是模板不适配 ⇒ **装 / 重装都无用**。
+    //   那正是 `lang_hint.ts` 头注批过的「不诚实提示」，而我**又造了第五份**（同一件事的第二处实现）。
+    //   ⇒ 判据只有一个落点：`missingLanguageHint`（四要件：缺哪门 / 装什么 / 照哪份清单 / 缺多少，
+    //     且装包前带**真筛子**提醒；「没装」与「装了但是死包」在那里已分开说）。
+    //   本文件的职责只是「**哪几个后缀没读到、各几个**」这个事实。
+    return missingLanguageHint(u.ext);
   }
   // ★ 空扩展名**单列一句**：它和「注册表里没这门口语」不是同一回事 ——
   //   没有后缀 ⇒ 内核**按后缀挑解析器**这件事本身无从下手（不是缺一门语言）。
@@ -738,6 +747,24 @@ function unreadWhy(u: UnmatchedExtFact & { count: number }): string {
   return u.ext === ''
     ? '没读到（无后缀）：这些文件没有扩展名（Makefile / LICENSE 之类），内核按后缀挑解析器 ⇒ 挑不出来'
     : `没读到（非源码后缀）：语言注册表里没有 ${u.ext} 这门口语，内核不认识它`;
+}
+
+/**
+ * summary 行里那个括号标记（纯函数）。
+ * ★ 必须区分「**没装**」与「**装了但是死包**」—— 实测：`.md` 的包**就在磁盘上**，
+ *   而旧的 `(缺tree-sitter-markdown)` 会让读的人去装一个**已经在**的东西，**装完还是不可用**。
+ *   ★ `usable` 出现在这里就是矛盾（这些后缀正是因为**用不了**才进未读）⇒ 如实印出来，别粉饰。
+ */
+function unreadMark(u: UnmatchedExtFact & { count: number }): string {
+  if (!u.pkg) return '';
+  switch (languagePackagePresence(u.pkg)) {
+    case 'absent':
+      return `(未装${u.pkg})`;
+    case 'incompatible':
+      return '(已装但过不了真筛子)';
+    default:
+      return '(可载入?——与"未读"矛盾，请查)';
+  }
 }
 
 export async function analyzeHealth(root: string, options: HealthOptions = {}): Promise<HealthReport> {
@@ -1160,7 +1187,7 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
       : `　[未读后缀（无解析器）${unparsed
           .slice(0, UNREAD_SHOWN)
           // ★ 空扩展名要有说得出口的标签 —— 否则这一项印出来是裸的 `×3`，读的人不知道那是什么。
-          .map((u) => `${u.ext === '' ? '（无后缀）' : u.ext}×${u.count}${u.pkg ? `(缺${u.pkg})` : ''}`)
+          .map((u) => `${u.ext === '' ? '（无后缀）' : u.ext}×${u.count}${unreadMark(u)}`)
           .join(' ')}` +
         (unparsed.length > UNREAD_SHOWN ? ` …余 ${unparsed.length - UNREAD_SHOWN} 种` : '') +
         `｜合计 ${unparsed.reduce((n, u) => n + u.count, 0)} 个文件本次没读；逐条见 bounds.skipped]`;
