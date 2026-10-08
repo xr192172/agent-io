@@ -29,4 +29,10 @@ export const PACK_PINS: Record<string, string> = {
   //   `.inspect/fx-css`，核心 0.21.1）`setLanguage` + `parse` 出 `stylesheet` ✓ 真能读。
   //   ★ 注意**不能装 latest**：0.25.0 要核心 `^0.25.0`，装了当场 ERESOLVE。
   css: '^0.21.0',
+  // ★★ 2026-10-08 新增：本机**实测可载入**之后才登记（不是查 registry 就登记）。
+  //   `tree-sitter-bash` 曾**装上了却从未声明**（不记账）⇒ 这次一并补上。
+  bash: '^0.21.0',
+  // ★ `tree-sitter-solidity` 用**精确版本**：`^1.2.11` 会浮到 1.2.13，而 1.2.13 的 peer 是
+  //   `tree-sitter ^0.25.0` ⇒ 整棵树 ERESOLVE（本笔实测踩到）。1.2.11 实测可载入。
+  solidity: '1.2.11',
 };
