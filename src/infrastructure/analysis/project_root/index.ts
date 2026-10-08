@@ -458,7 +458,7 @@ export interface LangResolveCtx {
  * 扩展点：本函数按文件扩展名分派到 `LANG_RESOLVERS[lang]`；未注册的语言走
  * `resolveGenericLangImport` 通用兜底（把 import 字符串按分隔符转路径，从 importer
  * 目录/工程根逐级落盘）。AST import 提取由 ts_kernel.parseFileFull 通用完成——
- * LANGUAGES 注册表已覆盖 150+ 语言，故【加一个新语言 = 给 LANG_RESOLVERS 加一条
+ * LANGUAGES 注册表覆盖**本仓已登记的 55 条**（★ 别写「150+」—— 那是上游的量级，且该数无出处），故【加一个新语言 = 给 LANG_RESOLVERS 加一条
  * 扩展名→resolver 映射】，AST 层零改动。
  */
 export function resolveLangImport(absFile: string, imp: ParsedImport, ctx: LangResolveCtx): string | null {

@@ -253,7 +253,17 @@ The design view is what gets iterated; the actual view is what the code currentl
 
 ## Capability Matrix & Multi-language Support
 
-Tools are built on a **168+ language AST parser** (tree-sitter) loaded on demand. The core foundation `ts_kernel` fully supports every installed language (symbols / imports / call edges / type references); some refactoring features are rolled out per language tier:
+Tools are built on tree-sitter parsers, loaded on demand.
+
+> NOTE (corrected 2026-10-08): this section used to say "**168+ language AST parser**" — **that number had no
+> source**. Measured from the list the official docs point to (`tree-sitter.wiki.git` → `List-of-parsers.md`):
+> **509 table rows / 440 distinct parser names / 482 repos**, of which **227 have an npm package** and **213 are
+> GitHub-only**. **This repo registers only 55**, and **11 of those had package names that do not match npm
+> reality** (now declared explicitly via `pkgSpec`; re-runnable check: `npm run lang:check`).
+> **Do not describe this repo's capability with upstream's magnitude.**
+
+The core foundation `ts_kernel` supports symbols / imports / call edges / type references for every **installed
+and usable** language; some refactoring features are rolled out per language tier:
 
 - **full_ast**: Go / TypeScript / JS family in full; Python depending on the feature
 - **regex_fallback**: a few features fall back to regex for some languages

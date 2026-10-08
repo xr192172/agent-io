@@ -2,7 +2,13 @@
  * Tree-sitter Kernel - 语言注册表
  *
  * 元数据：ext → npm 包名 + tree-sitter 节点类型 → 我们的 ParsedSymbol 字段
- * 来源：tree-sitter 官方 https://github.com/tree-sitter/tree-sitter (150+ 语言)
+ * 来源：tree-sitter 官方**指向的**解析器清单 = wiki 的 `List-of-parsers`
+ *   （https://github.com/tree-sitter/tree-sitter/wiki/List-of-parsers）
+ *   ★★ 2026-10-08 实测（`git clone tree-sitter.wiki.git`）：**表 509 行 / 440 个去重解析器名 / 482 个仓库**。
+ *   ★★ **更正**：这里原写「(150+ 语言)」—— **官方 README 与文档站都没有这个数**
+ *   （官方 README 只有 1153 字节、是个指路桩；文档站只说「已知解析器清单在 wiki 里」）
+ *   ⇒ 那是**本仓自己的旧说法**，别再当事实引用（`docs/` 里另有一处写「168+」同属此类）。
+ *   ★ 本仓注册表是 **55 条**，不是 150+/440 —— 那是「上游有」，不是「我们支持」。
  *
  * 注释：
  *   - name: 语言的 npm 包名
@@ -81,7 +87,15 @@ export interface LanguageEntry {
   };
 }
 
-/** 150+ 语言注册表（npm 包名已与官方仓库对齐） */
+/**
+ * 本仓语言注册表（**55 条**；★ 不是 150+/440 —— 那个量级是"上游有"，不是"我们支持"）。
+ *
+ * ★★ 2026-10-08 **更正**原注「npm 包名已与官方仓库对齐」——**这句是假的**：逐条查过 npm，
+ *   55 条里 **11 条的派生名不成立**（`f-sharp` ⇒ 真名 `tree-sitter-fsharp`；`tsx`/`jsx` 住在别人的包里；
+ *   `erlang r less nim crystal vhdl tcl protobuf rego fish` 的派生名在 npm 上根本不存在）。
+ *   现用 `pkgSpec` **三态声明**（未写 = 约定派生 / 字符串 = 真名 / `null` = 本仓未登记可用包），
+ *   判据**可复跑**：`npm run lang:check`（逐条把声明与 npm 事实对照）。
+ */
 export const LANGUAGES: LanguageEntry[] = [
   // === Web/JS 生态 ===
   // TS 符号宇宙 v6 扩容：type_alias/enum/abstract class 进 nodes——

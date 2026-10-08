@@ -245,7 +245,7 @@
 
 5. **批量操作** —— ✅ **已实施**：新增 `rename_symbols` 跨文件符号批量改名。先全部 dry\_run 算结构化 diff，任一条被阻断→整体不落盘；全部可落盘才逐条落盘。
 
-**跨语言 import 边（扩展点）**：AST import 提取由 `ts_kernel.parseFileFull` 通用完成（`LANGUAGES` 注册表覆盖 150+ 语言）；`resolveLangImport` 按扩展名分派到 `LANG_RESOLVERS`（已注册 `.go`/`.py`），未注册语言走 `resolveGenericLangImport` 通用兜底（分隔符→路径）。**加新语言 = 给** **`LANG_RESOLVERS`** **加一条** **`[ext]→resolver`** **映射，AST 层零改动。**
+**跨语言 import 边（扩展点）**：AST import 提取由 `ts_kernel.parseFileFull` 通用完成（`LANGUAGES` 注册表覆盖**本仓已登记的 55 条**；★ 原写「150+」是**无出处**的说法，2026-10-08 更正）；`resolveLangImport` 按扩展名分派到 `LANG_RESOLVERS`（已注册 `.go`/`.py`），未注册语言走 `resolveGenericLangImport` 通用兜底（分隔符→路径）。**加新语言 = 给** **`LANG_RESOLVERS`** **加一条** **`[ext]→resolver`** **映射，AST 层零改动。**
 
 **引用查找** —— ✅ **已实施（2026-08）**：新增 `find_references` 工具——改/删一个符号前查"谁引用了它"，只读不落盘，复用 rename 闭包/引用图内核。已入 AGENTS.md 触发点表。
 
