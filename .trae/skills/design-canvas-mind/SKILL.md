@@ -15,6 +15,13 @@ description: "design-canvas 工具集心智外衣：注入活 DSL + 能力地图
 
 通用 LLM 的认知里**不天然装着**这套工具的心智，其习惯用法是挂在会话外的。开工前必须把下面三样注入工作记忆，不允许"边做边猜"：
 
+> ★★ 第 0 样：**先认"三个层"**。「DSL」不是一个文件，是三样（① live 实际快照=只读、② base 设计 DSL=**会被重新生成**、
+> ③ overlay 设计意图层=**独立保留**、另有 archive 下线库）。**只写一处**：表在
+> `.trae/skills/design-canvas-router/SKILL.md` 的「第零层」。纪律一句话：
+> **"为什么"写 ③（`design_intent`），"是什么"改 ②（`edit_dsl`）。**
+> （★ 2026-10-08 实测：这条心智此前**只住在 `src/infrastructure/storage_overlay.ts` 的注释里**，
+> README / router / 本文都 0 次 ⇒ 谁都不会想到"有三个"。）
+
 1. **活的 DSL**：当前 feature 的 live 态（`getDSL(feature)` / `/api/load`），而不是脑补一个 fork 版真相。DSL 只有你每次任务都往里写才是活的，不写就只是过期快照。
 2. **能力地图**：见第四节，心里有一张"每个愿望 → 该伸手哪个工具"的接线表。
 3. **习惯用法**：工具调用走 MCP/HTTP/CLI 三套出口之一，优先即席编排既有工具，再考虑"要不要造新工具"。
@@ -49,7 +56,9 @@ description: "design-canvas 工具集心智外衣：注入活 DSL + 能力地图
 | **中观（文件/链）** | 按文件/宿主节点「真跑+查数据+对账」 | **`reconcile_chain`**（本方法论的样板实现） |
 | 微观（单函数） | 纯函数子集 / 证据 | `trace_exec` / `trace_evidence` |
 
-对应的 observe 数据线：`log_query`（查事件）→ `judge`（逐事件判定偏差）→ `chain.rebuildChains/matchChainDecl`（重建实测链 + 链路契约匹配）。
+对应的 observe 数据线：`observe_log`（按文件查事件）→ `observe_judge`（批量判定偏差）→ 重建实测链 + 链路契约匹配（在 `reconcile_chain` 内部完成）。
+> ★ 2026-10-08 更正：此处旧写 `log_query` → `judge` —— **两个都不是工具名**（`log_query` 是 `infrastructure/analysis/observe/` 里的模块；`judge` 无此名）。
+> 照旧名调用会撞 `unknown tool`。**名字以 `capability_map` 的输出为准**（它从注册表派生，不漂）。
 
 **样板**：`reconcile_chain` 就是把「后工具自动前置 + 缓存跳过 + 一次命令三件事」落地的参考实现。它先看宿主下有没有 detail 链，没有就自动派生（缓存有过就跳过），再自动发现事件文件、按链过滤、judge、rebuild、契约匹配，最后 `not_run` 诚实标注。功能线按"分层 → 复用既有砖 → 才能固化"来的。
 

@@ -357,11 +357,15 @@ CI 另跑 `archify vendor doctor`（守第三方 vendor 的 renderer + schema + 
 
 仓库内置面向 Agent 的 skill（`.trae/skills/`）：
 
-* **agent-io-router**：渐进披露路由，按「遇到什么问题 → 调哪个工具」分层定位，先查询已有能力再决定是否新建工具；
+* **design-canvas-router**：渐进披露路由，按「遇到什么问题 → 调哪个工具」分层定位，先查询已有能力再决定是否新建工具；
 
-* **agent-io-mind**：心智外衣，提供能力地图、需求到工具链的编排、工具调用缓存与诚实交付纪律。
+* **design-canvas-mind**：心智外衣，提供能力地图、需求到工具链的编排、工具调用缓存与诚实交付纪律。
 
-使用本工具链前建议先加载这两个 skill，避免重复造轮子。
+使用本工具链前建议先加载这两个 skill，避免重复造轮子。★ 另：工具面上还有 **`capability_map`**（只读导航，6 条能力线 × 线内工具 × 何时用它）——**拿不准走哪条线时先调它**。
+
+> ★ 2026-10-08 更正：这两条 skill 此前在 README 里写作 `agent-io-router` / `agent-io-mind`，
+> 而磁盘上一直是 `design-canvas-router` / `design-canvas-mind`（改名时漏了这份 README）
+> ⇒ 照 README 去找会 404。**名字以 `.trae/skills/` 下的目录名为准。**
 
 ## License
 

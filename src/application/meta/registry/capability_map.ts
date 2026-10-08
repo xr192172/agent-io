@@ -95,7 +95,14 @@ export const LANE_META: ReadonlyArray<Omit<Lane, 'tools'>> = [
     id: 'design',
     label: '设计 / 活文档',
     desc: 'DSL 读写、feature 生命周期、渲染与一致性。',
-    direct: ['get_dsl', 'edit_dsl'],
+    // ★★ 2026-10-08 补 `import_project` + `design_intent`（**这是"门"，原来不在面上**）。
+    //   实测（`facesOf` 输出）：编排面 9 个工具里 design 线**只露了 `get_dsl` / `edit_dsl`**，
+    //   而 `import_project`（扫描代码生成 DSL —— **这条线的入口**）不在 direct 也不在派生链
+    //   ⇒ 编排面上是"能读能写、**没有门**"。调用方看到两个读写工具却不知从哪进来，
+    //   只能退到 `atomic_call` 先 list 才发现入口 ⇒ **门在门后面**。
+    //   `design_intent` 同理：它是"改 why/方向先请人批"的那道闸（本仓核心纪律），
+    //   不可见就等于不存在。★ 这三条是**结构性判据**（面无门 ⇒ 该线不可达），不是偏好。
+    direct: ['get_dsl', 'edit_dsl', 'import_project', 'design_intent'],
   },
   {
     id: 'refactor',
@@ -125,7 +132,11 @@ export const LANE_META: ReadonlyArray<Omit<Lane, 'tools'>> = [
     id: 'meta',
     label: '元信息 / 探索',
     desc: '代码理解入口、诊断、画布笔记、归档与网关说明。',
-    direct: ['explore_code'],
+    // ★★ 2026-10-08 补 `capability_map` —— **地图必须出现在它自己要省的那段路上**。
+    //   它自己的描述写着"agent 开工前先定位"，但它既不在 direct 也不在派生链
+    //   ⇒ 面设成 `composed` 时它**是隐身的**：要拿到地图得先 `atomic_call(action=list)`
+    //   列全 61 个、再 describe、再 call —— **用 4 跳去换一个"省跳数"的工具**，正好相反。
+    direct: ['explore_code', 'capability_map'],
   },
 ];
 

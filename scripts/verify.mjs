@@ -99,7 +99,7 @@ function tsGate() {
 /** @type {Array<Gate|(() => Gate)>} */
 const GATES = [
   tsGate, // ★ 惰性：tsc 路径按环境解析；拿不到编译器 ⇒ 该门 `fail`（T61）
-  { name: 'MCP 工具签名', kind: 'gate', cmd: 'node', args: ['scripts/mcp/mcp_scan.mjs'], why: '59 个工具的入参/出参契约（坏签名 ⇒ LLM 一定调错）。★ 需先有 dist/：它走 CLI 入口（CLI 不做 zod 校验，守卫接没接上只有这里看得见）' },
+  { name: 'MCP 工具签名', kind: 'gate', cmd: 'node', args: ['scripts/mcp/mcp_scan.mjs'], why: '61 个工具的入参/出参契约（坏签名 ⇒ LLM 一定调错）。★ 需先有 dist/：它走 CLI 入口（CLI 不做 zod 校验，守卫接没接上只有这里看得见）。★ 2026-10-08 更正 why 里的旧数 59（实测 61）。' },
   { name: 'b 项契约占位符', kind: 'gate', cmd: 'node', args: ['scripts/measure_b_contract.mjs'], why: '量具：有未定义占位符即失败' },
   { name: 'Go 编译', kind: 'gate', cmd: 'go', args: ['build', './...'], cwd: 'observe-lang-go', need: 'go', why: '★ Go 语言包（observe-lang-go）此前**零门**：它一直是 TS 侧之外的盲区（go.mod 无 require ⇒ 标准库项目）' },
   { name: 'Go 静态检查', kind: 'gate', cmd: 'go', args: ['vet', './...'], cwd: 'observe-lang-go', need: 'go', why: '同上；vet 过了才谈得上"改 Go 代码有反馈"' },
