@@ -23,7 +23,7 @@
 
 import path from 'node:path';
 import type Parser from 'tree-sitter';
-import { findLanguageByExt, LanguageEntry } from './languages.js';
+import { findLanguageByExt, LANGUAGES, LanguageEntry } from './languages.js';
 import { isLanguageInstalled, isExtSupported, listSupportedExts, probeInstalledLanguages } from './probe.js';
 import { getParser, getParserSync, clearLoaderCache } from './loader.js';
 import { missingLanguageHint } from './lang_hint.js';
@@ -1721,17 +1721,36 @@ export function canParseFileSync(filePath: string): boolean {
  * 完成后 `parseFileFullSync` / `syncFileSync` / `syncSelfWritesSync` 全程同步可用。
  * 单个语言包加载失败照常走 loader 降级（记录 warning，返回 null），预热本身不抛。
  */
-export async function prewarmKernel(): Promise<{ warmed: number; missing: string[] }> {
+export async function prewarmKernel(): Promise<{
+  warmed: number;
+  /** 装了但**加载失败**的扩展名（沿用原字段名 —— 原调用方文案写「语言包」是错的，它是 ext） */
+  missing: string[];
+  /**
+   * ★★ 2026-10-08 新增：**注册了但包没装**的语言名。
+   *
+   * 为什么必须报出来：它们此前落在 `warmed` 与 `missing` 的**夹缝**里，**完全看不见** ——
+   * 因为原实现只遍历 `probeInstalledLanguages()`（**已装的**）⇒ 未装的**连循环都进不去**。
+   * ★ `tsx` / `jsx` 就是在这里藏了很久：`.tsx` 全体解析不出来，
+   *   而预热报告显示的是「34 个解析器就绪，缺 0 个语言包」—— 听起来一切正常。
+   */
+  notInstalled: string[];
+}> {
   const missing: string[] = [];
+  const notInstalled: string[] = [];
   let warmed = 0;
-  for (const lang of probeInstalledLanguages()) {
+  // ★ 遍历**全部注册语言**（不只是已装的）—— 未装的先分流出去，**不静默、不折叠**
+  for (const lang of LANGUAGES) {
+    if (!isLanguageInstalled(lang.pkg)) {
+      notInstalled.push(lang.name);
+      continue;
+    }
     for (const ext of lang.exts) {
       const p = await getParser(ext, lang);
       if (p) warmed++;
       else missing.push(ext);
     }
   }
-  return { warmed, missing };
+  return { warmed, missing, notInstalled };
 }
 
 /** 检查扩展名是否被支持（且已安装对应语言包） */

@@ -66,7 +66,13 @@ function ensureKernelPrewarmed(): Promise<void> {
     prewarmPromise = prewarmKernel()
       .then((r) =>
         console.error(
-          `[ts_kernel] prewarm: ${r.warmed} 个解析器就绪${r.missing.length ? `（缺 ${r.missing.length} 个语言包）` : ''}`,
+          `[ts_kernel] prewarm: ${r.warmed} 个解析器就绪` +
+            // ★ 2026-10-08：① 原文案说「语言包」是错的（missing 里装的是 **ext**）；
+            //   ② **新增**报「注册了但没装」—— 那类是此前**看不见**的（夹缝在最上面那段注释里）。
+            (r.missing.length ? `（${r.missing.length} 个扩展名加载失败）` : '') +
+            (r.notInstalled.length
+              ? ` ★ 另有 ${r.notInstalled.length} 门语言【注册了但没装】：${r.notInstalled.join(', ')}`
+              : ''),
         ),
       )
       .catch((e) => console.error(`[ts_kernel] prewarm 失败：${e instanceof Error ? e.message : String(e)}`));
