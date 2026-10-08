@@ -32,6 +32,7 @@ const SNAP = path.join(REPO, '.snapshots', 'behavior.json');
 /** 观测点表：每个探针都要有 `--json`（只吐可比数据）。★ 全部是「函数行为」，不含仓库状态 */
 const OBS = [
   { name: 'tool-surface', script: 'scripts/probe_tool_surface.mjs', note: '★ 工具面契约指纹（name/title/description/入参键）—— LLM 看到的**全部**就是它' },
+  { name: 'tool-smells', script: 'scripts/probe_tool_smells.mjs', note: '★ 工具面坏味道读数（宽签名/袋子/描述过短/词序）—— **拆工具的进展可被追踪**' },
   { name: 'completion-candidates', script: 'scripts/probe_cc_equiv.mjs', note: 'import 候选表生成（纯函数，顺序即行为）' },
   { name: 'binding-generation', script: 'scripts/probe_verdict_grid.mjs', note: '装包代际 → verdict（纯判据，穷举事实）' },
   { name: 'xfile-resolve', script: 'scripts/probe_xfile_resolve.mjs', note: '跨文件 import 解析（依赖语言包 ⇒ 见 env 闸）' },

@@ -1,12 +1,12 @@
 {
  "_meta": {
-  "takenAt": "2026-10-08T14:12:19.386Z",
+  "takenAt": "2026-10-08T14:27:50.168Z",
   "env": {
    "core": "0.21.1",
    "node": "v22.22.2",
    "platform": "win32-x64"
   },
-  "obsCount": 5
+  "obsCount": 6
  },
  "obs": {
   "tool-surface": {
@@ -750,6 +750,249 @@
      ]
     }
    ]
+  },
+  "tool-smells": {
+   "total": 61,
+   "thresholds": {
+    "wide": 8,
+    "thin": 80
+   },
+   "wide": [
+    {
+     "name": "get_dsl",
+     "params": 21,
+     "keys": [
+      "query",
+      "view",
+      "feature",
+      "node_id",
+      "thread",
+      "decision_status",
+      "file_id",
+      "project_dir",
+      "layer",
+      "type",
+      "file_layer",
+      "file_status",
+      "annotation_node_id",
+      "severity",
+      "unresolved_only",
+      "status",
+      "assignee",
+      "annotation_id",
+      "feature_a",
+      "feature_b",
+      "view_b"
+     ]
+    },
+    {
+     "name": "rules",
+     "params": 16,
+     "keys": [
+      "action",
+      "project_dir",
+      "id",
+      "before",
+      "after",
+      "title",
+      "tags",
+      "level",
+      "language",
+      "created_from",
+      "rule_ids",
+      "glob",
+      "max_files",
+      "todo",
+      "update_baseline",
+      "dry_run"
+     ]
+    },
+    {
+     "name": "edit_code",
+     "params": 13,
+     "keys": [
+      "project_dir",
+      "file",
+      "op",
+      "symbol",
+      "parent",
+      "code",
+      "start",
+      "end",
+      "old_text",
+      "new_text",
+      "dry_run",
+      "targets",
+      "atomic"
+     ]
+    },
+    {
+     "name": "import_project",
+     "params": 11,
+     "keys": [
+      "project_dir",
+      "feature",
+      "title",
+      "max_files",
+      "include_tests",
+      "include_archive",
+      "live_only",
+      "live_dir",
+      "gen_roles",
+      "design_mode",
+      "functional_mode"
+     ]
+    },
+    {
+     "name": "gateway_provider",
+     "params": 11,
+     "keys": [
+      "action",
+      "id",
+      "name",
+      "base_url",
+      "model",
+      "keys",
+      "weight",
+      "price_prompt_per_1m",
+      "price_completion_per_1m",
+      "enabled",
+      "reset"
+     ]
+    },
+    {
+     "name": "translate_go_ts",
+     "params": 9,
+     "keys": [
+      "file",
+      "projectDir",
+      "outDir",
+      "out",
+      "fill",
+      "holes",
+      "batchSize",
+      "verify",
+      "maxRetries"
+     ]
+    },
+    {
+     "name": "observe_instrument",
+     "params": 8,
+     "keys": [
+      "action",
+      "target",
+      "dry_run",
+      "contract_probes",
+      "project_root",
+      "deep",
+      "effects",
+      "scope"
+     ]
+    },
+    {
+     "name": "find_references",
+     "params": 8,
+     "keys": [
+      "project_dir",
+      "mode",
+      "scope",
+      "min_hit",
+      "file",
+      "symbol",
+      "field",
+      "report_literals"
+     ]
+    }
+   ],
+   "bags": [
+    {
+     "name": "manage_feature",
+     "bagKeys": [
+      "args"
+     ],
+     "params": 2
+    },
+    {
+     "name": "explore_code",
+     "bagKeys": [
+      "args"
+     ],
+     "params": 2
+    }
+   ],
+   "thin": [
+    {
+     "name": "consistency_check",
+     "len": 75
+    }
+   ],
+   "order": {
+    "verbFirst": [
+     "apply_refactor_plan",
+     "detect_drift",
+     "edit_code",
+     "edit_dsl",
+     "find_references",
+     "find_similar_names",
+     "get_dsl",
+     "import_project",
+     "manage_feature",
+     "read_project_docs",
+     "remove_dead_imports",
+     "render_brickwork",
+     "render_design",
+     "run_tests",
+     "scaffold",
+     "split_stage",
+     "sync_contracts"
+    ],
+    "otherFirst": [
+     "annotate_functions",
+     "archive",
+     "behavior_baseline",
+     "canvas_notes",
+     "capability_audit",
+     "capability_map",
+     "code_health",
+     "consistency_check",
+     "cross_repo_symbol_index",
+     "deprecate_offline",
+     "design_intent",
+     "diagnose",
+     "diff_views",
+     "explore_code",
+     "extract_contracts",
+     "feature_line",
+     "gateway_provider",
+     "go_originals",
+     "harvest_closure",
+     "harvest_decisions",
+     "impact_analysis",
+     "index_integrity",
+     "memory_observe",
+     "move_symbol",
+     "narrate_step",
+     "observe_instrument",
+     "observe_judge",
+     "observe_log",
+     "observe_trace",
+     "plan_refactor",
+     "recommend_observe_points",
+     "reconcile_chain",
+     "reconcile_effects",
+     "refactor_judge",
+     "refactor_pipeline",
+     "rename_files",
+     "rename_symbols",
+     "rules",
+     "signal_review",
+     "snapshot",
+     "structure_gap",
+     "suggest_renames",
+     "translate_go_ts",
+     "upgrade"
+    ]
+   }
   },
   "completion-candidates": [
    {

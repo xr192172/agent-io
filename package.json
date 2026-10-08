@@ -90,7 +90,9 @@
     "probe:cc-equiv": "node scripts/probe_cc_equiv.mjs",
     "snap:list": "node scripts/snapshot.mjs list",
     "snap:take": "node scripts/snapshot.mjs take",
-    "snap:diff": "node scripts/snapshot.mjs diff"
+    "snap:diff": "node scripts/snapshot.mjs diff",
+    "probe:tool-smells": "node scripts/probe_tool_smells.mjs",
+    "probe:tool-surface": "node scripts/probe_tool_surface.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
