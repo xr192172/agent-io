@@ -177,7 +177,13 @@ export const LANGUAGES: LanguageEntry[] = [
   { name: 'nim', pkg: 'nim', exts: ['.nim'], kind: 'code', symbol_nodes: ['proc_def'], field_map: { name: 'name' } },
   { name: 'crystal', pkg: 'crystal', exts: ['.cr'], kind: 'code', symbol_nodes: ['method_def'], field_map: { name: 'name' } },
   { name: 'ocaml', pkg: 'ocaml', exts: ['.ml', '.mli'], kind: 'code', symbol_nodes: ['let_binding'], field_map: { name: 'name' } },
-  { name: 'fsharp', pkg: 'f-sharp', exts: ['.fs', '.fsx'], kind: 'code', symbol_nodes: ['function_or_value_defn'], field_map: { name: 'name' } },
+  // ★★ 2026-10-08 修：**派生名不存在**。`pkg: 'f-sharp'` ⇒ 派生 `tree-sitter-f-sharp`，
+  //   而 npm 上**没有这个包**（实测 `npm view tree-sitter-f-sharp` ⇒ E404）—— 真名是
+  //   **`tree-sitter-fsharp`**（实测存在，N-API：`node-gyp-build`、无 `nan`；但它 latest 的
+  //   `peerDependencies` 是 `tree-sitter ^0.25.0` ⇒ 要装得等核心升级，见 `ops-and-dsh-brain-notes` 里那条）。
+  //   ⇒ 与 `tsx`/`jsx` **同一类**问题（约定名 ≠ 真名）⇒ 用同一个机制 `pkgSpec` 修，不发明新字段。
+  //   ★ 不修的话提示会说「装包：tree-sitter-f-sharp@latest」——**一个装不上的包**（同"不诚实提示"家族）。
+  { name: 'fsharp', pkg: 'f-sharp', pkgSpec: 'tree-sitter-fsharp', exts: ['.fs', '.fsx'], kind: 'code', symbol_nodes: ['function_or_value_defn'], field_map: { name: 'name' } },
   // ★ 2026-09-29 新增：实测（julia 0.23.1）`function_definition` 的 node-types.json 里
   //   **"fields": {}** ⇒ 名字/体都靠结构走（适配器 nameNodeTypes + bodyIsSelf）。
   //   struct/abstract/primitive 是类型声明（名字在 type_head 里），module 有 name 字段但无 body 字段。
@@ -227,4 +233,21 @@ export function findLanguageByExt(ext: string): LanguageEntry | undefined {
  */
 export function languageModuleSpec(pkg: string, pkgSpec?: string): string {
   return pkgSpec ?? `tree-sitter-${pkg}`;
+}
+
+/**
+ * ★★ 2026-10-08：**手上只有 pkg 名**（不是表项）时的同一个问题 —— 查注册表拿到 `pkgSpec` 再走上面那条规则。
+ *
+ * 为什么要有它（实测）：本仓有 **28 处**手拼 `` `tree-sitter-${pkg}` ``，而其中有几处是**真查找**
+ * （`readPkgJson` / `hasHostPrebuild` / `npm view` / `registryInstallScript`）。
+ * 对这些语言，手拼的名字**根本不存在**：
+ *   · `f-sharp` → 真名 `tree-sitter-fsharp`
+ *   · `tsx` → 住在 `tree-sitter-typescript` 里
+ *   · `jsx` → 住在 `tree-sitter-javascript` 里
+ * ⇒ **"查不到"与"没有可用版本"是两回事**，而手拼会把前者伪装成后者（给出一条装不上的建议）。
+ * ★ 收口方式：调用方把 `pkg` 名交给本函数，**不要再自己拼**。
+ */
+export function moduleSpecOfPkg(pkg: string): string {
+  const l = LANGUAGES.find((x) => x.pkg === pkg);
+  return languageModuleSpec(pkg, l?.pkgSpec);
 }

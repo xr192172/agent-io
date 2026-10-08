@@ -140,6 +140,10 @@ export function missingLanguageHint(ext: string, capabilityId?: string): string 
   const e = normExt(ext);
   const registered = findLanguageByExt(e);
   const installed = isExtSupported(e);
+  // ★★ 2026-10-08：**模块说明符只在这一处算** —— 原先下面三处各手拼一次 `tree-sitter-${pkg}`，
+  //   于是 `f-sharp` 的提示仍在说「装 tree-sitter-f-sharp」——**一个 npm 上不存在的包**
+  //   （真名 `tree-sitter-fsharp`，同 tsx/jsx 的 `pkgSpec` 家族）。
+  const mod = registered ? languageModuleSpec(registered.pkg, registered.pkgSpec) : null;
   const langName = (installed ?? registered)?.name ?? null;
   const { total, byCapability } = capabilityGaps();
 
@@ -157,7 +161,7 @@ export function missingLanguageHint(ext: string, capabilityId?: string): string 
     packText = '装包：注册表里还没有它（languages.ts: LANGUAGES 无此扩展名，得先加表项才有包名）';
   } else if (!installed) {
     const pin = PACK_PINS[registered.pkg];
-    const spec = pin ? `tree-sitter-${registered.pkg}@${pin}` : `tree-sitter-${registered.pkg}@latest（未登记钉版）`;
+    const spec = pin ? `${mod}@${pin}` : `${mod}@latest（未登记钉版）`;
     // ★★ 2026-10-08：「**没装**」与「**装了但是死包**」必须分开说 —— 见本文件头注那条反向的坑。
     //   判据取自 probe 的**唯一落点** `languagePackagePresence`（真筛子住那儿），此处不重判。
     const st = languagePackageStatus(languageModuleSpec(registered.pkg, registered.pkgSpec));
@@ -169,7 +173,7 @@ export function missingLanguageHint(ext: string, capabilityId?: string): string 
     //      ⇒ **装上游最新版就能读**。⇒ 处置必须**先联网核上游**，再分两级。
     packText =
       st.state === 'incompatible'
-        ? `装包：**本机已装** tree-sitter-${registered.pkg}@${st.version ?? '?'}，但它**载入必失败**：` +
+        ? `装包：**本机已装** ${mod}@${st.version ?? '?'}，但它**载入必失败**：` +
           `${templateCompatReason('incompatible', st.usesNan)}` +
           `。★ **先联网核对上游再决定**（\`npm run install-package check ${registered.name}\`，同一判据）——` +
           `① 上游**在同一核心线上**已有 N-API 版本（有 node-gyp-build、无 nan）⇒ **重装即可用**` +
@@ -178,9 +182,16 @@ export function missingLanguageHint(ext: string, capabilityId?: string): string 
           `\`tree-sitter-css\` 的 latest 0.25.0 要核心 \`tree-sitter ^0.25.0\` ⇒ 装了当场 ERESOLVE，` +
           `而**同核心线**的 0.21.0 真能载入 ⇒ 按**钉版**装（\`install-package install <lang>\`）；` +
           `② 上游同样带 nan ⇒ 那才叫死包，**装 / 重装都无用**，只能等上游换模板或照 ${DOC} 自己编一份`
-        : `装包：${spec}，或 npm run install-package install ${registered.name}${SIEVE_HINT}`;
+        : `装包：${spec}，或 npm run install-package install ${registered.name}${SIEVE_HINT}` +
+          // ★★ 2026-10-08：**先确认这个包真的存在** —— 实测注册表里有一批语言的**派生包名在 npm 上查不到**
+          //   （`f-sharp` ⇒ 真名 `tree-sitter-fsharp`；另有 erlang / r / less / fish / crystal / vhdl /
+          //   tcl / protobuf / rego / nim 等**连真名都没找到**）。不提醒的话，这句话会让人去装一个
+          //   **不存在的包** —— 与 `lang_hint.ts` 头注批的那类"不诚实提示"同族。
+          `。★ **先确认包存在**：npm run install-package check ${registered.name}` +
+          `（实测有若干语言我们派生的包名在 npm 上查不到，例：「f-sharp」的真名是 tree-sitter-fsharp）` +
+          `⇒ 那种情况先给该表项补 pkgSpec 修名，再谈装什么`;
   } else {
-    packText = `装包：tree-sitter-${registered.pkg} 已装（不是缺包；若解析仍失败按钉版重装：npm run install-package install ${registered.name}）`;
+    packText = `装包：${mod} 已装（不是缺包；若解析仍失败按钉版重装：npm run install-package install ${registered.name}）`;
   }
 
   // ③ 照哪份清单补
