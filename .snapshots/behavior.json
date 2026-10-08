@@ -1,14 +1,756 @@
 {
  "_meta": {
-  "takenAt": "2026-10-08T14:06:01.651Z",
+  "takenAt": "2026-10-08T14:12:19.386Z",
   "env": {
    "core": "0.21.1",
    "node": "v22.22.2",
    "platform": "win32-x64"
   },
-  "obsCount": 4
+  "obsCount": 5
  },
  "obs": {
+  "tool-surface": {
+   "count": 61,
+   "tools": [
+    {
+     "name": "annotate_functions",
+     "title": "函数语义注释：扫描覆盖 → LLM 补全缺失 → body指纹同步过期（TS/JS + Go）",
+     "description": "让\"函数做什么\"由源码自带语义注释承载，而非每次由 LLM 从中重新提取。对 TS/JS + Go 项目的每个函数检查其上方是否有语义化注释：缺失 → 用 LLM 依据 签名+函数体 生成一句\"这函数做什么\"，按语言惯例（TS/JS 用 JSDoc，Go 用 `//` 近 godoc）注入到函数名上方；带 `@fnhash <sha256(body)>` 指纹标记的函数被改动过（指纹失配 = 过期）→ LLM 重注同步。任何对函数体的修改都会改变 fingerprint，因此\"每次修改都同步注释\"被机械覆盖。安全：只替换带自己 `@fnhash` 标记的块，手写无指纹注释一律不动，绝不误删用户注释。mode=scan 只读报告覆盖（不生成、不写盘）；dry_run 生成并给出预览 diff、不写盘；apply（默认）生成并写盘。未配置 LLM 时 scan 照常，apply/dry_run 退化为仅报告缺/过期名单。",
+     "inputKeys": [
+      "project_dir",
+      "files",
+      "mode"
+     ]
+    },
+    {
+     "name": "apply_refactor_plan",
+     "title": "Apply a refactor plan from plan_refactor (idempotent, fingerprint-checked)",
+     "description": "「先算清单 → 预览 → 批量落盘」的**第二半**（规划书 §16.3 P-C）：按 plan_refactor 的清单落盘（不重算清单、不再要 old_text）。**幂等**：先按**文件级指纹**判（当前内容指纹 == 清单里的 post_fingerprint ⇒ 该文件的项全部已应用），再用逐项判——old 仍唯一命中 ⇒ 改；old 已不在而 new 唯一命中 ⇒ 判 already_applied、**不写盘**；两者都不成立 ⇒ failed（源被别处改过，绝不猜）。⇒ 同一份清单重复 apply：第二次全部落 already_applied，ok=true / written=false / 文件字节不变。**篡改检出**：apply 前重算 plan_id 与声明值比对，不符即报错（改 old/new/顺序/base_fingerprint/增删项都会变）。**复用 edit_code(targets[]) 的落地路径**（写闸 + 写前快照 + 索引写穿保鲜 + 逐项回报），不另写一套；落盘走同一批量编排。atomic=true ⇒ 任一项失败（含\"清单与实际源冲突\"与落盘失败）则**整批不落盘**（全成或全不成）；缺省 false = 逐项独立。结果 data：{ok, plan_id, written, items[{file,status:applied|already_applied|failed,...}], total, applied, already_applied, failed, atomic}。空清单（items=[]）⇒ 合法 no-op（ok=true / written=false）。",
+     "inputKeys": [
+      "project_dir",
+      "plan",
+      "atomic"
+     ]
+    },
+    {
+     "name": "archive",
+     "title": "Retired-node library: archive a node / list archived entries — single entry",
+     "description": "「下线库」统一入口（**2 个注册入口收敛为 1 个入口 + action 分派**；两者操作的是**同一个对象**「某 feature 的下线库归档条目」（条目住在 `<live_dir>/.agent-io/archive/<feature>/`），共用同一锚点参数 feature，动作互补 = 写 + 读）。action=node（**写，且不可逆**）节点下线：把要下线的文件/节点孤立到下线库，存档完整 DSL 快照（含决策卡）+ 为什么下线，作为历史研究材料，并从设计 DSL 移除（不再参与周边联系）。\"下线=两个文件合并\"时传 merged_into 指向合并目标，目标文件 lifecycle.merged_from 记录来源，diff 时 LLM 可据归档卡 + diff 增量做决策合并（不做自动合并，决策是语义的）。action=list（**只读**）列出某 feature 的下线库归档条目：每个条目含被下线文件、下线原因、合并去向、归档时间。★ 安全策略前移（**默认值与不可逆事实明写在这里**，不是隐藏知识）：action=node **立即落盘**（归档条目写盘 + 从设计 DSL 移除并 saveDSL），**没有 dry_run 预览**；同一文件**重复归档会被拒绝**（\"已归档过，勿重复归档\"）；设计 DSL 里不存在的文件也会被拒。⇒ 调用前请确认该文件确实要下线；只在需要\"以前为什么这么设计、为什么下线\"的历史依据时用 action=list。适用：删掉废弃模块、合并重复文件、结构重构后的清理（list 用于这类决策前的历史查证）。",
+     "inputKeys": [
+      "action",
+      "feature",
+      "file_path",
+      "retire_reason",
+      "merged_into",
+      "live_dir"
+     ]
+    },
+    {
+     "name": "behavior_baseline",
+     "title": "Behavior baseline - canary test capture/verify diff",
+     "description": "行为基线（金丝雀测试对比）：对目标 Python 函数用样例输入跑一次记录行为快照（capture），改代码后再跑一次对比（verify）——回答\"跑得对不对\"（动态闸只答\"跑得动不炸\"，补不了行为级变化）。action=capture：生成 harness（顶层 exec 目标文件 + 规范化 repr 返回值 + stdout 痕迹 + 函数源码快照），存基线到 <project_dir>/.agent-io/behavior/<file>__<func>.json（baseline 参数可覆盖路径）。action=verify：读基线 + 对当前磁盘再跑同一份 harness，逐 case 对齐对比 → verdict same/diff（进程级失败 → error）。v1 边界：仅 Python；目标函数须自包含（顶层 exec 整文件，模块级常量/其它函数可用；跨文件 import 与 import 副作用不支持）；返回值对比 = 规范化 repr（set 排序化）；样例输入由 cases 显式提供（capture 必需），不自动生成。",
+     "inputKeys": [
+      "action",
+      "project_dir",
+      "file",
+      "function",
+      "cases",
+      "baseline"
+     ]
+    },
+    {
+     "name": "canvas_notes",
+     "title": "Manage canvas notes: read as work orders / update status / LLM decide",
+     "description": "画布批注统一入口（收敛 read/mark/decide_canvas_notes 三工具为 1 入口，action 分派）。action=read 读某 feature 的画布批注，解析成 agent 工单（Markdown/JSON，按 open/done/rejected 分组）——定位待办；action=mark 批量更新批注处理状态（updates=[{id,status}]，status ∈ open|done|rejected）——闭环\"工单→处理→标记\"；action=decide 内置 LLM 决策器：读 open 批注逐单决策（change/done/reject），将\"批注→改动提案\"自动化（LLM 经网关 Key 池调度，未配置则停用）。",
+     "inputKeys": [
+      "action",
+      "feature",
+      "format",
+      "updates",
+      "project_dir",
+      "max_file_lines",
+      "dry_run"
+     ]
+    },
+    {
+     "name": "capability_audit",
+     "title": "能力矩阵自检：语言 × 功能的 AST 覆盖缺口",
+     "description": "**能力矩阵自检**（缺口清单；只读、纯计算、不改任何代码）：对语言名单（或只对**已安装**的 tree-sitter 语言包）逐功能审计 AST 覆盖度，汇总「功能 × 语言」缺口 ⇒ 可直接给 LLM 做\"补哪个功能、补哪门语言\"的决策输入。★ 与 `capability_map` **不是一回事**：那个是「6 条能力线 × 工具」的**工具导航**，本工具审的是**语言支持度**。★ `installed_only=true` 更贴近\"眼下真能跑的语言\"；省略则为语言名单全量（含未装包的语言）。",
+     "inputKeys": [
+      "installed_only",
+      "gaps_only"
+     ]
+    },
+    {
+     "name": "capability_map",
+     "title": "能力线导航：agent-io 工具分层地图",
+     "description": "统一能力线入口（只读导航，无副作用）。无参返回完整分层清单：6 条能力线（design 设计 / refactor 重构 / observe 观测 / harvest 契约采集 / cross 跨仓翻译健康 / meta 元信息）× 每条线内工具及其适用时机；传 lane 只看某条线。agent 在不确定用哪个工具前，优先调它分层定位，再进入具体工具。★ 2026-10-05 新增「实现地图」段：工具注册在哪个文件 ≠ **实现住在哪个目录** —— 该段按线列出 `structure.domains.json` 里该线下的域（dir + role + note 首句），用来回答「我要改 X 的实现，该进哪个目录」。传 project_dir 才读得到（读的是该项目的域表）。高频工具（get_dsl / edit_dsl / explore_code / rename_symbols / rename_files / find_references）始终直接可用，无需先经本工具。★ 通用前置（2026-10-06 新增 —— 这三条**不属于任何单个工具**，但用任何工具前都成立）：① **DSL 数据锚定「包安装根」，不是你的项目目录**：不设 `AGENT_IO_HOME` 时，**任何 cwd** 都读写同一个数据目录 ⇒ 多个项目会**互相看见**。要隔离，请在调用前设 `AGENT_IO_HOME=<某个目录>`。② **符号索引会被「顺手」自动建**：第一次 `find_references` 之类就在**被分析项目里**生成 `.agent-io/cache.db`，不必先 `import_project`（但你可以预期它会写盘）。③ **「每次调用前保鲜」只认 4 个项目根参数名**：`project_dir` / `project_root` / `root` / `dir`。用别的名字（如 `cross_repo_symbol_index` 的 `project_dir_a` / `project_dir_b`）就**拿不到自动保鲜** ⇒ 结果可能**悄悄是旧的**；此时请显式先调 `index_integrity({project_dir, refresh:true})`。",
+     "inputKeys": [
+      "lane",
+      "project_dir"
+     ]
+    },
+    {
+     "name": "code_health",
+     "title": "Code health - dead code / complexity / layer violation",
+     "description": "代码健康度（选材体检）：对 project_dir 全项目做三层体检，输出健康分 + 问题清单。三维度：①死代码——未使用导出（复用调用边/类型引用边反查，外部消费者不可见一律标 info 不自动删）、未使用 import（TS/JS/Python/Java 命名导入）、孤儿文件（无任何项目内消费者的非胶水文件）；②复杂度——顶层函数/方法圈复杂度启发式（剥注释后数分支，默认阈值 10，超阈值标 warn）；③分层违规——依赖方向向上（契约→积木/胶水、积木→胶水）标 error。守护\"积木/契约/胶水\"三分层哲学，是项目杂交选材的评分依据。输出：score(0-100)/grade(A-D，0 个源文件时为 N/A)/summary + issues 逐条(file/line/symbol/message/evidence) + complexity Top 清单。",
+     "inputKeys": [
+      "project_dir",
+      "complexity_threshold",
+      "top"
+     ]
+    },
+    {
+     "name": "consistency_check",
+     "title": "Check design-code consistency",
+     "description": "对比 DSL 定义的 expected_apis 与实际代码实现，生成一致性报告（已实现/缺失/签名不匹配/代码新增），并验证跨文件不变式。只读检查。",
+     "inputKeys": [
+      "feature",
+      "code_dir"
+     ]
+    },
+    {
+     "name": "cross_repo_symbol_index",
+     "title": "Cross-repo symbol index - two-project conflict & migration scope",
+     "description": "跨项目符号索引（杂交前\"会不会撞名\"）：对两个项目根各建顶层符号集合，再求交/求差。①冲突清单（同名不同签 = 真冲突，杂交前需改名/错位，附两侧定义文件与签名）；②双胞胎（同名同签 = 语义重复，可去重一个）；③迁移范围 aOnly/bOnly（只在一方的顶层符号 = 搬到对侧不撞名的安全候选）。是 rename_symbol / package_migration / impact_analysis 跨项目版与跨项目符号层的地基。顶层符号 = 所有模块级符号（未显式 export 的也计入，保守超集）。",
+     "inputKeys": [
+      "project_dir_a",
+      "project_dir_b"
+     ]
+    },
+    {
+     "name": "deprecate_offline",
+     "title": "Deprecate & retire internally-authored modules (dead-import cleanup + compile-level verification)",
+     "description": "废弃积木**下线链**（C 链）：承接 dead_deps / brickify 的废弃证据，把**项目内自研源码模块**真正下线。三问式判据：① **是自研积木吗**（source 能 resolve 成项目内 .ts/.go 实体；三方包/内置模块不参与 —— 那是清依赖，不是下线积木）；② **无活跃消费吗**（移除各消费者死 import 后跑**编译级验收**：编译仍绿 ⇒ 无活跃消费者，比静态扫描更可信；一旦回归 ⇒ **自动回滚**并判定「有活跃消费」）；③ **真删还是仅清引用**（`remove_file` 才物理删除模块文件本体；其它动作只清各处死 import）。★ **安全默认**：`dry_run` 缺省 **true** ⇒ 只出候选报告、一个字节都不落盘；要真落盘必须显式 `dry_run:false`，物理删文件还要**再给** `remove_file:true` —— **两道闸**，与 CLI 的 `--apply` / `--remove-file` 一一对应。`plans` 显式指定下线清单（不给 = 从全量死源里筛「项目内自研源」）；`files` 收窄扫描视野（★ 它会**同时**收窄候选判定与「物理删硬闸门」的视野 ⇒ 若漏掉仍在消费该模块的文件，硬闸门可能计数为 0（视觉盲区）⇒ 只建议用于 dry-run 收敛；真物理下线时请**省略**它，让硬闸门覆盖全库，别靠兜底擦屁股）。★ 与 `remove_dead_imports` 是**两个对象**（不聚合）：那个只清死 import、不判定能不能下线；本工具做的是「下线裁决 + 验收 + 可选物理删」。",
+     "inputKeys": [
+      "project_dir",
+      "plans",
+      "files",
+      "dry_run",
+      "remove_file",
+      "verify"
+     ]
+    },
+    {
+     "name": "design_intent",
+     "title": "Design intent (why): set directly / propose for human approval — single entry",
+     "description": "「设计意图（why）」统一入口（**2 个注册入口收敛为 1 个入口 + action 分派**；两者操作的是**同一个对象**「设计意图 overlay」——`<feature>.overlay.json` 的 goals + edge_intents，共用同一锚点参数 feature；action=propose 是 action=set 的\"先请人批再落\"前置闸）。action=set（默认）：直接写 goals（结构化目标/方向，全量替换）与 edge_intents（\"A 为何依赖 B\" 与边界归属，按 base 边 id 或 from+to 匹配挂载）到 overlay，随即 apply 回 base 并保存，让 get_dsl/serve 当下即可读到（meta.goals 与 edge.intent），不依赖下一次代码扫描再生。action=propose：由 LLM 代拟意图改写提案（把当前意图 vs 将改意图算成 before/after 预览）进入人工审批闸门，**不写盘不碰 DSL**；人在工作台「代码审批」页签 approve 后才真正写入 overlay + base。★ 何时用哪个：确定要改、无需人拍板 → action=set 直接落；\"改 why / 方向\"这类应由人决策的变更 → action=propose。★ 安全策略前移（与\"人只做决策审批、LLM 只做提案转述\"的分层一致）：propose **永不直接落盘**；project_dir 是审批台账的隔离桶名，应与人当前查看的项目一致，提案才会出现在他的审批列表里。",
+     "inputKeys": [
+      "action",
+      "feature",
+      "goals",
+      "edge_intents",
+      "project_dir"
+     ]
+    },
+    {
+     "name": "detect_drift",
+     "title": "Detect live-doc drift against code",
+     "description": "活文档↔代码漂移检测：对比 design DSL 的 expected_apis 与当前代码，判定「设计是否过时 / 是否欠实现」，并持久化漂移台账。scope=changed（默认）只看 git 变更文件（相对 since_ref，默认 HEAD=未提交改动），圈出「这次改代码引发了哪些漂移」；scope=all 全量对标。mode=check 重新计算（默认），mode=status 只读最近一次台账。只读，不改 DSL；要同步设计请用 edit_dsl / import_project。",
+     "inputKeys": [
+      "feature",
+      "code_dir",
+      "scope",
+      "since_ref",
+      "mode"
+     ]
+    },
+    {
+     "name": "diagnose",
+     "title": "Diagnose a symptom to root cause + evidence chain + impact + fix suggestions",
+     "description": "症状诊断：输入\"症状\"（报错信息 / stack trace / 测试失败输出 / 行为异常描述），输出\"根因 + 证据链 + 影响面 + 修改建议 + 验证方式\"。六步流水线：症状解析（正则提取 错误类型/文件:行/符号）→ 候选定位（查 .agent-io/cache.db 符号缓存，exact/file/FTS/anchor 四路）→ 调用链追溯（沿 call/type_ref/import 三类边双向 BFS）→ 影响面分析（复用 diff_impact）→ 根因聚合（规则引擎先跑，LLM 可选把证据翻成人话根因，未配置自动降级）→ 验证建议（按项目类型给命令，只建议不执行）。前置：无需任何准备——缓存为空时会自动冷启建索引；仅在目标目录没有可解析源码时退化为文件级线索。anchor 可选：用户已知的线索（文件路径或函数名）帮助聚焦。",
+     "inputKeys": [
+      "project_dir",
+      "symptom",
+      "symptom_type",
+      "anchor",
+      "max_depth"
+     ]
+    },
+    {
+     "name": "diff_views",
+     "title": "Compare design view vs live code snapshot",
+     "description": "双视图对比：加载同一 feature 的 design（设计视图）和 live（实际代码快照）两个 DSL，逐层比对文件级/符号级/API 级/依赖级变更。输出结构化数据供 LLM 分析 + 可读摘要。适用于：重构后验证设计一致性、代码生成后检查偏差、追踪代码演进。",
+     "inputKeys": [
+      "feature",
+      "live_dir"
+     ]
+    },
+    {
+     "name": "edit_code",
+     "title": "Symbol-level code editing (AST-located)",
+     "description": "符号级语义编辑：按 文件+符号名 定位函数/方法/类/接口，AST 确定边界后整体替换/插入/删除。这是 Agent 第一性编辑路径——不依赖行号与 old_string 文本匹配，杜绝改错行/改错函数。安全设计：编辑后 re-parse 整个文件，解析失败自动放弃（不写盘）；replace 要求新代码解析出同名符号（防粘贴错函数）；同名多候选时报错列出签名行号，传 parent 消歧。写盘后自动重建该文件索引（新鲜度闭环）。op: replace（symbol 必填 + code 完整新定义）| insert（code 新符号，symbol 可选=锚点其后插入，缺省文件末尾；新文件也走 insert）| delete（symbol 必填）| range（显式行区间：start/end 必填 + code，不依赖符号）| replace_text（old_text 唯一文本替换：**不需要符号索引、不需要行号**，4 级模糊级联定位——L1 逐字 → L2 空白归一（宽容 CRLF/行尾空格/行内空格差异）→ L3 缩进弹性（宽容整块缩进层级差异，new_text 自动按命中缩进重排）→ L4 省略号占位（old_text 里的 ... 或 … 行=省略任意行，适合只默写头尾）；每级都要求全文件恰好 1 处命中，歧义即报错并列行号、绝不猜；回执明示命中级别（exact/空白归一/缩进弹性/省略号占位），模糊命中时 diff 展示**实际被替换的文件片段**而非 old_text；适合凭记忆默写代码的小改）。range：1-based 含端点的 start/end 行号 + code=区间新内容（传空串=删除区间）；dry_run=true 只出 diff 预览 + 语法门结果不写盘；同 replace 的语法门兜底（编辑后 re-parse，新引入语法错误 → 拒绝不写盘），并列出区间穿透的符号供复核。定位优先 qualified_name（如 Class.method），短名兜底；Go 方法用短名 + parent（receiver 类型）消歧。★ 批量（P-B，规划书 §16.2）：传 targets=[{file, old_text, new_text}, ...] 一次调用对**多个文件**做唯一文本替换，省去\"每文件一次 dry-run + 一次 apply\"（N 文件 = 2N 次调用）。逐项**独立回报**（每项 ok/hit/error 各自独立，一项失败不影响其余）；atomic=true ⇒ 任一项失败则**整批不落盘**（全成或全不成，缺省 false=逐项独立）；dry_run=true 一次性给出**全部**预览、不写盘。批量落盘走写闸（写前快照 + 索引写穿保鲜），每文件只写一次。",
+     "inputKeys": [
+      "project_dir",
+      "file",
+      "op",
+      "symbol",
+      "parent",
+      "code",
+      "start",
+      "end",
+      "old_text",
+      "new_text",
+      "dry_run",
+      "targets",
+      "atomic"
+     ]
+    },
+    {
+     "name": "edit_dsl",
+     "title": "Update feature with batch operations",
+     "description": "统一写入口：通过 operations 列表批量执行节点/边/文件/API 的增删改、节点平移、语义绑定、状态更新，以及标注/审批/快照/自动布局/仿真重置。按顺序执行，任一失败自动回滚（原子性）。op: add/update/delete/move（通用），resolve（关闭标注），submit/review（审批），save/rollback/delete（快照），apply（布局），reset（仿真）；type: node/edge/file/api/binding/status/annotation/approval/snapshot/layout/simulation。标注/审批/快照/布局/仿真 用 data 传参（annotation.add data.text；annotation.resolve data.annotation_id；approval.submit/review data.annotation_id；snapshot.save data.label；snapshot.rollback/delete data.snapshot_id；layout.apply data.algo=dag|force|grid；simulation.reset 无参）。view: design（默认，改设计视图）/ live（拒绝写入，实际代码快照只能由 import/watch 重建）。weight: normal（默认）/ routine。routine=轻量写路径：跳过 L4 证据回溯（仍留 L1-L3 防空话/套话/泛谈），适合日常维护（补节点/改职责描述/加标注/改属性），不必先跑代码留 trace 证据；改架构/契约等重改请用 normal 全链强闸。★ 但**改 `semantic.files` 的 op（`type=file` / `type=api`）两档都要先\"现取该文件的事实\"**：DSL 已不存事实镜像（actual_apis/actual_deps 已移除）⇒ 事实只能现取，须把该文件路径作为 evidence 的 ref 传进来。",
+     "inputKeys": [
+      "feature",
+      "view",
+      "weight",
+      "reason",
+      "operations",
+      "evidence"
+     ]
+    },
+    {
+     "name": "explore_code",
+     "title": "Explore, analyze and understand code",
+     "description": "代码理解统一入口：通过 action 参数化执行各类分析。action: search / read / diff_impact / arch_layer / guided_tour / check_monolith / derive_split / derive_chain / derive_anim_flow / derive_algorithm / derive_mind_map / inject_replay / run_simulation / reset_simulation / watch。语义搜索/读取/影响分析/架构分层/导览/巨石分析/拆分/变形链/动画流/算法/注入回放/仿真/文件监听。args 为各 action 的具体参数。★ 按需选用与必填项（缺任一项即报错，别空调）：巨石体检用 check_monolith（给 project_dir|feature|files 之一）；看单函数内部流程用 derive_algorithm（给 feature+node_id+function）；看函数间调用链用 derive_chain（给 feature+node_id）；拆文件用 derive_split（给 project_dir+target_file+symbols；dry_run 默认 true 只出草稿、false 才落盘）；读文件内容用 read（硬必填 file）；盯文件变更用 watch（硬必填 project_dir）；看模块导览用 guided_tour（硬必填 feature）；生成模块思维导图用 derive_mind_map（硬必填 feature）；跑事件仿真用 run_simulation（硬必填 feature）；复位仿真用 reset_simulation（硬必填 feature）；注入回放用 inject_replay（硬必填 feature+flow_id）；看动画流用 derive_anim_flow（硬必填 feature+node_id）。read 是 edit_code 的\"先读后改\"前置：按符号定位（symbol，+parent 消歧，+context 附带上下文）或行区间（start/end，1-based 含端点）读文件，返回带真实行号的内容；返回的 start/end/行号与 edit_code(op=range) 同基准（line_utils.splitKeepEnds 下标+1=行号），可直接把 read 的行号喂给 edit_code，杜绝行号漂移改错行。read 默认在 data.symbols 附整文件符号索引（name/kind/行号/签名，message 末尾附可读符号表，上限30截断），一次 read 同时拿到正文+文件地图，symbols:false 可关。search 三层路由：标识符查询（如 normalizeCode / Calc.reset）→ 精确符号索引（provider=exact，零向量开销）；自然语言意图 → 语义向量相似度；无 embedding 配置/失败 → FTS trigram 降级。search 必填 args.project_dir（目标项目根目录，缺省报错）+ args.query（空则返回『查询为空』提示），可选 top_k；diff_impact 必填 project_dir + feature；arch_layer 必填 feature（不吃 project_dir）。watch 支持 impact_on_change=true：文件变更后自动生成影响报告（一行摘要入 alerts，action=status 查看未读提醒，action=impact + seq 取全文；报告持久落盘 .agent-io/impact/）。改代码前建议 action=declare + files 登记预告（Impact Ledger）：改后自动对比实际波及，计划外扩散即时报警。预告持久化 ledger.json（跨会话恢复，24h 未消费过期）；action=ledger 查台账，violated 用 resolve_id + reason 过门处理（status 播报未处理数）。",
+     "inputKeys": [
+      "action",
+      "args"
+     ]
+    },
+    {
+     "name": "extract_contracts",
+     "title": "Extract brick contracts (role/shapes/effects) for project files",
+     "description": "积木契约提取（Brick Harvest Phase 2）：给项目文件生成 BrickContract——role（业务/功能二分：依赖方向图算法，零 token，\"功能不依赖业务，业务组装功能\"）、shapes（struct/interface/class 数据形状+字段，结构化类型匹配的判定单元）、effects（reads_config=env/flag 读取点；writes/holds/emits=静态候选 origin:ast——模块级变量写/listen/句柄/chan send/emit 调用，待 observe 观测转正 origin:runtime）。提供 feature 时写回 DSL 的 SemanticFile.contract（write_dsl=false 可只读预演）。LLM 不产生事实：结构化字段只接受 AST/observe 源。规划见 docs/plans/2026-08-19-cross-project-brick-harvest.md Phase 2.5/2.7。",
+     "inputKeys": [
+      "project_dir",
+      "feature",
+      "files",
+      "write_dsl"
+     ]
+    },
+    {
+     "name": "feature_line",
+     "title": "功能线：每个功能搭一条主链（功能 → 入口函数 → 依次调用节点），供沿线单步运行/投屏",
+     "description": "把\"这个功能是怎么一步步走的\"搭成一条可读主链：对每个功能（DSL feature）挑一个入口函数（功能内不被本功能函数调用的根，否则按名启发 main/run/handle 等），再沿功能内调用边贪心走成有序链。target 留空 → 返回该项目所有功能的 入口+链长 总览；给 target=功能名 → 返回该功能 entry + chain（每个节点含 函数名/签名/文件/行/所属功能/语义注释 doc）。纯推导、不执行：要沿线跑入/出参请用 trace-exec；要投大屏点位由前端消费本条 line。只读，不改任何存储。",
+     "inputKeys": [
+      "feature",
+      "project_dir",
+      "target",
+      "max_steps"
+     ]
+    },
+    {
+     "name": "find_references",
+     "title": "Find symbol references (callers/importers, structural field refs), read-only",
+     "description": "查找符号/字段的引用——改/删前看波及面。只读，不改文件。mode=symbol（默认）：输入 {file(定义文件), symbol}，返回定义文件 + 所有 import 该符号的文件（含 import 子句 source、无别名使用点位置与行号）。复用 rename 的闭包/引用图内核（自动定位项目根 + 闭包 + 别名边 + 跨语言）。mode=field：输入 {field, project_dir}（可选 file 定 scope，默认 closure 按 file 闭包扫，all 全项目），返回字段的「读取点」(obj.field/obj.field)、「构造点」({field: v})、「解构点」、「声明点」，AST 分类 + 行内上下文 snapshot，**含定义文件内部**——用于\"加字段/改签名\"前看清谁读谁构造。mode=type：输入 {file, symbol(类型名), min_hit?}，从类型声明解出成员字段集，找与其交叠 ≥ min_hit 的对象字面量候选构造点（启发式，非类型求解器）。report_literals=true：任一模式额外扫描符号 snake 变体（renderDsl→render_dsl）在项目文本（文档/测试/契约/工具注册名）里的字面量命中，返回清单待核验——补 AST 查不到的字符串/文档引用，改名/删符号前一次看清全量波及面。",
+     "inputKeys": [
+      "project_dir",
+      "mode",
+      "scope",
+      "min_hit",
+      "file",
+      "symbol",
+      "field",
+      "report_literals"
+     ]
+    },
+    {
+     "name": "find_similar_names",
+     "title": "Detect confusable similar names and disambiguate",
+     "description": "相似名称检测与一键消歧：识别同一函数内\"易看错\"的孪生名（仅大小写不同 / 数字后缀 count-count2 / 相邻换位 typo total-totla / 小编辑距离），按相似度连通块聚类。每个 cluster 保留最清晰名 basis，其余为待改名 offenders；use_llm=true（默认）请 LLM 为每个 offender 建议语义化且与 basis 明显区分的新名。use_llm=false 或未配置 LLM 时降级为仅聚类（suggested 留空）。返回 clusters（含 offenders.suggested 与 reason）+ 可直接作为 rename_symbols(scope=\"local\") 的 renames 条目使用的 items 数组（{file, symbol, to}），实现\"检测→建议→批量改名\"闭环。",
+     "inputKeys": [
+      "project_dir",
+      "file",
+      "max_clusters",
+      "use_llm"
+     ]
+    },
+    {
+     "name": "gateway_provider",
+     "title": "Manage LLM gateway providers & usage (single entry)",
+     "description": "小网关供应商 + 用量统一入口（收敛原 gateway_* 4 工具为 1 入口，action 分派）：action=list 列出已注册供应商（key 脱敏只露尾 4 位）+ 用量汇总；action=upsert 注册/更新一个供应商到 Key 池（同供应商多 key 入一个池，调用时加权轮询 + 失败自动切下一个 key/供应商；OpenAI 兼容协议 base_url 形如 https://api.openai.com/v1；已存在同 id 则按传入字段合并更新）；action=delete 删除一个供应商及其 Key 池；action=stats 用量监视（按 供应商+key 维度的调用数/token/费用(USD)/错误/延迟及汇总；reset=true 可清零统计）。",
+     "inputKeys": [
+      "action",
+      "id",
+      "name",
+      "base_url",
+      "model",
+      "keys",
+      "weight",
+      "price_prompt_per_1m",
+      "price_completion_per_1m",
+      "enabled",
+      "reset"
+     ]
+    },
+    {
+     "name": "get_dsl",
+     "title": "Query feature data",
+     "description": "统一只读入口：通过 query 参数查询 DSL 数据。query: dsl（完整 DSL JSON）/ features（所有 feature 列表）/ nodes（节点摘要列表，支持 layer/type 过滤）/ edges（边摘要列表，支持 layer 过滤）/ node（单个节点详情，需 node_id，含决策卡与版本史）/ decisions（决策卡目录，按功能线 thread 分组，支持 thread/decision_status 过滤）/ files（语义文件摘要列表，支持 file_layer/file_status 过滤；★ 每项出 `file`（仓库相对路径）与 `symbols`（**实际符号的 qualified_name**，取 cache.db 事实、不再是计数）—— 这两个词就是 find_references 的入参词，可直接接力）/ file（单个文件详情，需 file_id，含 expected_apis / expected_deps；★ 已实现 API 不在此——它是**代码的事实**，现取解析数据 cache.db）/ digest（每文件一行的紧凑认知索引：F:职责 | R:关系 | A:契约 | S:高熵决策，需 feature；★ 只读**派生视图**——从已有 DSL 字段现渲染、不落盘、不新增真相源，上下文紧张时一遍读完）/ calls（文件调用关系，需 file_id+project_dir，查 cache.db 入/出调用）/ functions（函数级大纲，需 feature，查缓存 db 的目录→文件→函数 + 调用/被调用/回环）/ annotations（标注）/ approvals（审批）/ approval_history（审批历史，需 annotation_id）/ snapshots（快照）/ templates（模板）/ simulation_state（仿真状态）/ diff（对比，需 feature_a+feature_b）/ goals（结构化目标，meta.goals）/ edge_intents（边级意图，edge.intent）。view: design（默认，活态设计）/ live（实际代码快照，仅 query=dsl/nodes/edges/node/files/file 生效，用于对比设计 vs 代码现状）。",
+     "inputKeys": [
+      "query",
+      "view",
+      "feature",
+      "node_id",
+      "thread",
+      "decision_status",
+      "file_id",
+      "project_dir",
+      "layer",
+      "type",
+      "file_layer",
+      "file_status",
+      "annotation_node_id",
+      "severity",
+      "unresolved_only",
+      "status",
+      "assignee",
+      "annotation_id",
+      "feature_a",
+      "feature_b",
+      "view_b"
+     ]
+    },
+    {
+     "name": "go_originals",
+     "title": "读取 Go 源文件每个顶层符号的原文片段（ground-truth 即取即读）",
+     "description": "解析单个 Go 源码文件，返回其中每个顶层符号(func/const/var/type)的 Go 原文片段(srcSnippet)与起始行(srcLine)。文件级直接解析（复用共享 tree-sitter-go，无需 import_project 建全工程索引）。用途：语义修复/评审时拿 Go 原文当 ground truth，不再对着翻译后的 TS 壳猜；可选 symbol 过滤只取指定符号。",
+     "inputKeys": [
+      "file",
+      "symbol"
+     ]
+    },
+    {
+     "name": "harvest_closure",
+     "title": "Harvest a brick with its transitive import closure",
+     "description": "积木拎取闭包（Brick Harvest Phase 1）：给定种子文件，沿 import 边算出\"拎走这块积木必须连根带走的全部东西\"。输出：项目内传递闭包（带深度/带入者/import 语句证据）+ 外部依赖三分类（标准库/三方/未归类）。与 diff_impact 正交：diff_impact 答\"改这里波及谁\"（importer 方向），本工具答\"拎走它需要什么\"（importee 方向）。include_callers=true 时连调用方一起端走（拎服务层带生态）。前置：项目需先跑 import_project 建符号缓存。规划见 docs/plans/2026-08-19-cross-project-brick-harvest.md。",
+     "inputKeys": [
+      "project_dir",
+      "files",
+      "feature",
+      "include_callers",
+      "max_depth"
+     ]
+    },
+    {
+     "name": "harvest_decisions",
+     "title": "Harvest decision-card candidates from docs / git log / comments",
+     "description": "决策卡补录：从项目文档（docs/*.md）、git 日志、源码注释粗提取设计意图线索，生成 draft 决策卡候选（含出处 ref + 原文 evidence + 一句话总结）。不直接写 DSL——LLM review 核对出处后，定稿（status: active）再通过决策卡工具写入 DSL，防编造。候选带 lifecycle_hint（下线/合并/取代/拆分），供 diff 与下线库（`archive` action=node/list）参考。适用：为没有决策卡历史的现有项目/外来代码补录活文档。",
+     "inputKeys": [
+      "feature",
+      "doc_dir",
+      "git_root",
+      "limit",
+      "comment_files"
+     ]
+    },
+    {
+     "name": "impact_analysis",
+     "title": "Impact analysis - pre-change risk closure report",
+     "description": "影响面分析（改前风险闭包报告）：从变更点（文件 + 可选顶层导出符号）沿 import/调用/类型引用依赖图做反向可达闭包，输出直接/间接受影响文件、引用证据与风险排序——回答\"我要改这里，会炸哪里\"。change_points=[{file, symbol?}] 支持改整个文件或只改某个符号；解析不到符号消费方时保守降级为整文件闭包（fell_back）。hubs=true 时切换为热区盘点模式（无变更点）：全项目按\"被直接依赖数\"排序，找出改哪些文件风险最高。风险启发式：受影响文件自身的波及半径 × 距离；depth=1 的直接消费方附带引用证据行。",
+     "inputKeys": [
+      "project_dir",
+      "change_points",
+      "hubs",
+      "top",
+      "max_depth"
+     ]
+    },
+    {
+     "name": "import_project",
+     "title": "Import a code project as DSL",
+     "description": "扫描代码项目（.go/.ts/.py/.js 等）生成 DSL：文件节点 + 调用边 + 符号/API 语义层，写入 agent-io 存储。默认生成设计 DSL；live_only=true 只生成\"实际视图\"快照（live/ 目录，供 🎭设计/⚡实际 双视图对比）。design_mode=true 按目录聚合成模块节点；functional_mode=true 按调用图做功能性聚合（优先级高于 design_mode）。导入后可用 render_design 渲染可视化，或 diff_views 对比设计 vs 实际。",
+     "inputKeys": [
+      "project_dir",
+      "feature",
+      "title",
+      "max_files",
+      "include_tests",
+      "include_archive",
+      "live_only",
+      "live_dir",
+      "gen_roles",
+      "design_mode",
+      "functional_mode"
+     ]
+    },
+    {
+     "name": "index_integrity",
+     "title": "索引可信度自检：现在的索引能不能当真",
+     "description": "只读自检：回答\"我眼下读到的索引能不能当真\"。给出规模（索引文件/磁盘源码/未索引/幽灵行/节点/边）、引用状态（resolved/pending/external/failed）、**陈旧断言数**（声称 resolved 但目标符号已不在索引 ⇒ find_references / impact_analysis 会静默漏报）、未保鲜文件数、待消费的自写登记、后台续建进度，并给出一条总结论与可执行修复建议。发现\"不可信\"时可传 refresh:true 顺手保鲜后重报。在\"准备基于索引做改动\"或\"怀疑漏报/读到旧数据\"之前调它。",
+     "inputKeys": [
+      "project_dir",
+      "refresh",
+      "sample"
+     ]
+    },
+    {
+     "name": "manage_feature",
+     "title": "Manage feature lifecycle",
+     "description": "feature 生命周期统一入口：create（创建）/ clone（克隆）/ template（从模板创建）/ list（列出）/ delete（删除）。create 需 feature 名（^[a-zA-Z0-9_-]+$）；clone 需 source_feature+target_feature；template 需 template_id+feature；delete 需 feature（同时清理设计存档 + 实际快照 + 活态视图）。",
+     "inputKeys": [
+      "action",
+      "args"
+     ]
+    },
+    {
+     "name": "memory_observe",
+     "title": "External process memory observer (CDP)",
+     "description": "外部进程内存观测：开发期对 DSH gen / 任意 node 进程做内存诊断。通过 CDP 从外部连到目标进程的 --inspect 端口（observer≠subject，不需往目标进程塞插件）。action：targets=（**无需 target**）列出本机所有带 --inspect=<port> 的 node 进程（pid + inspect 端口），用来决定后面 target 传什么；status=一次性内存构成（默认）/ baseline=记基线 / track=对比基线报增量+增长率+泄漏方向(JS堆 vs native) / gc=目标进程强制 global.gc() 判断瞬时或泄漏(需目标带 --expose-gc) / snapshot=HeapProfiler 写 heap snapshot 落盘。除 action=targets 外，target（目标进程 --inspect 端口，纯数字）**必填**；不知道填什么时先 action=targets。★ 常用链：action=targets 拿端口 → target=<端口> status 看现状 → action=baseline 记起点 → 跑活 → action=track 看增量。",
+     "inputKeys": [
+      "action",
+      "target",
+      "project_dir"
+     ]
+    },
+    {
+     "name": "move_symbol",
+     "title": "Move a module-level symbol across files (semantic refactor, redirects importers)",
+     "description": "跨文件移动模块级符号（语义重构第一棒）：把 file 里的模块级符号 symbol 搬到 to_file，并自动把工作区内所有「仅引入该符号」的 import/再导出目标从源文件重定向到 to_file（只改 import 的 source，远程名/别名/使用点不动）。导入到工作区外（外部仓库）的引用只反馈（externalRefs）不追外。防护（任一触发→整体不落盘并说明）：目标文件撞同名 / namespace import / export * 转发 / 一条 import 同时引入其它符号 / 非模块级符号 / 源文件是 import 绑定。v1 仅 TS/JS 模块级符号；to_symbol 改名未启用（改名著 safe_rename）。",
+     "inputKeys": [
+      "project_dir",
+      "file",
+      "symbol",
+      "to_file",
+      "to_symbol",
+      "dry_run"
+     ]
+    },
+    {
+     "name": "narrate_step",
+     "title": "Narrate a production-line step as a governed narrative brick",
+     "description": "叙事砖（设计观察：吸收 manim 的\"声明式分镜\"——一个工序只讲一件事、靠连续进/出过渡连起来）。给定一个产线工序文件，生成\"进料口→工序→出料口\"分镜序列：数据形态（input/output 针脚）由契约投影（actual_apis[0] 签名）产生，是代码事实、非 LLM 编造；分镜 facts 逐条引用真实针脚。write=true 时用自有 MCP 抽成砖接入体系：DSL semantic 落 brick_narr_* 条目（思维导图「🧱 已验证积木」区出卡）。防编造纪律同契约提取：LLM 结论只进 role.reasons/notes，不产生数据事实。",
+     "inputKeys": [
+      "feature",
+      "file",
+      "title",
+      "detail",
+      "write"
+     ]
+    },
+    {
+     "name": "observe_instrument",
+     "title": "Auto-instrument or restore a TS/Go project",
+     "description": "对目标项目全自动插桩，按语言分派：Go 工程走 observe-lang-go 语言包（go/ast 注入 camprobe.Capture，函数出/入/return/catch/IO）；TS 工程走 TS AST（captureProbe）。均幂等（已含探针文件跳过）。action=uninstrument|restore 一键全拔（从自动备份拷回原文件、删备份目录）。action=ledger 只读查看探针台账（一次插桩的全部探针点 + 统计），不写盘。dry_run=true 只预览不写盘。写盘前自动备份，git 可兜底。TS 写盘后自动生成探针台账（.agent-io/observe-ledger.json），用 action=ledger 只读查看；Go 写盘后可用 action=restore 还原。契约模式：contract_probes 传探针 id 数组则只注入这些探针点；缺省=探索模式全量插桩。Go 运行前提：被测工程须能 import `github.com/xr192172/agent-io/observe-lang-go/probe`（其 go.mod 需 replace/require 指向本仓 observe-lang-go）。",
+     "inputKeys": [
+      "action",
+      "target",
+      "dry_run",
+      "contract_probes",
+      "project_root",
+      "deep",
+      "effects",
+      "scope"
+     ]
+    },
+    {
+     "name": "observe_judge",
+     "title": "Judge a batch of Observe events",
+     "description": "对一批 Observe 事件执行偏差判定（语言无关）。传 events 数组（符合 TSEvent 形状：probe/fields[err/op/benign]，可含 trace_id/frame_id）。返回逐条判定 + 汇总（total/ok/deviation）。text=true 返回人类可读报告，否则返回 JSON。传 decls（设计声明数组）时额外执行链路契约判定（P2）：从事件 trace 三元组重建实测调用链，声明的调用序（decl.chain）必须是某条实测链的子序列，断裂报 chain-broken（含 trace_id 与实测窗口）。适用于：探针语言任意，统一收敛到这一处判定，不随语言复刻规则。",
+     "inputKeys": [
+      "events",
+      "decls",
+      "text",
+      "use_llm",
+      "project_root"
+     ]
+    },
+    {
+     "name": "observe_log",
+     "title": "Query Observe runtime logs by file",
+     "description": "查询 Observe 运行时日志（events.jsonl）。可传 files 按文件路径过滤（精确/后缀/包含匹配），只返回命中路径的事件；不传 files 时默认只返回偏差，all=true 才全量。适用于：LLM 按需拉取某文件/某条链路的数据流与异常，而非全量丢出。",
+     "inputKeys": [
+      "events_file",
+      "files",
+      "all"
+     ]
+    },
+    {
+     "name": "observe_trace",
+     "title": "Read recorded call-chain traces (LLM-facing replay)",
+     "description": "读探针录制的事件（events.jsonl）→ 重建完整调用树 → 采样保留，返回结构化的调用链给 LLM 分析/总结/找根因。一针 = 一次采样的完整链路（前因后果在，每环节 probe / 入参 / 出参 / 耗时 / 缺帧），不裁剪不伪造。不给 trace_id：返回链路清单（trace_id、帧数、根函数、信号），供挑哪针展开。给 trace_id：展开该针完整调用树（文本树 + 结构化 JSON）。keep=all 返回全部链路不过滤（弥合默认 judge 丢纯对话长针的偏差）。events_path 缺省自动找探针 sink：OBSERVE_EVENTS_FILE > DS_OBSERVE_EVENTS > 系统临时目录 dsh_events.jsonl > cwd/runs.jsonl。",
+     "inputKeys": [
+      "events_path",
+      "events_text",
+      "keep",
+      "trace_id",
+      "limit"
+     ]
+    },
+    {
+     "name": "plan_refactor",
+     "title": "Compute a reviewable, replayable refactor plan (read-only)",
+     "description": "「先算清单 → 预览 → 批量落盘」的**第一半**（规划书 §16.3 P-C）：**只读**算出一份可审、可复跑、可入账的重构清单，不写任何文件。输入 targets=[{file, old_text, new_text}, ...]（与 edit_code 批量同形状，每项 = 文件内一次**唯一**文本替换）；输出结构化清单 data：plan_id（内容派生指纹）+ items（每项 file/old/new/**命中级别**/diff 预览）+ files（规划时刻源文件指纹 base_fingerprint 与\"全应用后\"指纹 post_fingerprint）+ summary（项数/文件数/按命中级别分布）。定位与语法门**复用** edit_code 的 replace_text 同一实现（4 级模糊级联：逐字→空白归一→缩进弹性→省略号占位；歧义即报错、绝不猜）。纪律（§21）：清单必须**全部可执行**——任一项规划不出来（old_text 不在/歧义/新引入语法错误）⇒ 报错并列全每项原因，不产出半成品；targets 为空 ⇒ 产出**显式空清单**（items=[]）。★ 把本品的 data **原样**交给 apply_refactor_plan 落盘（同一份清单 = 同一 plan_id；清单被改动会被指纹检出）。与 refactor_pipeline 的分工：pipeline 是\"内置步骤自动检测\"（dead import/语句/迁移）；本品是\"**调用方给定清单**\"的算清单入口（无自动检测，只算你要的那批替换）。",
+     "inputKeys": [
+      "project_dir",
+      "targets"
+     ]
+    },
+    {
+     "name": "read_project_docs",
+     "title": "Read project docs (per-project docs/ folder)",
+     "description": "读取某 feature 的项目文档夹（<project_dir>/docs/，或受管目录 .agent-io/docs/<feature>/）。三种用法：不带 name= 返回清单（含 frontmatter 关联标签与预览，供 agent 挑）；带 name= 返回单篇全文；带 targets 返回命中该目标集（功能/步骤/文件）的文档正文（与 canvas_notes action=decide 的按批关联注入同一套匹配）。项目文档可丢进项目仓库 docs/ 作为 LLM 决策背景（需求/设计约定/约定规范），canvas_notes action=decide 会自动按批把命中文档注入决策上下文（TOC 全量 + 命中正文封顶）。",
+     "inputKeys": [
+      "feature",
+      "project_dir",
+      "name",
+      "targets"
+     ]
+    },
+    {
+     "name": "recommend_observe_points",
+     "title": "Recommend where to instrument (observe points)",
+     "description": "★ 观测点推荐器：**不做全量插桩**，而是先用索引/图 + AST 语义算出「该在哪打日志」，只在推荐点上插。信号：高被引用（call 入度）/ 最近真改过的符号（symbol_diffs）/ 副作用边界（span 内 IO 调用，启发式）/静默吞错（catch 块内无 throw/日志，启发式）/ 复杂度高地（行数）/ 文件热点（24h 内改动）。每个点给出 score 与 reasons（为什么推荐它——这份「理由」本身就是整理日志的骨架）。key 取自**插桩器自身的 dry-run 站点清单**（`<mod>.<fn>.enter/.exit/.catch/.io.<op>`），与 contractProbes 精确匹配 ⇒ 推荐出来的点一定插得出来，不会漂移。输出清单落 `<project_dir>/.agent-io/observe-points.json`（可人工增删/改 level），再把 contractProbes 交给 observe_instrument 即可只插这些点。预算按分数裁剪（max_points），被截断的如实列出——不搞环形缓冲那套事后策略。",
+     "inputKeys": [
+      "project_dir",
+      "focus",
+      "focus_paths",
+      "max_points",
+      "max_files",
+      "write"
+     ]
+    },
+    {
+     "name": "reconcile_chain",
+     "title": "Reconcile a host chain with its real-run observe events (meso tier)",
+     "description": "中观档对账（工具可用性复盘缺口 C）：按「文件/宿主节点」一条命令的真跑 + 查数据 + 对账，填补宏观（整项目对账）与微观（trace-exec 纯函数子集）之间的空档。后工具自动前置 + 缓存跳过：宿主下无 detail 链时自动调用 deriveDetailChain 建链（已有链则命中缓存跳过派生），自动发现被观测项目事件文件（.agent/observe + .agent-io/observe），按链涉及文件过滤出这条链的真跑事件 → judgeEvent 逐事件判定偏差 → rebuildChains 重建实测调用链→ 链路契约匹配（声明链须是某条实测链的子序列，mode=bare-name 近似）。该链无任何事件时 not_run=true 并明示「先跑一遍再对账」，绝不伪造事件降级冒充成品。用途：重构前基线 + 重构后验收对照。",
+     "inputKeys": [
+      "feature",
+      "node_id",
+      "project_dir",
+      "events_files",
+      "force",
+      "max_steps"
+     ]
+    },
+    {
+     "name": "reconcile_effects",
+     "title": "Reconcile effect candidates with observe runtime observation",
+     "description": "积木契约动静对账（Brick Harvest Phase 2c 合龙）：读 <project>/.agent/observe/events-*.jsonl 中的 effect 事件（Go 语言包（observe-lang-go）instrument --effects 插桩产生），与 DSL 契约候选对账——命中转正（origin ast→runtime）、候选外新观测补进契约并记 incomplete 告警（静态漏了）、未触发候选保持 ast（不证伪），并填充 contract.runtime（call_count/top_callers/observed_targets/last_seen）。前置链：import_project → extract_contracts → instrument --effects → 运行项目 → 本工具。LLM 不产生事实：只搬运 observe 观测，判定规则全部机械。",
+     "inputKeys": [
+      "project_dir",
+      "feature",
+      "events_files",
+      "write_dsl"
+     ]
+    },
+    {
+     "name": "refactor_judge",
+     "title": "LLM review gate: collect issues, decide adopt/reject, escalate the unsure to human (via context/inbox)",
+     "description": "LLM 审闭环的裁决门：接受候选问题清单，逐条裁【采纳/驳回/不确定(+置信度+理由)】，把\"拿不定主意\"的（uncertain）上抛回控制台/上下文（经 alert_inbox 入箱，下一次工具响应自动附带），其余进 decided（adopt/reject）。这是\"用工具收集问题 → 问题回吐给 LLM → 再给人审\"的最小闭环，无需交互审核 UI。用法：给我 issues（type/file/desc/severity/evidence 数组）；不传 decide → 全部判\"不确定\"全部上抛（等 LLM/人拍板），或传 decide 裁决器自动路由（adopt→做/继续，reject→忽略，unsure→上抛）。返回 result：{ decided:{adopt,reject}, escalated, decisions, meta, review_prompt }，其中 review_prompt 可直接贴给人看。",
+     "inputKeys": [
+      "project_dir",
+      "issues",
+      "verdicts",
+      "escalate_to_inbox"
+     ]
+    },
+    {
+     "name": "refactor_pipeline",
+     "title": "Run deterministic refactor pipeline (dead imports + dead statements + package migration + function annotation)",
+     "description": "确定性重构管线：把可自动执行的瘦身改写串成一条链，一次调用按序执行、统一增量验证、失败只回滚到最近绿点。入口只跑一次改前基线（build+test），其后每步基于上一步已绿的内容只跑一次改后验证——不改动的步骤不验证（性能友好）。内置步骤：  1) dead_imports：一键自动检测并删除死 import——未给 dead 清单时自动调用 detect_dead_imports 做文件级扫描；     给了清单则用给定清单（可直接用 dead_deps 的 dead 数组）。复用 removeDeadImports 同源规则删除指向死源的 import/require/re-export 语句。  2) dead_statements：自动扫描（可选 files 收敛范围）删除 return/throw/continue 后不可达语句与死分支（TS/Go）。  3) package_migration（包改名/提级）：把缺换代的包一次性涤荡干净——全项目 import 引用面重写（prefix→to）、     package 声明改名（v2→hub，from_test→to_test）、import 别名清洗（hubv2→hub）；可选目录物理移动。  4) function_annotation（函数语义注释，TS/JS + Go）：扫覆盖→缺失的用 LLM 依据 签名+函数体 生成一句话语义注释；     用 @fnhash body 指纹标记，函数体一改即判过期 → 下次管线重注同步；手写无指纹注释绝不动。失败语义：某步改后验证回归 → 只还原该步预读的原始内容，回到上一步绿点，前面已绿的改动保留；管线结果 ok=false。基线失败 → 一个文件都不改。verify=true 启用验证；{commands} 自定义命令组；缺省/verify=false 仅落盘不验证（not_verifiable）。rename 步骤需人工候选，暂不内置。result.stages[] 含每步 outcome（applied/no_change/rolled_back/not_verifiable/skipped）+ baseline/after 验证状态。",
+     "inputKeys": [
+      "project_dir",
+      "steps",
+      "verify"
+     ]
+    },
+    {
+     "name": "remove_dead_imports",
+     "title": "Remove dead imports reported by dead_deps",
+     "description": "移除死 import 执行器：把 dead_deps 报告的死三方依赖（DeadDepCandidate 列表，含 source + files）从对应文件里删掉对应的 import/require/re-export 语句。Go 与 TS/JS 各形态都支持：单行 import、块 import（删空块壳 `import (...) `）、别名/空导入 `_`/点导入 `.`、具名/默认/命名空间/type/副作用 import、export * / export {...} from、CommonJS require。保守规则：只删整条 import 语句；识别不出的形态不动；动态 import(\"x\") 等使用点绝不碰。原子性：预读全部待改文件，任一读取失败 → 整批中止、一个都不写。dead 参数可直接传 dead_deps 工具返回结果里的 dead 数组。verify=true（推荐）：启用改前/改后验证闭环——改写前先跑 build+test 基线，改写后再跑同一批验证；基线失败则一个都不改，改后回归则自动回滚原位。verify 也可传 { commands: [{label, cmd, args, timeoutMs}] } 自定义验证命令组（缺省按项目形态探测）：有 go.mod → go build ./... + go test ./...；有 package.json → tsc --noEmit + npm test。verify=false/缺省 = 只执行不验证。",
+     "inputKeys": [
+      "project_dir",
+      "dead",
+      "verify"
+     ]
+    },
+    {
+     "name": "rename_files",
+     "title": "Batch file renames with import-reference rewrites (whole-batch dry-run first)",
+     "description": "文件改名/移动（单条或批量统一入口）并联动全仓 import 引用改写，对标脚本效率（消除\"70 文件改名=70 次调用\"的粒度问题）。支持单条或批量——renames 传 1 条即单文件改名（原独立的 rename_file 单条目工具已并入本入口）。输入 renames=[{from,to}]（from/to 相对 project_dir 或绝对路径）。先对所有条目按原始文件态 dry_run 算影响面；任一条被阻断（源缺失 / 目标已存在 / 命中冻结行）→ 整体不落盘，返回预览报告。全部可落盘时才逐条落盘（复用 rename_file 的原子语义：先复制→改写引用→删源+重索引，失败可回滚）。apply 阶段串行，前面改动使后续条目被阻断时立即中止，如实报告已应用条数。冻结行保护 / 生成物识别：逐条内部走 rename_file，天然继承（body 文件不套 / importer 命中冻结行 → 该条阻断）。★ 成本模型（2026-10-05 四档真跑实测 —— 要调用本工具前请先读这段）：**耗时 ∝ 被改写的引用数，不是条目数**—— 0 处引用的「搬回」只要 0.7s，而 42 处引用的「搬去」要 52–178s。★ 且有**一次性大额固定成本**（首次建索引 / 保鲜）：实测 4 条 52.1s > 8 条 24.6s ⇒ 耗时**非单调**，所以**不要**用「条目数 × 单条耗时」估算，也**不要**据此定分片大小。⇒ 该不该分批的预判依据是**这些文件被多少处 import 引用**（不是 renames 有几条）；引用面大时（几十处）单批就可能跑几十秒到数分钟 ⇒ 请留足超时。",
+     "inputKeys": [
+      "project_dir",
+      "renames",
+      "dry_run"
+     ]
+    },
+    {
+     "name": "rename_symbols",
+     "title": "Rename identifiers — module-level symbols (cross-file) or file-local bindings (scope-isolated)",
+     "description": "标识符改名**统一入口**：一个工具、两种作用域粒度，用 scope 选；**入参两种 scope 同形**：renames=[{file,symbol,to,decl_line?,rename_file_if_matching?}]（单条或批量）。· scope=module（缺省，即老行为）：改**模块级符号**（函数/const/class/interface/type/enum，或 import 进来的远程名），跨文件联动定义点 + import 子句 + 全部引用点（含 tsconfig 别名、re-export）；**全批原子** —— 任一条被阻断（撞名/星号转发/非模块级符号/根外文件）⇒ 整体不落盘，返回预览报告。· scope=local：改**文件内局部绑定**（函数/块内 const·let·var、形参、catch 参数），作用域隔离（同作用域不撞名；不同函数/块的同名绑定互不误伤）；**逐项独立** —— 某一项找不到绑定/名字歧义/撞名/非法名 ⇒ 只跳它，其余照改，跳过项逐条可见。两种 scope 共有：先算结构化预览（每处 old→new 可验证）、true=dry_run 只看不写、**一次解析多编辑逆序合并**（避免串行改名导致的偏移错位）、一批一份写前快照（撤回通道）、落盘后索引写穿（改完立刻读不会读到旧索引）。scope=local 按 **symbol（名字）+ 可选 decl_line（声明行，1-based）** 寻址：名字在文件内唯一就直接命中；同名多于一个（不同函数/块级遮蔽）而没给 decl_line ⇒ 该条被拒并列出候选行号（**不猜**，改错变量是这类工具最不能出的错）。report_literals=true（仅 scope=module）：额外扫描每个旧符号 snake 变体在项目文本里的字面量引用（如工具名 render_dsl 出现在错误提示/README 里的串），按 kind 分治（契约/历史/文档/测试/代码），仅报告不改动。★ 与 rename_files 是**两个对象**（那个改文件系统路径 + 全仓 import 源），不聚合；suggest_renames / find_similar_names 是它的上游只读分析层。",
+     "inputKeys": [
+      "project_dir",
+      "scope",
+      "renames",
+      "dry_run",
+      "report_literals"
+     ]
+    },
+    {
+     "name": "render_brickwork",
+     "title": "Render the dependency-driven community workbench (brickify)",
+     "description": "可视化协作平台的**依赖驱动积木化工作台**渲染（后端数据线路的交付出口）：扫描 project_dir → 文件级依赖图 → 目录种子积木 → 混合文件信号(AST 顶层概念簇) → 功能社区(依赖边连通分量+内聚度) → 生成**自包含单 HTML 社区工作台**。取代旧\"按目录硬切+基名相似\"启发式：每块积木=一个功能，社区=积木依赖簇，混合文件=一文件多功能(解耦候选信号，需人/LLM 确认拆分)。返回 HTML 文件路径，浏览器可直接打开验收。",
+     "inputKeys": [
+      "project_dir",
+      "source_root",
+      "output_path"
+     ]
+    },
+    {
+     "name": "render_design",
+     "title": "Render design DSL to mindmap/SVG/Markdown",
+     "description": "渲染设计 DSL：format=mindmap（默认，现行思维导图架构：root → 功能分组 → 文件；功能分组优先读设计视图语义分组容器，其次 feature_tree 功能树）/svg（矢量图）/ markdown（可读设计文档）。均用 feature 从存储读取。★ 2026-09-30：原 `format=html`（自包含单文件设计画布·星图）**已删除** —— 它是 lane 自己标注的\"仅调试用\"旧路径、渲染效果差，且前端（dsl-workbench）自取数据自行渲染；DSL 相关能力不受影响。",
+     "inputKeys": [
+      "feature",
+      "format",
+      "output_path"
+     ]
+    },
+    {
+     "name": "rules",
+     "title": "Rule library (fix → rule): export / apply / check with CI ratchet — single entry",
+     "description": "规则库统一入口（**3 个注册入口收敛为 1 个入口 + action 分派**；三者操作的是**同一个库**，故按「操作对象」聚合成一面）。规则 = 一个自包含 `.md`（frontmatter + 说明 + `pattern`/`replace` + 正/反例夹具），住在 `<project_dir>/.agent-io/rules/` —— 三个动作操作的是**同一个库**，故按「操作对象」聚合成一面。action=export（修复→规则沉淀）：把一次已完成的修复**沉淀成可复跑规则**：给一段 before/after，自动泛化出 pattern/replace 并生成夹具，过「验收三关」后才允许落盘。这是与 Grit/GritQL 的核心差异：Grit 的规则全靠专家手写，没有\"从改动本身长出规则\"的机制。泛化：before/after 先做行级 diff 取**变化行窗口**（pattern/replace/夹具三者同 scope）；两侧都出现的标识符抽象成 `$hole`（保持\"同一实参\"），只在一侧的保留字面量，关键字/全局对象/属性名不抽象。★ 泛化的\"度\"不靠猜：从最多抽象开始逐级放宽，每级用三关裁决 —— ① 出生回归（pattern 必须能复现这次修复）② 反例不命中（修好的代码/阴性样本不得被命中）③ 幂等（对 after 再跑不得再命中）；某级通过就采纳（泛化尽量强），全败则退化为**纯字面量**规则并在回执里如实标注降级。落盘位置：`<project_dir>/.agent-io/rules/<id>.md`（单文件自包含）。action=apply（三态语义）：把规则库批量应用到项目源码 —— ① applied（命中且唯一 ⇒ 按 replace 改写）；② todo（命中但歧义 >1 处 ⇒ 在命中处插入 TODO(rule-id) 注释，不失败）；③ clean（无命中 ⇒ 对该文件干净）。纪律：**唯一才动**（歧义绝不挑一个改），**不改文件就不报成功**。glob 可限定文件（正则，匹配相对路径）；rule_ids 可只跑指定规则。action=check（lint + CI 棘轮）：结果与 `<project_dir>/.agent-io/rules/baseline.json` 的存量比对 —— 命中数**未增加** ⇒ 通过（哪怕这条规则当下就有一堆存量命中）；出现**新增命中** ⇒ 不通过。这样\"先启用一条当前就失败的规则\"不会炸 CI，而新引入的问题会被立刻拦住。update_baseline=true 把当前存量记为基线（修完一批后收紧棘轮）。同时跑每条规则的**自身夹具**（正例须命中且改写一致、反例不得命中），夹具不过的规则单独列出（规则本身坏了）。★ 安全策略前移（默认值**明写在这里**，不是隐藏知识）：两个**写** action（export / apply）的 dry_run 都默认 `true` —— 只出预览 / 三态计数、**不写盘**；确认后必须**显式**传 dry_run=false 才落盘（apply 落盘走写闸：写前快照 + 索引写穿保鲜）。★ check 的 update_baseline=true 会**改写棘轮基线**（收紧后不会自动回退），属不可逆动作 ⇒ 只在修完一批后显式传。",
+     "inputKeys": [
+      "action",
+      "project_dir",
+      "id",
+      "before",
+      "after",
+      "title",
+      "tags",
+      "level",
+      "language",
+      "created_from",
+      "rule_ids",
+      "glob",
+      "max_files",
+      "todo",
+      "update_baseline",
+      "dry_run"
+     ]
+    },
+    {
+     "name": "run_tests",
+     "title": "Run tests and return exit code plus output tail",
+     "description": "跑目标项目的测试（走 package.json 的 scripts.test，以退出码判成败，退出码 0 ⇒ 成功）。filter 传单个测试文件/名称 → `npm test -- <filter>` 定向回归；省略跑全量（耗时，适合提交前检查）。失败时返回 exitCode + stdout/stderr 的尾部（截断，仅尾部），不解析任何框架私有格式，通用适配 vitest/jest/node:test 等。",
+     "inputKeys": [
+      "project_dir",
+      "filter",
+      "timeout_ms"
+     ]
+    },
+    {
+     "name": "scaffold",
+     "title": "Scaffold: generate a code skeleton from the DSL",
+     "description": "从 DSL semantic 层生成代码骨架（输出根缺省 `<cwd>/scaffold/<feature>`）。支持语言 .go/.ts/.py/.js/.vue/.tsx。额外生成 INVARIANTS.md 记录跨文件不变式。已存在文件默认**不覆盖**（`overwrite=true` 才覆盖）。★ 2026-10-01：原先的 `action=backfill`（把代码解析出的 API 签名**镜像回填进 DSL** 的 `actual_apis`）**已整条剔除** —— 那是\"把代码的事实抄进意图册\"，是第二份可写副本。要读事实请用 `explore_code`/`query_feature`，它们现取解析数据（唯一入口 `infrastructure/index/file_facts`）。",
+     "inputKeys": [
+      "feature",
+      "output_dir",
+      "overwrite",
+      "ui_framework",
+      "project_dir"
+     ]
+    },
+    {
+     "name": "signal_review",
+     "title": "Review mixed-file decoupling signals (LLM)",
+     "description": "混合文件解耦信号的**LLM 复核**（\"拆分链\"第一棒）：先跑 brickify 取 `mixed_files` 信号（一个文件里多功能 = 解耦候选），再逐信号喂 LLM（读文件全文 + 注释）⇒ 逐簇产出【采纳/驳回 + 功能名 + 理由】。判据：独立使用者 / 独立演进 / 文档证据 ⇒ 工具函数簇**驳回**；新旧世代并存且注释明言 ⇒ **采纳**。★ LLM 不可用（未配置 apiKey）时**诚实降级**：`llm_available=false`，原样返回信号、**不伪造复核结论**。产物（`signals_scanned` + `review.reviews`）可直接喂 `split_stage`（给 `report_path` 落盘即可）。",
+     "inputKeys": [
+      "project_dir",
+      "source_root",
+      "only",
+      "timeout_ms",
+      "max_source_chars",
+      "report_path"
+     ]
+    },
+    {
+     "name": "snapshot",
+     "title": "Code snapshots (undo points): list them / roll back to one — single entry",
+     "description": "代码快照统一入口（**2 个注册入口收敛为 1 个入口 + action 分派**；按「操作对象」聚合的理由：两者操作的是同一个快照库）。快照 = 每次 edit_code / rename_files / move_symbol **落盘前**自动存的一份文件副本（住 <project_dir>/.agent-io/code-snapshots/，默认保留最近 20 份）。action=list 列出快照（id / 时间 / 原因 / 涉及文件数）—— 回答\"我能不能撤回刚才那一步\"，limit 默认 10；action=rollback 回滚到某份快照（snapshot 省略或 \"latest\" = 最近一份）：快照里存在的文件写回原内容，快照时\"还不存在\"的文件（= 那次改动新建的）会被删除；传 file 可只回滚单个文件。★ 语义明写（**不静默改**）：rollback **立即落盘、没有 dry_run 预览**（与收敛前的 rollback 入口逐字同语义）；且**回滚本身不再存快照 ⇒ 这一步不可再撤回** —— 要留后路请先 action=list 确认目标快照，或依赖 git。★ 别与设计稿快照混淆：本工具管**代码文件**快照；**DSL 设计快照**走 get_dsl(query=\"snapshots\")。",
+     "inputKeys": [
+      "action",
+      "project_dir",
+      "limit",
+      "snapshot",
+      "file"
+     ]
+    },
+    {
+     "name": "split_stage",
+     "title": "Split adopted concept clusters into separate files",
+     "description": "拆分执行器（\"拆分链\"最后一棒）：消费 `signal_review` 的报告，把复核判**采纳**的概念簇**按簇切出独立文件**。★ **默认 dry_run 只出草稿**（`apply=true` 才真落盘）；落盘由 `derive_split` 内置的编译/测试级验收 + 失败回滚兜底。报告形态：`{signals_scanned: [...], review: {reviews: [...]}}`（即 `signal_review` 的 `report_path` 产物）。",
+     "inputKeys": [
+      "project_dir",
+      "report_path",
+      "source_root",
+      "apply",
+      "re_export_extracted",
+      "max_symbols"
+     ]
+    },
+    {
+     "name": "structure_gap",
+     "title": "Structure intent vs reality — domain gap (misplaced / unlisted / missing)",
+     "description": "结构意图 vs 现状四态读数：读 `<project_dir>/structure.domains.json`（**域 = 能力的家**，声明\"哪个目录算哪个域\"）与磁盘现状对账，回答\"这次分层/搬家还差多少、下一步该搬什么\"。· misplaced = 文件在，但不在目标域 —— **待搬清单**；· unlisted = 文件在，但归属未定 —— **要决定，不要猜**；· missing = 目标声明了某域，但目录还不存在 / 域里没有源码 —— 与 misplaced 一体两面（搬完自然消失）。★ flatDirs 声明\"**有意平铺**\"的目录（散文件是终态、不报 misplaced，如 domain/ 概念族、CLI 命令面）：它的**子目录必须被登记**，出现了却没登记 ⇒ 报 unlisted —— 这是 flat 唯一的可证伪点，**不是免检白名单**。★ 依赖方向**不归本工具管**（那是 dep-cruiser 的 layer 规则）；配置里的 layer 只是给人读的分类标签。★ 配置**不存在** ⇒ configured:false（**合法状态**：尚未开垦，不是失败）；配置**坏**（JSON 非法 / id 重复 / dir 写成绝对路径）⇒ **直接抛错，不降级成\"没配置\"**。",
+     "inputKeys": [
+      "project_dir"
+     ]
+    },
+    {
+     "name": "suggest_renames",
+     "title": "Suggest semantic names for short/unmeaningful variables",
+     "description": "智能化改名建议：识别文件中短名/无意义局部变量（含形参），结合纯逻辑候选识别 + LLM 命名建议，为每个候选给出 suggested（建议新名）与 reason（理由）。use_llm=true（默认）调 LLM 建议；false 或未配置 LLM 时降级为仅候选识别（suggested 留空）。返回 candidates 含 id/name/kind/parentFunction/refs/declLine/suggested/reason，可直接把 {file, symbol: name, to: suggested} 作为 rename_symbols(scope=\"local\") 的 renames 条目完成批量改名（同文件同名绑定多于一个时再补 decl_line=声明行号；候选里的 declLine 是**行文本**、不是行号）。",
+     "inputKeys": [
+      "project_dir",
+      "file",
+      "min_len",
+      "max",
+      "use_llm"
+     ]
+    },
+    {
+     "name": "sync_contracts",
+     "title": "Sync tool contracts from registry schema into DSL expected_apis",
+     "description": "契约回填（修复契约漂移）：以注册表的 zod schema 为唯一事实源，把每个已注册工具的输入契约生成签名回填到 DSL semantic.files 的 expected_apis。改了工具 schema 后跑一次，DSL 契约自动跟上。默认只更新 DSL 中已存在的工具实现文件（按 basename 在 src/ 下解析真实路径）；include_all=true 时为缺失的工具文件补全契约节点。只回填签名（notes 带机器生成标记），设计侧意图由 LLM 维护。解析不到同名实现文件的工具（在 lane 内联实现）会在结果 unresolved 里如实列出，不静默跳过。",
+     "inputKeys": [
+      "feature",
+      "include_all"
+     ]
+    },
+    {
+     "name": "translate_go_ts",
+     "title": "Go→TS 半自动翻译（骨架 + 可选 LLM 填 + 可选行为对拍）",
+     "description": "把 Go 源文件机械生成 TS 骨架 + 验证闸（默认）；fill=true 用 AGNES key 池 LLM 逐孔填函数体（需 AGNES_KEY_POOL 或本地 key-pool-proxy）；verify=true 再对已填的纯函数跑 Go↔TS 行为对拍（需 go 工具链）。跨语言翻译：函数/方法/struct/接口/named 别名/多返回元组/map·slice·指针/泛型/chan(近似)。★ 本工具即原 `translate_cli` 的能力载体（该 CLI 已于 2026-10-06 删除；argv 面由 `cli.js translate_go_ts` 投影提供 —— 下文「原 translate_cli 的 …」是历史对应关系）。",
+     "inputKeys": [
+      "file",
+      "projectDir",
+      "outDir",
+      "out",
+      "fill",
+      "holes",
+      "batchSize",
+      "verify",
+      "maxRetries"
+     ]
+    },
+    {
+     "name": "upgrade",
+     "title": "版本升级契约差：工具链/语言特性/废弃 API 检测 + 局部重写闭环（git 验证回退）",
+     "description": "**版本升级契约差**（一个入口两个动作）。`action=scan`（缺省，**只读**）：① 工具链版本盘点（`pom.xml` / `build.gradle` / `.nvmrc` / `.tool-versions` / `go.mod` / `engines` 的声明版本 vs 本机探测）② 语言特性契约差（以声明版本为边界，报\"用了超过声明版本的特性\" = 编译会失败的那部分，附行号 + 重写建议）③ 废弃/移除 API（如 JDK 11 起移除的 JAXB/JAX-WS/JAF，附替代方案）④ 未覆盖扩展名（★ 扫到却没有适配器 ⇒ **这些文件没被检查，不等于没问题** —— 少做事必须可见）。可选两道闸（都缺省关）：`gate=true` 静态闸（编译级：Python `ast.parse feature_version` / Java `javac --release`）；`dynamic=true` 动态闸（运行级：★ **会真跑被测源码**）。`action=apply`（**写**，闭环）：按 `edits` 精确串替换（★ 歧义/未命中 ⇒ **整批拒绝、一个文件都不改**）→ 改前基线提交 → 验证（按项目形态探测 build/test）→ 通过则精确提交；**失败则 git 回退**到改写前。★ `apply` 两处如实说：① 前置 `project_dir` 必须是 **git 仓库**（回退靠 git）；② 它**会提交该仓库** —— 基线步骤把工作区**原有改动一并提交**（既有行为），验证通过后再精确提交本次改动文件。★ 与 `deprecate_offline`（死代码下线）/ `contract_gate`（积木契约）**不是一回事**：本工具管的是**版本边界**。",
+     "inputKeys": [
+      "project_dir",
+      "action",
+      "gate",
+      "dynamic",
+      "edits",
+      "skip_verify"
+     ]
+    }
+   ]
+  },
   "completion-candidates": [
    {
     "base": "./a",
