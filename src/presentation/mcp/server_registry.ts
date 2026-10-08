@@ -43,8 +43,10 @@ import { prewarmKernel } from '../../infrastructure/parse/index.js';
  * 后果：`parseFileFullSync` 恒返回 `解析器未预热`、`canParseFileSync` 恒 false ⇒
  * **同步解析路径从来没通过** ⇒ 同步工具只能退化（这也是仓里到处是文本回退的根因之一）。
  *
- * 放在**唯一调用入口**（MCP 与 CLI 逐字同路径）⇒ 一处覆盖两面；
- * `prewarmStarted` 保证只起一次；`void` ⇒ **不阻塞本次调用**。
+ * 放在**唯一调用入口**（MCP 与 CLI 逐字同路径）⇒ 一处覆盖两面；`prewarmPromise` 保证只起一次。
+ * ★ 2026-10-08 更正：原文写「`void` ⇒ **不阻塞本次调用**」——**那句已被下面那段推翻**
+ *   （fire-and-forget 会让每次 CLI 调用都落在「预热还没完成」上）⇒ 现在是**首次调用 await 一次**。
+ *   开篇声明与实现必须同时改：本文件原样犯过「注释承诺 ≠ 实现」（正是它要修的那件事）。
  */
 let prewarmPromise: Promise<void> | null = null;
 
@@ -70,8 +72,18 @@ function ensureKernelPrewarmed(): Promise<void> {
             // ★ 2026-10-08：① 原文案说「语言包」是错的（missing 里装的是 **ext**）；
             //   ② **新增**报「注册了但没装」—— 那类是此前**看不见**的（夹缝在最上面那段注释里）。
             (r.missing.length ? `（${r.missing.length} 个扩展名加载失败）` : '') +
+            // ★★ 2026-10-08 收（③′）：**只报计数，不逐次刷 33 个名字**。
+            //   为什么（上一笔自己留下的形态错误）：一次列 33 个名字是**每次启动都刷的噪音**，
+            //   而**噪音会训练人忽略它**（本仓最忌的「狼来了」）。
+            //   ★ 那 33 个名字是**静态**的（注册表里 kind 不变、装没装只随机器变）⇒ 它们不携带
+            //     「(本次/本项目) 有什么」的信息 —— **按项目交叉**才携带。而按项目的明细已经有人报：
+            //     `code_health` 的 `bounds.skipped` 逐后缀报出（只报**本项目真有文件**的那些，
+            //     还带「补：npm i xxx」）。
+            //   ★ 这不是「静默省略」：计数还在，`prewarmKernel()` 的**返回值**照旧带全量
+            //     `notInstalled`（数据 API 未动）—— 去掉的只是**没人要的那次喊话**。
             (r.notInstalled.length
-              ? ` ★ 另有 ${r.notInstalled.length} 门语言【注册了但没装】：${r.notInstalled.join(', ')}`
+              ? ` ★ 另有 ${r.notInstalled.length} 门语言【注册了但没装】（静态清单，不逐次刷屏；` +
+                `本项目真用到哪些 ⇒ 看 code_health 的 bounds.skipped，那里逐后缀带「补 npm i xxx」）`
               : ''),
         ),
       )
