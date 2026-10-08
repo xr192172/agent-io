@@ -20,8 +20,9 @@
  * 不引入跨仓状态。
  */
 
+import path from 'node:path';
 import { parseFileFull, listSupportedExtensions, resolveProjectImport, type ParsedSymbol } from '../../parse/index.js';
-import { codeSourceExts, partitionByCodeLang } from '../../parse/source_exts.js';
+import { codeSourceExts, partitionByCodeLang, isTsJsExt } from '../../parse/source_exts.js';
 import { boundsSkipFromExcluded, type ScanBounds } from '../../scan_bounds.js';
 import { collectSourceFiles } from '../../authoring/version_upgrade/detect.js';
 
@@ -202,8 +203,17 @@ export async function buildImpactGraph(root: string): Promise<GraphResult> {
       return null;
     }
     // 裸标识符 `computeSum`：保底走"全局唯一"（多候选时不建边，防误报）
+    // ★★ 2026-10-08 修：**再加一道「同语言族」闸**。
+    //   实测假边（靠"现扫 vs 索引库"两条独立路径对照逮到）：
+    //   `observe-lang-go/probe/tiered.go` 把**局部变量** `opt` 当函数调，而全仓恰好只有
+    //   `src/presentation/cli/cli.ts` 导出名为 `opt` 的顶层符号 ⇒ 连出一条 **Go → TS** 的边。
+    //   本文件头注写着这条兜底的用意是「重名时不建边（**避免误报**）」⇒ 跨语言误连正违背该意图。
+    //   判据：**TS/JS 家族内部互通**（`.ts`↔`.mjs` 等本来就是一套工具链）；其余语言**要求扩展名相同**。
     if (providerOfSymbol && providerOfSymbol.length === 1 && providerOfSymbol[0].rel !== consumer) {
-      return providerOfSymbol[0].rel;
+      const ea = path.extname(consumer);
+      const eb = path.extname(providerOfSymbol[0].rel);
+      const sameFamily = isTsJsExt(ea) && isTsJsExt(eb) ? true : ea === eb;
+      if (sameFamily) return providerOfSymbol[0].rel;
     }
     return null;
   };
