@@ -32,7 +32,7 @@ import { LANGUAGES, findLanguageByExt, languageModuleSpec, LanguageEntry } from 
  *   **下层依赖上层**；搬 ⑥ 后架构门的 `layer-downward-only` **真的亮了** ⇒ 按本文件原注释
  *   自己写下的处置办法，把那个纯函数抽到 `infrastructure/parse/template_compat.ts`，两边都引它。
  */
-import { templateCompatFromPkgJson } from '../packages/template_compat.js';
+import { templateCompatFromPkgJson, usesNanBinding } from '../packages/template_compat.js';
 
 /**
  * 语言包可解析性判定用了两套 resolver，按可用性依次回退：
@@ -153,9 +153,47 @@ export function isLanguageInstalled(pkgName: string): boolean {
  * （就是 `languageModuleSpec(...)` 那个串，也是 `describeUnmatchedExt().pkg` 给的那个），
  * 这样调用方**不必**再知道「pkg 名 / 说明符」的区别。
  */
-export function languagePackagePresence(moduleSpec: string): 'usable' | 'incompatible' | 'absent' {
-  if (resolvePackage(moduleSpec) === null) return 'absent'; // 解析不到 = 磁盘上没有
-  return resolvedIsLoadable(moduleSpec) ? 'usable' : 'incompatible'; // 在，但过不了真筛子
+export interface LanguagePackageStatus {
+  /** `usable` = 可载入；`incompatible` = 在盘上但过不了真筛子；`absent` = 解析不到（磁盘上没有） */
+  state: 'usable' | 'incompatible' | 'absent';
+  /** 磁盘上那份的版本（拿不到 ⇒ null） */
+  version: string | null;
+  /** 它是不是 `nan`（NAN 绑定）—— **因果判据**，见 `templateCompatFromPkgJson`（拿不到 ⇒ null） */
+  usesNan: boolean | null;
+  /** 磁盘上那份自己的清单（拿不到 ⇒ null） */
+  pkgJson: Record<string, unknown> | null;
+}
+
+/**
+ * 一个语言包**在磁盘上的真实状态**（判别符**能不能用**，并给出"为什么"所需的原料）。
+ *
+ * ★ 与 `isLanguageInstalled` 的分工（别混）：那个答"**这门语言能不能解析**"（带缓存、会被
+ *   loader 的失败缓存影响）；本函数答"**磁盘上那个包是什么情况**"（每次真读，不缓存）。
+ *   提示文案要的是后者 —— 它得说出**版本**与**为什么**。
+ * ★ 判据复用 `templateCompatFromPkgJson`（**真筛子的唯一权威**）⇒ 不另写第二份。
+ */
+export function languagePackageStatus(moduleSpec: string): LanguagePackageStatus {
+  const empty: LanguagePackageStatus = { state: 'absent', version: null, usesNan: null, pkgJson: null };
+  const entry = resolvePackage(moduleSpec);
+  if (entry === null) return empty;
+  const pj = nearestPackageJson(entry);
+  let json: Record<string, unknown> | null = null;
+  if (pj !== null) {
+    try {
+      json = JSON.parse(fs.readFileSync(pj, 'utf8')) as Record<string, unknown>;
+    } catch {
+      json = null;
+    }
+  }
+  // 在盘上，但读不出清单 ⇒ **不能声称可用**（与 `isLoadablePackage` 同向：读不出就不算可用）
+  if (json === null) return { state: 'incompatible', version: null, usesNan: null, pkgJson: null };
+  const compat = templateCompatFromPkgJson(json);
+  return {
+    state: compat === 'ok' ? 'usable' : 'incompatible',
+    version: typeof json.version === 'string' ? json.version : null,
+    usesNan: usesNanBinding(json),
+    pkgJson: json,
+  };
 }
 
 /** 探测可用的语言（LANGUAGES 中可解析且过真筛子的子集） */

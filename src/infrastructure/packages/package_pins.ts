@@ -23,4 +23,10 @@ export const PACK_PINS: Record<string, string> = {
   rust: '^0.21.0',
   'c-sharp': '^0.21.3', // note: LANGUAGES.pkg 用的是 'c-sharp'（tree-sitter-c-sharp）
   php: '^0.23.12',
+  // ★★ 2026-10-08 新增：本机 `node_modules` 里那份 css 是 **0.20.0**（`nan` 绑定 ⇒ 载入必失败），
+  //   而它**不是我们装的** —— 是 `tree-sitter-scss` 的**传递依赖**（`tree-sitter-css: ^0.20.0`）。
+  //   上游**同核心线上**的 0.21.0 是 N-API（peer `tree-sitter ^0.21.0`）⇒ 实测（隔离目录
+  //   `.inspect/fx-css`，核心 0.21.1）`setLanguage` + `parse` 出 `stylesheet` ✓ 真能读。
+  //   ★ 注意**不能装 latest**：0.25.0 要核心 `^0.25.0`，装了当场 ERESOLVE。
+  css: '^0.21.0',
 };

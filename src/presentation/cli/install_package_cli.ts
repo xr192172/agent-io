@@ -32,7 +32,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { LANGUAGES } from '../../infrastructure/parse/languages.js';
-import { templateCompatFromPkgJson, type TemplateCompat } from '../../infrastructure/packages/template_compat.js';
+import {
+  templateCompatFromFacts,
+  templateCompatFromPkgJson,
+  templateCompatReason,
+  usesNanBinding,
+  type TemplateCompat,
+} from '../../infrastructure/packages/template_compat.js';
 import { PACK_PINS } from '../../infrastructure/packages/package_pins.js';
 
 
@@ -57,6 +63,11 @@ export interface LangPackRow {
    * 未装的包**离线判不出** ⇒ 'unknown'（用 `check` 子命令查 registry 元数据）。
    */
   compat: TemplateCompat;
+  /**
+   * ★ 2026-10-08：该包是不是 `nan`（NAN 绑定）—— **「为什么不可用」的因果判据**。
+   * 未装 / 清单读不出 ⇒ null（**不许当成 false**）。见 `template_compat.usesNanBinding`。
+   */
+  usesNan: boolean | null;
   /** 本机是否有 `prebuilds/<platform>-<arch>/`（装上即用）；未装 ⇒ null */
   prebuild: boolean | null;
 }
@@ -72,28 +83,62 @@ export function hasHostPrebuild(pkg: string): boolean {
   }
 }
 
-/** 兼容性的人读结论（一处措辞，list/check/install 三处共用，别各写一份） */
-export function compatVerdict(compat: TemplateCompat, prebuild: boolean | null): string {
+/**
+ * 兼容性的人读结论（一处措辞，list / check / install 三处共用，别各写一份）。
+ * ★★ 2026-10-08：`incompatible` 与 `unknown` 的**措辞搬到 `template_compat.templateCompatReason`**
+ *   —— 因为 `lang_hint` 也要说同一件事（它原先只能自己拼一句，于是拼错了：把「模板非
+ *   node-gyp-build」当成原因）。**同一件事的措辞不许有第二处**。
+ * @param usesNan 该包是不是 NAN 绑定（null = 清单拿不到）——决定"为什么不可用"那句怎么写
+ */
+export function compatVerdict(compat: TemplateCompat, prebuild: boolean | null, usesNan: boolean | null = null): string {
   if (compat === 'ok') {
-    return prebuild === false ? '⚠ 可载入，但本机无 prebuild（要靠本机 node-gyp 编译）' : '✅ 模板兼容（node-gyp-build）';
+    return prebuild === false
+      ? '⚠ 可载入，但本机无 prebuild（要靠本机 node-gyp 编译）'
+      : templateCompatReason('ok', usesNan);
   }
-  if (compat === 'incompatible') {
-    return '❌ 模板不兼容（非 node-gyp-build ⇒ 多为老 nan.h 模板，载入必失败）';
-  }
-  return '？未装（离线判不出，用 `check <lang>` 查 registry 元数据）';
+  return templateCompatReason(compat, usesNan);
 }
 
 /**
- * registry 元数据取 `scripts.install`（装包**前**的预检）。
+ * registry 元数据预检 —— 装包**前**，以及**本机那份已装但不可用时**（问上游还有没有救）。
  * best-effort：包不存在 / 网络不通 / 超时 ⇒ 如实返回原因（不猜、不假装能载入）。
+ *
+ * ★★ 2026-10-08 扩展（用户追问"怎么会是死包呢"逼出来的）：
+ *   原先只取 `scripts.install` —— 那是**影子判据**（判不出 NAN），而且**答不了**
+ *   「本机装的是旧版 / 本机这份只是别人的传递依赖」这个**最常见**的情况。
+ *   现在一次取 **version + scripts.install + dependencies**（`--json` 多字段 ⇒ 返回对象，
+ *   键被 npm **拍平**成 `'scripts.install'`），判据仍走 `templateCompatFromFacts`（唯一落点）。
+ *   实测 `tree-sitter-css`：本机 0.20.0（nan，`tree-sitter-scss` 的传递依赖），
+ *   上游 **0.25.0 已是 node-gyp-build、无 nan** ⇒ **这里才看得出"升级就能用"**。
  */
-export function registryInstallScript(pkg: string): { script: string | null; missing: boolean; error?: string } {
-  const r = spawnSync(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['view', `tree-sitter-${pkg}`, 'scripts.install', '--json'], {
-    encoding: 'utf-8',
-    shell: process.platform === 'win32',
-    timeout: 30_000,
-    cwd: path.dirname(findNodeModulesRoot()),
-  });
+export function registryInstallScript(pkg: string): {
+  script: string | null;
+  /** 上游 latest 版本号（取不到 ⇒ null） */
+  version: string | null;
+  /** 上游 latest 是否 NAN 绑定（取不到 ⇒ null） */
+  usesNan: boolean | null;
+  /**
+   * 上游 latest 声明的 `peerDependencies['tree-sitter']`（没声明 ⇒ null）。
+   * ★★ 2026-10-08 补：**只看"模板修了"会推荐一个装不上的版本** —— 实测 `tree-sitter-css`：
+   *   latest 0.25.0 已是 node-gyp-build，但它 `peerDependencies: tree-sitter ^0.25.0`，
+   *   而本机核心是 **0.21.1** ⇒ 真去装**当场 ERESOLVE**（本笔实测踩到）。
+   *   而**同核心线上**的 `0.21.0` 是真能载入的（本笔实测：`setLanguage` + `parse` 出 `stylesheet`）。
+   */
+  peer: string | null;
+  missing: boolean;
+  error?: string;
+} {
+  const none = { script: null, version: null, usesNan: null, peer: null };
+  const r = spawnSync(
+    process.platform === 'win32' ? 'npm.cmd' : 'npm',
+    ['view', `tree-sitter-${pkg}`, 'version', 'scripts.install', 'dependencies', 'peerDependencies', '--json'],
+    {
+      encoding: 'utf-8',
+      shell: process.platform === 'win32',
+      timeout: 30_000,
+      cwd: path.dirname(findNodeModulesRoot()),
+    },
+  );
   const out = (r.stdout || '').trim();
   const errText = r.stderr || '';
   // npm view 的失败有两条路：`--json` 下错误 JSON 走 **stdout**（{"error":{"code":"E404"…}}），
@@ -110,16 +155,31 @@ export function registryInstallScript(pkg: string): { script: string | null; mis
     errJson?.code === 'E404' ||
     /E404|Not found|is not in this registry/i.test(errText) ||
     /E404|is not in this registry/i.test(out);
-  if (notFound) return { script: null, missing: true };
+  if (notFound) return { ...none, missing: true };
   if (!out || out === 'undefined') {
-    if (r.status !== 0) return { script: null, missing: false, error: (errText.split('\n').find((l) => l.trim()) || `npm 退出码 ${r.status ?? '?'}`).trim() };
-    return { script: null, missing: false };
+    if (r.status !== 0) {
+      return {
+        ...none,
+        missing: false,
+        error: (errText.split('\n').find((l) => l.trim()) || `npm 退出码 ${r.status ?? '?'}`).trim(),
+      };
+    }
+    return { ...none, missing: false };
   }
   try {
-    const v = JSON.parse(out);
-    return { script: typeof v === 'string' ? v : null, missing: false };
+    const v = JSON.parse(out) as Record<string, unknown>;
+    if (typeof v === 'string') return { ...none, script: v, missing: false }; // 只命中单个字段时的形态
+    const deps = v.dependencies as Record<string, unknown> | undefined;
+    const peer = v.peerDependencies as Record<string, unknown> | undefined;
+    return {
+      script: typeof v['scripts.install'] === 'string' ? (v['scripts.install'] as string) : null,
+      version: typeof v.version === 'string' ? v.version : null,
+      usesNan: deps && typeof deps === 'object' ? 'nan' in deps : null,
+      peer: peer && typeof peer['tree-sitter'] === 'string' ? (peer['tree-sitter'] as string) : null,
+      missing: false,
+    };
   } catch {
-    return { script: out.replace(/^"|"$/g, ''), missing: false };
+    return { ...none, script: out.replace(/^"|"$/g, ''), missing: false };
   }
 }
 
@@ -266,8 +326,11 @@ export function collect(): LangPackRow[] {
     const parent = DERIVED[l.pkg];
     const { installed, version } = isInstalled(parent ?? l.pkg);
     // ★ 模板兼容性：只对**已装**的包离线可判（读本地 package.json）——
-    //   未装的包拿不到 scripts.install（要么联网查 registry，要么不猜）⇒ 'unknown'
-    const compat = installed ? templateCompatFromPkgJson(readPkgJson(`tree-sitter-${parent ?? l.pkg}`)) : 'unknown';
+    //   未装的包拿不到清单（要么联网查 registry，要么不猜）⇒ 'unknown'
+    // ★★ 2026-10-08：连 `usesNan`（**因果判据**）一起留下 —— 「为什么不可用」那句要靠它才说得准
+    //   （原先那句话把"模板非 node-gyp-build"当原因，那是**影子**；真因是 NAN 绑定）。
+    const localJson = installed ? readPkgJson(`tree-sitter-${parent ?? l.pkg}`) : null;
+    const compat = templateCompatFromPkgJson(localJson);
     rows.push({
       lang: l.name,
       pkg: l.pkg,
@@ -276,6 +339,7 @@ export function collect(): LangPackRow[] {
       installedVersion: version,
       adapted: l.import_nodes && l.import_nodes.length > 0 ? true : false,
       compat,
+      usesNan: usesNanBinding(localJson),
       prebuild: installed && !parent ? hasHostPrebuild(l.pkg) : null,
     });
   }
@@ -372,7 +436,7 @@ function main(): void {
           : `  → npm i tree-sitter-${r.pkg}@${r.pin ?? 'latest'}`;
       // ★ 装包模板兼容性：只对已装的包离线可判（判据 = 真筛子，见 templateCompatFromPkgJson）；
       //   不兼容的**当场标红**，别让它静默躺在 optionalDependencies 里等运行时炸
-      const compat = r.installed ? `  ${compatVerdict(r.compat, r.prebuild)}` : '';
+      const compat = r.installed ? `  ${compatVerdict(r.compat, r.prebuild, r.usesNan)}` : '';
       return `${status.padEnd(8)} ${r.pkg.padEnd(18)} ${adapted}${r.pin && !derived ? ` 钉版 ${r.pin}` : ''} ${hint}${compat}`;
     });
     console.log(
@@ -400,41 +464,80 @@ function main(): void {
       process.exit(1);
     }
     let bad = 0;
+    /** 其中「上游已修、重装即可用」的个数（与"真死包"分开报） */
+    let fixable = 0;
     for (const t of targets) {
       const r = findRowByName(rows, t);
       if (!r) {
         console.error(`✗ 未知语言：${t}（list 查看可用语言）`);
         process.exit(1);
       }
-      const localJson = readPkgJson(`tree-sitter-${DERIVED[r.pkg] ?? r.pkg}`);
+      const realPkg = DERIVED[r.pkg] ?? r.pkg;
+      const localJson = readPkgJson(`tree-sitter-${realPkg}`);
       const local = templateCompatFromPkgJson(localJson);
-      const remote = registryInstallScript(DERIVED[r.pkg] ?? r.pkg);
+      // ★★ 2026-10-08 修一个**真缺陷**（用户追问"怎么会是死包呢"引出的）：
+      //   原先 `local === 'incompatible'` 就**直接下结论、从不问上游** ⇒ 于是
+      //   「本机装的是旧版」与「本机这份只是**别人的传递依赖**」这两种最常见的情况被判成死包。
+      //   实测 `tree-sitter-css`：本机 0.20.0（nan，`tree-sitter-scss` 的传递依赖），
+      //   而上游 **0.25.0 已是 node-gyp-build、无 nan** ⇒ **升级就能用**，这里却报 ❌。
+      //   ⇒ 新次序：**本地可用 ⇒ 到此为止**；本地不可用（或未装）⇒ **一律再问上游**，
+      //     结论按"**上游那份**可不可用"给 —— 那才是"装得动装不动"的真答案。
+      const remote = registryInstallScript(realPkg);
+      const remoteCompat: TemplateCompat =
+        remote.missing || remote.error ? 'unknown' : templateCompatFromFacts(remote.usesNan, remote.script);
+      const localVersion = typeof localJson?.version === 'string' ? localJson.version : '?';
       let compat: TemplateCompat;
       let via: string;
+      let verdict: string;
       if (local === 'ok') {
         compat = 'ok';
-        via = '本地已装包（package.json scripts.install）';
-      } else if (local === 'incompatible') {
-        compat = 'incompatible';
-        via = '本地已装包（package.json scripts.install）';
+        via = '本地已装包';
+        verdict = compatVerdict('ok', hasHostPrebuild(realPkg), usesNanBinding(localJson));
       } else if (remote.missing) {
         compat = 'incompatible';
         via = 'registry：该包在 npm 上不存在（E404）';
+        verdict = '❌ npm 上不存在这个包（装必失败）';
       } else if (remote.error) {
         compat = 'unknown';
-        via = `registry 取不到（${remote.error}）且本地未装 ⇒ 判不出`;
+        via = `registry 取不到（${remote.error}）${local === 'unknown' ? '且本地未装' : '，本地那份也不可用'} ⇒ 判不出`;
+        verdict = '？判不出（网络不通；**别凭本机那份就下"死包"结论**）';
+      } else if (remoteCompat === 'ok') {
+        // ★ 本机那份不可用、**上游有可载入的版本** ⇒ 这是**可修**的，不是死包。
+        // ★★ 但「模板修了」还不够 —— 得看 **peer**：实测 `tree-sitter-css` latest 0.25.0 模板是好的，
+        //   但它要核心 `tree-sitter ^0.25.0`，本机 **0.21.1** ⇒ 真去装**当场 ERESOLVE**。
+        const core = coreTreeSitterVersion();
+        const peerOk = remote.peer === null || !core ? null : rangeOk(remote.peer, core);
+        const pin = PACK_PINS[r.pkg];
+        if (peerOk === false) {
+          // 上游最新**装不上**：要么按钉版装同核心线的版本，要么先去挑一个 peer 兼容的
+          if (pin) fixable++;
+          compat = 'incompatible';
+          via = `registry 最新 v${remote.version ?? '?'} 是 node-gyp-build，但它要求核心 tree-sitter ${remote.peer}（本机 ${core}）⇒ 直接装会被 ERESOLVE 顶掉`;
+          verdict = pin
+            ? `⚠️ 别装 latest v${remote.version ?? '?'}（要新核心 ${remote.peer}）⇒ 装**同核心线**的：npm run install-package install ${r.lang}（钉版 ${pin}，已实测可载入）`
+            : `⚠️ 别装 latest v${remote.version ?? '?'}（要新核心 ${remote.peer}）；本语言**没有钉版** ⇒ 先 \`npm view tree-sitter-${r.pkg} versions\` 挑一个 peer 兼容 ${core ?? '本机核心'} 的版本`;
+        } else {
+          compat = 'incompatible';
+          fixable++;
+          via = `registry 最新 v${remote.version ?? '?'} 是 node-gyp-build（无 nan${remote.peer ? `，peer tree-sitter ${remote.peer}` : ''}）`;
+          verdict =
+            local === 'unknown'
+              ? `✅ 上游 v${remote.version ?? '?'} 可载入 ⇒ 装它：npm run install-package install ${r.lang}`
+              : `🔄 本机 v${localVersion} 载入必失败，但**上游 v${remote.version ?? '?'} 已修** ⇒ npm run install-package install ${r.lang} 重装即可用`;
+        }
       } else {
-        compat = remote.script === 'node-gyp-build' ? 'ok' : 'incompatible';
-        via = `registry 元数据（scripts.install=${remote.script ?? '（无 install 脚本）'}）`;
+        compat = 'incompatible';
+        via = `本地不可用，registry 最新 v${remote.version ?? '?'} 同样${remote.usesNan === true ? '带 nan' : '不是 node-gyp-build'}`;
+        verdict = compatVerdict('incompatible', null, remote.usesNan);
       }
-      const prebuild = localJson ? hasHostPrebuild(DERIVED[r.pkg] ?? r.pkg) : null;
-      const verdict = remote.missing && local === 'unknown' ? '❌ npm 上不存在这个包（装必失败）' : compatVerdict(compat, prebuild);
       if (compat !== 'ok') bad++;
       console.log(`${r.lang.padEnd(12)} tree-sitter-${r.pkg.padEnd(18)} ${verdict}   [来源：${via}]`);
     }
     console.log(
       bad > 0
-        ? `\n❌ ${bad}/${targets.length} 个包**装上也载入不了**（或 npm 上不存在）—— 别装，或先补一个 node-gyp-build 模板的 fork/新版本（见 .inspect 侦察记录的判据）。`
+        ? `\n❌ ${bad}/${targets.length} 个包**当前不可用**` +
+          (fixable > 0 ? `（其中 **${fixable} 个上游已修** ⇒ 按上面那行的命令重装即可）` : '') +
+          `；其余只能等上游换模板，或照 docs/adding-a-language.md 自己编一份。`
         : `\n✅ ${targets.length} 个包模板兼容，可装。`,
     );
     if (bad > 0) process.exit(1);

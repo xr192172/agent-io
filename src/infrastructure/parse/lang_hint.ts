@@ -40,7 +40,7 @@
  */
 
 import { findLanguageByExt, languageModuleSpec } from './languages.js';
-import { isExtSupported, languagePackagePresence } from './probe.js';
+import { isExtSupported, languagePackageStatus } from './probe.js';
 import {
   aggregateGaps,
   diagnoseCapabilities,
@@ -50,6 +50,7 @@ import {
   SUPPORT_META,
 } from '../analysis/capability/capability_matrix.js';
 import { PACK_PINS } from '../packages/package_pins.js';
+import { templateCompatReason } from '../packages/template_compat.js';
 import '../analysis/capability/register_capabilities.js'; // side-effect：填充能力声明表（否则缺口数恒为 0）
 
 /** 补齐清单（只读，别改；docs/* 被 .gitignore 忽略，本提示只**指向**它） */
@@ -159,12 +160,24 @@ export function missingLanguageHint(ext: string, capabilityId?: string): string 
     const spec = pin ? `tree-sitter-${registered.pkg}@${pin}` : `tree-sitter-${registered.pkg}@latest（未登记钉版）`;
     // ★★ 2026-10-08：「**没装**」与「**装了但是死包**」必须分开说 —— 见本文件头注那条反向的坑。
     //   判据取自 probe 的**唯一落点** `languagePackagePresence`（真筛子住那儿），此处不重判。
+    const st = languagePackageStatus(languageModuleSpec(registered.pkg, registered.pkgSpec));
+    // ★★ 2026-10-08 **第二次更正**（用户追问"怎么会是死包呢"后联网查证）：
+    //   上一版我写「模板非 node-gyp-build ⇒ **装 / 重装都无用**」—— **两处都不准**：
+    //   ① 原因是**影子**（模板指纹），真因是**依赖 `nan`（NAN 绑定）**；
+    //   ② 「无用」**不能只看本机这一份就下判决** —— 实测 `tree-sitter-css`：本机 0.20.0 是
+    //      `tree-sitter-scss` 的**传递依赖**（带 nan），而上游最新 **0.25.0 已是 node-gyp-build、无 nan**
+    //      ⇒ **装上游最新版就能读**。⇒ 处置必须**先联网核上游**，再分两级。
     packText =
-      languagePackagePresence(languageModuleSpec(registered.pkg, registered.pkgSpec)) === 'incompatible'
-        ? `装包：**本机已装** tree-sitter-${registered.pkg}，但它**过不了真筛子**（模板非 node-gyp-build）` +
-          `⇒ 载入必失败，**装 / 重装都无用**。要真读它只有两条路：` +
-          `① 等上游换模板（先 \`npm run install-package check ${registered.name}\` 联网查 registry）；` +
-          `② 自己编一份（照 ${DOC}）`
+      st.state === 'incompatible'
+        ? `装包：**本机已装** tree-sitter-${registered.pkg}@${st.version ?? '?'}，但它**载入必失败**：` +
+          `${templateCompatReason('incompatible', st.usesNan)}` +
+          `。★ **先联网核对上游再决定**（\`npm run install-package check ${registered.name}\`，同一判据）——` +
+          `① 上游**在同一核心线上**已有 N-API 版本（有 node-gyp-build、无 nan）⇒ **重装即可用**` +
+          `（本机这份可能是旧版，或只是**别人的传递依赖**）；` +
+          `★ **别装 latest**：实测 ` +
+          `\`tree-sitter-css\` 的 latest 0.25.0 要核心 \`tree-sitter ^0.25.0\` ⇒ 装了当场 ERESOLVE，` +
+          `而**同核心线**的 0.21.0 真能载入 ⇒ 按**钉版**装（\`install-package install <lang>\`）；` +
+          `② 上游同样带 nan ⇒ 那才叫死包，**装 / 重装都无用**，只能等上游换模板或照 ${DOC} 自己编一份`
         : `装包：${spec}，或 npm run install-package install ${registered.name}${SIEVE_HINT}`;
   } else {
     packText = `装包：tree-sitter-${registered.pkg} 已装（不是缺包；若解析仍失败按钉版重装：npm run install-package install ${registered.name}）`;

@@ -38,7 +38,7 @@ import { parseFileFull, parseAstRoot, parseAstRootSync, listSupportedExtensions,
 import { codeSourceExts, isTestFileName, partitionByCodeLang, describeUnmatchedExt, type UnmatchedExtFact } from '../../parse/source_exts.js';
 import { boundsSkipFromExcluded, type ScanBounds } from '../../scan_bounds.js';
 import { missingLanguageHint } from '../../parse/lang_hint.js';
-import { languagePackagePresence } from '../../parse/probe.js';
+import { languagePackageStatus } from '../../parse/probe.js';
 import { collectSourceFiles } from '../../authoring/version_upgrade/detect.js';
 
 // ── 对外类型 ─────────────────────────────────────────────────
@@ -757,11 +757,13 @@ function unreadWhy(u: UnmatchedExtFact & { count: number }): string {
  */
 function unreadMark(u: UnmatchedExtFact & { count: number }): string {
   if (!u.pkg) return '';
-  switch (languagePackagePresence(u.pkg)) {
+  const s = languagePackageStatus(u.pkg);
+  switch (s.state) {
     case 'absent':
       return `(未装${u.pkg})`;
     case 'incompatible':
-      return '(已装但过不了真筛子)';
+      // ★ 版本要带上：本机装的是**哪一版**决定了"升级有没有用"（见 lang_hint 里那句两级处置）。
+      return `(已装${s.version ?? '?'}但${s.usesNan === true ? '是 nan 绑定' : '过不了真筛子'})`;
     default:
       return '(可载入?——与"未读"矛盾，请查)';
   }
