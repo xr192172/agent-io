@@ -24,31 +24,31 @@
 
 | 语言 | 后缀 | 深适配 | 包 / 说明 |
 |---|---|---|---|
-| `bash` | `.sh .bash` |  | `tree-sitter-bash@0.25.1` |
-| `c` | `.c .h` | ★ | `tree-sitter-c@0.24.1` |
-| `c_sharp` | `.cs` | ★ | `tree-sitter-c-sharp@0.23.5` |
-| `cpp` | `.cpp .cc .cxx .hpp .hh .hxx` | ★ | `tree-sitter-cpp@0.23.4` |
-| `css` | `.css` |  | `tree-sitter-css@0.25.0` |
-| `elixir` | `.ex .exs` |  | `tree-sitter-elixir@0.3.5` |
-| `go` | `.go` | ★ | `tree-sitter-go@0.25.0` |
-| `groovy` | `.groovy` | ★ | `tree-sitter-groovy@0.1.2` |
-| `haskell` | `.hs` | ★ | `tree-sitter-haskell@0.23.1` |
-| `html` | `.html .htm` |  | `tree-sitter-html@0.23.2` |
-| `java` | `.java` | ★ | `tree-sitter-java@0.23.5` |
-| `javascript` | `.js .mjs .cjs` | ★ | `tree-sitter-javascript@0.25.0` |
-| `json` | `.json` |  | `tree-sitter-json@0.24.8` |
+| `bash` | `.sh .bash` |  | `tree-sitter-bash@0.21.0`（本机装的） |
+| `c` | `.c .h` | ★ | `tree-sitter-c@0.21.4`（本机装的） |
+| `c_sharp` | `.cs` | ★ | `tree-sitter-c-sharp@0.21.3`（本机装的） |
+| `cpp` | `.cpp .cc .cxx .hpp .hh .hxx` | ★ | `tree-sitter-cpp@0.23.4`（本机装的） |
+| `css` | `.css` |  | `tree-sitter-css@0.21.1`（本机装的） |
+| `elixir` | `.ex .exs` |  | `tree-sitter-elixir@0.3.5`（本机装的） |
+| `go` | `.go` | ★ | `tree-sitter-go@0.21.2`（本机装的） |
+| `groovy` | `.groovy` | ★ | `tree-sitter-groovy@0.1.2`（本机装的） |
+| `haskell` | `.hs` | ★ | `tree-sitter-haskell@0.23.1`（本机装的） |
+| `html` | `.html .htm` |  | `tree-sitter-html@0.23.2`（本机装的） |
+| `java` | `.java` | ★ | `tree-sitter-java@0.23.5`（本机装的） |
+| `javascript` | `.js .mjs .cjs` | ★ | `tree-sitter-javascript@0.21.4`（本机装的） |
+| `json` | `.json` |  | `tree-sitter-json@0.24.8`（本机装的） |
 | `jsx` | `.jsx` | ★ | （已装，可用） |
-| `julia` | `.jl` | ★ | `tree-sitter-julia@0.23.1` |
-| `kotlin` | `.kt .kts` | ★ | `tree-sitter-kotlin@0.3.8` |
-| `php` | `.php` | ★ | `tree-sitter-php@0.24.2` |
-| `python` | `.py` | ★ | `tree-sitter-python@0.25.0` |
-| `ruby` | `.rb` |  | `tree-sitter-ruby@0.23.1` |
-| `rust` | `.rs` | ★ | `tree-sitter-rust@0.24.0` |
-| `scala` | `.scala .sc` | ★ | `tree-sitter-scala@0.24.0` |
-| `scss` | `.scss` |  | `tree-sitter-scss@1.0.0` |
-| `solidity` | `.sol` |  | `tree-sitter-solidity@1.2.13` |
-| `tsx` | `.tsx` | ★ | `tree-sitter-typescript@0.23.2` |
-| `typescript` | `.ts .mts .cts` | ★ | `tree-sitter-typescript@0.23.2` |
+| `julia` | `.jl` | ★ | `tree-sitter-julia@0.23.1`（本机装的） |
+| `kotlin` | `.kt .kts` | ★ | `tree-sitter-kotlin@0.3.8`（本机装的） |
+| `php` | `.php` | ★ | `tree-sitter-php@0.23.12`（本机装的） |
+| `python` | `.py` | ★ | `tree-sitter-python@0.21.0`（本机装的） |
+| `ruby` | `.rb` |  | `tree-sitter-ruby@0.23.1`（本机装的） |
+| `rust` | `.rs` | ★ | `tree-sitter-rust@0.21.0`（本机装的） |
+| `scala` | `.scala .sc` | ★ | `tree-sitter-scala@0.24.0`（本机装的） |
+| `scss` | `.scss` |  | `tree-sitter-scss@1.0.0`（本机装的） |
+| `solidity` | `.sol` |  | `tree-sitter-solidity@1.2.11`（本机装的） |
+| `tsx` | `.tsx` | ★ | `tree-sitter-typescript@0.21.2`（本机装的） |
+| `typescript` | `.ts .mts .cts` | ★ | `tree-sitter-typescript@0.21.2`（本机装的） |
 
 ## ❌ 装了但载入失败（上游是 NAN 绑定，核心 0.21 只认 N-API）（9）
 
