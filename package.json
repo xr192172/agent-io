@@ -81,7 +81,8 @@
     "grammar:freeze": "python scripts/freeze_grammar_sources.py",
     "grammar:verify-frozen": "node scripts/grammar_shim.mjs verify-frozen",
     "probe:extract": "node scripts/probe_extract_quality.mjs",
-    "probe:extract-hard": "node scripts/probe_extract_hard.mjs"
+    "probe:extract-hard": "node scripts/probe_extract_hard.mjs",
+    "probe:xfile": "node scripts/probe_xfile_resolve.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",

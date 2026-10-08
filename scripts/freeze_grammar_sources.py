@@ -76,6 +76,16 @@ def find_grammar_root(name, e):
     for c in cands:
         if c and os.path.isdir(c):
             hits = glob.glob(os.path.join(c, '**', 'src', 'parser.c'), recursive=True)
+            # ★★ 2026-10-09 修：glob 回退**多候选时必须报错**，不许静默取 `hits[0]`。
+            #   隐患实测（子代理排查）：`ocaml` 包里有 **3 个** parser.c（interface / ocaml / type）
+            #   —— 现在靠 `subpath: grammars/ocaml` 的快路径抢先命中才没事；**subpath 一丢就会编错语言**，
+            #   而且是**静默**编错（产物能用、只是不是那门语言）。
+            #   与"前缀匹配挑 tarball 挑到 0.7.1"是**同一个病**：模糊挑一个 + 不核对。
+            if len(hits) > 1:
+                raise SystemExit(
+                    '★ %s 的 parser.c 有 %d 个候选，无法确定要哪一份：\n  %s\n'
+                    '  ⇒ 请在 SOURCES.json 的 from.subpath 里写清；本脚本**拒绝猜**。'
+                    % (name, len(hits), '\n  '.join(rel(c, h) for h in hits)))
             if hits:
                 return os.path.dirname(os.path.dirname(hits[0]))
     return None

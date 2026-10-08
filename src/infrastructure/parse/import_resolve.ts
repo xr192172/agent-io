@@ -110,7 +110,15 @@ export function completionCandidates(base: string, options: ResolvePathOptions =
     for (const e of exts) out.push(bare + e);
     for (const f of indexFiles) out.push(`${bare}/${f}`);
   } else {
-    if (options.bareBaseFirst) out.push(base);
+    // ★★ 2026-10-08：`base` **原样**也纳入 —— 当它的扩展名 ∈ 调用方给的 `exts` 时。
+    //
+    // 为什么：`import "./a.sol"` 这类**自带真实扩展名**的写法，在旧判据下 `base` 根本不会成为候选
+    //   （判定集合只有 `IMPORT_EXTS` = TS/JS 系）⇒ **恒解析不到**（实测 solidity：`./a.sol` → null）。
+    //
+    // ★ 与 T36 否决的那条**不是一回事**（别混）：T36 否决的是"放宽为 `IMPORT_EXTS ∪ exts`"，
+    //   那会让 `exts` 里的一切翻进「**剥扩展名重试**」⇒ 跨语言同名回退（`util.go` → 命中 `util.ts`）。
+    //   本条**不剥**，只把**字面路径本身**加进候选 ⇒ **只有那个文件真的存在时才会命中**，不可能造出假边。
+    if (options.bareBaseFirst || (baseExt !== '' && exts.includes(baseExt))) out.push(base);
     // ★ 非 import 级扩展名（如显式 `.go`/`.rs`）**不剥** —— 与旧三份实现逐字一致；
     //   需要"剥任意扩展名重试"是另一个策略，别顺手加进来（会让 health/impact 行为漂移）。
     for (const e of exts) out.push(base + e);
