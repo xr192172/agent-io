@@ -6,8 +6,16 @@
 > 哦，不对，我们的 DSL 也依赖于大模型，那这样呢就更像了。"*
 > **取证**：clone 真源码 `D:/project_develop/_research/aoci-code`（`v0.1.0-rc17`），
 > 读 `aoci.txt` / `aoci.meta.txt` / `aoci.code.txt` 实样 + `spec/public/aoci-index-format-v1.txt` + Go 侧工具面。
-> ★ 许可：**FSL-1.1-MIT**（Fair Source，**非 OSI 开源**，带竞争性使用限制，两年后转 MIT）
+> 许可：**FSL-1.1-MIT**（Fair Source，**非 OSI 开源**，带竞争性使用限制，两年后转 MIT）
 > ⇒ **机制/思路可学，源码不可搬。**
+>
+> ★★★ **定性更正（2026-10-08，用户指出，重要）**：本文初稿把 `query=digest` 说成"我们早就抄了 AOCI"——
+> **措辞错了，而且错在定性上**。用户原话：*"实际上并没有抄他，因为我在写的时候，我都没听说过这个项目。
+> 写出来了之后，大家是用了同一个思路罢了。"*
+> ⇒ 正确说法是 **独立收敛（convergent design）**：`digest` 的实现（`query_feature.ts:718` 自称"AOCI 形状"）
+> 是**先有了本仓的形状、后被拿来对照命名**的，不是从它那里搬的。
+> ⇒ 这个更正**改变结论的性质**：**两边独立走到同一形状 ⇒ 那个形状大概率是对的**（互相印证），
+> 而剩下的差异就**都是有意差异**，不是"我们落后"。（`digest` 的注释把"AOCI"当**类比**用，是命名，不是出处。）
 
 ## 1. 它长什么样（实样，不是宣传）
 
@@ -65,20 +73,25 @@ S:The exact local replace keeps builds off unpatched upstream; … a first-party
 
 ⇒ 一句话：**相似的是"有 LLM 参与"，相反的是"LLM 在造事实，还是在给事实起名"。**
 
-## 4. 它确实更优的地方 —— 该抄的 5 条
+## 4. 它更优的地方 —— 按"独立收敛 / 纯差距"重排（不是"该抄的清单"）
 
-1. **显式格式版本**：`#Format-Version: cognition-volumes/v1` / `format=object-fras-v2`。
-   我们的 `version` 字段是 feature 版本 ⇒ **格式漂了没处看**。
-2. **准入判据写进格式**：`#S-Admission: non-inferable-and-error-preventing`
-   ——不是"这条有用就写"，而是"**不可推得 且 能防错**"才准写。
-3. **字符预算，且声明为机器契约**：`#S quota: C9-8≤600 C7-4≤200 C3-1≤50`
-   （`#FRAS-v2-Limits-Authority: machine-contract`）。我们的 `goals` / `acceptance` **无约束**
-   ——旁证：`design_intent` 描述 689 字 vs `consistency_check` 75 字，就是"没有预算"的后果。
-4. **关系行内化 + 命名空间前缀**：一条记录自带出边，**不必跨表查**
-   ——这直接对上我们"链要手工拼"的病（`docs/orchestration-audit.md`）。
-5. ★ **给"LLM 忘了自己读过"配了探针**：`aoci_overview` 带游标分页（`next_cursor` / `completed`），
-   且有一条明写的失败判据 ——「`cognition loss measured; declare context_compaction: call aoci_overview with refresh_reasons=["context_compaction"]`」。
-   ⇒ 我们的 DSL 有**同一个病**（上下文一压缩，LLM 就忘了"有三个层"），但**没有探针**。
+★ 因为两边是**独立收敛**（见开头定性更正），下表不再问"抄不抄"，只问**"这条路我们走了没有"**：
+
+| # | 它做到的 | 我们 | 判定 |
+|---|---|---|---|
+| 1 | **一行式机读视图**（F/R/A/S） | ✅ **已有**：`query=digest`（真跑过，`R:` 也真出） | **已收敛，无差距**（只是没人点名，见 §7） |
+| 2 | **关系行内 + 命名空间前缀**（`R:code:a.go`） | ✅ `digest` 的 `R:` 就是行内的 | **已收敛** |
+| 3 | **显式格式版本**（`#Format-Version: cognition-volumes/v1`；每卷再自述 `format=object-fras-v2`） | ❌ 只有 feature 版本 `version:"1.0.0"` | **真差距** |
+| 4 | **长度预算，且声明为机器契约**（`#S quota: C9-8≤600 C7-4≤200 C3-1≤50`；`#FRAS-v2-Limits-Authority: machine-contract`） | ❌ `goals` / `acceptance` 无约束 | **真差距** |
+| 5 | **准入判据写进格式**（`#S-Admission: non-inferable-and-error-preventing`） | ❌ `decision.consequences` 谁都能写 | **真差距** |
+| 6 | **给"LLM 忘了读过"配探针**（`cognition loss measured; … refresh_reasons=["context_compaction"]`） | ❌ 同一个病（上下文一压缩就忘了三个层），**无探针** | **真差距** |
+| 7 | **README 式"数出来的"工具面**（9 个，有测试锁死） | 61 个（编排面 12），**且快照测不到面成员** | **真差距（治理侧）** |
+
+⇒ **五条真差距，全部集中在"治理"（版本 / 预算 / 准入 / 探针 / 面上锁），不在"看法"。**
+
+**而我们**领先**的两条（不是自夸，是 §6 论证过的）：**
+- **可执行**：它的索引**不生成语义、不改代码**；我们的 DSL 是 `scaffold` / `edit_code` / `consistency_check` / rename 联动的**输入**。
+- **几何/画布**：它零坐标（省 token 的来源，也是它画不出图、不能在图上下决策的原因）。
 
 ## 5. 但它为"更机读"付了税 —— 可量化
 
@@ -103,11 +116,12 @@ S:The exact local replace keeps builds off unpatched upstream; … a first-party
    我们的 DSL 是 `scaffold` / `edit_code` / `consistency_check` / rename 联动的**输入**。
    ⇒ **降到"只能读" = 把命脉砍掉。**
 
-## 7. 结论：不是"谁更优"——**而且第一条我们早就抄了，只是没人知道**
+## 7. 结论：不是"谁更优"——**读的那条路我们独立走通了；治理那五条没走**
 
-★★★ **重大更正（本文初稿写错了）**：初稿的"最小可搬动作"第一条提的是
-「给 `get_dsl` 加 `query=outline`：一行一条 `path[标签]: 职责 | 依赖 | 依据 | 陷阱`，零坐标」。
-**那是重复造已存在的东西。** 实测真跑：
+★★★ **本文初稿在这里写错了两处，一并更正**：
+① 说"我们早就抄了 AOCI" —— **不是抄，是独立收敛**（用户指出，见开头）；
+② "最小可搬动作"第一条提的是「给 `get_dsl` 加 `query=outline`：一行一条 `path[标签]: 职责 | 依赖 | 依据 | 陷阱`，零坐标」
+—— **那是重复造已存在的东西**（我自己犯的，不是抄的）。实测真跑：
 
 ```
 ══ feature "wga_syncwarm_2" 一行式认知索引（语义层派生视图·只读·不落盘）══
