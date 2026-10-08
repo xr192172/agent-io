@@ -83,6 +83,15 @@
     "zod": "^3.25.0 || ^4.0.0"
   },
   "optionalDependencies": {
+    "agent-io-grammar-crystal": "file:vendor/grammars/crystal",
+    "agent-io-grammar-fish": "file:vendor/grammars/fish",
+    "agent-io-grammar-lua": "file:vendor/grammars/lua",
+    "agent-io-grammar-ocaml": "file:vendor/grammars/ocaml",
+    "agent-io-grammar-r": "file:vendor/grammars/r",
+    "agent-io-grammar-swift": "file:vendor/grammars/swift",
+    "agent-io-grammar-toml": "file:vendor/grammars/toml",
+    "agent-io-grammar-vhdl": "file:vendor/grammars/vhdl",
+    "agent-io-grammar-vue": "file:vendor/grammars/vue",
     "tree-sitter-bash": "^0.21.0",
     "tree-sitter-c": "^0.21.0",
     "tree-sitter-c-sharp": "^0.21.3",

@@ -134,7 +134,7 @@ export const LANGUAGES: LanguageEntry[] = [
   //   findBodyNode / extractCallee）。本次顺带把 object_declaration（单例 object）纳入符号；
   //   import_nodes=import_header 为专用 import 节点（`import a.b.C as D`）。
   { name: 'kotlin', pkg: 'kotlin', exts: ['.kt', '.kts'], kind: 'code', symbol_nodes: ['class_declaration', 'function_declaration', 'object_declaration'], import_nodes: ['import_header'], field_map: { name: 'name', parameters: 'parameters' } },
-  { name: 'swift', pkg: 'swift', exts: ['.swift'], kind: 'code', symbol_nodes: ['function_declaration', 'class_declaration'], field_map: { name: 'name', parameters: 'parameters' } },
+  { name: 'swift', pkg: 'swift', pkgSpec: 'agent-io-grammar-swift', exts: ['.swift'], kind: 'code', symbol_nodes: ['function_declaration', 'class_declaration'], field_map: { name: 'name', parameters: 'parameters' } },
   // ★ ruby 无 import_nodes：tree-sitter-ruby 没有"import 声明"节点 —— `require 'x'` 就是普通
   //   `call`（见 kernel.ts: LANG_ADAPTERS.ruby 注释）。调用边已通（callNode='call'）。
   { name: 'ruby', pkg: 'ruby', exts: ['.rb'], kind: 'code', symbol_nodes: ['method', 'class', 'module'], field_map: { name: 'name', parameters: 'parameters' } },
@@ -224,7 +224,7 @@ export const LANGUAGES: LanguageEntry[] = [
   //   都是 wasm 或宿主插件，**不是** node 的 tree-sitter 语言对象）⇒ 显式声明 `pkgSpec: null`。
   //   ★ 这不是"我们没装"，是**上游没有** —— 要让提示说得出这句话，而不是给一个装不上的包名。
   { name: 'crystal', pkg: 'crystal', pkgSpec: 'agent-io-grammar-crystal', exts: ['.cr'], kind: 'code', symbol_nodes: ['method_def'], field_map: { name: 'name' } },
-  { name: 'ocaml', pkg: 'ocaml', exts: ['.ml', '.mli'], kind: 'code', symbol_nodes: ['let_binding'], field_map: { name: 'name' } },
+  { name: 'ocaml', pkg: 'ocaml', pkgSpec: 'agent-io-grammar-ocaml', exts: ['.ml', '.mli'], kind: 'code', symbol_nodes: ['let_binding'], field_map: { name: 'name' } },
   // ★★ 2026-10-08 修：**派生名不存在**。`pkg: 'f-sharp'` ⇒ 派生 `tree-sitter-f-sharp`，
   //   而 npm 上**没有这个包**（实测 `npm view tree-sitter-f-sharp` ⇒ E404）—— 真名是
   //   **`tree-sitter-fsharp`**（实测存在，N-API：`node-gyp-build`、无 `nan`；但它 latest 的
