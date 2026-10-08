@@ -242,7 +242,28 @@ if (cmd === 'list') {
   console.log(r.ok ? `✅ ${arg} ABI ${r.abi} root=${r.root}${tag}` : `❌ ${arg} ${r.why}\n   raw=${JSON.stringify(r)}`);
   process.exitCode = r.ok ? 0 : 1;
 } else if (cmd === 'verify-frozen') {
-  // ★ 「我们自己的副本」的验收：**只用冻结件**重建，逐门真加载。
+  // ★ 「我们自己的副本」的验收：**只用冻结件**重建，逐门真加载 + ★ 与**仓里在册的产物**比行为等价。
+  //
+  // ★★ 2026-10-08 补这道比较（**因为不加它就漏了一次真事故**）：
+  //   上一版的 verify-frozen 只验"能用冻结件重建 + 真加载" ⇒ 全绿；
+  //   而 swift 的**在册产物**其实是从 **0.7.1** 编的（旧工具用**前缀匹配**挑 tarball，挑错了），
+  //   冻结件却是 **0.6.0** ⇒ 两者**不是同一个东西**，验收却全绿。
+  //   ⇒ 判据必须包含"**重建出来的 == 在册的**"（同输入 ⇒ 同树），否则"能重建"不等于"是同一份"。
+  const TREE_PROBE = path.join(REPO, '.inspect', '_probe_tree.mjs');
+  fs.mkdirSync(path.dirname(TREE_PROBE), { recursive: true });
+  fs.writeFileSync(TREE_PROBE, `
+import Parser from 'tree-sitter';
+import { createRequire } from 'node:module';
+const req = createRequire(import.meta.url);
+try { const p = new Parser(); p.setLanguage(req(process.argv[2]));
+  console.log(JSON.stringify({ root: p.parse(process.argv[3]).rootNode.type, sexp: p.parse(process.argv[3]).rootNode.toString() })); }
+catch (e) { console.log(JSON.stringify({ err: ((e && e.message) || '').slice(0, 60) })); }
+`);
+  const SAMPLE = 'a b c\nx = 1\nfoo(bar, 2)\n';
+  const tree = (file) => new Promise((res) =>
+    execFile(process.execPath, [TREE_PROBE, file, SAMPLE], { timeout: 90000, maxBuffer: 1 << 22 },
+      (e, o) => res((o || '').trim() || `{"err":"无输出 code=${e ? e.code : 0}"}`)));
+
   const out = [];
   for (const k of Object.keys(table)) {
     if (table[k].disabled) continue;
@@ -250,11 +271,24 @@ if (cmd === 'list') {
       console.log(`  ·  ${k} 没有冻结件`); continue;
     }
     const r = await build(k, { frozen: true });
-    out.push(r);
-    console.log(r.ok ? `  ✅ ${k.padEnd(9)} ABI ${r.abi} root=${r.root}` : `  ❌ ${k.padEnd(9)} ${r.why}`);
+    if (!r.ok) { out.push(r); console.log(`  ❌ ${k.padEnd(9)} ${r.why}`); continue; }
+    // ★ 与在册产物比行为等价
+    const vendored = path.join(REPO, 'vendor', 'grammars', k, 'build', 'Release', `tree_sitter_${k}_binding.node`);
+    let same = null, detail = '';
+    if (fs.existsSync(vendored)) {
+      const [a, b] = [await tree(r.nodeFile), await tree(vendored)];
+      try {
+        const A = JSON.parse(a), B = JSON.parse(b);
+        same = !!(A.sexp && B.sexp && A.sexp === B.sexp && A.root === B.root);
+        if (!same) detail = `  ← 与在册产物**不一致**：新 root=${A.root} / 在册 root=${B.root}`;
+      } catch { same = false; detail = '  ← 比较时输出无法解析'; }
+    }
+    out.push({ ...r, same });
+    console.log(`  ${r.ok && same !== false ? '✅' : '❌'} ${k.padEnd(9)} ABI ${r.abi} root=${r.root}` +
+      (same === null ? '  （在册产物不存在，未比）' : same ? '  ＝ 与在册一致' : detail));
   }
-  const pass = out.filter((r) => r.ok).length;
-  console.log(`\n只用冻结副本重建：${pass}/${out.length} 通过`);
+  const pass = out.filter((r) => r.ok && r.same !== false).length;
+  console.log(`\n只用冻结副本重建 **且与在册产物行为等价**：${pass}/${out.length} 通过`);
   process.exitCode = pass === out.length && out.length > 0 ? 0 : 1;
 } else if (cmd === 'build-all') {
   const out = [];

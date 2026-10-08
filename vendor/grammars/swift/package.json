@@ -3,5 +3,5 @@
   "version": "0.0.0",
   "private": true,
   "main": "index.js",
-  "description": "用通用 N-API 绑定从语法源码构建的 tree-sitter 语言包（swift）。构建：scripts/make_grammar_shim.mjs"
+  "description": "通用 N-API 绑定从语法源码构建（swift）。重建：node scripts/grammar_shim.mjs build swift"
 }

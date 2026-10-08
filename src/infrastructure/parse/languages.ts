@@ -229,10 +229,14 @@ export const LANGUAGES: LanguageEntry[] = [
   //   ★ 这不是"我们没装"，是**上游没有** —— 要让提示说得出这句话，而不是给一个装不上的包名。
   // ★ 2026-10-08 更正：`method_def` **不是** crystal 的节点名（取不到 ⇒ 这门语言永远提不出符号）。
   //   实测真实节点：`def foo … end` ⇒ `method_definition[name=foo]`（见 `.inspect/dbg4.mjs`）。
-  { name: 'crystal', pkg: 'crystal', pkgSpec: 'agent-io-grammar-crystal', exts: ['.cr'], kind: 'code', symbol_nodes: ['method_definition'], field_map: { name: 'name' } },
+  { name: 'crystal', pkg: 'crystal', pkgSpec: 'agent-io-grammar-crystal', exts: ['.cr'], kind: 'code', symbol_nodes: ['method_definition'], field_map: { name: 'name' }, // ★ import 边（2026-10-08 子代理实测）：`require "a"` 是**专用语句节点**（非普通方法调用）
+  //   ⇒ 与 ruby 的 require 不同、**可做**；路径在 `path` 字段（适配器 importSourceField 已声明）。
+  import_nodes: ['require_statement'] },
   // ★ 2026-10-08 更正：`let_binding` 的**字段不叫 `name`**，实测是 `pattern`（指向 `value_name`「foo」）。
   //   原来写 `{name:'name'}` ⇒ 字段取不到 ⇒ symbols 为空（节点找得到、名字取不到）。
-  { name: 'ocaml', pkg: 'ocaml', pkgSpec: 'agent-io-grammar-ocaml', exts: ['.ml', '.mli'], kind: 'code', symbol_nodes: ['let_binding'], field_map: { name: 'pattern' } },
+  { name: 'ocaml', pkg: 'ocaml', pkgSpec: 'agent-io-grammar-ocaml', exts: ['.ml', '.mli'], kind: 'code', symbol_nodes: ['let_binding'], field_map: { name: 'pattern' }, // ★ import 边（实测）：`open Foo` 是专用节点 `open_module`，模块名走 `module` 字段。
+  //   ★ 它是**模块名**不是文件路径 ⇒ kind='package'；模块名→文件的解析属另一层。
+  import_nodes: ['open_module'] },
   // ★★ 2026-10-08 修：**派生名不存在**。`pkg: 'f-sharp'` ⇒ 派生 `tree-sitter-f-sharp`，
   //   而 npm 上**没有这个包**（实测 `npm view tree-sitter-f-sharp` ⇒ E404）—— 真名是
   //   **`tree-sitter-fsharp`**（实测存在，N-API：`node-gyp-build`、无 `nan`；但它 latest 的
@@ -250,7 +254,8 @@ export const LANGUAGES: LanguageEntry[] = [
   { name: 'julia', pkg: 'julia', exts: ['.jl'], kind: 'code', symbol_nodes: ['function_definition', 'struct_definition', 'module_definition', 'abstract_definition', 'primitive_definition'], import_nodes: ['import_statement', 'using_statement'], field_map: { name: 'name' } },
   { name: 'clojure', pkg: 'clojure', exts: ['.clj', '.cljs'], kind: 'code', symbol_nodes: ['list_lit'], field_map: { name: 'name' } },
   { name: 'scheme', pkg: 'scheme', exts: ['.scm', '.ss'], kind: 'code', symbol_nodes: ['list'], field_map: { name: 'name' } },
-  { name: 'solidity', pkg: 'solidity', exts: ['.sol'], kind: 'code', symbol_nodes: ['contract_declaration', 'function_definition'], field_map: { name: 'name' } },
+  { name: 'solidity', pkg: 'solidity', exts: ['.sol'], kind: 'code', symbol_nodes: ['contract_declaration', 'function_definition'], field_map: { name: 'name' }, // ★ import 边（实测）：专用节点 `import_directive`，路径走 `source` 字段（三种形态都落同一字段）。
+  import_nodes: ['import_directive'] },
   // ★ 2026-10-08 核实：派生名 `tree-sitter-vhdl` 在 npm 上**不存在**，也没找到可用的 node 原生真名
   //   （只有别的生态的产物：`@lumis-sh/wasm-*` / `@arborium/*` / `@treelight/*` / `@lotsa/verdant-lang-*`
   //   都是 wasm 或宿主插件，**不是** node 的 tree-sitter 语言对象）⇒ 显式声明 `pkgSpec: null`。

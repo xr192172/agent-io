@@ -47,7 +47,9 @@ const S = {
   julia: { ext: '.jl', code: 'using A\n\nfunction foo()\n  bar()\nend\n', sym: 'foo', imp: 'A', call: 'bar' },
   r: { ext: '.r', code: 'library(a)\n\nfoo <- function() { bar() }\n', sym: 'foo', imp: 'a', call: 'bar' },
   fish: { ext: '.fish', code: 'source ./a.fish\n\nfunction foo\n  bar\nend\n', sym: 'foo', imp: './a.fish', call: 'bar' },
-  crystal: { ext: '.cr', code: 'require "a"\n\ndef foo\n  bar\nend\n', sym: 'foo', imp: 'a', call: 'bar' },
+  // ★ 2026-10-08 更正样本：crystal 的**裸调用不产调用节点**（`bar`→local_variable、`bar()`→ERROR），
+  //   只有带 receiver 的 `self.bar` 才成 `method_call`（上游 grammar 固有限制：`alias($.property,'')` 是必需项）。
+  crystal: { ext: '.cr', code: 'require "a"\n\nclass Foo\n  def bar\n  end\n\n  def foo\n    self.bar\n  end\nend\n', sym: 'foo', imp: 'a', call: 'bar' },
   swift: { ext: '.swift', code: 'import Foundation\n\nfunc foo() { bar() }\n', sym: 'foo', imp: 'Foundation', call: 'bar' },
   ocaml: { ext: '.ml', code: 'open A\n\nlet foo () = bar ()\n', sym: 'foo', imp: 'A', call: 'bar' },
   solidity: { ext: '.sol', code: 'import "./a.sol";\n\ncontract C {\n  function foo() public { bar(); }\n}\n', sym: 'foo', imp: './a.sol', call: 'bar' },

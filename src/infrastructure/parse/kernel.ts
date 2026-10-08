@@ -1164,6 +1164,12 @@ export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
     // ★ 必须声明：`let_binding` 的 `body` 字段**就是那条表达式**（`bar ()`），没有块包裹。
     //   默认取法返回"体的子节点"⇒ 会把 application_expression 本身丢掉 ⇒ 调用边全丢（实测 calls=0）。
     bodyIsExpression: true,
+    // ★ import 边（子代理实测）：`open Foo` 是**专用节点** `open_module`，模块名在 **`module`** 字段
+    //   （→ `module_path`：`open Foo`→`Foo`、`open Foo.Bar`→`Foo.Bar`）。
+    //   ★ 它**不是文件路径而是模块名** ⇒ 落成 `kind='package'`；"模块名 → 哪个文件"的解析属**另一层**
+    //   （`resolveProjectImport` / LANG_RESOLVERS），本笔不碰。
+    //   node-types.json: 语法仓 src/node-types.json L4281 / L4284(module 字段)
+    importSourceField: 'module',
   },
   solidity: {
     // 实测：`bar()` → `call_expression`，被调名在 **`function` 字段**
@@ -1172,6 +1178,12 @@ export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
     //   node-types.json: node_modules/tree-sitter-solidity/src/node-types.json L369 / L372(function 字段)
     callNode: 'call_expression',
     calleeFields: ['function'],
+    // ★ import 边（子代理实测）：有**专用**节点 `import_directive`（与 ruby 那种"require 即普通 call"不同），
+    //   模块路径在 **`source`** 字段（`string` 节点、text 含引号 ⇒ `stripQuotes` 去掉）。
+    //   三种形态 `import "./a.sol"` / `import {A,B as C} from "./b.sol"` / `import * as D from "./c.sol"`
+    //   **都**落在同一个字段。
+    //   node-types.json: node_modules/tree-sitter-solidity/src/node-types.json L1171 / L1194(source 字段)
+    importSourceField: 'source',
   },
   crystal: {
     // ★ 实测（子代理逐字段探测 + 本笔复验）：被调名在 `method_call` 的**第 0 个子节点**上，
@@ -1184,6 +1196,11 @@ export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
     //   证据：grammar.js L474-487；上游副本逐字节一致。
     callNode: 'method_call',
     calleeChildIndex: 0,
+    // ★ import 边（子代理实测）：`require "a"` 是**专用语句节点** `require_statement`
+    //   （**不是**普通方法调用 ⇒ 与 ruby 的 `require` 不同、**可做**），路径在 **`path`** 字段（text 含引号）。
+    //   实测仅支持裸写法；`require("x")` 会变 `ERROR`（上游限制）。
+    //   grammar.js:311-314 = seq('require', field('path', $.string))
+    importSourceField: 'path',
     // ★ 实测：`method_definition` 也**没有 body 字段**（body/suite 皆 null），命名子节点就是
     //   `identifier`(方法名) + `method_call`(体语句) ⇒ 与 fish 同形，用 `bodyIsSelf`
     //   （名字那个直接子节点由 `nameIndex` 跳过）。
