@@ -25,6 +25,8 @@ import { fileFacts } from '../../../infrastructure/index/file_facts.js';
 import { getProjectCacheDb } from '../../../infrastructure/index/db.js';
 import { getRawImportsOfFile, contentHash } from '../../../infrastructure/index/symbols.js';
 import { parseFileSymbols, isSupportedFile } from '../../../infrastructure/parse/ast_parser.js';
+// ★ T79：调用边读取**复用现成那一处**（别在这再写一份 SQL）
+import { queryFileCalls } from '../../meta/explore/query_feature.js';
 import { type Expectation, normPath, normSignature } from '../../../domain/expectation.js';
 
 export type Verdict = 'pass' | 'fail' | 'unsupported';
@@ -171,6 +173,64 @@ export async function judgeExpectations(
         );
         break;
       }
+      case 'call-exists': {
+        // ★★ T79：**调用级**判据 —— 边/符号/签名三档表达不了"必须用哪个符号"，
+        //   而"用错符号"恰恰是最常见的偏差（实测：设计说必须用 add，实现换成 mul，边判据照样绿）。
+        const p = normPath(e.path);
+        const bad = indexStaleFor(root, [p]);
+        if (bad) {
+          push(it, 'unsupported', bad);
+          break;
+        }
+        const fileId = p;
+        let outgoing: Array<{ caller: string; callee: string; line: number }> = [];
+        try {
+          outgoing = queryFileCalls(getProjectCacheDb(root), p, p).outgoing;
+        } catch (err) {
+          push(it, 'unsupported', `读调用边失败（${(err as Error).message}）⇒ 判不了`);
+          break;
+        }
+        // ★★★ 2026-10-09：id 约定**实测定证**（别按 DSL 的节点 id 猜）——
+        //   索引 `nodes` / `edges` 里符号 id 是 **`<仓库相对路径>#<符号名>`**
+        //   （实测：`src/format.ts#total → src/math.ts#add`），
+        //   **不是** DSL 的 `file_src_format_ts#total`。
+        //   ★ 我初版按 DSL 的 file id 拼 ⇒ 查不到 ⇒ 把"已实现"判成 fail（**假红**）。
+        //   ★★ 顺带：`get_dsl query=calls`（`queryFileCalls`）拼的正是 DSL 的 file id
+        //     ⇒ **那条路一直是查不到东西的**（独立缺陷，已单独记账）。
+        const callerId = `${p}#${e.symbol}`;
+        const mine = outgoing.filter((x) => x.caller === callerId);
+        // ★★ 守卫（防**假绿**，但不能变成假红）：只有当**整个索引里一条调用边都没有**时，
+        //   才说"判不了"（那时是"调用抽取没产出"，不是"这个符号没调用"）。
+        //   ★ 初版守卫写的是"该文件一条出调用都没有 ⇒ 判不了" —— **太保守**：
+        //     文件本来就不做任何项目内调用是完全正常的状态（实测夹具里 `total` 只调用 `Array.reduce`），
+        //     那应当判 **fail**，判"判不了"等于给一个"没实现"的设计开脱。
+        if (mine.length === 0) {
+          let totalCalls = 0;
+          try {
+            const row = getProjectCacheDb(root).prepare("SELECT COUNT(*) AS c FROM edges WHERE kind = 'call'").get() as { c?: number } | undefined;
+            totalCalls = row?.c ?? 0;
+          } catch {
+            totalCalls = 0;
+          }
+          if (totalCalls === 0) {
+            push(it, 'unsupported', `本项目索引里**一条调用边都没有**（该语言的调用抽取没产出）⇒ 判不了`);
+            break;
+          }
+        }
+        const shortName = (id: string): string => id.slice(id.lastIndexOf('#') + 1);
+        const callees = mine.map((x) => shortName(x.callee));
+        const hit = mine.find((x) => shortName(x.callee) === e.target);
+        push(
+          it,
+          hit ? 'pass' : 'fail',
+          hit
+            ? `${p} 的 \`${e.symbol}()\` **调用了** \`${e.target}()\`（L${hit.line}）`
+            : `${p} 的 \`${e.symbol}()\` **没有**调用 \`${e.target}()\`` +
+              (callees.length ? `；它实际调用的是：${[...new Set(callees)].join(', ')}` : '（该符号没有任何出调用）'),
+        );
+        break;
+      }
+
       case 'edge-exists':
       case 'edge-absent': {
         const from = normPath(e.from);

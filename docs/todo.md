@@ -956,14 +956,19 @@
 
 ---
 
-- [ ] **T79 ★★ 「验收的表达力」止于边/符号/签名 ⇒ 会出现「验收全绿但设计没实现」**
-      *(核实：2026-10-09 真跑试用 —— 设计写的是"累加必须复用 **math.add**"，
-       而我把源码改成 `import { mul }` 后，`edge-exists format→math` **照样通过**（边在嘛）⇒
-       **验收 3/3 全绿，但设计其实没被实现**。)*
-      ⇒ **形状**：需要更细的检查项，例如 `call-exists`（某符号的调用图里出现某目标符号）——
-        ★ 判据要在手边：调用边已有（`query=calls` / `cache.db` 的 call 边），**不新造解析**。
-      ⇒ **判据**：上面那个夹具里把实现从 `add` 换成 `mul` ⇒ **必须判 fail**（现在判 pass）。
-      ⇒ ★ 与 T74 同一族：**"验收的粒度"决定了"重写能否被真正约束"** —— 粒度太粗 = 假绿。
+- [ ] **T80 ★★★ `get_dsl query=calls` **恒空**（id 约定不同源）；且它的错误提示**把责任推给了索引**（2026-10-09 T79 顺手实测抓到）**
+      *(核实：2026-10-09 实测 —— 夹具里索引**明明有** `call | src/format.ts#total → src/math.ts#add | L3`；
+       而 `get_dsl {query:"calls", feature, file_id:"file_src_format_ts", project_dir}` 返回：*
+       *「feature "t79" 文件 "src/format.ts" **无调用关系数据**（cache.db 中可能尚未索引该文件的调用边）」，`incoming/outgoing` 皆空。)*
+      ⇒ **根因**：`queryFileCalls`（`application/meta/explore/query_feature.ts:157`）用
+        **DSL 的文件节点 id**（`file_src_format_ts`）拼前缀 `${fileId}#`，
+        而索引 `nodes`/`edges` 里符号 id 用的是**仓库相对路径**（实测 `src/format.ts#total`）⇒ **永远匹配不上**。
+      ⇒ ★★ **比"恒空"更坏的是它的归因**：提示说"可能尚未索引该文件的调用边"——**把责任推给索引使用者**，
+        而真相是它自己拼错了 id。**错误的归因会让人去修错的地方**（这类"误导性诚实"比静默更贵）。
+      ⇒ **形状**：让 id 约定**只有一个来源** —— 要么 `queryFileCalls` 改用路径（与索引一致），
+        要么把"DSL 节点 id ↔ 索引符号 id"的换算收成一处具名函数（★ 现在是**隐含约定**，两边各猜一次）。
+      ⇒ **判据**：上面那个夹具 ⇒ `query=calls` **非空**，且给出 `src/format.ts#total → src/math.ts#add`。
+      ⇒ ★ 顺带说明为什么它与 T54 同族：**"两端各自约定 id"正是"入参端不接"的另一副面孔**。
 
 - [ ] **T69 ★★ 合并形态 S3：上限预算 —— 把 L1 扩成双边 + 配额单点**
       *(核实：2026-10-08 实测我们**只有下限**（`MIN_REASON_CHARS = 6`，见 `reason_validator.ts:73`），

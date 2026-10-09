@@ -151,8 +151,10 @@ function loadDSL(input: QueryFeatureInput) {
   return dsl;
 }
 
-/** 查询 cache.db 中指定文件的调用关系 */
-function queryFileCalls(db: Database, fileId: string, relPath: string): { incoming: Array<{ caller: string; callee: string; line: number; cross: boolean }>; outgoing: Array<{ caller: string; callee: string; line: number; cross: boolean }> } {
+/** 查询 cache.db 中指定文件的调用关系
+ *  ★ 2026-10-09（T79）：**导出**给验收判据复用（检查项 `call-exists`）——
+ *  调用边的读取逻辑只此一处，别在别处再写一份 SQL。 */
+export function queryFileCalls(db: Database, fileId: string, relPath: string): { incoming: Array<{ caller: string; callee: string; line: number; cross: boolean }>; outgoing: Array<{ caller: string; callee: string; line: number; cross: boolean }> } {
   // 前缀匹配：fileId 是文件节点 ID（如 "file_src_tools_a_ts"），
   // 符号节点 ID 为 "file_rel#SymbolName"，用 fileId 前缀匹配 source/target
   const prefix = `${fileId}#`;

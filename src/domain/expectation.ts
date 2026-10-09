@@ -37,9 +37,21 @@ export type Expectation =
   | { kind: 'symbol-exists'; path: string; symbol: string; why: string }
   | { kind: 'signature-matches'; path: string; symbol: string; signature: string; why: string }
   | { kind: 'edge-exists'; from: string; to: string; why: string }
-  | { kind: 'edge-absent'; from: string; to: string; why: string };
+  | { kind: 'edge-absent'; from: string; to: string; why: string }
+  /**
+   * ★★ 2026-10-09（T79）：**调用级**判据 —— 「`path` 里的 `symbol` 必须调用 `target`」。
+   *
+   * ## 为什么非有它不可（实测）
+   * 设计写的是"累加必须复用 **`math.add`**"，而我把实现换成了 `mul` ——
+   * **`edge-exists format→math` 照样通过**（边还在嘛）⇒ **验收 3/3 全绿，但设计根本没实现**。
+   * ⇒ 边/符号/签名三档**表达不了"必须用哪个符号"**，而"用错符号"恰恰是最常见的偏差。
+   *
+   * ★ 判据**已在手边**：调用边住在 `cache.db` 的 `edges(kind='call')`，
+   *   节点 id 约定 `"<fileNodeId>#<SymbolName>"`；现成读取入口 = `queryFileCalls`（**复用它，不新写**）。
+   */
+  | { kind: 'call-exists'; path: string; symbol: string; target: string; why: string };
 
-export const EXPECTATION_KINDS = ['file-exists', 'symbol-exists', 'signature-matches', 'edge-exists', 'edge-absent'] as const;
+export const EXPECTATION_KINDS = ['file-exists', 'symbol-exists', 'signature-matches', 'edge-exists', 'edge-absent', 'call-exists'] as const;
 
 /** 规范化路径（`\`→`/`、去前导 `./`）—— ★ 与 `scope.ts` 同一个口径，别再造第三种写法 */
 export function normPath(p: string): string {
@@ -59,6 +71,7 @@ export function describeExpectation(e: Expectation): string {
     case 'signature-matches': return `signature-matches  ${normPath(e.path)} :: ${e.symbol}  =  ${e.signature}`;
     case 'edge-exists': return `edge-exists  ${normPath(e.from)} → ${normPath(e.to)}`;
     case 'edge-absent': return `edge-absent  ${normPath(e.from)} ⇸ ${normPath(e.to)}`;
+    case 'call-exists': return `call-exists  ${normPath(e.path)} :: ${e.symbol}() → ${e.target}()`;
   }
 }
 
@@ -82,6 +95,7 @@ export function assertValidExpectations(v: unknown): asserts v is Expectation[] 
     if (kind === 'file-exists') need('path');
     else if (kind === 'symbol-exists') { need('path'); need('symbol'); }
     else if (kind === 'signature-matches') { need('path'); need('symbol'); need('signature'); }
+    else if (kind === 'call-exists') { need('path'); need('symbol'); need('target'); }
     else { need('from'); need('to'); }
   });
 }
@@ -97,7 +111,7 @@ export function assertValidExpectations(v: unknown): asserts v is Expectation[] 
  * ⇒ 要让两者汇成同一份块，就得先回答：**这条失败的验收，该算到哪个文件头上？**
  *
  * ## 规则（一句话：**算在"欠了这件事"的那一端**）
- *   · `file-exists` / `symbol-exists` / `signature-matches` ⇒ **`path`** 本身（就是它欠着）；
+ *   · `file-exists` / `symbol-exists` / `signature-matches` / **`call-exists`** ⇒ **`path`** 本身（就是它欠着）；
  *   · `edge-exists`（该有的依赖没有）⇒ **`from`**（是它没去依赖 `to`）；
  *   · `edge-absent`（不该有的依赖有了）⇒ **`from`**（是它越权去依赖了 `to`）。
  * ⇒ 后两者**都算 `from`**，不是"两边都算" —— 两边都标会把"改哪端"这个判断推给读者，
@@ -112,7 +126,6 @@ export function expectationSubjectPath(e: Expectation): string {
 export function expectationPaths(e: Expectation): string[] {
   return e.kind === 'edge-exists' || e.kind === 'edge-absent' ? [normPath(e.from), normPath(e.to)] : [normPath(e.path)];
 }
-
 /** 汇总某个 DSL 里所有决策卡上的 expectations（★ 只读、不改；供对账用） */
 export function collectExpectations(dsl: DesignDSL): Array<{ node_id: string; node_label: string; expectation: Expectation }> {
   const out: Array<{ node_id: string; node_label: string; expectation: Expectation }> = [];
