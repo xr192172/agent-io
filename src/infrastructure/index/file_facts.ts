@@ -152,6 +152,39 @@ export function apiSignaturesOf(root: string, fileRel: string, feature?: string)
  *
  * ★ 口径：值统一成 `{name?, signature}`（与 `ExpectedApi` **可赋值**）—— 这样它能直接喂 `diffApis`。
  */
+/**
+ * ★★★ **核对「事实抵消」的两个前提**（2026-10-09，T86）—— 返回**人话的告警**（空数组 = 前提成立）。
+ *
+ * ## 为什么抽成一个纯函数（而不是内联在 `diff_views` 里）
+ * 这条检查是**防御性**的：要触发它，得让两侧 `source_root` 不一致或缺失 —— 而 `source_root` 是
+ * **写在 DSL 里**（fork 时定）的、`getDSL` 还优先读"活态文件" ⇒ **夹具极难造**。
+ * ⇒ 抽成纯函数后**直接喂输入**即可验全部四象限，**不必造出真实的坏状态**。
+ * ★ 这是本仓的一条通则：**判据做成纯函数 ⇒ 验收不依赖"能否造出坏状态"**。
+ *
+ * ## 四象限
+ * | dRoot | lRoot | 结论 |
+ * |---|---|---|
+ * | 都有且相同 | | **前提成立**（空数组）—— 事实在 `diffApis` 里相互抵消 |
+ * | 都有但不同 | | ⚠ 事实**不抵消** ⇒ 差异里**混进了代码变更** |
+ * | 任一缺失 | | ⚠ 该侧**只有契约、没有事实** ⇒ **事实会全被算成"差异"** |
+ */
+export function diagnoseFactsOffset(dRoot: string | undefined, lRoot: string | undefined): string[] {
+  if (dRoot && lRoot && path.resolve(dRoot) !== path.resolve(lRoot)) {
+    return [
+      `⚠ **两侧 root 不同**（设计 = \`${dRoot}\`，实际 = \`${lRoot}\`）⇒ 两侧的"事实"**不抵消** ⇒ ` +
+        '下面的 API 差异里**混进了代码变更**（本工具本该只报「**契约**差异」）。',
+    ];
+  }
+  if (!dRoot || !lRoot) {
+    const which = !dRoot ? '设计' : '实际';
+    return [
+      `⚠ **${which}视图拿不到 \`source_root\`** ⇒ 该侧**只有契约、没有事实** ⇒ ` +
+        '**事实会全被算成"差异"**（★ 不是"真的差了这么多"）。',
+    ];
+  }
+  return [];
+}
+
 export function mergedApis(
   root: string | undefined,
   fileRel: string | undefined,

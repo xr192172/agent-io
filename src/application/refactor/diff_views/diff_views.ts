@@ -22,8 +22,10 @@
  */
 
 import type { DesignDSL, SemanticFile, Symbol, ExpectedApi, Edge, NodeDecision, DecisionHistoryEntry } from '../../../domain/types.js';
+// ★ T86：比两侧 root 是否同源（"事实抵消"的前提）
+import path from 'node:path';
 import { getDSL, getLiveFeatureResolved, getBaselineFeatureResolved, getArchiveEntryByPath } from '../../../infrastructure/storage.js';
-import { mergedApis } from '../../../infrastructure/index/file_facts.js';
+import { mergedApis, diagnoseFactsOffset } from '../../../infrastructure/index/file_facts.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
 // ──────── 输出类型 ────────
@@ -185,6 +187,11 @@ export interface DiffViewsResult {
     live_exists: boolean;
     /** 基线视图（契约创立时刻的 fork）是否存在 */
     baseline_exists: boolean;
+    /**
+     * ★★ **T86**：本次比较的「**事实抵消**」前提核对结果（空 = 前提成立）。
+     * ★ 非空 ⇒ 下面的差异**不能**直接读成「设计变了」或「代码变了」。见 `mergedApis` 的文档。
+     */
+    notes: string[];
     /** 总体统计 */
     summary: {
       /** 设计视图文件数 */
@@ -249,6 +256,25 @@ function diffViewsCore(input: DiffViewsInput): DiffViewsResult {
   const design = getDSL(feature);
   const live = getLiveFeatureResolved(feature, live_dir);
   const baseline = getBaselineFeatureResolved(feature, live_dir);
+
+  /**
+   * ★★★ **T86：把「事实抵消」的两个前提当场核一遍**（2026-10-09）。
+   *
+   * ## 背景（见 `mergedApis` 的文档）
+   * 本工具比两侧时用的是 `diffApis(mergedApis(design…), mergedApis(live…))` ——
+   * **两侧都把"当下的事实"加进去** ⇒ 只要**同根**，事实部分**完全相同 ⇒ 相互抵消**
+   * ⇒ 剩下的差异**纯是契约的** ✓ 这是**有意**的。
+   *
+   * ## 不满足就是**静默出错**（所以必须说出来）
+   * · 两侧 root **不同** ⇒ 事实**不抵消** ⇒ 差异里**混进了代码变更**（而这条线本该只报"设计差异"）；
+   * · ★ **任一侧拿不到 root** ⇒ `mergedApis` 只返回契约 ⇒ **一侧有事实、另一侧没有**
+   *   ⇒ **事实会全被算成"差异"** —— ★ 这与 T85 那个 1281 是**同一种病**：
+   *     **该说"判不了"却给了个默认值**。
+   * ⇒ 宁可**明说"本次比较里事实未抵消"**，也不给一个看起来精确的数字。
+   */
+  const dRoot = design?.source_root;
+  const lRoot = live?.source_root;
+  const factsNotes: string[] = diagnoseFactsOffset(dRoot, lRoot);
 
   // 构建结果
   const designFiles = design?.semantic?.files ?? [];
@@ -642,6 +668,12 @@ function diffViewsCore(input: DiffViewsInput): DiffViewsResult {
   }
 
   lines.push('', '  (需要更多细节请使用 query_feature 查询单个文件)');
+  // ★ T86：把「事实抵消」的前提核对结果**印出来**（不满足时不静默 —— 否则数字看着精确、其实含义变了）
+  if (factsNotes.length) {
+    lines.push('', '  ── ⚠ 本次比较的**前提未满足**（影响下面差异的**含义**）──');
+    for (const n of factsNotes) lines.push(`    ${n}`);
+    lines.push('    ★ 读法：凡"事实未抵消"的情形，本页差异**不能**直接读成「设计变了」或「代码变了」。');
+  }
 
   return {
     message: lines.join('\n'),
@@ -650,6 +682,8 @@ function diffViewsCore(input: DiffViewsInput): DiffViewsResult {
       design_exists: !!design,
       live_exists: !!live,
       baseline_exists: !!baseline,
+      // ★ T86：结构化通道也要有（否则只有人看得见、机器解析不到）
+      notes: factsNotes,
       summary: {
         design_files: designFiles.length,
         live_files: liveFiles.length,
