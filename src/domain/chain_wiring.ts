@@ -331,8 +331,104 @@ export const CHAIN_EDGES_PENDING: readonly ChainEdge[] = [
  * · `single` ⇒ `touched.<键>`（只有一个，取即确定）
  * · `pick`   ⇒ `touched.<键>[i]`（可能有多个，**下标由调用方给** —— 选择是语义判断，不自动化）
  */
+/**
+ * ★★★ **按"谁来接谁"查接法边**（2026-10-09，T54 顺便收口）。
+ *
+ * ## 为什么要有它（实测踩到）
+ * 接法表里有**通配边**（`from`/`to` = `ANY_TOOL`，如 `project_dir` / `feature`：任何 [B] 之间直通）。
+ * ⇒ 调用方若照 `edge.to === 'edit_code'` 去找，**永远找不到通配那两条**，然后报"接法表里没有这条边" ——
+ *   而**那条边其实在**，只是用通配表达的。
+ * ★ 这个"要不要算通配"的判断**此前散在每个调用方手里**（本仓头号病的又一例）⇒ 收成这一处。
+ * ★ 反面同样有坑：**逐段判定链通不通时，通配边必须排除**（否则恒真，见 `verifiedEdgesBetween` 的教训）。
+ *   两处结论相反、方向相反 —— 所以更**必须各自写在一个具名函数里**，别让读者在调用点猜。
+ *
+ * 排序：**精确边优先于通配边**（更具体的赢）；同具体度按表内顺序（稳定）。
+ */
+export function findChainEdges(
+  from: string,
+  to: string,
+  opts?: { fromKey?: string; toPath?: string },
+): readonly ChainEdge[] {
+  const hit = (x: string, t: string): boolean => x === t || x === ANY_TOOL;
+  const rank = (e: ChainEdge): number => (e.from === from && e.to === to ? 0 : 1);
+  return CHAIN_EDGES.filter(
+    (e) =>
+      hit(e.from, from) &&
+      hit(e.to, to) &&
+      (opts?.fromKey === undefined || e.fromKey === opts.fromKey) &&
+      (opts?.toPath === undefined || e.toPath === opts.toPath),
+  ).slice().sort((a, b) => rank(a) - rank(b));
+}
+
 export function chainExprOf(e: ChainEdge): string {
   return e.cardinality === 'single' ? `touched.${e.fromKey}` : `touched.${e.fromKey}[i]`;
+}
+
+/**
+ * ★★★ **执行一次接续**：拿上游的 `touched` + 一条接法边 ⇒ 产出下游入参的那一格（2026-10-09，`docs/todo.md` T54）。
+ *
+ * ## 为什么需要它（这就是"管道"缺的那一段）
+ * 本仓的产物端（`Touched`）与接法表（`CHAIN_EDGES`）**都已经做完了**，
+ * 但**"把上一步的值取出来、放到下一步的入参位置"**这件事**一直由调用方手工做** ——
+ * 而"手工做"正是会出错的地方：**回忆字段名、自己数下标**。
+ * ⇒ 本函数把那一格变成**一个纯函数调用**：输入 `touched` + 边，输出 `{toPath, value}`。
+ *
+ * ## 三条纪律
+ * 1. ★★★ **不替调用方选**：`cardinality:'pick'` 时**必须**显式给下标；不给就**报错并列出候选**，
+ *    绝不默认取第 0 个（"选"是语义判断 —— 本文件开头的立论；默认选 = 静默替人做决定）。
+ * 2. ★★ **不许静默降级**：字段缺了、类型不对、`single` 却给了多元素 —— 一律 `ok:false` + 人话原因，
+ *    不返回 `undefined` 让下游猜（`undefined` 传下去会变成"看起来能跑"）。
+ * 3. ★ **表达式只由 {@link chainExprOf} 生成**（同一个形态，别在这里再拼一份）。
+ */
+export type ChainHandoff =
+  | { ok: true; toPath: string; value: string; expr: string }
+  | { ok: false; reason: string; candidates: readonly string[]; expr: string };
+
+export function applyChainEdge(
+  touched: Record<string, unknown>,
+  edge: ChainEdge,
+  opts?: { pick?: number },
+): ChainHandoff {
+  const expr = chainExprOf(edge);
+  const raw = touched[edge.fromKey];
+  if (raw === undefined || raw === null) {
+    return { ok: false, reason: `上游 touched 里**没有** \`${edge.fromKey}\`（这次没产出它）`, candidates: [], expr };
+  }
+  if (Array.isArray(raw)) {
+    const xs = raw.map((x) => String(x));
+    if (xs.length === 0) {
+      return { ok: false, reason: `上游 \`${edge.fromKey}\` 是**空数组**（这次没产出任何元素）`, candidates: [], expr };
+    }
+    if (edge.cardinality === 'single') {
+      if (xs.length !== 1) {
+        return {
+          ok: false,
+          reason: `这条边声明的是 \`single\`（只该有一个元素），但上游给了 ${xs.length} 个`,
+          candidates: xs,
+          expr,
+        };
+      }
+      return { ok: true, toPath: edge.toPath, value: xs[0]!, expr };
+    }
+    // pick：★ 下标必须由调用方给 —— 这里**不默认取第 0 个**
+    const i = opts?.pick;
+    if (i === undefined) {
+      return {
+        ok: false,
+        reason: `这条边是 \`pick\`（可能有多个）⇒ **要你给下标**（\`pick:i\`）。★ 刻意不替你在候选里选 —— 选择是语义判断`,
+        candidates: xs,
+        expr,
+      };
+    }
+    if (!Number.isInteger(i) || i < 0 || i >= xs.length) {
+      return { ok: false, reason: `下标 ${i} 越界（候选 ${xs.length} 个）`, candidates: xs, expr };
+    }
+    return { ok: true, toPath: edge.toPath, value: xs[i]!, expr };
+  }
+  if (typeof raw === 'string' || typeof raw === 'number') {
+    return { ok: true, toPath: edge.toPath, value: String(raw), expr };
+  }
+  return { ok: false, reason: `上游 \`${edge.fromKey}\` 的类型是 ${typeof raw}，不是标量也不是数组`, candidates: [], expr };
 }
 
 /**
