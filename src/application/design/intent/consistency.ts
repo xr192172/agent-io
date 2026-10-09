@@ -29,13 +29,106 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { DesignDSL, SemanticFile } from '../../../domain/types.js';
-import { getDSL } from '../../../infrastructure/storage.js';
+import { getDSL, getBaselineFacts } from '../../../infrastructure/storage.js';
+// ★ T85/D3：线 1 的"现取事实"入口 —— 与 `import_project` 锚基线事实时**用的是同一个 accessor**（同源）
+import { fileFacts } from '../../../infrastructure/index/file_facts.js';
 import { parseFileSymbols, ParsedSymbol, isSupportedFile } from '../../../infrastructure/parse/ast_parser.js';
+
+/**
+ * ★★★ **线 1：代码相对基线的变更**（2026-10-09，T85/D3）。
+ *
+ * ## 它回答的问题（与线 2 **不同**）
+ *   · **线 1（本类型）**：`基线事实`（fork 那一刻） vs `现取事实` ⇒ 「**代码相对基线变了没有**」
+ *   · **线 2（`fileResults`）**：`DSL.expected_apis`（**人写的意图**） vs `现取事实` ⇒ 「**设计与实现的差距**」
+ * ★ 在此之前**只有线 2，而它的"期望侧"是 fork 时从事实复制来的** ⇒ **自己跟自己比**。
+ *   用户原话：*"怎么可能对拍还放在同一个里面？**那这算什么对拍？自己测自己吗？**"*
+ */
+export interface BaselineDrift {
+  /** 比了几个文件 */
+  compared: number;
+  /** 逐文件：现取相对基线**新增/消失**的 API（签名，与 `expected_apis[].signature` 同形） */
+  files: Array<{ path: string; added: string[]; removed: string[] }>;
+  /** ★ 说明（**不许静默**：没基线 / 索引取不到，都要写在这儿） */
+  notes: string[];
+}
+
+/**
+ * 跑**线 1**：基线事实 vs 现取事实。★ 纯读，不写任何东西。
+ * ★ 没有基线事实 ⇒ **明说"这条线判不了"**（老 feature 就是这种）—— 不冒充"没变化"。
+ */
+export function checkBaselineDrift(feature: string, codeDir: string): BaselineDrift {
+  const notes: string[] = [];
+  const baseline = getBaselineFacts(feature);
+  if (!baseline) {
+    return {
+      compared: 0,
+      files: [],
+      notes: [
+        '本 feature **没有基线事实**（`baseline/<feature>.facts.json` 不存在 —— 多半是 D2 之前导入的）' +
+          '⇒ **线 1（代码相对基线的变更）判不了**。★ 重新 `import_project` 即可锚定（若设计已存在，先删掉该 feature 的 `.facts.json` 才会重建）。',
+      ],
+    };
+  }
+  const files: BaselineDrift['files'] = [];
+  for (const [rel, base] of Object.entries(baseline.files)) {
+    let now: readonly string[];
+    try {
+      const f = fileFacts(codeDir, rel);
+      now = (f.apis ?? []).map((a) => a.signature ?? a.name);
+    } catch (e) {
+      // ★ 取不到事实**不许静默**：那会让"变化"看起来是"没变化"
+      notes.push(`${rel}: 现取事实失败（${(e as Error).message.slice(0, 80)}）⇒ 该文件本轮**没比**`);
+      continue;
+    }
+    const added = now.filter((s) => !base.apis.includes(s));
+    const removed = base.apis.filter((s) => !now.includes(s));
+    if (added.length || removed.length) files.push({ path: rel, added, removed });
+  }
+  files.sort((a, b) => a.path.localeCompare(b.path));
+  return { compared: Object.keys(baseline.files).length, files, notes };
+}
+
+/** 渲染线 1 的小节（给 `checkConsistency` 的消息用） */
+function renderBaselineDriftSection(d: BaselineDrift): string {
+  const L: string[] = [
+    '',
+    '── 线 1 · 代码相对**基线**的变更（★ 基线 = **fork 那一刻的事实**；★ 与下面"设计 vs 实现"**不是一回事**）──',
+  ];
+  if (d.compared === 0 && d.files.length === 0) {
+    L.push('  （**判不了**）');
+  } else {
+    const nAdd = d.files.reduce((a, f) => a + f.added.length, 0);
+    const nDel = d.files.reduce((a, f) => a + f.removed.length, 0);
+    if (nAdd === 0 && nDel === 0) {
+      L.push(`  ✓ **相对基线无变化**（比了 ${d.compared} 个文件）—— ★ 源码没动过就是它；**这不是"没跑"**。`);
+    } else {
+      L.push(`  有变化：${d.files.length} 个文件（新增 API ${nAdd} · 消失 API ${nDel}）`);
+      for (const f of d.files.slice(0, 10)) {
+        L.push(`    ${f.path}`);
+        for (const s of f.added.slice(0, 3)) L.push(`      ＋ ${s}`);
+        for (const s of f.removed.slice(0, 3)) L.push(`      － ${s}`);
+      }
+      if (d.files.length > 10) L.push(`    …另有 ${d.files.length - 10} 个文件`);
+    }
+  }
+  for (const n of d.notes) L.push(`  ★ ${n}`);
+  return L.join('\n');
+}
 
 export interface ConsistencyResult {
   message: string;
   fileResults: FileConsistency[];
   invariantResults: InvariantResult[];
+  /**
+   * ★★★ **线 1：代码相对基线的变更**（2026-10-09，T85/D3）—— **与 `fileResults`（线 2）是两件事，绝不许混**：
+   *   · **本项（线 1）** = `baseline/<f>.facts.json`（**fork 那一刻的事实**） vs **现取事实**（`fileFacts`）
+   *     ⇒ 回答「**代码相对基线变了没有**」。★ **同窗口内（源码未动）应为 0**。
+   *   · **`fileResults`（线 2）** = DSL 里的 `expected_apis`（**人写的意图**） vs 现取事实
+   *     ⇒ 回答「**设计与实现的差距**」。
+   * ★ 用户原话：*"怎么可能对拍还放在同一个里面？**那这算什么对拍？自己测自己吗？**"*
+   *   ⇒ 两条线**各有各的对手**，混着比就是假差异（**这就是 T85 的病根**）。
+   */
+  baselineDrift?: BaselineDrift;
   summary: {
     total_files: number;
     matched: number;
@@ -442,9 +535,18 @@ export async function checkConsistency(input: ConsistencyInput): Promise<Consist
   if (invariantFailed > 0) lines.push('  - 修复失败的不变式');
   lines.push('');
 
+  // ★★★ 2026-10-09（T85/D3）：**线 1 与线 2 分开报**。
+  //   上面那些 `missing/mismatched/unexpected` 是**线 2**：`DSL.expected_apis`（人写的**意图**）vs 现取事实。
+  //   本节是**线 1**：`基线事实`（fork 那一刻）vs 现取事实 ⇒ 「**代码相对基线变了没有**」。
+  //   ★ 用户原话：*"怎么可能对拍还放在同一个里面？那这算什么对拍？**自己测自己吗？**"*
+  //   ★ 两条线**各有各的对手**；混着看就会**分不清"代码变了"还是"设计改了"**（T85 的病根）。
+  const baselineDrift = checkBaselineDrift(feature, codeDir);
+  lines.push(renderBaselineDriftSection(baselineDrift));
+
   return {
     message: lines.join('\n'),
     fileResults,
+    baselineDrift,
     invariantResults,
     summary: {
       total_files: fileResults.length,
