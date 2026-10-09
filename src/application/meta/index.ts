@@ -674,8 +674,14 @@ export const META_TOOLS: ToolDef[] = [
  *    ★ 两个都没给 ⇒ 返回**空串**（与改造前**逐字等价**，导航不因此变胖）。
  *
  * ★ 只读：本段不改任何东西，也**不代表"这条链跑通过"**（那是 `CHAINS` 的 `verified` 说的）。
+ *
+ * ★★★ 2026-10-09（T54 收口）：**本函数导出、两个面共用** —— ① `capability_map` 工具；
+ *   ② **回执通道**（`presentation/mcp/server_registry.ts` 的「下一棒」）——
+ *   它手上正好有刚跑完那个工具的 `r.text`（`touched` 就在 `---DATA---` 里）
+ *   ⇒ **能直接把具体值印出来**（`edit_code.file = src/a.ts`），调用方**不必自己 stringify 一遍**。
+ *   ★ 为什么必须共用：这正是本仓头号病的高发处 —— 两个面各写一份"把 touched 变成下一棒"就**分叉**了。
  */
-function renderHandoffSection(
+export function renderHandoffSection(
   fromTool: string | undefined,
   touchedJson: string | undefined,
   /** 下游工具的**顶层必填入参**名（由 `catalogOf(...).requiredKeys` 提供） */
@@ -745,6 +751,12 @@ function renderHandoffSection(
   if (ready.length) L.push('', `  ★ **直接可用**（值已取好，零手工拼字段名）：${ready.length} 条`, ...ready);
   if (needPick.length) L.push('', `  ★ **要你选一个**：${needPick.length} 条（选是语义判断 —— 本工具**不替你选**）`, ...needPick);
   if (blocked.length) L.push('', `  ★ 接不上（上游这次没产出该键）：${blocked.length} 条`, ...blocked);
+  if (ready.length || needPick.length) {
+    // ★★ 读起来会卡的地方（实测）：**同一对工具之间常有多条边**（如 `rename_symbols → edit_code` 有
+    //   `written_files→file` 与 `symbols→symbol` 两条），于是每条边上那句"还要给"**要合起来看**才算全
+    //   （单看 `symbol` 那条会说"还要给 file"，而 `file` 其实由**另一条边**给了）。
+    L.push('', '  ★ 注意：**同一对工具之间常有多条边** ⇒ 上面每条的"还要给"要**合起来看**（例：`file` 由另一条边已给）。');
+  }
   if (uni.length) L.push('', '  ★ 全称规则（对**任何**工具都成立，只提一次、不展开）：', ...uni);
   const unused = Object.keys(cur).filter((k) => !used.has(k));
   if (unused.length) L.push('', `  ★ touched 里**没被任何边用到**的键：${unused.join(', ')}（不是错误，只是本表没接它）`);

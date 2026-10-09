@@ -166,6 +166,26 @@
         并**让量具查出"同义不同名"**（`path` vs `file` 就是第一个）。
         ★ 判据：**每条真实链的"出口字段名"都能在"入口字段名"里逐字找到**。
 
+      ⇒ ★★★ **2026-10-09 第二次进展（工具面收口 —— 这条最接近"用户要的东西"）**：
+        **「下一棒」现在印具体值**。此前回执通道只印**表达式**（`touched.written_files[i] → edit_code.file`），
+        调用方得**自己 stringify 一遍 `touched`**、再回忆字段名 —— 而本通道（`server_registry.ts`）
+        手上**正好有**刚跑完那个工具的 `r.text`，`touched` 就在它的 `---DATA---` 里。
+        ⇒ 现在把它喂进**同一个**渲染（`renderHandoffSection`，与 `capability_map` 的「接续」段**共用一份实现**）
+        ⇒ 实测（`rename_symbols` 真跑）：
+        ```
+        ── 接续（你手上有 `rename_symbols` 的 touched ⇒ 下一步怎么调）──
+          ★ 直接可用：2 条
+            edit_code.file  ←  touched.written_files[i]  =  src/a.ts
+                ★ 下游还要给：op
+            edit_code.symbol  ←  touched.symbols[i]  =  Kk4
+                ★ 下游还要给：file, op
+          ★ 注意：同一对工具之间常有多条边 ⇒ 每条的"还要给"要合起来看
+        ```
+        ⇒ ★ **调用方零手工**（不必 stringify、不必回忆字段名）—— **"接到工具面"这一跳补上了**。
+        ★ 取不到 `touched` 的工具 ⇒ **逐字退回**原表达式版（行为不变）；解析失败**一律退回**（提示非契约，不许连累主回执）。
+        ★ 另补一段实测发现的读法：**同一对工具常有多条边**（`rename_symbols → edit_code` 有两条）
+          ⇒ 每条的"还要给"**要合起来看**（单看 `symbol` 那条会说"还要给 file"，而 `file` 由另一条边给了）。
+
       ⇒ ★★★ **2026-10-09 进展：走了「另一条路」，且已验第一条真链 —— ★ 路线分歧需要拍板**
 
         **做了什么**（`domain/chain_wiring.ts` 新增两个函数；不改任何 `[B]` 的入参名）：
