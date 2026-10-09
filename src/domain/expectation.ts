@@ -86,6 +86,33 @@ export function assertValidExpectations(v: unknown): asserts v is Expectation[] 
   });
 }
 
+/**
+ * ★★ 一条检查项的**「主体路径」**—— 失败时**该改哪个文件**（2026-10-09，T78）。
+ *
+ * ## 为什么需要它
+ * `consistency_check` 的对账结果里有**两个来源**的差异：
+ *   ① `expected_apis` 对账（**扫描来的**契约 —— 而设计就是从扫描 fork 的 ⇒ 它对出来**永远干净**）；
+ *   ② **人写的验收**（`expectations`）—— **只有它才会真的不一样**。
+ * 而"差异块"当初只吃 ① ⇒ **块永远是空的**，"圈范围"那一步等于没做。
+ * ⇒ 要让两者汇成同一份块，就得先回答：**这条失败的验收，该算到哪个文件头上？**
+ *
+ * ## 规则（一句话：**算在"欠了这件事"的那一端**）
+ *   · `file-exists` / `symbol-exists` / `signature-matches` ⇒ **`path`** 本身（就是它欠着）；
+ *   · `edge-exists`（该有的依赖没有）⇒ **`from`**（是它没去依赖 `to`）；
+ *   · `edge-absent`（不该有的依赖有了）⇒ **`from`**（是它越权去依赖了 `to`）。
+ * ⇒ 后两者**都算 `from`**，不是"两边都算" —— 两边都标会把"改哪端"这个判断推给读者，
+ *   而这里能给的是**默认主体**：*依赖关系由"source 端"负责*。
+ * ★ 只此一处算主体路径；别在展示层再推一遍（那是判据分叉）。
+ */
+export function expectationSubjectPath(e: Expectation): string {
+  return normPath(e.kind === 'edge-exists' || e.kind === 'edge-absent' ? e.from : e.path);
+}
+
+/** 一条检查项**涉及的全部路径**（主体 + 对端）—— 报告里说清"牵动了谁"，但**不计入块的归属** */
+export function expectationPaths(e: Expectation): string[] {
+  return e.kind === 'edge-exists' || e.kind === 'edge-absent' ? [normPath(e.from), normPath(e.to)] : [normPath(e.path)];
+}
+
 /** 汇总某个 DSL 里所有决策卡上的 expectations（★ 只读、不改；供对账用） */
 export function collectExpectations(dsl: DesignDSL): Array<{ node_id: string; node_label: string; expectation: Expectation }> {
   const out: Array<{ node_id: string; node_label: string; expectation: Expectation }> = [];

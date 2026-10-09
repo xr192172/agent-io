@@ -27,7 +27,7 @@ import { updateFeature } from '.././design/dsl_ops/update_feature.js';
 import { resolveScopeText, formatScope } from '../../domain/scope.js';
 import { buildDiffBlocks, type FileDiff } from '../../domain/diff_blocks.js';
 // ★★ 2026-10-09（T74）：验收执行 —— 类型/格式化在 domain，判定器在 application（domain 不许 import infrastructure）
-import { collectExpectations, describeExpectation } from '../../domain/expectation.js';
+import { collectExpectations, describeExpectation, expectationSubjectPath, expectationPaths } from '../../domain/expectation.js';
 import { judgeExpectations } from './intent/expectations.js';
 
 /** consistency_check：一致性。★ wrapData（2026-09-29）：[B] 回 `ConsistencyResult`
@@ -104,17 +104,52 @@ export const consistencyHandler = wrapData(async (a) => {
   const seen = new Set(sel.map((fr) => norm(fr.file.path)));
   const notChecked = sc.paths.filter((p) => !seen.has(p));
 
-  const files: FileDiff[] = sel.map((fr) => ({
-    path: norm(fr.file.path),
-    arch_layer: fr.file.layer,
-    missing: fr.apis.filter((x) => x.status === 'missing').length,
-    mismatched: fr.apis.filter((x) => x.status === 'mismatched').length,
-    unexpected: fr.apis.filter((x) => x.status === 'unexpected').length,
-  }));
+  // ★★★ 2026-10-09（T78）：**把"人写的验收"的失败并进同一份块**。
+  //   为什么必须：块的输入原本只有 `expected_apis` 对账，而**设计 DSL 的结构是从扫描 fork 的**
+  //   ⇒ 那一路对出来**永远干净** ⇒ **块永远是空的**，而"圈范围"正是用户要的那一步。
+  //   实测（2026-10-09 真跑）：验收报 `failed 1`，块报"有差异 0 个"，还把出问题的文件列进"已对齐" —— 两者矛盾。
+  //   ★ 归属规则**只由 `domain/expectation.ts` 的 `expectationSubjectPath` 决定**（不在这里再推一遍）。
+  const failByPath = new Map<string, number>();
+  const outsideScope: string[] = [];
+  let unsupportedInScope = 0;
+  let unsupportedOutside = 0;
+  for (const it of exp?.items ?? []) {
+    if (it.verdict === 'pass') continue;
+    const subj = expectationSubjectPath(it.expectation);
+    if (!inScope.has(subj)) {
+      // ★ 不静默：主体**不在你框的范围里**——要说出来（否则你会以为"这片没问题"）
+      // ★★ 2026-10-09 自查补：`unsupported` 走到这条分支时**也被踢掉了**（初版只收 `fail`）
+      //    ⇒ 于是"索引旧 + 主体在范围外"会**完全不吭声** —— 正是我最想防的那种静默。
+      if (it.verdict === 'fail') outsideScope.push(`${expectationPaths(it.expectation).join(' → ')}`);
+      else unsupportedOutside++;
+      continue;
+    }
+    if (it.verdict === 'fail') failByPath.set(subj, (failByPath.get(subj) ?? 0) + 1);
+    else unsupportedInScope++;
+  }
+  const files: FileDiff[] = sel.map((fr) => {
+    const p = norm(fr.file.path);
+    return {
+      path: p,
+      arch_layer: fr.file.layer,
+      missing: fr.apis.filter((x) => x.status === 'missing').length,
+      mismatched: fr.apis.filter((x) => x.status === 'mismatched').length,
+      unexpected: fr.apis.filter((x) => x.status === 'unexpected').length,
+      expectation_failures: failByPath.get(p) ?? 0,
+    };
+  });
+  // ★ 兜底（不静默）：验收失败的**主体在范围内、但对账结果里没有这个文件** ⇒ 补一条，
+  //   让它照旧能进块（否则这条失败会凭空消失）。
+  const covered = new Set(files.map((f) => f.path));
+  for (const [p, n] of failByPath) {
+    if (!covered.has(p)) {
+      files.push({ path: p, missing: 0, mismatched: 0, unexpected: 0, expectation_failures: n });
+    }
+  }
   // ★ scope 比 `arch_layer` 更窄时（files: / subtree: / nodes:），再按层切没有意义 ⇒ 整个 scope 作一块
   const narrower = sc.scope.kind === 'files' || sc.scope.kind === 'subtree' || sc.scope.kind === 'nodes';
   const d = buildDiffBlocks(files, sc.scope, narrower ? 'scope' : 'arch_layer');
-  const nDiff = files.filter((f) => f.missing + f.mismatched + f.unexpected > 0).length;
+  const nDiff = files.filter((f) => f.missing + f.mismatched + f.unexpected + (f.expectation_failures ?? 0) > 0).length;
 
   const lines = [
     `══ 差异块 scope ${formatScope(sc.scope)} ══`,
@@ -124,17 +159,41 @@ export const consistencyHandler = wrapData(async (a) => {
   if (d.blocks.length) {
     lines.push('', '  块（★ 块名稳定 ⇒ 可直接当"分区域重写"的工作单元）：');
     for (const b of d.blocks) {
-      const { missing, mismatched, unexpected } = b.counts;
-      lines.push(
-        `    [${b.region}]  差异 ${missing + mismatched + unexpected} 条` +
-          `（缺实现 ${missing} / 签名不符 ${mismatched} / 代码新增 ${unexpected}） · ${b.files.length} 个文件`,
-      );
+      const { missing, mismatched, unexpected, expectation_failures } = b.counts;
+      const total = missing + mismatched + unexpected + expectation_failures;
+      lines.push(`    [${b.region}]  差异 ${total} 条 · ${b.files.length} 个文件`);
+      // ★ 分类只说**非零**的（免得一行里挂一串 0）；★ 明写"人写的验收"——那是设计最该被兑现的部分
+      const parts: string[] = [];
+      if (expectation_failures) parts.push(`**人写的验收 ${expectation_failures}**`);
+      if (missing) parts.push(`缺实现 ${missing}`);
+      if (mismatched) parts.push(`签名不符 ${mismatched}`);
+      if (unexpected) parts.push(`代码新增 ${unexpected}`);
+      lines.push(`        （${parts.join(' / ')}）`);
       for (const f of b.files) lines.push(`        ${f}`);
     }
   }
   if (d.clean_files.length) lines.push('', `  范围内已对齐（无差异）：${d.clean_files.join(', ')}`);
   const allNotes = [...sc.notes, ...d.notes];
   if (notChecked.length) allNotes.push(`scope 命中但对账结果里没有（可能不在语义层）：${notChecked.join(', ')}`);
+  // ★ T78：两类"不进块但必须说出来"的东西（**不许静默**）
+  if (outsideScope.length) {
+    allNotes.push(
+      `**${outsideScope.length} 条验收失败的主体不在本 scope 内**（所以没进块）：${outsideScope.join('；')} —— ` +
+        `要么把 scope 放宽到含它，要么这批差异归别的区域。`,
+    );
+  }
+  if (unsupportedInScope) {
+    allNotes.push(
+      `另有 **${unsupportedInScope} 条判不了（unsupported）**，**没进块** —— ★ 它们**不是"要改的"、也不是"通过"**：` +
+        `判不了多半是索引与源码不一致 ⇒ 跑一次 \`import_project\`（默认只刷新实际、不碰设计）保鲜后再对拍。`,
+    );
+  }
+  if (unsupportedOutside) {
+    allNotes.push(
+      `另有 **${unsupportedOutside} 条判不了、且主体在本 scope 外** —— 这批**既没进块、也没在上面报过**，` +
+        `★ 单列出来免得被当成"范围内没问题"。`,
+    );
+  }
   if (allNotes.length) {
     lines.push('', '  ★ 说明（**不许静默**）：');
     for (const n of allNotes) lines.push(`    · ${n}`);

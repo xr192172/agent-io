@@ -34,6 +34,17 @@ export interface FileDiff {
   missing: number;
   mismatched: number;
   unexpected: number;
+  /**
+   * ★★ 2026-10-09（T78）：**人写的验收**（`expectations`）在这个文件上失败了**几条**。
+   *
+   * ## 为什么必须并进来
+   * 「差异」有**两个来源**：`expected_apis` 对账（**扫描来的**契约 —— 而设计是从扫描 fork 的，
+   * 所以它对出来**永远干净**）与人写的 `expectations`（**只有它会真的不一样**）。
+   * 而本模块当初只吃前者 ⇒ **块永远是空的** ⇒ 用户要的那一步「**把不对的范围自动圈出来**」等于没做
+   * （2026-10-09 真跑试用当场抓到：验收报 `failed 1`，而块报"有差异 0 个"，两者矛盾）。
+   * ⇒ 把它并进同一个计数，让**两个来源汇成同一份块**。
+   */
+  expectation_failures?: number;
 }
 
 export interface DiffBlock {
@@ -41,8 +52,8 @@ export interface DiffBlock {
   region: string;
   /** 这一块里**有差异**的文件（已排序） */
   files: string[];
-  /** 差异计数（三类之和 = 这一块要处理的总条数） */
-  counts: { missing: number; mismatched: number; unexpected: number };
+  /** 差异计数（四类之和 = 这一块要处理的总条数） */
+  counts: { missing: number; mismatched: number; unexpected: number; expectation_failures: number };
 }
 
 export interface DiffBlocksResult {
@@ -66,7 +77,8 @@ export function buildDiffBlocks(
   group_by: 'arch_layer' | 'scope' = 'arch_layer',
 ): DiffBlocksResult {
   const notes: string[] = [];
-  const withDiff = files.filter((f) => f.missing + f.mismatched + f.unexpected > 0);
+  const totalOf = (f: FileDiff): number => f.missing + f.mismatched + f.unexpected + (f.expectation_failures ?? 0);
+  const withDiff = files.filter((f) => totalOf(f) > 0);
 
   if (withDiff.length === 0) {
     notes.push('范围内**没有任何差异** ⇒ 无块可出。★ 这是"好消息"，不是"没跑"。');
@@ -100,15 +112,28 @@ export function buildDiffBlocks(
         missing: fs.reduce((a, f) => a + f.missing, 0),
         mismatched: fs.reduce((a, f) => a + f.mismatched, 0),
         unexpected: fs.reduce((a, f) => a + f.unexpected, 0),
+        expectation_failures: fs.reduce((a, f) => a + (f.expectation_failures ?? 0), 0),
       },
     }))
     // ★ 排序键必须**只由稳定量**构成：先按差异总数降序，同数再按 region 名字典序
     //   （★ 不许用"插入顺序"或"文件数"当第一键 —— 那会让块的顺序随无关改动漂）
     .sort((a, b) => {
-      const ta = a.counts.missing + a.counts.mismatched + a.counts.unexpected;
-      const tb = b.counts.missing + b.counts.mismatched + b.counts.unexpected;
+      const ta = a.counts.missing + a.counts.mismatched + a.counts.unexpected + a.counts.expectation_failures;
+      const tb = b.counts.missing + b.counts.mismatched + b.counts.unexpected + b.counts.expectation_failures;
       return tb - ta || a.region.localeCompare(b.region);
     });
+
+  // ★ T78：若整份块的差异**全部来自人写的验收**，明说一句 —— 否则读者会以为"扫描对账也没对上"，
+  //   而真相恰恰相反：**扫描对账永远干净**（设计是从扫描 fork 的），差异只可能来自人写的意图。
+  const scanSide = blocks.reduce((a, b) => a + b.counts.missing + b.counts.mismatched + b.counts.unexpected, 0);
+  const expSide = blocks.reduce((a, b) => a + b.counts.expectation_failures, 0);
+  if (expSide > 0 && scanSide === 0) {
+    notes.push(
+      `本次差异**全部来自"人写的验收"**（${expSide} 条），扫描侧对账是干净的 —— ` +
+        `★ 这是常态：**设计 DSL 的结构是从扫描 fork 的**，expected_apis 与代码同源 ⇒ 它那一路对出来必然一致；` +
+        `真正会不一样的只有**人写的意图**（决策卡上的验收）。`,
+    );
+  }
 
   return { blocks, clean_files: files.filter((f) => !withDiff.includes(f)).map((f) => f.path).sort(), notes };
 }
