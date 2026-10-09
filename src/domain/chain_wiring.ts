@@ -548,6 +548,27 @@ export const CHAINS: readonly Chain[] = [
       '`extract_contracts` 是**终端分析工具**，产物里既无定位器也无符号名 ⇒ 交接不出对象。' +
       '★ 这条链记的是"**看起来连得上 ≠ 是链**"这个反例。',
   },
+  {
+    name: 'design-loop',
+    steps: ['import_project', 'edit_dsl', 'consistency_check', 'edit_code', 'consistency_check'],
+    evidence: 'verified',
+    note:
+      '★★ **用户工作流那条链**：**建档 → 写设计 → 对拍 → 重写 → 再对拍**（"一步步往设计靠近"）。' +
+      '★ 端到端真跑（2026-10-09，3 文件夹具，**全程真落盘**）：' +
+      '`import_project` ⇒ `edit_dsl` 写决策卡+`call-exists` 验收 ⇒ `consistency_check` 判 **failed=1** 并交出 ' +
+      '`scope_files=["src/core/format.ts"]` ⇒ 取 `[0]` 给 `edit_code.file`（`op=range`）⇒ `written=true` ⇒ ' +
+      '再 `consistency_check` ⇒ **通过 1 / failed 0**（`scope_files` 随之省略）⇒ **闭环** ✅' +
+      '★★ **逐段交接物（如实，别粉饰）**：①→② `feature`（**作用域**）· ②→③ `feature`（**作用域**）· ' +
+      '③→④ **`scope_files → file`（对象边，已 `verified`）** · ④→⑤ `project_dir`（**作用域**，通用边）。' +
+      '★ 所以 `hopsOf` 会把**前两段与末段**报成"无对象边" —— ★ 而那是**信号不是判决**（见 `objectGapOf` 的注释）：' +
+      '**设计侧工具的对象天然都住在同一个 feature 里**（DSL / 决策 / 验收 / 差异块），' +
+      '它们之间**本来就靠作用域键 `feature` 交接** ⇒ "没有对象边"在这里是**结构事实**，不是断链。' +
+      '★★ 真跑中修掉的**真缺口**：`import_project` **原本连 `touched` 都没有** ⇒ 这条链的**第一段根本没有交接物**' +
+      '（调用方只能自己记住 `feature`）。已补 `touched={feature, project_dir}`；' +
+      '★ **刻意不给 `written_files`** —— 它写的是 `<dataHome>` 下的 DSL/存档/索引，**不是源码**，给了就是谎报。' +
+      '★★ 遗留（未做）：判据只有"有对象边/没有"**两值**，而真实情况是**三值**' +
+      '（有对象边 / **仅靠作用域交接** / 真断）⇒ 建议三值化（`docs/todo.md`）。',
+  },
 ];
 
 /**

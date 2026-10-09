@@ -520,7 +520,16 @@ export const DESIGN_TOOLS: ToolDef[] = [
       }
       const r = await importProject({ ...(a as unknown as ImportProjectInput), project_dir, feature, cache_db: cacheDb });
       const { message, ...data } = r;
-      return { message, data };
+      // ★★★ 2026-10-09（T81 续）：**它是链的起点，必须有自己的产物端口径**。
+      //   实测缺口：端到端真跑时 `import_project` 的 `touched` **完全为空** ——
+      //   于是"建档 → 写设计 → 对拍"这条链的**第一段根本没有交接物**（只能靠调用方自己记住 feature）。
+      //   ★ 只给**与它实际产物相符**的两个键：
+      //     · `feature` = 本次建的那个活文档（就是"我产出了什么"）
+      //     · `project_dir` = 本次分析的那个项目根（通用边）
+      //   ★ **刻意不给 `written_files`**：它写的是 `<dataHome>` 下的 DSL/存档/索引 ——
+      //     按 `Touched.written_files` 的口径「排除工具自有的状态/账本/索引目录」+「写在 dataHome 下的
+      //     本就不是仓库相对 ⇒ 从来不给」⇒ **给了就是谎报"我改了源码"**。
+      return { message, data: { ...data, touched: { feature, project_dir } } };
     }),
   },
 
