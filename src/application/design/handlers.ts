@@ -372,7 +372,25 @@ export const editDslHandler = wrap(async (a) => {
    *     而且"有 evidence 却无 resolver"那条分支在**无录制事件**时会**误伤整个调用**。
    *   ★ 边界（只影响什么）：仅使 L4 **多接受一类可回溯证据** —— 既有判据一条不放宽、一条不删。
    */
+  /**
+   * ★★★ 2026-10-09（T88 下半）：**「证据」= 真实存在的实体** —— 而 **DSL 里的节点就是实体**。
+   *
+   * ## 为什么加这一条（用户点破）
+   * *"你每一次改动都要有原因，可以是**自己在这里即刻的去写**，也可以是**挂载一个文档**。"*
+   * ⇒ 「**挂一篇文档当理由**」的落点就在这儿：`evidence: [{type:'node', ref:'doc_docs_xxx_md'}]`。
+   * ★ 而在加它之前，`existsFn` **只按"文件路径查索引事实"** ⇒ **节点 id 一律查不到** ⇒
+   *   **L4（证据可回溯）会把文档引用打回** ⇒ **"挂文档"这条路走不通**（只能现场写一段话）。
+   *
+   * ## 语义（为什么这是对的，不是放宽）
+   * ★ **文档节点是 DSL 里真实存在的实体**（T88 上半把它收成了 `type:'doc'`）⇒
+   *   引用它**和引用一个文件路径一样可回溯**（甚至可以更硬：节点存在与否是**当场可查**的）。
+   * ★ 而它**不等于**"文档参与对拍" —— ★ **对拍的两边只能是「设计 DSL」与「实际 DSL」**（用户原话）；
+   *   文档的角色是**改动理由的挂点**。
+   * ★ 反例仍在：`ref` 指向**不存在的**节点 ⇒ `nodeIds` 里没有 ⇒ **照旧打回** ✓（闸没放宽）。
+   */
+  const nodeIds = new Set(((dsl?.geometry?.nodes ?? []) as Array<{ id: string }>).map((n) => n.id));
   const existsFn = (ev: ReasonEvidenceRef): boolean =>
+    nodeIds.has(String(ev.ref)) ||
     (traceResolver?.exists?.(ev) ?? false) ||
     (sourceRoot ? factsOf(normRef(String(ev.ref))).matched_path !== null : false);
   const v = validateReason({

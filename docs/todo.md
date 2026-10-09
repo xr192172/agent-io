@@ -962,44 +962,15 @@
         ② 若否 ⇒ 至少要让"采完就断"这件事**在输出里说出来**（现在是"采到 899 条"就完了，
           **没告诉调用方"接下来该怎么办"** —— ★ 这与 `renderNextNote` 的处理方式正好相反）。
 
-- [ ] **T88 ★★★ 让「文档」成为设计 DSL 的一等节点（`doc` 类）—— ★ **上半已落（2026-10-09），下半待做**（用户点破：「不然你拿什么对拍」）**
-      **✅ 上半已落（`import_project` 侧）**：加 **`include_docs?: boolean`（默认 false，与 `include_tests` 同款）**；
-        `true` ⇒ `docs/**/*.md` 收成 **`geometry.nodes` 里 `type:'doc'`**（★ **不进 `semantic.files`**）；
-        ★ 同步改了 **`OverlayAnchor['kind']` 加 `'doc'`（两处联合）+ `nodePathKind` 加分支**
-        （否则未知类型**落到 `'symbol'`** ⇒ 语义错）。
-        **真跑验三条全达成**：① 默认 `{module:13,file:40}` ⇒ **一个 doc 都不多**；
-        ② `true` ⇒ **37 篇 doc 节点**（`doc_docs_adding-a-language_md`）；③ `semantic.files` 里 docs = **0** ✓
-      **⏳ 下半待做（"能挂上去"）**：`harvest_decisions` 的候选要带 **`target_node_id`** ——
-        ★ 对 `source === 'doc'`，由 **`ref`**（形如 `docs/adding-a-language.md:49`）**去掉 `:行号` ⇒ `doc_` + sanitize** 即得；
-        ★ 只在**该节点真在 DSL 里**时给（否则明说"该文档不在 DSL 里 ⇒ 先 `include_docs=true` 重新导入"）。
-        ⇒ 之后的"挂"就是现成的：`edit_dsl {op:update, type:node, id:target_node_id, data:{decision:{...}}}` ✓
-      *(用户原话（两句，都要逐字记住）)*
-      *① "文档可以挂，但**文档挂点，它只是一个事实源**，就是证明他**为什么要在这个地方这么写**的一个理由。"*
-      *② "但是**你 DSL 也是要改的呀**，要把你的那个**设计翻译成 DSL，然后才能对拍** —— **不然你拿什么对拍？**"*
-      ⇒ ★★★ **② 是要害**：**如果设计 DSL 就是代码的镜像，那对拍的两边是同一个东西 ⇒ 对拍没有意义**。
-        ⇒ 今晚的 (D1) 只做到「**把"事实"从"意图"里摘出去**」；而「**"设计"那一半我只留了空位、没往里放**」
-          ⇒ 所以现在那份东西**仍只是"实际的 DSL"**（用户上一轮已经指出："这不还是实际代码的 DSL 直接翻译出去吗？"）。
-        ⇒ ★ **"改 DSL"的机制有**：`edit_dsl` 写 `decision`/`goals`/`expected_apis` ⇒ 落 **overlay** ⇒ `applyOverlay` 回填
-          （**T75/T77 已立**：base 可重建、overlay 独立保留）⇒ **"设计"= overlay 那一层** ✓
-          **缺的是"往里放什么"的来源** —— 而这正是用户最早问的那件事（**从文档翻译**）。
-      ⇒ **实测（2026-10-09）**：`harvest_decisions` 对本仓 `docs/` 采出 **899 条候选**（带出处 `docs/adding-a-language.md:49`
-        + 证据原文），**但一条也挂不上** —— 因为 **DSL 里 `docs/` 节点 = 0**（实测：60 个文件里 docs 占 **0**）
-        ⇒ **候选的出处（文档路径）在 DSL 里没有对应节点** ⇒ **没有挂点**。
-      ⇒ ★★ **一条已定的判据挡在中间**：`source_exts.ts:27` 明写
-        「`rename_symbols` 的文本扫描清单（含 `.json/.md/…`）—— **那些是"可读文本"，不是源码**」
-        ⇒ **不许把文档塞进"源码文件节点"**（那是 L1 判据，G4 登记过）。
-        ⇒ ★★★ **所以文档要另立一类节点 `doc`**（★ 不违反 L1，语义也清楚：**"这是文档，不是源码"**）。
-      ⇒ **形状（下一步照此做）**：
-        · `import_project` 加 **`include_docs?: boolean`（默认 `false`）** —— ★ 与 `include_tests` **同款**，
-          **不改变现有行为**（★ 这是"默认别乱动"那条纪律的应用）；
-        · `include_docs:true` ⇒ 把 `docs/**/*.md` 收成 **`geometry.nodes` 里 `type: 'doc'` 的节点**
-          （★ **不进 `semantic.files`** —— 那要接一堆源码判据，且语义不对）；
-        · ★ **必须一并改 `nodePathKind`**（`domain/overlay.ts:399`）：它对**未知类型落到 `'symbol'`**
-          ⇒ `doc` 会被当成"符号"（**语义错**，且会让 overlay 的锚点/对账路径错）⇒ 加 `doc` 分支；
-        · ★ **好消息**：`Node.type?: string` **不是联合**（`domain/types.ts:191`）⇒ **不用改类型定义** ✓
-      ⇒ **判据**：① `include_docs:true` ⇒ DSL 里出现 `docs/*.md` 的 **`doc` 节点**（默认 false 时**一个都不多**）；
-        ② ★ `harvest_decisions` 的候选**能挂上去**（**出处即挂点** —— 不需要 LLM 猜）；
-        ③ 挂上之后 ⇒ **"文档说要 X / 代码做了 Y"** 成为**可对拍的一对**（这才是用户要的那个对拍）。
+- [x] **T88 —— 结项（2026-10-09）**：文档成为**设计 DSL 的一等节点** + **改动理由可以"挂一篇文档"**。
+      ★ **对拍的边界（用户更正）**：**能对拍的只有两个 DSL**（设计 vs 实际）—— **文档不是对拍的一方**；
+        文档的角色是「**改动理由的挂点**」（*"你每一次改动都要有原因，可以是自己在这里即刻的去写，
+        也可以是挂载一个文档"*）。
+      · **上半**：`import_project {include_docs:true}` ⇒ `docs/**/*.md` 收成 `type:'doc'` 节点
+        （★ **不进 `semantic.files`**，不参与对账）；`OverlayAnchor.kind` + `nodePathKind` 同步认 `doc`。
+      · **下半**：`existsFn`（L4 证据回溯）**认 DSL 节点 id** ⇒ `evidence:[{type:'node',ref:'doc_xxx'}]` 成为合法理由。
+      **判据（双验）**：① 挂**真文档** ⇒ **通过** ✓；② 挂**不存在的节点** ⇒ **L4 拒**（*evidence 无法回溯*，exit 1）✓
+        ⇒ ★ **闸没放宽**。"每次改动都要有原因"本就强制（L1-L4）⇒ 现在**理由有两个来源**：现场写 / 挂文档。
 
 - [ ] **T69 ★★ 合并形态 S3：上限预算 —— 把 L1 扩成双边 + 配额单点**
       *(核实：2026-10-08 实测我们**只有下限**（`MIN_REASON_CHARS = 6`，见 `reason_validator.ts:73`），
