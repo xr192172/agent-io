@@ -457,11 +457,10 @@ export const DESIGN_TOOLS: ToolDef[] = [
     noAutoFresh: true, // 自己做全量导入，前置保鲜纯属浪费
     description:
       '扫描代码项目（.go/.ts/.py/.js 等）生成 DSL：文件节点 + 调用边 + 符号/API 语义层，写入 agent-io 存储。' +
-      '★ **这一个命令干两件事** —— ① 刷新"**实际**"（扫描结果）；② **重建"设计"**（结构来自扫描，再把 overlay 的意图贴回去）。' +
-      '· 只想刷新实际、**不动设计** ⇒ `live_only=true`（设计被完整保住；★ "有设计就不动、只对比"就该用这个）；' +
-      '· 重建**会抹掉"扫描产不出"的节点**（人手加的那些）⇒ 因此**默认拒绝**，除非显式 `allow_design_drop=true`（丢了什么会被报出来）。' +
+      '★ **默认永不破坏**：· 设计**不存在** ⇒ 建一份（从实际 fork）；· 设计**已存在** ⇒ **只刷新"实际"，完全不碰设计**' +
+      '（这就是"有设计就不用动、只对比"）。要重写设计请显式 `rebuild_design=true`（会抹掉人手加的节点 ⇒ 受 `allow_design_drop` 把关）。' +
       'design_mode=true 按目录聚合成模块节点；functional_mode=true 按调用图做功能性聚合（优先级高于 design_mode）。' +
-      '导入后可用 render_design 渲染可视化，或 diff_views 对比设计 vs 实际。',
+      '导入后可用 render_design 渲染可视化，或 diff_views / consistency_check 对比设计 vs 实际。',
     inputSchema: {
       project_dir: z.string().describe('目标项目根目录（绝对路径或相对 cwd）'),
       feature: z.string().describe('新 feature 名（^[a-zA-Z0-9_-]+$）'),
@@ -473,8 +472,17 @@ export const DESIGN_TOOLS: ToolDef[] = [
         .boolean()
         .optional()
         .describe(
-          'true=**只刷新"实际"（live/），完全不碰设计 DSL**（默认 false=重建设计）。' +
-            '★ 这就是"设计已经存在 ⇒ 别动它，只对比"的那条路；重建是另一件事。',
+          '★ **缺省已变（T77）**：不再给"只生成实际"，而是按"设计有没有"自动定 —— 见 `rebuild_design`。' +
+            '显式给 true=**只要"实际"、不碰设计**；显式给 false=写设计（**保留旧语义**，不静默改你的意思）。' +
+            '★ 与 `rebuild_design=true` **不能同时给**（矛盾 ⇒ 直接报错）。',
+        ),
+      rebuild_design: z
+        .boolean()
+        .optional()
+        .describe(
+          '★ 显式要求**重建设计 DSL**（T77）。默认 false ⇒ **默认永不破坏**：设计不存在就从实际 fork 一份；' +
+            '设计已存在就**只刷新"实际"、完全不碰设计**。' +
+            '★ 重建会抹掉"扫描产不出"的节点（人手加的那些）⇒ 受 `allow_design_drop` 把关（默认拒绝并列出）。',
         ),
       allow_design_drop: z
         .boolean()

@@ -62,6 +62,19 @@ export interface ImportProjectInput {
    */
   live_only?: boolean;
   /**
+   * ★★★ 可选（T77，2026-10-09 用户裁定"翻"）：**显式要求重建设计 DSL**。
+   *
+   * ## 默认规则（只有一条，用户原话：*"有的话就不用动了，就只需要对比就可以。"*）
+   *   · **设计不存在** ⇒ 默认**建**（从实际 fork 一份；没东西可丢，不算破坏）；
+   *   · **设计已存在** ⇒ 默认**只刷新"实际"，完全不碰设计**。
+   *   ⇒ **默认永不破坏**，用户不必记任何开关；要重写设计时才显式 `rebuild_design=true`。
+   *
+   * ★ `live_only` 保留原有两个取值的语义（true=只实际 / false=写设计），**只有缺省变了**；
+   *   两个都显式给且矛盾（`live_only=true` + `rebuild_design=true`）⇒ **直接报错**（不替调用方选）。
+   * ★ 重建仍受 `allow_design_drop` 把关（会丢"扫描产不出"的节点时默认拒绝）。
+   */
+  rebuild_design?: boolean;
+  /**
    * ★ 可选（T77）：**只在重建设计时生效**。
    * 默认 false ⇒ 若本次重建会**抹掉"扫描产不出"的节点**（人手加的那些，判据见实现处），
    * **直接拒绝并列出它们**；true ⇒ 允许丢，但丢掉了什么会在输出里报出来。
@@ -1254,23 +1267,17 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
     let overlayNote: string | null = null;
     // ★ T77：重建时"丢掉了哪些扫描产不出的节点"——**丢了就要说**，不许静默（空 = 没丢）
     let designDropNote: string | null = null;
+    /** ★ T77：本次对"设计"做了什么 —— **必须写出来**，否则用户不知道设计有没有被动过 */
+    let designAction = '';
     // ★★★ 2026-10-09（T75）：**合并与落盘挪到流程末尾**（见下面 `saveDSL(designDsl)` 那处）。
     //   原因：这里曾经"合并 + `saveDSL(designDsl)`"一次，**末尾又 `saveDSL(layered)` 一次**
     //   ⇒ 第二次用**未合并的 base 覆盖**了合并结果 ⇒ **overlay 里的决策/意图全被冲掉**。
     //   实测症状：`edit_dsl` 写了决策卡 ⇒ 跑一次 `import_project` ⇒ **决策卡不见**（overlay 还在，base 没了）。
     //   ★ 另外把合并放末尾还修掉一个隐患：`gen_roles` 会改 `layered`（给节点加职责标题），
     //     先合并会把标题丢掉（合并产物不含后续改动）。
-    //   ⇒ 所以这一处**只留"落 live"**，base 的落盘统一到末尾一次。
-    if (input.live_only) {
-      saveLiveFeature(layered, input.live_dir);
-    } else {
-      // 同时写入 live 代码快照：功能树聚类（derive_feature_tree）以 live 视图的
-      // semantic.files 为语义基准做命中率闸门。手动导入的项目若只有设计 DSL 而无
-      // live 快照，换项目后聚类会因语义基准为空被判"db 不相关"而拒生成 → 导图平铺。
-      // 导入即落一份 live，保证换项目后功能树可稳定聚类。（live_dir 缺省 = 默认 dataHome，
-      // 与 getLiveFeature 默认读取路径一致。）
-      saveLiveFeature(layered, input.live_dir);
-    }
+    //   ⇒ 所以 base 的落盘统一到流程末尾一次（见下面）；★ 2026-10-09 顺手删掉了这里那个
+    //     `if (live_only) saveLiveFeature … else saveLiveFeature …` 的块 ——
+    //     **两个分支干的事一模一样**，纯冗余（也正是"两处落盘"这个病的残余）。
 
     if (input.gen_roles) {
       const roleFiles = input.design_mode || input.functional_mode
@@ -1305,7 +1312,29 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       }
     }
 
-    if (input.live_only) {
+    // ★★★ 2026-10-09（T77，用户裁定"翻"）：**默认永不破坏** ——
+    //   规则只有一条，对应用户原话：*"有的话就不用动了，就只需要对比就可以。"*
+    //     · **设计不存在** ⇒ 默认**建**（= 从实际 fork 一份；**没东西可丢**，所以不算破坏）；
+    //     · **设计已存在** ⇒ 默认**只刷新"实际"，完全不碰设计**（要重建必须显式 `rebuild_design=true`）。
+    //   ⇒ 于是**用户不必记任何开关**：默认永远安全；想重写设计时才显式一次。
+    //   ★ `live_only` 保留它原有的两个取值语义（true=只实际 / false=写设计），只是**缺省**变了
+    //     ⇒ 下游若显式传 `live_only:false`，行为与从前一致（不静默改人意思）。
+    const designExists = !!getDSL(layered.feature);
+    if (input.live_only === true && input.rebuild_design === true) {
+      throw new Error(
+        '参数矛盾：`live_only=true`（只要"实际"，不动设计）与 `rebuild_design=true`（要重建设计）**不能同时给**。' +
+          '请只给一个 —— 刻意不替你在两者之间选。',
+      );
+    }
+    let wantsDesign: boolean;
+    if (input.live_only === true) wantsDesign = false; // 显式：只要实际
+    else if (input.live_only === false) wantsDesign = true; // 显式：写设计（兼容旧语义）
+    else if (input.rebuild_design === true) wantsDesign = true; // 显式：重建
+    else wantsDesign = !designExists; // ★ 默认：没设计就 fork 一份；有设计就**不动**
+
+    if (!wantsDesign) {
+      // 只刷新"实际"：设计被完整保住
+      designAction = '（★ 本次**只刷新了"实际"**：设计 DSL 未被触碰 —— 这就是"有设计就不动、只对比"）';
       saveLiveFeature(layered, input.live_dir);
     } else {
       // ★★★ 2026-10-09（T77 落地）：**重建设计会抹掉"扫描产不出"的节点** ⇒ 先算差集，非空就**拒绝**。
@@ -1342,6 +1371,9 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       //   ★ 以前这里落的是**未合并的 `layered`**，把上面那次合并整个覆盖掉 ⇒ 决策卡一重建就丢。
       const { dsl: designDsl, message: ovMsg } = mergeDesignLayer(layered);
       overlayNote = ovMsg;
+      designAction = designExists
+        ? '（★ 本次**按你的显式要求重建了设计 DSL**：结构来自扫描 —— 人手加的节点会丢，故受 `allow_design_drop` 把关）'
+        : '（★ 设计**原本不存在** ⇒ 本次从"实际"**fork 了一份设计 DSL**；此后默认不再自动重建）';
       saveDSL(designDsl);
       // 同时写入 live 代码快照：功能树聚类（derive_feature_tree）以 live 视图的
       // semantic.files 为语义基准做命中率闸门。手动导入的项目若只有设计 DSL 而无
@@ -1376,10 +1408,8 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       overlayNote ? `设计层 overlay: ${overlayNote}` : null,
       // ★ T77：重建丢掉了什么，**明确报出来**（不静默）
       designDropNote,
-      input.live_only
-        ? '下一步: render_design 渲染预览，或 get_dsl 查看/修改。（★ live_only=true ⇒ **设计 DSL 未被触碰**）'
-        : '下一步: render_design 渲染预览，或 get_dsl 查看/修改。' +
-            '（★ 本次**重建了设计 DSL**：结构来自扫描；要只刷新"实际"请用 `live_only=true`）',
+      designAction,
+      '下一步: render_design 渲染预览，或 get_dsl 查看/修改；对比设计与实际用 consistency_check / diff_views。',
     ].filter(Boolean).join('\n');
 
     return {

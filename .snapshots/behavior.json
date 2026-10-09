@@ -1,6 +1,6 @@
 {
  "_meta": {
-  "takenAt": "2026-10-09T02:39:14.470Z",
+  "takenAt": "2026-10-09T02:50:57.557Z",
   "env": {
    "core": "0.21.1",
    "node": "v22.22.2",
@@ -363,7 +363,7 @@
     {
      "name": "import_project",
      "title": "Import a code project as DSL",
-     "description": "扫描代码项目（.go/.ts/.py/.js 等）生成 DSL：文件节点 + 调用边 + 符号/API 语义层，写入 agent-io 存储。★ **这一个命令干两件事** —— ① 刷新\"**实际**\"（扫描结果）；② **重建\"设计\"**（结构来自扫描，再把 overlay 的意图贴回去）。· 只想刷新实际、**不动设计** ⇒ `live_only=true`（设计被完整保住；★ \"有设计就不动、只对比\"就该用这个）；· 重建**会抹掉\"扫描产不出\"的节点**（人手加的那些）⇒ 因此**默认拒绝**，除非显式 `allow_design_drop=true`（丢了什么会被报出来）。design_mode=true 按目录聚合成模块节点；functional_mode=true 按调用图做功能性聚合（优先级高于 design_mode）。导入后可用 render_design 渲染可视化，或 diff_views 对比设计 vs 实际。",
+     "description": "扫描代码项目（.go/.ts/.py/.js 等）生成 DSL：文件节点 + 调用边 + 符号/API 语义层，写入 agent-io 存储。★ **默认永不破坏**：· 设计**不存在** ⇒ 建一份（从实际 fork）；· 设计**已存在** ⇒ **只刷新\"实际\"，完全不碰设计**（这就是\"有设计就不用动、只对比\"）。要重写设计请显式 `rebuild_design=true`（会抹掉人手加的节点 ⇒ 受 `allow_design_drop` 把关）。design_mode=true 按目录聚合成模块节点；functional_mode=true 按调用图做功能性聚合（优先级高于 design_mode）。导入后可用 render_design 渲染可视化，或 diff_views / consistency_check 对比设计 vs 实际。",
      "inputKeys": [
       "project_dir",
       "feature",
@@ -372,6 +372,7 @@
       "include_tests",
       "include_archive",
       "live_only",
+      "rebuild_design",
       "allow_design_drop",
       "live_dir",
       "gen_roles",
@@ -813,6 +814,25 @@
      ]
     },
     {
+     "name": "import_project",
+     "params": 13,
+     "keys": [
+      "project_dir",
+      "feature",
+      "title",
+      "max_files",
+      "include_tests",
+      "include_archive",
+      "live_only",
+      "rebuild_design",
+      "allow_design_drop",
+      "live_dir",
+      "gen_roles",
+      "design_mode",
+      "functional_mode"
+     ]
+    },
+    {
      "name": "edit_code",
      "params": 13,
      "keys": [
@@ -829,24 +849,6 @@
       "dry_run",
       "targets",
       "atomic"
-     ]
-    },
-    {
-     "name": "import_project",
-     "params": 12,
-     "keys": [
-      "project_dir",
-      "feature",
-      "title",
-      "max_files",
-      "include_tests",
-      "include_archive",
-      "live_only",
-      "allow_design_drop",
-      "live_dir",
-      "gen_roles",
-      "design_mode",
-      "functional_mode"
      ]
     },
     {
