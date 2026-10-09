@@ -23,6 +23,8 @@
  */
 
 import { DATA_DIR_NAME } from '../../../infrastructure/data_dir.js';
+// ★ T85/D2.5：「事实」的**唯一 accessor**（与 `import_project` 锚基线事实、`consistency_check` 线 1 同源）
+import { fileFacts } from '../../../infrastructure/index/file_facts.js';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -42,6 +44,23 @@ export interface FileSnapshotMeta {
   /** 谁触发、改了什么（人读，如 `edit_code:src/a.ts`） */
   reason: string;
   files: FileSnapshotEntry[];
+  /**
+   * ★★★ **写入前那一刻的「事实」**（2026-10-09，T85/D2.5）—— 该批文件的 **API 签名 + 依赖**。
+   *
+   * ## 为什么与代码影子**放在同一份快照里**
+   * `snapshotBeforeWrite` 是**所有重写工具**（`edit_code` / `rename_files` / `symbol_move` / `write_gate`）
+   * **写入前的唯一咽喉点** ⇒ 在这一刻取事实 ⇒ **代码影子与事实天然同期**。
+   * ⇒ 于是能回答**此前答不了的那个问题**：
+   *   **「这次重写**前后**，事实变了什么」** —— ★ 那才是"对拍"最需要的**那一对时间点**
+   *   （在此之前只能比「fork 时 vs 此刻」，比不了"我刚改动的前后"）。
+   *
+   * ## 口径
+   * · 值 = `fileFacts(root, rel)` 取到的**签名**（与 `DSL.expected_apis[].signature`、
+   *   与 `baseline/<f>.facts.json` **同形**）⇒ 三处**直接可比**，无需翻译。
+   * · ★ 只收**取到事实**的文件（取不到就省略该键）—— 与 `snapshotBeforeWrite` 的 `catch` 同策：
+   *   **事实快照是增强，不是前提**；★ 但**绝不写空条目冒充"那时没 API"**。
+   */
+  facts?: Record<string, { apis: string[]; deps: string[] }>;
 }
 
 /** 默认保留份数 */
@@ -80,6 +99,8 @@ export function createFileSnapshot(
 
   const seen = new Set<string>();
   const entries: FileSnapshotEntry[] = [];
+  // ★ T85/D2.5：**写入前那一刻的事实**（同批、同期）—— 见 `FileSnapshotMeta.facts` 的立论
+  const facts: Record<string, { apis: string[]; deps: string[] }> = {};
   for (const f of opts.files ?? []) {
     const rel = normalizeRel(absRoot, f);
     if (!rel || seen.has(rel)) continue;
@@ -100,6 +121,16 @@ export function createFileSnapshot(
       fs.copyFileSync(abs, dest);
     }
     entries.push({ rel, existed, bytes });
+    // ★ 取事实（**必须此刻取** —— 下面就要写盘了）。★ 取不到就**省略**（不写空条目冒充"那时没 API"）。
+    try {
+      const ff = fileFacts(absRoot, rel);
+      const apis = (ff.apis ?? []).map((a) => a.signature ?? a.name);
+      const deps = [...(ff.deps ?? [])];
+      if (apis.length || deps.length) facts[rel] = { apis, deps };
+    } catch {
+      // ★ 事实是增强、不是前提（与 `snapshotBeforeWrite` 的 catch 同策）⇒ 静默跳过该文件**这一项**；
+      //   但**快照本身照常**（代码影子必须存得住）。
+    }
   }
 
   const meta: FileSnapshotMeta = {
@@ -107,6 +138,7 @@ export function createFileSnapshot(
     createdAt: new Date().toISOString(),
     reason: opts.reason,
     files: entries,
+    ...(Object.keys(facts).length ? { facts } : {}),
   };
   fs.writeFileSync(path.join(snapDir, 'meta.json'), JSON.stringify(meta, null, 2) + '\n', 'utf8');
   pruneFileSnapshots(absRoot);
