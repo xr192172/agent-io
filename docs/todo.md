@@ -956,28 +956,6 @@
 
 ---
 
-- [ ] **T75 ★★★ 「决策卡重建即丢」—— 人写的 `decision` 只落 base，不落 overlay（2026-10-09 出生证当场抓到）**
-      *(核实：2026-10-09 实测 —— ① 用 `edit_dsl` 给节点写含 `expectations` 的决策卡；
-       ② 跑一次 `import_project`（重建 base）；③ 再查：*
-       *`features/t74.json` 里**该节点已无 `decision`**；`features/t74.overlay.json` 是 `{"version":1,"feature":"t74","anchors":{}}` —— **空的**。)*
-      ⇒ ★★ **这与 overlay 存在的全部理由直接矛盾**：`src/infrastructure/storage_overlay.ts:4` 原文
-        「与 base 分离，**base 可再生成，overlay 独立保留**」；
-        且 `OverlayAnchor` **本来就有 `decision` / `decision_history` 字段**（`domain/overlay.ts:42/45`）
-        ⇒ **设计本意就是"决策住在 overlay"**，而现状是**没落过去**。
-      ⇒ **定位**：`edit_dsl` → `updateFeature` 结尾 `saveDSL(dsl)`（`dsl_ops/update_feature.ts:389`）
-        —— **只写 base**；全仓写 overlay 的只有
-        `intent/set_design_intent.ts:101`（goals/edge_intents）与 `workbench/code_workbench.ts`（提案）。
-        ⇒ `import_project` 走 `mergeDesignLayer`（`infrastructure/graph/import_project.ts:1252`）时会
-        "读旧 overlay + reconcile 到新 base"，但旧 overlay 里**本来就没有决策** ⇒ **一重建就丢**。
-      ⇒ ★★★ **为什么这条最痛**：它是**目标工作流的地基**。
-        "照设计重写实际"要求**人写的意图能在多次重建之间活下来**；
-        现在你写下"这块应该怎样"（含验收标准）**一 re-import 就没了** ⇒ **T74 的机制即使对了，输入也会蒸发**。
-      ⇒ **形状（建议，待裁定）**：让 `decision` 的写入**同时落 overlay**（或改为"只落 overlay + 应用回 base"）。
-        ★ 关键约束：**不许两处都当真源** —— 只能有一个"决策的家"（按本仓既有裁定 = overlay），
-        base 上的 `decision` 必须是**应用结果**而非独立副本。
-      ⇒ **判据**：① 写决策 ⇒ 查 overlay **能看到它**；② 跑 `import_project` ⇒ **决策仍在**；
-        ③ 再跑一次对账 ⇒ `expectations` 仍能判出同样的结论。
-
 - [ ] **T76 ★★ 验收判据在"索引旧"时一律判不了 ⇒ 需要一个"重建索引再判"的既定动作**
       *(核实：2026-10-09 出生证 —— 改了源码后，依赖类检查（`edge-exists`/`edge-absent`）**全部判不了**，
        原因是依赖边只能取自索引、而索引比源码旧（守卫见 `application/design/intent/expectations.ts` 的

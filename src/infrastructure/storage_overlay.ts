@@ -13,7 +13,7 @@ import type {
   DesignOverlay,
   ReconcileStats,
 } from '../domain/overlay.js';
-import { reconcileOverlay, buildCandidates, buildEdgeCandidates, seedOverlayFromDsl, applyOverlay, statsLine } from '../domain/overlay.js';
+import { reconcileOverlay, buildCandidates, buildEdgeCandidates, seedOverlayFromDsl, applyOverlay, statsLine, mergeDecisionsIntoOverlay } from '../domain/overlay.js';
 
 function getOverlayFile(feature: string): string {
   if (!/^[a-zA-Z0-9_-]+$/.test(feature)) {
@@ -47,6 +47,33 @@ export interface MergeResult {
   /** 是否有 overlay 参与（首次可能为空 overlay） */
   seeded: boolean;
   message: string;
+}
+
+/**
+ * ★★★ 把 base 上的**决策卡**同步进 overlay，并落盘（2026-10-09，`docs/todo.md` T75）。
+ *
+ * ## 为什么要有这个入口（实测病灶）
+ * `edit_dsl` 以前只写 base，而 `import_project` 会**重建 base** ⇒
+ * **人写的决策卡（含 `acceptance`/`expectations`）一重建就丢** —— 与 overlay 存在的全部理由矛盾
+ * （"base 可再生成，overlay 独立保留"）。⇒ 每次改完 base，**当场把决策同步过去**。
+ *
+ * ★ **纯搬运在 `domain/overlay.ts` 的 `mergeDecisionsIntoOverlay`**（那里可测、无 IO）；
+ *   本函数只负责 **读旧的 + 落盘 + 报账**（IO 住 infrastructure，是本仓分层）。
+ * ★ **没有变化就不写盘**（避免无谓 churn 与 mtime 抖动）。
+ * ★ 返回 `changed=false` 时**不要**把它当成"失败了" —— 那是"本来就已经同步过"。
+ */
+export function syncDecisionsToOverlay(
+  feature: string,
+  dsl: DesignDSL,
+): { changed: boolean; written: number; cleared: number; file: string | null; notes: string[] } {
+  const before = loadOverlay(feature);
+  const ov: DesignOverlay = before ?? { version: 1, feature, anchors: {} };
+  const r = mergeDecisionsIntoOverlay(ov, dsl);
+  const a = JSON.stringify(before?.anchors ?? {});
+  const b = JSON.stringify(r.overlay.anchors);
+  if (a === b) return { changed: false, written: r.written, cleared: r.cleared, file: null, notes: r.notes };
+  const file = saveOverlay(r.overlay);
+  return { changed: true, written: r.written, cleared: r.cleared, file, notes: r.notes };
 }
 
 /**

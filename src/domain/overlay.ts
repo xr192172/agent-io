@@ -403,8 +403,93 @@ function nodePathKind(n: { id: string; type?: string }): OverlayAnchor['kind'] {
   return 'symbol';
 }
 
-/** 对账统计的通用人类可读行（供报告 / 测试复用） */
-export function statsLine(stats: ReconcileStats): string {
+/**
+ * ★★★ 把 **base 上的决策卡**同步进 overlay（2026-10-09，`docs/todo.md` T75）。
+ *
+ * ## 为什么必须要有这一步（实测的病灶）
+ * `edit_dsl` → `updateFeature` 以前**只写 base**（`dsl_ops/update_feature.ts:389` 的 `saveDSL(dsl)`），
+ * 而 `import_project` 会**重建 base**（它只"读旧 overlay 再 reconcile 回填"）。
+ * ⇒ **旧 overlay 里本来就没有决策** ⇒ **人写的决策卡（含 `acceptance`/`expectations`）一重建就丢**。
+ * ★ 这与 overlay 存在的**全部理由**直接矛盾 —— `infrastructure/storage_overlay.ts:4` 原文：
+ *   「与 base 分离，**base 可再生成，overlay 独立保留**」。
+ *
+ * ## 为什么是**纯函数**、且**只搬决策相关字段**
+ * · 纯函数：与 `seedOverlayFromDsl` 同族（可测、无 IO）；落盘由调用方做。
+ * · **只搬 `decision` / `decision_history`** —— `attributes` / `annotations` / 全局件
+ *   各有自己的既有通路（`seedOverlayFromDsl` 初始化时搬过），这里**顺手再搬一遍**才是判据分叉。
+ *
+ * ## 三条纪律
+ * 1. ★ **只有一个"决策的家"**：overlay。base 上的 `decision` 是**应用结果**（`applyOverlay` 回填），
+ *    不是独立副本 ⇒ 本函数**只从 base 往 overlay 搬**，不回写 base。
+ * 2. ★★ **清除也要同步**：base 上决策被清掉（`decision: null`）时，overlay 里那份**必须一起清** ——
+ *    否则 overlay 会拿着一份"已经不存在的决策"，下次重建又把它复活（**僵尸决策**）。
+ * 3. ★ **不留空壳**：搬完/清完只剩 `path`/`kind` 的锚点要删掉，免得 overlay 越堆越虚。
+ *    ★ 但**有 `signature` 的不能删** —— 那是 rename 认亲用的接口指纹（`reconcileOverlay` 的 `bySig`）。
+ */
+export function mergeDecisionsIntoOverlay(
+  ov: DesignOverlay,
+  dsl: DesignDSL,
+): { overlay: DesignOverlay; written: number; cleared: number; notes: string[] } {
+  type NodeLike = {
+    id: string;
+    type?: string;
+    description?: string;
+    decision?: NodeDecision;
+    decision_history?: DecisionHistoryEntry[];
+  };
+  const anchors: Record<string, OverlayAnchor> = { ...ov.anchors };
+  const notes: string[] = [];
+  let written = 0;
+  let cleared = 0;
+
+  const nodes = (dsl.geometry?.nodes ?? []) as unknown as NodeLike[];
+  const withDecision: NodeLike[] = [];
+
+  // ① 先扫"清除"：base 上没有、而 overlay 里有的 ⇒ 一起清（纪律 2，防僵尸决策）
+  for (const n of nodes) {
+    if (n.decision || n.decision_history) {
+      withDecision.push(n);
+      continue;
+    }
+    const prev = anchors[n.id];
+    if (prev && (prev.decision || prev.decision_history)) {
+      const next = { ...prev };
+      delete next.decision;
+      delete next.decision_history;
+      anchors[n.id] = next;
+      cleared++;
+    }
+  }
+
+  // ② 再搬"写入"
+  for (const n of withDecision) {
+    const prev = anchors[n.id];
+    const next: OverlayAnchor = { ...(prev ?? { path: nodePath(n), kind: nodePathKind(n) }) };
+    if (n.decision) next.decision = n.decision;
+    else delete next.decision;
+    if (n.decision_history) next.decision_history = n.decision_history;
+    else delete next.decision_history;
+    anchors[n.id] = next;
+    written++;
+  }
+
+  // ③ 清空壳（纪律 3）
+  let pruned = 0;
+  for (const [id, a] of Object.entries(anchors)) {
+    const hasPayload =
+      a.decision || a.decision_history || a.attributes || a.signature || a.stale || a.orphaned || (a.annotations?.length ?? 0) > 0;
+    if (!hasPayload) {
+      delete anchors[id];
+      pruned++;
+    }
+  }
+  if (pruned) notes.push(`清掉 ${pruned} 个只剩路径、没有内容的空锚点`);
+  if (cleared) notes.push(`**同步清除了 ${cleared} 个决策**（base 上已删，overlay 不许留僵尸决策）`);
+
+  return { overlay: { ...ov, anchors }, written, cleared, notes };
+}
+
+/** 对账统计的通用人类可读行（供报告 / 测试复用） */export function statsLine(stats: ReconcileStats): string {
   return `设计意图保留：保留 ${stats.retained} / 迁移 ${stats.migrated} / 孤儿 ${
     stats.orphaned
   }（真相已删，暂存待决）/ 过期 ${stats.stale}（签名变化，标需复核）`;

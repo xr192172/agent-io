@@ -1245,13 +1245,16 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
 
     let roleNote: string | null = null;
     let overlayNote: string | null = null;
-    // 设计层 overlay 增量保留：真相刷新只替换 base，设计意图（决策/标注/user_node/分镜）按稳定锚点保留/迁移/孤儿/标过期
+    // ★★★ 2026-10-09（T75）：**合并与落盘挪到流程末尾**（见下面 `saveDSL(designDsl)` 那处）。
+    //   原因：这里曾经"合并 + `saveDSL(designDsl)`"一次，**末尾又 `saveDSL(layered)` 一次**
+    //   ⇒ 第二次用**未合并的 base 覆盖**了合并结果 ⇒ **overlay 里的决策/意图全被冲掉**。
+    //   实测症状：`edit_dsl` 写了决策卡 ⇒ 跑一次 `import_project` ⇒ **决策卡不见**（overlay 还在，base 没了）。
+    //   ★ 另外把合并放末尾还修掉一个隐患：`gen_roles` 会改 `layered`（给节点加职责标题），
+    //     先合并会把标题丢掉（合并产物不含后续改动）。
+    //   ⇒ 所以这一处**只留"落 live"**，base 的落盘统一到末尾一次。
     if (input.live_only) {
       saveLiveFeature(layered, input.live_dir);
     } else {
-      const { dsl: designDsl, message: ovMsg } = mergeDesignLayer(layered);
-      overlayNote = ovMsg;
-      saveDSL(designDsl);
       // 同时写入 live 代码快照：功能树聚类（derive_feature_tree）以 live 视图的
       // semantic.files 为语义基准做命中率闸门。手动导入的项目若只有设计 DSL 而无
       // live 快照，换项目后聚类会因语义基准为空被判"db 不相关"而拒生成 → 导图平铺。
@@ -1296,7 +1299,13 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
     if (input.live_only) {
       saveLiveFeature(layered, input.live_dir);
     } else {
-      saveDSL(layered);
+      // ★★★ 2026-10-09（T75）：**base 只在这里落一次盘，且必须落"合并后"的那份**。
+      //   设计层 overlay 增量保留：真相刷新只替换 base，设计意图（决策/标注/user_node/分镜）
+      //   按稳定锚点保留/迁移/孤儿/标过期（`mergeDesignLayer` 负责）。
+      //   ★ 以前这里落的是**未合并的 `layered`**，把上面那次合并整个覆盖掉 ⇒ 决策卡一重建就丢。
+      const { dsl: designDsl, message: ovMsg } = mergeDesignLayer(layered);
+      overlayNote = ovMsg;
+      saveDSL(designDsl);
       // 同时写入 live 代码快照：功能树聚类（derive_feature_tree）以 live 视图的
       // semantic.files 为语义基准做命中率闸门。手动导入的项目若只有设计 DSL 而无
       // live 快照，换项目后聚类会因语义基准为空被判"db 不相关"而拒生成 → 导图平铺。

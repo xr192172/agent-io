@@ -13,6 +13,8 @@
  */
 
 import { getDSL, saveDSL } from '../../../infrastructure/storage.js';
+// ★★ T75：决策卡必须活过 base 重建 ⇒ 每次 edit_dsl 收口时同步进 overlay
+import { syncDecisionsToOverlay } from '../../../infrastructure/storage_overlay.js';
 import type { EditResult } from './edit_result.js';
 import { addNode, updateNode, deleteNode } from './node_ops.js';
 import type { AddNodeInput, UpdateNodeInput } from './node_ops.js';
@@ -145,6 +147,13 @@ function touchedOf(input: UpdateFeatureInput): Touched {
 
 export function updateFeature(input: UpdateFeatureInput): TouchedProduct<EditResult> {
   const r = updateFeatureCore(input);
+  // ★★★ 2026-10-09（T75）：一次 `edit_dsl` 调用结束后，**把 base 上的决策卡同步进 overlay**。
+  //   为什么放在这一处（而不是每个 op 里各写一遍）：**这里是所有写操作的唯一收口**
+  //   （node / file / edge / status / annotation … 都从这里出去），一处覆盖全部，不会漏。
+  //   ★ 没有它：`import_project` 重建 base 时 **人写的决策（含验收标准）一重建就丢** ——
+  //     而"base 可再生成、overlay 独立保留"正是 overlay 存在的全部理由。
+  //   ★ 失败不许吞：同步失败就让整个 `edit_dsl` 失败（否则会安静地回到"决策会丢"的老状态）。
+  syncDecisionsToOverlay(input.feature, getDSL(input.feature) ?? ({ feature: input.feature, geometry: { nodes: [] } } as never));
   return withTouched(r, touchedOf(input));
 }
 
