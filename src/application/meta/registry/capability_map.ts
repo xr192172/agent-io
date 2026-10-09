@@ -62,6 +62,11 @@ export interface ToolCatalogEntry {
    * ★ 由 `application/meta/index.ts` 在注入目录时用 {@link collectInputKeys} 算好（那层拿得到 zod）。
    */
   inputKeys?: readonly string[];
+  /**
+   * ★★★ 该工具**顶层必填**入参名（2026-10-09，T81 配套；口径见 {@link collectRequiredKeys}）。
+   * ★ 它是「接续」段能说清"**还差哪些必填**"的依据 —— 否则"直接可用（零手工）"会误导。
+   */
+  requiredKeys?: readonly string[];
 }
 
 export interface LaneTool {
@@ -613,6 +618,35 @@ export interface CapabilityMapInput {
  *     ★ 是**探针**（手写同形 schema 跑一遍）抓到的，不是读代码看出来的 —— **先问解析器不猜**。
  *   顶层 `inputSchema` 的**键**本身就是顶层入参名 ⇒ 单独收一遍。
  */
+/**
+ * ★★★ 该工具**顶层必填入参**名（2026-10-09，T81 配套）。
+ *
+ * ## 为什么需要它（实测动机）
+ * `capability_map` 的「接续」段说"**直接可用**（值已取好，零手工）"—— 但实测：
+ * 我验过的那条 `get_dsl.scope_files → edit_code.file`，**下游 `edit_code` 还要 `op`**
+ * ⇒ "零手工"这个说法**会误导**（让人以为传一个字段就能调）。
+ *
+ * ## 它同时立起一条更准的定位
+ * 把所有边都算一遍会发现：**没有一条边能填满下游的必填**
+ * （`edit_code` 还要 `op`；`move_symbol` 还要 `symbol` / `to_file`；`rename_symbols` 还要 `renames` 的 `symbol`/`to`）。
+ * ⇒ ★★★ **这不是缺陷，是分工**：**接续负责"位置与对象"，不负责"意图"**
+ *   —— "要做什么操作、改成什么名、移到哪"是**语义判断**，只能由调用方给。
+ *   ★ 这与 `applyChainEdge` 在 `pick` 上**不替人选中**下标的立论**是同一条**。
+ *
+ * ★ 取不到 `isOptional` 时**当作可选**（= **宁可少报"必填"，不凭空报必填**）：
+ *   多报一个"必填"会让调用方去填一个其实不必填的字段；少报只会让它多试一次。
+ */
+export function collectRequiredKeys(schema: unknown): string[] {
+  if (!schema || typeof schema !== 'object') return [];
+  const out: string[] = [];
+  for (const [k, v] of Object.entries(schema as Record<string, unknown>)) {
+    const probe = (v as { isOptional?: () => boolean } | null)?.isOptional;
+    const optional = typeof probe === 'function' ? (v as { isOptional: () => boolean }).isOptional() : true;
+    if (!optional) out.push(k);
+  }
+  return out;
+}
+
 export function collectInputKeys(schema: unknown): string[] {
   if (!schema || typeof schema !== 'object') return [];
   const top = schema as Record<string, unknown>;
@@ -657,6 +691,7 @@ export function catalogOf(defs: readonly ToolDef[]): ToolCatalogEntry[] {
     title: d.title,
     description: d.description,
     inputKeys: collectInputKeys(d.inputSchema),
+    requiredKeys: collectRequiredKeys(d.inputSchema),
   }));
 }
 

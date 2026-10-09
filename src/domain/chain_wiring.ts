@@ -294,6 +294,22 @@ export const CHAIN_EDGES: readonly ChainEdge[] = [
       '★ 同形但**未逐条验**的边（故**先不写进表**）：`scope_files → move_symbol.file`、' +
       '`scope_files → rename_symbols.renames[].file` —— 验过再加，不把预测写成实测。',
   },
+  {
+    from: 'get_dsl',
+    fromKey: 'scope_files',
+    to: 'move_symbol',
+    toPath: 'file',
+    cardinality: 'pick',
+    evidence: 'verified',
+    note:
+      '★ 真跑（2026-10-09，夹具）：`get_dsl {query:"scope", scope:"all"}` ⇒ `scope_files` 里取 ' +
+      '`src/core/math.ts` 放进 `move_symbol.file`（`symbol=add` / `to_file=src/util/calc.ts` 由**调用方给**）' +
+      '⇒ `ok=true`、`filesWritten=2`（源文件删段 + 目标文件新建）。' +
+      '★★ **这是"半条边"，如实记**：它只填下游 3 个必填里的 **1 个**（`file`）；' +
+      '`symbol` 与 `to_file` 是**意图**，只能由调用方给 —— ' +
+      '★ 依 `CHAIN_EDGES` 的立论：**接续负责"位置与对象"，不负责"意图"**（`capability_map` 的接续段会把' +
+      '"还要给"逐条列出来）。★ 与 `applyChainEdge` 在 `pick` 上不替人选中下标**同一条道理**。',
+  },
 ];
 
 /**

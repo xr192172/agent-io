@@ -77,7 +77,7 @@ import type { DocTargetSet } from './docs/project_docs.js';
 import { exploreCodeHandler, syncContractsHandler } from './handlers.js';
 import type { ToolDef } from '../types.js';
 // ★ T54：接续段的三件套 —— **规则住在 domain，这里只渲染**（别在本文件重推一遍）
-import { nextHopsOf, universalHopsOf, applyChainEdge } from '../../domain/chain_wiring.js';
+import { nextHopsOf, universalHopsOf, applyChainEdge, SCOPE_PATHS } from '../../domain/chain_wiring.js';
 
 
 /**
@@ -469,7 +469,11 @@ export const META_TOOLS: ToolDef[] = [
       //   为什么放在本工具：本工具**本来就画着接法表**（"链的接法"段），而它自称"新用户第一站"
       //   ⇒ "我手上这份 touched 下一步怎么用"放这儿最自然，且**不新增工具**（不增面、不增 8 处登记）。
       //   ★ 计算全部落在**已收口的那两个函数**（`nextHopsOf`/`applyChainEdge`）—— 本段不自己推任何规则。
-      const handoff = renderHandoffSection(a.from_tool as string | undefined, a.touched_json as string | undefined);
+      const handoff = renderHandoffSection(
+        a.from_tool as string | undefined,
+        a.touched_json as string | undefined,
+        (tool) => catalogOf(listToolDefs()).find((c) => c.name === tool)?.requiredKeys ?? [],
+      );
       // 域表**在调用期现取**（不注入、不缓存）：它是**按 project_dir 读的项目级声明**，
       // 而本仓自己那份结构意图与被分析项目无关 ⇒ 缓存它就是把两个项目混成一份（判据分叉）。
       // 与「ts_kernel 现取、不建镜像」同策。
@@ -671,7 +675,12 @@ export const META_TOOLS: ToolDef[] = [
  *
  * ★ 只读：本段不改任何东西，也**不代表"这条链跑通过"**（那是 `CHAINS` 的 `verified` 说的）。
  */
-function renderHandoffSection(fromTool: string | undefined, touchedJson: string | undefined): string {
+function renderHandoffSection(
+  fromTool: string | undefined,
+  touchedJson: string | undefined,
+  /** 下游工具的**顶层必填入参**名（由 `catalogOf(...).requiredKeys` 提供） */
+  requiredOf: (tool: string) => readonly string[],
+): string {
   if (fromTool === undefined && touchedJson === undefined) return '';
   if (fromTool === undefined || touchedJson === undefined) {
     throw new Error(
@@ -696,13 +705,34 @@ function renderHandoffSection(fromTool: string | undefined, touchedJson: string 
   const ready: string[] = [];
   const needPick: string[] = [];
   const blocked: string[] = [];
+
+  /**
+   * ★★★ 这条边**只填了哪一个顶层入参**，以及**还差哪些必填**。
+   *
+   * ## 为什么必须写出来（实测动机）
+   * 我验过的那条 `get_dsl.scope_files → edit_code.file`，下游 `edit_code` **还要 `op`**
+   * ⇒ 光说"**直接可用（零手工）**"会**误导**（让人以为传一个字段就能调）。
+   * ## 而它顺带立起一条更准的定位
+   * 把所有边算一遍：**没有一条能填满下游必填**（`edit_code` 缺 `op`；`move_symbol` 缺 `symbol`/`to_file`；
+   * `rename_symbols` 缺 `renames` 里每条的 `symbol`/`to`）—— ★★★ **这不是缺陷，是分工**：
+   * **接续负责"位置与对象"，不负责"意图"**（要做什么操作 / 改成什么名 / 移到哪 = 语义判断）。
+   * ★ 与 `applyChainEdge` 在 `pick` 上**不替人选中**下标，是同一条立论。
+   */
+  const missingOf = (to: string, toPath: string): string => {
+    const filledTop = toPath.replace(/\[\].*$/, '').replace(/\..*$/, '');
+    const miss = requiredOf(to).filter((k) => k !== filledTop && !SCOPE_PATHS.has(k));
+    return miss.length ? `\n        ★ 下游**还要给**：${miss.join(', ')}` : '\n        ★ 下游必填**已填满**';
+  };
+
   for (const e of nextHopsOf(fromTool)) {
     used.add(e.fromKey);
     const r = applyChainEdge(cur, e);
     const head = `${e.to}.${e.toPath}`;
-    if (r.ok) ready.push(`    ${head}  ←  ${r.expr}  =  ${r.value}`);
+    if (r.ok) ready.push(`    ${head}  ←  ${r.expr}  =  ${r.value}${missingOf(e.to, e.toPath)}`);
     else if (r.candidates.length) {
-      needPick.push(`    ${head}  ←  ${r.expr}  · **要你选**：${r.candidates.map((c, i) => `[${i}] ${c}`).join('   ')}`);
+      needPick.push(
+        `    ${head}  ←  ${r.expr}  · **要你选**：${r.candidates.map((c, i) => `[${i}] ${c}`).join('   ')}${missingOf(e.to, e.toPath)}`,
+      );
     } else blocked.push(`    ${head}  ←  ${r.expr}  · 接不上：${r.reason}`);
   }
   const uni: string[] = [];
@@ -721,6 +751,9 @@ function renderHandoffSection(fromTool: string | undefined, touchedJson: string 
   if (!ready.length && !needPick.length && !blocked.length) {
     L.push('', '  （该工具在接法表里**没有对象类出边** ⇒ 它通常是"链的终点"；作用域键见下面的全称规则）');
   }
+  L.push('', '  ★★ **接续的分工**：它只负责**位置与对象**；"**要做什么操作 / 改成什么名 / 移到哪**"是**意图**，'
+    + '由你给 —— ★ **没有一条边能替你填满下游必填**，这是分工，不是缺陷。'
+    + '（同一条道理：本段在多个候选时也**不替你选下标**。）');
   L.push('', '  ★ 本段**只读**：不改任何东西，也**不代表"这条链跑通过"**（那是 `CHAINS` 的 `verified` 说的）。');
   return L.join('\n');
 }
