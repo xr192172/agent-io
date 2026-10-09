@@ -80,7 +80,12 @@ export function toRelPath(projectRoot: string, absPath: string): string {
   return path.relative(projectRoot, absPath).split(path.sep).join('/');
 }
 
-function contentHash(content: string): string {
+/**
+ * 内容指纹（sha1）—— ★ **导出**（2026-10-09）：验收判据要问"索引与源码是否一致"，
+ * 而**唯一准的判据就是这个哈希**（`files.content_hash` 存的就是它）。
+ * ★ 别处不许再写一份 sha1 —— 那是判据分叉（`symbols.ts:5` 自陈"content_hash 未变 ⇒ 整文件跳过"）。
+ */
+export function contentHash(content: string): string {
   return crypto.createHash('sha1').update(content, 'utf-8').digest('hex');
 }
 

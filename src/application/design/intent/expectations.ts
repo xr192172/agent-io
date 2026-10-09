@@ -22,8 +22,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileFacts } from '../../../infrastructure/index/file_facts.js';
-import { getProjectCacheDb, projectCacheDbPath } from '../../../infrastructure/index/db.js';
-import { getRawImportsOfFile } from '../../../infrastructure/index/symbols.js';
+import { getProjectCacheDb } from '../../../infrastructure/index/db.js';
+import { getRawImportsOfFile, contentHash } from '../../../infrastructure/index/symbols.js';
 import { parseFileSymbols, isSupportedFile } from '../../../infrastructure/parse/ast_parser.js';
 import { type Expectation, normPath, normSignature } from '../../../domain/expectation.js';
 
@@ -48,28 +48,40 @@ export interface ExpectationsReport {
 }
 
 /**
- * 索引是否**比源码旧**。
- * ★ 为什么需要它：依赖边**只能从索引取**（符号能现解析，依赖不能）⇒ 索引旧了就不敢判。
- * ⇒ 宁可说"判不了"，也**不拿旧事实说"通过"**（假绿）；同样也不说"不存在"（假红）。
+ * 索引是否**与源码一致**。
+ *
+ * ★★★ 2026-10-09 **判据换过一次，这次是换掉一个错判据** —— 起因是"真跑一遍试用"：
+ *   在真夹具上把 `format.ts` 改对之后，`fileFacts('src/format.ts').deps` **已经是 `['src/math.ts']`**
+ *   （索引确实更新了、设计确实满足了），而旧判据仍报「**索引比源码旧 ⇒ 判不了**」⇒ **假红**。
+ *   根因两条：① 旧判据比的是 **mtime**，而索引库是 **WAL** 模式 ⇒ **写的是 `cache.db-wal`/`-shm`，
+ *   主库 `cache.db` 的 mtime 根本不更新**（实测：主库停在 10-08 21:58，而源文件是 10-09 10:55）；
+ *   ② 即使不是 WAL，"谁的 mtime 大"也只是**代理**，而 `files.content_hash` 是**事实**。
+ *   ⇒ 换成**按内容比对**：读源文件算 `contentHash`（**复用 `index/symbols.ts` 那一份，不另写 sha1**），
+ *     与索引里该文件的 `content_hash` 比。**这才叫"索引是否反映此刻的代码"。**
+ * ★ 为什么假红也危险：它会让**干对了的人以为没干对** —— 比假绿更难察（假绿是"不该绿却绿"，
+ *   假红是"该绿却红"，而人会先把活儿重做一遍再说）。
+ * ★ 附：提示里必须给**可执行的修复动作**（下面那句就是）—— 只说"判不了"等于把问题丢回给用户。
  */
 function indexStaleFor(root: string, rels: readonly string[]): string | null {
-  let dbM = 0;
-  try {
-    const p = projectCacheDbPath(root);
-    if (!fs.existsSync(p)) return `本项目**没有索引**（${p} 不存在）⇒ 依赖事实取不到，判不了`;
-    dbM = fs.statSync(p).mtimeMs;
-  } catch (e) {
-    return `读索引时间戳失败（${(e as Error).message}）⇒ 判不了`;
-  }
-  const newer = rels.filter((r) => {
-    const abs = path.join(root, normPath(r));
-    return fs.existsSync(abs) && fs.statSync(abs).mtimeMs > dbM;
-  });
-  if (newer.length) {
-    return (
-      `**索引比源码旧**（${newer.join(', ')} 的 mtime 晚于 cache.db）⇒ 依赖边可能还没反映这次改动。` +
-      `★ 依赖边只能取自索引（符号能现解析，依赖不能）⇒ **宁可说"判不了"，不拿旧事实说"通过"**`
-    );
+  const db = getProjectCacheDb(root);
+  for (const relInput of rels) {
+    const rel = normPath(relInput);
+    const abs = path.join(root, rel);
+    if (!fs.existsSync(abs)) continue; // 文件不存在 ⇒ 由调用方去判"失败"，不是这里的事
+    const facts = fileFacts(root, rel);
+    const key = facts.matched_path ?? rel;
+    const row = db.prepare('SELECT content_hash FROM files WHERE path = $p').get({ p: key }) as { content_hash?: string } | undefined;
+    if (!row?.content_hash) {
+      return `索引里查不到该文件（\`${key}\`）⇒ 依赖事实取不到，判不了`;
+    }
+    const now = contentHash(fs.readFileSync(abs, 'utf-8'));
+    if (row.content_hash !== now) {
+      return (
+        `**索引与源码不一致**：\`${rel}\` 的内容已改过，但索引还是旧的 ⇒ 依赖边可能没反映这次改动。` +
+        `★ 依赖边只能取自索引（符号能现解析，依赖不能）⇒ **宁可说"判不了"，不拿旧事实说"通过"**。` +
+        `\n     修复动作：跑一次 \`import_project\`（**默认只刷新"实际"、不碰设计**）即可保鲜，然后再对拍。`
+      );
+    }
   }
   return null;
 }
