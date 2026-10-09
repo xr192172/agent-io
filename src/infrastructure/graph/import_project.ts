@@ -48,6 +48,23 @@ export interface ImportProjectInput {
   /** 是否包含测试文件（默认 false，测试文件通常是架构噪声） */
   include_tests?: boolean;
   /**
+   * ★★★ **是否把「文档」也收成 DSL 节点**（`type: 'doc'`，默认 false）—— 2026-10-09（T88）。
+   *
+   * ## 为什么需要（用户点破）
+   * 现实链条是「**把项目文档翻译成设计 DSL，然后才能对拍**」——
+   * 而在此之前 **DSL 里 `docs/` 节点 = 0**（实测）⇒ `harvest_decisions` 采到的候选**无处可挂**
+   * （它的出处就是 `docs/xxx.md:行号`）⇒ **采完就断**。
+   *
+   * ## 为什么是**另一类节点**，而不是"源码文件节点"
+   * `source_exts.ts:27` 明写：`.md` 那类是「**可读文本，不是源码**」（L1 判据，G4 登记过）
+   * ⇒ 塞进 `type: 'file'` 会**违反 L1**；⇒ 另立 `type: 'doc'`（语义清楚：**这是文档，不是源码**）。
+   *
+   * ★ 默认 **false**（与 `include_tests` 同款）⇒ **不改变现有行为**；
+   *   要"文档成为设计的一等公民"就**显式打开**（`harvest_decisions` 的使用者会打开）。
+   * ★ **只进 `geometry.nodes`，不进 `semantic.files`** —— 后者是要接一堆源码判据的语义层。
+   */
+  include_docs?: boolean;
+  /**
    * 是否索引归档/历史目录（_archive/archive/_old/…，默认 false）。
    * 遗留项目归档代码不是主体，默认跳过以防稀释活跃社区；true 时索引且截断排序靠后。
    */
@@ -1061,7 +1078,10 @@ function aggregateDirSymbols(
 }
 
 export async function importProject(input: ImportProjectInput): Promise<ImportProjectResult> {
-  const { feature, max_files = 200, include_tests = false } = input;
+  const { feature, max_files = 200, include_tests = false, include_docs = false } = input;
+  // ★ T88：文档节点收了几篇（只在 include_docs 时非空；★ 必须声明在**函数体层**，
+  //   因为"收集"与"拼 message"在**两个不同的块**里 —— 块内声明块外读不到，我第一版就栽在这)
+  let docNote: string | null = null;
   const root = path.resolve(input.project_dir);
   if (!fs.existsSync(root) || !fs.statSync(root).isDirectory()) {
     throw new Error(`project_dir 不存在或不是目录: ${root}`);
@@ -1451,6 +1471,7 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       skipped.length > 0 ? `跳过/截断:\n  - ${skipped.join('\n  - ')}` : null,
       roleNote ? `职责标题: ${roleNote}` : null,
       baselineFactsNote,
+      docNote,
       overlayNote ? `设计层 overlay: ${overlayNote}` : null,
       // ★ T77：重建丢掉了什么，**明确报出来**（不静默）
       designDropNote,
@@ -1734,6 +1755,47 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       });
     }
   }
+
+  // ★★★ 2026-10-09（T88）：**文档进 DSL（`type: 'doc'`）** —— 让"文档"成为设计的一等公民，
+  //   从而 `harvest_decisions` 的候选（出处 = `docs/xxx.md:行号`）**有地方可挂**。
+  //   ★ 只在显式 `include_docs` 时收（与 `include_tests` 同款 ⇒ 默认**一个节点都不多**）。
+  //   ★ 布局：排在**所有已有节点的下方**（算一遍包围盒），x 依次排 —— 简单可预测，不和代码区重叠。
+  if (include_docs) {
+    const docsRoot = path.join(root, 'docs');
+    const docRels: string[] = [];
+    if (fs.existsSync(docsRoot)) {
+      const walk = (dir: string): void => {
+        for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+          if (e.isDirectory()) {
+            if (shouldSkipDir(e.name)) continue; // ★ 复用同一个跳目录判据（不另写一份）
+            walk(path.join(dir, e.name));
+          } else if (e.isFile() && e.name.toLowerCase().endsWith('.md')) {
+            docRels.push(path.relative(root, path.join(dir, e.name)).split(path.sep).join('/'));
+          }
+        }
+      };
+      walk(docsRoot);
+      docRels.sort();
+    }
+    const docBaseY = nodes.reduce((m, n) => Math.max(m, (n.y ?? 0) + (n.height ?? FILE_H)), 0) + 80;
+    docRels.forEach((rel, i) => {
+      nodes.push({
+        id: `doc_${sanitize(rel)}`,
+        label: `📄 ${path.posix.basename(rel)}`,
+        x: MARGIN + (i % 6) * (FILE_W + 24),
+        y: docBaseY + Math.floor(i / 6) * (FILE_H + 16),
+        width: FILE_W,
+        height: FILE_H,
+        type: 'doc',
+        status: 'done',
+        // ★ 与 file 节点同款：**路径放 `description`** ⇒ `nodePath()` 的 else 分支能原样取到 ✓
+        description: rel,
+        style: { ...DEFAULT_FILE_COLOR, borderRadius: 4 },
+      });
+    });
+    if (docRels.length) docNote = `文档 ${docRels.length} 篇（type=doc，可挂设计意图）`;
+  }
+
   for (const d of [...dirByRel.values()].sort((a, b) => a.rel.localeCompare(b.rel))) {
     if (input.design_mode) continue; // 设计模式只保留顶级目录节点，无父子 contains 边
     if (d.rel === '') continue;

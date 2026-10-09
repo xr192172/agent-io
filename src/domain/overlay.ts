@@ -36,7 +36,7 @@ export function computeFileSignature(
 export interface OverlayAnchor {
   /** 相对路径（file=rel 路径；dir/brick=解码后的路径名） */
   path?: string;
-  kind?: 'file' | 'dir' | 'brick' | 'symbol';
+  kind?: 'file' | 'dir' | 'brick' | 'symbol' | 'doc';
   /** 接口指纹（仅 file 节点有；dir/brick 无 → 永不判 stale） */
   signature?: string;
   /** 决策卡：结论/理由/替代/后果/验收 */
@@ -114,7 +114,7 @@ export interface DesignOverlay {
 export interface AnchorCandidate {
   id: string;
   path: string;
-  kind: 'file' | 'dir' | 'brick' | 'symbol';
+  kind: 'file' | 'dir' | 'brick' | 'symbol' | 'doc';
   /** 接口指纹 */
   signature?: string;
 }
@@ -399,6 +399,10 @@ export function seedOverlayFromDsl(dsl: DesignDSL | null): DesignOverlay {
 function nodePathKind(n: { id: string; type?: string }): OverlayAnchor['kind'] {
   if (n.type === 'module' || n.id.startsWith('dir_')) return 'dir';
   if (n.type === 'file') return 'file';
+  // ★★★ T88：**文档是一类节点**（`type: 'doc'`）—— 与源码文件**分开**（★ L1 判据明写
+  //   ".md 是**可读文本**，不是源码"，见 `source_exts.ts:27`）⇒ 锚点类型也必须分开，
+  //   否则它会被下面的兜底判成 `symbol`（**语义错**，且锚点/对账路径跟着错）。
+  if (n.type === 'doc') return 'doc';
   if (n.id.startsWith('brick_')) return 'brick';
   return 'symbol';
 }

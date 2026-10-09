@@ -1,6 +1,6 @@
 {
  "_meta": {
-  "takenAt": "2026-10-09T04:11:00.198Z",
+  "takenAt": "2026-10-09T08:53:22.332Z",
   "env": {
    "core": "0.21.1",
    "node": "v22.22.2",
@@ -372,6 +372,7 @@
       "title",
       "max_files",
       "include_tests",
+      "include_docs",
       "include_archive",
       "live_only",
       "rebuild_design",
@@ -817,13 +818,14 @@
     },
     {
      "name": "import_project",
-     "params": 13,
+     "params": 14,
      "keys": [
       "project_dir",
       "feature",
       "title",
       "max_files",
       "include_tests",
+      "include_docs",
       "include_archive",
       "live_only",
       "rebuild_design",
