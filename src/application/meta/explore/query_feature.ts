@@ -37,7 +37,8 @@
 
 import { getDSLByView, listFeatures as listStoredFeatures } from '../../../infrastructure/storage.js';
 // ★ T89：**意图的家是 overlay**（T75/T77 立）—— 与视图无关 ⇒ 实际视图也能"贴"上设计意图
-import { loadOverlay } from '../../../infrastructure/storage_overlay.js';
+// ★ T90：**「最后实现过的决策」** 来源 = 重写前那份快照的 `intents`（不再是 overlay 最新）
+import { listFileSnapshots } from '../../refactor/snapshot/file_snapshot.js';
 import type { DSLView } from '../../../infrastructure/storage.js';
 import { listAnnotations } from '../../design/dsl_ops/annotation_tools.js';
 import { listApprovals, getApprovalHistory } from '../../observe/reconcile/approval.js';
@@ -816,28 +817,33 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
         ((dsl.geometry?.nodes ?? []) as Array<{ id: string; decision?: unknown }>).map((n) => [n.id, n]),
       );
       /**
-       * ★★★ 2026-10-09（T89 下半）：**实际视图（`view=live`）也要能"一眼看出"设计意图**。
+       * ★★★ 2026-10-09（T90 下半）：**实际视图显示的是「最后**实现**过的」那一版决策**。
        *
-       * ## 用户原话
-       * *"……这样的话**哪怕是实际 DSL 也能一眼看出来其上面标注的一些设计意图**什么的。"*
+       * ## 用户模型（他提出的）
+       * *"实现的话，那里展示的是**最后一次实现的决策**，设计那里展示的是**最后一次设计的决策**。"*
+       * ⇒ 于是 **两视图相同 = 设计已实现（同步）**；**不同 = 设计改了但没实现** ✓
        *
-       * ## 为什么读 **overlay** 而不是读 design 的 base
-       * ★ **意图的家就是 overlay**（T75/T77 立：`base` 可重建、**`overlay` 独立保留**）⇒
-       *   读它**不依赖 design base 是否被重建过**，语义最正。
-       * ★★ 而**节点 id 同源**（design 与 live 都是 `file_<sanitize(rel)>`）⇒ **直接按 id 贴上，不需要翻译**。
-       * ★ 实测（未加本段时）：`view=live` 的 digest **只有 `F:`**（纯代码结构），确实看不出任何意图。
+       * ## ★ 为什么**不能**退回"overlay 最新"
+       * 我 T89 第一版正是从 overlay 读**最新** `decision` ⇒ 两视图**必然逐字相同** ⇒ **重合**（用户当场抓到）。
+       * ⇒ **没实现过就不显示**（= 选项 A）：**"设计有、实际无"本身就是"未实现"这个信号** ✓
+       *   ★ 退回 overlay 最新 = 选项 B ⇒ **信号消失**（又重合）。
+       *
+       * ## 来源 = **快照的 `intents`**（T90 上半落的）
+       * `snapshotBeforeWrite` 在每个重写工具**写盘前**记下当时各文件的决策 ⇒
+       * **那就是"这次实现所依据的意图"**。**取最近一份含该文件的快照**（`listFileSnapshots` 已按新→旧排）。
        */
-      const intentById = new Map<string, { summary?: string; acceptance?: string }>();
-      if (currentView === 'live') {
+      const implementedByPath = new Map<string, { summary?: string; acceptance?: string }>();
+      if (currentView === 'live' && dsl.source_root) {
         try {
-          const ov = loadOverlay(dsl.feature);
-          for (const [id, a] of Object.entries(ov?.anchors ?? {})) {
-            const d = a.decision as { summary?: string; acceptance?: string } | undefined;
-            if (d && (d.summary || d.acceptance)) intentById.set(id, d);
+          for (const snap of listFileSnapshots(dsl.source_root)) {
+            for (const [rel, it] of Object.entries(snap.intents ?? {})) {
+              // ★ **最近优先**（快照已按新→旧）⇒ 先到的不覆盖
+              if (!implementedByPath.has(rel)) implementedByPath.set(rel, it);
+            }
           }
         } catch {
-          // ★ 读不到 overlay ⇒ 退化为"实际视图只有结构"（**但那不是错误**：意图可以还不存在）
-          //   ★ 刻意**不报错**也不 fake —— 与本节"有啥填啥"的口径一致。
+          // ★ 读不到快照 ⇒ 退化为"实际视图只有结构" —— **但那不是错误**（可能还没实现过任何东西）
+          //   ★ 刻意**不报错**也不 fake（与本节"有啥填啥"的口径一致）。
         }
       }
       for (const f of files) {
@@ -868,9 +874,10 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
         //     不管这份是"设计"还是"实际"，**挂上去的意图都会显示** ✓
         //   ★ 只取**最高熵的两个短字段**（`summary` / `acceptance`）——
         //     `rationale` 太长会把"一行一个文件"撑破（★ 那正是本节存在的理由：**一眼**）。
+        // ★ T90：设计视图取「最新设计」（`nodes[].decision`）；**实际视图取「最后实现过的」**（快照 `intents`）
         const dec =
           ((nodeById.get(f.id) as { decision?: { summary?: string; acceptance?: string } } | undefined)?.decision) ??
-          intentById.get(f.id);
+          implementedByPath.get(f.path);
         if (dec?.summary?.trim()) s.push(`决策=${dec.summary.trim()}`);
         if (dec?.acceptance?.trim()) s.push(`验收=${dec.acceptance.trim()}`);
         if (s.length) seg.push(`S:${s.join(' ; ')}`);
