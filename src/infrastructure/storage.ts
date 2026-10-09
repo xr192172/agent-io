@@ -191,6 +191,93 @@ export function getBaselineFeatureFile(feature: string, baseDir?: string): strin
   return path.join(getBaselineDir(baseDir), `${feature}.dsl.json`);
 }
 
+// ─────────────────────────────────────────────────────────────
+// ★★★ 「对拍」的第二份产物：**基线事实**（2026-10-09，T85/D2）
+//
+// ## 为什么必须有它（用户 2026-10-09 的原话）
+//   *"你的意思是这两个产物没有分开是吗？**那要赶紧分开啊**。当时我不是说了**对拍**吗？
+//     怎么可能对拍还放在同一个里面？**那这算什么对拍？自己测自己吗？**"*
+//   ⇒ ★ **说得对**：对拍的**前提是两份产物**。而在此之前，对账的"期望侧"取的是
+//     **`<feature>.json`（设计 DSL）里的 `expected_apis`** —— 那**恰恰是同一个东西**（fork 时复制过去的）
+//     ⇒ **自己跟自己比** ⇒ 代码没变时要么恒 0、要么一堆假差异。
+//
+// ## 两份产物各自是什么（**不许混**）
+//   · **基线事实**（本文件）= **fork 那一刻**的事实快照 —— ★ **一旦落盘就不再变**（除非重新 fork）；
+//   · **现取事实** = `infrastructure/index/file_facts.ts` 的 `fileFacts(root, rel)`（此刻）。
+//   ⇒ **对拍 = 这两者比** ⇒ 同窗口（代码未变）应 **0**；代码改了才有差异。
+//   ★ 而"**人写的意图**"（DSL 里的 `expected_apis`，`edit_dsl type=api` 写）是**第三条线** ——
+//     它与事实比才是"**设计 vs 实现**"。★ 三条线**各有各的问题**，混着比就是假差异（这就是 T85 的病根）。
+//
+// ## 为什么这份快照**不能**从 DSL 里取
+//   ★ 那正是"自己测自己"。它必须**独立取**（`fileFacts` = 索引器的事实），
+//     且取的时刻 = **fork 那一刻**（`import_project` 刚写完索引 ⇒ 索引与源码同期 ✓）。
+// ─────────────────────────────────────────────────────────────
+
+/** 基线事实文件（`baseline/<feature>.facts.json`）—— ★ **对拍的两份产物之一** */
+export interface BaselineFactsFile {
+  version: 1;
+  feature: string;
+  saved_at: string;
+  /** 取这份事实时用的项目根（★ 事实的"出处"，与 `DSL.source_root` 同源） */
+  source_root: string;
+  /** 仓库相对路径 → **那一刻**的事实（API 签名 + 依赖） */
+  files: Record<string, { apis: string[]; deps: string[] }>;
+}
+
+/** 基线事实文件路径（与 `.dsl.json` 并列，**同目录、同名族**） */
+export function getBaselineFactsFile(feature: string, baseDir?: string): string {
+  if (!/^[a-zA-Z0-9_-]+$/.test(feature)) {
+    throw new Error(`非法 feature 名: "${feature}"，必须匹配 ^[a-zA-Z0-9_-]+$`);
+  }
+  return path.join(getBaselineDir(baseDir), `${feature}.facts.json`);
+}
+
+/** 读取基线事实；不存在返回 `null`（★ 老 feature 没有它 ⇒ 调用方要能处理"没有基线事实"） */
+export function getBaselineFacts(feature: string, baseDir?: string): BaselineFactsFile | null {
+  const file = getBaselineFactsFile(feature, baseDir);
+  if (!fs.existsSync(file)) return null;
+  try {
+    return JSON.parse(fs.readFileSync(file, 'utf-8')) as BaselineFactsFile;
+  } catch {
+    // ★ 坏了**抛**（不返回 null 冒作"没有"）—— 把"文件损坏"和"还没有"混成一个值，
+    //   会让对拍静默地以为"没基线"⇒ 那正是本仓禁止的失败模式。
+    throw new Error(`基线事实文件损坏：${file}（请重新 import_project 重建）`);
+  }
+}
+
+/**
+ * 写基线事实（**只在缺失时写**，与 `ensureBaseline` 同策：基线是"共同祖先"，**绝不漂移**）。
+ *
+ * ★ 事实来源**必须是 `fileFacts`**（索引器）—— **不许从 DSL 取**（那是"自己测自己"）。
+ * ★ 取不到事实的文件**不写空条目**（省略 = 那时它没有事实），并在返回值里报出数量便于对账。
+ */
+export function saveBaselineFactsIfAbsent(
+  feature: string,
+  sourceRoot: string,
+  rels: readonly string[],
+  readFacts: (rel: string) => { apis: readonly string[]; deps: readonly string[] },
+  baseDir?: string,
+): { written: boolean; file: string; files: number } {
+  const file = getBaselineFactsFile(feature, baseDir);
+  if (fs.existsSync(file)) return { written: false, file, files: 0 };
+  const files: BaselineFactsFile['files'] = {};
+  for (const rel of rels) {
+    const f = readFacts(rel);
+    if (f.apis.length === 0 && f.deps.length === 0) continue;
+    files[rel] = { apis: [...f.apis], deps: [...f.deps] };
+  }
+  const data: BaselineFactsFile = {
+    version: 1,
+    feature,
+    saved_at: new Date().toISOString(),
+    source_root: sourceRoot,
+    files,
+  };
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, JSON.stringify(data, null, 2), 'utf-8');
+  return { written: true, file, files: Object.keys(files).length };
+}
+
 /** 保存基线 DSL（带 _sync 标记；不触发 dslChangeCallback，避免打扰设计视图刷新） */
 export function saveBaselineFeature(dsl: DesignDSL, baseDir?: string): string {
   const dir = getBaselineDir(baseDir);

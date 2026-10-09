@@ -24,7 +24,9 @@ import path from 'node:path';
 import ignore from 'ignore';
 import type { Ignore } from 'ignore';
 import type { DesignDSL, Node, Edge, SemanticFile, ExpectedApi, Symbol } from '../../domain/types.js';
-import { saveDSL, saveLiveFeature, ensureBaseline, getDSL } from '../storage.js';
+import { saveDSL, saveLiveFeature, ensureBaseline, getDSL, saveBaselineFactsIfAbsent } from '../storage.js';
+// ★ T85/D2：基线事实**独立取**（索引器的事实）—— **绝不从 DSL 取**（那是「自己测自己」）
+import { fileFacts } from '../index/file_facts.js';
 import { mergeDesignLayer } from '../storage_overlay.js';
 import { detectArchLayers } from '../analysis/structure/layer_detect.js';
 import { parseFileFull, isSupported, resolveProjectImport } from '../parse/index.js';
@@ -1264,6 +1266,8 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
     const layered = detectArchLayers(dsl);
 
     let roleNote: string | null = null;
+    // ★ T85/D2：基线事实锚定的结果（**写了什么、有没有写失败，都要能报出来**）
+    let baselineFactsNote: string | null = null;
     let overlayNote: string | null = null;
     // ★ T77：重建时"丢掉了哪些扫描产不出的节点"——**丢了就要说**，不许静默（空 = 没丢）
     let designDropNote: string | null = null;
@@ -1386,6 +1390,39 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
     // 之后 live 随代码演进更新、设计 DSL 随意图演进，二者都相对 baseline 各自前进，
     // diff_views 三方对比据此裁决冲突。ensureBaseline 只在基线缺失时写入，绝不漂移。
     ensureBaseline(layered, input.live_dir);
+    // ★★★ 2026-10-09（T85/D2）：**同时锚定「基线事实」—— 对拍的第二份产物**。
+    //   用户原话：*"这两个产物没有分开是吗？那要赶紧分开啊……怎么可能对拍还放在同一个里面？
+    //   **那这算什么对拍？自己测自己吗？**"*
+    //   ⇒ 在此之前只有**一份**（`<feature>.json` 的 `expected_apis`，fork 时从事实复制过去），
+    //     而对账拿它当"期望侧" ⇒ **自己跟自己比**。
+    //   ★ 本步落的这份**独立取**（`fileFacts` = 索引器的事实，**不读 DSL**），时刻 = fork 那一刻
+    //     （刚 `syncProject` 写完索引 ⇒ 索引与源码同期）。
+    //   ★ **纯新增**：不改任何现有字段/行为；对账侧（D3）以后再接。
+    //   ★ 只取**文件节点**的 path（模块节点的 `path` 是 ", " 拼的多个 rel，不是单个文件）。
+    try {
+      const rels = (layered.semantic?.files ?? [])
+        .filter((f) => !f.path.includes(', ') && !f.path.endsWith('/'))
+        .map((f) => f.path);
+      const res = saveBaselineFactsIfAbsent(
+        layered.feature,
+        input.project_dir,
+        rels,
+        (rel) => {
+          const facts = fileFacts(input.project_dir, rel);
+          // ★ 只存**签名**（与 `expected_apis[].signature` **同形**）⇒ 对拍时**直接可比**，不需要再翻译。
+          //   ★ 签名缺失时回退到 `name`（与 `ingest` 里 `s.signature ?? s.name` 同口径）。
+          return {
+            apis: (facts.apis ?? []).map((a) => a.signature ?? a.name),
+            deps: facts.deps ?? [],
+          };
+        },
+        input.live_dir,
+      );
+      if (res.written) baselineFactsNote = `基线事实已锚定：${res.files} 个文件 → ${path.basename(res.file)}`;
+    } catch (e) {
+      // ★ **不许静默**：基线事实写不上 ⇒ 对拍将**没有第二份产物** ⇒ 必须说出来（但不阻断导入本身）
+      baselineFactsNote = `⚠ 基线事实**未能锚定**（${(e as Error).message.slice(0, 120)}）⇒ 本 feature 的对拍将缺"第二份产物"`;
+    }
 
     const dirCount = nodes.filter((n) => n.type === 'module').length;
     const oversized = files
@@ -1405,6 +1442,7 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
         : null,
       skipped.length > 0 ? `跳过/截断:\n  - ${skipped.join('\n  - ')}` : null,
       roleNote ? `职责标题: ${roleNote}` : null,
+      baselineFactsNote,
       overlayNote ? `设计层 overlay: ${overlayNote}` : null,
       // ★ T77：重建丢掉了什么，**明确报出来**（不静默）
       designDropNote,
