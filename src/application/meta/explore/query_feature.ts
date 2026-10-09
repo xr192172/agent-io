@@ -33,6 +33,7 @@
  *   templates        → list_templates   {}
  *   simulation_state → get_simulation_state { feature }
  *   diff             → diff_features    { feature_a, feature_b }
+ *   tag              → 功能标记（人给文件节点的"隶属某功能"标签）{ feature, tag? } —— 给 tag=成员+失联；省略=列全部标签
  */
 
 import { getDSLByView, listFeatures as listStoredFeatures } from '../../../infrastructure/storage.js';
@@ -80,7 +81,8 @@ export interface QueryFeatureInput {
     | 'simulation_state'
     | 'diff'
     | 'goals'
-    | 'edge_intents';
+    | 'edge_intents'
+    | 'tag';
   /** feature 名（dsl/nodes/edges/node/decisions/files/file/digest/annotations/approvals/approval_history/snapshots/simulation_state 必填；features/templates 忽略；diff 用 feature_a/feature_b） */
   feature?: string;
   /** node：节点 ID */
@@ -117,6 +119,13 @@ export interface QueryFeatureInput {
   assignee?: string;
   /** approval_history：标注 ID */
   annotation_id?: string;
+  /**
+   * ★ tag：**功能标记名**（2026-10-09，人机共创 MVP）。
+   * 给则返回该 tag 的**成员文件**与**失联成员**；省略则列出本 feature 现有全部 tag（连同成员数）。
+   * ★ 与决策卡上的 `decision.tags`（决策标签）**不是一件事** —— 那是卡自身的分类词，
+   *   这里是"文件隶属哪个功能"的**集合级**标记。
+   */
+  tag?: string;
   /** diff：源 feature */
   feature_a?: string;
   /** diff：目标 feature */
@@ -135,9 +144,9 @@ export interface QueryFeatureResult {
   data?: unknown;
 }
 
-/** DesignDSL 顶层类型未声明 meta（overlay 把结构化目标落进 base meta.goals），读取时按显式类型收窄 */
+/** DesignDSL 顶层类型未声明 meta（overlay 把结构化目标/功能标记落进 base meta），读取时按显式类型收窄 */
 interface DSLWithMeta {
-  meta?: { goals?: OverlayGoal[] };
+  meta?: { goals?: OverlayGoal[]; function_tags?: Record<string, string[]> };
 }
 
 function requireFeature(input: QueryFeatureInput): string {
@@ -1121,6 +1130,76 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
       return {
         message: [`feature "${dsl.feature}" 边级意图 ${edges.length} 条`, '', ...lines].join('\n'),
         data: edges.map((e) => ({ id: e.id, from: e.from, to: e.to, reason: e.intent?.reason, boundary: e.intent?.boundary })),
+      };
+    }
+
+    // ── ★★ 功能标记（人机共创 MVP，2026-10-09）：人给**文件节点**打的「隶属某功能」标签 ──
+    //   ★ 存储**只有一个方向**：tag → 成员文件 rel（`overlay.global.function_tags`；
+    //     `applyOverlay` 投影进 `base.meta.function_tags` ⇒ 本查询读 base 即可）。
+    //   ★ 给 `tag` ⇒ 列出该 tag 的成员 + **失联成员**（成员 rel 在当前 DSL 里找不到任何文件节点）；
+    //     不给 ⇒ 列出本 feature 现有**全部** tag（名字 + 成员数 + 失联数）。
+    //   ★ 失联**不许静默少一个**：改名一个成员文件后，本读数必须变化（命中减一、失联加一）。
+    case 'tag': {
+      const dsl = loadDSL(input);
+      const tags = (dsl as DSLWithMeta).meta?.function_tags ?? {};
+      const names = Object.keys(tags);
+      if (names.length === 0) {
+        return {
+          message:
+            `feature "${dsl.feature}" 暂无功能标记 ${viewTag}` +
+            `（用 edit_dsl 的 op={op:'add',type:'tag',data:{tag,files}} 给文件节点打标）`,
+          data: input.tag ? { tag: input.tag, members: [], found: [], missing: [] } : [],
+        };
+      }
+      // 现存文件节点的 rel 集合（语义层 path ∪ geometry 文件节点 description/id）
+      const filePaths = new Set<string>();
+      for (const f of dsl.semantic?.files ?? []) if (f.path) filePaths.add(f.path);
+      for (const n of dsl.geometry?.nodes ?? []) if (n.type === 'file') filePaths.add(n.description ?? n.id);
+
+      if (!input.tag) {
+        // 不给 tag：列出全部标签（名字 + 成员数 + 失联数）—— 便于发现有哪些标记
+        const sorted = [...names].sort();
+        const lines = sorted.map((t) => {
+          const members = tags[t];
+          const miss = members.filter((m) => !filePaths.has(m)).length;
+          return `  · 「${t}」${members.length} 个成员${miss ? ` · **${miss} 个失联**` : ''}`;
+        });
+        return {
+          message: [`feature "${dsl.feature}" 功能标记 ${names.length} 个 ${viewTag}`, '', ...lines, '', '（查看某标签的成员：加 tag 参数）'].join('\n'),
+          data: sorted.map((t) => ({ tag: t, count: tags[t].length, missing: tags[t].filter((m) => !filePaths.has(m)).length })),
+        };
+      }
+
+      const members = tags[input.tag];
+      if (!members) {
+        return {
+          message: `feature "${dsl.feature}" 无功能标记「${input.tag}」${viewTag}。现有标签：${[...names].sort().join(', ')}`,
+          data: { tag: input.tag, members: [], found: [], missing: [] },
+        };
+      }
+      const found = members.filter((m) => filePaths.has(m));
+      const missing = members.filter((m) => !filePaths.has(m));
+      const lines: string[] = [
+        `══ feature "${dsl.feature}" 功能标记 tag="${input.tag}" ${viewTag} ══`,
+        '',
+        `  成员 ${members.length} 个 · **命中 ${found.length}** · **失联 ${missing.length}**`,
+        '',
+        '  成员（仓库相对路径）：',
+      ];
+      for (const m of found) lines.push(`    ✓ ${m}`);
+      for (const m of missing) lines.push(`    ✗ ${m}  ← **失联**：未匹配到任何文件节点（该成员可能已改名/删除）`);
+      if (missing.length) {
+        lines.push(
+          '',
+          `  ★ 说明（**不许静默**）：上面 ${missing.length} 个成员**不算命中** —— 它们写进标记时的文件路径`,
+          '    在**当前 DSL 里找不到任何文件节点**。这要么是文件被改名/删除，要么是标记时写错了路径。',
+          '    ★ 本读数**可区分**：改名一个成员文件后，它会从"命中"落到"失联"（成员数不变、命中数减一）。',
+        );
+      }
+      lines.push('', '  ★ 存储只有一个方向（tag → 成员）；"这个文件属哪些功能"由**反查**而得，不另存一份。');
+      return {
+        message: lines.join('\n'),
+        data: { tag: input.tag, members, found, missing },
       };
     }
 

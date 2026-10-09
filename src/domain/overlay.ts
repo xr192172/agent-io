@@ -68,6 +68,25 @@ export interface OverlayGlobal {
   storyboard?: unknown;
   /** 结构化目标/方向（缺口④）：全局性设计意图，LLM 开发时作为方向信号读 */
   goals?: OverlayGoal[];
+  /**
+   * ★★★ **功能标记**（人机共创第一块地基，2026-10-09）：人给**文件节点**打的多值标签，
+   * 说它**隶属某功能** —— tag → 成员文件的**仓库相对路径**列表。
+   *
+   * ## 为什么是"一个方向"（判据分叉是本仓头号病）
+   * 只存 **tag → 成员** 这一个方向；"**这个文件属哪些功能**"**反查而得**（遍历各 tag 的成员）。
+   * ★ **绝不两个方向都存** —— 否则两份数据会漂移，且"谁是权威"无解。
+   *
+   * ## 为什么住 `overlay.global`（而不是新造"功能节点"，也不住 base）
+   * · ❌ **不造功能节点**：那是又一个「聚合节点冒充节点」（本仓 2026-10-09 刚清掉的病，见 T93）；
+   * · ❌ **不住 base**：base 可再生成，`import_project` 重建会冲掉人写的标记
+   *   （T75/T77 已踩过：人写的决策一重建就丢，而"overlay 独立保留"正是它存在的全部理由）；
+   * · ✅ 它是**feature 级**意图（不挂在单个锚点上）⇒ 与 `goals`/`title` 同族，住 `global`。
+   *
+   * ## 读到哪
+   * `applyOverlay` 把它投影进 base 的 `meta.function_tags`（与 `goals → meta.goals` 同款），
+   * 让 `get_dsl` 当下即可读到；`mergeTagsIntoOverlay` 在每次改动收口时把 base 的标记同步回来。
+   */
+  function_tags?: Record<string, string[]>;
 }
 
 /** 结构化目标/方向（缺口④）：全局性设计意图，落库进 base meta.goals */
@@ -323,13 +342,15 @@ export function applyOverlay(base: DesignDSL, overlay: DesignOverlay): DesignDSL
     if (g.title) out.title = g.title;
     if (g.theme) out.theme = g.theme;
     if (g.user_nodes?.length) out.user_nodes = g.user_nodes;
-    if (g.storyboard !== undefined || g.goals !== undefined) {
+    if (g.storyboard !== undefined || g.goals !== undefined || g.function_tags !== undefined) {
       const rec = out as unknown as { meta?: Record<string, unknown> };
       rec.meta = {
         ...(rec.meta ?? {}),
         ...(g.storyboard !== undefined ? { storyboard: g.storyboard } : {}),
         // 结构化目标（缺口④）：落进 meta.goals 供 LLM 作方向信号读；overlay 显式给了 goals（含空数组清空）就如实写入
         ...(g.goals !== undefined ? { goals: g.goals } : {}),
+        // 功能标记（人机共创）：tag → 成员文件 rel；落进 base.meta.function_tags 让 get_dsl 当下可读
+        ...(g.function_tags !== undefined ? { function_tags: g.function_tags } : {}),
       };
     }
   }
@@ -371,9 +392,11 @@ export function seedOverlayFromDsl(dsl: DesignDSL | null): DesignOverlay {
   if (dsl?.title) global.title = dsl.title;
   if (dsl?.theme) global.theme = dsl.theme;
   if (dsl?.user_nodes) global.user_nodes = dsl.user_nodes;
-  const meta = (dsl as unknown as { meta?: { storyboard?: unknown; goals?: OverlayGoal[] } } | null)?.meta;
+  const meta = (dsl as unknown as { meta?: { storyboard?: unknown; goals?: OverlayGoal[]; function_tags?: Record<string, string[]> } } | null)?.meta;
   if (meta?.storyboard) global.storyboard = meta.storyboard;
   if (meta?.goals && meta.goals.length > 0) global.goals = meta.goals;
+  // 功能标记：首次迁移把 base 上已有的标记铺回 overlay（此后以 overlay 为权威）
+  if (meta?.function_tags && Object.keys(meta.function_tags).length > 0) global.function_tags = meta.function_tags;
 
   // 边级意图（缺口③）：base 若已带 edge.intent（上一轮 apply 产物）→ 铺回 overlay，保证迁移/回环不掉
   const edges: Record<string, OverlayEdgeIntent> = {};
@@ -491,6 +514,44 @@ export function mergeDecisionsIntoOverlay(
   if (cleared) notes.push(`**同步清除了 ${cleared} 个决策**（base 上已删，overlay 不许留僵尸决策）`);
 
   return { overlay: { ...ov, anchors }, written, cleared, notes };
+}
+
+/**
+ * ★★★ 把 **base 上的功能标记**（`meta.function_tags`）同步进 overlay.global（2026-10-09，功能标记 MVP）。
+ *
+ * ## 为什么必须要有这一步（与 `mergeDecisionsIntoOverlay` 同款病灶）
+ * 功能标记的写入口在 `edit_dsl`（`type:'tag'`），**只改 base**；而 `import_project` 会**重建 base**
+ * （它"读旧 overlay 再 reconcile 回填"）⇒ **旧 overlay 里本来就没有标记** ⇒ **人写的标记一重建就丢**。
+ * ★ 与 overlay 存在的全部理由直接矛盾（"base 可再生成，overlay 独立保留"）。
+ * ⇒ 每次改完 base，**当场把标记同步过去**（`update_feature.ts` 收口处调用）。
+ *
+ * ## 纪律
+ * 1. ★ **只有一个"标记的家"**：overlay。base 上的 `meta.function_tags` 是**应用结果**
+ *    （`applyOverlay` 回填），不是独立副本 ⇒ 本函数**只从 base 往 overlay 搬**，不回写 base。
+ * 2. ★★ **清除也要同步**：base 上标记被清空（`meta.function_tags` 缺失或空）时，overlay 里那份
+ *    **必须一起清** —— 否则 overlay 会拿着"已经不存在的标记"，下次重建又把它复活（**僵尸标记**）。
+ * 3. ★ **不造空壳**：base 无标记就不在 overlay 里留一个空对象（`undefined` 才是"没有"）。
+ *
+ * ★ 纯函数（与 `seedOverlayFromDsl` 同族：可测、无 IO）；落盘由调用方做。
+ */
+export function mergeTagsIntoOverlay(
+  ov: DesignOverlay,
+  dsl: DesignDSL,
+): { overlay: DesignOverlay; tags: Record<string, string[]> | undefined; written: number; cleared: boolean } {
+  const baseTags = (dsl as unknown as { meta?: { function_tags?: Record<string, string[]> } }).meta?.function_tags;
+  const nextGlobal: OverlayGlobal = { ...(ov.global ?? {}) };
+  const hasTags = !!baseTags && Object.keys(baseTags).length > 0;
+  let written = 0;
+  let cleared = false;
+  if (hasTags) {
+    nextGlobal.function_tags = baseTags;
+    written = Object.keys(baseTags!).length;
+  } else if (nextGlobal.function_tags !== undefined) {
+    delete nextGlobal.function_tags;
+    cleared = true;
+  }
+  const global = Object.keys(nextGlobal).length ? nextGlobal : undefined;
+  return { overlay: { ...ov, global }, tags: nextGlobal.function_tags, written, cleared };
 }
 
 /** 对账统计的通用人类可读行（供报告 / 测试复用） */export function statsLine(stats: ReconcileStats): string {

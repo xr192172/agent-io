@@ -218,8 +218,8 @@ export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
   //   但**导航不点名、README 不点名、router 不点名** ⇒ 我上一轮甚至**提议再造一个 `query=outline`**
   //   （= 重复造已存在的东西）。⇒ 策展文本**少点名**的代价，比多写几个字贵得多。
   get_dsl:
-    '统一只读入口，query 参数查 DSL/features/nodes/edges/file/decisions/digest（一行式认知索引 F/R/A/S —— 想知道"这些文件都是干什么的"先看它）/calls/functions/diff/goals 等 20 种',
-  edit_dsl: '统一写入口，operations 批量增删改节点/边/文件/API/binding/status',
+    '统一只读入口，query 参数查 DSL/features/nodes/edges/file/decisions/digest（一行式认知索引 F/R/A/S —— 想知道"这些文件都是干什么的"先看它）/calls/functions/diff/goals/tag（功能标记：人给文件节点打的"隶属某功能"标签）等 21 种',
+  edit_dsl: '统一写入口，operations 批量增删改节点/边/文件/API/binding/status/tag（功能标记：给文件节点打"隶属某功能"标签）',
   manage_feature: 'feature 生命周期：create/clone/template/list/delete',
   render_design: '渲染并保存设计图（完整 DSL 模式产物）',
   render_brickwork: '渲染积木墙视图',

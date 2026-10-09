@@ -14,7 +14,7 @@
 
 import { getDSL, saveDSL } from '../../../infrastructure/storage.js';
 // ★★ T75：决策卡必须活过 base 重建 ⇒ 每次 edit_dsl 收口时同步进 overlay
-import { syncDecisionsToOverlay } from '../../../infrastructure/storage_overlay.js';
+import { syncDecisionsToOverlay, syncTagsToOverlay } from '../../../infrastructure/storage_overlay.js';
 import type { EditResult } from './edit_result.js';
 import { addNode, updateNode, deleteNode } from './node_ops.js';
 import type { AddNodeInput, UpdateNodeInput } from './node_ops.js';
@@ -29,7 +29,7 @@ import { submitApproval, reviewAnnotation } from '../../observe/reconcile/approv
 import { saveSnapshot, rollbackSnapshot, deleteSnapshot, saveAutoSnapshot, pruneSnapshots } from '../lifecycle/snapshot.js';
 import { dagLayout, forceLayout, gridAlign } from '../workbench/dag_layout.js';
 import { resetSimulation } from '../lifecycle/simulation.js';
-import type { DiagramStatus } from '../../../domain/types.js';
+import type { DiagramStatus, DesignDSL } from '../../../domain/types.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
 // ─────────────────────────────────────────────────────────────
@@ -45,6 +45,7 @@ export interface FeatureOperation {
    * - snapshot：save（保存快照） / rollback（回滚） / delete（删除快照）
    * - layout：apply（自动布局，data.algo=dag|force|grid）
    * - simulation：reset（重置仿真状态）
+   * - tag：**功能标记**（add=给 files 打 tag / delete=从 tag 移除 files 或删整个 tag；data.tag 必填）
    */
   op:
     | 'add'
@@ -69,6 +70,7 @@ export interface FeatureOperation {
    * - snapshot：版本快照（op=save data.label/description；op=rollback/delete data.snapshot_id）
    * - layout：自动布局（op=apply data.algo=dag|force|grid + 各算法参数）
    * - simulation：仿真（op=reset 重置到初始状态）
+   * - tag：功能标记（op=add/delete，data.tag 必填；data.files = 成员文件（仓库相对路径或文件 id），省略 = 只动这个 tag 自身）
    */
   type:
     | 'node'
@@ -81,7 +83,8 @@ export interface FeatureOperation {
     | 'approval'
     | 'snapshot'
     | 'layout'
-    | 'simulation';
+    | 'simulation'
+    | 'tag';
   /** 目标 ID：node_id / edge_id / file_id（api 类型为所属 file_id）；annotation/approval/snapshot/layout/simulation 用 data 传参，本字段可空 */
   id?: string;
   /** 操作数据（add/update/move 时按目标类型提供对应字段） */
@@ -204,7 +207,19 @@ export function updateFeature(input: UpdateFeatureInput): TouchedProduct<EditRes
   //   ★ 没有它：`import_project` 重建 base 时 **人写的决策（含验收标准）一重建就丢** ——
   //     而"base 可再生成、overlay 独立保留"正是 overlay 存在的全部理由。
   //   ★ 失败不许吞：同步失败就让整个 `edit_dsl` 失败（否则会安静地回到"决策会丢"的老状态）。
-  syncDecisionsToOverlay(input.feature, getDSL(input.feature) ?? ({ feature: input.feature, geometry: { nodes: [] } } as never));
+  // ★★★ 2026-10-09（功能标记 MVP）：**同一收口**把 base 上的**功能标记**（`meta.function_tags`）
+  //   也同步进 `overlay.global.function_tags` —— 同款理由（标记也必须活过 base 重建）。
+  //   ★★ **读不到 DSL 就抛，绝不 `?? 空 DSL`**：空 DSL 的 `meta.function_tags` 缺失会被
+  //     `mergeTagsIntoOverlay` 读成"标记已清空"⇒ **把 overlay 里的标记静默抹掉**（破坏性静默降级）。
+  const dslNow = getDSL(input.feature);
+  if (!dslNow) {
+    throw new Error(
+      `edit_dsl 已写入，但**回读不到** feature "${input.feature}" 的 DSL ⇒ 无法把决策/功能标记同步进 overlay。` +
+        `（★ 不静默降级成空 DSL：那会把 overlay 里的标记**当成"已被清空"而抹掉**）`,
+    );
+  }
+  syncDecisionsToOverlay(input.feature, dslNow);
+  syncTagsToOverlay(input.feature, dslNow);
   return withTouched(r, touchedOf(input));
 }
 
@@ -253,6 +268,8 @@ function applyOperation(feature: string, op: FeatureOperation): EditResult {
       return applyLayoutOp(feature, op);
     case 'simulation':
       return applySimulationOp(feature, op);
+    case 'tag':
+      return applyTagOp(feature, op);
     default:
       throw new Error(`未知操作类型: ${op.type satisfies never}`);
   }
@@ -420,6 +437,138 @@ function applySimulationOp(feature: string, op: FeatureOperation): EditResult {
   if (op.op !== 'reset') throw new Error(`simulation 不支持操作: ${op.op}`);
   const r = resetSimulation({ feature });
   return { message: r.message, feature };
+}
+
+// ─────────────────────────────────────────────────────────────
+// tag：功能标记（人给文件节点打的"隶属某功能"标签）
+//   ★ 形态的唯一住处是 `domain/overlay.ts` 的 `OverlayGlobal.function_tags`（tag → 成员 rel 单向）。
+//   ★ 本 op **只改 base**（meta.function_tags）；收口处 `updateFeature` 再同步进 overlay。
+// ─────────────────────────────────────────────────────────────
+
+/** DSL 的 `meta` 是**无类型袋子**（goals/storyboard 已住此处）；这里只对 function_tags 做最小收窄 */
+interface DslWithMeta {
+  meta?: { function_tags?: Record<string, string[]> } & Record<string, unknown>;
+}
+
+/**
+ * 把入参里的文件标识（**仓库相对路径** / 文件节点 id / 语义文件 id）归一成**仓库相对路径**。
+ * ★ 匹配不到的不**静默丢弃** —— 由调用方逐条列出并抛错。
+ */
+function resolveMemberFiles(dsl: DesignDSL, inputs: string[]): { resolved: string[]; unresolved: string[] } {
+  const norm = (s: string) => s.replace(/\\/g, '/').replace(/^\.\//, '');
+  const byKey = new Map<string, string>();
+  for (const f of dsl.semantic?.files ?? []) {
+    if (f.path) byKey.set(norm(f.path), f.path);
+    if (f.id && f.path) byKey.set(f.id, f.path);
+  }
+  for (const n of dsl.geometry?.nodes ?? []) {
+    if (n.type !== 'file') continue;
+    const rel = n.description ?? n.id;
+    byKey.set(n.id, rel);
+    if (n.description) byKey.set(norm(n.description), rel);
+  }
+  const resolved: string[] = [];
+  const unresolved: string[] = [];
+  for (const raw of inputs) {
+    const hit = byKey.get(raw) ?? byKey.get(norm(raw));
+    if (hit === undefined) unresolved.push(raw);
+    else if (!resolved.includes(hit)) resolved.push(hit);
+  }
+  return { resolved, unresolved };
+}
+
+function applyTagOp(feature: string, op: FeatureOperation): EditResult {
+  if (op.op !== 'add' && op.op !== 'delete') {
+    throw new Error(`tag 不支持操作: ${op.op}（只支持 add / delete）`);
+  }
+  const data = op.data ?? {};
+  const tag = typeof data.tag === 'string' ? data.tag.trim() : '';
+  if (!tag) throw new Error('tag 操作需要 data.tag（功能标记名，非空字符串）');
+
+  const dsl = getDSL(feature);
+  if (!dsl) throw new Error(`feature "${feature}" 不存在`);
+  const rec = dsl as unknown as DslWithMeta;
+  const tags: Record<string, string[]> = { ...(rec.meta?.function_tags ?? {}) };
+  const rawFiles = Array.isArray(data.files)
+    ? data.files.map((x) => String(x)).filter((s) => s.length > 0)
+    : [];
+
+  let msg: string;
+  if (op.op === 'add') {
+    if (rawFiles.length === 0) {
+      if (tag in tags) {
+        msg = `标签「${tag}」已存在（现 ${tags[tag].length} 个成员）；本次未给 data.files ⇒ 只确认标签存在，成员不变`;
+      } else {
+        tags[tag] = [];
+        msg = `已登记空标签「${tag}」（未给 data.files ⇒ 成员待补）`;
+      }
+    } else {
+      const { resolved, unresolved } = resolveMemberFiles(dsl, rawFiles);
+      if (unresolved.length) {
+        throw new Error(
+          `tag.add 有 ${unresolved.length} 个文件匹配不到任何文件节点：${unresolved.join(' / ')}` +
+            ` ⇒ 拒绝打标（不静默略过）。请核对**仓库相对路径**或文件节点 id（见 get_dsl query=files）。`,
+        );
+      }
+      const cur = tags[tag] ?? [];
+      const merged = [...cur];
+      const added: string[] = [];
+      for (const r of resolved) {
+        if (!merged.includes(r)) {
+          merged.push(r);
+          added.push(r);
+        }
+      }
+      tags[tag] = merged;
+      msg =
+        `标签「${tag}」加入 ${added.length} 个成员（现共 ${merged.length} 个）` +
+        (added.length ? `：${added.join(', ')}` : '（均已在标签内，无变化）');
+    }
+  } else {
+    if (!(tag in tags)) throw new Error(`tag.delete 的标签「${tag}」不存在`);
+    if (rawFiles.length === 0) {
+      const n = tags[tag].length;
+      delete tags[tag];
+      msg = `已删除整个标签「${tag}」（连带 ${n} 个成员）`;
+    } else {
+      const cur = tags[tag];
+      const curSet = new Set(cur);
+      const norm = (s: string) => s.replace(/\\/g, '/').replace(/^\.\//, '');
+      const toRemove = new Set<string>();
+      const notMember: string[] = [];
+      for (const raw of rawFiles) {
+        // 当前文件节点解析到的 rel（可能 undefined —— 例如该成员文件已改名/删除）
+        const viaFile = resolveMemberFiles(dsl, [raw]).resolved[0];
+        // ★ 先认**存储里的成员串本身**（失联成员也要能被清掉），再认"当前文件解析出的 rel"
+        const hit = [raw, norm(raw), ...(viaFile ? [viaFile] : [])].find((c) => curSet.has(c));
+        if (hit === undefined) notMember.push(raw);
+        else toRemove.add(hit);
+      }
+      if (notMember.length) {
+        throw new Error(
+          `tag.delete 有 ${notMember.length} 个文件不是标签「${tag}」的成员：${notMember.join(' / ')}` +
+            ` ⇒ 拒绝删除（不静默略过）。当前成员：${cur.join(', ') || '(空)'}`,
+        );
+      }
+      const remaining = cur.filter((r) => !toRemove.has(r));
+      if (remaining.length) {
+        tags[tag] = remaining;
+        msg = `标签「${tag}」移除 ${toRemove.size} 个成员（剩 ${remaining.length} 个）`;
+      } else {
+        delete tags[tag];
+        msg = `标签「${tag}」移除 ${toRemove.size} 个成员后已空 ⇒ 一并删除该标签`;
+      }
+    }
+  }
+
+  // 写回 base 的 meta.function_tags（保留 meta 其它键；空则清掉，不留空壳）
+  const meta: Record<string, unknown> = { ...(rec.meta ?? {}) };
+  if (Object.keys(tags).length > 0) meta.function_tags = tags;
+  else delete meta.function_tags;
+  if (Object.keys(meta).length > 0) rec.meta = meta;
+  else delete rec.meta;
+  saveDSL(dsl);
+  return { message: `[tag] ${msg}`, feature };
 }
 
 // ─────────────────────────────────────────────────────────────

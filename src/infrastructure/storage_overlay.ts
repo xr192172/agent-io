@@ -13,7 +13,7 @@ import type {
   DesignOverlay,
   ReconcileStats,
 } from '../domain/overlay.js';
-import { reconcileOverlay, buildCandidates, buildEdgeCandidates, seedOverlayFromDsl, applyOverlay, statsLine, mergeDecisionsIntoOverlay } from '../domain/overlay.js';
+import { reconcileOverlay, buildCandidates, buildEdgeCandidates, seedOverlayFromDsl, applyOverlay, statsLine, mergeDecisionsIntoOverlay, mergeTagsIntoOverlay } from '../domain/overlay.js';
 
 function getOverlayFile(feature: string): string {
   if (!/^[a-zA-Z0-9_-]+$/.test(feature)) {
@@ -74,6 +74,29 @@ export function syncDecisionsToOverlay(
   if (a === b) return { changed: false, written: r.written, cleared: r.cleared, file: null, notes: r.notes };
   const file = saveOverlay(r.overlay);
   return { changed: true, written: r.written, cleared: r.cleared, file, notes: r.notes };
+}
+
+/**
+ * ★★★ 把 base 上的**功能标记**（`meta.function_tags`）同步进 `overlay.global.function_tags` 并落盘
+ * （2026-10-09，功能标记 MVP）。
+ *
+ * ★ **纯搬运在 `domain/overlay.ts` 的 `mergeTagsIntoOverlay`**（那里可测、无 IO）；
+ *   本函数只负责 **读旧的 + 落盘 + 报账**（IO 住 infrastructure，是本仓分层）。
+ * ★ **没有变化就不写盘**（避免无谓 churn 与 mtime 抖动）。
+ * ★ 返回 `changed=false` 时**不要**把它当成"失败了" —— 那是"本来就已经同步过"。
+ */
+export function syncTagsToOverlay(
+  feature: string,
+  dsl: DesignDSL,
+): { changed: boolean; written: number; cleared: boolean; file: string | null } {
+  const before = loadOverlay(feature);
+  const ov: DesignOverlay = before ?? { version: 1, feature, anchors: {} };
+  const r = mergeTagsIntoOverlay(ov, dsl);
+  const a = JSON.stringify(before?.global?.function_tags ?? null);
+  const b = JSON.stringify(r.overlay.global?.function_tags ?? null);
+  if (a === b) return { changed: false, written: r.written, cleared: r.cleared, file: null };
+  const file = saveOverlay(r.overlay);
+  return { changed: true, written: r.written, cleared: r.cleared, file };
 }
 
 /**
