@@ -457,7 +457,9 @@ export const DESIGN_TOOLS: ToolDef[] = [
     noAutoFresh: true, // 自己做全量导入，前置保鲜纯属浪费
     description:
       '扫描代码项目（.go/.ts/.py/.js 等）生成 DSL：文件节点 + 调用边 + 符号/API 语义层，写入 agent-io 存储。' +
-      '默认生成设计 DSL；live_only=true 只生成"实际视图"快照（live/ 目录，供 🎭设计/⚡实际 双视图对比）。' +
+      '★ **这一个命令干两件事** —— ① 刷新"**实际**"（扫描结果）；② **重建"设计"**（结构来自扫描，再把 overlay 的意图贴回去）。' +
+      '· 只想刷新实际、**不动设计** ⇒ `live_only=true`（设计被完整保住；★ "有设计就不动、只对比"就该用这个）；' +
+      '· 重建**会抹掉"扫描产不出"的节点**（人手加的那些）⇒ 因此**默认拒绝**，除非显式 `allow_design_drop=true`（丢了什么会被报出来）。' +
       'design_mode=true 按目录聚合成模块节点；functional_mode=true 按调用图做功能性聚合（优先级高于 design_mode）。' +
       '导入后可用 render_design 渲染可视化，或 diff_views 对比设计 vs 实际。',
     inputSchema: {
@@ -470,7 +472,18 @@ export const DESIGN_TOOLS: ToolDef[] = [
       live_only: z
         .boolean()
         .optional()
-        .describe('true=仅生成实际视图快照（写 live/，不覆盖设计 DSL），默认 false=写设计 DSL'),
+        .describe(
+          'true=**只刷新"实际"（live/），完全不碰设计 DSL**（默认 false=重建设计）。' +
+            '★ 这就是"设计已经存在 ⇒ 别动它，只对比"的那条路；重建是另一件事。',
+        ),
+      allow_design_drop: z
+        .boolean()
+        .optional()
+        .describe(
+          '★ 只在重建设计时生效（T77）。默认 false ⇒ 若本次重建会**抹掉"扫描产不出"的节点**（人手加的那些），' +
+            '**直接拒绝并列出它们**。true ⇒ 允许丢，但**丢掉了什么会在输出里报出来**。' +
+            '★ 为什么默认拒绝：破坏性操作不该是"默认且静默"的（本仓先例：`archive` 拒重复归档、`split_stage` 默认 dry-run）。',
+        ),
       live_dir: z.string().optional().describe('live_only 时实际 DSL 归属的项目根（默认 dataHome）'),
       gen_roles: z
         .boolean()

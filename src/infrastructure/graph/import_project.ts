@@ -62,6 +62,13 @@ export interface ImportProjectInput {
    */
   live_only?: boolean;
   /**
+   * ★ 可选（T77）：**只在重建设计时生效**。
+   * 默认 false ⇒ 若本次重建会**抹掉"扫描产不出"的节点**（人手加的那些，判据见实现处），
+   * **直接拒绝并列出它们**；true ⇒ 允许丢，但丢掉了什么会在输出里报出来。
+   * ★ 为什么默认拒绝：破坏性操作不该是"默认且静默"的。
+   */
+  allow_design_drop?: boolean;
+  /**
    * 可选：live_only 时实际 DSL 归属的项目根（默认 dataHome）。
    * watch_project 监听任意项目时传 project_dir，使实际 DSL 与该项目 cache.db 同目录归位。
    */
@@ -1245,6 +1252,8 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
 
     let roleNote: string | null = null;
     let overlayNote: string | null = null;
+    // ★ T77：重建时"丢掉了哪些扫描产不出的节点"——**丢了就要说**，不许静默（空 = 没丢）
+    let designDropNote: string | null = null;
     // ★★★ 2026-10-09（T75）：**合并与落盘挪到流程末尾**（见下面 `saveDSL(designDsl)` 那处）。
     //   原因：这里曾经"合并 + `saveDSL(designDsl)`"一次，**末尾又 `saveDSL(layered)` 一次**
     //   ⇒ 第二次用**未合并的 base 覆盖**了合并结果 ⇒ **overlay 里的决策/意图全被冲掉**。
@@ -1299,6 +1308,34 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
     if (input.live_only) {
       saveLiveFeature(layered, input.live_dir);
     } else {
+      // ★★★ 2026-10-09（T77 落地）：**重建设计会抹掉"扫描产不出"的节点** ⇒ 先算差集，非空就**拒绝**。
+      //   为什么必须拦：实测（2026-10-09）手工 `edit_dsl` 加的节点 `node_manual_1` 一重建就**消失**，
+      //   且 overlay 里**毫无痕迹** —— 因为 `user_nodes` 是"新功能构想"，**代码里没有"人手加的结构"的登记处**。
+      //   ★ 判据：**"扫描产不出"= 旧 base 里有、而本次扫描结果里没有、且 id 不是扫描命名 `dir_`/`file_` 的节点**。
+      //     ⇒ 「文件被删掉」这种**合法**消失不会被误拦（它的 id 是 `file_`）。
+      //   ★ 破坏性操作**不该是默认且静默**的（本仓先例：`archive` 拒重复归档、`split_stage` 默认 dry-run）。
+      //   ⇒ 要真重建，显式给 `allow_design_drop=true`，并且**丢掉了什么会被报出来**。
+      const prevDesign = getDSL(layered.feature);
+      if (prevDesign) {
+        const nextIds = new Set((layered.geometry?.nodes ?? []).map((n) => n.id));
+        const nonScanned = (prevDesign.geometry?.nodes ?? [])
+          .map((n) => n.id)
+          .filter((id) => !/^(dir|file)_/.test(id));
+        const willDrop = nonScanned.filter((id) => !nextIds.has(id)).sort();
+        if (willDrop.length && input.allow_design_drop !== true) {
+          throw new Error(
+            `拒绝重建设计 DSL：本次重建会**抹掉 ${willDrop.length} 个"扫描产不出的"节点**（多半是人手加的）：\n` +
+              willDrop.slice(0, 20).map((id) => `  · ${id}`).join('\n') +
+              (willDrop.length > 20 ? `\n  …另有 ${willDrop.length - 20} 个` : '') +
+              `\n⇒ 三选一：① 只想刷新"实际"、不动设计 ⇒ 传 \`live_only=true\`（**设计会被完整保住**）；` +
+              `② 确定要放弃这些节点 ⇒ 传 \`allow_design_drop=true\`；` +
+              `③ 想留住它们 ⇒ 先手工把它们记进设计（或等"人手结构的登记处"落地）。`,
+          );
+        }
+        if (willDrop.length) {
+          designDropNote = `★ 本次重建**丢掉了 ${willDrop.length} 个扫描产不出的节点**（已显式允许）：${willDrop.slice(0, 10).join(', ')}${willDrop.length > 10 ? ' …' : ''}`;
+        }
+      }
       // ★★★ 2026-10-09（T75）：**base 只在这里落一次盘，且必须落"合并后"的那份**。
       //   设计层 overlay 增量保留：真相刷新只替换 base，设计意图（决策/标注/user_node/分镜）
       //   按稳定锚点保留/迁移/孤儿/标过期（`mergeDesignLayer` 负责）。
@@ -1337,7 +1374,12 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       skipped.length > 0 ? `跳过/截断:\n  - ${skipped.join('\n  - ')}` : null,
       roleNote ? `职责标题: ${roleNote}` : null,
       overlayNote ? `设计层 overlay: ${overlayNote}` : null,
-      `下一步: render_design 渲染预览，或 get_dsl 查看/修改。`,
+      // ★ T77：重建丢掉了什么，**明确报出来**（不静默）
+      designDropNote,
+      input.live_only
+        ? '下一步: render_design 渲染预览，或 get_dsl 查看/修改。（★ live_only=true ⇒ **设计 DSL 未被触碰**）'
+        : '下一步: render_design 渲染预览，或 get_dsl 查看/修改。' +
+            '（★ 本次**重建了设计 DSL**：结构来自扫描；要只刷新"实际"请用 `live_only=true`）',
     ].filter(Boolean).join('\n');
 
     return {
