@@ -1008,6 +1008,20 @@
       ⇒ **判据**：`CHAIN_EDGES` 里出现**至少一条 design 线**的 `verified` 对象边
         （现在 **0** —— 与我早先那条"design 线作上下游各 0"一致）。
       ⇒ ★ 依赖：T54（接续的执行器已就位）。★ 与 T78/T79 同一族：**"能不能接上"决定"编排里有没有它"**。
+      ⇒ ★★★ **2026-10-09 形状已定（读数定证，仍不动手 —— 用户说"不急"）**：
+        · **消费者普查**：**16 个工具**要"文件 / 文件列表"（`file` / `files` / `renames` / `change_points` / `targets`）
+          ⇒ **"作用面"有大量下游** ⇒ 加这个锚点**有依据**（不是凭感觉造词）。
+        · **为什么不能复用既有键**：`written_files` 的语义是「**被写入/改动**的文件」
+          （词表原文 + 只列落盘后仍存在的）—— 而 design 线**没写任何文件**（`get_dsl`/`consistency_check` 是只读）
+          ⇒ **语义不符，硬塞就是撒谎**；`file`（单数）语义是"**一个**定义文件"（来自 `find_references`）⇒ 也不符。
+        · ⇒ **选定 (a) 的窄版本**：新增 **`Touched.scope_files?: string[]`**，语义 =「**被框定/被审阅的作用面**」，
+          **只读工具也能产**（这是它与 `written_files` 的分界，必须写进词表注释）。
+        · ★ **零新算**：`get_dsl query=scope` 的产物**已经含 `paths`**（`ResolvedScope.paths`）
+          ⇒ 只需在 `get_dsl` 的 `touchedOf` 里**映射**成 `scope_files`，**不新造任何解析**。
+        · 接着加边并**真跑验**：`get_dsl.scope_files → edit_code.file`（`pick`）/
+          `→ move_symbol.file`（`pick`）/ `→ rename_symbols.renames[].file`（`pick`）…
+          ★ `edit_code.file` 是**单个**，所以用 **`pick`**（由调用方选一片）——**不替他选**。
+        ⇒ **判据不变**：`CHAIN_EDGES` 里出现**至少一条 design 线**的 `verified` 对象边（现在 0）。
 
 - [ ] **T82 ★★ 「面」的名单该由**链**派生，去掉手写那一半（用户 2026-10-09 提出："不好管理"）**
       *(核实：2026-10-09 实测 —— `composed` 面 = 手写 `direct`(9) ∪ 派生链(5)。*
