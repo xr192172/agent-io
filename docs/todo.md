@@ -956,20 +956,6 @@
 
 ---
 
-- [ ] **T80 ★★★ `get_dsl query=calls` **恒空**（id 约定不同源）；且它的错误提示**把责任推给了索引**（2026-10-09 T79 顺手实测抓到）**
-      *(核实：2026-10-09 实测 —— 夹具里索引**明明有** `call | src/format.ts#total → src/math.ts#add | L3`；
-       而 `get_dsl {query:"calls", feature, file_id:"file_src_format_ts", project_dir}` 返回：*
-       *「feature "t79" 文件 "src/format.ts" **无调用关系数据**（cache.db 中可能尚未索引该文件的调用边）」，`incoming/outgoing` 皆空。)*
-      ⇒ **根因**：`queryFileCalls`（`application/meta/explore/query_feature.ts:157`）用
-        **DSL 的文件节点 id**（`file_src_format_ts`）拼前缀 `${fileId}#`，
-        而索引 `nodes`/`edges` 里符号 id 用的是**仓库相对路径**（实测 `src/format.ts#total`）⇒ **永远匹配不上**。
-      ⇒ ★★ **比"恒空"更坏的是它的归因**：提示说"可能尚未索引该文件的调用边"——**把责任推给索引使用者**，
-        而真相是它自己拼错了 id。**错误的归因会让人去修错的地方**（这类"误导性诚实"比静默更贵）。
-      ⇒ **形状**：让 id 约定**只有一个来源** —— 要么 `queryFileCalls` 改用路径（与索引一致），
-        要么把"DSL 节点 id ↔ 索引符号 id"的换算收成一处具名函数（★ 现在是**隐含约定**，两边各猜一次）。
-      ⇒ **判据**：上面那个夹具 ⇒ `query=calls` **非空**，且给出 `src/format.ts#total → src/math.ts#add`。
-      ⇒ ★ 顺带说明为什么它与 T54 同族：**"两端各自约定 id"正是"入参端不接"的另一副面孔**。
-
 - [ ] **T69 ★★ 合并形态 S3：上限预算 —— 把 L1 扩成双边 + 配额单点**
       *(核实：2026-10-08 实测我们**只有下限**（`MIN_REASON_CHARS = 6`，见 `reason_validator.ts:73`），
        **人写文本无上限**；而 AOCI 是 `#S quota: C9-8≤600 C7-4≤200 C3-1≤50`（上限，且声明为 machine-contract）。)*

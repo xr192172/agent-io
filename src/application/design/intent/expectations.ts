@@ -182,10 +182,9 @@ export async function judgeExpectations(
           push(it, 'unsupported', bad);
           break;
         }
-        const fileId = p;
-        let outgoing: Array<{ caller: string; callee: string; line: number }> = [];
+                let outgoing: Array<{ caller: string; callee: string; line: number }> = [];
         try {
-          outgoing = queryFileCalls(getProjectCacheDb(root), p, p).outgoing;
+          outgoing = queryFileCalls(getProjectCacheDb(root), p).outgoing;
         } catch (err) {
           push(it, 'unsupported', `读调用边失败（${(err as Error).message}）⇒ 判不了`);
           break;
@@ -195,8 +194,7 @@ export async function judgeExpectations(
         //   （实测：`src/format.ts#total → src/math.ts#add`），
         //   **不是** DSL 的 `file_src_format_ts#total`。
         //   ★ 我初版按 DSL 的 file id 拼 ⇒ 查不到 ⇒ 把"已实现"判成 fail（**假红**）。
-        //   ★★ 顺带：`get_dsl query=calls`（`queryFileCalls`）拼的正是 DSL 的 file id
-        //     ⇒ **那条路一直是查不到东西的**（独立缺陷，已单独记账）。
+        //   ★★ 顺带修掉了 `get_dsl query=calls`（同一个拼错 id 的根因，见 T80）。
         const callerId = `${p}#${e.symbol}`;
         const mine = outgoing.filter((x) => x.caller === callerId);
         // ★★ 守卫（防**假绿**，但不能变成假红）：只有当**整个索引里一条调用边都没有**时，

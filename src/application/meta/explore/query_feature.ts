@@ -151,13 +151,21 @@ function loadDSL(input: QueryFeatureInput) {
   return dsl;
 }
 
-/** 查询 cache.db 中指定文件的调用关系
+/**
+ * 查询 cache.db 中指定文件的调用关系
  *  ★ 2026-10-09（T79）：**导出**给验收判据复用（检查项 `call-exists`）——
- *  调用边的读取逻辑只此一处，别在别处再写一份 SQL。 */
-export function queryFileCalls(db: Database, fileId: string, relPath: string): { incoming: Array<{ caller: string; callee: string; line: number; cross: boolean }>; outgoing: Array<{ caller: string; callee: string; line: number; cross: boolean }> } {
-  // 前缀匹配：fileId 是文件节点 ID（如 "file_src_tools_a_ts"），
-  // 符号节点 ID 为 "file_rel#SymbolName"，用 fileId 前缀匹配 source/target
-  const prefix = `${fileId}#`;
+ *  调用边的读取逻辑只此一处，别在别处再写一份 SQL。
+ *
+ *  ★★★ 2026-10-09（T80）**修正 id 约定 —— 这个函数此前一直是查不到东西的**：
+ *   它原来用 `${fileId}#` 作前缀，而 `fileId` 是 **DSL 的文件节点 id**（如 `file_src_format_ts`）；
+ *   但索引 `nodes` / `edges` 里符号 id 用的是 **仓库相对路径**（实测 `src/format.ts#total`）
+ *   ⇒ **前缀永远匹配不上** ⇒ `query=calls` 恒空，而它的提示还把责任推给"索引没建"。
+ *   ⇒ 现在统一用 **`relPath`**（与索引同源）。★ 两个 id 空间**不同源**这件事，
+ *     正是"两端各自约定 id"那类病的又一例（与 T54「入参端不接」同族）。
+ */
+export function queryFileCalls(db: Database, relPath: string): { incoming: Array<{ caller: string; callee: string; line: number; cross: boolean }>; outgoing: Array<{ caller: string; callee: string; line: number; cross: boolean }> } {
+  // 前缀匹配：符号节点 ID 形如 "<仓库相对路径>#<SymbolName>"（★ 实测，不是 DSL 的文件节点 id）
+  const prefix = `${relPath}#`;
 
   // 入调用：本文件符号被其他文件调用（target 以本文件前缀开头）
   const incoming = db
@@ -201,14 +209,14 @@ function symbolNameFromId(nodeId: string): string {
 
 /** 将符号节点 ID 解析为来源文件路径（"file_rel#SymbolName" → "rel" 或 "file_rel" → "rel"） */
 function filePathFromId(nodeId: string): string {
+  const hash = nodeId.lastIndexOf('#');
+  const body = hash === -1 ? nodeId : nodeId.slice(0, hash);
   const prefix = 'file_';
-  if (!nodeId.startsWith(prefix)) return nodeId;
-  const afterPrefix = nodeId.slice(prefix.length);
-  const hash = afterPrefix.lastIndexOf('#');
-  const raw = hash === -1 ? afterPrefix : afterPrefix.slice(0, hash);
-  // 反 sanitize：_ 恢复为路径分隔符（import_project 中 sanitize 把非 [a-zA-Z0-9_-] 替换为 _）
-  // 但这是不可逆的，只能展示原始 nodeId
-  return raw;
+  // ★ T80：索引里的符号 id 是 **`<仓库相对路径>#<符号名>`** ⇒ 取 `#` 之前**就是精确路径**，直接用。
+  if (!body.startsWith(prefix)) return body;
+  // 兼容 DSL 那一侧的旧 id 空间（`file_<sanitize(rel)>`）：★ 反 sanitize **不可逆**（`_` 既可能是
+  // 路径分隔符也可能本来就在名字里）⇒ 只能原样展示，别假装能还原。
+  return body.slice(prefix.length);
 }
 
 /** 保序去重（派生视图内部折叠重复项；不引入新判据） */
@@ -846,11 +854,16 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
         );
       }
 
-      const { incoming, outgoing } = queryFileCalls(db, input.file_id, file.path);
+      const { incoming, outgoing } = queryFileCalls(db, file.path);
 
       if (incoming.length === 0 && outgoing.length === 0) {
+        // ★ T80：**别再把它归因成"索引没建"** —— 索引在不在是另一回事（可用 index_integrity 查）。
+        //   这里能负责说清的只有："**在本索引里**，该文件确实没有出/入调用"。
         return {
-          message: `feature "${dsl.feature}" 文件 "${file.path}" 无调用关系数据 ${viewTag}（cache.db 中可能尚未索引该文件的调用边）`,
+          message:
+            `feature "${dsl.feature}" 文件 "${file.path}" 在本索引里**没有出/入调用记录** ${viewTag}` +
+            `（该文件确实不调用项目内符号、也没被项目内符号调用；若你确信不是这样，` +
+            `先确认索引与源码一致 —— 跑一次 import_project 保鲜，再用 index_integrity 看覆盖度）`,
           data: { incoming: [], outgoing: [] },
         };
       }
