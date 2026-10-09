@@ -459,7 +459,6 @@ export const DESIGN_TOOLS: ToolDef[] = [
       '扫描代码项目（.go/.ts/.py/.js 等）生成 DSL：文件节点 + 调用边 + 符号/API 语义层，写入 agent-io 存储。' +
       '★ **默认永不破坏**：· 设计**不存在** ⇒ 建一份（从实际 fork）；· 设计**已存在** ⇒ **只刷新"实际"，完全不碰设计**' +
       '（这就是"有设计就不用动、只对比"）。要重写设计请显式 `rebuild_design=true`（会抹掉人手加的节点 ⇒ 受 `allow_design_drop` 把关）。' +
-      'design_mode=true 按目录聚合成模块节点；functional_mode=true 按调用图做功能性聚合（优先级高于 design_mode）。' +
       '导入后可用 render_design 渲染可视化，或 diff_views / consistency_check 对比设计 vs 实际。',
     inputSchema: {
       project_dir: z.string().describe('目标项目根目录（绝对路径或相对 cwd）'),
@@ -507,8 +506,6 @@ export const DESIGN_TOOLS: ToolDef[] = [
         .boolean()
         .optional()
         .describe('true=用 LLM 为文件节点生成中文职责标题（默认 false，未配置 LLM 时静默跳过）'),
-      design_mode: z.boolean().optional().describe('true=按目录聚合为模块节点（设计草图模式）'),
-      functional_mode: z.boolean().optional().describe('true=按调用图做功能性聚合（跨目录功能社区，优先于 design_mode）'),
     },
     // ★ 回执通道（2026-09-29）：`wrap` → `wrapData`。[B] `importProject` 的
     //   `ImportProjectResult` 带**机器可读的导入读数**（feature / files_parsed / symbols_found /
@@ -551,9 +548,10 @@ export const DESIGN_TOOLS: ToolDef[] = [
       //   ★★ **来源枚举与口径的唯一住处 = `domain/b_terms.ts` 的 `scope_files.meaning`** ⇒ 本处**不复述**。
       //     ★ 我第一版在这里又列了一遍"作用面 / 差异面"，并写它是"**同一个语义**" —— 两句都错：
       //       ① 复述 = 同一判断住两处（本仓头号病，我当场复发了一次）；
-      //       ② "同一个语义"**有一半是假的**（反伪评审实测）：`get_dsl query=scope` 在 `functional_mode` 下
-      //          给的是**逗号串**（`"src/core/math.ts, src/util/calc.ts"`）、`design_mode` 下给的是**目录**
-      //          （`"src/"`）⇒ 下游硬失败。详见 `chain_wiring.ts` 这条边的「基准警告」。
+      //       ② "同一个语义"**有一半是假的**（反伪评审实测）：聚合模式（`functional_mode` / `design_mode`，
+      //          ★ 2026-10-09 移除：0 使用 + 有害 T101）下 `get_dsl query=scope` 给的是**逗号串**
+      //          （`"src/core/math.ts, src/util/calc.ts"`）/ **目录**（`"src/"`）⇒ 下游硬失败。
+      //          详见 `chain_wiring.ts` 这条边的「基准警告」。
       //       本工具交的**能无条件宣称**的只有：**仓库相对的单个文件路径**列表。
       //   ★ 字段名**零翻译**：`[B]` 的 `ImportProjectResult.scope_files` 就叫这个名字 ⇒ 这里直接搬。
       return {

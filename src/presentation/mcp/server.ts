@@ -54,7 +54,7 @@ const server = new McpServer(
       '\n\n6. 自动布局：edit_dsl(op=apply,type=layout) 一键整理画布（data.algo=dag 拓扑排序 / force 力导向 / grid 网格对齐），避免连线混乱。' +
       '\n\n7. 仿真器：explore_code(action=run_simulation) 批量传入事件验证事件级联和条件触发 → get_dsl（query:"simulation_state"）读取当前状态 → edit_dsl(op=reset,type=simulation) 重置。' +
       '\n   仿真器是事件驱动状态机，不是动画播放器。用于验证"数据流入 → 规则触发 → 状态变化"是否符合预期。' +
-      '\n\n8. 项目导入：import_project 扫描代码项目生成 DSL（文件节点+调用边+符号语义层），design_mode/functional_mode 聚合为设计草图。' +
+      '\n\n8. 项目导入：import_project 扫描代码项目生成 DSL（文件节点+调用边+符号语义层）。' +
       '\n\n9. 单文件体检：explore_code(action=check_monolith) 扫描文件行数，超阈值文件自动做 Louvain 社区发现，给出功能内聚拆分建议（仅建议不改代码）。' +
       '\n\n10. 文件索引优先（Agent 第一性路径）：查/改代码时优先 get_dsl(query:"files",feature) 拿语义文件列表' +
       '（含架构层/API 数/行数，★ 以及**实际符号名** data[].symbols）——' +

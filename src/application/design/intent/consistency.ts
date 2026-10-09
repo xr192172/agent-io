@@ -20,7 +20,7 @@
  *   - consistency：只读检查，生成报告，不修改 DSL
  *
  * 职责归属（对账语义，与三方对比/基线一致）：
- *   - expected_apis 只由设计侧产生（import 设计模式 / scaffold / edit_dsl 决策），
+ *   - expected_apis 只由设计侧产生（import_project / scaffold / edit_dsl 决策），
  *     本工具只读不写
  *   - actual 以实际代码为事实源；报告把「预期缺失」（red）与「实现新增」（blue）
  *     分开，LLM 据此裁决：预期缺失 → 补实现；实现新增 → 回填设计或登记决策卡
@@ -372,7 +372,8 @@ export async function checkConsistency(input: ConsistencyInput): Promise<Consist
   let unexpectedCount = 0;
 
   // ★★★ T97：**线 2（逐文件 vs "人指定的契约"）只在"有文件级条目"时才有对手。**
-  //   聚合模式（functional_mode / design_mode）下 `semantic.files` 为空 ⇒ 这里 0 次迭代，
+  //   `semantic.files` 为空（手工建的 DSL / 旧产物；2026-10-09 前聚合模式 functional_mode / design_mode
+  //   导入的产物，该模式已移除：0 使用 + 有害 T101）⇒ 这里 0 次迭代，
   //   渲染段会用 `noFileEntriesMessage` 如实报「线 2 无内容」（**不是错误、也不是"全过"**）。
   //   ★ 这里**内联**调 `hasFileEntries`（而非复用上面的 `fileEntriesPresent`）：它的返回是**类型谓词**
   //     ⇒ TS 在本 `if` 内把 `dsl.semantic` 收敛为**已定义**，循环内取 `dsl.semantic.files` 无需 `?.` / `?? []`。
@@ -484,8 +485,9 @@ export async function checkConsistency(input: ConsistencyInput): Promise<Consist
   //   它的对手是「**人指定的契约**（`expected_apis`）」，**不是**「代码相对基线变了没」（那是**线 1**）。
   lines.push('【线 2 · 设计（**人指定的契约** `expected_apis`）vs 实现】');
   if (!fileEntriesPresent) {
-    // ★★★ T97：聚合模式（functional_mode / design_mode）**故意**把"文件身份"折叠进模块
-    //   ⇒ 语义层没有逐文件条目 ⇒ **线 2 没有"对手"**（不是"没有差异"）。**这要报告，不是错误。**
+    // ★★★ T97：本 feature 语义层没有逐文件条目（手工建的 DSL / 旧产物；2026-10-09 前聚合模式
+    //   functional_mode / design_mode 导入的产物，该模式已移除：0 使用 + 有害 T101）
+    //   ⇒ **线 2 没有"对手"**（不是"没有差异"）。**这要报告，不是错误。**
     //   ★ 与 `check_status` / `scaffold` 的拒**共用同一条说明**（`noFileEntriesMessage`，唯一住处）。
     lines.push(noFileEntriesMessage(feature));
     lines.push('');

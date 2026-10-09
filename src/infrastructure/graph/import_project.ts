@@ -116,19 +116,6 @@ export interface ImportProjectInput {
    * 浏览器上传导入时由 serve 指定为 .agent-io/projects/<feature>/。
    */
   source_root?: string;
-  /**
-   * 可选：设计模式 — 聚合文件到目录层级，只输出高层模块节点，不输出每个文件。
-   * 用于从现有代码快速生成设计意图 DSL（草图供人后续调整）。默认 false=保留每个文件。
-   * true 时：同一目录下的所有文件聚合为一个模块容器节点，符号和 API 汇总到语义层。
-   */
-  design_mode?: boolean;
-  /**
-   * 可选：功能模式 — 按调用图做【功能性】聚合，而非按目录聚合。
-   * 理想聚合是"业务功能"而非"文件夹"：用文件级 import 边做标签传播，把互相依赖的
-   * 文件聚成功能社区，每个社区 = 一个功能模块节点（可跨目录）。自包含，不依赖 cache.db。
-   * 优先级高于 design_mode（functional_mode 即为一种设计级聚合）。
-   */
-  functional_mode?: boolean;
 }
 
 export interface ImportProjectResult {
@@ -662,386 +649,6 @@ export function layoutGroup(items: LayoutItem[], deps: Array<[string, string]>):
 }
 
 // ─────────────────────────────────────────────────────────────
-// 功能性聚合：按调用图社区划功能模块（functional_mode）
-// ─────────────────────────────────────────────────────────────
-
-/** 文件级标签传播：把互相依赖的文件聚成功能社区。返回 社区 id → 文件 rel 列表 */
-function communityDetectFiles(files: FileEntry[], deps: Array<[string, string]>, maxIter = 20): Map<number, string[]> {
-  const idx = new Map<string, number>();
-  files.forEach((f, i) => idx.set(f.rel, i));
-  const n = files.length;
-  const adj: number[][] = files.map(() => []);
-  for (const [a, b] of deps) {
-    const ia = idx.get(a);
-    const ib = idx.get(b);
-    if (ia === undefined || ib === undefined || ia === ib) continue;
-    adj[ia].push(ib);
-    adj[ib].push(ia);
-  }
-  // 标签传播：初始每个文件自成一派，邻居多数派标签胜出
-  const labels = files.map((_, i) => i);
-  for (let it = 0; it < maxIter; it++) {
-    let changed = false;
-    for (let i = 0; i < n; i++) {
-      const nbrs = adj[i];
-      if (nbrs.length === 0) continue;
-      const cnt = new Map<number, number>();
-      for (const nb of nbrs) {
-        const l = labels[nb];
-        cnt.set(l, (cnt.get(l) ?? 0) + 1);
-      }
-      let best = labels[i];
-      let bestN = -1;
-      for (const [l, c] of cnt) {
-        if (c > bestN || (c === bestN && l < best)) {
-          bestN = c;
-          best = l;
-        }
-      }
-      if (best !== labels[i]) {
-        labels[i] = best;
-        changed = true;
-      }
-    }
-    if (!changed) break;
-  }
-  // 按 label 分组，稳定编号
-  const byLabel = new Map<number, string[]>();
-  files.forEach((f, i) => {
-    const l = labels[i];
-    const arr = byLabel.get(l) || [];
-    arr.push(f.rel);
-    byLabel.set(l, arr);
-  });
-  const out = new Map<number, string[]>();
-  let cid = 0;
-  for (const arr of byLabel.values()) out.set(cid++, arr);
-  return out;
-}
-
-/** 社区默认名：取成员文件里出现最多的首段目录 */
-function communityNameOf(files: string[]): string {
-  const dirCount = new Map<string, number>();
-  for (const f of files) {
-    const d = f.includes('/') ? f.split('/')[0] : '(根)';
-    dirCount.set(d, (dirCount.get(d) ?? 0) + 1);
-  }
-  let best = '(根)';
-  let bestN = 0;
-  for (const [d, n] of dirCount) if (n > bestN) { best = d; bestN = n; }
-  return best;
-}
-
-/** 社区消歧符：取成员文件里出现最多的第二段路径（子目录/文件名），用于区分同顶层目录的多个社区 */
-function communityQualifier(rels: string[]): string {
-  const sub = new Map<string, number>();
-  for (const f of rels) {
-    const parts = f.split('/');
-    const s = parts.length >= 2 ? parts[1] : f.split('.').slice(0, -1).join('.') || f;
-    sub.set(s, (sub.get(s) ?? 0) + 1);
-  }
-  let best = rels[0]?.split('/').pop()?.replace(/\.[a-z]+$/i, '') ?? '?';
-  let bestN = 0;
-  for (const [s, n] of sub) if (n > bestN) { best = s; bestN = n; }
-  return best;
-}
-
-/**
- * skill 级功能性聚合：基于 analyze_monolith 的锚点驱动社区（+ 可选 derive_feature_tree
- * LLM 归并成业务功能），产出功能模块节点 + 社区间依赖边。
- * 每个模块节点聚合其社区成员文件的 API/符号/行数，语义层写入职责描述。
- */
-async function buildFromMonolith(
-  mono: {
-    communities: Array<{ id: number; name: string; files: string[]; est_lines: number; symbol_count: number }>;
-    dependencies: Array<[number, number, number]>;
-  },
-  projectDir: string,
-  parsed: Map<string, { symbols: ExpectedApi[]; nonFuncSymbols: Symbol[]; imports: ParsedImport[] }>,
-  lineCounts: Map<string, number>,
-  genNames: boolean,
-  sanitize: (s: string) => string,
-  moduleId: (cid: number) => string,
-  cacheDb?: Database,
-): Promise<{ nodes: Node[]; edges: Edge[]; semanticFiles: SemanticFile[]; size: { w: number; h: number } }> {
-  // A. 模块分组：LLM 归并成业务功能（3-8 个中文名）；失败/未配置则用社区级
-  let groups: Array<{ id: string; name: string; communities: Array<{ id: number; files: string[] }> }> | null = null;
-  if (genNames) {
-    try {
-      const { deriveFeatureTree } = await import('../analysis/structure/derive_feature_tree.js');
-      const ft = await deriveFeatureTree({ project_dir: projectDir, db: cacheDb, gen_names: true });
-      if (ft.features.length > 0) {
-        groups = ft.features.map((f, i) => ({
-          id: moduleId(i),
-          name: f.name,
-          communities: f.communities.map((c) => ({ id: c.id, files: c.files })),
-        }));
-      }
-    } catch {
-      groups = null;
-    }
-  }
-
-  // 模块 → 成员文件 与 主键
-  const moduleRels = new Map<string, { name: string; rels: string[] }>();
-  if (groups) {
-    for (const g of groups) {
-      const rels = [...new Set(g.communities.flatMap((c) => c.files))].sort();
-      moduleRels.set(g.id, { name: g.name, rels });
-    }
-  } else {
-    for (const c of mono.communities) {
-      moduleRels.set(moduleId(c.id), { name: c.name, rels: c.files });
-    }
-  }
-
-  // 社区 → 模块 id 映射（用于依赖边聚合）
-  const commToModule = new Map<number, string>();
-  if (groups) {
-    for (const g of groups) for (const c of g.communities) commToModule.set(c.id, g.id);
-  } else {
-    for (const c of mono.communities) commToModule.set(c.id, moduleId(c.id));
-  }
-
-  // B. 聚合社区间依赖边 → 模块边
-  const agg = new Map<string, { from: string; to: string; n: number }>();
-  for (const [a, b, w] of mono.dependencies) {
-    const from = commToModule.get(a);
-    const to = commToModule.get(b);
-    if (!from || !to || from === to) continue;
-    const key = `${from}|${to}`;
-    const cur = agg.get(key);
-    if (cur) cur.n += w;
-    else agg.set(key, { from, to, n: w });
-  }
-  const aggDeps: Array<[string, string]> = [...agg.values()].map(({ from, to }) => [from, to]);
-
-  // C. 布局：带社区依赖边做拓扑分列
-  const items: LayoutItem[] = [];
-  for (const [id, m] of moduleRels) {
-    items.push({ id, w: FILE_W * Math.min(Math.max(m.rels.length, 1), 3), h: FILE_H, x: 0, y: 0 });
-  }
-  const content = layoutGroup(items, aggDeps);
-  const contentW = content.w + PAD * 2;
-  const contentH = content.h + PAD * 2 + TITLE_H;
-
-  // D. 生成模块节点 + 语义层
-  const nodes: Node[] = [];
-  const semanticFiles: SemanticFile[] = [];
-  for (const item of items) {
-    const m = moduleRels.get(item.id)!;
-    const containerW = item.w + PAD * 2;
-    const containerH = FILE_H + PAD * 2 + TITLE_H;
-    const x = item.x + MARGIN - PAD;
-    const y = item.y + MARGIN - PAD;
-    const apis: ExpectedApi[] = [];
-    const nonFuncSymbols: Symbol[] = [];
-    for (const r of m.rels) {
-      const p = parsed.get(r);
-      if (p) {
-        apis.push(...p.symbols.slice(0, 50 - apis.length));
-        nonFuncSymbols.push(...p.nonFuncSymbols);
-      }
-    }
-    nodes.push({
-      id: item.id,
-      label: `🧩 ${m.name}`,
-      x: Math.round(x),
-      y: Math.round(y),
-      width: containerW,
-      height: containerH,
-      type: 'module',
-      // ★★★ 2026-10-09（T93）：聚合体的摘要改挂**它自己的几何节点** ⇒ 写进 `title`
-      //   （`geometry.ts:124`：「人话主标题：LLM 生成的职责摘要…渲染端优先展示，label 兜底」）。
-      //   ★ 为什么**不再** `semanticFiles.push`：契约 `semantic.ts:67` 规定 `SemanticFile.path` 是
-      //     **单个目标文件相对路径**（单数）；而这是**模块聚合节点**，只能填 `m.rels.join(', ')`
-      //     （成员列表拼串）⇒ 违约。实害：下游把这逗号串**当路径读源码**（`derive_chain` /
-      //     `consistency_check` 实测硬失败：「源文件不存在，无法读取: …math.ts, src/util/calc.ts」）。
-      title: `${m.name} — 聚合 ${m.rels.length} 个文件 / ${apis.length + nonFuncSymbols.length} 个符号`,
-      style: { ...DIR_STYLE, borderRadius: 8 },
-    });
-  }
-
-  // E. 组装模块边
-  const edges: Edge[] = [];
-  const sorted = [...agg.values()].sort((x, y) => x.from.localeCompare(y.from) || x.to.localeCompare(y.to));
-  for (const { from, to, n } of sorted) {
-    edges.push({
-      id: `dep_${sanitize(from)}_${sanitize(to)}`,
-      from,
-      to,
-      label: n > 1 ? `imports ×${n}` : 'imports',
-      type: 'dashed',
-      style: n > 3 ? { strokeWidth: 2 } : undefined,
-    });
-  }
-
-  return { nodes, edges, semanticFiles, size: { w: contentW, h: contentH } };
-}
-
-/**
- * 功能性聚合布局：每个功能社区 = 一个模块节点，社区间依赖边 = 模块边。
- * 孤立单文件（无依赖边）按顶层目录归并，避免一文件一模块的碎片爆炸。
- *
- * 优先走 skill 级管线：复用 analyze_monolith 锚点社区 + derive_feature_tree LLM 归并
- * （动态 import，隔离 node:sqlite 负载，不污染主链路）。无 cache.db / 无社区时
- * 回退到本文件自包含的朴素标签传播。
- *
- * useSkillPipeline=false：跳过 skill 管线强制走标签传播——积木折叠场景专用
- * （analyze_monolith 自行读盘/读库，会把积木内部文件吸进社区 → 黑盒泄漏；
- * 标签传播只吃传入的 files/fileDeps，外部文件集已在调用方过滤干净）。
- */
-async function buildFunctionalLayout(
-  files: FileEntry[],
-  fileDeps: Array<[string, string]>,
-  parsed: Map<string, { symbols: ExpectedApi[]; nonFuncSymbols: Symbol[]; imports: ParsedImport[] }>,
-  lineCounts: Map<string, number>,
-  projectDir: string,
-  genNames: boolean,
-  cacheDb?: Database,
-  useSkillPipeline = true,
-): Promise<{ nodes: Node[]; edges: Edge[]; semanticFiles: SemanticFile[]; size: { w: number; h: number } }> {
-  const sanitize = (s: string): string => s.replace(/[^a-zA-Z0-9_-]/g, '_');
-  const moduleId = (cid: number): string => `func_${cid}`; // ★ 前缀登记在 SCANNED_ID_PREFIXES
-
-  // 0. skill 级：复用 analyze_monolith（锚点驱动社区）+ derive_feature_tree（LLM 归并业务功能）
-  if (useSkillPipeline) {
-    try {
-      const { analyzeMonolith } = await import('../analysis/structure/analyze_monolith.js');
-      const mono = analyzeMonolith({ project_dir: projectDir, db: cacheDb });
-      if (mono.communities.length > 0) {
-        return await buildFromMonolith(mono, projectDir, parsed, lineCounts, genNames, sanitize, moduleId, cacheDb);
-      }
-    } catch {
-      // 无 cache.db / node:sqlite 不可用 → 回退自包含标签传播
-    }
-  }
-
-  // 1. 社区检测
-  const rawCommunities = communityDetectFiles(files, fileDeps);
-
-  // 2. 合并孤立单文件社区（按顶层目录归并）
-  const edgeFiles = new Set<string>();
-  for (const [a, b] of fileDeps) {
-    edgeFiles.add(a);
-    edgeFiles.add(b);
-  }
-  const merged = new Map<number, string[]>();
-  const fileToMerged = new Map<string, number>();
-  const dirToMerged = new Map<string, number>();
-  let nextId = 0;
-  for (const rels of rawCommunities.values()) {
-    const isIsolated = rels.length === 1 && !edgeFiles.has(rels[0]);
-    if (!isIsolated) {
-      merged.set(nextId, rels);
-      rels.forEach((r) => fileToMerged.set(r, nextId));
-      nextId++;
-      continue;
-    }
-    const r = rels[0];
-    const top = r.includes('/') ? r.split('/')[0] : '(根)';
-    let m = dirToMerged.get(top);
-    if (m === undefined) {
-      m = nextId++;
-      merged.set(m, []);
-      dirToMerged.set(top, m);
-    }
-    merged.get(m)!.push(r);
-    fileToMerged.set(r, m);
-  }
-  // 清理空 bucket（兜底）
-  for (const [id, rels] of [...merged]) if (rels.length === 0) merged.delete(id);
-
-  // 3. 先聚合社区间依赖边（跨社区的文件依赖）——布局需要真实边才能分列排布
-  const agg = new Map<string, { from: string; to: string; n: number }>();
-  for (const [fromRel, toRel] of fileDeps) {
-    const a = fileToMerged.get(fromRel);
-    const b = fileToMerged.get(toRel);
-    if (a === undefined || b === undefined || a === b) continue;
-    const key = `${a}|${b}`;
-    const cur = agg.get(key);
-    if (cur) cur.n++;
-    else agg.set(key, { from: moduleId(a), to: moduleId(b), n: 1 });
-  }
-  const aggDeps: Array<[string, string]> = [...agg.values()].map(({ from, to }) => [from, to]);
-
-  // 4. 布局：每个功能模块一个 item，带社区依赖边做拓扑分列（避免单列纵排高塔）
-  const items: LayoutItem[] = [];
-  const moduleMeta = new Map<number, { rels: string[] }>();
-  for (const [cid, rels] of merged) {
-    items.push({ id: moduleId(cid), w: FILE_W * Math.min(rels.length, 3), h: FILE_H, x: 0, y: 0 });
-    moduleMeta.set(cid, { rels });
-  }
-  const content = layoutGroup(items, aggDeps);
-  const contentW = content.w + PAD * 2;
-  const contentH = content.h + PAD * 2 + TITLE_H;
-
-  // 5. 生成功能模块节点 + 语义层；同名社区（同顶层目录）用消歧符区分
-  const baseNameCount = new Map<string, number>();
-  for (const item of items) {
-    const cid = Number(item.id.replace(/^func_/, ''));
-    const b = communityNameOf(moduleMeta.get(cid)!.rels);
-    baseNameCount.set(b, (baseNameCount.get(b) ?? 0) + 1);
-  }
-  const nodes: Node[] = [];
-  const semanticFiles: SemanticFile[] = [];
-  for (const item of items) {
-    const cid = Number(item.id.replace(/^func_/, ''));
-    const meta = moduleMeta.get(cid)!;
-    const containerW = item.w + PAD * 2;
-    const containerH = FILE_H + PAD * 2 + TITLE_H;
-    const x = item.x + MARGIN - PAD;
-    const y = item.y + MARGIN - PAD;
-    const apis: ExpectedApi[] = [];
-    const nonFuncSymbols: Symbol[] = [];
-    for (const r of meta.rels) {
-      const p = parsed.get(r);
-      if (p) {
-        apis.push(...p.symbols.slice(0, 50 - apis.length));
-        nonFuncSymbols.push(...p.nonFuncSymbols);
-      }
-    }
-    const base = communityNameOf(meta.rels);
-    const label = baseNameCount.get(base)! > 1
-      ? `🧩 ${base} · ${communityQualifier(meta.rels)}`
-      : `🧩 ${base}`;
-    nodes.push({
-      id: moduleId(cid),
-      label,
-      x: Math.round(x),
-      y: Math.round(y),
-      width: containerW,
-      height: containerH,
-      type: 'module',
-      // ★★★ 2026-10-09（T93）：聚合体的摘要改挂**它自己的几何节点** ⇒ 写进 `title`
-      //   （`geometry.ts:124`：「人话主标题…渲染端优先展示，label 兜底」）。
-      //   ★ 为什么**不再** `semanticFiles.push`：契约 `semantic.ts:67` 规定 `SemanticFile.path` 是
-      //     **单个目标文件相对路径**（单数）；而这是**功能聚合（模块）节点**，只能填 `meta.rels.join(', ')`
-      //     （成员列表拼串）⇒ 违约。实害：下游把这逗号串**当路径读源码**（`derive_chain` /
-      //     `consistency_check` 实测硬失败）。
-      title: `${base} — 聚合 ${meta.rels.length} 个文件 / ${apis.length + nonFuncSymbols.length} 个符号`,
-      style: { ...DIR_STYLE, borderRadius: 8 },
-    });
-  }
-
-  // 6. 组装社区间依赖边（按 id 排序保证确定性）
-  const edges: Edge[] = [];
-  const sorted = [...agg.values()].sort((x, y) => x.from.localeCompare(y.from) || x.to.localeCompare(y.to));
-  for (const { from, to, n } of sorted) {
-    edges.push({
-      id: `dep_${sanitize(from)}_${sanitize(to)}`,
-      from,
-      to,
-      label: n > 1 ? `imports ×${n}` : 'imports',
-      type: 'dashed',
-      style: n > 3 ? { strokeWidth: 2 } : undefined,
-    });
-  }
-
-  return { nodes, edges, semanticFiles, size: { w: contentW, h: contentH } };
-}
-
-// ─────────────────────────────────────────────────────────────
 // 主流程
 // ─────────────────────────────────────────────────────────────
 
@@ -1053,25 +660,6 @@ function parsedKindToSymbolKind(kind: string): Symbol['kind'] {
     case 'type': return 'type';
     default: return 'type';
   }
-}
-
-/** 汇总目录下所有符号和 API */
-function aggregateDirSymbols(
-  dir: string,
-  files: FileEntry[],
-  parsed: Map<string, { symbols: ExpectedApi[]; nonFuncSymbols: Symbol[]; imports: ParsedImport[] }>,
-): { apis: ExpectedApi[]; nonFuncSymbols: Symbol[] } {
-  const apis: ExpectedApi[] = [];
-  const nonFuncSymbols: Symbol[] = [];
-  for (const f of files) {
-    const p = parsed.get(f.rel);
-    if (p) {
-      // 每个目录最多保留 50 API，避免过大
-      apis.push(...p.symbols.slice(0, 50 - apis.length));
-      nonFuncSymbols.push(...p.nonFuncSymbols);
-    }
-  }
-  return { apis, nonFuncSymbols };
 }
 
 export async function importProject(input: ImportProjectInput): Promise<ImportProjectResult> {
@@ -1246,16 +834,10 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
     depsByFrom.get(fr)!.push(to);
   }
 
-  // ── 3.5 节点 ID（须在 functional_mode / 目录树 / 边聚合前）──
+  // ── 3.5 节点 ID（须在目录树 / 边聚合前）──
   const sanitize = (s: string): string => s.replace(/[^a-zA-Z0-9_-]/g, '_');
   const fileNodeId = (rel: string): string => `file_${sanitize(rel)}`; // ★ 前缀登记在下面 SCANNED_ID_PREFIXES
   const dirNodeId = (rel: string): string => `dir_${sanitize(rel)}`; // ★ 同上
-  /** 设计模式下：返回文件所属的顶级目录节点 ID（root 的直接子目录） */
-  const topDirNodeId = (rel: string): string => {
-    const slash = rel.indexOf('/');
-    if (slash === -1) return dirNodeId(''); // 根目录文件，聚合到根
-    return dirNodeId(rel.slice(0, slash));
-  };
 
   /**
    * ★★★ **本次扫描能产出哪些 id 前缀** —— ★ **唯一住处**。
@@ -1272,14 +854,16 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
    * ① 把前缀加进本集合；② 在生成它的那行加一句 `★ 前缀登记在 SCANNED_ID_PREFIXES` 注释。
    * ★ **判据（可机检）**：源码里所有 `` `<x>_${…}` `` 形式的 id 模板，其前缀 ⊆ 本集合。
    *   （当前实测：`file_`[本文件 :1251 与 `impact/diff_impact.ts:158`] · `dir_`[:1252] ·
-   *     `func_`[:905] · `doc_`[:1803] —— 四种，全在下面。）
+   *     `doc_`[:1803] —— 三种，全在下面。）
+   * ★ 2026-10-09 移除：`func_`（原 `functional_mode` 功能聚合节点前缀）—— 随该死入参一并删除
+   *   （0 使用 + 有害，T101）⇒ 增删前缀**只改这一行**（这正是本集合存在的意义）。
    */
-  const SCANNED_ID_PREFIXES = ['file_', 'dir_', 'func_', 'doc_'] as const;
+  const SCANNED_ID_PREFIXES = ['file_', 'dir_', 'doc_'] as const;
   const isScannedNodeId = (id: string): boolean => SCANNED_ID_PREFIXES.some((p) => id.startsWith(p));
 
   const plainDeps: Array<[string, string]> = [...fileDeps];
 
-  // 6.0 布局/语义产出（目录路径用；functional_mode 提前产出并返回）
+  // 6.0 布局/语义产出（目录路径用）
   let nodes: Node[] = [];
   let edges: Edge[] = [];
   let semanticFiles: SemanticFile[] = [];
@@ -1290,8 +874,9 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
   const finalizeDsl = async (): Promise<ImportProjectResult> => {
     // ★★★ 2026-10-09（T93）：**"本 feature 有哪些文件"只此一份** —— 扫描出来的 `files`。
     //   · 此前有**两把尺**：`scope_files`（下面 return）用**扫描的 files**，而基线事实（T85/D2）
-    //     却从 `semantic.files` 过滤取 ⇒ 聚合体一退出语义层（本文件 3 处 T93 改动），
-    //     functional_mode / design_mode 的语义层为空 ⇒ 基线事实锚 **0 个文件** ⇒ **对拍没有基准**。
+    //     却从 `semantic.files` 过滤取 ⇒ 聚合体一退出语义层（本文件 3 处 T93 改动）后，
+    //     聚合导入的语义层为空 ⇒ 基线事实锚 **0 个文件** ⇒ **对拍没有基准**
+    //     （★ 2026-10-09 移除聚合模式 `functional_mode` / `design_mode`：0 使用 + 有害，T101）。
     //   · ⇒ 两处**共用这一份** `scopeRels`（单一事实源；判据不许分叉）。
     const scopeRels = files.map((f) => f.rel);
     const canvasW = Math.round(rootSize.w + MARGIN * 2);
@@ -1337,29 +922,18 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
     if (input.gen_roles) {
       // ★★★ 2026-10-09（T93 round2）：**喂 LLM 的"条目键"与回填标题时的"查找键"必须是同一口径**（抽在此处一处）。
       //   · 文件节点：`description` 即文件相对路径（`import_project.ts` 写文件节点时落的）；
-      //   · 目录聚合节点：id = `dir_<sanitized rel>` ⇒ 反推 rel；
-      //   · 功能聚合节点：id = `func_<cid>`（聚合社区**无单一路径**）⇒ 取 id（不硬造路径）。
+      //   · 目录容器节点：id = `dir_<sanitized rel>` ⇒ 反推 rel。
       const roleRelOf = (n: Node): string =>
         n.description || (n.id.startsWith('dir_') ? n.id.replace(/^dir_/, '').replace(/_/g, '/') : n.id);
-      // ★★★ 2026-10-09（T93 round2）：聚合模式（design/functional）**渲染的就是模块节点** ⇒ 喂 LLM 的正是这些节点。
-      //   ★ 出生证（实测）：这里**曾经**读 `semantic.files`（含聚合/目录条目，`sf.path!.endsWith('/')` 剥尾斜杠）；
-      //     T93 后语义层**只放文件**（契约 `semantic.ts:67`）、design_mode / functional_mode 的语义层**为空**
-      //     （实测 `semantic.files = 0 条`，见 J 报告）⇒ 原分支恒产出 `[]`、剥尾斜杠**永不执行** = **死分支** ⇒ 删。
-      //   ★ 但聚合模式的职责标题**不能因此消失**：改从**几何模块节点**取（单一事实源：渲染什么、就从什么取），
-      //     与下游 `for (const n of nodes)` 回填用**同一个 `roleRelOf`**（杜绝两把尺）。
-      const roleFiles = input.design_mode || input.functional_mode
-        ? nodes
-            .filter((n) => n.type === 'module')
-            .map((n) => {
-              const rel = roleRelOf(n);
-              return { path: rel, dir: rel || '根', apis: [] as string[] };
-            })
-        : files
-            .map((f) => ({
-              path: f.rel,
-              dir: f.dir === '.' ? '根' : f.dir,
-              apis: (parsed.get(f.rel)?.symbols ?? []).map((s) => s.signature),
-            }));
+      // ★★★ 2026-10-09（T93 round2）：**喂 LLM 的条目键 = 文件相对路径**（渲染的就是文件节点）；
+      //   回填标题时用同一个 `roleRelOf` 取查找键（杜绝两把尺）。
+      //   ★ 2026-10-09 移除聚合模式（`functional_mode` / `design_mode`，0 使用 + 有害 T101）后，
+      //     这里**只剩文件路径这一条路**（不再有 `type='module'` 的功能聚合体需要转换其无单一路径的 id）。
+      const roleFiles = files.map((f) => ({
+        path: f.rel,
+        dir: f.dir === '.' ? '根' : f.dir,
+        apis: (parsed.get(f.rel)?.symbols ?? []).map((s) => s.signature),
+      }));
       const titles = await generateFileRoleTitles(roleFiles);
       if (Object.keys(titles).length > 0) {
         for (const n of nodes) {
@@ -1469,12 +1043,14 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
     //   ★★★ 2026-10-09（T93）：此处曾有 `.filter((f) => !f.path.includes(', ') && !f.path.endsWith('/'))`
     //     —— 那是"语义层**混进了聚合/模块节点**"的**绕行判据**（模块的 `path` 是 ", " 拼的成员列表 / 目录名带尾斜杠）。
     //     ★ 出生证（实测）：聚合节点已不再进 `semantic.files`（见本文件 3 处 T93 改动）⇒ 该 filter
-    //       **过滤掉 0 条**：默认模式（3 条真文件，全通过）与 functional_mode（0 条）**各一次读数均为 0**。
+    //       **过滤掉 0 条**：默认模式（3 条真文件，全通过）与聚合模式（0 条）**各一次读数均为 0**。
+    //       （★ 2026-10-09 移除聚合模式 `functional_mode` / `design_mode`：0 使用 + 有害，T101。）
     //     ⇒ 它已不是判据、是死代码，删（本仓铁律：「没有坏状态就别占正常路径」）。
     //     ★ 现在 `semantic.files` **只放文件**（契约 `semantic.ts:67`）⇒ 其 `path` 恒为单个文件相对路径。
     //   ★★★ 2026-10-09（T93 round2）：**取数源不再是 `semantic.files`，而是与 `scope_files` 同一份
-    //     `scopeRels`（= 扫描出的 `files`）**。★ 为什么必须换：语义层现在只放文件 ⇒ 聚合模式
-    //     （functional/design）语义层为空 ⇒ 从它取会锚 **0 个文件**、对拍**没有基准**。
+    //     `scopeRels`（= 扫描出的 `files`）**。★ 为什么必须换：语义层现在只放文件 ⇒ 聚合导入
+    //     （`functional_mode` / `design_mode`，2026-10-09 移除：0 使用 + 有害 T101）语义层为空
+    //     ⇒ 从它取会锚 **0 个文件**、对拍**没有基准**。
     //     `files` 才是"本 feature 有哪些文件"的权威（`scope_files` 同源，见 `finalizeDsl` 顶部）。
     try {
       const rels = scopeRels;
@@ -1505,7 +1081,7 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       .filter((x) => assessLines(x.lines) !== 'ok')
       .sort((a, b) => b.lines - a.lines);
     const message = [
-      `已导入项目 → feature "${feature}"${input.design_mode ? '（设计模式：聚合文件到目录层级）' : input.functional_mode ? '（功能模式：按调用图社区聚合）' : ''}`,
+      `已导入项目 → feature "${feature}"`,
       `项目根: ${path.resolve(input.project_dir)}`,
       `文件: ${files.length} 个 → ${nodes.length} 节点（符号 ${symbolsFound} 个，依赖 ${fileDeps.length} 条→渲染 ${renderedDepEdges} 条，模块节点 ${dirCount} 个）`,
       cacheStats ? `缓存: 命中 ${cacheStats.hits} / 重解析 ${cacheStats.reparsed} / 失败 ${cacheStats.failed}` : null,
@@ -1541,26 +1117,6 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
     };
   };
 
-  // 6.1 功能模式：按调用图社区做功能性聚合，产出功能模块节点并提前返回
-  if (input.functional_mode) {
-    const externalFiles = [...files];
-    const res = await buildFunctionalLayout(
-      externalFiles,
-      plainDeps,
-      parsed,
-      lineCounts,
-      input.project_dir,
-      !!input.gen_roles,
-      input.cache_db,
-    );
-    nodes = res.nodes;
-    edges = res.edges;
-    semanticFiles = res.semanticFiles;
-    rootSize = res.size;
-    renderedDepEdges = res.edges.length;
-    return await finalizeDsl();
-  }
-
   // 4. 目录树
   interface DirNode {
     rel: string; // '' 表示项目根
@@ -1594,129 +1150,85 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
   };
   computeSubtree(rootDir);
 
-  // 5. 节点 ID 生成器已上移至 3.5（functional_mode 分支亦用）
+  // 5. 节点 ID 生成器已上移至 3.5
 
   // 6. 布局（后序：先内层目录，尺寸向上传递）
   // 注：nodes/edges/semanticFiles 已在 6.0 声明为外层可变量，此处沿用
-
-  /** 收集子树下所有文件（递归） */
-  const collectSubtreeFiles = (d: DirNode): FileEntry[] => {
-    const result = [...d.files];
-    for (const sub of d.subdirs.values()) {
-      result.push(...collectSubtreeFiles(sub));
-    }
-    return result;
-  };
 
   /** 布局一个目录，返回其容器尺寸（根目录不生成容器节点） */
   const layoutDir = (dir: DirNode): { w: number; h: number } => {
     const items: LayoutItem[] = [];
     const localDeps: Array<[string, string]> = [];
 
-    // 设计模式：聚合子文件到当前目录节点，不生成单个文件节点
-    if (input.design_mode && dir.rel !== '') {
-      // 在 design_mode 下，整个目录只生成一个模块节点，不需要展开子文件
-      items.push({ id: dirNodeId(dir.rel), w: FILE_W * Math.min(dir.subtreeSize, 3), h: FILE_H, x: 0, y: 0 });
-    } else {
-      // 子目录先布局（递归），获得尺寸后作为 item
-      const subdirOrder = (a: DirNode, b: DirNode): number => {
-        const aIsEntry = a.files.some((f) => /main|index|server|app\./i.test(f.rel));
-        const bIsEntry = b.files.some((f) => /main|index|server|app\./i.test(f.rel));
-        if (aIsEntry !== bIsEntry) return aIsEntry ? -1 : 1;
-        return b.subtreeSize - a.subtreeSize;
-      };
-      for (const sub of [...dir.subdirs.values()].sort(subdirOrder)) {
-        const size = layoutDir(sub);
-        items.push({ id: dirNodeId(sub.rel), w: size.w, h: size.h, x: 0, y: 0 });
+    // 子目录先布局（递归），获得尺寸后作为 item
+    const subdirOrder = (a: DirNode, b: DirNode): number => {
+      const aIsEntry = a.files.some((f) => /main|index|server|app\./i.test(f.rel));
+      const bIsEntry = b.files.some((f) => /main|index|server|app\./i.test(f.rel));
+      if (aIsEntry !== bIsEntry) return aIsEntry ? -1 : 1;
+      return b.subtreeSize - a.subtreeSize;
+    };
+    for (const sub of [...dir.subdirs.values()].sort(subdirOrder)) {
+      const size = layoutDir(sub);
+      items.push({ id: dirNodeId(sub.rel), w: size.w, h: size.h, x: 0, y: 0 });
+    }
+    // 文件节点（排序：入口文件优先，其余按行数降序）
+    const fileOrder = (a: FileEntry, b: FileEntry): number => {
+      const aIsEntry = /main|index|server|app\./i.test(a.rel);
+      const bIsEntry = /main|index|server|app\./i.test(b.rel);
+      if (aIsEntry !== bIsEntry) return aIsEntry ? -1 : 1;
+      return (lineCounts.get(b.rel) ?? 0) - (lineCounts.get(a.rel) ?? 0);
+    };
+    for (const f of [...dir.files].sort(fileOrder)) {
+      items.push(fileLayout.get(f.rel)!);
+    }
+    // 局部依赖：两端都在本目录直接子级
+    const ownerOf = (rel: string): string => {
+      if (dir.files.some((f) => f.rel === rel)) return fileNodeId(rel);
+      for (const sub of dir.subdirs.keys()) {
+        if (rel.startsWith(sub + '/')) return dirNodeId(sub);
       }
-      // 文件节点（排序：入口文件优先，其余按行数降序）
-      const fileOrder = (a: FileEntry, b: FileEntry): number => {
-        const aIsEntry = /main|index|server|app\./i.test(a.rel);
-        const bIsEntry = /main|index|server|app\./i.test(b.rel);
-        if (aIsEntry !== bIsEntry) return aIsEntry ? -1 : 1;
-        return (lineCounts.get(b.rel) ?? 0) - (lineCounts.get(a.rel) ?? 0);
-      };
-      if (!input.design_mode) {
-        for (const f of [...dir.files].sort(fileOrder)) {
-          items.push(fileLayout.get(f.rel)!);
-        }
-      }
-      // 局部依赖：两端都在本目录直接子级
-      const ownerOf = (rel: string): string => {
-        if (dir.files.some((f) => f.rel === rel)) return fileNodeId(rel);
-        for (const sub of dir.subdirs.keys()) {
-          if (rel.startsWith(sub + '/')) return dirNodeId(sub);
-        }
-        return '';
-      };
-      for (const [fromRel, toRel] of plainDeps) {
-        const a = ownerOf(fromRel);
-        const b = ownerOf(toRel);
-        if (a && b && a !== b) localDeps.push([a, b]);
-      }
-      const content = layoutGroup(items, localDeps);
+      return '';
+    };
+    for (const [fromRel, toRel] of plainDeps) {
+      const a = ownerOf(fromRel);
+      const b = ownerOf(toRel);
+      if (a && b && a !== b) localDeps.push([a, b]);
+    }
+    const content = layoutGroup(items, localDeps);
 
-      // 写回子项局部坐标
-      for (const item of items) {
-        if (item.id.startsWith('file_')) {
-          const rel = files.find((f) => fileNodeId(f.rel) === item.id)!.rel;
-          fileLayout.get(rel)!.x = item.x;
-          fileLayout.get(rel)!.y = item.y;
-        } else {
-          const subRel = [...dirByRel.values()].find((d) => d.rel !== '' && dirNodeId(d.rel) === item.id)!.rel;
-          dirOffset.set(subRel, { x: item.x, y: item.y });
-        }
+    // 写回子项局部坐标
+    for (const item of items) {
+      if (item.id.startsWith('file_')) {
+        const rel = files.find((f) => fileNodeId(f.rel) === item.id)!.rel;
+        fileLayout.get(rel)!.x = item.x;
+        fileLayout.get(rel)!.y = item.y;
+      } else {
+        const subRel = [...dirByRel.values()].find((d) => d.rel !== '' && dirNodeId(d.rel) === item.id)!.rel;
+        dirOffset.set(subRel, { x: item.x, y: item.y });
       }
-
-      const containerW = content.w + PAD * 2;
-      const containerH = content.h + PAD * 2 + TITLE_H;
-      if (dir.rel !== '') {
-        nodes.push({
-          id: dirNodeId(dir.rel),
-          label: `📁 ${dir.name}`,
-          x: 0,
-          y: 0,
-          width: containerW,
-          height: containerH,
-          type: 'module',
-          style: { ...DIR_STYLE, borderRadius: 8 },
-        });
-      }
-      dirContentOffset.set(dir.rel, { dx: PAD, dy: PAD + TITLE_H, w: containerW, h: containerH });
-      return { w: containerW, h: containerH };
     }
 
-    // ── 设计模式非根目录：单个模块节点，聚合摘要挂到**节点 title**（T93：不再进语义层） ──
-    const subtreeFiles = collectSubtreeFiles(dir);
-    const { apis, nonFuncSymbols } = aggregateDirSymbols(dir.rel, subtreeFiles, parsed);
-    const itemW = FILE_W * Math.min(dir.subtreeSize, 3);
-    const containerW = itemW + PAD * 2;
-    const containerH = FILE_H + PAD * 2 + TITLE_H;
-    nodes.push({
-      id: dirNodeId(dir.rel),
-      label: `📁 ${dir.name}`,
-      x: 0,
-      y: 0,
-      width: containerW,
-      height: containerH,
-      type: 'module',
-      // ★★★ 2026-10-09（T93）：聚合体的摘要改挂**它自己的几何节点** ⇒ 写进 `title`
-      //   （`geometry.ts:124`：「人话主标题…渲染端优先展示，label 兜底」）。
-      //   ★ 为什么**不再** `semanticFiles.push`：契约 `semantic.ts:67` 规定 `SemanticFile.path` 是
-      //     **单个目标文件相对路径**（单数）；而这是**目录聚合节点**，只能填 `dir.rel + '/'`
-      //     ⇒ 违约。实害：下游把这目录串**当路径读源码**（`derive_chain` / `consistency_check`）。
-      title: `${dir.rel} — 聚合 ${apis.length + nonFuncSymbols.length} 个符号`,
-      style: { ...DIR_STYLE, borderRadius: 8 },
-    });
+    const containerW = content.w + PAD * 2;
+    const containerH = content.h + PAD * 2 + TITLE_H;
+    if (dir.rel !== '') {
+      nodes.push({
+        id: dirNodeId(dir.rel),
+        label: `📁 ${dir.name}`,
+        x: 0,
+        y: 0,
+        width: containerW,
+        height: containerH,
+        type: 'module',
+        style: { ...DIR_STYLE, borderRadius: 8 },
+      });
+    }
     dirContentOffset.set(dir.rel, { dx: PAD, dy: PAD + TITLE_H, w: containerW, h: containerH });
     return { w: containerW, h: containerH };
   };
 
   const fileLayout = new Map<string, LayoutItem>();
-  if (!input.design_mode) {
-    for (const f of files) {
-      fileLayout.set(f.rel, { id: fileNodeId(f.rel), w: FILE_W, h: FILE_H, x: 0, y: 0 });
-    }
+  for (const f of files) {
+    fileLayout.set(f.rel, { id: fileNodeId(f.rel), w: FILE_W, h: FILE_H, x: 0, y: 0 });
   }
 
   const dirContentOffset = new Map<string, { dx: number; dy: number; w: number; h: number }>();
@@ -1740,63 +1252,55 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       node.y = containerY;
     }
 
-    if (input.design_mode && dirRel !== '') {
-      // 设计模式非根目录：不处理子文件，也不递归子目录（已聚合到当前目录节点）
-    } else {
-      if (!input.design_mode) {
-        for (const f of d.files) {
-          const item = fileLayout.get(f.rel)!;
-          item.x += contentX;
-          item.y += contentY;
-        }
-      }
-      for (const sub of d.subdirs.values()) {
-        accumulate(sub.rel, contentX, contentY);
-      }
+    for (const f of d.files) {
+      const item = fileLayout.get(f.rel)!;
+      item.x += contentX;
+      item.y += contentY;
+    }
+    for (const sub of d.subdirs.values()) {
+      accumulate(sub.rel, contentX, contentY);
     }
   };
   accumulate('', MARGIN, MARGIN);
 
-  // 8. 文件节点 + 边 + 语义层（设计模式：每个目录聚合所有子文件符号）
-  if (!input.design_mode) {
-    for (const f of files) {
-      const p = parsed.get(f.rel);
-      const apis = p?.symbols || [];
-      const syms = p?.nonFuncSymbols || [];
-      const item = fileLayout.get(f.rel)!;
-      const langKey = f.ext.slice(1);
-      const colors = LANG_COLORS[langKey] || DEFAULT_FILE_COLOR;
-      const apiCount = apis.length;
-      nodes.push({
-        id: fileNodeId(f.rel),
-        label: `${path.posix.basename(f.rel)} · ${apiCount} APIs`,
-        x: Math.round(item.x),
-        y: Math.round(item.y),
-        width: FILE_W,
-        height: FILE_H,
-        type: 'file',
-        status: 'done',
-        description: f.rel,
-        style: { ...colors, borderRadius: 4 },
-      });
-      // 目录归属边
-      if (f.dir && f.dir !== '.') {
-        edges.push({ id: `contains_${sanitize(f.dir)}_${sanitize(f.rel)}`, from: dirNodeId(f.dir), to: fileNodeId(f.rel), label: 'contains' });
-      }
-      // 嵌套目录 contains 边
-      semanticFiles.push({
-        id: fileNodeId(f.rel),
-        path: f.rel,
-        responsibility: `${f.dir === '.' ? '根目录' : f.dir} — ${apiCount} 个 API（导入自 ${(p?.imports.length || 0)} 个模块）`,
-        status: 'done',
-        // ★★★ 2026-10-09（T85/D1）：**已摘掉 expected_apis: apis** —— 见上一条同款注释。
-        symbols: syms.length > 0 ? syms : undefined,
-        lines: lineCounts.get(f.rel) ?? 0,
-        // ★ 2026-10-01（T20）：`actual_apis` / `actual_deps` **不再回填进 DSL** ——
-        //   事实（真实 import / 真实签名）的唯一权威是解析数据 `cache.db`，
-        //   要读请走 `infrastructure/index/file_facts`（DSL 只留 `source_root` 这个"出处"）。
-      });
+  // 8. 文件节点 + 边 + 语义层
+  for (const f of files) {
+    const p = parsed.get(f.rel);
+    const apis = p?.symbols || [];
+    const syms = p?.nonFuncSymbols || [];
+    const item = fileLayout.get(f.rel)!;
+    const langKey = f.ext.slice(1);
+    const colors = LANG_COLORS[langKey] || DEFAULT_FILE_COLOR;
+    const apiCount = apis.length;
+    nodes.push({
+      id: fileNodeId(f.rel),
+      label: `${path.posix.basename(f.rel)} · ${apiCount} APIs`,
+      x: Math.round(item.x),
+      y: Math.round(item.y),
+      width: FILE_W,
+      height: FILE_H,
+      type: 'file',
+      status: 'done',
+      description: f.rel,
+      style: { ...colors, borderRadius: 4 },
+    });
+    // 目录归属边
+    if (f.dir && f.dir !== '.') {
+      edges.push({ id: `contains_${sanitize(f.dir)}_${sanitize(f.rel)}`, from: dirNodeId(f.dir), to: fileNodeId(f.rel), label: 'contains' });
     }
+    // 嵌套目录 contains 边
+    semanticFiles.push({
+      id: fileNodeId(f.rel),
+      path: f.rel,
+      responsibility: `${f.dir === '.' ? '根目录' : f.dir} — ${apiCount} 个 API（导入自 ${(p?.imports.length || 0)} 个模块）`,
+      status: 'done',
+      // ★★★ 2026-10-09（T85/D1）：**已摘掉 expected_apis: apis** —— 见上一条同款注释。
+      symbols: syms.length > 0 ? syms : undefined,
+      lines: lineCounts.get(f.rel) ?? 0,
+      // ★ 2026-10-01（T20）：`actual_apis` / `actual_deps` **不再回填进 DSL** ——
+      //   事实（真实 import / 真实签名）的唯一权威是解析数据 `cache.db`，
+      //   要读请走 `infrastructure/index/file_facts`（DSL 只留 `source_root` 这个"出处"）。
+    });
   }
 
   // ★★★ 2026-10-09（T88）：**文档进 DSL（`type: 'doc'`）** —— 让"文档"成为设计的一等公民，
@@ -1840,7 +1344,6 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
   }
 
   for (const d of [...dirByRel.values()].sort((a, b) => a.rel.localeCompare(b.rel))) {
-    if (input.design_mode) continue; // 设计模式只保留顶级目录节点，无父子 contains 边
     if (d.rel === '') continue;
     const parentRel = path.posix.dirname(d.rel);
     const parentId = parentRel === '.' || parentRel === '' ? null : dirNodeId(parentRel);
@@ -1872,45 +1375,31 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
   const aggEdges = new Map<string, { from: string; to: string; n: number }>();
   const directEdges: Array<[string, string]> = [];
   for (const [fromRel, toRel] of plainDeps) {
-    if (input.design_mode) {
-      // 设计模式：只聚合到顶级目录（root 的直接子目录），忽略根目录散文件依赖（无 '/' 的 rel）
-      if (!fromRel.includes('/') || !toRel.includes('/')) continue;
-      const fromTop = topDirNodeId(fromRel);
-      const toTop = topDirNodeId(toRel);
-      if (fromTop === toTop) continue; // 同一目录内，跳过（内部依赖）
-      const key = `${fromTop}|${toTop}`;
+    const fromAnc = ancestorsOf(path.posix.dirname(fromRel));
+    const toAncSet = new Set(ancestorsOf(path.posix.dirname(toRel)));
+    const lca = fromAnc.find((d) => toAncSet.has(d));
+    if (lca === undefined) continue;
+    const a = ownerAtLca(fromRel, lca);
+    const b = ownerAtLca(toRel, lca);
+    if (a === b) continue;
+    if (a.startsWith('file_') && b.startsWith('file_')) {
+      directEdges.push([fromRel, toRel]);
+    } else {
+      const key = `${a}|${b}`;
       const cur = aggEdges.get(key);
       if (cur) cur.n++;
-      else aggEdges.set(key, { from: fromTop, to: toTop, n: 1 });
-    } else {
-      const fromAnc = ancestorsOf(path.posix.dirname(fromRel));
-      const toAncSet = new Set(ancestorsOf(path.posix.dirname(toRel)));
-      const lca = fromAnc.find((d) => toAncSet.has(d));
-      if (lca === undefined) continue;
-      const a = ownerAtLca(fromRel, lca);
-      const b = ownerAtLca(toRel, lca);
-      if (a === b) continue;
-      if (a.startsWith('file_') && b.startsWith('file_')) {
-        directEdges.push([fromRel, toRel]);
-      } else {
-        const key = `${a}|${b}`;
-        const cur = aggEdges.get(key);
-        if (cur) cur.n++;
-        else aggEdges.set(key, { from: a, to: b, n: 1 });
-      }
+      else aggEdges.set(key, { from: a, to: b, n: 1 });
     }
   }
 
-  if (!input.design_mode) {
-    for (const [fromRel, toRel] of directEdges) {
-      edges.push({
-        id: `dep_${sanitize(fromRel)}_${sanitize(toRel)}`,
-        from: fileNodeId(fromRel),
-        to: fileNodeId(toRel),
-        label: 'imports',
-        type: 'dashed',
-      });
-    }
+  for (const [fromRel, toRel] of directEdges) {
+    edges.push({
+      id: `dep_${sanitize(fromRel)}_${sanitize(toRel)}`,
+      from: fileNodeId(fromRel),
+      to: fileNodeId(toRel),
+      label: 'imports',
+      type: 'dashed',
+    });
   }
   const aggSorted = [...aggEdges.values()].sort((x, y) => x.from.localeCompare(y.from) || x.to.localeCompare(y.to));
   for (const { from, to, n } of aggSorted) {

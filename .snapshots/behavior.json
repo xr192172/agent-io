@@ -1,6 +1,6 @@
 {
  "_meta": {
-  "takenAt": "2026-10-09T08:53:22.332Z",
+  "takenAt": "2026-10-09T13:53:57.534Z",
   "env": {
    "core": "0.21.1",
    "node": "v22.22.2",
@@ -365,7 +365,7 @@
     {
      "name": "import_project",
      "title": "Import a code project as DSL",
-     "description": "扫描代码项目（.go/.ts/.py/.js 等）生成 DSL：文件节点 + 调用边 + 符号/API 语义层，写入 agent-io 存储。★ **默认永不破坏**：· 设计**不存在** ⇒ 建一份（从实际 fork）；· 设计**已存在** ⇒ **只刷新\"实际\"，完全不碰设计**（这就是\"有设计就不用动、只对比\"）。要重写设计请显式 `rebuild_design=true`（会抹掉人手加的节点 ⇒ 受 `allow_design_drop` 把关）。design_mode=true 按目录聚合成模块节点；functional_mode=true 按调用图做功能性聚合（优先级高于 design_mode）。导入后可用 render_design 渲染可视化，或 diff_views / consistency_check 对比设计 vs 实际。",
+     "description": "扫描代码项目（.go/.ts/.py/.js 等）生成 DSL：文件节点 + 调用边 + 符号/API 语义层，写入 agent-io 存储。★ **默认永不破坏**：· 设计**不存在** ⇒ 建一份（从实际 fork）；· 设计**已存在** ⇒ **只刷新\"实际\"，完全不碰设计**（这就是\"有设计就不用动、只对比\"）。要重写设计请显式 `rebuild_design=true`（会抹掉人手加的节点 ⇒ 受 `allow_design_drop` 把关）。导入后可用 render_design 渲染可视化，或 diff_views / consistency_check 对比设计 vs 实际。",
      "inputKeys": [
       "project_dir",
       "feature",
@@ -378,9 +378,7 @@
       "rebuild_design",
       "allow_design_drop",
       "live_dir",
-      "gen_roles",
-      "design_mode",
-      "functional_mode"
+      "gen_roles"
      ]
     },
     {
@@ -817,26 +815,6 @@
      ]
     },
     {
-     "name": "import_project",
-     "params": 14,
-     "keys": [
-      "project_dir",
-      "feature",
-      "title",
-      "max_files",
-      "include_tests",
-      "include_docs",
-      "include_archive",
-      "live_only",
-      "rebuild_design",
-      "allow_design_drop",
-      "live_dir",
-      "gen_roles",
-      "design_mode",
-      "functional_mode"
-     ]
-    },
-    {
      "name": "edit_code",
      "params": 13,
      "keys": [
@@ -853,6 +831,24 @@
       "dry_run",
       "targets",
       "atomic"
+     ]
+    },
+    {
+     "name": "import_project",
+     "params": 12,
+     "keys": [
+      "project_dir",
+      "feature",
+      "title",
+      "max_files",
+      "include_tests",
+      "include_docs",
+      "include_archive",
+      "live_only",
+      "rebuild_design",
+      "allow_design_drop",
+      "live_dir",
+      "gen_roles"
      ]
     },
     {

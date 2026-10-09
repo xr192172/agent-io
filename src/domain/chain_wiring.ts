@@ -363,6 +363,8 @@ export const CHAIN_EDGES: readonly ChainEdge[] = [
       '★★ **前提**：`edit_code.file` 相对 `project_dir` 解析，而 `scope_files` 是**仓库相对** ⇒ ' +
       '**必须同时把 `touched.project_dir` 传过去**，让两者同基准。' +
       '★★★ **基准警告（2026-10-09 反伪评审独立实测 —— 必须读，我第一版写错了）**：' +
+      '（★ 2026-10-09 移除 `import_project` 的 `functional_mode` / `design_mode` 及 `buildFunctionalLayout`：' +
+      '0 使用 + 有害 T101 —— 以下括号里的模式名保留为**当时的实测留证**。）' +
       '这条边**本身 4/4 模式都真落盘**（默认 / `max_files:1` / `functional_mode` / `design_mode`，外加 `live_only`，' +
       '`written:true` 且磁盘内容核对过）✅；但**我原先写的"与 `get_dsl query=scope` 同一个语义"只在默认模式下成立** —— ' +
       '同一 feature 逐元素比对：`functional_mode` 下 `get_dsl` 给 `["src/core/math.ts, src/util/calc.ts"]`（**逗号串**）、' +

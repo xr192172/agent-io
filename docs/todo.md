@@ -10,6 +10,12 @@
 >    而状态群**会腐、腐了没人知道**（详见文末"为什么这么定"）。
 > 5. 新增项**必须已核实**才能写进「待做」，且写清**核实方式**。没核实的进「待核实（不是欠账）」。
 > 6. 只做清单上的内容。清单外的事 ⇒ 先讨论要不要上清单，**不要顺手做**。
+> 7. ★★★ **人机共创的落点只有「设计侧」**（2026-10-09 用户裁定）：
+>    *"而且人机共创环节，**共创的也只能是设计图**。不能共创实际，因为实际还得**施工人员**去。"*
+>    ⇒ · **设计侧**（设计 DSL / `overlay`）= **意图** ⇒ 人机**共写**，走**共识闸**（`design_intent action=propose` → 人 approve）；
+>      · **实际侧**（`live` / 用户源码）= **施工产物** ⇒ **只读、只对拍**；写入必须走**单一可检查通道**（= T49）。
+>    ★ 已落一半：`edit_dsl` 拒 `view=live`（`handlers.ts:289`"**实际视图是代码快照，只读，请勿手改**"）。
+>    ★ 推论：**别把"共创"性质的产物挂到实际侧**（例：功能标记住 `overlay` ⇒ T100 的落点判据）。
 
 ---
 
@@ -1114,6 +1120,30 @@
         且用 cache 重建的 deps 只有 228 条 vs 实测 333 ⇒ **拒绝冒充**）；② 出样预测（历史仅 09-08~10-09 一个月）；
         ③ 用"设计意图"而非共变作真值的版本未做。
 
+- [x] **T102 ✅（2026-10-09 结项）移除两个死入参 `functional_mode` / `design_mode` + 整条实现线（8 文件 +176/-685）**
+      *(依据：T99 普查 —— 两者**全仓 0 处赋 true**、README **未承诺**、且有害（`func_*` 曾因 id 前缀不在白名单被误判成"人手节点"）。
+        用户 2026-10-09 裁定「**可以**」。)*
+      ⇒ **先查一个前提决定删多少**（grep 原文在 `.inspect/review/N-remove-modes.md`）：
+        · `analyzeMonolith` / `analyze_monolith` **有别的调用者**（`derive_feature_tree.ts:199` + 一个独立注册工具）**⇒ 保留**；
+        · `buildFromMonolith` **无别的调用者**（私有，唯一调用点就在 `buildFunctionalLayout` 里）⇒ 与
+          `buildFunctionalLayout` / `communityDetectFiles` / `communityNameOf` **一并删**（只为 functional_mode 存在）。
+      ⇒ **删了什么**：接口两字段 + 整条功能聚合线（380 行）+ `design_mode` 全部分支（layoutDir/accumulate/文件循环/依赖边/directEdges）
+        + 连带死函数（`aggregateDirSymbols`/`collectSubtreeFiles`/`topDirNodeId`）；
+        ★★ **`SCANNED_ID_PREFIXES` 去掉 `func_`** ⇒ `['file_', 'dir_', 'doc_']`（**加/删前缀只改一处** —— 那个集合立对了）。
+      ⇒ ★★★ **验收判据（最强的一条，缺它作废）：默认模式产出「逐字不变」** ——
+        删前先在**本仓**（200 文件）抓一份稳定投影指纹（254 节点 / 418 边 / 200 语义 / 4169 行），
+        删后用**新 home + 新 feature 名**重导（★ 因为基线事实与设计层是 **write-if-absent**，同名重导会读到冻结的旧产物）
+        ⇒ `diff` **无输出** ✓ —— **证明删掉的确实只是死分支**。
+      ⇒ 其余：`tsc` 0 · `build` 孤儿 0 · `verify` **5/5** · `grep 'func_${' src` = 0 · 残留的 `functional_mode/design_mode` 命中**全是"移除留证"注释**。
+      ⇒ ★★ **顺带得到一个精确的"快照覆盖面"结论**（比"快照有没有用"更准）：
+        `npm run snap:diff` 报了 **2/6 不一致**（`tool-surface` 与 `tool-smells`）—— 差异**正好**是
+        `import_project.inputKeys[12]="design_mode"→undefined`、`[13]="functional_mode"→undefined`（+ 宽签名名次级联）。
+        ⇒ **工具入参面有人盯**（`tool-surface`/`tool-smells` 覆盖它）；
+        ⇒ **而面成员（`direct` / 派生链）没人盯**（T71 那次"面变了仍 6/6 全绿"）。
+        ⇒ 结论：**不是"快照没用"，是覆盖面有具体边界** —— 用之前先问"**它在看哪几个面**"。
+        按快照自己的规矩（有意变更就 `take` 更新并说明）⇒ 已 `snap:take`，复查 **6/6 一致**。
+      ⇒ ★ 未动：`.snapshots/behavior.json` **本来就不该提前抹**（要让 `snap:diff` 把这次 schema 变化报出来）——
+        这也是刚才那 2/6 能被看见的原因。
 - [x] **T101 ✅（2026-10-09 结项）★ `doc_*` 被当成"人手加的节点" ⇒ 重建被误拒（**默认路径上的活缺陷，我自己当天引进的**）**
       *(来源：T99 派单查出 D1-2（`/^(dir|file)_/` 把 `func_*` 误判），我顺着它推出 `doc_*` 也会被误判 ⇒ 真跑复现。)*
       ⇒ **现场（真跑，夹具 `C:/tmp/t_doc`：1 个 ts + `docs/todo.md`）**：
