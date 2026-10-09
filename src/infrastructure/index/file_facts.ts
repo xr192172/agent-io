@@ -134,6 +134,24 @@ export function apiSignaturesOf(root: string, fileRel: string, feature?: string)
  * ⇒ 与旧行为的关系：`import_project` 落库时 `actual_apis === expected_apis`（`diff_views.ts:793` 的注释
  *   早就写明了这一点），所以对这类 DSL **新旧等价**；对其它的，事实改为**现取**（这正是本改革的目的）。
  */
+/**
+ * ★★★ **契约 + 事实「拼接」**（`[...契约, ...事实]`）—— ★ **它不是"合并两种东西"，是"抵消事实"**。
+ *
+ * ## 意图（2026-10-09，T85/D3 后继 —— 我读了调用方才看懂，所以必须写下来）
+ * `diff_views` 用它做**两侧对比**：`diffApis(mergedApis(design…), mergedApis(live…))`。
+ * ⇒ **两侧都把"当下的事实"加进去** ⇒ 只要两侧指向**同一个 `source_root`**，**事实部分完全相同** ⇒
+ *   **在 `diffApis` 里相互抵消** ⇒ **剩下的差异纯是「契约」的差异** ✓ 这是**有意**的。
+ *
+ * ## ★★ 两个前提（**不满足就会静默出错**，所以写在这儿）
+ * 1. **两侧的 root 必须相同**（同一份 `cache.db`）⇒ 否则**事实不抵消** ⇒ 差异里**混进了代码变更**
+ *    （而这条线本该只报"设计差异"）。
+ * 2. **两侧都必须拿得到 root** ⇒ 而本函数在 `!root || !fileRel` 时**只返回契约**（下面那行 `return exp`）
+ *    ⇒ ★ 于是**一侧有事实、另一侧没有** ⇒ 事实**全变成"差异"** ——
+ *    ★★ 这与 T85 那个 1281（"期望侧空了却没别的线"）**是同一种病**：**该说"判不了"却给了个默认值**。
+ *    ⇒ ⚠ **已记待办**：`diff_views` 应在两侧 root 不一致/缺失时**明说**（加 `notes`），**不静默**。
+ *
+ * ★ 口径：值统一成 `{name?, signature}`（与 `ExpectedApi` **可赋值**）—— 这样它能直接喂 `diffApis`。
+ */
 export function mergedApis(
   root: string | undefined,
   fileRel: string | undefined,
@@ -142,8 +160,11 @@ export function mergedApis(
   feature?: string,
   /** ★ 产物与 DSL 的 `ExpectedApi` **可赋值**（`signature` 必填）—— 这样它能直接喂 `diffApis(ExpectedApi[], ExpectedApi[])` */
 ): Array<{ name?: string; signature: string }> {
-  const exp = (expected ?? []).map((a) => ({ name: a.name, signature: a.signature ?? a.name ?? '' }));
-  if (!root || !fileRel) return exp;
-  const facts = fileFacts(root, fileRel, feature).apis.map((a) => ({ name: a.name, signature: a.signature ?? a.name }));
-  return [...exp, ...facts];
+  const contract = (expected ?? []).map((a) => ({ name: a.name, signature: a.signature ?? a.name ?? '' }));
+  // ★ 拿不到 root/路径 ⇒ **只给契约**（= 事实侧缺席）。★ 这在两侧对比里**不是等价的**（见上面的前提 2）
+  //   ⇒ 保留原行为（不改签名、不破坏 20+ 处调用），但**说明白**：它是"事实缺席"，不是"事实为空"。
+  if (!root || !fileRel) return contract;
+  const factsNow = fileFacts(root, fileRel, feature).apis.map((a) => ({ name: a.name, signature: a.signature ?? a.name }));
+  // ★ 顺序**契约在前、事实在后**：`diffApis` 是对称比较（两侧同形），顺序不影响抵消。
+  return [...contract, ...factsNow];
 }
