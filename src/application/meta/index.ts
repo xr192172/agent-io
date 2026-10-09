@@ -76,6 +76,8 @@ import { buildDocsPromptBlock, listProjectDocs, matchDocsForTargets, readProject
 import type { DocTargetSet } from './docs/project_docs.js';
 import { exploreCodeHandler, syncContractsHandler } from './handlers.js';
 import type { ToolDef } from '../types.js';
+// ★ T54：接续段的三件套 —— **规则住在 domain，这里只渲染**（别在本文件重推一遍）
+import { nextHopsOf, universalHopsOf, applyChainEdge } from '../../domain/chain_wiring.js';
 
 
 /**
@@ -446,8 +448,28 @@ export const META_TOOLS: ToolDef[] = [
         .string()
         .optional()
         .describe('要读**哪个项目**的域表（structure.domains.json）；省略 = 不读，实现地图段会明说"该项目未声明结构意图"而不是给空表'),
+      from_tool: z
+        .string()
+        .optional()
+        .describe(
+          '★ **接续**（T54）：你**刚刚调完的那个工具名**。与 `touched_json` 必须**成对给** —— ' +
+            '给了这一对，本工具会算出"**下一步能怎么调**、入参**已经取好**"（零手工拼字段名）。',
+        ),
+      touched_json: z
+        .string()
+        .optional()
+        .describe(
+          '★ **接续**：上一步 `---DATA---` 里的那个 `touched` 对象，**原样 JSON.stringify 后的字符串**。' +
+            '（★ 用字符串而不是对象：对象在这里只能声明成"袋子"，而袋子正是本仓点名的坏味道 —— ' +
+            '宁可让调用方多 stringify 一次，也不新增一个袋子。）',
+        ),
     },
     handler: wrapData(async (a) => {
+      // ★★★ 2026-10-09（T54）：**接续段** —— 把"上一步的产物"算成"下一步的入参"。
+      //   为什么放在本工具：本工具**本来就画着接法表**（"链的接法"段），而它自称"新用户第一站"
+      //   ⇒ "我手上这份 touched 下一步怎么用"放这儿最自然，且**不新增工具**（不增面、不增 8 处登记）。
+      //   ★ 计算全部落在**已收口的那两个函数**（`nextHopsOf`/`applyChainEdge`）—— 本段不自己推任何规则。
+      const handoff = renderHandoffSection(a.from_tool as string | undefined, a.touched_json as string | undefined);
       // 域表**在调用期现取**（不注入、不缓存）：它是**按 project_dir 读的项目级声明**，
       // 而本仓自己那份结构意图与被分析项目无关 ⇒ 缓存它就是把两个项目混成一份（判据分叉）。
       // 与「ts_kernel 现取、不建镜像」同策。
@@ -475,7 +497,17 @@ export const META_TOOLS: ToolDef[] = [
         //     `domain` 反向依赖 `application` 是分层违规 ⇒ 表侧判定只能做到一半。
         //   ★ 构造**单点化**成 `catalogOf`（`server_registry` 按面过滤时也要用同一份口径）。
         const r = await makeCapabilityMapHandler(() => catalogOf(listToolDefs()))(a, readNote);
-        return { message: r.text, data: { lanes: LANE_IDS, domains: domains?.length ?? 0, read_note: readNote } };
+        // ★ T54：接续段放**最前** —— 调用方给了 `from_tool`+`touched_json` 时，他要的就是这个
+        const text = handoff ? `${handoff}\n${r.text}` : r.text;
+        return {
+          message: text,
+          data: {
+            lanes: LANE_IDS,
+            domains: domains?.length ?? 0,
+            read_note: readNote,
+            ...(handoff ? { handoff: { from_tool: a.from_tool } } : {}),
+          },
+        };
       } finally {
         resetDomainsForTest();
       }
@@ -483,8 +515,7 @@ export const META_TOOLS: ToolDef[] = [
   },
 
   {
-    // ★ T15 切片（2026-10-05）：原先只存在于 `capability_cli`（CLI-only）⇒ 能力被藏在 MCP 面之外。
-    //   ★ 顺带更正一条误判：T15 原写"`capability_cli` 的 MCP 等价物已存在（`capability_map`）⇒ 只需删 CLI"。
+    // ★ T15 切片（2026-10-05）：原先只存在于 `capability_cli`（CLI-only）⇒ 能力被藏在 MCP 面之外。    //   ★ 顺带更正一条误判：T15 原写"`capability_cli` 的 MCP 等价物已存在（`capability_map`）⇒ 只需删 CLI"。
     //     **错** —— 两者只有名字像：`capability_map` 是「6 条能力线 × 工具」的**工具导航**（零语言），
     //     本工具审的是「功能 × 语言」的**支持度矩阵**（`diagnoseCapabilities`）。删 CLI 会丢一个能力。
     name: 'capability_audit',
@@ -621,3 +652,75 @@ export const META_TOOLS: ToolDef[] = [
     handler: upgradeHandler,
   },
 ];
+
+
+/**
+ * ★★★「**接续**」段（2026-10-09，`docs/todo.md` T54）—— 把"上一步的产物"算成"下一步的入参"。
+ *
+ * ## 为什么需要它
+ * 本仓的产物端（`Touched`）与接法表（`CHAIN_EDGES`）**早就做完了**，
+ * 但"取出来、放到下游入参位置"**一直由调用方手工做** —— 而手工正是会出错的地方（回忆字段名、自己数下标）。
+ * ⇒ 本段把上一步的 `touched` 直接算成"**下一步能怎么调、值是多少**"。
+ *
+ * ## 三条纪律
+ * 1. ★★★ **规则不在这里推**：下游是谁用 `nextHopsOf`，取值用 `applyChainEdge`，全称规则用 `universalHopsOf` ——
+ *    本段只做**渲染**。★ 这是本仓头号病的反面：**别在展示层再实现一遍规则**。
+ * 2. ★★ **不替调用方选**：`pick` 类边**列出候选并明说"要你选"**，绝不给一个默认值。
+ * 3. ★ **成对参数**：给了 `from_tool` 就必须给 `touched_json`（反之亦然）—— 只有一半就**报错**，不猜。
+ *    ★ 两个都没给 ⇒ 返回**空串**（与改造前**逐字等价**，导航不因此变胖）。
+ *
+ * ★ 只读：本段不改任何东西，也**不代表"这条链跑通过"**（那是 `CHAINS` 的 `verified` 说的）。
+ */
+function renderHandoffSection(fromTool: string | undefined, touchedJson: string | undefined): string {
+  if (fromTool === undefined && touchedJson === undefined) return '';
+  if (fromTool === undefined || touchedJson === undefined) {
+    throw new Error(
+      '`from_tool` 与 `touched_json` **必须成对给**：只给一半就判断不了"从哪接、拿什么接"。★ 刻意不替你猜。',
+    );
+  }
+  let touched: Record<string, unknown>;
+  try {
+    const parsed: unknown = JSON.parse(touchedJson);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('不是一个对象');
+    touched = parsed as Record<string, unknown>;
+  } catch (e) {
+    throw new Error(
+      `touched_json 不是合法的 JSON 对象（${(e as Error).message}）。` +
+        '它应当是上一步 `---DATA---` 里的**那个 `touched`**，原样 stringify（别自己重排字段）。',
+    );
+  }
+
+  const cur = touched;
+  const L: string[] = [`── 接续（你手上有 \`${fromTool}\` 的 touched ⇒ 下一步怎么调）──`];
+  const used = new Set<string>();
+  const ready: string[] = [];
+  const needPick: string[] = [];
+  const blocked: string[] = [];
+  for (const e of nextHopsOf(fromTool)) {
+    used.add(e.fromKey);
+    const r = applyChainEdge(cur, e);
+    const head = `${e.to}.${e.toPath}`;
+    if (r.ok) ready.push(`    ${head}  ←  ${r.expr}  =  ${r.value}`);
+    else if (r.candidates.length) {
+      needPick.push(`    ${head}  ←  ${r.expr}  · **要你选**：${r.candidates.map((c, i) => `[${i}] ${c}`).join('   ')}`);
+    } else blocked.push(`    ${head}  ←  ${r.expr}  · 接不上：${r.reason}`);
+  }
+  const uni: string[] = [];
+  for (const e of universalHopsOf()) {
+    used.add(e.fromKey);
+    const r = applyChainEdge(cur, e);
+    uni.push(`    ${e.fromKey.padEnd(12)} → 任何 [B].${e.toPath}${r.ok ? `  =  ${r.value}` : '（这次没产出它）'}`);
+  }
+
+  if (ready.length) L.push('', `  ★ **直接可用**（值已取好，零手工拼字段名）：${ready.length} 条`, ...ready);
+  if (needPick.length) L.push('', `  ★ **要你选一个**：${needPick.length} 条（选是语义判断 —— 本工具**不替你选**）`, ...needPick);
+  if (blocked.length) L.push('', `  ★ 接不上（上游这次没产出该键）：${blocked.length} 条`, ...blocked);
+  if (uni.length) L.push('', '  ★ 全称规则（对**任何**工具都成立，只提一次、不展开）：', ...uni);
+  const unused = Object.keys(cur).filter((k) => !used.has(k));
+  if (unused.length) L.push('', `  ★ touched 里**没被任何边用到**的键：${unused.join(', ')}（不是错误，只是本表没接它）`);
+  if (!ready.length && !needPick.length && !blocked.length) {
+    L.push('', '  （该工具在接法表里**没有对象类出边** ⇒ 它通常是"链的终点"；作用域键见下面的全称规则）');
+  }
+  L.push('', '  ★ 本段**只读**：不改任何东西，也**不代表"这条链跑通过"**（那是 `CHAINS` 的 `verified` 说的）。');
+  return L.join('\n');
+}

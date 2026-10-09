@@ -411,8 +411,13 @@ export function applyChainEdge(
       return { ok: true, toPath: edge.toPath, value: xs[0]!, expr };
     }
     // pick：★ 下标必须由调用方给 —— 这里**不默认取第 0 个**
+    //   ★★ 例外（2026-10-09，实跑时发现）：**候选只有 1 个 ⇒ 选是确定的** —— 直接取，并注明。
+    //     理由就是本表自己的立论：「`single` —— 集合**只有一个元素**时**确定** ⇒ 直接取，无需选择」。
+    //     `cardinality` 是**静态声明**（"这条边可能有多个"），而"**这轮实际有几个**"是**运行期事实** ⇒
+    //     后者更准。★ 否则会出现"只有 1 个候选却要你选"——那不是谨慎，是把判断推给调用方。
     const i = opts?.pick;
     if (i === undefined) {
+      if (xs.length === 1) return { ok: true, toPath: edge.toPath, value: xs[0]!, expr };
       return {
         ok: false,
         reason: `这条边是 \`pick\`（可能有多个）⇒ **要你给下标**（\`pick:i\`）。★ 刻意不替你在候选里选 —— 选择是语义判断`,
