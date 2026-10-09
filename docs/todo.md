@@ -954,6 +954,29 @@
            设计 `S:决策=v2 只改了设计、还没实现 ; 验收=Kk2 必须…` ／ 实际 `S:决策=v1 已实现的那版 ; 验收=Kk 必须存在` ✓
         ⇒ ★★ **两行并排读，一眼就知道"设计已走到 v2、代码还停在 v1"** —— 这正是用户要的那个信号。
 
+      ⇒ ★★★★ **2026-10-09 真跑试用（拿 T82 当"未实现的设计"走完整条链）—— 第 5 步撞到硬前提**
+        **链路 1–4 全部通过**：① `import_project` ✓ ② **把设计翻译进 DSL**（决策卡 + `signature-matches` 验收，
+        并**用 `evidence` 挂 `docs/todo.md` 当理由** ⇒ **L1–L4 全过，顺带证明 T88 那条路可用**）✓
+        ③ **对拍精确报未实现**（`facesOf` 期望去掉 `directNames`、实取还在）✓ ④ **圈范围**圈出
+        `[files:…tool_faces.ts] 差异 2 条（**人写的验收 2**）` ✓
+        ★★ **第 5 步（重写）之前先探规模 ⇒ 发现"设计的前提没满足"**（实测读数）：
+        ```
+        手写 direct 共 9 个：
+          ✓ 已在链里（3）: get_dsl / rename_symbols / find_references
+          ✗ 不在链里（6）: edit_dsl / import_project / design_intent / rename_files / explore_code / capability_map
+        ⇒ 去掉手写名单后 composed 只剩: consistency_check, edit_code, find_references, get_dsl,
+          impact_analysis, move_symbol, rename_symbols
+        ```
+        ⇒ ★★★ **会削掉 6 个门，含 `import_project`（建档=第一步）/ `edit_dsl`（写设计=第二步）/
+          **`capability_map`（导航它自己！）** ⇒ **"新人第一站"没了**。
+        ⇒ ⇒ **"设计"纸面对、一做就撞**：**T81 只把 1 个 design 工具上了链（`get_dsl`）** ⇒ **手写那一半还得留**。
+        ★ **所以"重写"这步没做** —— 而理由**是硬的**（做了会削掉入口），**不是"时间不够"**；
+          这恰好反证**对拍+圈范围是对的**：它圈出的差异**是真的**，而**实现它需要先补前提**。
+      ⇒ ★★★ **下一步的真正形状（给 design 线补对象类锚点 ⇒ 才能上链）**：
+        · **`import_project`**：它**已有 `touched={feature, project_dir}`**，但两者都是**作用域边**（**不计入对象边**）
+          ⇒ 要产**对象类**锚点（候选：它扫出的**文件集合** = 新键 `scope_files`，与 `get_dsl query=scope` 同族 ✓）；
+        · **`edit_dsl`**：它改了 **DSL 的节点** ⇒ 候选锚点 = 它改的 `nodes[]`（★ 而 `Touched.nodes` **已有** ✓）。
+        ⇒ 两条边一加，`composed` 里就会出现 `import_project` 与 `edit_dsl` ⇒ **那时去手写才安全** ✓
 - [ ] **T69 ★★ 合并形态 S3：上限预算 —— 把 L1 扩成双边 + 配额单点**
       *(核实：2026-10-08 实测我们**只有下限**（`MIN_REASON_CHARS = 6`，见 `reason_validator.ts:73`），
        **人写文本无上限**；而 AOCI 是 `#S quota: C9-8≤600 C7-4≤200 C3-1≤50`（上限，且声明为 machine-contract）。)*
