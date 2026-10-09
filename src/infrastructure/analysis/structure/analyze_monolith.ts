@@ -1,5 +1,5 @@
 /**
- * analyze_monolith 工具：基于 cache.db 调用边做【跨文件】功能社区圈定
+ * analyze_monolith 工具：基于 cache.db 调用边做【跨文件】结构簇圈定
  *
  * 与 check_monolith 的分工：
  *   - check_monolith：单文件内的文本引用近似（声明体文本匹配），无跨文件视角、无功能锚点
@@ -12,8 +12,17 @@
  *   - 老项目没有现成锚点 → 从既存结构推导：入度（高频被调）/ 语义命名 / 导出入口
  *   - 标签传播不设"拆多碎"的下限——功能大就整块聚在一起，再在社区内评估子拆分
  *
+ * ★★ 2026-10-09 实测更正（**上述"按功能/业务"的锚点未达成，如实记**）：
+ *   本函数产出的分组，其**预测"哪些文件会一起改"**的能力实测为
+ *   **度匹配 lift 1.84×**，而**"同一个直接父目录"（一个平凡基线）是 3.41×**
+ *   ⇒ **它连最便宜的那个基线都没赢过**（详见 `docs/todo.md` T99 的读数）。
+ *   ⇒ 故：**它产出的是「结构簇」（按依赖/入度等结构性信号聚出），不代表功能边界**；
+ *     "功能"这个词在本仓**只指人写的标记** `overlay.global.function_tags`（`src/domain/overlay.ts`）。
+ *   ★ 愿景里"老项目没有现成锚点"这一前提，**今天已不再成立** —— 锚点可以由人给（功能标记），
+ *     不再需要"从结构里猜"。⇒ 详见 `docs/todo.md` **T104**（锚点从"猜"改成"人给 + 缺省建议"）。
+ *
  * 产出：
- *   - communities：功能社区清单（锚点 + 符号 + 跨哪些文件 + 估算行数）
+ *   - communities：结构簇清单（锚点 + 符号 + 跨哪些文件 + 估算行数）
  *   - file_view：每个文件被哪些社区占用（多社区文件 → 建议拆分）
  *   - dependencies：社区间调用边（决定拆完 import 怎么补）
  *   - suggestions：文本建议（只给证据 + 启发，落不落盘由人/LLM 裁决）
@@ -74,7 +83,7 @@ export interface AnalyzeMonolithResult {
   message: string;
   /** 参与分析的符号数 */
   symbol_count: number;
-  /** 功能社区数 */
+  /** 结构簇数 */
   community_count: number;
   communities: MonolithCommunity[];
   file_view: MonolithFileView[];
@@ -711,10 +720,10 @@ export function analyzeMonolith(input: AnalyzeMonolithInput): AnalyzeMonolithRes
 
     // 文本报告
     const lines: string[] = [
-      `analyze_monolith：基于调用边圈定 ${communities.length} 个功能社区（${funcs.length} 个符号，锚点 ${allAnchors.length} 个）` + (ownerClusters.length > 0 ? `，${ownerClusters.length} 个类型锚定` : ''),
+      `analyze_monolith：基于调用边圈定 ${communities.length} 个结构簇（${funcs.length} 个符号，锚点 ${allAnchors.length} 个）` + (ownerClusters.length > 0 ? `，${ownerClusters.length} 个类型锚定` : ''),
       `缓存：${dbPath}`,
       '',
-      '功能社区（锚点驱动，功能多大就多大）：',
+      '结构簇（锚点驱动，不设大小下限）：',
     ];
     for (const c of communities) {
       const anchorNames = c.anchors.map((a) => a.split('#').pop()).join(', ');

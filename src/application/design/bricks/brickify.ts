@@ -4,7 +4,7 @@
  * 用户核心洞见（2026-08-24）：拿到一个项目，**先积木化**——每块积木 = 一个功能；
  * 再去识别"一个功能多个相似实现"（同概念散落多份 = 破抽象）与
  * "一个文件塞多个功能"（多概念挤一文件 = 破分离）两种**内聚被打破**的症状；
- * 然后将文件解耦 → 独立成积木；最后按积木的**依赖边做功能社区**聚类，
+ * 然后将文件解耦 → 独立成积木；最后按积木的**依赖边做结构簇**聚类，
  * 取代旧的"按目录硬切 + 文件基名相似"启发式，再进思维导图式运算/重构。
  *
  * 原则（反屎山）：只做**投影 + 组装 + 依赖聚类**，解析/分层/死码全部复用既有原子：
@@ -54,7 +54,7 @@ export interface MixedFileSignal {
   reason: string;
 }
 
-/** 功能社区（按积木间依赖边无向连通） */
+/** 结构簇（按积木间依赖边无向连通分量聚出） */
 export interface Community {
   id: string;
   bricks: string[];
@@ -102,7 +102,14 @@ export interface BrickifyBrick {
   roles: Record<BrickRole, string[]>;
   /** 主导角色（块内文件最多的角色；同数按 积木>契约>胶水，功能优先） */
   role: BrickRole;
-  /** 所属功能社区 id（null = 孤立积木，无任何依赖边） */
+  /**
+   * 所属**结构簇** id（null = 孤立积木，无任何依赖边）。
+   *
+   * ★ 一词一义：这是**按积木间依赖边无向连通分量 + 内聚度聚出的结构分组**——纯拓扑邻近，
+   *   **不代表功能边界**；它是**启发式**结果，**需人确认边界**。
+   *   ★ 本仓的「**功能**」一词只指**人写的功能标记** `overlay.global.function_tags`
+   *   （见 `src/domain/overlay.ts`），不指任何算法聚出的分组。
+   */
   community: string | null;
   /** 落在本积木下的混合文件（解耦候选雷达） */
   mixed_files: string[];
@@ -393,7 +400,7 @@ export async function detectMixedFiles(sourceRoot: string, rels: string[]): Prom
 }
 
 // ─────────────────────────────────────────────────────────────
-// ③ 功能社区（依赖边无向连通分量 + 内聚度）
+// ③ 结构簇（依赖边无向连通分量 + 内聚度）
 // ─────────────────────────────────────────────────────────────
 
 class UnionFind {
@@ -411,7 +418,7 @@ class UnionFind {
   }
 }
 
-/** ③ 功能社区：把文件级依赖边聚合到"积木（目录种子）→ 积木"，按无向连通分量为社区，
+/** ③ 结构簇：把文件级依赖边聚合到"积木（目录种子）→ 积木"，按无向连通分量为社区，
  *  计算每社区内聚度（内部边 / 内部+外部边）。孤立积木也成单点社区。 */
 export function computeCommunities(rels: string[], fileDeps: FileDep[]): Community[] {
   const brickIds = [...new Set(rels.map(featureIdOf))].sort();
@@ -570,7 +577,7 @@ export function computeBrickSubClusters(
 // 汇总：全链路一次打通
 // ─────────────────────────────────────────────────────────────
 
-/** 全链路：扫描 → 文件依赖边 → 目录种子积木 → 混合文件信号 → 功能社区 → 汇总。 */
+/** 全链路：扫描 → 文件依赖边 → 目录种子积木 → 混合文件信号 → 结构簇 → 汇总。 */
 export async function buildBrickify(opts: BrickifyOptions): Promise<BrickifyResult> {
   const proj = path.resolve(opts.project_dir);
   const sourceRoot = path.resolve(opts.source_root ?? proj);
@@ -681,7 +688,7 @@ export async function buildBrickify(opts: BrickifyOptions): Promise<BrickifyResu
     },
     limitations: [
       '积木 = 源码根首层目录做种子，叠加依赖边校正；不自动搬目录（保守）',
-      '功能社区 = 积木间依赖边的无向连通分量 + 内聚度；启发式，需人确认边界',
+      '结构簇 = 积木间依赖边的无向连通分量 + 内聚度；启发式，需人确认边界',
       '第2层小簇 = 积木内按文件级依赖连通分量再聚；目录高度耦合时退化为单簇（degenerate 如实标注，无更小功能边界可切）',
       '三类角色（积木/契约/胶水）= 复用 layer_detect 层的模式启发式映射，非运行时确证；' +
         'type→契约(interface/dto/types)，entry/middleware/config/api→胶水，service/data/ui/utility/core→积木(功能)',

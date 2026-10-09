@@ -2,11 +2,11 @@
  * derive_feature_tree —— 功能树生成（项目 → 功能 → 社区 → 文件）
  *
  * 把"一滩平铺的文件星图"变成逐级下钻的层级导航数据：
- *   项目（feature 根）→ 几大功能 → 社区（analyze_monolith 功能社区）→ 文件
+ *   项目（feature 根）→ 几大功能 → 社区（analyze_monolith 结构簇）→ 文件
  *
  * 数据来源：
- *   - analyze_monolith：基于 cache.db 调用边做跨文件 Louvain 功能社区圈定，
- *     产出 communities（功能社区，锚点名 + 横跨文件）与 file_view（文件内社区分布）。
+ *   - analyze_monolith：基于 cache.db 调用边做跨文件 Louvain 结构簇圈定，
+ *     产出 communities（结构簇，锚点名 + 横跨文件）与 file_view（文件内社区分布）。
  *   - 本工具把社区**二次归并**成"几大功能"，并建立
  *     文件 → 主导社区 → 功能 的归属映射（file_map）。
  *
@@ -222,7 +222,7 @@ export async function deriveFeatureTree(
       .filter((c) => c.files.length > 0)
       .map((c) => ({ id: c.id, name: c.name, files: c.files, est_lines: c.est_lines, symbol_count: c.symbol_count }));
   if (comms.length === 0) {
-    return { feature: input.feature, features: [], file_count: 0, unassigned_count: 0, message: '无有效功能社区' };
+    return { feature: input.feature, features: [], file_count: 0, unassigned_count: 0, message: '无有效结构簇' };
   }
 
   // 3. 归并成功能：目录优先（结构保真，对得上实际项目）——社区按"成员文件主导目录"聚成功能，

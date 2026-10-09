@@ -535,7 +535,7 @@ export async function analyzeFileContent(
   } else {
     const names = base.communities.map((c) => c.suggested_name).join(', ');
     base.suggestion = `${status === 'critical' ? '严重' : '警告'}：${lineCount} 行 / ${units.length} 个顶层声明，` +
-      `Louvain 聚出 ${base.communities.length} 个功能社区，建议拆分：${names}`;
+      `Louvain 聚出 ${base.communities.length} 个结构簇，建议拆分：${names}`;
   }
   return base;
 }

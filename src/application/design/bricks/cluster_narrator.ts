@@ -169,7 +169,7 @@ export function collectNarrUnits(r: BrickifyResult, sourceRoot: string): NarrUni
 /** 确定性降级翻译：LLM 不在时的"事实句"人话（不编造，只陈述）。 */
 export function fallbackNarrative(u: NarrUnit): ClusterNarrative {
   const kindCn: Record<NarrUnit['kind'], string> = {
-    community: '功能社区',
+    community: '结构簇',
     brick: '积木',
     cluster: '功能簇',
   };
@@ -359,7 +359,7 @@ function fallbackOverview(r: BrickifyResult): ProjectOverview {
   }));
   return {
     title: name,
-    desc: `本项目共 ${r.meta.scanned_files} 个源文件，聚成 ${r.bricks.length} 块积木（功能模块）、${r.communities.length} 个功能社区。项目一句话定位待 LLM 翻译（--narrate）。`,
+    desc: `本项目共 ${r.meta.scanned_files} 个源文件，聚成 ${r.bricks.length} 块积木、${r.communities.length} 个结构簇。项目一句话定位待 LLM 翻译（--narrate）。`,
     features,
     mode: 'rule',
   };
@@ -386,18 +386,21 @@ async function narrateOverview(
     .join('\n');
 
   const system =
-    '你是项目解读官。给定项目元信息和它的"积木"（功能模块）清单，请产出项目总览：\n' +
+    '你是项目解读官。给定项目元信息和一份"积木"清单，请产出项目总览：\n' +
+    '★ 口径（务必遵守）：这份"积木"清单是**按依赖关系聚出的结构分组**（源码根首层目录做种子 + 文件间依赖边校正）——' +
+    '它由代码结构聚出，**不代表功能边界**，是启发式结果、**需人确认**；' +
+    '请**不要**把它当成已测量的"功能"来断言。\n' +
     '- title：这个项目本身是什么，≤16 个汉字（如"人机共享的可视化设计工具"），不要出现"项目"二字；\n' +
     '- desc：2-3 句话讲清项目是什么、核心价值（给完全不懂代码的人听）；\n' +
-    '- features：功能清单，与给定积木**一一对应**（每块积木恰好一条：target=积木id，label=≤10字功能名，desc=一句话它给项目提供什么）；\n' +
-    '不得编造积木清单之外的功能；features 条数必须等于积木数。\n' +
+    '- features：与给定积木**一一对应**的清单（每块积木恰好一条：target=积木id，label=≤10 字的定位名，desc=一句话说明这组文件在项目里做什么）；\n' +
+    '不得编造积木清单之外的内容；features 条数必须等于积木数。\n' +
     '只输出 JSON：{"title":"...","desc":"...","features":[{"target":"...","label":"...","desc":"..."}]}';
 
   const user =
     `项目目录=${path.basename(r.meta.project_dir)}\n` +
     (ev.pkg ? `package.json：${ev.pkg}\n` : '') +
     (ev.readme ? `README 摘要：${ev.readme}\n` : '') +
-    `积木清单（${r.bricks.length} 块，功能与人话已初步译出）：\n${brickList}`;
+    `积木清单（${r.bricks.length} 块，名称与人话已初步译出）：\n${brickList}`;
 
   const raw = await callChat(cfg, [
     { role: 'system', content: system },

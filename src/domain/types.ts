@@ -145,7 +145,7 @@ export interface ArchLayer {
   count: number;
 }
 
-/** 功能树下钻：一个社区（analyze_monolith 的功能社区） */
+/** 功能树下钻：一个社区（analyze_monolith 的结构簇） */
 export interface FeatureCommunity {
   /** analyze_monolith 社区 id */
   id: number;

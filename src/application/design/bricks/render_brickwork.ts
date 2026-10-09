@@ -654,12 +654,12 @@ export function buildWorkbenchPreview(opts: { project_dir: string; source_root?:
 }
 
 // ─────────────────────────────────────────────────────────────
-// 依赖驱动的积木化 · 功能社区工作台（消费 BrickifyResult）
+// 依赖驱动的积木化 · 结构簇工作台（消费 BrickifyResult）
 // 社区 = 积木间依赖边的无向连通分量；每块积木=功能；混合文件 = 解耦候选信号。
 // 取代"按目录硬切 + 基名相似"启发式，作为思维导图式运算前的数据地基。
 // ─────────────────────────────────────────────────────────────
 
-/** 渲染依赖驱动的功能社区工作台：社区内聚 + 跨社区桥 + 混合文件诊断。自包含单 HTML。 */
+/** 渲染依赖驱动的结构簇工作台：社区内聚 + 跨社区桥 + 混合文件诊断。自包含单 HTML。 */
 export function renderBrickifyWorkbenchHtml(r: BrickifyResult): string {
   const m = r.meta;
   const projectName = path.basename(m.project_dir);
@@ -727,7 +727,7 @@ export function renderBrickifyWorkbenchHtml(r: BrickifyResult): string {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>功能社区工作台 · ${esc(projectName)}</title>
+<title>结构簇工作台 · ${esc(projectName)}</title>
 <style>
 :root{--bg:#fafafa;--card:#fff;--border:#e4e4e7;--text:#0a0a0a;--muted:#71717a;--brand:#7c3aed;--accent:#2563eb;--danger:#b91c1c;--ok:#16a34a}
 *{box-sizing:border-box}
@@ -780,13 +780,13 @@ footer ul{margin:0;color:var(--muted);font-size:11px;padding-left:18px;display:f
 </head>
 <body>
 <header>
-  <h1>功能社区工作台 · ${esc(projectName)}</h1>
-  <span class="meta">${m.scanned_files} 文件 → ${r.bricks.length} 块积木 → ${r.communities.length} 个功能社区</span>
+  <h1>结构簇工作台 · ${esc(projectName)}</h1>
+  <span class="meta">${m.scanned_files} 文件 → ${r.bricks.length} 块积木 → ${r.communities.length} 个结构簇</span>
   <div class="megacount"><span class="mc"><b>${r.communities.length}</b>社区</span><span class="mc"><b>${r.mixed_files.length}</b>混合文件</span><span class="mc"><b>${bridges.length}</b>跨社区桥</span><span class="mc"><b>${rt.brick}/${rt.contract}/${rt.glue}</b>积木/契约/胶水</span></div>
 </header>
 <main>
   <section>
-    <h2>功能社区（依赖边连通分量，取代"按目录硬切+基名相似"）<span class="hint">积木=功能；社区内聚度 = 内部边/总边</span></h2>
+    <h2>结构簇（依赖边连通分量，取代"按目录硬切+基名相似"）<span class="hint">积木=功能；社区内聚度 = 内部边/总边</span></h2>
     <div class="grid">${commCards}</div>
   </section>
   <section>

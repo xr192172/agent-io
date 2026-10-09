@@ -219,7 +219,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
     description:
       '可视化协作平台的**依赖驱动积木化工作台**渲染（后端数据线路的交付出口）：' +
       '扫描 project_dir → 文件级依赖图 → 目录种子积木 → 混合文件信号(AST 顶层概念簇) → ' +
-      '功能社区(依赖边连通分量+内聚度) → 生成**自包含单 HTML 社区工作台**。' +
+      '结构簇(依赖边连通分量+内聚度) → 生成**自包含单 HTML 社区工作台**。' +
       '取代旧"按目录硬切+基名相似"启发式：每块积木=一个功能，社区=积木依赖簇，' +
       '混合文件=一文件多功能(解耦候选信号，需人/LLM 确认拆分)。' +
       '返回 HTML 文件路径，浏览器可直接打开验收。',
@@ -237,7 +237,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
         out_file: a.output_path as string | undefined,
       });
       const fileUrl = `file:///${out.replace(/\\/g, '/')}`;
-      return { message: `已生成依赖驱动功能社区工作台：${out}\n（浏览器打开 ${fileUrl} 查看积木社区/混合文件诊断）` };
+      return { message: `已生成依赖驱动结构簇工作台：${out}\n（浏览器打开 ${fileUrl} 查看积木社区/混合文件诊断）` };
     }),
   },
 
