@@ -962,6 +962,25 @@
       ⇒ **判据**：① 造一个"设计改了但没实现"的夹具 ⇒ **两视图的 `S:决策` 不同**（且能说清差在哪一版）；
         ② 实现完之后 ⇒ **两视图相同**（= 同步）—— ★ **"重合"这时才是对的**。
 
+      ⇒ ★★★★ **2026-10-09 追查：真正的卡点比"缺写后收口"更深 —— 两者之间没有桥**
+        · **"写完盘"那一刻散在 4+ 处**（`edit_code.ts:19` 注释自陈落盘是**内联四件套**
+          `snapshotBeforeWrite → writeFileSync → syncFile → reopenAndResolveAfterWrite`，
+          而 `edit_code` 自己就有 **2 处**；`rename_files`/`symbol_move` 各 1 处）⇒ **没有共用收口**。
+          ★★ **那正是清单里的 T49**（「**写用户源码**没有**单一可检查通道**」）⇒ **T90 撞上 T49**。
+        · ★★★★★ **更根本的一条（实测）**：**4 个重写工具的 schema 里 `feature` 出现次数 = 0**
+          （`edit_code` / `rename_symbols` / `move_symbol` / `rename_files`）⇒
+          **它们只认 `project_dir`（项目侧），而"决策"住在 feature 侧的 overlay** ⇒ **两边无桥** ✗
+          ⇒ 这解释了今晚的多处现象：`harvest_decisions` 要 `feature`、`edit_code` 要 `project_dir`
+            ⇒ **"挂意图"与"实现"分居两侧**，所以**没有"这次实现用的是哪一版"的落点**。
+      ⇒ **最小可行路径（★ 不必等 T49，也不必改 4 个工具的入参）**：
+        ★ **(B) 按 `project_dir` 反查 feature** —— DSL 自带 **`source_root`** ⇒
+        `getDSL(feature).source_root === project_dir` 即命中；**不改任何入参** ✓
+        ⇒ 然后**在 `snapshotBeforeWrite`（那个**已经存在**的单一咽喉点）记下"写前那一刻各文件的决策摘要"**
+          —— ★★ **"这次实现所依据的决策"就是「写前那一刻的决策」** ⇒ **不需要"写后收口"** ✓
+        ★ **一个项目可能命中多个 feature** ⇒ **明说"命中多个 ⇒ 不标"**（★ 不许替人选；与 `applyChainEdge` 的 `pick` 同一立论）。
+      ⇒ **仍留 T49**：它管的是"**写用户源码的通道本身**"（4 处内联 ⇔ 1 处收口）——
+        那是**独立**的一条（★ 就算 T90 走了 (B)，T49 也该做）。
+
 - [ ] **T69 ★★ 合并形态 S3：上限预算 —— 把 L1 扩成双边 + 配额单点**
       *(核实：2026-10-08 实测我们**只有下限**（`MIN_REASON_CHARS = 6`，见 `reason_validator.ts:73`），
        **人写文本无上限**；而 AOCI 是 `#S quota: C9-8≤600 C7-4≤200 C3-1≤50`（上限，且声明为 machine-contract）。)*
