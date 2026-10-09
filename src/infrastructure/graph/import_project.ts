@@ -830,7 +830,11 @@ async function buildFromMonolith(
       path: m.rels.join(', '),
       responsibility: `${m.name} — 聚合 ${m.rels.length} 个文件 / ${apis.length + nonFuncSymbols.length} 个符号`,
       status: 'done',
-      expected_apis: apis.length > 0 ? apis : undefined,
+      // ★★★ 2026-10-09（T85/D1）：**不再把扫描结果灌进 expected_apis** —— 那是**事实**（权威在 cache.db），
+      //   而 `expected_apis` 是**意图**（T20：「意图册只放意图」）。★ T20 当年摘了 `actual_apis`，**漏了这一处**
+      //   ⇒ 于是「每文件前 50 条」的截断被对账当成了「代码新增」（实测 5/6 个真仓都中）。
+      //   ★ 事实要读请走 `infrastructure/index/file_facts`（现取）；★ 人的意图仍用 `edit_dsl type=api` 写。
+      // expected_apis: （已摘，见上）
       symbols: nonFuncSymbols.length > 0 ? nonFuncSymbols : undefined,
       lines,
     });
@@ -996,7 +1000,11 @@ async function buildFunctionalLayout(
       path: meta.rels.join(', '),
       responsibility: `${base} — 聚合 ${meta.rels.length} 个文件 / ${apis.length + nonFuncSymbols.length} 个符号`,
       status: 'done',
-      expected_apis: apis.length > 0 ? apis : undefined,
+      // ★★★ 2026-10-09（T85/D1）：**不再把扫描结果灌进 expected_apis** —— 那是**事实**（权威在 cache.db），
+      //   而 `expected_apis` 是**意图**（T20：「意图册只放意图」）。★ T20 当年摘了 `actual_apis`，**漏了这一处**
+      //   ⇒ 于是「每文件前 50 条」的截断被对账当成了「代码新增」（实测 5/6 个真仓都中）。
+      //   ★ 事实要读请走 `infrastructure/index/file_facts`（现取）；★ 人的意图仍用 `edit_dsl type=api` 写。
+      // expected_apis: （已摘，见上）
       symbols: nonFuncSymbols.length > 0 ? nonFuncSymbols : undefined,
       lines,
     });
@@ -1615,7 +1623,11 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       path: dir.rel + '/',
       responsibility: `${dir.rel} — 聚合 ${apis.length + nonFuncSymbols.length} 个符号`,
       status: 'done',
-      expected_apis: apis.length > 0 ? apis : undefined,
+      // ★★★ 2026-10-09（T85/D1）：**不再把扫描结果灌进 expected_apis** —— 那是**事实**（权威在 cache.db），
+      //   而 `expected_apis` 是**意图**（T20：「意图册只放意图」）。★ T20 当年摘了 `actual_apis`，**漏了这一处**
+      //   ⇒ 于是「每文件前 50 条」的截断被对账当成了「代码新增」（实测 5/6 个真仓都中）。
+      //   ★ 事实要读请走 `infrastructure/index/file_facts`（现取）；★ 人的意图仍用 `edit_dsl type=api` 写。
+      // expected_apis: （已摘，见上）
       symbols: nonFuncSymbols.length > 0 ? nonFuncSymbols : undefined,
       lines: subtreeFiles.reduce((sum, f) => sum + (lineCounts.get(f.rel) ?? 0), 0),
     });
@@ -1713,7 +1725,7 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
         path: f.rel,
         responsibility: `${f.dir === '.' ? '根目录' : f.dir} — ${apiCount} 个 API（导入自 ${(p?.imports.length || 0)} 个模块）`,
         status: 'done',
-        expected_apis: apis,
+        // ★★★ 2026-10-09（T85/D1）：**已摘掉 expected_apis: apis** —— 见上一条同款注释。
         symbols: syms.length > 0 ? syms : undefined,
         lines: lineCounts.get(f.rel) ?? 0,
         // ★ 2026-10-01（T20）：`actual_apis` / `actual_deps` **不再回填进 DSL** ——

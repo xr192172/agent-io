@@ -87,6 +87,9 @@ export const consistencyHandler = wrapData(async (a) => {
       fileResults: r.fileResults,
       invariantResults: r.invariantResults,
       summary: r.summary,
+      // ★ T85/D3：**线 1 也要进机器通道** —— 否则只有 message 里有、`---DATA---` 里没有
+      //   ⇒ 调用方解析不到它（而"代码变了没"正是要给机器用的）。
+      baselineDrift: r.baselineDrift,
     };
     if (exp) data.expectation_results = { checked: exp.checked, passed: exp.passed, failed: exp.failed, unsupported: exp.unsupported, items: exp.items, notes: exp.notes };
     else if (expNotes.length) data.expectation_results = { checked: 0, passed: 0, failed: 0, unsupported: 0, items: [], notes: expNotes };
@@ -222,6 +225,8 @@ export const consistencyHandler = wrapData(async (a) => {
       clean_files: d.clean_files,
       notes: allNotes,
       summary: r.summary,
+      // ★ T85/D3：线 1 进机器通道（同早返回那条的说明）
+      baselineDrift: r.baselineDrift,
       touched,
       ...(exp
         ? { expectation_results: { checked: exp.checked, passed: exp.passed, failed: exp.failed, unsupported: exp.unsupported, items: exp.items, notes: exp.notes } }

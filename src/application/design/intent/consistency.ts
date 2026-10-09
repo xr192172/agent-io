@@ -437,19 +437,15 @@ export async function checkConsistency(input: ConsistencyInput): Promise<Consist
       }
     }
 
-    for (const actual of actualApis) {
-      if (!matchedNames.has(actual.name)) {
-        apiMatches.push({
-          expected_signature: '',
-          actual_signature: actual.signature,
-          actual_location: `${file.path}:${actual.start_line}`,
-          status: 'unexpected',
-          match_score: 0,
-          reason: 'DSL 中未定义此 API',
-        });
-        unexpectedCount++;
-      }
-    }
+    // ★★★ 2026-10-09（T85/D1b）：**这里原来会报「代码新增」—— 现已移除，且是不该存在的一类。**
+    //   理由（一句话）：**`expected_apis` 是「人指定的契约」，不是「必须等于代码」**
+    //   ⇒ "代码里有、契约里没写"是**常态**（没人会为每个内部函数都写契约），**不是差异**。
+    //   ★ 而"**代码相对基线新增了什么**"是**另一个问题** ⇒ 归**线 1**（`checkBaselineDrift`）✓
+    //     —— 那才是"新增"的正主（它有"基线"这个对手；而本函数没有）。
+    //   ★ 记账：这条此前会把"fork 时被 50 上限截掉的 symbol"全报成"代码新增"
+    //     （实测 5/6 个真仓：`elv` 44 条、`dsh-brain` 25 条……用户对真项目做的**第一件事**就看到它）。
+    //   ★ `unexpectedCount` **保留字段但恒 0**（`ConsistencyResult.summary.unexpected` 有外部读者，
+    //     删字段会波及下游；而"恒 0 + 本节说明"语义正确且零破坏）。
 
     fileResults.push({
       file,
@@ -528,10 +524,16 @@ export async function checkConsistency(input: ConsistencyInput): Promise<Consist
     lines.push('');
   }
 
+  // ★ T85/D1b：**明说这件事** —— 否则读的人会以为「没有代码新增」等于「代码没变」。
+  lines.push('');
+  lines.push('  ★ 本节的 missing / mismatched 是**线 2**（**人指定的契约** vs 实现）；');
+  lines.push('    「**代码新增**」**不在本节** —— 它是**线 1** 的事（相对**基线**），见下面「线 1 · 代码相对基线的变更」。');
+  lines.push('');
   lines.push('【建议】');
   if (missingCount > 0) lines.push('  - 实现缺失的 API');
   if (mismatchedCount > 0) lines.push('  - 修正签名不匹配的函数');
-  if (unexpectedCount > 0) lines.push('  - 考虑将代码新增的 API 添加到 DSL expected_apis');
+  // ★ T85/D1b：原建议「把代码新增的 API 添加到 DSL expected_apis」**已删** —— 那是**把事实塞进意图**
+  //   （正是 T20/T85 要根治的）。★ 想看「代码新增了什么」⇒ 看**线 1**（相对基线）。
   if (invariantFailed > 0) lines.push('  - 修复失败的不变式');
   lines.push('');
 
