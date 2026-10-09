@@ -330,6 +330,57 @@ export const CHAIN_EDGES: readonly ChainEdge[] = [
       '我最初只改了给 scope 的那条 ⇒ **默认那条根本不产 `touched`**。' +
       '⇒ 两条路径现在**共用同一套判据**（`hasDiff` 与 `groupExpectationFails`，都是导出的单点）。',
   },
+
+  // ── ★★★ 2026-10-09（T82 的硬前提）：**入口也能上链了** ──
+  //   在此之前 `import_project`（建档 = 这条链的**第一步**）在 `deriveObjectChains()` 里**永远没有它**。
+  //   ★ 根因**不是"没写这条边"**，而是它交的两个键（`feature` / `project_dir`）**都是作用域键**
+  //     （`ANY_TOOL → ANY_TOOL`，见 `SCOPE_PATHS`）⇒ **一个对象都不承载**。
+  //   ★ 实测代价（T82，2026-10-09 真跑试用）：手写 `direct` 名单 9 个，去掉"没上链的 6 个"之后
+  //     会**削掉 `import_project`（新人第一站）/ `edit_dsl`（写设计）/ `capability_map`（导航它自己）**。
+  //   ⇒ 补法 = 让它交出一个**对象类**锚点 `scope_files`（= 本次扫进来、归本 feature 管的源码文件），
+  //     与 `get_dsl query=scope`（作用面）、`consistency_check`（差异面）**同一把钥匙、同一个语义**。
+  {
+    from: 'import_project',
+    fromKey: 'scope_files',
+    to: 'edit_code',
+    toPath: 'file',
+    cardinality: 'pick',
+    evidence: 'verified',
+    note:
+      '★ 真跑（2026-10-09，夹具 `C:/tmp/agentio_t82`，3 个 TS 文件）：' +
+      '`import_project {project_dir,feature}` ⇒ `touched.scope_files=["src/core/format.ts","src/core/math.ts","src/util/calc.ts"]`' +
+      '（与读数 `files_parsed:3` 同源）⇒ 取 `[0]` 放进 `edit_code.file`（`op=range` L1-L3 + 调用方给的 `code`）' +
+      '⇒ `ok=true` / `written=true` / `written_files=["src/core/format.ts"]` ⇒ **真落盘**（diff 逐字可见）。' +
+      '★★ **零字段名翻译**：`scope_files[0]` → `file`、`touched.project_dir` → `project_dir`（后者走通用边）。' +
+      '★ 之所以是 `pick`：导入的是**一整个项目**（本仓实测 400 文件）⇒ 改哪一个是**语义判断**，`applyChainEdge` 不替你选' +
+      '（与 `get_dsl` 那两条同款）。' +
+      '★★ **前提**：`edit_code.file` 相对 `project_dir` 解析，而 `scope_files` 是**仓库相对** ⇒ ' +
+      '**必须同时把 `touched.project_dir` 传过去**，让两者同基准。',
+  },
+
+  // ── ★★★ 2026-10-09（T82 的硬前提·第 2 条）：**写设计这一步也上链了** ──
+  //   与上一条同病同治：`edit_dsl` 的 `touchedOf` 原先**只给 `feature`**（作用域键）⇒ 零对象 ⇒ 上不了链。
+  //   而它**明明有对象可交**：它改的就是 DSL 的**节点** —— `Touched.nodes` 这个键**早就存在**。
+  //   ⇒ 补法 = `touchedOf` 交出 `nodes`（只收 `id` 就是节点 id 的那几种 op：`node`/`binding`/`status`；
+  //     `edge`/`file`/`api` 的 `id` **不是节点**，一个都不收 —— §2.2「名字像 ≠ 同义」）。
+  {
+    from: 'edit_dsl',
+    fromKey: 'nodes',
+    to: 'get_dsl',
+    toPath: 'node_id',
+    cardinality: 'pick',
+    evidence: 'verified',
+    note:
+      '★ 真跑（2026-10-09，夹具 `C:/tmp/agentio_t82` 的 feature `t82probe`）：' +
+      '`edit_dsl {op:move,type:node,id:"file_src_core_format_ts"}` ⇒ `touched.nodes=["file_src_core_format_ts"]`' +
+      '⇒ 取 `[0]` 放进 `get_dsl.node_id`（`query="node"`）⇒ **真读到该节点**（`label/type/x/y` 全在）。' +
+      '★ 之所以是 `pick`：一次 `edit_dsl` 可以改**多个**节点（`operations[]` 是数组）⇒ 下游看哪个由调用方定。' +
+      '★★ **口径（别拿它当"改了哪些节点"的唯一来源）**：只给**落定后仍存在**的 id —— ' +
+      '`op=delete` 之后那个节点已经不在 DSL 里，交出去会让下游去查一个**不存在的节点**。' +
+      '★ 出生证（真跑，能区分）：同一次调用里 `delete dir_src_util` + `move file_src_core_math_ts` ⇒ ' +
+      '`touched.nodes=["file_src_core_math_ts"]` —— **两个都被点名，只给活着的那个** ✓' +
+      '（与 `find_references.file` "只在真有定义时才给" 同款判据）。',
+  },
 ];
 
 /**

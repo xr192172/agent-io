@@ -135,6 +135,19 @@ export interface ImportProjectResult {
   message: string;
   feature: string;
   files_parsed: number;
+  /**
+   * ★★★ **本次扫进来、归本 feature 管**的源码文件（仓库相对、`/` 分隔）。
+   *
+   * ★ **与 `touched.scope_files` 同名同义**（零字段名翻译）：`import_project` 是链的**入口**，
+   *   它在链上要交出的"对象"就是**这条链接下来该关注的文件面**。
+   * ★ 为什么不复用 `files_parsed`：那个是**数**（`number`），这个是**集合**（`string[]`）——
+   *   按 §2.2「名字像 ≠ 同义」，**不改既有字段名，只新增**。
+   * ★ 为什么 `import_project` 需要一个对象类锚点（2026-10-09 实测）：它的 `touched` 此前只有
+   *   `feature` / `project_dir`，**两者都是作用域键**（`ANY_TOOL → ANY_TOOL`）⇒ **不计入对象边**
+   *   ⇒ `deriveObjectChains()` 里**永远没有它**（建档=第一步 却是唯一上不了链的入口）。
+   * ★ 恒非空：`absFiles.length === 0` 在下面直接 `throw`（第 1112 行）⇒ 不是兜底，是**不变量**。
+   */
+  scope_files: string[];
   symbols_found: number;
   dep_edges: number;
   dirs_created: number;
@@ -1483,6 +1496,8 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       message,
       feature,
       files_parsed: files.length,
+      // ★ 对象类锚点：与 `files_parsed` 同源、不同形（集合 vs 数）。见 `ImportProjectResult.scope_files`。
+      scope_files: files.map((f) => f.rel),
       symbols_found: symbolsFound,
       dep_edges: fileDeps.length,
       dirs_created: dirCount,

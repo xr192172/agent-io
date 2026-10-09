@@ -142,7 +142,46 @@ function updateFeatureCore(input: UpdateFeatureInput): EditResult {
 function touchedOf(input: UpdateFeatureInput): Touched {
   // 只给作用域类 feature：本工具改的是 **DSL（活文档）不是文件** ⇒ **不给 written_files**
   //   （在 DSL 内存模型上落 saveDSL，不对应"仓库相对路径的源文件"；硬填会把"改了设计"谎报成"改了源码文件"）。
-  return { feature: input.feature };
+  const nodes = touchedNodeIds(input);
+  return nodes.length ? { feature: input.feature, nodes } : { feature: input.feature };
+}
+
+/**
+ * ★★★ 2026-10-09（T82 的硬前提）：**对象类锚点 = 本次操作点名的那些节点**。
+ *
+ * ## 为什么要补（实测，不是洁癖）
+ * `touchedOf` 原先**只给 `feature`** —— 那是个**作用域键**（`CHAIN_EDGES` 里是 `ANY_TOOL → ANY_TOOL`）
+ * ⇒ **一个对象都不承载** ⇒ `deriveObjectChains()` 里**永远没有 `edit_dsl`**
+ * ⇒ 手写 `direct` 名单里它删不得（T82 实测：删了会**削掉"写设计"这一步**）。
+ * ★ 而它**明明有对象可交**：它改的就是 DSL 的**节点**，而 `Touched.nodes` **这个键早就存在**。
+ *
+ * ## 口径（哪些算、哪些不算）
+ * 只收 **`id` 就是节点 id** 的那几种 op：
+ *   · `node`    —— 通用增/删/改/移，`id` = `node_id`（见 `applyNodeOp`：`addNode({node_id: id, …})`）；
+ *   · `binding` —— `setNodeSemantic({node_id: op.id, …})`；
+ *   · `status`  —— `updateStatus({node_id: op.id, …})`。
+ * ★ **其余 type 的 `id` 不是节点**，一个都不收：`edge` 是**边**、`file`/`api` 是**语义实体**、
+ *   `annotation`/`approval`/`snapshot`/`layout`/`simulation` 是**协作对象**
+ *   ⇒ 塞进来就是 §2.2 那条「**名字像 ≠ 同义**」（都叫 `id`，指的不是一类东西）。
+ *
+ * ## ★★ 只给「**落定后**仍存在」的 id（这条是硬要求，不是优化）
+ * `op=delete` 执行完那个节点**已经不在 DSL 里**了 —— 再把它的 id 交出去，下游（如 `get_dsl query=node`）
+ * 会去查一个**不存在的节点**。
+ * ★ 这是本仓已经栽过的那一课的**同款**：`find_references` 的 `file` **只在真有定义时才给**
+ *   （`mode=field` 下整项省略）—— 判据是**"无条件能宣称的东西"**，不是"夹具里恰好成立"。
+ * ★ 所以这里**回读一次** `getDSL`（此时 `updateFeatureCore` 已 save，读到的是**落定后**的状态）
+ *   与 `rename_symbols.symbols` 给**新名**同口径。
+ */
+function touchedNodeIds(input: UpdateFeatureInput): string[] {
+  const named = input.operations
+    .filter((op) => op.type === 'node' || op.type === 'binding' || op.type === 'status')
+    .map((op) => op.id)
+    .filter((id): id is string => typeof id === 'string' && id.length > 0);
+  if (named.length === 0) return [];
+  const alive = new Set(
+    ((getDSL(input.feature)?.geometry?.nodes ?? []) as Array<{ id: string }>).map((n) => n.id),
+  );
+  return [...new Set(named)].filter((id) => alive.has(id));
 }
 
 export function updateFeature(input: UpdateFeatureInput): TouchedProduct<EditResult> {

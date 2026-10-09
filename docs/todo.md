@@ -977,6 +977,22 @@
           ⇒ 要产**对象类**锚点（候选：它扫出的**文件集合** = 新键 `scope_files`，与 `get_dsl query=scope` 同族 ✓）；
         · **`edit_dsl`**：它改了 **DSL 的节点** ⇒ 候选锚点 = 它改的 `nodes[]`（★ 而 `Touched.nodes` **已有** ✓）。
         ⇒ 两条边一加，`composed` 里就会出现 `import_project` 与 `edit_dsl` ⇒ **那时去手写才安全** ✓
+      ⇒ ★★★★ **2026-10-09 当天就补完了这两条边（真跑读数，不是推断）**：
+        **① `import_project` ⇒ 交 `scope_files`**（`ImportProjectResult.scope_files` + 入口层搬进 `touched`）。
+          真跑（夹具 `C:/tmp/agentio_t82`，3 个 TS 文件）：`touched.scope_files=["src/core/format.ts","src/core/math.ts","src/util/calc.ts"]`
+          ⇒ 取 `[0]` 直喂 `edit_code.file`（`op=range`）⇒ `ok=true` / `written=true` / `written_files=["src/core/format.ts"]` ✓
+        **② `edit_dsl` ⇒ 交 `nodes`**（`touchedOf` 原先**只给 `feature`**，是个作用域键 ⇒ 零对象 ⇒ 上不了链）。
+          真跑：`edit_dsl {op:move,type:node,id:"file_src_core_format_ts"}` ⇒ `touched.nodes=["file_src_core_format_ts"]`
+          ⇒ 取 `[0]` 直喂 `get_dsl.node_id`（`query="node"`）⇒ **真读到该节点** ✓
+          ★ 口径：只收 `id` **就是节点 id** 的 op（`node`/`binding`/`status`）；`edge`/`file`/`api` 的 `id` **不是节点**，一个都不收。
+          ★★ 只给**落定后仍存在**的 id（`op=delete` 后那个节点已不在 DSL 里）。**出生证（能区分）**：
+             同一次调用 `delete dir_src_util` + `move file_src_core_math_ts` ⇒ `nodes=["file_src_core_math_ts"]`
+             —— **两个都被点名，只给活着的那个** ✓
+        ⇒ **复算面读数**（走真工具 `capability_map`）：派生链 7→9 个（新增 `import_project` / `edit_dsl`）、
+          `composed` 9→**13** 个；`direct` 里**仍未上链**的 **6→4 个**（`capability_map` / `design_intent` / `explore_code` / `rename_files`）。
+        ⇒ ★ **前提只解了一半**：T82 想删的那 3 个门里，`import_project` ✓、`edit_dsl` ✓，**`capability_map` 仍然上不了链**
+          ⇒ **手写 `direct` 那一半今天仍然删不得**（那句"待用数据替换"照旧成立）。
+        ⇒ ★★ **顺带撞上 T71（同一根因，见下）**：面上成员 **9→13** 变了，而 `npm run snap:diff` **仍 6/6 全绿**。
 - [ ] **T69 ★★ 合并形态 S3：上限预算 —— 把 L1 扩成双边 + 配额单点**
       *(核实：2026-10-08 实测我们**只有下限**（`MIN_REASON_CHARS = 6`，见 `reason_validator.ts:73`），
        **人写文本无上限**；而 AOCI 是 `#S quota: C9-8≤600 C7-4≤200 C3-1≤50`（上限，且声明为 machine-contract）。)*
@@ -996,6 +1012,16 @@
       *(核实：2026-10-08 实测「面成员变化**没有任何东西会变红**」——我把 `import_project`/`design_intent`/`capability_map`
        加进 `LANE_META.direct`，编排面 9→12 个，而 `npm run snap:diff` **仍 6/6 全绿**
        （`tool-surface` 观测点量的是 `TOOL_DEFS` 的 61 个契约，**不含面成员**）。)*
+      ⇒ ★★★ **2026-10-09 第 2 次实测坐实（不是同一件事的重复，是"换了成因又撞一次"）**：
+        T82 补完两条对象边后，**派生链 7→9 个**、`composed` **9→13 个**（走真工具 `capability_map` 读数）
+        —— 而 `npm run snap:diff` **仍然 6/6 全绿**。
+        ★ 与 10-08 那次**成因不同**：那次动的是**手写 `direct`**，这次动的是**机器算的派生链**
+          二者**都不在**任何观测点里 ⇒ **整块"面"（两半）全裸**。
+        ★★ 这正是本仓那条老病：**判据设计错时，它给出的"全绿"看起来同样干净**（§2.3）
+          —— 我若只看 `snap:diff`，会得出"本次改动零行为变化"的**错结论**
+          （实际：`importProject` 多回一个字段、`updateFeature` 的 `touched` 多一个键、`CHAIN_EDGES` 多两条边）。
+        ⇒ ⇒ **本条的判据升级**：不只要"面变 ⇒ 红"，还要**两半各红一次**
+          （① 改 `LANE_META.direct` ⇒ 红；② 删一条 `CHAIN_EDGES` ⇒ 红）。
       ⇒ **形状**：快照多一个观测点（`facesOf()` 输出的面→名单映射）。
       ⇒ **判据**：**把 `import_project` 从 `direct` 拿掉 ⇒ `snap:diff` 变红**。
       ⇒ ★ 注意本仓规则：**不建门、不建 fixture、不建棘轮基线**（`todo.md` 规则 4）—— 本条是**扩观测点**，

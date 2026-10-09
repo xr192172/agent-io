@@ -533,13 +533,36 @@ export const DESIGN_TOOLS: ToolDef[] = [
       // ★★★ 2026-10-09（T81 续）：**它是链的起点，必须有自己的产物端口径**。
       //   实测缺口：端到端真跑时 `import_project` 的 `touched` **完全为空** ——
       //   于是"建档 → 写设计 → 对拍"这条链的**第一段根本没有交接物**（只能靠调用方自己记住 feature）。
-      //   ★ 只给**与它实际产物相符**的两个键：
+      //   ★ 只给**与它实际产物相符**的键：
       //     · `feature` = 本次建的那个活文档（就是"我产出了什么"）
       //     · `project_dir` = 本次分析的那个项目根（通用边）
       //   ★ **刻意不给 `written_files`**：它写的是 `<dataHome>` 下的 DSL/存档/索引 ——
       //     按 `Touched.written_files` 的口径「排除工具自有的状态/账本/索引目录」+「写在 dataHome 下的
       //     本就不是仓库相对 ⇒ 从来不给」⇒ **给了就是谎报"我改了源码"**。
-      return { message, data: { ...data, touched: { feature, project_dir } } };
+      //   ★★★ 2026-10-09 续（**对象类锚点**，T82 的硬前提）：上两个键**都是作用域键**
+      //     （`project_dir` / `feature` 在 `CHAIN_EDGES` 里是 `ANY_TOOL → ANY_TOOL`）
+      //     ⇒ **不计入对象边** ⇒ `deriveObjectChains()` 里**永远没有 `import_project`**
+      //     ⇒ 它是**唯一上不了链的入口**。
+      //     实测（`docs/todo.md` T82）：手写 `direct` 里 9 个工具，去掉没上链的 6 个之后
+      //     会**削掉 `import_project`（建档=第一步）/ `edit_dsl`（写设计=第二步）/ `capability_map`（导航它自己）**
+      //     ⇒ "新人第一站"没了。⇒ 补法 = 让它交出一个**对象类**锚点。
+      //   ★ 为什么是 `scope_files` 而不是新造一个键：它**已经存在且语义正好**
+      //     （=「**我圈定了 / 要我关注的文件**」，仓库相对）—— 本工具交的是**导入面**（本次扫进来、归本 feature 管的源码文件），
+      //     与 `get_dsl query=scope`（作用面）、`consistency_check`（差异面）**同一把钥匙、同一个语义**。
+      //   ★ 字段名**零翻译**：`[B]` 的 `ImportProjectResult.scope_files` 就叫这个名字 ⇒ 这里直接搬。
+      return {
+        message,
+        data: {
+          ...data,
+          touched: {
+            feature,
+            project_dir,
+            // ★ 与另外三个产者同形（`handlers.ts:115`/`:219`、`query_feature.ts:778`）：
+            //   **没圈到就省略整个键，不给空数组**（空数组会被读成"真的没有文件"）。
+            ...(data.scope_files.length ? { scope_files: data.scope_files } : {}),
+          },
+        },
+      };
     }),
   },
 
