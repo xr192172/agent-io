@@ -270,6 +270,30 @@ export const CHAIN_EDGES: readonly ChainEdge[] = [
       '（`op=replace` + 调用方给的 `code`）⇒ `ok=true`。★ 之所以是 `pick`：一次批量改 N 个符号就有 N 个。' +
       '★ `symbols` 装的是**新名**（下游拿新名继续操作；给旧名会让链静默接错）。',
   },
+
+  // ── ★★★ 2026-10-09（T81）：**design 线的第一条对象边** ──
+  //   在此之前 `CHAIN_EDGES` **一条 design 线都没有**（实测：design 线 12 个工具作上下游各 0）。
+  //   根因不是"没写"，而是**只读工具没有能交给下游的对象**：`Touched` 里原先只有
+  //   `written_files`（我**改了**哪些）与 `file`（主语**住**在哪），**没有一个"我圈定了哪些"**。
+  //   ⇒ 为此新增了 `Touched.scope_files`（作用面·**只读也成立**），并让 `get_dsl query=scope` 产出它。
+  {
+    from: 'get_dsl',
+    fromKey: 'scope_files',
+    to: 'edit_code',
+    toPath: 'file',
+    cardinality: 'pick',
+    evidence: 'verified',
+    note:
+      '★ 真跑（2026-10-09，夹具 3 文件）：`get_dsl {query:"scope", scope:"arch_layer:service"}` ⇒ ' +
+      '`touched.scope_files=["src/core/format.ts","src/core/math.ts"]` ⇒ 走 `applyChainEdge` 取 `[0]` 放进 ' +
+      '`edit_code.file`（`op=range`）⇒ **真落盘成功**（改后源码逐字可见）。' +
+      '★ 之所以是 `pick`：一个 scope 圈住的通常是**一组**文件，改哪一片是**语义判断**（`applyChainEdge` 因此**不替你选**）。' +
+      '★★ **前提（与 `written_files → edit_code.file` 同款）**：`edit_code.file` 相对 `project_dir` 解析，' +
+      '而 `scope_files` 是**仓库相对** ⇒ **必须同时把 `touched.project_dir`（通用边）传过去**，让两者同基准。' +
+      '★ 这一条的意义不在"多一条边"，而在：**编排里第一次有了设计侧**（此前只有 refactor 线）。' +
+      '★ 同形但**未逐条验**的边（故**先不写进表**）：`scope_files → move_symbol.file`、' +
+      '`scope_files → rename_symbols.renames[].file` —— 验过再加，不把预测写成实测。',
+  },
 ];
 
 /**

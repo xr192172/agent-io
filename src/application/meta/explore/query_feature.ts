@@ -763,7 +763,20 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
         '',
         '  ★ 本 scope 由**纯函数**解析（同一输入两次结果**逐字相同**）—— 下游"分区域重写 / 对账"的稳定命名就以它为准。',
       );
-      return { message: [`══ scope ${formatScope(r.scope)} ${viewTag} ══`, '', ...body].join('\n'), data: r };
+      // ★★★ 2026-10-09（T81）：**让只读工具也能交出"对象"**。
+      //   实测病灶：design 线 12 个工具**一条对象边都接不上**（`CHAIN_EDGES` 里作上下游各 0），
+      //   根因是它们的产物里**没有任何"能交给下游的对象"**（只读工具没有 `written_files`）。
+      //   ⇒ 而"我圈定了哪一片"**恰恰是它给出的**（`ResolvedScope.paths` 是确定的文件集合）。
+      //   ★ 口径**照抄 `written_files` 立下的规矩**：
+      //     · 语义上这是**作用面**（我圈定了/审阅了哪些），**不是**"我改了哪些" ⇒ 用**新键 `scope_files`**；
+      //     · ★ **没框到就省略整个键**（不给空数组）—— 空数组会被下游读成"真的没有文件"，
+      //       省缺才是"这次没圈到东西"（与 `written_files` 同一条口径）。
+      const touched: Record<string, unknown> = { feature: dsl.feature };
+      if (r.paths.length) touched.scope_files = r.paths;
+      return {
+        message: [`══ scope ${formatScope(r.scope)} ${viewTag} ══`, '', ...body].join('\n'),
+        data: { ...r, touched },
+      };
     }
 
     // ── 一行式认知索引（AOCI 形状的**派生视图**：只读、不落盘、不新增真相源）──
