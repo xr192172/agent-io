@@ -188,10 +188,17 @@ export interface DiffViewsResult {
     /** 基线视图（契约创立时刻的 fork）是否存在 */
     baseline_exists: boolean;
     /**
-     * ★★ **T86**：本次比较的「**事实抵消**」前提核对结果（空 = 前提成立）。
+     * ★★ **T86**：本次比较的「**事实抵消**」前提核对结果。
+     *
+     * ★★★ **只在"前提不满足"时才有这个键**（正常路径**根本不出现**）——
+     *   这是"**防御性判据的成本要匹配它的触发概率**"那条通则的落地：
+     *   本节检的是「两侧 `source_root` 不同 / 缺失」，而**正常流程下两侧同源于一次 `import_project`
+     *   ⇒ 必然相同**（★ 我试了两种造法**都造不出**这个坏状态：删 `features/<f>.json` 的字段没用
+     *   —— `getDSL` 优先读"活态文件"；传不同 `live_dir` 也没用 —— 它不改 `source_root`）。
+     *   ⇒ 既然**几乎永远为空**，就**不该占常态输出的位置**（否则每次多一个恒空的字段，还会让人以为"这里有东西看"）。
      * ★ 非空 ⇒ 下面的差异**不能**直接读成「设计变了」或「代码变了」。见 `mergedApis` 的文档。
      */
-    notes: string[];
+    notes?: string[];
     /** 总体统计 */
     summary: {
       /** 设计视图文件数 */
@@ -682,8 +689,8 @@ function diffViewsCore(input: DiffViewsInput): DiffViewsResult {
       design_exists: !!design,
       live_exists: !!live,
       baseline_exists: !!baseline,
-      // ★ T86：结构化通道也要有（否则只有人看得见、机器解析不到）
-      notes: factsNotes,
+      // ★ T86：**前提成立时这个键根本不出现**（见类型上的说明 —— 防御成本要匹配触发概率）
+      ...(factsNotes.length ? { notes: factsNotes } : {}),
       summary: {
         design_files: designFiles.length,
         live_files: liveFiles.length,
