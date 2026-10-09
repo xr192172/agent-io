@@ -809,6 +809,10 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
         '',
       ];
       const cards: Array<Record<string, unknown>> = [];
+      // ★ T89：决策卡住在 `geometry.nodes[].decision`（`semantic.files` 上没有）⇒ 建个索引一次，循环里用
+      const nodeById = new Map(
+        ((dsl.geometry?.nodes ?? []) as Array<{ id: string; decision?: unknown }>).map((n) => [n.id, n]),
+      );
       for (const f of files) {
         const seg: string[] = [];
         // F ← responsibility（无则不填占位）
@@ -830,6 +834,16 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
         if (f.lifecycle && f.lifecycle.status !== 'active') {
           s.push(`生命周期=${f.lifecycle.status}${f.lifecycle.merged_into ? `→${f.lifecycle.merged_into}` : ''}`);
         }
+        // ★★★ 2026-10-09（T89，用户提案）：**S 里也要有「决策卡」** —— 那才是**人写的设计意图**。
+        //   ★ 用户原话：*"哪怕是**实际 DSL** 也能**一眼看出来**其上面标注的一些**设计意图**什么的。"*
+        //   ⇒ 决策卡住在 **`geometry.nodes[].decision`**（`semantic.files` 上没有）⇒ 从这里取。
+        //   ★ **同一份渲染、实际 DSL 也成立**：决策卡由 `applyOverlay` 回填进 base ⇒
+        //     不管这份是"设计"还是"实际"，**挂上去的意图都会显示** ✓
+        //   ★ 只取**最高熵的两个短字段**（`summary` / `acceptance`）——
+        //     `rationale` 太长会把"一行一个文件"撑破（★ 那正是本节存在的理由：**一眼**）。
+        const dec = (nodeById.get(f.id) as { decision?: { summary?: string; acceptance?: string } } | undefined)?.decision;
+        if (dec?.summary?.trim()) s.push(`决策=${dec.summary.trim()}`);
+        if (dec?.acceptance?.trim()) s.push(`验收=${dec.acceptance.trim()}`);
         if (s.length) seg.push(`S:${s.join(' ; ')}`);
         const tag = f.layer ? `[${f.layer}]` : '';
         const body = seg.length ? seg.join(' | ') : '(语义层无 F/R/A/S 字段可投影)';
