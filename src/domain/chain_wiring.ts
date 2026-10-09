@@ -560,8 +560,8 @@ export const CHAINS: readonly Chain[] = [
       '再 `consistency_check` ⇒ **通过 1 / failed 0**（`scope_files` 随之省略）⇒ **闭环** ✅' +
       '★★ **逐段交接物（如实，别粉饰）**：①→② `feature`（**作用域**）· ②→③ `feature`（**作用域**）· ' +
       '③→④ **`scope_files → file`（对象边，已 `verified`）** · ④→⑤ `project_dir`（**作用域**，通用边）。' +
-      '★ 所以 `hopsOf` 会把**前两段与末段**报成"无对象边" —— ★ 而那是**信号不是判决**（见 `objectGapOf` 的注释）：' +
-      '**设计侧工具的对象天然都住在同一个 feature 里**（DSL / 决策 / 验收 / 差异块），' +
+      '★ 所以 `hopsOf` 会把**前两段与末段**报成 **`scope-only`（弱交接）** —— ★ 那不是"断"：' +
+      '**设计侧工具的对象天然都住在同一个 `feature` 里**（DSL / 决策 / 验收 / 差异块），' +
       '它们之间**本来就靠作用域键 `feature` 交接** ⇒ "没有对象边"在这里是**结构事实**，不是断链。' +
       '★★ 真跑中修掉的**真缺口**：`import_project` **原本连 `touched` 都没有** ⇒ 这条链的**第一段根本没有交接物**' +
       '（调用方只能自己记住 `feature`）。已补 `touched={feature, project_dir}`；' +
@@ -602,57 +602,90 @@ export function verifiedEdgesBetween(from: string, to: string): readonly ChainEd
 export const SCOPE_PATHS = new Set(['project_dir', 'feature']);
 
 /** 一段的判定 —— ★ **只报事实**，不判生死。 */
+/**
+ * 一段链路的判定 —— ★★★ **三值**（2026-10-09，`docs/todo.md` T83）。
+ *
+ * ## 为什么必须是三值（实测暴露）
+ * 写 `design-loop`（用户那条工作流）时：**每一段都端到端真跑通、闭环**
+ * （验收 failed 1 → 改写 → 通过 1），而旧判据把它报成**三处「⚠ 无对象类边」** ——
+ * 因为那几段靠 **`feature`（作用域键）** 交接，而判据**特意剔除作用域边**
+ * （理由见 `verifiedEdgesBetween`：不剔就"恒真、没有信息量"）。
+ * ⇒ **判据错吗？不错。错的是它只有两值** ⇒ **真跑通的链看起来像断了**（事实被压成错误的样子）。
+ *
+ * ## 三档**实际只落两档**（★ 2026-10-09 当场验出来，据实改）
+ * 我第一版写的是三值（强 / 弱 / **真断**），可**实测立刻打脸**：作用域边是 `ANY_TOOL → ANY_TOOL`
+ * ⇒ **恒有** ⇒ `scopeEdges` **从不空** ⇒ **"真断"那一档不可达**（死档）。
+ * ★ **"真断"的正确判据**应是「**下游确实要对象类入参，而这一段没喂**」 —— 那需要知道下游的入参形状
+ *   （`ToolDef`，在 `application` 层）⇒ **那是下一步**（仓库注释早就这么写了）。
+ *   ⇒ 所以本类型**只给可达的两档**，**不摆一个永远不出现的警告**（摆着就是骗人）。
+ */
 export interface HopVerdict {
   hop: number;
   from: string;
   to: string;
-  /** ★ 该段**除作用域外**的已验证边（= "下游要的对象"有没有人喂）。**这才是链的判据。** */
+  /** ★ 该段**除作用域外**的已验证边（= "下游要的对象"有没有人喂）。**这是强交接的判据。** */
   objectEdges: readonly ChainEdge[];
+  /** ★ 该段的**作用域**已验证边（`project_dir` / `feature`）—— 弱交接的判据（T83 新增）。 */
+  scopeEdges: readonly ChainEdge[];
+  /** ★ **可达的两档**：`strong`（有对象边）/ `scope-only`（无对象边、仅有作用域键）。 */
+  kind: 'strong' | 'scope-only';
 }
 
-/** 逐段判定。 */
+/** 逐段判定（★ 两档可达；"真断"判不了，理由见 {@link HopVerdict}）。 */
 export function hopsOf(chain: Chain): readonly HopVerdict[] {
   const out: HopVerdict[] = [];
   for (let i = 0; i + 1 < chain.steps.length; i++) {
     const from = chain.steps[i];
     const to = chain.steps[i + 1];
+    const all = verifiedEdgesBetween(from, to);
+    const objectEdges = all.filter((e) => !SCOPE_PATHS.has(e.toPath));
+    const scopeEdges = all.filter((e) => SCOPE_PATHS.has(e.toPath));
     out.push({
       hop: i + 1,
       from,
       to,
-      objectEdges: verifiedEdgesBetween(from, to).filter((e) => !SCOPE_PATHS.has(e.toPath)),
+      objectEdges,
+      scopeEdges,
+      kind: objectEdges.length > 0 ? 'strong' : 'scope-only',
     });
   }
   return out;
 }
 
-/**
- * 链上**第一处"一个对象类边都没有"**的段；全都有则 `null`。
- * ★ **这是信号，不是判决**：末段（如 `run_tests`）**本来就不要对象入参** ⇒ 它报 0 未必是断
- *   （`refactor` 链的第 3 段就是这种）⇒ 要定论必须知道下游的入参形状（`ToolDef`，下一步）。
- */
-export function objectGapOf(chain: Chain): HopVerdict | null {
-  return hopsOf(chain).find((h) => h.objectEdges.length === 0) ?? null;
-}
-
 /** 渲染链表（给 `capability_map` 用）。 */
 export function renderChains(max = 20): string {
   const lines = CHAINS.slice(0, max).map((c) => {
-    const hops = hopsOf(c)
-      .map((h) => `${h.from}→${h.to}: ${h.objectEdges.length}`)
-      .join(' · ');
-    const gap = objectGapOf(c);
-    const status = gap
-      ? `⚠ 第 ${gap.hop} 段**无对象类边**（${gap.from} → ${gap.to}）`
-      : '✓ 每段都有对象类边';
-    return `    ${c.name.padEnd(14)} [${c.evidence}] ${c.steps.join(' → ')}\n${' '.repeat(19)}${status}｜对象类边数 ${hops}`;
+    const hops = hopsOf(c);
+    const counts = hops.map((h) => `${h.from}→${h.to}: ${h.objectEdges.length}`).join(' · ');
+    // ★★★ T83：三值分档 —— **"仅靠作用域交接"≠"断"**（旧版把两者都印成 ⚠，把通的说成断的）。
+    // ★★ 但**原因不在渲染处解释**：同样是"弱交接"，`refactor` 第 3 段的原因是"缺 源文件→测试 的映射"，
+    //   而 `design-loop` 的原因是"设计侧对象都住在同一个 feature 里"—— **两回事**。
+    //   ⇒ 渲染**只报事实（哪一档、几段）**，**为什么**由 `CHAINS[].note` 说（那里是逐链真跑结论）。
+    //     ★ 我第一版在这句里套了解释"设计侧…"，结果把它贴到了 `refactor` 上 —— **又一处"同一段话套不同事实"**。
+    const strong = hops.filter((h) => h.kind === 'strong').length;
+    const weak = hops.filter((h) => h.kind === 'scope-only').length;
+    const firstWeak = hops.find((h) => h.kind === 'scope-only');
+    const tally = `强 ${strong}/${hops.length} · 弱 ${weak}`;
+    const status = weak
+      ? `◇ **仅靠作用域键交接**（首处在第 ${firstWeak!.hop} 段：${firstWeak!.from} → ${firstWeak!.to}）` +
+        ` —— ★ **弱交接 ≠ 断**；**为什么弱**逐链见 CHAINS[].note｜${tally}`
+      : `✓ 每段都是**强交接**（有对象类边）｜${tally}`;
+    return `    ${c.name.padEnd(14)} [${c.evidence}] ${c.steps.join(' → ')}\n${' '.repeat(19)}${status}｜对象类边数 ${counts}`;
   });
   return (
-    '\n\n── 链（★ 一等公民：逐段查 `CHAIN_EDGES` 的**对象类**边；作用域边恒有 ⇒ 不进判定）──\n' +
+    '\n\n── 链（★ 一等公民：逐段查 `CHAIN_EDGES`；每段分**两档**：强交接（有对象类边）/ 弱交接（仅作用域键））──\n' +
     lines.join('\n') +
     '\n  ★ 本判定**只查表**，且**只报事实**（对象类边几条，不是"通/断"）：' +
-    '\n    "下游到底要不要对象类入参"需要 `ToolDef`（`application` 层）⇒ 那是下一步。' +
-    '\n  ★★ 通没通，**只看 `[verified]`** —— 那是整条链的真跑结论，权威在 `CHAINS[].note`。'
+    '\n    ★★ **"真断"目前判不了**（2026-10-09 当场验出来）：作用域边是 `ANY_TOOL→ANY_TOOL` ⇒ **恒有**' +
+    '\n      ⇒ "连作用域都没有"那一档**不可达**。**真断的正确判据**是「**下游确实要对象类入参、而这一段没喂**」' +
+    '\n      —— 那需要知道下游的入参形状（`ToolDef`，`application` 层）⇒ **那是下一步**。' +
+    '\n      ★ 所以这里**只印可达的两档**，**不摆一个永远不出现的警告**。' +
+    '\n  ★★ 通没通，**只看 `[verified]`** —— 那是整条链的真跑结论，权威在 `CHAINS[].note`。' +
+    '\n  ★★ **"弱交接"不是断**（2026-10-09，T83）：它只是"这一段靠 `feature`/`project_dir` 接上、没有对象类边"。' +
+    '\n     ★ 旧版把弱交接与"无对象边"印成同一个 "⚠"，⇒ **真跑通了整条链，看起来却像断的**' +
+    '\n       （判据只有一档 ⇒ 事实被压成错误的样子）。' +
+    '\n     ★ **为什么某一段是弱交接，逐链看 `note`** —— 不同链的原因不同（例：`design-loop` 是"设计侧对象都住在同一个 feature 里"；' +
+    '\n       `refactor` 末段是"缺 源文件→对应测试 的映射"），渲染处**不替它们编统一解释**。'
   );
 }
 
