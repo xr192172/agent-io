@@ -463,13 +463,18 @@ export async function checkConsistency(input: ConsistencyInput): Promise<Consist
   const lines: string[] = [];
   lines.push(`=== 设计一致性检查报告 - ${feature} ===`);
   lines.push('');
-  lines.push('【摘要】');
+  // ★★★ 2026-10-09（T85/D1b **正名**）：标题说清这是「**线 2**」——
+  //   它的对手是「**人指定的契约**（`expected_apis`）」，**不是**「代码相对基线变了没」（那是**线 1**）。
+  lines.push('【线 2 · 设计（**人指定的契约** `expected_apis`）vs 实现】');
   lines.push(`  文件数: ${fileResults.length}`);
-  lines.push(`  ✅ 已实现: ${matchedCount}`);
-  lines.push(`  ❌ 缺失: ${missingCount}`);
+  lines.push(`  ✅ 契约已实现: ${matchedCount}`);
+  lines.push(`  ❌ 契约缺失: ${missingCount}`);
   lines.push(`  ⚠️ 签名不匹配: ${mismatchedCount}`);
-  lines.push(`  🆕 代码新增: ${unexpectedCount}`);
+  // ★ **删掉 `🆕 代码新增` 那一行** —— 那一类**已废**（"代码里有、契约没写"是常态，不是差异）；
+  //   而留着一个恒 0 的行更坏：读者会把「没有代码新增」读成「代码没变」（真相要看**线 1**）。
   lines.push(`  不变式通过: ${invariantPassed}/${invariantResults.length}`);
+  lines.push('');
+  lines.push('  ★ 「**代码新增**」**不在这里** —— 它是**线 1** 的事（相对**基线**），见下面「线 1 · 代码相对基线的变更」。');
   lines.push('');
 
   for (const fr of fileResults) {
@@ -524,27 +529,31 @@ export async function checkConsistency(input: ConsistencyInput): Promise<Consist
     lines.push('');
   }
 
-  // ★ T85/D1b：**明说这件事** —— 否则读的人会以为「没有代码新增」等于「代码没变」。
-  lines.push('');
-  lines.push('  ★ 本节的 missing / mismatched 是**线 2**（**人指定的契约** vs 实现）；');
-  lines.push('    「**代码新增**」**不在本节** —— 它是**线 1** 的事（相对**基线**），见下面「线 1 · 代码相对基线的变更」。');
-  lines.push('');
-  lines.push('【建议】');
-  if (missingCount > 0) lines.push('  - 实现缺失的 API');
-  if (mismatchedCount > 0) lines.push('  - 修正签名不匹配的函数');
-  // ★ T85/D1b：原建议「把代码新增的 API 添加到 DSL expected_apis」**已删** —— 那是**把事实塞进意图**
-  //   （正是 T20/T85 要根治的）。★ 想看「代码新增了什么」⇒ 看**线 1**（相对基线）。
-  if (invariantFailed > 0) lines.push('  - 修复失败的不变式');
-  lines.push('');
-
-  // ★★★ 2026-10-09（T85/D3）：**线 1 与线 2 分开报**。
-  //   上面那些 `missing/mismatched/unexpected` 是**线 2**：`DSL.expected_apis`（人写的**意图**）vs 现取事实。
-  //   本节是**线 1**：`基线事实`（fork 那一刻）vs 现取事实 ⇒ 「**代码相对基线变了没有**」。
+  // ★★★ 2026-10-09（T85/D3）：**两条线各自"摘要 + 建议"自成一段** —— 顺序：
+  //   **线 2（摘要 + 建议）→ 线 1**。★ 建议**必须紧跟它自己那条线**（隔远了读者就不知道它在说谁）。
+  //   线 2 = `DSL.expected_apis`（人写的**契约**）vs 现取事实。见上。
+  //   线 1 = `基线事实`（fork 那一刻）vs 现取事实 ⇒ 「**代码相对基线变了没有**」。
   //   ★ 用户原话：*"怎么可能对拍还放在同一个里面？那这算什么对拍？**自己测自己吗？**"*
   //   ★ 两条线**各有各的对手**；混着看就会**分不清"代码变了"还是"设计改了"**（T85 的病根）。
+  const advice: string[] = [];
+  if (missingCount > 0) advice.push('  - 实现缺失的契约 API（或把契约改对 —— ★ 契约是**人指定的**，代码不必覆盖它）');
+  if (mismatchedCount > 0) advice.push('  - 修正签名不匹配的函数（或把契约签名改对，见上）');
+  // ★ T85/D1b：原建议「把代码新增的 API 添加到 DSL expected_apis」**已删** —— 那是**把事实塞进意图**
+  //   （正是 T20/T85 要根治的）。★ 想看「代码新增了什么」⇒ 看**线 1**（相对基线）。
+  if (invariantFailed > 0) advice.push('  - 修复失败的不变式');
+  if (advice.length) {
+    lines.push('【建议（仅针对线 2）】');
+    lines.push(...advice);
+    lines.push('');
+  } else {
+    lines.push('  ✓ **线 2 无待办**（人指定的契约都已实现、签名一致）—— 这不是"没跑"。');
+    lines.push('');
+  }
+
+  // ★ 线 1 排在**线 2 整段（摘要 + 建议）之后** —— 两条线各自自成一段（见上）。
   const baselineDrift = checkBaselineDrift(feature, codeDir);
   lines.push(renderBaselineDriftSection(baselineDrift));
-
+  lines.push('');
   return {
     message: lines.join('\n'),
     fileResults,
