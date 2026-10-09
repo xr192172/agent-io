@@ -33,13 +33,13 @@ export interface ClusterNarrative {
   mode: 'llm' | 'rule';
 }
 
-/** 项目总览（第0层）：项目本身是什么 + 功能清单（与积木一一对应） */
+/** 项目总览（第0层）：项目本身是什么 + 清单（features 字段，与积木一一对应） */
 export interface ProjectOverview {
   /** 项目是什么（≤16 字人话，如"可视化设计画布工具"） */
   title: string;
   /** 2-3 句：这个项目本身是什么、核心价值 */
   desc: string;
-  /** 功能清单：每块积木一条（target=积木 id，与下钻结构一一对应） */
+  /** 清单（features 字段）：每块积木一条（target=积木 id，与下钻结构一一对应） */
   features: Array<{ target: string; label: string; desc: string }>;
   mode: 'llm' | 'rule';
 }
@@ -120,7 +120,7 @@ interface NarrUnit {
 export function collectNarrUnits(r: BrickifyResult, sourceRoot: string): NarrUnit[] {
   const units: NarrUnit[] = [];
   const roleCn: Record<BrickRole, string> = {
-    brick: '功能',
+    brick: '积木',
     contract: '契约',
     glue: '胶水',
   };
@@ -148,7 +148,7 @@ export function collectNarrUnits(r: BrickifyResult, sourceRoot: string): NarrUni
       rawId: b.id,
       files: all.slice(0, 10),
       exports: all.slice(0, 4).flatMap((f) => topLevelExportsOf(sourceRoot, f, 4)).slice(0, 12),
-      facts: `${all.length} 文件 / 主导角色=${ROLE_LABEL[b.role]} / ${b.sub_clusters.length} 个内部功能簇`,
+      facts: `${all.length} 文件 / 主导角色=${ROLE_LABEL[b.role]} / ${b.sub_clusters.length} 个子簇`,
     });
     for (const s of b.sub_clusters) {
       units.push({
@@ -171,7 +171,7 @@ export function fallbackNarrative(u: NarrUnit): ClusterNarrative {
   const kindCn: Record<NarrUnit['kind'], string> = {
     community: '结构簇',
     brick: '积木',
-    cluster: '功能簇',
+    cluster: '子簇',
   };
   const seed = u.kind === 'cluster' ? u.rawId.split('#')[0] : u.rawId;
   return {
@@ -202,11 +202,11 @@ async function narrateOneBatch(
     .join('\n');
 
   const system =
-    '你是项目结构翻译官。给定若干"文件簇"（同一功能互相依赖的文件组），请为每簇生成人话翻译，' +
+    '你是项目结构翻译官。给定若干"文件簇"（按依赖互相耦合的文件组），请为每簇生成人话翻译，' +
     '让完全不懂代码的人也能明白这组文件是干什么的、有什么用。要求：\n' +
-    '- title：不超过 12 个汉字的功能名（如"界面渲染引擎"、"依赖扫描与死码检测"），描述功能而非文件名；\n' +
+    '- title：不超过 12 个汉字的人话名（如"界面渲染引擎"、"依赖扫描与死码检测"），描述用途而非文件名；\n' +
     '- desc：1-2 句口语化说明"它做什么 + 给谁用/有什么用"，可用生活化比喻（如"像流水线上的质检员"）；\n' +
-    '- 只依据给定的文件名、导出符号、事实推断，不得编造文件中不存在的功能；\n' +
+    '- 只依据给定的文件名、导出符号、事实推断，不得编造文件中不存在的用途；\n' +
     '- 同批内 title 不得重复。\n' +
     '只输出 JSON：{"narratives":[{"id":"...","title":"...","desc":"..."}]}，id 必须来自给定清单。';
 
@@ -304,7 +304,7 @@ export async function narrateClusters(
     await runBatches(missing, Math.min(3, batch));
   }
 
-  // 第0层：项目总览（用已翻好的积木人话做证据，保证"项目→功能"与下钻一一对应；失败重试一次）
+  // 第0层：项目总览（用已翻好的积木人话做证据，保证"项目→积木"与下钻一一对应；失败重试一次）
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
       const ov = await narrateOverview(cfg, r, r.meta.project_dir, result);
@@ -365,7 +365,7 @@ function fallbackOverview(r: BrickifyResult): ProjectOverview {
   };
 }
 
-/** LLM 总览：证据=package.json/README + 积木人话清单 → 项目定位 + 与积木一一对应的功能清单。 */
+/** LLM 总览：证据=package.json/README + 积木人话清单 → 项目定位 + 与积木一一对应的清单（features 字段）。 */
 async function narrateOverview(
   cfg: { apiKey: string; model: string; baseURL: string },
   r: BrickifyResult,
@@ -381,7 +381,7 @@ async function narrateOverview(
         .slice(0, 5)
         .map((x) => x.title as string)
         .join('、');
-      return `- ${b.id}（${b.total} 文件${subs ? `，内部功能：${subs}` : ''}）`;
+      return `- ${b.id}（${b.total} 文件${subs ? `，内部子簇：${subs}` : ''}）`;
     })
     .join('\n');
 

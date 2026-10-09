@@ -1,9 +1,9 @@
 /**
- * classify_bricks —— 分类官：把**功能簇**归入软件解剖学槽位（自顶向下组织的关键一步）
+ * classify_bricks —— 分类官：把**子簇**归入软件解剖学槽位（自顶向下组织的关键一步）
  *
  * 用户定调：先定义好"一个软件该有哪些部分"（taxonomy 槽位，人话、封闭集合），
  * 再归类，从上往下下钻。粒度选**簇**而非积木——狗食证明积木太粗（tools 119 文件
- * 横跨核心运算/观测/人审多个身份，整块归类必然失真）；簇是"单一职责的最小功能
+ * 横跨核心运算/观测/人审多个身份，整块归类必然失真）；子簇是"单一职责的最小结构
  * 单元"，恰好一个身份，天生的分类单元。积木在泳道内作为分组容器保留。
  *
  * LLM 角色（分类官）：
@@ -120,13 +120,14 @@ async function classifyByLlm(
     const clustersText = group
       .map(
         (c) =>
-          `### ${c.id}（积木 ${c.brick}）\n功能：${c.title}${c.desc ? `——${c.desc}` : ''}\n文件：${c.files}`,
+          `### ${c.id}（积木 ${c.brick}）\n子簇：${c.title}${c.desc ? `——${c.desc}` : ''}\n文件：${c.files}`,
       )
       .join('\n\n');
 
     const system =
-      '你是软件架构分类官。给定"软件解剖学槽位"（封闭集合）和项目的功能簇清单，' +
-      '请把每个功能簇归入**恰好一个**槽位。要求：\n' +
+      '你是软件架构分类官。给定"软件解剖学槽位"（封闭集合）和项目的子簇清单，' +
+      '请把每个子簇归入**恰好一个**槽位。' +
+      '★ 这些"子簇"是**按依赖聚出的结构分组**，**不代表功能边界**（启发式结果，非已测量的功能）。要求：\n' +
       '- slot 必须来自给定槽位 id，禁止发明；拿不准时选最接近的并降 confidence；\n' +
       '- confidence 0..1（证据充分≥0.8，模棱两可≤0.5）；\n' +
       '- reason 一句话依据；每个簇都必须有归类结果。\n' +
@@ -134,7 +135,7 @@ async function classifyByLlm(
 
     const raw = await callChat(cfg, [
       { role: 'system', content: system },
-      { role: 'user', content: `槽位定义：\n${slotsText}\n\n功能簇清单（${group.length} 个）：\n${clustersText}` },
+      { role: 'user', content: `槽位定义：\n${slotsText}\n\n子簇清单（${group.length} 个）：\n${clustersText}` },
     ]);
     const fence = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
     const candidate = fence ? fence[1] : raw;
@@ -195,7 +196,7 @@ function crossValidate(
 }
 
 /**
- * 主入口：功能簇 → 解剖学槽位归类，产出泳道视图（槽位→积木分组→簇，供渲染直接吃）。
+ * 主入口：子簇 → 解剖学槽位归类，产出泳道视图（槽位→积木分组→簇，供渲染直接吃）。
  * LLM 缺席/失败 → 关键词启发式降级；启发式也命不中 → 诚实"未归类"桶。
  */
 async function classifyBricksCore(

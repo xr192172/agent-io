@@ -1,9 +1,9 @@
 /**
  * brickify —— 依赖驱动的积木化管线（全链路：一个文件预处理成一个积木社区）
  *
- * 用户核心洞见（2026-08-24）：拿到一个项目，**先积木化**——每块积木 = 一个功能；
- * 再去识别"一个功能多个相似实现"（同概念散落多份 = 破抽象）与
- * "一个文件塞多个功能"（多概念挤一文件 = 破分离）两种**内聚被打破**的症状；
+ * 用户核心洞见（2026-08-24）：拿到一个项目，**先积木化**——把源码聚成若干结构块（积木）；
+ * 再去识别"同一能力散落多份实现"（同概念散落多份 = 破抽象）与
+ * "一个文件塞多个概念"（多概念挤一文件 = 破分离）两种**内聚被打破**的症状；
  * 然后将文件解耦 → 独立成积木；最后按积木的**依赖边做结构簇**聚类，
  * 取代旧的"按目录硬切 + 文件基名相似"启发式，再进思维导图式运算/重构。
  *
@@ -17,7 +17,7 @@
  *   - **混合文件检测是"信号级"**：能确定性标出"一个文件里多个无耦合的概念簇"，
  *     但不自动切分文件内部——解耦拆分由人/LLM 确认（文件内符号切分比文件级难一档）。
  *   - 依赖社区用**无向连通分量 + 内聚度**做确定性社区（不引入随机优化），
- *     积木=功能由"目录做种子 + 依赖边校正"定义，不激进自动搬目录。
+ *     积木由"目录做种子 + 依赖边校正"聚出（是**结构块**，非功能；定义见 BrickifyBrick），不激进自动搬目录。
  *   - 仅工程内相对 import 参与依赖边；裸包名（axios）跨文件不可解析故跳过。
  */
 
@@ -48,7 +48,7 @@ export interface FileDep {
 /** 混合文件信号：一个文件里多个无耦合概念簇（解耦候选） */
 export interface MixedFileSignal {
   file: string;
-  /** 检测到的概念簇（每簇 = 一组功能名），>=2 簇即信号 */
+  /** 检测到的概念簇（每簇 = 一组声明名），>=2 簇即信号 */
   clusters: string[][];
   /** 人话原因 */
   reason: string;
@@ -65,9 +65,11 @@ export interface Community {
 }
 
 /**
- * 第2层小簇：积木（目录种子）内按"文件级依赖连通分量"再聚出的更小功能簇。
+ * ★ 术语「子簇」（唯一住处）：**积木内**再按"文件级依赖连通分量"聚出的更小块。
+ * 它是纯拓扑邻近的**结构分组，不代表功能边界**（本仓「功能」一词只指人写的功能标记，
+ * 见 BrickifyBrick.community 的口径）。
  * 下钻语义（对齐用户"沙盘节点可下钻"的心智模型）：点开一个积木 → 看到它内部
- * 若干个内聚的功能簇 → 每簇再下钻到具体文件。
+ * 若干内聚的子簇 → 每簇再下钻到具体文件。
  */
 export interface BrickSubCluster {
   /** 簇 id：`${积木id}#${序号}`（同一积木内确定） */
@@ -76,9 +78,9 @@ export interface BrickSubCluster {
   files: string[];
   total: number;
   dominant: FeatureSide;
-  /** 主导角色（功能>契约>胶水） */
+  /** 主导角色（积木>契约>胶水） */
   role: BrickRole;
-  /** 簇内三层角色归组（下钻第二维度：功能/契约/胶水 分拨） */
+  /** 簇内三层角色归组（下钻第二维度：积木/契约/胶水 分拨） */
   roles: Record<BrickRole, string[]>;
   /** 簇内依赖边权重（会议数） */
   internal_edges: number;
@@ -86,21 +88,25 @@ export interface BrickSubCluster {
   external_edges: number;
   /** 簇内聚度 = internal/(internal+external)；1=完全自足 */
   cohesion: number;
-  /** true = 整个积木退化为单簇（目录内高度耦合，无更小功能边界可切） */
+  /** true = 整个积木退化为单簇（目录内高度耦合，无更小子簇可切） */
   degenerate: boolean;
 }
 
-/** 升级版积木（目录种子 + 依赖社区标签 + 混合文件雷达） */
+/**
+ * ★ 术语「积木」（唯一住处）：按「**源码根首层目录做种子 + 依赖边校正**」聚出的**结构块**——
+ * 目录种子是主、依赖边只做校正；**不代表功能边界**（本仓「功能」一词只指人写的功能标记，
+ * 见 BrickifyBrick.community 的口径）。此结构块再叠加依赖社区标签 + 混合文件雷达。
+ */
 export interface BrickifyBrick {
   id: string;
   files: { frontend: string[]; backend: string[]; shared: string[] };
   total: number;
   dominant: FeatureSide;
-  /** 第2层垂直细化：积木内按文件级依赖再聚的更小功能簇（下钻用） */
+  /** 第2层垂直细化：积木内按文件级依赖再聚的更小**子簇**（下钻用；定义见 BrickSubCluster） */
   sub_clusters: BrickSubCluster[];
   /** 三类角色文件归组（积木/契约/胶水）——用户三层组织模型 */
   roles: Record<BrickRole, string[]>;
-  /** 主导角色（块内文件最多的角色；同数按 积木>契约>胶水，功能优先） */
+  /** 主导角色（块内文件最多的角色；同数按 积木>契约>胶水） */
   role: BrickRole;
   /**
    * 所属**结构簇** id（null = 孤立积木，无任何依赖边）。
@@ -143,13 +149,13 @@ const TS_EXT = /\.(ts|tsx|js|jsx|mjs|cjs|mts|cts)$/;
 export type BrickRole = 'brick' | 'contract' | 'glue';
 
 export const ROLE_LABEL: Record<BrickRole, string> = {
-  brick: '积木(功能)',
+  brick: '积木',
   contract: '契约',
   glue: '胶水',
 };
 
 /** 架构层 → 三类角色：
- *   - brick（积木层=功能层）：业务逻辑/数据/界面/通用——可独立成块的"功能核心"
+ *   - brick（积木层）：业务逻辑/数据/界面/通用——可独立成块的核心积木
  *   - contract（契约层）：类型/接口/契约/DTO——积木暴露给外界的"插头"
  *   - glue（胶水层）：入口/路由/中间件/配置——把积木经契约接起来的"布线" */
 export function roleOfLayer(layer: string): BrickRole {
@@ -391,7 +397,7 @@ export async function detectMixedFiles(sourceRoot: string, rels: string[]): Prom
       signals.push({
         file: rel,
         clusters,
-        reason: `顶层 ${declList.length} 个功能被依赖切成 ${clusters.length} 个无耦合概念簇（疑似一文件多功能，解耦候选）`,
+        reason: `顶层 ${declList.length} 个声明被依赖切成 ${clusters.length} 个无耦合概念簇（疑似一文件多概念，解耦候选）`,
       });
     }
   }
@@ -493,14 +499,14 @@ export function computeCommunities(rels: string[], fileDeps: FileDep[]): Communi
 
 /**
  * 第2层聚类：给定一个积木（目录种子）的全体文件，用"仅本积木内部的文件级依赖边"
- * 做无向连通分量 → 得到该积木内部若干个更小功能簇。
+ * 做无向连通分量 → 得到该积木内部若干更小子簇。
  *
  * 诚实边界：
  *   - 连通分量是确定性的（不引入随机社区算法）；目录若高度耦合，会退化为单簇，
- *     degenerate=true 如实标注（"无更小功能边界可切"——向内钻到底即整层耦合）。
+ *     degenerate=true 如实标注（"无更小子簇可切"——向内钻到底即整层耦合）。
  *   - 内聚度按簇：簇内边权重 / (簇内+簇出境边权重)。
  *   - 每簇附带三层角色归组，作为下钻的第二个维度：即便连通度退化为单簇，
- *     渲染端仍能按 功能/契约/胶水 三拨来展示簇内组织。
+ *     渲染端仍能按 积木/契约/胶水 三拨来展示簇内组织。
  */
 export function computeBrickSubClusters(
   brickId: string,
@@ -631,7 +637,7 @@ export async function buildBrickify(opts: BrickifyOptions): Promise<BrickifyResu
         : files.backend.length > files.frontend.length && files.backend.length >= files.shared.length
           ? 'backend'
           : 'shared';
-    // 主导角色：文件最多者；同数按 积木>契约>胶水（功能优先）
+    // 主导角色：文件最多者；同数按 积木>契约>胶水
     const roles = seedRoles[id] ?? { brick: [], contract: [], glue: [] };
     const roleCount = (r: BrickRole): number => roles[r].length;
     const role: BrickRole = roleCount('brick') >= roleCount('contract') && roleCount('brick') >= roleCount('glue')
@@ -644,7 +650,7 @@ export async function buildBrickify(opts: BrickifyOptions): Promise<BrickifyResu
       files,
       total,
       dominant,
-      // 第2层：积木内按文件级依赖再聚的更小功能簇（下钻）
+      // 第2层：积木内按文件级依赖再聚的更小子簇（下钻）
       sub_clusters: computeBrickSubClusters(
         id,
         [...files.frontend, ...files.backend, ...files.shared],
@@ -687,11 +693,11 @@ export async function buildBrickify(opts: BrickifyOptions): Promise<BrickifyResu
       role_totals: summarizeRoles(bricks),
     },
     limitations: [
-      '积木 = 源码根首层目录做种子，叠加依赖边校正；不自动搬目录（保守）',
+      '积木 = 结构块（非功能；定义见 BrickifyBrick）；不自动搬目录（保守）',
       '结构簇 = 积木间依赖边的无向连通分量 + 内聚度；启发式，需人确认边界',
-      '第2层小簇 = 积木内按文件级依赖连通分量再聚；目录高度耦合时退化为单簇（degenerate 如实标注，无更小功能边界可切）',
+      '子簇 = 积木内按文件级依赖连通分量再聚；目录高度耦合时退化为单簇（degenerate 如实标注，无更小子簇可切）',
       '三类角色（积木/契约/胶水）= 复用 layer_detect 层的模式启发式映射，非运行时确证；' +
-        'type→契约(interface/dto/types)，entry/middleware/config/api→胶水，service/data/ui/utility/core→积木(功能)',
+        'type→契约(interface/dto/types)，entry/middleware/config/api→胶水，service/data/ui/utility/core→积木',
       '混合文件 = AST 顶层声明依赖聚类的"信号级"标记；不自动切分文件内部，解耦拆分需人/LLM 确认',
       '依赖边仅工程内相对 import；裸包名跨文件不可解析故跳过',
     ],

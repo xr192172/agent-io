@@ -17,7 +17,7 @@
  *
  * 忠实纪律：节点状态点/徽章只映射确定性事实——
  *   ok绿=正常 · warn橙=整层耦合(重构信号) · gray=待翻译(rule 降级)；
- *   徽章色=三层角色（功能绿/契约蓝/胶水灰）。
+ *   徽章色=三层角色（积木绿/契约蓝/胶水灰）。
  */
 
 import path from 'node:path';
@@ -273,7 +273,7 @@ const ROLE_BADGE: Record<string, string> = {
   contract: 'dslw-badge-info',
   glue: 'dslw-badge-gray',
 };
-const ROLE_TXT: Record<string, string> = { brick: '功能', contract: '契约', glue: '胶水' };
+const ROLE_TXT: Record<string, string> = { brick: '积木', contract: '契约', glue: '胶水' };
 
 export function renderDepCanvasHtml(
   r: BrickifyResult,
@@ -425,7 +425,7 @@ main.panning{cursor:grabbing}
 <header>
   <h1>沙盘 ·</h1>
   <span class="ov-title">${esc(ov?.title ?? projectName)}</span>
-  <span class="meta">${esc(projectName)} · ${r.meta.scanned_files} 文件 · ${r.bricks.length} 积木 · ${layout.nodes.length} 功能簇 · ${narMeta}</span>
+  <span class="meta">${esc(projectName)} · ${r.meta.scanned_files} 文件 · ${r.bricks.length} 积木 · ${layout.nodes.length} 子簇 · ${narMeta}</span>
   <span class="ov-desc" title="${esc(ovDesc)}">${esc(ovDesc)}</span>
 </header>
 <main id="main">
@@ -544,7 +544,7 @@ document.querySelectorAll('.dslw-node').forEach(el => {
     body.innerHTML = d.files.map(f =>
       '<div class="f-row"><span class="f-path"></span>' +
       '<span class="dslw-badge f-role ' + ({brick:'dslw-badge-ok',contract:'dslw-badge-info',glue:'dslw-badge-gray'}[f.role]||'dslw-badge-gray') + '">' +
-      ({brick:'功能',contract:'契约',glue:'胶水'}[f.role]||f.role) + '</span></div>'
+      ({brick:'积木',contract:'契约',glue:'胶水'}[f.role]||f.role) + '</span></div>'
     ).join('');
     body.querySelectorAll('.f-path').forEach((p, i) => { p.textContent = d.files[i].path; p.title = d.files[i].path; });
     document.getElementById('panel').classList.add('open');

@@ -1,11 +1,11 @@
 /**
  * brick_bag —— 后端数据线路的"积木组装"段（BrickBag 投影）
  *
- * 把 feature_map（文件明细 + 功能聚合 + three 标注）重塑成积木集合（BrickBag）：
- *   每块积木(Brick) = 一个功能；积木内部挂前端/后端/通用文件；积木间通过 peers 交互
+ * 把 feature_map（文件明细 + 首层目录聚合 + three 标注）重塑成积木集合（BrickBag）：
+ *   每块积木(Brick) = 一个积木投影（术语「积木」见 brickify.ts 的 BrickifyBrick）；内部挂前端/后端/通用文件；积木间通过 peers 交互
  *   （similar 相似虚线 / call 调用实线）。工作台外壳（沙盘/屎山重构/问题清单…）都消费它。
  *
- * 命名说明：本模块聚焦「功能 → 积木集合」的**投影组装**，服务于"可视化协作平台"的
+ * 命名说明：本模块聚焦「首层目录 → 积木集合」的**投影组装**，服务于"可视化协作平台"的
  * 沙盘数据线路，与已删除的 Brick Harvest 拼装区（把盒内积木搬到新目录，2026-10-05 删）
  * 是两码事——故独立成 brick_bag，避免与既有 MCP 工具语义冲突。
  *
@@ -13,7 +13,7 @@
  *   - files/families/deprecation 直接投影自 feature_map.features；
  *   - peers.similar 直接搬 feature.similar；
  *   - peers.call 由本模块新增的 deriveFeatureCallEdges() 产出：复用 sources 级 import 枚举，
- *     把"文件 import 另一特征下的文件"折算成"积木→积木"的有向调用边（跨功能依赖）。
+ *     把"文件 import 另一特征下的文件"折算成"积木→积木"的有向调用边（跨积木依赖）。
  */
 
 import fs from 'node:fs';
@@ -56,7 +56,7 @@ export interface CallPeer {
 export type BrickPeer = SimilarPeer | CallPeer;
 
 export interface Brick {
-  /** 功能 id（= source_root 下首层目录段；根文件 'root'） */
+  /** 积木 id（= source_root 下首层目录段；根文件 'root'） */
   id: string;
   name: string;
   files: BrickFileGroups;
@@ -78,7 +78,7 @@ export interface FeatureCallEdges {
 
 export interface BrickBag {
   bricks: Brick[];
-  /** 跨功能有向调用边（经去重在 peers 上体现；可空） */
+  /** 跨积木有向调用边（经去重在 peers 上体现；可空） */
   call_edges: FeatureCallEdges[];
   meta: {
     project_dir: string;
@@ -143,7 +143,7 @@ export function assembleBrickBag(featureMap: FeatureMapResult): BrickBag {
   };
 }
 
-/** 带 call 边的完整组装：再加一层跨功能调用边，写回 peers。 */
+/** 带 call 边的完整组装：再加一层跨积木调用边，写回 peers。 */
 export function assembleBrickBagWithCall(featureMap: FeatureMapResult): BrickBag {
   const bag = assembleBrickBag(featureMap);
   const edges = deriveFeatureCallEdges(featureMap);
@@ -191,9 +191,9 @@ export function assembleBrickBagWithCall(featureMap: FeatureMapResult): BrickBag
 }
 
 /**
- * 跨功能调用边：扫描 source_root 下源文件，对 TS/JS 复用 enumerateTsSources，
+ * 跨积木调用边：扫描 source_root 下源文件，对 TS/JS 复用 enumerateTsSources，
  * 把"相对 import 指向的同一工程内文件"折算到其归属积木 → 有向边（from import 方 → to 目标）。
- * 说明：仅工程内相对 import 参与；裸包名(如 axios)跨功能不可解析故跳过；
+ * 说明：仅工程内相对 import 参与；裸包名(如 axios)跨积木不可解析故跳过；
  * go/py 暂不参与 call 边（本项目对应 .ts 用 TS 枚举，limitations 已注明）。
  */
 export function deriveFeatureCallEdges(featureMap: FeatureMapResult): FeatureCallEdges[] {

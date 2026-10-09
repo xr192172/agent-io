@@ -45,7 +45,7 @@ export interface WorkbenchIssue {
   evidence?: { file?: string; clusters?: string[] };
 }
 
-/** 功能簇（积木内聚块）——title/desc 是 narrate 的 LLM 人话 */
+/** 子簇（积木内聚块）——title/desc 是 narrate 的 LLM 人话 */
 export interface WorkbenchCluster {
   id: string;
   title: string;
@@ -175,7 +175,7 @@ export function buildWorkbenchData(
       kind: 'mixed-file',
       severe: false,
       title: `混合职责文件：${m.file}`,
-      desc: `该文件内检测到 ${m.clusters.length} 个独立功能簇（${m.clusters
+      desc: `该文件内检测到 ${m.clusters.length} 个独立概念簇（${m.clusters
         .slice(0, 2)
         .map((c) => `[${c.slice(0, 4).join(', ')}${c.length > 4 ? '…' : ''}]`)
         .join(' ')}${m.clusters.length > 2 ? ' …' : ''}），不同职责挤在一个文件里，建议拆分为独立模块。`,
@@ -235,7 +235,7 @@ export function buildWorkbenchData(
     const explainWhy =
       clusters.length === 0
         ? '本项目没有这一层——流水线照样完整运行，这也是信息：说明该项目把这部分职责省略或合并到了别处。'
-        : `这一层由 ${groups.length} 块积木的 ${clusters.length} 个功能簇构成：` +
+        : `这一层由 ${groups.length} 块积木的 ${clusters.length} 个子簇构成：` +
           titles.slice(0, 4).map((t) => `「${t}」`).join('') +
           (titles.length > 4 ? ` 等 ${titles.length} 个。` : '。') +
           `共 ${fileCount} 个源文件在此层协同。`;

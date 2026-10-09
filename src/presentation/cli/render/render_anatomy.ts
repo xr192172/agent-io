@@ -32,7 +32,7 @@ const ROLE_BADGE: Record<string, string> = {
   contract: 'an-badge-info',
   glue: 'an-badge-gray',
 };
-const ROLE_TXT: Record<string, string> = { brick: '功能', contract: '契约', glue: '胶水' };
+const ROLE_TXT: Record<string, string> = { brick: '积木', contract: '契约', glue: '胶水' };
 
 export function renderAnatomyHtml(r: BrickifyResult, anatomy: AnatomyResult): string {
   const projectName = path.basename(r.meta.project_dir);
@@ -226,7 +226,7 @@ document.querySelectorAll('.an-node').forEach(el => {
     body.innerHTML = d.fileList.map(f =>
       '<div class="f-row"><span class="f-path"></span>' +
       '<span class="an-badge f-role ' + ({brick:'an-badge-ok',contract:'an-badge-info',glue:'an-badge-gray'}[f.role]||'an-badge-gray') + '">' +
-      ({brick:'功能',contract:'契约',glue:'胶水'}[f.role]||f.role) + '</span></div>'
+      ({brick:'积木',contract:'契约',glue:'胶水'}[f.role]||f.role) + '</span></div>'
     ).join('');
     body.querySelectorAll('.f-path').forEach((p, i) => { p.textContent = d.fileList[i].path; p.title = d.fileList[i].path; });
     document.getElementById('panel').classList.add('open');

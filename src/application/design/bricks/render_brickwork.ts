@@ -162,8 +162,8 @@ footer ul{margin:0;color:var(--muted);padding-left:0;list-style:none;display:fle
   <span class="divider">·</span>
   <span class="meta" style="max-width:40vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(m.source_root)}">${esc(m.source_root)}</span>
   <div class="legend">
-    <span class="legend-item"><span class="sw similar"></span>相似功能(虚线)</span>
-    <span class="legend-item"><span class="sw call"></span>跨功能调用(实线)</span>
+    <span class="legend-item"><span class="sw similar"></span>相似积木(虚线)</span>
+    <span class="legend-item"><span class="sw call"></span>跨积木调用(实线)</span>
     <span class="legend-item"><span class="dot" style="background:#7c3aed"></span>重复家族</span>
     <span class="legend-item"><span class="dot" style="background:#b91c1c"></span>废弃候选</span>
   </div>
@@ -263,7 +263,7 @@ export function buildSandboxPreview(opts: { project_dir: string; source_root?: s
 // 可视化协作平台 · 工作台外壳渲染（后端数据线路的对接交付物）
 // 消费同一 BrickBag → 渲染"DSL 协作工作台"外壳，取代静态 mock：
 //   左导航挂 沙盘视图(默认)/屎山重构/问题清单/版本历史/DSL源码/同步记录
-//   中央沙盘 = 可拖拽积木拼搭场（积木=功能，peers=拼接线：相似虚线/调用实线）
+//   中央沙盘 = 可拖拽积木拼搭场（peers=拼接线：相似虚线/调用实线）
 //   右侧详情 = 选中积木文件三侧 + 重复家族 + 相似积木 + 废弃证据
 //   底部     = 版本↔AI建议 + limitations 免责
 // 自包含、无外网依赖；可直接浏览器打开验收。
@@ -489,7 +489,7 @@ ul.lims li{font-size:11px}
     <div class="panel-head">
       <div class="pbadge"><span class="chip ss" id="dstatus">未选中</span></div>
       <div class="ptitle" id="dtitle">点击沙盘上的积木</div>
-      <div class="psub" id="dsub">每一块积木 = 一个功能；点它查看前端/后端/通用文件、相似积木、重复家族与废弃证据。</div>
+      <div class="psub" id="dsub">每一块积木 = 一个结构块；点它查看前端/后端/通用文件、相似积木、重复家族与废弃证据。</div>
     </div>
     <div id="dbody" class="pbody"></div>
     <div class="hint">提示：积木可拖拽拼搭；拖到另一块旁边就是一次"合并/复用"候选，可进入屎山重构。</div>
@@ -655,7 +655,7 @@ export function buildWorkbenchPreview(opts: { project_dir: string; source_root?:
 
 // ─────────────────────────────────────────────────────────────
 // 依赖驱动的积木化 · 结构簇工作台（消费 BrickifyResult）
-// 社区 = 积木间依赖边的无向连通分量；每块积木=功能；混合文件 = 解耦候选信号。
+// 社区 = 积木间依赖边的无向连通分量；每块积木=一个结构块；混合文件 = 解耦候选信号。
 // 取代"按目录硬切 + 基名相似"启发式，作为思维导图式运算前的数据地基。
 // ─────────────────────────────────────────────────────────────
 
@@ -694,7 +694,7 @@ export function renderBrickifyWorkbenchHtml(r: BrickifyResult): string {
         : `<div class="empty">单社区工程，无跨社区桥。</div>`
       : `<div class="empty">✅ 社区间无调用边——各社区完全解耦（内聚 100%）。</div>`;
 
-  // 混合文件诊断（一文件多功能 = 解耦候选信号）
+  // 混合文件诊断（一文件多概念 = 解耦候选信号）
   const mixedHtml =
     r.mixed_files.length > 0
       ? r.mixed_files.map((mf: MixedFileSignal) => `<div class="m-file" title="${esc(mf.reason)}">
@@ -710,14 +710,14 @@ export function renderBrickifyWorkbenchHtml(r: BrickifyResult): string {
   const rt = m.role_totals;
   const roleBadge = (role: 'brick' | 'contract' | 'glue'): string => {
     const cls = { brick: 'rb-brick', contract: 'rb-contract', glue: 'rb-glue' }[role];
-    const label = { brick: '积木(功能)', contract: '契约', glue: '胶水' }[role];
+    const label = { brick: '积木', contract: '契约', glue: '胶水' }[role];
     return `<span class="role-b ${cls}">${esc(label)}</span>`;
   };
   const roleRows = r.bricks
     .map((b) => `<tr>
         <td><b>${esc(b.id)}</b></td>
         <td>${roleBadge(b.role)}</td>
-        <td class="role-cnt">功能 ${b.roles.brick.length} · 契约 ${b.roles.contract.length} · 胶水 ${b.roles.glue.length}</td>
+        <td class="role-cnt">积木 ${b.roles.brick.length} · 契约 ${b.roles.contract.length} · 胶水 ${b.roles.glue.length}</td>
         <td class="role-cnt">${b.community ? esc(b.community) : '-'}</td>
       </tr>`)
     .join('');
@@ -786,11 +786,11 @@ footer ul{margin:0;color:var(--muted);font-size:11px;padding-left:18px;display:f
 </header>
 <main>
   <section>
-    <h2>结构簇（依赖边连通分量，取代"按目录硬切+基名相似"）<span class="hint">积木=功能；社区内聚度 = 内部边/总边</span></h2>
+    <h2>结构簇（依赖边连通分量，取代"按目录硬切+基名相似"）<span class="hint">社区内聚度 = 内部边/总边</span></h2>
     <div class="grid">${commCards}</div>
   </section>
   <section>
-    <h2>三层角色（积木/契约/胶水——用户组织模型）<span class="hint">积木=功能核心 · 契约=类型/接口插头 · 胶水=入口/路由/中间件接线</span></h2>
+    <h2>三层角色（积木/契约/胶水——用户组织模型）<span class="hint">积木=业务/数据/界面核心 · 契约=类型/接口插头 · 胶水=入口/路由/中间件接线</span></h2>
     <div class="legend">
       <span class="lg">${roleBadge('brick')}业务逻辑/数据/界面——可独立成块</span>
       <span class="lg">${roleBadge('contract')}type/interface/dto/契约——积木外露的插头</span>
@@ -806,7 +806,7 @@ footer ul{margin:0;color:var(--muted);font-size:11px;padding-left:18px;display:f
     <div class="bridges">${bridgeHtml}</div>
   </section>
   <section>
-    <h2>混合文件诊断（一文件多功能 = 解耦候选）</h2>
+    <h2>混合文件诊断（一文件多概念 = 解耦候选）</h2>
     ${mixedHtml}
   </section>
 </main>

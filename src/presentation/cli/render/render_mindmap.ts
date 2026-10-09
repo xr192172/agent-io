@@ -26,7 +26,7 @@ export interface MNode {
 }
 
 const ROLE_CLS: Record<string, string> = { brick: 'r-brick', contract: 'r-contract', glue: 'r-glue' };
-const ROLE_TXT: Record<string, string> = { brick: '积木(功能)', contract: '契约', glue: '胶水' };
+const ROLE_TXT: Record<string, string> = { brick: '积木', contract: '契约', glue: '胶水' };
 const KIND_ICON: Record<string, string> = {
   project: '⌂',
   community: '◎',
@@ -193,7 +193,7 @@ footer{margin-top:20px;padding:14px 18px;border-top:1px solid var(--border);back
 <header>
   <h1>分层导图 · 项目 → 社区 → 积木 → 积木内小簇 → 文件</h1>
   <div class="legend">
-    <span class="badge brick">功能</span><span class="badge contract">契约</span><span class="badge glue">胶水</span>
+    <span class="badge brick">积木</span><span class="badge contract">契约</span><span class="badge glue">胶水</span>
   </div>
   <div class="toolbar">
     <button class="btn" id="expandAll">全部展开</button>

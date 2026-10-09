@@ -90,7 +90,7 @@ async function main(): Promise<void> {
   console.log(`[brickify] 混合文件信号 ${result.mixed_files.length} 个；跨社区桥 ${countBridges(result)} 条`);
   const rt = result.meta.role_totals;
   console.log(
-    `[brickify] 三层角色 积木(功能)${rt.brick} / 契约${rt.contract} / 胶水${rt.glue}`,
+    `[brickify] 三层角色 积木${rt.brick} / 契约${rt.contract} / 胶水${rt.glue}`,
   );
   for (const b of result.bricks) {
     const tr = b.roles;
@@ -105,7 +105,7 @@ async function main(): Promise<void> {
           ? ` 下钻1簇(退化为整层耦合)`
           : ` 下钻${subs.length}簇`;
     console.log(
-      `  积木 ${b.id}(${b.total}) [${ROLE_LABEL[b.role]}]: 功能${tr.brick.length}/契约${tr.contract.length}/胶水${tr.glue.length} 社区=${b.community ?? '-'}${subInfo}`,
+      `  积木 ${b.id}(${b.total}) [${ROLE_LABEL[b.role]}]: 积木${tr.brick.length}/契约${tr.contract.length}/胶水${tr.glue.length} 社区=${b.community ?? '-'}${subInfo}`,
     );
   }
   for (const c of result.communities) {

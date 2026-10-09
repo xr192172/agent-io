@@ -20,7 +20,7 @@ import { roleOfFile } from '../../../application/design/bricks/brickify.js';
 import type { ClusterNarratives } from '../../../application/design/bricks/cluster_narrator.js';
 
 const ROLE_CLS: Record<string, string> = { brick: 'r-brick', contract: 'r-contract', glue: 'r-glue' };
-const ROLE_TXT: Record<string, string> = { brick: '功能', contract: '契约', glue: '胶水' };
+const ROLE_TXT: Record<string, string> = { brick: '积木', contract: '契约', glue: '胶水' };
 
 function esc(s: string): string {
   return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
@@ -105,7 +105,7 @@ export function renderClusterWorkbenchHtml(
   <div class="pc-chips">
     ${ov.features.map((f) => `<button class="chip" data-brick-target="${esc(f.target)}" title="${esc(f.desc)}">${esc(f.label)}</button>`).join('')}
   </div>
-  <div class="pc-stats">${r.meta.scanned_files} 文件 · ${r.bricks.length} 功能积木 · ${r.communities.length} 社区${ov.features.length ? ` · ${ov.features.length} 项功能` : ''}</div>
+  <div class="pc-stats">${r.meta.scanned_files} 文件 · ${r.bricks.length} 块积木 · ${r.communities.length} 社区${ov.features.length ? ` · ${ov.features.length} 项` : ''}</div>
 </section>`
     : '';
 
@@ -274,7 +274,7 @@ document.querySelectorAll('.cnode').forEach(el => {
     body.innerHTML = d.files.map(f =>
       '<div class="f-row"><span class="f-path"></span>' +
       '<span class="cb f-role ' + ({brick:'r-brick',contract:'r-contract',glue:'r-glue'}[f.role]||'') + '">' +
-      ({brick:'功能',contract:'契约',glue:'胶水'}[f.role]||f.role) + '</span></div>'
+      ({brick:'积木',contract:'契约',glue:'胶水'}[f.role]||f.role) + '</span></div>'
     ).join('');
     body.querySelectorAll('.f-path').forEach((p, i) => { p.textContent = d.files[i].path; p.title = d.files[i].path; });
     document.getElementById('panel').classList.add('open');
@@ -284,7 +284,7 @@ document.getElementById('pclose').addEventListener('click', () => {
   document.getElementById('panel').classList.remove('open');
   document.querySelectorAll('.cnode').forEach(x => x.classList.remove('sel'));
 });
-// 项目总览功能 chip → 定位到对应积木的第一张簇卡（项目→功能→簇 的下钻闭环）
+// 项目总览 chip → 定位到对应积木的第一张簇卡（项目→积木→簇 的下钻闭环）
 document.querySelectorAll('.chip[data-brick-target]').forEach(el => {
   el.addEventListener('click', () => {
     const brick = el.dataset.brickTarget;

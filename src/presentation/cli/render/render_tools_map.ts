@@ -281,7 +281,7 @@ document.querySelectorAll('.tm-card').forEach(el => {
         '<div class="cl-files">' + c.files.map(f =>
           '<div class="f-row"><span class="f-path"></span>' +
           '<span class="an-badge f-role ' + ({brick:'an-badge-ok',contract:'an-badge-info',glue:'an-badge-gray'}[f.role]||'an-badge-gray') + '">' +
-          ({brick:'功能',contract:'契约',glue:'胶水'}[f.role]||f.role) + '</span></div>'
+          ({brick:'积木',contract:'契约',glue:'胶水'}[f.role]||f.role) + '</span></div>'
         ).join('') + '</div></div>'
       ).join('') || '<div class="tm-empty">内联实现（无独立模块）</div>') +
       (d.unmatched.length ? '<div class="unmatched">未匹配模块：' + d.unmatched.join(', ') + '</div>' : '');
