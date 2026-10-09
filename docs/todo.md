@@ -912,65 +912,17 @@
         出生证两方向都验过（磁盘多卷 ⇒ 红；声明谎报 ⇒ 红；还原 ⇒ 绿）。**余下：`capability_map` 顶部点名它。**
       ⇒ 设计：`docs/convergent-product-form.md`。
 
-- [ ] **T68 ★★ 合并形态 S2：`COGNITION.txt` —— `query=digest` 的落盘形态（带派生指纹）**
-      *(核实：2026-10-08 实测 `get_dsl query=digest` **已实现**（AOCI 形状 F/R/A/S，真跑出 `F`/`R`/`A`）；
-       但 **`WHEN_OVERRIDES.get_dsl` 手挑了 4 个 query、README、router 三处全不点名它** ⇒ 我上一轮甚至提议再造一个 `query=outline`。)*
-      ⇒ **形状**：把 `digest` 的产物落成仓根一份可进 Git 的文本；**同一渲染器，不许第二份实现**；
-        文件头写 **`#Generated-From: feature=<f> dsl_rev=<n> sha256=<hash>`**
-        （`_dsl_rev` 今天只当**乐观锁**用，此处**借来当派生指纹** ⇒ ★ 须在类型注释里标清"一名两义"）。
-      ⇒ **判据**：① 与 `query=digest` 输出**逐字一致**；② 改 DSL 后不重生成 ⇒ 文件头印「**已过期，请重生成**」。
-      ⇒ ★★ **用户已裁定（2026-10-09）：不进 Git** —— 判据 = **变更频率**（它随每次代码改动而变 ⇒ churn 高）。
-        对照 `MANIFEST.txt`（只在卷布局变时变 ⇒ churn 低 ⇒ **进 Git**）⇒ **声明进 Git，快照不进。**
-      ⇒ ★ **本轮已落**：`scripts/gen_cognition.mjs` + `npm run cognition` / `cognition:check`。三条取舍：
-        ① **不自己排版**（把 `get_dsl query=digest` 的文本原样取回）⇒ "逐字一致"是**结构保证**；
-        ② **哈希"渲染出的 body"而不是 DSL 文件**（改坐标不该判过期 —— 快照仍准确）；
-        ③ 过期**由读者判**（静态文件不可能自己知道），文件头**常驻自白**。
-        **出生证**：改一个 `responsibility` ⇒ `--check` 报「已过期」exit 1；还原 ⇒ 0。
-      ⇒ 余下：`capability_map` 顶部点名 + 判过期（这才是"被看见"的那一半）。
-
----
-
-- [x] **T84 —— 结项（2026-10-09）：判据"已在"** —— 能力住在 `capability_map` 的「**链的完整判定**」段
-      （`chainVerdictsOf`：`wants` = 下游要哪些对象（`objectInputsOf`）/ `fed` = 上游喂了哪些 /
-       `state` = `ok` / `no-need` / `gap`）—— **比本节当初设想的更全**。实测三条链全部对上：
-      `refactor` ✓ 无缺口（`edit_code→run_tests: 不要对象`）·
-      `design-loop` ✓ 无缺口（`edit_code→consistency_check: 不要对象`）·
-      ★ `design-import` **✗ 第 2 段真缺口**（`extract_contracts→find_references: ✗ 要[file,symbol] ← 喂[—]`）
-      —— **与它 `note` 里的真跑记录（"真跑时报缺少必需参数 file"）逐字对上**。
-      ★★ 教训（自记）：我**已经把 `needsObjects` 注入写好**（打算把段 B 的逻辑搬进「链」段），
-        回头一查现有渲染才发现**段 B 早就有更全的算法** ⇒ **当场回退**。
-        **抄一份 = 判据分叉**（本仓头号病）· **动手前先查仓库里有没有**（§2.7 老毛病）。
-
-- [ ] **T87 ★★★ `harvest_decisions` 的候选**没有出口**（实测：对本仓 `docs/` 采出 **899 条**，然后**采完就断**）**
-      *(核实：2026-10-09 用户问"能不能把**项目文档翻译成设计 DSL**、效率会不会更高" ⇒ 真跑了一次 ——
-       `harvest_decisions {feature, doc_dir: 本仓 docs/, git_root: 本仓}` ⇒
-       **"提取到 899 条决策候选（draft，未写入 DSL）"，来源分布 `gitlog 2 · doc 897 · comment 0`**，*
-       *且**每条带出处**（`docs/adding-a-language.md:49` / `git:c53da8ab`）**与证据原文** ⇒ **采集质量看着是可用的**。*
-       *★ 但它**没有写回参数**、实现里**没有 `saveDSL`**，而 `DecisionCandidate` **全仓没有任何其他消费者**
-       ⇒ **候选采下来就没有出口**。)*
-      ⇒ ★★★ **为什么这条重要**：用户要的是"**文档 → 设计 DSL**"。现在**能采、不能落**
-        ⇒ **效率再高也停在半路**（899 条候选 → 0 条进 DSL）。
-      ⇒ ★★ **与 `design-import` 链的 note 是同一类**：那里判过 `extract_contracts` 是
-        「**终端分析工具**（产物里既无定位器也无符号名 ⇒ **交接不出对象**）」⇒ **本条同族**：
-        **采得出、接不上**。★ 也正是 **T54（入参端管道）** 的又一实例。
-      ⇒ **形状（待定，两个方向）**：
-        (a) **给候选加出口** —— 让它们能落成 `decision`（`edit_dsl` 认的形状）或**进 overlay**；
-            ★ 而"哪条候选该落"是**人的判断** ⇒ 应默认 **draft（现状 ✓）+ 一条显式的"录用"路径**；
-        (b) 或**只把它当"人读的材料"**（现状）⇒ 那就**明说**"本工具是终端，不进链"
-            （与 `CHAINS` 的判据一致 —— ★ 现在它**没被写进任何链**，那是不是"有意"？**要先查清**）。
-      ⇒ **判据（先据此定性）**：① 它是否**曾被设想成一条链**（查 `docs/` 与历史）；
-        ② 若否 ⇒ 至少要让"采完就断"这件事**在输出里说出来**（现在是"采到 899 条"就完了，
-          **没告诉调用方"接下来该怎么办"** —— ★ 这与 `renderNextNote` 的处理方式正好相反）。
-
-- [x] **T88 —— 结项（2026-10-09）**：文档成为**设计 DSL 的一等节点** + **改动理由可以"挂一篇文档"**。
-      ★ **对拍的边界（用户更正）**：**能对拍的只有两个 DSL**（设计 vs 实际）—— **文档不是对拍的一方**；
-        文档的角色是「**改动理由的挂点**」（*"你每一次改动都要有原因，可以是自己在这里即刻的去写，
-        也可以是挂载一个文档"*）。
-      · **上半**：`import_project {include_docs:true}` ⇒ `docs/**/*.md` 收成 `type:'doc'` 节点
-        （★ **不进 `semantic.files`**，不参与对账）；`OverlayAnchor.kind` + `nodePathKind` 同步认 `doc`。
-      · **下半**：`existsFn`（L4 证据回溯）**认 DSL 节点 id** ⇒ `evidence:[{type:'node',ref:'doc_xxx'}]` 成为合法理由。
-      **判据（双验）**：① 挂**真文档** ⇒ **通过** ✓；② 挂**不存在的节点** ⇒ **L4 拒**（*evidence 无法回溯*，exit 1）✓
-        ⇒ ★ **闸没放宽**。"每次改动都要有原因"本就强制（L1-L4）⇒ 现在**理由有两个来源**：现场写 / 挂文档。
+- [x] **T68 —— 结项（2026-10-09 核实）：`COGNITION.txt` 已经落完了**（★ 我"先查清单"才没去做一件已完成的事）。
+      · **落盘** `.agent-io/COGNITION.txt` ✓ · **重生成** `npm run cognition` ✓ · **判过期** `npm run cognition:check` ✓
+      · ★ **派生指纹在**（T68 要的那个）：每个 feature 一段 ——
+        `===feature wga_syncwarm=== dsl_rev=558 sha256=d7e1d56772148c52` ⇒ **`dsl_rev` + `sha256` 都有** ✓
+      · **复验**：`npm run cognition:check` ⇒ **`✅ COGNITION 是最新的`** ✓
+      ★ **形状与原文有一处不同（且是有意的）**：原文说"落成**仓根**一份**可进 Git** 的文本"，
+        实现落在 **`.agent-io/`（不进 Git）** —— `capability_map` 的"读之前先看哪儿"段明写理由：
+        **高 churn ⇒ 不进 Git**（MANIFEST 在仓根低 churn ⇒ 进 Git）。⇒ **按现设计结项**。
+      ★ **记账（我的过程失误）**：核实它的判据时 `cognition:check` 先报"**已过期**" —— 而原因是
+        **我今晚留下的测试 feature**（`v85_dsl-workbench` / `v85_elv`）**没清** ⇒ 清掉即"一致"。
+        ⇒ ★ 教训：**测试 feature 用完当天就清**，否则会污染 `cognition:check` 这类**全仓对账**（看起来像系统坏了）。
 
 - [ ] **T69 ★★ 合并形态 S3：上限预算 —— 把 L1 扩成双边 + 配额单点**
       *(核实：2026-10-08 实测我们**只有下限**（`MIN_REASON_CHARS = 6`，见 `reason_validator.ts:73`），
