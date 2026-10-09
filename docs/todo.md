@@ -988,18 +988,16 @@
 
 ---
 
-- [ ] **T84 ★★ 逐段判据的"最后一步"：把「下游要不要对象类入参」接进来 ⇒ 才判得了"真断"（T83 的后续）**
-      *(背景：2026-10-09 做 T83 时**当场验出** —— 我原先写的第三档"真断"（"连作用域边都没有"）*
-       ***不可达**：作用域边是 `ANY_TOOL → ANY_TOOL` ⇒ **恒有**。⇒ 已据实去掉那一档，不摆永远不出现的警告。)*
-      ⇒ **"真断"的正确判据** =「**下游确实要对象类入参，而这一段没喂**」：
-        · "要对象类入参" 可从 `ToolDef` 算（`capability_map` 已有 `objectInputsOf(name, catalog)`）；
-        · "没喂" 就是 `objectEdges.length === 0`（已有）。
-      ⇒ **形状**：`hopsOf` 吃一份 `catalog`（像 `capability_map` 已经做的那样），对**两档**再细分：
-        `strong` / **`weak-but-ok`**（下游本来就不吃对象 ⇒ 弱没问题）/ **`broken`**（下游要吃而没喂）。
-      ⇒ **判据**：上面三条链里，`refactor` 末段（`edit_code → run_tests`）应判 **"下游本来就不吃对象"**
-        （`run_tests` 要测试文件/名称，不吃文件对象）；而 `design-loop` 的 `edit_code → consistency_check`
-        （`consistency_check` **要** `feature`/`scope`、不吃文件对象）也应归**弱但没问题**。
-      ⇒ ★ 这是"判据表达力"的收尾 —— 与 T83 同族：**判据说不清 ⇒ 事实被压成错误的样子**。
+- [x] **T84 —— 结项（2026-10-09）：判据"已在"** —— 能力住在 `capability_map` 的「**链的完整判定**」段
+      （`chainVerdictsOf`：`wants` = 下游要哪些对象（`objectInputsOf`）/ `fed` = 上游喂了哪些 /
+       `state` = `ok` / `no-need` / `gap`）—— **比本节当初设想的更全**。实测三条链全部对上：
+      `refactor` ✓ 无缺口（`edit_code→run_tests: 不要对象`）·
+      `design-loop` ✓ 无缺口（`edit_code→consistency_check: 不要对象`）·
+      ★ `design-import` **✗ 第 2 段真缺口**（`extract_contracts→find_references: ✗ 要[file,symbol] ← 喂[—]`）
+      —— **与它 `note` 里的真跑记录（"真跑时报缺少必需参数 file"）逐字对上**。
+      ★★ 教训（自记）：我**已经把 `needsObjects` 注入写好**（打算把段 B 的逻辑搬进「链」段），
+        回头一查现有渲染才发现**段 B 早就有更全的算法** ⇒ **当场回退**。
+        **抄一份 = 判据分叉**（本仓头号病）· **动手前先查仓库里有没有**（§2.7 老毛病）。
 
 - [ ] **T69 ★★ 合并形态 S3：上限预算 —— 把 L1 扩成双边 + 配额单点**
       *(核实：2026-10-08 实测我们**只有下限**（`MIN_REASON_CHARS = 6`，见 `reason_validator.ts:73`），

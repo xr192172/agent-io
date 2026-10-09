@@ -616,7 +616,14 @@ export const SCOPE_PATHS = new Set(['project_dir', 'feature']);
  * 我第一版写的是三值（强 / 弱 / **真断**），可**实测立刻打脸**：作用域边是 `ANY_TOOL → ANY_TOOL`
  * ⇒ **恒有** ⇒ `scopeEdges` **从不空** ⇒ **"真断"那一档不可达**（死档）。
  * ★ **"真断"的正确判据**应是「**下游确实要对象类入参，而这一段没喂**」 —— 那需要知道下游的入参形状
- *   （`ToolDef`，在 `application` 层）⇒ **那是下一步**（仓库注释早就这么写了）。
+ *   （`ToolDef`，在 `application` 层）。
+ *   ⇒ ★★★ **而它已经住在别处**：「链的完整判定」段（`capability_map` 的 `renderChainVerdicts` /
+ *     `chainVerdictsOf`）用 `ToolDef` 算 `wants`（下游要哪些对象）/ `fed`（上游喂了哪些）/ `state`
+ *     （`ok` / `no-need` / `gap`）—— **比本段完整**。
+ *   ⇒ 所以本段**只查表、只报"有没有对象边"这一件事**，**不把段 B 的逻辑抄过来**（抄过来 = **判据分叉**）。
+ *   ★★ 记账（2026-10-09，T84）：我**差点就抄了** —— 已经把 `needsObjects` 注入写好，
+ *     回头一查才发现段 B 早就有更全的算法 ⇒ **当场回退**，并把责任边界写在这儿。
+ *     教训：**动手前先查仓库里有没有**（本仓反复栽在这一条上）。
  *   ⇒ 所以本类型**只给可达的两档**，**不摆一个永远不出现的警告**（摆着就是骗人）。
  */
 export interface HopVerdict {
@@ -627,11 +634,11 @@ export interface HopVerdict {
   objectEdges: readonly ChainEdge[];
   /** ★ 该段的**作用域**已验证边（`project_dir` / `feature`）—— 弱交接的判据（T83 新增）。 */
   scopeEdges: readonly ChainEdge[];
-  /** ★ **可达的两档**：`strong`（有对象边）/ `scope-only`（无对象边、仅有作用域键）。 */
+  /** ★ **可达的两档**（本段的责任边界；"真断"看「链的完整判定」段）：`strong` / `scope-only`。 */
   kind: 'strong' | 'scope-only';
 }
 
-/** 逐段判定（★ 两档可达；"真断"判不了，理由见 {@link HopVerdict}）。 */
+/** 逐段判定（★ 两档；"真断"见「链的完整判定」段 —— 责任边界见 {@link HopVerdict}）。 */
 export function hopsOf(chain: Chain): readonly HopVerdict[] {
   const out: HopVerdict[] = [];
   for (let i = 0; i + 1 < chain.steps.length; i++) {
@@ -668,18 +675,19 @@ export function renderChains(max = 20): string {
     const tally = `强 ${strong}/${hops.length} · 弱 ${weak}`;
     const status = weak
       ? `◇ **仅靠作用域键交接**（首处在第 ${firstWeak!.hop} 段：${firstWeak!.from} → ${firstWeak!.to}）` +
-        ` —— ★ **弱交接 ≠ 断**；**为什么弱**逐链见 CHAINS[].note｜${tally}`
+        ` —— ★ **弱交接 ≠ 断**；"**这一段到底行不行**"看下面「**链的完整判定**」段（它算"下游要不要对象"）；` +
+        `**为什么弱**逐链见 CHAINS[].note｜${tally}`
       : `✓ 每段都是**强交接**（有对象类边）｜${tally}`;
     return `    ${c.name.padEnd(14)} [${c.evidence}] ${c.steps.join(' → ')}\n${' '.repeat(19)}${status}｜对象类边数 ${counts}`;
   });
   return (
     '\n\n── 链（★ 一等公民：逐段查 `CHAIN_EDGES`；每段分**两档**：强交接（有对象类边）/ 弱交接（仅作用域键））──\n' +
     lines.join('\n') +
-    '\n  ★ 本判定**只查表**，且**只报事实**（对象类边几条，不是"通/断"）：' +
-    '\n    ★★ **"真断"目前判不了**（2026-10-09 当场验出来）：作用域边是 `ANY_TOOL→ANY_TOOL` ⇒ **恒有**' +
-    '\n      ⇒ "连作用域都没有"那一档**不可达**。**真断的正确判据**是「**下游确实要对象类入参、而这一段没喂**」' +
-    '\n      —— 那需要知道下游的入参形状（`ToolDef`，`application` 层）⇒ **那是下一步**。' +
-    '\n      ★ 所以这里**只印可达的两档**，**不摆一个永远不出现的警告**。' +
+    '\n  ★★ **本段只回答一件事**："每一段**有没有对象类边**"。' +
+    '\n     ★ **"这一段到底行不行"不在这里判** —— 那要知道"下游要不要对象类入参"，' +
+    '\n       而那件事**已经住在下面「链的完整判定」段**（它用 `ToolDef` 算 `wants`/`fed`/`state`）。' +
+    '\n     ★★ 责任边界是**有意**划的（2026-10-09，T84）：我**差点把段 B 的逻辑抄进本段**（`needsObjects` 注入都写好了），' +
+    '\n        回头一查才发现段 B 早就有更全的算法 ⇒ **当场回退**。**抄一份 = 判据分叉**（本仓头号病）。' +
     '\n  ★★ 通没通，**只看 `[verified]`** —— 那是整条链的真跑结论，权威在 `CHAINS[].note`。' +
     '\n  ★★ **"弱交接"不是断**（2026-10-09，T83）：它只是"这一段靠 `feature`/`project_dir` 接上、没有对象类边"。' +
     '\n     ★ 旧版把弱交接与"无对象边"印成同一个 "⚠"，⇒ **真跑通了整条链，看起来却像断的**' +
