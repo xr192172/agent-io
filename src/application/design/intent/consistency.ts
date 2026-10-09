@@ -29,6 +29,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { DesignDSL, SemanticFile } from '../../../domain/types.js';
+import { hasFileEntries } from '../../../domain/semantic.js';
+import { noFileEntriesMessage } from '../no_file_entries.js';
 import { getDSL, getBaselineFacts } from '../../../infrastructure/storage.js';
 // ★ T85/D3：线 1 的"现取事实"入口 —— 与 `import_project` 锚基线事实时**用的是同一个 accessor**（同源）
 import { fileFacts } from '../../../infrastructure/index/file_facts.js';
@@ -343,9 +345,16 @@ export async function checkConsistency(input: ConsistencyInput): Promise<Consist
     throw new Error(`feature "${feature}" 不存在`);
   }
 
-  if (!dsl.semantic || !dsl.semantic.files || dsl.semantic.files.length === 0) {
-    throw new Error(`feature "${feature}" 没有 semantic.files，无法检查一致性`);
-  }
+  // ★★★ T97：**这里原先是"没有 semantic.files 就整体拒"—— 已撤（过度拒绝，丢能力）**。
+  //   本函数有**两条各自独立的线**（见文件头与本类型注释）：
+  //   · **线 1**（`checkBaselineDrift`）= `baseline/<feature>.facts.json` vs 现取事实。
+  //     它取"本 feature 有哪些文件"读的是**基线事实文件**（`import_project` 用**扫描出的文件**
+  //     锚定，见 `import_project.ts` 的 `scopeRels`）—— **独立于 DSL** ⇒ 聚合模式下**照样可算**。
+  //     判据（实测）：`checkBaselineDrift` 只 `Object.entries(baseline.files)`，**从不读 `semantic.files`**。
+  //   · **线 2**（下面的 `fileResults`）= DSL 的 `expected_apis` vs 现取事实 ⇒ 它**逐 `semantic.files`** 比
+  //     ⇒ 聚合模式下**没有对手**（无逐文件契约）⇒ 如实报「**线 2 无内容**」，**不是错误**。
+  //   ⇒ 所以：**照跑线 1**，线 2 空则报告"无内容"。★ 判据住一处（`hasFileEntries`）。
+  const fileEntriesPresent = hasFileEntries(dsl.semantic);
 
   // 摩擦 G 修复：未显式传 code_dir 时，自动用 DSL 记录的 source_root（import_project
   // 已把 project_dir 写入 source_root）作为代码根，外部项目无需每次手传 code_dir；
@@ -362,97 +371,105 @@ export async function checkConsistency(input: ConsistencyInput): Promise<Consist
   let mismatchedCount = 0;
   let unexpectedCount = 0;
 
-  for (const file of dsl.semantic.files) {
-    const fullPath = path.join(codeDir, file.path);
-    const exists = fs.existsSync(fullPath);
+  // ★★★ T97：**线 2（逐文件 vs "人指定的契约"）只在"有文件级条目"时才有对手。**
+  //   聚合模式（functional_mode / design_mode）下 `semantic.files` 为空 ⇒ 这里 0 次迭代，
+  //   渲染段会用 `noFileEntriesMessage` 如实报「线 2 无内容」（**不是错误、也不是"全过"**）。
+  //   ★ 这里**内联**调 `hasFileEntries`（而非复用上面的 `fileEntriesPresent`）：它的返回是**类型谓词**
+  //     ⇒ TS 在本 `if` 内把 `dsl.semantic` 收敛为**已定义**，循环内取 `dsl.semantic.files` 无需 `?.` / `?? []`。
+  //     （判据仍是同一处 —— 函数本身；下面渲染段的 `fileEntriesPresent` 与本调用**同源**。）
+  if (hasFileEntries(dsl.semantic)) {
+    for (const file of dsl.semantic.files) {
+      const fullPath = path.join(codeDir, file.path);
+      const exists = fs.existsSync(fullPath);
 
-    const apiMatches: ApiMatch[] = [];
-    const expectedApis = file.expected_apis || [];
-    const actualApis: ParsedApi[] = [];
+      const apiMatches: ApiMatch[] = [];
+      const expectedApis = file.expected_apis || [];
+      const actualApis: ParsedApi[] = [];
 
-    if (exists) {
-      const content = fs.readFileSync(fullPath, 'utf-8');
-      if (isSupportedFile(file.path)) {
-        const symbols: ParsedSymbol[] = await parseFileSymbols(file.path, content);
-        for (const s of symbols) {
-          if (s.kind === 'function' || s.kind === 'method') {
-            actualApis.push({
-              signature: s.signature,
-              name: s.name,
-              start_line: s.start_line,
-              end_line: s.end_line,
-              kind: s.kind,
-            });
+      if (exists) {
+        const content = fs.readFileSync(fullPath, 'utf-8');
+        if (isSupportedFile(file.path)) {
+          const symbols: ParsedSymbol[] = await parseFileSymbols(file.path, content);
+          for (const s of symbols) {
+            if (s.kind === 'function' || s.kind === 'method') {
+              actualApis.push({
+                signature: s.signature,
+                name: s.name,
+                start_line: s.start_line,
+                end_line: s.end_line,
+                kind: s.kind,
+              });
+            }
           }
         }
       }
-    }
 
-    const matchedNames = new Set<string>();
+      const matchedNames = new Set<string>();
 
-    for (const expected of expectedApis) {
-      const expectedName = extractFuncName(expected.signature);
-      const actual = actualApis.find(a => a.name === expectedName);
+      for (const expected of expectedApis) {
+        const expectedName = extractFuncName(expected.signature);
+        const actual = actualApis.find(a => a.name === expectedName);
 
-      if (actual) {
-        const comparison = compareSignatures(expected.signature, actual.signature);
-        matchedNames.add(expectedName);
+        if (actual) {
+          const comparison = compareSignatures(expected.signature, actual.signature);
+          matchedNames.add(expectedName);
 
-        if (comparison.score >= 90) {
-          apiMatches.push({
-            expected_signature: expected.signature,
-            expected_notes: expected.notes,
-            actual_signature: actual.signature,
-            actual_location: `${file.path}:${actual.start_line}`,
-            status: comparison.score === 100 ? 'matched' : 'mismatched',
-            match_score: comparison.score,
-            reason: comparison.reason,
-          });
-          if (comparison.score === 100) {
-            matchedCount++;
+          if (comparison.score >= 90) {
+            apiMatches.push({
+              expected_signature: expected.signature,
+              expected_notes: expected.notes,
+              actual_signature: actual.signature,
+              actual_location: `${file.path}:${actual.start_line}`,
+              status: comparison.score === 100 ? 'matched' : 'mismatched',
+              match_score: comparison.score,
+              reason: comparison.reason,
+            });
+            if (comparison.score === 100) {
+              matchedCount++;
+            } else {
+              mismatchedCount++;
+            }
           } else {
+            apiMatches.push({
+              expected_signature: expected.signature,
+              expected_notes: expected.notes,
+              actual_signature: actual.signature,
+              actual_location: `${file.path}:${actual.start_line}`,
+              status: 'mismatched',
+              match_score: comparison.score,
+              reason: comparison.reason,
+            });
             mismatchedCount++;
           }
         } else {
           apiMatches.push({
             expected_signature: expected.signature,
             expected_notes: expected.notes,
-            actual_signature: actual.signature,
-            actual_location: `${file.path}:${actual.start_line}`,
-            status: 'mismatched',
-            match_score: comparison.score,
-            reason: comparison.reason,
+            status: 'missing',
+            match_score: 0,
+            reason: '代码中未找到该函数',
           });
-          mismatchedCount++;
+          missingCount++;
         }
-      } else {
-        apiMatches.push({
-          expected_signature: expected.signature,
-          expected_notes: expected.notes,
-          status: 'missing',
-          match_score: 0,
-          reason: '代码中未找到该函数',
-        });
-        missingCount++;
       }
+
+      // ★★★ 2026-10-09（T85/D1b）：**这里原来会报「代码新增」—— 现已移除，且是不该存在的一类。**
+      //   理由（一句话）：**`expected_apis` 是「人指定的契约」，不是「必须等于代码」**
+      //   ⇒ "代码里有、契约里没写"是**常态**（没人会为每个内部函数都写契约），**不是差异**。
+      //   ★ 而"**代码相对基线新增了什么**"是**另一个问题** ⇒ 归**线 1**（`checkBaselineDrift`）✓
+      //     —— 那才是"新增"的正主（它有"基线"这个对手；而本函数没有）。
+      //   ★ 记账：这条此前会把"fork 时被 50 上限截掉的 symbol"全报成"代码新增"
+      //     （实测 5/6 个真仓：`elv` 44 条、`dsh-brain` 25 条……用户对真项目做的**第一件事**就看到它）。
+      //   ★ `unexpectedCount` **保留字段但恒 0**（`ConsistencyResult.summary.unexpected` 有外部读者，
+      //     删字段会波及下游；而"恒 0 + 本节说明"语义正确且零破坏）。
+
+      fileResults.push({
+        file,
+        file_path: fullPath,
+        exists,
+        apis: apiMatches,
+      });
     }
-
-    // ★★★ 2026-10-09（T85/D1b）：**这里原来会报「代码新增」—— 现已移除，且是不该存在的一类。**
-    //   理由（一句话）：**`expected_apis` 是「人指定的契约」，不是「必须等于代码」**
-    //   ⇒ "代码里有、契约里没写"是**常态**（没人会为每个内部函数都写契约），**不是差异**。
-    //   ★ 而"**代码相对基线新增了什么**"是**另一个问题** ⇒ 归**线 1**（`checkBaselineDrift`）✓
-    //     —— 那才是"新增"的正主（它有"基线"这个对手；而本函数没有）。
-    //   ★ 记账：这条此前会把"fork 时被 50 上限截掉的 symbol"全报成"代码新增"
-    //     （实测 5/6 个真仓：`elv` 44 条、`dsh-brain` 25 条……用户对真项目做的**第一件事**就看到它）。
-    //   ★ `unexpectedCount` **保留字段但恒 0**（`ConsistencyResult.summary.unexpected` 有外部读者，
-    //     删字段会波及下游；而"恒 0 + 本节说明"语义正确且零破坏）。
-
-    fileResults.push({
-      file,
-      file_path: fullPath,
-      exists,
-      apis: apiMatches,
-    });
   }
 
   const invariantResults = checkInvariants(dsl, codeDir);
@@ -466,16 +483,29 @@ export async function checkConsistency(input: ConsistencyInput): Promise<Consist
   // ★★★ 2026-10-09（T85/D1b **正名**）：标题说清这是「**线 2**」——
   //   它的对手是「**人指定的契约**（`expected_apis`）」，**不是**「代码相对基线变了没」（那是**线 1**）。
   lines.push('【线 2 · 设计（**人指定的契约** `expected_apis`）vs 实现】');
-  lines.push(`  文件数: ${fileResults.length}`);
-  lines.push(`  ✅ 契约已实现: ${matchedCount}`);
-  lines.push(`  ❌ 契约缺失: ${missingCount}`);
-  lines.push(`  ⚠️ 签名不匹配: ${mismatchedCount}`);
-  // ★ **删掉 `🆕 代码新增` 那一行** —— 那一类**已废**（"代码里有、契约没写"是常态，不是差异）；
-  //   而留着一个恒 0 的行更坏：读者会把「没有代码新增」读成「代码没变」（真相要看**线 1**）。
-  lines.push(`  不变式通过: ${invariantPassed}/${invariantResults.length}`);
-  lines.push('');
-  lines.push('  ★ 「**代码新增**」**不在这里** —— 它是**线 1** 的事（相对**基线**），见下面「线 1 · 代码相对基线的变更」。');
-  lines.push('');
+  if (!fileEntriesPresent) {
+    // ★★★ T97：聚合模式（functional_mode / design_mode）**故意**把"文件身份"折叠进模块
+    //   ⇒ 语义层没有逐文件条目 ⇒ **线 2 没有"对手"**（不是"没有差异"）。**这要报告，不是错误。**
+    //   ★ 与 `check_status` / `scaffold` 的拒**共用同一条说明**（`noFileEntriesMessage`，唯一住处）。
+    lines.push(noFileEntriesMessage(feature));
+    lines.push('');
+    lines.push('★ 因此 **线 2 无内容可比** —— 不是"没有差异"，是"**没有对手**"（本 feature 的 DSL 里没有逐文件的 `expected_apis` 契约）。');
+    if (invariantResults.length > 0) lines.push(`  （跨文件不变式仍有判据：通过 ${invariantPassed}/${invariantResults.length}，见下）`);
+    lines.push('');
+    lines.push('  ★ 「**代码新增**」不在这里 —— 它是**线 1** 的事（相对**基线**），见下面「线 1 · 代码相对基线的变更」。');
+    lines.push('');
+  } else {
+    lines.push(`  文件数: ${fileResults.length}`);
+    lines.push(`  ✅ 契约已实现: ${matchedCount}`);
+    lines.push(`  ❌ 契约缺失: ${missingCount}`);
+    lines.push(`  ⚠️ 签名不匹配: ${mismatchedCount}`);
+    // ★ **删掉 `🆕 代码新增` 那一行** —— 那一类**已废**（"代码里有、契约没写"是常态，不是差异）；
+    //   而留着一个恒 0 的行更坏：读者会把「没有代码新增」读成「代码没变」（真相要看**线 1**）。
+    lines.push(`  不变式通过: ${invariantPassed}/${invariantResults.length}`);
+    lines.push('');
+    lines.push('  ★ 「**代码新增**」**不在这里** —— 它是**线 1** 的事（相对**基线**），见下面「线 1 · 代码相对基线的变更」。');
+    lines.push('');
+  }
 
   for (const fr of fileResults) {
     lines.push(`【文件】${fr.file.path}`);
@@ -545,7 +575,9 @@ export async function checkConsistency(input: ConsistencyInput): Promise<Consist
     lines.push('【建议（仅针对线 2）】');
     lines.push(...advice);
     lines.push('');
-  } else {
+  } else if (fileEntriesPresent) {
+    // ★ 只在**线 2 真的比过**（有对手）时才说"无待办"。★ 没有文件级条目时**不说这句** ——
+    //   否则"契约已实现、签名一致"会被读成"线 2 跑过且全过"，而真相是"线 2 没有对手"（上面已如实写明）。
     lines.push('  ✓ **线 2 无待办**（人指定的契约都已实现、签名一致）—— 这不是"没跑"。');
     lines.push('');
   }

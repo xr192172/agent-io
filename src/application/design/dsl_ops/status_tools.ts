@@ -14,6 +14,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { DesignDSL, DiagramStatus } from '../../../domain/types.js';
+import { hasFileEntries } from '../../../domain/semantic.js';
+import { noFileEntriesMessage } from '../no_file_entries.js';
 import { getDSL, saveDSL } from '../../../infrastructure/storage.js';
 
 // ─────────────────────────────────────────────────────────────
@@ -95,8 +97,10 @@ export function checkStatus(input: CheckStatusInput): StatusResult {
     throw new Error(`feature "${feature}" 不存在`);
   }
 
-  if (!dsl.semantic || !dsl.semantic.files || dsl.semantic.files.length === 0) {
-    throw new Error(`feature "${feature}" 没有 semantic.files，无法检查状态`);
+  // ★ 判据住一处（domain/semantic.ts `hasFileEntries`）、说明住一处（application/design/no_file_entries.ts）。
+  //   本工具**只能**按文件粒度跑（逐 `file.path` 扫脚手架输出）⇒ 没有文件级条目时如实拒。
+  if (!hasFileEntries(dsl.semantic)) {
+    throw new Error(noFileEntriesMessage(feature));
   }
 
   const baseDir = scaffold_dir

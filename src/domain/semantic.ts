@@ -145,3 +145,26 @@ export interface Semantic {
   /** scaffold 代码生成配置 */
   scaffold?: ScaffoldConfig;
 }
+
+/**
+ * ★ 判据（纯）：本 feature 的语义层里**有没有文件级条目**（`semantic.files` 非空）。
+ *
+ * ## 为什么单独立一个判据（而不是在调用处各写一次 `files.length === 0`）
+ * `semantic.files` **为空**在**聚合模式**下是**正常状态**，不是坏数据：
+ * `import_project` 的 `functional_mode`（功能聚合）/ `design_mode`（设计草图）**故意**把
+ * "文件身份"折叠进**模块节点** ⇒ 语义层只留模块、不留文件（T93 后的契约，见本文件的
+ * `SemanticFile` 与 `import_project` 的 3 处 T93 改动）。
+ * 而"空 ⇒ 按文件粒度的工具不适用"这条**同一判断**此前散在 **三处**
+ * （`dsl_ops/status_tools.ts` / `intent/consistency.ts` / `lifecycle/scaffold.ts`）
+ * —— 本仓铁律「**同一判据只写一处**」⇒ 判据住这里。
+ * ★ 本判据**只管"有没有"**；"为什么 + 出路"的**用户可见措辞**住
+ * `application/design/no_file_entries.ts` 的 `noFileEntriesMessage`（三处共用）。
+ *
+ * ★ 运行时守卫用 `Array.isArray`：契约上 `files` 恒为数组，但手工/老 DSL 可能缺该字段，
+ *   缺字段与空数组**同一语义**（都没有文件级条目）—— 这是**判据**，不是静默降级。
+ * ★ 返回类型是**类型谓词**（`semantic is Semantic`）：`if (!hasFileEntries(dsl.semantic)) throw …`
+ *   之后 TS 能把 `dsl.semantic` 收敛为**已定义** ⇒ 下游 `dsl.semantic.files` 不必再写 `?.`/`?? []`。
+ */
+export function hasFileEntries(semantic: Semantic | undefined | null): semantic is Semantic {
+  return !!semantic && Array.isArray(semantic.files) && semantic.files.length > 0;
+}

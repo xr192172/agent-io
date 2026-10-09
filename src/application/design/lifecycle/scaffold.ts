@@ -22,6 +22,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { DesignDSL, SemanticFile, CodeTemplate, Node, ContentBlock } from '../../../domain/types.js';
+import { hasFileEntries } from '../../../domain/semantic.js';
+import { noFileEntriesMessage } from '../no_file_entries.js';
 import { getDSL } from '../../../infrastructure/storage.js';
 import { snapshotAndRecordSelfWrite, syncSelfWritesSync, toRelPosix } from '../../write_gate.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
@@ -680,8 +682,10 @@ function scaffoldCore(input: ScaffoldInput): ScaffoldResult {
     throw new Error(`feature "${feature}" 不存在，请先使用 create_feature 或 render_design 创建`);
   }
 
-  if (!dsl.semantic || !dsl.semantic.files || dsl.semantic.files.length === 0) {
-    throw new Error(`feature "${feature}" 没有 semantic.files，无法生成代码骨架`);
+  // ★ 判据住一处（domain/semantic.ts `hasFileEntries`）、说明住一处（application/design/no_file_entries.ts）。
+  //   本工具**逐 `semantic.files[].path`** 生成骨架 ⇒ 没有文件级条目时如实拒（不是"生成 0 个文件"的静默成功）。
+  if (!hasFileEntries(dsl.semantic)) {
+    throw new Error(noFileEntriesMessage(feature));
   }
 
   const scaffoldConfig = dsl.semantic.scaffold;
