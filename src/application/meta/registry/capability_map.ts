@@ -736,8 +736,12 @@ export function makeCapabilityMapHandler(getCatalog: () => readonly ToolCatalogE
     const { lanes, unassigned } = buildLanes(catalog);
     const lane = args.lane as LaneId | undefined;
     const toolCount = lanes.reduce((n, l) => n + l.tools.length, 0) + unassigned.length;
+    // ★★ 2026-10-09 改开场白：原写「**先看线再看工具**」—— 那是**旧顺序**（清单在前）。
+    //   现在编排好的（链）排在最前 ⇒ 开场白必须跟着改，否则**地图的开场白与实际顺序相反**（本仓老毛病）。
     const header =
-      `agent-io 能力线导航：先看线再看工具，高频工具可绕过本导航直接调用。` +
+      `agent-io 能力线导航（**新用户第一站**）。` +
+      `\n★ **怎么读**：① 想**直接上手** ⇒ 先看下面的「**链**」（那几条是**已经编好、验过**的路径）；` +
+      `② 想**自行搭配** ⇒ 再看「6 条线的完整清单」，原子工具都在那儿，随你组合。` +
       `\n目录由工具注册表自动派生（${toolCount} 工具 / ${LANE_IDS.length} 线），与注册表同源、不会脱节。` +
       `\n前缀语义：observe_=观测、harvest_=采集、reconcile_=对账、rename_=改名、edit_=修改、render_=渲染。`;
 
@@ -768,13 +772,17 @@ export function makeCapabilityMapHandler(getCatalog: () => readonly ToolCatalogE
         header,
         // ★★ 2026-10-09：**"读之前先看哪儿"** —— 摆在最前（本工具自我定位就是"新用户第一站"）。
         renderVolumesNote(),
+        // ★★★ 2026-10-09（用户提议，落地）：**"编排好的"排在"清单"之前**。
+        //   实测（改前）：前 **84 行**是 6 条线的**工具清单**，而**链**的东西（41 行）全排在 **89~133 行**
+        //   ⇒ 「新人第一眼看到的是清单，不是路径」—— 而本工具自称"新用户第一站"，这顺序自相矛盾。
+        //   ⇒ 用户的原话：*"把已经编好的工具放到这里面……不管懂不懂，直接用我们编排好的工具就能快速上手；
+        //     原工具才是留给所有人去自行搭配的。"*
+        //   ⇒ 于是顺序改成：**编排好的（链）→ 才能自行搭配的原工具（清单）**。
+        renderChainWiring(),
+        renderChainVerdicts(catalog),
         renderLaneText(lanes),
         renderDomainText(lanes, listDomains(), domainReadNote),
         renderUnassigned(unassigned),
-        renderChainWiring(),
-        // ★★ 2026-10-06：链的**完整判定**（表侧对象边 × 下游要不要对象）——
-        //   接在"链的接法"之后：先看**怎么接**，再看**接到哪一步就断了**。
-        renderChainVerdicts(catalog),
         // ★★ 2026-10-06：工具「面」（同一个注册表的**视图**）——
         //   `direct` 名单由本模块的 `LANE_META` 提供（避免反向 import 成环）；名字零手写。
         renderFaces(catalog, LANE_META.flatMap((m) => m.direct)),
