@@ -25,6 +25,9 @@
 import { DATA_DIR_NAME } from '../../../infrastructure/data_dir.js';
 // ★ T85/D2.5：「事实」的**唯一 accessor**（与 `import_project` 锚基线事实、`consistency_check` 线 1 同源）
 import { fileFacts } from '../../../infrastructure/index/file_facts.js';
+// ★ T90：**反查 feature**（"这次实现所依据的决策"）—— ★ 4 个重写工具的入参里**根本没有 feature**，
+//   所以在这条咽喉点**自己反查** ⇒ **零调用点改动**。
+import { getDSL, listFeatures } from '../../../infrastructure/storage.js';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -61,6 +64,25 @@ export interface FileSnapshotMeta {
    *   **事实快照是增强，不是前提**；★ 但**绝不写空条目冒充"那时没 API"**。
    */
   facts?: Record<string, { apis: string[]; deps: string[] }>;
+  /**
+   * ★★★ **写入前那一刻，这些文件上挂着的「设计意图」**（2026-10-09，T90）。
+   *
+   * ## 它回答的问题（用户 2026-10-09 提出）
+   * *"实现的话，那里展示的是**最后一次实现的决策**，设计那里展示的是**最后一次设计的决策**。"*
+   * ⇒ 之前**没有任何地方记录"这次实现所依据的是哪一版决策"** ⇒ 于是**两个视图只能显示同一份**（重合）。
+   * ★★ 有了它：**两视图相同 ⇒ 设计已实现（同步）**；**不同 ⇒ 设计改了但没实现**。
+   *
+   * ## 为什么记在**写入前**
+   * ★ **"这次实现所依据的决策"就是「写前那一刻的决策」** —— 所以**不需要**"写后收口"
+   *   （而"写后"那个时刻**散在 4+ 处、没有共用收口**，见 T49）⇒ **这条咽喉点就够了**。
+   *
+   * ## feature 是**反查**出来的（不是入参）
+   * ★ 实测：`edit_code`/`rename_symbols`/`move_symbol`/`rename_files` 的 schema 里 `feature` **出现 0 次**
+   *   ⇒ 它们只认 `project_dir`，而决策住在 **feature 侧** ⇒ 两边原本**没有桥**。
+   *   ⇒ 这里按 **`DSL.source_root === 项目根`** 反查。
+   * ★★ **命中 0 个或多个 ⇒ 一律不标**（★ 不许替人选 —— 与 `applyChainEdge` 的 `pick` 同一立论）。
+   */
+  intents?: Record<string, { summary?: string; acceptance?: string }>;
 }
 
 /** 默认保留份数 */
@@ -133,12 +155,37 @@ export function createFileSnapshot(
     }
   }
 
+  // ★★★ T90：**反查 feature ⇒ 记下"写前那一刻各文件的决策"**（= 这次实现所依据的意图）
+  const intents: Record<string, { summary?: string; acceptance?: string }> = {};
+  {
+    // ★ **命中 0 个或多个 ⇒ 一律不标** —— 不许替人选（与 `applyChainEdge` 的 `pick` 同一立论）
+    const hits = listFeatures().filter((d) => d.source_root && path.resolve(d.source_root) === absRoot);
+    if (hits.length === 1) {
+      const dsl = getDSL(hits[0].feature);
+      const byPath = new Map(
+        (
+          (dsl?.geometry?.nodes ?? []) as Array<{
+            description?: string;
+            decision?: { summary?: string; acceptance?: string };
+          }>
+        )
+          .filter((n) => typeof n.description === 'string' && n.description !== '')
+          .map((n) => [n.description as string, n]),
+      );
+      for (const rel of seen) {
+        const d = byPath.get(rel)?.decision;
+        if (d && (d.summary || d.acceptance)) intents[rel] = { summary: d.summary, acceptance: d.acceptance };
+      }
+    }
+  }
+
   const meta: FileSnapshotMeta = {
     id,
     createdAt: new Date().toISOString(),
     reason: opts.reason,
     files: entries,
     ...(Object.keys(facts).length ? { facts } : {}),
+    ...(Object.keys(intents).length ? { intents } : {}),
   };
   fs.writeFileSync(path.join(snapDir, 'meta.json'), JSON.stringify(meta, null, 2) + '\n', 'utf8');
   pruneFileSnapshots(absRoot);
