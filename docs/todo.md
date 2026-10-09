@@ -962,7 +962,17 @@
         ② 若否 ⇒ 至少要让"采完就断"这件事**在输出里说出来**（现在是"采到 899 条"就完了，
           **没告诉调用方"接下来该怎么办"** —— ★ 这与 `renderNextNote` 的处理方式正好相反）。
 
-- [ ] **T88 ★★★ 让「文档」成为设计 DSL 的一等节点（`doc` 类）—— 否则"文档 → 设计"没有挂点，**对拍的两边还是同一个东西**（用户 2026-10-09 点破）**
+- [ ] **T88 ★★★ 让「文档」成为设计 DSL 的一等节点（`doc` 类）—— ★ **上半已落（2026-10-09），下半待做**（用户点破：「不然你拿什么对拍」）**
+      **✅ 上半已落（`import_project` 侧）**：加 **`include_docs?: boolean`（默认 false，与 `include_tests` 同款）**；
+        `true` ⇒ `docs/**/*.md` 收成 **`geometry.nodes` 里 `type:'doc'`**（★ **不进 `semantic.files`**）；
+        ★ 同步改了 **`OverlayAnchor['kind']` 加 `'doc'`（两处联合）+ `nodePathKind` 加分支**
+        （否则未知类型**落到 `'symbol'`** ⇒ 语义错）。
+        **真跑验三条全达成**：① 默认 `{module:13,file:40}` ⇒ **一个 doc 都不多**；
+        ② `true` ⇒ **37 篇 doc 节点**（`doc_docs_adding-a-language_md`）；③ `semantic.files` 里 docs = **0** ✓
+      **⏳ 下半待做（"能挂上去"）**：`harvest_decisions` 的候选要带 **`target_node_id`** ——
+        ★ 对 `source === 'doc'`，由 **`ref`**（形如 `docs/adding-a-language.md:49`）**去掉 `:行号` ⇒ `doc_` + sanitize** 即得；
+        ★ 只在**该节点真在 DSL 里**时给（否则明说"该文档不在 DSL 里 ⇒ 先 `include_docs=true` 重新导入"）。
+        ⇒ 之后的"挂"就是现成的：`edit_dsl {op:update, type:node, id:target_node_id, data:{decision:{...}}}` ✓
       *(用户原话（两句，都要逐字记住）)*
       *① "文档可以挂，但**文档挂点，它只是一个事实源**，就是证明他**为什么要在这个地方这么写**的一个理由。"*
       *② "但是**你 DSL 也是要改的呀**，要把你的那个**设计翻译成 DSL，然后才能对拍** —— **不然你拿什么对拍？**"*
