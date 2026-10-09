@@ -25,6 +25,17 @@
 import type { Scope } from './scope.js';
 import { formatScope } from './scope.js';
 
+/**
+ * ★★ **"有差异"的判据 —— 只此一处**（2026-10-09 导出，T81 续）。
+ *
+ * ★ 为什么要导成单点：`consistency_check` 有**两条返回路径**（给 scope / 不给 scope），
+ *   两条都要算"哪些文件**要我关注**" ⇒ 若各写一遍判据，就是本仓头号病（**同一判据住两处**）。
+ * ★ 口径：四类差异之和 > 0 —— 含 `expectation_failures`（T78：**人写的验收**也算差异）。
+ */
+export function hasDiff(f: FileDiff): boolean {
+  return f.missing + f.mismatched + f.unexpected + (f.expectation_failures ?? 0) > 0;
+}
+
 /** 一个文件的差异计数（★ 只数差异，不数"通过"——通过的文件不进块） */
 export interface FileDiff {
   /** 仓库相对路径（已规范化为 `/`） */
@@ -77,8 +88,7 @@ export function buildDiffBlocks(
   group_by: 'arch_layer' | 'scope' = 'arch_layer',
 ): DiffBlocksResult {
   const notes: string[] = [];
-  const totalOf = (f: FileDiff): number => f.missing + f.mismatched + f.unexpected + (f.expectation_failures ?? 0);
-  const withDiff = files.filter((f) => totalOf(f) > 0);
+  const withDiff = files.filter(hasDiff);
 
   if (withDiff.length === 0) {
     notes.push('范围内**没有任何差异** ⇒ 无块可出。★ 这是"好消息"，不是"没跑"。');

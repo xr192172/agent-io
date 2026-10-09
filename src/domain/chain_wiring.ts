@@ -310,6 +310,26 @@ export const CHAIN_EDGES: readonly ChainEdge[] = [
       '★ 依 `CHAIN_EDGES` 的立论：**接续负责"位置与对象"，不负责"意图"**（`capability_map` 的接续段会把' +
       '"还要给"逐条列出来）。★ 与 `applyChainEdge` 在 `pick` 上不替人选中下标**同一条道理**。',
   },
+  {
+    from: 'consistency_check',
+    fromKey: 'scope_files',
+    to: 'edit_code',
+    toPath: 'file',
+    cardinality: 'pick',
+    evidence: 'verified',
+    note:
+      '★★ **这是"对拍 → 重写"那一跳**（用户工作流的核心：把**不对的范围**圈出来 ⇒ 去改它）。' +
+      '★ 真跑（2026-10-09，夹具）：`consistency_check` 的 `touched.scope_files=["src/core/format.ts"]`' +
+      '（= **差异面**：验收 `call-exists total→add` 判 fail 的那个文件）⇒ 取 `[0]` 放进 `edit_code.file`' +
+      '（`op=range`）⇒ **真落盘成功** ⇒ 再对拍 ⇒ **无差异（`scope_files` 随之省略）** ✅ —— 闭环。' +
+      '★ 语义记清：`get_dsl query=scope` 交的是**作用面**，本工具交的是**差异面**（"哪些文件不对"），' +
+      '两者**都落进 `scope_files` 同一个键**（语义统一为"**要我关注的文件**"，词表已写清这两种来源）。' +
+      '★ 之所以是 `pick`：差异可能落在多个文件上；改哪一片由调用方定。' +
+      '★★ **前提**：`edit_code.file` 相对 `project_dir` 解析 ⇒ 必须同时传 `touched.project_dir`（通用边）同基准。' +
+      '★★ 实现踩到的坑（留档）：`consistency_check` 有**两条返回路径**（给 scope / 不给 scope），' +
+      '我最初只改了给 scope 的那条 ⇒ **默认那条根本不产 `touched`**。' +
+      '⇒ 两条路径现在**共用同一套判据**（`hasDiff` 与 `groupExpectationFails`，都是导出的单点）。',
+  },
 ];
 
 /**

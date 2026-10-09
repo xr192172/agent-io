@@ -25,9 +25,9 @@ import { updateFeature } from '.././design/dsl_ops/update_feature.js';
 // ★★ 2026-10-09（T73）：差异块 —— 把 per-file 差异折成"可重写的区域块"。
 //   `scope.ts` 是"圈定范围"的**文法与解析唯一落点**；`diff_blocks.ts` 是"归块"的纯函数。
 import { resolveScopeText, formatScope } from '../../domain/scope.js';
-import { buildDiffBlocks, type FileDiff } from '../../domain/diff_blocks.js';
+import { buildDiffBlocks, hasDiff, type FileDiff } from '../../domain/diff_blocks.js';
 // ★★ 2026-10-09（T74）：验收执行 —— 类型/格式化在 domain，判定器在 application（domain 不许 import infrastructure）
-import { collectExpectations, describeExpectation, expectationSubjectPath, expectationPaths } from '../../domain/expectation.js';
+import { collectExpectations, describeExpectation, expectationSubjectPath, expectationPaths, normPath } from '../../domain/expectation.js';
 import { judgeExpectations } from './intent/expectations.js';
 
 /** consistency_check：一致性。★ wrapData（2026-09-29）：[B] 回 `ConsistencyResult`
@@ -90,6 +90,27 @@ export const consistencyHandler = wrapData(async (a) => {
     };
     if (exp) data.expectation_results = { checked: exp.checked, passed: exp.passed, failed: exp.failed, unsupported: exp.unsupported, items: exp.items, notes: exp.notes };
     else if (expNotes.length) data.expectation_results = { checked: 0, passed: 0, failed: 0, unsupported: 0, items: [], notes: expNotes };
+    // ★★★ 2026-10-09（T81 续）：**全量这条路径也要产 `touched`**。
+    //   ★ 我最初只改了「给 scope」那一条 ⇒ 实测才发现**默认那条根本不产 `touched`**（DATA 里连 `blocks` 都没有）
+    //     —— 又一次"改的那处不在跑"。★ 两条路径**共用同一套判据**：`hasDiff`（有差异）+ `groupExpectationFails`（归类）。
+    const failAll = groupExpectationFails(exp?.items ?? [], () => true).failByPath;
+    const diffFiles = r.fileResults
+      .map((fr) => {
+        const p = normPath(fr.file.path);
+        return {
+          path: p,
+          missing: fr.apis.filter((x) => x.status === 'missing').length,
+          mismatched: fr.apis.filter((x) => x.status === 'mismatched').length,
+          unexpected: fr.apis.filter((x) => x.status === 'unexpected').length,
+          expectation_failures: failAll.get(p) ?? 0,
+        };
+      })
+      .filter(hasDiff)
+      .map((x) => x.path)
+      .sort();
+    const touchedAll: Record<string, unknown> = { feature };
+    if (diffFiles.length) touchedAll.scope_files = diffFiles;
+    data.touched = touchedAll;
     return { message: expSection ? `${r.message}\n${expSection}` : r.message, data };
   }
 
@@ -97,11 +118,10 @@ export const consistencyHandler = wrapData(async (a) => {
   if (!dsl) throw new Error(`feature "${feature}" 不存在（视图: design）⇒ 无法解析 scope`);
   const sc = resolveScopeText(dsl, scopeText);
 
-  const norm = (p: string): string => p.replace(/\\/g, '/').replace(/^\.\//, '');
   const inScope = new Set(sc.paths);
-  const sel = r.fileResults.filter((fr) => inScope.has(norm(fr.file.path)));
+  const sel = r.fileResults.filter((fr) => inScope.has(normPath(fr.file.path)));
   // ★ 不许静默：scope 命中、但对账结果里没有的文件（例如不在语义层）要说出来
-  const seen = new Set(sel.map((fr) => norm(fr.file.path)));
+  const seen = new Set(sel.map((fr) => normPath(fr.file.path)));
   const notChecked = sc.paths.filter((p) => !seen.has(p));
 
   // ★★★ 2026-10-09（T78）：**把"人写的验收"的失败并进同一份块**。
@@ -109,26 +129,9 @@ export const consistencyHandler = wrapData(async (a) => {
   //   ⇒ 那一路对出来**永远干净** ⇒ **块永远是空的**，而"圈范围"正是用户要的那一步。
   //   实测（2026-10-09 真跑）：验收报 `failed 1`，块报"有差异 0 个"，还把出问题的文件列进"已对齐" —— 两者矛盾。
   //   ★ 归属规则**只由 `domain/expectation.ts` 的 `expectationSubjectPath` 决定**（不在这里再推一遍）。
-  const failByPath = new Map<string, number>();
-  const outsideScope: string[] = [];
-  let unsupportedInScope = 0;
-  let unsupportedOutside = 0;
-  for (const it of exp?.items ?? []) {
-    if (it.verdict === 'pass') continue;
-    const subj = expectationSubjectPath(it.expectation);
-    if (!inScope.has(subj)) {
-      // ★ 不静默：主体**不在你框的范围里**——要说出来（否则你会以为"这片没问题"）
-      // ★★ 2026-10-09 自查补：`unsupported` 走到这条分支时**也被踢掉了**（初版只收 `fail`）
-      //    ⇒ 于是"索引旧 + 主体在范围外"会**完全不吭声** —— 正是我最想防的那种静默。
-      if (it.verdict === 'fail') outsideScope.push(`${expectationPaths(it.expectation).join(' → ')}`);
-      else unsupportedOutside++;
-      continue;
-    }
-    if (it.verdict === 'fail') failByPath.set(subj, (failByPath.get(subj) ?? 0) + 1);
-    else unsupportedInScope++;
-  }
+  const { failByPath, outsideScope, unsupportedInScope, unsupportedOutside } = groupExpectationFails(exp?.items ?? [], (p) => inScope.has(p));
   const files: FileDiff[] = sel.map((fr) => {
-    const p = norm(fr.file.path);
+    const p = normPath(fr.file.path);
     return {
       path: p,
       arch_layer: fr.file.layer,
@@ -203,6 +206,14 @@ export const consistencyHandler = wrapData(async (a) => {
     '  ★ 块的排序键只由稳定量构成（差异总数 ↓，同数按区域名字典序）⇒ 无关改动不会让块乱跳。',
     '  ★ 本工具**仍不改退出码**（差异再多也 exit 0）—— 它是**报告**；要"会红"是 T74（验收执行）的事。',
   );
+  // ★★★ 2026-10-09（T81 续）：**让"对拍"也能交出对象** —— 它交的是「**要我关注的文件**」。
+  //   为什么这里是**差异面**而不是"作用面"：对拍这个动作的产出**本来就是**「哪些文件不对」
+  //   （用户要的那句「把**不对的范围**自动圈出来」正是指它）。而 `get_dsl query=scope` 交的是"作用面"
+  //   —— 两者都落进**同一个键** `scope_files`，语义统一为「**我圈定了 / 要我关注的文件**」（词表已写清这两种来源）。
+  //   ★ 口径照旧：**没差异 ⇒ 省略整个键**（不给空数组 —— 空数组会被读成"真的没有文件"）。
+  const diffFiles = [...new Set(d.blocks.flatMap((b) => b.files))].sort();
+  const touched: Record<string, unknown> = { feature };
+  if (diffFiles.length) touched.scope_files = diffFiles;
   return {
     message: lines.join('\n'),
     data: {
@@ -211,6 +222,7 @@ export const consistencyHandler = wrapData(async (a) => {
       clean_files: d.clean_files,
       notes: allNotes,
       summary: r.summary,
+      touched,
       ...(exp
         ? { expectation_results: { checked: exp.checked, passed: exp.passed, failed: exp.failed, unsupported: exp.unsupported, items: exp.items, notes: exp.notes } }
         : expNotes.length
@@ -439,3 +451,35 @@ export const renderDesignHandler = wrap(async (a) => {
   //   仍**显式抛错**而不是静默返回 —— 不写兜底（§3），真越界要响。
   throw new Error(`render_design 不支持的 format：${String(format)}（只支持 mindmap / svg / markdown）`);
 });
+
+
+/**
+ * ★★ 把「人写的验收」的**失败按主体路径归到文件上** —— **两条返回路径共用，只此一处**（2026-10-09，T81 续）。
+ *
+ * ★ 为什么必须共用：`consistency_check` 有**两条返回路径**（给 scope / 不给 scope），
+ *   两条都要算「哪些文件**要我关注**」⇒ 各写一遍就是本仓头号病（**同一判据住两处**）。
+ *   ★ 我最初只改了给 scope 的那一条 ⇒ 实测发现**默认那条根本没产 `touched`**（且 DATA 里也没有 `blocks`）。
+ * ★ 归属规则**只由 `domain/expectation.ts` 的 `expectationSubjectPath` 决定**（不在这里再推一遍）。
+ * ★ `inScope` 为 `() => true` 时（全量那条路径）`outsideScope` / `unsupportedOutside` 恒空 —— 语义正确：没有"范围外"。
+ */
+function groupExpectationFails(
+  items: readonly { verdict: string; expectation: Parameters<typeof expectationSubjectPath>[0] }[],
+  inScope: (p: string) => boolean,
+): { failByPath: Map<string, number>; outsideScope: string[]; unsupportedInScope: number; unsupportedOutside: number } {
+  const failByPath = new Map<string, number>();
+  const outsideScope: string[] = [];
+  let unsupportedInScope = 0;
+  let unsupportedOutside = 0;
+  for (const it of items) {
+    if (it.verdict === 'pass') continue;
+    const subj = expectationSubjectPath(it.expectation);
+    if (!inScope(subj)) {
+      if (it.verdict === 'fail') outsideScope.push(expectationPaths(it.expectation).join(' → '));
+      else unsupportedOutside++;
+      continue;
+    }
+    if (it.verdict === 'fail') failByPath.set(subj, (failByPath.get(subj) ?? 0) + 1);
+    else unsupportedInScope++;
+  }
+  return { failByPath, outsideScope, unsupportedInScope, unsupportedOutside };
+}
