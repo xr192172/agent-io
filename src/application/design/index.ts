@@ -546,9 +546,15 @@ export const DESIGN_TOOLS: ToolDef[] = [
       //     实测（`docs/todo.md` T82）：手写 `direct` 里 9 个工具，去掉没上链的 6 个之后
       //     会**削掉 `import_project`（建档=第一步）/ `edit_dsl`（写设计=第二步）/ `capability_map`（导航它自己）**
       //     ⇒ "新人第一站"没了。⇒ 补法 = 让它交出一个**对象类**锚点。
-      //   ★ 为什么是 `scope_files` 而不是新造一个键：它**已经存在且语义正好**
-      //     （=「**我圈定了 / 要我关注的文件**」，仓库相对）—— 本工具交的是**导入面**（本次扫进来、归本 feature 管的源码文件），
-      //     与 `get_dsl query=scope`（作用面）、`consistency_check`（差异面）**同一把钥匙、同一个语义**。
+      //   ★ 为什么是 `scope_files` 而不是新造一个键：它**已经存在**，词表已把它的语义定死
+      //     （=「**我圈定了 / 要我关注的文件**」，仓库相对）—— 本工具交的是**导入面**。
+      //   ★★ **来源枚举与口径的唯一住处 = `domain/b_terms.ts` 的 `scope_files.meaning`** ⇒ 本处**不复述**。
+      //     ★ 我第一版在这里又列了一遍"作用面 / 差异面"，并写它是"**同一个语义**" —— 两句都错：
+      //       ① 复述 = 同一判断住两处（本仓头号病，我当场复发了一次）；
+      //       ② "同一个语义"**有一半是假的**（反伪评审实测）：`get_dsl query=scope` 在 `functional_mode` 下
+      //          给的是**逗号串**（`"src/core/math.ts, src/util/calc.ts"`）、`design_mode` 下给的是**目录**
+      //          （`"src/"`）⇒ 下游硬失败。详见 `chain_wiring.ts` 这条边的「基准警告」。
+      //       本工具交的**能无条件宣称**的只有：**仓库相对的单个文件路径**列表。
       //   ★ 字段名**零翻译**：`[B]` 的 `ImportProjectResult.scope_files` 就叫这个名字 ⇒ 这里直接搬。
       return {
         message,

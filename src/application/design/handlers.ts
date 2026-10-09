@@ -212,7 +212,7 @@ export const consistencyHandler = wrapData(async (a) => {
   // ★★★ 2026-10-09（T81 续）：**让"对拍"也能交出对象** —— 它交的是「**要我关注的文件**」。
   //   为什么这里是**差异面**而不是"作用面"：对拍这个动作的产出**本来就是**「哪些文件不对」
   //   （用户要的那句「把**不对的范围**自动圈出来」正是指它）。而 `get_dsl query=scope` 交的是"作用面"
-  //   —— 两者都落进**同一个键** `scope_files`，语义统一为「**我圈定了 / 要我关注的文件**」（词表已写清这两种来源）。
+  //   ★ 来源枚举与口径见 `domain/b_terms.ts` 的 `scope_files.meaning`（**唯一住处**）—— 本处不再复述。
   //   ★ 口径照旧：**没差异 ⇒ 省略整个键**（不给空数组 —— 空数组会被读成"真的没有文件"）。
   const diffFiles = [...new Set(d.blocks.flatMap((b) => b.files))].sort();
   const touched: Record<string, unknown> = { feature };

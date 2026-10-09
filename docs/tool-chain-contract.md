@@ -81,13 +81,21 @@ export interface Touched {
    *  ★ 用**新名**：`files` 在产物侧有 **6 种不同语义**（`string[]` / 各类 Report 数组），已被污染，不可复用；
    *    `filesWritten` 是 `number`（计数）、`written` 是 `boolean`（是否落盘）——也都不能用。 */
   written_files?: string[];
-  /** 被**读取**当作输入的文件。★ 与 `written_files` 分开：现有 `files` 恰恰是"报告/路径"混用才坏的。 */
-  read_files?: string[];
+  /** **我圈定了 / 要我关注的文件**（仓库相对路径）—— ★ 只读工具也成立（写类才用 `written_files`）。
+   *  ★ 2026-10-09 新增：三个来源同一语义（`get_dsl query=scope` 作用面 / `consistency_check` 差异面 /
+   *    `import_project` 导入面），一个键装下；口径见 `src/domain/b_terms.ts` 的 `scope_files.meaning`。 */
+  scope_files?: string[];
+  /** ★ **已退役（产物侧，2026-10-05）** —— `Touched` **不再有此字段**；留此行仅为**留证**（撤掉的东西要留证）。
+   *  它是**剪贴板 / 变量**（下游自己读/扫即可），**不该占「链的接口」**这一格；理由见 §8。 */
+  // read_files?: string[];
   /** 改动/定位到的符号 qualified_name。
    *  ★ 用**新名**：既有 `symbol` 是 `string`（单个）；一次调用常涉及多个，链需要全部。 */
   symbols?: string[];
   /** 作用到的 DSL 节点 id。★ 同上：既有 `node_id` 是 `string`（单个）。 */
   nodes?: string[];
+  /** **本次操作的那个对象所在的文件**（单数）。★ 2026-10-05 由 `definition_file` **改名**而来 ——
+   *  目的：`touched.file` 与下游入参 `rename_symbols.renames[].file` **逐字同名、零字段名翻译**。 */
+  file?: string;
 }
 ```
 
@@ -133,13 +141,14 @@ G8 行为快照 `UPDATE_TOOL_BEHAVIOR=1` **并记账**。
 
 ## 8. 追加记录：`read_files` 撤出 `Touched`（2026-10-05）
 
-> ★ 本节是**追加记录**（§4.1 那段定义保留原貌 —— 它记的是当时的判断）；结论在此更新。
+> ★ 本节是**追加记录**（§4.1 那段定义原为 2026-10-01 当时的判断；已按 `Touched` 现有 7 键更新于
+> 2026-10-09 —— 撤出的 `read_files` 仍以「已退役」在 §4.1 **留证**）；结论在此更新。
 
 **改了什么**：`Touched` 去掉 `read_files` 字段（§4.1 里的那一栏**不再成立**）；词表 `b_terms.ts` 里
 `read_files` 由 `kind: 'anchor'` **改判为 `context` 并标"已退役（产物侧）"**。
 原 5 个产者（`find_references` / `extract_contracts` / `reconcile_effects` / `reconcile_chain` /
-`harvest_decisions`）各自那段聚合**一并删除**（不留死代码）。`Touched` 现存字段：
-`feature` / `project_dir` / `written_files` / `symbols` / `nodes` / `file`
+`harvest_decisions`）各自那段聚合**一并删除**（不留死代码）。`Touched` 现存字段（7 个）：
+`feature` / `project_dir` / `written_files` / `scope_files` / `symbols` / `nodes` / `file`
 （★ 末项 2026-10-05 由 `definition_file` **改名**为 `file` —— 目的：让 `touched.file` 与下游入参
 `rename_symbols.renames[].file` **逐字同名、零字段名翻译**；该边已真跑并升级 `verified`）。
 

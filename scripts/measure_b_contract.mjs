@@ -186,6 +186,32 @@ function readTouchedExempt() {
 const TERMS = readTerms();
 /** ★ 例外清单的唯一数据源（工具级）—— 棘轮报告靠它区分「已登记例外」与「真债」。 */
 const TOUCHED_EXEMPT = readTouchedExempt();
+/**
+ * ★★ 读 `src/domain/b_terms.ts` 的 **`Touched` 接口字段名**（直读 AST，理由同 `readTerms`）。
+ *
+ * 为什么是 `Touched`、而不是 `ANCHOR_NAMES`：本量具量的是「**`touched` 内部**的键」，
+ *   而 `Touched` 接口**就是** `touched` 对象的形状 ⇒ 它的字段名 = 权威的 `KEYS`。
+ *   ★ `ANCHOR_NAMES` 会**多**收 `symbol` / `node_id` —— 它们是**入参侧**的 anchor 词（单个·旧名），
+ *     **不在 `Touched` 里** ⇒ 拿它们当 `KEYS` 会对两个**永远为 0** 的键空报（又一种"看起来干净的 0"）。
+ *   ★ 本文件原先持一份**手抄**的 `KEYS`（6 个）；2026-10-09 词表给 `Touched` 加了第 7 个键 `scope_files`
+ *     时**没人补它** ⇒ 本节对该键**零覆盖**（本仓"手抄清单必腐"的又一例）。改从接口派生 ⇒ 加键自动跟上。
+ */
+function readTouchedKeys() {
+  const tsf = program.getSourceFile(TERMS_FILE);
+  if (!tsf) return [];
+  for (const st of tsf.statements) {
+    if (!ts.isInterfaceDeclaration(st) || st.name.text !== 'Touched') continue;
+    return st.members
+      .map((m) => {
+        const n = ts.isPropertySignature(m) ? m.name : null;
+        return n && (ts.isIdentifier(n) || ts.isStringLiteral(n)) ? n.text : null;
+      })
+      .filter((x) => x !== null);
+  }
+  return [];
+}
+/** ★★ `touched` 内部键的**权威名单** = `Touched` 接口的字段名（本节 `KEYS` 的唯一来源，见 `readTouchedKeys`）。 */
+const TOUCHED_KEYS = readTouchedKeys();
 /** ★ 权威来源 = 词表。**不再手抄**任何"锚点名"。 */
 const TERM_NAMES = new Set(TERMS.map((t) => t.name));
 /** 词表里登记为「链的接口」的词（`kind: 'anchor'`） */
@@ -418,69 +444,126 @@ if (process.argv.includes('--json')) {
   // ★★★ 关键：上面那一节的产物字段是**顶层**的，而 `touched` 是个**对象** ⇒ 它内部的键**上面完全看不到**。
   //   2026-10-05 实测教训：我曾据此断言"`symbols`/`read_files` 产物端 0/37"，**整轮结论作废** ——
   //   而真调一看 `find_references` 的 `touched` = `{project_dir, symbols:["Kk"], read_files:["com/a/Kk.java"]}`。
-  //   ⇒ 这一节**必须单列**：扫各 [B] 的 `touchedOf` **函数体**，看它填了哪些键。
-  {
-    // ★ 2026-10-05：补上 `file` —— 原 `definition_file` 已改名（见 T54）。★ 此前这个数组**不含**它，
-    //   所以本节**一直量不到**那个字段的产出（盲区）；改名时一并补上。
-    const KEYS = ['feature', 'project_dir', 'written_files', 'symbols', 'nodes', 'file'];
-    /**
-     * ★★ 匹配口径（2026-10-05 修）：**按"字段访问 / 属性键"匹配，不按裸词**。
-     *   旧实现是 `new RegExp('\\b' + k + '\\b')` —— 那会把**局部变量、注释、入参名**也算进来（量到影子）。
-     *   实测：刚给 `file` 补进 KEYS 时就报出 `file 7/31`，而真实产者只有 1 个
-     *   （`find_references.ts` 的 `touched.file = …`）⇒ 其余 6 个是 `const file = …` / `r.definition.file` 之类。
-     *   ⇒ 现在要求命中以下任一种形态（[B] 的 `touchedOf` 只会用这两种写法）：
-     *     · `touched.<键>`（赋值式）
-     *     · `<键>:` 或 `{ <键>,`（对象字面量式 —— `return { … }` 或 `withTouched(r, { … })`）
-     */
-    const hitOf = (body, k) =>
-      new RegExp(`touched\\.${k}\\b`).test(body) || new RegExp(`(?:^|[{,\\s])${k}\\s*[,:}]`, 'm').test(body);
-    const bodyOf = (src) => {
-      const i = src.indexOf('touchedOf');
-      if (i < 0) return null;
-      const rest = src.slice(i);
-      const end = rest.indexOf('\n}\n');
-      return end > 0 ? rest.slice(0, end) : rest.slice(0, 3000);
-    };
-    const hits = [];
-    for (const f of files) {
-      const sf = program.getSourceFile(f);
-      const body = bodyOf(sf ? sf.getFullText() : '');
+  //   ⇒ 这一节**必须单列**：扫各 [B] 的 `touched` **构造处**，看它填了哪些键。
+  //
+  // ★★ 2026-10-09 修（T81）——本节原先有两个缺陷，**同型**：判据设计错时它给出的"0"看起来同样干净。
+  //   (a) `KEYS` 是**手抄**的 6 元数组。词表 2026-10-09 给 `Touched` 新增第 7 个键 `scope_files` 时**没人补它**
+  //       ⇒ 本节对它**零覆盖**（本仓"手抄清单必腐"，见 `readTerms` 里同样的教训）。
+  //       修法：`KEYS` 从**权威派生** = `Touched` 接口的字段名（见 `readTouchedKeys`）⇒ 接口加键，本节自动跟上。
+  //       ★ 为什么**不**用 `ANCHOR_NAMES`（词表 `kind:'anchor'` 的词）：那会**多**收 `symbol` / `node_id`
+  //         —— 它们是**入参侧**的 anchor 词、**不在 `Touched` 里** ⇒ 会让本节永远空报两个 0。
+  //   (b) 产者检测**只认 `touchedOf` 函数体**（那是 T18 定的唯一构造点）。但 2026-10-09 新增的 `scope_files`
+  //       产者**没有 `touchedOf`** —— 它们**手搓 `touched` 对象**：
+  //         · `query_feature.ts:778`（`const touched: Record<string,unknown> = {feature}; touched.scope_files = …`）
+  //         · `design/handlers.ts:115` / `:219`（`touchedAll` / `touched` 两条 return 路径）
+  //         · `design/index.ts:568`（`touched: { feature, project_dir, …(… scope_files …) }`）
+  //       ⇒ 旧判据对它们**量到 0**，而那个 0 与"真没有"**看起来一样干净**（正是本仓反对的假读数）。
+  //       修法：产者检测改**两源** —— 源① `touchedOf` 函数体；源② 无 `touchedOf`、但手搓 `touched` 的文件。
+  //   ★ 因此本节的**产者集合**（两源）与**棘轮的「已接」集合**（只认 `touchedOf`）**判据不同 ⇒ 必须分列**
+  //     （反例：`queryFeature` 是登记在案的 `dispatcher` 例外、本不该自己产 `touched`，却手搓了一份
+  //      ⇒ 棘轮不应把它算"已接"；但它是 `scope_files` 的**真产者** ⇒ 本节的覆盖**应**算它）。
+  //
+  // ★★ 匹配口径（2026-10-05 修）：**按"字段访问 / 属性键"匹配，不按裸词**。
+  //   旧实现是 `new RegExp('\\b' + k + '\\b')` —— 那会把**局部变量、注释、入参名**也算进来（量到影子）。
+  //   实测：刚给 `file` 补进 KEYS 时就报出 `file 7/31`，而真实产者只有 1 个
+  //   （`find_references.ts` 的 `touched.file = …`）⇒ 其余 6 个是 `const file = …` / `r.definition.file` 之类。
+  //   ⇒ 只认以下两种形态（`touched` 的构造只会用这两种写法）：
+  //     · `touched.<键>`（赋值式）
+  //     · `<键>:` 或 `{ <键>,`（对象字面量式 —— `return { … }` 或 `withTouched(r, { … })`）
+  const KEYS = TOUCHED_KEYS;   // ★ 权威 = `Touched` 接口字段名（`readTouchedKeys`），**不再手抄**（见上）
+  const relOf = (f) => path.relative(ROOT, f).replace(/\\/g, '/');
+  const hitOf = (body, k) =>
+    new RegExp(`touched\\.${k}\\b`).test(body) || new RegExp(`(?:^|[{,\\s])${k}\\s*[,:}]`, 'm').test(body);
+  /** 源①：`touchedOf` **函数体**（T18 定的唯一构造点） */
+  const bodyOf = (src) => {
+    const i = src.indexOf('touchedOf');
+    if (i < 0) return null;
+    const rest = src.slice(i);
+    const end = rest.indexOf('\n}\n');
+    return end > 0 ? rest.slice(0, end) : rest.slice(0, 3000);
+  };
+  /**
+   * 源②：手搓 `touched`（无 `touchedOf`）。
+   *   ★ 判据必须**全文件扫**（不能只取第一个构造点后的一段窗口 —— 实测 `handlers.ts` 有**两条** return 路径，
+   *     相隔 > 3000 字符 ⇒ 窗口法会漏掉第二条；这正是"判据太窄 ⇒ 假 0"）。两条写法：
+   *     · `<touched变量>.<键>`（赋值式，变量名以 `touched` 起 —— 如 `touched.scope_files` / `touchedAll.scope_files`）
+   *     · `touched: { … }` / `const touched… = { … }`（对象字面量式 —— **按花括号配对**取对象体，不用定长窗口）
+   *   ★ 只在文件**确实**含手搓构造时才启用（`hasManualTouched`），且**至少命中一个键**才算产者
+   *     ⇒ 把"只读 `touched_json` 的消费者"（如 `meta/index.ts`）排除在外，不量到影子。
+   */
+  const hasManualTouched = (src) =>
+    /(?:const|let)\s+touched[A-Za-z_$]*[^;{}\n]*=\s*\{|touched\s*:\s*\{/.test(src);
+  const braceBody = (src, openBraceIdx) => {
+    let d = 0;
+    for (let i = openBraceIdx; i < src.length; i++) {
+      if (src[i] === '{') d += 1;
+      else if (src[i] === '}' && --d === 0) return src.slice(openBraceIdx, i + 1);
+    }
+    return src.slice(openBraceIdx, openBraceIdx + 2000);
+  };
+  const manualHitOf = (src, k) => {
+    if (new RegExp(`\\btouched[A-Za-z_$]*\\.${k}\\b`).test(src)) return true;
+    const re = /(?:const|let)\s+touched[A-Za-z_$]*[^;{}\n]*=\s*\{|touched\s*:\s*\{/g;
+    for (const m of src.matchAll(re)) {
+      if (hitOf(braceBody(src, m.index + m[0].length - 1), k)) return true;
+    }
+    return false;
+  };
+  const hits = [];
+  /** ★ 棘轮用：**只**认 `touchedOf` 的文件（口径不变）；与上面的"产键覆盖"是**两个集合**（见上）。 */
+  const touchedOfFiles = new Set();
+  for (const f of files) {
+    const sf = program.getSourceFile(f);
+    const full = sf ? sf.getFullText() : '';
+    const viaTouchedOf = full.includes('touchedOf');
+    if (viaTouchedOf) {
+      touchedOfFiles.add(relOf(f));
+      const body = bodyOf(full);
       if (!body) continue;
-      hits.push({ f: path.relative(ROOT, f).replace(/\\/g, '/'), got: KEYS.filter((k) => hitOf(body, k)) });
+      hits.push({ f: relOf(f), via: 'touchedOf', got: KEYS.filter((k) => hitOf(body, k)) });
+    } else if (hasManualTouched(full)) {
+      const got = KEYS.filter((k) => manualHitOf(full, k));
+      if (got.length) hits.push({ f: relOf(f), via: '手搓', got });
     }
-    console.log(`★★★ \`touched\` **内部各键**的产出覆盖（扫 \`touchedOf\` 函数体；${hits.length} 个 [B] 有它）：`);
-    for (const k of KEYS) {
-      console.log(`     ${k.padEnd(15)} ${String(hits.filter((h) => h.got.includes(k)).length).padStart(2)} / ${hits.length}`);
-    }
-    console.log('     ⇒ ★ 这一个读数**上面几节都量不到** —— 上方"产物字段"只到 `touched` 这一层为止，不会下钻。');
-    console.log('');
-
-    // ★★ 2026-10-06（T18 定稿）：把棘轮变成**可执行**的 —— 三类分开报：
-    //   **已接 · 已登记例外（`B_TOUCHED_EXEMPT`） · 该给未给（真债）**。
-    //   判据：`hits` 里的文件 = 有 `touchedOf`（= 已接）；例外读**唯一数据源**（同一文件里的另一张表）。
-    //   ★ 用 `file` 关联（`hits` 只记文件、`rows` 记到函数；本仓 [B] 与文件基本 1:1）。
-    //   ★ 本节的 8/37 与例外表的 7 条**判据不同 ⇒ 不相等**，故**必须分开报**（见下面的脚注）。
-    const hitFiles = new Set(hits.map((h) => h.f));
-    const missing = rows.filter((r) => !hitFiles.has(r.file));
-    const exempted = missing.filter((r) => TOUCHED_EXEMPT.has(r.name));
-    const debt = missing.filter((r) => !TOUCHED_EXEMPT.has(r.name));
-    console.log('★★ 棘轮（「新增 [B] 必须给 `touched`」的**三类**，2026-10-06 T18 定稿）：');
-    console.log(`     已接            ${rows.length - missing.length} / ${rows.length}`);
-    console.log(`     已登记例外      ${exempted.length}${exempted.length ? '（' + exempted.map((r) => r.name).join(', ') + '）' : ''}`);
-    console.log(`     该给未给＝真债  ${debt.length}${debt.length ? '（' + debt.map((r) => r.name).join(', ') + '）' : ''}`);
-    const staleExempt = [...TOUCHED_EXEMPT.keys()].filter((n) => !rows.some((r) => r.name === n));
-    if (staleExempt.length) {
-      console.log(`     ⚠ 例外表的**陈旧项**（已不在当前 [B] 里，表会腐 ⇒ 请核对）：${staleExempt.join(', ')}`);
-    }
-    console.log('     ⇒ ★ 判据：`真债` **只许减不许增**（棘轮）。★ 而「已登记例外（7）」与上一行');
-    console.log('       「**产物里没有任何锚点候选字段**的 [B]：8/37」**判据不同 ⇒ 必然不相等**：');
-    console.log('         · 在 8 里、却**不在**例外表的（如 `diffViews` / `editCode` / `renameFiles`）');
-    console.log('           ⇒ 它们**已接 `touched`**（见上面那节的 `hits`），只是**产物里没有"锚点候选"字段** —— 两回事；');
-    console.log('         · 在例外表里、却**不在** 8 里的（`wizardSteps` / `runTests`）');
-    console.log('           ⇒ 它们**根本没有 `touchedOf`**，自然不会出现在"扫 `touchedOf`"的那一列。');
-    console.log('       ⇒ 一句话：**8 数的是"产物有没有候选锚点"，7 数的是"有没有 `touchedOf`"** —— 别把两个数字对着看。');
-    console.log('');
   }
+  console.log(`★★★ \`touched\` **内部各键**的产出覆盖（两源：\`touchedOf\` 函数体 + 手搓 \`touched\`；共 ${hits.length} 个文件产它）：`);
+  for (const k of KEYS) {
+    const n = hits.filter((h) => h.got.includes(k)).length;
+    const hand = hits.filter((h) => h.via === '手搓' && h.got.includes(k)).length;
+    console.log(`     ${k.padEnd(15)} ${String(n).padStart(2)} / ${hits.length}${hand ? `（含手搓 ${hand}）` : ''}`);
+  }
+  console.log('     ⇒ ★ 这一个读数**上面几节都量不到** —— 上方"产物字段"只到 `touched` 这一层为止，不会下钻。');
+  console.log('');
+
+  // ★ anchor 候选缺失的 [B]（下游最难接）—— ★ 提前算：供下面棘轮脚注引用（原先它在"接力键"那节才算，
+  //   且脚注散文里**硬编码 "8/37"** ⇒ 人群从 37 涨到 38 后它就成了**陈旧假数**）。
+  const noAnchor = rows.filter((r) => !r.product.anchors?.length);
+  // ★★ 2026-10-06（T18 定稿）：把棘轮变成**可执行**的 —— 三类分开报：
+  //   **已接 · 已登记例外（`B_TOUCHED_EXEMPT`） · 该给未给（真债）**。
+  //   判据：`touchedOfFiles` = 有 `touchedOf`（= 已接）；例外读**唯一数据源**（同一文件里的另一张表）。
+  //   ★ 用 `file` 关联（`touchedOfFiles` 只记文件、`rows` 记到函数；本仓 [B] 与文件基本 1:1）。
+  //   ★★ 2026-10-09 修：这里**不再复用**上面那个两源 `hits` —— 棘轮只问"有没有 `touchedOf`"（口径不变），
+  //     否则手搓 `touched` 的文件（如 `queryFeature`）会被误算成"已接"（它与本判据是**两个问题**）。
+  const hitFiles = touchedOfFiles;
+  const missing = rows.filter((r) => !hitFiles.has(r.file));
+  const exempted = missing.filter((r) => TOUCHED_EXEMPT.has(r.name));
+  const debt = missing.filter((r) => !TOUCHED_EXEMPT.has(r.name));
+  console.log('★★ 棘轮（「新增 [B] 必须给 `touched`」的**三类**，2026-10-06 T18 定稿）：');
+  console.log(`     已接            ${rows.length - missing.length} / ${rows.length}`);
+  console.log(`     已登记例外      ${exempted.length}${exempted.length ? '（' + exempted.map((r) => r.name).join(', ') + '）' : ''}`);
+  console.log(`     该给未给＝真债  ${debt.length}${debt.length ? '（' + debt.map((r) => r.name).join(', ') + '）' : ''}`);
+  const staleExempt = [...TOUCHED_EXEMPT.keys()].filter((n) => !rows.some((r) => r.name === n));
+  if (staleExempt.length) {
+    console.log(`     ⚠ 例外表的**陈旧项**（已不在当前 [B] 里，表会腐 ⇒ 请核对）：${staleExempt.join(', ')}`);
+  }
+  console.log('     ⇒ ★ 判据：`真债` **只许减不许增**（棘轮）。★ 而「已登记例外（7）」与下面那行');
+  console.log(`       「**产物里没有任何锚点候选字段**的 [B]：${noAnchor.length}/${rows.length}」**判据不同 ⇒ 必然不相等**：`);
+  console.log('         · 在那一类里、却**不在**例外表的（如 `diffViews` / `editCode` / `renameFiles`）');
+  console.log('           ⇒ 它们**已接 `touched`**（有 `touchedOf`），只是**产物里没有"锚点候选"字段** —— 两回事；');
+  console.log('         · 在例外表里、却**不在**那一类里的（`wizardSteps` / `runTests`）');
+  console.log('           ⇒ 它们**根本没有 `touchedOf`**，自然不会出现在"扫 `touchedOf`"的那一列。');
+  console.log('       ⇒ 一句话：**前者数的是"产物有没有候选锚点"，后者数的是"有没有 `touchedOf`"** —— 别把两个数字对着看。');
+  console.log('');
   // ★★ 接力键：词表里 `kind === 'anchor'` 的词在两端各覆盖多少；以及**不在词表**的候选异名。
   //    ★ 2026-10-05（T54 第一步）：本节的目的是把"该收口的名字"**机械列出来**，
   //      替代原先那份**手抄的** `ANCHOR_CANDIDATES`（它会腐：里面留着已删家族的 `box_dir`/`brick_dir`/`slim_dir`）。
@@ -491,9 +574,26 @@ if (process.argv.includes('--json')) {
   };
   const prodNames = tally((r) => r.product.fields);
   const inNames = tally((r) => r.input.fields);
+  /**
+   * ★★ 2026-10-09 修：产物端覆盖**必须含 `touched` 内部** —— anchor 键多半就产在 `touched` 里，
+   *   顶层量不到 ⇒ 旧口径把 `scope_files` 印成 `产物 0`（**假读数**；`symbols` / `nodes` 也常年被印成 0）。
+   *   判据 = 该 [B] 的**顶层产物字段** **或** 其文件的 `touched` 构造里**任一**命中该键
+   *   —— 与上面"各键覆盖"**共用同一份 `hits`**（不再两处各一套判据 = 判据分叉）。
+   *   ★ 注意：下面「候选异名 / 退役词」两行**仍按顶层**（那两问的对象是"顶层出现的**非词表**名"），
+   *     与这里的"anchor 两端覆盖"是**两个问题**，不是同一判据住两处。
+   */
+  const prodCover = (k) => {
+    let n = 0;
+    for (const r of rows) {
+      if ((r.product.fields ?? []).includes(k)) { n++; continue; }
+      const h = hits.find((x) => x.f === r.file);
+      if (h && h.got.includes(k)) n++;
+    }
+    return n;
+  };
   console.log('★★ 接力键（词表 `kind: "anchor"` 的词）两端覆盖：');
   for (const k of [...ANCHOR_NAMES].sort()) {
-    console.log(`     ${k.padEnd(16)} 入参 ${String(inNames.get(k) ?? 0).padStart(2)} · 产物 ${String(prodNames.get(k) ?? 0).padStart(2)}`);
+    console.log(`     ${k.padEnd(16)} 入参 ${String(inNames.get(k) ?? 0).padStart(2)} · 产物 ${String(prodCover(k)).padStart(2)}`);
   }
   const odd = (m) => [...m.entries()].filter(([n, c]) => !TERM_NAMES.has(n) && c >= 2).sort((a, b) => b[1] - a[1]);
   const op = odd(prodNames);
@@ -507,7 +607,6 @@ if (process.argv.includes('--json')) {
   console.log('     ⇒ ★ 词表的"退役"多数是**分侧**的（例：`files` 是**产物侧**退役 —— 产物必须用 `written_files`，');
   console.log('        而**入参侧**"限定本次处理哪几个文件"是正当用法）⇒ 两边分开看，别把入参侧的合法用法读成违规。');
   console.log('');
-  const noAnchor = rows.filter((r) => !r.product.anchors?.length);
   console.log(`★ 产物里**没有任何锚点候选字段**的 [B]：${noAnchor.length}/${rows.length}（下游最难接）`);
   console.log(`     ${noAnchor.map((r) => r.name).join(', ')}`);
   console.log('');

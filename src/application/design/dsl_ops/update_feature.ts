@@ -178,9 +178,21 @@ function touchedNodeIds(input: UpdateFeatureInput): string[] {
     .map((op) => op.id)
     .filter((id): id is string => typeof id === 'string' && id.length > 0);
   if (named.length === 0) return [];
-  const alive = new Set(
-    ((getDSL(input.feature)?.geometry?.nodes ?? []) as Array<{ id: string }>).map((n) => n.id),
-  );
+  // ★★★ 读不到 DSL 就**抛**，**绝不 `?? []`**（2026-10-09 评审查出，我第一版写成 `getDSL(...)?.… ?? []`）。
+  //   那是本仓判据里的「**该报错却默认**」：DSL 读不回来时，`?? []` 会把"**锚点丢了**"
+  //   **静默降级成"这批节点都不在了"** ⇒ `nodes` 整项省略 ⇒ 下游拿不到锚点，而回执里**看不出任何异常**。
+  //   ★ 这**不是**不可能状态（我原先以为"刚 save 过所以读得到"）：`updateFeatureCore` 只保证**写之前**
+  //     feature 存在；写入之后读不回来仍然是缺陷，必须让调用方知道。
+  //   ★ 同族留档：`find_references` 的 `file`「只在真有定义时才给」—— 那里的"省略"是**语义**（本来就没有），
+  //     这里的"省略"会是**故障伪装成语义**，两者必须分开。
+  const dslNow = getDSL(input.feature);
+  if (!dslNow) {
+    throw new Error(
+      `edit_dsl 已写入，但**回读不到** feature "${input.feature}" 的 DSL ⇒ 无法判定 touched.nodes。` +
+        `（不静默降级成"没有节点"：那会让下游拿不到锚点却看不出原因）`,
+    );
+  }
+  const alive = new Set(dslNow.geometry.nodes.map((n) => n.id));
   return [...new Set(named)].filter((id) => alive.has(id));
 }
 

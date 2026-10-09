@@ -291,8 +291,11 @@ export const CHAIN_EDGES: readonly ChainEdge[] = [
       '★★ **前提（与 `written_files → edit_code.file` 同款）**：`edit_code.file` 相对 `project_dir` 解析，' +
       '而 `scope_files` 是**仓库相对** ⇒ **必须同时把 `touched.project_dir`（通用边）传过去**，让两者同基准。' +
       '★ 这一条的意义不在"多一条边"，而在：**编排里第一次有了设计侧**（此前只有 refactor 线）。' +
-      '★ 同形但**未逐条验**的边（故**先不写进表**）：`scope_files → move_symbol.file`、' +
-      '`scope_files → rename_symbols.renames[].file` —— 验过再加，不把预测写成实测。',
+      '★ 同形的边：`scope_files → move_symbol.file` **已在表里**（`verified`，见下一条）—— ' +
+      '★ 留档（评审查出）：这句原先写的是"**未逐条验，故先不写进表**"，那是**写这句话的当时**（`69d3d2a` 13:12）为真，' +
+      '而那条边 **46 分钟后**（`6bb86fab` 13:58）就验完进表了，**没人回来销账** ⇒ ' +
+      '教训：**"先不写进表 / 待验"这类话必须当场销账**，否则它自己变成一处过期断言。' +
+      '★ 仍**未验**的只剩 `scope_files → rename_symbols.renames[].file` —— 验过再加，不把预测写成实测。',
   },
   {
     from: 'get_dsl',
@@ -322,8 +325,9 @@ export const CHAIN_EDGES: readonly ChainEdge[] = [
       '★ 真跑（2026-10-09，夹具）：`consistency_check` 的 `touched.scope_files=["src/core/format.ts"]`' +
       '（= **差异面**：验收 `call-exists total→add` 判 fail 的那个文件）⇒ 取 `[0]` 放进 `edit_code.file`' +
       '（`op=range`）⇒ **真落盘成功** ⇒ 再对拍 ⇒ **无差异（`scope_files` 随之省略）** ✅ —— 闭环。' +
-      '★ 语义记清：`get_dsl query=scope` 交的是**作用面**，本工具交的是**差异面**（"哪些文件不对"），' +
-      '两者**都落进 `scope_files` 同一个键**（语义统一为"**要我关注的文件**"，词表已写清这两种来源）。' +
+      '★ 语义记清：`get_dsl query=scope` 交的是**作用面**，本工具交的是**差异面**（"哪些文件不对"）—— ' +
+      '两者**都落进 `scope_files` 同一个键**。★ **来源枚举不再在此复述**（唯一住处 = `b_terms.ts` 的 ' +
+      '`scope_files.meaning`；我原先在这里又列了一遍"这两种来源"，是同一判断住两处）。' +
       '★ 之所以是 `pick`：差异可能落在多个文件上；改哪一片由调用方定。' +
       '★★ **前提**：`edit_code.file` 相对 `project_dir` 解析 ⇒ 必须同时传 `touched.project_dir`（通用边）同基准。' +
       '★★ 实现踩到的坑（留档）：`consistency_check` 有**两条返回路径**（给 scope / 不给 scope），' +
@@ -337,8 +341,10 @@ export const CHAIN_EDGES: readonly ChainEdge[] = [
   //     （`ANY_TOOL → ANY_TOOL`，见 `SCOPE_PATHS`）⇒ **一个对象都不承载**。
   //   ★ 实测代价（T82，2026-10-09 真跑试用）：手写 `direct` 名单 9 个，去掉"没上链的 6 个"之后
   //     会**削掉 `import_project`（新人第一站）/ `edit_dsl`（写设计）/ `capability_map`（导航它自己）**。
-  //   ⇒ 补法 = 让它交出一个**对象类**锚点 `scope_files`（= 本次扫进来、归本 feature 管的源码文件），
-  //     与 `get_dsl query=scope`（作用面）、`consistency_check`（差异面）**同一把钥匙、同一个语义**。
+  //   ⇒ 补法 = 让它交出一个**对象类**锚点 `scope_files`（= 本次扫进来、归本 feature 管的源码文件）。
+  //   ★★ **来源枚举的唯一住处 = `domain/b_terms.ts` 的 `scope_files.meaning`**（三个产者、同一把钥匙）。
+  //      本处**不复述**它 —— 而我第一版正是在这里又写了一遍"同一把钥匙、同一个语义"，**本仓头号病当场复发**。
+  //      ★ 并且那句话**有一半是假的**（反伪评审独立实测）：见下面这条边 `note` 的「基准警告」。
   {
     from: 'import_project',
     fromKey: 'scope_files',
@@ -355,7 +361,18 @@ export const CHAIN_EDGES: readonly ChainEdge[] = [
       '★ 之所以是 `pick`：导入的是**一整个项目**（本仓实测 400 文件）⇒ 改哪一个是**语义判断**，`applyChainEdge` 不替你选' +
       '（与 `get_dsl` 那两条同款）。' +
       '★★ **前提**：`edit_code.file` 相对 `project_dir` 解析，而 `scope_files` 是**仓库相对** ⇒ ' +
-      '**必须同时把 `touched.project_dir` 传过去**，让两者同基准。',
+      '**必须同时把 `touched.project_dir` 传过去**，让两者同基准。' +
+      '★★★ **基准警告（2026-10-09 反伪评审独立实测 —— 必须读，我第一版写错了）**：' +
+      '这条边**本身 4/4 模式都真落盘**（默认 / `max_files:1` / `functional_mode` / `design_mode`，外加 `live_only`，' +
+      '`written:true` 且磁盘内容核对过）✅；但**我原先写的"与 `get_dsl query=scope` 同一个语义"只在默认模式下成立** —— ' +
+      '同一 feature 逐元素比对：`functional_mode` 下 `get_dsl` 给 `["src/core/math.ts, src/util/calc.ts"]`（**逗号串**）、' +
+      '`design_mode` 下给 `["src/"]`（**目录**）；两者都能把下游**硬失败** —— ' +
+      '实测原文：`文件不存在: C:\\tmp\\…\\src\\core\\math.ts, src/util/calc.ts` / ' +
+      '`EISDIR: illegal operation on a directory, read`。' +
+      '★ 根因**不在这条边、也不是本 commit 的回归**（import 侧 4/4 全对）：`buildFunctionalLayout` 把逗号串写进了 ' +
+      '`semantic.files[].path`，而 `scope.ts:243` **无条件相信那是个路径** ⇒ 属本仓**既有缺陷**（已记 `docs/todo.md`）。' +
+      '⇒ ★★ 本边**能无条件宣称的**只有一句：「`import_project.touched.scope_files` 是**仓库相对的单个文件路径**列表」；' +
+      '**不能**宣称它与 `get_dsl query=scope` 恒等 —— 后者在聚合模式下会给出不是路径的东西。',
   },
 
   // ── ★★★ 2026-10-09（T82 的硬前提·第 2 条）：**写设计这一步也上链了** ──
@@ -375,8 +392,9 @@ export const CHAIN_EDGES: readonly ChainEdge[] = [
       '`edit_dsl {op:move,type:node,id:"file_src_core_format_ts"}` ⇒ `touched.nodes=["file_src_core_format_ts"]`' +
       '⇒ 取 `[0]` 放进 `get_dsl.node_id`（`query="node"`）⇒ **真读到该节点**（`label/type/x/y` 全在）。' +
       '★ 之所以是 `pick`：一次 `edit_dsl` 可以改**多个**节点（`operations[]` 是数组）⇒ 下游看哪个由调用方定。' +
-      '★★ **口径（别拿它当"改了哪些节点"的唯一来源）**：只给**落定后仍存在**的 id —— ' +
-      '`op=delete` 之后那个节点已经不在 DSL 里，交出去会让下游去查一个**不存在的节点**。' +
+      '★★ **这条边的取值口径不在这里** —— 唯一住处 = `domain/b_terms.ts` 的 `nodes` 词条。' +
+      '★ 我第一版把口径**写在本注释里**、词条里没有，评审判为违反本仓"一处定义" ⇒ **已搬回词表**。' +
+      '★ 而且搬完之后我在这里**又把它复述了一遍**（评审查出）—— 那等于没搬 ⇒ **本处现在只说"去哪看"，不写内容**。' +
       '★ 出生证（真跑，能区分）：同一次调用里 `delete dir_src_util` + `move file_src_core_math_ts` ⇒ ' +
       '`touched.nodes=["file_src_core_math_ts"]` —— **两个都被点名，只给活着的那个** ✓' +
       '（与 `find_references.file` "只在真有定义时才给" 同款判据）。',
@@ -616,6 +634,8 @@ export const CHAINS: readonly Chain[] = [
       '它们之间**本来就靠作用域键 `feature` 交接** ⇒ "没有对象边"在这里是**结构事实**，不是断链。' +
       '★★ 真跑中修掉的**真缺口**：`import_project` **原本连 `touched` 都没有** ⇒ 这条链的**第一段根本没有交接物**' +
       '（调用方只能自己记住 `feature`）。已补 `touched={feature, project_dir}`；' +
+      '★★ 2026-10-09 又补了第三个键 `scope_files`（对象类锚点 ⇒ 这一段才从 `scope-only` 变成有对象边）' +
+      '⇒ **现在的形状是 `{feature, project_dir, scope_files?}`**（`scope_files` 恒非空但不写死）。' +
       '★ **刻意不给 `written_files`** —— 它写的是 `<dataHome>` 下的 DSL/存档/索引，**不是源码**，给了就是谎报。' +
       '★★ 遗留（未做）：判据只有"有对象边/没有"**两值**，而真实情况是**三值**' +
       '（有对象边 / **仅靠作用域交接** / 真断）⇒ 建议三值化（`docs/todo.md`）。',

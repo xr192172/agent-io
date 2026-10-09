@@ -233,14 +233,17 @@ export const B_TERMS: Record<string, BTerm> = {
       '**我圈定了 / 要我关注的文件**（仓库相对路径，`/` 分隔）—— ★ 与 `written_files` 的分界是**本键存在的全部理由**：' +
       '`written_files` = 我**改了**哪些（写盘事实）；`file` = 主语**住在**哪个文件（单个·定位）；' +
       '**`scope_files` = 要我关注哪些（只读也成立）**。' +
-      '★★ **两种来源，同一个语义**（不许再分叉成第三把钥匙）：' +
+      '★★ **三个产者，同一把钥匙，同一个语义**（★ **只加产者、不加钥匙** —— `scope_files` 一个键装下三个来源；' +
+      '不许再分叉成第四把钥匙或新字段）：' +
       '· 「圈范围」类（`get_dsl query=scope`）交的是**作用面**（我框定了哪些）；' +
-      '· 「对拍」类（`consistency_check`）交的是**差异面**（哪些文件**不对**）—— 因为对拍这个动作的产出本来就是"不对的范围"。' +
-      '★ **只读工具也能产**（这正是它存在的理由：2026-10-09 实测 design 线 12 个工具**一条对象边都接不上**，' +
+      '· 「对拍」类（`consistency_check`）交的是**差异面**（哪些文件**不对**）—— 因为对拍这个动作的产出本来就是"不对的范围"；' +
+      '· 「建档」类（`import_project`）交的是**导入面**（本次扫进来、归本 feature 管的源码文件）—— 本次新增的第三个产者。' +
+      '★ **只读工具也能产**（这正是它存在的理由：2026-10-09 实测 design 线 12 个工具**在此之前一条对象边都接不上**，' +
       '根因就是只读工具"没有能交给下游的对象"）；' +
       '★ **不许拿它冒充 `written_files`**（那等于谎报"我改了这些"），反之亦然；' +
       '★ 没圈到 / 没差异 ⇒ **省略整个键**，不给空数组（空数组会被读成"真的没有文件"）。',
     debt: true,
+    fix: '★ 处置：三个来源（`get_dsl query=scope` 作用面 / `consistency_check` 差异面 / `import_project` 导入面）同一语义、不制造一名多义 ⇒ 债还清。',
   },
   read_files: {
     kind: 'context',
@@ -265,9 +268,17 @@ export const B_TERMS: Record<string, BTerm> = {
   nodes: {
     kind: 'anchor',
     type: 'string[]',
-    meaning: '涉及到的 DSL 节点 id',
+    meaning:
+      '涉及到的 DSL 节点 id。★ 口径（**唯一住处** —— 原只写在 `chain_wiring.ts` 的注释里）：' +
+      '**只给落定后仍存在的 DSL 节点 id** —— `op=delete` 之后那个节点**已不在 DSL 里**，' +
+      '交出去会让下游去查一个**不存在的节点**（与 `file` 那条"只在真有定义时才给"同款判据）。' +
+      '★ 产者分类：只收 `id` **就是节点 id** 的 op（`node` / `binding` / `status`）；' +
+      '`edge` / `file` / `api` 的 `id` **不是节点**，一个都不收。',
     debt: true,
-    fix: '新词，尚无使用者；与旧 `node_id: string`（单个）并存期间禁止混用',
+    fix:
+      '**已非新词**：本轮之前已有 3 个产者 —— `harvest_closure.ts:462` / `derive_anim_flow.ts:515` / ' +
+      '`reconcile_chain.ts:353`；2026-10-09 起 `edit_dsl`（`update_feature.ts`）亦产（口径见 meaning）。' +
+      '与旧 `node_id: string`（单个）并存期间禁止混用。',
   },
   // ★ 2026-10-05：原 `definition_file` 词条**已删** —— 该字段（当日新加、1 产者 0 消费者）为「出口名 = 入口名」
   //   改名为 `file`（词条见本表下方 anchor 续段），见 `Touched.file` 的注释；**旧名作废**，不留会误导的别名。
@@ -347,7 +358,7 @@ export const B_TERMS: Record<string, BTerm> = {
    */
   touched: {
     kind: 'receipt',
-    type: 'Touched（本文件导出的接口；6 个字段全可选）',
+    type: 'Touched（本文件导出的接口；7 个字段全可选：`feature` / `project_dir` / `written_files` / `scope_files` / `symbols` / `nodes` / `file`）',
     meaning: '**本次调用"动了什么"的统一小票**（T18）：跨 [B] 的**唯一收据**，供下游接链',
     fix: '新接 [B] 一律 `withTouched(r, touchedOf(input, r))`（单构造点）；★ **纯数据 / 纯计算 [B] 例外**（它们没有"本次动了什么"）',
   },
