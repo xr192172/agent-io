@@ -902,7 +902,7 @@ async function buildFunctionalLayout(
   useSkillPipeline = true,
 ): Promise<{ nodes: Node[]; edges: Edge[]; semanticFiles: SemanticFile[]; size: { w: number; h: number } }> {
   const sanitize = (s: string): string => s.replace(/[^a-zA-Z0-9_-]/g, '_');
-  const moduleId = (cid: number): string => `func_${cid}`;
+  const moduleId = (cid: number): string => `func_${cid}`; // ★ 前缀登记在 SCANNED_ID_PREFIXES
 
   // 0. skill 级：复用 analyze_monolith（锚点驱动社区）+ derive_feature_tree（LLM 归并业务功能）
   if (useSkillPipeline) {
@@ -1248,14 +1248,34 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
 
   // ── 3.5 节点 ID（须在 functional_mode / 目录树 / 边聚合前）──
   const sanitize = (s: string): string => s.replace(/[^a-zA-Z0-9_-]/g, '_');
-  const fileNodeId = (rel: string): string => `file_${sanitize(rel)}`;
-  const dirNodeId = (rel: string): string => `dir_${sanitize(rel)}`;
+  const fileNodeId = (rel: string): string => `file_${sanitize(rel)}`; // ★ 前缀登记在下面 SCANNED_ID_PREFIXES
+  const dirNodeId = (rel: string): string => `dir_${sanitize(rel)}`; // ★ 同上
   /** 设计模式下：返回文件所属的顶级目录节点 ID（root 的直接子目录） */
   const topDirNodeId = (rel: string): string => {
     const slash = rel.indexOf('/');
     if (slash === -1) return dirNodeId(''); // 根目录文件，聚合到根
     return dirNodeId(rel.slice(0, slash));
   };
+
+  /**
+   * ★★★ **本次扫描能产出哪些 id 前缀** —— ★ **唯一住处**。
+   *
+   * ## 为什么立它（2026-10-09 真跑复现的一个活缺陷）
+   * "重建会抹掉哪些节点"那道闸（本文件下方 `nonScanned`）问的是**"这个 id 是不是本次扫描产得出的"**。
+   * 它原先用 `/^(dir|file)_/` 回答 —— 那是**用"是不是目录/文件"去回答"是不是扫描产物"**，
+   * 两者**根本不是一个问题**。而 id 前缀这件事原先住在**两处**（四个生成器 ←→ 那道正则），
+   * T88 加了 `doc_`（文档节点）之后**没人去改正则** ⇒ **`doc_*` 被当成"人手加的节点"**，
+   * 真跑复现：`拒绝重建设计 DSL：会抹掉 1 个"扫描产不出的"节点（多半是人手加的）：· doc_docs_todo_md`
+   * —— 那句提示还建议"先手工把它们记进设计"，**对一个文档节点完全不知所云**。
+   *
+   * ## 不变式（★ 加新前缀必须同时做两件事）
+   * ① 把前缀加进本集合；② 在生成它的那行加一句 `★ 前缀登记在 SCANNED_ID_PREFIXES` 注释。
+   * ★ **判据（可机检）**：源码里所有 `` `<x>_${…}` `` 形式的 id 模板，其前缀 ⊆ 本集合。
+   *   （当前实测：`file_`[本文件 :1251 与 `impact/diff_impact.ts:158`] · `dir_`[:1252] ·
+   *     `func_`[:905] · `doc_`[:1803] —— 四种，全在下面。）
+   */
+  const SCANNED_ID_PREFIXES = ['file_', 'dir_', 'func_', 'doc_'] as const;
+  const isScannedNodeId = (id: string): boolean => SCANNED_ID_PREFIXES.some((p) => id.startsWith(p));
 
   const plainDeps: Array<[string, string]> = [...fileDeps];
 
@@ -1398,7 +1418,10 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
         const nextIds = new Set((layered.geometry?.nodes ?? []).map((n) => n.id));
         const nonScanned = (prevDesign.geometry?.nodes ?? [])
           .map((n) => n.id)
-          .filter((id) => !/^(dir|file)_/.test(id));
+          // ★★ 判据住一处：`isScannedNodeId`（前缀集合在 `SCANNED_ID_PREFIXES`）。
+          //   此前这里是 `/^(dir|file)_/` —— 用"是不是目录/文件"回答"是不是扫描产物"，
+          //   于是 T88 新加的 `doc_*` 被误判成"人手加的"（真跑复现见该常量注释）。
+          .filter((id) => !isScannedNodeId(id));
         const willDrop = nonScanned.filter((id) => !nextIds.has(id)).sort();
         if (willDrop.length && input.allow_design_drop !== true) {
           throw new Error(
@@ -1800,7 +1823,7 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
     const docBaseY = nodes.reduce((m, n) => Math.max(m, (n.y ?? 0) + (n.height ?? FILE_H)), 0) + 80;
     docRels.forEach((rel, i) => {
       nodes.push({
-        id: `doc_${sanitize(rel)}`,
+        id: `doc_${sanitize(rel)}`, // ★ 前缀登记在 SCANNED_ID_PREFIXES（T88 加它时漏改了那道闸的正则）
         label: `📄 ${path.posix.basename(rel)}`,
         x: MARGIN + (i % 6) * (FILE_W + 24),
         y: docBaseY + Math.floor(i / 6) * (FILE_H + 16),
