@@ -1026,20 +1026,47 @@
         ⇒ ★★ **顺带撞上 T71 —— 但结论要改**：我原先写"面上成员变了而 `snap:diff` 全绿"，**面上成员没变**（见上）
           ⇒ 那次"坐实"作废；不过实测反倒挖出更硬的一条：**给一个工具补上派生链，会让"它在不在 `direct` 里"不再可观测**
           （把 `import_project` 从 `direct` 拿掉 ⇒ `composed` 一个名字都不变）。详见 T71。
-- [ ] **T93 ★★★ `semantic.files[].path` 会被写成「逗号串」或「目录」⇒ 下游当路径用，硬失败（不报错的错）**
-      *(来源：2026-10-09 反伪评审独立实测，夹具 `C:/tmp/rvf_fixture`。)*
-      ⇒ **读数**：`import_project` 带 `functional_mode:true` ⇒ DSL 里 `semantic.files[0]={id:"func_0", path:"src/core/math.ts, src/util/calc.ts"}`
-        （**逗号串**）；带 `design_mode:true` ⇒ `path:"src/"`（**目录**）。
-      ⇒ **症状**：`get_dsl query=scope` 原样交出这些"路径"，喂下游**硬失败**：
-        `文件不存在: …\src\core\math.ts, src/util/calc.ts` / `EISDIR: illegal operation on a directory, read`。
-      ⇒ ★ **根因**：`buildFunctionalLayout` 把逗号串写进 `semantic.files[].path`，而 `scope.ts:243` **无条件相信那是个路径**
-        （⇒ §2.1："先问解析器不猜"，和 `package_declaration` 那次的错法同族）。
-      ⇒ ★★ **归属**：**不是** `4b58de2` 的回归（import 侧 4/4 模式全对，写入的 `scope_files` 是对的）；
-        是**既有缺陷**，只是被这次评审翻出来。附证：`functional_mode` 下 DSL **零个 `type:'file'` 节点**，
-        而 `import_project` 仍交 3 个文件路径 ⇒ **两者必有一方说谎**。
-      ⇒ **修法有三种都成立**（★ **选哪种需要裁定**，本轮只出证据）：① 修上游（`semantic.files[].path` 只放单一路径，
-        多路径信息挪到别的字段）；② `scope.ts:243` 加过滤（不是路径就**省略整项**，不许原样交出）；③ 两者都做。
-      ⇒ **判据**：**聚合模式下 `get_dsl query=scope` 交出的每一项都能被下游当路径成功读取**（今天不是）。
+- [x] **T93 ✅（2026-10-09 结项）★★★ `semantic.files` 被拿去装聚合节点 ⇒ 容器名与内容不符（不报错的错）**
+      *(来源：2026-10-09 反伪评审实测，夹具 `C:/tmp/rvf_fixture` / `agentio_t93`。)*
+      ⇒ **契约**（`src/domain/semantic.ts:62-67`）：`SemanticFile` = **文件**的语义条目，`path` 是"**目标文件相对路径**"（单数）。
+      ⇒ **违约的写入者 3 处**（`import_project.ts`）：`buildFromMonolith`、`buildFunctionalLayout`、`design_mode` 目录聚合
+        —— 都把**聚合/模块节点**塞进 `semantic.files`，且 `path` 填**成员列表拼接**（`rel.join(', ')` / `rel + '/'`）。
+      ⇒ **实测读数（最严重的一条）**：`functional_mode` 下 `semantic.files` **只有 2 条、两条 `geometry.type` 都是 `module`、真文件 0 个**
+        —— **不是"个别条目被污染"，是"容器被整个挪用"**：一个叫 `files` 的容器里**一个文件都没有**。
+      ⇒ **实害（真跑复现）**：`explore_code action=derive_chain node_id=func_0` → `源文件不存在，无法读取: …\math.ts, src/util/calc.ts`；
+        `consistency_check` → `【文件】src/core/math.ts, src/util/calc.ts 状态: ❌ 不存在`（而单成员聚合 `func_1` **侥幸"存在"** —— 这种"偶尔对"最危险）。
+      ⇒ **修法（已落地）**：**写入端不挪用** —— 聚合节点**不进 `semantic.files`**，摘要写进对应模块几何节点的 **`title`**
+        （`geometry.ts:124-125`：人话主标题／职责摘要，**渲染端优先展示**，label 兜底；`:1349` 本来就在给 file/module 两类都写它 ⇒ 删掉不丢信息）。
+        ★ **不选**"在 `scope.ts:243` 里过滤"那条 —— 那是**给消费者加兜底**，把症状藏起来（本仓明令禁止）。
+      ⇒ **判据（真跑，三条模式各验）**：`semantic.files` **只出现几何类型为 `file` 的 id**
+        （default 3 条真文件；functional/design **0 条**）✓；两条硬失败**变成人话错误**
+        （`节点 "func_0" 没有对应源文件（semantic.files 无此 id…）` / `feature "func" 没有 semantic.files…`）✓
+        —— ★ 判据**不是**"`func_0` 必须成功"：它是聚合体，**拒绝得清楚才对**；**唯一不可接受的是"再把逗号串当路径去读"** ✓
+      ⇒ ★★ **反向证据（定性关键）**：`:1442-1445` 逐字写着「模块节点的 `path` 是 ", " 拼的多个 rel，不是单个文件」**并用 filter 排除之**
+        ⇒ 「容器=文件」**从来没被真正贯彻**，早有人知道并**绕开了** ⇒ 搬走是**收敛历史债**，**不是破坏契约**。
+      ⇒ ★★ **修复顺带照出一处判据分叉（已一并修掉）**：「**本 feature 有哪些文件**」原先有**两把尺** ——
+        `scope_files` 取**扫描出的文件列表**，而**基线事实**（T85/D2 第二份产物）从 `semantic.files` 过滤取
+        ⇒ 实测聚合模式下 `baseline/<feature>.facts.json` 锚定 **0 个文件**（default 3 个）⇒ **对拍在聚合模式下没有基准**。
+        修法：抽 `const scopeRels = files.map(f => f.rel)` **算一次**，基线事实与 `scope_files` **共用同一份**。
+        判据（真跑）：`default` / `functional_mode` / `design_mode` **三种模式都锚 3 个真文件** ✓（改前是 3 / 0 / 0）。
+      ⇒ ★ 顺带清掉的死代码：`import_project.ts` 里那个"排除逗号串/目录"的 filter —— **出生证**：默认与聚合两种模式各跑一次，
+        **过滤掉 0 条**（判据仍在就留着，只有确证恒不触发才删）。
+      ⇒ ★★ **遗留（新记 T97）**：T93 让三处「`semantic.files` 为空就抛」的闸在**聚合模式下新触发**
+        —— 见 T97（**同一判断住三处**，且消息不自洽）。
+- [ ] **T97 ★★ 三处「没有 semantic.files」的拒绝对话框：同一判断住三处，且消息不说明"为什么"**
+      *(来源：2026-10-09 T93 收口时 `grep "没有 semantic.files"` 命中 3 个抛点。)*
+      ⇒ **三处**：`status_tools.ts:99`（无法检查**状态**）· `intent/consistency.ts:347`（无法检查**一致性**）·
+        `scaffold.ts:684`（无法生成**代码骨架**）。**三处各写一句，判据是同一件事**。
+      ⇒ ★★ **T93 让它们在聚合模式下新触发**（以前 `semantic.files` 里有模块条目，会往下走）—— 所以这是**我的改动带来的行为变化**，
+        必须处置（**不许"半修"**：不能让它停在"以前给垃圾 / 现在直接拒"这个中间态）。
+      ⇒ **先判"该不该拒"**（我倾向：**聚合视图里按文件粒度的操作本来就该拒**，因为 aggregation 模式**故意**把文件身份折叠掉了）：
+        `scaffold` 拒 ⇒ **对**（没有文件节点可生成骨架）；`status` 拒 ⇒ **可辩护**；`consistency` 拒 ⇒ **存疑**
+        （它的**线 1「基线事实 ↔ 现取事实」在聚合模式下是可算的** —— 基线事实现在还锚着 3 个真文件）。
+      ⇒ **要做**：① 三处**合成一处**（单一事实源，本仓"同一判断只写一处"）；
+        ② 消息**说清"为什么"**并给出**出路**（例："本 feature 的 DSL 里没有任何文件节点（多半是聚合/设计草图模式导入）
+        ⇒ 按文件粒度的对拍不适用；要按文件对拍请用默认模式导入"），**而不是**现在这句会让人以为是坏数据的话。
+      ⇒ **判据**：三处抛出的消息**逐字相同**（同一 helper 产出）；且 **default 模式行为不变**（仍然正常检查、不抛）。
+
 - [ ] **T94 ★★ `glossary.md` 已落后两轮，且**不能**用生成器整体重写**
       *(来源：2026-10-09 评审。`glossary.md` 最后更新 `a2d010d`(2026-10-05)，而 `scope_files` 是 `69d3d2a`(10-09) 引入的。)*
       ⇒ 现状：词表节里 `nodes` 那行仍写「**尚无使用者**」（假的，实有 4 个产者）；`scope_files` 整条缺。

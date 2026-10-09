@@ -2322,7 +2322,11 @@ async function deriveMindMapCore(input: DeriveMindMapInput): Promise<DeriveMindM
         const mNode: MindMapNode = {
           id: m.id as string,
           label: m.label || (m.id as string),
-          description: m.description || `${files.length} 个文件`,
+          // ★★★ 2026-10-09（T93 round2）：模块节点的摘要**先读节点 `title`**（`geometry.ts:124`
+          //   「人话主标题…渲染端优先展示，label 兜底」）——聚合/模块摘要现在只住这里
+          //   （`semantic.files` 只放文件，聚合体不再进语义层）⇒ 不读 `title` 则分组卡只剩"N 个文件"。
+          //   无 `title` 再回退手填的 `description`，最后才是文件数兜底。
+          description: m.title || m.description || `${files.length} 个文件`,
           kind: 'feature',
           meta: { files: files.length },
           children: buildFileNodes(files, m.id as string),

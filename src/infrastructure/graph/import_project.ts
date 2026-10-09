@@ -836,14 +836,12 @@ async function buildFromMonolith(
     const y = item.y + MARGIN - PAD;
     const apis: ExpectedApi[] = [];
     const nonFuncSymbols: Symbol[] = [];
-    let lines = 0;
     for (const r of m.rels) {
       const p = parsed.get(r);
       if (p) {
         apis.push(...p.symbols.slice(0, 50 - apis.length));
         nonFuncSymbols.push(...p.nonFuncSymbols);
       }
-      lines += lineCounts.get(r) ?? 0;
     }
     nodes.push({
       id: item.id,
@@ -853,20 +851,14 @@ async function buildFromMonolith(
       width: containerW,
       height: containerH,
       type: 'module',
+      // ★★★ 2026-10-09（T93）：聚合体的摘要改挂**它自己的几何节点** ⇒ 写进 `title`
+      //   （`geometry.ts:124`：「人话主标题：LLM 生成的职责摘要…渲染端优先展示，label 兜底」）。
+      //   ★ 为什么**不再** `semanticFiles.push`：契约 `semantic.ts:67` 规定 `SemanticFile.path` 是
+      //     **单个目标文件相对路径**（单数）；而这是**模块聚合节点**，只能填 `m.rels.join(', ')`
+      //     （成员列表拼串）⇒ 违约。实害：下游把这逗号串**当路径读源码**（`derive_chain` /
+      //     `consistency_check` 实测硬失败：「源文件不存在，无法读取: …math.ts, src/util/calc.ts」）。
+      title: `${m.name} — 聚合 ${m.rels.length} 个文件 / ${apis.length + nonFuncSymbols.length} 个符号`,
       style: { ...DIR_STYLE, borderRadius: 8 },
-    });
-    semanticFiles.push({
-      id: item.id,
-      path: m.rels.join(', '),
-      responsibility: `${m.name} — 聚合 ${m.rels.length} 个文件 / ${apis.length + nonFuncSymbols.length} 个符号`,
-      status: 'done',
-      // ★★★ 2026-10-09（T85/D1）：**不再把扫描结果灌进 expected_apis** —— 那是**事实**（权威在 cache.db），
-      //   而 `expected_apis` 是**意图**（T20：「意图册只放意图」）。★ T20 当年摘了 `actual_apis`，**漏了这一处**
-      //   ⇒ 于是「每文件前 50 条」的截断被对账当成了「代码新增」（实测 5/6 个真仓都中）。
-      //   ★ 事实要读请走 `infrastructure/index/file_facts`（现取）；★ 人的意图仍用 `edit_dsl type=api` 写。
-      // expected_apis: （已摘，见上）
-      symbols: nonFuncSymbols.length > 0 ? nonFuncSymbols : undefined,
-      lines,
     });
   }
 
@@ -1002,14 +994,12 @@ async function buildFunctionalLayout(
     const y = item.y + MARGIN - PAD;
     const apis: ExpectedApi[] = [];
     const nonFuncSymbols: Symbol[] = [];
-    let lines = 0;
     for (const r of meta.rels) {
       const p = parsed.get(r);
       if (p) {
         apis.push(...p.symbols.slice(0, 50 - apis.length));
         nonFuncSymbols.push(...p.nonFuncSymbols);
       }
-      lines += lineCounts.get(r) ?? 0;
     }
     const base = communityNameOf(meta.rels);
     const label = baseNameCount.get(base)! > 1
@@ -1023,20 +1013,14 @@ async function buildFunctionalLayout(
       width: containerW,
       height: containerH,
       type: 'module',
+      // ★★★ 2026-10-09（T93）：聚合体的摘要改挂**它自己的几何节点** ⇒ 写进 `title`
+      //   （`geometry.ts:124`：「人话主标题…渲染端优先展示，label 兜底」）。
+      //   ★ 为什么**不再** `semanticFiles.push`：契约 `semantic.ts:67` 规定 `SemanticFile.path` 是
+      //     **单个目标文件相对路径**（单数）；而这是**功能聚合（模块）节点**，只能填 `meta.rels.join(', ')`
+      //     （成员列表拼串）⇒ 违约。实害：下游把这逗号串**当路径读源码**（`derive_chain` /
+      //     `consistency_check` 实测硬失败）。
+      title: `${base} — 聚合 ${meta.rels.length} 个文件 / ${apis.length + nonFuncSymbols.length} 个符号`,
       style: { ...DIR_STYLE, borderRadius: 8 },
-    });
-    semanticFiles.push({
-      id: moduleId(cid),
-      path: meta.rels.join(', '),
-      responsibility: `${base} — 聚合 ${meta.rels.length} 个文件 / ${apis.length + nonFuncSymbols.length} 个符号`,
-      status: 'done',
-      // ★★★ 2026-10-09（T85/D1）：**不再把扫描结果灌进 expected_apis** —— 那是**事实**（权威在 cache.db），
-      //   而 `expected_apis` 是**意图**（T20：「意图册只放意图」）。★ T20 当年摘了 `actual_apis`，**漏了这一处**
-      //   ⇒ 于是「每文件前 50 条」的截断被对账当成了「代码新增」（实测 5/6 个真仓都中）。
-      //   ★ 事实要读请走 `infrastructure/index/file_facts`（现取）；★ 人的意图仍用 `edit_dsl type=api` 写。
-      // expected_apis: （已摘，见上）
-      symbols: nonFuncSymbols.length > 0 ? nonFuncSymbols : undefined,
-      lines,
     });
   }
 
@@ -1284,6 +1268,12 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
 
   /** 共享收尾：组装 DSL → 分层 → 可选职责标题 → 落盘 → 报告 */
   const finalizeDsl = async (): Promise<ImportProjectResult> => {
+    // ★★★ 2026-10-09（T93）：**"本 feature 有哪些文件"只此一份** —— 扫描出来的 `files`。
+    //   · 此前有**两把尺**：`scope_files`（下面 return）用**扫描的 files**，而基线事实（T85/D2）
+    //     却从 `semantic.files` 过滤取 ⇒ 聚合体一退出语义层（本文件 3 处 T93 改动），
+    //     functional_mode / design_mode 的语义层为空 ⇒ 基线事实锚 **0 个文件** ⇒ **对拍没有基准**。
+    //   · ⇒ 两处**共用这一份** `scopeRels`（单一事实源；判据不许分叉）。
+    const scopeRels = files.map((f) => f.rel);
     const canvasW = Math.round(rootSize.w + MARGIN * 2);
     const canvasH = Math.round(rootSize.h + MARGIN * 2 + TITLE_H);
     const dsl: DesignDSL = {
@@ -1325,12 +1315,24 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
     //     **两个分支干的事一模一样**，纯冗余（也正是"两处落盘"这个病的残余）。
 
     if (input.gen_roles) {
+      // ★★★ 2026-10-09（T93 round2）：**喂 LLM 的"条目键"与回填标题时的"查找键"必须是同一口径**（抽在此处一处）。
+      //   · 文件节点：`description` 即文件相对路径（`import_project.ts` 写文件节点时落的）；
+      //   · 目录聚合节点：id = `dir_<sanitized rel>` ⇒ 反推 rel；
+      //   · 功能聚合节点：id = `func_<cid>`（聚合社区**无单一路径**）⇒ 取 id（不硬造路径）。
+      const roleRelOf = (n: Node): string =>
+        n.description || (n.id.startsWith('dir_') ? n.id.replace(/^dir_/, '').replace(/_/g, '/') : n.id);
+      // ★★★ 2026-10-09（T93 round2）：聚合模式（design/functional）**渲染的就是模块节点** ⇒ 喂 LLM 的正是这些节点。
+      //   ★ 出生证（实测）：这里**曾经**读 `semantic.files`（含聚合/目录条目，`sf.path!.endsWith('/')` 剥尾斜杠）；
+      //     T93 后语义层**只放文件**（契约 `semantic.ts:67`）、design_mode / functional_mode 的语义层**为空**
+      //     （实测 `semantic.files = 0 条`，见 J 报告）⇒ 原分支恒产出 `[]`、剥尾斜杠**永不执行** = **死分支** ⇒ 删。
+      //   ★ 但聚合模式的职责标题**不能因此消失**：改从**几何模块节点**取（单一事实源：渲染什么、就从什么取），
+      //     与下游 `for (const n of nodes)` 回填用**同一个 `roleRelOf`**（杜绝两把尺）。
       const roleFiles = input.design_mode || input.functional_mode
-        ? semanticFiles
-            .filter((sf) => sf.path)
-            .map((sf) => {
-              const p = sf.path!.endsWith('/') ? sf.path!.slice(0, -1) : sf.path!;
-              return { path: p, dir: sf.path === '' ? '根' : p, apis: (sf.expected_apis ?? []).map((s) => s.signature) };
+        ? nodes
+            .filter((n) => n.type === 'module')
+            .map((n) => {
+              const rel = roleRelOf(n);
+              return { path: rel, dir: rel || '根', apis: [] as string[] };
             })
         : files
             .map((f) => ({
@@ -1342,13 +1344,15 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       if (Object.keys(titles).length > 0) {
         for (const n of nodes) {
           if (n.type !== 'file' && n.type !== 'module') continue;
-          const rel = n.description || (n.id.startsWith('dir_') ? n.id.replace(/^dir_/, '').replace(/_/g, '/') : '');
-          const searchRel = rel.endsWith('/') ? rel.slice(0, -1) : rel;
+          // 与上面 `roleFiles[].path` **同一口径**（`roleRelOf`）
+          const searchRel = roleRelOf(n);
           const t = titles[searchRel];
           if (t) {
+            // ★★★ 2026-10-09（T93 round2）：LLM 职责标题的**唯一家 = `node.title`**（`geometry.ts:124`
+            //   「人话主标题…渲染端优先展示，label 兜底」）。★ 为什么**不再**同时写进 `semantic.files[].responsibility`：
+            //   `title` 已有自己的字段、读者也优先读它（`query_feature` / `export` / `scaffold` / `derive_mind_map` 等）——
+            //   再把同一段标题塞进 `responsibility` = **同一内容两处**（本仓头号病，判据分叉的温床）。
             n.title = t;
-            const sf = semanticFiles.find((f) => f.id === n.id);
-            if (sf) sf.responsibility = `${t}（${sf.responsibility}）`;
           }
         }
         roleNote = `职责标题 ${Object.keys(titles).length} 个（LLM 生成）`;
@@ -1439,11 +1443,18 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
     //   ★ 本步落的这份**独立取**（`fileFacts` = 索引器的事实，**不读 DSL**），时刻 = fork 那一刻
     //     （刚 `syncProject` 写完索引 ⇒ 索引与源码同期）。
     //   ★ **纯新增**：不改任何现有字段/行为；对账侧（D3）以后再接。
-    //   ★ 只取**文件节点**的 path（模块节点的 `path` 是 ", " 拼的多个 rel，不是单个文件）。
+    //   ★★★ 2026-10-09（T93）：此处曾有 `.filter((f) => !f.path.includes(', ') && !f.path.endsWith('/'))`
+    //     —— 那是"语义层**混进了聚合/模块节点**"的**绕行判据**（模块的 `path` 是 ", " 拼的成员列表 / 目录名带尾斜杠）。
+    //     ★ 出生证（实测）：聚合节点已不再进 `semantic.files`（见本文件 3 处 T93 改动）⇒ 该 filter
+    //       **过滤掉 0 条**：默认模式（3 条真文件，全通过）与 functional_mode（0 条）**各一次读数均为 0**。
+    //     ⇒ 它已不是判据、是死代码，删（本仓铁律：「没有坏状态就别占正常路径」）。
+    //     ★ 现在 `semantic.files` **只放文件**（契约 `semantic.ts:67`）⇒ 其 `path` 恒为单个文件相对路径。
+    //   ★★★ 2026-10-09（T93 round2）：**取数源不再是 `semantic.files`，而是与 `scope_files` 同一份
+    //     `scopeRels`（= 扫描出的 `files`）**。★ 为什么必须换：语义层现在只放文件 ⇒ 聚合模式
+    //     （functional/design）语义层为空 ⇒ 从它取会锚 **0 个文件**、对拍**没有基准**。
+    //     `files` 才是"本 feature 有哪些文件"的权威（`scope_files` 同源，见 `finalizeDsl` 顶部）。
     try {
-      const rels = (layered.semantic?.files ?? [])
-        .filter((f) => !f.path.includes(', ') && !f.path.endsWith('/'))
-        .map((f) => f.path);
+      const rels = scopeRels;
       const res = saveBaselineFactsIfAbsent(
         layered.feature,
         input.project_dir,
@@ -1497,7 +1508,8 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       feature,
       files_parsed: files.length,
       // ★ 对象类锚点：与 `files_parsed` 同源、不同形（集合 vs 数）。见 `ImportProjectResult.scope_files`。
-      scope_files: files.map((f) => f.rel),
+      //   ★★ 与**基线事实**（上面 T85/D2）**共用同一份 `scopeRels`** —— 单一事实源，杜绝两把尺。
+      scope_files: scopeRels,
       symbols_found: symbolsFound,
       dep_edges: fileDeps.length,
       dirs_created: dirCount,
@@ -1651,22 +1663,9 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       return { w: containerW, h: containerH };
     }
 
-    // ── 设计模式非根目录：单个模块节点，聚合符号到语义层 ──
+    // ── 设计模式非根目录：单个模块节点，聚合摘要挂到**节点 title**（T93：不再进语义层） ──
     const subtreeFiles = collectSubtreeFiles(dir);
     const { apis, nonFuncSymbols } = aggregateDirSymbols(dir.rel, subtreeFiles, parsed);
-    semanticFiles.push({
-      id: dirNodeId(dir.rel),
-      path: dir.rel + '/',
-      responsibility: `${dir.rel} — 聚合 ${apis.length + nonFuncSymbols.length} 个符号`,
-      status: 'done',
-      // ★★★ 2026-10-09（T85/D1）：**不再把扫描结果灌进 expected_apis** —— 那是**事实**（权威在 cache.db），
-      //   而 `expected_apis` 是**意图**（T20：「意图册只放意图」）。★ T20 当年摘了 `actual_apis`，**漏了这一处**
-      //   ⇒ 于是「每文件前 50 条」的截断被对账当成了「代码新增」（实测 5/6 个真仓都中）。
-      //   ★ 事实要读请走 `infrastructure/index/file_facts`（现取）；★ 人的意图仍用 `edit_dsl type=api` 写。
-      // expected_apis: （已摘，见上）
-      symbols: nonFuncSymbols.length > 0 ? nonFuncSymbols : undefined,
-      lines: subtreeFiles.reduce((sum, f) => sum + (lineCounts.get(f.rel) ?? 0), 0),
-    });
     const itemW = FILE_W * Math.min(dir.subtreeSize, 3);
     const containerW = itemW + PAD * 2;
     const containerH = FILE_H + PAD * 2 + TITLE_H;
@@ -1678,6 +1677,12 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       width: containerW,
       height: containerH,
       type: 'module',
+      // ★★★ 2026-10-09（T93）：聚合体的摘要改挂**它自己的几何节点** ⇒ 写进 `title`
+      //   （`geometry.ts:124`：「人话主标题…渲染端优先展示，label 兜底」）。
+      //   ★ 为什么**不再** `semanticFiles.push`：契约 `semantic.ts:67` 规定 `SemanticFile.path` 是
+      //     **单个目标文件相对路径**（单数）；而这是**目录聚合节点**，只能填 `dir.rel + '/'`
+      //     ⇒ 违约。实害：下游把这目录串**当路径读源码**（`derive_chain` / `consistency_check`）。
+      title: `${dir.rel} — 聚合 ${apis.length + nonFuncSymbols.length} 个符号`,
       style: { ...DIR_STYLE, borderRadius: 8 },
     });
     dirContentOffset.set(dir.rel, { dx: PAD, dy: PAD + TITLE_H, w: containerW, h: containerH });

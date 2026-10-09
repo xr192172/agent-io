@@ -207,16 +207,25 @@ function escapeXml(text: string): string {
   return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+/**
+ * ★★★ 2026-10-09（T93）：摘要文本的取法 —— **先读节点 `title`，无 title 再回退语义层 `responsibility`**。
+ *   · `geometry.ts:124`：「人话主标题：LLM 生成的职责摘要…**渲染端优先展示**，label 兜底」——这是写明的优先级，非兜底补丁。
+ *   · `semantic.files` 现在**只放文件**（契约 `semantic.ts:67`）：聚合体摘要已移住节点 `title`，不再进语义层。
+ */
+function responsibilityOf(file: SemanticFile, node: Node | undefined): string {
+  return node?.title?.trim() || file.responsibility;
+}
+
 // ─────────────────────────────────────────────────────────────
 // 各语言骨架生成
 // ─────────────────────────────────────────────────────────────
 
-function generateGo(file: SemanticFile, marker: string): string {
+function generateGo(file: SemanticFile, node: Node | undefined, marker: string): string {
   const pkg = goPackageName(file.path);
   const lines: string[] = [];
 
   lines.push(`// Package ${pkg}`);
-  lines.push(`// ${file.responsibility}`);
+  lines.push(`// ${responsibilityOf(file, node)}`);
   lines.push(marker);
   lines.push(`package ${pkg}`);
   lines.push('');
@@ -288,11 +297,11 @@ function generateGo(file: SemanticFile, marker: string): string {
   return lines.join('\n');
 }
 
-function generateTs(file: SemanticFile, marker: string): string {
+function generateTs(file: SemanticFile, node: Node | undefined, marker: string): string {
   const lines: string[] = [];
 
   lines.push('/**');
-  lines.push(` * ${file.responsibility}`);
+  lines.push(` * ${responsibilityOf(file, node)}`);
   if (file.expected_behavior) {
     lines.push(` * 行为约束：${file.expected_behavior}`);
   }
@@ -339,11 +348,11 @@ function generateTs(file: SemanticFile, marker: string): string {
   return lines.join('\n');
 }
 
-function generatePy(file: SemanticFile, marker: string): string {
+function generatePy(file: SemanticFile, node: Node | undefined, marker: string): string {
   const lines: string[] = [];
 
   lines.push('"""');
-  lines.push(file.responsibility);
+  lines.push(responsibilityOf(file, node));
   if (file.expected_behavior) {
     lines.push(`行为约束：${file.expected_behavior}`);
   }
@@ -389,11 +398,11 @@ function generatePy(file: SemanticFile, marker: string): string {
   return lines.join('\n');
 }
 
-function generateJs(file: SemanticFile, marker: string): string {
+function generateJs(file: SemanticFile, node: Node | undefined, marker: string): string {
   const lines: string[] = [];
 
   lines.push('/**');
-  lines.push(` * ${file.responsibility}`);
+  lines.push(` * ${responsibilityOf(file, node)}`);
   if (file.expected_behavior) {
     lines.push(` * 行为约束：${file.expected_behavior}`);
   }
@@ -446,7 +455,7 @@ function generateVue(file: SemanticFile, node: Node | undefined, marker: string)
   const lines: string[] = [];
 
   lines.push(`<!--`);
-  lines.push(`  ${file.responsibility}`);
+  lines.push(`  ${responsibilityOf(file, node)}`);
   if (file.expected_behavior) {
     lines.push(`  行为约束：${file.expected_behavior}`);
   }
@@ -509,7 +518,7 @@ function generateReact(file: SemanticFile, node: Node | undefined, marker: strin
   const componentNamePascal = componentName.charAt(0).toUpperCase() + componentName.slice(1);
 
   lines.push('/**');
-  lines.push(` * ${file.responsibility}`);
+  lines.push(` * ${responsibilityOf(file, node)}`);
   if (file.expected_behavior) {
     lines.push(` * 行为约束：${file.expected_behavior}`);
   }
@@ -567,7 +576,7 @@ function generateReact(file: SemanticFile, node: Node | undefined, marker: strin
 function generateHtml(file: SemanticFile, node: Node | undefined, marker: string): string {
   const lines: string[] = [];
 
-  lines.push(`<!-- ${file.responsibility} -->`);
+  lines.push(`<!-- ${responsibilityOf(file, node)} -->`);
   lines.push(marker);
   lines.push('');
 
@@ -730,16 +739,16 @@ function scaffoldCore(input: ScaffoldInput): ScaffoldResult {
     } else {
       switch (lang) {
         case 'go':
-          content = generateGo(file, marker);
+          content = generateGo(file, node, marker);
           break;
         case 'ts':
-          content = generateTs(file, marker);
+          content = generateTs(file, node, marker);
           break;
         case 'py':
-          content = generatePy(file, marker);
+          content = generatePy(file, node, marker);
           break;
         case 'js':
-          content = generateJs(file, marker);
+          content = generateJs(file, node, marker);
           break;
         case 'vue':
           content = generateVue(file, node, marker);
@@ -752,7 +761,7 @@ function scaffoldCore(input: ScaffoldInput): ScaffoldResult {
             content = generateHtml(file, node, marker);
           } else {
             content = [
-              `// ${file.responsibility}`,
+              `// ${responsibilityOf(file, node)}`,
               marker,
               '// TODO: 以下 API 待实现：',
               ...(file.expected_apis || []).map(a => `//   - ${a.signature}`),

@@ -212,10 +212,15 @@ export function exportMarkdown(input: ExportMarkdownInput): ExportMarkdownResult
   if (dsl.semantic?.files && dsl.semantic.files.length > 0) {
     lines.push('## 语义层 — 文件');
     lines.push('');
+    // ★★★ 2026-10-09（T93）：摘要的权威是节点 `title`（`geometry.ts:124`「人话主标题…渲染端优先展示」）——
+    //   聚合体摘要住这里（`semantic.files` 只放文件，聚合/模块节点不在此列表）。
+    const mdNodeById = new Map((dsl.geometry.nodes ?? []).map((n) => [n.id, n]));
     for (const f of dsl.semantic.files) {
       lines.push(`### ${f.id}`);
       lines.push(`- 路径: \`${f.path}\``);
-      if (f.responsibility) lines.push(`- 职责: ${f.responsibility}`);
+      // 先读节点 `title`，无 title 再回退语义层 `responsibility`（title 注释写明的优先级）。
+      const respText = mdNodeById.get(f.id)?.title?.trim() || f.responsibility;
+      if (respText) lines.push(`- 职责: ${respText}`);
       if (f.expected_apis && f.expected_apis.length > 0) {
         lines.push('- 预期 API:');
         for (const api of f.expected_apis) {

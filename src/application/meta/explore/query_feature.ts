@@ -489,11 +489,14 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
       }
 
       // 关联的语义文件
+      // ★★★ 2026-10-09（T93）：`semantic.files` 现在**只放文件**（契约 `semantic.ts:67`：`path` 是单个文件路径）
+      //   ⇒ 聚合/模块节点在这里**查不到**（其摘要住在 `geometry.nodes[].title`，见下）。
       const file = (dsl.semantic?.files ?? []).find((f) => f.id === node.id);
-      if (file) {
-        lines.push(`  关联文件: ${file.path}`);
-        lines.push(`  文件职责: ${file.responsibility}`);
-      }
+      if (file) lines.push(`  关联文件: ${file.path}`);
+      // 摘要：先读节点 `title`（`geometry.ts:124`「人话主标题…渲染端优先展示，label 兜底」），
+      // **无 title 再回退**到语义层 `responsibility`（非"补丁"——title 注释写明的优先级）。
+      const roleText = node.title?.trim() || file?.responsibility;
+      if (roleText) lines.push(`  职责: ${roleText}`);
 
       // 决策向上并集（易读分层口径）：本节点自有决策 + 全部后代（host/detail 子节点 + sub_dsl 内节点，递归收集）
       // 单点所有于稳定叶子，可读层（L1–L3）只投影并集——不复制。
@@ -672,12 +675,26 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
       const dsl = loadDSL(input);
       if (!input.file_id) throw new Error('query "file" 需要 file_id 参数');
       const file = (dsl.semantic?.files ?? []).find((f) => f.id === input.file_id);
-      if (!file) throw new Error(`feature "${dsl.feature}" 中不存在文件 "${input.file_id}"`);
+      // ★★★ 2026-10-09（T93）：`semantic.files` 现在**只放文件** ⇒ 聚合/模块节点不在这里。
+      //   · 是几何节点但**不是文件**（模块/目录，`geometry.type !== 'file'`）⇒ **人话错误**并指路 `query=node`；
+      //   · 绝不把聚合节点的 `title` / 成员串当"文件路径"去读源码（旧实害：「不存在文件」+ 逗号串被当路径）。
+      if (!file) {
+        const n = (dsl.geometry?.nodes ?? []).find((x) => x.id === input.file_id);
+        if (n && n.type !== 'file') {
+          throw new Error(
+            `"${input.file_id}" 不是文件节点（geometry.type=${n.type ?? '?'}${n.title ? `，职责：${n.title}` : ''}）` +
+              `⇒ query "file" 只接受真文件；要看该节点请用 query="node" + node_id="${input.file_id}"。`,
+          );
+        }
+        throw new Error(`feature "${dsl.feature}" 中不存在文件 "${input.file_id}"`);
+      }
+      // 摘要：先读节点 `title`（`geometry.ts:124`「人话主标题…渲染端优先展示」），无 title 再回退 `responsibility`。
+      const node = (dsl.geometry?.nodes ?? []).find((x) => x.id === file.id);
 
       const lines: string[] = [
         `文件: [${file.id}]`,
         `  路径: ${file.path}`,
-        `  职责: ${file.responsibility}`,
+        `  职责: ${node?.title?.trim() || file.responsibility}`,
         `  状态: ${file.status ?? '-'}`,
         `  架构层: ${file.layer ?? '-'}`,
         file.lines ? `  行数: ${file.lines}` : '',
@@ -814,7 +831,7 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
       const cards: Array<Record<string, unknown>> = [];
       // ★ T89：决策卡住在 `geometry.nodes[].decision`（`semantic.files` 上没有）⇒ 建个索引一次，循环里用
       const nodeById = new Map(
-        ((dsl.geometry?.nodes ?? []) as Array<{ id: string; decision?: unknown }>).map((n) => [n.id, n]),
+        ((dsl.geometry?.nodes ?? []) as Array<{ id: string; decision?: unknown; title?: string }>).map((n) => [n.id, n]),
       );
       /**
        * ★★★ 2026-10-09（T90 下半）：**实际视图显示的是「最后**实现**过的」那一版决策**。
@@ -849,7 +866,10 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
       for (const f of files) {
         const seg: string[] = [];
         // F ← responsibility（无则不填占位）
-        const resp = typeof f.responsibility === 'string' ? f.responsibility.trim() : '';
+        // ★★★ 2026-10-09（T93）：先读节点 `title`（`geometry.ts:124`「人话主标题…渲染端优先展示，label 兜底」），
+        //   **无 title 再回退**语义层 `responsibility` —— 聚合体摘要已移住 `title`，语义层只放文件。
+        const nodeTitle = typeof nodeById.get(f.id)?.title === 'string' ? nodeById.get(f.id)!.title!.trim() : '';
+        const resp = nodeTitle || (typeof f.responsibility === 'string' ? f.responsibility.trim() : '');
         if (resp) seg.push(`F:${resp}`);
         // R ← 已有依赖事实：设计意图 expected_deps ∪ cache.db 真实 import 边
         const factsDeps = factsRoot ? fileFacts(factsRoot, f.path, dsl.feature).deps : [];
