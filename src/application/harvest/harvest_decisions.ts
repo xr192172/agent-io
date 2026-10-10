@@ -36,6 +36,11 @@
  * ★ 仍只出一条（一个文件最多一条）：票最多者 → `decision`（稳定序破平）；其余桶 → `alternatives`（各带票数 + 证据源）。
  *   ⇒ **分歧不丢**（T109 修正：原来的罪不是"归一化不准"，是 `pickTop` 任取一条、假装它是唯一答案）。
  *
+ * ★★ **落点可行性**（2026-10-10）：采集问的是**全集**（该问的都要问），但**每条产出标注
+ *   `landing`** = 它的落点在**本 feature** 里**能不能写进去**（判据与写入口 `edit_dsl` 同一份，
+ *   见 {@link makeLandable}）。★ **只标注、不过滤**：落点不可用（多半因 `import_project` 的
+ *   `max_files` 截断）的候选**照旧产出**，回执里汇总"可落库 X / 落点不在 Y"（判开判关两档都标）。
+ *
  * ★★ **「判」可开可关**（用户 2026-10-10 裁定：「本身这个东西是要配 AGNES 的密钥的，那么我们需要把这个功能
  *   作为**可开可关**的功能」）：
  *   · **判开**（有 LLM 密钥 / 入参 `judge:true`）⇒ 产出决策候选（本工具的主体行为）。
@@ -59,6 +64,12 @@ import { loadLlmConfig, callChat, loadExplainConfig } from '../../infrastructure
 import { describeAgnesConfigHint } from '../../infrastructure/llm_agnes.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../domain/b_terms.js';
 import type { NodeDecision, DecisionHistoryEntry } from '../../domain/geometry.js';
+// ★★ 2026-10-10（落点可行性）：采集要**读 feature**，并**复用写入口同一份**"落点认不认"的判据。
+//   ★ 为什么复用 `findDecisionTargetNode` 而**不自己拼判断**：本仓头号纪律是"判据同一处"——
+//     `edit_dsl`（`type:'decision'`）收不收这个落点，只有它自己说了算；采集侧另写一份 = 立刻分叉。
+import { getDSL } from '../../infrastructure/storage.js';
+import { findDecisionTargetNode } from '../design/dsl_ops/update_feature.js';
+import type { DesignDSL } from '../../domain/types.js';
 
 /**
  * 目标文件的**种类**（★ 与 {@link EvidenceSource} 是**两个正交的轴**）：
@@ -171,6 +182,16 @@ export interface HarvestCandidate {
   alternatives: AlternativeWhy[];
   /** 原始证据（三份证据各自的摘要，带证据源标签），供逐条复核 */
   evidence: string;
+  /**
+   * ★★ 落点可行性（2026-10-10）—— **本候选的 `file_path` 在本 feature 里能否落到文件/文档节点**
+   *   （即用 `edit_dsl` 的 `type:'decision'` op 时**能否写进去**）。
+   *   · `'ok'`            = 在（写入口会接受）。
+   *   · `'not-in-feature'` = 不在（写入口会拒收；通常因 `import_project` 的 `max_files` 截断 ——
+   *                          `semantic.files` 只保留确定序前 N 个，本文件落选）。
+   * ★★ **只标注、不过滤**：落点不可用的候选**照旧产出**（采集问的是**全集**，该问的都要问；
+   *   它们对"看清项目"仍有价值）。判据与写入口**同一份**（{@link makeLandable} ⇒ `findDecisionTargetNode`）。
+   */
+  landing: 'ok' | 'not-in-feature';
   /** 生命周期提示（下线/合并/取代/拆分），供 diff 与归档参考 */
   lifecycle_hint?: LifecycleHint;
 }
@@ -210,6 +231,12 @@ export interface FileEvidence {
   /** 目标文件种类：comment = 源码文件 · doc = 文档文件 */
   source: HarvestSource;
   excerpts: EvidenceExcerpt[];
+  /**
+   * ★★ 落点可行性（2026-10-10）—— 语义同 {@link HarvestCandidate.landing}：
+   *   该文件在本 feature 里能否落到文件/文档节点（写入口 `edit_dsl` 会不会收）。
+   * ★ **判关档也标注**：降级只说明"没判"，不代表可以不知道"落点能不能写"。
+   */
+  landing: 'ok' | 'not-in-feature';
 }
 
 export interface HarvestInput {
@@ -333,6 +360,8 @@ function buildLead(
     /** 其余分歧结论（各带票数 + 证据源）；收敛时缺省 ⇒ 落为空数组 */
     alternatives?: AlternativeWhy[];
     lifecycle_hint?: LifecycleHint;
+    /** ★★ 落点可行性（见 {@link HarvestCandidate.landing}）—— 由 {@link makeLandable} 判定 */
+    landing: HarvestCandidate['landing'];
   },
 ): HarvestCandidate | null {
   if (!el.subject.trim()) return null; // ③ 作用对象缺 ⇒ 产不出
@@ -350,9 +379,30 @@ function buildLead(
     evidence_source: rest.evidence_source,
     alternatives: rest.alternatives ?? [],
     evidence: rest.evidence,
+    landing: rest.landing,
   };
   if (rest.lifecycle_hint) lead.lifecycle_hint = rest.lifecycle_hint;
   return lead;
+}
+
+// ──────── 落点可行性（★ 与 edit_dsl 写入口**同一份判据**） ────────
+
+/**
+ * ★★ 落点可行性的**唯一判据**：给定 feature DSL 与一个仓库相对路径，返回
+ *   "这条决策**落得进去**吗"（= `edit_dsl` 的 `type:'decision'` op **会不会接受**它）。
+ *
+ * ★★ 为什么复用 `findDecisionTargetNode`（写入口的函数）而**不自己拼路径**：
+ *   本仓头号纪律是"判据同一处"。写入口（`resolveDecisionTarget`）的收/拒由它自己说了算；
+ *   采集侧**再写一份**"在不在 semantic.files 里" = 立刻**分叉**（写入口还认节点 id / 节点 description，
+ *   不只有 `semantic.files`）。⇒ 采集侧与写入口**共用**这一个查找函数，收/拒口径**必然一致**。
+ * ★ 与写入口的**唯一差别**：写入口把"找不到"与"找到但类型不对"分成两条抛错；
+ *   这里两者都归结为 `false`（都写不进去），因为采集侧只关心"落得进 / 落不进"。
+ */
+function makeLandable(dsl: DesignDSL): (rel: string) => boolean {
+  return (rel: string): boolean => {
+    const node = findDecisionTargetNode(dsl, rel);
+    return !!node && (node.type === 'file' || node.type === 'doc');
+  };
 }
 
 // ──────── 目标文件（单位 = 文件） ────────
@@ -740,7 +790,12 @@ type EvidenceByRel = Map<string, EvidenceSignal[]>;
  *   票最多者 → `decision`；其余桶 → `alternatives`（各带票数 + 证据源）。
  *   返回的每条都已过 {@link buildLead} 的产出契约（三要素齐备）。
  */
-function writeCandidates(targets: TargetFile[], table: VoteTable, evidenceByRel: EvidenceByRel): HarvestCandidate[] {
+function writeCandidates(
+  targets: TargetFile[],
+  table: VoteTable,
+  evidenceByRel: EvidenceByRel,
+  landable: (rel: string) => boolean,
+): HarvestCandidate[] {
   const leads: HarvestCandidate[] = [];
   for (const t of targets) {
     const byWhy = table.get(t.rel);
@@ -766,6 +821,8 @@ function writeCandidates(targets: TargetFile[], table: VoteTable, evidenceByRel:
         alternatives,
         evidence,
         lifecycle_hint: lifecycleHint(sigs.map((s) => s.lines.map((l) => l.text).join(' ')).join(' ')),
+        // ★★ 落点可行性：**只标注**（这条候选照旧进结果，不因"落不进去"被丢）
+        landing: landable(t.rel) ? 'ok' : 'not-in-feature',
       },
     );
     if (lead) leads.push(lead);
@@ -875,6 +932,20 @@ function applyOutputLimit<T>(xs: T[], limit: number | undefined): T[] {
 
 async function harvestDecisionsCore(input: HarvestInput): Promise<HarvestResult> {
   const { feature } = input;
+
+  // ★★ 2026-10-10（落点可行性）：采集**必须**读得到本 feature —— 才能逐条判定"这个落点能不能写进去"。
+  //   ★ 读不到 ⇒ **抛**（**不许**静默降级成"全标落点不在"：那会把"我没读到 feature"伪装成
+  //     "这个 feature 里一个文件都没有" —— 正是本仓最反对的静默降级）。
+  const dsl = getDSL(feature);
+  if (!dsl) {
+    throw new Error(
+      `harvest_decisions：读不到 feature "${feature}" 的 DSL，无法判定各候选的落点可行性（不静默降级为"全标落点不在"）。\n` +
+        `请先用 list_features / get_dsl 确认该 feature 存在（或用 import_project 建一个）后重试。`,
+    );
+  }
+  // ★ 落点判据 = 写入口那一份（见 makeLandable / findDecisionTargetNode）
+  const landable = makeLandable(dsl);
+
   // ★★ 「判」的档位（见文件头）：入参**显式优先**；不传则**自动检测**（有密钥 ⇒ 判开）。
   //   ⚠ 判开却无密钥 ⇒ 在 `requireLlmConfig()` 里**抛**（含"怎样配"提示）；判关 ⇒ 降级只给证据（回执明说）。
   const cfgOrNull = loadCfgOrNull();
@@ -953,16 +1024,21 @@ async function harvestDecisionsCore(input: HarvestInput): Promise<HarvestResult>
       const hits = await runBatches(chunk(signals, BATCH_SIZE), (b) => askEvidenceBatch(cfg, b, ev));
       accumulate(table, hits);
     }
-    const allCandidates = writeCandidates(targets, table, evidenceByRel);
+    const allCandidates = writeCandidates(targets, table, evidenceByRel, landable);
     // ★★ 产出条数上限（判开档同样生效；见 HarvestInput.limit）。截断**不静默**：回执明写总量。
     const candidates = applyOutputLimit(allCandidates, limit);
     const nOf = (s: HarvestSource) => candidates.filter((c) => c.source === s).length;
     const conv = candidates.filter((c) => c.votes > 1).length;
+    // ★★ 落点可行性汇总（★ 对**全部**产出计，不受 limit 截断影响 —— 见下方"排除必须出声"同款）
+    const landOk = allCandidates.filter((c) => c.landing === 'ok').length;
+    const landOut = allCandidates.length - landOk;
     const lines = [
       `harvest_decisions [${feature}] **判开** ⇒ 产出 ${allCandidates.length} 条决策（三要素齐备：结论 / 出处 / 作用对象）`,
       ...(allCandidates.length > candidates.length
         ? [`  ★ 已按 limit=${limit} 截断：下面只显示前 ${candidates.length} 条（要全部请调大 limit）。`]
         : []),
+      // ★★ 落点可行性（本仓"排除必须出声"同款）：落点不可用的**没被丢**，这里如实汇总。
+      `  ★★ 落点可用性（判据 = edit_dsl 写入口那一份）: 可落库 ${landOk} 条 · **落点不在本 feature 文件集内 ${landOut} 条**（源码多半因 import_project 的 max_files 截断而落选；文档需 include_docs=true 才成节点）—— 这些条**照旧保留**（对看清项目仍有价值），按需扩大 max_files 后重跑 edit_dsl 即可写入。`,
       targetLine,
       evidenceLine,
       `  ★ votes = 支持该说法的**证据源个数**（1..3，多源印证 = 置信）；多源收敛 ${conv} 条 · 来源: comment ${nOf('comment')} · doc ${nOf('doc')}`,
@@ -972,8 +1048,10 @@ async function harvestDecisionsCore(input: HarvestInput): Promise<HarvestResult>
         const alt = c.alternatives.length
           ? `  未决分歧: ${c.alternatives.map((a) => `${a.why}(${a.votes}票←${a.evidence_source.join('+')})`).join(' · ')}`
           : '';
+        // ★ 落点标记（每条候选自带）：可落库 / 落点不在本 feature 文件集内
+        const land = c.landing === 'ok' ? '  ✅ 可落库' : '  ★ 落点不在本 feature 文件集内（edit_dsl 会拒收）';
         return (
-          `  ${i + 1}. [${c.source}] ${c.decision.summary}  证据 ${c.votes}/${c.samples}${lh}${alt}\n` +
+          `  ${i + 1}. [${c.source}] ${c.decision.summary}  证据 ${c.votes}/${c.samples}${land}${lh}${alt}\n` +
           `      ↳ 作用对象: ${c.file_path}\n` +
           `      ↳ 出处: ${c.ref}\n` +
           `      ↳ 证据源: ${c.evidence_source.join('+')}\n` +
@@ -987,21 +1065,28 @@ async function harvestDecisionsCore(input: HarvestInput): Promise<HarvestResult>
   }
 
   // ── 判关：降级成"只给三份证据"（**让调用方自己判**）──
-  const allEvidence = buildEvidenceByFile(targets, evidenceByRel);
+  const allEvidence = buildEvidenceByFile(targets, evidenceByRel, landable);
   // ★★ 产出条数上限（判关档也生效；见 HarvestInput.limit）。截断**不静默**：回执明写总量。
   const evidenceByFile = applyOutputLimit(allEvidence, limit);
+  // ★★ 落点可行性汇总（★ 对**全部**证据计，不受 limit 截断影响）
+  const evLandOk = allEvidence.filter((f) => f.landing === 'ok').length;
+  const evLandOut = allEvidence.length - evLandOk;
   const lines = [
     `harvest_decisions [${feature}] ★★ **本次没判**（${degradeReason}）⇒ 已降级为「**只给三份证据**」`,
     ...(allEvidence.length > evidenceByFile.length
       ? [`  ★ 已按 limit=${limit} 截断：本次共取到 ${allEvidence.length} 个文件的证据，下面只显示前 ${evidenceByFile.length} 个（要全部请调大 limit）。`]
       : []),
     '  ★ 这是**降级**，不是失败：下面给的是**未经 LLM 判断**的原始证据，请调用方**自己判**「每个文件为什么存在」。',
+    // ★★ 落点可行性（本仓"排除必须出声"同款）：判关也标，落点不可用的证据**没被丢**。
+    `  ★★ 落点可用性（判据 = edit_dsl 写入口那一份）: 可落库 ${evLandOk} 个 · **落点不在本 feature 文件集内 ${evLandOut} 个**（源码多半因 import_project 的 max_files 截断而落选；文档需 include_docs=true 才成节点）—— 这些个**照旧保留**，按需扩大 max_files 后重跑即可写入。`,
     targetLine,
     evidenceLine,
     '',
     ...evidenceByFile.map((f, i) => {
       const ex = f.excerpts.map((e) => `      [${e.evidence_source}] ${e.summary}`).join('\n');
-      return `  ${i + 1}. [${f.source}] ${f.file_path}\n${ex}`;
+      // ★ 落点标记（每个文件自带）
+      const land = f.landing === 'ok' ? '  ✅ 可落库' : '  ★ 落点不在本 feature 文件集内（edit_dsl 会拒收）';
+      return `  ${i + 1}. [${f.source}] ${f.file_path}${land}\n${ex}`;
     }),
     '',
     '★ 要"判"：配置密钥后不带 judge 重跑，或显式 judge:true（无密钥时会报错并给配置指引）。',
@@ -1014,7 +1099,11 @@ async function harvestDecisionsCore(input: HarvestInput): Promise<HarvestResult>
  * ★ 判关降级产物：逐文件把三份证据（code / history / docs）折成可复核的摘要 + 出处。
  * ★ 判据：只收"该文件**至少取到一份证据**"的（一份都没取到 ⇒ 无从给证据）。
  */
-function buildEvidenceByFile(targets: TargetFile[], evidenceByRel: EvidenceByRel): FileEvidence[] {
+function buildEvidenceByFile(
+  targets: TargetFile[],
+  evidenceByRel: EvidenceByRel,
+  landable: (rel: string) => boolean,
+): FileEvidence[] {
   const out: FileEvidence[] = [];
   for (const t of targets) {
     const sigs = evidenceByRel.get(t.rel);
@@ -1027,6 +1116,8 @@ function buildEvidenceByFile(targets: TargetFile[], evidenceByRel: EvidenceByRel
         summary: s.evidence,
         refs: s.lines.map((l) => l.ref),
       })),
+      // ★★ 落点可行性：**只标注**（这个文件的证据照旧进结果）
+      landing: landable(t.rel) ? 'ok' : 'not-in-feature',
     });
   }
   return out;

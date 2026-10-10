@@ -622,8 +622,11 @@ interface DecisionTarget {
  * ⇒ `named` 为空 ⇒ `nodes` 整项省略 ⇒ `edit_dsl → get_dsl` 接不上（实测回执："接不上：上游 touched 里没有 nodes"）。
  * ★ 所以**这一处查找就是唯一答案**：`resolveDecisionTarget`（写路径，带校验、会抛）与 `touchedNodeIds`
  *   （锚点路径，不抛）**共用它** —— 两处各写一份解析 = 本仓最反对的"判据分叉"。
+ *
+ * ★★ 2026-10-10（落点可行性）：**导出** —— `harvest_decisions` 采集时要标注「这条决策的落点能不能写进去」，
+ *   判据必须与写入口**同一份**（否则又分叉）。采集侧据此判定 `landing` 字段，**不自己拼路径**。
  */
-function findDecisionTargetNode(dsl: DesignDSL, raw: string): DecisionTarget['node'] | undefined {
+export function findDecisionTargetNode(dsl: DesignDSL, raw: string): DecisionTarget['node'] | undefined {
   const nodes = dsl.geometry?.nodes ?? [];
   const byId = nodes.find((n) => n.id === raw);
   const byPath = nodes.find(

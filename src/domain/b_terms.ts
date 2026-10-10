@@ -476,6 +476,34 @@ export const B_TERMS: Record<string, BTerm> = {
       '**支持某条结论的证据源**（`harvest_decisions` 的枚举：`code` / `history` / `docs`），长度应 = `votes`。' +
       '用于给"分歧 / 结论"**归因到证据**（"这条来自哪份证据"可观察）。',
   },
+  /**
+   * ★★ 2026-10-10（落点可行性）新增 —— **一条采集产出的落点在目标 feature 里"能不能写进去"**。
+   *
+   * ## 存在的理由（它修的是"到写入时才撞墙"）
+   * `harvest_decisions` 采集问的是**全集**（该问的都要问，不受 `max_files` 限制）；
+   * 而写入口 `edit_dsl`（`type:'decision'`）只认**本 feature 的节点**（`semantic.files` / 文件节点
+   * —— 受 `import_project` 的 `max_files` 截断）。两者口径不同 ⇒ 采集会对**落不进去**的文件产决策而
+   * **浑然不知**，调用方**到写入时才撞墙**。本字段把这件事**在采集那一刻**说出来。
+   *
+   * ## 口径（★ 唯一住处 = 写入口那一份，不自己拼）
+   * 判定**复用** `edit_dsl` 的 `findDecisionTargetNode`（`update_feature.ts`）——**同一份**查找函数，
+   * 收/拒口径**必然一致**；`harvest_decisions.makeLandable` 只是把它包成 `(rel)=>boolean`。
+   * 值：`'ok'` = 落得进去（写入口会接受）；`'not-in-feature'` = 落不进去（写入口会拒收，
+   * 多半因 `max_files` 截断）。
+   *
+   * ## 它不是过滤器（★ 关键）
+   * **只标注、不过滤**：落点不可用的候选/证据**照旧产出**（对"看清项目"仍有价值）。
+   * 回执里**汇总**「可落库 X / 落点不在 Y」（判开判关两档都出声）—— 即"排除必须出声"同款。
+   */
+  landing: {
+    kind: 'state',
+    type: "'ok' | 'not-in-feature'",
+    meaning:
+      '**落点可行性**：一条采集产出的目标文件在**本 feature** 里能否落到文件/文档节点' +
+      '（= 用 `edit_dsl` 的 `type:\'decision\'` op 时**能否写进去**）。`\'ok\'` = 可落库；' +
+      '`\'not-in-feature\'` = 落点不在本 feature 文件集内（多半因 `import_project` 的 `max_files` 截断）。' +
+      '★ **只标注、不过滤**（落点不可用的产出照旧保留）。判据与写入口**同一份**（`findDecisionTargetNode`）。',
+  },
   previews: { kind: 'state', type: 'unknown[]', meaning: '预演结果（逐条）', debt: true, fix: '★ 现状与 `applied` 平行两套（file 版 / symbol 版）⇒ 统一' },
   applied: { kind: 'state', type: 'unknown[]', meaning: '已落盘的逐条结果', debt: true, fix: '★ 同 `previews`：两套平行形状 ⇒ 统一' },
   tools: { kind: 'context', type: 'unknown[]', meaning: '工具清单（含各自元信息）', debt: true, fix: '★ 现状 `WizardTool[]` 与 `MappedTool[]` ⇒ 各领域改名' },
