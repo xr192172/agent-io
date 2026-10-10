@@ -11,7 +11,7 @@
 import { wrap, wrapData } from '.././plumbing.js';
 import { harvestDecisions } from '.././harvest/harvest_decisions.js';
 
-/** harvest_decisions：从文档/git日志/注释提取决策卡候选（draft，供 review 补录）。★ wrapData：回 `data: r` */
+/** harvest_decisions：从文档/git日志/注释提取决策线索（candidate leads，draft，供 review 定稿）。★ wrapData：回 `data: r` */
 export const harvestDecisionsHandler = wrapData(async (a) => {
   const r = harvestDecisions({
     feature: a.feature as string,

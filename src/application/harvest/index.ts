@@ -38,11 +38,12 @@ import type { ToolDef } from '../types.js';
 export const HARVEST_TOOLS: ToolDef[] = [
   {
     name: 'harvest_decisions',
-    title: 'Harvest decision-card candidates from docs / git log / comments',
+    title: 'Harvest decision leads from docs / git log / comments',
     description:
-      '决策卡补录：从项目文档（docs/*.md）、git 日志、源码注释粗提取设计意图线索，生成 draft 决策卡候选（含出处 ref + 原文 evidence + 一句话总结）。' +
-      '不直接写 DSL——LLM review 核对出处后，定稿（status: active）再通过决策卡工具写入 DSL，防编造。' +
-      '候选带 lifecycle_hint（下线/合并/取代/拆分），供 diff 与下线库（`archive` action=node/list）参考。' +
+      '决策卡补录：从项目文档（docs/*.md）、git 日志、源码注释粗提取设计意图**决策线索（candidate leads）**（含出处 ref + 原文 evidence + 一句话总结）。' +
+      '★ 只交**机器能判**的那一刀：先按形状过滤掉表格行/引用块/标题/代码围栏内/纯列表项/半句话（见 impossibleShapeOf），产出的是**线索**、不是决策卡。' +
+      '不直接写 DSL——定稿成决策卡（status: active）是**下一步**（当前不存在该步），且**不做**"结论/理由/作用对象"三要素判断。' +
+      '线索带 lifecycle_hint（下线/合并/取代/拆分），供 diff 与下线库（`archive` action=node/list）参考。' +
       '适用：为没有决策卡历史的现有项目/外来代码补录活文档。',
     inputSchema: {
       feature: z.string().describe('feature 名（候选挂载目标）'),

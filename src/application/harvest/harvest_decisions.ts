@@ -1,10 +1,11 @@
 /**
- * harvest_decisions：从文档 / git 日志 / 注释提取设计意图线索，生成 draft 决策卡候选。
+ * harvest_decisions：从文档 / git 日志 / 注释提取设计意图**决策线索（candidate leads）**。
  *
  * 背景（决策卡补录）：现有项目（尤其外来/历史代码）没有决策卡历史，直接扫描必然失真。
- * 本工具不直接写 DSL——先取证（出处 ref + 原文 evidence + 一句话 draft_summary），
- * 产出可复核的候选；LLM review 后定稿（status: active）再写入 DSL。
- * draft 态保证补录有复核门槛，不污染活文档。
+ * 本工具不直接写 DSL——只做**机器能判的那一刀**（形状过滤，见 impossibleShapeOf），
+ * 先取证（出处 ref + 原文 evidence + 一句话 draft_summary），产出可复核的**线索**。
+ * ★ 它产出的是「线索」而非「决策卡」：定稿成卡（status: active）是**下一步**，当前**不存在**该步。
+ *   本工具**不**判"结论 / 理由 / 作用对象"三要素——那是**判断**（属"提案 → 定稿"），不是机器判据。
  *
  * 与契约（harvest-decisions DSL expected_apis）对齐：
  *   harvestDecisions(input: { feature; doc_dir?; git_root?; limit?; comment_files? }) → HarvestResult
@@ -28,7 +29,7 @@ export interface LifecycleHint {
   detail: string;
 }
 
-/** 一条可复核的决策候选（draft，未写入 DSL） */
+/** 一条可复核的**决策线索**（candidate lead；draft，未写入 DSL。定稿成决策卡是下一步） */
 export interface HarvestCandidate {
   /** 挂载目标：feature 级用 feature 名；注释提取用文件相对路径 */
   file_path: string;
@@ -136,22 +137,106 @@ function collectMdFiles(dir: string): string[] {
   return out;
 }
 
+// ──────── 形状判据（唯一住处） ────────
+
+/**
+ * 一行"**形状上就不可能是决策**"的类别。判据逐条给出**为什么**这条形状不可能承载决策。
+ */
+type ImpossibleShape =
+  /** 落在 markdown 代码围栏（``` / ~~~）内的行 —— 那是示例代码/命令，不是本仓的决定。
+   *  ★ 实测教训：`// 要 import 边才填（…否则测试红…）` 这类**代码注释**行含"必须/否则"，
+   *    会**混过**只看行首的意图关键词检查；它藏在这里面 ⇒ 围栏内的行必须一律排除。 */
+  | 'code_fence'
+  /** 以 `|` 开头 —— markdown **表格行**：一个单元格是列/行数据，不是一句结论。 */
+  | 'table_row'
+  /** 以 `>` 开头 —— **引用块**：引用/转述别人的话，不是本仓自己做的决定。 */
+  | 'blockquote'
+  /** 以 `#` 开头 —— **章节标题**：是结构标签（章节名），决定在它下面的正文里。 */
+  | 'heading'
+  /** 以 `//` / `/*` 开头 —— **源码注释**：注释不是文档里的决策陈述。 */
+  | 'code_comment'
+  /** `·`/`-`/`*`/`+`/`1.` 开头且标记后**只剩很短的标签**（< {@link MIN_CLAUSE_LEN}）——
+   *  **纯列表项**：不成句、无谓词，承载不了"结论 + 理由"。
+   *  ★ 长列表项（含谓词/理由的整句）**不在此列** —— 它可以是决策线索，不许一刀切。 */
+  | 'list_fragment'
+  /** 以 `：` `,` `，` `（` `(` 结尾 —— **半句话**：后面还有下文，结论不成句。 */
+  | 'half_sentence';
+
+/** 与既有 `clean.length < 12` 对齐：短于此长度不成句 ⇒ 视为纯标签。 */
+const MIN_CLAUSE_LEN = 12;
+
+interface ShapeVerdict {
+  /** 命中 ⇒ 形状上不可能是决策；null ⇒ 未被形状否决（仍可能是决策线索） */
+  shape: ImpossibleShape | null;
+  /** 该行是标题时给出标题文本（供后续段落作 `thread` 上下文）；否则 undefined */
+  headingText?: string;
+}
+
+/**
+ * ★ **形状判据 —— 唯一住处**：判断一行是否"在形状上就不可能是决策"。
+ *
+ * 所有形状规则只在这里判一次；调用方（{@link scanDocs}）**不得**再散落行首 if（那正是本仓
+ * 撞过的病灶：零判别 ⇒ 表格行/引用块/代码围栏混进"决策线索"，好的被淹掉）。
+ *
+ * 返回 null 只表示"形状上不作否决"，**不等于**这行就是决策——那需要 LLM/人进一步判断。
+ */
+function impossibleShapeOf(rawLine: string, opts: { inFence: boolean }): ShapeVerdict {
+  const t = rawLine.trim();
+  // ① 代码围栏内一律不是决策（先于一切行首规则；注释行能混过行首检查，靠这条挡住）
+  if (opts.inFence) return { shape: 'code_fence' };
+  // ② 表格行
+  if (t.startsWith('|')) return { shape: 'table_row' };
+  // ③ 引用块
+  if (t.startsWith('>')) return { shape: 'blockquote' };
+  // ④ 标题（顺带取出标题文本，供章节上下文）
+  const h = t.match(/^#{1,6}\s*(.*)$/);
+  if (h) return { shape: 'heading', headingText: h[1].trim() };
+  // ⑤ 源码注释
+  if (/^\/[/*]/.test(t)) return { shape: 'code_comment' };
+  // ⑥ 纯列表项：标记后仅剩很短的标签
+  const bullet = t.match(/^([·•\-*+]|\d+[.、)])\s+(.*)$/);
+  if (bullet && bullet[2].trim().length < MIN_CLAUSE_LEN) return { shape: 'list_fragment' };
+  // ⑦ 半句话：以"话没说完"的标点收尾
+  if (/[：,，（(]\s*$/.test(t)) return { shape: 'half_sentence' };
+  return { shape: null };
+}
+
+/**
+ * 每行"是否落在代码围栏内"（含围栏标记行本身）——返回 **0 基行号**集合。
+ *
+ * ★ 围栏必须**成对**才算数（这里是"实测边界"，不是防御性补丁）：
+ *   本仓实测 `docs/observe-unification.md:76` 只有**一个开栅 ``` 、无闭栅**。
+ *   若按"见标记就切换开关"的老写法，会把该文件**第 76 行到末尾整段**误判成围栏
+ *   ⇒ 真线索被整片吞掉（实测：该文件 12 条候选 → 0 条）。
+ *   故先按行号两两配对（1-2、3-4 …）；**落单的尾部标记视作非围栏**（当普通行走后续长度/意图判断）。
+ */
+function fencedLines(lines: string[]): Set<number> {
+  const markers: number[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    if (/^(```|~~~)/.test(lines[i].trim())) markers.push(i);
+  }
+  const fenced = new Set<number>();
+  for (let k = 0; k + 1 < markers.length; k += 2) {
+    for (let i = markers[k]; i <= markers[k + 1]; i++) fenced.add(i);
+  }
+  return fenced;
+}
+
 function scanDocs(docDir: string): HarvestCandidate[] {
   const candidates: HarvestCandidate[] = [];
   for (const md of collectMdFiles(docDir)) {
     if (!fs.existsSync(md)) continue;
     const lines = fs.readFileSync(md, 'utf-8').split('\n');
+    const fenced = fencedLines(lines);
     let heading = '';
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
-      const h = line.match(/^#{1,4}\s+(.+)$/);
-      if (h) {
-        heading = h[1].trim();
-        continue;
-      }
+      const shape = impossibleShapeOf(line, { inFence: fenced.has(i) });
+      if (shape.headingText !== undefined) heading = shape.headingText;
+      if (shape.shape) continue; // 形状上就不可能是决策 ⇒ 交出它=噪声
       // 列表项/段落：去掉 markdown 装饰后判断是否有设计意图
-      const clean = line.replace(/^[-*•]\s+/, '').replace(/^#+\s*/, '').trim();
-      if (clean.length < 12 || !hasIntent(clean)) continue;
+      const clean = line.replace(/^[-*•+]\s+/, '').replace(/^\d+[.、)]\s+/, '').trim();
+      if (clean.length < MIN_CLAUSE_LEN || !hasIntent(clean)) continue;
       const ref = `${path.relative(process.cwd(), md) || md}:${i + 1}`;
       candidates.push({
         file_path: '',
@@ -229,7 +314,7 @@ function harvestDecisionsCore(input: HarvestInput): HarvestResult {
   if (input.comment_files?.length) candidates.push(...scanComments(input.comment_files));
 
   const lines = [
-    `harvest_decisions [${feature}] 提取到 ${candidates.length} 条决策候选（draft，未写入 DSL）`,
+    `harvest_decisions [${feature}] 提取到 ${candidates.length} 条决策线索（candidate leads，draft，未写入 DSL）`,
     `  来源分布: gitlog ${candidates.filter((c) => c.source === 'gitlog').length} · doc ${candidates.filter((c) => c.source === 'doc').length} · comment ${candidates.filter((c) => c.source === 'comment').length}`,
     '',
     ...candidates.map((c, i) => {
@@ -238,7 +323,7 @@ function harvestDecisionsCore(input: HarvestInput): HarvestResult {
       return `  ${i + 1}. [${c.source}] ${c.draft_summary}${th}${lh}\n      ↳ 出处: ${c.ref}\n      ↳ 证据: ${c.evidence}`;
     }),
     '',
-    '用法: LLM review 上述候选（核对出处/原文），定稿后通过 edit_dsl / 决策卡工具写入 DSL（status: active）。',
+    '用法: 逐条 review 上述**线索**（核对出处/原文）自行判断是否成决策；定稿成决策卡是**下一步**（当前无此步），本工具不写 DSL。',
   ];
   return { message: lines.join('\n'), feature, candidates };
 }

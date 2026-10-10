@@ -476,8 +476,8 @@ export const DESIGN_TOOLS: ToolDef[] = [
         .describe(
           '★ **是否把 `docs/**/*.md` 也收成 DSL 节点**（`type: "doc"`，默认 false）—— T88。' +
             '★ 文档是**可读文本、不是源码**（L1 判据）⇒ 它**另立 `doc` 类**，不混进源码文件节点。' +
-            '★ 打开它的理由：`harvest_decisions` 采到的决策候选**出处就是 `docs/xxx.md:行号`**，' +
-            '而在此之前 **DSL 里 `docs/` 节点 = 0** ⇒ 候选**无处可挂**（"采完就断"）。' +
+            '★ 打开它的理由：`harvest_decisions` 采到的决策线索**出处就是 `docs/xxx.md:行号`**，' +
+            '而在此之前 **DSL 里 `docs/` 节点 = 0** ⇒ 线索**无处可挂**（"采完就断"）。' +
             '★ 默认 false ⇒ **不改变现有行为**（一个节点都不多）。',
         ),
       include_archive: z.boolean().optional().describe('是否索引归档目录 _archive/archive/_old 等（默认 false）'),
