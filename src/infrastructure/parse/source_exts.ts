@@ -30,6 +30,7 @@
 
 import path from 'node:path';
 import { LANGUAGES, findLanguageByExt, languageModuleSpec } from './languages.js';
+import { listSupportedExtensions } from './kernel.js';
 
 /** TS/JS 家族：同一套 tree-sitter AST、同一套 ESM/CJS 语义。顺序即解析优先级（`.ts` 优先于编译产物 `.js`）。 */
 export const TS_JS_EXTS = ['.ts', '.tsx', '.js', '.jsx', '.mts', '.cts', '.mjs', '.cjs'] as const;
@@ -122,6 +123,30 @@ export function isCodeLangExt(ext: string): boolean {
  */
 export function codeSourceExts(parseableExts: readonly string[]): string[] {
   return parseableExts.filter(isCodeLangExt);
+}
+
+// ─────────────────────────────────────────────────────────────
+// 「源码集」的**唯一用法** —— 别在调用点各写一遍 Set / 小写 / 缓存（T116，2026-10-10）
+//
+// ★ 为什么要有它：判据（`codeSourceExts`）此前已唯一，但"**怎么用**"没唯一 ——
+//   调用点各写了一遍「`codeSourceExts(...)` 外套 `new Set` + `.map(小写归一)`」这句**表达式**，
+//   在 `import_project` / `watch_project` / `symbols` 各抄了一份，
+//   而且**只有 `watch_project` 自己加了缓存** ⇒ 各单位做法不同。
+//   分叉的种子长在"用法"上而不在"判据"上：将来要**加一条小写归一**或**加缓存**，
+//   得改 N 处，**漏一处就静默不一致**（正是本文件头注批的"缺失是沉默的"）。
+//   ⇒ 本函数把「判据 + 小写归一 + 进程内缓存」收成**一处**；调用点只 `codeSourceExtSet()`。
+// ★ 缓存安全的理由：语言包**可用性**在进程生命周期内不变（同 `probe.ts` 的 `loadable`/`unloadable`
+//   进程级缓存；`resetProbeCache`/`_reset` 在 `src/` 下无人调用）⇒ 高频口（如 `shouldSyncRel`
+//   每事件/每文件都调）不必每次重算 60 门语言。若将来运行期切换语言包，本缓存会滞后 —— 这是**刻意的**。
+// ─────────────────────────────────────────────────────────────
+let sourceExtSetCache: Set<string> | null = null;
+
+/** 源码扩展名集（「可解析」∩「代码语言」，小写归一）——**唯一用法**，进程内缓存一次。 */
+export function codeSourceExtSet(): Set<string> {
+  if (sourceExtSetCache === null) {
+    sourceExtSetCache = new Set(codeSourceExts(listSupportedExtensions()).map((e) => e.toLowerCase()));
+  }
+  return sourceExtSetCache;
 }
 
 /**

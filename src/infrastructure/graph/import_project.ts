@@ -18,7 +18,7 @@
  *   - 其他包导入（npm 包、标准库）→ 外部依赖，跳过
  */
 
-import { INDEX_SKIP_DIR_EXTRA, codeSourceExts, excludedNonCodeExts, isIndexSkippedFileName, partitionByCodeLang, shouldSkipDir } from '../parse/source_exts.js';
+import { INDEX_SKIP_DIR_EXTRA, codeSourceExtSet, excludedNonCodeExts, isIndexSkippedFileName, partitionByCodeLang, shouldSkipDir } from '../parse/source_exts.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import ignore from 'ignore';
@@ -277,7 +277,8 @@ export function walkFiles(
   const out: string[] = [];
   // ★★★ 「什么算源码」—— 走 **L1 的唯一权威**（`source_exts.ts`），本文件**不再自持口径**（D6，2026-10-10）。
   //
-  // 判据 = 「可解析」∩「代码语言」= `codeSourceExts(listSupportedExtensions())`（source_exts.ts 文档写明的**唯一合成点**）：
+  // 判据 = 「可解析」∩「代码语言」= `codeSourceExtSet()`（L1 的唯一合成点 + 小写归一 + 缓存，
+  //   见 `source_exts.ts` 的 `codeSourceExtSet` 一节；本文件**不再自拼 Set/小写**）：
   //   · 「可解析」= `listSupportedExtensions()`（我装了哪些语言包 ⇒ 我能解析什么，随 optionalDependencies 变）；
   //   · 「代码语言」= 注册表 `kind==='code'`（`codeSourceExts` 内部按 `isCodeLangExt` 过滤）。
   // ★ 为什么**必须取交集**、而不是单用其中任何一个（两个方向都真跑过，见 source_exts.ts:54-57 的同款反例）：
@@ -289,8 +290,9 @@ export function walkFiles(
   //   ⇒ 交集同时排掉两者：非代码类（data/markup/style/doc）不进，未装语言不进。
   // ★ 文档类（`.md`/`.tex`，注册表 kind==='doc'）**不在本尺的源码类里** —— 它是**另一类**，
   //   只在 `include_docs=true` 时由下方 `if (include_docs)` 块单独收（T88；两条路，各用各的尺）。
-  // ★ 大小写：`isCodeLangExt` 本就在 L1 内做小写归一，这里对集合与文件后缀同做小写 ⇒ 与 L1 同口径。
-  const codeExts = new Set(codeSourceExts(listSupportedExtensions()).map((e) => e.toLowerCase()));
+  // ★ 大小写：小写归一由 L1 的 `codeSourceExtSet()` 统一做（`isCodeLangExt` 内本就归一，
+  //   这里对文件后缀同做小写）⇒ 与 L1 同口径。
+  const codeExts = codeSourceExtSet();
   // ★ 「可解析但非代码」的后缀（同一把 L1 尺：`excludedNonCodeExts`）—— 走查时顺手收下，
   //   供 `importProject` 在回执里报「因非代码后缀排除了 N 个」。★ 只在调用方要（给了 `excludedOut`）时才算。
   const nonCodeParseable = excludedOut

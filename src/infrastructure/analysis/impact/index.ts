@@ -136,6 +136,11 @@ export async function buildImpactGraph(root: string): Promise<GraphResult> {
   //   于是 `package.json` 曾被当源码收进依赖图（夹具 fileCount 4 ≠ 3 的来源）。
   //   权威 = 内核 `source_exts.ts` 的「代码语言」一节；一次走查再分拣，非代码只进可见性统计。
   const parseable = listSupportedExtensions();
+  // ★ 本处的 `exts` 是喂 `resolveProjectImport` 的**有序候选后缀**（顺序即优先级、大小写须保真），
+  //   与「源码集成员判定」用的 `codeSourceExtSet()`（**小写归一 + Set**）是**两个不同的问题**（T116）：
+  //     `codeSourceExtSet()` 会把 `.R` 折叠成 `.r`（Set 去重 + 小写），而候选表需要 `.R` 原样在列
+  //     （`rels` 是字符串精确匹配 ⇒ 候选 `x.r` 匹配不到文件 `x.R`）。
+  //   ⇒ 故此处**刻意**用保序保大小写的 `codeSourceExts()`，不套 Set（套了即静默丢 `.R` 候选）。
   const exts = codeSourceExts(parseable);
   const { code: files, nonCodeExts } = partitionByCodeLang(collectSourceFiles(root, parseable));
   const rels = new Set(files.map((f) => f.rel));

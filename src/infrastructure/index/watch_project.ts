@@ -31,10 +31,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { Database } from './db.js';
 import { syncFile, removeFile, resolveCrossFileCalls, pruneDeletedFiles, toRelPath, changedSymbolNames, reopenRefsTo, type CrossFileResolveStats } from './symbols.js';
-import { listSupportedExtensions } from '../parse/index.js';
 import { indexedRelativeSet } from './index_freshness.js';
 import { isIndexIncomplete } from './index_backfill.js';
-import { codeSourceExts, skipDirSet } from '../parse/source_exts.js';
+import { codeSourceExtSet, skipDirSet } from '../parse/source_exts.js';
 // ★ watcher 挂钩（§19）：**有 watcher 时由事件驱动失效**，TTL 只是没有 watcher 时的兜底。
 //   enqueue 是 fs.watch 回调归一后的**唯一入口** ⇒ 挂这一处即覆盖全部变更事件。
 import { invalidateProjectView } from '../project_view.js';
@@ -57,26 +56,18 @@ export function isIgnoredRel(rel: string): boolean {
 
 /**
  * 「源码」扩展名集（**可解析 ∩ 代码语言**）—— 与 `import_project.walkFiles` /
- * `symbols.pruneDeletedFiles` **同一合成点**（`source_exts.ts` 的 `codeSourceExts`，D6/D6-2）。
+ * `symbols.pruneDeletedFiles` **共用 L1 的唯一用法** `codeSourceExtSet()`（`source_exts.ts`）。
  *
  * ★ 为什么不是 `isSupported(ext)`（改前）：那只答"我**能不能**解析它"，
  *   `.json`/`.html`/`.css` 也能被某棵树解析 ⇒ 会被当源码同步进 cache.db（污染索引与下游）。
  *   "什么算源码"的唯一权威是 L1 的 `codeSourceExts(listSupportedExtensions())`。
- * ★ 进程内缓存一次：语言包**可用性**在进程生命周期内不变（`probe.ts` 的 `loadable`/`unloadable`
- *   就是同款进程级缓存）⇒ 高频的 `shouldSyncRel`（每事件/每文件调）不必每次重算 60 门语言。
+ * ★ 进程内缓存 + 小写归一**都在 `codeSourceExtSet()` 里**（不再本文件自持缓存，
+ *   否则又成"各单位做法不同"）—— 见 `source_exts.ts` 该函数一节的立论。
  */
-let sourceExtSetCache: Set<string> | null = null;
-function sourceExtSet(): Set<string> {
-  if (sourceExtSetCache === null) {
-    sourceExtSetCache = new Set(codeSourceExts(listSupportedExtensions()).map((e) => e.toLowerCase()));
-  }
-  return sourceExtSetCache;
-}
-
 /** 文件是否应被同步（非忽略目录 + **属于源码** + 非测试生成物） */
 export function shouldSyncRel(rel: string): boolean {
   if (isIgnoredRel(rel)) return false;
-  if (!sourceExtSet().has(path.posix.extname(rel).toLowerCase())) return false;
+  if (!codeSourceExtSet().has(path.posix.extname(rel).toLowerCase())) return false;
   if (SKIP_FILE_RE.test(path.posix.basename(rel))) return false;
   return true;
 }
