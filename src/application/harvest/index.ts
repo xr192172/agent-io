@@ -38,19 +38,23 @@ import type { ToolDef } from '../types.js';
 export const HARVEST_TOOLS: ToolDef[] = [
   {
     name: 'harvest_decisions',
-    title: 'Harvest decision leads from docs / git log / comments',
+    title: 'Harvest why-a-file-exists decision leads from comments / docs / git log',
     description:
-      '决策卡补录：从项目文档（docs/*.md）、git 日志、源码注释粗提取设计意图**决策线索（candidate leads）**（含出处 ref + 原文 evidence + 一句话总结）。' +
-      '★ 只交**机器能判**的那一刀：先按形状过滤掉表格行/引用块/标题/代码围栏内/纯列表项/半句话（见 impossibleShapeOf），产出的是**线索**、不是决策卡。' +
-      '不直接写 DSL——定稿成决策卡（status: active）是**下一步**（当前不存在该步），且**不做**"结论/理由/作用对象"三要素判断。' +
-      '线索带 lifecycle_hint（下线/合并/取代/拆分），供 diff 与下线库（`archive` action=node/list）参考。' +
+      '决策卡补录：**逐个文件**问 LLM「这个文件为什么存在」（= 该文件存在的**理由**，不是"做什么"），产出**决策线索**。' +
+      '来源三路：① comment = 扫项目**已索引的源码文件**的注释块（缺省打开，可 comment_files 指定）；② doc = 扫文档正文；③ gitlog = 判每条提交信息是不是决策记录。' +
+      '★ **产出契约（三要素缺一不可）**：结论（为什么存在）· 出处（注释位置 `文件:行`）· 作用对象（该文件）—— 填不出就**产不出**（不是"收下再过滤"）。' +
+      '★ 抽奖 R=3 次采样、按结论归一化去重、记 votes（置信 = votes/3）。' +
+      '★ **必须配置 LLM**，否则**报错**（不回落关键词）。只产 `status:draft` 线索、**不写 DSL**——写回文件节点 `decision` 是下一步（D1，当前不存在）。' +
       '适用：为没有决策卡历史的现有项目/外来代码补录活文档。',
     inputSchema: {
       feature: z.string().describe('feature 名（候选挂载目标）'),
       doc_dir: z.string().optional().describe('文档目录（扫描 *.md），默认 <cwd>/docs'),
       git_root: z.string().optional().describe('git 仓库根（读 git log），默认 <cwd>'),
       limit: z.number().optional().describe('git 日志条数上限，默认 30'),
-      comment_files: z.array(z.string()).optional().describe('要提取注释的源码文件（绝对路径）'),
+      comment_files: z
+        .array(z.string())
+        .optional()
+        .describe('要提取注释的源码文件；缺省 = 扫描项目已索引的全部源码文件'),
     },
     // ★ CLI 面绕过 zod 必填校验：缺 feature 时 [B] 会把 undefined 拼进扫描路径/git 命令（泄漏 git 原始报错）。
     //   本层只加守卫；随后**原样**委托已包装的 harvestDecisionsHandler（其 isError 语义保持不变）。
