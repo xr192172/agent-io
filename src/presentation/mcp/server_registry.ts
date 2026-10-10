@@ -446,11 +446,100 @@ import { TOOL_DEFS } from '../../application/tool_registry.js';
  *   ⇒ 另开模块会成环（本仓 §P1a 已为同样的理由抽过一层基础设施）。
  *   等 `server_registry.ts` 按 §44 搬进 `presentation/mcp/` 时，本函数一并搬去 `registry/invoke.ts`。
  */
+
+/**
+ * ★★★ 2026-10-10：「**调用失败**」与「**世界不好**」是两件事 —— 这里只判**调用失败**。
+ *
+ * ─────────────────────────────────────────────────────────────
+ * 为什么必须有它（实测的真缺陷，不是风格问题）
+ * ─────────────────────────────────────────────────────────────
+ *   `isError` / 退出码的语义本来就是「**这次调用有没有失败**」，**不是「世界好不好」**
+ *   （世界好不好由工具**报表内容**表达 —— 那是另一码事，本函数**不碰**）。
+ *
+ *   实测（本仓 `scripts/mcp/mcp_scan.mjs` 的产物 `.inspect/mcp_scan.json`）：
+ *   拿**同一个** `{}` 调 61 个工具，**只有 5 个**把"缺必填参数"**当成了正常报告**退 0：
+ *     `go_originals` / `canvas_notes` / `gateway_provider` / `read_project_docs` / `refactor_judge`
+ *   （例：`gateway_provider` 声明了必填 `action`，缺它时 handler 直接落进"stats"分支，
+ *     回一句"用量汇总：0 次调用…" ⇒ 退出码 0 ⇒ **调用方永远不知道自己漏了参数**。）
+ *   其余 48 个自带 `requireStr` 之类的守卫、**当场抛错** ⇒ 已被 `wrap`/`wrapData` 记成 `isError`。
+ *
+ * ─────────────────────────────────────────────────────────────
+ * 为什么放**这里**（而不是逐个工具补守卫）
+ * ─────────────────────────────────────────────────────────────
+ *   `invokeTool` 是**唯一调用入口** —— MCP 面（`registerAllTools`）与 CLI 面（`cli.ts`）
+ *   逐字同路径 ⇒ 一处生效、全体受益，且**以后新增工具不用记得**（结构保证，不是自觉）。
+ *
+ *   ★ 而且这与 **MCP 面已经是同一条口径**，不是新造判据：SDK 的 `registerTool` 会把同一个
+ *     `looseInputSchema(def.inputSchema)` 拿去做 `safeParseAsync`，失败即回 `InvalidParams`
+ *     （`@modelcontextprotocol/sdk/dist/esm/server/mcp.js:174-178`）⇒ MCP 面**从来**就拦缺参。
+ *     只有 CLI 面（`cli.ts` 直接调 `invokeTool`，绕过 zod）与 `atomic_call`（直接调本函数）
+ *     漏了这一格 ⇒ 本函数把这格补齐 ⇒ **两个面从此一致**。
+ *
+ *   ★ 校验用的**就是** `looseInputSchema(def.inputSchema)` —— 与 SDK 同一份构造器，
+ *     所以"允许多余键（供参数纠错）/ 要求必填"的语义**逐字相同**，不引入第二套口径。
+ *     只判 `success`，**不用** `parsed.data`（不替 handler 注入默认值 —— 那会改动工具行为）。
+ *
+ *   ★ 纪律：本函数**只**做"入参能不能开跑"的判定，**不改任何工具的业务判据**；
+ *     "工具跑通了但报表说世界不好"（如 `run_tests` 退出码非 0、`structure_gap` 报不一致）
+ *     **一律不在此处**，仍是 `isError:false` ⇒ 退 0。
+ */
+interface ArgValidator {
+  safeParse(v: unknown): { success: boolean; error?: { issues: Array<{ path: Array<string | number> }> } };
+}
+
+/** 每个 `def` 只构造一次 validator（SDK 那边也是注册时构造一次，这里对齐）。 */
+const _argValidators = new WeakMap<ToolDef, ArgValidator>();
+
+function argValidatorOf(def: ToolDef): ArgValidator {
+  const cached = _argValidators.get(def);
+  if (cached) return cached;
+  const v = looseInputSchema(def.inputSchema ?? {}) as unknown as ArgValidator;
+  _argValidators.set(def, v);
+  return v;
+}
+
+/**
+ * 按 schema 校验入参 —— 通过返 `null`；不通过返**人话错误文本**（调用方据此 `isError` ⇒ 退非 0）。
+ *
+ * 分类（两类都属"调用失败"，都改不了"世界"）：
+ *   · **缺必填**：`a[key] === undefined`（zod 对 string/array 报 `invalid_type`、对 enum 报 `invalid_value`，
+ *     但按"值是不是 undefined"分比按 issue 的 code 分**更稳**，不押注 zod 的内部编码）。
+ *   · **类型/取值不符**：值**给了**但不符合声明（如 `view:123`、`timeout_ms:"x"`）。
+ */
+function validateToolArgs(def: ToolDef, a: Record<string, unknown>): string | null {
+  const parsed = argValidatorOf(def).safeParse(a);
+  if (parsed.success) return null;
+  const missing = new Set<string>();
+  const bad = new Set<string>();
+  for (const iss of parsed.error?.issues ?? []) {
+    const key = iss.path.length ? String(iss.path[0]) : '(入参)';
+    if (a[key] === undefined) missing.add(key);
+    else bad.add(key);
+  }
+  const required = Object.entries(def.inputSchema ?? {})
+    .filter(([, s]) => (s as unknown as { isOptional?: () => boolean }).isOptional?.() === false)
+    .map(([k]) => k);
+  const lines = [`✗ 调用失败：入参未通过 \`${def.name}\` 的 schema 校验（不是"世界不好"）。`];
+  if (missing.size) lines.push(`  缺必填：${[...missing].join(', ')}`);
+  if (bad.size) lines.push(`  类型/取值不符：${[...bad].join(', ')}`);
+  if (required.length) lines.push(`  \`${def.name}\` 必填：${required.join(', ')}`);
+  lines.push('  ⇒ 这是**调用方用错了**（缺参 / 类型错），修好入参再调；不要把它当成工具结果。');
+  return lines.join('\n');
+}
+
 export async function invokeTool(
   def: ToolDef,
   args: Record<string, unknown> | undefined,
 ): Promise<{ text: string; isError?: boolean }> {
   const a = (args ?? {}) as Record<string, unknown>;
+  // ★★★ 2026-10-10：**先**判"调用失败" —— 入参不过 schema 就到此为止（不再建索引 / 保鲜 / 注入告警）。
+  //   为什么最前置：一次**用错了**的调用不该有任何副作用（不该起后台建索引、不该读旧索引算告警）。
+  //   为什么仍记狗食：失败也要被记（"漏参数"的频率本身就是"该怎么收敛/该补哪个文档"的原料）。
+  const argError = validateToolArgs(def, a);
+  if (argError) {
+    recordDogfoodUsage({ ts: new Date().toISOString(), tool: def.name, ok: false, ms: 0, err: argError.slice(0, 200) });
+    return { text: argError, isError: true };
+  }
   // ★ 首次接触 ⇒ 后台建索引（2026-09-15）：带 project_root 的调用若该项目还没有索引，
   //   顺手起后台续建（不阻塞本次调用）——把建索引的起点从"第一次读"提前到"第一次任何调用"。
   //   起了就诚实标注"本轮结果可能不全"（空缺型不全，staleIndexWarning 覆盖不了）。
