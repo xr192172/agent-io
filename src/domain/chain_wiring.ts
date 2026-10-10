@@ -592,6 +592,8 @@ export interface Chain {
    * ★ **整条链真跑过没有**（`verified` = 每一段都真跑过；`pending` = 还没人跑）。
    * ★★ **`verified` 只表示"跑过"，不等于"通"** —— 它只说"有真跑结论"，**不断言"接得上"**：
    *   反例 `design-import`（`verified` 却**真跑 ⇒ 断在第 2 段**）。★ 与 `renderChains` 末尾那句是**同一口径**。
+   * ★★★ 它是**域取值**（枚举、多处消费 ⇒ **不动**）；**给人读时**经 {@link evidenceTag} 呈现为
+   *   **`[ran]` / `[pending]`** —— `[ran]` 是**过去时**（"当年跑过"），刻意让**词本身不暗示"现在能用"**。
    */
   readonly evidence: 'verified' | 'pending';
   /** 证据一句话（`verified` 必填，写清"怎么验的"） */
@@ -736,6 +738,30 @@ export function hopsOf(chain: Chain): readonly HopVerdict[] {
   return out;
 }
 
+/**
+ * ★★★ `Chain.evidence` 的**呈现词**（2026-10-10，用户裁定：「**改词、不改数据**」）。
+ *
+ * ## 病：`[verified]` 会被读成"现在能用"
+ * 域里的取值是 `'verified'`，而 **`CHAINS[].evidence` 是硬编码字面量、运行时【不重验】** ⇒
+ * 它是**冻结标签**，只说明"**当年跑过**"。但 `[verified]` 是个**状态形容词** ⇒ 会被读作"现在是验证过的"。
+ * ★ 反例就在本表：`design-import` 是 `[verified]`，却**真跑 ⇒ 断在第 2 段**。
+ * ★★ 而本表是「**新人第一站**」要读的 ⇒ **这个误读会被放大**。
+ *
+ * ## 为什么改**词**、**不加时点**（别搞反）
+ * 手填时点 = 又造一份**会腐的手抄副本**（本仓刚立的判据：别在散文/表里写会变的东西）——
+ * 一个"以为准、其实会腐"的时点比一个诚实的"跑过"更坏。⇒ **让词本身不再暗示"现在"** 才是正解。
+ * ★ **"运行时重验"是更大的事**（记待办，本轮不做）。
+ *
+ * ## 为什么 `ran`
+ * · `ran` 是**过去时动词** ⇒ 词性本身带住"**发生在过去、不保证现在**"（正是要的）；`verified` 是形容词。
+ * · 短、纯 ASCII、与 `[pending]` 对仗。
+ * · **不含时点** ⇒ **不会腐**。
+ * ★ 唯一住处 = 本函数。**别在别处手拼这个映射**（本仓头号病：一处判断住两处）。
+ */
+function evidenceTag(e: Chain['evidence']): string {
+  return e === 'verified' ? 'ran' : 'pending';
+}
+
 /** 渲染链表（给 `capability_map` 用）。 */
 export function renderChains(max = 20): string {
   const lines = CHAINS.slice(0, max).map((c) => {
@@ -755,7 +781,7 @@ export function renderChains(max = 20): string {
         ` —— ★ **弱交接 ≠ 断**；"**这一段到底行不行**"看下面「**链的完整判定**」段（它算"下游要不要对象"）；` +
         `**为什么弱**逐链见 CHAINS[].note｜${tally}`
       : `✓ 每段都是**强交接**（有对象类边）｜${tally}`;
-    return `    ${c.name.padEnd(14)} [${c.evidence}] ${c.steps.join(' → ')}\n${' '.repeat(19)}${status}｜对象类边数 ${counts}`;
+    return `    ${c.name.padEnd(14)} [${evidenceTag(c.evidence)}] ${c.steps.join(' → ')}\n${' '.repeat(19)}${status}｜对象类边数 ${counts}`;
   });
   return (
     '\n\n── 链（★ 一等公民：逐段查 `CHAIN_EDGES`；每段分**两档**：强交接（有对象类边）/ 弱交接（仅作用域键））──\n' +
@@ -765,9 +791,11 @@ export function renderChains(max = 20): string {
     '\n       而那件事**已经住在下面「链的完整判定」段**（它用 `ToolDef` 算 `wants`/`fed`/`state`）。' +
     '\n     ★★ 责任边界是**有意**划的（2026-10-09，T84）：我**差点把段 B 的逻辑抄进本段**（`needsObjects` 注入都写好了），' +
     '\n        回头一查才发现段 B 早就有更全的算法 ⇒ **当场回退**。**抄一份 = 判据分叉**（本仓头号病）。' +
-    '\n  ★★ `[verified]` **只表示"这条链真跑过"**（有真跑结论），**≠ "通"** —— ★ 反例就在本表：`design-import` 是 `[verified]`' +
-    '\n     却**真跑 ⇒ 断在第 2 段**（见下一段「链的完整判定」）。⇒ **"通没通"看两处**：逐段的 `✓/✗` 在「链的完整判定」段，' +
-    '\n     逐链的真跑结论在 `CHAINS[].note`（那里才是权威）。' +
+    '\n  ★★ `[ran]` 是**标签**（= **当年真跑过**、**不是实时验证**），**≠ "通"**、**≠ "现在能用"** ——' +
+    '\n     ★ 反例就在本表：`design-import` 是 `[ran]`，却**真跑 ⇒ 断在第 2 段**（见下一段「链的完整判定」）。' +
+    '\n     ⇒ **"通没通"看两处**：逐段的 `✓/✗` 在「链的完整判定」段，逐链的真跑结论在 `CHAINS[].note`（那里才是权威）。' +
+    '\n     ★ **何时跑的不在本表**（时点会腐 —— 写了就是一份会过期的副本）：逐链"怎么验的"在 `CHAINS[].note`。' +
+    '\n     ★ 域里的取值仍叫 `verified`（枚举、多处消费）；`[ran]` 只是它的**呈现词**（改病灶、不改类型）。' +
     '\n  ★★ **"弱交接"不是断**（2026-10-09，T83）：它只是"这一段靠 `feature`/`project_dir` 接上、没有对象类边"。' +
     '\n     ★ 旧版把弱交接与"无对象边"印成同一个 "⚠"，⇒ **真跑通了整条链，看起来却像断的**' +
     '\n       （判据只有一档 ⇒ 事实被压成错误的样子）。' +
@@ -852,7 +880,7 @@ export function renderNextHops(tool: string): string {
     return `    ${chainExprOf(e).padEnd(26)} → ${e.to} · ${e.toPath}　（${card}）`;
   });
   return (
-    '\n── 下一棒（★ **提示**，不是链的接口：本工具**全部**已验证出边，先全给、不收敛）──\n' +
+    '\n── 下一棒（★ **提示**，不是链的接口：本工具**全部**跑过的出边 —— ★ 标签：**当年真跑过**、**非实时验证**，先全给、不收敛）──\n' +
     lines.join('\n') +
     '\n    ★ 想接才用；不接就直接结束。' +
     '\n    ★ 另有**全称规则**（**提一次、不展开**，展开就是"每个工具都能接每个工具"= 零信息量）：\n' +
@@ -887,7 +915,7 @@ export function renderChainWiring(max = 20): string {
   const pending = CHAIN_EDGES_PENDING.slice(0, max).map(line).join('\n');
   return (
     '\n\n── 链的接法（上一步的产物 → 下一步的入参）──\n' +
-    '  ★ 已实测（可直接用；touched 是**产物端**统一过的那张契约）：\n' + verified + '\n' +
+    '  ★ 跑过的接法（★ **标签**：**当年真跑过**、**非实时验证** ⇒ 用之前自己核；touched 是**产物端**统一过的那张契约）：\n' + verified + '\n' +
     (pending.length > 0
       ? '  ⏳ 待验（文档写了链，但**一条都没真跑过** —— 用之前先自己核）：\n' + pending + '\n'
       : '  ⏳ 待验：**空**（§5 那条链的每一环都已真跑过；★ 第 2 条链 `import_project → extract_contracts → find_references` 已于 2026-10-06 **真跑 ⇒ 接不上**（环C 缺 `file`），记录见本文件 `CHAIN_EDGES_PENDING`；新验出来的边加进本表）。\n') +
