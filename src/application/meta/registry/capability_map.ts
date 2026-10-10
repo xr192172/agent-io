@@ -39,7 +39,7 @@ import { renderChainWiring, CHAINS, hopsOf, SCOPE_PATHS, type Chain, type HopVer
 import { B_TERMS } from '../../../domain/b_terms.js';
 // ★ 只取两个常量/函数（`DATA_DIR_NAME` 是零依赖常量模块；`getDataHome` 是数据归口的唯一入口）——
 //   「读之前先看哪儿」那一段要**指出文件在不在**，这是导航该知道的最少信息。
-import { getDataHome, getPackageRoot } from '../../../infrastructure/storage.js';
+import { getDataHome } from '../../../infrastructure/storage.js';
 import { DATA_DIR_NAME } from '../../../infrastructure/data_dir.js';
 // ★★ 2026-10-06：工具「面」= 同一个注册表的**视图**（实现方式 = **不注册** + 一个原子入口 `atomic_call`；
 //   ★ 注意：不是"裁 listTools" —— 那做不到，理由见 `tool_faces.ts` 模块头的实测更正）。
@@ -185,17 +185,27 @@ function renderVolumesNote(projectRoot: string): string {
   const home = getDataHome();
   const dataDir = path.join(home, DATA_DIR_NAME);
   // ★★ MANIFEST 的 owner 是**项目（仓根）**，不是数据目录：`scripts/gen_manifest.mjs` 默认写
-  //   `<project>/MANIFEST.txt`（只有 `--in-data-dir` 才落进 `.agent-io/`）。⇒ 用 `project_dir` 定位；
-  //   未传 project_dir 时退回**包安装根**（= 本仓仓根，且**不受 `AGENT_IO_HOME` 影响**）。
+  //   `<project>/MANIFEST.txt`（只有 `--in-data-dir` 才落进 `.agent-io/`）。⇒ 用 `project_dir` 定位。
   //   ★★ 旧代码用 `getDataHome()`（= 数据目录）——`AGENT_IO_HOME` 一被覆盖就去别处找 ⇒ **假阴性**（MANIFEST 明明在仓根）。
   //   ★ COGNITION 的 owner 才是数据目录 ⇒ 两者**分开定位**（判据不与 owner 打架）。
-  const manifestRoot = projectRoot || getPackageRoot();
-  const hasManifest = fs.existsSync(path.join(manifestRoot, 'MANIFEST.txt'));
+  //
+  // ★★★ 2026-10-10（T127 收尾，用户裁定）：**未传 `project_dir` ⇒ 报第三态「未查」，不猜。**
+  //   上一版在未传时退回 `getPackageRoot()`（包安装根）—— 那只是**替调用方猜一个默认值**：
+  //   `project_dir` 没给，我们**并不知道**调用方想查哪个项目，拿包安装根去 `existsSync` ⇒
+  //   **假阴 / 假阳都可能**（查的仓根本不是目标仓）。本仓铁律：**不许静默降级 / 不许猜**。
+  //   ⇒ 三态并列：`✅ 在` / `— 未生成` / `— 未查（未指定项目）`。
+  //   ★ owner 的既有约定（`scripts/gen_manifest.mjs:94`：默认写 `<project>/MANIFEST.txt`）决定了
+  //     「目标仓 == project_dir」，所以**没有 project_dir 就无从得知目标仓** ⇒ 「未查」是唯一诚实的答案。
+  //   ★ COGNITION 的 owner 是数据目录，而数据目录由 `getDataHome()` **唯一确定**（不依赖 project_dir）
+  //     ⇒ 它仍是「在 / 未生成」两态，**不受本改动影响**（不能把 COGNITION 也改坏）。
+  const manifestRoot = projectRoot || null; // null ⇒ 未指定项目 ⇒ 未查
+  const hasManifest = manifestRoot ? fs.existsSync(path.join(manifestRoot, 'MANIFEST.txt')) : null;
   const hasCognition = fs.existsSync(path.join(dataDir, 'COGNITION.txt'));
   const mark = (b: boolean) => (b ? '✅ 在' : '— 未生成');
+  const markManifest = hasManifest === null ? '— 未查（未指定项目）' : mark(hasManifest);
   return (
     `\n── 读之前先看哪儿（这两个文件**都不是真相**，真相是 ${DATA_DIR_NAME}/features/<f>.json + .overlay.json）──\n` +
-    `  MANIFEST.txt             ${mark(hasManifest)}  卷声明（哪几卷 · 谁是真相 · 谁能改 · 谁会被重生成）` +
+    `  MANIFEST.txt             ${markManifest}  卷声明（哪几卷 · 谁是真相 · 谁能改 · 谁会被重生成）` +
     ` ⇒ 改过卷布局跑 \`npm run manifest\`、判漂 \`manifest:check\`\n` +
     `  ${DATA_DIR_NAME}/COGNITION.txt  ${mark(hasCognition)}  一行式认知索引 \`路径[层]: F:职责 | R:关系 | A:契约 | S:高熵决策\`` +
     ` ⇒ **可能过期**，判过期 \`npm run cognition:check\`、重生成 \`npm run cognition\`（等价 \`get_dsl query=digest\`）\n` +
@@ -792,8 +802,9 @@ export function makeCapabilityMapHandler(getCatalog: () => readonly ToolCatalogE
     const catalog = getCatalog();
     const { lanes, unassigned } = buildLanes(catalog);
     const lane = args.lane as LaneId | undefined;
-    // ★★ MANIFEST 按**其 owner（项目 / 仓根）**定位（见 `renderVolumesNote`）：传了 project_dir 就用它，
-    //   否则退回包安装根 —— **两者都不受 `AGENT_IO_HOME` 影响**（旧代码用数据目录 ⇒ 覆盖后假阴性）。
+    // ★★ MANIFEST 按**其 owner（项目 / 仓根）**定位（见 `renderVolumesNote`）：传了 project_dir 就用它；
+    //   未传 ⇒ 传空串 ⇒ `renderVolumesNote` 报第三态「未查」（**不猜包安装根**，见该函数注释）。
+    //   ★ 无论哪条路都**不受 `AGENT_IO_HOME` 影响**（旧代码用数据目录 ⇒ 覆盖后假阴性）。
     const projectRoot =
       typeof args.project_dir === 'string' && args.project_dir ? path.resolve(args.project_dir) : '';
     const toolCount = lanes.reduce((n, l) => n + l.tools.length, 0) + unassigned.length;

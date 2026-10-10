@@ -69,7 +69,7 @@
       "layer": "infrastructure",
       "role": "engine",
       "dir": "src/infrastructure/rules",
-      "note": "规则匹配引擎：`rule_match` = `$hole` 元变量 + `...` 省略号（对齐 **GritQL** 的能力子集，二层匹配：块级粗筛→窗口级精配）；`rule_tokens` = 行/token 小工具（被 `rule_apply` / `rule_extract` / 测试**共用**，单独成模块是为了避免三处各写一遍造成口径漂移）。★ 2026-10-03 从 `infrastructure/parse/` **归位**：它们不做解析，是**模式匹配**；消费方是 `rules` 工具（`application/refactor/rule_library`）。"
+      "note": "规则匹配引擎：`rule_match` = `$hole` 元变量 + `...` 省略号（对齐 **GritQL** 的能力子集，分级匹配：块级粗筛→窗口级精配）；`rule_tokens` = 行/token 小工具（被 `rule_apply` / `rule_extract` / 测试**共用**，单独成模块是为了避免各处各写一遍造成口径漂移）。★ 2026-10-03 从 `infrastructure/parse/` **归位**：它们不做解析，是**模式匹配**；消费方是 `rules` 工具（`application/refactor/rule_library`）。"
     },
     {
       "id": "text",
@@ -83,35 +83,35 @@
       "layer": "infrastructure",
       "role": "engine",
       "dir": "src/infrastructure/parse",
-      "note": "tree-sitter 解析内核（12 个文件）：`kernel` = parseFile 统一接口；`languages` / `probe` / `loader` / `source_exts` = 语言包探测与「什么算源码/测试/噪音」的**单点判据**；`ast_parser` / `ast_rename` / `import_resolve` / `import_text` / `fuzzy_match` / `lang_hint` = 具体解析与改写。★ 这是**符号/import/调用边的唯一权威来源** —— 产品里凡要判「这段代码是什么」都该走这里，不该自己写正则。"
+      "note": "tree-sitter 解析内核：`kernel` = parseFile 统一接口；`languages` / `probe` / `loader` / `source_exts` = 语言包探测与「什么算源码/测试/噪音」的**单点判据**；`ast_parser` / `ast_rename` / `import_resolve` / `import_text` / `fuzzy_match` / `lang_hint` = 具体解析与改写。★ 这是**符号/import/调用边的唯一权威来源** —— 产品里凡要判「这段代码是什么」都该走这里，不该自己写正则。"
     },
     {
       "id": "index",
       "layer": "infrastructure",
       "role": "engine",
       "dir": "src/infrastructure/index",
-      "note": "符号索引与 `cache.db`（11 个文件）：`db` / `schema` = 库与建表；`symbols` / `file_facts` = 解析结果的**增量写入**；`watch_project` / `index_backfill` / `index_freshness` = 保鲜与回填；`function_outline` / `guided_tour` / `registry` = 基于索引的派生读数。"
+      "note": "符号索引与 `cache.db`：`db` / `schema` = 库与建表；`symbols` / `file_facts` = 解析结果的**增量写入**；`watch_project` / `index_backfill` / `index_freshness` = 保鲜与回填；`function_outline` / `guided_tour` / `registry` = 基于索引的派生读数。"
     },
     {
       "id": "graph",
       "layer": "infrastructure",
       "role": "engine",
       "dir": "src/infrastructure/graph",
-      "note": "文件级依赖图与项目导入（3 个文件 / 2708 行）：`import_graph` = 从 cache.db 建 import 邻接表的**共享构建器**（多个消费方共用一张图，避免各建一份造成口径不同）；`import_project` = 扫现有项目→自动生成初始 DSL；`dead_deps` = 值级可达性判死依赖。"
+      "note": "文件级依赖图与项目导入：`import_graph` = 从 cache.db 建 import 邻接表的**共享构建器**（多个消费方共用一张图，避免各建一份造成口径不同）；`import_project` = 扫现有项目→自动生成初始 DSL；`dead_deps` = 值级可达性判死依赖。"
     },
     {
       "id": "render",
       "layer": "infrastructure",
       "role": "engine",
       "dir": "src/infrastructure/render",
-      "note": "渲染纯逻辑核心（5 个文件）：`anim_core` / `dataflow_core` / `simulation_engine` = 动画与数据流推演，**不依赖 DOM / Node API**（故构建期可被 bundle 内联进浏览器，也可被直接引用）；`export` / `inject_replay` = 导出与注入回放。"
+      "note": "渲染纯逻辑核心：`anim_core` / `dataflow_core` / `simulation_engine` = 动画与数据流推演，**不依赖 DOM / Node API**（故构建期可被 bundle 内联进浏览器，也可被直接引用）；`export` / `inject_replay` = 导出与注入回放。"
     },
     {
       "id": "daemon",
       "layer": "infrastructure",
       "role": "engine",
       "dir": "src/infrastructure/daemon",
-      "note": "daemon 的**客户端侧**（2 个文件）：`client` = MCP/CLI 与 daemon（127.0.0.1:7600）通信的薄封装 + 健康探测；`dispatch` = watch 转发与**降级**（daemon 在 → 转发到单实例权威；不在 → 进程内兜底）。★ daemon 的服务端入口在 `presentation/daemon/`，本域只管「怎么跟它说话」。"
+      "note": "daemon 的**客户端侧**：`client` = MCP/CLI 与 daemon（127.0.0.1:7600）通信的薄封装 + 健康探测；`dispatch` = watch 转发与**降级**（daemon 在 → 转发到单实例权威；不在 → 进程内兜底）。★ daemon 的服务端入口在 `presentation/daemon/`，本域只管「怎么跟它说话」。"
     },
     {
       "id": "meta-view",
@@ -181,14 +181,14 @@
       "layer": "application",
       "role": "capability",
       "dir": "src/application/design/dsl_ops",
-      "note": "**改 DSL 的操作原语族**：`edit_result`（编辑结果契约，被 6 个依赖 ⇒ 底座）+ `node_ops` / `edge_ops` / `file_ops` / `api_ops` / `feature_ops`（五类操作的原子实现）+ `update_feature`（**聚合点**，一次 `edit_dsl` 调它串起上面五个）+ `status_tools`（状态回填）+ `annotation_tools`（人审标注）。★ 2026-10-03 从 `application/design/` 收进本域（依赖团 = edit_result）。"
+      "note": "**改 DSL 的操作原语族**：`edit_result`（编辑结果契约 ⇒ 底座）+ `node_ops` / `edge_ops` / `file_ops` / `api_ops` / `feature_ops`（各类操作的原子实现）+ `update_feature`（**聚合点**，一次 `edit_dsl` 调它串起上述操作）+ `status_tools`（状态回填）+ `annotation_tools`（人审标注）。★ 2026-10-03 从 `application/design/` 收进本域（依赖团 = edit_result）。"
     },
     {
       "id": "design-bricks",
       "layer": "application",
       "role": "capability",
       "dir": "src/application/design/bricks",
-      "note": "**积木族**：`brickify`（底座，被 7 个依赖）/ `brick_bag`（积木盒）/ `classify_bricks`（分类）/ `cluster_narrator`（簇叙述）/ `render_brickwork`（积木墙渲染）/ `signal_review`（信号复核）/ `taxonomy`（**软件解剖学分类法** —— 自顶向下的先验骨架，与「分类」同族）。"
+      "note": "**积木族**：`brickify`（底座）/ `brick_bag`（积木盒）/ `classify_bricks`（分类）/ `cluster_narrator`（簇叙述）/ `render_brickwork`（积木墙渲染）/ `signal_review`（信号复核）/ `taxonomy`（**软件解剖学分类法** —— 自顶向下的先验骨架，与「分类」同族）。"
     },
     {
       "id": "design-workbench",
@@ -209,7 +209,7 @@
       "layer": "application",
       "role": "capability",
       "dir": "src/application/design/lifecycle",
-      "note": "**功能生命周期族**：`manage_feature`（建/克隆/模板/列/删）/ `wizard_steps`（新功能向导七步）/ `templates`（预置架构模板，生成设计起点）/ `snapshot`（DSL 时间点快照）/ `simulation`（设计仿真验证）/ `split_stage`（分阶段拆分）/ `scaffold`（从 DSL 生成代码骨架）。"
+      "note": "**功能生命周期族**：`manage_feature`（建/克隆/模板/列/删）/ `wizard_steps`（新功能向导：分步引导）/ `templates`（预置架构模板，生成设计起点）/ `snapshot`（DSL 时间点快照）/ `simulation`（设计仿真验证）/ `split_stage`（分阶段拆分）/ `scaffold`（从 DSL 生成代码骨架）。"
     },
     {
       "id": "observe-capture",
@@ -223,7 +223,7 @@
       "layer": "application",
       "role": "capability",
       "dir": "src/application/observe/reconcile",
-      "note": "**对账族**：`reconcile_chain`（沿效应链逐级对账契约）/ `reconcile_effects`（对账函数·模块的**实际效应**与契约）/ `reason_validator`（变更原因的「四层抗偷懒校验链」—— 让 agent 在 `edit_dsl` 时留下「为什么改」）/ `approval`（人审·审批工作流：提交审批 + 审标注）。"
+      "note": "**对账族**：`reconcile_chain`（沿效应链逐级对账契约）/ `reconcile_effects`（对账函数·模块的**实际效应**与契约）/ `reason_validator`（变更原因的「抗偷懒校验链」—— 让 agent 在 `edit_dsl` 时留下「为什么改」）/ `approval`（人审·审批工作流：提交审批 + 审标注）。"
     },
     {
       "id": "observe-runtime",
@@ -314,7 +314,7 @@
       "layer": "application",
       "role": "capability",
       "dir": "src/application/cross",
-      "note": "跨项目/跨语言能力线（index.ts 即该线归属的唯一来源）：`translate_go_ts` 等 4 条工具。★ 2026-10-05（T42 方案 B 第 2b 步）：原 `project_root`（项目根自动定位 + import 动态闭包边界）已**归位**到 `infrastructure/analysis/project_root/`（另立 `project-root` 域）—— 它自身只 import infrastructure、且无模块反向 import 它，本就不属应用层。"
+      "note": "跨项目/跨语言能力线（index.ts 即该线归属的唯一来源）：`translate_go_ts` 等工具。★ 2026-10-05（T42 方案 B 第 2b 步）：原 `project_root`（项目根自动定位 + import 动态闭包边界）已**归位**到 `infrastructure/analysis/project_root/`（另立 `project-root` 域）—— 它自身只 import infrastructure、且无模块反向 import 它，本就不属应用层。"
     },
     {
       "id": "harvest",
@@ -335,7 +335,7 @@
       "layer": "infrastructure",
       "role": "analysis",
       "dir": "src/infrastructure/analysis/package_migration",
-      "note": "包改名 / 提级线（对外仅两条导出）：`core`（语言无关骨架，`computeMigrationPlan` 纯计算、**绝不落盘**；落盘 / 验证 / 回滚交 `refactor_pipeline`）+ `parts`（接线层，断环同 rename_symbol）+ `languages/{registry,go,ts,py}`（语言包）。"
+      "note": "包改名 / 提级线（对外仅少量导出）：`core`（语言无关骨架，`computeMigrationPlan` 纯计算、**绝不落盘**；落盘 / 验证 / 回滚交 `refactor_pipeline`）+ `parts`（接线层，断环同 rename_symbol）+ `languages/{registry,go,ts,py}`（语言包）。"
     },
     {
       "id": "daemon-server",
@@ -356,7 +356,7 @@
       "layer": "presentation",
       "role": "capability",
       "dir": "src/presentation/http/archify",
-      "note": "R5 Archify 渲染线（**已挂起，暂不开发**）：`archify_semantics`（编辑 IR 树 → 语义面）/ `archify_mappers`（语义面 → 5 类图的官方 candidate）/ `archify_pipeline`（语义面 → 5 类图各一张；validate 不达 showcase 只回诊断、**绝不造几何**）/ `archify_project`（编辑 IR 树 ↔ Archify 数据层契约适配 + 视觉令牌，只读非投影）。★ 2026-10-06 归位：`archify_runner`（Archify 官方命令的进程封装 —— validate / deliver）从 `presentation/cli/` 搬进本域并改名 —— 它**不是命令**（无 argv、只有导出函数），原先住在 `cli-surface`（那条规则是「每个文件 = 一条命令」）是**错位**；其唯一消费者就是同域的 `archify_pipeline`。★ 对外端点 `POST /api/archify-demo` 在 `presentation/http/serve.ts`。★ **中性数据层 `view_inputs.ts` 也归本域**（README + 架构规划书 §11.5 钦定保留；`src` 内零 importer，消费者是**外仓** dsl-workbench 前端 ⇒ **按依赖亲和归类，不按 importer 数**）。"
+      "note": "R5 Archify 渲染线（**已挂起，暂不开发**）：`archify_semantics`（编辑 IR 树 → 语义面）/ `archify_mappers`（语义面 → 各类图的官方 candidate）/ `archify_pipeline`（语义面 → 各类图各一张；validate 不达 showcase 只回诊断、**绝不造几何**）/ `archify_project`（编辑 IR 树 ↔ Archify 数据层契约适配 + 视觉令牌，只读非投影）。★ 2026-10-06 归位：`archify_runner`（Archify 官方命令的进程封装 —— validate / deliver）从 `presentation/cli/` 搬进本域并改名 —— 它**不是命令**（无 argv、只有导出函数），原先住在 `cli-surface`（那条规则是「每个文件 = 一条命令」）是**错位**；其唯一消费者就是同域的 `archify_pipeline`。★ 对外端点 `POST /api/archify-demo` 在 `presentation/http/serve.ts`。★ **中性数据层 `view_inputs.ts` 也归本域**（README + 架构规划书 §11.5 钦定保留；`src` 内零 importer，消费者是**外仓** dsl-workbench 前端 ⇒ **按依赖亲和归类，不按 importer 数**）。"
     },
     {
       "id": "behavior",
@@ -384,7 +384,7 @@
       "layer": "infrastructure",
       "role": "analysis",
       "dir": "src/infrastructure/analysis/project_root",
-      "note": "项目根自动定位 + import 动态闭包边界（消除「必须显式传 project_dir」的使用摩擦）：向上找 `.git` → 退化到 manifest；沿 import 边算闭包。★ 2026-10-05（T42 方案 B 第 2b 步）从 `application/cross/`（`project_root.ts`）**归位**到此：它自身只 import infrastructure，且无任何模块反向 import 它（infrastructure 内仅注释提及）⇒ 归位不造环。★ 但它的消费者**跨 cross / design / refactor×4 / presentation**（十余处）⇒ 不服务单一能力，**该有自己的域**，故独立登记而非塞进 `analysis/refactor/`。"
+      "note": "项目根自动定位 + import 动态闭包边界（消除「必须显式传 project_dir」的使用摩擦）：向上找 `.git` → 退化到 manifest；沿 import 边算闭包。★ 2026-10-05（T42 方案 B 第 2b 步）从 `application/cross/`（`project_root.ts`）**归位**到此：它自身只 import infrastructure，且无任何模块反向 import 它（infrastructure 内仅注释提及）⇒ 归位不造环。★ 但它的消费者**跨 cross / design / refactor / presentation 等多条线**⇒ 不服务单一能力，**该有自己的域**，故独立登记而非塞进 `analysis/refactor/`。"
     },
     {
       "id": "diagnosis",
@@ -405,7 +405,7 @@
       "layer": "infrastructure",
       "role": "capability",
       "dir": "src/infrastructure/authoring/version_upgrade",
-      "note": "版本升级契约差检测与改写（静态门 / 动态门 / 6 语言适配器表）。★ 2026-10-05 从 `analysis/version_upgrade` 搬来 —— 同上，它改写代码"
+      "note": "版本升级契约差检测与改写（静态门 / 动态门 / 语言适配器表）。★ 2026-10-05 从 `analysis/version_upgrade` 搬来 —— 同上，它改写代码"
     }
   ],
   "flatDirs": [
@@ -413,42 +413,42 @@
       "id": "domain-model",
       "layer": "domain",
       "dir": "src/domain",
-      "note": "领域模型（14 个文件）：animation / annotation / geometry / mindmap / narration / overlay / contract / semantic …。★ 它们是**同一层的概念族**，彼此并列、没有父子结构 ⇒ 平铺是**终态**，不是「还没分域」。",
+      "note": "领域模型：animation / annotation / geometry / mindmap / narration / overlay / contract / semantic …。★ 它们是**同一层的概念族**，彼此并列、没有父子结构 ⇒ 平铺是**终态**，不是「还没分域」。",
       "role": "engine"
     },
     {
       "id": "cli-surface",
       "layer": "presentation",
       "dir": "src/presentation/cli",
-      "note": "CLI 入口面（**4 个文件**；★ 2026-10-06 由 13 降到 4，见本 note 末）：`cli.ts`（投影本体）+ 各 `*_cli.ts`。每个文件 = 一条命令，命令之间**并列**、不互相拥有 ⇒ 平铺是终态。★ 2026-10-05 拆出 `cli/render/`（见 `cli-render`）：原 22 文件里 7 个 renderer + 1 个 CSS 是「被 `brickify_cli` 引用的**渲染子库**」，不是命令 ⇒ 它们让本条 note 的理由（\"每个文件 = 一条命令\"）**对它们不成立**；拆掉后本条才**真的是**平铺终态。★ 2026-10-06 又把 `deprecate_offline.ts`（434 行、`runDeprecateOffline` 本体）搬去 `src/application/refactor/deprecate_offline/`（见新域 `deprecate_offline`）—— 它不是命令、是**被 `deprecate_offline_cli` 引用的能力**（且它 import `application/refactor/edit` ⇒ 本就在 application 层），与 `cli/render/` 同型。★ 2026-10-06（T15）：手写 CLI 面 **13 → 4**（先后**删 8 个** + **归位 1 个** —— 删的是 `capability_cli` / `instrument_cli` / `signal_review_cli` / `split_stage_cli` / `translate_cli` / `deprecate_offline_cli` / `upgrade_cli` / `upgrade_rewrite_cli`）—— 能力一律归位到 **MCP 注册**（`ToolDef` 数组），argv 面由 `cli.js <工具名>` **投影**提供 ⇒ 手写 `*_cli.ts` 只是**同一入口的第二份副本**。现存 4 个：`cli.ts`（投影本体）+ `brickify_cli` / `diagnose_loop_cli` / `install_package_cli`。（★ 上面那「**归位 1 个**」= `archify_cli`：**它不是命令** —— 无 argv、无 `main()`、只有导出函数 ⇒ 住在本域属**错位**，已搬到其唯一消费者所在域 `archify-r5` 并改名 `archify_runner`。）",
+      "note": "CLI 入口面（★ 2026-10-06 由 13 降到 4，见本 note 末）：`cli.ts`（投影本体）+ 各 `*_cli.ts`。每个文件 = 一条命令，命令之间**并列**、不互相拥有 ⇒ 平铺是终态。★ 2026-10-05 拆出 `cli/render/`（见 `cli-render`）：原 22 文件里 7 个 renderer + 1 个 CSS 是「被 `brickify_cli` 引用的**渲染子库**」，不是命令 ⇒ 它们让本条 note 的理由（\"每个文件 = 一条命令\"）**对它们不成立**；拆掉后本条才**真的是**平铺终态。★ 2026-10-06 又把 `deprecate_offline.ts`（434 行、`runDeprecateOffline` 本体）搬去 `src/application/refactor/deprecate_offline/`（见新域 `deprecate_offline`）—— 它不是命令、是**被 `deprecate_offline_cli` 引用的能力**（且它 import `application/refactor/edit` ⇒ 本就在 application 层），与 `cli/render/` 同型。★ 2026-10-06（T15）：手写 CLI 面 **13 → 4**（先后**删 8 个** + **归位 1 个** —— 删的是 `capability_cli` / `instrument_cli` / `signal_review_cli` / `split_stage_cli` / `translate_cli` / `deprecate_offline_cli` / `upgrade_cli` / `upgrade_rewrite_cli`）—— 能力一律归位到 **MCP 注册**（`ToolDef` 数组），argv 面由 `cli.js <工具名>` **投影**提供 ⇒ 手写 `*_cli.ts` 只是**同一入口的第二份副本**。现存：`cli.ts`（投影本体）+ `brickify_cli` / `diagnose_loop_cli` / `install_package_cli`。（★ 上面那「**归位 1 个**」= `archify_cli`：**它不是命令** —— 无 argv、无 `main()`、只有导出函数 ⇒ 住在本域属**错位**，已搬到其唯一消费者所在域 `archify-r5` 并改名 `archify_runner`。）",
       "role": "capability"
     },
     {
       "id": "cli-render",
       "layer": "presentation",
       "dir": "src/presentation/cli/render",
-      "note": "渲染子库（8 个文件）：brickify 工作台的 HTML 渲染器（`render_anatomy` / `render_cluster_workbench` / `render_dep_canvas` / `render_mindmap` / `render_tools_map` / `render_wizard` / `render_workbench`）+ 工作台壳 CSS 原样快照（`workbench_shell_css`，1175 行）。★ 它们**不是命令入口** —— 唯一引用者是 `cli/brickify_cli.ts`。2026-10-05 从 `presentation/cli/` 拆出（T42 方案 A）。",
+      "note": "渲染子库：brickify 工作台的 HTML 渲染器（`render_anatomy` / `render_cluster_workbench` / `render_dep_canvas` / `render_mindmap` / `render_tools_map` / `render_wizard` / `render_workbench`）+ 工作台壳 CSS 原样快照（`workbench_shell_css`）。★ 它们**不是命令入口** —— 唯一引用者是 `cli/brickify_cli.ts`。2026-10-05 从 `presentation/cli/` 拆出（T42 方案 A）。",
       "role": "engine"
     },
     {
       "id": "infra-shared",
       "layer": "infrastructure",
       "dir": "src/infrastructure",
-      "note": "基础设施横切件（12 个文件）：data_dir / storage / storage_overlay / git / exec_guard / dictionary / alert_inbox / dogfood_stats / llm_focus / project_view / verify_refactor / **scan_bounds**。被各层共用、彼此无父子关系 ⇒ 平铺是终态。★ 它**同时是容器**：`analysis/` 与 `parse/ index/ render/ graph/ daemon/ packages/ rules/ text/` 是**已登记的子域**（2026-10-04 收口，unlisted 归零）。**flat 只说「直属 .ts 是成员」，不管子目录** —— 子目录按 domains 条目各自判。★ `scan_bounds` 于 2026-10-04 从 `application/refactor/edit/` 下沉到此（它是零依赖的纯契约：两个 interface + 一个纯函数，却被放在某条 refactor 子线里，导致 infrastructure 反向 import application）。",
+      "note": "基础设施横切件（`src/infrastructure/` 顶层的散装 .ts —— 被各层共用、彼此无父子关系的那批）⇒ 平铺是终态。★ 它**同时是容器**：`analysis/` 与 `parse/ index/ render/ graph/ daemon/ packages/ rules/ text/` 是**已登记的子域**（2026-10-04 收口，unlisted 归零）。**flat 只说「直属 .ts 是成员」，不管子目录** —— 子目录按 domains 条目各自判。★ `scan_bounds` 于 2026-10-04 从 `application/refactor/edit/` 下沉到此（它是零依赖的纯契约：两个 interface + 一个纯函数，却被放在某条 refactor 子线里，导致 infrastructure 反向 import application）。",
       "role": "engine"
     },
     {
       "id": "flat-application",
       "layer": "application",
       "dir": "src/application",
-      "note": "应用层横切件（**6** 个文件）：handlers 已于 2026-10-05 按线拆走（见下方 lane-* 四条）/ plumbing / tool_registry / stage_registry / types / **dispatch** / **write_gate**。被各工具线共用、彼此无父子 ⇒ 平铺是终态。★ 登记它**是必需的**：只要 `application/` 下新增任一域（如 cross / harvest），量具就会把 `src/application/` 当成「域的父目录」去扫它的直属文件 ⇒ 不登记则它们全变 `misplaced`（实测：登记 cross + harvest 后 misplaced 2 → 7；补上本条后回到 2）。★ `dispatch` 于 2026-10-04 从 `application/observe/` 挪到此处：它被 **3 条线**消费（design 经 `handlers.dispatchDslEdit` / meta 经 `explore_code.dispatchWatch` / mcp 经 `server_registry.collectPendingAlertText`），是真正的**跨线调度件**，留在 observe 里反而会让 design 线依赖 observe 内部 —— 这也消掉了 T29 的归属歧义。★ `write_gate` 于 2026-10-05 从 `application/observe/runtime/` 挪到此处，**判据与 dispatch 同型**：它被 **11 处 / 4 条线 + presentation** 消费，是全项目写源码的统一闸门。★ ★ `application/handlers.ts` 已于 2026-10-05 **整体拆掉**（15 个 handler 按线分给 design/meta/observe/refactor/harvest 各自己的 `handlers.ts`）—— 那个文件是 5 条线共用的枢纽，`application/` 与每个 lane 互为消费方 = **目录级环**（文件级无环，所以 code_health 报 0 是对的，但目录才是导航单位）。拆后各线自足：给一条线加工具只动那条线内的文件。",
+      "note": "应用层横切件：handlers 已于 2026-10-05 按线拆走（见下方 lane-* 各线根）/ plumbing / tool_registry / stage_registry / types / **dispatch** / **write_gate**。被各工具线共用、彼此无父子 ⇒ 平铺是终态。★ 登记它**是必需的**：只要 `application/` 下新增任一域（如 cross / harvest），量具就会把 `src/application/` 当成「域的父目录」去扫它的直属文件 ⇒ 不登记则它们全变 `misplaced`（实测：登记 cross + harvest 后 misplaced 2 → 7；补上本条后回到 2）。★ `dispatch` 于 2026-10-04 从 `application/observe/` 挪到此处：它**被跨线消费**（如 design 经 `handlers.dispatchDslEdit`、meta 经 `explore_code.dispatchWatch`、mcp 经 `server_registry.collectPendingAlertText`），是真正的**跨线调度件**，留在 observe 里反而会让 design 线依赖 observe 内部 —— 这也消掉了 T29 的归属歧义。★ `write_gate` 于 2026-10-05 从 `application/observe/runtime/` 挪到此处，**判据与 dispatch 同型**：它被**全项目多处（跨线 + presentation）**消费，是全项目写源码的统一闸门。★ ★ `application/handlers.ts` 已于 2026-10-05 **整体拆掉**（15 个 handler 按线分给 design/meta/observe/refactor/harvest 各自己的 `handlers.ts`）—— 那个文件是 5 条线共用的枢纽，`application/` 与每个 lane 互为消费方 = **目录级环**（文件级无环，所以 code_health 报 0 是对的，但目录才是导航单位）。拆后各线自足：给一条线加工具只动那条线内的文件。",
       "role": "engine"
     },
     {
       "id": "http-surface",
       "layer": "presentation",
       "dir": "src/presentation/http",
-      "note": "HTTP 服务面（3 个终态文件）：`serve` = 轻量 HTTP 服务器（静态文件 + `/api/save|load|events` 的 SSE，外加 `/api/archify-demo` 等派生端点）/ `contract` = 响应契约**单源**（zod 定义，顶层带 `_api` 版本字段，生成 `schema/endpoints.schema.json` 供跨仓前端校验）/ `dict_gen` = 伪维基词典的 LLM 生成与分类后端。★ 三者并列、无父子 ⇒ 平铺终态；R5 渲染子包 `archify/` 另立为 `archify-r5` **域**（flat 的语义要求：子目录必须被登记）。",
+      "note": "HTTP 服务面（平铺终态）：`serve` = 轻量 HTTP 服务器（静态文件 + `/api/save|load|events` 的 SSE，外加 `/api/archify-demo` 等派生端点）/ `contract` = 响应契约**单源**（zod 定义，顶层带 `_api` 版本字段，生成 `schema/endpoints.schema.json` 供跨仓前端校验）/ `dict_gen` = 伪维基词典的 LLM 生成与分类后端。★ 三者并列、无父子 ⇒ 平铺终态；R5 渲染子包 `archify/` 另立为 `archify-r5` **域**（flat 的语义要求：子目录必须被登记）。",
       "role": "capability"
     },
     {
@@ -463,31 +463,31 @@
       "layer": "application",
       "role": "capability",
       "dir": "src/application/design",
-      "note": "`design` 线（设计 / 活文档）的**根**：`index.ts` = 该线的 ToolDef 表（工具注册的唯一事实源），`handlers.ts` = 该线的工具入参适配层（★ 2026-10-05 从跨 5 线的 `application/handlers.ts` 拆来）。两者都是「被本线 index.ts 消费、彼此无父子」的**直属成员** ⇒ 平铺是终态，不另立子域。它下面另有 6 个**已登记的子域**（各自进 domains）—— ★ flat 只说「直属 .ts 是成员」，不管子目录。★ 登记它**是必需的**（同 `flat-application` 的理由）：lane 根是子域的父目录，不登记则量具会把它的直属文件判成 misplaced（实测：本笔加 `handlers.ts` 的那一刻立刻报出 4 条）。"
+      "note": "`design` 线（设计 / 活文档）的**根**：`index.ts` = 该线的 ToolDef 表（工具注册的唯一事实源），`handlers.ts` = 该线的工具入参适配层（★ 2026-10-05 从跨 5 线的 `application/handlers.ts` 拆来）。两者都是「被本线 index.ts 消费、彼此无父子」的**直属成员** ⇒ 平铺是终态，不另立子域。它下面另有**若干已登记的子域**（各自进 domains）—— ★ flat 只说「直属 .ts 是成员」，不管子目录。★ 登记它**是必需的**（同 `flat-application` 的理由）：lane 根是子域的父目录，不登记则量具会把它的直属文件判成 misplaced（实测：本笔加 `handlers.ts` 的那一刻立刻报出 4 条）。"
     },
     {
       "id": "lane-meta",
       "layer": "application",
       "role": "capability",
       "dir": "src/application/meta",
-      "note": "`meta` 线（元信息 / 导航 / 文档）的**根**：`index.ts` = 该线的 ToolDef 表（工具注册的唯一事实源），`handlers.ts` = 该线的工具入参适配层（★ 2026-10-05 从跨 5 线的 `application/handlers.ts` 拆来）。两者都是「被本线 index.ts 消费、彼此无父子」的**直属成员** ⇒ 平铺是终态，不另立子域。它下面另有 8 个**已登记的子域**（各自进 domains）—— ★ flat 只说「直属 .ts 是成员」，不管子目录。★ 登记它**是必需的**（同 `flat-application` 的理由）：lane 根是子域的父目录，不登记则量具会把它的直属文件判成 misplaced（实测：本笔加 `handlers.ts` 的那一刻立刻报出 4 条）。"
+      "note": "`meta` 线（元信息 / 导航 / 文档）的**根**：`index.ts` = 该线的 ToolDef 表（工具注册的唯一事实源），`handlers.ts` = 该线的工具入参适配层（★ 2026-10-05 从跨 5 线的 `application/handlers.ts` 拆来）。两者都是「被本线 index.ts 消费、彼此无父子」的**直属成员** ⇒ 平铺是终态，不另立子域。它下面另有**若干已登记的子域**（各自进 domains）—— ★ flat 只说「直属 .ts 是成员」，不管子目录。★ 登记它**是必需的**（同 `flat-application` 的理由）：lane 根是子域的父目录，不登记则量具会把它的直属文件判成 misplaced（实测：本笔加 `handlers.ts` 的那一刻立刻报出 4 条）。"
     },
     {
       "id": "lane-observe",
       "layer": "application",
       "role": "capability",
       "dir": "src/application/observe",
-      "note": "`observe` 线（观测 / 对账）的**根**：`index.ts` = 该线的 ToolDef 表（工具注册的唯一事实源），`handlers.ts` = 该线的工具入参适配层（★ 2026-10-05 从跨 5 线的 `application/handlers.ts` 拆来）。两者都是「被本线 index.ts 消费、彼此无父子」的**直属成员** ⇒ 平铺是终态，不另立子域。它下面另有 3 个**已登记的子域**（各自进 domains）—— ★ flat 只说「直属 .ts 是成员」，不管子目录。★ 登记它**是必需的**（同 `flat-application` 的理由）：lane 根是子域的父目录，不登记则量具会把它的直属文件判成 misplaced（实测：本笔加 `handlers.ts` 的那一刻立刻报出 4 条）。"
+      "note": "`observe` 线（观测 / 对账）的**根**：`index.ts` = 该线的 ToolDef 表（工具注册的唯一事实源），`handlers.ts` = 该线的工具入参适配层（★ 2026-10-05 从跨 5 线的 `application/handlers.ts` 拆来）。两者都是「被本线 index.ts 消费、彼此无父子」的**直属成员** ⇒ 平铺是终态，不另立子域。它下面另有**若干已登记的子域**（各自进 domains）—— ★ flat 只说「直属 .ts 是成员」，不管子目录。★ 登记它**是必需的**（同 `flat-application` 的理由）：lane 根是子域的父目录，不登记则量具会把它的直属文件判成 misplaced（实测：本笔加 `handlers.ts` 的那一刻立刻报出 4 条）。"
     },
     {
       "id": "lane-refactor",
       "layer": "application",
       "role": "capability",
       "dir": "src/application/refactor",
-      "note": "`refactor` 线（重构 / 改名 / 编辑）的**根**：`index.ts` = 该线的 ToolDef 表（工具注册的唯一事实源），`handlers.ts` = 该线的工具入参适配层（★ 2026-10-05 从跨 5 线的 `application/handlers.ts` 拆来）。两者都是「被本线 index.ts 消费、彼此无父子」的**直属成员** ⇒ 平铺是终态，不另立子域。它下面另有 9 个**已登记的子域**（各自进 domains）—— ★ flat 只说「直属 .ts 是成员」，不管子目录。★ 登记它**是必需的**（同 `flat-application` 的理由）：lane 根是子域的父目录，不登记则量具会把它的直属文件判成 misplaced（实测：本笔加 `handlers.ts` 的那一刻立刻报出 4 条）。"
+      "note": "`refactor` 线（重构 / 改名 / 编辑）的**根**：`index.ts` = 该线的 ToolDef 表（工具注册的唯一事实源），`handlers.ts` = 该线的工具入参适配层（★ 2026-10-05 从跨 5 线的 `application/handlers.ts` 拆来）。两者都是「被本线 index.ts 消费、彼此无父子」的**直属成员** ⇒ 平铺是终态，不另立子域。它下面另有**若干已登记的子域**（各自进 domains）—— ★ flat 只说「直属 .ts 是成员」，不管子目录。★ 登记它**是必需的**（同 `flat-application` 的理由）：lane 根是子域的父目录，不登记则量具会把它的直属文件判成 misplaced（实测：本笔加 `handlers.ts` 的那一刻立刻报出 4 条）。"
     }
   ],
-  "flatNote": "★ `flatDirs` 与 `domains` 的区别，一句话：**`domains[i].dir` 里的散文件「要么已搬完、要么就是待搬的缺口」；`flatDirs[i].dir` 里的散文件「就是终态」**。 所以 flat 不是「免检」：它的作用是①把这三个目录**纳入视野**（否则量具对它们是瞎的）；②规定「**flat 目录里再长出的子目录必须被登记**」—— 出现了却没登记就是缺口，读数会报 `unlisted`。★ 判据的来源：`infrastructure/` 顶层这 10 个文件如果按容器判，会永远挂在待搬清单上，而「它们本来就该平铺」这个意图**在原表里没地方写** ⇒ 这就是缺的那一位。",
+  "flatNote": "★ `flatDirs` 与 `domains` 的区别，一句话：**`domains[i].dir` 里的散文件「要么已搬完、要么就是待搬的缺口」；`flatDirs[i].dir` 里的散文件「就是终态」**。 所以 flat 不是「免检」：它的作用是①把这些目录**纳入视野**（否则量具对它们是瞎的）；②规定「**flat 目录里再长出的子目录必须被登记**」—— 出现了却没登记就是缺口，读数会报 `unlisted`。★ 判据的来源：`infrastructure/` 顶层这些文件如果按容器判，会永远挂在待搬清单上，而「它们本来就该平铺」这个意图**在原表里没地方写** ⇒ 这就是缺的那一位。",
   "roles": {
     "capability": "面向用户代码**产出或改动东西**的域：翻译出 TS 文件 / 改写升级 / 生成 harness+基线 / 改 DSL / 改代码。★ 判据是**产物是不是新东西**，不是「有没有工具面」—— code_health 与 impact_analysis 都有工具面，但产物是判断 ⇒ 归 analysis",
     "analysis": "**只读代码、只产出判断**的域：体检 / 影响面 / 漂移 / 契约对账 / 死代码 / 跨仓冲突。★ 判据：读得多、写得少；它的返回值是「报告/计数/布尔」，不是新文件",
@@ -498,5 +498,5 @@
   "containers": {
     "src/infrastructure/authoring": "**面向用户代码产出/改写**的能力容器（2026-10-05 新增）。★ 与 `analysis/` 的分工：analysis 只读代码、只产判断；authoring 产出新文件（新代码 / harness / 基线）。★ 这条线是 structure_gap 的 misnested 判据量出来的，不是人列的。"
   },
-  "roleWhyFlat": "★ flatDirs 的 role 取自**它们自己 note 里已写明的性质**，不是新判据：note 说「每个文件=一条命令」⇒ capability（cli-surface）；说「被 X 引用、不是命令」⇒ engine（cli-render）；说「自检/产判断」⇒ analysis（submit-gate）；说「被各层共用」⇒ engine（其余三个）。★ 判据只有一条：**note 里怎么说，就怎么填** —— 免得 role 与 note 打架（那又是一次判据分叉）。"
+  "roleWhyFlat": "★ flatDirs 的 role 取自**它们自己 note 里已写明的性质**，不是新判据：note 说「每个文件=一条命令」⇒ capability（cli-surface）；说「被 X 引用、不是命令」⇒ engine（cli-render）；说「自检/产判断」⇒ analysis（submit-gate）；说「被各层共用」⇒ engine（其余诸项）。★ 判据只有一条：**note 里怎么说，就怎么填** —— 免得 role 与 note 打架（那又是一次判据分叉）。"
 }
