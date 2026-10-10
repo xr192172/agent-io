@@ -23,8 +23,14 @@
  *   - `gitlog` ：逐条**提交信息**判 LLM「这是不是一条决策记录」（提交信息本身就是决策记录）
  *
  * ★★ 没有 LLM ⇒ **抛**（不回落关键词）—— 本仓铁律"不许兜底，失败就是失败"。
- * ★ 抽奖：每个文件/提交 **R=3** 次采样 → 按结论归一化去重 → 记 `votes`（置信 = votes / R）。
+ * ★ 抽奖：每个文件/提交 **R=3** 次**独立**采样 → 按结论短语归一化去重 → 记 `votes`（置信 = votes / R）。
  *   LLM 的随机性**不当缺陷治，当机制用**：多次都抽到的 = 高置信。
+ * ★★ 抽奖的票**必须被读走**（2026-10-10 修）：旧版归一太严（措辞微变即分桶）+ `pickTop` 任取一条
+ *   ⇒ 三个不同措辞永远三桶、票恒 1/3、另两条被**丢掉**——**抽了 3 次只用 1 次**。
+ *   现：① 结论**短语化**（自由度小 ⇒ 措辞自然收敛，字面归一才可能命中）；
+ *       ② 归一多去一层**单字连接词**（`与/和/及/的`）⇒ 把"抖动"判成同一条、把"真分歧"留在两条；
+ *       ③ **仍只出一条**（一个文件最多一条），但**不收敛时**把其余 `why` 收进 `alternatives`（各带票数）——
+ *          **分歧不丢**，`votes` 记最高票。
  * ★ 本工具**只产决策线索**（`decision.status = 'draft'`），**不写 DSL** —— 定稿写入口是**下一步**（D1）。
  */
 import fs from 'node:fs';
@@ -56,12 +62,28 @@ export interface LifecycleHint {
  *     是模型填不出三要素时**产不出**。这正是"补丁尽量少、原生源码尽量多"。
  */
 export interface DecisionElements {
-  /** ① 结论：这个文件为什么存在（一句话理由） */
+  /**
+   * ① 结论：这个文件为什么存在 —— ★ **短短语**（≤12 字、不带句号/标点）。
+   *   ★ 为什么必须短：抽奖要按**字面**归一，"同一件事"的多种措辞只有在自由度小时才会自然收敛
+   *     （见 {@link normalizeWhy}）。长句/带标点 ⇒ 三次采样永远三个桶 ⇒ 票永远是 1/3（旧病）。
+   *   ★ 详细理由**不在这里**：走 `rationale`（一句话，**不参与归一**）。
+   */
   why: string;
   /** ② 出处：注释位置 `文件:行`（comment/doc）/ `git:<hash>`（gitlog） */
   origin: string;
   /** ③ 作用对象：该文件（仓库相对路径）/ feature 名（gitlog 提交是 feature 级决策记录） */
   subject: string;
+}
+
+/**
+ * 一条「未收敛时落选」的结论：归一后票数 < 最高票的其余 `why`，**带票数**。
+ * （不收敛的定义：R 次采样归一后落进**多个**桶。）
+ */
+export interface AlternativeWhy {
+  /** 该措辞的结论短语（首次落进本桶的采样原文） */
+  why: string;
+  /** 票数（1..R-1；至少 1） */
+  votes: number;
 }
 
 /** 一条「文件为什么存在」的决策（三要素齐备才产得出；`decision` 可**直接落到文件节点的 `decision` 字段**） */
@@ -79,10 +101,20 @@ export interface HarvestCandidate {
    * （用户裁定：有历史、默认只显示最后一次）。
    */
   decision_history?: DecisionHistoryEntry[];
-  /** 抽奖票数：R 次采样中该结论被抽到几次 */
+  /** 抽奖票数：R 次采样中该结论被抽到几次（1..R；**不收敛时 = 最高票**） */
   votes: number;
   /** 采样轮数 R（置信 = votes / samples） */
   samples: number;
+  /**
+   * ★ 其余分歧结论（**各带票数**）—— 归一后除最高票外的其余桶，按票数降序；**收敛时为空数组**。
+   *
+   * ★ 为什么要它：旧版 `pickTop` 取一条就把分歧**丢掉**、假装最高票是唯一答案。现在最高票仍只出一条
+   *   （"一个文件最多一条"不破），但其余措辞**留在这里不丢** ⇒ `votes` 背后到底有没有分歧，看得见。
+   * ★ 为什么挂在 **candidate** 而**不是** `NodeDecision.alternatives`：后者语义是「**被否掉的**替代方案 +
+   *   否决原因」——这里的分歧**没被否决**（只是抽奖没抽齐），也没有否决原因；混进去会污染决策卡语义
+   *   （既有字段语义不许动）。本字段是**抽奖的置信信息**，不是文件决策内容。
+   */
+  alternatives: AlternativeWhy[];
   /** 原始证据（注释原文 / 文档正文片段），供逐条复核 */
   evidence: string;
   /** 生命周期提示（下线/合并/取代/拆分），供 diff 与归档参考 */
@@ -185,12 +217,23 @@ function requireLlmConfig(): LlmCfg {
  */
 function buildLead(
   el: DecisionElements,
-  rest: { source: HarvestSource; votes: number; samples: number; evidence: string; lifecycle_hint?: LifecycleHint },
+  rest: {
+    source: HarvestSource;
+    votes: number;
+    samples: number;
+    evidence: string;
+    /** 详细理由（一句话，**不参与归一**）—— 落到 `decision.rationale`（NodeDecision 既有字段，语义不变） */
+    rationale?: string;
+    /** 其余分歧结论（各带票数）；收敛时缺省 ⇒ 落为空数组 */
+    alternatives?: AlternativeWhy[];
+    lifecycle_hint?: LifecycleHint;
+  },
 ): HarvestCandidate | null {
   if (!el.subject.trim()) return null; // ③ 作用对象缺 ⇒ 产不出
   if (!el.origin.trim()) return null; // ② 出处缺 ⇒ 产不出
   if (!el.why.trim()) return null; // ① 结论缺 ⇒ 产不出
   const decision: NodeDecision = { summary: el.why.trim(), status: 'draft', author: 'llm' };
+  if (rest.rationale?.trim()) decision.rationale = rest.rationale.trim();
   const lead: HarvestCandidate = {
     file_path: el.subject.trim(),
     source: rest.source,
@@ -198,6 +241,7 @@ function buildLead(
     decision,
     votes: rest.votes,
     samples: rest.samples,
+    alternatives: rest.alternatives ?? [],
     evidence: rest.evidence,
   };
   if (rest.lifecycle_hint) lead.lifecycle_hint = rest.lifecycle_hint;
@@ -310,7 +354,10 @@ function docSignal(rel: string, abs: string): FileSignal | null {
 /** 单个文件/提交的 LLM 原始命中（已过产出契约：三要素齐备才存在） */
 interface RawHit {
   key: string;
+  /** 结论短语（参与抽奖归一） */
   why: string;
+  /** 详细理由（一句话，**不参与**归一） */
+  rationale: string;
   refLine: number;
 }
 
@@ -331,19 +378,41 @@ function toPositiveInt(v: unknown): number | null {
   return Number.isInteger(n) && n >= 1 ? n : null;
 }
 
-function normConclusion(s: string): string {
-  return s.replace(/[\s，。、；：！？,.;:!?"'“”‘’（）()【】[\]]/g, '').toLowerCase();
+/**
+ * 归一化「结论短语」—— 抽奖归并的**唯一判据**（★ 本规则唯一住处，别处不得再写一份）。
+ *
+ * 五步（顺序固定）：① 去首尾空白 · ② 去**所有**空白 · ③ 去**标点**（中英，含 `、，。：（）` 等）
+ *   · ④ 去**单字连接词** `与/和/及/的` · ⑤ 转小写；此后**完全相等**才判为"同一条"。
+ *
+ * ★ 它归的是**措辞抖动**，不是语义：`配置加载与校验` 与 `配置加载 校验，` ⇒ 同一条。
+ * ★ 但 `配置加载` 与 `参数校验` ⇒ **不同条**（真分歧，必须留在两个桶 ⇒ 进 `alternatives`，不许丢）。
+ * ★ 为什么不归更多（**不做**同义词替换 / 子串包含 / 编辑距离近似）：一旦"近似也算同一条"，
+ *   真分歧就会被**合并吞掉**——那正是本条要修的旧病（"任取一条、假装它是唯一答案"）的镜像。
+ *   ⇒ 判据**宁窄勿宽**：宁可把抖动判成分歧（多出一条 `alternatives`），也不许把分歧判成抖动（丢结论）。
+ * ★ 为什么加第 ④ 步（旧版只有 ①②③⑤）：实测三次采样的抖动**主要落在连接词**上
+ *   （`与` 的有无、`和/及` 的换用）⇒ 不归它，三次永远三桶、票恒 1/3（旧病复现）。
+ *
+ * ★ 导出（`export`）**只为一件事**：让确定性探针（`.inspect/_w_lottery_probe.mjs`）调**同一个函数**
+ *   来展示"哪些字符串被判成同一条"——避免探针另写一份归一（那会造出第二份判据、且可能与实现分叉）。
+ */
+export function normalizeWhy(s: string): string {
+  return s
+    .trim()
+    .replace(/[\s，。、；：！？,.;:!?"'“”‘’（）()【】\[\]{}《》〈〉—－·…~`|/\\@#$%^&*+=_-]/g, '')
+    .replace(/[与和及的了]/g, '')
+    .toLowerCase();
 }
 
 const FILE_SYSTEM_PROMPT =
   '你是项目结构解读助手。给定若干文件及其「可读线索」（**源码=注释块**，**文档=正文**，均带行号 L<行号>），' +
   '请为每个文件回答**唯一**一个问题：**这个文件为什么存在**（它要解决什么问题、为什么需要它）。\n' +
   '要求：\n' +
-  '1. 只写「**为什么**」（理由），**不要**写「做什么」（职责）—— 例："因为跨语言桥接从未跑通，故整条线被删" 而非 "翻译 Go 到 TS"。\n' +
-  '2. 一句话，不超过 40 个汉字。\n' +
+  '1. `reason`（**结论**）= 这个文件为什么存在的**短短语**：★ **≤12 个汉字**、**不带句号/标点/空格**，说「为什么」不是「做什么」。' +
+  '   例："配置加载与校验" · "CLI 参数解析入口" · "T93 的容器口径修正"（写成"翻译 Go 到 TS"这类"做什么"是错的）。\n' +
+  '2. `rationale`（**详细理由**）= 一句话把这个短语说清楚（≤40 个汉字，可含依据）。★ 它**不参与**多次采样的比对，只供人读。\n' +
   '3. ★ 必须能指到给定线索的**某一行**：给出 `ref_line`（该文件里支撑这句话的那一行号）。\n' +
   '4. ★★ 线索里**看不出**该文件为什么存在 ⇒ **把该文件整个略去**（不要编造，不要给"未知"/"无"）。\n' +
-  '只输出 JSON：{"files":[{"path":"...","reason":"...","ref_line":123}]}，path 必须来自给定清单。';
+  '只输出 JSON：{"files":[{"path":"...","reason":"...","rationale":"...","ref_line":123}]}，path 必须来自给定清单。';
 
 async function askFileBatch(cfg: LlmCfg, batch: FileSignal[]): Promise<RawHit[]> {
   const known = new Set(batch.map((f) => f.rel));
@@ -360,9 +429,10 @@ async function askFileBatch(cfg: LlmCfg, batch: FileSignal[]): Promise<RawHit[]>
   for (const f of files) {
     const p = typeof f.path === 'string' ? f.path.trim() : '';
     const why = typeof f.reason === 'string' ? f.reason.trim() : '';
+    const rationale = typeof f.rationale === 'string' ? f.rationale.trim() : '';
     const refLine = toPositiveInt(f.ref_line);
     // ★ 产出契约在解析口就生效：三要素（已知作用对象 + 结论 + 出处行号）缺一 ⇒ 这条**产不出**（丢弃，不是"收下再筛"）
-    if (known.has(p) && why && refLine !== null) hits.push({ key: p, why, refLine });
+    if (known.has(p) && why && refLine !== null) hits.push({ key: p, why, rationale, refLine });
   }
   return hits;
 }
@@ -371,9 +441,10 @@ const COMMIT_SYSTEM_PROMPT =
   '你是项目历史解读助手。给定若干 git 提交信息（含短 hash），请判断每条**是不是一条设计决策记录** —— ' +
   '即"**为什么**做这个改动 / 为什么这么设计"（是**理由**，不是纯粹的功能罗列、typo、格式化、版本号）。\n' +
   '要求：\n' +
-  '1. 是决策 ⇒ 用一句话（不超过 40 个汉字）写出它的**理由/结论**。\n' +
+  '1. 是决策 ⇒ `reason` = **短短语**（★ ≤12 个汉字、**不带句号/标点/空格**、说"为什么"），' +
+  '`rationale` = 一句话详细理由（≤40 字，**不参与**比对）。\n' +
   '2. ★ 不是决策 ⇒ **把该条整个略去**（不要编造）。\n' +
-  '只输出 JSON：{"decisions":[{"hash":"...","reason":"..."}]}，hash 必须来自给定清单。';
+  '只输出 JSON：{"decisions":[{"hash":"...","reason":"...","rationale":"..."}]}，hash 必须来自给定清单。';
 
 async function askCommitBatch(cfg: LlmCfg, batch: Array<{ hash: string; subject: string }>): Promise<RawHit[]> {
   const known = new Set(batch.map((c) => c.hash));
@@ -388,7 +459,8 @@ async function askCommitBatch(cfg: LlmCfg, batch: Array<{ hash: string; subject:
   for (const d of arr) {
     const h = typeof d.hash === 'string' ? d.hash.trim() : '';
     const why = typeof d.reason === 'string' ? d.reason.trim() : '';
-    if (known.has(h) && why) hits.push({ key: h, why, refLine: 0 }); // 提交无行号；key=hash
+    const rationale = typeof d.rationale === 'string' ? d.rationale.trim() : '';
+    if (known.has(h) && why) hits.push({ key: h, why, rationale, refLine: 0 }); // 提交无行号；key=hash
   }
   return hits;
 }
@@ -422,8 +494,20 @@ function chunk<T>(arr: T[], size: number): T[][] {
   return out;
 }
 
-/** 按 key 聚合 R 轮命中的票数：key → 归一化结论 → { why, refLine, votes } */
-type VoteTable = Map<string, Map<string, { why: string; refLine: number; votes: number }>>;
+/** 一个归一化结论的票桶：**同一条** `why` 在 R 轮里被抽到几次 */
+interface VoteBin {
+  /** 该桶的结论短语（取**首次**落进本桶的那次采样原文） */
+  why: string;
+  /** 详细理由（**不参与归一**；同样取首次落桶的采样） */
+  rationale: string;
+  /** 出处行号（首次落桶的采样） */
+  refLine: number;
+  /** 票数：本桶在 R 轮里被抽中的次数 */
+  votes: number;
+}
+
+/** 按 key 聚合 R 轮命中的票数：key → 归一化结论 → 票桶 */
+type VoteTable = Map<string, Map<string, VoteBin>>;
 
 function accumulate(table: VoteTable, hits: RawHit[]): void {
   for (const h of hits) {
@@ -432,17 +516,19 @@ function accumulate(table: VoteTable, hits: RawHit[]): void {
       byWhy = new Map();
       table.set(h.key, byWhy);
     }
-    const norm = normConclusion(h.why);
+    const norm = normalizeWhy(h.why);
     const cur = byWhy.get(norm);
     if (cur) cur.votes++;
-    else byWhy.set(norm, { why: h.why, refLine: h.refLine, votes: 1 });
+    else byWhy.set(norm, { why: h.why, rationale: h.rationale, refLine: h.refLine, votes: 1 });
   }
 }
 
-function pickTop(byWhy: Map<string, { why: string; refLine: number; votes: number }>): { why: string; refLine: number; votes: number } {
-  let top: { why: string; refLine: number; votes: number } | null = null;
-  for (const v of byWhy.values()) if (!top || v.votes > top.votes) top = v;
-  return top as { why: string; refLine: number; votes: number };
+/**
+ * 按票数**降序**排出全部桶；**同票保持首次出现顺序**（`[...map.values()]` = 插入序，`sort` 稳定）
+ * ⇒ 平局以**稳定序**打破，不靠随机、可复现（旧版 `pickTop` 只取一条、把其余**丢掉**）。
+ */
+function rankBins(byWhy: Map<string, VoteBin>): VoteBin[] {
+  return [...byWhy.values()].sort((a, b) => b.votes - a.votes);
 }
 
 /**
@@ -460,13 +546,18 @@ async function extractFileLeads(cfg: LlmCfg, signals: FileSignal[], source: 'com
   for (const sig of signals) {
     const byWhy = table.get(sig.rel);
     if (!byWhy) continue; // 该文件 R 轮都没被抽中 ⇒ 产不出
-    const top = pickTop(byWhy);
+    const ranked = rankBins(byWhy);
+    const top = ranked[0];
+    // ★★ 不收敛（多个桶）⇒ 其余结论**不丢**，收进 alternatives（各带票数）；**最高票仍只出一条**（一文件一条）
+    const alternatives = ranked.slice(1).map((b) => ({ why: b.why, votes: b.votes }));
     const lead = buildLead(
       { why: top.why, origin: `${sig.rel}:${top.refLine}`, subject: sig.rel },
       {
         source,
         votes: top.votes,
         samples: R,
+        rationale: top.rationale,
+        alternatives,
         evidence: sig.evidence,
         lifecycle_hint: lifecycleHint(sig.lines.map((l) => l.text).join(' ')),
       },
@@ -491,11 +582,22 @@ async function extractCommitLeads(
   const byHash = new Map(commits.map((c) => [c.hash, c.subject]));
   const leads: HarvestCandidate[] = [];
   for (const [hash, byWhy] of table) {
-    const top = pickTop(byWhy);
+    const ranked = rankBins(byWhy);
+    const top = ranked[0];
+    // ★★ 同 comment/doc：不收敛时其余结论进 alternatives（各带票数），最高票仍只出一条
+    const alternatives = ranked.slice(1).map((b) => ({ why: b.why, votes: b.votes }));
     const subject = byHash.get(hash) ?? '';
     const lead = buildLead(
       { why: top.why, origin: `git:${hash}`, subject: feature },
-      { source: 'gitlog', votes: top.votes, samples: R, evidence: subject, lifecycle_hint: lifecycleHint(subject) },
+      {
+        source: 'gitlog',
+        votes: top.votes,
+        samples: R,
+        rationale: top.rationale,
+        alternatives,
+        evidence: subject,
+        lifecycle_hint: lifecycleHint(subject),
+      },
     );
     if (lead) leads.push(lead);
   }
@@ -595,13 +697,16 @@ async function harvestDecisionsCore(input: HarvestInput): Promise<HarvestResult>
 
   const lines = [
     `harvest_decisions [${feature}] 产出 ${candidates.length} 条决策（三要素齐备：结论 / 出处 / 作用对象）`,
-    `  来源: comment ${nOf('comment')} · doc ${nOf('doc')} · gitlog ${nOf('gitlog')} · 抽奖 R=${R}（置信 = votes/${R}）`,
+    `  来源: comment ${nOf('comment')} · doc ${nOf('doc')} · gitlog ${nOf('gitlog')} · 抽奖 R=${R}（置信 = votes/${R}；**不收敛**⇒其余结论进 alternatives，不丢）`,
     `  扫描: 源码 ${scannedComment} 个（有注释块）/ 提交 ${commits.length} 条 / 文档 ${docs.length} 个`,
     '',
     ...candidates.map((c, i) => {
       const lh = c.lifecycle_hint ? `  ⚠ lifecycle:${c.lifecycle_hint.type}` : '';
+      const alt = c.alternatives.length
+        ? `  分歧: ${c.alternatives.map((a) => `${a.why}(${a.votes}票)`).join(' · ')}`
+        : '';
       return (
-        `  ${i + 1}. [${c.source}] ${c.decision.summary}  置信 ${c.votes}/${c.samples}${lh}\n` +
+        `  ${i + 1}. [${c.source}] ${c.decision.summary}  置信 ${c.votes}/${c.samples}${lh}${alt}\n` +
         `      ↳ 作用对象: ${c.file_path}\n` +
         `      ↳ 出处: ${c.ref}\n` +
         `      ↳ 证据: ${c.evidence}`
