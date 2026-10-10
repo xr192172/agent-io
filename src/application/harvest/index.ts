@@ -38,12 +38,15 @@ import type { ToolDef } from '../types.js';
 export const HARVEST_TOOLS: ToolDef[] = [
   {
     name: 'harvest_decisions',
-    title: 'Harvest why-a-file-exists decision leads from comments / docs / git log',
+    title: 'Harvest why-a-file-exists decision leads from three evidences (code / history / docs)',
     description:
       '决策卡补录：**逐个文件**问 LLM「这个文件为什么存在」（= 该文件存在的**理由**，不是"做什么"），产出**决策线索**。' +
-      '来源三路：① comment = 扫项目**已索引的源码文件**的注释块（缺省打开，可 comment_files 指定）；② doc = 扫文档正文；③ gitlog = 判每条提交信息是不是决策记录。' +
-      '★ **产出契约（三要素缺一不可）**：结论（为什么存在）· 出处（注释位置 `文件:行`）· 作用对象（该文件）—— 填不出就**产不出**（不是"收下再过滤"）。' +
-      '★ 抽奖 R=3 次**独立**采样、按结论**短语**归一化去重、记 votes（置信 = votes/3）；**不收敛**时最高票仍只出一条，其余结论进 `alternatives`（各带票数，不丢）。' +
+      '★ **三份证据各抽一次**（三个 loop，各自取、各自判）：① code = 该文件的符号/导出/依赖/被谁引用（读 cache.db）；' +
+      '② history = 该文件的 git 提交（何时出现、改过几次、每次提交的理由）—— 逐文件读 `git log -- <file>`；' +
+      '③ docs = docs/ 里提到它的地方 + 它自己的文件头注释/正文。' +
+      '★ **产出契约（三要素缺一不可）**：结论（为什么存在）· 出处（`文件:行` 或 `git:<hash>`）· 作用对象（该文件）—— 填不出就**产不出**（不是"收下再过滤"）。' +
+      '★★ `votes` = **支持同一说法的证据源个数**（1..3，多源印证 = 置信，非"抽三次的稳定性"）；' +
+      '不收敛时最高票仍只出一条（**一个文件最多一条**），其余结论进 `alternatives`（各带票数 + `evidence_source`，不丢）。' +
       '★ **必须配置 LLM**，否则**报错**（不回落关键词）。只产 `status:draft` 线索、**不写 DSL**——写回文件节点 `decision` 是下一步（D1，当前不存在）。' +
       '适用：为没有决策卡历史的现有项目/外来代码补录活文档。',
     inputSchema: {

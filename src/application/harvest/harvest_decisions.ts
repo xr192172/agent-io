@@ -1,5 +1,5 @@
 /**
- * harvest_decisions —— 把源码注释 / 文档 / 提交信息提取成「**这个文件为什么存在**」的决策。
+ * harvest_decisions —— 把 **三份证据**（代码 / 历史 / 文档与注释）提取成「**这个文件为什么存在**」的决策。
  *
  * ★★★ 决策卡定义（用户 2026-10-10 原话，本工具的最高依据）：
  *   「每一个文件**为什么要存在**这样一个决策，就等于你 git 推送的时候推送的那个**理由**……
@@ -10,40 +10,76 @@
  *     （reader：`src/application/meta/explore/query_feature.ts` 的 `decisions_own` / `:360`）；
  *     有历史（节点 `decision_history`），默认只显示最新一条；用途 = **省**（读 DSL 就不必翻源码）。
  *
- * ★ 本文件为什么被**重写**（不是打补丁）：旧版**没有任何 LLM 通路**，靠一张设计意图关键词表
- *   + 一套"按行形状"正则（表格行/引用/标题/围栏/纯列表/半句话逐个判）判断"这是不是一条决策"，
- *   自述"宁多勿漏"⇒ 判不准 ⇒ 多收噪声 ⇒ 靠"draft 复核"兜底 ⇒ 而复核**不存在**（`docs/todo.md` T106 D1）
- *   ⇒ 人加形状护栏 ⇒ 越厚越列不全。用户裁定：
- *   「护栏越打越多，只能说明这个规则本身不完善；**只有你不断去重写它才是更合适的**。」
- *   ⇒ 本版换掉**判据本身**：判断交给 LLM；"形状问题"从"过滤"变成**"产不出"**（见 `DecisionElements`）。
+ * ★★★ 三份证据（本轮 = T109 之后的「抽奖」重写，用户裁定）：
+ *   用户 2026-10-10：*"根本一个代理和三个代理也没什么区别，就是并行和串行的区别而已。其实就是**三个 loop**。"*
+ *   ⇒ **循环是语义，并行是调度。** 旧版「同一个提示词抽 3 次」测的只是**模型稳不稳**（真实数据里三次给的是
+ *     `配置加载` / `参数校验` / `默认值合并` 这种**随机抖动**）——它**测不出"这个文件为什么存在"**。
+ *   ⇒ 本版把「抽 3 次同一提示词」换成「**三份不同的证据各抽 1 次**」：
+ *     ```
+ *     for 证据 in [code, history, docs]:   # ← 可枚举的 EVIDENCE_SOURCES
+ *         读(证据)  →  判(LLM)  →  写(累进投票)     # ← 三个**具名**阶段，边界清楚、可抽出
+ *     ```
+ *   ⇒ 三份证据**各自取、各自喂**（**不许三份都用同一份上下文** —— 那会退化成旧版"抽三次"）：
+ *     | 证据源     | 取什么 |
+ *     | `code`     | 该文件的**符号/导出/依赖/被谁 import**（读 `cache.db` 的 `nodes` / `edges` / `imports`）|
+ *     | `history`  | **该文件的 git 提交**（何时出现、改过几次、每次提交的理由 subject，`git log -- <file>`）|
+ *     | `docs`     | `docs/` 里**提到它**的地方 + **它自己的文件头注释 / 正文** |
  *
- * 三条产出策略：
- *   - `comment`：逐个**源码文件**问 LLM「这个文件为什么存在」（读它的**注释块**）—— 主路径
- *   - `doc`    ：逐个**文档文件**问同一个问题（读它的正文）
- *   - `gitlog` ：逐条**提交信息**判 LLM「这是不是一条决策记录」（提交信息本身就是决策记录）
+ * ★★ `votes` 语义随之改变（★ 这就是本版的要点）：
+ *   - 旧版：`votes` = **同一视角抽三次的稳定性**（结果全 = 1/3，无信息量 —— 见 T109）。
+ *   - 本版：`votes` = **有几份证据支持同一个说法**（1..3）⇒ ★ **这才是"置信"的本意（多源印证）**。
+ *   - 归一化仍用 {@link normalizeWhy}（**规则一字未改**）；票数 = **支持该说法的证据源个数**。
  *
- * ★★ 没有 LLM ⇒ **抛**（不回落关键词）—— 本仓铁律"不许兜底，失败就是失败"。
- * ★ 抽奖：每个文件/提交 **R=3** 次**独立**采样 → 按结论短语归一化去重 → 记 `votes`（置信 = votes / R）。
- *   LLM 的随机性**不当缺陷治，当机制用**：多次都抽到的 = 高置信。
- * ★★ 抽奖的票**必须被读走**（2026-10-10 修）：旧版归一太严（措辞微变即分桶）+ `pickTop` 任取一条
- *   ⇒ 三个不同措辞永远三桶、票恒 1/3、另两条被**丢掉**——**抽了 3 次只用 1 次**。
- *   现：① 结论**短语化**（自由度小 ⇒ 措辞自然收敛，字面归一才可能命中）；
- *       ② 归一多去一层**单字连接词**（`与/和/及/的`）⇒ 把"抖动"判成同一条、把"真分歧"留在两条；
- *       ③ **仍只出一条**（一个文件最多一条），但**不收敛时**把其余 `why` 收进 `alternatives`（各带票数）——
- *          **分歧不丢**，`votes` 记最高票。
- * ★ 本工具**只产决策线索**（`decision.status = 'draft'`），**不写 DSL** —— 定稿写入口是**下一步**（D1）。
+ * ★★ 新增 `evidence_source`（`code` / `history` / `docs`）—— 每条候选标注它来自哪份证据；
+ *   **不收敛**时 `alternatives` 里每项也带 `evidence_source`（★ 于是"分歧"能**归因到证据**，可观察）。
+ *
+ * ★ 仍只出一条（一个文件最多一条）：票最多者 → `decision`（稳定序破平）；其余桶 → `alternatives`（各带票数 + 证据源）。
+ *   ⇒ **分歧不丢**（T109 修正：原来的罪不是"归一化不准"，是 `pickTop` 任取一条、假装它是唯一答案）。
+ *
+ * ★★ 没有 LLM ⇒ **抛**（不回落关键词 / 不静默降级）—— 本仓铁律"不许兜底，失败就是失败"。
+ * ★ 本工具**只产决策线索**（`decision.status = 'draft'`），**不写 DSL**（定稿写入口是下一步 D1）。
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { gitAvailable } from '../../infrastructure/exec_guard.js';
 import { ensureProjectIndex } from '../../infrastructure/index/index_freshness.js';
 import type { Database } from '../../infrastructure/index/db.js';
+import { getRawImportsOfFile, getResolvedImportSources } from '../../infrastructure/index/symbols.js';
 import { loadLlmConfig, callChat, configFilePath, loadExplainConfig } from '../../infrastructure/llm_focus.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../domain/b_terms.js';
 import type { NodeDecision, DecisionHistoryEntry } from '../../domain/geometry.js';
 
-export type HarvestSource = 'comment' | 'doc' | 'gitlog';
+/**
+ * 目标文件的**种类**（★ 与 {@link EvidenceSource} 是**两个正交的轴**）：
+ *   - `source` 说「**目标是什么文件**」：`comment` = 源码文件（.ts/.go/.py…），`doc` = 文档文件（.md）。
+ *   - `evidence_source` 说「**靠哪份证据说话**」：code / history / docs（见下）。
+ * ★ 与旧版相比：旧版是「三路来源」（comment/doc/gitlog），其中 gitlog 是**提交级**候选；
+ *   本版把提交信息**收敛为每个文件的 `history` 证据**（同一份一手材料，从"提交级候选"改成"文件级证据"）。
+ */
+export type HarvestSource = 'comment' | 'doc';
+
+/**
+ * ★★★ **证据源**（本轮核心判据）—— 三份证据，各自取、各自喂、各投一票。
+ *   · `code`    ：代码证据（符号 / 导出 / 依赖 / 被谁引用）—— 读 `cache.db`
+ *   · `history` ：历史证据（该文件的 git 提交：何时出现、改过几次、每次的理由）—— `git log -- <file>`
+ *   · `docs`    ：文档与注释证据（`docs/` 提到它的地方 + 它自己的文件头注释 / 正文）
+ */
+export type EvidenceSource = 'code' | 'history' | 'docs';
+
+/**
+ * ★★ 证据源的**唯一枚举处**（可抽出性的落点之一）：`harvestDecisionsCore` 就 `for (const ev of EVIDENCE_SOURCES)`。
+ *   ★ 为什么不写死成三段重复代码：用户明说"以后可能要改成**外部编排**（并行跑三个）"——
+ *     枚举成列表 ⇒ 将来把 `read→judge→write` 这三段抽出去并行的成本 = 改这一处调度，不动证据语义。
+ */
+export const EVIDENCE_SOURCES: readonly EvidenceSource[] = ['code', 'history', 'docs'];
+
+/** 证据源 → 人读标签（进提示词，让 LLM 知道自己读的是哪份证据） */
+const EVIDENCE_LABEL: Record<EvidenceSource, string> = {
+  code: '代码证据（该文件的符号/导出/依赖/被谁引用）',
+  history: '历史证据（该文件的 git 提交：何时出现、改过几次、每次提交的理由）',
+  docs: '文档与注释证据（docs/ 提到它的地方 + 它自己的文件头注释/正文）',
+};
 
 export interface LifecycleHint {
   type: 'retired' | 'merged' | 'superseded' | 'split';
@@ -51,47 +87,48 @@ export interface LifecycleHint {
 }
 
 /**
- * ★★★ **产出契约**（这条是本次重写的核心）—— 一条决策线索必须**同时**具备三要素：
+ * ★★★ **产出契约**（一条决策线索必须**同时**具备三要素）：
  *   ① 结论 `why`    ：这个文件为什么存在（一句话**理由**，不是"做什么"）
- *   ② 出处 `origin` ：注释位置 `文件:行`（复核依据）
- *   ③ 作用对象 `subject`：该文件（仓库相对路径 / feature 名）
+ *   ② 出处 `origin` ：证据锚点 —— 代码/文档证据 = `文件:行`；历史证据 = `git:<hash>`（复核依据）
+ *   ③ 作用对象 `subject`：该文件（仓库相对路径）
  *
  * ★ 它不是**过滤器**（过滤器先收下再按规则丢弃，规则只会越打越厚）；它是**接口的形状**：
  *   三要素任一为空 ⇒ 这条决策**根本构造不出来**（见 {@link buildLead} 返回 `null`）。
- *   ⇒ 于是"表格行 / 引用块 / 半句话 / 围栏内"这类**形状问题自动消失** —— 不是被规则挡住的，
- *     是模型填不出三要素时**产不出**。这正是"补丁尽量少、原生源码尽量多"。
  */
 export interface DecisionElements {
   /**
    * ① 结论：这个文件为什么存在 —— ★ **短短语**（≤12 字、不带句号/标点）。
-   *   ★ 为什么必须短：抽奖要按**字面**归一，"同一件事"的多种措辞只有在自由度小时才会自然收敛
-   *     （见 {@link normalizeWhy}）。长句/带标点 ⇒ 三次采样永远三个桶 ⇒ 票永远是 1/3（旧病）。
+   *   ★ 为什么必须短：投票要按**字面**归一，"同一件事"的多种措辞只有在自由度小时才会自然收敛
+   *     （见 {@link normalizeWhy}）。长句/带标点 ⇒ 不同证据永远分进不同桶（旧病）。
    *   ★ 详细理由**不在这里**：走 `rationale`（一句话，**不参与归一**）。
    */
   why: string;
-  /** ② 出处：注释位置 `文件:行`（comment/doc）/ `git:<hash>`（gitlog） */
+  /** ② 出处：证据锚点 —— `文件:行`（代码/文档证据）/ `git:<hash>`（历史证据） */
   origin: string;
-  /** ③ 作用对象：该文件（仓库相对路径）/ feature 名（gitlog 提交是 feature 级决策记录） */
+  /** ③ 作用对象：该文件（仓库相对路径） */
   subject: string;
 }
 
 /**
- * 一条「未收敛时落选」的结论：归一后票数 < 最高票的其余 `why`，**带票数**。
- * （不收敛的定义：R 次采样归一后落进**多个**桶。）
+ * 一条「未收敛时落选」的结论：归一后票数 < 最高票的其余 `why`，**带票数与支持它的证据源**。
+ * （不收敛的定义：三份证据归一后落进**多个**桶。）
  */
 export interface AlternativeWhy {
-  /** 该措辞的结论短语（首次落进本桶的采样原文） */
+  /** 该措辞的结论短语（首次落进本桶的证据原文） */
   why: string;
-  /** 票数（1..R-1；至少 1） */
+  /** 票数 = 支持该说法的**证据源个数**（1..2；<= EVIDENCE_SOURCES.length - 1） */
   votes: number;
+  /** ★ 支持该说法的证据源（可归因"这条分歧来自哪份证据"） */
+  evidence_source: EvidenceSource[];
 }
 
 /** 一条「文件为什么存在」的决策（三要素齐备才产得出；`decision` 可**直接落到文件节点的 `decision` 字段**） */
 export interface HarvestCandidate {
-  /** 作用对象：comment/doc = 该文件（仓库相对路径）；gitlog = feature 名 */
+  /** 作用对象：该文件（仓库相对路径） */
   file_path: string;
+  /** 目标文件种类：comment = 源码文件 · doc = 文档文件 */
   source: HarvestSource;
-  /** 出处：comment/doc = `文件:行`（注释/正文位置）；gitlog = `git:<hash>` */
+  /** 出处：证据锚点（`文件:行` 或 `git:<hash>`） */
   ref: string;
   /** 决策本体：可直接落到文件节点的 `decision` 字段（`status` 为 `draft` —— 写回是下一步 D1） */
   decision: NodeDecision;
@@ -101,21 +138,28 @@ export interface HarvestCandidate {
    * （用户裁定：有历史、默认只显示最后一次）。
    */
   decision_history?: DecisionHistoryEntry[];
-  /** 抽奖票数：R 次采样中该结论被抽到几次（1..R；**不收敛时 = 最高票**） */
+  /**
+   * 票数 = **支持该说法（归一化后同一条）的证据源个数**（1..3）。
+   * ★★ 语义变更（T109 之后）：旧版 = 同一提示词抽三次的**稳定性**（恒 1/3、无信息量）；
+   *   本版 = **多源印证** —— 三份证据里有几份得出同一结论 ⇒ 这才是"置信"的本意。
+   */
   votes: number;
-  /** 采样轮数 R（置信 = votes / samples） */
+  /** 本文件**实际取到证据并产出一条 `why`** 的证据源个数（1..3；置信 = votes / samples） */
   samples: number;
   /**
-   * ★ 其余分歧结论（**各带票数**）—— 归一后除最高票外的其余桶，按票数降序；**收敛时为空数组**。
+   * ★ 支持本条结论的证据源（长度 = `votes`）：`code` / `history` / `docs`。
+   * ★ 为什么是数组：收敛（votes>1）时一条结论由**多份**证据共同支持 ⇒ "它来自哪份证据"不是一个值。
+   */
+  evidence_source: EvidenceSource[];
+  /**
+   * ★ 其余分歧结论（**各带票数 + 证据源**）—— 归一后除最高票外的其余桶，按票数降序；**收敛时为空数组**。
    *
-   * ★ 为什么要它：旧版 `pickTop` 取一条就把分歧**丢掉**、假装最高票是唯一答案。现在最高票仍只出一条
-   *   （"一个文件最多一条"不破），但其余措辞**留在这里不丢** ⇒ `votes` 背后到底有没有分歧，看得见。
    * ★ 为什么挂在 **candidate** 而**不是** `NodeDecision.alternatives`：后者语义是「**被否掉的**替代方案 +
-   *   否决原因」——这里的分歧**没被否决**（只是抽奖没抽齐），也没有否决原因；混进去会污染决策卡语义
-   *   （既有字段语义不许动）。本字段是**抽奖的置信信息**，不是文件决策内容。
+   *   否决原因」——这里的分歧**没被否决**（只是投票没投齐），也没有否决原因；混进去会污染决策卡语义
+   *   （既有字段语义不许动）。本字段是**证据投票的置信信息**，不是文件决策内容。
    */
   alternatives: AlternativeWhy[];
-  /** 原始证据（注释原文 / 文档正文片段），供逐条复核 */
+  /** 原始证据（三份证据各自的摘要，带证据源标签），供逐条复核 */
   evidence: string;
   /** 生命周期提示（下线/合并/取代/拆分），供 diff 与归档参考 */
   lifecycle_hint?: LifecycleHint;
@@ -132,33 +176,28 @@ export interface HarvestInput {
   feature: string;
   /** 文档目录（扫描 *.md），默认 <cwd>/docs */
   doc_dir?: string;
-  /** git 仓库根（读 git log），默认 <cwd> */
+  /** git 仓库根（读每个文件的提交历史），默认 <cwd> */
   git_root?: string;
-  /** git 日志条数上限，默认 30 */
+  /** git 日志条数上限（**每个文件**取多少条提交当历史证据），默认 30 */
   limit?: number;
-  /** 显式指定要提取注释的源码文件（绝对路径）；**缺省 = 扫描项目已索引的全部源码文件** */
+  /** 显式指定目标源码文件（绝对路径）；**缺省 = 扫描项目已索引的全部源码文件** */
   comment_files?: string[];
 }
 
-// ──────── 常量（复用 role_title.ts 的批量/并发形状） ────────
+// ──────── 常量 ────────
 
-/**
- * 抽奖轮数 **R = 3**。为什么是 3：
- *   ① 要能区分"稳定 vs 不稳定"，至少需要**一轮平局之外的多数** —— 2 轮只能 1:1 平局，判不出；
- *   ② 3 是最小的**奇数**（多数票不会平局），且"3 次里 2~3 次都抽到"已足够把随机噪声压下去；
- *   ③ 再多轮边际收益迅速变小而成本线性上升（用户指定 R=3）。
- */
-const R = 3;
-/** 每批最多文件数，默认 20（与 role_title 一致，控制单次 payload 长度） */
+/** 每批最多文件数，默认 20（控制单次 payload 长度） */
 const BATCH_SIZE = 20;
-/** 并发批数上限，默认 3（与 role_title 一致） */
+/** 并发批数上限，默认 3 */
 const CONCURRENCY = 3;
-/** 每个文件喂给 LLM 的线索行上限（控制 payload；文档正文尤其需要截断） */
+/** 每份证据每个文件最多喂给 LLM 的线索行数（控制 payload） */
 const MAX_SIGNAL_LINES = 40;
 /** 证据字段截断长度 */
 const EVIDENCE_MAX = 240;
-/** 源码扩展名（"已索引的源码文件"取这些；md 走 doc 策略，其它忽略） */
+/** 源码扩展名（"已索引的源码文件"取这些；md 走 doc 目标，其它忽略） */
 const SOURCE_EXT_RE = /\.(ts|tsx|mts|cts|js|jsx|mjs|cjs|go|py)$/i;
+/** `docs` 证据里**每个目标**最多取几条"文档提及"行（防止一个核心模块被整仓文档淹没） */
+const MAX_DOC_MENTIONS = 3;
 
 const LIFECYCLE_RULES: Array<{ kw: string[]; type: LifecycleHint['type'] }> = [
   { kw: ['弃用', '下线', '废弃', '删除'], type: 'retired' },
@@ -183,16 +222,14 @@ function lifecycleHint(text: string): LifecycleHint | undefined {
 
 type LlmCfg = NonNullable<ReturnType<typeof loadLlmConfig>>;
 
-/** 把讲解后端配置（ExplainConfig）转成通用 LLM 配置（LlmConfig）—— 与 role_title.ts 的 `toLlmCfg` 同形。 */
+/** 把讲解后端配置（ExplainConfig）转成通用 LLM 配置（LlmConfig）。 */
 function toLlmCfg(c: ReturnType<typeof loadExplainConfig>): LlmCfg | null {
   return c ? { apiKey: c.apiKey, model: c.model, baseURL: c.baseURL } : null;
 }
 
 /**
  * ★★ 取得 LLM 配置；**取不到就抛**。
- *
- * role_title.ts 在此处是 `if (!cfg) return {}`（静默降级为"只显示文件名"）—— 本工具**不继承**这条：
- * 判断"这是不是一条决策"本就属"判断"，没有 LLM 就**没有判据** ⇒ 只能失败。
+ * 判断"这个文件为什么存在"本就属"判断"，没有 LLM 就**没有判据** ⇒ 只能失败。
  * 错误消息说清"需要什么"以及"去哪配"（本仓铁律：不许兜底，失败就是失败）。
  */
 function requireLlmConfig(): LlmCfg {
@@ -210,10 +247,7 @@ function requireLlmConfig(): LlmCfg {
 
 /**
  * ★★★ **产出契约**：三要素齐备才构造得出，缺一即"**产不出**"（返回 `null`）。
- *
- * ★ 与"过滤器"的区别就写在这里：过滤器是"先把行收成候选，再按形状规则**丢弃**不合格的"——
- *   于是规则越加越多。这里没有"收下"这一步：{@link DecisionElements} 三要素任一为空
- *   ⇒ 这条决策**根本不存在**。解析口（`askFileBatch` / `askCommitBatch`）**只**把三要素齐备的条目交到这里。
+ * 解析口（{@link askEvidenceBatch}）**只**把三要素齐备的条目交到这里。
  */
 function buildLead(
   el: DecisionElements,
@@ -221,10 +255,11 @@ function buildLead(
     source: HarvestSource;
     votes: number;
     samples: number;
+    evidence_source: EvidenceSource[];
     evidence: string;
     /** 详细理由（一句话，**不参与归一**）—— 落到 `decision.rationale`（NodeDecision 既有字段，语义不变） */
     rationale?: string;
-    /** 其余分歧结论（各带票数）；收敛时缺省 ⇒ 落为空数组 */
+    /** 其余分歧结论（各带票数 + 证据源）；收敛时缺省 ⇒ 落为空数组 */
     alternatives?: AlternativeWhy[];
     lifecycle_hint?: LifecycleHint;
   },
@@ -241,6 +276,7 @@ function buildLead(
     decision,
     votes: rest.votes,
     samples: rest.samples,
+    evidence_source: rest.evidence_source,
     alternatives: rest.alternatives ?? [],
     evidence: rest.evidence,
   };
@@ -248,117 +284,227 @@ function buildLead(
   return lead;
 }
 
-// ──────── git 日志提取 ────────
+// ──────── 目标文件（单位 = 文件） ────────
 
-function gitLogEntries(gitRoot: string, limit: number): Array<{ hash: string; subject: string }> {
-  // ★ 先过 exec_guard：环境里没有 git 时 spawn 会白等约 5.1 秒（实测本工具 5169ms → ~0ms）
-  if (!gitAvailable()) return [];
-  try {
-    const out = execSync(`git log -n ${limit} --pretty=format:%H%x09%s`, {
-      cwd: gitRoot,
-      encoding: 'utf-8',
-      maxBuffer: 4 * 1024 * 1024,
-    });
-    return out
-      .split('\n')
-      .filter(Boolean)
-      .map((line) => {
-        const tab = line.indexOf('\t');
-        return tab > 0 ? { hash: line.slice(0, tab).slice(0, 8), subject: line.slice(tab + 1) } : null;
-      })
-      .filter((x): x is { hash: string; subject: string } => x !== null);
-  } catch {
-    return []; // 非 git 仓库或无 git：静默跳过（git 不可用 ≠ 判据缺失，与"无 LLM"是两回事）
-  }
+/** 一个待判的目标文件（源码文件 / 文档文件） */
+interface TargetFile {
+  /** 仓库相对路径（`/` 分隔）—— 也是"作用对象" */
+  rel: string;
+  /** 绝对路径（读注释/正文用） */
+  abs: string;
+  kind: 'code' | 'doc';
 }
 
-// ──────── 源码注释 / 文档正文 → 带行号的线索 ────────
-
+/** 线索行：`ref` = **完整出处锚点**（`文件:行` 或 `git:<hash>`），`text` = 人读文本 */
 interface SignalLine {
-  line: number;
+  ref: string;
   text: string;
 }
 
-/** 逐文件喂给 LLM 的线索（源码 = 注释块；文档 = 正文前若干非空行）。 */
-interface FileSignal {
-  /** 仓库相对路径（`/` 分隔）—— 也是"作用对象" */
+/** 一份证据（某个文件、某个证据源）：喂给 LLM 的线索 + 截断的原文摘要 */
+interface EvidenceSignal {
   rel: string;
-  kind: 'code' | 'doc';
-  /** 带**真实行号**的线索行（出处 `文件:行` 就从这里来） */
+  evidence_source: EvidenceSource;
   lines: SignalLine[];
-  /** 证据原文（截断） */
   evidence: string;
 }
 
+// ──────── 代码证据（code）：读 cache.db 的 nodes / edges / imports ────────
+
 /**
- * 源码文件 → 注释块线索。只取**块注释**（含 JSDoc 文件头）并保留每条注释的真实行号。
- * ★ 打不出注释块 ⇒ 无"出处"可言 ⇒ 该文件**产不出**（本工具就是把注释提取成决策）。
+ * ★ 证据源 `code`（**取**）：该文件的**符号/导出/依赖/被谁引用**。
+ *
+ * 数据源 = `<projectRoot>/.agent-io/cache.db`（`ensureProjectIndex` 保证已就绪）：
+ *   · `nodes`（file_path = 该文件且 kind != 'file'）= 符号（`name` / `kind` / `signature` / `start_line`）
+ *   · `imports`（file_path = 该文件）= 它 import 了谁（带行号）
+ *   · `edges(kind='import', target = 该文件)` = **谁 import 了它**（入边；文件级，行号不在本文件内）
+ * ★ 取不到（无符号 / 无 import 边 / 文件未索引）⇒ 返回 `null` ⇒ 该证据源对这个文件**缺席**
+ *   （**不**用别的证据顶替 —— 那正是"三份证据退化成三份同一上下文"的旧病）。
  */
-function codeSignal(rel: string, abs: string): FileSignal | null {
-  let content: string;
+function codeEvidence(target: TargetFile, ctx: EvidenceCtx): EvidenceSignal | null {
+  const lines: SignalLine[] = [];
+  const syms = ctx.db
+    .prepare("SELECT kind, name, signature, start_line FROM nodes WHERE file_path = $p AND kind != 'file' ORDER BY start_line")
+    .all({ p: target.rel }) as Array<{ kind: string; name: string; signature: string | null; start_line: number }>;
+  for (const s of syms) {
+    lines.push({ ref: `${target.rel}:${s.start_line}`, text: `[符号] ${s.kind} ${s.name}${s.signature ? ` ${s.signature}` : ''}` });
+    if (lines.length >= MAX_SIGNAL_LINES) break;
+  }
+  if (lines.length < MAX_SIGNAL_LINES) {
+    for (const im of getRawImportsOfFile(ctx.db, target.rel)) {
+      lines.push({ ref: `${target.rel}:${im.line}`, text: `[依赖] import ${im.source}` });
+      if (lines.length >= MAX_SIGNAL_LINES) break;
+    }
+  }
+  const importers = getResolvedImportSources(ctx.db, target.rel);
+  if (importers.length > 0) {
+    // ★ 入边的行号不在本文件内 ⇒ 锚在文件首行（文件节点 start_line=1），并**明说**这是"谁引用我"的汇总线索。
+    lines.push({ ref: `${target.rel}:1`, text: `[被引用] 本文件被 ${importers.length} 个文件 import：${importers.slice(0, 8).join('、')}` });
+  }
+  if (lines.length === 0) return null;
+  return { rel: target.rel, evidence_source: 'code', lines, evidence: lines.map((l) => l.text).join(' ').slice(0, EVIDENCE_MAX) };
+}
+
+// ──────── 历史证据（history）：git log -- <file> ────────
+
+/**
+ * ★ 证据源 `history`（**取**）：该文件的 git 提交（何时出现、改过几次、每次提交的理由 subject）。
+ *   `git log -n <limit> --pretty=format:%h%x09%ad%x09%s --date=short -- <rel>`。
+ * ★ 三种"缺席"（返回 `null`，**如实缺席**、不用别的证据顶替）：
+ *     ① git 不可用 / 不是 git 仓库（`ctx.gitRepoOk === false`）—— 对本仓**整体**无历史证据；
+ *     ② 该文件无提交历史（未被 git 跟踪 / 新文件）；
+ *     ③ 取到的提交全是空 subject。
+ * ★ 其余 git 报错 ⇒ **抛**（不许静默降级：真的失败就是失败）。
+ */
+function historyEvidence(target: TargetFile, ctx: EvidenceCtx): EvidenceSignal | null {
+  if (!ctx.gitRepoOk) return null; // ① 无 git / 非仓库 ⇒ 本证据源整体缺席
+  let out: string;
   try {
-    content = fs.readFileSync(abs, 'utf-8');
-  } catch {
-    return null; // 文件读不到（可能刚被删）：本文件无据可取
+    out = execFileSync(
+      'git',
+      ['log', '-n', String(ctx.limit), '--pretty=format:%h%x09%ad%x09%s', '--date=short', '--', target.rel],
+      { cwd: ctx.gitRoot, encoding: 'utf-8', maxBuffer: 4 * 1024 * 1024 },
+    );
+  } catch (e) {
+    throw new Error(`harvest_decisions：读 '${target.rel}' 的 git 历史失败（不静默降级）：${(e as Error).message}`);
   }
   const lines: SignalLine[] = [];
+  for (const raw of out.split('\n')) {
+    if (!raw.trim()) continue;
+    const [hash, date, subject] = raw.split('\t');
+    if (!hash) continue;
+    lines.push({ ref: `git:${hash}`, text: `${date ?? ''} ${subject ?? ''}`.trim() });
+    if (lines.length >= MAX_SIGNAL_LINES) break;
+  }
+  if (lines.length === 0) return null; // ②③ 该文件无提交历史
+  return { rel: target.rel, evidence_source: 'history', lines, evidence: lines.map((l) => l.text).join(' ').slice(0, EVIDENCE_MAX) };
+}
+
+// ──────── 文档与注释证据（docs）：docs/ 提及 + 自己的注释/正文 ────────
+
+/** 从源码正文抠出块注释（含 JSDoc 文件头），保留**真实行号**。 */
+function commentLines(content: string): SignalLine[] {
+  const out: SignalLine[] = [];
   const re = /\/\*[\s\S]*?\*\//g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(content)) !== null) {
     const startLine = content.slice(0, m.index).split('\n').length;
-    const blockLines = m[0].split('\n');
-    for (let i = 0; i < blockLines.length; i++) {
-      const text = blockLines[i]
+    const block = m[0].split('\n');
+    for (let i = 0; i < block.length; i++) {
+      const text = block[i]
         .replace(/^\s*\/\*+\s?/, '')
         .replace(/^\s*\*+\s?/, '')
         .replace(/\*\/\s*$/, '')
         .trim();
-      if (text) lines.push({ line: startLine + i, text });
+      if (text) out.push({ ref: `${startLine + i}`, text });
     }
   }
-  if (lines.length === 0) return null; // 无注释 ⇒ 无出处 ⇒ 产不出
-  const sliced = lines.slice(0, MAX_SIGNAL_LINES);
-  return {
-    rel,
-    kind: 'code',
-    lines: sliced,
-    evidence: sliced.map((l) => l.text).join(' ').slice(0, EVIDENCE_MAX),
-  };
+  return out;
 }
 
-/** 文档文件 → 正文线索（前若干非空行，带行号）。 */
-function docSignal(rel: string, abs: string): FileSignal | null {
-  let content: string;
-  try {
-    content = fs.readFileSync(abs, 'utf-8');
-  } catch {
-    return null;
-  }
-  const lines: SignalLine[] = [];
+/** 正文非空行（带行号）—— 文档文件的"自己的正文" */
+function bodyLines(content: string): SignalLine[] {
+  const out: SignalLine[] = [];
   for (const [i, raw] of content.split('\n').entries()) {
     const text = raw.trim();
-    if (text) lines.push({ line: i + 1, text });
-    if (lines.length >= MAX_SIGNAL_LINES) break;
+    if (text) out.push({ ref: `${i + 1}`, text });
   }
-  if (lines.length === 0) return null;
-  return {
-    rel,
-    kind: 'doc',
-    lines,
-    evidence: lines.map((l) => l.text).join(' ').slice(0, EVIDENCE_MAX),
-  };
+  return out;
 }
 
-// ──────── LLM 批量问「为什么存在」 ────────
+/** 文档语料（每个 md 文件的 rel + 原文），供"docs/ 里提到它"检索 */
+interface DocCorpusEntry {
+  rel: string;
+  text: string;
+}
 
-/** 单个文件/提交的 LLM 原始命中（已过产出契约：三要素齐备才存在） */
+/**
+ * ★ 证据源 `docs`（**取**）：`docs/` 里**提到它**的地方 + **它自己的文件头注释 / 正文**。
+ *   · 自己的注释/正文：源码文件取块注释（{@link commentLines}），md 文件取正文（{@link bodyLines}）。
+ *   · 文档提及：在文档语料里找**该文件的仓库相对路径**或**basename**（长度 ≥ 6，避免 `index.ts` 这类噪声）。
+ * ★ 两者皆空 ⇒ 返回 `null`（该证据源缺席）。
+ */
+function docsEvidence(target: TargetFile, ctx: EvidenceCtx): EvidenceSignal | null {
+  const lines: SignalLine[] = [];
+  let content: string;
+  try {
+    content = fs.readFileSync(target.abs, 'utf-8');
+  } catch {
+    content = ''; // 文件读不到（可能刚被删）：自己的注释/正文缺席，但"文档提及"仍可能取到
+  }
+  if (content) {
+    const own = target.kind === 'code' ? commentLines(content) : bodyLines(content);
+    for (const l of own) {
+      lines.push({ ref: `${target.rel}:${l.ref}`, text: l.text });
+      if (lines.length >= MAX_SIGNAL_LINES) break;
+    }
+  }
+  // 文档提及：别的 md 里写到本文件（按 rel 精确，或按足够长的 basename）
+  const base = path.posix.basename(target.rel);
+  const key = base.length >= 6 ? base : '';
+  let mentions = 0;
+  for (const d of ctx.docCorpus) {
+    if (d.rel === target.rel) continue;
+    const hit = firstMention(d, target.rel, key);
+    if (!hit) continue;
+    lines.push({ ref: `${d.rel}:${hit.line}`, text: `[文档提及] ${hit.text}` });
+    if (++mentions >= MAX_DOC_MENTIONS || lines.length >= MAX_SIGNAL_LINES) break;
+  }
+  if (lines.length === 0) return null;
+  return { rel: target.rel, evidence_source: 'docs', lines, evidence: lines.map((l) => l.text).join(' ').slice(0, EVIDENCE_MAX) };
+}
+
+/** 在文档 d 里找第一个提及 `rel`（或 `key`=basename）的行；找不到返回 null。 */
+function firstMention(d: DocCorpusEntry, rel: string, key: string): { line: number; text: string } | null {
+  const lines = d.text.split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].includes(rel) || (key && lines[i].includes(key))) {
+      return { line: i + 1, text: lines[i].trim().slice(0, 120) };
+    }
+  }
+  return null;
+}
+
+// ──────── 取证据的调度（★ 可抽出性的落点：每个证据源一个**具名**函数） ────────
+
+interface EvidenceCtx {
+  db: Database;
+  gitRoot: string;
+  /** git 仓库是否可用（一次判定；false ⇒ history 证据整体缺席） */
+  gitRepoOk: boolean;
+  limit: number;
+  docCorpus: DocCorpusEntry[];
+}
+
+/**
+ * ★★ 「读证据」阶段的**唯一分发点**：证据源 → 取数函数。
+ *   三个取数函数（{@link codeEvidence} / {@link historyEvidence} / {@link docsEvidence}）**互不内联**，
+ *   各自读各自的数据源；将来要改成"外部编排并行跑三个"，只需把这一个 `switch` 换成三个并行任务。
+ */
+function evidenceForSource(ev: EvidenceSource, target: TargetFile, ctx: EvidenceCtx): EvidenceSignal | null {
+  switch (ev) {
+    case 'code':
+      return codeEvidence(target, ctx);
+    case 'history':
+      return historyEvidence(target, ctx);
+    case 'docs':
+      return docsEvidence(target, ctx);
+  }
+}
+
+// ──────── 判（LLM，同一套输出契约） ────────
+
+/** 单个文件在**某一份证据**下的 LLM 原始命中（已过产出契约：三要素齐备才存在） */
 interface RawHit {
   key: string;
-  /** 结论短语（参与抽奖归一） */
+  /** 结论短语（参与归一投票） */
   why: string;
   /** 详细理由（一句话，**不参与**归一） */
   rationale: string;
-  refLine: number;
+  /** 出处锚点（逐字取自这份证据的某个 `ref`） */
+  ref: string;
+  /** 本命中来自哪份证据 */
+  evidence_source: EvidenceSource;
 }
 
 /** 从 LLM 文本里抠出 JSON 对象；抠不出 ⇒ **抛**（失败就是失败，不静默当空）。 */
@@ -373,27 +519,18 @@ function extractJsonObject(raw: string): Record<string, unknown> {
   return JSON.parse(s.slice(start, end + 1)) as Record<string, unknown>;
 }
 
-function toPositiveInt(v: unknown): number | null {
-  const n = typeof v === 'number' ? v : Number(v);
-  return Number.isInteger(n) && n >= 1 ? n : null;
-}
-
 /**
- * 归一化「结论短语」—— 抽奖归并的**唯一判据**（★ 本规则唯一住处，别处不得再写一份）。
+ * 归一化「结论短语」—— 投票归并的**唯一判据**（★ 本规则唯一住处，别处不得再写一份）。
  *
  * 五步（顺序固定）：① 去首尾空白 · ② 去**所有**空白 · ③ 去**标点**（中英，含 `、，。：（）` 等）
  *   · ④ 去**单字连接词** `与/和/及/的` · ⑤ 转小写；此后**完全相等**才判为"同一条"。
  *
  * ★ 它归的是**措辞抖动**，不是语义：`配置加载与校验` 与 `配置加载 校验，` ⇒ 同一条。
  * ★ 但 `配置加载` 与 `参数校验` ⇒ **不同条**（真分歧，必须留在两个桶 ⇒ 进 `alternatives`，不许丢）。
- * ★ 为什么不归更多（**不做**同义词替换 / 子串包含 / 编辑距离近似）：一旦"近似也算同一条"，
- *   真分歧就会被**合并吞掉**——那正是本条要修的旧病（"任取一条、假装它是唯一答案"）的镜像。
- *   ⇒ 判据**宁窄勿宽**：宁可把抖动判成分歧（多出一条 `alternatives`），也不许把分歧判成抖动（丢结论）。
- * ★ 为什么加第 ④ 步（旧版只有 ①②③⑤）：实测三次采样的抖动**主要落在连接词**上
- *   （`与` 的有无、`和/及` 的换用）⇒ 不归它，三次永远三桶、票恒 1/3（旧病复现）。
- *
- * ★ 导出（`export`）**只为一件事**：让确定性探针（`.inspect/_w_lottery_probe.mjs`）调**同一个函数**
- *   来展示"哪些字符串被判成同一条"——避免探针另写一份归一（那会造出第二份判据、且可能与实现分叉）。
+ * ★ 为什么加第 ④ 步：实测抖动**主要落在连接词**上（`与` 的有无、`和/及` 的换用）⇒ 不归它，
+ *   几条证据永远几个桶、票恒 1。
+ * ★ **导出**（`export`）**只为一件事**：让确定性探针调**同一个函数**来展示"哪些字符串被判成同一条"。
+ * ★★ 本版**一字未改**（T109 的三案探针靠它）。
  */
 export function normalizeWhy(s: string): string {
   return s
@@ -403,25 +540,33 @@ export function normalizeWhy(s: string): string {
     .toLowerCase();
 }
 
-const FILE_SYSTEM_PROMPT =
-  '你是项目结构解读助手。给定若干文件及其「可读线索」（**源码=注释块**，**文档=正文**，均带行号 L<行号>），' +
-  '请为每个文件回答**唯一**一个问题：**这个文件为什么存在**（它要解决什么问题、为什么需要它）。\n' +
+const EVIDENCE_SYSTEM_PROMPT =
+  '你是项目结构解读助手。给定若干文件，以及这些文件的**一份特定证据**（代码证据 / 历史证据 / 文档与注释证据之一）。' +
+  '每条证据都带**出处**（形如 [文件:行] 或 [git:hash]）。请**只依据给定证据**回答每个文件的唯一问题：' +
+  '**这个文件为什么存在**（它要解决什么问题、为什么需要它）。\n' +
   '要求：\n' +
-  '1. `reason`（**结论**）= 这个文件为什么存在的**短短语**：★ **≤12 个汉字**、**不带句号/标点/空格**，说「为什么」不是「做什么」。' +
-  '   例："配置加载与校验" · "CLI 参数解析入口" · "T93 的容器口径修正"（写成"翻译 Go 到 TS"这类"做什么"是错的）。\n' +
-  '2. `rationale`（**详细理由**）= 一句话把这个短语说清楚（≤40 个汉字，可含依据）。★ 它**不参与**多次采样的比对，只供人读。\n' +
-  '3. ★ 必须能指到给定线索的**某一行**：给出 `ref_line`（该文件里支撑这句话的那一行号）。\n' +
-  '4. ★★ 线索里**看不出**该文件为什么存在 ⇒ **把该文件整个略去**（不要编造，不要给"未知"/"无"）。\n' +
-  '只输出 JSON：{"files":[{"path":"...","reason":"...","rationale":"...","ref_line":123}]}，path 必须来自给定清单。';
+  '1. `reason`（**结论**）= 这个文件为什么存在的**短短语**：★ **≤12 个汉字**、**不带句号/标点/空格**，' +
+  '   说「为什么」不是「做什么」。例："配置加载与校验" · "CLI 参数解析入口"（写成"翻译 Go 到 TS"这类"做什么"是错的）。\n' +
+  '2. `rationale`（**详细理由**）= 一句话把这个短语说清楚（≤40 个汉字，可含依据）。★ 它**不参与**比对，只供人读。\n' +
+  '3. ★ `ref`（**出处**）= 支撑这句话的锚点，必须**逐字**取自给定证据里的某个 `[出处]`。\n' +
+  '4. ★★ 这份证据里**看不出**该文件为什么存在 ⇒ **把该文件整个略去**（不要编造，不要给"未知"/"无"）。\n' +
+  '只输出 JSON：{"files":[{"path":"...","reason":"...","rationale":"...","ref":"..."}]}，path 必须来自给定清单。';
 
-async function askFileBatch(cfg: LlmCfg, batch: FileSignal[]): Promise<RawHit[]> {
-  const known = new Set(batch.map((f) => f.rel));
+/**
+ * ★★ 「判」阶段：**同一套输出契约**，对**一份证据**的一批文件问 LLM。
+ *   三份证据走的是同一个函数、同一个 prompt 形状（只有 `证据源` 标签不同）——这就是"三个 loop 同一个判据"。
+ */
+async function askEvidenceBatch(cfg: LlmCfg, batch: EvidenceSignal[], ev: EvidenceSource): Promise<RawHit[]> {
+  const known = new Set(batch.map((s) => s.rel));
   const listText = batch
-    .map((f, i) => `文件 ${i + 1}（${f.kind === 'code' ? '源码注释' : '文档正文'}）: ${f.rel}\n${f.lines.map((l) => `  L${l.line}: ${l.text}`).join('\n')}`)
+    .map((s, i) => `文件 ${i + 1}: ${s.rel}\n${s.lines.map((l) => `  [${l.ref}] ${l.text}`).join('\n')}`)
     .join('\n\n');
   const raw = await callChat(cfg, [
-    { role: 'system', content: FILE_SYSTEM_PROMPT },
-    { role: 'user', content: `请判断以下 ${batch.length} 个文件各自的「为什么存在」：\n\n${listText}` },
+    { role: 'system', content: EVIDENCE_SYSTEM_PROMPT },
+    {
+      role: 'user',
+      content: `证据源: ${ev}（${EVIDENCE_LABEL[ev]}）\n\n请判断以下 ${batch.length} 个文件各自的「为什么存在」（只依据上面的证据）：\n\n${listText}`,
+    },
   ]);
   const obj = extractJsonObject(raw);
   const files = Array.isArray(obj.files) ? (obj.files as Array<Record<string, unknown>>) : [];
@@ -430,37 +575,9 @@ async function askFileBatch(cfg: LlmCfg, batch: FileSignal[]): Promise<RawHit[]>
     const p = typeof f.path === 'string' ? f.path.trim() : '';
     const why = typeof f.reason === 'string' ? f.reason.trim() : '';
     const rationale = typeof f.rationale === 'string' ? f.rationale.trim() : '';
-    const refLine = toPositiveInt(f.ref_line);
-    // ★ 产出契约在解析口就生效：三要素（已知作用对象 + 结论 + 出处行号）缺一 ⇒ 这条**产不出**（丢弃，不是"收下再筛"）
-    if (known.has(p) && why && refLine !== null) hits.push({ key: p, why, rationale, refLine });
-  }
-  return hits;
-}
-
-const COMMIT_SYSTEM_PROMPT =
-  '你是项目历史解读助手。给定若干 git 提交信息（含短 hash），请判断每条**是不是一条设计决策记录** —— ' +
-  '即"**为什么**做这个改动 / 为什么这么设计"（是**理由**，不是纯粹的功能罗列、typo、格式化、版本号）。\n' +
-  '要求：\n' +
-  '1. 是决策 ⇒ `reason` = **短短语**（★ ≤12 个汉字、**不带句号/标点/空格**、说"为什么"），' +
-  '`rationale` = 一句话详细理由（≤40 字，**不参与**比对）。\n' +
-  '2. ★ 不是决策 ⇒ **把该条整个略去**（不要编造）。\n' +
-  '只输出 JSON：{"decisions":[{"hash":"...","reason":"...","rationale":"..."}]}，hash 必须来自给定清单。';
-
-async function askCommitBatch(cfg: LlmCfg, batch: Array<{ hash: string; subject: string }>): Promise<RawHit[]> {
-  const known = new Set(batch.map((c) => c.hash));
-  const listText = batch.map((c, i) => `${i + 1}. ${c.hash}  ${c.subject}`).join('\n');
-  const raw = await callChat(cfg, [
-    { role: 'system', content: COMMIT_SYSTEM_PROMPT },
-    { role: 'user', content: `请判断以下 ${batch.length} 条提交信息：\n\n${listText}` },
-  ]);
-  const obj = extractJsonObject(raw);
-  const arr = Array.isArray(obj.decisions) ? (obj.decisions as Array<Record<string, unknown>>) : [];
-  const hits: RawHit[] = [];
-  for (const d of arr) {
-    const h = typeof d.hash === 'string' ? d.hash.trim() : '';
-    const why = typeof d.reason === 'string' ? d.reason.trim() : '';
-    const rationale = typeof d.rationale === 'string' ? d.rationale.trim() : '';
-    if (known.has(h) && why) hits.push({ key: h, why, rationale, refLine: 0 }); // 提交无行号；key=hash
+    const ref = typeof f.ref === 'string' ? f.ref.trim() : '';
+    // ★ 产出契约在解析口就生效：三要素（已知作用对象 + 结论 + 出处）缺一 ⇒ 这条**产不出**（丢弃，不是"收下再筛"）
+    if (known.has(p) && why && ref) hits.push({ key: p, why, rationale, ref, evidence_source: ev });
   }
   return hits;
 }
@@ -494,21 +611,29 @@ function chunk<T>(arr: T[], size: number): T[][] {
   return out;
 }
 
-/** 一个归一化结论的票桶：**同一条** `why` 在 R 轮里被抽到几次 */
+// ──────── 写（累进投票 → 一文件一条） ────────
+
+/** 一个归一化结论的票桶：**同一条** `why` 被**几份证据**投到 */
 interface VoteBin {
-  /** 该桶的结论短语（取**首次**落进本桶的那次采样原文） */
+  /** 该桶的结论短语（取**首次**落进本桶的证据原文） */
   why: string;
-  /** 详细理由（**不参与归一**；同样取首次落桶的采样） */
+  /** 详细理由（**不参与归一**；同样取首次落桶的证据） */
   rationale: string;
-  /** 出处行号（首次落桶的采样） */
-  refLine: number;
-  /** 票数：本桶在 R 轮里被抽中的次数 */
+  /** 出处锚点（首次落桶的证据；★ 收敛时只保留第一条 —— 其余证据源见 `evidence_source`） */
+  ref: string;
+  /** 票数 = 支持该说法的**证据源个数** */
   votes: number;
+  /** 支持该说法的证据源（各证据源对同一文件最多投一票 ⇒ 长度 = votes） */
+  evidence_source: EvidenceSource[];
 }
 
-/** 按 key 聚合 R 轮命中的票数：key → 归一化结论 → 票桶 */
+/** 按 key 聚合各证据源的命中：key(rel) → 归一化结论 → 票桶 */
 type VoteTable = Map<string, Map<string, VoteBin>>;
 
+/**
+ * ★ 「写」阶段之一：把一份证据的命中累进票桶。
+ *   ★ 每个证据源对同一个文件**最多贡献一条** `why`（一次调用一次采样）⇒ 同一桶的票数 == 支持它的证据源个数。
+ */
 function accumulate(table: VoteTable, hits: RawHit[]): void {
   for (const h of hits) {
     let byWhy = table.get(h.key);
@@ -518,85 +643,57 @@ function accumulate(table: VoteTable, hits: RawHit[]): void {
     }
     const norm = normalizeWhy(h.why);
     const cur = byWhy.get(norm);
-    if (cur) cur.votes++;
-    else byWhy.set(norm, { why: h.why, rationale: h.rationale, refLine: h.refLine, votes: 1 });
+    if (cur) {
+      cur.votes++;
+      if (!cur.evidence_source.includes(h.evidence_source)) cur.evidence_source.push(h.evidence_source);
+    } else {
+      byWhy.set(norm, { why: h.why, rationale: h.rationale, ref: h.ref, votes: 1, evidence_source: [h.evidence_source] });
+    }
   }
 }
 
 /**
  * 按票数**降序**排出全部桶；**同票保持首次出现顺序**（`[...map.values()]` = 插入序，`sort` 稳定）
- * ⇒ 平局以**稳定序**打破，不靠随机、可复现（旧版 `pickTop` 只取一条、把其余**丢掉**）。
+ * ⇒ 平局以**稳定序**打破，不靠随机、可复现。
  */
 function rankBins(byWhy: Map<string, VoteBin>): VoteBin[] {
   return [...byWhy.values()].sort((a, b) => b.votes - a.votes);
 }
 
-/**
- * 逐文件产出决策（comment / doc 共用）—— **R 轮抽奖**。
- * 返回的每条都已过 {@link buildLead} 的产出契约（三要素齐备）。
- */
-async function extractFileLeads(cfg: LlmCfg, signals: FileSignal[], source: 'comment' | 'doc'): Promise<HarvestCandidate[]> {
-  if (signals.length === 0) return [];
-  const batches = chunk(signals, BATCH_SIZE);
-  const table: VoteTable = new Map();
-  for (let round = 0; round < R; round++) {
-    accumulate(table, await runBatches(batches, (b) => askFileBatch(cfg, b)));
-  }
-  const leads: HarvestCandidate[] = [];
-  for (const sig of signals) {
-    const byWhy = table.get(sig.rel);
-    if (!byWhy) continue; // 该文件 R 轮都没被抽中 ⇒ 产不出
-    const ranked = rankBins(byWhy);
-    const top = ranked[0];
-    // ★★ 不收敛（多个桶）⇒ 其余结论**不丢**，收进 alternatives（各带票数）；**最高票仍只出一条**（一文件一条）
-    const alternatives = ranked.slice(1).map((b) => ({ why: b.why, votes: b.votes }));
-    const lead = buildLead(
-      { why: top.why, origin: `${sig.rel}:${top.refLine}`, subject: sig.rel },
-      {
-        source,
-        votes: top.votes,
-        samples: R,
-        rationale: top.rationale,
-        alternatives,
-        evidence: sig.evidence,
-        lifecycle_hint: lifecycleHint(sig.lines.map((l) => l.text).join(' ')),
-      },
-    );
-    if (lead) leads.push(lead);
-  }
-  return leads;
-}
+/** 目标文件 → 它各份证据的 `evidence` 摘要（供逐条复核） */
+type EvidenceByRel = Map<string, EvidenceSignal[]>;
 
-/** gitlog：逐条提交判「是不是决策记录」—— 同样 R 轮抽奖。 */
-async function extractCommitLeads(
-  cfg: LlmCfg,
-  feature: string,
-  commits: Array<{ hash: string; subject: string }>,
-): Promise<HarvestCandidate[]> {
-  if (commits.length === 0) return [];
-  const batches = chunk(commits, BATCH_SIZE);
-  const table: VoteTable = new Map();
-  for (let round = 0; round < R; round++) {
-    accumulate(table, await runBatches(batches, (b) => askCommitBatch(cfg, b)));
-  }
-  const byHash = new Map(commits.map((c) => [c.hash, c.subject]));
+/**
+ * ★ 「写」阶段之二：逐目标产出决策（**一个文件最多一条**）。
+ *   票最多者 → `decision`；其余桶 → `alternatives`（各带票数 + 证据源）。
+ *   返回的每条都已过 {@link buildLead} 的产出契约（三要素齐备）。
+ */
+function writeCandidates(targets: TargetFile[], table: VoteTable, evidenceByRel: EvidenceByRel): HarvestCandidate[] {
   const leads: HarvestCandidate[] = [];
-  for (const [hash, byWhy] of table) {
+  for (const t of targets) {
+    const byWhy = table.get(t.rel);
+    if (!byWhy) continue; // 该文件三份证据都没产出 why ⇒ 产不出
     const ranked = rankBins(byWhy);
     const top = ranked[0];
-    // ★★ 同 comment/doc：不收敛时其余结论进 alternatives（各带票数），最高票仍只出一条
-    const alternatives = ranked.slice(1).map((b) => ({ why: b.why, votes: b.votes }));
-    const subject = byHash.get(hash) ?? '';
+    // ★★ 不收敛（多个桶）⇒ 其余结论**不丢**，收进 alternatives（各带票数 + 证据源）；**最高票仍只出一条**
+    const alternatives: AlternativeWhy[] = ranked
+      .slice(1)
+      .map((b) => ({ why: b.why, votes: b.votes, evidence_source: b.evidence_source }));
+    // samples = 本文件实际产出 why 的证据源个数 = 各桶票数之和（每源对每文件最多一票）
+    const samples = ranked.reduce((s, b) => s + b.votes, 0);
+    const sigs = evidenceByRel.get(t.rel) ?? [];
+    const evidence = sigs.map((s) => `[${s.evidence_source}] ${s.evidence}`).join(' | ').slice(0, EVIDENCE_MAX * 3);
     const lead = buildLead(
-      { why: top.why, origin: `git:${hash}`, subject: feature },
+      { why: top.why, origin: top.ref, subject: t.rel },
       {
-        source: 'gitlog',
+        source: t.kind === 'code' ? 'comment' : 'doc',
         votes: top.votes,
-        samples: R,
+        samples,
+        evidence_source: top.evidence_source,
         rationale: top.rationale,
         alternatives,
-        evidence: subject,
-        lifecycle_hint: lifecycleHint(subject),
+        evidence,
+        lifecycle_hint: lifecycleHint(sigs.map((s) => s.lines.map((l) => l.text).join(' ')).join(' ')),
       },
     );
     if (lead) leads.push(lead);
@@ -624,39 +721,71 @@ function relOf(root: string, abs: string): string {
   return (path.relative(root, abs) || abs).split(path.sep).join('/');
 }
 
-/** 项目已索引的源码文件（读 cache.db 的 `files` 表；口径 = "该 feature 已索引的源码文件"）。 */
-function indexedSourceFiles(db: Database, root: string): FileSignal[] {
-  const rows = db.prepare('SELECT path FROM files').all() as Array<{ path: string }>;
-  const signals: FileSignal[] = [];
-  for (const r of rows) {
-    if (!SOURCE_EXT_RE.test(r.path)) continue;
-    const sig = codeSignal(r.path, path.join(root, r.path));
-    if (sig) signals.push(sig);
-  }
-  signals.sort((a, b) => a.rel.localeCompare(b.rel));
-  return signals;
-}
-
 /** 显式指定的源码文件（绝对/相对皆可） */
-function explicitCommentFiles(files: string[], root: string): FileSignal[] {
-  const signals: FileSignal[] = [];
+function explicitCodeTargets(files: string[], root: string): TargetFile[] {
+  const out: TargetFile[] = [];
   for (const f of files) {
     const abs = path.isAbsolute(f) ? f : path.join(root, f);
     if (!SOURCE_EXT_RE.test(abs)) continue;
-    const sig = codeSignal(relOf(root, abs), abs);
-    if (sig) signals.push(sig);
+    out.push({ rel: relOf(root, abs), abs, kind: 'code' });
   }
-  return signals;
+  return out;
 }
 
-function docSignals(docDir: string, root: string): FileSignal[] {
-  const signals: FileSignal[] = [];
-  for (const md of collectMdFiles(docDir)) {
-    const sig = docSignal(relOf(root, md), md);
-    if (sig) signals.push(sig);
+/** 项目已索引的源码文件（读 cache.db 的 `files` 表） */
+function indexedCodeTargets(db: Database, root: string): TargetFile[] {
+  const rows = db.prepare('SELECT path FROM files').all() as Array<{ path: string }>;
+  const out: TargetFile[] = [];
+  for (const r of rows) {
+    if (!SOURCE_EXT_RE.test(r.path)) continue;
+    out.push({ rel: r.path, abs: path.join(root, r.path), kind: 'code' });
   }
-  signals.sort((a, b) => a.rel.localeCompare(b.rel));
-  return signals;
+  out.sort((a, b) => a.rel.localeCompare(b.rel));
+  return out;
+}
+
+/** 文档目录下的 md 目标（相对路径 + 绝对路径） */
+function docTargets(docDir: string, root: string): TargetFile[] {
+  const out: TargetFile[] = [];
+  for (const md of collectMdFiles(docDir)) out.push({ rel: relOf(root, md), abs: md, kind: 'doc' });
+  out.sort((a, b) => a.rel.localeCompare(b.rel));
+  return out;
+}
+
+/** 读文档语料（供 `docs` 证据检索"谁提到了它"）；★ 读不到的 md **不静默跳过**，会进语料为空串。 */
+function readDocCorpus(docDir: string, root: string): DocCorpusEntry[] {
+  const out: DocCorpusEntry[] = [];
+  for (const md of collectMdFiles(docDir)) {
+    let text = '';
+    try {
+      text = fs.readFileSync(md, 'utf-8');
+    } catch {
+      text = '';
+    }
+    out.push({ rel: relOf(root, md), text });
+  }
+  return out;
+}
+
+// ──────── git 仓库判定 ────────
+
+/**
+ * git 仓库是否可用（**只判一次**）。`gitAvailable()`=false 或 `git rev-parse` 失败 ⇒ false。
+ * ★ 这不是"静默降级"：它明确回答"这一份证据源在本仓是否存在"，`historyEvidence` 据此**如实缺席**
+ *   （返回 null ⇒ 该证据源不投票），而不是编造/顶替。
+ */
+function isGitRepo(gitRoot: string): boolean {
+  if (!gitAvailable()) return false;
+  try {
+    const out = execFileSync('git', ['rev-parse', '--is-inside-work-tree'], {
+      cwd: gitRoot,
+      encoding: 'utf-8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+    return out.trim() === 'true';
+  } catch {
+    return false; // 非 git 仓库：本证据源整体缺席（不是错误）
+  }
 }
 
 // ──────── 主入口 ────────
@@ -666,49 +795,74 @@ async function harvestDecisionsCore(input: HarvestInput): Promise<HarvestResult>
   const cfg = requireLlmConfig(); // ★ 没有 LLM ⇒ 当场抛（早于任何扫描）
   const limit = input.limit ?? 30;
   // ★ 注释扫描锚定 **进程当前目录**（= 被分析的项目；与 `doc_dir` 默认根 `<cwd>/docs` 同一口径）。
-  //   不锚 `git_root` —— 那是"git 仓库根"，只管 git log；两者含义不同，不该混用一个根。
   const projectRoot = path.resolve(process.cwd());
   const gitRoot = path.resolve(input.git_root ?? process.cwd());
   const docDir = input.doc_dir ?? path.join(process.cwd(), 'docs');
 
-  // git 日志：提交 subject 即"为什么改"的一手线索 —— 仍走**同一条 LLM 判定**（不是关键词）
-  const commits = gitLogEntries(gitRoot, limit);
-  const commitLeads = await extractCommitLeads(cfg, feature, commits);
+  // 目标文件：源码文件（显式或已索引）+ 文档 md
+  const { db } = await ensureProjectIndex(projectRoot); // 代码证据需要符号索引（零前置：空库就地冷启）
+  const codeTargets = input.comment_files?.length
+    ? explicitCodeTargets(input.comment_files, projectRoot)
+    : indexedCodeTargets(db, projectRoot);
+  const docT = docTargets(docDir, projectRoot);
+  const targets: TargetFile[] = [...codeTargets, ...docT];
 
-  // 注释：默认扫**项目已索引的源码文件**（不必调用方列文件）；显式传 comment_files 时只扫这些
-  let commentSignals: FileSignal[];
-  let scannedComment: number;
-  if (input.comment_files?.length) {
-    commentSignals = explicitCommentFiles(input.comment_files, projectRoot);
-    scannedComment = input.comment_files.length;
-  } else {
-    const { db } = await ensureProjectIndex(projectRoot);
-    commentSignals = indexedSourceFiles(db, projectRoot);
-    scannedComment = commentSignals.length;
+  const ctx: EvidenceCtx = {
+    db,
+    gitRoot,
+    gitRepoOk: isGitRepo(gitRoot),
+    limit,
+    docCorpus: readDocCorpus(docDir, projectRoot),
+  };
+
+  // ★★★ 三个 loop = 三份证据：每份证据**各自取、各自判**，命中累进同一张票表
+  const table: VoteTable = new Map();
+  const evidenceByRel: EvidenceByRel = new Map();
+  const perSource: Record<EvidenceSource, { signals: number; chars: number }> = {
+    code: { signals: 0, chars: 0 },
+    history: { signals: 0, chars: 0 },
+    docs: { signals: 0, chars: 0 },
+  };
+  for (const ev of EVIDENCE_SOURCES) {
+    // ① 读：取这一份证据（逐目标；取不到即缺席）
+    const signals: EvidenceSignal[] = [];
+    for (const t of targets) {
+      const sig = evidenceForSource(ev, t, ctx);
+      if (!sig) continue;
+      signals.push(sig);
+      const arr = evidenceByRel.get(t.rel) ?? [];
+      arr.push(sig);
+      evidenceByRel.set(t.rel, arr);
+      perSource[ev].signals++;
+      perSource[ev].chars += sig.evidence.length;
+    }
+    if (signals.length === 0) continue; // 本证据源在本仓/本批整体缺席 ⇒ 不投任何票
+    // ② 判：LLM（同一套输出契约）
+    const hits = await runBatches(chunk(signals, BATCH_SIZE), (b) => askEvidenceBatch(cfg, b, ev));
+    // ③ 写：命中累进票桶
+    accumulate(table, hits);
   }
-  const commentLeads = await extractFileLeads(cfg, commentSignals, 'comment');
 
-  // 文档：逐个 md 文件问同一个问题
-  const docs = docSignals(docDir, projectRoot);
-  const docLeads = await extractFileLeads(cfg, docs, 'doc');
-
-  const candidates = [...commentLeads, ...docLeads, ...commitLeads];
+  const candidates = writeCandidates(targets, table, evidenceByRel);
   const nOf = (s: HarvestSource) => candidates.filter((c) => c.source === s).length;
+  const conv = candidates.filter((c) => c.votes > 1).length;
 
   const lines = [
     `harvest_decisions [${feature}] 产出 ${candidates.length} 条决策（三要素齐备：结论 / 出处 / 作用对象）`,
-    `  来源: comment ${nOf('comment')} · doc ${nOf('doc')} · gitlog ${nOf('gitlog')} · 抽奖 R=${R}（置信 = votes/${R}；**不收敛**⇒其余结论进 alternatives，不丢）`,
-    `  扫描: 源码 ${scannedComment} 个（有注释块）/ 提交 ${commits.length} 条 / 文档 ${docs.length} 个`,
+    `  目标: 源码 ${codeTargets.length} 个 / 文档 ${docT.length} 个 · git_root=${gitRoot}（有历史证据: ${ctx.gitRepoOk ? '是' : '否'}）`,
+    `  ★ 三份证据各自取数: code ${perSource.code.signals} 个文件(${perSource.code.chars} 字) · history ${perSource.history.signals} 个(${perSource.history.chars} 字) · docs ${perSource.docs.signals} 个(${perSource.docs.chars} 字)`,
+    `  ★ votes = 支持该说法的**证据源个数**（1..3，多源印证 = 置信）；多源收敛 ${conv} 条 · 来源: comment ${nOf('comment')} · doc ${nOf('doc')}`,
     '',
     ...candidates.map((c, i) => {
       const lh = c.lifecycle_hint ? `  ⚠ lifecycle:${c.lifecycle_hint.type}` : '';
       const alt = c.alternatives.length
-        ? `  分歧: ${c.alternatives.map((a) => `${a.why}(${a.votes}票)`).join(' · ')}`
+        ? `  分歧: ${c.alternatives.map((a) => `${a.why}(${a.votes}票←${a.evidence_source.join('+')})`).join(' · ')}`
         : '';
       return (
-        `  ${i + 1}. [${c.source}] ${c.decision.summary}  置信 ${c.votes}/${c.samples}${lh}${alt}\n` +
+        `  ${i + 1}. [${c.source}] ${c.decision.summary}  证据 ${c.votes}/${c.samples}${lh}${alt}\n` +
         `      ↳ 作用对象: ${c.file_path}\n` +
         `      ↳ 出处: ${c.ref}\n` +
+        `      ↳ 证据源: ${c.evidence_source.join('+')}\n` +
         `      ↳ 证据: ${c.evidence}`
       );
     }),
@@ -720,10 +874,6 @@ async function harvestDecisionsCore(input: HarvestInput): Promise<HarvestResult>
 
 /**
  * ★ 唯一的构造点：把"我动了什么"集中算一次，所有出口都从这一个地方出去。
- *
- * 口径（`Touched` 两类字段，见 domain/b_terms.ts:42-89）：
- *   - 作用域类（`project_dir` / `feature`）：随时可给，不依赖成败；
- *   - 对象类（`written_files` / `symbols` / `nodes`）：只有**真发生**才给，否则整项省略。
  */
 function touchedOf(input: HarvestInput): Touched {
   const touched: Touched = {};
@@ -731,10 +881,7 @@ function touchedOf(input: HarvestInput): Touched {
   // feature：作用域类，随时可给（入参必填）。★ 产物顶层**也有** `feature`，属"同一事实两个名字"。
   touched.feature = input.feature;
 
-  // ★ 不给 project_dir：入参里**没有** project_dir（只有 `doc_dir` 与 `git_root`）。二者都不是
-  //   "被分析项目的根"，且缺省回落 `process.cwd()`（那是"进程当前目录"，不是本次调用**确立的对象**）。
-  //   按"不猜"口径 ⇒ **整项省略**。
-
+  // ★ 不给 project_dir：入参里**没有** project_dir（只有 `doc_dir` 与 `git_root`）。
   // ★ 不给 written_files：本 [B] 只产出 draft 决策、**不写任何文件/DSL**（写回是下一步 D1）。
   // ★ 不给 symbols / nodes：决策线索里没有符号 / DSL 节点标识可取。
 

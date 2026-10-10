@@ -259,7 +259,7 @@ export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
   reconcile_effects: '对账函数/模块的实际效应与契约',
   memory_observe: '外部进程内存观测（CDP 外连，不插目标进程）：action=targets 列出本机 --inspect 进程 / status/baseline/track/gc/snapshot 定位 JS 堆 vs native 泄漏方向',
   recommend_observe_points: '★ 推荐该在哪打观测点（索引/图 + AST 语义打分，不做全量插桩）；输出可编辑清单 + 每条的理由',
-  harvest_decisions: '逐个文件问 LLM「这个文件为什么存在」产出决策线索（注释/文档/提交；三要素契约；无 LLM 报错）',
+  harvest_decisions: '逐个文件问 LLM「这个文件为什么存在」产出决策线索（三份证据 code/history/docs 各抽一次；votes=支持证据数；三要素契约；无 LLM 报错）',
   harvest_closure: '扫描闭包出产入盒三件套',
   extract_contracts: '从代码提取契约（多语言 AST）',
   sync_contracts: '以注册表 zod schema 回填 DSL expected_apis',
