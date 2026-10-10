@@ -55,7 +55,14 @@ export const HARVEST_TOOLS: ToolDef[] = [
       feature: z.string().describe('feature 名（候选挂载目标）'),
       doc_dir: z.string().optional().describe('文档目录（扫描 *.md），默认 <cwd>/docs'),
       git_root: z.string().optional().describe('git 仓库根（读 git log），默认 <cwd>'),
-      limit: z.number().optional().describe('git 日志条数上限，默认 30'),
+      limit: z
+        .number()
+        .optional()
+        .describe(
+          '产出条数上限（**可选**）：判开（candidates）与判关（evidence_by_file）两档都生效，超出即截断' +
+            '（回执明写"共 N 条、只显示前 M 条"，不静默）。★ **不传 = 不设上限**（返回全部，行为与改造前一致）。' +
+            '★ 每文件 git 历史条数由独立常量 GIT_LOG_LIMIT=30 控制，不受本参数影响。',
+        ),
       comment_files: z
         .array(z.string())
         .optional()

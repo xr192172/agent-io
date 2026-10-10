@@ -478,7 +478,17 @@ export async function chatViaGateway(
     }
   }
   // 保留最后一次错误为 cause（调用方据此判定超时/网络类可重试；不吞原始错误）。
-  throw new Error(`网关所有可用端点均失败：${(lastErr as Error)?.message ?? lastErr}`, { cause: lastErr });
+  // ★★ 2026-10-10（T-e2e 顺带）：**不改语义**，只补一句**可操作线索**，让"本机到不了它"与"它坏了"能分开。
+  //   实测教训：`fetch failed` 极易被误读成"上游不稳定"，而真相可能是**本机到不了境外** ——
+  //   两者给出的是**同一句**网络层错误，光看这句**无从区分**。一个对照探针就能定性。
+  throw new Error(
+    `网关所有可用端点均失败：${(lastErr as Error)?.message ?? lastErr}\n` +
+      `★ 线索（不改上句判定，只帮你定性「本机到不了它」还是「它坏了」）：像 \`fetch failed\` 这类网络层错误，` +
+      `本机出网问题与境外上游故障**给出同一句**。先跑一个**非境外**站点做对照探针 —— 通了 ⇒ 本机能出网、` +
+      `更可能是境外上游/中转；不通 ⇒ 先查本机网络/代理。例：` +
+      `\`curl -sS -o /dev/null -w '%{http_code}\\n' https://www.baidu.com\`。`,
+    { cause: lastErr },
+  );
 }
 
 /** 测试单供应商连通性（发一条 ping，不影响用量统计） */

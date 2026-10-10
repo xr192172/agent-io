@@ -219,7 +219,15 @@ export interface HarvestInput {
   doc_dir?: string;
   /** git 仓库根（读每个文件的提交历史），默认 <cwd> */
   git_root?: string;
-  /** git 日志条数上限（**每个文件**取多少条提交当历史证据），默认 30 */
+  /**
+   * ★★ **产出条数上限**（2026-10-10，T-e2e Bug3 修），**可选**。
+   *   · **判开**：产出（`candidates`）最多给这么多条；**判关**：降级证据（`evidence_by_file`）最多给这么多条。
+   *   · ★ **不传 = 不设上限**（返回全部，行为与改造前一致；回归判据要求"不传 limit 行为不变"）。
+   *   · ★ 两档**都生效** —— 此前它只在「取证据」阶段当 `git log -n` 用（每文件历史条数），
+   *     而**产出列表一点没被它限制**（实测 `judge:false, limit:4` 出 458 条）⇒ 与入参字面义对不上（同名不同义）。
+   *   · ⇒ 现拆开：`limit` = **产出条数上限**（显式才截断）；每文件 git 历史条数改用独立常量 `GIT_LOG_LIMIT`（见下）。
+   *   · ★ 截断**不静默**：回执会写明"共取到 N 条、按 limit 只显示前 M 条"。
+   */
   limit?: number;
   /** 显式指定目标源码文件（绝对路径）；**缺省 = 扫描项目已索引的全部源码文件** */
   comment_files?: string[];
@@ -240,6 +248,13 @@ const BATCH_SIZE = 20;
 const CONCURRENCY = 3;
 /** 每份证据每个文件最多喂给 LLM 的线索行数（控制 payload） */
 const MAX_SIGNAL_LINES = 40;
+/**
+ * ★★ 每文件 `git log -n` 的条数上限（2026-10-10，T-e2e Bug3 修）。
+ *   ★ **独立常量**、不再借用入参 `limit` —— `limit` 现是**产出条数上限**（见 `HarvestInput.limit` 注释）。
+ *     两者曾共用一个值（`ctx.limit`）⇒ 一个入参两个含义（本仓头号病「同名不同义」），现拆开。
+ *   口径不变（默认 30，与原默认一致）。
+ */
+const GIT_LOG_LIMIT = 30;
 /** 证据字段截断长度 */
 const EVIDENCE_MAX = 240;
 /** 源码扩展名（"已索引的源码文件"取这些；md 走 doc 目标，其它忽略） */
@@ -405,7 +420,7 @@ function codeEvidence(target: TargetFile, ctx: EvidenceCtx): EvidenceSignal | nu
 
 /**
  * ★ 证据源 `history`（**取**）：该文件的 git 提交（何时出现、改过几次、每次提交的理由 subject）。
- *   `git log -n <limit> --pretty=format:%h%x09%ad%x09%s --date=short -- <rel>`。
+ *   `git log -n <GIT_LOG_LIMIT> --pretty=format:%h%x09%ad%x09%s --date=short -- <rel>`。
  * ★ 三种"缺席"（返回 `null`，**如实缺席**、不用别的证据顶替）：
  *     ① git 不可用 / 不是 git 仓库（`ctx.gitRepoOk === false`）—— 对本仓**整体**无历史证据；
  *     ② 该文件无提交历史（未被 git 跟踪 / 新文件）；
@@ -418,7 +433,7 @@ function historyEvidence(target: TargetFile, ctx: EvidenceCtx): EvidenceSignal |
   try {
     out = execFileSync(
       'git',
-      ['log', '-n', String(ctx.limit), '--pretty=format:%h%x09%ad%x09%s', '--date=short', '--', target.rel],
+      ['log', '-n', String(ctx.gitLogLimit), '--pretty=format:%h%x09%ad%x09%s', '--date=short', '--', target.rel],
       { cwd: ctx.gitRoot, encoding: 'utf-8', maxBuffer: 4 * 1024 * 1024 },
     );
   } catch (e) {
@@ -528,7 +543,8 @@ interface EvidenceCtx {
   gitRoot: string;
   /** git 仓库是否可用（一次判定；false ⇒ history 证据整体缺席） */
   gitRepoOk: boolean;
-  limit: number;
+  /** 每文件 `git log -n` 的条数上限（**独立常量** `GIT_LOG_LIMIT`；不再借用入参 `limit`，见其注释） */
+  gitLogLimit: number;
   docCorpus: DocCorpusEntry[];
 }
 
@@ -846,6 +862,17 @@ function isGitRepo(gitRoot: string): boolean {
 
 // ──────── 主入口 ────────
 
+/**
+ * ★★ 产出条数上限（2026-10-10，T-e2e Bug3）：判开（`candidates`）与判关（`evidence_by_file`）**共用**。
+ *   ★ 单一落点：两档各写一份 `slice` 就是本仓最反对的"判据分叉"。
+ *   ★★ **不传 `limit` ⇒ 不设上限**（返回原列表，行为与改造前一致）——
+ *     这是回归判据要求的（"judge:false 不传 limit 时行为不变"）：上限是**可选项**，不是默认开。
+ *   `limit` 显式给出时才截断；非正数 ⇒ 空列表（不静默当"无限"）。
+ */
+function applyOutputLimit<T>(xs: T[], limit: number | undefined): T[] {
+  return limit === undefined ? xs : xs.slice(0, Math.max(0, limit));
+}
+
 async function harvestDecisionsCore(input: HarvestInput): Promise<HarvestResult> {
   const { feature } = input;
   // ★★ 「判」的档位（见文件头）：入参**显式优先**；不传则**自动检测**（有密钥 ⇒ 判开）。
@@ -866,7 +893,8 @@ async function harvestDecisionsCore(input: HarvestInput): Promise<HarvestResult>
   }
   const cfg = judged ? requireLlmConfig() : null;
 
-  const limit = input.limit ?? 30;
+  // ★★ 产出条数上限（判开/判关两档都生效；见 HarvestInput.limit）。**不传 = 不设上限**（保留改造前行为）。
+  const limit = input.limit;
   // ★ 注释扫描锚定 **进程当前目录**（= 被分析的项目；与 `doc_dir` 默认根 `<cwd>/docs` 同一口径）。
   const projectRoot = path.resolve(process.cwd());
   const gitRoot = path.resolve(input.git_root ?? process.cwd());
@@ -884,7 +912,8 @@ async function harvestDecisionsCore(input: HarvestInput): Promise<HarvestResult>
     db,
     gitRoot,
     gitRepoOk: isGitRepo(gitRoot),
-    limit,
+    // ★ 每文件 git 历史条数 = **独立常量**（与产出上限 `limit` 解耦，见 GIT_LOG_LIMIT）
+    gitLogLimit: GIT_LOG_LIMIT,
     docCorpus: readDocCorpus(docDir, projectRoot),
   };
 
@@ -924,11 +953,16 @@ async function harvestDecisionsCore(input: HarvestInput): Promise<HarvestResult>
       const hits = await runBatches(chunk(signals, BATCH_SIZE), (b) => askEvidenceBatch(cfg, b, ev));
       accumulate(table, hits);
     }
-    const candidates = writeCandidates(targets, table, evidenceByRel);
+    const allCandidates = writeCandidates(targets, table, evidenceByRel);
+    // ★★ 产出条数上限（判开档同样生效；见 HarvestInput.limit）。截断**不静默**：回执明写总量。
+    const candidates = applyOutputLimit(allCandidates, limit);
     const nOf = (s: HarvestSource) => candidates.filter((c) => c.source === s).length;
     const conv = candidates.filter((c) => c.votes > 1).length;
     const lines = [
-      `harvest_decisions [${feature}] **判开** ⇒ 产出 ${candidates.length} 条决策（三要素齐备：结论 / 出处 / 作用对象）`,
+      `harvest_decisions [${feature}] **判开** ⇒ 产出 ${allCandidates.length} 条决策（三要素齐备：结论 / 出处 / 作用对象）`,
+      ...(allCandidates.length > candidates.length
+        ? [`  ★ 已按 limit=${limit} 截断：下面只显示前 ${candidates.length} 条（要全部请调大 limit）。`]
+        : []),
       targetLine,
       evidenceLine,
       `  ★ votes = 支持该说法的**证据源个数**（1..3，多源印证 = 置信）；多源收敛 ${conv} 条 · 来源: comment ${nOf('comment')} · doc ${nOf('doc')}`,
@@ -953,9 +987,14 @@ async function harvestDecisionsCore(input: HarvestInput): Promise<HarvestResult>
   }
 
   // ── 判关：降级成"只给三份证据"（**让调用方自己判**）──
-  const evidenceByFile = buildEvidenceByFile(targets, evidenceByRel);
+  const allEvidence = buildEvidenceByFile(targets, evidenceByRel);
+  // ★★ 产出条数上限（判关档也生效；见 HarvestInput.limit）。截断**不静默**：回执明写总量。
+  const evidenceByFile = applyOutputLimit(allEvidence, limit);
   const lines = [
     `harvest_decisions [${feature}] ★★ **本次没判**（${degradeReason}）⇒ 已降级为「**只给三份证据**」`,
+    ...(allEvidence.length > evidenceByFile.length
+      ? [`  ★ 已按 limit=${limit} 截断：本次共取到 ${allEvidence.length} 个文件的证据，下面只显示前 ${evidenceByFile.length} 个（要全部请调大 limit）。`]
+      : []),
     '  ★ 这是**降级**，不是失败：下面给的是**未经 LLM 判断**的原始证据，请调用方**自己判**「每个文件为什么存在」。',
     targetLine,
     evidenceLine,

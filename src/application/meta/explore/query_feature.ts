@@ -47,7 +47,7 @@ import { listSnapshots } from '../../design/lifecycle/snapshot.js';
 import { listTemplates } from '../../design/lifecycle/templates.js';
 import { getSimulationState } from '../../design/lifecycle/simulation.js';
 import { diffFeatures } from '../../../infrastructure/analysis/impact/diff.js';
-import type { Node, Edge } from '../../../domain/geometry.js';
+import type { Node, Edge, NodeDecision } from '../../../domain/geometry.js';
 import type { SemanticFile } from '../../../domain/semantic.js';
 import { getProjectCacheDb } from '../../../infrastructure/index/db.js';
 import type { Database } from '../../../infrastructure/index/db.js';
@@ -469,6 +469,15 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
         for (const alt of d.alternatives ?? []) {
           lines.push(`    替代「${alt.option}」被否: ${alt.rejected_because}`);
         }
+        // ★★ 2026-10-10（T-e2e Bug1）：**未决分歧必须给人看见** —— "分歧可见"首先是给人读的。
+        //   它住 `decision.dissent`（**不是** `alternatives`：那已是"被否掉 + 否决原因"）。
+        //   ★ 以前人话段**不渲染** `dissent` ⇒ 分歧只在 JSON 里、读端看不见 ⇒ "以设计为准往设计上靠拢"
+        //     这条链**没有输入**（端到端没闭环）。这里如实列出：待对拍，**不**说成"已排除"。
+        for (const ds of d.dissent ?? []) {
+          const votes = ds.votes !== undefined ? ` · ${ds.votes} 票` : '';
+          const src = ds.evidence_source?.length ? ` · 证据源 ${ds.evidence_source.join('+')}` : '';
+          lines.push(`    未决分歧「${ds.option}」${votes}${src} —— 待对拍（未裁定，非已排除）`);
+        }
         if (d.consequences) lines.push(`    后果: ${d.consequences}`);
         if (d.acceptance) lines.push(`    验收: ${d.acceptance}`);
         // 版本史：decision_history 旧→新（当前版在 decision 字段，不入栈）
@@ -509,10 +518,14 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
 
       // 决策向上并集（易读分层口径）：本节点自有决策 + 全部后代（host/detail 子节点 + sub_dsl 内节点，递归收集）
       // 单点所有于稳定叶子，可读层（L1–L3）只投影并集——不复制。
-      const ownDec = node.decision
-        ? [{ summary: node.decision.summary, status: node.decision.status ?? 'active', thread: node.decision.thread }]
+      // ★★ 2026-10-10（T-e2e Bug1）：**透出完整的 `decision`**（含 dissent / votes / evidence_source /
+      //   rationale / alternatives / consequences / acceptance / author / updated_at）。
+      //   旧投影只留 {summary,status,thread} ⇒ 读端**看不见分歧** ⇒ "以设计为准、往设计上靠拢"无从发生
+      //   （端到端没闭环）。这里 spread 整个 `decision`，只对**缺省**的 `status` 补 'active'（不丢原字段）。
+      const ownDec: Array<NodeDecision & { status: string }> = node.decision
+        ? [{ ...node.decision, status: node.decision.status ?? 'active' }]
         : [];
-      const descDec: Array<{ id: string; summary: string; status: string; thread?: string }> = [];
+      const descDec: Array<{ id: string } & NodeDecision & { status: string }> = [];
       const queue: Array<unknown> = [];
       const pushChildren = (cur: unknown) => {
         const c = cur as { id?: string; sub_dsl?: { geometry?: { nodes?: unknown[] } } };
@@ -522,9 +535,9 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
       };
       pushChildren(node);
       while (queue.length) {
-        const cur = queue.shift() as { decision?: { summary: string; status?: string; thread?: string }; host?: string };
+        const cur = queue.shift() as { id?: string; decision?: NodeDecision; host?: string };
         if (cur.decision) {
-          descDec.push({ id: (cur as { id?: string }).id ?? '', summary: cur.decision.summary, status: cur.decision.status ?? 'active', thread: cur.decision.thread });
+          descDec.push({ id: cur.id ?? '', ...cur.decision, status: cur.decision.status ?? 'active' });
         }
         pushChildren(cur);
       }
@@ -606,13 +619,20 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
 
       return {
         message: lines.join('\n'),
+        // ★★ 2026-10-10（T-e2e Bug1）：**透出完整的 `decision`**（含 dissent / votes / evidence_source /
+        //   rationale / alternatives / consequences / acceptance / author / updated_at / thread / tags）。
+        //   旧投影只留 {node_id,label,thread,status,summary,tags,revisions} ⇒ 读端**看不见分歧**，
+        //   "以设计为准、往设计上靠拢"这条链**没有输入**（端到端没闭环）。这里 spread 整个 `decision`
+        //   （缺省 status 补 'active'，不丢任何原字段），并保留 `node_id`/`label`/`revisions` 这三个导航字段。
         data: entries.map((n) => ({
           node_id: n.id,
           label: n.label ?? n.title,
+          ...n.decision!,
+          // ★ 保留旧投影的三个键及其**缺省口径**（thread→null / tags→[] / status→'active'）——
+          //   下有依赖它们的调用方，扩字段**不改**已有键的语义（别改坏已验过的）。
           thread: n.decision!.thread ?? null,
-          status: n.decision!.status ?? 'active',
-          summary: n.decision!.summary,
           tags: n.decision!.tags ?? [],
+          status: n.decision!.status ?? 'active',
           revisions: n.decision_history?.length ?? 0,
         })),
       };

@@ -168,8 +168,9 @@ function touchedOf(input: UpdateFeatureInput): Touched {
  *   · `node`     —— 通用增/删/改/移，`id` = `node_id`（见 `applyNodeOp`：`addNode({node_id: id, …})`）；
  *   · `binding`  —— `setNodeSemantic({node_id: op.id, …})`；
  *   · `status`   —— `updateStatus({node_id: op.id, …})`；
- *   · `decision` —— 决策写入口，`id` = **文件/文档节点 id 或仓库相对路径**（2026-10-10 T106 加；
- *     路径解不成节点 id 时由下面 `alive.has(id)` 过滤掉 ⇒ 交出去的仍是**真节点 id**）。
+ *   · `decision` —— 决策写入口，`id` = **文件/文档节点 id 或仓库相对路径**（2026-10-10 T106 加）；
+ *     ★★ 2026-10-10（T-e2e Bug2 修）：**路径必须先解析成真节点 id**（`findDecisionTargetNode`）再收 ——
+ *     此前把 `op.id`（可能是路径）原样丢进 `alive.has(id)` ⇒ 路径永远匹配不上 ⇒ `nodes` 整项省略。
  * ★ **其余 type 的 `id` 不是节点**，一个都不收：`edge` 是**边**、`file`/`api` 是**语义实体**、
  *   `annotation`/`approval`/`snapshot`/`layout`/`simulation` 是**协作对象**
  *   ⇒ 塞进来就是 §2.2 那条「**名字像 ≠ 同义**」（都叫 `id`，指的不是一类东西）。
@@ -183,11 +184,19 @@ function touchedOf(input: UpdateFeatureInput): Touched {
  *   与 `rename_symbols.symbols` 给**新名**同口径。
  */
 function touchedNodeIds(input: UpdateFeatureInput): string[] {
-  const named = input.operations
-    .filter((op) => op.type === 'node' || op.type === 'binding' || op.type === 'status' || op.type === 'decision')
+  // ① `id` **本身就是节点 id** 的那几类（node/binding/status）—— 直接取。
+  const directIds = input.operations
+    .filter((op) => op.type === 'node' || op.type === 'binding' || op.type === 'status')
     .map((op) => op.id)
     .filter((id): id is string => typeof id === 'string' && id.length > 0);
-  if (named.length === 0) return [];
+  // ② `decision` 的 `id` 可能是**节点 id**、也可能是**仓库相对路径**（见 resolveDecisionTarget）
+  //    ⇒ 必须**解析成真节点 id** 再交出去。★ 这一步此前缺席：filter 收了 decision，却把 `op.id`（可能是路径）
+  //    原样丢进 `alive.has(id)` ⇒ 路径匹配不到任何节点 id ⇒ `named` 为空 ⇒ `nodes` 整项省略（T-e2e Bug2 实测）。
+  const decisionIds = input.operations
+    .filter((op) => op.type === 'decision')
+    .map((op) => op.id)
+    .filter((id): id is string => typeof id === 'string' && id.length > 0);
+  if (directIds.length === 0 && decisionIds.length === 0) return [];
   // ★★★ 读不到 DSL 就**抛**，**绝不 `?? []`**（2026-10-09 评审查出，我第一版写成 `getDSL(...)?.… ?? []`）。
   //   那是本仓判据里的「**该报错却默认**」：DSL 读不回来时，`?? []` 会把"**锚点丢了**"
   //   **静默降级成"这批节点都不在了"** ⇒ `nodes` 整项省略 ⇒ 下游拿不到锚点，而回执里**看不出任何异常**。
@@ -203,7 +212,12 @@ function touchedNodeIds(input: UpdateFeatureInput): string[] {
     );
   }
   const alive = new Set(dslNow.geometry.nodes.map((n) => n.id));
-  return [...new Set(named)].filter((id) => alive.has(id));
+  // ② 的解析：路径/id → 真节点 id；解析不到（不该发生：applyDecisionOp 已校验）⇒ 交给下面的 alive 过滤，
+  //     **不**在这里抛（这里只负责"能交出去的交出去"，不是第二处写前校验）。
+  const resolvedDecisionIds = decisionIds
+    .map((id) => findDecisionTargetNode(dslNow, id)?.id)
+    .filter((id): id is string => typeof id === 'string' && id.length > 0);
+  return [...new Set([...directIds, ...resolvedDecisionIds])].filter((id) => alive.has(id));
 }
 
 export function updateFeature(input: UpdateFeatureInput): TouchedProduct<EditResult> {
@@ -601,6 +615,27 @@ interface DecisionTarget {
 }
 
 /**
+ * ★★ 2026-10-10（T-e2e Bug2）：**决策写入口的目标节点查找（唯一落点，不抛）**。
+ *
+ * 为什么单拎出来：`decision` op 的 `id` 可以是**节点 id** 也可以是**仓库相对路径**（见 {@link resolveDecisionTarget}）。
+ * 而 `touched.nodes` 需要的是**真节点 id** —— 若照抄 `op.id`（可能是路径），下面 `alive.has(id)` 会把路径过滤掉
+ * ⇒ `named` 为空 ⇒ `nodes` 整项省略 ⇒ `edit_dsl → get_dsl` 接不上（实测回执："接不上：上游 touched 里没有 nodes"）。
+ * ★ 所以**这一处查找就是唯一答案**：`resolveDecisionTarget`（写路径，带校验、会抛）与 `touchedNodeIds`
+ *   （锚点路径，不抛）**共用它** —— 两处各写一份解析 = 本仓最反对的"判据分叉"。
+ */
+function findDecisionTargetNode(dsl: DesignDSL, raw: string): DecisionTarget['node'] | undefined {
+  const nodes = dsl.geometry?.nodes ?? [];
+  const byId = nodes.find((n) => n.id === raw);
+  const byPath = nodes.find(
+    (n) => (n.type === 'file' || n.type === 'doc') && n.description && (n.description === raw || normRel(n.description) === normRel(raw)),
+  );
+  if (byId ?? byPath) return byId ?? byPath;
+  // 语义文件表兜底：把 path / file_id 解析到它的节点 id，再取节点
+  const sf = (dsl.semantic?.files ?? []).find((f) => f.id === raw || f.path === raw || normRel(f.path) === normRel(raw));
+  return sf ? nodes.find((n) => n.id === sf.id) : undefined;
+}
+
+/**
  * 解析目标节点。★ **只接受文件/文档节点** —— 决策卡的定义就是"**每个文件为什么存在**"
  * （`harvest_decisions` 文件头）；挂到聚合/模块节点上是**语义错**，这里**响亮拒绝**而不是默默挂上去。
  * ★ 解析不到 ⇒ **抛**（列出试过的方式），绝不静默创建一个新节点。
@@ -609,26 +644,12 @@ function resolveDecisionTarget(dsl: DesignDSL, id: string | undefined, data: Rec
   const raw = (typeof id === 'string' && id.trim() ? id.trim() : '') ||
     (typeof data.path === 'string' && data.path.trim() ? data.path.trim() : '');
   if (!raw) throw new Error('decision.update 需要 id（文件节点 id 或仓库相对路径）');
-  const nodes = dsl.geometry?.nodes ?? [];
-  const byId = nodes.find((n) => n.id === raw);
-  const byPath = nodes.find(
-    (n) => (n.type === 'file' || n.type === 'doc') && n.description && (n.description === raw || normRel(n.description) === normRel(raw)),
-  );
-  const node = byId ?? byPath;
+  const node = findDecisionTargetNode(dsl, raw);
   if (!node) {
-    // 语义文件表兜底：把 path / file_id 解析到它的节点 id，再取节点
-    const sf = (dsl.semantic?.files ?? []).find((f) => f.id === raw || f.path === raw || normRel(f.path) === normRel(raw));
-    const viaSf = sf ? nodes.find((n) => n.id === sf.id) : undefined;
-    if (!viaSf) {
-      throw new Error(
-        `decision.update 的目标 "${raw}" 不是本 feature 的节点：既非节点 id，也非任何文件/文档节点的路径，` +
-          `也不在 semantic.files 里。请用 get_dsl query=files 核对**仓库相对路径**或节点 id。`,
-      );
-    }
-    if (viaSf.type !== 'file' && viaSf.type !== 'doc') {
-      throw new Error(`decision.update 的目标节点 "${viaSf.id}"（type=${viaSf.type ?? '?'}）不是文件/文档节点 ⇒ 拒绝（决策卡挂在文件上，见 harvest_decisions）。`);
-    }
-    return { node: viaSf, path: viaSf.description ?? viaSf.id };
+    throw new Error(
+      `decision.update 的目标 "${raw}" 不是本 feature 的节点：既非节点 id，也非任何文件/文档节点的路径，` +
+        `也不在 semantic.files 里。请用 get_dsl query=files 核对**仓库相对路径**或节点 id。`,
+    );
   }
   if (node.type !== 'file' && node.type !== 'doc') {
     throw new Error(
