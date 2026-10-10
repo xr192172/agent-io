@@ -18,7 +18,7 @@
  *   - 其他包导入（npm 包、标准库）→ 外部依赖，跳过
  */
 
-import { INDEX_SKIP_DIR_EXTRA, isIndexSkippedFileName, shouldSkipDir } from '../parse/source_exts.js';
+import { INDEX_SKIP_DIR_EXTRA, codeSourceExts, isIndexSkippedFileName, shouldSkipDir } from '../parse/source_exts.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import ignore from 'ignore';
@@ -29,7 +29,7 @@ import { saveDSL, saveLiveFeature, ensureBaseline, getDSL, saveBaselineFactsIfAb
 import { fileFacts } from '../index/file_facts.js';
 import { mergeDesignLayer } from '../storage_overlay.js';
 import { detectArchLayers } from '../analysis/structure/layer_detect.js';
-import { parseFileFull, isSupported, resolveProjectImport } from '../parse/index.js';
+import { parseFileFull, listSupportedExtensions, resolveProjectImport } from '../parse/index.js';
 import type { ParsedImport } from '../parse/index.js';
 import { countLines, assessLines } from '../analysis/structure/monolith.js';
 import type { Database } from '../index/db.js';
@@ -265,6 +265,22 @@ export function walkFiles(
   gitignore: GitignoreMatchers | null = null,
 ): string[] {
   const out: string[] = [];
+  // ★★★ 「什么算源码」—— 走 **L1 的唯一权威**（`source_exts.ts`），本文件**不再自持口径**（D6，2026-10-10）。
+  //
+  // 判据 = 「可解析」∩「代码语言」= `codeSourceExts(listSupportedExtensions())`（source_exts.ts 文档写明的**唯一合成点**）：
+  //   · 「可解析」= `listSupportedExtensions()`（我装了哪些语言包 ⇒ 我能解析什么，随 optionalDependencies 变）；
+  //   · 「代码语言」= 注册表 `kind==='code'`（`codeSourceExts` 内部按 `isCodeLangExt` 过滤）。
+  // ★ 为什么**必须取交集**、而不是单用其中任何一个（两个方向都真跑过，见 source_exts.ts:54-57 的同款反例）：
+  //   · 只问「可解析」（= 此处原来的 `isSupported(ext)`）⇒ `.json`/`.html`/`.css`/`.yaml`… **也能被某棵树解析**
+  //     ⇒ 被当源码收进 `semantic.files`。★ 实测（本仓自检，不截断）：448 条里混进 **26 条非源码**（json×25 + html×1），
+  //     且污染**所有下游读数**（`scope_files` / 量具 / 基线事实）—— 这正是 `source_exts.ts:44` 警告过的那个坑。
+  //   · 只问「代码语言」（= 那份静态 `SOURCE_EXTS`）⇒ 会把注册表里已声明、但**本机载不入**的语言（lua/erlang/nim…）
+  //     也收进来 ⇒ 每条都 `parseFileFull` 失败、刷「解析失败」噪声（"少做事而大声抱怨"也是错）。
+  //   ⇒ 交集同时排掉两者：非代码类（data/markup/style/doc）不进，未装语言不进。
+  // ★ 文档类（`.md`/`.tex`，注册表 kind==='doc'）**不在本尺的源码类里** —— 它是**另一类**，
+  //   只在 `include_docs=true` 时由下方 `if (include_docs)` 块单独收（T88；两条路，各用各的尺）。
+  // ★ 大小写：`isCodeLangExt` 本就在 L1 内做小写归一，这里对集合与文件后缀同做小写 ⇒ 与 L1 同口径。
+  const codeExts = new Set(codeSourceExts(listSupportedExtensions()).map((e) => e.toLowerCase()));
   interface Frame {
     dir: string;
     /** 治理本目录内条目的 gitignore 链（含祖先 + 本目录自己的 .gitignore） */
@@ -293,7 +309,8 @@ export function walkFiles(
       } else if (e.isFile()) {
         if (isIndexSkippedFileName(e.name, includeTests)) continue;
         if (isGitignored(chain, full, false)) continue;
-        if (isSupported(path.extname(e.name))) out.push(full);
+        // ★ 「什么算源码」走 L1 权威（`codeExts`，见函数顶部注释）—— 不再用 `isSupported`（那是"能不能解析"，不是"算不算源码"）
+        if (codeExts.has(path.extname(e.name).toLowerCase())) out.push(full);
       }
     }
   }
