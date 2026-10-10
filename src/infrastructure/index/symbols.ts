@@ -16,7 +16,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import type { Database } from './db.js';
-import { parseFileFull, parseFileFullSync, isSupported, resolveImportPath, type ParsedFile } from '../parse/index.js';
+import { parseFileFull, parseFileFullSync, listSupportedExtensions, resolveImportPath, type ParsedFile } from '../parse/index.js';
+// ★ 「什么算源码」走 L1 唯一权威（`source_exts.ts` 的 `codeSourceExts` = 可解析 ∩ 代码语言）——
+//   本文件不再用 `isSupported`（那是"能不能解析"，不是"算不算源码"）回答"哪些缓存行算源码"。
+import { codeSourceExts } from '../parse/source_exts.js';
 // ★ 写路径挂钩（§19）：ProjectView 的缓存在「磁盘被改过」时必须失效。
 //   syncFile/syncFileSync 是**全部 15 个写工具**的公共落点 ⇒ 挂这一处即覆盖所有写入，
 //   不必让每个写工具自己记得调 —— 「靠自觉的接线」正是本项目反复踩的坑。
@@ -887,16 +890,22 @@ function findCrossFileTarget(
  * 不做 fs 监听（监听属序号 11，届时换 removeFile 实时触发）。
  *
  * absPaths 必须是【完整】扫描列表（max_files 截断之前），否则误删。
- * 只 prune 受支持扩展名的文件（与 sync 同域）——.md 等其他工具写入的
- * files 行不受 import_project 扫描列表影响，避免多工具共享缓存时互踩。
+ * ★ 「本文件管哪些行」走**源码尺**（`codeSourceExts` = 可解析 ∩ 代码语言，`source_exts.ts` 的唯一合成点）——
+ *   与 `import_project.walkFiles` / `watch_project.shouldSyncRel` **同一把尺**（"建"与"裁"两端同源）。
+ *   ⇒ 其它工具写入的**非源码** files 行（`.md`/`.json`/`.html`…）不归本次 prune 管，
+ *   不受 import_project 扫描列表影响，避免多工具共享缓存时互踩。
+ * ★ 为什么不用 `isSupported`（改前）：那只答"能不能解析"，`.json` 恰在差集里 ⇒ 会把别的工具/旧库的
+ *   `.json` 行也当成"已删的源码"清掉 —— 两会话前 `walkFiles`（D6）犯的是同一个错（用错尺回答"什么算源码"）。
  * 返回被清理的相对路径列表。
  */
 export function pruneDeletedFiles(db: Database, projectRoot: string, absPaths: string[]): string[] {
   const alive = new Set(absPaths.map((p) => toRelPath(projectRoot, p)));
+  // ★ 与 walkFiles/watch 同一合成点（源码尺）——一次建集，逐行 `has` 查
+  const codeExts = new Set(codeSourceExts(listSupportedExtensions()).map((e) => e.toLowerCase()));
   const rows = db.prepare('SELECT path FROM files').all() as Array<{ path: string }>;
   const dead = rows
     .map((r) => r.path)
-    .filter((rel) => isSupported(path.posix.extname(rel)) && !alive.has(rel));
+    .filter((rel) => codeExts.has(path.posix.extname(rel).toLowerCase()) && !alive.has(rel));
   if (dead.length === 0) return [];
   const ownTx = !inTransaction(db);
   if (ownTx) db.exec('BEGIN');

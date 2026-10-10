@@ -18,7 +18,7 @@
  *   - 其他包导入（npm 包、标准库）→ 外部依赖，跳过
  */
 
-import { INDEX_SKIP_DIR_EXTRA, codeSourceExts, isIndexSkippedFileName, shouldSkipDir } from '../parse/source_exts.js';
+import { INDEX_SKIP_DIR_EXTRA, codeSourceExts, excludedNonCodeExts, isIndexSkippedFileName, partitionByCodeLang, shouldSkipDir } from '../parse/source_exts.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import ignore from 'ignore';
@@ -263,6 +263,16 @@ export function walkFiles(
   includeTests: boolean,
   includeArchive = false,
   gitignore: GitignoreMatchers | null = null,
+  /**
+   * ★ 可选：**因非代码后缀被排除**的文件（绝对路径）收集器 —— 「排除必须出声」的载体（D6-2）。
+   *
+   * 为什么要有它：`source_exts.ts` 的 `excludedNonCodeExts` 自述是"口径收紧的可见性载体"，
+   *   而本走查原先**连数都不数**地跳过 `.json/.html/.css/...` ⇒ 回执里看不到它们被排除了
+   *   ⇒ 下一个人会以为是"本来就没有"。这里把"被排除的"如实交回给调用方（`importProject` 拼进回执）。
+   * ★ 只收「**可解析但非代码**」的后缀（= `excludedNonCodeExts`，与本走查同一把 L1 尺）：
+   *   不吞"走查本来就不该进的"（跳目录/gitignore/测试/噪音），也不夸大（未装语言的那些另有其类）。
+   */
+  excludedOut?: string[],
 ): string[] {
   const out: string[] = [];
   // ★★★ 「什么算源码」—— 走 **L1 的唯一权威**（`source_exts.ts`），本文件**不再自持口径**（D6，2026-10-10）。
@@ -281,6 +291,11 @@ export function walkFiles(
   //   只在 `include_docs=true` 时由下方 `if (include_docs)` 块单独收（T88；两条路，各用各的尺）。
   // ★ 大小写：`isCodeLangExt` 本就在 L1 内做小写归一，这里对集合与文件后缀同做小写 ⇒ 与 L1 同口径。
   const codeExts = new Set(codeSourceExts(listSupportedExtensions()).map((e) => e.toLowerCase()));
+  // ★ 「可解析但非代码」的后缀（同一把 L1 尺：`excludedNonCodeExts`）—— 走查时顺手收下，
+  //   供 `importProject` 在回执里报「因非代码后缀排除了 N 个」。★ 只在调用方要（给了 `excludedOut`）时才算。
+  const nonCodeParseable = excludedOut
+    ? new Set(excludedNonCodeExts(listSupportedExtensions()).map((e) => e.toLowerCase()))
+    : null;
   interface Frame {
     dir: string;
     /** 治理本目录内条目的 gitignore 链（含祖先 + 本目录自己的 .gitignore） */
@@ -310,7 +325,10 @@ export function walkFiles(
         if (isIndexSkippedFileName(e.name, includeTests)) continue;
         if (isGitignored(chain, full, false)) continue;
         // ★ 「什么算源码」走 L1 权威（`codeExts`，见函数顶部注释）—— 不再用 `isSupported`（那是"能不能解析"，不是"算不算源码"）
-        if (codeExts.has(path.extname(e.name).toLowerCase())) out.push(full);
+        const ext = path.extname(e.name).toLowerCase();
+        if (codeExts.has(ext)) out.push(full);
+        // ★ 排除必须出声：可解析但**非代码**的后缀（.json/.html/.css/…）如实交回，不静默丢弃
+        else if (nonCodeParseable?.has(ext)) excludedOut!.push(full);
       }
     }
   }
@@ -703,8 +721,22 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
 
   // 1. 扫描文件（被 gitignore 的一律不扫——references/_archive/缓存等参考堆不进来）
   const gitignore = collectGitignore(root);
-  let absFiles = walkFiles(root, effectiveIncludeTests, input.include_archive ?? false, gitignore);
+  // ★ 「排除必须出声」（D6-2）：走查时顺手收下"因非代码后缀被排除"的文件（否则回执里它们完全不出声）
+  const excludedNonCode: string[] = [];
+  let absFiles = walkFiles(root, effectiveIncludeTests, input.include_archive ?? false, gitignore, excludedNonCode);
   const skipped: string[] = [];
+  // ★★ 「排除必须出声」：被源码尺排除的**非代码**后缀（`.json`/`.html`/`.css`/…）如实报出 ——
+  //   口径收紧不许静默（`source_exts.ts:127-135` 的 `excludedNonCodeExts` 自述即此）。
+  //   不报 ⇒ 回执只说"导入了 N 个"，下一个人**无从知道**还有 26 个 .json 被口径挡掉。
+  //   逐后缀计数 + 样例；分拣复用 L1 的 `partitionByCodeLang`（不另写一份"按后缀分类"）。
+  if (excludedNonCode.length > 0) {
+    const { nonCodeExts } = partitionByCodeLang(excludedNonCode.map((p) => ({ rel: p })));
+    const samples = excludedNonCode.slice(0, 3).map((p) => toPosix(path.relative(root, p)));
+    skipped.push(
+      `因非代码后缀排除 ${excludedNonCode.length} 个（${nonCodeExts.map((x) => `${x.ext.slice(1)}×${x.count}`).join(', ')}）` +
+        `，例: ${samples.join(', ')}${excludedNonCode.length > samples.length ? ' …' : ''}`,
+    );
+  }
   // 截断前的完整列表——pruneDeletedFiles 的比对基准（拿截断后列表会误删）
   const walkedAll = absFiles;
   if (absFiles.length > max_files) {
