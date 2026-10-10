@@ -495,7 +495,8 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       '查找符号/字段的引用——改/删前看波及面。只读，不改文件。' +
       'mode=symbol（默认）：输入 {file(定义文件), symbol}，返回定义文件 + 所有 import 该符号的文件' +
       '（含 import 子句 source、无别名使用点位置与行号）。复用 rename 的闭包/引用图内核（自动定位项目根 + 闭包 + 别名边 + 跨语言）。' +
-      'mode=field：输入 {field, project_dir}（可选 file 定 scope，默认 closure 按 file 闭包扫，all 全项目），' +
+      'mode=field：输入 {field, project_dir}（可选 file 定 scope，默认 closure 按 file 闭包扫，all 全项目；' +
+      '可选 of_type 按所属类型限定——把同名噪音收窄到该类型声明文件的 import 闭包，且只丢弃能确证不属于该类型的声明点），' +
       '返回字段的「读取点」(obj.field/obj.field)、「构造点」({field: v})、「解构点」、「声明点」，' +
       'AST 分类 + 行内上下文 snapshot，**含定义文件内部**——用于"加字段/改签名"前看清谁读谁构造。' +
       'mode=type：输入 {file, symbol(类型名), min_hit?}，从类型声明解出成员字段集，找与其交叠 ≥ min_hit 的' +
@@ -510,6 +511,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       file: z.string().optional().describe('mode=symbol 必填：定义符号的文件（绝对路径或相对 cwd/project_dir）；field/type 可选（用于定 scope）'),
       symbol: z.string().optional().describe('mode=symbol/type 必填：符号/类型名（模块级声明名）'),
       field: z.string().optional().describe('mode=field 必填：要查的字段名'),
+      of_type: z.string().optional().describe('mode=field 可选：所属类型名——把字段限定到该类型（作用域收窄到其声明文件的 import 闭包；只丢弃能确证不属于该类型的声明点，读/构/解无法判定则如实保留）'),
       report_literals: z.boolean().optional().describe('true=额外扫描符号 snake 变体在项目文本里的字面量命中（文档/测试/契约/工具注册名），返回清单待核验，不改动'),
     },
     handler: wrapData(async (a) => {
@@ -526,10 +528,21 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       };
       // mode=field：AST 分类的读/构/解/声明点 + snippet
       if (a.mode === 'field') {
-        const r = await findReferences({ ...common, mode: 'field', field: optStr(a.field) });
+        const r = await findReferences({ ...common, mode: 'field', field: optStr(a.field), of_type: optStr(a.of_type) });
         if (!r.ok) return { message: `字段引用查找失败：\n- ${(r.blocked || []).join('\n- ')}`, data: r };
+        if (r.fieldScope && !r.fieldScope.resolved) {
+          return { message: `字段引用查找失败：\n- ${(r.blocked || []).join('\n- ')}`, data: r };
+        }
         const kindLabel = { 'field-read': '读', 'field-key': '构', 'field-destructure': '解', 'field-decl': '声明' } as Record<string, string>;
-        const lines = [`字段 ${r.symbol} 的引用（${r.fieldRefs!.length} 个文件；scope=${common.scope}）：`];
+        const lines = [`字段 ${r.symbol} 的引用（${r.fieldRefs!.length} 个文件；scope=${common.scope}${r.fieldScope?.of_type ? `；of_type=${r.fieldScope.of_type}` : ''}）：`];
+        if (r.fieldScope) {
+          // ★ 限定账目如实打印：丢了什么、为什么留 —— 不让"限定"变成静默少给（T125）
+          lines.push(
+            `\t★ 类型限定：of_type=${r.fieldScope.of_type}，声明于 ${r.fieldScope.declared_in.join(', ')}；` +
+              `按 ownerType 证伪丢弃声明点 ${r.fieldScope.dropped_decl_points} 条；` +
+              `无法类型判定而**如实保留** ${r.fieldScope.unverified_points} 条（读/构/解 + ownerType 未知的声明点）。`,
+          );
+        }
         for (const f of r.fieldRefs!) {
           const cnt = new Map<string, number>();
           for (const x of f.refs) cnt.set(x.kind, (cnt.get(x.kind) ?? 0) + 1);

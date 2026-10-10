@@ -1442,6 +1442,148 @@
         ★ **身份来源是【调用方】** —— 工具**不生成**（它每次调用都是新的）；
         ★ **没传身份不许静默**（抛 / 明标"未署名"，读端看得见）。
       ⇒ **判据**：三条读路（DATA / `decisions_own` / **人话**）都看得到 · 类别与身份并存 · 重建后仍在。
+- [ ] **T125 ★★★ 「备菜」原则 + `mode=field` 缺「所属」限定（已派实现）**
+      *(来源：2026-10-10 用户 —— *"并不是全自动，而是能直接把**备好**……就像是厨师把**备好的菜**直接递给厨师，
+        而不是让厨师自己去菜篮子里到处翻，然后再处理。我们要做的就是把东西从代码库里面翻出来，**并且处理好，精简的给 LLM**，
+        **优雅的让 LLM 进行处理**，给它提供**最好的厨具**，给它提供**打下手的人**。"*)*
+      ⇒ ★★★ **这条是本仓对"工具"的定位声明，比"链要通"更准**：
+        **工具 = 备菜 + 厨具**（翻出来 → 处理好 → 精简地给）· **上层 = 派下手 + 决定做什么菜** · **LLM = 厨师**（只处理，不翻找）。
+        ⇒ ★ 而要防的失败态正是：**"让厨师自己去菜篮子里翻"** —— 即**递原料而不是递备菜**。
+      ⇒ ★★★ **实测缺口（我已复现）**：`find_references mode=field field=file` ⇒ **命中 123 文件 / 135KB**，
+        绝大多数是噪音（例：`dogfood/verify_spec_form.mjs` 里的**局部变量 `file`**，不是 `Touched.file`）。
+      ⇒ ★★ **但要更正一处（我一度判成"没备菜"）**：`src/application/refactor/find/field_refs.ts` 头注自述它**已经备过**：
+        **用 `ts_kernel` 的 AST 做精确分类**（读取点/构造点/解构点/声明点）· **去噪**（跳过注释/字符串）·
+        **行内 snippet（免 LLM 再开文件）**。
+        ⇒ ★★★ **所以缺的不是"备菜能力"，是「没问清要哪一种菜」**：
+          `mode=symbol` **有 `file` 锚点**（在哪个文件里找），**`mode=field` 只有字段名** ⇒ **全仓所有同名字段**。
+          ⇒ 比喻：**厨师说"给我鱼"，你把菜市场所有的鱼都搬来了 —— 不是你没备菜，是你没问"哪种鱼"。**
+      ⇒ **落地方向（主次）**：**(乙) 主** —— **限定词跟着产物一起传下去**（上游知道它是 `X` 的字段，**在知道的那一层就附上**，
+        ★ 那才是"备好"）；**(甲) 辅** —— `mode=field` 支持**显式限定入参**（给直接调用的人一条路）。
+        ★ 本仓先例：`Touched` 的接续表本来就干这个（"上一棒产物 = 下一棒入参"）。
+      ⇒ ★★★ **派工时先要它答【可行性】**（★ 因为我不确定）：**工具自己能不能知道「这个 field 属于哪个类型」？**
+        · **声明点**（`interface T { field }`）⇒ 类型**可能现成**；
+        · **读取点**（`obj.field`）⇒ 要知 `obj` 的类型 ⇒ **要看本仓有没有类型推断/类型引用**；
+        ⇒ ★ 结论**决定 (甲)/(乙) 谁为主**（若工具做不到自己限定 ⇒ (乙) 更必要）。★ **不许猜，要贴 `file:line`**。
+      ⇒ **判据（最要紧）**：**加限定后，`withTouched` 的 34 处构造点【一个不少】**
+        （独立读数 34）；★ **漏掉真引用 = 比不给更坏**。
+- [ ] **T124 ★★★ T121 工具面验收查出的问题（B 组：`design` 线 / 漂移）—— 且**两处量具抓不到****
+      *(来源：2026-10-10 大验收。子代理 B 的真实任务="设计侧和实际代码有没有对不上的？"，
+        ★ 从 `capability_map` 出发，**给的是问题不是命令**。)*
+      ⇒ ★★★ **最硬的一条：README 教了一个【已删除的 action】—— 而同一错误【三处，只修了一处】**（我已复核）：
+        · `README.md:18` / `:151` · `README.en.md:8` / `:18` —— 教 `scaffold (action=backfill)`；
+        · ★ **`src/application/design/index.ts:21` 的注释也还写着**（**代码注释也漂了**）；
+        · 而 `index.ts:394` 自述「★ 2026-10-01：原先的 `action=backfill`（…）已剔除」⇒ **代码里根本没有这个入参**；
+        · ★★ **旁证：`capability_map.ts:226` 已经注了**「backfill 已随 T20 删除 ⇒ **教了不存在的 action**」
+          ⇒ ★★★ **团队修了导航那一处，漏了 README（4 处）+ 注释** —— **"修一处忘一处"，头号病落在【文档】层**。
+      ⇒ ★★ **`structure.domains.json`（自称"架构意图唯一数据源"）自述计数与代码不符**：
+        `lane-meta` 写"另有 8 个子域"实际 **9** · `lane-refactor` 写 9 实际 **10** ·
+        `infra-shared` 写"12 个文件"实际 **15**（**漏了 `llm_agnes`/`llm_gateway`/`llm_pool`** —— ★ **正是今天新建的**）·
+        `domain-model` 写 14 实际 **18**。
+        ⇒ ★★★ **而指定判漂器 `structure_gap` / `npm run structure:gap` 报「一致 ✓」** ——
+          **它只查 dir 存在性、不读 `note`** ⇒ **量具抓不到**（**又一个"量具的判据认的不是那个东西"**）。
+      ⇒ ★★ **`capability_map` 的「读之前先看哪儿」给【假阴性】**（我已核代码）：`renderVolumesNote()` 用
+        **`getDataHome()`** 找 `MANIFEST.txt` —— 而它是 **`owner=project` 的【仓根】文件**
+        ⇒ **`AGENT_IO_HOME` 被覆盖时报"未生成"，实际它就在仓根（2107B）**；
+        ★ 而 `COGNITION.txt`（数据目录）**它找对了** ⇒ **两个文件两套口径，错了一个**。
+        ⇒ ★ **这也解释了 T106 我那次看到的"两个都未生成"—— 当时我把定性写偏了**（不是"真没生成"，是**路径口径错**）。
+      ⇒ ★ **`capability_map` 内部矛盾**：`design-import` 链**同时**标 `[verified]` 与 `✗ 第 2 段真缺口`，
+        且写"通没通只看 `[verified]`"；而 `chain_wiring.ts:591` 注明 `verified` **只 = 「跑过」≠「通」**
+        ⇒ **一名两义（"跑过" vs "通"）**。
+      ⇒ **导航评测**：✅ 工具层**导对了**（`design` 线直接给出 `consistency_check`/`detect_drift`）；
+        ❌ **漏点名 `structure.domains.json`**（**真正回答题意的意图文件没摆到第一站**）·
+        ❌ 不带 `project_dir` 时**实现地图整段缺失**（用法靠猜）· ❌ 对自己点名的 MANIFEST/COGNITION **给假阴性**。
+      ⇒ **链实测**：✅ `import_project.touched.{project_dir,feature} → consistency_check` 直接接上；
+        ★★ **`find_references` 的"接续"段把 `touched.file → renames[].file` 的【值都取好打印】** ⇒ **体验最好**（**链的样板**）；
+        ❌ `extract_contracts.touched` **只有 `{project_dir,feature}`** ⇒ 喂 `find_references` 报
+          「**缺少必需参数 file**」（★ **复现了 `CHAIN_EDGES_PENDING` 里记的"环C 缺 file"**）；
+        ★★ **须手工翻译**：`find_references.touched={file,symbols[]}` → `rename_symbols` 要 `renames:[{file,symbol,to}]`
+          ⇒ **得自己把两字段拼成对象 + 另给新名 `to`** ⇒ ★ **"这步没有名字也没有工具"**。
+      ⇒ ★★★ **缺工具（最值钱的摩擦）**：
+        a) **无法按符号名全仓查引用**（`find_references` 三种 mode **都要 `file`/`field`**）；
+        b) ★★ **没有「README/AGENTS 文档 vs 代码」的一致性闸门** —— **DRIFT-1 就是靠人肉 grep 才发现的**。
+        ⇒ ★ **而 (b) 正是本仓痛点**：**本仓有 5 道门（`verify`），但没有一道查"文档教的东西还在不在"**。
+      ⇒ ★★★ **2026-10-10 收口：A 更正了一条我差点采信的结论 —— 且它引出「接不上的三种成因」**
+        【更正】我先前转述 A 的「`find_references→rename_symbols` ✅ 直接接上」——**应降为「⚠️ 半接」**。
+        **表里的真相（我已独立复算）**：
+        ```
+        find_references 名下 toPath：'renames[].file' · 'file' · 'symbol' · 'change_points[].file'
+                                    ★ 没有 'renames[].symbol'
+        move_symbol     名下 toPath：'renames[].file' · 'renames[].symbol'   ← 两条都有（对照）
+        grep 'renames[].symbol'：:114 / :154 / :233 全是【注释】（:154 明说「★ 真跑过」）；
+                                :241 是唯一真表项，而它在 move_symbol 名下
+        ```
+        ⇒ ★★★ **注释写了三次、表里没有** —— 而**表才是机器读的那份**（`capability_map` 的接续提示来自它）
+          ⇒ **用户按提示接，只能接上 1/3**（`file` 有 · `symbol` 缺 · `to` 本就要人给）。
+        ⇒ ★★ **与 T124 的 README 漂移【同型】**：**文档承诺了代码做不到的事**（这次"文档"是注释、"代码"是边表）。
+        ★ `:154` 的注释自己**写了前提**（「`definition` 只在 `mode=symbol` 成功出口赋值」）⇒
+          **那是前提，不是"不能接"** ⇒ ★ **疑似漏记，非有意删**（但派工前要先判有无反方理由）。
+      ⇒ ★★★ **结构性收获：「接不上」不是一个问题，是【三种】，修法完全不同**：
+        | 成因 | 实例 | 修法 |
+        |---|---|---|
+        | **① 下游不认**（能力缺） | `find_references(mode=field)` **找得到字段**，而唯一改名器 `rename_symbols` **改不了字段**（★ **两条独立路径收敛**：A 与 B 都报了这一条） | **补工具** |
+        | **② 表漏记**（记录不全） | 上面那条 `symbols[i] → renames[].symbol`（**注释有、表无**） | **补表项**（附前提） |
+        | **③ 上游没产**（源头缺） | `extract_contracts.touched` **只有 `{project_dir,feature}`**，本无对象类 key ⇒ 喂 `find_references` 报「**缺少必需参数 file**」 | **补上游产物** |
+      ⇒ ★★★ **而这三种之上还有一层【本来就不该由机器给】的（不是断，要分清）**：
+        **`to`（新名）· 下标（选哪个）** —— 那是**意图**，**永远由调用方给**。
+        ⇒ ★★ **所以"链"的完整判据应是**：
+        **【字段名】对得上 + 【对象边】齐全 + 【意图位】留了明确位置（由人/上层填）** —— **而不是"全自动"**。
+        ★「意图位要人给」**不算接不上**；**边缺了、或下游认不得，才算。**
+      ⇒ ★★★ **B 的收口：两条量具盲区【合并成同一根因】**：
+        · **[B]** `structure_gap` **只查域表 `dir` 是否存在** ⇒ `structure.domains.json` 的 `note` 计数漂移**报「一致 ✓」**；
+        · **[A]** `find_references mode=field` **只按名匹配、不按类型/语义限定** ⇒ 通用名（`file`）命中 **123 文件/135KB 噪音**。
+        ⇒ ★★★ **共同病灶：判据停在「有没有 / 叫不叫这个名字」，没进到「对不对 / 是不是这个」**
+          —— 与 `capability_map` 里 **T68 那句「两种状态读数相同 ⇒ 那是常量」同源**。
+        ⇒ ★★ **而这正是今天那条主线的概括形态**（各层各占一次）：
+          `harvest_decisions` 关键词命中冒充"这是决策" · `structure_gap` dir 存在冒充"域表正确" ·
+          `find_references` 名字相同冒充"同一个东西" · `capability_map` 的 `verified`（**跑过**）冒充"**通**" ·
+          README **教了**的冒充"**还有**"。
+          ⇒ **共性：判据停在「表层匹配」，没进到「语义相等」。**
+- [ ] **T123 ★★★ T121 工具面验收查出的问题（A 组：`meta` + `refactor` 线）—— 逐条**
+      *(来源：2026-10-10 大验收。子代理 A 的真实任务="`Touched` 改字段名会砸到谁"，
+        ★ 从 `capability_map`（"新人第一站"）出发，**给它的是问题不是命令**。）*
+      ⇒ ★★★ **最要命的一条：`find(field) → rename(field)` —— 链断在最后一跳**（**我已独立复现**）：
+        · `find_references mode=field` **找得到**字段：实测 `field=file` ⇒ **命中 123 个文件**；
+        · 而唯一的改名器 `rename_symbols` **直接阻断**：实测 `written_files → written_paths` ⇒
+          「**批量改名被阻断（整体未落盘）**：`[被阻断] src/domain/b_terms.ts 的 written_files → written_paths`」。
+        ⇒ ⇒ **两个"看起来配套"的工具，其实不配套** ——
+          ★★ **`find_references` 的 "field" 找的是【任何叫这个名字的东西】（含局部变量）；
+            `rename_symbols` 的 "symbol" 改的是【模块级声明】。**
+          ⇒ **"名字像 ≠ 同义"的又一次现身**（今天的头号病，这次落在**工具面**上）。
+      ⇒ ★★ **`find_references mode=field` 对通用名不可用**：`field=file` ⇒ **123 文件 / 135KB 噪音**
+        （它**按名匹配、不按类型限定**；`scope=closure` 也救不了，因 `b_terms.ts` fan-out=0）。
+        ⇒ **唯一名（`written_files`/`scope_files`）干净，但 `Touched` 一半字段是通用名。**
+      ⇒ ★★ **`capability_map`（"新用户第一站"）导航缺一半**（★ 但**它有一半是好的**，要分开说）：
+        · ✅ **给了消费侧**：`touched.*` 边表对"谁消费"**直接有用**；且"直接可用"标注**属实**
+          （实测 `find_references → impact_analysis` **直接接上**）。
+        · ❌ **没给"定义在哪"**：全文有 `touched.` 却**无定义文件**；
+        · ❌ **没导到 `docs/tool-chain-contract.md`**（那篇**逐字写了每个字段的依据**）；
+        · ❌ 它自称"真相在 `.agent-io/features/<f>.json`" —— 对 `Touched` 契约**口径对不上**（真相在**源码 + docs**）。
+        · ⇒ 子代理最后靠 `explore_code search` + **手工 `ls docs/`** 补齐。
+      ⇒ ★ **`read_project_docs` 的 `targets` 参数【没生效】**：输出与不带时**逐字相同**（只列 37 篇标题、tags 全空、无正文）。
+        ⇒ ★★ 而**答案文档的标题里没有"Touched"二字** ⇒ **用户根本猜不到该看哪篇**（这条与上一条叠加 = 死角）。
+      ⇒ ★ **`explore_code` 的 schema 不完整**：`search` **实际必填 `project_dir` 却没列**；
+        且 `capability_map` 把它标"**直接可用（无需导航）**" ⇒ **名不副实**。
+      ⇒ ★ **`import_project` 的 `max_files=200` 跳过 222 文件 + 全程 `STALE_INDEX`**
+        ⇒ **子代理所有"谁在用"的清单可能偏低**（与 T117 的 `landing` 同源，但这里影响的是**影响面**）。
+      ⇒ ★ **链实测（它报的）**：**直接接上** `find_references→impact_analysis` ✅ ·
+        `find_references→rename_symbols` ✅（**但仅对模块级名**）· `import_project→edit_code` ✅（下标要人选）；
+        **要手工**：`capability_map` 给的是**表达式**（`touched.written_files[i]`）**不是可跑 JSON**，入参要自己拼。
+- [ ] **T122 ★★ `comment_files` 已删，但**记录现状的两个产物还列着它** —— 而更新它们的生成器**有坑****
+      *(来源：T119 实现者主动报的；★ 我已核实。）*
+      ⇒ **落后的两处**：`docs/b-field-dictionary.md:110`（字段列表里仍列 `comment_files`）· `.snapshots/behavior.json`（108736 字节）。
+      ⇒ ★★ **它们是【生成的】**（`scripts/measure_b_contract.mjs` 自述产出 `glossary.md` + `b-field-dictionary.md`；
+        而 `scripts/gen_agents.mjs:210` 说它「其实是这两个文件的**唯一生成器**」）
+        ⇒ **该用生成器重生成，不许手改**。
+      ⇒ ★★★ **但那里有坑（我记忆里记着，且它决定怎么做）**：
+        **`docs/glossary.md` 非纯生成 —— 重定向会静默冲掉手工内容**。
+        而**同一个生成器同时产出 glossary 与 b-field-dictionary** ⇒ **整体重跑会连坐**。
+      ⇒ **要做**：**先查清那个生成器**是"整体重写两个文件"还是"可分别产出"；
+        · 若可分别 ⇒ **只重生成 `b-field-dictionary.md`**；
+        · 若不可分别 ⇒ **要么把 glossary 的手工内容先取出/后并回，要么判定"不重生成"并写清理由**。
+        ★ **无论哪条，都要先量**（不许"跑一下看看"—— 那正是会冲掉东西的做法）。
+      ⇒ **判据**：`grep -rn comment_files docs/ .snapshots/` ⇒ **不再命中过期的字段名**；
+        ★ 且 **`docs/glossary.md` 的内容与重生成前逐字对比无意外丢失**。
+      ⇒ ★ **为什么值得记**：它**无门检查**（不会红）⇒ 正是"**静默落后**"那一类 —— 和 T94（glossary 落后两轮）同族。
 - [ ] **T121 ★★★ 大验收：**让子代理真去用工具面**（不只 DSL 那条链）—— **一个个试过去****
       *(来源：2026-10-10 用户 —— *"那么现在你和你的子代理进行接力，用这个工具用得顺畅吗？
         **除了 DSL 还有各种其他的工具。一个个试用过去吧**。"*)*

@@ -22,7 +22,7 @@ import path from 'node:path';
 import { resolveProjectRoot, loadAliasConfig, resolveAliasedImport, resolveLangImport } from '../../../infrastructure/analysis/project_root/index.js';
 import { analyzeModuleSource, resolveRel, buildNoExt } from '../../../infrastructure/analysis/rename_symbol/index.js';
 import { camelToSnake, scanLiteralOccurrences, type RawLiteralMatch } from '../rename/rename_symbols.js';
-import { collectFieldRefs, collectTypeConstructCandidates, type FieldRefFile, type TypeConstructCandidate } from './field_refs.js';
+import { collectFieldRefs, collectTypeConstructCandidates, type FieldRefFile, type FieldScopeReport, type TypeConstructCandidate } from './field_refs.js';
 import { parseFileFull } from '../../../infrastructure/parse/index.js';
 import { getProjectCacheDb } from '../../../infrastructure/index/db.js';
 import { ensureProjectIndex } from '../../../infrastructure/index/index_freshness.js';
@@ -158,6 +158,11 @@ export interface FindReferencesResult {
   importerCount: number;
   /** mode=field 时：该字段的读取/构造/解构/声明点（含定义文件内部），按文件分组，含行内上下文 */
   fieldRefs?: FieldRefFile[];
+  /**
+   * ★ mode=field 且给了 `of_type` 时：**限定的账目**（T125）——定位到了哪个类型的声明、
+   *   依据 ownerType 证伪丢了几条、无法判定而**如实保留**了几条。让"限定丢了多少"在产物里看得见。
+   */
+  fieldScope?: FieldScopeReport;
   /** mode=type 时：类型声明的成员字段集 */
   typeMembers?: string[];
   /** mode=type 时：与类型成员交叠 ≥ min_hit 的对象字面量候选构造点 */
@@ -214,6 +219,12 @@ async function findReferencesCore(input: {
   symbol?: string;
   /** mode=field 必填：要查的字段名 */
   field?: string;
+  /**
+   * ★ mode=field 可选：**所属类型名**（T125「备菜」）—— 把字段引用限定到该类型。
+   *   作用域收窄到该类型声明文件的 import 闭包（与 `mode=symbol` 的 `file` 锚点同源）；
+   *   同时丢弃**能确证不属于该类型**的声明点。★ 读/构/解 无法判定 ⇒ 如实保留（见 `FieldScopeReport`）。
+   */
+  of_type?: string;
   /** symbol（默认，找符号的 importers/使用点）| field（字段读取/构造/解构/声明点）| type（形如某类型的对象字面量构造候选） */
   mode?: 'symbol' | 'field' | 'type';
   /** field/type 模式：closure（默认，给 file 时按 import 闭包）| all（全项目扫） */
@@ -297,14 +308,21 @@ async function findReferencesCore(input: {
   // field 模式：字段的结构引用点（AST 分类：读/构/解/声明，含定义文件内部）
   if (input.mode === 'field') {
     const field = input.field as string; // 缺参已在上方前置校验 throw
-    const fieldRefs = await collectFieldRefs({
+    const { files: fieldRefs, scope: fieldScope } = await collectFieldRefs({
       project_dir: projectDir,
       field,
       // ★ 同 type 模式：有锚点就传**绝对** file（断环）；`file` 缺席时仍 `undefined`
       //   （那时根只能落 `cwd`，而 `project_dir` 也**不进产物** —— 见 `rootAnchored`）。
       file: fileAbsForRoot,
       scope: input.scope === 'all' ? 'all' : 'closure',
+      of_type: input.of_type,
     });
+    // ★ of_type 给了但类型声明定位不到 ⇒ **空结果 + 明标**（不退回全仓 —— 那会让"没限定"看起来成功）
+    const blocked = fieldScope && !fieldScope.resolved
+      ? [`未定位到类型 "${fieldScope.of_type}" 的声明（认 interface T {...} / type T = {...}）⇒ 未做限定、结果为空。`]
+      : fieldRefs.length === 0
+        ? ['项目中未找到对该字段的引用']
+        : undefined;
     return {
       ok: true,
       symbol: field,
@@ -312,8 +330,9 @@ async function findReferencesCore(input: {
       importerCount: 0,
       ...(rootAnchored ? { project_dir: projectDir } : {}),
       fieldRefs,
+      ...(fieldScope ? { fieldScope } : {}),
       literals: input.report_literals ? await scanLiterals(projectDir, field) : undefined,
-      blocked: fieldRefs.length === 0 ? ['项目中未找到对该字段的引用'] : undefined,
+      blocked,
     };
   }
 
