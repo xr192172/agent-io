@@ -310,7 +310,7 @@ export interface WatchProjectToolResult {
   drift_on_change?: boolean;
   /** 最近一次 detect_drift 结果摘要（仅 drift_on_change=true 且完成后有） */
   drift_alert?: string;
-  /** drift 是否判定为「设计过时/欠实现」（true=需同步设计，false=对齐或尚未检测） */
+  /** drift 是否判定为「设计过时/欠实现」（true=需同步设计；false=**比过且一致** / **没得比（0 条可比）** / 尚未检测 —— ★ 三者不都是"对齐"） */
   has_drift?: boolean;
   last_drift_at?: string;
   /** 影响报告是否开启 */
@@ -371,7 +371,12 @@ function driftBrief(d: DriftData): string {
   const s = d.summary;
   return `[drift] ${d.feature} 状态=${d.status}（满足 ${s.matched} / 待实现 ${s.missing} / 签名偏离 ${s.mismatched} / 设计未声明 ${s.unexpected}）` +
     `${d.stale_files.length ? ' · 过时文件: ' + d.stale_files.slice(0, 3).join(', ') : ''}` +
-    (d.drifted ? ' — 设计需同步（edit_dsl/import_project）' : ' — 对齐');
+    // ★★ 2026-10-10：**没得比**（0 条可比）**不许**落到「对齐」那一支 —— 否则同一句"没查=报好"在这里复活。
+    (d.status === 'no_comparison'
+      ? ' — 没得比（0 条可比，未给结论）'
+      : d.drifted
+        ? ' — 设计需同步（edit_dsl/import_project）'
+        : ' — 比过且一致');
 }
 
 /**

@@ -81,17 +81,29 @@ export interface DiffBlocksResult {
  * @param files    范围内的文件差异（**只应有差异的**；通过的文件由调用方放进 `clean_files`）
  * @param scope    用于**回退命名**（`group_by='scope'` 时块名 = 它）
  * @param group_by `'arch_layer'`（默认）或 `'scope'`
+ *
+ * ★★ 2026-10-10 `compared`（可选）：本范围内**真的比了多少条**（`expected_apis` 条数 + 验收条数）。
+ *   · `undefined` ⇒ 旧行为（不区分"无差异"与"没得比"）；
+ *   · `0` ⇒ **没得比**："无差异"**不是"已核对 / 没问题"** —— 是**没有东西可查**。
+ *     ★ 沉默会被读成"安全"；故这里把"好消息"那句换成**诚实**的"没得比"（不许静默）。
+ *   ★ 只影响**措辞**，不改任何判据（差异/块/clean_files 的计算一个字没动）。
  */
 export function buildDiffBlocks(
   files: readonly FileDiff[],
   scope: Scope,
   group_by: 'arch_layer' | 'scope' = 'arch_layer',
+  compared?: number,
 ): DiffBlocksResult {
   const notes: string[] = [];
   const withDiff = files.filter(hasDiff);
 
   if (withDiff.length === 0) {
-    notes.push('范围内**没有任何差异** ⇒ 无块可出。★ 这是"好消息"，不是"没跑"。');
+    notes.push(
+      compared === 0
+        ? '范围内**没有任何差异可报**，但**本轮实际比对了 0 条** ⇒ **没得比**：' +
+            '别把"无差异"读成"已核对 / 没问题"（**没有对手，就没有对错可言**）。'
+        : '范围内**没有任何差异** ⇒ 无块可出。★ 这是"好消息"，不是"没跑"。',
+    );
     return { blocks: [], clean_files: [...files.map((f) => f.path)].sort(), notes };
   }
 

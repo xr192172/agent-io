@@ -123,6 +123,12 @@ export const consistencyHandler = wrapData(async (a) => {
 
   const inScope = new Set(sc.paths);
   const sel = r.fileResults.filter((fr) => inScope.has(normPath(fr.file.path)));
+  // ★★★ 2026-10-10：**本 scope 里"到底比了几条"** —— `expected_apis` 条数 + 命中该 scope 的验收条数。
+  //   = 0 ⇒ **没得比**（scope 版）：**不许**把"范围内无差异"说成「已对齐」（那正是"没查=报好"）。
+  const scopeCompared =
+    sel.reduce((a, fr) => a + fr.apis.length, 0) +
+    (exp?.items ?? []).filter((it) => inScope.has(expectationSubjectPath(it.expectation))).length;
+  const scopeNoComparison = scopeCompared === 0;
   // ★ 不许静默：scope 命中、但对账结果里没有的文件（例如不在语义层）要说出来
   const seen = new Set(sel.map((fr) => normPath(fr.file.path)));
   const notChecked = sc.paths.filter((p) => !seen.has(p));
@@ -154,7 +160,8 @@ export const consistencyHandler = wrapData(async (a) => {
   }
   // ★ scope 比 `arch_layer` 更窄时（files: / subtree: / nodes:），再按层切没有意义 ⇒ 整个 scope 作一块
   const narrower = sc.scope.kind === 'files' || sc.scope.kind === 'subtree' || sc.scope.kind === 'nodes';
-  const d = buildDiffBlocks(files, sc.scope, narrower ? 'scope' : 'arch_layer');
+  // ★★ 把"本 scope 真的比了几条"传进去 ⇒ 空块那句"无差异 ⇒ 好消息"在 `scopeCompared===0`（**没得比**）时**不成立**。
+  const d = buildDiffBlocks(files, sc.scope, narrower ? 'scope' : 'arch_layer', scopeCompared);
   const nDiff = files.filter((f) => f.missing + f.mismatched + f.unexpected + (f.expectation_failures ?? 0) > 0).length;
 
   const lines = [
@@ -178,8 +185,20 @@ export const consistencyHandler = wrapData(async (a) => {
       for (const f of b.files) lines.push(`        ${f}`);
     }
   }
-  if (d.clean_files.length) lines.push('', `  范围内已对齐（无差异）：${d.clean_files.join(', ')}`);
+  // ★★ 2026-10-10：`scopeNoComparison` 时**不说「已对齐」** —— 那是"没比就报好"的 scope 版。
+  if (d.clean_files.length && !scopeNoComparison) {
+    lines.push('', `  范围内已对齐（无差异）：${d.clean_files.join(', ')}`);
+  } else if (d.clean_files.length) {
+    lines.push('', `  范围内**无差异可报**的文件：${d.clean_files.join(', ')}（★ 见下：本 scope **没得比**，不是"已核对"）`);
+  }
   const allNotes = [...sc.notes, ...d.notes];
+  if (scopeNoComparison) {
+    allNotes.push(
+      `★★ **本 scope 没得比**：范围内"可比条目"共 **0 条**（\`expected_apis\` 与验收都没有命中）⇒ **线 2 实际比对了 0 条**；` +
+        `上面「无差异」**不是"已核对"**、更**不能**读成"这片没问题" ⇒ **给不出结论**。` +
+        `★ 出路：给这些文件写 \`expected_apis\`（\`import_project\` 或 \`edit_dsl\`）后再圈这片范围。`,
+    );
+  }
   if (notChecked.length) allNotes.push(`scope 命中但对账结果里没有（可能不在语义层）：${notChecked.join(', ')}`);
   // ★ T78：两类"不进块但必须说出来"的东西（**不许静默**）
   if (outsideScope.length) {
@@ -267,15 +286,23 @@ function renderExpectationsSection(
   return L.join('\n');
 }
 
-/** detect_drift：活文档↔代码漂移检测（代码变更 → 提示 DSL 过时/欠实现），持久化台账 */
+/** detect_drift：活文档↔代码漂移检测（代码变更 → 提示 DSL 过时/欠实现），持久化台账
+ * ★★ 2026-10-10：**让 `DriftData` 真的进机器通道**。此前本 handler 直接 `return detectDrift(...)`
+ *   —— 产物顶层只有 `message` + `touched`、**没有 `data` 键** ⇒ `wrapData` 的 `machinePayload`
+ *   只回 `{touched}`，把 `status`/`summary`/`suggestions` **在出口静默丢光**。
+ *   ⇒ 实测：`---DATA---` 里**读不到 `status`**，三态（没得比/一致/漂移）**无法机读区分**。
+ *   ★ 处置：拆出 `data`（= DriftData + `touched`），与 `consistency_check` 同一形状（`{message, data}`）。
+ *   ★ `message` **不进 data** —— 它已在正文里，塞进去只是逐字重复（同 import_project 的口径）。 */
 export const detectDriftHandler = wrapData(async (a) => {
-  return detectDrift({
+  const r = await detectDrift({
     feature: a.feature as string,
     code_dir: a.code_dir as string | undefined,
     scope: a.scope as 'changed' | 'all' | undefined,
     since_ref: a.since_ref as string | undefined,
     mode: a.mode as 'check' | 'status' | undefined,
   });
+  const { message, ...data } = r;
+  return { message, data };
 });
 
 /** edit_dsl：统一写操作（复用 updateFeature，Step A 扩展后覆盖更多写动作）

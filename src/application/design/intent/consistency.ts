@@ -119,6 +119,36 @@ function renderBaselineDriftSection(d: BaselineDrift): string {
   return L.join('\n');
 }
 
+/**
+ * ★★★ **「对账」的三态术语**（2026-10-10）—— `consistency_check` 与 `detect_drift` **共用这一处**。
+ *
+ * ## 为什么要单独立它（这不是语义洁癖，是修一个会骗人的读数）
+ * 实测（2026-10-10，真跑）：DSL 里 `expected_apis` **共 0 条**时，
+ * `consistency_check` 报「0/0/0 + ✓ 线 2 无待办（…签名一致）」、`detect_drift` 报
+ * 「状态: clean（对齐）… 无需同步」—— **它什么都没比，却报"好"**。
+ * ★ 读者读到"一致 / 无待办"，会以为**检查过了、没问题**；真相是**没有东西可查**。
+ * ⇒ 这是「判据恒真 = 装饰」的最纯形态（**沉默会被读成"没问题"**）。
+ *
+ * ## 三态（**必须分开**；不许把「没得比」塌进「比过且一致」）
+ * | 态 | 含义 | 词表纪律 |
+ * |---|---|---|
+ * | `no_comparison` | **比了 0 条**（`expected_apis=0` / 无对手） | ★★ **不许**说「一致 / clean / 对齐 / 无需同步」；必须**主动说清"没得比 ⇒ 给不出结论"** |
+ * | `consistent`   | 真的比了 N>0 条，都对得上 | 可说「比过且一致」 |
+ * | `drifted`      | 比了 N>0 条，有对不上的 | 报差异 |
+ *
+ * ★ 判据**只吃两个数**（`compared` / `drifted`）⇒ 两个工具**同一处判**，不会各推一遍（本仓头号病）。
+ */
+export type ComparisonState = 'no_comparison' | 'consistent' | 'drifted';
+
+/**
+ * 三态的**唯一定义**。`compared` = 真的比了多少条；`drifted` = 其中对不上的条数。
+ * ★ 边界在 `compared === 0` —— 那是「没得比」，**不是**「比过且全对」（后者要求 `compared > 0`）。
+ */
+export function comparisonState(compared: number, drifted: number): ComparisonState {
+  if (compared === 0) return 'no_comparison';
+  return drifted > 0 ? 'drifted' : 'consistent';
+}
+
 export interface ConsistencyResult {
   message: string;
   fileResults: FileConsistency[];
@@ -135,12 +165,23 @@ export interface ConsistencyResult {
   baselineDrift?: BaselineDrift;
   summary: {
     total_files: number;
+    /**
+     * ★★★ **真的"比"了多少条 `expected_apis`**（= matched+missing+mismatched；每条约产生一条 `ApiMatch`）。
+     * ★ 它回答「**线 2 到底有没有对手**」；= 0 ⇒ `state='no_comparison'`（**什么都没比，别读成"没问题"**）。
+     */
+    compared: number;
     matched: number;
     missing: number;
     mismatched: number;
     unexpected: number;
     invariant_passed: number;
     invariant_failed: number;
+    /**
+     * ★★★ **三态机读值**（唯一判定见 `comparisonState`）：
+     *   `no_comparison` = 没得比（compared=0）；`consistent` = 比过且一致；`drifted` = 有漂移。
+     * ★ 有了它，调用方**不必**再从"全 0"里猜 —— 全 0 既可能是"没得比"，也可能是"比过且全对"。
+     */
+    state: ComparisonState;
   };
 }
 
@@ -486,9 +527,17 @@ export async function checkConsistency(input: ConsistencyInput): Promise<Consist
   const invariantPassed = invariantResults.filter(r => r.status === 'passed').length;
   const invariantFailed = invariantResults.filter(r => r.status === 'failed').length;
 
+  // ★★★ 2026-10-10：**线 2 到底"比了几条"** + 三态机读值（唯一定义见 `comparisonState`）。
+  //   `comparedCount` = 真的比了多少条 `expected_apis`（每条约产生一条 ApiMatch）——
+  //   `0` ⇒ **没得比**（`expected_apis=0` 或没有文件级条目）：**不许**把这种"没查"读成"没问题"。
+  const comparedCount = matchedCount + missingCount + mismatchedCount;
+  const cmpState = comparisonState(comparedCount, missingCount + mismatchedCount);
+
   // 构建报告消息
   const lines: string[] = [];
-  lines.push(`=== 设计一致性检查报告 - ${feature} ===`);
+  // ★★ 标题**不含「一致」** —— 否则"没得比"态里 grep「一致」会命中标题，读者/机器分不清
+  //   "这是报告名"还是"这是结论"。本工具做的是「设计↔实现**对账**」，报告名照此写。
+  lines.push(`=== 设计↔实现 对账报告 - ${feature} ===`);
   lines.push('');
   // ★★★ 2026-10-09（T85/D1b **正名**）：标题说清这是「**线 2**」——
   //   它的对手是「**人指定的契约**（`expected_apis`）」，**不是**「代码相对基线变了没」（那是**线 1**）。
@@ -500,10 +549,24 @@ export async function checkConsistency(input: ConsistencyInput): Promise<Consist
     //   ★ 与 `check_status` / `scaffold` 的拒**共用同一条说明**（`noFileEntriesMessage`，唯一住处）。
     lines.push(noFileEntriesMessage(feature));
     lines.push('');
-    lines.push('★ 因此 **线 2 无内容可比** —— 不是"没有差异"，是"**没有对手**"（本 feature 的 DSL 里没有逐文件的 `expected_apis` 契约）。');
+    lines.push('★ 因此 **线 2 没得比** —— 不是"没有差异"，是"**没有对手**"（本 feature 的 DSL 里没有逐文件的 `expected_apis` 契约）⇒ **给不出结论**。');
     if (invariantResults.length > 0) lines.push(`  （跨文件不变式仍有判据：通过 ${invariantPassed}/${invariantResults.length}，见下）`);
     lines.push('');
     lines.push('  ★ 「**代码新增**」不在这里 —— 它是**线 1** 的事（相对**基线**），见下面「线 1 · 代码相对基线的变更」。');
+    lines.push('');
+  } else if (comparedCount === 0) {
+    // ★★★ 2026-10-10：**有文件条目，但 `expected_apis` 共 0 条** ⇒ **没得比**。
+    //   ★ 原先落到下面的 else 分支 ⇒ 末尾还说「✓ 线 2 无待办（…签名一致）」——
+    //     **什么都没比却报"一致"**（用户读到"检查过了、没问题"，真相是"没有东西可查"）。
+    //   ★ 这里**主动说清"没得比 ⇒ 给不出结论"**（不许靠"少说一句话"来回避 —— 沉默会被读成"没问题"）。
+    lines.push(`  文件数: ${fileResults.length}`);
+    lines.push(`  ★★ **没得比**：这 ${fileResults.length} 个文件里 \`expected_apis\` 共 **0 条** ⇒ 本轮**实际比对了 0 条**。`);
+    lines.push('  ★ 没得比 ⇒ **给不出结论**：不能说"没问题"，也不能说"有问题"（**没有对手，就没有对错可言**）。');
+    lines.push('  ★ 为什么单独说：报告里若只剩 `0/0/0` + 一句"无待办"，会被读成"查过、没事" —— 而真相是**什么都没查**。');
+    lines.push('  ★ 出路：给这些文件写 `expected_apis`（`import_project` 或 `edit_dsl`），下一轮才有东西可对拍。');
+    lines.push(`  不变式通过: ${invariantPassed}/${invariantResults.length}（★ 不变式是**另一件事**：它不依赖 \`expected_apis\`）`);
+    lines.push('');
+    lines.push('  ★ 「**代码新增**」**不在这里** —— 它是**线 1** 的事（相对**基线**），见下面「线 1 · 代码相对基线的变更」。');
     lines.push('');
   } else {
     lines.push(`  文件数: ${fileResults.length}`);
@@ -586,12 +649,16 @@ export async function checkConsistency(input: ConsistencyInput): Promise<Consist
     lines.push('【建议（仅针对线 2）】');
     lines.push(...advice);
     lines.push('');
-  } else if (fileEntriesPresent) {
-    // ★ 只在**线 2 真的比过**（有对手）时才说"无待办"。★ 没有文件级条目时**不说这句** ——
-    //   否则"契约已实现、签名一致"会被读成"线 2 跑过且全过"，而真相是"线 2 没有对手"（上面已如实写明）。
-    lines.push('  ✓ **线 2 无待办**（人指定的契约都已实现、签名一致）—— 这不是"没跑"。');
+  } else if (cmpState === 'consistent') {
+    // ★★ 只在**线 2 真的比过**（`comparedCount > 0`）且**全对得上**时才说这句。
+    //   ★ 判据从 `fileEntriesPresent` 改成 `cmpState === 'consistent'`：后者在
+    //     `expected_apis=0`（**有文件却没契约**）时也成立 ⇒ 会说出「无待办（…签名一致）」
+    //     这种**没比就报好**的话（2026-10-10 实测的真缺陷，本笔修的就是它）。
+    lines.push(`  ✓ **线 2 比过且一致**（比了 ${comparedCount} 条契约，全部对得上）—— 这不是"没跑"。`);
     lines.push('');
   }
+  // ★ `cmpState === 'no_comparison'`（**没得比**）在此**刻意什么都不说** ——
+  //   上面「没得比 ⇒ 给不出结论」那一段已把话说清；这里若再补一句"无待办/一致"就是**没比却报好**。
 
   // ★ 线 1 排在**线 2 整段（摘要 + 建议）之后** —— 两条线各自自成一段（见上）。
   const baselineDrift = checkBaselineDrift(feature, codeDir);
@@ -604,12 +671,14 @@ export async function checkConsistency(input: ConsistencyInput): Promise<Consist
     invariantResults,
     summary: {
       total_files: fileResults.length,
+      compared: comparedCount,
       matched: matchedCount,
       missing: missingCount,
       mismatched: mismatchedCount,
       unexpected: unexpectedCount,
       invariant_passed: invariantPassed,
       invariant_failed: invariantFailed,
+      state: cmpState,
     },
   };
 }

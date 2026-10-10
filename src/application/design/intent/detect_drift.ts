@@ -19,7 +19,7 @@ import path from 'node:path';
 import { execSync } from 'node:child_process';
 import { getDSL, getStorageRoot } from '../../../infrastructure/storage.js';
 import { gitRootOf } from '../../../infrastructure/analysis/project_root/index.js';
-import { checkConsistency } from './consistency.js';
+import { checkConsistency, comparisonState } from './consistency.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
 export interface DetectDriftInput {
@@ -41,7 +41,15 @@ export interface DetectDriftInput {
   mode?: 'check' | 'status';
 }
 
-export type DriftStatus = 'clean' | 'design_stale' | 'missing_impl' | 'design_stale_and_missing_impl';
+/**
+ * ★★★ 2026-10-10：**加了第四态 `no_comparison`（没得比）** —— 与 `consistent/clean` **必须分开**。
+ *
+ * 由来（实测，真跑）：`expected_apis` 共 0 条时，原先 `staleCount===0 && missingCount===0` ⇒ 判成
+ * `clean`，于是输出「状态: clean（对齐）… 设计与当前代码对齐，无需同步」——
+ * **它一条都没比，却报"对齐、无需同步"**。读者会把"没查"读成"查过、没事"。
+ * ★ 判据与词表**共用 `comparisonState`（唯一住处）** ⇒ 不与 `consistency_check` 各推一遍。
+ */
+export type DriftStatus = 'no_comparison' | 'clean' | 'design_stale' | 'missing_impl' | 'design_stale_and_missing_impl';
 
 export interface DriftData {
   feature: string;
@@ -50,6 +58,11 @@ export interface DriftData {
   scope: { mode: 'changed' | 'all'; since_ref: string | null; changed_files: number };
   summary: {
     checked_files: number;
+    /**
+     * ★★★ 2026-10-10：**本轮真的比了几条 `expected_apis`**（`matched+missing+mismatched+unexpected`）。
+     *   = 0 ⇒ `status='no_comparison'`（没得比）—— ★ 别把"全 0"读成"对齐"。
+     */
+    compared: number;
     matched: number;
     missing: number;
     mismatched: number;
@@ -93,6 +106,16 @@ function gitChangedFiles(root: string, ref: string): string[] {
 
 const norm = (p: string): string => path.resolve(p).toLowerCase();
 
+/**
+ * ★ 状态枚举 → **人话标签**（三态渲染的**唯一住处**，`check` 与 `status` 两条路径共用）。
+ *   `no_comparison` **绝不**写成「对齐/一致」；`clean` 只在**真的比过**（compared>0）时才会出现。
+ */
+function driftStatusLabel(status: DriftStatus): string {
+  if (status === 'no_comparison') return 'no_comparison（**没得比**：比了 0 条）';
+  if (status === 'clean') return 'clean（比过且一致）';
+  return status;
+}
+
 async function detectDriftCore(input: DetectDriftInput): Promise<DriftData & { message: string }> {
   const { feature, code_dir, mode = 'check' } = input;
 
@@ -102,7 +125,7 @@ async function detectDriftCore(input: DetectDriftInput): Promise<DriftData & { m
       throw new Error(`feature "${feature}" 尚无漂移台账，先用 mode=check 检测一次`);
     }
     const data = JSON.parse(fs.readFileSync(f, 'utf-8')) as DriftData & { verdict?: string };
-    const msg = `[detect_drift 台账] ${feature}: ${data.status}（${data.checked_at ?? '未知'}，scope=${data.scope.mode}）。drifted=${data.drifted}`;
+    const msg = `[detect_drift 台账] ${feature}: ${driftStatusLabel(data.status)}（${data.checked_at ?? '未知'}，scope=${data.scope.mode}）。drifted=${data.drifted}`;
     return { message: msg, ...data };
   }
 
@@ -153,8 +176,12 @@ async function detectDriftCore(input: DetectDriftInput): Promise<DriftData & { m
 
   const staleCount = unexpected + mismatched;
   const missingCount = missing;
-  const status: DriftStatus =
-    staleCount > 0 && missingCount > 0
+  // ★★★ 2026-10-10：**先算"到底比了几条"**（每条 api 计入一次）—— `0` ⇒ **没得比**，不是 clean。
+  const compared = matched + missing + mismatched + unexpected;
+  const noComparison = comparisonState(compared, staleCount + missingCount) === 'no_comparison';
+  const status: DriftStatus = noComparison
+    ? 'no_comparison'
+    : staleCount > 0 && missingCount > 0
       ? 'design_stale_and_missing_impl'
       : staleCount > 0
         ? 'design_stale'
@@ -171,7 +198,18 @@ async function detectDriftCore(input: DetectDriftInput): Promise<DriftData & { m
     suggestions.push('实现欠账：设计契约已立但代码未实现 expected_apis，补齐对应实现。');
   }
   if (staleCount === 0 && missingCount === 0) {
-    suggestions.push('设计与当前代码对齐，无需同步。');
+    if (noComparison) {
+      // ★★★ **没得比**：一条都没比 ⇒ 报"对齐/无需同步"就是"没查=报好"。
+      //   ★ 必须**主动说清"给不出结论"**（不许靠"少说一句"回避 —— 沉默会被读成"没问题"）。
+      //   ★ 词表：这段里**不许**出现「一致 / clean / 对齐 / 无需同步」。
+      suggestions.push(
+        '**没得比**：本轮实际比对了 **0 条** `expected_apis`（该作用域内设计没有逐文件契约）⇒ **给不出结论**' +
+          '——不能据此判断设计对不对得上代码（既不是"没问题"，也不是"有问题"）。' +
+          '★ 出路：给文件写 `expected_apis`（`import_project` 或 `edit_dsl`）后再跑一次。',
+      );
+    } else {
+      suggestions.push(`设计与当前代码对得上（比了 ${compared} 条契约，无需同步）。`);
+    }
   }
 
   const data: DriftData = {
@@ -181,6 +219,7 @@ async function detectDriftCore(input: DetectDriftInput): Promise<DriftData & { m
     scope: { mode: scopeMode, since_ref: (scopeMode === 'changed' && !(input.changed_files && input.changed_files.length > 0)) ? (input.since_ref ?? 'HEAD') : null, changed_files: changedAbs.size },
     summary: {
       checked_files: scoped.length,
+      compared,
       matched,
       missing,
       mismatched,
@@ -203,9 +242,11 @@ async function detectDriftCore(input: DetectDriftInput): Promise<DriftData & { m
     scopeMode === 'changed'
       ? `（仅 ${changedAbs.size} 个相关变更文件${changedAbs.size === 0 ? `，可能相对 ${input.since_ref ?? 'HEAD'} 无改动或未命中；可用 scope=all 全量对标` : ''}）`
       : '（全量文件）';
+  // ★★★ 2026-10-10：状态标签**把三态用人话说出**（机读值仍是 `status`；渲染唯一住处 = `driftStatusLabel`）。
+  const statusLabel = driftStatusLabel(status);
   const lines = [
     `══ detect_drift [${feature}] ══`,
-    `  状态: ${status}${drifted ? '' : '（对齐）'} ${scopeNote}`,
+    `  状态: ${statusLabel} ${scopeNote}`,
     '',
     `  已检文件: ${data.summary.checked_files}`,
     `  ✅ 满足: ${matched}`,
