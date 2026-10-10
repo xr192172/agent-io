@@ -29,7 +29,8 @@ import { INDEX_SKIP_DIR_EXTRA, isNoiseFileName, isTestFileName, isUnderSkippedDi
 import { hasLiveIndex } from '../../write_gate.js';
 import { pendingSelfWrites } from '../../../infrastructure/index/self_writes.js';
 import { backfillState, backfillSummary, isIndexIncomplete } from '../../../infrastructure/index/index_backfill.js';
-import { ensureProjectIndex, type IndexState } from '../../../infrastructure/index/index_freshness.js';
+import { ensureProjectIndex, type IndexState, type FreshnessReport } from '../../../infrastructure/index/index_freshness.js';
+import { walkFiles } from '../../../infrastructure/graph/import_project.js';
 import { summarizeLanguagesByTier, type LanguageTierSummary } from '../../refactor/parse_capability/parse_capability.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
@@ -78,7 +79,15 @@ export interface IndexIntegrityResult {
     indexed_files_by_kind: FileKindCounts;
     /** 未索引按类拆分。★ `main > 0` 才是**真缺陷**；`test` 是 `include_tests=false` 的**有意结果** */
     not_indexed_by_kind: FileKindCounts;
-    /** 索引有、磁盘没有（= 需要清理的幽灵行） */
+    /**
+     * 索引有、**磁盘上没有**（= 需要清理的幽灵行）。
+     * ★ 判据 = 该路径 `fs.existsSync` 为 false —— **不是**"不在源码走查集里"。
+     *   为什么必须用 fs 存在性（2026-10-11 修）：原实现是 `!diskSet.has(p)`，而 `diskSet` 是
+     *   **源码走查**（`walkSourceFiles`，只收代码类扩展名）⇒ 任何被索引、却**不是代码类**的文件
+     *   （典型：`include_docs`/编辑路径落进索引的 `.md` 文档）都被误判成"幽灵"。实测本仓：
+     *   索引里 6 个 `.md` **都在磁盘上**，却被报成 6 条幽灵，且它给的 fix（`refresh:true 清理`）
+     *   是**空操作**（保鲜的删除侦测按 `fs.existsSync` 判定，磁盘在 ⇒ 不删）——"说了做了、但没做"。
+     */
     ghosts: number;
     nodes: number;
     edges: number;
@@ -106,6 +115,16 @@ export interface IndexIntegrityResult {
     not_fresh: number;
     /** 抽样列出的文件名（最多 20 条，供定位） */
     not_fresh_sample: string[];
+    /**
+     * ★★ **refresh 覆盖不到**的那部分未保鲜文件（2026-10-11 加）。
+     * 判据 = 该相对路径**不在保鲜重同步范围内**（范围 = 索引器的 `walkFiles(root,false,false)`：
+     * 只走查**代码类**源码、且 `include_tests=false`）。典型：索引里的 `.md` 文档 ——
+     * 它们能进索引（`include_docs`/编辑路径），却**永不被保鲜重解析**。
+     * 为什么单列：`refresh:true` 之后若仍有 blocker，工具**必须**说清"哪些是 refresh 覆盖不到的"，
+     * 否则就会一边标"已保鲜"、一边留着没消的 blocker（**它自己给的 fix 对自己无效**）。
+     * ★ 仅当 `refresh:true` 时非空（只在保鲜范围内才有资格谈"覆盖"）。
+     */
+    not_fresh_out_of_scope: string[];
     /** 待消费的自写登记文件数（同步写工具登记过、还没被读路径消费） */
     self_writes_pending: number;
   };
@@ -114,8 +133,38 @@ export interface IndexIntegrityResult {
   /** P10 能力自述：已索引文件按语言的解析层级汇总（文件数降序；渲染时截前 8 行） */
   languages: LanguageTierSummary[];
   issues: IntegrityIssue[];
-  /** 综合判定：`true` = 眼下读到的东西可以当真 */
+  /**
+   * ★★★ **综合判定（三态，机读）** —— 唯一判据见 {@link integrityVerdict}。
+   * 与 `consistency_check` 的 `comparisonState` **同款纪律**（本仓先例，见 `intent/consistency.ts`）：
+   *   · `trusted`   = **查了、没发现**（有可用索引，且无 blocker、无幽灵行）
+   *   · `untrusted` = **查了、发现了**（有 blocker，或存在幽灵行 —— ★ 幽灵**属于**这里）
+   *   · `unknown`   = **查不了 / 没得查**（还没有可用索引 ⇒ **给不出结论**，不是"可信"也不是"不可信"）
+   * ★ 为什么必须三态（2026-10-11 修）：原先只有一个布尔 `trustworthy`，规则是
+   *   `state!=='empty' && stale_resolved===0 && notFreshCount===0` —— **幽灵行压根没进判据**
+   *   ⇒ 造出幽灵文件时 headline 照旧说"✅ 可信"（**算了判据，却不拿它定 headline**）。
+   *   而"查不了"（无索引）也被塌进 `false`，与"不可信"混为一谈。
+   */
+  verdict: 'trusted' | 'untrusted' | 'unknown';
+  /**
+   * 布尔口径（**保留**，= `verdict === 'trusted'`）：`true` = 眼下读到的东西可以当真。
+   * ★ 只回答"可信吗"；"为什么不可信 / 是不是查不了"看 {@link verdict} 与 {@link summary}。
+   */
   trustworthy: boolean;
+  /**
+   * refresh:true 时的**保鲜回执**（原样记录保鲜实际做了什么）—— 没传 refresh 则 undefined。
+   * ★ 为什么要有它：headline 不许在没做事时宣称做了事。有了逐项计数，
+   *   "本次已跑保鲜"才能落在**具体做了多少**上，而不是一句空口承诺。
+   */
+  refresh_receipt?: {
+    checked: number;
+    resynced: number;
+    added: number;
+    removed: number;
+    failed: number;
+    skipped_adds: number;
+    bootstrapped: number;
+    state: IndexState;
+  };
   /** 人读一句总结（供 LLM 直接引用） */
   summary: string;
 }
@@ -156,6 +205,50 @@ export function repairStaleResolvedRefs(
 }
 
 /**
+ * ★★★ **三态判定的唯一定义** —— 与 `consistency_check` 的 `comparisonState` 同款纪律
+ * （本仓先例：`intent/consistency.ts` 的 `comparisonState`，同样只吃两个数、**同一处判**）。
+ *
+ * | 态 | 含义 | 判据 |
+ * |---|---|---|
+ * | `unknown`   | **查不了 / 没得查**（还没有可用索引） | `!hasIndex` |
+ * | `untrusted` | **查了、发现了**（有 blocker，或存在幽灵行） | `hasIndex && (hasBlocker || hasGhost)` |
+ * | `trusted`   | **查了、没发现** | `hasIndex && !hasBlocker && !hasGhost` |
+ *
+ * ★ 关键边界①：**幽灵行（ghost）属于 `untrusted`，不是"看不见"** —— 索引里有一行、磁盘上没有，
+ *   任何"基于索引"的读数都可能指向一个不存在的东西 ⇒ headline 不许说"可信"（2026-10-11 修）。
+ * ★ 关键边界②：**"查不了" ≠ "不可信"**。无索引时给不出结论，必须**主动说清**，
+ *   不能塌进 `trustworthy:false`（那会被读成"查过了、有问题"）。
+ */
+export function integrityVerdict(args: {
+  /** 有没有可用索引（`false` ⇒ 查不了） */
+  hasIndex: boolean;
+  /** 有没有 blocker 级问题（陈旧断言 / 未保鲜文件 …） */
+  hasBlocker: boolean;
+  /** 有没有幽灵行（索引有、磁盘无） */
+  hasGhost: boolean;
+}): 'trusted' | 'untrusted' | 'unknown' {
+  if (!args.hasIndex) return 'unknown';
+  return args.hasBlocker || args.hasGhost ? 'untrusted' : 'trusted';
+}
+
+/** 保鲜回执：把 `FreshnessReport` 收成结果里那几项（**原样**搬运，不加工、不隐瞒） */
+function receiptOf(
+  r: FreshnessReport,
+  state: IndexState,
+): NonNullable<IndexIntegrityResult['refresh_receipt']> {
+  return {
+    checked: r.checked,
+    resynced: r.resynced,
+    added: r.added,
+    removed: r.removed,
+    failed: r.failed,
+    skipped_adds: r.skipped_adds,
+    bootstrapped: r.bootstrapped,
+    state,
+  };
+}
+
+/**
  * 索引可信度自检。
  * @param opts.refresh true = 先跑一次保鲜（`ensureProjectIndex`）再报告；默认 false（纯只读）
  * @param opts.sample  抽样条数上限（默认 20）
@@ -172,10 +265,13 @@ async function indexIntegrityCore(opts: {
   let state: IndexState = 'empty';
 
   let db: ReturnType<typeof getProjectCacheDb> | null = null;
+  /** refresh:true 时的保鲜回执（原样记录保鲜实际做了什么；未 refresh 则 null） */
+  let refreshReport: FreshnessReport | null = null;
   if (opts.refresh === true) {
     const idx = await ensureProjectIndex(root);
     db = idx.db;
     state = idx.state;
+    refreshReport = idx.report;
     refreshed = true;
   } else if (hasLiveIndex(root)) {
     try {
@@ -204,7 +300,12 @@ async function indexIntegrityCore(opts: {
         not_indexed_by_kind: { main: 0, test: 0, noise: 0, excluded: 0 },
       },
       refs: { pending: 0, resolved: 0, external: 0, failed: 0, stale_resolved: 0 },
-      freshness: { not_fresh: 0, not_fresh_sample: [], self_writes_pending: pendingSelfWrites(root).length },
+      freshness: {
+        not_fresh: 0,
+        not_fresh_sample: [],
+        not_fresh_out_of_scope: [],
+        self_writes_pending: pendingSelfWrites(root).length,
+      },
       backfill: backfillSummary(backfillState(root)),
       languages: [],
       issues: [
@@ -215,8 +316,13 @@ async function indexIntegrityCore(opts: {
           fix: '传 refresh:true 就地建立，或直接用任意读工具（零前置冷启会自动建）',
         },
       ],
+      // ★ 三态：无索引 = **查不了**（给不出结论），不是"不可信"，也不是"可信"。
+      verdict: integrityVerdict({ hasIndex: false, hasBlocker: false, hasGhost: false }),
       trustworthy: false,
-      summary: '索引不可用：还没有建索引。此时任何"基于索引"的查询都应当先建索引。',
+      ...(refreshReport !== null ? { refresh_receipt: receiptOf(refreshReport, state) } : {}),
+      summary:
+        '索引**不可用（查不了）**：还没有建索引 ⇒ **给不出可信与否的结论**。' +
+        '此时任何"基于索引"的查询都应先建索引（传 refresh:true，或用任意读工具触发零前置冷启）。',
     };
   }
 
@@ -269,7 +375,12 @@ async function indexIntegrityCore(opts: {
   const notIndexedSet = [...diskSet].filter((p) => !indexedSet.has(p));
   const not_indexed_by_kind = tally(notIndexedSet);
   const not_indexed = notIndexedSet.length;
-  const ghosts = [...indexedSet].filter((p) => !diskSet.has(p)).length;
+  // ★★ 幽灵行 = **索引里有、磁盘上却没有**（判据 = `fs.existsSync` 为 false）。
+  //   2026-10-11 修：原实现是 `!diskSet.has(p)`，而 `diskSet` 是**源码走查**（只收代码类扩展名）
+  //   ⇒ 任何"被索引、但不是代码类"的文件（本仓实测：6 个 `.md` 文档，全在磁盘上）被误报成幽灵，
+  //   且它给的 fix（`refresh:true 清理`）是空操作（保鲜删除侦测按 `fs.existsSync` 判定，磁盘在 ⇒ 不删）。
+  //   ⇒ 改成 fs 存在性：与字段自身定义（"磁盘上没有"）一致，也让 fix 真的可执行。
+  const ghosts = [...indexedSet].filter((p) => !fs.existsSync(path.join(root, p))).length;
 
   // ── 引用状态 ──
   const byStatus = (s: string): number =>
@@ -296,8 +407,8 @@ async function indexIntegrityCore(opts: {
   }
 
   // ── 新鲜度（stat 比对；只 stat 不解析，O(已索引文件数)）──
-  const notFresh: string[] = [];
-  let notFreshCount = 0;
+  const notFresh: string[] = []; // 抽样展示（≤ sampleN）
+  const notFreshAll: string[] = []; // 全量（供与"保鲜范围"求差）
   for (const rel of indexedSet) {
     let st: fs.Stats;
     try {
@@ -310,8 +421,27 @@ async function indexIntegrityCore(opts: {
       | undefined;
     if (!row) continue;
     if (row.size !== st.size || row.modified_at !== Math.round(st.mtimeMs)) {
-      notFreshCount++;
+      notFreshAll.push(rel);
       if (notFresh.length < sampleN) notFresh.push(rel);
+    }
+  }
+  const notFreshCount = notFreshAll.length;
+
+  // ★★ 保鲜**覆盖范围**（2026-10-11 加）：`ensureFreshIndex` 只重同步 `walkFiles(root,false,false)`
+  //   —— 即**代码类源码、且 include_tests=false**。索引里若有该范围之外的文件（典型：`.md` 文档），
+  //   它们**永远**落在"未保鲜"里 ⇒ `refresh:true` 之后 blocker 不消。
+  //   这里把这批文件单独分出来 ⇒ headline 才能**如实说清"refresh 覆盖不到它们"**，
+  //   而不是一边标"已保鲜"、一边留着未消的 blocker。
+  //   仅在 `refresh:true` 时计算（只有真跑过保鲜，"覆盖不到"这句话才成立）。
+  let notFreshOutOfScope: string[] = [];
+  if (refreshed) {
+    try {
+      const scope = new Set(
+        walkFiles(root, false, false).map((abs) => path.relative(root, abs).split(path.sep).join('/')),
+      );
+      notFreshOutOfScope = notFreshAll.filter((rel) => !scope.has(rel));
+    } catch {
+      /* 走查失败：不臆测，留空（headline 会退回"仍有 N 项不一致"的一般说法） */
     }
   }
 
@@ -331,11 +461,24 @@ async function indexIntegrityCore(opts: {
     issues.push({ code: 'stale_refs_repaired', severity: 'info', message: repair });
   }
   if (notFreshCount > 0) {
+    const outScopeN = notFreshOutOfScope.length;
+    // ★ 保鲜之后仍有"未保鲜"时，**必须说清哪些是 refresh 覆盖不到的**（否则 headline 会
+    //   "说了做了、但没做"——把没消的 blocker 藏在一句"已保鲜"后面）。
+    const scopeNote = !refreshed
+      ? ''
+      : outScopeN > 0
+        ? ` ★ 本次已跑 refresh，但其中 ${outScopeN} 个**不在保鲜重解析范围内**` +
+          '（保鲜只走查**代码类**源码、`include_tests=false`）⇒ refresh **覆盖不到**它们：' +
+          `${notFreshOutOfScope.slice(0, 5).join(', ')}${outScopeN > 5 ? ' …' : ''}`
+        : ' （本次 refresh 已覆盖此范围 ⇒ 仍在列说明保鲜未收敛，见下方保鲜回执）';
     issues.push({
       code: 'files_not_fresh',
       severity: 'blocker',
-      message: `${notFreshCount} 个已索引文件与磁盘不一致（自上次索引后被改过）`,
-      fix: '传 refresh:true 重同步；或直接调读工具（保鲜路径会自动同步）',
+      message: `${notFreshCount} 个已索引文件与磁盘不一致（自上次索引后被改过）${scopeNote}`,
+      fix:
+        outScopeN > 0
+          ? 'refresh:true 只重同步**代码类**文件；★ 上面列出的非代码类（如 `.md`）不在其列 —— 需 `import_project({include_docs:true})` 重导入或从索引移除'
+          : '传 refresh:true 重同步；或直接调读工具（保鲜路径会自动同步）',
     });
   }
   if (ghosts > 0) {
@@ -343,7 +486,7 @@ async function indexIntegrityCore(opts: {
       code: 'ghost_files',
       severity: 'warn',
       message: `索引里有 ${ghosts} 个文件在磁盘上已不存在（幽灵行）`,
-      fix: '传 refresh:true 清理',
+      fix: '传 refresh:true 清理（保鲜的删除侦测按磁盘存在性判定，磁盘上已无的会被移除）',
     });
   }
   if (selfWrites.length > 0) {
@@ -392,18 +535,33 @@ async function indexIntegrityCore(opts: {
     });
   }
 
-  const trustworthy = state !== 'empty' && stale_resolved === 0 && notFreshCount === 0;
-  const summary = trustworthy
-    ? `索引可信：${indexed_files} 文件 / ${nodes} 节点 / ${edges} 边 ｜ 陈旧断言 0 ｜ 未保鲜文件 0` +
-      (not_indexed > 0 ? `（另有 ${not_indexed} 个文件未索引，属拼图按需状态）` : '')
-    : `索引**不可全信**：` +
-      [
-        stale_resolved ? `陈旧断言 ${stale_resolved} 条（会静默漏报引用）` : '',
-        notFreshCount ? `${notFreshCount} 个文件自上次索引后被改过` : '',
-        state === 'empty' ? '还没有可用索引' : '',
-      ]
-        .filter(Boolean)
-        .join('；');
+  // ★★ 综合判定：**由上面这批 issue（已算出的判据）导出**，不再另立一套数。
+  //   2026-10-11 修：原先 `trustworthy = state!=='empty' && stale_resolved===0 && notFreshCount===0`
+  //     —— 幽灵行**压根没进这条式子**（算了 `ghosts`、却没拿它定 headline）。
+  //   现在：凡 blocker 级 issue，或有幽灵行 ⇒ `untrusted`；无索引 ⇒ `unknown`；其余 ⇒ `trusted`。
+  //   `ghosts > 0` 单列（它是 warn，但按判据"索引指向不存在的东西"必须进 headline）。
+  const hasBlocker = issues.some((i) => i.severity === 'blocker');
+  const verdict = integrityVerdict({ hasIndex: state !== 'empty', hasBlocker, hasGhost: ghosts > 0 });
+  const trustworthy = verdict === 'trusted';
+  const summary =
+    verdict === 'trusted'
+      ? `索引可信：${indexed_files} 文件 / ${nodes} 节点 / ${edges} 边 ｜ 陈旧断言 0 ｜ 未保鲜文件 0 ｜ 幽灵行 0` +
+        (not_indexed > 0 ? `（另有 ${not_indexed} 个文件未索引，属拼图按需状态）` : '')
+      : verdict === 'unknown'
+        ? '索引**不可用（查不了）**：还没有可用索引 ⇒ **给不出可信与否的结论**。'
+        : `索引**不可信**：` +
+          [
+            stale_resolved ? `陈旧断言 ${stale_resolved} 条（会静默漏报引用）` : '',
+            notFreshCount
+              ? `${notFreshCount} 个文件自上次索引后被改过` +
+                (refreshed && notFreshOutOfScope.length > 0
+                  ? `（其中 ${notFreshOutOfScope.length} 个不在保鲜重解析范围内，refresh 覆盖不到）`
+                  : '')
+              : '',
+            ghosts ? `${ghosts} 个幽灵行（索引有、磁盘无）` : '',
+          ]
+            .filter(Boolean)
+            .join('；');
 
   return {
     project_root: root,
@@ -431,12 +589,15 @@ async function indexIntegrityCore(opts: {
     freshness: {
       not_fresh: notFreshCount,
       not_fresh_sample: notFresh,
+      not_fresh_out_of_scope: notFreshOutOfScope,
       self_writes_pending: selfWrites.length,
     },
     backfill: backfillSummary(bf),
     languages: summarizeLanguagesByTier([...indexedSet]),
     issues,
+    verdict,
     trustworthy,
+    ...(refreshReport !== null ? { refresh_receipt: receiptOf(refreshReport, state) } : {}),
     summary,
   };
 }
@@ -482,9 +643,17 @@ export async function indexIntegrity(opts: {
 
 /** 人读多行（供工具结果直接呈现） */
 export function renderIntegrity(r: IndexIntegrityResult): string {
+  const verdictLabel: Record<IndexIntegrityResult['verdict'], string> = {
+    trusted: '✅ 可信',
+    untrusted: '⚠️ 不可信',
+    unknown: '❓ 查不了（还没有可用索引）',
+  };
   const lines = [
     `索引可信度自检 —— ${r.project_root}`,
-    `  判定：${r.trustworthy ? '✅ 可信' : '⚠️ 不可全信'}${r.refreshed ? '（本次已顺手保鲜）' : ''}`,
+    // ★ 判定**只读三态 `verdict`**（唯一定义见 `integrityVerdict`）—— 不再用布尔自己拼词。
+    //   ★ 也**不再**无条件追加"（本次已顺手保鲜）"：那句话曾是空头承诺（保鲜覆盖不到的 blocker 还在）。
+    //     保鲜到底做了什么，看下面那行**逐项回执**；覆盖不到的，由问题区如实点名。
+    `  判定：${verdictLabel[r.verdict]}`,
     `  ${r.summary}`,
     `  规模：索引 ${r.counts.indexed_files} 文件 / 磁盘源码 ${r.counts.disk_files} 文件（未索引 ${r.counts.not_indexed}）` +
     `
@@ -497,6 +666,21 @@ export function renderIntegrity(r: IndexIntegrityResult): string {
     `  ★ 陈旧断言（resolved 但目标名已不在索引）：${r.refs.stale_resolved}`,
     `  新鲜度：不一致 ${r.freshness.not_fresh} ｜ 待消费自写登记 ${r.freshness.self_writes_pending} ｜ ${r.backfill}`,
   ];
+  if (r.refresh_receipt) {
+    const c = r.refresh_receipt;
+    lines.push(
+      `  保鲜回执（本次 refresh 实际做的）：走查 ${c.checked} ｜ 重同步 ${c.resynced} ｜ 新增 ${c.added} ｜ 清理 ${c.removed} ｜ 失败 ${c.failed}` +
+        (c.skipped_adds ? ` ｜ 超限跳过新增 ${c.skipped_adds}` : ''),
+    );
+    // ★ 保鲜之后若**仍有 blocker**，明说"哪些是它覆盖不到的"——不许用一句"已保鲜"盖过去。
+    if (r.verdict !== 'trusted' && r.freshness.not_fresh_out_of_scope.length > 0) {
+      lines.push(
+        `  ★ 保鲜**未竟**：refresh 之后仍有 ${r.freshness.not_fresh} 项不一致，其中 ` +
+          `${r.freshness.not_fresh_out_of_scope.length} 项**不在保鲜重解析范围内**（索引器只走查代码类源码，` +
+          '`.md` 等文档类不在其列）⇒ **这份 refresh 覆盖不到它们**（详见下方问题）。',
+      );
+    }
+  }
   if (r.languages.length) {
     const tierLabel: Record<string, string> = { call: '调用级', symbol: '符号级', none: '不解析' };
     // 只展示前 8 种（按文件数）；同层级合并显示避免长尾刷屏
