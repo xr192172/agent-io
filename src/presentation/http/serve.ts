@@ -80,6 +80,7 @@ import {
   resetStats,
   testProvider,
   hasEnabledProvider,
+  ensureSeededFromEnv,
   handleOpenAICompatRequest,
   type OpenAICompatRequest,
 } from '../../infrastructure/llm_gateway.js';
@@ -2002,12 +2003,13 @@ async function handleApiDictGenerate(req: http.IncomingMessage, res: http.Server
       sendJson(res, 400, { success: false, message: '缺少 term 参数' });
       return;
     }
+    // ★ 出网入口：首次真正要用 key 时把 env 里的配置一次性导入网关（key 的家 = gateway；env 只是导入源）。
+    ensureSeededFromEnv();
     if (!hasEnabledProvider()) {
       sendJson(res, 200, { success: false, message: '未配置 LLM（网关无可用供应商），无法生成' });
       return;
     }
-    const gen = await generateDictEntry(term);
-    sendJson(res, 200, { success: true, ...gen });
+    const gen = await generateDictEntry(term);    sendJson(res, 200, { success: true, ...gen });
   } catch (e) {
     sendError(res, 500, (e as Error).message);
   }
@@ -2232,10 +2234,12 @@ function handleApiExplain(req: http.IncomingMessage, res: http.ServerResponse): 
  */
 async function handleApiExplainGenerate(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
   try {
+    // ★ 出网入口：首次真正要用 key 时把 env 里的配置一次性导入网关（key 的家 = gateway；env 只是导入源）。
+    ensureSeededFromEnv();
     if (!hasEnabledProvider()) {
       sendJson(res, 200, {
         success: false,
-        note: '未配置 LLM（网关无可用供应商，亦无 AGNES_API_KEY / DEEPSEEK_API_KEY 环境变量），已保留手写文案',
+        note: '未配置 LLM（网关无可用供应商），已保留手写文案',
       });
       return;
     }

@@ -310,7 +310,10 @@ export const META_TOOLS: ToolDef[] = [
     title: 'Manage LLM gateway providers & usage (single entry)',
     description:
       '小网关供应商 + 用量统一入口（收敛原 gateway_* 4 工具为 1 入口，action 分派）：' +
-      'action=list 列出已注册供应商（key 脱敏：露首 3 + 尾 4，长度 ≤8 全遮）+ 用量汇总；' +
+      '★ Key 的**家就在这里**（gateway.json）：可配**多供应商**、每个供应商一个 **Key 池**（多 key）。' +
+      '★ 环境变量（AGNES_KEY_POOL/AGNES_API_KEY/AGNES_UPSTREAM_BASE/AGNES_BASE_URL/AGNES_MODEL）只是**导入源**——' +
+      '旧配置会在**首次写类/出网访问**时被**一次性导入** gateway.json；此后 key 一律从 gateway 读，env 不再是住处。' +
+      'action=list 列出已注册供应商（**只读，不改文件**；key 脱敏：露首 3 + 尾 4，长度 ≤8 全遮）+ 用量汇总；' +
       'action=upsert 注册/更新一个供应商到 Key 池（同供应商多 key 入一个池，调用时加权轮询 + 失败自动切下一个 key/供应商；' +
       'OpenAI 兼容协议 base_url 形如 https://api.openai.com/v1；已存在同 id 则按传入字段合并更新）；' +
       'action=delete 删除一个供应商及其 Key 池；' +

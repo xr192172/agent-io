@@ -6,7 +6,9 @@
  * 共用**同一份**「选 key / 冷却 blockedUntil / 换 key 重试」的状态机，不再各写一份。
  *
  * ★ 本模块只放**与具体上游/协议无关**的池机制；上游地址、模型、读哪个 env 由调用方
- *   （`llm_focus` 的 `resolveAgnes*`）决定 —— 这样"上游/key池/模型"仍只有**一处**解析。
+ *   （`llm_agnes` 的 `resolveAgnes*`，被网关"种入/导入"与出网共用）决定 —— 这样"上游/key池/模型"仍只有**一处**解析。
+ * ★★ 2026-10-11（用户裁定）：key 的家 = 网关 `gateway.json`；`loadKeys` 只是**env 导入源**用的读取器
+ *   （由 `llm_agnes.resolveAgnesKeys` 调用，且**只在种入那一刻**被调用一次）。
  */
 
 /** 多 key 轮换池（round-robin + 冷却窗口） */

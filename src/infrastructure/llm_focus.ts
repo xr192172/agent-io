@@ -18,11 +18,8 @@ import {
   agnesApiBaseUrl,
   DEFAULT_AGNES_MODEL,
   DEFAULT_AGNES_UPSTREAM,
-  resolveAgnesApiBaseUrl,
-  resolveAgnesKeys,
-  resolveAgnesModel,
 } from './llm_agnes.js';
-import { chatViaGateway, hasEnabledProvider } from './llm_gateway.js';
+import { chatViaGateway, ensureSeededFromEnv, firstUsableProvider, hasEnabledProvider } from './llm_gateway.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -62,10 +59,14 @@ export function configFileReadPath(): string {
 }
 
 // ─────────────────────────────────────────────────────────────
-// AGNES 上游 / key（池） / 模型 —— 唯一住处已迁至 `llm_agnes.ts`（叶子模块）
+// AGNES 上游 / key（池） / 模型 —— ★ key 的家在 gateway（T133 已迁）
 // ─────────────────────────────────────────────────────────────
 // ★ 2026-10-10：此段原住本文件；为消除 `llm_focus ↔ llm_gateway` 的循环依赖（会话线 callChat 出网要经网关，
 //   而网关读 AGNES 配置）已抽到 `llm_agnes.ts`。这里改为 import，语义与归一化口径不变。
+// ★★ 2026-10-11（用户裁定）：**关键的家从 env 改成 gateway** —— AGNES 的 key 由 env **一次性导入** `gateway.json`
+//   （`ensureSeededFromEnv`），此后 key 一律从 gateway 读（`firstUsableProvider`）。
+//   ⇒ 本文件**不再调用 `resolveAgnesKeys()` 从 env 取 key**；env 只在"导入那一刻"被读。
+//   ★ 编排上：先 `ensureSeededFromEnv()`（若是"要用 LLM"的入口）⇒ 再 `firstUsableProvider()`（只读 gateway）。
 
 // ─────────────────────────────────────────────────────────────
 // Agent 配置（L3 思维导图 Agent / 管理 Agent 默认后端 = AGNES）
@@ -81,20 +82,25 @@ export interface AgentConfig {
 
 /**
  * 读取管理 Agent 的 LLM 配置。优先级：
- *   1) AGNES 环境（`AGNES_KEY_POOL` / `AGNES_API_KEY` + `AGNES_UPSTREAM_BASE` / `AGNES_BASE_URL` + `AGNES_MODEL`）
- *      —— 上游/key池/模型统一由上面的 `resolveAgnes*` 解析；有多把 key 时返回 `keys` 池。
+ *   1) **网关 `gateway.json`**（★ key 的家）—— 首个可出网供应商的 key/model/baseURL；
+ *      若磁盘为空且 env 有 AGNES 配置，则先**一次性导入**（`ensureSeededFromEnv`）。
+ *      ★ 本函数是"要用 LLM"的加载器（不是 `action=list` 那种纯检视）⇒ 允许触发这次迁移。
  *   2) config.json 的 agent.mmd 段（{ "agent": { "mmd": {...} } }）
  * 无 key 返回 null（此时管理 Agent 走规则降级）。
  * 说明：Agent 默认后端固定为 AGNES，与科普讲解（DeepSeek）解耦。
+ * ★★ 2026-10-11（用户裁定）：**key 的家 = gateway**；env 降级为**导入源**（旧配置一次性迁入）。
+ *   本函数**不再从 env 取 key**（旧版 `resolveAgnesKeys()`）—— 那是上一个"呆板住处"。
  */
 export function loadAgentConfig(): AgentConfig | null {
-  const keys = resolveAgnesKeys();
-  if (keys.length > 0) {
+  // ★ 先"导入"（env → gateway；磁盘非空则是 no-op），再从 gateway 取 —— env 只在此刻被读一次。
+  ensureSeededFromEnv();
+  const p = firstUsableProvider();
+  if (p && p.keys.length > 0) {
     return {
-      apiKey: keys[0],
-      keys,
-      model: resolveAgnesModel(),
-      baseURL: resolveAgnesApiBaseUrl(),
+      apiKey: p.keys[0],
+      keys: p.keys,
+      model: p.model,
+      baseURL: p.base_url,
     };
   }
 
@@ -167,7 +173,7 @@ export interface ExplainConfig {
 const DEFAULT_DS_BASE_URL = 'https://api.deepseek.com/v1';
 const DEFAULT_DS_MODEL = 'deepseek-v4-flash';
 
-/** 读取讲解文案生成配置。优先级：DeepSeek 环境变量 > config.json explain 段 > Agnes 环境（池/单把）。无 key 返回 null。 */
+/** 读取讲解文案生成配置。优先级：DeepSeek 环境变量 > config.json explain 段 > 网关供应商。无 key 返回 null。 */
 export function loadExplainConfig(): ExplainConfig | null {
   // DeepSeek（首选后端）
   const dsEnv: Partial<ExplainConfig> = {};
@@ -175,8 +181,8 @@ export function loadExplainConfig(): ExplainConfig | null {
   if (process.env.DEEPSEEK_BASE_URL) dsEnv.baseURL = process.env.DEEPSEEK_BASE_URL;
   if (process.env.DEEPSEEK_MODEL) dsEnv.model = process.env.DEEPSEEK_MODEL;
 
-  // Agnes（兼容后端）—— 上游/模型/key 池统一由 resolveAgnes* 解析；单 key 形状取池第一把
-  const agnesKeys = resolveAgnesKeys();
+  // ★ 2026-10-11（用户裁定）：末位兼容后端由 env 改为**网关**（key 的家 = gateway；env 只在导入那一刻被读）。
+  //   下面第 3) 步才真正用到它 —— 故种入也放到那一步，避免"明明用 DeepSeek 却也写一份 agnes"。
 
   let fileCfg: Partial<ExplainConfig> = {};
   const cfgPath = configFileReadPath();
@@ -211,12 +217,14 @@ export function loadExplainConfig(): ExplainConfig | null {
       baseURL: (fileCfg.baseURL ?? DEFAULT_DS_BASE_URL).replace(/\/+$/, ''),
     };
   }
-  // 3) Agnes 环境（兼容；池/单把皆可）
-  if (agnesKeys.length > 0) {
+  // 3) 网关（兼容后端）—— env 里的 AGNES 在此"一次性导入"；取 gateway 首个可出网供应商
+  ensureSeededFromEnv();
+  const p = firstUsableProvider();
+  if (p && p.keys.length > 0) {
     return {
-      apiKey: agnesKeys[0],
-      model: resolveAgnesModel(),
-      baseURL: resolveAgnesApiBaseUrl(),
+      apiKey: p.keys[0],
+      model: p.model,
+      baseURL: p.base_url,
     };
   }
   return null;

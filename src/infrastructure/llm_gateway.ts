@@ -7,12 +7,21 @@
  *   3. 用量监视：调用数 / token / 费用 / 错误 / 延迟（持久化 gateway.stats.json）
  *   4. OpenAI 兼容端点 POST /v1/chat/completions —— 上层网关（如 AI base）可把我当 upstream
  *
- * 配置持久化：<dataHome>/.agent-io/gateway.json（★ 只由**写类 action** upsert/delete 创建/更新；
- *   仅存**用户自注册**的供应商）。
- * ★★ 2026-10-11（只读不再落盘）：原"首次启动把 AGNES 环境变量**种入** gateway.json"的做法已去掉 ——
- *   它的触发点是只读路径（listProvidersMasked / hasEnabledProvider），会**因"看一眼"而写出含明文 key 的文件**，
- *   把 **env 里的凭据副本**落到多一个地方。现改为：env 派生的 agnes 供应商**按需在内存里合并**，
- *   env（`llm_agnes.ts`）仍是 AGNES 凭据的**唯一住处**，**绝不落盘**。
+ * 配置持久化：<dataHome>/.agent-io/gateway.json —— ★★★ **Key 的唯一住处**（支持池 / 多 key / 多供应商）。
+ *
+ * ★★★ 2026-10-11（用户裁定）：**key 的家 = gateway，不是 env**。用户原话：「env 里面不放 key，
+ *   Gateway 里面放 key 呗，只留那一处…… env 的管理不智能，我们的 Gateway 可以去配池，可以配多条 Key，
+ *   可以配多种供应商，但是 env 的话用起来比较呆板。」
+ *   ⇒ **env 降级为「导入源」**：旧配置（AGNES_*）在其中，**只在种入那一刻被读一次**，之后不再是住处。
+ *
+ * ★★ 与上一版（`ae17068`）的关系：上一版理由是「env 才是唯一住处 ⇒ 别把 env 抄进 gateway」，方向与上述裁定相反；
+ *   但上一版**做对**的一件事要保留 —— 它把「**从哪取 key**」**收成了一个取数点**
+ *   （`envDerivedProvider()` / `effectiveProviders()`，读/判定/出网/测试全走它）。
+ *   本版只把那个取数点的**数据源**从 env 换成 gateway（`effectiveProviders()` 只读 `gateway.json`），
+ *   并**把种入从只读路径里挪出来**（见 `ensureSeededFromEnv`）。
+ *
+ * ★★ 只读纪律（`ae17068` 修对、本版保住）：`action=list` → `listProvidersMasked` 这条**纯只读**路径
+ *   **绝不写文件**；`hasEnabledProvider` 同理。种入只在**写类 / 出网**入口发生。
  *
  * ★ 2026-10-10（T109 收拢）：
  *   · 本文件从 `application/meta/llm/gateway.ts` 搬到 `infrastructure/` —— 它管 key 池 / 用量 / 端点，
@@ -111,29 +120,26 @@ function saveGatewayConfig(cfg: GatewayConfig): void {
 }
 
 /**
- * ★★★ 由环境变量派生的 AGNES 供应商 —— **只在内存里构造，绝不落盘**（2026-10-11 修）。
+ * ★★★ 从环境变量**导入**的 AGNES 供应商（**全仓唯一的「读 env 取 key」点**，只在 {@link ensureSeededFromEnv} 里被调用）。
  *
- * ## 为什么改成"派生"而不是"种入"（原 `ensureSeededFromEnv`）
- * 原实现（`ensureSeededFromEnv`）在**没有已存供应商**时，把 env 里的 AGNES 配置
- * **写进** `gateway.json`（`saveGatewayConfig`）—— 而它的两个调用点 `listProvidersMasked` /
- * `hasEnabledProvider` **都是只读路径** ⇒ **"看一眼"就落下一个含明文 key 的文件**。
- * 而那份 key 就是从 env 抄来的**副本**：env（`llm_agnes.ts`）才是 AGNES 凭据的**唯一住处**
- * ⇒ 既破坏了"只读"承诺，又给凭据**多造一个副本（多一个泄漏面）**。
+ * ## 为什么 env 现在是「导入源」而不是「住处」（2026-10-11 用户裁定）
+ * 用户裁定：**key 的家 = `gateway.json`**（能配池 / 多 key / 多供应商）；env（`llm_agnes.ts`）是**呆板的旧住处**，
+ * 降级为**一次性导入源**。⇒ 这里把 env 的 AGNES 配置**转成一条 provider**，交给 `ensureSeededFromEnv` 落进
+ * `gateway.json`；**此后所有取 key 都走 `gateway.json`**，不再回到 env。
  *
- * ## 现在的口径
- * · env 派生的供应商**按需在内存里合并**进"有效供应商清单"，**不写任何文件**；
- * · `gateway.json` 只由**显式写类 action**（`gateway_provider action=upsert/delete`）创建/更新；
- * · env 有 key 且磁盘无已存供应商 ⇒ 有效清单 = [env 派生的 agnes]（**语义与旧"种入后读回"一致**）。
+ * ## 与上一版（`ae17068`）的差别
+ * 上一版把这里改成 `envDerivedProvider()` 并在**只读路径按需内存派生**，理由是「env 是唯一住处」——该理由
+ * 已被用户裁定推翻。本版保留"**取数点唯一**"（`effectiveProviders`）这一成果，但把它的**数据源换成 gateway**。
  *
- * ★ env 无 key ⇒ 返回 `null`（而非空供应商），调用方据此区分"没有"与"有但空"。
+ * ★ env 无 key ⇒ 返回 `null`（区分"没有"与"有但空"）。
  */
-function envDerivedProvider(): GatewayProvider | null {
-  // ★ 上游/模型/key 池统一由 llm_agnes 解析（唯一住处）；池可多把
+function providerFromEnv(): GatewayProvider | null {
+  // ★ 上游/模型/key 池统一由 llm_agnes 解析（env 的**解析器**仍只此一处）；池可多把
   const keys = resolveAgnesKeys();
   if (keys.length === 0) return null;
   return {
     id: 'agnes',
-    name: 'AGNES（自动发现）',
+    name: 'AGNES（从 env 导入）',
     type: 'openai-compatible',
     base_url: resolveAgnesApiBaseUrl(),
     model: resolveAgnesModel(),
@@ -142,21 +148,51 @@ function envDerivedProvider(): GatewayProvider | null {
     price_prompt_per_1m: 0,
     price_completion_per_1m: 0,
     enabled: true,
-    // ★ 它不是一条持久记录（未落盘），没有真实"创建时刻" ⇒ 空串，不编时间戳冒充。
-    created_at: '',
+    // ★ 真实"导入时刻"（这次它确实落盘了 ⇒ 有一个真实的创建时间）。
+    created_at: new Date().toISOString(),
   };
 }
 
 /**
- * ★ 有效供应商清单（**只读，绝不落盘**）：磁盘上已存的；磁盘为空时派生自 env 的 AGNES。
- * 全仓读供应商的**唯一入口**（list / hasEnabled / pickEndpoint / testProvider 都走它），
- * 使"读到什么"与"写不写文件"解耦 —— **读不再有副作用**。
+ * ★★★ env → gateway 的**一次性种入（迁移）** —— **唯一的 env 取 key 点**（本仓裁定：key 的家 = gateway）。
+ *
+ * ## 触发点（★ 显式，且**不在只读路径**）
+ * 由**网关的写类 / 出网入口**调用，**不是**「看一眼就写」：
+ *   · 出网/使用：`chatViaGateway`（唯一出网点）· `testProvider` · `handleOpenAICompatRequest`；
+ *   · 显式写配置：`upsertProvider` · `deleteProvider`；
+ *   · 上层"要用 LLM"的加载器：`llm_focus.loadAgentConfig` / `loadExplainConfig`。
+ * ★ **纯只读路径绝不调用它**：`listProvidersMasked`（`action=list`）/ `hasEnabledProvider` / `getStats`
+ *   ⇒ **只看不写**（保住 `ae17068` 修对的"只读真的只读"）。
+ *
+ * ## 守卫与语义
+ * · `gateway.json` 非空 ⇒ **不动**（用户已显式注册过 ⇒ 迁移已完成 / 或让位给显式注册，显式 > 隐式）；
+ * · 返回 `true` 表示**本次真的写入了**（`gateway.json` 从无到有），`false` 表示没写（已有/无 env/无 key）。
+ */
+export function ensureSeededFromEnv(): boolean {
+  const cfg = loadGatewayConfig();
+  if (cfg.providers.length > 0) return false;
+  const seeded = providerFromEnv();
+  if (!seeded) return false;
+  cfg.providers.push(seeded);
+  saveGatewayConfig(cfg);
+  return true;
+}
+
+/**
+ * ★ 有效供应商清单（**只读**）—— **只读 `gateway.json`**（key 的唯一住处）。
+ * env 只在 {@link ensureSeededFromEnv} 那一刻被读一次 —— **此处不再回 env 兜底**（env 不再是住处）。
+ * 全仓读供应商的**唯一入口**（list / hasEnabled / pickEndpoint / testProvider 都走它）。
  */
 function effectiveProviders(): GatewayProvider[] {
-  const cfg = loadGatewayConfig();
-  if (cfg.providers.length > 0) return cfg.providers;
-  const derived = envDerivedProvider();
-  return derived ? [derived] : [];
+  return loadGatewayConfig().providers;
+}
+
+/**
+ * ★ 只读：网关当前**首个可出网**的供应商（enabled 且有 key）；供上层判定「有没有 LLM / 用哪个模型」。
+ * ★ **不触发种入**（种入由调用方按"是不是写类/使用类入口"决定，见 {@link ensureSeededFromEnv}）。
+ */
+export function firstUsableProvider(): GatewayProvider | undefined {
+  return effectiveProviders().find((p) => p.enabled && p.keys.length > 0);
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -185,7 +221,8 @@ export interface ProviderView {
 }
 
 export function listProvidersMasked(): ProviderView[] {
-  // ★ 只读：走 effectiveProviders（**不落盘**）—— 不再在此触发任何写入（2026-10-11）
+  // ★ 纯只读：走 effectiveProviders（**只读 gateway.json**），**不触发种入、不落盘**
+  //   ⇒ `action=list` "看一眼"绝不写文件（守住 ae17068 的成果）。种入只在写类/出网入口发生。
   return effectiveProviders().map((p) => ({
     id: p.id,
     name: p.name,
@@ -216,6 +253,8 @@ export interface UpsertProviderInput {
 }
 
 export function upsertProvider(input: UpsertProviderInput): { ok: boolean; error?: string } {
+  // ★ 写类入口：先把 env 里的 AGNES 配置**一次性导入** gateway.json（若尚未导入且磁盘为空）。
+  ensureSeededFromEnv();
   const id = (input.id || '').trim().toLowerCase().replace(/[^a-zA-Z0-9_-]/g, '');
   if (!id) return { ok: false, error: '供应商 id 不能为空（仅字母数字-_）' };
   const keys = (input.keys ?? []).map((k) => k.trim()).filter(Boolean);
@@ -255,6 +294,8 @@ export function upsertProvider(input: UpsertProviderInput): { ok: boolean; error
 }
 
 export function deleteProvider(id: string): { ok: boolean; error?: string } {
+  // ★ 写类入口：同 upsert —— 先把 env 里的 AGNES 配置一次性导入（若尚未导入且磁盘为空）。
+  ensureSeededFromEnv();
   const cfg = loadGatewayConfig();
   const before = cfg.providers.length;
   cfg.providers = cfg.providers.filter((p) => p.id !== id);
@@ -264,7 +305,7 @@ export function deleteProvider(id: string): { ok: boolean; error?: string } {
 }
 
 export function hasEnabledProvider(): boolean {
-  // ★ 只读：同样走 effectiveProviders（**不落盘**），判定不再有副作用（2026-10-11）
+  // ★ 纯只读：走 effectiveProviders（**只读 gateway.json**）—— 不触发种入、不落盘（守住 ae17068 的成果）。
   return effectiveProviders().some((p) => p.enabled && p.keys.length > 0);
 }
 
@@ -386,7 +427,8 @@ interface Endpoint {
 
 /** 选择下一个可用供应商 + 池内 key（供应商加权轮询 + 池内 round-robin）；全冷却时抛错。 */
 function pickEndpoint(now: number): Endpoint {
-  // ★ 走 effectiveProviders（磁盘已存 + 空盘时 env 派生，**不落盘**）—— env 直连也能出网，无需先"种入"。
+  // ★ 走 effectiveProviders（**只读 gateway.json**，key 的唯一住处）。种入不在此发生 ——
+  //   由出网入口 `chatViaGateway` 先 `ensureSeededFromEnv()` 落盘，这里只读已落盘的清单。
   const enabled = effectiveProviders().filter((p) => p.enabled && p.keys.length > 0);
   if (enabled.length === 0) throw new Error('网关无可用供应商（未配置或全部停用）');
   const totalWeight = enabled.reduce((a, p) => a + Math.max(1, p.weight), 0);
@@ -476,6 +518,9 @@ export async function chatViaGateway(
   messages: Array<{ role: string; content: string }>,
   opts: GatewayChatOptions = {},
 ): Promise<ChatResult> {
+  // ★★★ 出网入口（唯一出网点）—— 首次真正要用 key 出网时，把 env 里的 AGNES 配置**一次性导入** gateway.json。
+  //   这是"显式使用"（不是"看一眼"）：它本来就要写 gateway.stats.json ⇒ 同属写类路径，非只读。
+  ensureSeededFromEnv();
   const temperature = opts.temperature ?? 0.2;
   const timeoutMs = opts.timeoutMs ?? 90_000;
   const maxAttempts = Math.max(1, opts.maxAttempts ?? 3);
@@ -521,7 +566,9 @@ export async function chatViaGateway(
 
 /** 测试单供应商连通性（发一条 ping，不影响用量统计） */
 export async function testProvider(id: string): Promise<{ ok: boolean; ms: number; model: string; error?: string }> {
-  // ★ 走 effectiveProviders：env 派生的 agnes 也能被直接 ping（无需先落盘）。
+  // ★ 使用类入口（要发网络请求）：先把 env 里的 AGNES 配置一次性导入（若尚未导入且磁盘为空）。
+  ensureSeededFromEnv();
+  // ★ 走 effectiveProviders（**只读 gateway.json**）：导入后的 agnes 也能被直接 ping。
   const provider = effectiveProviders().find((p) => p.id === id);
   if (!provider) return { ok: false, ms: 0, model: '', error: `供应商不存在：${id}` };
   const start = Date.now();
@@ -552,6 +599,9 @@ export async function handleOpenAICompatRequest(body: OpenAICompatRequest): Prom
   if (!Array.isArray(body?.messages) || body.messages.length === 0) {
     return { status: 400, body: { error: { message: 'messages 必填', type: 'invalid_request_error' } } };
   }
+  // ★ 出网/服务入口（要真的应答一次 LLM 调用）：先把 env 里的 AGNES 配置一次性导入（若尚未导入）。
+  //   ★ 必须在下面的只读判定 `hasEnabledProvider()` **之前** —— 否则空盘（未迁移）会被误报 503。
+  ensureSeededFromEnv();
   if (!hasEnabledProvider()) {
     return {
       status: 503,
