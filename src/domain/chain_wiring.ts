@@ -588,7 +588,11 @@ export interface Chain {
   readonly name: string;
   /** 有序的 [B] 序列（`steps[i] → steps[i+1]` 是一段） */
   readonly steps: readonly string[];
-  /** ★ **整条链真跑过没有**（`verified` = 每一段都真跑过；`pending` = 还没人跑） */
+  /**
+   * ★ **整条链真跑过没有**（`verified` = 每一段都真跑过；`pending` = 还没人跑）。
+   * ★★ **`verified` 只表示"跑过"，不等于"通"** —— 它只说"有真跑结论"，**不断言"接得上"**：
+   *   反例 `design-import`（`verified` 却**真跑 ⇒ 断在第 2 段**）。★ 与 `renderChains` 末尾那句是**同一口径**。
+   */
   readonly evidence: 'verified' | 'pending';
   /** 证据一句话（`verified` 必填，写清"怎么验的"） */
   readonly note: string;
@@ -761,7 +765,9 @@ export function renderChains(max = 20): string {
     '\n       而那件事**已经住在下面「链的完整判定」段**（它用 `ToolDef` 算 `wants`/`fed`/`state`）。' +
     '\n     ★★ 责任边界是**有意**划的（2026-10-09，T84）：我**差点把段 B 的逻辑抄进本段**（`needsObjects` 注入都写好了），' +
     '\n        回头一查才发现段 B 早就有更全的算法 ⇒ **当场回退**。**抄一份 = 判据分叉**（本仓头号病）。' +
-    '\n  ★★ 通没通，**只看 `[verified]`** —— 那是整条链的真跑结论，权威在 `CHAINS[].note`。' +
+    '\n  ★★ `[verified]` **只表示"这条链真跑过"**（有真跑结论），**≠ "通"** —— ★ 反例就在本表：`design-import` 是 `[verified]`' +
+    '\n     却**真跑 ⇒ 断在第 2 段**（见下一段「链的完整判定」）。⇒ **"通没通"看两处**：逐段的 `✓/✗` 在「链的完整判定」段，' +
+    '\n     逐链的真跑结论在 `CHAINS[].note`（那里才是权威）。' +
     '\n  ★★ **"弱交接"不是断**（2026-10-09，T83）：它只是"这一段靠 `feature`/`project_dir` 接上、没有对象类边"。' +
     '\n     ★ 旧版把弱交接与"无对象边"印成同一个 "⚠"，⇒ **真跑通了整条链，看起来却像断的**' +
     '\n       （判据只有一档 ⇒ 事实被压成错误的样子）。' +

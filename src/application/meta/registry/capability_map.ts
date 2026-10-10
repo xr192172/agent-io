@@ -39,7 +39,7 @@ import { renderChainWiring, CHAINS, hopsOf, SCOPE_PATHS, type Chain, type HopVer
 import { B_TERMS } from '../../../domain/b_terms.js';
 // ★ 只取两个常量/函数（`DATA_DIR_NAME` 是零依赖常量模块；`getDataHome` 是数据归口的唯一入口）——
 //   「读之前先看哪儿」那一段要**指出文件在不在**，这是导航该知道的最少信息。
-import { getDataHome } from '../../../infrastructure/storage.js';
+import { getDataHome, getPackageRoot } from '../../../infrastructure/storage.js';
 import { DATA_DIR_NAME } from '../../../infrastructure/data_dir.js';
 // ★★ 2026-10-06：工具「面」= 同一个注册表的**视图**（实现方式 = **不注册** + 一个原子入口 `atomic_call`；
 //   ★ 注意：不是"裁 listTools" —— 那做不到，理由见 `tool_faces.ts` 模块头的实测更正）。
@@ -181,10 +181,16 @@ export const LANE_META: ReadonlyArray<Omit<Lane, 'tools'>> = [
  *   在这里再算一遍 = **同一条判据住两处**（本仓头号病）。⇒ 这里**只指路**："文件在哪、怎么判、怎么重生成"。
  * ★ 也不读文件内容（只 `existsSync`）—— 导航是高频入口，别让它做重活。
  */
-function renderVolumesNote(): string {
+function renderVolumesNote(projectRoot: string): string {
   const home = getDataHome();
   const dataDir = path.join(home, DATA_DIR_NAME);
-  const hasManifest = fs.existsSync(path.join(home, 'MANIFEST.txt'));
+  // ★★ MANIFEST 的 owner 是**项目（仓根）**，不是数据目录：`scripts/gen_manifest.mjs` 默认写
+  //   `<project>/MANIFEST.txt`（只有 `--in-data-dir` 才落进 `.agent-io/`）。⇒ 用 `project_dir` 定位；
+  //   未传 project_dir 时退回**包安装根**（= 本仓仓根，且**不受 `AGENT_IO_HOME` 影响**）。
+  //   ★★ 旧代码用 `getDataHome()`（= 数据目录）——`AGENT_IO_HOME` 一被覆盖就去别处找 ⇒ **假阴性**（MANIFEST 明明在仓根）。
+  //   ★ COGNITION 的 owner 才是数据目录 ⇒ 两者**分开定位**（判据不与 owner 打架）。
+  const manifestRoot = projectRoot || getPackageRoot();
+  const hasManifest = fs.existsSync(path.join(manifestRoot, 'MANIFEST.txt'));
   const hasCognition = fs.existsSync(path.join(dataDir, 'COGNITION.txt'));
   const mark = (b: boolean) => (b ? '✅ 在' : '— 未生成');
   return (
@@ -786,6 +792,10 @@ export function makeCapabilityMapHandler(getCatalog: () => readonly ToolCatalogE
     const catalog = getCatalog();
     const { lanes, unassigned } = buildLanes(catalog);
     const lane = args.lane as LaneId | undefined;
+    // ★★ MANIFEST 按**其 owner（项目 / 仓根）**定位（见 `renderVolumesNote`）：传了 project_dir 就用它，
+    //   否则退回包安装根 —— **两者都不受 `AGENT_IO_HOME` 影响**（旧代码用数据目录 ⇒ 覆盖后假阴性）。
+    const projectRoot =
+      typeof args.project_dir === 'string' && args.project_dir ? path.resolve(args.project_dir) : '';
     const toolCount = lanes.reduce((n, l) => n + l.tools.length, 0) + unassigned.length;
     // ★★ 2026-10-09 改开场白：原写「**先看线再看工具**」—— 那是**旧顺序**（清单在前）。
     //   现在编排好的（链）排在最前 ⇒ 开场白必须跟着改，否则**地图的开场白与实际顺序相反**（本仓老毛病）。
@@ -806,7 +816,7 @@ export function makeCapabilityMapHandler(getCatalog: () => readonly ToolCatalogE
       //   实测漏了一次：初版只加在全量视图那条 return 上，而**单线视图走的是另一条分支**
       //   ⇒ 恰恰是"定位时最常走"的那条路看不见这两份文件。
       //   ★ 教训同本仓旧账：「加东西只加一处，另一处静默地没有」。
-      return { text: `${header}${renderVolumesNote()}${renderLaneText(lanes, [lane])}${doms}`.trim() };
+      return { text: `${header}${renderVolumesNote(projectRoot)}${renderLaneText(lanes, [lane])}${doms}`.trim() };
     }
     // ★★ 链的接法（2026-10-05）：把"上一步的产物怎么喂下一步的入参"摆在这里 ——
     //   它是**新用户第一站**，所以 LLM 一眼就能看到接法，**不必回忆字段名、不必数下标**。
@@ -822,7 +832,7 @@ export function makeCapabilityMapHandler(getCatalog: () => readonly ToolCatalogE
       text: [
         header,
         // ★★ 2026-10-09：**"读之前先看哪儿"** —— 摆在最前（本工具自我定位就是"新用户第一站"）。
-        renderVolumesNote(),
+        renderVolumesNote(projectRoot),
         // ★★★ 2026-10-09（用户提议，落地）：**"编排好的"排在"清单"之前**。
         //   实测（改前）：前 **84 行**是 6 条线的**工具清单**，而**链**的东西（41 行）全排在 **89~133 行**
         //   ⇒ 「新人第一眼看到的是清单，不是路径」—— 而本工具自称"新用户第一站"，这顺序自相矛盾。
