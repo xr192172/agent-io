@@ -310,7 +310,7 @@ export const META_TOOLS: ToolDef[] = [
     title: 'Manage LLM gateway providers & usage (single entry)',
     description:
       '小网关供应商 + 用量统一入口（收敛原 gateway_* 4 工具为 1 入口，action 分派）：' +
-      'action=list 列出已注册供应商（key 脱敏只露尾 4 位）+ 用量汇总；' +
+      'action=list 列出已注册供应商（key 脱敏：露首 3 + 尾 4，长度 ≤8 全遮）+ 用量汇总；' +
       'action=upsert 注册/更新一个供应商到 Key 池（同供应商多 key 入一个池，调用时加权轮询 + 失败自动切下一个 key/供应商；' +
       'OpenAI 兼容协议 base_url 形如 https://api.openai.com/v1；已存在同 id 则按传入字段合并更新）；' +
       'action=delete 删除一个供应商及其 Key 池；' +

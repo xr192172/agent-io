@@ -7,9 +7,12 @@
  *   3. 用量监视：调用数 / token / 费用 / 错误 / 延迟（持久化 gateway.stats.json）
  *   4. OpenAI 兼容端点 POST /v1/chat/completions —— 上层网关（如 AI base）可把我当 upstream
  *
- * 配置持久化：<dataHome>/.agent-io/gateway.json
- * 首次启动若检测到 AGNES 环境变量（key 池/单把，老配置），自动种入 agnes 供应商，
- * 从"直连 env"无缝过渡到"网关统一管理"。
+ * 配置持久化：<dataHome>/.agent-io/gateway.json（★ 只由**写类 action** upsert/delete 创建/更新；
+ *   仅存**用户自注册**的供应商）。
+ * ★★ 2026-10-11（只读不再落盘）：原"首次启动把 AGNES 环境变量**种入** gateway.json"的做法已去掉 ——
+ *   它的触发点是只读路径（listProvidersMasked / hasEnabledProvider），会**因"看一眼"而写出含明文 key 的文件**，
+ *   把 **env 里的凭据副本**落到多一个地方。现改为：env 派生的 agnes 供应商**按需在内存里合并**，
+ *   env（`llm_agnes.ts`）仍是 AGNES 凭据的**唯一住处**，**绝不落盘**。
  *
  * ★ 2026-10-10（T109 收拢）：
  *   · 本文件从 `application/meta/llm/gateway.ts` 搬到 `infrastructure/` —— 它管 key 池 / 用量 / 端点，
@@ -107,14 +110,28 @@ function saveGatewayConfig(cfg: GatewayConfig): void {
   fs.writeFileSync(gatewayCfgPath(), JSON.stringify(cfg, null, 2), 'utf-8');
 }
 
-/** 首次启动引导：无任何供应商时，把环境变量里的 AGNES 配置种成默认供应商（老配置无缝过渡） */
-export function ensureSeededFromEnv(): boolean {
-  const cfg = loadGatewayConfig();
-  if (cfg.providers.length > 0) return false;
-  // ★ 上游/模型/key 池统一由 llm_agnes 解析（唯一住处）；池可多把，直接种入网关 key 池
+/**
+ * ★★★ 由环境变量派生的 AGNES 供应商 —— **只在内存里构造，绝不落盘**（2026-10-11 修）。
+ *
+ * ## 为什么改成"派生"而不是"种入"（原 `ensureSeededFromEnv`）
+ * 原实现（`ensureSeededFromEnv`）在**没有已存供应商**时，把 env 里的 AGNES 配置
+ * **写进** `gateway.json`（`saveGatewayConfig`）—— 而它的两个调用点 `listProvidersMasked` /
+ * `hasEnabledProvider` **都是只读路径** ⇒ **"看一眼"就落下一个含明文 key 的文件**。
+ * 而那份 key 就是从 env 抄来的**副本**：env（`llm_agnes.ts`）才是 AGNES 凭据的**唯一住处**
+ * ⇒ 既破坏了"只读"承诺，又给凭据**多造一个副本（多一个泄漏面）**。
+ *
+ * ## 现在的口径
+ * · env 派生的供应商**按需在内存里合并**进"有效供应商清单"，**不写任何文件**；
+ * · `gateway.json` 只由**显式写类 action**（`gateway_provider action=upsert/delete`）创建/更新；
+ * · env 有 key 且磁盘无已存供应商 ⇒ 有效清单 = [env 派生的 agnes]（**语义与旧"种入后读回"一致**）。
+ *
+ * ★ env 无 key ⇒ 返回 `null`（而非空供应商），调用方据此区分"没有"与"有但空"。
+ */
+function envDerivedProvider(): GatewayProvider | null {
+  // ★ 上游/模型/key 池统一由 llm_agnes 解析（唯一住处）；池可多把
   const keys = resolveAgnesKeys();
-  if (keys.length === 0) return false;
-  cfg.providers.push({
+  if (keys.length === 0) return null;
+  return {
     id: 'agnes',
     name: 'AGNES（自动发现）',
     type: 'openai-compatible',
@@ -125,10 +142,21 @@ export function ensureSeededFromEnv(): boolean {
     price_prompt_per_1m: 0,
     price_completion_per_1m: 0,
     enabled: true,
-    created_at: new Date().toISOString(),
-  });
-  saveGatewayConfig(cfg);
-  return true;
+    // ★ 它不是一条持久记录（未落盘），没有真实"创建时刻" ⇒ 空串，不编时间戳冒充。
+    created_at: '',
+  };
+}
+
+/**
+ * ★ 有效供应商清单（**只读，绝不落盘**）：磁盘上已存的；磁盘为空时派生自 env 的 AGNES。
+ * 全仓读供应商的**唯一入口**（list / hasEnabled / pickEndpoint / testProvider 都走它），
+ * 使"读到什么"与"写不写文件"解耦 —— **读不再有副作用**。
+ */
+function effectiveProviders(): GatewayProvider[] {
+  const cfg = loadGatewayConfig();
+  if (cfg.providers.length > 0) return cfg.providers;
+  const derived = envDerivedProvider();
+  return derived ? [derived] : [];
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -157,8 +185,8 @@ export interface ProviderView {
 }
 
 export function listProvidersMasked(): ProviderView[] {
-  ensureSeededFromEnv();
-  return loadGatewayConfig().providers.map((p) => ({
+  // ★ 只读：走 effectiveProviders（**不落盘**）—— 不再在此触发任何写入（2026-10-11）
+  return effectiveProviders().map((p) => ({
     id: p.id,
     name: p.name,
     type: p.type,
@@ -236,8 +264,8 @@ export function deleteProvider(id: string): { ok: boolean; error?: string } {
 }
 
 export function hasEnabledProvider(): boolean {
-  ensureSeededFromEnv();
-  return loadGatewayConfig().providers.some((p) => p.enabled && p.keys.length > 0);
+  // ★ 只读：同样走 effectiveProviders（**不落盘**），判定不再有副作用（2026-10-11）
+  return effectiveProviders().some((p) => p.enabled && p.keys.length > 0);
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -358,8 +386,8 @@ interface Endpoint {
 
 /** 选择下一个可用供应商 + 池内 key（供应商加权轮询 + 池内 round-robin）；全冷却时抛错。 */
 function pickEndpoint(now: number): Endpoint {
-  const cfg = loadGatewayConfig();
-  const enabled = cfg.providers.filter((p) => p.enabled && p.keys.length > 0);
+  // ★ 走 effectiveProviders（磁盘已存 + 空盘时 env 派生，**不落盘**）—— env 直连也能出网，无需先"种入"。
+  const enabled = effectiveProviders().filter((p) => p.enabled && p.keys.length > 0);
   if (enabled.length === 0) throw new Error('网关无可用供应商（未配置或全部停用）');
   const totalWeight = enabled.reduce((a, p) => a + Math.max(1, p.weight), 0);
   const start = providerCursor % totalWeight;
@@ -493,8 +521,8 @@ export async function chatViaGateway(
 
 /** 测试单供应商连通性（发一条 ping，不影响用量统计） */
 export async function testProvider(id: string): Promise<{ ok: boolean; ms: number; model: string; error?: string }> {
-  const cfg = loadGatewayConfig();
-  const provider = cfg.providers.find((p) => p.id === id);
+  // ★ 走 effectiveProviders：env 派生的 agnes 也能被直接 ping（无需先落盘）。
+  const provider = effectiveProviders().find((p) => p.id === id);
   if (!provider) return { ok: false, ms: 0, model: '', error: `供应商不存在：${id}` };
   const start = Date.now();
   try {
