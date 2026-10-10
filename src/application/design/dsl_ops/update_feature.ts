@@ -30,7 +30,7 @@ import { submitApproval, reviewAnnotation } from '../../observe/reconcile/approv
 import { saveSnapshot, rollbackSnapshot, deleteSnapshot, saveAutoSnapshot, pruneSnapshots } from '../lifecycle/snapshot.js';
 import { dagLayout, forceLayout, gridAlign } from '../workbench/dag_layout.js';
 import { resetSimulation } from '../lifecycle/simulation.js';
-import type { DiagramStatus, DesignDSL, NodeDecision, DecisionDissent } from '../../../domain/types.js';
+import type { DiagramStatus, DesignDSL, NodeDecision, DecisionDissent, DecisionAuthor } from '../../../domain/types.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
 // ─────────────────────────────────────────────────────────────
@@ -49,7 +49,8 @@ export interface FeatureOperation {
    * - tag：**功能标记**（add=给 files 打 tag / delete=从 tag 移除 files 或删整个 tag；data.tag 必填）
    * - decision：**决策卡写入口**（update=把决策候选写到**文件/文档节点**的 `decision`；
    *   id = 文件节点 id 或仓库相对路径；data.summary 必填，可带 rationale/alternatives/consequences/
-   *   acceptance/dissent/votes/evidence_source/author/note。★ 未决分歧进 `dissent`，**不是** `alternatives`）
+   *   acceptance/dissent/votes/evidence_source/author/note。★ 未决分歧进 `dissent`，**不是** `alternatives`；
+   *   ★ `data.author` 是**类别**（只认 'human' | 'llm'，说可信度）；**身份**（谁）走**顶层入参 `agent`**）
    */
   op:
     | 'add'
@@ -99,6 +100,17 @@ export interface FeatureOperation {
 export interface UpdateFeatureInput {
   feature: string;
   operations: FeatureOperation[];
+  /**
+   * ★★★ **本次调用的身份来源**（2026-10-10）—— 发起 `edit_dsl` 的那个 Agent / 人的编号或名字
+   * （谁在写）。写进决策卡的 `NodeDecision.agent` + 修订历史的 `DecisionHistoryEntry.agent`。
+   *
+   * ★★ **工具不生成它**：一次工具调用本身没有稳定身份（每次都是新的）⇒ 身份只能由**调用方**给。
+   *   工具绝不自己造一个 id（那是伪造）。
+   * ★ 它是**整次调用**的属性（一次 `edit_dsl` 里所有决策同属一个发起者）⇒ 放**顶层**、不放每个 op 的 `data`。
+   * ★ 与 `data.author`（**类别** `'human' | 'llm'`）是**两个维度**，可并存。
+   * ★ **没传 ⇒ 落库但不伪造**，读端明标「未署名」（不是抛错；理由见 `b_terms` 的 `agent` 词条）。
+   */
+  agent?: string;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -106,7 +118,7 @@ export interface UpdateFeatureInput {
 // ─────────────────────────────────────────────────────────────
 
 function updateFeatureCore(input: UpdateFeatureInput): EditResult {
-  const { feature, operations } = input;
+  const { feature, operations, agent } = input;
 
   if (!operations || operations.length === 0) {
     throw new Error('operations 不能为空');
@@ -123,7 +135,7 @@ function updateFeatureCore(input: UpdateFeatureInput): EditResult {
   const results: string[] = [];
   try {
     for (const [i, op] of operations.entries()) {
-      const result = applyOperation(feature, op);
+      const result = applyOperation(feature, op, agent);
       // 取原子操作返回消息首行作为摘要
       const summary = result.message.split('\n')[0];
       results.push(`  [${i + 1}/${operations.length}] ${summary}`);
@@ -248,10 +260,10 @@ export function updateFeature(input: UpdateFeatureInput): TouchedProduct<EditRes
 // 操作路由
 // ─────────────────────────────────────────────────────────────
 
-function applyOperation(feature: string, op: FeatureOperation): EditResult {
+function applyOperation(feature: string, op: FeatureOperation, agent?: string): EditResult {
   switch (op.type) {
     case 'node':
-      return applyNodeOp(feature, op);
+      return applyNodeOp(feature, op, agent);
     case 'edge':
       return applyEdgeOp(feature, op);
     case 'file':
@@ -292,7 +304,7 @@ function applyOperation(feature: string, op: FeatureOperation): EditResult {
     case 'tag':
       return applyTagOp(feature, op);
     case 'decision':
-      return applyDecisionOp(feature, op);
+      return applyDecisionOp(feature, op, agent);
     default:
       throw new Error(`未知操作类型: ${op.type satisfies never}`);
   }
@@ -705,7 +717,7 @@ function parseDissent(v: unknown): DecisionDissent[] {
   });
 }
 
-function applyDecisionOp(feature: string, op: FeatureOperation): EditResult {
+function applyDecisionOp(feature: string, op: FeatureOperation, agent?: string): EditResult {
   if (op.op !== 'update') throw new Error(`decision 仅支持 update 操作（收到 ${op.op}）`);
   const data = op.data ?? {};
   const summary = typeof data.summary === 'string' ? data.summary.trim() : '';
@@ -741,12 +753,26 @@ function applyDecisionOp(feature: string, op: FeatureOperation): EditResult {
   }
   if (typeof data.thread === 'string' && data.thread.trim()) decision.thread = data.thread.trim();
   if (Array.isArray(data.tags)) decision.tags = data.tags.filter((x): x is string => typeof x === 'string');
-  if (typeof data.author === 'string' && data.author.trim()) decision.author = data.author.trim();
+  // ★★ 作者**类别**（可信度轴）：只认 'human' | 'llm' —— 收口（从前是自由文本，把类别/身份挤在一格）。
+  //   ★ 身份（谁：Agent 编号/名字）是**另一个维度**，走**顶层入参 `agent`**，不许再塞进 author。
+  let author: DecisionAuthor | undefined;
+  if (data.author !== undefined) {
+    const a = typeof data.author === 'string' ? data.author.trim() : '';
+    if (a !== 'human' && a !== 'llm') {
+      throw new Error(
+        `decision.update 的 data.author 是**类别**（可信度轴），只认 'human' | 'llm'（收到 ${JSON.stringify(data.author)}）。` +
+          `★ 「谁在写」（Agent 的编号/名字）是**另一个维度**，请用 edit_dsl 的**顶层入参 agent** 传，不要塞进 author。`,
+      );
+    }
+    author = a;
+  }
 
   const note = typeof data.note === 'string' ? data.note : undefined;
   const prev = target.node.decision;
+  // ★ 身份来自顶层 `agent`（整次调用的发起者）；类别来自 data.author。二者落库可并存。
   const { decision: nd, decision_history: nh } = applyDecisionWrite(target.node.decision, target.node.decision_history, decision, {
-    author: decision.author,
+    author,
+    agent,
     note,
   });
   if (nd === undefined) throw new Error('decision.update 内部错误：写入结果为 undefined（summary 已非空，不应发生）');
@@ -754,8 +780,12 @@ function applyDecisionOp(feature: string, op: FeatureOperation): EditResult {
   if (nh?.length) target.node.decision_history = nh;
   saveDSL(dsl);
 
+  // ★★ 署名必须**在读得见的地方显形**。写回执经 `updateFeatureCore` 只透出**首行**（其余行丢弃）
+  //   ⇒ 「署名 / 未署名」放进**首行**，否则"没传身份"在写回执里**看不见**（就静默了）。
+  const authorTag = nd.author ? `作者类别 ${nd.author}` : '作者类别未标';
+  const signTag = nd.agent ? `署名 ${nd.agent}` : '★ 未署名（本次调用未传 agent 身份 ⇒ 无发起者编号）';
   const lines = [
-    `[decision] 已写入节点 "${target.node.id}"（${target.path}）`,
+    `[decision] 已写入节点 "${target.node.id}"（${target.path}） · ${authorTag} · ${signTag}`,
     `  结论: ${nd.summary}`,
   ];
   if (nd.rationale) lines.push(`  理由: ${nd.rationale}`);
@@ -774,14 +804,15 @@ function applyDecisionOp(feature: string, op: FeatureOperation): EditResult {
 // node：add / update / delete / move
 // ─────────────────────────────────────────────────────────────
 
-function applyNodeOp(feature: string, op: FeatureOperation): EditResult {
+function applyNodeOp(feature: string, op: FeatureOperation, agent?: string): EditResult {
   const { id, data } = op;
   if (!id) throw new Error('node 操作需要 id');
   switch (op.op) {
     case 'add':
       return addNode({ feature, node_id: id, ...data } as AddNodeInput);
     case 'update':
-      return updateNode({ feature, node_id: id, ...data } as UpdateNodeInput);
+      // ★ 身份（agent）来自 edit_dsl 顶层入参（整次调用的发起者），随 node.update 一起落到决策卡上。
+      return updateNode({ feature, node_id: id, ...data, agent } as UpdateNodeInput);
     case 'delete':
       return deleteNode({ feature, node_id: id });
     case 'move': {

@@ -131,6 +131,9 @@ export const DESIGN_TOOLS: ToolDef[] = [
       '可带 rationale/consequences/acceptance；★ **未决分歧进 data.dissent**（{option, votes, evidence_source}[]，待对拍），' +
       '**已排除的方案才进 data.alternatives**（{option, rejected_because}[]，缺 rejected_because 会被拒）；' +
       '可带 votes/evidence_source（多源印证）/ author / status / thread / tags / note（修订说明）；' +
+      '★ **两个正交的"谁"**（都要能同时出现）：data.author = **类别**（可信度轴，只认 \'human\' | \'llm\'）；' +
+      '**顶层入参 `agent`** = **身份**（可追溯轴，发起本次调用的 Agent 编号/名字，工具不生成、由调用方给；' +
+      '没传 ⇒ 落库但读端标「未署名」）。' +
       '覆盖时旧版自动压入 decision_history（**有历史、默认只显示最新**）。决策住设计意图 overlay，活过 import_project 重建。' +
       'view: design（默认，改设计视图）/ live（拒绝写入，实际代码快照只能由 import/watch 重建）。' +
       'weight: normal（默认）/ routine。routine=轻量写路径：跳过 L4 证据回溯（仍留 L1-L3 防空话/套话/泛谈），' +
@@ -139,6 +142,15 @@ export const DESIGN_TOOLS: ToolDef[] = [
       'DSL 已不存事实镜像（actual_apis/actual_deps 已移除）⇒ 事实只能现取，须把该文件路径作为 evidence 的 ref 传进来。',
     inputSchema: {
       feature: z.string().describe('feature 名'),
+      agent: z
+        .string()
+        .optional()
+        .describe(
+          '**身份**（可追溯轴）：发起本次调用的 Agent 的编号/名字 —— 谁在写。' +
+            '写进决策卡的 `agent`（与修订历史）。★ 工具**不生成**它，由**调用方**传入（一次调用一个身份）。' +
+            '★ 与 `data.author`（**类别** human/llm）是**两个维度**，可同时存在（例：author:\'llm\' + agent:\'agent-07\'）。' +
+            '★ 没传 ⇒ 决策照旧落库、但不署名 —— 读端与写回执都会**明标「未署名」**（不静默）。',
+        ),
       view: z.enum(['design', 'live']).default('design').describe('视图层级：design=设计视图（默认）；live=实际代码快照，只读，拒绝写入'),
       weight: z
         .enum(['normal', 'routine'])

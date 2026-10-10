@@ -462,9 +462,13 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
         const meta = [`状态: ${status}`];
         if (d.thread) meta.push(`功能线: ${d.thread}`);
         if (d.tags?.length) meta.push(`标签: ${d.tags.join(', ')}`);
+        // ★ 作者**类别**（可信度轴）：human / llm —— 有才显示（缺省不伪造）
+        if (d.author) meta.push(`作者: ${d.author}`);
         lines.push('  ─ 决策卡·决策记录 ─');
         lines.push(`    ${meta.join(' · ')}`);
         lines.push(`    结论: ${d.summary}`);
+        // ★★ 署名（身份轴）：本仓口径「没传 ⇒ 落库但明标未署名」⇒ 读端**必须**看得出这条有没有署名。
+        lines.push(d.agent ? `    署名: ${d.agent}` : `    署名: 未署名（未记录发起者身份）`);
         if (d.rationale) lines.push(`    理由: ${d.rationale}`);
         for (const alt of d.alternatives ?? []) {
           lines.push(`    替代「${alt.option}」被否: ${alt.rejected_because}`);
@@ -485,7 +489,9 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
           lines.push(`  ─ 决策版本史 (${node.decision_history.length} 次修订，旧→新) ─`);
           node.decision_history.forEach((h, i) => {
             const hStatus = h.decision.status ?? 'active';
-            lines.push(`    v${i + 1} · ${h.at}${h.note ? ` · ${h.note}` : ''} · [${hStatus}]`);
+            // ★ 每条修订也记「谁发起的」：类别（author）+ 身份（agent，缺省标未署名）—— 追溯逐版成立。
+            const hWho = `${h.author ? `${h.author}/` : ''}${h.agent ?? '未署名'}`;
+            lines.push(`    v${i + 1} · ${h.at}${h.note ? ` · ${h.note}` : ''} · [${hStatus}] · 署名 ${hWho}`);
             lines.push(`      结论: ${h.decision.summary}`);
           });
           lines.push(`    当前版 · [${status}] ${d.summary}`);
@@ -610,6 +616,10 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
           const tags = d.tags?.length ? ` [${d.tags.join(', ')}]` : '';
           const verInfo = n.decision_history?.length ? ` · ${n.decision_history.length} 次修订` : '';
           lines.push(`  [${status}] ${n.label ?? n.title ?? n.id}: ${d.summary}${tags}${verInfo}`);
+          // ★ 两轴：作者**类别**（可信度）+ 署名**身份**（可追溯；缺省标未署名）。
+          const authorTag = d.author ? `作者 ${d.author}` : '作者未标';
+          const signTag = d.agent ? `署名 ${d.agent}` : '未署名';
+          lines.push(`    ${authorTag} · ${signTag}`);
           lines.push(`    节点: ${n.id}`);
         }
         lines.push('');
@@ -634,6 +644,10 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
           tags: n.decision!.tags ?? [],
           status: n.decision!.status ?? 'active',
           revisions: n.decision_history?.length ?? 0,
+          // ★★ 两轴显式化（缺省给 null，读端据此**看得出这条有没有署名**，不是靠"键不存在"猜）：
+          //   author = 类别（可信度轴）；agent = 身份（可追溯轴）。
+          author: n.decision!.author ?? null,
+          agent: n.decision!.agent ?? null,
         })),
       };
     }

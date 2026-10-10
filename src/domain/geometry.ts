@@ -150,6 +150,22 @@ export interface Node {
   decision_history?: DecisionHistoryEntry[];
 }
 
+/**
+ * ★★★ 决策作者的**类别**（可信度轴）—— `NodeDecision.author` / `DecisionHistoryEntry.author` 的唯一取值域。
+ *
+ * ## 为什么收成一个枚举（不许再是自由文本）
+ * 本仓规矩「**语义空 = 谁想装什么都行 = 迟早一名两义**」。收口前 `author` 上写着
+ * "human / llm / 账号名"——**三个东西挤在同一个字段**：前两个是**类别**（可信度），
+ * 第三个是**身份**（谁）。这正是一名两义。
+ * ⇒ 拆成两个正交维度（本仓 2026-10-10 定）：
+ *   · **类别**（可信度到哪）= 本类型 `author`，只为 `'human' | 'llm'`；
+ *   · **身份**（可追溯·出了事找谁）= `NodeDecision.agent`（`string`）。
+ * ★ 两者**可以并存**（例：`author:'llm'` + `agent:'agent-07'`）——
+ *   "这条是机器推的" 与 "是哪台机器" 是**两个问题**，不许合并。
+ * ★ 立场（本仓既有）：**人写的 > 机器推的** —— 所以类别是**可信度**，不是"礼帽装饰"。
+ */
+export type DecisionAuthor = 'human' | 'llm';
+
 /** 节点决策记录（决策卡的核心结构） */
 export interface NodeDecision {
   /** 结论：这个设计是什么（一句话） */
@@ -179,8 +195,30 @@ export interface NodeDecision {
   thread?: string;
   /** 自由标签：跨功能线检索（如 "blackbox" "performance"） */
   tags?: string[];
-  /** 谁定的（human / llm / 账号名），人机长期共同演进的「谁」 */
-  author?: string;
+  /**
+   * ★★★ **作者类别**（可信度轴，2026-10-10 收口）—— `'human' | 'llm'`，回答「**可信度到哪**」。
+   *
+   * ★ **不再是自由文本**：此前写着"human / llm / 账号名"，把**类别**（可信度）与**身份**（谁）挤在一个字段里
+   *   ⇒ 一名两义。现只认两个类别；**身份**（Agent 的编号/名字）住在 {@link NodeDecision.agent}。
+   * ★ 两者**并存**：`author:'llm'` + `agent:'agent-07'` ⇒ "机器推的" + "是哪台机器"。
+   * ★ **缺省不伪造**（写入口没传就不写）—— 缺省 ≠ 说谎，读端据"有没有值"判断。
+   */
+  author?: DecisionAuthor;
+  /**
+   * ★★★ **发起本次决策的身份**（可追溯轴，2026-10-10 新增）—— Agent 的编号/名字，回答「**出了事找谁**」。
+   *
+   * ## 它**不是** `author`（这是本字段存在的全部理由）
+   * `author` = **类别**（`'human' | 'llm'`，说**可信度**）；本字段 = **身份**（`string`，说**是谁**）。
+   * 二者是**两个正交维度**，**都要能同时存在**（例：`author:'llm'` + `agent:'agent-07'`）。
+   * ★ 从前把"账号名"塞进 `author` ⇒ 谁想装什么都行 ⇒ 迟早一名两义（本仓头号病）。
+   *
+   * ## 来源是**调用方**，工具**不生成**它
+   * 一次工具调用本身没有稳定身份（每次都是新的）—— 所以身份只能由**调用方**（发起 `edit_dsl` 的那个
+   * Agent / 人）传进来（`edit_dsl` 顶层入参 `agent`）。工具**绝不自己造**一个 id（那是伪造）。
+   * ★ **没传时怎么办**：本仓选「**落库但不伪造 + 读端明标「未署名」**」（不是抛错）——
+   *   理由见 `b_terms` 的 `agent` 词条 / 写入口回执。⇒ 读端据"有没有该字段"即可判断**这条有没有署名**。
+   */
+  agent?: string;
   /** 本次决策最近写入/修订时间（ISO 8601），与 decision_history.at 呼应成时间线 */
   updated_at?: string;
   /**
@@ -232,8 +270,16 @@ export interface DecisionHistoryEntry {
   decision: NodeDecision;
   /** 本次修订说明（翻案理由/变更点，可空） */
   note?: string;
-  /** 发起本次修订的人（谁用新版取代了旧版）；旧版自身的 author 仍留在 decision.author */
-  author?: string;
+  /**
+   * 发起本次修订的**作者类别**（谁用新版取代了旧版；值域 = `'human' | 'llm'`，**同 `NodeDecision.author`**）；
+   * 旧版自身的 author 仍留在 `decision.author`。★ 与 `agent` 是两个维度（类别 vs 身份）。
+   */
+  author?: DecisionAuthor;
+  /**
+   * 发起本次修订的**身份**（Agent 的编号/名字，同 `NodeDecision.agent`）；旧版自身身份仍在 `decision.agent`。
+   * ★ 缺省 = 本次修订**未署名**（读端据此判断）。
+   */
+  agent?: string;
 }
 
 /** 边 SVG 样式 */

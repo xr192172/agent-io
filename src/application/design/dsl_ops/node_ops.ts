@@ -2,7 +2,7 @@
  * 节点操作：add_node / update_node / delete_node
  */
 
-import type { DesignDSL, Node, NodeStyle, NodeContent, DiagramStatus, NodeLayer, NodeShapes, NodeDecision, DecisionHistoryEntry, AnimationValueSchema } from '../../../domain/types.js';
+import type { DesignDSL, Node, NodeStyle, NodeContent, DiagramStatus, NodeLayer, NodeShapes, NodeDecision, DecisionHistoryEntry, DecisionAuthor, AnimationValueSchema } from '../../../domain/types.js';
 import { getDSL, saveDSL } from '../../../infrastructure/storage.js';
 import type { EditResult } from './edit_result.js';
 // ★★ 2026-10-09（T74）：`expectations` 会被程序判 ⇒ 写进来时校验（坏形状响亮拒绝）
@@ -162,21 +162,27 @@ export interface UpdateNodeInput {
   decision?: NodeDecision | null;
   /** 决策修订说明：随本次 decision 更新记入版本栈（翻案理由/变更点） */
   decision_note?: string;
-  /** 决策作者（谁定的/谁发起的修订）：human / llm / 账号名。缺省不伪造、不主动写 */
-  author?: string;
+  /** 决策**作者类别**（可信度轴）：`'human' | 'llm'`。缺省不伪造、不主动写。★ 身份（谁）请用 `agent` */
+  author?: DecisionAuthor;
+  /** 决策**发起人身份**（可追溯轴）：Agent 的编号/名字。由调用方给，工具不生成；缺省 ⇒ 落库标「未署名」 */
+  agent?: string;
 }
 
 /**
  * 决策写入纯函数（缺口①：作者/时间线）。
- * decision 更新=版本演进：旧版自动压入 decision_history（`at` 时间戳 + 修订 note + 发起人 author），
- * 新版成为当前生效版，并打 `updated_at`（author 若有则一并打上）。首版（无旧版）不压栈。
+ * decision 更新=版本演进：旧版自动压入 decision_history（`at` 时间戳 + 修订 note + 发起人 author/agent），
+ * 新版成为当前生效版，并打 `updated_at`（author/agent 若有则一并打上）。首版（无旧版）不压栈。
  * return 直接可写回 node.decision / node.decision_history。
+ *
+ * ★★ 2026-10-10 拆两个正交维度（见 `NodeDecision.author` / `.agent` 注释）：
+ *   · `author` = **类别**（`'human' | 'llm'`，可信度）；· `agent` = **身份**（`string`，谁）。
+ *   ★ 两者**可并存**；**缺省不伪造**（不传就不写）—— 写入口的"未署名"由调用方回执负责出声。
  */
 export function applyDecisionWrite(
   prevDecision: NodeDecision | undefined,
   history: DecisionHistoryEntry[] | undefined,
   next: NodeDecision | null | undefined,
-  opts?: { author?: string; note?: string; now?: string },
+  opts?: { author?: DecisionAuthor; agent?: string; note?: string; now?: string },
 ): { decision: NodeDecision | undefined; decision_history: DecisionHistoryEntry[] | undefined } {
   // 未传 decision 字段：不改
   if (next === undefined) return { decision: prevDecision, decision_history: history };
@@ -187,19 +193,24 @@ export function applyDecisionWrite(
   // ★★ 2026-10-09（T74）：`expectations` 是**会被程序判**的字段 ⇒ 写进来时必须**响亮拒绝**坏形状，
   //   不许"存进去了但判定器读不懂"（那会变成一条永远不判的假验收）。
   if (next.expectations !== undefined) assertValidExpectations(next.expectations);
-  // 新决策：时间戳恒打；author 传入才打（不伪造）
-  const decision: NodeDecision = opts?.author ? { ...next, author: opts.author, updated_at: now } : { ...next, updated_at: now };
+  // 新决策：时间戳恒打；author（类别）/ agent（身份）**传入才打**（不伪造）
+  const decision: NodeDecision = { ...next, updated_at: now };
+  if (opts?.author) decision.author = opts.author;
+  if (opts?.agent) decision.agent = opts.agent;
 
   // 旧版存在 → 压栈（首版不压）
   let decision_history = history;
   if (prevDecision) {
-    decision_history = [...(history ?? []), { at: now, decision: prevDecision, note: opts?.note, author: opts?.author }];
+    const entry: DecisionHistoryEntry = { at: now, decision: prevDecision, note: opts?.note };
+    if (opts?.author) entry.author = opts.author;
+    if (opts?.agent) entry.agent = opts.agent;
+    decision_history = [...(history ?? []), entry];
   }
   return { decision, decision_history };
 }
 
 export function updateNode(input: UpdateNodeInput): EditResult {
-  const { feature, node_id, label, x, y, width, height, bg, color, border, borderRadius, shape, shadow, opacity, type, description, status, swimlane, content, sub_dsl, layer, host, shapes, attributes, decision, decision_note, author } = input;
+  const { feature, node_id, label, x, y, width, height, bg, color, border, borderRadius, shape, shadow, opacity, type, description, status, swimlane, content, sub_dsl, layer, host, shapes, attributes, decision, decision_note, author, agent } = input;
 
   const dsl = getDSL(feature);
   if (!dsl) {
@@ -249,10 +260,11 @@ export function updateNode(input: UpdateNodeInput): EditResult {
     if (attributes === null) delete node.attributes;
     else node.attributes = attributes;
   }
-  // decision 更新=版本演进：旧版压入 decision_history，新版成为当前生效版（author/updated_at 由纯函数打）。
+  // decision 更新=版本演进：旧版压入 decision_history，新版成为当前生效版（author/agent/updated_at 由纯函数打）。
   if (decision !== undefined) {
     const { decision: nd, decision_history: nh } = applyDecisionWrite(node.decision, node.decision_history, decision, {
       author,
+      agent,
       note: decision_note,
     });
     if (nd === undefined) {
