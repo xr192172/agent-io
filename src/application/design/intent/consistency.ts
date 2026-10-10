@@ -31,6 +31,8 @@ import path from 'node:path';
 import type { DesignDSL, SemanticFile } from '../../../domain/types.js';
 import { hasFileEntries } from '../../../domain/semantic.js';
 import { noFileEntriesMessage } from '../no_file_entries.js';
+// ★ AB-double-name 病 B：函数名提取收口成唯一住处（与 scaffold 共用同一份，不再各持一份）
+import { extractFuncName } from '../api_signature.js';
 import { getDSL, getBaselineFacts } from '../../../infrastructure/storage.js';
 // ★ T85/D3：线 1 的"现取事实"入口 —— 与 `import_project` 锚基线事实时**用的是同一个 accessor**（同源）
 import { fileFacts } from '../../../infrastructure/index/file_facts.js';
@@ -187,11 +189,6 @@ interface ParsedApi {
   kind: string;
 }
 
-function extractFuncName(sig: string): string {
-  const match = sig.match(/(?:func\s+)?(?:\([^)]+\)\s+)?(\w+)\s*[\(\<]/);
-  return match ? match[1] : sig.split(/\s*\(/)[0];
-}
-
 function normalizeSignature(sig: string): string {
   return sig.replace(/\s+/g, ' ').trim().toLowerCase();
 }
@@ -224,23 +221,34 @@ function argName(arg: string): string {
   return m ? m[1] : arg.trim();
 }
 
-function compareSignatures(expected: string, actual: string): { score: number; reason?: string } {
+/**
+ * 比对**期望签名**与**实际符号**。
+ * ★★★ AB-double-name 病 A 修复：`actual` 的名字**一律取 AST 权威名**（`ParsedSymbol.name`），
+ *   以 **`{ name, signature }`** 传入 —— 不再像旧版那样对 `actual.signature` **正则重取**名字。
+ *   旧版同一函数体内有**两个名字来源**（`:411` 配对用 `a.name`；`:229` 判等又正则取名 actual），
+ *   二者可能自相矛盾 ⇒ 明明按 `a.name` 配上了，却因正则名不同报「函数名不匹配」（假差异）。
+ *   `expected` 侧仍从**设计态签名串**推名字（那是**人写的契约**，代码 AST 里没有同一份）。
+ */
+function compareSignatures(
+  expected: string,
+  actual: { name: string; signature: string },
+): { score: number; reason?: string } {
   const expectedName = extractFuncName(expected);
-  const actualName = extractFuncName(actual);
+  const actualName = actual.name; // ★ AST 权威名（不再对 actual.signature 正则取名）
 
   if (expectedName !== actualName) {
     return { score: 0, reason: '函数名不匹配' };
   }
 
   const expectedNorm = normalizeSignature(expected);
-  const actualNorm = normalizeSignature(actual);
+  const actualNorm = normalizeSignature(actual.signature);
 
   if (expectedNorm === actualNorm) {
     return { score: 100 };
   }
 
   const expectedArgs = expected.match(/\(([^)]*)\)/)?.[1] || '';
-  const actualArgs = actual.match(/\(([^)]*)\)/)?.[1] || '';
+  const actualArgs = actual.signature.match(/\(([^)]*)\)/)?.[1] || '';
   const expectedArgList = splitTopLevelArgs(expectedArgs);
   const actualArgList = splitTopLevelArgs(actualArgs);
 
@@ -263,7 +271,7 @@ function compareSignatures(expected: string, actual: string): { score: number; r
 
     // 返回类型：仅当两侧都是具体类型（不含语义省略号 ...）时才严格比对
     const expectedRet = expected.split(')')[1]?.trim() || '';
-    const actualRet = actual.split(')')[1]?.trim() || '';
+    const actualRet = actual.signature.split(')')[1]?.trim() || '';
     const expConcrete = !!expectedRet && !expectedRet.includes('...');
     const actConcrete = !!actualRet && !actualRet.includes('...');
     const retCompatible =
@@ -412,7 +420,8 @@ export async function checkConsistency(input: ConsistencyInput): Promise<Consist
         const actual = actualApis.find(a => a.name === expectedName);
 
         if (actual) {
-          const comparison = compareSignatures(expected.signature, actual.signature);
+          // ★ 病 A：把**整个 actual**（含 AST 权威名 `name`）传进去，判等用 `actual.name`，不再正则重取。
+          const comparison = compareSignatures(expected.signature, actual);
           matchedNames.add(expectedName);
 
           if (comparison.score >= 90) {

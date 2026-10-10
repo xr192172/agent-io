@@ -24,6 +24,8 @@ import path from 'node:path';
 import type { DesignDSL, SemanticFile, CodeTemplate, Node, ContentBlock } from '../../../domain/types.js';
 import { hasFileEntries } from '../../../domain/semantic.js';
 import { noFileEntriesMessage } from '../no_file_entries.js';
+// ★ AB-double-name 病 B：函数名提取收口成唯一住处（不再本地复制正则）
+import { extractFuncName } from '../api_signature.js';
 import { getDSL } from '../../../infrastructure/storage.js';
 import { snapshotAndRecordSelfWrite, syncSelfWritesSync, toRelPosix } from '../../write_gate.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
@@ -89,13 +91,8 @@ function makeMarkerComment(nodeId: string, lang: Lang, label?: string): string {
 }
 
 // ─────────────────────────────────────────────────────────────
-// 从 API 签名中提取函数名
+// 从 API 签名中提取函数名 —— ★ 已收口到 `../api_signature.ts`（唯一住处，AB-double-name 病 B）
 // ─────────────────────────────────────────────────────────────
-
-function extractFuncName(signature: string): string {
-  const match = signature.match(/(?:func\s+)?(\w+)\s*[\(\<]/);
-  return match ? match[1] : signature.split(/\s*\(/)[0];
-}
 
 function goPackageName(filePath: string): string {
   const dir = path.dirname(filePath);
