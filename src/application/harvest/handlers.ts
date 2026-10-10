@@ -20,7 +20,7 @@ export const harvestDecisionsHandler = wrapData(async (a) => {
     doc_dir: a.doc_dir as string | undefined,
     git_root: a.git_root as string | undefined,
     limit: a.limit as number | undefined,
-    comment_files: a.comment_files as string[] | undefined,
+    files: a.files as string[] | undefined,
     judge: a.judge as boolean | undefined,
   });
   return { message: r.message, data: r };

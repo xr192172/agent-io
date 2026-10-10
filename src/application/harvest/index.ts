@@ -50,6 +50,8 @@ export const HARVEST_TOOLS: ToolDef[] = [
       '★★ **「判」可开可关**（`judge`）：判开（有密钥 / judge:true）⇒ 产候选；**判关**（judge:false，或没配密钥的自动档）' +
       '⇒ ★ **降级为"只给三份证据"**（`evidence_by_file`，未经 LLM 判断，调用方自己判），**回执必明说"本次没判"**（不静默降级）。' +
       '只产 `status:draft` 线索、**不写 DSL**——写回文件节点用 `edit_dsl`（type=decision；★ 未决分歧进 data.dissent，不是 data.alternatives）。' +
+      '★★ **迁移**：原入参 `comment_files` **已由 `files` 取代** —— 语义**扩大到同时限定【文档目标】**' +
+      '（原 `comment_files` 只限源码那一路，文档目标不受它管）。要用小范围试跑请传 `files`。' +
       '适用：为没有决策卡历史的现有项目/外来代码补录活文档。',
     inputSchema: {
       feature: z.string().describe('feature 名（候选挂载目标）'),
@@ -63,10 +65,14 @@ export const HARVEST_TOOLS: ToolDef[] = [
             '（回执明写"共 N 条、只显示前 M 条"，不静默）。★ **不传 = 不设上限**（返回全部，行为与改造前一致）。' +
             '★ 每文件 git 历史条数由独立常量 GIT_LOG_LIMIT=30 控制，不受本参数影响。',
         ),
-      comment_files: z
+      files: z
         .array(z.string())
         .optional()
-        .describe('要提取注释的源码文件；缺省 = 扫描项目已索引的全部源码文件'),
+        .describe(
+          '统一的处理范围：本次**只处理列出的这些文件**（仓库相对路径，`/` 分隔）。' +
+            '★ **同时限定源码目标与文档目标**（不在列表里的 ⇒ 不产出）。缺省 = 处理全部已索引源码 + `doc_dir` 下全部 *.md（行为与改造前一致）。' +
+            '★ 口径与写入口 edit_dsl 的 `type:\'decision\'` 同一份（仓库相对路径）。',
+        ),
       judge: z
         .boolean()
         .optional()

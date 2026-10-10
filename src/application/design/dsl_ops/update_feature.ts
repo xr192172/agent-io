@@ -614,8 +614,12 @@ function applyTagOp(feature: string, op: FeatureOperation): EditResult {
 //      把它搬进 overlay，`import_project` 重建时由 `applyOverlay` 投影回来（与 tag / 决策卡既有同步同款）。
 // ─────────────────────────────────────────────────────────────
 
-/** 把入参字符串归一成仓库相对路径（`/` 分隔、去 `./`）—— 与 `resolveMemberFiles` 同款口径 */
-function normRel(s: string): string {
+/**
+ * 把入参字符串归一成仓库相对路径（`/` 分隔、去 `./`）—— 与 `resolveMemberFiles` 同款口径。
+ * ★★ 2026-10-10 导出：`harvest_decisions` 的「统一处理范围入参」`files` 要按**同一个**路径口径
+ *   过滤目标（见 {@link findDecisionTargetNode} 用的就是它）—— 采集侧另写一份归一 = 立刻分叉。
+ */
+export function normRel(s: string): string {
   return s.replace(/\\/g, '/').replace(/^\.\//, '');
 }
 

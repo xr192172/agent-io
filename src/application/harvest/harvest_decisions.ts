@@ -68,7 +68,7 @@ import type { NodeDecision, DecisionHistoryEntry } from '../../domain/geometry.j
 //   ★ 为什么复用 `findDecisionTargetNode` 而**不自己拼判断**：本仓头号纪律是"判据同一处"——
 //     `edit_dsl`（`type:'decision'`）收不收这个落点，只有它自己说了算；采集侧另写一份 = 立刻分叉。
 import { getDSL } from '../../infrastructure/storage.js';
-import { findDecisionTargetNode } from '../design/dsl_ops/update_feature.js';
+import { findDecisionTargetNode, normRel } from '../design/dsl_ops/update_feature.js';
 import type { DesignDSL } from '../../domain/types.js';
 
 /**
@@ -256,8 +256,20 @@ export interface HarvestInput {
    *   · ★ 截断**不静默**：回执会写明"共取到 N 条、按 limit 只显示前 M 条"。
    */
   limit?: number;
-  /** 显式指定目标源码文件（绝对路径）；**缺省 = 扫描项目已索引的全部源码文件** */
-  comment_files?: string[];
+  /**
+   * ★★★ **统一的处理范围**（2026-10-10，T119）—— 本次**只处理列出的这些文件**。
+   *
+   * ★★ **它同时限定【源码目标】与【文档目标】**（= **整个 target 集**），不只是源码那一路。
+   *   · 传了 `files` ⇒ 只有这些文件进目标集（源码 + 文档都按它过滤）；**不在列表里的 ⇒ 不产出**。
+   *   · 不传 ⇒ 行为与改造前**完全一致**（全部已索引源码 + `doc_dir` 下全部 `*.md`）。
+   *
+   * ★ 路径口径 = **仓库相对路径**（`/` 分隔），与**写入口** `edit_dsl`（`type:'decision'`）**同一份**
+   *   （归一复用 `update_feature.ts` 的 `normRel`，不自己拼 —— 见 {@link normRel}）。
+   *
+   * ★★ **本入参对外契约的迁移交代写在工具描述里**（`index.ts` 的 tool description）——
+   *   它**不是**墓碑：契约变更要说给调用方听。本文件内**不重复**那句（避免两处各写一份）。
+   */
+  files?: string[];
   /**
    * ★ **「判」的开关**（2026-10-10，用户裁定"可开可关"）：
    *   · `true`  ⇒ 强制判（**没密钥就抛**，错误里带"怎样配"的提示）。
@@ -850,17 +862,6 @@ function relOf(root: string, abs: string): string {
   return (path.relative(root, abs) || abs).split(path.sep).join('/');
 }
 
-/** 显式指定的源码文件（绝对/相对皆可） */
-function explicitCodeTargets(files: string[], root: string): TargetFile[] {
-  const out: TargetFile[] = [];
-  for (const f of files) {
-    const abs = path.isAbsolute(f) ? f : path.join(root, f);
-    if (!SOURCE_EXT_RE.test(abs)) continue;
-    out.push({ rel: relOf(root, abs), abs, kind: 'code' });
-  }
-  return out;
-}
-
 /** 项目已索引的源码文件（读 cache.db 的 `files` 表） */
 function indexedCodeTargets(db: Database, root: string): TargetFile[] {
   const rows = db.prepare('SELECT path FROM files').all() as Array<{ path: string }>;
@@ -971,13 +972,25 @@ async function harvestDecisionsCore(input: HarvestInput): Promise<HarvestResult>
   const gitRoot = path.resolve(input.git_root ?? process.cwd());
   const docDir = input.doc_dir ?? path.join(process.cwd(), 'docs');
 
-  // 目标文件：源码文件（显式或已索引）+ 文档 md
+  // 目标文件：源码文件（已索引）+ 文档 md
   const { db } = await ensureProjectIndex(projectRoot); // 代码证据需要符号索引（零前置：空库就地冷启）
-  const codeTargets = input.comment_files?.length
-    ? explicitCodeTargets(input.comment_files, projectRoot)
-    : indexedCodeTargets(db, projectRoot);
-  const docT = docTargets(docDir, projectRoot);
+  const codeAll = indexedCodeTargets(db, projectRoot);
+  const docAll = docTargets(docDir, projectRoot);
+  // ★★★ 统一的处理范围（`files`，T119）：**同时**过滤源码目标与文档目标（= 整个 target 集）。
+  //   ★ 不传 `files` ⇒ `scope=null` ⇒ `codeTargets`/`docT` 逐字等于全部目标（回归判据：行为不变）。
+  //   ★ 路径归一复用写入口的 `normRel`（不自己拼口径 ⇒ 与 `edit_dsl` 认的相对路径同一份）。
+  const scope = input.files?.length ? new Set(input.files.map(normRel)) : null;
+  const codeTargets = scope ? codeAll.filter((t) => scope.has(normRel(t.rel))) : codeAll;
+  const docT = scope ? docAll.filter((t) => scope.has(normRel(t.rel))) : docAll;
   const targets: TargetFile[] = [...codeTargets, ...docT];
+  // ★★ 限定范围**不静默**：列了却没命中任何目标的路径，逐条出声（本仓"排除必须出声"同款）。
+  const scopeMiss = scope
+    ? [...scope].filter((p) => !targets.some((t) => normRel(t.rel) === p))
+    : [];
+  const scopeLine = scope
+    ? `  ★ 本次按 files 限定处理范围（同时限源码+文档目标）：给定 ${scope.size} 个路径 ⇒ 命中 源码 ${codeTargets.length} 个 / 文档 ${docT.length} 个` +
+      (scopeMiss.length ? `；**未命中任何目标**的路径 ${scopeMiss.length} 个：${scopeMiss.join('、')}` : '')
+    : '';
 
   const ctx: EvidenceCtx = {
     db,
@@ -1014,7 +1027,10 @@ async function harvestDecisionsCore(input: HarvestInput): Promise<HarvestResult>
   const evidenceLine =
     `  ★ 三份证据各自取数: code ${perSource.code.signals} 个文件(${perSource.code.chars} 字) · ` +
     `history ${perSource.history.signals} 个(${perSource.history.chars} 字) · docs ${perSource.docs.signals} 个(${perSource.docs.chars} 字)`;
-  const targetLine = `  目标: 源码 ${codeTargets.length} 个 / 文档 ${docT.length} 个 · git_root=${gitRoot}（有历史证据: ${ctx.gitRepoOk ? '是' : '否'}）`;
+  // ★ 有 `files` 时限范围行在"目标"行**之前**（判开/判关两档共用，单一落点）。
+  const targetLine =
+    (scopeLine ? `${scopeLine}\n` : '') +
+    `  目标: 源码 ${codeTargets.length} 个 / 文档 ${docT.length} 个 · git_root=${gitRoot}（有历史证据: ${ctx.gitRepoOk ? '是' : '否'}）`;
 
   // ★★★ ② 判 + ③ 写：只有"判开"时才走 LLM；判关 ⇒ 直接降级只给证据（**回执必明说**）
   if (judged && cfg) {
