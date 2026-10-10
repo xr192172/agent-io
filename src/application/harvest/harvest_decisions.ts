@@ -36,8 +36,15 @@
  * ★ 仍只出一条（一个文件最多一条）：票最多者 → `decision`（稳定序破平）；其余桶 → `alternatives`（各带票数 + 证据源）。
  *   ⇒ **分歧不丢**（T109 修正：原来的罪不是"归一化不准"，是 `pickTop` 任取一条、假装它是唯一答案）。
  *
- * ★★ 没有 LLM ⇒ **抛**（不回落关键词 / 不静默降级）—— 本仓铁律"不许兜底，失败就是失败"。
- * ★ 本工具**只产决策线索**（`decision.status = 'draft'`），**不写 DSL**（定稿写入口是下一步 D1）。
+ * ★★ **「判」可开可关**（用户 2026-10-10 裁定：「本身这个东西是要配 AGNES 的密钥的，那么我们需要把这个功能
+ *   作为**可开可关**的功能」）：
+ *   · **判开**（有 LLM 密钥 / 入参 `judge:true`）⇒ 产出决策候选（本工具的主体行为）。
+ *   · **判关**（入参 `judge:false`，或**没配密钥时的自动档**）⇒ ★ **降级成"只给三份证据"**（`evidence_by_file`），
+ *     让调用方自己判；★★ **回执里必须明说"本次没判、只给了证据"** —— 降级可以，**不许静默降级**（本仓铁律）。
+ *   · 档位：入参 `judge` **显式优先**；不传则**自动检测**（有配置 ⇒ 判开；无配置 ⇒ 判关，并在回执明示）。
+ *   · ★ `judge:true` 却**没密钥** ⇒ **抛**（不回落关键词）；错误里带"怎样配"的提示（见 `llm_agnes.describeAgnesConfigHint`）。
+ * ★ 本工具**只产决策线索**（`decision.status = 'draft'`），**不写 DSL**；写 DSL 用 `edit_dsl` 的 `type:'decision'` op
+ *   （未决分歧进 `NodeDecision.dissent`，**不是** `alternatives`）。
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -46,7 +53,10 @@ import { gitAvailable } from '../../infrastructure/exec_guard.js';
 import { ensureProjectIndex } from '../../infrastructure/index/index_freshness.js';
 import type { Database } from '../../infrastructure/index/db.js';
 import { getRawImportsOfFile, getResolvedImportSources } from '../../infrastructure/index/symbols.js';
-import { loadLlmConfig, callChat, configFilePath, loadExplainConfig } from '../../infrastructure/llm_focus.js';
+import { loadLlmConfig, callChat, loadExplainConfig } from '../../infrastructure/llm_focus.js';
+// ★★ 2026-10-10（T106）：「怎样配密钥」的提示**从唯一住处生成**（`AGNES_ENV` + `describeAgnesConfigHint`），
+//   本文件**不手抄变量名清单** —— 否则 T108 刚收拢的"上游/key/模型唯一住处"会立刻在这里重新分叉。
+import { describeAgnesConfigHint } from '../../infrastructure/llm_agnes.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../domain/b_terms.js';
 import type { NodeDecision, DecisionHistoryEntry } from '../../domain/geometry.js';
 
@@ -130,11 +140,11 @@ export interface HarvestCandidate {
   source: HarvestSource;
   /** 出处：证据锚点（`文件:行` 或 `git:<hash>`） */
   ref: string;
-  /** 决策本体：可直接落到文件节点的 `decision` 字段（`status` 为 `draft` —— 写回是下一步 D1） */
+  /** 决策本体：可直接落到文件节点的 `decision` 字段（`status` 为 `draft` —— 写回用 `edit_dsl` 的 `type:'decision'` op） */
   decision: NodeDecision;
   /**
    * 历史决策（旧版，默认不显示）。★ 本工具只产**最新一条** ⇒ 此处**恒不填**；
-   * 旧版压栈由 D1 写入口在"用新版取代旧版"时完成 —— 本字段仅声明产物**可承载历史**
+   * 旧版压栈由 `edit_dsl`（`type:'decision'`）写入口在"用新版取代旧版"时完成 —— 本字段仅声明产物**可承载历史**
    * （用户裁定：有历史、默认只显示最后一次）。
    */
   decision_history?: DecisionHistoryEntry[];
@@ -168,7 +178,38 @@ export interface HarvestCandidate {
 export interface HarvestResult {
   message: string;
   feature: string;
+  /**
+   * ★★ 本次**是否真的用 LLM 判了**。
+   * `false` = 降级为"只给三份证据"（`evidence_by_file`）—— ★ **回执（message）里必明说**，
+   *           调用方从这一位也**机器可读**地知道"这次没判"（**不许静默降级**）。
+   * `true` = 走了 LLM，`candidates` 才有内容。
+   */
+  judged: boolean;
+  /** 决策候选（`judged=false` 时为空数组） */
   candidates: HarvestCandidate[];
+  /**
+   * ★ `judged=false` 时**逐文件的三份证据原文**（code / history / docs 各一段），供调用方**自己判**。
+   * `judged=true` 时不产出（证据已折进各候选的 `evidence`）。
+   */
+  evidence_by_file?: FileEvidence[];
+}
+
+/** 一份证据对一个文件的摘要（`judged=false` 的降级产物） */
+export interface EvidenceExcerpt {
+  evidence_source: EvidenceSource;
+  /** 该证据对该文件的摘要文本（∈ 各 `SignalLine.text`，供人/LLM 读） */
+  summary: string;
+  /** 该证据里可复核的**出处锚点**（`文件:行` 或 `git:<hash>`） */
+  refs: string[];
+}
+
+/** `judged=false` 时逐文件的证据包（**未判**，等调用方判） */
+export interface FileEvidence {
+  /** 作用对象：该文件（仓库相对路径） */
+  file_path: string;
+  /** 目标文件种类：comment = 源码文件 · doc = 文档文件 */
+  source: HarvestSource;
+  excerpts: EvidenceExcerpt[];
 }
 
 export interface HarvestInput {
@@ -182,6 +223,13 @@ export interface HarvestInput {
   limit?: number;
   /** 显式指定目标源码文件（绝对路径）；**缺省 = 扫描项目已索引的全部源码文件** */
   comment_files?: string[];
+  /**
+   * ★ **「判」的开关**（2026-10-10，用户裁定"可开可关"）：
+   *   · `true`  ⇒ 强制判（**没密钥就抛**，错误里带"怎样配"的提示）。
+   *   · `false` ⇒ **强制不判**：降级成"只给三份证据"（`evidence_by_file`），回执明说。
+   *   · 省略    ⇒ **自动**：有 LLM 配置 ⇒ 判；没配置 ⇒ 降级只给证据（并明示）。
+   */
+  judge?: boolean;
 }
 
 // ──────── 常量 ────────
@@ -228,18 +276,26 @@ function toLlmCfg(c: ReturnType<typeof loadExplainConfig>): LlmCfg | null {
 }
 
 /**
- * ★★ 取得 LLM 配置；**取不到就抛**。
+ * ★★ 取得 LLM 配置（**不抛**）；取不到返回 null（供"自动档"判定）。
+ * 判据：通用 llm 段 / DEEPSEEK 环境 / AGNES 环境，三路任一有 key 即算"有配置"。
+ */
+function loadCfgOrNull(): LlmCfg | null {
+  return loadLlmConfig() ?? toLlmCfg(loadExplainConfig());
+}
+
+/**
+ * ★★ 取得 LLM 配置；**取不到就抛**（只在"判开"档调用）。
  * 判断"这个文件为什么存在"本就属"判断"，没有 LLM 就**没有判据** ⇒ 只能失败。
- * 错误消息说清"需要什么"以及"去哪配"（本仓铁律：不许兜底，失败就是失败）。
+ * 错误消息说清"需要什么"以及"**怎样配**"（★ 提示文本由 `describeAgnesConfigHint` 从**唯一住处**生成）。
  */
 function requireLlmConfig(): LlmCfg {
-  const cfg = loadLlmConfig() ?? toLlmCfg(loadExplainConfig());
+  const cfg = loadCfgOrNull();
   if (cfg) return cfg;
   throw new Error(
-    'harvest_decisions 需要 LLM 配置：判断「这个文件为什么存在」必须用 LLM，没有 LLM 就没有判据。\n' +
-      `请在 ${configFilePath()} 写入 { "llm": { "apiKey": "...", "model": "...", "baseURL": "..." } }，` +
-      '或设置环境变量 LLM_API_KEY / LLM_BASE_URL / LLM_MODEL（亦兼容 DEEPSEEK_API_KEY / AGNES_API_KEY）。\n' +
-      '本工具不回落关键词（本仓铁律：不许兜底，失败就是失败）。',
+    'harvest_decisions 判开（judge:true / 自动档里有密钥）需要 LLM 配置：判断「这个文件为什么存在」必须用 LLM，没有 LLM 就没有判据。\n' +
+      '本工具不回落关键词（本仓铁律：不许兜底，失败就是失败）。\n' +
+      `★ 若不想现在配：传 \`judge:false\` ⇒ 降级为"**只给三份证据**"，让调用方自己判（回执会明说"本次没判"）。\n` +
+      describeAgnesConfigHint(),
   );
 }
 
@@ -792,7 +848,24 @@ function isGitRepo(gitRoot: string): boolean {
 
 async function harvestDecisionsCore(input: HarvestInput): Promise<HarvestResult> {
   const { feature } = input;
-  const cfg = requireLlmConfig(); // ★ 没有 LLM ⇒ 当场抛（早于任何扫描）
+  // ★★ 「判」的档位（见文件头）：入参**显式优先**；不传则**自动检测**（有密钥 ⇒ 判开）。
+  //   ⚠ 判开却无密钥 ⇒ 在 `requireLlmConfig()` 里**抛**（含"怎样配"提示）；判关 ⇒ 降级只给证据（回执明说）。
+  const cfgOrNull = loadCfgOrNull();
+  let judged: boolean;
+  let degradeReason = '';
+  if (input.judge === true) {
+    judged = true;
+  } else if (input.judge === false) {
+    judged = false;
+    degradeReason = '入参显式 `judge:false`';
+  } else if (cfgOrNull) {
+    judged = true;
+  } else {
+    judged = false;
+    degradeReason = '未检测到 LLM 密钥（自动档）';
+  }
+  const cfg = judged ? requireLlmConfig() : null;
+
   const limit = input.limit ?? 30;
   // ★ 注释扫描锚定 **进程当前目录**（= 被分析的项目；与 `doc_dir` 默认根 `<cwd>/docs` 同一口径）。
   const projectRoot = path.resolve(process.cwd());
@@ -815,16 +888,16 @@ async function harvestDecisionsCore(input: HarvestInput): Promise<HarvestResult>
     docCorpus: readDocCorpus(docDir, projectRoot),
   };
 
-  // ★★★ 三个 loop = 三份证据：每份证据**各自取、各自判**，命中累进同一张票表
+  // ★★★ ① 读：三份证据**各自取**（取不到即缺席；不用别的证据顶替）
   const table: VoteTable = new Map();
   const evidenceByRel: EvidenceByRel = new Map();
+  const signalsBySource = new Map<EvidenceSource, EvidenceSignal[]>();
   const perSource: Record<EvidenceSource, { signals: number; chars: number }> = {
     code: { signals: 0, chars: 0 },
     history: { signals: 0, chars: 0 },
     docs: { signals: 0, chars: 0 },
   };
   for (const ev of EVIDENCE_SOURCES) {
-    // ① 读：取这一份证据（逐目标；取不到即缺席）
     const signals: EvidenceSignal[] = [];
     for (const t of targets) {
       const sig = evidenceForSource(ev, t, ctx);
@@ -836,40 +909,88 @@ async function harvestDecisionsCore(input: HarvestInput): Promise<HarvestResult>
       perSource[ev].signals++;
       perSource[ev].chars += sig.evidence.length;
     }
-    if (signals.length === 0) continue; // 本证据源在本仓/本批整体缺席 ⇒ 不投任何票
-    // ② 判：LLM（同一套输出契约）
-    const hits = await runBatches(chunk(signals, BATCH_SIZE), (b) => askEvidenceBatch(cfg, b, ev));
-    // ③ 写：命中累进票桶
-    accumulate(table, hits);
+    signalsBySource.set(ev, signals);
+  }
+  const evidenceLine =
+    `  ★ 三份证据各自取数: code ${perSource.code.signals} 个文件(${perSource.code.chars} 字) · ` +
+    `history ${perSource.history.signals} 个(${perSource.history.chars} 字) · docs ${perSource.docs.signals} 个(${perSource.docs.chars} 字)`;
+  const targetLine = `  目标: 源码 ${codeTargets.length} 个 / 文档 ${docT.length} 个 · git_root=${gitRoot}（有历史证据: ${ctx.gitRepoOk ? '是' : '否'}）`;
+
+  // ★★★ ② 判 + ③ 写：只有"判开"时才走 LLM；判关 ⇒ 直接降级只给证据（**回执必明说**）
+  if (judged && cfg) {
+    for (const ev of EVIDENCE_SOURCES) {
+      const signals = signalsBySource.get(ev) ?? [];
+      if (signals.length === 0) continue; // 本证据源在本仓/本批整体缺席 ⇒ 不投任何票
+      const hits = await runBatches(chunk(signals, BATCH_SIZE), (b) => askEvidenceBatch(cfg, b, ev));
+      accumulate(table, hits);
+    }
+    const candidates = writeCandidates(targets, table, evidenceByRel);
+    const nOf = (s: HarvestSource) => candidates.filter((c) => c.source === s).length;
+    const conv = candidates.filter((c) => c.votes > 1).length;
+    const lines = [
+      `harvest_decisions [${feature}] **判开** ⇒ 产出 ${candidates.length} 条决策（三要素齐备：结论 / 出处 / 作用对象）`,
+      targetLine,
+      evidenceLine,
+      `  ★ votes = 支持该说法的**证据源个数**（1..3，多源印证 = 置信）；多源收敛 ${conv} 条 · 来源: comment ${nOf('comment')} · doc ${nOf('doc')}`,
+      '',
+      ...candidates.map((c, i) => {
+        const lh = c.lifecycle_hint ? `  ⚠ lifecycle:${c.lifecycle_hint.type}` : '';
+        const alt = c.alternatives.length
+          ? `  未决分歧: ${c.alternatives.map((a) => `${a.why}(${a.votes}票←${a.evidence_source.join('+')})`).join(' · ')}`
+          : '';
+        return (
+          `  ${i + 1}. [${c.source}] ${c.decision.summary}  证据 ${c.votes}/${c.samples}${lh}${alt}\n` +
+          `      ↳ 作用对象: ${c.file_path}\n` +
+          `      ↳ 出处: ${c.ref}\n` +
+          `      ↳ 证据源: ${c.evidence_source.join('+')}\n` +
+          `      ↳ 证据: ${c.evidence}`
+        );
+      }),
+      '',
+      '用法: 逐条核对出处/原文；把候选写回文件节点用 `edit_dsl`（type=decision, data.summary/…, ★ 未决分歧进 data.dissent，不是 data.alternatives）。',
+    ];
+    return { message: lines.join('\n'), feature, judged: true, candidates };
   }
 
-  const candidates = writeCandidates(targets, table, evidenceByRel);
-  const nOf = (s: HarvestSource) => candidates.filter((c) => c.source === s).length;
-  const conv = candidates.filter((c) => c.votes > 1).length;
-
+  // ── 判关：降级成"只给三份证据"（**让调用方自己判**）──
+  const evidenceByFile = buildEvidenceByFile(targets, evidenceByRel);
   const lines = [
-    `harvest_decisions [${feature}] 产出 ${candidates.length} 条决策（三要素齐备：结论 / 出处 / 作用对象）`,
-    `  目标: 源码 ${codeTargets.length} 个 / 文档 ${docT.length} 个 · git_root=${gitRoot}（有历史证据: ${ctx.gitRepoOk ? '是' : '否'}）`,
-    `  ★ 三份证据各自取数: code ${perSource.code.signals} 个文件(${perSource.code.chars} 字) · history ${perSource.history.signals} 个(${perSource.history.chars} 字) · docs ${perSource.docs.signals} 个(${perSource.docs.chars} 字)`,
-    `  ★ votes = 支持该说法的**证据源个数**（1..3，多源印证 = 置信）；多源收敛 ${conv} 条 · 来源: comment ${nOf('comment')} · doc ${nOf('doc')}`,
+    `harvest_decisions [${feature}] ★★ **本次没判**（${degradeReason}）⇒ 已降级为「**只给三份证据**」`,
+    '  ★ 这是**降级**，不是失败：下面给的是**未经 LLM 判断**的原始证据，请调用方**自己判**「每个文件为什么存在」。',
+    targetLine,
+    evidenceLine,
     '',
-    ...candidates.map((c, i) => {
-      const lh = c.lifecycle_hint ? `  ⚠ lifecycle:${c.lifecycle_hint.type}` : '';
-      const alt = c.alternatives.length
-        ? `  分歧: ${c.alternatives.map((a) => `${a.why}(${a.votes}票←${a.evidence_source.join('+')})`).join(' · ')}`
-        : '';
-      return (
-        `  ${i + 1}. [${c.source}] ${c.decision.summary}  证据 ${c.votes}/${c.samples}${lh}${alt}\n` +
-        `      ↳ 作用对象: ${c.file_path}\n` +
-        `      ↳ 出处: ${c.ref}\n` +
-        `      ↳ 证据源: ${c.evidence_source.join('+')}\n` +
-        `      ↳ 证据: ${c.evidence}`
-      );
+    ...evidenceByFile.map((f, i) => {
+      const ex = f.excerpts.map((e) => `      [${e.evidence_source}] ${e.summary}`).join('\n');
+      return `  ${i + 1}. [${f.source}] ${f.file_path}\n${ex}`;
     }),
     '',
-    '用法: 逐条核对出处/原文；把决策写回文件节点 `decision` 是**下一步**（D1，当前不存在），本工具不写 DSL。',
+    '★ 要"判"：配置密钥后不带 judge 重跑，或显式 judge:true（无密钥时会报错并给配置指引）。',
+    describeAgnesConfigHint(),
   ];
-  return { message: lines.join('\n'), feature, candidates };
+  return { message: lines.join('\n'), feature, judged: false, candidates: [], evidence_by_file: evidenceByFile };
+}
+
+/**
+ * ★ 判关降级产物：逐文件把三份证据（code / history / docs）折成可复核的摘要 + 出处。
+ * ★ 判据：只收"该文件**至少取到一份证据**"的（一份都没取到 ⇒ 无从给证据）。
+ */
+function buildEvidenceByFile(targets: TargetFile[], evidenceByRel: EvidenceByRel): FileEvidence[] {
+  const out: FileEvidence[] = [];
+  for (const t of targets) {
+    const sigs = evidenceByRel.get(t.rel);
+    if (!sigs?.length) continue;
+    out.push({
+      file_path: t.rel,
+      source: t.kind === 'code' ? 'comment' : 'doc',
+      excerpts: sigs.map((s) => ({
+        evidence_source: s.evidence_source,
+        summary: s.evidence,
+        refs: s.lines.map((l) => l.ref),
+      })),
+    });
+  }
+  return out;
 }
 
 /**
@@ -882,7 +1003,7 @@ function touchedOf(input: HarvestInput): Touched {
   touched.feature = input.feature;
 
   // ★ 不给 project_dir：入参里**没有** project_dir（只有 `doc_dir` 与 `git_root`）。
-  // ★ 不给 written_files：本 [B] 只产出 draft 决策、**不写任何文件/DSL**（写回是下一步 D1）。
+  // ★ 不给 written_files：本 [B] 只产出 draft 决策、**不写任何文件/DSL**（写回用 `edit_dsl` 的 `type:'decision'` op）。
   // ★ 不给 symbols / nodes：决策线索里没有符号 / DSL 节点标识可取。
 
   return touched;

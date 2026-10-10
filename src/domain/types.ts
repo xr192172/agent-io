@@ -25,6 +25,7 @@ export type {
   NodeContent,
   Node,
   NodeDecision,
+  DecisionDissent,
   DecisionHistoryEntry,
   EdgeStyle,
   Edge,

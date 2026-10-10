@@ -11,7 +11,9 @@
 import { wrap, wrapData } from '.././plumbing.js';
 import { harvestDecisions } from '.././harvest/harvest_decisions.js';
 
-/** harvest_decisions：把注释/文档/提交信息提取成「这个文件为什么存在」的决策（LLM 判定；无 LLM 抛）。★ wrapData：回 `data: r` */
+/** harvest_decisions：把注释/文档/提交信息提取成「这个文件为什么存在」的决策（LLM 判定）。
+ * ★ 「判」可开可关：judge:true 强制判（无密钥抛）；judge:false 降级只给三份证据（回执明说）；省略=自动。
+ * ★ wrapData：回 `data: r`（含 judged 位，调用方可机器判定"这次判没判"） */
 export const harvestDecisionsHandler = wrapData(async (a) => {
   const r = await harvestDecisions({
     feature: a.feature as string,
@@ -19,6 +21,7 @@ export const harvestDecisionsHandler = wrapData(async (a) => {
     git_root: a.git_root as string | undefined,
     limit: a.limit as number | undefined,
     comment_files: a.comment_files as string[] | undefined,
+    judge: a.judge as boolean | undefined,
   });
   return { message: r.message, data: r };
 });

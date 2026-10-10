@@ -272,7 +272,7 @@ export const B_TERMS: Record<string, BTerm> = {
       '涉及到的 DSL 节点 id。★ 口径（**唯一住处** —— 原只写在 `chain_wiring.ts` 的注释里）：' +
       '**只给落定后仍存在的 DSL 节点 id** —— `op=delete` 之后那个节点**已不在 DSL 里**，' +
       '交出去会让下游去查一个**不存在的节点**（与 `file` 那条"只在真有定义时才给"同款判据）。' +
-      '★ 产者分类：只收 `id` **就是节点 id** 的 op（`node` / `binding` / `status`）；' +
+      '★ 产者分类：只收 `id` **就是节点 id** 的 op（`node` / `binding` / `status` / `decision`）；' +
       '`edge` / `file` / `api` 的 `id` **不是节点**，一个都不收。',
     debt: true,
     fix:
@@ -440,6 +440,41 @@ export const B_TERMS: Record<string, BTerm> = {
     fix:
       '★ 实测**同名不同义** ⇒ 各领域改名：条目表 → `<领域>_candidates`（如 `decision_candidates`）；' +
       '计数 → `candidate_count`（同 `filesWritten` → `written_file_count` 的口径）。拆清之前禁止新增使用者。',
+  },
+  /**
+   * ★★★ 2026-10-10（T106 决策写入口）新增 —— **决策卡上"多份证据说法不一致、尚未裁定"的差异**。
+   *
+   * ## 它**不是** `alternatives`（这是本词条存在的全部理由）
+   * `NodeDecision.alternatives` 的既有语义 = 「**被否掉的**方案 + **否决原因**」（已经想清楚并排除了）；
+   * 而本字段是「**还没想清楚**」。用户 2026-10-10 裁定：「并**不要强制它们没有区别**，……三个如果有了差别，
+   * **要以用户的那个设计为准**，然后去想**怎样去往设计上靠拢**。」⇒ 分歧是**待对拍的差异**，不是噪声。
+   * 处置后（对拍 / 以设计为准裁定）**才**进 `alternatives[{option, rejected_because}]`。
+   *
+   * ★ 口径唯一住处 = `domain/geometry.ts` 的 `NodeDecision.dissent`（契约值 = `DecisionDissent[]`）。
+   */
+  dissent: {
+    kind: 'context',
+    type: 'DecisionDissent[]',
+    meaning:
+      '**未决分歧**：多份证据给出了与 `NodeDecision.summary` 不同、且**尚未裁定**的说法（每条含 `option` + 可选 `votes` / `evidence_source`）。' +
+      '★ 与 `alternatives` **严格分开**：`alternatives` = **已被否决**的方案 + 否决原因；`dissent` = **还没判**的分歧。' +
+      '★ 混用 = 把"未决"伪装成"已排除"（同名不同义）；裁定后**未采纳的说法**才进 `alternatives`。',
+  },
+  /** ★ 2026-10-10（T106）：**支持 `NodeDecision.summary` 的证据源个数**（多源印证 = 置信）。 */
+  votes: {
+    kind: 'context',
+    type: 'number',
+    meaning:
+      '**支持某条结论（summary）的证据源个数**（1..3）—— `harvest_decisions` 的三份证据（code/history/docs）里投它的份数，' +
+      '是"多源印证 = 置信"的本意（★ 不是"同一提示词抽几次的稳定性"）。同族的 `AlternativeWhy` 也用它。',
+  },
+  /** ★ 2026-10-10（T106）：**支持某条结论的证据源**（哪几份证据投了它）。 */
+  evidence_source: {
+    kind: 'context',
+    type: 'string[]',
+    meaning:
+      '**支持某条结论的证据源**（`harvest_decisions` 的枚举：`code` / `history` / `docs`），长度应 = `votes`。' +
+      '用于给"分歧 / 结论"**归因到证据**（"这条来自哪份证据"可观察）。',
   },
   previews: { kind: 'state', type: 'unknown[]', meaning: '预演结果（逐条）', debt: true, fix: '★ 现状与 `applied` 平行两套（file 版 / symbol 版）⇒ 统一' },
   applied: { kind: 'state', type: 'unknown[]', meaning: '已落盘的逐条结果', debt: true, fix: '★ 同 `previews`：两套平行形状 ⇒ 统一' },

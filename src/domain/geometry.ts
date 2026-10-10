@@ -183,6 +183,45 @@ export interface NodeDecision {
   author?: string;
   /** 本次决策最近写入/修订时间（ISO 8601），与 decision_history.at 呼应成时间线 */
   updated_at?: string;
+  /**
+   * ★★★ **未决分歧**（2026-10-10，T106 决策写入口）—— 多份证据**说法不一致、还没对拍裁定**的差异。
+   *
+   * ## 为什么**不能**塞进 `alternatives`（本字段存在的全部理由）
+   * `alternatives` 的既有语义是「**被否掉的**替代方案 + **否决原因**」（**已经想清楚并排除了**）；
+   * 而这里的分歧是「**还没想清楚**」。直接塞进去会把"未决"伪装成"已排除"（同名不同义，本仓头号病）。
+   * ⇒ **未决分歧住这里**；等对拍 / 以设计为准裁定之后，**未采纳的说法 + 为什么不采纳**才进
+   *   `alternatives[{option, rejected_because}]`。
+   *
+   * ## 语义（用户 2026-10-10 裁定，逐字）
+   * 「并**不要强制它们没有区别**……三个如果有了差别，**要以用户的那个设计为准**，然后去想
+   *   **怎样去往设计上靠拢**。」⇒ **分歧不是要消除的噪声，是一处「待对拍的差异」**；
+   * "往设计上靠拢"是**修复方向**。⇒ 写入口只**如实记下**分歧，**不去消歧**（处置是对拍与人的事）。
+   *
+   * ★ 口径见 `domain/b_terms.ts` 的 `dissent` 词条（**唯一住处**）。
+   */
+  dissent?: DecisionDissent[];
+  /**
+   * ★ **支持 `summary` 的证据源个数**（多源印证 = 置信；不是"同一提示词抽几次的稳定性"）。
+   * 证据源枚举见 `harvest_decisions` 的 `EvidenceSource`（code / history / docs）。
+   */
+  votes?: number;
+  /** ★ 支持 `summary` 的**证据源**（哪几份证据投了它）；长度应 = `votes`。 */
+  evidence_source?: string[];
+}
+
+/**
+ * 一条**未决分歧**：某份证据给出的、与当前 `summary` 不同、且**尚未裁定**的说法。
+ * ★ 与 `NodeDecision.alternatives` 的 `{option, rejected_because}` **不是一个东西**：
+ *   本结构**没有被否**（只是没被采纳），也**没有否决原因**（还没判）。
+ * ★ 将来裁定后：被否的说法 → `alternatives`（补 `rejected_because`）；本项从 `dissent` 移除。
+ */
+export interface DecisionDissent {
+  /** 该分歧说法（与 `summary` 不同的那个结论） */
+  option: string;
+  /** 支持该说法的证据源个数（可选） */
+  votes?: number;
+  /** 支持该说法的证据源（可选；code / history / docs） */
+  evidence_source?: string[];
 }
 
 /** 决策版本栈条目：旧决策 + 压栈时间 + 修订说明 */

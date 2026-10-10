@@ -47,7 +47,9 @@ export const HARVEST_TOOLS: ToolDef[] = [
       '★ **产出契约（三要素缺一不可）**：结论（为什么存在）· 出处（`文件:行` 或 `git:<hash>`）· 作用对象（该文件）—— 填不出就**产不出**（不是"收下再过滤"）。' +
       '★★ `votes` = **支持同一说法的证据源个数**（1..3，多源印证 = 置信，非"抽三次的稳定性"）；' +
       '不收敛时最高票仍只出一条（**一个文件最多一条**），其余结论进 `alternatives`（各带票数 + `evidence_source`，不丢）。' +
-      '★ **必须配置 LLM**，否则**报错**（不回落关键词）。只产 `status:draft` 线索、**不写 DSL**——写回文件节点 `decision` 是下一步（D1，当前不存在）。' +
+      '★★ **「判」可开可关**（`judge`）：判开（有密钥 / judge:true）⇒ 产候选；**判关**（judge:false，或没配密钥的自动档）' +
+      '⇒ ★ **降级为"只给三份证据"**（`evidence_by_file`，未经 LLM 判断，调用方自己判），**回执必明说"本次没判"**（不静默降级）。' +
+      '只产 `status:draft` 线索、**不写 DSL**——写回文件节点用 `edit_dsl`（type=decision；★ 未决分歧进 data.dissent，不是 data.alternatives）。' +
       '适用：为没有决策卡历史的现有项目/外来代码补录活文档。',
     inputSchema: {
       feature: z.string().describe('feature 名（候选挂载目标）'),
@@ -58,6 +60,10 @@ export const HARVEST_TOOLS: ToolDef[] = [
         .array(z.string())
         .optional()
         .describe('要提取注释的源码文件；缺省 = 扫描项目已索引的全部源码文件'),
+      judge: z
+        .boolean()
+        .optional()
+        .describe('「判」开关：true=强制判（无 LLM 密钥则报错）；false=不判、降级为"只给三份证据"；省略=自动（有密钥就判）'),
     },
     // ★ CLI 面绕过 zod 必填校验：缺 feature 时 [B] 会把 undefined 拼进扫描路径/git 命令（泄漏 git 原始报错）。
     //   本层只加守卫；随后**原样**委托已包装的 harvestDecisionsHandler（其 isError 语义保持不变）。

@@ -27,6 +27,46 @@ export const DEFAULT_AGNES_UPSTREAM = 'https://apihub.agnes-ai.com';
 /** 默认模型（统一口径，替换旧的写死 `agnes-2.0-flash`；现役为 `agnes-2.5-flash`） */
 export const DEFAULT_AGNES_MODEL = 'agnes-2.5-flash';
 
+/**
+ * ★★★ **AGNES 环境变量名的唯一住处**（T108）。
+ *
+ * 为什么必须是**一个具名常量**、而不是散在 `process.env.XXX` 字面量里：
+ *   「上游 / key 池 / 模型」此前分散在三处、名字不同，T108 把它们收拢进本文件；
+ *   而**给 Agent 的"怎样配密钥"提示**若再手抄一份变量名清单，就会**立刻**重新分叉
+ *   （正是 T108 刚清掉的病）。⇒ 解析器与提示**都从本常量取**，只此一处。
+ */
+export const AGNES_ENV = {
+  /** 上游根（不含 /v1）；`AGNES_BASE_URL` 是它的等价旧写法（含 /v1） */
+  upstreamBase: 'AGNES_UPSTREAM_BASE',
+  /** 上游 base（含 /v1）—— 与 `upstreamBase` 同指一个上游（归一化时剥掉 `/v1`） */
+  baseUrl: 'AGNES_BASE_URL',
+  /** key 池（逗号分隔多把，优先） */
+  keyPool: 'AGNES_KEY_POOL',
+  /** 单把 key（池的回退） */
+  apiKey: 'AGNES_API_KEY',
+  /** 模型名 */
+  model: 'AGNES_MODEL',
+} as const;
+
+/**
+ * ★★ **"怎样配密钥"的人话提示**（用户 2026-08-xx 要求：用此功能 / 缺密钥时要提示 Agent 可以去配）。
+ *
+ * ★ **变量名从 {@link AGNES_ENV} 取**（唯一住处），**本函数不手抄任何变量名清单** ——
+ *   否则 T108 刚收拢的"上游/key/模型唯一住处"会立刻在这里重新分叉。
+ * ★ 纯字符串拼装、无副作用（可被任何提示 / 回执复用）。
+ */
+export function describeAgnesConfigHint(): string {
+  return (
+    '可以怎样配 AGNES 密钥（任选其一）：\n' +
+    `  · 环境变量：\`${AGNES_ENV.keyPool}\`（逗号分隔多把 key，优先）或 \`${AGNES_ENV.apiKey}\`（单把）；` +
+    `上游用 \`${AGNES_ENV.upstreamBase}\`（不含 /v1）或 \`${AGNES_ENV.baseUrl}\`（含 /v1），模型用 \`${AGNES_ENV.model}\`。\n` +
+    '  · 或写进配置文件 `<configHome>/.agent-io/config.json`：' +
+    '{ "llm": { "apiKey": "...", "model": "...", "baseURL": "..." } }（也兼容 agent.mmd 段）。\n' +
+    `★ 当前默认上游 = ${DEFAULT_AGNES_UPSTREAM}，默认模型 = ${DEFAULT_AGNES_MODEL}。`
+  );
+}
+
+
 /** 归一化：去尾部斜杠、再去尾部一次 `/v1` ⇒ 上游根 */
 function toAgnesUpstreamRoot(raw: string): string {
   return raw.trim().replace(/\/+$/, '').replace(/\/v1$/, '');
@@ -44,8 +84,8 @@ export function agnesApiBaseUrl(root: string): string {
 export function resolveAgnesUpstreamBase(explicit?: string): string {
   const raw =
     explicit?.trim() ||
-    process.env.AGNES_UPSTREAM_BASE?.trim() ||
-    process.env.AGNES_BASE_URL?.trim();
+    process.env[AGNES_ENV.upstreamBase]?.trim() ||
+    process.env[AGNES_ENV.baseUrl]?.trim();
   return raw ? toAgnesUpstreamRoot(raw) : DEFAULT_AGNES_UPSTREAM;
 }
 
@@ -56,10 +96,10 @@ export function resolveAgnesApiBaseUrl(): string {
 
 /** 解析模型。优先级：`AGNES_MODEL` > 默认 `agnes-2.5-flash` */
 export function resolveAgnesModel(): string {
-  return process.env.AGNES_MODEL?.trim() || DEFAULT_AGNES_MODEL;
+  return process.env[AGNES_ENV.model]?.trim() || DEFAULT_AGNES_MODEL;
 }
 
 /** 解析 key 池。优先级：`AGNES_KEY_POOL`（逗号分隔多把）→ `AGNES_API_KEY`（单把）。复用共享的 `loadKeys`。 */
 export function resolveAgnesKeys(): string[] {
-  return loadKeys('AGNES_KEY_POOL', ['AGNES_API_KEY']);
+  return loadKeys(AGNES_ENV.keyPool, [AGNES_ENV.apiKey]);
 }

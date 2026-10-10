@@ -121,12 +121,17 @@ export const DESIGN_TOOLS: ToolDef[] = [
       '统一写入口：通过 operations 列表批量执行节点/边/文件/API 的增删改、节点平移、语义绑定、状态更新，' +
       '以及标注/审批/快照/自动布局/仿真重置。按顺序执行，任一失败自动回滚（原子性）。' +
       'op: add/update/delete/move（通用），resolve（关闭标注），submit/review（审批），save/rollback/delete（快照），apply（布局），reset（仿真）；' +
-      'type: node/edge/file/api/binding/status/annotation/approval/snapshot/layout/simulation/tag。' +
+      'type: node/edge/file/api/binding/status/annotation/approval/snapshot/layout/simulation/tag/decision。' +
       '标注/审批/快照/布局/仿真/标记 用 data 传参（annotation.add data.text；annotation.resolve data.annotation_id；' +
       'approval.submit/review data.annotation_id；snapshot.save data.label；snapshot.rollback/delete data.snapshot_id；' +
       'layout.apply data.algo=dag|force|grid；simulation.reset 无参；' +
       '★ tag：功能标记 —— op=add/delete，data.tag=标记名（必填），data.files=成员文件（仓库相对路径或文件 id；省略=只动这个标签自身）。' +
       '给文件节点打"隶属某功能"标签，成员被改名/删除后可用 get_dsl query=tag 查出**失联成员**；标记住设计意图 overlay，活过 import_project 重建）。' +
+      '★ decision：**决策卡写入口** —— op=update，id=文件/文档节点 id 或仓库相对路径，data.summary 必填（结论），' +
+      '可带 rationale/consequences/acceptance；★ **未决分歧进 data.dissent**（{option, votes, evidence_source}[]，待对拍），' +
+      '**已排除的方案才进 data.alternatives**（{option, rejected_because}[]，缺 rejected_because 会被拒）；' +
+      '可带 votes/evidence_source（多源印证）/ author / status / thread / tags / note（修订说明）；' +
+      '覆盖时旧版自动压入 decision_history（**有历史、默认只显示最新**）。决策住设计意图 overlay，活过 import_project 重建。' +
       'view: design（默认，改设计视图）/ live（拒绝写入，实际代码快照只能由 import/watch 重建）。' +
       'weight: normal（默认）/ routine。routine=轻量写路径：跳过 L4 证据回溯（仍留 L1-L3 防空话/套话/泛谈），' +
       '适合日常维护（补节点/改职责描述/加标注/改属性），不必先跑代码留 trace 证据；改架构/契约等重改请用 normal 全链强闸。' +
@@ -152,8 +157,8 @@ export const DESIGN_TOOLS: ToolDef[] = [
               .enum(['add', 'update', 'delete', 'move', 'resolve', 'submit', 'review', 'save', 'rollback', 'apply', 'reset'])
               .describe('操作：add/update/delete/move 通用；resolve=关闭标注；submit/review=审批；save/rollback/delete=快照；apply=布局；reset=仿真'),
             type: z
-              .enum(['node', 'edge', 'file', 'api', 'binding', 'status', 'annotation', 'approval', 'snapshot', 'layout', 'simulation', 'tag'])
-              .describe('目标类型：node/edge/file/api/binding/status 几何与语义；annotation/approval/snapshot/layout/simulation 协作与整理；tag=功能标记（data.tag + data.files）'),
+              .enum(['node', 'edge', 'file', 'api', 'binding', 'status', 'annotation', 'approval', 'snapshot', 'layout', 'simulation', 'tag', 'decision'])
+              .describe('目标类型：node/edge/file/api/binding/status 几何与语义；annotation/approval/snapshot/layout/simulation 协作与整理；tag=功能标记（data.tag + data.files）；decision=决策卡写入口（id=文件/文档节点 id 或路径；data.summary 必填，★ 未决分歧进 data.dissent，**不是** data.alternatives）'),
             id: z.string().optional().describe('目标 ID（annotation/approval/snapshot/layout/simulation 可省略，用 data 传参）'),
             data: z.record(z.string(), z.unknown()).optional(),
           }),

@@ -18,6 +18,7 @@ import { syncDecisionsToOverlay, syncTagsToOverlay } from '../../../infrastructu
 import type { EditResult } from './edit_result.js';
 import { addNode, updateNode, deleteNode } from './node_ops.js';
 import type { AddNodeInput, UpdateNodeInput } from './node_ops.js';
+import { applyDecisionWrite } from './node_ops.js';
 import { addEdge, deleteEdge } from './edge_ops.js';
 import type { AddEdgeInput } from './edge_ops.js';
 import { addFile, updateFile, deleteFile } from './file_ops.js';
@@ -29,7 +30,7 @@ import { submitApproval, reviewAnnotation } from '../../observe/reconcile/approv
 import { saveSnapshot, rollbackSnapshot, deleteSnapshot, saveAutoSnapshot, pruneSnapshots } from '../lifecycle/snapshot.js';
 import { dagLayout, forceLayout, gridAlign } from '../workbench/dag_layout.js';
 import { resetSimulation } from '../lifecycle/simulation.js';
-import type { DiagramStatus, DesignDSL } from '../../../domain/types.js';
+import type { DiagramStatus, DesignDSL, NodeDecision, DecisionDissent } from '../../../domain/types.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
 // ─────────────────────────────────────────────────────────────
@@ -46,6 +47,9 @@ export interface FeatureOperation {
    * - layout：apply（自动布局，data.algo=dag|force|grid）
    * - simulation：reset（重置仿真状态）
    * - tag：**功能标记**（add=给 files 打 tag / delete=从 tag 移除 files 或删整个 tag；data.tag 必填）
+   * - decision：**决策卡写入口**（update=把决策候选写到**文件/文档节点**的 `decision`；
+   *   id = 文件节点 id 或仓库相对路径；data.summary 必填，可带 rationale/alternatives/consequences/
+   *   acceptance/dissent/votes/evidence_source/author/note。★ 未决分歧进 `dissent`，**不是** `alternatives`）
    */
   op:
     | 'add'
@@ -84,7 +88,8 @@ export interface FeatureOperation {
     | 'snapshot'
     | 'layout'
     | 'simulation'
-    | 'tag';
+    | 'tag'
+    | 'decision';
   /** 目标 ID：node_id / edge_id / file_id（api 类型为所属 file_id）；annotation/approval/snapshot/layout/simulation 用 data 传参，本字段可空 */
   id?: string;
   /** 操作数据（add/update/move 时按目标类型提供对应字段） */
@@ -160,9 +165,11 @@ function touchedOf(input: UpdateFeatureInput): Touched {
  *
  * ## 口径（哪些算、哪些不算）
  * 只收 **`id` 就是节点 id** 的那几种 op：
- *   · `node`    —— 通用增/删/改/移，`id` = `node_id`（见 `applyNodeOp`：`addNode({node_id: id, …})`）；
- *   · `binding` —— `setNodeSemantic({node_id: op.id, …})`；
- *   · `status`  —— `updateStatus({node_id: op.id, …})`。
+ *   · `node`     —— 通用增/删/改/移，`id` = `node_id`（见 `applyNodeOp`：`addNode({node_id: id, …})`）；
+ *   · `binding`  —— `setNodeSemantic({node_id: op.id, …})`；
+ *   · `status`   —— `updateStatus({node_id: op.id, …})`；
+ *   · `decision` —— 决策写入口，`id` = **文件/文档节点 id 或仓库相对路径**（2026-10-10 T106 加；
+ *     路径解不成节点 id 时由下面 `alive.has(id)` 过滤掉 ⇒ 交出去的仍是**真节点 id**）。
  * ★ **其余 type 的 `id` 不是节点**，一个都不收：`edge` 是**边**、`file`/`api` 是**语义实体**、
  *   `annotation`/`approval`/`snapshot`/`layout`/`simulation` 是**协作对象**
  *   ⇒ 塞进来就是 §2.2 那条「**名字像 ≠ 同义**」（都叫 `id`，指的不是一类东西）。
@@ -177,7 +184,7 @@ function touchedOf(input: UpdateFeatureInput): Touched {
  */
 function touchedNodeIds(input: UpdateFeatureInput): string[] {
   const named = input.operations
-    .filter((op) => op.type === 'node' || op.type === 'binding' || op.type === 'status')
+    .filter((op) => op.type === 'node' || op.type === 'binding' || op.type === 'status' || op.type === 'decision')
     .map((op) => op.id)
     .filter((id): id is string => typeof id === 'string' && id.length > 0);
   if (named.length === 0) return [];
@@ -270,6 +277,8 @@ function applyOperation(feature: string, op: FeatureOperation): EditResult {
       return applySimulationOp(feature, op);
     case 'tag':
       return applyTagOp(feature, op);
+    case 'decision':
+      return applyDecisionOp(feature, op);
     default:
       throw new Error(`未知操作类型: ${op.type satisfies never}`);
   }
@@ -569,6 +578,172 @@ function applyTagOp(feature: string, op: FeatureOperation): EditResult {
   else delete rec.meta;
   saveDSL(dsl);
   return { message: `[tag] ${msg}`, feature };
+}
+
+// ─────────────────────────────────────────────────────────────
+// decision：决策卡写入口（把候选落到**文件/文档节点**的 `decision`）
+//   ★★ 语义分叉（本 op 的头号纪律）：**未决分歧**住 `data.dissent`，
+//      **不是** `data.alternatives`（后者 = 已排除的方案 + 否决原因）。见 `domain/b_terms.ts` 的 `dissent`。
+//   ★ 住 overlay：本 op **只改 base**；收口处 `updateFeature` 调 `syncDecisionsToOverlay`
+//      把它搬进 overlay，`import_project` 重建时由 `applyOverlay` 投影回来（与 tag / 决策卡既有同步同款）。
+// ─────────────────────────────────────────────────────────────
+
+/** 把入参字符串归一成仓库相对路径（`/` 分隔、去 `./`）—— 与 `resolveMemberFiles` 同款口径 */
+function normRel(s: string): string {
+  return s.replace(/\\/g, '/').replace(/^\.\//, '');
+}
+
+/** 决策写入口的目标节点：`id` 可为 **节点 id** 或 **仓库相对路径**（文件/文档节点） */
+interface DecisionTarget {
+  node: { id: string; type?: string; description?: string; decision?: NodeDecision; decision_history?: import('../../../domain/types.js').DecisionHistoryEntry[] };
+  /** 目标的仓库相对路径（人读回执用；取不到给节点 id） */
+  path: string;
+}
+
+/**
+ * 解析目标节点。★ **只接受文件/文档节点** —— 决策卡的定义就是"**每个文件为什么存在**"
+ * （`harvest_decisions` 文件头）；挂到聚合/模块节点上是**语义错**，这里**响亮拒绝**而不是默默挂上去。
+ * ★ 解析不到 ⇒ **抛**（列出试过的方式），绝不静默创建一个新节点。
+ */
+function resolveDecisionTarget(dsl: DesignDSL, id: string | undefined, data: Record<string, unknown>): DecisionTarget {
+  const raw = (typeof id === 'string' && id.trim() ? id.trim() : '') ||
+    (typeof data.path === 'string' && data.path.trim() ? data.path.trim() : '');
+  if (!raw) throw new Error('decision.update 需要 id（文件节点 id 或仓库相对路径）');
+  const nodes = dsl.geometry?.nodes ?? [];
+  const byId = nodes.find((n) => n.id === raw);
+  const byPath = nodes.find(
+    (n) => (n.type === 'file' || n.type === 'doc') && n.description && (n.description === raw || normRel(n.description) === normRel(raw)),
+  );
+  const node = byId ?? byPath;
+  if (!node) {
+    // 语义文件表兜底：把 path / file_id 解析到它的节点 id，再取节点
+    const sf = (dsl.semantic?.files ?? []).find((f) => f.id === raw || f.path === raw || normRel(f.path) === normRel(raw));
+    const viaSf = sf ? nodes.find((n) => n.id === sf.id) : undefined;
+    if (!viaSf) {
+      throw new Error(
+        `decision.update 的目标 "${raw}" 不是本 feature 的节点：既非节点 id，也非任何文件/文档节点的路径，` +
+          `也不在 semantic.files 里。请用 get_dsl query=files 核对**仓库相对路径**或节点 id。`,
+      );
+    }
+    if (viaSf.type !== 'file' && viaSf.type !== 'doc') {
+      throw new Error(`decision.update 的目标节点 "${viaSf.id}"（type=${viaSf.type ?? '?'}）不是文件/文档节点 ⇒ 拒绝（决策卡挂在文件上，见 harvest_decisions）。`);
+    }
+    return { node: viaSf, path: viaSf.description ?? viaSf.id };
+  }
+  if (node.type !== 'file' && node.type !== 'doc') {
+    throw new Error(
+      `decision.update 的目标节点 "${node.id}"（type=${node.type ?? '?'}）不是文件/文档节点 ⇒ 拒绝。` +
+        `决策卡语义是"**每个文件为什么存在**"（harvest_decisions），只能挂 type=file / type=doc 的节点。`,
+    );
+  }
+  return { node, path: node.description ?? node.id };
+}
+
+/** 逐条校验 `alternatives`（已排除的方案 + **否决原因**）。★ 缺 `rejected_because` ⇒ 抛，并指向 `dissent`。 */
+function parseAlternatives(v: unknown): { option: string; rejected_because: string }[] {
+  if (v === undefined) return [];
+  if (!Array.isArray(v)) throw new Error('decision.update 的 data.alternatives 必须是数组');
+  return v.map((it, i) => {
+    const o = it as { option?: unknown; rejected_because?: unknown };
+    const option = typeof o?.option === 'string' ? o.option.trim() : '';
+    const rejected_because = typeof o?.rejected_because === 'string' ? o.rejected_because.trim() : '';
+    if (!option) throw new Error(`decision.update alternatives[${i}] 缺 option`);
+    if (!rejected_because) {
+      throw new Error(
+        `decision.update alternatives[${i}] 缺 rejected_because —— **「alternatives」的语义是"被否掉的方案 + 否决原因"**。` +
+          `若这条其实是"**还没裁定的分歧**"，请放「data.dissent」（未决分歧），不要塞进 alternatives。`,
+      );
+    }
+    return { option, rejected_because };
+  });
+}
+
+/** 逐条校验 `dissent`（未决分歧）。★ 与 alternatives 分开：这里**没有** rejected_because（还没判）。 */
+function parseDissent(v: unknown): DecisionDissent[] {
+  if (v === undefined) return [];
+  if (!Array.isArray(v)) throw new Error('decision.update 的 data.dissent 必须是数组');
+  return v.map((it, i) => {
+    const o = it as { option?: unknown; votes?: unknown; evidence_source?: unknown };
+    const option = typeof o?.option === 'string' ? o.option.trim() : '';
+    if (!option) throw new Error(`decision.update dissent[${i}] 缺 option`);
+    const d: DecisionDissent = { option };
+    if (o.votes !== undefined) {
+      if (typeof o.votes !== 'number' || !Number.isFinite(o.votes)) throw new Error(`decision.update dissent[${i}].votes 必须是数字`);
+      d.votes = o.votes;
+    }
+    if (o.evidence_source !== undefined) {
+      if (!Array.isArray(o.evidence_source) || o.evidence_source.some((x) => typeof x !== 'string')) {
+        throw new Error(`decision.update dissent[${i}].evidence_source 必须是字符串数组`);
+      }
+      d.evidence_source = o.evidence_source as string[];
+    }
+    return d;
+  });
+}
+
+function applyDecisionOp(feature: string, op: FeatureOperation): EditResult {
+  if (op.op !== 'update') throw new Error(`decision 仅支持 update 操作（收到 ${op.op}）`);
+  const data = op.data ?? {};
+  const summary = typeof data.summary === 'string' ? data.summary.trim() : '';
+  if (!summary) throw new Error('decision.update 需要 data.summary（结论：这个设计是什么，一句话，非空）');
+
+  const dsl = getDSL(feature);
+  if (!dsl) throw new Error(`feature "${feature}" 不存在`);
+  const target = resolveDecisionTarget(dsl, op.id, data);
+
+  const decision: NodeDecision = { summary };
+  if (typeof data.rationale === 'string' && data.rationale.trim()) decision.rationale = data.rationale.trim();
+  const alternatives = parseAlternatives(data.alternatives);
+  if (alternatives.length) decision.alternatives = alternatives;
+  if (typeof data.consequences === 'string' && data.consequences.trim()) decision.consequences = data.consequences.trim();
+  if (typeof data.acceptance === 'string' && data.acceptance.trim()) decision.acceptance = data.acceptance.trim();
+  // ★★ 未决分歧独立成字段（**不进 alternatives**）
+  const dissent = parseDissent(data.dissent);
+  if (dissent.length) decision.dissent = dissent;
+  // 置信（多源印证）：votes = 支持 summary 的证据源个数；evidence_source = 哪几份证据
+  if (data.votes !== undefined) {
+    if (typeof data.votes !== 'number' || !Number.isFinite(data.votes)) throw new Error('decision.update 的 data.votes 必须是数字');
+    decision.votes = data.votes;
+  }
+  if (data.evidence_source !== undefined) {
+    if (!Array.isArray(data.evidence_source) || data.evidence_source.some((x) => typeof x !== 'string')) {
+      throw new Error('decision.update 的 data.evidence_source 必须是字符串数组');
+    }
+    decision.evidence_source = data.evidence_source as string[];
+  }
+  if (typeof data.status === 'string') {
+    if (!['active', 'superseded', 'draft'].includes(data.status)) throw new Error(`decision.update 的 data.status 非法：${data.status}`);
+    decision.status = data.status as NodeDecision['status'];
+  }
+  if (typeof data.thread === 'string' && data.thread.trim()) decision.thread = data.thread.trim();
+  if (Array.isArray(data.tags)) decision.tags = data.tags.filter((x): x is string => typeof x === 'string');
+  if (typeof data.author === 'string' && data.author.trim()) decision.author = data.author.trim();
+
+  const note = typeof data.note === 'string' ? data.note : undefined;
+  const prev = target.node.decision;
+  const { decision: nd, decision_history: nh } = applyDecisionWrite(target.node.decision, target.node.decision_history, decision, {
+    author: decision.author,
+    note,
+  });
+  if (nd === undefined) throw new Error('decision.update 内部错误：写入结果为 undefined（summary 已非空，不应发生）');
+  target.node.decision = nd;
+  if (nh?.length) target.node.decision_history = nh;
+  saveDSL(dsl);
+
+  const lines = [
+    `[decision] 已写入节点 "${target.node.id}"（${target.path}）`,
+    `  结论: ${nd.summary}`,
+  ];
+  if (nd.rationale) lines.push(`  理由: ${nd.rationale}`);
+  if (nd.alternatives?.length) lines.push(`  已排除方案 ${nd.alternatives.length} 个（alternatives：option + rejected_because）`);
+  if (nd.dissent?.length) lines.push(`  ★ 未决分歧 ${nd.dissent.length} 个（dissent：**待对拍**，非已排除）`);
+  if (nd.votes !== undefined) lines.push(`  证据支持: ${nd.votes} 份${nd.evidence_source?.length ? `（${nd.evidence_source.join('+')}）` : ''}`);
+  lines.push(
+    prev
+      ? `  ★ 旧版已压入 decision_history（当前历史 ${nh?.length ?? 0} 条）；当前生效版 = 本次写入`
+      : `  首版（无旧版可压栈）`,
+  );
+  return { message: lines.join('\n'), feature };
 }
 
 // ─────────────────────────────────────────────────────────────
