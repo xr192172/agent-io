@@ -766,6 +766,15 @@ function applyDecisionOp(feature: string, op: FeatureOperation, agent?: string):
     }
     author = a;
   }
+  // ★★ 身份（谁）**不走 data.agent** —— 走**顶层入参 `agent`**（一次调用一个身份）。
+  //   ★ 若写进 `data.agent` ⇒ **响亮拒绝**（与上一条 `data.author` **同款**口径）：这是同一处"写错了地方"的病，
+  //     两处必须一样响 —— 不许静默忽略（静默忽略正是本仓明令禁止的）。
+  if (data.agent !== undefined) {
+    throw new Error(
+      `decision.update 的 data.agent 位置不对：**身份**（可追溯轴）不住 decision 的 data（收到 ${JSON.stringify(data.agent)}）。` +
+        `★ 「谁在写」（Agent 的编号/名字）请用 edit_dsl 的**顶层入参 agent** 传（一次调用一个身份），不要塞进 decision 的 data。`,
+    );
+  }
 
   const note = typeof data.note === 'string' ? data.note : undefined;
   const prev = target.node.decision;
@@ -809,7 +818,9 @@ function applyNodeOp(feature: string, op: FeatureOperation, agent?: string): Edi
   if (!id) throw new Error('node 操作需要 id');
   switch (op.op) {
     case 'add':
-      return addNode({ feature, node_id: id, ...data } as AddNodeInput);
+      // ★ 身份（agent）来自 edit_dsl 顶层入参（整次调用的发起者），随**内联决策卡**一起落库。
+      //   与 node.update 的 decision 路径**同款** —— 同一个 decision 字段，add/update 两条路不许行为分叉。
+      return addNode({ feature, node_id: id, ...data, agent } as AddNodeInput);
     case 'update':
       // ★ 身份（agent）来自 edit_dsl 顶层入参（整次调用的发起者），随 node.update 一起落到决策卡上。
       return updateNode({ feature, node_id: id, ...data, agent } as UpdateNodeInput);

@@ -59,10 +59,17 @@ export interface AddNodeInput {
   attributes?: Record<string, string | number | boolean>;
   /** 决策卡·决策记录：结论/理由/替代方案/后果/验收 */
   decision?: NodeDecision;
+  /**
+   * ★ 决策**发起人身份**（可追溯轴，同 {@link UpdateNodeInput.agent}）：随 `decision` 一起**注入**决策卡
+   *   （`NodeDecision.agent`）并打 `updated_at`。由调用方给（`edit_dsl` 顶层入参 `agent`），工具不生成；
+   *   缺省 ⇒ 落库标「未署名」。★ 与 `node.update` 的 decision 路径**同款**：同一个 `decision` 字段，
+   *   add / update 两条路对身份的处理必须一致（否则顶层身份在 add 路被静默丢弃）。
+   */
+  agent?: string;
 }
 
 export function addNode(input: AddNodeInput): EditResult {
-  const { feature, node_id, label, x, y, width, height, bg, color, border, borderRadius, shape, shadow, opacity, type, description, status, swimlane, content, sub_dsl, layer, host, shapes, attributes, decision } = input;
+  const { feature, node_id, label, x, y, width, height, bg, color, border, borderRadius, shape, shadow, opacity, type, description, status, swimlane, content, sub_dsl, layer, host, shapes, attributes, decision, agent } = input;
 
   const dsl = getDSL(feature);
   if (!dsl) {
@@ -78,6 +85,9 @@ export function addNode(input: AddNodeInput): EditResult {
   if (shapes) assertValidShapes(shapes);
   // ★★ 2026-10-09（T74）：与 update 路径同一个校验（`expectations` 是会被程序判的字段）
   if (decision?.expectations !== undefined) assertValidExpectations(decision.expectations);
+  // ★★ 决策身份注入（与 `node.update` 同款，走同一个纯函数）：顶层 `agent` 落进决策卡（+ `updated_at`），
+  //   不再静默丢弃。（首版无旧版可压栈 ⇒ 不产生 history，与 update 的版本演进一致。）
+  const nodeDecision = decision === undefined ? undefined : applyDecisionWrite(undefined, undefined, decision, { agent }).decision;
 
   const style: NodeStyle = {};
   if (bg) style.bg = bg;
@@ -106,14 +116,19 @@ export function addNode(input: AddNodeInput): EditResult {
     host,
     shapes,
     attributes,
-    decision,
+    decision: nodeDecision,
   };
 
   dsl.geometry.nodes.push(node);
   saveDSL(dsl);
 
   const lines = [
-    `已添加节点: ${node_id}`,
+    // ★ 首行是 `updateFeatureCore` **唯一透出**的那行 ⇒ 内联决策卡的「署名/未署名」必须进首行，否则静默。
+    nodeDecision
+      ? `已添加节点: ${node_id} · 决策卡 ${nodeDecision.summary} · ${
+          nodeDecision.agent ? `署名 ${nodeDecision.agent}` : '★ 未署名（本次调用未传 agent 身份 ⇒ 无发起者编号）'
+        }`
+      : `已添加节点: ${node_id}`,
     `标签: ${node.label}`,
     `位置: (${node.x ?? 'auto'}, ${node.y ?? 'auto'})`,
     `尺寸: ${node.width ?? 'auto'} × ${node.height ?? 'auto'}`,
