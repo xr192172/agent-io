@@ -1124,7 +1124,11 @@
       *(依据：T99 普查 —— 两者**全仓 0 处赋 true**、README **未承诺**、且有害（`func_*` 曾因 id 前缀不在白名单被误判成"人手节点"）。
         用户 2026-10-09 裁定「**可以**」。)*
       ⇒ **先查一个前提决定删多少**（grep 原文在 `.inspect/review/N-remove-modes.md`）：
-        · `analyzeMonolith` / `analyze_monolith` **有别的调用者**（`derive_feature_tree.ts:199` + 一个独立注册工具）**⇒ 保留**；
+        · `analyzeMonolith` / `analyze_monolith` **有别的调用者**（`derive_feature_tree.ts:199`）**⇒ 保留**；
+          ⇒ ⚠⚠ **2026-10-10 撤回半句**：我在这里写过"**+ 一个独立注册工具**" —— **错，没有那个工具**。
+            全仓搜 `analyze_monolith` 只有**注释里提到**（`derive_split.ts` / `derive_mind_map.ts`）。
+            ⇒ **真实依据只有一条**：`derive_feature_tree.ts:199`。★ 这条删除依据**仍然成立**（它确有调用者）⇒ 结论不变。
+            ★ 错因同 T106 那三条：**下判断时没有把全量拉下来数**（我大概率是从"它像是个 skill"顺手推的）。
         · `buildFromMonolith` **无别的调用者**（私有，唯一调用点就在 `buildFunctionalLayout` 里）⇒ 与
           `buildFunctionalLayout` / `communityDetectFiles` / `communityNameOf` **一并删**（只为 functional_mode 存在）。
       ⇒ **删了什么**：接口两字段 + 整条功能聚合线（380 行）+ `design_mode` 全部分支（layoutDir/accumulate/文件循环/依赖边/directEdges）
@@ -1318,6 +1322,72 @@
         ★ 实现者**主动超出清单**修了同一病的另几处（含 `brick_bag.ts:5`、以及 `cluster_narrator.ts:205/:207/:209`
         的 **narrate system prompt** 把簇断言成"同一功能" —— 同属最有害位置）。
         ★ 遗留：`src` 之外（`scripts/*.mjs`、README、`docs/*.md`）未动 ⇒ 见 **T105** 一并处置。
+- [ ] **T108 ★★★ LLM 上游 / key 池：**同一件事住了两处，名字还不一样** ⇒ 会话线从来没被配上（**已有实害**）**
+      *(来源：2026-10-10 用户 —— *"你去找 DSH 里那个 AGNES 的三把 key 组成的 key 池……看它是怎么接的，你接到这个项目里。"*
+        ⇒ 一查发现**早就接过，但只接了一半**。)*
+      ⇒ **两处（实测，变量名不同、语义还不同）**：
+        | 通路 | 读什么 | 支持池 | 默认值 |
+        |---|---|---|---|
+        | **翻译线** `infrastructure/authoring/translate/llm.ts:123` | **`AGNES_UPSTREAM_BASE`** + `AGNES_KEY_POOL` | ✅ | `https://apihub.agnes-ai.com`（**不含 `/v1`**） |
+        | **会话线** `infrastructure/llm_focus.ts:79`（`role_title` / **刚重写的 `harvest_decisions`** 都走它） | **`AGNES_BASE_URL`** + `AGNES_API_KEY` | ❌ **只认单把 key** | `https://apihub.agnes-ai.com/v1`（**含 `/v1`**） |
+        | `application/meta/llm/gateway.ts:85` | 同 `AGNES_BASE_URL` 一路 | ❌ | `agnes-2.0-flash` |
+        ★★ **两个变量语义不同**：一个含 `/v1`、一个不含 ⇒ **照抄到另一个就拼错路径**。
+      ⇒ ★★★ **而 DSH 的装配只给了 `AGNES_UPSTREAM_BASE`**（`~/.dsh/profiles/web/cordis.patch.yml:44-48`，注释逐字写
+        「**agent-io translate(translate_go_ts) 的 LLM 池**：指向 dsh key-pool-proxy(3101)，由 dsh 的
+        `AGENTSHELL_MAIN_LLM_API_KEYS` 池轮换，**agent-io 不持任何 key**」）⇒ **只覆盖了翻译线**。
+        ⇒ ★★★ **会话线从来没被覆盖过** ⇒ **这就是我 `harvest_decisions` 真跑报 429 的真因**
+          （走 `AGNES_BASE_URL` 那条，没人配，落到默认上游 + 免费额度）。
+        ⇒ **"配上了"和"接上了"不是一回事** —— 又是「同一判据住两处」的实例，**且已有实害**。
+      ⇒ **池的状态**：`127.0.0.1:3101` **现在没在跑**（`netstat` 空）；池由 **DSH 装配**拉起，
+        key 存在 DSH 凭据库（`~/.dsh/.credentials.yaml` → `AGENTSHELL_MAIN_LLM_API_KEY`）⇒ **池的 key 不在本仓手里**。
+        相关脚本（**dsh-brain 侧，不是本仓**）：`scripts/dsh-up.cmd` · `relaunch-switchboard.cmd` ·
+        ★ `scripts/pool-key-selftest.mjs`（**现成的池自检**）。
+      ⇒ ★ 代理接法（`@dsh-brain/key-pool-proxy`）：`poolEnv`(默认 `AGNES_KEY_POOL`，**逗号分隔多 key**) ·
+        `upstreamBase`(默认 `https://apihub.agnes-ai.com`) · `port`(默认 3101)；
+        ★★ **它主动替换 `Authorization: Bearer <所选 key>`** ⇒ **incoming 的 key 是占位也行**。
+      ⇒ **要做（两个动作分开）**：
+        ① **修根（正解）**：把"LLM 上游 + key 从哪来"在 agent-io 内部**收成一处**（一个 `agnesUpstream()` / `agnesKeys()`），
+           **同时认** `AGNES_UPSTREAM_BASE`（外部已用）与 `AGNES_BASE_URL`（自己在用）—— **只在这一处认**，并把"含不含 `/v1`"说清。
+           ★ 以外部已用的名为准（不改 DSH 的配置 = 不改别人的项目）。
+        ② **配上**：让会话线也走池（`AGNES_BASE_URL=http://127.0.0.1:3101/v1`，**注意带 `/v1`**）。
+        ③ **顺带**：默认模型名两处不一致（本仓写死 `agnes-2.0-flash`，现役池是 `agnes-2.5-flash`）⇒ 一并收口。
+      ⇒ **判据**：① `grep -rnE "AGNES_(BASE_URL|UPSTREAM_BASE)" src` ⇒ **命中全在同一处**（那个住处）；
+        ② 真跑 `harvest_decisions` **不再 429、能产出决策**（`notDetermined` 从 T106 那种状态下解除）。
+      ⇒ ⚠ **前置**：池要起来（起 DSH 装配）。★ **这是本仓之外的服务，且是共享现役资源**（DSH 的预演 profile 特意用死端口隔离它）
+        ⇒ 我**没有擅自起**，等用户一句。（另：预演 profile 的注释值得读 —— 它示范了"**用死端口做结构性隔离**"这种判据。）
+      ⇒ ★★★ **2026-10-10 用户授权起 DSH 后的实测结论（三件，都很关键）**：
+        · **① DSH 现在起不来 —— 是旧疾，不是我弄坏的**。`3080` 前门在听但**回 502**、后面**没有任何 generation 存活**；
+          switchboard 日志逐字：`切换失败 (b-not-ready)` ·
+          **`ERR_MODULE_NOT_FOUND: Cannot find package '@deepseek-ai/cordis-plugin-group'`** ·
+          ★★ **`gen assembly: source=none profile=web poolPort=none patches=0 envKeys=0`** ⇒ **`poolPort=none` = 池根本没被装配**。
+          `ls` 确认该包**确实缺**（`package.json` 里没有，但 **`pnpm-lock.yaml` 有 29 处命中** ⇒ **`pnpm install` 应能补上**）。
+          ★ **我起了 switchboard（3080 在听、无 generation），没有动 DSH 的 node_modules。**
+        · **② 那 3 把 key 找到了**（**池的 key 不在本仓手里，在这**）：
+          `/d/project_develop/dsh-brain/.env` ⇒ `AGENTSHELL_MAIN_LLM_API_KEY`（**1 把**）+
+          `AGENTSHELL_MAIN_LLM_API_KEYS`（**2 把**，逗号分隔）= **3 把** —— 与用户说的"三把 key"吻合。
+          ★ 另有现成的 **`scripts/pool-key-selftest.mjs`**（逐 key 自检 + `--env-file` 支持）。
+        · **③ 代理不能独立跑**：`@dsh-brain/key-pool-proxy` 是 **cordis 插件**
+          （`private:true` / `peerDependencies: @deepseek-ai/cordis` / `export const name/Config` + `apply` 里才 `http.createServer`）
+          ⇒ **必须由 DSH 装配器拉起** ⇒ **要池，就得先修 DSH**。
+      ⇒ ★★★ **用户给出战略目标后，这件事的正确解法可能要反过来（重要，待拍板）**：
+        用户原话：*"这个未来还是要接进 LLM 里的。你可以把 DSH 提起来没关系。
+        因为最后我的希望是把它……因为那个 DSH 它的底层是 **Pi**，就是 **PI 这个工具箱**嘛，
+        我希望我们这个 **AgentIO 能够替代 PI 工具箱成为它的底层工具**。"*
+        ⇒ ★★ **如果 AgentIO 要当 DSH 的底座，那"key 池"就该归 AgentIO**（它是"给上层供 LLM"的能力），
+          **而不是继续做 DSH 的一个插件** —— 否则底座反过来依赖上层，方向是反的。
+        ⇒ **两条路（待拍板）**：
+          **(甲) 短期过渡**：让步 (i) —— 修 DSH（`pnpm install` 补缺包）⇒ 池起来 ⇒ agent-io 走 `127.0.0.1:3101`。
+            ★ 代价：**动另一个项目的 node_modules**（版本可能漂）；且方向仍是"底座依赖上层"。
+          **(乙) 正解（合战略）**：把"池"**搬进 AgentIO**（它就是那件能力）——
+            ★ 现成的原料：agent-io 的**翻译线已经在读 `AGNES_KEY_POOL`**（`translate/llm.ts` 里池逻辑已有），
+              只是**会话线不支持**；把它收成一处（T108 动作①）后，池就是 agent-io 的能力。
+            ⇒ 之后 **DSH 反过来指向 AgentIO**（`llm-pi-ai` 那个 provider 的 `baseURL` 指向 agent-io 的口）。
+            ★ 这也正是"**替代 Pi**"的字面实现：Pi 现在干的就是"给 DSH 供 LLM 通路"这件事。
+        ⇒ ★ 我倾向 **(乙)**（它才是终点），但 **(甲)** 是让 T106 那条 `notDetermined`（"产出质量未验"）
+          **今天就能兑现**的最短路径。**两件不冲突**：先 (甲) 验通，再 (乙) 搬家。
+      ⇒ ★ **已核实的现状**：DSH 的 `@dsh-brain/agent-io-bridge` **已存在** —— 它把 **67 个 agent-io 工具**以
+        `mcp__agent-io__<name>` 命名空间注册进 DSH，并在工作区建立时自动 `import_project` 预热索引。
+        ⇒ **"AgentIO 进 DSH"这条路已经通了一半**（工具面通了；LLM 通路还没通）。
 - [ ] **T107 ★★★ 「意图 / 搬运 / 关联」三层判据 —— 用它审一遍"号称能推断意义"的老组件，判定**留 / 改角色 / 退役****
       *(来源：2026-10-10 用户 —— 在敲定"决策卡 = 人写/授权模型写 > 机器从原文**搬运/关联**"之后，说：*
         *「按照这么设计的话，这些**老东西**我感觉可能大概率是要**退役**了，你可以去**仔细查一下**。」)*
@@ -1339,6 +1409,34 @@
       ⇒ ★★ **同一条判据在仓库里会反复用**（"功能社区""积木=功能""功能树"都是它的实例）⇒ **判据只写这一处**，别处引用。
       ⇒ **本条的产出**：一页总表 + **冒充清单（按程度排序）** + **正牌成员** + **退役候选 + 代价** + `notDetermined`。
       ⇒ ★ **去留由我把关**（审计员只交证据与分层判定，不给最终决定）。★ **对应用户预期**：他判断"老东西大概率要退役"——本条就是去把这句话**变成证据**（或推翻它）。
+      ⇒ ★★★ **2026-10-10 审计结果（`git diff` 复核 + 逐条带 `file:line`）—— 它推翻了半条预期**：
+        **冒充只有 2 处，且都是"一句话/一个名字"，不是组件**：
+        · **`analyze_monolith.ts`（高）**：自称「社区锚点是【**功能/业务**】」（`:11`），实际 = **关联**
+          （调用图标签传播，**可从 cache.db 逐格重算**；T99 已复现 379 社区）。**整个文件无 LLM、无人在场**；
+          所谓"语义命名"其实是标识符**后缀正则** `ROLE_SUFFIX_RE`（`:130-131`）—— **没有任何语义**。
+          ★★ **而且是"半修"**：文件头 `:15-22` **已经自认"结构簇"**（T103/T104 那两刀改过），
+          **但运行期输出串 `:773` 仍印"社区锚点是功能/业务"** ⇒ **改注释没改输出**，而那句**正落在 D1 路径上**（对用户说）。
+        · **`derive_feature_tree.ts`（高）**：自称「项目→**功能**→社区→文件」（`:2`），实际 = **目录分组（关联）**
+          —— 归并主键是 `split('/')[0]`（`:128-132`）、`fileMap` 目录优先（`:328-330`），**LLM 只改名字**（`:167`）不动结构。
+          ★ 且在 `overview.ts:6` **对用户说"有哪些功能"** ⇒ 与刚统一的「**功能」只指人写的 `function_tags`** 直接冲突。
+        · **`harvest_decisions.ts`（低）**：名字带"意图"，实际 = **搬运**（关键词召回 + 原文切片）。
+          ★ 但**它正文自知**（自述"线索/候选"、明说不做判断）⇒ **命名偏大，不是冒充**。
+      ⇒ ★★★ **正牌成员（自称 = 实际）—— 这才是本次最值钱的发现**：
+        · **有 LLM 在场（意图层）**：**`role_title.ts:99`（唯一逐文件问 LLM，产出不可由原文/结构重算 ⇒ 真·意图）** ·
+          `classify_bricks.ts:136` · `cluster_narrator.ts:213/:405` · `signal_review.ts:130`；
+        · **有"人"在场（意图层）**：`taxonomy.ts`（**人写死 7 个架构槽位** `:41-84`）；
+        · **无 LLM 但诚实自认关联**：`brickify.ts`（自称"结构块、**不代表功能边界**" `:20/:111-118`）· `brick_bag` ·
+          `render_*` · `workbench_data` · `derive_anim_flow`（调用链 + CFG 可重算）。
+      ⇒ ★★★ **`brickify` 同族无一处冒充**（要么自称=实际，要么**自称低于实际**——`cluster_narrator` 自称"翻译"实为 LLM 命名）。
+        ⇒ **这推翻了"老东西大概率要退役"的一半**：那一族**恰恰是干净的** —— 而且干净的原因正是 T103/T104 那两刀**已经修过它**。
+      ⇒ ★★ **退役候选：无"整文件级"安全目标。** `analyze_monolith` / `derive_feature_tree` **都不可整退**
+        （D1 消费者在跑：`derive_feature_tree.ts:199`；`overview`（HTTP 首屏）/`derive_mind_map` 都依赖 feature_tree；
+        `check_monolith` 是单文件文本近似，**替代不了跨文件社区**）。
+        ⇒ **可退的是"冒充的那句话/那个名字"（零结构风险）**：`analyze_monolith.ts:773` 的输出串 + FeatureTree 的"功能"话术。
+        ⇒ 与 T99/T104 的判决**一致**：聚类应**降级为提案器**，**不是删**。
+      ⇒ ★ **`notDetermined`（审计员诚实报的）**：① HEAD vs 工作区口径（工作区版 `harvest_decisions` 已含 LLM，见下）；②
+        ~~"独立注册工具"~~（**我已撤回，见 T102 那条**）；③ `derive_feature_tree` 的 `gen_names` 默认是否启用未跑端到端；
+        ④ `classify_bricks`/`cluster_narrator` 的真实 LLM 命中率（`meta.llm_ok`）未实测；⑤ `classify_tools.ts` 不在清单内。
 - [ ] **T106 ★★★ 自查验收（拿本仓当用户使一遍：「把项目文档翻译成决策记录」）⇒ **这条路是断的**，5 条缺陷**
       *(来源：2026-10-09 用户：*「你可以再自己拿自己去用验收一下……我们之前不是让你把项目文档翻译成决策记录，
         就设计 DSL 里面吗？你现在可以去试一下……**如果真的成功了，而且过程中你用得很顺手，也没有什么 bug，我们就成功了。**」*)*

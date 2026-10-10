@@ -14,6 +14,7 @@
  */
 
 import { DATA_DIR_NAME } from './data_dir.js';
+import { KeyPool, loadKeys } from './llm_pool.js';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -27,6 +28,8 @@ export interface LlmConfig {
   apiKey: string;
   model: string;
   baseURL: string;
+  /** key 池（多把轮转）；缺省只用 `apiKey`。`callChat` 据此支持池（会话线由此认池）。 */
+  keys?: string[];
 }
 
 /** 配置主目录：AGENT_IO_HOME 显式覆盖（测试/部署用）优先，否则用户主目录 */
@@ -51,6 +54,70 @@ export function configFileReadPath(): string {
 }
 
 // ─────────────────────────────────────────────────────────────
+// ★★ 唯一住处：AGNES 上游 / key（池） / 模型（2026-10-10）
+// ─────────────────────────────────────────────────────────────
+//
+// 为什么必须只有这一处：此前「上游在哪、key 从哪来、用哪个模型」分散在三处、名字不同、语义还不同 ——
+//   · 会话线（本文件 loadAgentConfig）  ：AGNES_API_KEY / AGNES_BASE_URL（**含 /v1**） / AGNES_MODEL
+//   · 翻译线（authoring/translate/llm） ：AGNES_KEY_POOL（池） / AGNES_UPSTREAM_BASE（**不含 /v1**） / AGNES_MODEL
+//   · gateway（application/meta/llm）    ：又一份 AGNES_* + 又一份默认常量
+// ⇒ **两个变量名干同一件事**（`AGNES_UPSTREAM_BASE` 不含 /v1 vs `AGNES_BASE_URL` 含 /v1），
+//   照抄一个到另一个就拼错路径；且只有翻译线支持池 ⇒ 会话线真跑落到默认上游 + 单把 key ⇒ 429。
+//
+// ★ 归一化口径（canonical）：**无 `/v1` 的上游根**（例：`https://apihub.agnes-ai.com`）。
+//   - 默认值两种写法（`.../v1` 与 `...`）本就指**同一个上游** ⇒ 统一剥掉尾部 `/v1` 即同一根。
+//   - 需要 OpenAI `base_url` 的调用方（callChat / gateway）**一律**经 `agnesApiBaseUrl()` 追加**唯一一次** `/v1`。
+//   - 需要「根 + `/v1/chat/completions`」的调用方（翻译线）直接用根，自拼一次 `/v1`。
+//   ⇒ 于是「含不含 /v1」只在**归一化一处**被决定，三条线拿到的都是归一化后的值。
+
+/** 默认上游根（**不含 /v1**；等价的传统写法是 `https://apihub.agnes-ai.com/v1`） */
+export const DEFAULT_AGNES_UPSTREAM = 'https://apihub.agnes-ai.com';
+/** 默认模型（统一口径，替换旧的写死 `agnes-2.0-flash`；现役为 `agnes-2.5-flash`） */
+export const DEFAULT_AGNES_MODEL = 'agnes-2.5-flash';
+
+/** 归一化：去尾部斜杠、再去尾部一次 `/v1` ⇒ 上游根 */
+function toAgnesUpstreamRoot(raw: string): string {
+  return raw.trim().replace(/\/+$/, '').replace(/\/v1$/, '');
+}
+
+/** 上游根 → OpenAI base_url（含 `/v1`）—— `/v1` 只在此处追加一次 */
+export function agnesApiBaseUrl(root: string): string {
+  return toAgnesUpstreamRoot(root) + '/v1';
+}
+
+/**
+ * 解析上游根（**不含 /v1**）。优先级：显式传入 > `AGNES_UPSTREAM_BASE` > `AGNES_BASE_URL` > 默认。
+ * 无论来自哪个变量、写成含不含 /v1，出口一律是归一化后的根。
+ */
+export function resolveAgnesUpstreamBase(explicit?: string): string {
+  const raw =
+    explicit?.trim() ||
+    process.env.AGNES_UPSTREAM_BASE?.trim() ||
+    process.env.AGNES_BASE_URL?.trim();
+  return raw ? toAgnesUpstreamRoot(raw) : DEFAULT_AGNES_UPSTREAM;
+}
+
+/** 解析 OpenAI base_url（含 `/v1`），供 callChat / gateway 用 */
+export function resolveAgnesApiBaseUrl(): string {
+  return agnesApiBaseUrl(resolveAgnesUpstreamBase());
+}
+
+/** 上游是否由 `AGNES_UPSTREAM_BASE` 显式指向（翻译线「指向本地 key-pool-proxy ⇒ 客户端无需 key」判定沿用此口径） */
+export function agnesUpstreamProxyConfigured(): boolean {
+  return process.env.AGNES_UPSTREAM_BASE !== undefined;
+}
+
+/** 解析模型。优先级：`AGNES_MODEL` > 默认 `agnes-2.5-flash` */
+export function resolveAgnesModel(): string {
+  return process.env.AGNES_MODEL?.trim() || DEFAULT_AGNES_MODEL;
+}
+
+/** 解析 key 池。优先级：`AGNES_KEY_POOL`（逗号分隔多把）→ `AGNES_API_KEY`（单把）。复用共享的 `loadKeys`。 */
+export function resolveAgnesKeys(): string[] {
+  return loadKeys('AGNES_KEY_POOL', ['AGNES_API_KEY']);
+}
+
+// ─────────────────────────────────────────────────────────────
 // Agent 配置（L3 思维导图 Agent / 管理 Agent 默认后端 = AGNES）
 // ─────────────────────────────────────────────────────────────
 
@@ -58,25 +125,26 @@ export interface AgentConfig {
   apiKey: string;
   model: string;
   baseURL: string;
+  /** key 池（多把轮转）。会话线据此支持 key 池；`apiKey` = `keys[0]`（兼容只读单把的旧调用方） */
+  keys?: string[];
 }
-
-const DEFAULT_AGNES_BASE_URL = 'https://apihub.agnes-ai.com/v1';
-const DEFAULT_AGNES_MODEL = 'agnes-2.0-flash';
 
 /**
  * 读取管理 Agent 的 LLM 配置。优先级：
- *   1) 环境变量 AGNES_API_KEY / AGNES_BASE_URL / AGNES_MODEL
+ *   1) AGNES 环境（`AGNES_KEY_POOL` / `AGNES_API_KEY` + `AGNES_UPSTREAM_BASE` / `AGNES_BASE_URL` + `AGNES_MODEL`）
+ *      —— 上游/key池/模型统一由上面的 `resolveAgnes*` 解析；有多把 key 时返回 `keys` 池。
  *   2) config.json 的 agent.mmd 段（{ "agent": { "mmd": {...} } }）
  * 无 key 返回 null（此时管理 Agent 走规则降级）。
  * 说明：Agent 默认后端固定为 AGNES，与科普讲解（DeepSeek）解耦。
  */
 export function loadAgentConfig(): AgentConfig | null {
-  const envApiKey = process.env.AGNES_API_KEY?.trim();
-  if (envApiKey) {
+  const keys = resolveAgnesKeys();
+  if (keys.length > 0) {
     return {
-      apiKey: envApiKey,
-      model: process.env.AGNES_MODEL?.trim() || DEFAULT_AGNES_MODEL,
-      baseURL: (process.env.AGNES_BASE_URL?.trim() || DEFAULT_AGNES_BASE_URL).replace(/\/+$/, ''),
+      apiKey: keys[0],
+      keys,
+      model: resolveAgnesModel(),
+      baseURL: resolveAgnesApiBaseUrl(),
     };
   }
 
@@ -89,7 +157,7 @@ export function loadAgentConfig(): AgentConfig | null {
         return {
           apiKey: mmd.apiKey,
           model: mmd.model || DEFAULT_AGNES_MODEL,
-          baseURL: (mmd.baseURL || DEFAULT_AGNES_BASE_URL).replace(/\/+$/, ''),
+          baseURL: agnesApiBaseUrl(mmd.baseURL || DEFAULT_AGNES_UPSTREAM),
         };
       }
     } catch {
@@ -127,10 +195,11 @@ export function loadLlmConfig(): LlmConfig | null {
     baseURL: (fromEnv.baseURL ?? fileCfg.baseURL ?? 'https://api.openai.com/v1').replace(/\/$/, ''),
   };
   // 兜底：未配置专用 llm 段时复用 agent.mmd（AGNES，OpenAI 兼容），
-  // 使 overview / feature_tree / mind_map 等通用提炼功能开箱即用
+  // 使 overview / feature_tree / mind_map 等通用提炼功能开箱即用。
+  // ★ 继承 agent 的 key 池（keys）：会话线（harvest_decisions / role_title 等）由此也能轮转多把 key。
   if (!cfg.apiKey) {
     const agent = loadAgentConfig();
-    if (agent) cfg = { apiKey: agent.apiKey, model: agent.model, baseURL: agent.baseURL };
+    if (agent) cfg = { apiKey: agent.apiKey, model: agent.model, baseURL: agent.baseURL, keys: agent.keys };
   }
   return cfg.apiKey ? cfg : null;
 }
@@ -148,7 +217,7 @@ export interface ExplainConfig {
 const DEFAULT_DS_BASE_URL = 'https://api.deepseek.com/v1';
 const DEFAULT_DS_MODEL = 'deepseek-v4-flash';
 
-/** 读取讲解文案生成配置。优先级：DeepSeek 环境变量 > config.json explain 段 > Agnes 环境变量。无 key 返回 null。 */
+/** 读取讲解文案生成配置。优先级：DeepSeek 环境变量 > config.json explain 段 > Agnes 环境（池/单把）。无 key 返回 null。 */
 export function loadExplainConfig(): ExplainConfig | null {
   // DeepSeek（首选后端）
   const dsEnv: Partial<ExplainConfig> = {};
@@ -156,11 +225,8 @@ export function loadExplainConfig(): ExplainConfig | null {
   if (process.env.DEEPSEEK_BASE_URL) dsEnv.baseURL = process.env.DEEPSEEK_BASE_URL;
   if (process.env.DEEPSEEK_MODEL) dsEnv.model = process.env.DEEPSEEK_MODEL;
 
-  // Agnes（兼容后端）
-  const agnesEnv: Partial<ExplainConfig> = {};
-  if (process.env.AGNES_API_KEY) agnesEnv.apiKey = process.env.AGNES_API_KEY;
-  if (process.env.AGNES_BASE_URL) agnesEnv.baseURL = process.env.AGNES_BASE_URL;
-  if (process.env.AGNES_MODEL) agnesEnv.model = process.env.AGNES_MODEL;
+  // Agnes（兼容后端）—— 上游/模型/key 池统一由 resolveAgnes* 解析；单 key 形状取池第一把
+  const agnesKeys = resolveAgnesKeys();
 
   let fileCfg: Partial<ExplainConfig> = {};
   const cfgPath = configFileReadPath();
@@ -195,12 +261,12 @@ export function loadExplainConfig(): ExplainConfig | null {
       baseURL: (fileCfg.baseURL ?? DEFAULT_DS_BASE_URL).replace(/\/+$/, ''),
     };
   }
-  // 3) Agnes 环境变量（兼容）
-  if (agnesEnv.apiKey) {
+  // 3) Agnes 环境（兼容；池/单把皆可）
+  if (agnesKeys.length > 0) {
     return {
-      apiKey: agnesEnv.apiKey,
-      model: agnesEnv.model ?? DEFAULT_AGNES_MODEL,
-      baseURL: (agnesEnv.baseURL ?? DEFAULT_AGNES_BASE_URL).replace(/\/+$/, ''),
+      apiKey: agnesKeys[0],
+      model: resolveAgnesModel(),
+      baseURL: resolveAgnesApiBaseUrl(),
     };
   }
   return null;
@@ -215,6 +281,22 @@ export interface ChatMessage {
   content: string;
 }
 
+/**
+ * 会话线**共享**的 key 池：按 key 集合缓存一个 `KeyPool`，使**跨调用**也 round-robin 并共享冷却窗口。
+ * 为什么必须共享（而不是每次调用 `new KeyPool`）：per-call 池每次都从 `key[0]` 起 —— 正常（无 429）时
+ * 永远只用第一把，池等于没在用。共享池 = 与翻译线「一个 translator 一个池」同形，池才真的分摊负载。
+ */
+const sharedKeysPools = new Map<string, KeyPool>();
+function sharedPoolFor(keys: string[]): KeyPool {
+  const id = keys.join('\n');
+  let pool = sharedKeysPools.get(id);
+  if (!pool) {
+    pool = new KeyPool(keys);
+    sharedKeysPools.set(id, pool);
+  }
+  return pool;
+}
+
 export async function callChat(
   cfg: LlmConfig,
   messages: ChatMessage[],
@@ -222,28 +304,57 @@ export async function callChat(
   /** 请求超时（默认 90s；慢端点上大 prompt 曾出现 5 分钟悬挂，必须有保护） */
   timeoutMs = 90_000,
 ): Promise<string> {
-  const res = await fetch(`${cfg.baseURL}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${cfg.apiKey}`,
-    },
-    body: JSON.stringify({
-      model: cfg.model,
-      messages,
-      temperature,
-      response_format: { type: 'json_object' }, // 兼容 OpenAI/DeepSeek 等
-    }),
-    signal: AbortSignal.timeout(timeoutMs),
-  });
-  if (!res.ok) {
-    throw new Error(`LLM 调用失败 ${res.status}：${(await res.text()).slice(0, 200)}`);
+  // ★ key 池（会话线由此支持池）：有 keys 则多把轮转，遇 429/5xx（或被上游关闭 socket 的网络错）
+  //   换 key / 新连接重试（复用共享 KeyPool）；单把时不重试 —— 与旧版行为完全一致。
+  const keys = (cfg.keys && cfg.keys.length > 0 ? cfg.keys : [cfg.apiKey]).filter(Boolean);
+  if (keys.length === 0) throw new Error('[llm_focus] 无可用 LLM key（apiKey / keys 均为空）。');
+  const pool = sharedPoolFor(keys);
+  const retrySet = new Set([429, 500, 502, 503, 504]);
+  const cooldownMs = 15_000;
+  // 尝试预算：单把 = 1（与旧版完全一致）；有池 = 池大小 + 3 次额外机会，
+  // 让「换 key / 换新连接」也能吸收偶发的网络层抖动（实测上游会关闭池化连接 → UND_ERR_SOCKET）。
+  const maxAttempts = keys.length > 1 ? keys.length + 3 : 1;
+  let lastErr: Error | null = null;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const idx = pool.pick(Date.now());
+    if (idx < 0) break; // 池内全部处于冷却
+    let res: Response;
+    try {
+      res = await fetch(`${cfg.baseURL}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${keys[idx]}`,
+        },
+        body: JSON.stringify({
+          model: cfg.model,
+          messages,
+          temperature,
+          response_format: { type: 'json_object' }, // 兼容 OpenAI/DeepSeek 等
+        }),
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+    } catch (netErr) {
+      // 网络层失败（如 UND_ERR_SOCKET：上游关闭了池化连接）—— 有池就换 key/新连接再试，单把照旧立即抛。
+      lastErr = netErr instanceof Error ? netErr : new Error(String(netErr));
+      if (keys.length > 1) continue;
+      throw lastErr;
+    }
+    if (res.ok) {
+      const data = (await res.json()) as {
+        choices?: Array<{ message?: { content?: string } }>;
+      };
+      return (data.choices?.[0]?.message?.content ?? '').trim();
+    }
+    const err = new Error(`LLM 调用失败 ${res.status}：${(await res.text()).slice(0, 200)}`);
+    if (retrySet.has(res.status)) {
+      pool.cooldown(idx, Date.now(), cooldownMs);
+      lastErr = err;
+      continue;
+    }
+    throw err;
   }
-  const data = (await res.json()) as {
-    choices?: Array<{ message?: { content?: string } }>;
-  };
-  const content = data.choices?.[0]?.message?.content ?? '';
-  return content.trim();
+  throw lastErr ?? new Error('[llm_focus] key 池已全部冷却或重试耗尽');
 }
 
 // ─────────────────────────────────────────────────────────────

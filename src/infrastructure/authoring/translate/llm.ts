@@ -1,16 +1,21 @@
 /**
  * llm —— 接入设计内置 AGNES key 池的 HoleTranslator（fork 自 dsh-brain/packages/key-pool-proxy）
  *
- * key-pool-proxy 本身是一个本地 OpenAI 兼容反向代理：读 `AGNES_KEY_POOL`（逗号分隔多 key），
- * round-robin 分摊 + 遇 429/5xx 冷却换 key 重试，上游 apihub.agnes-ai.com。本文件不在跑代理，
- * 而是把那套轮换语义内联成纯客户端函数，让 translate 的 HoleTranslator 自包含即可翻译——
- * 不必依赖 dsh-brain 代理进程是否在跑。
+ * key-pool-proxy 本身是一个本地 OpenAI 兼容反向代理：读逗号分隔多 key，round-robin 分摊 +
+ * 遇 429/5xx 冷却换 key 重试，上游 apihub.agnes-ai.com。本文件不在跑代理，而是把那套轮换语义
+ * 内联成纯客户端函数，让 translate 的 HoleTranslator 自包含即可翻译 —— 不必依赖 dsh-brain 代理。
  *
- * 轮换语义（对齐 key-pool-proxy）：遇 retryStatuses（默认 429/5xx）把当前 key 打入冷却窗口，
- * 立即换下一个 key 重试，直到成功或重试耗尽；平时 round-robin。
+ * ★ 2026-10-10：上游 / key 池 / 模型**不再在本文件解析**（此前本文件、`llm_focus`、`gateway` 各解析一份，
+ *   且 `AGNES_UPSTREAM_BASE`（不含 /v1）与 `AGNES_BASE_URL`（含 /v1）语义不一致 ⇒ 照抄即拼错路径）。
+ *   现统一走 `llm_focus` 的 `resolveAgnes*`（唯一住处）；池的**状态机**（选 key / 冷却 blockedUntil /
+ *   换 key 重试）抽到共享模块 `llm_pool`，与会话线 `callChat` 共用同一份。
+ *   本文件保留「显式配置优先」（`config.baseURL` / `config.model` / `config.keys` / `config.poolEnv`），
+ *   供本地代理与测试注入。
  */
 import type { FillContext, HoleTranslator, BatchHoleTranslator } from './fill.js';
 import { buildBatchFillPrompt, type BatchUnitView } from './prompts.js';
+import { KeyPool, loadKeys } from '../../llm_pool.js';
+import { resolveAgnesUpstreamBase, resolveAgnesModel, resolveAgnesKeys, agnesUpstreamProxyConfigured } from '../../llm_focus.js';
 
 /** 极简 fetch 形态（Node 18+ 全局 fetch 不依赖 DOM lib，这里显式声明） */
 export type MinimalFetch = (
@@ -19,11 +24,11 @@ export type MinimalFetch = (
 ) => Promise<{ status: number; json(): Promise<unknown> }>;
 
 export interface PooledTranslatorConfig {
-  /** 上游 OpenAI 兼容根（不含 /v1）。缺省 AGNES_UPSTREAM_BASE 或 key-pool-proxy 默认 agnes */
+  /** 上游 OpenAI 兼容根（不含 /v1）。缺省走 llm_focus.resolveAgnesUpstreamBase()（AGNES_* / 默认 agnes） */
   baseURL?: string;
-  /** 模型。缺省 AGNES_MODEL 或 deepseek-chat */
+  /** 模型。缺省走 llm_focus.resolveAgnesModel()（AGNES_MODEL / 默认 agnes-2.5-flash） */
   model?: string;
-  /** 主 key 池 env 名（逗号分隔多 key）。缺省 AGNES_KEY_POOL */
+  /** 主 key 池 env 名（逗号分隔多 key）。给了则从该 env 读；缺省走 llm_focus.resolveAgnesKeys() */
   poolEnv?: string;
   /** 回退 env（逗号分隔合并） */
   fallbackEnvs?: string[];
@@ -36,57 +41,6 @@ export interface PooledTranslatorConfig {
   maxTokens?: number;
   /** 自定义 fetch（测试桩 / 代理） */
   fetchImpl?: MinimalFetch;
-}
-
-/** 多 key 轮换池（round-robin + 冷却窗口） */
-export class KeyPool {
-  private ptr = 0;
-  private blockedUntil: number[];
-  constructor(readonly keys: string[]) {
-    this.blockedUntil = new Array(keys.length).fill(0);
-  }
-  get length(): number {
-    return this.keys.length;
-  }
-  /** 取一个未冷却的 key 下标；全冷却返回 -1 */
-  pick(now: number): number {
-    for (let i = 0; i < this.keys.length; i++) {
-      const idx = (this.ptr + i) % this.keys.length;
-      if (this.blockedUntil[idx] <= now) {
-        this.ptr = (idx + 1) % this.keys.length;
-        return idx;
-      }
-    }
-    return -1;
-  }
-  hasAvailable(now: number): boolean {
-    return this.blockedUntil.some((t) => t <= now);
-  }
-  cooldown(idx: number, now: number, ms: number): void {
-    this.blockedUntil[idx] = now + ms;
-  }
-}
-
-/** 从主池 + 回退 env 读取去重 key 列表（fork key-pool-proxy 语义） */
-export function loadKeys(poolEnv: string, fallbackEnvs: string[]): string[] {
-  const out: string[] = [];
-  const seen = new Set<string>();
-  const add = (value: string): void => {
-    for (const raw of value.split(',')) {
-      const k = raw.trim();
-      if (k && !seen.has(k)) {
-        seen.add(k);
-        out.push(k);
-      }
-    }
-  };
-  const main = process.env[poolEnv];
-  if (main) add(main);
-  for (const e of fallbackEnvs) {
-    const v = process.env[e];
-    if (v) add(v);
-  }
-  return out;
 }
 
 interface ChatMessage {
@@ -120,22 +74,24 @@ export function normalizeBody(c: string): string {
 
 /** 共享的池化 chat：遇冷却/空内容自动换 key 重试，返回原始 content 文本（含 markdown 围栏，由各翻译器自行剥） */
 function buildChat(config: PooledTranslatorConfig): (messages: ChatMessage[]) => Promise<string> {
-  const baseURL = (config.baseURL ?? process.env.AGNES_UPSTREAM_BASE ?? 'https://apihub.agnes-ai.com').replace(/\/+$/, '');
+  // 上游根（不含 /v1）：显式 config.baseURL 优先；否则统一解析（AGNES_UPSTREAM_BASE → AGNES_BASE_URL → 默认 agnes）
+  const baseURL = resolveAgnesUpstreamBase(config.baseURL);
   // 显式配 baseURL（典型指向本地 key-pool-proxy）→ 客户端无需 key，Bearer 占位，轮换发生在上游代理自己的池。
-  let keys = config.keys ?? loadKeys(config.poolEnv ?? 'AGNES_KEY_POOL', config.fallbackEnvs ?? []);
-  const explicitBase = config.baseURL !== undefined || process.env.AGNES_UPSTREAM_BASE !== undefined;
+  let keys =
+    config.keys ?? (config.poolEnv !== undefined ? loadKeys(config.poolEnv, config.fallbackEnvs ?? []) : resolveAgnesKeys());
+  const explicitBase = config.baseURL !== undefined || agnesUpstreamProxyConfigured();
   if (keys.length === 0 && explicitBase) keys = ['proxy-caller'];
   if (keys.length === 0) {
     throw new Error(
-      `[translate/llm] 空 key 池：可设 ${config.poolEnv ?? 'AGNES_KEY_POOL'}（逗号分隔多 key），` +
-        `或设 AGNES_UPSTREAM_BASE 指向本地 key-pool-proxy、或传入 keys 显式提供。`,
+      `[translate/llm] 空 key 池：可设 AGNES_* key 池（逗号分隔多 key，见 llm_focus.resolveAgnesKeys），` +
+        `或让上游指向本地 key-pool-proxy、或传入 keys 显式提供。`,
     );
   }
   const pool = new KeyPool(keys);
   const fetchImpl =
     config.fetchImpl ?? (((globalThis as { fetch?: MinimalFetch }).fetch as MinimalFetch | undefined)?.bind(globalThis) as MinimalFetch);
   if (!fetchImpl) throw new Error('[translate/llm] 环境无 fetch（Node >= 18）。');
-  const model = config.model ?? process.env.AGNES_MODEL ?? 'deepseek-chat';
+  const model = config.model ?? resolveAgnesModel();
   const cooldownMs = config.cooldownMs ?? 15000;
   const maxRetries = config.maxRetries ?? 3;
   const retrySet = new Set<number>(config.retryStatuses ?? [429, 500, 502, 503, 504]);

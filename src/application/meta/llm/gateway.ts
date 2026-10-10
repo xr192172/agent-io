@@ -8,7 +8,7 @@
  *   4. OpenAI 兼容端点 POST /v1/chat/completions —— 上层网关（如 AI base）可把我当 upstream
  *
  * 配置持久化：<dataHome>/.agent-io/gateway.json
- * 首次启动若检测到 AGNES_API_KEY 环境变量（老配置），自动种入 agnes 供应商，
+ * 首次启动若检测到 AGNES 环境变量（key 池/单把，老配置），自动种入 agnes 供应商，
  * 从"直连 env"无缝过渡到"网关统一管理"。
  */
 
@@ -16,6 +16,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { getStorageRoot } from '../../../infrastructure/storage.js';
+import { resolveAgnesApiBaseUrl, resolveAgnesModel, resolveAgnesKeys } from '../../../infrastructure/llm_focus.js';
 
 // ─────────────────────────────────────────────────────────────
 // 类型
@@ -82,9 +83,6 @@ function gatewayStatsPath(): string {
   return path.join(getStorageRoot(), 'gateway.stats.json');
 }
 
-const DEFAULT_AGNES_BASE_URL = 'https://apihub.agnes-ai.com/v1';
-const DEFAULT_AGNES_MODEL = 'agnes-2.0-flash';
-
 export function loadGatewayConfig(): GatewayConfig {
   try {
     const raw = JSON.parse(fs.readFileSync(gatewayCfgPath(), 'utf-8'));
@@ -104,15 +102,16 @@ function saveGatewayConfig(cfg: GatewayConfig): void {
 export function ensureSeededFromEnv(): boolean {
   const cfg = loadGatewayConfig();
   if (cfg.providers.length > 0) return false;
-  const apiKey = process.env.AGNES_API_KEY?.trim();
-  if (!apiKey) return false;
+  // ★ 上游/模型/key 池统一由 llm_focus 解析（唯一住处）；池可多把，直接种入网关 key 池
+  const keys = resolveAgnesKeys();
+  if (keys.length === 0) return false;
   cfg.providers.push({
     id: 'agnes',
     name: 'AGNES（自动发现）',
     type: 'openai-compatible',
-    base_url: (process.env.AGNES_BASE_URL?.trim() || DEFAULT_AGNES_BASE_URL).replace(/\/+$/, ''),
-    model: process.env.AGNES_MODEL?.trim() || DEFAULT_AGNES_MODEL,
-    keys: [apiKey],
+    base_url: resolveAgnesApiBaseUrl(),
+    model: resolveAgnesModel(),
+    keys,
     weight: 1,
     price_prompt_per_1m: 0,
     price_completion_per_1m: 0,
