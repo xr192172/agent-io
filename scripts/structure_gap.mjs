@@ -13,6 +13,7 @@
  *   而"哪份是对的"没人能判定。要改判据 ⇒ 改 `.ts`，本壳跟着变。
  *
  * 用法：npm run structure:gap [-- <项目根>] [--json]
+ * 退出码：0 = 结构意图与现状一致（或项目未声明结构意图）；1 = 有任一态非空（待处置）。
  */
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -25,6 +26,17 @@ const rootArg = argv.find((a) => !a.startsWith('--'));
 const projectDir = rootArg ? path.resolve(rootArg) : path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 const r = structureGap(projectDir);
+
+// ★★ 2026-10-10：补上「算出来了、却不设退出码」——
+//   判据 `clean` **早已算好**（下方几态的长度和），但此前**只用来打文案**，脚本结尾（及 `--json` 分支）
+//   **无条件退 0** ⇒ `npm run structure:gap` 与 `verify` 的报告项**永远绿**（本仓最反对的假绿灯，
+//   而且就长在判据自己身上）。现在按它设退出码：**结构不一致 ⇒ 退 1**。
+//   ★ 为什么是 1 不是 2："结构不一致"是**判定结果**（待处置），不是"脚本用错了"——2 留给用法错。
+//   ★ `configured:false`（项目没声明结构意图）是**合法状态**（"尚未开垦"，不是失败）⇒ 不设非 0。
+//   ★ 放在 if/else **之外** ⇒ 人读模式与 `--json` 模式**都**按判据退码（原先两处都无条件 0）。
+const nonClean =
+  r.misplaced.length + r.unlisted.length + r.missing.length + r.misnested.length + r.unclassified.length;
+const clean = nonClean === 0;
 
 if (asJson) {
   console.log(JSON.stringify(r, null, 2));
@@ -46,8 +58,6 @@ if (asJson) {
   sec('missing（域目录还不存在 / 域里没有源码 —— 与 misplaced 一体两面）', r.missing);
   sec('⚠ misnested（role=capability 的域，却住在另一个域/混装筐里 —— 拆不拆请拍板）', r.misnested);
   sec('○ unclassified（没写 role ⇒ 不参与 misnested 判定 —— 能被省略的判据一定被省略，故让它显形）', r.unclassified);
-  const todo = r.misplaced.length + r.unlisted.length;
-  const clean = todo + r.missing.length + r.misnested.length + r.unclassified.length === 0;
   const bits = [];
   if (r.misplaced.length) bits.push(`**${r.misplaced.length} 个待搬**`);
   if (r.unlisted.length) bits.push(`**${r.unlisted.length} 个待定归属**`);
@@ -61,3 +71,6 @@ if (asJson) {
   );
   console.log('★ 搬完记得：用 code_health 看环与分层违规 → 逐个工具试用一遍。\n');
 }
+
+// ★ 按判据设退出码（见文件上方 `nonClean`）：结构不一致 ⇒ 1；未声明意图（configured:false）⇒ 保持 0。
+if (r.configured) process.exitCode = clean ? 0 : 1;

@@ -17,8 +17,11 @@
  *   ⇒ **`npm run verify` 返回 0 的含义被收紧为"每一道门都真的跑过并通过"**，
  *     含 Go 的机器才能拿到 0；没装 Go 的机器拿到 2，而不是"看起来全绿"。
  *
- * ★ 刻意**不**把 `structure_gap` 算进判定：实测它的结尾是 `process.exit(0)`（无条件）
- *   —— 把它当门会给 CI 一种"结构已核对"的假安全感。它只作为**报告**打印（--report-only 之外也打）。
+ * ★ 2026-10-10 订正（原文写「刻意不把 `structure_gap` 算进判定：它的结尾是 `process.exit(0)`（无条件）
+ *   ⇒ 永远不可能失败」——**该前提已不成立**）：`structure_gap.mjs` 现在**按判据（`clean`）退非 0**。
+ *   它仍列在**报告区**（`kind:'report'`）只为两件事：① 通过时打印它的正文；② **门计数仍是 5**
+ *   （`total` 只数 `kind:'gate'`）。★ 但它的 FAIL **照常计入** —— 计数循环对 FAIL **一律** `fail++`（与 `kind` 无关）
+ *   ⇒ **结构不一致时，verify 会退 1**（这正是不再给"结构已核对"假安全感）。
  *
  * ★★ 2026-10-06（T61）ts 门**不再走 `npx`**：实测 `typescript` 未安装时 `npx tsc` 会取到 npm 上
  *   同名的 **`tsc` 占位包**（只打印「This is not the tsc command you are looking for」）并**退出 0**
@@ -103,7 +106,7 @@ const GATES = [
   { name: 'b 项契约占位符', kind: 'gate', cmd: 'node', args: ['scripts/measure_b_contract.mjs'], why: '量具：有未定义占位符即失败' },
   { name: 'Go 编译', kind: 'gate', cmd: 'go', args: ['build', './...'], cwd: 'observe-lang-go', need: 'go', why: '★ Go 语言包（observe-lang-go）此前**零门**：它一直是 TS 侧之外的盲区（go.mod 无 require ⇒ 标准库项目）' },
   { name: 'Go 静态检查', kind: 'gate', cmd: 'go', args: ['vet', './...'], cwd: 'observe-lang-go', need: 'go', why: '同上；vet 过了才谈得上"改 Go 代码有反馈"' },
-  { name: '结构意图 gap', kind: 'report', cmd: 'node', args: ['scripts/structure_gap.mjs'], why: '★ 只作报告：它的结尾是 process.exit(0)，**永远不可能失败** ⇒ 不计入判定' },
+  { name: '结构意图 gap', kind: 'report', cmd: 'node', args: ['scripts/structure_gap.mjs'], why: '★ 2026-10-10 起**能失败**：它已按判据（clean）退非 0。列在报告区=通过时打印正文、且不进"5 道门"计数；但 FAIL 照常计入（结构不一致 ⇒ verify 退 1）' },
 ];
 
 const has = (b) => { try { return spawnSync(b, ['version'], { encoding: 'utf8', shell: process.platform === 'win32' }).status === 0; } catch { return false; } };
@@ -141,7 +144,7 @@ for (const g of gates) {
   console.log(`  ${tag}  ${label.padEnd(20)} ${C.d}${String(ms).padStart(5)}ms  ${r.why}${C.x}`);
   if (r.state === 'FAIL') { fail++; if (r.out) tail.push(`${C.r}── ${g.name} 输出 ──${C.x}\n${r.out.slice(0, 4000)}`); }
   if (r.state === 'SKIP') skip++;
-  if (r.state === 'PASS' && g.kind === 'report' && r.out) tail.push(`${C.d}── ${g.name}（报告，不计入判定）──${C.x}\n${r.out.slice(0, 3000)}`);
+  if (r.state === 'PASS' && g.kind === 'report' && r.out) tail.push(`${C.d}── ${g.name}（报告区：通过时打印正文；失败照常计入）──${C.x}\n${r.out.slice(0, 3000)}`);
 }
 
 console.log('');
