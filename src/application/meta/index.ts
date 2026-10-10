@@ -69,7 +69,7 @@ import {
 import '../../infrastructure/analysis/capability/register_capabilities.js';
 import { markCanvasNotesStatus, renderCanvasNotesDigest, resolveCanvasNoteTargets } from './view/derive_mind_map.js';
 import { EXPLORE_ACTIONS } from './explore/explore_code.js';
-import { deleteProvider, getStats, listProvidersMasked, resetStats, upsertProvider } from './llm/gateway.js';
+import { deleteProvider, getStats, listProvidersMasked, resetStats, upsertProvider } from '../../infrastructure/llm_gateway.js';
 import { indexIntegrity, renderIntegrity } from './integrity/index_integrity.js';
 import { decideCanvasNotes } from './llm/llm_decider.js';
 import { buildDocsPromptBlock, listProjectDocs, matchDocsForTargets, readProjectDoc } from './docs/project_docs.js';

@@ -9,7 +9,7 @@
  * 失败策略：任何一步失败都抛错，由调用方决定是否回退到"未收录"提示，不阻塞前端。
  */
 
-import { loadExplainConfig, type ExplainConfig } from '../../infrastructure/llm_focus.js';
+import { hasEnabledProvider, chatViaGateway } from '../../infrastructure/llm_gateway.js';
 import { extractJsonObject } from '../../application/meta/view/explain_gen.js';
 
 // ─────────────────────────────────────────────────────────────
@@ -29,14 +29,13 @@ export type DictClassResult = {
 
 /**
  * 让 LLM 判断待解释词属于通用概念还是项目专有词。
+ * ★ 出网经小网关（全仓唯一出网点）：上游 / key 池 / 轮转全在网关内，本函数只给 messages。
  * @param term      待解释词（用户选中）
  * @param projectHint 项目上下文片段（如项目根名/README 摘要），帮助 LLM 判断是否项目专有
- * @param cfg       LLM 配置
  */
 export async function classifyTerm(
   term: string,
   projectHint: string,
-  cfg: ExplainConfig,
 ): Promise<DictClassResult> {
   const system =
     '你是词典分类器。给定一个待解释的词，判断它属于「通用概念」还是「某项目的专有词」。' +
@@ -47,21 +46,13 @@ export async function classifyTerm(
 
   const user = `待解释词：${term}\n项目上下文：${projectHint || '（无额外上下文）'}`;
 
-  const res = await fetch(`${cfg.baseURL}/chat/completions`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${cfg.apiKey}` },
-    body: JSON.stringify({
-      model: cfg.model,
-      messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: user },
-      ],
-      temperature: 0.2,
-    }),
-  });
-  if (!res.ok) throw new Error(`词典分类 LLM 调用失败 ${res.status}`);
-  const data = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
-  const content = data.choices?.[0]?.message?.content ?? '';
+  const { content } = await chatViaGateway(
+    [
+      { role: 'system', content: system },
+      { role: 'user', content: user },
+    ],
+    { temperature: 0.2 },
+  );
   const parsed = extractJsonObject(content);
   if (!parsed) throw new Error('词典分类 LLM 未返回有效 JSON');
 
@@ -95,7 +86,6 @@ export interface DictGenerationResult {
  */
 export async function generateDictEntry(
   term: string,
-  cfg: ExplainConfig,
 ): Promise<DictGenerationResult> {
   const system =
     '你是伪维基词典词条小编剧。给定一个术语词，写出三档解释：' +
@@ -108,21 +98,13 @@ export async function generateDictEntry(
 
   const user = `术语：${term}`;
 
-  const res = await fetch(`${cfg.baseURL}/chat/completions`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${cfg.apiKey}` },
-    body: JSON.stringify({
-      model: cfg.model,
-      messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: user },
-      ],
-      temperature: 0.4,
-    }),
-  });
-  if (!res.ok) throw new Error(`词典生成 LLM 调用失败 ${res.status}：${(await res.text()).slice(0, 200)}`);
-  const data = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
-  const content = data.choices?.[0]?.message?.content ?? '';
+  const { content } = await chatViaGateway(
+    [
+      { role: 'system', content: system },
+      { role: 'user', content: user },
+    ],
+    { temperature: 0.4 },
+  );
   const parsed = extractJsonObject(content);
   if (!parsed) throw new Error('词典生成 LLM 未返回有效 JSON');
 
@@ -173,16 +155,15 @@ export async function ingestTerm(
   projectHint: string,
   opts: { save?: boolean } = {},
 ): Promise<IngestResult> {
-  const cfg = loadExplainConfig();
-  if (!cfg) throw new Error('未配置 LLM（DEEPSEEK_API_KEY 或 config.json explain 段），无法生成词典解释');
+  if (!hasEnabledProvider()) throw new Error('未配置 LLM（网关无可用供应商，亦无 AGNES 环境变量），无法生成词典解释');
 
   // 1. 分类：通用 vs 项目专有
-  let cls = await classifyTerm(source, projectHint, cfg);
+  let cls = await classifyTerm(source, projectHint);
   const kind = cls.kind === 'project' ? 'project' : 'global'; // unknown → 归入 global
   const term = cls.term || source.trim();
 
   // 2. 生成三档
-  const gen = await generateDictEntry(term, cfg);
+  const gen = await generateDictEntry(term);
 
   const entry: DictEntry = {
     term,

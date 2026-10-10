@@ -27,6 +27,7 @@ import { getDSL, getStorageRoot, getPackageRoot } from '../../../infrastructure/
 import { extractJsonObject } from './explain_gen.js';
 import { loadAgentConfig, callChat } from '../../../infrastructure/llm_focus.js';
 import type { ChatMessage } from '../../../infrastructure/llm_focus.js';
+import { hasEnabledProvider, chatViaGateway } from '../../../infrastructure/llm_gateway.js';
 import { openDb, findCacheDb } from '../../../infrastructure/index/db.js';
 import type { Database } from '../../../infrastructure/index/db.js';
 import { fileFacts } from '../../../infrastructure/index/file_facts.js';
@@ -699,8 +700,7 @@ async function llmEnrichDescriptions(
   nodes: Array<{ id: string; label: string; kind: string; hint: string; owner?: string }>,
   projectTitle: string,
 ): Promise<Map<string, string> | null> {
-  const cfg = loadAgentConfig();
-  if (!cfg) return null;
+  if (!hasEnabledProvider()) return null;
   const BATCH = 12;
   const chunks: Array<typeof nodes> = [];
   for (let i = 0; i < nodes.length; i += BATCH) chunks.push(nodes.slice(i, i + BATCH));
@@ -721,23 +721,13 @@ async function llmEnrichDescriptions(
       .map((n) => `- id=${n.id} · ${kindLabel(n.kind)}「${n.label}」（所属功能名只能用：${n.owner ?? '未提供'}）· ${n.hint}`)
       .join('\n');
     try {
-      const res = await fetch(`${cfg.baseURL}/chat/completions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${cfg.apiKey}` },
-        body: JSON.stringify({
-          model: cfg.model,
-          messages: [
-            { role: 'system', content: system },
-            { role: 'user', content: `项目：${projectTitle}\n条目清单：\n${list}` },
-          ],
-          temperature: 0.4,
-          response_format: { type: 'json_object' },
-        }),
-        signal: AbortSignal.timeout(60_000),
-      });
-      if (!res.ok) return null;
-      const data = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
-      const content = data.choices?.[0]?.message?.content ?? '';
+      const { content } = await chatViaGateway(
+        [
+          { role: 'system', content: system },
+          { role: 'user', content: `项目：${projectTitle}\n条目清单：\n${list}` },
+        ],
+        { temperature: 0.4, jsonMode: true, timeoutMs: 60_000 },
+      );
       const parsed = extractJsonObject(content);
       const raw = parsed?.descriptions as Record<string, unknown> | undefined;
       if (!raw || typeof raw !== 'object') return null;
@@ -1105,8 +1095,7 @@ async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T, index: nu
  * 返回 null 表示失败/未配置（调用方降级）。
  */
 async function llmTeachFeature(material: string, featureName = ''): Promise<TeachScript | null> {
-  const cfg = loadAgentConfig();
-  if (!cfg) return null;
+  if (!hasEnabledProvider()) return null;
   const system =
     '你是技术科普编剧，擅长把软件功能讲成普通人爱看的科普视频（类似"3分钟看懂搜索引擎原理"）。\n' +
     '给定一个功能的材料：【职责】每个文件是干嘛的；【调用记录】真实代码里谁调用谁、调用多少次（这是真实执行顺序的证据，材料区允许出现函数名供你理解，但你的输出不许照搬）；【主人批注】项目主人在导图上写的理解/纠正（如有，优先级最高，人的说法与材料冲突时以人为准）。\n\n' +
@@ -1125,33 +1114,20 @@ async function llmTeachFeature(material: string, featureName = ''): Promise<Teac
     userContent: string,
   ): Promise<{ ok: boolean; status: number; content: string; finishReason: string; retryable: boolean; err?: string }> => {
     try {
-      const res = await fetch(`${cfg.baseURL}/chat/completions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${cfg.apiKey}` },
-        body: JSON.stringify({
-          model: cfg.model,
-          messages: [
-            { role: 'system', content: system },
-            { role: 'user', content: userContent },
-          ],
-          temperature: 0.4,
-          response_format: { type: 'json_object' },
-        }),
-        signal: AbortSignal.timeout(150_000),
-      });
-      if (!res.ok) {
-        const body = await res.text().catch(() => '');
-        return { ok: false, status: res.status, content: body.slice(0, 300), finishReason: '', retryable: res.status === 429 || res.status >= 500, err: `HTTP ${res.status}` };
-      }
-      const data = (await res.json()) as {
-        choices?: Array<{ message?: { content?: string }; finish_reason?: string }>;
-      };
-      const choice = data.choices?.[0];
-      return { ok: true, status: res.status, content: choice?.message?.content ?? '', finishReason: choice?.finish_reason ?? '', retryable: false };
+      // ★ 单次尝试（maxAttempts=1）：本函数外层已有 3 次退避重试；跨重试的换 key 由网关池游标完成。
+      const { content } = await chatViaGateway(
+        [
+          { role: 'system', content: system },
+          { role: 'user', content: userContent },
+        ],
+        { temperature: 0.4, jsonMode: true, timeoutMs: 150_000, maxAttempts: 1 },
+      );
+      return { ok: true, status: 200, content, finishReason: '', retryable: false };
     } catch (e) {
-      const err = e as Error;
-      // 超时/网络中断可重试；配置类错误重试也没用
-      const retryable = err.name === 'TimeoutError' || err.name === 'AbortError' || err.name === 'TypeError';
+      const err = e as Error & { cause?: Error };
+      // 超时/网络中断可重试；配置类错误重试也没用（网关会把上游错误包一层，故并看 cause）
+      const names = [err.name, err.cause?.name];
+      const retryable = names.some((n) => n === 'TimeoutError' || n === 'AbortError' || n === 'TypeError');
       return { ok: false, status: 0, content: '', finishReason: '', retryable, err: `${err.name}: ${err.message}` };
     }
   };
@@ -1591,37 +1567,26 @@ async function buildTeachMindMap(
   for (const n of allCommNames) if (!communityZh[n] && isNoiseCommunity(n)) communityZh[n] = NOISE_ZH;
   const needZh = allCommNames.filter((n) => !communityZh[n]);
   if (needZh.length > 0) {
-    const cfg = loadAgentConfig();
-    if (cfg) {
+    if (hasEnabledProvider()) {
       try {
-        const res = await fetch(`${cfg.baseURL}/chat/completions`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${cfg.apiKey}` },
-          body: JSON.stringify({
-            model: cfg.model,
-            messages: [
-              {
-                role: 'system',
-                content:
-                  '把代码模块名翻译成简短中文名（≤6字，说明这组文件在做什么，如 TSProbeCapture→探针捕获、LLMJudge→AI判读）。' +
-                  '专有技术词可保留（如 PDF、API）。只输出 JSON：{"zh":{"<原名>":"<中文名>"}}，键必须来自给定清单。',
-              },
-              { role: 'user', content: needZh.join('\n') },
-            ],
-            temperature: 0.2,
-            response_format: { type: 'json_object' },
-          }),
-          signal: AbortSignal.timeout(60_000),
-        });
-        if (res.ok) {
-          const data = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
-          const parsed = extractJsonObject(data.choices?.[0]?.message?.content ?? '');
-          const zh = parsed?.zh as Record<string, unknown> | undefined;
-          if (zh && typeof zh === 'object') {
-            for (const n of needZh) {
-              const v = zh[n];
-              if (typeof v === 'string' && v.trim()) communityZh[n] = v.trim().slice(0, 12);
-            }
+        const { content } = await chatViaGateway(
+          [
+            {
+              role: 'system',
+              content:
+                '把代码模块名翻译成简短中文名（≤6字，说明这组文件在做什么，如 TSProbeCapture→探针捕获、LLMJudge→AI判读）。' +
+                '专有技术词可保留（如 PDF、API）。只输出 JSON：{"zh":{"<原名>":"<中文名>"}}，键必须来自给定清单。',
+            },
+            { role: 'user', content: needZh.join('\n') },
+          ],
+          { temperature: 0.2, jsonMode: true, timeoutMs: 60_000 },
+        );
+        const parsed = extractJsonObject(content);
+        const zh = parsed?.zh as Record<string, unknown> | undefined;
+        if (zh && typeof zh === 'object') {
+          for (const n of needZh) {
+            const v = zh[n];
+            if (typeof v === 'string' && v.trim()) communityZh[n] = v.trim().slice(0, 12);
           }
         }
       } catch {
@@ -1995,40 +1960,31 @@ export async function placeProposals(feature: string): Promise<PlaceProposalsRes
   const featNames = (mindMap.root.children ?? []).map((c) => c.label);
   const featDescs = (mindMap.root.children ?? []).map((c) => `${c.label}：${(c.description || '').slice(0, 60)}`).join('\n');
 
-  const cfg = loadAgentConfig();
   let proposals: ProposalFeature[] = [];
   let mode: 'llm' | 'rule' = 'rule';
-  if (cfg) {
+  if (hasEnabledProvider()) {
     const list = ideas.map((u) => `- ${u.id}：「${u.text.slice(0, 120)}」`).join('\n');
     try {
-      const res = await fetch(`${cfg.baseURL}/chat/completions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${cfg.apiKey}` },
-        body: JSON.stringify({
-          model: cfg.model,
-          messages: [
-            {
-              role: 'system',
-              content:
-                '你是软件架构师。主人要在项目里加新功能，他只写一句构想，你来定位：\n' +
-                '1. 起个功能名（≤8字，动宾或名词）；\n' +
-                '2. 一句人话介绍（15~40字，解决什么问题）；\n' +
-                '3. parent：它属于哪个现有功能（是其子能力）？独立新功能则填 ""；\n' +
-                '4. steps：2-3 步实现分镜（每步 title ≤12字 + detail 一两句）；\n' +
-                '5. depends_on：预判它要踩哪些现有功能（数组，可空）。\n' +
-                '基于给定现有功能事实判断，不要编造不存在的功能名。只输出 JSON：\n' +
-                '{"proposals":{"<id>":{"title":"","desc":"","parent":"","steps":[{"title":"","detail":""}],"depends_on":[""]}}}',
-            },
-            { role: 'user', content: `项目：${dsl.title || feature}\n\n现有功能：\n${featDescs}\n\n主人的新功能构想：\n${list}` },
-          ],
-          temperature: 0.4,
-          response_format: { type: 'json_object' },
-        }),
-        signal: AbortSignal.timeout(90_000),
-      });
-      if (res.ok) {
-        const data = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
-        const parsed = extractJsonObject(data.choices?.[0]?.message?.content ?? '');
+      const { content } = await chatViaGateway(
+        [
+          {
+            role: 'system',
+            content:
+              '你是软件架构师。主人要在项目里加新功能，他只写一句构想，你来定位：\n' +
+              '1. 起个功能名（≤8字，动宾或名词）；\n' +
+              '2. 一句人话介绍（15~40字，解决什么问题）；\n' +
+              '3. parent：它属于哪个现有功能（是其子能力）？独立新功能则填 ""；\n' +
+              '4. steps：2-3 步实现分镜（每步 title ≤12字 + detail 一两句）；\n' +
+              '5. depends_on：预判它要踩哪些现有功能（数组，可空）。\n' +
+              '基于给定现有功能事实判断，不要编造不存在的功能名。只输出 JSON：\n' +
+              '{"proposals":{"<id>":{"title":"","desc":"","parent":"","steps":[{"title":"","detail":""}],"depends_on":[""]}}}',
+          },
+          { role: 'user', content: `项目：${dsl.title || feature}\n\n现有功能：\n${featDescs}\n\n主人的新功能构想：\n${list}` },
+        ],
+        { temperature: 0.4, jsonMode: true, timeoutMs: 90_000 },
+      );
+      {
+        const parsed = extractJsonObject(content);
         const raw = parsed?.proposals as Record<string, Record<string, unknown>> | undefined;
         if (raw && typeof raw === 'object') {
           for (const u of ideas) {

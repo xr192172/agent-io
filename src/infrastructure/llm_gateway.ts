@@ -1,5 +1,5 @@
 /**
- * gateway —— 小网关（薄层，可被上层网关再次接入并管理）
+ * llm_gateway —— 小网关（薄层，可被上层网关再次接入并管理）
  *
  * 定位：不重造完整网关平台，只做四件事——
  *   1. 供应商注册（OpenAI 兼容：base_url + model，支持任意厂商/本地 Ollama）
@@ -10,13 +10,22 @@
  * 配置持久化：<dataHome>/.agent-io/gateway.json
  * 首次启动若检测到 AGNES 环境变量（key 池/单把，老配置），自动种入 agnes 供应商，
  * 从"直连 env"无缝过渡到"网关统一管理"。
+ *
+ * ★ 2026-10-10（T109 收拢）：
+ *   · 本文件从 `application/meta/llm/gateway.ts` 搬到 `infrastructure/` —— 它管 key 池 / 用量 / 端点，
+ *     **全是基础设施职责**；且会话线 `llm_focus.callChat`（infrastructure）要经它出网 ⇒ 不能反过来依赖 application。
+ *   · 池内轮转**复用** `llm_pool.KeyPool`（不再自持 `keyCursor` 第二份状态机）：同一 KeyPool 对象**跨调用**保留
+ *     ⇒ 第 1 把断了，下一次从第 2 把开始；转完一圈才回第 1 把（照用户口径）。
+ *   · **对外只提供一个入口**：内部调用方只传 messages / temperature / jsonMode（不碰上游 / key / 池）；
+ *     HTTP 端点仍是 `handleOpenAICompatRequest`。全仓**唯一**发 `/chat/completions` 的地方。
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { getStorageRoot } from '../../../infrastructure/storage.js';
-import { resolveAgnesApiBaseUrl, resolveAgnesModel, resolveAgnesKeys } from '../../../infrastructure/llm_focus.js';
+import { getStorageRoot } from './storage.js';
+import { resolveAgnesApiBaseUrl, resolveAgnesModel, resolveAgnesKeys } from './llm_agnes.js';
+import { KeyPool } from './llm_pool.js';
 
 // ─────────────────────────────────────────────────────────────
 // 类型
@@ -102,7 +111,7 @@ function saveGatewayConfig(cfg: GatewayConfig): void {
 export function ensureSeededFromEnv(): boolean {
   const cfg = loadGatewayConfig();
   if (cfg.providers.length > 0) return false;
-  // ★ 上游/模型/key 池统一由 llm_focus 解析（唯一住处）；池可多把，直接种入网关 key 池
+  // ★ 上游/模型/key 池统一由 llm_agnes 解析（唯一住处）；池可多把，直接种入网关 key 池
   const keys = resolveAgnesKeys();
   if (keys.length === 0) return false;
   cfg.providers.push({
@@ -316,35 +325,62 @@ export function resetStats(): void {
 // 池调度（轮询 + 失败转移）与调用
 // ─────────────────────────────────────────────────────────────
 
-/** 池内 key 游标（进程内存态，重启归零可接受） */
-const keyCursor: Record<string, number> = {};
+/**
+ * 每个供应商一个 `KeyPool`（**复用共享的 `llm_pool.KeyPool`**，不新写第二份状态机）：按 key 集合缓存，
+ * 于是「轮转位置 + 冷却窗口」**跨调用**保持 —— 第 1 把断了，下一次从第 2 把开始；转完一圈才回第 1 把。
+ */
+const keyPools = new Map<string, { pool: KeyPool; keyId: string }>();
+function poolForProvider(provider: GatewayProvider): KeyPool {
+  const keyId = provider.keys.join('\n');
+  let e = keyPools.get(provider.id);
+  if (!e || e.keyId !== keyId) {
+    e = { pool: new KeyPool(provider.keys), keyId };
+    keyPools.set(provider.id, e);
+  }
+  return e.pool;
+}
+
+/** 供应商层游标（加权轮询；进程内存态，重启归零可接受） */
 let providerCursor = 0;
 
 /** 测试用：重置池调度游标（生产无调用；让用例可确定性验证轮询/故障转移） */
 export function _resetGatewayCursors(): void {
-  for (const k of Object.keys(keyCursor)) delete keyCursor[k];
+  keyPools.clear();
   providerCursor = 0;
 }
 
-/** 选择下一个可用供应商 + 池内 key（加权轮询 + 池内轮询） */
-function pickEndpoint(): { provider: GatewayProvider; key: string } {
+interface Endpoint {
+  provider: GatewayProvider;
+  key: string;
+  pool: KeyPool;
+  idx: number;
+}
+
+/** 选择下一个可用供应商 + 池内 key（供应商加权轮询 + 池内 round-robin）；全冷却时抛错。 */
+function pickEndpoint(now: number): Endpoint {
   const cfg = loadGatewayConfig();
   const enabled = cfg.providers.filter((p) => p.enabled && p.keys.length > 0);
   if (enabled.length === 0) throw new Error('网关无可用供应商（未配置或全部停用）');
   const totalWeight = enabled.reduce((a, p) => a + Math.max(1, p.weight), 0);
-  let pick = providerCursor % totalWeight;
-  providerCursor++;
-  let provider = enabled[0];
-  for (const p of enabled) {
-    pick -= Math.max(1, p.weight);
-    if (pick < 0) {
-      provider = p;
-      break;
+  const start = providerCursor % totalWeight;
+  for (let hop = 0; hop < totalWeight; hop++) {
+    let slot = (start + hop) % totalWeight;
+    let provider = enabled[enabled.length - 1];
+    for (const p of enabled) {
+      slot -= Math.max(1, p.weight);
+      if (slot < 0) {
+        provider = p;
+        break;
+      }
+    }
+    const pool = poolForProvider(provider);
+    const idx = pool.pick(now);
+    if (idx >= 0) {
+      providerCursor = (start + hop + 1) % totalWeight;
+      return { provider, key: provider.keys[idx], pool, idx };
     }
   }
-  const idx = (keyCursor[provider.id] ?? 0) % provider.keys.length;
-  keyCursor[provider.id] = idx + 1;
-  return { provider, key: provider.keys[idx] };
+  throw new Error('网关所有 key 均在冷却窗口内（无可用端点）');
 }
 
 export interface GatewayChatOptions {
@@ -354,19 +390,30 @@ export interface GatewayChatOptions {
   maxAttempts?: number;
   /** 是否强制 JSON 输出（内部决策契约用）；通用 /v1 端点默认 false，保持 OpenAI 标准行为 */
   jsonMode?: boolean;
+  /** 输出上限（透传 max_tokens；不填则不传，沿用上游默认） */
+  maxTokens?: number;
+}
+
+/** 上游 HTTP 错误（带状态码，供失败转移判定是否可重试） */
+class GatewayHttpError extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message);
+    this.name = 'GatewayHttpError';
+  }
 }
 
 async function callProvider(
   provider: GatewayProvider,
   key: string,
   messages: Array<{ role: string; content: string }>,
-  opts: { temperature: number; timeoutMs: number; model?: string; jsonMode?: boolean },
+  opts: { temperature: number; timeoutMs: number; model?: string; jsonMode?: boolean; maxTokens?: number },
 ): Promise<{ content: string; usage: { prompt_tokens: number; completion_tokens: number } }> {
   const payload: Record<string, unknown> = {
     model: opts.model || provider.model,
     messages,
     temperature: opts.temperature,
   };
+  if (typeof opts.maxTokens === 'number') payload.max_tokens = opts.maxTokens;
   if (opts.jsonMode) payload.response_format = { type: 'json_object' };
   const res = await fetch(`${provider.base_url}/chat/completions`, {
     method: 'POST',
@@ -375,7 +422,7 @@ async function callProvider(
     signal: AbortSignal.timeout(opts.timeoutMs),
   });
   if (!res.ok) {
-    throw new Error(`HTTP ${res.status}：${(await res.text()).slice(0, 160)}`);
+    throw new GatewayHttpError(`HTTP ${res.status}：${(await res.text()).slice(0, 160)}`, res.status);
   }
   const data = (await res.json()) as {
     choices?: Array<{ message?: { content?: string } }>;
@@ -391,8 +438,11 @@ async function callProvider(
 }
 
 /**
- * 走网关调用 LLM：加权轮询选供应商 → 池内轮询选 key → 失败自动切下一个 key/供应商。
- * 每次调用都记录用量（token/费用/延迟/错误）到 gateway.stats.json。
+ * 走网关调用 LLM（**全仓唯一出网点**）：加权轮询选供应商 → 池内 round-robin 选 key →
+ * 失败自动切下一个 key/供应商。每次调用都记录用量（token/费用/延迟/错误）到 gateway.stats.json。
+ *
+ * 轮转口径（用户裁定）：池是**跨调用**前进的 —— 第 1 把断了，**下一次从第 2 把开始**；
+ * 第 2 把断了从第 3 把开始；**转完一圈才回第 1 把**。调用方**只传 messages**，不碰上游 / key / 池。
  */
 export async function chatViaGateway(
   messages: Array<{ role: string; content: string }>,
@@ -402,13 +452,16 @@ export async function chatViaGateway(
   const timeoutMs = opts.timeoutMs ?? 90_000;
   const maxAttempts = Math.max(1, opts.maxAttempts ?? 3);
   const jsonMode = opts.jsonMode === true;
+  const maxTokens = opts.maxTokens;
+  const cooldownMs = 15_000;
+  const retryStatuses = new Set([429, 500, 502, 503, 504]);
 
   let lastErr: unknown = null;
   for (let i = 0; i < maxAttempts; i++) {
-    const { provider, key } = pickEndpoint();
+    const { provider, key, pool, idx } = pickEndpoint(Date.now());
     const start = Date.now();
     try {
-      const r = await callProvider(provider, key, messages, { temperature, timeoutMs, jsonMode });
+      const r = await callProvider(provider, key, messages, { temperature, timeoutMs, jsonMode, maxTokens });
       const cost =
         (provider.price_prompt_per_1m * r.usage.prompt_tokens) / 1_000_000 +
         (provider.price_completion_per_1m * r.usage.completion_tokens) / 1_000_000;
@@ -417,10 +470,15 @@ export async function chatViaGateway(
     } catch (e) {
       lastErr = e;
       recordUsage(provider.id, key, { prompt: 0, completion: 0, cost: 0, ok: false, ms: Date.now() - start });
-      // 失败转移：下一个循环自动换 key/供应商
+      // 失败转移：可重试状态（429/5xx）冷却该 key，下一轮 pick 直接跳过它；
+      // 网络层错误（UND_ERR_SOCKET/超时）不冷却，但池游标已前进 ⇒ 下一轮换 key/新连接。
+      if (e instanceof GatewayHttpError && retryStatuses.has(e.status)) {
+        pool.cooldown(idx, Date.now(), cooldownMs);
+      }
     }
   }
-  throw new Error(`网关所有可用端点均失败：${(lastErr as Error)?.message ?? lastErr}`);
+  // 保留最后一次错误为 cause（调用方据此判定超时/网络类可重试；不吞原始错误）。
+  throw new Error(`网关所有可用端点均失败：${(lastErr as Error)?.message ?? lastErr}`, { cause: lastErr });
 }
 
 /** 测试单供应商连通性（发一条 ping，不影响用量统计） */

@@ -42,7 +42,7 @@ import { guidedTour } from '../../infrastructure/index/guided_tour.js';
 import { semanticSearch } from '../../application/meta/llm/semantic_search.js';
 import { languageConcepts } from '../../infrastructure/analysis/capability/language_concepts.js';
 import { buildDictionaryView, getGlobalDictFile, getProjectDictFile, loadGlobalDict, loadProjectDict, saveGlobalEntry, saveProjectEntry, splitHighlights, validateProjectRoot, type DictEntry } from '../../infrastructure/dictionary.js';
-import { ingestTerm, classifyTerm, generateDictEntry } from './dict_gen.js';
+import { ingestTerm, generateDictEntry } from './dict_gen.js';
 import { readRegistry, updateArtifact } from '../../infrastructure/index/registry.js';
 import { proposeChange, listChanges, approveChange, rejectChange } from '../../application/design/workbench/code_workbench.js';
 import { checkMonolith } from '../../infrastructure/analysis/structure/monolith.js';
@@ -65,7 +65,7 @@ import { schemas, RESPONSE_SCHEMA_AT, API_VERSION, type ResponseSchemaKey } from
 import { deriveDetailChain } from '../../application/design/derive/derive_chain.js';
 import { reconcileChain } from '../../application/observe/reconcile/reconcile_chain.js';
 import type { DesignDSL } from '../../domain/types.js';
-import { loadLlmConfig, pickKeyNodes, loadExplainConfig, type ChainNodeInfo } from '../../infrastructure/llm_focus.js';
+import { loadLlmConfig, pickKeyNodes, type ChainNodeInfo } from '../../infrastructure/llm_focus.js';
 import {
   generateModuleNarrations,
   loadGeneratedNarrations,
@@ -82,7 +82,7 @@ import {
   hasEnabledProvider,
   handleOpenAICompatRequest,
   type OpenAICompatRequest,
-} from '../../application/meta/llm/gateway.js';
+} from '../../infrastructure/llm_gateway.js';
 
 const PORT = parseInt(process.argv[2]) || 3000;
 const PUBLIC_DIR = path.join(process.cwd(), 'output');
@@ -2002,12 +2002,11 @@ async function handleApiDictGenerate(req: http.IncomingMessage, res: http.Server
       sendJson(res, 400, { success: false, message: '缺少 term 参数' });
       return;
     }
-    const cfg = loadExplainConfig();
-    if (!cfg) {
-      sendJson(res, 200, { success: false, message: '未配置 LLM，无法生成' });
+    if (!hasEnabledProvider()) {
+      sendJson(res, 200, { success: false, message: '未配置 LLM（网关无可用供应商），无法生成' });
       return;
     }
-    const gen = await generateDictEntry(term, cfg);
+    const gen = await generateDictEntry(term);
     sendJson(res, 200, { success: true, ...gen });
   } catch (e) {
     sendError(res, 500, (e as Error).message);
@@ -2233,14 +2232,15 @@ function handleApiExplain(req: http.IncomingMessage, res: http.ServerResponse): 
  */
 async function handleApiExplainGenerate(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
   try {
-    const cfg = loadExplainConfig();
-    if (!cfg) {
+    if (!hasEnabledProvider()) {
       sendJson(res, 200, {
         success: false,
-        note: '未配置 LLM（config.json 缺 explain 段，或未设 DEEPSEEK_API_KEY / AGNES_API_KEY 环境变量），已保留手写文案',
+        note: '未配置 LLM（网关无可用供应商，亦无 AGNES_API_KEY / DEEPSEEK_API_KEY 环境变量），已保留手写文案',
       });
       return;
     }
+    // 出网经网关：从网关供应商回读 model / 上游（供回执展示），本端不再自持配置
+    const primary = listProvidersMasked()[0];
 
     let body: { steps?: Array<{ title?: string; background?: string }> } = {};
     const raw = await readBody(req);
@@ -2260,7 +2260,7 @@ async function handleApiExplainGenerate(req: http.IncomingMessage, res: http.Ser
     const failures: Array<{ title: string; error: string }> = [];
     for (const m of modules) {
       try {
-        const narrations = await generateModuleNarrations(m.title, m.background, cfg);
+        const narrations = await generateModuleNarrations(m.title, m.background);
         const src = requested.length > 0 ? EXPLAIN_SCRIPT.find((s) => s.title === m.title) : undefined;
         generated.push({
           title: m.title,
@@ -2280,14 +2280,14 @@ async function handleApiExplainGenerate(req: http.IncomingMessage, res: http.Ser
 
     sendJson(res, 200, {
       success: true,
-      model: cfg.model,
-      baseURL: cfg.baseURL,
+      model: primary?.model ?? '',
+      baseURL: primary?.base_url ?? '',
       generated,
       failures,
       persisted_file: persistedFile,
       note: failures.length > 0
         ? `${failures.length} 个模块生成失败（${failures[0]?.title}：${failures[0]?.error}），可重试或保留手写文案`
-        : `已用 ${cfg.model} 生成 ${generated.length} 个模块的三档文案并持久化`,
+        : `已用网关供应商 ${primary?.id ?? ''} 生成 ${generated.length} 个模块的三档文案并持久化`,
     });
   } catch (e) {
     sendError(res, 500, (e as Error).message);

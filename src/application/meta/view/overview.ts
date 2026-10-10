@@ -16,7 +16,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { getDSL, getStorageRoot } from '../../../infrastructure/storage.js';
 import { deriveMindMap, getMindMapFile } from './derive_mind_map.js';
-import { loadAgentConfig } from '../../../infrastructure/llm_focus.js';
+import { hasEnabledProvider, chatViaGateway } from '../../../infrastructure/llm_gateway.js';
 import { guidedTour } from '../../../infrastructure/index/guided_tour.js';
 import type { TourStep } from '../../../infrastructure/index/guided_tour.js';
 import type { MindMap } from '../../../domain/mindmap.js';
@@ -96,10 +96,9 @@ function ruleSummary(feature: string, title: string, mm: MindMap, fileCount?: nu
   };
 }
 
-/** LLM 版摘要：把功能树喂给 LLM，产出"这是什么软件"的人话概括 */
+/** LLM 版摘要：把功能树喂给 LLM，产出"这是什么软件"的人话概括（出网经小网关，只给 messages） */
 async function llmSummary(feature: string, title: string, mm: MindMap): Promise<OverviewSummary | null> {
-  const cfg = loadAgentConfig();
-  if (!cfg) return null;
+  if (!hasEnabledProvider()) return null;
   const feats = mm.root.children ?? [];
   if (feats.length === 0) return null;
   const list = feats
@@ -113,23 +112,13 @@ async function llmSummary(feature: string, title: string, mm: MindMap): Promise<
     '只输出 JSON：{"one_liner":"一句话（≤30字，说清这是什么软件）","brief":"2-3句（它由哪几块组成、用来干嘛，不要罗列文件名）"}\n' +
     '基于给定事实，不编造功能。';
   try {
-    const res = await fetch(`${cfg.baseURL}/chat/completions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${cfg.apiKey}` },
-      body: JSON.stringify({
-        model: cfg.model,
-        messages: [
-          { role: 'system', content: system },
-          { role: 'user', content: `项目：${title}\n功能清单：\n${list}` },
-        ],
-        temperature: 0.4,
-        response_format: { type: 'json_object' },
-        signal: AbortSignal.timeout(60_000),
-      }),
-    });
-    if (!res.ok) return null;
-    const data = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
-    const content = data.choices?.[0]?.message?.content ?? '';
+    const { content } = await chatViaGateway(
+      [
+        { role: 'system', content: system },
+        { role: 'user', content: `项目：${title}\n功能清单：\n${list}` },
+      ],
+      { temperature: 0.4, jsonMode: true, timeoutMs: 60_000 },
+    );
     const obj = extractJsonObject(content) as { one_liner?: string; brief?: string } | null;
     if (!obj?.one_liner) return null;
     return { one_liner: String(obj.one_liner).slice(0, 80), brief: String(obj.brief ?? '').slice(0, 300), mode: 'llm' };
@@ -193,8 +182,7 @@ async function llmSharedDesc(
   dsl: NonNullable<ReturnType<typeof getDSL>>,
 ): Promise<Map<string, string>> {
   const out = new Map<string, string>();
-  const cfg = loadAgentConfig();
-  if (!cfg) return out;
+  if (!hasEnabledProvider()) return out;
   // API 签名材料：精确 → 后缀匹配。★ 签名事实取自 cache.db（fileFacts），不再读 DSL 里镜像的 actual_apis；
   //   但 DSL 路径与索引里的 file_path 可能前缀不一致，故仍按"精确 → 后缀"匹配（该逻辑保留）。
   const apiExact = new Map<string, string[]>();
@@ -234,29 +222,20 @@ async function llmSharedDesc(
     })
     .join('\n');
   try {
-    const res = await fetch(`${cfg.baseURL}/chat/completions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${cfg.apiKey}` },
-      body: JSON.stringify({
-        model: cfg.model,
-        messages: [
-          {
-            role: 'system',
-            content:
-              '你是代码库讲解员。给定项目里被多个功能共用的"共享能力"文件清单（含真实调用方与导出API），' +
-              '为每个文件写一句通俗易懂的"它是干嘛的"（15~40 字，讲它为整个项目提供了什么能力，不罗列函数名）。' +
-              '只输出 JSON：{"descs":{"<文件路径>":"<一句话>"}}，路径必须来自给定清单。',
-          },
-          { role: 'user', content: `项目：${dsl.title || ''}\n清单：\n${items}` },
-        ],
-        temperature: 0.3,
-        response_format: { type: 'json_object' },
-      }),
-      signal: AbortSignal.timeout(60_000),
-    });
-    if (!res.ok) return out;
-    const data = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
-    const parsed = extractJsonObject(data.choices?.[0]?.message?.content ?? '');
+    const { content } = await chatViaGateway(
+      [
+        {
+          role: 'system',
+          content:
+            '你是代码库讲解员。给定项目里被多个功能共用的"共享能力"文件清单（含真实调用方与导出API），' +
+            '为每个文件写一句通俗易懂的"它是干嘛的"（15~40 字，讲它为整个项目提供了什么能力，不罗列函数名）。' +
+            '只输出 JSON：{"descs":{"<文件路径>":"<一句话>"}}，路径必须来自给定清单。',
+        },
+        { role: 'user', content: `项目：${dsl.title || ''}\n清单：\n${items}` },
+      ],
+      { temperature: 0.3, jsonMode: true, timeoutMs: 60_000 },
+    );
+    const parsed = extractJsonObject(content);
     const raw = parsed?.descs as Record<string, unknown> | undefined;
     if (!raw || typeof raw !== 'object') return out;
     for (const [f, v] of Object.entries(raw)) {

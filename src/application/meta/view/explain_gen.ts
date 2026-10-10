@@ -16,7 +16,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import type { ExplainConfig } from '../../../infrastructure/llm_focus.js';
+import { chatViaGateway } from '../../../infrastructure/llm_gateway.js';
 import { getStorageRoot } from '../../../infrastructure/storage.js';
 
 // ─────────────────────────────────────────────────────────────
@@ -45,15 +45,14 @@ export function extractJsonObject(text: string): Record<string, unknown> | null 
 }
 
 /**
- * 用 Agnes 为单个模块生成三档角色文案。
+ * 用 LLM 为单个模块生成三档角色文案。
+ * ★ 出网经小网关（全仓唯一出网点）：上游 / key 池 / 轮转全在网关内，本函数只给 messages。
  * @param moduleLabel  模块标题（如「入口：MCP 服务」）
  * @param background   权威技术说明（通常传手写 senior 文案，作为唯一事实来源）
- * @param cfg          Agnes 配置
  */
 export async function generateModuleNarrations(
   moduleLabel: string,
   background: string,
-  cfg: ExplainConfig,
 ): Promise<GeneratedNarrations> {
   const system =
     '你是软件科普讲解小编剧。给定一个模块的权威技术说明，请为同一模块写出三档讲解文案，服务于不同读者。' +
@@ -66,29 +65,16 @@ export async function generateModuleNarrations(
 
   const user = `模块：${moduleLabel}\n权威技术说明：\n${background}`;
 
-  const res = await fetch(`${cfg.baseURL}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${cfg.apiKey}`,
-    },
-    body: JSON.stringify({
-      model: cfg.model,
-      messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: user },
-      ],
-      temperature: 0.4,
-    }),
-  });
-  if (!res.ok) {
-    throw new Error(`Agnes 调用失败 ${res.status}：${(await res.text()).slice(0, 200)}`);
-  }
-  const data = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
-  const content = data.choices?.[0]?.message?.content ?? '';
+  const { content } = await chatViaGateway(
+    [
+      { role: 'system', content: system },
+      { role: 'user', content: user },
+    ],
+    { temperature: 0.4 },
+  );
   const parsed = extractJsonObject(content);
   if (!parsed) {
-    throw new Error('Agnes 未返回有效 JSON 文案');
+    throw new Error('LLM 未返回有效 JSON 文案');
   }
   const str = (v: unknown): string => (typeof v === 'string' ? v.trim() : '');
   const out: GeneratedNarrations = {
@@ -97,7 +83,7 @@ export async function generateModuleNarrations(
     senior: str(parsed.senior),
   };
   if (!out.newbie && !out.pm && !out.senior) {
-    throw new Error('Agnes 返回的文案为空');
+    throw new Error('LLM 返回的文案为空');
   }
   return out;
 }
