@@ -718,7 +718,7 @@ export const META_TOOLS: ToolDef[] = [
       '★ **意图位显式留空并标注**：下游**必填**里**没有任何出边覆盖**的那一格（如 `rename_symbols` 的 `renames[].to`）' +
       ' ⇒ 产出里是一个**显眼的占位串**（`<你给：renames[].to（新符号名）>`）—— **绝不编造、绝不用空串冒充、绝不静默省略**。' +
       '★ **不猜前提**：上游这次没产出的键 ⇒ 该格是**明确态**（`<拿不到：…>` + 理由），**不假设它总有**。' +
-      '★ 判据全部**复用已有权威**（`nextHopsOf` / `applyChainEdge` / `CHAIN_EDGES` / `evidenceTag` / `collectInputPaths`）—— 本工具**只端，不新做**。' +
+      '★ 判据全部**复用已有权威**（`nextHopsOf` / `applyChainEdge` / `CHAIN_EDGES` / `evidenceLabel` / `collectInputPaths`）—— 本工具**只端，不新做**。' +
       '★ 典型用法：`find_references` 之后拿它的 `touched` 调本工具（`to_tool="rename_symbols"`）' +
       ' ⇒ 直接得到 `{project_dir, renames:[{file, symbol, to:"<你给：…>"}]}`，补个新名即可跑。',
     inputSchema: {

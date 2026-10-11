@@ -29,7 +29,7 @@
  * | 下一棒是谁 / 取值表达式 | **`nextHopsOf` / `universalHopsOf`**（`domain/chain_wiring.ts`） | 唯一权威；**不新增边表** |
  * | 取哪个 touched 键 → 填哪个入参位置 | **`CHAIN_EDGES` 的 `fromKey` / `toPath`** | 落位**用 `toPath`**（别自己拼路径）；形状由 `cardinality` 定 |
  * | 值怎么取（含 `pick` 不替人选） | **`applyChainEdge`**（同文件） | 不重写一遍取值/判错逻辑 |
- * | 标签 | **`evidenceTag`**（同文件） | `[ran]` 只在那一处生成 |
+ * | 标签 | **`evidenceLabel`**（同文件） | `[ran]` 只在那一处生成 |
  * | 下游**必填的深层路径** | **`collectInputPaths`**（`registry/capability_map.ts`） | 从 `ToolDef.inputSchema` 派生（与 `collectInputKeys` 同一套遍历口径） |
  * | 意图位的"是什么意思"提示 | **zod `.describe` 原样** | 用**下游自己**的说明，本工具**不编** |
  *
@@ -43,7 +43,7 @@
  * ## 只读
  * 本工具**只读**（不改任何文件），也**不代表"这条链跑通过"** —— 那是 `CHAINS[].note` 说的。
  */
-import { CHAIN_EDGES, applyChainEdge, chainExprOf, evidenceTag, nextHopsOf, universalHopsOf, ANY_TOOL, type ChainEdge } from '../../../domain/chain_wiring.js';
+import { CHAIN_EDGES, applyChainEdge, chainExprOf, evidenceLabel, nextHopsOf, universalHopsOf, ANY_TOOL, type ChainEdge } from '../../../domain/chain_wiring.js';
 import { collectInputPaths, requiredLeavesOf, type InputPath } from '../registry/capability_map.js';
 import type { ToolDef } from '../../types.js';
 
@@ -71,7 +71,7 @@ export interface PreparedSlot {
   from_key?: string;
   /** 该边声明的**来源工具**（`CHAIN_EDGES.from`）。★ 与 `from_tool` 不同 ⇒ 是"同接力键"的**补位边**（见 `note`）。 */
   edge_from?: string;
-  /** 边标签（`evidenceTag`）：`ran` = 当年真跑过、非实时验证。 */
+  /** 边标签（`evidenceLabel`）：`ran` = 当年真跑过、非实时验证。 */
   evidence?: string;
   /** `pick` 时的候选清单（**全列**，不给默认值）。 */
   candidates?: readonly string[];
@@ -231,7 +231,7 @@ function buildHop(
         expr: chainExprOf(e),
         from_key: e.fromKey,
         edge_from: e.from,
-        evidence: evidenceTag(e.evidence),
+        evidence: evidenceLabel(e.evidence),
         note: `已填：取自 \`${chainExprOf(e)}\`${crossNote}`,
       });
       covered.add(e.toPath);
@@ -243,7 +243,7 @@ function buildHop(
         state: 'pick',
         from_key: e.fromKey,
         edge_from: e.from,
-        evidence: evidenceTag(e.evidence),
+        evidence: evidenceLabel(e.evidence),
         candidates: r.candidates,
         note: r.reason + crossNote,
       });
@@ -256,7 +256,7 @@ function buildHop(
       state: 'unresolved',
       from_key: e.fromKey,
       edge_from: e.from,
-      evidence: evidenceTag(e.evidence),
+      evidence: evidenceLabel(e.evidence),
       note: r.reason + crossNote,
     });
     covered.add(e.toPath);

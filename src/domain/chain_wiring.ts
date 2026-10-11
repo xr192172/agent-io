@@ -592,7 +592,7 @@ export interface Chain {
    * ★ **整条链真跑过没有**（`verified` = 每一段都真跑过；`pending` = 还没人跑）。
    * ★★ **`verified` 只表示"跑过"，不等于"通"** —— 它只说"有真跑结论"，**不断言"接得上"**：
    *   反例 `design-import`（`verified` 却**真跑 ⇒ 断在第 2 段**）。★ 与 `renderChains` 末尾那句是**同一口径**。
-   * ★★★ 它是**域取值**（枚举、多处消费 ⇒ **不动**）；**给人读时**经 {@link evidenceTag} 呈现为
+   * ★★★ 它是**域取值**（枚举、多处消费 ⇒ **不动**）；**给人读时**经 {@link evidenceLabel} 呈现为
    *   **`[ran]` / `[pending]`** —— `[ran]` 是**过去时**（"当年跑过"），刻意让**词本身不暗示"现在能用"**。
    */
   readonly evidence: 'verified' | 'pending';
@@ -760,9 +760,9 @@ export function hopsOf(chain: Chain): readonly HopVerdict[] {
  *
  * ★★ 2026-10-11：**导出**（原为文件私有）—— `contract_page` 工具要逐条给出 `[ran]` 标签，
  *   而按上文"唯一住处"的立论，它**不许**在别处手拼这个映射 ⇒ 从本函数取同一份口径。
- *   ★ 这**不是**判据变更（`evidenceTag` 的行为一字未动），只是把它从私有提为可复用。
+ *   ★ 这**不是**判据变更（`evidenceLabel` 的行为一字未动），只是把它从私有提为可复用。
  */
-export function evidenceTag(e: Chain['evidence']): string {
+export function evidenceLabel(e: Chain['evidence']): string {
   return e === 'verified' ? 'ran' : 'pending';
 }
 
@@ -785,7 +785,7 @@ export function renderChains(max = 20): string {
         ` —— ★ **弱交接 ≠ 断**；"**这一段到底行不行**"看下面「**链的完整判定**」段（它算"下游要不要对象"）；` +
         `**为什么弱**逐链见 CHAINS[].note｜${tally}`
       : `✓ 每段都是**强交接**（有对象类边）｜${tally}`;
-    return `    ${c.name.padEnd(14)} [${evidenceTag(c.evidence)}] ${c.steps.join(' → ')}\n${' '.repeat(19)}${status}｜对象类边数 ${counts}`;
+    return `    ${c.name.padEnd(14)} [${evidenceLabel(c.evidence)}] ${c.steps.join(' → ')}\n${' '.repeat(19)}${status}｜对象类边数 ${counts}`;
   });
   return (
     '\n\n── 链（★ 一等公民：逐段查 `CHAIN_EDGES`；每段分**两档**：强交接（有对象类边）/ 弱交接（仅作用域键））──\n' +

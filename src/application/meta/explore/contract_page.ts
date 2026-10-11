@@ -18,7 +18,7 @@
  * | 定义在哪（文件:行 + 签名） | **内核 AST**（`src/infrastructure/parse/`） | `locateCandidates`（cache.db 的符号索引）定文件 → `parseFileFull` 取签名 |
  * | 字段/成员清单 | **内核 AST** | `parseAstRoot` 走 `interface_body`/`object_type`/`class_body`（**不是正则**） |
  * | 产者 / 消费者 | **`find_references` 已有的能力** | 调 `findReferences`（**不自己写一套匹配**）：mode=field 的「构」=产者、「读/解」=消费者；mode=symbol 的 importers 并入消费者 |
- * | 接法边 | **`CHAIN_EDGES`**（`src/domain/chain_wiring.ts`） | 唯一权威，连 `[ran]` 标签也用它的 `evidenceTag` |
+ * | 接法边 | **`CHAIN_EDGES`**（`src/domain/chain_wiring.ts`） | 唯一权威，连 `[ran]` 标签也用它的 `evidenceLabel` |
  * | 词表口径 | **`b_terms`**（`src/domain/b_terms.ts`） | `B_TERMS` 原样带出（不改写、不摘要） |
  *
  * ## ★★ 三条纪律（照本仓已立的先例抄口径）
@@ -40,7 +40,7 @@ import { locateCandidates } from '../../../infrastructure/analysis/diagnosis/can
 import type { Candidate, SymptomParsed } from '../../../infrastructure/analysis/diagnosis/contract.js';
 import { findReferences } from '../../refactor/find/find_references.js';
 import { camelToSnake } from '../../refactor/rename/rename_symbols.js';
-import { CHAIN_EDGES, chainExprOf, evidenceTag } from '../../../domain/chain_wiring.js';
+import { CHAIN_EDGES, chainExprOf, evidenceLabel } from '../../../domain/chain_wiring.js';
 import { B_TERMS, withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
 /** 每个面**最多回多少条**（避免刷屏）；真实总数另给 `count`，截断在 `caveats` 里如实标注。 */
@@ -89,7 +89,7 @@ export interface ContractEdge {
   to: string;
   to_path: string;
   cardinality: 'single' | 'pick';
-  /** ★ 呈现词 = `evidenceTag(evidence)`：`ran`（当年真跑过）/ `pending` */
+  /** ★ 呈现词 = `evidenceLabel(evidence)`：`ran`（当年真跑过）/ `pending` */
   tag: string;
   evidence: string;
 }
@@ -241,7 +241,7 @@ function relatedEdges(symbol: string, members: readonly string[]): ContractEdge[
     to: e.to,
     to_path: e.toPath,
     cardinality: e.cardinality,
-    tag: evidenceTag(e.evidence),
+    tag: evidenceLabel(e.evidence),
     evidence: e.evidence,
   }));
 }
