@@ -394,6 +394,25 @@ async function renameFileCore(input: RenameFileInput): Promise<RenameFileResult>
   if (!fs.existsSync(fromAbs)) {
     blocked.push(`源文件不存在：${fromRel}`);
   }
+  // ★★★ 2026-10-11（T164）：**源必须是【文件】，目录一律拒** ——
+  //   此前没有这条守卫 ⇒ 传一个**目录**会一路走到底：`existsSync` 为真、`to` 不存在 ⇒ 校验全过；
+  //   然后本函数按**文件路径**匹配 import（`targetRel === fromRel`）—— 而 **import 永不解析到目录路径**
+  //   ⇒ `references: []`、`editCount: 0`，而回执是 **`ok: true`**。
+  //   ★ 实测（2026-10-11，`src/infrastructure/analysis/deadcode`）：dry-run 报 `ok:true` + `references:[]`，
+  //     **而那个目录里的 `detect_dead_imports.ts` 被 4 处 import**（brickify / brick_bag /
+  //     function_annotation / deprecate_offline）⇒ **一旦落盘 = 4 处 import 静默断掉**。
+  //   ⇒ 这是本仓最反对的形态：**"本该红却绿"**（假绿灯，且会真改坏东西）。
+  //   ★ 处置 = **明确拒**（不是兜底、也不是假装支持）：目录搬家要做的是
+  //     「枚举其下**全部**文件 + **逐个**改写指向它们的 import」，那是**另一件事**，
+  //     不能靠本工具"看着像文件"就顺手做掉。
+  else if (fs.statSync(fromAbs).isDirectory()) {
+    blocked.push(
+      `源是【目录】不是文件（\`${fromRel}\`）—— 本工具只搬**单个文件**。` +
+        `★ 为什么必须拒（不是嫌麻烦）：一次"目录搬家"要**枚举其下全部文件**并**逐个**改写指向它们的 import；` +
+        `本工具按**文件路径**匹配 import（import 不解析到目录）⇒ 对目录会算出 \`references: []\`、` +
+        `**看着像"没有引用要改"** ⇒ 照落盘就**静默改断里面所有文件的 import**。`,
+    );
+  }
   if (fs.existsSync(toAbs)) {
     blocked.push(`目标已存在，拒绝覆盖：${toRel}`);
   }
