@@ -815,9 +815,30 @@ export function collectInputPaths(schema: unknown): InputPath[] {
   return out;
 }
 
-/** 该路径表里**必填的叶子**（= 真"要填的槽位"；容器与可选叶子剔除）。 */
-export function requiredLeavesOf(paths: readonly InputPath[]): InputPath[] {
-  return paths.filter((p) => p.required && !p.container);
+/**
+ * ★★★ 该路径表里**必填的槽位叶子**（容器剔除）—— 取**两种"必填"来源的并**：
+ *   ① **schema 必填**（`isOptional()===false`，即 {@link collectRequiredKeys} 的口径）—— 如 `rename_symbols.renames[].to`；
+ *   ② **下游自己在 `.describe` 里显式写「必填」** —— 覆盖 **zod 表达不了的模式相关必填**。
+ *
+ * ## 为什么必须补 ②（实测，T140，2026-10-11；这是本笔的核心）
+ * `find_references` 的 `file` / `symbol` 是 **`mode=symbol` 必填**，而 **zod 里只能写成 `.optional()`**
+ * （模式相关 ⇒ schema 表达不了；下游自己在 `.describe` 写「mode=symbol 必填」、并在 [B] 体里前置校验 —— 见
+ * `refactor/index.ts` 该工具的两个字段说明 + `find/find_references.ts` 的 `reqStr`）。
+ * ⇒ 只按 ① 判 ⇒ `find_references` **一个必填都收不到** ⇒ `next_hop_args` 报 **"意图位 0"**，
+ *   而拿它的产出**真跑**却报 **"缺少必需参数 symbol"** ⇒ ★★★ **「看着备好了，其实没备好」**
+ *   —— **比"没备"更坏**（没备你会去备，"备好了"你不会，而它给的是**假的信心**）。
+ *
+ * ## 这是"读下游自己的说明"，不是本工具凭空判必填
+ * 下游在自己文本里声明"必填" ⇒ 与"意图位提示语**逐字取下游 `.describe`**"**同源**，**不新增第二份必填清单**。
+ *
+ * ## 已知代价（如实记，不静默）
+ * `find_references.field`（`mode=field 必填`）**也会被列出** —— 因为**本函数不替你判 `mode`**。
+ * ★ 这是**故意的**：本仓的坏形态是**漏列**（漏了 `symbol` ⇒ 跑不起来）；**多列一格**只是让你忽略它，
+ *   而且每格的 `note` **逐字带着下游自己的条件**（"mode=field 必填：…"），调用方一眼能看出它不适用于当前 mode。
+ *   ★ 与 `applyChainEdge` 在 `pick` 上**不替人选下标**是同一条立论。
+ */
+export function declaredRequiredLeavesOf(paths: readonly InputPath[]): InputPath[] {
+  return paths.filter((p) => !p.container && (p.required || /必填/.test(p.description)));
 }
 
 /**
