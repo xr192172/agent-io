@@ -104,6 +104,43 @@ import { nextHopsOf, universalHopsOf, applyChainEdge, SCOPE_PATHS } from '../../
 
 
 /**
+ * ★★★ 2026-10-11（T139-3）：`touched` 的**入参声明**（对象）—— `next_hop_args` 与 `capability_map` 的「接续段」**共用一份**。
+ *
+ * ## 为什么是**对象**而不是"原样 stringify 的字符串"
+ * `Touched`（`src/domain/b_terms.ts`）是 **7 个明确字段**的基本类型结构（`feature` / `project_dir` /
+ * `written_files` / `scope_files` / `symbols` / `nodes` / `file`），**不是** `Record<string, unknown>` 那种"袋子"
+ * ⇒ 完全可以在 zod 里**逐字段声明**。上游 `---DATA---` 里的 `touched` 因此可以**原样嵌进入参**，**零手工 stringify**。
+ *   ★（旧版声明成 `.string()` 并让调用方手工 `stringify`，理由是"对象在这里只能声明成袋子"—— ★ 该理由**不成立**：
+ *     "袋子" = `Record<string, unknown>`，而 `Touched` 是**7 个明确字段** ⇒ 两回事。）
+ * ★ 单一来源：**两个消费点共用本 shape**，避免"同一个 `touched` 两处各声明一份"（本仓头号病：判据分叉）。
+ * ★ **不改** `Touched` 本身的类型（`b_terms.ts`）—— 本笔只改"入参怎么声明"。
+ */
+const handoffTouchedShape = {
+  feature: z.string().optional().describe('作用到的 feature（DSL 活文档单元）'),
+  project_dir: z.string().optional().describe('作用到的项目根（解析后的绝对路径）'),
+  written_files: z.array(z.string()).optional().describe('被写入/改动的文件（仓库相对路径）'),
+  scope_files: z.array(z.string()).optional().describe('被框定/被审阅的作用面（仓库相对路径；只读也成立）'),
+  symbols: z.array(z.string()).optional().describe('涉及到的符号标识（模块级裸名 / `Class.method`）'),
+  nodes: z.array(z.string()).optional().describe('涉及到的 DSL 节点 id'),
+  file: z.string().optional().describe('本次操作的那个对象所在的文件（单数）'),
+};
+
+/**
+ * `touched` 入参的**运行时守卫**（缺/非对象 ⇒ 当场报人话，不是 Node 原始异常）。
+ *
+ * ★ 为什么还要它（zod 已在 MCP 面校验过对象）：**CLI 面绕过 zod**（见 `plumbing.ts` 的 `requireStr` 头注）
+ *   ⇒ 缺参数时若不守，`Object.keys(undefined)` 会抛 `Cannot read properties of undefined`，用户看不懂。
+ * ★ 与 `requireStr` / `requireArr` 同一条纪律（"缺参数"报人话），只是这里守的是"是对象"。
+ */
+function touchedObjectOf(v: unknown): Record<string, unknown> {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) {
+    throw new Error('缺参数或不合法 "touched"（应为上一步 `---DATA---` 里的那个 `touched` 对象，原样传入）');
+  }
+  return v as Record<string, unknown>;
+}
+
+
+/**
  * capability_map 的目录必须来自**真实注册表**（不能自己再维护一份清单）——
  * 但它属于 meta 线，而目录是由**各 lane 汇总**出来的 ⇒ 结构上成环。
  *
@@ -478,16 +515,15 @@ export const META_TOOLS: ToolDef[] = [
         .string()
         .optional()
         .describe(
-          '★ **接续**（T54）：你**刚刚调完的那个工具名**。与 `touched_json` 必须**成对给** —— ' +
+          '★ **接续**（T54）：你**刚刚调完的那个工具名**。与 `touched` 必须**成对给** —— ' +
             '给了这一对，本工具会算出"**下一步能怎么调**、入参**已经取好**"（零手工拼字段名）。',
         ),
-      touched_json: z
-        .string()
+      touched: z
+        .object(handoffTouchedShape)
         .optional()
         .describe(
-          '★ **接续**：上一步 `---DATA---` 里的那个 `touched` 对象，**原样 JSON.stringify 后的字符串**。' +
-            '（★ 用字符串而不是对象：对象在这里只能声明成"袋子"，而袋子正是本仓点名的坏味道 —— ' +
-            '宁可让调用方多 stringify 一次，也不新增一个袋子。）',
+          '★ **接续**：上一步 `---DATA---` 里的那个 `touched` 对象，**原样给**（不必 stringify）。' +
+            '★ 字段与 `Touched`（`domain/b_terms.ts`）逐字对应，全可选。',
         ),
     },
     handler: wrapData(async (a) => {
@@ -503,7 +539,7 @@ export const META_TOOLS: ToolDef[] = [
       //     必填判定在 `renderHandoffPanel` 里**复用** T140 立的 `declaredRequiredMembersOf`（import，不另抄）。
       const handoff = renderHandoffPanel(
         a.from_tool as string | undefined,
-        a.touched_json as string | undefined,
+        a.touched as Record<string, unknown> | undefined,
         (tool) => {
           const d = listToolDefs().find((c) => c.name === tool);
           return d ? collectInputPaths(d.inputSchema) : [];
@@ -536,7 +572,7 @@ export const META_TOOLS: ToolDef[] = [
         //     `domain` 反向依赖 `application` 是分层违规 ⇒ 表侧判定只能做到一半。
         //   ★ 构造**单点化**成 `catalogOf`（`server_registry` 按面过滤时也要用同一份口径）。
         const r = await makeCapabilityMapHandler(() => catalogOf(listToolDefs()))(a, readNote);
-        // ★ T54：接续段放**最前** —— 调用方给了 `from_tool`+`touched_json` 时，他要的就是这个
+        // ★ T54：接续段放**最前** —— 调用方给了 `from_tool`+`touched` 时，他要的就是这个
         const text = handoff ? `${handoff}\n${r.text}` : r.text;
         return {
           message: text,
@@ -764,7 +800,7 @@ export const META_TOOLS: ToolDef[] = [
     name: 'next_hop_args',
     title: 'Prepare the next hop args: upstream touched -> runnable JSON for the next tool (filled where possible, intent slots left blank & marked)',
     description:
-      '**生成"下一棒入参"**（只读）：给**上一步的工具名** `from_tool` + 它的 `touched`（`touched_json`），' +
+      '**生成"下一棒入参"**（只读）：给**上一步的工具名** `from_tool` + 它的 `touched`（对象，**原样给**），' +
       '本工具按接法表把它**组装成下一步【可跑的入参 JSON】** —— 调用方**只需补"意图位"就能直接跑**，不必再人肉抄字段。' +
       '可选 `to_tool`：只算通到那一个下游；不给 = **列出所有可接的**下一棒。' +
       '★ **能填的必须填**：按 `CHAIN_EDGES` 的 `fromKey` 从 `touched` 取值、按 `toPath` 落位（`cardinality` 定要不要下标）。' +
@@ -782,11 +818,11 @@ export const META_TOOLS: ToolDef[] = [
           '★ 上一步的工具名（= 接法表里那条边的 `from`）。**接法表以 `from` 为键** ⇒ 给了它才得到"只属于它"的权威出边；' +
             '不给则按**接力键**（`fromKey ∈ touched`）匹配候选（可能列出别的上游同样会产的边）。',
         ),
-      touched_json: z
-        .string()
+      touched: z
+        .object(handoffTouchedShape)
         .describe(
-          '★ 上一步 `---DATA---` 里的那个 `touched` 对象，**原样 JSON.stringify 后的字符串**（必填）。' +
-            '（★ 用字符串而不是对象：对象在这里只能声明成"袋子"，而袋子正是本仓点名的坏味道。）',
+          '★ 上一步 `---DATA---` 里的那个 `touched` 对象（必填），**原样给**（不必 stringify）。' +
+            '★ 字段与 `Touched`（`domain/b_terms.ts`）逐字对应，全可选。',
         ),
       to_tool: z
         .string()
@@ -794,18 +830,9 @@ export const META_TOOLS: ToolDef[] = [
         .describe('可选：只算通到这一个下游的接续；不给 = 列出**所有可接的**对象类下一棒。'),
     },
     handler: wrapData(async (a) => {
-      const touchedJson = requireStr(a, 'touched_json');
-      let touchedObj: Record<string, unknown>;
-      try {
-        const parsed: unknown = JSON.parse(touchedJson);
-        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('不是一个 JSON 对象');
-        touchedObj = parsed as Record<string, unknown>;
-      } catch (e) {
-        throw new Error(
-          `touched_json 不是合法的 JSON 对象（${(e as Error).message}）。` +
-            '它应当是上一步 `---DATA---` 里的**那个 `touched`**，原样 stringify（别自己重排字段）。',
-        );
-      }
+      // ★ 入参就是**那个 `touched` 对象**（不再有"手工 stringify → 这里 JSON.parse"那一步）。
+      //   CLI 面绕过 zod ⇒ 仍需运行时守卫（`touchedObjectOf`），缺/非对象报人话、不是 Node 原始异常。
+      const touchedObj = touchedObjectOf(a.touched);
       // ★ 目录**现取**（同 capability_map）：只有这层拿得到 `ToolDef`（含 zod schema）。
       const r = nextHopArgs(touchedObj, {
         from_tool: typeof a.from_tool === 'string' && a.from_tool ? a.from_tool : undefined,
@@ -877,7 +904,7 @@ export const META_TOOLS: ToolDef[] = [
  * 1. ★★★ **规则不在这里推**：下游是谁用 `nextHopsOf`，取值用 `applyChainEdge`，全称规则用 `universalHopsOf` ——
  *    本段只做**渲染**。★ 这是本仓头号病的反面：**别在展示层再实现一遍规则**。
  * 2. ★★ **不替调用方选**：`pick` 类边**列出候选并明说"要你选"**，绝不给一个默认值。
- * 3. ★ **成对参数**：给了 `from_tool` 就必须给 `touched_json`（反之亦然）—— 只有一半就**报错**，不猜。
+ * 3. ★ **成对参数**：给了 `from_tool` 就必须给 `touched`（反之亦然）—— 只有一半就**报错**，不猜。
  *    ★ 两个都没给 ⇒ 返回**空串**（与改造前**逐字等价**，导航不因此变胖）。
  *
  * ★ 只读：本段不改任何东西，也**不代表"这条链跑通过"**（那是 `CHAINS` 的 `[ran]` 标签说的 —— 标签 = 当年跑过、非实时验证）。
@@ -885,12 +912,14 @@ export const META_TOOLS: ToolDef[] = [
  * ★★★ 2026-10-09（T54 收口）：**本函数导出、两个面共用** —— ① `capability_map` 工具；
  *   ② **回执通道**（`presentation/mcp/server_registry.ts` 的「下一棒」）——
  *   它手上正好有刚跑完那个工具的 `r.text`（`touched` 就在 `---DATA---` 里）
- *   ⇒ **能直接把具体值印出来**（`edit_code.file = src/a.ts`），调用方**不必自己 stringify 一遍**。
+ *   ⇒ **能直接把具体值印出来**（`edit_code.file = src/a.ts`）。
  *   ★ 为什么必须共用：这正是本仓头号病的高发处 —— 两个面各写一份"把 touched 变成下一棒"就**分叉**了。
+ * ★★★ 2026-10-11（T139-3）：入参 `touched` 改成**对象**（不再收"手工 stringify 的字符串"）——
+ *   `Touched` 是 7 个明确字段、不是袋子 ⇒ 上游 `---DATA---` 里的 `touched` 可**原样**喂进来，**零手工 stringify**。
  */
 export function renderHandoffPanel(
   fromTool: string | undefined,
-  touchedJson: string | undefined,
+  touched: Record<string, unknown> | undefined,
   /**
    * 下游工具的**入参路径表**（由 `collectInputPaths(d.inputSchema)` 提供；★ 与 `CHAIN_EDGES.toPath` 同形）。
    * ★★★ 为什么不是 `readonly string[]`（=`catalogOf(...).requiredKeys`）：那只给**顶层 + schema 必填**
@@ -898,25 +927,14 @@ export function renderHandoffPanel(
    */
   pathsOf: (tool: string) => readonly InputPath[],
 ): string {
-  if (fromTool === undefined && touchedJson === undefined) return '';
-  if (fromTool === undefined || touchedJson === undefined) {
+  if (fromTool === undefined && touched === undefined) return '';
+  if (fromTool === undefined || touched === undefined) {
     throw new Error(
-      '`from_tool` 与 `touched_json` **必须成对给**：只给一半就判断不了"从哪接、拿什么接"。★ 刻意不替你猜。',
+      '`from_tool` 与 `touched` **必须成对给**：只给一半就判断不了"从哪接、拿什么接"。★ 刻意不替你猜。',
     );
   }
-  let touched: Record<string, unknown>;
-  try {
-    const parsed: unknown = JSON.parse(touchedJson);
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('不是一个对象');
-    touched = parsed as Record<string, unknown>;
-  } catch (e) {
-    throw new Error(
-      `touched_json 不是合法的 JSON 对象（${(e as Error).message}）。` +
-        '它应当是上一步 `---DATA---` 里的**那个 `touched`**，原样 stringify（别自己重排字段）。',
-    );
-  }
-
-  const cur = touched;
+  // ★ 已不再 `JSON.parse`（入参本来就是对象）；仍做**运行时**对象校验 —— CLI 面绕过 zod（见 `touchedObjectOf`）。
+  const cur = touchedObjectOf(touched);
   const L: string[] = [`── 接续（你手上有 \`${fromTool}\` 的 touched ⇒ 下一步怎么调）──`];
   const used = new Set<string>();
   const ready: string[] = [];

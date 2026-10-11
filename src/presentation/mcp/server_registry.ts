@@ -645,7 +645,7 @@ function renderNextNote(tool: string, text: string): string {
         if (t && typeof t === 'object' && Object.keys(t).length > 0) {
           const note = renderHandoffPanel(
             tool,
-            JSON.stringify(t),
+            t,
             (name): readonly InputPath[] => {
               const d = TOOL_DEFS.find((x) => x.name === name);
               return d ? collectInputPaths(d.inputSchema) : [];
