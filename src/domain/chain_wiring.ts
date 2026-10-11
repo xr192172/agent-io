@@ -401,6 +401,42 @@ export const CHAIN_EDGES: readonly ChainEdge[] = [
       '`touched.nodes=["file_src_core_math_ts"]` —— **两个都被点名，只给活着的那个** ✓' +
       '（与 `find_references.file` "只在真有定义时才给" 同款判据）。',
   },
+
+  // ── ★★★ 2026-10-11：`contract_page` → `find_references`（**"符号名 → 定义文件"那一棒**）──
+  //   ★ 病（已被一次真实使用实测出来）：一组使用者走「改名 `evidenceTag` → `evidenceLabel`」的完整链，
+  //     在 `find_references` 那一步**被迫手工填 `file`** —— 因为链里**没有「符号名 → 定义文件」这一棒**
+  //     （实测原话：`find_references` 要 `file`（定义符号的文件），而链里【没有】那一棒）。
+  //   ★★ 而那一棒**早就存在**、只是**不在链上**：`contract_page{symbol}` 的 `touched` 里**有 `file`**
+  //     （定义文件，单数）—— 它天然就是"符号名 → 定义文件"。⇒ 本边把它接上。
+  //   ★ 定性（**登记一条已有的事实**，不改 `contract_page` / `find_references` 任何判据）：
+  //     `contract_page(符号名) ──touched.file──▶ find_references.file`（`symbol` 由调用方从 `touched.symbols[0]` 取）。
+  //   ★★ 它属于哪一类 = **对象类边**（不是作用域类）。依据两条：
+  //     ① `toPath:"file"` **不在** `SCOPE_PATHS`（`project_dir`/`feature`）⇒ 按本文件 `HopVerdict`/`hopsOf` 的分类是对象类，
+  //        且 `deriveObjectChains` 会收它、`hopsOf` 会把它记成 `strong`；
+  //     ② 两端都是**具体工具名**（`contract_page` / `find_references`）—— 与作用域类那两条 `ANY_TOOL → ANY_TOOL`
+  //        的**通配边**形状正好相反。★ `file` 是**字符串**（不是对象）**不影响归类**：归类看的是"作用域锚点 vs 对象锚点"，
+  //        而 `file` 在 `b_terms` 里是 `anchor`（上游产物 `Touched.file` ↔ 下游入参 `file`，逐字同名）。
+  //   ★ 形状与既有对象边**逐字一致**（照抄 `find_references → move_symbol`：`fromKey:'file', toPath:'file', cardinality:'single'`）——
+  //     **不自创形状**。
+  {
+    from: 'contract_page',
+    fromKey: 'file',
+    to: 'find_references',
+    toPath: 'file',
+    cardinality: 'single',
+    evidence: 'verified',
+    note:
+      '★ 真跑（2026-10-11，夹具 = **本仓自身**）：`contract_page{symbol:"evidenceLabel", project_dir:"D:/project_develop/design-canvas"}` ⇒ ' +
+      '`touched={project_dir, file:"src/domain/chain_wiring.ts", symbols:["evidenceLabel"]}` ⇒ 把 `touched.file` + ' +
+      '`touched.symbols[0]`【零字段名翻译】地喂给 `find_references` ⇒ `ok=true`（定义文件 + 2 个 import 方，`importerCount=2`）。' +
+      '★★ 它补的是链里**一直缺的「符号名 → 定义文件」那一棒**（此前调用方得**手工填 `file`**；`capability_map` 的第一站也看不见它）。' +
+      '★★ **前提（`file` 只在真有定义时给 —— 与 `find_references` 的 `file` 同款判据，已核源码 `contract_page.touchedOf`）**：' +
+      '`contract_page` 只在 `resolution="ok"`（命中**唯一**定义、且解出了 `definition`）时才宣称 `file`/`symbols`；' +
+      '`resolution="not-found"`（查不到）/ `"ambiguous"`（多个同名、不替你选）/ `"index-unavailable"`（索引不可用）时 ' +
+      '**`file` 整项省略** ⇒ 此时这条边**拿不到 `file`**（不是边不成立，是**上游这次没确立定义**）。' +
+      '★ 说明：`find_references` 的 `symbol` 不由本边填（须调用方给，通常就是喂给 `contract_page` 的那个符号名；' +
+      '`next_hop_args` 会把它标成"意图位"）—— ★ 本任务只登记**这一条**边。',
+  },
 ];
 
 /**
