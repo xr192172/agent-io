@@ -84,6 +84,10 @@ import { contractPage, renderContractPage } from './explore/contract_page.js';
 //   能填的替它填好、意图位（如新名 `to`）**显式留空并标注**。判据全部复用 `chain_wiring` 的
 //   `nextHopsOf`/`applyChainEdge` 与 `capability_map` 的 `collectInputPaths`（**只端，不新做**）。
 import { nextHopArgs, renderNextHopArgs } from './explore/next_hop_args.js';
+// ★ 起手入参（2026-10-11）：把"知道用哪个工具 → 到把第一棒入参凑齐"那一步端上来 ——
+//   `next_hop_args` 的**同族**（一个管"下一棒"、一个管"第一棒"）。判据全部复用 `CHAINS`/`hopsOf`
+//   与 `collectInputPaths`/`declaredRequiredMembersOf`（**只端，不新做**）。
+import { firstHopArgs, renderFirstHopArgs } from './explore/first_hop_args.js';
 import { deleteProvider, getStats, listProvidersMasked, resetStats, upsertProvider } from '../../infrastructure/llm_gateway.js';
 import { indexIntegrity, renderIntegrity } from './integrity/index_integrity.js';
 // ★ BB 笔（2026-10-11）：把「什么被用过 / 覆盖缺口」接进**工具面** ——
@@ -809,6 +813,53 @@ export const META_TOOLS: ToolDef[] = [
         defs: listToolDefs(),
       });
       return { message: renderNextHopArgs(r), data: r };
+    }),
+  },
+
+  {
+    // ★ 2026-10-11：**起手入参** —— 一次真实走查（"同型任务第二次"）实测出的**头号缺口**：
+    //   原话：*"地图只给工具名、【不产入参】"* + *"地图也没提要先 import_project 建档"*。
+    //   ⇒ 本工具把这两件事**一次给全**：① 第一棒的可跑入参 JSON（能填的填好、意图位显式留空并标注）；
+    //     ② "起手之前还有一步"（要不要先 `import_project` 建档）。
+    //   ★ 与 `next_hop_args` **同族**（一个管"第一棒"、一个管"下一棒"）：占位串/槽位/落位**复用同一批函数**。
+    name: 'first_hop_args',
+    title:
+      'Prepare the FIRST hop args: chain/tool -> runnable JSON for the first step (filled where possible, intent slots blank & marked) + chain overview + "build the index first?" hint',
+    description:
+      '**生成"起手入参"**（只读）：给它一条**链名** `chain`（如 `refactor`）**或**一个**起点工具名** `tool`，' +
+      '本工具把**第一棒**的入参**组装成【可跑的 JSON】** —— 调用方**只需补"意图位"就能直接跑**，不必再手工拆字段。' +
+      '★ 不给 `chain`/`tool` ⇒ **列出所有链 + 各自的起手**（链的第一段工具 + 它有哪些必填意图位 + 要不要先建档）。' +
+      '★ **能填的必须填**：如你给的 `project_dir` 会填进第一棒的 `project_dir`（仅当第一棒声明里收它）。' +
+      '★ **意图位显式留空并标注**：第一棒**必填**（= schema 必填 ∪ 下游 `.describe` 里写「必填」）里**没有任何上游可喂**的每一格' +
+      ' ⇒ 产出里是一个**显眼的占位串**（如 `<你给：file（mode=symbol 必填）>`）—— **绝不编造、绝不用空串冒充、绝不静默省略**；' +
+      '提示语**逐字取自下游自己的 `.describe`**。' +
+      '★ **链的全貌**（`CHAINS[].steps`）+ **每段交接强度**（强/弱两档，复用 `hopsOf` 的现成读数）。' +
+      '★ **"起手之前还有一步"**：若该链/工具要用 `feature`、而第一棒不是建档步 ⇒ 明说**先跑 `import_project` 建档**' +
+      '（否则你会踩到"缺少必需参数 feature"才发现）。' +
+      '★ 判据全部**复用已有权威**（`CHAINS` / `hopsOf` / `collectInputPaths` / `declaredRequiredMembersOf`）—— 本工具**只端，不新做**。' +
+      '★ 与 `next_hop_args` **同族**：一个管"第一棒"，一个管"下一棒"。',
+    inputSchema: {
+      chain: z
+        .string()
+        .optional()
+        .describe(
+          '链名（`CHAINS[].name`，如 `refactor`）。与 `tool` 二选一；★ 都不给 = 列出**所有链 + 各自的起手**。',
+        ),
+      tool: z.string().optional().describe('起点工具名（不在任何链里也行）。与 `chain` 二选一。'),
+      project_dir: z
+        .string()
+        .optional()
+        .describe('起手根 —— ★ **能自动填的就填好**（填进第一棒的 `project_dir`）'),
+    },
+    handler: wrapData(async (a) => {
+      // ★ 目录**现取**（同 capability_map / next_hop_args）：只有这层拿得到 `ToolDef`（含 zod schema）。
+      const r = firstHopArgs({
+        chain: typeof a.chain === 'string' && a.chain ? a.chain : undefined,
+        tool: typeof a.tool === 'string' && a.tool ? a.tool : undefined,
+        project_dir: typeof a.project_dir === 'string' && a.project_dir ? a.project_dir : undefined,
+        defs: listToolDefs(),
+      });
+      return { message: renderFirstHopArgs(r), data: r };
     }),
   },
 ];

@@ -301,6 +301,12 @@ export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
   //   给上一步的工具名 + 它的 `touched`，产出下一步**可跑的入参 JSON**（能填的已填、意图位显式留空并标注）。
   next_hop_args:
     '★ 生成**下一棒入参**：给上一步的 `from_tool` + 它的 `touched`，组装成下一步**可跑的入参 JSON**（能填的已填、意图位如新名 `to` 显式留空并标注）；可选 `to_tool` 只算通到它',
+  // ★ 2026-10-11：`next_hop_args` 的**同族** —— 一个管"下一棒"，一个管"第一棒"。
+  //   实测头号缺口：地图**只给工具名、不产入参**，且**没提要先 import_project 建档**。
+  first_hop_args:
+    '★ 生成**起手入参**：给一条**链名** `chain`（如 `refactor`）或一个**起点工具名** `tool`，产出**第一棒的可跑入参 JSON**' +
+    '（能填的已填如 `project_dir`、意图位显式留空并标注）+ **链全貌与每段交接强度** + **"起手之前还有一步"**（要不要先 `import_project` 建档）；' +
+    '★ 都不给 ⇒ 列出**所有链 + 各自的起手**',
   // ★ 2026-10-05 更正：第一轮实测发现这条写的是 capability_audit 的活（"诊断能力缺口（多语言矩阵）"）⇒
   //   agent 照它去选 diagnose 会得到完全无关的结果。正确口径 = diagnosis 域 note 的第一句。
   diagnose: '症状 → 根因 + 证据链 + 影响面 + 修复建议（不知道是哪条线坏了时先用它定位）',

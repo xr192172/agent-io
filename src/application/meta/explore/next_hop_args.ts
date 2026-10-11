@@ -140,7 +140,13 @@ function shortHint(desc: string): string {
   const s = (cut > 0 ? desc.slice(0, cut) : desc).trim();
   return s.length > 28 ? s.slice(0, 28) + '…' : s;
 }
-const intentMarker = (path: string, desc: string): string => {
+/**
+ * 意图位占位串。
+ * ★★ 2026-10-11：**导出**（原为文件私有）—— `first_hop_args`（起手入参）要写出**同一种**占位串，
+ *   而按本文件头注的立论，它**不许**在别处手拼这个形态（那 = 同一件事住两处）⇒ 从本函数取**同一份**口径。
+ *   ★ 这**不是**行为变更（逐字未动），只是把它从私有提为可复用。
+ */
+export const intentMarker = (path: string, desc: string): string => {
   const h = shortHint(desc);
   return `<你给：${path}${h ? `（${h}）` : ''}>`;
 };
@@ -152,8 +158,9 @@ const pickMarker = (path: string, candidates: readonly string[]): string =>
  * 把值**落位**到 `toPath` 上（`renames[].file` ⇒ `renames[0].file`）。
  * ★ 同一段路径多次落位**复用同一容器**（`renames[].file` / `renames[].symbol` / `renames[].to`
  *   落进**同一个** `renames[0]` 对象，而不是三个各带一个键的数组元素）。
+ * ★★ 2026-10-11：**导出**（原为文件私有）—— `first_hop_args` 复用**同一份**落位逻辑（不另写一套）。
  */
-function assignPath(root: Record<string, unknown>, path: string, value: unknown): void {
+export function assignPath(root: Record<string, unknown>, path: string, value: unknown): void {
   const segs = path.split('.').map((s) => ({ name: s.replace(/\[\]$/, ''), array: s.endsWith('[]') }));
   let cur: Record<string, unknown> = root;
   for (let i = 0; i < segs.length; i++) {
