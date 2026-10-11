@@ -24,7 +24,7 @@ import { renderNextHops, nextHopsOf } from '../../domain/chain_wiring.js';
 import { DATA_MARKER } from '../../application/plumbing.js';
 // ★★ 2026-10-06：「面」—— 目录口径（`catalogOf`，单点）+ 面的机算（`facesOf`）+ 各线 direct 白名单
 // ★ 2026-10-11：接续段的**入参路径表**改用 `collectInputPaths`（必填判定在 `renderHandoffSection` 里，
-//   复用 `declaredRequiredLeavesOf` —— 与 `capability_map` 的「接续」段**同源**，T140 第二处）。
+//   复用 `declaredRequiredMembersOf` —— 与 `capability_map` 的「接续」段**同源**，T140 第二处）。
 import { catalogOf, collectInputPaths, LANE_META } from '../../application/meta/registry/capability_map.js';
 import type { InputPath } from '../../application/meta/registry/capability_map.js';
 // ★ T54 收口：「下一棒」印具体值，**共用** capability_map 的同一个渲染（别在这写第二份）

@@ -32,7 +32,7 @@
  * | 取哪个 touched 键 → 填哪个入参位置 | **`CHAIN_EDGES` 的 `fromKey` / `toPath`** | 落位**用 `toPath`**（别自己拼路径）；形状由 `cardinality` 定 |
  * | 值怎么取（含 `pick` 不替人选） | **`applyChainEdge`**（同文件） | 不重写一遍取值/判错逻辑 |
  * | 标签 | **`evidenceLabel`**（同文件） | `[ran]` 只在那一处生成 |
- * | 下游**必填的深层路径** | **`collectInputPaths`** + **`declaredRequiredLeavesOf`**（`registry/capability_map.ts`） | 从 `ToolDef.inputSchema` 派生（与 `collectInputKeys` 同一套遍历口径）；**必填口径 = schema 必填 ∪ 下游说明里写「必填」** |
+ * | 下游**必填的深层路径** | **`collectInputPaths`** + **`declaredRequiredMembersOf`**（`registry/capability_map.ts`） | 从 `ToolDef.inputSchema` 派生（与 `collectInputKeys` 同一套遍历口径）；**必填口径 = schema 必填 ∪ 下游说明里写「必填」** |
  * | 意图位的"是什么意思"提示 | **zod `.describe` 原样** | 用**下游自己**的说明，本工具**不编** |
  *
  * ## ★ 形态判据
@@ -40,14 +40,14 @@
  *   本工具**复用** `applyChainEdge`，**不自己判**。
  * · **落位到哪儿**：由 `toPath` 定（`renames[].file` 就是 `renames[0].file`）——
  *   本工具**解析** `toPath`，**不发明**新路径。
- * · **还差哪些必填**：由 `declaredRequiredLeavesOf` 的**必填槽位**（= schema 必填 ∪ 下游说明里写「必填」）
+ * · **还差哪些必填**：由 `declaredRequiredMembersOf` 的**必填槽位**（= schema 必填 ∪ 下游说明里写「必填」）
  *   减去"被出边覆盖的"得出。
  *
  * ## 只读
  * 本工具**只读**（不改任何文件），也**不代表"这条链跑通过"** —— 那是 `CHAINS[].note` 说的。
  */
 import { CHAIN_EDGES, applyChainEdge, chainExprOf, evidenceLabel, nextHopsOf, universalHopsOf, ANY_TOOL, type ChainEdge } from '../../../domain/chain_wiring.js';
-import { collectInputPaths, declaredRequiredLeavesOf, type InputPath } from '../registry/capability_map.js';
+import { collectInputPaths, declaredRequiredMembersOf, type InputPath } from '../registry/capability_map.js';
 import type { ToolDef } from '../../types.js';
 
 /** 某一格的**明确态**（照 `contract_page` 的 `resolution` / `consistency_check` 的三态口径：查不到是一个态，不是空）。 */
@@ -266,10 +266,10 @@ function buildHop(
   }
 
   // ── 意图位：下游**必填槽位**里，**没有被任何出边覆盖**的那一格 ──
-  // ★★ 必填来源 = **两路并**（见 `declaredRequiredLeavesOf`）：**schema 必填** ∪ **下游 `.describe` 里写「必填」**。
+  // ★★ 必填来源 = **两路并**（见 `declaredRequiredMembersOf`）：**schema 必填** ∪ **下游 `.describe` 里写「必填」**。
   //   后者覆盖 **zod 表达不了的模式相关必填** —— 实测：`find_references` 的 `file`/`symbol` 是 `mode=symbol` 必填，
   //   却只能写成 `.optional()`；只按 schema 判 ⇒ 意图位 0 而**真跑报缺 `symbol`**（"看着备好了，其实没备好"）。
-  for (const leaf of declaredRequiredLeavesOf(paths)) {
+  for (const leaf of declaredRequiredMembersOf(paths)) {
     if (covered.has(leaf.path)) continue;
     slots.push({
       path: leaf.path,

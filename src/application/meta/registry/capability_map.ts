@@ -850,7 +850,7 @@ export function collectInputPaths(schema: unknown): InputPath[] {
  *   而且每格的 `note` **逐字带着下游自己的条件**（"mode=field 必填：…"），调用方一眼能看出它不适用于当前 mode。
  *   ★ 与 `applyChainEdge` 在 `pick` 上**不替人选下标**是同一条立论。
  */
-export function declaredRequiredLeavesOf(paths: readonly InputPath[]): InputPath[] {
+export function declaredRequiredMembersOf(paths: readonly InputPath[]): InputPath[] {
   return paths.filter((p) => !p.container && (p.required || /必填/.test(p.description)));
 }
 
