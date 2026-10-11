@@ -18,7 +18,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 // ★ 从 `dist/` 读（与 MCP 跑的是同一份产物）⇒ 必须带 `.js` 扩展名（Node ESM 不做扩展名推断）。
-import { structureGap } from '../dist/src/infrastructure/analysis/structure/structure_gap.js';
+import { structureGap, structureGapIsClean } from '../dist/src/infrastructure/analysis/structure/structure_gap.js';
 
 const argv = process.argv.slice(2);
 const asJson = argv.includes('--json');
@@ -34,9 +34,12 @@ const r = structureGap(projectDir);
 //   ★ 为什么是 1 不是 2："结构不一致"是**判定结果**（待处置），不是"脚本用错了"——2 留给用法错。
 //   ★ `configured:false`（项目没声明结构意图）是**合法状态**（"尚未开垦"，不是失败）⇒ 不设非 0。
 //   ★ 放在 if/else **之外** ⇒ 人读模式与 `--json` 模式**都**按判据退码（原先两处都无条件 0）。
-const nonClean =
-  r.misplaced.length + r.unlisted.length + r.missing.length + r.misnested.length + r.unclassified.length;
-const clean = nonClean === 0;
+// ★★ 2026-10-11（T165）：**"哪些态算不干净"收口到 `.ts`**（`structureGapIsClean`）。
+//   此前本壳**自己重算了一遍**（misplaced+unlisted+missing+misnested+unclassified）——
+//   ⇒ 往 `StructureGapReport` 加一态时**忘了同步改这里**，新态就**不进退码**：
+//     它报出来了、门却是绿的 = ★ 本仓最反对的假绿灯，而且长在判据自己身上（与 2026-10-10 那次同型）。
+//   ⇒ 现在只有一处判"干净"，本壳只渲染 + 按它设退出码。
+const clean = structureGapIsClean(r);
 
 if (asJson) {
   console.log(JSON.stringify(r, null, 2));
@@ -54,12 +57,17 @@ if (asJson) {
     console.log();
   };
   sec('★ misplaced（在，但不在目标域 —— 这就是待搬清单）', r.misplaced);
+  // ★ T165（2026-10-11）：域**搬迁**（域表 dir 变了、旧位置里还有人）—— 排在 misplaced 之后，
+  //   因为它才是"重新规划分布"的**可执行差异**（misplaced 只在"散文件"场景管用）。
+  sec('★ relocating（域表改了位置，而【旧位置里还有源码】—— 这才是【整域搬迁】的待办清单）', r.relocating);
+  if (r.relocate_note) console.log(`  ⚠️ ${r.relocate_note}\n`);
   sec('unlisted（在，归属未定 —— 要决定，不要猜）', r.unlisted);
   sec('missing（域目录还不存在 / 域里没有源码 —— 与 misplaced 一体两面）', r.missing);
   sec('⚠ misnested（role=capability 的域，却住在另一个域/混装筐里 —— 拆不拆请拍板）', r.misnested);
   sec('○ unclassified（没写 role ⇒ 不参与 misnested 判定 —— 能被省略的判据一定被省略，故让它显形）', r.unclassified);
   const bits = [];
   if (r.misplaced.length) bits.push(`**${r.misplaced.length} 个待搬**`);
+  if (r.relocating.length) bits.push(`★ **${r.relocating.length} 个域要整体搬迁**（旧位置里还有人，清单见上）`);
   if (r.unlisted.length) bits.push(`**${r.unlisted.length} 个待定归属**`);
   if (r.missing.length) bits.push(`${r.missing.length} 个**待建域**（搬完自然消失）`);
   if (r.misnested.length) bits.push(`**${r.misnested.length} 处声明与位置打架**（域表已登记，只是位置与 role 不配 —— 搬目录 or 改 role，先想清楚哪个是真的）`);

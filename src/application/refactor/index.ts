@@ -714,16 +714,24 @@ export const REFACTOR_TOOLS: ToolDef[] = [
     //   ——它只读结构域表 JSON + `readdirSync` 扫目录。而 `trustNoteFor` 报的是"符号索引里有
     //   陈旧断言"，那对本工具的结论**没有任何影响** ⇒ 标了就是**假告警**（狼来了）。
     //   `impact_analysis` / `rename_*` 要标，是因为它们的结论走索引闭包。
-    title: 'Structure intent vs reality — domain gap (misplaced / unlisted / missing)',
+    title: 'Structure intent vs reality — domain gap (misplaced / relocating / unlisted / missing)',
     description:
-      '结构意图 vs 现状四态读数：读 `<project_dir>/structure.domains.json`（**域 = 能力的家**，声明"哪个目录算哪个域"）' +
+      '结构意图 vs 现状**六态**读数：读 `<project_dir>/structure.domains.json`（**域 = 能力的家**，声明"哪个目录算哪个域"）' +
       '与磁盘现状对账，回答"这次分层/搬家还差多少、下一步该搬什么"。' +
-      '· misplaced = 文件在，但不在目标域 —— **待搬清单**；' +
+      '· misplaced = 文件在，但不在目标域 —— **待搬清单**（★ 只覆盖"**父目录的直属散文件**"）；' +
+      '· ★ relocating = **域表改了位置（对比 `HEAD`），而旧位置里还有源码** —— ' +
+      '**整域搬迁的待办清单**（note 里直接列出那几个文件名）；' +
       '· unlisted = 文件在，但归属未定 —— **要决定，不要猜**；' +
-      '· missing = 目标声明了某域，但目录还不存在 / 域里没有源码 —— 与 misplaced 一体两面（搬完自然消失）。' +
+      '· missing = 目标声明了某域，但目录还不存在 / 域里没有源码；' +
+      '· misnested = role=capability 的域却住在另一个域/混装筐里 —— **声明与位置打架**；' +
+      '· unclassified = 声明条目没写 role ⇒ 不参与 misnested 判定（**让它显形**：能被省略的判据一定被省略）。' +
+      '★★ **"整域搬迁"与"散文件没归类"是两件事**（T165，2026-10-11）：改域表 `dir` 时 `misplaced` **是空的**' +
+      '（它只看父目录的直属散文件）—— ★ 要看**待搬清单**必须看 `relocating` ⇒ 这就是它存在的理由。' +
+      '★ relocating 的**诚实边界**：只比 `HEAD` → 工作区 ⇒ **已提交的搬迁不在此列**；' +
+      '取不到 `HEAD` 版（非 git 仓库 / 从未提交）⇒ **不报** + 给 `relocate_note`（★ **"没查"≠"没有"**）。' +
       '★ flatDirs 声明"**有意平铺**"的目录（散文件是终态、不报 misplaced，如 domain/ 概念族、CLI 命令面）：' +
       '它的**子目录必须被登记**，出现了却没登记 ⇒ 报 unlisted —— 这是 flat 唯一的可证伪点，**不是免检白名单**。' +
-      '★ 依赖方向**不归本工具管**（那是 dep-cruiser 的 layer 规则）；配置里的 layer 只是给人读的分类标签。' +
+      '★ 依赖方向**不归本工具管**（那是 `code_health` 现算）；配置里的 layer 只是给人读的分类标签。' +
       '★ 配置**不存在** ⇒ configured:false（**合法状态**：尚未开垦，不是失败）；' +
       '配置**坏**（JSON 非法 / id 重复 / dir 写成绝对路径）⇒ **直接抛错，不降级成"没配置"**。',
     inputSchema: {

@@ -12,8 +12,11 @@
  *     **观测由来**；改掉它反而看不出这个模块是为什么而建的。
  *
  * ★ 与既有判据的分工（**这三条决定了"补什么、不补什么"**，别只看结论）：
- *   · **依赖方向不在这里**：`dep-cruiser` 已在算（`layer-downward-only` 等）⇒ 搬进来就是第二副本。
- *     ⇒ 配置里的 `layer` 只是给人读的**分类标签**，**不参与任何判定**。
+ *   · **依赖方向不在这里**：由 `code_health` **现算**（分层违规 + 循环）⇒ 搬进来就是第二副本。
+ *     ★ 原文写的是「`dep-cruiser` 已在算（`layer-downward-only` 等）」—— ★ **那个框架已于
+ *     `7bcc364`（2026-10-04「整体移除测试框架」）删除** ⇒ 本行 2026-10-11（T165）**改指 `code_health`**
+ *     （现行唯一实现，本仓自己的 `health/index.ts:1114` 已记明此事）。
+ *     ⇒ 而配置里的 `layer` **始终**只是给人读的**分类标签**，**不参与任何判定**（这一点没变）。
  *   · **实际依赖边也不在这里**：从 `cache.db` 现取。
  *   · **本模块只做一件事**：把「配置声明的结构意图」与「磁盘现状」对账，报出差异。
  *
@@ -37,6 +40,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { SOURCE_EXTS, isSourceExt, isNoiseFileName } from '../../parse/source_exts.js';
 
 /** 结构意图的配置文件名（与 `.dependency-cruiser.cjs` 同级：**架构约定**，不是派生数据） */
@@ -134,6 +138,41 @@ export interface StructureGapReport {
    * —— 那是合法的分层容器；只有"父目录本身就是个域"才报。
    */
   misnested: StructureGapItem[];
+
+  /**
+   * **域表改了位置（HEAD → 工作区），而旧位置里还有源码**（2026-10-11 新增，T165）。
+   *
+   * ★ 为什么单列一态（它此前**无处安放**，实测）：
+   *   把 `domains[deadcode].dir` 从 `src/infrastructure/analysis/deadcode` 改成
+   *   `src/infrastructure/deadcode`（= 一次真实的"重新规划分布"）后，读数只有两个：
+   *   · `missing`   —— 新家（目录不存在）✓ 对；
+   *   · `unlisted`  —— 旧家，而它的文案是「**要么给它登记，要么它不该在这里**」✗ **语义错**。
+   *   ⇒ ★★ 而**真相是"这个域要搬"**，且 **`misplaced` 是空的**（它只看"父目录的直属散文件"，
+   *     **整个域搬走的场景它覆盖不到**）⇒ **"要搬谁"一个文件名都没有**。
+   *   ★ 更值得注意的是：`missing` 自己的注释写着「与 misplaced **一体两面**：搬迁完成 ⇒
+   *     目录出现、misplaced 归零」—— ★ **那个前提只在"散文件"场景成立**，
+   *     在"整个域搬走"场景**不成立** ⇒ **判据的假设与现实不符**（不是笔误）。
+   *
+   * ## 判据（★ 零人写：**旧位置从 git 现取**，不新增配置字段）
+   *   比 `HEAD` 版本的 `structure.domains.json` 与**工作区**版本：
+   *   同一个 `id` 的 `dir` 不同 ⇒ 一次"域搬迁"；★ 若**旧 `dir` 目录里还有源码** ⇒ 报，
+   *   并把那些**文件名**列在 `note` 里 = **待搬清单**（这才是可执行的那个东西）。
+   *   · **旧位置空了**（搬完了）⇒ 不报 ✓
+   *   · ★ 与 `unlisted` 的关系：**被本态认领的旧目录，不再从 `unlisted` 报** ——
+   *     同一件事两处报 = 判据分叉（照"`misplaced` 扣掉 `flatDirs`"的先例）。
+   *   · ★ **只比 `HEAD` → 工作区**：**已提交的搬迁不在此列**（那时旧目录仍会被报成 `unlisted`）。
+   *     取不到 `HEAD` 版本（非 git 仓库 / 从未提交 / git 不可用）⇒ **不报**，
+   *     并在 {@link StructureGapReport.relocate_note} **如实标注"本轮没查"**（★ 不许把"没查"读成"没问题"）。
+   */
+  relocating: StructureGapItem[];
+
+  /**
+   * ★ **`relocating` 这一态的"查没查"**（2026-10-11，T165）——
+   * 只在**想查却查不到**时给（非 git 仓库 / 从未提交 / git 不可用）。
+   * ★ 为什么它必须存在：`relocating: []` **既可能是"没有搬迁"，也可能是"没查"** ——
+   *   两者塌在一起就是本仓最反对的"沉默会被读成没问题"。
+   */
+  relocate_note?: string;
 }
 
 /** 顶层入口的返回：多一个 `configured` —— 项目**没声明**结构意图时，四态都是空数组 */
@@ -217,6 +256,50 @@ export function readStructureConfig(projectDir: string): StructureDomainsConfig 
 }
 
 /** 对账：意图（配置）vs 现状（磁盘）。纯函数，不写盘、不兜底。 */
+/**
+ * T165（2026-10-11）：**域搬迁**的探测 —— 比 `HEAD` 版本的域表与**工作区**版本，找出 `dir` 变了的域。
+ *
+ * ★ 为什么旧位置**从 git 现取**，而不是在配置里加一个 `moved_from`：
+ *   本仓纪律「**能派生的绝不声明**」（见 `DomainRole` 的注释）。旧位置**能从版本库派生**
+ *   ⇒ 加字段就等于让它**靠人记得写** ⇒ 忘了写就**静默没有待搬清单** —— 那正是要防的形态。
+ *
+ * ★ 诚实边界（★ 说出来，不许沉默）：**只比 `HEAD` → 工作区**。
+ *   · 覆盖的是**真实工作流的那一步**："改了意图（域表）⇒ 我该搬什么" ✓
+ *   · **已提交的搬迁不在此列**（`HEAD` 已是新值 ⇒ 没有差异）⇒ 那时旧目录仍会落在 `unlisted`。
+ *   · 取不到 `HEAD` 版本（非 git 仓库 / 从未提交 / git 不可用）⇒ **不报** + 给 `note`（= **没查**，不是"没有"）。
+ */
+function detectRelocations(
+  projectDir: string,
+  cfg: StructureDomainsConfig,
+): { moves: Array<{ id: string; oldDir: string; newDir: string }>; note?: string } {
+  let headDirs: Map<string, string>;
+  try {
+    const raw = execFileSync('git', ['-C', projectDir, 'show', `HEAD:${STRUCTURE_CONFIG_BASENAME}`], {
+      encoding: 'utf-8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+    const head = JSON.parse(raw) as { domains?: Array<{ id?: unknown; dir?: unknown }> };
+    headDirs = new Map(
+      (Array.isArray(head.domains) ? head.domains : [])
+        .filter((d) => typeof d?.id === 'string' && typeof d?.dir === 'string')
+        .map((d) => [d.id as string, d.dir as string]),
+    );
+  } catch {
+    return {
+      moves: [],
+      note:
+        `读不到 \`HEAD:${STRUCTURE_CONFIG_BASENAME}\`（非 git 仓库 / 从未提交过该文件 / git 不可用）` +
+        `⇒ ★ **本轮【没查】"域搬迁"** —— 不是"没有搬迁"。`,
+    };
+  }
+  const moves: Array<{ id: string; oldDir: string; newDir: string }> = [];
+  for (const d of cfg.domains) {
+    const old = headDirs.get(d.id);
+    if (old && old !== d.dir) moves.push({ id: d.id, oldDir: old, newDir: d.dir });
+  }
+  return { moves };
+}
+
 export function computeStructureGap(projectDir: string, cfg: StructureDomainsConfig): StructureGapReport {
   const flat = cfg.flatDirs ?? [];
   const declaredDirs = [...cfg.domains, ...flat].map((d) => d.dir);
@@ -319,6 +402,26 @@ export function computeStructureGap(projectDir: string, cfg: StructureDomainsCon
     }
   }
 
+  // ②′ relocating：**域表改了位置，而旧位置里还有源码**（T165，2026-10-11）
+  //    ★ 为什么它必须在这里（在 ③ 之前）：③ 要把"被本态认领的旧目录"**排除出去**
+  //      —— 同一件事两处报 = 判据分叉（照"`misplaced` 扣掉 `flatDirs`"的先例）。
+  //    ★ 顺序上也对：这是**"域要搬"**（声明变了），③ 是**"家没人要"**（缺声明）——
+  //      前者更具体 ⇒ 先认领。
+  const relocating: StructureGapItem[] = [];
+  const { moves, note: relocateNote } = detectRelocations(projectDir, cfg);
+  const claimedOldDirs = new Set<string>();
+  for (const mv of moves) {
+    const names = sourceFileNames(absOf(projectDir, mv.oldDir));
+    if (names.length === 0) continue; // 旧位置空了 ⇒ 搬完了，不报
+    claimedOldDirs.add(mv.oldDir);
+    relocating.push({
+      path: `${mv.oldDir}/`,
+      note:
+        `域 \`${mv.id}\` 的 **dir 从 \`${mv.oldDir}\` 改成了 \`${mv.newDir}\`**（对比 \`HEAD\`），` +
+        `而**旧位置里还有 ${names.length} 个源码文件** ⇒ ★ **这就是待搬清单**：${names.join(' / ')}`,
+    });
+  }
+
   // ③ 未被登记的目录 = **归属未定的家**（★★ 2026-10-04 重写，原判据报假绿）
   //    ★ 原判据只遍历 `flatDirs` 的子目录 ⇒ 实际只覆盖了 `src/infrastructure` **一个**容器，
   //      而 `src/application` / `src/infrastructure/analysis` / `src/presentation` / `src/tools`
@@ -350,6 +453,9 @@ export function computeStructureGap(projectDir: string, cfg: StructureDomainsCon
         continue;
       }
       if (isDeclared(child)) continue; // 纯域（其下再没有子域）⇒ 叶，其内部由 ① / ② 判
+      // ★ T165：**已被 `relocating` 认领的旧位置** ⇒ 不在这里再报一次
+      //   （它是"某个域搬走了"，不是"这个家没人要" —— 两者处置动作不同）
+      if (claimedOldDirs.has(child)) continue;
       unlisted.push({
         path: `${child}/`,
         note: '没在任何域里登记 —— 既不是域，也不是某个域的祖先容器。要么给它登记（域 / flat），要么它不该在这里',
@@ -367,7 +473,33 @@ export function computeStructureGap(projectDir: string, cfg: StructureDomainsCon
     missing,
     unclassified,
     misnested,
+    relocating,
+    ...(relocateNote ? { relocate_note: relocateNote } : {}),
   };
+}
+
+/**
+ * ★★ **"结构意图与现状是否一致"的唯一判据**（2026-10-11，T165 顺手收口）。
+ *
+ * ★ 为什么把它从 `scripts/structure_gap.mjs` 收到这里：
+ *   壳里此前**自己重算了一遍**"哪些态算不干净"（`misplaced + unlisted + missing + misnested + unclassified`）。
+ *   ⇒ 那是**同一判据住两处**：往 `StructureGapReport` 加一态（本笔的 `relocating`）时，
+ *     **忘了同步改壳** ⇒ 新态**不进退码** ⇒ 它报出来了、但门是绿的 = ★ 本仓最反对的"假绿灯"。
+ *   ⇒ 现在**只有这一处**判"干净"，壳只负责渲染与用它的返回值设退出码。
+ *
+ * ★ 边界：`configured:false`（项目没声明结构意图）是**合法状态**（"尚未开垦"，不是失败）⇒ 算干净。
+ */
+export function structureGapIsClean(r: StructureGapResult): boolean {
+  if (!r.configured) return true;
+  return (
+    r.misplaced.length +
+      r.unlisted.length +
+      r.missing.length +
+      r.misnested.length +
+      r.unclassified.length +
+      r.relocating.length ===
+    0
+  );
 }
 
 /** 顶层入口：读配置（没有则 `configured:false`）→ 对账 → 四态。 */
@@ -384,6 +516,7 @@ export function structureGap(projectDir: string): StructureGapResult {
       missing: [],
       unclassified: [],
       misnested: [],
+      relocating: [],
     };
   }
   return { configured: true, ...computeStructureGap(projectDir, cfg) };
