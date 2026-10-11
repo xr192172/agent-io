@@ -1,3 +1,6 @@
+// ★★ T170b：只为**类型级断言**（防"字段清单与 interface 漂移"）而 import type —— **不产生运行期依赖**。
+import type { AddNodeInput, UpdateNodeInput } from './node_ops.js';
+
 /**
  * `edit_dsl` 各 `type`/`op` 的 **data 契约表**（唯一判据）。
  *
@@ -59,7 +62,20 @@ export const OP_SPECS: readonly OpSpec[] = [
     ops: ['add', 'update', 'delete', 'move'],
     idRequired: true,
     required: { move: [] },
-    note: 'add/update 的**领域字段**（label / type / status / description / decision / shapes / x,y,width,height…）**大多可选** —— 见 `add_node` 的字段表（★ 那一半本表不覆盖）',
+    // ★★★ 2026-10-11（T170b）：**这里原先写的是「见 `add_node` 的字段表」—— 而 `add_node` 根本不是工具**
+    //   （66 个工具里没有）⇒ ★ **那句"指路"是【死路】**：读它的人去找 `add_node`，找不到。
+    //   ⇒ 现在**把字段真列出来**（★ 机械提取自 `AddNodeInput` / `UpdateNodeInput` 的 interface，非手抄）。
+    //   ★ 防漂移：下面 `NODE_DATA_KEYS` 有**类型级断言** —— interface 改了而这里没跟 ⇒ **`tsc` 会红**。
+    note:
+      '★ `data` 的**领域字段**（★ **全部可选** —— 一个都不给也能建/改，只是信息少）。' +
+      '★ `feature` / `node_id` **不要放 data**（前者走顶层，后者走 `operations[].id`）：\n' +
+      '        · 文字与样式：`label` `description` `type` `status` `bg` `color` `border` `borderRadius` ' +
+      '`shape`(rect|rounded|circle|diamond|freeform) `shadow` `opacity`\n' +
+      '        · 几何：`x` `y` `width` `height`\n' +
+      '        · 结构与内容：`layer` `host`(宿主节点 id) `swimlane` `shapes` `content` `sub_dsl`(子图 DSL) ' +
+      '`attributes`(Record<string,string|number|boolean>)\n' +
+      '        · 语义：`decision`（决策卡对象，**字段形状同下面 `decision` 那张表**）· ' +
+      '`decision_note`（**update 专有**）· `author`（**update 专有**，`human`｜`llm`）',
   },
   { type: 'edge', ops: ['add', 'update', 'delete'], idRequired: true, required: { add: ['from', 'to'] } },
   { type: 'file', ops: ['add', 'update', 'delete'], idRequired: true, required: { add: ['path', 'responsibility'] } },
@@ -127,6 +143,65 @@ export const OP_SPECS: readonly OpSpec[] = [
 ];
 
 const BY_TYPE = new Map(OP_SPECS.map((s) => [s.type, s]));
+
+/**
+ * ★★★ **`node.add` / `node.update` 的领域字段（唯一清单）**（2026-10-11 T170b）。
+ *
+ * ★ 为什么需要它：这两类 op 把 `data` **整体展开**传给 `addNode` / `updateNode`
+ *   （`{ feature, node_id: id, ...data }`）⇒ ★ **键集合住在下游 interface 里，运行期没法枚举**
+ *   （TS 类型不能反射）⇒ 只能**静态维护一份**。
+ * ⇒ ★★ 而"静态维护"就有**漂移风险** ⇒ 用**下面两个类型级断言**把它按死：
+ *   interface 改了而本清单没跟（漏 / 多）⇒ **`tsc` 直接红**，不是"以后有人发现"。
+ */
+export const NODE_DATA_KEYS = [
+  'label',
+  'description',
+  'type',
+  'status',
+  'bg',
+  'color',
+  'border',
+  'borderRadius',
+  'shape',
+  'shadow',
+  'opacity',
+  'x',
+  'y',
+  'width',
+  'height',
+  'layer',
+  'host',
+  'swimlane',
+  'shapes',
+  'content',
+  'sub_dsl',
+  'attributes',
+  'decision',
+  'decision_note',
+  'author',
+] as const;
+
+/** ★ `feature` / `node_id` 由顶层入参与 `operations[].id` 提供；`agent` 由顶层 `agent` 提供 ⇒ 不进 data。 */
+type NodeNonDataKeys = 'feature' | 'node_id' | 'agent';
+type NodeOwnedKeys =
+  | Exclude<keyof AddNodeInput, NodeNonDataKeys>
+  | Exclude<keyof UpdateNodeInput, NodeNonDataKeys>;
+
+/**
+ * ★ 断言一：interface 有、清单没有 ⇒ 报（**漏一个就红**）。
+ * ★★ 错误信息**带上差集**（`['★ 漏了这些键…', <键名>]`）—— 否则只能看到
+ *   `Type 'true' is not assignable to type 'never'`（★ 那**不指路**，与今天修的第八例同族）。
+ */
+export type NodeKeysMissingFromList = Exclude<NodeOwnedKeys, (typeof NODE_DATA_KEYS)[number]>;
+export const _assertNodeKeysNoMissing: NodeKeysMissingFromList extends never
+  ? true
+  : ['★ `NODE_DATA_KEYS` 漏了这些键（interface 有、清单没有）⇒ 补进 `op_data_spec.ts` 的 `NODE_DATA_KEYS`：', NodeKeysMissingFromList] = true;
+/** ★ 断言二：清单有、interface 没有 ⇒ 报（**多写一个也红**）；错误信息同样带差集。 */
+export type NodeKeysExtraInList = Exclude<(typeof NODE_DATA_KEYS)[number], NodeOwnedKeys>;
+export const _assertNodeKeysNoExtra: NodeKeysExtraInList extends never
+  ? true
+  : ['★ `NODE_DATA_KEYS` 多写了这些键（清单有、interface 没有）⇒ 从 `NODE_DATA_KEYS` 里删掉：', NodeKeysExtraInList] = true;
+
 
 /**
  * ★ **校验通过后的 op**（2026-10-11 T170）——
