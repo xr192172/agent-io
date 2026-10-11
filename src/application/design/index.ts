@@ -26,7 +26,7 @@
  *   ★ 本线其余**不动**：`get_dsl` / `edit_dsl` / `manage_feature`（已是聚合体）/ `render_design`
  *     / `render_brickwork` / `consistency_check` / `detect_drift` / `import_project` 各是独立操作对象。
  *   ★ 反面结论（与 `camera_*` 教训同型，见提交信息）：「一致性检查 + 漂移检测」**不该合** ——
- *     `detect_drift` 是**编排**（内部调 `checkConsistency`），`consistency_check` 是**基础动作/引擎**，
+ *     `detect_drift` 是**编排**（内部调 `checkConsistencyReport`），`consistency_check` 是**基础动作/引擎**，
  *     二者**不同抽象层**，且不共用输入契约（前者要 code_dir；后者要 scope/since_ref/mode/changed_files）。
  *
  * 为什么能切了：依赖已先行抽到 `registry/{types,plumbing,handlers}.ts`（P1a）——

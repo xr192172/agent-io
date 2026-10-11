@@ -11,7 +11,7 @@
 import { wrap, wrapData } from '.././plumbing.js';
 import { dispatchDslEdit } from '.././dispatch.js';
 import { getDSLByView, getLiveDir, requireProjectRoot } from '../../infrastructure/storage.js';
-import { checkConsistency } from '.././design/intent/consistency.js';
+import { checkConsistencyReport } from '.././design/intent/consistency.js';
 import { deriveMindMap } from '.././meta/view/derive_mind_map.js';
 import { detectDrift } from '.././design/intent/detect_drift.js';
 import { exportMarkdown, exportSvg } from '../../infrastructure/render/export.js';
@@ -34,7 +34,7 @@ import { judgeExpectations } from './intent/expectations.js';
  *   = `{ message, fileResults[], invariantResults[], summary{totals…} }` ——
  *   逐文件 API 匹配明细 + 不变式结果 + **计数摘要**原被 `wrap` 丢掉（agent 无从机器判定"过没过"）。 */
 export const consistencyHandler = wrapData(async (a) => {
-  const r = await checkConsistency({
+  const r = await checkConsistencyReport({
     feature: a.feature as string,
     code_dir: a.code_dir as string | undefined,
   });

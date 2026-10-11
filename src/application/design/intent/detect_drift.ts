@@ -5,7 +5,7 @@
  * 产出可行动的过时判定并持久化漂移台账，让「代码变了 → 提示 DSL 需同步」成为可反复
  * 触发的状态，而不是每次重算的无状态报告。
  *
- * 复用 checkConsistency 引擎（expected_apis vs 实际代码 + 跨文件不变式），在此基础上叠加三层：
+ * 复用 checkConsistencyReport 引擎（expected_apis vs 实际代码 + 跨文件不变式），在此基础上叠加三层：
  *   1. git 变更作用域：scope=changed（默认）只看工作区改动 / 自 since_ref 起的变更，
  *      把「这次改动引发了哪些漂移」从全量历史噪音里圈出来；
  *   2. 过时判定：把 unexpected/mismatched 归为「设计过时（代码先走了）」，missing 归为
@@ -19,7 +19,7 @@ import path from 'node:path';
 import { execSync } from 'node:child_process';
 import { getDSL, getStorageRoot } from '../../../infrastructure/storage.js';
 import { gitRootOf } from '../../../infrastructure/analysis/project_root/index.js';
-import { checkConsistency, comparisonState } from './consistency.js';
+import { checkConsistencyReport, comparisonState } from './consistency.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
 export interface DetectDriftInput {
@@ -138,7 +138,7 @@ async function detectDriftCore(input: DetectDriftInput): Promise<DriftData & { m
   );
 
   // 2. 跑一致性引擎（全量，拿到 per-file matched/missing/mismatched/unexpected + invariants）
-  const r = await checkConsistency({ feature, code_dir: codeDir });
+  const r = await checkConsistencyReport({ feature, code_dir: codeDir });
 
   // 3. 变更作用域：显式 changed_files（watcher 的 fs 变更集）优先；否则 git diff
   const scopeMode = input.scope === 'all' ? ('all' as const) : ('changed' as const);

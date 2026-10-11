@@ -32,7 +32,7 @@ import { validateDSLJson } from '../../domain/validator.js';
 import { saveAutoSnapshot, pruneSnapshots } from '../../application/design/lifecycle/snapshot.js';
 import { dagLayout, forceLayout, gridAlign } from '../../application/design/workbench/dag_layout.js';
 import { scaffold } from '../../application/design/lifecycle/scaffold.js';
-import { checkConsistency } from '../../application/design/intent/consistency.js';
+import { checkConsistencyReport } from '../../application/design/intent/consistency.js';
 import { diffImpact } from '../../infrastructure/analysis/impact/diff_impact.js';
 import { diffViews } from '../../application/refactor/diff_views/diff_views.js';
 import { watchProject } from '../../infrastructure/index/watch_project.js';
@@ -1152,7 +1152,7 @@ async function handleApiConsistency(req: http.IncomingMessage, res: http.ServerR
   try {
     const body = await readBody(req);
     const params = JSON.parse(body.toString('utf-8'));
-    const result = await checkConsistency({
+    const result = await checkConsistencyReport({
       feature: params.feature || 'agent-io',
       code_dir: params.code_dir,
     });

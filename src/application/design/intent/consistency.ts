@@ -92,7 +92,7 @@ export function checkBaselineDrift(feature: string, codeDir: string): BaselineDr
   return { compared: Object.keys(baseline.files).length, files, notes };
 }
 
-/** 渲染线 1 的小节（给 `checkConsistency` 的消息用） */
+/** 渲染线 1 的小节（给 `checkConsistencyReport` 的消息用） */
 function renderBaselineDriftSection(d: BaselineDrift): string {
   const L: string[] = [
     '',
@@ -386,7 +386,7 @@ function checkInvariants(dsl: DesignDSL, codeDir: string): InvariantResult[] {
 // 主函数
 // ─────────────────────────────────────────────────────────────
 
-export async function checkConsistency(input: ConsistencyInput): Promise<ConsistencyResult> {
+export async function checkConsistencyReport(input: ConsistencyInput): Promise<ConsistencyResult> {
   const { feature, code_dir } = input;
 
   const dsl = getDSL(feature);
