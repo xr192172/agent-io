@@ -69,6 +69,9 @@ import {
 import '../../infrastructure/analysis/capability/register_capabilities.js';
 import { markCanvasNotesStatus, renderCanvasNotesDigest, resolveCanvasNoteTargets } from './view/derive_mind_map.js';
 import { EXPLORE_ACTIONS } from './explore/explore_code.js';
+// ★ 契约页 / 类型页（2026-10-11）：给定符号名一次给全（定义/成员/产者/消费者/接法边/词表口径）——
+//   聚合既有权威（内核 AST · find_references · CHAIN_EDGES · b_terms），**不新算**。
+import { contractPage, renderContractPage } from './explore/contract_page.js';
 import { deleteProvider, getStats, listProvidersMasked, resetStats, upsertProvider } from '../../infrastructure/llm_gateway.js';
 import { indexIntegrity, renderIntegrity } from './integrity/index_integrity.js';
 import { decideCanvasNotes } from './llm/llm_decider.js';
@@ -657,6 +660,41 @@ export const META_TOOLS: ToolDef[] = [
       skip_verify: z.boolean().optional().describe('apply 用：跳过验证（★ 未验证的改动不自动提交）'),
     },
     handler: upgradeHandler,
+  },
+
+  {
+    // ★ 2026-10-11：契约页 / 类型页 —— 用户问「`Touched` 是什么、谁产生、谁消费、改它会砸谁」时，
+    //   原先要四步（explore_code search → find_references(symbol) → find_references(field) → 手工 Read）
+    //   才拼得出答案。本工具**一次给全**，把散在四处的信息**端上来**（不新算 —— 见模块头注的数据源表）。
+    name: 'contract_page',
+    title: 'Contract page: everything about one symbol in one call (definition / members / producers / consumers / chain edges / glossary)',
+    description:
+      '**契约页 / 类型页**（只读）：给一个**符号名或类型名**，**一次给全**六块 —— 调用方**不用再调别的工具**：' +
+      '① 定义在哪（文件:行 + 签名，来自内核 AST）；' +
+      '② 字段/成员清单（interface / type / class，内核 AST 走出来的成员）；' +
+      '③ 谁产生它（产者 = find_references mode=field 的「构造点」）；' +
+      '④ 谁消费它（消费者 = find_references mode=symbol 的 importers + mode=field 的「读/解构」点）；' +
+      '⑤ 相关接法边（CHAIN_EDGES 里与它相关的边，含 `[ran]` 标签）；' +
+      '⑥ 词表口径（若它在 b_terms 里，原样带出）。' +
+      '★ **每一块都取自已有的权威**（内核 AST / find_references / CHAIN_EDGES / b_terms）—— 本工具**只端、不新算**。' +
+      '★ **查不到是一个明确的态**（`resolution`: ok / ambiguous / not-found / index-unavailable），**不是空数组**；' +
+      '多个同名定义 ⇒ 报 ambiguous 并**全列候选**（不替你选，可用 `file=` 消歧）。' +
+      '★ 想改一个符号前先用它，比"先猜定义在哪、再分头查引用"少三步。',
+    inputSchema: {
+      symbol: z.string().describe('要查的符号名 / 类型名（模块级声明名，如 Touched / withTouched / written_files）'),
+      project_dir: z.string().optional().describe('目标项目根目录（缺省 = 当前工作目录）'),
+      file: z.string().optional().describe('可选：定义文件（多候选消歧用；给了就以它为定义锚点）'),
+      feature: z.string().optional().describe('可选：feature（仅作上下文回显）'),
+    },
+    handler: wrapData(async (a) => {
+      const r = await contractPage({
+        symbol: requireStr(a, 'symbol'),
+        project_dir: typeof a.project_dir === 'string' && a.project_dir ? a.project_dir : undefined,
+        file: typeof a.file === 'string' && a.file ? a.file : undefined,
+        feature: typeof a.feature === 'string' && a.feature ? a.feature : undefined,
+      });
+      return { message: renderContractPage(r), data: r };
+    }),
   },
 ];
 

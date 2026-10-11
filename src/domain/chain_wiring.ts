@@ -757,8 +757,12 @@ export function hopsOf(chain: Chain): readonly HopVerdict[] {
  * · 短、纯 ASCII、与 `[pending]` 对仗。
  * · **不含时点** ⇒ **不会腐**。
  * ★ 唯一住处 = 本函数。**别在别处手拼这个映射**（本仓头号病：一处判断住两处）。
+ *
+ * ★★ 2026-10-11：**导出**（原为文件私有）—— `contract_page` 工具要逐条给出 `[ran]` 标签，
+ *   而按上文"唯一住处"的立论，它**不许**在别处手拼这个映射 ⇒ 从本函数取同一份口径。
+ *   ★ 这**不是**判据变更（`evidenceTag` 的行为一字未动），只是把它从私有提为可复用。
  */
-function evidenceTag(e: Chain['evidence']): string {
+export function evidenceTag(e: Chain['evidence']): string {
   return e === 'verified' ? 'ran' : 'pending';
 }
 
