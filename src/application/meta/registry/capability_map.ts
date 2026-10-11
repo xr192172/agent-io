@@ -180,6 +180,10 @@ export const LANE_META: ReadonlyArray<Omit<Lane, 'tools'>> = [
  * ★★ **刻意不在这里判过期**：过期的唯一判据是 `scripts/gen_cognition.mjs` 的 **body-sha**，
  *   在这里再算一遍 = **同一条判据住两处**（本仓头号病）。⇒ 这里**只指路**："文件在哪、怎么判、怎么重生成"。
  * ★ 也不读文件内容（只 `existsSync`）—— 导航是高频入口，别让它做重活。
+ *
+ * ★★ 2026-10-11（BB 笔）补「**什么被保证**」那一半：末尾加一行指向 `npm run verify`（本仓唯一总门）。
+ *   用户原话点名 `capability_map` **不导 verify**；而这里**本来就在导** MANIFEST / COGNITION 的 npm 命令
+ *   ⇒ 同一处补 verify 是**就地补齐**，不是新造段。★ 只指路、不写门数（门数住在 `scripts/verify.mjs`，写这儿必漂）。
  */
 function renderVolumesNote(projectRoot: string): string {
   const home = getDataHome();
@@ -210,7 +214,13 @@ function renderVolumesNote(projectRoot: string): string {
     `  ${DATA_DIR_NAME}/COGNITION.txt  ${mark(hasCognition)}  一行式认知索引 \`路径[层]: F:职责 | R:关系 | A:契约 | S:高熵决策\`` +
     ` ⇒ **可能过期**，判过期 \`npm run cognition:check\`、重生成 \`npm run cognition\`（等价 \`get_dsl query=digest\`）\n` +
     // ★ 位置口径必须写明：两个文件为什么一个进 Git 一个不进，否则下一个人会把它们"统一"掉（那是判据分叉的入口）
-    `  ★ 位置口径：MANIFEST 在**仓根**（低 churn ⇒ 进 Git）；COGNITION 在 ${DATA_DIR_NAME}/（高 churn ⇒ **不进 Git**）\n`
+    `  ★ 位置口径：MANIFEST 在**仓根**（低 churn ⇒ 进 Git）；COGNITION 在 ${DATA_DIR_NAME}/（高 churn ⇒ **不进 Git**）\n` +
+    // ★★ 2026-10-11（BB 笔）：补"**什么被保证**"那一半 —— 用户原话点名 `capability_map` **不导 verify**。
+    //   本仓已有 `npm run verify`（**唯一总门**，`scripts/verify.mjs`：三态 PASS/FAIL/SKIP，
+    //   返回 0 = **每道门都真跑过并通过**；缺可选工具链（如 Go）时退 2 而不是"假绿"）。
+    //   ⇒ 它是"改完东西有没有坏"的**唯一入口** —— 不在这儿点名，就等于藏起来了（同 MANIFEST / COGNITION 的旧账）。
+    //   ★ 刻意**不写门的条数**（那会随门增减漂移，且它已住在 `scripts/verify.mjs` 的单一事实源里）。
+    `  ★ 改完东西要"保证没坏" ⇒ 跑 \`npm run verify\`（**本仓唯一总门**：三态 PASS/FAIL/SKIP，返回 0 = 每道门都真跑过；见 scripts/verify.mjs）\n`
   );
 }
 
@@ -299,6 +309,9 @@ export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
   gateway_provider: 'LLM 网关供应商/Key 池说明与状态',
   read_project_docs: '读项目文档（README/活文档）',
   capability_map: '本工具：能力线导航（目录由注册表 TOOL_DEFS 自动派生）',
+  // ★ 2026-10-11（BB 笔）："什么被用过"的那半 —— 注册表无门/覆盖工具的缺口。只读。
+  tool_usage:
+    '工具使用 / 覆盖读数（只读）：用过哪些工具/各多少次（复用 npm run dogfood 的口径）+ ★ 死工具（注册了但从未用过）+ ★ 过期记录（用过但已不在注册表）—— 两个集合的权威来源都写在读数里',
 };
 
 // ─────────────────────────────────────────────────────────────
