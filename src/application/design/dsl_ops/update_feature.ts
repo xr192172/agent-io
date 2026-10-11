@@ -23,6 +23,8 @@ import { addEdge, deleteEdge } from './edge_ops.js';
 import type { AddEdgeInput } from './edge_ops.js';
 import { addFile, updateFile, deleteFile } from './file_ops.js';
 import type { AddFileInput, UpdateFileInput } from './file_ops.js';
+// ★ T170： 各 type/op 的 **data 契约表**（唯一判据）—— 校验与描述都从它派生。
+import { checkOpSpec, OP_SPECS, type CheckedOperation } from './op_data_spec.js';
 import { addExpectedApi, updateExpectedApi, deleteExpectedApi, setExpectedApis, setNodeSemantic } from './api_ops.js';
 import { updateStatus } from './status_tools.js';
 import { addAnnotationByTool, resolveAnnotation } from './annotation_tools.js';
@@ -271,7 +273,17 @@ export function updateFeature(input: UpdateFeatureInput): TouchedProduct<EditRes
 // 操作路由
 // ─────────────────────────────────────────────────────────────
 
-function applyOperation(feature: string, op: FeatureOperation, agent?: string): EditResult {
+function applyOperation(feature: string, rawOp: FeatureOperation, agent?: string): EditResult {
+  // ★★ T170（2026-10-11）：**形状校验的唯一入口**（type 合法性 / op 合法性 / id / data 必需键 / 二选一）。
+  //   原先这些判据**散在下面各 case 里**（19 处 `if (!op.data?.X) throw`，还有几处 `if (op.op !== 'x') throw`）
+  //   ⇒ ★ **LLM 看不见**，只能"故意发一个残缺请求、读报错"来发现字段（黑盒实验实测：**24 次调用里 8 次是试形状**）。
+  //   现全部收进 `OP_SPECS`（唯一判据），同一张表**也渲染进 `edit_dsl` 的描述** ⇒ 提前看得见 ✓
+  //   ★ 用 `const op = checkOpSpec(rawOp)` 的形态：**校验一次，此后 `op.data` 必有** ——
+  //     那些被删掉的 `throw` 原先**兼具 TS 类型收窄**的作用，这里一次性补回来（不必在 15 处各写 `as`）。
+  // ★ `op.id` 的存在**由 `OP_SPECS` 保证**（`idRequired:true` 的 type）⇒ 下面子函数里对
+  //   `id` 的 `as string` 是"把已为真的事实告诉 TS"，**不是新判据**。
+  //   ★ 若哪天把某 type 的 `idRequired` 改成 false，那些 `as` 就会撒谎 ⇒ **改表时要一起看**。
+  const op = checkOpSpec(rawOp);
   switch (op.type) {
     case 'node':
       return applyNodeOp(feature, op, agent);
@@ -282,24 +294,20 @@ function applyOperation(feature: string, op: FeatureOperation, agent?: string): 
     case 'api':
       return applyApiOp(feature, op);
     case 'binding': {
-      if (op.op !== 'update') throw new Error('binding 仅支持 update 操作');
-      if (!op.id) throw new Error('binding.update 需要 id（node_id）');
-      if (!op.data?.file_id) throw new Error('binding.update 需要 data.file_id');
+      // ★ T170：`op`/`id`/`data.file_id` 三者已由 `checkOpSpec` 判（见 `OP_SPECS`）—— 此处不再重复。
       return setNodeSemantic({
         feature,
-        node_id: op.id,
-        file_id: op.data.file_id as string,
-        sync_status: op.data.sync_status as boolean | undefined,
+        node_id: op.id as string,
+        file_id: op.data!.file_id as string,
+        sync_status: op.data!.sync_status as boolean | undefined,
       });
     }
     case 'status': {
-      if (op.op !== 'update') throw new Error('status 仅支持 update 操作');
-      if (!op.id) throw new Error('status.update 需要 id（node_id）');
-      if (!op.data?.status) throw new Error('status.update 需要 data.status');
+      // ★ T170：三条已由 `checkOpSpec` 判（见 `OP_SPECS`）—— 此处不再重复。
       return updateStatus({
         feature,
-        node_id: op.id,
-        status: op.data.status as DiagramStatus,
+        node_id: op.id as string,
+        status: op.data!.status as DiagramStatus,
       });
     }
     case 'annotation':
@@ -325,11 +333,10 @@ function applyOperation(feature: string, op: FeatureOperation, agent?: string): 
 // annotation：op=add 加标注 / op=resolve 关闭标注
 // ─────────────────────────────────────────────────────────────
 
-function applyAnnotationOp(feature: string, op: FeatureOperation): EditResult {
+function applyAnnotationOp(feature: string, op: CheckedOperation<FeatureOperation>): EditResult {
   const data = op.data ?? {};
   switch (op.op) {
     case 'add': {
-      if (!data.text) throw new Error('annotation.add 需要 data.text');
       const r = addAnnotationByTool({
         feature,
         text: data.text as string,
@@ -341,7 +348,6 @@ function applyAnnotationOp(feature: string, op: FeatureOperation): EditResult {
       return { message: r.message, feature };
     }
     case 'resolve': {
-      if (!data.annotation_id) throw new Error('annotation.resolve 需要 data.annotation_id');
       const r = resolveAnnotation({
         feature,
         annotation_id: data.annotation_id as string,
@@ -358,11 +364,10 @@ function applyAnnotationOp(feature: string, op: FeatureOperation): EditResult {
 // approval：op=submit 提交审批 / op=review 审批决策
 // ─────────────────────────────────────────────────────────────
 
-function applyApprovalOp(feature: string, op: FeatureOperation): EditResult {
+function applyApprovalOp(feature: string, op: CheckedOperation<FeatureOperation>): EditResult {
   const data = op.data ?? {};
   switch (op.op) {
     case 'submit': {
-      if (!data.annotation_id) throw new Error('approval.submit 需要 data.annotation_id');
       const r = submitApproval({
         feature,
         annotation_id: data.annotation_id as string,
@@ -373,9 +378,6 @@ function applyApprovalOp(feature: string, op: FeatureOperation): EditResult {
       return { message: r.message, feature };
     }
     case 'review': {
-      if (!data.annotation_id) throw new Error('approval.review 需要 data.annotation_id');
-      if (!data.decision) throw new Error('approval.review 需要 data.decision');
-      if (!data.reviewer) throw new Error('approval.review 需要 data.reviewer');
       const r = reviewAnnotation({
         feature,
         annotation_id: data.annotation_id as string,
@@ -394,11 +396,10 @@ function applyApprovalOp(feature: string, op: FeatureOperation): EditResult {
 // snapshot：op=save 保存 / op=rollback 回滚 / op=delete 删除
 // ─────────────────────────────────────────────────────────────
 
-function applySnapshotOp(feature: string, op: FeatureOperation): EditResult {
+function applySnapshotOp(feature: string, op: CheckedOperation<FeatureOperation>): EditResult {
   const data = op.data ?? {};
   switch (op.op) {
     case 'save': {
-      if (!data.label) throw new Error('snapshot.save 需要 data.label');
       const r = saveSnapshot({
         feature,
         label: data.label as string,
@@ -407,12 +408,10 @@ function applySnapshotOp(feature: string, op: FeatureOperation): EditResult {
       return { message: r.message, feature };
     }
     case 'rollback': {
-      if (!data.snapshot_id) throw new Error('snapshot.rollback 需要 data.snapshot_id');
       const r = rollbackSnapshot({ feature, snapshot_id: data.snapshot_id as string });
       return { message: r.message, feature };
     }
     case 'delete': {
-      if (!data.snapshot_id) throw new Error('snapshot.delete 需要 data.snapshot_id');
       const r = deleteSnapshot({ feature, snapshot_id: data.snapshot_id as string });
       return { message: r.message, feature };
     }
@@ -425,7 +424,7 @@ function applySnapshotOp(feature: string, op: FeatureOperation): EditResult {
 // layout：op=apply 自动布局（data.algo=dag|force|grid + 各算法参数）
 // ─────────────────────────────────────────────────────────────
 
-function applyLayoutOp(feature: string, op: FeatureOperation): EditResult {
+function applyLayoutOp(feature: string, op: CheckedOperation<FeatureOperation>): EditResult {
   const data = op.data ?? {};
   const algo = data.algo ?? 'dag';
   let msg: string;
@@ -479,8 +478,8 @@ function applyLayoutOp(feature: string, op: FeatureOperation): EditResult {
 // simulation：op=reset 重置仿真状态
 // ─────────────────────────────────────────────────────────────
 
-function applySimulationOp(feature: string, op: FeatureOperation): EditResult {
-  if (op.op !== 'reset') throw new Error(`simulation 不支持操作: ${op.op}`);
+function applySimulationOp(feature: string, op: CheckedOperation<FeatureOperation>): EditResult {
+  // ★ T170：必需键已由 checkOpSpec 判（唯一判据见 op_data_spec.ts 的 OP_SPECS）—— 此处不再重复（op 合法性）
   const r = resetSimulation({ feature });
   return { message: r.message, feature };
 }
@@ -523,13 +522,12 @@ function resolveMemberFiles(dsl: DesignDSL, inputs: string[]): { resolved: strin
   return { resolved, unresolved };
 }
 
-function applyTagOp(feature: string, op: FeatureOperation): EditResult {
+function applyTagOp(feature: string, op: CheckedOperation<FeatureOperation>): EditResult {
   if (op.op !== 'add' && op.op !== 'delete') {
-    throw new Error(`tag 不支持操作: ${op.op}（只支持 add / delete）`);
+    // ★ T170：必需键已由 checkOpSpec 判（唯一判据见 op_data_spec.ts 的 OP_SPECS）—— 此处不再重复（tag 的 op 只支持 add/delete）
   }
   const data = op.data ?? {};
   const tag = typeof data.tag === 'string' ? data.tag.trim() : '';
-  if (!tag) throw new Error('tag 操作需要 data.tag（功能标记名，非空字符串）');
 
   const dsl = getDSL(feature);
   if (!dsl) throw new Error(`feature "${feature}" 不存在`);
@@ -673,7 +671,6 @@ export function findDecisionTargetNode(dsl: DesignDSL, raw: string): DecisionTar
 function resolveDecisionTarget(dsl: DesignDSL, id: string | undefined, data: Record<string, unknown>): DecisionTarget {
   const raw = (typeof id === 'string' && id.trim() ? id.trim() : '') ||
     (typeof data.path === 'string' && data.path.trim() ? data.path.trim() : '');
-  if (!raw) throw new Error('decision.update 需要 id（文件节点 id 或仓库相对路径）');
   const node = findDecisionTargetNode(dsl, raw);
   if (!node) {
     throw new Error(
@@ -732,11 +729,10 @@ function parseDissent(v: unknown): DecisionDissent[] {
   });
 }
 
-function applyDecisionOp(feature: string, op: FeatureOperation, agent?: string): EditResult {
+function applyDecisionOp(feature: string, op: CheckedOperation<FeatureOperation>, agent?: string): EditResult {
   if (op.op !== 'update') throw new Error(`decision 仅支持 update 操作（收到 ${op.op}）`);
   const data = op.data ?? {};
   const summary = typeof data.summary === 'string' ? data.summary.trim() : '';
-  if (!summary) throw new Error('decision.update 需要 data.summary（结论：这个设计是什么，一句话，非空）');
 
   const dsl = getDSL(feature);
   if (!dsl) throw new Error(`feature "${feature}" 不存在`);
@@ -828,9 +824,8 @@ function applyDecisionOp(feature: string, op: FeatureOperation, agent?: string):
 // node：add / update / delete / move
 // ─────────────────────────────────────────────────────────────
 
-function applyNodeOp(feature: string, op: FeatureOperation, agent?: string): EditResult {
+function applyNodeOp(feature: string, op: CheckedOperation<FeatureOperation>, agent?: string): EditResult {
   const { id, data } = op;
-  if (!id) throw new Error('node 操作需要 id');
   switch (op.op) {
     case 'add':
       // ★ 身份（agent）来自 edit_dsl 顶层入参（整次调用的发起者），随**内联决策卡**一起落库。
@@ -840,7 +835,7 @@ function applyNodeOp(feature: string, op: FeatureOperation, agent?: string): Edi
       // ★ 身份（agent）来自 edit_dsl 顶层入参（整次调用的发起者），随 node.update 一起落到决策卡上。
       return updateNode({ feature, node_id: id, ...data, agent } as UpdateNodeInput);
     case 'delete':
-      return deleteNode({ feature, node_id: id });
+      return deleteNode({ feature, node_id: id as string });
     case 'move': {
       // 相对平移（替代 batch_move_nodes，逐个 node 一条 move 操作）
       const dx = (data?.dx as number) ?? 0;
@@ -863,25 +858,24 @@ function applyNodeOp(feature: string, op: FeatureOperation, agent?: string): Edi
 // edge：add / update / delete（update = 合并数据后删除重建）
 // ─────────────────────────────────────────────────────────────
 
-function applyEdgeOp(feature: string, op: FeatureOperation): EditResult {
+function applyEdgeOp(feature: string, op: CheckedOperation<FeatureOperation>): EditResult {
   const { id, data } = op;
-  if (!id) throw new Error('edge 操作需要 id');
   switch (op.op) {
     case 'add':
-      if (!data?.from || !data?.to) throw new Error('edge.add 需要 data.from 和 data.to');
+      // ★ T170：必需键已由 checkOpSpec 判（唯一判据见 op_data_spec.ts 的 OP_SPECS）—— 此处不再重复
       return addEdge({ feature, edge_id: id, ...data } as unknown as AddEdgeInput);
     case 'delete':
-      return deleteEdge({ feature, edge_id: id });
+      return deleteEdge({ feature, edge_id: id as string });
     case 'update': {
       const dsl = getDSL(feature);
       if (!dsl) throw new Error(`feature "${feature}" 不存在`);
       const existing = (dsl.geometry.edges ?? []).find(e => e.id === id);
       if (!existing) throw new Error(`边 "${id}" 不存在`);
       const merged = { ...existing, ...(data ?? {}) };
-      deleteEdge({ feature, edge_id: id });
+      deleteEdge({ feature, edge_id: id as string });
       return addEdge({
         feature,
-        edge_id: id,
+        edge_id: id as string,
         from: merged.from,
         to: merged.to,
         label: merged.label,
@@ -899,19 +893,16 @@ function applyEdgeOp(feature: string, op: FeatureOperation): EditResult {
 // file：add / update / delete
 // ─────────────────────────────────────────────────────────────
 
-function applyFileOp(feature: string, op: FeatureOperation): EditResult {
+function applyFileOp(feature: string, op: CheckedOperation<FeatureOperation>): EditResult {
   const { id, data } = op;
-  if (!id) throw new Error('file 操作需要 id');
   switch (op.op) {
     case 'add':
-      if (!data?.path || !data?.responsibility) {
-        throw new Error('file.add 需要 data.path 和 data.responsibility');
-      }
+      // ★ T170：必需键已由 checkOpSpec 判（唯一判据见 op_data_spec.ts 的 OP_SPECS）—— 此处不再重复
       return addFile({ feature, file_id: id, ...data } as unknown as AddFileInput);
     case 'update':
       return updateFile({ feature, file_id: id, ...data } as UpdateFileInput);
     case 'delete':
-      return deleteFile({ feature, file_id: id });
+      return deleteFile({ feature, file_id: id as string });
     default:
       throw new Error(`file 不支持操作: ${op.op}`);
   }
@@ -926,15 +917,14 @@ function applyFileOp(feature: string, op: FeatureOperation): EditResult {
 //   ★ 后者留着只为向后兼容；★ **新写的东西一律走整块重写**（旧式那把尺正是代码侧已抛弃的）。
 // ─────────────────────────────────────────────────────────────
 
-function applyApiOp(feature: string, op: FeatureOperation): EditResult {
+function applyApiOp(feature: string, op: CheckedOperation<FeatureOperation>): EditResult {
   const { id, data } = op;
-  if (!id) throw new Error('api 操作需要 id（所属 file_id）');
   switch (op.op) {
     case 'add':
-      if (!data?.signature) throw new Error('api.add 需要 data.signature');
+      // ★ T170：必需键已由 checkOpSpec 判（唯一判据见 op_data_spec.ts 的 OP_SPECS）—— 此处不再重复
       return addExpectedApi({
         feature,
-        file_id: id,
+        file_id: id as string,
         signature: data.signature as string,
         notes: data.notes as string | undefined,
       });
@@ -944,29 +934,24 @@ function applyApiOp(feature: string, op: FeatureOperation): EditResult {
       if (Array.isArray(data?.expected_apis)) {
         return setExpectedApis({
           feature,
-          file_id: id,
+          file_id: id as string,
           expected_apis: data!.expected_apis as Array<{ signature: string; notes?: string }>,
           note: data!.note as string | undefined,
         });
       }
-      if (!data?.signature) {
-        throw new Error(
-          'api.update 二选一：① 整块重写 —— data.expected_apis=[{signature,notes?},…]（**推荐**，不看旧串）；' +
-            '② 单条改 —— data.signature=**原签名串逐字**（+ data.new_signature / data.notes）。两个都没给。',
-        );
-      }
+      // ★ T170：必需键已由 checkOpSpec 判（唯一判据见 op_data_spec.ts 的 OP_SPECS）—— 此处不再重复（api.update 的**二选一**也已在表里：`anyOf`）
       return updateExpectedApi({
         feature,
-        file_id: id,
+        file_id: id as string,
         signature: data.signature as string,
         new_signature: data.new_signature as string | undefined,
         notes: data.notes as string | undefined,
       });
     case 'delete':
-      if (!data?.signature) throw new Error('api.delete 需要 data.signature');
+      // ★ T170：必需键已由 checkOpSpec 判（唯一判据见 op_data_spec.ts 的 OP_SPECS）—— 此处不再重复
       return deleteExpectedApi({
         feature,
-        file_id: id,
+        file_id: id as string,
         signature: data.signature as string,
       });
     default:

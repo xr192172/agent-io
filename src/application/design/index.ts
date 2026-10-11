@@ -34,6 +34,8 @@
  */
 import { z } from 'zod';
 import { requireStr, wrapData } from '../plumbing.js';
+// ★ T170：`operations[]` 各 type 的 data 契约表（**唯一判据**）—— edit_dsl 描述里那段就是它的渲染。
+import { renderOpSpecs } from './dsl_ops/op_data_spec.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { getProjectCacheDb } from '../../infrastructure/index/db.js';
@@ -149,7 +151,11 @@ export const DESIGN_TOOLS: ToolDef[] = [
       '"**不信 AI 的行号，不信 AI 的 old_string**"的本意：它防的是"**拿旧文本当定位**"，' +
       '**不是**"不许看旧文本"（★ 我此前把它读成了后者）。' +
       '回执给结构化增删（`data.added/removed/kept`）。' +
-      '★ 旧的单条路（`data.signature`=**原签名串逐字** + `data.new_signature`）仍在，但**新写走整块重写**。',
+      '★ 旧的单条路（`data.signature`=**原签名串逐字** + `data.new_signature`）仍在，但**新写走整块重写**。' +
+      '\n★★★ **`operations[]` 各 type 的 `data` 契约**（★ T170：**唯一判据表**在 `dsl_ops/op_data_spec.ts`，' +
+      '这里只是**它的渲染**，不新增规则）—— ★ **照这张表填就不会被校验打回**：\n' +
+      renderOpSpecs() +
+      '\n★ 上面标 "id" 的 type ⇒ `operations[].id` 必填；未标 ⇒ 用 `data` 传参、`id` 可省。',
     inputSchema: {
       feature: z.string().describe('feature 名'),
       agent: z
