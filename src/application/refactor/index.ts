@@ -172,8 +172,16 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       '批量落盘走写闸（写前快照 + 索引写穿保鲜），每文件只写一次。',
     inputSchema: {
       project_dir: z.string().describe('项目根目录（索引归属；编辑后重建该文件索引）'),
-      file: z.string().describe('目标文件（相对 project_dir 或绝对路径）'),
-      op: z.enum(['replace', 'insert', 'delete', 'range', 'replace_text']).describe('replace=替换符号；insert=插入新符号；delete=删除符号；range=显式行区间替换；replace_text=唯一文本替换（不依赖符号索引/行号；4 级模糊级联：逐字→空白归一→缩进弹性→省略号占位，回执明示级别）。注：传 targets 时忽略 file/op 等单文件参数'),
+      // ★★ 2026-10-11（T173）：`file` 原先写成 `z.string()`（**无条件必填**），
+      //   而**同一份描述**里写着「传 `targets` 时忽略 `file`/`op` 等单文件参数」，
+      //   且 `[B]` 里**早就**是条件必填（`if (!Array.isArray(a.targets)) requireStr(a, 'file')`）
+      //   ⇒ ★ **两处两套口径**，而 zod 在最前面 ⇒ **批量路径被白要一个用不上的参数**：
+      //     实测（黑盒第三轮）代理读了描述、**只给 `targets`** ⇒ 被 zod 拒
+      //     `Invalid input: expected string, received undefined`（★ **一条 schema 级冷错误**，
+      //     而不是 `[B]` 的人话「缺参数 file」）。
+      //   ⇒ 改成 `.optional()`，把「何时必填」**交回 `[B]` 的 `requireStr`**（★ 判据一处；CLI 面也走得到）
+      file: z.string().optional().describe('目标文件（相对 project_dir 或绝对路径）。★ **单文件路径必填**；传了非空 `targets` 时可省（那时忽略它）'),
+      op: z.enum(['replace', 'insert', 'delete', 'range', 'replace_text']).optional().describe('replace=替换符号；insert=插入新符号；delete=删除符号；range=显式行区间替换；replace_text=唯一文本替换（不依赖符号索引/行号；4 级模糊级联：逐字→空白归一→缩进弹性→省略号占位，回执明示级别）。★ **单文件路径必填**；传了非空 targets 时可省（那时忽略 file/op 等单文件参数）'),
       symbol: z
         .string()
         .optional()

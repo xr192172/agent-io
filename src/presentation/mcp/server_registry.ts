@@ -29,7 +29,9 @@ import { catalogOf, collectInputPaths, LANE_META } from '../../application/meta/
 import type { InputPath } from '../../application/meta/registry/capability_map.js';
 // ★ T54 收口：「下一棒」印具体值，**共用** capability_map 的同一个渲染（别在这写第二份）
 import { renderHandoffPanel } from '../../application/meta/index.js';
-import { facesOf } from '../../application/meta/registry/tool_faces.js';
+import { facesOf, mcpFace } from '../../application/meta/registry/tool_faces.js';
+// ★ T173：`mcpFace()` 的定义已搬到 `tool_faces.ts`（与「说面」的回执同处）—— 这里 re-export 保持对外 API 不变。
+export { mcpFace };
 
 // （`tools/stale_check` 的导入已随 P-F 删除：本文件不再直接消费它 —— 三个 stale 告警各自
 //   探测，`stale_check.formatStaleText` 仍由 lanes/observe.ts 的 `run_tests` 前置提示使用。）
@@ -676,10 +678,8 @@ function renderNextNote(tool: string, text: string): string {
  */
 export const ATOMIC_ENTRY_NAME = 'atomic_call';
 
-/** 当前 MCP 面。★ 用 env 而非常量 —— "把这一部分做成可配置的"是需求本人。 */
-export function mcpFace(): 'all' | 'composed' {
-  return process.env.AGENT_IO_MCP_FACE === 'composed' ? 'composed' : 'all';
-}
+// ★ 2026-10-11（T173）：`mcpFace()` 的**本地定义已删除** —— 定义在 `tool_faces.ts`（见上方 import），
+//   因为「**说面**」的那一侧（`capability_map` 的回执）也要用它 ⇒ 同一处定义、两边共用。
 
 /** 编排面 = `facesOf` 算出的 `composed`（`direct` ∪ 派生链）—— ★ 零手写。 */
 function composedDefs(): ToolDef[] {

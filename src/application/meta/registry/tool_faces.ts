@@ -99,6 +99,20 @@ export function facesOf(catalog: readonly ToolCatalogEntry[], directNames: reado
 }
 
 /** 渲染面（给 `capability_map` 的读者面用）。 */
+/**
+ * ★ **当前 MCP 面**（唯一一处读 `AGENT_IO_MCP_FACE`）。
+ *
+ * ★★ 为什么它住这里（2026-10-11，T173）：这个常量的**两个出口**此前一分为二 ——
+ *   · `presentation/mcp/server_registry.ts` **用它决定注册谁**；
+ *   · `capability_map` 的**回执**却**只说"有一个原子入口 `atomic_call`"、不提条件**。
+ *   ⇒ ★ 实测后果（黑盒实验，三轮里**两次**被试都被它误导）：**默认面（`all`）下 `atomic_call` 并未注册**，
+ *     而回执读起来像"它存在" ⇒ 被试去调 ⇒ `MCP error -32602: Tool atomic_call not found` ✗
+ *   ⇒ 现在**定义搬到"说面"的那一侧**，两边共用同一个函数 ⇒ 回执可以**按当前面说实话** ✓
+ */
+export function mcpFace(): 'all' | 'composed' {
+  return process.env.AGENT_IO_MCP_FACE === 'composed' ? 'composed' : 'all';
+}
+
 export function renderFaces(catalog: readonly ToolCatalogEntry[], directNames: readonly string[]): string {
   const faces = facesOf(catalog, directNames);
   const lines = faces.map((f) => {
@@ -123,6 +137,13 @@ export function renderFaces(catalog: readonly ToolCatalogEntry[], directNames: r
     '\n  ★★ **实现方式（2026-10-06 实测更正）**：**不是**"裁 `listTools`" —— 那**做不到**：' +
     '\n     MCP SDK 的 `ListTools` 与 `CallTool` handler 读的是**同一张** `_registeredTools`。' +
     '\n     真做法 = **不注册**那些工具 + **留一个原子入口**（`atomic_call`）—— 即用户方案。' +
+    // ★★★ 2026-10-11（T173）：**这句原先不说条件** ⇒ 默认面下读它的人以为 `atomic_call` 存在 ⇒ 去调 ⇒ `not found`。
+    //   实测：黑盒实验三轮里**两次**被试都先试它 ✗ ⇒ 现在**按当前面说实话**（面由本文件的 `mcpFace()` 算，判据一处）。
+    (mcpFace() === 'composed'
+      ? '\n       ★ **本会话的面 = `composed`** ⇒ `atomic_call` **已注册**（`action=list/describe/call`）；' +
+        '**其余工具**经 `atomic_call action=call` 调。'
+      : '\n       ★ **本会话的面 = `all`（默认）** ⇒ **没有 `atomic_call`**（它**只在 `composed` 面注册**）——' +
+        ' ★ **所有工具都已直接暴露，不需要它**；别去调 `atomic_call`（会报 `Tool atomic_call not found`）。') +
     '\n  ★★ **编排面 = 两份依据拼的（可以重叠，不是互斥的两半）**：' +
     `\n     · **派生链**（${chainTools.length} 个：${chainTools.join(', ')}）—— **机器算的**，验出一条新边它就自己长；` +
     `\n     · **「direct」门名单**（${directNames.length} 个，其中 **${directOnly.length} 个派生链没覆盖**、` +
