@@ -30,6 +30,9 @@ import type { InputPath } from '../../application/meta/registry/capability_map.j
 // ★ T54 收口：「下一棒」印具体值，**共用** capability_map 的同一个渲染（别在这写第二份）
 import { renderHandoffPanel } from '../../application/meta/index.js';
 import { facesOf, mcpFace } from '../../application/meta/registry/tool_faces.js';
+// ★ T179：**仓根**要用仓里已有的"向上找"（`resolveProjectRoot`：git 根 → 最近 manifest）——
+//   ★ 不许再手算 `'..', '..'`（那是"级数随位置变"的补丁，见下方 STALE SOURCE 段的注释）。
+import { resolveProjectRoot } from '../../infrastructure/analysis/project_root/index.js';
 // ★ T173：`mcpFace()` 的定义已搬到 `tool_faces.ts`（与「说面」的回执同处）—— 这里 re-export 保持对外 API 不变。
 export { mcpFace };
 
@@ -161,7 +164,14 @@ function staleBuildWarning(): ToolWarning | null {
 // ───── STALE SOURCE：改了 src 却忘了 build 的检测 ─────
 // 补齐 staleBuildWarning 覆盖不到的缺口——它只在 dist 被重建后(un进程仍旧)提示，
 // 若用户改了 src 但没 build，dist mtime 不变则完全无感。此处检测「src 比 dist 新」。
-const PACKAGE_ROOT = SELF_PATH ? path.resolve(path.dirname(SELF_PATH), '..', '..') : null;
+// ★★★ 2026-10-11（T179，**黑盒外的 bug 猎人查出来的 HIGH**）：**原先这里是手算 `'..', '..'`** ——
+//   而 `SELF_PATH` = `<root>/dist/src/presentation/mcp/server_registry.js`
+//   ⇒ 上溯 2 级只到 `<root>/dist/src`（★ **到仓根要 4 级**）⇒ `SRC_DIR` 算成 `<root>/dist/src/src` **不存在** ✗
+//   ⇒ ★★ 后果：`newestMtime` 恒返回 null ⇒ ★ **「改了 src 却忘了 build」的 STALE_SOURCE 告警【永远不触发】**，
+//     而且**没有任何报错**（★ 正是本仓最在意的「**检测静默失效**」= 假绿灯）✓
+//   ⇒ ★ **修法不是"把 2 改成 4"**（那只是补丁：级数随文件位置变，下次搬家还会错）——
+//     **改用仓里已有的 `resolveProjectRoot()`**（向上找 `.git` → 最近 manifest），★ **一处判据** ✓
+const PACKAGE_ROOT = SELF_PATH ? resolveProjectRoot(SELF_PATH) : null;
 const SRC_DIR = PACKAGE_ROOT ? path.join(PACKAGE_ROOT, 'src') : null;
 const DIST_DIR = PACKAGE_ROOT ? path.join(PACKAGE_ROOT, 'dist') : null;
 

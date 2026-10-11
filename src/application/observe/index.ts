@@ -22,6 +22,8 @@
  *   否则本文件 import 它们就会成环（server_registry → lanes → server_registry）。
  */
 import { z } from 'zod';
+// ★ T179：**仓根**用仓里已有的『向上找』（git 根 → 最近 manifest）—— 别手算 '..' 级数。
+import { resolveProjectRoot } from '../../infrastructure/analysis/project_root/index.js';
 import { wrap, wrapData, requireStr } from '../plumbing.js';
 import path from 'node:path';
 import { baselinePathFor, captureBaseline, verifyBaseline } from '../../infrastructure/authoring/behavior/index.js';
@@ -388,8 +390,12 @@ export const OBSERVE_TOOLS: ToolDef[] = [
       // 跑测试前置：检本服务自身 dist 是否 stale（改 src 忘 build → 提示先重建，防测旧产物）
       const staleHint = (() => {
         try {
-          // dist/src/server_registry.js → 向上 3 级 = 项目根
-          const stale = checkStaleBuild(path.resolve(fileURLToPath(import.meta.url), '..', '..', '..'));
+          // ★★★ 2026-10-11（T179）：**原先这里手算 `'..','..','..'`**，注释还写「dist/src/server_registry.js → 向上 3 级」
+          //   —— ★ 而本模块在 `<root>/dist/src/application/observe/index.js`，**比它深 2 层** ⇒ 算到 `<root>/dist/src` ✗
+          //   ⇒ ★ `checkStaleBuild` 去看 `<root>/dist/src/src`（不存在）⇒ 静默 return ⇒
+          //     ★ **`run_tests` 的「测试前置 STALE BUILD 提示」永久哑火**（同型于 server_registry 那处 HIGH）✓
+          //   ⇒ 改用仓里的 `resolveProjectRoot()`（向上找 `.git` → 最近 manifest）—— **别手算级数**。
+          const stale = checkStaleBuild(resolveProjectRoot(fileURLToPath(import.meta.url)));
           return stale.stale ? formatStaleText(stale) : null;
         } catch {
           return null; // 非本项目根（如外部项目）→ 静默跳过
