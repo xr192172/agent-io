@@ -1464,6 +1464,55 @@
         ★ 因为**那些被提到的东西是有限集合**（不像散文），**可机器判**。
       ⇒ ★ 另一层好处：**它天然正确** —— 门**只查"agent 会信的"**，就**不会**逼着人每次改代码都同步 README
         （**那正是用户说的"花很多时间"的做法**）。
+- [ ] **T136 ★★★ `unused_export` 的两处盲区 —— ★ 而这条账【早就被记过，却住在别处】**
+      *(来源：2026-10-11 早 —— 子代理 `module-level-edges` 因**网络 502** 失败（**未交付任何东西**），
+        team-lead 自己接手复现。★ **独立复现来自两路**：F 组（读数可信度验收）+ 本次。)*
+
+      ⇒ ★★★ **先说那个结构性发现（比 bug 本身更值得记）**：
+        这条账**已经写在 `docs/architecture-refactor-plan.md:3438`** ——
+        「★ `unused_export` 对"带 parent 的方法"的盲区（§38.2 第二条）—— **要改的是 `symIndex` 的收面**」，
+        而它住在 **§38.6「本笔**未动**（登记为后续）」** 一节里（**2026-09-30**，**连修法都写好了**）。
+        ★★ **而 `grep -c unused_export docs/todo.md` = 【0】** ⇒ **它从没进过"唯一待办"**。
+        ⇒ ⇒ ★★★ **这就是"同一件事住两处"在【待办】这一层的形态** ——
+          **住在 `plan` 的"未动项"里 ⇒ 不会被当成一件活干** ⇒ **所以它被评估三轮（09-29 / 09-30）、却一直没修。**
+        ⇒ ★ **本条的第一个动作就该是：把它搬进 `todo.md`（一处）** —— **已完成（即本条）**。
+
+      ⇒ **病根（我用【唯一变量对照】钉死的，比 F 的说法更精确）**：
+        夹具 `C:/tmp/ch_fix`（**故意做成"两个方向"**）：
+        ```
+        provider.ts:  export function usedTwo(): number { return 2; }
+        consumer.ts:  import { usedTwo } from './provider';
+                      const VALUE = usedTwo();                    ← 【模块顶层】调用
+                      export function getValue(): number { return VALUE; }
+        dead.ts:      export function neverCalledAnywhere(): number { return 9; }   ← 真死代码
+        ```
+        **实测**：`[unused_export] provider.ts:1 usedTwo` ⇒ ★ **报"项目内无引用"（错，consumer 明明 import+调用了）**
+        而**同一次输出里** `getValue`（**真没被引用**）与 `neverCalledAnywhere`（**真死代码**）**都报对了**。
+        ★★★ **唯一变量对照**（`C:/tmp/ch_ctl`，**只把调用挪进函数体**）：
+        ```
+        consumer.ts:  import { usedTwo } from './provider';
+                      export function getValue(): number { return usedTwo(); }   ← 只在【函数体内】
+        ⇒ issues 里【没有 usedTwo】✓  （counts: unused_export 2 → 2，但那条是 getValue 与 neverCalledAnywhere）
+        ```
+        ⇒ ★★★ **归因**：**`unused_export` 漏了「调用写在【表达式位置】（如变量初始化器）」那种边** ——
+          而**函数体内的调用能建边** ⇒ **两者差别只在调用位置。**
+        ⇒ ★ 而**同一份输出里 `orphan_file` 是对的**（`provider.ts` 有 import 边 ⇒ 不是孤儿）⇒
+          ★★ **只有 `unused_export` 这一维受影响**（**两个维度走不同的边**：孤儿走 import，未用导出走调用/类型）。
+        ⇒ ★ **与已知的 `T4` 修复（2026-10-04）是【两回事】**：T4 修的是
+          「`Helper.twice(3)` 的裸名 `twice` 带 parent 不进 `symIndex` ⇒ 取 `callee_expr` 的**第一段**（receiver 根）再查」；
+          而本条**没有 receiver 根**（`usedTwo()` 是纯裸调用）⇒ **走不到那个兜底。**
+
+      ⇒ ★★★ **裁定：本条【先记准，本轮不修】。** 理由三条：
+        ① **修法要动 `symIndex` 的【收面】**（plan 自己说的）⇒ **影响面大**，不是一处小改；
+        ② ★★ **而要先判一件事**（plan §38.6-2 已立规矩）：
+          「**分叉 D**（`health` 缺 `impact` 的裸名唯一保底调用边）—— 这是
+          「**import 级消费者**」vs「**调用级依赖**」**两个不同判据，先判定是否有意，别顺手统一**」⇒
+          **本条与它同域 ⇒ 动之前必须先判"这两个维度该不该用同一套边"。**
+        ③ ★ **今天最该做的那一步已经做完了**：**把这条账从"评估记录"里捞出来、变成 `todo.md` 里的一件活。**
+      ⇒ **判据（将来修时）**：**同一份夹具上** ——
+        `usedTwo`（表达式位置调用）**不许再报** · `neverCalledAnywhere`（真死代码）**仍要报** ·
+        `getValue`（真无引用）**仍要报**；★ 且**真仓的"未使用导出"数若骤降到 0 ⇒ 那是修坏了**（要能区分"减少误报"与"不再报了"）。
+
 - [ ] **T134 ★★ key 迁入 Gateway 后的两处残留**（实现者交回、我已裁定"接受"）
       *(来源：T133 —— key 的家迁到 `gateway.json`、env 降级为「导入源」之后。)*
       ⇒ **(b) 只迁了 AGNES**：**`DeepSeek` / `LLM_API_KEY` / `EMBEDDING_API_KEY` 未迁**。
