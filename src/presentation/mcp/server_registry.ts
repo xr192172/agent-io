@@ -23,7 +23,10 @@ import { collectPendingAlertText, dispatchDslEdit } from '../../application/disp
 import { renderNextHops, nextHopsOf } from '../../domain/chain_wiring.js';
 import { DATA_MARKER } from '../../application/plumbing.js';
 // ★★ 2026-10-06：「面」—— 目录口径（`catalogOf`，单点）+ 面的机算（`facesOf`）+ 各线 direct 白名单
-import { catalogOf, LANE_META } from '../../application/meta/registry/capability_map.js';
+// ★ 2026-10-11：接续段的**入参路径表**改用 `collectInputPaths`（必填判定在 `renderHandoffSection` 里，
+//   复用 `declaredRequiredLeavesOf` —— 与 `capability_map` 的「接续」段**同源**，T140 第二处）。
+import { catalogOf, collectInputPaths, LANE_META } from '../../application/meta/registry/capability_map.js';
+import type { InputPath } from '../../application/meta/registry/capability_map.js';
 // ★ T54 收口：「下一棒」印具体值，**共用** capability_map 的同一个渲染（别在这写第二份）
 import { renderHandoffSection } from '../../application/meta/index.js';
 import { facesOf } from '../../application/meta/registry/tool_faces.js';
@@ -643,7 +646,10 @@ function renderNextNote(tool: string, text: string): string {
           const note = renderHandoffSection(
             tool,
             JSON.stringify(t),
-            (name) => catalogOf(TOOL_DEFS).find((c) => c.name === name)?.requiredKeys ?? [],
+            (name): readonly InputPath[] => {
+              const d = TOOL_DEFS.find((x) => x.name === name);
+              return d ? collectInputPaths(d.inputSchema) : [];
+            },
           );
           if (note) return '\n' + note;
         }

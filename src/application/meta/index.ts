@@ -51,9 +51,11 @@ import {
   listToolDefs,
   makeCapabilityMapHandler,
   catalogOf,
+  collectInputPaths,
+  declaredRequiredLeavesOf,
   resetDomainsForTest,
 } from './registry/capability_map.js';
-import type { DomainNavView, LaneId } from './registry/capability_map.js';
+import type { DomainNavView, InputPath, LaneId } from './registry/capability_map.js';
 // ★ T15 切片（2026-10-05）：`capability_audit` 的核心（与 `capability_cli` 同源）。
 import { probeInstalledLanguages } from '../../infrastructure/parse/probe.js';
 import {
@@ -479,10 +481,19 @@ export const META_TOOLS: ToolDef[] = [
       //   为什么放在本工具：本工具**本来就画着接法表**（"链的接法"段），而它自称"新用户第一站"
       //   ⇒ "我手上这份 touched 下一步怎么用"放这儿最自然，且**不新增工具**（不增面、不增 8 处登记）。
       //   ★ 计算全部落在**已收口的那两个函数**（`nextHopsOf`/`applyChainEdge`）—— 本段不自己推任何规则。
+      // ★★ 2026-10-11（T140 第二处）：注入的**不再是** `catalogOf(...).requiredKeys` ——
+      //   那个只反映 **schema 层声明的必填**（`isOptional` 口径），照不出**模式相关必填**
+      //   （`find_references.file`/`symbol` = `mode=symbol` 才要 ⇒ zod 只能写 `.optional()`），
+      //   ⇒ 接续段会拿它报"必填已填满"（**假信心**，正是 T140 刚修掉的那个形态）。
+      //   ★ 改注入 `collectInputPaths(d.inputSchema)`（**深层入参路径表**，与 `CHAIN_EDGES.toPath` 同形），
+      //     必填判定在 `renderHandoffSection` 里**复用** T140 立的 `declaredRequiredLeavesOf`（import，不另抄）。
       const handoff = renderHandoffSection(
         a.from_tool as string | undefined,
         a.touched_json as string | undefined,
-        (tool) => catalogOf(listToolDefs()).find((c) => c.name === tool)?.requiredKeys ?? [],
+        (tool) => {
+          const d = listToolDefs().find((c) => c.name === tool);
+          return d ? collectInputPaths(d.inputSchema) : [];
+        },
       );
       // 域表**在调用期现取**（不注入、不缓存）：它是**按 project_dir 读的项目级声明**，
       // 而本仓自己那份结构意图与被分析项目无关 ⇒ 缓存它就是把两个项目混成一份（判据分叉）。
@@ -791,8 +802,12 @@ export const META_TOOLS: ToolDef[] = [
 export function renderHandoffSection(
   fromTool: string | undefined,
   touchedJson: string | undefined,
-  /** 下游工具的**顶层必填入参**名（由 `catalogOf(...).requiredKeys` 提供） */
-  requiredOf: (tool: string) => readonly string[],
+  /**
+   * 下游工具的**入参路径表**（由 `collectInputPaths(d.inputSchema)` 提供；★ 与 `CHAIN_EDGES.toPath` 同形）。
+   * ★★★ 为什么不是 `readonly string[]`（=`catalogOf(...).requiredKeys`）：那只给**顶层 + schema 必填**
+   *   ⇒ 照不出**模式相关必填**（见 `missingOf` 与 `declaredRequiredLeavesOf` 的头注，T140）。
+   */
+  pathsOf: (tool: string) => readonly InputPath[],
 ): string {
   if (fromTool === undefined && touchedJson === undefined) return '';
   if (fromTool === undefined || touchedJson === undefined) {
@@ -820,20 +835,32 @@ export function renderHandoffSection(
   const blocked: string[] = [];
 
   /**
-   * ★★★ 这条边**只填了哪一个顶层入参**，以及**还差哪些必填**。
+   * ★★★ 这条边**只填了哪一格入参**，以及**还差哪些必填**。
    *
    * ## 为什么必须写出来（实测动机）
    * 我验过的那条 `get_dsl.scope_files → edit_code.file`，下游 `edit_code` **还要 `op`**
    * ⇒ 光说"**直接可用（零手工）**"会**误导**（让人以为传一个字段就能调）。
    * ## 而它顺带立起一条更准的定位
-   * 把所有边算一遍：**没有一条能填满下游必填**（`edit_code` 缺 `op`；`move_symbol` 缺 `symbol`/`to_file`；
-   * `rename_symbols` 缺 `renames` 里每条的 `symbol`/`to`）—— ★★★ **这不是缺陷，是分工**：
+   * 把所有边算一遍：**没有一条能填满下游必填**（`edit_code` 缺 `op`/`symbol`；`move_symbol` 缺 `symbol`/`to_file`；
+   * `rename_symbols` 缺 `renames[]` 里每条的 `symbol`/`to`）—— ★★★ **这不是缺陷，是分工**：
    * **接续负责"位置与对象"，不负责"意图"**（要做什么操作 / 改成什么名 / 移到哪 = 语义判断）。
    * ★ 与 `applyChainEdge` 在 `pick` 上**不替人选中**下标，是同一条立论。
+   *
+   * ## ★★★ 必填口径（2026-10-11，T140 第二处）
+   * 必填**不在这里判** —— 复用 T140 立在 `collectInputPaths` 旁边的 `declaredRequiredLeavesOf`（**import**）：
+   * 它取「**schema 必填** ∪ **下游 `.describe` 里写「必填」**」两路的并 ⇒ 覆盖 zod 表达不了的
+   * **模式相关必填**（`find_references.file`/`symbol`/`field`）。★ 上一版只按 `requiredKeys`（**顶层 + schema 必填**）
+   * 判 ⇒ `find_references` 一个必填都收不到 ⇒ 对本边报"**已填满**"（**假信心**，即 T140 修的形态）。
+   * ★ 本段**不是链的完整判定**（那是 `makeCapabilityMapHandler` 的段），只借同一张路径表。
    */
   const missingOf = (to: string, toPath: string): string => {
+    // 「本边填的是哪一格」= `toPath` 在**下游入参路径空间**里的全路径（`InputPath.path` 与 `CHAIN_EDGES.toPath`
+    // **刻意同形** ⇒ 逐字比对）。★ `filledTop` 是**旧口径**（`requiredOf` 只给顶层键 ⇒ 需先把 `toPath` 归一化成
+    // 顶层键才比得上）；保留它作**兜底**（对"只填顶层那一格"的旧形态仍成立），精确排除由 `toPath` 那一比负责。
     const filledTop = toPath.replace(/\[\].*$/, '').replace(/\..*$/, '');
-    const miss = requiredOf(to).filter((k) => k !== filledTop && !SCOPE_PATHS.has(k));
+    const miss = declaredRequiredLeavesOf(pathsOf(to))
+      .map((p) => p.path)
+      .filter((k) => k !== toPath && k !== filledTop && !SCOPE_PATHS.has(k));
     return miss.length ? `\n        ★ 下游**还要给**：${miss.join(', ')}` : '\n        ★ 下游必填**已填满**';
   };
 
