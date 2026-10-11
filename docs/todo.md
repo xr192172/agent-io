@@ -19,16 +19,6 @@
         | ★ **`data` 形状失败** | **主体** | ★ **0**（它这次**一次就写对** `data.signature`） |
         | 剩余失败构成 | — | **3 次全在 `evidence[]`** + 2 次环境/用法（与本改动无关）✓
       ⇒ ★ **现场全清、`agent-io.json` 与快照逐字相同** ✓ · `verify` **5/5** ✓
-- [ ] **T170b ★★【本表的已知边界】`node.add/update` 的**可选字段字典**没进表**（27 个字段住 `addNode` 的解构里）
-      *(来源：T170 划范围时明确留下的 —— **那一半的问题不是"必需"，是"有哪些"**。)*
-      ⇒ `addNode` 一行解构 27 个字段（`label/x/y/width/height/bg/color/border/shape/shadow/opacity/type/
-        description/status/swimlane/content/sub_dsl/layer/host/shapes/attributes/decision…`）⇒ ★ **LLM 完全看不到**。
-      ⇒ ★★ 而黑盒代理**不许翻源码** ⇒ **它试不出来**（★ 这正是"33%"里另一部分）✓
-      ⇒ **要做**：**先想清形态** —— "可选字段字典"**放哪**？
-        · 进 `edit_dsl` 描述（★ 会长，且与 `addNode` 的 interface **两处维护** ⇒ 病根）；
-        · 还是**一个读工具**（如 `tool_usage` 那样）**从 interface 现取**？★ 但 TS interface **无法运行期反射**；
-        · 或者 **`describe` 增强**（`atomic_call action=describe` 现在只给顶层名）；
-        ⇒ ★ **没想清之前别动** —— 否则就是造第二份清单（本仓头号病根）。
 - [x] **T171 ✅（2026-10-11 结项）★★★★【真缺口·且是判据分叉】`evidence[]` 的形态要**两层两种口径** —— ★ 而实测推翻了描述本身**
       *(来源：T170 的黑盒复跑 —— ★ **剩余 3 次失败全在这里**，而它**不是** `data`（`data` 已 0 失败）。)*
       ⇒ **子代理的原话（这就是病）**：
@@ -108,6 +98,38 @@
         对**只看回执的人 = 死路**（他只能"故意发非法入参套 schema"）✗
         ⇒ 加 **`node scripts/mcp/mcp_call.mjs --describe <tool>`**（打印 title / description / 入参名含★必填），
           **让实验环境与真实 host 对齐** ✓（出生证：`--describe edit_dsl` 打出完整描述 + 入参名；回归正常 ✓）
+
+- [x] **T170b ✅（2026-10-11 结项，`a8a2376`）★★ `node.add/update` 的字段**真列出来** + **类型级断言防漂移****
+      *(★ 而开工第一步就撞出一个【第九例】"输出在误导" —— 见下。)*
+      ⇒ **第九例**：我 T170 给 `node` 写的那句是「**见 `add_node` 的字段表**」——
+        ★ **而 `add_node` 根本不是工具**（66 个里**没有任何**含 `node` 的工具名）✗
+        ⇒ **读它的人去找 `add_node`，找不到** ⇒ ★ 与 T174 那条"指路到描述（而 `mcp_call` 看不到描述）"**同族** ✓
+      ⇒ **做成的两件**（★ 都**不"指路"，而是直接给**）：
+        ① **把 24 个字段真列进描述**（分组：**文字与样式** / **几何** / **结构与内容** / **语义**），
+           ★ **机械提取自 `AddNodeInput` / `UpdateNodeInput` 的 interface**（不是手抄）；
+        ② ★★ **类型级断言防漂移**：`NODE_DATA_KEYS`（**唯一清单**）+ 两个断言
+           （`Exclude<keyof AddNodeInput | keyof UpdateNodeInput, 'feature'|'node_id'|'agent'>` 的**差集必须为 `never`**）
+           ⇒ ★ **interface 改了而清单没跟（漏 / 多）⇒ `tsc` 直接红**，不是"以后有人发现" ✓
+      ⇒ ★★★ **而断言【当场就抓到了我的一个漏】**：第一次跑 `tsc` 就红 ⇒ 差集 = **`borderRadius`**
+        ⇒ ★ 我的提取正则用了 `[a-z0-9_]`、**不含大写** ⇒ **驼峰字段被跳过** ✗
+        ⇒ **人工核对也没看出来，是断言抓到的** ✓✓✓
+      ⇒ ★★ **而报错文案也按今天的纪律做了"指路"**：第一版断言报
+        `Type 'true' is not assignable to type 'never'`（★ **不说漏了哪个**）⇒ 改成**带差集的元组** ⇒
+        报错变成 `… is not assignable to type '["★ NODE_DATA_KEYS 漏了这些键…⇒ 补进 op_data_spec.ts：", "borderRadius"]'`
+        ⇒ ★ **既说"怎么回事"、又说"怎么修"、还点名缺哪个键** ✓
+      ⇒ **出生证**：清单列进描述 ✓ · **注入漂移（删 `borderRadius`）⇒ `tsc` 红且点名** ✓ · 还原 ⇒ 0 ✓ ·
+        `verify` **5/5** ✓ · T170 回归 **28 拒 / 6 放行** ✓
+      ⇒ ★ **诚实记一笔：描述又变长了** —— **4725 → 5166**（★ 因为字段清单**真的写进来**了）
+        ⇒ ★ 这是**用长度换"不指路"** ⇒ ★ **T175b（分节 / 按需取）更紧了** ✓
+- [ ] **T170c ★★【T170b 的下一半】「未知键 ⇒ 报」（`knownKeys`）—— ★ 而它依赖"清单完整"，故未做**
+      *(来源：T170b 划范围时明确留下的。)*
+      ⇒ **病**：`data` 是**自由袋子** ⇒ **键名写错（如 `labl`）会被【静默忽略】**（T174 治的是"形状错"，**没治"名字错"**）✗
+      ⇒ **要做**：给表加 `knownKeys`（每 type 的已知键集）⇒ `checkOpSpec` **未知键 ⇒ 报**（★ 并把已知键列出来）
+      ⇒ ★★ **为什么本笔没做**：它**依赖 `knownKeys` 完整** —— 而 13 个 type 的键我**只核实了 `node`（做完了）和 `decision`**
+        ⇒ ★ **其余 11 个（annotation / approval / snapshot / layout / tag / api / file / edge / binding / status / simulation）
+          还没逐个核实** ⇒ ★ **半做会误报**（把实现读的键当"未知"）⇒ **宁可不做** ✓
+      ⇒ **判据**：逐 type 从实现提取键集（用正确正则，★ 见 T170b 那次的 `[a-z0-9_]` 教训）⇒ 加 `knownKeys` ⇒
+        注入一个错键 ⇒ **应报**；且**合法键全都不报**（逐个 type 的反例）。
 
 - [x] **T175 ✅（2026-10-11 结项，`6f63fba`）★★【第四轮暴露】`edit_dsl` 的描述**同一件事三处说****（★ 也是 T173 ② 的同一片）
       ⇒ **三处**：① 描述里的**旧段**（`★ decision：…可带 rationale/consequences/acceptance；data.dissent（…）…`）
