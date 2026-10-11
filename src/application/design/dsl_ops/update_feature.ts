@@ -23,7 +23,7 @@ import { addEdge, deleteEdge } from './edge_ops.js';
 import type { AddEdgeInput } from './edge_ops.js';
 import { addFile, updateFile, deleteFile } from './file_ops.js';
 import type { AddFileInput, UpdateFileInput } from './file_ops.js';
-import { addExpectedApi, updateExpectedApi, deleteExpectedApi, setNodeSemantic } from './api_ops.js';
+import { addExpectedApi, updateExpectedApi, deleteExpectedApi, setExpectedApis, setNodeSemantic } from './api_ops.js';
 import { updateStatus } from './status_tools.js';
 import { addAnnotationByTool, resolveAnnotation } from './annotation_tools.js';
 import { submitApproval, reviewAnnotation } from '../../observe/reconcile/approval.js';
@@ -133,19 +133,29 @@ function updateFeatureCore(input: UpdateFeatureInput): EditResult {
   delete backup._sync;
 
   const results: string[] = [];
+  // ★ T160（2026-10-11）：收集每个 op 的**结构化产物**（`EditResult.data`）。
+  //   ★★ 为什么必须收：本循环下面**只取 `message` 首行**做摘要 ⇒ op 自己算出来的结构化结果
+  //     （如"整块重写契约"的 added/removed/kept）**若不走这里就会蒸发**，agent 只能读散文。
+  //   ★ 口径：**只收"有 data"的那些 op**；每条 data **自带定位字段**（如 `file_id` / `mode`）
+  //     ⇒ 不需要额外包 `op_index`（那也是本仓"产物要能自己说清我是谁"的口径）。
+  //   ★ 长度 1 ⇒ 直接给元素本身（常见情形少一层解包）；>1 ⇒ 给数组。**这条口径写在这里，读端别猜**。
+  const opData: unknown[] = [];
   try {
     for (const [i, op] of operations.entries()) {
       const result = applyOperation(feature, op, agent);
-      // 取原子操作返回消息首行作为摘要
+      // ★★ 摘要 = **首行**。⇒ 〔继承下笔人的判据〕**op 的首行必须自足**：
+      //   它是**唯一保证被看见**的那一行（明细与结构化产物都可能在传输/汇总时丢掉）。
+      //   例：破坏性操作（删条目）必须把"删了几条"写进首行，并带 ⚠。
       const summary = result.message.split('\n')[0];
       results.push(`  [${i + 1}/${operations.length}] ${summary}`);
+      if (result.data !== undefined) opData.push(result.data);
     }
   } catch (e) {
     // 回滚到操作前状态
     saveDSL(backup as never);
     throw new Error(
       `操作 ${results.length + 1}/${operations.length} 失败，已回滚全部 ${results.length} 个已应用变更\n` +
-      `失败原因: ${(e as Error).message}`,
+        `失败原因: ${(e as Error).message}`,
     );
   }
 
@@ -155,6 +165,7 @@ function updateFeatureCore(input: UpdateFeatureInput): EditResult {
       ...results,
     ].join('\n'),
     feature,
+    ...(opData.length ? { data: opData.length === 1 ? opData[0] : opData } : {}),
   };
 }
 
@@ -907,7 +918,12 @@ function applyFileOp(feature: string, op: FeatureOperation): EditResult {
 }
 
 // ─────────────────────────────────────────────────────────────
-// api：add / update / delete（id = 所属 file_id，data.signature 定位）
+// api：add / update / delete（id = 所属 file_id）
+// ★ T160（2026-10-11）：**update 有两条路**（同一个操作对象"该文件的契约列表"，两种粒度）：
+//   · **整块重写**（推荐）：给 `data.expected_apis`（数组）⇒ **不看旧串**、整块替换
+//     —— 与代码侧 `edit_code op=replace`（"不信 AI 的 old_string"）**同一把尺**；
+//   · **单条改**（旧式）：给 `data.signature`（**原签名串，逐字匹配**）+ `data.new_signature`。
+//   ★ 后者留着只为向后兼容；★ **新写的东西一律走整块重写**（旧式那把尺正是代码侧已抛弃的）。
 // ─────────────────────────────────────────────────────────────
 
 function applyApiOp(feature: string, op: FeatureOperation): EditResult {
@@ -923,7 +939,22 @@ function applyApiOp(feature: string, op: FeatureOperation): EditResult {
         notes: data.notes as string | undefined,
       });
     case 'update':
-      if (!data?.signature) throw new Error('api.update 需要 data.signature（原签名）');
+      // ★ T160：**整块重写优先** —— 给了 expected_apis 就整块替换，**不下看旧串**
+      //   （判据：`Array.isArray` —— 明确的一刀，不做"像数组就当数组"的猜测）
+      if (Array.isArray(data?.expected_apis)) {
+        return setExpectedApis({
+          feature,
+          file_id: id,
+          expected_apis: data!.expected_apis as Array<{ signature: string; notes?: string }>,
+          note: data!.note as string | undefined,
+        });
+      }
+      if (!data?.signature) {
+        throw new Error(
+          'api.update 二选一：① 整块重写 —— data.expected_apis=[{signature,notes?},…]（**推荐**，不看旧串）；' +
+            '② 单条改 —— data.signature=**原签名串逐字**（+ data.new_signature / data.notes）。两个都没给。',
+        );
+      }
       return updateExpectedApi({
         feature,
         file_id: id,

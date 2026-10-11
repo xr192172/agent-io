@@ -98,6 +98,110 @@ export function deleteExpectedApi(input: DeleteExpectedApiInput): EditResult {
 }
 
 // ─────────────────────────────────────────────────────────────
+// set_expected_apis：**整块重写**该文件的契约列表（★ T160）
+// ─────────────────────────────────────────────────────────────
+
+export interface SetExpectedApisInput {
+  feature: string;
+  /** 所属文件 id（`semantic.files[].id`） */
+  file_id: string;
+  /** ★ **整块**新契约列表 —— **不是增量**：这里给什么，这个文件就是什么。 */
+  expected_apis: Array<{ signature: string; notes?: string }>;
+  /** 修订说明（进决策/历史的口径同其它 op；此处只落进回执，供人复核） */
+  note?: string;
+}
+
+/** 整块重写的结构化回执（见 `EditResult.data`）。★ 口径写在字段注释里，别让读者自己猜。 */
+export interface SetExpectedApisData {
+  mode: 'block-rewrite';
+  file_id: string;
+  /** 重写前的契约签名（逐字，保持原顺序） */
+  before: string[];
+  /** 重写后的契约签名（逐字，保持你给的顺序） */
+  after: string[];
+  /** ★ 口径：以下三项按**签名串逐字相等**算。
+   *  ★★ 所以"改了一条契约"会**同时**出现在 `removed` 与 `added` 里（那是**同一条**，不是删一加一）。 */
+  added: string[];
+  removed: string[];
+  kept: string[];
+}
+
+/**
+ * ★★★ **整块重写**该文件的 `expected_apis`（T160，2026-10-11）。
+ *
+ * ## 为什么要有它（用户的理念，逐字）
+ * > *"AI 直接不打补丁而是局部重写，因为 AI 写代码比打补丁厉害……哪怕**重构工具**，
+ * >  我的推荐也是**把那一整块圈出来，然后让你去重写**……所以**不用在意重写的成本**。"*
+ *
+ * ## 它解掉的具体病（★ 实测的不对称）
+ * 代码侧的写入原语 `edit_code op=replace` 的纪律是
+ * 「**不信 AI 的行号、不信 AI 的 old_string**」——只给 `文件 + 符号名 + 完整新定义`。
+ * ★ 而设计侧此前只有 `updateExpectedApi`：**按 `data.signature`（旧签名串）逐字匹配**来找目标
+ *   ⇒ 要改 `NodeDecision` 的契约，**得先把那 91 个字符的旧串一字不差地背出来**，
+ *   否则报 `API "…" 不存在于文件 "…"` —— **正是代码侧已经抛弃的那把老尺**。
+ * ⇒ **同一条理念，代码侧落地了、设计侧没有。** 本函数把它补上：
+ *   **圈出整块（`get_dsl` 能看到当前列表）⇒ 回一个整块 ⇒ 整块替换**，**不需要定位、不需要旧串**。
+ *
+ * ## 纪律（照本仓已立的三条）
+ * 1. **不打补丁**：不做"改第 3 条的第 2 个字段"这种定位式 API（那又回到旧串匹配）。
+ * 2. **不许静默**：回执**必须**报出增删（`data.added/removed/kept`）—— 否则"漏写一条"会被读成"改好了"。
+ * 3. **不猜**：`expected_apis` 不是数组 / 元素缺 `signature` ⇒ **抛**（不兜底成"那就别改了"）。
+ */
+export function setExpectedApis(input: SetExpectedApisInput): EditResult & { data: SetExpectedApisData } {
+  const { feature, file_id, expected_apis } = input;
+
+  const dsl = getDSL(feature);
+  if (!dsl || !dsl.semantic) throw new Error(`feature "${feature}" 不存在或没有 semantic 层`);
+
+  const file = dsl.semantic.files.find(f => f.id === file_id);
+  if (!file) throw new Error(`文件 "${file_id}" 不存在`);
+
+  const before = (file.expected_apis ?? []).map(a => a.signature).filter((s): s is string => !!s);
+  const after = expected_apis.map(a => a.signature);
+
+  // ★ 不猜：整块重写最容易出的错是"给了一条没有 signature 的"，静默丢掉它就等于悄悄删契约。
+  const badIdx = expected_apis.findIndex(a => !a || typeof a.signature !== 'string' || a.signature.trim() === '');
+  if (badIdx >= 0) {
+    throw new Error(`expected_apis[${badIdx}] 缺少非空 signature ⇒ 拒绝整块重写（静默丢掉它 = 悄悄删一条契约）`);
+  }
+  const dup = after.filter((s, i) => after.indexOf(s) !== i);
+  if (dup.length) {
+    throw new Error(`expected_apis 里有重复 signature（${[...new Set(dup)].join(' / ')}）⇒ 定位会二义，拒绝写入`);
+  }
+
+  const beforeSet = new Set(before);
+  const afterSet = new Set(after);
+  const data: SetExpectedApisData = {
+    mode: 'block-rewrite',
+    file_id,
+    before,
+    after,
+    added: after.filter(s => !beforeSet.has(s)),
+    removed: before.filter(s => !afterSet.has(s)),
+    kept: after.filter(s => beforeSet.has(s)),
+  };
+
+  file.expected_apis = expected_apis.map(a => ({ signature: a.signature, ...(a.notes ? { notes: a.notes } : {}) }));
+  saveDSL(dsl);
+
+  // ★★ 首行必须**自足**：`updateFeatureCore` 的汇总**只取每 op 的 `message` 首行**
+  //   ⇒ 首行是**唯一保证被看见**的那一行（明细与 `data` 都可能在汇总/传输时丢）。
+  //   ★ 而"整块重写"是**破坏性**的（给少了就删条目）⇒ **删了几条必须进首行，并带 ⚠**。
+  const delMark = data.removed.length ? '⚠ ' : '';
+  const lines = [
+    `${delMark}已**整块重写**契约列表：${file.path}（${file_id}）—— ` +
+      `${before.length} 条 → ${after.length} 条（＋${data.added.length} / －${data.removed.length} / ＝${data.kept.length}）`,
+  ];
+  if (data.added.length) lines.push(`  ＋ 新增 ${data.added.length}：${data.added.map(s => s.slice(0, 60)).join(' ｜ ')}`);
+  if (data.removed.length) lines.push(`  － 移除 ${data.removed.length}：${data.removed.map(s => s.slice(0, 60)).join(' ｜ ')}`);
+  lines.push(`  ＝ 原样保留 ${data.kept.length}`);
+  lines.push('  ★ 口径：上面按**签名串逐字**比 ⇒ "改了一条契约"会**同时**出现在 ＋ 与 － 里（那是同一条）。');
+  if (input.note) lines.push(`  ★ 说明：${input.note}`);
+
+  return { message: lines.join('\n'), feature, data };
+}
+
+// ─────────────────────────────────────────────────────────────
 // set_node_semantic：绑定节点与语义文件（自动同步状态）
 // ─────────────────────────────────────────────────────────────
 

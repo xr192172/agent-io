@@ -139,7 +139,11 @@ export const DESIGN_TOOLS: ToolDef[] = [
       'weight: normal（默认）/ routine。routine=轻量写路径：跳过 L4 证据回溯（仍留 L1-L3 防空话/套话/泛谈），' +
       '适合日常维护（补节点/改职责描述/加标注/改属性），不必先跑代码留 trace 证据；改架构/契约等重改请用 normal 全链强闸。' +
       '★ 但**改 `semantic.files` 的 op（`type=file` / `type=api`）两档都要先"现取该文件的事实"**：' +
-      'DSL 已不存事实镜像（actual_apis/actual_deps 已移除）⇒ 事实只能现取，须把该文件路径作为 evidence 的 ref 传进来。',
+      'DSL 已不存事实镜像（actual_apis/actual_deps 已移除）⇒ 事实只能现取，须把该文件路径作为 evidence 的 ref 传进来。' +
+      '★★ **`type=api` 改契约：优先【整块重写】**（T160）—— `op=update` + `data.expected_apis=[{signature,notes?},…]` ' +
+      '把该文件的契约列表**整块换掉**：**不需要位号、不需要旧串**（与 `edit_code op=replace` 的 ' +
+      '"不信 AI 的行号、不信 AI 的 old_string"**同一把尺**）。回执给结构化增删（`data.added/removed/kept`）。' +
+      '★ 旧的单条路（`data.signature`=**原签名串逐字** + `data.new_signature`）仍在，但**新写一律走整块重写**。',
     inputSchema: {
       feature: z.string().describe('feature 名'),
       agent: z
