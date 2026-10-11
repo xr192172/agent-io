@@ -100,7 +100,15 @@ export const OP_SPECS: readonly OpSpec[] = [
     note: '`data.algo` 可选（dag | force | grid，缺省 dag）；另有 direction / h_gap / v_gap 可选',
   },
   { type: 'simulation', ops: ['reset'], idRequired: false, required: {} },
-  { type: 'tag', ops: ['add', 'delete'], idRequired: false, required: { add: ['tag'], delete: ['tag'] } },
+  {
+    type: 'tag',
+    ops: ['add', 'delete'],
+    idRequired: false,
+    required: { add: ['tag'], delete: ['tag'] },
+    // ★ T175：`data.files` 此前**只在描述的另一段里说过**（那段被收进本表时差点漏掉）——
+    //   逐项核对后补进来：★ **删重复之前必须确认"新家有没有"**，否则就是信息消失。
+    note: '`data.files` = **成员文件**（仓库相对路径 **或** 文件 id）—— 省略 ⇒ 只动这个 tag 自身；给了 ⇒ 把这些文件挂到这个功能标记下',
+  },
   {
     type: 'decision',
     ops: ['update'],
@@ -112,7 +120,9 @@ export const OP_SPECS: readonly OpSpec[] = [
       '`rationale` / `consequences` / **`acceptance`** / `thread` = **字符串**（★ **不是数组**）· ' +
       '`votes` = 数字 · `evidence_source` / `tags` = **字符串数组** · ' +
       '`status` = `active`｜`superseded`｜`draft` · `author` = `human`｜`llm` · ' +
-      '`dissent` / `alternatives` = 对象数组（`alternatives` 每项要 `rejected_because`：它是"**被否掉的方案 + 原因**"，没裁定的分歧请放 `dissent`）',
+      '`note` = **字符串**（修订说明）· ' +
+      '`dissent` = 数组，每项 `{option: 字符串(必填), votes?: 数字, evidence_source?: 字符串数组}`（★ **未决分歧**放这，待对拍）· ' +
+      '`alternatives` = 数组，每项 `{option, rejected_because}` 两个都要（★ **已被排除的方案**放这，缺 `rejected_because` 会被拒）',
   },
 ];
 

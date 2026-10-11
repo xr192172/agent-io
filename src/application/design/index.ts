@@ -129,10 +129,11 @@ export const DESIGN_TOOLS: ToolDef[] = [
       'layout.apply data.algo=dag|force|grid；simulation.reset 无参；' +
       '★ tag：功能标记 —— op=add/delete，data.tag=标记名（必填），data.files=成员文件（仓库相对路径或文件 id；省略=只动这个标签自身）。' +
       '给文件节点打"隶属某功能"标签，成员被改名/删除后可用 get_dsl query=tag 查出**失联成员**；标记住设计意图 overlay，活过 import_project 重建）。' +
-      '★ decision：**决策卡写入口** —— op=update，id=文件/文档节点 id 或仓库相对路径，data.summary 必填（结论），' +
-      '可带 rationale/consequences/acceptance；★ **未决分歧进 data.dissent**（{option, votes, evidence_source}[]，待对拍），' +
-      '**已排除的方案才进 data.alternatives**（{option, rejected_because}[]，缺 rejected_because 会被拒）；' +
-      '可带 votes/evidence_source（多源印证）/ author / status / thread / tags / note（修订说明）；' +
+      // ★★ 2026-10-11（T175）：本段原先**把 `decision` 的 data 字段清单又列了一遍** ——
+      //   而 T170 新加的「data 契约」表**也在列**它 ⇒ ★ **同一件事两处，且已经不一致**
+      //   （本段的 `dissent` 形状比表里细 ⇒ 表是错的；而表的位置在描述更后面 ⇒ 读者先看到的是旧段）。
+      //   ⇒ 按本仓纪律「**同一件事只说一处**」：**字段清单归表**，本段只留**表里没有的语义**（"谁"的两个轴 / 历史 / overlay）。
+      '★ decision：**决策卡写入口** —— op=update。★ **它的 `data` 字段清单与形状见下面的「data 契约」表**（此处不再重复）。' +
       '★ **两个正交的"谁"**（都要能同时出现）：data.author = **类别**（可信度轴，只认 \'human\' | \'llm\'）；' +
       '**顶层入参 `agent`** = **身份**（可追溯轴，发起本次调用的 Agent 编号/名字，工具不生成、由调用方给；' +
       '没传 ⇒ 落库但读端标「未署名」）。' +
@@ -197,7 +198,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
               .describe('操作：add/update/delete/move 通用；resolve=关闭标注；submit/review=审批；save/rollback/delete=快照；apply=布局；reset=仿真'),
             type: z
               .enum(['node', 'edge', 'file', 'api', 'binding', 'status', 'annotation', 'approval', 'snapshot', 'layout', 'simulation', 'tag', 'decision'])
-              .describe('目标类型：node/edge/file/api/binding/status 几何与语义；annotation/approval/snapshot/layout/simulation 协作与整理；tag=功能标记（data.tag + data.files）；decision=决策卡写入口（id=文件/文档节点 id 或路径；data.summary 必填，★ 未决分歧进 data.dissent，**不是** data.alternatives）'),
+              .describe('目标类型：node/edge/file/api/binding/status 几何与语义；annotation/approval/snapshot/layout/simulation 协作与整理；tag=功能标记；decision=决策卡写入口（★ **字段清单与形状见描述里的「data 契约」段**；★ 未决分歧进 data.dissent，**不是** data.alternatives）'),
             id: z.string().optional().describe('目标 ID（annotation/approval/snapshot/layout/simulation 可省略，用 data 传参）'),
             data: z.record(z.string(), z.unknown()).optional(),
           }),
