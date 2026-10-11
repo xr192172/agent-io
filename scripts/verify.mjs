@@ -142,9 +142,14 @@ for (const g of gates) {
   const tag = r.state === 'PASS' ? `${C.g}PASS${C.x}` : r.state === 'FAIL' ? `${C.r}FAIL${C.x}` : `${C.y}SKIP${C.x}`;
   const label = (g.kind === 'report' ? `${C.d}[报告]${C.x} ` : '') + g.name;
   console.log(`  ${tag}  ${label.padEnd(20)} ${C.d}${String(ms).padStart(5)}ms  ${r.why}${C.x}`);
-  if (r.state === 'FAIL') { fail++; if (r.out) tail.push(`${C.r}── ${g.name} 输出 ──${C.x}\n${r.out.slice(0, 4000)}`); }
+  // ★★ 2026-10-11（T161）：**截断了就必须说** —— 原先 `slice(0, 4000)` / `slice(0, 3000)` 直接切，
+  //   读者会以为**这就是全部输出**（"沉默会被读成没问题"的又一形态）。
+  //   ★ 与 T160 定下的两条同源：**① 结构化/完整产物要有出路；② 摘要处必须自足**。
+  //   这里加的是**第③条**：**截断要标注**（不然"没看到"与"没有"分不清）。
+  const clip = (s, n) => (s.length <= n ? s : `${s.slice(0, n)}\n…（★ 已截断：原文 ${s.length} 字符，只印前 ${n}；要看全 ⇒ 单独跑该门）`);
+  if (r.state === 'FAIL') { fail++; if (r.out) tail.push(`${C.r}── ${g.name} 输出 ──${C.x}\n${clip(r.out, 4000)}`); }
   if (r.state === 'SKIP') skip++;
-  if (r.state === 'PASS' && g.kind === 'report' && r.out) tail.push(`${C.d}── ${g.name}（报告区：通过时打印正文；失败照常计入）──${C.x}\n${r.out.slice(0, 3000)}`);
+  if (r.state === 'PASS' && g.kind === 'report' && r.out) tail.push(`${C.d}── ${g.name}（报告区：通过时打印正文；失败照常计入）──${C.x}\n${clip(r.out, 3000)}`);
 }
 
 console.log('');

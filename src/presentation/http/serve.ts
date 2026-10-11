@@ -387,9 +387,19 @@ async function handleApiLiveRebuild(req: http.IncomingMessage, res: http.ServerR
     const result = await importProject({ project_dir: projectRoot, feature, cache_db: cacheDb, live_only: true });
     // 重建成功后推送 SSE：打开的画布自动刷新并重新跑 diff 高亮（source=watch，非 browser，避免循环）
     broadcastSSE('dsl-changed', { feature, source: 'watch', timestamp: new Date().toISOString() });
+    // ★★ 2026-10-11（T161）：**原先这里是 `result.message.split('\n')[0]`** —— 只回首行 `已导入项目 → feature "x"`。
+    //   ⇒ 把 `importProject` 回执里**其余全部**静默掉了，其中包含**它专门声明"不静默"的那几条**：
+    //     · `⚠ 单文件化预警 N 个:`（**多行清单**）· `跳过/截断:`（**多行清单**）
+    //     · `designDropNote`（源码逐字："★ T77：重建丢掉了什么，**明确报出来**（不静默）"）
+    //     · 基线事实 / 文档 / overlay 提示
+    //   ★★ 而**同一个回执在本文件里还有另一个出口**（下面的目录上传/本地路径导入端点，
+    //      `message: imp.message` = **完整**）⇒ **同一件事两处两种口径**（本仓头号病根），
+    //      且**截断的这处正是丢警告的**。
+    //   ⇒ 修法：与那个出口**对齐成完整 message**（★ 不是加 `headline` 字段糊一层 ——
+    //     那会留下"两处各持一份口径"）。判据：**上层不许把下层的"不许静默"静默掉**。
     sendJson(res, 200, {
       success: true,
-      message: result.message.split('\n')[0],
+      message: result.message,
       files: result.files_parsed,
       symbols: result.symbols_found,
       cache: result.cache ?? null,
