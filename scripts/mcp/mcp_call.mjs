@@ -103,14 +103,30 @@ p.stdout.on('data', (d) => {
           if (!t) {
             out = `没有这个工具："${describeTarget}"。★ 共 ${list.length} 个工具；列表见 capability_map（或 AGENT_IO_MCP_FACE=composed 下的 atomic_call action=list）。`;
           } else {
+            // ★★★ 2026-10-11（T176）：**递归展开 schema** —— 此前只打顶层入参名，
+            //   ⇒ ★ **深层 describe 全看不见**（如 `evidence[]` 元素里的 `type`，它的说明其实写得很好，
+            //     可是只有**看 schema 的人**能看到）⇒ 实测代价：**黑盒两轮**（T171 第三轮 / 本轮第五轮）
+            //     都卡在"`evidence[].type` 该填什么、为什么没有 `file`"，**只能靠报错反推** ✗
+            //   ★ 而**真实 host 给模型的是完整 JSON schema** ⇒ 本壳这么打才是**与真实对齐** ✓
+            const lines = [];
             const sch = t.inputSchema ?? {};
-            const req = Array.isArray(sch.required) ? sch.required : [];
-            const names = Object.keys(sch.properties ?? {});
+            const walk = (node, path, depth) => {
+              if (!node || depth > 4) return;
+              const req = new Set(Array.isArray(node.required) ? node.required : []);
+              for (const [k, v] of Object.entries(node.properties ?? {})) {
+                const mark = req.has(k) ? '★必填' : '  可选';
+                const kind = v.type === 'array' ? `array<${v.items?.type ?? '?'}>` : (v.type ?? (v.enum ? 'enum' : '?'));
+                const d = (v.description ?? '').split('\n').join(' ');
+                lines.push(`${'  '.repeat(depth)}${mark}  ${path}${k}  [${kind}]${d ? '  — ' + d.slice(0, 500) : ''}`);
+                if (v.enum) lines.push(`${'  '.repeat(depth)}       取值: ${v.enum.join(' | ')}`);
+                if (v.items) walk(v.items, `${path}${k}[].`, depth + 1);
+                if (v.properties) walk(v, `${path}${k}.`, depth + 1);
+              }
+            };
+            walk(sch, '', 0);
             out =
-              `【${t.name}】${t.title ?? ''}\n\n` +
-              `${t.description ?? '(无描述)'}\n\n` +
-              `── 入参（顶层名）──\n` +
-              names.map((n) => `${req.includes(n) ? '★必填' : '  可选'}  ${n}`).join('\n');
+              `【${t.name}】${t.title ?? ''}\n\n${t.description ?? '(无描述)'}\n\n` +
+              `── 入参（★ **递归展开**，含数组元素与嵌套对象；括号里是类型）──\n${lines.join('\n')}`;
           }
           finish(out ? 0 : 1);
         } else {

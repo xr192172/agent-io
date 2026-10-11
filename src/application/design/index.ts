@@ -210,7 +210,17 @@ export const DESIGN_TOOLS: ToolDef[] = [
             type: z
               .enum(['trace', 'diff', 'node', 'edge', 'metric'])
               .describe(
-                "证据类型：L4 支持 ① 'trace'（真实执行记录）② **指向仓库文件的 ref**（程序按 fileFacts **现取**事实验证）—— 改 semantic.files 时必须给后者",
+                // ★★ 2026-10-11（T176）：**黑盒两轮都卡在这**（T171 第三轮 / T176 第五轮），原话：
+                //   *"说明说「ref 要放文件路径」，可选值里却**没有一个叫 `file`**"*
+                //   ⇒ ★ 从实现读出真相：`existsFn` = `nodeIds.has(ref)` ∨ `traceResolver.exists(ev)` ∨ `factsOf(ref)`，
+                //     而 `traceResolver.exists` **只认 `type==='trace'`** ⇒ ★ **五个值里只有 `node` 与 `trace` 参与判定**；
+                //     `diff`/`edge`/`metric` **判定时不加区分** —— 它们是**"文件证据"的共用槽位**。
+                "证据类型（★ **取值里【没有】`file`，别去找**）：" +
+                  "① `'trace'` = 真实执行记录，`ref` 是**探针名**；" +
+                  "② **文件证据** = `ref` 是**仓库相对路径**（程序按 `fileFacts` **现取**事实验证）——" +
+                  "★ **填 `diff` 最贴切**（`diff` / `edge` / `metric` 三者判定时**不加区分**，都是「文件证据」的共用槽位）；" +
+                  "③ `node` ⇒ `ref` 必须是**节点 id**（几何节点 / `semantic.files` 的文件节点 / 文档节点都算）。" +
+                  "★ **改 `semantic.files` 时必须给一条**（走文件证据那类）。",
               ),
             ref: z
               .string()
