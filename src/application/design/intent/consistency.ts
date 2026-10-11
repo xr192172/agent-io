@@ -304,8 +304,15 @@ function compareSignatures(
 
   if (nameAligned) {
     // 对象形参契约：期望为对象字面量时，实现应为对象/Record/任意，而非标量
+    // ★★ 2026-10-11 修**两侧判据不对称**（T154 试点真跑踩到）：
+    //   期望侧 `expHasObj` 用 `: {`（**任意**对象字面量），实现侧 `actIsObj` 却只认
+    //   `{}`（**空**对象）/`{[`/`Record<`/`object` —— 于是「期望对象、实际也是**非空**对象字面量」
+    //   （如 `opts?: { author?: string }`）被判成"不匹配"（**假差异**）。
+    //   实测病灶：`applyDecisionWrite(prev, history, next, opts?: { … })` 的契约与实现**逐字等价**，
+    //   却报 `形参类型不匹配：期望对象形参` ⇒ 把"配上了"读成"没配上"。
+    //   修法：两侧用**同一把尺**（实现侧也收 `: {`）。
     const expHasObj = /:\s*\{/.test(expectedArgs);
-    const actIsObj = /:\s*(\{\s*\}|\{\s*\[|Record\s*<|object)/i.test(actualArgs);
+    const actIsObj = /:\s*\{|Record\s*<|\bobject\b/i.test(actualArgs);
     if (expHasObj && !actIsObj) {
       return { score: 80, reason: `形参类型不匹配：期望对象形参，实际 ${actualArgs}` };
     }
