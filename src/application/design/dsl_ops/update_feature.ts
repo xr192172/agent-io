@@ -739,11 +739,37 @@ function applyDecisionOp(feature: string, op: CheckedOperation<FeatureOperation>
   const target = resolveDecisionTarget(dsl, op.id, data);
 
   const decision: NodeDecision = { summary };
-  if (typeof data.rationale === 'string' && data.rationale.trim()) decision.rationale = data.rationale.trim();
+  // ★★★ 2026-10-11（T174）：下面这 4 个字段**原先都是"形状不对就静默丢弃"** ——
+  //   形如 `if (typeof data.X === 'string' && data.X.trim()) decision.X = …`
+  //   ⇒ ★ **给了、但形状不对 ⇒ 条件不成立 ⇒ 一声不响地丢掉**（本仓最反对的形态）。
+  //   ★★ 实测代价（黑盒第四轮）：代理按"链注说的验收"传了 `acceptance: ["…"]`（**数组**），
+  //     **连试三种形态全部被静默丢弃**，它只能靠 `grep` **回读落盘文件**才发现没进去，
+  //     并一度以为"契约没写进去"⇒ 最后**绕道**用 `expected_apis` 才闭环 ✗
+  //   ⇒ 现在与**同袋子里另外几个字段（`votes` / `evidence_source` / `status` / `author`）对齐**：
+  //     **给了就校验，形状不对就抛**。★ 判据：**同一处不许两种纪律**。
+  if (data.rationale !== undefined) {
+    if (typeof data.rationale !== 'string' || !data.rationale.trim()) {
+      throw new Error('decision.update 的 data.rationale 必须是**非空字符串**（说清"为什么这么定"）');
+    }
+    decision.rationale = data.rationale.trim();
+  }
   const alternatives = parseAlternatives(data.alternatives);
   if (alternatives.length) decision.alternatives = alternatives;
-  if (typeof data.consequences === 'string' && data.consequences.trim()) decision.consequences = data.consequences.trim();
-  if (typeof data.acceptance === 'string' && data.acceptance.trim()) decision.acceptance = data.acceptance.trim();
+  if (data.consequences !== undefined) {
+    if (typeof data.consequences !== 'string' || !data.consequences.trim()) {
+      throw new Error('decision.update 的 data.consequences 必须是**非空字符串**');
+    }
+    decision.consequences = data.consequences.trim();
+  }
+  if (data.acceptance !== undefined) {
+    if (typeof data.acceptance !== 'string' || !data.acceptance.trim()) {
+      throw new Error(
+        'decision.update 的 data.acceptance 必须是**非空字符串**（★ **不是数组** —— ' +
+          '写清"这条决策怎么算验收通过"，一句话）',
+      );
+    }
+    decision.acceptance = data.acceptance.trim();
+  }
   // ★★ 未决分歧独立成字段（**不进 alternatives**）
   const dissent = parseDissent(data.dissent);
   if (dissent.length) decision.dissent = dissent;
@@ -762,8 +788,20 @@ function applyDecisionOp(feature: string, op: CheckedOperation<FeatureOperation>
     if (!['active', 'superseded', 'draft'].includes(data.status)) throw new Error(`decision.update 的 data.status 非法：${data.status}`);
     decision.status = data.status as NodeDecision['status'];
   }
-  if (typeof data.thread === 'string' && data.thread.trim()) decision.thread = data.thread.trim();
-  if (Array.isArray(data.tags)) decision.tags = data.tags.filter((x): x is string => typeof x === 'string');
+  if (data.thread !== undefined) {
+    // ★ T174：同族 —— 原先 `typeof === 'string'` 不成立就**静默丢**；现改为"给了就校验"。
+    if (typeof data.thread !== 'string' || !data.thread.trim()) {
+      throw new Error('decision.update 的 data.thread 必须是**非空字符串**（这条决策挂在哪个线索/文档上）');
+    }
+    decision.thread = data.thread.trim();
+  }
+  if (data.tags !== undefined) {
+    // ★ T174：原先 `Array.isArray` + `filter` ⇒ **非字符串项被悄悄滤掉**（半静默）；现改为**报**。
+    if (!Array.isArray(data.tags) || data.tags.some((x) => typeof x !== 'string')) {
+      throw new Error('decision.update 的 data.tags 必须是**字符串数组**（不要混进对象/数字）');
+    }
+    decision.tags = data.tags as string[];
+  }
   // ★★ 作者**类别**（可信度轴）：只认 'human' | 'llm' —— 收口（从前是自由文本，把类别/身份挤在一格）。
   //   ★ 身份（谁：Agent 编号/名字）是**另一个维度**，走**顶层入参 `agent`**，不许再塞进 author。
   let author: DecisionAuthor | undefined;

@@ -164,7 +164,9 @@ export const DESIGN_TOOLS: ToolDef[] = [
       '\n★★★ **`operations[]` 各 type 的 `data` 契约**（★ T170：**唯一判据表**在 `dsl_ops/op_data_spec.ts`，' +
       '这里只是**它的渲染**，不新增规则）—— ★ **照这张表填就不会被校验打回**：\n' +
       renderOpSpecs() +
-      '\n★ 上面标 "id" 的 type ⇒ `operations[].id` 必填；未标 ⇒ 用 `data` 传参、`id` 可省。',
+      '\n★ 上面标 "id" 的 type ⇒ `operations[].id` 必填；未标 ⇒ 用 `data` 传参、`id` 可省。' +
+      '\n★★ **`data` 是【自由袋子】**（T174 如实说明）：**不在上表里的键名会被【静默忽略】** —— 不报错、也不生效；' +
+      '形状写错则**会报错**（2026-10-11 起）。⇒ ★ **只用上表列出的字段名，并按它的形状填**（★ 具体 type 的字段形状见该 type 的 `★` 行）。',
     inputSchema: {
       feature: z.string().describe('feature 名'),
       agent: z

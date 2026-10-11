@@ -18,7 +18,14 @@
  *
  * ★ 路径无关。用法：
  *   node scripts/mcp/mcp_call.mjs <tool> '<json args>' [服务端入口.js] [cwd]
+ *   node scripts/mcp/mcp_call.mjs --describe <tool>      # ★ 打印该工具的 title / description / 入参名
  *   例：node scripts/mcp/mcp_call.mjs capability_map '{}'
+ *
+ * ★★★ 2026-10-11（T174）：加 `--describe` —— 修一个**实验环境的缺口**（不是产品缺陷）：
+ *   本壳原先**只印回执、不印工具描述**，而真实 MCP host 是**把描述给模型的**（`tools/list`）。
+ *   ⇒ 后果（黑盒第四轮实测）：`edit_dsl` 的回执/报错里写「完整字段表见 `edit_dsl` 描述里的「data 契约」段」，
+ *     而**读它的人拿不到描述** ⇒ ★ **那句"指路"对他 = 死路**，只能靠"故意发非法入参套 schema"。
+ *   ⇒ 现在壳能打印描述 ⇒ **实验环境与真实 host 对齐**。
  */
 import { spawn } from 'node:child_process';
 import path from 'node:path';
@@ -28,15 +35,24 @@ const HARD_TIMEOUT_MS = 120000;
 
 const [tool, argsJson, entryArg, cwdArg] = process.argv.slice(2);
 if (!tool) {
-  console.error("用法: node scripts/mcp/mcp_call.mjs <tool> '<json args>' [入口.js] [cwd]");
+  console.error("用法: node scripts/mcp/mcp_call.mjs <tool> '<json args>' [入口.js] [cwd]\n     : node scripts/mcp/mcp_call.mjs --describe <tool>");
+  process.exit(2);
+}
+// ★ T174：`--describe <tool>` ⇒ 走 `tools/list` 打印该工具的 title / description / 入参名。
+const isDescribe = tool === '--describe';
+const describeTarget = isDescribe ? argsJson : undefined;
+if (isDescribe && !describeTarget) {
+  console.error('用法: node scripts/mcp/mcp_call.mjs --describe <工具名>');
   process.exit(2);
 }
 let args;
-try {
-  args = JSON.parse(argsJson || '{}');
-} catch (e) {
-  console.error(`入参不是合法 JSON：${e.message}`);
-  process.exit(2);
+if (!isDescribe) {
+  try {
+    args = JSON.parse(argsJson || '{}');
+  } catch (e) {
+    console.error(`入参不是合法 JSON：${e.message}`);
+    process.exit(2);
+  }
 }
 const cwd = cwdArg ? path.resolve(cwdArg) : process.cwd();
 const entry = path.resolve(entryArg ?? path.join(cwd, 'dist/src/presentation/mcp/server.js'));
@@ -74,12 +90,35 @@ p.stdout.on('data', (d) => {
       if (r.id === 1) {
         // ★ 收到 initialize 的响应 ⇒ **立刻**发下一棒（原先在这里硬等 2.2 秒）
         send({ jsonrpc: '2.0', method: 'notifications/initialized' });
-        send({ jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: tool, arguments: args } });
+        send(
+          isDescribe
+            ? { jsonrpc: '2.0', id: 2, method: 'tools/list' }
+            : { jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: tool, arguments: args } },
+        );
       } else if (r.id === 2) {
-        out = (r.result?.content ?? []).map((x) => x.text ?? '').join('\n');
-        if (r.result?.isError) out += '\n[isError=true]';
-        // ★ 拿到回执 ⇒ 立刻退出（原先在这里硬等 90 秒）
-        finish(out ? 0 : 1);
+        if (isDescribe) {
+          // ★ T174：把描述**原样**给出来（真实 host 就是把它给模型的）
+          const list = r.result?.tools ?? [];
+          const t = list.find((x) => x.name === describeTarget);
+          if (!t) {
+            out = `没有这个工具："${describeTarget}"。★ 共 ${list.length} 个工具；列表见 capability_map（或 AGENT_IO_MCP_FACE=composed 下的 atomic_call action=list）。`;
+          } else {
+            const sch = t.inputSchema ?? {};
+            const req = Array.isArray(sch.required) ? sch.required : [];
+            const names = Object.keys(sch.properties ?? {});
+            out =
+              `【${t.name}】${t.title ?? ''}\n\n` +
+              `${t.description ?? '(无描述)'}\n\n` +
+              `── 入参（顶层名）──\n` +
+              names.map((n) => `${req.includes(n) ? '★必填' : '  可选'}  ${n}`).join('\n');
+          }
+          finish(out ? 0 : 1);
+        } else {
+          out = (r.result?.content ?? []).map((x) => x.text ?? '').join('\n');
+          if (r.result?.isError) out += '\n[isError=true]';
+          // ★ 拿到回执 ⇒ 立刻退出（原先在这里硬等 90 秒）
+          finish(out ? 0 : 1);
+        }
       }
     } catch {
       /* 日志行（非 JSON-RPC） */

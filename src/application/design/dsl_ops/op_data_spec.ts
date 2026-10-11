@@ -107,7 +107,12 @@ export const OP_SPECS: readonly OpSpec[] = [
     idRequired: true,
     idNote: '文件/文档节点 id **或**仓库相对路径（`resolveDecisionTarget` 两种都认）',
     required: { update: ['summary'] },
-    note: '`id` = 文件/文档节点 id **或仓库相对路径**；data 可带 rationale / consequences / acceptance / dissent / alternatives / votes / evidence_source / status / thread / tags',
+    note:
+      '★ **`data` 各字段的形状（2026-10-11 T174 从实现逐个读出 —— 照填）**：' +
+      '`rationale` / `consequences` / **`acceptance`** / `thread` = **字符串**（★ **不是数组**）· ' +
+      '`votes` = 数字 · `evidence_source` / `tags` = **字符串数组** · ' +
+      '`status` = `active`｜`superseded`｜`draft` · `author` = `human`｜`llm` · ' +
+      '`dissent` / `alternatives` = 对象数组（`alternatives` 每项要 `rejected_because`：它是"**被否掉的方案 + 原因**"，没裁定的分歧请放 `dissent`）',
   },
 ];
 
