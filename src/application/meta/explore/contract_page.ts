@@ -33,7 +33,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { parseAstRoot, parseFileFull, type SyntaxNodeLike } from '../../../infrastructure/parse/index.js';
+import { parseAstRoot, parseFileFull, memberNamesOf, findTypeDeclByName } from '../../../infrastructure/parse/index.js';
 import { ensureProjectIndex } from '../../../infrastructure/index/index_freshness.js';
 import { hasAnyIndexedFiles } from '../../../infrastructure/index/symbols.js';
 import { locateCandidates } from '../../../infrastructure/analysis/diagnosis/candidate_locator.js';
@@ -130,79 +130,10 @@ export interface ContractPageResult {
   caveats: string[];
 }
 
-/** 类型声明节点（跨语言取本仓内核已注册的那些；取不到的形态直接跳过，宁可少收也不猜）。 */
-const TYPE_DECL_NODES = new Set([
-  'interface_declaration',
-  'type_alias_declaration',
-  'class_declaration',
-  'abstract_class_declaration',
-  'struct_declaration',
-]);
-/** 声明体节点 */
-const BODY_NODES = new Set(['interface_body', 'object_type', 'class_body', 'declaration_list']);
-/** 成员节点（属性/方法签名/字段） */
-const MEMBER_NODES = new Set([
-  'property_signature',
-  'method_signature',
-  'public_field_definition',
-  'property_definition',
-  'method_definition',
-  'abstract_method_signature',
-  'abstract_property_signature',
-]);
-
-/** 深度优先：找到名为 `name` 的类型声明节点（内核 AST 节点）。 */
-function findDeclByName(root: SyntaxNodeLike, name: string): SyntaxNodeLike | null {
-  let hit: SyntaxNodeLike | null = null;
-  const walk = (n: SyntaxNodeLike): void => {
-    if (hit) return;
-    if (TYPE_DECL_NODES.has(n.type)) {
-      const nm = n.childForFieldName('name');
-      if (nm && nm.text === name) {
-        hit = n;
-        return;
-      }
-    }
-    for (let i = 0; i < n.childCount; i++) {
-      const c = n.child(i);
-      if (c) walk(c);
-    }
-  };
-  walk(root);
-  return hit;
-}
-
-/** 取某声明节点的**直接成员名**（interface / type / class）。找不到体/成员 ⇒ 空数组（不猜）。 */
-function memberNamesOf(decl: SyntaxNodeLike): string[] {
-  let body: SyntaxNodeLike | null = null;
-  for (let i = 0; i < decl.childCount; i++) {
-    const c = decl.child(i);
-    if (c && BODY_NODES.has(c.type)) {
-      body = c;
-      break;
-    }
-  }
-  if (!body) return [];
-  const out: string[] = [];
-  for (let i = 0; i < body.childCount; i++) {
-    const m = body.child(i);
-    if (!m || !MEMBER_NODES.has(m.type)) continue;
-    const nm = m.childForFieldName('name');
-    if (nm && nm.text) {
-      out.push(nm.text);
-      continue;
-    }
-    // 兜底：取第一个 named 标识符子节点作名字（不同 grammar 的名字字段名可能不同）
-    for (let j = 0; j < m.childCount; j++) {
-      const c = m.child(j);
-      if (c && (c.type === 'property_identifier' || c.type === 'identifier' || c.type === 'type_identifier')) {
-        out.push(c.text);
-        break;
-      }
-    }
-  }
-  return [...new Set(out)];
-}
+// ★ T157（2026-10-11）：类型声明的节点集与成员提取**已提级到内核**
+//   （`infrastructure/parse/type_members.ts`）—— 因为 `consistency_check` 也要用同一份。
+//   ★ 原先这一整块（`TYPE_DECL_NODES`/`BODY_NODES`/`MEMBER_NODES`/`findDeclByName`/`memberNamesOf`）
+//     住在本文件里 ⇒ **两处调用各持一份**就是本仓头号病 ⇒ 已改为 `import`（见文件头 import 行）。
 
 /** 词表命中：原名 → snake 归一 → 小写（b_terms 的键就是字段名，不许自己再造变体）。 */
 function lookupTerm(symbol: string): { key: string; term: ContractTerm } | null {
@@ -360,7 +291,7 @@ async function contractPageCore(input: ContractPageInput): Promise<ContractPageR
     }
 
     const ast = await parseAstRoot(absFile, src);
-    const decl = ast ? findDeclByName(ast.root, symbol) : null;
+    const decl = ast ? findTypeDeclByName(ast.root, symbol) : null;
     if (decl) {
       members = memberNamesOf(decl);
       membersNote = `内核 AST 从 \`${decl.type}\` 的直接成员解出（interface/type/class）。`;

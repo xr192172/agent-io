@@ -10,7 +10,10 @@
  *      - ✅ 已实现（green）：expected 与 actual 匹配
  *      - ❌ 缺失（red）：expected 中有，但代码中没有
  *      - ⚠️ 签名不匹配（yellow）：函数存在但参数/返回值不一致
- *      - 🆕 代码新增（blue）：代码中有，但 DSL expected_apis 中没有
+ *      - 「🆕 代码新增（blue）」**已废**（T85/D1b）—— 见下「职责归属」。**别再加回来**。
+ *   3′.（T157，2026-10-11）**类型契约**（`interface`/`type`/`class`）走**成员比对**：
+ *      `expected_apis[].signature` 写成一行类型声明时，比的是**字段名 + 类型 + 可选性**
+ *      （★ 只对"契约声明了的成员"判；**实现多出来的成员不算差异**，但会在报告中列出）。
  *   4. 支持注释标记定位（<!-- agent-io:node_id -->）
  *   5. 验证跨文件不变式（multi_file_invariants）
  *
@@ -22,8 +25,9 @@
  * 职责归属（对账语义，与三方对比/基线一致）：
  *   - expected_apis 只由设计侧产生（import_project / scaffold / edit_dsl 决策），
  *     本工具只读不写
- *   - actual 以实际代码为事实源；报告把「预期缺失」（red）与「实现新增」（blue）
- *     分开，LLM 据此裁决：预期缺失 → 补实现；实现新增 → 回填设计或登记决策卡
+ *   - actual 以实际代码为事实源；报告把「预期缺失」（red）与「签名不匹配」（yellow）分开，
+ *     LLM 据此裁决：预期缺失 → 补实现（或把契约改对 —— **契约是人指定的**）；
+ *     ★ 「实现新增」**不在此列**（T85/D1b 已废）：它是**线 1**（相对**基线**）的事，见下。
  */
 
 import fs from 'node:fs';
@@ -37,6 +41,20 @@ import { getDSL, getBaselineFacts } from '../../../infrastructure/storage.js';
 // ★ T85/D3：线 1 的"现取事实"入口 —— 与 `import_project` 锚基线事实时**用的是同一个 accessor**（同源）
 import { fileFacts } from '../../../infrastructure/index/file_facts.js';
 import { parseFileSymbols, ParsedSymbol, isSupportedFile } from '../../../infrastructure/parse/ast_parser.js';
+// ★ T157（2026-10-11）：**类型契约**（`interface`/`type`/`class`）的成员比对。
+//   内核的 `ParsedSymbol.signature` 对类型**退化成 `Name()`** ⇒ 成员提取必须另走 AST；
+//   而"从签名串与从真实文件取成员"**共用同一份提取器**（`memberNamesOf`/`typeMembersOf` 的唯一住处），
+//   不许在这里再写一份正则（那正是本仓头号病）。
+import {
+  parseAstRoot,
+  findTypeDeclByName,
+  typeMembersOf,
+  typeDeclFromSignature,
+  normalizeMemberType,
+  type ParsedTypeMember,
+  type SignatureDeclResult,
+  type SyntaxNodeLike,
+} from '../../../infrastructure/parse/index.js';
 
 /**
  * ★★★ **线 1：代码相对基线的变更**（2026-10-09，T85/D3）。
@@ -190,6 +208,11 @@ export interface FileConsistency {
   file_path: string;
   exists: boolean;
   apis: ApiMatch[];
+  /**
+   * ★ T157（2026-10-11）：本文件层面的**诚实边界**（如"内核解析器不可用 ⇒ 形态判不了"）。
+   * ★ 只在真发生时才有 —— **不许静默**（沉默会被读成"判过了、没问题"）。
+   */
+  notes?: string[];
 }
 
 export interface ApiMatch {
@@ -200,6 +223,23 @@ export interface ApiMatch {
   status: 'matched' | 'missing' | 'mismatched' | 'unexpected';
   match_score: number;
   reason?: string;
+  /**
+   * ★ T157（2026-10-11）：**类型契约**（interface/type/class）的成员级明细。
+   * ★ 只在"期望侧被解析成类型声明"时填；函数/方法契约**不填**（那是 `reason` 的事）。
+   * ★★ `extras` **不算差异**（契约只声明"必需有什么"，实现多出来的成员合法）——
+   *   但**必须报出来**：否则"设计侧只声明了一小片"会被读成"完全一致"（本仓反复踩的坑）。
+   */
+  members?: {
+    matched: number;
+    /** 契约声明了、实现里没有的成员名 */
+    missing: string[];
+    /** 两边都有、但**类型或可选性**漂移了的成员 */
+    drifted: Array<{ name: string; kind: 'type' | 'optional'; expected: string; actual: string }>;
+    /** 实现有、契约**未声明**的成员名（★ 不算差异，仅如实报出） */
+    extras: string[];
+    /** ★ 判不了的成员（如实现侧没写返回注解 ⇒ 类型无从比）—— 不许静默当成"匹配" */
+    unjudged: string[];
+  };
 }
 
 export interface InvariantResult {
@@ -233,6 +273,14 @@ interface ParsedApi {
 function normalizeSignature(sig: string): string {
   return sig.replace(/\s+/g, ' ').trim().toLowerCase();
 }
+
+/**
+ * 「函数契约没找到」的**默认原因串** —— 唯一住处。
+ * ★ 提取它只为**一处复用**：渲染段靠它判断"这句是不是默认文案"（是则省略，不是则渲染）。
+ *   否则同一句话会有两处字面量（本仓头号病：同一件事住两处）。
+ * ★ T157：**类型契约**的"没找到"是**另一句**（"没找到类型声明"）—— 它必须被渲染出来。
+ */
+const MISSING_FUNC_REASON = '代码中未找到该函数';
 
 /**
  * 按顶层逗号切分参数列表（跳过 ()[]{}<> 嵌套）。
@@ -336,6 +384,81 @@ function compareSignatures(
   }
 
   return { score: 90, reason: '签名不完全一致' };
+}
+
+/**
+ * 比对**类型契约**的成员（T157，2026-10-11）。
+ *
+ * ## 为什么要它（它答的问题此前**无人答**）
+ * `expected_apis` 也可以写成一行类型声明（如
+ * `export interface Touched { feature?: string; … }`）—— 这是本仓**最核心的契约面**
+ * （"统一 [B] 契约形状"）。而在此之前，判定器**只收 `kind==='function'|'method'`** 的符号
+ * ⇒ 类型契约**一律报「❌ 缺失」**（**假红**）。★ 而"只按名字配上"的弱匹配又测不出字段漂移（**假绿**）
+ * ⇒ 两难。本函数走第三条路：**逐成员比**。
+ *
+ * ## 判据（三条，都要能证伪）
+ * 1. **只对"契约声明了的成员"判**：契约没写的成员，实现多出来 ⇒ **不算差异**
+ *    （照 T85/D1b 已立的先例：**契约只声明"必需有什么"**，不是"必须等于代码"）。
+ *    ★★ 但**必须报出来**（`extras`）—— 否则"设计侧只声明了一小片"会被读成"完全一致"。
+ * 2. **类型**：两侧**都**有类型注解时才比（归一化后逐字比）；**一侧没有 ⇒ `unjudged`**
+ *    （★ 不许静默当"匹配" —— 那是"不报错的错"）。
+ * 3. **可选性**：`?` 与必填是**不同的契约**（`summary: string` ≠ `summary?: string`）⇒ 也算漂移。
+ */
+function compareTypeContractMembers(
+  expectedMembers: ParsedTypeMember[],
+  actualMembers: ParsedTypeMember[],
+): NonNullable<ApiMatch['members']> {
+  const byName = new Map(actualMembers.map((m) => [m.name, m]));
+  const missing: string[] = [];
+  const drifted: NonNullable<ApiMatch['members']>['drifted'] = [];
+  const unjudged: string[] = [];
+  let matched = 0;
+
+  for (const exp of expectedMembers) {
+    const act = byName.get(exp.name);
+    if (!act) {
+      missing.push(exp.name);
+      continue;
+    }
+    if (exp.optional !== act.optional) {
+      drifted.push({
+        name: exp.name,
+        kind: 'optional',
+        expected: exp.optional ? '可选(?)' : '必填',
+        actual: act.optional ? '可选(?)' : '必填',
+      });
+      continue;
+    }
+    const et = normalizeMemberType(exp.type);
+    const at = normalizeMemberType(act.type);
+    if (et === undefined || at === undefined) {
+      unjudged.push(exp.name);
+      continue;
+    }
+    if (et !== at) {
+      drifted.push({ name: exp.name, kind: 'type', expected: exp.type ?? '', actual: act.type ?? '' });
+      continue;
+    }
+    matched++;
+  }
+
+  const declared = new Set(expectedMembers.map((m) => m.name));
+  const extras = actualMembers.filter((m) => !declared.has(m.name)).map((m) => m.name);
+  return { matched, missing, drifted, extras, unjudged };
+}
+
+/** 把类型契约的比对结果压成一句 `reason`（**只报事实，不替调用方裁决**）。 */
+function typeContractReason(m: NonNullable<ApiMatch['members']>): string | undefined {
+  const parts: string[] = [];
+  if (m.missing.length) parts.push(`实现缺 ${m.missing.length} 个成员：${m.missing.join(', ')}`);
+  if (m.drifted.length) {
+    parts.push(
+      `${m.drifted.length} 个成员漂移：` +
+        m.drifted.map((d) => `${d.name}（${d.kind === 'type' ? '类型' : '可选性'} 期望 ${d.expected} / 实际 ${d.actual}）`).join('；'),
+    );
+  }
+  if (m.unjudged.length) parts.push(`${m.unjudged.length} 个成员**判不了**（一侧无类型注解）：${m.unjudged.join(', ')}`);
+  return parts.length ? parts.join('｜') : undefined;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -442,6 +565,11 @@ export async function checkConsistencyReport(input: ConsistencyInput): Promise<C
       const apiMatches: ApiMatch[] = [];
       const expectedApis = file.expected_apis || [];
       const actualApis: ParsedApi[] = [];
+      const fileNotes: string[] = [];
+      /** ★ T157 期望侧的**形态判定**（下标 → 结果）：只在"文件存在且扩展名受支持"时填 */
+      const declExpectations = new Map<number, SignatureDeclResult>();
+      /** ★ T157 实际文件的 AST 根 —— **只在真有类型契约时才解析**（不白付代价）。 */
+      let typeAst: SyntaxNodeLike | null = null;
 
       if (exists) {
         const content = fs.readFileSync(fullPath, 'utf-8');
@@ -458,12 +586,75 @@ export async function checkConsistencyReport(input: ConsistencyInput): Promise<C
               });
             }
           }
+
+          // ★ T157：判"这条契约是**类型声明**还是**函数签名**"的依据是**内核解析器**
+          //   （`typeDeclFromSignature`）—— **不是正则/关键字匹配**（那会与本处再分叉一把尺）。
+          //   `unparsable`（本文件的内核解析器不可用）**如实记进 fileNotes**，不许静默。
+          let unparsable = 0;
+          for (let i = 0; i < expectedApis.length; i++) {
+            const r = await typeDeclFromSignature(expectedApis[i].signature, file.path);
+            if (r.kind === 'unparsable') unparsable++;
+            declExpectations.set(i, r);
+          }
+          if (unparsable > 0) {
+            fileNotes.push(
+              `★ 有 ${unparsable} 条契约的**形态判不了**（本文件的内核解析器不可用）⇒ 那几条退回按**名字**比（可能把"类型契约"误读成"函数契约"）。`,
+            );
+          }
+
+          const needsTypeAst = [...declExpectations.values()].some((r) => r.kind === 'type-decl');
+          if (needsTypeAst) {
+            const ast = await parseAstRoot(fullPath, content);
+            typeAst = ast ? ast.root : null;
+            if (!typeAst) {
+              fileNotes.push('★ 实际文件的 **AST 取不到** ⇒ 本文件的类型契约**判不了**（不是"缺失"）。');
+            }
+          }
         }
       }
 
       const matchedNames = new Set<string>();
 
-      for (const expected of expectedApis) {
+      for (let i = 0; i < expectedApis.length; i++) {
+        const expected = expectedApis[i];
+        const declExp = declExpectations.get(i);
+
+        // ── 分支 A（T157）：**类型契约** ⇒ 逐成员比（不再是"一律缺失"的假红，也不是"只按名字"的假绿）──
+        if (declExp && declExp.kind === 'type-decl') {
+          const td = declExp.decl;
+          const declNode = typeAst ? findTypeDeclByName(typeAst, td.name) : null;
+          matchedNames.add(td.name);
+          if (!declNode) {
+            apiMatches.push({
+              expected_signature: expected.signature,
+              expected_notes: expected.notes,
+              status: 'missing',
+              match_score: 0,
+              reason: typeAst
+                ? `代码中未找到类型声明 \`${td.name}\`（契约声明了 ${td.members.length} 个成员）`
+                : `★ 判不了：实际文件 AST 取不到（**不是**"契约缺失"）`,
+            });
+            missingCount++;
+            continue;
+          }
+          const members = compareTypeContractMembers(td.members, typeMembersOf(declNode));
+          const bad = members.missing.length + members.drifted.length;
+          apiMatches.push({
+            expected_signature: expected.signature,
+            expected_notes: expected.notes,
+            actual_signature: `${td.name} { 契约声明 ${td.members.length} 个成员，对齐 ${members.matched} 个 }`,
+            actual_location: `${file.path}:${declNode.startPosition.row + 1}`,
+            status: bad === 0 ? 'matched' : 'mismatched',
+            match_score: bad === 0 ? 100 : 0,
+            reason: typeContractReason(members),
+            members,
+          });
+          if (bad === 0) matchedCount++;
+          else mismatchedCount++;
+          continue;
+        }
+
+        // ── 分支 B：函数/方法契约（**原有路径，一字未改**）──
         const expectedName = extractFuncName(expected.signature);
         const actual = actualApis.find(a => a.name === expectedName);
 
@@ -505,7 +696,7 @@ export async function checkConsistencyReport(input: ConsistencyInput): Promise<C
             expected_notes: expected.notes,
             status: 'missing',
             match_score: 0,
-            reason: '代码中未找到该函数',
+            reason: MISSING_FUNC_REASON,
           });
           missingCount++;
         }
@@ -526,6 +717,7 @@ export async function checkConsistencyReport(input: ConsistencyInput): Promise<C
         file_path: fullPath,
         exists,
         apis: apiMatches,
+        ...(fileNotes.length ? { notes: fileNotes } : {}),
       });
     }
   }
@@ -580,6 +772,15 @@ export async function checkConsistencyReport(input: ConsistencyInput): Promise<C
     lines.push(`  ✅ 契约已实现: ${matchedCount}`);
     lines.push(`  ❌ 契约缺失: ${missingCount}`);
     lines.push(`  ⚠️ 签名不匹配: ${mismatchedCount}`);
+    // ★ T157：把"其中有多少条是**类型契约**（逐成员比）"说出来 —— 否则读者不知道
+    //   `✅ 已实现` 里混着两类完全不同的判据（函数签名 vs 成员集）。
+    const typeContractCount = fileResults.reduce(
+      (n, fr) => n + fr.apis.filter((a) => a.members !== undefined).length,
+      0,
+    );
+    if (typeContractCount > 0) {
+      lines.push(`  · 其中**类型契约**（interface/type/class，逐成员比）：${typeContractCount} 条`);
+    }
     // ★ **删掉 `🆕 代码新增` 那一行** —— 那一类**已废**（"代码里有、契约没写"是常态，不是差异）；
     //   而留着一个恒 0 的行更坏：读者会把「没有代码新增」读成「代码没变」（真相要看**线 1**）。
     lines.push(`  不变式通过: ${invariantPassed}/${invariantResults.length}`);
@@ -593,6 +794,9 @@ export async function checkConsistencyReport(input: ConsistencyInput): Promise<C
     lines.push(`  状态: ${fr.exists ? '存在' : '❌ 不存在'}`);
     if (!fr.exists) continue;
 
+    // ★ T157：文件层面的诚实边界（形态判不了 / AST 取不到）——**不许静默**
+    for (const n of fr.notes ?? []) lines.push(`  ${n}`);
+
     const matched = fr.apis.filter(a => a.status === 'matched');
     const missing = fr.apis.filter(a => a.status === 'missing');
     const mismatched = fr.apis.filter(a => a.status === 'mismatched');
@@ -602,6 +806,15 @@ export async function checkConsistencyReport(input: ConsistencyInput): Promise<C
       lines.push(`  ✅ 已实现 (${matched.length}):`);
       for (const a of matched) {
         lines.push(`    - ${a.expected_signature}`);
+        // ★ T157：类型契约要**说清它比了什么**，并把"实现多出来的成员"如实报出
+        //   —— 否则"设计侧只声明了一小片"会被读成"完全一致"（本仓反复踩的坑）。
+        if (a.members) {
+          const m = a.members;
+          let s = `      · 类型契约：契约声明的 ${m.matched + m.unjudged.length} 个成员都在，其中 ${m.matched} 个逐字对齐`;
+          if (m.unjudged.length) s += `｜★ ${m.unjudged.length} 个**判不了**（一侧无类型注解）：${m.unjudged.join(', ')}`;
+          if (m.extras.length) s += `｜★ 实现多出 ${m.extras.length} 个契约**未声明**的成员（**不算差异**，但请看）：${m.extras.join(', ')}`;
+          lines.push(s);
+        }
       }
     }
 
@@ -609,6 +822,9 @@ export async function checkConsistencyReport(input: ConsistencyInput): Promise<C
       lines.push(`  ❌ 缺失 (${missing.length}):`);
       for (const a of missing) {
         lines.push(`    - ${a.expected_signature}${a.expected_notes ? ' (' + a.expected_notes + ')' : ''}`);
+        // ★ T157：类型契约的"缺失"原因与函数**不同**（"没找到类型声明" ≠ "没找到函数"）——
+        //   默认那句（`MISSING_FUNC_REASON`）不必重复渲染（它对读者没有新信息）。
+        if (a.reason && a.reason !== MISSING_FUNC_REASON) lines.push(`      原因: ${a.reason}`);
       }
     }
 
@@ -618,6 +834,17 @@ export async function checkConsistencyReport(input: ConsistencyInput): Promise<C
         lines.push(`    - 期望: ${a.expected_signature}`);
         lines.push(`      实际: ${a.actual_signature} (${a.actual_location})`);
         if (a.reason) lines.push(`      原因: ${a.reason}`);
+        // ★ T157：类型契约**逐成员列出**（哪条缺、哪条漂移、哪条判不了）
+        if (a.members) {
+          const m = a.members;
+          lines.push(`      · 类型契约成员：对齐 ${m.matched}`);
+          for (const name of m.missing) lines.push(`        ❌ 契约声明了 \`${name}\`，实现里没有`);
+          for (const d of m.drifted) {
+            lines.push(`        ⚠️ \`${d.name}\` ${d.kind === 'type' ? '类型' : '可选性'}漂移：期望 ${d.expected} / 实际 ${d.actual}`);
+          }
+          for (const name of m.unjudged) lines.push(`        ○ \`${name}\` 判不了（一侧无类型注解）`);
+          if (m.extras.length) lines.push(`        ★ 实现多出（**不算差异**）：${m.extras.join(', ')}`);
+        }
       }
     }
 
@@ -651,6 +878,30 @@ export async function checkConsistencyReport(input: ConsistencyInput): Promise<C
   if (mismatchedCount > 0) advice.push('  - 修正签名不匹配的函数（或把契约签名改对，见上）');
   // ★ T85/D1b：原建议「把代码新增的 API 添加到 DSL expected_apis」**已删** —— 那是**把事实塞进意图**
   //   （正是 T20/T85 要根治的）。★ 想看「代码新增了什么」⇒ 看**线 1**（相对基线）。
+  // ★★★ T157：把**类型契约**的成员级差异与上面的粗粒度计数**分开说** ——
+  //   `❌ 契约缺失` 说"有一条契约没实现"，而这里说"**哪一个字段**没了/漂了"（可执行得多）。
+  let memberMissingTotal = 0;
+  let memberDriftedTotal = 0;
+  let memberUnjudgedTotal = 0;
+  let memberExtrasTotal = 0;
+  for (const fr of fileResults) {
+    for (const a of fr.apis) {
+      if (!a.members) continue;
+      memberMissingTotal += a.members.missing.length;
+      memberDriftedTotal += a.members.drifted.length;
+      memberUnjudgedTotal += a.members.unjudged.length;
+      memberExtrasTotal += a.members.extras.length;
+    }
+  }
+  if (memberMissingTotal > 0) {
+    advice.push(`  - 类型契约里**实现缺 ${memberMissingTotal} 个成员**：补实现，或把契约改对（★ 契约是**人指定的**）`);
+  }
+  if (memberDriftedTotal > 0) {
+    advice.push(`  - 类型契约里**有 ${memberDriftedTotal} 处成员漂移**（类型/可选性）：以哪边为准**要人裁**（契约是意图、代码是事实）`);
+  }
+  if (memberUnjudgedTotal > 0) {
+    advice.push(`  - ★ 有 ${memberUnjudgedTotal} 个成员**判不了**（一侧无类型注解）⇒ **别当成"匹配"**`);
+  }
   if (invariantFailed > 0) advice.push('  - 修复失败的不变式');
   if (advice.length) {
     lines.push('【建议（仅针对线 2）】');
@@ -666,6 +917,17 @@ export async function checkConsistencyReport(input: ConsistencyInput): Promise<C
   }
   // ★ `cmpState === 'no_comparison'`（**没得比**）在此**刻意什么都不说** ——
   //   上面「没得比 ⇒ 给不出结论」那一段已把话说清；这里若再补一句"无待办/一致"就是**没比却报好**。
+
+  // ★★★ T157：**「不算差异、但值得看」单列一段** —— 它**不参与**上面"建议 / 比过且一致"的取舍。
+  //   理由：`extras` 不是差异（契约只声明"必需有什么"）⇒ 不该把 `consistent` 顶掉；
+  //   但它**是本仓最值钱的信号之一**：代码长出了契约没记得的东西 = **设计侧过期**
+  //   （与那张 `tool_faces.ts` 决策卡同族）⇒ 不报出来，"设计侧只声明了一小片"就会被读成"完全一致"。
+  if (memberExtrasTotal > 0) {
+    lines.push('【★ 不算差异，但值得看（仅针对线 2）】');
+    lines.push(`  - 类型契约里，实现**多出 ${memberExtrasTotal} 个契约未声明的成员** ⇒ ★ **不算差异**（契约只声明"必需有什么"），`);
+    lines.push('    但多半说明**设计侧过期了**（代码长出了契约没记得的东西）⇒ 值得**回写契约**（回写是**人**的活，不是本工具的）。');
+    lines.push('');
+  }
 
   // ★ 线 1 排在**线 2 整段（摘要 + 建议）之后** —— 两条线各自自成一段（见上）。
   const baselineDrift = checkBaselineDrift(feature, codeDir);

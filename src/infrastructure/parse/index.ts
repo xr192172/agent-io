@@ -22,6 +22,20 @@ export {
 export type { ParsedSymbol, ParsedImport, ParsedCall, ParsedTypeRef, ParsedFile, LanguageEntry, SyntaxNodeLike } from './kernel.js';
 export type { LanguageEntry as LanguageMeta } from './languages.js';
 
+// ★ T157（2026-10-11）：类型声明的**成员提取** —— `interface`/`type`/`class` 的字段与方法签名。
+//   唯一住处；`contract_page`（字段清单）与 `consistency_check`（契约对拍）**共用这一份**。
+export {
+  TYPE_DECL_NODES,
+  BODY_NODES,
+  MEMBER_NODES,
+  typeMembersOf,
+  memberNamesOf,
+  findTypeDeclByName,
+  typeDeclFromSignature,
+  normalizeMemberType,
+} from './type_members.js';
+export type { ParsedTypeMember, ParsedTypeDecl, SignatureDeclResult } from './type_members.js';
+
 export { IMPORT_EXTS, INDEX_FILES, importPathCandidates, completionCandidates, resolveImportPath, resolveExistingPath, resolveProjectImport } from './import_resolve.js';
 export {
   TS_JS_EXTS,
