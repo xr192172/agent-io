@@ -33,6 +33,14 @@ export interface OpSpec {
   ops: string[];
   /** 是否必须给 `operations[].id` */
   idRequired: boolean;
+  /**
+   * ★ `id` **到底填什么**（只在该 type 特殊时写）。
+   * ★★ 为什么要它（T171 实测）：「`id` 是节点 id 还是路径」**各 type 不一样** ——
+   *   我一度在报错里写死成「文件节点 id **或**仓库相对路径」，而那是照 `decision` 的说明抄的通用句
+   *   ⇒ **`api` 并不吃路径** ⇒ 黑盒实验里 agent 照它填了路径 ⇒ `文件 "src/mathutil.ts" 不存在` ✗
+   *   ⇒ 现在**按 type 各自声明**，报错文案**从本字段派生**（仍是判据一处）。
+   */
+  idNote?: string;
   /** 【按 op 细分】的必需 data 键：`op → 键名清单`（未列出的 op ⇒ 无必需键） */
   required: Record<string, string[]>;
   /** 【按 op 细分】的"至少给一组"：`op → 若干组，每组内全部要给` */
@@ -59,6 +67,7 @@ export const OP_SPECS: readonly OpSpec[] = [
     type: 'api',
     ops: ['add', 'update', 'delete'],
     idRequired: true,
+    idNote: '所属 `file` 节点的 id（★ **不是路径** —— 实测填路径会报「文件不存在」）',
     required: { add: ['signature'], delete: ['signature'] },
     anyOf: { update: [['expected_apis'], ['signature']] },
     note: '`update` 二选一：① **整块重写** `data.expected_apis=[{signature,notes?},…]`（**推荐**，不看旧串）；② 单条改 `data.signature`=**原签名串逐字**',
@@ -96,6 +105,7 @@ export const OP_SPECS: readonly OpSpec[] = [
     type: 'decision',
     ops: ['update'],
     idRequired: true,
+    idNote: '文件/文档节点 id **或**仓库相对路径（`resolveDecisionTarget` 两种都认）',
     required: { update: ['summary'] },
     note: '`id` = 文件/文档节点 id **或仓库相对路径**；data 可带 rationale / consequences / acceptance / dissent / alternatives / votes / evidence_source / status / thread / tags',
   },
@@ -148,7 +158,7 @@ export function checkOpSpec<T extends FeatureOperationLike>(op: T): CheckedOpera
     );
   }
   if (spec.idRequired && !op.id) {
-    throw new Error(`${type}.${o} 需要 id${type === 'api' || type === 'decision' ? '（文件节点 id 或仓库相对路径）' : ''}`);
+    throw new Error(`${type}.${o} 需要 id${spec.idNote ? `（${spec.idNote}）` : ''}`);
   }
   const data = (op.data ?? {}) as Record<string, unknown>;
   const missing = (spec.required[o] ?? []).filter((k) => {
@@ -186,6 +196,8 @@ export function renderOpSpecs(): string {
       return bits.length ? `${o}（需 ${bits.join('；')}）` : `${o}（无必需字段）`;
     });
     lines.push(`  · ${s.type}: ${parts.join(' ｜ ')}`);
+    // ★ `id` 的语义**按 type 说一次**（不在每个 op 里重复 —— 那会把描述撑肿）
+    if (s.idRequired && s.idNote) lines.push(`      ★ id = ${s.idNote}`);
     if (s.note) lines.push(`      ★ ${s.note}`);
   }
   return lines.join('\n');

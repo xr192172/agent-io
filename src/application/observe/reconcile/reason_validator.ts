@@ -172,7 +172,19 @@ export function validateReason(input: ValidateReasonInput): ReasonValidationResu
     return {
       ok: false,
       layer: 3,
-      error: '原因需绑定至少一个具体实体（trace 引用 / diff 文件名 / 数字指标 / 节点或文件 id），避免泛泛而谈。',
+      // ★★★ 2026-10-11（T171）：**这句文案原先是误导源** —— 它写
+      //   「原因需绑定至少一个具体实体（trace 引用 / diff 文件名 / 数字指标 / 节点或文件 id）」，
+      //   ★ 把五种"能算实体的东西"列在一起 ⇒ 读的人**自然去调 `evidence`**。
+      //   ★★ 而本层查的是 `matchesConcreteEntity(trimmed, …)` —— **`trimmed` 是 `reason` 文本本身**，
+      //      **与 `evidence` 一点关系都没有**。
+      //   ⇒ 实测（黑盒实验，一个不许读源码的 agent）：它因此**误判成"evidence 的 ref 要换成节点 id"**，
+      //     连试三次，最后"成功"其实是它**顺手把 reason 写具体了**（那条 id 是多余的）。
+      //   ⇒ 所以文案改成**先点明"看的是 reason 文本"**，并明确**排除 evidence**。
+      error:
+        '原因未绑定具体实体，太泛了。★ **注意：这一层看的是【reason 那句话本身】** —— 请把实体名**写进 reason 里**' +
+        '（例："为 `src/mathutil.ts` 补 `multiply` 契约，因为调用方已经用它了"），' +
+        '★ **不要**指望放进 `evidence` 就能过（`evidence` 是给后面的 facts / L4 两层用的，**与本层无关**）。' +
+        '能被认出的实体：节点 id / 文件路径 / 文件名 / 数字指标。',
     };
   }
 
