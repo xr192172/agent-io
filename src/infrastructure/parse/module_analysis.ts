@@ -116,6 +116,21 @@ export async function analyzeModuleSource(src: string, filePath = 'file.ts'): Pr
   const rootOffsets = new Map<string, number>();
   const rootKinds = new Map<string, string>();
   const rootRefs: ModuleRef[] = [];
+  // ★★ 2026-10-11（BD）：**前向引用**暂存 —— 本分析是**单遍**遍历，`rootScope` 由 `declare`
+  //   边走边填 ⇒ 一个引用点若**词法上先于**它的模块级声明（函数提升 `f(); function f(){}`、
+  //   类型/接口先行引用、模块级 const 的 TDZ 前向引用），遍历到它时根作用域**还没有那个名字**
+  //   ⇒ 原先直接判"非根引用"丢弃。实测病灶：`src/application/meta/index.ts` 里 `renderHandoffPanel`
+  //   定义在 891 行、调用在 504 行 ⇒ 该调用点漏收，改名后 504 行残留旧名 ⇒ 编译不过。
+  //   暂存"当时任何作用域都查不到"的引用，遍历结束再按**最终**根作用域结算（见 walk(root) 之后）。
+  const pendingRefs: ModuleRef[] = [];
+  // ★★ 2026-10-11（BD）：**非根作用域出现过的名字**集合 —— 前向引用结算时的**安全闸**。
+  //   单遍遍历下，"此刻查不到"既可能是"声明在后的模块级符号"（要收），也可能是"局部绑定但声明
+  //   还没走到"（**不能收**：那处引用指的是局部，收了就会把局部名当模块符号改掉 = 改错东西）。
+  //   本集合把**任何非根作用域里绑定过的名字**都记下来，结算时排除 ⇒ 宁可漏收，绝不误收
+  //   （与本源文件一贯的"宁漏不误"一致）。局部绑定**不止** `declare` 覆盖的那些：解构默认值/
+  //   重命名/剩余项（`{ a = 1 }`·`{ k: v }`·`...r`）此前**根本没登记**（本源文件既有的登记缺口），
+  //   故另配 `collectPatternNames` 把这类模式里的绑定名也补进本集合。
+  const nonRootBindings = new Set<string>();
   const exportRefs: ModuleRef[] = [];
   const imports: ImportEdge[] = [];
 
@@ -123,15 +138,52 @@ export async function analyzeModuleSource(src: string, filePath = 'file.ts'): Pr
   const stack: ScopeMap[] = [rootScope];
 
   const declare = (scope: ScopeMap, name: string, offset: number, kind: string): void => {
+    if (scope !== rootScope) nonRootBindings.add(name);
     if (!scope.has(name)) scope.set(name, offset);
     if (scope === rootScope && !rootKinds.has(name)) rootKinds.set(name, kind);
   };
 
-  const lookupIsRoot = (name: string): boolean => {
-    for (let i = stack.length - 1; i >= 0; i--) {
-      if (stack[i].has(name)) return i === 0;
+  // 把解构模式里的**绑定名**补进 `nonRootBindings`（只登记名字、不进作用域，故不改变既有分类；
+  // 仅用于前向引用结算的安全闸）。覆盖：裸标识符 / 简写 / `k: v`（pair_pattern 的 value）/
+  // `a = 1`（assignment_pattern·object_assignment_pattern 的 left）/ `...r`（rest_pattern）/
+  // 具名与可选形参（required_parameter·optional_parameter 的 pattern）/ 嵌套 object·array。
+  // ★ 刻意**不下钻默认值右值**（`= expr`）：那是引用、不是绑定，下钻会把表达式里的名字误当绑定名。
+  const collectPatternNames = (n: N): void => {
+    const t = n.type;
+    if (t === 'identifier' || t === 'shorthand_property_identifier_pattern') {
+      nonRootBindings.add(n.text);
+      return;
     }
-    return false;
+    if (t === 'required_parameter' || t === 'optional_parameter') {
+      const p = n.childForFieldName('pattern');
+      if (p) collectPatternNames(p);
+      return;
+    }
+    if (t === 'object_assignment_pattern' || t === 'assignment_pattern') {
+      const l = n.childForFieldName('left');
+      if (l) collectPatternNames(l);
+      return;
+    }
+    if (t === 'pair_pattern') {
+      const v = n.childForFieldName('value');
+      if (v) collectPatternNames(v);
+      return;
+    }
+    if (t === 'rest_pattern' || t === 'object_pattern' || t === 'array_pattern') {
+      for (let i = 0; i < n.childCount; i++) {
+        const c = n.child(i);
+        if (c) collectPatternNames(c);
+      }
+    }
+  };
+
+  // 沿作用域栈解析到**最近**的同名绑定，返回它在栈中的下标（0 = 根作用域）；
+  // 任何作用域都没有 ⇒ -1（"暂时查不到" —— 可能是全局名，也可能是**声明在后的前向引用**）。
+  const lookupScope = (name: string): number => {
+    for (let i = stack.length - 1; i >= 0; i--) {
+      if (stack[i].has(name)) return i;
+    }
+    return -1;
   };
 
   const handleImport = (node: N): void => {
@@ -257,7 +309,11 @@ export async function analyzeModuleSource(src: string, filePath = 'file.ts'): Pr
 
     const refType = isRefType(t);
     if (refType) {
-      if (lookupIsRoot(node.text)) rootRefs.push({ name: node.text, offset: node.startIndex, nodeType: refType! });
+      const scopeIdx = lookupScope(node.text);
+      if (scopeIdx === 0) rootRefs.push({ name: node.text, offset: node.startIndex, nodeType: refType! });
+      // scopeIdx === -1：此刻任何作用域都查不到 —— 不急着丢，先暂存，遍历结束后按最终根作用域结算。
+      // 三态互斥：==0 根引用（直接收）· >0 被局部遮蔽（既非根也非前向，丢弃）· ==-1 暂存待结算。
+      else if (scopeIdx === -1) pendingRefs.push({ name: node.text, offset: node.startIndex, nodeType: refType! });
       return;
     }
 
@@ -295,6 +351,7 @@ export async function analyzeModuleSource(src: string, filePath = 'file.ts'): Pr
         for (let i = 0; i < params.childCount; i++) {
           const p = params.child(i);
           if (!p) continue;
+          collectPatternNames(p); // 形参（含解构默认值/重命名/剩余项）里的绑定名 → 安全闸
           if (p.type === 'identifier') {
             // 裸标识符参数（无类型注解/解构）
             declare(fnScope, p.text, p.startIndex, 'param');
@@ -348,6 +405,10 @@ export async function analyzeModuleSource(src: string, filePath = 'file.ts'): Pr
               const idn = nm.child(j);
               if (idn && (idn.type === 'identifier' || idn.type === 'shorthand_property_identifier_pattern')) declare(stack[stack.length - 1], idn.text, idn.startIndex, 'const');
             }
+            // ★ 上面的 declare 只覆盖"裸标识符 / 简写"两种形态；解构默认值·重命名·剩余项
+            //   （`{ a = 1 }` · `{ k: v }` · `...r`）此前**没登记**。本作用域非根时补进安全闸
+            //   （根作用域的解构名是**模块级**符号，不该进闸 ⇒ 排除）。
+            if (stack[stack.length - 1] !== rootScope) collectPatternNames(nm);
           }
           // 类型注解 `: T` 也要 walk（收 type_identifier 引用）
           if (ty) walk(ty, depth + 1);
@@ -378,6 +439,7 @@ export async function analyzeModuleSource(src: string, filePath = 'file.ts'): Pr
             if (dec && dec.type === 'variable_declarator') {
               const nm = dec.childForFieldName('name');
               if (nm && nm.type === 'identifier') declare(fScope, nm.text, nm.startIndex, 'const');
+              else if (nm) collectPatternNames(nm); // `for (const { a = 1 } of xs)` 等解构绑定 → 安全闸
             }
           }
           continue;
@@ -396,6 +458,7 @@ export async function analyzeModuleSource(src: string, filePath = 'file.ts'): Pr
           const idn = param.child(i);
           if (idn && idn.type === 'identifier') declare(cScope, idn.text, idn.startIndex, 'catch');
         }
+        collectPatternNames(param); // `catch ({ e })` 等解构绑定 → 安全闸
       }
       for (let i = 0; i < node.childCount; i++) {
         const c = node.child(i);
@@ -412,5 +475,13 @@ export async function analyzeModuleSource(src: string, filePath = 'file.ts'): Pr
   };
 
   walk(root, 0);
+  // 结算前向引用：此刻根作用域已含**全部**模块级声明 —— 引用点当时"任何作用域都查不到"的名字，
+  // 若最终落在根作用域**且从未在任何非根作用域绑定过**，才判为"声明在后的模块级符号"的前向引用。
+  // ★ 后一条闸（`nonRootBindings`）挡的是误收：那处"查不到"可能只是**局部绑定还没遍历到**
+  //   （如 `const { direction = … } = input` 的 `direction`，本源文件此前**没登记**这类解构绑定）
+  //   ⇒ 若不挡，`rename_symbols` 会把那个局部名当模块符号一起改掉 = 改错东西。宁漏不误。
+  for (const r of pendingRefs) if (rootScope.has(r.name) && !nonRootBindings.has(r.name)) rootRefs.push(r);
+  // 前向引用是**后补**的 ⇒ 按偏移排序，恢复"跟随源码顺序"的稳定次序（下游 find_references 直接原序输出）。
+  rootRefs.sort((a, b) => a.offset - b.offset);
   return { rootOffsets, rootKinds, rootRefs, exportRefs, imports };
 }
