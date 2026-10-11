@@ -244,7 +244,7 @@
       "layer": "application",
       "role": "capability",
       "dir": "src/application/refactor/rename",
-      "note": "改名族：文件改名（单/批）/ 局部变量改名 / 模块级符号改名的**工具入口** / 跨文件移符号"
+      "note": "改名与搬迁族：文件改名（单/批）/ 局部变量改名 / 模块级符号改名的**工具入口** / 跨文件移符号 / **整个域的整块搬迁（move_domain）**"
     },
     {
       "id": "find",

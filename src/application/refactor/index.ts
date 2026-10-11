@@ -35,6 +35,7 @@ import type { SuggestOptions } from './find/ast_suggest.js';
 import { applyWrites } from './edit/apply_writes.js';
 import { editCode } from './edit/edit_code.js';
 import { listFileSnapshots, rollbackFileSnapshot } from './snapshot/file_snapshot.js';
+import { moveDomain } from './rename/move_domain.js';
 import { findReferences } from './find/find_references.js';
 import { planFunctionAnnotation } from './annotate/function_annotation.js';
 import { renderGranularityNote } from './parse_capability/parse_capability.js';
@@ -474,6 +475,46 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       ];
       for (const p of r.previews) parts.push(fmt(p, p.result).replace(/\n/g, '\n\t'));
       return { message: parts.join('\n'), data: r };
+    }),
+  },
+
+  {
+    name: 'move_domain',
+    title: 'Move a whole domain (one block) — relocating its files to the declared new dir',
+    description:
+      '★ **一次搬完一个域**（整块搬迁，T166）：按**域表声明的变化**把旧家那一整块搬到新家，' +
+      '并**逐个改写 import**。' +
+      '· **判据来源不新造**：读 `structure_gap` 的 **`relocate_moves`**（= 域表 `dir` 相对 `HEAD` 变了、' +
+      '而旧家还有源码的域）⇒ ★ 所以**先改域表，再用本工具**（本工具**不改** `structure.domains.json`：那是**意图**，已经由人写好了）。' +
+      '· 落地**复用** `rename_files`（整体校验→全通过才落盘 + import 引用改写 + 目标目录自动创建 + 写前快照 + 索引写穿）：' +
+      '本工具只做**枚举 + 映射 + 汇总**。' +
+      '· `domain_ids` 省略 ⇒ 搬**全部**待搬的域；给了却不在清单里 ⇒ **抛**（不猜）。' +
+      '· ★ **不静默**：清单为空 ⇒ 明确报"没有待搬的域"（且区分"域表没变/旧家已空"与"搬迁判据没查"）；' +
+      '旧家里的**子目录 / 非源码文件**本工具**不搬** ⇒ 如实列进 `leftovers`（★ 不是遗漏，是口径）。' +
+      '· ★ **收尾**：搬完**旧目录空了 ⇒ 把它删掉**（`removed_dirs`）—— ★ 用 `rmdirSync`（非空会抛）⇒ ' +
+      '**天然不会删掉还有东西的目录**；**非空 ⇒ 绝不删**，只报 `leftover_dirs`。' +
+      '★ 不做收尾的后果（实测）：旧空壳还在 ⇒ `structure_gap` 报 `unlisted: 1` ⇒ 读数变成"1 个待定归属"，' +
+      '而真相是"搬完了、只差收壳" ⇒ 「一次搬完」永远差最后一步。' +
+      '· `dry_run=true` ⇒ 只算影响面预览，不落盘（会预告 `would_remove_dirs`）。' +
+      '★ 与 `structure_gap` 的分工：**量具只读、本工具只写** —— 不合成一个。' +
+      '★ 适用判据：domain/2026-10-11 T166（用户裁定"**重新规划功能的分布**，不打补丁而是整块重写"）。',
+    inputSchema: {
+      project_dir: z.string().describe('项目根（读它根下的 structure.domains.json 作为"结构意图"；并以此为搬移的路径锚）'),
+      domain_ids: z
+        .array(z.string())
+        .optional()
+        .describe('只搬这些域 id（domains[].id）。省略 ⇒ 搬全部「待搬」的域。★ 给了却不在待搬清单里 ⇒ 报错'),
+      dry_run: z.boolean().optional().describe('true=只算影响面预览、不落盘（默认 false）'),
+    },
+    handler: wrapData(async (a) => {
+      // ★ [C] 只转发：读域表/清单（structure_gap）+ 搬（rename_files）全在 [B]
+      const project_dir = requireStr(a, 'project_dir');
+      const r = await moveDomain({
+        project_dir,
+        domain_ids: Array.isArray(a.domain_ids) ? (a.domain_ids as string[]) : undefined,
+        dry_run: a.dry_run === true,
+      });
+      return { message: `${r.ok ? '✓' : '⚠'} ${r.reason}`, data: r.data, ...(r.touched ? { touched: r.touched } : {}) };
     }),
   },
 

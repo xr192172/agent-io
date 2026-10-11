@@ -94,6 +94,24 @@ export interface StructureGapItem {
   note: string;
 }
 
+/**
+ * ★ 一次**域搬迁**的结构化描述（T166，2026-10-11）—— `relocating` 的机读形态。
+ * ★ 它是"一次搬完"那个动作（`move_domain`）的**唯一输入**：读这里，**不解析 `note` 散文**。
+ */
+export interface RelocateMove {
+  /** 域表里的 `domains[].id` */
+  domain_id: string;
+  /** 域表里的旧 `dir`（从 `HEAD` 版现取） */
+  from_dir: string;
+  /** 域表里的新 `dir`（工作区当前值） */
+  to_dir: string;
+  /**
+   * 旧目录里的**源码文件名**（仓库相对路径，**已排序**）= **待搬清单**。
+   * ★ 口径与 `sourceFileNames` 同源（已排噪音/声明产物、只收 `isSourceExt`）。
+   */
+  files: string[];
+}
+
 export interface StructureGapReport {
   config_path: string;
   domain_count: number;
@@ -165,6 +183,20 @@ export interface StructureGapReport {
    *     并在 {@link StructureGapReport.relocate_note} **如实标注"本轮没查"**（★ 不许把"没查"读成"没问题"）。
    */
   relocating: StructureGapItem[];
+
+  /**
+   * ★★★ `relocating` 的**结构化形态** —— **判据在这里，`relocating` 只是它的人读渲染**。
+   *
+   * ★ 为什么单独立它（T166，2026-10-11 —— ★ **这是修我自己 T165 留下的一个病**）：
+   *   T165 把**文件名清单塞进了 `note`（散文）** ⇒ 执行器（"一次搬完"那个动作）要拿清单，
+   *   就只能**解析散文** —— ★ 那正是本仓纪律②「**产物结构化，非 message 串**」要根治的形态
+   *   （"接不上链"的根因）。
+   *   ⇒ 所以：**清单归这里（机读）**，`relocating[].note` 归人读，
+   *     ★ 而**两者从同一个 `relocate_moves` 派生** ⇒ 判据仍是**一处**（不会分叉）。
+   *
+   * ★ 它也是"**一次搬完**"那个动作的**输入**（`move_domain` 读的就是它，不是 `note`）。
+   */
+  relocate_moves: RelocateMove[];
 
   /**
    * ★ **`relocating` 这一态的"查没查"**（2026-10-11，T165）——
@@ -408,17 +440,22 @@ export function computeStructureGap(projectDir: string, cfg: StructureDomainsCon
   //    ★ 顺序上也对：这是**"域要搬"**（声明变了），③ 是**"家没人要"**（缺声明）——
   //      前者更具体 ⇒ 先认领。
   const relocating: StructureGapItem[] = [];
+  // ★★ 判据一处：**清单（机读）与 note（人读）都从下面这一份 `names` 派生** ——
+  //   不是两处各算一遍（那是判据分叉）；note 只是**渲染**，`relocate_moves` 是**权威**。
+  const relocateMoves: RelocateMove[] = [];
   const { moves, note: relocateNote } = detectRelocations(projectDir, cfg);
   const claimedOldDirs = new Set<string>();
   for (const mv of moves) {
-    const names = sourceFileNames(absOf(projectDir, mv.oldDir));
+    const names = sourceFileNames(absOf(projectDir, mv.oldDir)).map((n) => path.posix.join(mv.oldDir, n));
     if (names.length === 0) continue; // 旧位置空了 ⇒ 搬完了，不报
     claimedOldDirs.add(mv.oldDir);
+    relocateMoves.push({ domain_id: mv.id, from_dir: mv.oldDir, to_dir: mv.newDir, files: names });
     relocating.push({
       path: `${mv.oldDir}/`,
       note:
         `域 \`${mv.id}\` 的 **dir 从 \`${mv.oldDir}\` 改成了 \`${mv.newDir}\`**（对比 \`HEAD\`），` +
-        `而**旧位置里还有 ${names.length} 个源码文件** ⇒ ★ **这就是待搬清单**：${names.join(' / ')}`,
+        `而**旧位置里还有 ${names.length} 个源码文件** ⇒ ★ **这就是待搬清单**：${names.join(' / ')}　` +
+        `（★ 机读形态见 \`relocate_moves[${relocateMoves.length - 1}]\` —— **执行器读那个，别解析本句**）`,
     });
   }
 
@@ -474,6 +511,7 @@ export function computeStructureGap(projectDir: string, cfg: StructureDomainsCon
     unclassified,
     misnested,
     relocating,
+    relocate_moves: relocateMoves,
     ...(relocateNote ? { relocate_note: relocateNote } : {}),
   };
 }
@@ -517,6 +555,7 @@ export function structureGap(projectDir: string): StructureGapResult {
       unclassified: [],
       misnested: [],
       relocating: [],
+      relocate_moves: [],
     };
   }
   return { configured: true, ...computeStructureGap(projectDir, cfg) };

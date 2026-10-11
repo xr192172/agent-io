@@ -36,6 +36,7 @@ const TRIGGER_ROWS = [
   ['改**对外契约名 / MCP 工具名**', '`rename_symbols report_literals=true`', '扫旧名 snake 字面量清单，按 kind 分治(契约/历史/文档/测试/代码)；契约变更才跟文档'],
   ['改文件名并联动全仓 import', '`rename_files`', '单条或批量统一入口（renames=[…]），防文件悬空'],
   ['批量改多个文件名', '`rename_files`', '整体先 dry-run，全部可落盘才落'],
+  ['★ 重新规划功能的分布：把一整个域搬到声明的新位置', '`move_domain`', '**整块搬迁**（不是一个文件一个文件打补丁）：先改 `structure.domains.json` 的 `dir`，再用它**一次搬完**旧家全部源码文件 + 逐个改写 import；★ 搬什么是 `structure_gap` 的 `relocate_moves` 判的（判据只那一处）'],
   ['单文件/文件内局部变量/形参批量改名', '`rename_symbols scope=local`', '作用域隔离；逐项独立（一项跳过不影响其余），跳过项逐条可见'],
   ['改一段代码（函数体/range）', '`edit_code`', '按符号/行号定位改写'],
   ['理解一串代码/结构', '`explore_code`', '只读、即时答案'],
