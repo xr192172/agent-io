@@ -342,6 +342,21 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         if (contractHits) {
           parts.push('  ⚠ 命中【契约名】= 对外 MCP 注册名（name:）——改名会破坏调用契约，需人审同步契约而非自动落盘。');
         }
+        // ★ 自查：`code`（源码）类命中 = 源码文本里**仍有同名（snake）提及** —— 而 rename 只改标识符、
+        //   不改这些文本 ⇒ 很可能是"没改全"。这是本工具唯一能**自证改名完整性**的一句：
+        //   此前只对 contract 类发警告、code 类只列不改，于是"产物自称完整却漏改"要靠链外的 grep+verify 兜。
+        //   逐条列出（不只给数），格式对齐上面的 `• "needle" → …`。
+        const codeMatches = hits.flatMap((l) => l.matches.filter((m) => m.kind === 'code').map((m) => ({ needle: l.needle, file: m.file, line: m.line })));
+        if (codeMatches.length > 0) {
+          parts.push(`  ★ 自查：源码里还有 ${codeMatches.length} 处同名提及（rename 只改标识符、不改这些文本）⇒ ⚠ 改名可能不完整，请核：`);
+          for (const m of codeMatches) parts.push(`    · "${m.needle}" ${m.file}:${m.line}`);
+        }
+        // ★ 其余类别（文档/历史/测试）**本就不在改名的范围内** —— 如实说清即可，**不作警告**
+        //   （本仓已多次栽在"一律警告 = 没人看"上；只有 code 类才提示"可能未改全"）。
+        const outOfScope = (['docs', 'history', 'test'] as const).filter((k) => hits.some((l) => l.matches.some((m) => m.kind === k)));
+        if (outOfScope.length > 0) {
+          parts.push(`  △ 【${outOfScope.map((k) => kindLabel[k]).join('/')}】类命中本就不在改名的范围内（rename 只改代码标识符，不动这些文本）——列出仅供参考，无需处理。`);
+        }
       };
       // ★ §27.4 / §28.3-7（2026-09-28）：改名是**正确性敏感**操作 —— `skipped` 非空意味着
       //   "有文件我没看"（读不了 / 该扩展名无解析器 / 闭包扫描失败）⇒ 那些文件里的引用**可能没被改写**，
