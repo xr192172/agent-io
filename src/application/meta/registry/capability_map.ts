@@ -287,6 +287,10 @@ export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
   // ★ 2026-10-11：契约页 / 类型页 —— "新用户第一站"要能导到它（否则又一条"声明了但没人点名"）。
   contract_page:
     '★ 契约页 / 类型页：给一个**符号名**一次给全 —— 定义在哪 / 字段成员 / 谁产生 / 谁消费 / 相关接法边 / b_terms 口径（查不到是一个明确的态，不是空数组）',
+  // ★ 2026-10-11：把"人肉抄字段"那一步变成**有名字的一步** ——
+  //   给上一步的工具名 + 它的 `touched`，产出下一步**可跑的入参 JSON**（能填的已填、意图位显式留空并标注）。
+  next_hop_args:
+    '★ 生成**下一棒入参**：给上一步的 `from_tool` + 它的 `touched`，组装成下一步**可跑的入参 JSON**（能填的已填、意图位如新名 `to` 显式留空并标注）；可选 `to_tool` 只算通到它',
   // ★ 2026-10-05 更正：第一轮实测发现这条写的是 capability_audit 的活（"诊断能力缺口（多语言矩阵）"）⇒
   //   agent 照它去选 diagnose 会得到完全无关的结果。正确口径 = diagnosis 域 note 的第一句。
   diagnose: '症状 → 根因 + 证据链 + 影响面 + 修复建议（不知道是哪条线坏了时先用它定位）',
@@ -713,6 +717,107 @@ export function collectInputKeys(schema: unknown): string[] {
   };
   for (const v of Object.values(top)) walk(v, 0);
   return [...out].sort();
+}
+
+/**
+ * ★★★ 一个 [B] 声明入参的**深层路径**表（含**必填与否** + **容器与否** + **下游自己的说明**）。
+ *
+ * ## 为什么需要它（`collectInputKeys` / `collectRequiredKeys` 不够用）
+ * 那两个只给**扁平名字**与**顶层必填**：`rename_symbols` 得到 `renames`（一个**容器**名），
+ * 而"`renames[]` 里的 `to` 是不是必填"这件事**丢了** ⇒ 无法据此拼出一个**可跑的入参 JSON**
+ * （`next_hop_args` 的职责：能填的填、意图位**显式留空并标注** —— 见
+ * `application/meta/explore/next_hop_args.ts`）。
+ * ★ 路径形态**刻意与 `CHAIN_EDGES.toPath` 同形**（数组元素用 `[]`）⇒ 两边能**逐字比对**，
+ *   不必在这里再定一套"路径怎么写"（本仓头号病：一处判断住两处）。
+ *
+ * ## 与 `collectInputKeys` 同一套遍历口径（v3 与 v4 取并集）
+ *   · v4：`_def.type` 是**类型名字符串**，数组元素在 `_def.element`、对象体在 `_def.shape`；
+ *   · v3：`_def.typeName` 是 `ZodArray` / `ZodObject`，数组元素在 `_def.type`、`shape` 可能是函数。
+ *   ★ **取不到的形态直接跳过**（宁可少收，也不猜）—— 与 `collectInputKeys` 同款纪律。
+ *
+ * ## 必填口径**复用** {@link collectRequiredKeys} 的那一条
+ * `isOptional()` 取不到 ⇒ **当作可选**（宁可少报"必填"，不凭空报必填 —— 那会逼调用方填一个不必填的字段）。
+ */
+export interface InputPath {
+  /** 点路径；数组元素用 `[]`（如 `renames[].file`）。★ 与 `CHAIN_EDGES.toPath` **同形**。 */
+  path: string;
+  /** 是否必填。★ `isOptional()` 取不到 ⇒ `false`（当可选）。 */
+  required: boolean;
+  /** 是否是**容器**（对象 / 数组的元素对象）—— 容器本身不是"要填的槽位"，其叶子才是。 */
+  container: boolean;
+  /** 下游自己的说明（zod `.describe` 原样）；取不到 = 空串。 */
+  description: string;
+}
+
+export function collectInputPaths(schema: unknown): InputPath[] {
+  if (!schema || typeof schema !== 'object') return [];
+  const out: InputPath[] = [];
+  const optionalOf = (n: unknown): boolean => {
+    const probe = (n as { isOptional?: () => boolean } | null)?.isOptional;
+    return typeof probe === 'function' ? (n as { isOptional: () => boolean }).isOptional() : true;
+  };
+  const descOf = (n: unknown): string => {
+    const d = (n as { description?: unknown } | null)?.description;
+    return typeof d === 'string' ? d : '';
+  };
+  const dget = (n: unknown): Record<string, unknown> | undefined =>
+    (n as { _def?: Record<string, unknown> } | null)?._def;
+  const visit = (node: unknown, path: string, required: boolean, inheritedDesc: string): void => {
+    let cur = node;
+    let desc = descOf(cur) || inheritedDesc;
+    for (let i = 0; i < 8; i++) {
+      const def = dget(cur);
+      if (!def) break;
+      const t = def.type;
+      const typeName = def.typeName;
+      const isArray = t === 'array' || typeName === 'ZodArray';
+      const isObject = t === 'object' || typeName === 'ZodObject';
+      if (isArray) {
+        // v4 元素在 `element`；v3 的 `type` 就是元素节点（与 `collectInputKeys` 同款并集）
+        const el = def.element ?? (typeof t === 'object' ? t : undefined);
+        const elDef = dget(el);
+        const shape = elDef && (elDef.type === 'object' || elDef.typeName === 'ZodObject') ? elDef.shape : undefined;
+        const shapeObj = typeof shape === 'function' ? (shape as () => unknown)() : shape;
+        if (elDef && shapeObj && typeof shapeObj === 'object') {
+          out.push({ path: path + '[]', required, container: true, description: desc });
+          for (const [k, v] of Object.entries(shapeObj as Record<string, unknown>)) {
+            visit(v, path + '[].' + k, !optionalOf(v), '');
+          }
+        } else if (el !== undefined && el !== null) {
+          visit(el, path + '[]', required, desc);
+        } else {
+          out.push({ path: path + '[]', required, container: false, description: desc });
+        }
+        return;
+      }
+      if (isObject) {
+        const rawShape = def.shape;
+        const shapeObj = typeof rawShape === 'function' ? (rawShape as () => unknown)() : rawShape;
+        if (shapeObj && typeof shapeObj === 'object') {
+          out.push({ path, required, container: true, description: desc });
+          for (const [k, v] of Object.entries(shapeObj as Record<string, unknown>)) {
+            visit(v, path + '.' + k, !optionalOf(v), '');
+          }
+          return;
+        }
+      }
+      const inner = def.innerType;
+      if (inner !== undefined && inner !== null) {
+        if (!desc) desc = descOf(inner);
+        cur = inner;
+        continue;
+      }
+      break;
+    }
+    out.push({ path, required, container: false, description: desc });
+  };
+  for (const [k, v] of Object.entries(schema as Record<string, unknown>)) visit(v, k, !optionalOf(v), '');
+  return out;
+}
+
+/** 该路径表里**必填的叶子**（= 真"要填的槽位"；容器与可选叶子剔除）。 */
+export function requiredLeavesOf(paths: readonly InputPath[]): InputPath[] {
+  return paths.filter((p) => p.required && !p.container);
 }
 
 /**

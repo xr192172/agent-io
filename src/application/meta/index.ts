@@ -72,6 +72,10 @@ import { EXPLORE_ACTIONS } from './explore/explore_code.js';
 // ★ 契约页 / 类型页（2026-10-11）：给定符号名一次给全（定义/成员/产者/消费者/接法边/词表口径）——
 //   聚合既有权威（内核 AST · find_references · CHAIN_EDGES · b_terms），**不新算**。
 import { contractPage, renderContractPage } from './explore/contract_page.js';
+// ★ 生成「下一棒入参」（2026-10-11）：把上一步的 `touched` **组装成**下一步**可跑的入参 JSON** ——
+//   能填的替它填好、意图位（如新名 `to`）**显式留空并标注**。判据全部复用 `chain_wiring` 的
+//   `nextHopsOf`/`applyChainEdge` 与 `capability_map` 的 `collectInputPaths`（**只端，不新做**）。
+import { nextHopArgs, renderNextHopArgs } from './explore/next_hop_args.js';
 import { deleteProvider, getStats, listProvidersMasked, resetStats, upsertProvider } from '../../infrastructure/llm_gateway.js';
 import { indexIntegrity, renderIntegrity } from './integrity/index_integrity.js';
 import { decideCanvasNotes } from './llm/llm_decider.js';
@@ -694,6 +698,68 @@ export const META_TOOLS: ToolDef[] = [
         feature: typeof a.feature === 'string' && a.feature ? a.feature : undefined,
       });
       return { message: renderContractPage(r), data: r };
+    }),
+  },
+
+  {
+    // ★ 2026-10-11：**生成"下一棒入参"** —— D/E/G 组共同指出的缺口：
+    //   "CLI 无管道 ⇒ 「链」是【文档约定】不是可执行的 pipe，每一步都得人肉抄字段"
+    //   （G 组原话：`find_references.touched={file,symbols[]}` → `rename_symbols` 要
+    //    `renames:[{file,symbol,to}]` ⇒ 得自己把两字段拼成对象 + 另给新名 `to`）。
+    //   ⇒ 本工具把"人肉抄字段"那一步变成**有名字的一步**：能填的**替它填好**，
+    //     只把**真正只能由人给的"意图位"**（如新名 `to`）**显式留空并标注**。
+    name: 'next_hop_args',
+    title: 'Prepare the next hop args: upstream touched -> runnable JSON for the next tool (filled where possible, intent slots left blank & marked)',
+    description:
+      '**生成"下一棒入参"**（只读）：给**上一步的工具名** `from_tool` + 它的 `touched`（`touched_json`），' +
+      '本工具按接法表把它**组装成下一步【可跑的入参 JSON】** —— 调用方**只需补"意图位"就能直接跑**，不必再人肉抄字段。' +
+      '可选 `to_tool`：只算通到那一个下游；不给 = **列出所有可接的**下一棒。' +
+      '★ **能填的必须填**：按 `CHAIN_EDGES` 的 `fromKey` 从 `touched` 取值、按 `toPath` 落位（`cardinality` 定要不要下标）。' +
+      '★ **意图位显式留空并标注**：下游**必填**里**没有任何出边覆盖**的那一格（如 `rename_symbols` 的 `renames[].to`）' +
+      ' ⇒ 产出里是一个**显眼的占位串**（`<你给：renames[].to（新符号名）>`）—— **绝不编造、绝不用空串冒充、绝不静默省略**。' +
+      '★ **不猜前提**：上游这次没产出的键 ⇒ 该格是**明确态**（`<拿不到：…>` + 理由），**不假设它总有**。' +
+      '★ 判据全部**复用已有权威**（`nextHopsOf` / `applyChainEdge` / `CHAIN_EDGES` / `evidenceTag` / `collectInputPaths`）—— 本工具**只端，不新做**。' +
+      '★ 典型用法：`find_references` 之后拿它的 `touched` 调本工具（`to_tool="rename_symbols"`）' +
+      ' ⇒ 直接得到 `{project_dir, renames:[{file, symbol, to:"<你给：…>"}]}`，补个新名即可跑。',
+    inputSchema: {
+      from_tool: z
+        .string()
+        .optional()
+        .describe(
+          '★ 上一步的工具名（= 接法表里那条边的 `from`）。**接法表以 `from` 为键** ⇒ 给了它才得到"只属于它"的权威出边；' +
+            '不给则按**接力键**（`fromKey ∈ touched`）匹配候选（可能列出别的上游同样会产的边）。',
+        ),
+      touched_json: z
+        .string()
+        .describe(
+          '★ 上一步 `---DATA---` 里的那个 `touched` 对象，**原样 JSON.stringify 后的字符串**（必填）。' +
+            '（★ 用字符串而不是对象：对象在这里只能声明成"袋子"，而袋子正是本仓点名的坏味道。）',
+        ),
+      to_tool: z
+        .string()
+        .optional()
+        .describe('可选：只算通到这一个下游的接续；不给 = 列出**所有可接的**对象类下一棒。'),
+    },
+    handler: wrapData(async (a) => {
+      const touchedJson = requireStr(a, 'touched_json');
+      let touchedObj: Record<string, unknown>;
+      try {
+        const parsed: unknown = JSON.parse(touchedJson);
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('不是一个 JSON 对象');
+        touchedObj = parsed as Record<string, unknown>;
+      } catch (e) {
+        throw new Error(
+          `touched_json 不是合法的 JSON 对象（${(e as Error).message}）。` +
+            '它应当是上一步 `---DATA---` 里的**那个 `touched`**，原样 stringify（别自己重排字段）。',
+        );
+      }
+      // ★ 目录**现取**（同 capability_map）：只有这层拿得到 `ToolDef`（含 zod schema）。
+      const r = nextHopArgs(touchedObj, {
+        from_tool: typeof a.from_tool === 'string' && a.from_tool ? a.from_tool : undefined,
+        to_tool: typeof a.to_tool === 'string' && a.to_tool ? a.to_tool : undefined,
+        defs: listToolDefs(),
+      });
+      return { message: renderNextHopArgs(r), data: r };
     }),
   },
 ];

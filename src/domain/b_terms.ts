@@ -286,6 +286,33 @@ export const B_TERMS: Record<string, BTerm> = {
   // ── receipt ────────────────────────────────────────────────
   message: { kind: 'receipt', type: 'string', meaning: '一行人读摘要。★ 不是数据：下游禁止从它解析' },
   limitations: { kind: 'receipt', type: 'string[]', meaning: '本次调用**做不到什么**（诚实列，不留白）' },
+  /**
+   * ★ 2026-10-11 补（门「b 项契约占位符」报出的"未定义共用字段名"）：由 `contract_page` 与
+   *   `next_hop_args` **两个 [B] 共用** ⇒ 按门规「出现在 ≥2 个 [B] 的字段名必须在词表里有定义」登记。
+   *
+   * ★ **同名同义**（登记前核过两端）：两者都是「**本次查找 / 解析的结果态**」——
+   *   一个**明确的枚举**，含"查不到 / 不可用 / 多候选"这类**态** ⇒ **不是空数组、不是静默返回空**。
+   *   照本仓既定口径（`consistency_check` 三态 / `index_integrity.verdict`）。
+   *   · `contract_page`: `ok` / `ambiguous` / `not-found` / `index-unavailable`（符号解析）
+   *   · `next_hop_args`: `ok` / `no-object-hops` / `no-edge-to-target` / `scope-only`（下一棒查找）
+   *   ★ 值域随"问的问题"不同，**语义唯一**（都是"这次查的结果态"）⇒ **不是一名多义**
+   *     （对照 `mode`：那 3 组枚举问的是三件**不同的事** ⇒ 登记为 debt）。
+   */
+  resolution: {
+    kind: 'state',
+    type: 'string',
+    meaning:
+      '**本次查找 / 解析的结果态**（各工具自定的枚举）：★ 查不到 / 不可用 / 多候选**都是一种明确的态**，' +
+      '不是空数组、不是静默返回空。值域随工具不同（见各工具自己的枚举），语义唯一 = "这次查的结果态"。',
+  },
+  /** ★ `resolution` 的**人读说明**（照 `contract_page` 的口径：一句话解释"为什么是这个态 / 定位到了哪儿"）。 */
+  resolution_note: {
+    kind: 'receipt',
+    type: 'string',
+    meaning:
+      '**对 {@link resolution} 那句话的人读说明**（为什么是这个态 / 定位到哪儿了）—— 与人读回执同族；' +
+      '★ **不是数据**：下游禁止从它解析（要数据就读 `resolution` 或对应字段）。',
+  },
 
   // ── state ──────────────────────────────────────────────────
   ok: { kind: 'state', type: 'boolean', meaning: '本次调用**是否成功完成**（领域失败也给 false，理由进 `blocked`）' },
@@ -619,9 +646,16 @@ export const B_TOUCHED_EXEMPT: Record<
   manageFeature: { kind: 'dispatcher', why: '入参 {action,args} + 产物 data:unknown ⇒ [C] 级分派器' },
   exploreCode: { kind: 'dispatcher', why: '入参 {action,args} + 产物 data:unknown ⇒ [C] 级分派器' },
   queryFeature: { kind: 'dispatcher', why: '入参 {query,…} + 产物 data:unknown ⇒ [C] 级分派器' },
-  // ── (a) 纯数据 / 纯计算（2）──
+  // ── (a) 纯数据 / 纯计算（3）──
   wizardSteps: { kind: 'pure', why: '无入参静态表 ⇒ 没有"本次动了什么"可报' },
   collectFunctions: { kind: 'pure', why: '纯计算（把一个文件里的函数收集出来）⇒ 不产生动作' },
+  //    ★ 2026-10-11 补：`next_hop_args`（`nextHopArgs`）也是**纯计算** ——
+  //      它只读「接法表 + 下游 schema」把上一步的 `touched` 组装成**下一棒的入参模板**，
+  //      **不触碰仓库任何对象**（不读源、不写盘、不建索引）⇒ 没有"本次动了什么"可报。
+  nextHopArgs: {
+    kind: 'pure',
+    why: '纯计算：把上一步的 `touched` 组装成**下一棒入参模板**（只读接法表 + 下游 schema）⇒ 不触碰仓库任何对象，没有"本次动了什么"可报',
+  },
   // ── (c) 根只能靠 cwd 兜底（2）──
   observeTrace: { kind: 'no-root', why: '根只能靠 cwd 兜底（本仓禁 cwd）；且无仓库相对的对象' },
   runTests: { kind: 'no-root', why: '根只能靠 cwd 兜底（本仓禁 cwd）；且无仓库相对的对象' },
