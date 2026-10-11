@@ -159,3 +159,10 @@ go-observe/MIGRATED_FROM_AI_BASE.md
 
 # 出生证探针的残留（gate_probe 注入后由测试删除；若被 git add -A 捞到，不该进仓）
 **/__gate_probe*.*
+
+
+# ★★ T177b（2026-10-11）：**实验报告与调试产物【一律不写进仓库】**
+#   它们写到仓外：D:\project_develop\_design-canvas-labs\（★ 与既有 "_" 前缀约定一致）
+#   ★ 理由：黑盒实验的**被试读得到仓里的一切**，而实验报告/预期读数**就是答案**（实测污染过一轮）。
+#   ★ 本行是**防复发**：原来那个 out/ 已整体搬到 _design-canvas-labs/out-2026-10-11/
+out/
