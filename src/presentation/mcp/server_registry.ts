@@ -23,12 +23,12 @@ import { collectPendingAlertText, dispatchDslEdit } from '../../application/disp
 import { renderNextHops, nextHopsOf } from '../../domain/chain_wiring.js';
 import { DATA_MARKER } from '../../application/plumbing.js';
 // ★★ 2026-10-06：「面」—— 目录口径（`catalogOf`，单点）+ 面的机算（`facesOf`）+ 各线 direct 白名单
-// ★ 2026-10-11：接续段的**入参路径表**改用 `collectInputPaths`（必填判定在 `renderHandoffSection` 里，
+// ★ 2026-10-11：接续段的**入参路径表**改用 `collectInputPaths`（必填判定在 `renderHandoffPanel` 里，
 //   复用 `declaredRequiredMembersOf` —— 与 `capability_map` 的「接续」段**同源**，T140 第二处）。
 import { catalogOf, collectInputPaths, LANE_META } from '../../application/meta/registry/capability_map.js';
 import type { InputPath } from '../../application/meta/registry/capability_map.js';
 // ★ T54 收口：「下一棒」印具体值，**共用** capability_map 的同一个渲染（别在这写第二份）
-import { renderHandoffSection } from '../../application/meta/index.js';
+import { renderHandoffPanel } from '../../application/meta/index.js';
 import { facesOf } from '../../application/meta/registry/tool_faces.js';
 
 // （`tools/stale_check` 的导入已随 P-F 删除：本文件不再直接消费它 —— 三个 stale 告警各自
@@ -614,7 +614,7 @@ export async function invokeTool(
   //    ★★ 它**不进产物**：既不是契约（下游不会用它重算）、也不是剪贴板 —— 是**提示**。
   // ★★★ 2026-10-09（T54 收口）：**「下一棒」现在印具体值**。
   //   本通道手上**正好有**刚跑完那个工具的 `r.text`，而 `touched` 就在它的 `---DATA---` 里
-  //   ⇒ 把它喂进**同一个**渲染（`renderHandoffSection`，与 `capability_map` 的「接续」段共用一份实现）
+  //   ⇒ 把它喂进**同一个**渲染（`renderHandoffPanel`，与 `capability_map` 的「接续」段共用一份实现）
   //   ⇒ 调用方**不必自己 stringify 一遍 `touched`**，直接照抄入参即可。
   //   ★ 取不到 `touched`（多数工具不产）⇒ **逐字退回**原来的表达式版 `renderNextHops`（行为不变）。
   //   ★ 为什么必须共用一份实现：两个面各写一份"把 touched 变成下一棒" ⇒ **判据分叉**（本仓头号病）。
@@ -627,7 +627,7 @@ export async function invokeTool(
 }
 
 /**
- * 「下一棒」的合成 —— ★ 有 `touched` 就印**具体值**（共用 `renderHandoffSection`），否则退回**表达式**版。
+ * 「下一棒」的合成 —— ★ 有 `touched` 就印**具体值**（共用 `renderHandoffPanel`），否则退回**表达式**版。
  *
  * ★ 从 `r.text` 里取 `touched` 是**只能这么干**（本通道按设计只回**合成好的文本**，见上面那段注释）；
  *   `DATA_MARKER` 是**单点**（`application/plumbing.ts`），不硬编码。
@@ -643,7 +643,7 @@ function renderNextNote(tool: string, text: string): string {
         const data = JSON.parse(line) as { touched?: Record<string, unknown> } | null;
         const t = data && typeof data === 'object' ? data.touched : undefined;
         if (t && typeof t === 'object' && Object.keys(t).length > 0) {
-          const note = renderHandoffSection(
+          const note = renderHandoffPanel(
             tool,
             JSON.stringify(t),
             (name): readonly InputPath[] => {

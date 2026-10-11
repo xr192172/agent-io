@@ -500,8 +500,8 @@ export const META_TOOLS: ToolDef[] = [
       //   （`find_references.file`/`symbol` = `mode=symbol` 才要 ⇒ zod 只能写 `.optional()`），
       //   ⇒ 接续段会拿它报"必填已填满"（**假信心**，正是 T140 刚修掉的那个形态）。
       //   ★ 改注入 `collectInputPaths(d.inputSchema)`（**深层入参路径表**，与 `CHAIN_EDGES.toPath` 同形），
-      //     必填判定在 `renderHandoffSection` 里**复用** T140 立的 `declaredRequiredMembersOf`（import，不另抄）。
-      const handoff = renderHandoffSection(
+      //     必填判定在 `renderHandoffPanel` 里**复用** T140 立的 `declaredRequiredMembersOf`（import，不另抄）。
+      const handoff = renderHandoffPanel(
         a.from_tool as string | undefined,
         a.touched_json as string | undefined,
         (tool) => {
@@ -888,7 +888,7 @@ export const META_TOOLS: ToolDef[] = [
  *   ⇒ **能直接把具体值印出来**（`edit_code.file = src/a.ts`），调用方**不必自己 stringify 一遍**。
  *   ★ 为什么必须共用：这正是本仓头号病的高发处 —— 两个面各写一份"把 touched 变成下一棒"就**分叉**了。
  */
-export function renderHandoffSection(
+export function renderHandoffPanel(
   fromTool: string | undefined,
   touchedJson: string | undefined,
   /**
