@@ -1581,7 +1581,16 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       '定位与语法门**复用** edit_code 的 replace_text 同一实现（4 级模糊级联：逐字→空白归一→缩进弹性→省略号占位；歧义即报错、绝不猜）。' +
       '纪律（§21）：清单必须**全部可执行**——任一项规划不出来（old_text 不在/歧义/新引入语法错误）⇒ 报错并列全每项原因，不产出半成品；targets 为空 ⇒ 产出**显式空清单**（items=[]）。' +
       '★ 把本品的 data **原样**交给 apply_refactor_plan 落盘（同一份清单 = 同一 plan_id；清单被改动会被指纹检出）。' +
-      '与 refactor_pipeline 的分工：pipeline 是"内置步骤自动检测"（dead import/语句/迁移）；本品是"**调用方给定清单**"的算清单入口（无自动检测，只算你要的那批替换）。',
+      '与 refactor_pipeline 的分工：pipeline 是"内置步骤自动检测"（dead import/语句/迁移）；本品是"**调用方给定清单**"的算清单入口（无自动检测，只算你要的那批替换）。' +
+      '★★★ **本族 = 【补丁族】——定位别用错（2026-10-11 正名）**：本品的每一项是 ' +
+      '`{file, old_text, new_text}`，即**文件内一次唯一文本替换** = **在旧文本上打补丁**。' +
+      '★ 按本仓既定理念（用户原话：*"AI 直接**不打补丁而是局部重写**……**把那一整块圈出来，然后让你去重写**"*），' +
+      '**重构的主路不是本族**，而是【**整块族**】：' +
+      '① `edit_code op=replace`（**整个符号**，按**符号名**定位，不看行号/不拿旧文本当定位）；' +
+      '② `move_symbol`（**整块符号跨文件**，自动重定向 importers）；' +
+      '③ `rename_files`（**整块文件级**改名/移动 + 全仓 import 改写）；' +
+      '④ 设计侧 `edit_dsl type=api op=update` + `data.expected_apis`（**整个契约块**）。' +
+      '⇒ ★ 本族的正当用途：**你确实只要改一小段文本**（改条注释、换个字面量），且**不涉及"这块功能该怎么分布"**。',
     inputSchema: {
       project_dir: z.string().describe('项目根目录（相对路径的锚点）'),
       targets: z
@@ -1631,7 +1640,8 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       '**复用 edit_code(targets[]) 的落地路径**（写闸 + 写前快照 + 索引写穿保鲜 + 逐项回报），不另写一套；落盘走同一批量编排。' +
       'atomic=true ⇒ 任一项失败（含"清单与实际源冲突"与落盘失败）则**整批不落盘**（全成或全不成）；缺省 false = 逐项独立。' +
       '结果 data：{ok, plan_id, written, items[{file,status:applied|already_applied|failed,...}], total, applied, already_applied, failed, atomic}。' +
-      '空清单（items=[]）⇒ 合法 no-op（ok=true / written=false）。',
+      '空清单（items=[]）⇒ 合法 no-op（ok=true / written=false）。' +
+      '★★ **同 plan_refactor：本族是【补丁族】**（逐项唯一文本替换）⇒ **重构主路请走整块族**（见 plan_refactor 的描述末段）。',
     inputSchema: {
       project_dir: z.string().describe('项目根目录（清单里的相对路径以此为锚点）'),
       plan: refactorPlanSchema.describe('plan_refactor 的 data 原样传入（含 plan_id / items / files / summary）'),

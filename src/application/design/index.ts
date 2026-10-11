@@ -140,10 +140,16 @@ export const DESIGN_TOOLS: ToolDef[] = [
       '适合日常维护（补节点/改职责描述/加标注/改属性），不必先跑代码留 trace 证据；改架构/契约等重改请用 normal 全链强闸。' +
       '★ 但**改 `semantic.files` 的 op（`type=file` / `type=api`）两档都要先"现取该文件的事实"**：' +
       'DSL 已不存事实镜像（actual_apis/actual_deps 已移除）⇒ 事实只能现取，须把该文件路径作为 evidence 的 ref 传进来。' +
-      '★★ **`type=api` 改契约：优先【整块重写】**（T160）—— `op=update` + `data.expected_apis=[{signature,notes?},…]` ' +
-      '把该文件的契约列表**整块换掉**：**不需要位号、不需要旧串**（与 `edit_code op=replace` 的 ' +
-      '"不信 AI 的行号、不信 AI 的 old_string"**同一把尺**）。回执给结构化增删（`data.added/removed/kept`）。' +
-      '★ 旧的单条路（`data.signature`=**原签名串逐字** + `data.new_signature`）仍在，但**新写一律走整块重写**。',
+      '★★ **`type=api` 改契约：走【整块重写】**（T160）—— `op=update` + `data.expected_apis=[{signature,notes?},…]` ' +
+      '把该文件的契约列表**整块换掉**。' +
+      '★★★ **口径先读清（2026-10-11 用户更正，我上一版把它写反了）**：**不是"不许看旧串"** —— ' +
+      '**旧串是你改写的素材**（先 `get_dsl` 把旧块拿来，**在它上面改**），★ **只是别拿它当【定位键】**：' +
+      '旧机制 `data.signature` 靠**逐字相等**找目标，一字之差就报「不存在」（**脆**）。' +
+      '⇒ 一句话：**定位不绑旧串；内容依据旧串** —— 这才是 `edit_code op=replace` 那句' +
+      '"**不信 AI 的行号，不信 AI 的 old_string**"的本意：它防的是"**拿旧文本当定位**"，' +
+      '**不是**"不许看旧文本"（★ 我此前把它读成了后者）。' +
+      '回执给结构化增删（`data.added/removed/kept`）。' +
+      '★ 旧的单条路（`data.signature`=**原签名串逐字** + `data.new_signature`）仍在，但**新写走整块重写**。',
     inputSchema: {
       feature: z.string().describe('feature 名'),
       agent: z
