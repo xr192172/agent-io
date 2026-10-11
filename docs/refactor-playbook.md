@@ -8,6 +8,11 @@
 > `a1ff974` 第 4 份解析器归并、`bbe9c34` 扩展名权威、`4737f5b`/`a49e7a5` 拆注册表），
 > **不是设想**。凡标 ★ 的都是踩过的坑。
 
+> ⚠️⚠️ **2026-10-11 全局警示（T155）**：本指南正文里凡出现 `tests/…` 路径或 `vitest run` 的**例子**，
+> **自 `7bcc364`（2026-10-04「整体移除测试框架」）起全部失效** —— 那个目录已不存在、`vitest` 未安装。
+> ⇒ ★ **要跑门，只认 §0 的 `npm run verify`**；§0.1 有"原清单 12 条 / 11 条已死"的全表。
+> ★ 本指南已**逐处标注**（§8.6 命令块、目录约定表）；**未逐句重写的旧例子只是历史，别照抄**。
+
 ---
 
 ## 0.0 ★★★ 加「防御性判据」之前先问一句：**我能造出那个坏状态吗？**
@@ -38,50 +43,45 @@
 
 ---
 
-## 0. 一页速查：开工前必须能跑通的 8 道门
+## 0. 一页速查：开工前必须能跑通的那道门
 
 ```bash
 cd /d/project_develop/design-canvas
 
-# ① 类型                —— 最快的兜底。搬完立刻跑，别等到最后
-./node_modules/.bin/tsc --noEmit
-
-# ② G1 对外契约快照      —— 工具名/标题/描述/inputSchema 逐字不变（顺序不算契约）
-./node_modules/.bin/vitest run tests/server_registry.tool_snapshot.test.ts
-
-# ③ G4 同族副本棘轮      —— 存量不拦，**新增即红**
-./node_modules/.bin/vitest run tests/single_source.test.ts
-
-# ④ G5 量具有效性        —— 方向 / 反饱和 / 分辨率 / 空输入第三态
-./node_modules/.bin/vitest run tests/health/health-validity.test.ts
-
-# ⑤ README 工具数        —— 必须 67 = 67
-node scripts/readme_tools_gate.mjs --check
-
-# ⑥ 契约文档门（CI 用）  —— 新增契约未同步 / 改名残留
-node scripts/contract_docs_gate.mjs
-
-# ⑦ G9 lane 来源门（P1c） —— 归属只有一个来源；lane 文件 ↔ 线 id 配对
-./node_modules/.bin/vitest run tests/registry/lane_sources.test.ts
-
-# ⑧ 品牌串残留门（改名后＝零容忍） —— 旧名一处都不许回来（含 .gitignore / *.mod 这类无扩展名文件）
-./node_modules/.bin/vitest run tests/brand_residue.test.ts
-
-# ⑨ G7 宣传-实现一致性门 —— 每个对外宣传的 action 必须真调实现；空壳/半空壳进 debt 棘轮
-./node_modules/.bin/vitest run tests/tools/explore_action_wiring.test.ts
-
-# ⑩ G8 逐工具行为快照     —— 不退化即可（S1 稳定集 / S2 测量集）
-./node_modules/.bin/vitest run tests/tool_behavior_snapshot.test.ts
-
-# ⑪ T19 工序表门 —— 只查编译器查不了的四件事（id 重复 / 溯源无环 / owner 行为 / 缺了就重做·失败就重试·不兜底）
-./node_modules/.bin/vitest run tests/stages/stage_registry.test.ts
-
-# ⑫ 全量回归（仓内约定：排除 archify）
-./node_modules/.bin/vitest run --exclude 'tests/tools/archify_*.test.ts'
+# ★ 本仓**唯一**的总门 —— 三态：0=每道门都真跑过并通过 ｜ 1=FAIL ｜ 2=有门跑不了(SKIP)
+npm run verify
 ```
 
-**基线**：⑫ 当前应为 **234 文件通过 / 1 跳过 ｜ 2423 项通过 / 5 跳过 ｜ 0 失败**（2026-10-01 实测；上一条记录 219/2269 已过期 —— 此后 T20/T19 两族陆续加了测试）。
-★ 记账口径提醒：**`test:main` 是排除 archify 的数**（234）；若看到 **238 文件 / 2449 项**那是**含 archify 4 个文件 26 项**的口径（`npm test`）。
+★ 它今天有 **5 道门** + 1 个报告区（**逐门说明写在 `scripts/verify.mjs` 的门表里，那里是唯一住处**）：
+
+| 门 | 跑什么 | 判什么 |
+|---|---|---|
+| ts 类型 | 本地 `tsc`（**进程内解析路径，不走 `npx`** —— T61：`npx` 会在没装编译器时**从网上取一个**⇒ 假绿灯） | 类型错 ⇒ 红 |
+| MCP 工具签名 | `node scripts/mcp/mcp_scan.mjs` | 65 个工具的入参/出参契约（**坏签名 ⇒ LLM 一定调错**） |
+| b 项契约占位符 | `node scripts/measure_b_contract.mjs` | 有未定义占位符 ⇒ 红 |
+| Go 编译 | `go build ./...`（cwd `observe-lang-go`） | Go 语言包此前**零门**，是盲区 |
+| Go 静态检查 | `go vet ./...` | 同上；vet 过了才谈得上"改 Go 有反馈" |
+| （报告区）结构意图 gap | `node scripts/structure_gap.mjs` | 通过时打印正文；**FAIL 照常计入** |
+
+★ **调单个工具**（改契约/改回执时第一个该跑的）：
+`node scripts/mcp/mcp_call.mjs <tool> '<json args>'`（路径无关，不必起 host）。
+
+### 0.1 ⛔ 本节**原清单已整段失效**（2026-10-11 复核，T155）
+
+原文是一份 12 条命令的「开工前必须能跑通的 8 道门」，**其中 11 条今天跑不了**：
+
+| 原命令 | 今天 |
+|---|---|
+| ① `./node_modules/.bin/tsc --noEmit` | ✅ **还活着**（现在由 `npm run verify` 的「ts 类型」门代跑） |
+| ②③④⑦⑧⑨⑩⑪⑫ `./node_modules/.bin/vitest run …` | ⛔ **全死** —— `tests/` 与 `vitest` 已于 `7bcc364`（2026-10-04「整体移除测试框架」）删除 |
+| ⑤ `node scripts/readme_tools_gate.mjs --check` | ⛔ **脚本本身不存在**（★ 且按 T127 裁定：README 是**对外门面、允许漂移**⇒ **不重建**） |
+| ⑥ `node scripts/contract_docs_gate.mjs` | ⛔ **脚本本身不存在** |
+
+★ 原文附的基线（`234 文件 / 2423 项`，更早的 `219/2269`）**一并作废** —— 那套计数今天**没有出处**。
+★★ **教训（本节最值钱的一条）**：一份自称"**开工前必须能跑通**"的清单，
+**11/12 条跑不了却没人发现** —— 与纲领 §5 同源（**判据指向已删的树**）。
+⇒ **判据必须能被真跑一次**；跑不了的不是判据，是**装饰**。
+
 两个数都对，别当成回归。任何一笔改动若把这些数字**变少**，先解释清楚再提交。
 
 ★ **G7 是"堆新工具"的准入闸**（用户 2026-09-28 要求）：新增 action 必须①声明它调的实现
@@ -265,6 +265,8 @@ B1 实测：把 `cli_extract` / `registry_extract` 里**逐字相同**的函数�
 调用方于是写成 `expect(msg).toBe('')` ⇒ 我第一次重构**减少了 188 处**旧品牌串时，
 门**红了** —— 惩罚了正确的方向，正违反棘轮纪律（"只在新增命中上 fail"）。
 - **纪律**：`added` / `grown`（这两类）单独断言 ⇒ 红；`shrunk` / `cleared` 只 `console.log` 提示。
+  ★ 2026-10-11 更正：原例引用的 `tests/helpers/ratchet.ts` 已随 `7bcc364` 删除；★ 且**棘轮型门本身已按 G4 裁定弃用**
+  （不重建"免疫系统"）⇒ 本条**原则仍成立**（"变差"与"变好"要分开返回），但**今天用它的是量具/报告，不是棘轮门**。
 - 通用化：**任何"棘轮/基线"型门都要把"变差"与"变好但不合规"分开返回**。
   顺手把这条也写进 `tests/helpers/ratchet.ts`（那份便利函数的注释解释了为什么刻意不提供它）。
 
@@ -308,7 +310,8 @@ P1c 要把 `LANE_OF` 的 67 条改写成 `WHEN_OVERRIDES`，我写了一版单�
 - 每条新门写一个**探针脚本**（在 `.inspect/`）：逐个注入它能抓的错 → 跑门 → 断言变红 → 还原（`process.on('exit', restore)`）。
 - 探针要**同时包含"本门应该抓不到"的对照项**，否则你不知道自己的断言是在抓什么。
 - 发现恒真断言 ⇒ **删掉，不要保留**（保留会给人虚假安全感，正是本项目"兜底代码"的同一种病）。
-- 出生证结果写进门文件头（本仓惯例，见 `tests/registry/lane_sources.test.ts`）。
+- 出生证结果写进门文件头（本仓惯例，**例**：`scripts/verify.mjs` 各门的 `why` 字段、`scripts/mcp/mcp_scan.mjs` 的文件头）。
+  ★ 原引用的 `tests/registry/lane_sources.test.ts` 已随 `7bcc364` 删除（2026-10-11 更正）。
 
 ---
 
@@ -467,19 +470,21 @@ grep -rIn "['\"][^'\"]*/$m\(\.js\)\?['\"]" src tests --include=*.ts --include=*.
 ```bash
 cd /d/project_develop/design-canvas
 # ① 残留门必须 0（且它不是"0 因为扫不到"—— 先看门的 isProbablyText 自测）
-./node_modules/.bin/vitest run tests/brand_residue.test.ts
+#    ⛔ `tests/brand_residue.test.ts` 已随 7bcc364 删除 ⇒ 今天**没有替代门**：
+#       改用"真扫一遍"：grep 旧名（**含 `.gitignore` / `*.mod` 这类无扩展名文件**），当场看读数
 # ② 契约与行为基线（重算过、哈希一致）
-UPDATE_TOOL_SNAPSHOT=1 ./node_modules/.bin/vitest run tests/server_registry.tool_snapshot.test.ts
-UPDATE_TOOL_BEHAVIOR=1 ./node_modules/.bin/vitest run tests/tool_behavior_snapshot.test.ts
+#    ⛔ 两条快照命令（tool_snapshot / tool_behavior_snapshot）已随 7bcc364 删除
+#       ⇒ ★ 工具契约今天只看 `npm run verify` 的「MCP 工具签名」门 ——
+#         但它验的是**签名合法性**，**不验"与基线逐字相同"**（这一半**没有门**，见纲领 §5-G1）
 # ③ 生成物重算
 npm run build && npm run gen:schema && npm install --package-lock-only
-# ④ 别的语言别忘（本仓有两个 Go 模块 + 一个交叉语言的数据目录名约定）
-(cd go-observe && go build ./... && go test ./...)
-(cd go-slim && go build ./...)
+# ④ 别的语言别忘（本仓有一个 Go 模块 observe-lang-go + 一个交叉语言的数据目录名约定）
+(cd observe-lang-go && go build ./... && go vet ./...)
 # ⑤ un-hide 检查
 git status --short | grep '^??'
-# ⑥ 全量回归 + 残留门 second pass
-npm run test:main
+# ⑥ ★ 唯一总门（原 `npm run test:main` 已随测试框架一起删除）
+npm run verify
+```
 ```
 
 ★ **跨语言的数据目录名是一条真耦合**：`go-observe/internal/instrument/instrument.go` 里
@@ -500,7 +505,7 @@ npm run test:main
 |---|---|---|
 | `scripts/` | **产品链脚本**（build / setup / 门 / 生成器） | 长期维护，进 `package.json` 或文档 |
 | `scripts/mcp/` | **MCP 驱动**（`mcp_smoke.mjs` 握手冒烟 / `mcp_call.mjs` 单次调任意工具） | ★ **必须路径无关**（取 argv/cwd，不硬编码本仓路径） |
-| `tests/probes/` | **门的出生证探针**（可选） | 见 §4.11；**趋势是做共享 helper，而不是每门一个脚本** |
+| ⛔ ~~`tests/probes/`~~ | ~~门的出生证探针~~ | ★ **该目录已随 `7bcc364` 删除**（2026-10-11 更正）⇒ **出生证探针改放 `.inspect/`**（scratch，不入 git）：**当场注入 ⇒ 看红 ⇒ 还原**，读数写进提交信息/todo。**仍然不为每门留一个脚本**（那是墓碑，见下） |
 
 ★★ **`scripts/oneoff/` 已撤销（2026-09-28，同日二次判定）**
 原约定是"一次性脚本用完丢这儿、**留作可复现证据**"。实测证伪了它：
@@ -510,7 +515,9 @@ npm run test:main
 ⇒ 结果就是"**留了却不记得**"的墓碑 —— 正是用户点过的病（"上下文一压缩就会忘，然后重做一遍"）。
 
 **★ 新约定：一次性脚本用完即删。** 若某步诊断**确实值得留**，二选一（都不许原样落一份脚本）：
-1. 转成 `tests/` 下的**测试**（能复跑、能判红）；
+1. ~~转成 `tests/` 下的**测试**（能复跑、能判红）~~ ⇒ ★ **该路已随 `7bcc364` 关闭**（2026-10-11 更正）。
+   今天的对应做法：**转成 `scripts/` 或 `scripts/mcp/` 下的路径无关驱动**（长期维护、进文档、进 `verify` 门表）；
+   或**当场做一次出生证**（注入 ⇒ 红 ⇒ 还原），把读数写进提交信息 —— **不落脚本**；
 2. 转成 `scripts/mcp/` 或 `scripts/` 下的**路径无关驱动**（长期维护、进文档）。
 
 ★ 账（2026-09-28 执行 + 同日修正）：仓库根下 12 个散落脚本 → `scripts/oneoff/`（根下现为 0）；
