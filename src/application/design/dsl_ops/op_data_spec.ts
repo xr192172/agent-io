@@ -1,5 +1,7 @@
 // ★★ T170b：只为**类型级断言**（防"字段清单与 interface 漂移"）而 import type —— **不产生运行期依赖**。
 import type { AddNodeInput, UpdateNodeInput } from './node_ops.js';
+import type { AddFileInput, UpdateFileInput } from './file_ops.js';
+import type { AddEdgeInput } from './edge_ops.js';
 
 /**
  * `edit_dsl` 各 `type`/`op` 的 **data 契约表**（唯一判据）。
@@ -144,6 +146,7 @@ export const OP_SPECS: readonly OpSpec[] = [
 
 const BY_TYPE = new Map(OP_SPECS.map((s) => [s.type, s]));
 
+
 /**
  * ★★★ **`node.add` / `node.update` 的领域字段（唯一清单）**（2026-10-11 T170b）。
  *
@@ -202,6 +205,81 @@ export const _assertNodeKeysNoExtra: NodeKeysExtraInList extends never
   ? true
   : ['★ `NODE_DATA_KEYS` 多写了这些键（清单有、interface 没有）⇒ 从 `NODE_DATA_KEYS` 里删掉：', NodeKeysExtraInList] = true;
 
+/** ★ `file_id` 由 `operations[].id` 给，`feature` 由顶层给 ⇒ 不进 data。 */
+export const FILE_DATA_KEYS = [
+  'path', 'responsibility', 'expected_apis', 'expected_deps', 'expected_behavior', 'status',
+] as const;
+type FileOwnedKeys =
+  | Exclude<keyof AddFileInput, 'feature' | 'file_id'>
+  | Exclude<keyof UpdateFileInput, 'feature' | 'file_id'>;
+export type FileKeysMissing = Exclude<FileOwnedKeys, (typeof FILE_DATA_KEYS)[number]>;
+export const _assertFileNoMissing: FileKeysMissing extends never
+  ? true
+  : ['★ `FILE_DATA_KEYS` 漏了这些键 ⇒ 补进 `op_data_spec.ts`：', FileKeysMissing] = true;
+export type FileKeysExtra = Exclude<(typeof FILE_DATA_KEYS)[number], FileOwnedKeys>;
+export const _assertFileNoExtra: FileKeysExtra extends never
+  ? true
+  : ['★ `FILE_DATA_KEYS` 多写了这些键 ⇒ 删掉：', FileKeysExtra] = true;
+
+/** ★ `edge_id` 由 `operations[].id` 给。 */
+export const EDGE_DATA_KEYS = ['from', 'to', 'label', 'edge_type', 'arrow', 'layer'] as const;
+type EdgeOwnedKeys = Exclude<keyof AddEdgeInput, 'feature' | 'edge_id'>;
+export type EdgeKeysMissing = Exclude<EdgeOwnedKeys, (typeof EDGE_DATA_KEYS)[number]>;
+export const _assertEdgeNoMissing: EdgeKeysMissing extends never
+  ? true
+  : ['★ `EDGE_DATA_KEYS` 漏了这些键 ⇒ 补进 `op_data_spec.ts`：', EdgeKeysMissing] = true;
+export type EdgeKeysExtra = Exclude<(typeof EDGE_DATA_KEYS)[number], EdgeOwnedKeys>;
+export const _assertEdgeNoExtra: EdgeKeysExtra extends never
+  ? true
+  : ['★ `EDGE_DATA_KEYS` 多写了这些键 ⇒ 删掉：', EdgeKeysExtra] = true;
+
+/**
+ * ★★★ **每个 type 的「已知 `data` 键」全集**（T170c）——
+ * 用于把"**键名写错**"从**静默忽略**改成**报**（★ T174 治的是"形状错"，没治"名字错"）。
+ *
+ * ## 键集是**从实现里读出来的**（不是凭印象；★ 本仓的纪律）
+ * · `node` / `file` / `edge` 是**整体展开**（`{…data}` 交给下游 `addXxx`）⇒ 键集在 interface 里
+ *   ⇒ 用 `NODE_DATA_KEYS` / `FILE_DATA_KEYS` / `EDGE_DATA_KEYS`（**各自都有类型级断言**防漂移）
+ * · 其余 type 在各自 `applyXxxOp` 里**显式读 `data.X`** ⇒ 逐条从实现抄出
+ * ★★ 有一条**教训**要记：**机械提取会把【注释里出现的词】也算进去** ——
+ *    实测 `applyTagOp` 被误抓出 `alternatives`/`dissent`（那是它的**文案**里写的），
+ *    真身只读 `tag`/`files` ⇒ ★ **所以这份键集是【人工逐条核对过】的** ✓
+ *
+ * ## 为什么"未知键 ⇒ 报"值得做
+ * ★ 兜底：★ `data` 是自由袋子 ⇒ 写错一个字母（`labl`）此前**一声不响地丢掉** ✗
+ *   ⇒ 实测代价：**decision 的 4 个字段**曾因"形状不对"静默丢弃，害一代代理**回读落盘文件**才发现（T174）。
+ */
+export const TYPE_KNOWN_KEYS: Record<string, readonly string[]> = {
+  node: NODE_DATA_KEYS,
+  edge: EDGE_DATA_KEYS,
+  file: FILE_DATA_KEYS,
+  api: ['signature', 'new_signature', 'notes', 'note', 'expected_apis'],
+  binding: ['file_id', 'sync_status'],
+  status: ['status'],
+  annotation: ['text', 'annotation_id', 'node_id', 'author', 'resolution_note', 'severity'],
+  approval: ['annotation_id', 'assignee', 'comment', 'decision', 'reviewer', 'submitter'],
+  snapshot: ['label', 'description', 'snapshot_id'],
+  layout: [
+    'algo', 'direction', 'h_gap', 'v_gap', 'damping', 'grid_size',
+    'iterations', 'node_radius', 'repulsion', 'respect_swimlanes', 'stiffness',
+  ],
+  simulation: [],
+  tag: ['tag', 'files'],
+  decision: [
+    'summary', 'rationale', 'consequences', 'acceptance', 'thread', 'tags',
+    'votes', 'evidence_source', 'note', 'status', 'author', 'alternatives', 'dissent',
+  ],
+};
+/** ★★ 断言：`TYPE_KNOWN_KEYS` 的键集**必须恰好覆盖 `OP_SPECS` 的全部 type**（多 / 少都红）。 */
+export type KnownKeysMissingTypes = Exclude<(typeof OP_SPECS)[number]['type'], keyof typeof TYPE_KNOWN_KEYS>;
+export const _assertKnownKeysCoverAll: KnownKeysMissingTypes extends never
+  ? true
+  : ['★ `TYPE_KNOWN_KEYS` 漏了这些 type ⇒ 补上（键集从实现读）：', KnownKeysMissingTypes] = true;
+export type KnownKeysExtraTypes = Exclude<keyof typeof TYPE_KNOWN_KEYS, (typeof OP_SPECS)[number]['type']>;
+export const _assertKnownKeysNoExtraType: KnownKeysExtraTypes extends never
+  ? true
+  : ['★ `TYPE_KNOWN_KEYS` 多写了这些 type（`OP_SPECS` 里没有）⇒ 删掉：', KnownKeysExtraTypes] = true;
+
 
 /**
  * ★ **校验通过后的 op**（2026-10-11 T170）——
@@ -251,6 +329,18 @@ export function checkOpSpec<T extends FeatureOperationLike>(op: T): CheckedOpera
     throw new Error(`${type}.${o} 需要 id${spec.idNote ? `（${spec.idNote}）` : ''}`);
   }
   const data = (op.data ?? {}) as Record<string, unknown>;
+  // ★★★ T170c：**未知键 ⇒ 报**（此前是静默忽略）。★ 只对**表里列了的 type** 校验（`TYPE_KNOWN_KEYS` 覆盖全部，见断言）。
+  const known = TYPE_KNOWN_KEYS[type];
+  if (known) {
+    const unknown = Object.keys(data).filter((k) => !known.includes(k));
+    if (unknown.length > 0) {
+      throw new Error(
+        `${type}.${o} 的 data 里有**不被认的键**：${unknown.join(' / ')}` +
+          `（★ 此前它们会被**静默忽略** —— 你以为生效了、其实没有）。\n` +
+          `★ ${type} 的已知键（${known.length} 个）：${known.length ? known.join(' / ') : '（无 —— 这个 type 不走 data）'}`,
+      );
+    }
+  }
   const missing = (spec.required[o] ?? []).filter((k) => {
     const v = data[k];
     return v === undefined || v === null || (typeof v === 'string' && v.trim() === '');
