@@ -97,6 +97,35 @@ const refactorPlanSchema = z.object({
   }),
 });
 
+/**
+ * ★★ 字面量扫描的**总账**（2026-10-11）——纯呈现层，**不改** `literals` 的数据结构（`--json` 消费者在）。
+ *
+ * 病（**已真实误导过一个使用者**，非"理论上可能"）：`report_literals:true` 下 `literals` 是**多个 needle 的数组**
+ *   （符号的 snake 变体 + 原串，各一项）。实测某 camelCase 符号产出形如
+ *   `[ {snake 变体, matches:[]},        ← 零命中，【排在前】
+ *      {原串,       matches:[…19 处…]} ] ← 原串，命中 19 处`
+ *   ⇒ 那个走了完整改名链的使用者读到**排在前**的 `matches:[]`，下结论说「对该 camelCase 提及零命中」——
+ *     而真相是**原串命中 19 处**。（它甚至因此绕远路用文本级链去改那 7 处注释。）
+ *
+ * 根因 = **"多个 needle"被平铺，而"零命中的那个"因排在前而被当成了结论** —— 把看到的一小片当整体。
+ *   ★ "零命中的那个排在前"本身**没错**；错在**没有总账**。故补这一句：
+ *     一句话说清「共几个 needle、各自命中几处」⇒ 不用逐个去读 `matches` 就知道谁零命中、谁有命中。
+ *
+ * 产出形如：`★ 字面量扫描：2 个 needle —— alpha_beta 0 处 · alphaBeta 19 处（1 个有命中）`
+ *   ★ 全零时**如实写"都没命中"**——**零命中 ≠ 没扫描**，不留给调用方自己去猜。
+ *   ★★ 本注释**刻意不写出本仓真实符号名**：本工具会扫**本仓自身源码文本**，
+ *      注释里写下某个真名会**把这个注释算成该名的命中**（实测会让 `bounds.textAdded` 0→1）。
+ *      故示例用仓内不存在的占位名（`alphaBeta`/`alpha_beta`）。
+ */
+function renderLiteralsSummary(
+  literals: ReadonlyArray<{ needle: string; matches: ReadonlyArray<unknown> }>,
+): string {
+  const per = literals.map((kv) => `${kv.needle} ${kv.matches.length} 处`);
+  const hits = literals.filter((kv) => kv.matches.length > 0).length;
+  const tail = hits === 0 ? '（都没命中）' : `（${hits} 个有命中）`;
+  return `★ 字面量扫描：${literals.length} 个 needle —— ${per.join(' · ')}${tail}`;
+}
+
 export const REFACTOR_TOOLS: ToolDef[] = [
   {
     name: 'diff_views',
@@ -553,7 +582,10 @@ export const REFACTOR_TOOLS: ToolDef[] = [
           lines.push(`\t- ${f.file}（${summary}）：`);
           for (const x of f.refs) lines.push(`\t    L${x.line}[${kindLabel[x.kind]}] ${x.snippet}`);
         }
-        if (r.literals) for (const kv of r.literals) for (const m of kv.matches) lines.push(`\t[字面 ${kv.needle}] ${path.basename(m.file)} L${m.line} [${m.kind}] ${m.snippet}`);
+        if (r.literals) {
+          lines.push(`\t${renderLiteralsSummary(r.literals)}`);
+          for (const kv of r.literals) for (const m of kv.matches) lines.push(`\t[字面 ${kv.needle}] ${path.basename(m.file)} L${m.line} [${m.kind}] ${m.snippet}`);
+        }
         // P10 能力自述：涉及文件是非调用级语言 ⇒ 诚实标注"文本级，零引用不可全信"
         const granField = renderGranularityNote([common.file], 'refs');
         if (granField) lines.push(granField);
@@ -570,7 +602,10 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         for (const c of r.typeCandidates!) {
           lines.push(`\t- ${c.file}:L${c.line}（命中 ${c.matched.join(', ')}） ${c.snippet}`);
         }
-        if (r.literals) for (const kv of r.literals) for (const m of kv.matches) lines.push(`\t[字面 ${kv.needle}] ${path.basename(m.file)} L${m.line} [${m.kind}] ${m.snippet}`);
+        if (r.literals) {
+          lines.push(`\t${renderLiteralsSummary(r.literals)}`);
+          for (const kv of r.literals) for (const m of kv.matches) lines.push(`\t[字面 ${kv.needle}] ${path.basename(m.file)} L${m.line} [${m.kind}] ${m.snippet}`);
+        }
         const granType = renderGranularityNote([common.file], 'refs');
         if (granType) lines.push(granType);
         return { message: lines.join('\n'), data: r };
@@ -592,7 +627,10 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       for (const imp of r.importers!) {
         parts.push(`\t- ${imp.file}（import ${imp.importSources.join(', ')}）：行 ${imp.refs.map((x) => x.line).join(', ')}`);
       }
-      if (r.literals) for (const kv of r.literals) for (const m of kv.matches) parts.push(`\t[字面 ${kv.needle}] ${path.basename(m.file)} L${m.line} [${m.kind}] ${m.snippet}`);
+      if (r.literals) {
+        parts.push(`\t${renderLiteralsSummary(r.literals)}`);
+        for (const kv of r.literals) for (const m of kv.matches) parts.push(`\t[字面 ${kv.needle}] ${path.basename(m.file)} L${m.line} [${m.kind}] ${m.snippet}`);
+      }
       // P10 能力自述：定义文件是非调用级语言 ⇒ 诚实标注"文本级，零引用不可全信"
       const granSymbol = renderGranularityNote([common.file], 'refs');
       if (granSymbol) parts.push(granSymbol);
