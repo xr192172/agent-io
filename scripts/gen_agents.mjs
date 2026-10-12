@@ -46,6 +46,7 @@ const TRIGGER_ROWS = [
   ['把一个功能搭成一条主链 / 沿线看这功能怎么走', '`feature_line`', '功能线：每功能挑入口函数→沿功能内调用边走成主链；target 留空返回全功能 入口+链长 总览；沿线单步运行用 trace-exec'],
   ['要改设计意图(why)前先提 PR', '`design_intent`（action=propose）', '代拟「意图改写」PR：propose 只算前后 intent diff **不写盘**；★ **确认人是【下一个接手的 Agent】**（不是人）—— 接手方用 `review_changes` approve 后才真写 DSL（reject 则丢弃）'],
   ['★ **接手时先看有没有别人提的 PR**', '`review_changes`（action=list）', 'PR 的确认人**是下一个接手的 Agent**（2026-10-12 用户裁定：*"下一个接手的 AI 发现自己这里除了原有的设计以外，还有新的 PR，它根据 PR 去做新的决策"*）—— list 看待确认提案，show 看全文+意见栈，**一个 Agent 拿不准就开会**（别的会话 `action=comment` 各留意见），最后由某个会话 approve/reject；★ **必须署名，且不许自批**'],
+  ['★ 还有一类待确认的：**observe 提案**（代码→设计的契约回流）', '`observe_proposals`（action=list）', '★ 与 `review_changes` **同一条规矩**（确认人是**下一个接手的 Agent**），此前它**只有 HTTP** ⇒ 接手方看不见也批不了 —— 现已开 MCP 口。approve **走四层门**（L1 规则/L2 无谓词声明的 LLM 复核/L3 覆盖/L4 定稿），★ **任一层不过即 `frozen`**：提案置 rejected、**权威 DSL 一个字不动** ⇒ ★ **别把 frozen 读成通过**；`use_llm` 缺省 false（含无谓词声明的提案会因此冻结）'],
   ['看「谁引用了 X / 谁调用了 X」', '`find_references`', '只读引用查询；mode=field 报字段读取/构造点（加字段/改签名前必查，勿回退 grep）'],
   ['加字段/改接口签名前查波及面', '`find_references mode=field`/`mode=type field=<字段>/symbol=<类型>`', '读/构/解/声明四类 AST 分类＋行内上下文；type 模式找形如某类型的对象字面量构造候选'],
   ['跑测试/提交前回归', '`run_tests`', '结构化失败定位（filter 定向 or 全量）'],

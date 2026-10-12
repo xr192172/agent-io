@@ -317,6 +317,9 @@ export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
   //     而那正是用户说的"**下一个接手的 AI 发现自己这里除了原有的设计以外，还有新的 PR**"。
   review_changes:
     '待确认的 PR 入口（action=list/show/comment/approve/reject）—— ★ **给下一个接手的 Agent 用**（不是给人）：list 看待确认的提案，comment 开会留意见，approve/reject 拍板（**必须署名，且不许自批**）',
+  // ★ 2026-10-12（T186b）：observe 侧那套提案也开了 MCP 口（此前只有 HTTP ⇒ 接手方看不见也批不了）。
+  observe_proposals:
+    'observe 提案入口（action=list/show/approve/reject）—— ★ 同样是**给下一个接手的 Agent**：approve 走**四层门**（L1 规则/L2 LLM 复核/L3 覆盖/L4 定稿），★ 任一层不过即 **frozen**（提案 rejected、权威 DSL 不动，**别把 frozen 读成通过**）',
   gateway_provider: 'LLM 网关供应商/Key 池说明与状态',
   read_project_docs: '读项目文档（README/活文档）',
   capability_map: '本工具：能力线导航（目录由注册表 TOOL_DEFS 自动派生）',

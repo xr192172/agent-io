@@ -192,9 +192,38 @@
         `register_capabilities.ts` **刻意不加** —— 矩阵声明的是**语言/特性能力**（带各语言支持度），
         而本工具是**治理动作、无语言维度** ⇒ 加进去才是错配。
       ⇒ `tsc` **0** · `npm run verify` **5/5** ✓ · 工具数 **66 → 67**
-- [ ] **T186b ★★【T186 留下的】**`observe` 侧那套提案（`/api/observe/proposals`）**仍只在 HTTP 上**
-      ⇒ 它的 `reviewer` 早就是"为第三方会话审批留的位"，但**下一个 Agent 同样看不见也批不了**。
-      ★ 与本条**同一病灶、另一处实例** ⇒ 要么同样开 MCP 口，要么说明为什么它该留给人。
+- [x] **T186b ✅（2026-10-12 结项）★★★ observe 侧那套提案开了 MCP 口 —— ★ 而"该不该开"是**量出来的**，不是设计的**
+      *(来源：T186 自己登记的边界 —— `/api/observe/proposals` **仍只在 HTTP 上** ⇒ 接手方看不见也批不了。)*
+      ⇒ **先量四条事实**（★ 先数事实，不是先设计）：
+        · 在途提案 **0 条**（`.agent` 目录**不存在**）⇒ 不急，但方向该开；
+        · **唯一在跑的产者 = 机器回路**（`run_loop.ts:229` 的 `ps.create(…, 'loop')`）⇒ ★ **agent 批它天然不是自批**；
+        · `reviewer` 只在 `:66` 形参与 `:122` 赋值 ⇒ ★ **不进任何判据**（四层门自己才是判据）；
+        · L1/L2/L3/L4 **失败去向全是 `freeze`** ⇒ 提案置 `rejected` + **权威 DSL 一个字不动**
+          ⇒ ★ **失败方向恒为"拒"**（没有"半放行"）⇒ 开 MCP 口**安全**。
+      ⇒ **落地**：新工具 **`observe_proposals`**（meta 线，与 `review_changes` 同族；action=list/show/approve/reject）——
+        ★ **目录与门都复用仓储层已有的**（`defaultDSLDir` / `validateProjectRoot` / `ProposalStore` /
+        `DesignDSLStore` / `approveGated`），**不在这里再推一遍"提案库在哪"**。
+      ⇒ ★★★ **三处"不许把 X 读成 Y"的显式措辞**（★ 本工具最容易读错的地方）：
+        · ★★ **`frozen` 不是通过** —— 回执写 `被门冻结（frozen，★ 不是通过）`，且与"已定稿"**互斥**；
+        · ★ `use_llm` **缺省 false**（与 HTTP 面同款、**不默认开**）⇒ 含无谓词声明的提案**默认会冻结**，回执**明说这一点**；
+        · ★★ **"不许自批"在这侧只判得了一半，如实标**：`source="loop"` ⇒ **已判**（提出方是机器）；
+          `manual`/`llm-revise` ⇒ ★ **判不了**（`Proposal` **没有 `submitter` 字段**）—— **不冒充判过**。
+      ⇒ **出生证（`23 PASS / 0 FAIL`，`.inspect/t186b-cert.mjs`）** —— ★ **两个方向都自证**：
+        · **坏/缺输入 ⇒ 拒**：不署名 approve/reject ⇒ 拒 · 提案不存在 ⇒ 拒（不是静默空回执）· **失败抛**（`isError`）；
+        · ★★ **好输入 ⇒ 放行**：一条**带确定性谓词**的提案**真的定稿**（`frozen=false, version=1`）
+          ⇒ ★ 证了"门**不是**一律冻结的废门"；
+        · ★★ **且真的触发一次冻结**（无谓词声明 + `use_llm` 缺省 ⇒ `frozen=true, version=0`）
+          —— ★ 不这么补，上面"frozen 措辞"那条**只是没被走过**（`gate-authoring`：最该看清的输出必须**真的见过**）。
+      ⇒ ★ 隔离：全程在一个**临时 project 根**的 store 里做 ⇒ 收尾断言**真实 `.agent/observe` 仍不存在**。
+      ⇒ **登记面**（`dc-add-tool`）：`meta/index.ts` def ✓ · `WHEN_OVERRIDES` ✓ · `README.md`+`README.en.md`（加行 + **计数 67→68**）✓ ·
+        `scripts/gen_agents.mjs` 改源头 ⇒ build 重生成 `AGENTS.md` ✓ · `structure.domains.json` 无需改 ·
+        `register_capabilities.ts` **刻意不加**（治理动作、无语言维度）。
+      ⇒ ★ **一条量具教训（两次白跑）**：`---DATA---` 之后的 JSON 是**一行**，而它后面**还有"下一棒/接续"的散文块**，
+        然后才是 `--- stderr ---` ⇒ ★ 我按"到 `--- stderr ---` 为止"截断 ⇒ 把散文也喂进 `JSON.parse` ⇒ 失败，
+        而**我自己的 `try/catch` 把它吞成了 `{}`**（★ 我的量具里长出一个静默兜底）
+        ⇒ 改成**只取第一行 + 不吞**。★ 且 `'---DATA---'.length === 10` ⇒ `i+10` 正落在 `\n` 上，**必须先 `trim()`**。
+        ★ 另一个真读数：**失败回执【没有】 `---DATA---`**（走 `wrap` 失败通路）⇒ "出错 ⇒ 无 DATA"是**正常**。
+      ⇒ `tsc` **0** · `npm run verify` **5/5** ✓
 - [x] **T185 ✅（2026-10-12 结项）★★★★ 三步流的 **③** + 收掉一条**我在 T181 引入的回归**（★ 是 T185 的出生证抓到的）**
       *(来源：T180 登记的「`deleteFile` 只删语义侧 ⇒ 留幽灵节点」+ 三步流的③。)*
       ⇒ **① 判据收成一处**：新建 **`domain/dsl_removal.ts` 的 `removeFileFromDsl(dsl, fileId)`**

@@ -50,6 +50,13 @@ import { readStructureConfig } from '../../infrastructure/analysis/structure/str
 import { archiveNode, listArchive } from './archive/archive_node.js';
 // ★ T186（2026-10-12）：「待确认的 PR」的读与定 —— ★ **PR 的确认人是下一个接手的 Agent**，不是人
 import { listChanges, getChange, addReview, approveChange, rejectChange } from '../design/workbench/code_workbench.js';
+// ★ T186b（2026-10-12）：observe 侧那套提案（此前**只有 HTTP**）的 MCP 口。
+//   ★ 四层门 (`approveGated`) **自己就是判据**；`ProposalStore` / `DesignDSLStore` / `defaultDSLDir`
+//     都**复用**仓储层已有的那几处（★ 不在这里再推一遍"提案库在哪"）。
+import { ProposalStore } from '../../infrastructure/analysis/observe/proposal_store.js';
+import { approveGated } from '../../infrastructure/analysis/observe/approve_gated.js';
+import { DesignDSLStore, defaultDSLDir } from '../../infrastructure/analysis/observe/dsl_store.js';
+import { validateProjectRoot } from '../../infrastructure/dictionary.js';
 // ★ T15 切片（2026-10-06）：版本升级契约差（检测 + 局部重写闭环）—— 核心与两个 CLI 同源，
 //   现归位到 `meta/upgrade/upgrade.ts`（见本文件头注）。
 import { upgradeHandler } from './upgrade/upgrade.js';
@@ -400,6 +407,144 @@ export const META_TOOLS: ToolDef[] = [
         lines.push('  ★ 设计/代码已真正落盘；改动会体现在下一次 `get_dsl` / 索引里。');
       }
       return { message: lines.join('\n'), data: { action, project_dir, id, agent, ...r } };
+    }),
+  },
+
+  {
+    name: 'observe_proposals',
+    title: 'Observe proposals: list / show / approve (4-layer gate) / reject — the NEXT agent confirms',
+    description:
+      '「observe 提案」（代码→设计的**契约回流**）的确认入口：action = list / show / approve / reject。\n' +
+      '★★★ **与 `review_changes` 同一条规矩**：**确认人是【下一个接手的 Agent】**（2026-10-12 用户裁定）——\n' +
+      '  ★ 这一侧此前**只有 HTTP**（`/api/observe/proposals…`），而**手 agent 不用 HTTP** ⇒ 下一个 Agent\n' +
+      '  **看不见、也批不了**（T186b：同一病灶的另一处实例）。\n' +
+      '★★ **approve 走四层门**（`approveGated`）—— ★ **门自己才是判据，`agent` 只是审计身份**：\n' +
+      '  · **L1 规则回归** → **L2 无谓词声明的 LLM 复核**（★ 需 `use_llm:true` 才开）→ **L3 覆盖校验** → **L4 定稿**；\n' +
+      '  · ★★ **任一层不过 ⇒ 冻结（`frozen:true`）**：提案置 `rejected`、**权威 DSL 一个字不动**\n' +
+      '    ⇒ ★ **失败方向恒为"拒"**（没有"半放行"）。⇒ **冻结不是出错，是"门判定不许落"**，\n' +
+      '    回执与 `data.frozen` 都会明说 —— ★ **别把 `frozen` 读成通过**（那是本工具最容易读错的一处）。\n' +
+      '  · ★ `use_llm` **默认 false**（与 HTTP 面同款、**不默认开**）⇒ 含**无确定性谓词**声明的提案**默认会被冻结**。\n' +
+      '★★ **"不许自批"这条守在这里是【部分判得了】**（★ 如实说，不假装）：\n' +
+      '  · 提案的**唯一在跑产者**是机器回路（`run_loop`），`source: "loop"` ⇒ ★ **可判"非自批"**（提出方根本不是 agent）；\n' +
+      '  · 而 `source` 为 `manual` / `llm-revise` 时 ⇒ ★ **判不了** —— 因为 `Proposal` **没有 `submitter` 字段**\n' +
+      '    ⇒ 回执里**明标"判不了"**（不静默、也不冒充判过）。\n' +
+      '★ 身份必填（`approve`/`reject` 都要 `agent`）；★ 定位用 `project_dir`，或给 `feature` 按其 `source_root` 推。',
+    inputSchema: {
+      action: z
+        .enum(['list', 'show', 'approve', 'reject'])
+        .describe('list=列提案（默认）| show=看一条全文（含冻结/复核证据）| approve=走四层门定稿 | reject=驳回（权威 DSL 不动）'),
+      project_dir: z.string().optional().describe('提案库所在项目根（与 `feature` 二选一）'),
+      feature: z.string().optional().describe('用来推 project_dir（取其 source_root）'),
+      id: z.string().optional().describe('show/approve/reject 用：提案 id（list 会给）'),
+      agent: z
+        .string()
+        .optional()
+        .describe('★ **你的身份**（会话 id / Agent 编号 / 系统名）—— approve/reject **必填**；写进提案的审批人，供审计'),
+      note: z.string().optional().describe('reject 用：驳回理由'),
+      use_llm: z
+        .boolean()
+        .optional()
+        .describe('approve 用：**显式 opt-in**。缺省 false ⇒ 含无谓词声明的提案一律**冻结**（与 HTTP 面同款，不默认开）'),
+    },
+    handler: wrapData(async (a) => {
+      const action = (a.action as 'list' | 'show' | 'approve' | 'reject' | undefined) ?? 'list';
+      // ★ 定位：project_dir 优先，否则由 feature 的 source_root 推（与 `review_changes` / `design_intent` 同口径）
+      let projectRoot = typeof a.project_dir === 'string' && a.project_dir.trim() ? a.project_dir.trim() : '';
+      if (!projectRoot) {
+        const feature = typeof a.feature === 'string' && a.feature.trim() ? a.feature.trim() : '';
+        if (!feature) throw new Error('缺少定位：给 `project_dir`，或给 `feature`（按它的 source_root 推）');
+        projectRoot = requireProjectRoot({ 'dsl.source_root': getDSL(feature)?.source_root });
+      }
+      // ★ 复用仓储层的**同一个**判据与目录推导（★ 不在这里再写一遍 `defaultDSLDir` 的逻辑）
+      const dir = defaultDSLDir(validateProjectRoot(projectRoot, 'observe_proposals project_dir'));
+      const ps = new ProposalStore(dir);
+
+      const needId = (): string => {
+        const id = typeof a.id === 'string' && a.id.trim() ? a.id.trim() : '';
+        if (!id) throw new Error(`action=${action} 需要 id（先 action=list 拿）`);
+        return id;
+      };
+      const needAgent = (): string => {
+        const g = typeof a.agent === 'string' && a.agent.trim() ? a.agent.trim() : '';
+        if (!g) throw new Error(`action=${action} 需要 agent（你的身份：会话 id / Agent 编号 / 系统名）`);
+        return g;
+      };
+
+      if (action === 'list') {
+        const all = ps.list();
+        const lines = [`observe 提案：${all.length} 条（★ 0 条 ≠ "都没问题"，只代表没人提过）`, `  库：${dir}`];
+        for (const p of all) {
+          lines.push(`  · [${p.id}] ${p.status} · source=${p.source} · ${p.decls?.length ?? 0} 条声明`);
+          lines.push(`      ${p.reason}`);
+          if (p.reviewer) lines.push(`      审批人：${p.reviewer}${p.verified_by ? ` · ${p.verified_by}` : ''}`);
+        }
+        if (all.length) lines.push('  ★ 下一步：`action=show`（id=…）看全文；确认/驳回**都要署名**（`agent`）。');
+        return { message: lines.join('\n'), data: { action, dir, count: all.length, proposals: all } };
+      }
+
+      if (action === 'show') {
+        const id = needId();
+        const p = ps.get(id);
+        if (!p) throw new Error(`提案不存在：${id}`);
+        const lines = [
+          `提案 ${id} · ${p.status} · source=${p.source}`,
+          `  提出于：${p.created_at}`,
+          `  理由：${p.reason}`,
+          `  声明集（${p.decls?.length ?? 0} 条）：`,
+          ...(p.decls ?? []).slice(0, 20).map((d) => `    - ${JSON.stringify(d).slice(0, 160)}`),
+          ...(p.reviewed_at ? [`  审批于：${p.reviewed_at}（${p.reviewer ?? '未署名'}）`] : []),
+          ...(p.verified_by ? [`  ★ 验证门证据：${p.verified_by}`] : []),
+          ...(p.verification ? [`  详情：${p.verification}`] : []),
+        ];
+        return { message: lines.join('\n'), data: { action, dir, proposal: p } };
+      }
+
+      // approve / reject —— 都要署名
+      const id = needId();
+      const agent = needAgent();
+      // ★★ 如实交代"不许自批"这条在这侧判得了多少（★ 别假装判过）
+      const p0 = ps.get(id);
+      if (!p0) throw new Error(`提案不存在：${id}`);
+      const selfReviewNote =
+        p0.source === 'loop'
+          ? '★ "不许自批"**已判**：本提案的 `source="loop"`（机器回路提出）⇒ 确认人不是提出方 ✓'
+          : `⚠ ★ "不许自批"**判不了**：本提案 \`source="${p0.source}"\`，而 \`Proposal\` **没有 \`submitter\` 字段** ` +
+            '⇒ 无从知道提出人是不是你。★ 若这案是你提的，请换人/换会话确认。';
+
+      if (action === 'reject') {
+        const note = typeof a.note === 'string' ? a.note.trim() : '';
+        ps.reject(id, agent); // ★ 权威 DSL 完全不动
+        return {
+          message: [
+            `提案 ${id} 已驳回（确认人 ${agent}）—— ★ 权威 DSL **一字未动**`,
+            selfReviewNote,
+            ...(note ? [`  理由：${note}`] : []),
+          ].join('\n'),
+          data: { action, dir, id, agent, rejected: true, proposal: ps.get(id) },
+        };
+      }
+
+      // approve：走四层门。★ `use_llm` 不默认开（与 HTTP 面同款）
+      const useLlm = a.use_llm === true;
+      let r: Awaited<ReturnType<typeof approveGated>>;
+      try {
+        r = await approveGated(ps, new DesignDSLStore(dir), id, agent, useLlm);
+      } catch (e) {
+        // ★★ 与 T186 同款：**失败必须抛**（否则机器通道 isError=false，人读文字说失败 ⇒ 判据分叉）
+        throw new Error(`提案 ${id} approve **未成功**（确认人 ${agent}）：${(e as Error).message}\n  ★ 未改动任何东西。`);
+      }
+      // ★★★ **`frozen` 必须一眼看见**（它是"门判定不许落"，不是出错、更不是通过）
+      const head = r.frozen
+        ? `提案 ${id} **被门冻结**（frozen，★ 不是通过）：${r.reason ?? ''}`
+        : `提案 ${id} **已定稿**（确认人 ${agent}，DSL version ${r.version}）`;
+      const lines = [head, selfReviewNote];
+      if (r.frozen) {
+        lines.push(
+          '  ★ 冻结 = 提案置 `rejected`、**权威 DSL 一个字不动**（四层门任一层不过都走这里）。',
+          ...(useLlm ? [] : ['  ★ 本次 `use_llm` 未开（缺省 false）⇒ 含**无谓词声明**的提案会在此冻结；确需 LLM 复核请显式 `use_llm: true`。']),
+        );
+      }
+      return { message: lines.join('\n'), data: { action, dir, id, agent, version: r.version, frozen: r.frozen, reason: r.reason, proposal: r.proposal } };
     }),
   },
 
