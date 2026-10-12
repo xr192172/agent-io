@@ -72,6 +72,28 @@ export interface ChangeDiff {
   note?: string;
 }
 
+/**
+ * ★★★ **一条评审意见**（T186，2026-10-12）—— 支撑"**一个 Agent 定不了就开会**"。
+ *
+ * 用户裁定：*"PR 现在不应该待在人的代码审批页面，而是应该由**下一个接手的 Agent** 去进行确认。
+ * 如果**他一个人确认不了，可以召开会议**进行确认……下一个接手的 AI 发现自己这里除了原有的设计以外，
+ * 还有新的 PR，它根据 PR 去做新的决策。"*
+ *
+ * ⇒ 于是"评审"不再是一个人点一下，而是**一段可累积的意见流**：
+ *   各会话各自留意见（`comment`），最后由**做出决定**的那个记下 `approve` / `reject`。
+ *   ★ 这样一来"开了会"这件事**有据可查**（谁说支持、谁提了反对、谁拍的板），
+ *     而不是只剩一个终态 —— 那正是本仓一贯的"**考古要靠留下的东西**"。
+ */
+export interface ChangeReview {
+  /** ★ 评审者身份（会话 id / Agent 编号 / 系统名 / 用户名 —— 与 observe 侧 `reviewer` 同口径） */
+  agent: string;
+  /** comment=只留意见（会议中）；approve/reject=做决定 */
+  verdict: 'comment' | 'approve' | 'reject';
+  /** 意见正文（★ 会议的价值全在这里，别留空） */
+  note?: string;
+  at: string;
+}
+
 export interface PendingChange {
   id: string;
   kind: ChangeKind;
@@ -86,12 +108,25 @@ export interface PendingChange {
   result?: string;         // 执行成功后的结果文本
   submitted_at: string;
   decided_at?: string;
+  /**
+   * ★★★ **提议者身份**（谁提的这个 PR）—— T186 新增。
+   *   ★★ 修的是一个**静默丢**：`ProposeInput.submitter` 此前**一直存在、调用方一直在传**
+   *     （HTTP 的 `/api/code/propose`、`design_intent`、`llm_decider` 都传），
+   *     而 `proposeChange` 组装 `PendingChange` 时**根本没把它写进去** ⇒ **收下就扔**。
+   *   ★ 为什么它现在是**承重**的："确认人不能是提议人"这条守卫**要有它才判得了**。
+   */
+  submitter?: string;
+  /** ★ 评审意见栈（会议记录，按时间追加）；最后一条 `approve`/`reject` 即决定 */
+  reviews?: ChangeReview[];
+  /** ★ 最终确认者身份（谁拍的板）—— 与 `decided_at` **同生共死**（写一个必写另一个） */
+  reviewed_by?: string;
 }
 
 export interface ProposeInput {
   kind: ChangeKind;
   project_dir: string;
   op: ChangeOp;
+  /** ★ 提议者身份（T186 起**真正落盘**；此前被接受后静默丢弃） */
   submitter?: string;
 }
 
@@ -501,6 +536,9 @@ export async function proposeChange(input: ProposeInput): Promise<{ change: Pend
       preview,
       status: 'pending',
       submitted_at: nowIso(),
+      // ★ T186：**把 submitter 真正落盘**（此前收下就扔 —— 见 `PendingChange.submitter` 的注释）。
+      //   ★ 只有真给了才写键（不给就是"未署名"，**不编一个假身份**）。
+      ...(input.submitter ? { submitter: input.submitter } : {}),
     };
     const all = loadChanges(project_dir);
     all.push(change);
@@ -534,6 +572,103 @@ export interface ApproveResult {
   status: ChangeStatus;
   result?: string;
   error?: string;
+  /**
+   * ★★ **不是错误、但必须说出来的话**（T186）—— 目前只有一种：**"不许自批"这条守卫判不了**
+   *   （历史提案没记 `submitter`）。
+   *   ★ 为什么单列一个字段而不是塞进 `result`：★ **不静默** —— 调用方拿到 `ok:true` 时
+   *     若不知道"这条守卫没判成"，就会把"放行"读成"**判过了且通过**"（本仓最忌的假绿灯）。
+   */
+  warning?: string;
+}
+
+/**
+ * ★★★ **评审者身份的校验与"不许自批"守卫**（T186）—— **唯一判据**（approve / reject / comment 三处共用）。
+ *
+ * ## 为什么必须有这一条（★ 这是本仓**记过账**的理由，别丢）
+ * `serve.ts:1740-1743` 逐字写着当初**为什么不**把审批做成 MCP 工具：
+ *   *"为什么开在 HTTP 而不是 MCP 工具：审批的语义是「**谁**批准了这条声明」……
+ *     做成 MCP 工具会退化成「**agent 批准自己的提案**」，语义弱。"*
+ * ⇒ ★ 用户 2026-10-12 的方向（**由下一个接手的 Agent 确认**）**恰好解掉这个结**：
+ *   确认人**本来就不是提议人** ⇒ ★ 于是那条"语义会退化"的顾虑**变成了一条可判定的守卫**：
+ *   **提议人 ≠ 确认人**。⇒ 这条守卫就是"把原来的保护留下来"的形态，**不是新增的障碍**。
+ *
+ * ## 三条判据（★ 逐条都可判定）
+ * 1. ★ **身份必填**（与 observe 侧 `reviewer` 同口径）—— 审计链不能有空。
+ * 2. ★★ **不许自批**：`submitter` 已知且**等于** reviewer ⇒ 拒。
+ * 3. ★ **提议人未知时不假装判过**：返回里**明写"判不了"**，让调用方看得见
+ *    （★ 不许静默放行 —— 那正是本仓"假绿灯"）。
+ */
+export function checkReviewer(
+  c: Pick<PendingChange, 'submitter'>,
+  reviewer: string,
+): { ok: true; selfReviewUnjudged?: string } | { ok: false; error: string } {
+  const who = reviewer.trim();
+  if (!who) {
+    return {
+      ok: false,
+      error:
+        '缺少 reviewer：评审必须声明身份（会话 id / Agent 编号 / 系统名 / 用户名）。' +
+        '★ 审计链不能有空 —— 与 observe 侧 `/api/observe/proposals/approve` 同口径。',
+    };
+  }
+  if (c.submitter) {
+    if (c.submitter.trim() === who) {
+      return {
+        ok: false,
+        error:
+          `**不许自批**：提议人与确认人都是「${who}」。` +
+          '★ 这个 PR 闸门的全部意义就是"**另一个人**来看一遍"（用户 2026-10-12 裁定：由**下一个接手的 Agent** 确认）。' +
+          '⇒ 请换一个会话/Agent 来确认；一个 Agent 拿不准就**开会**：' +
+          '让别的会话先用 `verdict=comment` 留意见，再由某个会话做决定。',
+      };
+    }
+    return { ok: true };
+  }
+  // ★ 提议人未知（历史提案 / 调用方没署名）⇒ **判不了自批**，但**必须说出来**
+  return {
+    ok: true,
+    selfReviewUnjudged:
+      '★ 本提案**没有记录提议人**（`submitter` 为空 —— 多为 T186 之前落的历史提案）' +
+      '⇒ "不许自批"这条守卫**判不了**（不是"判过且通过"）。如果是你提的，请换人/换会话确认。',
+  };
+}
+
+/** ★ 追加一条评审意见（会议记录）。**不改变状态** —— 定不定由 `approve`/`reject` 说。 */
+export function addReview(
+  project_dir: string,
+  id: string,
+  review: { agent: string; verdict: ChangeReview['verdict']; note?: string },
+): { ok: boolean; error?: string; reviews: ChangeReview[] } {
+  const dir = path.resolve(project_dir);
+  const c = loadChanges(dir).find((x) => x.id === id);
+  if (!c) return { ok: false, error: '变更不存在', reviews: [] };
+  if (c.status === 'executed' || c.status === 'rejected') {
+    return { ok: false, error: `该变更已 ${c.status}，不再接受意见（会议已散）`, reviews: c.reviews ?? [] };
+  }
+  const who = review.agent.trim();
+  if (!who) return { ok: false, error: '缺少 agent：留意见也必须署名', reviews: c.reviews ?? [] };
+  const entry: ChangeReview = {
+    agent: who,
+    verdict: review.verdict,
+    ...(review.note ? { note: review.note } : {}),
+    at: nowIso(),
+  };
+  const updated = findAndUpdate(dir, id, (x) => {
+    x.reviews = [...(x.reviews ?? []), entry];
+  });
+  return { ok: true, reviews: updated?.reviews ?? [] };
+}
+
+/**
+ * ★ **只在意见栈里记一笔**（不改状态、不写 `reviewed_by`）—— 用于"批了，但执行可能被阻断"的场景。
+ *   ★★ 为什么与 `reviewed_by` 分开：`reviewed_by` 的语义是"**谁拍的板**"，
+ *     它必须与 `decided_at` **同生共死**（决定真落地了才写）。
+ *     ★ 若在"刚说要批"时就写上，而执行**被阻断**（变更退回 `pending`）
+ *     ⇒ 会留下一个**"有人拍过板、但这条还挂着"的假终态** ⇒ 读端会误判。
+ *     ★ 而`reviews[]` 记的是"**意见发生过**"—— 那件事**真的发生了**，不该抹掉。
+ */
+function pushReview(c: PendingChange, reviewer: string, verdict: ChangeReview['verdict'], note?: string): void {
+  c.reviews = [...(c.reviews ?? []), { agent: reviewer, verdict, ...(note ? { note } : {}), at: nowIso() }];
 }
 
 /**
@@ -543,12 +678,26 @@ export interface ApproveResult {
  * dsl_rename/dsl_intent 只改设计画布 store（.agent-io 下的 DSL/提案 JSON，非源码，
  * 索引不覆盖）。⇒ 索引保鲜由被委托方保证，这里不需要（也不得重复）写穿。
  */
-export async function approveChange(project_dir: string, id: string): Promise<ApproveResult> {
+export async function approveChange(project_dir: string, id: string, reviewer: string): Promise<ApproveResult> {
   project_dir = path.resolve(project_dir);
-  const c = loadChanges(project_dir).find((x) => x.id === id);
+  const c0 = loadChanges(project_dir).find((x) => x.id === id);
+  const c = c0;
   if (!c) return { ok: false, status: 'pending', error: '变更不存在' };
   if (c.status === 'executed') return { ok: false, status: 'executed', error: '该变更已执行，勿重复审批' };
   if (c.status === 'rejected') return { ok: false, status: 'rejected', error: '该变更已驳回' };
+
+  // ★★★ T186：**确认人是谁** + **不许自批**（判据一处 = `checkReviewer`，与 reject/comment 共用）
+  const gate = checkReviewer(c, reviewer);
+  if (!gate.ok) return { ok: false, status: c.status, error: gate.error };
+  const who = reviewer.trim();
+  // ★★ T186：**必须被说出来的话**（"自批守卫判不了"）—— ★ 只挂在 `ok:true` 的返回上，
+  //   因为只有"放行"才会被误读成"判过了且通过"。（被拒的那条自带更好的解释。）
+  const warn: ApproveResult = gate.selfReviewUnjudged
+    ? ({ warning: gate.selfReviewUnjudged } as ApproveResult)
+    : ({} as ApproveResult);
+  // ★ 先记一笔"这个会话批了"（会议记录）—— ★ 即使下面被阻断，这笔也**真实发生过**，不该抹掉
+  //   ★★ 注意这里**只记意见、不写 `reviewed_by`**：决定真落地了才写（见 `pushReview` 的注释）。
+  findAndUpdate(project_dir, id, (x) => pushReview(x, who, 'approve'));
 
   try {
     if (c.kind === 'rename_file') {
@@ -567,8 +716,9 @@ export async function approveChange(project_dir: string, id: string): Promise<Ap
         x.lastError = undefined;
         x.status = 'executed';
         x.decided_at = nowIso();
+        x.reviewed_by = who;
       });
-      return { ok: true, status: 'executed', result };
+      return { ...warn, ok: true, status: 'executed', result };
     }
 
     if (c.kind === 'dsl_rename') {
@@ -578,8 +728,9 @@ export async function approveChange(project_dir: string, id: string): Promise<Ap
         x.lastError = undefined;
         x.status = 'executed';
         x.decided_at = nowIso();
+        x.reviewed_by = who;
       });
-      return { ok: true, status: 'executed', result };
+      return { ...warn, ok: true, status: 'executed', result };
     }
 
     // dsl_intent：approve 才真写设计意图到 overlay + base
@@ -590,8 +741,9 @@ export async function approveChange(project_dir: string, id: string): Promise<Ap
         x.lastError = undefined;
         x.status = 'executed';
         x.decided_at = nowIso();
+        x.reviewed_by = who;
       });
-      return { ok: true, status: 'executed', result };
+      return { ...warn, ok: true, status: 'executed', result };
     }
 
     // split_plan：approve 时在文件顶部插入拆分标记（保留原首行）
@@ -616,8 +768,9 @@ export async function approveChange(project_dir: string, id: string): Promise<Ap
         x.lastError = undefined;
         x.status = 'executed';
         x.decided_at = nowIso();
+        x.reviewed_by = who;
       });
-      return { ok: true, status: 'executed', result: res.message };
+      return { ...warn, ok: true, status: 'executed', result: res.message };
     }
 
     // edit_code range
@@ -634,8 +787,9 @@ export async function approveChange(project_dir: string, id: string): Promise<Ap
       x.lastError = undefined;
       x.status = 'executed';
       x.decided_at = nowIso();
+      x.reviewed_by = who;
     });
-    return { ok: true, status: 'executed', result: res.message };
+    return { ...warn, ok: true, status: 'executed', result: res.message };
   } catch (e) {
     findAndUpdate(project_dir, id, (x) => {
       x.lastError = (e as Error).message;
@@ -645,14 +799,26 @@ export async function approveChange(project_dir: string, id: string): Promise<Ap
   }
 }
 
-export function rejectChange(project_dir: string, id: string): ApproveResult {
+export function rejectChange(project_dir: string, id: string, reviewer: string): ApproveResult {
   project_dir = path.resolve(project_dir);
   const c = loadChanges(project_dir).find((x) => x.id === id);
   if (!c) return { ok: false, status: 'pending', error: '变更不存在' };
   if (c.status === 'executed') return { ok: false, status: 'executed', error: '已执行，无法驳回' };
+
+  // ★★★ T186：驳回**同样**要自报身份，且**同样不许自己驳自己**（判据一处 = `checkReviewer`）
+  const gate = checkReviewer(c, reviewer);
+  if (!gate.ok) return { ok: false, status: c.status, error: gate.error };
+  const who = reviewer.trim();
+  // ★ 同 `approveChange`：**判不了的话必须说出来**（否则"放行"会被读成"判过了且通过"）
+  const warn: ApproveResult = gate.selfReviewUnjudged
+    ? ({ warning: gate.selfReviewUnjudged } as ApproveResult)
+    : ({} as ApproveResult);
+
   findAndUpdate(project_dir, id, (x) => {
+    pushReview(x, who, 'reject');
     x.status = 'rejected';
     x.decided_at = nowIso();
+    x.reviewed_by = who;
   });
-  return { ok: true, status: 'rejected', result: '已驳回，未写盘' };
+  return { ...warn, ok: true, status: 'rejected', result: '已驳回，未写盘' };
 }

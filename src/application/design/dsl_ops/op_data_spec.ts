@@ -80,7 +80,23 @@ export const OP_SPECS: readonly OpSpec[] = [
       '`decision_note`（**update 专有**）· `author`（**update 专有**，`human`｜`llm`）',
   },
   { type: 'edge', ops: ['add', 'update', 'delete'], idRequired: true, required: { add: ['from', 'to'] } },
-  { type: 'file', ops: ['add', 'update', 'delete'], idRequired: true, required: { add: ['path', 'responsibility'] } },
+  {
+    type: 'file',
+    ops: ['add', 'update', 'delete'],
+    idRequired: true,
+    required: { add: ['path', 'responsibility'] },
+    // ★★★ T181：「**设计侧先标记待删**」三步流程的第一步**只能从这里进** ——
+    //   而此前 `lifecycle` **一个字的说明都没有**（`FILE_DATA_KEYS` 里有、描述里没有）
+    //   ⇒ ★ **能力被藏在 MCP 面之外**（本仓已为此记过账：`bricks/signal_review` 同族）。
+    //   ⇒ 这里补一句**指路**；★ 真正的判据仍只有一处 = `semantic.ts` 的 `assertLifecycle`
+    //     （本 note 只说"有这条路 + 它是什么轴"，**不重述合法值/必填字段**，避免第二份判据）。
+    note:
+      '`data.lifecycle` = **文件生命周期轴**（与 `data.status` 的「实现进度」轴 `draft|in_progress|done` **不是一回事**）：\n' +
+      '        ★ **标记待删** ⇒ `data.lifecycle = {status:"deprecated", retire_reason:"为什么该删"}`（`retire_reason` 必填）；\n' +
+      '        ★ 撤回标记 ⇒ `{status:"active"}`；★ **根本没有 `archived` 这个值** —— 归档 = 走 `archive` 工具' +
+      '（把文件**移出 DSL** + 写**归档库**）⇒ 已归档的文件**不在设计 DSL 里**，没有 status 可写（T183）。\n' +
+      '        ★ 写入是**合并**（只给 `retire_reason` 不会把 `status` 弄丢）。合法值/必填字段由 `assertLifecycle` 一处判定。',
+  },
   {
     type: 'api',
     ops: ['add', 'update', 'delete'],
@@ -208,6 +224,11 @@ export const _assertNodeKeysNoExtra: NodeKeysExtraInList extends never
 /** ★ `file_id` 由 `operations[].id` 给，`feature` 由顶层给 ⇒ 不进 data。 */
 export const FILE_DATA_KEYS = [
   'path', 'responsibility', 'expected_apis', 'expected_deps', 'expected_behavior', 'status',
+  // ★ T181：`lifecycle`（标记待删 / 已归档）—— ★ **不加这一项会【编译红】**：
+  //   `FileOwnedKeys` 从 `AddFileInput`/`UpdateFileInput` 的键集推导（见下方断言），
+  //   而 `updateFile` 已接 `lifecycle` ⇒ 漏在这里 ⇒ `FileKeysMissing` 不是 `never` ⇒ `tsc` 报错。
+  //   ★ 那正是 T170b 加那两个断言的意义：**清单与实现漂移会当场红，而不是"以后有人发现"** ✓
+  'lifecycle',
 ] as const;
 type FileOwnedKeys =
   | Exclude<keyof AddFileInput, 'feature' | 'file_id'>

@@ -16,7 +16,31 @@ import type { DesignDSL } from './types.js';
 import type { NodeDecision, DecisionHistoryEntry } from './geometry.js';
 import type { Annotation } from './annotation.js';
 import type { ThemeId, UserNode } from './types.js';
-import type { ExpectedApi, Symbol } from './semantic.js';
+import type { ExpectedApi, Symbol, FileLifecycle } from './semantic.js';
+
+/**
+ * ★★★ **锚点"有内容"的唯一判据**（T182，2026-10-11）。
+ *
+ * ## 为什么必须抽出来（★ 这是本仓头号病的一次现场拦截）
+ * 该判据用于"**清空壳**"（prune 掉只剩 `path`/`kind`、没有任何意图的锚点）。
+ * 它原本**内联在 `mergeDecisionsIntoOverlay` 里** —— ★ 我在 T182 又写了一份几乎一样的
+ * ⇒ ★ **同一判据住两处**。而**后果不是风格问题**：两份清单一旦漂移，就会出现
+ *   **"A 函数认为这个锚点是空的、于是删掉它"** 而 B 函数刚往里放了东西
+ *   ⇒ ★ **静默丢字段**（`lifecycle` 差点就这么被决策同步 prune 掉）。
+ * ⇒ ⇒ 判据只许住一处：**加任何新意图字段时，只改这一个函数**。
+ */
+export function hasAnchorPayload(a: OverlayAnchor): boolean {
+  return !!(
+    a.decision ||
+    a.decision_history ||
+    a.attributes ||
+    a.lifecycle ||
+    a.signature ||
+    a.stale ||
+    a.orphaned ||
+    (a.annotations?.length ?? 0) > 0
+  );
+}
 
 /** 一个极简不可变 sha1 指纹，用于判断「接口签名变化」（过期的信号） */
 export function computeFileSignature(
@@ -53,6 +77,22 @@ export interface OverlayAnchor {
   orphaned?: boolean;
   /** 迁移自哪个旧锚点（改名/换 id 时记录，便于审计） */
   _migratedFrom?: string;
+  /**
+   * ★★★ **文件生命周期（T182，2026-10-11）** —— `deprecated`（待删标记）/ `merged` / `archived`。
+   *
+   * ★ **为什么它必须住 overlay**（规矩 T100/T75 早已立过，本条只是**跟上来**）：
+   *   overlay 存在的全部理由是"**base 可再生成、设计意图独立保留**"。
+   *   而 `lifecycle` 是**人写的意图**（"这个文件该删了，理由是…"），**扫描产不出**。
+   *   ⇒ 此前它**只写在 base** ⇒ ★ `rebuild_design=true` 重建一次**就静默丢掉**
+   *     —— ★ 而同一段重建代码**已有**一道 `allow_design_drop` 闸，却只覆盖
+   *     "**扫描产不出的节点**"（`file_`/`dir_`/`doc_` 之外的前缀）
+   *     ⇒ ★ **"人写的待删标记"恰好标在【扫描产出】的文件节点上** ⇒ **不报、不拦**（§2.3「不报错的错」）。
+   *
+   * ★ 落点选择：**挂在锚点上**（与 `decision`/`attributes` 同层），因为锚点**已按 `n.id` 对齐**，
+   *   而文件节点在 `semantic.files` 与 `geometry.nodes` 里**共用同一个 id**
+   *   （`archive_node.ts` 就是靠这个找文件级决策卡的）⇒ 不需要新造索引。
+   */
+  lifecycle?: FileLifecycle;
 }
 
 /** overlay 全局件（不挂在具体节点上） */
@@ -319,6 +359,20 @@ export function applyOverlay(base: DesignDSL, overlay: DesignOverlay): DesignDSL
   });
   out.geometry = { ...base.geometry!, nodes };
 
+  // ★★★ T182：`lifecycle` 挂在 **`semantic.files`** 上，而上面那一遍**只走 `geometry.nodes`**
+  //   ⇒ ★ **必须另走一遍 semantic 层**：这是本条唯一**新增**的机制，其余四处（merge/seed/sync/anchor）
+  //     都是照抄 T75/T100 已验证的模板。
+  //   ★ 为什么用 `f.id` 去查锚点：文件节点在 `semantic.files` 与 `geometry.nodes` 里**共用同一个 id**
+  //     （`archive_node.ts` 正是靠这个找文件级决策卡的）⇒ 锚点表两边通用，不必新造索引。
+  //   ★ 只覆盖"overlay 里有"的那些：overlay 没写 `lifecycle` 就**原样保留 base**（不抹成 undefined）。
+  if (base.semantic) {
+    const files = base.semantic.files.map((f) => {
+      const a = overlay.anchors[f.id];
+      return a?.lifecycle ? { ...f, lifecycle: a.lifecycle } : f;
+    });
+    out.semantic = { ...base.semantic, files };
+  }
+
   // —— 边级意图（缺口③）：把 overlay.edges 的 reason/boundary 写回 base 边（id 已对账对齐）——
   if (overlay.edges && Object.keys(overlay.edges).length > 0) {
     const edges = (base.geometry?.edges ?? []).map((e) => {
@@ -378,15 +432,31 @@ export function seedOverlayFromDsl(dsl: DesignDSL | null): DesignOverlay {
     annIndex.set(key, arr);
   }
 
+  // ★★ T182：文件级 `lifecycle` 的锚点 id = `semantic.files[].id`（与同名几何节点同 id）
+  //   ⇒ 先建索引，铺完几何节点后**合并进同一锚点**（不能直接覆盖：决策卡也挂同一个 id）。
+  const lifecycleById = new Map<string, FileLifecycle>();
+  for (const f of dsl?.semantic?.files ?? []) {
+    if (f.lifecycle) lifecycleById.set(f.id, f.lifecycle);
+  }
+
   for (const n of dsl?.geometry?.nodes ?? []) {
     const anns = annIndex.get(n.id);
-    if (!n.decision && !n.decision_history && !n.attributes && !anns?.length) continue;
+    const lc = lifecycleById.get(n.id);
+    // ★ 判据加了 `lc`：否则"只有 lifecycle、没有决策"的文件会被 `continue` 跳过 ⇒ 首次迁移就漏掉它。
+    if (!n.decision && !n.decision_history && !n.attributes && !anns?.length && !lc) continue;
     const a: OverlayAnchor = { path: nodePath(n), kind: nodePathKind(n) };
     if (n.decision) a.decision = n.decision;
     if (n.decision_history) a.decision_history = n.decision_history;
     if (n.attributes) a.attributes = n.attributes;
     if (anns?.length) a.annotations = anns;
+    if (lc) a.lifecycle = lc;
     anchors[n.id] = a as OverlayAnchor;
+  }
+
+  // ★ 兜底：`semantic.files` 里有、而几何层没有同名节点的（不该发生，但**不静默丢**）。
+  for (const f of dsl?.semantic?.files ?? []) {
+    if (!f.lifecycle || anchors[f.id]) continue;
+    anchors[f.id] = { path: f.path, kind: 'file', lifecycle: f.lifecycle } as OverlayAnchor;
   }
 
   if (dsl?.title) global.title = dsl.title;
@@ -500,12 +570,10 @@ export function mergeDecisionsIntoOverlay(
     written++;
   }
 
-  // ③ 清空壳（纪律 3）
+  // ③ 清空壳（纪律 3）—— ★ 判据住一处：`hasAnchorPayload`（见其注释：两份清单漂移会静默丢字段）
   let pruned = 0;
   for (const [id, a] of Object.entries(anchors)) {
-    const hasPayload =
-      a.decision || a.decision_history || a.attributes || a.signature || a.stale || a.orphaned || (a.annotations?.length ?? 0) > 0;
-    if (!hasPayload) {
+    if (!hasAnchorPayload(a)) {
       delete anchors[id];
       pruned++;
     }
@@ -552,6 +620,114 @@ export function mergeTagsIntoOverlay(
   }
   const global = Object.keys(nextGlobal).length ? nextGlobal : undefined;
   return { overlay: { ...ov, global }, tags: nextGlobal.function_tags, written, cleared };
+}
+
+/**
+ * ★★★ 把 **base 上的文件生命周期**（`semantic.files[].lifecycle`）同步进 overlay 锚点
+ * （T182，2026-10-11）。
+ *
+ * ## 为什么必须要有这一步（与 `mergeDecisionsIntoOverlay` / `mergeTagsIntoOverlay` 同款病灶）
+ * 「设计侧先标记待删」的写入口在 `edit_dsl`（`type=file op=update` 的 `data.lifecycle`），**只改 base**；
+ * 而 `import_project` 的**显式重建**（`rebuild_design=true`）会**整个替换 base**
+ * （`:1066` 逐字："真相刷新只替换 base"）⇒ ★ **人写的 `deprecated` 标记一重建就丢**。
+ * ⇒ 这正是 T100 立过的规矩：*"标记必须住 `overlay`（意图），不住 base"*。
+ *
+ * ## 纪律（照抄 `mergeDecisionsIntoOverlay`）
+ * 1. ★ **只从 base 往 overlay 搬**，不回写 base（base 上那份是 `applyOverlay` 的应用结果）。
+ * 2. ★★ **清除也要同步**：base 上某文件的 `lifecycle` 没了 ⇒ overlay 里那份**必须一起清**
+ *    —— 否则下次重建又把它复活（**僵尸标记**）。
+ *    ★ 为什么这条路是安全的（不是"静默抹掉"）：`import_project` 走的是
+ *    `mergeDesignLayer → applyOverlay`，**会把 overlay 的 `lifecycle` 回填进 base 再落盘**
+ *    ⇒ ★ 于是"编辑收口时 base 上没有 `lifecycle`"只可能是**真的没有**（从未设过 / 文件已不在），
+ *      而不是"刚被重建冲掉"。
+ * 3. ★ **不造空壳**：没有 payload 的锚点 prune 掉（否则 overlay 会越长越胖）。
+ * 4. ★★ **清了多少要报**（`notes`）—— 清除是**破坏性**的，不许无声无息。
+ *
+ * ## ★★ 一条【诚实的边界】—— 请拍板（`docs/todo.md` T182b），本条**刻意不替你选**
+ * **场景**：那个被标 `deprecated` 的文件**真的从代码里删掉了**。
+ * ⇒ 重建时 `reconcileOverlay` **不会静默丢**它（`:274` 把锚点留成 `orphaned: true`）；
+ * 但**下一次 `edit_dsl`** 一跑本函数，`liveIds` 里已没有该文件 ⇒ **标记被清掉**。
+ * ★ 两种读法都说得通，而**含义完全不同**：
+ *   · **(甲) 清掉是对的** —— 文件没了 ⇒ 三步流的**步骤②已被证明**，该走**步骤③归档**了，
+ *     留着 base 侧的标记反而是"该删清单里的一条死链"；
+ *   · **(乙) 清掉是错的** —— 用户**还没看到**对拍的结论、**还没**决定归档
+ *     ⇒ 标记在他的工作台上**凭空消失**（★ 又是 §2.3「不报错的错」）。
+ * ★ 我**不选**（这是你的流程语义，不是工程细节）：T182b 里要定的是
+ *   「**文件没了，标记该留成 `orphaned` 墓碑（等人处置），还是该清掉**」。
+ * ★ 无论选哪个，**必须先做到"不静默"**：今天 `cleared` 只进 `notes`，而 `updateFeature`
+ *   **丢掉了所有 sync 的返回值** ⇒ ★ 这个"清掉了 N 个标记"**没有任何人看得到**。
+ *
+ * ★ 纯函数（可测、无 IO）；落盘由 `storage_overlay.ts` 的 `syncLifecycleToOverlay` 做。
+ */
+export function mergeLifecycleIntoOverlay(
+  ov: DesignOverlay,
+  dsl: DesignDSL,
+): { overlay: DesignOverlay; written: number; cleared: number; notes: string[] } {
+  const anchors: Record<string, OverlayAnchor> = { ...ov.anchors };
+  const notes: string[] = [];
+  let written = 0;
+  let cleared = 0;
+
+  const files = dsl.semantic?.files ?? [];
+  const liveIds = new Set(files.map((f) => f.id));
+
+  // ① 先扫"清除"（纪律 2，防僵尸标记）—— ★★★ **但只清"文件还在 base 里"的那些**。
+  //   ★★★ 为什么"文件已不在 base"时**绝不清**（T182b，2026-10-12 —— 本仓最贵的一课：
+  //     **"清干净"在这里恰好会毁掉流程自己的信号**）：
+  //     三步流的②（`consistency_check`，T184）判据逐字是
+  //     「`deprecated` + **实现里也没了** ⇒ ★ **可以走③归档**」
+  //     ⇒ ★ 而"实现里没了"在 DSL 里的样子**就是**"文件不在 base 了"
+  //     ⇒ ★ 若这里把它当僵尸清掉，**②刚给出的"可归档"信号会在下一次 `edit_dsl` 时被抹掉**
+  //       —— 用户**永远看不到**那句"可以走③归档"（步骤③因此永远不会被触发）。
+  //   ★ 所以"文件不在 base"的处置权**归 `reconcileOverlay`**（它把锚点留成 `orphaned: true`，
+  //     逐字写着"真相已删除该锚点 → 设计**暂存待决**，不静默丢"）—— ★ **一处判据，各管各的**。
+  //   ★ 剩下能清的只有一种：**文件还在 base 里、但它的 `lifecycle` 没了**
+  //     （正常路径上几乎不会发生 —— `applyOverlay` 会把 overlay 那份回填进 base；
+  //       所以本条是给"带外改过 JSON"留的守卫，不是主路）。
+  for (const [id, a] of Object.entries(anchors)) {
+    if (!a.lifecycle) continue;
+    // ★★ 文件已不在 base ⇒ **墓碑**，归 reconcile 管，本函数**不碰**（见上）。
+    if (!liveIds.has(id)) continue;
+    if (files.find((f) => f.id === id)?.lifecycle) continue;
+    const next = { ...a };
+    delete next.lifecycle;
+    anchors[id] = next;
+    cleared++;
+  }
+  const tombstoned = Object.entries(anchors).filter(([id, a]) => a.lifecycle && !liveIds.has(id)).length;
+  if (tombstoned) {
+    notes.push(
+      `★ 有 ${tombstoned} 个待删标记指向**已不在 base 的文件** ⇒ 按纪律**保留为墓碑**（不清）` +
+        `：它们是三步流②的"可归档"信号，清掉就没人能触发③了`,
+    );
+  }
+
+  // ② 再搬"写入"
+  for (const f of files) {
+    if (!f.lifecycle) continue;
+    const prev = anchors[f.id];
+    const next: OverlayAnchor = { ...(prev ?? { path: f.path, kind: 'file' }) };
+    next.lifecycle = f.lifecycle;
+    anchors[f.id] = next;
+    written++;
+  }
+
+  // ③ 清空壳（纪律 3）—— ★ 与 `mergeDecisionsIntoOverlay` **共用** `hasAnchorPayload`：
+  //   此前我在这里抄了第二份清单 ⇒ ★ **决策同步会先把"只有 lifecycle 的锚点"当空壳删掉**
+  //   （写完 lifecycle 又被 prune，字段静默消失）。★ 判据一处，两边同时正确。
+  let pruned = 0;
+  for (const [id, a] of Object.entries(anchors)) {
+    if (!hasAnchorPayload(a)) {
+      delete anchors[id];
+      pruned++;
+    }
+  }
+  if (pruned) notes.push(`清掉 ${pruned} 个只剩路径、没有内容的空锚点`);
+  if (cleared) {
+    notes.push(`**同步清除了 ${cleared} 个生命周期标记**（base 上已无 ⇒ overlay 不许留僵尸标记）`);
+  }
+
+  return { overlay: { ...ov, anchors }, written, cleared, notes };
 }
 
 /** 对账统计的通用人类可读行（供报告 / 测试复用） */export function statsLine(stats: ReconcileStats): string {

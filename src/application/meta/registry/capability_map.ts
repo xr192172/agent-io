@@ -312,6 +312,11 @@ export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
   diagnose: '症状 → 根因 + 证据链 + 影响面 + 修复建议（不知道是哪条线坏了时先用它定位）',
   canvas_notes: '画布人审标注的读取/渲染',
   archive: '下线库统一入口（action=node/list）—— node：把文件下线归档（写，不可逆，立即落盘，无 dry_run，重复归档被拒）+ 合并记录；list：列某 feature 的下线库归档条目（只读）',
+  // ★ 2026-10-12（T186）：PR 的确认人是**下一个接手的 Agent**（不是人）。
+  //   ★ 策展文本要**点明"谁用"** —— 否则接手方不会想到"先来看这里有没有别人提的 PR"，
+  //     而那正是用户说的"**下一个接手的 AI 发现自己这里除了原有的设计以外，还有新的 PR**"。
+  review_changes:
+    '待确认的 PR 入口（action=list/show/comment/approve/reject）—— ★ **给下一个接手的 Agent 用**（不是给人）：list 看待确认的提案，comment 开会留意见，approve/reject 拍板（**必须署名，且不许自批**）',
   gateway_provider: 'LLM 网关供应商/Key 池说明与状态',
   read_project_docs: '读项目文档（README/活文档）',
   capability_map: '本工具：能力线导航（目录由注册表 TOOL_DEFS 自动派生）',

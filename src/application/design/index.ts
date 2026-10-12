@@ -675,7 +675,14 @@ export const DESIGN_TOOLS: ToolDef[] = [
         )
         .optional()
         .describe('边级意图：按 base 边 id 或 from+to 匹配挂载 reason/boundary —— 2 个 action 共用'),
-      project_dir: z.string().optional().describe('propose 用：审批台账的隔离桶名（人查看的项目目录）；缺省取 feature 的 source_root'),
+      project_dir: z.string().optional().describe('propose 用：审批台账的隔离桶名（查看 PR 的项目目录）；缺省取 feature 的 source_root'),
+      agent: z
+        .string()
+        .optional()
+        .describe(
+          'propose 用：**提议者身份**（会话 id / Agent 编号 / 系统名）—— ★ 会被记进 PR 的 `submitter`，' +
+            '供接手方判"**是不是自己在批自己**"（T186 起"不许自批"是硬守卫）。不传 ⇒ 落库但**未署名**（读端会明标）。',
+        ),
     },
     handler: wrapData(async (a) => {
       const action = (a.action as 'set' | 'propose' | undefined) ?? 'set';
@@ -702,7 +709,10 @@ export const DESIGN_TOOLS: ToolDef[] = [
           kind: 'dsl_intent',
           project_dir,
           op: { feature, goals: goals as never, edge_intents: edgeIntents as never },
-          submitter: 'llm',
+          // ★★★ T186：**记下"谁提的"** —— 此前这里写死 `'llm'`（**类别**，不是身份）
+          //   ⇒ 接手方**无法回答"这条是不是我自己提的"** ⇒ "不许自批"那条守卫形同虚设。
+          //   ★ 现在：调用方给了 `agent`（身份）就用它；**没给就如实留空**（不编一个假身份 —— 读端会明标"未署名"）。
+          ...(typeof a.agent === 'string' && a.agent.trim() ? { submitter: a.agent.trim() } : {}),
         });
         if (!r.ok) throw new Error(r.error ?? '提案失败');
         const c = r.change;
@@ -713,7 +723,15 @@ export const DESIGN_TOOLS: ToolDef[] = [
           `  预览：`,
           ...(c.preview ?? '').split('\n').map((l) => `    ${l}`),
           ``,
-          `人将在工作台「代码审批」页签看到这条提案，approve 后 goals/边意图才真正写入 DSL；reject 则丢弃。`,
+          ``,
+          // ★★★ T186（2026-10-12 用户裁定）：**确认人不是人，是下一个接手的 Agent**。
+          //   ★ 这句话以前写的是"**人**将在工作台「代码审批」页签看到"⇒ 与新方向**相反**，必须改
+          //     —— 否则接手方读到它，会以为"这不该我管，等人去点"。
+          `★ 这条 PR **等【下一个接手的 Agent】确认**（不是等人去点工作台）：` +
+            `接手方先 \`review_changes action=list\` 看见它，再 \`action=show\` 看全文与意见栈；` +
+            `拿不准就**开会**（别的会话 \`action=comment\` 各留意见），最后由某个会话 \`approve\` / \`reject\`。`,
+          `★ \`approve\` 后 goals/边意图才真正写入 DSL；\`reject\` 则丢弃。` +
+            `★ **必须署名，且不许自批**（提议人 ≠ 确认人）—— 见 \`review_changes\`。`,
         ].join('\n');
         return {
           message,

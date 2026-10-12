@@ -45,9 +45,11 @@ import path from 'node:path';
 import { requireStr, wrapData } from '../plumbing.js';
 import type { DiagnoseInput } from '../../infrastructure/analysis/diagnosis/contract.js';
 import { formatDiagnoseText, runDiagnosis } from '../../infrastructure/analysis/diagnosis/diagnose.js';
-import { getDSL, saveDSL } from '../../infrastructure/storage.js';
+import { getDSL, saveDSL, requireProjectRoot } from '../../infrastructure/storage.js';
 import { readStructureConfig } from '../../infrastructure/analysis/structure/structure_gap.js';
 import { archiveNode, listArchive } from './archive/archive_node.js';
+// ★ T186（2026-10-12）：「待确认的 PR」的读与定 —— ★ **PR 的确认人是下一个接手的 Agent**，不是人
+import { listChanges, getChange, addReview, approveChange, rejectChange } from '../design/workbench/code_workbench.js';
 // ★ T15 切片（2026-10-06）：版本升级契约差（检测 + 局部重写闭环）—— 核心与两个 CLI 同源，
 //   现归位到 `meta/upgrade/upgrade.ts`（见本文件头注）。
 import { upgradeHandler } from './upgrade/upgrade.js';
@@ -252,6 +254,152 @@ export const META_TOOLS: ToolDef[] = [
       // ★ 回执编排：把 [B] 的结构化产物点出来 —— 归档条目 id（data.archive_id）与
       //   "是否已从设计 DSL 移除"（data.removed_from_dsl）都是 agent 后续要引用的机器可读事实。
       return { message: `${r.message}\n  归档条目：${r.archive_id}（已从设计 DSL 移除：${r.removed_from_dsl}）`, data: r };
+    }),
+  },
+
+  {
+    name: 'review_changes',
+    title: 'Review pending PRs — the NEXT agent confirms (list / show / comment / approve / reject)',
+    description:
+      '「待确认的 PR」统一入口（action 分派：list / show / comment / approve / reject）。\n' +
+      '★★★ **这是给【下一个接手的 Agent】用的，不是给人用的**（2026-10-12 用户裁定）：\n' +
+      '  *"PR 现在不应该待在人的代码审批页面，而是应该由**下一个接手的 Agent** 去进行确认。\n' +
+      '   如果他一个人确认不了，可以**召开会议**进行确认……下一个接手的 AI 发现自己这里除了原有的设计以外，\n' +
+      '   还有新的 PR，它根据 PR 去做新的决策。"*\n' +
+      '⇒ 于是 PR 不再是"等人点一下"，而是**交接物**：接手方**先 `list` 看见它**，再自己判。\n' +
+      '★ **开会怎么开**：拿不准就先让**别的会话**用 `action=comment` 各自留意见（`reviews[]` 会累积），\n' +
+      '  最后由**某一个**会话用 `approve`/`reject` 拍板 —— 谁支持、谁反对、谁拍的板**都留在记录里**。\n' +
+      '★★ **不许自批**：`agent` 必须**不同于**提案的提交人（`submitter`）；相同会被**拒**。\n' +
+      '  这条守卫是把原来"审批不开在 MCP 上"的那个理由（`serve.ts`：*"做成 MCP 工具会退化成「agent 批准' +
+      '自己的提案」，语义弱"*）**保留下来** —— 不是新加的障碍。\n' +
+      '★ **身份必填**（`comment`/`approve`/`reject` 都要 `agent`）：审计链不能有空。\n' +
+      '★ 定位：`project_dir` 或 `feature` 二选一（给 `feature` 就按它的 `source_root` 推审批台账的位置）。',
+    inputSchema: {
+      action: z
+        .enum(['list', 'show', 'comment', 'approve', 'reject'])
+        .describe('list=列待确认的 PR（默认）| show=看一条的全文（含评审意见栈）| comment=只留意见（开会用）| approve=通过并落盘 | reject=驳回（不落盘）'),
+      feature: z.string().optional().describe('用来推 project_dir（取其 source_root）；与 project_dir 二选一'),
+      project_dir: z.string().optional().describe('审批台账的隔离桶（缺省由 feature 的 source_root 推）'),
+      id: z.string().optional().describe('show/comment/approve/reject 用：提案 id（list 会给）'),
+      agent: z
+        .string()
+        .optional()
+        .describe('★ **你的身份**（会话 id / Agent 编号 / 系统名 / 用户名）—— comment/approve/reject **必填**，且**不得**等于提案的 submitter'),
+      note: z.string().optional().describe('comment 用：意见正文（★ 会议的价值全在这里，别留空）'),
+      include_decided: z.boolean().optional().describe('list 用：默认只看 pending；true 则把已批/已驳/已执行的也列出来'),
+    },
+    handler: wrapData(async (a) => {
+      const action = (a.action as 'list' | 'show' | 'comment' | 'approve' | 'reject' | undefined) ?? 'list';
+      // ★ 定位：project_dir 优先；否则由 feature 的 source_root 推（与 `design_intent action=propose` 同口径）
+      let project_dir = typeof a.project_dir === 'string' && a.project_dir.trim() ? a.project_dir.trim() : '';
+      if (!project_dir) {
+        const feature = typeof a.feature === 'string' && a.feature.trim() ? a.feature.trim() : '';
+        if (!feature) {
+          throw new Error('缺少定位：给 `project_dir`，或给 `feature`（按它的 source_root 推审批台账位置）');
+        }
+        project_dir = requireProjectRoot({ 'dsl.source_root': getDSL(feature)?.source_root });
+      }
+      const needId = (): string => {
+        const id = typeof a.id === 'string' && a.id.trim() ? a.id.trim() : '';
+        if (!id) throw new Error(`action=${action} 需要 id（先 action=list 拿）`);
+        return id;
+      };
+      const needAgent = (): string => {
+        const g = typeof a.agent === 'string' && a.agent.trim() ? a.agent.trim() : '';
+        if (!g) {
+          throw new Error(
+            `action=${action} 需要 agent（你的身份：会话 id / Agent 编号 / 系统名 / 用户名）—— ` +
+              '★ 没有署名就没有审计链，也没法判"是不是自己在批自己"。',
+          );
+        }
+        return g;
+      };
+
+      if (action === 'list') {
+        const all = listChanges(project_dir);
+        const items = a.include_decided === true ? all : all.filter((c) => c.status === 'pending');
+        const lines = [
+          `待确认的 PR：${items.length} 条${a.include_decided === true ? `（含已决定的，共 ${all.length} 条）` : `（只列 pending；全量加 include_decided=true）`}`,
+        ];
+        if (items.length === 0) {
+          lines.push('  （没有待确认的 PR —— ★ 这不代表"一切都对"，只代表**没人提过提案**）');
+        }
+        for (const c of items) {
+          lines.push(`  · [${c.id}] ${c.kind} — ${c.label}`);
+          for (const s of c.summary ?? []) lines.push(`      ${s}`);
+          lines.push(
+            `      提交：${c.submitter ?? '⚠ **未署名**（谁提的不知道）'} · ${c.submitted_at}` +
+              (c.reviews?.length ? ` · 已有 ${c.reviews.length} 条评审意见` : ''),
+          );
+        }
+        if (items.length) {
+          lines.push('  ★ 下一步：`action=show`（id=…）看全文与意见栈；拿不准先 `action=comment` 找别的会话一起看；' +
+            '最后由某个会话 `action=approve` / `action=reject`（**必须署名，且不能是提交人**）。');
+        }
+        return { message: lines.join('\n'), data: { action, project_dir, count: items.length, changes: items } };
+      }
+
+      if (action === 'show') {
+        const id = needId();
+        const c = getChange(project_dir, id);
+        if (!c) throw new Error(`提案不存在：${id}`);
+        const lines = [
+          `PR ${id} — ${c.kind} · ${c.label} · 状态 ${c.status}`,
+          `  提交者：${c.submitter ?? '⚠ **未署名**'}`,
+          ...(c.summary ?? []).map((s) => `  ${s}`),
+          ...(c.preview ? [`  ── 干跑预览 ──`, ...c.preview.split('\n').map((l) => `    ${l}`)] : []),
+          ...(c.reviews?.length
+            ? [`  ── 评审意见栈（${c.reviews.length} 条，会议记录） ──`, ...c.reviews.map((r) => `    [${r.verdict}] ${r.agent}${r.note ? `：${r.note}` : ''}  (${r.at})`)]
+            : ['  ── 还没有任何评审意见 ──']),
+          ...(c.reviewed_by ? [`  确认人：${c.reviewed_by}${c.decided_at ? ` @ ${c.decided_at}` : ''}`] : []),
+          ...(c.lastError ? [`  ⚠ 上次失败：${c.lastError}`] : []),
+          ...(c.result ? [`  结果：${c.result}`] : []),
+        ];
+        return { message: lines.join('\n'), data: { action, project_dir, change: c } };
+      }
+
+      if (action === 'comment') {
+        const id = needId();
+        const agent = needAgent();
+        const note = typeof a.note === 'string' ? a.note.trim() : '';
+        if (!note) throw new Error('action=comment 需要 note（意见正文）—— ★ 会议的价值全在这里，不许留空。');
+        const r = addReview(project_dir, id, { agent, verdict: 'comment', note });
+        if (!r.ok) throw new Error(r.error ?? '留意见失败');
+        return {
+          message: `已在 PR ${id} 上记下「${agent}」的意见（现有 ${r.reviews.length} 条，状态仍是 pending —— 留意见不改状态）\n  ${note}`,
+          data: { action, project_dir, id, agent, reviews: r.reviews },
+        };
+      }
+
+      // approve / reject
+      const id = needId();
+      const agent = needAgent();
+      const r =
+        action === 'approve'
+          ? await approveChange(project_dir, id, agent)
+          : rejectChange(project_dir, id, agent);
+      // ★★★ T186：**失败必须【抛】** —— 不许只在散文里写"未成功"。
+      //   ★ 实测抓到的形态：`approveChange` 是**返回** `{ok:false,error}`（不是抛），
+      //     而我第一版只把它写进 `message` ⇒ ★ **机器通道 `isError=false`** ⇒
+      //     调用方/上层脚本会把"被守卫拒了"读成**成功**（本仓最忌的"判据分叉"：
+      //     人读的文字说失败、机器读的字段说成功）。
+      //   ⇒ 抛出去，让 `wrap` 统一成 `isError:true`（那是唯一的失败通路，见 `plumbing`）。
+      if (!r.ok) {
+        throw new Error(
+          `PR ${id} ${action} **未成功**（确认人 ${agent}）：${r.error ?? '未知原因'}\n` +
+            '  ★ 未改动任何东西（被守卫拒、以及驳回，都不写盘）。',
+        );
+      }
+      // ★ 首行自足：谁、对哪条、结果是什么（`edit_dsl` 那套"只取首行"的纪律同样适用）
+      const lines = [`PR ${id} 已${action === 'approve' ? '通过并执行' : '驳回'}（确认人 ${agent}）`];
+      if (r.result) lines.push(`  ${r.result}`);
+      // ★★ **"守卫判不了"必须出现在回执里** ——
+      //   ★ 否则拿到成功的人会把"放行"读成"**判过了且通过**"（本仓最忌的假绿灯）。
+      if (r.warning) lines.push(`  ⚠ ${r.warning}`);
+      if (action === 'approve') {
+        lines.push('  ★ 设计/代码已真正落盘；改动会体现在下一次 `get_dsl` / 索引里。');
+      }
+      return { message: lines.join('\n'), data: { action, project_dir, id, agent, ...r } };
     }),
   },
 

@@ -22,6 +22,11 @@ import {
   type ArchiveEntry,
 } from '../../../infrastructure/storage.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
+import { assertLifecycle, type FileLifecycle } from '../../../domain/semantic.js';
+// ★ T185：与 `deleteFile` **共用**的"移除文件节点"唯一判据
+import { removeFileFromDsl } from '../../../domain/dsl_removal.js';
+// ★ T185：归档是**终态** ⇒ 意图层要在这里收口（清僵尸标记 + 同步合并溯源）
+import { dropLifecycleFromOverlay, syncLifecycleToOverlay } from '../../../infrastructure/storage_overlay.js';
 
 export interface ArchiveNodeInput {
   /** feature 名 */
@@ -80,31 +85,33 @@ function archiveNodeCore(input: ArchiveNodeInput): ArchiveNodeResult {
     : null;
 
   // 2. 从设计 DSL 移除该文件/节点/边（"不需要和周边有联系"）
+  //   ★★★ T185：改用 **`removeFileFromDsl`（唯一判据）** —— 此处原先**内联**了"三清"，
+  //   而 `deleteFile` 只删语义侧 ⇒ ★ **同一条判据住两处、且两边不一样**（本仓头号病）。
+  //   现在两边共用一份实现，不会再出现"一边做全、一边做一半"。
   const removedId = file.id;
-  const next: DesignDSL = {
-    ...dsl,
-    semantic: dsl.semantic
-      ? { ...dsl.semantic, files: dsl.semantic.files.filter((f) => f.id !== removedId) }
-      : undefined,
-    geometry: {
-      ...dsl.geometry,
-      nodes: (dsl.geometry.nodes ?? []).filter((n) => n.id !== removedId),
-      edges: (dsl.geometry.edges ?? []).filter((e) => e.from !== removedId && e.to !== removedId),
-    },
-  };
+  const { dsl: next, removal } = removeFileFromDsl(dsl, removedId);
 
   // 3. 合并场景：目标文件 lifecycle 记上 merged_from（diff 时 LLM 可据 archive 回溯两边决策卡）
   let mergedTarget: string | undefined = merged_into;
   if (merged_into && next.semantic) {
     const target = next.semantic.files.find((f) => f.path === merged_into);
     if (target) {
-      target.lifecycle = {
+      // ★★ T181：与 `updateFile` **共用同一个 `assertLifecycle`** ——
+      //   "什么状态合法 / 哪些字段必填"这条判据**只许住一处**（本仓头号病是"同一判据住两处"）。
+      //   ★ 合并写、非覆盖：`merged_from` 要**追加**（原实现也是追加，这里保留该语义）。
+      const merged: FileLifecycle = {
+        ...target.lifecycle,
         status: 'merged',
         merged_into: undefined,
         merged_from: [...(target.lifecycle?.merged_from ?? []), file_path],
         retire_reason,
         changed_at: new Date().toISOString(),
       };
+      // ★★ T183（2026-10-12）：原先这里传过 `allowArchived: true`，**那是个空转的开关** ——
+      //   `'archived'` 全仓零个写端，本支写的是 `merged` ⇒ 那个参数**永远不会改变行为**。
+      //   ⇒ 该值与参数**一起删掉了**（一个声明了却产不出的状态 = 一条会被读成事实的谎）。
+      assertLifecycle(merged);
+      target.lifecycle = merged;
     } else {
       mergedTarget = undefined; // 目标不存在则退化为孤立归档
     }
@@ -112,13 +119,30 @@ function archiveNodeCore(input: ArchiveNodeInput): ArchiveNodeResult {
 
   saveDSL(next);
 
+  // 4. ★★★ **收口 overlay 的意图**（T185）—— 归档是**终态**，不能让意图层留下僵尸。
+  //   ★ 两件事都要做，理由不同：
+  //     ① **清掉被归档文件的那笔生命周期**：文件已从 base 摘掉 ⇒ 若不清，
+  //        `syncLifecycleToOverlay` 按 T182b 的规矩（"文件不在 base ⇒ 墓碑，不清"）**不会**帮我们清
+  //        ⇒ ★ 留下一个**谁都看不见的僵尸**（T184b：②只迭代 `semantic.files`，看不到它）。
+  //        ⇒ ★ **谁摘掉的文件，谁负责清这笔意图**。
+  //     ② **把合并目标的 `merged_from` 同步进 overlay**：本工具**不走** `edit_dsl` 那个收口
+  //        ⇒ 不补这一下，`merged_from` 溯源记录**一重建就丢**（与 T182 同一个病）。
+  const dropped = dropLifecycleFromOverlay(feature, removedId);
+  const synced = syncLifecycleToOverlay(feature, next);
+
   return {
     message: [
-      `已把 "${file_path}" 下线归档 → 下线库条目 "${archiveId}"`,
+      // ★ **首行自足**（同 `deleteFile` 那条纪律）：三清 + 意图层收口都放首行
+      `已把 "${file_path}" 下线归档 → 条目 "${archiveId}"` +
+        ` · 三清: 语义文件 1 + 几何节点 ${removal.node_removed ? 1 : 0} + 边 ${removal.edges_removed}` +
+        ` · 意图层待删标记${dropped.changed ? '已清' : '无'}`,
       `  原因: ${retire_reason}`,
       mergedTarget ? `  合并到: ${mergedTarget}（目标 lifecycle.merged_from 已记录来源）` : '  孤立：不再参与周边联系',
       archivedDecision ? `  归档决策卡: ${archivedDecision.summary}${archivedDecision.thread ? ` [${archivedDecision.thread}]` : ''}` : '  （该文件无决策卡）',
       `  归档快照含该文件全部决策卡，diff 时可作裁决依据`,
+      // ★ 不许静默：意图层那两件事的结果（三清已进首行，这里只说意图层）
+      `  意图层: 清掉该文件的待删标记 ${dropped.changed ? '✓' : '（本来就没有）'}` +
+        ` · 合并溯源同步进 overlay ${synced.changed ? '✓' : '（无变化）'}`,
     ].join('\n'),
     feature,
     archive_id: archiveId,

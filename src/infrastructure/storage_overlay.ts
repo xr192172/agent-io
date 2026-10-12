@@ -13,7 +13,7 @@ import type {
   DesignOverlay,
   ReconcileStats,
 } from '../domain/overlay.js';
-import { reconcileOverlay, buildCandidates, buildEdgeCandidates, seedOverlayFromDsl, applyOverlay, statsLine, mergeDecisionsIntoOverlay, mergeTagsIntoOverlay } from '../domain/overlay.js';
+import { reconcileOverlay, buildCandidates, buildEdgeCandidates, seedOverlayFromDsl, applyOverlay, statsLine, mergeDecisionsIntoOverlay, mergeTagsIntoOverlay, mergeLifecycleIntoOverlay, hasAnchorPayload } from '../domain/overlay.js';
 
 function getOverlayFile(feature: string): string {
   if (!/^[a-zA-Z0-9_-]+$/.test(feature)) {
@@ -97,6 +97,79 @@ export function syncTagsToOverlay(
   if (a === b) return { changed: false, written: r.written, cleared: r.cleared, file: null };
   const file = saveOverlay(r.overlay);
   return { changed: true, written: r.written, cleared: r.cleared, file };
+}
+
+/**
+ * ★★★ 把 base 上的**文件生命周期**（`semantic.files[].lifecycle`）同步进 overlay 锚点并落盘
+ * （T182，2026-10-11）。
+ *
+ * ## 为什么必须有（与 T75 的决策卡、T100 的功能标记**同款病灶**）
+ * `import_project` 的显式重建（`rebuild_design=true`）**整个替换 base**（`:1066` 逐字
+ * "真相刷新只替换 base"）⇒ ★ 只写在 base 的 `deprecated`（**待删标记**）**一重建就丢**。
+ * ★ 且它是**静默**丢的：同一段重建代码已有 `allow_design_drop` 闸，但判据只覆盖
+ * "**扫描产不出的节点**"（非 `file_`/`dir_`/`doc_` 前缀）—— 而待删标记恰恰标在
+ * **扫描产出**的文件节点上 ⇒ **不报、不拦**（`docs/todo.md` §2.3「不报错的错」）。
+ *
+ * ★ 纯搬运在 `domain/overlay.ts` 的 `mergeLifecycleIntoOverlay`（可测、无 IO）；
+ *   本函数只负责 **读旧的 + 落盘 + 报账**（IO 住 infrastructure，是本仓分层）。
+ * ★ **没有变化就不写盘**（避免无谓 churn 与 mtime 抖动）。
+ * ★ 返回 `changed=false` 时**不要**把它当成"失败了" —— 那是"本来就已经同步过"。
+ */
+export function syncLifecycleToOverlay(
+  feature: string,
+  dsl: DesignDSL,
+): { changed: boolean; written: number; cleared: number; file: string | null; notes: string[] } {
+  const before = loadOverlay(feature);
+  const ov: DesignOverlay = before ?? { version: 1, feature, anchors: {} };
+  const r = mergeLifecycleIntoOverlay(ov, dsl);
+  // ★ 只比**生命周期那一半**：否则"同一次调用里决策也变了"会被误算成本函数改了东西。
+  const pick = (a: DesignOverlay | null) =>
+    JSON.stringify(
+      Object.entries(a?.anchors ?? {})
+        .filter(([, v]) => v.lifecycle)
+        .sort(([x], [y]) => x.localeCompare(y))
+        .map(([k, v]) => [k, v.lifecycle]),
+    );
+  if (pick(before) === pick(r.overlay)) {
+    return { changed: false, written: r.written, cleared: r.cleared, file: null, notes: r.notes };
+  }
+  const file = saveOverlay(r.overlay);
+  return { changed: true, written: r.written, cleared: r.cleared, file, notes: r.notes };
+}
+
+/**
+ * ★★★ **显式清掉某个锚点上的文件生命周期**（T185，2026-10-12）—— 供**归档工具**在终态调用。
+ *
+ * ## 为什么不能靠 `syncLifecycleToOverlay` 顺手清（即：为什么必须有个"显式"入口）
+ * T182b 立的规矩是「**文件不在 base ⇒ 墓碑，不清**」，因为"文件不在 base"**可能是**
+ * "代码先删了、等着走③归档"—— 那时标记**必须留着**（它就是②的信号）。
+ * ⇒ 所以同一个"文件不在 base"的状态**有两种含义**，`syncLifecycleToOverlay` **分不出来**
+ *   —— ★ 而**归档工具分得出**（是它自己把文件从 DSL 里摘掉的）。
+ * ⇒ ⇒ **谁摘掉的文件，谁负责清这笔意图**（这是本仓一贯的"动作方负责收口"）。
+ *
+ * ★ 不清的后果（真实存在，不是假想）：归档后 overlay 仍留着这笔 `deprecated`，
+ *   而 T184b 说②看不到它（②只迭代 `semantic.files`）⇒ ★ **一个谁都看不见的僵尸**。
+ *
+ * ★ 没有变化就不写盘；返回 `changed=false` = "本来就没有"，**不是失败**。
+ */
+export function dropLifecycleFromOverlay(
+  feature: string,
+  fileId: string,
+): { changed: boolean; file: string | null } {
+  const before = loadOverlay(feature);
+  if (!before) return { changed: false, file: null };
+  const a = before.anchors[fileId];
+  if (!a?.lifecycle) return { changed: false, file: null };
+
+  const anchors = { ...before.anchors };
+  const next = { ...a };
+  delete next.lifecycle;
+  // ★ 与 `hasAnchorPayload` 同一条纪律：删完只剩 path/kind ⇒ 这个锚点没了意义，prune 掉
+  delete anchors[fileId];
+  if (hasAnchorPayload(next)) anchors[fileId] = next;
+
+  const file = saveOverlay({ ...before, anchors });
+  return { changed: true, file };
 }
 
 /**

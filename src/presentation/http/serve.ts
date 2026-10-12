@@ -1710,12 +1710,26 @@ async function handleApiCodePropose(req: http.IncomingMessage, res: http.ServerR
   }
 }
 
+/**
+ * ★★★ T186（2026-10-12）：审批**必须自报身份** —— 与 observe 侧 `reviewer` 同口径。
+ *
+ * `reviewer` 优先取 body（前端/第三方会话可自带），否则落到 `'human:workbench'`
+ * —— ★ 这不是"编一个身份"：**这条路由本来就是给人用的工作台**，
+ *   所以那个默认值**说的就是事实**（"人在工作台点的"）。
+ *   ★ 而第三方会话（下一个接手的 Agent）走 MCP 的 `review_changes`，
+ *     **必须自带身份**（那条路的默认值是空 ⇒ 空就报错，见 `checkReviewer`）。
+ */
+function codeReviewerFrom(params: Record<string, unknown>): string {
+  const r = typeof params.reviewer === 'string' ? params.reviewer.trim() : '';
+  return r || 'human:workbench';
+}
+
 /** POST /api/code/approve：通过并真正写盘 */
 async function handleApiCodeApprove(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
   try {
     const body = await readBody(req);
     const params = JSON.parse(body.toString('utf-8'));
-    const r = await approveChange(params.project_dir || '', params.id || '');
+    const r = await approveChange(params.project_dir || '', params.id || '', codeReviewerFrom(params));
     sendJson(res, 200, { success: r.ok, status: r.status, result: r.result, error: r.error });
   } catch (e) {
     sendError(res, 500, (e as Error).message);
@@ -1727,7 +1741,7 @@ async function handleApiCodeReject(req: http.IncomingMessage, res: http.ServerRe
   try {
     const body = await readBody(req);
     const params = JSON.parse(body.toString('utf-8'));
-    const r = rejectChange(params.project_dir || '', params.id || '');
+    const r = rejectChange(params.project_dir || '', params.id || '', codeReviewerFrom(params));
     sendJson(res, 200, { success: r.ok, status: r.status, result: r.result, error: r.error });
   } catch (e) {
     sendError(res, 500, (e as Error).message);

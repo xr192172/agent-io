@@ -90,6 +90,11 @@ export const consistencyHandler = wrapData(async (a) => {
       // ★ T85/D3：**线 1 也要进机器通道** —— 否则只有 message 里有、`---DATA---` 里没有
       //   ⇒ 调用方解析不到它（而"代码变了没"正是要给机器用的）。
       baselineDrift: r.baselineDrift,
+      // ★★★ T184（2026-10-12）：**三步流的②** 也要进机器通道。
+      //   ★ 这里 `data` 是**显式白名单**（不是 `...r` 展开）⇒ ★ **不加这一行，`retireFlow`
+      //     就只活在 `message` 的散文里、机器一律解析不到** —— 而"哪些待删标记已经可以归档了"
+      //     正是**下一步动作**（③）的输入，必须是结构化的（本仓 §5 纪律①）。
+      retireFlow: r.retireFlow,
     };
     if (exp) data.expectation_results = { checked: exp.checked, passed: exp.passed, failed: exp.failed, unsupported: exp.unsupported, items: exp.items, notes: exp.notes };
     else if (expNotes.length) data.expectation_results = { checked: 0, passed: 0, failed: 0, unsupported: 0, items: [], notes: expNotes };
@@ -246,6 +251,10 @@ export const consistencyHandler = wrapData(async (a) => {
       summary: r.summary,
       // ★ T85/D3：线 1 进机器通道（同早返回那条的说明）
       baselineDrift: r.baselineDrift,
+      // ★★★ T184：三步流的② 也进机器通道 —— ★ **两条 return 都要带**（给 `scope` / 不给 `scope`）。
+      //   ★ 只给一条 = **判据分叉**：调用方"能不能拿到待删清单"取决于它有没有传 `scope`
+      //     —— 那与本轴（该不该删）毫无关系。
+      retireFlow: r.retireFlow,
       touched,
       ...(exp
         ? { expectation_results: { checked: exp.checked, passed: exp.passed, failed: exp.failed, unsupported: exp.unsupported, items: exp.items, notes: exp.notes } }

@@ -14,7 +14,7 @@
 
 import { getDSL, saveDSL } from '../../../infrastructure/storage.js';
 // ★★ T75：决策卡必须活过 base 重建 ⇒ 每次 edit_dsl 收口时同步进 overlay
-import { syncDecisionsToOverlay, syncTagsToOverlay } from '../../../infrastructure/storage_overlay.js';
+import { syncDecisionsToOverlay, syncTagsToOverlay, syncLifecycleToOverlay } from '../../../infrastructure/storage_overlay.js';
 import type { EditResult } from './edit_result.js';
 import { addNode, updateNode, deleteNode } from './node_ops.js';
 import type { AddNodeInput, UpdateNodeInput } from './node_ops.js';
@@ -264,9 +264,37 @@ export function updateFeature(input: UpdateFeatureInput): TouchedProduct<EditRes
         `（★ 不静默降级成空 DSL：那会把 overlay 里的标记**当成"已被清空"而抹掉**）`,
     );
   }
-  syncDecisionsToOverlay(input.feature, dslNow);
-  syncTagsToOverlay(input.feature, dslNow);
-  return withTouched(r, touchedOf(input));
+  const syncDecisions = syncDecisionsToOverlay(input.feature, dslNow);
+  const syncTags = syncTagsToOverlay(input.feature, dslNow);
+  // ★★★ T182（2026-10-11）：**文件生命周期**（`deprecated` 待删标记）也走**同一个收口**。
+  //   ★ 同款理由：它也是"**人写的意图**"，而 `import_project` 的显式重建会**整个替换 base**
+  //     ⇒ 只写 base 的标记**一重建就静默丢**（T100 立过的规矩："标记必须住 overlay"）。
+  //   ★ 放在**同一处**（而不是塞进 `updateFile`）是有意的 —— 收口在 `updateFeature`，
+  //     **一处覆盖全部出口**（node/file/edge/status/annotation… 都从这出去），不会漏。
+  const syncLifecycle = syncLifecycleToOverlay(input.feature, dslNow);
+
+  // ★★★ T182b（2026-10-11）：**同步是破坏性的，不许无声无息**。
+  //   `mergeXxxIntoOverlay` 有一条"清除也要同步"的纪律（base 上没了 ⇒ overlay 里一起清，
+  //   防僵尸标记）—— ★ 但"清掉了"这件事此前**只进 `notes`，而返回值被整个丢掉**
+  //   ⇒ ★ 于是"**清掉了 N 个待删标记**"**没有任何人看得到**（§2.3「不报错的错」的教科书形态）。
+  //   ★ 修法：**把清除数报进回执**（只在真有清除时说话，免得日常噪声淹没它）。
+  const clearedLines: string[] = [];
+  if (syncDecisions.cleared > 0) clearedLines.push(`决策 ${syncDecisions.cleared} 个`);
+  if (syncTags.cleared) clearedLines.push('功能标记 1 组');
+  if (syncLifecycle.cleared > 0) clearedLines.push(`★ 文件生命周期标记 ${syncLifecycle.cleared} 个（待删标记）`);
+  const r2: EditResult =
+    clearedLines.length === 0
+      ? r
+      : {
+          ...r,
+          message:
+            r.message +
+            `\n⚠ **同步 overlay 时清除了**：${clearedLines.join(' · ')}` +
+            `\n   （含义：这些意图在 base 上已经没有了 ⇒ 按"不留僵尸"的纪律从 overlay 一并清掉。` +
+            `★ 若你【没打算】清它们，现在就该回头看 —— 否则它们会安静地消失。）`,
+        };
+
+  return withTouched(r2, touchedOf(input));
 }
 
 // ─────────────────────────────────────────────────────────────

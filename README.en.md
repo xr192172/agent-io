@@ -104,7 +104,7 @@ Your browser opens `http://localhost:3000/workbench`: the left canvas is an inte
 
 ## MCP Tool Reference
 
-A total of **66 MCP tools** are registered, organized into "capability navigation + primary tools + specialized tools": `capability_map` provides layered capability-lane navigation, primary tools provide unified entry points, specialized tools each do one job. The tables below are a curated subset, not the full list — the authoritative count comes from `TOOL_DEFS` in `src/application/tool_registry.ts`.
+A total of **67 MCP tools** are registered, organized into "capability navigation + primary tools + specialized tools": `capability_map` provides layered capability-lane navigation, primary tools provide unified entry points, specialized tools each do one job. The tables below are a curated subset, not the full list — the authoritative count comes from `TOOL_DEFS` in `src/application/tool_registry.ts`.
 
 ### Capability navigation (1)
 
@@ -221,6 +221,7 @@ Java projects, Python dead-code cleanup on Python projects; apply / verify / rol
 |------|------|
 | `canvas_notes` | Unified canvas-notes entry (read=work orders / mark=status / decide=LLM) |
 | `archive` | Unified retired-node library entry (node=archive a file·write & irreversible / list=list archived entries·read-only) |
+| `review_changes` | Pending-PR entry (list/show/comment/approve/reject) — ★ the confirmer is the **next agent taking over**, not a human; comments are how a "meeting" is held, and **self-approval is refused** |
 | `sync_contracts` | Backfill DSL contracts using the server_registry schema as source |
 
 **LLM gateway**

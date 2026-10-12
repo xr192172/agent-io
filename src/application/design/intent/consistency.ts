@@ -167,10 +167,58 @@ export function comparisonState(compared: number, drifted: number): ComparisonSt
   return drifted > 0 ? 'drifted' : 'consistent';
 }
 
+/**
+ * ★★★ **三步流（退役流程）里的一步**（T184，2026-10-12）—— 用户裁定的流程：
+ * *"设计侧先标记给它对删除……然后**删除完了之后进行对拍**的时候，发现这个地方**确实删完了**，
+ * 才把它**真正扫进历史堆**里面。"*
+ *
+ * ★ 本条对的是**第三根轴**（与线 1 / 线 2 **都不是一件事**，见 `ConsistencyResult` 的说明）：
+ *   · **线 1**：`基线事实` vs `现取事实` ⇒ 代码变了没；
+ *   · **线 2**：`expected_apis`（人写的契约） vs 现取事实 ⇒ 契约与实现差多少；
+ *   · **本轴**：★ **`lifecycle.status==='deprecated'`（设计说该删） vs `exists`（实现还在不在）**
+ *     ⇒ 回答「**这具"待删"的判定，实现侧做完了没有**」。
+ * ★ 为什么必须单列：线 2 对的是"**契约签名**"，而"该不该删这个文件"**与签名一点关系都没有**
+ *   ⇒ ★ 把它塞进线 2 的计数就是**混着比**（T85 的病根：*"自己测自己吗？"*）。
+ * ★★ 它也**不依赖 `expected_apis`** —— 一个文件可以**没有任何契约**、却标着 `deprecated`
+ *   ⇒ 本轴必须在"`expected_apis` 共 0 条"的报告里**照样出现**（同"跨文件不变式"的地位）。
+ */
+export interface RetireFlowEntry {
+  file_path: string;
+  /** 设计侧标记（本轴只会收 `deprecated`；`merged`/`archived` 走归档工具，不在这） */
+  design_status: 'deprecated';
+  /** 设计侧写的"为什么该删"（★ 三步流的①要求必填 ⇒ 这里应当有值） */
+  retire_reason?: string;
+  /** 实现里还在不在（现取，非缓存） */
+  exists: boolean;
+  /**
+   * 两步判定（**唯一判据**见 `retireStage`）：
+   *   · `awaiting_implementation_delete` = 设计说该删、**实现里还在** ⇒ 待办（②的"还没删完"）
+   *   · `ready_to_archive` = 设计说该删、**实现里也没了** ⇒ ★ **可以走③归档了**
+   */
+  stage: RetireStage;
+}
+
+export type RetireStage = 'awaiting_implementation_delete' | 'ready_to_archive';
+
+/**
+ * ★ **两步流的唯一定义**（判据一处 —— 与 `comparisonState` 同一个位置、同一种写法）。
+ * ★ 边界：`exists === true` ⇒ 只能"等实现删"；`false` ⇒ 才"可以归档"。
+ *   ★★ **没有第三种**：`deprecated` 是**设计侧的声明**，`exists` 是**实现侧的事实**，
+ *     两者的四种组合里只有这两种能同时成立（本函数只被 `deprecated` 的条目调用）。
+ */
+export function retireStage(exists: boolean): RetireStage {
+  return exists ? 'awaiting_implementation_delete' : 'ready_to_archive';
+}
+
 export interface ConsistencyResult {
   message: string;
   fileResults: FileConsistency[];
   invariantResults: InvariantResult[];
+  /**
+   * ★★★ T184：**三步流的②**（见 {@link RetireFlowEntry}）—— 只含**设计侧标了 `deprecated`** 的文件。
+   * ★ 空数组 = 没有待删标记（**不是**"删完了"）。
+   */
+  retireFlow: RetireFlowEntry[];
   /**
    * ★★★ **线 1：代码相对基线的变更**（2026-10-09，T85/D3）—— **与 `fileResults`（线 2）是两件事，绝不许混**：
    *   · **本项（线 1）** = `baseline/<f>.facts.json`（**fork 那一刻的事实**） vs **现取事实**（`fileFacts`）
@@ -200,6 +248,13 @@ export interface ConsistencyResult {
      * ★ 有了它，调用方**不必**再从"全 0"里猜 —— 全 0 既可能是"没得比"，也可能是"比过且全对"。
      */
     state: ComparisonState;
+    /**
+     * ★ T184：三步流②的两个计数（**只数 `deprecated` 的文件**，与线 2 的计数不共用口径）。
+     *   `retire_pending` = 设计说该删、**实现还在**；`retire_ready` = 设计说该删、**实现也没了**。
+     *   ★ 两者之和 = `retireFlow.length`；`0` = 没有任何待删标记（**不是**"都删完了"）。
+     */
+    retire_pending: number;
+    retire_ready: number;
   };
 }
 
@@ -732,6 +787,31 @@ export async function checkConsistencyReport(input: ConsistencyInput): Promise<C
   const comparedCount = matchedCount + missingCount + mismatchedCount;
   const cmpState = comparisonState(comparedCount, missingCount + mismatchedCount);
 
+  // ★★★ T184（2026-10-12）：**三步流的②** —— 设计说该删的，实现侧删完了没有？
+  //   ★ 判据住一处：`retireStage(exists)`；本处**只负责挑出 `deprecated` 的条目**并组装。
+  //   ★ 与线 2 **不共用口径**（线 2 数的是 `expected_apis` 条数；这里数的是**文件**），
+  //     所以它**不参与** `comparedCount` / `cmpState` —— 混进去就会把"没得比"算成"比过"。
+  const retireFlow: RetireFlowEntry[] = fileResults
+    .filter((fr) => fr.file.lifecycle?.status === 'deprecated')
+    .map((fr) => ({
+      file_path: fr.file.path,
+      design_status: 'deprecated' as const,
+      // ★ `retire_reason` 在①是**必填**（`assertLifecycle` 拦过）⇒ 这里照搬；万一历史数据没有，就是 undefined（不编一个）
+      retire_reason: fr.file.lifecycle?.retire_reason,
+      exists: fr.exists,
+      stage: retireStage(fr.exists),
+    }));
+  const retirePending = retireFlow.filter((e) => e.stage === 'awaiting_implementation_delete').length;
+  const retireReady = retireFlow.filter((e) => e.stage === 'ready_to_archive').length;
+
+  // ★★ 反向的信号：实现里**已经没了**、而设计侧**没标** `deprecated` 的文件。
+  //   ★ 为什么值得单列：它是**①的前置状态**（"代码先没了，设计侧还没记账"）。
+  //     ★ 也**不作差异**：`exists=false` 可能是"这文件从来就不存在"（DSL 写错/代码换过目录）
+  //       ⇒ **只说数、不下结论**（下结论要人看路径）。
+  const vanishedUnmarked = fileResults.filter(
+    (fr) => !fr.exists && fr.file.lifecycle?.status !== 'deprecated',
+  );
+
   // 构建报告消息
   const lines: string[] = [];
   // ★★ 标题**不含「一致」** —— 否则"没得比"态里 grep「一致」会命中标题，读者/机器分不清
@@ -929,6 +1009,48 @@ export async function checkConsistencyReport(input: ConsistencyInput): Promise<C
     lines.push('');
   }
 
+  // ★★★ T184：**三步流的②** —— 独立成段，★ **不放在线 2 的 if/else 里**
+  //   （理由：本轴**不依赖 `expected_apis`** ⇒ 在"契约 0 条"的报告里也必须照样出现，
+  //    地位同"跨文件不变式"）。
+  //   ★ 也不叫"线 3"：本仓 `线 1`/`线 2` 已各有明确对手，而这根轴对的是
+  //     **"该不该删"**，与"签名/契约"无关 ⇒ 用**它的流程名**（待删）称呼，别蹭编号。
+  if (retireFlow.length > 0 || vanishedUnmarked.length > 0) {
+    lines.push('【设计侧待删（三步流：①标记 → ②对拍确认 → ③归档）】');
+    if (retireFlow.length === 0) {
+      lines.push('  （本 feature **没有**任何 `deprecated` 标记 —— ★ 别读成"都删完了"）');
+    } else {
+      lines.push(`  标记总数: ${retireFlow.length}（★ 设计侧声明"该删"，理由见下）`);
+      if (retirePending > 0) {
+        lines.push(`  ⏳ **待实现侧删除（${retirePending}）** —— 设计说该删，而**实现里还在** ⇒ ②尚未完成：`);
+        for (const e of retireFlow.filter((x) => x.stage === 'awaiting_implementation_delete')) {
+          lines.push(`    - ${e.file_path}`);
+          lines.push(`        理由: ${e.retire_reason ?? '⚠ **没有理由**（①本应必填 —— 该标记来路不正，请核查）'}`);
+        }
+      }
+      if (retireReady > 0) {
+        lines.push(`  ✅ **可归档（${retireReady}）** —— 设计说该删，**实现里也确实没了** ⇒ ★ **②已被证明，可以走③归档**：`);
+        for (const e of retireFlow.filter((x) => x.stage === 'ready_to_archive')) {
+          lines.push(`    - ${e.file_path}`);
+          lines.push(`        理由: ${e.retire_reason ?? '⚠ **没有理由**（同上）'}`);
+          lines.push('        ★ 归档请用 `archive`（它会**三清**：文件 + 几何节点 + 边，并留下归档快照）—— **不要**用 `deleteFile`（它只删语义侧，会留幽灵节点，见 T180）');
+        }
+      } else if (retirePending === 0) {
+        lines.push('  （标记数 > 0 但两边都不匹配 —— 不该发生，请报异常）');
+      }
+    }
+    if (vanishedUnmarked.length > 0) {
+      lines.push(`  ⚠ **反向信号（${vanishedUnmarked.length}）**：实现里**已经没了**、而设计侧**没标** "deprecated" 的文件：`);
+      for (const fr of vanishedUnmarked.slice(0, 10)) {
+        lines.push(`    - ${fr.file.path}`);
+      }
+      if (vanishedUnmarked.length > 10) lines.push(`    …另有 ${vanishedUnmarked.length - 10} 个`);
+      lines.push('    ★ **只说数、不下结论**：可能是"代码先删了、设计侧没记账"（⇒ 该补①），');
+      lines.push('      也可能是"这条设计从来就没有对应实现"（DSL 写错 / 目录换过）⇒ **要人看一眼路径**。');
+    }
+    lines.push('  ★ 本段**不参与**上面线 2 的 `状态/建议` —— 它问的是「**该不该删**」，与"契约签名"无关。');
+    lines.push('');
+  }
+
   // ★ 线 1 排在**线 2 整段（摘要 + 建议）之后** —— 两条线各自自成一段（见上）。
   const baselineDrift = checkBaselineDrift(feature, codeDir);
   lines.push(renderBaselineDriftSection(baselineDrift));
@@ -936,6 +1058,7 @@ export async function checkConsistencyReport(input: ConsistencyInput): Promise<C
   return {
     message: lines.join('\n'),
     fileResults,
+    retireFlow,
     baselineDrift,
     invariantResults,
     summary: {
@@ -948,6 +1071,8 @@ export async function checkConsistencyReport(input: ConsistencyInput): Promise<C
       invariant_passed: invariantPassed,
       invariant_failed: invariantFailed,
       state: cmpState,
+      retire_pending: retirePending,
+      retire_ready: retireReady,
     },
   };
 }
