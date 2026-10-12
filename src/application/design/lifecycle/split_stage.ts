@@ -171,7 +171,18 @@ async function runOneSplit(opts: SplitStageOptions, plan: SplitStagePlan): Promi
         ? '已落盘但编译级验收未通过（见 derivation）'
         : dryRun
           ? '草稿已产出（dry-run）'
-          : '已拆分并通过验收'
+          : // ★★★ T210（2026-10-12）：**"跳过"不许说成"通过"** —— ★ 实测真落盘踩到：
+            //   ★ 夹具**没有 `tsconfig.json`** ⇒ `runCompileVerify` 返回
+            //   `{ok:true, skipped:'项目无 tsconfig.json，跳过 TS 编译级验收'}` ⇒ ★★ 这里**只看了 `ok`**
+            //   ⇒ 把"**根本没验**"渲染成"**已拆分并通过验收**" ✗
+            //   ★ 而它切出来的文件**真的编不过**（实测 `noUnusedLocals` 下 8 个错误：
+            //     `TS2459: 'SECRET' … is not exported` + 一堆 `TS6192/TS6133` 死 import）
+            //   ⇒ ★ 这正是本仓最痛的那类：**「没跑」和「跑过且通过」长得一模一样** ✓
+            //   ★ 判据（只此一处）：★ **有 `skipped` 就必须说出来** —— 不给"跳过"披"通过"的外衣 ✓
+            (derivation.verification.compile?.skipped
+              ? `已拆分，但**验收被跳过**（${derivation.verification.compile.skipped}）` +
+                '—— ★ **这次【没验过】**，别把它读成"通过" ✓'
+              : '已拆分并通过验收')
       : status === 'rolled_back'
         ? `验收失败已回滚：${derivation.message.split('\n').pop()?.trim()}`
         : status === 'no_change'
