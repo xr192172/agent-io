@@ -20,6 +20,8 @@
 //     **逐字相同**（纯重复），后三个是**宽松版**（形状错 ⇒ 静默当没给）。
 //   ⇒ 现在：**删掉那四个局部助手**，统一用 `plumbing` 的（严格：**形状错就抛**）。
 import { requireStr, optionalStr, optionalNum, optionalBool, optionalArr } from '../../plumbing.js';
+// ★★★ T197：**args 的【键名】判据**（★ 与 plumbing 的【值形状】判据是两把尺）。
+import { assertExploreArgKeys } from './explore_arg_spec.js';
 import { semanticSearch } from '../llm/semantic_search.js';
 import { ensureProjectIndex, ensureIndexAroundSeed } from '../../../infrastructure/index/index_freshness.js';
 import { scheduleBackfill, backfillState, backfillSummary } from '../../../infrastructure/index/index_backfill.js';
@@ -96,6 +98,12 @@ function toResult(r: unknown, isAsync = false): { message: string; data: unknown
 
 export async function exploreCode(params: { action: ExploreAction; args: Record<string, unknown> }): Promise<{ message: string; data: unknown }> {
   const { action, args } = params;
+
+  // ★★★ T197：**先校验键名** —— `args` 在 schema 里是自由袋子（zod 不校验），
+  //   ⇒ 过去一个拼错的键会被**静默丢掉**，调用方以为生效了、工具按默认值跑完还回"正常"结果。
+  //   ⇒ 现在：不认识的键 **当场抛**，并给"是不是想写 X"（★ 实测过这个病，见本文件测试与
+  //     `explore_arg_spec.ts` 的文件头）。★ 放在 switch **之前** ⇒ 任何 action 都拦得住。
+  assertExploreArgKeys(action, args);
 
   switch (action) {
     case 'search': {
