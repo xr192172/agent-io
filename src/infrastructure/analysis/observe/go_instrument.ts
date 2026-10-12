@@ -27,10 +27,26 @@ export interface GoInstrumentOptions {
   contractProbes?: string[];
 }
 
-/** 是否 Go 工程：目录含 go.mod 且含离散 .go 文件（排除 .agent-io/node_modules）。 */
+/**
+ * 递归找 .go 文件：目录含 go.mod 时才会被调用；排除 `.agent-io`/`node_modules`/`.git`/`bin`。
+ *
+ * ★★★ **2026-10-12（T188）改掉一处"静默兜底"** —— 这里原先写
+ *   `try { entries = fs.readdirSync(…) } catch { return false; }`：
+ *   ★ 它把「**这个目录读不了**（权限 / 不是目录 / IO 错）」和「**这里没有 .go**」
+ *     **答成了同一个 `false`** ⇒ 上层会说"**不是 Go 工程**"，而真相是"**我没读到**"。
+ * ★ 判据（本仓 §5 ③「失败就抛」）：**读不到就是失败，不是"没有"**。
+ *   ⇒ 现在**删掉那个 catch**：读不了**当场抛**（带上路径），让人看得见"是读不到、不是不存在"。
+ * ★ 为什么以前那样写"看起来没事"：`readdirSync` 在**正常仓**上几乎不失败 ⇒ 这条路**长期没被走到**；
+ *   而它一旦走到（权限/软链/并发删），给出的就是一句**方向相反的结论**。
+ */
 function scanDir(root: string): boolean {
+  // ★ 不吞异常：读不了 ⇒ 抛（消息里带上路径，便于定位）
   let entries: fs.Dirent[];
-  try { entries = fs.readdirSync(root, { withFileTypes: true }); } catch { return false; }
+  try {
+    entries = fs.readdirSync(root, { withFileTypes: true });
+  } catch (e) {
+    throw new Error(`扫描 Go 源码时**读不到目录**（不是"这里没有 Go 文件"）：${root} —— ${(e as Error).message}`);
+  }
   for (const e of entries) {
     if (e.isDirectory()) {
       if (e.name === DATA_DIR_NAME || e.name === 'node_modules' || e.name === '.git' || e.name === 'bin') continue;
@@ -42,11 +58,20 @@ function scanDir(root: string): boolean {
   return false;
 }
 
+/**
+ * 是否 Go 工程：目录含 `go.mod` 且扫到离散 `.go` 文件（排除 `.agent-io`/`node_modules`/`.git`/`bin`）。
+ *
+ * ★★ **2026-10-12（T188）**：删掉了外面那层 `catch { return false; }` ——
+ *   它把「**目录读不了**」也答成 `false`（= "不是 Go 工程"），**两种病同因**（本仓"输出在误导"族）。
+ *   ⇒ 现在：**没有 `go.mod`** ⇒ `false`（这是**真的**"不是 Go 工程"）；
+ *     **扫的时候读不到目录** ⇒ **抛**（带路径）—— ★ 不再冒充一个"不是"的结论。
+ * ★ 现状说明（如实）：本函数**当前没有生产调用方**（语言分派已改为语言包注册表，见
+ *   `application/observe/handlers.ts:92` 的注释）；它仍留在 `observe_langs` 的登记里。
+ *   ⇒ 所以这次改动**不改变任何在跑的流程**，只是**不再撒谎**。
+ */
 export function isGoProject(root: string): boolean {
-  try {
-    if (!fs.existsSync(path.join(root, 'go.mod'))) return false;
-    return scanDir(root);
-  } catch { return false; }
+  if (!fs.existsSync(path.join(root, 'go.mod'))) return false;
+  return scanDir(root);
 }
 
 /**

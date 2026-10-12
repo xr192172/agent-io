@@ -13,7 +13,7 @@
  */
 
 import { probeDaemon, postWatch, postDsl, fetchAlertsSince } from '../infrastructure/daemon/client.js';
-import { takeAlerts } from '../infrastructure/alert_inbox.js';
+import { takeAlerts, SELF_CARRYING_TOOLS } from '../infrastructure/alert_inbox.js';
 
 import type { WatchProjectToolInput, WatchProjectToolResult } from './observe/runtime/watch_project_tool.js';
 import { watchProjectTool } from './observe/runtime/watch_project_tool.js';
@@ -102,8 +102,11 @@ function isDslConflictError(e: unknown): boolean {
 /** 本 MCP 进程的 daemon alert 游标（各客户端独立，互不互抢） */
 let daemonAlertCursor = 0;
 
-/** 响应自带 alerts piggyback 的工具：跳过注入避免同屏重复（与本地语义一致） */
-const SELF_CARRYING_TOOLS = new Set(['watch_project']);
+/**
+ * ★★ T188：这里**原先是第二份** `SELF_CARRYING_TOOLS`（与 `alert_inbox.ts` 各写一份，
+ *   内容还是同一个**已不存在的工具** `watch_project`）⇒ **同一判据住两处**。
+ *   ⇒ 现在从 `alert_inbox`（**唯一住处**）import —— ★ 那边注释里写着它为什么是空的、以及新增的规矩。
+ */
 
 /**
  * 响应注入升级版：本地未读（进程内降级路径产生）+ daemon 新增（权威路径

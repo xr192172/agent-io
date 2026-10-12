@@ -64,7 +64,16 @@ const delivered = new Set<string>();
 
 /**
  * 测试隔离 / 显式重置：清掉"已投递全文"的记账 ⇒ **下一次投递重新给全文**。
- * （`staleIndexWarning` 那边的 `resetStaleIndexWarningCache` 会连带调用本函数 —— 见其注释。）
+ *
+ * ★★★ **2026-10-12（T188）更正一句【假承诺】** —— 此处原先写着
+ * *"`staleIndexWarning` 那边的 `resetStaleIndexWarningCache` 会连带调用本函数"*，
+ * ★ **它从来没调过、也不该调**（`server_registry.ts` 的函数体只有 `_staleIndexCache = null`）。
+ * ★★ 而且**它们必须分开** —— 那边的注释逐字写着理由：
+ *   *"前者=模拟「过了 5s」，后者=模拟「新进程」。**搅在一起就会让『首次全文/后续摘要』这条性质无法被观测**。"*
+ * ⇒ 所以本处的修法是 **改掉这句谎**（不是去补那行调用）——
+ *   ★ 补上去会**毁掉一个可观测性质**，那正是另一侧在警告的事。
+ * ⇒ 教训（本仓 §2.3「不报错的错」族）：**注释里的"某处会调我"也是一条断言**，
+ *   它不会有编译器看着 ⇒ **只许写"当场核过"的事实**；核不到就别写。
  */
 export function resetWarningDelivery(): void {
   delivered.clear();

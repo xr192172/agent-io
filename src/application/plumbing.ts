@@ -129,6 +129,31 @@ export function requireArr(a: Record<string, unknown>, key: string, hint: string
   return v;
 }
 
+/**
+ * ★★★ **可选**数组参数：**给了就必须是数组**；没给 ⇒ `undefined`（由调用方 `?? []`）。
+ *
+ * ## 为什么必须是它（T188 修 M5 —— 一个**真洞**，不是洁癖）
+ * `explore_code` 这类工具的入参是 **`z.record(z.string(), z.unknown())` 一个自由袋子**
+ * ⇒ ★ **zod 对这些键什么都不校验**（`unknown`），于是过去写的是
+ *   `(args['changed'] as string[]) ?? []` —— ★ `as` 是**编译期**的断言，**运行期一个字都不查**：
+ *   传 `changed: "abc"`（字符串）⇒ 它**不是 null/undefined** ⇒ `?? []` 也不生效
+ *   ⇒ 下游按数组去遍历它 ⇒ **按字符遍历**（静默的垃圾）。
+ * ★ 而**同一个调用点**上 `project_dir` 走 `requireStr` ⇒ 形状错**当场抛** ——
+ *   ★ **同一处两种纪律**（本仓 §2.3「不报错的错」的一个标准形态）。
+ * ⇒ 判据：**形状错就抛，与 `requireStr` 同款**；★ 这是 `requireArr` 的**可选版**，住在一起。
+ */
+export function optionalArr(a: Record<string, unknown>, key: string, hint: string): unknown[] | undefined {
+  const v = a[key];
+  if (v === undefined) return undefined;
+  if (!Array.isArray(v)) {
+    throw new Error(
+      `参数 "${key}" 必须是**数组**（${hint}）—— 收到的是 ${v === null ? 'null' : typeof v}。` +
+        '★ 没给就省略这个键，别传别的形状（字符串会被当成"按字符遍历的数组"）。',
+    );
+  }
+  return v;
+}
+
 // ─────────────────────────────────────────────────────────────
 // 输入 schema 包装
 // ─────────────────────────────────────────────────────────────

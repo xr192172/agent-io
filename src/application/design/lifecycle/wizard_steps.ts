@@ -16,13 +16,32 @@
 
 export type WizardRole = 'brick' | 'contract' | 'glue' | 'flow' | 'store' | 'review';
 
-export interface WizardTool {
-  /** 功能名（统一功能注册面里的真实名字） */
-  name: string;
-  kind: 'mcp' | 'cli' | 'human';
-  /** 这一步用这个工具干什么（一句话） */
-  note: string;
-}
+/**
+ * 向导某一步用到的"工具"。
+ *
+ * ★★★ **T188（2026-10-12）改成判别联合** —— 修一处"**指路到不存在的工具**"：
+ *   此前是 `{ name: string; kind: 'mcp'|'cli'|'human' }`，而 `name` 的注释逐字写着
+ *   *"功能名（统一功能注册面里的**真实名字**）"* ⇒ ★ 可"胶水接线"那一步塞的是
+ *   **`{ name: 'human', kind: 'human' }`** —— ★ **`human` 根本不是工具**，
+ *   它违反了这个类型**自己写的契约**；读到它的人（或程序）会去调一个没有的工具。
+ *   ⇒ 现在**让类型把这件事挡住**：`kind='human'` 时 **`name` 不许出现**
+ *     （`name?: never`）⇒ ★ 再写 `name: 'human'` 会**编译红**，而不是靠人记得。
+ */
+export type WizardTool =
+  | {
+      /** 功能名（统一功能注册面里的**真实名字**） */
+      name: string;
+      kind: 'mcp' | 'cli';
+      /** 这一步用这个工具干什么（一句话） */
+      note: string;
+    }
+  | {
+      /** ★ **人拍板**的步骤 —— 它**没有工具**，所以**不许给 `name`**（这是刻意的机器约束） */
+      kind: 'human';
+      name?: never;
+      /** 这一步要人决定什么（一句话） */
+      note: string;
+    };
 
 export interface WizardStep {
   id: string;
@@ -90,7 +109,9 @@ export function wizardSteps(): WizardStep[] {
       role: 'glue',
       tools: [
         { name: 'edit_code', kind: 'mcp', note: '在胶水层文件里接线（注册/路由/装配）' },
-        { name: 'human', kind: 'human', note: '接线方案需要人拍板（放哪个入口、什么参数）' },
+        // ★ T188：原先写 `name: 'human'` —— ★ `human` 不是工具（它违反了 `name` 的"真实名字"契约）。
+        //   现在 `kind:'human'` 分支**不许带 `name`**（带了编译红）。
+        { kind: 'human', note: '接线方案需要人拍板（放哪个入口、什么参数）' },
       ],
       input: '契约插头 + 系统接线图',
       output: '功能可被调用（MCP/CLI/路由至少一种形态）',

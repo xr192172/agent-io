@@ -490,7 +490,21 @@ export function saveDSL(dsl: DesignDSL, source: string = 'mcp', base_dsl_rev?: n
   const nextRev = (base_dsl_rev ?? currentDslRev(dsl.feature)) + 1;
   dsl._dsl_rev = nextRev;
   const file = getFeatureFile(dsl.feature);
-  fs.writeFileSync(file, JSON.stringify(dsl, null, 2), 'utf-8');
+  // ★★★ 2026-10-12（T188）：**改成原子写**（临时文件 + rename）—— 治的是 M4 的**根因**。
+  //   为什么必须：本函数原先用**裸 `writeFileSync`** 直写目标文件（全仓 `renameSync` **0** 处）
+  //   ⇒ ★ **写不是原子的**：看护进程（watch/daemon）写的时候，并发的读**可能读到半截**
+  //     ⇒ `JSON.parse` 失败 ⇒ 调用方走 `getDSL` 的**静默回退**（`storage.ts:531` 那个 catch）。
+  //   ★★ 于是这里有个**反直觉的结论**（我核过才敢写）：那个 catch 处**不能"失败就抛"** ——
+  //     在**非原子写**的前提下抛，会把"**并发读撞上写入**"这个**正常现象**变成报错。
+  //   ⇒ 正确次序是**先让写变原子**（消除"半截"这个可能），那个 catch 才只剩"**真损坏**"一种含义。
+  //   ★ 同目录内 rename ⇒ 同文件系统 ⇒ 原子（POSIX 语义；Windows 的 `rename` 覆盖已存在文件
+  //     在 Node 上走 `MoveFileEx`，对"同目录换名"同样是原子的）。
+  const writeAtomic = (target: string, text: string): void => {
+    const tmp = `${target}.tmp-${process.pid}`;
+    fs.writeFileSync(tmp, text, 'utf-8');
+    fs.renameSync(tmp, target);
+  };
+  writeAtomic(file, JSON.stringify(dsl, null, 2));
 
   // 同步到活态文件（带时间戳，方便 diff）
   const liveFile = getLiveDslFile();
@@ -502,7 +516,8 @@ export function saveDSL(dsl: DesignDSL, source: string = 'mcp', base_dsl_rev?: n
       feature: dsl.feature,
     },
   };
-  fs.writeFileSync(liveFile, JSON.stringify(liveData, null, 2), 'utf-8');
+  // ★ T188：活态文件同样走原子写 —— ★ 它**正是**那个被并发读的目标（`getDSL` 优先读它）。
+  writeAtomic(liveFile, JSON.stringify(liveData, null, 2));
 
   // 触发 SSE 通知（用传入的 source，避免浏览器保存被误判为 mcp 触发 reload）
   if (dslChangeCallback) {
@@ -510,6 +525,21 @@ export function saveDSL(dsl: DesignDSL, source: string = 'mcp', base_dsl_rev?: n
   }
 
   return file;
+}
+
+/**
+ * ★ T188：**最近一次"活态 DSL 读不了 ⇒ 回退到存档"**的记录（没有则 `null`）。
+ * ★ 为什么要它：那次回退**会改变你读到的内容**（可能是**较旧**的一份），
+ *   而此前它**完全静默**（§2.3「不报错的错」）。⇒ 现在**记下来 + 一次性 stderr 提示**。
+ * ★ 未做（登记在账）：把它接进 MCP 的告警通道（`tool_warnings`）——
+ *   那需要一层注入（infrastructure 不许 import presentation，先例是 `dslChangeCallback`）。
+ */
+let lastLiveFallback: { file: string; error: string; at: string } | null = null;
+let liveFallbackWarned = false;
+
+/** 读最近一次"活态回退"记录（`null` = 本进程没发生过）。 */
+export function getLiveFallback(): { file: string; error: string; at: string } | null {
+  return lastLiveFallback;
 }
 
 /** 当前磁盘 rev：优先活态文件，回退 feature 存档，缺失为 0 */
@@ -528,8 +558,31 @@ export function getDSL(feature: string): DesignDSL | null {
       if (liveData.feature === feature) {
         return liveData as DesignDSL;
       }
-    } catch {
-      // 活态文件损坏，回退到 feature 文件
+    } catch (e) {
+      // ★★★ 2026-10-12（T188）修 M4「**静默**回退」—— 此前这里只有一个注释，**外部一个字都看不到**。
+      //
+      // ## 为什么"抛"在这**不成立**（★ 我核过才敢这么写，别照着 doctrine 顺手改成 throw）
+      // · 活态文件是**全局单文件**（`agent-io.json`），装的是**最后一次 saveDSL** 的那个 feature
+      //   ⇒ ★ 它损坏时**它可能根本不属于当前 feature** ⇒ 抛会让**所有 feature 一起挂**。
+      // · ★ 而且**写侧原先不是原子的**（裸 `writeFileSync`）：并发读**可能读到半截**
+      //   ⇒ 在那种前提下抛，会把"**撞上写入**"这个正常现象变成报错。
+      //   ★★ 该根因已在 `saveDSL` 里治掉（改成 临时文件 + `renameSync` 原子写）——
+      //      ⇒ 于是**到这里就只剩"真损坏"一种含义**了，这才轮得到"要不要更响"。
+      // · ★ 本仓先例也不是"一律抛"：`fileFacts` 对"**缺** db"返回空、对"**损坏**"才抛
+      //   —— 判据是"**这份数据是不是我这一份**"。（这里答不了，所以不抛。）
+      //
+      // ## 所以处置 = **保可用 + 不静默**
+      //   回退照旧（可用性不能拿来赌），但**把这件事记下来并说出来**（一次性，免得刷屏）。
+      lastLiveFallback = { file: liveFile, error: (e as Error).message, at: new Date().toISOString() };
+      if (!liveFallbackWarned) {
+        liveFallbackWarned = true;
+        console.error(
+          `[agent-io] ⚠ **活态 DSL 读不了，已回退到 feature 存档**（★ 你刚读到的可能是**较旧的一份**）：\n` +
+            `    ${liveFile}\n    ${(e as Error).message}\n` +
+            '  ★ 处置：确认没有并发写入后删掉该活态文件（下次 saveDSL 会重建），或跑一次 import_project 重扫。\n' +
+            `  ★ 本次进程内只提示这一次（避免刷屏）；后续可从 getLiveFallback() 读到这条记录。`,
+        );
+      }
     }
   }
 

@@ -15,6 +15,7 @@
  * 它们在注册表独立存在，因为 LLM 需要在 import 后立刻渲染/查询，动作链较短。
  */
 
+import { optionalArr } from '../../plumbing.js';
 import { semanticSearch } from '../llm/semantic_search.js';
 import { ensureProjectIndex, ensureIndexAroundSeed } from '../../../infrastructure/index/index_freshness.js';
 import { scheduleBackfill, backfillState, backfillSummary } from '../../../infrastructure/index/index_backfill.js';
@@ -66,6 +67,19 @@ function requireStr(v: Record<string, unknown>, key: string): string {
   return val;
 }
 
+/**
+ * ★★ **宽松**取值：形状不对 ⇒ 返回 `undefined`（**不抛**）。
+ *
+ * ★★★ **T188 提示（读到这里的人请注意，别以为本文件已经严了）**：
+ * 本文件还有一批 action 走这三个**宽松**助手 ⇒ ★ **"同一处两种纪律"这个病只修了一半**：
+ *   · 已修（**严**）：`changed` / `files` / `symbols` / `events` 四个**数组**参数
+ *     —— 改用 `plumbing.optionalArr`（★ `as T[]` 不做运行期检查，见那个函数的注释）；
+ *   · **未修（仍宽松）**：`str` / `num` / `bool` 三个（如 `direction` / `max_depth` / `dry_run` …）。
+ * ★ 为什么不一次全改：本文件的入参是 **`z.record(z.string(), z.unknown())` 一个自由袋子**
+ *   ⇒ 治本要按 §5 ①「[B] 收**显式参数**，非袋子」把整个 action 面收一遍（**大整形**，已登记在账）；
+ *   而"**形状错就抛**"这条判据**住一处**（`plumbing.ts`）⇒ 逐个 action 迁移时照着用即可。
+ * ⇒ ★ 这一段的用途就是**别让"半修"看起来像"全修"**（§"半修比不修更坏"）。
+ */
 function str(v: Record<string, unknown>, key: string): string | undefined {
   const val = v[key];
   return typeof val === 'string' ? val : undefined;
@@ -212,7 +226,7 @@ export async function exploreCode(params: { action: ExploreAction; args: Record<
       const r = await diffImpact({
         project_dir: requireStr(args, 'project_dir'),
         feature: requireStr(args, 'feature'),
-        changed: (args['changed'] as string[]) ?? [],
+        changed: (optionalArr(args, 'changed', 'string[]') as string[]) ?? [],
         direction: args['direction'] as 'callers' | 'callees' | 'both' | undefined,
         max_depth: args['max_depth'] as number | undefined,
       });
@@ -240,7 +254,7 @@ export async function exploreCode(params: { action: ExploreAction; args: Record<
         project_dir: str(args, 'project_dir'),
         feature: str(args, 'feature'),
         base_dir: str(args, 'base_dir'),
-        files: args['files'] as string[] | undefined,
+        files: optionalArr(args, 'files', 'string[]') as string[] | undefined,
         warn_lines: num(args, 'warn_lines'),
         crit_lines: num(args, 'crit_lines'),
         flag_cohesive: bool(args, 'flag_cohesive'),
@@ -258,7 +272,7 @@ export async function exploreCode(params: { action: ExploreAction; args: Record<
       const r = await deriveSplit({
         project_dir: requireStr(args, 'project_dir'),
         target_file: requireStr(args, 'target_file'),
-        symbols: (args['symbols'] as string[]) ?? [],
+        symbols: (optionalArr(args, 'symbols', 'string[]') as string[]) ?? [],
         new_file: str(args, 'new_file'),
         dry_run: bool(args, 'dry_run'),
         verify_compile: bool(args, 'verify_compile'),
@@ -337,7 +351,7 @@ export async function exploreCode(params: { action: ExploreAction; args: Record<
       return toResult(r, true);
     }
     case 'run_simulation': {
-      const r = runSimulation({ feature: requireStr(args, 'feature'), events: (args['events'] as Array<{ event: string; payload?: Record<string, unknown> }>) ?? [] });
+      const r = runSimulation({ feature: requireStr(args, 'feature'), events: (optionalArr(args, 'events', '[{event, payload?}]') as Array<{ event: string; payload?: Record<string, unknown> }>) ?? [] });
       return toResult(r);
     }
     case 'reset_simulation': {

@@ -91,8 +91,22 @@ export function clearAlertInbox(): void {
   alertLog.length = 0;
 }
 
-/** 响应自带 alerts piggyback 的工具：跳过注入避免同屏重复 */
-const SELF_CARRYING_TOOLS = new Set(['watch_project']);
+/**
+ * ★★★ **响应自带 alerts piggyback 的工具**：跳过注入，避免同屏重复。
+ * ★ 本常数是**唯一住处** —— `application/dispatch.ts` 从**这里** import（★ 此前**各写一份**，
+ *   是"同一判据住两处"的又一实例）。★ 放 infrastructure 而非 application 是有意的：
+ *   `infrastructure` 不许 import `application`，反向可以 ⇒ 共享点必须在**下位**。
+ *
+ * ★★★ **2026-10-12（T188）清空，并记下故事**：
+ *   此前唯一成员是 **`watch_project`** —— ★ 而**它已经不是工具了**
+ *   （注册表 67 个名字里搜不到，连 `watch*` 前缀都没有；实测读数为证）。
+ *   ⇒ ★ **那个 `has()` 判定永远为 false** ⇒ 这条"跳过注入"的分支**结构上不可能触发**
+ *     ⇒ 本集合**行为上早就是空的** ⇒ 换成空集合是**零行为变化的纯真话修复**。
+ * ★ **规矩（新增前先读）**：真有一个工具在自己的响应里已经带 alerts ⇒ 把它的**注册表里的准确名字**
+ *   加进来，并**当面核过它在 `TOOL_DEFS` 里**（★ 否则就是这次的复刻：写了一个不存在的名字，
+ *   而它不会有任何东西报错 —— 静默失效）。
+ */
+export const SELF_CARRYING_TOOLS: ReadonlySet<string> = new Set<string>();
 
 /**
  * 把未读提醒追加到工具响应文本尾部（分发中间件调用，一次投递即消费）。

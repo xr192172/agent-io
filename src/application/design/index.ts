@@ -324,8 +324,16 @@ export const DESIGN_TOOLS: ToolDef[] = [
       const brick = await buildBrickify({ project_dir, source_root });
       if (brick.mixed_files.length === 0) {
         return {
-          message: `无混合文件解耦信号（扫了 ${brick.meta.scanned_files} 个文件）⇒ 无需复核。`,
-          data: { signals_scanned: [], review: null, llm_available: true },
+          // ★★★ 2026-10-12（T188）修一处**输出在误导**：这里原先回 `llm_available: true` ——
+          //   ★ 而本分支**根本没探测过 LLM**（没有任何信号要复核）⇒ 那是**凭空的断言**，
+          //     且与同文件另一分支（`:345` 的 `false`）构成**两个口径**。
+          //   ⇒ 判据：**读不到就【省略整个键】**，不编一个看起来最好看的值
+          //     （★ 同 `scope_files` 的家规："没圈到就省略，不给空数组"）。
+          //   ★ 机器形状因此与另两分支不同 —— 那是**诚实**：这条读数**不存在**。
+          message:
+            `无混合文件解耦信号（扫了 ${brick.meta.scanned_files} 个文件）⇒ 无需复核。` +
+            '★ **本次未探测 LLM 是否可用**（没有要复核的信号）⇒ `llm_available` 省略，不谎报 true。',
+          data: { signals_scanned: [], review: null },
         };
       }
       const only = (a.only as string[] | undefined) ?? [];

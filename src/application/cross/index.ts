@@ -54,7 +54,17 @@ export const CROSS_TOOLS: ToolDef[] = [
     handler: wrapData(async (a) => {
       // ★ [C] 只做路由：读文件（含存在性判定）在 [B]（extractGoFromFile），本层不碰文件系统
       const file = a.file ? path.resolve(String(a.file)) : '';
-      if (!file) return { message: 'Go 文件不存在: (未提供 file)' };
+      // ★ 2026-10-12（T188）：原先是 `'Go 文件不存在: (未提供 file)'` —— ★ **把"你没给 file"
+      //   说成了"文件不存在"**（两种病不同因：一个是**调用方漏了参数**，一个是**路径查无此文件**）。
+      //   ⇒ 现在**先说真相**，再说该怎么给（★ 本仓纪律：错误信息就是最好的文档）。
+      if (!file) {
+        return {
+          message:
+            '**缺少入参 `file`**（不是"文件不存在"）⇒ 没得读。' +
+            '★ 请传 Go 源文件路径（绝对路径，或相对当前工作目录）。' +
+            '★ 想先定位文件：`get_dsl query=file` / `explore_code`。',
+        };
+      }
       const r = await extractGoFromFile(file);
       if (r.missing) return { message: 'Go 文件不存在: ' + file };
       if (r.error) return { message: 'Go 解析失败: ' + r.error };
