@@ -32,6 +32,8 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { parseFileFull, parseAstRoot, ParsedSymbol } from '../../../infrastructure/parse/index.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
+// ★ T212：判"有没有被真的引用"前**先剔注释**（★ 用 AST 的注释区间 ⇒ 不把注释里的提及当成引用 ✓）
+import { stripCommentsSync } from '../../../infrastructure/parse/comments.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -234,10 +236,42 @@ function importSourceOf(text: string): string {
 }
 
 /** 引用扫描：在给定文本中统计每个目标符号名是否出现（词边界），返回命中的名字 */
-function referNames(text: string, names: string[]): string[] {
+/**
+ * ★★★ T212（2026-10-13）：**判"这些名字在正文里有没有被【真的引用】"** —— ★ 现在**先剔注释** ✓
+ *
+ * ## 为什么改（★ 实测踩到的真 bug）
+ * ★ 原先这里用正则 `\b<name>\b` 直接扫正文 ⇒ ★ 而**注释里的提及**也算"出现过" ✗
+ * 实测（夹具 `mixed.ts`、手写报告 ⇒ 确定性复现）：`formatMoney` 在原文里出现 4 处，其中 **2 处在注释里**
+ * ```
+ *   26: export function formatMoney(cents…)        ← 声明
+ *   42: // ── 旧世代（★ 与 formatMoney 并存 …）     ← ★ 注释里的提及 ✗
+ *   43: /** @deprecated … 新代码请用 formatMoney。 *​/  ← ★ 注释里的提及 ✗
+ * ```
+ * ⇒ ★ 于是给原文件加了一条**死 import**（`import { formatMoney }`，而原文件切完根本不用它）✓
+ *
+ * ## ★★ 用户的问题与答案
+ * 用户问：*"不能靠解析来完成吗？**就是说 AST 的极限已经达到了是吧？**"*
+ * ⇒ ★★★ **不是 AST 的极限 —— 是"用正则冒充 AST"的极限** ✓
+ *   ★ **AST 分得开**（注释节点与标识符节点是**不同 node type** ✓）⇒ ★ **正则只是没去问它** ✓
+ *
+ * ## ★ 判据（★ 只住这一处，两个方向同时受益）
+ * ★ ★ 走 `stripCommentsSync`（**AST 的注释区间** ⇒ ★ 不是"找 `//`"那种猜法，字符串里的 `//` 不会误伤 ✓）
+ * ★ ★★ **`null`（没查成）⇒ 【抛】** —— ★ **不许**拿"没剔注释的正文"当剔过的用 ✗
+ *   （★ 那是"没报错的错"：★ **"没查成"与"真的一条注释都没有"必须分开** ✓）
+ *
+ * @param filePath ★ 用来判语言（★ 必填 —— ★ 从一段**片段**判不出语言 ✓）
+ */
+function referNames(text: string, names: string[], filePath: string): string[] {
+  const stripped = stripCommentsSync(filePath, text);
+  if (stripped === null) {
+    throw new Error(
+      `referNames：剔注释失败（拿不到 ${filePath} 的解析器 —— 语言不支持或 kernel 未预热）⇒ ` +
+        '**停手**，不拿"没剔注释的正文"当剔过的用（★ 否则会把注释里的提及当成引用 ✓）',
+    );
+  }
   const present = new Set<string>();
   for (const n of names) {
-    if (new RegExp(`\\b${escapeRe(n)}\\b`).test(text)) present.add(n);
+    if (new RegExp(`\\b${escapeRe(n)}\\b`).test(stripped)) present.add(n);
   }
   return [...present];
 }
@@ -340,7 +374,7 @@ function buildWiring(
     const isPkg = isPythonPackage(projectRoot, targetRel);
     const origSpec = isPkg ? `.${base}` : base;
     const newSpec = isPkg ? `.${newBase}` : newBase;
-    const importedFromOrig = referNames(extractedText, remainingNames);
+    const importedFromOrig = referNames(extractedText, remainingNames, targetRel);
     const importFromOrigLine =
       importedFromOrig.length > 0 ? `from ${origSpec} import ${importedFromOrig.join(', ')}` : '';
     const importFromNewLine = `from ${newSpec} import ${extractedNames.join(', ')}`;
@@ -357,10 +391,10 @@ function buildWiring(
   // ts / js：ESM 相对 import
   const origImportPath = `./${base}`;
   const newImportPath = `./${newBase}`;
-  const importedFromOrig = referNames(extractedText, remainingNames);
+  const importedFromOrig = referNames(extractedText, remainingNames, targetRel);
   // ★★★ T211：**接回原文件的 import，只列"残余正文真的还引用到"的那些** ✓
   //   ★ 原先无脑列 `extractedNames` ⇒ 会给原文件塞它**根本不用**的符号 ⇒ 实测直接编不过（见函数头注释）✓
-  const neededBack = referNames(remainingText, extractedNames);
+  const neededBack = referNames(remainingText, extractedNames, targetRel);
   return {
     newFileHeader: '',
     copiedImports: [],
