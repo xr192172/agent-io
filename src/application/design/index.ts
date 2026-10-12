@@ -244,9 +244,18 @@ export const DESIGN_TOOLS: ToolDef[] = [
       'feature 生命周期统一入口：create（创建）/ clone（克隆）/ template（从模板创建）/ list（列出）/ delete（删除）。' +
       'create 需 feature 名（^[a-zA-Z0-9_-]+$）；clone 需 source_feature+target_feature；template 需 template_id+feature；' +
       'delete 需 feature（同时清理设计存档 + 实际快照 + 活态视图）。',
+    // ★★★ T194（2026-10-12）：**入参扁平**（原先 `action` + 一个 `z.record` 袋子）。
+    //   ★ 三条证据（详见 `manage_feature.ts` 头部）：① 5 个键、每 action ≤3、无撞名 ⇒ 嵌套买不到东西
+    //   ② 本文件/`manage_feature.ts` 的旧注释自己记着"调用方很可能已经在顶层传了" ⇒ 扁的是自然心智
+    //   ③ 14 个 action 分派型工具里 12 个是扁的，连 `server.ts` 的引导文案都写 `manage_feature(action=create)`。
+    //   ★ 而且**扁的每个参数都有类型**（可逐字自校验）；袋子 `z.record(unknown)` 让校验器一个字都帮不上。
     inputSchema: {
       action: z.enum(MANAGE_ACTIONS).describe('create/clone/template/list/delete'),
-      args: z.record(z.string(), z.unknown()).optional().describe('各 action 参数（feature/title/source_feature/target_feature/template_id）'),
+      feature: z.string().optional().describe('create / delete / template 用：feature 名（^[a-zA-Z0-9_-]+$）'),
+      title: z.string().optional().describe('create / clone / template 用：标题（可省）'),
+      source_feature: z.string().optional().describe('clone 用：源 feature'),
+      target_feature: z.string().optional().describe('clone 用：目标 feature'),
+      template_id: z.string().optional().describe('template 用：模板 id'),
     },
     handler: manageFeatureHandler,
   },
