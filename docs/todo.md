@@ -116,6 +116,34 @@
           **何时才该做 = 把 `consistency_check` 用到真实老仓、且有人因此不用它时** ✓（裁定与理由**已写进目标**）
       ⇒ ⏳ **在账**：`brickify`（是链）与 `install_package`（**不是链**、单动作）仍未上工具面。
       ⇒ `tsc` 0 · `structure:gap` **三态全 0** · **23 张证 324 PASS / 0 FAIL** · `npm run verify` **4/4** ✓
+- [x] **T202b ✅（2026-10-12 结项）★★★★★ 用户纠正了我一个【概念错误】：能力**全上工具面**，只有**【链】才登记在 Map 里****
+      *(用户逐字：*"倒也不是，是我想错了，**工具面是【全都要上】的**，那个**工具链才是只上到 Map 里就行**。"*)*
+      ⇒ ★ 我此前的理解偏了（把"是链 ⇒ 上工具面；不是链 ⇒ 待定"当判据）⇒ ★ **是两件不同的事**：
+        · **工具面** = **能力** ⇒ **全都要上** ✓（与"是不是链"无关）
+        · **Map** = **链**（`chain_wiring.ts` 的 `CHAIN_EDGES` / `CHAIN_EDGES_PENDING`）⇒ 记的是
+          **「上一步的产物，怎么喂给下一步的入参」**（字段级接法）✓ —— **不是工具**
+      ⇒ ★★★ **于是立刻发现：我刚交的 `diagnose_loop` 缺了一半** —— ★ 它是链，但**没有返回 `touched`（产物锚点）**
+        ⇒ **Map 根本接不上它** ✓（★ 我此前只按技能 `dc-add-tool` 的 **7 个登记面**走，而那条技能**不含链登记** ⇒
+          ★ **"工具面"与"Map"是两套登记，我漏了后者** ✓）
+      ⇒ **补的两处**：
+        ① **`touched`**（契约 `domain/b_terms.ts`）：`project_dir` = ★ **解析后的绝对根**；
+           `written_files` = ★ 只在 **`applied === true` 且 `reverted !== true`**（改动真在工作区）时给，
+           ★ 否则**整个省略**（契约："只列落盘后仍存在的""未落盘则省略 —— 不给空数组" ✓）
+           ★★ **做法上改了一次**：内层有 **8 个止步分支** ⇒ 逐个加 = **同一判据住 8 处**（漏一个就静默少锚点）
+           ⇒ ★ **改成外层一处**（`diagnoseLoop` 薄包装 `diagnoseLoopInner`，由**内层已如实记下的 `data`** 推出）✓
+           ★ **实测**：`apply=false` ⇒ 回执里**只有 `{project_dir}`、没有 `written_files`**（不是空数组 ✓）
+        ② **链边**（`CHAIN_EDGES_PENDING`）：`diagnose_loop.written_files[pick] → edit_code.file` ·
+           ★ **`evidence: 'pending'`** —— ★ 要跑通得走 `apply:true` + 验证通过，而那需要 **LLM**
+           （出补丁那步 `generatePatch` 依赖 LLM）⇒ ★ **当日实测"网关所有 key 均在冷却窗口内"** ⇒ **跑不出成功的 apply** ✓
+           ★ **本表纪律**："不许把 pending 写成 verified" ⇒ **如实标** + 把原因写进 note ✓
+           ★★ 而 `project_dir` 那侧**不用加边** —— 已被 `ANY_TOOL → ANY_TOOL · project_dir` 的**通配边**覆盖 ✓
+      ⇒ **出生证（`29 PASS / 0 FAIL`，`.inspect/t202-diagnose-loop.mjs`；★ 原 22 + 新 7）**：
+        ★-f 有 `touched.project_dir` · ★-g 是**绝对根** · ★-h `apply=false` ⇒ **`written_files` 整个省略** ·
+        ★-i 链表里有本工具的边 · ★-j 接法正确 · ★-k **诚实标 `pending`** · ★-l **写明了为什么没跑成** ✓
+      ⇒ ⏳ **在账**：① `brickify`（**是链** ⇒ 上工具面 + 链边进 Map）· ② `install_package`（**不是链** ⇒
+        按用户口径**照样上工具面**）· ③ ★ 其余**已有工具**也**没有 `touched`** 的那些（★ 按用户的"全都要上"，
+        "接得上 Map"也是工具面该有的完整度）⇒ **值得单独排一次盘点**。
+      ⇒ `tsc` 0 · `build` ✓ · **23 张证 331 PASS / 0 FAIL** · `npm run verify` **4/4** ✓
 - [x] **T201 ✅（2026-10-12 结项）★★★★★ 补「近名诱饵」检测 —— ★ 并**收紧了目标里那条判据**（它量错了东西）**
       *(来源：`g-decoy-instrument` —— 外部调研说"语义诱饵（名字像但没用）最坑"，而 `probe:tool-smells` 只查了
         「宽签名/袋子/描述过短/命名词序」、**没查近名诱饵** ⇒ 判据在目标里是现成的。)*

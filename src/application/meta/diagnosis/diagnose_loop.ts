@@ -20,6 +20,7 @@
  * · `detectKind` · `readTestContract`（★ 从 CLI **搬进 infrastructure**，两边共用，避免判据住两处）
  */
 import { execSync } from 'node:child_process';
+import path from 'node:path';
 import { getProjectCacheDb } from '../../../infrastructure/index/db.js';
 import { walkFiles } from '../../../infrastructure/graph/import_project.js';
 import { syncProject } from '../../../infrastructure/index/symbols.js';
@@ -51,6 +52,16 @@ export interface DiagnoseLoopInput {
 
 export interface DiagnoseLoopResult {
   message: string;
+  /**
+   * ★★★ T202b：**产物锚点**（`Touched` 契约，`domain/b_terms.ts`）—— ★ 没有它，**链就接不上我** ✓
+   *
+   * 口径（照契约，不自己定）：
+   * · `project_dir` = **解析后的绝对根**（不是入参原值 ✓）
+   * · `written_files` = ★ **只列"落盘后仍存在"的文件** ⇒ ★ **验证失败回退之后【自动省略】**
+   *   （★ 契约原话：*"被移动/删除的旧路径不列（下游读不到它）"*、*"未落盘时省略整个字段 —— 不给空数组"* ✓
+   *   ⇒ 所以"回退过"这里**天然就是空**，不必我另外判断 ✓）
+   */
+  touched?: { project_dir: string; written_files?: string[] };
   data: {
     stopped_at: DiagnoseLoopStage;
     /** ★ 每一步的读数（★ 都不加工，原样给） */
@@ -65,7 +76,32 @@ export interface DiagnoseLoopResult {
   };
 }
 
+/**
+ * ★★★ T202b：**外层只做一件事** —— 把 `touched`（产物锚点）补上。
+ *
+ * ## 为什么不在内层 8 个 `return` 各自加（★ 我第一版就是那样，很脆）
+ * ★ 内层有 **8 个止步分支** ⇒ 逐个加 = **同一判据住 8 处**（漏一个就静默少一个锚点）。
+ * ⇒ 改成**外层一处**：`touched` 由**内层已经如实记下的结果**推出来 ✓
+ *
+ * ## `written_files` 的判据（★ 只住这一处）
+ * ★ 契约要求"**只列落盘后仍存在的文件**"（★ 回退过的就不列）⇒
+ * ⇒ **`applied === true` 且 `reverted !== true`** ⇒ 改动**真在工作区** ⇒ 列；
+ *   否则（没 apply / 校验失败 / 验证没过已回退 / 类型未识别已回退）⇒ **省略整个字段**（不给空数组 ✓）。
+ */
 export async function diagnoseLoop(input: DiagnoseLoopInput): Promise<DiagnoseLoopResult> {
+  const r = await diagnoseLoopInner(input);
+  const stillOnDisk = r.data.applied === true && r.data.reverted !== true;
+  const changed = r.data.patch?.changed_files ?? [];
+  return {
+    ...r,
+    touched: {
+      project_dir: path.resolve(input.project_dir),
+      ...(stillOnDisk && changed.length ? { written_files: changed } : {}),
+    },
+  };
+}
+
+async function diagnoseLoopInner(input: DiagnoseLoopInput): Promise<DiagnoseLoopResult> {
   const root = input.project_dir;
   const apply = input.apply === true;
   const verify = input.verify !== false;

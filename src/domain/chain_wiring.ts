@@ -465,6 +465,26 @@ export const CHAIN_EDGES: readonly ChainEdge[] = [
  * ★ 单独一张表 —— 让"没验"这件事**在读数里看得见**，而不是混进 `CHAIN_EDGES` 冒充已验证。
  */
 export const CHAIN_EDGES_PENDING: readonly ChainEdge[] = [
+  // ── ★★★ T202b（2026-10-12）：诊断闭环的产物边（★ **诚实标 pending** —— 我没真跑过成功的 apply）──
+  //   §5 那条链之外的**第二条链**：`diagnose_loop` 到"验证通过"为止（★ 它**不提交**，提交由人做），
+  //   此时 `touched.written_files` = 刚改过、**已验证、且仍在工作区**的文件。
+  //   ⇒ 下游"还想接着改"就接 `edit_code.file`（两端的路径口径都是**仓库相对**、`/` 分隔 ✓）。
+  //
+  //   ★★ **为什么是 `pending` 而不是 `verified`**（★ 本表纪律：不许把没跑过的写成跑过）：
+  //     要跑它得先让 `diagnose_loop` 走完 `apply:true` + 验证通过 ⇒ 而那需要 **LLM 可用**
+  //     （出补丁那步 `generatePatch` 依赖 LLM）⇒ ★ 2026-10-12 本机实测**网关所有 key 均在冷却窗口内**
+  //     ⇒ ★ **跑不出成功的 apply** ⇒ 只能 `pending` ✓
+  //   ★ 但 `written_files` 那一侧的**语义**已验：真调（`apply:false`）确认 **未落盘时整个字段省略**
+  //     （只出 `{project_dir}`）⇒ 与 `Touched` 契约"只列落盘后仍存在的、未落盘则省略"一致 ✓
+  {
+    from: 'diagnose_loop',
+    fromKey: 'written_files',
+    to: 'edit_code',
+    toPath: 'file',
+    cardinality: 'pick',
+    evidence: 'pending',
+    note: '闭环验证通过后、改动留在工作区 ⇒ 接着改那个文件。★ pending 的原因：跑通需 LLM（出补丁那步），本机当日 key 全在冷却窗口 ⇒ 没跑成',
+  },
   // ★★★ 2026-10-06：**本表已清空** —— 原有三条全部真跑出了结论：
   //   · `rename_symbols.written_files → edit_code.file`   ⇒ ✅ **成立**，已升级进 `CHAIN_EDGES`；
   //   · `rename_symbols.symbols → edit_code.symbol`       ⇒ ✅ **成立**，已升级进 `CHAIN_EDGES`；

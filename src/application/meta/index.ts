@@ -611,7 +611,9 @@ export const META_TOOLS: ToolDef[] = [
         verify_timeout_sec: optionalNum(a, 'verify_timeout_sec'),
       };
       const r = await diagnoseLoop(input);
-      return { message: r.message, data: r.data };
+      // ★★★ T202b：**把 `touched` 传出去** —— `wrapData` 读的就是 `r.touched`（见 `plumbing.ts`），
+      //   没有它 Map（`chain_wiring`）就接不上本工具（★ 链的接法靠"上游的产物锚点 → 下游的入参位置"）。
+      return { message: r.message, data: r.data, touched: r.touched };
     }),
   },
 
