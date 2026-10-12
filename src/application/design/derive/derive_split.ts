@@ -317,6 +317,20 @@ interface Wiring {
   importFromNewLine: string;
   /** 是否需要在原/新文件之间加 import（Go 同包不需要） */
   needsCrossImport: boolean;
+  /**
+   * ★★★ T213（2026-10-13）：**被抽走、而【原文件还需要】的符号名**。
+   *
+   * ## 为什么需要它
+   * ★ T212 修掉了"**不需要却硬塞**"那一格；★ 而**反过来那一格**是：
+   * ★★ 残余代码**真的需要**某个被抽走的符号 ⇒ ★ 那它必须**在新文件里可被引用** ✓
+   * ★★★ 而 ★ **若它在原文里是【模块私有的】**（如 `const SESSION_SECRET`，无 `export`）⇒
+   *   ★ 切出去之后原文件**根本 import 不到它** ⇒ ★ **TS2459：declares … locally, but it is not exported** ✓
+   *   （★ 实测：T213 夹具 `privshare.ts` ⇒ `import { SESSION_SECRET } from './session'` ⇒ **真编不过** ✓）
+   * ⇒ ★ 判据：★ **`neededBack` 里那些【原文没 export 的】⇒ 在新文件里补一行 `export { … };`** ✓
+   *
+   * ★ Go 同包共享 ⇒ 不需要（★ 恒 `[]` ✓）；★ **Python 这一格尚未处理**（★ 如实标 `[]`，★ 不假装做了 ✓）
+   */
+  neededBack: string[];
 }
 
 /**
@@ -367,6 +381,7 @@ function buildWiring(
       importFromOriginalLine: '',
       importFromNewLine: '',
       needsCrossImport: false,
+      neededBack: [],  // Go same-package / Python not handled yet
     };
   }
 
@@ -385,6 +400,7 @@ function buildWiring(
       importFromOriginalLine: importFromOrigLine,
       importFromNewLine,
       needsCrossImport: true,
+      neededBack: [],  // Go same-package / Python not handled yet
     };
   }
 
@@ -405,6 +421,7 @@ function buildWiring(
     importFromNewLine:
       neededBack.length > 0 ? `import { ${neededBack.join(', ')} } from '${newImportPath}';` : '',
     needsCrossImport: true,
+    neededBack,
   };
 }
 
@@ -884,10 +901,42 @@ async function splitOnce(input: DeriveSplitInput): Promise<DeriveSplitResult> {
   }
 
   // —— 新文件草稿（先不含接线 import，裁剪后再注入，避免接线 import 被误裁） ——
+  // ★★★ T213：**"被抽走的符号里，原文本来就 `export` 的有哪些"** —— ★ 从**被抽走的正文**里认（判据复用，不另造）
+  //   ★ 为什么要它两处都用：① 原文件的 **re-export** 只该列这些（★ 否则会把私有变公开 ✗）
+  //                            ② ★ 新文件的 **补 export** 只该列【不在这些里】的（★ 那些才是"原本私有、而现在被需要" ✓）
+  //   ★★ **错法的后果不对称 ⇒ 保守**：少再导出 ⇒ 引用断 ⇒ ★ **编译能抓到** ✓；多再导出 ⇒ 偷偷改 API ⇒ ★ 抓不到 ✗
+  const exportedExtracted = extractedNames.filter((n) =>
+    new RegExp(
+      `export\\s+(?:default\\s+)?(?:declare\\s+)?(?:async\\s+)?(?:function|class|const|let|var|type|interface|enum)\\s+${escapeRe(n)}\\b`,
+    ).test(extractedText),
+  );
+
   const newBodyLines = [wiring.newFileHeader, ...copiedImports, '', extractedText]
     .filter((l) => l !== '')
     .join('\n');
   let newContent = newBodyLines.trimEnd() + '\n';
+
+  // ★★★ T213（2026-10-13）：**"既被需要、又原本私有"⇒ 在新文件里补 export** ✓
+  //
+  // ## 那一格是什么（★ 与 T212 修的那格【同族但相反】）
+  // · ★ T212 修的是"**不需要却硬塞**"（★ 给原文件塞死 import ✓）
+  // · ★★ 这一格是"**需要、但搬走后拿不到**"：★ 残余代码真的要用某个被抽走的符号，
+  //   而**它在原文里是模块私有的**（如 `const SESSION_SECRET`，无 `export`）
+  //   ⇒ ★ 切出去之后原文件**根本 import 不到它** ⇒ ★★ **TS2459：declares … locally, but it is not exported** ✓
+  //   ★ 实测（T213 夹具 `privshare.ts`）：`import { SESSION_SECRET } from './session'` ⇒ **真编不过** ✓
+  //
+  // ## 判据（★ 两块现成的集合取差，不造第三把尺）
+  // ★ `wiring.neededBack`（残余代码**需要**的）× ★ 不在 `exportedExtracted` 里（原文**没 export** 的）
+  // ⇒ ★ 这些**必须**在新文件里可见 ⇒ ★ 补一行 `export { … };` ✓
+  //
+  // ## 为什么放在【正文之后】
+  // ★ `export { X };` 只是"把这个已有的绑定导出去" ⇒ ★ **放在声明之后一定合法** ✓
+  //   （★ 放在声明之前要靠"绑定提升"的细节，★ **不赌它** ✓）
+  // ★ 且 ★ 与下面的 `insertImport`（往**顶部**插 import）**互不干扰** ✓
+  const mustExportFromNew = wiring.neededBack.filter((n) => !exportedExtracted.includes(n));
+  if (mustExportFromNew.length > 0) {
+    newContent = newContent.trimEnd() + `\nexport { ${mustExportFromNew.join(', ')} };\n`;
+  }
 
   // —— 原文件草稿：先移除符号、暂不含接线 import ——
   let originalContent = removeLineRanges(content, ranges);
@@ -918,11 +967,7 @@ async function splitOnce(input: DeriveSplitInput): Promise<DeriveSplitResult> {
   //   ★ 判据：从**被抽走的正文**里认出"带 `export` 的声明" ✓
   //   ★★ **两条错法的后果不对称**（★ 据此选保守那边）：少再导出 ⇒ 外部引用**断** ⇒ ★ **编译能抓到** ✓；
   //     多再导出 ⇒ **偷偷改 API** ⇒ ★ **抓不到** ✗ ⇒ ★ **所以宁可少列** ✓（★ 保守方向明确 ✓）
-  const exportedExtracted = extractedNames.filter((n) =>
-    new RegExp(
-      `export\\s+(?:default\\s+)?(?:declare\\s+)?(?:async\\s+)?(?:function|class|const|let|var|type|interface|enum)\\s+${escapeRe(n)}\\b`,
-    ).test(extractedText),
-  );
+  // ★ T213：`exportedExtracted` 的计算**已上移到** `newBodyLines` 之前（★ 判据一处 —— 新文件的补 export 也要用它 ✓）
   const reExportAdded: string[] = [];
   if (input.re_export_extracted && lang === 'ts' && exportedExtracted.length > 0) {
     const newBase = path.posix.basename(newRel.replace(/\\/g, '/')).replace(/\.[^.]+$/, '');
