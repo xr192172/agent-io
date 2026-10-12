@@ -120,8 +120,20 @@ export const consistencyHandler = wrapData(async (a) => {
         };
       })
       .filter(hasDiff)
-      .map((x) => x.path)
-      .sort();
+      .map((x) => x.path);
+    // ★★★ T184b（2026-10-12）：**兜底** —— 退役标记里那些**不在 `fileResults` 里的**也要进来。
+    //   ★ 为什么会有这种：T184b 起，`retireFlow` 也收 **overlay 墓碑**（文件已从 base 消失），
+    //     而 `fileResults` 是**按 `semantic.files` 生成的** ⇒ ★ 墓碑**不在里面**
+    //     ⇒ 上面那次 `.map()` **根本覆盖不到它** ⇒ `scope_files` 漏掉 ⇒ ★ **②→③ 那条链又断了**
+    //       （T187 修的是"退役算差异"，但它当时**默认了"退役的文件一定在 `fileResults` 里"** —— 那个前提现在不成立）。
+    //   ★ 与 scope 分支里那段兜底**同一个形状**（那边也有：不在 `sel` 里的补一条）。
+    for (const [p, mark] of retireMarks) {
+      if (!diffFiles.includes(p)) {
+        void mark;
+        diffFiles.push(p);
+      }
+    }
+    diffFiles.sort();
     const touchedAll: Record<string, unknown> = { feature };
     if (diffFiles.length) touchedAll.scope_files = diffFiles;
     data.touched = touchedAll;

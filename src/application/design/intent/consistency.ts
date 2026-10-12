@@ -40,6 +40,8 @@ import { extractFuncName } from '../api_signature.js';
 import { getDSL, getBaselineFacts } from '../../../infrastructure/storage.js';
 // ★ T85/D3：线 1 的"现取事实"入口 —— 与 `import_project` 锚基线事实时**用的是同一个 accessor**（同源）
 import { fileFacts } from '../../../infrastructure/index/file_facts.js';
+// ★ T184b：② 的**第二个输入来源** —— overlay 上的墓碑（`loadOverlay`）。此前它只读 base（`getDSL`）。
+import { loadOverlay } from '../../../infrastructure/storage_overlay.js';
 import { parseFileSymbols, ParsedSymbol, isSupportedFile } from '../../../infrastructure/parse/ast_parser.js';
 // ★ T157（2026-10-11）：**类型契约**（`interface`/`type`/`class`）的成员比对。
 //   内核的 `ParsedSymbol.signature` 对类型**退化成 `Name()`** ⇒ 成员提取必须另走 AST；
@@ -196,6 +198,61 @@ export interface RetireFlowEntry {
    *   · `ready_to_archive` = 设计说该删、**实现里也没了** ⇒ ★ **可以走③归档了**
    */
   stage: RetireStage;
+  /**
+   * ★★★ **这条是【从哪儿】看到的**（T184b，2026-10-12）—— 读端必须知道，因为两处的**可查性不同**：
+   *   · `base_dsl` —— 它就在 `semantic.files` 里，`get_dsl query=files` 查得到；
+   *   · `overlay_tombstone` —— ★ **它已经不在 `semantic.files` 里了**（显式重建把文件换掉了），
+   *     只剩 `overlay.anchors` 上那笔标记 ⇒ ★ `get_dsl` **按文件查不到它**。
+   * ★ 为什么要这个字段（而不是让它悄悄混在一起）：★ **读端会去 `get_dsl` 核对路径** ——
+   *   核不到时，他需要知道"**这不是数据错了，是它只剩墓碑了**"，否则会当成漂移去排查。
+   */
+  origin: 'base_dsl' | 'overlay_tombstone';
+}
+
+/**
+ * ★★★ **T184b：把 overlay 上的「墓碑」也捞出来**（2026-10-12）——
+ * `checkConsistencyReport` 的**第二个输入来源**，此前**完全没有**。
+ *
+ * ## 为什么必须有（★ 两态真跑坐实，不是推演）
+ * · 「设计侧标记待删」这件事**住在 overlay**（`lifecycle` 在 overlay 锚点上，T182 立的规矩）。
+ * · 而 ② 此前**只扫 `dsl.semantic.files`**（= base）。
+ * · ⇒ **显式 `rebuild_design=true` 之后**（`import_project.ts:1069` 的 `mergeDesignLayer` 把 base 整个换掉、
+ *   那个文件不在新扫描结果里）⇒ ★ **它从 `semantic.files` 里消失，而 overlay 上的标记还在**
+ *   ⇒ **② 报 `retireFlow = []`** —— ★ **数据明明在，判据瞎了**（`guard-blindspot-diagnosis` 的
+ *   "判据只读了输入的一个来源"）。
+ * · 实测（`run82` 真仓）：态 A（未重建）报 `awaiting_implementation_delete` ✓；
+ *   态 B（重建后）报 **空**，而 `overlay.anchors[…] .lifecycle` **仍在** ✗
+ *
+ * ## 判据（★ 一处，没另写一把尺）
+ * · 挑谁：overlay 锚点里 `lifecycle.status === 'deprecated'` **且该路径不在 base 的 `semantic.files` 里**
+ *   —— ★ 后者是为了**不重复报**：base 里有的那些，上面那半已经报了。
+ * · 阶段用**同一个** `retireStage(exists)`；`exists` **现取磁盘**（`fs.existsSync`），
+ *   ★ **不假设**"不在 base 就等于不在磁盘"（那是另一件事，靠现取说话）。
+ */
+function overlayTombstones(
+  feature: string,
+  basePaths: ReadonlySet<string>,
+  existsOf: (relPath: string) => boolean,
+): RetireFlowEntry[] {
+  const ov = loadOverlay(feature);
+  if (!ov) return [];
+  const out: RetireFlowEntry[] = [];
+  for (const a of Object.values(ov.anchors)) {
+    const lc = a.lifecycle;
+    if (lc?.status !== 'deprecated') continue;
+    const p = a.path;
+    if (!p || basePaths.has(p)) continue; // ★ base 里有的，上面那半已经报过 ⇒ 不重复
+    const exists = existsOf(p);
+    out.push({
+      file_path: p,
+      design_status: 'deprecated',
+      retire_reason: lc.retire_reason,
+      exists,
+      stage: retireStage(exists),
+      origin: 'overlay_tombstone',
+    });
+  }
+  return out.sort((x, y) => x.file_path.localeCompare(y.file_path));
 }
 
 export type RetireStage = 'awaiting_implementation_delete' | 'ready_to_archive';
@@ -821,7 +878,10 @@ export async function checkConsistencyReport(input: ConsistencyInput): Promise<C
   //   ★ 判据住一处：`retireStage(exists)`；本处**只负责挑出 `deprecated` 的条目**并组装。
   //   ★ 与线 2 **不共用口径**（线 2 数的是 `expected_apis` 条数；这里数的是**文件**），
   //     所以它**不参与** `comparedCount` / `cmpState` —— 混进去就会把"没得比"算成"比过"。
-  const retireFlow: RetireFlowEntry[] = fileResults
+  // ★★★ T184b（2026-10-12）：**两个来源合起来** —— 此前只有第一个。
+  //   ① base（`semantic.files`）里标着 `deprecated` 的；② **overlay 上的墓碑**（文件已从 base 消失、
+  //   只剩标记）—— ★ 少了②，**显式重建之后 ② 就瞎了**（详见 `overlayTombstones` 的注释）。
+  const baseRetire: RetireFlowEntry[] = fileResults
     .filter((fr) => fr.file.lifecycle?.status === 'deprecated')
     .map((fr) => ({
       file_path: fr.file.path,
@@ -830,7 +890,13 @@ export async function checkConsistencyReport(input: ConsistencyInput): Promise<C
       retire_reason: fr.file.lifecycle?.retire_reason,
       exists: fr.exists,
       stage: retireStage(fr.exists),
+      origin: 'base_dsl' as const,
     }));
+  const basePaths = new Set((dsl.semantic?.files ?? []).map((f) => f.path));
+  const retireFlow: RetireFlowEntry[] = [
+    ...baseRetire,
+    ...overlayTombstones(feature, basePaths, (rel) => fs.existsSync(path.join(codeDir, rel))),
+  ];
   const retirePending = retireFlow.filter((e) => e.stage === 'awaiting_implementation_delete').length;
   const retireReady = retireFlow.filter((e) => e.stage === 'ready_to_archive').length;
 
@@ -1055,6 +1121,13 @@ export async function checkConsistencyReport(input: ConsistencyInput): Promise<C
         for (const e of retireFlow.filter((x) => x.stage === 'awaiting_implementation_delete')) {
           lines.push(`    - ${e.file_path}`);
           lines.push(`        理由: ${e.retire_reason ?? '⚠ **没有理由**（①本应必填 —— 该标记来路不正，请核查）'}`);
+          // ★ T184b：**来源必须说出来** —— 否则读端会拿这个路径去 `get_dsl` 核对、核不到，遂当成漂移排查。
+          if (e.origin === 'overlay_tombstone') {
+            lines.push(
+              '        ★ 来源：**overlay 墓碑** —— 它**已不在** `semantic.files` 里（显式重建换掉了 base）' +
+                ' ⇒ `get_dsl query=files` **查不到它**（★ 这不是数据错了，是它只剩墓碑了）。',
+            );
+          }
         }
       }
       if (retireReady > 0) {
@@ -1062,6 +1135,11 @@ export async function checkConsistencyReport(input: ConsistencyInput): Promise<C
         for (const e of retireFlow.filter((x) => x.stage === 'ready_to_archive')) {
           lines.push(`    - ${e.file_path}`);
           lines.push(`        理由: ${e.retire_reason ?? '⚠ **没有理由**（同上）'}`);
+          if (e.origin === 'overlay_tombstone') {
+            lines.push(
+              '        ★ 来源：**overlay 墓碑**（已不在 `semantic.files` 里；`get_dsl` 查不到它，★ 不是数据错）',
+            );
+          }
           lines.push('        ★ 归档请用 `archive`（它会**三清**：文件 + 几何节点 + 边，并留下归档快照）—— **不要**用 `deleteFile`（它只删语义侧，会留幽灵节点，见 T180）');
         }
       } else if (retirePending === 0) {

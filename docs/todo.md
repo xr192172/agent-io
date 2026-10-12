@@ -235,7 +235,39 @@
       ⇒ ★ 并且**还原脚本又漏了一层**：T185 会**真的删掉结构**（`t181-reset.mjs` 只删 `lifecycle` 键 ⇒ 放不回来），
         且 `archive` 会往**归档库** `.agent-io/archive/<feature>/` 追加（那**不在**三个 DSL 文件里）
         ⇒ 现在用 `.inspect/t185-reset.mjs`（**整份还原 4 处**：活态 · 存档 · overlay · 归档库）。
-- [ ] **T184b ★★【T184 留下的边界】**显式 `rebuild_design=true` 之后，**②的信号就看不见了**（墓碑还在，但报告不显示）*
+- [x] **T184b ✅（2026-10-12 结项）★★★★ ② 此前**只读了输入的一个来源** —— ★ 而它**顺便暴露了 T187 修复的不完整****
+      *(来源：T184 结项时自己登记的边界；★ 技能 `guard-blindspot-diagnosis` 的对症项 ——
+        「**判据只读了输入的一个来源**」⇒ 静默少报。)*
+      ⇒ **两态真跑坐实（不读码猜）**：
+        · 态 A（未重建）⇒ `retireFlow` 报 `awaiting_implementation_delete` ✓
+        · **态 B（真重建**，调 `import_project.ts:1069` 那一行 `mergeDesignLayer` + 同款 `saveDSL`**）**
+          ⇒ ★ **`retireFlow = []`**，而 `overlay.anchors[…].lifecycle` **仍在** ✓
+        ⇒ ★ **数据明明在、判据瞎了**（`run82` 真仓读数）。
+      ⇒ **修法**：② 除 base（`semantic.files`）外，**也读 overlay 的墓碑** ——
+        新增 `overlayTombstones(feature, basePaths, existsOf)`：
+        挑 `lifecycle.status==='deprecated'` **且该路径不在 base 里**的锚点（★ 后者为了**不重复报**）。
+        · ★ 判据**仍是一处**：阶段用**同一个** `retireStage(exists)`；
+        · ★ `exists` **现取磁盘**，**不假设**"不在 base 就等于不在磁盘"
+          —— 实测：重建后 base 没有它、而**文件还在盘上** ⇒ 正确判成**待实现删**（想当然会误报成"可归档"）。
+        · ★ `RetireFlowEntry` 加 `origin: 'base_dsl' | 'overlay_tombstone'` ——
+          ★ **读端必须知道**：墓碑**不在 `semantic.files` 里**，`get_dsl` **按文件查不到它**
+          （不说清楚，读端会当成漂移去排查）。报告段**逐条印出来源**。
+      ⇒ ★★★ **它顺便暴露了 T187 修复的一个不完整前提**（★ 这是本条最值钱的读数）：
+        T187 把"退役算进差异面"时，是**映射到 `fileResults` 上**的 ⇒ ★ **默认了"退役的文件一定在 `fileResults` 里"**；
+        而 T184b 之后 `retireFlow` 会含 **overlay 墓碑**（不在 base）⇒ ★ **那个前提不成立了**
+        ⇒ `scope_files` 漏掉墓碑 ⇒ **②→③ 那条链又断了**。
+        ⇒ 补齐：**两条 handler 路径都给退役标记加兜底**（不在名单里的补一条）—— 与 scope 分支原有的兜底**同形**。
+      ⇒ **出生证（`12 PASS / 0 FAIL`，`.inspect/t184b-cert.mjs`）**：
+        ① 态 A 报且 `origin='base_dsl'` ② ★★ **态 B 仍报且 `origin='overlay_tombstone'`**
+        （★ 修前实测是 `[]` ⇒ **这条断言在旧代码上必红**，即本条出生证）；
+        ★ 反例两条：**同一路径只报一次**（合并去重，不各报一遍）· ★ **"不在 base" 没被当成 "不在磁盘"**；
+        ★ 合成：墓碑**进了 `scope_files`**（T187 那条边因此也通了）+ **报告写明了来源**；
+        ⑤ 反例③：磁盘上也没有的墓碑 ⇒ 正确判成 `ready_to_archive`。
+      ⇒ ★ **一条量具教训**：我在 ④ 卡了两轮，真因是 **`---DATA---` 后面还跟着 `--- stderr ---` 段**，
+        我把它一起喂给 `JSON.parse` ⇒ `Unexpected non-whitespace character after JSON`
+        —— ★ 而那个报错**一直伪装成 `<anonymous_script>`**（看着像子进程问题）
+        ⇒ **先看全产物再解析**。
+      ⇒ `tsc` **0** · `npm run verify` **5/5** ✓
       *(来源：写 T184 时顺着"两种子情形"查出来的。)*
       ⇒ **子情形 (a)（默认路径，②工作正常）**：代码文件被删、**DSL 没重建**
         ⇒ DSL 里**仍列着**该文件、`exists=false` ⇒ `ready_to_archive` ✓
