@@ -116,6 +116,29 @@
           **何时才该做 = 把 `consistency_check` 用到真实老仓、且有人因此不用它时** ✓（裁定与理由**已写进目标**）
       ⇒ ⏳ **在账**：`brickify`（是链）与 `install_package`（**不是链**、单动作）仍未上工具面。
       ⇒ `tsc` 0 · `structure:gap` **三态全 0** · **23 张证 324 PASS / 0 FAIL** · `npm run verify` **4/4** ✓
+- [x] **T204 ✅（2026-10-12 结项）★★★★★ 逐条核"接棒" —— ★ 8 条声明链【一条都不能照说明抄】**
+      *(用户："可以,但是你也不要盲目的去接，因为有一些可能已经被替代了。" ⇒ ★ 我核【实现】，不看说明。)*
+      ⇒ ★ **核的判据（可靠版）**：全仓找 **`withTouched(` / `touchedOf(`** —— ★ 这才是"真产产物锚点"的记号
+        （★ 我前面两版静态扫都错在找字面 `touched:`；真记号是这个 helper ⇒ **全仓 32 个文件用** ✓）
+      ⇒ ★★ **逐条判定**：
+        | 链 | 实际交接什么 | 能否成边 |
+        |---|---|---|
+        | **"拆分链"** `signal_review`→`split_stage` | ★ **文件路径**（`split_stage.report_path`：*"`signal_review` 的报告 JSON 路径"*）| ★★ **能** —— 但★ **上游不产锚点**（32 个文件里没有它）⇒ **要接得先给它加** |
+        | **§16.3 P-C** `plan_refactor`→`apply_refactor_plan` | ★ **内存对象**（`plan`：*"`plan_refactor` 的 `data` **原样传入**"*）| ✗ ★★ **`Touched` 没有装"任意对象"的键** ⇒ **要接得先扩契约**（★ 影响全 69 工具 ⇒ **设计决策，不顺手做**）|
+        | **"C 链"** `deprecate_offline` | ★ 它点名的 `dead_deps`/`brickify` 不在工具面 | ✗ ★ **不是"断了"** —— ★ 两者**都还在**（`infrastructure/graph/dead_deps.ts` · `design/bricks/brickify.ts`）⇒ ★ **是【内部模块】，从来不是工具** ⇒ **没有工具间的边** |
+        | **Brick Harvest** 三棒 | `harvest_closure` 产 `nodes`；另两个**只产作用域键** | ✗ ★ `extract_contracts`/`reconcile_effects` 只有 `{project_dir,feature}`（★ 其注释**逐字解释了为什么不给** ⇒ 深思过的）<br>✗ ★ `harvest_closure` 的 `nodes` **全仓零个工具收它** |
+      ⇒ ★★ **两个"我以为严重、结果不是"的澄清**：① `dead_deps`/`brickify` 不在册**不是缺陷**（从来是内部模块，
+        路径照常工作）—— ★ 但**说明文字里点名它们**会让读者去工具面找 ⇒ **是文案问题** ✓
+        ② **"8 条都没接"也不是偷懒** —— ★ 6 条的原因是**结构性的**（交界物是内存对象 / 上游不是工具 / 下游没人收）✓
+      ⇒ ★ **正确动作**（★ 不盲接）：
+        ① ★★ **只有一条值得动手**：给 `signal_review` 加 `touched`（`written_files` = 它写的报告），
+           再接 `signal_review.written_files[pick] → split_stage.report_path` ⇒ **标 `pending`** ✓
+        ② `plan_refactor`→`apply_refactor_plan` 要接，**先得扩 `Touched` 契约**（装"上一棒的产物对象"）
+           ⇒ ★ **单独拍板** ✓
+        ③ ★ **改 `deprecate_offline` 的说明文字**（把 `dead_deps`/`brickify` 说成内部模块或去掉）
+           ⇒ 否则读者去工具面找两个不存在的东西（★ "输出在误导"那一族）✓
+        ④ `harvest_closure.nodes` **没有下游** ⇒ 找下游、或接受它是**链的终点** ✓
+      ⇒ ★ 报告已更新（`docs/chain-coverage-report.md` 第八节）✓
 - [x] **T202b ✅（2026-10-12 结项）★★★★★ 用户纠正了我一个【概念错误】：能力**全上工具面**，只有**【链】才登记在 Map 里****
       *(用户逐字：*"倒也不是，是我想错了，**工具面是【全都要上】的**，那个**工具链才是只上到 Map 里就行**。"*)*
       ⇒ ★ 我此前的理解偏了（把"是链 ⇒ 上工具面；不是链 ⇒ 待定"当判据）⇒ ★ **是两件不同的事**：

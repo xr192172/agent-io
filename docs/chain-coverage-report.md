@@ -100,3 +100,38 @@
   看不见"由底层函数返回"的）⇒ ★★ **所以本文没给这个数** —— **要拿真值只能真调工具看回执** ✓
 - ★ "24 个"是**文字扫描**的读数 ⇒ ★ **我逐个看过说明**，**确凿的是 8 个**，其余是自闭环或误报 ✓
 - ★ "说明里写着是一条链" **不等于** "这条链跑通过" ⇒ ★ 接上时要**标 `pending`**，**不许直接写 `verified`** ✓
+
+---
+
+## 八、★ 逐条核过之后：**这 8 条一条都不能照说明抄**（2026-10-12 追加）
+
+> 用户的原话：**"你也不要盲目的去接，因为有一些可能已经被替代了。"**
+> ⇒ ★ 我逐条核了**实现**（不看说明）—— ★ **结果是：能真接的只有 1 条，而它还得先补上游。**
+
+### 8 条的逐条判定
+
+| 链 | 实际交接的是什么 | 能不能写成边 |
+|---|---|---|
+| **"拆分链"** `signal_review` → `split_stage` | ★ **文件路径**（`split_stage.report_path` 的说明逐字：*"`signal_review` 的报告 **JSON 路径**"*）| ★★ **能** —— 但 ★ **上游 `signal_review` 根本不产锚点**（全仓 32 个用 `withTouched` 的文件里没有它）⇒ **要接得先给它加** |
+| **§16.3 P-C** `plan_refactor` → `apply_refactor_plan` | ★ **内存对象**（`apply_refactor_plan.plan` 说明逐字：*"`plan_refactor` 的 **`data` 原样传入**（含 plan_id/items/files/summary）"*）| ✗ ★★ **`Touched` 契约里没有装"任意对象"的键**（它只装标识/路径）⇒ **要接得先扩契约**（那是设计决策，不该顺手做）|
+| **"C 链"** `deprecate_offline` ← `dead_deps`/`brickify` | ★ 它点名的两个上游 **都不在工具面** | ✗ ★★ 但**不是"断了"** —— ★ `dead_deps` 还在（`infrastructure/graph/dead_deps.ts`）· `brickify` 还在（模块 + CLI）⇒ ★ **它们是【内部模块】，从来就不是工具** ⇒ **根本没有"工具间的边"可接** |
+| **Brick Harvest** `harvest_closure` → `extract_contracts` → `reconcile_effects` | `harvest_closure` 产 `nodes`；另两个**只产作用域键** | ✗ ★ `extract_contracts`/`reconcile_effects` **只有 `{project_dir, feature}`** ⇒ 对象边写不出来（★ 而 `extract_contracts` 的注释**逐字解释了为什么不给** —— ★ **那是深思过的，不是漏** ✓）<br>✗ ★ `harvest_closure` 产的 `nodes` **全仓没有任何工具收它**（实测：零个工具的入参里有 `nodes`）|
+
+### ★★ 两个"我以为会很严重、结果不是"的澄清
+
+1. ★ **`dead_deps` / `brickify` "消失"不是缺陷** —— ★ 它们**从来只是内部模块**，被同一个工具内部调用 ⇒
+   ★ `deprecate_offline` 的"省略 `plans` = 从 `dead_deps` 全量里筛"这条路**照常工作** ✓
+   ★（★ 但**说明文字**里点名 `dead_deps`/`brickify` 会让读者**去工具面找** ⇒ 那是**文案问题**，不是链问题）
+2. ★ **"8 条都没接"也不是偷懒** —— ★ 其中 6 条的原因是**结构性的**：
+   ★ 要么**交界物是内存对象**（契约装不下）· 要么**上游不是工具** · 要么**下游没人收**
+
+### ★ 所以正确的动作是（★ 不盲接）
+
+- ★★ **只有一条值得动手**：给 `signal_review` 加 `touched`（`written_files` = 它写的报告），
+  然后接 `signal_review.written_files[pick] → split_stage.report_path` ⇒ ★ **标 `pending`**（★ 我还没真跑通这条链）
+- ★ **`plan_refactor`→`apply_refactor_plan` 要接，先得扩 `Touched` 契约**（能装"上一棒的产物对象"）
+  ⇒ ★★ **那是一个设计决策，得单独拍板**（★ 而扩契约会影响**全部 69 个工具** ⇒ 不该顺手做）
+- ★ **`deprecate_offline` 的说明文字**该改：把 `dead_deps`/`brickify` 的措辞改成"内部模块"或去掉 ——
+  ★ 否则读者会去工具面找两个不存在的东西（★ 属"输出在误导"那一族）
+- ★ **`harvest_closure.nodes`** 目前是**没有下游的产物** ⇒ ★ 要么找个下游、要么接受它是"链的终点"
+
