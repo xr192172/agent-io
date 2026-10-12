@@ -237,7 +237,11 @@ export function createFromTemplate(input: CreateFromTemplateInput): CreateFromTe
 
   const template = templates.find(t => t.info.id === template_id);
   if (!template) {
-    throw new Error('模板 "' + template_id + '" 不存在，使用 list_templates 查看可用模板');
+    throw new Error(
+      // ★ T196：原先写「使用 **`list_templates`** 查看」—— ★ 而当时**连这个 action 都没有**
+      //   ⇒ 现在它是**真的能用**了（`manage_feature` 的 `list_templates`，T196 接上的）。
+      '模板 "' + template_id + '" 不存在 —— 用 `manage_feature`（`action:"list_templates"`）查看可用模板',
+    );
   }
 
   const existing = getDSL(feature);

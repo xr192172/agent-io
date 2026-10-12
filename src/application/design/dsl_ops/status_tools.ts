@@ -7,7 +7,8 @@
  *
  * 工作流：
  *   LLM 写完代码 → check_status 扫描文件 → 自动标记 done/in_progress/draft
- *   或者：LLM 调用 update_status 手动标记
+ *   或者：LLM 手动标记 —— ★ T196：**真入口是 `edit_dsl`（`operations:[{type:"status", …}]`）**；
+ *     原写「LLM 调用 `update_status`」—— ★ **那个工具不存在**（是收进 `edit_dsl` 之前的旧世界）。
  *   → render_design 重新渲染，节点颜色随状态变化
  */
 

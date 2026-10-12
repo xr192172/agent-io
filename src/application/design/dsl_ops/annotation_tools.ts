@@ -7,9 +7,11 @@
  * 工作流：
  *   1. 人类在浏览器双击节点 → 弹窗输入标注
  *   2. 标注自动保存到 dsl.annotations[] + localStorage
- *   3. LLM 调用 list_annotations 读取所有标注
+ *   3. LLM 读所有标注 —— ★ T196：**真入口是 `canvas_notes`（action=list）**；
+ *      ★ 原写「LLM 调用 `list_annotations`」——**那个工具不存在**（是合并进 `canvas_notes` 之前的旧世界），
+ *      读者照着去找会撞墙。
  *   4. LLM 修改设计以解决标注中的问题
- *   5. LLM 调用 resolve_annotation 关闭已解决的标注
+ *   5. LLM 关闭已解决的标注 —— ★ 真入口是 `canvas_notes`（resolve）；★ 原写 `resolve_annotation`（不存在）。
  */
 
 import { getDSL, saveDSL } from '../../../infrastructure/storage.js';

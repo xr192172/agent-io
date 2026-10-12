@@ -25,10 +25,10 @@
 // ★ 判据一处：形状错就抛（★ 不再用本文件自带的宽松 `str`）。
 import { requireStr, optionalStr } from '../../plumbing.js';
 import { createFeature, cloneFeature } from '../dsl_ops/feature_ops.js';
-import { createFromTemplate } from './templates.js';
+import { createFromTemplate, listTemplates } from './templates.js';
 import { listFeatures as listStoredFeatures, deleteFeature } from '../../../infrastructure/storage.js';
 
-export const MANAGE_ACTIONS = ['create', 'clone', 'template', 'list', 'delete'] as const;
+export const MANAGE_ACTIONS = ['create', 'clone', 'template', 'list_templates', 'list', 'delete'] as const;
 export type ManageAction = (typeof MANAGE_ACTIONS)[number];
 
 /**
@@ -84,6 +84,17 @@ export function manageFeature(input: ManageFeatureInput): ManageFeatureResult {
         title: str('title'),
       });
       return { message: r.message };
+    }
+    /**
+     * ★★★ T196（2026-10-12）：**新 action** —— 把 `listTemplates()` 接上。
+     *   ★ 为什么：`templates.ts` 早就导出了 `listTemplates()`（[B] 存在），而**没有任何工具接它**；
+     *     偏偏 `createFromTemplate` 的报错写着*「模板 "x" 不存在，使用 **list_templates** 查看可用模板」*
+     *     ⇒ ★ **叫调用方做一件【做不到的事】**（★ 能力在，**管道没接上** —— 与 T189 同族）。
+     *   ★ **G7**：本 action 调的实现 = `./templates.js` 的 `listTemplates()`（★ 不是凭空新写的）。
+     */
+    case 'list_templates': {
+      const r = listTemplates();
+      return { message: r.message, data: r.templates };
     }
     case 'list': {
       const dsls = listStoredFeatures();

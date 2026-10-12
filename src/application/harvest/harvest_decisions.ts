@@ -941,7 +941,9 @@ async function harvestDecisionsCore(input: HarvestInput): Promise<HarvestResult>
   if (!dsl) {
     throw new Error(
       `harvest_decisions：读不到 feature "${feature}" 的 DSL，无法判定各候选的落点可行性（不静默降级为"全标落点不在"）。\n` +
-        `请先用 list_features / get_dsl 确认该 feature 存在（或用 import_project 建一个）后重试。`,
+        // ★ T196：原写「请先用 **`list_features`**」—— ★ 那**不是工具**（也不是参数）；
+      //   真入口是 `manage_feature` 的 `list` action。
+      `请先用 \`manage_feature\`（\`action:"list"\`）/ \`get_dsl\` 确认该 feature 存在（或用 \`import_project\` 建一个）后重试。`,
     );
   }
   // ★ 落点判据 = 写入口那一份（见 makeLandable / findDecisionTargetNode）
