@@ -49,7 +49,72 @@ const VERBS = new Set(['get', 'edit', 'manage', 'render', 'split', 'scaffold', '
 const verbFirst = [], otherFirst = [];
 for (const t of TOOL_DEFS) (VERBS.has(t.name.split('_')[0]) ? verbFirst : otherFirst).push(t.name);
 
+/**
+ * ★★★ T201（2026-10-12）：**近名诱饵**（`g-decoy-instrument`）——
+ *   ★ 目标原文的判据是「两工具共享 ≥1 个长度>2 的词根、且**用途不同** ⇒ 报。实测本仓有 41 对」。
+ *
+ * ## ★★ 我实测后**改了它的判据**（照原文写法会量错东西）
+ * 照原文（**只**看共享词根）跑 ⇒ **本仓 68 个工具里共 48 对**。而看那 48 对的内容：
+ *   `memory_observe ↔ observe_log/observe_judge/observe_instrument/observe_proposals`（全共享 `observe`）
+ *   `reconcile_effects ↔ reconcile_chain`
+ * ⇒ ★★ **共享同一个词根，正是"这是一个【族】"的标志** —— 而**族是有意分组**，是诱饵的**反面**。
+ *   ★ 而 n 个族员**两两组合** ⇒ 对数被族内组合撑爆（5 个 `observe_*` 就贡献 10 对）。
+ *
+ * ## 真诱饵的形状（★ 目标自己举的例子就是它）
+ * `edit_dsl` ↔ `edit_code`：**共享词根 `edit`，但一个改设计、一个改代码** ⇒ ★ **名字像、族不同** ⇒ 会挑错。
+ * ⇒ ★★ **判据收紧为：共享词根 且【跨 lane】**（lane = `application/<线>/index.ts` 的归属，机器可读）。
+ *
+ * ## ★ 而"用途不同"这一半**机器判不了** —— 所以本项是【候选生成器】，不是判据
+ * 它报的是「**共享词根 + 跨 lane**」的全部对 + 共享的那个词根 ⇒ ★ **"用途到底同不同"由读的人判** ✓
+ * （★ 与 §2.2「扫描器/量具是候选生成器，不是判据」同一条）。
+ */
+const LANES = ['design', 'refactor', 'observe', 'harvest', 'cross', 'meta'];
+const laneOf = new Map();
+for (const l of LANES) {
+  try {
+    const mod = await import(`file://${REPO}/dist/src/application/${l}/index.js`);
+    const defs = mod[`${l.toUpperCase()}_TOOLS`] ?? [];
+    for (const d of defs) laneOf.set(d.name, l);
+  } catch {
+    /* ★ 取不到就**不猜**：留着 undefined ⇒ 下面会把"无归属"的数如实报出来 */
+  }
+}
+const rootWords = (n) => n.split('_').filter((w) => w.length > 2);
+const rootSets = new Map(TOOL_DEFS.map((d) => [d.name, new Set(rootWords(d.name))]));
+const sameLanePairs = [];
+const crossLanePairs = [];
+let noLaneCount = 0;
+const names = TOOL_DEFS.map((d) => d.name);
+for (let i = 0; i < names.length; i++) {
+  for (let j = i + 1; j < names.length; j++) {
+    const a = names[i], b = names[j];
+    const shared = [...rootSets.get(a)].filter((x) => rootSets.get(b).has(x));
+    if (!shared.length) continue;
+    const la = laneOf.get(a), lb = laneOf.get(b);
+    if (!la || !lb) noLaneCount++;
+    (la && lb && la !== lb ? crossLanePairs : sameLanePairs).push({ a, b, shared, la, lb });
+  }
+}
+// ★ 弱词根：**出现在 ≥4 个工具名里**的词根 ⇒ 共享它的**信息量低**（★ 不是"不是诱饵"，是"这条候选的证据弱"）。
+//   ★ 由数据算出来，**不是手列黑名单**（手列会腐）。
+const rootCount = new Map();
+for (const set of rootSets.values()) for (const r of set) rootCount.set(r, (rootCount.get(r) ?? 0) + 1);
+const WEAK_ROOT_MIN = 4;
+const isWeakRoot = (r) => (rootCount.get(r) ?? 0) >= WEAK_ROOT_MIN;
+
+const decoy = {
+  /** ★ 候选（共享词根 **且跨 lane**）—— ★ 这才是"名字像、族不同" */
+  candidates: crossLanePairs.map((c) => ({ ...c, weakRoots: c.shared.filter(isWeakRoot) })),
+  /** ★ 弱词根定义（≥N 个工具共享）—— 供读的人判断"这条证据有多硬" */
+  weakRootMin: WEAK_ROOT_MIN,
+  /** ★ 族内组合（共享词根但**同 lane**）—— ★ 那是**族**、不是诱饵（报出来是为了让人看见差别） */
+  familyPairs: sameLanePairs.length,
+  /** ★ 取不到 lane 的对数（★ 如实报，不当 0） */
+  withoutLane: noLaneCount,
+};
+
 const payload = {
+  decoy,
   total: TOOL_DEFS.length,
   thresholds: { wide: WIDE, thin: THIN },
   wide: wide.sort((a, b) => b.params - a.params),
@@ -68,3 +133,23 @@ console.log(`\n★ 描述过短（< ${THIN} 字 ⇒ LLM 判不出用途）：${t
 for (const t of payload.thin.slice(0, 8)) console.log(`    ${t.name.padEnd(22)} ${t.len} 字`);
 console.log(`\n★ 命名词序：动词开头 ${payload.order.verbFirst.length} 个 · **非动词开头 ${payload.order.otherFirst.length} 个**（两边都非空 ⇒ **混用**）`);
 console.log(`    非动词开头的: ${payload.order.otherFirst.join(' ') || '（无）'}`);
+
+const strong = decoy.candidates.filter((c) => !c.weakRoots.length);
+const weakOnes = decoy.candidates.filter((c) => c.weakRoots.length);
+console.log(`
+★★ 近名诱饵候选（共享词根 **且跨 lane** —— ★ "名字像、族不同"）：${decoy.candidates.length} 对`);
+console.log(`  ★★ **强候选**（共享的词根**不**常见 ⇒ 证据硬）：${strong.length} 对`);
+for (const c of strong) {
+  console.log(`    ${c.a.padEnd(22)}[${c.la}] ↔ ${c.b.padEnd(22)}[${c.lb}]  共享词根: ${c.shared.join(',')}`);
+}
+if (!strong.length) console.log('    （无）');
+console.log(`  ★ 弱候选（共享的只是**常见词根**，≥${decoy.weakRootMin} 个工具都有它 ⇒ 证据弱）：${weakOnes.length} 对`);
+for (const c of weakOnes.slice(0, 6)) {
+  console.log(`    ${c.a.padEnd(22)}[${c.la}] ↔ ${c.b.padEnd(22)}[${c.lb}]  ★ 弱词根: ${c.weakRoots.join(',')}`);
+}
+if (weakOnes.length > 6) console.log(`    …（还有 ${weakOnes.length - 6} 对）`);
+console.log('    ★ 注：**"跨 lane" ≠ "用途不同"** —— lane 是【组织归属】不是语义域。');
+console.log('      ★ 例：`observe_proposals` 归 `meta`，而它的语义域明显是 `observe` ⇒ 它与 `observe_*` 的那些对');
+console.log('        是【组织归属与语义域不一致】的信号，**不是**诱饵 ⇒ 这类由"弱词根"标出来。');
+console.log(`    ★ 对照：**族内**共享词根 ${decoy.familyPairs} 对（= 族，**不是**诱饵）· 取不到 lane 的 ${decoy.withoutLane} 对（★ 如实计，不当 0）`);
+console.log('    ★★ 本项是【候选生成器】："用途是否真不同"机器判不了 ⇒ 由读的人判（§2.2）。');
