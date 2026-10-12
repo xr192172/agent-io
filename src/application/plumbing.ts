@@ -154,6 +154,46 @@ export function optionalArr(a: Record<string, unknown>, key: string, hint: strin
   return v;
 }
 
+/**
+ * ★★★ **可选**标量参数：**给了就必须是对的类型**；没给 ⇒ `undefined`。
+ *
+ * ## 为什么要有它（T191 —— 与 `optionalArr` 同一条命，另两个类型）
+ * `explore_code` 这类"action 分发"工具的入参是 **`z.record(z.string(), z.unknown())` 一个自由袋子**
+ * ⇒ ★ **zod 对它一个字都不校验**；而 [B] 里过去写的是**宽松**取值：
+ *   `typeof v === 'string' ? v : undefined` ⇒ ★ **形状错 = 静默当没给**（§2.3「不报错的错」）。
+ * ★ 后果不是"少报一条"：`{ max_depth: "3" }`（字符串）会被**当成没给**、于是用默认值 ——
+ *   而调用方**以为自己的要求生效了**（他看到的是一份"正常"的结果）。
+ * ⇒ 判据：**形状错就抛**（与 `requireStr` 同款）；★ 住这里（`plumbing`）—— **别各文件自带一套**。
+ *
+ * @param hint 该字段的**形状**（如 `'number'` / `'boolean'`），进报错里，比只报名字有用
+ */
+export function optionalStr(a: Record<string, unknown>, key: string, hint = 'string'): string | undefined {
+  const v = a[key];
+  if (v === undefined) return undefined;
+  if (typeof v !== 'string') throw new Error(shapeErr(key, hint, v));
+  return v;
+}
+
+export function optionalNum(a: Record<string, unknown>, key: string, hint = 'number'): number | undefined {
+  const v = a[key];
+  if (v === undefined) return undefined;
+  if (typeof v !== 'number' || !Number.isFinite(v)) throw new Error(shapeErr(key, hint, v));
+  return v;
+}
+
+export function optionalBool(a: Record<string, unknown>, key: string, hint = 'boolean'): boolean | undefined {
+  const v = a[key];
+  if (v === undefined) return undefined;
+  if (typeof v !== 'boolean') throw new Error(shapeErr(key, hint, v));
+  return v;
+}
+
+/** 形状错时的**统一**报错文本（★ 一处生成 —— 别在三个助手里各写一份） */
+function shapeErr(key: string, hint: string, v: unknown): string {
+  const got = v === null ? 'null' : Array.isArray(v) ? 'array' : typeof v;
+  return `参数 "${key}" 形状不对：要 **${hint}**，收到 **${got}**。★ 没给就省略这个键（别传别的形状 —— 它会被静默当成"没给"）。`;
+}
+
 // ─────────────────────────────────────────────────────────────
 // 输入 schema 包装
 // ─────────────────────────────────────────────────────────────

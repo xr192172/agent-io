@@ -15,7 +15,11 @@
  * 它们在注册表独立存在，因为 LLM 需要在 import 后立刻渲染/查询，动作链较短。
  */
 
-import { optionalArr } from '../../plumbing.js';
+// ★★★ T191：**判据一处** —— `requireStr` / 严格可选取值 全部从 `plumbing` import。
+//   ★ 此前本文件**自带一套**（`requireStr`/`str`/`num`/`bool`）：前者的行为与 `plumbing.requireStr`
+//     **逐字相同**（纯重复），后三个是**宽松版**（形状错 ⇒ 静默当没给）。
+//   ⇒ 现在：**删掉那四个局部助手**，统一用 `plumbing` 的（严格：**形状错就抛**）。
+import { requireStr, optionalStr, optionalNum, optionalBool, optionalArr } from '../../plumbing.js';
 import { semanticSearch } from '../llm/semantic_search.js';
 import { ensureProjectIndex, ensureIndexAroundSeed } from '../../../infrastructure/index/index_freshness.js';
 import { scheduleBackfill, backfillState, backfillSummary } from '../../../infrastructure/index/index_backfill.js';
@@ -58,42 +62,6 @@ export const EXPLORE_ACTIONS = [
 
 export type ExploreAction = (typeof EXPLORE_ACTIONS)[number];
 
-/** 必填字符串参数：缺失或空串抛 `缺参数 "key"` 风格报错（分发器统一校验，消息含缺失 key） */
-function requireStr(v: Record<string, unknown>, key: string): string {
-  const val = v[key];
-  if (typeof val !== 'string' || val.trim() === '') {
-    throw new Error(`缺参数 "${key}"`);
-  }
-  return val;
-}
-
-/**
- * ★★ **宽松**取值：形状不对 ⇒ 返回 `undefined`（**不抛**）。
- *
- * ★★★ **T188 提示（读到这里的人请注意，别以为本文件已经严了）**：
- * 本文件还有一批 action 走这三个**宽松**助手 ⇒ ★ **"同一处两种纪律"这个病只修了一半**：
- *   · 已修（**严**）：`changed` / `files` / `symbols` / `events` 四个**数组**参数
- *     —— 改用 `plumbing.optionalArr`（★ `as T[]` 不做运行期检查，见那个函数的注释）；
- *   · **未修（仍宽松）**：`str` / `num` / `bool` 三个（如 `direction` / `max_depth` / `dry_run` …）。
- * ★ 为什么不一次全改：本文件的入参是 **`z.record(z.string(), z.unknown())` 一个自由袋子**
- *   ⇒ 治本要按 §5 ①「[B] 收**显式参数**，非袋子」把整个 action 面收一遍（**大整形**，已登记在账）；
- *   而"**形状错就抛**"这条判据**住一处**（`plumbing.ts`）⇒ 逐个 action 迁移时照着用即可。
- * ⇒ ★ 这一段的用途就是**别让"半修"看起来像"全修"**（§"半修比不修更坏"）。
- */
-function str(v: Record<string, unknown>, key: string): string | undefined {
-  const val = v[key];
-  return typeof val === 'string' ? val : undefined;
-}
-
-function num(v: Record<string, unknown>, key: string): number | undefined {
-  const val = v[key];
-  return typeof val === 'number' ? val : undefined;
-}
-
-function bool(v: Record<string, unknown>, key: string): boolean | undefined {
-  const val = v[key];
-  return typeof val === 'boolean' ? val : undefined;
-}
 
 /** catch 里如实记下「跳过了什么/为什么」时用的错误文本（§2d：少做的事不许不说） */
 function errMessage(err: unknown): string {
@@ -203,14 +171,14 @@ export async function exploreCode(params: { action: ExploreAction; args: Record<
         }
       }
       // ★ 解参只在这一层（[C] 工具边界，§21.2）；readCode 是显式参数的 [B] 执行体
-      const r = await readCode(str(args, 'project_dir'), requireStr(args, 'file'), {
-        symbol: str(args, 'symbol'),
-        parent: str(args, 'parent'),
-        start: num(args, 'start'),
-        end: num(args, 'end'),
-        context: num(args, 'context'),
-        symbols: bool(args, 'symbols'),
-        symbolsLimit: num(args, 'symbols_limit'),
+      const r = await readCode(optionalStr(args, 'project_dir'), requireStr(args, 'file'), {
+        symbol: optionalStr(args, 'symbol'),
+        parent: optionalStr(args, 'parent'),
+        start: optionalNum(args, 'start'),
+        end: optionalNum(args, 'end'),
+        context: optionalNum(args, 'context'),
+        symbols: optionalBool(args, 'symbols'),
+        symbolsLimit: optionalNum(args, 'symbols_limit'),
       });
       const data = indexSkipped.length ? { ...r.data, index_skipped: indexSkipped } : r.data;
       const skipNote = indexSkipped.length
@@ -235,10 +203,10 @@ export async function exploreCode(params: { action: ExploreAction; args: Record<
     case 'arch_layer': {
       const r = await archLayer({
         feature: requireStr(args, 'feature'),
-        persist: bool(args, 'persist'),
+        persist: optionalBool(args, 'persist'),
         layers: args['layers'] as LayerDef[] | undefined,
-        check_violations: bool(args, 'check_violations'),
-        no_cache: bool(args, 'no_cache'),
+        check_violations: optionalBool(args, 'check_violations'),
+        no_cache: optionalBool(args, 'no_cache'),
       });
       return toResult(r, true);
     }
@@ -251,17 +219,17 @@ export async function exploreCode(params: { action: ExploreAction; args: Record<
       //   从不调用 checkMonolith，**对 agent 说谎**（宣告"巨石分析"却永远给 'ok'）。
       //   现在真的调它：扫描 project_dir / feature / files 之一，出报告 + 拆分建议（只读）。
       const r = await checkMonolith({
-        project_dir: str(args, 'project_dir'),
-        feature: str(args, 'feature'),
-        base_dir: str(args, 'base_dir'),
+        project_dir: optionalStr(args, 'project_dir'),
+        feature: optionalStr(args, 'feature'),
+        base_dir: optionalStr(args, 'base_dir'),
         files: optionalArr(args, 'files', 'string[]') as string[] | undefined,
-        warn_lines: num(args, 'warn_lines'),
-        crit_lines: num(args, 'crit_lines'),
-        flag_cohesive: bool(args, 'flag_cohesive'),
-        max_files: num(args, 'max_files'),
-        no_cache: bool(args, 'no_cache'),
-        save_preview: bool(args, 'save_preview'),
-        preview_feature: str(args, 'preview_feature'),
+        warn_lines: optionalNum(args, 'warn_lines'),
+        crit_lines: optionalNum(args, 'crit_lines'),
+        flag_cohesive: optionalBool(args, 'flag_cohesive'),
+        max_files: optionalNum(args, 'max_files'),
+        no_cache: optionalBool(args, 'no_cache'),
+        save_preview: optionalBool(args, 'save_preview'),
+        preview_feature: optionalStr(args, 'preview_feature'),
       });
       return toResult(r, true);
     }
@@ -273,11 +241,11 @@ export async function exploreCode(params: { action: ExploreAction; args: Record<
         project_dir: requireStr(args, 'project_dir'),
         target_file: requireStr(args, 'target_file'),
         symbols: (optionalArr(args, 'symbols', 'string[]') as string[]) ?? [],
-        new_file: str(args, 'new_file'),
-        dry_run: bool(args, 'dry_run'),
-        verify_compile: bool(args, 'verify_compile'),
-        verify_test: bool(args, 'verify_test'),
-        re_export_extracted: bool(args, 're_export_extracted'),
+        new_file: optionalStr(args, 'new_file'),
+        dry_run: optionalBool(args, 'dry_run'),
+        verify_compile: optionalBool(args, 'verify_compile'),
+        verify_test: optionalBool(args, 'verify_test'),
+        re_export_extracted: optionalBool(args, 're_export_extracted'),
         subsplit: args['subsplit'] as DeriveSplitInput['subsplit'],
       });
       return toResult(r, true);
@@ -288,12 +256,12 @@ export async function exploreCode(params: { action: ExploreAction; args: Record<
       const r = await deriveDetailChain({
         feature: requireStr(args, 'feature'),
         node_id: requireStr(args, 'node_id'),
-        source_path: str(args, 'source_path'),
-        project_root: str(args, 'project_root'),
-        entry: str(args, 'entry'),
-        max_steps: num(args, 'max_steps'),
-        max_branches: num(args, 'max_branches'),
-        max_cross: num(args, 'max_cross'),
+        source_path: optionalStr(args, 'source_path'),
+        project_root: optionalStr(args, 'project_root'),
+        entry: optionalStr(args, 'entry'),
+        max_steps: optionalNum(args, 'max_steps'),
+        max_branches: optionalNum(args, 'max_branches'),
+        max_cross: optionalNum(args, 'max_cross'),
       });
       return toResult(r, true);
     }
@@ -309,12 +277,12 @@ export async function exploreCode(params: { action: ExploreAction; args: Record<
         feature: requireStr(args, 'feature'),
         // 主干文件节点 id（semantic.files[].id）：flows 的 handler.file_id 与 detail 节点 host 都用它
         node_id: requireStr(args, 'node_id'),
-        source_path: str(args, 'source_path'),
-        project_root: str(args, 'project_root'),
-        entry: str(args, 'entry'),
-        max_steps: num(args, 'max_steps'),
-        interval: num(args, 'interval'),
-        max_cfg_branches: num(args, 'max_cfg_branches'),
+        source_path: optionalStr(args, 'source_path'),
+        project_root: optionalStr(args, 'project_root'),
+        entry: optionalStr(args, 'entry'),
+        max_steps: optionalNum(args, 'max_steps'),
+        interval: optionalNum(args, 'interval'),
+        max_cfg_branches: optionalNum(args, 'max_cfg_branches'),
       });
       return toResult(r, true);
     }
@@ -325,18 +293,18 @@ export async function exploreCode(params: { action: ExploreAction; args: Record<
         feature: requireStr(args, 'feature'),
         node_id: requireStr(args, 'node_id'),
         function: requireStr(args, 'function'),
-        source_path: str(args, 'source_path'),
-        project_root: str(args, 'project_root'),
-        max_depth: num(args, 'max_depth'),
+        source_path: optionalStr(args, 'source_path'),
+        project_root: optionalStr(args, 'project_root'),
+        max_depth: optionalNum(args, 'max_depth'),
       });
       return toResult(r, true);
     }
     case 'derive_mind_map': {
       const r = await deriveMindMap({
         feature: requireStr(args, 'feature'),
-        gen_descriptions: bool(args, 'gen_descriptions'),
-        max_files_per_community: num(args, 'max_files_per_community'),
-        output_path: str(args, 'output_path'),
+        gen_descriptions: optionalBool(args, 'gen_descriptions'),
+        max_files_per_community: optionalNum(args, 'max_files_per_community'),
+        output_path: optionalStr(args, 'output_path'),
       });
       return toResult(r, true);
     }
@@ -362,21 +330,21 @@ export async function exploreCode(params: { action: ExploreAction; args: Record<
       // daemon 感知分流：daemon 在则转发（注册表权威在 daemon 进程），不在降级本地（方向 E）
       const r = await dispatchWatch({
         project_dir: requireStr(args, 'project_dir'),
-        action: str(args, 'action') as 'start' | 'status' | 'stop' | 'impact' | 'declare' | 'ledger' | undefined,
-        feature: str(args, 'feature'),
-        debounce_ms: num(args, 'debounce_ms'),
-        rebuild_on_change: bool(args, 'rebuild_on_change'),
-        rebuild_window_ms: num(args, 'rebuild_window_ms'),
-        reconcile_interval_ms: num(args, 'reconcile_interval_ms'),
-        diff_on_change: bool(args, 'diff_on_change'),
-        drift_on_change: bool(args, 'drift_on_change'),
-        impact_on_change: bool(args, 'impact_on_change'),
-        seq: num(args, 'seq'),
+        action: optionalStr(args, 'action') as 'start' | 'status' | 'stop' | 'impact' | 'declare' | 'ledger' | undefined,
+        feature: optionalStr(args, 'feature'),
+        debounce_ms: optionalNum(args, 'debounce_ms'),
+        rebuild_on_change: optionalBool(args, 'rebuild_on_change'),
+        rebuild_window_ms: optionalNum(args, 'rebuild_window_ms'),
+        reconcile_interval_ms: optionalNum(args, 'reconcile_interval_ms'),
+        diff_on_change: optionalBool(args, 'diff_on_change'),
+        drift_on_change: optionalBool(args, 'drift_on_change'),
+        impact_on_change: optionalBool(args, 'impact_on_change'),
+        seq: optionalNum(args, 'seq'),
         files: (args['files'] as string[] | undefined)?.map(String),
-        ledger_status: str(args, 'ledger_status') as 'pending' | 'ok' | 'violated' | 'resolved' | 'expired' | 'all' | undefined,
-        resolve_id: str(args, 'resolve_id'),
-        reason: str(args, 'reason'),
-        reviewer: str(args, 'reviewer'),
+        ledger_status: optionalStr(args, 'ledger_status') as 'pending' | 'ok' | 'violated' | 'resolved' | 'expired' | 'all' | undefined,
+        resolve_id: optionalStr(args, 'resolve_id'),
+        reason: optionalStr(args, 'reason'),
+        reviewer: optionalStr(args, 'reviewer'),
       });
       return toResult(r, true);
     }
