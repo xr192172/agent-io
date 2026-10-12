@@ -25,7 +25,13 @@ export function createFeature(input: CreateFeatureInput): EditResult {
 
   const existing = getDSL(feature);
   if (existing) {
-    throw new Error(`feature "${feature}" 已存在，使用 update_node 或 add_node 进行修改`);
+    // ★ T192：原指 `update_node` / `add_node` —— ★ **两个都不是工具**（是内部函数名）
+    //   ⇒ 改成指向**真入口**（`edit_dsl` 的 node 操作），★ 并说明旧名不是工具。
+    throw new Error(
+      `feature "${feature}" 已存在 —— 要改它请用 \`edit_dsl\`：` +
+        '\`operations:[{type:"node", op:"update"|"add"|"delete"|"move", …}]\`。' +
+        '★ 注意：**没有** `update_node` / `add_node` 这两个工具。',
+    );
   }
 
   const dsl: DesignDSL = {

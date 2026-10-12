@@ -73,11 +73,24 @@ export function addNode(input: AddNodeInput): EditResult {
 
   const dsl = getDSL(feature);
   if (!dsl) {
-    throw new Error(`feature "${feature}" 不存在，请先使用 create_feature 创建`);
+    // ★★★ T192（2026-10-12）：**原先这里写的是 `create_feature` —— 而那个工具不存在**
+    //   （68 个工具里没有；`create_feature` 只是内部函数名）⇒ ★ **新建项目的第一笔就撞墙**：
+    //   读者照着去调，拿到的是"工具不存在"，**看不出是文案写错了**（T188/L5 那一族的整面）。
+    //   ⇒ 现在指向**真入口**，并**说明那个旧名不是工具**（免得下一个人又去找它）。
+    throw new Error(
+      // ★★ 形状务必对：`manage_feature` 是 **12/14 那一派** —— `action` 在**顶层**，
+      //   ★ 不是 `{args:{action}}` 那种嵌套（只有 `manage_feature` 自己与 `explore_code` 是嵌套，★ 少数派）。
+      `feature "${feature}" 不存在 —— 先建一个：\`manage_feature\`（**顶层** \`action:"create"\` + \`feature:"${feature}"\`）。` +
+        '★ 注意：**没有** `create_feature` 这个工具（它只是内部函数名）。',
+    );
   }
 
   if (dsl.geometry.nodes.find(n => n.id === node_id)) {
-    throw new Error(`节点 "${node_id}" 已存在，使用 update_node 修改`);
+    throw new Error(
+      `节点 "${node_id}" 已存在 —— 要改它请用 \`edit_dsl\`：` +
+        `\`operations:[{type:"node", op:"update", node_id:"${node_id}", …}]\`。` +
+        '★ 注意：**没有** `update_node` 这个工具。',
+    );
   }
   if (host && !dsl.geometry.nodes.find(n => n.id === host)) {
     throw new Error(`host 节点 "${host}" 不存在`);

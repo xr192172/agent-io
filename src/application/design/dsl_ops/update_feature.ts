@@ -128,7 +128,12 @@ function updateFeatureCore(input: UpdateFeatureInput): EditResult {
 
   const original = getDSL(feature);
   if (!original) {
-    throw new Error(`feature "${feature}" 不存在，请先使用 create_feature 创建`);
+    // ★ T192：同 `node_ops.ts` —— 原指 `create_feature`（**不存在**）；现在指真入口。
+    throw new Error(
+      // ★★ 形状：`action` 在**顶层**（★ 不是 `{args:{action}}` —— 那是少数派写法）。
+      `feature "${feature}" 不存在 —— 先建一个：\`manage_feature\`（**顶层** \`action:"create"\` + \`feature:"${feature}"\`）。` +
+        '★ 注意：**没有** `create_feature` 这个工具。',
+    );
   }
   // 深拷贝备份，供失败回滚（剔除活态文件可能带入的 _sync 元数据）
   const backup = JSON.parse(JSON.stringify(original)) as Record<string, unknown>;

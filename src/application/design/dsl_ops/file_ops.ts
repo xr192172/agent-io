@@ -35,7 +35,11 @@ export function addFile(input: AddFileInput): EditResult {
   if (!dsl.semantic) dsl.semantic = { files: [] };
 
   if (dsl.semantic.files.find(f => f.id === file_id)) {
-    throw new Error(`文件 "${file_id}" 已存在，使用 update_file 修改`);
+    // ★ T192：原指 `update_file` —— ★ **它不是工具**（内部函数名）⇒ 指向真入口。
+    throw new Error(
+      `文件 "${file_id}" 已存在 —— 要改它请用 \`edit_dsl\`：\`operations:[{type:"file", op:"update", …}]\`。` +
+        '★ 注意：**没有** `update_file` 这个工具。',
+    );
   }
 
   const file: SemanticFile = {

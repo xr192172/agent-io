@@ -676,7 +676,11 @@ function scaffoldCore(input: ScaffoldInput): ScaffoldResult {
 
   const dsl = getDSL(feature);
   if (!dsl) {
-    throw new Error(`feature "${feature}" 不存在，请先使用 create_feature 或 render_design 创建`);
+    // ★ T192：`render_design` **是在册的** ✓；`create_feature` **不是** ⇒ 只留真的那个。
+    throw new Error(
+      `feature "${feature}" 不存在 —— 先建一个：\`manage_feature\`（**顶层** \`action:"create"\`）或 \`render_design\`。` +
+        '★ 注意：**没有** `create_feature` 这个工具。',
+    );
   }
 
   // ★ 判据住一处（domain/semantic.ts `hasFileEntries`）、说明住一处（application/design/no_file_entries.ts）。
