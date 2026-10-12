@@ -237,6 +237,10 @@ function renderVolumesNote(projectRoot: string): string {
  *     并新增"`WHEN_OVERRIDES` 里的陈旧条目"检查（工具删了、策展文本忘了删）。
  */
 export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
+  // ★ T202：与 `diagnose` 的分工是**本工具最容易选错的地方** ⇒ 必写。
+  diagnose_loop:
+    '★ 要**闭环**（诊断→出补丁→应用→验证）时选我；★ **只想看诊断结论**时选 `diagnose`（更快、且绝不写盘）。'
+    + '★ 我**默认不写盘**（要 `apply:true`）；★ 我**不提交** git —— 提交由你做。',
   index_integrity: '索引可信度自检：陈旧断言 / 未保鲜文件 / 覆盖度 —— 判断"现在读到的索引能不能当真"，可选 refresh 顺手保鲜',
   // ★★ 2026-10-08 更正：旧文只列了 `DSL/features/decisions/simulation_state` —— **20 个 query 里手挑了 4 个**，
   //   而**最能一眼看懂一个 feature 的那个（`digest`）恰好没被点到名**。

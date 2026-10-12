@@ -34,6 +34,8 @@ import { stdin, stdout } from 'node:process';
 import { runDiagnosis, formatDiagnoseText } from '../../infrastructure/analysis/diagnosis/diagnose.js';
 import { generatePatch, applyPatches, revertPatches, formatPatchDiff, allowedPatchFiles } from '../../infrastructure/analysis/diagnosis/repair.js';
 import { detectKind } from '../../infrastructure/analysis/diagnosis/verifier.js';
+// ★ T202：`readTestContract` 已**搬进 infrastructure**（工具面的闭环与 CLI 共用一份 ⇒ 判据不住两处）。
+import { readTestContract } from '../../infrastructure/analysis/diagnosis/test_contract.js';
 import { getProjectCacheDb } from '../../infrastructure/index/db.js';
 import { walkFiles } from '../../infrastructure/graph/import_project.js';
 import { syncProject } from '../../infrastructure/index/symbols.js';
@@ -54,25 +56,6 @@ function print(...args: unknown[]): void {
  * 读取验证契约文本（测试命令 + 测试文件内容前若干行）。
  * 喂给修复 LLM，让它按验收标准生成补丁（修复"修对了方向但过不了测试"的常见失败）。
  */
-function readTestContract(root: string): string | undefined {
-  try {
-    const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf-8')) as { scripts?: Record<string, string> };
-    const testCmd = pkg?.scripts?.test;
-    if (!testCmd) return undefined;
-    const m = /node\s+([\w./\\-]+\.(?:js|ts|cjs|mjs))/.exec(testCmd);
-    const candidates = m ? [m[1]] : ['test.js', 'test.ts', 'tests/test.js', 'test/index.js'];
-    for (const c of candidates) {
-      const abs = path.resolve(root, c);
-      if (fs.existsSync(abs)) {
-        const body = fs.readFileSync(abs, 'utf-8');
-        return `测试命令: ${testCmd}\n测试文件 ${c}:\n${body.slice(0, 2000)}`;
-      }
-    }
-    return `测试命令: ${testCmd}`;
-  } catch {
-    return undefined;
-  }
-}
 
 /** 交互确认：y 通过 / 其它拒绝（--apply/--auto 时跳过） */
 async function confirm(rl: ReturnType<typeof createInterface> | null, question: string): Promise<boolean> {

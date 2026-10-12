@@ -46,7 +46,7 @@ One thread runs through everything: **any code → contract-bearing bricks → v
 | **Runtime verification** | Reconcile contracts and behavior baselines against actual runtime observations, forming a "commit only if verified, roll back on failure" gate | `observe_instrument` / `observe_judge` / `reconcile_chain` / `reconcile_effects` |
 | **Generation / backfill / consistency** | Generate code skeleton from DSL, backfill contracts from implementation, output consistency reports | `scaffold` / `consistency_check` |
 | **Deterministic refactoring (no rework)** | Symbol-level editing (never matches wrong), bulk/cross-file renaming, dead code removal, diff review before applying, rollback on failure | `edit_code` / `rename_*` / `refactor_pipeline` |
-| **Diagnosis loop** | Full chain from symptom → root cause → fix → verify → commit (or roll back) | `diagnose` / `refactor_judge` / `diagnose-loop` (CLI) |
+| **Diagnosis loop** | Full chain from symptom → root cause → fix → verify (or roll back) ⇒ ★ now on the tool face: `diagnose_loop` (★ **commit stays with you**; the tool stops at "verified") | `diagnose` / `refactor_judge` / `diagnose-loop` (CLI) |
 | **Multi-language AST foundation** | Unified extraction of symbols / imports / call edges / type references on top of tree-sitter | `ts_kernel` / `package_migration` |
 
 ## Quick Start
@@ -206,6 +206,7 @@ Java projects, Python dead-code cleanup on Python projects; apply / verify / rol
 |------|------|
 | `refactor_judge` | LLM review gate: accept / reject / escalate uncertain items |
 | `diagnose` | Symptom → root cause analysis: locate candidates → trace call chain → assess impact → aggregate root cause → suggest verification |
+| `diagnose_loop` | ★ **Diagnosis loop** (T202, moved from CLI to the tool face): diagnose → generate patch → apply → verify, **auto-rollback on failure**. ★ `apply` defaults to `false` (compute-only) · ★ **does NOT commit** git (that is yours) |
 
 | `upgrade` | **Version-upgrade contract diff** (single entry, two actions): `scan` (read-only) reports "declared toolchain versions vs local runtimes / language features beyond the declared boundary / removed-deprecated APIs / uncovered extensions (unchecked files are stated, not hidden)", with optional `gate` (compile-level) and `dynamic` (runtime-level, ★ really runs the source) gates; `apply` runs the closed loop: exact string replacement → pre-edit baseline commit → verification → **commit on pass, git rollback on fail** (★ requires `project_dir` to be a git repo; the baseline commit **also sweeps in pre-existing working-tree changes**) |
 

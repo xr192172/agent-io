@@ -135,6 +135,13 @@
       "note": "查询与探索入口：explore_code（多 action 探索）/ query_feature（按 feature 查询）"
     },
     {
+      "id": "meta-diagnosis",
+      "layer": "application",
+      "role": "capability",
+      "dir": "src/application/meta/diagnosis",
+      "note": "★ 诊断**闭环**（T202）：把 CLI 的 diagnose_loop 上工具面 —— 诊断→出补丁→应用→验证（不过自动回退）。与 meta-explore 的分工：那个是【看】，这个是【改】。★ 工具面已有 diagnose（只做诊断那一步），本域补的是闭环的其余部分。"
+    },
+    {
       "id": "meta-impact",
       "layer": "application",
       "role": "engine",

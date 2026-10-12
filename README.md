@@ -51,7 +51,7 @@ DSL 双层结构是两者的共同根基：
 | **运行时验证**         | 以实际运行观测对账契约与行为基线，形成「验证通过才提交，失败回滚」的防线           | `observe_instrument` / `observe_judge` / `reconcile_chain` / `reconcile_effects`                                  |
 | **生成 / 回填 / 一致性** | 从 DSL 生成代码骨架，解析实现回填契约，输出一致性报告                  | `scaffold` / `consistency_check`                                                                                  |
 | **确定性改造（防返工）**    | 符号级代码编辑（绝不匹配错）、批量/跨文件重命名、死代码清理、改前 diff 审批、失败回滚 | `edit_code` / `rename_*` / `refactor_pipeline`                                                                    |
-| **诊断闭环**          | 症状 → 根因 → 修复 → 验证 → 提交（或回退）的完整链路               | `diagnose` / `refactor_judge` / `diagnose-loop`(CLI)                                                              |
+| **诊断闭环**          | 症状 → 根因 → 修复 → 验证 → （回退）的完整链 ⇒ ★ 已在工具面：`diagnose_loop`（★ **提交留给人**，工具到验证为止）路               | `diagnose` / `refactor_judge` / `diagnose-loop`(CLI)                                                              |
 | **多语言 AST 根基**    | 基于 tree-sitter 的符号 / import / 调用边 / 类型引用统一产出   | `ts_kernel` / `package_migration`                                                                                 |
 
 ## 快速开始
@@ -233,6 +233,7 @@ npm run demo -- --prepare   # 只准备示例（构建+渲染+注册），不起
 | ---------------- | ------------------------------------------ |
 | `refactor_judge` | LLM 审裁决门：采纳 / 驳回 / 上抛不确定项                  |
 | `diagnose`       | 症状 → 根因分析：定位候选 → 调用链追溯 → 影响面 → 根因聚合 → 验证建议 |
+| `diagnose_loop`  | ★ **诊断闭环**（T202 从 CLI 上到工具面）：诊断 → 出补丁 → 应用 → 验证，**不过自动回退**。★ 默认 `apply=false`（只算不写）· ★ **不提交** git（提交由你做） |
 | `capability_audit` | **能力矩阵自检**（只读、纯计算）：语言 × 功能的 AST 覆盖缺口清单 ⇒ "补哪个功能、补哪门语言"的决策输入。★ 与 `capability_map` 不是一回事（那是**工具导航**，本工具审**语言支持度**） |
 
 | `upgrade` | **版本升级契约差**（单入口两动作）：`scan`（只读）报「工具链声明 vs 本机 / 语言特性超标 / 废弃-移除 API / 未覆盖扩展名（没被检查的要说清）」，可选 `gate`（编译级）/ `dynamic`（运行级，★ 真跑源码）两闸；`apply` 走闭环：精确串替换 → 改前基线提交 → 验证 → **通过则提交、失败则 git 回退**（★ 前置：`project_dir` 须是 git 仓库；基线会把工作区**原有改动一并提交**）|

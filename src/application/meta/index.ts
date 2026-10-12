@@ -43,6 +43,10 @@
 import { z } from 'zod';
 import path from 'node:path';
 import { requireStr, wrapData } from '../plumbing.js';
+// ★ T202：诊断闭环的 [B]（`optionalBool/Num` 与 `requireStr` 是**同一处**判据 —— `plumbing`）。
+import { optionalBool, optionalNum } from '../plumbing.js';
+import type { DiagnoseLoopInput } from './diagnosis/diagnose_loop.js';
+import { diagnoseLoop } from './diagnosis/diagnose_loop.js';
 import type { DiagnoseInput } from '../../infrastructure/analysis/diagnosis/contract.js';
 import { formatDiagnoseText, runDiagnosis } from '../../infrastructure/analysis/diagnosis/diagnose.js';
 import { getDSL, saveDSL, requireProjectRoot } from '../../infrastructure/storage.js';
@@ -572,6 +576,42 @@ export const META_TOOLS: ToolDef[] = [
       const input = { ...(a as unknown as DiagnoseInput), project_dir, symptom };
       const out = await runDiagnosis(input);
       return { message: formatDiagnoseText(out), data: out };
+    }),
+  },
+
+  {
+    name: 'diagnose_loop',
+    title: 'Closed loop: diagnose a symptom to a patch, apply it, verify it (and roll back on failure)',
+    description:
+      '★ 诊断**闭环**（T202 从 CLI 上到工具面）：**诊断 → 出补丁 → 应用 → 验证**，' +
+      '验证不过**自动回退**。★ 与 `diagnose` 的分工：`diagnose` 只做**第 2 步**（诊断），' +
+      '本工具做**闭环的其余部分**（出补丁 / 应用 / 验证）。\n' +
+      '★ **安全设计（两条，都是有意为之，不是没做完）**：\n' +
+      '  ① ★★ **默认 `apply=false`** ⇒ **只诊断 + 出补丁 + 给 diff，【不改动项目源码】** —— ' +
+      '要真改必须**显式** `apply:true`。\n' +
+      '     ★ 注：**符号缓存（`.agent-io/cache.db`）仍会建/更新** —— 那是本工具自己的索引，不是项目源码。' +
+      '（★ 原先写「一个字节都不写盘」**不准确**，已改。）\n' +
+      '  ② ★★ **不做 git 提交** —— 提交是**不可逆的对外动作** ⇒ 本工具到「**验证通过**」为止，' +
+      '改动**留在工作区**，由你 review 后自己提交（回执的 `data.next` 会说明）。\n' +
+      '★ 前置：无需准备 —— 本工具自己先建符号缓存（建不起来就降级、并在回执里**如实说**）。\n' +
+      '★ 未配置 LLM 时：诊断可走规则引擎，但**出补丁会失败** ⇒ 本工具会在**写明原因**后止步（不静默）。',
+    inputSchema: {
+      project_dir: z.string().describe('被诊断项目根目录'),
+      symptom: z.string().describe('症状：报错信息 / stack trace / 测试失败输出 / 行为异常描述'),
+      apply: z.boolean().optional().describe('★ 默认 false = 只算不写（给 diff）。true = 真应用补丁，并自动跑验证'),
+      verify: z.boolean().optional().describe('★ 默认 true（仅 apply=true 时有意义）：应用后跑项目自己的验证命令；不过则自动回退'),
+      verify_timeout_sec: z.number().optional().describe('验证命令超时（秒），默认 300'),
+    },
+    handler: wrapData(async (a) => {
+      const input: DiagnoseLoopInput = {
+        project_dir: requireStr(a, 'project_dir'),
+        symptom: requireStr(a, 'symptom'),
+        apply: optionalBool(a, 'apply'),
+        verify: optionalBool(a, 'verify'),
+        verify_timeout_sec: optionalNum(a, 'verify_timeout_sec'),
+      };
+      const r = await diagnoseLoop(input);
+      return { message: r.message, data: r.data };
     }),
   },
 
