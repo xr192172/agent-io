@@ -15,6 +15,8 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { ensureProjectIndex, detectStaleIndex } from '../../infrastructure/index/index_freshness.js';
+// ★ T190：读 infrastructure 记下的"活态 DSL 回退"事实（告警在**本层**现拼 ⇒ 不需要注入）。
+import { getLiveFallback, isLiveDslParseable } from '../../infrastructure/storage.js';
 import { hasLiveIndex } from '../../application/write_gate.js';
 import { scheduleBackfill, backfillState, isIndexIncomplete } from '../../infrastructure/index/index_backfill.js';
 import { unknownArgHints, renderArgHints } from '../../infrastructure/text/arg_suggest.js';
@@ -237,6 +239,43 @@ export function staleSourceWarningFor(srcMax: number | null, distMax: number | n
  */
 function staleSourceWarning(): ToolWarning | null {
   return staleSourceWarningFor(cachedSrcMtime(), newestMtime(DIST_DIR, false));
+}
+
+/**
+ * ★★★ **T190（2026-10-12）：活态 DSL 读不了 ⇒ 已回退到存档** ⇒ 报一条结构化告警。
+ *
+ * ## 为什么要有它（T188 自己登记的尾巴）
+ * T188 修了 `storage.ts` 那个**静默回退**：记下 `lastLiveFallback` + 一次性 stderr。
+ * 但 **stderr 在 MCP 场景下用户看不见** ⇒ ★ **真正该看到的地方是【工具回执】** ⇒ 补这一条。
+ *
+ * ## ★ 为什么不用"状态位"去重（照抄本文件里那条已删先例的理由）
+ * 上面 `staleSourceWarning` 的注释逐字记着：*"原先的状态位 `_lastStaleState` 已删除 ——
+ * 分级呈现（首次全文 / 后续一行摘要）**统一交给 `emitWarnings` 的进程内记账**；
+ * 删除的原因：那个状态位把'持续陈旧'变成**永久静默**。"*
+ * ⇒ 这里同理：**不建位**，`scope` 交给 `emitWarnings` 算 `code@scope` 的"首次/后续"。
+ *
+ * ★ 数据来自 `storage.getLiveFallback()`（infrastructure 层记的那条）——
+ *   ★ **不需要"注入"**（T188 登记时以为要）：告警本来就是**在这一层现拼**的
+ *   （`emitWarnings([...producers])`），而这一层**可以** import infrastructure。
+ */
+export function liveDslFallbackWarning(): ToolWarning | null {
+  const fb = getLiveFallback();
+  if (!fb) return null;
+  // ★★ **自清**（T190）：活态文件**现在已经能解析** ⇒ 那次回退是**历史**，不再报。
+  //   ★ 不这么做就**粘住不放** —— 把"已恢复"说成"仍然坏着"，与那个已删状态位（把"持续"变成"永久静默"）
+  //     是**同一枚硬币的两面**：都是"告警说的不是【现在】"。
+  //   ★ 判据一处：用的是 `storage.isLiveDslParseable()`（与回退分支**同一把尺**）。
+  if (isLiveDslParseable()) return null;
+  return {
+    code: 'LIVE_DSL_FALLBACK',
+    summary: '活态 DSL 读不了，**已回退到 feature 存档** —— ★ 你刚读到的那份可能是**较旧**的',
+    detail:
+      `活态文件：${fb.file}\n  失败原因：${fb.error}\n  发生于：${fb.at}\n` +
+      '★ 为什么值得你知道：读端**无从分辨**"这是当前设计"还是"这是回退来的旧副本"（§2.3「不报错的错」）。',
+    fix: '确认没有并发写入后删掉该活态文件（下次 `saveDSL` 会重建），或跑一次 `import_project` 重扫',
+    // ★ 记账作用域 = 那个文件 ⇒ "首次全文 / 后续一行摘要"按它算（★ 不自己建去重位）
+    scope: fb.file,
+  };
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -613,7 +652,13 @@ export async function invokeTool(
   //      所以本笔无需改动 plumbing.ts（`wrap` 丢 `data` 与这里的告警通道无关）。
   const trustNote = def.trustAnnotated ? trustNoteFor(rootArg) : '';
   const alertNote = await collectPendingAlertText(def.name);
-  const emission = emitWarnings([staleBuildWarning(), staleSourceWarning(), staleIndexWarning(rootArg)]);
+  const emission = emitWarnings([
+    staleBuildWarning(),
+    staleSourceWarning(),
+    staleIndexWarning(rootArg),
+    // ★ T190：第 4 个 producer —— "活态 DSL 读不了 ⇒ 回退到存档"（此前只在 stderr 上，用户看不见）。
+    liveDslFallbackWarning(),
+  ]);
   // ★ 只回**合成好的文本**（含注入的告警块），**不在这里包 MCP 形状** ——
   //   「怎么呈现」是各面自己的事：MCP 面用 `textOut(...)` 包成 `{content:[...]}`，
   //   CLI 面直接打到 stdout。★ 这样两个面共用的就是**同一份合成逻辑**（唯一真相源）。

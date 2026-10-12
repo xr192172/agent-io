@@ -542,6 +542,31 @@ export function getLiveFallback(): { file: string; error: string; at: string } |
   return lastLiveFallback;
 }
 
+/**
+ * ★ T190：**活态文件现在还能不能解析** —— 给告警做**自清**用。
+ *
+ * ## 为什么要它（★ 我第一版漏了这一步）
+ * `lastLiveFallback` 是**一条历史记录**，它**不会自己消失** ⇒ 若告警只读记录，就会
+ * **粘住不放**：活态文件被修好之后，读者仍会一直被告知"你读到的可能是旧的"。
+ * ★ 而同族先例是**自清**的：`staleSourceWarning` **每次都重算 mtime**（不存状态位 ——
+ * 那个状态位当年正是因为"把持续陈旧变成**永久静默**"而被删；这里是**另一个方向**的错：
+ * 把**已恢复**说成**仍然坏着**）。
+ * ⇒ 判据：**告警说"现在读到的可能旧" ⇒ 它必须反映【现在】。**
+ *
+ * ★ 只判"**能不能 JSON.parse**"，**不碰** `feature` 比对 —— 那是"这份活态不是本 feature 的"
+ * （**正常**情形，不是损坏）⇒ 混进来会误报。判据**就这一处**（`readLiveDsl` 的回退分支也用它）。
+ */
+export function isLiveDslParseable(): boolean {
+  const f = getLiveDslFile();
+  if (!fs.existsSync(f)) return true; // 没有活态文件 ≠ 损坏（下次 saveDSL 会建）
+  try {
+    JSON.parse(fs.readFileSync(f, 'utf-8'));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** 当前磁盘 rev：优先活态文件，回退 feature 存档，缺失为 0 */
 function currentDslRev(feature: string): number {
   return getDSL(feature)?._dsl_rev ?? 0;
