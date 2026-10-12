@@ -58,7 +58,7 @@ npm run verify
 |---|---|---|
 | ts 类型 | 本地 `tsc`（**进程内解析路径，不走 `npx`** —— T61：`npx` 会在没装编译器时**从网上取一个**⇒ 假绿灯） | 类型错 ⇒ 红 |
 | MCP 工具签名 | `node scripts/mcp/mcp_scan.mjs` | 65 个工具的入参/出参契约（**坏签名 ⇒ LLM 一定调错**） |
-| b 项契约占位符 | `node scripts/measure_b_contract.mjs` | 有未定义占位符 ⇒ 红 |
+| ~~b 项契约占位符~~ | `node scripts/measure_b_contract.mjs` | ★ **2026-10-12（T195）已撤出门** —— 它查的是「本仓自己编的**命名普查**」（某名在不在 `B_TERMS`），**一条 grep 可查** ⇒ 改回**量具**（只报告、退 0）。依据是 2026-10-07 的既有裁定：**不建免疫系统**（*"逐条修不撒谎，普查会"*）。★ **别加回来** |
 | Go 编译 | `go build ./...`（cwd `observe-lang-go`） | Go 语言包此前**零门**，是盲区 |
 | Go 静态检查 | `go vet ./...` | 同上；vet 过了才谈得上"改 Go 有反馈" |
 | （报告区）结构意图 gap | `node scripts/structure_gap.mjs` | 通过时打印正文；**FAIL 照常计入** |

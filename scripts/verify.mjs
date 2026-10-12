@@ -103,10 +103,19 @@ function tsGate() {
 const GATES = [
   tsGate, // ★ 惰性：tsc 路径按环境解析；拿不到编译器 ⇒ 该门 `fail`（T61）
   { name: 'MCP 工具签名', kind: 'gate', cmd: 'node', args: ['scripts/mcp/mcp_scan.mjs'], why: '61 个工具的入参/出参契约（坏签名 ⇒ LLM 一定调错）。★ 需先有 dist/：它走 CLI 入口（CLI 不做 zod 校验，守卫接没接上只有这里看得见）。★ 2026-10-08 更正 why 里的旧数 59（实测 61）。' },
-  { name: 'b 项契约占位符', kind: 'gate', cmd: 'node', args: ['scripts/measure_b_contract.mjs'], why: '量具：有未定义占位符即失败' },
+  // ★★★ 2026-10-12（T195）：**原 `b 项契约占位符` 这道门【已撤】** —— ★ 这是**用户既有裁定的执行**，
+  //   不是新决定：本仓 2026-10-07 就定过「**不建"免疫系统"（棘轮/体检/巡航门）**；判据靠**逐条查、逐条修**」，
+  //   理由（原话）：★「**逐条修不撒谎，普查会** —— 它能**静默死去仍显 ✅**」。
+  //   ★ 判据（用户）：*"你这个门能比你多抓出什么东西吗？…你使用 grep 什么的是能够校验出来的吧。
+  //     只要你现在开发没有问题，那后续这个门的存在，只是在一遍遍的复核已有的事情，反而还拖累运行速度。"*
+  //   ★★ **划在这条线上的理由**：它查的是「**某个字段名在不在 `B_TERMS` 词表里**」= **本仓自己编的命名普查**
+  //     ⇒ ★ **一条 grep 就能查**（`node scripts/measure_b_contract.mjs` 随时可跑，只是不再判红）。
+  //     ★ 对照留下的门：`ts 类型`/`Go 编译` 是**编译器**（语言的形式规则，不是本仓编的）；
+  //     `MCP 工具签名` 抓的是「**zod schema 到底接没接上**」—— ★ **类型系统对 zod 透明，那是我 grep 不出来的接线事实**。
+  //   ★ 量具本体保留：`scripts/measure_b_contract.mjs`（改成**只报告、退 0**）。**别再把它加回门里。**
   { name: 'Go 编译', kind: 'gate', cmd: 'go', args: ['build', './...'], cwd: 'observe-lang-go', need: 'go', why: '★ Go 语言包（observe-lang-go）此前**零门**：它一直是 TS 侧之外的盲区（go.mod 无 require ⇒ 标准库项目）' },
   { name: 'Go 静态检查', kind: 'gate', cmd: 'go', args: ['vet', './...'], cwd: 'observe-lang-go', need: 'go', why: '同上；vet 过了才谈得上"改 Go 代码有反馈"' },
-  { name: '结构意图 gap', kind: 'report', cmd: 'node', args: ['scripts/structure_gap.mjs'], why: '★ 2026-10-10 起**能失败**：它已按判据（clean）退非 0。列在报告区=通过时打印正文、且不进"5 道门"计数；但 FAIL 照常计入（结构不一致 ⇒ verify 退 1）' },
+  { name: '结构意图 gap', kind: 'report', cmd: 'node', args: ['scripts/structure_gap.mjs'], why: '★ 2026-10-10 起**能失败**：它已按判据（clean）退非 0。列在报告区=通过时打印正文、且不进"门"的计数；但 FAIL 照常计入（结构不一致 ⇒ verify 退 1）' },
 ];
 
 const has = (b) => { try { return spawnSync(b, ['version'], { encoding: 'utf8', shell: process.platform === 'win32' }).status === 0; } catch { return false; } };
