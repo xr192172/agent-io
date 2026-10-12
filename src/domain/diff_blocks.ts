@@ -33,7 +33,9 @@ import { formatScope } from './scope.js';
  * ★ 口径：四类差异之和 > 0 —— 含 `expectation_failures`（T78：**人写的验收**也算差异）。
  */
 export function hasDiff(f: FileDiff): boolean {
-  return f.missing + f.mismatched + f.unexpected + (f.expectation_failures ?? 0) > 0;
+  // ★★★ T187：**待退役也算差异**（见 `FileDiff.retire`）——
+  //   ★ 这一条是"一个文件算不算不对"的**唯一判据**，别在别处再写一遍。
+  return f.retire !== undefined || f.missing + f.mismatched + f.unexpected + (f.expectation_failures ?? 0) > 0;
 }
 
 /** 一个文件的差异计数（★ 只数差异，不数"通过"——通过的文件不进块） */
@@ -56,6 +58,23 @@ export interface FileDiff {
    * ⇒ 把它并进同一个计数，让**两个来源汇成同一份块**。
    */
   expectation_failures?: number;
+  /**
+   * ★★★ **T187（2026-10-12）：这个文件处在退役流的哪一步** —— 有值就**算一种差异**。
+   *
+   * ## 为什么它必须进「差异面」
+   * 「设计说该删」本身**就是**"这文件不对"的一种 —— 只是它以前**没有任何计数**：
+   * `missing/mismatched/unexpected/expectation_failures` 全是 **API 契约/验收**口径，
+   * 而一个被标 `deprecated` 的文件**可以一条契约都不缺**（实测：`gateway.ts` 标了待删、
+   * 而 `consistency_check` 的 `scope_files` 是**空的**）。
+   * ⇒ ★ 后果不是"少报一条"：**退役流的②→③接不上** ——
+   *   `scope_files` 是链上唯一的"文件路径"锚点，它空了 ⇒ ③（`archive` 要 `file_path`）
+   *   **拿不到该归档的那个文件**，只能靠人把路径递过去 ⇒ **链在这儿断了**（T187 探针真跑所得）。
+   *
+   * ★ 取值**与 `RetireStage` 同轴**（`awaiting_delete` = 设计说该删、实现里还在；
+   *   `ready_to_archive` = 实现里也没了、该走③）—— 两个名字是同一件事的两种说法，
+   *   由 `consistency.ts` 的 `retireMarksOf` **一处投影**，不在这里再判一遍。
+   */
+  retire?: 'awaiting_delete' | 'ready_to_archive';
 }
 
 export interface DiffBlock {
@@ -64,7 +83,19 @@ export interface DiffBlock {
   /** 这一块里**有差异**的文件（已排序） */
   files: string[];
   /** 差异计数（四类之和 = 这一块要处理的总条数） */
-  counts: { missing: number; mismatched: number; unexpected: number; expectation_failures: number };
+  counts: {
+    missing: number;
+    mismatched: number;
+    unexpected: number;
+    expectation_failures: number;
+    /**
+     * ★ T187：本块里**处在退役流中**的文件数（`FileDiff.retire` 有值的那些）。
+     * ★ 单列一栏（而不是并进上面任一个）—— 因为它是**另一根轴**：
+     *   "设计说该删"既不是契约缺失、也不是验收失败 ⇒ 并进去会让读者把"该归档"
+     *   误读成"契约没实现"（而那会让人去改代码，方向正好相反）。
+     */
+    retire_files: number;
+  };
 }
 
 export interface DiffBlocksResult {
@@ -135,14 +166,17 @@ export function buildDiffBlocks(
         mismatched: fs.reduce((a, f) => a + f.mismatched, 0),
         unexpected: fs.reduce((a, f) => a + f.unexpected, 0),
         expectation_failures: fs.reduce((a, f) => a + (f.expectation_failures ?? 0), 0),
+        retire_files: fs.filter((f) => f.retire !== undefined).length,
       },
     }))
     // ★ 排序键必须**只由稳定量**构成：先按差异总数降序，同数再按 region 名字典序
     //   （★ 不许用"插入顺序"或"文件数"当第一键 —— 那会让块的顺序随无关改动漂）
+    //   ★ T187：`retire_files` **也算进"差异总数"**（否则一个"只有待退役"的块会排到最后，
+    //     而它恰恰是需要人去动的 —— 与 `hasDiff` 的口径保持一致）。
     .sort((a, b) => {
-      const ta = a.counts.missing + a.counts.mismatched + a.counts.unexpected + a.counts.expectation_failures;
-      const tb = b.counts.missing + b.counts.mismatched + b.counts.unexpected + b.counts.expectation_failures;
-      return tb - ta || a.region.localeCompare(b.region);
+      const sum = (c: DiffBlock['counts']) =>
+        c.missing + c.mismatched + c.unexpected + c.expectation_failures + c.retire_files;
+      return sum(b.counts) - sum(a.counts) || a.region.localeCompare(b.region);
     });
 
   // ★ T78：若整份块的差异**全部来自人写的验收**，明说一句 —— 否则读者会以为"扫描对账也没对上"，

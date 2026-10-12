@@ -437,6 +437,27 @@ export const CHAIN_EDGES: readonly ChainEdge[] = [
       '★ 说明：`find_references` 的 `symbol` 不由本边填（须调用方给，通常就是喂给 `contract_page` 的那个符号名；' +
       '`next_hop_args` 会把它标成"意图位"）—— ★ 本任务只登记**这一条**边。',
   },
+  // ── ★★★ T187（2026-10-12）：退役流的 ②→③ —— 把"该归档的文件"交出去 ──
+  {
+    from: 'consistency_check',
+    fromKey: 'scope_files',
+    to: 'archive',
+    toPath: 'file_path',
+    cardinality: 'pick',
+    evidence: 'verified',
+    note:
+      '★ **真跑（2026-10-12，`run82` 真仓）**：`edit_dsl` 把 `src/application/meta/llm/gateway.ts` 标 `deprecated` ⇒ ' +
+      '`consistency_check` 的 `touched.scope_files=["src/application/meta/llm/gateway.ts","…/tool_faces.ts"]` ⇒ ' +
+      '取 `[0]` 放进 `archive.file_path` ⇒ **归档成功**（回执：`三清: 语义文件 1 + 几何节点 1 + 边 2`）；' +
+      '★ 归档后重跑 ⇒ 该文件**不在** `retireFlow`、也**不在** `scope_files`（差异随终态消解）。' +
+      '★ 之所以是 `pick`：一个 scope 里通常**一组**文件，归档哪个/哪几个是**语义判断**（同 `get_dsl → edit_code`）。' +
+      '★★ **这条边的前史必须写下来**（否则读端会以为它一直成立）：**改之前它接不上** —— ' +
+      '`scope_files` 只按 **API 差异**算，而一个待删文件**可以一条契约都不缺**（实测：`scope_files` 为空，' +
+      '而 `retireFlow` 明明报着"可归档"）⇒ ③（`archive` 要 `file_path`）**拿不到那个文件** ⇒ ★ **链在这儿断了**，' +
+      '只能靠人把路径递过去。★ 修法（判据一处）：`FileDiff.retire`（**退役也算差异**）+ `hasDiff` 一处判据 + ' +
+      '`retireMarksOf` 一处投影 ⇒ 两条 handler 路径（给/不给 `scope`）**共用同一把尺**。' +
+      '★ 同形的边：`scope_files → edit_code.file` / `scope_files → move_symbol.file`（都在表里，`verified`）。',
+  },
 ];
 
 /**
@@ -683,6 +704,28 @@ export const CHAINS: readonly Chain[] = [
       '★ **刻意不给 `written_files`** —— 它写的是 `<dataHome>` 下的 DSL/存档/索引，**不是源码**，给了就是谎报。' +
       '★★ 遗留（未做）：判据只有"有对象边/没有"**两值**，而真实情况是**三值**' +
       '（有对象边 / **仅靠作用域交接** / 真断）⇒ 建议三值化（`docs/todo.md`）。',
+  },
+  {
+    name: 'retire-flow',
+    steps: ['edit_dsl', 'consistency_check', 'archive'],
+    evidence: 'verified',
+    note:
+      '★★★ **用户裁定的「三步退役流」**（2026-10-11 逐字：*"设计侧应该先标记给它对删除……然后删除完了之后进行对拍的时候，' +
+      '发现这个地方确实删完了，才把它真正扫进历史堆里面"*）⇒ ①**标记** → ②**对拍** → ③**归档**。' +
+      '★ 端到端真跑（2026-10-12，`run82` **真仓**，全程真落盘）：' +
+      '`edit_dsl` 写 `data.lifecycle={status:"deprecated", retire_reason:"…"}` ⇒ `consistency_check` 的' +
+      '**第三根轴** `retireFlow` 报 `{stage:"ready_to_archive"}`，**并把该文件放进 `touched.scope_files`** ⇒ ' +
+      '取 `[0]` 给 `archive.file_path` ⇒ 归档成功（三清）⇒ **重跑时它从两个轴里都消失** ✅' +
+      '★★ **逐段交接物（如实）**：①→② `feature`（**作用域**）· ②→③ **`scope_files → file_path`（对象边，已 `verified`）**。' +
+      '★ 所以 `hopsOf` 会把**第一段**报成 `scope-only`（弱交接）—— ★ 与 `design-loop` 同理：' +
+      '**设计侧工具的对象天然都住在同一个 `feature` 里**（DSL / 决策卡 / 待删标记），' +
+      '"没有对象边"在这里是**结构事实**，不是断链。' +
+      '★★ **这条链此前是【真断】**（真跑所得，不是推演）：② 只按 **API 差异**算 `scope_files`，' +
+      '而待删文件**可以一条契约都不缺** ⇒ `scope_files` 为空 ⇒ ③ **拿不到那个文件** ⇒ 只能靠人递。' +
+      '★ 已修（判据一处）：`FileDiff.retire` + `hasDiff` + `retireMarksOf`（见 `CHAIN_EDGES` 里那条边的 note）。' +
+      '★ 与「`archived` **不是**设计 DSL 的状态」配套：**归档 = 移出 DSL + 写归档库**' +
+      '（T183 删掉了那个产不出来的枚举值），所以链的终点是 `archive` 这一棒，' +
+      '而活文档里**不会**出现一个"已归档"的状态。',
   },
 ];
 

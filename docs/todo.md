@@ -48,6 +48,42 @@
         ⑤ 撤掉标记 ⇒ 回到 ⓪。
       ⇒ ★ 报告里的措辞**不许把"没有标记"读成"都删完了"**（逐字写了 `（★ 别读成"都删完了"）`）。
       ⇒ `tsc` 0 · `npm run verify` **5/5** ✓
+- [x] **T187 ✅（2026-10-12 结项）★★★★ 把元工具**编排成链**并放进 Map —— ★ 而这一趟**真跑出一个真断点**（退役流的 ②→③ 接不上）**
+      *(来源：用户 2026-10-12 指令 ——
+        *"元工具是元工具……除了元工具编排在 MCP 面上的，我们还有需要把它们**编排成链**，
+         然后**放在那个 Map 里**。就是那个**导航工具**里。"*)*
+      ⇒ **先量现状（不是先设计）**：`CHAIN_EDGES` 共 17 条（2 条通配），**具体边 15 条**，
+        而**有具体出边的工具只有 8 个** —— 分布是 **refactor 9 · design 5 · meta 1**，
+        **observe / cross / harvest 各 0** ⇒ ★ 链此前只铺在"改代码"那条主线上。
+      ⇒ ★★★ **真跑（不是读码）抓到的断点**：退役流的 **②→③ 接不上** ——
+        `consistency_check` 的 `touched.scope_files` 只按 **API 差异**算，
+        而一个待删文件**可以一条契约都不缺** ⇒ **实测 `scope_files` 是空的**（而 `retireFlow` 明明报着"可归档"）
+        ⇒ ③（`archive`，入参 `file_path`）**拿不到该归档的文件** ⇒ **链在这儿断了**，只能靠人把路径递过去。
+        ★ 这正是"**编排成链**"这个动作的价值：**不真跑，这条断点看不出来**。
+      ⇒ **修法（判据一处，两条 handler 路径共用）**：
+        · `domain/diff_blocks.ts` 的 `FileDiff.retire`（**退役也算一种差异**）+ `hasDiff` 一处判据
+          （★ 顺手收掉一处**判据分叉**：`handlers.ts` 里原有一份**手写**的"什么算差异"，它不会知道 `retire`）；
+        · `consistency.ts` 的 `retireMarksOf`（**唯一投影**：`retireFlow` 里每一条都算差异，两阶段都算）；
+        · `b_terms.ts` 的 `scope_files.meaning`（**口径只住一处**）补上这第四类差异来源；
+        · 差异块的单列一栏 `counts.retire_files` —— ★ **不并进 `missing`**：
+          "该归档"被读成"契约没实现"会把人**引向反方向**（去改代码）。
+      ⇒ **真跑出生证（`6 PASS / 0 FAIL`，`.inspect/t187-probe.mjs` → `.inspect/t187-out.txt`）**：
+        ① 标记后 `scope_files = ["src/application/meta/llm/gateway.ts","…/tool_faces.ts"]`（**改前是空的**）；
+        ② 取 `[0]` 喂 `archive.file_path` ⇒ **归档成功**（回执 `三清: 语义文件 1 + 几何节点 1 + 边 2`，**零字段名翻译**）；
+        ③ 归档后重跑 ⇒ 该文件**不在 `retireFlow`、也不在 `scope_files`**（差异随终态消解）。
+      ⇒ **登记进链表**：`CHAIN_EDGES` 加 `consistency_check.scope_files → archive.file_path`（`pick` · `verified`，note 里写着**它的前史**）；
+        `CHAINS` 加 **`retire-flow`**（`edit_dsl → consistency_check → archive`）。
+      ⇒ ★★ **机器判 + Map 都跟上了**：`nextHopsOf(consistency_check)` 多出 `archive.file_path`；
+        `hopsOf(retire-flow)` ⇒ **hop2 = `strong`（对象边）**、hop1 = `scope-only`（作用域交接，
+        ★ 与 `design-loop` 同型的**结构事实**：设计侧对象天然都住在同一个 `feature` 里）；
+        `capability_map` 里出现 `consistency_check ──touched.scope_files[i] ──▶ archive · file_path`、
+        `retire-flow [ran] …`、以及「链的完整判定」的 `retire-flow ✓ 无缺口` ✓
+      ⇒ ⏳ **未做 / 登记在账（不是静默缺口）**：
+        · **observe / cross / harvest 三条线仍是 0 条链** —— 它们**该不该有链**要逐条判（不是一律补）。
+        · ★ `review_changes` **不产 `touched`** ⇒ 按链的契约它**只能是终点、不能当上游**
+          （要当上游得先让它产 `touched`，如 approve 时给 `{feature, project_dir}`）。
+        · `hopsOf` 的判据仍**两值**（有对象边/没有），真实是**三值**（有 / 仅作用域 / 真断）—— 见 `design-loop` 的 note。
+      ⇒ `tsc` **0** · `npm run verify` **5/5** ✓
 - [x] **T186 ✅（2026-10-12 结项）★★★★★ PR 的确认人是【下一个接手的 Agent】，不是人 —— ★ 并由此把「审批不开在 MCP」那条**记过账的顾虑**变成了一条**硬守卫**（不许自批）**
       *(来源：用户 2026-10-12 裁定 ——
         *"PR 现在不应该待在人的代码审批页面，而是应该由**下一个接手的 Agent** 去进行确认。

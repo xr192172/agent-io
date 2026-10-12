@@ -11,7 +11,7 @@
 import { wrap, wrapData } from '.././plumbing.js';
 import { dispatchDslEdit } from '.././dispatch.js';
 import { getDSLByView, getLiveDir, requireProjectRoot } from '../../infrastructure/storage.js';
-import { checkConsistencyReport } from '.././design/intent/consistency.js';
+import { checkConsistencyReport, retireMarksOf } from '.././design/intent/consistency.js';
 import { deriveMindMap } from '.././meta/view/derive_mind_map.js';
 import { detectDrift } from '.././design/intent/detect_drift.js';
 import { exportMarkdown, exportSvg } from '../../infrastructure/render/export.js';
@@ -102,6 +102,11 @@ export const consistencyHandler = wrapData(async (a) => {
     //   ★ 我最初只改了「给 scope」那一条 ⇒ 实测才发现**默认那条根本不产 `touched`**（DATA 里连 `blocks` 都没有）
     //     —— 又一次"改的那处不在跑"。★ 两条路径**共用同一套判据**：`hasDiff`（有差异）+ `groupExpectationFails`（归类）。
     const failAll = groupExpectationFails(exp?.items ?? [], () => true).failByPath;
+    // ★★★ T187：**待退役也进差异面**（判据一处 = `retireMarksOf` + `hasDiff`）。
+    //   ★ 不这么做的后果是**链断**：`scope_files` 是链上唯一的"文件路径"锚点，
+    //     而"设计说该删"的文件可以一条契约都不缺 ⇒ 它不在 `scope_files` 里
+    //     ⇒ ③（`archive`，要 `file_path`）拿不到该归档的文件。
+    const retireMarks = retireMarksOf(r.retireFlow);
     const diffFiles = r.fileResults
       .map((fr) => {
         const p = normPath(fr.file.path);
@@ -111,6 +116,7 @@ export const consistencyHandler = wrapData(async (a) => {
           mismatched: fr.apis.filter((x) => x.status === 'mismatched').length,
           unexpected: fr.apis.filter((x) => x.status === 'unexpected').length,
           expectation_failures: failAll.get(p) ?? 0,
+          ...(retireMarks.has(p) ? { retire: retireMarks.get(p) } : {}),
         };
       })
       .filter(hasDiff)
@@ -144,6 +150,9 @@ export const consistencyHandler = wrapData(async (a) => {
   //   实测（2026-10-09 真跑）：验收报 `failed 1`，块报"有差异 0 个"，还把出问题的文件列进"已对齐" —— 两者矛盾。
   //   ★ 归属规则**只由 `domain/expectation.ts` 的 `expectationSubjectPath` 决定**（不在这里再推一遍）。
   const { failByPath, outsideScope, unsupportedInScope, unsupportedOutside } = groupExpectationFails(exp?.items ?? [], (p) => inScope.has(p));
+  // ★★★ T187：**与"不给 scope"那条路共用同一个判据**（`retireMarksOf`）——
+  //   ★ 本仓栽过「改的那处不在跑」（见下面 `diffFiles` 的注释）⇒ 两条路必须同一把尺。
+  const retireMarks = retireMarksOf(r.retireFlow);
   const files: FileDiff[] = sel.map((fr) => {
     const p = normPath(fr.file.path);
     return {
@@ -153,6 +162,7 @@ export const consistencyHandler = wrapData(async (a) => {
       mismatched: fr.apis.filter((x) => x.status === 'mismatched').length,
       unexpected: fr.apis.filter((x) => x.status === 'unexpected').length,
       expectation_failures: failByPath.get(p) ?? 0,
+      ...(retireMarks.has(p) ? { retire: retireMarks.get(p) } : {}),
     };
   });
   // ★ 兜底（不静默）：验收失败的**主体在范围内、但对账结果里没有这个文件** ⇒ 补一条，
@@ -163,11 +173,21 @@ export const consistencyHandler = wrapData(async (a) => {
       files.push({ path: p, missing: 0, mismatched: 0, unexpected: 0, expectation_failures: n });
     }
   }
+  // ★★★ T187：**同一个兜底，给"待退役"也来一遍** —— 退役文件若**不在本 scope 内**就不补；
+  //   在 scope 内、却不在 `sel`（对账结果）里的，同样不许凭空消失（照上面那条的先例）。
+  for (const [p, mark] of retireMarks) {
+    if (inScope.has(p) && !covered.has(p)) {
+      files.push({ path: p, missing: 0, mismatched: 0, unexpected: 0, expectation_failures: 0, retire: mark });
+    }
+  }
   // ★ scope 比 `arch_layer` 更窄时（files: / subtree: / nodes:），再按层切没有意义 ⇒ 整个 scope 作一块
   const narrower = sc.scope.kind === 'files' || sc.scope.kind === 'subtree' || sc.scope.kind === 'nodes';
   // ★★ 把"本 scope 真的比了几条"传进去 ⇒ 空块那句"无差异 ⇒ 好消息"在 `scopeCompared===0`（**没得比**）时**不成立**。
   const d = buildDiffBlocks(files, sc.scope, narrower ? 'scope' : 'arch_layer', scopeCompared);
-  const nDiff = files.filter((f) => f.missing + f.mismatched + f.unexpected + (f.expectation_failures ?? 0) > 0).length;
+  // ★★ T187：这里原先是**手写第二份**"什么算差异"（`missing+mismatched+unexpected+expectation_failures>0`）
+  //   ⇒ ★ 与 `hasDiff` **同一判据住两处**（本仓头号病），而且它**不会知道**新加的 `retire`。
+  //   ⇒ 改成就地复用 `hasDiff`：判据一处，`retire` 自动算进来。
+  const nDiff = files.filter(hasDiff).length;
 
   const lines = [
     `══ 差异块 scope ${formatScope(sc.scope)} ══`,
@@ -177,8 +197,8 @@ export const consistencyHandler = wrapData(async (a) => {
   if (d.blocks.length) {
     lines.push('', '  块（★ 块名稳定 ⇒ 可直接当"分区域重写"的工作单元）：');
     for (const b of d.blocks) {
-      const { missing, mismatched, unexpected, expectation_failures } = b.counts;
-      const total = missing + mismatched + unexpected + expectation_failures;
+      const { missing, mismatched, unexpected, expectation_failures, retire_files } = b.counts;
+      const total = missing + mismatched + unexpected + expectation_failures + retire_files;
       lines.push(`    [${b.region}]  差异 ${total} 条 · ${b.files.length} 个文件`);
       // ★ 分类只说**非零**的（免得一行里挂一串 0）；★ 明写"人写的验收"——那是设计最该被兑现的部分
       const parts: string[] = [];
@@ -186,6 +206,9 @@ export const consistencyHandler = wrapData(async (a) => {
       if (missing) parts.push(`缺实现 ${missing}`);
       if (mismatched) parts.push(`签名不符 ${mismatched}`);
       if (unexpected) parts.push(`代码新增 ${unexpected}`);
+      // ★ T187：退役是**另一根轴**，单列 —— 并进上面任一项都会把读者引向错的方向
+      //   （"该归档"被读成"契约没实现" ⇒ 去改代码，而那正是**反的**）。
+      if (retire_files) parts.push(`**待退役 ${retire_files}**（设计说该删/该归档 ⇒ 走 archive，别去改实现）`);
       lines.push(`        （${parts.join(' / ')}）`);
       for (const f of b.files) lines.push(`        ${f}`);
     }

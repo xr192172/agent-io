@@ -210,6 +210,36 @@ export function retireStage(exists: boolean): RetireStage {
   return exists ? 'awaiting_implementation_delete' : 'ready_to_archive';
 }
 
+/**
+ * ★★★ **T187：把「待退役」折进「差异面」** —— `FileDiff.retire` 的**唯一取值来源**。
+ *
+ * ## 它要解决的事（★ 探针真跑所得，不是推演）
+ * 退役流的②→③**接不上**：②（`consistency_check`）给出的 `touched.scope_files` 按 API 差异算，
+ * 而一个被标 `deprecated` 的文件**可以一条契约都不缺** ⇒ `scope_files` 是空的
+ * ⇒ ③（`archive`，入参 `file_path`）**拿不到该归档的那个文件**。
+ *
+ * ## 口径（★ 一处）
+ * **`retireFlow` 里的每一条都算差异** —— 因为 `retireFlow` 只收
+ * `lifecycle.status === 'deprecated'` 的文件，而"设计说该删"本身就是一种"不对"。
+ * 两个阶段（`awaiting_implementation_delete` / `ready_to_archive`）**都算** ——
+ *   前者是"实现还没删"，后者是"实现删了、该归档"，**两者都要人去动**。
+ *
+ * ★ 键的取名与 `FileDiff.retire` 对齐（`awaiting_delete` / `ready_to_archive`）：
+ *   `RetireStage` 说"这具判定到哪一步"，`FileDiff.retire` 说"这个文件到哪一步" —— **同一件事**。
+ */
+export function retireMarksOf(entries: readonly RetireFlowEntry[]): Map<string, NonNullable<FileDiffRetire>> {
+  const m = new Map<string, NonNullable<FileDiffRetire>>();
+  for (const e of entries) {
+    m.set(e.file_path, e.stage === 'ready_to_archive' ? 'ready_to_archive' : 'awaiting_delete');
+  }
+  return m;
+}
+
+/** ★ 与 `domain/diff_blocks.ts` 的 `FileDiff.retire` **同型**（这里只是取个名字给上面用）。
+ *  ★ 不 import 那个类型是有意的：`consistency.ts` 不该为了一个字段名去依赖 `diff_blocks` 的整张表；
+ *    两边靠**这个别名 + 一处投影**保持同轴（改一边 ⇒ 这里会红）。 */
+type FileDiffRetire = 'awaiting_delete' | 'ready_to_archive';
+
 export interface ConsistencyResult {
   message: string;
   fileResults: FileConsistency[];
