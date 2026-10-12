@@ -9,6 +9,8 @@
 
 import { getDSL, saveDSL } from '../../../infrastructure/storage.js';
 import type { Annotation, ApprovalStatus, ApprovalHistoryEntry } from '../../../domain/types.js';
+// ★ T198：状态**值**表（运行时）—— 用于把合法值渲染进报错/描述，并在 `listApprovals` 里**校验**。
+import { APPROVAL_STATUSES } from '../../../domain/types.js';
 
 function now(): string {
   return new Date().toISOString();
@@ -94,10 +96,41 @@ export function submitApproval(input: SubmitApprovalInput): SubmitApprovalResult
 // review_annotation
 // ─────────────────────────────────────────────────────────────
 
+/**
+ * ★★ **`approval.review` 的 `data.decision` 合法值 —— 唯一住处**（2026-10-12 T198）。
+ *
+ * ## 为什么它是常量 + 从这里导出
+ * 此前值域**只以三份散落的字面量存在**（本文件里的 interface 联合 / switch 分支 / 状态标签 map）
+ * ⇒ ★ **MCP 描述里一个字都没有** ⇒ 读者（LLM）只能**试错**才知道填什么
+ *   （实测：填 `approved` ⇒ `未知决策: approved`）。
+ * ⇒ 现在值域**只此一处**：本常量。校验（`reviewAnnotation`）与描述
+ *   （`op_data_spec.ts` 的 `approval` note，渲染进 `edit_dsl`）**都从它派生** ——
+ *   改了这里，描述**自动跟**（不需要有人记得同步第二份）。
+ *
+ * ## ★ 是【动作词】，不是【状态词】
+ * `approve`（动作）≠ `approved`（状态）；`reject` ≠ `rejected`。
+ * `data.decision` 收的是**动作**；落地后的 `approval_status` 才是状态（见 `DECISION_EFFECT`）。
+ */
+export const APPROVAL_DECISIONS = ['approve', 'reject', 'request_revision'] as const;
+
+/** ★ 合法决策值（从 {@link APPROVAL_DECISIONS} 推导 —— 别再手写第二份联合类型）。 */
+export type ApprovalDecision = (typeof APPROVAL_DECISIONS)[number];
+
+/**
+ * ★ 每个决策的**效果**：动作（进历史）· 落地状态 · 中文标签。
+ * ★★ 键集由 `ApprovalDecision` **约束** ⇒ `APPROVAL_DECISIONS` 加了值而这里没跟 ⇒ **`tsc` 直接红**
+ *   （照本仓 `op_data_spec.ts` 里 `Record` 覆盖式断言的同款防漂移）。
+ */
+const DECISION_EFFECT: Record<ApprovalDecision, { action: ApprovalHistoryEntry['action']; status: ApprovalStatus; label: string }> = {
+  approve: { action: 'approve', status: 'approved', label: '已通过' },
+  reject: { action: 'reject', status: 'rejected', label: '已驳回' },
+  request_revision: { action: 'request_revision', status: 'needs_revision', label: '要求修改' },
+};
+
 export interface ReviewAnnotationInput {
   feature: string;
   annotation_id: string;
-  decision: 'approve' | 'reject' | 'request_revision';
+  decision: ApprovalDecision;
   reviewer: string;
   comment?: string;
 }
@@ -121,40 +154,28 @@ export function reviewAnnotation(input: ReviewAnnotationInput): ReviewAnnotation
     throw new Error(`当前状态为 ${ann.approval_status ?? 'draft'}，无法审批。请先提交审批。`);
   }
 
-  let action: ApprovalHistoryEntry['action'];
-  let status: ApprovalStatus;
-
-  switch (input.decision) {
-    case 'approve':
-      action = 'approve';
-      status = 'approved';
-      break;
-    case 'reject':
-      action = 'reject';
-      status = 'rejected';
-      break;
-    case 'request_revision':
-      action = 'request_revision';
-      status = 'needs_revision';
-      break;
-    default:
-      throw new Error(`未知决策: ${input.decision}`);
+  // ★★ 2026-10-12 T198：值域以 `APPROVAL_DECISIONS` **一处**判定；★ 报错**点名合法值**
+  //   （此前只说 `未知决策: approved` —— 不指路；照本仓"回执即文档"的经验补上合法值）。
+  const effect = DECISION_EFFECT[input.decision as ApprovalDecision] as
+    | (typeof DECISION_EFFECT)[ApprovalDecision]
+    | undefined;
+  if (!effect) {
+    throw new Error(
+      `未知决策: ${input.decision}（★ 合法值: ${APPROVAL_DECISIONS.join(' / ')}` +
+        ` —— 注意是【动作词】不是状态词，如 \`approve\` 而非 \`approved\`）`,
+    );
   }
 
-  addHistory(ann, action, status, input.reviewer, input.comment);
+  addHistory(ann, effect.action, effect.status, input.reviewer, input.comment);
   saveDSL(dsl);
 
-  const statusLabel = {
-    approve: '已通过',
-    reject: '已驳回',
-    request_revision: '要求修改',
-  }[input.decision];
+  const statusLabel = effect.label;
 
   return {
     message: `审批${statusLabel}：${ann.id}\n审批人: ${input.reviewer}\n意见: ${input.comment ?? '(无)'}`,
     feature: input.feature,
     annotation_id: ann.id,
-    status,
+    status: effect.status,
   };
 }
 
@@ -190,6 +211,15 @@ export function listApprovals(input: ListApprovalsInput): ListApprovalsResult {
   let filtered = annotations;
 
   if (input.status) {
+    // ★★★ T198：**未知状态 ⇒ 抛**。★ 原先这里**不校验** ⇒ 传个写错的状态会**静默返回 0 行**
+    //   ⇒ ★ 读者会读成"没有待审批的"，而**不是**"你参数写错了"（§2.3「不报错的错」）。
+    //   ★ 与 T197 治 `explore_code` 的"键名错就抛"是**同一把尺**：**错的输入不许静默变成空结果**。
+    if (!(APPROVAL_STATUSES as readonly string[]).includes(input.status)) {
+      throw new Error(
+        `未知审批状态 "${input.status}" —— ★ 合法值：${APPROVAL_STATUSES.map((s) => '`' + s + '`').join(' · ')}。` +
+          '★ 注意：尚未提交审批的批注状态是 `draft`，**默认不过滤时它也会出现在本查询里**。',
+      );
+    }
     filtered = filtered.filter(a => (a.approval_status ?? 'draft') === input.status);
   }
   if (input.assignee) {

@@ -60,6 +60,9 @@ export type {
   Annotation,
 } from './annotation.js';
 
+// ★ T198：值导出（**类型渲染不进 MCP 描述** ⇒ 需要一个运行时可渲染的值；★ 见 `annotation.ts` 的两条类型级断言）。
+export { APPROVAL_STATUSES } from './annotation.js';
+
 export type {
   ElementState,
   AnimationStage,

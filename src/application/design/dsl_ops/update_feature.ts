@@ -28,7 +28,7 @@ import { checkOpSpec, OP_SPECS, type CheckedOperation } from './op_data_spec.js'
 import { addExpectedApi, updateExpectedApi, deleteExpectedApi, setExpectedApis, setNodeSemantic } from './api_ops.js';
 import { updateStatus } from './status_tools.js';
 import { addAnnotationByTool, resolveAnnotation } from './annotation_tools.js';
-import { submitApproval, reviewAnnotation } from '../../observe/reconcile/approval.js';
+import { submitApproval, reviewAnnotation, type ApprovalDecision } from '../../observe/reconcile/approval.js';
 import { saveSnapshot, rollbackSnapshot, deleteSnapshot, saveAutoSnapshot, pruneSnapshots } from '../lifecycle/snapshot.js';
 import { dagLayout, forceLayout, gridAlign } from '../workbench/dag_layout.js';
 import { resetSimulation } from '../lifecycle/simulation.js';
@@ -414,7 +414,8 @@ function applyApprovalOp(feature: string, op: CheckedOperation<FeatureOperation>
       const r = reviewAnnotation({
         feature,
         annotation_id: data.annotation_id as string,
-        decision: data.decision as 'approve' | 'reject' | 'request_revision',
+        // ★ T198：值域**不在这里手写** —— 用 `approval.ts` 的 `ApprovalDecision`（唯一住处）。
+        decision: data.decision as ApprovalDecision,
         reviewer: data.reviewer as string,
         comment: data.comment as string | undefined,
       });

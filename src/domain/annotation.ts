@@ -5,6 +5,29 @@
 /** 审批状态 */
 export type ApprovalStatus = 'draft' | 'pending_review' | 'approved' | 'rejected' | 'needs_revision';
 
+/**
+ * ★★★ T198（2026-10-12）：`ApprovalStatus` 的**运行时形态**。
+ *
+ * ## 为什么类型不够、还要一个值
+ * `ApprovalStatus` 是**类型** —— ★ **类型渲染不进 MCP 描述**（描述是运行时字符串）。
+ * ⇒ 于是"合法值有哪些"就只能在**描述里手写一份** ⇒ ★ 那就是第二份、会漂。
+ * ⇒ 本常量 = **唯一可渲染处**；`describe` 里从它**渲染**；★★ 由下面两条**类型级断言**钉死与 `ApprovalStatus` 一致。
+ * （★ 照本仓 `op_data_spec.ts` 里 `_assert...` 的同款防漂移手法。）
+ */
+export const APPROVAL_STATUSES = ['draft', 'pending_review', 'approved', 'rejected', 'needs_revision'] as const;
+
+/** ★ 断言一：常量**不漏**类型的成员（漏了 ⇒ 不是 never ⇒ `tsc` 红） */
+export type _AssertStatusesCover = Exclude<ApprovalStatus, (typeof APPROVAL_STATUSES)[number]> extends never
+  ? true
+  : ['★ `APPROVAL_STATUSES` 漏了这些状态 ⇒ 补上：', Exclude<ApprovalStatus, (typeof APPROVAL_STATUSES)[number]>];
+export const _assertStatusesCover: _AssertStatusesCover = true;
+
+/** ★ 断言二：常量**不多**（多了 ⇒ 不是 never ⇒ `tsc` 红） */
+export type _AssertStatusesNoExtra = Exclude<(typeof APPROVAL_STATUSES)[number], ApprovalStatus> extends never
+  ? true
+  : ['★ `APPROVAL_STATUSES` 多了这些（不在 `ApprovalStatus` 里）⇒ 删掉：', Exclude<(typeof APPROVAL_STATUSES)[number], ApprovalStatus>];
+export const _assertStatusesNoExtra: _AssertStatusesNoExtra = true;
+
 /** 审批记录 */
 export interface ApprovalHistoryEntry {
   id: string;

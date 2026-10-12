@@ -36,6 +36,8 @@ import { z } from 'zod';
 import { requireStr, wrapData } from '../plumbing.js';
 // ★ T170：`operations[]` 各 type 的 data 契约表（**唯一判据**）—— edit_dsl 描述里那段就是它的渲染。
 import { renderOpSpecs } from './dsl_ops/op_data_spec.js';
+// ★ T198：审批**状态值表** —— ★ 描述里**从它渲染**合法值（不手抄 ⇒ 不会与实现漂）。
+import { APPROVAL_STATUSES } from '../../domain/types.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { getProjectCacheDb } from '../../infrastructure/index/db.js';
@@ -81,7 +83,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
     inputSchema: {
       query: z
         .enum(['dsl', 'features', 'nodes', 'edges', 'node', 'decisions', 'files', 'file', 'digest', 'scope', 'calls', 'functions', 'annotations', 'approvals', 'approval_history', 'snapshots', 'templates', 'simulation_state', 'diff', 'goals', 'edge_intents', 'tag'])
-        .describe('查询类型：dsl=完整DSL, features=feature列表, nodes=节点摘要, edges=边摘要, node=节点详情, decisions=决策目录(按功能线分组), files=文件摘要, file=文件详情, digest=每文件一行紧凑认知索引(F职责/R关系/A契约/S高熵决策,只读派生), scope=**圈定范围**(按 layer/swimlane/arch_layer/subtree/files 解析成确定的文件集合,只读派生), calls=调用关系, functions=函数级大纲(目录→文件→函数+调用/被调用/回环), annotations=标注, approvals=审批, approval_history=审批历史, snapshots=快照, templates=模板, simulation_state=仿真状态, diff=对比, goals=结构化目标(meta.goals), edge_intents=边级意图(edge.intent), tag=功能标记(人给文件节点打的"隶属某功能"标签:给 tag=成员+失联,省略=列全部标签)'),
+        .describe('查询类型：dsl=完整DSL, features=feature列表, nodes=节点摘要, edges=边摘要, node=节点详情, decisions=决策目录(按功能线分组), files=文件摘要, file=文件详情, digest=每文件一行紧凑认知索引(F职责/R关系/A契约/S高熵决策,只读派生), scope=**圈定范围**(按 layer/swimlane/arch_layer/subtree/files 解析成确定的文件集合,只读派生), calls=调用关系, functions=函数级大纲(目录→文件→函数+调用/被调用/回环), annotations=标注, approvals=**按审批状态看【全部】批注**（★ 默认含未提交的 `draft`；只要待审批的用 `status="pending_review"`）, approval_history=审批历史, snapshots=快照, templates=模板, simulation_state=仿真状态, diff=对比, goals=结构化目标(meta.goals), edge_intents=边级意图(edge.intent), tag=功能标记(人给文件节点打的"隶属某功能"标签:给 tag=成员+失联,省略=列全部标签)'),
       scope: z
         .string()
         .optional()
@@ -106,8 +108,17 @@ export const DESIGN_TOOLS: ToolDef[] = [
       annotation_node_id: z.string().optional().describe('query=annotations 时：按节点过滤'),
       severity: z.enum(['info', 'warning', 'critical']).optional(),
       unresolved_only: z.boolean().optional(),
-      status: z.string().optional().describe('query=approvals 时：按状态过滤'),
-      assignee: z.string().optional(),
+      // ★★★ T198：原先 `status` 只说"按状态过滤"（**一个合法值都不给**）、`assignee` **完全没有描述**
+      //   ⇒ ★ 读者只能试错（★ 有个子代理真的被"审批列表里出现 draft"骗过一次）。
+      //   ★ 值域从 `APPROVAL_STATUSES` **渲染**（★ 不手抄 ⇒ 不会漂）。
+      status: z
+        .string()
+        .optional()
+        .describe(
+          `query=approvals 时：按审批状态过滤。合法值：${APPROVAL_STATUSES.join(' / ')}。` +
+            '★ 注：`draft` = 尚未提交审批（★ **默认不过滤时也会列出来**）；`pending_review` = 待审批。',
+        ),
+      assignee: z.string().optional().describe('query=approvals 时：按指派人（assignee）过滤'),
       annotation_id: z.string().optional().describe('query=approval_history 时：标注 ID'),
       feature_a: z.string().optional().describe('query=diff 时：源 feature'),
       feature_b: z.string().optional().describe('query=diff 时：目标 feature'),
