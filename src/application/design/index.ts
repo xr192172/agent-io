@@ -382,9 +382,27 @@ export const DESIGN_TOOLS: ToolDef[] = [
       }
       return {
         message:
-          `${result.meta.total_signals} 个信号 → ${result.meta.actionable} 个需拆(采纳) / ${result.meta.rejected} 个驳回。` +
-          (written ? `\n报告已落盘：${written}（可直接喂 split_stage）` : ''),
-        data: { signals_scanned: brick.mixed_files, review: result, llm_available: true, ...(written ? { report_path: written } : {}) },
+          `${result.meta.total_signals} 个信号 → ${result.meta.actionable} 个采纳 / ${result.meta.rejected} 个驳回` +
+          // ★★★ T205（2026-10-12）：**"没判成"必须单独说出来**。
+          //   ★ 原先汇总只有"采纳/驳回"两个数，而 `rejected` 把"没判成"也算了进去 ⇒
+          //     实测（真跑）出现 `1 个信号 → 0 个采纳 / 1 个驳回`，**而真相是 LLM 不可用、谁都没判** ⇒
+          //     读者会得出"工具判定这个文件不该拆"的**错结论**，下游 `split_stage` 也只会看到"0 个采纳"
+          //     ⇒ **静静地什么都不拆**（★ 本仓最反对的"猜错不报错"）。
+          (result.meta.undecided > 0
+            ? `\n★ 其中 ${result.meta.undecided} 个【**未判**】：本轮**没产出任何结论**（LLM 不可用）—— ★ **这不是"驳回"** ✓`
+            : '') +
+          '。' +
+          (written ? `\n报告已落盘：${written}（可直接喂 split_stage）` : '') +
+          (result.meta.llm_available
+            ? ''
+            : '\n★★ `llm_available = false` ⇒ **上面的结论不完整**（有信号没判过）⇒ 恢复 LLM 后重跑再拆。'),
+        // ★ `llm_available` **从结果如实带出**（原先这里**写死 `true`** ⇒ 与真实状态矛盾：LLM 明明全失败了）。
+        data: {
+          signals_scanned: brick.mixed_files,
+          review: result,
+          llm_available: result.meta.llm_available,
+          ...(written ? { report_path: written } : {}),
+        },
       };
     }),
   },
@@ -442,12 +460,27 @@ export const DESIGN_TOOLS: ToolDef[] = [
         max_symbols: a.max_symbols as number | undefined,
       });
       const rolled = result.items?.some((i) => i.status === 'rolled_back');
+      // ★★★ T205（2026-10-12）：**把"没判成"从报告里带出来** ——
+      //   ★ 实测（真跑）：`signal_review` 在 LLM 不可用时，报告里每条的 `reviews` 是**空数组**，
+      //     而 `report.review.reviews.length` **恒为"每文件一条"** ⇒ 上面那个"空报告"守卫**拦不住** ⇒
+      //     本工具会回 **`ok: true` + 0 簇**，与"判过了、确实不该拆"**长得一模一样** ✗
+      //   ⇒ ★ 后果：**LLM 挂掉 ⇒ 整条链静静地什么都不做、还报成功**（本仓最反对的"不报错的错"）
+      //   ★ 修法：读报告的 `meta.undecided`（`signal_review` 已按 T205 如实给出）⇒ **明说它不是"驳回"**。
+      const meta = (report.review as { meta?: { undecided?: number; llm_available?: boolean } } | undefined)?.meta;
+      const undecided = meta?.undecided ?? 0;
+      const notJudged =
+        undecided > 0
+          ? `\n★★ 注意：报告里有 **${undecided} 个信号【未判】**（不是"驳回"）—— ` +
+            (meta?.llm_available === false ? '**LLM 不可用** ⇒ ' : '') +
+            '本次"0 簇"**不代表"判定不该拆"**，而是**没判出来**。恢复 LLM 后重跑 `signal_review` 再拆。'
+          : '';
       return {
         message:
           (result.message ? `${result.message}\n` : '') +
           `采纳 ${result.total_plans} 簇 → 拆出 ${result.total_splits} 簇，成功 ${result.applied}${rolled ? '，**有回滚**' : ''}；` +
-          (dry_run ? 'dry-run：未写文件（确认草稿后传 apply=true）' : '已落盘'),
-        data: result,
+          (dry_run ? 'dry-run：未写文件（确认草稿后传 apply=true）' : '已落盘') +
+          notJudged,
+        data: { ...result, undecided_in_report: undecided },
       };
     }),
   },

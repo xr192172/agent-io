@@ -66,7 +66,17 @@ export interface ReviewResult {
   meta: {
     total_signals: number;
     actionable: number;
+    /** ★ **判过、且判"驳回"**的条数（★ 不含"没判成"的 —— 见 `undecided`）*/
     rejected: number;
+    /**
+     * ★★★ T205（2026-10-12）：**"没判成"**的条数 —— ★ 与"驳回"**必须分开**。
+     * ★ 为什么：原先 `rejected = 总数 − actionable` 把两者混成一个数 ⇒ 回执会写成
+     *   *"N 个驳回"*，**而真相是【谁都没判】**（LLM 不可用）⇒ 读者会得出"工具判定不该拆"的**错结论**，
+     *   而下游 `split_stage` 只会看到"0 个采纳"⇒ **静静地什么都不拆**（本仓最反对的"猜错不报错"）。
+     * ★ 判据（只此一处）：**`reviews.length === 0`** ⇒ 没产出任何逐簇结论 ⇒ 没判 ✓
+     *   （两种来源 —— 文件读不到/为空 · LLM 复核失败 —— 都在该条的 `note` 里写明了原因 ✓）
+     */
+    undecided: number;
     llm_available: boolean;
   };
   limitations: string[];
@@ -186,14 +196,23 @@ export async function reviewSignals(opts: ReviewOptions): Promise<ReviewResult |
     reviews.push(...results);
   }
 
+  // ★★★ T205：**"没判成" ≠ "驳回"** —— 原先这里 `rejected = reviews.length - actionable`
+  //   把两者混成一个数 ⇒ 回执写"N 个驳回"，而真相是【谁都没判】（LLM 不可用）✗
+  //   ★ 判据（只此一处）：**没产出任何逐簇结论（`reviews.length === 0`）⇒ 未判** ✓
   const actionable = reviews.filter((r) => r.actionable).length;
+  const undecided = reviews.filter((r) => !r.actionable && r.reviews.length === 0).length;
+  const rejected = reviews.length - actionable - undecided;
+  // ★ 而 `llm_available` 也**不能写死 true** —— ★ LLM 真失败过就要说 false ✓
+  //   （原先无论成败都回 `llm_available: true` ⇒ 与本模块自己的"诚实降级"承诺矛盾）
+  const llmFailed = reviews.some((r) => r.reviews.length === 0 && /LLM/.test(r.note ?? ''));
   return {
     reviews,
     meta: {
       total_signals: reviews.length,
       actionable,
-      rejected: reviews.length - actionable,
-      llm_available: true,
+      rejected,
+      undecided,
+      llm_available: !llmFailed,
     },
     limitations: [
       '复核判据 = 独立使用者 / 独立演进 / 文档证据；不自动切分文件内部，采纳后拆法由人确认',
