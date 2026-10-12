@@ -304,6 +304,21 @@ function buildWiring(
   extractedText: string,
   remainingNames: string[],
   extractedNames: string[],
+  /**
+   * ★★★ T211（2026-10-12）：**原文件抽走那些符号之后剩下的正文**。
+   *
+   * ## 为什么需要它（★ 实测踩到的真 bug）
+   * 原先 ts/js 分支写的是 *"`import { 【全部被抽走的符号】 } from './新文件'`"* ⇒ ★ **无脑全给** ✗
+   * 实测（真落盘，夹具 `mixed.ts`）：切完之后 `mixed.ts` **只用到 `toCsv`/`downloadCsv`**
+   * ⇒ ★ **它一个被抽走的符号都不需要** ⇒ 却被硬塞了
+   * `import { SECRET, signToken, verifyToken } from './fixture-session-token'` ⇒
+   * ★★ 而 `SECRET` 在原文件里是**模块私有的**（`const SECRET`，没 `export`）⇒
+   * ★★★ **TS2459：declares 'SECRET' locally, but it is not exported** ⇒ **切出来的代码【编不过】** ✓
+   *
+   * ⇒ ★ 判据（就是要它）：**只把"残余正文里真的还引用到"的那些接回来** ✓
+   *   ★ 而"谁真的被引用"已有现成助手 `referNames`（本文件已在用另一个方向 ✓）⇒ ★ **不再造第二把尺** ✓
+   */
+  remainingText: string,
 ): Wiring {
   const base = path.posix.basename(targetRel.replace(/\\/g, '/')).replace(/\.[^.]+$/, '');
   const newBase = path.posix.basename(newRel.replace(/\\/g, '/')).replace(/\.[^.]+$/, '');
@@ -343,13 +358,18 @@ function buildWiring(
   const origImportPath = `./${base}`;
   const newImportPath = `./${newBase}`;
   const importedFromOrig = referNames(extractedText, remainingNames);
+  // ★★★ T211：**接回原文件的 import，只列"残余正文真的还引用到"的那些** ✓
+  //   ★ 原先无脑列 `extractedNames` ⇒ 会给原文件塞它**根本不用**的符号 ⇒ 实测直接编不过（见函数头注释）✓
+  const neededBack = referNames(remainingText, extractedNames);
   return {
     newFileHeader: '',
     copiedImports: [],
     importFromOriginalNames: importedFromOrig,
     importFromOriginalLine:
       importedFromOrig.length > 0 ? `import { ${importedFromOrig.join(', ')} } from '${origImportPath}';` : '',
-    importFromNewLine: `import { ${extractedNames.join(', ')} } from '${newImportPath}';`,
+    // ★ 残余代码**一个都不需要** ⇒ **整行 import 都不生成**（★ 不给空 import ✓ 同"没圈到就省略"）
+    importFromNewLine:
+      neededBack.length > 0 ? `import { ${neededBack.join(', ')} } from '${newImportPath}';` : '',
     needsCrossImport: true,
   };
 }
@@ -811,8 +831,14 @@ async function splitOnce(input: DeriveSplitInput): Promise<DeriveSplitResult> {
   const remainingSyms = topLevel.filter((s) => !extractedSyms.includes(s));
   const remainingNames = remainingSyms.map((s) => s.name);
   const extractedNames = extractedSyms.map((s) => s.name);
+  // ★★★ T211：**残余正文只算一次** —— ★ 判据一处（★ 这段原先在下面算了一遍给 `keptLines` 用；
+  //   ★ 现在 `buildWiring` 也要它 ⇒ **提到这儿共用**，★ 别让同一把尺出现两次 ✓）
+  const keptLines = content.split('\n').filter((_, i) => !ranges.some(([s, e]) => i + 1 >= s && i + 1 <= e));
+  const remainingText = keptLines.join('\n');
 
-  const wiring = buildWiring(lang, projectRoot, targetRel, newRel, content, extractedText, remainingNames, extractedNames);
+  const wiring = buildWiring(
+    lang, projectRoot, targetRel, newRel, content, extractedText, remainingNames, extractedNames, remainingText,
+  );
 
   // 新文件要复制的 import：TS/Python 复制 import 声明文本；Go 复制 import_declaration 整块
   let copiedImports: string[];
@@ -850,19 +876,29 @@ async function splitOnce(input: DeriveSplitInput): Promise<DeriveSplitResult> {
   // 向后兼容再导出（re_export_extracted=true && TS/JS）：原文件对被抽取符号保留
   // `export { X } from './new'`，保证外部跨文件消费者（别处 import { X } from 本文件）
   // 拆走后引用不中断。与上方 import 并存：import 供本文件内部使用，export from 供外部再导出。
+  // ★★★ T211（2026-10-12）：**只再导出"原文里本来就 export 的"** —— ★ 原先无脑列 `extractedNames` ✗
+  //   ★ 实测（真落盘）：`SECRET` 在原文里是 `const SECRET = …`（**模块私有**）⇒ 却被
+  //     `export { SECRET } from './token-session'` 带了出去 ✗ ⇒ ★★ **【把私有变成了公开】** ✓
+  //   ★ 两个后果：① 新文件**必须**把它 `export` 出来（⇒ TS2459 的另一半来源）
+  //              ② ★ **对外 API 悄悄变了**（★ 而这**编译抓不到** ✗ —— 比"断引用"更阴）
+  //   ★ 判据：从**被抽走的正文**里认出"带 `export` 的声明" ✓
+  //   ★★ **两条错法的后果不对称**（★ 据此选保守那边）：少再导出 ⇒ 外部引用**断** ⇒ ★ **编译能抓到** ✓；
+  //     多再导出 ⇒ **偷偷改 API** ⇒ ★ **抓不到** ✗ ⇒ ★ **所以宁可少列** ✓（★ 保守方向明确 ✓）
+  const exportedExtracted = extractedNames.filter((n) =>
+    new RegExp(
+      `export\\s+(?:default\\s+)?(?:declare\\s+)?(?:async\\s+)?(?:function|class|const|let|var|type|interface|enum)\\s+${escapeRe(n)}\\b`,
+    ).test(extractedText),
+  );
   const reExportAdded: string[] = [];
-  if (input.re_export_extracted && lang === 'ts') {
+  if (input.re_export_extracted && lang === 'ts' && exportedExtracted.length > 0) {
     const newBase = path.posix.basename(newRel.replace(/\\/g, '/')).replace(/\.[^.]+$/, '');
-    const reExportLine = `export { ${extractedNames.join(', ')} } from './${newBase}';`;
+    const reExportLine = `export { ${exportedExtracted.join(', ')} } from './${newBase}';`;
     origContentWithImport = insertImport(origContentWithImport, reExportLine);
     reExportAdded.push(reExportLine);
   }
 
   // 原文件里指向被抽取符号的引用（在非抽取文本中扫描）
-  const keptLines = content.split('\n').filter((_, i) => {
-    for (const [s, e] of ranges) if (i + 1 >= s && i + 1 <= e) return false;
-    return true;
-  });
+  // ★ T211：`keptLines` **不再在这儿重算** —— 它已在上面算过一次（判据一处）⇒ 这里直接复用 ✓
   const referencesToExtracted: Array<{ line: number; ref: string }> = [];
   keptLines.forEach((ln, i) => {
     for (const nm of extractedNames) {

@@ -164,6 +164,44 @@
            ★ 该不该改字段本身，要单独拍（★ 它会牵动所有读 `compile.ok` 的地方 ✓）
         ③ ★ 新文件的 import 方向反了（★ 加了"离开的符号"而不是"需要的符号"）⇒ ★ 无害但**耦合是假的** ✓
       ⇒ `tsc` 0 · **全量 24 张证全绿** · `verify` 4/4 ✓
+- [x] **T211 ✅（2026-10-12 结项）★★★★★ 修掉拆分链的【真 bug】：接回原文件的 import 无脑全给 ⇒ ★ 默认 `tsc` 从"编不过"变成"0 错误"**
+      *(承 T210：真落盘抓出"切出来的代码编不过"，本轮把它修掉。）*
+      ⇒ ★★ **根因精确到两行**（★ 一个 bug 两个症状）：
+        ```
+        derive_split.ts:353  importFromNewLine: `import { ${extractedNames.join(', ')} } from '…';`   ← ★ 无脑全给
+        derive_split.ts:882  const reExportLine = `export { ${extractedNames.join(', ')} } from './…';` ← ★ 无脑全给
+        ```
+        ⇒ ★ **两处都是"把所有被抽走的符号"无条件列上** —— ★ 而正确判据是**两个不同的尺**：
+         ① ★ **import 只该给"残余代码【还用得着】的"** ⇒ ★ 实测：切完后 `mixed.ts` **一个都不用** ⇒
+            ★ 却硬塞了 `import { SECRET, signToken, verifyToken }` ⇒ ★★ 而 `SECRET` 原文里是**模块私有**（`const SECRET` 无 `export`）
+            ⇒ ★★★ **TS2459：declares 'SECRET' locally, but it is not exported** ⇒ **编不过** ✓
+         ② ★ **re-export 只该给"原文里本来就 `export` 的"** ⇒ ★ 原先把 `SECRET` 也 re-export 出去
+            ⇒ ★★ **把私有变成了公开**（★ 对外 API 悄悄变了）✓
+      ⇒ ★ **修法（两处判据，都用现成的尺，不造第二把）**：
+        · ① ★ `importFromNewLine` = **`referNames(remainingText, extractedNames)`** ✓
+          —— ★ `referNames` 本文件**已在用另一个方向**（`referNames(extractedText, remainingNames)` ✓）⇒ ★ **对称用** ✓
+          ★ 且 ★ **残余一个都不需要 ⇒ 整行 import 都不生成**（★ 不给空 import ✓ 同"没圈到就省略"）
+        · ② ★ `reExportLine` = **只列 `exportedExtracted`**（★ 从**被抽走的正文**里认出"带 `export` 的声明"）✓
+          ★★ **两条错法的后果不对称 ⇒ 据此选保守那边**：少再导出 ⇒ 外部引用**断** ⇒ ★ **编译能抓到** ✓；
+            多再导出 ⇒ **偷偷改 API** ⇒ ★ **抓不到** ✗ ⇒ ★ **宁少列** ✓
+        · ★ 顺带：**残余正文只算一次**（★ `buildWiring` 与 `keptLines` 都要它）⇒ ★ 把原先**重算一遍**的那份删掉，**判据一处** ✓
+      ⇒ ★★★ **决定性那一测**（★ 拿掉 `tsconfig.json` ⇒ **验收会跳过** ⇒ ★ 那才是"代码本身对不对"的裸判据）：
+        ```
+        重切 ⇒ 4/4 落盘（★ 且回执明说"**验收被跳过**…★ **这次【没验过】**" ✓ ← ★ T210 修的诚实那半也当场生效了）
+        切完 mixed.ts：  import { formatMoney } from './money-format';        ← ★ 只留真用得着的 ✓
+                        export { signToken, verifyToken } from './token-session';  ← ★ 【没有 SECRET 了】✓
+        ★★ 硬判据：默认 `tsc`（不带 noUnusedLocals）⇒ **0 错误** ✓✓
+        ★（`noUnusedLocals` 下仍有 3 个 `TS6133` 未用 import —— ★ 但那**不是默认**，★ 且仓里写明
+          *"TS 不做裁剪（tsc 默认不报未用变量）"* ⇒ ★ **有意为之** ✓）
+        ★ 对照：**修之前**同一路径下 `noUnusedLocals` 报 **8 错（含 TS2459）** ⇒ ★ **真 bug 消失** ✓
+      ⇒ ⏳ **在账（★ 本轮量出来的）**：
+        ① ★ **切出来的新文件之间仍有【假耦合】的 import**（实测：`csv-export.ts` / `money-format-legacy.ts`
+           都 import 了它们**不用的** `formatMoney`）⇒ ★ 默认 `tsc` 无害、`noUnusedLocals` 下报 `TS6133` ✓
+        ② ★ `verify_compile` **跳过时仍返回 `ok:true`**（★ 我只修了**显示层**）⇒ ★ 字段语义要不要改，得单独拍
+           （★ 牵动所有读 `compile.ok` 的地方 ✓）
+        ③ ★ **"私人符号既离开又被需要"** 这一格还没处理（★ 本轮修的是"不需要却硬塞"⇒ 现在不塞了 ⇒ **TS2459 消失** ✓）
+           ⇒ ★ 若真出现"**残余代码需要一个被抽走的私有符号**"⇒ ★ 仍需在**新文件里补 `export`**（★ 现在只会被验收拦 ✓）
+      ⇒ `tsc` 0 · `build` ✓ · 全量回归全绿 · `verify` 4/4 ✓
 - [x] **T209 ✅（2026-10-12 结项）★★★★★ 拆分链【接上了】+ ★ 抓出并修掉了"判定不可复现" + ★ 链路诊断**
       *(用户："那接吧…反正这些东西你自己看着安排，你自己觉得怎样顺序合理就可以。**没有必要给我挑，你自己才是开发工程师**。"）*
       ⇒ ★★ **（一）接链 —— 按本表最高的标准做的（不是"登记了"，是"真跑过"）**：
