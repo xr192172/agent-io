@@ -141,6 +141,20 @@
         ★ 以及**密钥怎么走**（`gateway_provider action=upsert` 写进 `gateway.json`，还是设 `AGNES_KEY_POOL`）⇒
         ★ 那是**跨项目搬运密钥**的动作，**要用户点头** ✓
       ⇒ ★ **安全**：本次全程**只数个数、不打印任何 key** ✓
+      ⇒ ★★★ **追加实测（★ 关键）：那 3 把 key 【全都活着、且能用】**
+        用 DSH 现成的自检脚本逐把打上游（`dsh-brain/scripts/pool-key-selftest.mjs --env-file .env --model agnes-2.5-flash`）：
+        ```
+        # 1  …9tvB  status=200  verdict=VALID
+        # 2  …CR6p  status=200  verdict=VALID
+        # 3  …z12X  status=200  verdict=VALID
+        ★ 池共 3 把 key：有效 3 / 无效 0 / 未能判定 0
+        — 池对账 http://127.0.0.1:3101/healthz ⇒ ★ 读不到（ECONNREFUSED）⇒ **池代理没在跑** ✓
+        ```
+        ⇒ ★★ **3 把有效** ＋ ★ **本仓那把被限流** ⇒ ★★★ **把它们接进来，很可能【立刻修好 LLM】** ✓
+      ⇒ ⏳ **具体动作（★ 一行命令的事，但要你点头 —— 那是【跨项目搬密钥】）**：
+        · 方式 A：`gateway_provider action=upsert`（`id=agnes`，`keys=[3 把]`）⇒ ★ 写进本仓 `gateway.json`（**可逆**，`action=delete` 可撤）✓
+        · 方式 B：设 `AGNES_KEY_POOL`（逗号分隔 3 把）⇒ ★ 但★ **它只是"一次性导入源"**（`gateway.json` 才是家）⇒ 仍需落盘那一步 ✓
+        ★ **我倾向方式 A**（直接、可逆、且与"池归 AgentIO"的 (乙) 方向一致）✓
 - [x] **T206 ✅（2026-10-12 结项）★★★ 查清"网关 key 全在冷却"到底是什么 —— ★ **不是梯子**，是上游对【免费用户】限流（HTTP 429）**
       *(用户："**网关 T 全在冷却吗？为什么会这样**，我记得之前的话是每天都那个的，**会不会是我把梯子关了的原因**，我先把梯子打开你试一下。"）*
       ⇒ ★ **先弄清机制**（★ 不猜）：冷却 = `llm_gateway.ts` 的 `pool.cooldown(idx, now, 15_000)` ⇒
