@@ -354,6 +354,8 @@ export const DESIGN_TOOLS: ToolDef[] = [
             `无混合文件解耦信号（扫了 ${brick.meta.scanned_files} 个文件）⇒ 无需复核。` +
             '★ **本次未探测 LLM 是否可用**（没有要复核的信号）⇒ `llm_available` 省略，不谎报 true。',
           data: { signals_scanned: [], review: null },
+          // ★ T209：产物锚点 —— ★ 本分支**没写任何文件** ⇒ 只给 `project_dir` ✓
+          touched: { project_dir: path.resolve(project_dir) },
         };
       }
       const only = (a.only as string[] | undefined) ?? [];
@@ -371,6 +373,8 @@ export const DESIGN_TOOLS: ToolDef[] = [
             `LLM 不可用（未配置 apiKey）⇒ **未复核**：${brick.mixed_files.length} 个信号原样返回，` +
             '没有编造"采纳/驳回"结论（诚实降级）。',
           data: { signals_scanned: brick.mixed_files, review: null, llm_available: false },
+          // ★ T209：产物锚点 —— ★ LLM 不可用这条**在写报告之前就返回了** ⇒ 没有产物文件 ⇒ 只给 `project_dir` ✓
+          touched: { project_dir: path.resolve(project_dir) },
         };
       }
       const report_path = a.report_path as string | undefined;
@@ -402,6 +406,15 @@ export const DESIGN_TOOLS: ToolDef[] = [
           review: result,
           llm_available: result.meta.llm_available,
           ...(written ? { report_path: written } : {}),
+        },
+        // ★★★ T209：**产物锚点**（`Touched`）—— ★ 没有它，`split_stage` 就**接不上本工具**
+        //   （链的接法表记的是"上游的产物 → 下游的入参位置"）。
+        // ★ 口径（照契约）：`project_dir` = **解析后的绝对根**；`written_files` = ★ **只在报告真落盘时给**
+        //   （★ 报告就是本工具**唯一**的产物文件 ⇒ 它正是 `split_stage.report_path` 要的那份 ✓）。
+        //   ★ 没给 `report_path`（只诊断、不留档）⇒ **整个 `written_files` 省略**（★ 不给空数组 ✓）。
+        touched: {
+          project_dir: path.resolve(project_dir),
+          ...(written ? { written_files: [written] } : {}),
         },
       };
     }),

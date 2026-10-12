@@ -137,7 +137,15 @@ async function reviewOne(
   const timeoutMs = opts.timeout_ms ?? 120_000;
   for (let attempt = 0; attempt < 2 && !Array.isArray(list); attempt++) {
     try {
-      const text = await callChat(cfg, messages, 0.2, timeoutMs);
+      // ★★★ T209（2026-10-12）：**温度从 0.2 改成 0** —— ★ 这是【裁决】任务，不是创作。
+      //   ★★ 实测证据（同一份夹具、同一个提示，相隔几十分钟跑两次）：**判定翻转了两个簇** ——
+      //     `review4` ⇒ 采纳「金额新版 + 金额旧版」/ 驳回「token + CSV」
+      //     `review5` ⇒ 采纳「token + 金额旧版」/ 驳回「金额新版 + CSV」
+      //   ⇒ ★★ 而下游 `split_stage` **忠实照判定切文件**（两次都切得对）⇒ **不可复现的是【判定】本身** ✓
+      //   ★ 为什么这条比"温度随便"更严重：★ 它产出的是**要落到代码上的拆分计划** ⇒
+      //     ★ **同一份代码两次跑出不同计划** = 无法复现、无法复核 ✓
+      //   ★ 判定/分类类任务的业界口径就是**低温**（取最可能的那个答案），温度只该喂给"要多样"的生成任务 ✓
+      const text = await callChat(cfg, messages, 0, timeoutMs);
       const parsed = extractJsonObject(text);
       const l = parsed?.reviews;
       if (Array.isArray(l)) {

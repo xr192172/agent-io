@@ -458,6 +458,29 @@ export const CHAIN_EDGES: readonly ChainEdge[] = [
       '`retireMarksOf` 一处投影 ⇒ 两条 handler 路径（给/不给 `scope`）**共用同一把尺**。' +
       '★ 同形的边：`scope_files → edit_code.file` / `scope_files → move_symbol.file`（都在表里，`verified`）。',
   },
+
+  // ── ★★★ T209（2026-10-12）：**"拆分链"那一棒** —— `signal_review` → `split_stage` ──
+  //   ★ 前史（★ 为什么它直到今天才进表）：这条链**早就写在两个工具的说明里**（一个写"第一棒"、
+  //     一个写"最后一棒：消费 `signal_review` 的报告"），★ **但上游 `signal_review` 不产 `touched`** ⇒
+  //     ★★ 接法表**根本接不上它**（表记的是"上游产物 → 下游入参位置"，上游没产物锚点就没得接）。
+  //   ★ 修法（T209）：给 `signal_review` 补 `touched = {project_dir, written_files:[报告]}` —— ★ 报告是它**唯一**的产物文件，
+  //     而那份**正是** `split_stage.report_path` 要吃的 ✓；★ 没传 `report_path`（只诊断不留档）⇒ **整个 `written_files` 省略** ✓
+  //   ★ 之所以是 `single`：★ 报告**有且只有一份**（取即确定）⇒ 不需要调用方给下标 ✓
+  //   ★★ 验收（★ 本表纪律：`verified` = **真跑过**）：★ 用 `next_hop_args` 按本边**组出 `split_stage` 的入参**并**真跑**，
+  //     回执 `2 个采纳簇 → 拆出 2 个文件，成功 2/2，回滚 0`（dry-run，未落盘）⇒ ★ **边成立** ✓
+  {
+    from: 'signal_review',
+    fromKey: 'written_files',
+    to: 'split_stage',
+    toPath: 'report_path',
+    cardinality: 'single',
+    evidence: 'verified',
+    note:
+      '`signal_review` 落盘的**报告 JSON** 就是 `split_stage` 要吃的 `report_path`。' +
+      '★ 按本边组参真跑过：`2 个采纳簇 → 拆出 2 个文件，成功 2/2`（dry-run 未落盘）⇒ `verified`。' +
+      '★ 前提：上游得**给了 `report_path`**（不给就不留档 ⇒ `written_files` 整项省略，这条边**无值可接**）。' +
+      '★★ 前史：两边的**说明里早就写着**这是同一条链，但上游一直不产锚点 ⇒ **表里接不上**；修法是给上游补 `touched`（判据一处）。',
+  },
 ];
 
 /**
