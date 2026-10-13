@@ -1355,26 +1355,6 @@
 
 ---
 
-- [ ] **T67 ★★★ 合并形态 S1：`MANIFEST.txt` —— 卷声明，把"三个层"从注释里请出来**
-      *(核实：2026-10-08 实测「`overlay 独立保留` / `base 可再生成` 全仓**只在 `src/infrastructure/storage_overlay.ts` 一处**；
-       `README` 的 `三个`=0 / `acceptance`=0；`design-canvas-router` 的 `overlay`=0；`design-canvas-mind` 的 `overlay`=0 / `base`=0
-       ⇒ **三处引导全不写** ⇒ 用户与我都"不会想到它有三个"。)*
-      ⇒ **形状**：一份 10~20 行纯文本，**只有声明、没有数据**（数据仍在原处 ⇒ **不新增真相源**）：
-        `#Format-Version: agent-io/volumes-v1`（治"DSL 格式漂了没处看"）·
-        `#Volume: id=live|base|overlay|archive|cognition  mode=… regen=… path=…` ·
-        `#Quota: F<=200 R<=300 A<=300 S<=600`（治"只有下限没有上限"）·
-        `#Admission:` **指向已有的 L1–L4**（`reason_validator.ts`）——★ **声明已有的，不新造一个**。
-      ⇒ **判据**：① 生成物与磁盘实况一致（**列出不存在的卷 ⇒ 报错，不静默**）；
-        ② 只读它**能答出"谁是真相、谁能改、谁会被重生成"**。
-      ⇒ ★ **已定（2026-10-08）**：住 **仓根**（`<project>/MANIFEST.txt`），判据 = **变更频率低**
-        （只在"卷布局变了"时变；实测 21 行 ~1.5KB）⇒ **进 Git 可 diff、可评审、走"读文件"这个原生通道**。
-        `--in-data-dir` 保留给不想让仓根多文件的场合。
-        ★★ **理由（用户追问"我们现在的设计达得到简化 LLM 读取的目的吗"）**：这是「**file 通道 vs tool 通道**」之别 ——
-          tool 通道要求 **服务在跑 + 知道工具存在 + 20 个 query 里挑对**；实测 `query=digest` 早就实现且能用，
-          `capability_map`/README/router **三处全不点名** ⇒ **连着四轮没人看见**。
-      ⇒ ★ **本轮已落**：`scripts/gen_manifest.mjs` + `npm run manifest` / `manifest:check`，
-        出生证两方向都验过（磁盘多卷 ⇒ 红；声明谎报 ⇒ 红；还原 ⇒ 绿）。**余下：`capability_map` 顶部点名它。**
-      ⇒ 设计：`docs/convergent-product-form.md`。
 
 - [ ] **T99 ★★★ 聚类的判决：**它有用，但输给一个更便宜的东西** ⇒ 据此定去留**
       *(来源：2026-10-09 用户提出「那个聚类我觉得也可以废弃了……太机械化了，而且和实际意义不相符，
