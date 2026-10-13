@@ -541,7 +541,21 @@ if (process.argv.includes('--json')) {
       if (got.length) hits.push({ f: relOf(f), via: '手搓', got });
     }
   }
-  console.log(`★★★ \`touched\` **内部各键**的产出覆盖（两源：\`touchedOf\` 函数体 + 手搓 \`touched\`；共 ${hits.length} 个文件产它）：`);
+  // ★★★ 2026-10-13（T96）：**本节的判定是【静态文本命中】，不是"运行时真产"** —— ★ 如实标成**候选**。
+  //   已复现的偏差（假阳性方向）：本节的 `hitOf` 是**正则扫源码文本** ⇒
+  //     · 产者被**注释掉** ⇒ 照样算命中 ✗（`// touched.scope_files = []` 判为 true）
+  //     · 只在**注释里提一句**、从没产过 ⇒ 也算命中 ✗
+  //     · **块注释** / 对象字面量里被注释掉的键 ⇒ 同样算命中 ✗
+  //   ★★ 判据（账上 T96 原文）：**注释掉一个产者，读数必须下降** —— ★ **今天不下降**（未满足）✓
+  //   ★ 为什么仍不改（`todo.md` T96 自己写着"**别急着改 —— 先问它服务什么**"）：本节服务的是
+  //     "**哪个 [B] 该接上锚点**"的**工作清单** ⇒ ★ 假阳性 = **多列几个候选**，人去看一眼即可 ⇒ **低危** ✓
+  //   ★ 修法（已想清、未做）：走 **AST** —— 仓里已有先例（`derive_split.ts:549` 判 `n.type === 'comment'`）
+  //     ⇒ 拿注释节点的**范围**，命中位置落在注释里就**不算**。★ 本次因"低危 + 服务对象是工作清单"**不做** ✓
+  console.log(
+    `★★★ \`touched\` **内部各键**的产出覆盖（两源：\`touchedOf\` 函数体 + 手搓 \`touched\`；共 ${hits.length} 个文件产它）` +
+      `\n     ★★ 口径声明：下面是**静态文本命中**（正则扫源码）⇒ ★ **是"候选"，不是"运行时真产"** ——` +
+      ` 产者被注释掉、或只在注释里提一句，**都会被算进来**（已知偏差，见本段上方注释 / \`todo.md\` T96）✓`,
+  );
   for (const k of KEYS) {
     const n = hits.filter((h) => h.got.includes(k)).length;
     const hand = hits.filter((h) => h.via === '手搓' && h.got.includes(k)).length;
@@ -610,6 +624,8 @@ if (process.argv.includes('--json')) {
     return n;
   };
   console.log('★★ 接力键（词表 `kind: "anchor"` 的词）两端覆盖：');
+  console.log('     ★★ 口径声明（同上面「各键产出覆盖」）：**"产物"这一列是【静态文本命中】，是候选不是真产** ——');
+  console.log('        产者被注释掉、或只在注释里提一句，**都会被算进来**（已知偏差见本节上方注释 / `todo.md` T96）✓');
   for (const k of [...ANCHOR_NAMES].sort()) {
     console.log(`     ${k.padEnd(16)} 入参 ${String(inNames.get(k) ?? 0).padStart(2)} · 产物 ${String(prodCover(k)).padStart(2)}`);
   }
