@@ -275,8 +275,8 @@ export const DESIGN_TOOLS: ToolDef[] = [
     name: 'render_design',
     title: 'Render design DSL to mindmap/SVG/Markdown',
     description:
-      '渲染设计 DSL：format=mindmap（默认，现行思维导图架构：root → 功能分组 → 文件；' +
-      '功能分组优先读设计视图语义分组容器，其次 feature_tree 功能树）/' +
+      '渲染设计 DSL：format=mindmap（默认，现行思维导图架构：root → 目录分组 → 文件；' +
+      '目录分组优先读设计视图语义分组容器，其次 feature_tree 功能树）/' +
       'svg（矢量图）/ markdown（可读设计文档）。均用 feature 从存储读取。' +
       '★ 2026-09-30：原 `format=html`（自包含单文件设计画布·星图）**已删除** —— ' +
       '它是 lane 自己标注的"仅调试用"旧路径、渲染效果差，且前端（dsl-workbench）自取数据自行渲染；' +

@@ -7,7 +7,8 @@
  * 本 feature 的 DSL 与导图（"146 条 flows 污染"）。storage.ts 已修复为自省包根
  * 锚定；本命令提供配套的一键全链重建入口。
  *
- * 聚类的原理：结构导图是否按功能模块分组，取决于 DSL 里有没有 feature_tree。
+ * 聚类的原理：结构导图是否按**目录分组**（★ 按 T105 定的口径：这一层不叫「功能」，「功能」留给人写的标记），
+ * 取决于 DSL 里有没有 feature_tree。
  * feature_tree 由 derive_feature_tree 基于 cache.db（analyze_monolith）计算；
  * 所以必须先建 import_cache_<feature>.db（importProject 写符号缓存），再跑
  * deriveFeatureTree 写回 dsl.feature_tree，最后 deriveMindMap 才不平铺。

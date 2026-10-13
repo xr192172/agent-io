@@ -770,7 +770,7 @@ export const META_TOOLS: ToolDef[] = [
     description:
       '读取某 feature 的项目文档夹（<project_dir>/docs/，或受管目录 .agent-io/docs/<feature>/）。' +
       '三种用法：不带 name= 返回清单（含 frontmatter 关联标签与预览，供 agent 挑）；带 name= 返回单篇全文；' +
-      '带 targets 返回命中该目标集（功能/步骤/文件）的文档正文（与 canvas_notes action=decide 的按批关联注入同一套匹配）。' +
+      '带 targets 返回命中该目标集（目录分组/步骤/文件）的文档正文（与 canvas_notes action=decide 的按批关联注入同一套匹配）。' +
       '项目文档可丢进项目仓库 docs/ 作为 LLM 决策背景（需求/设计约定/约定规范），' +
       'canvas_notes action=decide 会自动按批把命中文档注入决策上下文（TOC 全量 + 命中正文封顶）。',
     inputSchema: {
@@ -779,7 +779,7 @@ export const META_TOOLS: ToolDef[] = [
       name: z.string().optional().describe('文档 id（相对 docs/ 的路径）；给则返回该篇全文'),
       targets: z
         .object({
-          features: z.array(z.string()).optional().describe('功能名集合'),
+          features: z.array(z.string()).optional().describe('分组名集合（★ 键名是 `features`，指思维导图那层的**目录分组**；「功能」只留给**人写的标记**）'),
           steps: z.array(z.string()).optional().describe('步骤标题集合'),
           files: z.array(z.string()).optional().describe('文件路径集合'),
         })

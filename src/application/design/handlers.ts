@@ -507,7 +507,7 @@ export const manageFeatureHandler = wrapData(async (a) => manageFeature(a as nev
  *       ⇒ 直接塞进回执是"淹掉回执"，正是 §2d 说的那种"为了好看而加的东西"。
  *   ⇒ 保留 `wrap`；**这不是漏迁，是逐字段算过后的判定**（不刷假账）。 */
 export const renderDesignHandler = wrap(async (a) => {
-  // 默认 mindmap：现行思维导图架构（root → 功能分组 → 文件）。
+  // 默认 mindmap：现行思维导图架构（root → 目录分组 → 文件）。
   // ★ 2026-09-30：原 `format=html`（自包含单文件设计画布·星图）**已删除** ——
   //   它是 lane 自己标注"仅调试用"的旧路径、渲染效果差；前端（dsl-workbench）自取数据渲染。
   //   详见 `lanes/design.ts` 的 tool description 与台账 §44.9。
