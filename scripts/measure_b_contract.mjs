@@ -571,7 +571,10 @@ if (process.argv.includes('--json')) {
   if (staleExempt.length) {
     console.log(`     ⚠ 例外表的**陈旧项**（已不在当前 [B] 里，表会腐 ⇒ 请核对）：${staleExempt.join(', ')}`);
   }
-  console.log('     ⇒ ★ 判据：`真债` **只许减不许增**（棘轮）。★ 而「已登记例外（7）」与下面那行');
+  // ★ 2026-10-13（T138 收口）：原句在「已登记例外」后手抄了一个旧数字，早已与真实值不符
+  //   （真实值上一行已由 `exempted.length` 印出）。⇒ 删掉那个手抄的数字，**不再手抄**。
+  //   ★ 刻意**不**改成"新数字"：那只是把腐往后推一次，账上已明写这条判据。
+  console.log('     ⇒ ★ 判据：`真债` **只许减不许增**（棘轮）。★ 而「已登记例外」与下面那行');
   console.log(`       「**产物里没有任何锚点候选字段**的 [B]：${noAnchor.length}/${rows.length}」**判据不同 ⇒ 必然不相等**：`);
   console.log('         · 在那一类里、却**不在**例外表的（如 `diffViews` / `editCode` / `renameFiles`）');
   console.log('           ⇒ 它们**已接 `touched`**（有 `touchedOf`），只是**产物里没有"锚点候选"字段** —— 两回事；');

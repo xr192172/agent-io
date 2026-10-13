@@ -43,7 +43,7 @@ import { camelToSnake } from '../../refactor/rename/rename_symbols.js';
 import { CHAIN_EDGES, chainExprOf, evidenceLabel } from '../../../domain/chain_wiring.js';
 import { B_TERMS, withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
-/** 每个面**最多回多少条**（避免刷屏）；真实总数另给 `count`，截断在 `caveats` 里如实标注。 */
+/** 每个面**最多回多少条**（避免刷屏）；真实总数另给 `count`，截断在 `limitations` 里如实标注。 */
 const MAX_SITES = 40;
 
 export interface ContractPageInput {
@@ -67,7 +67,7 @@ export interface ContractDefinition {
   end_line: number;
   /** 内核 AST 给的 kind（function / interface / type / class / const …） */
   kind: string;
-  /** 内核 AST 给的签名（取不到时为空串，另在 caveats 里说） */
+  /** 内核 AST 给的签名（取不到时为空串，另在 limitations 里说） */
   signature: string;
   qualified_name: string;
 }
@@ -127,7 +127,7 @@ export interface ContractPageResult {
   /** ★ 词表口径（`b_terms` 唯一权威，原样） */
   term?: ContractTerm;
   /** ★ 诚实边界：哪些取不到、哪些是启发式、哪些没做 —— 不许留白。 */
-  caveats: string[];
+  limitations: string[];
 }
 
 // ★ T157（2026-10-11）：类型声明的节点集与成员提取**已提级到内核**
@@ -200,7 +200,7 @@ function sitesOfKind(
 async function contractPageCore(input: ContractPageInput): Promise<ContractPageResult> {
   const symbol = input.symbol;
   const root = path.resolve(input.project_dir ?? process.cwd());
-  const caveats: string[] = [];
+  const limitations: string[] = [];
   /** 词表命中（唯一住处 = `B_TERMS`；本工具只取、不改）。 */
   const termHit = lookupTerm(symbol);
 
@@ -214,7 +214,7 @@ async function contractPageCore(input: ContractPageInput): Promise<ContractPageR
         `符号索引不可用：${root} 下没有可解析的源码（或建索引失败）⇒ 拿不到定义。` +
         '请确认 project_dir 指向代码根目录（本工具只读，不会替你改任何代码）。',
       project_dir: root,
-      caveats,
+      limitations,
     };
   }
 
@@ -243,7 +243,7 @@ async function contractPageCore(input: ContractPageInput): Promise<ContractPageR
       project_dir: root,
       ...(near.length ? { candidates: near } : {}),
       ...(termHit ? { term: termHit.term } : {}),
-      caveats: ['定义/成员/产者/消费者未做（没有锚点）。'],
+      limitations: ['定义/成员/产者/消费者未做（没有锚点）。'],
     };
   }
 
@@ -259,7 +259,7 @@ async function contractPageCore(input: ContractPageInput): Promise<ContractPageR
       candidates: primaryPool.map(asCandidate),
       chain_edges: relatedEdges(symbol, []),
       ...(termHit ? { term: termHit.term } : {}),
-      caveats: ['多候选 ⇒ 未产出定义/成员/产者/消费者。'],
+      limitations: ['多候选 ⇒ 未产出定义/成员/产者/消费者。'],
     };
   }
 
@@ -270,7 +270,7 @@ async function contractPageCore(input: ContractPageInput): Promise<ContractPageR
   try {
     src = fs.readFileSync(absFile, 'utf-8');
   } catch {
-    caveats.push(`定义文件读不到（${relFile}），定义/成员降级为索引里的行号（无签名）。`);
+    limitations.push(`定义文件读不到（${relFile}），定义/成员降级为索引里的行号（无签名）。`);
   }
 
   // ── ② 定义 + 成员：**内核 AST**（parseFileFull 取签名；parseAstRoot 走成员）──
@@ -283,11 +283,11 @@ async function contractPageCore(input: ContractPageInput): Promise<ContractPageR
     definition = ps
       ? { file: relFile, line: ps.start_line, end_line: ps.end_line, kind: ps.kind, signature: ps.signature ?? '', qualified_name: ps.qualified_name }
       : { file: relFile, line: pick.start_line, end_line: pick.start_line, kind: pick.kind, signature: '', qualified_name: pick.qualified_name };
-    if (!ps) caveats.push('内核 AST 未在定义文件里解出该符号（可能是该方法不支持的声明形态）⇒ 签名取不到、行号退回索引值。');
+    if (!ps) limitations.push('内核 AST 未在定义文件里解出该符号（可能是该方法不支持的声明形态）⇒ 签名取不到、行号退回索引值。');
     else if (ps.kind !== 'function' && ps.kind !== 'method') {
       // ★ 内核 AST 的 `signature` 是**函数形态**的（`Name(params): ret`）—— 对 interface/type/class
       //   会退化成 `Name()`，那不是真实签名 ⇒ 如实标注（不许把内核的归一化当成"这个类型的签名"）。
-      caveats.push(`内核 AST 对 \`${ps.kind}\` 的 signature 形如 \`Name()\`（**非真实签名**，只是内核的归一化）⇒ 类型/接口的"签名"请直接看定义行 ${relFile}:${ps.start_line}。`);
+      limitations.push(`内核 AST 对 \`${ps.kind}\` 的 signature 形如 \`Name()\`（**非真实签名**，只是内核的归一化）⇒ 类型/接口的"签名"请直接看定义行 ${relFile}:${ps.start_line}。`);
     }
 
     const ast = await parseAstRoot(absFile, src);
@@ -299,7 +299,7 @@ async function contractPageCore(input: ContractPageInput): Promise<ContractPageR
     } else if (ast) {
       membersNote = '该声明不是带成员体的类型（interface/type/class）⇒ 无成员清单。';
     } else {
-      caveats.push('AST 解析失败（语言不支持 / 解析器缺失）⇒ 无成员清单。');
+      limitations.push('AST 解析失败（语言不支持 / 解析器缺失）⇒ 无成员清单。');
     }
   }
 
@@ -322,10 +322,10 @@ async function contractPageCore(input: ContractPageInput): Promise<ContractPageR
         consumerSites.push({ file: imp.file, line, kind: 'import', ...(imp.importSources.length ? { snippet: `import ${imp.importSources.join(', ')}` } : {}) });
       }
     } else {
-      caveats.push(`引用面（mode=symbol）未产出：${(refs.blocked ?? ['未给出原因']).join('；')}`);
+      limitations.push(`引用面（mode=symbol）未产出：${(refs.blocked ?? ['未给出原因']).join('；')}`);
     }
   } catch (e) {
-    caveats.push(`引用面（mode=symbol）调用失败：${(e as Error).message.slice(0, 160)}`);
+    limitations.push(`引用面（mode=symbol）调用失败：${(e as Error).message.slice(0, 160)}`);
   }
 
   // 3b) 字段面（mode=field）：谁「构」（产者）/ 谁「读、解构」（消费者）
@@ -346,12 +346,12 @@ async function contractPageCore(input: ContractPageInput): Promise<ContractPageR
           `（原样取自 find_references，本工具不重算。）`,
       };
       consumerSites.push(...consumerFieldSites);
-      if (buildSites.length > MAX_SITES) caveats.push(`产者站点已截断：共 ${buildSites.length}，只列前 ${MAX_SITES}。`);
+      if (buildSites.length > MAX_SITES) limitations.push(`产者站点已截断：共 ${buildSites.length}，只列前 ${MAX_SITES}。`);
     } catch (e) {
-      caveats.push(`字段面（mode=field）调用失败：${(e as Error).message.slice(0, 160)}`);
+      limitations.push(`字段面（mode=field）调用失败：${(e as Error).message.slice(0, 160)}`);
     }
   } else {
-    caveats.push(
+    limitations.push(
       `字段面（mode=field）**未做**：\`${symbol}\` 既不在词表里、也不是带成员的类型 ` +
         `⇒ 没有可查的字段名（归一后为 \`${fieldName}\`）。`,
     );
@@ -365,14 +365,14 @@ async function contractPageCore(input: ContractPageInput): Promise<ContractPageR
       `★ 两个来源都取自 find_references：**谁 import 它**（mode=symbol，${importerCount} 个 import 方）` +
       `＋ **谁读/解构它**（mode=field 的 field-read / field-destructure）。`,
   };
-  if (consumerSites.length > MAX_SITES) caveats.push(`消费者站点已截断：共 ${consumerSites.length}，只列前 ${MAX_SITES}。`);
+  if (consumerSites.length > MAX_SITES) limitations.push(`消费者站点已截断：共 ${consumerSites.length}，只列前 ${MAX_SITES}。`);
 
   // ── ④ 接法边（CHAIN_EDGES 唯一权威）──
   const edges = relatedEdges(symbol, members ?? []);
 
   // ── ⑤ 词表口径（b_terms 唯一权威，原样）──
   const term = termHit?.term;
-  if (!term) caveats.push(`\`${symbol}\` 不在 \`b_terms\` 词表里（键试过：原名 / snake / 小写）⇒ 无口径。`);
+  if (!term) limitations.push(`\`${symbol}\` 不在 \`b_terms\` 词表里（键试过：原名 / snake / 小写）⇒ 无口径。`);
 
   return {
     symbol,
@@ -386,7 +386,7 @@ async function contractPageCore(input: ContractPageInput): Promise<ContractPageR
     consumers,
     chain_edges: edges,
     ...(term ? { term } : {}),
-    caveats,
+    limitations,
   };
 }
 
@@ -424,7 +424,7 @@ export function renderContractPage(r: ContractPageResult): string {
       for (const c of r.candidates) L.push(`      - ${c.qualified_name} @ ${c.file}:${c.line}（${c.kind}，来源 ${c.source}）`);
     }
     if (r.term) L.push(`  ▢ 词表口径（\`${r.term.name}\` · ${r.term.kind}）：${r.term.meaning}`);
-    if (r.caveats.length) L.push('  ★ 未做/取不到：\n      - ' + r.caveats.join('\n      - '));
+    if (r.limitations.length) L.push('  ★ 未做/取不到：\n      - ' + r.limitations.join('\n      - '));
     return L.join('\n');
   }
 
@@ -473,6 +473,6 @@ export function renderContractPage(r: ContractPageResult): string {
     if (r.term.fix) L.push(`   处置：${r.term.fix}`);
   }
 
-  if (r.caveats.length) L.push('\n★ 诚实边界（取不到 / 未做）：\n   - ' + r.caveats.join('\n   - '));
+  if (r.limitations.length) L.push('\n★ 诚实边界（取不到 / 未做）：\n   - ' + r.limitations.join('\n   - '));
   return L.join('\n');
 }
