@@ -25,7 +25,9 @@ import { unknownArgHints, renderArgHints } from '../../infrastructure/text/arg_s
 import { collectPendingAlertText, dispatchDslEdit } from '../../application/dispatch.js';
 // ★★ 2026-10-06：「下一棒」提示 —— 链的接法（`CHAIN_EDGES`）+ 机器段标记（**单点**，别硬编码）
 import { renderNextHops, nextHopsOf } from '../../domain/chain_wiring.js';
-import { DATA_MARKER } from '../../application/plumbing.js';
+// ★ T251（2026-10-13）：`parseDataBlock` = 取 `---DATA---` 后**第一行**的**唯一**解析器
+//   （`DATA_MARKER` 单点 + 单行载荷口径都住它那一处）—— 本文件取 `touched` 走它，不再自写切法。
+import { DATA_MARKER, parseDataBlock } from '../../application/plumbing.js';
 // ★★ 2026-10-06：「面」—— 目录口径（`catalogOf`，单点）+ 面的机算（`facesOf`）+ 各线 direct 白名单
 // ★ 2026-10-11：接续段的**入参路径表**改用 `collectInputPaths`（必填判定在 `renderHandoffPanel` 里，
 //   复用 `declaredRequiredMembersOf` —— 与 `capability_map` 的「接续」段**同源**，T140 第二处）。
@@ -816,8 +818,8 @@ export async function invokeTool(
   //   「怎么呈现」是各面自己的事：MCP 面用 `textOut(...)` 包成 `{content:[...]}`，
   //   CLI 面直接打到 stdout。★ 这样两个面共用的就是**同一份合成逻辑**（唯一真相源）。
   // ⑦ ★★ 2026-10-06：「下一棒」提示（用户裁定：**先不收敛，所有有可能的下一棒都给它**）。
-  //    ★ 插在 `---DATA---` **之前**：既有解析 `text.split('---DATA---')[1]` **不受影响**，
-  //      且机器块（`---WARNINGS---`）仍是最末 —— **别追加到末尾**，那会污染 `JSON.parse`。
+  //    ★ 提示插在 DATA 标记之前，保持载荷首行不变；告警和信任附注可能追加在载荷之后。
+  //    ★ T251：取机器载荷统一用 `parseDataBlock`，不再假定标记后的整段都是 JSON。
   //    ★ 只在**有已验证出边**的工具上注入（★ 具体哪些、共几个，一律见 `domain/chain_wiring.ts` 的
   //      `CHAIN_EDGES`，以它为准 —— 不在此硬编码数字：会漂的数字就是下一处漂移），
   //      其余工具文本**一个字符都不变**。
@@ -847,30 +849,30 @@ export async function invokeTool(
  * 「下一棒」的合成 —— ★ 有 `touched` 就印**具体值**（共用 `renderHandoffPanel`），否则退回**表达式**版。
  *
  * ★ 从 `r.text` 里取 `touched` 是**只能这么干**（本通道按设计只回**合成好的文本**，见上面那段注释）；
- *   `DATA_MARKER` 是**单点**（`application/plumbing.ts`），不硬编码。
- * ★★ **解析失败一律退回**（`JSON.parse` 包在 try 里）：提示是"锦上添花"，**绝不许**因为它让主回执崩掉。
+ *   取法**唯一**：`parseDataBlock`（`application/plumbing.ts`，`DATA_MARKER` 单点 + 单行载荷口径
+ *   都住它那一处）—— ★ 本函数不再自写 `indexOf`/`slice`/`split` 切法。
+ * ★★ **解析失败一律退回**：`parseDataBlock` 找不到标记 / 第一行不是 JSON 时**返回 `null`**（它不抛）；
+ *   这里再包一层 try 是为了兜住**渲染**（`renderHandoffPanel`）的异常 —— 提示是"锦上添花"，
+ *   **绝不许**因为它让主回执崩掉。
  */
 function renderNextNote(tool: string, text: string): string {
   if (nextHopsOf(tool).length === 0) return '';
   try {
-    const i = text.indexOf(DATA_MARKER);
-    if (i >= 0) {
-      const line = text.slice(i + DATA_MARKER.length).split('\n').find((l) => l.trim().startsWith('{'));
-      if (line) {
-        const data = JSON.parse(line) as { touched?: Record<string, unknown> } | null;
-        const t = data && typeof data === 'object' ? data.touched : undefined;
-        if (t && typeof t === 'object' && Object.keys(t).length > 0) {
-          const note = renderHandoffPanel(
-            tool,
-            t,
-            (name): readonly InputPath[] => {
-              const d = TOOL_DEFS.find((x) => x.name === name);
-              return d ? collectInputPaths(d.inputSchema) : [];
-            },
-          );
-          if (note) return '\n' + note;
-        }
-      }
+    const data = parseDataBlock(text);
+    const t =
+      data && typeof data === 'object'
+        ? (data as { touched?: Record<string, unknown> }).touched
+        : undefined;
+    if (t && typeof t === 'object' && Object.keys(t).length > 0) {
+      const note = renderHandoffPanel(
+        tool,
+        t,
+        (name): readonly InputPath[] => {
+          const d = TOOL_DEFS.find((x) => x.name === name);
+          return d ? collectInputPaths(d.inputSchema) : [];
+        },
+      );
+      if (note) return '\n' + note;
     }
   } catch {
     // ★ 静默退回**是这里唯一允许的"静默"**：提示不属于契约，不能因为它连累主回执。

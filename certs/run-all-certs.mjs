@@ -55,11 +55,10 @@ const named = filters.filter((a) => a !== '--exclude' && a !== EXCLUDE);
 //
 // ## ★★ 自检（★ 防这份清单腐掉——"硬编码的清单一定会过期"）
 // 每一条都要求**它的源码里真的没有 `汇总：PASS=`** ⇒ 谁将来给它补上了判定，这里**当场警告**并拒绝跳过它。
-// ★★ **已知的假阳性（实测）**：`t187-probe.mjs` 源码里**有**那个串、**运行期却不产出汇总**
-//   ⇒ 它被误判成"已升级为真证"而遭拒绝 ⇒ ★ 所以它**没进清单**、每次全量都陪跑（约 22s）。
-//   ⇒ ★ **权威来源应当是【运行期事实】**（跑一次看它到底产不产出汇总），而不是源码文本 ——
-//     后半段那个「运行期漏项自检」就是干这个的；反向（"清单里这条其实已是真证"）
-//     需要一个 `--all` 跑才能看出来。★ 这处不自洽已单列 **T253**。
+// ★★ **T254（2026-10-14）**：`t187-probe.mjs` **已升级为真证** —— 它现在产标准 `汇总：PASS=n FAIL=m`、
+//   有红时 `exit 1` ⇒ 从本清单**删掉**，由 runner 正常收集与判红。
+//   （★ 它曾经是 T253 那个"源码文本查假阳性"的主角：源码里有 `汇总：PASS=` 串、运行期却不产出 ⇒
+//     权威口径改成**运行期台账** `cert-facts.json` 之后，这类误判才消掉。）
 // ★★ T253 续：`t184b-probe.mjs` / `t197sub-approval.mjs` / `t203b-declared.mjs` **已从清单删掉** ——
 //   实测它们**不匹配 `COLLECT_RE`**（`t\d+` 后面必须紧跟 `-`，而它们是 `t184b-`/`t197sub-`/`t203b-`）
 //   ⇒ ★ runner **根本不会收集它们** ⇒ 列在清单里**毫无作用**（既不会跳过、也不会跑）。
@@ -67,7 +66,6 @@ const named = filters.filter((a) => a !== '--exclude' && a !== EXCLUDE);
 const NON_JUDGING = [
   ['t181-reset.mjs', '复位脚本（摆证器纪律用）'],
   ['t185-reset.mjs', '复位脚本'],
-  ['t187-probe.mjs', '探针（★ T253：依据 = **运行期台账** cert-facts.json 说它 hasSummary=false，不是源码文本）'],
   ['t189-measure.mjs', '量具'],
   ['t189-sweep.mjs', '量具：把 69 个工具逐个真跑（★ T224 实测 = 全量 52% 的时间）'],
   ['t192-phantom.mjs', '探针'],
@@ -201,17 +199,24 @@ for (const f of files) {
   const hasSummary = sum.length === 2;
   const pass = sum[0] ?? '?';
   const fail = sum[1] ?? '?';
-  rows.push({ f, rc, pass, fail, out, hasSummary, ms });
+  // ★★★ T254：**三档判读收成一处**（唯一派生 = `kind`）—— 下面所有地方（计数 · 行标签 · 报告表 ·
+  //   崩/有红原文 · 漏项自检）都从它取，不再各写一遍谓词（本仓头号病：同一判据住两处）。
+  //   · 有标准汇总且 FAIL>0 ⇒ `red`：**不管 rc**（探针自己 `exit 1` 仍算"有红"，不是"崩"）
+  //   · 否则 rc!=0 ⇒ `crash`：没跑完/自己炸（连汇总都给不出）
+  //   · 否则有汇总 ⇒ `green`
+  //   · 否则 ⇒ `nosummary`：跑了但没判红汇总（不是出生证 / 未成形）
+  const kind = hasSummary && fail !== '0' ? 'red' : rc !== 0 ? 'crash' : hasSummary ? 'green' : 'nosummary';
+  rows.push({ f, rc, pass, fail, out, hasSummary, ms, kind });
 
-  if (rc !== 0) crashed++;
-  else if (hasSummary && fail !== '0') failed++;
+  if (kind === 'crash') crashed++;
+  else if (kind === 'red') failed++;
 
   const tag =
-    rc !== 0
+    kind === 'crash'
       ? `★ 崩（exit=${rc}）`
-      : !hasSummary
+      : kind === 'nosummary'
         ? '○ 无汇总（★ 不是证书 / 未成形）'
-        : fail !== '0'
+        : kind === 'red'
           ? `★ 有红（FAIL=${fail}）`
           : '✓';
   console.log(`${String(rc).padStart(2)}  ${String(pass).padStart(3)}/${String(fail).padEnd(2)}  ${f.padEnd(28)} ${tag}  ${(ms / 1000).toFixed(1)}s`);
@@ -224,8 +229,8 @@ console.log(`  合计 ${(totalMs / 1000 / 60).toFixed(1)} 分钟`);
 for (const r of slowest) console.log(`  ${(r.ms / 1000).toFixed(1).padStart(7)}s  ${r.f}`);
 console.log(`  其余 ${rows.length - slowest.length} 张合计 ${((totalMs - slowest.reduce((a, r) => a + r.ms, 0)) / 1000).toFixed(1)}s`);
 
-const noSummary = rows.filter((r) => r.rc === 0 && !r.hasSummary).length;
-const green = rows.filter((r) => r.rc === 0 && r.hasSummary && r.fail === '0').length;
+const noSummary = rows.filter((r) => r.kind === 'nosummary').length;
+const green = rows.filter((r) => r.kind === 'green').length;
 const verdict = `══ ${files.length} 张：崩 ${crashed} · 有红 ${failed} · 无汇总 ${noSummary} · **真证书全绿 ${green}**`;
 console.log(`\n${verdict}`);
 
@@ -247,7 +252,7 @@ console.log(`\n${verdict}`);
   }
 }
 
-const drift = rows.filter((r) => r.rc === 0 && !r.hasSummary && !NON_JUDGING.some((n) => n[0] === r.f));
+const drift = rows.filter((r) => r.kind === 'nosummary' && !NON_JUDGING.some((n) => n[0] === r.f));
 if (drift.length > 0) {
   console.log(`\n★ T253：**清单漏项（运行期事实）** —— 这些跑了、没崩、但不产出 PASS/FAIL，且不在 NON_JUDGING 里：`);
   for (const r of drift) console.log(`   · ${r.f}（${(r.ms / 1000).toFixed(1)}s）`);
@@ -292,7 +297,7 @@ if (files.length > 0) {
       ...rows.map(
         (r) =>
           `| ${r.rc} | ${r.pass}/${r.fail} | ${(r.ms / 1000).toFixed(1)}s | ${r.f} | ${
-            r.rc !== 0 ? '★ 崩' : !r.hasSummary ? '○ 无汇总' : r.fail !== '0' ? `★ 有红(${r.fail})` : '✓'
+            r.kind === 'crash' ? '★ 崩' : r.kind === 'nosummary' ? '○ 无汇总' : r.kind === 'red' ? `★ 有红(${r.fail})` : '✓'
           } |`,
       ),
       '',
@@ -302,7 +307,7 @@ if (files.length > 0) {
       '',
       crashed > 0 ? '## 崩掉的证 · 输出原文（尾部 25 行）' : '（无崩）',
       ...rows
-        .filter((r) => r.rc !== 0)
+        .filter((r) => r.kind === 'crash')
         .flatMap((r) => [`### ${r.f}（exit=${r.rc}）`, '```', ...r.out.split('\n').slice(-25), '```', '']),
     ].join('\n'),
     'utf8',
@@ -314,7 +319,7 @@ console.log(files.length > 0 ? `（读数已写入 ${reportPath} —— ★ 下�
 // ★★ 崩了的：**把原文打出来**（★ 否则下一个人还是只能猜 ✓）
 if (crashed > 0) {
   console.log('\n════ 崩掉的证，输出原文（★ 只打这些，免得刷屏）════');
-  for (const r of rows.filter((x) => x.rc !== 0)) {
+  for (const r of rows.filter((x) => x.kind === 'crash')) {
     console.log(`\n──── ${r.f}（exit=${r.rc}）────`);
     console.log(r.out.split('\n').slice(-25).join('\n'));
   }
@@ -327,7 +332,7 @@ if (crashed > 0) {
 //   ⇒ ★ 所以这里补上：★ **把"有红"证的【失败那几行】也打出来** ✓（★ 只打失败行 + 上下文 ✓）
 if (failed > 0) {
   console.log('\n════ 有红的证，**失败那几行**原文（★ 只打 ✗ 行 ± 它们前面 6 行）════');
-  for (const r of rows.filter((x) => x.rc === 0 && x.hasSummary && x.fail !== '0')) {
+  for (const r of rows.filter((x) => x.kind === 'red')) {
     console.log(`\n──── ${r.f}（${r.pass}/${r.fail}）────`);
     const ls = r.out.split('\n');
     const idx = ls.map((l, i) => [l, i]).filter(([l]) => /^✗/.test(l)).map(([, i]) => i);
