@@ -10,13 +10,13 @@
  *
  * ## 用法
  * ```
- * node certs/run-all-certs.mjs                       # 跑全部（★ 实测 18.8 分钟）
+ * node certs/run-all-certs.mjs                       # 跑全部（★ 实测 19.4 分钟）
  * node certs/run-all-certs.mjs t205 t212             # 只跑名字里含这几个串的
- * node certs/run-all-certs.mjs --exclude t189-sweep  # ★ 排掉某张（实测 18.8 → 8.7 分钟）
+ * node certs/run-all-certs.mjs --exclude t189-sweep  # ★ 排掉某张（★ 实测 19.4 → 9.3 分钟）
  * ```
- * ★ `--exclude` 的由来：全量里 **54% 的时间花在一张【不判红】的量具**上
- *   （`t189-sweep` 把 69 个工具逐个真跑）—— 它被名字规则收进来陪跑，**而它不是出生证**。
- *   ⇒ 给一条**显式**退出口（不替调用方决定"哪些算证"）。
+ * ★ `--exclude` 的由来：全量里 **52% 的时间花在一张【不判红】的量具**上
+ *   （`t189-sweep` 把 69 个工具逐个真跑，602s / 1164s）—— 它被名字规则收进来陪跑，
+ *   **而它不是出生证**。⇒ 给一条**显式**退出口（不替调用方决定"哪些算证"）。
  *
  * ## 每张证都记耗时
  * ★ 为什么加：我被告知"全量要 21 分钟"，而当时的量具**没有时间列** ⇒ 只能猜是谁慢。
@@ -28,11 +28,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const filters = process.argv.slice(2);
-// ★★ T224：`--exclude <串>` —— 起因（★ 有读数）：全量 **18.8 分钟**里，
-//   **10.1 分钟（54%）是一张【不判红】的量具**（`t189-sweep` 把 **69 个工具逐个真跑**一遍）✓
+// ★★ T224：`--exclude <串>` —— 起因（★ 有读数）：全量 **19.4 分钟**里，
+//   **52% 是一张【不判红】的量具**（`t189-sweep`，602s/1164s，把 **69 个工具逐个真跑**一遍）✓
 //   ★ 它被 runner 的**名字规则**收进来了 ⇒ 每次全量都陪跑 ⇒ 而它**本来就不是出生证**。
 //   ⇒ 给它一条**显式**的退出口（★ 不做隐式策略：不猜"哪些算证"，由调用方点名）：
-//     `node certs/run-all-certs.mjs --exclude t189-sweep`   ⇒ ★ 实测 18.8 → 8.7 分钟 ✓
+//     `node certs/run-all-certs.mjs --exclude t189-sweep`   ⇒ ★ **实测 19.4 → 9.3 分钟** ✓
 const EXCLUDE = process.argv.includes('--exclude')
   ? process.argv[process.argv.indexOf('--exclude') + 1] ?? ''
   : '';
