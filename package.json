@@ -45,6 +45,7 @@
     "build": "node scripts/gen_agents.mjs && tsc && node scripts/clean_dist.mjs",
     "verify": "node scripts/verify.mjs",
     "certs": "node certs/run-all-certs.mjs",
+    "certs:all": "node certs/run-all-certs.mjs --all",
     "dev": "node scripts/dev.mjs",
     "start": "node dist/src/presentation/mcp/server.js",
     "serve": "node dist/src/presentation/http/serve.js",

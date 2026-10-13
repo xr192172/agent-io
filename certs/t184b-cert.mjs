@@ -115,7 +115,45 @@ try {
 //   而且那个错误一直伪装成 `<anonymous_script>`，看着像子进程的问题 ⇒ **先看全产物再解析**）。
 const i = toolOut.indexOf('---DATA---');
 const jsonText = i < 0 ? '' : toolOut.slice(i + 10).split('\n--- stderr ---')[0];
-const data = jsonText ? JSON.parse(jsonText) : {};
+// ★★★ T250 续（2026-10-13）：**解析要"取第一个配平的 JSON"，不是"切到某个标记"**。
+//   起因（★ 实测）：`---DATA---` 之后的 JSON **后面会被追加告警文本**
+//   （实测原文：`…,"touched":{…}}` 紧跟一行 `⚠️ NO_PROJECT_ROOT：…`）——
+//   而本证原先只按 `\n--- stderr ---` 截 ⇒ `JSON.parse` 在 position 442345 炸。
+//   ★★ **根因在产品侧**（`---DATA---` 段**没有结束标记** ⇒ 每个消费方各自猜边界），已单列 **T251**。
+//   ★ 这里先按**括号配平**取第一个完整 JSON 对象（抗任何后追加的文本）。
+function firstJson(s) {
+  const start = s.indexOf('{');
+  if (start < 0) return null;
+  let d = 0;
+  let inStr = false;
+  let esc = false;
+  for (let j = start; j < s.length; j++) {
+    const c = s[j];
+    if (inStr) {
+      if (esc) esc = false;
+      else if (c === '\\') esc = true;
+      else if (c === '"') inStr = false;
+      continue;
+    }
+    if (c === '"') inStr = true;
+    else if (c === '{') d++;
+    else if (c === '}') {
+      d--;
+      if (d === 0) return s.slice(start, j + 1);
+    }
+  }
+  return null;
+}
+let data = {};
+try {
+  const one = firstJson(jsonText);
+  data = one ? JSON.parse(one) : {};
+} catch (e) {
+  const msg = e instanceof Error ? e.message : String(e);
+  console.log(`✗ ④ JSON.parse 失败：${msg}`);
+  console.log(`   ★ jsonText 前 240 字符：${jsonText.slice(0, 240).replace(/\n/g, '⏎')}`);
+  console.log(`   ★ jsonText 尾部 160 字符：${jsonText.slice(-160).replace(/\n/g, '⏎')}`);
+}
 chk(
   (data.touched?.scope_files ?? []).includes(TARGET),
   '★ 墓碑进了 scope_files（T187 那条边因此也通了）',
