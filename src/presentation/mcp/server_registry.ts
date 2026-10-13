@@ -491,6 +491,36 @@ function backfillProgressNote(absRoot: string): string {
  * 首次接触 ⇒ 起后台建索引；返回要注入响应的诚实标注（已有索引且没在建 → 空串）。
  * 导出是为了**能被测试看见** —— "顺手起后台"这类逻辑最容易静默失效（永远不起也没人发现）。
  */
+/**
+ * ★★★ T246（2026-10-13）：**"保鲜失败 / 没走完" ⇒ 结构化告警**（不再是一条被吞掉的 `catch`）。
+ *
+ * 为什么要有它：原来 `invokeTool` 里写的是 `catch { /* 保鲜失败不阻断主流程 *\/ }` ——
+ *   ★ 那是本仓明令禁的**静默兜底**形状。而它咽下去的两类里，**第二类最阴**：
+ *   ① 无可用索引却不许冷启（T238）；
+ *   ② ★★ **走了一趟但超出补全上限**（`state:'partial'`）⇒ **"库在、但不全"被当成完整** ——
+ *      正是 `write_gate.ts` 自己命名的"**比不建更糟**"（半成品索引被后续查询当成完整索引）。
+ *   ⇒ 现在：**不阻断主流程**（那条判据不变），但**把原因交出去**（走既有 `emitWarnings` 通道）。
+ *
+ * `scope` = 项目根 ⇒ 换项目各自算"首次全文"；同一项目重复出现时只投一行摘要（防噪音）。
+ */
+export function freshnessRefusedWarning(msg: string, scope: string | null): ToolWarning | null {
+  if (!msg) return null;
+  const firstLine = msg.split('\n')[0].slice(0, 200);
+  return {
+    code: 'INDEX_FRESHNESS_REFUSED',
+    scope: scope ?? undefined,
+    summary: `★ 索引**本次没保鲜成功** ⇒ 本次结果可能基于**旧图**：${firstLine}`,
+    detail:
+      msg +
+      '\n★ 为什么"没保鲜"要单独说：`staleIndexWarning` 只覆盖"**库落后于磁盘**"，' +
+      '而这里覆盖的是"**根本没走成 / 没走完**"（前者是"查了、结果是旧的"，后者是"这次没查"）。',
+    fix:
+      '① 若原因是"超出补全上限"（`state=partial`）⇒ 跑 `import_project` 重建索引；' +
+      '② `index_integrity({project_dir})` 可看覆盖度与进度；' +
+      '③ 若原因是"没有可用索引"⇒ 先 `import_project`（本入口**绝不冷启**，见 `symbol_index.produce`）。',
+  };
+}
+
 export function firstContactBackfill(rawRoot: string | null): string {
   // ★★ T228：**解析不到根 ⇒ 不许静默**（与 `staleIndexWarning` 同一句话，见 `NO_PROJECT_ROOT_NOTE`）。
   if (!rawRoot) return NO_PROJECT_ROOT_NOTE;
@@ -715,20 +745,29 @@ export async function invokeTool(
   //   不另开生命周期钩子（本仓没有启动钩子，见上一段的注释教训）。
   // ★ 2026-10-08：**等它一次**（不是 fire-and-forget）—— 否则同步 AST 路径在本轮不可用（见函数注释）。
   await ensureKernelPrewarmed();
+  // ★★★ T246（2026-10-13）：**保鲜失败/没走完 ⇒ 不许静默** ——
+  //   原来这里是 `catch { /* 保鲜失败不阻断主流程 */ }` ⇒ ★ 那是本仓明令禁的"**静默兜底**"形状
+  //   （"失败就抛、不许 catch{return []}"）。★ 现在：不阻断主流程，**但把原因交出去**
+  //   ⇒ 由下面的 `INDEX_FRESHNESS_REFUSED` **结构化告警**投递（走既有通道，不新开机制）。
+  //   ★ 两种来源都会走到这里：① 无可用索引却不许冷启（T238）；② **走了一趟但超出补全上限**
+  //     ⇒ `state:'partial'`（T246）—— ★ 后者才是最阴的那一格："库在、但不全"被当成完整。
+  let freshnessFailure = '';
   if (rootArg && !def.noAutoFresh) {
     try {
       if (hasLiveIndex(rootArg) && !isIndexIncomplete(rootArg)) {
         // ★★★ T221（2026-10-13）：**改走统一机制**（原先直调 `ensureProjectIndex` ✗）——
         //   ★ 外部评测的 ④：*"工序表定义了统一机制，但没有其他模块调用它"* ✓ ⇒ **现在接了** ✓
-        //   ★★ **行为不变**（★ 这是接的前提）：★ 外层那两条守卫**留着** ✓
-        //     （`hasLiveIndex` ⇒ **绝不冷启** ✓ · `isIndexIncomplete` ⇒ 后台在建时跳过 ✓）；
-        //     ★ 而 `ensureStage` 的 `bootstrap` **默认 `false`** ✓ ⇒ **也不冷启** ✓（★ 与原来 `{bootstrap:false}` 同）
-        //   ★★★ **收益**：★ `symbol_index` 的 `inputs: ['source_files']` ⇒
-        //     **主链自动获得【上游补链】** ✓ —— ★ 那是【直调没有的】✓
+        //   ★★ 外层那两条守卫**留着** ✓（`hasLiveIndex` ⇒ **绝不冷启** ✓ ·
+        //     `isIndexIncomplete` ⇒ 后台在建时跳过 ✓）；`ensureStage` 的 `bootstrap` 默认 `false` ✓
+        //   ★ **收益**：`symbol_index` 的 `inputs: ['source_files']` ⇒ **主链自动获得【上游补链】** ✓
+        //   ★★★ ★ **2026-10-13 更正（T238）**：上面那句"**行为不变**"当时是**假的** ——
+        //     `symbol_index` 有 `locate` 却没写 `isFresh` ⇒ 恒判 fresh ⇒ **保鲜一次都没跑**。
+        //     已修（`isFresh: () => false`）并出了出生证 `certs/t238-freshness-cert.mjs` ✓
         await ensureStage('symbol_index', { projectRoot: rootArg });
       }
-    } catch {
-      /* 保鲜失败不阻断主流程（staleIndexWarning 仍会兜底标注） */
+    } catch (e) {
+      // ★ 不阻断主流程（结果仍有 `staleIndexWarning` 兜底标注），★ 但**必须说出去**。
+      freshnessFailure = e instanceof Error ? e.message : String(e);
     }
   }
   // ★ 参数纠错（Did you mean）：zod object 会**静默丢弃**未知键（错参数 = 结果莫名其妙），
@@ -770,6 +809,8 @@ export async function invokeTool(
     staleIndexWarning(rootArg),
     // ★ T190：第 4 个 producer —— "活态 DSL 读不了 ⇒ 回退到存档"（此前只在 stderr 上，用户看不见）。
     liveDslFallbackWarning(),
+    // ★★★ T246：第 5 个 producer —— **保鲜失败 / 没走完**（原来是 `catch {}` 咽掉的，见该函数注释）。
+    freshnessRefusedWarning(freshnessFailure, rootArg),
   ]);
   // ★ 只回**合成好的文本**（含注入的告警块），**不在这里包 MCP 形状** ——
   //   「怎么呈现」是各面自己的事：MCP 面用 `textOut(...)` 包成 `{content:[...]}`，

@@ -189,7 +189,21 @@ export const STAGES: readonly Stage[] = [
             `（绝不因为一次调用就凭空建索引）。先 import_project，或显式传 bootstrap:true。`,
         );
       }
-      await ensureProjectIndex(root, { bootstrap: ctx.bootstrap === true });
+      const idx = await ensureProjectIndex(root, { bootstrap: ctx.bootstrap === true });
+      // ★★★ T246（2026-10-13）：**"走了一趟但没走完"也必须响亮** ——
+      //   走查有**补全上限**（`MAX_ADDS_PER_REFRESH`）。超出时 `ensureProjectIndex` 会**如实**回
+      //   `state:'partial'` + `skipped_adds>0`（它自己的注释："有界 = 诚实 … 绝不假装完整"），
+      //   ★ 但**保鲜这条路径从不读那个返回值** —— 于是"库在、但不全"会被**当成完整**继续用，
+      //   正是 `write_gate.ts` 自己命名的"**比不建更糟**"。
+      //   ⇒ 这里把它变成**异常**（由 `invokeTool` 转成一条结构化告警，见 `INDEX_FRESHNESS_REFUSED`）。
+      //   ★ 判据：`state` 是**产者自己报的**；本工序只负责**不许把它咽下去**。
+      if (idx.state === 'partial') {
+        throw new Error(
+          `工序 symbol_index：索引本轮**没能补齐**（超补全上限、跳过新增 ${idx.report.skipped_adds} 个文件）` +
+            `⇒ ★ 现在读到的索引**是不全的**（"查不到" ≠ "不存在"）。请先 import_project 重建；` +
+            `\`index_integrity({project_dir})\` 可看覆盖度。`,
+        );
+      }
     },
   },
   {
