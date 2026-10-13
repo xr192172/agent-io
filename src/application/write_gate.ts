@@ -58,7 +58,7 @@ import { getProjectCacheDb, beginBatch, endBatch, projectCacheDbPath, type Datab
 import { syncFile, syncFileSync, removeFile, changedSymbolNames, reopenRefsTo, resolveCrossFileCalls, type SyncStatus, type CrossFileResolveStats } from '../infrastructure/index/symbols.js';
 import { canParseFileSync } from '../infrastructure/parse/index.js';
 import { snapshotBeforeWrite, type FileSnapshotMeta } from './refactor/snapshot/file_snapshot.js';
-import { isIndexIncomplete } from '../infrastructure/index/index_backfill.js';
+import { indexCoversDisk } from '../infrastructure/index/index_freshness.js';
 
 // ─────────────────────────────────────────────────────────────
 // 索引写穿的结果类型（一个类型 + 可选字段：调用方统一渲染，不用分三种形状）
@@ -199,7 +199,12 @@ export function recordSelfWrite(projectRoot: string, files: readonly string[], n
  *   ③ `reopenRefsTo` 把这些名字的**已解析引用重开为 pending**，并拿到"引用在哪些文件里"
  *   ④ 用 ③ 返回的**引用方文件 + 本批文件**做 scope 解析
  *      ★ 只放本批文件是不够的：重开的行属于引用方（它自己没变），不放 scope 就"开了却不解析"
- *   ⑤ 索引不完整时（后台续建在跑）`keepUnresolvedPending`，避免把"还没索引到"误判成 failed
+ *   ⑤ ★★ 索引**没覆盖磁盘时**（`!indexCoversDisk`）`keepUnresolvedPending`，避免把"还没索引到"误判成 failed
+ *      ★★★ T247（2026-10-13）：这里的判据**改过** —— 以前用 `isIndexIncomplete(root)`
+ *        （= **后台续建在不在跑**）当"索引不完整"的**代理**，而同一件事在 `index_freshness` 里用的是
+ *        **数据口径**（`已索引 >= 走查到的文件数`）⇒ ★ **两处会分歧**（复现见 `certs/t247-coverage-cert.mjs`），
+ *        且**进程口径那一侧会把"还没索引到"判死**（`failed` 的边永不重试 ⇒ 索引永久缺边）。
+ *        ⇒ 现在**两处都走 `index_freshness.indexCoversDisk`** —— 判据只有一处。
  */
 export async function syncSelfWrites(
   projectRoot: string,
@@ -236,7 +241,7 @@ export async function syncSelfWrites(
     return out;
   }
 
-  const keepPending = isIndexIncomplete(root);
+  const keepPending = !indexCoversDisk(db, root); // ★ T247：判据收口 —— 不再拿"后台在跑"当"覆盖度"的代理
   beginBatch(db);
   try {
     for (const rel of rels) {
@@ -425,7 +430,7 @@ export function syncSelfWritesSync(
     return out;
   }
 
-  const keepPending = isIndexIncomplete(root);
+  const keepPending = !indexCoversDisk(db, root); // ★ T247：判据收口 —— 不再拿"后台在跑"当"覆盖度"的代理
   beginBatch(db);
   try {
     for (const rel of rels) {
@@ -496,7 +501,7 @@ export async function reopenAndResolveAfterWrite(
   }
   try {
     // ★ ②③④ 走**唯一内核**（与闸内 `finishWriteThrough` 同一份实现，勿在此另写一套）
-    return resolveRefsAfterWrite(db, root, rels, isIndexIncomplete(root));
+    return resolveRefsAfterWrite(db, root, rels, !indexCoversDisk(db, root));
   } catch (e) {
     return { ...empty, error: `reopen/resolve failed: ${(e as Error).message}` };
   }

@@ -504,6 +504,43 @@ export async function ensureProjectIndex(
 }
 
 /**
+ * ★★★ T247（2026-10-13）：**「索引覆盖磁盘了吗」的判据 —— 全仓只有这一处定义"覆盖"的含义。**
+ *
+ * ## 为什么要有这个名字
+ * 同一个问题 —— *"现在能不能把「连不上」判成 `failed`，还是要 `keepUnresolvedPending`"* ——
+ * 此前**两处各持一份判据**（★ 本仓头号病的活标本）：
+ * | 处 | 判据 | 口径 |
+ * |---|---|---|
+ * | `index_freshness`（本文件，走查收尾） | `已索引行数 >= 走查到的文件数` | ★ **数据口径（对）** |
+ * | `write_gate.ts:239/428/499` · `watch_project.ts:207` · `index_integrity.ts:202` | `isIndexIncomplete(root)` = **后台续建在不在跑** | ★ **进程口径（只是个代理）** |
+ * ★★ 两处**会分歧**（A/B 最小复现：`certs/t247-coverage-cert.mjs`）：
+ *   库在、**覆盖不全**、且本进程**从没起过 backfill** ⇒
+ *   数据口径说"**留 pending**"，进程口径说"**可以判 failed**" ⇒
+ *   ★ 后者**正好会制造它自己注释里点名要防的事故**：把"还没索引到"判成 `failed`，
+ *     而 `failed` 的边**永不重试** ⇒ 索引**永久缺边**（`index_backfill.ts` 的 `isIndexIncomplete` 注释原文）。
+ *
+ * ## 判据只在这里；"两个数从哪来"由调用方按手上的东西给（★ 这是有意的，不是分叉）
+ * · `ensureFreshIndex` 走查完时**两个数本来就在手上** ⇒ 直接传它俩（**零额外成本**）；
+ * · 其它调用方手上只有 `db` + `root` ⇒ 用 {@link indexCoversDisk}（付**一次** `walkFiles`）。
+ */
+export function indexCovers(indexedFiles: number, diskFiles: number): boolean {
+  return indexedFiles >= diskFiles;
+}
+
+/**
+ * `db` + `root` 形态的 {@link indexCovers}：自己去数两个数。
+ *
+ * ★ 成本：一次 `walkFiles`（本仓 478 文件实测 **冷 36ms / 热 5ms**）——
+ *   ★ 换来"判据只有一处"，这个价本仓付得起（写路径本来就远不止这个量级）。
+ * ★★ 别改成"读一个持久化的上次走查数"：那个数会**过期**，且过期方向是**不安全**的
+ *   （磁盘涨了新文件而持久数没涨 ⇒ 会误判"覆盖了" ⇒ 又回到"把还没索引到判死"）。
+ */
+export function indexCoversDisk(db: Database, root: string): boolean {
+  const c = (db.prepare('SELECT COUNT(*) AS c FROM files').get() as { c: number } | undefined)?.c ?? 0;
+  return indexCovers(c, walkFiles(path.resolve(root), false, false).length);
+}
+
+/**
  * 校验并修复 <projectRoot> 的符号索引新鲜度。任何内部异常都吞掉返回空报告——
  * 保鲜是尽力而为的增强，绝不能让查询本身失败。
  */
@@ -663,7 +700,12 @@ export async function ensureFreshIndex(
     //   ② 索引**还不完整**时（files 数 < 走查数，比如只在拼图模式下）留 pending、不判 failed ——
     //   否则"目标只是还没索引到"会被误判成死引用，永久缺边。
     if (dirty) {
-      const indexComplete = rows.length >= absFiles.length;
+      // ★★★ T247（2026-10-13）：**判据改走唯一住处** `indexCovers`。
+      //   以前这里内联 `rows.length >= absFiles.length`，而 `write_gate` / `watch_project` /
+      //   `index_integrity` 四处用的是 `isIndexIncomplete()`（= **后台续建在不在跑**）——
+      //   ★ 同一个问题**两处各持一份判据**，且**会分歧**（复现见 `certs/t247-coverage-cert.mjs`）。
+      //   ★ 这一处的成本**没变**（两个数本来就在手上，走查刚完）—— 见 `indexCovers` 的注释。
+      const indexComplete = indexCovers(rows.length, absFiles.length);
       try {
         resolveCrossFileCalls(db, root, { scopeFiles: [...scopeFiles], keepUnresolvedPending: !indexComplete });
       } catch {

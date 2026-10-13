@@ -32,7 +32,7 @@ import path from 'node:path';
 import type { Database } from './db.js';
 import { syncFile, removeFile, resolveCrossFileCalls, pruneDeletedFiles, toRelPath, changedSymbolNames, reopenRefsTo, type CrossFileResolveStats } from './symbols.js';
 import { indexedRelativeSet } from './index_freshness.js';
-import { isIndexIncomplete } from './index_backfill.js';
+import { indexCoversDisk } from './index_freshness.js';
 import { codeSourceExtSet, skipDirSet } from '../parse/source_exts.js';
 // ★ watcher 挂钩（§19）：**有 watcher 时由事件驱动失效**，TTL 只是没有 watcher 时的兜底。
 //   enqueue 是 fs.watch 回调归一后的**唯一入口** ⇒ 挂这一处即覆盖全部变更事件。
@@ -204,7 +204,7 @@ export async function flushBatch(
   // 批量收尾：① 重开指向"本轮变动符号"的引用 → ② 跨文件解析（只处理本批动过的文件 + 被重开的引用方）
   if (summary.files.length > 0) {
     // 统一口径（与 write_gate.syncSelfWrites 同一处判断，别各写一套慢慢漂移）
-    const backfilling = isIndexIncomplete(projectRoot);
+    const keepPending = !indexCoversDisk(db, projectRoot); // ★ T247：判据收口
     // ① ★ 引用**部分**重算（用户 2026-09-14 问的正是这一段）：
     //    本批文件改名的符号，其**引用方文件没变、不会被重解析** —— 而 `edges.target → nodes.id`
     //    是 ON DELETE CASCADE，旧符号节点一删，引用方那条边就被**静默删掉且不重建** ⇒
@@ -230,7 +230,7 @@ export async function flushBatch(
       summary.cross = resolveCrossFileCalls(db, projectRoot, {
         scopeFiles: [...scope],
         // 索引补建途中不能判 failed（目标可能只是还没索引到）⇒ 跟随后台续建状态
-        keepUnresolvedPending: backfilling,
+        keepUnresolvedPending: keepPending,
       });
     } catch (e) {
       summary.error = summary.error ? `${summary.error}; resolve failed: ${(e as Error).message}` : `resolve failed: ${(e as Error).message}`;

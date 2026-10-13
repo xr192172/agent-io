@@ -28,8 +28,8 @@ import { getProjectView } from '../../../infrastructure/project_view.js';
 import { INDEX_SKIP_DIR_EXTRA, isNoiseFileName, isTestFileName, isUnderSkippedDir } from '../../../infrastructure/parse/source_exts.js';
 import { hasLiveIndex } from '../../write_gate.js';
 import { pendingSelfWrites } from '../../../infrastructure/index/self_writes.js';
-import { backfillState, backfillSummary, isIndexIncomplete } from '../../../infrastructure/index/index_backfill.js';
-import { ensureProjectIndex, type IndexState, type FreshnessReport } from '../../../infrastructure/index/index_freshness.js';
+import { backfillState, backfillSummary } from '../../../infrastructure/index/index_backfill.js';
+import { ensureProjectIndex, indexCoversDisk, type IndexState, type FreshnessReport } from '../../../infrastructure/index/index_freshness.js';
 import { walkFiles } from '../../../infrastructure/graph/import_project.js';
 import { summarizeLanguagesByTier, type LanguageTierSummary } from '../../refactor/parse_capability/parse_capability.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
@@ -199,7 +199,7 @@ export function repairStaleResolvedRefs(
   const r = reopenRefsTo(db, names);
   const cross =
     r.files.length > 0
-      ? resolveCrossFileCalls(db, root, { scopeFiles: r.files, keepUnresolvedPending: isIndexIncomplete(root) })
+      ? resolveCrossFileCalls(db, root, { scopeFiles: r.files, keepUnresolvedPending: !indexCoversDisk(db, root) })
       : { total: 0, resolved: 0, external: 0, failed: 0 };
   return { names: names.length, reopened: r.reopened, cross };
 }

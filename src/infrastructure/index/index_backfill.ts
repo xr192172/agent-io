@@ -80,7 +80,7 @@ export function stopBackfill(root: string): void {
  * 最终索引会永久缺边）。`watch_project.flushBatch` 与 `write_gate.syncSelfWrites` 共用本函数，
  * 避免两处各写一套判断而慢慢漂移。
  */
-export function isIndexIncomplete(root: string): boolean {
+export function isBackfillRunning(root: string): boolean {
   return backfillState(root)?.running === true;
 }
 

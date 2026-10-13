@@ -506,12 +506,25 @@
       ⇒ ★★ **剩下的三件**：
         · **① 索引政策以哪条为准**（`edit_code` 的"编辑即建" vs `applyWrites` 的"绝不凭空建"）
           ⇒ ★ 有了下面 ② 之后**不再是二选一**（"编辑即建"不会再造出"假装的完整索引"）。
-        · ★★★ **② "完整性"这个判据住了两处**（★ 本仓头号病的活标本）：
-          - `isIndexIncomplete(root) = backfillState(root)?.running === true`，而 `states` 是**进程内 `Map`**（`index_backfill.ts:57`）
-            ⇒ 它回答的是"**后台续建正在跑**"，★ **扛不起"索引不完整"这个一等信号**（重启后 `states` 空 ⇒ 恒 false）；
-          - `FreshnessReport.state === 'partial'`（`index_freshness.ts:80`，含 `truncated`/`skipped_adds`）
-            ⇒ ★ 这个才是**按需可算**的完整信号，且 `index_integrity.ts:529` 已在读它。
-          ⇒ **要做**：**收到一处**（建议留 `FreshnessReport.state`），并让"零前置冷启/陈旧告警"读**它**。
+        · ★★★ **② "完整性"这件事**（★ 本仓头号病，但**形态与会审时的判断不同、已被实测更正**）：
+          ★★ **2026-10-13 侦察后更正**：原先（我 + 会审几席）说的
+          "`isIndexIncomplete` ↔ `FreshnessReport.state` 两处各持一份" —— ★ **不准确**。
+          真实形态是：**同一个问题**（"现在能不能把「连不上」判成 `failed`，还是要 `keepUnresolvedPending`"）
+          **两处各持一份判据**，而且**会分歧**：
+          | 处 | 判据 | 口径 |
+          |---|---|---|
+          | `index_freshness.ts:666`（走查收尾） | `已索引行数 >= 走查到的文件数` | ★ **数据口径（对）** |
+          | `write_gate.ts:239/428/499` · `watch_project.ts:207` · `index_integrity.ts:202` | `isIndexIncomplete(root)`（=**后台在不在跑**） | ★ **进程口径（错的代理）** |
+          ★★★ **实测分歧**（`certs/t247-coverage-cert.mjs` 的夹具）：库在（2 行）· 磁盘 42 文件 ·
+          本进程从没起过 backfill ⇒ 数据口径 `keepPending=true`（留），进程口径 `keepPending=false`（**判死**）
+          ⇒ ★ 后者**正好制造 `isIndexIncomplete` 自己注释里点名要防的事故**（failed 的边永不重试 ⇒ 永久缺边）。
+          ★★ 而 `index_backfill` 的函数说明还写着"**统一口径**…避免两处各写一套判断而慢慢漂移"
+          —— ★ **它俩确实统一了，但统一的是一个错的代理**。
+          ⇒ ★★★ **已修（T247）**：判据收成**一处**（`index_freshness.indexCovers` / `indexCoversDisk`），
+          5 个站点全改走它；`isIndexIncomplete` **正名为 `isBackfillRunning`**（★ 顺带还它清白 ——
+          它自己没说谎，是别人拿它当代理）。出生证 `certs/t247-coverage-cert.mjs`（5/5，含**反向**）。
+          ⇒ ★ **剩下**：`index_integrity.ts:276` 那处**硬编码 `state='ready'`**（一个同名的假值，
+          "有库就说 ready"，不问齐不齐）⇒ 单独一笔。
         · **③ 建库互斥**（多进程抢建）—— ★★ **先量必要性，别先造锁**：全仓无 lock，`openDb` 用 WAL + `IF NOT EXISTS`
           （`db.ts:161-162`）⇒ ★ **"会不会真抢坏"这件事本身还没被量过**。
       ⇒ ★★ **2026-10-13 已落一半（T246）**：`FreshnessReport.state === 'partial'`（超补全上限 ⇒ **索引不全**）

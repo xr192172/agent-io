@@ -20,7 +20,7 @@ import { ensureStage } from '../../application/stage_registry.js';
 // ★ T190：读 infrastructure 记下的"活态 DSL 回退"事实（告警在**本层**现拼 ⇒ 不需要注入）。
 import { getLiveFallback, isLiveDslParseable } from '../../infrastructure/storage.js';
 import { hasLiveIndex } from '../../application/write_gate.js';
-import { scheduleBackfill, backfillState, isIndexIncomplete } from '../../infrastructure/index/index_backfill.js';
+import { scheduleBackfill, backfillState, isBackfillRunning } from '../../infrastructure/index/index_backfill.js';
 import { unknownArgHints, renderArgHints } from '../../infrastructure/text/arg_suggest.js';
 import { collectPendingAlertText, dispatchDslEdit } from '../../application/dispatch.js';
 // ★★ 2026-10-06：「下一棒」提示 —— 链的接法（`CHAIN_EDGES`）+ 机器段标记（**单点**，别硬编码）
@@ -739,7 +739,7 @@ export async function invokeTool(
   //   以后新增工具也不用记得（结构保证，不是自觉）。
   //   成本：ready 态实测 ~35ms/次（390 文件）；有变更时付的是本来也要付的重同步钱。
   //   纪律：bootstrap:false —— 绝不因为一次调用就冷启建索引；失败静默（结果里仍有陈旧告警兜底）。
-  //   ★ 后台续建在建时跳过（isIndexIncomplete）：后台循环本来就在持续同步，逐调用保鲜
+  //   ★ 后台续建在建时跳过（isBackfillRunning）：后台循环本来就在持续同步，逐调用保鲜
   //     只会重复全盘走查 + 触发 MAX_ADDS_PER_REFRESH 噪音；"在建 ⇒ 可能不全"由 firstContactNote 标注。
   // ★ 2026-10-08：预热在**每次调用**都检查（只真起一次）—— 放这儿是为了与「逐调用保鲜」同一处，
   //   不另开生命周期钩子（本仓没有启动钩子，见上一段的注释教训）。
@@ -754,11 +754,11 @@ export async function invokeTool(
   let freshnessFailure = '';
   if (rootArg && !def.noAutoFresh) {
     try {
-      if (hasLiveIndex(rootArg) && !isIndexIncomplete(rootArg)) {
+      if (hasLiveIndex(rootArg) && !isBackfillRunning(rootArg)) {
         // ★★★ T221（2026-10-13）：**改走统一机制**（原先直调 `ensureProjectIndex` ✗）——
         //   ★ 外部评测的 ④：*"工序表定义了统一机制，但没有其他模块调用它"* ✓ ⇒ **现在接了** ✓
         //   ★★ 外层那两条守卫**留着** ✓（`hasLiveIndex` ⇒ **绝不冷启** ✓ ·
-        //     `isIndexIncomplete` ⇒ 后台在建时跳过 ✓）；`ensureStage` 的 `bootstrap` 默认 `false` ✓
+        //     `isBackfillRunning` ⇒ 后台在建时跳过 ✓）；`ensureStage` 的 `bootstrap` 默认 `false` ✓
         //   ★ **收益**：`symbol_index` 的 `inputs: ['source_files']` ⇒ **主链自动获得【上游补链】** ✓
         //   ★★★ ★ **2026-10-13 更正（T238）**：上面那句"**行为不变**"当时是**假的** ——
         //     `symbol_index` 有 `locate` 却没写 `isFresh` ⇒ 恒判 fresh ⇒ **保鲜一次都没跑**。
