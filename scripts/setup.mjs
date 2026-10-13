@@ -31,6 +31,15 @@ import { spawnSync } from 'node:child_process';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SKILL_SRC = path.join(ROOT, '.trae', 'skills');
+/**
+ * ★★★ 2026-10-13（T223）：这两条 skill 的**目录名**是唯一权威（README 曾错写成 `agent-io-router` /
+ *   `agent-io-mind`，改过一次名没跟上）。★ 而本文件此前**7 处**都在找 `agent-io-mind` ——
+ *   磁盘上**根本没有**那个目录 ⇒ 两处后果：
+ *     ① `npm run doctor` 的 skill 检查**恒报 ✗**（假的红：skills 明明在，只是名字不对）；
+ *     ② `dc setup` 的拷装分支**恒走 else** ⇒ ★★ **skill 从来没被装过去**（只打一句 warn）✓
+ *   ⇒ ★ 判据只此一处：**以磁盘目录名为准**，别再在别处各写一份名字。
+ */
+const SKILL_NAMES = ['design-canvas-mind', 'design-canvas-router'];
 const INSTALL_MCP = path.join(ROOT, 'scripts', 'install_mcp.mjs');
 /**
  * ★ 2026-10-06（T15）：本脚本原先直接 spawn 两个**手写 CLI**（`instrument_cli.js` / `capability_cli.js`）
@@ -190,11 +199,19 @@ function runDoctor() {
 
   // 3) skill 安装
   {
-    const srcExist = fs.existsSync(path.join(SKILL_SRC, 'agent-io-mind', 'SKILL.md'));
-    const dstExist = fs.existsSync(path.join(SKILL_DST, 'agent-io-mind', 'SKILL.md'));
-    if (srcExist && dstExist) { pass++; console.log(ok(`skill：已安装到 ${SKILL_DST}`)); }
-    else if (srcExist) { fail++; console.log(warn(`skill：项目内有 ${SKILL_SRC}，但未安装到目标 agent（${SKILL_DST}）`)); }
-    else { fail++; console.log(no(`skill：项目缺少 ${path.join(SKILL_SRC, 'agent-io-mind', 'SKILL.md')}`)); }
+    // ★ T223：逐条按**真目录名**判，并报清"缺哪一条"（原先只盯一个已不存在的名字 ⇒ 恒 ✗）
+    const srcMissing = SKILL_NAMES.filter((n) => !fs.existsSync(path.join(SKILL_SRC, n, 'SKILL.md')));
+    const dstMissing = SKILL_NAMES.filter((n) => !fs.existsSync(path.join(SKILL_DST, n, 'SKILL.md')));
+    if (srcMissing.length === 0 && dstMissing.length === 0) {
+      pass++;
+      console.log(ok(`skill：${SKILL_NAMES.length} 条已安装到 ${SKILL_DST}`));
+    } else if (srcMissing.length === 0) {
+      fail++;
+      console.log(warn(`skill：项目内有 ${SKILL_SRC}，但未安装到目标 agent（${SKILL_DST}）缺：${dstMissing.join('、')}`));
+    } else {
+      fail++;
+      console.log(no(`skill：项目缺少 ${srcMissing.map((n) => path.join(SKILL_SRC, n, 'SKILL.md')).join('、')}`));
+    }
   }
 
   // 4) 插桩状态
@@ -269,17 +286,20 @@ async function runSetup() {
 
   // 2) skill 安装（拷 .trae/skills/ → 目标 agent skills 目录）
   {
-    const src = SKILL_SRC;
-    const dst = path.join(SKILL_DST, 'agent-io-mind');
-    if (fs.existsSync(path.join(src, 'agent-io-mind', 'SKILL.md'))) {
-      actions.push(`copy skill → ${dst}`);
-      if (!DRY) {
-        fs.mkdirSync(dst, { recursive: true });
-        fs.copyFileSync(path.join(src, 'agent-io-mind', 'SKILL.md'), path.join(dst, 'SKILL.md'));
+    // ★ T223：改**逐条拷**（原先只拷 `agent-io-mind` 那一条，而那个目录不存在 ⇒ **一条都没装过**）
+    for (const name of SKILL_NAMES) {
+      const srcSkill = path.join(SKILL_SRC, name, 'SKILL.md');
+      const dst = path.join(SKILL_DST, name);
+      if (fs.existsSync(srcSkill)) {
+        actions.push(`copy skill → ${dst}`);
+        if (!DRY) {
+          fs.mkdirSync(dst, { recursive: true });
+          fs.copyFileSync(srcSkill, path.join(dst, 'SKILL.md'));
+        }
+        console.log(ok(`skill 安装 → ${dst}`));
+      } else {
+        console.log(warn(`未找到 skill 源 ${srcSkill}`));
       }
-      console.log(ok(`skill 安装 → ${dst}`));
-    } else {
-      console.log(warn(`未找到 skill 源 ${path.join(src, 'agent-io-mind', 'SKILL.md')}`));
     }
   }
 

@@ -72,12 +72,17 @@ jobs:
   #   ⇒ 那个 job 会永远红。**这正是 verify 三态设计的用意：跑不了要说成跑不了。**
   #
   # ★ 它在 CI 上**新增**的覆盖（其余与既有 job 重叠）：
-  #   · mcp_scan          —— 59 个工具的入参/出参签名（坏签名 ⇒ LLM 一定调错）
-  #   · measure_b_contract —— b 项契约的未定义占位符
+  #   · mcp_scan          —— 全部工具的入参/出参签名（坏签名 ⇒ LLM 一定调错）
+  #     ★ 2026-10-13：这里原写"59 个工具" —— **手维护的数字已经漂了**（实测 69）⇒ **删掉数字**，
+  #       别改成 69（会再漂）。真值看 `TOOL_DEFS`；`verify` 自己会打印当次总数。
+  #   ★ 2026-10-13 更正：原写"另含 measure_b_contract（b 项契约占位符）"—— **那道门已于
+  #     2026-10-12（T195）撤除**（本仓不再自养门；见 `scripts/verify.mjs` 同处注释）⇒ 别再照旧注释找它。
   #   另含 tsc（node-test 的 build 已覆盖）与 Go build/vet（go-test 已覆盖）。
   #   ★ **不重加已被裁掉的门**：ci.yml 原注释记载 2026-10-05 移除了「契约变更 / README 工具数 /
   #     能力矩阵 / STALE BUILD」等零依赖闸门（用户裁定"不再自养门"）—— verify **不含**它们。
   #   ★ 也不含 `go test`（那由 go-test job 负责）⇒ **verify 不是"全部检查"，是"提交前的总门"**。
+  #   ★ 当次门数/名称一律以 `verify` 的输出为准（**本注释不写死门数** —— 它已经漂过一次：
+  #     原写"五门"（含 b 项契约），撤成四门后注释没跟）。
   verify:
     runs-on: ubuntu-latest
     steps:
@@ -101,5 +106,5 @@ jobs:
       #   **本地跑不出来**：本地一路都在 build，dist 一直在。
       - name: 构建（mcp_scan 需要 dist/）
         run: npm run build
-      - name: 总门（ts 类型 / 59 工具签名 / b 项契约 / Go 编译 / Go vet）
+      - name: 总门（★ 门名/门数以 verify 自身输出为准 —— 本仓刻意不在此写死）
         run: npm run verify
