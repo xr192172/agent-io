@@ -1,24 +1,24 @@
 /**
- * derive_feature_tree —— 功能树生成（项目 → 功能 → 社区 → 文件）
+ * derive_feature_tree —— 功能树生成（项目 → 目录分组 → 社区 → 文件）
  *
  * 把"一滩平铺的文件星图"变成逐级下钻的层级导航数据：
- *   项目（feature 根）→ 几大功能 → 社区（analyze_monolith 结构簇）→ 文件
+ *   项目（feature 根）→ 几大目录分组 → 社区（analyze_monolith 结构簇）→ 文件
  *
  * 数据来源：
  *   - analyze_monolith：基于 cache.db 调用边做跨文件 Louvain 结构簇圈定，
  *     产出 communities（结构簇，锚点名 + 横跨文件）与 file_view（文件内社区分布）。
- *   - 本工具把社区**二次归并**成"几大功能"，并建立
- *     文件 → 主导社区 → 功能 的归属映射（file_map）。
+ *   - 本工具把社区**二次归并**成"几大目录分组"，并建立
+ *     文件 → 主导社区 → 目录分组 的归属映射（file_map）。
  *
  * 归并策略（目录优先，结构保真——功能树必须对得上实际项目、符合人类阅读习惯）：
- *   - 社区按"成员文件主导目录"聚成功能（domain/infrastructure/presentation/registry/observe… 各成功能）；
+ *   - 社区按"成员文件主导目录"聚成目录分组（domain/infrastructure/presentation/registry/observe… 各成一组）；
  *   - 零社区的目录（纯定义/配置/入口文件，如 dsl 类型、db 存储、daemon 守护）
- *     按目录直挂补成功能，不凭空消失；
- *   - gen_names=true（配置了 LLM）时 LLM 只做**命名润色**（目录分组 → 中文功能名），
+ *     按目录直挂补成目录分组，不凭空消失；
+ *   - gen_names=true（配置了 LLM）时 LLM 只做**命名润色**（目录分组 → 中文分组名），
  *     不重新归并——避免 LLM 按猜的业务语义把目录打散/吞并，导致对不上实际项目。
  * 结果写入 DSL 顶层 feature_tree 字段，供渲染端逐级下钻。
  *
- * ★★ T230（2026-10-13）**改角色**：**功能的定义归目录，聚类只作"差异信号"**（不是退役）——
+ * ★★ T230（2026-10-13）**改角色**：**这一层的定义归目录，聚类只作"差异信号"**（不是退役）——
  *   - **无可用社区**（`communities.length === 0` / 社区皆无成员）⇒ **回落【目录分组】**，
  *     不再返回空 `features`（改前这条链会让功能树**直接变空**）。判据复用本文件唯一的
  *     `fileKeyOf`/`ruleLabelOf`（`dirFallbackTree` 内），**不新造第二套目录算法**。
@@ -47,17 +47,17 @@ export interface FeatureTreeInput {
   db?: import('../../index/db.js').Database;
   /** 可选：写入哪个 feature 的 DSL（缺省不落盘，仅返回） */
   feature?: string;
-  /** 是否用 LLM 润色功能名（默认 false；未配置 LLM 时静默降级为规则中文名） */
+  /** 是否用 LLM 润色分组名（默认 false；未配置 LLM 时静默降级为规则中文名） */
   gen_names?: boolean;
 }
 
 export interface FeatureTreeResult {
   feature?: string;
-  /** 功能层 */
+  /** 目录分组层 */
   features: Array<FeatureNode & { file_count: number }>;
   /** 参与归属的文件总数 */
   file_count: number;
-  /** 未归入任何功能的孤立文件数（通常无调用边也无目录归属，如纯配置） */
+  /** 未归入任何目录分组的孤立文件数（通常无调用边也无目录归属，如纯配置） */
   unassigned_count: number;
   message: string;
   /**
@@ -79,7 +79,7 @@ function dirOf(p: string): string {
 }
 
 /**
- * 顶层目录 → 中文功能名（规则归并时功能名符合人类阅读习惯，而非裸目录名）。
+ * 顶层目录 → 中文分组名（规则归并时分组名符合人类阅读习惯，而非裸目录名）。
  * 未列出的目录保持原名（如 observe-lang-go 等外部子项目）。
  */
 const DIR_FEATURE_NAMES: Record<string, string> = {
@@ -109,7 +109,7 @@ function isInfraPath(relPath: string): boolean {
 }
 
 /** 路径归一化：cache.db 的 file_path 锚定仓库根（带 src/ 前缀），DSL 语义路径已剥 src/。
- *  不剥一致则 communityKeyOf 会把所有社区都判成 'src' 主键 → 全部坍缩成一个"核心功能"大桶。
+ *  不剥一致则 communityKeyOf 会把所有社区都判成 'src' 主键 → 全部坍缩成一个"核心分组"大桶。
  *  统一剥掉前导 src/，让两套路径空间对齐，目录/能力域判定一致。 */
 function normPath(p: string): string {
   const seg = p.split('/');
@@ -152,16 +152,16 @@ function fileKeyOf(relPath: string): string {
   return seg[0];
 }
 
-/** 规则归并主键 → 功能展示名 */
+/** 规则归并主键 → 分组展示名 */
 function ruleLabelOf(key: string): string {
   if (key === 'root-svc') return '基础服务';
   return DIR_FEATURE_NAMES[key] ?? key;
 }
 
 /**
- * 规则兜底归并：社区按"成员文件主导目录"聚成功能（先目录聚）；
- *   - 根级文件（storage/server…）聚成"基础服务"，消除"(根)"伪功能
- * 功能名用中文（DIR_FEATURE_NAMES），符合人类阅读习惯。
+ * 规则兜底归并：社区按"成员文件主导目录"聚成目录分组（先目录聚）；
+ *   - 根级文件（storage/server…）聚成"基础服务"，消除"(根)"伪分组
+ * 分组名用中文（DIR_FEATURE_NAMES），符合人类阅读习惯。
  */
 function groupByDir(
   comms: Array<{ id: number; name: string; files: string[]; est_lines: number; symbol_count: number }>,
@@ -197,7 +197,7 @@ async function renameGroupsByLLM(groups: FeatureNode[]): Promise<string[] | null
     })
     .join('\n');
   const prompt =
-    `下面是一个软件项目按目录粗分的功能组。请给每组起一个简短的**中文名**（4-8 字，体现业务用途，` +
+    `下面是一个软件项目按目录粗分的若干目录分组。请给每组起一个简短的**中文名**（4-8 字，体现业务用途，` +
     `如"渲染引擎""配置加载"），不要用目录名/英文原名。\n` +
     `只输出紧凑 JSON：{"names":["名字0","名字1",...]}，顺序与组号一致，共 ${groups.length} 个。\n\n${list}`;
   try {
@@ -258,7 +258,7 @@ function dirFallbackTree(
     unassigned_count: Math.max(0, total - mapped),
     message:
       features.length > 0
-        ? `功能树生成（★ 无结构簇 ⇒ 回落【目录分组】）：${features.length} 个功能 · ` +
+        ? `功能树生成（★ 无结构簇 ⇒ 回落【目录分组】）：${features.length} 个目录分组 · ` +
           `${mapped}/${total} 个文件按目录归属。原因：${reason}`
         : `${reason}（且无 live 语义文件 ⇒ 目录分组同样为空）`,
   };
@@ -292,13 +292,13 @@ export async function deriveFeatureTree(
       .map((c) => ({ id: c.id, name: c.name, files: c.files, est_lines: c.est_lines, symbol_count: c.symbol_count }));
 
   // ★★ T230：**无可用社区 ⇒ 回落【目录分组】**（改前这里直接 `features: []`，功能树会**变空**）。
-  //   —— 功能的定义归**目录**（更准、更便宜、人可直接检查）；聚类只作"差异信号"（见下 `community_dir_diff`）。
+  //   —— 这一层的定义归**目录**（更准、更便宜、人可直接检查）；聚类只作"差异信号"（见下 `community_dir_diff`）。
   //   ⇒ 判据复用本文件唯一的 `fileKeyOf`/`ruleLabelOf`（`dirFallbackTree` 内），**不新造第二套目录算法**。
   if (comms.length === 0) {
     return dirFallbackTree(input, liveDsl, semanticFiles, mono.message);
   }
 
-  // 3. 归并成功能：目录优先（结构保真，对得上实际项目）——社区按"成员文件主导目录"聚成功能，
+  // 3. 归并成目录分组：目录优先（结构保真，对得上实际项目）——社区按"成员文件主导目录"聚成目录分组，
   //    再按能力域拆 tools 大桶；LLM 只做命名润色（不重新归并，避免把目录打散成猜的业务功能）。
   let nodes: FeatureNode[] = groupByDir(comms);
   let usedLlm = false;
@@ -314,14 +314,14 @@ export async function deriveFeatureTree(
     }
   }
 
-  // 4. 稳定功能 id（f0, f1, …），供 file_map 引用
+  // 4. 稳定分组 id（f0, f1, …），供 file_map 引用
   nodes.forEach((n, i) => {
     n.id = `f${i}`;
   });
 
-  // 4.5 建"目录主键 → 功能"索引 + 补零社区目录功能（B）：
+  // 4.5 建"目录主键 → 分组"索引 + 补零社区目录分组（B）：
   //     数据/协议/服务/工具等目录的纯定义/配置/入口文件（dsl/db/daemon/tools/observe 等）没有调用边，
-  //     进不了社区；按目录直挂补成功能，保证 L2 层体现真实目录，而不是凭空消失。
+  //     进不了社区；按目录直挂补成目录分组，保证 L2 层体现真实目录，而不是凭空消失。
   const keyToFeature = new Map<string, string>();
   const coveredKeys = new Set<string>();
   for (const n of nodes) {
@@ -344,7 +344,7 @@ export async function deriveFeatureTree(
     nodes.push({ id, name: ruleLabelOf(k), communities: [] });
     coveredKeys.add(k);
   }
-  // 社区 → 功能 id
+  // 社区 → 分组 id
   const commFeatureId = new Map<number, string>();
   nodes.forEach((n) => {
     for (const c of n.communities) commFeatureId.set(c.id, n.id);
@@ -364,7 +364,7 @@ export async function deriveFeatureTree(
     file_count: 0,
   }));
 
-  // 5. file_map：文件 → 功能（社区优先保原子性，孤儿文件目录直挂补全）
+  // 5. file_map：文件 → 目录分组（社区优先保原子性，孤儿文件目录直挂补全）
   // 路径形态可能不一致：cache.db 的路径相对其项目根（如本仓库 observe/internal/...），
   // DSL 的路径相对导入快照根（顶层目录已剥，如 internal/...）。
   // 用后缀索引兜底（≥2 段，避免单文件名误命中）。
@@ -385,10 +385,10 @@ export async function deriveFeatureTree(
     return undefined;
   }
   const fileMap: Record<string, { feature_id: string; community_id: number }> = {};
-  // 归属原则（E，v2 目录优先）：文件按"自己的目录/能力域"归属功能（fileKeyOf），
-  //   - L4 下钻是"文件层"，文件必须落在它实际所在的目录功能里（tools 文件按能力域、
+  // 归属原则（E，v2 目录优先）：文件按"自己的目录/能力域"归属目录分组（fileKeyOf），
+  //   - L4 下钻是"文件层"，文件必须落在它实际所在的目录分组里（tools 文件按能力域、
   //     observe 文件归观测探针），不能跟着"社区的主目录"跑——否则跨目录社区会把
-  //     observe/diagnosis 的文件拖进 tools 大功能，对不上实际项目。
+  //     observe/diagnosis 的文件拖进 tools 大分组，对不上实际项目。
   //   - community_id 仅作参考保留（L3 实现路径仍按社区协作模块叙事）。
   //   - 目录键对不上（理论上不会，keyToFeature 覆盖全部语义文件目录）→ 按社区兜底。
   for (const sf of semanticFiles) {
@@ -468,7 +468,7 @@ export async function deriveFeatureTree(
       message: `cache.db 与该 feature 不相关（db 文件 ${dbHit}/${dbTotal} 属于此项目），已拒绝生成功能树`,
     };
   }
-  // 规则：功能下任一社区的文件都没进 file_map → 该功能整体剔除。
+  // 规则：分组下任一社区的文件都没进 file_map → 该分组整体剔除。
   const mappedFids = new Set(Object.values(fileMap).map((m) => m.feature_id));
   let scoped = features;
   if (semanticFiles.length > 0 && mappedFids.size > 0) {
@@ -494,7 +494,7 @@ export async function deriveFeatureTree(
     file_count: Object.keys(fileMap).length,
     unassigned_count: Math.max(0, total - Object.keys(fileMap).length),
     message:
-      `功能树生成：${scoped.length} 个功能 · ${mono.community_count} 个社区 · ` +
+      `功能树生成：${scoped.length} 个目录分组 · ${mono.community_count} 个社区 · ` +
       `${Object.keys(fileMap).length}/${total} 个文件完成归属` +
       (renameOnly ? '（LLM 重命名目录分组）' : usedLlm ? '（LLM 归并命名）' : '（规则目录归并）') +
       (community_dir_diff.length > 0 ? ` · ★ 社区≠目录 ${community_dir_diff.length} 个文件` : ''),

@@ -2,16 +2,16 @@
  * derive_mind_map —— L3 思维导图层生成
  *
  * 把 L2 设计图层（feature_tree 功能树 + semantic 语义文件）提炼成
- * 普通人能看懂的逐级思维导图（root → 功能 → 社区 → 文件）。
+ * 普通人能看懂的逐级思维导图（root → 目录分组 → 社区 → 文件）。
  *
  * 数据来源：
- *   - dsl.feature_tree：项目 → 功能 → 社区（analyze_monolith 聚类）→ 文件
+ *   - dsl.feature_tree：项目 → 目录分组 → 社区（analyze_monolith 聚类）→ 文件
  *   - dsl.semantic.files：文件职责描述（responsibility）+ 行数 + 状态
- *   - dsl.layers：架构分层（作为功能描述补充）
+ *   - dsl.layers：架构分层（作为目录分组描述补充）
  *
  * 提炼策略：
  *   - 骨架：无 LLM 也能生成（规则骨架，恒可用），供可观测产物兜底。
- *   - LLM 提炼（gen_descriptions=true）：用内置 LLM 为每个功能/社区生成
+ *   - LLM 提炼（gen_descriptions=true）：用内置 LLM 为每个目录分组/社区生成
  *     "人话"描述（这是什么、解决什么问题），让思维导图对普通人也友好。
  *
  * 锚点：文件节点 id 与 L2 共享（file_xxx），保证思维导图 → 设计图 → 代码可追溯。
@@ -47,8 +47,8 @@ export interface DeriveMindMapInput {
   /** 产物输出路径（可选，默认 output/mind_map_<feature>.html） */
   output_path?: string;
   /** 视图形态（默认 structure）：
-   *  structure = 结构树（功能→社区→文件，开发者下钻用）
-   *  teach     = 科普教学（功能 + 实现原理分镜 steps，像科普视频讲解，小白用） */
+   *  structure = 结构树（目录分组→社区→文件，开发者下钻用）
+   *  teach     = 科普教学（目录分组 + 实现原理分镜 steps，像科普视频讲解，小白用） */
   view?: 'structure' | 'teach';
   /** 局部触发式更新：上次导图已生成人话描述的未变更文件，直接复用旧描述、不进 LLM 重算；
    *  结构仍从活 DSL 重建（结构层始终是代码事实）。dirty_paths = 本次实际变更/新增的相对路径。 */
@@ -81,7 +81,7 @@ function basename(p: string): string {
  * 噪音社区名（C）：聚类锚点常把"数据结构/通用辅助器"类名当社区名
  * （MinHeap、Trie、LruCache、RingBuffer…），LLM 直译成"最小堆"仍是噪音。
  * 命中的社区不送 LLM 翻译、不占"协作模块"注意力，统一标为「内部组件」——
- * 它确实是功能内部的一颗螺丝钉，只是不配当 L3 的叙事主角。
+ * 它确实是目录分组内部的一颗螺丝钉，只是不配当 L3 的叙事主角。
  */
 const NOISE_COMMUNITY_RE =
   /^(min|max|small|big)?(heap|hash|map|set|list|stack|queue|tree|trie|lru|fifo|ring|buffer|pool|sync|mutex|lock|timer|clock|util|helper|common|base|const|types?|dto|vo|enums?|errs?|warn|log|metrics?|stats?|configs?|opts?|params?)$/i;
@@ -403,7 +403,7 @@ export function projectFileDataShape(
    各步入/出针脚来自契约投影（涉及文件 API 签名，非 LLM 编造）。跨步骤连线同样不编造——
    按「数据形态名」保守匹配：输出针脚与【后续步骤】的输入针脚，清洗后的类型或中文人话名
    一致才连一条真边；泛型噪声（string/number/boolean/this/...）不参与匹配，避免全连。
-   缺口 = 某步的入/出无法在本功能内闭环 → 管线可能漏了一步 / 该步投影失败，如实标记。
+   缺口 = 某步的入/出无法在本目录分组内闭环 → 管线可能漏了一步 / 该步投影失败，如实标记。
    ============================================================ */
 /** 泛型噪声类型：不承载业务语义，不能作为跨步连线身份 */
 const GENERIC_T = new Set([
@@ -453,7 +453,7 @@ function pinIdentity(p: TeachPin): { key: string; name: string } | null {
   return null;
 }
 
-/** 针脚列表 → 去重后的语义身份 key 集合（与 pinIdentity 同款清洗，供跨功能 global 集用） */
+/** 针脚列表 → 去重后的语义身份 key 集合（与 pinIdentity 同款清洗，供跨目录分组 global 集用） */
 export function pinIdentityKeys(pins: TeachPin[] | undefined): Set<string> {
   const s = new Set<string>();
   for (const p of pins ?? []) {
@@ -470,8 +470,8 @@ export interface StepFlowOut {
 
 /**
  * 按数据形态名推导跨步骤真实出边/入边 + 管线缺口（steps 与 stepIds 同序对应）。
- * global：跨功能视角的产出/消费集合（可缺省）。有它时，「无源/悬空」缺口只在
- * 全项目都没有产出者/消费方时才报——避免把「来自其它功能的外部输入」误判成漏步。
+ * global：跨目录分组视角的产出/消费集合（可缺省）。有它时，「无源/悬空」缺口只在
+ * 全项目都没有产出者/消费方时才报——避免把「来自其它目录分组的外部输入」误判成漏步。
  */
 export function deriveStepFlow(
   steps: TeachStep[],
@@ -489,7 +489,7 @@ export function deriveStepFlow(
 
   // —— 0) 唯一产出者：同一数据名被 ≥2 个步骤产出 → 太泛（基础设施类型 / 事件总线），
   //    不配做跨步连线身份，否则 SyntaxNodeLike/ParsedSymbol 这类"每步都出现"的共享类型
-  //    会把相邻步骤全连成噪声。仅"全功能内唯一产出"的数据名参与连线（缺口判定同款过滤）。
+  //    会把相邻步骤全连成噪声。仅"全目录分组内唯一产出"的数据名参与连线（缺口判定同款过滤）。
   const prodByKey = new Map<string, number>();
   for (let i = 0; i < N; i++) for (const o of pinOut[i]) if (o) prodByKey.set(o.key, (prodByKey.get(o.key) ?? 0) + 1);
   const isUniqueProducer = (key: string): boolean => (prodByKey.get(key) ?? 0) === 1;
@@ -526,7 +526,7 @@ export function deriveStepFlow(
   }
 
   // —— 2) 缺口（只报真异常，把噪声压到最低）——
-  //    此前「入边在本功能/全项目都没有产出者就报无源」会把大量合法的外部输入（跨功能类型、
+  //    此前「入边在本目录分组/全项目都没有产出者就报无源」会把大量合法的外部输入（跨目录分组类型、
   //    标准库、共享模型）误判成漏步（实测 413 → 全是噪声）。新口径：
   //      · in_missing / out_missing：不再报（投影缺料由前端面板「未投影出/入边」info 提示兜底）；
   //      · 顺序倒挂（in_no_source / out_no_consumer）：数据在管线里真实存在，但先消费后产出。
@@ -578,20 +578,20 @@ export function deriveStepFlow(
 }
 
 /* ============================================================
-   跨功能数据流（L2 功能介绍视图高亮用）：数据名跨功能「产出 → 消费」。
-   保守规则同 deriveStepFlow 升级版：一个数据名只被【一个功能】产出（唯一产出者）
-   才连线——被多个功能产出说明是公共基础设施（事件总线 / 共享模型），连了反而全亮成噪声。
+   跨目录分组数据流（L2 目录分组视图高亮用）：数据名跨目录分组「产出 → 消费」。
+   保守规则同 deriveStepFlow 升级版：一个数据名只被【一个目录分组】产出（唯一产出者）
+   才连线——被多个目录分组产出说明是公共基础设施（事件总线 / 共享模型），连了反而全亮成噪声。
    ============================================================ */
 export interface CrossFeatureFlowEdge {
-  /** 产出功能 id（源） */
+  /** 产出分组 id（源） */
   from: string;
-  /** 消费功能 id（目标） */
+  /** 消费分组 id（目标） */
   to: string;
   /** 流转的数据形态名 */
   data: string;
 }
 
-/** 跨功能数据流推导：features 为 { id, steps } 列表，返回唯一产出者的跨功能连线 */
+/** 跨目录分组数据流推导：features 为 { id, steps } 列表，返回唯一产出者的跨目录分组连线 */
 export function deriveCrossFeatureFlow(
   features: Array<{ id: string; steps: TeachStep[] }>,
 ): CrossFeatureFlowEdge[] {
@@ -630,7 +630,7 @@ export function deriveCrossFeatureFlow(
 }
 
 /* ============================================================
-   文件级数据流（L4 文件视图高亮用）：某功能内「文件产出 → 文件消费」。
+   文件级数据流（L4 文件视图高亮用）：某目录分组内「文件产出 → 文件消费」。
    材料 = 逐文件契约投影的针脚（projectFileDataShape，非 LLM 编造）；
    连线规则与 deriveStepFlow 同款保守：数据身份一致、且唯一产出者才连，
    方向不限（文件间无工序顺序，只要 A 产 B 吃即可）。id 用文件路径（l2_ref）。
@@ -642,7 +642,7 @@ export interface FileFlowNode {
   outputs?: TeachPin[];
 }
 
-/** 文件级数据流推导：files 为功能内全部文件（跨步骤去重收集），返回唯一产出者的文件连线 */
+/** 文件级数据流推导：files 为目录分组内全部文件（跨步骤去重收集），返回唯一产出者的文件连线 */
 export function deriveFileFlow(files: FileFlowNode[]): TeachFlowEdge[] {
   const edges: TeachFlowEdge[] = [];
   const N = files.length;
@@ -669,7 +669,7 @@ export function deriveFileFlow(files: FileFlowNode[]): TeachFlowEdge[] {
   return edges;
 }
 
-/** 规则描述：功能节点 */
+/** 规则描述：目录分组节点 */
 function ruleFeatureDesc(f: { name: string; communities: unknown[] }, fileCount: number): string {
   return `由 ${f.communities.length} 个子模块组成，共 ${fileCount} 个文件`;
 }
@@ -692,7 +692,7 @@ function ruleFileDesc(f: FileInfo): string {
 }
 
 /**
- * 用 LLM 为一批功能/社区节点批量生成人话描述。
+ * 用 LLM 为一批目录分组/社区节点批量生成人话描述。
  * 分批并行（每批 12 个条目，批间 Promise.all），单批 60s 超时——
  * 一次性喂几十个条目会让慢端点生成超长输出甚至悬挂（实测 5 分钟）。
  * 返回 { 节点id → 描述 }（合并各批成功部分）；全部失败返回 null（调用方降级规则）。
@@ -707,19 +707,19 @@ async function llmEnrichDescriptions(
   for (let i = 0; i < nodes.length; i += BATCH) chunks.push(nodes.slice(i, i + BATCH));
   const system =
     '你是软件项目的"人话翻译官"。用户要把一个项目的结构做成给普通人看的思维导图。' +
-    '给定项目里的功能/子模块/文件清单，请为每个条目写一句**通俗易懂且有针对性**的介绍（2-3 句以内），' +
-    '讲清"这是什么、大概干嘛用、在所属功能里承担什么角色"，避免只重复技术名词，' +
+    '给定项目里的目录分组/子模块/文件清单，请为每个条目写一句**通俗易懂且有针对性**的介绍（2-3 句以内），' +
+    '讲清"这是什么、大概干嘛用、在所属目录分组里承担什么角色"，避免只重复技术名词，' +
     '也避免给不同条目写雷同的套话——每个条目的介绍必须体现它自己的特点。' +
-    '铁律：条目信息中给出的功能名/路径/职责是唯一事实来源，介绍里提到功能名时必须原样引用给定名称，' +
-    '严禁发明清单里没有的功能名或项目背景；信息不足就只描述文件本身，不要推测。' +
+    '铁律：条目信息中给出的分组名/路径/职责是唯一事实来源，介绍里提到分组名时必须原样引用给定名称，' +
+    '严禁发明清单里没有的分组名或项目背景；信息不足就只描述文件本身，不要推测。' +
     '只输出 JSON：{"descriptions":{"<id>":"<人话描述>", ...}}，id 必须来自给定清单，且必须覆盖清单中的每一个 id。';
-  const kindLabel = (k: string): string => (k === 'feature' ? '功能' : k === 'file' ? '文件' : '子模块');
+  const kindLabel = (k: string): string => (k === 'feature' ? '目录分组' : k === 'file' ? '文件' : '子模块');
   /** 单批调用：成功返回 Map，失败（网络/超时/JSON 截断）返回 null */
   const fetchChunk = async (
     chunk: Array<{ id: string; label: string; kind: string; hint: string; owner?: string }>,
   ): Promise<Map<string, string> | null> => {
     const list = chunk
-      .map((n) => `- id=${n.id} · ${kindLabel(n.kind)}「${n.label}」（所属功能名只能用：${n.owner ?? '未提供'}）· ${n.hint}`)
+      .map((n) => `- id=${n.id} · ${kindLabel(n.kind)}「${n.label}」（所属分组名只能用：${n.owner ?? '未提供'}）· ${n.hint}`)
       .join('\n');
     try {
       const { content } = await chatViaGateway(
@@ -759,7 +759,7 @@ async function llmEnrichDescriptions(
 }
 
 // ─────────────────────────────────────────────────────────────
-// 能力支柱合成：把代码自动聚出的"细功能"归并成"这个项目能干嘛"的业务能力
+// 能力支柱合成：把代码自动聚出的"细粒度目录分组"归并成"这个项目能干嘛"的业务能力
 // 上下文来源 = MCP 工具注册表（server_registry）——比目录聚类更能回答"能干嘛"
 // ─────────────────────────────────────────────────────────────
 
@@ -803,7 +803,7 @@ function extractToolContext(dsl: DesignDSL): { text: string; readError?: string 
   return { text: tools.map((t) => `- ${t}`).join('\n') };
 }
 
-/** 用 LLM 把细功能归并成几个业务能力支柱：返回 [{name, explanation, features}] 或 null */
+/** 用 LLM 把细粒度目录分组归并成几个业务能力支柱：返回 [{name, explanation, features}] 或 null */
 async function llmSynthesizeCapabilities(
   features: FeatureNode[],
   toolContext: string,
@@ -811,32 +811,32 @@ async function llmSynthesizeCapabilities(
 ): Promise<Array<{ name: string; explanation: string; features: string[] }> | null> {
   const cfg = loadAgentConfig();
   if (!cfg || features.length === 0) return null;
-  // 能力归并只需功能名即可，不带子模块细节（那会令输入膨胀、拖慢冷启动数十秒）
+  // 能力归并只需分组名即可，不带子模块细节（那会令输入膨胀、拖慢冷启动数十秒）
   const list = features.map((f) => `-「${f.name}」`).join('\n');
   const contextBlock = toolContext
     ? `\n这个项目是一个 MCP server，注册了以下工具（即它能提供的能力）：\n${toolContext}\n` +
-      `请以这些能力为准来命名/归并下面的功能。\n`
+      `请以这些能力为准来命名/归并下面的目录分组。\n`
     : '';
   const prompt =
-    `下面是一个软件项目导图里自动聚类出的 ${features.length} 个太过细致的"功能"。${contextBlock}\n` +
+    `下面是一个软件项目导图里自动聚类出的 ${features.length} 个太过细致的"目录分组"。${contextBlock}\n` +
     `请把它们归并成 **3-5 个业务能力支柱**，每个支柱是"这个项目给用户/开发者解决什么问题"这件事。\n` +
     `命名要像"重构屎山""剥离积木块""摄像头自动测试"这种**面向使用场景的能力动宾短语**（2-6 字），` +
     `不要用"渲染能力""可观测性""服务治理"这类技术分类词。\n` +
     `每个支柱给出：\n` +
     `1) 简短中文能力名（2-6 字，动宾、面向场景）；\n` +
     `2) 一句**对普通人友好**的能力说明（用它做什么、解决什么问题，避免堆技术名词）；\n` +
-    `3) features 数组：包含哪些功能（必须**原样**用上面给定的功能名）。\n` +
+    `3) features 数组：包含哪些目录分组（必须**原样**用上面给定的分组名）。\n` +
     `要求：\n` +
-    `- 每个功能必须且只能归入一个支柱；\n` +
+    `- 每个目录分组必须且只能归入一个支柱；\n` +
     `- 归并依据是"用户要它解决什么问题"，不是目录名或技术分类；\n` +
     `- 提供工具上下文时，命名优先贴合工具体现的做事场景；\n` +
-    `- 信息不足时不要发明清单里没有的功能或能力。\n` +
-    `只输出紧凑 JSON：{"capabilities":[{"name":"重构屎山","explanation":"一句话说明","features":["功能A","功能B"]}]}`;
+    `- 信息不足时不要发明清单里没有的目录分组或能力。\n` +
+    `只输出紧凑 JSON：{"capabilities":[{"name":"重构屎山","explanation":"一句话说明","features":["分组A","分组B"]}]}`;
   // 冷启动兜底：端点首个 LLM 调用常达 30+s（随后热缓存秒回）。超时放大到 180s，
   // 失败时重试一次以命中热缓存——否则冷启动必触发 90s 超时，能力支柱层"静默消失"。
   const messages: ChatMessage[] = [
-    { role: 'system', content: '你是软件架构的"能力翻译官"：把代码聚出的细粒度功能，转成业务负责人一眼看懂的能力导图。' },
-    { role: 'user', content: `项目：${title}\n功能清单：\n${list}\n\n${prompt}` },
+    { role: 'system', content: '你是软件架构的"能力翻译官"：把代码聚出的细粒度目录分组，转成业务负责人一眼看懂的能力导图。' },
+    { role: 'user', content: `项目：${title}\n分组清单：\n${list}\n\n${prompt}` },
   ];
   let content = '';
   for (let attempt = 0; attempt < 2; attempt++) {
@@ -867,9 +867,9 @@ async function llmSynthesizeCapabilities(
       out.push({ name, explanation, features: feats });
       feats.forEach((x) => used.add(x));
     }
-    // 未被任何支柱收纳的功能 → 归入"其他"
+    // 未被任何支柱收纳的目录分组 → 归入"其他"
     const missing = features.map((f) => f.name).filter((n) => !used.has(n));
-    if (missing.length > 0) out.push({ name: '其他', explanation: '未归入上述能力的功能', features: missing });
+    if (missing.length > 0) out.push({ name: '其他', explanation: '未归入上述能力的目录分组', features: missing });
     return out.length > 0 ? out : null;
   } catch (e) {
     console.error('[cap] llmSynthesizeCapabilities exception:', (e as Error).name, (e as Error).message?.slice(0, 200));
@@ -884,8 +884,8 @@ function countFiles(n: MindMapNode): number {
 }
 
 // ─────────────────────────────────────────────────────────────
-// teach 模式：科普教学导图（功能 + 实现原理分镜）
-// 叙事框架参考科普视频：项目是什么 → 有哪些功能 → 每个功能怎么实现的（分镜）
+// teach 模式：科普教学导图（目录分组 + 实现原理分镜）
+// 叙事框架参考科普视频：项目是什么 → 有哪些目录分组 → 每个目录分组怎么实现的（分镜）
 // 材料三层：文件职责（静态）+ 函数签名（静态）+ 真实调用链（cache.db 动态证据）
 // ─────────────────────────────────────────────────────────────
 
@@ -893,11 +893,11 @@ function countFiles(n: MindMapNode): number {
 interface TeachScript {
   what: string;
   steps: TeachStep[];
-  /** 产线判定提议：该功能是否像一条产线/流水线（数据有单向先后流向）。LLM 只出候选，人确认后才成为事实 */
+  /** 产线判定提议：该目录分组是否像一条产线/流水线（数据有单向先后流向）。LLM 只出候选，人确认后才成为事实 */
   pipeline_like?: { like?: boolean; why?: string };
 }
 
-/** 后缀匹配（≥2 段）判断 cache.db 路径是否属于功能文件集合（两套相对根可能前缀不同） */
+/** 后缀匹配（≥2 段）判断 cache.db 路径是否属于目录分组的文件集合（两套相对根可能前缀不同） */
 function makeFileMatcher(featureRels: string[]): (p: string) => boolean {
   const exact = new Set(featureRels);
   const suffixes = new Set<string>();
@@ -914,7 +914,7 @@ function makeFileMatcher(featureRels: string[]): (p: string) => boolean {
 }
 
 /**
- * 从 cache.db 取该功能的真实跨文件调用边（科普分镜的执行顺序证据）。
+ * 从 cache.db 取该目录分组的真实跨文件调用边（科普分镜的执行顺序证据）。
  * 按调用频次取 top N，一屏可读；文件粒度去重（同一对文件最多 2 条，防 hub 函数刷屏）。
  * 返回人读格式："a.ts:fnA → b.ts:fnB ×12"；db 不可用返回 []。
  */
@@ -946,8 +946,8 @@ function loadCallEdges(db: Database, featureRels: string[], maxEdges = 40): stri
 }
 
 /**
- * 功能内文件热度：该文件在功能集合中作为跨文件调用 source/target 的总次数。
- * teach 功能节点下的"关键文件"子层按它取 topN——下钻有据，不是全量平铺（那是星图的杂乱）。
+ * 目录分组内文件热度：该文件在目录分组集合中作为跨文件调用 source/target 的总次数。
+ * teach 目录分组节点下的"关键文件"子层按它取 topN——下钻有据，不是全量平铺（那是星图的杂乱）。
  */
 function loadFileHeat(db: Database, featureRels: string[]): Map<string, number> {
   const match = makeFileMatcher(featureRels);
@@ -970,9 +970,9 @@ function loadFileHeat(db: Database, featureRels: string[]): Map<string, number> 
 }
 
 /**
- * 跨功能依赖聚合：从 cache.db 真实调用边算"功能 A 的文件调用功能 B 的文件"总次数。
- * 树管归属（is-part-of）、线管依赖（depends-on）——底座功能不占兄弟名目，用叠加层表达。
- * 同时识别底座：被 ≥2 个功能调用、且调出量不到调入量一半（入度 >> 出度）的基建。
+ * 跨目录分组依赖聚合：从 cache.db 真实调用边算"目录分组 A 的文件调用目录分组 B 的文件"总次数。
+ * 树管归属（is-part-of）、线管依赖（depends-on）——底座目录分组不占兄弟名目，用叠加层表达。
+ * 同时识别底座：被 ≥2 个目录分组调用、且调出量不到调入量一半（入度 >> 出度）的基建。
  */
 function loadFeatureDeps(
   db: Database,
@@ -984,7 +984,7 @@ function loadFeatureDeps(
   shared: Array<{ file: string; used_by: Array<{ feature: string; count: number }>; total: number }>;
 } {
   const matchers = featureRels.map((rels) => makeFileMatcher(rels));
-  /** 文件 → 功能索引（首次匹配）；一个文件只归一个功能（与分拣口径一致） */
+  /** 文件 → 目录分组索引（首次匹配）；一个文件只归一个目录分组（与分拣口径一致） */
   const fileOwner = new Map<string, number>();
   const ownerOf = (p: string): number => {
     if (fileOwner.has(p)) return fileOwner.get(p) as number;
@@ -1009,7 +1009,7 @@ function loadFeatureDeps(
     )
     .all() as Array<{ sf: string; tf: string; w: number }>;
   const pairW = new Map<string, number>();
-  /** pairKey → 目标文件 → 次数：功能粒度会失真（调用方可能只用功能里一小块），文件证据揭示真正踩的地板 */
+  /** pairKey → 目标文件 → 次数：目录分组粒度会失真（调用方可能只用目录分组里一小块），文件证据揭示真正踩的地板 */
   const pairFiles = new Map<string, Map<string, number>>();
   for (const r of rows) {
     const a = ownerOf(r.sf);
@@ -1032,7 +1032,7 @@ function loadFeatureDeps(
     deps.push({ from: featureNames[a], to: featureNames[b], weight: w, via_files: via });
   }
   deps.sort((x, y) => y.weight - x.weight);
-  // 底座识别：入度（被依赖）≥2 个功能 且 调出 < 调入一半
+  // 底座识别：入度（被依赖）≥2 个目录分组 且 调出 < 调入一半
   const inW = new Array(featureNames.length).fill(0);
   const inFans: Set<number>[] = featureNames.map(() => new Set<number>());
   const outW = new Array(featureNames.length).fill(0);
@@ -1046,9 +1046,9 @@ function loadFeatureDeps(
   for (let i = 0; i < featureNames.length; i++) {
     if (inFans[i].size >= 2 && inW[i] >= 8 && outW[i] < inW[i] / 2) foundations.push(featureNames[i]);
   }
-  // 共享能力文件：跨功能被调总次数 ≥3（含单功能高频调用，如 watch 工具被某功能 ×6）。
-  // 聚类会把这类"隐形地板"吸进某个大功能变得不可见，这里按调用证据显式挖出来。
-  const fileFans = new Map<string, Map<number, number>>(); // 目标文件 → (调用方功能 → 次数)
+  // 共享能力文件：跨目录分组被调总次数 ≥3（含单目录分组高频调用，如 watch 工具被某目录分组 ×6）。
+  // 聚类会把这类"隐形地板"吸进某个大目录分组变得不可见，这里按调用证据显式挖出来。
+  const fileFans = new Map<string, Map<number, number>>(); // 目标文件 → (调用方目录分组 → 次数)
   for (const r of rows) {
     const a = ownerOf(r.sf);
     const b = ownerOf(r.tf);
@@ -1099,14 +1099,14 @@ async function llmTeachFeature(material: string, featureName = ''): Promise<Teac
   if (!hasEnabledProvider()) return null;
   const system =
     '你是技术科普编剧，擅长把软件功能讲成普通人爱看的科普视频（类似"3分钟看懂搜索引擎原理"）。\n' +
-    '给定一个功能的材料：【职责】每个文件是干嘛的；【调用记录】真实代码里谁调用谁、调用多少次（这是真实执行顺序的证据，材料区允许出现函数名供你理解，但你的输出不许照搬）；【主人批注】项目主人在导图上写的理解/纠正（如有，优先级最高，人的说法与材料冲突时以人为准）。\n\n' +
-    '请为这个功能写科普分镜：\n' +
+    '给定一个目录分组的材料：【职责】每个文件是干嘛的；【调用记录】真实代码里谁调用谁、调用多少次（这是真实执行顺序的证据，材料区允许出现函数名供你理解，但你的输出不许照搬）；【主人批注】项目主人在导图上写的理解/纠正（如有，优先级最高，人的说法与材料冲突时以人为准）。\n\n' +
+    '请为这个目录分组写科普分镜：\n' +
     '1. what：从**痛点/场景**开场（"如果没它会怎样"或"它像生活中的什么"），1-2 句。禁止用"本功能用于/是一个…的功能"这类说明书腔。可以打生活类比（如"给程序装行车记录仪"）。\n' +
     '2. steps：实现原理分镜 3-6 步，像视频镜头按**真实执行/数据流顺序**推进——顺序必须以【调用记录】为证据，不能凭目录名猜。每步：\n' +
     '   - title：≤12 字动宾短语（如「埋下探针」「比对流水账」）；\n' +
     '   - detail：1-2 句纯人话，讲清这步发生什么、数据从哪来到哪去。**严禁**出现函数名、文件名、路径、英文驼峰词——技术细节只许放进 involves；\n' +
     '   - involves：这步依据的关键文件（只能从【职责】清单的文件里选，给想深挖的工程师看）。\n' +
-    '3. pipeline_like（可选）：这个功能整体是否像一条**产线/流水线**？\n' +
+    '3. pipeline_like（可选）：这个目录分组整体是否像一条**产线/流水线**？\n' +
     '   - 判断标准：数据有**单向先后流向**——上一道工序的产物（返回值/结果）喂给下一道，前后有明确先后，如 埋针→采集→传输→入库→查询。若符合，输出 {"like":true,"why":"一句话依据（如 数据沿调用链单向流动）"}。\n' +
     '   - 不符合则输出 {"like":false,"why":"一句话依据"}。\n' +
     '只基于给定材料，不得编造。只输出 JSON（无其他文字）：\n' +
@@ -1178,22 +1178,22 @@ async function llmTeachFeature(material: string, featureName = ''): Promise<Teac
     const needRetry = (x: CallResult): boolean => (!x.ok && x.retryable) || (x.ok && x.content.trim() === '');
     let r = await callOnce(material);
     for (let attempt = 2; attempt <= 3 && needRetry(r); attempt++) {
-      console.error(`[teach] 功能「${featureName}」第 ${attempt - 1} 次尝试失败（${r.err || r.content.slice(0, 100) || '空 content'}），${attempt * 2}s 后重试`);
+      console.error(`[teach] 目录分组「${featureName}」第 ${attempt - 1} 次尝试失败（${r.err || r.content.slice(0, 100) || '空 content'}），${attempt * 2}s 后重试`);
       await new Promise((resolve) => setTimeout(resolve, attempt * 2000));
       r = await callOnce(material);
     }
     if (!r.ok) {
-      console.error(`[teach] 功能「${featureName}」LLM 调用失败：${r.err ?? ''} ${r.content}`);
+      console.error(`[teach] 目录分组「${featureName}」LLM 调用失败：${r.err ?? ''} ${r.content}`);
       return null;
     }
     let { script, violations } = parseAndFilter(r.content);
     if (!script && r.content.trim() === '') {
-      console.error(`[teach] 功能「${featureName}」LLM 返回空 content（finish_reason=${r.finishReason}）`);
+      console.error(`[teach] 目录分组「${featureName}」LLM 返回空 content（finish_reason=${r.finishReason}）`);
     }
     // 违规重写回路：≥2 步带技术标识（或全灭）时，把违规明细发回 LLM 重写一次——
-    // LLM 常照搬材料里的 snake_case 模块名，丢弃会导致整个功能无分镜，重写才能两全（零噪声 + 有分镜）
+    // LLM 常照搬材料里的 snake_case 模块名，丢弃会导致整个目录分组无分镜，重写才能两全（零噪声 + 有分镜）
     if (violations.length >= 2 && (script === null || script.steps.length < 3)) {
-      console.error(`[teach] 功能「${featureName}」${violations.length} 步含技术标识，触发重写回路`);
+      console.error(`[teach] 目录分组「${featureName}」${violations.length} 步含技术标识，触发重写回路`);
       const rewriteUser =
         material +
         '\n\n【重写要求】你上一遍输出的以下步骤 detail 含函数名/文件名/英文驼峰或下划线标识，已全部作废：\n' +
@@ -1203,25 +1203,25 @@ async function llmTeachFeature(material: string, featureName = ''): Promise<Teac
       if (r2.ok) {
         const second = parseAndFilter(r2.content);
         if (second.script && (script === null || second.script.steps.length > script.steps.length)) {
-          console.error(`[teach] 功能「${featureName}」重写成功：${second.script.steps.length} 步全部合规`);
+          console.error(`[teach] 目录分组「${featureName}」重写成功：${second.script.steps.length} 步全部合规`);
           script = second.script;
         }
       }
     }
     if (!script) {
-      console.error(`[teach] 功能「${featureName}」无有效分镜（违规 ${violations.length} 步重写后仍不合规）`);
+      console.error(`[teach] 目录分组「${featureName}」无有效分镜（违规 ${violations.length} 步重写后仍不合规）`);
       return null;
     }
     return script;
   } catch (e) {
-    console.error(`[teach] 功能「${featureName}」意外异常：`, (e as Error).message);
+    console.error(`[teach] 目录分组「${featureName}」意外异常：`, (e as Error).message);
     return null;
   }
 }
 
-/** 组装单个功能的实现材料 v2：职责 + 调用记录（顺序证据）+ 主人批注
- *  rels 传入功能的**文件全集**（社区文件 + 目录直挂文件），
- *  零社区功能（dsl/db/daemon 等纯定义/服务目录）也能拿到真实文件喂给分镜。 */
+/** 组装单个目录分组的实现材料 v2：职责 + 调用记录（顺序证据）+ 主人批注
+ *  rels 传入目录分组的**文件全集**（社区文件 + 目录直挂文件），
+ *  零社区目录分组（dsl/db/daemon 等纯定义/服务目录）也能拿到真实文件喂给分镜。 */
 function buildTeachMaterial(
   projectTitle: string,
   fName: string,
@@ -1239,7 +1239,7 @@ function buildTeachMaterial(
   const shown = rels.slice(0, MAX);
   const parts: string[] = [
     `项目：${projectTitle}`,
-    `功能：${fName}（${rels.length} 个文件${anchors.length ? `，协作模块：${anchors.join('、')}` : ''}）`,
+    `目录分组：${fName}（${rels.length} 个文件${anchors.length ? `，协作模块：${anchors.join('、')}` : ''}）`,
     '【职责】各文件是干嘛的：',
   ];
   for (const rel of shown) {
@@ -1253,7 +1253,7 @@ function buildTeachMaterial(
     parts.push('【调用记录】真实代码里的跨文件调用（按频次排序，是分镜顺序的证据）：');
     parts.push(...callEdges.map((e) => `- ${e}`));
   } else {
-    parts.push('【调用记录】无（该功能无跨文件调用数据，分镜顺序依据职责推断并在 detail 中说明）');
+    parts.push('【调用记录】无（该目录分组无跨文件调用数据，分镜顺序依据职责推断并在 detail 中说明）');
   }
   if (ownerNotes.length > 0) {
     parts.push('【主人批注】项目主人在这张导图上写的批注（人的理解和纠正，优先级最高，必须融入 what/steps）：');
@@ -1265,13 +1265,13 @@ function buildTeachMaterial(
 /**
  * involves 管线兜底：LLM 产出的 involves 常有两类病——
  *   1. 裸文件名（丢了目录前缀，如 `trace_exec.ts`，lookupFile/下钻都解析不到）；
- *   2. 引用不全（只点出个别关键文件，功能其余文件在 L4 下钻不可达，如「能力矩阵」13 文件只引 2 个）。
- * 以该功能真实文件全集 rels（file_map 目录优先归属，权威）为准：
+ *   2. 引用不全（只点出个别关键文件，目录分组其余文件在 L4 下钻不可达，如「能力矩阵」13 文件只引 2 个）。
+ * 以该目录分组真实文件全集 rels（file_map 目录优先归属，权威）为准：
  *   - 裸文件名按 basename 归一到全路径，无法解析的条目丢弃；
  *   - 未引用的文件**按文件名词元相似度匹配到最相关步骤**（以 LLM 已引用的关键文件为锚点，
  *     如 leftover 里的 `arch_layer.ts` 会匹配到已含 `arch_layer/monolith` 的「识别架构分层」步骤，
  *     而不是被轮流塞进无关步骤）；完全无相似锚点的文件才按轮转兜底。
- *     文件均为该功能真实成员，非编造。
+ *     文件均为该目录分组真实成员，非编造。
  */
 function fileTokenSet(base: string): Set<string> {
   return new Set(base.replace(/\.(tsx?|go|js)$/i, '').split(/[^a-z0-9]+/i).filter(Boolean));
@@ -1350,8 +1350,8 @@ function polishStepInvolves(script: { steps: TeachStep[] }, rels: string[]): voi
 }
 
 /**
- * 构建 teach 导图：root → 功能（what + 实现原理分镜 steps）。
- * useLlm=true 时各功能并行调科普编剧；失败/未配置降级规则版（无分镜，仅描述）。
+ * 构建 teach 导图：root → 目录分组（what + 实现原理分镜 steps）。
+ * useLlm=true 时各目录分组并行调科普编剧；失败/未配置降级规则版（无分镜，仅描述）。
  * teach 只落 JSON（小白入口是项目页圆框图，不需要独立 HTML 查看器）。
  */
 /**
@@ -1379,7 +1379,7 @@ function brickCardFromSemantic(sf: SemanticFile): MindMapNode {
 
 /** 根下补挂积木区（structure/teach × 功能树/平铺 全路径共用）：
  *  积木折叠后盒内文件不进 feature_tree/社区/平铺——不补位则导图上积木整体消失。
- *  积木卡与功能平级（"项目用了哪些标准件"），工厂产线视图里它就是产线上的外购件工位。 */
+ *  积木卡与目录分组平级（"项目用了哪些标准件"），工厂产线视图里它就是产线上的外购件工位。 */
 function appendBrickZone(root: MindMapNode, dsl: DesignDSL): void {
   const brickEntries = (dsl.semantic?.files ?? []).filter((sf) => sf.id.startsWith('brick_') && sf.path);
   if (brickEntries.length === 0) return;
@@ -1454,7 +1454,7 @@ async function buildTeachMindMap(
     return { feature, mode: 'rule', mind_map: mindMap, jsonFile, message: mindMap.note ?? '' };
   }
 
-  // LLM 科普编剧：各功能并行（材料含真实调用链证据）
+  // LLM 科普编剧：各目录分组并行（材料含真实调用链证据）
   // db 打不开时 edges=[]，材料仍以职责清单为主（LLM 会标注顺序为推断）
   let db: Database | null = null;
   // ★ 缓存库定位的唯一权威在 `infrastructure/index/db.ts#findCacheDb`（本文件此前自持一份候选逻辑）
@@ -1471,7 +1471,7 @@ async function buildTeachMindMap(
       dbReadError = `${dbFile}: ${err instanceof Error ? err.message : String(err)}`;
     }
   }
-  // 功能 → 文件全集：以 file_map（目录/能力域优先归属，权威）为准。
+  // 目录分组 → 文件全集：以 file_map（目录/能力域优先归属，权威）为准。
   // 社区按 cache.db 跨文件聚类，成员常横跨多个目录且混入测试/过滤文件——若整组并进来，
   // 文件数会被虚高（「查询理解」43 文件被顶到 168）且 involves 会指向非语义文件，
   // 下游 L4 下钻与 LLM 分镜材料都失真。社区节点仍单独按 f.communities 构建，不依赖 rels。
@@ -1487,18 +1487,18 @@ async function buildTeachMindMap(
   }
   const featureRels = ft.features.map((f) => [...new Set(fidFiles.get(f.id) ?? [])]);
   const callEdgeLists = featureRels.map((rels) => (db ? loadCallEdges(db, rels) : []));
-  // 跨功能依赖叠加层（树管归属、线管依赖）：真实调用边聚合 + 底座识别
+  // 跨目录分组依赖叠加层（树管归属、线管依赖）：真实调用边聚合 + 底座识别
   const { deps, foundations, shared } = db
     ? loadFeatureDeps(db, ft.features.map((f) => f.name), featureRels)
     : { deps: [], foundations: [] as string[], shared: [] as Array<{ file: string; used_by: Array<{ feature: string; count: number }>; total: number }> };
-  // 功能内文件热度：teach 下钻"关键文件"子层的排序依据（db 关闭前算好）
+  // 目录分组内文件热度：teach 下钻"关键文件"子层的排序依据（db 关闭前算好）
   const fileHeat = featureRels.map((rels) => (db ? loadFileHeat(db, rels) : new Map<string, number>()));
   db?.close();
 
-  // 主人批注分拣：导图节点 id f{i}（功能）/ f{i}:{j}（步骤），target_id 前缀匹配
+  // 主人批注分拣：导图节点 id f{i}（目录分组）/ f{i}:{j}（步骤），target_id 前缀匹配
   const humanNotes = (dsl.annotations ?? []).filter((a) => a.author === 'human' && !a.resolved && a.text);
-  // 用户手写节点（人机共笔）：挂功能/步骤下的整棵子树（含嵌套）作为该功能的理解补充；
-  // 挂 root 的作为项目级理解，进所有功能材料。parent_id 索引漂移时按 parent_label 匹配功能名兜底。
+  // 用户手写节点（人机共笔）：挂目录分组/步骤下的整棵子树（含嵌套）作为该目录分组的理解补充；
+  // 挂 root 的作为项目级理解，进所有目录分组材料。parent_id 索引漂移时按 parent_label 匹配分组名兜底。
   const userNodes = dsl.user_nodes ?? [];
   const uChildren = new Map<string, string[]>();
   for (const u of userNodes) {
@@ -1527,14 +1527,14 @@ async function buildTeachMindMap(
     const annTexts = humanNotes
       .filter((a) => a.target_id === `f${i}` || a.target_id?.startsWith(prefix))
       .map((a) => a.text);
-    // 只取直挂本功能子树的顶层节点（嵌套已由 uTreeText 展开），避免重复
+    // 只取直挂本目录分组子树的顶层节点（嵌套已由 uTreeText 展开），避免重复
     const nodeTexts = userNodes
       .filter((u) => belongsToFeature(u, i) && !u.parent_id.startsWith('u_'))
       .map((u) => `主人新增的笔记节点「${uTreeText(u.id)}」`);
     return [...annTexts, ...nodeTexts, ...rootLevelNotes.map((t) => `（项目级理解）${t}`)].slice(0, 14);
   });
 
-  // 旧 teach JSON 的分镜缓存：功能名没变 + 本次不强制 LLM 时直接复用，
+  // 旧 teach JSON 的分镜缓存：分组名没变 + 本次不强制 LLM 时直接复用，
   // 避免规则重建（gen_descriptions=false）把已有 LLM 分镜覆盖成降级文案
   const prevScripts = new Map<string, TeachScript>();
   // 社区名中文缓存（community_zh）：社区名是聚类算法从代码标识生成的英文，译成人话
@@ -1603,8 +1603,8 @@ async function buildTeachMindMap(
         3,
         async (f, i) => {
           // 已有有效分镜（≥3 步）直接复用，避免每次重建全量重调 LLM；
-          // 只对缺失/占位（steps<3，如"AI 分镜暂不可用"/"材料不足"）的功能重新生成——
-          // 支持逐步补齐：掉了哪个功能，重跑一次只需补那一个。
+          // 只对缺失/占位（steps<3，如"AI 分镜暂不可用"/"材料不足"）的目录分组重新生成——
+          // 支持逐步补齐：掉了哪个目录分组，重跑一次只需补那一个。
           const prev = prevScripts.get(f.name);
           if (prev && prev.steps.length >= 3) return prev;
           return llmTeachFeature(
@@ -1616,7 +1616,7 @@ async function buildTeachMindMap(
     : ft.features.map((f) => prevScripts.get(f.name) ?? (null as TeachScript | null));
   const anyLlm = scripts.some((s) => s !== null);
 
-  // 展示顺序：底座功能排根下首位（承认其"地板"身份），但 f{i} id 保持原始索引——批注/用户节点锚点不漂移
+  // 展示顺序：底座目录分组排根下首位（承认其"地板"身份），但 f{i} id 保持原始索引——批注/用户节点锚点不漂移
   const isFoundation = (i: number) => foundations.includes(ft.features[i].name);
   const order = [
     ...ft.features.map((_, i) => i).filter((i) => isFoundation(i)),
@@ -1625,12 +1625,12 @@ async function buildTeachMindMap(
 
   // 社区/文件专属描述生成目标：构建树时收集（带稳定 key + 材料 hint），树成型后统一补描述
   const descTargets: Array<{ node: MindMapNode; key: string; kind: 'community' | 'file'; hint: string; owner: string }> = [];
-  // 产线判定提议：功能名 → 一句话依据。LLM 只出候选，确认前不影响渲染（机器不代主人拍板）
+  // 产线判定提议：分组名 → 一句话依据。LLM 只出候选，确认前不影响渲染（机器不代主人拍板）
   const pipelineProposals: Record<string, string> = {};
   const root: MindMapNode = {
     id: 'root',
     label: title,
-    description: `项目总览：${ft.features.length} 个功能`,
+    description: `项目总览：${ft.features.length} 个目录分组`,
     kind: 'root',
     children: order.map((i) => {
       const f = ft.features[i];
@@ -1638,8 +1638,8 @@ async function buildTeachMindMap(
       const script = scripts[i];
       const hasEdges = callEdgeLists[i].length > 0;
       if (script?.pipeline_like?.like) pipelineProposals[f.name] = script.pipeline_like.why ?? '';
-      // 真三层下钻：功能 → 子模块（社区=聚类真实产物，按内部热度 top3）→ 关键文件（每社区热度 top4）。
-      // 分镜单独成组（🎬 stepgroup），不再与文件混在功能下一级——结构层与讲解层分开。
+      // 真三层下钻：目录分组 → 子模块（社区=聚类真实产物，按内部热度 top3）→ 关键文件（每社区热度 top4）。
+      // 分镜单独成组（🎬 stepgroup），不再与文件混在目录分组下一级——结构层与讲解层分开。
       const heat = fileHeat[i] ?? new Map<string, number>();
       const usedFileIds = new Set<string>();
       // 收集描述生成目标（key 稳定：文件用路径、社区用聚类原名，跨重建命中缓存）
@@ -1708,12 +1708,12 @@ async function buildTeachMindMap(
         {
           title: hasEdges ? 'AI 分镜暂不可用' : '材料不足，暂无法讲解',
           detail: hasEdges
-            ? '本次 AI 讲解生成失败（可稍后重试），以下是该功能的静态概览。'
-            : '该功能缺少源码调用记录（早期导入的数据），无法生成原理讲解；重新导入项目后可获得完整分析。',
+            ? '本次 AI 讲解生成失败（可稍后重试），以下是该目录分组的静态概览。'
+            : '该目录分组缺少源码调用记录（早期导入的数据），无法生成原理讲解；重新导入项目后可获得完整分析。',
           involves: rels.slice(0, 3),
         },
       ];
-      // 产线视图：默认所有功能直接走工厂流水线（工序盒+针脚+涉及文件入住为子卡片）。
+      // 产线视图：默认所有目录分组直接走工厂流水线（工序盒+针脚+涉及文件入住为子卡片）。
       // 工厂流水线就是分镜的标准呈现，无需逐一拍板；仅主人显式点过「✗ 否」才回落普通步骤。
       const isLine = !(prevPipelineLike && prevPipelineLike[f.name] === false);
       // 产线内涉及文件的去重集合：一个文件只入住首个引用它的工序盒
@@ -1727,7 +1727,7 @@ async function buildTeachMindMap(
           return { path: p, inputs: fs?.inputs, outputs: fs?.outputs };
         }),
       );
-      // 二期·L4：文件级数据流边（功能内全部文件跨步骤去重收集 → 唯一产出者连线，供 L4 高亮）
+      // 二期·L4：文件级数据流边（目录分组内全部文件跨步骤去重收集 → 唯一产出者连线，供 L4 高亮）
       const allFiles: Array<{ id: string; inputs?: TeachPin[]; outputs?: TeachPin[] }> = [];
       const seenFile = new Set<string>();
       filePinsByStep.forEach((fps) => fps.forEach((fp) => {
@@ -1739,7 +1739,7 @@ async function buildTeachMindMap(
       const stepGroup: MindMapNode = {
         id: `f${i}:sg`,
         label: '工作步骤',
-        description: `${steps.length} 步讲清这个功能怎么跑起来`,
+        description: `${steps.length} 步讲清这个目录分组怎么跑起来`,
         kind: 'stepgroup',
         // pending 标记：分镜是"AI 分镜暂不可用/材料不足"占位（script 为空）时挂上，前端据此显示待生成态、不伪装成品
         meta: {
@@ -1770,7 +1770,7 @@ async function buildTeachMindMap(
               narration: buildScenes(shape ?? undefined, s.title, s.detail),
             },
           };
-          // 已确认产线的功能：把 steps 升级为骨架（工序盒）——涉及文件入住为工序的子卡片。
+          // 已确认产线的目录分组：把 steps 升级为骨架（工序盒）——涉及文件入住为工序的子卡片。
           // 共享文件不重复入住（一个文件只住进首个引用它的工序盒，其余工序仅画连线）。
           if (isLine && s.involves?.length) {
             const kids: MindMapNode[] = [];
@@ -1796,7 +1796,7 @@ async function buildTeachMindMap(
         id: `f${i}`,
         label: f.name,
         kind: 'feature' as const,
-        description: script?.what ?? `由 ${f.communities.length} 个子模块协作完成的业务功能`,
+        description: script?.what ?? `由 ${f.communities.length} 个子模块协作组成的目录分组`,
         steps,
         children: [stepGroup, ...communityChildren],
         // storyboard 权威标记：LLM 分镜是唯一最终产物——有有效分镜(done) vs 占位(pending)。前端据此判定是否已完成科普
@@ -1806,10 +1806,10 @@ async function buildTeachMindMap(
   };
 
   // ── 能力支柱顶层（teach 视图）──
-  // 与 structure 一致：把根下平铺的功能用 MCP 工具上下文归并成 2-6 个"这项目能干嘛"的支柱，
-  // 每个支柱挂回原功能子树（feature 节点 id 不改，批注/用户节点锚点不漂移）。
+  // 与 structure 一致：把根下平铺的目录分组用 MCP 工具上下文归并成 2-6 个"这项目能干嘛"的支柱，
+  // 每个支柱挂回原目录分组子树（feature 节点 id 不改，批注/用户节点锚点不漂移）。
   let capGroups: Array<{ name: string; explanation: string; features: string[] }> | null = null;
-  // 能力合成与分镜描述解耦：只要配置了 LLM 即合成（功能名都够），
+  // 能力合成与分镜描述解耦：只要配置了 LLM 即合成（分组名都够），
   // 不依赖 useLlm/gen_descriptions——避免 overview 默认不传 gen_descriptions 时"能干嘛"层静默缺失。
   let ctxReadError = '';
   if (loadAgentConfig()) {
@@ -1847,7 +1847,7 @@ async function buildTeachMindMap(
       capKids.push({
         id: 'cap_teach_other',
         label: '其他',
-        description: '未归入上述能力支柱的功能',
+        description: '未归入上述能力支柱的目录分组',
         kind: 'capability' as const,
         meta: { files: leftover.reduce((s, n) => s + ((n.meta?.files as number) || 0), 0) },
         children: leftover,
@@ -1957,7 +1957,7 @@ export async function placeProposals(feature: string): Promise<PlaceProposalsRes
     return { proposals: [], mode: 'rule', message: '没有待定位的新功能构想（根级节点为空）' };
   }
 
-  // 现有功能清单 = 树里的真实功能（JSON root.children 不含前端合成的 shared 分支）
+  // 现有目录分组清单 = 树里的真实目录分组（JSON root.children 不含前端合成的 shared 分支）
   const featNames = (mindMap.root.children ?? []).map((c) => c.label);
   const featDescs = (mindMap.root.children ?? []).map((c) => `${c.label}：${(c.description || '').slice(0, 60)}`).join('\n');
 
@@ -1974,13 +1974,13 @@ export async function placeProposals(feature: string): Promise<PlaceProposalsRes
               '你是软件架构师。主人要在项目里加新功能，他只写一句构想，你来定位：\n' +
               '1. 起个功能名（≤8字，动宾或名词）；\n' +
               '2. 一句人话介绍（15~40字，解决什么问题）；\n' +
-              '3. parent：它属于哪个现有功能（是其子能力）？独立新功能则填 ""；\n' +
+              '3. parent：它属于哪个现有目录分组（是其子能力）？独立新功能则填 ""；\n' +
               '4. steps：2-3 步实现分镜（每步 title ≤12字 + detail 一两句）；\n' +
-              '5. depends_on：预判它要踩哪些现有功能（数组，可空）。\n' +
-              '基于给定现有功能事实判断，不要编造不存在的功能名。只输出 JSON：\n' +
+              '5. depends_on：预判它要踩哪些现有目录分组（数组，可空）。\n' +
+              '基于给定现有目录分组事实判断，不要编造不存在的分组名。只输出 JSON：\n' +
               '{"proposals":{"<id>":{"title":"","desc":"","parent":"","steps":[{"title":"","detail":""}],"depends_on":[""]}}}',
           },
-          { role: 'user', content: `项目：${dsl.title || feature}\n\n现有功能：\n${featDescs}\n\n主人的新功能构想：\n${list}` },
+          { role: 'user', content: `项目：${dsl.title || feature}\n\n现有目录分组：\n${featDescs}\n\n主人的新功能构想：\n${list}` },
         ],
         { temperature: 0.4, jsonMode: true, timeoutMs: 90_000 },
       );
@@ -2051,7 +2051,7 @@ async function deriveMindMapCore(input: DeriveMindMapInput): Promise<DeriveMindM
 
   const title = dsl.title || feature;
 
-  // teach 模式独立分支：科普教学导图（功能 + 实现原理分镜）
+  // teach 模式独立分支：科普教学导图（目录分组 + 实现原理分镜）
   // 分镜是小白真正看的"表达产物"——只要配了 LLM 就默认生成（与 structure 一致），
   // 不依赖调用方传 gen_descriptions，避免默认路径生成"空分镜"并长期缓存。
   if ((input.view ?? 'structure') === 'teach') {
@@ -2107,8 +2107,8 @@ async function deriveMindMapCore(input: DeriveMindMapInput): Promise<DeriveMindM
   let root: MindMapNode;
 
   if (ft && ft.features.length > 0) {
-    // ── 有功能树：先建"功能 → 社区 → 文件"子树，能力合成可行时再在顶上套能力支柱 ──
-    root = { id: 'root', label: title, description: `项目总览：${ft.features.length} 个功能`, kind: 'root', children: [] };
+    // ── 有功能树：先建"目录分组 → 社区 → 文件"子树，能力合成可行时再在顶上套能力支柱 ──
+    root = { id: 'root', label: title, description: `项目总览：${ft.features.length} 个目录分组`, kind: 'root', children: [] };
     const featureSubtrees: MindMapNode[] = [];
     for (const f of ft.features) {
       const communityIds = new Set<string>();
@@ -2168,7 +2168,7 @@ async function deriveMindMapCore(input: DeriveMindMapInput): Promise<DeriveMindM
       featureSubtrees.push(fNode);
     }
 
-    // 能力支柱合成：把细功能归并成"这个项目能干嘛"的业务能力。
+    // 能力支柱合成：把细粒度目录分组归并成"这个项目能干嘛"的业务能力。
     // 只要配置了 LLM 即启用（单次调用、便宜），不依赖 gen_descriptions——
     let capGroups: Array<{ name: string; explanation: string; features: string[] }> | null = null;
     if (loadAgentConfig()) {
@@ -2177,7 +2177,7 @@ async function deriveMindMapCore(input: DeriveMindMapInput): Promise<DeriveMindM
       capGroups = toolCtx.text ? await llmSynthesizeCapabilities(ft.features, toolCtx.text, title) : null;
     }
     if (capGroups && capGroups.length > 0) {
-      // 功能名/id → 子树节点 映射（能力支柱把它下面的功能子树整棵搬进去）
+      // 目录分组名/id → 子树节点 映射（能力支柱把它下面的目录分组子树整棵搬进去）
       const nameToNode = new Map<string, MindMapNode>();
       ft.features.forEach((f, i) => {
         const n = featureSubtrees[i];
@@ -2201,13 +2201,13 @@ async function deriveMindMapCore(input: DeriveMindMapInput): Promise<DeriveMindM
           children: kids,
         } as MindMapNode;
       });
-      // 未被任何支柱收纳的功能 → 兜底挂"其他"
+      // 未被任何支柱收纳的目录分组 → 兜底挂"其他"
       const leftover = featureSubtrees.filter((n) => !usedNode.has(n.id));
       if (leftover.length > 0) {
         root.children!.push({
           id: 'cap_other',
           label: '其他',
-          description: '未归入上述能力支柱的功能',
+          description: '未归入上述能力支柱的目录分组',
           kind: 'capability',
           meta: { files: leftover.reduce((s, n) => s + ((n.meta?.files as number) || 0), 0) },
           children: leftover,
@@ -2405,7 +2405,7 @@ async function deriveMindMapCore(input: DeriveMindMapInput): Promise<DeriveMindM
       };
       apply(root);
       // §2d：把"覆盖了几成"变成可读的数 —— 原来只会在"全失败"时说话，部分失败静默（teach 路径早已有此覆盖度）
-      note = `已用 LLM（${loadAgentConfig()?.model ?? ''}）提炼功能/子模块描述 ${enriched.size}/${llmTargets.length} 条`;
+      note = `已用 LLM（${loadAgentConfig()?.model ?? ''}）提炼目录分组/子模块描述 ${enriched.size}/${llmTargets.length} 条`;
     } else {
       note = 'LLM 提炼不可用（未配置或调用失败），已用规则描述';
     }
@@ -2463,7 +2463,7 @@ export async function deriveMindMap(input: DeriveMindMapInput): Promise<TouchedP
 // ─────────────────────────────────────────────────────────────
 // 阶段 C · 批注语义化解析（resolveCanvasNoteTargets）
 // 把画布几何批注（canvas_notes）解析成外部 agent 可读的语义工单：
-// 每条批注（或批注套）→ 目标节点 → L1 功能 / L2 步骤 / L3 文件 / L4 细节（标题+针脚+契约）。
+// 每条批注（或批注套）→ 目标节点 → L1 目录分组 / L2 步骤 / L3 文件 / L4 细节（标题+针脚+契约）。
 // 纯函数、不写盘：消费双通道（MCP Resource 订阅 + MCP Tool 显式调用），内置 LLM 仅作工具。
 // ─────────────────────────────────────────────────────────────
 
@@ -2475,7 +2475,7 @@ export interface ResolvedNoteTarget {
   kind: 'file' | 'step' | 'feature' | 'other';
   /** 解析依据：anchor=锚定节点 / hit=坐标命中 / nearest=最近邻 */
   via: 'anchor' | 'hit' | 'nearest';
-  /** L1 功能（中文名） */
+  /** L1 目录分组（中文名） */
   feature?: string;
   /** L2 步骤 */
   step?: { seq: number; title: string; detail?: string };
@@ -2520,13 +2520,13 @@ interface TeachStepIdx {
   outputs?: TeachPin[];
 }
 
-/** teach 导图索引：功能/步骤/文件归属 */
+/** teach 导图索引：目录分组/步骤/文件归属 */
 interface TeachIndex {
   /** featureId（f{i}）→ 步骤列表 */
   stepsByFeature: Map<string, TeachStepIdx[]>;
   /** 文件路径 → 涉及它的步骤（一个文件可能被多步涉及） */
   filesToSteps: Map<string, TeachStepIdx[]>;
-  /** 功能清单 */
+  /** 目录分组清单 */
   features: Array<{ id: string; label: string; kind: string }>;
 }
 
@@ -2676,12 +2676,12 @@ function resolveNodeId(id: string, ctx: NoteCtx): ResolvedNoteTarget | null {
     if (st) return stepTarget(fid, st, ctx);
     return featureTarget(fid, ctx);
   }
-  // 功能节点：f{i}
+  // 目录分组节点：f{i}
   if (/^f\d+$/.test(id)) return featureTarget(id, ctx);
   return nodeTarget(id, ctx);
 }
 
-/** 前端 nav IR 节点 id → L1-L4 上下文（L3 步骤 nav:t{i}_{fid}:s{seq} / L4 文件 nav:...:f{j}:{path} / L2 功能 nav:feat:{i}:{fid}） */
+/** 前端 nav IR 节点 id → L1-L4 上下文（L3 步骤 nav:t{i}_{fid}:s{seq} / L4 文件 nav:...:f{j}:{path} / L2 目录分组 nav:feat:{i}:{fid}） */
 function resolveNavId(id: string, ctx: NoteCtx): ResolvedNoteTarget | null {
   // 步骤节点：nav:t{i}_{fid}:s{seq}
   const s = id.match(/^nav:t\d+_([^:]+):s(\d+)$/);
@@ -2698,7 +2698,7 @@ function resolveNavId(id: string, ctx: NoteCtx): ResolvedNoteTarget | null {
     const t = fileTarget(f[1], ctx);
     if (t) return t;
   }
-  // 功能节点：nav:feat:{i}:{fid}
+  // 目录分组节点：nav:feat:{i}:{fid}
   const fe = id.match(/^nav:feat:\d+:(.+)$/);
   if (fe) {
     const t = featureTarget(fe[1], ctx);
@@ -2733,7 +2733,7 @@ function fileTarget(path: string, ctx: NoteCtx): ResolvedNoteTarget | null {
   };
 }
 
-/** 步骤上下文：L2 步骤 + 归属功能 + L4 针脚 */
+/** 步骤上下文：L2 步骤 + 归属目录分组 + L4 针脚 */
 function stepTarget(fid: string, st: TeachStepIdx, _ctx: NoteCtx): ResolvedNoteTarget {
   return {
     nodeId: `${fid}:${st.seq}`,
@@ -2749,14 +2749,14 @@ function stepTarget(fid: string, st: TeachStepIdx, _ctx: NoteCtx): ResolvedNoteT
   };
 }
 
-/** 功能上下文：L1 功能 */
+/** 目录分组上下文：L1 目录分组 */
 function featureTarget(fid: string, ctx: NoteCtx): ResolvedNoteTarget {
   const feat = ctx.teach.features.find((f) => f.id === fid);
   const name = feat?.label || ctx.featureNames.get(fid) || fid;
   return { nodeId: fid, kind: 'feature', via: 'anchor', feature: name, detail: { title: name } };
 }
 
-/** 通用节点：file_xxx / 画布几何节点（含功能归属） */
+/** 通用节点：file_xxx / 画布几何节点（含目录分组归属） */
 function nodeTarget(id: string, ctx: NoteCtx): ResolvedNoteTarget | null {
   const fileInfo = ctx.fileById.get(id);
   if (fileInfo) {
@@ -2801,7 +2801,7 @@ function lookupSemanticFile(idx: FileIndex, rel: string): FileInfo | undefined {
   return undefined;
 }
 
-/** 加载 teach 导图索引（无导图 = 仅文件/功能级解析，不抛错） */
+/** 加载 teach 导图索引（无导图 = 仅文件/目录分组级解析，不抛错） */
 function loadTeachIndex(feature: string): TeachIndex {
   const out: TeachIndex = { stepsByFeature: new Map(), filesToSteps: new Map(), features: [] };
   let mm: MindMap;
@@ -2882,7 +2882,7 @@ const NOTE_STATUS_LABEL: Record<string, string> = { open: '待处理', done: '�
 function renderNoteWorkItem(n: ResolvedCanvasNote, index: number): string {
   const t = n.target;
   const ctx: string[] = [];
-  if (t?.feature) ctx.push(`功能「${t.feature}」`);
+  if (t?.feature) ctx.push(`目录分组「${t.feature}」`);
   if (t?.step) ctx.push(`步骤 ${t.step.seq}「${t.step.title}」`);
   if (t?.file) ctx.push(`文件 ${t.file.path}`);
   const head = t

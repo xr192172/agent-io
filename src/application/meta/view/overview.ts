@@ -3,8 +3,8 @@
  *
  * 回答新手的四个问题中的三个（第四个"怎么做"由 first_steps 兜）：
  *   - 这是什么软件？   → summary（一句话 + 两行简介）
- *   - 有哪些功能？     → mind_map 的 root→feature→community 层（前端画圆框图）
- *   - 每个功能里有什么？→ 社区节点 description（点开看）
+ *   - 有哪些目录分组？     → mind_map 的 root→feature→community 层（前端画圆框图）
+ *   - 每个目录分组里有什么？→ 社区节点 description（点开看）
  *   - 要怎么做？       → first_steps（guided_tour 学习路径前几步）
  *
  * 数据全部来自现有能力（derive_mind_map / guided_tour / LLM），本工具只做组装与缓存：
@@ -80,7 +80,7 @@ function ruleSummary(feature: string, title: string, mm: MindMap, fileCount?: nu
   if (feats.length === 0) {
     return {
       one_liner: `${title}（${fileTotal} 个源码文件）`,
-      brief: '功能树尚未生成，暂无法给出功能级概览。可先执行 derive_mind_map 生成。',
+      brief: '功能树尚未生成，暂无法给出分组级概览。可先执行 derive_mind_map 生成。',
       mode: 'rule',
     };
   }
@@ -88,10 +88,10 @@ function ruleSummary(feature: string, title: string, mm: MindMap, fileCount?: nu
     .map((f) => (f.label === '(根)' ? '其他模块' : f.label))
     .slice(0, 6)
     .join('、');
-  const more = feats.length > 6 ? ` 等 ${feats.length} 个功能` : '';
+  const more = feats.length > 6 ? ` 等 ${feats.length} 个目录分组` : '';
   return {
-    one_liner: `${title}：由 ${feats.length} 个功能组成的软件（${fileTotal} 个源码文件）`,
-    brief: `主要功能包括 ${names}${more}。每个功能由若干子模块组成，点下方圆框查看各功能说明。`,
+    one_liner: `${title}：由 ${feats.length} 个目录分组组成的软件（${fileTotal} 个源码文件）`,
+    brief: `主要目录分组包括 ${names}${more}。每个目录分组由若干子模块组成，点下方圆框查看各分组说明。`,
     mode: 'rule',
   };
 }
@@ -108,14 +108,14 @@ async function llmSummary(feature: string, title: string, mm: MindMap): Promise<
     })
     .join('\n');
   const system =
-    '你是软件产品介绍官。给定一个项目的功能清单（功能名/子模块/文件数），用普通人能懂的话概括这个软件。\n' +
+    '你是软件产品介绍官。给定一个项目的分组清单（分组名/子模块/文件数），用普通人能懂的话概括这个软件。\n' +
     '只输出 JSON：{"one_liner":"一句话（≤30字，说清这是什么软件）","brief":"2-3句（它由哪几块组成、用来干嘛，不要罗列文件名）"}\n' +
-    '基于给定事实，不编造功能。';
+    '基于给定事实，不编造分组。';
   try {
     const { content } = await chatViaGateway(
       [
         { role: 'system', content: system },
-        { role: 'user', content: `项目：${title}\n功能清单：\n${list}` },
+        { role: 'user', content: `项目：${title}\n分组清单：\n${list}` },
       ],
       { temperature: 0.4, jsonMode: true, timeoutMs: 60_000 },
     );
@@ -127,7 +127,7 @@ async function llmSummary(feature: string, title: string, mm: MindMap): Promise<
   }
 }
 
-/** mind_map 是否处于"文件平铺"形态（无功能层）——小白视图 unacceptable，需补功能树 */
+/** mind_map 是否处于"文件平铺"形态（无目录分组层）——小白视图 unacceptable，需补功能树 */
 function isFlatMindMap(mm: MindMap): boolean {
   const kids = mm.root.children ?? [];
   return kids.length === 0 || kids[0].kind === 'file';
@@ -135,7 +135,7 @@ function isFlatMindMap(mm: MindMap): boolean {
 
 /**
  * 平铺兜底修复：DSL 没有 feature_tree 时用 deriveFeatureTree 现场生成
- * （Louvain 社区 → 按目录/LLM 归并成 3-8 个功能），写回 DSL。
+ * （Louvain 社区 → 按目录/LLM 归并成 3-8 个目录分组），写回 DSL。
  * cache.db 定位：★ **唯一权威** `db.ts#findCacheDb`（本文件此前自持一份同款候选逻辑）。
  * 找不到任何 db 时静默失败（保持平铺）。
  */
@@ -227,7 +227,7 @@ async function llmSharedDesc(
         {
           role: 'system',
           content:
-            '你是代码库讲解员。给定项目里被多个功能共用的"共享能力"文件清单（含真实调用方与导出API），' +
+            '你是代码库讲解员。给定项目里被多个分组共用的"共享能力"文件清单（含真实调用方与导出API），' +
             '为每个文件写一句通俗易懂的"它是干嘛的"（15~40 字，讲它为整个项目提供了什么能力，不罗列函数名）。' +
             '只输出 JSON：{"descs":{"<文件路径>":"<一句话>"}}，路径必须来自给定清单。',
         },
@@ -356,11 +356,11 @@ export async function getOverview(input: GetOverviewInput): Promise<OverviewResu
     note = `思维导图已生成（${result.mode === 'llm' ? 'LLM 科普分镜' : '规则骨架'}）`;
   }
 
-  // 1.5 平铺兜底修复 + 规则树升级：小白第一屏不能是文件名列表，功能名也不能
+  // 1.5 平铺兜底修复 + 规则树升级：小白第一屏不能是文件名列表，分组名也不能
   // 一直是目录名（tools/observe）。两种情况需要（重）生成功能树：
   //   a) 导图平铺（DSL 缺 feature_tree）→ 现场聚类（refresh_llm 时用 LLM 命名）
   //   b) refresh_llm 且现有树是规则版（source!=='llm'）→ 用 LLM 重新归并命名
-  // 树更新后 teach 导图需重建（吃新功能名）；树已是 LLM 版但 teach 未升级时也补生成。
+  // 树更新后 teach 导图需重建（吃新分组名）；树已是 LLM 版但 teach 未升级时也补生成。
   const treeIsRule = (dsl.feature_tree?.source ?? 'rule') !== 'llm';
   const wasFlat = isFlatMindMap(mindMap);
   if (wasFlat || (refresh_llm && treeIsRule)) {
@@ -372,7 +372,7 @@ export async function getOverview(input: GetOverviewInput): Promise<OverviewResu
       note = wasFlat
         ? '已自动生成功能树（按调用关系聚类）'
         : upgraded
-          ? '功能已用 AI 重新命名归类'
+          ? '目录分组已用 AI 重新命名归类'
           : undefined;
       // saveDSL 已推进磁盘 rev；重取最新值，否则摘要缓存会误命中补树前的旧文案
       if (fresh) dslRev = fresh._dsl_rev ?? dslRev;

@@ -1,21 +1,21 @@
 /**
- * feature_map —— 可视化地基：把"文件结构 → 功能 → 前端/后端 → 相似功能 → 废弃功能"算出来
+ * feature_map —— 可视化地基：把"文件结构 → 目录分组 → 前端/后端 → 相似分组 → 废弃分组"算出来
  *
- * 用户目标：可视化要能展示——"一个功能下面挂着它的前端功能和后端功能；还能列出相似功能、
- * 重构废弃功能"。本模块把这份*语义树*确定性算出来，供渲染层直接画，也供人先看报告再拍板。
+ * 用户目标：可视化要能展示——"一个目录分组下面挂着它的前端侧和后端侧；还能列出相似分组、
+ * 重构废弃分组"。本模块把这份*语义树*确定性算出来，供渲染层直接画，也供人先看报告再拍板。
  *
  * 设计原则（反屎山）：**只拼装既有的探索原子，不重复实现**——
  *   - 前端/后端 分层：复用 layer_detect.matchLayer（ui→前端；api/service/data/middleware/entry→后端；
  *     util/config/types/test/core→通用）。
  *   - 废弃证据：复用 detectDeadImports（TS/Go 文件级死 import）+ detectDeadPyImports（py）。
  *   - 源码收集：扫描 source_root 下源文件（跳过 node_modules/.git/dist/venv/__pycache__ 等噪音）。
- * 新增的只有"功能(按目录切分) + 相似功能(文件重名重叠)"这两层聚合，属于这个粒度的新能力。
+ * 新增的只有"目录分组(按目录切分) + 相似分组(文件重名重叠)"这两层聚合，属于这个粒度的新能力。
  *
- * 功能切分：source_root 下按*首层目录段*作为一个功能（如 src/renderer → 'renderer'）；
- * 直接挂在 source_root 下的文件归入 'root' 功能。目录名即功能 id，顺序稳定。
+ * 目录分组切分：source_root 下按*首层目录段*作为一个目录分组（如 src/renderer → 'renderer'）；
+ * 直接挂在 source_root 下的文件归入 'root' 分组。目录名即分组 id，顺序稳定。
  *
- * 相似功能：两个功能若存在*文件基名重叠*（如都含 index.ts/types.ts/verify.ts），视为结构雷同——
- * 这正反映"AI 重复实现而非在原功能上扩展"的典型屎山症状。score = 重叠基名数 / 两端基名集的小者。
+ * 相似分组：两个分组若存在*文件基名重叠*（如都含 index.ts/types.ts/verify.ts），视为结构雷同——
+ * 这正反映"AI 重复实现而非在原分组上扩展"的典型屎山症状。score = 重叠基名数 / 两端基名集的小者。
  */
 
 import fs from 'node:fs';
@@ -30,7 +30,7 @@ export type FeatureSide = 'frontend' | 'backend' | 'shared';
 export interface FeatureMapOptions {
   /** 工程根 */
   project_dir: string;
-  /** 源码根；缺省 = project_dir。功能按此根的首层目录切分。 */
+  /** 源码根；缺省 = project_dir。目录分组按此根的首层目录切分。 */
   source_root?: string;
 }
 
@@ -42,7 +42,7 @@ export interface SimilarFeatureLink {
 }
 
 export interface DeprecationEvidence {
-  /** 该功能内死 import 源数（跨栈累计） */
+  /** 该分组内死 import 源数（跨栈累计） */
   deadImportSources: number;
   /** 命中的死 import 明细（source → 相对文件） */
   deadSources: Array<{ source: string; files: string[] }>;
@@ -50,16 +50,16 @@ export interface DeprecationEvidence {
 
 export interface FeatureMapFeature {
   id: string;
-  /** 该功能的"挂载名"：source_root 内的目录段 */
+  /** 该分组的"挂载名"：source_root 内的目录段 */
   name: string;
   /** 每个侧面的相对文件（相对 source_root） */
   frontend: string[];
   backend: string[];
   shared: string[];
-  /** 与它相似的其它功能（双向都在两侧各自体现） */
+  /** 与它相似的其它分组（双向都在两侧各自体现） */
   similar: SimilarFeatureLink[];
-  /** 功能内"重复实现"家族：共享姓名前缀簇（derive_*、*_ops、*_verify…），
-   *  提示同一功能里存在成族平行实现——典型 AI 重复实现而非扩展的症状。 */
+  /** 分组内"重复实现"家族：共享姓名前缀簇（derive_*、*_ops、*_verify…），
+   *  提示同一分组里存在成族平行实现——典型 AI 重复实现而非扩展的症状。 */
   repeatedFamilies: RepeatedFamily[];
   /** 废弃证据（死 import 聚合） */
   deprecation: DeprecationEvidence;
@@ -73,13 +73,13 @@ export interface RepeatedFamily {
 }
 
 /**
- * 文件级聚类明细（新画布绘制"前端文件/后端文件挂在同一功能下"的最小原子）。
+ * 文件级聚类明细（新画布绘制"前端文件/后端文件挂在同一分组下"的最小原子）。
  * 数据契约见 docs/feature-map-viz-spec.md——本文件只产出数据，不掺展示逻辑。
  */
 export interface FeatureMapEntry {
   /** 相对 source_root 的源码路径（唯一 key） */
   file: string;
-  /** 归属功能 id（= source_root 下首层目录段；根文件 'root'） */
+  /** 归属分组 id（= source_root 下首层目录段；根文件 'root'） */
   feature_id: string;
   /** 前端 / 后端 / 通用 */
   side: FeatureSide;
@@ -102,7 +102,7 @@ export interface FeatureMapMeta {
 export interface FeatureMapResult {
   /** 文件级聚类明细（扁平，唯一真相源） */
   file_map: FeatureMapEntry[];
-  /** 功能级聚合 + 标注（相似/重复家族/废弃） */
+  /** 分组级聚合 + 标注（相似/重复家族/废弃） */
   features: FeatureMapFeature[];
   /** 参与切分的源文件数 */
   scannedFiles: number;
@@ -140,7 +140,7 @@ export function scanSourceFiles(sourceRoot: string): string[] {
   return out;
 }
 
-/** 文件相对路径 → 功能 id：取 source_root 下首层目录段；无目录段 → 'root' */
+/** 文件相对路径 → 分组 id：取 source_root 下首层目录段；无目录段 → 'root' */
 export function featureIdOf(rel: string): string {
   const parts = rel.split('/');
   return parts.length > 1 ? parts[0] : 'root';
@@ -165,7 +165,7 @@ function familyRoot(base: string): string | null {
   return m ? m[1].toLowerCase() : null;
 }
 
-/** 功能内聚类"重复实现"家族：同词根的基名 >=3 个 → 一族（derive_*、*_ops、*_verify、*_test…）。
+/** 分组内聚类"重复实现"家族：同词根的基名 >=3 个 → 一族（derive_*、*_ops、*_verify、*_test…）。
  * 排除纯测试文件族（*_test / *.test.* / *_spec）——测试成族是正常，不当作重复实现。 */
 function detectRepeatedFamilies(rels: string[]): RepeatedFamily[] {
   const byRoot = new Map<string, string[]>();
@@ -192,7 +192,7 @@ export function buildFeatureMap(opts: FeatureMapOptions): FeatureMapResult {
   const sourceRoot = path.resolve(opts.source_root ?? proj);
   const rels = scanSourceFiles(sourceRoot);
 
-  // 1) 收集既有的废弃证据（TS/Go 死 import + py 死 import），文件→功能下钻
+  // 1) 收集既有的废弃证据（TS/Go 死 import + py 死 import），文件→分组下钻
   // 将 rels (相对于 sourceRoot) 转换为相对于 proj 的路径，确保 detectDeadImports 只扫描 sourceRoot 内的文件
   const relsInProj = rels.map((r) => path.relative(proj, path.resolve(sourceRoot, r))).filter((r) => !r.startsWith('..'));
   
@@ -222,7 +222,7 @@ export function buildFeatureMap(opts: FeatureMapOptions): FeatureMapResult {
     }
   }
 
-  // 2) 按功能分组文件，标前端/后端/通用
+  // 2) 按目录分组归拢文件，标前端/后端/通用
   interface FeatAcc {
     id: string;
     frontend: string[];
@@ -254,7 +254,7 @@ export function buildFeatureMap(opts: FeatureMapOptions): FeatureMapResult {
     });
   }
 
-  // 3) 相似功能：按文件基名重叠聚合
+  // 3) 相似分组：按文件基名重叠聚合
   const baseNameSetOf = (acc: FeatAcc): Set<string> =>
     new Set([...acc.frontend, ...acc.backend, ...acc.shared].map(basename));
   const baseNameSets = new Map<string, Set<string>>();
@@ -262,7 +262,7 @@ export function buildFeatureMap(opts: FeatureMapOptions): FeatureMapResult {
 
   const features: FeatureMapFeature[] = [];
   for (const [id, acc] of featMap) {
-    // 废弃证据：收集该功能内出现死 import 的 source
+    // 废弃证据：收集该分组内出现死 import 的 source
     const localDead: Array<{ source: string; files: string[] }> = [];
     for (const [source, files] of deadBySource) {
       const inFeat = files.filter((rel) => featureIdOf(rel) === id);
@@ -293,9 +293,9 @@ export function buildFeatureMap(opts: FeatureMapOptions): FeatureMapResult {
   }
 
   const limitations = [
-    '功能 = source_root 下首层目录段；直接挂根的文件归入 root（目录即功能的约定，简单可用）',
+    '目录分组 = source_root 下首层目录段；直接挂根的文件归入 root（目录即分组的约定，简单可用）',
     '前端/后端 由文件路径的模式启发式分层推得（复用 layer_detect），非运行时确证',
-    '相似功能 = 文件基名重叠（>=0.2）的启发式，抓"重复实现"毒征兆；需人确认是否真合并',
+    '相似分组 = 文件基名重叠（>=0.2）的启发式，抓"重复实现"毒征兆；需人确认是否真合并',
     '废弃证据 = 文件级死 import 聚合（复用 TS/Go/py 检测的保守规则）；高死源 ≠ 必废弃',
   ];
   return {
