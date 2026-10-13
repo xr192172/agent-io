@@ -84,6 +84,20 @@ export interface StageCtx {
   /** 被分析项目的根。★ **没有就是没有** —— 绝不兜底到 cwd（见 `storage.ts#requireProjectRoot`） */
   projectRoot?: string;
   feature?: string;
+  /**
+   * ★★★ T221（2026-10-13）：**空库时要不要就地冷启 bootstrap** —— ★ 默认 **`false`**（保守）✓
+   *
+   * ## 为什么加它（★ 接主链时【差点踩掉的一条保护】）
+   * ★ 主链（`server_registry` 的逐调用保鲜）**明确写了 `{ bootstrap: false }`** ✓，注释逐字：
+   *   *"**绝不因为一次调用就冷启建索引**"* ✓
+   * ★★ 而 `symbol_index.produce` 原先调的是 `ensureProjectIndex(root)`（**不带参数**）⇒
+   *   ★ `FreshnessOptions.bootstrap` 的**默认是 `true`**（*"空库时是否就地 bootstrap（默认 true = 零前置）"* ✓）
+   *   ⇒ ★★★ **直接接上就会把那条保护【悄悄换掉】** ✗（★ 一次查询触发全量冷启 ✓）
+   * ★ 所以这里**显式透传**、且**默认 false** ⇒ ★ **接上之后行为不变** ✓
+   *
+   * ★ 想冷启的调用方**显式给 `true`** ✓（★ 现在的冷启在别处、不由本入口做 ✓）
+   */
+  bootstrap?: boolean;
 }
 
 interface StageBase {
@@ -147,7 +161,11 @@ export const STAGES: readonly Stage[] = [
     note: '符号索引 cache.db：nodes / edges / files / imports',
     locate: (ctx) => projectCacheDbPath(requireProjectRoot({ projectRoot: ctx.projectRoot })),
     produce: async (ctx) => {
-      await ensureProjectIndex(requireProjectRoot({ projectRoot: ctx.projectRoot }));
+      // ★★★ T221：**透传 `bootstrap`，且默认 `false`** —— ★ 别让"接上统一机制"把主链那条
+      //   *"绝不因为一次调用就冷启建索引"* 的保护**悄悄换掉** ✗（★ `FreshnessOptions` 的默认是 `true` ✓）
+      await ensureProjectIndex(requireProjectRoot({ projectRoot: ctx.projectRoot }), {
+        bootstrap: ctx.bootstrap === true,
+      });
     },
   },
   {

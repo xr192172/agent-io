@@ -15,6 +15,8 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { ensureProjectIndex, detectStaleIndex } from '../../infrastructure/index/index_freshness.js';
+// ★ T221：逐调用保鲜**改走统一机制**（★ 评测④：工序表没人调 ⇒ 现在接了 ✓）
+import { ensureStage } from '../../application/stage_registry.js';
 // ★ T190：读 infrastructure 记下的"活态 DSL 回退"事实（告警在**本层**现拼 ⇒ 不需要注入）。
 import { getLiveFallback, isLiveDslParseable } from '../../infrastructure/storage.js';
 import { hasLiveIndex } from '../../application/write_gate.js';
@@ -614,7 +616,16 @@ export async function invokeTool(
   await ensureKernelPrewarmed();
   if (rootArg && !def.noAutoFresh) {
     try {
-      if (hasLiveIndex(rootArg) && !isIndexIncomplete(rootArg)) await ensureProjectIndex(rootArg, { bootstrap: false });
+      if (hasLiveIndex(rootArg) && !isIndexIncomplete(rootArg)) {
+        // ★★★ T221（2026-10-13）：**改走统一机制**（原先直调 `ensureProjectIndex` ✗）——
+        //   ★ 外部评测的 ④：*"工序表定义了统一机制，但没有其他模块调用它"* ✓ ⇒ **现在接了** ✓
+        //   ★★ **行为不变**（★ 这是接的前提）：★ 外层那两条守卫**留着** ✓
+        //     （`hasLiveIndex` ⇒ **绝不冷启** ✓ · `isIndexIncomplete` ⇒ 后台在建时跳过 ✓）；
+        //     ★ 而 `ensureStage` 的 `bootstrap` **默认 `false`** ✓ ⇒ **也不冷启** ✓（★ 与原来 `{bootstrap:false}` 同）
+        //   ★★★ **收益**：★ `symbol_index` 的 `inputs: ['source_files']` ⇒
+        //     **主链自动获得【上游补链】** ✓ —— ★ 那是【直调没有的】✓
+        await ensureStage('symbol_index', { projectRoot: rootArg });
+      }
     } catch {
       /* 保鲜失败不阻断主流程（staleIndexWarning 仍会兜底标注） */
     }
