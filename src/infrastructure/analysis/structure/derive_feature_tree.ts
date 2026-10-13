@@ -17,12 +17,28 @@
  *   - gen_names=true（配置了 LLM）时 LLM 只做**命名润色**（目录分组 → 中文功能名），
  *     不重新归并——避免 LLM 按猜的业务语义把目录打散/吞并，导致对不上实际项目。
  * 结果写入 DSL 顶层 feature_tree 字段，供渲染端逐级下钻。
+ *
+ * ★★ T230（2026-10-13）**改角色**：**功能的定义归目录，聚类只作"差异信号"**（不是退役）——
+ *   - **无可用社区**（`communities.length === 0` / 社区皆无成员）⇒ **回落【目录分组】**，
+ *     不再返回空 `features`（改前这条链会让功能树**直接变空**）。判据复用本文件唯一的
+ *     `fileKeyOf`/`ruleLabelOf`（`dirFallbackTree` 内），**不新造第二套目录算法**。
+ *   - **有社区时**除功能树外**额外**输出 `community_dir_diff`：**文件的主导社区之家目录 ≠
+ *     该文件自己的目录**的那些文件。★ 这正是聚类**唯一**目录给不了的价值——跨目录的调用关系
+ *     （一个功能横跨多目录时，目录会把它**切碎**，而聚类看得见"这些点在外还聚在一起"）。
+ *   - ★ **判据可判定**：`社区 ≠ 目录` 的文件**必须显式出现**；两者**一致时不出现**
+ *     （输出空清单占位 = 装饰，不许）。
  */
 
 import { analyzeMonolith } from './analyze_monolith.js';
 import { getDSLByView, saveDSL } from '../../storage.js';
 import { loadLlmConfig, callChat, loadExplainConfig } from '../../llm_focus.js';
-import type { FeatureTree, FeatureNode, FeatureCommunity } from '../../../domain/types.js';
+import type {
+  DesignDSL,
+  FeatureTree,
+  FeatureNode,
+  FeatureCommunity,
+  CommunityDirDiffEntry,
+} from '../../../domain/types.js';
 
 export interface FeatureTreeInput {
   /** 项目根（定位 <root>/.agent-io/cache.db） */
@@ -44,6 +60,11 @@ export interface FeatureTreeResult {
   /** 未归入任何功能的孤立文件数（通常无调用边也无目录归属，如纯配置） */
   unassigned_count: number;
   message: string;
+  /**
+   * ★ T230：社区 ≠ 目录 的文件（聚类唯一的增量价值）。
+   *   ★ **仅当存在不一致时才带这个键** —— 一致时**不出现**（空清单占位 = 装饰，不许）。
+   */
+  community_dir_diff?: CommunityDirDiffEntry[];
 }
 
 /** 把 LLM 配置格式（explain_gen）转为通用 LlmConfig */
@@ -193,19 +214,67 @@ async function renameGroupsByLLM(groups: FeatureNode[]): Promise<string[] | null
   }
 }
 
+/**
+ * ★ T230 空社区回落：**目录分组**（不再返回空 features）。
+ *
+ * 判据复用本文件**唯一**的目录键 `fileKeyOf` 与展示名 `ruleLabelOf`（与 `groupByDir` 同源），
+ * **不新造第二套目录算法**（本仓头号病：同一判据住两处）。
+ * 产出形状与社区路径**一致**（`features: FeatureNode & {file_count}` + `file_map`）⇒ 下游不变。
+ *
+ * @param reason analyzeMonolith 给出的"为什么没有社区"（原样带出，不吞）
+ */
+function dirFallbackTree(
+  input: FeatureTreeInput,
+  liveDsl: DesignDSL | null,
+  semanticFiles: Array<{ id: string; path: string }>,
+  reason: string,
+): FeatureTreeResult {
+  const byKey = new Map<string, string[]>(); // 目录键 → 语义文件 id
+  for (const sf of semanticFiles) {
+    const k = fileKeyOf(sf.path);
+    if (!byKey.has(k)) byKey.set(k, []);
+    byKey.get(k)!.push(sf.id);
+  }
+  const features: Array<FeatureNode & { file_count: number }> = [];
+  const fileMap: Record<string, { feature_id: string; community_id: number }> = {};
+  let i = 0;
+  for (const [key, ids] of byKey) {
+    const id = `f${i++}`;
+    features.push({ id, name: ruleLabelOf(key), communities: [], file_count: ids.length });
+    for (const fid of ids) fileMap[fid] = { feature_id: id, community_id: -1 };
+  }
+  features.sort((a, b) => b.file_count - a.file_count);
+
+  if (input.feature && liveDsl && features.length > 0) {
+    liveDsl.feature_tree = { features, file_map: fileMap, source: 'rule' };
+    saveDSL(liveDsl, 'feature_tree');
+  }
+  const total = semanticFiles.length;
+  const mapped = Object.keys(fileMap).length;
+  return {
+    feature: input.feature,
+    features,
+    file_count: mapped,
+    unassigned_count: Math.max(0, total - mapped),
+    message:
+      features.length > 0
+        ? `功能树生成（★ 无结构簇 ⇒ 回落【目录分组】）：${features.length} 个功能 · ` +
+          `${mapped}/${total} 个文件按目录归属。原因：${reason}`
+        : `${reason}（且无 live 语义文件 ⇒ 目录分组同样为空）`,
+  };
+}
+
 export async function deriveFeatureTree(
   input: FeatureTreeInput,
 ): Promise<FeatureTreeResult> {
   const mono = analyzeMonolith({ project_dir: input.project_dir, db: input.db });
-  if (mono.communities.length === 0) {
-    return {
-      feature: input.feature,
-      features: [],
-      file_count: 0,
-      unassigned_count: 0,
-      message: mono.message,
-    };
-  }
+
+  // 语义基准：live 视图（功能树是"实际代码结构"的产物，必须对齐 cache.db 索引的代码快照）。
+  // 不能用设计视图（design）：设计视图是人工/历史拼装态，可能混入跨项目残留文件
+  //（曾因 cwd 漂移把 observe-lang-go、observe-conformance 等并进来），命中率闸门会误判"不相关"而拒生成。
+  // ★ T230：提前到"空社区回落"之前 —— 回落【目录分组】也要拿这份文件清单当判据。
+  const liveDsl = input.feature ? getDSLByView(input.feature, 'live') : null;
+  const semanticFiles = liveDsl?.semantic?.files ?? [];
 
   // 1. 文件 → 主导社区（取 file_view 内符号数最多的社区）
   const fileToCommunity = new Map<string, number>();
@@ -221,8 +290,12 @@ export async function deriveFeatureTree(
     mono.communities
       .filter((c) => c.files.length > 0)
       .map((c) => ({ id: c.id, name: c.name, files: c.files, est_lines: c.est_lines, symbol_count: c.symbol_count }));
+
+  // ★★ T230：**无可用社区 ⇒ 回落【目录分组】**（改前这里直接 `features: []`，功能树会**变空**）。
+  //   —— 功能的定义归**目录**（更准、更便宜、人可直接检查）；聚类只作"差异信号"（见下 `community_dir_diff`）。
+  //   ⇒ 判据复用本文件唯一的 `fileKeyOf`/`ruleLabelOf`（`dirFallbackTree` 内），**不新造第二套目录算法**。
   if (comms.length === 0) {
-    return { feature: input.feature, features: [], file_count: 0, unassigned_count: 0, message: '无有效结构簇' };
+    return dirFallbackTree(input, liveDsl, semanticFiles, mono.message);
   }
 
   // 3. 归并成功能：目录优先（结构保真，对得上实际项目）——社区按"成员文件主导目录"聚成功能，
@@ -245,11 +318,6 @@ export async function deriveFeatureTree(
   nodes.forEach((n, i) => {
     n.id = `f${i}`;
   });
-  // 语义基准：live 视图（功能树是"实际代码结构"的产物，必须对齐 cache.db 索引的代码快照）。
-  // 不能用设计视图（design）：设计视图是人工/历史拼装态，可能混入跨项目残留文件
-  //（曾因 cwd 漂移把 observe-lang-go、observe-conformance 等并进来），命中率闸门会误判"不相关"而拒生成。
-  const liveDsl = input.feature ? getDSLByView(input.feature, 'live') : null;
-  const semanticFiles = liveDsl?.semantic?.files ?? [];
 
   // 4.5 建"目录主键 → 功能"索引 + 补零社区目录功能（B）：
   //     数据/协议/服务/工具等目录的纯定义/配置/入口文件（dsl/db/daemon/tools/observe 等）没有调用边，
@@ -343,6 +411,35 @@ export async function deriveFeatureTree(
   for (const f of features) f.file_count = perFeatureFiles.get(f.id) ?? 0;
   features.sort((a, b) => b.file_count - a.file_count);
 
+  // ★★ 4.8 T230：**社区 ≠ 目录 的文件**（聚类唯一的增量价值 = 跨目录的调用关系；目录会把它切碎）。
+  //   判据（可判定）：某文件**主导社区的家目录**（`communityKeyOf` = 该社区多数成员文件所在目录）
+  //   ≠ 该文件**自己的目录键**（`fileKeyOf`）⇒ 进清单；两者**一致的文件不出现**（否则就是装饰）。
+  //   · 无主导社区的文件（孤儿 / 纯目录文件）谈不上"社区≠目录" ⇒ 不进清单。
+  //   · 只在"有社区"这条路径上算 —— 空社区回落【目录分组】时本来就没有社区可比（差异清单必空）。
+  const communityById = new Map<number, { id: number; name: string; files: string[] }>();
+  for (const c of comms) communityById.set(c.id, c);
+  const communityDirOf = new Map<number, string>();
+  for (const c of comms) communityDirOf.set(c.id, communityKeyOf(c));
+  const community_dir_diff: CommunityDirDiffEntry[] = [];
+  for (const sf of semanticFiles) {
+    const cid = fileToCommunity.get(sf.path) ?? communityOf(sf.path);
+    if (cid === undefined) continue;
+    const c = communityById.get(cid);
+    if (!c) continue;
+    const cdir = communityDirOf.get(cid)!;
+    const fdir = fileKeyOf(sf.path);
+    if (cdir === fdir) continue; // ★ 一致 ⇒ 不出现
+    community_dir_diff.push({
+      file_id: sf.id,
+      file: sf.path,
+      dir: fdir,
+      community_id: cid,
+      community_name: c.name,
+      community_dir: cdir,
+    });
+  }
+  community_dir_diff.sort((a, b) => a.file.localeCompare(b.file) || a.community_id - b.community_id);
+
   // 5.5 范围过滤 + 命中率闸门：cache.db 覆盖整个 project_dir，而 feature 可能只是
   // 其中一个子目录，甚至属于完全无关的代码库（早期无 source_root 的数据）。
   // 闸门判据用 **db 侧命中率**：db 索引文件中属于该 feature 的比例 < 50% 视为
@@ -380,7 +477,13 @@ export async function deriveFeatureTree(
 
   // 6. 落盘（写回 live 快照；saveDSL 同时同步设计视图文件，使结构图与功能树对齐）
   if (input.feature && liveDsl) {
-    liveDsl.feature_tree = { features: scoped, file_map: fileMap, source: usedLlm ? 'llm' : 'rule' };
+    liveDsl.feature_tree = {
+      features: scoped,
+      file_map: fileMap,
+      source: usedLlm ? 'llm' : 'rule',
+      // ★ 仅在不一致时带上这个键（一致时不写 —— 空清单占位=装饰）
+      ...(community_dir_diff.length > 0 ? { community_dir_diff } : {}),
+    };
     saveDSL(liveDsl, 'feature_tree');
   }
 
@@ -393,6 +496,9 @@ export async function deriveFeatureTree(
     message:
       `功能树生成：${scoped.length} 个功能 · ${mono.community_count} 个社区 · ` +
       `${Object.keys(fileMap).length}/${total} 个文件完成归属` +
-      (renameOnly ? '（LLM 重命名目录分组）' : usedLlm ? '（LLM 归并命名）' : '（规则目录归并）'),
+      (renameOnly ? '（LLM 重命名目录分组）' : usedLlm ? '（LLM 归并命名）' : '（规则目录归并）') +
+      (community_dir_diff.length > 0 ? ` · ★ 社区≠目录 ${community_dir_diff.length} 个文件` : ''),
+    // ★ 仅在不一致时带上这个键（一致时不出现 —— 空清单占位=装饰）
+    ...(community_dir_diff.length > 0 ? { community_dir_diff } : {}),
   };
 }

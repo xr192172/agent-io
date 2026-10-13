@@ -178,6 +178,28 @@ export interface FeatureNode {
   communities: FeatureCommunity[];
 }
 
+/**
+ * ★ 社区 ≠ 目录 的文件（T230）：该文件的主导社区之"家目录" ≠ 该文件自己的目录。
+ *
+ * 这是**聚类唯一的增量价值**：一个功能横跨多个目录时，目录会把它**切碎**，
+ * 而聚类能看见"这些点在外还聚在一起"（跨目录的调用关系）。
+ * ★ 判据：两者**一致的文件不出现**——只有不一致的才进这份清单（否则就是装饰）。
+ */
+export interface CommunityDirDiffEntry {
+  /** SemanticFile.id（= geometry.node.id） */
+  file_id: string;
+  /** 语义文件相对路径（相对 source_root） */
+  file: string;
+  /** 文件自己的目录键（首段目录；根级文件 'root-svc'） */
+  dir: string;
+  /** 该文件主导社区 id */
+  community_id: number;
+  /** 该文件主导社区名 */
+  community_name: string;
+  /** 主导社区的家目录键（该社区多数成员文件所在目录） */
+  community_dir: string;
+}
+
 /** 功能树：项目 → 功能 → 社区 → 文件 的逐级下钻数据 */
 export interface FeatureTree {
   /** 功能层 */
@@ -186,6 +208,8 @@ export interface FeatureTree {
   file_map: Record<string, { feature_id: string; community_id: number }>;
   /** 功能名生成方式：llm=LLM 人话命名；rule=目录归并兜底（可被 refresh_llm 升级） */
   source?: 'llm' | 'rule';
+  /** ★ 社区 ≠ 目录 的文件清单（仅在不一致时出现；一致时不写这个键 —— 空清单占位=装饰）。 */
+  community_dir_diff?: CommunityDirDiffEntry[];
 }
 
 /** 顶层 DSL 文档 */
