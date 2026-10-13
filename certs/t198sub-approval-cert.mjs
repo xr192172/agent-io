@@ -20,7 +20,12 @@ import path from 'node:path';
 import os from 'node:os';
 import { execFileSync } from 'node:child_process';
 
-const EXT = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-io-t198sub-'));  /* ★ T224：草稿放 os.tmpdir() —— 宿主护栏对 temp 整体绕过（T223 实测），且 temp 在仓外 ⇒ 不受 .gitignore 影响（否则 import_project 会把这些文件过滤掉）*/
+const EXT = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-io-t198sub-'));
+// ★★★ T252（2026-10-13）：**给本证自己的数据根** —— 全量里本证崩、**单跑 15/0 全绿** ⇒
+//   元凶是宿主删除护栏按 `requestId`（一次 tool call）累积条目（阈值 50），整套证跑在同一 request 里。
+//   ★ 护栏正经的绕过口径 = "路径在 temp 下"（`isUnderAnyTempDir`）⇒ 让 feature 数据也落 temp。
+//   ★ 不是关护栏（那是废掉安全网），是让**自己造的东西**落在护栏本来就不管的地方 ✓
+const HOME = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-io-t198sub-home-'));  /* ★ T224：草稿放 os.tmpdir() —— 宿主护栏对 temp 整体绕过（T223 实测），且 temp 在仓外 ⇒ 不受 .gitignore 影响（否则 import_project 会把这些文件过滤掉）*/
 const FEATURE = 't198sub';
 let P = 0, F = 0;
 const chk = (ok, label, extra = '') => {
@@ -32,6 +37,7 @@ const call = (tool, args) => {
   try {
     out = execFileSync('node', ['scripts/mcp/mcp_call.mjs', tool, JSON.stringify(args)], {
       encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'],
+      env: { ...process.env, AGENT_IO_HOME: HOME }, // ★ T252：数据落 temp
     });
   } catch (e) { out = String((e.stdout ?? '') + (e.stderr ?? '')); }
   const isErr = out.includes('[isError=true]') || /MCP error|失败原因/.test(out);
@@ -46,6 +52,7 @@ const head = (s) => clean(s).split('\n')[0].slice(0, 160);
 
 // ── 夹具（可 rm：它是我自己造的）──────────────────────────────
 fs.rmSync(EXT, { recursive: true, force: true });
+fs.rmSync(HOME, { recursive: true, force: true }); // ★ T252：本证的数据根（temp ⇒ 不撞护栏）
 fs.mkdirSync(path.join(EXT, 'src'), { recursive: true });
 fs.writeFileSync(path.join(EXT, 'src/a.ts'), 'export function add(a: number, b: number) { return a + b; }\n');
 fs.writeFileSync(path.join(EXT, 'package.json'), JSON.stringify({ name: 't198sub-ext', version: '1.0.0' }, null, 2));
