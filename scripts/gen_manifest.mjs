@@ -64,10 +64,31 @@ const VOLUMES = [
   { id: 'drcache',   mode: 'derived',        regen: 'on-demand',    probe: 'cache',          path: `${DATA_DIR}/cache/` },
   { id: 'drift',     mode: 'derived',        regen: 'check',        probe: 'drift',          path: `${DATA_DIR}/drift/<feature>.drift.json` },
   { id: 'mindmap',   mode: 'derived',        regen: 'render',       probe: 'mindmap',        path: `${DATA_DIR}/mindmap/` },
-  { id: 'snapshots', mode: 'append-only',    regen: 'never',        probe: 'code-snapshots', path: `${DATA_DIR}/code-snapshots/` },
+  // ★★ 2026-10-13（T67）：**两个快照卷，名字必须分清** ——
+  //   盘上同时存在 `code-snapshots/`（**代码**快照：`edit_code`/`rename_*` 的撤回点，目录名带时间戳+随机后缀）
+  //   与 `snapshots/<feature>/`（★ **DSL 设计快照**：`snapshot.ts` 写、`get_dsl(query="snapshots")` 读、含"回滚前自动备份"）。
+  //   ★ 而本条原先叫 `id=snapshots` 却指着 `code-snapshots/` ⇒ ★★ **读者必然把两者当成一回事** ✗
+  //   ⇒ 改成两个名字各自说清（★ `id` 无代码消费，只进 `MANIFEST.txt`，改名安全）✓
+  { id: 'code-snapshots', mode: 'append-only', regen: 'never',     probe: 'code-snapshots', path: `${DATA_DIR}/code-snapshots/` },
+  { id: 'dsl-snapshots',  mode: 'append-only', regen: 'never',     probe: 'snapshots',      path: `${DATA_DIR}/snapshots/<feature>/` },
   { id: 'dogfood',   mode: 'append-only',    regen: 'never',        probe: 'dogfood',        path: `${DATA_DIR}/dogfood/usage.jsonl` },
   // ── 配置卷（★ 人也写，且可能含凭据）──
   { id: 'gateway',   mode: 'human-authored', regen: 'never',        probe: 'gateway.json',   path: `${DATA_DIR}/gateway.json`, secret: true },
+  // ══════════════════════════════════════════════════════════════════════════════
+  // ★★★ 2026-10-13（T67）：**下面 7 卷是 `manifest:check` 当场抓出来的** ——
+  //   它们住在 `.agent-io/` 却**既不在卷表、也不在 `NON_VOLUME_ENTRIES`** ⇒
+  //   对账报 *"要么进卷表、要么进 NON_VOLUME_ENTRIES 加一行理由 —— **不许默默多出来**"* ✓
+  //   ★ 逐条判过：**7 条各有独立语义 ⇒ 都是卷**（★ 不是"随某卷生灭的边车"）✓
+  // ══════════════════════════════════════════════════════════════════════════════
+  // ── 人的内容卷（人写、永不被覆盖）──
+  { id: 'docs',      mode: 'human-authored', regen: 'never',        probe: 'docs',           path: `${DATA_DIR}/docs/<feature>/` },
+  { id: 'workbench', mode: 'human-authored', regen: 'never',        probe: 'workbench',      path: `${DATA_DIR}/workbench/<feature>.json` },
+  // ── 只增卷 ──
+  { id: 'observe',   mode: 'append-only',    regen: 'never',        probe: 'observe',        path: `${DATA_DIR}/observe/` },
+  // ── 派生卷（现算的，不是真相）──
+  { id: 'self-writes',      mode: 'derived', regen: 'scan',         probe: 'self-writes.json',    path: `${DATA_DIR}/self-writes.json` },
+  { id: 'observe-points',   mode: 'derived', regen: 'check',        probe: 'observe-points.json', path: `${DATA_DIR}/observe-points.json` },
+  { id: 'gateway-stats',    mode: 'derived', regen: 'call',         probe: 'gateway.stats.json',  path: `${DATA_DIR}/gateway.stats.json` },
 ];
 
 /**

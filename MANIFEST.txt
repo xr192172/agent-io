@@ -17,9 +17,16 @@
 #Volume: id=drcache   mode=derived        regen=on-demand    path=.agent-io/cache/
 #Volume: id=drift     mode=derived        regen=check        path=.agent-io/drift/<feature>.drift.json
 #Volume: id=mindmap   mode=derived        regen=render       path=.agent-io/mindmap/
-#Volume: id=snapshots mode=append-only    regen=never        path=.agent-io/code-snapshots/
+#Volume: id=code-snapshots mode=append-only    regen=never        path=.agent-io/code-snapshots/
+#Volume: id=dsl-snapshots mode=append-only    regen=never        path=.agent-io/snapshots/<feature>/
 #Volume: id=dogfood   mode=append-only    regen=never        path=.agent-io/dogfood/usage.jsonl
 #Volume: id=gateway   mode=human-authored regen=never        path=.agent-io/gateway.json secret=true
+#Volume: id=docs      mode=human-authored regen=never        path=.agent-io/docs/<feature>/
+#Volume: id=workbench mode=human-authored regen=never        path=.agent-io/workbench/<feature>.json
+#Volume: id=observe   mode=append-only    regen=never        path=.agent-io/observe/
+#Volume: id=self-writes mode=derived        regen=scan         path=.agent-io/self-writes.json
+#Volume: id=observe-points mode=derived        regen=check        path=.agent-io/observe-points.json
+#Volume: id=gateway-stats mode=derived        regen=call         path=.agent-io/gateway.stats.json
 #
 #Quota: F<=200 R<=300 A<=300 S<=600
 #Admission: L1-L4（见 src/application/observe/reconcile/reason_validator.ts）—— ★ 我们已有的写入闸，不是新造的
