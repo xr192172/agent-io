@@ -336,6 +336,11 @@ npm run tool -- <tool> --json '{...}'     # actually invoke a tool — the only 
 npm run structure:gap                     # structural intent vs. reality (runs as a "report" inside verify)
 ```
 
+> `npm run doctor` is a **health report, not a gate**: it lists "not ready" items and **exits 1**, and those are
+> usually **environmental** (no instrumentation ⇒ no events source, no LLM env, skills not installed into the
+> target agent, language-pack gaps…). ★ It now **names which one is missing** (e.g. `缺：design-canvas-router`)
+> — act on that line rather than reading exit code 1 as "the repo is broken". ★ The only real gate is below.
+
 `npm run verify`'s four gates (plus one report) — **only these two kinds qualify as a gate**: a compiler / official linter, or something that catches a *wiring* fact:
 
 | Gate | What it checks | Why it qualifies |
