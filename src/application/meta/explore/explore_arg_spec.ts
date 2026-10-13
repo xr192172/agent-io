@@ -100,3 +100,51 @@ export function assertExploreArgKeys(action: string, args: Record<string, unknow
       '调用方**以为自己的参数生效了**，而工具按默认值跑完、还回一份"正常"结果。',
   );
 }
+
+/**
+ * ★★★ T215（2026-10-13）：**哪些 action 的哪些键是【硬必填】** —— ★ 缺了必须在【入口】就拒 ✓
+ *
+ * ## 为什么加它（★ 外部评测的 ③）
+ * 评测原话：*"**入口合并了，不代表使用复杂度消失了；它可能只是搬进了参数和说明里**。
+ *   对 Agent 来说，这也会增加**选错动作、漏参数、漏读限制**的机会。"* ✓
+ * ★★ 实测：★ **必填要求【确实只写在长描述里】** —— 如 *"`run_simulation`（**硬必填** feature）"* ✓
+ *   ⇒ ★ 而**机器可判的表里没有** ✗ ⇒ ★ **"漏参数"只能靠人/LLM【读长描述】** ✓
+ *   ⇒ ★★ **本表就是把那些"硬必填"【从说明搬回参数】** ✓ —— ★ 正是评测要的方向 ✓
+ *
+ * ## 口径（★ 严格照描述读，★ 不猜）
+ * ★ 只有描述里**明说"必填 / 缺省报错"**的才收进来 ✓
+ * ★★ 反例：★ `search` 的 `query` —— ★ 描述写 *"（**空则返回『查询为空』提示**）"* ✓
+ *   ⇒ ★ **那是"空有专门提示"、不是"缺就抛"** ✗ ⇒ ★ **不收** ✓（★ 收了会误拒 ✓）
+ *
+ * ## 边界（★ 如实标）
+ * ★ **只列【描述里点了名的】那 7 个 action** ✓ —— ★ 其余 action 的必填**没逐条读** ✗ ⇒ **不在这里**
+ *   ⇒ ★★ **"没列" ≠ "没有必填"**（★ 与"没圈到就省略"同：★ **本表是【已知】，不是【穷举】** ✓）
+ */
+export const EXPLORE_REQUIRED: Record<string, readonly string[]> = {
+  run_simulation: ['feature'],
+  reset_simulation: ['feature'],
+  inject_replay: ['feature', 'flow_id'],
+  derive_anim_flow: ['feature', 'node_id'],
+  search: ['project_dir'],
+  diff_impact: ['project_dir', 'feature'],
+  arch_layer: ['feature'],
+};
+
+/**
+ * ★★★ T215：校验 `args` 的**硬必填**：缺了 ⇒ **抛**（★ 绝不带着缺参往下跑）。
+ *
+ * @param action 当前 action（**不在表里 ⇒ 不拦**：★ 本表只覆盖"描述里点名过必填"的那些 ⇒
+ *   ★ 对没读过的 action **不越权** ✓）
+ */
+export function assertExploreRequired(action: string, args: Record<string, unknown>): void {
+  const required = EXPLORE_REQUIRED[action];
+  if (!required) return; // ★ 本表只覆盖已知的那些 ⇒ 其余不拦（★ 不越权 ✓）
+  const missing = required.filter((k) => args[k] === undefined || args[k] === null || args[k] === '');
+  if (missing.length === 0) return;
+  throw new Error(
+    `explore_code action="${action}" 缺**必填**参数：${missing.map((k) => `\`${k}\``).join('、')}。\n` +
+      `  ★ 该 action 的必填：${required.map((k) => `\`${k}\``).join(' · ')}\n` +
+      '  ★ 为什么必须拒（而不是跑默认值）：★ 缺参时"默默按默认跑完"会给出**看起来正常、其实不对**的结果 —— ' +
+      '★ 而调用方**以为自己的意图被接受了**。',
+  );
+}

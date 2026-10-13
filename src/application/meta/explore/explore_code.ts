@@ -21,7 +21,7 @@
 //   ⇒ 现在：**删掉那四个局部助手**，统一用 `plumbing` 的（严格：**形状错就抛**）。
 import { requireStr, optionalStr, optionalNum, optionalBool, optionalArr } from '../../plumbing.js';
 // ★★★ T197：**args 的【键名】判据**（★ 与 plumbing 的【值形状】判据是两把尺）。
-import { assertExploreArgKeys } from './explore_arg_spec.js';
+import { assertExploreArgKeys, assertExploreRequired } from './explore_arg_spec.js';
 import { semanticSearch } from '../llm/semantic_search.js';
 import { ensureProjectIndex, ensureIndexAroundSeed } from '../../../infrastructure/index/index_freshness.js';
 import { scheduleBackfill, backfillState, backfillSummary } from '../../../infrastructure/index/index_backfill.js';
@@ -104,6 +104,13 @@ export async function exploreCode(params: { action: ExploreAction; args: Record<
   //   ⇒ 现在：不认识的键 **当场抛**，并给"是不是想写 X"（★ 实测过这个病，见本文件测试与
   //     `explore_arg_spec.ts` 的文件头）。★ 放在 switch **之前** ⇒ 任何 action 都拦得住。
   assertExploreArgKeys(action, args);
+  // ★★★ T215（2026-10-13）：**"漏参数"也在入口拦** —— ★ 与上面那道"键名"校验**对称** ✓
+  //   ★ 外部评测的 ③：*"入口合并了…增加**选错动作、漏参数、漏读限制**的机会"* ✓
+  //   ★★ 实测：★ **必填要求只写在长描述里** ✗（★ 如 *"`run_simulation`（**硬必填** feature）"* ✓）
+  //     ⇒ ★ 本行把那些"硬必填"**从说明搬回参数** ✓ —— ★ 缺就在这儿被拒、并说清缺什么 ✓
+  //   ★ 同样放在 switch **之前** ⇒ ★ 任何 action 都拦得住 ✓
+  //   ★★ 边界：★ 只覆盖 `EXPLORE_REQUIRED` 里【描述点名过】的那些 ✓ —— ★ 其余 action **不越权** ✓
+  assertExploreRequired(action, args);
 
   switch (action) {
     case 'search': {
