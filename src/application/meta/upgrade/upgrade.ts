@@ -422,9 +422,23 @@ export async function runUpgradeApplyLoop(
       } else {
         lines.push('✗ 验证失败，正在回退…');
         lines.push((outcome.detail ?? '').split(/\r?\n/).filter(Boolean).slice(-15).join('\n'));
-        gitRestoreFiles(root, changedFiles);
-        lines.push('✓ 已回退，项目恢复改写前状态');
-        report.rollback = true;
+        // ★★★ T214 续5（2026-10-13）：**回退的成败必须【看返回值】再看结论** ——
+        //   ★★ 外部评测指出的真缺口 ✓；★ 实测：`gitRestoreFiles` **本来就返回 `{ ok, out }`** ✓
+        //   ⇒ ★ 而原代码**不看返回值**、**无条件** push "✓ 已回退"、并**无条件** `report.rollback = true` ✗
+        //   ★★ 后果：回退**失败**时回执仍说"项目恢复改写前状态" ⇒ ★ 人会以为没动过、实际停在半改状态 ✗
+        //      —— ★★★ 与 T214 的 `rename_symbols`【同一族】：★ **结果没检查就下结论** ✓
+        const rb = gitRestoreFiles(root, changedFiles);
+        if (rb.ok) {
+          lines.push('✓ 已回退，项目恢复改写前状态');
+          report.rollback = true;
+        } else {
+          lines.push(
+            '★★ **回退未成功**：' + (rb.out || '（无输出）') +
+              '\n★★ ⇒ ★ **项目可能停在【半改状态】**，请手动处理（★ 不要以为它回到改写前了 ✓）',
+          );
+          report.rollback = false;
+          report.rollbackError = rb.out;
+        }
       }
     }
   }

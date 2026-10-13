@@ -327,15 +327,29 @@ function finishWriteThrough(
   errors: string[],
   keepPending: boolean,
 ): void {
+  // ★★★ T214 续5（2026-10-13）：**`ok` 必须把【文件级失败】并进来** —— ★ 外部评测指出的真缺口 ✓
+  //   ★ 原来：★ **只要"引用重算"没抛就无条件 `out.ok = true`** ✗ ⇒ ★★ 于是
+  //     `out.failed > 0`（**有文件写失败**）时，回执**照样报 ok** ✗ —— ★ 而调用方据此以为写穿成功 ✓
+  //   ★★ 另一个方向也错：★ 引用重算**抛了** ⇒ ★ 原来**根本不设 `ok`** ⇒ ★ 它留成 `undefined` ✗
+  //     ⇒ ★ 而"没设"与"明确 false"对读端是**两件事**（★ 本仓一贯口径 ✓）⇒ 必须**明确 `false`** ✓
+  //   ⇒ ★ 判据（★ 只此一处，两个方向都收）：
+  //     ★ **有文件级失败 ⇒ 不 ok** ✓ · ★ **引用重算失败 ⇒ 明确 `false`**（不留 `undefined` ✓）
+  const hadFileFailures = (out.failed ?? 0) > 0;
   try {
     const r = resolveRefsAfterWrite(db, root, rels, keepPending);
     out.refsReopened = r.refsReopened;
     out.refsReopenedFiles = r.refsReopenedFiles;
     out.cross = r.cross;
-    out.ok = true;
+    // ★ 文件级失败**也**要并进来 —— ★ 不许只看"引用重算有没有抛" ✓
+    out.ok = !hadFileFailures;
+    if (hadFileFailures) {
+      errors.push(`写穿未全成功：有 ${out.failed} 个文件同步失败 ⇒ \`ok=false\`（★ 见 out.failed ✓）`);
+    }
   } catch (e) {
     // 不吞：历史上这类异常被 catch 吞掉，导致 reopenRefsTo 长期"静默 0 条"
     errors.push(`reference re-resolve failed: ${(e as Error).message}`);
+    // ★★ 明确 false（★ 不留 undefined —— ★ 那是"没结论"，而这里**有结论**：失败了 ✓）
+    out.ok = false;
   }
 }
 
