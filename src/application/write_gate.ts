@@ -540,6 +540,13 @@ export async function writeSourceFiles<T>(
   const snapshot = opts.snapshot === false ? null : snapshotBeforeWrite(root, opts.label ?? 'source write', norm());
 
   // ② 真写
+  //    ★ T229：目标目录可能**尚不存在**（写"新目录下的新文件"）——
+  //    与 `edit_code.ts:501`「insert 建新文件」**同一做法**：先建目录再落盘，否则 `ENOENT`。
+  //    （此前 `applyWrites` 写陌生目录必 `ENOENT`；只补这一处目录创建，不动写入/快照/索引/根外任何政策。）
+  for (const f of files) {
+    const abs = path.isAbsolute(f) ? path.resolve(f) : path.resolve(root, f);
+    fs.mkdirSync(path.dirname(abs), { recursive: true });
+  }
   opts.before?.();
   const value = await mutate();
 
