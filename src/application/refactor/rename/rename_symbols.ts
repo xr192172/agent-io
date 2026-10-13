@@ -24,6 +24,12 @@
  *   （见下"写盘粒度"）。
  * ★ **写盘粒度（两种 scope 有意不同，[C] 的 description 里也明写了）**：
  *   - `scope='module'`：**全批原子** —— 任一条被阻断 ⇒ 整批不落盘（阻断常是跨条目性质）。
+ *     ★★ **T214 补（2026-10-13）**：★ 这句话原先**只对【预检阶段】成立** ——
+ *       ★ 真执行（`doWrite`）是**逐条落盘**，中途某条被阻断会 `return { …, applied }`
+ *       ⇒ ★★ **已落盘的那些【保留】了** ✗ ⇒ 而用户正是据此才敢交批量改名 ✓
+ *       ⇒ ★ 现在：★ 失败就走**统一写入闸在写前拍的那份整批快照**回滚 ✓（★ `rollbackFileSnapshot` ✓）
+ *       ★ 回执里给了 **`rolledBack`**（★ 是否真回滚成功）与 **`rollbackNote`**（★ 人话说明）✓
+ *       ★★ **回滚失败时【明说"可能停在半改状态、请手动处理"】** —— ★ 不许只说"失败"就完事 ✓
  *   - `scope='local'` ：**逐项独立** —— 某一项找不到绑定/名字歧义/撞名/非法名 ⇒ 只跳它，
  *     其余照改（局部改名的失败天然是逐项的）；跳过项逐条可见（`blocked[]` / 回执里列出）。
  *   两种情形都在 `previews[].ok` / `blocked[]` 上**同义**：`ok=false` ⇔ 该项不能落盘、理由在 `blocked`。
@@ -41,6 +47,8 @@ import { renameFile } from './rename_file.js';
 import { resolveProjectRoot } from '../../../infrastructure/analysis/project_root/index.js';
 import { createProtectGuard } from '../../../infrastructure/analysis/refactor/protect.js';
 import { writeSourceFiles, type WriteThroughOutcome } from '../../write_gate.js';
+// ★ T214：兑现"整批原子"要用它 —— ★ 用**写前那份快照**回滚整批（★ 零件现成，不造新轮子 ✓）
+import { rollbackFileSnapshot } from '../snapshot/file_snapshot.js';
 import type { ExternalRef } from '../../../infrastructure/analysis/project_root/index.js';
 import { skipDirSet, TS_JS_EXTS } from '../../../infrastructure/parse/source_exts.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
@@ -151,6 +159,19 @@ export interface RenameSymbolsResult {
    * 这是"静默撒谎"，比报错危险得多。有了这个字段，调用方能明确知道"下一步读是可信的"。
    */
   indexWriteThrough?: WriteThroughOutcome;
+  /**
+   * ★★★ T214：**本批失败时【有没有回滚成功】** —— ★ `false` 表示**项目可能停在半改状态** ✗
+   *
+   * ★ 为什么需要这个字段（★ 外部评测指出的头号缺口）：
+   * ★ 说明里写着 `scope='module'` = "**全批原子**"，★ 而那句**原先只对预检阶段成立** ——
+   *   真执行逐条落盘、中途失败会**保留已落盘的** ✗ ⇒ ★★ **"整批不落盘"是假的** ✓
+   * ★ 现在：★ 失败就走**写前那份快照**回滚整批 ✓ ⇒ ★ **这句话才真了** ✓
+   * ★★ 而调用方**必须能分辨**"回滚成功"与"回滚失败"（★ 后者要人去处理 ✓）
+   *   —— ★ 不许只回一个笼统的 `ok:false`（★ 那会让人以为没动过 ✓）
+   */
+  rolledBack?: boolean;
+  /** ★ T214：回滚的**人话说明**（★ 成功说"已回滚整批"· 失败说"可能停在半改状态，请手动处理" ✓） */
+  rollbackNote?: string;
   /**
    * ★ 本次**解析出的项目根**（module 支的 `rootDir` / local 支的 `rootDir`）——
    *   两支各自在内部定位过它（此前只在手里、没进产物）；T18：回传给构造点与下游反查。
@@ -394,7 +415,16 @@ async function renameSymbolsModule(input: Omit<RenameSymbolsInput, 'scope'>): Pr
           previews,
           applied,
           filesWritten,
-          blocked: [`条目 ${i}（${item.file} 的 ${item.symbol}→${item.to}）实际落盘时被阻断：${(result.blocked || []).join('；')}。已应用 ${applied.length} 条，之后条目未执行`],
+          // ★★★ T214：内层**不许替外层下结论** ✓
+          //   ★ 原先这句写着"**已应用 ${applied.length} 条**" ✗ —— ★ 而**回滚发生在本函数【外面】**（统一写入闸那层 ✓）
+          //     ⇒ ★★ 于是外层说"已回滚整批"、内层说"已应用 1 条" ⇒ **自相矛盾** ✗
+          //   ⇒ ★ 内层只说**它确知的事实**（★ 在第几条被阻断、余下未执行 ✓）；
+          //     ★★ **"最终有没有回滚"由外层补**（★ 它拿着快照、才知道 ✓）
+          blocked: [
+            `条目 ${i}（${item.file} 的 ${item.symbol}→${item.to}）实际落盘时被阻断：` +
+              `${(result.blocked || []).join('；')}。★ 本批**在此停下**，之后条目未执行 ` +
+              `（★ **最终是否已整批回滚，看外层回执的"已回滚整批 / 停在半改状态"** ✓）`,
+          ],
           literals,
           literalFilesWritten,
           ...(rootDir ? { project_dir: rootDir } : {}),
@@ -437,7 +467,48 @@ async function renameSymbolsModule(input: Omit<RenameSymbolsInput, 'scope'>): Pr
   }
 
   const gated = await writeSourceFiles(gateRoot, touched, doWrite, { label: `rename_symbols: ${renames.length} 条` });
-  return { ...gated.value, indexWriteThrough: gated.report.index ?? { ok: false, mode: 'skipped', note: '未写穿' } };
+
+  // ★★★ T214（2026-10-13）：**真兑现"整批原子"** —— ★ 这是外部评测指出的**头号缺口** ✓
+  //
+  // ## 原来的问题（★ 实测代码路径，非推测）
+  // ★ 本文件上面写着 `scope='module'` = **"全批原子 —— 任一条被阻断 ⇒ 整批不落盘"** ✓
+  // ★★ 而**那句话只对【预检阶段】成立**：★ 真执行（`doWrite`）是**逐条落盘**，
+  //   中途某条被阻断 ⇒ 原来直接 `return { …, applied }` ⇒ ★★ **已落盘的那些【保留】** ✗
+  //   ⇒ ★★★ **"整批不落盘"是【假的】** ✓ —— ★ 而用户据此才敢把批量改名交出去 ✓
+  //
+  // ## 为什么现在能修（★ 零件本来就在）
+  // ★ 走到这里必然过了统一写入闸 ⇒ ★★ **闸在写前已经拍了整批快照**（`gated.report.snapshot` ✓，
+  //   用的就是上面那个按 dry-run 预览算出来的 `touched` 列表 ✓）
+  //   ⇒ ★ 只差"失败时**用它回滚**" ✓（★ `rollbackFileSnapshot(root, id)` 现成 ✓ —— ★ 不造新轮子 ✓）
+  //
+  // ## 事后对不上时怎么说（★ 本仓一贯口径）
+  // ★ **回滚成功** ⇒ ★ 明说"已回滚整批 ⇒ 项目回到改写前"（★ 此时 `applied[]` 里列的文件**其实没改** ✓）
+  // ★ **回滚失败** ⇒ ★★ **如实说"回滚失败、可能停在半改状态、请手动处理"** ✗
+  //   —— ★ **不许**只说"失败"就完事（★ 那会让人以为没动过 ✓）
+  let rolledBack: boolean | undefined;
+  let rollbackNote: string | undefined;
+  if (gated.value.ok === false) {
+    const snapId = gated.report.snapshot?.id;
+    if (!snapId) {
+      // ★ 快照没拍成（★ 闸的设计是"快照失败绝不阻断主流程" ✓）⇒ ★ **如实说没得回滚** ✓
+      rolledBack = false;
+      rollbackNote =
+        '★★ **本批未落盘成功，且【没有可用快照】⇒ 无法自动回滚** —— ★ 项目可能停在半改状态，请手动处理';
+    } else {
+      const rb = rollbackFileSnapshot(gateRoot, snapId);
+      rolledBack = rb.ok;
+      rollbackNote = rb.ok
+        ? `★ **已用写前快照回滚整批**（恢复 ${rb.restored.length} 个 / 删除 ${rb.removed.length} 个）` +
+          '⇒ **项目回到改写前状态** ✓（★ 上面 `applied[]` 里列的文件**其实已被改回** ✓）'
+        : `★★ **回滚失败**：${rb.message} —— ★ 项目可能停在半改状态，请手动处理`;
+    }
+  }
+  return {
+    ...gated.value,
+    indexWriteThrough: gated.report.index ?? { ok: false, mode: 'skipped', note: '未写穿' },
+    ...(rolledBack !== undefined ? { rolledBack } : {}),
+    ...(rollbackNote ? { rollbackNote } : {}),
+  };
 }
 
 // ──────────────── scope='local' 支：文件内局部绑定（产物适配成上面同一封回执） ────────────────

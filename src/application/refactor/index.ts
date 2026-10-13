@@ -405,7 +405,23 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         };
       };
       if (!r.ok) {
-        const parts = [`批量改名被阻断（${r.dryRun ? '整体未落盘' : '部分已应用后中止'}）：`];
+        // ★★★ T214（2026-10-13）：**这句文案必须跟着 `rolledBack` 走** —— ★ 它是外部评测指出的头号缺口的**第二半** ✓
+        //   ★ 原先只有两档：`dryRun ? '整体未落盘' : '**部分已应用后中止**'` ✓
+        //   ★★ 而现在 `rename_symbols` **中途失败会回滚整批** ⇒ ★ "部分已应用后中止"**变成了假话** ✗
+        //     （★ 实测：注入让第 2 条失败 ⇒ 文件**确实被回滚** ✓ 而回执仍说"已应用 1 条" ✗ —— ★ 行为变了、文案没跟上 ✓）
+        //   ⇒ ★ 判据（★ 三档分开，与 `rolledBack` 同义）：
+        //     ★ `rolledBack === true`  ⇒ ★ **已回滚整批 ⇒ 项目回到改写前** ✓
+        //     ★ `rolledBack === false` ⇒ ★★ **回滚失败 ⇒ 可能停在半改状态、要人处理** ✗
+        //     ★ `undefined`            ⇒ ★ 没走到回滚那一步（★ 如预检阶段整体拒绝 ✓）⇒ 保持原说法 ✓
+        const why = r.dryRun
+          ? '整体未落盘'
+          : r.rolledBack === true
+            ? '★ **已回滚整批** ⇒ 项目回到改写前'
+            : r.rolledBack === false
+              ? '★★ **部分已应用、且回滚未成功** ⇒ 项目可能停在半改状态，请手动处理'
+              : '部分已应用后中止';
+        const parts = [`批量改名被阻断（${why}）：`];
+        if (r.rollbackNote) parts.push(`\t${r.rollbackNote}`);
         const warn = skippedWarning();
         if (warn) parts.push(warn);
         parts.push(`\t${(r.blocked || []).join('\n\t')}`);
