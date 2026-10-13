@@ -203,34 +203,41 @@ if (drift.length > 0) {
 //   ⇒ ★ 管道会**缓冲** ⇒ ★★ 命令不跑完**一个字都看不到** ⇒ 我为此白等了两次（★ 各 17 分钟 ✗）
 //   ⇒ ★★ **量具"不便读"也是量具问题** ✓ ⇒ 写文件：★ 想看随时看，不用等 ✓
 //   （★ 而"该看的时候不用等"正是本仓一贯的取向：★ 读数要能被【随时】取到 ✓）
-const reportPath = REPORT_PATH;
-fs.mkdirSync(path.dirname(reportPath), { recursive: true });   // ★ 不假设 .work 已存在（全新 clone 第一次跑 ✓）
-fs.writeFileSync(
-  reportPath,
-  [
-    `# 出生证全量读数 · ${new Date().toISOString()}`,
-    '',
-    '| exit | PASS/FAIL | 耗时 | 证 | 判 |',
-    '|---|---|---|---|---|',
-    ...rows.map(
-      (r) =>
-        `| ${r.rc} | ${r.pass}/${r.fail} | ${(r.ms / 1000).toFixed(1)}s | ${r.f} | ${
-          r.rc !== 0 ? '★ 崩' : !r.hasSummary ? '○ 无汇总' : r.fail !== '0' ? `★ 有红(${r.fail})` : '✓'
-        } |`,
-    ),
-    '',
-    `**${verdict}**`,
-    '',
-    `**耗时合计 ${(totalMs / 1000 / 60).toFixed(1)} 分钟** —— 最慢：${slowest.map((r) => `${r.f}(${(r.ms / 1000).toFixed(1)}s)`).join(' · ')}`,
-    '',
-    crashed > 0 ? '## 崩掉的证 · 输出原文（尾部 25 行）' : '（无崩）',
-    ...rows
-      .filter((r) => r.rc !== 0)
-      .flatMap((r) => [`### ${r.f}（exit=${r.rc}）`, '```', ...r.out.split('\n').slice(-25), '```', '']),
-  ].join('\n'),
-  'utf8',
-);
-console.log(`（读数已写入 ${reportPath} —— ★ 下次直接读它，不用盯着终端等 ✓）`);
+// ★ T252 续（2026-10-13）：**零张时不覆盖读数文件** ——
+//   起因（实测）：我为了看提示跑了一次 `node certs/run-all-certs.mjs __nope__`（0 张），
+//   ★ 结果把上一份**真读数**覆盖成了 "0 张 / 0.0 分钟" ⇒ 差点把一次全绿当成"没跑"。
+//   ⇒ 判据：**没跑任何东西，就不许写读数**。
+const reportPath = REPORT_PATH;   // ★ 放 if **外面**（★ 我第一版把它一起包进去了 ⇒ 下面那条消息就报 reportPath is not defined）
+if (files.length > 0) {
+  fs.mkdirSync(path.dirname(reportPath), { recursive: true });   // ★ 不假设 .work 已存在（全新 clone 第一次跑 ✓）
+  fs.writeFileSync(
+    reportPath,
+    [
+      `# 出生证全量读数 · ${new Date().toISOString()}`,
+      '',
+      '| exit | PASS/FAIL | 耗时 | 证 | 判 |',
+      '|---|---|---|---|---|',
+      ...rows.map(
+        (r) =>
+          `| ${r.rc} | ${r.pass}/${r.fail} | ${(r.ms / 1000).toFixed(1)}s | ${r.f} | ${
+            r.rc !== 0 ? '★ 崩' : !r.hasSummary ? '○ 无汇总' : r.fail !== '0' ? `★ 有红(${r.fail})` : '✓'
+          } |`,
+      ),
+      '',
+      `**${verdict}**`,
+      '',
+      `**耗时合计 ${(totalMs / 1000 / 60).toFixed(1)} 分钟** —— 最慢：${slowest.map((r) => `${r.f}(${(r.ms / 1000).toFixed(1)}s)`).join(' · ')}`,
+      '',
+      crashed > 0 ? '## 崩掉的证 · 输出原文（尾部 25 行）' : '（无崩）',
+      ...rows
+        .filter((r) => r.rc !== 0)
+        .flatMap((r) => [`### ${r.f}（exit=${r.rc}）`, '```', ...r.out.split('\n').slice(-25), '```', '']),
+    ].join('\n'),
+    'utf8',
+  );
+}
+console.log(files.length > 0 ? `（读数已写入 ${reportPath} —— ★ 下次直接读它，不用盯着终端等 ✓）`
+  : `（★ 本次 0 张 ⇒ **没有覆盖** ${reportPath} —— 上一份真读数还在 ✓）`);
 
 // ★★ 崩了的：**把原文打出来**（★ 否则下一个人还是只能猜 ✓）
 if (crashed > 0) {
