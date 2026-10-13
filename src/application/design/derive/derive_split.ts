@@ -111,9 +111,12 @@ export interface DeriveSplitResult {
     imports_pruned_new: string[];
     imports_pruned_original: string[];
     /** 真实编译器验收结果（dry_run=false 且未关闭时存在） */
-    compile?: { command: string; ok: boolean; output: string; skipped?: string };
+    // ★★★ T214 续：**`ok` 改成可选** —— ★ 跳过时**省略**（= "没这个结论"），不写 `true` ✗
+    //   ★ 理由：★ `skipped` 已经在说"没跑" ✓ ⇒ 再回一个 `ok:true` 就是**冒充"通过"** ✗
+    //   ★ 口径（与"没圈到就省略"同）：★ **`ok:false` = 跑了、没过** · ★ **省略 = 没跑/没结论** · ★ `ok:true` = 跑了、过了
+    compile?: { command: string; ok?: boolean; output: string; skipped?: string };
     /** 测试级验收结果（编译通过后、dry_run=false 且未关闭时存在） */
-    test?: { command: string; ok: boolean; output: string; skipped?: string };
+    test?: { command: string; ok?: boolean; output: string; skipped?: string };
     note?: string;
   };
   /** 编译级验收失败后是否已回滚原文件（项目保持拆分前状态） */
@@ -671,11 +674,11 @@ async function runCompile(
   projectDir: string,
   targetRel: string,
   newRel: string,
-): Promise<{ command: string; ok: boolean; output: string; skipped?: string }> {
+): Promise<{ command: string; ok?: boolean; output: string; skipped?: string }> {
   let command: string;
   if (lang === 'go') {
     if (!existsSync(path.join(projectDir, 'go.mod'))) {
-      return { command: 'go build', ok: true, output: '', skipped: '项目无 go.mod，跳过 Go 编译级验收' };
+      return { command: 'go build', output: '', skipped: '项目无 go.mod，跳过 Go 编译级验收' };
     }
     // 只编译拆分所在包（连同其依赖），输出到临时文件避免污染项目目录
     const pkgDir = path.posix.dirname(targetRel.replace(/\\/g, '/')) || '.';
@@ -712,7 +715,7 @@ async function runCompile(
   }
   // TypeScript
   if (!existsSync(path.join(projectDir, 'tsconfig.json'))) {
-    return { command: 'tsc --noEmit', ok: true, output: '', skipped: '项目无 tsconfig.json，跳过 TS 编译级验收' };
+    return { command: 'tsc --noEmit', output: '', skipped: '项目无 tsconfig.json，跳过 TS 编译级验收' };
   }
   command = 'npx tsc --noEmit';
   try {
@@ -766,15 +769,15 @@ async function runTest(
   projectDir: string,
   targetRel: string,
   newRel: string,
-): Promise<{ command: string; ok: boolean; output: string; skipped?: string }> {
+): Promise<{ command: string; ok?: boolean; output: string; skipped?: string }> {
   if (lang === 'go') {
     if (!existsSync(path.join(projectDir, 'go.mod'))) {
-      return { command: 'go test', ok: true, output: '', skipped: '项目无 go.mod，跳过 Go 测试级验收' };
+      return { command: 'go test', output: '', skipped: '项目无 go.mod，跳过 Go 测试级验收' };
     }
     const pkgDir = path.posix.dirname(targetRel.replace(/\\/g, '/')) || '.';
     const pkgAbs = path.join(projectDir, pkgDir === '.' ? '' : pkgDir);
     if (!hasTestFiles(pkgAbs, /_test\.go$/)) {
-      return { command: 'go test', ok: true, output: '', skipped: '拆分所在包无 _test.go 测试文件，跳过' };
+      return { command: 'go test', output: '', skipped: '拆分所在包无 _test.go 测试文件，跳过' };
     }
     const spec = pkgDir === '.' ? '.' : `./${pkgDir}`;
     const command = `go test ${spec}`;
@@ -783,12 +786,12 @@ async function runTest(
   }
   if (lang === 'python') {
     if (!hasTestFiles(projectDir, /(^|[\\/])(test_.*|.*_test)\.py$/)) {
-      return { command: 'python -m pytest -q', ok: true, output: '', skipped: '项目无测试文件（test_*.py / *_test.py），跳过' };
+      return { command: 'python -m pytest -q', output: '', skipped: '项目无测试文件（test_*.py / *_test.py），跳过' };
     }
     const command = 'python -m pytest -q';
     const r = await runShell(command, projectDir);
     if (!r.ok && /No module named ['"]pytest['"]|pytest: command not found/i.test(r.output)) {
-      return { command, ok: true, output: r.output, skipped: 'pytest 未安装，跳过 Python 测试级验收' };
+      return { command, output: r.output, skipped: 'pytest 未安装，跳过 Python 测试级验收' };
     }
     return { command, ok: r.ok, output: r.output };
   }
@@ -800,7 +803,7 @@ async function runTest(
     /* 无 package.json */
   }
   if (!pkg?.scripts?.test) {
-    return { command: 'npm test', ok: true, output: '', skipped: 'package.json 无 test 脚本，跳过 TS 测试级验收' };
+    return { command: 'npm test', output: '', skipped: 'package.json 无 test 脚本，跳过 TS 测试级验收' };
   }
   const files = [targetRel, newRel].map((f) => shq(f)).join(' ');
   // 通用形式：不绑定 vitest，经 npm 标准透传把两个文件追加到 scripts.test（`npm test -- <files>`）。
@@ -996,7 +999,7 @@ async function splitOnce(input: DeriveSplitInput): Promise<DeriveSplitResult> {
 
   // —— 编译级验收（dry_run=false 且未显式关闭）：落盘后跑真实编译器，失败自动回滚 ——
   const verifyCompile = input.verify_compile ?? !dryRun;
-  let compileResult: { command: string; ok: boolean; output: string; skipped?: string } | undefined;
+  let compileResult: { command: string; ok?: boolean; output: string; skipped?: string } | undefined;
   let rolledBack = false;
 
   if (!dryRun) {
@@ -1004,7 +1007,10 @@ async function splitOnce(input: DeriveSplitInput): Promise<DeriveSplitResult> {
     writeFileSync(targetAbs, origContentWithImport, 'utf8');
     if (verifyCompile) {
       compileResult = await runCompile(lang, projectRoot, targetRel, newRel);
-      if (!compileResult.ok) {
+      // ★★★ T214 续：**只有【明确 false】才当失败** —— ★ 跳过（有 `skipped`、无 `ok`）**不是失败** ✓
+      //   ★ 改前这里是 `!compileResult.ok` ⇒ ★★ 跳过时（原先回 `ok:true`）**不会**回滚 ✓；
+      //   ★ 而把"跳过"改成"省略 `ok`"之后，`!ok` 会**把跳过也当成失败** ✗ ⇒ ★ 判据必须写死成 `=== false` ✓
+      if (compileResult.ok === false) {
         // 编译失败：回滚原文件到拆分前，并删除新文件（不能只清空——空 .go 文件本身非法会破坏整个包）
         writeFileSync(targetAbs, content, 'utf8');
         if (existsSync(newAbs)) rmSync(newAbs);
@@ -1015,10 +1021,12 @@ async function splitOnce(input: DeriveSplitInput): Promise<DeriveSplitResult> {
 
   // —— 测试级验收（P3 收尾）：编译通过后跑项目测试命令，失败同样回滚 ——
   const verifyTest = input.verify_test ?? verifyCompile;
-  let testResult: { command: string; ok: boolean; output: string; skipped?: string } | undefined;
-  if (!dryRun && !rolledBack && verifyCompile && compileResult?.ok && verifyTest) {
+  let testResult: { command: string; ok?: boolean; output: string; skipped?: string } | undefined;
+  // ★★ 同上：★ **编译级"跳过"不该让测试级连坐** ✓（★ 没 `tsconfig` 但有测试脚本的项目 ⇒ 测试**本该跑** ✓）
+  if (!dryRun && !rolledBack && verifyCompile && compileResult?.ok !== false && verifyTest) {
     testResult = await runTest(lang, projectRoot, targetRel, newRel);
-    if (!testResult.ok) {
+    // ★★ 同上：★ 只有【明确 false】才算"测试没过" ⇒ 跳过（无 `ok`）不当成失败 ✓
+    if (testResult.ok === false) {
       writeFileSync(targetAbs, content, 'utf8');
       if (existsSync(newAbs)) rmSync(newAbs);
       rolledBack = true;
