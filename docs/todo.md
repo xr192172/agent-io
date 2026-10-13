@@ -348,6 +348,31 @@ ode-safe-delete-s…` ⇒ ★ **删除护栏的 shim** ✓
           ```
           ⇒ ★★★ **真原子 + 内外文案一致** ✓ · ★ 验完 `npm run build` 清注入（已确认 0 ✓）
         · ★ **评测①的"安全承诺"这一族到此【两处都收口】** ✓（★ `rename_symbols` ✓ + `rename_files` ✓）
+      ⇒ ★★★ **T214 续9（2026-10-13）：Go/Python 的 `neededBack` 那格 —— ★ 结论是【两格都不需要做】** ✓
+        · ★★ **我 T214 的注释写错了** ✗ —— 它把两件事混成一句 *"Go same-package / Python not handled yet"* ✓
+          ⇒ ★ **两半都不准**：
+          ★ **Go 那半**在说"**未做**"（★ 其实**不需要** ✓ —— ★ 同包拆分、包级符号共享 ✓）
+          ★ **Python 那半**在说"**该做**"（★ 其实**也不需要** ✓ —— ★ **Python 没有 `export` 概念** ✓，
+            一切顶层名都能被 `from x import y` 取到 ⇒ ★ **"被抽走的私有符号原文件拿不到"那一格对 Python 不存在** ✓）
+          ⇒ ★ 所以 **`neededBack: []` 对两者都是【对的】** ✓ —— ★ 注释已改准 ✓
+        · ★★★ **而 Python 分支【真有一个】同族的洞**（★ 顺手修了 ✓）：
+          ```python
+          const importFromNewLine = `from ${newSpec} import ${extractedNames.join(', ')}`;   ← ★★ 无脑全给 ✗
+          ```
+          ⇒ ★ 与 **TS 分支修前【同形】** ✓（★ T212 只修了 TS，★ **Python 漏了** ✓）
+          ⇒ ★ 修法同 TS：★ **只给"残余代码真的还引用到"的那些**（★ 同一把尺 `referNames` ✓）·
+            ★ **一个都不需要 ⇒ 整行不生成** ✓
+        · ★★ **验收（★ 仓外 Python 夹具 `_design-canvas-labs/t217/` ✓）**：
+          ★ 夹具：★ `a.py` 有 `SECRET`（★ 私有约定 ✓）+ `sign`/`verify`（★ 抽走 ✓）+ `audit`（★ 留下、**也用 `SECRET`** ✓）
+          ★ 结果：★ **`成功拆分 1/1` · "已拆分并通过验收"** ✓（★ Python 的验收真跑了 ✓）
+          ★★ **好的一半验到了**：★ **`a.py` 里【没有】`from sign2 import sign/verify`** ✓✓
+            —— ★ 修前会是 `from sign2 import SECRET, sign, verify` ✗ ⇒ ★ **我改的那行对了** ✓
+          ★★★ **而坏的一半是【新发现】：★ `sign2.py` 里 `SECRET` 未定义** ✗
+            ⇒ ★ **抽走的 `sign`/`verify` 依赖一个【留在原地】的变量** ⇒ ★ 新文件**该 `from a import SECRET`** ✓
+            ⇒ ★ 而 `importFromOriginalLine`（★ `referNames(extractedText, remainingNames)` ✓）**没生成它** ✗
+        · ⏳ **这个新发现【登记为待查】**（★ 不这一轮硬修 ✓）—— ★ 因为**要先查清一件事**：
+          ★ **`referNames` 在 `.py` 上的行为**（★ 它的剔注释走 `stripCommentsSync` ⇒ ★ **`.py` 走哪个 parser** ✓、
+          ★ 拿不到解析器时**会抛** ✓ —— ★ 而这里**没抛、只是没命中** ⇒ ★ **得先弄清是哪一步没命中** ✓）
 - [x] **T213（2026-10-13）★★★★★ 修掉 ③「**私人符号既离开又被需要**」—— ★ 与 T212 是【同族但相反】的两格**
       ⇒ ★★ **两格是对称的（★ 记这一对）**：
         | | 症状 | 修法 |

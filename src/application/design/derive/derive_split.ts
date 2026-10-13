@@ -384,7 +384,13 @@ function buildWiring(
       importFromOriginalLine: '',
       importFromNewLine: '',
       needsCrossImport: false,
-      neededBack: [],  // Go same-package / Python not handled yet
+      // ★★★ T214 续9：**Go 恒 `[]`，而且这是【对的】—— ★ 不是"未做"** ✓
+      //   ★ 同包拆分：**包级符号共享** ⇒ ★ 新文件里不需要 `export`、原文件也不需要 `import` ✓
+      //     ⇒ ★ **"被抽走、原文件还需要"这一格对 Go【不存在】** ✓（★ 那是 TS 独有的 ✓）
+      //   ★★ 我 T214 原先把 Go 与 Python 混写成 *"Go same-package / Python not handled yet"* ✗
+      //     —— ★ **两半都不准**：★ Go 那半在说"未做"（★ 其实不需要 ✓）·
+      //        ★ Python 那半在说"该做"（★ 其实也不需要，**Python 无 `export` 概念** ✓）
+      neededBack: [],
     };
   }
 
@@ -395,7 +401,13 @@ function buildWiring(
     const importedFromOrig = referNames(extractedText, remainingNames, targetRel);
     const importFromOrigLine =
       importedFromOrig.length > 0 ? `from ${origSpec} import ${importedFromOrig.join(', ')}` : '';
-    const importFromNewLine = `from ${newSpec} import ${extractedNames.join(', ')}`;
+    // ★★★ T214 续9：**把 T212 的修法补到 Python** —— ★ 这里原先**无脑全给** `extractedNames` ✗
+    //   （★ 与 TS 分支**修前同形** ✓ —— ★ T212 只修了 TS，★ Python 漏了 ✓）
+    //   ⇒ ★ 判据同 TS：★ **只给"残余代码真的还引用到"的那些** ✓（★ 同一把尺 `referNames` ✓）
+    //   ★ 且 **一个都不需要 ⇒ 整行都不生成** ✓（★ 不给空的 `from x import ` ✓）
+    const neededBackPy = referNames(remainingText, extractedNames, targetRel);
+    const importFromNewLine =
+      neededBackPy.length > 0 ? `from ${newSpec} import ${neededBackPy.join(', ')}` : '';
     return {
       newFileHeader: '',
       copiedImports: [],
@@ -403,7 +415,11 @@ function buildWiring(
       importFromOriginalLine: importFromOrigLine,
       importFromNewLine,
       needsCrossImport: true,
-      neededBack: [],  // Go same-package / Python not handled yet
+      // ★★★ T214 续9：**这格对 Python【不需要】—— ★ 而我 T214 的注释写错了** ✗
+      //   ★ 我原先写 *"Python not handled yet"* ⇒ ★★ **那暗示"该做但没做"** ✗ —— **是误导** ✓
+      //   ★ 真相：★ **Python 没有 `export` 概念** ⇒ ★ 一切顶层名都能被 `from x import y` 取到 ✓
+      //     ⇒ ★ **不存在"被抽走的私有符号、原文件拿不到"那一格** ✓（★ 那是 TS 独有的 ✓）
+      neededBack: [],
     };
   }
 
