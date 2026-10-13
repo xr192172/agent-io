@@ -19,6 +19,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { execFileSync } from 'node:child_process';
+import { parseDataBlock } from '../dist/src/application/plumbing.js';
 
 const EXT = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-io-t192-'));  /* ★ T224：草稿放 os.tmpdir() —— 宿主护栏对 temp 整体绕过（T223 实测），且 temp 在仓外 ⇒ 不受 .gitignore 影响（否则 import_project 会把这些文件过滤掉）*/
 const FEATURE = 't192flow';
@@ -38,10 +39,8 @@ const call = (tool, args) => {
   } catch (e) {
     out = String((e.stdout ?? '') + (e.stderr ?? ''));
   }
-  const i = out.indexOf('---DATA---');
-  const line = i < 0 ? '' : out.slice(i + 10).trim().split('\n')[0].trim();
-  let data = null;
-  try { data = line ? JSON.parse(line) : null; } catch { data = null; }
+  // ★★★ T251：机器段解析只走唯一入口 `parseDataBlock`（原先这里自己 indexOf+slice+JSON.parse 一份）
+  const data = parseDataBlock(out);
   return { err: out.includes('isError=true') || /MCP error/.test(out), text: out, data };
 };
 

@@ -9,6 +9,7 @@
 import fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { consistencyHandler } from '../dist/src/application/design/handlers.js';
+import { parseDataBlock } from '../dist/src/application/plumbing.js';
 
 const TARGET = 'src/application/meta/llm/gateway.ts';
 const FEATURE = 'run82';
@@ -25,11 +26,13 @@ const mcp = (tool, args) =>
     encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'],
   });
 
-/** 取 `[C]` 回执里的机器段 —— ★ 先确认标记在，别让"没标记"变成一句难懂的解析错 */
+/** 取 `[C]` 回执里的机器段 —— ★★★ T251：解析只走唯一入口 `parseDataBlock`
+ *   （原先这里自己写了一份 `indexOf + 整段 JSON.parse` —— ★ 整段 parse 正是"JSON 之后有追加文本就必炸"的旧口径）。
+ *   ★ 先确认取到了，别让"没标记"变成一句难懂的解析错。 */
 const dataOf = (r) => {
-  const i = r.text.indexOf('---DATA---');
-  if (i < 0) throw new Error(`回执里没有 DATA 段；text 头 200 字：${r.text.slice(0, 200)}`);
-  return JSON.parse(r.text.slice(i + 10));
+  const d = parseDataBlock(r.text);
+  if (d === null) throw new Error(`回执里没有 DATA 段（或 DATA 首行不是合法 JSON）；text 头 200 字：${r.text.slice(0, 200)}`);
+  return d;
 };
 
 L.push('════ ① ② 这一棒交出什么（[C] 编排后的 touched）');

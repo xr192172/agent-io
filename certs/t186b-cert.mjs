@@ -19,6 +19,7 @@ import { execFileSync } from 'node:child_process';
 import { ProposalStore } from '../dist/src/infrastructure/analysis/observe/proposal_store.js';
 import { defaultDSLDir } from '../dist/src/infrastructure/analysis/observe/dsl_store.js';
 import { knownSpreadDecl } from '../dist/src/infrastructure/analysis/observe/ledger_fold.js';
+import { parseDataBlock } from '../dist/src/application/plumbing.js';
 
 const ROOT = path.resolve('certs/.work/t186b-tenant');
 const dir = defaultDSLDir(ROOT);
@@ -51,18 +52,14 @@ const call = (args) => {
     out = String((e.stdout ?? '') + (e.stderr ?? ''));
   }
   isErr = out.includes('isError=true');
-  const i = out.indexOf('---DATA---');
-  // ★★★ `---DATA---` 之后的 JSON 是**一行**；★ 它后面还有【"下一棒/接续"的散文块】，**然后**才是 `--- stderr ---`
-  //   ⇒ ★ 只取**第一行**（★ 我第一版按 `--- stderr ---` 截断 ⇒ 把散文也喂进 `JSON.parse` ⇒ 解析失败，
-  //     而**我的 `try/catch` 把它吞成了 `{}`** —— ★ 我自己的量具里又长出一个静默兜底）。
-  //   ⇒ 现在：**不吞** —— 解析不了就把原文抛出来（这是量具，不是产品）。
-  // ★ `'---DATA---'.length === 10` ⇒ `i+10` 正好落在那个 `\n` 上 ⇒ ★ 必须先 `trim()` 再取第一行
-  //   （否则第一行是空串 —— 我为此又白跑一轮）。
-  // ★★ 实测：**失败回执【没有】 `---DATA---`**（走 `wrap` 的失败通路 ⇒ 只有文字 + `isError=true`）
-  //   ⇒ ★ "出错 ⇒ 无 DATA" 是**正常**；只有"**没出错却也没有 DATA**"才是异常（那才该抛）。
-  const firstLine = i < 0 ? '' : out.slice(i + 10).trim().split('\n')[0].trim();
-  if (!firstLine && !isErr) throw new Error(`没出错却没有 DATA 段（异常）：${out.slice(0, 200)}`);
-  const data = firstLine ? JSON.parse(firstLine) : {};
+  // ★★★ T251：机器段解析只走唯一入口 `parseDataBlock`（原先这里自己 indexOf+slice+JSON.parse 一份）。
+  //   ★ 口径不变，教训仍在：JSON 只取第一行 —— 它后面还跟着"下一棒"散文块与 `--- stderr ---`，
+  //     整段 parse 必炸（我曾把散文喂进 JSON.parse 又被自己的 try/catch 吞成 {} —— 量具里的静默兜底）。
+  //   ★★ 实测：失败回执【没有】`---DATA---`（走 `wrap` 失败通路 ⇒ 只有文字 + `isError=true`）
+  //     ⇒ "出错 ⇒ 无 DATA"是**正常**；只有"**没出错却也没取到**"才是异常（那才该抛）。
+  const parsed = parseDataBlock(out);
+  if (parsed === null && !isErr) throw new Error(`没出错却没取到 DATA 段（无标记或首行不是合法 JSON）（异常）：${out.slice(0, 200)}`);
+  const data = parsed ?? {};
   return { isErr, message: out.split('---DATA---')[0], data };
 };
 

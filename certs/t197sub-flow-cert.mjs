@@ -23,6 +23,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { execFileSync } from 'node:child_process';
+import { parseDataBlock } from '../dist/src/application/plumbing.js';
 
 const REPO = process.cwd();
 const EXT = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-io-t197sub-'));
@@ -54,10 +55,8 @@ const call = (tool, args) => {
   } catch (e) {
     out = String((e.stdout ?? '') + (e.stderr ?? ''));
   }
-  const i = out.indexOf('---DATA---');
-  const line = i < 0 ? '' : out.slice(i + 10).trim().split('\n')[0].trim();
-  let data = null;
-  try { data = line ? JSON.parse(line) : null; } catch { data = null; }
+  // ★★★ T251：机器段解析只走唯一入口 `parseDataBlock`（原先这里自己 indexOf+slice+JSON.parse 一份）
+  const data = parseDataBlock(out);
   return { err: out.includes('isError=true') || /MCP error/.test(out), text: out, data, first: out.split('\n')[0] };
 };
 const body = (r, n = 3) => r.text.split('\n').filter((l) => l && !l.startsWith('[agent-io') && !l.startsWith('(node:') && !l.includes('MCP server') && !l.includes('prewarm')).slice(0, n).join(' ⏎ ');

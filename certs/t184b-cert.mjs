@@ -114,23 +114,11 @@ try {
   // ★ 失败要说出来（`guard-blindspot-diagnosis`：量具自己的失败不许被吞）
   console.log(`✗ ④ 取工具回执失败：${String(e.message).slice(0, 200)}`);
 }
-// ★★ 切到 `---DATA---` 之后**还要在 `--- stderr ---` 处截断** —— 否则把后随的 stderr 段也喂给
-//   `JSON.parse` ⇒ `Unexpected non-whitespace character after JSON`（★ 我为此白折腾了两轮，
-//   而且那个错误一直伪装成 `<anonymous_script>`，看着像子进程的问题 ⇒ **先看全产物再解析**）。
-const i = toolOut.indexOf('---DATA---');
-const jsonText = i < 0 ? '' : toolOut.slice(i + 10).split('\n--- stderr ---')[0];
-let data = {};
-// ★★★ T251：**改用唯一入口**（`plumbing.parseDataBlock`）—— ★ 本证原先自己写了一份解析，
-//   而"每个消费方各写一份"正是本仓头号病 ⇒ 已删本地实现，改为共用。
-const parsed = parseDataBlock(toolOut);
-try {
-  data = parsed ?? {};
-} catch (e) {
-  const msg = e instanceof Error ? e.message : String(e);
-  console.log(`✗ ④ JSON.parse 失败：${msg}`);
-  console.log(`   ★ jsonText 前 240 字符：${jsonText.slice(0, 240).replace(/\n/g, '⏎')}`);
-  console.log(`   ★ jsonText 尾部 160 字符：${jsonText.slice(-160).replace(/\n/g, '⏎')}`);
-}
+// ★★★ T251：**改用唯一入口**（`plumbing.parseDataBlock`）—— ★ 本证原先自己写了一份解析
+//   （indexOf + 在 `--- stderr ---` 处截断 + JSON.parse），而"每个消费方各写一份"正是本仓头号病 ⇒ 已删本地实现。
+//   ★ 历史教训（截断法的那两轮白折腾）已收进唯一入口的头注与 `certs/t251-data-parser-cert.mjs`。
+//   ★ parseDataBlock 不抛（失败回 null）⇒ 这里不再需要 try/catch；取不到 ⇒ data={} ⇒ 下面的 chk 自会红。
+const data = parseDataBlock(toolOut) ?? {};
 chk(
   (data.touched?.scope_files ?? []).includes(TARGET),
   '★ 墓碑进了 scope_files（T187 那条边因此也通了）',

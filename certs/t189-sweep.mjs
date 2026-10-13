@@ -16,6 +16,7 @@ import fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { TOOL_DEFS } from '../dist/src/application/tool_registry.js';
 import { CHAIN_EDGES, ANY_TOOL } from '../dist/src/domain/chain_wiring.js';
+import { parseDataBlock } from '../dist/src/application/plumbing.js';
 
 const OBJ_KEYS = ['scope_files', 'written_files', 'file', 'symbols', 'nodes'];
 const SCOPE_KEYS = ['feature', 'project_dir'];
@@ -34,11 +35,9 @@ for (const def of TOOL_DEFS) {
   } catch (e) {
     out = String(e.stdout ?? '');
   }
-  const i = out.indexOf('---DATA---');
-  // ★ 只取第一行（后面还有"下一棒"散文块，再后面才是 --- stderr ---）
-  const line = i < 0 ? '' : out.slice(i + 10).trim().split('\n')[0].trim();
-  let touched = null;
-  try { touched = line ? (JSON.parse(line).touched ?? null) : null; } catch { touched = null; }
+  // ★★★ T251：机器段解析只走唯一入口 `parseDataBlock`（原先这里自己 indexOf+slice+JSON.parse 一份）。
+  //   只取首行的理由在唯一入口的头注里（JSON 之后还有"下一棒"散文块与 `--- stderr ---`）。
+  const touched = (parseDataBlock(out) ?? {}).touched ?? null;
   const keys = touched ? Object.keys(touched) : [];
   rows.push({
     name: def.name,

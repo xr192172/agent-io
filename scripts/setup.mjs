@@ -26,7 +26,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -127,22 +127,16 @@ const warn = (s) => `\x1b[33m•\x1b[0m ${s}`;
  * ★ 为什么要有它：`cli.js` 的输出是「人读 message + `---DATA---` + 机器 JSON」两段式
  *   （见 `application/plumbing.ts` 的 `wrapData` / `machinePayload`）⇒ 想读数据就按这个约定取，
  *   **别自己另发明一份**（那正是第二份口径）。
+ * ★★★ T251：解析只走唯一入口 `plumbing.parseDataBlock`（原先这里自己写了一份"扫首个 `{` 行"的切法）。
+ *   ★ 懒加载（用到才 import）：dist 未构建时 `--help` / `--doctor` 的其它体检项不许被它连累着崩
+ *     （能走到这里 ⇒ CLI 已经跑起来了 ⇒ dist 必然存在）；`import()` 自带模块缓存，重复调用不重复加载。
  * ★ 取不到 ⇒ 返回 `null`（调用方按"没读到"处理，**不假装读到**）。
  */
-function parseDataSection(stdout) {
+async function parseDataSection(stdout) {
   const text = String(stdout || '');
-  const i = text.indexOf('---DATA---');
-  if (i < 0) return null;
-  for (const line of text.slice(i + 10).split('\n')) {
-    const t = line.trim();
-    if (!t.startsWith('{')) continue;
-    try {
-      return JSON.parse(t);
-    } catch {
-      /* 非那行 */
-    }
-  }
-  return null;
+  if (!text) return null;
+  const { parseDataBlock } = await import(pathToFileURL(path.join(ROOT, 'dist', 'src', 'application', 'plumbing.js')).href);
+  return parseDataBlock(text);
 }
 
 function runNode(script, argv, opts = {}) {
@@ -171,7 +165,7 @@ function countEvents() {
 }
 
 // ── doctor：只读体检 ──
-function runDoctor() {
+async function runDoctor() {
   console.log(`\ndc doctor · 目标 ${T}\n`);
   let pass = 0, fail = 0;
 
@@ -258,7 +252,7 @@ function runDoctor() {
     // ★ 2026-10-06（T15）：改走**投影入口**（`cli.js capability_audit`），不再 spawn 手写 CLI、
     //   也不再用临时文件转一手 —— 机器段就在 stdout 的 `---DATA---` 之后，直接读它。
     const r = runNode(CLI, ['capability_audit', '--json', JSON.stringify({ installed_only: true })]);
-    const data = parseDataSection(r?.stdout);
+    const data = await parseDataSection(r?.stdout);
     if (r && r.status === 0 && data) {
       const totalNeed = data?.totalNeed ?? 0;
       if (totalNeed === 0) {
@@ -377,9 +371,16 @@ async function runSetup() {
 
 const main = () => {
   if (DRY) console.log(dim('dry-run：只打印，不改写文件\n'));
-  if (DOCTOR) { const f = runDoctor(); process.exitCode = f > 0 ? 1 : 0; return; }
+  if (DOCTOR) {
+    // ★ T251：runDoctor 变 async（parseDataSection 懒加载唯一入口）⇒ Promise 要接住，不许裸奔
+    runDoctor()
+      .then((f) => { process.exitCode = f > 0 ? 1 : 0; })
+      .catch((e) => { console.error('dc doctor:', (e instanceof Error ? e.message : String(e))); process.exitCode = 1; });
+    return;
+  }
   runSetup()
-    .then(() => { const f = runDoctor(); process.exitCode = f > 0 ? 1 : 0; })
+    .then(() => runDoctor())
+    .then((f) => { process.exitCode = f > 0 ? 1 : 0; })
     .catch((e) => { console.error('dc setup:', (e instanceof Error ? e.message : String(e))); process.exitCode = 1; });
 };
 main();
