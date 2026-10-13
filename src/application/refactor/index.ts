@@ -485,7 +485,19 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         return lines.join('\n');
       };
       if (!r.ok) {
-        const parts = [`批量文件改名被阻断（${r.dryRun ? '整体未落盘' : '部分已应用后中止'}）：`];
+        // ★★★ T214 续8（2026-10-13）：**这句也跟着 `rolledBack` 走** —— ★ 与上面 `rename_symbols` 同一口径 ✓
+        //   ★★ 因为 `rename_files` **现在也会回滚整批**了 ⇒ "部分已应用后中止"**成了假话** ✗
+        //   ★ 三档（★ 与 T214 同）：★ `true` ⇒ 已回滚整批 ✓ · ★ `false` ⇒ 回滚未成功、可能停在半改状态 ✗ ·
+        //     ★ `undefined` ⇒ 没走到回滚（★ 如预检整体拒绝 ✓）⇒ 保持原说法 ✓
+        const whyFiles = r.dryRun
+          ? '整体未落盘'
+          : r.rolledBack === true
+            ? '★ **已回滚整批** ⇒ 项目回到改写前'
+            : r.rolledBack === false
+              ? '★★ **部分已应用、且回滚未成功** ⇒ 项目可能停在半改状态，请手动处理'
+              : '部分已应用后中止';
+        const parts = [`批量文件改名被阻断（${whyFiles}）：`];
+        if (r.rollbackNote) parts.push(`\t${r.rollbackNote}`);
         parts.push(`\t${(r.blocked || []).join('\n\t')}`);
         parts.push('\tdry-run 各条状态：');
         for (const p of r.previews) parts.push(`\t  [${p.ok ? '可落盘' : '被阻断'}] ${fmt(p, p.result)}`.replace(/\n/g, '\n\t  '));

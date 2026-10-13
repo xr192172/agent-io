@@ -18,6 +18,8 @@ import path from 'node:path';
 import { renameFile, type RenameFileResult } from './rename_file.js';
 import { resolveProjectRoot } from '../../../infrastructure/analysis/project_root/index.js';
 import { snapshotBeforeWrite } from '../snapshot/file_snapshot.js';
+// ★ T214 续8：兑现"整批不落盘"要用它 —— ★ 用**写前那份快照**回滚整批（★ 与 rename_symbols 对称 ✓）
+import { rollbackFileSnapshot } from '../snapshot/file_snapshot.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
 export interface FileRenameItem {
@@ -59,6 +61,17 @@ export interface RenameFilesResult {
   filesWritten: number;
   /** 整体阻断理由（ok=false 时给出全部） */
   blocked?: string[];
+  /**
+   * ★★★ T214 续8（2026-10-13）：**本批失败时【有没有回滚成功】** —— ★ `false` 表示**可能停在半改状态** ✗
+   *
+   * ★ 与 `rename_symbols` **对称**（★ 那边 T214 已修 ✓）：★ 说明里写着"整批不落盘"，
+   *   ★★ 而真执行是**逐条落盘** ⇒ 中途失败原来 `return { applied }` ⇒ **已落盘的保留** ✗
+   * ★ 本函数**本来就拍了快照**（`snapshotBeforeWrite` ✓）★ **却丢了返回值** ✗ ⇒ 只差"失败时用它回滚" ✓
+   * ★★ 调用方**必须能分辨**"回滚成功"与"回滚失败"（★ 后者要人去处理 ✓）
+   */
+  rolledBack?: boolean;
+  /** ★ T214 续8：回滚的**人话说明**（★ 成功说"已回滚整批"· 失败说"可能停在半改状态，请手动处理" ✓） */
+  rollbackNote?: string;
 }
 
 async function renameFilesCore(input: RenameFilesInput): Promise<RenameFilesResult> {
@@ -106,6 +119,10 @@ async function renameFilesCore(input: RenameFilesInput): Promise<RenameFilesResu
   // 阶段 2：全部通过 → 逐条真落盘（串行；前面改动导致后续阻断则中止并据实报告）
   // ★ 可撤回：落盘前把"本次会改到的全部文件"（每个条目的 from/to + 各 importer）各存一份。
   // 清单取自阶段 1 的 dry_run 预览（references 已列出会被改的引用方文件）。
+  // ★ T214 续8：这三个是"失败 ⇒ 回滚"要用的（★ 声明在【拍快照那块之前】—— 否则"used before declaration" ✗）
+  let snap: ReturnType<typeof snapshotBeforeWrite> = null;
+  let failedAt = -1;
+  let failedBlocked = '';
   {
     const touched = new Set<string>();
     for (const p of previews) {
@@ -113,7 +130,8 @@ async function renameFilesCore(input: RenameFilesInput): Promise<RenameFilesResu
       if (p.to) touched.add(p.to);
       for (const r of p.result?.references ?? []) if (r?.file) touched.add(r.file);
     }
-    snapshotBeforeWrite(projectDir, `rename_files:${renames.length} 条`, [...touched]);
+    // ★ T214 续8：**接住快照**（★ 否则失败时无从回滚 ✓ —— 原来这里把返回值丢了 ✗）
+    snap = snapshotBeforeWrite(projectDir, `rename_files:${renames.length} 条`, [...touched]);
   }
   const applied: RenameFilesResult['applied'] = [];
   let filesWritten = 0;
@@ -121,13 +139,14 @@ async function renameFilesCore(input: RenameFilesInput): Promise<RenameFilesResu
     const item = renames[i];
     const result = await renameFile({ project_dir: projectDir, from: item.from, to: item.to, dry_run: false });
     if (!result.ok) {
-      return {
-        ok: false,
-        previews,
-        applied,
-        filesWritten,
-        blocked: [`条目 ${i}（${item.from}→${item.to}）实际落盘时被阻断：${(result.blocked || []).join('；')}。已应用 ${applied.length} 条，之后条目未执行`],
-      };
+      // ★★★ T214 续8：**不再直接 return** —— ★ 先记住"在第几条失败"，★ 出循环后**用它回滚整批** ✓
+      //   ★★ 原来这里 `return { …, applied, blocked: [… 已应用 N 条 …] }` ⇒ **已落盘的【保留】** ✗
+      //     —— ★ 与 `rename_symbols` 修前同形（★ 那边 T214 已修 ✓）
+      //   ★ 内层**只说它确知的**（★ "在第几条停下、之后未执行" ✓）；
+      //   ★★ **"最终有没有回滚"由出循环后那一处补**（★ 那儿才拿着快照 ✓ —— ★ 与 T214 同一口径 ✓）
+      failedAt = i;
+      failedBlocked = `条目 ${i}（${item.from}→${item.to}）实际落盘时被阻断：${(result.blocked || []).join('；')}。★ 本批**在此停下**，之后条目未执行（★ **最终是否已整批回滚，看外层回执** ✓）`;
+      break;
     }
     // ★ 2026-10-07：原先 += result.references.length（**引用处数**）—— 名字与注释互相矛盾，
     //   且同一份回执里 touched.written_files 有 3 条而本字段报 2：两个数说的不是一回事。
@@ -136,6 +155,29 @@ async function renameFilesCore(input: RenameFilesInput): Promise<RenameFilesResu
     //     实测一次移动报 moved=1 + 2 个 distinct importer = 3，与 touched.written_files 对得上。）
     filesWritten += (result.moved ? 1 : 0) + new Set(result.references.map((x) => x.file)).size;
     applied.push({ index: i, from: item.from, to: item.to, result });
+  }
+
+  // ★★★ T214 续8（2026-10-13）：**中途失败 ⇒ 用写前快照回滚整批** —— ★ 这才真兑现"整批不落盘" ✓
+  //   ★★ 与 `rename_symbols` 对称（★ 那边 T214 已修 ✓）；★ 本函数**本来就拍了快照**（`snap` ✓）
+  //     ⇒ 原来**只差"失败时用它回滚"** ✗
+  //   ★ 事后对不上时的口径（★ 与 T214 一致）：★ **回滚成功** ⇒ 明说"已回滚整批、项目回到改写前" ✓；
+  //     ★★ **回滚失败 / 无快照** ⇒ **如实说"可能停在半改状态、请手动处理"** ✗（★ 不许只说"失败" ✓）
+  if (failedAt >= 0) {
+    let rolledBack: boolean;
+    let rollbackNote: string;
+    if (!snap?.id) {
+      rolledBack = false;
+      rollbackNote =
+        '★★ **本批未落盘成功，且【没有可用快照】⇒ 无法自动回滚** —— ★ 项目可能停在半改状态，请手动处理';
+    } else {
+      const rb = rollbackFileSnapshot(projectDir, snap.id);
+      rolledBack = rb.ok;
+      rollbackNote = rb.ok
+        ? `★ **已用写前快照回滚整批**（恢复 ${rb.restored.length} 个 / 删除 ${rb.removed.length} 个）` +
+          '⇒ **项目回到改写前状态** ✓（★ 上面 `applied[]` 里列的文件**其实已被改回** ✓）'
+        : `★★ **回滚失败**：${rb.message} —— ★ 项目可能停在半改状态，请手动处理`;
+    }
+    return { ok: false, previews, applied, filesWritten, blocked: [failedBlocked], rolledBack, rollbackNote };
   }
 
   return { ok: true, previews, applied, filesWritten };
