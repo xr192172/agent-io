@@ -79,9 +79,45 @@ export interface IndexStats {
 // 路径与 hash
 // ─────────────────────────────────────────────────────────────
 
-/** 绝对路径 → 相对 projectRoot 的 posix 路径（节点/文件表的统一键） */
+/**
+ * ★★★ T245（2026-10-13）：**「路径 → 索引键」的唯一住处**（键 = 相对项目根的 posix 路径）。
+ *
+ * ## 为什么必须只有这一处
+ * 此前**两份实现，而只有一份有护栏**：
+ * · 下面那个 `toRelPath`：裸 `path.relative` ⇒ ★ **根外路径会造出 `../x.ts` 这样的键**（污染键空间）；
+ * · `write_gate.toRelPosix`：根外 ⇒ `null`（注释写着"不参与索引，避免键污染"）。
+ * ⇒ ★★ 而护栏那一半当时住在**上层**（`application/write_gate.ts`）——
+ *   "路径 → 索引键"明明是**索引自己的事**，下层却没法复用它 ⇒ 只能各写一份。
+ * ⇒ 现在护栏**沉到索引这一层**，上层**改用本函数**（`toRelPosix` 已删）。
+ *
+ * ## 越界的两种处置由调用方按语义选（★ 这是有意的，不是分叉）
+ * · 想"**跳过不索引**" ⇒ 用本函数并判 `null`（`write_gate` / `scaffold` / `apply_writes` 那一族）；
+ * · 想"**响亮**" ⇒ 用 {@link toRelPath}（根外它会**抛** —— 因为它造不出合法的索引键）。
+ */
+export function toIndexKey(projectRoot: string, p: string): string | null {
+  const root = path.resolve(projectRoot);
+  const abs = path.isAbsolute(p) ? path.resolve(p) : path.resolve(root, p);
+  const rel = path.relative(root, abs);
+  if (!rel || rel.startsWith('..') || path.isAbsolute(rel)) return null;
+  return rel.split(path.sep).join('/');
+}
+
+/**
+ * 绝对路径 → 相对 projectRoot 的 posix 路径（节点/文件表的统一键）。
+ *
+ * ★★ T245：**根外 ⇒ 抛** —— 不再静默造出 `../x.ts` 键（那是**索引污染**）。
+ * 要"跳过不索引"的语义，请改用 {@link toIndexKey} 并判 `null`。
+ */
 export function toRelPath(projectRoot: string, absPath: string): string {
-  return path.relative(projectRoot, absPath).split(path.sep).join('/');
+  const rel = toIndexKey(projectRoot, absPath);
+  if (rel === null) {
+    throw new Error(
+      `路径不在项目根内 ⇒ 造不出合法的索引键：${absPath}（根 = ${path.resolve(projectRoot)}）。` +
+        `★ 索引键是"相对根的 posix 路径"；根外路径会在键空间里造出 \`../…\` 这类**污染键**。` +
+        `★ 若这里想要的是"**跳过不索引**"，请改用 \`toIndexKey()\` 并判 \`null\`。 `,
+    );
+  }
+  return rel;
 }
 
 /**

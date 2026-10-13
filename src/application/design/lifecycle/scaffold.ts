@@ -27,7 +27,8 @@ import { noFileEntriesMessage } from '../no_file_entries.js';
 // ★ AB-double-name 病 B：函数名提取收口成唯一住处（不再本地复制正则）
 import { extractFuncName } from '../api_signature.js';
 import { getDSL } from '../../../infrastructure/storage.js';
-import { snapshotAndRecordSelfWrite, syncSelfWritesSync, toRelPosix } from '../../write_gate.js';
+import { snapshotAndRecordSelfWrite, syncSelfWritesSync } from '../../write_gate.js';
+import { toIndexKey } from '../../../infrastructure/index/symbols.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
 export interface ScaffoldInput {
@@ -708,7 +709,7 @@ function scaffoldCore(input: ScaffoldInput): ScaffoldResult {
   plannedFiles.push(invariantsPath);
   let indexNote: string | null = null;
   // ⑤ 同步写穿（2026-09-15）：inRoot 提到写循环外 —— 写完所有文件后要用同一批路径做同步写穿尝试
-  const inRoot = input.project_dir ? plannedFiles.filter((f) => toRelPosix(input.project_dir!, f)) : [];
+  const inRoot = input.project_dir ? plannedFiles.filter((f) => toIndexKey(input.project_dir!, f)) : [];
   if (input.project_dir) {
     try {
       if (inRoot.length === 0) {
@@ -843,13 +844,13 @@ function touchedOf(input: ScaffoldInput, r: ScaffoldResult): Touched {
   touched.feature = input.feature;
   if (input.project_dir) touched.project_dir = path.resolve(input.project_dir);
   // 对象类 written_files：**只列真落盘的**（r.written_files 里带 "(跳过，已存在)" 的项未写 ⇒ 剔除）。
-  //   契约要求**仓库相对路径** ⇒ 以 project_dir 为基换算（复用本文件已用的 toRelPosix）。★ 没给
+  //   契约要求**仓库相对路径** ⇒ 以 project_dir 为基换算（复用本文件已用的 toIndexKey）。★ 没给
   //   project_dir 时省略整个字段——不把绝对路径塞进"仓库相对"槽位（那是换口径，不是更弱的答案）。
   if (input.project_dir) {
     const written = new Set<string>();
     for (const f of r.written_files) {
       if (f.endsWith(' (跳过，已存在)')) continue;
-      const rel = toRelPosix(input.project_dir, f);
+      const rel = toIndexKey(input.project_dir, f);
       if (rel) written.add(rel);
     }
     if (written.size > 0) touched.written_files = [...written];

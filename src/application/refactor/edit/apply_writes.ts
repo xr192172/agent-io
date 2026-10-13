@@ -31,7 +31,8 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { writeSourceFiles, toRelPosix, type WriteThroughOutcome } from '../../write_gate.js';
+import { writeSourceFiles, type WriteThroughOutcome } from '../../write_gate.js';
+import { toIndexKey } from '../../../infrastructure/index/symbols.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
 /** 一项待落盘的改写：目标文件（相对 `projectRoot` 或绝对路径）+ 新内容全文 */
@@ -77,7 +78,7 @@ async function applyWritesCore(
   const outside: string[] = [];
   for (const it of items ?? []) {
     if (!it || typeof it.file !== 'string' || it.file.trim() === '') continue;
-    const rel = toRelPosix(root, it.file);
+    const rel = toIndexKey(root, it.file);
     if (rel === null) outside.push(it.file);
     else byRel.set(rel, it.content);
   }
@@ -129,7 +130,7 @@ async function applyWritesCore(
  *       · 无可写项（:87，`ok:true` 但空）；
  *       · `dryRun`（:89，`ok:true` 但空）。
  *       ⇒ 不另立 `if (dryRun)` 判据（那会把同一个事实两处各判一次）。
- *   - 值**直接复用**产物里的 `written_files`：它本就是 `toRelPosix(root, it.file)` 的键（仓库相对 POSIX），
+ *   - 值**直接复用**产物里的 `written_files`：它本就是 `toIndexKey(root, it.file)` 的键（仓库相对 POSIX），
  *     与 `Touched.written_files` 口径**逐字一致**（无需再转一次）。
  *
  * ★★ 已知重复：产物**顶层**已有一个规范名 `written_files`（:47）⇒ 本次调用后同一份路径表会**出现两次**

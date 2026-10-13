@@ -49,7 +49,8 @@ import { syncFile } from '../../../infrastructure/index/symbols.js';
 import { getProjectCacheDb } from '../../../infrastructure/index/db.js';
 import { splitKeepEnds, detectEol, isBlankLine } from '../../../infrastructure/text/line_utils.js';
 import { snapshotBeforeWrite } from '../snapshot/file_snapshot.js';
-import { reopenAndResolveAfterWrite, reopenNote, toRelPosix } from '../../write_gate.js';
+import { reopenAndResolveAfterWrite, reopenNote } from '../../write_gate.js';
+import { toIndexKey } from '../../../infrastructure/index/symbols.js';
 import { locateReplaceText, realignNewTextTo, FUZZY_LEVEL_LABEL } from '../../../infrastructure/parse/fuzzy_match.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
@@ -938,10 +939,14 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
       snapshotBeforeWrite(projectRoot, `edit_code:batch:${rel}`, [rel]);
       fs.writeFileSync(absPath, virtual.get(absPath)!, 'utf8');
       const sync = await syncFile(getProjectCacheDb(projectRoot), projectRoot, absPath);
+      // ★★★ T245（2026-10-13）：**别把算出来的东西扔掉** —— 原来是 `const _rw = await …; void _rw;`，
+      //   而**同一件事**在**内联四件套**那条路上是**报出来的**（`reopenNote(_rw)` 进了回执，
+      //   见本文件 `:507/:576/:637/:666`）。⇒ ★ "同一件事两处实现、一处报一处不报" = 本仓点名的病。
+      //   ⇒ 这里改用**同一个** `reopenNote`，且**并入同一个字段**（`index_synced`）——
+      //     ★ 与内联路的形状一致（`（${sync.status}${reopenNote(_rw)}）`），不新开字段 ⇒ 不改契约 ✓
       const _rw = await reopenAndResolveAfterWrite(projectRoot, [absPath]);
-      void _rw;
       if (sync.symbol_diff) symbolDiffByFile.set(absPath, sync.symbol_diff);
-      indexStatusByFile.set(absPath, sync.status);
+      indexStatusByFile.set(absPath, `${sync.status}${reopenNote(_rw)}`);
       writtenFiles.add(absPath);
     }
   }
@@ -1035,10 +1040,10 @@ function touchedOf(args: EditCodeArgs, r: { message: string; data: EditReceipt }
   // 对象类（⇒ 只有真发生才给）：单文件 + 真落盘，才谈"写了哪个文件 / 涉及哪个符号"。
   //   dry_run / 校验失败（throw，走不到这里）⇒ 整项省略（省略 ≠ 空数组）。
   if (single && r.data.written === true) {
-    // written_files：口径 = **仓库相对 POSIX**。复用闸的 `toRelPosix`（同族现成助手，scaffold 同款判据）：
+    // written_files：口径 = **仓库相对 POSIX**。复用闸的 `toIndexKey`（同族现成助手，scaffold 同款判据）：
     //   ★ 根外文件返回 null ⇒ **不塞**（本工具的政策 #3 允许写根外文件，但那种路径没有"仓库相对"形式，
     //   塞绝对路径 = 换口径而非更弱的答案，故省略该文件；见交付报告"有条件省略"）。
-    const rel = toRelPosix(path.resolve(args.project_dir), args.file);
+    const rel = toIndexKey(path.resolve(args.project_dir), args.file);
     if (rel) touched.written_files = [rel];
     // symbols（可选）：value 取"**落定后**的符号标识"（b_terms 口径）。
     //   · replace：新代码必须仍解析出同名符号（:768 已校验）⇒ 落定后仍在，可作下游锚点；

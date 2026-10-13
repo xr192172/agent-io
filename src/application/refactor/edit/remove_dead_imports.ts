@@ -24,7 +24,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { DeadDepCandidate } from '../../../infrastructure/graph/dead_deps.js';
 import { applyWithVerify, defaultVerifyCommands, runVerification, type VerifyCommand, type VerificationOutcome, type VerifyOutcomeKind } from '../../../infrastructure/verify_refactor.js';
-import { snapshotAndRecordSelfWrite, syncSelfWritesSync, toRelPosix, type WriteThroughOutcome } from '../../write_gate.js';
+import { snapshotAndRecordSelfWrite, syncSelfWritesSync, type WriteThroughOutcome } from '../../write_gate.js';
+import { toIndexKey } from '../../../infrastructure/index/symbols.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
 
 // ─────────────────────────────────────────────
@@ -319,7 +320,7 @@ function removeDeadImportsCore(opts: {
  *   而 `absToNew` 恰是"内容真的变了"的文件集，与 `removal_reports[].changed === true` 同一批。
  *   `changed` 为空 ⇒ 整项省略（省略 ≠ 空数组）。
  * - 值口径 = **仓库相对 POSIX**：`removal_reports[].file` 是 `path.relative(proj, abs)`（Windows 下带 `\`），
- *   故一律经闸的 `toRelPosix(project_dir, file)` 归一（★ 根外文件返回 null ⇒ 不塞，见 scaffold 同款判据）。
+ *   故一律经闸的 `toIndexKey(project_dir, file)` 归一（★ 根外文件返回 null ⇒ 不塞，见 scaffold 同款判据）。
  *
  * ★ 旁路提示：`removeDeadImportsWithVerify` 在**未启用验证 / 探测不出命令**两条路径上
  *   `{ ...removeDeadImports(opts), ... }` —— 那两条路径**确实落了盘**（无回滚），故随之携带的
@@ -337,7 +338,7 @@ function touchedOf(opts: { project_dir: string }, r: RemoveDeadImportResult): To
  *
  * 判据 = `removal_reports[].changed === true` 的那批 —— Core 只在 `absToNew.size > 0` 时才走到
  * `writeFileSync`，而 `absToNew` 恰是"内容真的变了"的文件集，与 `changed` **同一批**。
- * 值口径 = **仓库相对 POSIX**（`toRelPosix` 归一；根外文件返回 null ⇒ 不塞）。
+ * 值口径 = **仓库相对 POSIX**（`toIndexKey` 归一；根外文件返回 null ⇒ 不塞）。
  *
  * ★ 为什么必须**唯一**：`deprecate_offline` 复用的正是 `removeDeadImportsWithVerify`，
  *   而那条主路径**不自带 `touched`**（它用 `c.result`，见上面 `touchedOf` 的旁路提示）
@@ -348,7 +349,7 @@ export function writtenFilesOf(projectDir: string, r: RemoveDeadImportResult): s
   const written = new Set<string>();
   for (const rep of r.removal_reports) {
     if (!rep.changed) continue;
-    const rel = toRelPosix(projectDir, rep.file);
+    const rel = toIndexKey(projectDir, rep.file);
     if (rel) written.add(rel);
   }
   return [...written];

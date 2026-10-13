@@ -55,7 +55,7 @@ import { selfWritesPath, SELF_WRITE_TTL_MS, readSelfWrites, type SelfWriteEntry 
 import fs from 'node:fs';
 import path from 'node:path';
 import { getProjectCacheDb, beginBatch, endBatch, projectCacheDbPath, type Database } from '../infrastructure/index/db.js';
-import { syncFile, syncFileSync, removeFile, changedSymbolNames, reopenRefsTo, resolveCrossFileCalls, type SyncStatus, type CrossFileResolveStats } from '../infrastructure/index/symbols.js';
+import { syncFile, syncFileSync, removeFile, changedSymbolNames, reopenRefsTo, resolveCrossFileCalls, type SyncStatus, type CrossFileResolveStats , toIndexKey, toRelPath } from '../infrastructure/index/symbols.js';
 import { canParseFileSync } from '../infrastructure/parse/index.js';
 import { snapshotBeforeWrite, type FileSnapshotMeta } from './refactor/snapshot/file_snapshot.js';
 import { indexCoversDisk } from '../infrastructure/index/index_freshness.js';
@@ -109,14 +109,6 @@ const EMPTY_CROSS = { total: 0, resolved: 0, external: 0, failed: 0 };
 // 路径工具
 // ─────────────────────────────────────────────────────────────
 
-/** 把绝对/相对路径统一成"相对项目根的 posix 路径"；已在根外则返回 null（不参与索引，避免键污染） */
-export function toRelPosix(projectRoot: string, p: string): string | null {
-  const root = path.resolve(projectRoot);
-  const abs = path.isAbsolute(p) ? path.resolve(p) : path.resolve(root, p);
-  const rel = path.relative(root, abs);
-  if (!rel || rel.startsWith('..') || path.isAbsolute(rel)) return null;
-  return rel.split(path.sep).join('/');
-}
 
 /**
  * 该项目**是否已有可用的索引**（cache.db 存在且 files 表非空）。
@@ -177,7 +169,7 @@ function writeSelfWrites(root: string, list: SelfWriteEntry[]): void {
  */
 export function recordSelfWrite(projectRoot: string, files: readonly string[], note?: string): number {
   const root = path.resolve(projectRoot);
-  const rels = [...new Set(files.map((f) => toRelPosix(root, f)).filter((r): r is string => !!r))];
+  const rels = [...new Set(files.map((f) => toIndexKey(root, f)).filter((r): r is string => !!r))];
   if (!rels.length) return 0;
   const now = Date.now();
   const kept = readSelfWrites(root).filter((e) => now - e.at < SELF_WRITE_TTL_MS);
@@ -215,7 +207,7 @@ export async function syncSelfWrites(
   if (opts.syncIndex === false) return null;
   if (!hasLiveIndex(root)) return null;
 
-  const rels = [...new Set(files.map((f) => toRelPosix(root, f)).filter((r): r is string => !!r))];
+  const rels = [...new Set(files.map((f) => toIndexKey(root, f)).filter((r): r is string => !!r))];
   if (!rels.length) return null;
 
   const t0 = Date.now();
@@ -386,7 +378,7 @@ export function syncSelfWritesSync(
   if (opts.syncIndex === false) return null;
   if (!hasLiveIndex(root)) return null;
 
-  const rels = [...new Set(files.map((f) => toRelPosix(root, f)).filter((r): r is string => !!r))];
+  const rels = [...new Set(files.map((f) => toIndexKey(root, f)).filter((r): r is string => !!r))];
   if (!rels.length) return null;
 
   const t0 = Date.now();
@@ -491,7 +483,7 @@ export async function reopenAndResolveAfterWrite(
 }> {
   const empty = { refsReopened: 0, refsReopenedFiles: 0, cross: { total: 0, resolved: 0, external: 0, failed: 0 } };
   const root = path.resolve(projectRoot);
-  const rels = [...new Set(files.map((f) => toRelPosix(root, f)).filter((r): r is string => !!r))];
+  const rels = [...new Set(files.map((f) => toIndexKey(root, f)).filter((r): r is string => !!r))];
   if (!rels.length || !hasLiveIndex(root)) return empty;
   let db: Database;
   try {
@@ -538,7 +530,7 @@ export async function writeSourceFiles<T>(
 ): Promise<{ value: T; report: SourceWriteReport }> {
   const root = path.resolve(projectRoot);
   const norm = (): string[] =>
-    [...new Set(files.map((f) => toRelPosix(root, f)).filter((r): r is string => !!r))];
+    [...new Set(files.map((f) => toIndexKey(root, f)).filter((r): r is string => !!r))];
 
   // ① 写前快照（失败绝不阻断：可撤回是增强，不是前提）
   //    用"写前可见的列表" —— 有些改动集合只有跑完才知道，那时再补快照已经晚了。
@@ -584,7 +576,7 @@ export function snapshotAndRecordSelfWrite(
   opts: { label?: string; snapshot?: boolean } = {},
 ): WriteThroughOutcome {
   const root = path.resolve(projectRoot);
-  const rels = [...new Set(files.map((f) => toRelPosix(root, f)).filter((r): r is string => !!r))];
+  const rels = [...new Set(files.map((f) => toIndexKey(root, f)).filter((r): r is string => !!r))];
   const hasIndex = hasLiveIndex(root);
   if (opts.snapshot !== false) snapshotBeforeWrite(root, opts.label ?? 'source write', rels);
   if (!hasIndex) return { ok: false, mode: 'skipped', note: '该项目还没有索引 ⇒ 只真写，未登记' };
