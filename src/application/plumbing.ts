@@ -73,6 +73,50 @@ export function wrap(
  */
 export const DATA_MARKER = '---DATA---';
 
+/**
+ * ★★★ T251（2026-10-13）：**解析 `---DATA---` 机器段的唯一入口** —— 别在别处再写一份切法。
+ *
+ * ## 它测的是哪一格（★ 实测的现场，不是理论）
+ * 旧约定 = `text.split('---DATA---')[1]` **整段**当 JSON ⇒ ★ 它默认"**JSON 之后没有别的东西**"。
+ * 而**产品自己就违反了那条约定**：`invokeTool` 组装回执时是
+ *   `withNext + argHints + emission.text + firstContactNote + trustNote + alertNote + emission.block`
+ * ⇒ **机器段之后**永远可能追加：告警文本 / 信任附注 / 首触标注 / `---WARNINGS---` 机器块。
+ * ★ 实测（`capability_map` 真调用）逐字长这样：
+ * ```
+ * ---DATA---
+ * {"lanes":[…],"domains":0,…}                                   ← 行 1：JSON
+ * ⚠️ NO_PROJECT_ROOT：本次调用未解析到项目根 ⇒ 未做索引保鲜…      ← 行 2：被追加的告警
+ *    本次入参里既没有约定的根参数名…                              ← 行 3：告警的细节行
+ * ```
+ * ⇒ ★★ 任何"整段 parse"的消费方在**告警非空时必炸**（平时恰好为空 ⇒ **看不出来**）。
+ * ★ 实测炸过一次：`certs/t184b-cert.mjs` 报 `Unexpected non-whitespace character after JSON at position 442345`。
+ *
+ * ## 口径 = 仓里**既有**约定的可执行化：**取标记之后的【第一行】**
+ * ★★ 为什么"第一行"就够（★ 这是**结构保证**，不是巧合）：载荷由 `wrapData` 用
+ *   **`JSON.stringify(payload)`** 产出 ⇒ ★ `stringify` **不会产出裸换行**
+ *   （串内的 `\n` 会被转义成 `\\n`）⇒ 载荷**必然是一行**。
+ * ⇒ ★ 所以我**没有**去写"括号配平"那套（★ 我第一版写了，然后**量了一下**才发现是多余的复杂度 ——
+ *   实测回执里载荷就是单行 ⇒ 配平那一层是**为不存在的情况付的复杂度**）。
+ *
+ * ★ 找不到标记 / 第一行不是 JSON ⇒ 返回 **`null`**（★ **这里不抛**：要不要响亮由调用方按语义定）。
+ * ★ 注：**不改线上格式**（不给 JSON 段加结束标记）—— 那会让所有既有"切标记"的消费方在**同一次改动里全炸**。
+ */
+export function parseDataBlock(text: string): unknown | null {
+  const i = text.indexOf(DATA_MARKER);
+  if (i < 0) return null;
+  const firstLine = text
+    .slice(i + DATA_MARKER.length)
+    .trim()
+    .split('\n')[0]
+    .trim();
+  if (!firstLine) return null;
+  try {
+    return JSON.parse(firstLine);
+  } catch {
+    return null;
+  }
+}
+
 export function wrapData(
   fn: (args: Record<string, unknown>) => { message: string; data?: unknown } | Promise<{ message: string; data?: unknown }>,
 ): ToolDef['handler'] {
