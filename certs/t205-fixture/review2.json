@@ -1,0 +1,48 @@
+{
+  "signals_scanned": [
+    {
+      "file": "src/mixed.ts",
+      "clusters": [
+        [
+          "SECRET",
+          "signToken",
+          "verifyToken"
+        ],
+        [
+          "formatMoney"
+        ],
+        [
+          "toCsv",
+          "downloadCsv"
+        ],
+        [
+          "formatMoneyLegacy"
+        ]
+      ],
+      "reason": "顶层 7 个声明被依赖切成 4 个无耦合概念簇（疑似一文件多概念，解耦候选）"
+    }
+  ],
+  "review": {
+    "reviews": [
+      {
+        "file": "src/mixed.ts",
+        "actionable": false,
+        "reviews": [],
+        "note": "LLM 复核失败已重试仍不通过（网关所有 key 均在冷却窗口内（无可用端点）），保留原始信号"
+      }
+    ],
+    "meta": {
+      "total_signals": 1,
+      "actionable": 0,
+      "rejected": 0,
+      "undecided": 1,
+      "llm_available": false
+    },
+    "limitations": [
+      "复核判据 = 独立使用者 / 独立演进 / 文档证据；不自动切分文件内部，采纳后拆法由人确认",
+      "判定采用 LLM 语义理解，依赖注释/文档质量；注释含糊时可能误判",
+      "单文件源码注入上限 12000 字符，超长只按头部判断",
+      "LLM 不可用或无 apiKey 时整体返回 null，调用方按原信号降级"
+    ]
+  }
+}

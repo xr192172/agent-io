@@ -1,0 +1,76 @@
+{
+  "signals_scanned": [
+    {
+      "file": "src/mixed.ts",
+      "clusters": [
+        [
+          "SECRET",
+          "signToken",
+          "verifyToken"
+        ],
+        [
+          "formatMoney"
+        ],
+        [
+          "toCsv",
+          "downloadCsv"
+        ],
+        [
+          "formatMoneyLegacy"
+        ]
+      ],
+      "reason": "顶层 7 个声明被依赖切成 4 个无耦合概念簇（疑似一文件多概念，解耦候选）"
+    }
+  ],
+  "review": {
+    "reviews": [
+      {
+        "file": "src/mixed.ts",
+        "actionable": true,
+        "reviews": [
+          {
+            "cluster": "token会话",
+            "adopt": true,
+            "feature": "token-session",
+            "reason": "独立的会话签发/校验逻辑，无任何其他簇依赖证据",
+            "evidence": "文件头注释明确标注\"用户会话（token 签发/校验）\"为独立职责之一"
+          },
+          {
+            "cluster": "formatMoney",
+            "adopt": true,
+            "feature": "money-format",
+            "reason": "与formatMoneyLegacy同属金额格式化但处于不同生命周期（新/旧并存），且均有独立导出使用",
+            "evidence": "★ 注意：下面这版是【新世代】，旧的那版还在用（见文件尾）—— 两代并存。"
+          },
+          {
+            "cluster": "CSV导出",
+            "adopt": true,
+            "feature": "csv-export",
+            "reason": "独立的服务端/前端CSV导出职责，无跨簇耦合",
+            "evidence": "文件头注释明确标注\"CSV 导出（纯工具函数）\"为独立职责之一"
+          },
+          {
+            "cluster": "formatMoneyLegacy",
+            "adopt": true,
+            "feature": "money-format-legacy",
+            "reason": "已废弃的旧版金额格式化，被标注为弃用但保留兼容，与新版处于不同生命周期",
+            "evidence": "/** @deprecated 旧版金额格式化，保留兼容。新代码请用 formatMoney。 */"
+          }
+        ]
+      }
+    ],
+    "meta": {
+      "total_signals": 1,
+      "actionable": 1,
+      "rejected": 0,
+      "undecided": 0,
+      "llm_available": true
+    },
+    "limitations": [
+      "复核判据 = 独立使用者 / 独立演进 / 文档证据；不自动切分文件内部，采纳后拆法由人确认",
+      "判定采用 LLM 语义理解，依赖注释/文档质量；注释含糊时可能误判",
+      "单文件源码注入上限 12000 字符，超长只按头部判断",
+      "LLM 不可用或无 apiKey 时整体返回 null，调用方按原信号降级"
+    ]
+  }
+}

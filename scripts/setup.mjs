@@ -200,17 +200,38 @@ function runDoctor() {
   // 3) skill 安装
   {
     // ★ T223：逐条按**真目录名**判，并报清"缺哪一条"（原先只盯一个已不存在的名字 ⇒ 恒 ✗）
-    const srcMissing = SKILL_NAMES.filter((n) => !fs.existsSync(path.join(SKILL_SRC, n, 'SKILL.md')));
-    const dstMissing = SKILL_NAMES.filter((n) => !fs.existsSync(path.join(SKILL_DST, n, 'SKILL.md')));
-    if (srcMissing.length === 0 && dstMissing.length === 0) {
+    // ★★★ T224：**判据从"在不在"改成"是不是同一份"** ——
+    //   ★ 起因（实测）：目标里那份 `design-canvas-mind` 是 **8-26** 的（5494 字节），
+    //     而仓内那份已经是 **6501 字节**（含 10-08 那次「第零层 / 三个层」修复）
+    //     ⇒ ★★ 而旧判据只看 `existsSync` ⇒ **给出一个假 ✓**（"已安装"其实装的是七周前的版本）✓
+    //   ★ 为什么这个假 ✓ 贵：`docs/guidance-audit.md` §三 量过 —— 引导**指着已拆掉的房子**
+    //     （21 个"像工具名"的标识符里 9 个指向不存在的东西）⇒ 照着走会撞 `unknown tool`，
+    //     ★ **撞一次之后那份引导就不再被信**（"不是不肯用，是用一次就不敢用"）✓
+    //   ⇒ ★ 判据：**装的必须是【仓里现在这一份】**；不然就是"装过，但装的不是它" ✓
+    const state = (n) => {
+      const s = path.join(SKILL_SRC, n, 'SKILL.md');
+      const d = path.join(SKILL_DST, n, 'SKILL.md');
+      if (!fs.existsSync(s)) return 'no-src';
+      if (!fs.existsSync(d)) return 'missing';
+      // ★ 比**字节**而不是比 mtime：拷过去就是逐字节复制 ⇒ 同一个文件必然相等 ✓
+      return fs.readFileSync(s).equals(fs.readFileSync(d)) ? 'same' : 'stale';
+    };
+    const states = SKILL_NAMES.map((n) => [n, state(n)]);
+    const bad = states.filter(([, st]) => st !== 'same');
+    if (bad.length === 0) {
       pass++;
-      console.log(ok(`skill：${SKILL_NAMES.length} 条已安装到 ${SKILL_DST}`));
-    } else if (srcMissing.length === 0) {
-      fail++;
-      console.log(warn(`skill：项目内有 ${SKILL_SRC}，但未安装到目标 agent（${SKILL_DST}）缺：${dstMissing.join('、')}`));
+      console.log(ok(`skill：${SKILL_NAMES.length} 条已安装到 ${SKILL_DST}，★ 且与仓内**同一份**`));
     } else {
       fail++;
-      console.log(no(`skill：项目缺少 ${srcMissing.map((n) => path.join(SKILL_SRC, n, 'SKILL.md')).join('、')}`));
+      const detail = bad.map(([n, st]) =>
+        st === 'no-src' ? `${n}（★ 仓内缺源）`
+        : st === 'missing' ? `${n}（未安装）`
+        : `${n}（★ **已安装但过期** —— 与 ${SKILL_SRC} 下那份不一致）`).join('、');
+      console.log(
+        bad.some(([, st]) => st === 'no-src')
+          ? no(`skill：仓内缺源 —— ${detail}`)
+          : warn(`skill：${detail}；重跑 \`node scripts/setup.mjs <target> --no-mcp\` 可重新拷过去（--no-mcp = 不动 MCP 配置）`),
+      );
     }
   }
 

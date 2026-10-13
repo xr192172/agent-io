@@ -1,0 +1,74 @@
+{
+  "signals_scanned": [
+    {
+      "file": "src/mixed.ts",
+      "clusters": [
+        [
+          "SECRET",
+          "signToken",
+          "verifyToken"
+        ],
+        [
+          "formatMoney"
+        ],
+        [
+          "formatMoneyLegacy"
+        ],
+        [
+          "toCsv",
+          "downloadCsv"
+        ]
+      ],
+      "reason": "（★ T212 手写报告：固定 4 簇，不依赖 LLM ⇒ 确定性复现）"
+    }
+  ],
+  "review": {
+    "reviews": [
+      {
+        "file": "src/mixed.ts",
+        "actionable": true,
+        "reviews": [
+          {
+            "cluster": "会话 token",
+            "adopt": true,
+            "feature": "token-session",
+            "reason": "（手写：采纳）",
+            "evidence": ""
+          },
+          {
+            "cluster": "金额新",
+            "adopt": true,
+            "feature": "money-format",
+            "reason": "（手写：采纳）",
+            "evidence": ""
+          },
+          {
+            "cluster": "金额旧",
+            "adopt": false,
+            "feature": "",
+            "reason": "（手写：驳回）",
+            "evidence": ""
+          },
+          {
+            "cluster": "CSV",
+            "adopt": false,
+            "feature": "",
+            "reason": "（手写：驳回）",
+            "evidence": ""
+          }
+        ],
+        "note": null
+      }
+    ],
+    "meta": {
+      "total_signals": 1,
+      "actionable": 1,
+      "rejected": 2,
+      "undecided": 0,
+      "llm_available": true
+    },
+    "limitations": [
+      "★ T212 手写报告 —— 不经 LLM"
+    ]
+  }
+}

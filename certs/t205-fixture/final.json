@@ -1,0 +1,76 @@
+{
+  "signals_scanned": [
+    {
+      "file": "src/mixed.ts",
+      "clusters": [
+        [
+          "SECRET",
+          "signToken",
+          "verifyToken"
+        ],
+        [
+          "formatMoney"
+        ],
+        [
+          "toCsv",
+          "downloadCsv"
+        ],
+        [
+          "formatMoneyLegacy"
+        ]
+      ],
+      "reason": "顶层 7 个声明被依赖切成 4 个无耦合概念簇（疑似一文件多概念，解耦候选）"
+    }
+  ],
+  "review": {
+    "reviews": [
+      {
+        "file": "src/mixed.ts",
+        "actionable": true,
+        "reviews": [
+          {
+            "cluster": "会话令牌（SECRET + signToken + verifyToken）",
+            "adopt": true,
+            "feature": "fixture-session-token",
+            "reason": "三件构成独立会话管理职责，可被仅关心令牌的测试用例单独消费",
+            "evidence": "文件头部注释：'里面塞了三簇互不相干的职责……① 用户会话（token 签发/校验）'"
+          },
+          {
+            "cluster": "金额格式化（formatMoney）",
+            "adopt": true,
+            "feature": "fixture-money-format-v2",
+            "reason": "新世代格式化函数，与 formatMoneyLegacy 分属不同生命周期，存在独立演进需求",
+            "evidence": "文件中：'注意：下面这版是【新世代】，旧的那版还在用—— 两代并存。'"
+          },
+          {
+            "cluster": "CSV 导出（toCsv + downloadCsv）",
+            "adopt": false,
+            "feature": "",
+            "reason": "纯工具函数集，两者同服务于 CSV 导出单一用途、被整套一起使用，拆开即碎片",
+            "evidence": "无；文件头部注释仅称其为第③项职责，未标注独立生命周期或分离证据"
+          },
+          {
+            "cluster": "金额格式化-旧版（formatMoneyLegacy）",
+            "adopt": true,
+            "feature": "fixture-money-format-legacy",
+            "reason": "明确标记为 deprecated 并为向后兼容保留，与新版处于不同生命周期",
+            "evidence": "函数顶部注释：'@deprecated 旧版金额格式化，保留兼容。新代码请用 formatMoney。'"
+          }
+        ]
+      }
+    ],
+    "meta": {
+      "total_signals": 1,
+      "actionable": 1,
+      "rejected": 0,
+      "undecided": 0,
+      "llm_available": true
+    },
+    "limitations": [
+      "复核判据 = 独立使用者 / 独立演进 / 文档证据；不自动切分文件内部，采纳后拆法由人确认",
+      "判定采用 LLM 语义理解，依赖注释/文档质量；注释含糊时可能误判",
+      "单文件源码注入上限 12000 字符，超长只按头部判断",
+      "LLM 不可用或无 apiKey 时整体返回 null，调用方按原信号降级"
+    ]
+  }
+}

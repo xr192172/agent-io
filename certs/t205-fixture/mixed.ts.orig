@@ -1,0 +1,46 @@
+/**
+ * ★ T205 测试夹具：**故意"一个文件塞好几种职责"** —— 用来测"拆分链"好不好用。
+ *
+ * 里面塞了三簇互不相干的职责（★ 按 `signal_review` 的判据，这类应该被【采纳】拆分）：
+ *   ① 用户会话（token 签发/校验）
+ *   ② 金额格式化（纯工具函数）
+ *   ③ CSV 导出（纯工具函数）
+ * ★ 并刻意留一条"新旧世代并存"的注释 —— 那是它的采纳判据之一。
+ */
+
+// ── ① 会话：token ─────────────────────────────────────────────
+const SECRET = 'fixture-secret';
+
+export function signToken(userId: string): string {
+  return `tok.${userId}.${SECRET}`;
+}
+
+export function verifyToken(tok: string): string | null {
+  const parts = tok.split('.');
+  if (parts.length !== 3 || parts[2] !== SECRET) return null;
+  return parts[1];
+}
+
+// ── ② 金额格式化 ──────────────────────────────────────────────
+// ★ 注意：下面这版是【新世代】，旧的那版还在用（见文件尾）—— 两代并存。
+export function formatMoney(cents: number): string {
+  return '¥' + (cents / 100).toFixed(2);
+}
+
+// ── ③ CSV 导出 ───────────────────────────────────────────────
+export function toCsv(rows: string[][]): string {
+  return rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+}
+
+export function downloadCsv(filename: string, rows: string[][]): void {
+  const blob = toCsv(rows);
+  // 夹具里不真写文件；只保留形状。
+  void blob;
+  void filename;
+}
+
+// ── 旧世代（★ 与 formatMoney 并存 —— 供"两代并存"的采纳判据）──────
+/** @deprecated 旧版金额格式化，保留兼容。新代码请用 formatMoney。 */
+export function formatMoneyLegacy(yuan: number): string {
+  return '￥' + yuan.toFixed(2);
+}

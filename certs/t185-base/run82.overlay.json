@@ -1,0 +1,1387 @@
+{
+  "version": 1,
+  "feature": "run82",
+  "anchors": {
+    "file_src_application_meta_registry_tool_faces_ts": {
+      "path": "src/application/meta/registry/tool_faces.ts",
+      "kind": "file",
+      "decision": {
+        "summary": "编排面的名单只由链派生（deriveObjectChains），去掉手写 direct 白名单",
+        "rationale": "手写策展表无用量依据（2026-08 建立），tool_faces.ts:21 自陈『待用数据替换』；而链是机器算的、验一条边就自己长。",
+        "consequences": "composed 面成员由链数据决定 ⇒ 以后不再需要人工维护名单；但少了 get_dsl/edit_dsl 等未上链的门。",
+        "acceptance": "facesOf 与 renderFaces 都不再收 directNames 参数",
+        "expectations": [
+          {
+            "kind": "signature-matches",
+            "path": "src/application/meta/registry/tool_faces.ts",
+            "symbol": "facesOf",
+            "signature": "facesOf(catalog: readonly ToolCatalogEntry[]): ToolFaceView[]",
+            "why": "T82：名单只由链派生 ⇒ 签名里不该再有 directNames"
+          },
+          {
+            "kind": "signature-matches",
+            "path": "src/application/meta/registry/tool_faces.ts",
+            "symbol": "renderFaces",
+            "signature": "renderFaces(catalog: readonly ToolCatalogEntry[]): string",
+            "why": "同上：渲染侧也要去掉手写名单"
+          }
+        ],
+        "author": "design-trial",
+        "updated_at": "2026-10-09T10:29:53.402Z"
+      },
+      "signature": "7499266b33a9"
+    },
+    "contract_arc_1": {
+      "path": "候选契约登记 ARC-1 ← docs/architecture-refactor-plan.md:15",
+      "kind": "symbol",
+      "decision": {
+        "summary": "**对外契约不变**：`mcp__design-canvas__*` 工具名与 inputSchema 不变",
+        "rationale": "【抽取者判】纲领 §1 的「任何阶段都不许破」I1。原文明文\"不变\"并给了判据（工具集快照 G1）⇒ 是一条真·对外契约。★ 抽取者意见：可信（有判据），但\"指向对象\"原文只写\"MCP 工具名 / inputSchema\"，未点名文件 ⇒ 落点由抽取者定为本条登记节点。",
+        "evidence_source": [
+          "docs/architecture-refactor-plan.md:15"
+        ],
+        "status": "draft",
+        "thread": "docs/architecture-refactor-plan.md",
+        "updated_at": "2026-10-11T08:18:27.714Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_arc_3": {
+      "path": "候选契约登记 ARC-3 ← docs/architecture-refactor-plan.md:17",
+      "kind": "symbol",
+      "decision": {
+        "summary": "**全量回归全绿**（当前基线：205 文件 / 2137 测试）",
+        "rationale": "【抽取者判】本句逐字取自纲领 §1 的 I3，原文语气是**硬不变式**（\"任何阶段都不许破\"）、并给了判据 `vitest run`。★★★ **但前提已不成立**：抽取者本次**实测**——本仓 `tests/` 目录**不存在**、`package.json` 里 `\"test\"` 出现 **0 次**、无 `vitest`/`jest` 依赖 ⇒ **该不变量的判据今天跑不了**，是一条**永远无法满足的契约**（\"白纸黑字上的假 ✅\"）。★ 之所以照旧登记：登记的目的是**让它\"在册\"**；而\"**它已失效**\"这件事本身就是一条**该登记的决策** —— 否则下一个人仍会把 I3 当成\"不许破的不变量\"。★ 是否裁为 superseded/删除，由人定。",
+        "evidence_source": [
+          "docs/architecture-refactor-plan.md:17"
+        ],
+        "status": "draft",
+        "thread": "docs/architecture-refactor-plan.md",
+        "updated_at": "2026-10-11T08:18:27.812Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_tcc_1": {
+      "path": "候选契约登记 TCC-1 ← docs/tool-chain-contract.md:73",
+      "kind": "symbol",
+      "decision": {
+        "summary": "`export interface Touched { … feature?: string; project_dir?: string; written_files?: string[]; scope_files?: string[]; symbols?: string[]; nodes?: string[]; file?: string; }`",
+        "rationale": "【抽取者判】`tool-chain-contract.md` §4.1 的 `Touched` 接口定义，**逐字段带数据依据注释** ⇒ 是\"expected_apis\"最标准的样本。★ 抽取者意见：这是**接口的形状**（不是\"为什么存在\"），落在 `src/domain/` 的 `Touched` 类型上；★ 与 TCC-10（现存 7 字段）互为佐证。是否已成\"现行契约\"（vs 提案）由人裁。",
+        "evidence_source": [
+          "docs/tool-chain-contract.md:73",
+          "docs/tool-chain-contract.md:99"
+        ],
+        "status": "draft",
+        "thread": "docs/tool-chain-contract.md",
+        "updated_at": "2026-10-11T08:18:29.177Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_die_2": {
+      "path": "候选契约登记 DIE-2 ← docs/dsl-intent-and-expectations.md:43",
+      "kind": "symbol",
+      "decision": {
+        "summary": "`OverlayAnchor.decision: NodeDecision`（决策卡：**结论/理由/替代/后果/验收**）—— 类型在 **`src/domain/geometry.ts:154`**",
+        "rationale": "【抽取者判】`dsl-intent-and-expectations.md` 用**带行号的代码事实**钉死了 `OverlayAnchor.decision: NodeDecision`，类型在 `src/domain/geometry.ts:154`。★ 抽取者意见：出处精确到行、可信度高；它是对**决策卡类型**的契约（正是本笔在用的那个类型的定义处）。",
+        "evidence_source": [
+          "docs/dsl-intent-and-expectations.md:43"
+        ],
+        "status": "draft",
+        "thread": "docs/dsl-intent-and-expectations.md",
+        "updated_at": "2026-10-11T08:18:29.707Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_ddr_1": {
+      "path": "候选契约登记 DDR-1 ← docs/dsl-design-review.md:55",
+      "kind": "symbol",
+      "decision": {
+        "summary": "而 **`live` 只读、拒绝写入**这条语义**在签名上完全不可见**",
+        "rationale": "【抽取者判】`dsl-design-review.md` 指出 `live` 只读、拒绝写入这条语义\"在签名上完全不可见\" ⇒ 一条**现存不变式 + 其缺陷**。★ 抽取者意见：语义可信（写入口 handle 里确实对 view=live 直接抛），\"签名不可见\"是**改进点**（非契约本体）。",
+        "evidence_source": [
+          "docs/dsl-design-review.md:55"
+        ],
+        "status": "draft",
+        "thread": "docs/dsl-design-review.md",
+        "updated_at": "2026-10-11T08:18:30.042Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_arc_2": {
+      "path": "候选契约登记 ARC-2 ← docs/architecture-refactor-plan.md:16",
+      "kind": "symbol",
+      "decision": {
+        "summary": "**运行时依赖不增加**（现 8 个：MCP SDK / ajv / ajv-formats / ignore / tree-sitter×3 / zod）",
+        "rationale": "【抽取者判】\"运行时依赖不增加（现 8 个）\"。★ 抽取者意见：**\"现 8 个\"是可核对的清单**，落在 `package.json` 的 dependencies；在册以防依赖悄悄膨胀。draft（是否作为硬闸人裁）。",
+        "evidence_source": [
+          "docs/architecture-refactor-plan.md:16"
+        ],
+        "status": "draft",
+        "thread": "docs/architecture-refactor-plan.md",
+        "updated_at": "2026-10-11T08:18:27.763Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_arc_4": {
+      "path": "候选契约登记 ARC-4 ← docs/architecture-refactor-plan.md:18",
+      "kind": "symbol",
+      "decision": {
+        "summary": "**每步可独立提交**：不搞大爆炸分支；一步一提交，绿了再下一步",
+        "rationale": "【抽取者判】流程纪律（非代码对象）：小步提交、绿了再下一步。★ 抽取者意见：是\"流程不变量\"，登记它让\"小步提交\"在册；机器判不了 ⇒ draft。",
+        "evidence_source": [
+          "docs/architecture-refactor-plan.md:18"
+        ],
+        "status": "draft",
+        "thread": "docs/architecture-refactor-plan.md",
+        "updated_at": "2026-10-11T08:18:27.858Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_arc_5": {
+      "path": "候选契约登记 ARC-5 ← docs/architecture-refactor-plan.md:19",
+      "kind": "symbol",
+      "decision": {
+        "summary": "**不引 DI / 全栈框架**",
+        "rationale": "【抽取者判】**non-goal**（§6 同义复述：\"不引 DI / 全栈框架\"）。★ 抽取者意见：明确的依赖选型禁令、强候选；draft（是否升 active 人裁）。",
+        "evidence_source": [
+          "docs/architecture-refactor-plan.md:19"
+        ],
+        "status": "draft",
+        "thread": "docs/architecture-refactor-plan.md",
+        "updated_at": "2026-10-11T08:18:27.904Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_arc_6": {
+      "path": "候选契约登记 ARC-6 ← docs/architecture-refactor-plan.md:75",
+      "kind": "symbol",
+      "decision": {
+        "summary": "**可被 import 指向的东西**（含 `.json`） | `import_resolve.IMPORT_EXTS` | ❌ 另一维度，**不许合进 SOURCE_EXTS**",
+        "rationale": "【抽取者判】明文禁令：\"IMPORT_EXTS 是另一维度，不许合进 SOURCE_EXTS\"，指向 `import_resolve` 的两组常量。★ 抽取者意见：高可信（\"不许合并\"是硬禁令）。",
+        "evidence_source": [
+          "docs/architecture-refactor-plan.md:75"
+        ],
+        "status": "draft",
+        "thread": "docs/architecture-refactor-plan.md",
+        "updated_at": "2026-10-11T08:18:27.949Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_arc_7": {
+      "path": "候选契约登记 ARC-7 ← docs/architecture-refactor-plan.md:82",
+      "kind": "symbol",
+      "decision": {
+        "summary": "**当\"错了\"会静默降级时，禁止用兜底\"猜一个\"，必须硬失败或显式可见。**",
+        "rationale": "【抽取者判】通用判据：\"当错了会静默降级时，禁止兜底猜一个，必须硬失败或显式可见\"。★ 抽取者意见：**本仓最高频引用的一条纪律**（§2d 整节展开）⇒ 强候选；draft。",
+        "evidence_source": [
+          "docs/architecture-refactor-plan.md:82"
+        ],
+        "status": "draft",
+        "thread": "docs/architecture-refactor-plan.md",
+        "updated_at": "2026-10-11T08:18:27.996Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_arc_8": {
+      "path": "候选契约登记 ARC-8 ← docs/architecture-refactor-plan.md:149",
+      "kind": "symbol",
+      "decision": {
+        "summary": "**规则**：依赖只允许向下；同层内不得横向堆叠成新抽屉。",
+        "rationale": "【抽取者判】分层不变式（§4 给\"允许依赖\"矩阵）：依赖只向下、同层不横向堆叠。★ 抽取者意见：有判据、强候选；draft。",
+        "evidence_source": [
+          "docs/architecture-refactor-plan.md:149"
+        ],
+        "status": "draft",
+        "thread": "docs/architecture-refactor-plan.md",
+        "updated_at": "2026-10-11T08:18:28.043Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_arc_9": {
+      "path": "候选契约登记 ARC-9 ← docs/architecture-refactor-plan.md:160",
+      "kind": "symbol",
+      "decision": {
+        "summary": "`(name, schema)` 列表与基线逐字相同（G1 工具集快照，67 工具）",
+        "rationale": "【抽取者判】G1 工具集快照（67 工具，`(name,schema)` 与基线逐字相同）。★ 抽取者意见：出处（测试文件 + 夹具）俱全，但**与 ARC-3 同病**——它落在 `tests/fixtures/tool_set_snapshot.json`，★ 而本仓 `tests/` 目录**不存在**（本次实测）⇒ **该判据今天跑不了**。★ 前提已不成立；登记以\"在册\"并示警。",
+        "evidence_source": [
+          "docs/architecture-refactor-plan.md:160"
+        ],
+        "status": "draft",
+        "thread": "docs/architecture-refactor-plan.md",
+        "updated_at": "2026-10-11T08:18:28.089Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_arc_10": {
+      "path": "候选契约登记 ARC-10 ← docs/architecture-refactor-plan.md:177",
+      "kind": "symbol",
+      "decision": {
+        "summary": "**不改 `mcp__design-canvas__*` 的工具名**（P4 除外，且 P4 需单独拍板）。",
+        "rationale": "【抽取者判】§6 non-goals 明文：不改 `mcp__design-canvas__*` 工具名（P4 除外）。★ 抽取者意见：与 ARC-1 同族（对外契约）；draft。",
+        "evidence_source": [
+          "docs/architecture-refactor-plan.md:177"
+        ],
+        "status": "draft",
+        "thread": "docs/architecture-refactor-plan.md",
+        "updated_at": "2026-10-11T08:18:28.135Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_arc_11": {
+      "path": "候选契约登记 ARC-11 ← docs/architecture-refactor-plan.md:106",
+      "kind": "symbol",
+      "decision": {
+        "summary": "**P2 拆抽屉** | `tools/` 200 文件按职责分层：`*_cli.ts`(17)→`surfaces/cli`、HTTP(`serve.ts` 等)→`surfaces/http`…",
+        "rationale": "【抽取者判】P2 拆抽屉——是\"**计划的目标结构**\"，非当前事实。★ 抽取者意见：目标/计划类 ⇒ draft（不设 active）。",
+        "evidence_source": [
+          "docs/architecture-refactor-plan.md:106"
+        ],
+        "status": "draft",
+        "thread": "docs/architecture-refactor-plan.md",
+        "updated_at": "2026-10-11T08:18:28.181Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_tcc_2": {
+      "path": "候选契约登记 TCC-2 ← docs/tool-chain-contract.md:102",
+      "kind": "symbol",
+      "decision": {
+        "summary": "**每个 [B] 的产物增加 `touched?: Touched`**（可选起步；棘轮收紧：**新增 [B] 必须给**）。",
+        "rationale": "【抽取者判】**反证③型**：像一条\"已生效的强制契约\"（新增 [B] 必须给 touched），**但同文档 §8/§9 又记着 `read_files`\"已退役\"、一条边\"❌ 证伪、撤掉\"** ⇒ 生效的与撤掉的长得一样。★ 抽取者意见：原文是\"可选起步 + 棘轮收紧\"⇒**是分阶段目标、尚未全量生效**；draft；\"哪一版是当下意图\"人裁。",
+        "evidence_source": [
+          "docs/tool-chain-contract.md:102"
+        ],
+        "status": "draft",
+        "thread": "docs/tool-chain-contract.md",
+        "updated_at": "2026-10-11T08:18:29.225Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_tcc_3": {
+      "path": "候选契约登记 TCC-3 ← docs/tool-chain-contract.md:124",
+      "kind": "symbol",
+      "decision": {
+        "summary": "**④-a** | `domain/` 建 `Touched` 类型（**与第一个采用者同笔落**，否则是墓碑）",
+        "rationale": "【抽取者判】落地顺序即决策：\"domain/ 建 Touched 类型，与第一个采用者同笔落，否则是墓碑\"。★ 抽取者意见：已落（`Touched` 类型确在 `src/domain`）⇒ 可核；draft（是否升 active 人裁）。",
+        "evidence_source": [
+          "docs/tool-chain-contract.md:124"
+        ],
+        "status": "draft",
+        "thread": "docs/tool-chain-contract.md",
+        "updated_at": "2026-10-11T08:18:29.274Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_tcc_4": {
+      "path": "候选契约登记 TCC-4 ← docs/tool-chain-contract.md:135",
+      "kind": "symbol",
+      "decision": {
+        "summary": "- ✗ **不把现有字段改名/合并**（§3 的反例：会改错语义）。",
+        "rationale": "【抽取者判】明文 non-do：\"不把现有字段改名/合并\"。★ 抽取者意见：禁令，与 TCC-5 同族；draft。",
+        "evidence_source": [
+          "docs/tool-chain-contract.md:135"
+        ],
+        "status": "draft",
+        "thread": "docs/tool-chain-contract.md",
+        "updated_at": "2026-10-11T08:18:29.321Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_tcc_5": {
+      "path": "候选契约登记 TCC-5 ← docs/tool-chain-contract.md:45",
+      "kind": "symbol",
+      "decision": {
+        "summary": "★ 纪律（新增，值得记住）：**\"名字像\" ≠ \"同义\"**。任何\"合并同义字段/常量\"的动作，必须先看**类型 + 语义**；不看就合并 = 制造判据分叉。",
+        "rationale": "【抽取者判】通用纪律：\"名字像 ≠ 同义\"，任何合并先看类型+语义。★ 抽取者意见：本仓高频纪律、强候选；draft。",
+        "evidence_source": [
+          "docs/tool-chain-contract.md:45",
+          "docs/tool-chain-contract.md:46"
+        ],
+        "status": "draft",
+        "thread": "docs/tool-chain-contract.md",
+        "updated_at": "2026-10-11T08:18:29.370Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_tcc_6": {
+      "path": "候选契约登记 TCC-6 ← docs/tool-chain-contract.md:80",
+      "kind": "symbol",
+      "decision": {
+        "summary": "★ 用**新名**：`files` 在产物侧有 **6 种不同语义**…，已被污染，不可复用；`filesWritten` 是 `number`（计数）、`written` 是 `boolean`（是否落盘）——也都不能用。",
+        "rationale": "【抽取者判】命名裁决：用新名 `written_files`（因 `files` 在产物侧有 6 种语义、已被污染）。★ 抽取者意见：带数据依据的高可信决定；draft。",
+        "evidence_source": [
+          "docs/tool-chain-contract.md:80",
+          "docs/tool-chain-contract.md:82"
+        ],
+        "status": "draft",
+        "thread": "docs/tool-chain-contract.md",
+        "updated_at": "2026-10-11T08:18:29.416Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_tcc_7": {
+      "path": "候选契约登记 TCC-7 ← docs/tool-chain-contract.md:84",
+      "kind": "symbol",
+      "decision": {
+        "summary": "**scope_files**…★ 只读工具也成立…口径见 `src/domain/b_terms.ts` 的 `scope_files.meaning`。",
+        "rationale": "【抽取者判】`scope_files` 口径**单点**落在 `src/domain/b_terms.ts` 的 `scope_files.meaning`。★ 抽取者意见：单一口径落点、高可信；draft。",
+        "evidence_source": [
+          "docs/tool-chain-contract.md:84",
+          "docs/tool-chain-contract.md:86"
+        ],
+        "status": "draft",
+        "thread": "docs/tool-chain-contract.md",
+        "updated_at": "2026-10-11T08:18:29.464Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_tcc_8": {
+      "path": "候选契约登记 TCC-8 ← docs/tool-chain-contract.md:117",
+      "kind": "symbol",
+      "decision": {
+        "summary": "⇒ `edit_code` 能按\"同一个符号、同一个文件\"接上，**链在类型上成立**。",
+        "rationale": "【抽取者判】一条工具链依赖：`rename_symbols → edit_code` 能在\"同一符号、同一文件\"接上。★ 抽取者意见：expected_deps 典型；draft。",
+        "evidence_source": [
+          "docs/tool-chain-contract.md:117",
+          "docs/tool-chain-contract.md:118"
+        ],
+        "status": "draft",
+        "thread": "docs/tool-chain-contract.md",
+        "updated_at": "2026-10-11T08:18:29.512Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_tcc_9": {
+      "path": "候选契约登记 TCC-9 ← docs/tool-chain-contract.md:220",
+      "kind": "symbol",
+      "decision": {
+        "summary": "而 `SemanticFile.path` 是 `schema/design_dsl.schema.json` 钉死的**对外契约**字段",
+        "rationale": "【抽取者判】明文\"对外契约\"：`SemanticFile.path` 由 `schema/design_dsl.schema.json` 钉死。★ 抽取者意见：指向 schema 的对外字段契约；draft。",
+        "evidence_source": [
+          "docs/tool-chain-contract.md:220"
+        ],
+        "status": "draft",
+        "thread": "docs/tool-chain-contract.md",
+        "updated_at": "2026-10-11T08:18:29.559Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_tcc_10": {
+      "path": "候选契约登记 TCC-10 ← docs/tool-chain-contract.md:150",
+      "kind": "symbol",
+      "decision": {
+        "summary": "`Touched` 现存字段（7 个）：`feature` / `project_dir` / `written_files` / `scope_files` / `symbols` / `nodes` / `file`",
+        "rationale": "【抽取者判】`Touched` 现存 7 字段清单（含退役留证）。★ 抽取者意见：与 TCC-1 互为佐证的**现状**；draft。",
+        "evidence_source": [
+          "docs/tool-chain-contract.md:150",
+          "docs/tool-chain-contract.md:151"
+        ],
+        "status": "draft",
+        "thread": "docs/tool-chain-contract.md",
+        "updated_at": "2026-10-11T08:18:29.607Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_die_1": {
+      "path": "候选契约登记 DIE-1 ← docs/dsl-intent-and-expectations.md:23",
+      "kind": "symbol",
+      "decision": {
+        "summary": "存储：<features>/<feature>.overlay.json（与 base 分离，base 可再生成，overlay 独立保留）",
+        "rationale": "【抽取者判】overlay 存储契约，逐字引 `src/infrastructure/storage_overlay.ts:4`：overlay 与 base 分离、base 可再生成、overlay 独立保留。★ 抽取者意见：存储契约、高可信；draft。",
+        "evidence_source": [
+          "docs/dsl-intent-and-expectations.md:23"
+        ],
+        "status": "draft",
+        "thread": "docs/dsl-intent-and-expectations.md",
+        "updated_at": "2026-10-11T08:18:29.657Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_die_3": {
+      "path": "候选契约登记 DIE-3 ← docs/dsl-intent-and-expectations.md:44",
+      "kind": "symbol",
+      "decision": {
+        "summary": "`OverlayAnchor.decision_history: DecisionHistoryEntry[]`（**决策卡·版本栈**，`geometry.ts:178`；**首版不压栈**，旧版才压）",
+        "rationale": "【抽取者判】`OverlayAnchor.decision_history` 版本栈（出处+行为都写明：首版不压栈、旧版才压）。★ 抽取者意见：**正是本笔在用**的那条\"时间表\"机制；draft。",
+        "evidence_source": [
+          "docs/dsl-intent-and-expectations.md:44"
+        ],
+        "status": "draft",
+        "thread": "docs/dsl-intent-and-expectations.md",
+        "updated_at": "2026-10-11T08:18:29.755Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_die_4": {
+      "path": "候选契约登记 DIE-4 ← docs/dsl-intent-and-expectations.md:54",
+      "kind": "symbol",
+      "decision": {
+        "summary": "决策卡字段表：`结论=summary` / `理由=rationale?` / `替代=alternatives?: {option, rejected_because}[]` / `后果=consequences?` / `验收=acceptance?`",
+        "rationale": "【抽取者判】决策卡字段表：结论/理由/替代/后果/验收 逐格给**真字段名**。★ 抽取者意见：可与 `src/domain/geometry.ts:154` 的 `NodeDecision` 对照核；draft。",
+        "evidence_source": [
+          "docs/dsl-intent-and-expectations.md:54",
+          "docs/dsl-intent-and-expectations.md:60"
+        ],
+        "status": "draft",
+        "thread": "docs/dsl-intent-and-expectations.md",
+        "updated_at": "2026-10-11T08:18:29.802Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_die_5": {
+      "path": "候选契约登记 DIE-5 ← docs/dsl-intent-and-expectations.md:42",
+      "kind": "symbol",
+      "decision": {
+        "summary": "**不写盘不碰 DSL**；人 approve 后才真正写入 overlay + base",
+        "rationale": "【抽取者判】前置闸语义不变式：\"不写盘不碰 DSL；人 approve 后才真正写入 overlay + base\"（引 `index.ts:488`）。★ 抽取者意见：高可信；draft。",
+        "evidence_source": [
+          "docs/dsl-intent-and-expectations.md:42"
+        ],
+        "status": "draft",
+        "thread": "docs/dsl-intent-and-expectations.md",
+        "updated_at": "2026-10-11T08:18:29.850Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_die_6": {
+      "path": "候选契约登记 DIE-6 ← docs/dsl-intent-and-expectations.md:71",
+      "kind": "symbol",
+      "decision": {
+        "summary": "✅ `dsl_ops/node_ops.ts:176` `applyDecisionWrite`（**首版不压栈**、旧版压入 `decision_history`、`author`/`updated_at` 由该纯函数打）",
+        "rationale": "【抽取者判】指定**唯一写入口**：`dsl_ops/node_ops.ts:176` 的 `applyDecisionWrite`（首版不压栈、author/updated_at 由该纯函数打）。★ 抽取者意见：本笔写路径所经之处、高可信；draft。",
+        "evidence_source": [
+          "docs/dsl-intent-and-expectations.md:71"
+        ],
+        "status": "draft",
+        "thread": "docs/dsl-intent-and-expectations.md",
+        "updated_at": "2026-10-11T08:18:29.897Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_die_7": {
+      "path": "候选契约登记 DIE-7 ← docs/dsl-intent-and-expectations.md:83",
+      "kind": "symbol",
+      "decision": {
+        "summary": "type Expectation = | { kind: 'edge-exists'; from: string; to: string; why: string } | { kind: 'edge-absent'; … } | { kind: 'symbol-exists'; … } | { kind: 'file-exists'; … } | { kind: 'signature-matches'; … };",
+        "rationale": "【抽取者判】原文**自称\"概念草案/未落码\"**：`Expectation` 型草案，拟把 `NodeDecision.acceptance` 升级为 `Expectation[]`。★ 抽取者意见：**是草案** ⇒ draft 正合适；且本仓已实现 `expectations` 字段（`assertValidExpectations`）⇒ 片段已成、整体待裁。",
+        "evidence_source": [
+          "docs/dsl-intent-and-expectations.md:83",
+          "docs/dsl-intent-and-expectations.md:89"
+        ],
+        "status": "draft",
+        "thread": "docs/dsl-intent-and-expectations.md",
+        "updated_at": "2026-10-11T08:18:29.947Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_die_8": {
+      "path": "候选契约登记 DIE-8 ← docs/dsl-intent-and-expectations.md:30",
+      "kind": "symbol",
+      "decision": {
+        "summary": "实为 **`src/application/meta/index.ts:138`**（**meta 线，不是 design 线**）",
+        "rationale": "【抽取者判】**归属更正**：`archive` 工具实为 `src/application/meta/index.ts:138`（meta 线，不是 design 线）。★ 抽取者意见：这是\"纠偏\"记录 ⇒ 登记以防再错；draft。",
+        "evidence_source": [
+          "docs/dsl-intent-and-expectations.md:30"
+        ],
+        "status": "draft",
+        "thread": "docs/dsl-intent-and-expectations.md",
+        "updated_at": "2026-10-11T08:18:29.994Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_ddr_2": {
+      "path": "候选契约登记 DDR-2 ← docs/dsl-design-review.md:48",
+      "kind": "symbol",
+      "decision": {
+        "summary": "inputSchema: { action: z.enum(MANAGE_ACTIONS), args: z.record(z.string(), z.unknown()).optional() }",
+        "rationale": "【抽取者判】**现状快照 + 缺陷**：`manage_feature` 现签名 `{action, args}`（args 是 `Record<string,unknown>` 袋子，正是 §5 反对的形状）。★ 抽取者意见：现状如实登记；draft。",
+        "evidence_source": [
+          "docs/dsl-design-review.md:48"
+        ],
+        "status": "draft",
+        "thread": "docs/dsl-design-review.md",
+        "updated_at": "2026-10-11T08:18:30.087Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_ddr_3": {
+      "path": "候选契约登记 DDR-3 ← docs/dsl-design-review.md:74",
+      "kind": "symbol",
+      "decision": {
+        "summary": "拆分表：`get_dsl(query=dsl)→read_dsl` / `get_dsl(query=features)→list_features` / `get_dsl(query=nodes)→list_nodes` / `get_dsl(query=annotations)→list_annotations` / `get_dsl(query=diff)→diff_views`",
+        "rationale": "【抽取者判】**反证②型**：整张 `get_dsl` 拆分表**形态完全像 expected_apis**，但原文前置是\"改进建议\"、\"**若采纳**\"（见 dsl-design-review.md:133）⇒ **是提案，不是定案**。★ 抽取者意见：register 为 draft 正合适（draft=讨论中未定稿）；**采纳与否是设计意图判断，人裁**。",
+        "evidence_source": [
+          "docs/dsl-design-review.md:74",
+          "docs/dsl-design-review.md:78"
+        ],
+        "status": "draft",
+        "thread": "docs/dsl-design-review.md",
+        "updated_at": "2026-10-11T08:18:30.134Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_ddr_4": {
+      "path": "候选契约登记 DDR-4 ← docs/dsl-design-review.md:79",
+      "kind": "symbol",
+      "decision": {
+        "summary": "拆分表：`manage_feature(action=create)→create_feature` / `(clone)→clone_feature` / `(template)→new_feature_from_template` / `(delete)→delete_feature`",
+        "rationale": "【抽取者判】**反证②型**（同 DDR-3）：`manage_feature` 拆分表原文是\"建议/若采纳\"⇒ 提案而非定案。★ 抽取者意见：draft；采纳与否人裁。",
+        "evidence_source": [
+          "docs/dsl-design-review.md:79",
+          "docs/dsl-design-review.md:83"
+        ],
+        "status": "draft",
+        "thread": "docs/dsl-design-review.md",
+        "updated_at": "2026-10-11T08:18:30.182Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_ddr_5": {
+      "path": "候选契约登记 DDR-5 ← docs/dsl-design-review.md:89",
+      "kind": "symbol",
+      "decision": {
+        "summary": "- 写入口 `edit_dsl` **不接受 `live`**（**类型上不可达**，而不是运行期拒绝）；",
+        "rationale": "【抽取者判】**反证②型**：建议\"写入口 edit_dsl 类型上不接受 live\"是\"读写分离\"的**建议**，未实施（现状是靠运行期拒绝，见 DDR-1）。★ 抽取者意见：draft；采纳与否人裁。",
+        "evidence_source": [
+          "docs/dsl-design-review.md:89"
+        ],
+        "status": "draft",
+        "thread": "docs/dsl-design-review.md",
+        "updated_at": "2026-10-11T08:18:30.229Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_ddr_6": {
+      "path": "候选契约登记 DDR-6 ← docs/dsl-design-review.md:94",
+      "kind": "symbol",
+      "decision": {
+        "summary": "design 车道 12 个里 9 个动词开头、3 个名词开头 ⇒ **只改那 3 个**：`signal_review → review_signals` · `consistency_check → check_consistency` · `design_intent → set_design_intent`",
+        "rationale": "【抽取者判】**反证②型**：3 个工具改名是**建议**，原文自带\"改名代价\"提醒。★ 抽取者意见：draft；改名与否是设计意图判断。",
+        "evidence_source": [
+          "docs/dsl-design-review.md:94",
+          "docs/dsl-design-review.md:95"
+        ],
+        "status": "draft",
+        "thread": "docs/dsl-design-review.md",
+        "updated_at": "2026-10-11T08:18:30.278Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_ddr_7": {
+      "path": "候选契约登记 DDR-7 ← docs/dsl-design-review.md:42",
+      "kind": "symbol",
+      "decision": {
+        "summary": "**本仓自己的规矩**：§5「[B] 收**显式参数**，非 `Record<string,unknown>` 袋子」",
+        "rationale": "【抽取者判】引\"自家纪律\"作判据：§5「[B] 收**显式参数**，非 `Record<string,unknown>` 袋子」。★ 抽取者意见：入参形状纪律、高可信；draft。",
+        "evidence_source": [
+          "docs/dsl-design-review.md:42"
+        ],
+        "status": "draft",
+        "thread": "docs/dsl-design-review.md",
+        "updated_at": "2026-10-11T08:18:30.326Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_dug_1": {
+      "path": "候选契约登记 DUG-1 ← docs/downstream-upstream-gaps.md:37",
+      "kind": "symbol",
+      "decision": {
+        "summary": "★ **能力模块在**（`src/infrastructure/graph/dead_deps.ts`，含 `DeadDepCandidate` 类型），**但没有门**（不在 MCP 面、也不在 CLI 面）",
+        "rationale": "【抽取者判】**expected_deps 典型**：能力模块 `src/infrastructure/graph/dead_deps.ts` 在、但**没有门**（不在 MCP/CLI 面）。★ 抽取者意见：文件+类型+\"缺门\"俱全；draft。",
+        "evidence_source": [
+          "docs/downstream-upstream-gaps.md:37"
+        ],
+        "status": "draft",
+        "thread": "docs/downstream-upstream-gaps.md",
+        "updated_at": "2026-10-11T08:18:31.336Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_dug_2": {
+      "path": "候选契约登记 DUG-2 ← docs/downstream-upstream-gaps.md:39",
+      "kind": "symbol",
+      "decision": {
+        "summary": "★ 像**旧名**（现名 `render_design`）⇒ **过期引用**",
+        "rationale": "【抽取者判】**过期引用**：\"`render_dsl` 像旧名（现名 `render_design`）\"。★ 抽取者意见：登记它以纠偏（旧名引用是腐的一种）；draft。",
+        "evidence_source": [
+          "docs/downstream-upstream-gaps.md:39"
+        ],
+        "status": "draft",
+        "thread": "docs/downstream-upstream-gaps.md",
+        "updated_at": "2026-10-11T08:18:31.386Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_dug_3": {
+      "path": "候选契约登记 DUG-3 ← docs/downstream-upstream-gaps.md:51",
+      "kind": "symbol",
+      "decision": {
+        "summary": "dead: z.array(z.object({ source: string, files: z.array(z.string()), reason?: 'no_reference' | 'unreachable_only', })).describe('dead_deps 报告的 DeadDepCandidate 列表')",
+        "rationale": "【抽取者判】`remove_dead_imports` 入参的 zod schema（逐字）。★ 抽取者意见：expected_apis、高可信；draft。",
+        "evidence_source": [
+          "docs/downstream-upstream-gaps.md:51",
+          "docs/downstream-upstream-gaps.md:55"
+        ],
+        "status": "draft",
+        "thread": "docs/downstream-upstream-gaps.md",
+        "updated_at": "2026-10-11T08:18:31.436Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_dug_4": {
+      "path": "候选契约登记 DUG-4 ← docs/downstream-upstream-gaps.md:72",
+      "kind": "symbol",
+      "decision": {
+        "summary": "`DeadDepCandidate` = `{ source, files, reason? }` —— 与 `remove_dead_imports.dead[]` **完全一致**",
+        "rationale": "【抽取者判】`DeadDepCandidate` = `{source, files, reason?}` 与 `remove_dead_imports.dead[]` **完全一致**。★ 抽取者意见：类型与入参逐字对应的接口契约；draft。",
+        "evidence_source": [
+          "docs/downstream-upstream-gaps.md:72"
+        ],
+        "status": "draft",
+        "thread": "docs/downstream-upstream-gaps.md",
+        "updated_at": "2026-10-11T08:18:31.486Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_dug_5": {
+      "path": "候选契约登记 DUG-5 ← docs/downstream-upstream-gaps.md:78",
+      "kind": "symbol",
+      "decision": {
+        "summary": "★★ **给 `dead_deps` 开门**（注册成工具，走 7 处登记面）",
+        "rationale": "【抽取者判】`downstream-upstream-gaps.md` 的\"结论与建议\"：给 `dead_deps` 开门。★ 抽取者意见：**是建议**（该文档定位为 gap 分析）⇒ draft。是否开门人裁。",
+        "evidence_source": [
+          "docs/downstream-upstream-gaps.md:78"
+        ],
+        "status": "draft",
+        "thread": "docs/downstream-upstream-gaps.md",
+        "updated_at": "2026-10-11T08:18:31.534Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_dug_6": {
+      "path": "候选契约登记 DUG-6 ← docs/downstream-upstream-gaps.md:82",
+      "kind": "symbol",
+      "decision": {
+        "summary": "「描述里声称的工具名必须在注册表里」",
+        "rationale": "【抽取者判】**拟建门**（原文：\"一旦有显式写法，这条就能变成门\"）⇒ 尚未成立。★ 抽取者意见：draft；建门与否人裁。",
+        "evidence_source": [
+          "docs/downstream-upstream-gaps.md:82"
+        ],
+        "status": "draft",
+        "thread": "docs/downstream-upstream-gaps.md",
+        "updated_at": "2026-10-11T08:18:31.584Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_gap_1": {
+      "path": "候选契约登记 GAP-1 ← docs/gaps-and-plan.md:44",
+      "kind": "symbol",
+      "decision": {
+        "summary": "**I3「205 文件 / 2137 测试」** … | **`tests/` 不存在、无 vitest/jest** ⇒ **I3 整条不成立**",
+        "rationale": "【抽取者判】**反证①型**：本句直接指认纲领 I3（ARC-3）为假 —— `tests/` 不存在、无 vitest/jest。★ 抽取者本次**独立复跑**确认：`ls tests/` = 不存在、`package.json` 的 `\"test\"` = 0 次、无 vitest/jest ⇒ **前提已不成立，判据（vitest run）今天跑不了**。★ 抽取者意见：这条本身是**一条该登记的决策**（\"那条不变量已失效\"），不是待升 active 的契约；已与 ARC-3 互为对照登记。",
+        "evidence_source": [
+          "docs/gaps-and-plan.md:44"
+        ],
+        "status": "draft",
+        "thread": "docs/gaps-and-plan.md",
+        "updated_at": "2026-10-11T08:18:31.635Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_gap_2": {
+      "path": "候选契约登记 GAP-2 ← docs/gaps-and-plan.md:22",
+      "kind": "symbol",
+      "decision": {
+        "summary": "❌ 只有 **feature 版本** `version:\"1.0.0\"` / ❌ `goals` / `acceptance` 无约束",
+        "rationale": "【抽取者判】**缺口**（\"缺什么\"，非\"是什么\"）：DSL 只有 feature 版本、`goals`/`acceptance` 无约束。★ 抽取者意见：draft；补约束与否人裁。",
+        "evidence_source": [
+          "docs/gaps-and-plan.md:22",
+          "docs/gaps-and-plan.md:23"
+        ],
+        "status": "draft",
+        "thread": "docs/gaps-and-plan.md",
+        "updated_at": "2026-10-11T08:18:31.693Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_gap_3": {
+      "path": "候选契约登记 GAP-3 ← docs/gaps-and-plan.md:62",
+      "kind": "symbol",
+      "decision": {
+        "summary": "`acceptance` 字段在、能写能读；但**是自由文本、没有执行者**",
+        "rationale": "【抽取者判】**现状**：`acceptance` 字段在、能写能读，但是**自由文本、没有执行者**。★ 抽取者意见：与 GAP-4（升级为 Expectation[]）、DIE-7（草案）同题；draft。",
+        "evidence_source": [
+          "docs/gaps-and-plan.md:62"
+        ],
+        "status": "draft",
+        "thread": "docs/gaps-and-plan.md",
+        "updated_at": "2026-10-11T08:18:31.744Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_gap_4": {
+      "path": "候选契约登记 GAP-4 ← docs/gaps-and-plan.md:102",
+      "kind": "symbol",
+      "decision": {
+        "summary": "`NodeDecision.acceptance` 自由文本 → `Expectation[]`；一个**真决策**挂上 acceptance ⇒ 改代码 ⇒ **指令退出码非 0**（现在恒 0）",
+        "rationale": "【抽取者判】**候选**（原文自称\"若上清单\"、全部未实施）：`acceptance` 自由文本 → `Expectation[]`。★ 抽取者意见：draft；未实施。",
+        "evidence_source": [
+          "docs/gaps-and-plan.md:102"
+        ],
+        "status": "draft",
+        "thread": "docs/gaps-and-plan.md",
+        "updated_at": "2026-10-11T08:18:31.791Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_gap_5": {
+      "path": "候选契约登记 GAP-5 ← docs/gaps-and-plan.md:64",
+      "kind": "symbol",
+      "decision": {
+        "summary": "实测：**入参端收 `touched` 的 [B] = 0**；链只覆盖 **5 / 61** 个工具",
+        "rationale": "【抽取者判】**实测读数**（现状，非契约）：入参端收 `touched` 的 [B] = 0；链只覆盖 5/61。★ 抽取者意见：这是**现状快照**，登记它=留证；是否构成\"缺口\"人裁。",
+        "evidence_source": [
+          "docs/gaps-and-plan.md:64"
+        ],
+        "status": "draft",
+        "thread": "docs/gaps-and-plan.md",
+        "updated_at": "2026-10-11T08:18:31.840Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_gap_6": {
+      "path": "候选契约登记 GAP-6 ← docs/gaps-and-plan.md:103",
+      "kind": "symbol",
+      "decision": {
+        "summary": "① 改一个字段名 ⇒ 旧 DSL 被读时**报\"格式版本不符\"**（而不是静默降级）；② `goals`/`acceptance` 超预算**拒绝写入**，预算值是**一处常量**",
+        "rationale": "【抽取者判】**候选判据**（原文自称候选、未上清单）：格式版本不符要报错、超预算拒绝写入。★ 抽取者意见：draft；未实施。",
+        "evidence_source": [
+          "docs/gaps-and-plan.md:103"
+        ],
+        "status": "draft",
+        "thread": "docs/gaps-and-plan.md",
+        "updated_at": "2026-10-11T08:18:31.889Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_cpf_1": {
+      "path": "候选契约登记 CPF-1 ← docs/convergent-product-form.md:34",
+      "kind": "symbol",
+      "decision": {
+        "summary": "<repo>/ ├─ MANIFEST.txt … ├─ COGNITION.txt … └─ .agent-io/ ├─ features/<f>.json … features/<f>.overlay.json … live/<f>.dsl.json … archive/<f>/",
+        "rationale": "【抽取者判】**卷布局设想**（部分已落：`features/*.json` / `*.overlay.json` / `live/` / `archive/` 确在）。★ 抽取者意见：草案形态、非全落 ⇒ draft。",
+        "evidence_source": [
+          "docs/convergent-product-form.md:34",
+          "docs/convergent-product-form.md:41"
+        ],
+        "status": "draft",
+        "thread": "docs/convergent-product-form.md",
+        "updated_at": "2026-10-11T08:18:31.940Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_cpf_2": {
+      "path": "候选契约登记 CPF-2 ← docs/convergent-product-form.md:62",
+      "kind": "symbol",
+      "decision": {
+        "summary": "#Format-Version: agent-io/volumes-v1 / #Quota: / #Admission:",
+        "rationale": "【抽取者判】**声明文件草案**（MANIFEST 头）：`#Format-Version` / `#Quota` / `#Admission`。★ 抽取者意见：draft（草案，需拍板）。",
+        "evidence_source": [
+          "docs/convergent-product-form.md:62",
+          "docs/convergent-product-form.md:64"
+        ],
+        "status": "draft",
+        "thread": "docs/convergent-product-form.md",
+        "updated_at": "2026-10-11T08:18:31.991Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_cpf_3": {
+      "path": "候选契约登记 CPF-3 ← docs/convergent-product-form.md:84",
+      "kind": "symbol",
+      "decision": {
+        "summary": "**排版** | **不自己排**，把 `get_dsl query=digest` 的文本**原样取回来**（经 CLI 调的就是那一个实现）",
+        "rationale": "【抽取者判】不变式：\"排版不自己排，把 `get_dsl query=digest` 的文本原样取回来\" ⇒ 逐字一致是**结构保证**。★ 抽取者意见：高可信；draft。",
+        "evidence_source": [
+          "docs/convergent-product-form.md:84"
+        ],
+        "status": "draft",
+        "thread": "docs/convergent-product-form.md",
+        "updated_at": "2026-10-11T08:18:32.040Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_cpf_4": {
+      "path": "候选契约登记 CPF-4 ← docs/convergent-product-form.md:110",
+      "kind": "symbol",
+      "decision": {
+        "summary": "改一个 DSL 字段名 ⇒ 旧文件被读时**报\"格式版本不符\"**，**不静默降级**",
+        "rationale": "【抽取者判】**吸收项/判据**：改字段名 ⇒ 报\"格式版本不符\"、不静默降级（与 GAP-6①同题）。★ 抽取者意见：draft；带判据但需拍板。",
+        "evidence_source": [
+          "docs/convergent-product-form.md:110"
+        ],
+        "status": "draft",
+        "thread": "docs/convergent-product-form.md",
+        "updated_at": "2026-10-11T08:18:32.091Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_cpf_5": {
+      "path": "候选契约登记 CPF-5 ← docs/convergent-product-form.md:119",
+      "kind": "symbol",
+      "decision": {
+        "summary": "我们的 DSL 是 `scaffold` / `edit_code` / `consistency_check` / rename 联动的**输入**；砍掉 = 砍命脉。",
+        "rationale": "【抽取者判】**non-goal/定位**：\"DSL 是 scaffold / edit_code / consistency_check / rename 联动的输入；砍掉=砍命脉\"。★ 抽取者意见：可执行性定位、高可信；draft。",
+        "evidence_source": [
+          "docs/convergent-product-form.md:119"
+        ],
+        "status": "draft",
+        "thread": "docs/convergent-product-form.md",
+        "updated_at": "2026-10-11T08:18:32.145Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_cpf_6": {
+      "path": "候选契约登记 CPF-6 ← docs/convergent-product-form.md:85",
+      "kind": "symbol",
+      "decision": {
+        "summary": "**哈希什么** | 哈希**渲染出来的 body**，不是 DSL 文件",
+        "rationale": "【抽取者判】实现取舍：\"哈希**渲染出来的 body**，不是 DSL 文件\"。★ 抽取者意见：决策（COGNITION 指纹口径）；draft。",
+        "evidence_source": [
+          "docs/convergent-product-form.md:85"
+        ],
+        "status": "draft",
+        "thread": "docs/convergent-product-form.md",
+        "updated_at": "2026-10-11T08:18:32.195Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_cfp_1": {
+      "path": "候选契约登记 CFP-1 ← docs/component-framework-proposal.md:84",
+      "kind": "symbol",
+      "decision": {
+        "summary": "积木的**契约**必须含三样（缺一不可）：**输入 / 输出 schema** · **语义类型（受控词表 ID）** · **例子 / 属性测试**",
+        "rationale": "【抽取者判】**元声明**：`component-framework-proposal.md` 全篇标\"草稿/待评审/尚未立项\"，本条讲的是\"契约应长成的形状\"，**不等于本项目当前契约**。★ 抽取者意见：draft。",
+        "evidence_source": [
+          "docs/component-framework-proposal.md:84",
+          "docs/component-framework-proposal.md:90"
+        ],
+        "status": "draft",
+        "thread": "docs/component-framework-proposal.md",
+        "updated_at": "2026-10-11T08:18:33.198Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_cfp_2": {
+      "path": "候选契约登记 CFP-2 ← docs/component-framework-proposal.md:92",
+      "kind": "symbol",
+      "decision": {
+        "summary": "★ **契约必须\"全函数\"**：输入域全覆盖 + 每个输入有定义输出。否则黑盒实际是**灰盒**",
+        "rationale": "【抽取者判】**元声明**（同 CFP-1，全文草稿/未立项）：契约必须\"全函数\"。★ 抽取者意见：draft。",
+        "evidence_source": [
+          "docs/component-framework-proposal.md:92"
+        ],
+        "status": "draft",
+        "thread": "docs/component-framework-proposal.md",
+        "updated_at": "2026-10-11T08:18:33.248Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_cfp_3": {
+      "path": "候选契约登记 CFP-3 ← docs/component-framework-proposal.md:98",
+      "kind": "symbol",
+      "decision": {
+        "summary": "★ 本仓现成样板：`b_terms.ts`（受控词表 = 机器判据，**活**）；反例：手工名字表（**腐**）。",
+        "rationale": "【抽取者判】指定\"受控词表\"的落点：`src/domain/b_terms.ts`（活样板）；反例=手工名字表（腐）。★ 抽取者意见：expected_deps；draft。",
+        "evidence_source": [
+          "docs/component-framework-proposal.md:98"
+        ],
+        "status": "draft",
+        "thread": "docs/component-framework-proposal.md",
+        "updated_at": "2026-10-11T08:18:33.299Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_cfp_4": {
+      "path": "候选契约登记 CFP-4 ← docs/component-framework-proposal.md:111",
+      "kind": "symbol",
+      "decision": {
+        "summary": "**已实测在数据上通了**：`find_references.touched` → 直接构造 `rename_symbols` 入参（`read_files[0]`→`file`、`symbols[0]`→`symbol`，**零字段名翻译**）→ 跑通。",
+        "rationale": "【抽取者判】**已实测的边**：`find_references.touched` → 直接构造 `rename_symbols` 入参（`read_files[0]→file`、`symbols[0]→symbol`，零字段名翻译）→ 跑通。★ 抽取者意见：实测边、高可信；draft。",
+        "evidence_source": [
+          "docs/component-framework-proposal.md:111"
+        ],
+        "status": "draft",
+        "thread": "docs/component-framework-proposal.md",
+        "updated_at": "2026-10-11T08:18:33.349Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_cfp_5": {
+      "path": "候选契约登记 CFP-5 ← docs/component-framework-proposal.md:119",
+      "kind": "symbol",
+      "decision": {
+        "summary": "★ **一条硬约束（若真做）**：**凭证不能住在积木里** —— 住进去 ⇒ 内容哈希会泄露凭证",
+        "rationale": "【抽取者判】原文限\"**若真做/跨信任域才必需**\"⇒ 条件性约束，尚未成立。★ 抽取者意见：draft。",
+        "evidence_source": [
+          "docs/component-framework-proposal.md:119"
+        ],
+        "status": "draft",
+        "thread": "docs/component-framework-proposal.md",
+        "updated_at": "2026-10-11T08:18:33.398Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_cfp_6": {
+      "path": "候选契约登记 CFP-6 ← docs/component-framework-proposal.md:128",
+      "kind": "symbol",
+      "decision": {
+        "summary": "manifest.json  id · version · 依赖(精确版本) · 导出接口清单 · ★子块内嵌清单 · stateless? · 凭证需求声明",
+        "rationale": "【抽取者判】**架构草图形态（未落码）**：积木 `manifest.json` 字段清单。★ 抽取者意见：draft（未落码）。",
+        "evidence_source": [
+          "docs/component-framework-proposal.md:128",
+          "docs/component-framework-proposal.md:130"
+        ],
+        "status": "draft",
+        "thread": "docs/component-framework-proposal.md",
+        "updated_at": "2026-10-11T08:18:33.447Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_cfp_7": {
+      "path": "候选契约登记 CFP-7 ← docs/component-framework-proposal.md:171",
+      "kind": "symbol",
+      "decision": {
+        "summary": "| **G2** | … 一条链跑通，且**产物 = 下一步入参**（零字段名翻译） | **管道不成立** ⇒ 框架无意义 ⇒ 企划终止 |",
+        "rationale": "【抽取者判】**决策门/判据**（G2：一条链跑通且产物=下一步入参，否则企划终止）。★ 抽取者意见：draft（是门，不是已实现的契约）；★ 参考 CFP-4（该链已实测通一段）。",
+        "evidence_source": [
+          "docs/component-framework-proposal.md:171"
+        ],
+        "status": "draft",
+        "thread": "docs/component-framework-proposal.md",
+        "updated_at": "2026-10-11T08:18:33.494Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "contract_cfp_8": {
+      "path": "候选契约登记 CFP-8 ← docs/component-framework-proposal.md:197",
+      "kind": "symbol",
+      "decision": {
+        "summary": "❌ 不承诺\"自动切积木\"（⑤ 无通用解 ⇒ 只做\"推荐切点\"）",
+        "rationale": "【抽取者判】**anti-goal**（明文\"不承诺\"）：不做\"自动切积木\"，只做\"推荐切点\"。★ 抽取者意见：**否定式契约**，register 为 draft；是 anti-goal 故不设 active。",
+        "evidence_source": [
+          "docs/component-framework-proposal.md:197"
+        ],
+        "status": "draft",
+        "thread": "docs/component-framework-proposal.md",
+        "updated_at": "2026-10-11T08:18:33.543Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "doc_docs_architecture-refactor-plan_md": {
+      "path": "docs/architecture-refactor-plan.md",
+      "kind": "symbol",
+      "decision": {
+        "summary": "T155：纲领 §1（I1–I5）与 §5（G1–G6）的判据**改指现门** —— 原判据全靠 tests/，而该目录已于 7bcc364(2026-10-04) 整体删除",
+        "rationale": "实测（2026-10-11）：① tests/ 不存在、vitest 未安装、全仓只剩 1 个 .inspect/ 下的三方 .test.ts；② 纲领里 tests/ 引用共 130 处；③ §5 门表 6 扇门里 G1/G2/G5/G6 四扇指向已删的树（G2 的脚本 scripts/readme_tools_gate.mjs 也不存在），G3 本就待建，G4 是有意弃用。⇒ I1「工具集快照」这一半能力**已无门**（现门 mcp_scan.mjs 只验签名合法性，不验与基线逐字相同）。",
+        "consequences": "I3 的基线数（205 文件/2137 测试）作废，改指 npm run verify（5 门三态）。I1 的快照等价性**仍是空白**（如实标注为缺口，不假装有）。§7 进度日志里的 tests/ 引用是历史记录，不再改。",
+        "acceptance": "纲领 §1 每一行都能回答『今天怎么验它』；§5 每一扇门都标了活/死与替代者；`npm run verify` 仍 5/5。",
+        "evidence_source": [
+          "docs/architecture-refactor-plan.md:12",
+          "docs/architecture-refactor-plan.md:158",
+          "git:7bcc364"
+        ],
+        "status": "active",
+        "thread": "docs/architecture-refactor-plan.md",
+        "tags": [
+          "T155",
+          "doc-integrity"
+        ],
+        "updated_at": "2026-10-11T08:54:01.655Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      }
+    },
+    "file_src_application_design_dsl_ops_api_ops_ts": {
+      "path": "src/application/design/dsl_ops/api_ops.ts",
+      "kind": "file",
+      "decision": {
+        "summary": "T160：设计侧契约写入改为【整块重写】（与代码侧 edit_code 同一把尺）—— 旧的按旧签名串逐字匹配降为兼容路径",
+        "rationale": "用户理念原话：AI 不打补丁而是局部重写，把那一整块圈出来交给 AI 重写；有了重写，改设计与改代码成本相当。实测不对称：edit_code op=replace 按符号名 + 完整新定义（不信行号/不信 old_string），而 updateExpectedApi 用 find(a=>a.signature===signature) 逐字匹配 —— 出生证A证实：旧串写错一个字符即报 API 不存在，死路。",
+        "consequences": "api.update 现在优先取 data.expected_apis（整块），给旧串的单条路保留但不推荐。同时修 updateFeatureCore 只取 message 首行导致 op 的结构化产物蒸发、op 自身的增删明细被静默丢弃 —— 现改为汇总 data + 要求 op 首行自足。",
+        "acceptance": "出生证B：不给旧串、只给整块 expected_apis ⇒ 写入成功；首行含文件与 N→M 条与增减计数（有删除时带 ⚠）；---DATA--- 里出现 mode/before/after/added/removed/kept。复跑 consistency_check 立刻报出实现缺 2 个成员（sources, provenance）⇒ 改一侧另一侧立刻知道，闭环可跑。npm run verify 5/5。",
+        "evidence_source": [
+          "src/application/design/dsl_ops/api_ops.ts",
+          "src/application/design/dsl_ops/update_feature.ts"
+        ],
+        "status": "active",
+        "thread": "docs/todo.md",
+        "tags": [
+          "T160",
+          "design-side-rewrite"
+        ],
+        "updated_at": "2026-10-11T09:30:48.380Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      },
+      "signature": "13a9a77adfc6"
+    },
+    "file_src_application_refactor_index_ts": {
+      "path": "src/application/refactor/index.ts",
+      "kind": "file",
+      "decision": {
+        "summary": "T166：新增 move_domain —— 「重新规划功能的分布」的第三棒（一次搬完一个域），闭环真跑通；工具面 65→66",
+        "rationale": "用户理念：不打补丁而是整块重写、重新规划功能的分布。三步链：改意图(域表 dir) → structure_gap 出 relocate_moves 待搬清单 → move_domain 一次搬完。判据不新造（读 relocate_moves）；落地复用 rename_files（整体校验+import改写+mkdir+快照）。真跑发现缺收尾：搬完旧空壳还在 ⇒ structure_gap 报 unlisted:1，读数像待处置而真相是搬完了，故加 removed_dirs（rmdirSync 非空会抛=安全网，非空绝不删只报 leftover_dirs）。",
+        "consequences": "另给 structure_gap 补结构化 relocate_moves 字段（T165 把清单塞进 note 散文 = 我自己的病，本笔修）。七处登记面已过：lane 数组/AGENTS.md+gen_agents/README×2/域表 note；WHEN_OVERRIDES 与能力矩阵无需改（前者缺省自动摘要、后者是语言矩阵）。",
+        "acceptance": "出生证（真跑）：改域表 dir ⇒ relocating 出清单 ⇒ move_domain 真搬 ⇒ 旧目录空、2 文件到位、7 处 import 被改写（files_written=9）、收掉空壳 1 个 ⇒ 复跑 structure_gap 六态全 0 + 退码 0。还原：与搬前 git status 基线逐字相同。四条验收：tsc=0 / build ok / structure:gap 全 0 / 无参调给人话缺参错误。npm run verify 5/5。",
+        "evidence_source": [
+          "src/application/refactor/index.ts",
+          "src/infrastructure/analysis/structure/structure_gap.ts",
+          "structure.domains.json"
+        ],
+        "status": "active",
+        "thread": "docs/todo.md",
+        "tags": [
+          "T166",
+          "move_domain"
+        ],
+        "updated_at": "2026-10-11T10:38:36.229Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      },
+      "decision_history": [
+        {
+          "at": "2026-10-11T10:38:36.229Z",
+          "decision": {
+            "summary": "T163 裁定：重构的【主路】是「整块重写」（块=功能分布），【补丁族】(plan_refactor/apply_refactor_plan)降为「只改一小段文本」的窄用途",
+            "rationale": "用户原话两条：①「我没让你不看旧串，我的意见是让你可以根据旧串整体去重写新串，只是不要打补丁而是整块重写」；②「重新规划功能的分布，而不是说重新做一个文件或者做一块补丁在那里」。核实：plan_refactor 的输入是 targets=[{file,old_text,new_text}]（文件内一次唯一文本替换）= 打补丁，与理念相反；而整块族已有 edit_code op=replace / move_symbol / rename_files / edit_dsl type=api op=update。",
+            "consequences": "plan_refactor 与 apply_refactor_plan 的描述已正名（标明是补丁族 + 指向整块族）。我把「不信 old_string」误读为「不许看旧串」已更正：正解是定位不绑旧串、内容依据旧串。edit_dsl 与 api_ops 的口径也已改对。",
+            "acceptance": "npm run verify 5/5；plan_refactor/apply_refactor_plan 的描述里能看到「补丁族」与整块族四条的指引；edit_dsl 描述里「定位不绑旧串；内容依据旧串」一句话可见。",
+            "evidence_source": [
+              "src/application/refactor/index.ts",
+              "src/application/design/dsl_ops/api_ops.ts",
+              "structure.domains.json"
+            ],
+            "status": "active",
+            "thread": "docs/todo.md",
+            "tags": [
+              "T163",
+              "block-rewrite",
+              "layer"
+            ],
+            "updated_at": "2026-10-11T09:45:15.066Z",
+            "author": "llm",
+            "agent": "doc-contract-extractor"
+          },
+          "author": "llm",
+          "agent": "doc-contract-extractor"
+        }
+      ],
+      "signature": "6f00d9add13b"
+    },
+    "file_src_application_refactor_rename_rename_file_ts": {
+      "path": "src/application/refactor/rename/rename_file.ts",
+      "kind": "file",
+      "decision": {
+        "summary": "T164 修复：rename_files 传【目录】一律拒（此前 ok:true + references:[] = 假绿灯，会静默改断 import）",
+        "rationale": "实测：rename_files 对 src/infrastructure/analysis/deadcode 做 dry-run ⇒ ok:true / references:[] / editCount:0。而该目录的 detect_dead_imports.ts 被 brickify.ts / brick_bag.ts / function_annotation.ts / deprecate_offline.ts 四处 import。根因：renameFileCore 从不检查 fromAbs 是不是文件；import 匹配按文件路径(targetRel===fromRel)，永不解析到目录 ⇒ 必然空引用。",
+        "consequences": "现在传目录会 blocked 并说明「目录搬家要枚举全部文件并逐个改 import」。目录搬家仍不是一等动作（记为 T165 之后的活）。正常文件改名的引用改写不受影响。",
+        "acceptance": "出生证：目录 ⇒ ok:false + blocked + 整体未落盘（原为 ok:true）；回归：src/domain/chain_wiring.ts 改名 dry-run 仍报出真实引用（contract_page.ts / first_hop_args.ts）。npm run verify 5/5。",
+        "evidence_source": [
+          "src/application/refactor/rename/rename_file.ts",
+          "src/application/refactor/index.ts"
+        ],
+        "status": "active",
+        "thread": "docs/todo.md",
+        "tags": [
+          "T164",
+          "false-green"
+        ],
+        "updated_at": "2026-10-11T10:06:02.048Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      },
+      "signature": "fba741c2efeb"
+    },
+    "file_src_infrastructure_analysis_structure_structure_gap_ts": {
+      "path": "src/infrastructure/analysis/structure/structure_gap.ts",
+      "kind": "file",
+      "decision": {
+        "summary": "T165：structure_gap 新增 relocating 态（整域搬迁的待搬清单），并把「哪些态算不干净」收口到 structureGapIsClean",
+        "rationale": "实测病：改 domains[deadcode].dir（真实重新规划分布）⇒ misplaced 仍是 0（它只看父目录直属散文件）、旧目录被 unlisted 报成「要么给它登记，要么它不该在这里」（语义错），且【要搬谁】一个文件名都没有。根因：missing 的注释假设 misplaced 会覆盖待搬文件（一体两面），而那个假设只在散文件场景成立。",
+        "consequences": "新增 relocating 态：比 HEAD 版域表与工作区版，同 id 的 dir 不同且旧目录仍有源码 ⇒ 列出文件名。被认领的旧目录不再从 unlisted 报（同一件事一处）。诚实边界：只比 HEAD→工作区，已提交的搬迁不报；取不到 HEAD 版则给 relocate_note 说明【没查】。壳里重算非干净态的代码收敛到 structureGapIsClean（防止下次加态忘同步=假绿灯）。顺手把两处 dep-cruiser 的现在时表述改指 code_health（该框架已随 7bcc364 删除）。",
+        "acceptance": "出生证：改一条域 dir ⇒ relocating:1 且 note 列出 dead_statements.ts / detect_dead_imports.ts；unlisted 不再报该旧目录；missing:1；退码 1。回归：还原后退码 0；注入无主目录 ⇒ unlisted 仍报 1（判据没被改哑）。npm run verify 5/5。",
+        "evidence_source": [
+          "src/infrastructure/analysis/structure/structure_gap.ts",
+          "scripts/structure_gap.mjs",
+          "structure.domains.json"
+        ],
+        "status": "active",
+        "thread": "docs/todo.md",
+        "tags": [
+          "T165",
+          "structure-gap",
+          "relocating"
+        ],
+        "updated_at": "2026-10-11T10:15:05.097Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      },
+      "signature": "28fb8252ef47"
+    },
+    "file_src_presentation_http_serve_ts": {
+      "path": "src/presentation/http/serve.ts",
+      "kind": "file",
+      "decision": {
+        "summary": "T161：修两处「摘要把下层静默掉」—— /api/import 不再截首行、verify 截断要标注；并给出可证伪的判据",
+        "rationale": "判据（本笔立）：不是有没有取首行，而是下层有没有【不在首行】的必须说清内容、且上层有没有别的通道给它。逐条查 10 处 split(换行)[0]：真漏洞 2 处（update_feature 已在 T160 修 + serve.ts 本笔），其余 8 处是代码首行/编译器诊断首行/自带 ok|status 结构化字段的条目人话细节，判为非漏洞。另 verify.mjs 两处 slice(0,4000|3000) 截断而不标注 = 读者会以为看全了。",
+        "consequences": "serve.ts 的 /api/import 与同文件另一出口（message: imp.message 完整）对齐成完整 message；verify 加 clip() 截断标注（原文 N 字符 + 要看全怎么做）。判据从「凡批量执行+逐条汇总都可能有病」收窄为上面那条（否则会变成普查）。",
+        "acceptance": "出生证：真跑 import_project（一次性 feature + .inspect 小项目）⇒ message 实测 8 行，含 ⚠ 单文件化预警多行清单（造 562 行文件实测出现）+ 基线事实已锚定 + 设计层 overlay + ★设计原本不存在⇒fork 了一份 ⇒ 截断必丢。verify 侧：造 50 个 misplaced ⇒ 输出 4020 字符 ⇒ 出现『★ 已截断：原文 4020 字符，只印前 4000』。清理后 verify 5/5、agent-io.json 与快照逐字相同、无残留。",
+        "evidence_source": [
+          "src/presentation/http/serve.ts",
+          "scripts/verify.mjs",
+          "src/infrastructure/graph/import_project.ts"
+        ],
+        "status": "active",
+        "thread": "docs/todo.md",
+        "tags": [
+          "T161",
+          "silent-truncation"
+        ],
+        "updated_at": "2026-10-11T10:53:02.157Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      },
+      "signature": "ce4be03ed282"
+    },
+    "file_src_application_design_dsl_ops_update_feature_ts": {
+      "path": "src/application/design/dsl_ops/update_feature.ts",
+      "kind": "file",
+      "decision": {
+        "summary": "T170：edit_dsl 各 type/op 的 data 契约进唯一判据表（OP_SPECS）；llm 不再靠试错发现字段",
+        "rationale": "T169 黑盒实验实测 24 次调用 8 次失败(33%)，全是试 data 形状。根因：必需字段只以 19 处散落的命令式 throw 存在，LLM 看不见。修法：建 op_data_spec.ts（OP_SPECS + checkOpSpec + renderOpSpecs），checkOpSpec 进 applyOperation 入口、renderOpSpecs 渲染进 edit_dsl 描述 —— 判据一处、两个出口。",
+        "consequences": "删掉 19 处散落 throw（含 op 合法性 4 处）改为表驱动；但那些 throw 同时兼任 TS 类型收窄，故 checkOpSpec 返回 CheckedOperation（data 必有），子函数改用该类型，id 处用 as string 并注明依据是 OP_SPECS。范围限定：本表只管形状不管语义，也不含可选字段字典（记 T170b）。",
+        "acceptance": "逐条回归探针：28 条缺陷全被拒 + 6 条合法全放行。黑盒复跑（同任务同约束）：失败 8→5，其中 data 形状失败主体→0，剩 3 次全在 evidence[] 形态 + 2 次环境/用法。npm run verify 5/5。现场全清、agent-io.json 与快照逐字相同。",
+        "evidence_source": [
+          "src/application/design/dsl_ops/op_data_spec.ts",
+          "src/application/design/dsl_ops/update_feature.ts",
+          "src/application/design/index.ts"
+        ],
+        "status": "active",
+        "thread": "docs/todo.md",
+        "tags": [
+          "T170",
+          "data-bag"
+        ],
+        "updated_at": "2026-10-11T11:45:12.709Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      },
+      "signature": "e24f33e816d7"
+    },
+    "file_src_application_observe_reconcile_reason_validator_ts": {
+      "path": "src/application/observe/reconcile/reason_validator.ts",
+      "kind": "file",
+      "decision": {
+        "summary": "T171：修「报错文案把 A 层的要求说成 B 层的形状」—— L3 报错改指 reason 文本；三层契约写进 edit_dsl 描述",
+        "rationale": "读实现：L3 判据是 matchesConcreteEntity(trimmed) —— trimmed 是 reason 文本，与 evidence 无关。实测对照：(a) reason 含实体名 + evidence 只给路径 ⇒ 一次通过；(b) reason 泛泛 + evidence 两条给全 ⇒ 仍被 L3 拒。⇒ 黑盒代理必须给两条 evidence 是误判，它成功是因为顺手把 reason 写具体了。而它误判的根因就是 L3 报错文案把五种实体并列、看起来像在说 evidence。",
+        "consequences": "L3 报错改写成先点明看 reason 文本并明确排除 evidence；edit_dsl 描述新增三层各要什么的段落（reason 提到实体 / facts 层 evidence 挂路径一条就够 / L4 每条可回溯）。连带：op_data_spec 加 idNote 字段按 type 声明 id 语义，报错从它派生（api 不是路径、decision 两种都认、其余默认），修掉我 T170 照抄 decision 说明导致的 api 误导。",
+        "acceptance": "出生证：L3 新文案含三个关键句且旧误导语已去；反例 reason 含实体名 ⇒ 放行。checkOpSpec 三条 id 报错按 type 各说各的。T170 逐条回归仍 28 拒/6 放行。黑盒第三轮：调用 17 失败 5（T169 24/8 → T170 21/5 → T171 17/5），evidence 相关失败 3→1 且那 1 次是缺 evidence、照报错一次改对。npm run verify 5/5。",
+        "evidence_source": [
+          "src/application/observe/reconcile/reason_validator.ts",
+          "src/application/design/dsl_ops/op_data_spec.ts",
+          "src/application/design/index.ts"
+        ],
+        "status": "active",
+        "thread": "docs/todo.md",
+        "tags": [
+          "T171",
+          "misleading-error"
+        ],
+        "updated_at": "2026-10-11T12:10:03.276Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      },
+      "signature": "0acb58628fb3"
+    },
+    "file_src_application_design_dsl_ops_file_ops_ts": {
+      "path": "src/application/design/dsl_ops/file_ops.ts",
+      "kind": "file",
+      "decision": {
+        "summary": "T180：文件退役走【三步流程】—— 设计侧先标记 retiring ⇒ 对拍确认实现里真没了 ⇒ 才扫进历史堆（overlay.retired[]）",
+        "rationale": "★ 用户裁定（逐字）：设计侧应该先标记给它对删除，这样的话那个原先的删除字段也不用取消了。然后删除完了之后进行对拍的时候，发现这个地方确实删完了，才把它真正扫进历史堆里面，这个流程应该更正规一点。★ 收益：反悔＝取消标记（一个字段回滚、零损失）；而直接删的反向动作（恢复）恢复不出原样（决策卡会丢）。★ 实测病（真跑）：edit_dsl type=file op=delete 只 splice semantic.files，geometry 里那个节点连同决策卡还留着 ⇒ 幽灵节点 ⇒ 所有读端都看得见。",
+        "consequences": "三步：① 设计侧 op=update 标记 retiring（常驻字段，不删节点）；② 对拍报当前没有的新差异态「设计说该删、而实现里还在」；③ import_project 重扫确认后才归档。★ 四条配套（缺一即半修）：a) 归档后 overlay.anchors 里那条要删（否则两处各持一份＝判据分叉）；b) retiring 期间读端仍显示但带标记（不许假装它没了）；c) 边/标签/几何节点要一起进档案（否则又留一群幽灵）；d) 判「实现里真没了」的权威是 import_project 重扫，没人重建就停在 retiring（可接受）。★ 档案字段：anchor/kind/path/retired_at/retired_head（当场的 git HEAD；取不到⇒null+如实说明，照抄 structure_gap 的 relocating 先例）/responsibility/decision（含 summary ⇒ 可按决策名搜）/expected_apis。",
+        "acceptance": "判据：删一个挂了决策的文件后 —— ① 活态读端（get_dsl query=files/nodes）看不见它；② overlay.retired[] 里能按决策名搜到；③ 带 retired_head（或 null + 说明）；④ overlay.anchors 里不再有它。",
+        "evidence_source": [
+          "src/application/design/dsl_ops/file_ops.ts",
+          "src/domain/overlay.ts",
+          "src/infrastructure/storage_overlay.ts"
+        ],
+        "status": "active",
+        "thread": "docs/todo.md",
+        "tags": [
+          "T180",
+          "retire-flow",
+          "history-pile"
+        ],
+        "updated_at": "2026-10-11T15:28:04.858Z",
+        "author": "llm",
+        "agent": "doc-contract-extractor"
+      },
+      "decision_history": [
+        {
+          "at": "2026-10-11T15:28:04.858Z",
+          "decision": {
+            "summary": "T180：删文件这条路是【半删】—— semantic.files 删了，geometry 里的节点（连同它的决策卡）留着；两条路两种纪律",
+            "rationale": "真跑（一次性 feature，已还原）：① 在 file_src_mathutil_ts 上挂一条决策；② edit_dsl type=file op=delete 删它 ⇒ semantic.files 0 条、而 geometry.nodes 里那个节点还在、decision 也还在 ⇒ 留下【幽灵节点】（语义层说没这文件、几何层还挂着它）。③ 再 import_project 重建 ⇒ 决策出现在 overlay 的 anchors（{path,kind:file,decision}）里 ⇒ 靠 overlay 的稳定锚点保住。★ 而 mergeDesignLayer 的设计文档（domain/overlay.ts 文件头）写得比这完整：按锚点【保留 retained / 迁移 migrated / 孤儿 orphaned（真相已删、暂存待决）/ 标过期 stale】—— 那正是用户记得的扫进历史的设计，它真的做了。",
+            "consequences": "两条入口两种纪律：deleteFile 只 splice semantic.files（不清 geometry 节点、不触发四态、不报孤儿）；而 import_project 重建走 mergeDesignLayer 的四态对账（有序）。★ 建议：deleteFile 要么同时清 geometry 节点、要么走同一套四态（保留决策 + 标 orphaned）。",
+            "acceptance": "判据（出生证已跑）：删一个挂了决策的 file 节点后，① semantic.files 不含它；② 若保留决策 ⇒ 它应出现在 overlay anchors 且带 orphan 标记；③ 若清理 ⇒ geometry 里不该残留幽灵节点。当前实测 ①✓ ②部分（anchors 有、但无 orphan 标记）③✗（幽灵残留）。",
+            "evidence_source": [
+              "src/application/design/dsl_ops/file_ops.ts",
+              "src/domain/overlay.ts",
+              "src/infrastructure/storage_overlay.ts"
+            ],
+            "status": "active",
+            "thread": "docs/todo.md",
+            "tags": [
+              "T180",
+              "ghost-node",
+              "two-disciplines"
+            ],
+            "updated_at": "2026-10-11T15:19:40.945Z",
+            "author": "llm",
+            "agent": "doc-contract-extractor"
+          },
+          "author": "llm",
+          "agent": "doc-contract-extractor"
+        }
+      ],
+      "signature": "ed9ad4c85bd9"
+    },
+    "file_dogfood_build_cache_mjs": {
+      "path": "dogfood/build_cache.mjs",
+      "kind": "file",
+      "signature": "2d7a20b5628d"
+    }
+  },
+  "global": {
+    "goals": [
+      {
+        "id": "g-tool-face-converge",
+        "title": "工具面收敛：67 个平铺 ⇒ 分组 + 渐进披露 + 合并同类（并在每个工具里写「何时【别】选我」）",
+        "description": "依据：① 外部硬数据 —— 路由 F1 随工具目录增大掉 16~23pp；RAG-MCP 55→740 工具时准确率 43%→<14%；② 本仓实测（★ 2026-10-12 更新）—— `probe:tool-smells` 报「宽签名 8 个」**仍成立**（`get_dsl` 23 参仍是第 1 名）、★ **袋子 2 → 1**（`manage_feature` 已于 T194 **扁平化**；现只剩 `explore_code` 一个，而它的 `args` 是**真命名空间**、★ **有理由保留**）、命名词序混用（动 17 / 非动 49）；③ 本仓实测 41 对工具共享词根，最典型 `edit_dsl`↔`edit_code`（一个改设计、一个改代码）。★ 手段（外部已验证）：分命名空间 / 合并同类（export_csv/json/xml ⇒ 一个 + format 参数）/ 检索式渐进披露 / 每工具写「何时别用我」。★ 工具数**不写死**（写死会过期：本行曾写 67，2026-10-12 实测 **68**）⇒ 真值看 `TOOL_DEFS`。",
+        "status": "active"
+      },
+      {
+        "id": "g-decoy-instrument",
+        "title": "补一条量具：「近名诱饵」检测（41 对，判据现成）",
+        "description": "★ **2026-10-12 落地**（T201）：`probe:tool-smells` 已新增「**近名诱饵**」段（★ 它原先只查「宽签名 / 袋子 / 描述过短 / 命名词序」）。★★★ **而原文那条判据被收紧了** —— 原写「两工具共享 ≥1 个长度>2 的词根、且**用途不同** ⇒ 报。实测 41 对」。照它跑（**只**看共享词根）实测是 **48 对**，而看内容：`memory_observe ↔ observe_log/observe_judge/…`（全共享 `observe`）⇒ ★★ **共享同一个词根正是\"这是一【族】\"的标志**，而族是**有意分组**、是诱饵的**反面**；★ 而 n 个族员两两组合会把对数撑爆（5 个 `observe_*` 就贡献 10 对）。⇒ **判据收紧为：共享词根 且【跨 lane】**（lane 从 `application/<线>/index.ts` 的 `<LANE>_TOOLS` **派生**，不手列）。⇒ 实测：**48 = 族内 31 + 跨 lane 17**。★★ **而\"跨 lane\"仍不等于\"用途不同\"**（★ 这层也必须说清）：那 17 对里 6 对全是 `observe_*`[observe] ↔ `observe_proposals`[**meta**] —— ★ 它的**语义域明显是 observe**、只是归在 `meta` ⇒ 那些是【**组织归属与语义域不一致**】的信号，**不是诱饵**。⇒ 故再按**弱词根**（≥4 个工具共享的词根 ⇒ 共享它信息量低，**由数据算**）分成 **强 11 / 弱 6**；★ 强候选里就有原文自己举的 `edit_dsl`[design] ↔ `edit_code`[refactor]（\"一个改设计、一个改代码\"）✓。★★ **本项是【候选生成器】，不是判据** —— \"用途是否真不同\"是**语义判断、机器判不了** ⇒ 量具给候选 + 证据、**由读的人判**（★ 也**不建门**：2026-10-07 裁定\"不建免疫系统\"）。",
+        "status": "active"
+      },
+      {
+        "id": "g-freeze-baseline",
+        "title": "对拍要支持「冻结存量、只拦新增」（否则 consistency_check 在老仓一开就全红 ⇒ 没人用）",
+        "description": "★★ **2026-10-12 裁定（主 agent 自行裁断 —— 用户：\"后面那个看起来好像并不那么急迫。但是你可以自行裁断。\"）：【本仓先不做】—— ★ 而**理由可证**，不是\"延后\"两个字：**① ★ 它的前提在本仓【不成立】**：原依据是 *\"设计侧过期是【必然】的 —— 今天实测 NodeDecision 契约声明 5 条 vs 实有 15 条（T158）\"* ⇒ ★ **这条早已修完**（陈旧证据）。★ 2026-10-12 **实测**：`consistency_check` 在 `run82` 上**契约缺失 0 · 签名不匹配 0** ⇒ ★ **没有\"一开就全红\"**。② ★ **代价是真的、而收益在本仓为零**：ArchUnit 的 `FreezingArchRule` 要**维护一份「已冻结的差异」清单**，而 ★★ **那份清单本身会腐**（★ 正是这几天一直在治的病：同一判据住两处 / 陈旧读数误导人）⇒ ★ **为一个本仓没有的问题，引入一个新的腐源** ✗。⇒ ★★ **这条目标【保留不删】** —— 它记的是一个**真问题**：**\"对拍工具在【老仓】落地时，'一开就全红'是头号障碍\"** ✓★ 所以它是一条【**条件目标**】：★ **何时才该做** = 当我们把 `consistency_check` 用到**一个真实的老仓**（存量违规很多）上、并且**有人因此不用它**的时候。★ 在那之前，判据按本仓一贯口径走：**逐条查、逐条修**（★ 与 2026-10-07「不建免疫系统（棘轮/体检/巡航门）」同向）。",
+        "status": "active"
+      },
+      {
+        "id": "g-cli-only-to-face",
+        "title": "CLI-only 的三件能力要上工具面（尤其 diagnose_loop = 诊断→修复→验证→提交）",
+        "description": "依据：实测（★ 2026-10-12 复核，**仍然成立**）3 个 `presentation/cli/*_cli.ts` 对应的能力都不在工具面里：`brickify`（积木化管线）· `diagnose_loop`（一键诊断闭环）· `install_package`（语言包按需安装）。★ `diagnose_loop` 最可惜 —— 它正是「闭环」，而工具面看不见 ⇒ LLM 只能走 CLI。★ 注意：这是既有账 T15「把 CLI-only 的能力注册为 MCP 工具」，不是新问题。★ 工具数**不写死**（曾写 67，2026-10-12 实测 68）⇒ 真值看 `TOOL_DEFS`。",
+        "status": "active"
+      },
+      {
+        "id": "g-getdsl-split",
+        "title": "get_dsl 的 23 个入参要拆（它其实是 21 种 query 挤在一个工具里）",
+        "description": "依据：probe:tool-smells 宽签名第 1 名（23 参）。★ 对照：第二名的 explore_code 是 2 参、rules 16 参。★ 而实测「第七轮黑盒」里，代理是靠 --describe 逐段读才把 query 摸清的。★ 候选手段：按 query 拆成多个工具（工具数会涨 ⇒ 与 g-tool-face-converge 张力，需一起裁）或用「一个 query 决定该给哪些参数」的显式契约。",
+        "status": "active"
+      },
+      {
+        "id": "g-output-not-misleading",
+        "title": "「输出在误导」当作一类缺陷来治：报错/回执一律指向那条【唯一判据】并给出下一条动作",
+        "description": "依据：★ **2026-10-12 逐条复核**（原文说\"10 条未修里有 5 条仍属这一族\"，**逐条核过**）：· `tool_warnings` 承诺不存在的调用 ⇒ **已修**（T188）；· `dispatch` 里写着 `watch_project` ⇒ ★ 那是**记录历史修复的注释**（逐字写着\"**已不存在**的工具\"），**不是活指路** ⇒ 无需改；· `signal_review` 没探测就断言 `llm_available` ⇒ **已修**（T188，见 `design/index.ts` 的注释）；· `cross` 把「没给 file」说成「Go 文件不存在」⇒ **已修**（T188）；· ★ `verify` 门自述「61 个工具」而实测 68 ⇒ **已修**（T200：**删掉计数**，不手改 —— 写死会再过期）。★★ 而 2026-10-12 这一整天又**新修了一批**同族：`edit_dsl` 指路到不存在的 `create_feature`（真入口 = `manage_feature`）·`list_templates` **能力在、管道没接**（已接）· `list_features` · 陈旧工作流注释 · `approvals`/`status`/`assignee` 的描述缺口 ·`args` 袋子的形状错/键名错（T191/T197）。★ 纪律（已立）：改判据必须连文案一起看；并列列举最危险；改完要验反例；★ **报错/文案里点名的工具必须在册**。",
+        "status": "active"
+      },
+      {
+        "id": "g-detection-not-silently-degraded",
+        "title": "「检测静默失效」单列一类：量具/告警自身不许无声地失去检测力",
+        "description": "依据：★ **2026-10-12 复核** —— 当年两条 HIGH（T179）已修（`PACKAGE_ROOT`/`run_tests` 的手算层级）；★ 而原文点名\"同族未修\"的 **`mcp_scan.mjs` 那条**：**已修** —— 它的文件头逐字记着*\"旧版走 CLI 面…**两面都先跑 zod** ⇒ 这道门测的是 zod schema、**不是** `[B]` 的守卫\"*，现在**直接 import `TOOL_DEFS`、调 `def.handler({})`（绕过 zod）**，专测 handler 自己的守卫 ✓（★ 正是 `gate-authoring` §0 的「**真调函数**：直调 handler，别走会先校验的那层」）。★ 判据（保留）：量具/告警自己也要有「**注入 ⇒ 红**」的出生证。",
+        "status": "active"
+      },
+      {
+        "id": "g-no-silent-fallback",
+        "title": "「静默兜底/静默陈旧」当作一类缺陷来治",
+        "description": "依据：★ **2026-10-12 结清** —— bug 猎人当年点名的 **2 条都已治**：① `storage.ts` 活态文件损坏 ⇒ 原先**静默回退到旧存档、零标注** ⇒ 现**记入 `lastLiveFallback` + 一次性 stderr**（T188），并**进 MCP 告警通道**（T190：`liveDslFallbackWarning` ⇒ 工具回执里看得见；★ 且**自清**：活态能解析后不再报）；② `explore_code.ts` 那三个数组参数原先 `as T[]` + `?? []` ⇒ 现走 `plumbing.optionalArr`（T191），与同处 `project_dir` 同一把尺；★ 且 T197 又补了**键名**校验（`args` 袋子不再吞拼写错）。★ 纪律（保留）：**失败就是失败**；静默降级与静默陈旧都要显形。★ 当前**无在账项** —— 若再发现同族，逐条查、逐条修（**不建普查门**，2026-10-07 裁定）。",
+        "status": "active"
+      },
+      {
+        "id": "g-retire-flow",
+        "title": "文件退役走【三步流程】（★ 已落地）：设计侧标记待删 ⇒ 对拍确认实现里真没了 ⇒ 才归档进历史堆（不在活态里留幽灵）",
+        "description": "★ 用户裁定（2026-10-11，逐字）：\"设计侧应该先标记给它对删除……然后删除完了之后进行对拍的时候，发现这个地方确实删完了，才把它真正扫进历史堆里面，这个流程应该更正规一点。\"\n⇒ 三步（★ 2026-10-12 全部落地；本段是**实现之后**的设计陈述，不是待办）：\n  ① **标记** = `edit_dsl type=file op=update` 的 `data.lifecycle = {status:\"deprecated\", retire_reason}`（理由**必填**）；唯一校验器 `assertLifecycle`（`src/domain/semantic.ts`）。★ 写入是**合并**非覆盖。\n  ② **对拍** = `consistency_check` 的**第三根轴**（`retireFlow` / `retireStage`）：`exists` ⇒ 待实现删；`!exists` ⇒ **可归档**。★ 与线 1/线 2 **不共用口径** —— 它问的是\"该不该删\"，与契约签名无关。\n  ③ **归档** = **`archive(action=node, file_path, retire_reason)`**（**三清**：语义文件 + 几何节点 + 边，并留归档库快照）—— ★ **不是** `deleteFile`（它同样三清，但**不留历史**，回执里逐字写明）。\n★ 收益：反悔 = 把标记改回 `{status:\"active\"}`（零损失）；而\"直接删\"的反向动作恢复不出原样（决策卡会丢）。\n★ 实测病（T180，真跑，**已修**）：`edit_dsl type=file op=delete` 原先**只 splice `semantic.files`** ⇒ 留下**幽灵几何节点**（连同它的决策卡）。现由**唯一判据** `removeFileFromDsl`（`src/domain/dsl_removal.ts`）三清，`deleteFile` 与 `archive_node` **共用**它。\n★ 配套纪律（缺一处就是半修）：\n  a) 「待删」标记**必须住 `overlay`**（否则 `rebuild_design=true` 一重建就丢）；归档时由**归档工具自己去清**（`dropLifecycleFromOverlay`）—— ★ **谁摘掉的文件，谁负责清那笔意图**；\n  b) ★★ **\"文件不在 base ⇒ 墓碑不清\"** —— 清了就把②刚说出的\"可归档\"抹掉，**③永远不会被触发**；\n  c) ★ **`archived` 不是设计 DSL 里的状态**（活文档里结构上不可能有：归档 = 移出 DSL + 写归档库）⇒ 归档的真身在**归档库条目**里（完整前置快照 + `retire_reason` + `merged_into` + `archived_at`）。\n★ ★★ **2026-10-12 更新：原文记的边界「显式 `rebuild_design=true` 之后 ② 看不见那个墓碑」—— 已结项（T184b）**：② 现在**也读 overlay 的墓碑**（`overlayTombstones`），并把 `origin: \"overlay_tombstone\"` 如实标出（★ 因为读端按文件去 `get_dsl` **查不到它**，不说清楚会被当成漂移）。★ 仍存的边界（**不假装已解决**）：**取消归档**（archive 的逆）**今天不提供**—— 且那是**声明的契约**（`archive` 描述逐字写着\"不可逆\"\"无 dry_run 预览\"），不是漏做。",
+        "status": "done"
+      }
+    ]
+  }
+}

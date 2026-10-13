@@ -1,0 +1,76 @@
+{
+  "signals_scanned": [
+    {
+      "file": "src/mixed.ts",
+      "clusters": [
+        [
+          "SECRET",
+          "signToken",
+          "verifyToken"
+        ],
+        [
+          "formatMoney"
+        ],
+        [
+          "toCsv",
+          "downloadCsv"
+        ],
+        [
+          "formatMoneyLegacy"
+        ]
+      ],
+      "reason": "顶层 7 个声明被依赖切成 4 个无耦合概念簇（疑似一文件多概念，解耦候选）"
+    }
+  ],
+  "review": {
+    "reviews": [
+      {
+        "file": "src/mixed.ts",
+        "actionable": true,
+        "reviews": [
+          {
+            "cluster": "会话 token（SECRET / signToken / verifyToken）",
+            "adopt": true,
+            "feature": "token-session",
+            "reason": "独立的会话管理概念簇，头部注释明确列为三职责之一，可被仅需要token校验的模块单独消费",
+            "evidence": "文件头部注释：'里面塞了三簇互不相干的职责（★ 按 signal_review 的判据，这类应该被【采纳】拆分）：① 用户会话（token 签发/校验）'"
+          },
+          {
+            "cluster": "金额格式化（formatMoney，新世代）",
+            "adopt": true,
+            "feature": "format-money-new",
+            "reason": "新世代formatMoney与旧版formatMoneyLegacy处于不同生命周期，存在明确的新旧并存演进关系",
+            "evidence": "'★ 注意：下面这版是【新世代】，旧的那版还在用（见文件尾）—— 两代并存。'"
+          },
+          {
+            "cluster": "CSV 导出（toCsv / downloadCsv）",
+            "adopt": false,
+            "feature": "",
+            "reason": "两个纯函数同服务于CSV导出单一用途，整套被一起使用，拆分会产生碎片",
+            "evidence": "无（头部注释仅将其列为第三职责簇，未标注独立演进或独立消费证据）"
+          },
+          {
+            "cluster": "金额格式化旧版（formatMoneyLegacy）",
+            "adopt": true,
+            "feature": "format-money-legacy",
+            "reason": "明确@deprecated保留兼容，与新世代formatMoney处于不同生命周期，有独立兼容消费者",
+            "evidence": "'/** @deprecated 旧版金额格式化，保留兼容。新代码请用 formatMoney。 */'"
+          }
+        ]
+      }
+    ],
+    "meta": {
+      "total_signals": 1,
+      "actionable": 1,
+      "rejected": 0,
+      "undecided": 0,
+      "llm_available": true
+    },
+    "limitations": [
+      "复核判据 = 独立使用者 / 独立演进 / 文档证据；不自动切分文件内部，采纳后拆法由人确认",
+      "判定采用 LLM 语义理解，依赖注释/文档质量；注释含糊时可能误判",
+      "单文件源码注入上限 12000 字符，超长只按头部判断",
+      "LLM 不可用或无 apiKey 时整体返回 null，调用方按原信号降级"
+    ]
+  }
+}

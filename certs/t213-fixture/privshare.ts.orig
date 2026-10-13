@@ -1,0 +1,32 @@
+/**
+ * ★ T213 测试夹具：**"被抽走的私有符号，原文件还需要它"**。
+ *
+ * ## 为什么要它
+ * ★ T212 修掉了"**不需要却硬塞**"（→ TS2459 消失 ✓）。
+ * ★★ 但**反过来那一格还没处理**：★ 若残余代码**真的需要一个被抽走的【私有】符号** ⇒
+ *   ★ 切出去的新文件里它**必须 `export`**（★ 否则原文件 import 不到它 ⇒ **TS2459**）✓
+ *
+ * ## 本夹具怎么构造出这一格
+ * · `SESSION_SECRET` = **模块私有**（`const`，**没有 `export`**）✓
+ * · `signToken` / `verifyToken` ⇒ **用它**（★ 这两支同属"会话"簇 ✓）
+ * · ★★ `auditStamp` ⇒ **也用它**，★ 但它**属于【审计】那一簇**（★ 会**留在原文件** ✓）
+ * ⇒ ★ 于是：抽走"会话"簇 ⇒ ★ 残余的 `auditStamp` **仍然需要 `SESSION_SECRET`** ✓✓
+ */
+
+// ── ① 会话（★ 这一簇会被抽走）────────────────────────────────
+const SESSION_SECRET = 'fixture-session-secret';
+
+export function signToken(userId: string): string {
+  return `tok.${userId}.${SESSION_SECRET}`;
+}
+
+export function verifyToken(tok: string): string | null {
+  const parts = tok.split('.');
+  if (parts.length !== 3 || parts[2] !== SESSION_SECRET) return null;
+  return parts[1];
+}
+
+// ── ② 审计（★ 这一簇【留在原文件】—— 而它也要用那个私有常量 ✓）──────
+export function auditStamp(userId: string): string {
+  return `${new Date().toISOString()} · ${userId} · ${SESSION_SECRET}`;
+}

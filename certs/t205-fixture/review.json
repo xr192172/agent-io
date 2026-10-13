@@ -1,0 +1,76 @@
+{
+  "signals_scanned": [
+    {
+      "file": "src/mixed.ts",
+      "clusters": [
+        [
+          "SECRET",
+          "signToken",
+          "verifyToken"
+        ],
+        [
+          "formatMoney"
+        ],
+        [
+          "toCsv",
+          "downloadCsv"
+        ],
+        [
+          "formatMoneyLegacy"
+        ]
+      ],
+      "reason": "顶层 7 个声明被依赖切成 4 个无耦合概念簇（疑似一文件多概念，解耦候选）"
+    }
+  ],
+  "review": {
+    "reviews": [
+      {
+        "file": "src/mixed.ts",
+        "actionable": true,
+        "reviews": [
+          {
+            "cluster": "token签发校验",
+            "adopt": true,
+            "feature": "token-session",
+            "reason": "会话token职责与其他簇互不相干，且文件头注释明确标注应拆分",
+            "evidence": "文件头部：\"里面塞了三簇互不相干的职责（★ 按 signal_review 的判据，这类应该被【采纳】拆分）\""
+          },
+          {
+            "cluster": "金额格式化",
+            "adopt": true,
+            "feature": "money-formatter",
+            "reason": "新世代formatMoney与旧版formatMoneyLegacy并存，已分属不同生命周期，满足独立演进条件",
+            "evidence": "源码注释：\"下面这版是【新世代】，旧的那版还在用（见文件尾）—— 两代并存\""
+          },
+          {
+            "cluster": "CSV导出",
+            "adopt": true,
+            "feature": "csv-exporter",
+            "reason": "CSV导出职责与token、金额格式化完全独立，无耦合依赖",
+            "evidence": "文件头部：\"三簇互不相干的职责\""
+          },
+          {
+            "cluster": "旧版金额格式化",
+            "adopt": true,
+            "feature": "money-formatter-legacy",
+            "reason": "已被明确废弃，与新世代formatMoney处于不同生命周期，保留仅用于向后兼容",
+            "evidence": "源码注释：\"@deprecated 旧版金额格式化，保留兼容。新代码请用 formatMoney。\""
+          }
+        ]
+      }
+    ],
+    "meta": {
+      "total_signals": 1,
+      "actionable": 1,
+      "rejected": 0,
+      "undecided": 0,
+      "llm_available": true
+    },
+    "limitations": [
+      "复核判据 = 独立使用者 / 独立演进 / 文档证据；不自动切分文件内部，采纳后拆法由人确认",
+      "判定采用 LLM 语义理解，依赖注释/文档质量；注释含糊时可能误判",
+      "单文件源码注入上限 12000 字符，超长只按头部判断",
+      "LLM 不可用或无 apiKey 时整体返回 null，调用方按原信号降级"
+    ]
+  }
+}

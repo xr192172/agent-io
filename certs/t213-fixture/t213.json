@@ -1,0 +1,53 @@
+{
+  "signals_scanned": [
+    {
+      "file": "src/privshare.ts",
+      "clusters": [
+        [
+          "SESSION_SECRET",
+          "signToken",
+          "verifyToken"
+        ],
+        [
+          "auditStamp"
+        ]
+      ],
+      "reason": "T213 手写"
+    }
+  ],
+  "review": {
+    "reviews": [
+      {
+        "file": "src/privshare.ts",
+        "actionable": true,
+        "reviews": [
+          {
+            "cluster": "会话",
+            "adopt": true,
+            "feature": "session",
+            "reason": "手写:采纳",
+            "evidence": ""
+          },
+          {
+            "cluster": "审计",
+            "adopt": false,
+            "feature": "",
+            "reason": "手写:驳回",
+            "evidence": ""
+          }
+        ],
+        "note": null
+      }
+    ],
+    "meta": {
+      "total_signals": 1,
+      "actionable": 1,
+      "rejected": 1,
+      "undecided": 0,
+      "llm_available": true
+    },
+    "limitations": [
+      "T213 手写报告"
+    ]
+  }
+}
