@@ -2,20 +2,33 @@
 
 ![CI](https://github.com/xr192172/agent-io/actions/workflows/ci.yml/badge.svg)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)
-![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)
+![Node](https://img.shields.io/badge/node-%3E%3D22.5-339933.svg)
 ![MCP](https://img.shields.io/badge/MCP-server-7c3aed.svg)
 
-> Give your codebase a **living document** and a **quality gate**. As a standard MCP server, agent-io encodes design and contracts into structured DSL JSON — auto-backfilled as code evolves, never stale — and turns LLM code changes into a controlled pipeline of **precise editing, runtime verification, and rollback on failure**.
+> Give your codebase a **living document** and a **quality gate**. As a standard MCP server, agent-io encodes **design intent** and contracts into structured DSL JSON (facts are read live, never backfilled into a second writable copy) — and turns LLM code changes into a controlled pipeline of **precise editing, runtime verification, and rollback on failure**.
 
 [中文](README.md) · [English](README.en.md)
 
 ![agent-io companion frontend dsl-workbench sandbox view (real-time DSL rendering)](assets/demo-workbench.png)
 
+## Current contract (quick reference)
+
+★ This section is the **spec as it stands today**, not a changelog. To trace *why* something became this way, read the inline `★ <date>: corrected…` notes and `docs/`.
+
+| Contract | What it is now | What NOT to repeat |
+|---|---|---|
+| **Entry points** | MCP / bin entry = `dist/src/presentation/mcp/server.js`; HTTP engine = `dist/src/presentation/http/serve.js` | `dist/src/server.js`, `dist/src/tools/*` (the old `src/tools/` was reorganized into application / domain / infrastructure / presentation) |
+| **Frontend** | A **separate repo**, [dsl-workbench](https://github.com/xr192172/dsl-workbench). This repo's `serve` has **no pages at all** | `/workbench`, `/mindmap/<feature>` — **measured 404** (removed 2026-09-30) |
+| **DSL semantic layer** | Records **intent only** (responsibility / decisions / goals). Code **facts** are computed live by `explore_code` / `consistency_check`, which *report* mismatches | "`scaffold action=backfill` auto-backfills" — deleted outright on 2026-10-01; `scaffold` no longer even has an `action` parameter |
+| **Verification** | `npm run verify` is the **single total gate** (4 gates + a 3-state exit code — see "Verification") | `tests/` (**does not exist**), vitest, `npm test` |
+| **Tool surface** | Default `AGENT_IO_MCP_FACE=all` ⇒ every tool exposed; `=composed` ⇒ orchestration face + one atomic entry | "the default is composed"; **any hardcoded tool total** (call `capability_map` — it is derived from the registry) |
+| **Writing to disk** | Throw on failure, structured products, pre-write snapshot for rollback; **a half-applied change is worse than none** | silent fallbacks / `catch { return [] }` / "partially applied, then aborted" without rollback |
+
 ## Background & Positioning
 
 Two chronic problems in engineering collaboration, both addressed by agent-io:
 
-**Problem 1: Documentation drift.** Every design doc and architecture diagram goes stale as code evolves, until nobody trusts it. agent-io encodes the "design truth" as **structured DSL JSON** that evolves with the code: the semantic layer records file contracts (files / apis / decisions), auto-backfilled from the implementation by `scaffold` (action=backfill) and corrected by runtime observation (Observe) — **documentation no longer goes stale**.
+**Problem 1: Documentation drift.** Every design doc and architecture diagram goes stale as code evolves, until nobody trusts it. agent-io encodes the "design truth" as **structured DSL JSON** — and records **intent only**: the semantic layer holds file responsibilities and decisions (files / decisions / goals), while **code facts are computed live** (`explore_code` / `consistency_check` read the parsed results directly) and mismatches are **reported** rather than copied into the doc. ★ There is deliberately **no "backfill from implementation" path** (deleted outright on 2026-10-01): that would be a *second writable copy*, which inevitably diverges from the truth.
 
 **Problem 2: Uncontrolled changes.** LLMs often edit the wrong location, break files, and produce changes that can't be verified — forcing rework. agent-io provides a controlled change pipeline: symbol-level precise editing (`edit_code`) → real diff review before applying → runtime probe reconciliation → commit only on pass, auto-rollback on failure — **changes no longer rely on luck**.
 
@@ -30,9 +43,8 @@ The project follows a **frontend/backend separation** architecture:
 
 | Layer | Responsibility | Carrier |
 |---|---|---|
-| **Data / protocol layer** | DSL storage, code understanding, generation/backfill/consistency, brick system, runtime verification, diagnosis loop; exposes MCP tools and an HTTP API | This repository (MCP server) |
+| **Data / protocol layer** | DSL storage, code understanding, generation/consistency, brick system, runtime verification, diagnosis loop; exposes MCP tools and an HTTP API | This repository (MCP server) |
 | **Visual collaboration frontend** | Renders live DSL into an interactive workbench (sandbox, version diff, issue list, probes, contracts, code approval) | [dsl-workbench](https://github.com/xr192172/dsl-workbench) (separate repo) |
-| **Built-in renderer** | Fallback preview when no frontend is available; renders a single DSL into a self-contained HTML file | `render_design` (built-in) |
 
 ## Core Capabilities
 
@@ -40,11 +52,11 @@ One thread runs through everything: **any code → contract-bearing bricks → v
 
 | Capability | Description | Representative tools |
 |---|---|---|
-| **Visual protocol layer** | DSL read/write/edit, design view vs. actual code snapshot diff, built-in render fallback | `get_dsl` / `edit_dsl` / `manage_feature` / `render_design` / `diff_views` |
+| **Visual protocol layer** | DSL read/write/edit, design view vs. actual code snapshot diff, diagram/vector/document export (from storage) | `get_dsl` / `edit_dsl` / `manage_feature` / `render_design` / `diff_views` |
 | **Code understanding** | Project import, semantic search, impact analysis, architecture layering, monolith splitting, algorithm/dataflow derivation | `import_project` / `explore_code` |
 | **Brick system** | Harvest code from any source into contract-bearing bricks: closure extraction, contract extraction, decision-card recovery (the brick-box / assembly family was removed on 2026-10-05; design docs kept in `docs/`) | `harvest_closure` / `extract_contracts` / `harvest_decisions` |
 | **Runtime verification** | Reconcile contracts and behavior baselines against actual runtime observations, forming a "commit only if verified, roll back on failure" gate | `observe_instrument` / `observe_judge` / `reconcile_chain` / `reconcile_effects` |
-| **Generation / backfill / consistency** | Generate code skeleton from DSL, backfill contracts from implementation, output consistency reports | `scaffold` / `consistency_check` |
+| **Generation / consistency** | Generate a code skeleton from the DSL semantic layer; compare expected contracts against actual code and report (read-only — mismatches are *reported*, never backfilled) | `scaffold` / `consistency_check` |
 | **Deterministic refactoring (no rework)** | Symbol-level editing (never matches wrong), bulk/cross-file renaming, dead code removal, diff review before applying, rollback on failure | `edit_code` / `rename_*` / `refactor_pipeline` |
 | **Diagnosis loop** | Full chain from symptom → root cause → fix → verify (or roll back) ⇒ ★ now on the tool face: `diagnose_loop` (★ **commit stays with you**; the tool stops at "verified") | `diagnose` / `refactor_judge` / `diagnose-loop` (CLI) |
 | **Multi-language AST foundation** | Unified extraction of symbols / imports / call edges / type references on top of tree-sitter | `ts_kernel` / `package_migration` |
@@ -73,7 +85,7 @@ Register in your MCP client configuration:
   "mcpServers": {
     "agent-io": {
       "command": "node",
-      "args": ["/path/to/agent-io/dist/src/server.js"]
+      "args": ["/path/to/agent-io/dist/src/presentation/mcp/server.js"]
     }
   }
 }
@@ -88,23 +100,31 @@ node scripts/install_mcp.mjs --dry-run  # Preview what will be written (no disk 
 node scripts/install_mcp.mjs --target claude  # Write a single platform only
 ```
 
-### One-command demo (golden path)
-
-Want to see what it looks like before wiring it up? One command builds, seeds the built-in example, starts the server, and opens the workbench:
+### One-command demo
 
 ```bash
-npm run demo                # Full demo: render example → start server → open /workbench
+npm run demo                # seed the built-in example + start the data/API engine (prints how to reach the frontend)
 npm run demo -- 8081        # Custom port
-npm run demo -- --prepare   # Prepare only (build + render + register), no server
+npm run demo -- --prepare   # Seed only (build + persist feature), no server — good for CI / acceptance
+npm run hub                 # Start the engine only, no example seeding (daily use, for the frontend to connect to)
 ```
 
-Your browser opens `http://localhost:3000/workbench`: the left canvas is an interactive diagram rendered from the example DSL (click nodes for details, conditional-branch animation flows), with sandbox feedback and code approval on the right. Existing features with the same name are skipped, so your data is never overwritten.
+Examples are persisted from `examples/*.json` through the **same storage entry the toolchain uses** (`saveDSL`); an existing feature with the same name is skipped, so your data is never overwritten.
 
-> The full visual collaboration frontend lives in [dsl-workbench](https://github.com/xr192172/dsl-workbench). Without a frontend environment, the built-in renderer (`render_design`) renders a single DSL into a self-contained HTML preview.
+> ★ **This repo has no pages** — `npm run demo` does **not** open a browser workbench. `serve` has shed all
+> self-contained pages: `GET /` returns a small JSON note, and `/workbench` plus `/mindmap/<feature>`
+> are **measured 404**. The visual frontend is a **separate repo**,
+> [dsl-workbench](https://github.com/xr192172/dsl-workbench): run `npm install && npm run dev` there and
+> point it at this `serve` address.
+> If you already know the frontend URL:
+> `AGENT_IO_FRONTEND_URL=http://localhost:5173 npm run demo -- --open`.
 
 ## MCP Tool Reference
 
-A total of **68 MCP tools** are registered, organized into "capability navigation + primary tools + specialized tools": `capability_map` provides layered capability-lane navigation, primary tools provide unified entry points, specialized tools each do one job. The tables below are a curated subset, not the full list — the authoritative count comes from `TOOL_DEFS` in `src/application/tool_registry.ts`.
+Tools are organized into "capability navigation + primary tools + specialized tools": `capability_map` provides layered capability-lane navigation, primary tools provide unified entry points, specialized tools each do one job. The tables below are a curated subset, not the full list.
+
+> ★ **This README deliberately does not state a tool total.** 2026-10-13: this line used to say "68 MCP tools", and a same-day measurement (`node scripts/mcp/mcp_scan.mjs`) returned **69** ⇒ a hand-maintained number *always* drifts, so deleting it beats bumping it once.
+> The authoritative count is `TOOL_DEFS` (`src/application/tool_registry.ts`); for a human-readable snapshot of the current state, call **`capability_map`** (derived from the registry, so it cannot drift).
 
 ### Capability navigation (1)
 
@@ -132,7 +152,9 @@ A total of **68 MCP tools** are registered, organized into "capability navigatio
 
 > Note: `capability_map` is a read-only navigation with no side effects. The return is a three-level map "lane → in-lane tools → when to use each"; the agent picks a tool from it, then enters the concrete tool. High-frequency tools (`get_dsl` / `edit_dsl` / `explore_code` / `rename_symbols` / `rename_files` / `find_references`) work directly without going through it first.
 >
-> The catalogue is **derived automatically from the tool registry**: `LANE_OF` in `src/tools/capability_map.ts` only declares the tool → lane membership, and `when` defaults to the first sentence of the registered description. A newly registered tool needs just one membership line and can never silently disappear from navigation (unmapped tools are listed explicitly under "unmapped"). Consistency is enforced by `tests/tools/capability_map.test.ts` against the real `TOOL_DEFS`.
+> The catalogue is **derived automatically from the tool registry**: `LANE_OF` in `src/application/meta/registry/capability_map.ts` only declares the tool → lane membership, and `when` defaults to the first sentence of the registered description. A newly registered tool needs just one membership line, and unmapped tools are listed explicitly under "unmapped" rather than silently vanishing.
+>
+> ★ Corrected 2026-10-13: this line used to say "Consistency is enforced by `tests/tools/capability_map.test.ts` against the real `TOOL_DEFS`" — **that file no longer exists** and following the reference gives a 404. The test framework was removed wholesale on 2026-10-04 (see "Verification"). **Nothing guards this for you now**: an unmapped tool only shows up if a human actually reads the output.
 
 ### Primary tools (7)
 
@@ -141,12 +163,15 @@ A total of **68 MCP tools** are registered, organized into "capability navigatio
 | `get_dsl` | Unified read-only entry: query DSL / nodes / edges / files / decisions / annotations / snapshots / simulation state / diffs, with `view` (design/live) and filter parameters |
 | `edit_dsl` | Unified write entry: batch `operations[]` for add/update/delete, semantic binding, status updates, annotations, approvals, auto-layout; executed in order, full rollback on any failure (atomic) |
 | `manage_feature` | Feature lifecycle management: create / clone / template / list / delete |
-| `render_design` | Render entry: mindmap / html / svg / markdown, with `view` and output path |
-| `scaffold` | Scaffold unified entry: `action=generate` (generate a code skeleton from the DSL semantic layer, vue / react / html + status inference) / `action=backfill` (parse implementation API signatures back into actual_apis and output a diff report) |
+| `render_design` | Render entry: mindmap (default) / svg / markdown, all read from storage by `feature`; `output_path` sets the destination |
+| `scaffold` | Scaffold entry: generate a code skeleton from the DSL semantic layer (go / ts / js / py / vue / tsx + state inference), plus INVARIANTS.md recording cross-file invariants; existing files are not overwritten by default. ★ **There is no `action` parameter** (generation is the only thing it does); ★ the former `action=backfill` (parsing implementation API signatures back into the DSL) was **deleted outright on 2026-10-01** — to read code facts, use `explore_code` / `get_dsl`, which compute them live |
 | `consistency_check` | Compare expected contracts against actual code; output a consistency report and cross-file invariants (read-only) |
 | `explore_code` | Code understanding entry: semantic search, impact analysis, architecture layering, monolith detection, split suggestions, algorithm/dataflow derivation, simulation replay, etc. |
 
-### Specialized tools (37)
+### Specialized tools
+
+> ★ Curated subset by topic (for findability — **not** the full list); the authoritative count is `TOOL_DEFS`.
+> The count that used to sit in this heading has been removed: as a "curated subset" number it could never equal the row count, and hand-maintained numbers only drift. Call `capability_map` for a real total.
 
 **Code understanding**
 
@@ -300,33 +325,56 @@ Flow: baseline snapshot (auto-commit before changes) → build symbol cache → 
 
 ## Verification
 
-This project **ships no unit-test suite** (decided 2026-10-04). Verification is three steps, all
-free of any test-framework dependency:
+This project **ships no unit-test suite** (decided 2026-10-04; the test framework was removed wholesale and the `tests/` directory **does not exist**). Verification is **one total gate + real invocation**:
 
 ```bash
-npm run build                            # type check + build (tsc is the first gate)
-npm run doctor                           # environment health check + capability gaps
-npm run tool -- <tool> --json '{...}'    # actually invoke a tool — the only meaningful acceptance
+npm run verify                            # ★ the single total gate: 4 gates, 3-state exit code (see below)
+npm run build                             # type check + build (tsc; the same thing as verify's ts gate)
+npm run doctor                            # environment health check + capability-matrix gaps
+npm run tool -- <tool> --schema           # see what args a tool actually needs (★ don't guess, don't read source)
+npm run tool -- <tool> --json '{...}'     # actually invoke a tool — the only meaningful acceptance
+npm run structure:gap                     # structural intent vs. reality (runs as a "report" inside verify)
 ```
 
-CI additionally runs 5 zero-dependency gates (`scripts/*.mjs` + the STALE BUILD self-check +
-archify vendor doctor); none of them require a test framework.
+`npm run verify`'s four gates (plus one report) — **only these two kinds qualify as a gate**: a compiler / official linter, or something that catches a *wiring* fact:
+
+| Gate | What it checks | Why it qualifies |
+|---|---|---|
+| **ts types** | `tsc` | A compiler, not something this repo invented |
+| **MCP tool signatures** | `scripts/mcp/mcp_scan.mjs`, invoking every tool **through the CLI entry** | Catches whether the zod schema is actually **wired up** — the type system is blind to zod, so **grep cannot find this** |
+| **Go compile** | `go build ./...` (observe-lang-go) | Official toolchain |
+| **Go static check** | `go vet ./...` | Same |
+| *[report] structural intent gap* | `scripts/structure_gap.mjs` | Prints its body on pass and is excluded from the gate count; but a **FAIL still counts** (exits 1) |
+
+★ **Three-state exit code**: `0` = every gate really ran and passed · `1` = some gate FAILed · `2` = **some gate could not run (SKIP)**.
+"Could not run" deliberately does **not** count as passing — otherwise an environment missing a toolchain would read "never ran" as "green".
+
+> ★ This repo **no longer maintains gates of its own making** (decided 2026-10-05). The criterion: **anything one `grep` can answer does not deserve a gate**, and a self-invented **sweep gate can silently die while still showing ✅** (looks like a gate, is actually a tautology) ⇒ changes go through **case-by-case checking and fixing**, not sweeping.
+
+CI additionally runs three things: `npm run verify` (its own job, with the Go toolchain),
+`node third_party/archify/bin/archify.mjs doctor` (keeps the vendored renderer + schema + example triple intact),
+and the Go language pack's `go build ./... && go test ./...`.
 
 ## Tech Stack
 
 - **MCP server**: TypeScript + [@modelcontextprotocol/sdk](https://www.npmjs.com/package/@modelcontextprotocol/sdk)
 - **AST parsing**: tree-sitter (Go / TypeScript / Python / JavaScript), language packs detected at runtime
-- **Renderer**: HTML string assembly (zero build chain, self-contained single-file output)
+- **Export**: `render_design` does **mindmap / svg / markdown** only, all **read from storage** (export is a data-layer concern);
+  ★ the former "HTML string-assembly renderer (self-contained single-file output)" was **removed on 2026-09-30** — the UI belongs to the separate dsl-workbench frontend.
 - **Schema validation**: ajv + ajv-formats
 
 ## Agent Guidance
 
 The repository ships agent-facing skills (`.trae/skills/`):
 
-- **agent-io-router**: progressive-disclosure routing — "what problem → which tool", layer by layer; check existing capabilities first before deciding to build a new tool;
-- **agent-io-mind**: a mental wrapper providing a capability map, needs-to-toolchain orchestration, tool-call caching, and honest-delivery discipline.
+- **design-canvas-router**: progressive-disclosure routing — "what problem → which tool", layer by layer; check existing capabilities first before deciding to build a new tool;
+- **design-canvas-mind**: a mental wrapper providing a capability map, needs-to-toolchain orchestration, tool-call caching, and honest-delivery discipline.
 
-Loading these two skills before using the toolchain is recommended, to avoid reinventing the wheel.
+Loading these two skills before using the toolchain is recommended, to avoid reinventing the wheel. ★ The tool face also has **`capability_map`** (read-only navigation: 6 lanes × in-lane tools × when to use each) — **call it first whenever you are unsure which lane to take**.
+
+> ★ Corrected 2026-10-08: these two skills were written here as `agent-io-router` / `agent-io-mind`, while the
+> directories on disk have always been `design-canvas-router` / `design-canvas-mind` (the rename missed this
+> README) ⇒ following the README gets you a 404. **Trust the directory names under `.trae/skills/`.**
 
 ## License
 

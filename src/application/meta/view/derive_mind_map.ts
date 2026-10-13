@@ -16,9 +16,10 @@
  *
  * 锚点：文件节点 id 与 L2 共享（file_xxx），保证思维导图 → 设计图 → 代码可追溯。
  *
- * 产出（单一路径：最终交互页统一为 /mindmap/<feature>，本层只产中间数据）：
+ * 产出（★ 本层**只产中间数据**——2026-09-30 起交互页随旧自包含前端一并撤除，
+ *   `/mindmap/<feature>` **已不存在**，实测 404；别再照旧注释去找那个出口）：
  *   - structure 骨架 JSON：<storageRoot>/mindmap/<feature>.json（中间步骤，不作为交付物）
- *   - teach 科普导图 JSON：<storageRoot>/mindmap/<feature>.teach.json（/mindmap/ 交互页的数据源）
+ *   - teach 科普导图 JSON：<storageRoot>/mindmap/<feature>.teach.json（供独立前端 dsl-workbench 自取）
  */
 
 import fs from 'node:fs';
@@ -2430,7 +2431,7 @@ async function deriveMindMapCore(input: DeriveMindMapInput): Promise<DeriveMindM
 
   const message = [
     `L3 结构骨架已生成（${mode === 'llm' ? 'LLM 提炼' : '规则骨架'}）：${jsonFile}`,
-    `（本路径只产中间骨架数据，最终交互导图统一由 /mindmap/${feature} 提供，不再产出独立 HTML）`,
+    `（本层只产**中间数据**，不作交付物：消费方按这个路径自取。★ 交互页面**不在本层**）`,
     note ? `说明：${note}` : '',
   ].filter(Boolean).join('\n');
 

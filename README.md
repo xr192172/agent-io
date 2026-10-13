@@ -2,20 +2,33 @@
 
 ![CI](https://github.com/xr192172/agent-io/actions/workflows/ci.yml/badge.svg)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)
-![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)
+![Node](https://img.shields.io/badge/node-%3E%3D22.5-339933.svg)
 ![MCP](https://img.shields.io/badge/MCP-server-7c3aed.svg)
 
-> 让代码工程自带「活文档」与「质量防线」。以标准 MCP server 的形式，将设计与契约编码为结构化的 DSL JSON——随代码演进自动回填、永不陈旧；同时把 LLM 的代码改造变成「准确编辑、运行时验证、失败可回滚」的受控流水线。
+> 让代码工程自带「活文档」与「质量防线」。以标准 MCP server 的形式，将**设计意图**与契约编码为结构化的 DSL JSON（事实现取现算，不回填、不存第二份副本）；同时把 LLM 的代码改造变成「准确编辑、运行时验证、失败可回滚」的受控流水线。
 
 [中文](README.md) · [English](README.en.md)
 
 ![agent-io 配套前端 dsl-workbench 沙盘视图（真实 DSL 实时渲染）](assets/demo-workbench.png)
 
+## 当前契约（速查）
+
+★ 这一节是**现在的规格**，不是沿革。想追溯「为什么会变成这样」，看正文里的 `★ 日期：更正…` 注与 `docs/`。
+
+| 契约         | 现在是什么                                                                                  | 别照旧记的                                                                          |
+| ---------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| **入口**     | MCP / bin 入口 = `dist/src/presentation/mcp/server.js`；HTTP 引擎 = `dist/src/presentation/http/serve.js` | `dist/src/server.js`、`dist/src/tools/*`（`src/tools/` 已按 application / domain / infrastructure / presentation 重组） |
+| **前端**     | **独立仓库** [dsl-workbench](https://github.com/xr192172/dsl-workbench)；本仓 serve **没有任何页面**                                                                 | `/workbench`、`/mindmap/<feature>` —— **实测 404**（2026-09-30 撤）                        |
+| **DSL 语义层** | 只记**意图**（职责 / 决策 / 目标）。代码**事实**由 `explore_code` / `consistency_check` **现取现算**，对不上就报差异               | 「`scaffold` `action=backfill` 自动回填」—— 2026-10-01 整条删除；`scaffold` 现在**连 `action` 参数都没有** |
+| **验证**     | `npm run verify` 是**唯一总门**（四道门 + 三态退出码，见「验证方式」）                                            | `tests/`（**不存在**）、vitest、`npm test`                                             |
+| **工具面**    | 默认 `AGENT_IO_MCP_FACE=all` ⇒ 暴露全部工具；设 `=composed` ⇒ 只注册编排面 + 一个原子入口                               | 「默认就是 composed」；**写死的工具总数**（要数就调 `capability_map`，它由注册表派生）                        |
+| **写盘**     | 失败就抛、产物结构化、写前存快照可回滚；**「半改」比不改更坏**                                                                   | 静默降级 / `catch { return [] }` / 「部分已应用后中止」却不回滚                                    |
+
 ## 背景与定位
 
 两个长期困扰工程协作的问题，agent-io 同时给出解法：
 
-**问题一：文档漂移。** 任何设计文档、架构图都会在代码演进后过期，最终没人敢信。agent-io 把「设计真相」编码为**结构化的 DSL JSON**，随代码一起演进：语义层记录文件契约（files / apis / decisions），由 `scaffold`（action=backfill）从实现自动回填、由运行时观测（Observe）自动校正——**文档不再会过期**。
+**问题一：文档漂移。** 任何设计文档、架构图都会在代码演进后过期，最终没人敢信。agent-io 把「设计真相」编码为**结构化的 DSL JSON**，并且**只在这里记「意图」**：语义层记录文件职责与决策（files / decisions / goals），而**代码的事实现取现算**（`explore_code` / `consistency_check` 直接读解析结果）——两者对不上就**报告差异**，绝不把代码抄进文档。★ 语义层**没有**「从实现回填」这条路（2026-10-01 整条删除）：那是"第二份可写副本"，必然与真相分叉。
 
 **问题二：改动失控。** LLM 改代码经常改错位置、改坏文件、无法验证，只能返工。agent-io 提供一条受控的改造流水线：符号级准确编辑（`edit_code`）→ 改前真实 diff 审批 → 运行时探针对账验证 → 通过才提交、失败自动回滚——**改动不再靠赌**。
 
@@ -31,8 +44,7 @@ DSL 双层结构是两者的共同根基：
 
 | 层            | 职责                                                          | 载体                                                               |
 | ------------ | ----------------------------------------------------------- | ---------------------------------------------------------------- |
-| **数据 / 协议层** | DSL 存取、代码理解、生成/回填/一致性、积木体系、运行时验证、诊断闭环，对外提供 MCP 工具与 HTTP API | 本仓库（MCP server）                                                  |
-| **可视化协作前端**  | 将实时 DSL 渲染为可交互工作台（沙盘、版本对比、问题清单、探针、契约、代码审批）                  | [dsl-workbench](https://github.com/xr192172/dsl-workbench)（独立仓库） |
+| **数据 / 协议层** | DSL 存取、代码理解、生成/一致性、积木体系、运行时验证、诊断闭环，对外提供 MCP 工具与 HTTP API | 本仓库（MCP server）                                                  |
 | **可视化协作前端**  | 将实时 DSL 渲染为可交互工作台（沙盘、版本对比、问题清单、探针、契约、代码审批）                  | [dsl-workbench](https://github.com/xr192172/dsl-workbench)（独立仓库） |
 
 > ★ 2026-09-30：原「内置渲染器（`render_design` 的 `format=html`，把单张 DSL 渲成**自包含单文件 HTML**）」**已删除** ——
@@ -49,7 +61,7 @@ DSL 双层结构是两者的共同根基：
 | **代码理解**          | 工程导入、语义搜索、影响分析、架构分层、单体拆分、算法/数据流推导              | `import_project` / `explore_code`                                                                                 |
 | **代码积木体系**        | 从任意来源收割代码为带契约的积木：抽契约、拎 import 闭包、补决策卡（积木盒/拼装族已于 2026-10-05 删除，设计文档留在 `docs/`） | `harvest_closure` / `extract_contracts` / `harvest_decisions`                                                     |
 | **运行时验证**         | 以实际运行观测对账契约与行为基线，形成「验证通过才提交，失败回滚」的防线           | `observe_instrument` / `observe_judge` / `reconcile_chain` / `reconcile_effects`                                  |
-| **生成 / 回填 / 一致性** | 从 DSL 生成代码骨架，解析实现回填契约，输出一致性报告                  | `scaffold` / `consistency_check`                                                                                  |
+| **生成 / 一致性**      | 从 DSL 语义层生成代码骨架；对比预期契约与实际代码并输出一致性报告（**只读**——差异只报告，不回填） | `scaffold` / `consistency_check`                                                                                  |
 | **确定性改造（防返工）**    | 符号级代码编辑（绝不匹配错）、批量/跨文件重命名、死代码清理、改前 diff 审批、失败回滚 | `edit_code` / `rename_*` / `refactor_pipeline`                                                                    |
 | **诊断闭环**          | 症状 → 根因 → 修复 → 验证 → （回退）的完整链 ⇒ ★ 已在工具面：`diagnose_loop`（★ **提交留给人**，工具到验证为止）路               | `diagnose` / `refactor_judge` / `diagnose-loop`(CLI)                                                              |
 | **多语言 AST 根基**    | 基于 tree-sitter 的符号 / import / 调用边 / 类型引用统一产出   | `ts_kernel` / `package_migration`                                                                                 |
@@ -78,7 +90,7 @@ npm start
   "mcpServers": {
     "agent-io": {
       "command": "node",
-      "args": ["/path/to/agent-io/dist/src/server.js"]
+      "args": ["/path/to/agent-io/dist/src/presentation/mcp/server.js"]
     }
   }
 }
@@ -93,24 +105,29 @@ node scripts/install_mcp.mjs --dry-run  # 预览将写入的内容（不落盘�
 node scripts/install_mcp.mjs --target claude  # 只写指定平台
 ```
 
-### 一键体验（黄金演示路径）
-
-想先看它长什么样？一条命令即可看到完整工作台——构建、注入内置示例、起服务、打开浏览器：
+### 一键体验
 
 ```bash
-npm run demo                # 完整演示：渲染示例 → 启动服务 → 打开 /workbench
+npm run demo                # 注入内置示例 + 起数据/API 引擎（并打印前端接法）
 npm run demo -- 8081        # 指定端口
-npm run demo -- --prepare   # 只准备示例（构建+渲染+注册），不起服务
+npm run demo -- --prepare   # 只注入示例（构建 + 落盘 feature），不起服务（适合 CI / 验收）
+npm run hub                 # 只起引擎、不注入示例（日常把后端跑起来给前端连）
 ```
 
-浏览器会自动打开 `http://localhost:3000/workbench`：左侧画布是示例 DSL 渲染的可交互图（点击节点查看详情、条件分支动画流），右侧是沙盘反馈与代码审批。已有同名 feature 时自动跳过，不会覆盖你的数据。
+示例从 `examples/*.json` 落成 feature（走与工具链**同一条**存储入口 `saveDSL`）；已有同名 feature 时自动跳过，不会覆盖你的数据。
 
-> 完整可视化协作前端见 [dsl-workbench](https://github.com/xr192172/dsl-workbench)（独立仓库，本仓作为其后端）。
-> ★ 本仓**不再自产**自包含 HTML 预览（2026-09-30 删除，见上方说明）。
+> ★ **本仓没有页面** —— `npm run demo` **不会**打开浏览器工作台。serve 已撤掉全部自包含页面：
+> `GET /` 只回一段 JSON（说明前端在哪），`/workbench` 与 `/mindmap/<feature>` **实测 404**。
+> 可视化前端是**独立仓库** [dsl-workbench](https://github.com/xr192172/dsl-workbench)：
+> 在那边 `npm install && npm run dev`，让它指向本 serve 的地址取数即可。
+> 若已知前端地址，可用 `AGENT_IO_FRONTEND_URL=http://localhost:5173 npm run demo -- --open` 顺手打开。
 
 ## MCP 工具参考
 
-共注册 **68 个 MCP 工具**，按「主工具 + 专项工具」组织：主工具承担统一入口，专项工具各司其职。
+本仓的工具按「主工具 + 专项工具」组织：主工具承担统一入口，专项工具各司其职。
+
+> ★ **本 README 不写死工具总数。** 2026-10-13：本行原写「共注册 68 个」，而当天实测（`node scripts/mcp/mcp_scan.mjs`）已是 **69** ⇒ 手维护的数字**必然漂**，删掉比改一次更对。
+> 权威计数以 `TOOL_DEFS`（`src/application/tool_registry.ts`）为准；人类可读的当次快照调 **`capability_map`**（由注册表自动派生，不会漂）。
 
 ### 能力导航（1 个）
 
@@ -138,7 +155,9 @@ npm run demo -- --prepare   # 只准备示例（构建+渲染+注册），不起
 
 > 用法提示：`capability_map` 是只读导航，无副作用。返回内容即「线 → 线内工具 → 何时用它」的三级地图，agent 据此选工具后再进入具体工具。高频工具（`get_dsl` / `edit_dsl` / `explore_code` / `rename_symbols` / `rename_files` / `find_references`）直接可用，无需先经本工具。
 >
-> 目录**由工具注册表自动派生**（`src/tools/capability_map.ts` 的 `LANE_OF` 只写「工具 → 线」归属，`when` 缺省取注册描述首句）：新增工具只需补一行归属，不会与注册表脱节；漏标的工具会在输出里单列「未归线」段显式暴露，不会静默消失。一致性由 `tests/tools/capability_map.test.ts` 对真实 `TOOL_DEFS` 断言兜底。
+> 目录**由工具注册表自动派生**（`src/application/meta/registry/capability_map.ts` 的 `LANE_OF` 只写「工具 → 线」归属，`when` 缺省取注册描述首句）：新增工具只需补一行归属，不会与注册表脱节；漏标的工具会在输出里单列「未归线」段显式暴露，不会静默消失。
+>
+> ★ 2026-10-13 更正：本行原写「一致性由 `tests/tools/capability_map.test.ts` 对真实 `TOOL_DEFS` 断言兜底」——**那是已删除的东西**，照它去找会 404。测试框架已于 2026-10-04 整体移除（见下文「验证方式」），该目录不存在。**现在没人替你兜底**：`capability_map` 漏标只会在输出里显形，需要有人真的去看。
 
 ### 主工具（7 个）
 
@@ -148,7 +167,7 @@ npm run demo -- --prepare   # 只准备示例（构建+渲染+注册），不起
 | `edit_dsl`          | 统一写入口：`operations[]` 批量增删改、语义绑定、状态更新、标注、审批、自动布局，按序执行、任一失败全量回滚（原子）                  |
 | `manage_feature`    | 功能生命周期管理：create / clone / template / list / delete                                 |
 | `render_design`     | 渲染入口：mindmap（默认）/ svg / markdown，均从存储按 `feature` 读取；`output_path` 指定输出路径                                |
-| `scaffold`          | 脚手架统一入口：`action=generate`（从 DSL 语义层生成代码骨架，vue / react / html + 状态推断）/ `action=backfill`（解析实现代码 API 签名回填 actual\_apis，输出差异报告） |
+| `scaffold`          | 脚手架入口：从 DSL 语义层生成代码骨架（go / ts / js / py / vue / tsx + 状态推断），另产 INVARIANTS.md 记录跨文件不变式；已存在文件默认不覆盖。★ **无 `action` 参数**（只有生成一件事）；★ 原先的 `action=backfill`（把代码解析出的 API 签名回填进 DSL）**已于 2026-10-01 整条删除**——要读代码事实请用 `explore_code` / `get_dsl`，它们现取解析结果 |
 | `consistency_check` | 对比预期契约与实际代码，输出一致性报告与跨文件不变式（只读）                                                     |
 | `explore_code`      | 代码理解入口：语义搜索、影响分析、架构分层、单体检测、拆分建议、算法/数据流推导、仿真回放等                                     |
 
@@ -329,16 +348,36 @@ npm run diagnose-loop -- --project <项目目录> --symptom "<症状>"
 
 ## 验证方式
 
-本项目**不设单元测试套件**（2026-10-04 裁定）。验证靠三条，全部零测试框架依赖：
+本项目**不设单元测试套件**（2026-10-04 裁定，测试框架已整体移除；`tests/` 目录**不存在**）。验证靠**一道总门 + 真调**：
 
 ```bash
-npm run build                            # 类型检查 + 构建（tsc 是第一道闸门）
-npm run doctor                           # 环境体检 + 能力缺口
-npm run tool -- <工具名> --json '{...}'   # 真调一个工具 —— 这才是唯一有意义的验收
+npm run verify                            # ★ 唯一总门：四道门，三态退出码（见下表）
+npm run build                             # 类型检查 + 构建（tsc；与 verify 的 ts 门同一件事）
+npm run doctor                            # 环境体检 + 能力矩阵缺口
+npm run tool -- <工具名> --schema          # 看某工具到底要哪些入参（★ 别猜，别去读源码）
+npm run tool -- <工具名> --json '{...}'    # 真调一个工具 —— 这才是唯一有意义的验收
+npm run structure:gap                     # 结构意图 vs 现状（verify 里以「报告」身份跑）
 ```
 
-CI 另跑 `archify vendor doctor`（守第三方 vendor 的 renderer + schema + example 三件套完整）
-与 Go 语言包（observe-lang-go）的编译与测试。
+`npm run verify` 的四道门（外加一份报告）——**只有这四类配当门**：编译器 / 官方 linter，或能抓「接线」事实的：
+
+| 门              | 查什么                                                    | 为什么它配当门                                            |
+| -------------- | ------------------------------------------------------ | -------------------------------------------------- |
+| **ts 类型**      | `tsc`                                                  | 编译器，不是本仓自己编的                                       |
+| **MCP 工具签名**   | `scripts/mcp/mcp_scan.mjs`，**走 CLI 入口**逐个真调工具            | 抓「zod schema 到底接没接上」——类型系统对 zod 透明，**grep 不出来**      |
+| **Go 编译**      | `go build ./...`（observe-lang-go）                      | 官方工具链                                              |
+| **Go 静态检查**    | `go vet ./...`                                         | 同上                                                 |
+| *[报告] 结构意图 gap* | `scripts/structure_gap.mjs`                            | 通过时打印正文、不进「门」的计数；但 **FAIL 照常计入**（会退 1）             |
+
+★ **三态退出码**：`0` = 每道门都真跑过并通过 · `1` = 有门 FAIL · `2` = **有门跑不了（SKIP）**。
+「跑不了」刻意**不**算通过 —— 否则缺工具链的环境会把「没跑」读成「绿」。
+
+> ★ 本仓**不再自养门**（2026-10-05 裁定）。判据的取舍标准：**一条 grep 能查的事不值得一道门**，
+> 而且自编的**普查门能静默死去仍显 ✅**（看着是闸门，实际恒真）⇒ 变更靠**逐条查、逐条修**，不靠普查。
+
+CI 另跑三件事：`npm run verify`（单独 job，自带 Go 工具链）、
+`node third_party/archify/bin/archify.mjs doctor`（守 vendor 的 renderer + schema + example 三件套完整）、
+以及 Go 语言包的 `go build ./... && go test ./...`。
 
 ## 挂起的线
 
@@ -352,7 +391,8 @@ CI 另跑 `archify vendor doctor`（守第三方 vendor 的 renderer + schema + 
 
 * **AST 解析**：tree-sitter（Go / TypeScript / Python / JavaScript），动态检测语言包
 
-* **渲染器**：HTML 字符串拼接（零构建链，产物单文件自包含）
+* **导出**：`render_design` 只做 **mindmap / svg / markdown** 三种**从存储读取**的导出（导出是数据侧的事）；
+  ★ 原先的「HTML 字符串拼接渲染器（产物单文件自包含）」**已于 2026-09-30 删除** —— 界面由独立前端 dsl-workbench 承担。
 
 * **Schema 校验**：ajv + ajv-formats
 

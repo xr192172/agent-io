@@ -527,10 +527,14 @@ export const renderDesignHandler = wrap(async (a) => {
           `提示：先 import_project 或 edit_dsl 补充 semantic.files 后再派生思维导图。`,
       };
     }
+    // ★ 2026-10-13：这里原写「交互版：http://localhost:3000/mindmap/<feature>」——
+    //   **那个路由已不存在**（随 2026-09-30 撤自包含前端一起没了，实测 404）。
+    //   工具回执点名一个 404 的出口 = 把调用方直接引到坑里 ⇒ 如实改成"本仓不提供页面"。
     return {
       message:
         r.message +
-        `\n交互版（人机共笔：⊕ 新增分支 / 双击批注 / 保存回写 DSL）：http://localhost:3000/mindmap/${feature}`,
+        `\n★ 交互渲染：本仓**不提供页面** —— /mindmap/<feature> 已随旧自包含前端一并撤除（2026-09-30，实测 404）；` +
+        `本仓 serve 只做数据/API 引擎，可视化由**独立前端仓库 dsl-workbench** 承担（它按上面的路径自取 JSON 渲染）。`,
     };
   }
   if (format === 'svg') {

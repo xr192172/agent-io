@@ -3313,7 +3313,8 @@ export async function startServer(port?: number): Promise<void> {
       console.log(`  - 产物注册表 API: GET/POST /api/registry`);
       console.log(`  - 项目导入 API: POST /api/import（浏览器目录上传）`);
       console.log(`  - SSE 实时推送: GET /api/events`);
-      console.log(`  - 访问 http://localhost:${listenPort}/workbench 打开唯一前端出口`);
+      console.log(`  - 前端出口：**本 serve 无页面**（旧自包含前端 /workbench 已撤）—— 前端在独立仓库 dsl-workbench，` +
+        `指向本 serve 的 http://localhost:${listenPort} 取数`);
 
       // 常驻 watch（最后一英里实时推送）：AGENT_IO_AUTO_WATCH=1 + AGENT_IO_WATCH_FEATURE=X 时，
       // 监听 cwd 代码变更 → 重建实际 DSL（live/）→ SSE 推送 dsl-changed(source=watch)，

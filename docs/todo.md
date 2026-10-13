@@ -605,6 +605,59 @@ ode-safe-delete-s…` ⇒ ★ **删除护栏的 shim** ✓
           ★ **行为不变** ⇒ ★ 同一调用**正常返回** ✓ · ★ 验完 `npm run build` 清探针（已确认 `0` ✓）
         · ★★ **收益**：★ `symbol_index` 的 `inputs: ['source_files']` ⇒ ★ **主链自动获得【上游补链】** ✓
           —— ★★ **那是【直调没有的】** ✓（★ 即你说的"**否则就可以自动帮它整理好**" ✓）
+      ⇒ ★★★★★ **T222（2026-10-13）：评测 ② 的落点 —— `npm run demo` / `npm run hub`【一跑就崩】（★ 是【真跑出来的】）** ✓✓
+        *(★ 评测原话：onboarding 路径过期 —— ★ 而我**没有照 README 改文档**，★ **先跑了一遍** ✓)*
+        · ★★★ **起点（实测，非推断）**：`npm run demo -- --prepare` ⇒
+          `[demo] Cannot find module '...\dist\src\tools\render_design.js'` ✗
+          ★ 顺带挖出一个**隐性浪费**：`SERVE_JS` 指 `dist/src/tools/serve.js` ⇒ **恒不存在**
+          ⇒ ★ **演示每次先白跑一遍 `npm run build`** ✓（★ 那是"**没报错与没跑长得一样**"的又一格 ✓）
+        · ★★★ **根因**：`src/tools/` 已整体重组为 `application/domain/infrastructure/presentation`
+          ⇒ ★ **脚本里的 dist 路径全停在旧世界** ✓ —— 三处：
+          ★ `demo.mjs` 的 `SERVE_JS` ✓ · ★ `hub.mjs` 的 **3 处** ✓ ·
+          ★★ `demo.mjs` 的 `render_design`（★ **两个都不存在**：`src/tools/` 重组 + ★ **自包含 HTML 渲染器
+            2026-09-30 已删 ⇒ `render_design` 不再产 `htmlFile`**，而脚本还在取 `r.htmlFile` ✗）
+        · ★★★★ **而更要紧的是：`demo`/`hub` 的【前提本身】也没了**（★ 不只路径）—— ★ **真起 serve + curl 实测**：
+          | 请求 | 实测 |
+          |---|---|
+          | `GET /` | **200** `{"ok":true,"frontend":"dsl-workbench",…}` |
+          | `GET /workbench` | ★ **404** ✓ |
+          | `GET /mindmap/run82` | ★ **404** ✓ |
+          ⇒ ★ 而 `demo` 结尾**正是去打开 `/workbench`** ✗ · ★ `hub.mjs` 注释写"主页/项目页由 serve **动态渲染**" ✗ ·
+            ★ **`serve.ts` 启动横幅**还在打 *"访问 http://localhost:PORT/workbench 打开唯一前端出口"* ✗
+            —— ★★ **与同文件上方 10 行的注释（"旧 serve 期自包含前端已撤"）直接矛盾** ✓
+        · ★★★★★ **最贵的一处：一个【活的工具回执】在给调用方指一个 404**
+          ★ `render_design format=mindmap` 的回执原写
+            *"交互版（人机共笔）：http://localhost:3000/mindmap/<feature>"* ⇒ ★ **那个页面不存在** ✗
+          ⇒ ★★ 这是 §2.4 那条 *"**报错/文案里点名的工具必须在册**"* 的**同类** ✓
+            —— ★ **把调用方直接引到坑里**，比"没写"更坏 ✓
+          ★ 同族还有 `derive_mind_map.ts`（头注释 + 回执 message 共 3 处）✓
+        · ★★★ **修法：按层切分知识（★ 不是两层都改一遍话）**
+          ★ 第一版我把"页面撤了 + 前端是 dsl-workbench"**两层各写一遍** ⇒ ★ **回执里同一句出现两次** ✗
+            —— ★ **那正是本仓头号病：同一判据住两处** ✓
+          ⇒ ★ **改成各说各的**：★ `derive_mind_map.ts`（**产数据那层**）只说
+            *"本层只产**中间数据**、不作交付物、消费方按此路径自取。★ 交互页面**不在本层**"*
+            （★ **不提前端名字** —— ★ **产者不该知道消费者是谁** ✓）·
+            ★ `handlers.ts`（**出回执那层**）才说 *"本仓**不提供页面**；可视化由**独立前端仓库
+            dsl-workbench** 承担"* ✓ —— ★ **回执读起来不再重复** ✓
+        · ★★★ **顺带量出来的：README 写死的工具总数【已经漂了】**
+          ★ README 写 **68** ⇒ ★ 当天实测 `node scripts/mcp/mcp_scan.mjs` = **69** ✓
+          ⇒ ★★ 处置照纪律：★ **不手动改成 69**（★ **会再漂** ✓）⇒ ★ **删掉数字**，指到 `capability_map`
+            （**由注册表派生**）✓ —— ★ 这正是 §3 那条 *"要么由 `TOOL_DEFS` 派生、要么删掉"* ✓
+          ★ 而**英文版 README 落后更多**：还留着
+            ★ **"Built-in renderer … self-contained HTML file" 一整行** ✗ ·
+            ★ `render_design` 支持 `html` ✗ · ★ "Specialized tools (37)" ✗ · ★ "5 zero-dependency gates" ✗
+        · ★★★ **取舍（★ 一处【故意的】行为改变，报账）**：
+          ★ `demo`/`hub` 原先**自动开浏览器** ⇒ ★ **现在默认不开**（★ 因为**没有页面可开** ✓）
+          ⇒ ★ 只给**如实提示 + 独立前端仓的接法** ✓；★ 要用浏览器看就给
+            `AGENT_IO_FRONTEND_URL=… npm run demo -- --open` ✓
+          ★ **为什么不顺手把 `hub` 删掉**：★ 它**未在 README 出现**、且**概念仍在**
+            （"把数据/API 引擎跑起来，供前端连" ✓）⇒ ★ **修好过删除** ✓
+            （★ 而 §8 的 G4 裁定是"**不重建已删的免疫系统**"，★ **与此不冲突** —— 这里删的是**渲染页面**，
+              ★ **不是工具面能力** ✓）
+        · ★★ **验收**：★ `npm run demo -- --prepare` ⇒ **落盘 `branch_test` + 幂等跳过** ✓（**跑通** ✓）·
+          ★ 全量 `npm run demo -- 3779` ⇒ **引擎起来 + 提示指到 `D:\project_develop\dsl-workbench`** ✓ ·
+          ★ `npm run hub 3780` ⇒ **同样跑通** ✓ · ★ `npm run build` ⇒ **688 产物 / 孤儿 0** ✓ ·
+          ★ `npm run verify` ⇒ **4/4 通过** ✓ · ★ 真调 `render_design mindmap` ⇒ **新回执（不重复、不指 404）** ✓
 - [x] **T213（2026-10-13）★★★★★ 修掉 ③「**私人符号既离开又被需要**」—— ★ 与 T212 是【同族但相反】的两格**
       ⇒ ★★ **两格是对称的（★ 记这一对）**：
         | | 症状 | 修法 |
