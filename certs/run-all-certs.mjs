@@ -27,6 +27,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+const NL = String.fromCharCode(10);   // ★ T253：换行符用**无歧义**的写法，别再踩三引号转义
+
 const filters = process.argv.slice(2);
 // ★★ T224：`--exclude <串>` —— 起因（★ 有读数）：全量 **19.4 分钟**里，
 //   **52% 是一张【不判红】的量具**（`t189-sweep`，602s/1164s，把 **69 个工具逐个真跑**一遍）✓
@@ -58,17 +60,19 @@ const named = filters.filter((a) => a !== '--exclude' && a !== EXCLUDE);
 //   ⇒ ★ **权威来源应当是【运行期事实】**（跑一次看它到底产不产出汇总），而不是源码文本 ——
 //     后半段那个「运行期漏项自检」就是干这个的；反向（"清单里这条其实已是真证"）
 //     需要一个 `--all` 跑才能看出来。★ 这处不自洽已单列 **T253**。
+// ★★ T253 续：`t184b-probe.mjs` / `t197sub-approval.mjs` / `t203b-declared.mjs` **已从清单删掉** ——
+//   实测它们**不匹配 `COLLECT_RE`**（`t\d+` 后面必须紧跟 `-`，而它们是 `t184b-`/`t197sub-`/`t203b-`）
+//   ⇒ ★ runner **根本不会收集它们** ⇒ 列在清单里**毫无作用**（既不会跳过、也不会跑）。
+//   ★ 要单独跑它们：直接 `node certs/<名字>`；★ 想让它们进 runner：给它们改名。
 const NON_JUDGING = [
   ['t181-reset.mjs', '复位脚本（摆证器纪律用）'],
-  ['t184b-probe.mjs', '探针'],
   ['t185-reset.mjs', '复位脚本'],
+  ['t187-probe.mjs', '探针（★ T253：依据 = **运行期台账** cert-facts.json 说它 hasSummary=false，不是源码文本）'],
   ['t189-measure.mjs', '量具'],
   ['t189-sweep.mjs', '量具：把 69 个工具逐个真跑（★ T224 实测 = 全量 52% 的时间）'],
   ['t192-phantom.mjs', '探针'],
   ['t192-pointer-sweep.mjs', '扫码器'],
-  ['t197sub-approval.mjs', '探针'],
   ['t203-touched-audit.mjs', '审计量具'],
-  ['t203b-declared.mjs', '审计量具'],
 ];
 const ALL = process.argv.includes('--all');
 const nonJudgingNames = new Set();
@@ -81,24 +85,64 @@ const staleList = [];
 const dir = path.dirname(fileURLToPath(import.meta.url)).replace(/\\/g, '/');
 const REPORT_PATH = `${dir}/.work/cert-report.md`;
 
-// ★★★ T250：清单自检（★ 放在 `dir` 定义之后 —— 上一版放在前面，踩了 `dir` 的 TDZ ✓ 已修）
-//   每一条都要求**它的源码里真的没有 `汇总：PASS=`** ⇒ 谁将来给它补上了判定，这里当场警告并**拒绝跳过它**。
+// ★★★ T253 续：**收集规则抽成一个常量** —— ★ 自检要拿它判"这条到底在不在收集范围里"
+//   （★ 第一版把声明插在 `.readdirSync(dir)` 与 `.filter` 之间 ⇒ 把链打断了 ✗，且它在下面自检之后 ⇒ TDZ）
+const COLLECT_RE = /^(t\d+.*-cert\.(sh|mjs)|t\d+-.*\.mjs)$/;
+
+// ★★★ T253（2026-10-13）：清单自检改用**运行期台账**，不再用**源码文本**。
+//
+// ## 为什么换（★ 实测的假阳性）
+// 旧版按源码文本查 汇总：PASS= ⇒ t187-probe.mjs 源码里**有**那个串、**运行期却不产出汇总**
+//   ⇒ 被误判成"已是真证" ⇒ 拒绝跳过 ⇒ ★ 它每次全量都陪跑（约 22s）。
+// ★★ 与 T197 同族：**验证方式的来源不能与生成方式同源**（拿源码文本查源码文本）。
+//
+// ## 现在的权威来源 = 运行期台账（每次跑完自动记 hasSummary）
+// certs/.work/cert-facts.json = { "<file>": { hasSummary, rc, at } }
+//   · 台账说它**产出** PASS/FAIL ⇒ ★ **拒绝跳过**（否则静默漏掉一张真证）
+//   · 台账说它**不产出** ⇒ 允许跳过 ✓（运行期事实）
+//   · 台账**没有它** ⇒ 允许跳过但**标"未核"**（★ 如实说）
+// ⇒ ★★ **反向核对（"清单里这条其实已是真证"）只有 --all 跑得出来** —— 被跳过的文件不产生记录。
+//   所以：**定期跑一次 npm run certs:all** 刷新整份台账 ⇒ 那次的反向核对才是权威的。
+const FACTS_PATH = `${dir}/.work/cert-facts.json`;
+let FACTS = {};
+try {
+  FACTS = JSON.parse(fs.readFileSync(FACTS_PATH, 'utf8'));
+} catch {
+  /* 首次运行：没有台账，全部标"未核" */
+}
+const unverified = [];
+const notCollected = [];
 for (const [f, why] of NON_JUDGING) {
   if (!fs.existsSync(path.join(dir, f))) {
     staleList.push(`${f}（★ 文件已不在，清单条目该删；原记理由：${why}）`);
     continue;
   }
-  const src = fs.readFileSync(path.join(dir, f), 'utf8');
-  if (/汇总：PASS=/.test(src)) {
-    // ★ 它现在**会判红**了 ⇒ 不许再当量具跳过（否则就是**静默漏掉一张真证**）
-    staleList.push(`${f}（★ 它现在**有** \`汇总：PASS=\` ⇒ 已不是量具，清单条目该删）`);
+  const rec = FACTS[f];
+  if (rec && rec.hasSummary === true) {
+    staleList.push(`${f}（★ **运行期事实**：上次跑它产出了 PASS/FAIL ⇒ 它已是真证，清单条目该删）`);
+    continue;
+  }
+  if (!rec) {
+    // ★★★ T253 续（2026-10-13）：**先问"这条到底在不在 runner 的收集范围里"** ——
+    //   起因（★ 实测到的**说谎**）：第一版对 `t184b-probe.mjs` / `t197sub-approval.mjs` /
+    //   `t203b-declared.mjs` 说了"本次照跑了一遍"，而它们**名字不匹配收集正则**
+    //   （`t\d+` 后面必须紧跟 `-`，而它们是 `t184b-`/`t197sub-`/`t203b-`）⇒ ★ **根本没被收进来、根本没跑**。
+    //   ⇒ 后果两条：① 提示**在说谎**；② 它们**永远核不上**（自举不收敛）。
+    if (!COLLECT_RE.test(f)) {
+      notCollected.push(f);
+      continue;
+    }
+    // ★ T253 自举：**台账里没有记录 ⇒ 本次照跑一遍**（花一次成本）⇒ 跑完台账就有它 ⇒ 下次才跳过。
+    //   为什么必须这样：被跳过的文件**不产生记录** ⇒ 否则清单条目会**永远停在"未核"**。
+    unverified.push(f);
     continue;
   }
   nonJudgingNames.add(f);
 }
+
 const files = fs
   .readdirSync(dir)
-  .filter((f) => /^(t\d+.*-cert\.(sh|mjs)|t\d+-.*\.mjs)$/.test(f))
+  .filter((f) => COLLECT_RE.test(f))
   .filter((f) => (named.length === 0 ? true : named.some((x) => f.includes(x))))
   .filter((f) => !(EXCLUDE && f.includes(EXCLUDE)))
   // ★★★ T250：**默认剔掉"不判红"的那批**（除非显式点名它、或 `--all`）
@@ -190,13 +234,41 @@ console.log(`\n${verdict}`);
 //   ★ 因为清单的自检是**按源码文本**查 `汇总：PASS=`，而它源码里有那个串、运行期却不产出汇总
 //   ⇒ ★★ **文本查不出漏项**。而"跑了却没汇总"这件事，**runner 手上就是现成的**（`hasSummary`）。
 //   ⇒ 所以：把"跑了、没崩、没汇总、又不在清单里"的文件**当场列出来**（这是权威来源）。
+// ★★★ T253：**刷新运行期台账**（下次的清单自检就读它）
+{
+  const next = { ...FACTS };
+  for (const r of rows) next[r.f] = { hasSummary: r.hasSummary, rc: r.rc, at: new Date().toISOString() };
+  try {
+    fs.mkdirSync(path.dirname(FACTS_PATH), { recursive: true });
+    fs.writeFileSync(FACTS_PATH, JSON.stringify(next, null, 1), 'utf8');
+    console.log(`\n★ T253：运行期台账已刷新（${rows.length} 条）⇒ 下次清单自检读它，不再读源码文本 ✓`);
+  } catch (e) {
+    console.log(`\n★ T253：台账写入失败（不影响本次判定）：${String(e && e.message)}`);
+  }
+}
+
 const drift = rows.filter((r) => r.rc === 0 && !r.hasSummary && !NON_JUDGING.some((n) => n[0] === r.f));
 if (drift.length > 0) {
-  console.log(
-    `\n★ T250：**清单漏项** —— 下面这些跑了、没崩、但**不产出 PASS/FAIL**，且不在 \`NON_JUDGING\` 里：`,
-  );
+  console.log(`\n★ T253：**清单漏项（运行期事实）** —— 这些跑了、没崩、但不产出 PASS/FAIL，且不在 NON_JUDGING 里：`);
   for (const r of drift) console.log(`   · ${r.f}（${(r.ms / 1000).toFixed(1)}s）`);
-  console.log('   ⇒ ★ 把它们加进 `run-all-certs.mjs` 的 `NON_JUDGING`（附理由）⇒ 下次默认就不跑了。');
+  console.log('   ⇒ ★ 把它们加进 NON_JUDGING（附理由）⇒ 下次默认就不跑了。');
+}
+if (notCollected.length > 0) {
+  console.log(
+    `${NL}★★ T253：清单里有 ${notCollected.length} 条**根本不在 runner 的收集范围**（名字不匹配 COLLECT_RE）⇒ 列着也没用：`,
+  );
+  console.log(`   ${notCollected.join(' · ')}`);
+  console.log('   ⇒ ★ 它们**永远不会被跑**（所以也永远核不上）⇒ 要么从清单里删掉，要么给它们改名。');
+}
+if (unverified.length > 0) {
+  console.log(
+    `${NL}★ T253 **自举**：清单里有 ${unverified.length} 条台账没记录 ⇒ **本次照跑了一遍**（花一次成本，不是陪跑）：`,
+  );
+  console.log(`   ${unverified.join(' · ')}`);
+  console.log('   ⇒ ★ 它们的结果已写进台账 ⇒ **下次默认就跳过**（★ 不需要人工跑 `--all` 了）。');
+}
+if (ALL) {
+  console.log('\n★ T253：本次是 --all ⇒ **台账覆盖全部文件** ⇒ 两个方向（漏项 / 该删的条目）都是权威的 ✓');
 }
 
 // ★★★ T213 续2：**结果同时写一份文件** —— ★ 为什么：★ 我原先用 `| head` / `| tail` 去截输出
