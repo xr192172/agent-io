@@ -1571,19 +1571,7 @@
       ⇒ ★ **已核实的现状**：DSH 的 `@dsh-brain/agent-io-bridge` **已存在** —— 它把 **67 个 agent-io 工具**以
         `mcp__agent-io__<name>` 命名空间注册进 DSH，并在工作区建立时自动 `import_project` 预热索引。
         ⇒ **"AgentIO 进 DSH"这条路已经通了一半**（工具面通了；LLM 通路还没通）。
-- [ ] **T116 ★ 「判据」已收口，但「**怎么用判据**」没收口 —— 包装器抄了多遍**
-      *(来源：D6-2 实现者主动报的"待拍板"；★ **我已裁定：收口**。)*
-      ⇒ **现状**：三处（`import_project.ts:293` · `watch_project.ts:71` · `symbols.ts:904`）
-        **都调了同一个唯一合成函数** `codeSourceExts(listSupportedExtensions())` ✓（**判据收口了**）——
-        但 **`new Set(… .map((e) => e.toLowerCase()))` 这个"怎么用"的表达式抄了多遍**；
-        ★ 而且 **`watch_project.ts:71` 自己加了 `sourceExtSetCache`，别处没有** ⇒ **同一件事各单位做法不同**。
-      ⇒ ★★ **为什么这仍是病**：**判据收口 ≠ 用法收口**。将来若要加**小写归一**或**加缓存**，
-        **要改 N 处**（漏一处就静默不一致）—— **那正是分叉的种子**，只是这次种子长在"用法"上而不是"判据"上。
-      ⇒ **要做**：在 `source_exts.ts` 加一个**带缓存 + 小写归一**的共享包装器（例：`codeSourceExtSet()`），
-        **所有调用点共用**（现在至少 3 处，`grep codeSourceExts` 实测还有 `health/index.ts:776` · `impact/index.ts:139` ⇒ **一并看**）。
-      ⇒ ★ **裁定说明**：这不是"动尺" —— **"别动尺"指的是别改那些扩展名清单本身**；
-        加一个"用它的包装器"**方向相同**（都是收口到一个住处），**不是冲突**。
-      ⇒ **判据**：`grep` 里"`codeSourceExts` + `new Set` + `toLowerCase`"的**组合只剩一处**（包装器内部）。
+
 - [ ] **T118 ★★★ 决策卡要记「是谁提的」—— 像 git 的 author 账号**（已派实现）
       *(来源：2026-10-10 用户 —— *"就像我人提交 Git 要有人的这个**账号**一样，那个 Agent 提交每一个决策，
         也要有**每一个 Agent 本身的那个 Agent 的编号**。"*)*
@@ -1669,22 +1657,8 @@
       ⇒ **缺口 4（小）★ `rename_symbols → 改注释` 走错棒**：链的下一棒是 `edit_code`（**AST 符号级，改不了注释**），
         而**正确棒是文本级的 `plan_refactor`** ⇒ ★ 使用者**自己找到了**（`plan_refactor → apply_refactor_plan` ✅ 7/7 applied）。
         ⇒ **要做**：**链里该有"改注释/字符串"的那一棒**（或**明说 `rename_symbols` 之后不该接 `edit_code`**）。
-- [ ] **T137 ★★ `caveats` ↔ `limitations` **同义异名** —— 同一个意思，两个名字**
-      *(来源：`next_hop_args` 实现时被 b 项契约门挡下（`caveats`/`resolution`/`resolution_note` 三个字段名未登记）；
-        实现者**没收口 `contract_page`**（超范围），而是**本工具改用已登记的 `limitations`**。)*
-      ⇒ **现状**：`contract_page` 用 **`caveats`** · `next_hop_args` 用 **`limitations`** —— **两者同义**。
-      ⇒ ★★ **这是"同一件事住两处"的同族**（**同义异名**：一个意思、两个词 ⇒ 读者会以为它们不同）。
-      ⇒ **要做**：**收口到一个**（★ 建议留 `limitations`，因**它已登记进 `B_TERMS`**、而 `caveats` 是后加的）。
-        ⇒ ★ 而**收口时要看 `contract_page` 的读端**（它的 `resolution`/`resolution_note` 是**另一件事**，别混）。
-      ⇒ **判据**：`grep -rn "caveats" src` ⇒ **归零**（或只剩"为什么改名的说明"）；★ 且 `contract_page` 的读数**语义不变**。
-- [ ] **T138 ★ `measure_b_contract.mjs:559` 硬编码「已登记例外（7）」，**实为 8****
-      *(来源：`next_hop_args` 实现者**明知而留下**（它是**门脚本**，按纪律没动）。)*
-      ⇒ ★ **这是"会腐的手抄数字"**（今天刚立的判据：**别在散文/脚本里写会变的东西** ——
-        `structure.domains.json` 那 16 处就是同款）。
-      ⇒ ⇒ ★★ **同一个病的又一个实例**：**一个数字被手抄进脚本，而它数的那件事一直在变。**
-      ⇒ **要做**：**让脚本自己数**（或**不写这个数**）—— ★ **不是"改成 8"**（那只是把腐往后推一次）。
-      ⇒ **判据**：`grep -n "已登记例外" scripts/measure_b_contract.mjs` ⇒ **那个数字不再硬编码**
-        （或它的来源可机算）；★ 且门**照旧 5/5**。
+
+
 - [ ] **T136 ★★★ `unused_export` 的两处盲区 —— ★ 而这条账【早就被记过，却住在别处】**
       *(来源：2026-10-11 早 —— 子代理 `module-level-edges` 因**网络 502** 失败（**未交付任何东西**），
         team-lead 自己接手复现。★ **独立复现来自两路**：F 组（读数可信度验收）+ 本次。)*
