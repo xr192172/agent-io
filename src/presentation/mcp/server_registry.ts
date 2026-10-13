@@ -42,7 +42,7 @@ export { mcpFace };
 
 // （`tools/stale_check` 的导入已随 P-F 删除：本文件不再直接消费它 —— 三个 stale 告警各自
 //   探测，`stale_check.formatStaleText` 仍由 lanes/observe.ts 的 `run_tests` 前置提示使用。）
-import { getProjectCacheDb } from '../../infrastructure/index/db.js';
+import { getProjectCacheDb, nearestCacheDb } from '../../infrastructure/index/db.js';
 import { recordDogfoodUsage } from '../../infrastructure/dogfood_stats.js';
 import { prewarmKernel } from '../../infrastructure/parse/index.js';
 
@@ -305,7 +305,7 @@ const STALE_INDEX_TTL_MS = 5000;
 
 let _staleIndexCache: { root: string; at: number; stale: number; total: number; sampled: boolean; selfWrites: number } | null = null;
 
-/** 从工具入参里取项目根（各工具参数名不统一，两个都认） */
+/** 从工具入参里取项目根（各工具参数名不统一，四个都认）—— ★ 只是**第一级**，见 `resolveRootFromArgs` */
 function projectRootArg(args: Record<string, unknown>): string | null {
   for (const k of ['project_dir', 'project_root', 'root', 'dir']) {
     const v = args[k];
@@ -313,6 +313,86 @@ function projectRootArg(args: Record<string, unknown>): string | null {
   }
   return null;
 }
+
+/**
+ * ★★★ T228（2026-10-13）：**在使用现场解析根** —— 把「读侧两道索引保障」（逐调用保鲜 +
+ *   陈旧告警）从"调用方传了哪个参数名"里**解绑**。此前它们只认 `projectRootArg` 那 4 个名字；
+ *   实测**20 个工具**（`go_originals` / `translate_go_ts` / `consistency_check` / `diff_views` …）
+ *   的入参里没有这 4 个名字 ⇒ 那两道保障对它们**同时失效、且不说**（静默）。
+ *
+ * 两级合一（"两级在一处表达"，不散在 `invokeTool` 里）：
+ *   ① **级 1**：约定的根参数名（`projectRootArg`，既有行为一字不改）。
+ *   ② **级 2**：扫本次调用的**参数值**（含嵌套对象 / 数组里的字符串），挑出**真实存在**的路径，
+ *      从它所在目录**向上**找最近的 `<dir>/.agent-io/cache.db`（`nearestCacheDb`——仓里已有的
+ *      "向上找"原语，直接复用）⇒ 第一个命中的目录即项目根。
+ *
+ * ★★ **绝不用 `cwd` 兜底**：`cwd` 与被分析项目没有关系（不是"更弱的答案"，是**另一个项目的答案**，
+ *   见 `storage.ts#requireProjectRoot` 的判据）。这里只在**调用方真给过的路径值**上解析；
+ *   一个都解析不到 ⇒ 返回 `null` ⇒ 由调用点**响亮标注**（`NO_PROJECT_ROOT_NOTE`），不静默。
+ */
+export function resolveRootFromArgs(args: Record<string, unknown>): string | null {
+  const named = projectRootArg(args);
+  if (named) return named;
+  for (const cand of collectArgPaths(args)) {
+    let startDir: string;
+    try {
+      // 文件 ⇒ 取所在目录；目录 ⇒ 直接作起点（`code_dir: "<root>"` 这类别再上跳一级）。
+      startDir = statSync(cand).isDirectory() ? cand : path.dirname(cand);
+    } catch {
+      continue; // 不存在 / 不可读 ⇒ 跳过（与 existsSync 等价：只有真存在的才算数）
+    }
+    const db = nearestCacheDb(startDir);
+    if (db) return path.dirname(path.dirname(db)); // <root>/.agent-io/cache.db ⇒ <root>
+  }
+  return null;
+}
+
+/**
+ * 收集一次调用里**真实存在**的字符串候选（深度优先，保持入参书写顺序；跳过已见值）。
+ * ★ 只收 `string`（路径只可能是字符串）；只收 `statSync` 得中的（"存在的文件路径"）。
+ * ★ 递归进对象 / 数组 —— `files[...]` / `args:{…}` 这类嵌套也覆盖。
+ * ★ 相对路径按 `path` 的默认语义（相对 `cwd`）解析 —— 那是**调用方给的路径**本身的语义，
+ *   与工具 handler 对同一入参的解析一致；**不是**拿 `cwd` 当项目根。
+ */
+function collectArgPaths(args: Record<string, unknown>): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  const walk = (v: unknown, depth: number): void => {
+    if (depth > 6) return; // 防病态深嵌套
+    if (typeof v === 'string') {
+      const s = v.trim();
+      if (!s || seen.has(s)) return;
+      seen.add(s);
+      try {
+        statSync(s);
+        out.push(s);
+      } catch {
+        /* 不是现存路径 ⇒ 略过 */
+      }
+      return;
+    }
+    if (Array.isArray(v)) {
+      for (const x of v) walk(x, depth + 1);
+      return;
+    }
+    if (v && typeof v === 'object') {
+      for (const x of Object.values(v as Record<string, unknown>)) walk(x, depth + 1);
+    }
+  };
+  walk(args, 0);
+  return out;
+}
+
+/**
+ * ★★ T228：解析不到项目根时的**如实标注**（不许静默）—— 覆盖两半：未做索引保鲜（`firstContactBackfill`）
+ *   与 未做陈旧检查（`staleIndexWarning`）。
+ *
+ * ★ 只在"真解析不到根"时出现；解析到根且索引健康时**不许**出现（否则就是噪音）。
+ * ★ 依据：本仓"缺失是沉默的"铁律（同族先例：`infrastructure/parse/source_exts.ts` 的
+ *   「排除必须出声」——被排除的东西若连说出来都没有，就是沉默的缺失）。
+ */
+export const NO_PROJECT_ROOT_NOTE =
+  '本次调用未解析到项目根 ⇒ 未做索引保鲜 / 未做陈旧检查（结果可能基于旧图）';
 
 /**
  * 测试隔离用：清掉陈旧告警的**探测缓存**（5s TTL），让下一次调用重新 stat。
@@ -324,13 +404,28 @@ export function resetStaleIndexWarningCache(): void {
 }
 
 /**
- * 索引是否落后于磁盘 → 结构化告警；无索引 / 无根 / 出错 → `null`（静默，不干扰主流程）。
+ * 索引是否落后于磁盘 → 结构化告警。
+ * ★★ T228：**无根 ⇒ 不再静默** —— 返回 `NO_PROJECT_ROOT` 告警（见 `NO_PROJECT_ROOT_NOTE`）。
+ *   （无索引 / 出错仍 `null`：那两种"没在查"与"查了没根"是不同的事，前者由首触保鲜标注兜。）
  *
  * `scope` = 项目根：换项目各自算"首次全文"（分级键 `STALE_INDEX@<root>`）。
  * 导出是为了**能被测试看见** —— 这类"注入型"逻辑最容易静默失效（永远返回 null 也没人发现）。
  */
 export function staleIndexWarning(rawRoot: string | null): ToolWarning | null {
-  if (!rawRoot) return null;
+  if (!rawRoot) {
+    // ★★ T228：**解析不到根 ⇒ 不许静默**。此前这里 `return null`，把"没做陈旧检查"
+    //   藏了起来（正是本仓最反对的"沉默的缺失"）⇒ 改为**结构化标注**（一次，不重复）。
+    return {
+      code: 'NO_PROJECT_ROOT',
+      scope: '(未解析到项目根)',
+      summary: NO_PROJECT_ROOT_NOTE,
+      detail:
+        '本次入参里既没有约定的根参数名（`project_dir` / `project_root` / `root` / `dir`），' +
+        '也没有能向上定位到 `.agent-io/cache.db` 的现存路径参数 ⇒ 无法确定"被分析项目"是哪一个，' +
+        '于是**没有做**索引保鲜与陈旧检查。',
+      fix: '显式传 `project_dir`（或任一能在其目录向上找到 `.agent-io/cache.db` 的现存路径参数）后重试。',
+    };
+  }
   let root: string;
   try {
     root = path.resolve(rawRoot);
@@ -397,7 +492,9 @@ function backfillProgressNote(absRoot: string): string {
  * 导出是为了**能被测试看见** —— "顺手起后台"这类逻辑最容易静默失效（永远不起也没人发现）。
  */
 export function firstContactBackfill(rawRoot: string | null): string {
-  if (!rawRoot || process.env.AGENT_IO_AUTO_BACKFILL === '0') return '';
+  // ★★ T228：**解析不到根 ⇒ 不许静默**（与 `staleIndexWarning` 同一句话，见 `NO_PROJECT_ROOT_NOTE`）。
+  if (!rawRoot) return NO_PROJECT_ROOT_NOTE;
+  if (process.env.AGENT_IO_AUTO_BACKFILL === '0') return '';
   try {
     const abs = path.resolve(rawRoot);
     if (!existsSync(abs) || !statSync(abs).isDirectory()) return ''; // 幻觉路径不建库
@@ -599,7 +696,11 @@ export async function invokeTool(
   // ★ 首次接触 ⇒ 后台建索引（2026-09-15）：带 project_root 的调用若该项目还没有索引，
   //   顺手起后台续建（不阻塞本次调用）——把建索引的起点从"第一次读"提前到"第一次任何调用"。
   //   起了就诚实标注"本轮结果可能不全"（空缺型不全，staleIndexWarning 覆盖不了）。
-  const rootArg = projectRootArg(a);
+  // ★★ T228：根的解析**改走 `resolveRootFromArgs`（两级：约定参数名 → 从现存路径值向上找
+  //   `.agent-io/cache.db`）** —— 下面这 4 处（保鲜 / 告警 / 可信度附注 / 首触建索引）因此
+  //   不再依赖"调用方传了那 4 个参数名"。解析不到 ⇒ `firstContactNote` 与 `staleIndexWarning`
+  //   会**响亮标注**（NO_PROJECT_ROOT），不再静默（见该常量）。
+  const rootArg = resolveRootFromArgs(a);
   const firstContactNote = def.noAutoFresh ? '' : firstContactBackfill(rootArg);
   // ★ L3① 结构性精确化（2026-09-15）：有索引的项目，**每次调用前先保鲜**。
   //   为什么放这里：保鲜此前靠"每个工具自己记得调 ensureProjectIndex"，实测 60 个工具里有
@@ -691,7 +792,14 @@ export async function invokeTool(
     nextNote && r.text.includes(DATA_MARKER)
       ? r.text.replace(DATA_MARKER, () => nextNote + '\n' + DATA_MARKER)
       : r.text + nextNote;
-  return { text: withNext + argHints + emission.text + firstContactNote + trustNote + alertNote + emission.block, isError: r.isError };
+  // ★★ T228：解析不到根时，保鲜（firstContactBackfill）与陈旧检查（staleIndexWarning）**各自**
+  //   都说同一句 `NO_PROJECT_ROOT_NOTE`；但用户只需**一条**（不许变噪音）⇒ 结构化通道
+  //   （`emission` 里那个 NO_PROJECT_ROOT 告警）已带出它时，文本通道不再重复。
+  const firstContactText =
+    firstContactNote === NO_PROJECT_ROOT_NOTE && emission.text.includes(NO_PROJECT_ROOT_NOTE)
+      ? ''
+      : firstContactNote;
+  return { text: withNext + argHints + emission.text + firstContactText + trustNote + alertNote + emission.block, isError: r.isError };
 }
 
 /**
