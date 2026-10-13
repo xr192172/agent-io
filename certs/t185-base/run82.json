@@ -2698,7 +2698,7 @@
           "summary": "T160：设计侧契约写入改为【整块重写】（与代码侧 edit_code 同一把尺）—— 旧的按旧签名串逐字匹配降为兼容路径",
           "rationale": "用户理念原话：AI 不打补丁而是局部重写，把那一整块圈出来交给 AI 重写；有了重写，改设计与改代码成本相当。实测不对称：edit_code op=replace 按符号名 + 完整新定义（不信行号/不信 old_string），而 updateExpectedApi 用 find(a=>a.signature===signature) 逐字匹配 —— 出生证A证实：旧串写错一个字符即报 API 不存在，死路。",
           "consequences": "api.update 现在优先取 data.expected_apis（整块），给旧串的单条路保留但不推荐。同时修 updateFeatureCore 只取 message 首行导致 op 的结构化产物蒸发、op 自身的增删明细被静默丢弃 —— 现改为汇总 data + 要求 op 首行自足。",
-          "acceptance": "出生证B：不给旧串、只给整块 expected_apis ⇒ 写入成功；首行含文件与 N→M 条与增减计数（有删除时带 ⚠）；---DATA--- 里出现 mode/before/after/added/removed/kept。复跑 consistency_check 立刻报出实现缺 2 个成员（sources, provenance）⇒ 改一侧另一侧立刻知道，闭环可跑。npm run verify 5/5。",
+          "acceptance": "不给旧串、只给整块 `expected_apis` ⇒ **写入成功**；**首行**含文件与 `N→M` 条与增减计数（有删除时带 ⚠）；`---DATA---` 里出现 `mode`/`before`/`after`/`added`/`removed`/`kept`。改一侧后复跑 `consistency_check` ⇒ ★ **必须立刻报出另一侧缺了哪些成员**（闭环可跑）。",
           "evidence_source": [
             "src/application/design/dsl_ops/api_ops.ts",
             "src/application/design/dsl_ops/update_feature.ts"
@@ -2809,7 +2809,7 @@
               "summary": "T180：删文件这条路是【半删】—— semantic.files 删了，geometry 里的节点（连同它的决策卡）留着；两条路两种纪律",
               "rationale": "真跑（一次性 feature，已还原）：① 在 file_src_mathutil_ts 上挂一条决策；② edit_dsl type=file op=delete 删它 ⇒ semantic.files 0 条、而 geometry.nodes 里那个节点还在、decision 也还在 ⇒ 留下【幽灵节点】（语义层说没这文件、几何层还挂着它）。③ 再 import_project 重建 ⇒ 决策出现在 overlay 的 anchors（{path,kind:file,decision}）里 ⇒ 靠 overlay 的稳定锚点保住。★ 而 mergeDesignLayer 的设计文档（domain/overlay.ts 文件头）写得比这完整：按锚点【保留 retained / 迁移 migrated / 孤儿 orphaned（真相已删、暂存待决）/ 标过期 stale】—— 那正是用户记得的扫进历史的设计，它真的做了。",
               "consequences": "两条入口两种纪律：deleteFile 只 splice semantic.files（不清 geometry 节点、不触发四态、不报孤儿）；而 import_project 重建走 mergeDesignLayer 的四态对账（有序）。★ 建议：deleteFile 要么同时清 geometry 节点、要么走同一套四态（保留决策 + 标 orphaned）。",
-              "acceptance": "判据（出生证已跑）：删一个挂了决策的 file 节点后，① semantic.files 不含它；② 若保留决策 ⇒ 它应出现在 overlay anchors 且带 orphan 标记；③ 若清理 ⇒ geometry 里不该残留幽灵节点。当前实测 ①✓ ②部分（anchors 有、但无 orphan 标记）③✗（幽灵残留）。",
+              "acceptance": "删一个挂了决策的 file 节点后：① `semantic.files` **不含**它；② 若保留决策 ⇒ 它应出现在 overlay `anchors` 且带 **orphan 标记**；③ 若清理 ⇒ `geometry` 里**不该**残留幽灵节点。",
               "evidence_source": [
                 "src/application/design/dsl_ops/file_ops.ts",
                 "src/domain/overlay.ts",
@@ -2885,7 +2885,7 @@
           "summary": "T170：edit_dsl 各 type/op 的 data 契约进唯一判据表（OP_SPECS）；llm 不再靠试错发现字段",
           "rationale": "T169 黑盒实验实测 24 次调用 8 次失败(33%)，全是试 data 形状。根因：必需字段只以 19 处散落的命令式 throw 存在，LLM 看不见。修法：建 op_data_spec.ts（OP_SPECS + checkOpSpec + renderOpSpecs），checkOpSpec 进 applyOperation 入口、renderOpSpecs 渲染进 edit_dsl 描述 —— 判据一处、两个出口。",
           "consequences": "删掉 19 处散落 throw（含 op 合法性 4 处）改为表驱动；但那些 throw 同时兼任 TS 类型收窄，故 checkOpSpec 返回 CheckedOperation（data 必有），子函数改用该类型，id 处用 as string 并注明依据是 OP_SPECS。范围限定：本表只管形状不管语义，也不含可选字段字典（记 T170b）。",
-          "acceptance": "逐条回归探针：28 条缺陷全被拒 + 6 条合法全放行。黑盒复跑（同任务同约束）：失败 8→5，其中 data 形状失败主体→0，剩 3 次全在 evidence[] 形态 + 2 次环境/用法。npm run verify 5/5。现场全清、agent-io.json 与快照逐字相同。",
+          "acceptance": "逐条回归探针：28 条缺陷**全被拒** + 6 条合法**全放行**。黑盒复跑（**同任务同约束**）⇒ ★ **现场全清**、`agent-io.json` 与快照**逐字相同**。",
           "evidence_source": [
             "src/application/design/dsl_ops/op_data_spec.ts",
             "src/application/design/dsl_ops/update_feature.ts",
@@ -3847,7 +3847,7 @@
           "summary": "T171：修「报错文案把 A 层的要求说成 B 层的形状」—— L3 报错改指 reason 文本；三层契约写进 edit_dsl 描述",
           "rationale": "读实现：L3 判据是 matchesConcreteEntity(trimmed) —— trimmed 是 reason 文本，与 evidence 无关。实测对照：(a) reason 含实体名 + evidence 只给路径 ⇒ 一次通过；(b) reason 泛泛 + evidence 两条给全 ⇒ 仍被 L3 拒。⇒ 黑盒代理必须给两条 evidence 是误判，它成功是因为顺手把 reason 写具体了。而它误判的根因就是 L3 报错文案把五种实体并列、看起来像在说 evidence。",
           "consequences": "L3 报错改写成先点明看 reason 文本并明确排除 evidence；edit_dsl 描述新增三层各要什么的段落（reason 提到实体 / facts 层 evidence 挂路径一条就够 / L4 每条可回溯）。连带：op_data_spec 加 idNote 字段按 type 声明 id 语义，报错从它派生（api 不是路径、decision 两种都认、其余默认），修掉我 T170 照抄 decision 说明导致的 api 误导。",
-          "acceptance": "出生证：L3 新文案含三个关键句且旧误导语已去；反例 reason 含实体名 ⇒ 放行。checkOpSpec 三条 id 报错按 type 各说各的。T170 逐条回归仍 28 拒/6 放行。黑盒第三轮：调用 17 失败 5（T169 24/8 → T170 21/5 → T171 17/5），evidence 相关失败 3→1 且那 1 次是缺 evidence、照报错一次改对。npm run verify 5/5。",
+          "acceptance": "L3 新文案**必须**含三个关键句、且旧误导语**已去**；反例 `reason` 含实体名 ⇒ **放行**；`checkOpSpec` 的三条 id 报错**按 type 各说各的**；★ **必须维持 T170 的逐条回归结果（28 拒 / 6 放行）**。",
           "evidence_source": [
             "src/application/observe/reconcile/reason_validator.ts",
             "src/application/design/dsl_ops/op_data_spec.ts",
@@ -4173,7 +4173,7 @@
           "summary": "T166：新增 move_domain —— 「重新规划功能的分布」的第三棒（一次搬完一个域），闭环真跑通；工具面 65→66",
           "rationale": "用户理念：不打补丁而是整块重写、重新规划功能的分布。三步链：改意图(域表 dir) → structure_gap 出 relocate_moves 待搬清单 → move_domain 一次搬完。判据不新造（读 relocate_moves）；落地复用 rename_files（整体校验+import改写+mkdir+快照）。真跑发现缺收尾：搬完旧空壳还在 ⇒ structure_gap 报 unlisted:1，读数像待处置而真相是搬完了，故加 removed_dirs（rmdirSync 非空会抛=安全网，非空绝不删只报 leftover_dirs）。",
           "consequences": "另给 structure_gap 补结构化 relocate_moves 字段（T165 把清单塞进 note 散文 = 我自己的病，本笔修）。七处登记面已过：lane 数组/AGENTS.md+gen_agents/README×2/域表 note；WHEN_OVERRIDES 与能力矩阵无需改（前者缺省自动摘要、后者是语言矩阵）。",
-          "acceptance": "出生证（真跑）：改域表 dir ⇒ relocating 出清单 ⇒ move_domain 真搬 ⇒ 旧目录空、2 文件到位、7 处 import 被改写（files_written=9）、收掉空壳 1 个 ⇒ 复跑 structure_gap 六态全 0 + 退码 0。还原：与搬前 git status 基线逐字相同。四条验收：tsc=0 / build ok / structure:gap 全 0 / 无参调给人话缺参错误。npm run verify 5/5。",
+          "acceptance": "改域表 `dir` ⇒ `relocating` 出清单 ⇒ `move_domain` 真搬。★ **四条验收**：`tsc`=0 · `build` ok · `structure:gap` **六态全 0 且退码 0** · 无参调用给**人话缺参错误**。★ 且**还原后与搬前 `git status` 基线逐字相同**。",
           "evidence_source": [
             "src/application/refactor/index.ts",
             "src/infrastructure/analysis/structure/structure_gap.ts",
@@ -4196,7 +4196,7 @@
               "summary": "T163 裁定：重构的【主路】是「整块重写」（块=功能分布），【补丁族】(plan_refactor/apply_refactor_plan)降为「只改一小段文本」的窄用途",
               "rationale": "用户原话两条：①「我没让你不看旧串，我的意见是让你可以根据旧串整体去重写新串，只是不要打补丁而是整块重写」；②「重新规划功能的分布，而不是说重新做一个文件或者做一块补丁在那里」。核实：plan_refactor 的输入是 targets=[{file,old_text,new_text}]（文件内一次唯一文本替换）= 打补丁，与理念相反；而整块族已有 edit_code op=replace / move_symbol / rename_files / edit_dsl type=api op=update。",
               "consequences": "plan_refactor 与 apply_refactor_plan 的描述已正名（标明是补丁族 + 指向整块族）。我把「不信 old_string」误读为「不许看旧串」已更正：正解是定位不绑旧串、内容依据旧串。edit_dsl 与 api_ops 的口径也已改对。",
-              "acceptance": "npm run verify 5/5；plan_refactor/apply_refactor_plan 的描述里能看到「补丁族」与整块族四条的指引；edit_dsl 描述里「定位不绑旧串；内容依据旧串」一句话可见。",
+              "acceptance": "`plan_refactor` / `apply_refactor_plan` 的描述里**能看到**「补丁族」与整块族四条的指引；`edit_dsl` 描述里「**定位不绑旧串；内容依据旧串**」一句话**可见**。",
               "evidence_source": [
                 "src/application/refactor/index.ts",
                 "src/application/design/dsl_ops/api_ops.ts",
@@ -4306,7 +4306,7 @@
           "summary": "T164 修复：rename_files 传【目录】一律拒（此前 ok:true + references:[] = 假绿灯，会静默改断 import）",
           "rationale": "实测：rename_files 对 src/infrastructure/analysis/deadcode 做 dry-run ⇒ ok:true / references:[] / editCount:0。而该目录的 detect_dead_imports.ts 被 brickify.ts / brick_bag.ts / function_annotation.ts / deprecate_offline.ts 四处 import。根因：renameFileCore 从不检查 fromAbs 是不是文件；import 匹配按文件路径(targetRel===fromRel)，永不解析到目录 ⇒ 必然空引用。",
           "consequences": "现在传目录会 blocked 并说明「目录搬家要枚举全部文件并逐个改 import」。目录搬家仍不是一等动作（记为 T165 之后的活）。正常文件改名的引用改写不受影响。",
-          "acceptance": "出生证：目录 ⇒ ok:false + blocked + 整体未落盘（原为 ok:true）；回归：src/domain/chain_wiring.ts 改名 dry-run 仍报出真实引用（contract_page.ts / first_hop_args.ts）。npm run verify 5/5。",
+          "acceptance": "目录 ⇒ `ok:false` + `blocked` + ★ **整体未落盘**；回归：对 `src/domain/chain_wiring.ts` 改名 `dry-run` ⇒ **仍报出真实引用**（`contract_page.ts` / `first_hop_args.ts`）。",
           "evidence_source": [
             "src/application/refactor/rename/rename_file.ts",
             "src/application/refactor/index.ts"
@@ -6348,7 +6348,7 @@
           "summary": "T165：structure_gap 新增 relocating 态（整域搬迁的待搬清单），并把「哪些态算不干净」收口到 structureGapIsClean",
           "rationale": "实测病：改 domains[deadcode].dir（真实重新规划分布）⇒ misplaced 仍是 0（它只看父目录直属散文件）、旧目录被 unlisted 报成「要么给它登记，要么它不该在这里」（语义错），且【要搬谁】一个文件名都没有。根因：missing 的注释假设 misplaced 会覆盖待搬文件（一体两面），而那个假设只在散文件场景成立。",
           "consequences": "新增 relocating 态：比 HEAD 版域表与工作区版，同 id 的 dir 不同且旧目录仍有源码 ⇒ 列出文件名。被认领的旧目录不再从 unlisted 报（同一件事一处）。诚实边界：只比 HEAD→工作区，已提交的搬迁不报；取不到 HEAD 版则给 relocate_note 说明【没查】。壳里重算非干净态的代码收敛到 structureGapIsClean（防止下次加态忘同步=假绿灯）。顺手把两处 dep-cruiser 的现在时表述改指 code_health（该框架已随 7bcc364 删除）。",
-          "acceptance": "出生证：改一条域 dir ⇒ relocating:1 且 note 列出 dead_statements.ts / detect_dead_imports.ts；unlisted 不再报该旧目录；missing:1；退码 1。回归：还原后退码 0；注入无主目录 ⇒ unlisted 仍报 1（判据没被改哑）。npm run verify 5/5。",
+          "acceptance": "改一条域 `dir` ⇒ `relocating:1` 且 `note` 列出 `dead_statements.ts` / `detect_dead_imports.ts`；`unlisted` **不再报**该旧目录；`missing:1`；**退码 1**。回归：还原后**退码 0**；注入无主目录 ⇒ `unlisted` **仍报 1**（★ **判据没被改哑**）。",
           "evidence_source": [
             "src/infrastructure/analysis/structure/structure_gap.ts",
             "scripts/structure_gap.mjs",
@@ -8171,7 +8171,7 @@
           "summary": "T161：修两处「摘要把下层静默掉」—— /api/import 不再截首行、verify 截断要标注；并给出可证伪的判据",
           "rationale": "判据（本笔立）：不是有没有取首行，而是下层有没有【不在首行】的必须说清内容、且上层有没有别的通道给它。逐条查 10 处 split(换行)[0]：真漏洞 2 处（update_feature 已在 T160 修 + serve.ts 本笔），其余 8 处是代码首行/编译器诊断首行/自带 ok|status 结构化字段的条目人话细节，判为非漏洞。另 verify.mjs 两处 slice(0,4000|3000) 截断而不标注 = 读者会以为看全了。",
           "consequences": "serve.ts 的 /api/import 与同文件另一出口（message: imp.message 完整）对齐成完整 message；verify 加 clip() 截断标注（原文 N 字符 + 要看全怎么做）。判据从「凡批量执行+逐条汇总都可能有病」收窄为上面那条（否则会变成普查）。",
-          "acceptance": "出生证：真跑 import_project（一次性 feature + .inspect 小项目）⇒ message 实测 8 行，含 ⚠ 单文件化预警多行清单（造 562 行文件实测出现）+ 基线事实已锚定 + 设计层 overlay + ★设计原本不存在⇒fork 了一份 ⇒ 截断必丢。verify 侧：造 50 个 misplaced ⇒ 输出 4020 字符 ⇒ 出现『★ 已截断：原文 4020 字符，只印前 4000』。清理后 verify 5/5、agent-io.json 与快照逐字相同、无残留。",
+          "acceptance": "真跑 `import_project`（一次性 feature + `.inspect` 小项目）⇒ `message` **必须**含：⚠ **单文件化预警**多行清单（造 562 行文件时出现）· **基线事实已锚定** · 设计层 overlay · ★ **设计原本不存在 ⇒ fork 了一份 ⇒ 截断必丢**。verify 侧：造 50 个 `misplaced` ⇒ 输出**必须**出现『★ 已截断：原文 N 字符，只印前 4000』；清理后 `agent-io.json` 与快照**逐字相同**、无残留。",
           "evidence_source": [
             "src/presentation/http/serve.ts",
             "scripts/verify.mjs",
