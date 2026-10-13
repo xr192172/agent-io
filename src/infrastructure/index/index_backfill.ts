@@ -73,12 +73,24 @@ export function stopBackfill(root: string): void {
 }
 
 /**
- * ★ 索引**还不完整**吗？（= 后台续建正在跑，符号表还没补齐）
+ * ★ **后台续建循环现在在不在这个进程里跑？**（★ 只回答这一件事）
  *
- * 为什么把它单独抽出来当**统一口径**：任何"重开引用 → 重解析"的路径都必须知道这件事 ——
- * 不完整时**不能**把"连不上"判成 `failed`（目标可能只是还没索引到；一旦标 failed 就永不重试，
- * 最终索引会永久缺边）。`watch_project.flushBatch` 与 `write_gate.syncSelfWrites` 共用本函数，
- * 避免两处各写一套判断而慢慢漂移。
+ * 唯一正当用法：**避免重复劳动** —— 后台循环本来就在持续同步，逐调用保鲜可以跳过
+ * （见 `server_registry.invokeTool` 的 `hasLiveIndex && !isBackfillRunning`）。
+ *
+ * ## ★★★ T247（2026-10-13）：它**不是**"索引完整不完整"的判据 —— 别再拿它当代理
+ * 它问的是"**在跑吗**"（进程内、瞬时）；而"**覆盖磁盘了吗**"是另一个问题
+ * （数据口径，按需可算）⇒ **判据住在 `index_freshness.indexCovers` / `indexCoversDisk`**（唯一一处）。
+ *
+ * 此前本函数被 5 处当作"索引不完整"的代理，喂给 `keepUnresolvedPending`
+ * （`write_gate.ts:239/428/499` · `watch_project.ts:207` · `index_integrity.ts:202`）——
+ * ★★ 而那**会分歧**（复现：`certs/t247-coverage-cert.mjs`）：
+ *   库在、覆盖不全、本进程从没起过 backfill ⇒ 本函数说"没在跑 ⇒ 可以判 failed"，
+ *   而 `index_freshness` 说"没覆盖 ⇒ 留 pending"
+ *   ⇒ ★ 前者**正好制造**这里点名要防的事故：
+ *     把"还没索引到"判成 `failed`，而 `failed` 的边**永不重试** ⇒ 索引**永久缺边**。
+ * ⇒ 那 5 处**已全部改走** `indexCoversDisk`；本函数**只剩 1 个真读者**（`server_registry`）。
+ * ⇒ ★ **名字也是那时改的**（原 `isIndexIncomplete`）—— 它自己没说错，是别人拿它当代理。
  */
 export function isBackfillRunning(root: string): boolean {
   return backfillState(root)?.running === true;

@@ -2,21 +2,15 @@
  * status_tools 工具实现
  *
  * 提供状态回填功能：
- * - update_status：手动更新节点/文件状态
- * - check_status：扫描 scaffold 生成的代码文件，根据 TODO 残留量自动推断状态
+ * - update_status：手动更新节点/文件状态（★ T98：`check_status` 已**移除**，见文件末注）
  *
  * 工作流：
- *   LLM 写完代码 → check_status 扫描文件 → 自动标记 done/in_progress/draft
- *   或者：LLM 手动标记 —— ★ T196：**真入口是 `edit_dsl`（`operations:[{type:"status", …}]`）**；
+ *   LLM 手动标记 —— ★ T196：**真入口是 `edit_dsl`（`operations:[{type:"status", …}]`）**；
  *     原写「LLM 调用 `update_status`」—— ★ **那个工具不存在**（是收进 `edit_dsl` 之前的旧世界）。
  *   → render_design 重新渲染，节点颜色随状态变化
  */
 
-import fs from 'node:fs';
-import path from 'node:path';
 import type { DesignDSL, DiagramStatus } from '../../../domain/types.js';
-import { hasFileEntries } from '../../../domain/semantic.js';
-import { noFileEntriesMessage } from '../no_file_entries.js';
 import { getDSL, saveDSL } from '../../../infrastructure/storage.js';
 
 // ─────────────────────────────────────────────────────────────
@@ -79,101 +73,6 @@ export function updateStatus(input: UpdateStatusInput): StatusResult {
   };
 }
 
-// ─────────────────────────────────────────────────────────────
-// check_status：扫描代码文件自动推断状态
-// ─────────────────────────────────────────────────────────────
-
-export interface CheckStatusInput {
-  /** feature 名 */
-  feature: string;
-  /** scaffold 输出根目录，默认 scaffold/<feature>/ */
-  scaffold_dir?: string;
-}
-
-export function checkStatus(input: CheckStatusInput): StatusResult {
-  const { feature, scaffold_dir } = input;
-
-  const dsl = getDSL(feature);
-  if (!dsl) {
-    throw new Error(`feature "${feature}" 不存在`);
-  }
-
-  // ★ 判据住一处（domain/semantic.ts `hasFileEntries`）、说明住一处（application/design/no_file_entries.ts）。
-  //   本工具**只能**按文件粒度跑（逐 `file.path` 扫脚手架输出）⇒ 没有文件级条目时如实拒。
-  if (!hasFileEntries(dsl.semantic)) {
-    throw new Error(noFileEntriesMessage(feature));
-  }
-
-  const baseDir = scaffold_dir
-    ? path.resolve(scaffold_dir)
-    : path.join(process.cwd(), 'scaffold', feature);
-
-  const results: { id: string; status: DiagramStatus; detail: string }[] = [];
-
-  for (const file of dsl.semantic.files) {
-    const fullPath = path.join(baseDir, file.path);
-
-    if (!fs.existsSync(fullPath)) {
-      // 文件不存在 → draft
-      if (file.status !== 'draft') {
-        file.status = 'draft';
-        const node = dsl.geometry.nodes.find(n => n.id === file.id);
-        if (node) node.status = 'draft';
-      }
-      results.push({ id: file.id, status: 'draft', detail: '文件未创建' });
-      continue;
-    }
-
-    const content = fs.readFileSync(fullPath, 'utf-8');
-    const todoCount = (content.match(/TODO/g) || []).length;
-    const notImplCount = (content.match(/Not implemented|NotImplemented|raise NotImplementedError/g) || []).length;
-    const totalMarkers = todoCount + notImplCount;
-
-    let newStatus: DiagramStatus;
-    let detail: string;
-
-    if (totalMarkers === 0) {
-      newStatus = 'done';
-      detail = '无 TODO 残留';
-    } else if (totalMarkers <= 2) {
-      newStatus = 'in_progress';
-      detail = `${totalMarkers} 个 TODO 残留`;
-    } else {
-      newStatus = 'draft';
-      detail = `${totalMarkers} 个 TODO 残留`;
-    }
-
-    // 更新 DSL
-    file.status = newStatus;
-    const node = dsl.geometry.nodes.find(n => n.id === file.id);
-    if (node) node.status = newStatus;
-
-    results.push({ id: file.id, status: newStatus, detail });
-  }
-
-  // 重新计算整体状态
-  recomputeFeatureStatus(dsl);
-  saveDSL(dsl);
-
-  const statusLabel = { draft: '待实现', in_progress: '实现中', done: '已完成' };
-  const lines = results.map(r => {
-    const label = statusLabel[r.status];
-    return `  ${r.id}: ${label} (${r.detail})`;
-  });
-
-  return {
-    message: [
-      `状态检查完成：feature "${feature}"`,
-      `整体状态: ${statusLabel[dsl.status!]}`,
-      '',
-      '各文件状态：',
-      ...lines,
-      '',
-      '提示：调用 render_design 重新渲染以查看状态可视化。',
-    ].join('\n'),
-    feature,
-  };
-}
 
 // ─────────────────────────────────────────────────────────────
 // 辅助：根据各节点状态重新计算 feature 整体状态
@@ -198,3 +97,18 @@ function recomputeFeatureStatus(dsl: DesignDSL): void {
     dsl.status = 'draft';
   }
 }
+
+// ─────────────────────────────────────────────────────────────
+// ★★ T98（2026-10-13）：**`check_status` 已移除** —— 留证，别再把它加回来
+// ─────────────────────────────────────────────────────────────
+// 它曾是：`checkStatus(feature, scaffold_dir?)` —— 扫 scaffold 产出的文件，
+//   按 **`TODO` / `Not implemented` 文本计数**推断每个文件的完成度
+//   （`totalMarkers === 0 ⇒ done` / `<= 2 ⇒ in_progress` / 更多 ⇒ `draft`）。
+//
+// 移除理由（★ 不是"说不出它解决什么" —— 它说得出来）：
+//   ① ★ **它的判据是文字游戏**："代码里没有 TODO 字样 = **已完成**" ——
+//      一个没写完但没留 TODO 的文件会被自动标成 `done`。
+//   ② ★★ 而它正是本仓**明令禁**的那一类「**普查式判据**」（`todo.md` T195：
+//      本仓自己编的"命名/词表"普查 ⇒ 撤 —— 因为**普查式门能静默死去仍显 ✅**）。
+//   ③ ★ 它**没有任何入口**（全仓 `grep -rn "checkStatus" src` ⇒ 只剩定义 / 注释 ⇒ 0 引用）。
+//   ⇒ 实现可从 git 取回；要恢复的是"**完成度怎么判**"这个**口径**，不是这段代码。

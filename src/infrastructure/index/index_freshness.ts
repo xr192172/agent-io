@@ -511,33 +511,41 @@ export async function ensureProjectIndex(
  * 此前**两处各持一份判据**（★ 本仓头号病的活标本）：
  * | 处 | 判据 | 口径 |
  * |---|---|---|
- * | `index_freshness`（本文件，走查收尾） | `已索引行数 >= 走查到的文件数` | ★ **数据口径（对）** |
+ * | `index_freshness`（本文件，走查收尾） | 已索引 ⊇ 走查到的 | ★ **数据口径（对）** |
  * | `write_gate.ts:239/428/499` · `watch_project.ts:207` · `index_integrity.ts:202` | `isIndexIncomplete(root)` = **后台续建在不在跑** | ★ **进程口径（只是个代理）** |
  * ★★ 两处**会分歧**（A/B 最小复现：`certs/t247-coverage-cert.mjs`）：
  *   库在、**覆盖不全**、且本进程**从没起过 backfill** ⇒
  *   数据口径说"**留 pending**"，进程口径说"**可以判 failed**" ⇒
  *   ★ 后者**正好会制造它自己注释里点名要防的事故**：把"还没索引到"判成 `failed`，
- *     而 `failed` 的边**永不重试** ⇒ 索引**永久缺边**（`index_backfill.ts` 的 `isIndexIncomplete` 注释原文）。
+ *     而 `failed` 的边**永不重试** ⇒ 索引**永久缺边**。
  *
- * ## 判据只在这里；"两个数从哪来"由调用方按手上的东西给（★ 这是有意的，不是分叉）
- * · `ensureFreshIndex` 走查完时**两个数本来就在手上** ⇒ 直接传它俩（**零额外成本**）；
+ * ## ★★★ 口径必须是**集合**，不能是**计数**（2026-10-13 外部复核抓出的一格）
+ * 第一版写成 `indexedFiles >= diskFiles`（**比个数**）⇒ ★ 能被"**数相等但集合不等**"骗过：
+ * `files` 表可以装着**走查宇宙之外**的文件（例如我们编辑过一个 `*.test.ts` ——
+ * `walkFiles` 的 `includeTests=false` 不列它，而写路径照样把它同步进索引）⇒
+ * ★ **多出来的行会把计数顶上去**，于是在"真源文件还没索引到"时判出"覆盖了" ⇒ 又回到判死。
+ * ⇒ 现在比**集合**：`磁盘上的每个文件都在库里` 才算覆盖（用现成的 `indexedRelativeSet`）。
+ *
+ * ## 判据只在这里；"两个集合从哪来"由调用方按手上的东西给（★ 这是有意的，不是分叉）
+ * · `ensureFreshIndex` 走查完时**两个集合本来就在手上** ⇒ 直接传（**零额外成本**）；
  * · 其它调用方手上只有 `db` + `root` ⇒ 用 {@link indexCoversDisk}（付**一次** `walkFiles`）。
  */
-export function indexCovers(indexedFiles: number, diskFiles: number): boolean {
-  return indexedFiles >= diskFiles;
+export function indexCovers(coveredRel: ReadonlySet<string>, diskRel: readonly string[]): boolean {
+  return diskRel.every((rel) => coveredRel.has(rel));
 }
 
 /**
- * `db` + `root` 形态的 {@link indexCovers}：自己去数两个数。
+ * `db` + `root` 形态的 {@link indexCovers}：自己去取两个集合。
  *
  * ★ 成本：一次 `walkFiles`（本仓 478 文件实测 **冷 36ms / 热 5ms**）——
  *   ★ 换来"判据只有一处"，这个价本仓付得起（写路径本来就远不止这个量级）。
- * ★★ 别改成"读一个持久化的上次走查数"：那个数会**过期**，且过期方向是**不安全**的
- *   （磁盘涨了新文件而持久数没涨 ⇒ 会误判"覆盖了" ⇒ 又回到"把还没索引到判死"）。
+ * ★★ 别改成"读一个持久化的上次走查结果"：那个会**过期**，且过期方向是**不安全**的
+ *   （磁盘涨了新文件而持久值没涨 ⇒ 会误判"覆盖了" ⇒ 又回到"把还没索引到判死"）。
  */
 export function indexCoversDisk(db: Database, root: string): boolean {
-  const c = (db.prepare('SELECT COUNT(*) AS c FROM files').get() as { c: number } | undefined)?.c ?? 0;
-  return indexCovers(c, walkFiles(path.resolve(root), false, false).length);
+  const r = path.resolve(root);
+  const disk = walkFiles(r, false, false).map((a) => path.relative(r, a).split(path.sep).join('/'));
+  return indexCovers(indexedRelativeSet(db), disk);
 }
 
 /**
@@ -704,8 +712,14 @@ export async function ensureFreshIndex(
       //   以前这里内联 `rows.length >= absFiles.length`，而 `write_gate` / `watch_project` /
       //   `index_integrity` 四处用的是 `isIndexIncomplete()`（= **后台续建在不在跑**）——
       //   ★ 同一个问题**两处各持一份判据**，且**会分歧**（复现见 `certs/t247-coverage-cert.mjs`）。
-      //   ★ 这一处的成本**没变**（两个数本来就在手上，走查刚完）—— 见 `indexCovers` 的注释。
-      const indexComplete = indexCovers(rows.length, absFiles.length);
+      //   ★ 这一处的成本**没变**（两个集合本来就在手上，走查刚完）—— 见 `indexCovers` 的注释。
+      //   ★★ ★ 口径是**集合**不是计数（第一版写 `rows.length >= absFiles.length`，
+      //     被"数相等但集合不等"骗过 —— 外部复核抓出的那一格）：
+      //     `rows` 是**走查之前**库里已有的集合 ⇒ "磁盘上每个文件走查前就已在库里" 才算完整。
+      const indexComplete = indexCovers(
+        new Set(rows.map((r) => r.path)),
+        absFiles.map((a) => path.relative(root, a).split(path.sep).join('/')),
+      );
       try {
         resolveCrossFileCalls(db, root, { scopeFiles: [...scopeFiles], keepUnresolvedPending: !indexComplete });
       } catch {

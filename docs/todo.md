@@ -587,6 +587,34 @@
         ② `void _rw` 那处**要么上报要么写明为何不用**（★ 不许"算出来又扔掉"）。
       ⇒ **判据**：`grep -rn "path.relative" src/infrastructure/index src/application/write_gate.ts` ⇒ 只剩一处做"转索引键"的护栏。
 
+- [ ] **T248 ★★ `index_integrity` 硬编码 `state='ready'` —— 一个**同名的假值**（"有库就说齐"，不问覆盖）**
+      *(来源：2026-10-13 架构席复核；★ 我复算过)*
+      ⇒ **实测**（`src/application/meta/integrity/index_integrity.ts:276-279`）：
+        ```ts
+        } else if (hasLiveIndex(root)) {
+          db = getProjectCacheDb(root);
+          state = 'ready';        // ★★ 一有库就宣布 ready —— 而"齐不齐"根本没问
+        }
+        ```
+      ⇒ ★ 这是**第三个**"完整性"的出处（前两个：`FreshnessReport.state` 与旧的 `isIndexIncomplete`），
+        且它是**硬编码**的 ⇒ ★ 与 `ensureProjectIndex` 那条路给出的 `state` **同名不同义**。
+      ⇒ **要做**（外部复核给的建议）：`state` 改成 **`IndexState | undefined`**，把"没走过走查"如实表示出来 ——
+        `refresh:true`/deep 那条路给**真值**，catalog 那条路**省略**（而不是编一个 `'ready'`）。
+        ★ 判据：`grep -n "state = 'ready'" src` ⇒ 0（不许有硬编码的完整度）。
+      ⇒ ★ 注意：**别顺手把 `bootstrap` 的 `'ready'` 也并进来** —— 那是**另一个问题**
+        （"空库冷启有没有建出东西"），不是覆盖度 ⇒ 合了才是真的"两处住一份"。
+
+- [ ] **T249 ★ `find_references.ts:92` 手写 `COUNT(files) > 0` —— 那是"索引能不能用"的**第三份拼法**（T247 的邻居）**
+      *(来源：2026-10-13 架构席复核；★ 我复算过)*
+      ⇒ **实测**：`src/application/refactor/find/find_references.ts:91-92`
+        ```ts
+        const cnt = (db.prepare('SELECT COUNT(*) AS c FROM files').get() as {c?:number}|undefined)?.c ?? 0;
+        if (cnt === 0) return null;
+        ```
+        —— ★ 与 `write_gate.hasLiveIndex`（"cache.db 存在 **且** files 非空"）**问的是同一件事**，却**各写一份**。
+      ⇒ **要做**：改调 `hasLiveIndex(root)`（★ 终态等价：`n>0` ⟺ "在且非空" ⇒ **纯去重、行为不变**）。
+        ★ 判据：全仓 `grep -rn "COUNT(\*) AS c FROM files" src` ⇒ 只剩 `hasLiveIndex` 与 `indexedRelativeSet` 两处**各有理由的**（不是"拼法"）。
+
 
 - [ ] **T231 ★★★ 「注释/字样一并改」【机制已存在】—— 只差一个【默认要不要出声】的取舍**（★ T152 更正后）
       *(★ 2026-10-13 更正：本条原先按"做"登记，**实测后改判为【待拍板】** —— 因为**机制已经完整**了。)*
