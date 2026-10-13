@@ -100,9 +100,9 @@ console.log('\n════ ④ ★ 合成：墓碑也要能走 T187 那条链�
 const { execFileSync } = await import('node:child_process');
 const execFileSync2 = execFileSync; // ★ 收尾复用（同一次 import）
 // ★★★ T251：**机器段的解析只走唯一入口**（本证原先自己写了一份 ⇒ 已删）
-const { parseDataBlock } = await import(
-  pathToFileURL(path.join(process.cwd(), 'dist', 'src', 'application', 'plumbing.js')).href,
-);
+//   ★ 注意：这里用**相对说明符**（与本文件其它 import 同款）—— ★ 我第一版写成
+//   `pathToFileURL(...)` 而本文件**没 import 它** ⇒ `ReferenceError` ⇒ ★ 把一张原本绿的证弄崩了。
+const { parseDataBlock } = await import('../dist/src/application/plumbing.js');
 let toolOut = '';
 try {
   toolOut = execFileSync('node', ['scripts/mcp/mcp_call.mjs', 'consistency_check', JSON.stringify({ feature: FEATURE })], {
