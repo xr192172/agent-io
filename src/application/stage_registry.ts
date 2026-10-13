@@ -46,6 +46,8 @@ import fs from 'node:fs';
 import { requireProjectRoot, getDSL, ensureBaseline, getBaselineFeatureFile, getFeatureFile, viewBaseDirCandidates } from '../infrastructure/storage.js';
 import { projectCacheDbPath, getProjectCacheDb } from '../infrastructure/index/db.js';
 import { ensureProjectIndex } from '../infrastructure/index/index_freshness.js';
+// ★ T238：「索引可用吗」的**唯一住处**（= cache.db 在 **且** files 非空）—— 不在这里重写第二份判据
+import { hasLiveIndex } from './write_gate.js';
 import { getProjectView, invalidateProjectView } from '../infrastructure/project_view.js';
 import { observePointsFile, recommendObservePoints } from './observe/capture/observe_points.js';
 
@@ -160,12 +162,34 @@ export const STAGES: readonly Stage[] = [
     inputs: ['source_files'],
     note: '符号索引 cache.db：nodes / edges / files / imports',
     locate: (ctx) => projectCacheDbPath(requireProjectRoot({ projectRoot: ctx.projectRoot })),
+    /**
+     * ★★★ T238（2026-10-13）：**`isFresh` 必须显式写，且这里只能是 `false`。**
+     *
+     * 为什么：本工序的"新鲜不新鲜"**只能由走查本身回答** —— 即 `ensureProjectIndex` 的
+     * 逐文件 `stat` 比对 + 重同步。**没有**一个"先能读出来的"新鲜标志；
+     * ★ `cache.db` 在不在**不是**那个标志（库在 ≠ 库新）。
+     * ⇒ 由 `isFresh: () => false` 让 `produce` **每次都跑**（它很便宜：ready 态实测 ~35ms/次 / 390 文件；
+     *   有变更时付的是**本来也要付**的重同步钱）。
+     *
+     * ★★ 事故背景（A/B 复现见 `certs/t221-freshness-cert.mjs`）：T221 把 `invokeTool` 的
+     *   "逐调用保鲜"改走 `ensureStage` 时**漏写了这一行** ⇒ 落到 `isFresh()` 的兜底
+     *   「有 `locate` ⇒ 存在即新鲜」⇒ 恒判 fresh ⇒ `produce` **一次都没跑**
+     *   ⇒ ★ 保鲜**静默变成空操作**，而当时的注释逐字写着"**行为不变 ✓**"。
+     */
+    isFresh: () => false,
     produce: async (ctx) => {
       // ★★★ T221：**透传 `bootstrap`，且默认 `false`** —— ★ 别让"接上统一机制"把主链那条
       //   *"绝不因为一次调用就冷启建索引"* 的保护**悄悄换掉** ✗（★ `FreshnessOptions` 的默认是 `true` ✓）
-      await ensureProjectIndex(requireProjectRoot({ projectRoot: ctx.projectRoot }), {
-        bootstrap: ctx.bootstrap === true,
-      });
+      const root = requireProjectRoot({ projectRoot: ctx.projectRoot });
+      if (ctx.bootstrap !== true && !hasLiveIndex(root)) {
+        // ★ T238：**不许"假装 produced"** —— 不冷启 ⇒ 本工序**什么都没做** ⇒ 必须响亮。
+        //   （`ensureStage` 的返回值会声称 `action:'produced'`，那就是一句假话。）
+        throw new Error(
+          `工序 symbol_index：${root} 下没有可用的符号索引，而 bootstrap≠true ⇒ 本工序**不冷启**` +
+            `（绝不因为一次调用就凭空建索引）。先 import_project，或显式传 bootstrap:true。`,
+        );
+      }
+      await ensureProjectIndex(root, { bootstrap: ctx.bootstrap === true });
     },
   },
   {
@@ -487,8 +511,24 @@ function locateState(stage: Stage, ctx: StageCtx): LocateState {
 
 function isFresh(stage: DerivedStage, ctx: StageCtx): boolean {
   if (stage.isFresh) return stage.isFresh(ctx);
-  // 算不出位置 / 不存在 ⇒ 都不算新鲜（去 produce，让它**响亮地**报缺什么）
-  return locateState(stage, ctx).kind === 'present';
+  // ★★★ T238（2026-10-13）：**没有 `isFresh` 时不许猜** —— 分两种情况，判据**完全不同**：
+  //   · **没有 `locate`**（内存产物，如 `source_files`）⇒ 新鲜度无从谈起 ⇒ **返回 false，每次重算**。
+  //     ★ 这是 `source_files` 的**有意设计**（见它的 `produce` 注释），不是兜底。
+  //   · ★★ **有 `locate`** ⇒ 「文件在」**不等于**「新鲜」。旧版这里返回 `kind === 'present'`，
+  //     等于把"**我不知道**"当成了"**新鲜**" ⇒ 实测酿成过一次真事故：
+  //       `invokeTool` 的"逐调用保鲜"改走 `ensureStage('symbol_index')` 后，因 `symbol_index`
+  //       有 `locate` 却没写 `isFresh` ⇒ 恒判 fresh ⇒ `produce` 一次都没跑
+  //       ⇒ **保鲜静默变成空操作**（A/B 复现见 `certs/t221-freshness-cert.mjs`）。
+  //   ⇒ 现在**响亮抛**：要么给这道工序写出真的 `isFresh`，要么它就不许被 `ensureStage` 驱动。
+  //     ★ 判据只住一处：真伪由**工序自己的声明**回答，**不由这个兜底替它回答**。
+  const st = locateState(stage, ctx);
+  if (st.kind === 'no-locate') return false;
+  throw new Error(
+    `工序 "${stage.id}" 声明了 locate 却没声明 isFresh ⇒ 「文件存在」**不等于**「新鲜」` +
+      `（derived 工序的产者可能是一遍**走查**，而不是一次**生成**）。` +
+      `★ 要么给它写一个真的 isFresh（例如"新鲜度只能由走查本身判定" ⇒ 写 \`() => false\` 并写明理由），` +
+      `要么别让 ensureStage 驱动它。**这里不替它猜。**`,
+  );
 }
 
 /**

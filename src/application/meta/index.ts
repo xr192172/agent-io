@@ -834,9 +834,18 @@ export const META_TOOLS: ToolDef[] = [
       '⇒ 多个项目会**互相看见**。要隔离，请在调用前设 `AGENT_IO_HOME=<某个目录>`。' +
       '② **符号索引会被「顺手」自动建**：第一次 `find_references` 之类就在**被分析项目里**生成 `.agent-io/cache.db`，' +
       '不必先 `import_project`（但你可以预期它会写盘）。' +
-      '③ **「每次调用前保鲜」只认 4 个项目根参数名**：`project_dir` / `project_root` / `root` / `dir`。' +
-      '用别的名字（如 `cross_repo_symbol_index` 的 `project_dir_a` / `project_dir_b`）就**拿不到自动保鲜** ' +
-      '⇒ 结果可能**悄悄是旧的**；此时请显式先调 `index_integrity({project_dir, refresh:true})`。',
+      // ★★★ T238（2026-10-13）：★ 这段**过期过**（T228 之前为真、之后为假）—— 记着它为什么必须改：
+      //   它**面向的是 LLM 使用者**（工具描述 = LLM 读的），而 T228 之后"逐调用保鲜 / 陈旧告警 /
+      //   可信度附注 / 首触建索引"这四处**已不靠参数名**（改走 `resolveRootFromArgs`：约定的参数名
+      //   → 否则从**本次调用的参数值**里挑真实存在的路径、向上找 `.agent-io/cache.db`）。
+      //   ★★ 若不改：它会让 LLM 用户**为了避免一个已经不存在的限制**去做多余动作（白调 `index_integrity`），
+      //     而真正该知道的限制（"一个路径都解析不到 ⇒ 结果里会响亮标注 NO_PROJECT_ROOT"）反而没说 ✓
+      '③ **「每次调用前保鲜 / 陈旧告警」怎么定位项目根**（T228 起**两级**）：先认约定参数名 ' +
+      '`project_dir` / `project_root` / `root` / `dir`；★ **都不是**时，改从**本次调用的参数值**里' +
+      '挑出**真实存在的**路径，从它所在目录**向上**找最近的 `.agent-io/cache.db` ⇒ 第一个命中的即项目根。' +
+      '⇒ ★ 用别的名字（如 `cross_repo_symbol_index` 的 `project_dir_a` / `project_dir_b`）**通常也能**被认到；' +
+      '★★ 但**一个路径都解析不到**时，结果里会**响亮标注**（`NO_PROJECT_ROOT`：未做索引保鲜 / 未做陈旧检查，' +
+      '结果可能基于旧图）—— ★ **绝不静默**。要确定性保鲜，仍可显式先调 `index_integrity({project_dir, refresh:true})`。',
     inputSchema: {
       lane: z
         .enum([...LANE_IDS] as [LaneId, ...LaneId[]])
