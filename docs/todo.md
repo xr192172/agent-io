@@ -2578,3 +2578,18 @@
       ⇒ 依据：`infrastructure/index/symbols.ts:390` —— type-only import 不建边（**这是设计**，不是缺陷）。
       ⇒ ⇒ 于是 `cpf_5`（「DSL 是 scaffold/edit_code/consistency_check/rename 的输入」）**表达不了**。
       ⇒ **要做（先裁）**：这是 edge 类的**固有盲区** ⇒ 至少写进形状描述；或新增「类型引用」形状。
+
+- [ ] **T263 ★★★ 【覆盖缺口·实测】`observe_instrument` 不插【箭头函数】—— 而它是本仓最常见的写法之一**
+      *(来源：2026-10-14 主代理真跑 `observe_instrument`（dry_run）在一个含 5 种形态的夹具上；★ 读数是原文。)*
+      ⇒ **实测**（夹具 = 一个 `src/a.ts`，5 种形态）：插了 **10 个探针点**，覆盖
+        **普通函数 / async 函数 / class 方法 / try-catch / 无参函数** ✓
+        —— ★ **而 `export const mul = (a, b) => a * b;`（箭头函数）【一个点都没有】** ✗
+      ⇒ ★★ **为什么这条要紧**：本仓自己就大量用 `const f = () => …`（今天的 `hasLiveIndex` /
+        `findExpectationConflicts` 都是这个形状）⇒ **探针插不到它们 ⇒ 那些函数的 enter/exit 永远不录**
+        ⇒ 而 `observe_trace` / `behavior_baseline` 的读数会**静默少一块**（★ 不是报错，是少）。
+      ⇒ **要做（先裁）**：① 在 ts_js 语言包里补箭头函数（`const f = () => {}` / `const f = async () => {}`
+        —— ★ 它们**不是** `FunctionDeclaration`，要按 `VariableDeclaration` + `ArrowFunction` 识别）；
+        ② 或**如实把「箭头函数不插」写进工具描述**（别让人以为插全了）。
+      ⇒ **判据**：夹具里加一个 `const f = () => 1;` ⇒ 插桩后**必须**有 `f.enter` / `f.exit`
+        （今天必无 ⇒ 静默漏）。
+      ⇒ ★ 关联：`observe_instrument` 的描述自称「对目标项目**全自动插桩**」—— ★ **与实测不符**。
