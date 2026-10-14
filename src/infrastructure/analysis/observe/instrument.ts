@@ -496,7 +496,12 @@ function isSimpleExpr(n: InstrNode): boolean {
  */
 function isBracelessGuardReturn(parent: InstrNode | undefined): boolean {
   if (!parent) return false;
-  const guardTypes = new Set(['if_statement', 'for_statement', 'for_in_statement', 'while_statement', 'do_statement', 'labeled_statement']);
+  // ★★★ T274（2026-10-14）：**补上 `else_clause`** —— 原先这张表里没有它
+  //   ⇒ `if (x>0) return 1; else return 2;` 的 **else 分支**认不出"无大括号"
+  //   ⇒ 走**替换**分支 ⇒ 注入成 **`else const __cam_ret15 = 2;…`**
+  //   ⇒ `SyntaxError: Expression expected` ⇒ 整模块 import 失败。
+  //   ★ 而 `if` 体无大括号走的是**内联**（见下面 T273 那段）—— ★★ **同一个语言构造、两个分支两套处理**。
+  const guardTypes = new Set(['if_statement', 'else_clause', 'for_statement', 'for_in_statement', 'while_statement', 'do_statement', 'labeled_statement']);
   if (!guardTypes.has(parent.type)) return false;
   // 若父控制语句有 statement_block 子节点（即花括号体），说明 return 在块内，安全。
   for (let i = 0; i < parent.childCount; i++) {
@@ -987,10 +992,17 @@ function handleReturn(
   const expr = returnExpr(n);
 
   // 无大括号控制语句的单语句 return（如 `if (x) return null;`）：
-  // 若做值捕获替换会破坏语法（`if (x) const T=null;` 非法），降级为仅返回标记。
+  // 若做值捕获替换会破坏语法（`if (x) const T=null;` 非法）⇒ 降级为"仅标记返回路径"。
+  // ★★★ T273（2026-10-14）：**但必须【补大括号】** —— 原先只在 `return` 前插一个 marker，
+  //   于是 `if (c) return X;` 变成 `if (c) captureProbe(…); return X;`
+  //   ⇒ ★★ **探针成了 `if` 的唯一语句体，`return X` 掉到 `if` 之外 ⇒ 变成【无条件执行】**
+  //   ⇒ **静默改宿主行为**（实测：`loopReturn 3→1` · `recurse 6→0` · `bareReturn -1→undefined`，
+  //     ★ **不报错**——本仓最反对的形态）。
+  //   ⇒ 现在插**两处**：return 前开块 + 探针、return 后闭块 ⇒ `if (c) { probe; return X; }` ✓
   if (isBracelessGuardReturn(parent)) {
     const marker = `captureProbe(${JSON.stringify(probeName)}, { file: ${JSON.stringify(fileRel)}, ret: undefined, level: 'core' });`;
-    insertions.push({ index: n.startIndex, site: { probe: probeName, file, line: n.startPosition.row + 1, kind: 'exit', level: 'core', injected: marker } });
+    insertions.push({ index: n.startIndex, site: { probe: probeName, file, line: n.startPosition.row + 1, kind: 'exit', level: 'core', injected: `{ ${marker} ` } });
+    insertions.push({ index: n.endIndex, site: { probe: probeName, file, line: n.startPosition.row + 1, kind: 'exit', level: 'core', injected: ` }` } });
     return;
   }
 
@@ -1005,17 +1017,47 @@ function handleReturn(
   //   ★ 唯一**真的**没有值可捕获的是**裸 `return;`**（无表达式）⇒ 只有那一支保留 `ret: undefined`。
   //   ★ 保留的特殊分支：`isBracelessGuardReturn`（`if (x) return null;`）—— 那里做值捕获会
   //     **破坏语法**（`if (x) const T=null;` 非法），故仍降级为"仅标记返回路径"（见上）。
-  if (expr) {
+  // ★★★ T272（2026-10-14）：**表达式里含函数/箭头时【不做替换】** —— 那种情况下内联箭头
+  //   会被**独立插桩**，而它的插入点**落在本 return 的替换区间内** ⇒ 两次编辑按原文偏移互相覆盖
+  //   ⇒ 实测 `captureProbe(` 被吃成 `reProbe(` ⇒ `SyntaxError`、**整模块 import 失败**。
+  //   ★ 取舍：**宁可丢 ret、不可崩**（内联函数的 enter/exit 保住、宿主能解析）。
+  if (expr && !containsFunctionLike(expr)) {
     const lineSuffix = n.startPosition.row + 1;
     const tempVar = `__cam_ret${lineSuffix}`;
     // 替换整个 return 语句：`return <expr>;` → `const T=<expr>; probe; return T;`
     const replacement = `const ${tempVar} = ${expr.text};captureProbe(${JSON.stringify(probeName)}, { file: ${JSON.stringify(fileRel)}, ret: ${tempVar}, level: 'core' });return ${tempVar};`;
     insertions.push({ index: n.startIndex, removeTo: n.endIndex, site: { probe: probeName, file, line: n.startPosition.row + 1, kind: 'exit', level: 'core', injected: replacement } });
   } else {
-    // 裸 `return;`：确实没有值 ⇒ 只记录返回路径
+    // 裸 `return;`，或表达式内含函数/箭头（T272）⇒ 只记录返回路径
     const marker = `captureProbe(${JSON.stringify(probeName)}, { file: ${JSON.stringify(fileRel)}, ret: undefined, level: 'core' });`;
     insertions.push({ index: n.startIndex, site: { probe: probeName, file, line: n.startPosition.row + 1, kind: 'exit', level: 'core', injected: marker } });
   }
+}
+
+/**
+ * ★★★ T272（2026-10-14）：这段表达式里**有没有函数/箭头**（会被**独立插桩**的那些）？
+ *
+ * ## 为什么需要它
+ * 应用插入的模型假设"**所有编辑互不重叠**"，而该假设**不成立**：
+ * 实测 `export function sl(arr){ return arr.map((x) => x * 2); }`
+ *   · `return <expr>` 走**替换**（区间 `[startIndex, removeTo)`）；
+ *   · 而 `<expr>` 里的内联箭头 `(x) => x*2` **自己也是一个函数** ⇒ 会被**独立插入** enter/exit；
+ *   · 内联箭头的插入点**落在** return 的替换区间**内** ⇒ 两次编辑都按**原文偏移**应用
+ *     ⇒ 后应用的把先应用的**吃掉一段** ⇒ 实测 `captureProbe(` 被吃成 **`reProbe(`**
+ *     ⇒ `SyntaxError: Expression expected` ⇒ **整模块 import 失败**。
+ *
+ * ## 取舍（如实）
+ * 检测到这种情况就**不做替换**（只发"返回路径标记"）⇒ ★ **宁可丢 `ret`、不可崩**：
+ * 内联函数的 enter/exit **保住**、宿主**能解析**，代价是这一个 return 拿不到返回值。
+ * （T264 是"同 offset"的同类问题，这条是"**包含关系**"。）
+ */
+function containsFunctionLike(node: InstrNode): boolean {
+  if (FN_TYPES.has(node.type)) return true;
+  for (let i = 0; i < node.childCount; i++) {
+    const c = node.child(i);
+    if (c && containsFunctionLike(c)) return true;
+  }
+  return false;
 }
 
 /** 对项目下所有 .ts 文件插桩。返回每个文件的插桩结果。 */
