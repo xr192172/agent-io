@@ -578,8 +578,15 @@ func processFunction(fset *token.FileSet, fn string, params, results *ast.FieldL
 		//   ⇒ 调用树与**契约匹配**分不清是谁（契约里写 `main.closure.exit` 会命中所有闭包）。
 		//   ★ 对齐 TS 侧（那边是 T277 的 `anon@L<行>C<列>`）；这里用 Go 自己的位置信息合成。
 		//   ★ **必须带列号**：同一行可以有多个闭包（`f(func(){…}, func(){…})`）。
+		// ★★★ T298（2026-10-14，第 3 轮实测的残余）：**还要带【文件】维度** —— T280 给闭包加了
+		//   `@L<行>C<列>`，但**没有文件维度** ⇒ 实测同包两个文件里**位置相同**的闭包会撞名
+		//   （`ctrl.closure@L4C14`）。Go 的「同包」= 「同目录」⇒ 用**文件名**（basename）就够区分。
+		base := fileRel
+		if i := strings.LastIndex(base, "/"); i >= 0 {
+			base = base[i+1:]
+		}
 		pos := fset.Position(body.Pos())
-		fn = fmt.Sprintf("closure@L%dC%d", pos.Line, pos.Column)
+		fn = fmt.Sprintf("closure@%s@L%dC%d", base, pos.Line, pos.Column)
 	}
 	offsetOf := func(pos token.Pos) int {
 		return fset.Position(pos).Offset

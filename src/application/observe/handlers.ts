@@ -236,9 +236,14 @@ export const observeInstrumentHandler = wrapData(async (a) => {
     const head =
       `=== Observe 插桩体检 [${lintRoot}] ===\n` +
       `台账：${sites.length} 探针点 · ${byFn.size} 个函数 · ${byFile.size} 个文件\n` +
-      `检查：① 每函数恰一条 enter、至少一条 exit（缺=漏插；enter>1=撞名） ② 同一目录跨文件撞名 ③ 不得有"零探针文件"\n`;
+      `检查：① 每函数恰一条 enter、至少一条 exit（缺=漏插；enter>1=撞名） ② 同一目录跨文件撞名 ③ 不得有"零探针文件"\n` +
+      // ★★★ T299（2026-10-14，第 3 轮实测的量具边界）：**必须说清它看不见什么** ——
+      //   实测 `gp1-r3v-mini`（`go build` **退 1**、编译不过）跑 lint 却报「✓ 不变量全过」。
+      //   ⇒ 因为 lint 只读**探针台账**（"注入了什么"），而"注入后还能不能编译/跑"它**结构上看不见**。
+      //   ★ 不说清就会被误当成"全绿" ⇒ 本仓最反对的"沉默的缺失"。
+      `★ 边界：本体检只覆盖**结构类**（名字/配对/覆盖）；**编译 / 运行 / 取值时机 / 序列化 / 事件顺序**它看不见 ⇒ 那几类要靠 go build / tsc / 端到端。\n`;
     if (issues.length === 0) {
-      return { message: `${head}✓ 不变量全过。\n  ★ 注意：体检**只覆盖结构类**（名字/配对/覆盖）；取值时机、序列化、事件顺序等**运行时**问题它看不见 ⇒ 仍需端到端。`, data: { root: lintRoot, issues: [], checked: { fns: byFn.size, files: byFile.size } } };
+      return { message: `${head}✓ 不变量全过。\n  ★ **但"全过"只说明【结构类】没问题** —— 编译不过 / 跑不起来 / 取值时机错 / 序列化丢事件 等**都看不见**（实测：一个 go build 退 1 的夹具，本体检照样报"全过"）⇒ 那几类必须靠 go build / tsc / 端到端。`, data: { root: lintRoot, issues: [], checked: { fns: byFn.size, files: byFile.size } } };
     }
     const body = issues
       .map((it, i) => `  ${i + 1}. [${it.kind}] ${it.where}\n     ${it.detail}`)
