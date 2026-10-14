@@ -222,7 +222,25 @@ export function applyDecisionWrite(
   //   不许"存进去了但判定器读不懂"（那会变成一条永远不判的假验收）。
   if (next.expectations !== undefined) assertValidExpectations(next.expectations);
   // 新决策：时间戳恒打；author（类别）/ agent（身份）**传入才打**（不伪造）
-  const decision: NodeDecision = { ...next, updated_at: now };
+  //
+  // ★★★ T255（2026-10-14）：**这里从【覆盖】改成【合并】。**
+  //   · 旧写法 `{ ...next }` = **用你给的字段整体替换** ⇒ 只给 `summary` 会把
+  //     `rationale` / `thread` / `evidence_source` / `author` **静默清空**（实测：
+  //     `contract_arc_7` 从 8 个字段掉到 4 个，**无报错无告警**，旧版进了 history）。
+  //   · 而契约只写「`decision: update`（需 id；`data.summary`）」⇒ 读的人自然以为
+  //     "给什么改什么"（合并）⇒ **契约与实现落差 + 静默**（T174 同族，但更隐蔽：
+  //     那一格是"形状错时静默丢"，**这一格是"形状合法也静默丢"**）。
+  //   · 现改为 **`...prevDecision` 打底** ⇒ **未给的字段保留**。
+  //     ★ 要**清空**某字段 ⇒ 显式给空串（合并语义下"不给"= 保留，"给空"= 清空）。
+  //   · ★ `summary` 是 `NodeDecision` 里**唯一必填**（`geometry.ts:172`）⇒ 合并后仍为空则**响亮抛**，
+  //     不再落一个没有结论的决策卡。
+  const decision: NodeDecision = { ...prevDecision, ...next, updated_at: now };
+  if (!decision.summary || !String(decision.summary).trim()) {
+    throw new Error(
+      '决策卡缺 `summary`（结论）—— 它是 NodeDecision 里**唯一必填**字段（geometry.ts:172）。' +
+        '★ 只改别的字段时**不必重给** `summary`（合并语义会保留旧值）；★ 若是首版，`summary` 必须给。',
+    );
+  }
   if (opts?.author) decision.author = opts.author;
   if (opts?.agent) decision.agent = opts.agent;
 

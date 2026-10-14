@@ -326,6 +326,42 @@
       ⇒ **判据**：只给 `{summary, status}` 调一次 ⇒ **要么其余字段保留（合并）**、
         **要么当场报错（要求给全）** —— ★ **不许像今天这样"成功且静默丢 4 个字段"**。
       ⇒ ★ 附：本轮已从仓外存档把 21 条补回完整字段（21/21 八字段全覆盖，已复核）。
+      ⇒ ★★★ **2026-10-14 已修（用户裁定「按你的倾向来」）** —— 实际做法 = **① 合并 + ③ 的必填校验**：
+        · `node_ops.ts:225`：`{ ...next }` → **`{ ...prevDecision, ...next }`** ⇒ **未给的可选字段保留**
+          （要清空某字段 ⇒ 显式给空串；合并语义下"不给"= 保留、"给空"= 清空）。
+        · 同处加「合并后 `summary` 非空」校验（它是 `NodeDecision` 里**唯一必填**，`geometry.ts:172`）。
+        · ★ **而「入参必填」那道【早已住在** `op_data_spec.ts:168` 的 `required: { update: ['summary'] }`
+          （实测：只给 `status`、不给 `summary` ⇒ **op 层直接拦下并回滚**）⇒ ★★ 所以本笔**没有**动它
+          —— 动了就是"同一判据两处"（本仓头号病）。**结论：summary 必填是契约本身，不是缺口。**
+        · **改前 / 改后对照（真实，非构造）**：改前 21 条激活时只给 `summary+status` ⇒
+          `rationale` / `thread` / `evidence_source` / `author` **全丢**（`contract_arc_7` 从 8 字段掉到 4）；
+          改后**同一操作** ⇒ **8 字段全保留** ✓
+        · ★★ **顺带落实用户设想**（*"决策和修改是同步或半同步的，直接修改并填写原因"*）：
+          **顶层 `reason` 绑进 `decision_history[].note`**（`update_feature.ts` 的 `applyDecisionOp`；
+          优先序 **显式 `data.note` > 顶层 `reason`**）—— 实测 history 末条 `note` = 本次 `reason` 逐字。
+          ⇒ **"这一次为什么动它"与那一版决策同处存档**，考古不必两处拼。
+          ★ 依据：实测 `reason` 此前**只喂 L1-L4 校验、完全不落库** ⇒ 与决策卡脱钩。
+
+- [ ] **T256 ★★★★ 【概念澄清】决策卡的"当代意义" = 它能【参与对拍】—— 机制早已存在（`decision.expectations`），缺的是【没人往里写】**
+      *(来源：2026-10-14 用户追问 —— *"决策不应该转化成设计 DSL 用来对拍吗？不然决策卡的实际意义是什么？
+        历史的原因是方便考古，当代的决策写进来……不应该有实际意义吗？"* ★ **这一问纠正了我 T154 的诊断**。)*
+      ⇒ ★★★ **我此前说"决策卡对拍读不到"是【错的/不完整】** —— 实测机制**早就有**：
+        · `domain/expectation.ts:130-138` `collectExpectations(dsl)` **遍历 `n.decision?.expectations`**
+          （★ 读的就是**决策卡**，不是文件节点的 `expected_apis`）；
+        · `handlers.ts:48-50`：`consistency_check` 收集它 → `judgeExpectations(expRoot, expItems)` 判定；
+        · 形状 **6 种**（`expectation.ts:35-54`）：`file-exists` / `symbol-exists` / `signature-matches` /
+          `edge-exists` / `edge-absent` / `call-exists`；写入口有 `assertValidExpectations` 响亮拒绝坏形状。
+        ⇒ ★★ **所以"决策卡 → 对拍"这条路是通的**，缺的是**那 62 条（现 21 条）里一条 `expectations` 都没写**。
+      ⇒ ★★★ **由此更正 T154 的诊断**：62 条的问题**不是**"落点不对（决策卡 vs `expected_apis`）"，
+        而是 **"只写了考古字段（`summary`/`rationale`），没写可判定字段（`expectations`）"**
+        ⇒ 所以它们**只考古、不对拍**。
+      ⇒ ★★ **判据（用户给的）**：**当代决策**应当**除"注释已有设计"外**都带**可判定验收** ——
+        · 若它是"**应该是什么**"的断言 ⇒ **必须能转成 `Expectation[]`**（否则它只是散文）；
+        · 若它只是**解释/背景**（"注释已有设计"）⇒ 无 `expectations` 是**正当**的。
+      ⇒ **要做**：① 逐条过那 21 条，判"能判定 / 只是解释"；② 能判定的补 `expectations`；
+        ③ ★ **量一件事**：补完之后 `consistency_check` 的"不变式/验收"读数**必须从 0 变非 0**
+        （★ 否则等于没补）；④ 把"新决策卡应当带可判定验收"写进 `edit_dsl` 的 `decision` 契约描述。
+      ⇒ ★ 与 T154 的关系：**T154 是"备菜"（把候选捞出来），本条是"让菜能下锅"（变成可对拍的断言）**。
       ⇒ **代码位置（判据的唯一住处）**：`dsl_ops/node_ops.ts:225` `const decision: NodeDecision = { ...next, updated_at: now };`
         —— ★ `{ ...next }` = **用你给的字段整体替换**，不是合并。三个调用点都走它：
         `update_feature.ts:865`（`edit_dsl` 的 decision 路径）· `node_ops.ts:103`（addNode）· `node_ops.ts:293`（updateNode 的 `data.decision`）。

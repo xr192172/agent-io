@@ -113,6 +113,22 @@ export interface UpdateFeatureInput {
    * ★ **没传 ⇒ 落库但不伪造**，读端明标「未署名」（不是抛错；理由见 `b_terms` 的 `agent` 词条）。
    */
   agent?: string;
+  /**
+   * ★★★ **本次变更的原因** —— 就是 `edit_dsl` 的**顶层必填入参 `reason`**（`dispatchDslEdit`
+   * 把原始入参原样传进来，所以它天然在这里）。
+   *
+   * ## T255（2026-10-14）起：它**绑进决策卡的历史**
+   * 用户设想（原话）：*"决策和修改是同步或半同步的，直接修改并填写原因，和先记录决策后续补修改"*。
+   * ⇒ **同步**：一次 `edit_dsl` 里"改 DSL + 填原因" ⇒ 那条原因**自动落进**该决策的
+   *   `decision_history[].note`（调用方**没显式给 `data.note`** 时）⇒ ★ **"为什么做这次决策"随卡可查**。
+   * ⇒ **半同步**：先落 `status:'draft'` 的决策，后续补改时原因同样进历史。
+   *
+   * ★ 为什么必须绑：实测（T255 取证）`reason` 此前**只喂 L1-L4 校验、完全不落库** ——
+   *   于是"为什么改"与"决策卡"**脱钩**：卡里只有 `rationale`（这个设计为什么这么定），
+   *   而"**这一次为什么动它**"没有任何住处。
+   * ★ 优先序：**显式 `data.note` > 顶层 `reason`**（前者是更贴切的逐条说明，后者是整次调用的原因）。
+   */
+  reason?: string;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -147,9 +163,11 @@ function updateFeatureCore(input: UpdateFeatureInput): EditResult {
   //     ⇒ 不需要额外包 `op_index`（那也是本仓"产物要能自己说清我是谁"的口径）。
   //   ★ 长度 1 ⇒ 直接给元素本身（常见情形少一层解包）；>1 ⇒ 给数组。**这条口径写在这里，读端别猜**。
   const opData: unknown[] = [];
+  // ★★★ T255：本次变更原因（顶层 `reason`）—— 传给 decision 写路，绑进决策卡历史（见 `UpdateFeatureInput.reason`）。
+  const changeReason = typeof input.reason === 'string' ? input.reason.trim() : '';
   try {
     for (const [i, op] of operations.entries()) {
-      const result = applyOperation(feature, op, agent);
+      const result = applyOperation(feature, op, agent, changeReason);
       // ★★ 摘要 = **首行**。⇒ 〔继承下笔人的判据〕**op 的首行必须自足**：
       //   它是**唯一保证被看见**的那一行（明细与结构化产物都可能在传输/汇总时丢掉）。
       //   例：破坏性操作（删条目）必须把"删了几条"写进首行，并带 ⚠。
@@ -306,7 +324,7 @@ export function updateFeature(input: UpdateFeatureInput): TouchedProduct<EditRes
 // 操作路由
 // ─────────────────────────────────────────────────────────────
 
-function applyOperation(feature: string, rawOp: FeatureOperation, agent?: string): EditResult {
+function applyOperation(feature: string, rawOp: FeatureOperation, agent?: string, changeReason?: string): EditResult {
   // ★★ T170（2026-10-11）：**形状校验的唯一入口**（type 合法性 / op 合法性 / id / data 必需键 / 二选一）。
   //   原先这些判据**散在下面各 case 里**（19 处 `if (!op.data?.X) throw`，还有几处 `if (op.op !== 'x') throw`）
   //   ⇒ ★ **LLM 看不见**，只能"故意发一个残缺请求、读报错"来发现字段（黑盒实验实测：**24 次调用里 8 次是试形状**）。
@@ -356,7 +374,7 @@ function applyOperation(feature: string, rawOp: FeatureOperation, agent?: string
     case 'tag':
       return applyTagOp(feature, op);
     case 'decision':
-      return applyDecisionOp(feature, op, agent);
+      return applyDecisionOp(feature, op, agent, changeReason);
     default:
       throw new Error(`未知操作类型: ${op.type satisfies never}`);
   }
@@ -763,7 +781,7 @@ function parseDissent(v: unknown): DecisionDissent[] {
   });
 }
 
-function applyDecisionOp(feature: string, op: CheckedOperation<FeatureOperation>, agent?: string): EditResult {
+function applyDecisionOp(feature: string, op: CheckedOperation<FeatureOperation>, agent?: string, changeReason?: string): EditResult {
   if (op.op !== 'update') throw new Error(`decision 仅支持 update 操作（收到 ${op.op}）`);
   const data = op.data ?? {};
   const summary = typeof data.summary === 'string' ? data.summary.trim() : '';
@@ -859,7 +877,14 @@ function applyDecisionOp(feature: string, op: CheckedOperation<FeatureOperation>
     );
   }
 
-  const note = typeof data.note === 'string' ? data.note : undefined;
+  // ★★★ T255：**原因绑进历史**（用户设想：*"决策和修改是同步或半同步的，直接修改并填写原因"*）。
+  //   ★ 优先序：**显式 `data.note` > 顶层 `reason`** —— 前者是逐条说明（更贴切），后者是整次调用的原因。
+  //   ★ 为什么落进 `note` 而不是别处：`note` 会进 `DecisionHistoryEntry.note`（`applyDecisionWrite`）
+  //     ⇒ 于是"**这一次为什么动它**"与那版决策**同处存档** ⇒ **考古时不用两处拼**。
+  const note =
+    typeof data.note === 'string' && data.note.trim()
+      ? data.note
+      : (changeReason && changeReason.trim() ? changeReason : undefined);
   const prev = target.node.decision;
   // ★ 身份来自顶层 `agent`（整次调用的发起者）；类别来自 data.author。二者落库可并存。
   const { decision: nd, decision_history: nh } = applyDecisionWrite(target.node.decision, target.node.decision_history, decision, {
