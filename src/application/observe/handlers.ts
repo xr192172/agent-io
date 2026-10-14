@@ -60,6 +60,101 @@ export const observeInstrumentHandler = wrapData(async (a) => {
   //   不碰任何写盘/备份路径。
   //   ★ 输出形状：`message` = 人读台账（与 CLI 逐行一致）；`data` = `{ root, ledger, summary }`。
   //     `ledger: null` = 未找到台账 ⇒ **不抛错**（"没插过桩 / 已全拔"是正常状态，不是失败）。
+  // ★★★ 2026-10-14：**插桩体检（`action=lint`）** —— 「清单对比」的第一道筛。
+  //
+  // ## 为什么要有它（来自今天 35 条账的复盘）
+  // 今天挖出的账里，约**三分之一是【结构类】**（探针名撞了 / 该有的没有），而它们
+  // **全都体现在探针台账里** —— 台账本来就有（`action=ledger`），只是**没人去比**。
+  // ⇒ 这一支就是"**去比**"：纯台账内检查，**不需要跑、不需要接 sink、秒级**，
+  //   把结构类问题挡在端到端之前（端到端贵，且贵在"要跑起来"）。
+  //
+  // ## 判据（★ 只三条，且**不需要人写期望清单** —— 不变量而非期望值）
+  // 按"函数"聚合（把 `X.enter` / `X.exit` / `X.catch` 归到 `X`）：
+  //   ① **每个函数恰有一条 enter、一条 exit** —— 缺 ⇒ 漏插；多 ⇒ **撞名**（两个东西共用一个名字）。
+  //      ★ 实测这类账：T280（Go 闭包全叫 `main.closure`）· T282（get/set 都叫 `value`）
+  //        · T263（箭头函数漏插 ⇒ 少一对）。
+  //   ② **同一 `probe` 名在同一文件出现多次** —— 直接点出撞名的具体名字。
+  //   ③ **完全没有探针的文件** —— 扫描到却一个点都没插（可能是整文件漏插）。
+  //
+  // ★ 覆盖不到什么（如实）：**运行时语义**（取值时机、序列化失败、事件顺序）——
+  //   台账只记"注入了什么"，不记"跑起来发生了什么"。那类必须靠端到端。
+  if (a.action === 'lint') {
+    const lintRoot = target;
+    const ledger = loadProbeLedger(lintRoot);
+    if (!ledger) {
+      return {
+        message: `=== Observe 插桩体检 [${lintRoot}] ===\n未找到台账（可能从未插桩，或已一键全拔清理）。\n  ⇒ 先跑一次插桩（不带 action），再体检。`,
+        data: { root: lintRoot, ledger: null, issues: [] },
+      };
+    }
+    const sites = (ledger as { sites?: Array<{ probe?: string; file?: string; kind?: string; line?: number }> }).sites ?? [];
+    // 按"文件 + 函数基名"聚合（基名 = 去掉 .enter/.exit/.catch/.writefile 等后缀）
+    const byFn = new Map<string, { enter: number; exit: number; probes: string[] }>();
+    const byFile = new Map<string, number>();
+    for (const s of sites) {
+      const probe = String(s.probe ?? '');
+      if (!probe) continue;
+      const file = String(s.file ?? '');
+      byFile.set(file, (byFile.get(file) ?? 0) + 1);
+      const base = probe.replace(/\.(enter|exit|catch|writefile|mkdir|rename|remove|append)$/i, '');
+      const key = `${file}::${base}`;
+      const rec = byFn.get(key) ?? { enter: 0, exit: 0, probes: [] };
+      if (probe.endsWith('.enter')) rec.enter++;
+      else if (probe.endsWith('.exit')) rec.exit++;
+      rec.probes.push(probe);
+      byFn.set(key, rec);
+    }
+    const issues: Array<{ kind: string; where: string; detail: string }> = [];
+    // ① 每个函数恰一条 enter / 至少一条 exit
+    //   ★★★ 2026-10-14 修（我自己的假阳性）：**`exit > 1` 不是撞名** ——
+    //     一个函数有多个 `return` 就天然有多条 exit（实测 `loopRet` 里两个 return ⇒ exit=2）。
+    //     ⇒ **撞名的判据只能是 `enter > 1`**（一个函数只能有一个入口）。
+    //     ★ 这条假阳性是"跑一次真夹具"抓出来的 —— 光看代码不会发现。
+    for (const [key, rec] of byFn) {
+      const [file, base] = key.split('::');
+      // ★ 先判**撞名**（`enter > 1`）—— 它比"缺失"更具体：`enter=2 exit=0` 既撞名又缺 exit，
+      //   两条都报（★ 实测构造过这一格：先判缺失会把撞名掩盖成"漏插"）。
+      if (rec.enter > 1) {
+        issues.push({
+          kind: 'duplicate-name',
+          where: `${file} :: ${base}`,
+          detail: `enter=${rec.enter} ⇒ **撞名**：两个不同的东西共用了这个名字（契约匹配会命中错的对象）`,
+        });
+      }
+      if (rec.enter === 0 || rec.exit === 0) {
+        issues.push({
+          kind: 'missing-pair',
+          where: `${file} :: ${base}`,
+          detail: `enter=${rec.enter} exit=${rec.exit} ⇒ 缺${rec.enter === 0 ? ' enter' : ''}${rec.exit === 0 ? ' exit' : ''}（漏插，或名字算错）`,
+        });
+      }
+    }
+    // ② ★★★ 2026-10-14 **已删除**（我自己的假阳性）：原先这里查"同名 probe 出现 >1 次"，
+    //   但**多 return 的函数天然有多条同名 exit**（实测 `loopRet.exit` 出现 2 次是正常的）、
+    //   **跨文件同名也是正常的**（不同文件的 `main.enter` 互不相干）
+    //   ⇒ 该判据与 ① 的 `enter > 1` 重复、且更粗 ⇒ **删掉**，避免噪声（假阳性会让体检失去信任）。
+    //   ★ 真正要抓的"撞名"由 ① 的 `enter > 1`（同文件同基名）精确覆盖。
+    // ③ 有文件却一个点都没有
+    const fileSet = new Set<string>((ledger as { files?: string[] }).files ?? []);
+    for (const f of fileSet) {
+      if (!byFile.has(f)) issues.push({ kind: 'empty-file', where: f, detail: '该文件在台账里没有任何探针点（整文件漏插？）' });
+    }
+    const head =
+      `=== Observe 插桩体检 [${lintRoot}] ===\n` +
+      `台账：${sites.length} 探针点 · ${byFn.size} 个函数 · ${byFile.size} 个文件\n` +
+      `检查：① 每函数恰一条 enter、至少一条 exit（缺=漏插；enter>1=撞名） ② 不得有"零探针文件"\n`;
+    if (issues.length === 0) {
+      return { message: `${head}✓ 不变量全过。\n  ★ 注意：体检**只覆盖结构类**（名字/配对/覆盖）；取值时机、序列化、事件顺序等**运行时**问题它看不见 ⇒ 仍需端到端。`, data: { root: lintRoot, issues: [], checked: { fns: byFn.size, files: byFile.size } } };
+    }
+    const body = issues
+      .map((it, i) => `  ${i + 1}. [${it.kind}] ${it.where}\n     ${it.detail}`)
+      .join('\n');
+    return {
+      message: `${head}✗ 发现 ${issues.length} 个结构问题：\n${body}\n  ★ 这些是**结构类**（名字/配对/覆盖）；运行时问题（取值时机/序列化/顺序）不在此列。`,
+      data: { root: lintRoot, issues, checked: { fns: byFn.size, files: byFile.size } },
+    };
+  }
+
   if (a.action === 'ledger') {
     const ledgerRoot = target; // 已在入口归一为绝对路径（原先这里再 resolve 一次 —— 同一件事写两处）
     const ledger = loadProbeLedger(ledgerRoot);

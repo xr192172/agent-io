@@ -226,9 +226,15 @@ export const OBSERVE_TOOLS: ToolDef[] = [
       'Go 运行前提：被测工程须能 import `github.com/xr192172/agent-io/observe-lang-go/probe`（其 go.mod 需 replace/require 指向本仓 observe-lang-go）。',
     inputSchema: {
       action: z
-        .enum(['instrument', 'uninstrument', 'restore', 'ledger'])
+        .enum(['instrument', 'uninstrument', 'restore', 'ledger', 'lint'])
         .optional()
-        .describe('instrument=插桩（默认）；uninstrument/restore=一键全拔（还原+清备份）；ledger=只看探针台账（只读，不写盘）'),
+        .describe(
+          'instrument=插桩（默认）；uninstrument/restore=一键全拔（还原+清备份）；' +
+            'ledger=只看探针台账（只读，不写盘）；' +
+            '★ lint=**插桩体检**（只读）：按台账跑两条结构不变量 —— ① 每个函数恰一条 enter、至少一条 exit' +
+            '（缺=漏插；`enter>1`=**撞名**） ② 不得有"零探针文件"。★ 只覆盖**结构类**（名字/配对/覆盖），秒级、不用跑；' +
+            '运行时问题（取值时机/序列化/事件顺序）它看不见 ⇒ 仍需端到端。',
+        ),
       target: z.string().describe('要插桩 / 还原 / 查台账的目标项目目录（绝对，或相对 cwd —— 入口会归一为绝对再交给语言包）'),
       dry_run: z.boolean().optional().describe('true=只预览探针点不写盘（默认 false）'),
       contract_probes: z

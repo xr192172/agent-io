@@ -80,6 +80,17 @@ export interface InstrumentedSite {
   /** ★ 探针名（与 contractProbes 精确匹配的 key，如 `mod.fn.enter`）；
    *  由插桩器自己产出 —— 推荐器/台账都据此取 key，避免各处自己拼字符串导致漂移。 */
   probe: string;
+  /**
+   * ★★★ 2026-10-14：**同一次注入里还带出的其它探针名**（只用于**记账**，不参与应用）。
+   *
+   * ## 为什么需要它
+   * 有些注入**一次替换同时表达两条探针**（如"箭头表达式体"那条：`{ captureProbe(enter); … captureProbe(exit); return … }`），
+   * 而 `probe` 只能填**一个** ⇒ 台账**只记了其中一个**。
+   * ★ 实测后果：`cb.named` 的源码里**明明有** `captureProbe("cb.named.exit")`，台账里却**没有** `cb.named.exit`
+   *   ⇒ ★★ **量具不全** ⇒ 一切基于台账的判断（含 `action=lint` 的体检）**都会错**。
+   * ⇒ 这些名字在这里补上，由 `buildProbeLedger` 展开成独立的 site 记录。
+   */
+  extraProbes?: string[];
   // 注入的探针源码（用于报告）
   injected: string;
 }
@@ -241,7 +252,17 @@ export function buildProbeLedger(results: InstrumentFileResult[], projectRoot: s
   for (const r of results) {
     if (r.error || r.sites.length === 0) continue;
     files.add(r.file);
-    sites.push(...r.sites);
+    for (const s of r.sites) {
+      sites.push(s);
+      // ★★★ 2026-10-14：把 `extraProbes` **展开成独立的 site 记录** ——
+      //   有些注入一次替换同时表达两条探针（如箭头表达式体的 enter+exit），而 `probe` 只填一个
+      //   ⇒ 原先台账**只记一个** ⇒ ★ 实测：源码里有 `cb.named.exit`、台账里没有
+      //   ⇒ **量具不全**（一切基于台账的判断都会错）。
+      //   ★ 这些是"同一次注入带出的"，所以 file/line/injected 共用，只有 probe 不同。
+      for (const p of s.extraProbes ?? []) {
+        sites.push({ ...s, probe: p, kind: p.endsWith('.enter') ? 'enter' : 'exit' });
+      }
+    }
   }
   const perKind: Record<string, number> = {};
   const perLevel: Record<string, number> = {};
@@ -776,6 +797,8 @@ function collectSites(
               removeTo: body.endIndex,
               site: {
                 probe: probeName + (wantEnter ? '.enter' : '.exit'),
+                // ★ 一次替换同时表达 enter+exit ⇒ 另一个名字只用于记账（否则台账漏记，见 extraProbes 的注释）
+                extraProbes: wantEnter && wantExit ? [probeName + '.exit'] : undefined,
                 file,
                 line: n.startPosition.row + 1,
                 kind: wantEnter ? 'enter' : 'exit',
@@ -807,6 +830,8 @@ function collectSites(
               removeTo: body.endIndex,
               site: {
                 probe: probeName + (wantEnter ? '.enter' : '.exit'),
+                // ★ 同上：一次替换同时表达 enter+exit ⇒ 另一个名字只用于记账
+                extraProbes: wantEnter && wantExit ? [probeName + '.exit'] : undefined,
                 file,
                 line: n.startPosition.row + 1,
                 kind: wantEnter ? 'enter' : 'exit',
