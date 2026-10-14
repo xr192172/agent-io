@@ -61,8 +61,42 @@ export function captureProbe(probe: string, fields: Record<string, unknown>, sou
   if (!sink) return;
   try {
     sink.emit(probe, fields, source);
-  } catch {
-    /* 探针绝不允许反过来让业务路径抛错 */
+  } catch (err) {
+    // ★★★ T306（2026-10-14）：**探针不许抛错，但错误必须【可见】** ——
+    //   原先是空的 `catch {}` ⇒ `sink.emit` 抛错（写盘失败 / 权限 / 磁盘满）时**无声无息**
+    //   ⇒ 观测者会以为"探针在跑"，实际一条事件都没出去（★ 与 Go 侧 T286 同族："缺失伪装成事实"）。
+    //   ⇒ 对齐 Go 侧的 `reportProbeError`（写 stderr 且**限流**：首次完整说 + 之后每 N 次报累计）。
+    //   ★ 纪律不变：**绝不 rethrow**（探针跑在宿主热路径上）。
+    reportProbeError(probe, err);
+  }
+}
+
+/**
+ * ★★★ T306：把探针的内部错误**说出去**，但**限流**。
+ *
+ * ★ 为什么不能静默：`sink.emit` 失败（写盘/权限/磁盘满）时，事件**一条都没出去**，
+ *   而宿主**毫不知情** ⇒ "缺失伪装成事实"（本仓最反对的形态）。
+ * ★ 为什么不能每次都喊：探针跑在宿主**热路径**上，刷屏会淹没宿主日志。
+ * ⇒ 策略与 Go 侧 `reportProbeError` 一致：**首次**完整说（含成因与排查方向），之后每 100 次报一次累计。
+ */
+let probeErrCount = 0;
+let probeErrSeen = false;
+function reportProbeError(probeName: string, err: unknown): void {
+  probeErrCount += 1;
+  const first = !probeErrSeen;
+  probeErrSeen = true;
+  const n = probeErrCount;
+  if (first) {
+    console.error(
+      `[probe] 探针事件**发不出去**（第 1 次）：${String(err)}\n` +
+        `  probe=${probeName}\n` +
+        `  ★ 常见成因：events.jsonl 的路径不可写（目录不存在 / 权限 / 磁盘满）。\n` +
+        `  ★ 序列化本身是容错的（serializeSafe）⇒ 若看到本行，多半是**写盘**出了问题，不是序列化。`,
+    );
+    return;
+  }
+  if (n % 100 === 0) {
+    console.error(`[probe] 探针事件发不出去：累计 ${n} 次（最近 probe=${probeName}: ${String(err)}）`);
   }
 }
 

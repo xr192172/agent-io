@@ -2756,28 +2756,38 @@
       ⇒ **验证**：插桩后 **`node` 退 0**（原先 SyntaxError）；临时变量名互不相同
         （`__cam_ret3C24` / `3C46` / `3C69` / `7C16` / `7C26`）。
 
-- [ ] **T306 ★★★ 【六格对比的第一个产出】TS 侧 `captureProbe` **静默吞掉 sink 错误** —— ⑤「错误可见」这一半没对齐 Go**
-      *(来源：2026-10-14 「骨架六格 × 两边」对比（据用户"把实际 DSL fork 成设计再对拍"的思路做）；★ 读数原文。)*
-      ⇒ **对比结果（六格）**：
-        · ① 命名：Go `funcDeclName`/`recvTypeName`/`closure@` ｜ TS `detectEnclosingFunction`/`anon@` ⇒ **各一套**
-        · ② 遍历：Go `walkStmts` ｜ TS `collectSites` ⇒ **各一套**
-        · ③ 应用：Go **无此层**（go/ast 直接重写）｜ TS `applyInsertions` ⇒ ★ **TS 特有**
-        · ④ sink：Go `NewSink`/`SetGlobalSink` ｜ TS `setGlobalProbeSink`/`TSProbeCapture` ⇒ **语义同、API 名不同**
-        · **⑤ 错误传播：Go 有两半（`sanitizeFields` 序列化容错 + `reportProbeError` 错误可见）｜ TS 只有一半**
-        · ⑥ 取值时机：Go 函数体首 `defer` 闭包 ｜ TS `handleReturn` ⇒ **各一套**
-      ⇒ **⑤ 的精确缺口**（`probe.ts:59-67`）：
-        ```ts
-        export function captureProbe(probe, fields, source = 'static-rule'): void {
-          const sink = getGlobalSink();
-          if (!sink) return;
-          try { sink.emit(probe, fields, source); }
-          catch { /* 探针绝不允许反过来让业务路径抛错 */ }   // ← ★ 错误被静默吞
+- [x] **【已做】T306 —— TS 侧 `captureProbe` 不再静默吞掉 sink 错误（⑤「错误可见」对齐 Go）**
+      *(2026-10-14；★ 全程用本仓 `edit_code`。)*
+      ⇒ **病**：`probe.ts:59` 的 `try { sink.emit(...) } catch { /* 空 */ }` ⇒
+        `sink.emit` 抛错（写盘失败 / 权限 / 磁盘满）时**无声无息** ⇒ ★ **"缺失伪装成事实"**（与 Go 侧 T286 同族）。
+      ⇒ **改**：加 `reportProbeError(probe, err)` —— 写 stderr 且**限流**（**首次**完整说 + 成因 + 排查方向；之后每 100 次报累计）。
+        ★ 纪律不变：**绝不 rethrow**（探针跑在宿主热路径上）。
+      ⇒ **验证**（给一个不可写的 sink 路径）**原文**：
+        `[probe] 探针事件**发不出去**（第 1 次）：Error: EEXIST: file already exists, mkdir …`
+        ＋ `★ 常见成因：events.jsonl 的路径不可写…` ＋ `★ 序列化本身是容错的（serializeSafe）…`；
+        第二次调用**不再刷**（限流生效）✓；宿主**继续跑**（不抛错）✓。
+
+- [ ] **T307 ★★★ 【潜伏·应用模型的同一个洞】Go 侧的「应用模型」与 TS 侧【同一个模式】，同样假设"编辑互不重叠"**
+      *(来源：2026-10-14 「骨架六格 × 两边」对比 + 主代理读源码确认。)*
+      ⇒ ★★ **先纠正我自己的一个错误结论**：我上一条说"**Go 侧没有应用模型这一层**"—— **错了**。
+        实际 `instrument.go:259-269` 写的是：
+        ```go
+        out := src
+        // 按 Offset 降序遍历（sites[0]=文件末尾），从后往前注入避免偏移漂移。
+        for i := 0; i < len(sites); i++ {
+          s := sites[i]
+          if s.EndOffset > 0 {
+            out = out[:s.Offset] + s.Code + out[s.EndOffset:]   // ← 区间替换
+          } else {
+            out = out[:s.Offset] + s.Code + out[s.Offset:]      // ← 纯插入
+          }
         }
         ```
-        ⇒ 序列化那半**它有**（`serializeSafe`：循环引用/BigInt/函数/undefined 都不抛错）✓；
-        ⇒ **缺的是"错误可见"**：`sink.emit` 抛错（写盘失败 / 权限 / 磁盘满）时**无声无息**。
-      ⇒ **要做**：对齐 Go 侧的 `reportProbeError`（写 stderr 且**限流**：首次完整说 + 之后每 N 次报累计）。
-        ★ 纪律不变：**探针不许抛错**（它跑在宿主热路径上）⇒ 只**写 stderr**，不 rethrow。
-      ⇒ **判据**：让 `sink.emit` 强制抛错（如只读路径）⇒ **必须有可见输出**（今天必静默）。
-      ⇒ ★★ **同时修正骨架清单**：**③「应用模型」不是通用件**（Go 侧没有这一层）⇒ 从"语言无关"里**去掉**；
-        真正的"语言无关"只有 **⑤ 错误传播**（与 ④ 的**契约**）；① ② ⑥ 是**语言钩子**（两边各实现、骨架定接口）。
+        ⇒ **与 TS 侧旧模型是同一个模式、同一句写法**（降序 + 同样假设不重叠）⇒ ★ **③ 是通用件**（Go 侧只是没抽成函数）。
+        ★ 我的错因：`grep applyInsertions` 没命中就断言"没有"（**今天第 7 次同类错误**）。
+      ⇒ **实测（主代理造夹具验证）**：`return func() int { return x * 2 }()`（**return 表达式里含闭包**）
+        ⇒ 插桩后 **`go build` 退 0**（**没中招**）⇒ 因为 Go 的 exit 在"表达式含闭包"时**退化成了纯插入**（不捕获值）⇒ 不与闭包重叠。
+        ⇒ ★ **但那是巧合**（同一个应用模型，只是这一格恰好走了纯插入分支）⇒ **洞是【潜伏】的**。
+      ⇒ **要做**：① 把"应用模型"**抽成一件**（两边同源）；② 顺带查 Go 侧**别的**区间替换场景会不会踩到重叠
+        （如 `blockingReturnCapture` 的区间替换 · `return <IO调用>` 时 IO 探针落在 return 区间内）。
+      ⇒ **判据**：造一个"Go 侧区间替换 + 区间内含 site"的形态 ⇒ **`go build` 退 0**（或明确报错）。
