@@ -538,7 +538,27 @@ export async function instrumentFile(file: string, opts: InstrumentOptions = {})
   if (insertions.length === 0) return result;
 
   // 按 index 从大到小排序，从后往前注入避免偏移漂移
-  insertions.sort((a, b) => b.index - a.index);
+  // ★★★ T264（2026-10-14）：**同 offset 时，替换（`removeTo`）必须排在插入【之前】应用。**
+  //
+  // ## 病（实测：`captureProbe(` 前缀被吃掉 ⇒ `tsc` 报 TS1005、不 emit）
+  // 一个「函数体第一条语句是 `return`」的函数，会**同时**产生两个落点相同的插入：
+  //   · **enter**：纯插入，`index` = `body` 里首个非空白处 == 那个 `return` 的 `startIndex`；
+  //   · **exit**（`handleReturn`）：**替换**，`index` 同上、`removeTo` = `return` 语句末尾。
+  // 降序应用（从后往前，本身是对的）在**同 offset** 时退化成"按插入序" ⇒ enter 先跑
+  // ⇒ `out` 在 `index` 处变长了；随后 exit 仍拿**未偏移的 `removeTo`** 去 `out.slice(removeTo)`
+  // ⇒ **错位，恰好吃掉插入文本的前 N 个字符**（N = 两者之差，实测 13 = `captureProbe(` 的长度）。
+  //
+  // ## 修法（最小且确定）
+  // **同 `index` 时，有 `removeTo` 的排前面** —— 于是替换先应用（`out` 在 `[index, removeTo)`
+  // 段变短/变样），插入后应用（落在那段**之前**）⇒ 两者互不按错位切。
+  // ★ 这不是"调个顺序凑合"：**同 offset 的替换与插入，语义上替换本就该先定型**，
+  //   插入只是"在它前面塞一句话"。顺序反了才是语义错。
+  insertions.sort((a, b) => {
+    if (b.index !== a.index) return b.index - a.index;
+    const ar = a.removeTo !== undefined ? 1 : 0;
+    const br = b.removeTo !== undefined ? 1 : 0;
+    return br - ar; // 有 removeTo 的排前（降序应用时先跑）
+  });
 
   const importStmt = buildImportStmt(probeImport);
 

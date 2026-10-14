@@ -2561,25 +2561,6 @@
       ⇒ ⇒ 于是 `cpf_5`（「DSL 是 scaffold/edit_code/consistency_check/rename 的输入」）**表达不了**。
       ⇒ **要做（先裁）**：这是 edge 类的**固有盲区** ⇒ 至少写进形状描述；或新增「类型引用」形状。
 
-- [ ] **T264 ★★★★ 【插桩会插坏代码】`observe_instrument` 在「函数体首句即 `return`」时把 `captureProbe(` 前缀吃掉 ⇒ 语法错**
-      *(来源：2026-10-14 子代理在**仓外独立 TS 项目**上实测 + 主代理亲自复现；★ 读数原文。)*
-      ⇒ **实测（主代理复现）**：夹具 `src/a.ts` 的 `add` 体首句即 `return a + b;` ⇒ 插桩后该行变成
-        ```ts
-        const __cam_ret4 = a + b;captureProbe("a.add.exit", {…});return __cam_ret4;"a.add.enter", {…});
-        ```
-        ★ **`captureProbe(` 不见了**，只剩裸的 `"a.add.enter", {…});` ⇒ `tsc` 原文：
-        `src/a.ts(6,275): error TS1005: ';' expected.`（**退出码非 0、不 emit**）
-      ⇒ ★★★ **根因（子代理定位到机制，我复核）**：入口探针的插入偏移 **== 该 `return` 的 `startIndex`**；
-        两次插入落在**同一个 offset**，而 **exit 是「替换」（`removeTo`）**；应用顺序是**按 offset 从大到小**
-        ⇒ 先插入的 enter 文本，被后应用的 exit 替换按**未偏移的 `removeTo`** 覆盖 ⇒ **恰好吃掉前 13 个字符**
-        （`captureProbe(` 正好 13 字符）。
-      ⇒ ★★★ **影响面**：**任何「函数体第一条语句是 `return`」的函数都会被插坏** —— 那是**极常见**的形态
-        （本仓自己就有：`hasLiveIndex` 的 `try { … } catch { return false }` 分支、一堆 guard clause）。
-        ⇒ **不是"配置能绕开"的，是产品缺陷**。
-      ⇒ **要做**：① 修插入顺序/偏移（同 offset 的多次插入必须有**确定序**，且替换与插入不能互相按未偏移位置覆盖）；
-        ② **补一条回归证**：夹具里放一个"体首句即 return"的函数 ⇒ 插桩后 **`tsc` 必须退出 0**
-        （今天必 TS1005）。
-
 - [ ] **T265 ★★★ 【默认参数是坏的】`observe_instrument` 不传 `project_root` 时，注入的 import 指向【被测项目自己】⇒ 直接跑不起来**
       *(来源：2026-10-14 子代理在仓外 TS 项目上实测；★ 主代理未复现（时间），读数采信其原文。)*
       ⇒ **实测**：不传 `project_root` ⇒ `inferProjectRoot` 向上找不到 `probe.ts` ⇒ 退回文件目录
