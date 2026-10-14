@@ -400,7 +400,14 @@ func collectFuncSites(fset *token.FileSet, f *ast.File, pkg, fileRel string, ena
 // DSL 声明的 pkg.FuncName.suffix。
 func processFunction(fset *token.FileSet, fn string, params, results *ast.FieldList, body *ast.BlockStmt, pkg, fileRel string, enableDeep, enableEffect bool, pkgVars map[string]bool, probes []ContractProbe, sites *[]Site) {
 	if fn == "" {
-		fn = "closure"
+		// ★★★ T280（2026-10-14）：**匿名函数要有唯一名** —— 原先恒为 `"closure"`
+		//   ⇒ 实测 4 个不同闭包（`MakeAdder` 内 / `Safe` 的 `defer` / `SumAsync` 的 goroutine /
+		//     `main` 的回调）的事件**全叫** `main.closure.enter/exit`
+		//   ⇒ 调用树与**契约匹配**分不清是谁（契约里写 `main.closure.exit` 会命中所有闭包）。
+		//   ★ 对齐 TS 侧（那边是 T277 的 `anon@L<行>C<列>`）；这里用 Go 自己的位置信息合成。
+		//   ★ **必须带列号**：同一行可以有多个闭包（`f(func(){…}, func(){…})`）。
+		pos := fset.Position(body.Pos())
+		fn = fmt.Sprintf("closure@L%dC%d", pos.Line, pos.Column)
 	}
 	offsetOf := func(pos token.Pos) int {
 		return fset.Position(pos).Offset
