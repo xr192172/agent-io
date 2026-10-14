@@ -196,10 +196,10 @@ export function renderInstrumentReport(
       //   ★ 实测病：回执原先**恒只印点探针那套** ⇒ 照做 ⇒ scope 的 enter/exit 全走
       //   `?.enter ?? (()=>{})` **静默 no-op** ⇒ **零事件**（用户以为插好了）。
       lines.push(`  ★ scope 模式：探针已就位，但【默认不出事件】—— 它走 globalThis.__probeScope，需要你挂上：`);
-      lines.push(`      import { enterScope, exitScope, setGlobalProbeSink, TSProbeCapture } from '<本行注入的那个 probe.js 相对路径>';`);
-      lines.push(`      (globalThis as any).__probeScope = { enter: enterScope, exit: exitScope };`);
+      lines.push(`      import { enterScope, exitScope, catchScope, setGlobalProbeSink, TSProbeCapture } from '<本行注入的那个 probe.js 相对路径>';`);
+      lines.push(`      (globalThis as any).__probeScope = { enter: enterScope, exit: exitScope, catch: catchScope };`);
       lines.push(`      setGlobalProbeSink(new TSProbeCapture('<events.jsonl 路径>'));`);
-      lines.push(`      （不挂 __probeScope ⇒ 所有 enter/exit 走 \`?.enter ?? (()=>{})\` 静默 no-op ⇒ 零事件。）`);
+      lines.push(`      （不挂 __probeScope ⇒ 所有 enter/exit/catch 走 \`?.enter ?? (()=>{})\` 静默 no-op ⇒ 零事件。）`);
     } else {
       lines.push(
         `  ★ 探针已就位，但【默认不出事件】：无 sink 时 captureProbe 是 no-op。`,

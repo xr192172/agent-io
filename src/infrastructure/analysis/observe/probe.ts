@@ -127,6 +127,32 @@ function msSince(started: number): number {
   return Math.max(0, Date.now() - started);
 }
 
+/**
+ * ★★★ T271（2026-10-14）：**在【当前帧】上发一条 catch 事件**（不改变帧栈）。
+ *
+ * ## 为什么需要它
+ * scope 模式的插桩原先**只注入 enter/exit** ⇒ 实测统计是 `enter:6 exit:5`、**没有 catch**
+ * ⇒ ★ **调用树里看不到任何"这一帧出错了"** —— 而"哪一帧抛的"恰是树里最有用的信息之一。
+ * ★ 且 scope 模式按设计**不注入 import**（走 `globalThis.__probeScope`）⇒ 不能复用 `captureProbe`
+ * ⇒ 必须有这么一个 scope 侧的入口。
+ *
+ * ## 语义
+ * · **挂到当前帧**（`als` 里的那个）—— 于是它能和它所属的调用帧对上；
+ * · **不改帧栈**（不像 enter/exit 那样压/弹）—— catch 不改变"我在哪一帧"；
+ * · 帧外调用（`als` 无 store）⇒ 用 0 号根帧发一条，**不丢**。
+ */
+export function catchScope(probe: string, fields: Record<string, unknown> = {}): void {
+  const cur = als.getStore();
+  const frame: FrameCtx = cur ?? {
+    trace_id: newTraceID(),
+    frame_id: 0,
+    parent_id: 0,
+    started: Date.now(),
+    parent: undefined,
+  };
+  emitFrame(probe, fields, frame);
+}
+
 /** 内部：向全局 sink 发带帧事件（未配置 no-op）。 */
 function emitFrame(probe: string, fields: Record<string, unknown>, frame: FrameCtx): void {
   const sink = getGlobalSink();

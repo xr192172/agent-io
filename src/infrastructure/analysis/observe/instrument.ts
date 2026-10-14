@@ -641,35 +641,51 @@ function collectSites(
           const scopeExit = `\n} finally { ((globalThis as any).__probeScope?.exit ?? (()=>{}))(${JSON.stringify(probeName)}, { file: ${JSON.stringify(fileRel)} }); }`;
           insertions.push({ index: tailIdx, site: { probe: probeName + '.exit', file, line: n.startPosition.row + 1, kind: 'exit', level: 'core', injected: scopeExit } });
         }
-        return; // scope 模式下该函数不再注入逐点 captureProbe/return 探针
-      }
+        // ★★★ T271（2026-10-14）：**这里原先是 `return;`（直接退出整个 `walk`）** ——
+        //   ⇒ ★★ **函数节点一旦命中，它的【整棵子树】就不再被遍历** ⇒ 子节点里的
+        //     `catch_clause`（以及嵌套函数）**永远不会被走到** ⇒ 实测统计恒为 `enter:N exit:N`
+        //     、**一个 catch 都没有**（"调用树里看不到哪一帧出错"的真根因）。
+        //   ⇒ 现在**不再 return**：只跳过"**当前函数节点**上的逐点探针"，然后照常递归子节点。
+        //     ★ 安全性：当前节点是**函数节点**，后面那几个 `if`（`return_statement` /
+        //       `catch_clause` / `call_expression`）本来就不会匹配它 ⇒ 不 return 也不会误注入。
+        //     ★ 而**子节点**里的逐点探针（return / IO）另有 `if (scope)` 门控（见下）——
+        //       scope 模式不注入 import，注入它们会 `ReferenceError`（T269 缺陷 B 的同一个根）。
+      } else {
+        // ★★ T271：**点探针模式**的入口/出口 —— 必须包在 `else` 里！
+        //   原先它是 `if (scope) { … return; }` 之后的**平级代码**，靠那个 `return` 挡住；
+        //   现在 `return` 去掉了（为了让子树被遍历）⇒ 不包 `else` 就会**注入两次**
+        //   （一次 `__probeScope.enter`、一次 `captureProbe`）⇒ 实测：enter 从 6 涨到 11、
+        //   且混进 4 处 `captureProbe`（而 scope 模式不注入 import ⇒ 那些会 `ReferenceError`）。
 
-      // 入口：body.startIndex 指向 '{'，跳过后首非空白
-      if (matchContract(probeName + '.enter', probes)) {
-        const open = body.startIndex;
-        let entryIdx = open;
-        if (content[entryIdx] === '{') entryIdx++;
-        while (entryIdx < content.length && /\s/.test(content[entryIdx])) entryIdx++;
-        const argsObj = params.length ? `{ ${params.map((p) => `${p}: ${p}`).join(', ')} }` : '{}';
-        const enterProbe = `captureProbe(${JSON.stringify(probeName + '.enter')}, { file: ${JSON.stringify(fileRel)}, args: ${argsObj}, level: 'core' });\n`;
-        insertions.push({ index: entryIdx, site: { probe: probeName + '.enter', file, line: n.startPosition.row + 1, kind: 'enter', level: 'core', injected: enterProbe } });
-      }
+        // 入口：body.startIndex 指向 '{'，跳过后首非空白
+        if (matchContract(probeName + '.enter', probes)) {
+          const open = body.startIndex;
+          let entryIdx = open;
+          if (content[entryIdx] === '{') entryIdx++;
+          while (entryIdx < content.length && /\s/.test(content[entryIdx])) entryIdx++;
+          const argsObj = params.length ? `{ ${params.map((p) => `${p}: ${p}`).join(', ')} }` : '{}';
+          const enterProbe = `captureProbe(${JSON.stringify(probeName + '.enter')}, { file: ${JSON.stringify(fileRel)}, args: ${argsObj}, level: 'core' });\n`;
+          insertions.push({ index: entryIdx, site: { probe: probeName + '.enter', file, line: n.startPosition.row + 1, kind: 'enter', level: 'core', injected: enterProbe } });
+        }
 
-      // 出口：若函数体无 return，则在末尾补末尾出口探针（有 return 的由 return 分支负责）
-      if (matchContract(probeName + '.exit', probes)) {
-        const returns: InstrNode[] = [];
-        collectReturns(body, returns);
-        if (returns.length === 0) {
-          // 在函数体最后一个 `}` 之前插入出口探针（保持函数体语法完整）
-          const tailIdx = body.endIndex - 1; // 指向 '}'
-          const exitProbe = `;captureProbe(${JSON.stringify(probeName + '.exit')}, { file: ${JSON.stringify(fileRel)}, ret: undefined, level: 'core' });`;
-          insertions.push({ index: tailIdx, site: { probe: probeName + '.exit', file, line: n.startPosition.row + 1, kind: 'exit', level: 'core', injected: exitProbe } });
+        // 出口：若函数体无 return，则在末尾补末尾出口探针（有 return 的由 return 分支负责）
+        if (matchContract(probeName + '.exit', probes)) {
+          const returns: InstrNode[] = [];
+          collectReturns(body, returns);
+          if (returns.length === 0) {
+            // 在函数体最后一个 `}` 之前插入出口探针（保持函数体语法完整）
+            const tailIdx = body.endIndex - 1; // 指向 '}'
+            const exitProbe = `;captureProbe(${JSON.stringify(probeName + '.exit')}, { file: ${JSON.stringify(fileRel)}, ret: undefined, level: 'core' });`;
+            insertions.push({ index: tailIdx, site: { probe: probeName + '.exit', file, line: n.startPosition.row + 1, kind: 'exit', level: 'core', injected: exitProbe } });
+          }
         }
       }
     }
 
     // ── return 出口（core）──
-    if (n.type === 'return_statement') {
+    // ★★ T271：**scope 模式下跳过** —— exit 已由 `finally` 覆盖（scope 的 exit 是包裹式的）；
+    //   而 scope **不注入 import** ⇒ 这里注入 `captureProbe` 会 `ReferenceError`（T269 缺陷 B 同根）。
+    if (!scope && n.type === 'return_statement') {
       handleReturn(n, root, file, content, insertions, fileRel, parent, probes);
     }
 
@@ -778,14 +794,22 @@ function collectSites(
           const errExpr = catchVar
             ? `(${catchVar} as Error)?.message ?? String(${catchVar} ?? '')`
             : `''`;
-          const injected = `captureProbe(${JSON.stringify(probeName)}, { file: ${JSON.stringify(fileRel)}, op: 'catch', err: ${errExpr}, level: 'event' });\n`;
+          const fields = `{ file: ${JSON.stringify(fileRel)}, op: 'catch', err: ${errExpr}, level: 'event' }`;
+          // ★★★ T271（2026-10-14）：**scope 模式下 catch 必须走 `__probeScope?.catch`** ——
+          //   scope 模式按设计**不注入 import** ⇒ 调 `captureProbe` 会 `ReferenceError`（见 T269 缺陷 B）。
+          //   ★ 而原先 scope 模式**根本不注入 catch** ⇒ 实测统计 `enter:6 exit:5` **没有 catch**
+          //   ⇒ **调用树里看不到"这一帧出错了"**（而那是树里最有用的信息之一）。
+          const injected = scope
+            ? `((globalThis as any).__probeScope?.catch ?? (()=>{}))(${JSON.stringify(probeName)}, ${fields});\n`
+            : `captureProbe(${JSON.stringify(probeName)}, ${fields});\n`;
           insertions.push({ index: idx, site: { probe: probeName, file, line: n.startPosition.row + 1, kind: 'catch', level: 'event', injected } });
         }
       }
     }
 
     // IO 写盘调用（event）：在调用表达式后注入
-    if (n.type === 'call_expression') {
+    // ★★ T271：**scope 模式下跳过** —— 同理（scope 不注入 import ⇒ `captureProbe` 会 ReferenceError）。
+    if (!scope && n.type === 'call_expression') {
       const calleeNode = n.childForFieldName?.('function');
       const callee = calleeNode ? calleeNode.text.split('.').pop() || calleeNode.text : '';
       // ★ 必须 hasOwnProperty 判存在：`IO_CALLS` 是普通对象字面量，原型上有 toString/constructor/

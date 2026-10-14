@@ -2560,12 +2560,3 @@
       ⇒ 依据：`infrastructure/index/symbols.ts:390` —— type-only import 不建边（**这是设计**，不是缺陷）。
       ⇒ ⇒ 于是 `cpf_5`（「DSL 是 scaffold/edit_code/consistency_check/rename 的输入」）**表达不了**。
       ⇒ **要做（先裁）**：这是 edge 类的**固有盲区** ⇒ 至少写进形状描述；或新增「类型引用」形状。
-
-- [ ] **T271 ★★ 【准确性】scope 模式【不注入 catch 探针】⇒ catch 事件（错误文本）在调用树里整个丢失**
-      *(来源：2026-10-14 子代理端到端实测。)*
-      ⇒ **实测**：scope 模式统计是 `enter:6 exit:5` —— **没有 catch**；而点探针模式有 `catch:2`
-        ⇒ 调用树里看不到任何"这里抛了/被抓了"的信息。
-      ⇒ ★ 为什么要紧：scope 模式**本来就是为"看调用树"而存在的** ⇒ 而"哪一帧出错"恰是树里最有用的信息之一。
-      ⇒ **要做（先裁）**：scope 模式下也注入 catch 探针（走 `__probeScope` 之外的一条事件通道，
-        或让 `__probeScope` 支持 `catch` 事件）—— ★ 先确认 `probe.ts` 的 scope 侧是否已有承载 catch 的入口。
-      ⇒ **判据**：scope 模式夹具里让某函数抛异常并被 catch ⇒ 事件流里**必须有 catch 事件**、且能挂到对应帧。

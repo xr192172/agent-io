@@ -71,6 +71,13 @@ export declare function enterScope(probe: string, fields: Record<string, unknown
 /** 退出当前调用帧（与 {@link enterScope} 配对）。 */
 export declare function exitScope(probe: string, fields?: Record<string, unknown>): void;
 
+/**
+ * ★ T271：在**当前帧**上发一条 catch 事件（**不改帧栈**）—— 供 **scope 模式**的 catch 探针用。
+ * ★ 必须声明：scope 模式**不注入 import** ⇒ catch 只能走 `globalThis.__probeScope.catch`；
+ *   宿主照回执挂 `{ enter, exit, catch: catchScope }` 时要用到这个名字。
+ */
+export declare function catchScope(probe: string, fields?: Record<string, unknown>): void;
+
 /** 装/卸全局 sink。返回被换掉的那个（便于临时探针还原）。 */
 export declare function setGlobalProbeSink(sink: TSProbeCapture | null): TSProbeCapture | null;
 
