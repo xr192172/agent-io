@@ -2560,3 +2560,46 @@
       ⇒ 依据：`infrastructure/index/symbols.ts:390` —— type-only import 不建边（**这是设计**，不是缺陷）。
       ⇒ ⇒ 于是 `cpf_5`（「DSL 是 scaffold/edit_code/consistency_check/rename 的输入」）**表达不了**。
       ⇒ **要做（先裁）**：这是 edge 类的**固有盲区** ⇒ 至少写进形状描述；或新增「类型引用」形状。
+
+- [ ] **T264 ★★★★ 【插桩会插坏代码】`observe_instrument` 在「函数体首句即 `return`」时把 `captureProbe(` 前缀吃掉 ⇒ 语法错**
+      *(来源：2026-10-14 子代理在**仓外独立 TS 项目**上实测 + 主代理亲自复现；★ 读数原文。)*
+      ⇒ **实测（主代理复现）**：夹具 `src/a.ts` 的 `add` 体首句即 `return a + b;` ⇒ 插桩后该行变成
+        ```ts
+        const __cam_ret4 = a + b;captureProbe("a.add.exit", {…});return __cam_ret4;"a.add.enter", {…});
+        ```
+        ★ **`captureProbe(` 不见了**，只剩裸的 `"a.add.enter", {…});` ⇒ `tsc` 原文：
+        `src/a.ts(6,275): error TS1005: ';' expected.`（**退出码非 0、不 emit**）
+      ⇒ ★★★ **根因（子代理定位到机制，我复核）**：入口探针的插入偏移 **== 该 `return` 的 `startIndex`**；
+        两次插入落在**同一个 offset**，而 **exit 是「替换」（`removeTo`）**；应用顺序是**按 offset 从大到小**
+        ⇒ 先插入的 enter 文本，被后应用的 exit 替换按**未偏移的 `removeTo`** 覆盖 ⇒ **恰好吃掉前 13 个字符**
+        （`captureProbe(` 正好 13 字符）。
+      ⇒ ★★★ **影响面**：**任何「函数体第一条语句是 `return`」的函数都会被插坏** —— 那是**极常见**的形态
+        （本仓自己就有：`hasLiveIndex` 的 `try { … } catch { return false }` 分支、一堆 guard clause）。
+        ⇒ **不是"配置能绕开"的，是产品缺陷**。
+      ⇒ **要做**：① 修插入顺序/偏移（同 offset 的多次插入必须有**确定序**，且替换与插入不能互相按未偏移位置覆盖）；
+        ② **补一条回归证**：夹具里放一个"体首句即 return"的函数 ⇒ 插桩后 **`tsc` 必须退出 0**
+        （今天必 TS1005）。
+
+- [ ] **T265 ★★★ 【默认参数是坏的】`observe_instrument` 不传 `project_root` 时，注入的 import 指向【被测项目自己】⇒ 直接跑不起来**
+      *(来源：2026-10-14 子代理在仓外 TS 项目上实测；★ 主代理未复现（时间），读数采信其原文。)*
+      ⇒ **实测**：不传 `project_root` ⇒ `inferProjectRoot` 向上找不到 `probe.ts` ⇒ 退回文件目录
+        ⇒ import 变成 **`./dist/src/infrastructure/analysis/observe/probe.js`**（指进**被测项目自己的** `src/dist/…`）
+        ⇒ `tsc`：`error TS2307: Cannot find module './dist/src/…/probe.js'`；运行：`ERR_MODULE_NOT_FOUND`。
+      ⇒ ★ 传 `project_root=<本仓>` 才对（import 变相对路径 `../../../design-canvas/dist/…/probe.js`）。
+      ⇒ ★★ **判据**：这个参数**不该是"记得传才对"** —— 要么**默认推断可靠**，要么**不传就响亮报错**
+        （"缺参数却静默生成一个坏 import" 正是本仓最反对的形态）。
+
+- [ ] **T266 ★★★ 【默认零观测】`captureProbe` 无 sink 时是 **no-op** ⇒ 插了桩但**一条事件都不出**，而工具不说**
+      *(来源：2026-10-14 子代理实测；★ 接线后确实产出 10 条事件，参数/返回值都对。)*
+      ⇒ **实测**：插桩后直接跑 ⇒ **零事件**（`probe.js` 无 sink 时 no-op）；
+        ★ 被测项目**还得自己接 sink**（import `enableObserveFromEnv` + 入口调用 + 设 `OBSERVE_EVENTS_FILE`）
+        ⇒ 接线后产出 10 条，例：`{"probe":"a.add.exit","fields":{"ret":5,"level":"core"}}` ✓
+      ⇒ ★★ **问题不在"要接 sink"（那是设计）**，而在 **`observe_instrument` 的回执没说这件事**
+        ⇒ 调用方以为"插完就有数据"，实际**零观测** ⇒ 静默。
+      ⇒ **要做**：插桩回执里**明写**"探针已就位，但**还需接 sink 才会出事件**（怎么接：…）"。
+
+- [ ] **T267 ★★ 【跨仓 import 的类型错】插桩注入的 import 指向本仓 `dist/*.js`，而 dist 里**没有 `.d.ts`** ⇒ strict/CI 下必报 TS7016**
+      *(来源：2026-10-14 子代理实测；★ 默认 `noEmitOnError:false` 时仍能 emit 并跑对，故**未被它判为致命**，但 CI 会挡。)*
+      ⇒ **实测**：`error TS7016: Could not find a declaration file for module '…/probe.js'` ⇒ 被测项目要么加
+        `declare module` 垫片、要么构建容忍类型错。
+      ⇒ **要做（先裁）**：① 随 dist 产出 `probe.d.ts`；② 或注入时同时写一个 `.d.ts` 垫片；③ 或如实写进描述。
