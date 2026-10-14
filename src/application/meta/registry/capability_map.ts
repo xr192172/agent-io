@@ -141,19 +141,33 @@ export const LANE_META: ReadonlyArray<Omit<Lane, 'tools'>> = [
     id: 'observe',
     label: '观测 / 验证',
     desc: '运行时插桩、行为基线、测试与契约对账（执行类，按需触发）。',
-    direct: [],
+    // ★★ 2026-10-14 补 `recommend_observe_points` —— **这条线的门**（原来 `direct: []` ⇒ 编排面上不可达）。
+    //   依据同 `design` / `meta` 两处：**每条线要有门**，面无门 ⇒ 该线在编排面上不可达（原话见 `tool_faces.ts`）。
+    //   为什么是它：它是**起点** —— 先用索引/图 + AST 打分算出「该在哪打点」（产出可编辑清单），
+    //   再把清单交给 `observe_instrument`（contractProbes）只插这些点 ⇒ 「先定位、再插桩」的第一步。
+    direct: ['recommend_observe_points'],
   },
   {
     id: 'harvest',
     label: '契约 / 闭包采集',
     desc: '从文档/git/注释/闭包采集决策卡与契约。',
-    direct: [],
+    // ★★ 2026-10-14 补 `harvest_decisions` —— **这条线的门**（原来 `direct: []` ⇒ 编排面上不可达）。
+    //   依据同 `design` / `meta` 两处：**每条线要有门**，面无门 ⇒ 该线在编排面上不可达（原话见 `tool_faces.ts`）。
+    //   为什么是它：三个工具里**唯一有「入口」性质**的 —— 它「逐个文件问为什么存在」，适用面写着
+    //   「为没有决策卡历史的现有项目/外来代码补录活文档」（**从零开始采**）；另两个
+    //   （`harvest_closure` / `extract_contracts`）都**先要给定种子/文件范围**，是被按需调用的分析步、不构成入口。
+    direct: ['harvest_decisions'],
   },
   {
     id: 'cross',
     label: '跨仓 / 翻译 / 健康',
     desc: '重量级分析：跨仓符号索引、代码健康度、跨语言翻译（Go→TS）。',
-    direct: [],
+    // ★★ 2026-10-14 补 `code_health` —— **这条线的门**（原来 `direct: []` ⇒ 编排面上不可达）。
+    //   依据同 `design` / `meta` 两处：**每条线要有门**，面无门 ⇒ 该线在编排面上不可达（原话见 `tool_faces.ts`）。
+    //   为什么是它：四个工具里**最常被「想起来」**的那个（体检 —— 给一个 `project_dir` 就出健康分 + 问题清单）；
+    //   另三个（`cross_repo_symbol_index` / `translate_go_ts` / `go_originals`）都**先要知道要做什么**
+    //   （两个项目根 / 一个 Go 源文件）才动得了。
+    direct: ['code_health'],
   },
   {
     id: 'meta',
