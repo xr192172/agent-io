@@ -91,7 +91,20 @@ export interface InstrumentedSite {
    * ⇒ 这些名字在这里补上，由 `buildProbeLedger` 展开成独立的 site 记录。
    */
   extraProbes?: string[];
-  // 注入的探针源码（用于报告）
+  /**
+   * ★★★ 2026-10-14：**替换用的模板**（`removeTo !== undefined` 的编辑应当用它，而不是 `injected`）。
+   *
+   * ## 为什么要有它（这是"分段拼接"模型的关键）
+   * 替换的区间里**可能有别的编辑**（实测：`return arr.map(x => x*2)` 的表达式里就有内联函数的 enter/exit）。
+   * 老模型把替换结果拼成**字符串**（`const T = <expr>; …`）⇒ 区间内的编辑**无处安放** ⇒ 只能
+   * 「检测到重叠就退让」（T272 的补丁，代价是**永远拿不到 `ret`**）。
+   * ⇒ 现在替换给的是**函数**：`template(inner)` 收到的是**区间原文先经过内层编辑处理后的文本**
+   *   ⇒ 于是 `const T = <处理过的 expr>; probe(ret: T); return T;` —— **内联探针与 `ret` 同时保住**。
+   *
+   * ★ 缺省（不给 `template`）⇒ 退回 `injected`（纯字符串替换，适用于区间内不会有其它编辑的场合）。
+   */
+  template?: (inner: string) => string;
+  // 注入的探针源码（用于报告；替换类若给了 template 则本字段仅供展示）
   injected: string;
 }
 
@@ -575,6 +588,77 @@ function isBracelessGuardReturn(parent: InstrNode | undefined): boolean {
   return true;
 }
 
+/** 一次编辑：`[index, removeTo)` 被替换（无 `removeTo` 则是在 `index` 处纯插入）。 */
+type Insertion = { index: number; removeTo?: number; site: InstrumentedSite };
+
+/**
+ * ★★★ 2026-10-14：**把「按原文偏移逐次应用」重写成「分段拼接」** —— 重叠在结构上不再可能。
+ *
+ * ## 为什么必须重写（不是打补丁）
+ * 老模型是「按 `index` 降序，逐条 `out = out.slice(0,index) + injected + out.slice(removeTo)`」，
+ * 它**默认所有编辑互不重叠**。而该假设**不成立**，于是同一个洞露了三次面：
+ *   · **T264**（同 offset 的「插入 vs 替换」⇒ `captureProbe(` 被吃成 `reProbe(`）；
+ *   · **T272**（**包含关系**：`return <expr>` 的替换区间内含内联函数的插入点 ⇒ 同样吃字符）；
+ *   · **T281**（**插入 vs 插入**同 offset ⇒ 事件顺序被记成 exit→enter）。
+ * ★ 前两次都是打补丁（调顺序 / 检测到重叠就退让），而**退让有永久代价**：
+ *   T272 的补丁让 `return arr.map(x => x*2)` **永远拿不到 `ret`**。
+ *
+ * ## 新模型（分段拼接）
+ * 一次从前往后扫，把原文切段、逐段输出：
+ *   · **纯插入** ⇒ 在 `index` 处塞进文本，原文继续；
+ *   · **替换** ⇒ 该段原文交给 `site.template(inner)`，其中 **`inner` = 区间原文【先经过区间内其它编辑处理】后的文本**。
+ * ⇒ ★★ 于是「区间内含其它编辑」**不再是异常**，而是**正常的一层递归**：
+ *   内联函数的 enter/exit 落在 `return` 的表达式里 ⇒ 它们**先作用在表达式上**，
+ *   结果再喂给 `return` 的模板 ⇒ **两边的观测都保住**（`ret` 与内联探针不再二选一）。
+ *
+ * ## 同 `index` 的定序（语义，不是凑数）
+ * 同 `index` 时**纯插入排在替换之前** ⇒ 输出为「插入的文本 + 替换结果」
+ * ⇒ 这正是要的顺序（`enter` 落在改写后的 `return` **之前**），T281 的顺序反转随之消失。
+ */
+function applyInsertions(content: string, insertions: Insertion[]): string {
+  // 升序；同 index：纯插入(0) 在前、替换(1) 在后
+  const sorted = [...insertions].sort((a, b) => {
+    if (a.index !== b.index) return a.index - b.index;
+    const ar = a.removeTo === undefined ? 0 : 1;
+    const br = b.removeTo === undefined ? 0 : 1;
+    return ar - br;
+  });
+
+  /** 渲染原文 `[from, to)`，其中 `list` 是落在这个区间内的编辑（已升序）。 */
+  const render = (from: number, to: number, list: Insertion[]): string => {
+    let out = '';
+    let pos = from;
+    let i = 0;
+    while (i < list.length) {
+      const ins = list[i];
+      if (ins.index < pos) {
+        i++;
+        continue; // 防御：理论上不会发生（区间内的都归到内层递归了）
+      }
+      if (ins.index >= to) break;
+      const rTo = ins.removeTo ?? ins.index;
+      out += content.slice(pos, ins.index);
+      if (ins.removeTo === undefined) {
+        out += ins.site.injected;
+        pos = ins.index;
+        i++;
+        continue;
+      }
+      // 替换：区间内的其它编辑**先作用在区间原文上**（递归），结果再喂给模板
+      const inner: Insertion[] = [];
+      for (let j = i + 1; j < list.length && list[j].index < rTo; j++) inner.push(list[j]);
+      const innerText = inner.length > 0 ? render(ins.index, rTo, inner) : content.slice(ins.index, rTo);
+      out += ins.site.template ? ins.site.template(innerText) : ins.site.injected;
+      while (i < list.length && list[i].index < rTo) i++; // 跳过区间内的（已由内层处理）
+      pos = rTo;
+    }
+    out += content.slice(pos, to);
+    return out;
+  };
+
+  return render(0, content.length, sorted);
+}
+
 /**
  * 对单个 TS 文件插桩。返回注入的探针点（dry-run 不写盘）。
  * level 分级：enter/exit=core，catch=event，io=event。
@@ -621,36 +705,19 @@ export async function instrumentFile(file: string, opts: InstrumentOptions = {})
 
   if (insertions.length === 0) return result;
 
-  // 按 index 从大到小排序，从后往前注入避免偏移漂移
-  // ★★★ T264（2026-10-14）：**同 offset 时，替换（`removeTo`）必须排在插入【之前】应用。**
-  //
-  // ## 病（实测：`captureProbe(` 前缀被吃掉 ⇒ `tsc` 报 TS1005、不 emit）
-  // 一个「函数体第一条语句是 `return`」的函数，会**同时**产生两个落点相同的插入：
-  //   · **enter**：纯插入，`index` = `body` 里首个非空白处 == 那个 `return` 的 `startIndex`；
-  //   · **exit**（`handleReturn`）：**替换**，`index` 同上、`removeTo` = `return` 语句末尾。
-  // 降序应用（从后往前，本身是对的）在**同 offset** 时退化成"按插入序" ⇒ enter 先跑
-  // ⇒ `out` 在 `index` 处变长了；随后 exit 仍拿**未偏移的 `removeTo`** 去 `out.slice(removeTo)`
-  // ⇒ **错位，恰好吃掉插入文本的前 N 个字符**（N = 两者之差，实测 13 = `captureProbe(` 的长度）。
-  //
-  // ## 修法（最小且确定）
-  // **同 `index` 时，有 `removeTo` 的排前面** —— 于是替换先应用（`out` 在 `[index, removeTo)`
-  // 段变短/变样），插入后应用（落在那段**之前**）⇒ 两者互不按错位切。
-  // ★ 这不是"调个顺序凑合"：**同 offset 的替换与插入，语义上替换本就该先定型**，
-  //   插入只是"在它前面塞一句话"。顺序反了才是语义错。
-  insertions.sort((a, b) => {
-    if (b.index !== a.index) return b.index - a.index;
-    const ar = a.removeTo !== undefined ? 1 : 0;
-    const br = b.removeTo !== undefined ? 1 : 0;
-    return br - ar; // 有 removeTo 的排前（降序应用时先跑）
-  });
-
+  // ★★★ 2026-10-14：**应用编辑改走 `applyInsertions`（分段拼接）** ——
+  //   旧模型是「按 `index` 降序，逐条 `out = out.slice(0,index) + injected + out.slice(removeTo)`」，
+  //   它默认"所有编辑互不重叠"，而该假设**不成立**：
+  //     · **T264** 同 offset 的「插入 vs 替换」⇒ `captureProbe(` 被吃成 `reProbe(`；
+  //     · **T272** **包含关系**（`return <expr>` 的替换区间内含内联函数的插入点）；
+  //     · **T281** 同 offset 的「插入 vs 插入」⇒ 事件顺序被记成 exit→enter。
+  //   ⇒ 三次是**同一个洞的三次露面**；前两次都是打补丁（调顺序 / 检测到重叠就退让），
+  //     而退让留下了**永久代价**（T272 让 `return arr.map(x => x*2)` 永远拿不到 `ret`）。
+  //   ⇒ 这次按"**改模型**"处理：细节与理由见 `applyInsertions` 的头注（含"同 index 的定序语义"）。
   const importStmt = buildImportStmt(probeImport);
 
-  let out = content;
-  for (const ins of insertions) {
-    const removeTo = ins.removeTo ?? ins.index; // 默认纯插入；removeTo>index 表示替换区间
-    out = out.slice(0, ins.index) + ins.site.injected + out.slice(removeTo);
-  }
+  // ★ `let`（不是 const）：下面还要补 import/标记头（`out = prependAfterShebang(out, head)`）
+  let out = applyInsertions(content, insertions);
   // 头部补 import 与分级标记（shebang 兼容：shebang 必须留在文件首行，
   // 否则带 `#!/usr/bin/env node` 的入口被 esbuild/tsx 视为语法错 `!`）
   // scope 模式走 globalThis.__probeScope，无需每文件 import 探针 → 不注入 importStmt
@@ -1102,12 +1169,39 @@ function handleReturn(
   //   会被**独立插桩**，而它的插入点**落在本 return 的替换区间内** ⇒ 两次编辑按原文偏移互相覆盖
   //   ⇒ 实测 `captureProbe(` 被吃成 `reProbe(` ⇒ `SyntaxError`、**整模块 import 失败**。
   //   ★ 取舍：**宁可丢 ret、不可崩**（内联函数的 enter/exit 保住、宿主能解析）。
-  if (expr && !containsFunctionLike(expr)) {
+  // ★★★ 2026-10-14（**T272 的补丁撤销**）：这里原先有一道门 `!containsFunctionLike(expr)` ——
+  //   那是**补丁**：表达式里含内联函数（如 `return arr.map(x => x*2)`）时不敢替换
+  //   （怕与内层插入重叠 ⇒ `captureProbe(` 被吃成 `reProbe(`），代价是**永远拿不到 `ret`**。
+  //   ⇒ 现在应用模型换成 `applyInsertions`（**分段拼接**）：区间内的编辑**先作用在表达式上**，
+  //     结果作为 `inner` 喂给 `template` ⇒ **内联探针与 `ret` 同时保住** ⇒ 那道门可以撤了。
+  //     ★ 这正是"改模型"与"打补丁"的差别：补丁让两件事二选一，模型让两件事都要。
+  if (expr) {
     const lineSuffix = n.startPosition.row + 1;
     const tempVar = `__cam_ret${lineSuffix}`;
-    // 替换整个 return 语句：`return <expr>;` → `const T=<expr>; probe; return T;`
-    const replacement = `const ${tempVar} = ${expr.text};captureProbe(${JSON.stringify(probeName)}, { file: ${JSON.stringify(fileRel)}, ret: ${tempVar}, level: 'core' });return ${tempVar};`;
-    insertions.push({ index: n.startIndex, removeTo: n.endIndex, site: { probe: probeName, file, line: n.startPosition.row + 1, kind: 'exit', level: 'core', injected: replacement } });
+    // 替换整个 return 语句：`return <inner>;` → `const T=<inner>; probe(ret:T); return T;`
+    // ★ `inner` = **已经过区间内编辑处理**的表达式文本（由 `applyInsertions` 传入）
+    // ★★★ 2026-10-14：**替换拆成两段**（这是本笔最关键的实现决定，实测踩过两次）：
+    //   · 段① `[n.startIndex, expr.startIndex)` = `return` 关键字 + 其后的空白 ⇒ 换成 `const T = `；
+    //   · 段② `[expr.endIndex, n.endIndex)`   = 语句末尾的 `;`          ⇒ 换成 `;probe;return T;`。
+    //   ★★ 为什么不是"一整段替换"：整段会把**表达式**圈进替换区间，而表达式里**可能有内联函数**
+    //     （`return arr.map(x => x*2)`）⇒ 那些插入点落进区间 ⇒ 就是 T272 那个洞。
+    //     实测踩坑：用 `[n.startIndex, n.endIndex)` ⇒ `inner` 带 `return ` 前缀 ⇒ 拼出
+    //     `const T = return arr.map(…)`；改用 `[expr.startIndex, expr.endIndex)` ⇒ `return` 又留在外面
+    //     ⇒ 拼出 `return const T = arr.map(…)`。★ 两次都对，只是"区间边界"选错了。
+    //   ⇒ **两段法**让**表达式完全不在任何替换区间内** ⇒ 内联插入自然落在两段之间 ⇒
+    //     **结构上不可能重叠**（连 `template` 都用不上）。
+    const assignStmt = `const ${tempVar} = `;
+    insertions.push({
+      index: n.startIndex,
+      removeTo: expr.startIndex,
+      site: { probe: probeName, file, line: n.startPosition.row + 1, kind: 'exit', level: 'core', injected: assignStmt },
+    });
+    const tailStmt = `;captureProbe(${JSON.stringify(probeName)}, { file: ${JSON.stringify(fileRel)}, ret: ${tempVar}, level: 'core' });return ${tempVar};`;
+    insertions.push({
+      index: expr.endIndex,
+      removeTo: n.endIndex,
+      site: { probe: probeName, file, line: n.startPosition.row + 1, kind: 'exit', level: 'core', injected: tailStmt },
+    });
   } else {
     // 裸 `return;`，或表达式内含函数/箭头（T272）⇒ 只记录返回路径
     const marker = `captureProbe(${JSON.stringify(probeName)}, { file: ${JSON.stringify(fileRel)}, ret: undefined, level: 'core' });`;
