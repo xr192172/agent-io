@@ -372,15 +372,24 @@ function inferProjectRoot(file: string): string {
 /** 从文件内容推导当前函数/方法名（用于探针 probe 命名，取最近一级函数定义） */
 function detectEnclosingFunction(root: InstrNode, insertIndex: number): string {
   let fnName = '';
-  const walk = (n: InstrNode): void => {
+  const walk = (n: InstrNode, parent?: InstrNode): void => {
     if (n.startIndex > insertIndex) return;
     if (FN_TYPES.has(n.type)) {
       const nameChild = n.childForFieldName?.('name');
-      if (nameChild && nameChild.text) fnName = nameChild.text;
+      if (nameChild && nameChild.text) {
+        fnName = nameChild.text;
+      } else if (parent && parent.type === 'variable_declarator') {
+        // ★★★ T263（2026-10-14）：**匿名箭头函数 / 函数表达式没有 `name`** ——
+        //   名字在**父级** `variable_declarator` 的 `name` 上（`const mul = (a,b) => a*b`）。
+        //   ★ 实测（改前）：`mul` 的探针名是 **`a.module.enter`**（而不是 `a.mul.enter`）
+        //     ⇒ 探针名错 ⇒ **契约模式匹配不上**、台账里也认不出是谁。
+        const vn = parent.childForFieldName?.('name');
+        if (vn && vn.text) fnName = vn.text;
+      }
     }
     for (let i = 0; i < n.childCount; i++) {
       const c = n.child(i);
-      if (c && c.startIndex <= insertIndex && c.endIndex >= insertIndex) walk(c);
+      if (c && c.startIndex <= insertIndex && c.endIndex >= insertIndex) walk(c, n);
     }
   };
   walk(root);
@@ -627,6 +636,50 @@ function collectSites(
     // ── return 出口（core）──
     if (n.type === 'return_statement') {
       handleReturn(n, root, file, content, insertions, fileRel, parent, probes);
+    }
+
+    // ★★★ T263（2026-10-14）：**表达式体箭头函数**（`const f = (a) => a * b`）——
+    //   上面那条要求 `isBlockBody`（body 必须是 `statement_block`），而**表达式体**的 body 是**表达式**
+    //   ⇒ 整条跳过 ⇒ 实测：夹具里 `export const mul = (a, b) => a * b;` **一个探针点都没有**。
+    //   ★ 为什么这条要紧：本仓**大量**用 `const f = () => …`（`hasLiveIndex` / `findExpectationConflicts`
+    //     都是这个形状）⇒ 那些函数的 enter/exit **永远不录** ⇒ `observe_trace` / `behavior_baseline`
+    //     的读数会**静默少一块**（★ 不是报错，是少 —— 本仓最反对的形态）。
+    //   ⇒ 修法：把 `=> expr` **改写成块体** `=> { 探针…; return (expr); }` ——
+    //     ★ 表达式**原样**放进 `return`，故 `() => ({a:1})`（对象字面量）/ `async () => await x` 语义都不变。
+    if (FN_TYPES.has(n.type) && n.type === 'arrow_function' && !isBlockBody(n)) {
+      const body = n.childForFieldName?.('body');
+      if (body && body.type !== 'statement_block') {
+        const fn = detectEnclosingFunction(root, n.startIndex) || 'module';
+        const mod = path.basename(file).replace('.ts', '');
+        const params = extractParamNames(n);
+        const probeName = `${mod}.${fn}`;
+        const wantEnter = matchContract(probeName + '.enter', probes);
+        const wantExit = matchContract(probeName + '.exit', probes);
+        if (wantEnter || wantExit) {
+          const argsObj = params.length ? `{ ${params.map((p) => `${p}: ${p}`).join(', ')} }` : '{}';
+          const stmts: string[] = [];
+          if (wantEnter) {
+            stmts.push(`captureProbe(${JSON.stringify(probeName + '.enter')}, { file: ${JSON.stringify(fileRel)}, args: ${argsObj}, level: 'core' });`);
+          }
+          if (wantExit) {
+            stmts.push(`captureProbe(${JSON.stringify(probeName + '.exit')}, { file: ${JSON.stringify(fileRel)}, ret: undefined, level: 'core' });`);
+          }
+          const expr = content.slice(body.startIndex, body.endIndex);
+          // ★ 一次替换同时表达 enter+exit（`removeTo` = 把原表达式换掉）
+          insertions.push({
+            index: body.startIndex,
+            removeTo: body.endIndex,
+            site: {
+              probe: probeName + (wantEnter ? '.enter' : '.exit'),
+              file,
+              line: n.startPosition.row + 1,
+              kind: wantEnter ? 'enter' : 'exit',
+              level: 'core',
+              injected: `{ ${stmts.join(' ')} return (${expr}); }`,
+            },
+          });
+        }
+      }
     }
 
     // catch 块（event）：在 catch 体开头注入
