@@ -691,28 +691,57 @@ function collectSites(
         const wantEnter = matchContract(probeName + '.enter', probes);
         const wantExit = matchContract(probeName + '.exit', probes);
         if (wantEnter || wantExit) {
-          const argsObj = params.length ? `{ ${params.map((p) => `${p}: ${p}`).join(', ')} }` : '{}';
-          const stmts: string[] = [];
-          if (wantEnter) {
-            stmts.push(`captureProbe(${JSON.stringify(probeName + '.enter')}, { file: ${JSON.stringify(fileRel)}, args: ${argsObj}, level: 'core' });`);
-          }
-          if (wantExit) {
-            stmts.push(`captureProbe(${JSON.stringify(probeName + '.exit')}, { file: ${JSON.stringify(fileRel)}, ret: undefined, level: 'core' });`);
-          }
           const expr = content.slice(body.startIndex, body.endIndex);
-          // ★ 一次替换同时表达 enter+exit（`removeTo` = 把原表达式换掉）
-          insertions.push({
-            index: body.startIndex,
-            removeTo: body.endIndex,
-            site: {
-              probe: probeName + (wantEnter ? '.enter' : '.exit'),
-              file,
-              line: n.startPosition.row + 1,
-              kind: wantEnter ? 'enter' : 'exit',
-              level: 'core',
-              injected: `{ ${stmts.join(' ')} return (${expr}); }`,
-            },
-          });
+          // ★★★ T269（2026-10-14）：**scope 模式下不能注入 `captureProbe`** ——
+          //   本文件上面已写死："scope 模式走 `globalThis.__probeScope`，无需每文件 import 探针
+          //   ⇒ **不注入 importStmt**"。而 T263 加的这段箭头分支**没判 scope** ⇒ 仍注入
+          //   `captureProbe(...)` 而文件里没有它的 import ⇒ ★ 实测 **`ReferenceError: captureProbe is not defined`**
+          //   ⇒ ★★ 又是"**打断宿主程序**"（不是探针不生效）。
+          //   ⇒ scope 模式：与块体箭头**同一形态**（包成块体 + 走 `__probeScope`）。
+          if (scope) {
+            const argsObj = params.length ? `{ ${params.map((p) => `${p}: ${p}`).join(', ')} }` : '{}';
+            const stmts: string[] = [];
+            if (wantEnter) {
+              stmts.push(`((globalThis as any).__probeScope?.enter ?? (()=>{}))(${JSON.stringify(probeName)}, { file: ${JSON.stringify(fileRel)}, args: ${argsObj} });`);
+            }
+            if (wantExit) {
+              stmts.push(`((globalThis as any).__probeScope?.exit ?? (()=>{}))(${JSON.stringify(probeName)}, { file: ${JSON.stringify(fileRel)} });`);
+            }
+            insertions.push({
+              index: body.startIndex,
+              removeTo: body.endIndex,
+              site: {
+                probe: probeName + (wantEnter ? '.enter' : '.exit'),
+                file,
+                line: n.startPosition.row + 1,
+                kind: wantEnter ? 'enter' : 'exit',
+                level: 'core',
+                injected: `{ ${stmts.join(' ')} return (${expr}); }`,
+              },
+            });
+          } else {
+            const argsObj = params.length ? `{ ${params.map((p) => `${p}: ${p}`).join(', ')} }` : '{}';
+            const stmts: string[] = [];
+            if (wantEnter) {
+              stmts.push(`captureProbe(${JSON.stringify(probeName + '.enter')}, { file: ${JSON.stringify(fileRel)}, args: ${argsObj}, level: 'core' });`);
+            }
+            if (wantExit) {
+              stmts.push(`captureProbe(${JSON.stringify(probeName + '.exit')}, { file: ${JSON.stringify(fileRel)}, ret: undefined, level: 'core' });`);
+            }
+            // ★ 一次替换同时表达 enter+exit（`removeTo` = 把原表达式换掉）
+            insertions.push({
+              index: body.startIndex,
+              removeTo: body.endIndex,
+              site: {
+                probe: probeName + (wantEnter ? '.enter' : '.exit'),
+                file,
+                line: n.startPosition.row + 1,
+                kind: wantEnter ? 'enter' : 'exit',
+                level: 'core',
+                injected: `{ ${stmts.join(' ')} return (${expr}); }`,
+              },
+            });
+          }
         }
       }
     }
@@ -729,7 +758,18 @@ function collectSites(
         const fn = detectEnclosingFunction(root, open);
         const probeName = `${path.basename(file).replace('.ts', '')}.${fn}.catch`;
         if (matchContract(probeName, probes)) {
-          const injected = `captureProbe(${JSON.stringify(probeName)}, { file: ${JSON.stringify(fileRel)}, op: 'catch', err: (e as Error)?.message ?? '', level: 'event' });\n`;
+          // ★★★ T269（2026-10-14）：**读【真实的】catch 参数名** —— 原先硬编码 `e`
+          //   （注入 `err: (e as Error)?.message ?? ''`）。
+          //   ★ 实测病：源码写的是 `catch (err)` ⇒ 注入后**运行时** `ReferenceError: e is not defined`
+          //     ⇒ ★★ **不是"探针不生效"，是【打断宿主程序】**（实测：整个程序崩在那一行）。
+          //   ⇒ 现在从 AST 的 `parameter` 字段取真实名；`catch {}`（无参，ES2019+）⇒ 取不到 ⇒
+          //     就**不引用变量**（err 字段留空），而不是硬编一个名字。
+          const paramNode = n.childForFieldName?.('parameter');
+          const catchVar = (paramNode?.text ?? '').replace(/[()\s]/g, '');
+          const errExpr = catchVar
+            ? `(${catchVar} as Error)?.message ?? String(${catchVar} ?? '')`
+            : `''`;
+          const injected = `captureProbe(${JSON.stringify(probeName)}, { file: ${JSON.stringify(fileRel)}, op: 'catch', err: ${errExpr}, level: 'event' });\n`;
           insertions.push({ index: idx, site: { probe: probeName, file, line: n.startPosition.row + 1, kind: 'catch', level: 'event', injected } });
         }
       }

@@ -85,6 +85,14 @@ export interface ObserveInstrumentReport {
   preflight?: string;
   /** 探针台账（仅 TS/JS：写盘成功后记账） */
   ledger?: { file: string; summary: string; raw: unknown };
+  /**
+   * ★ T269（2026-10-14）：本次是否走了 **scope 模式**（`try/finally` 包裹 + `globalThis.__probeScope`）。
+   * ★ 为什么回执需要它：两种模式**接线方式不同** ——
+   *   点探针模式要 `setGlobalProbeSink(...)`；scope 模式要挂 `globalThis.__probeScope`。
+   *   ★ 实测病：回执原先**恒只印点探针那套** ⇒ 照它做，scope 模式的 enter/exit 全走
+   *   `?.enter ?? (()=>{})` **静默 no-op** ⇒ **零事件**（用户以为插好了）。
+   */
+  scope?: boolean;
 }
 
 export interface ObserveUninstrumentReport {
@@ -182,21 +190,33 @@ export function renderInstrumentReport(
   //   ⇒ 这里【显式说出来】+ 给出**准确**的接法（导出名以 `probe.ts` 真实导出为准：
   //     `setGlobalProbeSink` / `TSProbeCapture`；★ 不要写不存在的 `enableObserveFromEnv`）。
   if (!rep.dryRun && totalSites > 0) {
-    lines.push(
-      `  ★ 探针已就位，但【默认不出事件】：无 sink 时 captureProbe 是 no-op。`,
-    );
-    lines.push(
-      `    ⇒ 要真观测，被测项目须在入口处接一次 sink：`,
-    );
-    lines.push(
-      `      import { setGlobalProbeSink, TSProbeCapture } from '<本行注入的那个 probe.js 相对路径>';`,
-    );
-    lines.push(
-      `      setGlobalProbeSink(new TSProbeCapture('<events.jsonl 路径>'));`,
-    );
-    lines.push(
-      `      （接完再跑，事件才会写进 events.jsonl；否则插了也观测不到。）`,
-    );
+    if (rep.scope) {
+      // ★★★ T269（2026-10-14）：**scope 模式的接线方式与点探针不同** ——
+      //   scope 走 `globalThis.__probeScope`（且**不注入** import），点探针走 `captureProbe` + sink。
+      //   ★ 实测病：回执原先**恒只印点探针那套** ⇒ 照做 ⇒ scope 的 enter/exit 全走
+      //   `?.enter ?? (()=>{})` **静默 no-op** ⇒ **零事件**（用户以为插好了）。
+      lines.push(`  ★ scope 模式：探针已就位，但【默认不出事件】—— 它走 globalThis.__probeScope，需要你挂上：`);
+      lines.push(`      import { enterScope, exitScope, setGlobalProbeSink, TSProbeCapture } from '<本行注入的那个 probe.js 相对路径>';`);
+      lines.push(`      (globalThis as any).__probeScope = { enter: enterScope, exit: exitScope };`);
+      lines.push(`      setGlobalProbeSink(new TSProbeCapture('<events.jsonl 路径>'));`);
+      lines.push(`      （不挂 __probeScope ⇒ 所有 enter/exit 走 \`?.enter ?? (()=>{})\` 静默 no-op ⇒ 零事件。）`);
+    } else {
+      lines.push(
+        `  ★ 探针已就位，但【默认不出事件】：无 sink 时 captureProbe 是 no-op。`,
+      );
+      lines.push(
+        `    ⇒ 要真观测，被测项目须在入口处接一次 sink：`,
+      );
+      lines.push(
+        `      import { setGlobalProbeSink, TSProbeCapture } from '<本行注入的那个 probe.js 相对路径>';`,
+      );
+      lines.push(
+        `      setGlobalProbeSink(new TSProbeCapture('<events.jsonl 路径>'));`,
+      );
+      lines.push(
+        `      （接完再跑，事件才会写进 events.jsonl；否则插了也观测不到。）`,
+      );
+    }
   }
   return lines;
 }
@@ -247,6 +267,7 @@ export const tsJsObservePack: ObserveLangPack = {
     const rep: ObserveInstrumentReport = {
       lang: 'ts_js',
       dryRun: opts.dryRun,
+      scope: opts.scope === true,
       scanned: scanned.length,
       files: results.map((r) => ({
         file: r.file,
