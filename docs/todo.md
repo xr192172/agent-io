@@ -2665,3 +2665,29 @@
         ③ **还原 ⇒ `internal/` 已消失** ✓；④ `go build ./...` 仍退 0 ✓。
       ⇒ ★ 至此 **Go 侧的账全部结清**（T268 探针包拷入 · T279 defer 取值 · T280 闭包名 · T283 命名返回值 ret ·
         T285/T296 还原残留 · T286 序列化失败 · T289–T293 三类打断编译 + 两类漏插 · T294 Go 台账 · T295/T297 撞名）。
+
+- [x] **【已做·第 3 轮 Go 实测的 P0】`select` 无 `default` 且各 case 都 return ⇒ 兜底 exit 插在 select 后 ⇒ `missing return`**
+      *(2026-10-14 子代理第 3 轮实测挖出 + 主代理亲自复现并修；★ 这是本轮唯一一条"打断宿主"的新账。)*
+      ⇒ **实测**（最小复现夹具 `gp1-r3v-mini`）：基线 `go build` 退 0；插桩后 **`main.go:26:1: missing return`**。
+      ⇒ **根因**：`instrument.go:390-391` 把 `*ast.SelectStmt` 也交给 `terminatesSwitchBody`，
+        而后者最后 `return hasDefault` —— 那是**表达式 switch** 的规则。★ **Go 规范：`select` 本身就是终止语句**
+        （只要各 case 体都以终止语句收尾）⇒ **不要求 `default`**（`switch` 才要求）。
+      ⇒ **改法**：给 `terminatesSwitchBody` 加 `requireDefault bool` —— `SwitchStmt`/`TypeSwitchStmt` 传 `true`、
+        `SelectStmt` 传 `false`；返回值改为 `!requireDefault || hasDefault`。
+      ⇒ **验证**：基线 build 退 0 ⇒ **插桩后 build 退 0** ✓；探针点 **6 → 5**（少掉的正是那个不该有的兜底 exit，
+        select 各 case 里的 exit 仍正确保留）；语言包 `go test ./...` 全绿。
+      ⇒ ★ 子代理还指出：`terminates_test.go:73` 只覆盖了「无 default 的 select 且 case 体**不** return」，
+        **漏了**「无 default 且各 case **都** return」⇒ 这个缺口本该被单测挡住（★ 单测的覆盖边界也是账）。
+
+- [ ] **T298 ★★ 【残余·T280 的尾巴】Go：`closure@L<行>C<列>` **跨文件**撞名**
+      *(来源：2026-10-14 第 3 轮 Go 实测。)*
+      ⇒ **实测**：同包两个文件里**位置相同**（同 L/C）的闭包 ⇒ 探针名相同（`ctrl.closure@L4C14`）。
+      ⇒ **根因**：T280 给闭包加了 `@L..C..` 维度，但**没有文件维度** ⇒ 两个文件的同一行列会撞。
+      ⇒ ★ `lint` **能抓**（跨文件判据非空转）。⇒ **要做**：闭包名也带文件（或 `lint` 之外再加"同包同名"口径）。
+
+- [ ] **T299 ★★★ 【量具边界】`lint` **看不见"打断宿主"类**问题**
+      *(来源：2026-10-14 第 3 轮 Go 实测；★ 不是缺陷，是**能力边界** —— 但要**说清**，否则会被误当成"全绿"。)*
+      ⇒ **实测**：`gp1-r3v-mini`（`go build` 退 1，**编译不过**）跑 `action=lint` ⇒ **「✓ 不变量全过」** ✗
+      ⇒ **根因**：`lint` 只读**探针台账**（"注入了什么"），而"注入后还能不能编译"它**结构上看不见**。
+      ⇒ **要做**：在 `lint` 回执里**明说**这条边界（"本体检不覆盖**编译/运行**类问题 —— 那要靠 `go build` / 端到端"）；
+        ★ 更进一步（可选）：让 `lint` **顺带跑一次编译**（TS 用 `tsc --noEmit`、Go 用 `go build ./...`）⇒ 但那会让它从"秒级"变成"慢"，**先裁**。

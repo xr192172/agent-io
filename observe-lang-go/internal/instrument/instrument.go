@@ -384,11 +384,11 @@ func terminatesFunction(stmt ast.Stmt) bool {
 	case *ast.RangeStmt:
 		return false // range 总是可能正常结束
 	case *ast.SwitchStmt:
-		return terminatesSwitchBody(t.Body)
+		return terminatesSwitchBody(t.Body, true) // 表达式 switch：要求 default
 	case *ast.TypeSwitchStmt:
-		return terminatesSwitchBody(t.Body)
+		return terminatesSwitchBody(t.Body, true) // type switch：同上
 	case *ast.SelectStmt:
-		return terminatesSwitchBody(t.Body)
+		return terminatesSwitchBody(t.Body, false) // ★ select：不要求 default（它本身就是终止语句）
 	default:
 		return false
 	}
@@ -431,7 +431,12 @@ func hasUnnestedBreak(body *ast.BlockStmt) bool {
 
 // terminatesSwitchBody 判断 switch / type switch / select 体是否整体终止：
 // 须含 default 分支，且每个分支体都以终止语句（或 fallthrough）收尾。
-func terminatesSwitchBody(body *ast.BlockStmt) bool {
+// ★★★ 2026-10-14（第 3 轮 Go 实测的 P0）：requireDefault 区分 switch 与 select ——
+//   Go 规范：表达式 switch 的终止要求有 default；而 select 本身就是终止语句
+//   （只要各 case 体都以终止语句收尾）⇒ 不要求 default。
+//   病（实测）：原先 select 也走这条、被要求 hasDefault ⇒ 误判为非终止 ⇒ 兜底 exit 探针
+//   被插在 select 之后 ⇒ missing return（main.go:26:1，最小复现夹具 gp1-r3v-mini）。
+func terminatesSwitchBody(body *ast.BlockStmt, requireDefault bool) bool {
 	if body == nil || len(body.List) == 0 {
 		return false
 	}
@@ -462,7 +467,8 @@ func terminatesSwitchBody(body *ast.BlockStmt) bool {
 			return false
 		}
 	}
-	return hasDefault
+	// ★ select 不要求 default ⇒ requireDefault=false 时直接算终止（各 case 体已在上面逐个检查过）
+	return !requireDefault || hasDefault
 }
 
 // sortSites 按 Offset 降序排列（注入时从文件末尾往前）。
