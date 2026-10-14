@@ -307,195 +307,6 @@
         · ★ 独立精判顺手坐实一处漂移：候选引用的 `node_ops.ts:176` **实际已是 `:209`**
           —— **"存副本必腐"的现场实证**（也是删掉 A 类现状快照的直接理由）。
 
-- [ ] **T255 ★★★ `decision: update` 是【覆盖语义】而契约没说 ⇒ 只给部分字段会【静默清空】其余字段**
-      *(来源：2026-10-14 执行 T154 裁定时实测 —— 我第一笔只给 `summary` + `status`，结果
-        `rationale` / `thread` / `evidence_source` / `author` **全没了**，当前 `decision` 只剩
-        `summary / status / updated_at / agent` 四个键。)*
-      ⇒ **实测**：`contract_arc_7` 的 `decision_history[0]` 里存着被覆盖掉的旧版（8 个字段），
-        而当前 `decision` 只有 4 个 ⇒ ★ **数据没丢（进了历史），但"当前值"残缺**，
-        且**全程没有任何报错、没有告警**。
-      ⇒ ★★ **而契约（`edit_dsl` 的描述）只写**：`decision: update（需 id；data.summary）`
-        ⇒ **读的人会以为"只给 `summary` 就是改 `summary`"**（合并语义）—— ★ **实测是【覆盖】**。
-      ⇒ ★★★ 这与 T174（`data` 袋子的"同一处两种纪律"）**同族，但更隐蔽**：
-        T174 治的是"**形状错**时有的抛、有的静默丢"；**这一格是"形状合法下也静默丢"**。
-      ⇒ **要做（先裁，三条候选各有代价）**：
-        · ① 让 `applyDecisionWrite` **合并**（未给的字段保留）—— ★ 代价：**"故意清空某字段"将不可表达**；
-        · ② 保持覆盖，但**在描述与回执里写明**"这是**整块替换**，未给的字段会被清空"
-          （★ 与 T160「`type=api` 走整块重写」同款口径，零行为变更）；
-        · ③ 要求**给全字段**，缺了**响亮报错**。
-      ⇒ **判据**：只给 `{summary, status}` 调一次 ⇒ **要么其余字段保留（合并）**、
-        **要么当场报错（要求给全）** —— ★ **不许像今天这样"成功且静默丢 4 个字段"**。
-      ⇒ ★ 附：本轮已从仓外存档把 21 条补回完整字段（21/21 八字段全覆盖，已复核）。
-      ⇒ ★★★ **2026-10-14 已修（用户裁定「按你的倾向来」）** —— 实际做法 = **① 合并 + ③ 的必填校验**：
-        · `node_ops.ts:225`：`{ ...next }` → **`{ ...prevDecision, ...next }`** ⇒ **未给的可选字段保留**
-          （要清空某字段 ⇒ 显式给空串；合并语义下"不给"= 保留、"给空"= 清空）。
-        · 同处加「合并后 `summary` 非空」校验（它是 `NodeDecision` 里**唯一必填**，`geometry.ts:172`）。
-        · ★ **而「入参必填」那道【早已住在** `op_data_spec.ts:168` 的 `required: { update: ['summary'] }`
-          （实测：只给 `status`、不给 `summary` ⇒ **op 层直接拦下并回滚**）⇒ ★★ 所以本笔**没有**动它
-          —— 动了就是"同一判据两处"（本仓头号病）。**结论：summary 必填是契约本身，不是缺口。**
-        · **改前 / 改后对照（真实，非构造）**：改前 21 条激活时只给 `summary+status` ⇒
-          `rationale` / `thread` / `evidence_source` / `author` **全丢**（`contract_arc_7` 从 8 字段掉到 4）；
-          改后**同一操作** ⇒ **8 字段全保留** ✓
-        · ★★ **顺带落实用户设想**（*"决策和修改是同步或半同步的，直接修改并填写原因"*）：
-          **顶层 `reason` 绑进 `decision_history[].note`**（`update_feature.ts` 的 `applyDecisionOp`；
-          优先序 **显式 `data.note` > 顶层 `reason`**）—— 实测 history 末条 `note` = 本次 `reason` 逐字。
-          ⇒ **"这一次为什么动它"与那一版决策同处存档**，考古不必两处拼。
-          ★ 依据：实测 `reason` 此前**只喂 L1-L4 校验、完全不落库** ⇒ 与决策卡脱钩。
-
-- [ ] **T256 ★★★★ 【概念澄清】决策卡的"当代意义" = 它能【参与对拍】—— 机制早已存在（`decision.expectations`），缺的是【没人往里写】**
-      *(来源：2026-10-14 用户追问 —— *"决策不应该转化成设计 DSL 用来对拍吗？不然决策卡的实际意义是什么？
-        历史的原因是方便考古，当代的决策写进来……不应该有实际意义吗？"* ★ **这一问纠正了我 T154 的诊断**。)*
-      ⇒ ★★★ **我此前说"决策卡对拍读不到"是【错的/不完整】** —— 实测机制**早就有**：
-        · `domain/expectation.ts:130-138` `collectExpectations(dsl)` **遍历 `n.decision?.expectations`**
-          （★ 读的就是**决策卡**，不是文件节点的 `expected_apis`）；
-        · `handlers.ts:48-50`：`consistency_check` 收集它 → `judgeExpectations(expRoot, expItems)` 判定；
-        · 形状 **6 种**（`expectation.ts:35-54`）：`file-exists` / `symbol-exists` / `signature-matches` /
-          `edge-exists` / `edge-absent` / `call-exists`；写入口有 `assertValidExpectations` 响亮拒绝坏形状。
-        ⇒ ★★ **所以"决策卡 → 对拍"这条路是通的**，缺的是**那 62 条（现 21 条）里一条 `expectations` 都没写**。
-      ⇒ ★★★ **由此更正 T154 的诊断**：62 条的问题**不是**"落点不对（决策卡 vs `expected_apis`）"，
-        而是 **"只写了考古字段（`summary`/`rationale`），没写可判定字段（`expectations`）"**
-        ⇒ 所以它们**只考古、不对拍**。
-      ⇒ ★★ **判据（用户给的）**：**当代决策**应当**除"注释已有设计"外**都带**可判定验收** ——
-        · 若它是"**应该是什么**"的断言 ⇒ **必须能转成 `Expectation[]`**（否则它只是散文）；
-        · 若它只是**解释/背景**（"注释已有设计"）⇒ 无 `expectations` 是**正当**的。
-      ⇒ **要做**：① 逐条过那 21 条，判"能判定 / 只是解释"；② 能判定的补 `expectations`；
-        ③ ★ **量一件事**：补完之后 `consistency_check` 的"不变式/验收"读数**必须从 0 变非 0**
-        （★ 否则等于没补）；④ 把"新决策卡应当带可判定验收"写进 `edit_dsl` 的 `decision` 契约描述。
-      ⇒ ★ 与 T154 的关系：**T154 是"备菜"（把候选捞出来），本条是"让菜能下锅"（变成可对拍的断言）**。
-      ⇒ ★★★ **2026-10-14 实测（接手验证，三条读数）** —— 结论：**闭环成立，但入口有缺口**：
-        · ★★ **决策卡 → 对拍【确实在工作】**（我上一轮说"只考古不对拍"**不准确，此处更正**）：
-          `consistency_check(run82)` 的 `expectation_results` 实测 **`checked 2 · passed 0 · failed 2`**
-          —— 那 2 条来自 `tool_faces.ts` 那张决策卡，**正在报真实差异**
-          （`facesOf` / `renderFaces` 签名里仍带 `directNames`，而决策卡要求去掉）⇒ **它出的就是真信号**。
-        · ★★★ **缺口①（入口）**：`edit_dsl` 的 **`decision` op【不认 `expectations`】**
-          —— 报错逐字：*"data 里有**不被认的键**：expectations（★ 此前它们会被**静默忽略**）"*；
-          该 op 已知键只有 13 个（`summary/rationale/consequences/acceptance/thread/tags/votes/evidence_source/note/status/author/alternatives/dissent`）。
-          ⇒ **从"决策卡写入口"写不进可判定验收**。
-          ★ 但系统**响亮拒绝**了（没静默）—— 那是 T174/T170c 立的"不在表里的键名要拒并列出已知键"在起作用 ✓
-        · ★★ **可行入口（实测）**：经 **`node` op 的 `data.decision.expectations`** 能写进去 ——
-          加了 1 条 `file-exists` ⇒ 对拍读数 **`checked 2→3 · passed 0→1`**（该条 `pass`）；撤掉后回到 `2/0/2` ✓
-        · ★★ **缺口②（冲突检测）**：我造了一条**与 `tool_faces` 决策卡正好相反**的断言
-          （要求 `facesOf` **保留** `directNames`）⇒ 两条**互相矛盾**（同一对象、相反要求），
-          ★ **而报告里 grep「冲突 / 矛盾 / contradict」= 0 命中**
-          ⇒ **冲突不是显式检测的**，只能靠"同一对象上判定结果互相打架"**间接**看出来。
-      ⇒ **要做**：① 把 `expectations` 加进 `op_data_spec` 的 `decision` 已知键
-        （★ 与 `node` 路径**同一判据**，别两处各判）；② 先裁"要不要给决策间冲突一个**显式**读数"
-        （候选：同一对象上 verdict 互斥即报；或维持现状、靠人看）；③ 再谈给那 21 条补 `expectations`。
-      ⇒ ★★★ **2026-10-14 缺口①已修并验证**：
-        · `op_data_spec.ts` 的 `TYPE_KNOWN_KEYS.decision` 补 **`expectations`**（+ `update_feature.ts` 的
-          `applyDecisionOp` 加处理：**复用既有唯一校验器 `assertValidExpectations`**，不另写一把尺）；
-        · **实测**：用 `decision` op 带 `expectations` ⇒ **成功写入**（不再报"不被认的键"）⇒
-          对拍读数 **`checked 2→3 · passed 0→1`**，新加那条 `pass`；撤掉后回到 `2/0/2` ✓
-        · ⇒ ★★ **"决策卡带可判定验收"这条主路现在从【两个入口】都走得通了**（`decision` op 与 `node` op）。
-      ⇒ **剩余**：② 冲突的显式读数（待裁）；③ 给那 21 条补 `expectations`（★ 这才是让它们"有当代意义"的一步）。
-      ⇒ ★★★ **2026-10-14 ③ 已完成（子代理逐条判、主代理复核读数）**：
-        · **补了 5 卡 / 6 项，全部 pass**（每条都**先核过目标真实存在**）：
-          `arc_1 → symbol-exists server_registry.ts::registerAllTools` ·
-          `arc_8 → edge-absent ×2（domain⇸infrastructure、infrastructure⇸application）` ·
-          `tcc_3 → call-exists deriveAlgorithm() → withTouched()` ·
-          `die_1 → symbol-exists storage_overlay.ts::saveOverlay` ·
-          `cpf_3 → call-exists gen_cognition.mjs 的 computeSections() → digestBody()`。
-        · **读数**：`checked 5 → 11` · `passed 3 → 9` · `failed 2`（既有真差异，未动）· `unsupported 0`。
-        · ★★ **反例（证明非恒真）**：把 `saveOverlay` 改成不存在的符号 ⇒ 该条**变 fail**
-          （`passed 9→8 · failed 2→3`），改回即恢复 ✓
-        · ★★★ **16 卡标注 `no-expectation: <理由>`**（**不硬塞假项** —— 判据是"硬塞的典型是永远绿的假项"）：
-          主因是 **T258**（判定器只认 `function|method`）与"6 种形状读不了 package.json / git 时序 / 通用纪律"。
-        · ★ 每条补的都**只覆盖一部分**，已在 `why` 里如实写明（例：`arc_1` 只覆盖"唯一出口存在"，
-          "与基线逐字相同"那一半**今天无门**——纲领 §5-G1 自己记的缺口）。
-        · ★ 两条既有 `fail`（`tool_faces.ts` 的 `facesOf`/`renderFaces`）经读码确认是**代码真没做到**
-          （T82 未落地，`tool_faces.ts:68/116` 仍带 `directNames`），**不是断言写错** ⇒ 未动。
-      ⇒ ★★★ **2026-10-14 缺口②已修并验证（用户裁定「按你倾向的来」= ① 但收窄）**：
-        · 加 `findExpectationConflicts(items)`（`expectations.ts`，**判据只住这一处**）+ `ExpectationsReport.conflicts`；
-          报告经 `handlers.ts` 的 4 处白名单透出。
-        · **「冲突」的定义（只检可判定的互斥，不猜语义冲突）**：
-          ① 同一 `from → to` 上一条要 `edge-exists`、另一条要 `edge-absent`；
-          ② 同一 `path#symbol` 上两条 `signature-matches` 要求**不同签名**。
-        · **实测**：造一条与 `contract_arc_8` 的 `edge-absent` **正好互斥**的 `edge-exists`（同 from→to）⇒
-          报告里出现 **1 条 `conflicts`**，`subject` = 那条边、`sides` 逐条带 **`node_id`（谁提的）**；
-          ★ **冲突单列，不混进 `pass/fail` 计数**（两条互斥要求里代码只能满足一条，**谁对是人的裁**）。
-          撤掉验证项后 `conflicts` 回到 **0** ✓
-        · ★ 为什么不并进 `verdict`：冲突是「**要求之间**的矛盾」，与「**代码满没满足**」是两件事
-          ⇒ 混进去会把"设计自己打架"读成"实现没做到"。
-
-- [ ] **T258 ★★★ 判定器只认 `function|method` 符号 ⇒ const / type / interface / 字段类断言【结构上无法表达】**
-      *(来源：2026-10-14 给 21 条补验收时实测；★ 主代理已读实现复核。)*
-      ⇒ **实测**（`application/design/intent/expectations.ts:162-164`）：
-        ```ts
-        const hit = syms.find((s) => (s.kind === 'function' || s.kind === 'method') && (s.name === e.symbol || …));
-        ```
-        ⇒ ★ 而 `parseFileSymbols` 把 `const`/`arrow const` 判成 `const`/`type`，`interface`/`type` 判成 `interface`/`type`
-        ⇒ **`symbol-exists` / `signature-matches` 对 const、类型、接口、接口字段一律取不到**
-        （★ 判 **fail** 而不是 unsupported —— 那会把"能力边界"读成"代码没做到"，**是假红**）。
-      ⇒ **实测后果（本轮 16 张判不了的卡里，至少 4 张死于此）**：
-        `arc_6`（`IMPORT_EXTS`/`SOURCE_EXTS` 都是 const）· `tcc_6`（`written_files` 是**接口字段**）·
-        `tcc_9`（`SemanticFile`/`path` 是 type/字段）· `tcc_3` 的"类型本体"那一半。
-      ⇒ **要做（先裁）**：① 扩判定器**认全部符号 kind**（并让 `symbol-exists` 的 `why` 说明"你要的是哪种 kind"）；
-        ② 或**新增形状**（如 `const-exists` / `type-exists` / `member-exists`）；
-        ③ 或**降级为 unsupported 而不是 fail**（★ 至少别把"表达不了"报成"代码没做到"）。
-      ⇒ **判据**：写一条 `symbol-exists` 指向一个**确实存在的 `const`/`interface`** ⇒ **必须 pass**
-        （今天必 fail ⇒ 假红）。
-      ⇒ ★★★ **2026-10-14 已修并验证**：`expectations.ts:162-164` **去掉 kind 过滤**
-        （问的是"这个符号在不在"，**不该替调用方挑 kind**）；失败提示**同步去掉过滤**
-        （否则"现取到 N 个"会漏报 const/type，把读者引向错的方向）。
-        · **实测**：`symbol-exists` 指向 `rename_file.ts` 的 `const SOURCE_EXTS` ⇒ **pass**
-          （`"（现解析）有 SOURCE_EXTS（L32-32）"`）；改前同一条必 fail。
-        · ★ **已知边界（如实记，本轮验证第一版就踩到）**：**`import` 进来的符号不在本文件定义里**
-          ⇒ 仍取不到（提示"没有符号 `TS_JS_EXTS`"）。那是"**符号必须本文件定义**"的语义，
-          **不是 kind 问题** ⇒ 若将来要判"某文件**引用了**某符号"，该用 `edge-exists` / `call-exists`。
-        · ★ 修完读数：`checked 11 / passed 9 / failed 2 / unsupported 0`（撤回验证项后）。
-      ⇒ ★ 关联：这与 T257 是**同一族**（"形状的能力边界"），但方向相反 ——
-        T257 是**假 unsupported**（本该判却判不了），本条是**假 fail**（表达不了却报"没有"）。
-      ⇒ ★★★ **2026-10-14 闭环 B 实测（"项目文档 → 决策卡 → 对拍"，由子代理真跑、主代理核验读数）**：
-        · **挑的 3 条**（都来自 `docs/architecture-refactor-plan.md` §1）：I1 对外契约不变 → `symbol-exists
-          server_registry.ts::registerAllTools` · I3 全量回归 → `file-exists scripts/verify.mjs` ·
-          I1 契约唯一出口 → `edge-exists server.ts → server_registry.ts`（写卡前先核过节点/符号真实存在）。
-        · **读数**：基线 `checked 2 · passed 0 · failed 2` ⇒ 加 3 张卡后 **`5 / 2 / 2 / unsupported 1`**
-          （主代理独立复核一致）。逐条：`file-exists` **pass** · `symbol-exists` **pass** ·
-          `edge-exists` **unsupported** · 既有的 2 条 `signature-matches` 仍 fail。
-        · ★★ **反例（证明判定非恒真）**：把 `verify.mjs` 改成 `verify-NOPE.mjs` ⇒ 该条**变 fail**
-          （`passed 2→1 · failed 2→3`），改回即恢复 ⇒ ✓
-        · ★★★ **闭环"顺"在哪 / "卡"在哪（如实）**：**写端一次通过**（`edit_dsl --input` + `data.expectations`，
-          T256 那条路）；★ **卡在"形状 × 语言"的匹配度** —— 见 **T257**（edge 类对 TS 恒 unsupported）。
-        · ★ 子代理如实报了**落不了卡**的三条：I2（8 个运行时依赖：6 种形状表达不了"集合=8"）、
-          I5（不引 DI/框架：唯一的 `edge-absent → @nestjs/core` 会**恒 pass** ⇒ 是假项，按纪律没硬塞）、
-          I4（每步可独立提交：git 历史属性，无对应形状）。
-
-- [ ] **T257 ★★★ `edge-exists` / `edge-absent` 在【真实 TS 文件上恒 unsupported】—— 6 种可判形状里有 2 种对 TS 仓没有可用面**
-      *(来源：2026-10-14 闭环 B 实测（子代理跑、主代理复核）；★ 这是**闭环 B 唯一的真卡点**。)*
-      ⇒ **实测**：`edge-exists server.ts → server_registry.ts` 判 **unsupported**，detail 逐字：
-        *"该文件含 **3 条非相对导入**（Go/Python 的包导入等），而依赖边表按设计**只记 relative** ⇒ **依赖事实不完整，判不了**"*。
-      ⇒ ★★★ **根因（已读实现）**：`application/design/intent/expectations.ts:92-109` 的 `depFactsIncomplete`
-        把 **`kind !== 'relative' && !type_only` 的【任何】import** 都算"依赖事实不完整" ——
-        ★ 注释只提"Go/Python 的包导入等"，但 **TS 的包导入（`node:path` / `@modelcontextprotocol/sdk`）同样触发**。
-        ⇒ ★★ 于是：**只要文件 import 了任何包（几乎每个真文件），edge 类断言就永远 unsupported**。
-      ⇒ ★ **不是假绿**（它没并进 `passed`，如实记 `unsupported` —— 这一点做对了）；
-        ★ **但它等于"这条形状对 TS 仓没有可用面"** ⇒ 6 种形状实际可用 ≈ 4 种
-        （`file-exists` / `symbol-exists` / `signature-matches` / `call-exists`；后者待核）。
-      ⇒ **要做（先裁）**：① **TS 的包导入不该算"依赖事实不完整"** —— 依赖边表只记 relative 是**设计**
-        （包导入没有仓内目标），而 `edge-exists` 问的是**仓内两文件之间**的边 ⇒ ★ **两者本不冲突**，
-        判据应改为"**只看被问的那对节点是否落在事实不完整的范围里**"，而不是"文件里有没有包导入"；
-        ② 或（更保守）把它降为"**该形状在 TS 上不支持**"并在描述里**写明**，别让人白写。
-      ⇒ **判据**：在**有包导入的真实 TS 文件**上写一条 `edge-exists`（那条边**确实存在**）⇒ **必须 pass**（而不是 unsupported）。
-      ⇒ ★ 关联：这也是"给那 21 条补 `expectations`"的前置 —— **先得知道哪些形状真能用**。
-      ⇒ ★★★ **2026-10-14 已修并验证**：`expectations.ts` 的 `depFactsIncomplete` 里加一条 ——
-        **TS/JS 家族（判据复用既有唯一来源 `TS_JS_EXTS`，`infrastructure/parse/source_exts.ts`）的裸导入
-        不算"依赖事实不完整"**（仓内引用走 relative、依赖边表记的正是它；裸导入没有仓内目标）。
-        · **实测对照**：改前 `edge-exists` = **unsupported**（子代理跑 + 主代理复核）⇒ 改后同一条 = **pass**；
-          整表读数 **`unsupported 1 → 0`**、`passed 2 → 3`（`checked 5 / passed 3 / failed 2 / unsupported 0`）✓
-          —— ★ 正合本条判据（"有包导入的真实 TS 文件上写一条确实存在的边 ⇒ 必须 pass"）。
-        · ★ **已知限度（如实写进注释）**：若项目配了 `tsconfig.paths` 别名（`@/x` → `src/x`），裸导入
-          **可能**指向仓内 ⇒ 那时本判据**偏乐观**；当前本仓**未配 paths**，故不触发。**该限度未加检测**（如实记）。
-      ⇒ **代码位置（判据的唯一住处）**：`dsl_ops/node_ops.ts:225` `const decision: NodeDecision = { ...next, updated_at: now };`
-        —— ★ `{ ...next }` = **用你给的字段整体替换**，不是合并。三个调用点都走它：
-        `update_feature.ts:865`（`edit_dsl` 的 decision 路径）· `node_ops.ts:103`（addNode）· `node_ops.ts:293`（updateNode 的 `data.decision`）。
-        ★ 而 `next === undefined`（整个 `data.decision` 不给）时**不改** ⇒ 缺的是"给了一部分"这一格。
-      ⇒ ★ **同文件已有先例可循**：`update_feature.ts:845`（`data.author` 位置错 ⇒ **抛**）·
-        `:855`（`data.agent` 位置错 ⇒ **抛**）—— 作者已在意"写错地方要响"，**只是没覆盖"字段缺失"这一格**。
-      ⇒ **主代理倾向（供裁）**：**③ 的变体** —— **必填缺失 ⇒ 抛；可选缺失 ⇒ 保留**。
-        理由：契约已写"需 `data.summary`"⇒ `summary` 是必填、其余可选 ⇒
-        "给什么改什么、未给的**可选**字段保留、**必填**缺了响亮报错"最贴合契约原意、也最小惊讶。
-        ★ 但它牵涉一个**概念判断**（该由用户定）：**决策卡是"整块对象"（一次定稿 ⇒ ②/③）还是"字段集合"（可逐字段演进 ⇒ ①）？**
-
 - [ ] **T153 ★★★★ DSL 走查的结果：**「对得上吗」= 对不上，但**性质特殊** —— ★ **本仓的"设计侧"几乎是空的**
       *(来源：2026-10-11 用户问「**有用到 DSL 吗？DSL 本身好用吗？**」⇒ 自查发现四次走查**全走 `refactor`（不碰 DSL）**
         ⇒ 于是派了一路 **`dsl-e2e`** 走 `design-loop` 那条线。★ 我已独立复核它的一手读数。)*
@@ -2809,3 +2620,38 @@
 
 
 
+
+
+- [ ] **T259 ★★★★ 【能力边界·成员级】`symbol-exists` / `signature-matches` 够不着【接口成员 / 对象键】—— T258 只解了「kind 级」**
+      *(来源：2026-10-14 用修好的判定器重跑 16 卡时实测；★ 主代理已复核读数 15/13/2。)*
+      ⇒ **实测**：`tcc_6`（`written_files` 是 `Touched` 的**接口成员** / `B_TERMS` 的**对象键**）与
+        `tcc_9`（`SemanticFile.path` 是**成员**）**双双判不了** —— 而 `SemanticFile` **类型本体**能判（pass）。
+      ⇒ **根因**：`parseFileSymbols` **只产顶层** `const`/`interface`/`type`/`function`，**不产成员**；
+        且接口的 `signature` 只有 `"Name()"`（**不含成员**）⇒ `signature-matches` 也够不着。
+      ⇒ ★★ **所以 T258 修的是「kind 级」（const/type/interface 能指了），「成员级」仍是盲区** ——
+        主代理当时点名 4 张 T258 候选卡，**实际只有 `arc_6` 被解**。
+      ⇒ **要做（先裁）**：① 新增形状 `member-exists` / `member-type`（`{path, owner, member, …}`）；
+        ② 或让接口的 `signature` 带上成员表；③ 或**如实把「成员级不支持」写进形状描述**，别让人白写。
+      ⇒ **判据**：写一条指向**确实存在的接口成员**的断言 ⇒ **必须 pass**（今天必 fail ⇒ 假红）。
+
+- [ ] **T260 ★★★ 【纪律】`no-expectation` 的理由【只活在报告里】—— 卡自己不带说明 ⇒ 下一个人会重复判断**
+      *(来源：2026-10-14 重跑 16 卡时实测；★ 主代理已复核：`grep -c no-expectation agent-io.json` = **0**。)*
+      ⇒ **实测**：两轮共 16 张卡判「不补」，理由写在**子代理的报告**里；而**卡上没有任何痕迹**
+        （`decision` 里没有该字段、`note` 里也没有）⇒ ★ **下一个人读到这些卡，仍会重新判一遍**。
+      ⇒ ★ 这与本仓头号病**同族**：**同一个结论住两处（报告 + 卡），而报告会丢、卡不会**。
+      ⇒ **要做（先裁）**：把「为什么判不了」写进卡的 **`decision.note`**（既有字段，会进 `decision_history`）
+        —— ★ 判据：**读一张卡就知道「它为什么没有验收」**，不必去翻报告。
+      ⇒ ★ 关联：`no-expectation` 若作为**约定词**，需进 `B_TERMS`（本仓「受控词表」纪律）。
+
+- [ ] **T261 ★★ 【边界·脆代理】`edge-absent` 当「不许合并」的代理是【间接且脆】的**
+      *(来源：2026-10-14 重跑时实测（`arc_6` 的写法）。)*
+      ⇒ 6 形状**没有「集合不相交」**那一种 ⇒ 只能退化成「家文件不依赖对端家文件」
+        （实测写法：`edge-absent source_exts.ts ⇸ import_resolve.ts`）。
+      ⇒ ★ **脆在哪**：若将来 `source_exts.ts` 因**别的正当理由** import 了 `import_resolve` ⇒ **假红**。
+      ⇒ **要做（先裁）**：要么新增「集合关系」形状，要么**如实把这条代理的限度写进 `why`**（本轮已写）。
+
+- [ ] **T262 ★★ 【边界】`type-only import` 按设计【不建边】⇒ 「X 是 Y 的输入、而链接是类型引用」的断言结构上不可表达**
+      *(来源：2026-10-14 重跑时实测（`cpf_5` 判不了）。)*
+      ⇒ 依据：`infrastructure/index/symbols.ts:390` —— type-only import 不建边（**这是设计**，不是缺陷）。
+      ⇒ ⇒ 于是 `cpf_5`（「DSL 是 scaffold/edit_code/consistency_check/rename 的输入」）**表达不了**。
+      ⇒ **要做（先裁）**：这是 edge 类的**固有盲区** ⇒ 至少写进形状描述；或新增「类型引用」形状。
