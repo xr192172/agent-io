@@ -2755,3 +2755,29 @@
         ★ 教训：**同族的多处必须一次找齐**（先 `grep` 出所有变体再改），否则"改了但没生效"要靠实测才发现。
       ⇒ **验证**：插桩后 **`node` 退 0**（原先 SyntaxError）；临时变量名互不相同
         （`__cam_ret3C24` / `3C46` / `3C69` / `7C16` / `7C26`）。
+
+- [ ] **T306 ★★★ 【六格对比的第一个产出】TS 侧 `captureProbe` **静默吞掉 sink 错误** —— ⑤「错误可见」这一半没对齐 Go**
+      *(来源：2026-10-14 「骨架六格 × 两边」对比（据用户"把实际 DSL fork 成设计再对拍"的思路做）；★ 读数原文。)*
+      ⇒ **对比结果（六格）**：
+        · ① 命名：Go `funcDeclName`/`recvTypeName`/`closure@` ｜ TS `detectEnclosingFunction`/`anon@` ⇒ **各一套**
+        · ② 遍历：Go `walkStmts` ｜ TS `collectSites` ⇒ **各一套**
+        · ③ 应用：Go **无此层**（go/ast 直接重写）｜ TS `applyInsertions` ⇒ ★ **TS 特有**
+        · ④ sink：Go `NewSink`/`SetGlobalSink` ｜ TS `setGlobalProbeSink`/`TSProbeCapture` ⇒ **语义同、API 名不同**
+        · **⑤ 错误传播：Go 有两半（`sanitizeFields` 序列化容错 + `reportProbeError` 错误可见）｜ TS 只有一半**
+        · ⑥ 取值时机：Go 函数体首 `defer` 闭包 ｜ TS `handleReturn` ⇒ **各一套**
+      ⇒ **⑤ 的精确缺口**（`probe.ts:59-67`）：
+        ```ts
+        export function captureProbe(probe, fields, source = 'static-rule'): void {
+          const sink = getGlobalSink();
+          if (!sink) return;
+          try { sink.emit(probe, fields, source); }
+          catch { /* 探针绝不允许反过来让业务路径抛错 */ }   // ← ★ 错误被静默吞
+        }
+        ```
+        ⇒ 序列化那半**它有**（`serializeSafe`：循环引用/BigInt/函数/undefined 都不抛错）✓；
+        ⇒ **缺的是"错误可见"**：`sink.emit` 抛错（写盘失败 / 权限 / 磁盘满）时**无声无息**。
+      ⇒ **要做**：对齐 Go 侧的 `reportProbeError`（写 stderr 且**限流**：首次完整说 + 之后每 N 次报累计）。
+        ★ 纪律不变：**探针不许抛错**（它跑在宿主热路径上）⇒ 只**写 stderr**，不 rethrow。
+      ⇒ **判据**：让 `sink.emit` 强制抛错（如只读路径）⇒ **必须有可见输出**（今天必静默）。
+      ⇒ ★★ **同时修正骨架清单**：**③「应用模型」不是通用件**（Go 侧没有这一层）⇒ 从"语言无关"里**去掉**；
+        真正的"语言无关"只有 **⑤ 错误传播**（与 ④ 的**契约**）；① ② ⑥ 是**语言钩子**（两边各实现、骨架定接口）。
