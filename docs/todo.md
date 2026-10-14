@@ -404,6 +404,18 @@
           "与基线逐字相同"那一半**今天无门**——纲领 §5-G1 自己记的缺口）。
         · ★ 两条既有 `fail`（`tool_faces.ts` 的 `facesOf`/`renderFaces`）经读码确认是**代码真没做到**
           （T82 未落地，`tool_faces.ts:68/116` 仍带 `directNames`），**不是断言写错** ⇒ 未动。
+      ⇒ ★★★ **2026-10-14 缺口②已修并验证（用户裁定「按你倾向的来」= ① 但收窄）**：
+        · 加 `findExpectationConflicts(items)`（`expectations.ts`，**判据只住这一处**）+ `ExpectationsReport.conflicts`；
+          报告经 `handlers.ts` 的 4 处白名单透出。
+        · **「冲突」的定义（只检可判定的互斥，不猜语义冲突）**：
+          ① 同一 `from → to` 上一条要 `edge-exists`、另一条要 `edge-absent`；
+          ② 同一 `path#symbol` 上两条 `signature-matches` 要求**不同签名**。
+        · **实测**：造一条与 `contract_arc_8` 的 `edge-absent` **正好互斥**的 `edge-exists`（同 from→to）⇒
+          报告里出现 **1 条 `conflicts`**，`subject` = 那条边、`sides` 逐条带 **`node_id`（谁提的）**；
+          ★ **冲突单列，不混进 `pass/fail` 计数**（两条互斥要求里代码只能满足一条，**谁对是人的裁**）。
+          撤掉验证项后 `conflicts` 回到 **0** ✓
+        · ★ 为什么不并进 `verdict`：冲突是「**要求之间**的矛盾」，与「**代码满没满足**」是两件事
+          ⇒ 混进去会把"设计自己打架"读成"实现没做到"。
 
 - [ ] **T258 ★★★ 判定器只认 `function|method` 符号 ⇒ const / type / interface / 字段类断言【结构上无法表达】**
       *(来源：2026-10-14 给 21 条补验收时实测；★ 主代理已读实现复核。)*

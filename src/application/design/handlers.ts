@@ -96,8 +96,8 @@ export const consistencyHandler = wrapData(async (a) => {
       //     正是**下一步动作**（③）的输入，必须是结构化的（本仓 §5 纪律①）。
       retireFlow: r.retireFlow,
     };
-    if (exp) data.expectation_results = { checked: exp.checked, passed: exp.passed, failed: exp.failed, unsupported: exp.unsupported, items: exp.items, notes: exp.notes };
-    else if (expNotes.length) data.expectation_results = { checked: 0, passed: 0, failed: 0, unsupported: 0, items: [], notes: expNotes };
+    if (exp) data.expectation_results = { checked: exp.checked, passed: exp.passed, failed: exp.failed, unsupported: exp.unsupported, items: exp.items, notes: exp.notes, conflicts: exp.conflicts };
+    else if (expNotes.length) data.expectation_results = { checked: 0, passed: 0, failed: 0, unsupported: 0, items: [], notes: expNotes, conflicts: [] };
     // ★★★ 2026-10-09（T81 续）：**全量这条路径也要产 `touched`**。
     //   ★ 我最初只改了「给 scope」那一条 ⇒ 实测才发现**默认那条根本不产 `touched`**（DATA 里连 `blocks` 都没有）
     //     —— 又一次"改的那处不在跑"。★ 两条路径**共用同一套判据**：`hasDiff`（有差异）+ `groupExpectationFails`（归类）。
@@ -292,9 +292,9 @@ export const consistencyHandler = wrapData(async (a) => {
       retireFlow: r.retireFlow,
       touched,
       ...(exp
-        ? { expectation_results: { checked: exp.checked, passed: exp.passed, failed: exp.failed, unsupported: exp.unsupported, items: exp.items, notes: exp.notes } }
+        ? { expectation_results: { checked: exp.checked, passed: exp.passed, failed: exp.failed, unsupported: exp.unsupported, items: exp.items, notes: exp.notes, conflicts: exp.conflicts } }
         : expNotes.length
-          ? { expectation_results: { checked: 0, passed: 0, failed: 0, unsupported: 0, items: [], notes: expNotes } }
+          ? { expectation_results: { checked: 0, passed: 0, failed: 0, unsupported: 0, items: [], notes: expNotes, conflicts: [] } }
           : {}),
     },
   };

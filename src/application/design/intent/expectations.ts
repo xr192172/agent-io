@@ -49,6 +49,75 @@ export interface ExpectationsReport {
   unsupported: number;
   items: ExpectationItem[];
   notes: string[];
+  /**
+   * ★★★ T256 缺口②（2026-10-14）：**决策间冲突** —— 见 {@link findExpectationConflicts}。
+   * ★ 为什么要有它（实测）：造两条**相反**断言时，报告里**一个「冲突」字样都没有** ⇒
+   *   只能靠"同一对象上 verdict 互相打架"**间接**看出 ⇒ ★ 两条都 fail 时看起来只是"两处问题"。
+   */
+  conflicts: ExpectationConflict[];
+}
+
+/** 一条**决策间冲突**：同一对象上的两个互斥要求。 */
+export interface ExpectationConflict {
+  /** 冲突对象（人读）—— `a → b` 或 `path#symbol` */
+  subject: string;
+  /** 冲突的两个（或更多）要求，各带**来源节点**（谁提的） */
+  sides: Array<{ node_id: string; kind: string; text: string }>;
+}
+
+/**
+ * ★★★ T256 缺口②（2026-10-14）：**决策间冲突**的检测 —— ★ **判据只住这一处**。
+ *
+ * ## 「冲突」的定义（★ 只检**同一对象上的互斥要求**，不猜语义冲突）
+ * · 同一 `from → to`：一条要 `edge-exists`、另一条要 `edge-absent`；
+ * · 同一 `path#symbol`：两条 `signature-matches` 要求**不同签名**。
+ *
+ * ★ **为什么只检这两类**：它们是**可判定的互斥**（同一对象上不可能同时成立）。
+ *   "语义冲突"（如 A 说该拆、B 说该合）**机器判不了** ⇒ **不假装能判**（那会变成假信号）。
+ * ★ **为什么不并进 `verdict`**：冲突是**要求之间的矛盾**，与"代码满没满足"是**两件事**
+ *   —— 两条互斥要求里，代码**只能满足一条**，所以至少一条会 fail；但"谁对"是**人的裁**。
+ *   ⇒ 单列一段，不混进 pass/fail 计数。
+ */
+export function findExpectationConflicts(
+  items: ReadonlyArray<{ node_id: string; node_label: string; expectation: Expectation }>,
+): ExpectationConflict[] {
+  const out: ExpectationConflict[] = [];
+  const add = (
+    map: Map<string, Array<{ node_id: string; kind: string; text: string }>>,
+    k: string,
+    v: { node_id: string; kind: string; text: string },
+  ): void => {
+    if (!map.has(k)) map.set(k, []);
+    map.get(k)!.push(v);
+  };
+
+  // ① edge：同一 from→to 上 exists vs absent
+  const byEdge = new Map<string, Array<{ node_id: string; kind: string; text: string }>>();
+  for (const it of items) {
+    const e = it.expectation;
+    if (e.kind !== 'edge-exists' && e.kind !== 'edge-absent') continue;
+    add(byEdge, `${normPath(e.from)} → ${normPath(e.to)}`, {
+      node_id: it.node_id,
+      kind: e.kind,
+      text: `${e.kind}：${e.from} → ${e.to}`,
+    });
+  }
+  for (const [subject, sides] of byEdge) {
+    if (new Set(sides.map((x) => x.kind)).size > 1) out.push({ subject, sides });
+  }
+
+  // ② signature：同一 path#symbol 上两条要求不同签名
+  const bySig = new Map<string, Array<{ node_id: string; kind: string; text: string }>>();
+  for (const it of items) {
+    const e = it.expectation;
+    if (e.kind !== 'signature-matches') continue;
+    add(bySig, `${normPath(e.path)}#${e.symbol}`, { node_id: it.node_id, kind: e.kind, text: e.signature });
+  }
+  for (const [subject, sides] of bySig) {
+    if (new Set(sides.map((x) => normSignature(x.text))).size > 1) out.push({ subject, sides });
+  }
+
+  return out;
 }
 
 /**
@@ -304,6 +373,8 @@ export async function judgeExpectations(
     passed: out.filter((x) => x.verdict === 'pass').length,
     failed: out.filter((x) => x.verdict === 'fail').length,
     unsupported,
+    // ★ T256 缺口②：决策间冲突（同一对象上的互斥要求）—— 单列，不混进 pass/fail 计数
+    conflicts: findExpectationConflicts(items),
     items: out,
     notes,
   };
