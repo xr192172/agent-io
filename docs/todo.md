@@ -272,6 +272,26 @@
         · ★ **`votes` 未填** —— 理由：「它是"多源印证"口径，与"文档抽契约"不同，**填了 = 把推测当实测**」✓
       ⇒ ★★★ **而 62 条现在是【在册但未定稿】** ⇒ **"裁"（`draft` ⇒ `active`）是【用户的活】**
         （★ 查：`get_dsl query=decisions decision_status=draft`；★ 这正是**共识闸**：**`propose` 已发，等 `approve`**）。
+      ⇒ ★★★ **2026-10-14 接手实测更正（三条，都带读数）**：
+        · **在册状态核实**：活态与受控基线 `certs/t185-base/agent-io.json` **一致** —— **596 节点 / 72 决策
+          （active 9 · 缺省=生效 1 · draft 62）· `contract_` 前缀 62**；62 条 `decision` 的 8 个字段
+          （`summary/rationale/evidence_source/status/thread/author/agent/updated_at`）**62/62 全覆盖**，
+          `thread` 分 8 组（ARC 11 · TCC 10 · DIE 8 · CFP 8 · DDR 7 · DUG 6 · GAP 6 · CPF 6）✓
+        · ★★★ **但 62 条对「设计↔实际对拍」零贡献**（这是本笔最要紧的更正）：
+          实测 `consistency_check(run82)` 报 **契约已实现 4 · 缺失 0 · 不匹配 0**；而那 4 条来自
+          **3 个文件节点的 `expected_apis`**（`dsl_ops/node_ops.ts` 1 · `domain/b_terms.ts` 2 · `domain/geometry.ts` 1，
+          ★ 三者**都没有 decision**）—— **正是 T156 试点写的那 4 条，不是本条的产出**。
+          ⇒ ★★ **62 条候选节点只有 5 个键**（`id/label/type/description/decision`），
+          **一个 `expected_apis` / `expected_deps` 都没有** ⇒ 对拍**读不到它们**。
+          ⇒ ★★ 所以本笔开篇那句因果（*"设计侧几乎是空的 ⇐ 因为这条欠账没做"*）**不成立**：
+          62 条是**决策卡**，解的是「可信度」（`draft`/`active`/`superseded`），**不是**「对拍能不能跑」。
+          ★ 而 T153 的空白（`expected_apis` 0 条）**今天仍在**（只多了 T156 那 4 条）。
+        · ★ **一处承诺没兑现**：正文称"`tags:['contract-candidate']`（可区分、可过滤、可批量清理）"，
+          而 **实测 62 条节点上【没有】`tags` 字段**（`contract-candidate` 命中 0）。
+          ★ 但 `contract_` 前缀 **62/62 唯一** ⇒ **按前缀仍可过滤/清理，路径没丢**（只是 tag 那条说法不实）。
+      ⇒ ★★ **给下一步的判据**：**继续抽更多文档不会解开"设计侧空白"** —— 那条空白在 `expected_apis`，
+        而它要的是「**应该是什么**」的声明（T156 已证：从现状文档抽出来的只能"自己比自己"）。
+        ⇒ 先解决「**对拍能不能出真信号**」，再谈量产；否则只是把 `draft` 从 62 堆到几百。
 
 - [ ] **T153 ★★★★ DSL 走查的结果：**「对得上吗」= 对不上，但**性质特殊** —— ★ **本仓的"设计侧"几乎是空的**
       *(来源：2026-10-11 用户问「**有用到 DSL 吗？DSL 本身好用吗？**」⇒ 自查发现四次走查**全走 `refactor`（不碰 DSL）**
