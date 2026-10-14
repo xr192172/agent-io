@@ -2560,3 +2560,62 @@
       ⇒ 依据：`infrastructure/index/symbols.ts:390` —— type-only import 不建边（**这是设计**，不是缺陷）。
       ⇒ ⇒ 于是 `cpf_5`（「DSL 是 scaffold/edit_code/consistency_check/rename 的输入」）**表达不了**。
       ⇒ **要做（先裁）**：这是 edge 类的**固有盲区** ⇒ 至少写进形状描述；或新增「类型引用」形状。
+
+- [ ] **T272 ★★★★ 【致命·打断宿主】`return` 表达式里含【被插桩的内联箭头/函数表达式】⇒ 文本错位 ⇒ 整模块 SyntaxError**
+      *(来源：2026-10-14 第二轮端到端实测（子代理）+ 主代理亲自复现；★ 读数原文。)*
+      ⇒ **最小复现（主代理复现）**：`export function sl(arr){ return arr.map((x) => x * 2); }`
+        ⇒ 插桩后那行成 `…return __cam_ret2;` + **`reProbe("sameline.sl.enter", …)`** + `… });`
+        ⇒ ★★ **`captureProbe(` 被吃成 `reProbe(`** ⇒ `SyntaxError: Expression expected` ⇒ **整模块 import 失败**。
+      ⇒ **根因**：`return <expr>` 的**替换区间** `[startIndex, removeTo)` **包含了**内联箭头（`(x) => x*2`）
+        的**插入点** ⇒ 两次编辑都按**原文偏移**应用 ⇒ 后应用的把先应用的**吃掉一段**。
+        ★ 与 T264 **同族**（"同 offset 的插入 vs 替换"），但这次是**包含关系**（不是同 offset）。
+      ⇒ **触发条件（极常见）**：`return f(x => …)` / `return (()=>…)()` / `return (function(){…})()` / `return (n)=>n+1`。
+        实测波及：`nested.ts` / `ret_forms.ts` **整文件 IMPORT_FAIL**。
+      ⇒ **要做**：**应用模型要能处理区间包含** —— 现在那句 `out = out.slice(0,index) + injected + out.slice(removeTo)`
+        假设"所有编辑互不重叠" ⇒ 该假设**不成立**。正解是改成**分段拼接**（把原文切成若干段，每段各自替换/插入），
+        或至少：**检测到"替换区间内含其它插入"时先应用内层**、再让外层用**已处理过的**区间文本拼 replacement。
+      ⇒ **判据**：`return arr.map(x => x * 2);` 插桩后 **`tsc`/`node` 能解析**、且 `arr.map` 的回调**也有 enter/exit**。
+
+- [ ] **T273 ★★★★ 【静默·改宿主行为，最阴】无大括号单语句体里的 `return` 逃逸 ⇒ 探针成了 `if` 的唯一语句体 ⇒ `return` 变【无条件】**
+      *(来源：2026-10-14 第二轮端到端实测；★ 不崩，但算错 —— 本仓最反对的形态。)*
+      ⇒ **实测对照（基线 → 插桩后）**：`loopReturn([1,2,3,4])` **3 → 1** · `whileReturn(5)` **3 → 1** ·
+        `recurse(3)` **6 → 0** · `guardNoBrace(0)` **0 → null** · `bareReturn(-1)` **-1 → undefined** · `whileBodyReturn(0)` **-1 → 100**。
+      ⇒ **根因**：注入成 `if (c) captureProbe(…); return X;` ⇒ **探针成了 `if` 的唯一语句体**，
+        而 `return X` **掉到 `if` 之外** ⇒ **变成无条件执行**。
+      ⇒ **触发条件**：`if (c) return X;` / `while (c) return X;` / `for (…) if (c) return X;` —— **任何单语句体 return**。
+      ⇒ ★★ 与 T274 是**同一族**（"无大括号体的注入"），但后果不同：这条**不报错、只算错** ⇒ **更难察**。
+      ⇒ **要做**：给单语句体**补大括号**再注入（`if (c) { probe; return X; }`），或**放弃在单语句体里注入**
+        （只记录，不改结构）。★ 无论哪种，**都不许让 `return` 的归属改变**。
+      ⇒ **判据**：夹具里 `if (c) return X;` 插桩后 ⇒ **返回值与基线逐字相同**（今天必变）。
+
+- [ ] **T274 ★★★ 【致命·打断宿主】无大括号 `else` 里的 `return` 走 hoist ⇒ `else const …` SyntaxError**
+      *(来源：2026-10-14 第二轮端到端实测。)*
+      ⇒ **实测**：`if (x>0) return 1; else return 2;` ⇒ 注入成 **`else const __cam_ret15 = 2;…`**
+        ⇒ `SyntaxError: Expression expected` ⇒ 整模块 IMPORT_FAIL。
+      ⇒ ★★ **同一个语言构造、两个分支处理不一致**：`if` 体无大括号走**内联**（不报错但改行为，见 T273），
+        `else` 体却走 **hoist**（`const …` 不能做 `else` 的语句体）⇒ **两个分支两套处理**。
+      ⇒ **要做**：与 T273 合并处理 —— **无大括号体统一"补大括号"或统一"不注入"**，别两套。
+      ⇒ **判据**：`if (x>0) return 1; else return 2;` 插桩后 **能解析** 且**返回值不变**。
+
+- [ ] **T275 ★★ 【信息丢失】解构参数只记第一个字段**
+      *(来源：2026-10-14 第二轮端到端实测。)*
+      ⇒ **实测**：`withDestructure({a, b}: {a:number;b:number})` ⇒ 注入 `args: { a: a }`，**`b` 丢失**。
+      ⇒ **触发条件**：对象解构参数。⇒ **要做**：`extractParamNames` 要展开解构模式（或如实标注"解构只记首字段"）。
+
+- [ ] **T276 ★★ 【读数失真】单语句体 `return` 的 `ret: undefined`（T270 的同族残留）**
+      *(来源：2026-10-14 第二轮端到端实测；★ 独立 `return x;` 能正确 hoist，只有"单语句体"不行。)*
+      ⇒ **实测**：`loopReturn` / `recurse` / `guardNoBrace` 的点模式 exit 注入 `ret: undefined`（真值 3/6/0）。
+      ⇒ 与 T273 同源（都是"单语句体"那格）⇒ **建议与 T273/T274 一起修**。
+
+- [ ] **T277 ★★ 【信息歧义】内联回调 / 同名 getter-setter 的探针名与宿主同名**
+      *(来源：2026-10-14 第二轮端到端实测。)*
+      ⇒ **实测**：`arr.map(x=>x*2)` 的回调探针名 = `nested.useCallback.enter/exit`（**与外层同名**）；
+        `useReduce` 一行 3 个探针**全叫** `nested.useReduce.enter`；`get value()` 与 `set value()` 都叫 `syntax_edge.value`。
+      ⇒ ★ 后果：调用树/台账里**分不清是谁**（观测到的事件挂不到正确的函数）。
+      ⇒ **要做（先裁）**：给匿名函数探针名加**区分**（如 `…useCallback#2`、`…value.get` / `…value.set`）。
+
+- [ ] **T278 ★★ 【静默空结果】`target` 传【文件路径】⇒ 0 探针、退出码 0、不报错**
+      *(来源：2026-10-14 第二轮端到端实测。)*
+      ⇒ **实测**：`target:"…/async_arrow.ts"` ⇒ `未找到匹配 …的观察语言包`，返回 `[]`，**不报错**。
+      ⇒ `target` 必须是**目录** ⇒ 但传文件时**静默空**（本仓最反对的形态）。
+      ⇒ **要做**：传文件时**响亮报错**（"target 是目录，你传了文件：…；要只插一个文件请传其所在目录"）。
