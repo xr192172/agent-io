@@ -2560,3 +2560,27 @@
       ⇒ 依据：`infrastructure/index/symbols.ts:390` —— type-only import 不建边（**这是设计**，不是缺陷）。
       ⇒ ⇒ 于是 `cpf_5`（「DSL 是 scaffold/edit_code/consistency_check/rename 的输入」）**表达不了**。
       ⇒ **要做（先裁）**：这是 edge 类的**固有盲区** ⇒ 至少写进形状描述；或新增「类型引用」形状。
+
+- [ ] **T268 ★★★★ 【不可移植】Go 侧插桩要求被测项目在 go.mod 里写一条**本机绝对路径**的 `replace`**
+      *(来源：2026-10-14 在**真实 Go 项目** `D:/project_develop/ai-base/xhs-mcp-tools`（module=`xhs-mcp-tools`，
+        22 个 .go、`go build ./...` 基线退 0）上实测。)*
+      ⇒ **实测原文**（dry_run 的 `preflight`）：
+        ```
+        运行前提：工程尚未接 observe-lang-go 语言包。可在 go.mod 补：
+               require github.com/xr192172/agent-io/observe-lang-go v0.0.0
+               replace github.com/xr192172/agent-io/observe-lang-go => "D:/project_develop/design-canvas/observe-lang-go"
+        ```
+        插桩预览本身是好的：**21 文件 / 935 探针点 / 0 失败**（`browser_ext.go` 一个文件 266 点）。
+      ⇒ ★★★ **不只是"侵入"，是"不可移植"**：那行 `replace` 指向 **agent-io 仓库的本机路径** ⇒
+        · 换个同事 checkout、换台机器、换盘符 ⇒ **直接失效**；
+        · 更糟：它被写进**被测项目的 `go.mod`**（受版本管理的文件）⇒ 会把一条本机路径**提交进仓库**。
+      ⇒ ★ **对照 TS 侧**（今天刚补齐后）：**被测项目零配置** —— 只需**调用方**多传一个 `project_root` 参数，
+        注入的是相对路径 import + 一份 `.d.ts` 契约，`tsc` 零错、能跑、行为不变。
+      ⇒ **要做（先裁）**：把 Go 也对齐到"**不改被测项目的构建配置**"。
+        做法（与 TS 思路同源）：**把 `observe-lang-go/probe/` 拷进被测工程**（如 `<module>/internal/camprobe/`），
+        注入的 import 从 `camprobe "observe-lang-go/probe"` 改为 **`"<被测 module>/internal/camprobe"`**；
+        `uninstrument` 时**连目录一起删**（它是生成物，不是被测项目的代码）。
+        ★ 代价（如实）：被测工程多一个包 → 必须能**干净清掉**；Go 的 import 必须是合法 module 路径
+        ⇒ 不能像 TS 那样用相对路径，只能"拷进去"。
+      ⇒ **判据**：插桩后 `go build ./...` **退 0**、且 **`go.mod` 一字未改**（含无 `replace`）；
+        `uninstrument` 后 `go.mod` 与工作树**逐字还原**、`internal/camprobe/` 目录消失。
