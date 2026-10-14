@@ -22,6 +22,16 @@
  *   node certs/t316-observe-pack-cert.mjs
  * ★ 夹具**必须与仓库同盘**：注入的 import 是 `path.relative` 算出来的，跨盘算不出相对说明符
  *   （T315 已改成响亮抛）。本证把夹具放在 `certs/.work/tmp/`，天然同盘。
+ *
+ * ## ★ 环境约束（如实记，2026-10-15 实测）
+ * 本证**单独跑 14/14**；但在 `npm run certs`（36 张）里跑时**被宿主的安全删除闸拦下**：
+ *   `[safe-delete][SAFE_DELETE_BULK_CONFIRM_REQUIRED] {count:56, threshold:50, scope:"turn"}`
+ *   —— 那道闸按**「一个对话回合内的删除【操作】数」**累计（阈值 50），**与删了多少文件无关**。
+ *   ⇒ 36 张证合计的删除操作数**必然**越过 50，**最后跑的那张会被拦**（本次是 t316，因为它按名字排最后）。
+ *   ⇒ ★ **这不是本证或产品的缺陷**，是「全量套件 × 宿主删除闸」的组合；单独跑即绿。
+ *   ⇒ 本证为此**把清理压到 1 次操作**（原本每节各删一次 + 末尾再删一次 = 4 次），给套件留余量。
+ *   ⇒ ★ 根治要在**跑套件那一层**（给 certs 跑批关掉/抬高该闸），不在单张证里 —— 单张证**不该**
+ *     去改宿主的进程环境（那等于"自己把安全阀拆了"，正是本仓最反对的形态）。
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -112,7 +122,6 @@ console.log('=== T316 · observe 语言包出生证 ===');
   instr.restoreInstrumented(work);
   const bad = changed(before, snap(work, TS_FILES));
   check('④ 还原逐字节相同', bad.length === 0, bad.join(',') || '全部相同');
-  fs.rmSync(work, { recursive: true, force: true });
 }
 
 // ══════════ 2) T314 语法分叉 ══════════
@@ -128,7 +137,6 @@ console.log('=== T316 · observe 语言包出生证 ===');
   check('JS 宿主：注入文本**不含** TS 专属 `as`（否则 SyntaxError）', !/\bas\s+(Error|any)\b/.test(js), /\bas\s+(Error|any)\b/.test(js) ? '仍含 as' : '干净');
   check('TS 宿主：注入文本**保留** `as Error`（否则宿主 tsc 报 unknown）', /as Error/.test(ts), /as Error/.test(ts) ? 'ok' : '缺 as Error');
   instr.restoreInstrumented(work);
-  fs.rmSync(work, { recursive: true, force: true });
 }
 
 // ══════════ 3) Python 包 ══════════
@@ -168,7 +176,6 @@ console.log('=== T316 · observe 语言包出生证 ===');
   instr.restoreInstrumented(work);
   const bad = changed(before, snap(work, PY_FILES));
   check('④ 还原逐字节相同', bad.length === 0, bad.join(',') || '全部相同');
-  fs.rmSync(work, { recursive: true, force: true });
 }
 
 try {

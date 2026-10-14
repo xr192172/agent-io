@@ -2919,3 +2919,20 @@
           （⇒ 4 张卡确实过得了全链，不是靠 routine 档躲过去的）。
         ★ 另：`type=file` 落的是 `semantic.files`，**不在 `geometry.nodes` 里** ⇒ `get_dsl query=nodes` 看不到它们，
           要用 `query=files`（我为此白跑了一趟）。
+
+- [ ] **T318 ★ 【环境】`npm run certs` 全量在 WorkBuddy 环境下会被**宿主的安全删除闸**拦掉最后一张证**
+      *(来源：2026-10-15 我第一次干净重跑 `npm run certs` 的实测读数。)*
+      ⇒ **现象**：`36 张：崩 1 · 有红 0 · 真证书全绿 35` —— 崩的那张是 `t316-observe-pack-cert.mjs`，
+        报 `[safe-delete][SAFE_DELETE_BULK_CONFIRM_REQUIRED] {"count":56,"threshold":50,"scope":"turn"}`，
+        崩在 `restoreInstrumented` 内部那句 `fs.rmSync`。
+      ⇒ **判据（读宿主源码 `safe-delete-bulk-guard.cjs` 得出，不是猜）**：那道闸按
+        **「一个对话回合内的删除【操作】数」**累计（`CODEBUDDY_SAFE_DELETE_BULK_THRESHOLD`，默认 20、本次传 50），
+        **与删了多少文件无关** ⇒ 36 张证的删除操作数**必然**越过 50 ⇒ **最后跑的那张被拦**。
+        ★ **所以"崩的是 t316"纯属它按名字排在最后**，换任何一张排最后的证都一样。
+      ⇒ **佐证**：`node certs/t316-observe-pack-cert.mjs` **单独跑 14/14 全绿** ⇒ **不是本证也不是产品的缺陷**。
+      ⇒ **本笔已做**：把 t316 的清理从 4 次操作压到 **1 次**（给套件留余量），并在证头**如实记**这段约束。
+      ⇒ **★ 根治不在这张证里**：要么在**跑套件那一层**给 certs 关掉/抬高该闸（`CODEBUDDY_SAFE_DELETE_ENABLED=0`
+        或调阈值），要么让宿主把"证自删自己的 mkdtemp 目录"排除在计数外。
+        ★★ **单张证【不该】自己去改宿主的进程环境** —— 那等于"测试脚本自己把安全阀拆了"，
+          正是本仓 ARC-7 最反对的形态（把"检查不到"伪装成"检查通过"）。
+      ⇒ ★ 这也是一条**环境类**结论：本仓的"全量绿"在带删除闸的宿主上**默认拿不到**，报告时必须说明口径。
