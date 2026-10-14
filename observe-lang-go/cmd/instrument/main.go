@@ -61,6 +61,12 @@ func main() {
 	// 手动解析：flags 与位置参数顺序无关（Go flag 包遇首个位置参数即停止，
 	// 与 SPEC §2 的 "<cmd> <file> [--flags...]" 契约冲突）。
 	var probesJSON, target string
+	// ★ T268（2026-10-14）：`--probe-import` / `--exclude-dirs` —— 让**调用方**决定探针包住在哪。
+	//   为什么需要：默认探针路径 `github.com/xr192172/agent-io/observe-lang-go/probe` 要求被测工程
+	//   在 **go.mod 里写一条指向 agent-io 本机路径的 `replace`** ⇒ 换机器即失效、且会被提交进被测仓库。
+	//   ⇒ 现在调用方可以把 probe 包**拷进被测工程**（如 `<module>/internal/camprobe`），
+	//     并用这两个 flag 告诉插桩器："import 这个路径" + "别把探针打进它自己"。
+	var probeImport, excludeDirsRaw string
 	dryRun, deep, effects, restore := false, false, false, false
 	for i := 0; i < len(os.Args)-1; i++ {
 		a := os.Args[i+1]
@@ -73,6 +79,18 @@ func main() {
 			effects = true
 		case a == "--restore":
 			restore = true
+		case a == "--probe-import":
+			i++
+			if i >= len(os.Args)-1 {
+				fail(fmt.Errorf("--probe-import 缺少参数"))
+			}
+			probeImport = os.Args[i+1]
+		case a == "--exclude-dirs":
+			i++
+			if i >= len(os.Args)-1 {
+				fail(fmt.Errorf("--exclude-dirs 缺少参数"))
+			}
+			excludeDirsRaw = os.Args[i+1]
 		case a == "--probes":
 			i++
 			if i >= len(os.Args)-1 {
@@ -119,12 +137,22 @@ func main() {
 		}
 	}
 
+	var excludeDirs []string
+	for _, d := range strings.Split(excludeDirsRaw, ",") {
+		if t := strings.TrimSpace(d); t != "" {
+			excludeDirs = append(excludeDirs, t)
+		}
+	}
+
 	opts := instrument.Options{
 		Write:          !dryRun,
 		EnableDeep:     deep,
 		EnableEffect:   effects,
 		ContractProbes: contract,
 		BackupRoot:     filepath.Dir(abs),
+		// ★ T268：调用方给的探针 import 路径与排除目录（缺省 = 旧行为，一字不改）
+		ProbeImport: probeImport,
+		ExcludeDirs: excludeDirs,
 	}
 
 	var results []instrument.Result

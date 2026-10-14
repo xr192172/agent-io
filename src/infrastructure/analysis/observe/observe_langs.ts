@@ -48,10 +48,11 @@ import {
   type InstrumentFileResult,
 } from './instrument.js';
 import {
-  checkGoObserveDeps,
   instrumentGoProject,
   isGoProject,
+  readGoModuleName,
   restoreGoProject,
+  VENDORED_PROBE_DIR,
   type GoInstrumentOptions,
 } from './go_instrument.js';
 
@@ -285,16 +286,22 @@ export const goObservePack: ObserveLangPack = {
       effects: opts.effects,
       contractProbes: opts.contractProbes,
     } as GoInstrumentOptions);
-    const deps = checkGoObserveDeps(root);
+    // ★★★ T268（2026-10-14）：**不再要求被测工程改 go.mod** ——
+    //   探针包现在随插桩**拷进被测工程**（`internal/camprobe/`），注入的 import 指向它
+    //   ⇒ 被测工程的 `go.mod` **一字不改**，换机器 / 换目录 / 换盘符都不会失效。
+    //   （旧行为：要求在 go.mod 补 `require` + 一条指向 agent-io **本机绝对路径**的 `replace`
+    //    —— 换机器即废，而且会被提交进**被测项目**的受版本管理文件。）
+    const moduleName = readGoModuleName(root);
     return {
       lang: 'go',
       dryRun: opts.dryRun,
       scanned: out.files.length,
       files: out.files.map((f) => ({ file: f.file, sites: f.sites, error: f.error })),
-      preflight:
-        deps.needs_replace || deps.needs_require
-          ? `工程尚未接 observe-lang-go 语言包。可在 go.mod 补：\n       ${deps.require_line}\n       ${deps.replace_line}`
-          : deps.note,
+      preflight: moduleName
+        ? `探针包随插桩拷入被测工程（${VENDORED_PROBE_DIR}/），注入的 import 为 ` +
+          `"${moduleName}/${VENDORED_PROBE_DIR}" ⇒ **被测工程的 go.mod 不需要任何改动**` +
+          `（uninstrument 会连该目录一起删）。`
+        : `★ 被测工程读不到 go.mod 的 module 名 ⇒ Go 侧插桩要求它是一个 Go module。`,
     };
   },
   async uninstrument(root) {
@@ -304,7 +311,10 @@ export const goObservePack: ObserveLangPack = {
       restored,
       restoredFiles: [],
       ledgerCleared: false,
-      note: '被插桩工程内对 observe-lang-go 的 replace/require 需自行清理（本操作不触碰 go.mod）。',
+      // ★ T268（2026-10-14）：旧文案是「对 observe-lang-go 的 replace/require 需自行清理」
+      //   —— 那是**改 go.mod 那套老路**的话。现在探针包是**拷进来的**（`internal/camprobe/`），
+      //   `uninstrument` 已把它一并删掉，而 `go.mod` **本来就一字未动** ⇒ **没有任何要清理的**。
+      note: `拷入的探针包（${VENDORED_PROBE_DIR}/）已一并删除；go.mod 本就未被改动 ⇒ 无需清理。`,
     };
   },
 };

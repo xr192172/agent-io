@@ -138,6 +138,77 @@ function parseReport(raw: string): GoInstrumentOut {
   }
 }
 
+// ─────────────────────────────────────────────
+// ★★★ T268（2026-10-14）：把探针包**拷进被测工程**，不再要求它改 go.mod
+//
+// ## 病（实测，真实 Go 项目）
+// 默认探针路径是 `github.com/xr192172/agent-io/observe-lang-go/probe` ⇒ 被测工程必须在
+// **自己的 go.mod** 里补：
+//     require github.com/xr192172/agent-io/observe-lang-go v0.0.0
+//     replace github.com/xr192172/agent-io/observe-lang-go => "<agent-io 的本机路径>"
+// ★ 第二行是**本机绝对路径** ⇒ 换机器 / 换目录 / 换盘符即失效；更糟的是它会被
+//   **提交进被测项目的受版本管理文件**（go.mod）。
+// ★ 对照 TS 侧：被测项目零配置（只在调用方传 `project_root`）⇒ Go 侧应对齐到同一形态。
+//
+// ## 做法（Go 侧本来就留了口子）
+// `instrument.Options.ExcludeDirs` 的注释写着「如 internal/probe，避免把探针打进探针包自身」
+// ⇒ **"探针包住在被测工程里"本来就是设计内的用法**，只是没接线。现在接上：
+//   · 拷 `<agent-io>/observe-lang-go/probe/*.go` → `<target>/internal/camprobe/`
+//   · 注入的 import 改为 **`<被测 module>/internal/camprobe`**（module 名从被测 go.mod 读）
+//   · `--exclude-dirs internal/camprobe`（别把探针打进它自己）
+//   · `uninstrument` 时**连目录一起删**（它是生成物，不是被测项目的代码）
+// ─────────────────────────────────────────────
+
+/** 探针包在被测工程里的落点（相对被测工程根，posix）。★ 用 `internal/` 是因为它不该被外部 import。 */
+export const VENDORED_PROBE_DIR = 'internal/camprobe';
+
+/** 读被测工程的 module 名（go.mod 第一行的第二个字段）。取不到 ⇒ 返回 null。 */
+export function readGoModuleName(root: string): string | null {
+  try {
+    const gomod = fs.readFileSync(path.join(root, 'go.mod'), 'utf-8');
+    for (const line of gomod.split(/\r?\n/)) {
+      const m = /^\s*module\s+(\S+)/.exec(line);
+      if (m) return m[1];
+    }
+  } catch {
+    /* 读不到 ⇒ null（调用方响亮处理） */
+  }
+  return null;
+}
+
+/**
+ * 把本仓的探针包拷进被测工程（幂等：已存在则覆盖为最新，保证与语言包同期）。
+ * ★ 返回注入 import 应使用的**完整包路径**（`<module>/internal/camprobe`）。
+ * ★ 拷不进去（没有 go.mod / 读不到 module / 源包缺失）⇒ **抛**（不静默退化成"改 go.mod"那条老路）。
+ */
+export function vendorGoProbe(root: string): string {
+  const moduleName = readGoModuleName(root);
+  if (!moduleName) {
+    throw new Error(
+      `被测工程 ${root} 里读不到 go.mod 的 module 名 ⇒ 无法决定探针包该 import 成什么路径。` +
+        `（Go 侧插桩要求被测工程是一个 Go module。）`,
+    );
+  }
+  const src = path.join(goObserveDir(), 'probe');
+  if (!fs.existsSync(src)) throw new Error(`本仓的探针包不存在：${src}（observe-lang-go/probe 缺失）`);
+  const dst = path.join(root, VENDORED_PROBE_DIR);
+  fs.mkdirSync(dst, { recursive: true });
+  for (const f of fs.readdirSync(src)) {
+    // ★ 只拷 .go；`_test.go` 也拷（无害，且让被测工程自带探针的自测）
+    if (!f.endsWith('.go')) continue;
+    fs.copyFileSync(path.join(src, f), path.join(dst, f));
+  }
+  return `${moduleName}/${VENDORED_PROBE_DIR}`;
+}
+
+/** 删掉拷进去的探针包（`uninstrument` 用）。返回是否删掉了东西。 */
+export function unvendorGoProbe(root: string): boolean {
+  const dst = path.join(root, VENDORED_PROBE_DIR);
+  if (!fs.existsSync(dst)) return false;
+  fs.rmSync(dst, { recursive: true, force: true });
+  return true;
+}
+
 /** 对 Go 工程插桩（或 dry-run）。返回与 observe-lang-go CLI 一致的报告。
  * ★ `root` **必须是绝对路径**（或调用方已归一）：它作为**位置参数**传给 `go run`，
  *   而那个子进程的 `cwd` 是**语言包目录**（`goObserveDir()`）⇒ 相对路径会被按**语言包目录**解析
@@ -152,6 +223,20 @@ export async function instrumentGoProject(root: string, opts: GoInstrumentOption
   if (opts.contractProbes && opts.contractProbes.length > 0) {
     args.push('--probes', JSON.stringify(opts.contractProbes));
   }
+  // ★★★ T268：**干跑不拷包**（dry-run 不该往被测工程写任何东西）——
+  //   但要**算出**该 import 成什么，好让报告里的预览与真实插桩一致。
+  if (opts.dryRun) {
+    const moduleName = readGoModuleName(root);
+    if (moduleName) {
+      args.push('--probe-import', `${moduleName}/${VENDORED_PROBE_DIR}`);
+      args.push('--exclude-dirs', VENDORED_PROBE_DIR);
+    }
+  } else {
+    // 真插桩：先把探针包拷进被测工程，再让插桩器 import 它 ⇒ **被测工程的 go.mod 一字不改**。
+    const probeImport = vendorGoProbe(root);
+    args.push('--probe-import', probeImport);
+    args.push('--exclude-dirs', VENDORED_PROBE_DIR);
+  }
   const raw = await runGo(mod, args);
   return parseReport(raw);
 }
@@ -161,6 +246,8 @@ export async function restoreGoProject(root: string): Promise<number> {
   const mod = goObserveDir();
   const raw = await runGo(mod, ['run', './cmd/instrument', root, '--restore']);
   const rep = parseReport(raw);
+  // ★ T268：连**拷进去的探针包**一起删（它是生成物，不属于被测工程）
+  unvendorGoProbe(root);
   return rep.restored ?? 0;
 }
 
@@ -176,9 +263,15 @@ export function goReportSummary(rep: GoInstrumentOut): { totalSites: number; ins
 }
 
 // ─────────────────────────────────────────────
-// 被测 Go 工程接 observe-lang-go（go.mod replace/require）
-// instrument 注入 `import camprobe "observe-lang-go/probe"`，被测工程须能解析该模块，
-// 否则插桩后编译报错。本函数检查/补连接（默认 dry-run 预览，可实际写）。
+// 被测 Go 工程接 observe-lang-go（go.mod replace/require）—— ★★ **T268 起不再是前置**
+//
+// ★★★ 2026-10-14（T268）：下面这套「改 go.mod」的检查/补齐**已不再被插桩流程调用**。
+//   原因（实测）：它要求在**被测工程**的 go.mod 里写一条指向 agent-io **本机绝对路径**的
+//   `replace` ⇒ 换机器 / 换目录即失效，且会被提交进被测项目的受版本管理文件。
+//   ⇒ 现在改为**把探针包拷进被测工程**（`vendorGoProbe`，落点 `internal/camprobe/`），
+//     注入的 import 指向 `<被测 module>/internal/camprobe` ⇒ **被测工程零改动**。
+//   ★ 本函数**保留导出**：给"确实想走 go.mod 那条路"的调用方（如被测工程希望探针包由
+//     自己的 module 管理）用；但它**不是插桩的前置条件**。
 // ─────────────────────────────────────────────
 
 const GO_OBSERVE_MODULE = 'github.com/xr192172/agent-io/observe-lang-go';
