@@ -20,6 +20,7 @@ import (
 	"go/token"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 )
 
@@ -257,18 +258,12 @@ func InstrumentFile(file string, opts Options) (Result, error) {
 	}
 	insertOffset := packageLineEnd(src, fset, f)
 
-	out := src
-	// 按 Offset 降序遍历（sites[0]=文件末尾），从后往前注入避免偏移漂移。
-	// 注：sortSites 已按 Offset 降序排列，此处正向遍历 = 从最大Offset（文件末尾）开始。
-	for i := 0; i < len(sites); i++ {
-		s := sites[i]
-		if s.EndOffset > 0 {
-			// 区间替换（改写 return 语句为：临时变量声明 + 探针 + 新 return）。
-			out = out[:s.Offset] + s.Code + out[s.EndOffset:]
-		} else {
-			out = out[:s.Offset] + s.Code + out[s.Offset:]
-		}
-	}
+	// ★★★ 2026-10-14：应用编辑改走 `applySites`（**分段拼接**，与 TS 侧 `applyInsertions` 同源）——
+	//   老写法是内联的「按 Offset 降序，逐条 out = out[:s.Offset] + s.Code + out[s.EndOffset:]」，
+	//   它**默认"编辑互不重叠"**，而该假设**不成立**（TS 侧 T264/T272/T281/T300 就是这个洞出的账）。
+	//   ★ Go 侧此前**恰好没踩到**（实测：`return func(){…}()` 插桩后仍能 build）—— 因为那种形态下
+	//     它的 exit 退化成了**纯插入**。⇒ 洞是**潜伏**的（T307）。
+	out := applySites(src, sites)
 	// 头部标记 + import（避免重复补 import）
 	if !hasCore && importLine != "" {
 		out = out[:insertOffset] + importLine + out[insertOffset:]
@@ -1095,6 +1090,77 @@ func InstrumentDir(root string, opts Options) []Result {
 		results = append(results, r)
 	}
 	return results
+}
+
+// applySites 把探针编辑作用到源码上 —— ★ 与 TS 侧 `applyInsertions` **同源**：**分段拼接**。
+//
+// ## 为什么不是「按 Offset 降序逐条 slice」
+// 老写法 `out = out[:s.Offset] + s.Code + out[s.EndOffset:]` **默认「编辑互不重叠」**，
+// 而该假设**不成立**：一次「区间替换」（改写 return 语句）的区间里，可能**还落着别的 site**
+// （如 return 表达式里的内联闭包、IO 调用）。TS 侧就为此出了 4 条账（T264/T272/T281/T300）。
+//
+// ## 新模型：一次从前往后扫，切段输出
+//   · 纯插入   ⇒ 在 Offset 处塞进 Code，原文继续；
+//   · 区间替换 ⇒ 该段原文被 Code 取代。
+//   ★ 同 Offset 的定序：**纯插入在前、区间替换在后**（与 TS 侧同序）。
+//
+// ## 重叠怎么办（★ 本仓 ARC-7：不许静默降级）
+// Go 侧的 `Code` 是**已拼好的字符串**（不像 TS 侧有 template 能接住内层编辑）⇒
+// 区间内的 site **无处安放** ⇒ 这时**必须说出来**（写 stderr），不许静默吃掉它。
+// applySites 把探针编辑作用到源码上 —— ★ 与 TS 侧 `applyInsertions` **同源**：**分段拼接**。
+//
+// ## 为什么不是「按 Offset 降序逐条 slice」
+// 老写法 `out = out[:s.Offset] + s.Code + out[s.EndOffset:]` **默认「编辑互不重叠」**，
+// 而该假设**不成立**：一次「区间替换」（改写 return 语句）的区间里，可能**还落着别的 site**
+// （如 return 表达式里的内联闭包、IO 调用）。TS 侧就为此出了 4 条账（T264/T272/T281/T300）。
+//
+// ## 新模型：一次从前往后扫，切段输出
+//   · 纯插入   ⇒ 在 Offset 处塞进 Code，原文继续；
+//   · 区间替换 ⇒ 该段原文被 Code 取代。
+//   ★ 同 Offset 的定序：**纯插入在前、区间替换在后**（与 TS 侧同序）。
+//
+// ## 重叠怎么办（★ 本仓 ARC-7：不许静默降级）
+// Go 侧的 `Code` 是**已拼好的字符串**（不像 TS 侧有 template 能接住内层编辑）⇒
+// 区间内的 site **无处安放** ⇒ 这时**必须说出来**（写 stderr），不许静默吃掉它。
+func applySites(src string, sites []Site) string {
+	sorted := make([]Site, len(sites))
+	copy(sorted, sites)
+	sort.SliceStable(sorted, func(i, j int) bool {
+		if sorted[i].Offset != sorted[j].Offset {
+			return sorted[i].Offset < sorted[j].Offset
+		}
+		// 同 Offset：纯插入（EndOffset==0）在前，区间替换在后
+		return sorted[i].EndOffset == 0 && sorted[j].EndOffset != 0
+	})
+
+	var b strings.Builder
+	pos := 0
+	for i := 0; i < len(sorted); i++ {
+		s := sorted[i]
+		if s.Offset < pos || s.Offset > len(src) {
+			continue
+		}
+		b.WriteString(src[pos:s.Offset])
+		if s.EndOffset > s.Offset && s.EndOffset <= len(src) {
+			// 区间替换：先查区间内还有没有别的 site（有 ⇒ 响亮）
+			for j := i + 1; j < len(sorted) && sorted[j].Offset < s.EndOffset; j++ {
+				fmt.Fprintf(os.Stderr,
+					"[camprobe] ★ 编辑区间重叠：区间替换 [%d,%d) 内含 site(offset=%d, kind=%v) ⇒ "+
+						"该 site 会被**覆盖**（Go 侧无 template 机制，内层编辑无处安放）。\n"+
+						"  ★ 这不是静默降级：重叠已**说出**。要真正支持，需给 Site 加 template 能力（见 T307）。\n",
+					s.Offset, s.EndOffset, sorted[j].Offset, sorted[j].Kind)
+			}
+			b.WriteString(s.Code)
+			pos = s.EndOffset
+		} else {
+			b.WriteString(s.Code)
+			pos = s.Offset
+		}
+	}
+	if pos < len(src) {
+		b.WriteString(src[pos:])
+	}
+	return b.String()
 }
 
 // isProbeCall 判断语句是否为 camprobe.Capture(...) 探针调用（插桩器生成的探针）。
