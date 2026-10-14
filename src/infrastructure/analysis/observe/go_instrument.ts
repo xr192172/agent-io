@@ -206,6 +206,19 @@ export function unvendorGoProbe(root: string): boolean {
   const dst = path.join(root, VENDORED_PROBE_DIR);
   if (!fs.existsSync(dst)) return false;
   fs.rmSync(dst, { recursive: true, force: true });
+  // ★★★ T296（2026-10-14）：**连空掉的父目录一起删** —— 原先只删 `internal/camprobe`，
+  //   而 `internal/` 若**本来不存在**（是我们为放探针包而建的）⇒ 还原后留一个**空目录**
+  //   ⇒ 被测工程的 `git status` 多一条，而它**不是**被测项目的代码（是生成物）。
+  //   ★ 安全边界（重要）：只删**一层**、且**仅当为空**；`parent !== root` 保证绝不会删到项目根；
+  //     删不掉（占用/权限）⇒ 留着，**不是错误**（与 `clean_dist.mjs` 的 pruneEmpty 同一纪律）。
+  const parent = path.dirname(dst);
+  if (parent !== root && fs.existsSync(parent)) {
+    try {
+      if (fs.readdirSync(parent).length === 0) fs.rmdirSync(parent);
+    } catch {
+      /* 占用/权限 ⇒ 留着 */
+    }
+  }
   return true;
 }
 
