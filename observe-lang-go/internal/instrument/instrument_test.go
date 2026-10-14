@@ -6,6 +6,7 @@ import (
 	"go/token"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 )
@@ -460,4 +461,138 @@ func min(a, b int) int {
 		return a
 	}
 	return b
+}
+
+// ─────────────────────────────────────────────
+// T297 / T295：探针名必须带「接收者」与「文件」维度
+// ─────────────────────────────────────────────
+
+// TestFuncDeclName_RecvAndInit 单测 funcDeclName：
+//   - T297：方法名要拼上接收者类型（去指针 / 去泛型实参）；
+//   - T295：顶层 init 要带文件名区分（同包可多文件各一个 init）。
+//
+// ★ 这是把"探针名空间只有 pkg+fn"这个病钉死在单测里 —— 不同接收者/不同文件的同名
+//
+//	函数**必须**产出不同名字。
+func TestFuncDeclName_RecvAndInit(t *testing.T) {
+	src := `package demo
+
+type A struct{}
+type B struct{}
+type G[T any] struct{}
+
+func (A) String() string    { return "" }
+func (*B) Close() error     { return nil }
+func (G[T]) String() string { return "" }
+func (A) Run() string       { return "" }
+func Run() string           { return "" }
+func init()                 {}
+`
+	fset := token.NewFileSet()
+	f, err := parser.ParseFile(fset, "svc/demo.go", src, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var names []string
+	for _, d := range f.Decls {
+		fd, ok := d.(*ast.FuncDecl)
+		if !ok || fd.Body == nil {
+			continue
+		}
+		names = append(names, funcDeclName(fd, "svc/demo.go"))
+	}
+	sort.Strings(names)
+	want := []string{"A.Run", "A.String", "B.Close", "G.String", "Run", "init@demo"}
+	if strings.Join(names, ",") != strings.Join(want, ",") {
+		t.Fatalf("funcDeclName 结果 %v，期望 %v", names, want)
+	}
+	// 核心不变量：互不相同（T297/T295 的病就是"撞名"）
+	seen := map[string]bool{}
+	for _, n := range names {
+		if seen[n] {
+			t.Errorf("探针名重复（撞名）：%s", n)
+		}
+		seen[n] = true
+	}
+}
+
+// TestRecvTypeName 覆盖接收者类型表达式的各种形态（值/指针/泛型/括号）。
+func TestRecvTypeName(t *testing.T) {
+	cases := map[string]string{
+		"A":       "A",
+		"*A":      "A",
+		"A[T]":    "A",
+		"A[T, U]": "A",
+		"*A[T]":   "A",
+		"(A)":     "A",
+	}
+	for in, want := range cases {
+		expr, err := parser.ParseExpr(in)
+		if err != nil {
+			t.Fatalf("解析 %q: %v", in, err)
+		}
+		if got := recvTypeName(expr); got != want {
+			t.Errorf("recvTypeName(%q) = %q，期望 %q", in, got, want)
+		}
+	}
+}
+
+// TestInstrument_MethodRecvInProbeName 端到端：两个类型各有 String() + 顶层 Run 与方法 Run
+// ⇒ 注入的四个探针名必须互不相同（T297）。
+func TestInstrument_MethodRecvInProbeName(t *testing.T) {
+	dir := t.TempDir()
+	os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module demo\n\ngo 1.26\n"), 0o644)
+	src := `package main
+
+type A struct{}
+type B struct{}
+
+func (A) String() string { return "a" }
+func (B) String() string { return "b" }
+func Run() string        { return "fn" }
+func (A) Run() string    { return "m" }
+`
+	file := filepath.Join(dir, "main.go")
+	if err := os.WriteFile(file, []byte(src), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := InstrumentFile(file, Options{Write: true, BackupRoot: dir}); err != nil {
+		t.Fatal(err)
+	}
+	content := readFile(t, dir, "main.go")
+	for _, want := range []string{"main.A.String.enter", "main.B.String.enter", "main.Run.enter", "main.A.Run.enter"} {
+		if !strings.Contains(content, `"`+want+`"`) {
+			t.Errorf("缺少带接收者的探针名 %q；产物:\n%s", want, content)
+		}
+	}
+	// 回归：不得再出现"丢了接收者"的裸名（main.String / main.Run 会与顶层/别的方法撞）
+	if strings.Contains(content, `"main.String.enter"`) {
+		t.Errorf("不应再出现丢接收者的 main.String.enter；产物:\n%s", content)
+	}
+}
+
+// TestInstrument_TwoInitsDistinct 端到端：同包两个文件各一个 init() ⇒ 探针名必须带文件区分（T295）。
+func TestInstrument_TwoInitsDistinct(t *testing.T) {
+	dir := t.TempDir()
+	os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module demo\n\ngo 1.26\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, "a.go"), []byte("package main\n\nfunc init() { _ = 0 }\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, "b.go"), []byte("package main\n\nfunc init() { _ = 1 }\n"), 0o644)
+	if _, err := InstrumentFile(filepath.Join(dir, "a.go"), Options{Write: true, BackupRoot: dir}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := InstrumentFile(filepath.Join(dir, "b.go"), Options{Write: true, BackupRoot: dir}); err != nil {
+		t.Fatal(err)
+	}
+	ca, cb := readFile(t, dir, "a.go"), readFile(t, dir, "b.go")
+	if !strings.Contains(ca, `"main.init@a.enter"`) {
+		t.Errorf("a.go 的 init 应命名 main.init@a；产物:\n%s", ca)
+	}
+	if !strings.Contains(cb, `"main.init@b.enter"`) {
+		t.Errorf("b.go 的 init 应命名 main.init@b；产物:\n%s", cb)
+	}
+	for _, c := range []string{ca, cb} {
+		if strings.Contains(c, `"main.init.enter"`) || strings.Contains(c, `"main.init.exit"`) {
+			t.Errorf("不应再出现不带文件区分的 main.init（T295）；产物:\n%s", c)
+		}
+	}
 }

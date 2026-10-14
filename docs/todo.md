@@ -2655,94 +2655,29 @@
         我前面三次都是"看回执说失败 → grep 发现改了 → 认定工具撒谎"，**却没去加一行日志**。
         ★ 这正是本仓"先取证再下结论"的纪律 —— 而这次我**在记账时也犯了**（把推测写成了"现象确凿"）。
 
-- [ ] **T295 ★★ 【观测歧义】Go：同包多个 `init()` 探针名相撞**
-      *(来源：2026-10-14 Go 侧补测。)*
-      ⇒ **实测**：两个 `init()` 都叫 `main.init.enter/exit` ⇒ 事件 `enter×1 / exit×2`，
-        两条 exit 只能靠 `fields.file` 区分（`aaa_sink.go` vs `main.go`）。
-      ⇒ ★ 而 `lint` 按「文件 + 基名」聚合 ⇒ **跨文件同名不报**（它抓不到这一格）。
-      ⇒ **要做（先裁）**：`init()` 是否要带文件名区分（如 `main.init@aaa_sink`）；以及 `lint` 是否要加"跨文件同名"判据。
-
 - [ ] **T296 ★★ 【还原残留】Go：`uninstrument` 后留【空目录】`internal/` 与 `.agent-io/`**
       *(来源：2026-10-14 Go 侧补测；★ 与 T285 同族，但这次实测三套夹具全中，且多了 `.agent-io/`。)*
       ⇒ **实测**：`unvendorGoProbe` 只删 `internal/camprobe`，不删父目录 ⇒ 三套夹具还原后都留空 `internal/`；
         `.agent-io/` 亦留空目录。
       ⇒ **要做**：删探针包时，**若父目录是空的且是我们建的** ⇒ 一并删（`.agent-io/` 同理）。
 
-- [ ] **T297 ★★★ 【观测歧义·与 T295 同族】Go：不同【类型的方法】/ 顶层函数**共用同一探针名**（接收者被丢掉）**
-      *(来源：2026-10-14 Go 侧补测的补充；★ 不打断宿主，但让**契约匹配与调用树失真**。)*
-      ⇒ **触发**：多个类型各有同名方法（`String()` / `Error()` / `Close()` / `Read()` / `Write()` —— **极常见**），
-        或「顶层函数名 == 某类型方法名」（Go 允许共存）。
-      ⇒ **根因**：探针名只取 `pkg.<Name>`（`instrument.go:387` 传 `t.Name.Name`，**把接收者丢了**）。
-      ⇒ **实测**（夹具 `gp1-go2-collide`，已插桩、`events.jsonl` 在案）：
-        · 报告：`main.String` = enter×2 / exit×2；`main.Run` = enter×2 / exit×2；
-        · 运行期（原文）：
-          ```
-          main.String.enter {"args":{}} / main.String.exit {"ret":{"0":"a"}}   ← A.String
-          main.String.enter {"args":{}} / main.String.exit {"ret":{"0":"b"}}   ← B.String（同名！）
-          main.Run.enter / main.Run.exit ret "fn"       ← 顶层 func Run
-          main.Run.enter / main.Run.exit ret "method"   ← 方法 (C) Run（同名！）
-          ```
-      ⇒ ★★ **与 T295（多 `init()` 撞名）是同一族**：**探针名空间不含"接收者 / 文件"维度**。
-      ⇒ ★ 且 `lint` 的 `enter>1` 判据**本可抓这一条**，但**因 T294（Go 侧无台账）抓不到**
-        ⇒ **两条账互相咬住**：量具空转 ⇒ 它专门要抓的撞名也漏了。
-      ⇒ **要做**：探针名带上接收者（如 `main.(*A).String` / `main.A.String`）；★ 与 T295 一起定"命名空间"口径。
-      ⇒ **判据**：两个类型各有 `String()` ⇒ 事件里**两个名字不同**；`lint` 在 Go 侧能报出撞名。
-
-- [x] **【补记】Go 侧补测最终计数：新账 9 条**（P0×3 打断编译 / P1×2 静默漏插 / P2×4 量具·歧义·残留）
-      *(2026-10-14 收尾更新；对应 T289–T297。)*
-      ⇒ 另附一条**环境提醒**（与工具无关）：Git Bash 里 `cd D:/project_develop/...` **偶发** "No such file or directory"，
-        改用 `/d/project_develop/...` 即正常 ⇒ 复现时优先用 `/d/` 形式。
-
-- [x] **【已做】Go 侧 3 条 P0（打断编译）+ 2 条 P1（静默漏插）一次结清 —— T289 / T290 / T291 / T292 / T293**
-      *(2026-10-14 子代理修 + 主代理核验；★ 全程用本仓 `edit_code`，改动面只有 2 个文件。)*
-      ⇒ **改了什么**（`observe-lang-go/internal/instrument/instrument.go`）：
-        · **`terminatesFunction` 重写**（:356）+ 新 helper `isPanicCall`(:398) / `hasUnnestedBreak`(:409) / `terminatesSwitchBody`(:434)
-          ⇒ 认 `panic(...)`（T289）· 认 `else if` 链（T291）· 不再对 `for`/`range`/`switch`/`select` 无条件返回 true（T293）；
-        · **`walkStmts`**：新增 `case *ast.LabeledStmt`(:656)（T290）· `IfStmt` 分支改为遍历整条 if/else if/else 链(:662)（T292）。
-        · 新增单测 `terminates_test.go`（13 子用例）。
-      ⇒ **前后对照（真实复跑，非预测）**：用 `git show HEAD:…` 还原一份**隔离的旧语言包副本**跑同一夹具 ——
-        前：`go build` **退 1**（`funcs.go:14/27/41: missing return` 三处）；后：**退 0**。
-      ⇒ **函数级 enter/exit（前 → 后）**：`Boom` enter1/exit1(错位) → enter1/**exit0** ·
-        `IfElseChain` enter1/exit2 → enter1/**exit3** · `ElseIfPartial` enter1/exit2(else if 无 exit) → enter1/**exit3** ·
-        `LoopOnly`/`RangeOnly`/`SwitchOnly`/`SelectOnly` 各**只有 enter** → 各 **enter+exit**；
-        不回归：`Plain`/`Two`/`DeferRewrite`/`ForRet` 均 enter+exit 且 `ret` 正确。
-      ⇒ **运行时事件**（run 夹具 32 事件）：`elseIfPartial.exit ret={"0":-1}` · `labeled.exit ret={"0":42}` ·
-        `boom` 有 enter 无 exit（panic，正确）· `deferRewrite.exit ret={"0":"boom"}`（命名返回值 + defer 终值）。
-      ⇒ **反例**：同一夹具仅注释掉 `SetGlobalSink` 重建再跑 ⇒ **0 事件**（对照 32 事件）⇒ 读数非恒真。
-      ⇒ **还原**：`go.mod` sha256 **一字未改** · `internal/camprobe/` 已删 · `go build` 退 0 · `funcs.go` 恢复无 camprobe import。
-      ⇒ **语言包自测**：`go build ./...` OK · `go test ./...` 全绿（新增 `TestTerminatesFunction` 13 子用例 + `TestInstrumentTerminalFormsCompile`）。
-      ⇒ ★ **仍未修（另立账）**：**T294**（`lint` 在 Go 侧无台账 ⇒ 量具空转）· **T295/T297**（探针名空间缺"接收者/文件"维度 ⇒ 撞名）· **T296**（还原留空目录）。
-
-- [x] **【已做】T294 —— Go 侧也产出探针台账 ⇒ `action=lint` 在 Go 上终于可用（原先量具空转）**
-      *(2026-10-14；★ 全程用本仓 `edit_code`。)*
-      ⇒ **改了什么**（`observe_langs.ts`）：`goObservePack.instrument` 原先**不填 `ledger`** ⇒ Go 从不写
-        `.agent-io/observe-ledger.json` ⇒ `lint` 在 Go 上**恒为「未找到台账」**。
-        现在复用 TS 侧**同一份** `buildProbeLedger`（判据只住一处），把 Go 的 site 形状补齐
-        （`file`/`injected`）后走同一条路 ⇒ 落 ledger 文件。
-      ⇒ ★ **顺带删掉一句过时 `limitations`**：「被插桩工程须在 go.mod 接 observe-lang-go（replace 到本仓路径）」
-        —— 与 T268 矛盾（现在探针包**拷进**被测工程）。★ 上次改 description 时**漏了这里**
-        （同一份过时知识住两处 ⇒ 只改一处必漏另一处 —— 本仓头号病的又一例）。
-      ⇒ **验证**（Go 夹具 38 探针点）：`action=ledger` **能列出台账**（`38 探针点 · 1 文件 · exit:21 io:1 enter:16`）；
-        `action=lint` **能跑不变量**。
-      ⇒ ★★ **同时修掉它自己的两个假阳性**（跑真夹具才抓出来，与之前 TS 侧同一教训）：
-        ① 后缀表**没有 Go 侧特有的 `defer`** ⇒ `main.closure@L123C9.defer` 被当成独立函数（enter=0/exit=0）；
-        ② `main.boom`（末语句 `panic(…)`）`enter=1 exit=0` 被报成「漏插」—— ★ 而那是**正确**行为。
-        ⇒ 修法：后缀表补 `defer`/`recover`/`readfile`；并在回执里**如实标注**「有 enter 无 exit **也可能是正确的**
-          （panic / os.Exit / 死循环结尾的函数本就没有出口）」。验证：假阳性 **2 → 1**（剩下的那条已带标注）。
-      ⇒ ★ 记账一条**工具局限**：`edit_code` 改「含正则/反斜杠的文本」时会踩 **JSON 转义层**（`.` 被吃掉 ⇒ 正则变宽）
-        ⇒ 这类改动改用 `op=range` 或直接用编辑工具补字符（本次就是）。
-
-- [x] **【更正·误判】“`edit_code` 改含反斜杠的文本会踩 JSON 转义层” —— ★ 定案：工具无问题，是 JSON 规范，我写错了请求**
-      *(2026-10-14 受控实验定案（用户质疑“不会这里本身就是用正则解析的吧”而触发）；★ 与 T288 同族 —— 我又一次拿“看输出”当证据。)*
-      ⇒ **取证**：`scripts/mcp/mcp_call.mjs:51` 用的是 **`JSON.parse`**（标准解析器）⇒ ★ **不是正则**。
-      ⇒ **两个实验（都直接看字节）**：
-        · JSON 里写 **`\.`（单反斜杠）** ⇒ `JSON.parse` 报 `Bad escaped character`，`edit_code` **报同一个错**、**不写盘**
-          ⇒ ★ 这是 **JSON 规范**（`\.` 不是合法转义），不是工具的错；
-        · JSON 里写 **`\\.`（双反斜杠）** ⇒ parse 后 `new_text` = `const re = /\.(enter|exit)$/; …`（**单**反斜杠）
-          ⇒ 落盘文件里**正是** `const re = /\.(enter|exit)$/;` ⇒ **反斜杠正确保留** ✓
-      ⇒ **结论**：**“转义被吃”从未发生** —— 发生的是「我写了非法 JSON ⇒ 被标准解析器拒收」。
-      ⇒ **正确写法（防复发）**：JSON 字符串里要表示一个反斜杠就写 **`\\`**；
-        ★ 更稳：**用 Write 工具直接写 JSON 文件**（不经 shell 的引号/转义层），或 `JSON.stringify` 生成。
-      ⇒ ★ 同时更正我在 T294 收尾里记的那条“工具局限”—— **那条是误判，作废**。
-      ⇒ ★★ **元教训**：今天我在同一个坑里跌了三次（T288 的 `L1 是子串`、T294 的“转义被吃”、以及本条），
-        共同点都是**用间接观察（回执/输出/记忆）替代直接取证（看字节、看日志、看源码）**。
+- [x] **【已做】Go 探针名空间补上「接收者 / 文件」两个维度 —— T295 + T297 一起结清，并让 `lint` 能抓跨文件撞名**
+      *(2026-10-14 子代理修 + 主代理核验；★ 改动 3 个文件。)*
+      ⇒ **改了什么**：
+        · `instrument.go`：`:483` 调用处 `t.Name.Name` → **`funcDeclName(t, fileRel)`**；
+          新增 `funcDeclName`（方法拼接收者 `<Recv>.<Name>`；顶层 `init` → `init@<basename>`）
+          + `recvTypeName`（去指针 `*A`→`A`、去泛型实参 `A[T]`→`A`，覆盖 `Ident`/`StarExpr`/`ParenExpr`/`IndexExpr`/`IndexListExpr`）；
+        · `instrument_test.go`：新增 3 组单测（原有单测**没有**断言方法/init 探针名 ⇒ 无需改断言）。
+        · `src/application/observe/handlers.ts`（lint）：新增判据「**同一「探针基名」出现在【同一目录】的 ≥2 个不同文件** ⇒ 报 `duplicate-name`」，
+          并用 `hasGoBuildConstraint`（查 `//go:build`/`// +build` 与隐式 GOOS/GOARCH 文件名后缀）排除**构建约束**这个唯一合法成因。
+      ⇒ **探针名 前 → 后（实测）**：`main.String`×2 → **`main.A.String` / `main.B.String`**；
+        `main.Run`×2 → **`main.Run` / `main.C.Run`**；`main.init`×2 → **`main.init@aaa_sink` / `main.init@bbb_init`**。
+      ⇒ **主代理核验**（读事件原文去重）：12 个函数名**全部唯一**；`go test ./...` 全绿；`tsc` 通过。
+      ⇒ ★★ **lint 的三条对照（证明不误报）**：真撞名夹具 ⇒ **报**；跨目录同名（`cmd/one`/`cmd/two` 各有 `Run`）⇒ **不报**；
+        构建约束同名（`plat_linux.go`/`plat_windows.go`、`//go:build`）⇒ **不报**。
+      ⇒ ★ **子代理的两处诚实**（都值得记）：
+        ① **主动报指令冲突** —— 我的 prompt 开头写「不要改 `src/`」、后面又要求改 `handlers.ts` ⇒ 它按"**具体覆盖笼统**"处理并**先请裁决**；
+        ② **指出我的判据在修复后不可满足** —— 我要求"用 T295 夹具跑 lint 必须报出来"，而**修复生效后两个 init 已不同名** ⇒ 它改用**构造的 pre-fix 台账**补足，并**在文件里注明是构造的**。
+      ⇒ **还原**：`go.mod` sha256 一字未改 · `internal/camprobe/` 已删 · `go build`/`go run` 退 0 且 stdout 与基线逐字相同。
+      ⇒ **反例**：已插桩但不接 sink ⇒ **0 事件**（对照 23 事件）。
+      ⇒ ★ **仍未做**：**T296**（`uninstrument` 后残留空 `internal/` 目录 —— 本轮实测确有此残留，但不在本笔范围，已登记）。

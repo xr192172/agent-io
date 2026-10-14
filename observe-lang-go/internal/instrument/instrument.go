@@ -480,7 +480,7 @@ func collectFuncSites(fset *token.FileSet, f *ast.File, pkg, fileRel string, ena
 		switch t := n.(type) {
 		case *ast.FuncDecl:
 			if t.Body != nil {
-				processFunction(fset, t.Name.Name, t.Type.Params, t.Type.Results, t.Body, pkg, fileRel, enableDeep, enableEffect, pkgVars, probes, sites)
+				processFunction(fset, funcDeclName(t, fileRel), t.Type.Params, t.Type.Results, t.Body, pkg, fileRel, enableDeep, enableEffect, pkgVars, probes, sites)
 			}
 		case *ast.FuncLit:
 			if t.Body != nil {
@@ -489,6 +489,76 @@ func collectFuncSites(fset *token.FileSet, f *ast.File, pkg, fileRel string, ena
 		}
 		return true
 	})
+}
+
+// funcDeclName 计算一个 FuncDecl 的探针名（探针名空间 = pkg + fn + suffix）。
+//
+// ★★★ T297（2026-10-14）：**带接收者的方法必须把接收者类型拼进名字**。
+//
+//	原先调用处只传 `t.Name.Name`（**丢掉了 `t.Recv`**）⇒ 不同类型上的**同名方法**
+//	共用同一探针名。String/Error/Close/Read/Write 这类**极常见**的方法名一撞就是一片。
+//	实测（夹具 gp1-go2-collide）：类型 A 与 B 各有 `String()` ⇒ 两处事件**都叫** `main.String`
+//	（enter×2/exit×2）⇒ 调用树与契约匹配分不清是谁。
+//	⇒ 形态 `A.String`（接收者类型名 + `.` + 方法名）。指针/泛型实参的处理见 recvTypeName。
+//	★ 不会与顶层函数撞：顶层函数名**不能含 `.`**，而方法名恒含一个 `.`。
+//
+// ★★★ T295（2026-10-14）：**`init` 每个文件可有一个**（Go 允许同包多文件各写一个 `init()`）
+//
+//	⇒ 同包两个 init 原先都叫 `pkg.init` ⇒ 实测事件 enter×1/exit×2，只能靠 fields.file 区分。
+//	⇒ 名字里带**文件**（basename 不带扩展）区分：`init@<basename>`。
+//	★ 只对**顶层** `init`（无接收者）做 —— 方法名 `init` 有接收者前缀（`T.init`），天然不撞。
+//	★ 残余（如实）：两个**不同目录**、包名又相同的包各有一个同名文件（如两个 `main` 命令
+//	  都叫 `main.go`）时，`init@main` 仍会撞。这属"包名空间只有 pkg 名"的既有局限，不在本笔范围。
+func funcDeclName(t *ast.FuncDecl, fileRel string) string {
+	name := t.Name.Name
+	if t.Recv != nil && len(t.Recv.List) > 0 {
+		if recv := recvTypeName(t.Recv.List[0].Type); recv != "" {
+			return recv + "." + name
+		}
+		return name
+	}
+	if name == "init" {
+		base := filepath.Base(fileRel)
+		base = strings.TrimSuffix(base, filepath.Ext(base))
+		if base != "" {
+			return "init@" + base
+		}
+	}
+	return name
+}
+
+// recvTypeName 从接收者类型表达式取**类型名**：去指针（`*A`→`A`）、去泛型实参（`A[T]`→`A`）。
+//
+// ★ 为什么去指针：Go **禁止**同一类型同时声明值接收者与指针接收者的**同名方法**
+//
+//	（编译错 `method A.String already declared`）⇒ `A.String` 对值/指针接收者都唯一；
+//	带 `*` 只会让名字更难看、无收益。
+//
+// ★ 为什么去泛型实参：泛型 `A[T]` 与其具名 `A` 同名（源码里只有一个方法声明），实例化
+//
+//	`A[int]`/`A[string]` 共用同一个方法 ⇒ 去实参不引入撞名。
+//
+// ★ 覆盖 ast 的基本形态（`*ast.Ident` / `*ast.StarExpr`）以及泛型 `IndexExpr`/`IndexListExpr`、
+//
+//	括号包裹；无法识别的形态退回 exprString，仍为 `"nil"` 时返回空串（调用方退回裸方法名）。
+func recvTypeName(e ast.Expr) string {
+	switch t := e.(type) {
+	case *ast.Ident:
+		return t.Name
+	case *ast.StarExpr:
+		return recvTypeName(t.X)
+	case *ast.ParenExpr:
+		return recvTypeName(t.X)
+	case *ast.IndexExpr: // 泛型 A[T]
+		return recvTypeName(t.X)
+	case *ast.IndexListExpr: // 泛型 A[T, U]
+		return recvTypeName(t.X)
+	default:
+		if s := exprString(e); s != "nil" {
+			return s
+		}
+		return ""
+	}
 }
 
 // processFunction 处理一个函数体（FuncDecl 或 FuncLit）：入口/出口/return/IO/deep。

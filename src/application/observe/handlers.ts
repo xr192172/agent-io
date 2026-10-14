@@ -31,6 +31,47 @@ import { observeTrace } from '.././observe/capture/observe_trace.js';
 import { reconcileChain } from '.././observe/reconcile/reconcile_chain.js';
 import type { ReconcileChainInput } from '.././observe/reconcile/reconcile_chain.js';
 
+/** 探针名后缀 → 基名（`X.enter` 的基名是 `X`）。★ 必须含 Go 侧特有后缀：Go 的 defer 探针名形如
+ *  `main.closure@L123C9.defer`（T294 假阳性的成因 —— 后缀表缺 `defer` 会把它当成独立函数）。 */
+const PROBE_SUFFIX_RE = /\.(enter|exit|catch|defer|recover|writefile|mkdir|rename|remove|append|readfile)$/i;
+
+/** Go 隐式构建约束的文件名后缀（GOOS / GOARCH）：`foo_linux.go` / `bar_amd64.go` 只在对应平台编译。 */
+const GO_PLATFORM_SUFFIXES = new Set([
+  // GOOS
+  'aix', 'android', 'darwin', 'dragonfly', 'freebsd', 'hurd', 'illumos', 'ios', 'js', 'linux',
+  'nacl', 'netbsd', 'openbsd', 'plan9', 'solaris', 'wasip1', 'windows', 'zos',
+  // GOARCH
+  '386', 'amd64', 'arm', 'arm64', 'loong64', 'mips', 'mips64', 'mips64le', 'mipsle',
+  'ppc64', 'ppc64le', 'riscv64', 's390x', 'wasm',
+]);
+
+/**
+ * 该 Go 文件是否带**构建约束**（⇒ 与同目录别的文件可能互斥、不会同时编译）？
+ * 覆盖两形态：① 文件头的 `//go:build` / `// +build` 注释；② 隐式文件名后缀（`foo_linux.go`）。
+ *
+ * ★★★ 为什么必须有它：`action=lint` 新增的「跨文件撞名」判据在**同一目录**下报警，而
+ *   「同目录两个文件声明同名顶层函数」**唯一合法**的成因就是**构建约束**（平台替代实现，
+ *   如 `open_linux.go` 与 `open_windows.go` 各有 `func open`）。
+ *   不排除它 ⇒ **必然误报**（而本仓反复强调"假阳性会让体检失去信任"）⇒ 查出来就跳过（宁可少报）。
+ * ★ 读不到文件 ⇒ 保守当作"可能有约束"⇒ 跳过（同样宁可少报）。
+ */
+function hasGoBuildConstraint(file: string): boolean {
+  const base = path.basename(file);
+  if (!base.endsWith('.go')) return false;
+  // ② 隐式文件名后缀：<name>_<GOOS|GOARCH>.go
+  const stem = base.slice(0, -3); // 去掉 ".go"
+  const us = stem.lastIndexOf('_');
+  if (us > 0 && GO_PLATFORM_SUFFIXES.has(stem.slice(us + 1))) return true;
+  // ① 文件头注释里的 build 指令（只扫开头 2KB —— 约束必须在 package 子句之前）
+  try {
+    const head = fs.readFileSync(file, 'utf-8').slice(0, 2048);
+    if (/^\/\/go:build\s/m.test(head) || /^\/\/\s*\+build\s/m.test(head)) return true;
+  } catch {
+    return true; // 读不到 ⇒ 保守跳过
+  }
+  return false;
+}
+
 /** observe_instrument：对目标项目全自动插桩 / 还原（复用 instrumentProject/restoreInstrumented）。
  * ★ wrapData：handler 回 `data`（results / ledger / 还原清单），wrap 会静默丢弃。 */
 export const observeInstrumentHandler = wrapData(async (a) => {
@@ -99,7 +140,7 @@ export const observeInstrumentHandler = wrapData(async (a) => {
       // ★★★ T294（2026-10-14）：后缀表要含 Go 侧特有的 —— 实测 Go 的 defer 探针名是
       //   `main.closure@L123C9.defer`，而原表没有 `defer` ⇒ 它被当成一个独立函数（enter=0/exit=0）
       //   ⇒ 假阳性。（假阳性会让体检失去信任 ⇒ 宁可判据少而准。）
-      const base = probe.replace(/\.(enter|exit|catch|defer|recover|writefile|mkdir|rename|remove|append|readfile)$/i, '');
+      const base = probe.replace(PROBE_SUFFIX_RE, '');
       const key = `${file}::${base}`;
       const rec = byFn.get(key) ?? { enter: 0, exit: 0, probes: [] };
       if (probe.endsWith('.enter')) rec.enter++;
@@ -136,11 +177,57 @@ export const observeInstrumentHandler = wrapData(async (a) => {
         });
       }
     }
-    // ② ★★★ 2026-10-14 **已删除**（我自己的假阳性）：原先这里查"同名 probe 出现 >1 次"，
-    //   但**多 return 的函数天然有多条同名 exit**（实测 `loopRet.exit` 出现 2 次是正常的）、
-    //   **跨文件同名也是正常的**（不同文件的 `main.enter` 互不相干）
-    //   ⇒ 该判据与 ① 的 `enter > 1` 重复、且更粗 ⇒ **删掉**，避免噪声（假阳性会让体检失去信任）。
-    //   ★ 真正要抓的"撞名"由 ① 的 `enter > 1`（同文件同基名）精确覆盖。
+    // ② ★★★ T295（2026-10-14）：**跨文件撞名** —— 同一「探针基名」出现在【同一目录】的 ≥2 个不同文件。
+    //
+    // ## 为什么原来的判据删了、这条要新加
+    // 原来（更早）这里查的是"同名 probe 出现 >1 次"，被删掉是因为它**过粗**：
+    //   · **多 return 的函数天然有多条同名 exit**（`loopRet.exit` 出现 2 次是正常的）—— 已由 ① 覆盖；
+    //   · **跨文件同名也可能正常**（不同文件的 `main.enter` 互不相干）。
+    // 但删掉之后**留了一个洞**：① 的 `enter > 1` 按 `文件::基名` 聚合 ⇒ **跨文件**撞名各成一条
+    //   （enter=1/exit=1）⇒ **抓不到**。而 T295（同包两个文件各一个 `init()`，Go 侧原先都叫
+    //   `pkg.init`）正是这种跨文件撞名 ⇒ ① 漏报。这条补的就是那个洞。
+    //
+    // ## 判据：同目录 + 同基名 + ≥2 文件
+    //   · **必须同目录**：同目录 = 同包；**跨目录**同名是**正常**的（如两个 `package main` 命令
+    //     各有一个 `func Run`，探针名都叫 `main.Run`）⇒ 不限制目录就会误报（这条限制就是"防误报"的关键）。
+    //   · **同目录同基名基本=撞名**：Go **不允许**同一包两个文件声明**同名顶层函数**（唯一例外是
+    //     `init` —— 而 Go 侧已把 init 的名字带上文件名区分，见 instrument.go 的 funcDeclName）
+    //     ⇒ 同目录里出现同基名，只可能来自**插桩命名缺陷**（T295 那类）或**合成名撞车**
+    //     （如两个文件里行列位置相同的 `closure@L..C..` ⇒ 确实是两个不同的闭包共用一个名字）。
+    //
+    // ## ★ 为什么**不会误报**（这是加它的前提）
+    // "同目录两个文件声明同名函数"在 Go 里**唯一合法**的成因是**构建约束**（平台替代实现：
+    // `open_linux.go` 与 `open_windows.go` 各有 `func open` —— 二者互斥、永不同时编译）。
+    // ⇒ 凡带构建约束的文件一律**跳过**（`hasGoBuildConstraint` 覆盖 `//go:build`/`// +build`
+    //   注释与隐式文件名后缀两种形态）。排掉它之后，同目录同基名就**不存在**合法解释 ⇒ 必为撞名。
+    //   ★ 仍有残余：读不到文件时保守跳过（宁可少报）；构建约束若只以**其它**非常规形式表达
+    //     （本函数未识别），仍可能漏过 —— 但那属于极罕见，且**方向是少报而非误报**。
+    const filesOfBase = new Map<string, Set<string>>();
+    for (const s of sites) {
+      const probe = String(s.probe ?? '');
+      const file = String(s.file ?? '');
+      if (!probe || !file) continue;
+      const base = probe.replace(PROBE_SUFFIX_RE, '');
+      const set = filesOfBase.get(base) ?? new Set<string>();
+      set.add(file);
+      filesOfBase.set(base, set);
+    }
+    for (const [base, fileSet] of filesOfBase) {
+      if (fileSet.size < 2) continue;
+      const files = [...fileSet];
+      // 只在【同一目录】报（跨目录同名正常 —— 见上"必须同目录"）
+      if (new Set(files.map((f) => path.dirname(f))).size !== 1) continue;
+      // 构建约束（平台替代实现）⇒ 合法，跳过（见上"不会误报"）
+      if (files.some((f) => hasGoBuildConstraint(f))) continue;
+      issues.push({
+        kind: 'duplicate-name',
+        where: `${path.dirname(files[0])} :: ${base}`,
+        detail:
+          `跨文件撞名：同一目录下 ${files.length} 个文件都产出探针名「${base}」` +
+          `（${files.map((f) => path.basename(f)).join(' / ')}）` +
+          `⇒ 两个不同的东西共用一个名字（契约匹配会命中错的对象）`,
+      });
+    }
     // ③ 有文件却一个点都没有
     const fileSet = new Set<string>((ledger as { files?: string[] }).files ?? []);
     for (const f of fileSet) {
@@ -149,7 +236,7 @@ export const observeInstrumentHandler = wrapData(async (a) => {
     const head =
       `=== Observe 插桩体检 [${lintRoot}] ===\n` +
       `台账：${sites.length} 探针点 · ${byFn.size} 个函数 · ${byFile.size} 个文件\n` +
-      `检查：① 每函数恰一条 enter、至少一条 exit（缺=漏插；enter>1=撞名） ② 不得有"零探针文件"\n`;
+      `检查：① 每函数恰一条 enter、至少一条 exit（缺=漏插；enter>1=撞名） ② 同一目录跨文件撞名 ③ 不得有"零探针文件"\n`;
     if (issues.length === 0) {
       return { message: `${head}✓ 不变量全过。\n  ★ 注意：体检**只覆盖结构类**（名字/配对/覆盖）；取值时机、序列化、事件顺序等**运行时**问题它看不见 ⇒ 仍需端到端。`, data: { root: lintRoot, issues: [], checked: { fns: byFn.size, files: byFile.size } } };
     }
