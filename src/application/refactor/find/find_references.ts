@@ -25,6 +25,8 @@ import { camelToSnake, scanLiteralOccurrences, type RawLiteralMatch } from '../r
 import { collectFieldRefs, collectTypeConstructCandidates, type FieldRefFile, type FieldScopeReport, type TypeConstructCandidate } from './field_refs.js';
 import { parseFileFull } from '../../../infrastructure/parse/index.js';
 import { getProjectCacheDb } from '../../../infrastructure/index/db.js';
+// ★ T249：「索引能不能用」的**唯一住处**（= cache.db 存在 **且** files 非空）—— 本文件不再手写第三份
+import { hasLiveIndex } from '../../write_gate.js';
 import { ensureProjectIndex } from '../../../infrastructure/index/index_freshness.js';
 import { buildImportGraph } from '../../../infrastructure/graph/import_graph.js';
 import { scanTextMentions } from '../../../infrastructure/text/refs_text.js';
@@ -88,9 +90,12 @@ async function indexCandidateFiles(
   symbolName?: string,
 ): Promise<CandidateSet | null> {
   try {
+    // ★★★ T249（2026-10-14）：**这里原先手写第三份「索引能不能用」** ——
+    //   `db.prepare('SELECT COUNT(*) FROM files')` + `cnt === 0` ⇒ 而那是
+    //   `write_gate.hasLiveIndex` 的**同一件事**（"cache.db 存在 **且** files 非空"）。
+    //   ⇒ 改调既有唯一实现（本仓头号病是"同一判据住两处" ⇒ **判据只住一处**）。
+    if (!hasLiveIndex(resolvedRoot)) return null;
     const db = getProjectCacheDb(resolvedRoot);
-    const cnt = (db.prepare('SELECT COUNT(*) AS c FROM files').get() as { c?: number } | undefined)?.c ?? 0;
-    if (cnt === 0) return null;
     const g = buildImportGraph(db, resolvedRoot);
     const defRel = path.relative(resolvedRoot, defAbs).split(path.sep).join('/');
     const seen = new Set<string>([defRel]);

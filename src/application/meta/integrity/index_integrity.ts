@@ -276,7 +276,14 @@ async function indexIntegrityCore(opts: {
   } else if (hasLiveIndex(root)) {
     try {
       db = getProjectCacheDb(root);
-      state = 'ready';
+      // ★★★ T248（2026-10-14）：**这里原先硬编码 `state = 'ready'`** —— 即"有库就说齐"，
+      //   **不问覆盖**。后果：`index_integrity` 会把"库在、但不全"报成 `ready`
+      //   ⇒ ★ 而 `state` 是**判定器输入**（`integrityVerdict({ hasIndex: state !== 'empty', … })`
+      //     与 `issues` 里的 `truncated` 都读它）⇒ 那个"同名假值"会顺着往下传。
+      //   ⇒ 现在改问**既有唯一判据** `indexCoversDisk`（`index_freshness.ts:545`，T247 收口的那处）：
+      //     · 覆盖磁盘 ⇒ `ready`；· 有库但**没覆盖** ⇒ `partial`（如实说"不全"）。
+      //   ★ 成本：一次 `walkFiles`（本仓实测 冷 36ms / 热 5ms）—— 与"判据只住一处"这个价，本仓付得起。
+      state = indexCoversDisk(db, root) ? 'ready' : 'partial';
     } catch {
       db = null;
     }
