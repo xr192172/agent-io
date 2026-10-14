@@ -343,8 +343,15 @@ export function resolveRootFromArgs(args: Record<string, unknown>): string | nul
     } catch {
       continue; // 不存在 / 不可读 ⇒ 跳过（与 existsSync 等价：只有真存在的才算数）
     }
-    const db = nearestCacheDb(startDir);
-    if (db) return path.dirname(path.dirname(db)); // <root>/.agent-io/cache.db ⇒ <root>
+    // ★★★ T244（2026-10-14）：**marker 判据优先**（`resolveProjectRoot`：git 根 → 最近 manifest → 所在目录）。
+    //   ★ 为什么不再用 `nearestCacheDb`（向上找**最近的 cache.db**）：那是**产物**的代理，嵌套下会认错根 ——
+    //     实测夹具（内层有 `.git` 但**没有** `.agent-io/cache.db`、外层有）⇒ 给内层**文件**路径时
+    //     `nearestCacheDb` 返回 **外层**（⚠ 于是"逐调用保鲜"去保鲜了**别的项目**），
+    //     而 marker 判据正确返回内层。
+    //   ★ 判据：问"**这次调用想操作哪个项目**"，该由**项目标记**回答；`cache.db` 是产物
+    //     （可能不存在、也可能住在外层）⇒ 不能拿它当"项目在哪"的代理（代理会被"碰巧"骗过）。
+    void startDir;
+    return resolveProjectRoot(cand);
   }
   return null;
 }
