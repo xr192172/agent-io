@@ -96,7 +96,10 @@ export const observeInstrumentHandler = wrapData(async (a) => {
       if (!probe) continue;
       const file = String(s.file ?? '');
       byFile.set(file, (byFile.get(file) ?? 0) + 1);
-      const base = probe.replace(/\.(enter|exit|catch|writefile|mkdir|rename|remove|append)$/i, '');
+      // ★★★ T294（2026-10-14）：后缀表要含 Go 侧特有的 —— 实测 Go 的 defer 探针名是
+      //   `main.closure@L123C9.defer`，而原表没有 `defer` ⇒ 它被当成一个独立函数（enter=0/exit=0）
+      //   ⇒ 假阳性。（假阳性会让体检失去信任 ⇒ 宁可判据少而准。）
+      const base = probe.replace(/\.(enter|exit|catch|defer|recover|writefile|mkdir|rename|remove|append|readfile)$/i, '');
       const key = `${file}::${base}`;
       const rec = byFn.get(key) ?? { enter: 0, exit: 0, probes: [] };
       if (probe.endsWith('.enter')) rec.enter++;
@@ -125,7 +128,11 @@ export const observeInstrumentHandler = wrapData(async (a) => {
         issues.push({
           kind: 'missing-pair',
           where: `${file} :: ${base}`,
-          detail: `enter=${rec.enter} exit=${rec.exit} ⇒ 缺${rec.enter === 0 ? ' enter' : ''}${rec.exit === 0 ? ' exit' : ''}（漏插，或名字算错）`,
+          // ★★★ T294（2026-10-14）：**如实标注「可能正确」** —— 实测 Go 的 `main.boom`（末语句 `panic(…)`）
+          //   就是 enter=1 / exit=0，而那是**正确**行为（panic 之后没有出口）。同类还有 `os.Exit`、死循环。
+          //   ⇒ 体检只读台账、**看不出**这些语义 ⇒ 与其报成「漏插」，不如说清「也可能是正确的」。
+          //     ★ 假阳性会让体检失去信任（本仓反复强调）⇒ 宁可说得准。
+          detail: `enter=${rec.enter} exit=${rec.exit} ⇒ 缺${rec.enter === 0 ? ' enter' : ''}${rec.exit === 0 ? ' exit' : ''}（漏插或名字算错；★ 但「有 enter 无 exit」**也可能是正确的** —— panic / os.Exit / 死循环结尾的函数本就没有出口）`,
         });
       }
     }

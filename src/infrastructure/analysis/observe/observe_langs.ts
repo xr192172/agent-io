@@ -45,6 +45,7 @@ import {
   ledgerSummary,
   restoreInstrumented,
   saveProbeLedger,
+  type InstrumentedSite,
   type InstrumentFileResult,
 } from './instrument.js';
 import {
@@ -297,7 +298,11 @@ export const goObservePack: ObserveLangPack = {
   inProcess: false,
   limitations: [
     '需要 Go 工具链（`go run ./cmd/instrument`）；缺 Go 时**响亮失败**，不是静默跳过。',
-    '被插桩工程须在 go.mod 接 observe-lang-go 语言包（replace 到本仓路径），否则插桩后编译不过 —— 报告的「运行前提」段会提示。',
+    // ★★★ T294（2026-10-14）：**删掉那句过时的**「被插桩工程须在 go.mod 接 observe-lang-go 语言包
+    //   （replace 到本仓路径），否则插桩后编译不过」—— T268 已把机制改成"探针包**拷进**被测工程
+    //   `internal/camprobe/`" ⇒ **被测工程零构建配置改动**。★ 上次改 description 时漏了这里
+    //   （同一份过时知识住了两处 ⇒ 只改一处必漏另一处 —— 本仓头号病的又一例）。
+    '探针包会**拷进**被测工程的 `internal/camprobe/`，注入的 import 指向它 ⇒ **被测工程的 go.mod 无需任何改动**；`uninstrument` 会连该目录一起删。',
   ],
   manifestFiles: ['go.mod'],
   async instrument(root, opts) {
@@ -313,7 +318,7 @@ export const goObservePack: ObserveLangPack = {
     //   （旧行为：要求在 go.mod 补 `require` + 一条指向 agent-io **本机绝对路径**的 `replace`
     //    —— 换机器即废，而且会被提交进**被测项目**的受版本管理文件。）
     const moduleName = readGoModuleName(root);
-    return {
+    const rep: ObserveInstrumentReport = {
       lang: 'go',
       dryRun: opts.dryRun,
       scanned: out.files.length,
@@ -324,6 +329,30 @@ export const goObservePack: ObserveLangPack = {
           `（uninstrument 会连该目录一起删）。`
         : `★ 被测工程读不到 go.mod 的 module 名 ⇒ Go 侧插桩要求它是一个 Go module。`,
     };
+    // ★★★ T294（2026-10-14）：**Go 侧也产出探针台账** —— 原先这里**不填 `ledger`**
+    //   ⇒ Go 从不写 `.agent-io/observe-ledger.json` ⇒ `action=lint`（今天新加的量具）
+    //     在 Go 上**恒为「未找到台账」** ⇒ ★★ **量具空转**：它专门要抓的"漏插 / 撞名"
+    //     （T292/T293 已修；T295 多 `init()` 撞名、T297 方法名丢接收者**仍在**）**一个都抓不到**。
+    //   ⇒ 复用 TS 侧**同一份** `buildProbeLedger`（判据只住一处，不许再写第二份）。
+    //     Go 的 site 形状少 `file`/`injected` ⇒ 在这里补齐（`file` 取自所属文件）。
+    if (!opts.dryRun) {
+      const asFiles: InstrumentFileResult[] = rep.files.map((f) => ({
+        file: f.file,
+        sites: f.sites.map((s) => ({
+          file: f.file,
+          line: s.line,
+          kind: s.kind as InstrumentedSite['kind'],
+          level: s.level as InstrumentedSite['level'],
+          probe: s.probe,
+          injected: '',
+        })),
+      }));
+      const ledger = buildProbeLedger(asFiles, root);
+      if (ledger.sites.length > 0) {
+        rep.ledger = { file: saveProbeLedger(root, ledger), summary: ledgerSummary(ledger), raw: ledger };
+      }
+    }
+    return rep;
   },
   async uninstrument(root) {
     const restored = await restoreGoProject(root);

@@ -2655,14 +2655,6 @@
         我前面三次都是"看回执说失败 → grep 发现改了 → 认定工具撒谎"，**却没去加一行日志**。
         ★ 这正是本仓"先取证再下结论"的纪律 —— 而这次我**在记账时也犯了**（把推测写成了"现象确凿"）。
 
-- [ ] **T294 ★★★★ 【P2·量具空转】`action=lint` 在 Go 侧【恒为"未找到台账"】—— 今天新加的量具在 Go 上抓不到任何东西**
-      *(来源：2026-10-14 Go 侧补测；★ 讽刺点：`lint` 正是为抓"结构类"（漏插/撞名）而做，而 Go 侧恰好有 T292/T293 两类漏插。)*
-      ⇒ **实测**：刚插完 70 探针点，`lint` 回「未找到台账（可能从未插桩，或已一键全拔清理）」。
-      ⇒ **根因**：`goObservePack.instrument`（`observe_langs.ts:303`）**不填 `ledger`** ⇒ Go **从不写**
-        `.agent-io/observe-ledger.json` ⇒ 台账只对 TS/JS 生效。
-      ⇒ **要做**：Go 侧也产出探针台账（Go CLI 已经报 `sites`，只是没落成 ledger 文件）⇒ 让 `lint` 在 Go 上可用。
-      ⇒ **判据**：Go 插桩后 `action=ledger` 能列出探针点；`action=lint` 能在 Go 侧报出 T292/T293 的漏插。
-
 - [ ] **T295 ★★ 【观测歧义】Go：同包多个 `init()` 探针名相撞**
       *(来源：2026-10-14 Go 侧补测。)*
       ⇒ **实测**：两个 `init()` 都叫 `main.init.enter/exit` ⇒ 事件 `enter×1 / exit×2`，
@@ -2720,3 +2712,22 @@
       ⇒ **还原**：`go.mod` sha256 **一字未改** · `internal/camprobe/` 已删 · `go build` 退 0 · `funcs.go` 恢复无 camprobe import。
       ⇒ **语言包自测**：`go build ./...` OK · `go test ./...` 全绿（新增 `TestTerminatesFunction` 13 子用例 + `TestInstrumentTerminalFormsCompile`）。
       ⇒ ★ **仍未修（另立账）**：**T294**（`lint` 在 Go 侧无台账 ⇒ 量具空转）· **T295/T297**（探针名空间缺"接收者/文件"维度 ⇒ 撞名）· **T296**（还原留空目录）。
+
+- [x] **【已做】T294 —— Go 侧也产出探针台账 ⇒ `action=lint` 在 Go 上终于可用（原先量具空转）**
+      *(2026-10-14；★ 全程用本仓 `edit_code`。)*
+      ⇒ **改了什么**（`observe_langs.ts`）：`goObservePack.instrument` 原先**不填 `ledger`** ⇒ Go 从不写
+        `.agent-io/observe-ledger.json` ⇒ `lint` 在 Go 上**恒为「未找到台账」**。
+        现在复用 TS 侧**同一份** `buildProbeLedger`（判据只住一处），把 Go 的 site 形状补齐
+        （`file`/`injected`）后走同一条路 ⇒ 落 ledger 文件。
+      ⇒ ★ **顺带删掉一句过时 `limitations`**：「被插桩工程须在 go.mod 接 observe-lang-go（replace 到本仓路径）」
+        —— 与 T268 矛盾（现在探针包**拷进**被测工程）。★ 上次改 description 时**漏了这里**
+        （同一份过时知识住两处 ⇒ 只改一处必漏另一处 —— 本仓头号病的又一例）。
+      ⇒ **验证**（Go 夹具 38 探针点）：`action=ledger` **能列出台账**（`38 探针点 · 1 文件 · exit:21 io:1 enter:16`）；
+        `action=lint` **能跑不变量**。
+      ⇒ ★★ **同时修掉它自己的两个假阳性**（跑真夹具才抓出来，与之前 TS 侧同一教训）：
+        ① 后缀表**没有 Go 侧特有的 `defer`** ⇒ `main.closure@L123C9.defer` 被当成独立函数（enter=0/exit=0）；
+        ② `main.boom`（末语句 `panic(…)`）`enter=1 exit=0` 被报成「漏插」—— ★ 而那是**正确**行为。
+        ⇒ 修法：后缀表补 `defer`/`recover`/`readfile`；并在回执里**如实标注**「有 enter 无 exit **也可能是正确的**
+          （panic / os.Exit / 死循环结尾的函数本就没有出口）」。验证：假阳性 **2 → 1**（剩下的那条已带标注）。
+      ⇒ ★ 记账一条**工具局限**：`edit_code` 改「含正则/反斜杠的文本」时会踩 **JSON 转义层**（`.` 被吃掉 ⇒ 正则变宽）
+        ⇒ 这类改动改用 `op=range` 或直接用编辑工具补字符（本次就是）。
