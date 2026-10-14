@@ -33,7 +33,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseAstRoot } from '../../parse/kernel.js';
-import { skipDirSet } from '../../parse/source_exts.js';
+import { isNoiseFileName, isTsJsExt, skipDirSet } from '../../parse/source_exts.js';
 
 /**
  * ★★ 唯一落点：**探针实现**在本仓里的目录（相对仓库根的 posix 路径）。
@@ -112,6 +112,15 @@ export interface InstrumentedSite {
 export interface InstrumentFileResult {
   file: string;
   sites: InstrumentedSite[];
+  /**
+   * ★★★ T304（2026-10-15）：本文件 AST 里的**函数节点数**（块体函数 + 表达式体箭头都算）。
+   *
+   * 用途：台账判据③（"零探针文件"）据此区分
+   *   · `functions > 0 && sites == 0` ⇒ **整文件漏插**（可疑）；
+   *   · `functions == 0` ⇒ 纯类型/纯常量文件，本就该 0 探针（**不报，避免假阳性**）。
+   * ★ 未解析（已插过 / 读失败 / 解析失败）时为 `undefined` ⇒ 台账按 0 处理（保守不报）。
+   */
+  functions?: number;
   /** ★ 本次实际用的探针 import 说明符（注入到文件头部的那一句）。
    *  暴露出来是为了**可被测试断言** —— 它由 `relativeProbeImport` **拼字符串**得出
    *  （不是 import），改名工具管不到 ⇒ 没有这个字段，"搬完家指错路径"就只能靠人眼发现。 */
@@ -241,10 +250,27 @@ export interface ProbeLedger {
   projectRoot: string;
   instrumentedAt: string;
   sites: InstrumentedSite[];
+  /**
+   * ★★★ T304（2026-10-15）：**本次扫描到的全部源文件**（含 0 探针的）。
+   *
+   * ## 为什么必须有它（原先判据③恒不可达）
+   * `action=lint` 的判据③（"零探针文件"）读的正是 `ledger.files`，而**台账里根本没有这个字段**
+   * （顶层只有 projectRoot/instrumentedAt/sites/stats）⇒ 恒 `undefined`；且 `buildProbeLedger`
+   * 原先**跳过 0 探针文件**（`r.sites.length === 0` 就 `continue`）⇒ **两头都堵死**
+   * ⇒ 判据③**永远不生效** = "沉默的缺失"。
+   * ⇒ 现在记下每个**扫到的**文件，判据③据 `functions > 0 && sites === 0` 判"整文件漏插"
+   *   （★ `functions == 0` 的纯类型文件**不报**，避免假阳性）。
+   */
+  files: Array<{ file: string; sites: number; functions: number }>;
+  /**
+   * ★ T304：本次是否**契约模式**（只注入了 `contractProbes` 声明的探针）。
+   * 契约模式下"文件有函数、但没命中任何声明"是**正常**的 ⇒ 判据③据此跳过（避免假阳性）。
+   */
+  contractMode?: boolean;
   stats: {
     /** 探针点总数 */
     total: number;
-    /** 涉及文件数 */
+    /** 涉及文件数（★ 只数**有探针点**的文件 —— 与 `files.length` 不等） */
     files: number;
     /** 按插桩类型统计（enter/exit/catch/io/deep） */
     perKind: Record<string, number>;
@@ -258,13 +284,21 @@ export function ledgerPath(root: string): string {
   return path.join(root, LEDGER_FILE);
 }
 
-/** 从插桩结果构建台账 */
-export function buildProbeLedger(results: InstrumentFileResult[], projectRoot: string): ProbeLedger {
+/** 从插桩结果构建台账。`opts.contractMode` 见 {@link ProbeLedger.contractMode}。 */
+export function buildProbeLedger(
+  results: InstrumentFileResult[],
+  projectRoot: string,
+  opts?: { contractMode?: boolean },
+): ProbeLedger {
   const sites: InstrumentedSite[] = [];
-  const files = new Set<string>();
+  const filesWithProbes = new Set<string>();
+  // ★ T304：每个**扫到的**文件都记账（含 0 探针的）—— 判据③的输入（见 ProbeLedger.files）
+  const fileEntries: Array<{ file: string; sites: number; functions: number }> = [];
   for (const r of results) {
-    if (r.error || r.sites.length === 0) continue;
-    files.add(r.file);
+    if (r.error) continue; // 读/解析失败的文件另有报告，不进台账（避免把"没插桩"当"漏插"）
+    fileEntries.push({ file: r.file, sites: r.sites.length, functions: r.functions ?? 0 });
+    if (r.sites.length === 0) continue;
+    filesWithProbes.add(r.file);
     for (const s of r.sites) {
       sites.push(s);
       // ★★★ 2026-10-14：把 `extraProbes` **展开成独立的 site 记录** ——
@@ -287,7 +321,9 @@ export function buildProbeLedger(results: InstrumentFileResult[], projectRoot: s
     projectRoot,
     instrumentedAt: new Date().toISOString(),
     sites,
-    stats: { total: sites.length, files: files.size, perKind, perLevel },
+    files: fileEntries,
+    contractMode: opts?.contractMode,
+    stats: { total: sites.length, files: filesWithProbes.size, perKind, perLevel },
   };
 }
 
@@ -355,7 +391,40 @@ const IO_CALLS: Record<string, string> = {
   rm: 'remove',
 };
 
-/** 递归收集项目下所有 .ts 源文件（跳过 node_modules / dist / .git / .agent-io） */
+/**
+ * ★ T304（2026-10-15）：数一棵 AST 里的**函数节点**（`FN_TYPES`，含嵌套 / 箭头）。
+ * 用途：台账判据③区分"有函数却 0 探针"（漏插）与"本就无函数"（纯类型文件，不报）。
+ * ★ 只数 `FN_TYPES`（有体/可插桩的那几类）—— `declare function` / `abstract foo():void`
+ *   这类**无体的签名**不是 `FN_TYPES` ⇒ 天然不算（那些文件本就该 0 探针）。
+ */
+function countFunctionNodes(n: InstrNode): number {
+  let c = FN_TYPES.has(n.type) ? 1 : 0;
+  for (let i = 0; i < n.childCount; i++) {
+    const ch = n.child(i);
+    if (ch) c += countFunctionNodes(ch);
+  }
+  return c;
+}
+
+/**
+ * ★★★ T302（2026-10-15）：**「收哪些文件」只住一处**。
+ *
+ * 判据 = 「扩展名属 TS/JS 家族」且「不是产物/声明文件」，两个事实都取自
+ * `parse/source_exts.ts`（该模块头注明写它就是「什么算源码」的**唯一权威**）：
+ *   · `isTsJsExt`     —— 8 个扩展名（`.ts/.tsx/.mts/.cts/.js/.mjs/.cjs/.jsx`）的唯一清单；
+ *   · `isNoiseFileName` —— 排除 `.d.ts/.d.mts/.d.cts` 声明产物与 `.min.js`/`*.gen.ts` 等。
+ *
+ * ★ 为什么必须有它（改前的病）：`collectTsFiles` 写死 `endsWith('.ts')`，而语言包
+ *   `isSourceFile` 用的是**另一份** 8 扩展名表（`observe_langs.ts` 的 `TS_EXT`）
+ *   ⇒ **同一件事住两处且不一致** ⇒ 实测 9 扩展名夹具里只收到 `.ts`
+ *   ⇒ 报告「扫描 N 个源文件」的 N 塌成 0/1，**长得像"这项目没函数"**（静默零结果）。
+ *   ★ `collectTsFiles` 与 `tsJsObservePack.isSourceFile` 现在都走本函数 ⇒ 不再漂移。
+ */
+export function isInstrumentableTsJsFile(rel: string): boolean {
+  return isTsJsExt(path.extname(rel)) && !isNoiseFileName(path.basename(rel));
+}
+
+/** 递归收集项目下所有可插桩的 TS/JS 源文件（跳过 node_modules / dist / .git / .agent-io） */
 export function collectTsFiles(root: string): string[] {
   const out: string[] = [];
   const skip = skipDirSet([]);
@@ -370,15 +439,90 @@ export function collectTsFiles(root: string): string[] {
       if (skip.has(e.name)) continue;
       const full = path.join(dir, e.name);
       if (e.isDirectory()) walk(full);
-      else if (e.isFile() && e.name.endsWith('.ts') && !e.name.endsWith('.d.ts')) out.push(full);
+      else if (e.isFile() && isInstrumentableTsJsFile(e.name)) out.push(full);
     }
   };
   walk(root);
   return out;
 }
 
-/** 计算相对模块路径的 import 语句 */
-function buildImportStmt(probeImport: string): string {
+/** 宿主模块制式：ESM（`import`）还是 CJS（`require`）。 */
+type HostModuleSystem = 'esm' | 'cjs';
+
+/**
+ * 从 `startDir` 向上找**最近的** `package.json` 的 `"type"`（找不到 / 没写 ⇒ `undefined`）。
+ * ★ 只认**最近的那一个**（node 的解析规则就是如此：遇到 package.json 即停，不再往上）。
+ */
+function nearestPackageType(startDir: string): string | undefined {
+  let dir = startDir;
+  for (let i = 0; i < 32; i++) {
+    const pkg = path.join(dir, 'package.json');
+    if (fs.existsSync(pkg)) {
+      try {
+        const j = JSON.parse(fs.readFileSync(pkg, 'utf-8')) as { type?: unknown };
+        return typeof j.type === 'string' ? j.type : undefined;
+      } catch {
+        return undefined; // 解析失败 ⇒ 当作没写 type
+      }
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return undefined;
+}
+
+/**
+ * ★★★ T301（2026-10-15）：**判宿主模块制式** —— 注入 `import` 还是 `require` 必须由它决定。
+ *
+ * ## 改前的病（实测）
+ * `buildImportStmt` **无条件**产出 ESM `import`，不读宿主制式。实测：CommonJS 的 `.ts`
+ * （`require` + `module.exports`，`package.json` 无 `"type"`，`node` 直跑）基线能跑，
+ * 插桩后 **`ReferenceError: require is not defined in ES module scope`**
+ * —— ★ **不是"探针不生效"，是【打断宿主程序】**（node 的 detect-module 一见 `import`
+ * 就把整文件当 ESM ⇒ 原有的 `require`/`module.exports` 全废）。
+ *
+ * ## 判据（按优先级；★ 拿不准不猜 —— 只有明确信号才翻成 CJS）
+ *   ① 扩展名：`.mts`/`.mjs` ⇒ ESM；`.cts`/`.cjs` ⇒ CJS（node 硬规则，覆盖一切）；
+ *   ② 最近的 `package.json` 的 `"type"`：`"module"` ⇒ ESM，`"commonjs"` ⇒ CJS（node 硬规则）；
+ *   ③ 文件内容：含 CJS 特征（`require(` / `module.exports` / `exports.`）⇒ **CJS**；
+ *   ④ 以上都没有 ⇒ **ESM**（保持改前行为；此时文件不碰 `require`/`module`，
+ *      注入 ESM 不会打断它；反之若文件真含 CJS 特征，③ 已把它判成 CJS）。
+ * ★ 残余（如实）：`.ts` 无 `"type"`、文件内又**没有**任何 `require`/`import` 字样，
+ *   却被**别的 CJS 文件 `require()` 加载** —— 本函数看不出来，会判 ESM。属"拿不准"，
+ *   已在报告里单列（不静默兜底猜）。
+ */
+function detectModuleSystem(file: string, content: string): HostModuleSystem {
+  const ext = path.extname(file).toLowerCase();
+  if (ext === '.mts' || ext === '.mjs') return 'esm';
+  if (ext === '.cts' || ext === '.cjs') return 'cjs';
+  const pkgType = nearestPackageType(path.dirname(file));
+  if (pkgType === 'module') return 'esm';
+  if (pkgType === 'commonjs') return 'cjs';
+  if (/\brequire\s*\(/.test(content) || /\bmodule\.exports\b/.test(content) || /\bexports\s*\./.test(content)) return 'cjs';
+  return 'esm';
+}
+
+/**
+ * ★ T302（2026-10-15）：模块基名（探针名前缀）= 文件名去掉 TS/JS 扩展名。
+ *
+ * ★ 为什么不能再用 `path.basename(file).replace('.ts', '')`：那是**只按 `.ts` 写的**，
+ *   对 T302 新纳入的扩展名会留下残渣 —— 实测 `main.tsx` → `mainx`、`main.mts` → `main.m`、
+ *   `main.cts` → `main.c`。而探针名是**契约匹配的 key** ⇒ 残渣 ⇒ 契约永远匹配不上。
+ */
+function moduleBase(file: string): string {
+  const base = path.basename(file);
+  const ext = path.extname(base);
+  return isTsJsExt(ext) ? base.slice(0, base.length - ext.length) : base;
+}
+
+/** 计算相对模块路径的 import / require 语句（★ 按宿主制式选 —— 见 `detectModuleSystem`）。 */
+function buildImportStmt(probeImport: string, system: HostModuleSystem): string {
+  if (system === 'cjs') {
+    // CommonJS 宿主：用 require。★ 探针实现（dist/…/probe.js）是 ESM，但 node ≥22.12
+    // 支持 `require(esm)`（本机 22.22.2 实测可用）⇒ 这里成立。
+    return `const { captureProbe, enterScope, exitScope } = require('${probeImport}');\n`;
+  }
   return `import { captureProbe, enterScope, exitScope } from '${probeImport}';\n`;
 }
 
@@ -418,6 +562,24 @@ function inferProjectRoot(file: string): string {
   );
 }
 
+/**
+ * ★★★ T303（2026-10-15）：**getter / setter 的访问器种类**（`get` / `set`，普通方法返回 null）。
+ *
+ * tree-sitter-typescript 的 `method_definition` 把 `get` / `set` 放在**匿名子节点**里
+ * （节点类型就是 `'get'` / `'set'`），与 `name`（`property_identifier`）**分开** —— 实测：
+ *   `get value(){…}` ⇒ 子节点 `get:"get" | property_identifier:"value" | …`；
+ *   `set value(v){…}` ⇒ `set:"set" | property_identifier:"value" | …`；
+ *   而名叫 `get` 的普通方法 ⇒ `property_identifier:"get" | …`（类型不同 ⇒ 不会误判）。
+ * ⇒ 按**节点类型**判，不看文本（文本会与"叫 get 的方法"撞）。
+ */
+function methodAccessorKind(n: InstrNode): 'get' | 'set' | null {
+  for (let i = 0; i < n.childCount; i++) {
+    const c = n.child(i);
+    if (c && (c.type === 'get' || c.type === 'set')) return c.type;
+  }
+  return null;
+}
+
 /** 从文件内容推导当前函数/方法名（用于探针 probe 命名，取最近一级函数定义） */
 function detectEnclosingFunction(root: InstrNode, insertIndex: number): string {
   let fnName = '';
@@ -427,6 +589,16 @@ function detectEnclosingFunction(root: InstrNode, insertIndex: number): string {
       const nameChild = n.childForFieldName?.('name');
       if (nameChild && nameChild.text) {
         fnName = nameChild.text;
+        // ★★★ T303（2026-10-15）：**getter / setter 同名会撞车** —— 实测
+        //   `class C { get value(){…} set value(v){…} }` 里两者都取 `name` 文本 `value`
+        //   ⇒ 台账出现两条 `classes.value.enter`，两个 enter 事件同名
+        //   （`args={}` vs `args={"v":9}`）⇒ **分不清谁是谁**（契约匹配会命中错的对象）。
+        //   ★ T277 只修了"匿名"那一支（见下），有真名的访问器没被覆盖。
+        //   ⇒ 给访问器加 `.get` / `.set` 后缀（`value.get` / `value.set`）。
+        if (n.type === 'method_definition') {
+          const acc = methodAccessorKind(n);
+          if (acc) fnName = `${nameChild.text}.${acc}`;
+        }
       } else if (parent && parent.type === 'variable_declarator') {
         // ★★★ T263（2026-10-14）：**匿名箭头函数 / 函数表达式没有 `name`** ——
         //   名字在**父级** `variable_declarator` 的 `name` 上（`const mul = (a,b) => a*b`）。
@@ -688,6 +860,9 @@ export async function instrumentFile(file: string, opts: InstrumentOptions = {})
     return result;
   }
   const root = asInstr(parsed.root);
+  // ★ T304：数函数节点（台账判据③用 —— 见 InstrumentFileResult.functions）。
+  //   ★ 必须在 `insertions.length === 0` 的早退**之前**算：0 探针文件正是要记账的那批。
+  result.functions = countFunctionNodes(root);
 
   const projectRoot = opts.projectRoot ?? inferProjectRoot(file);
   const probeImport = opts.probeImport ?? relativeProbeImport(file, projectRoot);
@@ -714,7 +889,8 @@ export async function instrumentFile(file: string, opts: InstrumentOptions = {})
   //   ⇒ 三次是**同一个洞的三次露面**；前两次都是打补丁（调顺序 / 检测到重叠就退让），
   //     而退让留下了**永久代价**（T272 让 `return arr.map(x => x*2)` 永远拿不到 `ret`）。
   //   ⇒ 这次按"**改模型**"处理：细节与理由见 `applyInsertions` 的头注（含"同 index 的定序语义"）。
-  const importStmt = buildImportStmt(probeImport);
+  // ★ T301（2026-10-15）：import 语句按**宿主模块制式**选（CJS ⇒ require，见 `detectModuleSystem`）。
+  const importStmt = buildImportStmt(probeImport, detectModuleSystem(file, content));
 
   // ★ `let`（不是 const）：下面还要补 import/标记头（`out = prependAfterShebang(out, head)`）
   let out = applyInsertions(content, insertions);
@@ -755,7 +931,7 @@ function collectSites(
     if (FN_TYPES.has(n.type) && isBlockBody(n)) {
       const body = n.childForFieldName!('body')!;
       const fn = detectEnclosingFunction(root, n.startIndex) || 'module';
-      const mod = path.basename(file).replace('.ts', '');
+      const mod = moduleBase(file);
       const params = extractParamNames(n);
       const probeName = `${mod}.${fn}`;
 
@@ -837,7 +1013,7 @@ function collectSites(
       const body = n.childForFieldName?.('body');
       if (body && body.type !== 'statement_block') {
         const fn = detectEnclosingFunction(root, n.startIndex) || 'module';
-        const mod = path.basename(file).replace('.ts', '');
+        const mod = moduleBase(file);
         const params = extractParamNames(n);
         const probeName = `${mod}.${fn}`;
         const wantEnter = matchContract(probeName + '.enter', probes);
@@ -925,7 +1101,7 @@ function collectSites(
         if (text[idx] === '{') idx++;
         while (idx < text.length && /\s/.test(text[idx])) idx++;
         const fn = detectEnclosingFunction(root, open);
-        const probeName = `${path.basename(file).replace('.ts', '')}.${fn}.catch`;
+        const probeName = `${moduleBase(file)}.${fn}.catch`;
         if (matchContract(probeName, probes)) {
           // ★★★ T269（2026-10-14）：**读【真实的】catch 参数名** —— 原先硬编码 `e`
           //   （注入 `err: (e as Error)?.message ?? ''`）。
@@ -964,7 +1140,7 @@ function collectSites(
       if (ioOp) {
         const idx = n.endIndex;
         const fnName = detectEnclosingFunction(root, n.startIndex);
-        const probeName = `${path.basename(file).replace('.ts', '')}.${fnName}.${ioOp}`;
+        const probeName = `${moduleBase(file)}.${fnName}.${ioOp}`;
         if (matchContract(probeName, probes)) {
           const injected = `;captureProbe(${JSON.stringify(probeName)}, { file: ${JSON.stringify(fileRel)}, op: ${JSON.stringify(ioOp)}, level: 'event' });`;
           insertions.push({ index: idx, site: { probe: probeName, file, line: n.startPosition.row + 1, kind: 'io', level: 'event', injected } });
@@ -1022,7 +1198,7 @@ function findBlockChild(n: InstrNode): InstrNode | null {
 
 /** 计算某函数内 deep 探针名（基名复用函数名，.deep 后缀；模块级为 module.deep）。 */
 function deepProbeName(root: InstrNode, file: string, atIndex: number): string {
-  const mod = path.basename(file).replace('.ts', '');
+  const mod = moduleBase(file);
   const fn = detectEnclosingFunction(root, atIndex);
   return `${mod}.${fn}.deep`;
 }
@@ -1124,7 +1300,7 @@ function handleReturn(
   probes?: string[],
 ): void {
   const fn = detectEnclosingFunction(root, n.startIndex);
-  const mod = path.basename(file).replace('.ts', '');
+  const mod = moduleBase(file);
   const probeName = `${mod}.${fn}.exit`;
   // 契约门：未声明的 exit 探针不注入（匹配 `mod.fn.exit`）
   if (!matchContract(probeName, probes)) return;

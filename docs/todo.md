@@ -2696,46 +2696,6 @@
       ⇒ ★ 本条也再次印证：**"含反引号/模板字符串"这类内容，本仓工具的 JSON 转义层确实不好用**
         ⇒ 稳妥做法是**用编辑工具直接改**（不经 JSON），或把 code 拆成不含嵌套反引号的形式。
 
-- [ ] **T301 ★★★★ 【P0·打断宿主】TS：CommonJS 的 `.ts` 被注入 **ESM `import`** ⇒ `require is not defined`**
-      *(来源：2026-10-14 TS 侧第 4 轮实测。)*
-      ⇒ **触发**：`.ts` 里用 `require` / `module.exports`，`package.json` **无** `"type":"module"`，且**用 node 直跑**。
-      ⇒ **实测**：基线 `cjsDouble 8 base b`（能跑）⇒ 插桩后 **`ReferenceError: require is not defined in ES module scope`**
-        —— ★ 注入的 `import` **把文件变成了 ESM**。
-      ⇒ **根因**：`instrument.ts:381-383 buildImportStmt` **无条件产出 ESM import**，**不读宿主模块制式**。
-      ⇒ **要做**：注入前**判宿主制式**（`package.json` 的 `type` / 文件扩展名 `.cjs` / 是否已有 `require`）⇒
-        CJS 场景改用 `require(...)` 或**如实拒绝并说明**（★ 不许"注入了但跑不起来"）。
-      ⇒ **判据**：CJS 的 `.ts` 插桩后 **`node` 能跑**、输出与基线一致。
-      ⇒ ★ 边界（子代理**如实标注为推断**）：宿主若用 tsc/bundler 降级到 CJS ⇒ 不触发（**未实测**）。
-
-- [ ] **T302 ★★★ 【P1·静默零结果】`isSourceFile` 声称 8 种扩展名，`collectTsFiles` **只收 `.ts`** ⇒ 纯 JS / TSX 项目报「扫描 0 个源文件」**
-      *(来源：2026-10-14 TS 侧第 4 轮实测。)*
-      ⇒ **触发**：任何纯 JS（`.js`/`.mjs`/`.cjs`）或 TSX（`.tsx`）项目。
-      ⇒ **实测**：夹具 9 个文件（`.js`/`.mjs`/`.cjs`/`.jsx`/`.tsx`/`.mts`/`.cts`/`.d.ts`/`.ts`）
-        ⇒ 报告「**扫描 0 个源文件** / 完成：0 新插桩…共 0 探针点」⇒ ★ **长得像"这项目没函数"**（而不是"我没扫"）。
-      ⇒ **根因**：**同一件事住了两处且不一致** —— `observe_langs.ts:238/253` 的 `TS_EXT` 有 **8 种**，
-        而 `instrument.ts:373` 只 `endsWith('.ts')`。
-      ⇒ **要做**：让"收哪些文件"**只住一处**（`TS_EXT` 单一事实源）；★ 并**如实标注**哪些扩展名**只插桩不解析**。
-      ⇒ ★ 已验（正面）：`.d.ts` / `.d.mts` **未被误插** ✓。
-      ⇒ **判据**：`.js`/`.mjs`/`.tsx` 项目 ⇒ 报告里的"扫描 N 个源文件"**N > 0**。
-
-- [ ] **T303 ★★ 【P1·不打断】TS：`get`/`set` 同名 ⇒ 探针名撞车（T277 只修了匿名分支）**
-      *(来源：2026-10-14 TS 侧第 4 轮实测。)*
-      ⇒ **实测**：`class C { get value(){…} set value(v){…} }` ⇒ 台账 `classes.value.enter` **×2**；
-        运行期两个 enter 事件**同名**（`args={}` vs `args={"v":9}`），**分不清谁是谁**。
-      ⇒ **根因**：`instrument.ts:422-457 detectEnclosingFunction` 取 `method_definition` 的 `name` 文本，
-        getter/setter 都叫 `value`，**没有 get/set 维度**。★ T277 只修了"匿名"那一支。
-      ⇒ **要做**：给 getter/setter 加区分（如 `value.get` / `value.set`）。
-      ⇒ ★ **lint 能抓**（真阳性：`duplicate-name :: classes.value`）—— 这是**量具第一次在 TS 侧立功**。
-
-- [ ] **T304 ★★★ 【量具盲区】`lint` 判据③（"零探针文件"）在真实台账上【恒不可达】**
-      *(来源：2026-10-14 TS 侧第 4 轮实测。)*
-      ⇒ **实测**：真实台账顶层只有 `projectRoot / instrumentedAt / sites / stats`（**没有 `files` 数组**），
-        而 `lint` 读的正是 `ledger.files` ⇒ **恒 `undefined`** ⇒ 判据③**永不触发**；
-        且 `buildProbeLedger` 本身会**跳过 0 探针文件** ⇒ 两头都堵死。
-      ⇒ **对照（证明判据本身没坏）**：**手工**给合成台账加 `files` 数组 ⇒ `lint` **报出 `[empty-file]`** ✓。
-      ⇒ ⇒ ★ 它**自称要抓"整文件漏插"，实际抓不到**（"沉默的缺失"—— 而且是**量具自己**的沉默）。
-      ⇒ **要做**：要么让 `buildProbeLedger` **记下"扫到但 0 探针"的文件**，要么**删掉判据③**（不许留着不生效）。
-
 - [ ] **T305 ★★ 【量具盲区·同族】`lint` 对"打断宿主"类问题**零覆盖**（TS 与 Go 两侧都实测到）**
       *(来源：2026-10-14 TS 第 4 轮 + Go 第 3 轮，各自独立实测。)*
       ⇒ **实测**：`gp1-r4v-mini`（`node` **SyntaxError**）、`gp1-r3v-mini`（`go build` **退 1**）
@@ -2788,3 +2748,39 @@
       ⇒ **要查的场景**：`blockingReturnCapture` 的区间替换 · `return <IO调用>`（IO 探针落在 return 区间内）·
         `return` 表达式里含闭包/函数字面量 · `defer` 语句上的 IO 探针。
       ⇒ **判据**：每类造一个夹具 ⇒ 插桩后**要么 build 退 0、要么打印重叠告警**（不许静默）。
+
+- [x] **【已做】T301–T304 四条一次结清（子代理修 + 主代理核验）**
+      *(2026-10-14；★ 改 4 个源文件；`tsc --noEmit`=0 · `npm run build`=0。)*
+      ⇒ **T301（P0 打断宿主）CJS 判制式**：`buildImportStmt(probeImport, system)` + `detectModuleSystem` + `nearestPackageType`。
+        改后注入 `const { … } = require(…)` ⇒ `node main.ts` **退 0**、输出与基线**逐字相同**。
+        ★ 判据链（**不兜底猜**，符合 ARC-7）：扩展名（`.mts`/`.mjs`⇒ESM、`.cts`/`.cjs`⇒CJS）> 最近 `package.json` 的 `type` >
+        内容 CJS 特征（`require(`/`module.exports`/`exports.`）> 默认 ESM。★ 判不出的情况**按 ESM 处理并在代码注释登记**。
+      ⇒ **T302（P1 静默零结果）扩展名单一事实源**：`isInstrumentableTsJsFile` 取代 `endsWith(".ts")`，
+        `observe_langs.ts` 删本地 `TS_EXT`/`extOf` 改调它。实测 9 扩展名夹具：**扫描 0 → 8 个源文件**；`.d.ts` **未误插** ✓。
+        ★★ **连带修了一个同族问题（子代理主动发现）**：`path.basename(file).replace(".ts","")`（**同族 6 处**）
+          对新扩展名会**留残渣**（实测 `main.tsx`→`mainx`、`main.mts`→`main.m`）⇒ 统一改 `moduleBase(file)`。
+          ⇒ **这正是"同族多处必须一次找齐"的正面例子**（今天有一次反面：T300 只改了两处之一）。
+      ⇒ **T303（P1 撞名）get/set 区分**：`methodAccessorKind` + `detectEnclosingFunction` 加 `.get`/`.set` 后缀。
+        实测台账：`cls.value.get.enter` / `cls.value.set.enter`（**两个名字不同**）✓。
+      ⇒ **T304（量具盲区）判据③ 选①并加 `functions` 计数**：台账 `files` 记 `{file, sites, functions}`，
+        ③ **只在 `functions>0 && sites==0` 报**；契约模式（`contractMode=true`）整条跳过。
+        ★ **子代理给的理由（值得记）**：「判据③ 是『插桩器整文件静默产出 0』的**金丝雀**，删掉就**永久失去这类信号**；
+          但直接记『扫到但 0 探针』会把**纯类型文件**全报成漏插（假阳性）」⇒ **保留信号、同时避开假阳性** ✓
+        实测：合成台账 ⇒ 报 **1 个 `[empty-file] hasFn.ts`**、**不报** `typesOnly.ts`；真实管道 ⇒ `✓`；契约模式 ⇒ `✓`。
+      ⇒ **不回归**：`t0-regress`（ESM 普通 TS：箭头表达式体/class get+set/catch/`fs.writeFileSync`）
+        插桩前后输出 `diff` **完全一致**、`node` 退 0、`lint` ✓。
+      ⇒ **反例（非恒真）**：不接 sink ⇒ **不产 events 文件**；接 sink ⇒ `t0-regress` 16 条 / `t301` 6 条。
+      ⇒ **还原**：`uninstrument` 后 `t301/main.ts` 与基线副本 `diff` 一致。
+
+- [ ] **T309 ★★ 【文案误导】插桩报告把「0 探针文件」也算进「已含探针跳过」**
+      *(来源：T301–T304 的子代理**主动指出**（超出它本笔范围）；★ 读数：`t304-realfiles` 里 `typesonly.ts` 显示为「1 已含探针跳过」。)*
+      ⇒ **为什么误导**：`已含探针跳过` 的原意是"**这文件已经插过桩了**" ⇒ 而 `typesonly.ts` 是"**本来就没有可插的东西**"
+        ⇒ 两者混在一句里 ⇒ 读者会以为"它被插过了"（**又一次"缺失伪装成事实"**）。
+      ⇒ **要做**：报告里**分开报**（`已含探针跳过 N` / `无可插点 M`）。
+
+- [ ] **T310 ★★ 【判据不对称】Go 侧 ledger 无 `functions` 计数 ⇒ 判据③ 对 Go **恒不报**（保守但不对称）**
+      *(来源：T301–T304 的子代理**主动指出**（超范围）。)*
+      ⇒ **现状**：T304 给**TS 侧**台账加了 `functions` ⇒ 判据③ 只在 `functions>0 && sites==0` 报；
+        而 **Go 侧台账没有 `functions`** ⇒ 判据③ 对 Go **永不触发**（**无假阳性，但也无信号**）。
+      ⇒ **要做（先裁）**：Go 侧 ledger 也记 `functions`（Go CLI 已经知道每个文件有几个函数），
+        让判据③ **两边对称**；或**如实标注**"该判据目前只对 TS 生效"。

@@ -229,14 +229,32 @@ export const observeInstrumentHandler = wrapData(async (a) => {
       });
     }
     // ③ 有文件却一个点都没有
-    const fileSet = new Set<string>((ledger as { files?: string[] }).files ?? []);
-    for (const f of fileSet) {
-      if (!byFile.has(f)) issues.push({ kind: 'empty-file', where: f, detail: '该文件在台账里没有任何探针点（整文件漏插？）' });
+    //   ★★★ T304（2026-10-15）：**判据③原先恒不可达** —— 它读 `ledger.files`，而台账顶层
+    //     只有 `projectRoot/instrumentedAt/sites/stats`、**没有 `files`** ⇒ 恒 `undefined`；
+    //     且 `buildProbeLedger` 原先**跳过 0 探针文件** ⇒ **两头都堵死**（"沉默的缺失"）。
+    //   ⇒ 现在台账记下每个**扫到的**文件（`files: {file, sites, functions}[]`），判据③真能生效。
+    //   ★ 假阳性防线（否则会把纯类型文件全报成"漏插"）：
+    //     · 只报 **`functions > 0 && sites == 0`** 的文件 —— 有函数却没探针才可疑；
+    //       纯类型/纯常量文件 `functions == 0`，本就该 0 探针 ⇒ **不报**；
+    //     · **契约模式**下"有函数但没命中声明"是**正常**的 ⇒ 整条跳过。
+    const ledgerFiles = (ledger as { files?: Array<{ file?: string; sites?: number; functions?: number }> }).files ?? [];
+    const ledgerContractMode = (ledger as { contractMode?: boolean }).contractMode === true;
+    if (!ledgerContractMode) {
+      for (const lf of ledgerFiles) {
+        const fpath = String(lf.file ?? '');
+        if (!fpath || byFile.has(fpath)) continue;
+        if ((lf.functions ?? 0) === 0) continue; // 无函数 ⇒ 0 探针正确（不报）
+        issues.push({
+          kind: 'empty-file',
+          where: fpath,
+          detail: `该文件有 ${lf.functions} 个函数，却没有任何探针点（整文件漏插？）`,
+        });
+      }
     }
     const head =
       `=== Observe 插桩体检 [${lintRoot}] ===\n` +
       `台账：${sites.length} 探针点 · ${byFn.size} 个函数 · ${byFile.size} 个文件\n` +
-      `检查：① 每函数恰一条 enter、至少一条 exit（缺=漏插；enter>1=撞名） ② 同一目录跨文件撞名 ③ 不得有"零探针文件"\n` +
+      `检查：① 每函数恰一条 enter、至少一条 exit（缺=漏插；enter>1=撞名） ② 同一目录跨文件撞名 ③ 有函数的文件不得零探针（纯类型文件不算）\n` +
       // ★★★ T299（2026-10-14，第 3 轮实测的量具边界）：**必须说清它看不见什么** ——
       //   实测 `gp1-r3v-mini`（`go build` **退 1**、编译不过）跑 lint 却报「✓ 不变量全过」。
       //   ⇒ 因为 lint 只读**探针台账**（"注入了什么"），而"注入后还能不能编译/跑"它**结构上看不见**。

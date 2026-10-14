@@ -236,8 +236,13 @@ const TEST_FILE_RE = /(_test\.go$|\.test\.[tj]sx?$|\.spec\.[tj]sx?$|test_.*\.py$
  *   本仓曾被它积压 147 个（未跟踪 + 早已 ignore ⇒ 一直没人看见）。
  *   框架整体移除后，这条规则**连同它的唯一实证来源一起消失**，故删。
  *   ★ 若将来在**别的项目**上真遇到这种产物，**那一次再加**（有实据再加，不预留）。
+ *
+ * ★ 2026-10-15（T302）：声明产物那一支由 `\.d\.ts$` 扩成 `\.d\.[cm]?ts$` ——
+ *   `.mts` / `.cts` 同属 TS/JS 家族（在 `TS_JS_EXTS` 里），它们编译出的声明是
+ *   `.d.mts` / `.d.cts`（**不是** `.d.ts`）⇒ 只认 `.d.ts` 会让 observe 插桩把
+ *   **声明产物**当成源码去插（本函数正是"不该算进源码"的判据）。
  */
-const NOISE_FILE_RE = /(\.min\.js$|\.d\.ts$|\.gen\.[tj]sx?$|\.tmp$|\.temp$|\.crswap$|\.crdownload$|\.swp$|\.swo$|\.swx$|\.bak$|\.orig$|\.rej$|~$)/;
+const NOISE_FILE_RE = /(\.min\.js$|\.d\.[cm]?ts$|\.gen\.[tj]sx?$|\.tmp$|\.temp$|\.crswap$|\.crdownload$|\.swp$|\.swo$|\.swx$|\.bak$|\.orig$|\.rej$|~$)/;
 
 /** 这条文件名是测试吗（★ 与索引器的 `include_tests` 判据同源） */
 export function isTestFileName(name: string): boolean {

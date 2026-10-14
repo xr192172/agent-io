@@ -42,6 +42,7 @@ import {
   clearProbeLedger,
   collectTsFiles,
   instrumentProject,
+  isInstrumentableTsJsFile,
   ledgerSummary,
   restoreInstrumented,
   saveProbeLedger,
@@ -235,13 +236,6 @@ export function renderUninstrumentReport(rep: ObserveUninstrumentReport): string
   );
 }
 
-const TS_EXT = new Set(['.ts', '.tsx', '.mts', '.cts', '.js', '.mjs', '.cjs', '.jsx']);
-
-function extOf(rel: string): string {
-  const i = rel.lastIndexOf('.');
-  return i < 0 ? '' : rel.slice(i).toLowerCase();
-}
-
 // ─────────────────────────────────────────────────────────────
 // 两个包
 // ─────────────────────────────────────────────────────────────
@@ -250,7 +244,11 @@ function extOf(rel: string): string {
 export const tsJsObservePack: ObserveLangPack = {
   lang: 'ts_js',
   label: 'TypeScript / JavaScript',
-  isSourceFile: (rel) => TS_EXT.has(extOf(rel)),
+  // ★★★ T302（2026-10-15）：**「收哪些文件」只住一处** —— 原先这里有一份 8 扩展名的 `TS_EXT`
+  //   （`observe_langs.ts`），而 `collectTsFiles` 另写死 `endsWith('.ts')` ⇒ 同一件事住两处且不一致。
+  //   ⇒ 现在两处都走 `instrument.ts` 的 `isInstrumentableTsJsFile`（其扩展名/产物判据取自
+  //     `parse/source_exts.ts` 那份「什么算源码」的唯一权威）。
+  isSourceFile: (rel) => isInstrumentableTsJsFile(rel),
   inProcess: true,
   limitations: [
     '只改 AST 可安全定位的位点；依赖运行时值的判断（如「参数是否真被读到」）插桩不到。',
@@ -278,7 +276,8 @@ export const tsJsObservePack: ObserveLangPack = {
     };
     const total = rep.files.reduce((n, f) => n + (f.error ? 0 : f.sites.length), 0);
     if (!opts.dryRun && total > 0) {
-      const ledger = buildProbeLedger(results, root);
+      // ★ T304：契约模式标记进台账 —— 判据③（零探针文件）在契约模式下跳过（避免假阳性）。
+      const ledger = buildProbeLedger(results, root, { contractMode: opts.contractProbes !== undefined });
       rep.ledger = { file: saveProbeLedger(root, ledger), summary: ledgerSummary(ledger), raw: ledger };
     }
     return rep;
@@ -347,7 +346,7 @@ export const goObservePack: ObserveLangPack = {
           injected: '',
         })),
       }));
-      const ledger = buildProbeLedger(asFiles, root);
+      const ledger = buildProbeLedger(asFiles, root, { contractMode: opts.contractProbes !== undefined });
       if (ledger.sites.length > 0) {
         rep.ledger = { file: saveProbeLedger(root, ledger), summary: ledgerSummary(ledger), raw: ledger };
       }
