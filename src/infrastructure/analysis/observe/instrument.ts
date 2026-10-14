@@ -358,6 +358,16 @@ function relativeProbeImport(file: string, projectRoot: string): string {
 }
 
 /** 从文件路径向上找含 `<PROBE_DIR_REL>/probe.ts` 的项目根；找不到退回文件所在目录 */
+/**
+ * 从被插桩文件**向上**找本仓根（路标：`<root>/src/infrastructure/analysis/observe/probe.ts`）。
+ *
+ * ★★★ T265（2026-10-14）：**找不到路标时改为【响亮抛】，不再静默退回文件目录。**
+ *   实测病（不传 `project_root` 时）：找不到本仓 ⇒ 旧写法 `return path.dirname(file)`
+ *   ⇒ 生成的 import 变成 `./dist/src/…/probe.js`（指进**被测项目自己**）⇒
+ *   `tsc: error TS2307 Cannot find module` / 运行 `ERR_MODULE_NOT_FOUND`
+ *   ⇒ ★ **缺一个参数却静默产出一份跑不起来的代码**，正是本仓最反对的形态。
+ *   ⇒ 现在：抛错并告诉调用方"**该显式传 `project_root`**"（宁可停下，不插坏用户源码）。
+ */
 function inferProjectRoot(file: string): string {
   let dir = path.dirname(file);
   for (let i = 0; i < 8; i++) {
@@ -366,7 +376,12 @@ function inferProjectRoot(file: string): string {
     if (parent === dir) break;
     dir = parent;
   }
-  return path.dirname(file);
+  throw new Error(
+    `推断不出 agent-io 仓库根：从 ${file} 向上 8 层都没找到路标 ` +
+      `\`${PROBE_DIR_REL}/probe.ts\` ⇒ 无法算出探针模块（probe.js）的位置。\n` +
+      `★ 请**显式传** \`project_root\`（= agent-io 仓库根，即含 package.json 与 src/ 的那个目录）。\n` +
+      `★ 这里【故意不兜底】：兜底会生成一个指进被测项目自己的 import，表面成功、实际跑不起来。`,
+  );
 }
 
 /** 从文件内容推导当前函数/方法名（用于探针 probe 命名，取最近一级函数定义） */

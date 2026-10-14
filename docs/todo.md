@@ -2561,15 +2561,6 @@
       ⇒ ⇒ 于是 `cpf_5`（「DSL 是 scaffold/edit_code/consistency_check/rename 的输入」）**表达不了**。
       ⇒ **要做（先裁）**：这是 edge 类的**固有盲区** ⇒ 至少写进形状描述；或新增「类型引用」形状。
 
-- [ ] **T265 ★★★ 【默认参数是坏的】`observe_instrument` 不传 `project_root` 时，注入的 import 指向【被测项目自己】⇒ 直接跑不起来**
-      *(来源：2026-10-14 子代理在仓外 TS 项目上实测；★ 主代理未复现（时间），读数采信其原文。)*
-      ⇒ **实测**：不传 `project_root` ⇒ `inferProjectRoot` 向上找不到 `probe.ts` ⇒ 退回文件目录
-        ⇒ import 变成 **`./dist/src/infrastructure/analysis/observe/probe.js`**（指进**被测项目自己的** `src/dist/…`）
-        ⇒ `tsc`：`error TS2307: Cannot find module './dist/src/…/probe.js'`；运行：`ERR_MODULE_NOT_FOUND`。
-      ⇒ ★ 传 `project_root=<本仓>` 才对（import 变相对路径 `../../../design-canvas/dist/…/probe.js`）。
-      ⇒ ★★ **判据**：这个参数**不该是"记得传才对"** —— 要么**默认推断可靠**，要么**不传就响亮报错**
-        （"缺参数却静默生成一个坏 import" 正是本仓最反对的形态）。
-
 - [ ] **T266 ★★★ 【默认零观测】`captureProbe` 无 sink 时是 **no-op** ⇒ 插了桩但**一条事件都不出**，而工具不说**
       *(来源：2026-10-14 子代理实测；★ 接线后确实产出 10 条事件，参数/返回值都对。)*
       ⇒ **实测**：插桩后直接跑 ⇒ **零事件**（`probe.js` 无 sink 时 no-op）；
