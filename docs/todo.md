@@ -2654,3 +2654,77 @@
       ⇒ **教训（比这条账本身更值钱）**：**回执与 grep 都是间接证据，日志才是直接证据**。
         我前面三次都是"看回执说失败 → grep 发现改了 → 认定工具撒谎"，**却没去加一行日志**。
         ★ 这正是本仓"先取证再下结论"的纪律 —— 而这次我**在记账时也犯了**（把推测写成了"现象确凿"）。
+
+- [ ] **T289 ★★★★ 【P0·打断宿主编译】Go：末语句是 `panic(...)` ⇒ 兜底 exit 探针插在它【之后】⇒ `missing return`**
+      *(来源：2026-10-14 Go 侧补测（子代理）+ 主代理亲自复跑 `go build`；★ 读数原文。)*
+      ⇒ **实测**（夹具 `gp1-go2-mini`，插桩后 `go build ./...` 退 1）：
+        ```go
+        func boom() int {
+            camprobe.Capture("main.boom.enter", …);
+            panic("unhandled")
+            camprobe.Capture("main.boom.exit", …);   // ← 插在 panic 之后
+        }
+        ```
+        ⇒ `main.go:18:1: missing return`。
+      ⇒ **根因**：`terminatesFunction`（`observe-lang-go/internal/instrument/instrument.go:346`）**不认 `panic`**；
+        而 `cleanupTrailingProbes` 判"前一语句是 ExprStmt"也不删 ⇒ 探针留在 `panic` 后。
+      ⇒ **要做**：`terminatesFunction` 认 `panic(...)`（它同样不返回）；或在 `cleanupTrailingProbes` 里兜底删。
+      ⇒ **判据**：`func f() int { panic("x") }` 插桩后 **`go build` 退 0**。
+
+- [ ] **T290 ★★★★ 【P0·打断宿主编译】Go：末语句是【带标签的 return】（`R: return 42`）⇒ 兜底探针插在标签后 ⇒ `missing return`**
+      *(来源：2026-10-14 Go 侧补测。)*
+      ⇒ **实测**：`R:` + `return 42` ⇒ 注入成 `R:` / `return 42` / `camprobe.Capture(…exit…)`
+        ⇒ `main.go:26:1: missing return`。
+      ⇒ **根因**：`walkStmts`（同文件 `:536`）**没有 `case *ast.LabeledStmt`** ⇒ 标签里的 `return` 拿不到 exit；
+        而末尾兜底探针又插在整条语句**之后** ⇒ 落在 `return` 后面 ⇒ 不可达 ⇒ `missing return`。
+      ⇒ **要做**：`walkStmts` 认 `LabeledStmt`（递归其 `Stmt`）。
+      ⇒ **判据**：`R: return 42` 插桩后 `go build` 退 0。
+
+- [ ] **T291 ★★★★ 【P0·打断宿主编译】Go：末语句是 `if/else if/else` 链且各分支都 return ⇒ 兜底探针插在整条链后 ⇒ `missing return`**
+      *(来源：2026-10-14 Go 侧补测。)*
+      ⇒ **实测**：`if a { return 1 } else if b { return -1 } else { return 0 }`
+        ⇒ `main.go:49:1: missing return`。
+      ⇒ **根因**：`terminatesFunction`（`:357`）只认 `else` 是 `BlockStmt`，**认不出 `else if`**。
+      ⇒ ★ 与 **T292（P1-1）同根因** ⇒ **一起修**。
+      ⇒ **判据**：该形态插桩后 `go build` 退 0。
+
+- [ ] **T292 ★★★ 【P1·静默漏插】Go：`else if` / 末尾 `else` 分支里的 `return`【拿不到 exit 探针】**
+      *(来源：2026-10-14 Go 侧补测；★ 不打断编译，但**运行期可见的缺失**。)*
+      ⇒ **实测**（可编译变体）：
+        ```
+        main.elseIfPartial.enter {"args":{"n":5}}
+        main.elseIfPartial.exit  {"ret":{"0":1}}     ← n>0 有 exit
+        main.elseIfPartial.enter {"args":{"n":-5}}   ← n<0 **只有 enter，没有 exit**
+        ```
+      ⇒ **根因**：`walkStmts` 的 `IfStmt` 分支只递归 `s.Body` 与 **BlockStmt 形态的** `Else`
+        ⇒ `else if`（Else 是 `IfStmt`）整支被跳过。★ 与 T291 同根因。
+      ⇒ **判据**：`else if` / 末尾 `else` 里的 `return` **必须**有对应 exit 事件。
+
+- [ ] **T293 ★★★ 【P1·静默漏插】Go：末语句是 `for`/`range`/`switch`/`select`（可自然落出）且函数【无命名返回值】⇒ 兜底 exit 被跳过**
+      *(来源：2026-10-14 Go 侧补测。)*
+      ⇒ **实测**：`main.loopOnly` / `rangeOnly` / `switchOnly` / `selectOnly` **四个函数全部只有 enter、没有 exit**
+        （对照 `main.normal` = enter 2 / exit 2）。
+      ⇒ **根因**：`terminatesFunction` 对这几类语句**无条件返回 true**（认为"不会自然落出"）⇒ 跳过兜底 exit
+        ⇒ ★ 但它们**完全可以自然落出**（`for` 不满足条件、`switch` 无匹配分支…）。
+      ⇒ **判据**：这四个形态**必须有 exit**（哪怕函数末尾没有 `return`）。
+
+- [ ] **T294 ★★★★ 【P2·量具空转】`action=lint` 在 Go 侧【恒为"未找到台账"】—— 今天新加的量具在 Go 上抓不到任何东西**
+      *(来源：2026-10-14 Go 侧补测；★ 讽刺点：`lint` 正是为抓"结构类"（漏插/撞名）而做，而 Go 侧恰好有 T292/T293 两类漏插。)*
+      ⇒ **实测**：刚插完 70 探针点，`lint` 回「未找到台账（可能从未插桩，或已一键全拔清理）」。
+      ⇒ **根因**：`goObservePack.instrument`（`observe_langs.ts:303`）**不填 `ledger`** ⇒ Go **从不写**
+        `.agent-io/observe-ledger.json` ⇒ 台账只对 TS/JS 生效。
+      ⇒ **要做**：Go 侧也产出探针台账（Go CLI 已经报 `sites`，只是没落成 ledger 文件）⇒ 让 `lint` 在 Go 上可用。
+      ⇒ **判据**：Go 插桩后 `action=ledger` 能列出探针点；`action=lint` 能在 Go 侧报出 T292/T293 的漏插。
+
+- [ ] **T295 ★★ 【观测歧义】Go：同包多个 `init()` 探针名相撞**
+      *(来源：2026-10-14 Go 侧补测。)*
+      ⇒ **实测**：两个 `init()` 都叫 `main.init.enter/exit` ⇒ 事件 `enter×1 / exit×2`，
+        两条 exit 只能靠 `fields.file` 区分（`aaa_sink.go` vs `main.go`）。
+      ⇒ ★ 而 `lint` 按「文件 + 基名」聚合 ⇒ **跨文件同名不报**（它抓不到这一格）。
+      ⇒ **要做（先裁）**：`init()` 是否要带文件名区分（如 `main.init@aaa_sink`）；以及 `lint` 是否要加"跨文件同名"判据。
+
+- [ ] **T296 ★★ 【还原残留】Go：`uninstrument` 后留【空目录】`internal/` 与 `.agent-io/`**
+      *(来源：2026-10-14 Go 侧补测；★ 与 T285 同族，但这次实测三套夹具全中，且多了 `.agent-io/`。)*
+      ⇒ **实测**：`unvendorGoProbe` 只删 `internal/camprobe`，不删父目录 ⇒ 三套夹具还原后都留空 `internal/`；
+        `.agent-io/` 亦留空目录。
+      ⇒ **要做**：删探针包时，**若父目录是空的且是我们建的** ⇒ 一并删（`.agent-io/` 同理）。
