@@ -2784,3 +2784,26 @@
         而 **Go 侧台账没有 `functions`** ⇒ 判据③ 对 Go **永不触发**（**无假阳性，但也无信号**）。
       ⇒ **要做（先裁）**：Go 侧 ledger 也记 `functions`（Go CLI 已经知道每个文件有几个函数），
         让判据③ **两边对称**；或**如实标注**"该判据目前只对 TS 生效"。
+
+- [x] **【已做·第 2 步】骨架「④ sink 契约 + ⑤ 错误传播」有了【可执行验收】—— `certs/observe-skeleton-cert.mjs`**
+      *(2026-10-14；★ 产出是一个 certs 脚本，4/4 通过。)*
+      ⇒ **为什么是 certs 而不是"两边各写单测"**：取证发现 **TS 侧【没有任何测试基础设施】**
+        —— 本仓 26 条 npm script 里**没有 `test`**，总门 `verify.mjs` 只有 `tsc` + `mcp_scan` 两道
+        ⇒ "两边各写单测"在 TS 侧**做不到**。⇒ 而本仓**已有范式**：`certs/*.mjs`（可执行验收脚本）✓
+      ⇒ **验什么（判据全是"事实"，不看回执）**：
+        · ④-1 **无 sink ⇒ events 文件不存在**（"探针就位 ≠ 有数据"）；
+        · ④-2 **接 sink ⇒ events 行数 > 0**；
+        · ⑤-1 **sink 不可写 ⇒ 宿主退出码 0**（探针不许抛错）；
+        · ⑤-2 **sink 不可写 ⇒ stderr 有输出**（不静默吞）。
+      ⇒ **实测：4/4 通过** ✓（`④-1 exit=0 events存在=false` · `④-2 行数=1` · `⑤-1 stdout含HOST_OK=true` · `⑤-2 stderr长度=272`）。
+      ⇒ ★★ **脚本自己第一版 4/4 全红**（如实记）：因为我在 runner 里 `import` 了一个 **Windows 绝对路径**
+        ⇒ ESM 报 `ERR_UNSUPPORTED_ESM_URL_SCHEME`（**要用 `pathToFileURL`**）。
+        ★ 而我**没把 stderr 打出来** ⇒ 差点把它读成"产品坏了"。⇒ 现在脚本**失败时会打印诊断**（runner 的 exit + stderr 首行）。
+        ⇒ **教训**：**验收脚本自己也会坏**，所以它必须**自带诊断**（否则"脚本坏了"和"产品坏了"分不开）。
+
+- [ ] **T311 ★★ 【对称性】给 Go 侧补同一份骨架验收（④ sink 契约 + ⑤ 错误传播）**
+      *(来源：第 2 步的收尾；TS 侧已做（`certs/observe-skeleton-cert.mjs`），Go 侧还没有。)*
+      ⇒ **Go 侧的优势**：它有 `go test` 基础设施（`probe/*_test.go` 已存在）⇒ 可直接写 Go 测试，**不必借 certs**。
+      ⇒ **要验**：① `NewSink` + `SetGlobalSink` 后 `Capture` 出事件；② **无 sink ⇒ no-op（0 事件）**；
+        ③ **sink 不可写 ⇒ 宿主不崩且 `reportProbeError` 有输出**（今天刚修的 T286）。
+      ⇒ **判据**：`go test ./probe/...` 里出现这三个用例且全绿。
