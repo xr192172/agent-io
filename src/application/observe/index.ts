@@ -216,14 +216,19 @@ export const OBSERVE_TOOLS: ToolDef[] = [
     name: 'observe_instrument',
     title: 'Auto-instrument or restore a TS/Go project',
     description:
-      '对目标项目全自动插桩，按语言分派：Go 工程走 observe-lang-go 语言包（go/ast 注入 camprobe.Capture，函数出/入/return/catch/IO）；' +
-      'TS 工程走 TS AST（captureProbe）。均幂等（已含探针文件跳过）。' +
-      'action=uninstrument|restore 一键全拔（从自动备份拷回原文件、删备份目录）。' +
-      'action=ledger 只读查看探针台账（一次插桩的全部探针点 + 统计），不写盘。' +
-      'dry_run=true 只预览不写盘。写盘前自动备份，git 可兜底。' +
-      'TS 写盘后自动生成探针台账（.agent-io/observe-ledger.json），用 action=ledger 只读查看；Go 写盘后可用 action=restore 还原。' +
-      '契约模式：contract_probes 传探针 id 数组则只注入这些探针点；缺省=探索模式全量插桩。' +
-      'Go 运行前提：被测工程须能 import `github.com/xr192172/agent-io/observe-lang-go/probe`（其 go.mod 需 replace/require 指向本仓 observe-lang-go）。',
+      '对目标项目插桩（TS/Go）。★ **用前必读三条**（都是实测踩出来的）：' +
+      '① **插完 ≠ 有数据** —— 探针默认**不出事件**（无 sink 时是 no-op，且不报错）：' +
+      '   被测项目要在入口接一次 sink（回执里给了**准确**接法；scope 模式还要挂 globalThis.__probeScope）。' +
+      '② **TS 必须传 `project_root`**（= 本仓根）—— 不传会**响亮报错**（不再静默生成一个指进被测项目的坏 import）。' +
+      '③ **Go 不需要改被测工程的 go.mod** —— 探针包会被**拷进**被测工程 `internal/camprobe/`，' +
+      '   `uninstrument` 时连它一起删（被测工程零构建配置改动）。' +
+      '按语言分派：Go 走 observe-lang-go 语言包（go/ast 注入 camprobe.Capture，函数出/入/return/catch/IO）；' +
+      'TS 走 TS AST（captureProbe）。均幂等（已含探针文件跳过）。' +
+      'action：instrument=插桩（默认）| uninstrument/restore=一键全拔（从备份拷回原文件 + 删备份 + 删拷入的探针包）' +
+      '| ledger=只看探针台账（只读）| lint=**插桩体检**（只读：按台账跑结构不变量 —— 漏插 / 撞名 / 零探针文件）。' +
+      'dry_run=true 只预览不写盘（★ 也不拷探针包）。写盘前自动备份，git 可兜底。' +
+      'TS 写盘后自动生成探针台账（.agent-io/observe-ledger.json）。' +
+      '契约模式：contract_probes 传探针 id 数组则只注入这些探针点；缺省=探索模式全量插桩。',
     inputSchema: {
       action: z
         .enum(['instrument', 'uninstrument', 'restore', 'ledger', 'lint'])
