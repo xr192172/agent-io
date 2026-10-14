@@ -28,6 +28,8 @@ import { parseFileSymbols, isSupportedFile } from '../../../infrastructure/parse
 // ★ T79：调用边读取**复用现成那一处**（别在这再写一份 SQL）
 import { queryFileCalls } from '../../meta/explore/query_feature.js';
 import { type Expectation, normPath, normSignature } from '../../../domain/expectation.js';
+// ★ T257：TS/JS 家族扩展名的**唯一判据**（`infrastructure/parse/source_exts.ts`）—— 不另写一把尺
+import { TS_JS_EXTS } from '../../../infrastructure/parse/source_exts.js';
 
 export type Verdict = 'pass' | 'fail' | 'unsupported';
 
@@ -100,10 +102,22 @@ function depFactsIncomplete(root: string, relPath: string): string | null {
   }
   const pkg = raw.filter((r) => r.kind !== 'relative' && !r.type_only);
   if (pkg.length) {
-    return (
-      `该文件含 **${pkg.length} 条非相对导入**（Go/Python 的包导入等），而依赖边表按设计**只记 relative**` +
-      `（\`infrastructure/index/symbols.ts:388\`）⇒ **依赖事实不完整，判不了**（不拿"没查到"冒充"不存在"）`
-    );
+    // ★★★ T257（2026-10-14）：**TS/JS 的裸导入是【外部包】，不构成"仓内边可能漏记"** ——
+    //   本仓（以及 TS/JS 生态）的**仓内引用走 relative 说明符**，而依赖边表记的正是它
+    //   （`infrastructure/index/symbols.ts:388`）；裸导入（`node:path` / `@scope/pkg`）
+    //   **没有仓内目标** ⇒ 它**不会**让"仓内两个文件之间的边"漏记。
+    //   ★ 原实现把**任何**非相对 import 都算"事实不完整"（注释只提"Go/Python 的包导入"），
+    //     实测后果（T257）：**真实 TS 文件几乎都有包导入** ⇒ `edge-exists` / `edge-absent`
+    //     **恒 unsupported** ⇒ 6 种可判形状里有 **2 种对 TS 仓没有可用面**。
+    //   ★ 已知限度（如实声明）：若项目配了 `tsconfig.paths` 别名（`@/x` → `src/x`），裸导入
+    //     **可能**指向仓内 ⇒ 那时本判据**偏乐观**。当前本仓**未配 paths**，故不触发。
+    const isTsJs = (TS_JS_EXTS as readonly string[]).includes(path.extname(relPath).toLowerCase());
+    if (!isTsJs) {
+      return (
+        `该文件含 **${pkg.length} 条非相对导入**（Go/Python 的包导入等），而依赖边表按设计**只记 relative**` +
+        `（\`infrastructure/index/symbols.ts:388\`）⇒ **依赖事实不完整，判不了**（不拿"没查到"冒充"不存在"）`
+      );
+    }
   }
   return null;
 }

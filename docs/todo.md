@@ -420,6 +420,14 @@
         ② 或（更保守）把它降为"**该形状在 TS 上不支持**"并在描述里**写明**，别让人白写。
       ⇒ **判据**：在**有包导入的真实 TS 文件**上写一条 `edge-exists`（那条边**确实存在**）⇒ **必须 pass**（而不是 unsupported）。
       ⇒ ★ 关联：这也是"给那 21 条补 `expectations`"的前置 —— **先得知道哪些形状真能用**。
+      ⇒ ★★★ **2026-10-14 已修并验证**：`expectations.ts` 的 `depFactsIncomplete` 里加一条 ——
+        **TS/JS 家族（判据复用既有唯一来源 `TS_JS_EXTS`，`infrastructure/parse/source_exts.ts`）的裸导入
+        不算"依赖事实不完整"**（仓内引用走 relative、依赖边表记的正是它；裸导入没有仓内目标）。
+        · **实测对照**：改前 `edge-exists` = **unsupported**（子代理跑 + 主代理复核）⇒ 改后同一条 = **pass**；
+          整表读数 **`unsupported 1 → 0`**、`passed 2 → 3`（`checked 5 / passed 3 / failed 2 / unsupported 0`）✓
+          —— ★ 正合本条判据（"有包导入的真实 TS 文件上写一条确实存在的边 ⇒ 必须 pass"）。
+        · ★ **已知限度（如实写进注释）**：若项目配了 `tsconfig.paths` 别名（`@/x` → `src/x`），裸导入
+          **可能**指向仓内 ⇒ 那时本判据**偏乐观**；当前本仓**未配 paths**，故不触发。**该限度未加检测**（如实记）。
       ⇒ **代码位置（判据的唯一住处）**：`dsl_ops/node_ops.ts:225` `const decision: NodeDecision = { ...next, updated_at: now };`
         —— ★ `{ ...next }` = **用你给的字段整体替换**，不是合并。三个调用点都走它：
         `update_feature.ts:865`（`edit_dsl` 的 decision 路径）· `node_ops.ts:103`（addNode）· `node_ops.ts:293`（updateNode 的 `data.decision`）。
