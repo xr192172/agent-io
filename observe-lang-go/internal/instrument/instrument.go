@@ -384,11 +384,11 @@ func collectFuncSites(fset *token.FileSet, f *ast.File, pkg, fileRel string, ena
 		switch t := n.(type) {
 		case *ast.FuncDecl:
 			if t.Body != nil {
-				processFunction(fset, t.Name.Name, t.Type.Params, t.Body, pkg, fileRel, enableDeep, enableEffect, pkgVars, probes, sites)
+				processFunction(fset, t.Name.Name, t.Type.Params, t.Type.Results, t.Body, pkg, fileRel, enableDeep, enableEffect, pkgVars, probes, sites)
 			}
 		case *ast.FuncLit:
 			if t.Body != nil {
-				processFunction(fset, "", t.Type.Params, t.Body, pkg, fileRel, enableDeep, enableEffect, pkgVars, probes, sites)
+				processFunction(fset, "", t.Type.Params, t.Type.Results, t.Body, pkg, fileRel, enableDeep, enableEffect, pkgVars, probes, sites)
 			}
 		}
 		return true
@@ -398,7 +398,7 @@ func collectFuncSites(fset *token.FileSet, f *ast.File, pkg, fileRel string, ena
 // processFunction 处理一个函数体（FuncDecl 或 FuncLit）：入口/出口/return/IO/deep。
 // probes 非 nil（契约模式）时，每条探针注入前用 MatchProbe 精确门控——只注入
 // DSL 声明的 pkg.FuncName.suffix。
-func processFunction(fset *token.FileSet, fn string, params *ast.FieldList, body *ast.BlockStmt, pkg, fileRel string, enableDeep, enableEffect bool, pkgVars map[string]bool, probes []ContractProbe, sites *[]Site) {
+func processFunction(fset *token.FileSet, fn string, params, results *ast.FieldList, body *ast.BlockStmt, pkg, fileRel string, enableDeep, enableEffect bool, pkgVars map[string]bool, probes []ContractProbe, sites *[]Site) {
 	if fn == "" {
 		fn = "closure"
 	}
@@ -412,24 +412,55 @@ func processFunction(fset *token.FileSet, fn string, params *ast.FieldList, body
 		return fmt.Sprintf("%s.%s.%s", pkg, fn, suffix)
 	}
 
+	openOffset := offsetOf(body.Lbrace)
+	insertAt := openOffset + 1
+
 	// ── 入口（core）：在函数体 '{' 后注入参数捕获 ──
 	if MatchProbe(probeName("enter"), probes) {
-		openOffset := offsetOf(body.Lbrace)
-		insertAt := openOffset + 1
 		argsMap := paramCapture(params)
 		code := fmt.Sprintf(`camprobe.Capture(%q, "llm-design", map[string]any{"file": %q, "level": "core", "args": map[string]any{%s}});`,
 			probeName("enter"), fileRel, argsMap)
 		*sites = append(*sites, Site{Kind: ProbeEnter, Level: "core", Line: lineOf(body.Lbrace), Offset: insertAt, Code: "\n" + code})
 	}
 
+	// ── 出口（core）· 命名返回值路径（T279）──
+	//
+	// 病：命名返回值 + defer 改结果时，挂在 `return` 语句处的 exit 探针取的是
+	// **return 语句那一刻**的值；而 Go 的 defer 在 return **之后**才跑（LIFO）⇒
+	// 探针记的是"改之前"的值（例：Safe 的 caught 被 defer 改成 "boom"，探针却报 ""）。
+	//
+	// 修：利用 defer 的 LIFO —— 在**函数体第一条语句**处注册一条 exit 探针的 defer，
+	// 它天然在**所有用户 defer 之后**执行，且**覆盖所有 return 路径**（含 panic 展开），
+	// 读的是命名返回值变量**最终**的值。
+	//
+	// ★ 必须是闭包 `defer func(){...}()`：`defer f(expr)` 的**实参在注册时即求值**
+	//   （Go 规范），直接把 `map[string]any{"ret": caught}` 写在 defer 调用里会捕获
+	//   注册那一刻的空值 —— 正是本 bug 本身。闭包把读取推迟到真正执行时。
+	//
+	// 非命名返回值的函数保持原路径（在 `return` 处插），因为没有名字可在 defer 里读。
+	namedRet := namedResultNames(results)
+	useDeferExit := len(namedRet) > 0 && MatchProbe(probeName("exit"), probes)
+	if useDeferExit {
+		retParts := make([]string, len(namedRet))
+		for i, n := range namedRet {
+			retParts[i] = fmt.Sprintf("%q: %s", fmt.Sprintf("%d", i), n)
+		}
+		code := fmt.Sprintf(`defer func() { camprobe.Capture(%q, "llm-design", map[string]any{"file": %q, "level": "core", "ret": map[string]any{%s}}) }();`,
+			probeName("exit"), fileRel, strings.Join(retParts, ", "))
+		*sites = append(*sites, Site{Kind: ProbeExit, Level: "core", Line: lineOf(body.Lbrace), Offset: insertAt, Code: "\n" + code})
+	}
+
 	// 遍历函数体语句：return / IO / deep / effect 由语句级处理
-	walkStmts(fset, body.List, probeName, fileRel, enableDeep, enableEffect, pkgVars, offsetOf, lineOf, probes, sites)
+	// useDeferExit=true 时 return 处不再插 exit（否则一条出口会出两条事件）。
+	walkStmts(fset, body.List, probeName, fileRel, enableDeep, enableEffect, pkgVars, offsetOf, lineOf, probes, sites, useDeferExit)
 
 	// 函数体末尾出口探针：仅当最后一条语句不是 return 时注入（named-return 尾部自然落出等）。
 	// 若最后一条是 return，return 前已有 exit 探针捕获出口；在 return 后插任何语句
 	// （探针/调用）都会成为不可达代码，Go 编译器报 "missing return"（已实验证实）。
 	// 注入位置用最后一条语句的 End()，避免与 Rbrace 前位置冲突。
-	if MatchProbe(probeName("exit"), probes) && len(body.List) > 0 {
+	// ★ 命名返回值路径已在函数体首注册了 defer 出口探针（覆盖所有路径，含自然落出）
+	//   ⇒ 这里跳过，避免同一条出口出两条事件。
+	if !useDeferExit && MatchProbe(probeName("exit"), probes) && len(body.List) > 0 {
 		last := body.List[len(body.List)-1]
 		// 末尾是「可能不落出函数」的控制流时不插末尾探针：
 		// return（已有 return 前探针）、for/select/switch（可能无限或全分支返回）、
@@ -442,6 +473,31 @@ func processFunction(fset *token.FileSet, fn string, params *ast.FieldList, body
 			*sites = append(*sites, Site{Kind: ProbeExit, Level: "core", Line: lineOf(body.Rbrace), Offset: lastEnd, Code: "\n" + code})
 		}
 	}
+}
+
+// namedResultNames 返回函数命名返回值中**可读**的变量名（跳过空标识符 `_`）。
+// 结果列表不是「全命名」（含无名字段）、无命名返回值、或命名结果全为 `_` 时返回 nil
+// —— 这些情况无法在 defer 里按名字读取，调用方应走旧的 return 处插桩路径。
+func namedResultNames(results *ast.FieldList) []string {
+	if results == nil || len(results.List) == 0 {
+		return nil
+	}
+	var names []string
+	for _, f := range results.List {
+		if len(f.Names) == 0 {
+			return nil // 结果列表非全命名（Go 语法上要么全命名要么全无名，防御性兜底）
+		}
+		for _, n := range f.Names {
+			if n.Name == "_" {
+				continue // 空标识符不可引用
+			}
+			names = append(names, n.Name)
+		}
+	}
+	if len(names) == 0 {
+		return nil // 命名结果全为 `_`：无变量可读
+	}
+	return names
 }
 
 // paramCapture 构造入口探针的参数捕获字段（仅命名简单标识符参数，且为单个名字）。
@@ -469,12 +525,13 @@ func paramCapture(params *ast.FieldList) string {
 
 // walkStmts 递归遍历语句列表，收集 return / IO / deep / effect 探针。
 // probes 非 nil（契约模式）时，每条探针注入前用 MatchProbe 精确门控。
-func walkStmts(fset *token.FileSet, stmts []ast.Stmt, probeName func(string) string, fileRel string, enableDeep, enableEffect bool, pkgVars map[string]bool, offsetOf func(token.Pos) int, lineOf func(token.Pos) int, probes []ContractProbe, sites *[]Site) {
+// skipReturnExit=true 时不在 `return` 处插 exit（该函数已走命名返回值 defer 路径，T279）。
+func walkStmts(fset *token.FileSet, stmts []ast.Stmt, probeName func(string) string, fileRel string, enableDeep, enableEffect bool, pkgVars map[string]bool, offsetOf func(token.Pos) int, lineOf func(token.Pos) int, probes []ContractProbe, sites *[]Site, skipReturnExit bool) {
 	for _, stmt := range stmts {
 		switch s := stmt.(type) {
 		case *ast.ReturnStmt:
 			// return 出口（core）：在 return 前注入。取值捕获仅当无副作用。
-			if MatchProbe(probeName("exit"), probes) {
+			if !skipReturnExit && MatchProbe(probeName("exit"), probes) {
 				// 含 <-ch（阻塞 + 消费，二次求值死锁）→ 临时变量替换路径。
 				if tmpCode, ok := blockingReturnCapture(s, lineOf(s.Pos()), probeName("exit"), fileRel); ok {
 					*sites = append(*sites, Site{Kind: ProbeExit, Level: "core", Line: lineOf(s.Pos()), Offset: offsetOf(s.Pos()), EndOffset: offsetOf(s.End()), Code: tmpCode})
@@ -492,40 +549,40 @@ func walkStmts(fset *token.FileSet, stmts []ast.Stmt, probeName func(string) str
 				*sites = append(*sites, Site{Kind: ProbeExit, Level: "core", Line: lineOf(s.Pos()), Offset: offsetOf(s.Pos()), Code: code + "\n"})
 			}
 		case *ast.BlockStmt:
-			walkStmts(fset, s.List, probeName, fileRel, enableDeep, enableEffect, pkgVars, offsetOf, lineOf, probes, sites)
+			walkStmts(fset, s.List, probeName, fileRel, enableDeep, enableEffect, pkgVars, offsetOf, lineOf, probes, sites, skipReturnExit)
 		case *ast.IfStmt:
 			if s.Body != nil {
-				walkStmts(fset, s.Body.List, probeName, fileRel, enableDeep, enableEffect, pkgVars, offsetOf, lineOf, probes, sites)
+				walkStmts(fset, s.Body.List, probeName, fileRel, enableDeep, enableEffect, pkgVars, offsetOf, lineOf, probes, sites, skipReturnExit)
 			}
 			if s.Else != nil {
 				if el, ok := s.Else.(*ast.BlockStmt); ok {
-					walkStmts(fset, el.List, probeName, fileRel, enableDeep, enableEffect, pkgVars, offsetOf, lineOf, probes, sites)
+					walkStmts(fset, el.List, probeName, fileRel, enableDeep, enableEffect, pkgVars, offsetOf, lineOf, probes, sites, skipReturnExit)
 				}
 			}
 		case *ast.ForStmt:
 			if s.Body != nil {
-				walkStmts(fset, s.Body.List, probeName, fileRel, enableDeep, enableEffect, pkgVars, offsetOf, lineOf, probes, sites)
+				walkStmts(fset, s.Body.List, probeName, fileRel, enableDeep, enableEffect, pkgVars, offsetOf, lineOf, probes, sites, skipReturnExit)
 			}
 		case *ast.RangeStmt:
 			if s.Body != nil {
-				walkStmts(fset, s.Body.List, probeName, fileRel, enableDeep, enableEffect, pkgVars, offsetOf, lineOf, probes, sites)
+				walkStmts(fset, s.Body.List, probeName, fileRel, enableDeep, enableEffect, pkgVars, offsetOf, lineOf, probes, sites, skipReturnExit)
 			}
 		case *ast.SwitchStmt:
 			if s.Body != nil {
-				walkStmts(fset, s.Body.List, probeName, fileRel, enableDeep, enableEffect, pkgVars, offsetOf, lineOf, probes, sites)
+				walkStmts(fset, s.Body.List, probeName, fileRel, enableDeep, enableEffect, pkgVars, offsetOf, lineOf, probes, sites, skipReturnExit)
 			}
 		case *ast.TypeSwitchStmt:
 			if s.Body != nil {
-				walkStmts(fset, s.Body.List, probeName, fileRel, enableDeep, enableEffect, pkgVars, offsetOf, lineOf, probes, sites)
+				walkStmts(fset, s.Body.List, probeName, fileRel, enableDeep, enableEffect, pkgVars, offsetOf, lineOf, probes, sites, skipReturnExit)
 			}
 		case *ast.SelectStmt:
 			if s.Body != nil {
-				walkStmts(fset, s.Body.List, probeName, fileRel, enableDeep, enableEffect, pkgVars, offsetOf, lineOf, probes, sites)
+				walkStmts(fset, s.Body.List, probeName, fileRel, enableDeep, enableEffect, pkgVars, offsetOf, lineOf, probes, sites, skipReturnExit)
 			}
 		case *ast.CaseClause:
-			walkStmts(fset, s.Body, probeName, fileRel, enableDeep, enableEffect, pkgVars, offsetOf, lineOf, probes, sites)
+			walkStmts(fset, s.Body, probeName, fileRel, enableDeep, enableEffect, pkgVars, offsetOf, lineOf, probes, sites, skipReturnExit)
 		case *ast.CommClause:
-			walkStmts(fset, s.Body, probeName, fileRel, enableDeep, enableEffect, pkgVars, offsetOf, lineOf, probes, sites)
+			walkStmts(fset, s.Body, probeName, fileRel, enableDeep, enableEffect, pkgVars, offsetOf, lineOf, probes, sites, skipReturnExit)
 		case *ast.DeferStmt:
 			// defer/recover（event）：捕获 defer 调用中的错误场景（Op）
 			if MatchProbe(probeName("defer"), probes) {

@@ -402,6 +402,59 @@ func F() error {
 	}
 }
 
+// Regression T279：命名返回值 + defer 改结果时，exit 探针必须读命名返回值变量
+// **最终**的值（在所有 defer 之后），而不是 `return` 语句处的表达式。
+//
+// 病：exit 挂在 `return` 处，取的是语句里的表达式值；defer 在 return 之后才跑
+// ⇒ 探针报的是"改之前"的值（例：`defer` 把 caught 改成 "boom"，探针却报 ""）。
+//
+// 修：命名返回值函数在函数体首注册 `defer func(){ camprobe.Capture(...) }()`，
+// 借 LIFO 天然在所有用户 defer 之后执行，读变量终值；return 处不再插 exit。
+func TestNamedReturnExitUsesDefer(t *testing.T) {
+	dir := t.TempDir()
+	src := `package demo
+
+func DeferRewrite() (caught string) {
+	defer func() { caught = "boom" }()
+	return ""
+}
+
+func Plain(a, b int) int { return a + b }
+`
+	if err := os.MkdirAll(filepath.Join(dir, "svc"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	file := filepath.Join(dir, "svc", "x.go")
+	if err := os.WriteFile(file, []byte(src), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := InstrumentFile(file, Options{Write: true, BackupRoot: dir}); err != nil {
+		t.Fatal(err)
+	}
+	content := readFile(t, dir, "svc/x.go")
+
+	// 1. 命名返回值函数：exit 以「闭包 defer」形态注入，且读的是变量名
+	if !strings.Contains(content, `defer func() { camprobe.Capture("demo.DeferRewrite.exit"`) {
+		t.Fatalf("命名返回值的 exit 应以 defer 闭包形态注入:\n%s", content)
+	}
+	if !strings.Contains(content, `"0": caught`) {
+		t.Fatalf("exit 探针应读命名返回值变量 caught（而非 return 表达式）:\n%s", content)
+	}
+	// 2. 不重复：该函数只应有一条 DeferRewrite.exit（return 处不再插）
+	if n := strings.Count(content, `"demo.DeferRewrite.exit"`); n != 1 {
+		t.Fatalf("DeferRewrite.exit 应恰出现 1 次（不得重复），实得 %d:\n%s", n, content)
+	}
+	// 3. 非命名返回值函数仍走旧路径：return 处内联捕获
+	if !strings.Contains(content, `"demo.Plain.exit"`) || !strings.Contains(content, `"0": a + b`) {
+		t.Fatalf("非命名返回值应保持 return 处内联捕获（回归）:\n%s", content)
+	}
+	// 4. 生成代码必须可解析
+	fset := token.NewFileSet()
+	if _, err := parser.ParseFile(fset, file, content, parser.ParseComments); err != nil {
+		t.Fatalf("插桩产物不可解析: %v\n%s", err, content)
+	}
+}
+
 func min(a, b int) int {
 	if a < b {
 		return a
