@@ -340,33 +340,129 @@ func packageLineEnd(src string, fset *token.FileSet, f *ast.File) int {
 	return len(src)
 }
 
-// terminatesFunction 判断语句是否可能使函数不落出（return / 无限循环 / 全分支返回）。
-// 用于决定是否在函数体末尾补出口探针——在这些语句之后插任何语句都是不可达代码，
-// Go 编译器会报 "missing return"。
+// terminatesFunction 判断语句是否使控制流**不落出**其所在块（return / panic /
+// 无限循环 / 全分支返回）。用于决定是否在函数体（或块）末尾补出口探针——在这些
+// 语句之后插任何语句都是不可达代码，Go 编译器会报 "missing return"。
+//
+// ★★★ 2026-10-14（T289/T290/T291/T292/T293）修三类「判定本身不认的终止形态」：
+//   · panic(...)：内置 panic 调用同样不返回（T289，旧版不认 ⇒ 末尾探针插在 panic 之后）。
+//   · 带标签语句 LabeledStmt：标签下的 return/goto 仍是终止语句（T290，旧版不认）。
+//   · else if 链：Else 是 *ast.IfStmt（不是 BlockStmt）时也要递归判定（T291/T292）。
+//   · for/range/switch/select：旧版**无条件**当作终止 ⇒ 会**跳过**函数末尾的兜底
+//     exit 探针，使「可自然落出」的循环/分支函数**只有 enter 没有 exit**（T293）。
+//     现按 Go 规范的「终止语句」定义精确判定：range 可正常结束；for 仅 `for {}`（无条件）
+//     且体内无 break 才终止；switch/type switch/select 须含 default 且各分支均终止
+//     （含 fallthrough）才终止。
 func terminatesFunction(stmt ast.Stmt) bool {
 	switch t := stmt.(type) {
-	case *ast.ReturnStmt, *ast.ForStmt, *ast.RangeStmt, *ast.SelectStmt:
+	case *ast.ReturnStmt:
 		return true
-	case *ast.SwitchStmt, *ast.TypeSwitchStmt:
-		return true
+	case *ast.ExprStmt:
+		// panic(...) 调用是终止语句（Go 规范）。
+		return isPanicCall(t)
+	case *ast.BlockStmt:
+		if len(t.List) == 0 {
+			return false
+		}
+		return terminatesFunction(t.List[len(t.List)-1])
+	case *ast.LabeledStmt:
+		// 标签下的语句仍是终止语句时，整条带标签语句终止（Go 规范）。
+		return terminatesFunction(t.Stmt)
 	case *ast.IfStmt:
 		if t.Else == nil {
 			return false // 无 else，可能不返回
 		}
-		// else 分支：仅当是 BlockStmt 且末尾是 return 才算终止
-		eb, ok := t.Else.(*ast.BlockStmt)
-		if !ok || len(eb.List) == 0 {
+		// 两分支都须以终止语句收尾；Else 是 else if（*ast.IfStmt）时递归判定整条链。
+		return terminatesFunction(t.Body) && terminatesFunction(t.Else)
+	case *ast.ForStmt:
+		// 仅 `for {}`（无循环条件）且体内无 break 才是 Go 终止语句；
+		// 带条件的 for 可能正常结束 ⇒ 需保留兜底出口探针（T293）。
+		if t.Cond != nil {
 			return false
 		}
-		_, ebRet := eb.List[len(eb.List)-1].(*ast.ReturnStmt)
-		_, ifRet := false, false
-		if t.Body != nil && len(t.Body.List) > 0 {
-			_, ifRet = t.Body.List[len(t.Body.List)-1].(*ast.ReturnStmt)
-		}
-		return ebRet && ifRet
+		return !hasUnnestedBreak(t.Body)
+	case *ast.RangeStmt:
+		return false // range 总是可能正常结束
+	case *ast.SwitchStmt:
+		return terminatesSwitchBody(t.Body)
+	case *ast.TypeSwitchStmt:
+		return terminatesSwitchBody(t.Body)
+	case *ast.SelectStmt:
+		return terminatesSwitchBody(t.Body)
 	default:
 		return false
 	}
+}
+
+// isPanicCall 判断语句是否为内置 panic 调用（`panic(...)`）。
+func isPanicCall(s *ast.ExprStmt) bool {
+	call, ok := s.X.(*ast.CallExpr)
+	if !ok {
+		return false
+	}
+	id, ok := call.Fun.(*ast.Ident)
+	return ok && id.Name == "panic"
+}
+
+// hasUnnestedBreak 判断块内是否存在**不属于内层可 break 语句**的 break。
+// 用于判定 `for {}` 是否真的是终止语句（有 break 跳出即非终止）。
+func hasUnnestedBreak(body *ast.BlockStmt) bool {
+	if body == nil {
+		return false
+	}
+	found := false
+	ast.Inspect(body, func(n ast.Node) bool {
+		if found {
+			return false
+		}
+		switch t := n.(type) {
+		case *ast.ForStmt, *ast.RangeStmt, *ast.SwitchStmt, *ast.TypeSwitchStmt, *ast.SelectStmt:
+			return false // 内层可 break 语句：其 break 属于内层，不下钻
+		case *ast.BranchStmt:
+			if t.Tok == token.BREAK {
+				found = true
+			}
+			return false
+		}
+		return true
+	})
+	return found
+}
+
+// terminatesSwitchBody 判断 switch / type switch / select 体是否整体终止：
+// 须含 default 分支，且每个分支体都以终止语句（或 fallthrough）收尾。
+func terminatesSwitchBody(body *ast.BlockStmt) bool {
+	if body == nil || len(body.List) == 0 {
+		return false
+	}
+	hasDefault := false
+	for _, c := range body.List {
+		var list []ast.Stmt
+		switch cc := c.(type) {
+		case *ast.CaseClause:
+			if cc.List == nil {
+				hasDefault = true
+			}
+			list = cc.Body
+		case *ast.CommClause:
+			if cc.Comm == nil {
+				hasDefault = true
+			}
+			list = cc.Body
+		default:
+			return false
+		}
+		if len(list) == 0 {
+			return false
+		}
+		if bs, ok := list[len(list)-1].(*ast.BranchStmt); ok && bs.Tok == token.FALLTHROUGH {
+			continue // fallthrough 计入终止（Go 规范）
+		}
+		if !terminatesFunction(list[len(list)-1]) {
+			return false
+		}
+	}
+	return hasDefault
 }
 
 // sortSites 按 Offset 降序排列（注入时从文件末尾往前）。
@@ -557,13 +653,29 @@ func walkStmts(fset *token.FileSet, stmts []ast.Stmt, probeName func(string) str
 			}
 		case *ast.BlockStmt:
 			walkStmts(fset, s.List, probeName, fileRel, enableDeep, enableEffect, pkgVars, offsetOf, lineOf, probes, sites, skipReturnExit)
+		case *ast.LabeledStmt:
+			// 带标签语句：递归其内部语句。
+			// ★ T290：旧版无此 case ⇒ `R: return 42` 里的 return 拿不到 exit 探针，
+			//   而末尾兜底探针又插在整条标签语句之后 ⇒ `missing return`。
+			walkStmts(fset, []ast.Stmt{s.Stmt}, probeName, fileRel, enableDeep, enableEffect, pkgVars, offsetOf, lineOf, probes, sites, skipReturnExit)
 		case *ast.IfStmt:
-			if s.Body != nil {
-				walkStmts(fset, s.Body.List, probeName, fileRel, enableDeep, enableEffect, pkgVars, offsetOf, lineOf, probes, sites, skipReturnExit)
-			}
-			if s.Else != nil {
-				if el, ok := s.Else.(*ast.BlockStmt); ok {
+			// 遍历 if / else if / else 链的各分支体：分支内的 return 都要拿到 exit 探针。
+			// ★ T291/T292：旧版只递归 s.Body 与「BlockStmt 形态的」Else ⇒ else if 分支里的
+			//   return 拿不到 exit（实测 elseIfPartial 的 n<0 分支只有 enter、没有 exit）。
+			// 仅对**分支体内的语句列表**调 walkStmts（与既有形态一致），不对内层 if 语句本身
+			// 做语句级 IO/deep/effect 处理（那由最外层 if 的语句级扫描覆盖）。
+			for cur := s; cur != nil; {
+				if cur.Body != nil {
+					walkStmts(fset, cur.Body.List, probeName, fileRel, enableDeep, enableEffect, pkgVars, offsetOf, lineOf, probes, sites, skipReturnExit)
+				}
+				switch el := cur.Else.(type) {
+				case *ast.BlockStmt:
 					walkStmts(fset, el.List, probeName, fileRel, enableDeep, enableEffect, pkgVars, offsetOf, lineOf, probes, sites, skipReturnExit)
+					cur = nil
+				case *ast.IfStmt:
+					cur = el
+				default:
+					cur = nil
 				}
 			}
 		case *ast.ForStmt:

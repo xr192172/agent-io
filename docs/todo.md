@@ -2655,59 +2655,6 @@
         我前面三次都是"看回执说失败 → grep 发现改了 → 认定工具撒谎"，**却没去加一行日志**。
         ★ 这正是本仓"先取证再下结论"的纪律 —— 而这次我**在记账时也犯了**（把推测写成了"现象确凿"）。
 
-- [ ] **T289 ★★★★ 【P0·打断宿主编译】Go：末语句是 `panic(...)` ⇒ 兜底 exit 探针插在它【之后】⇒ `missing return`**
-      *(来源：2026-10-14 Go 侧补测（子代理）+ 主代理亲自复跑 `go build`；★ 读数原文。)*
-      ⇒ **实测**（夹具 `gp1-go2-mini`，插桩后 `go build ./...` 退 1）：
-        ```go
-        func boom() int {
-            camprobe.Capture("main.boom.enter", …);
-            panic("unhandled")
-            camprobe.Capture("main.boom.exit", …);   // ← 插在 panic 之后
-        }
-        ```
-        ⇒ `main.go:18:1: missing return`。
-      ⇒ **根因**：`terminatesFunction`（`observe-lang-go/internal/instrument/instrument.go:346`）**不认 `panic`**；
-        而 `cleanupTrailingProbes` 判"前一语句是 ExprStmt"也不删 ⇒ 探针留在 `panic` 后。
-      ⇒ **要做**：`terminatesFunction` 认 `panic(...)`（它同样不返回）；或在 `cleanupTrailingProbes` 里兜底删。
-      ⇒ **判据**：`func f() int { panic("x") }` 插桩后 **`go build` 退 0**。
-
-- [ ] **T290 ★★★★ 【P0·打断宿主编译】Go：末语句是【带标签的 return】（`R: return 42`）⇒ 兜底探针插在标签后 ⇒ `missing return`**
-      *(来源：2026-10-14 Go 侧补测。)*
-      ⇒ **实测**：`R:` + `return 42` ⇒ 注入成 `R:` / `return 42` / `camprobe.Capture(…exit…)`
-        ⇒ `main.go:26:1: missing return`。
-      ⇒ **根因**：`walkStmts`（同文件 `:536`）**没有 `case *ast.LabeledStmt`** ⇒ 标签里的 `return` 拿不到 exit；
-        而末尾兜底探针又插在整条语句**之后** ⇒ 落在 `return` 后面 ⇒ 不可达 ⇒ `missing return`。
-      ⇒ **要做**：`walkStmts` 认 `LabeledStmt`（递归其 `Stmt`）。
-      ⇒ **判据**：`R: return 42` 插桩后 `go build` 退 0。
-
-- [ ] **T291 ★★★★ 【P0·打断宿主编译】Go：末语句是 `if/else if/else` 链且各分支都 return ⇒ 兜底探针插在整条链后 ⇒ `missing return`**
-      *(来源：2026-10-14 Go 侧补测。)*
-      ⇒ **实测**：`if a { return 1 } else if b { return -1 } else { return 0 }`
-        ⇒ `main.go:49:1: missing return`。
-      ⇒ **根因**：`terminatesFunction`（`:357`）只认 `else` 是 `BlockStmt`，**认不出 `else if`**。
-      ⇒ ★ 与 **T292（P1-1）同根因** ⇒ **一起修**。
-      ⇒ **判据**：该形态插桩后 `go build` 退 0。
-
-- [ ] **T292 ★★★ 【P1·静默漏插】Go：`else if` / 末尾 `else` 分支里的 `return`【拿不到 exit 探针】**
-      *(来源：2026-10-14 Go 侧补测；★ 不打断编译，但**运行期可见的缺失**。)*
-      ⇒ **实测**（可编译变体）：
-        ```
-        main.elseIfPartial.enter {"args":{"n":5}}
-        main.elseIfPartial.exit  {"ret":{"0":1}}     ← n>0 有 exit
-        main.elseIfPartial.enter {"args":{"n":-5}}   ← n<0 **只有 enter，没有 exit**
-        ```
-      ⇒ **根因**：`walkStmts` 的 `IfStmt` 分支只递归 `s.Body` 与 **BlockStmt 形态的** `Else`
-        ⇒ `else if`（Else 是 `IfStmt`）整支被跳过。★ 与 T291 同根因。
-      ⇒ **判据**：`else if` / 末尾 `else` 里的 `return` **必须**有对应 exit 事件。
-
-- [ ] **T293 ★★★ 【P1·静默漏插】Go：末语句是 `for`/`range`/`switch`/`select`（可自然落出）且函数【无命名返回值】⇒ 兜底 exit 被跳过**
-      *(来源：2026-10-14 Go 侧补测。)*
-      ⇒ **实测**：`main.loopOnly` / `rangeOnly` / `switchOnly` / `selectOnly` **四个函数全部只有 enter、没有 exit**
-        （对照 `main.normal` = enter 2 / exit 2）。
-      ⇒ **根因**：`terminatesFunction` 对这几类语句**无条件返回 true**（认为"不会自然落出"）⇒ 跳过兜底 exit
-        ⇒ ★ 但它们**完全可以自然落出**（`for` 不满足条件、`switch` 无匹配分支…）。
-      ⇒ **判据**：这四个形态**必须有 exit**（哪怕函数末尾没有 `return`）。
-
 - [ ] **T294 ★★★★ 【P2·量具空转】`action=lint` 在 Go 侧【恒为"未找到台账"】—— 今天新加的量具在 Go 上抓不到任何东西**
       *(来源：2026-10-14 Go 侧补测；★ 讽刺点：`lint` 正是为抓"结构类"（漏插/撞名）而做，而 Go 侧恰好有 T292/T293 两类漏插。)*
       ⇒ **实测**：刚插完 70 探针点，`lint` 回「未找到台账（可能从未插桩，或已一键全拔清理）」。
@@ -2753,3 +2700,23 @@
       *(2026-10-14 收尾更新；对应 T289–T297。)*
       ⇒ 另附一条**环境提醒**（与工具无关）：Git Bash 里 `cd D:/project_develop/...` **偶发** "No such file or directory"，
         改用 `/d/project_develop/...` 即正常 ⇒ 复现时优先用 `/d/` 形式。
+
+- [x] **【已做】Go 侧 3 条 P0（打断编译）+ 2 条 P1（静默漏插）一次结清 —— T289 / T290 / T291 / T292 / T293**
+      *(2026-10-14 子代理修 + 主代理核验；★ 全程用本仓 `edit_code`，改动面只有 2 个文件。)*
+      ⇒ **改了什么**（`observe-lang-go/internal/instrument/instrument.go`）：
+        · **`terminatesFunction` 重写**（:356）+ 新 helper `isPanicCall`(:398) / `hasUnnestedBreak`(:409) / `terminatesSwitchBody`(:434)
+          ⇒ 认 `panic(...)`（T289）· 认 `else if` 链（T291）· 不再对 `for`/`range`/`switch`/`select` 无条件返回 true（T293）；
+        · **`walkStmts`**：新增 `case *ast.LabeledStmt`(:656)（T290）· `IfStmt` 分支改为遍历整条 if/else if/else 链(:662)（T292）。
+        · 新增单测 `terminates_test.go`（13 子用例）。
+      ⇒ **前后对照（真实复跑，非预测）**：用 `git show HEAD:…` 还原一份**隔离的旧语言包副本**跑同一夹具 ——
+        前：`go build` **退 1**（`funcs.go:14/27/41: missing return` 三处）；后：**退 0**。
+      ⇒ **函数级 enter/exit（前 → 后）**：`Boom` enter1/exit1(错位) → enter1/**exit0** ·
+        `IfElseChain` enter1/exit2 → enter1/**exit3** · `ElseIfPartial` enter1/exit2(else if 无 exit) → enter1/**exit3** ·
+        `LoopOnly`/`RangeOnly`/`SwitchOnly`/`SelectOnly` 各**只有 enter** → 各 **enter+exit**；
+        不回归：`Plain`/`Two`/`DeferRewrite`/`ForRet` 均 enter+exit 且 `ret` 正确。
+      ⇒ **运行时事件**（run 夹具 32 事件）：`elseIfPartial.exit ret={"0":-1}` · `labeled.exit ret={"0":42}` ·
+        `boom` 有 enter 无 exit（panic，正确）· `deferRewrite.exit ret={"0":"boom"}`（命名返回值 + defer 终值）。
+      ⇒ **反例**：同一夹具仅注释掉 `SetGlobalSink` 重建再跑 ⇒ **0 事件**（对照 32 事件）⇒ 读数非恒真。
+      ⇒ **还原**：`go.mod` sha256 **一字未改** · `internal/camprobe/` 已删 · `go build` 退 0 · `funcs.go` 恢复无 camprobe import。
+      ⇒ **语言包自测**：`go build ./...` OK · `go test ./...` 全绿（新增 `TestTerminatesFunction` 13 子用例 + `TestInstrumentTerminalFormsCompile`）。
+      ⇒ ★ **仍未修（另立账）**：**T294**（`lint` 在 Go 侧无台账 ⇒ 量具空转）· **T295/T297**（探针名空间缺"接收者/文件"维度 ⇒ 撞名）· **T296**（还原留空目录）。
