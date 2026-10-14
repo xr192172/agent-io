@@ -388,6 +388,42 @@
           对拍读数 **`checked 2→3 · passed 0→1`**，新加那条 `pass`；撤掉后回到 `2/0/2` ✓
         · ⇒ ★★ **"决策卡带可判定验收"这条主路现在从【两个入口】都走得通了**（`decision` op 与 `node` op）。
       ⇒ **剩余**：② 冲突的显式读数（待裁）；③ 给那 21 条补 `expectations`（★ 这才是让它们"有当代意义"的一步）。
+      ⇒ ★★★ **2026-10-14 ③ 已完成（子代理逐条判、主代理复核读数）**：
+        · **补了 5 卡 / 6 项，全部 pass**（每条都**先核过目标真实存在**）：
+          `arc_1 → symbol-exists server_registry.ts::registerAllTools` ·
+          `arc_8 → edge-absent ×2（domain⇸infrastructure、infrastructure⇸application）` ·
+          `tcc_3 → call-exists deriveAlgorithm() → withTouched()` ·
+          `die_1 → symbol-exists storage_overlay.ts::saveOverlay` ·
+          `cpf_3 → call-exists gen_cognition.mjs 的 computeSections() → digestBody()`。
+        · **读数**：`checked 5 → 11` · `passed 3 → 9` · `failed 2`（既有真差异，未动）· `unsupported 0`。
+        · ★★ **反例（证明非恒真）**：把 `saveOverlay` 改成不存在的符号 ⇒ 该条**变 fail**
+          （`passed 9→8 · failed 2→3`），改回即恢复 ✓
+        · ★★★ **16 卡标注 `no-expectation: <理由>`**（**不硬塞假项** —— 判据是"硬塞的典型是永远绿的假项"）：
+          主因是 **T258**（判定器只认 `function|method`）与"6 种形状读不了 package.json / git 时序 / 通用纪律"。
+        · ★ 每条补的都**只覆盖一部分**，已在 `why` 里如实写明（例：`arc_1` 只覆盖"唯一出口存在"，
+          "与基线逐字相同"那一半**今天无门**——纲领 §5-G1 自己记的缺口）。
+        · ★ 两条既有 `fail`（`tool_faces.ts` 的 `facesOf`/`renderFaces`）经读码确认是**代码真没做到**
+          （T82 未落地，`tool_faces.ts:68/116` 仍带 `directNames`），**不是断言写错** ⇒ 未动。
+
+- [ ] **T258 ★★★ 判定器只认 `function|method` 符号 ⇒ const / type / interface / 字段类断言【结构上无法表达】**
+      *(来源：2026-10-14 给 21 条补验收时实测；★ 主代理已读实现复核。)*
+      ⇒ **实测**（`application/design/intent/expectations.ts:162-164`）：
+        ```ts
+        const hit = syms.find((s) => (s.kind === 'function' || s.kind === 'method') && (s.name === e.symbol || …));
+        ```
+        ⇒ ★ 而 `parseFileSymbols` 把 `const`/`arrow const` 判成 `const`/`type`，`interface`/`type` 判成 `interface`/`type`
+        ⇒ **`symbol-exists` / `signature-matches` 对 const、类型、接口、接口字段一律取不到**
+        （★ 判 **fail** 而不是 unsupported —— 那会把"能力边界"读成"代码没做到"，**是假红**）。
+      ⇒ **实测后果（本轮 16 张判不了的卡里，至少 4 张死于此）**：
+        `arc_6`（`IMPORT_EXTS`/`SOURCE_EXTS` 都是 const）· `tcc_6`（`written_files` 是**接口字段**）·
+        `tcc_9`（`SemanticFile`/`path` 是 type/字段）· `tcc_3` 的"类型本体"那一半。
+      ⇒ **要做（先裁）**：① 扩判定器**认全部符号 kind**（并让 `symbol-exists` 的 `why` 说明"你要的是哪种 kind"）；
+        ② 或**新增形状**（如 `const-exists` / `type-exists` / `member-exists`）；
+        ③ 或**降级为 unsupported 而不是 fail**（★ 至少别把"表达不了"报成"代码没做到"）。
+      ⇒ **判据**：写一条 `symbol-exists` 指向一个**确实存在的 `const`/`interface`** ⇒ **必须 pass**
+        （今天必 fail ⇒ 假红）。
+      ⇒ ★ 关联：这与 T257 是**同一族**（"形状的能力边界"），但方向相反 ——
+        T257 是**假 unsupported**（本该判却判不了），本条是**假 fail**（表达不了却报"没有"）。
       ⇒ ★★★ **2026-10-14 闭环 B 实测（"项目文档 → 决策卡 → 对拍"，由子代理真跑、主代理核验读数）**：
         · **挑的 3 条**（都来自 `docs/architecture-refactor-plan.md` §1）：I1 对外契约不变 → `symbol-exists
           server_registry.ts::registerAllTools` · I3 全量回归 → `file-exists scripts/verify.mjs` ·
