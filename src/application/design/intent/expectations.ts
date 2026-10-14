@@ -159,11 +159,18 @@ export async function judgeExpectations(
         //   而用 fileFacts 的初版仍报"✅ 有 mul" ⇒ **拿索引冒充代码**。
         const content = fs.readFileSync(abs, 'utf-8');
         const syms = await parseFileSymbols(p, content);
-        const hit = syms.find(
-          (s) => (s.kind === 'function' || s.kind === 'method') && (s.name === e.symbol || s.qualified_name === e.symbol),
-        );
+        // ★★★ T258（2026-10-14）：**这里原先按 kind 过滤，只认 `function | method`** ——
+        //   实测后果：`const` / `type` / `interface` / 接口字段类断言**结构上无法表达**
+        //   （`parseFileSymbols` 把 `const`/`arrow const` 判成 `const`/`type`，`interface`/`type` 判成
+        //   `interface`/`type`）⇒ 取不到 ⇒ 判 **fail**。
+        //   ★★ 那是**假红**：把"**我表达不了**"读成"**代码里没有**" —— 比 unsupported 更坏
+        //   （unsupported 至少诚实；假红会让人去改没坏的东西）。实测至少 4 张决策卡死于此
+        //   （`arc_6` 的 const / `tcc_6` 的接口字段 / `tcc_9` 的 type / `tcc_3` 的类型本体）。
+        //   ⇒ 现在**不按 kind 过滤**：问的是"**这个符号在不在**"，就不该替调用方挑 kind。
+        const hit = syms.find((s) => s.name === e.symbol || s.qualified_name === e.symbol);
         if (!hit) {
-          const names = syms.filter((s) => s.kind === 'function' || s.kind === 'method').map((s) => s.name);
+          // ★ 提示也**不再过滤** —— 否则"现取到 N 个"会漏报 const/type，把读者引向错的方向。
+          const names = syms.map((s) => s.name);
           push(
             it,
             'fail',
