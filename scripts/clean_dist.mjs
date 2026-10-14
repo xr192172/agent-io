@@ -41,6 +41,45 @@ if (!fs.existsSync(SCAN)) {
   process.exit(0);
 }
 
+/**
+ * ★★★ T267（2026-10-14）：把 `src/` 下的 `.d.ts` **拷到 dist** —— `tsc` 不会为单文件开 `declaration`，
+ *   而**外部项目插桩时需要它**。
+ *
+ * ## 为什么必须（实测）
+ * `observe_instrument` 往**被测项目**注入的 import 指向 `<agent-io>/dist/…/probe.js`，
+ * 而 dist 里没有 `.d.ts` ⇒ 严格项目必报 `TS7016: Could not find a declaration file …`
+ * ⇒ 默认 `noEmitOnError:false` 还能跑，CI 一严就搭不起来。
+ *
+ * ## 为什么是"手写一份契约"而不是给全仓开 `declaration`
+ * 全仓开 `declaration` 会为**几百个源文件**各产一份 `.d.ts`（大量无谓产物 + 又一批要清的孤儿）；
+ * 而**外部真正需要的只有探针模块**那份。⇒ 只拷 `.d.ts`，且**它由人写、是契约不是镜像**
+ *   （见 `src/infrastructure/analysis/observe/probe.d.ts` 头注：只声明外部真会用的成员）。
+ *
+ * ★ 与下面的孤儿判定不冲突：`sourceCandidates()` 本来就把 `${stem}.d.ts` 算作合法源
+ *   ⇒ 拷进去的 `.d.ts` **不会被当孤儿删掉**（这正是它应有的地位）。
+ */
+const dtsSources = [];
+{
+  const walkSrc = (dir) => {
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      const p = path.join(dir, e.name);
+      if (e.isDirectory()) walkSrc(p);
+      else if (e.name.endsWith('.d.ts')) dtsSources.push(p);
+    }
+  };
+  const SRC = path.join(ROOT, 'src');
+  if (fs.existsSync(SRC)) walkSrc(SRC);
+}
+let dtsCopied = 0;
+for (const abs of dtsSources) {
+  const rel = path.relative(path.join(ROOT, 'src'), abs).split(path.sep).join('/');
+  const dst = path.join(SCAN, rel);
+  fs.mkdirSync(path.dirname(dst), { recursive: true });
+  fs.copyFileSync(abs, dst);
+  dtsCopied++;
+}
+if (dtsCopied > 0) console.log(`[clean_dist] 已把 ${dtsCopied} 份 \`.d.ts\` 契约声明带到 dist（T267：外部插桩项目需要）。`);
+
 /** 收集 dist 下所有产物（相对 dist 的 posix 路径） */
 function walk(dir, out = []) {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -55,6 +94,11 @@ const all = walk(SCAN);
 
 /** 产物 → 它应当来自的源文件（tsc 的 outDir=dist，rootDir=仓根 ⇒ 产物 path = src 的相对 path） */
 function sourceCandidates(rel) {
+  // ★★★ T267（2026-10-14）：`.d.ts` 产物**源就是它自己** ——
+  //   下面那套是给 `.js` 产物用的（去后缀再拼 `.ts`），对 `x.d.ts` 会算出 `x.d.ts.ts`（不存在）
+  //   ⇒ 实测：手写拷进 dist 的 `probe.d.ts` 当场被判成孤儿删掉（"已删除 1 个孤儿"）。
+  //   ★ 这在 T267 之前是**潜伏 bug**：本仓此前没有 `.d.ts` 产物，所以从没暴露。
+  if (rel.endsWith('.d.ts')) return [rel];
   const stem = rel.replace(/\.js\.map$/, '').replace(/\.js$/, '');
   return [`${stem}.ts`, `${stem}.tsx`, `${stem}.d.ts`];
 }

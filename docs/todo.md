@@ -2560,9 +2560,3 @@
       ⇒ 依据：`infrastructure/index/symbols.ts:390` —— type-only import 不建边（**这是设计**，不是缺陷）。
       ⇒ ⇒ 于是 `cpf_5`（「DSL 是 scaffold/edit_code/consistency_check/rename 的输入」）**表达不了**。
       ⇒ **要做（先裁）**：这是 edge 类的**固有盲区** ⇒ 至少写进形状描述；或新增「类型引用」形状。
-
-- [ ] **T267 ★★ 【跨仓 import 的类型错】插桩注入的 import 指向本仓 `dist/*.js`，而 dist 里**没有 `.d.ts`** ⇒ strict/CI 下必报 TS7016**
-      *(来源：2026-10-14 子代理实测；★ 默认 `noEmitOnError:false` 时仍能 emit 并跑对，故**未被它判为致命**，但 CI 会挡。)*
-      ⇒ **实测**：`error TS7016: Could not find a declaration file for module '…/probe.js'` ⇒ 被测项目要么加
-        `declare module` 垫片、要么构建容忍类型错。
-      ⇒ **要做（先裁）**：① 随 dist 产出 `probe.d.ts`；② 或注入时同时写一个 `.d.ts` 垫片；③ 或如实写进描述。
