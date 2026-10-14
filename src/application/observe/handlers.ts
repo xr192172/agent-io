@@ -8,6 +8,7 @@
  * 本文件由 `edit_code`（AST 取边界）从原文件逐符号搬入，**不是手抄**；tsc 是闸门。
  */
 
+import fs from 'node:fs';
 import path from 'node:path';
 import { wrap, wrapData } from '.././plumbing.js';
 import { rebuildChains } from '../../infrastructure/analysis/observe/chain.js';
@@ -93,6 +94,23 @@ export const observeInstrumentHandler = wrapData(async (a) => {
   //   （`infrastructure/analysis/observe/observe_langs.ts`），本 handler 退化成**薄壳**：挑包 → 调包 → 一份渲染。
   //   原先这里是两段 ~35 行、**结构逐字相同**的报告渲染（Go 分支 / TS 分支），加第三门语言就得再抄一遍。
   //   挑包判据照 `refactor_langs`：`manifest` 优先（`package.json` vs `go.mod`），判不出再退到「有该语言源文件」。
+  // ★★★ T278（2026-10-14）：**`target` 传【文件】时必须响亮且准确** ——
+  //   实测：传 `…/async_arrow.ts` ⇒ `pick()` 判不出语言包 ⇒ 落到下面那句
+  //   「未找到匹配 …的观察语言包」⇒ ★★ **误导**（用户会以为"这门语言不支持"，
+  //   其实是"target 该传目录"）；而且返回 `[]`、**退出码 0**、**不报错** = 静默空结果。
+  try {
+    if (fs.existsSync(target) && fs.statSync(target).isFile()) {
+      return {
+        message:
+          `\`target\` 必须是【目录】，你传的是【文件】：${target}\n` +
+          `  ⇒ 插桩按语言包**扫描整个项目**；要只处理这一个文件，请传它所在的项目目录。`,
+        data: [],
+      };
+    }
+  } catch {
+    /* stat 失败 ⇒ 交给下面原来的判据（不吞成"没问题"） */
+  }
+
   const pack = observeLangs.pick(target);
   if (!pack) {
     const known = observeLangs.list().map((p) => `${p.lang}(${p.label})`).join('、');

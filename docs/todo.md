@@ -2566,20 +2566,9 @@
       ⇒ **实测**：`withDestructure({a, b}: {a:number;b:number})` ⇒ 注入 `args: { a: a }`，**`b` 丢失**。
       ⇒ **触发条件**：对象解构参数。⇒ **要做**：`extractParamNames` 要展开解构模式（或如实标注"解构只记首字段"）。
 
-- [ ] **T276 ★★ 【读数失真】单语句体 `return` 的 `ret: undefined`（T270 的同族残留）**
-      *(来源：2026-10-14 第二轮端到端实测；★ 独立 `return x;` 能正确 hoist，只有"单语句体"不行。)*
-      ⇒ **实测**：`loopReturn` / `recurse` / `guardNoBrace` 的点模式 exit 注入 `ret: undefined`（真值 3/6/0）。
-      ⇒ 与 T273 同源（都是"单语句体"那格）⇒ **建议与 T273/T274 一起修**。
-
 - [ ] **T277 ★★ 【信息歧义】内联回调 / 同名 getter-setter 的探针名与宿主同名**
       *(来源：2026-10-14 第二轮端到端实测。)*
       ⇒ **实测**：`arr.map(x=>x*2)` 的回调探针名 = `nested.useCallback.enter/exit`（**与外层同名**）；
         `useReduce` 一行 3 个探针**全叫** `nested.useReduce.enter`；`get value()` 与 `set value()` 都叫 `syntax_edge.value`。
       ⇒ ★ 后果：调用树/台账里**分不清是谁**（观测到的事件挂不到正确的函数）。
       ⇒ **要做（先裁）**：给匿名函数探针名加**区分**（如 `…useCallback#2`、`…value.get` / `…value.set`）。
-
-- [ ] **T278 ★★ 【静默空结果】`target` 传【文件路径】⇒ 0 探针、退出码 0、不报错**
-      *(来源：2026-10-14 第二轮端到端实测。)*
-      ⇒ **实测**：`target:"…/async_arrow.ts"` ⇒ `未找到匹配 …的观察语言包`，返回 `[]`，**不报错**。
-      ⇒ `target` 必须是**目录** ⇒ 但传文件时**静默空**（本仓最反对的形态）。
-      ⇒ **要做**：传文件时**响亮报错**（"target 是目录，你传了文件：…；要只插一个文件请传其所在目录"）。

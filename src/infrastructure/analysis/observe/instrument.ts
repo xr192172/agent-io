@@ -1000,9 +1000,22 @@ function handleReturn(
   //     ★ **不报错**——本仓最反对的形态）。
   //   ⇒ 现在插**两处**：return 前开块 + 探针、return 后闭块 ⇒ `if (c) { probe; return X; }` ✓
   if (isBracelessGuardReturn(parent)) {
-    const marker = `captureProbe(${JSON.stringify(probeName)}, { file: ${JSON.stringify(fileRel)}, ret: undefined, level: 'core' });`;
-    insertions.push({ index: n.startIndex, site: { probe: probeName, file, line: n.startPosition.row + 1, kind: 'exit', level: 'core', injected: `{ ${marker} ` } });
-    insertions.push({ index: n.endIndex, site: { probe: probeName, file, line: n.startPosition.row + 1, kind: 'exit', level: 'core', injected: ` }` } });
+    // ★★★ T273 + T276（2026-10-14）：**补大括号 + 捕获值** ——
+    //   原先只插一个 marker（`if (c) captureProbe(…); return X;`）⇒ 两个病：
+    //     ① 探针成了 `if` 的唯一语句体、`return X` **逃逸成无条件**（T273，**静默改行为**）；
+    //     ② 拿不到 `ret`（T276）。
+    //   ⇒ 现在**替换成带大括号的块**：`{ const T = <expr>; probe(ret: T); return T; }`
+    //     ⇒ `if (c) { … }` ✓ 语法正确、`return` 仍在 `if` 体内、**且值被捕获**。
+    if (expr && !containsFunctionLike(expr)) {
+      const tv = `__cam_ret${n.startPosition.row + 1}`;
+      const replacement = `{ const ${tv} = ${expr.text};captureProbe(${JSON.stringify(probeName)}, { file: ${JSON.stringify(fileRel)}, ret: ${tv}, level: 'core' });return ${tv}; }`;
+      insertions.push({ index: n.startIndex, removeTo: n.endIndex, site: { probe: probeName, file, line: n.startPosition.row + 1, kind: 'exit', level: 'core', injected: replacement } });
+    } else {
+      // 裸 `return;` 或表达式含函数/箭头（T272：替换会与内层插入重叠）⇒ 补大括号 + 纯标记
+      const marker = `captureProbe(${JSON.stringify(probeName)}, { file: ${JSON.stringify(fileRel)}, ret: undefined, level: 'core' });`;
+      insertions.push({ index: n.startIndex, site: { probe: probeName, file, line: n.startPosition.row + 1, kind: 'exit', level: 'core', injected: `{ ${marker} ` } });
+      insertions.push({ index: n.endIndex, site: { probe: probeName, file, line: n.startPosition.row + 1, kind: 'exit', level: 'core', injected: ` }` } });
+    }
     return;
   }
 
