@@ -19,6 +19,8 @@ import type { EditResult } from './edit_result.js';
 import { addNode, updateNode, deleteNode } from './node_ops.js';
 import type { AddNodeInput, UpdateNodeInput } from './node_ops.js';
 import { applyDecisionWrite } from './node_ops.js';
+// ★ T256：`expectations` 的形状校验器 —— ★ 与 `node_ops.ts:9` 同一处实现（不另写一把尺）
+import { assertValidExpectations } from '../../../domain/expectation.js';
 import { addEdge, deleteEdge } from './edge_ops.js';
 import type { AddEdgeInput } from './edge_ops.js';
 import { addFile, updateFile, deleteFile } from './file_ops.js';
@@ -791,6 +793,16 @@ function applyDecisionOp(feature: string, op: CheckedOperation<FeatureOperation>
   const target = resolveDecisionTarget(dsl, op.id, data);
 
   const decision: NodeDecision = { summary };
+  // ★★★ T256（2026-10-14）：`expectations`（**可判定的验收**）—— 决策卡里**唯一会被程序判**的字段
+  //   （`collectExpectations` → `consistency_check` 的 `judgeExpectations`）。
+  //   ★ 此前它**不在 `decision` op 的已知键表**（`op_data_spec.ts` 的 `TYPE_KNOWN_KEYS`）
+  //     ⇒ 从本入口写不进去（实测报「data 里有不被认的键：expectations」）⇒ 已补进那张表。
+  //   ★ 形状校验**复用既有唯一实现** `assertValidExpectations`（`applyDecisionWrite` 里用的是同一个）
+  //     —— ★ 不给这里另写第二把尺。
+  if (data.expectations !== undefined) {
+    assertValidExpectations(data.expectations);
+    decision.expectations = data.expectations as NodeDecision['expectations'];
+  }
   // ★★★ 2026-10-11（T174）：下面这 4 个字段**原先都是"形状不对就静默丢弃"** ——
   //   形如 `if (typeof data.X === 'string' && data.X.trim()) decision.X = …`
   //   ⇒ ★ **给了、但形状不对 ⇒ 条件不成立 ⇒ 一声不响地丢掉**（本仓最反对的形态）。

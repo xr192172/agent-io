@@ -306,6 +306,14 @@ export const TYPE_KNOWN_KEYS: Record<string, readonly string[]> = {
   decision: [
     'summary', 'rationale', 'consequences', 'acceptance', 'thread', 'tags',
     'votes', 'evidence_source', 'note', 'status', 'author', 'alternatives', 'dissent',
+    // ★★★ T256（2026-10-14）：补 `expectations`（**可判定的验收**，`domain/geometry.ts:191`）。
+    //   ★ 为什么必须补：它是**唯一会被程序判**的决策字段 —— `collectExpectations`（`domain/expectation.ts:130-138`）
+    //     读它 → `consistency_check` 的 `judgeExpectations` 判它 ⇒ ★ **决策卡的"当代意义"就靠它**。
+    //   ★ 实测（补之前）：从 `decision` op 写它 ⇒ 报「data 里有**不被认的键**：expectations」
+    //     ⇒ **从决策卡写入口写不进可判定验收**（而 `node` op 的 `data.decision` 那条路本来就能写
+    //     —— 实测加一条 `file-exists` ⇒ 对拍 `checked 2→3 · passed 0→1`）。
+    //   ★ 补上之后两条路**同一判据**（判据仍只有这一张表 + `assertValidExpectations`）。
+    'expectations',
   ],
 };
 /** ★★ 断言：`TYPE_KNOWN_KEYS` 的键集**必须恰好覆盖 `OP_SPECS` 的全部 type**（多 / 少都红）。 */

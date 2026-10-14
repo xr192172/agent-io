@@ -381,6 +381,13 @@
       ⇒ **要做**：① 把 `expectations` 加进 `op_data_spec` 的 `decision` 已知键
         （★ 与 `node` 路径**同一判据**，别两处各判）；② 先裁"要不要给决策间冲突一个**显式**读数"
         （候选：同一对象上 verdict 互斥即报；或维持现状、靠人看）；③ 再谈给那 21 条补 `expectations`。
+      ⇒ ★★★ **2026-10-14 缺口①已修并验证**：
+        · `op_data_spec.ts` 的 `TYPE_KNOWN_KEYS.decision` 补 **`expectations`**（+ `update_feature.ts` 的
+          `applyDecisionOp` 加处理：**复用既有唯一校验器 `assertValidExpectations`**，不另写一把尺）；
+        · **实测**：用 `decision` op 带 `expectations` ⇒ **成功写入**（不再报"不被认的键"）⇒
+          对拍读数 **`checked 2→3 · passed 0→1`**，新加那条 `pass`；撤掉后回到 `2/0/2` ✓
+        · ⇒ ★★ **"决策卡带可判定验收"这条主路现在从【两个入口】都走得通了**（`decision` op 与 `node` op）。
+      ⇒ **剩余**：② 冲突的显式读数（待裁）；③ 给那 21 条补 `expectations`（★ 这才是让它们"有当代意义"的一步）。
       ⇒ **代码位置（判据的唯一住处）**：`dsl_ops/node_ops.ts:225` `const decision: NodeDecision = { ...next, updated_at: now };`
         —— ★ `{ ...next }` = **用你给的字段整体替换**，不是合并。三个调用点都走它：
         `update_feature.ts:865`（`edit_dsl` 的 decision 路径）· `node_ops.ts:103`（addNode）· `node_ops.ts:293`（updateNode 的 `data.decision`）。
