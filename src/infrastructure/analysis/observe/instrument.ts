@@ -32,8 +32,16 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { parseAstRoot } from '../../parse/kernel.js';
 import { isNoiseFileName, isTsJsExt, skipDirSet } from '../../parse/source_exts.js';
+// ★★★ 2026-10-15：**语言无关的插桩骨架**（本文件即从它派生 —— 见 `instrument_skeleton.ts` 头注）。
+//   `applyInsertions` / `prependAfterShebang` / `backupOriginal` / 主流程 `instrumentFileWithHooks`
+//   全部搬到骨架 ⇒ 本文件只留 **TS/JS 专属的那几件**（AST 遍历、命名、return 改写、ESM/CJS 判制式）。
+import {
+  BACKUP_DIR,
+  instrumentFileWithHooks,
+  type Insertion as SkeletonInsertion,
+  type InstrumentHooks,
+} from './instrument_skeleton.js';
 
 /**
  * ★★ 唯一落点：**探针实现**在本仓里的目录（相对仓库根的 posix 路径）。
@@ -151,14 +159,6 @@ export interface InstrumentOptions {
   scope?: boolean;
 }
 
-/** 前缀插入且兼容 shebang：若 content 首行是 `#!...`，把 head 插到首行之后（保住 shebang 在行 1）。 */
-function prependAfterShebang(content: string, head: string): string {
-  if (!content.startsWith('#!')) return head + content;
-  const nl = content.indexOf('\n');
-  if (nl < 0) return content + '\n' + head;
-  return content.slice(0, nl + 1) + head + content.slice(nl + 1);
-}
-
 /**
  * 契约门：探针名是否命中契约列表。
  *   - probes === undefined → 探索模式，恒 true（全量无脑插桩）
@@ -176,25 +176,8 @@ const PROBE_MARKER = 'observe:instrumented';
  *  文件含此标记说明 deep 探针已注入，避免重复。 */
 const DEEP_MARKER = 'observe:deep';
 
-/** 备份目录名（相对被插桩项目根，位于 .agent-io 下，collectTsFiles 会跳过） */
-const BACKUP_DIR = '.agent-io/observe-backup';
-
 /** 探针台账文件名（相对被插桩项目根，位于 .agent-io 下） */
 const LEDGER_FILE = '.agent-io/observe-ledger.json';
-
-/** 备份文件名：把原文件相对项目根（backupRoot）的路径映射为备份目录下的镜像路径 */
-function backupPathFor(backupRoot: string, file: string): string {
-  const rel = path.relative(backupRoot, file).replaceAll('\\', '/');
-  return path.join(backupRoot, BACKUP_DIR, rel);
-}
-
-/** 原文件写盘前，若尚无备份则把当前内容备份到 .agent-io/observe-backup */
-function backupOriginal(backupRoot: string, file: string, content: string): void {
-  const dest = backupPathFor(backupRoot, file);
-  if (fs.existsSync(dest)) return; // 已备份过则保留最早的原版
-  fs.mkdirSync(path.dirname(dest), { recursive: true });
-  fs.writeFileSync(dest, content, 'utf-8');
-}
 
 /** 从备份镜像 path 还原: 把备份文件拷回原位置 */
 function restoreOne(backupRoot: string, backupFile: string): string | null {
@@ -761,155 +744,42 @@ function isBracelessGuardReturn(parent: InstrNode | undefined): boolean {
 }
 
 /** 一次编辑：`[index, removeTo)` 被替换（无 `removeTo` 则是在 `index` 处纯插入）。 */
-type Insertion = { index: number; removeTo?: number; site: InstrumentedSite };
+type Insertion = SkeletonInsertion;
 
 /**
- * ★★★ 2026-10-14：**把「按原文偏移逐次应用」重写成「分段拼接」** —— 重叠在结构上不再可能。
- *
- * ## 为什么必须重写（不是打补丁）
- * 老模型是「按 `index` 降序，逐条 `out = out.slice(0,index) + injected + out.slice(removeTo)`」，
- * 它**默认所有编辑互不重叠**。而该假设**不成立**，于是同一个洞露了三次面：
- *   · **T264**（同 offset 的「插入 vs 替换」⇒ `captureProbe(` 被吃成 `reProbe(`）；
- *   · **T272**（**包含关系**：`return <expr>` 的替换区间内含内联函数的插入点 ⇒ 同样吃字符）；
- *   · **T281**（**插入 vs 插入**同 offset ⇒ 事件顺序被记成 exit→enter）。
- * ★ 前两次都是打补丁（调顺序 / 检测到重叠就退让），而**退让有永久代价**：
- *   T272 的补丁让 `return arr.map(x => x*2)` **永远拿不到 `ret`**。
- *
- * ## 新模型（分段拼接）
- * 一次从前往后扫，把原文切段、逐段输出：
- *   · **纯插入** ⇒ 在 `index` 处塞进文本，原文继续；
- *   · **替换** ⇒ 该段原文交给 `site.template(inner)`，其中 **`inner` = 区间原文【先经过区间内其它编辑处理】后的文本**。
- * ⇒ ★★ 于是「区间内含其它编辑」**不再是异常**，而是**正常的一层递归**：
- *   内联函数的 enter/exit 落在 `return` 的表达式里 ⇒ 它们**先作用在表达式上**，
- *   结果再喂给 `return` 的模板 ⇒ **两边的观测都保住**（`ret` 与内联探针不再二选一）。
- *
- * ## 同 `index` 的定序（语义，不是凑数）
- * 同 `index` 时**纯插入排在替换之前** ⇒ 输出为「插入的文本 + 替换结果」
- * ⇒ 这正是要的顺序（`enter` 落在改写后的 `return` **之前**），T281 的顺序反转随之消失。
+ * ★★★ 2026-10-15：**TS/JS 插桩钩子** —— 本文件里与语言相关的装配点**唯一一处**。
+ * 主流程（读盘/幂等/解析/数函数/算根/应用编辑/补头/备份/写盘）在
+ * `instrument_skeleton.ts` 的 `instrumentFileWithHooks`；本对象只把 TS/JS 专属件接上去。
+ * ★ 之所以能这么薄：`applyInsertions`（③ 应用模型）与 `prependAfterShebang`/备份（主流程）
+ *   本就是语言无关的 —— 抽出来之后，加一门语言不再需要复制它们。
  */
-function applyInsertions(content: string, insertions: Insertion[]): string {
-  // 升序；同 index：纯插入(0) 在前、替换(1) 在后
-  const sorted = [...insertions].sort((a, b) => {
-    if (a.index !== b.index) return a.index - b.index;
-    const ar = a.removeTo === undefined ? 0 : 1;
-    const br = b.removeTo === undefined ? 0 : 1;
-    return ar - br;
-  });
-
-  /** 渲染原文 `[from, to)`，其中 `list` 是落在这个区间内的编辑（已升序）。 */
-  const render = (from: number, to: number, list: Insertion[]): string => {
-    let out = '';
-    let pos = from;
-    let i = 0;
-    while (i < list.length) {
-      const ins = list[i];
-      if (ins.index < pos) {
-        i++;
-        continue; // 防御：理论上不会发生（区间内的都归到内层递归了）
-      }
-      if (ins.index >= to) break;
-      const rTo = ins.removeTo ?? ins.index;
-      out += content.slice(pos, ins.index);
-      if (ins.removeTo === undefined) {
-        out += ins.site.injected;
-        pos = ins.index;
-        i++;
-        continue;
-      }
-      // 替换：区间内的其它编辑**先作用在区间原文上**（递归），结果再喂给模板
-      const inner: Insertion[] = [];
-      for (let j = i + 1; j < list.length && list[j].index < rTo; j++) inner.push(list[j]);
-      const innerText = inner.length > 0 ? render(ins.index, rTo, inner) : content.slice(ins.index, rTo);
-      out += ins.site.template ? ins.site.template(innerText) : ins.site.injected;
-      while (i < list.length && list[i].index < rTo) i++; // 跳过区间内的（已由内层处理）
-      pos = rTo;
-    }
-    out += content.slice(pos, to);
-    return out;
-  };
-
-  return render(0, content.length, sorted);
-}
+export const tsJsInstrumentHooks: InstrumentHooks = {
+  lang: 'ts_js',
+  markers: { core: PROBE_MARKER, deep: DEEP_MARKER },
+  comment: '//',
+  probeImport: (file, projectRoot) => relativeProbeImport(file, projectRoot),
+  inferProjectRoot: (file) => inferProjectRoot(file),
+  // ★ T301：import 语句按**宿主模块制式**选（CJS ⇒ require）
+  buildImportStmt: (probeImport, content, file) => buildImportStmt(probeImport, detectModuleSystem(file, content)),
+  countFunctions: (root) => countFunctionNodes(root),
+  collectSites: (ctx) =>
+    collectSites(ctx.root, ctx.file, ctx.content, ctx.insertions, ctx.fileRel, ctx.probes, ctx.scope),
+  collectDeepSites: (ctx) =>
+    collectDeepSites(ctx.root, ctx.file, ctx.content, ctx.insertions, ctx.fileRel, ctx.probes),
+};
 
 /**
  * 对单个 TS 文件插桩。返回注入的探针点（dry-run 不写盘）。
  * level 分级：enter/exit=core，catch=event，io=event。
+ *
+ * ★★★ 2026-10-15：**本函数现在只是骨架的薄包装** —— 语言无关的主流程
+ *   （读盘/幂等/解析/数函数/算根/应用编辑/补头/备份/写盘）住在
+ *   `instrument_skeleton.ts` 的 `instrumentFileWithHooks`；本文件只提供
+ *   `tsJsInstrumentHooks`（TS/JS 专属：AST 遍历 + 命名 + return 改写 + ESM/CJS 判制式）。
+ *   ⇒ 公开签名与行为**逐字不变**（回归由 TS 夹具端到端验）。
  */
 export async function instrumentFile(file: string, opts: InstrumentOptions = {}): Promise<InstrumentFileResult> {
-  const applyWrite = opts.write ?? true;
-  const enableDeep = opts.enableDeep ?? false;
-  const result: InstrumentFileResult = { file, sites: [] };
-  let content: string;
-  try {
-    content = fs.readFileSync(file, 'utf-8');
-  } catch (e) {
-    result.error = (e as Error).message;
-    return result;
-  }
-
-  // 幂等：按标记判断该文件已注入哪些级别的探针，避免重复。
-  //   - core/event 已注入（PROBE_MARKER）且未请求 deep → 跳过
-  //   - core/event 与 deep 都已注入 → 跳过
-  const hasCore = content.includes(PROBE_MARKER);
-  const hasDeep = content.includes(DEEP_MARKER);
-  if ((hasCore && !enableDeep) || (hasCore && hasDeep)) return result;
-
-  const parsed = await parseAstRoot(file, content);
-  if (!parsed) {
-    result.error = '解析失败（语言包不支持或语法错误）';
-    return result;
-  }
-  const root = asInstr(parsed.root);
-  // ★ T304：数函数节点（台账判据③用 —— 见 InstrumentFileResult.functions）。
-  //   ★ 必须在 `insertions.length === 0` 的早退**之前**算：0 探针文件正是要记账的那批。
-  result.functions = countFunctionNodes(root);
-
-  const projectRoot = opts.projectRoot ?? inferProjectRoot(file);
-  const probeImport = opts.probeImport ?? relativeProbeImport(file, projectRoot);
-  result.probeImport = probeImport;
-  // 探针注入时附带的文件相对路径（相对项目根，正斜杠），供日志按文件过滤
-  const fileRel = path.relative(projectRoot, file).replaceAll('\\', '/');
-
-  // 收集插入点（从后往前构造，偏移由大到小）
-  const insertions: { index: number; removeTo?: number; site: InstrumentedSite }[] = [];
-  const probes = opts.contractProbes;
-  // core/event 探针：仅当文件尚未注入 core/event 时收集（避免对已插桩文件重复注入）
-  if (!hasCore) collectSites(root, file, content, insertions, fileRel, probes, opts.scope === true);
-  // deep 探针：仅在请求 enableDeep 且尚未注入 deep 时收集
-  if (enableDeep && !hasDeep) collectDeepSites(root, file, content, insertions, fileRel, probes);
-
-  if (insertions.length === 0) return result;
-
-  // ★★★ 2026-10-14：**应用编辑改走 `applyInsertions`（分段拼接）** ——
-  //   旧模型是「按 `index` 降序，逐条 `out = out.slice(0,index) + injected + out.slice(removeTo)`」，
-  //   它默认"所有编辑互不重叠"，而该假设**不成立**：
-  //     · **T264** 同 offset 的「插入 vs 替换」⇒ `captureProbe(` 被吃成 `reProbe(`；
-  //     · **T272** **包含关系**（`return <expr>` 的替换区间内含内联函数的插入点）；
-  //     · **T281** 同 offset 的「插入 vs 插入」⇒ 事件顺序被记成 exit→enter。
-  //   ⇒ 三次是**同一个洞的三次露面**；前两次都是打补丁（调顺序 / 检测到重叠就退让），
-  //     而退让留下了**永久代价**（T272 让 `return arr.map(x => x*2)` 永远拿不到 `ret`）。
-  //   ⇒ 这次按"**改模型**"处理：细节与理由见 `applyInsertions` 的头注（含"同 index 的定序语义"）。
-  // ★ T301（2026-10-15）：import 语句按**宿主模块制式**选（CJS ⇒ require，见 `detectModuleSystem`）。
-  const importStmt = buildImportStmt(probeImport, detectModuleSystem(file, content));
-
-  // ★ `let`（不是 const）：下面还要补 import/标记头（`out = prependAfterShebang(out, head)`）
-  let out = applyInsertions(content, insertions);
-  // 头部补 import 与分级标记（shebang 兼容：shebang 必须留在文件首行，
-  // 否则带 `#!/usr/bin/env node` 的入口被 esbuild/tsx 视为语法错 `!`）
-  // scope 模式走 globalThis.__probeScope，无需每文件 import 探针 → 不注入 importStmt
-  let head = '';
-  if (!hasCore) head += (opts.scope === true ? '' : importStmt) + `// ${PROBE_MARKER}\n`;
-  if (enableDeep && !hasDeep) head += `// ${DEEP_MARKER}\n`;
-  if (head) out = prependAfterShebang(out, head);
-
-  result.sites = insertions.map((i) => i.site);
-  if (applyWrite) {
-    // 写盘前先备份原文件（幂等：已备份则保留最早原版），供 --uninstrument 一键还原
-    const backupRoot = opts.backupRoot ?? projectRoot;
-    backupOriginal(backupRoot, file, content);
-    fs.writeFileSync(file, out, 'utf-8');
-  }
-  return result;
+  return instrumentFileWithHooks(file, tsJsInstrumentHooks, opts);
 }
 
 /**

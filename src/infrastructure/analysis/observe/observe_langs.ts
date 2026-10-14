@@ -57,6 +57,9 @@ import {
   VENDORED_PROBE_DIR,
   type GoInstrumentOptions,
 } from './go_instrument.js';
+// ★★★ 2026-10-15：**第 3 门语言（Python）** —— 语言包住在 `instrument_py.ts`，走**同一套骨架**
+//   （`instrument_skeleton.ts` 的 `instrumentFileWithHooks`）⇒ 这里只注册、不复制主流程。
+import { collectPyFiles, instrumentPyProject, isInstrumentablePyFile } from './instrument_py.js';
 
 // ─────────────────────────────────────────────────────────────
 // 统一形状（两门语言都落到这里 ⇒ handler 一份渲染管两门）
@@ -95,6 +98,12 @@ export interface ObserveInstrumentReport {
    *   `?.enter ?? (()=>{})` **静默 no-op** ⇒ **零事件**（用户以为插好了）。
    */
   scope?: boolean;
+  /**
+   * ★ 语言包自带的「探针就位 ≠ 有事件」接法提示（缺省用 TS 侧的通用文案）。
+   * 为什么要有：接线方式**每语言不同**（TS `setGlobalProbeSink` / Python `set_global_probe_sink` /
+   * scope 模式 `globalThis.__probeScope`）—— 恒印 TS 那套会把 Python 用户引到一条死路。
+   */
+  sinkHint?: string[];
 }
 
 export interface ObserveUninstrumentReport {
@@ -127,6 +136,8 @@ export interface ObserveLangPack {
   uninstrument(root: string): Promise<ObserveUninstrumentReport>;
   /** 该语言暴露的保守规则（写进报告 / 供人审；照抄 `RefactorStageExecutor.limitations` 的做法） */
   limitations: string[];
+  /** 该语言「探针就位 ≠ 有事件」的**接法提示**（每语言接线方式不同 —— 见报告渲染）。 */
+  sinkHint?: string[];
   /** 该项目形态的验证命令组；缺省 = 不可自动验证 */
   detectVerifyCommands?(cwd: string): VerifyCommand[];
   /** 该项目形态的 manifest 文件名（相对项目根） */
@@ -192,7 +203,10 @@ export function renderInstrumentReport(
   //   ⇒ 这里【显式说出来】+ 给出**准确**的接法（导出名以 `probe.ts` 真实导出为准：
   //     `setGlobalProbeSink` / `TSProbeCapture`；★ 不要写不存在的 `enableObserveFromEnv`）。
   if (!rep.dryRun && totalSites > 0) {
-    if (rep.scope) {
+    if (rep.sinkHint) {
+      // ★ 语言包自带接法（每语言接线方式不同 —— 见 ObserveInstrumentReport.sinkHint）
+      for (const l of rep.sinkHint) lines.push(l);
+    } else if (rep.scope) {
       // ★★★ T269（2026-10-14）：**scope 模式的接线方式与点探针不同** ——
       //   scope 走 `globalThis.__probeScope`（且**不注入** import），点探针走 `captureProbe` + sink。
       //   ★ 实测病：回执原先**恒只印点探针那套** ⇒ 照做 ⇒ scope 的 enter/exit 全走
@@ -368,10 +382,71 @@ export const goObservePack: ObserveLangPack = {
   },
 };
 
+/**
+ * ★★★ **Python 包（第 3 门语言）** —— 2026-10-15 加，用来证明「骨架够通用」。
+ *
+ * ## 它凭什么这么小
+ * 插桩主流程（读盘/幂等/解析/数函数/算根/③应用模型/补头/备份/写盘）全在**骨架**
+ * （`instrument_skeleton.ts` 的 `instrumentFileWithHooks`）⇒ 本包只提供**语言钩子**
+ * （`instrument_py.ts` 的 `pyInstrumentHooks`：①命名 / ②遍历 / ⑥取值）+ 收文件 + 渲染报告。
+ * ★ 对照：TS 侧插桩实现 1257 行、Go 侧 1165 行（它们把主流程也写在了语言实现里）。
+ */
+export const pyObservePack: ObserveLangPack = {
+  lang: 'python',
+  label: 'Python',
+  isSourceFile: (rel) => isInstrumentablePyFile(rel),
+  inProcess: true,
+  limitations: [
+    '只改 AST 可安全定位的位点；Python 靠**缩进**注入，单行 suite（`def f(): return 1`）退回 `;` 分隔。',
+    '`lambda` 体是**表达式**（语法不允许语句）⇒ 包成 `cam_lambda(...)`；`yield` 本身不单独观测（生成器仍录 enter/exit）。',
+    'scope 模式（try/finally 调用树录制）**Python 侧未实现**（传 scope 不生效）。',
+    '备份靠 `.agent-io/observe-backup`（与 TS 侧同一套，uninstrument 可逐字还原）。',
+  ],
+  manifestFiles: ['pyproject.toml', 'setup.py', 'setup.cfg'],
+  sinkHint: [
+    '  ★ 探针已就位，但【默认不出事件】：无 sink 时 `capture_probe` 是 no-op。',
+    '    ⇒ 要真观测，被测项目须在入口处接一次 sink：',
+    '      from camprobe import set_global_probe_sink, JsonlSink',
+    `      set_global_probe_sink(JsonlSink('<events.jsonl 路径>'))`,
+    '      （接完再跑，事件才会写进 events.jsonl；否则插了也观测不到。）',
+  ],
+  async instrument(root, opts) {
+    const scanned = collectPyFiles(root);
+    const results: InstrumentFileResult[] = await instrumentPyProject(root, {
+      projectRoot: opts.projectRoot,
+      write: !opts.dryRun,
+      contractProbes: opts.contractProbes,
+    });
+    const rep: ObserveInstrumentReport = {
+      lang: 'python',
+      dryRun: opts.dryRun,
+      scanned: scanned.length,
+      files: results.map((r) => ({
+        file: r.file,
+        sites: r.sites.map((s) => ({ line: s.line, kind: s.kind, level: s.level, probe: s.probe })),
+        error: r.error,
+      })),
+      sinkHint: pyObservePack.sinkHint,
+    };
+    const total = rep.files.reduce((n, f) => n + (f.error ? 0 : f.sites.length), 0);
+    if (!opts.dryRun && total > 0) {
+      // 复用 TS 侧**同一份**台账实现（判据只住一处）
+      const ledger = buildProbeLedger(results, root, { contractMode: opts.contractProbes !== undefined });
+      rep.ledger = { file: saveProbeLedger(root, ledger), summary: ledgerSummary(ledger), raw: ledger };
+    }
+    return rep;
+  },
+  async uninstrument(root) {
+    // ★ 备份/台账是**语言无关**的（`.agent-io/` 同一套）⇒ 直接复用 TS 侧实现
+    const restored = restoreInstrumented(root);
+    const cleared = clearProbeLedger(root);
+    return { lang: 'python', restored: restored.length, restoredFiles: restored, ledgerCleared: cleared };
+  },
+};
+
 // ─────────────────────────────────────────────────────────────
 // 注册表（照 RefactorLangRegistry 的形状）
 // ─────────────────────────────────────────────────────────────
-
 export class ObserveLangRegistry {
   private m = new Map<string, ObserveLangPack>();
 
@@ -408,3 +483,4 @@ export class ObserveLangRegistry {
 export const observeLangs = new ObserveLangRegistry();
 observeLangs.register(tsJsObservePack);
 observeLangs.register(goObservePack);
+observeLangs.register(pyObservePack);

@@ -2807,3 +2807,50 @@
       ⇒ **要验**：① `NewSink` + `SetGlobalSink` 后 `Capture` 出事件；② **无 sink ⇒ no-op（0 事件）**；
         ③ **sink 不可写 ⇒ 宿主不崩且 `reportProbeError` 有输出**（今天刚修的 T286）。
       ⇒ **判据**：`go test ./probe/...` 里出现这三个用例且全绿。
+
+- [x] **【已做·第 3 步】observe 加了第 3 门语言（Python）—— 骨架抽出来了；★ 核心判据「≤200 行」【未达成】（如实记）**
+      *(2026-10-14 子代理做 + 主代理核验；★ 全部读数实测。)*
+      ⇒ **产出（实测 `wc -l`）**：
+        · **`instrument_skeleton.ts`（新·骨架）268 行** —— `AstNode/asNode` · `Insertion` · **③ `applyInsertions`（原样搬来）** ·
+          `prependAfterShebang` · 备份 · `CollectSitesCtx` · **`InstrumentHooks` 接口** ·
+          **`instrumentFileWithHooks`（主流程：读盘/幂等/解析/数函数/算根/收编辑/应用/补头/备份/写盘）**；
+        · **`instrument_py.ts`（新·Python 语言包）319 行**（去注释空行 248）；
+        · **`observe-lang-py/camprobe.py`（新·Python 探针运行时）148 行**；
+        · `instrument.ts` 1433 → **1303**（-130，只剩 `tsJsInstrumentHooks` + 薄包装，**既有导出签名不变**）。
+      ⇒ **★ 核心判据「语言包 ≤ 200 行」【未达成】**：实测 **319**（含注释）/ **248**（去注释）—— 两条都 > 200。
+        ★ 子代理给的原因（**判断，不是借口**）：骨架只抽走了**管线**（约 130 行）；
+          而「**每个函数节点的遍历**」与「**注入语句的渲染**」**是语言专属、不可共享** ——
+          Python 还要额外处理**缩进 / 单行 suite / lambda 表达式体 / 多返回值**（这四件本身就 ~150 行）；
+          再想压，只能把「语句渲染」也塞进骨架、让语言包只交数据 ⇒ 那需要给骨架加一套**每语言语句 DSL**
+          ⇒ ★★ **那是"把行数搬家"，总量不减**（这个判断很到位）。
+      ⇒ **★★ 但拿到了更有用的量化结论**：一门新语言的**边际成本** = 语言包 319 + 运行时 148 ≈ **467 行**；
+        对照 TS 侧 1433（`instrument.ts`）+ 399（`probe.ts`）≈ **1832 行**
+        ⇒ **骨架把"补新语言"从"抄一大坨"降到约 1/4，但没有降到「只写小文件」（≤200）那个量级**。
+      ⇒ **端到端（全绿）**：Python 夹具 **39 探针点 / 15 函数** · `python main.py` **exit 0** ·
+        stdout 与基线 **逐字相同**（`diff` 空）· 接 sink **32 条事件**，`ret` 实测：lambda `4` · 多返回值 `[5,4]` ·
+        裸 return `null` · 生成器 `null` · 单行 guard `"pos"/"neg"` · `args:{"x":4}` ✓
+      ⇒ **不回归**：`gp1-r4v-new`（9 文件 124 探针点，含 get/set 同名 · `#private` · static 块 · switch 同行多 return ·
+        try/finally · 箭头表达式体 · Unicode 标识符 · shebang）⇒ **两个入口 exit 0 + stdout 逐字相同**；
+        `certs/observe-skeleton-cert.mjs` **4/4**；`tsc`=0 · `build`=0 · **`npm run verify` 4 道门全通过** ✓
+      ⇒ **反例**：不接 sink ⇒ **不产 events 文件**（0 事件）✓；**还原**：`uninstrument` 后 `diff` **逐字相同** ✓
+      ⇒ **另测**：幂等（第 2 次插桩 ⇒ 0 新/1 跳过）· 契约模式（只声明 2 个探针 ⇒ 源码里只有那两个，台账 `contractMode=true`）✓
+      ⇒ ★ **它如实纠正了我的一个数字**：我说 `instrument.ts` 1257 行，**实测 HEAD 是 1433 行**
+        （「数对不上，如实记；我没去猜 1257 的口径」）—— **不猜、不圆场**，对。
+
+- [x] **【已修·骨架级】`applyInsertions` 在【空区间替换】（`removeTo === index`）时死循环 + 字符串无限增长**
+      *(来源：第 3 步写 Python 时**第一次跑就撞上**；★ 这是**骨架级**的洞 —— TS 侧同样受益。)*
+      ⇒ **症状**：`RangeError: Invalid string length`（堆栈直指 `render`）—— **死循环 + 字符串无限增长**。
+      ⇒ **根因**：`while (i < list.length && list[i].index < rTo) i++;` —— 当 `rTo === index`（**空区间替换**）时
+        该条件**一开始就为假** ⇒ `i` **永不前进** ⇒ 死循环。
+      ⇒ ★★ **TS 侧从来没露头**：因为它的替换区间**总非空**（`return <expr>;` 那个 `;` 让 `removeTo > index`）；
+        而 **Python 的 `return <expr>` 没有分号** ⇒ **立刻踩中**。⇒ ★ **第三门语言的价值在此：它把潜伏的洞踩出来了**。
+      ⇒ **修**：`do { i++ } while (i < list.length && list[i].index < rTo);`（空区间替换在应用层等价于纯插入，
+        只要保证**推进**）。验证：`certs/observe-skeleton-cert.mjs` **4/4** · `gp1-r4v-new` 不回归 ✓
+
+- [ ] **T312 ★★ 【缺口·Python 侧】scope 模式（try/finally 调用树）与 deep 模式【未实现】**
+      *(来源：第 3 步的子代理如实单列；已写进该包 `limitations`。)*
+      ⇒ 现状：传 `scope:true` / `deep:true` **不生效**（静默）⇒ ★ 与"缺参数必须响亮"同族 ⇒ **该至少出声**。
+
+- [ ] **T313 ★★ 【缺口·量具】没给 Python 侧加 certs 脚本（只跑了既有 TS 侧那份）**
+      *(来源：第 3 步；★ 与 T311（Go 侧补骨架验收）是同一族。)*
+      ⇒ **要做**：`certs/observe-py-cert.mjs`（验：插桩后 `python` 能跑 + 输出不变 + 接 sink 有事件 + 还原逐字）。
