@@ -175,6 +175,28 @@ export function renderInstrumentReport(
     lines.push(`  探针台账已记账 → ${rep.ledger.file}`);
     lines.push(`  统计：${rep.ledger.summary}`);
   }
+  // ★★★ T266（2026-10-14）：**探针就位 ≠ 有事件** —— `captureProbe` 在**没有 sink** 时是 **no-op**
+  //   （`probe.ts:40 hasGlobalProbeSink()` 为 false 就直接返回）。
+  //   ★ 实测病：插完桩直接跑 ⇒ **零事件、也不报错** ⇒ 调用方以为"插完就有数据"，实际什么都没观测。
+  //   ⇒ 这里【显式说出来】+ 给出**准确**的接法（导出名以 `probe.ts` 真实导出为准：
+  //     `setGlobalProbeSink` / `TSProbeCapture`；★ 不要写不存在的 `enableObserveFromEnv`）。
+  if (!rep.dryRun && totalSites > 0) {
+    lines.push(
+      `  ★ 探针已就位，但【默认不出事件】：无 sink 时 captureProbe 是 no-op。`,
+    );
+    lines.push(
+      `    ⇒ 要真观测，被测项目须在入口处接一次 sink：`,
+    );
+    lines.push(
+      `      import { setGlobalProbeSink, TSProbeCapture } from '<本行注入的那个 probe.js 相对路径>';`,
+    );
+    lines.push(
+      `      setGlobalProbeSink(new TSProbeCapture('<events.jsonl 路径>'));`,
+    );
+    lines.push(
+      `      （接完再跑，事件才会写进 events.jsonl；否则插了也观测不到。）`,
+    );
+  }
   return lines;
 }
 

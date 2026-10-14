@@ -2561,15 +2561,6 @@
       ⇒ ⇒ 于是 `cpf_5`（「DSL 是 scaffold/edit_code/consistency_check/rename 的输入」）**表达不了**。
       ⇒ **要做（先裁）**：这是 edge 类的**固有盲区** ⇒ 至少写进形状描述；或新增「类型引用」形状。
 
-- [ ] **T266 ★★★ 【默认零观测】`captureProbe` 无 sink 时是 **no-op** ⇒ 插了桩但**一条事件都不出**，而工具不说**
-      *(来源：2026-10-14 子代理实测；★ 接线后确实产出 10 条事件，参数/返回值都对。)*
-      ⇒ **实测**：插桩后直接跑 ⇒ **零事件**（`probe.js` 无 sink 时 no-op）；
-        ★ 被测项目**还得自己接 sink**（import `enableObserveFromEnv` + 入口调用 + 设 `OBSERVE_EVENTS_FILE`）
-        ⇒ 接线后产出 10 条，例：`{"probe":"a.add.exit","fields":{"ret":5,"level":"core"}}` ✓
-      ⇒ ★★ **问题不在"要接 sink"（那是设计）**，而在 **`observe_instrument` 的回执没说这件事**
-        ⇒ 调用方以为"插完就有数据"，实际**零观测** ⇒ 静默。
-      ⇒ **要做**：插桩回执里**明写**"探针已就位，但**还需接 sink 才会出事件**（怎么接：…）"。
-
 - [ ] **T267 ★★ 【跨仓 import 的类型错】插桩注入的 import 指向本仓 `dist/*.js`，而 dist 里**没有 `.d.ts`** ⇒ strict/CI 下必报 TS7016**
       *(来源：2026-10-14 子代理实测；★ 默认 `noEmitOnError:false` 时仍能 emit 并跑对，故**未被它判为致命**，但 CI 会挡。)*
       ⇒ **实测**：`error TS7016: Could not find a declaration file for module '…/probe.js'` ⇒ 被测项目要么加
