@@ -2695,3 +2695,66 @@
         ⇒ **建议**：语法门失败时**报出具体错误位置**（行列 + 原文片段）—— 现在这一步要人来猜。
       ⇒ ★ 本条也再次印证：**"含反引号/模板字符串"这类内容，本仓工具的 JSON 转义层确实不好用**
         ⇒ 稳妥做法是**用编辑工具直接改**（不经 JSON），或把 code 拆成不含嵌套反引号的形式。
+
+- [ ] **T300 ★★★★ 【P0·打断宿主】TS：同一行多个 `return` 落在【同一块作用域】⇒ 临时变量撞名 ⇒ `SyntaxError`、整模块加载失败**
+      *(来源：2026-10-14 TS 侧第 4 轮实测（子代理）+ 主代理亲自复现；★ 读数原文。)*
+      ⇒ **触发**：`switch(k){ case 1: return 'one'; case 2: return 'two'; default: return 'other'; }`
+        （★ **switch 各 case 共享一个块作用域**）；或同一行 `if (a>0) { return 1; return 2; }`。
+      ⇒ **实测（主代理复现）**：注入后那行是
+        `switch (k) { case 1: const __cam_ret3 = 'one'; …; case 2: const __cam_ret3 = 'two'; …; default: const __cam_ret3 = 'other'; … }`
+        ⇒ **三处同名** ⇒ `node` 直跑报 **`SyntaxError: Identifier '__cam_ret3' has already been declared`**
+        ⇒ **整模块加载失败**（不是"探针不生效"）。
+      ⇒ **根因**：`instrument.ts:1180`（`handleReturn`）`const tempVar = __cam_ret${n.startPosition.row + 1}`
+        —— **只用行号**，**没有列号 / 序号**。
+      ⇒ **要做**：临时变量名补上**列号**（对齐 T277 的 `anon@L<行>C<列>` 形态）或**全局序号**；
+        ★ 注意还有一处同族：`const tv = __cam_arrow${row+1}`（箭头表达式体）—— **一起改**。
+      ⇒ **判据**：`switch` 各 case 都 return、且同一行 ⇒ 插桩后 **`node` 能跑**、`tsc` 退 0。
+      ⇒ ★ **lint 看不见这条**（mini 跑 lint 报「✓ 不变量全过」）—— 它是"编译类"，台账里看不出来。
+
+- [ ] **T301 ★★★★ 【P0·打断宿主】TS：CommonJS 的 `.ts` 被注入 **ESM `import`** ⇒ `require is not defined`**
+      *(来源：2026-10-14 TS 侧第 4 轮实测。)*
+      ⇒ **触发**：`.ts` 里用 `require` / `module.exports`，`package.json` **无** `"type":"module"`，且**用 node 直跑**。
+      ⇒ **实测**：基线 `cjsDouble 8 base b`（能跑）⇒ 插桩后 **`ReferenceError: require is not defined in ES module scope`**
+        —— ★ 注入的 `import` **把文件变成了 ESM**。
+      ⇒ **根因**：`instrument.ts:381-383 buildImportStmt` **无条件产出 ESM import**，**不读宿主模块制式**。
+      ⇒ **要做**：注入前**判宿主制式**（`package.json` 的 `type` / 文件扩展名 `.cjs` / 是否已有 `require`）⇒
+        CJS 场景改用 `require(...)` 或**如实拒绝并说明**（★ 不许"注入了但跑不起来"）。
+      ⇒ **判据**：CJS 的 `.ts` 插桩后 **`node` 能跑**、输出与基线一致。
+      ⇒ ★ 边界（子代理**如实标注为推断**）：宿主若用 tsc/bundler 降级到 CJS ⇒ 不触发（**未实测**）。
+
+- [ ] **T302 ★★★ 【P1·静默零结果】`isSourceFile` 声称 8 种扩展名，`collectTsFiles` **只收 `.ts`** ⇒ 纯 JS / TSX 项目报「扫描 0 个源文件」**
+      *(来源：2026-10-14 TS 侧第 4 轮实测。)*
+      ⇒ **触发**：任何纯 JS（`.js`/`.mjs`/`.cjs`）或 TSX（`.tsx`）项目。
+      ⇒ **实测**：夹具 9 个文件（`.js`/`.mjs`/`.cjs`/`.jsx`/`.tsx`/`.mts`/`.cts`/`.d.ts`/`.ts`）
+        ⇒ 报告「**扫描 0 个源文件** / 完成：0 新插桩…共 0 探针点」⇒ ★ **长得像"这项目没函数"**（而不是"我没扫"）。
+      ⇒ **根因**：**同一件事住了两处且不一致** —— `observe_langs.ts:238/253` 的 `TS_EXT` 有 **8 种**，
+        而 `instrument.ts:373` 只 `endsWith('.ts')`。
+      ⇒ **要做**：让"收哪些文件"**只住一处**（`TS_EXT` 单一事实源）；★ 并**如实标注**哪些扩展名**只插桩不解析**。
+      ⇒ ★ 已验（正面）：`.d.ts` / `.d.mts` **未被误插** ✓。
+      ⇒ **判据**：`.js`/`.mjs`/`.tsx` 项目 ⇒ 报告里的"扫描 N 个源文件"**N > 0**。
+
+- [ ] **T303 ★★ 【P1·不打断】TS：`get`/`set` 同名 ⇒ 探针名撞车（T277 只修了匿名分支）**
+      *(来源：2026-10-14 TS 侧第 4 轮实测。)*
+      ⇒ **实测**：`class C { get value(){…} set value(v){…} }` ⇒ 台账 `classes.value.enter` **×2**；
+        运行期两个 enter 事件**同名**（`args={}` vs `args={"v":9}`），**分不清谁是谁**。
+      ⇒ **根因**：`instrument.ts:422-457 detectEnclosingFunction` 取 `method_definition` 的 `name` 文本，
+        getter/setter 都叫 `value`，**没有 get/set 维度**。★ T277 只修了"匿名"那一支。
+      ⇒ **要做**：给 getter/setter 加区分（如 `value.get` / `value.set`）。
+      ⇒ ★ **lint 能抓**（真阳性：`duplicate-name :: classes.value`）—— 这是**量具第一次在 TS 侧立功**。
+
+- [ ] **T304 ★★★ 【量具盲区】`lint` 判据③（"零探针文件"）在真实台账上【恒不可达】**
+      *(来源：2026-10-14 TS 侧第 4 轮实测。)*
+      ⇒ **实测**：真实台账顶层只有 `projectRoot / instrumentedAt / sites / stats`（**没有 `files` 数组**），
+        而 `lint` 读的正是 `ledger.files` ⇒ **恒 `undefined`** ⇒ 判据③**永不触发**；
+        且 `buildProbeLedger` 本身会**跳过 0 探针文件** ⇒ 两头都堵死。
+      ⇒ **对照（证明判据本身没坏）**：**手工**给合成台账加 `files` 数组 ⇒ `lint` **报出 `[empty-file]`** ✓。
+      ⇒ ⇒ ★ 它**自称要抓"整文件漏插"，实际抓不到**（"沉默的缺失"—— 而且是**量具自己**的沉默）。
+      ⇒ **要做**：要么让 `buildProbeLedger` **记下"扫到但 0 探针"的文件**，要么**删掉判据③**（不许留着不生效）。
+
+- [ ] **T305 ★★ 【量具盲区·同族】`lint` 对"打断宿主"类问题**零覆盖**（TS 与 Go 两侧都实测到）**
+      *(来源：2026-10-14 TS 第 4 轮 + Go 第 3 轮，各自独立实测。)*
+      ⇒ **实测**：`gp1-r4v-mini`（`node` **SyntaxError**）、`gp1-r3v-mini`（`go build` **退 1**）
+        跑 `lint` **都报「✓ 不变量全过」**。
+      ⇒ ★ 已用 **T299** 在回执里**明说这条边界**（"编译/运行/取值时机/序列化/事件顺序它看不见"）⇒ **该做的已做**；
+        本条只作为**记录**（避免以后有人以为 `lint` 全绿就等于健康）。
+      ⇒ **可选加强（先裁）**：让 `lint` 顺带跑一次 `tsc --noEmit` / `go build ./...` ⇒ 但那会从"秒级"变"慢"，**要权衡**。
