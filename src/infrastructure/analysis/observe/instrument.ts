@@ -419,10 +419,42 @@ function extractParamNames(fn: InstrNode): string[] {
   for (let i = 0; i < params.childCount; i++) {
     const p = params.child(i);
     if (!p) continue;
-    const nameNode = p.childForFieldName?.('name') ?? firstIdentifier(p);
-    if (nameNode && nameNode.text) names.push(nameNode.text);
+    // ★★★ T275（2026-10-14）：**统一用 `collectPatternNames`** —— 它天然覆盖
+    //   普通参数 / 对象解构 / 数组解构 / 重命名解构 / 嵌套解构。
+    //   ★ 原先用 `firstIdentifier` ⇒ 解构只拿到**第一个**绑定名
+    //     （实测 `withDestructure({a, b})` 注入的是 `args: { a: a }`，**`b` 丢失**）。
+    //   ★★ TS 的参数是 **`required_parameter` / `optional_parameter`**（外层包装，
+    //     里面才是 `identifier` 或 `object_pattern` + 类型标注）⇒ **必须递归下去**，
+    //     按 `p.type === 'object_pattern'` 直接判会**判不中**（我第一次就是这么改的，实测无效）。
+    //   ★ 类型标注里的 `type_identifier`（如 `Foo`）**不会被收**（只认 identifier / shorthand）。
+    const collected: string[] = [];
+    collectPatternNames(p, collected);
+    for (const n of collected) if (!names.includes(n)) names.push(n);
   }
   return names;
+}
+
+/**
+ * ★ T275：把**解构模式**里的绑定名全收集出来（`{a, b}` / `[x, y]` / 嵌套 / 默认值都覆盖）。
+ * ★ `{a: x}` 这类**重命名**只取 `x`（value 侧 = 真正的变量）；`key` 只是属性名。
+ */
+function collectPatternNames(n: InstrNode, out: string[], depth = 0): void {
+  if (depth > 6) return;
+  if (n.type === 'identifier' || n.type === 'shorthand_property_identifier_pattern') {
+    out.push(n.text);
+    return;
+  }
+  if (n.type === 'pair_pattern') {
+    const v = n.childForFieldName?.('value');
+    if (v) {
+      collectPatternNames(v, out, depth + 1);
+      return;
+    }
+  }
+  for (let i = 0; i < n.childCount; i++) {
+    const c = n.child(i);
+    if (c) collectPatternNames(c, out, depth + 1);
+  }
 }
 
 /** 从节点里找第一个 identifier/property_identifier 子节点（含嵌套，深度受限） */

@@ -2561,11 +2561,6 @@
       ⇒ ⇒ 于是 `cpf_5`（「DSL 是 scaffold/edit_code/consistency_check/rename 的输入」）**表达不了**。
       ⇒ **要做（先裁）**：这是 edge 类的**固有盲区** ⇒ 至少写进形状描述；或新增「类型引用」形状。
 
-- [ ] **T275 ★★ 【信息丢失】解构参数只记第一个字段**
-      *(来源：2026-10-14 第二轮端到端实测。)*
-      ⇒ **实测**：`withDestructure({a, b}: {a:number;b:number})` ⇒ 注入 `args: { a: a }`，**`b` 丢失**。
-      ⇒ **触发条件**：对象解构参数。⇒ **要做**：`extractParamNames` 要展开解构模式（或如实标注"解构只记首字段"）。
-
 - [ ] **T277 ★★ 【信息歧义】内联回调 / 同名 getter-setter 的探针名与宿主同名**
       *(来源：2026-10-14 第二轮端到端实测。)*
       ⇒ **实测**：`arr.map(x=>x*2)` 的回调探针名 = `nested.useCallback.enter/exit`（**与外层同名**）；
