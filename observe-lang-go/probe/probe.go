@@ -157,6 +157,45 @@ func (s *Sink) SetDeviationMB(n int64) *Sink {
 // Emit serializes and appends one event. Rate-limited per probe; over-rate
 // events are dropped so the ring stays bounded. Rotation happens in-place when
 // the current file exceeds its cap.
+// sanitizeFields 把 fields 里**不可 JSON 序列化**的值降级成占位字符串（★ T286）。
+//
+// ★ 为什么需要：`json.Marshal` 遇到 func / chan / complex 会**直接报错** ⇒ 整个事件丢掉。
+// 实测：参数里有个 `fn func()` ⇒ 连**这一条事件**都没了（观测者以为函数没被调到）。
+// ⇒ 取舍：**宁可丢"那个值的细节"，不可丢"这条事件"**。
+//
+// ★ **递归**处理：`args` 是嵌套 map —— 只在顶层判会"一颗老鼠屎坏一锅汤"
+//   （一个函数值参数就让**所有**参数都变成占位符）。
+func sanitizeFields(fields map[string]any) map[string]any {
+	out := make(map[string]any, len(fields))
+	for k, v := range fields {
+		out[k] = sanitizeValue(v)
+	}
+	return out
+}
+
+// sanitizeValue 递归把不可序列化的值换成 `<unserializable: T>`。
+func sanitizeValue(v any) any {
+	switch t := v.(type) {
+	case map[string]any:
+		out := make(map[string]any, len(t))
+		for k, vv := range t {
+			out[k] = sanitizeValue(vv)
+		}
+		return out
+	case []any:
+		out := make([]any, len(t))
+		for i, vv := range t {
+			out[i] = sanitizeValue(vv)
+		}
+		return out
+	default:
+		if _, err := json.Marshal(v); err != nil {
+			return fmt.Sprintf("<unserializable: %T>", v)
+		}
+		return v
+	}
+}
+
 func (s *Sink) Emit(probeName, source string, fields map[string]any) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -167,7 +206,19 @@ func (s *Sink) Emit(probeName, source string, fields map[string]any) error {
 	ev := Event{Probe: probeName, Time: now, Source: source, Fields: fields}
 	data, err := json.Marshal(ev)
 	if err != nil {
-		return err
+		// ★★★ T286（2026-10-14）：**序列化失败不许丢事件** ——
+		//   实测：参数里含**函数值**（`fn func()`）⇒ `json.Marshal` 报
+		//   `unsupported type: func()` ⇒ 原先这里直接 `return err`、而调用方
+		//   （`global.go` 的 `Capture`）写的是 `_ = s.Emit(...)` ⇒ **错误被吞、事件静默消失**。
+		//   ★★ 后果最阴：观测者会得出「**这个函数根本没被调到**」的**错误结论**
+		//     （实测 `main.Safe.enter` 在修复前后都没有事件）—— ★ **缺失伪装成事实**。
+		//   ⇒ 降级重试：把**不可序列化的值**替换成占位符（`<unserializable: func()>`），
+		//     ★ 宁可丢"那个值的细节"，**不可丢"这条事件"**。
+		ev.Fields = sanitizeFields(ev.Fields)
+		data, err = json.Marshal(ev)
+		if err != nil {
+			return err // 降级后仍失败 ⇒ 真报（上层会出声，见 Capture）
+		}
 	}
 	n, err := s.fh.Write(append(data, '\n'))
 	if err != nil {

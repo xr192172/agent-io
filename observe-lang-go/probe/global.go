@@ -1,9 +1,44 @@
 package probe
 
 import (
+	"fmt"
+	"os"
 	"sync"
 	"time"
 )
+
+// reportProbeError 把探针的内部错误**说出去**（★ T286），但**限流**。
+//
+// ★ 为什么不能静默：实测参数里一个函数值就让 `enter` 事件消失 ——
+//   观测者会得出「这个函数根本没被调到」的**错误结论**（缺失伪装成事实）。
+// ★ 为什么不能每次都喊：探针跑在宿主热路径上，刷屏会淹没宿主的日志。
+// ⇒ 策略：**首次**完整说（含成因），之后每 100 次报一次累计数。
+var (
+	probeErrMu    sync.Mutex
+	probeErrCount int
+	probeErrSeen  bool
+)
+
+func reportProbeError(probeName string, err error) {
+	probeErrMu.Lock()
+	probeErrCount++
+	first := !probeErrSeen
+	probeErrSeen = true
+	n := probeErrCount
+	probeErrMu.Unlock()
+	if first {
+		fmt.Fprintf(os.Stderr,
+			"[camprobe] 探针事件**发不出去**（第 1 次）：%v\n"+
+				"  probe=%s\n"+
+				"  ★ 常见成因：参数里含**函数值 / chan** 等不可 JSON 序列化的东西。\n"+
+				"    （不可序列化的值现在会降级成 `<unserializable: T>` 占位符，事件本身**不会**因此消失；\n"+
+				"     若仍看到本行，说明是写盘/权限问题，不是序列化问题。）\n", err, probeName)
+		return
+	}
+	if n%100 == 0 {
+		fmt.Fprintf(os.Stderr, "[camprobe] 探针事件发不出去：累计 %d 次（最近 probe=%s: %v）\n", n, probeName, err)
+	}
+}
 
 // Package-level globals for zero-dependency instrumentation.
 // Probes check these before emitting; if nil, the call is a no-op.
@@ -56,7 +91,13 @@ func Capture(probeName, source string, fields map[string]any) {
 	if s == nil {
 		return
 	}
-	_ = s.Emit(probeName, source, fields)
+	if err := s.Emit(probeName, source, fields); err != nil {
+		// ★★★ T286（2026-10-14）：**不再静默吞** —— 原先这里是 `_ = s.Emit(...)`
+		//   ⇒ 序列化失败（如参数含函数值）与写盘失败**都无声无息**
+		//   ⇒ 实测：一个 `fn func()` 参数就让 `main.Safe.enter` **彻底消失**，而没人知道。
+		//   ★ 探针**不许抛错**（它跑在宿主代码里）⇒ 只写 stderr，且**限流**（避免刷屏）。
+		reportProbeError(probeName, err)
+	}
 }
 
 // CaptureErr is a convenience: captures err as a string, nil error becomes "".
