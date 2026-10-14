@@ -2728,3 +2728,28 @@
       ⇒ **实测**：`unvendorGoProbe` 只删 `internal/camprobe`，不删父目录 ⇒ 三套夹具还原后都留空 `internal/`；
         `.agent-io/` 亦留空目录。
       ⇒ **要做**：删探针包时，**若父目录是空的且是我们建的** ⇒ 一并删（`.agent-io/` 同理）。
+
+- [ ] **T297 ★★★ 【观测歧义·与 T295 同族】Go：不同【类型的方法】/ 顶层函数**共用同一探针名**（接收者被丢掉）**
+      *(来源：2026-10-14 Go 侧补测的补充；★ 不打断宿主，但让**契约匹配与调用树失真**。)*
+      ⇒ **触发**：多个类型各有同名方法（`String()` / `Error()` / `Close()` / `Read()` / `Write()` —— **极常见**），
+        或「顶层函数名 == 某类型方法名」（Go 允许共存）。
+      ⇒ **根因**：探针名只取 `pkg.<Name>`（`instrument.go:387` 传 `t.Name.Name`，**把接收者丢了**）。
+      ⇒ **实测**（夹具 `gp1-go2-collide`，已插桩、`events.jsonl` 在案）：
+        · 报告：`main.String` = enter×2 / exit×2；`main.Run` = enter×2 / exit×2；
+        · 运行期（原文）：
+          ```
+          main.String.enter {"args":{}} / main.String.exit {"ret":{"0":"a"}}   ← A.String
+          main.String.enter {"args":{}} / main.String.exit {"ret":{"0":"b"}}   ← B.String（同名！）
+          main.Run.enter / main.Run.exit ret "fn"       ← 顶层 func Run
+          main.Run.enter / main.Run.exit ret "method"   ← 方法 (C) Run（同名！）
+          ```
+      ⇒ ★★ **与 T295（多 `init()` 撞名）是同一族**：**探针名空间不含"接收者 / 文件"维度**。
+      ⇒ ★ 且 `lint` 的 `enter>1` 判据**本可抓这一条**，但**因 T294（Go 侧无台账）抓不到**
+        ⇒ **两条账互相咬住**：量具空转 ⇒ 它专门要抓的撞名也漏了。
+      ⇒ **要做**：探针名带上接收者（如 `main.(*A).String` / `main.A.String`）；★ 与 T295 一起定"命名空间"口径。
+      ⇒ **判据**：两个类型各有 `String()` ⇒ 事件里**两个名字不同**；`lint` 在 Go 侧能报出撞名。
+
+- [x] **【补记】Go 侧补测最终计数：新账 9 条**（P0×3 打断编译 / P1×2 静默漏插 / P2×4 量具·歧义·残留）
+      *(2026-10-14 收尾更新；对应 T289–T297。)*
+      ⇒ 另附一条**环境提醒**（与工具无关）：Git Bash 里 `cd D:/project_develop/...` **偶发** "No such file or directory"，
+        改用 `/d/project_develop/...` 即正常 ⇒ 复现时优先用 `/d/` 形式。
