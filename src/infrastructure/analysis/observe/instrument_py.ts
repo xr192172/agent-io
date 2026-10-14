@@ -1,12 +1,14 @@
 /**
  * observe · **Python 插桩语言包**（第 3 门语言，2026-10-15）。
  *
- * 骨架（`instrument_skeleton.ts`：主流程 + ③ `applyInsertions` + 备份/写盘/幂等）**一行不改**，
- * 加一门语言只写本文件。分节即三个钩子：
+ * 骨架（`instrument_skeleton.ts`：单文件主流程 + **项目级四件** + ③ `applyInsertions` + 备份/写盘/幂等）
+ * **一行不改**，加一门语言只写本文件。分节即三个**真钩子**：
  *   ① **命名规则** `lambdaName` / `scanFunctions` 的 qualname —— 含**所属**与**位置**
  *   ② **遍历模型** `scanFunctions` —— 所有「函数」节点及其 body 范围
  *   ⑥ **取值时机** `collectReturns` / `returnExprOf` —— `return` 怎么读返回值
- * 其余是**每语言必需的语法管道**：幂等标记、探针 import、项目根路标、数函数、语句渲染。
+ * 其余是**每语言必需的语法管道**：幂等标记、探针 import、语句渲染；
+ * 而「收文件 / 数函数 / 向上找根 / 逐文件循环」是**数据**（`rootMarker` / `fnTypes` + 一个谓词），
+ * 实现在骨架里 —— 见 `instrument_skeleton.ts` 头注「第二笔」。
  *
  * ★ Python 与 TS 的三处**真差异**：① 无大括号 ⇒ 靠**缩进**，单行 suite（`def f(): return 1` /
  * `if c: return x`）不能塞换行 ⇒ 退回 `;`；② `lambda` 体是**表达式** ⇒ 包成 `cam_lambda(...)`
@@ -14,11 +16,13 @@
  * 天然 tuple、语义不变；裸 `return` 与生成器（`yield`）另判。
  */
 
-import fs from 'node:fs';
 import path from 'node:path';
-import { isNoiseFileName, skipDirSet } from '../../parse/source_exts.js';
+import { isNoiseFileName } from '../../parse/source_exts.js';
 import {
+  collectSourceFiles,
   instrumentFileWithHooks,
+  instrumentProjectWithHooks,
+  matchesContract,
   type AstNode,
   type CollectSitesCtx,
   type InstrumentHooks,
@@ -39,35 +43,21 @@ export function isInstrumentablePyFile(rel: string): boolean {
   return rel.endsWith('.py') && !isNoiseFileName(path.basename(rel));
 }
 
-/** 递归收集项目下所有可插桩的 .py（跳过 node_modules/dist/.git/__pycache__ 等）。 */
+/**
+ * 递归收集项目下所有可插桩的 .py。
+ * ★ 2026-10-15：遍历与跳过表**已搬到骨架** `collectSourceFiles` —— 本函数只回答
+ *   "**哪些文件名算 Python 源文件**"（= `isInstrumentablePyFile`）。
+ */
 export function collectPyFiles(root: string): string[] {
-  const out: string[] = [];
-  const skip = skipDirSet([]);
-  const walk = (dir: string): void => {
-    let entries: fs.Dirent[];
-    try {
-      entries = fs.readdirSync(dir, { withFileTypes: true });
-    } catch {
-      return;
-    }
-    for (const e of entries) {
-      if (skip.has(e.name)) continue;
-      const full = path.join(dir, e.name);
-      if (e.isDirectory()) walk(full);
-      else if (e.isFile() && isInstrumentablePyFile(e.name)) out.push(full);
-    }
-  };
-  walk(root);
-  return out;
+  return collectSourceFiles(root, isInstrumentablePyFile);
 }
 
-/** 对项目下所有 .py 插桩（骨架主流程逐文件跑）。 */
+/**
+ * 对项目下所有 .py 插桩（骨架主流程逐文件跑）。
+ * ★ 2026-10-15：**"收文件 + 逐文件循环 + backupRoot 口径"已搬到骨架**（`instrumentProjectWithHooks`）。
+ */
 export async function instrumentPyProject(root: string, opts: InstrumentOptions = {}): Promise<InstrumentFileResult[]> {
-  const results: InstrumentFileResult[] = [];
-  for (const f of collectPyFiles(root)) {
-    results.push(await instrumentFileWithHooks(f, pyInstrumentHooks, { ...opts, backupRoot: root }));
-  }
-  return results;
+  return instrumentProjectWithHooks(root, pyInstrumentHooks, isInstrumentablePyFile, opts);
 }
 
 // ── 骨架钩子（★ 语言专属装配点） ──────────────────────────────
@@ -77,9 +67,11 @@ export const pyInstrumentHooks: InstrumentHooks = {
   markers: { core: MARKER, deep: DEEP_MARKER },
   comment: '#',
   probeImport: (file, projectRoot) => relProbeDir(file, projectRoot),
-  inferProjectRoot: (file) => inferPyProjectRoot(file),
+  // ★ 2026-10-15：找根由骨架做 —— 这里只给**路标**（原先是个 14 行的钩子，与 TS 侧只差这个路径）
+  rootMarker: `${PROBE_DIR_REL}/${PROBE_MODULE}.py`,
+  // ★ 2026-10-15：数函数也由骨架做 —— 这里只给**集合**（原先是个 8 行的钩子，与 TS 侧同一个递归）
+  fnTypes: FN_TYPES,
   buildImportStmt: (spec) => buildPyImportStmt(spec),
-  countFunctions: (root) => countPyFunctions(root),
   collectSites: (ctx) => collectPySites(ctx),
 };
 
@@ -89,20 +81,12 @@ function relProbeDir(file: string, projectRoot: string): string {
   return rel || '.';
 }
 
-/** 向上找含 `observe-lang-py/camprobe.py` 的项目根；找不到**响亮抛**（不静默兜底）。 */
-export function inferPyProjectRoot(file: string): string {
-  let dir = path.dirname(file);
-  for (let i = 0; i < 8; i++) {
-    if (fs.existsSync(path.join(dir, PROBE_DIR_REL, `${PROBE_MODULE}.py`))) return dir;
-    const parent = path.dirname(dir);
-    if (parent === dir) break;
-    dir = parent;
-  }
-  throw new Error(
-    `推断不出 agent-io 仓库根：从 ${file} 向上 8 层都没找到路标 \`${PROBE_DIR_REL}/${PROBE_MODULE}.py\` ` +
-      `⇒ 无法算出探针模块位置。★ 请**显式传** \`project_root\`（= agent-io 仓库根）。`,
-  );
-}
+/**
+ * 向上找含 `observe-lang-py/camprobe.py` 的项目根。
+ * ★ 2026-10-15：**实现已搬到骨架** `inferProjectRootByMarker`（本文件与 TS 侧的两份逐字相同，
+ *   只差路标路径）⇒ 本文件只把路标交给 `pyInstrumentHooks.rootMarker`。
+ *   T265 那条纪律（**找不到就响亮抛，不静默退回文件目录**）由骨架统一执行。
+ */
 
 /** 头部 import：Python 无"相对 import 说明符"⇒ 用 `__file__` 相对路径把探针目录插进 `sys.path`。 */
 function buildPyImportStmt(spec: string): string {
@@ -113,15 +97,12 @@ function buildPyImportStmt(spec: string): string {
   );
 }
 
-/** 数函数节点（台账判据③用）：`function_definition` + `lambda`，含嵌套。 */
-function countPyFunctions(n: AstNode): number {
-  let c = FN_TYPES.has(n.type) ? 1 : 0;
-  for (let i = 0; i < n.childCount; i++) {
-    const ch = n.child(i);
-    if (ch) c += countPyFunctions(ch);
-  }
-  return c;
-}
+/**
+ * 数函数节点（台账判据③用）：`function_definition` + `lambda`，含嵌套。
+ * ★ 2026-10-15：**实现已搬到骨架** `countFunctionNodes(root, fnTypes)`（本文件与 TS 侧的两份
+ *   是同一个递归，只差 `FN_TYPES` 这个集合）⇒ 本文件的 `FN_TYPES` 现在作为**数据**喂给
+ *   `pyInstrumentHooks.fnTypes`。
+ */
 
 // ── ② 遍历模型：所有「函数」节点及其 body 范围（方法/嵌套/lambda/async def） ──
 
@@ -235,7 +216,7 @@ function collectDefSites(fn: PyFn, base: string, file: string, content: string, 
   const body = fn.body;
   if (!body) return;
   const line = fn.node.startPosition.row + 1;
-  if (matchContract(`${base}.enter`, probes)) {
+  if (matchesContract(`${base}.enter`, probes)) {
     const { indent, inline } = indentInfo(content, body.startIndex);
     const call = probeCall(`${base}.enter`, [['file', str(fileRel)], ['args', pyDict(fn.params.map((p) => [p, p]))], ['level', str('core')]]);
     insertions.push({ index: body.startIndex, site: { probe: `${base}.enter`, file, line, kind: 'enter', level: 'core', injected: `${inline ? '\n' + indent : ''}${call}\n${indent}` } });
@@ -243,7 +224,7 @@ function collectDefSites(fn: PyFn, base: string, file: string, content: string, 
   const returns = collectReturns(body);
   if (returns.length === 0) {
     // 无显式 return（普通函数 / `__init__` / 生成器）⇒ 函数体末尾补出口探针
-    if (matchContract(`${base}.exit`, probes)) {
+    if (matchesContract(`${base}.exit`, probes)) {
       const { indent, inline } = indentInfo(content, body.startIndex);
       const call = probeCall(`${base}.exit`, [['file', str(fileRel)], ['ret', 'None'], ['level', str('core')]]);
       insertions.push({ index: body.endIndex, site: { probe: `${base}.exit`, file, line, kind: 'exit', level: 'core', injected: `${inline ? '; ' : '\n' + indent}${call}` } });
@@ -254,7 +235,7 @@ function collectDefSites(fn: PyFn, base: string, file: string, content: string, 
 }
 
 function handleReturnSite(ret: AstNode, probeName: string, file: string, content: string, fileRel: string, probes: string[] | undefined, insertions: Insertion[]): void {
-  if (!matchContract(probeName, probes)) return;
+  if (!matchesContract(probeName, probes)) return;
   const line = ret.startPosition.row + 1;
   const expr = returnExprOf(ret);
   // ★ 单行 suite（`if c: return x`）不能塞换行 ⇒ 退回 `;` 分隔（同 TS 侧 T273，形态不同）
@@ -274,8 +255,8 @@ function handleReturnSite(ret: AstNode, probeName: string, file: string, content
 
 /** lambda：体是**表达式** ⇒ 包成 `cam_lambda(...)`（同发 enter+exit 并原样返回）。`template` 接住内层编辑。 */
 function collectLambdaSite(fn: PyFn, base: string, file: string, content: string, fileRel: string, probes: string[] | undefined, insertions: Insertion[]): void {
-  const wantEnter = matchContract(`${base}.enter`, probes);
-  const wantExit = matchContract(`${base}.exit`, probes);
+  const wantEnter = matchesContract(`${base}.enter`, probes);
+  const wantExit = matchesContract(`${base}.exit`, probes);
   const body = fn.body;
   if ((!wantEnter && !wantExit) || !body) return;
   const args = pyDict(fn.params.map((p) => [p, p]));
@@ -299,10 +280,11 @@ function collectLambdaSite(fn: PyFn, base: string, file: string, content: string
 
 // ── 语法管道小件 ──────────────────────────────────────────────
 
-/** 契约门：probes 为 undefined ⇒ 探索模式恒 true。 */
-function matchContract(name: string, probes?: string[]): boolean {
-  return probes === undefined || probes.includes(name);
-}
+/**
+ * 契约门。
+ * ★ 2026-10-15：**已搬到骨架** `matchesContract` —— 本文件原先那份与 TS 侧**逐字相同**
+ *   （判据住两处）。调用点改用 `matchesContract`，语义不变（`undefined` ⇒ 探索模式恒 true）。
+ */
 
 /** 该偏移处的缩进；★ 本行在它之前**已有代码**（单行 suite）⇒ `inline=true`，注入走 `;`。 */
 function indentInfo(content: string, index: number): { indent: string; inline: boolean } {

@@ -32,13 +32,16 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { isNoiseFileName, isTsJsExt, skipDirSet } from '../../parse/source_exts.js';
+import { isNoiseFileName, isTsExt, isTsJsExt } from '../../parse/source_exts.js';
 // ★★★ 2026-10-15：**语言无关的插桩骨架**（本文件即从它派生 —— 见 `instrument_skeleton.ts` 头注）。
 //   `applyInsertions` / `prependAfterShebang` / `backupOriginal` / 主流程 `instrumentFileWithHooks`
 //   全部搬到骨架 ⇒ 本文件只留 **TS/JS 专属的那几件**（AST 遍历、命名、return 改写、ESM/CJS 判制式）。
 import {
   BACKUP_DIR,
+  collectSourceFiles,
   instrumentFileWithHooks,
+  instrumentProjectWithHooks,
+  matchesContract,
   type Insertion as SkeletonInsertion,
   type InstrumentHooks,
 } from './instrument_skeleton.js';
@@ -160,14 +163,10 @@ export interface InstrumentOptions {
 }
 
 /**
- * 契约门：探针名是否命中契约列表。
- *   - probes === undefined → 探索模式，恒 true（全量无脑插桩）
- *   - probes 非 undefined → 精确匹配（契约模式）
+ * ★ 契约门 `matchesContract` 已搬到骨架（`instrument_skeleton.ts`）——
+ *   它原先在本文件与 `instrument_py.ts` **各写了一份逐字相同的实现**（判据住两处）。
+ *   本文件现在 `import { matchesContract }`，调用点不变（见下方 `collectSites` 等）。
  */
-function matchContract(probeName: string, probes?: string[]): boolean {
-  if (probes === undefined) return true;
-  return probes.includes(probeName);
-}
 
 /** 探针调用标记：已插桩文件里若含此标记则跳过（幂等） */
 const PROBE_MARKER = 'observe:instrumented';
@@ -375,19 +374,11 @@ const IO_CALLS: Record<string, string> = {
 };
 
 /**
- * ★ T304（2026-10-15）：数一棵 AST 里的**函数节点**（`FN_TYPES`，含嵌套 / 箭头）。
- * 用途：台账判据③区分"有函数却 0 探针"（漏插）与"本就无函数"（纯类型文件，不报）。
- * ★ 只数 `FN_TYPES`（有体/可插桩的那几类）—— `declare function` / `abstract foo():void`
- *   这类**无体的签名**不是 `FN_TYPES` ⇒ 天然不算（那些文件本就该 0 探针）。
+ * ★ T304（2026-10-15）：数函数节点 —— **实现已搬到骨架** `countFunctionNodes(root, fnTypes)`
+ *   （本文件与 `instrument_py.ts` 的两份是同一个递归，只差 `FN_TYPES` 这个集合）。
+ *   本文件的 `FN_TYPES` 现在作为**数据**喂给 `tsJsInstrumentHooks.fnTypes`。
+ *   用途不变：台账判据③区分"有函数却 0 探针"（漏插）与"本就无函数"（纯类型文件，不报）。
  */
-function countFunctionNodes(n: InstrNode): number {
-  let c = FN_TYPES.has(n.type) ? 1 : 0;
-  for (let i = 0; i < n.childCount; i++) {
-    const ch = n.child(i);
-    if (ch) c += countFunctionNodes(ch);
-  }
-  return c;
-}
 
 /**
  * ★★★ T302（2026-10-15）：**「收哪些文件」只住一处**。
@@ -407,26 +398,14 @@ export function isInstrumentableTsJsFile(rel: string): boolean {
   return isTsJsExt(path.extname(rel)) && !isNoiseFileName(path.basename(rel));
 }
 
-/** 递归收集项目下所有可插桩的 TS/JS 源文件（跳过 node_modules / dist / .git / .agent-io） */
+/**
+ * 递归收集项目下所有可插桩的 TS/JS 源文件。
+ * ★ 遍历与跳过表（node_modules / dist / .git / .agent-io）**已搬到骨架** `collectSourceFiles`；
+ *   本函数现在只回答"**哪些文件名算我的源文件**"（= `isInstrumentableTsJsFile`）。
+ *   ⇒ 语言包不再重写遍历（那是两份逐字相同的 20 行）。
+ */
 export function collectTsFiles(root: string): string[] {
-  const out: string[] = [];
-  const skip = skipDirSet([]);
-  const walk = (dir: string) => {
-    let entries: import('node:fs').Dirent[];
-    try {
-      entries = fs.readdirSync(dir, { withFileTypes: true });
-    } catch {
-      return;
-    }
-    for (const e of entries) {
-      if (skip.has(e.name)) continue;
-      const full = path.join(dir, e.name);
-      if (e.isDirectory()) walk(full);
-      else if (e.isFile() && isInstrumentableTsJsFile(e.name)) out.push(full);
-    }
-  };
-  walk(root);
-  return out;
+  return collectSourceFiles(root, isInstrumentableTsJsFile);
 }
 
 /** 宿主模块制式：ESM（`import`）还是 CJS（`require`）。 */
@@ -487,6 +466,36 @@ function detectModuleSystem(file: string, content: string): HostModuleSystem {
 }
 
 /**
+ * ★★★ T314（2026-10-15）：**注入的探针文本必须随【宿主语法】分叉** —— 这条纪律的两个落点见下方
+ *   `scopeRef` / `catchErrExpr`。
+ *
+ * ## 病（实测，2026-10-15 回归夹具第一次跑就撞上）
+ * 注入的探针文本原先**只有一种形态**，用了 `(e as Error)` / `(globalThis as any)` —— **TS 专属**。
+ * 而 T302 已把"收哪些文件"扩到 **8 个扩展名**（含 `.js/.mjs/.cjs/.jsx`）⇒ 对纯 JS 文件插桩
+ * ⇒ `node main.mjs` ⇒ **`SyntaxError: Unexpected identifier 'as'`，宿主程序直接起不来**。
+ * ★★ 而且**静默**：插桩回执 `sites=6`、**无 error**、文件已写盘 ⇒ 只有等你真去跑才炸
+ *   （正是 ARC-7 点名要禁的"错了却静默降级"）。
+ *
+ * ## 为什么非要分叉（而不是"统一用 JS 写法"）
+ *   · TS 宿主：`catch (e)` 的 `e` 是 **`unknown`** ⇒ `e?.message` **过不了宿主 tsc** ⇒ 需要 `as` 断言；
+ *   · JS 宿主：`as` **不是合法语法** ⇒ 一个字都不能有。
+ *   ⇒ 两边要求**相反**，只能按宿主扩展名分叉；判据住一处：`isTsExt`（`parse/source_exts.ts`）。
+ */
+function isTsHost(file: string): boolean {
+  return isTsExt(path.extname(file));
+}
+
+/** scope 模式的探针入口表达式（TS 宿主需 `as any`：`globalThis` 上没有 `__probeScope` 的声明）。 */
+function scopeRef(isTs: boolean): string {
+  return isTs ? '(globalThis as any).__probeScope' : 'globalThis.__probeScope';
+}
+
+/** catch 探针的 err 表达式（TS 宿主的 catch 变量是 `unknown` ⇒ 需断言；JS 宿主**不许有** `as`）。 */
+function catchErrExpr(v: string, isTs: boolean): string {
+  return isTs ? `(${v} as Error)?.message ?? String(${v} ?? '')` : `${v}?.message ?? String(${v} ?? '')`;
+}
+
+/**
  * ★ T302（2026-10-15）：模块基名（探针名前缀）= 文件名去掉 TS/JS 扩展名。
  *
  * ★ 为什么不能再用 `path.basename(file).replace('.ts', '')`：那是**只按 `.ts` 写的**，
@@ -514,36 +523,37 @@ function buildImportStmt(probeImport: string, system: HostModuleSystem): string 
 function relativeProbeImport(file: string, projectRoot: string): string {
   const observeProbe = path.join(projectRoot, 'dist', ...PROBE_DIR_REL.split('/'), 'probe.js');
   let rel = path.relative(path.dirname(file), observeProbe).replaceAll('\\', '/');
+  // ★★★ T315（2026-10-15）：**跨盘时 `path.relative` 返回的是【绝对路径】** ⇒ 原先那句
+  //   `if (!rel.startsWith('.')) rel = './' + rel;` 会把它拼成 `./D:/…` —— **一个谁也解析不了的说明符**。
+  //   而插桩回执**照样报成功**（sites>0、无 error、文件已写盘）⇒ 又是"静默产出一份跑不起来的代码"（同 T314 一族）。
+  //   ⇒ 这里**响亮抛**：跨盘本来就表达不出相对说明符，宁可停下让调用方把探针放到同盘。
+  if (path.isAbsolute(rel)) {
+    throw new Error(
+      `算不出探针的相对 import：被插桩文件与 agent-io 仓库**不在同一个盘**（\n` +
+        `  文件: ${file}\n  探针: ${observeProbe}\n）⇒ 无法生成相对说明符。\n` +
+        `★ 这里【故意不兜底】：硬拼会得到一个谁也解析不了的路径（如 \`./D:/…\`），` +
+        `表面成功、运行时必然 ERR_MODULE_NOT_FOUND。请把被测项目放到与 agent-io 同一个盘。`,
+    );
+  }
   if (!rel.startsWith('.')) rel = './' + rel;
   return rel;
 }
 
-/** 从文件路径向上找含 `<PROBE_DIR_REL>/probe.ts` 的项目根；找不到退回文件所在目录 */
 /**
- * 从被插桩文件**向上**找本仓根（路标：`<root>/src/infrastructure/analysis/observe/probe.ts`）。
- *
- * ★★★ T265（2026-10-14）：**找不到路标时改为【响亮抛】，不再静默退回文件目录。**
+ * ★ T265（2026-10-14）：**找不到路标时【响亮抛】，不再静默退回文件目录。**
  *   实测病（不传 `project_root` 时）：找不到本仓 ⇒ 旧写法 `return path.dirname(file)`
  *   ⇒ 生成的 import 变成 `./dist/src/…/probe.js`（指进**被测项目自己**）⇒
  *   `tsc: error TS2307 Cannot find module` / 运行 `ERR_MODULE_NOT_FOUND`
  *   ⇒ ★ **缺一个参数却静默产出一份跑不起来的代码**，正是本仓最反对的形态。
- *   ⇒ 现在：抛错并告诉调用方"**该显式传 `project_root`**"（宁可停下，不插坏用户源码）。
+ *
+ * ★ 2026-10-15：**实现已搬到骨架** `inferProjectRootByMarker(file, rootMarker, rootHint)`
+ *   （本文件与 `instrument_py.ts` 的两份只差路标路径与措辞 ⇒ 是**数据**，不是钩子）。
+ *   这里只留 T265 那条纪律的措辞（`tsJsRootHint`），随 `rootMarker` 一起喂给骨架。
  */
-function inferProjectRoot(file: string): string {
-  let dir = path.dirname(file);
-  for (let i = 0; i < 8; i++) {
-    if (fs.existsSync(path.join(dir, ...PROBE_DIR_REL.split('/'), 'probe.ts'))) return dir;
-    const parent = path.dirname(dir);
-    if (parent === dir) break;
-    dir = parent;
-  }
-  throw new Error(
-    `推断不出 agent-io 仓库根：从 ${file} 向上 8 层都没找到路标 ` +
-      `\`${PROBE_DIR_REL}/probe.ts\` ⇒ 无法算出探针模块（probe.js）的位置。\n` +
-      `★ 请**显式传** \`project_root\`（= agent-io 仓库根，即含 package.json 与 src/ 的那个目录）。\n` +
-      `★ 这里【故意不兜底】：兜底会生成一个指进被测项目自己的 import，表面成功、实际跑不起来。`,
-  );
-}
+const TS_ROOT_MARKER = `${PROBE_DIR_REL}/probe.ts`;
+const tsJsRootHint =
+  `★ 请**显式传** \`project_root\`（= agent-io 仓库根，即含 package.json 与 src/ 的那个目录）。\n` +
+  `★ 这里【故意不兜底】：兜底会生成一个指进被测项目自己的 import，表面成功、实际跑不起来。`;
 
 /**
  * ★★★ T303（2026-10-15）：**getter / setter 的访问器种类**（`get` / `set`，普通方法返回 null）。
@@ -758,10 +768,13 @@ export const tsJsInstrumentHooks: InstrumentHooks = {
   markers: { core: PROBE_MARKER, deep: DEEP_MARKER },
   comment: '//',
   probeImport: (file, projectRoot) => relativeProbeImport(file, projectRoot),
-  inferProjectRoot: (file) => inferProjectRoot(file),
+  // ★ 2026-10-15：找根由骨架做 —— 这里只给**路标**与**措辞**（原先是个 15 行的钩子，两侧逐字相同）
+  rootMarker: TS_ROOT_MARKER,
+  rootHint: tsJsRootHint,
   // ★ T301：import 语句按**宿主模块制式**选（CJS ⇒ require）
   buildImportStmt: (probeImport, content, file) => buildImportStmt(probeImport, detectModuleSystem(file, content)),
-  countFunctions: (root) => countFunctionNodes(root),
+  // ★ 2026-10-15：数函数也由骨架做 —— 这里只给**集合**（原先是个 8 行的钩子，两侧同一个递归）
+  fnTypes: FN_TYPES,
   collectSites: (ctx) =>
     collectSites(ctx.root, ctx.file, ctx.content, ctx.insertions, ctx.fileRel, ctx.probes, ctx.scope),
   collectDeepSites: (ctx) =>
@@ -785,7 +798,7 @@ export async function instrumentFile(file: string, opts: InstrumentOptions = {})
 /**
  * 收集一个文件内所有插桩点脚本。site.injected 为要插入/替换的源码文本，
  * site.line 为插入位置所在行（1-based）。probes 非 undefined（契约模式）时
- * 每个注入点用 matchContract 精确门控。
+ * 每个注入点用 matchesContract（骨架件）精确门控。
  */
 function collectSites(
   root: InstrNode,
@@ -796,6 +809,9 @@ function collectSites(
   probes?: string[],
   scope = false,
 ): void {
+  // ★★★ T314：本文件注入的探针文本里有两处**只有 TS 合法**（`as any` / `as Error`）
+  //   ⇒ 按宿主扩展名分叉一次，往下所有注入点都用它（判据住一处）。
+  const isTs = isTsHost(file);
   const walk = (n: InstrNode, parent?: InstrNode): void => {
     // ── 函数入口/出口（core）──
     if (FN_TYPES.has(n.type) && isBlockBody(n)) {
@@ -809,18 +825,18 @@ function collectSites(
       // 用 globalThis.__probeScope 调用而非 `import { enterScope }` —— 这样跨目录/相对路径/
       // esbuild 解析问题全消失，可对任意层级目录全量插桩。未挂 global 时 noop 不崩。
       if (scope) {
-        if (matchContract(probeName + '.enter', probes)) {
+        if (matchesContract(probeName + '.enter', probes)) {
           const open = body.startIndex;
           let entryIdx = open;
           if (content[entryIdx] === '{') entryIdx++;
           while (entryIdx < content.length && /\s/.test(content[entryIdx])) entryIdx++;
           const argsObj = params.length ? `{ ${params.map((p) => `${p}: ${p}`).join(', ')} }` : '{}';
-          const scopeEnter = `((globalThis as any).__probeScope?.enter ?? (()=>{}))(${JSON.stringify(probeName)}, { file: ${JSON.stringify(fileRel)}, args: ${argsObj} });\ntry {\n`;
+          const scopeEnter = `((${scopeRef(isTs)}?.enter ?? (()=>{}))(${JSON.stringify(probeName)}, { file: ${JSON.stringify(fileRel)}, args: ${argsObj} });\ntry {\n`;
           insertions.push({ index: entryIdx, site: { probe: probeName + '.enter', file, line: n.startPosition.row + 1, kind: 'enter', level: 'core', injected: scopeEnter } });
         }
-        if (matchContract(probeName + '.exit', probes)) {
+        if (matchesContract(probeName + '.exit', probes)) {
           const tailIdx = body.endIndex - 1; // 指向函数体 '}'
-          const scopeExit = `\n} finally { ((globalThis as any).__probeScope?.exit ?? (()=>{}))(${JSON.stringify(probeName)}, { file: ${JSON.stringify(fileRel)} }); }`;
+          const scopeExit = `\n} finally { ((${scopeRef(isTs)}?.exit ?? (()=>{}))(${JSON.stringify(probeName)}, { file: ${JSON.stringify(fileRel)} }); }`;
           insertions.push({ index: tailIdx, site: { probe: probeName + '.exit', file, line: n.startPosition.row + 1, kind: 'exit', level: 'core', injected: scopeExit } });
         }
         // ★★★ T271（2026-10-14）：**这里原先是 `return;`（直接退出整个 `walk`）** ——
@@ -840,7 +856,7 @@ function collectSites(
         //   且混进 4 处 `captureProbe`（而 scope 模式不注入 import ⇒ 那些会 `ReferenceError`）。
 
         // 入口：body.startIndex 指向 '{'，跳过后首非空白
-        if (matchContract(probeName + '.enter', probes)) {
+        if (matchesContract(probeName + '.enter', probes)) {
           const open = body.startIndex;
           let entryIdx = open;
           if (content[entryIdx] === '{') entryIdx++;
@@ -851,7 +867,7 @@ function collectSites(
         }
 
         // 出口：若函数体无 return，则在末尾补末尾出口探针（有 return 的由 return 分支负责）
-        if (matchContract(probeName + '.exit', probes)) {
+        if (matchesContract(probeName + '.exit', probes)) {
           const returns: InstrNode[] = [];
           collectReturns(body, returns);
           if (returns.length === 0) {
@@ -886,8 +902,8 @@ function collectSites(
         const mod = moduleBase(file);
         const params = extractParamNames(n);
         const probeName = `${mod}.${fn}`;
-        const wantEnter = matchContract(probeName + '.enter', probes);
-        const wantExit = matchContract(probeName + '.exit', probes);
+        const wantEnter = matchesContract(probeName + '.enter', probes);
+        const wantExit = matchesContract(probeName + '.exit', probes);
         if (wantEnter || wantExit) {
           const expr = content.slice(body.startIndex, body.endIndex);
           // ★★★ T269（2026-10-14）：**scope 模式下不能注入 `captureProbe`** ——
@@ -900,10 +916,10 @@ function collectSites(
             const argsObj = params.length ? `{ ${params.map((p) => `${p}: ${p}`).join(', ')} }` : '{}';
             const stmts: string[] = [];
             if (wantEnter) {
-              stmts.push(`((globalThis as any).__probeScope?.enter ?? (()=>{}))(${JSON.stringify(probeName)}, { file: ${JSON.stringify(fileRel)}, args: ${argsObj} });`);
+              stmts.push(`((${scopeRef(isTs)}?.enter ?? (()=>{}))(${JSON.stringify(probeName)}, { file: ${JSON.stringify(fileRel)}, args: ${argsObj} });`);
             }
             if (wantExit) {
-              stmts.push(`((globalThis as any).__probeScope?.exit ?? (()=>{}))(${JSON.stringify(probeName)}, { file: ${JSON.stringify(fileRel)} });`);
+              stmts.push(`((${scopeRef(isTs)}?.exit ?? (()=>{}))(${JSON.stringify(probeName)}, { file: ${JSON.stringify(fileRel)} });`);
             }
             insertions.push({
               index: body.startIndex,
@@ -972,7 +988,7 @@ function collectSites(
         while (idx < text.length && /\s/.test(text[idx])) idx++;
         const fn = detectEnclosingFunction(root, open);
         const probeName = `${moduleBase(file)}.${fn}.catch`;
-        if (matchContract(probeName, probes)) {
+        if (matchesContract(probeName, probes)) {
           // ★★★ T269（2026-10-14）：**读【真实的】catch 参数名** —— 原先硬编码 `e`
           //   （注入 `err: (e as Error)?.message ?? ''`）。
           //   ★ 实测病：源码写的是 `catch (err)` ⇒ 注入后**运行时** `ReferenceError: e is not defined`
@@ -982,7 +998,7 @@ function collectSites(
           const paramNode = n.childForFieldName?.('parameter');
           const catchVar = (paramNode?.text ?? '').replace(/[()\s]/g, '');
           const errExpr = catchVar
-            ? `(${catchVar} as Error)?.message ?? String(${catchVar} ?? '')`
+            ? catchErrExpr(catchVar, isTs)
             : `''`;
           const fields = `{ file: ${JSON.stringify(fileRel)}, op: 'catch', err: ${errExpr}, level: 'event' }`;
           // ★★★ T271（2026-10-14）：**scope 模式下 catch 必须走 `__probeScope?.catch`** ——
@@ -990,7 +1006,7 @@ function collectSites(
           //   ★ 而原先 scope 模式**根本不注入 catch** ⇒ 实测统计 `enter:6 exit:5` **没有 catch**
           //   ⇒ **调用树里看不到"这一帧出错了"**（而那是树里最有用的信息之一）。
           const injected = scope
-            ? `((globalThis as any).__probeScope?.catch ?? (()=>{}))(${JSON.stringify(probeName)}, ${fields});\n`
+            ? `((${scopeRef(isTs)}?.catch ?? (()=>{}))(${JSON.stringify(probeName)}, ${fields});\n`
             : `captureProbe(${JSON.stringify(probeName)}, ${fields});\n`;
           insertions.push({ index: idx, site: { probe: probeName, file, line: n.startPosition.row + 1, kind: 'catch', level: 'event', injected } });
         }
@@ -1011,7 +1027,7 @@ function collectSites(
         const idx = n.endIndex;
         const fnName = detectEnclosingFunction(root, n.startIndex);
         const probeName = `${moduleBase(file)}.${fnName}.${ioOp}`;
-        if (matchContract(probeName, probes)) {
+        if (matchesContract(probeName, probes)) {
           const injected = `;captureProbe(${JSON.stringify(probeName)}, { file: ${JSON.stringify(fileRel)}, op: ${JSON.stringify(ioOp)}, level: 'event' });`;
           insertions.push({ index: idx, site: { probe: probeName, file, line: n.startPosition.row + 1, kind: 'io', level: 'event', injected } });
         }
@@ -1110,7 +1126,7 @@ function collectDeepSites(
           const name = nameNode.text;
           const probeName = deepProbeName(root, file, d.startIndex);
           // 契约门：deep 探针名统一为 `mod.fn.deep`
-          if (!matchContract(probeName, probes)) continue;
+          if (!matchesContract(probeName, probes)) continue;
           const injected = deepProbeInjected(probeName, fileRel, `name: ${JSON.stringify(name)}, value: ${name}`);
           insertions.push({ index: d.endIndex, site: { probe: probeName, file, line: d.startPosition.row + 1, kind: 'deep', level: 'deep', injected } });
         }
@@ -1122,7 +1138,7 @@ function collectDeepSites(
       const left = n.childForFieldName?.('left');
       if (left && (left.type === 'identifier' || left.type === 'member_expression') && isSideEffectFreeExpr(left)) {
         const probeName = deepProbeName(root, file, n.startIndex);
-        if (matchContract(probeName, probes)) {
+        if (matchesContract(probeName, probes)) {
           const injected = deepProbeInjected(probeName, fileRel, `name: ${JSON.stringify(left.text)}, value: ${left.text}`);
           insertions.push({ index: n.endIndex, site: { probe: probeName, file, line: n.startPosition.row + 1, kind: 'deep', level: 'deep', injected } });
         }
@@ -1138,7 +1154,7 @@ function collectDeepSites(
         const inner = parenInner(cond);
         if (isSideEffectFreeExpr(inner)) {
           const probeName = deepProbeName(root, file, n.startIndex);
-          if (matchContract(probeName, probes)) {
+          if (matchesContract(probeName, probes)) {
             const injected = `;captureProbe(${JSON.stringify(probeName)}, { file: ${JSON.stringify(fileRel)}, level: 'deep', cond: ${JSON.stringify(inner.text)}, value: ${inner.text} });`;
             // 在块体 '{' 之后注入
             let idx = body.startIndex;
@@ -1173,7 +1189,7 @@ function handleReturn(
   const mod = moduleBase(file);
   const probeName = `${mod}.${fn}.exit`;
   // 契约门：未声明的 exit 探针不注入（匹配 `mod.fn.exit`）
-  if (!matchContract(probeName, probes)) return;
+  if (!matchesContract(probeName, probes)) return;
   const expr = returnExpr(n);
 
   // 无大括号控制语句的单语句 return（如 `if (x) return null;`）：
@@ -1291,14 +1307,11 @@ function containsFunctionLike(node: InstrNode): boolean {
   return false;
 }
 
-/** 对项目下所有 .ts 文件插桩。返回每个文件的插桩结果。 */
+/**
+ * 对项目下所有 TS/JS 源文件插桩。返回每个文件的插桩结果。
+ * ★ 2026-10-15：**"收文件 + 逐文件循环 + backupRoot 口径"已搬到骨架**
+ *   （`instrumentProjectWithHooks`）—— 这三件与 Python 侧逐字相同，只差一个谓词。
+ */
 export async function instrumentProject(root: string, opts: InstrumentOptions = {}): Promise<InstrumentFileResult[]> {
-  const files = collectTsFiles(root);
-  // 备份根固定为被插桩项目根 root（与 projectRoot 无关：projectRoot 用于 probe import）
-  const perFileOpts: InstrumentOptions = { ...opts, backupRoot: root };
-  const results: InstrumentFileResult[] = [];
-  for (const f of files) {
-    results.push(await instrumentFile(f, perFileOpts));
-  }
-  return results;
+  return instrumentProjectWithHooks(root, tsJsInstrumentHooks, isInstrumentableTsJsFile, opts);
 }

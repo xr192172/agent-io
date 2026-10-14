@@ -22,12 +22,24 @@
  *     ① **命名规则**、⑥ **取值时机** 是实现 `collectSites` 的内部件（见 `instrument_py.ts` 的分节）。
  *   其余是**每语言必需的语法/位置管道**（不同语言无法共用）：
  *     `markers`（幂等标记串）· `comment`（标记注释前缀）· `probeImport`（探针模块引用）·
- *     `buildImportStmt`（头部 import 语句）· `inferProjectRoot`（路标文件向上找根）· `countFunctions`。
+ *     `buildImportStmt`（头部 import 语句）。
+ *
+ * ## ★★ 2026-10-15 第二笔：把「项目级四件」也收进骨架（本笔）
+ * 上一笔只抽走了**单文件**的主流程；**项目级**那几件（收文件 / 数函数 / 向上找根 / 逐文件循环）
+ * 仍被 TS 与 Python **各抄了一份**（结构逐字相同，只差一处数据）。本笔搬进骨架：
+ *   · `collectSourceFiles`（遍历 + 跳过表住一份）· `countFunctionNodes`（按 `fnTypes` 递归）
+ *   · `inferProjectRootByMarker`（含 T265 的「找不到就响亮抛」）· `instrumentProjectWithHooks`
+ *   · `matchesContract`（三行的契约门，也曾各写一份）
+ * ⇒ 两个「钩子」随之**降级为数据**：`inferProjectRoot(file)` → `rootMarker: string`，
+ *   `countFunctions(root)` → `fnTypes: ReadonlySet<string>`。
+ *   ★ 判据：**凡是"两份实现只差一处数据"的，就不该是钩子，该是数据** —— 钩子要求每个语言包
+ *     重写一遍逻辑（抄错的机会 ×N），数据只要求它填一个值。
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseAstRoot } from '../../parse/kernel.js';
+import { skipDirSet } from '../../parse/source_exts.js';
 // ★ 这四件**类型**住在 `instrument.ts`（TS 侧的历史落点，其它模块按 `./instrument.js` 取它）
 //   ⇒ 这里**只 import type**（编译后擦除，**不产生运行时环**）—— 同一件事**不写第二份**
 //   （本仓头号病根是"判据住两处"；类型同理）。
@@ -59,6 +71,20 @@ export function asNode(n: unknown): AstNode {
 
 /** 一次编辑：`[index, removeTo)` 被替换（无 `removeTo` 则是在 `index` 处纯插入）。 */
 export type Insertion = { index: number; removeTo?: number; site: InstrumentedSite };
+
+/**
+ * 契约门：探针名是否命中契约列表。
+ *   · `probes === undefined` ⇒ 探索模式，**恒 true**（全量无脑插桩）；
+ *   · 否则**精确匹配**（契约模式）。
+ *
+ * ★ 骨架件（2026-10-15 从 `instrument.ts` 搬来）：搬之前 TS 与 Python **各写了一份逐字相同的**
+ *   实现（`instrument.ts:167` / `instrument_py.ts:303`）—— 判据住两处就是本仓头号病根，
+ *   哪怕它只有三行。
+ */
+export function matchesContract(probeName: string, probes?: string[]): boolean {
+  if (probes === undefined) return true;
+  return probes.includes(probeName);
+}
 
 /**
  * ★★★ **把「按原文偏移逐次应用」重写成「分段拼接」** —— 重叠在结构上不再可能。
@@ -160,12 +186,23 @@ export interface InstrumentHooks {
   comment: string;
   /** 探针模块引用（写进报告 `probeImport` 字段；TS = 相对 `dist/.../probe.js` 的说明符）。 */
   probeImport(file: string, projectRoot: string): string;
-  /** 从文件向上找项目根（路标 = 探针实现文件）；找不到**响亮抛**，不静默兜底。 */
-  inferProjectRoot(file: string): string;
+  /**
+   * ★ 项目根**路标**（相对根、posix）：从文件向上找含它的目录。
+   * 找不到时由骨架**响亮抛**（见 `inferProjectRootByMarker`），不静默兜底。
+   *
+   * ★★ 2026-10-15 由**钩子降级为数据**：TS 与 Python 两份 `inferProjectRoot` 除路标路径
+   *   与错误措辞外**逐字相同** ⇒ 留着当钩子 = 让每个语言包白抄 15 行。
+   */
+  rootMarker: string;
+  /** 找不到路标时，错误文案里补的「怎么办」（措辞每语言不同；缺省只说"显式传 project_root"）。 */
+  rootHint?: string;
   /** 头部 import 语句（语言语法不同：`import … from` / `const {…}=require` / `from … import …`）。 */
   buildImportStmt(probeImport: string, content: string, file: string): string;
-  /** 数函数节点（台账判据③用；语言包的 FN_TYPES 口径）。 */
-  countFunctions(root: AstNode): number;
+  /**
+   * ★ 「函数」节点类型集合（台账判据③的口径）。**数据，不是钩子** —— 两侧只差这一个集合。
+   * ★★ 2026-10-15 由 `countFunctions(root)` 降级：那个钩子的两份实现是同一个递归。
+   */
+  fnTypes: ReadonlySet<string>;
   /**
    * ★ ② **遍历模型**（内部再分 ①命名 / ⑥取值）：产出一个文件内全部插桩编辑。
    * 语言包在这里做它自己的 AST 遍历与探针文本渲染。
@@ -227,9 +264,9 @@ export async function instrumentFileWithHooks(
   }
   const root = asNode(parsed.root);
   // ★ 必须在 `insertions.length === 0` 的早退**之前**算：0 探针文件正是要记账的那批。
-  result.functions = hooks.countFunctions(root);
+  result.functions = countFunctionNodes(root, hooks.fnTypes);
 
-  const projectRoot = opts.projectRoot ?? hooks.inferProjectRoot(file);
+  const projectRoot = opts.projectRoot ?? inferProjectRootByMarker(file, hooks.rootMarker, hooks.rootHint);
   const probeImport = opts.probeImport ?? hooks.probeImport(file, projectRoot);
   result.probeImport = probeImport;
   // 探针注入时附带的文件相对路径（相对项目根，正斜杠），供日志按文件过滤
@@ -265,4 +302,103 @@ export async function instrumentFileWithHooks(
     fs.writeFileSync(file, out, 'utf-8');
   }
   return result;
+}
+
+// ─────────────────────────────────────────────────────────────
+// 语言无关的「项目级」四件（2026-10-15 从 TS / Python 两份实现里搬来）
+//
+// ★ 为什么它们该在骨架里：搬之前，TS 与 Python **各写了一份**，且**逐字/结构相同**，
+//   只差一处数据（扩展名 / 路标 / 集合）。留着当钩子 ⇒ 每个新语言包白抄 ~55 行。
+// ★ 它们是「同一件事住两处」的典型样本：同一份 `inferProjectRoot` 的**错误文案**
+//   都各写了一遍 —— 改一处必漏另一处（本仓反复踩过）。
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * 数「函数」节点（台账判据③用）：按语言给的 `fnTypes` 递归数，**含嵌套**。
+ *
+ * ★ 只数 `fnTypes` 里的那几类 —— 无体的签名（`declare function` / `abstract foo():void`）
+ *   不是函数节点 ⇒ 天然不算（那些文件本就该 0 探针）。
+ */
+export function countFunctionNodes(root: AstNode, fnTypes: ReadonlySet<string>): number {
+  let c = fnTypes.has(root.type) ? 1 : 0;
+  for (let i = 0; i < root.childCount; i++) {
+    const ch = root.child(i);
+    if (ch) c += countFunctionNodes(ch, fnTypes);
+  }
+  return c;
+}
+
+/**
+ * 递归收集项目下所有可插桩源文件（跳过 `node_modules` / `dist` / `.git` / `.agent-io` 等）。
+ *
+ * ★ `isInstrumentable` 是**谓词注入**（不是让语言包重写整个遍历）：
+ *   语言包只回答「这个文件名算不算我的源文件」，遍历与跳过表**只住这里一份**。
+ */
+export function collectSourceFiles(root: string, isInstrumentable: (rel: string) => boolean): string[] {
+  const out: string[] = [];
+  const skip = skipDirSet([]);
+  const walk = (dir: string): void => {
+    let entries: fs.Dirent[];
+    try {
+      entries = fs.readdirSync(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const e of entries) {
+      if (skip.has(e.name)) continue;
+      const full = path.join(dir, e.name);
+      if (e.isDirectory()) walk(full);
+      else if (e.isFile() && isInstrumentable(e.name)) out.push(full);
+    }
+  };
+  walk(root);
+  return out;
+}
+
+/**
+ * 从被插桩文件**向上**找项目根（路标 = `markerRel`，posix 相对路径）。
+ *
+ * ★★★ **找不到路标时【响亮抛】，绝不静默退回文件目录。**
+ *   实测病（T265，不传 `project_root` 时）：旧写法 `return path.dirname(file)`
+ *   ⇒ 生成的 import 变成 `./dist/src/…/probe.js`（指进**被测项目自己**）
+ *   ⇒ `tsc: error TS2307 Cannot find module` / 运行 `ERR_MODULE_NOT_FOUND`
+ *   ⇒ ★ **缺一个参数却静默产出一份跑不起来的代码**，正是本仓最反对的形态。
+ *   ⇒ 宁可停下并告诉调用方"**该显式传 `project_root`**"，也不插坏用户源码。
+ */
+export function inferProjectRootByMarker(file: string, markerRel: string, hint?: string): string {
+  const marker = path.join(...markerRel.split('/'));
+  let dir = path.dirname(file);
+  for (let i = 0; i < 8; i++) {
+    if (fs.existsSync(path.join(dir, marker))) return dir;
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  throw new Error(
+    `推断不出项目根：从 ${file} 向上 8 层都没找到路标 \`${markerRel}\` ⇒ 无法算出探针模块的位置。\n` +
+      (hint ??
+        `★ 请**显式传** \`project_root\`（= agent-io 仓库根）。\n` +
+          `★ 这里【故意不兜底】：兜底会生成一个指进被测项目自己的 import，表面成功、实际跑不起来。`),
+  );
+}
+
+/**
+ * 对整个项目插桩：收文件 → 逐文件跑骨架主流程 → 汇总结果。
+ *
+ * ★ `backupRoot` 固定为被插桩项目根（与 `projectRoot` 无关：后者用于算 probe import）
+ *   —— 这条口径两侧也各写过一遍，现在只住这里。
+ */
+export async function instrumentProjectWithHooks(
+  root: string,
+  hooks: InstrumentHooks,
+  isInstrumentable: (rel: string) => boolean,
+  opts: InstrumentOptions = {},
+): Promise<InstrumentFileResult[]> {
+  const files = collectSourceFiles(root, isInstrumentable);
+  const perFileOpts: InstrumentOptions = { ...opts, backupRoot: root };
+  const results: InstrumentFileResult[] = [];
+  for (const f of files) {
+    results.push(await instrumentFileWithHooks(f, hooks, perFileOpts));
+  }
+  return results;
 }

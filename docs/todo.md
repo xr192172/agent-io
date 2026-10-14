@@ -2854,3 +2854,68 @@
 - [ ] **T313 ★★ 【缺口·量具】没给 Python 侧加 certs 脚本（只跑了既有 TS 侧那份）**
       *(来源：第 3 步；★ 与 T311（Go 侧补骨架验收）是同一族。)*
       ⇒ **要做**：`certs/observe-py-cert.mjs`（验：插桩后 `python` 能跑 + 输出不变 + 接 sink 有事件 + 还原逐字）。
+
+- [ ] **T314 ★★★ 【已修·真缺陷】TS/JS 插桩往 `.js/.mjs/.cjs/.jsx` 里注**TypeScript 专属语法** ⇒ 插完的代码【根本不能解析】**
+      *(来源：2026-10-15 骨架第二笔的回归夹具**第一次跑就撞上** —— 我本来只想验"搬代码没改行为"。)*
+      ⇒ **症状（直接看事实，不看回执）**：对 `tryfin.mjs`（纯 JS，含 `catch (e) {...}`）插桩 ⇒
+        `node main.mjs` ⇒ `SyntaxError: Unexpected identifier 'as'`，**整个宿主程序起不来**。
+        注入的那行是：`catch (e) { captureProbe("tryfin.risky.catch", { …, err: (e as Error)?.message ?? String(e ?? ''), … });`
+        —— `as Error` 是 **TS 专属**，`.mjs` 里是**语法错误**。
+      ⇒ **静默**：插桩回执 `sites=6`、**无 error**、文件已写盘 ⇒ **只有等你真去跑才炸**。
+        ★ 这正是本仓 ARC-7 点名要禁的形态（"错了却静默降级"）——**它安静地产出了一份跑不起来的代码**。
+      ⇒ **面（实测 grep，共 6 处，全在 `collectSites` 内）**：
+        · `as Error` × 1（L956，catch 探针的 err 表达式，**默认就注入** ⇒ 命中面最大）；
+        · `as any` × 5（L789 / L794 / L874 / L877 / L964，**scope 模式**的 `(globalThis as any).__probeScope`）。
+      ⇒ **根因**：T302 把"收哪些文件"扩到 **8 个扩展名**（`.ts .tsx .js .jsx .mts .cts .mjs .cjs`），
+        但**注入的探针文本仍只有"TS 一种形态"** ⇒ ★ **收得进来，插不下去**：
+        8 个扩展名里**只有 4 个（TS 家族）真能被插桩**，另 4 个（JS 家族）插完即坏。
+      ⇒ **判据**：TS 宿主的 `catch` 变量是 `unknown` ⇒ `e?.message` **过不了宿主 tsc** ⇒ 需要 `as` 断言；
+        **JS 宿主不许有 `as`** ⇒ 必须**按宿主语法分叉**，而不是"一种文本打天下"。
+      ⇒ **修**（本笔）：① `parse/source_exts.ts` 补 `TS_EXTS` + `isTsExt()`（TS/JS 分家这件事的**唯一权威**，
+        与 `TS_JS_EXTS` 一致性在模块加载时**响亮断言**，不许漂移）；② `instrument.ts` 的 `collectSites`
+        按 `isTsExt(path.extname(file))` 分叉渲染那 6 处（`scopeRef` / `catchErrExpr` 两个小件）。
+      ⇒ **验**：`certs/.work/obsreg.mjs` 的 TS/JS 夹具（含 `catch`）⇒ 插桩后 `node main.mjs` **exit 0** +
+        stdout 与基线**逐字相同** + 还原**逐字相同** ✓（修前 9/11，修后 11/11）。
+
+- [ ] **T315 ★★ 【已修·同族】被测项目与 agent-io **跨盘**时，注入的 import 变成 `./D:/…`（**谁也解析不了**），而回执照样报成功**
+      *(来源：2026-10-15 查 T314 时**顺带撞见** —— 我先把夹具放在 `os.tmpdir()`（C 盘）而仓库在 D 盘，`node main.mjs` 报
+        `node:internal/modules/esm/resolve:275`，**不是**语法错。)*
+      ⇒ **根因**：`relativeProbeImport` 用 `path.relative`，而 Windows 上**跨盘**时它返回**绝对路径**；
+        紧接着那句 `if (!rel.startsWith('.')) rel = './' + rel;` 把它拼成 **`./D:/project_develop/…/probe.js`**。
+      ⇒ **静默**：插桩回执 `sites>0`、无 error、文件已写盘 ⇒ 与 T314 **同一族**（ARC-7 点名要禁的形态）。
+      ⇒ **修**：`path.isAbsolute(rel)` ⇒ **响亮抛**，并在错误里给出两侧路径与"把项目放到同盘"的处置。
+        ★ 与 T314 一样，判据是"**这件事能不能表达**"：跨盘根本表达不出相对说明符 ⇒ 只能硬失败。
+      ⇒ **验**：把夹具挪到同盘（`certs/.work/tmp/`）后 13/13 全绿；跨盘路径现在会抛而不是产出坏代码。
+
+- [x] **T316 ★★ 【已做】落一张「observe 语言包出生证」`certs/t316-observe-pack-cert.mjs`（14/14 通过）**
+      *(来源：骨架第二笔要"证明语言包契约成立"，而原先**没有任何一张证**在问"插出来的代码真能跑吗"。)*
+      ⇒ **它一诞生就抓到 T314**（往 `.js` 注入 `as` ⇒ 插完的代码不能解析，而回执全绿）——
+        ★ **这正是"量具先于结论"的价值**：不是我先怀疑才有它，是它先红了我才知道有问题。
+      ⇒ **判据四条（全看事实，不看回执）**：① 插桩后宿主 exit 0；② stdout 与插桩前**逐字相同**；
+        ③ 接 sink ⇒ events **行数 > 0**；④ `restoreInstrumented` 后源文件**逐字节相同**。
+        另加 T314 的**语法分叉**判据（JS 宿主不含 `as` / TS 宿主保留 `as Error` —— 两边要求相反）。
+      ⇒ **覆盖**：TS/JS 夹具 8 文件（get/set 同名 · `#private` · 箭头表达式体 · switch 同行多 return ·
+        无括号 guard + else-if · Unicode 标识符 · try/catch/finally · 嵌套函数）；Python 夹具（缩进 ·
+        单行 suite · lambda · 多返回值 · 裸 return · 生成器）。
+      ⇒ **实测读数**：TS `sites=38 functions=12 文件=8` · 接 sink **22 行事件**；
+        Python `sites=14 functions=7 文件=2` · 接 sink **11 行事件**；两份**还原逐字节相同** ✓
+      ⇒ ★ **顺带把 T313 的要求也满足了一半**（Python 侧"能跑 + 输出不变 + 有事件 + 逐字还原"）。
+        Go 侧仍是空的（T311 要的是另一条路：直接用 `go test`）。
+      ⇒ ★ 夹具**必须与仓库同盘**（跨盘算不出相对 import ⇒ T315 已改成响亮抛），故放在 `certs/.work/tmp/`。
+
+- [x] **T317 ★★ 【已做】把骨架契约写进 DSL（新 feature `observe-skeleton`，4 张决策卡）**
+      *(来源：用户"先把框架搭出来"；★ 我的判断：**写进 DSL 而不是 markdown** —— markdown 会腐，DSL 有工具维护 + 能对拍。)*
+      ⇒ **落点**：`.agent-io/features/observe-skeleton.json`，4 个几何节点 + 4 张决策卡：
+        · **OBS-1 骨架契约** —— 六格里 ③④⑤ 语言无关（+ 项目级四件），①②⑥ 是语言钩子；
+          并把"≤200 行达不到、正确目标不是行数而是**决策数**"如实写进 `consequences`。
+        · **OBS-2 钩子 vs 数据的判据** —— 「两份实现只差一处数据」就不该是钩子该是数据；
+          ★ 如实记：这个重构**在两门语言上几乎不赚钱**（净减 21 行），价值在第 3、4 门语言。
+        · **OBS-3 语言包出生证** —— 四条判据（能跑 / 不改行为 / 真出事件 / 可还原），判据=`certs/t316-observe-pack-cert.mjs`。
+        · **OBS-4 注入文本随宿主语法分叉** —— T314/T315 两条静默缺陷的判据与落点。
+      ⇒ **过程如实记（踩了 L4 的坑）**：`edit_dsl weight=normal` 的 L4 证据回溯**只认 feature 里【已有】的节点** ——
+        新 feature 里一个节点都没有 ⇒ 用 `diff`+文件路径、`node`+同批新建的 id **都被打回**（"不存在或对不上"）。
+        ⇒ **正确顺序**：先用 `weight=routine`（L1–L3 照走）把文件节点与 4 张卡**起底**，
+          再用 `weight=normal` + `evidence:[{type:'node', ref:'contract_obs_1'}]` 做一次**复核写** —— **通过** ✓
+          （⇒ 4 张卡确实过得了全链，不是靠 routine 档躲过去的）。
+        ★ 另：`type=file` 落的是 `semantic.files`，**不在 `geometry.nodes` 里** ⇒ `get_dsl query=nodes` 看不到它们，
+          要用 `query=files`（我为此白跑了一趟）。

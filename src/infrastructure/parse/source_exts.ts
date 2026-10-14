@@ -37,6 +37,35 @@ export const TS_JS_EXTS = ['.ts', '.tsx', '.js', '.jsx', '.mts', '.cts', '.mjs',
 
 const TS_JS_SET = new Set<string>(TS_JS_EXTS);
 
+/**
+ * ★★★ T314（2026-10-15）：**TS 家族**（上表里带类型语法的 4 个）—— 「注入的探针**能不能**用 `as` 断言」的唯一判据。
+ *
+ * 为什么必须单列（病根，读过再动）：插桩注入的探针文本**原先只有一种形态**，用了
+ *   `(e as Error)` / `(globalThis as any)` —— 那是 **TS 专属**。而 T302 已把"收哪些文件"扩到
+ *   **8 个扩展名**（`TS_JS_EXTS`）⇒ 对 `.js/.mjs/.cjs/.jsx` 插桩会注入**语法错误**，且**静默**
+ *   （回执 `sites>0`、无 error、文件已写盘），**只有真去跑才炸**（实测 `SyntaxError: Unexpected identifier 'as'`）。
+ * ⇒ 「哪些扩展名算 TS」这件事从此住在这里；注入侧（`observe/instrument.ts`）按它分叉。
+ */
+export const TS_EXTS = ['.ts', '.tsx', '.mts', '.cts'] as const;
+const TS_EXT_SET = new Set<string>(TS_EXTS);
+
+// ★ 一致性**响亮断言**（不是防御性废话）：TS_EXTS 必须是 TS_JS_EXTS 的子集 —— 两张表一旦漂移，
+//   "哪些文件能插桩"与"注入什么语法"就对不上（T314 正是这么来的：一张表扩了、另一张没动）。
+//   ⇒ 宁可模块加载即失败，也不静默错下去。
+for (const e of TS_EXTS) {
+  if (!TS_JS_SET.has(e)) {
+    throw new Error(
+      `source_exts 自检失败：TS_EXTS 里的 "${e}" 不在 TS_JS_EXTS 里 ⇒ 两张表已漂移。` +
+        `★ 新增 TS/JS 扩展名时必须同时更新 TS_JS_EXTS 与本表（见 T314）。`,
+    );
+  }
+}
+
+/** 该扩展名是否属 **TypeScript**（决定注入的探针**能否**用 `as` 断言；JS 宿主用了就是语法错误）。 */
+export function isTsExt(ext: string): boolean {
+  return TS_EXT_SET.has(ext.toLowerCase());
+}
+
 // ─────────────────────────────────────────────────────────────
 // ★★ 「代码语言」—— 「什么算源码」的唯一权威（2026-09-29）
 //
