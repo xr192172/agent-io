@@ -362,6 +362,25 @@
         ③ ★ **量一件事**：补完之后 `consistency_check` 的"不变式/验收"读数**必须从 0 变非 0**
         （★ 否则等于没补）；④ 把"新决策卡应当带可判定验收"写进 `edit_dsl` 的 `decision` 契约描述。
       ⇒ ★ 与 T154 的关系：**T154 是"备菜"（把候选捞出来），本条是"让菜能下锅"（变成可对拍的断言）**。
+      ⇒ ★★★ **2026-10-14 实测（接手验证，三条读数）** —— 结论：**闭环成立，但入口有缺口**：
+        · ★★ **决策卡 → 对拍【确实在工作】**（我上一轮说"只考古不对拍"**不准确，此处更正**）：
+          `consistency_check(run82)` 的 `expectation_results` 实测 **`checked 2 · passed 0 · failed 2`**
+          —— 那 2 条来自 `tool_faces.ts` 那张决策卡，**正在报真实差异**
+          （`facesOf` / `renderFaces` 签名里仍带 `directNames`，而决策卡要求去掉）⇒ **它出的就是真信号**。
+        · ★★★ **缺口①（入口）**：`edit_dsl` 的 **`decision` op【不认 `expectations`】**
+          —— 报错逐字：*"data 里有**不被认的键**：expectations（★ 此前它们会被**静默忽略**）"*；
+          该 op 已知键只有 13 个（`summary/rationale/consequences/acceptance/thread/tags/votes/evidence_source/note/status/author/alternatives/dissent`）。
+          ⇒ **从"决策卡写入口"写不进可判定验收**。
+          ★ 但系统**响亮拒绝**了（没静默）—— 那是 T174/T170c 立的"不在表里的键名要拒并列出已知键"在起作用 ✓
+        · ★★ **可行入口（实测）**：经 **`node` op 的 `data.decision.expectations`** 能写进去 ——
+          加了 1 条 `file-exists` ⇒ 对拍读数 **`checked 2→3 · passed 0→1`**（该条 `pass`）；撤掉后回到 `2/0/2` ✓
+        · ★★ **缺口②（冲突检测）**：我造了一条**与 `tool_faces` 决策卡正好相反**的断言
+          （要求 `facesOf` **保留** `directNames`）⇒ 两条**互相矛盾**（同一对象、相反要求），
+          ★ **而报告里 grep「冲突 / 矛盾 / contradict」= 0 命中**
+          ⇒ **冲突不是显式检测的**，只能靠"同一对象上判定结果互相打架"**间接**看出来。
+      ⇒ **要做**：① 把 `expectations` 加进 `op_data_spec` 的 `decision` 已知键
+        （★ 与 `node` 路径**同一判据**，别两处各判）；② 先裁"要不要给决策间冲突一个**显式**读数"
+        （候选：同一对象上 verdict 互斥即报；或维持现状、靠人看）；③ 再谈给那 21 条补 `expectations`。
       ⇒ **代码位置（判据的唯一住处）**：`dsl_ops/node_ops.ts:225` `const decision: NodeDecision = { ...next, updated_at: now };`
         —— ★ `{ ...next }` = **用你给的字段整体替换**，不是合并。三个调用点都走它：
         `update_feature.ts:865`（`edit_dsl` 的 decision 路径）· `node_ops.ts:103`（addNode）· `node_ops.ts:293`（updateNode 的 `data.decision`）。
