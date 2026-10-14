@@ -400,6 +400,17 @@ function detectEnclosingFunction(root: InstrNode, insertIndex: number): string {
         //     ⇒ 探针名错 ⇒ **契约模式匹配不上**、台账里也认不出是谁。
         const vn = parent.childForFieldName?.('name');
         if (vn && vn.text) fnName = vn.text;
+      } else {
+        // ★★★ T277（2026-10-14）：**匿名函数要有自己的合成名** ——
+        //   原先这一支**不赋值** ⇒ 于是沿用**外层函数**的名字 ⇒ 实测：
+        //     · `arr.map(x => x*2)` 的回调探针名 = `nested.useCallback.enter/exit`（**与外层同名**）；
+        //     · `useReduce` 一行三个回调**全叫** `nested.useReduce.enter`；
+        //     · `get value()` 与 `set value()` 都叫 `syntax_edge.value`。
+        //   ⇒ 后果：调用树/台账里**分不清是谁**（事件挂不到正确的函数）。
+        //   ⇒ 用 `anon@L<行>C<列>` 作合成名 —— ★ **必须带列号**：实测同一行可以有多个回调
+        //     （`arr.filter(x => …).reduce((a,b) => …)` 两个都在同一行）⇒ 只带行号仍会同名。
+        //   ★ 只影响**本来就没有契约**的匿名内联（变量赋值的箭头走上一支、有真名 ⇒ 既有契约不受影响）。
+        fnName = `anon@L${n.startPosition.row + 1}C${n.startPosition.column + 1}`;
       }
     }
     for (let i = 0; i < n.childCount; i++) {

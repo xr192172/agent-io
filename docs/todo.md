@@ -2560,10 +2560,3 @@
       ⇒ 依据：`infrastructure/index/symbols.ts:390` —— type-only import 不建边（**这是设计**，不是缺陷）。
       ⇒ ⇒ 于是 `cpf_5`（「DSL 是 scaffold/edit_code/consistency_check/rename 的输入」）**表达不了**。
       ⇒ **要做（先裁）**：这是 edge 类的**固有盲区** ⇒ 至少写进形状描述；或新增「类型引用」形状。
-
-- [ ] **T277 ★★ 【信息歧义】内联回调 / 同名 getter-setter 的探针名与宿主同名**
-      *(来源：2026-10-14 第二轮端到端实测。)*
-      ⇒ **实测**：`arr.map(x=>x*2)` 的回调探针名 = `nested.useCallback.enter/exit`（**与外层同名**）；
-        `useReduce` 一行 3 个探针**全叫** `nested.useReduce.enter`；`get value()` 与 `set value()` 都叫 `syntax_edge.value`。
-      ⇒ ★ 后果：调用树/台账里**分不清是谁**（观测到的事件挂不到正确的函数）。
-      ⇒ **要做（先裁）**：给匿名函数探针名加**区分**（如 `…useCallback#2`、`…value.get` / `…value.set`）。
