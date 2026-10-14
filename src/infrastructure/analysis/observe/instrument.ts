@@ -726,7 +726,16 @@ function collectSites(
               stmts.push(`captureProbe(${JSON.stringify(probeName + '.enter')}, { file: ${JSON.stringify(fileRel)}, args: ${argsObj}, level: 'core' });`);
             }
             if (wantExit) {
-              stmts.push(`captureProbe(${JSON.stringify(probeName + '.exit')}, { file: ${JSON.stringify(fileRel)}, ret: undefined, level: 'core' });`);
+              // ★★★ T270（2026-10-14）：**捕获真实返回值** —— 原先是 `ret: undefined`
+              //   （等于"箭头表达式体永远没有返回值"，而它恰恰是**本仓最常见的写法**）。
+              //   形态：`const __cam_arrowN = (expr); probe(exit, ret: __cam_arrowN); return __cam_arrowN;`
+              //   ⇒ `<expr>` 只出现一次（单次求值），与 `handleReturn` 那条同形。
+              const tv = `__cam_arrow${n.startPosition.row + 1}`;
+              stmts.push(`const ${tv} = (${expr});`);
+              stmts.push(`captureProbe(${JSON.stringify(probeName + '.exit')}, { file: ${JSON.stringify(fileRel)}, ret: ${tv}, level: 'core' });`);
+              stmts.push(`return ${tv};`);
+            } else {
+              stmts.push(`return (${expr});`);
             }
             // ★ 一次替换同时表达 enter+exit（`removeTo` = 把原表达式换掉）
             insertions.push({
@@ -738,7 +747,7 @@ function collectSites(
                 line: n.startPosition.row + 1,
                 kind: wantEnter ? 'enter' : 'exit',
                 level: 'core',
-                injected: `{ ${stmts.join(' ')} return (${expr}); }`,
+                injected: `{ ${stmts.join(' ')} }`,
               },
             });
           }
@@ -961,14 +970,25 @@ function handleReturn(
     return;
   }
 
-  if (expr && isSimpleExpr(expr)) {
+  // ★★★ T270（2026-10-14）：**只要 `return` 带表达式，就捕获它的值** ——
+  //   原先这里分两支：`isSimpleExpr` 才捕获，**"复杂表达式"降级成 `ret: undefined`**，
+  //   理由写的是"避免双求值/冲突"。
+  //   ★★ 实测该理由**不成立**：改写形态是
+  //        `const __cam_retN = <expr>; captureProbe(…, { ret: __cam_retN }); return __cam_retN;`
+  //      —— `<expr>` **只出现一次**（在 `const` 初始化里）⇒ **单次求值**，不会双求值。
+  //   ★ 代价（实测）：`return double(n);` 这种**最常见的返回形态**全都拿不到返回值
+  //     ⇒ `behavior_baseline` / `reconcile_effects` 这些**靠返回值对账**的判据**静默少一半数据**。
+  //   ★ 唯一**真的**没有值可捕获的是**裸 `return;`**（无表达式）⇒ 只有那一支保留 `ret: undefined`。
+  //   ★ 保留的特殊分支：`isBracelessGuardReturn`（`if (x) return null;`）—— 那里做值捕获会
+  //     **破坏语法**（`if (x) const T=null;` 非法），故仍降级为"仅标记返回路径"（见上）。
+  if (expr) {
     const lineSuffix = n.startPosition.row + 1;
     const tempVar = `__cam_ret${lineSuffix}`;
     // 替换整个 return 语句：`return <expr>;` → `const T=<expr>; probe; return T;`
     const replacement = `const ${tempVar} = ${expr.text};captureProbe(${JSON.stringify(probeName)}, { file: ${JSON.stringify(fileRel)}, ret: ${tempVar}, level: 'core' });return ${tempVar};`;
     insertions.push({ index: n.startIndex, removeTo: n.endIndex, site: { probe: probeName, file, line: n.startPosition.row + 1, kind: 'exit', level: 'core', injected: replacement } });
   } else {
-    // 复杂表达式或裸 return：仅记录返回路径（不捕获值，避免双求值/冲突）
+    // 裸 `return;`：确实没有值 ⇒ 只记录返回路径
     const marker = `captureProbe(${JSON.stringify(probeName)}, { file: ${JSON.stringify(fileRel)}, ret: undefined, level: 'core' });`;
     insertions.push({ index: n.startIndex, site: { probe: probeName, file, line: n.startPosition.row + 1, kind: 'exit', level: 'core', injected: marker } });
   }
