@@ -884,7 +884,11 @@ function collectSites(
               //   （等于"箭头表达式体永远没有返回值"，而它恰恰是**本仓最常见的写法**）。
               //   形态：`const __cam_arrowN = (expr); probe(exit, ret: __cam_arrowN); return __cam_arrowN;`
               //   ⇒ `<expr>` 只出现一次（单次求值），与 `handleReturn` 那条同形。
-              const tv = `__cam_arrow${n.startPosition.row + 1}`;
+              // ★★★ T300（2026-10-14，TS 第 4 轮实测的 P0）：**临时变量名必须带【列号】** ——
+              //   原先只用行号 ⇒ 实测 `switch` 各 case（**共享一个块作用域**）里三个 return 都生成
+              //   `__cam_ret3` ⇒ `node` 报 `SyntaxError: Identifier ... has already been declared`
+              //   ⇒ **整模块加载失败**。⇒ 加列号（对齐 T277 的 `anon@L<行>C<列>` 形态）。
+              const tv = `__cam_arrow${n.startPosition.row + 1}C${n.startPosition.column + 1}`;
               stmts.push(`const ${tv} = (${expr});`);
               stmts.push(`captureProbe(${JSON.stringify(probeName + '.exit')}, { file: ${JSON.stringify(fileRel)}, ret: ${tv}, level: 'core' });`);
               stmts.push(`return ${tv};`);
@@ -1142,7 +1146,9 @@ function handleReturn(
     //   ⇒ 现在**替换成带大括号的块**：`{ const T = <expr>; probe(ret: T); return T; }`
     //     ⇒ `if (c) { … }` ✓ 语法正确、`return` 仍在 `if` 体内、**且值被捕获**。
     if (expr && !containsFunctionLike(expr)) {
-      const tv = `__cam_ret${n.startPosition.row + 1}`;
+      // ★★★ T300（同上）：**带列号** —— 同一行的多个 return（`switch` 各 case / 一行两 return）
+      //   会落在同一块作用域，只带行号必然撞名 ⇒ 实测 SyntaxError。
+      const tv = `__cam_ret${n.startPosition.row + 1}C${n.startPosition.column + 1}`;
       const replacement = `{ const ${tv} = ${expr.text};captureProbe(${JSON.stringify(probeName)}, { file: ${JSON.stringify(fileRel)}, ret: ${tv}, level: 'core' });return ${tv}; }`;
       insertions.push({ index: n.startIndex, removeTo: n.endIndex, site: { probe: probeName, file, line: n.startPosition.row + 1, kind: 'exit', level: 'core', injected: replacement } });
     } else {
@@ -1176,7 +1182,11 @@ function handleReturn(
   //     结果作为 `inner` 喂给 `template` ⇒ **内联探针与 `ret` 同时保住** ⇒ 那道门可以撤了。
   //     ★ 这正是"改模型"与"打补丁"的差别：补丁让两件事二选一，模型让两件事都要。
   if (expr) {
-    const lineSuffix = n.startPosition.row + 1;
+    // ★★★ T300（2026-10-14，TS 第 4 轮实测的 P0）：**必须带【列号】** —— 原先 `lineSuffix` 只有行号
+    //   ⇒ 同一行的多个 return（`switch` 各 case **共享一个块作用域** / 一行两 return）会生成**同名**临时变量
+    //   ⇒ 实测 `node` 报 `SyntaxError: Identifier '__cam_ret3' has already been declared` ⇒ **整模块加载失败**。
+    //   ★ 我第一次只改了同族的 `tv`（braceless 分支）⇒ **实测没生效** ⇒ 补上这一处（主分支）。
+    const lineSuffix = `${n.startPosition.row + 1}C${n.startPosition.column + 1}`;
     const tempVar = `__cam_ret${lineSuffix}`;
     // 替换整个 return 语句：`return <inner>;` → `const T=<inner>; probe(ret:T); return T;`
     // ★ `inner` = **已经过区间内编辑处理**的表达式文本（由 `applyInsertions` 传入）

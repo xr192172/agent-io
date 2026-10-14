@@ -2696,21 +2696,6 @@
       ⇒ ★ 本条也再次印证：**"含反引号/模板字符串"这类内容，本仓工具的 JSON 转义层确实不好用**
         ⇒ 稳妥做法是**用编辑工具直接改**（不经 JSON），或把 code 拆成不含嵌套反引号的形式。
 
-- [ ] **T300 ★★★★ 【P0·打断宿主】TS：同一行多个 `return` 落在【同一块作用域】⇒ 临时变量撞名 ⇒ `SyntaxError`、整模块加载失败**
-      *(来源：2026-10-14 TS 侧第 4 轮实测（子代理）+ 主代理亲自复现；★ 读数原文。)*
-      ⇒ **触发**：`switch(k){ case 1: return 'one'; case 2: return 'two'; default: return 'other'; }`
-        （★ **switch 各 case 共享一个块作用域**）；或同一行 `if (a>0) { return 1; return 2; }`。
-      ⇒ **实测（主代理复现）**：注入后那行是
-        `switch (k) { case 1: const __cam_ret3 = 'one'; …; case 2: const __cam_ret3 = 'two'; …; default: const __cam_ret3 = 'other'; … }`
-        ⇒ **三处同名** ⇒ `node` 直跑报 **`SyntaxError: Identifier '__cam_ret3' has already been declared`**
-        ⇒ **整模块加载失败**（不是"探针不生效"）。
-      ⇒ **根因**：`instrument.ts:1180`（`handleReturn`）`const tempVar = __cam_ret${n.startPosition.row + 1}`
-        —— **只用行号**，**没有列号 / 序号**。
-      ⇒ **要做**：临时变量名补上**列号**（对齐 T277 的 `anon@L<行>C<列>` 形态）或**全局序号**；
-        ★ 注意还有一处同族：`const tv = __cam_arrow${row+1}`（箭头表达式体）—— **一起改**。
-      ⇒ **判据**：`switch` 各 case 都 return、且同一行 ⇒ 插桩后 **`node` 能跑**、`tsc` 退 0。
-      ⇒ ★ **lint 看不见这条**（mini 跑 lint 报「✓ 不变量全过」）—— 它是"编译类"，台账里看不出来。
-
 - [ ] **T301 ★★★★ 【P0·打断宿主】TS：CommonJS 的 `.ts` 被注入 **ESM `import`** ⇒ `require is not defined`**
       *(来源：2026-10-14 TS 侧第 4 轮实测。)*
       ⇒ **触发**：`.ts` 里用 `require` / `module.exports`，`package.json` **无** `"type":"module"`，且**用 node 直跑**。
@@ -2758,3 +2743,15 @@
       ⇒ ★ 已用 **T299** 在回执里**明说这条边界**（"编译/运行/取值时机/序列化/事件顺序它看不见"）⇒ **该做的已做**；
         本条只作为**记录**（避免以后有人以为 `lint` 全绿就等于健康）。
       ⇒ **可选加强（先裁）**：让 `lint` 顺带跑一次 `tsc --noEmit` / `go build ./...` ⇒ 但那会从"秒级"变"慢"，**要权衡**。
+
+- [x] **【已做】T300 —— 临时变量名补【列号】（同一行多个 return 不再撞名 ⇒ 不再 `SyntaxError`）**
+      *(2026-10-14；★ 全程用本仓 `edit_code`。)*
+      ⇒ **病（实测）**：`switch(k){ case 1: return one; case 2: return two; default: return other; }`
+        —— ★ **switch 各 case 共享一个块作用域** ⇒ 三处都生成 `__cam_ret3` ⇒
+        `node` 报 **`SyntaxError: Identifier __cam_ret3 has already been declared`** ⇒ **整模块加载失败**。
+      ⇒ **改**：临时变量名带**列号** —— `__cam_ret<行>C<列>`（`__cam_arrow` 同族一起改），对齐 T277 的 `anon@L<行>C<列>` 形态。
+      ⇒ ★★ **我第一次改漏了（如实记）**：只改了同族的 `tv`（braceless 分支），而**主分支用的是 `tempVar`**
+        ⇒ **实测没生效**（注入还是 `__cam_ret3`）⇒ 补上 `lineSuffix` 那一处才真修好。
+        ★ 教训：**同族的多处必须一次找齐**（先 `grep` 出所有变体再改），否则"改了但没生效"要靠实测才发现。
+      ⇒ **验证**：插桩后 **`node` 退 0**（原先 SyntaxError）；临时变量名互不相同
+        （`__cam_ret3C24` / `3C46` / `3C69` / `7C16` / `7C26`）。
