@@ -388,6 +388,38 @@
           对拍读数 **`checked 2→3 · passed 0→1`**，新加那条 `pass`；撤掉后回到 `2/0/2` ✓
         · ⇒ ★★ **"决策卡带可判定验收"这条主路现在从【两个入口】都走得通了**（`decision` op 与 `node` op）。
       ⇒ **剩余**：② 冲突的显式读数（待裁）；③ 给那 21 条补 `expectations`（★ 这才是让它们"有当代意义"的一步）。
+      ⇒ ★★★ **2026-10-14 闭环 B 实测（"项目文档 → 决策卡 → 对拍"，由子代理真跑、主代理核验读数）**：
+        · **挑的 3 条**（都来自 `docs/architecture-refactor-plan.md` §1）：I1 对外契约不变 → `symbol-exists
+          server_registry.ts::registerAllTools` · I3 全量回归 → `file-exists scripts/verify.mjs` ·
+          I1 契约唯一出口 → `edge-exists server.ts → server_registry.ts`（写卡前先核过节点/符号真实存在）。
+        · **读数**：基线 `checked 2 · passed 0 · failed 2` ⇒ 加 3 张卡后 **`5 / 2 / 2 / unsupported 1`**
+          （主代理独立复核一致）。逐条：`file-exists` **pass** · `symbol-exists` **pass** ·
+          `edge-exists` **unsupported** · 既有的 2 条 `signature-matches` 仍 fail。
+        · ★★ **反例（证明判定非恒真）**：把 `verify.mjs` 改成 `verify-NOPE.mjs` ⇒ 该条**变 fail**
+          （`passed 2→1 · failed 2→3`），改回即恢复 ⇒ ✓
+        · ★★★ **闭环"顺"在哪 / "卡"在哪（如实）**：**写端一次通过**（`edit_dsl --input` + `data.expectations`，
+          T256 那条路）；★ **卡在"形状 × 语言"的匹配度** —— 见 **T257**（edge 类对 TS 恒 unsupported）。
+        · ★ 子代理如实报了**落不了卡**的三条：I2（8 个运行时依赖：6 种形状表达不了"集合=8"）、
+          I5（不引 DI/框架：唯一的 `edge-absent → @nestjs/core` 会**恒 pass** ⇒ 是假项，按纪律没硬塞）、
+          I4（每步可独立提交：git 历史属性，无对应形状）。
+
+- [ ] **T257 ★★★ `edge-exists` / `edge-absent` 在【真实 TS 文件上恒 unsupported】—— 6 种可判形状里有 2 种对 TS 仓没有可用面**
+      *(来源：2026-10-14 闭环 B 实测（子代理跑、主代理复核）；★ 这是**闭环 B 唯一的真卡点**。)*
+      ⇒ **实测**：`edge-exists server.ts → server_registry.ts` 判 **unsupported**，detail 逐字：
+        *"该文件含 **3 条非相对导入**（Go/Python 的包导入等），而依赖边表按设计**只记 relative** ⇒ **依赖事实不完整，判不了**"*。
+      ⇒ ★★★ **根因（已读实现）**：`application/design/intent/expectations.ts:92-109` 的 `depFactsIncomplete`
+        把 **`kind !== 'relative' && !type_only` 的【任何】import** 都算"依赖事实不完整" ——
+        ★ 注释只提"Go/Python 的包导入等"，但 **TS 的包导入（`node:path` / `@modelcontextprotocol/sdk`）同样触发**。
+        ⇒ ★★ 于是：**只要文件 import 了任何包（几乎每个真文件），edge 类断言就永远 unsupported**。
+      ⇒ ★ **不是假绿**（它没并进 `passed`，如实记 `unsupported` —— 这一点做对了）；
+        ★ **但它等于"这条形状对 TS 仓没有可用面"** ⇒ 6 种形状实际可用 ≈ 4 种
+        （`file-exists` / `symbol-exists` / `signature-matches` / `call-exists`；后者待核）。
+      ⇒ **要做（先裁）**：① **TS 的包导入不该算"依赖事实不完整"** —— 依赖边表只记 relative 是**设计**
+        （包导入没有仓内目标），而 `edge-exists` 问的是**仓内两文件之间**的边 ⇒ ★ **两者本不冲突**，
+        判据应改为"**只看被问的那对节点是否落在事实不完整的范围里**"，而不是"文件里有没有包导入"；
+        ② 或（更保守）把它降为"**该形状在 TS 上不支持**"并在描述里**写明**，别让人白写。
+      ⇒ **判据**：在**有包导入的真实 TS 文件**上写一条 `edge-exists`（那条边**确实存在**）⇒ **必须 pass**（而不是 unsupported）。
+      ⇒ ★ 关联：这也是"给那 21 条补 `expectations`"的前置 —— **先得知道哪些形状真能用**。
       ⇒ **代码位置（判据的唯一住处）**：`dsl_ops/node_ops.ts:225` `const decision: NodeDecision = { ...next, updated_at: now };`
         —— ★ `{ ...next }` = **用你给的字段整体替换**，不是合并。三个调用点都走它：
         `update_feature.ts:865`（`edit_dsl` 的 decision 路径）· `node_ops.ts:103`（addNode）· `node_ops.ts:293`（updateNode 的 `data.decision`）。
