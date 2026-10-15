@@ -15,6 +15,12 @@
  *   - digest：每文件一行紧凑认知索引（F:职责 | R:关系 | A:契约 | S:高熵决策）——
  *             语义层的**只读派生视图**，上下文紧张时一遍读完；不落盘、不新增真相源
  *   - calls：查询文件的调用关系（需 file_id + project_dir，显示入/出调用）
+ *   - pending：**欠账视图**（全景判据⑤）—— ★ **只读直读 overlay 权威**（`<feature>.overlay.json`
+ *              锚点的 `progress`），列出所有「未完成」锚点（`progress !== 'done'`，★ **未登记
+ *              `progress` 的锚点不算欠账**）；每项出 `id/path/progress/progress_evidence`，
+ *              锚点决策卡带 `scope`（T329）时一并出 `decision_scope`。**不落盘、每次现算**。
+ *              ★ 为什么不复用 `files&file_status`：`applyOverlay` 只投影 `progress→base.status`，
+ *              **`progress_evidence` 不投影**（`overlay.ts:481/500`）⇒ 要证据必须直读 overlay。
  *
  * query 类型与参数映射：
  *   dsl              → get_dsl          { feature }
@@ -34,9 +40,13 @@
  *   simulation_state → get_simulation_state { feature }
  *   diff             → diff_features    { feature_a, feature_b }
  *   tag              → 功能标记（人给文件节点的"隶属某功能"标签）{ feature, tag? } —— 给 tag=成员+失联；省略=列全部标签
+ *   pending          → **欠账视图**（只读直读 overlay，列未完成锚点）{ feature }
  */
 
 import { getDSLByView, listFeatures as listStoredFeatures } from '../../../infrastructure/storage.js';
+// ★★★ T330：欠账视图（`query=pending`）**直读 overlay 权威** —— `progress_evidence` 不被
+//   `applyOverlay` 投影回 base（`overlay.ts:481/500`）⇒ 要 evidence 只能读 overlay 本体。
+import { loadOverlay } from '../../../infrastructure/storage_overlay.js';
 // ★ T89：**意图的家是 overlay**（T75/T77 立）—— 与视图无关 ⇒ 实际视图也能"贴"上设计意图
 // ★ T90：**「最后实现过的决策」** 来源 = 重写前那份快照的 `intents`（不再是 overlay 最新）
 import { listFileSnapshots } from '../../refactor/snapshot/file_snapshot.js';
@@ -83,7 +93,8 @@ export interface QueryFeatureInput {
     | 'diff'
     | 'goals'
     | 'edge_intents'
-    | 'tag';
+    | 'tag'
+    | 'pending';
   /** feature 名（dsl/nodes/edges/node/decisions/files/file/digest/annotations/approvals/approval_history/snapshots/simulation_state 必填；features/templates 忽略；diff 用 feature_a/feature_b） */
   feature?: string;
   /** node：节点 ID */
@@ -1282,6 +1293,67 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
         message: lines.join('\n'),
         data: { tag: input.tag, members, found, missing },
       };
+    }
+
+    // ── 欠账视图（只读 · 直读 overlay 权威）─────────────────────────────
+    //
+    // ★★★ T330（全景判据⑤的便宜那一半）：「欠账」= **尚未做完**的锚点。
+    //
+    // ★★ 为什么**必须直读 overlay**（而不是最接近的 `query=files&file_status=draft|in_progress`）：
+    //   `applyOverlay` 只把 `progress → base.status` **投影**，`progress_evidence` **不投影**
+    //   （逐字核过 `domain/overlay.ts:481` 与 `:500`：两处都只 `...(a.progress ? {status:a.progress} : {})`）。
+    //   ⇒ ★ 任何**要证据**的视图，读 base 都拿不到 evidence ⇒ 只能读 `<feature>.overlay.json` 本体
+    //     （照 `application/write_gate.ts:66/554` 的 `loadOverlay` 用法）。
+    //
+    // ★★ 口径（二选一并写清 —— 本处选「**未登记 ≠ 欠账**」）：
+    //   「欠账」= 锚点**已登记** `progress` 且 `progress !== 'done'`；
+    //   ★ **未登记 `progress` 的锚点不算欠账**（没有谁声明过它要做 ⇒ 不欠）。
+    //   ⇒ 判据逐字 = `a.progress !== undefined && a.progress !== 'done'`（★ **不是**裸 `!== 'done'`，
+    //     那会把"从没人认领的锚点"也卷进来 —— 那正是"把没判读成通过"的同族错）。
+    //
+    // ★ 数据来源 = overlay **权威**（不是 base 上那份被投影出来的 `status`）；每次**现算**、**不落盘**。
+    case 'pending': {
+      const feature = requireFeature(input);
+      const ov = loadOverlay(feature);
+      if (!ov) {
+        return {
+          message:
+            `feature "${feature}" 无 overlay（没有任何锚点 / 进度登记）⇒ 欠账 0 条 ${viewTag}`,
+          data: [],
+        };
+      }
+      const allAnchors = Object.entries(ov.anchors);
+      const debts = allAnchors
+        .filter(([, a]) => a.progress !== undefined && a.progress !== 'done')
+        .map(([id, a]) => ({
+          id,
+          path: a.path,
+          progress: a.progress,
+          progress_evidence: a.progress_evidence,
+          // ★ `decision?.scope`（T329 新字段）：**有就带上、没有就省略**（不造空值）
+          ...(a.decision?.scope ? { decision_scope: a.decision.scope } : {}),
+        }))
+        .sort((x, y) => x.id.localeCompare(y.id));
+
+      const registered = allAnchors.filter(([, a]) => a.progress !== undefined).length;
+      const lines: string[] = [
+        `══ feature "${feature}" 欠账（未完成锚点）${viewTag} ══`,
+        '',
+        `  口径：「欠账」= overlay 锚点**已登记** progress 且 !== 'done'；` +
+          `★ **未登记 progress 的锚点不算欠账**（没人认领 ⇒ 不欠）。`,
+        `  来源：\`${feature}.overlay.json\` 锚点上的 progress（**权威**，不是 base 的投影 status）；每次现算、不落盘。`,
+        `  欠账 ${debts.length} 条（锚点总数 ${allAnchors.length} · 已登记进度 ${registered}）`,
+      ];
+      if (debts.length === 0) {
+        lines.push('', '  （无欠账：所有已登记进度的锚点都是 done）');
+      } else {
+        debts.forEach((d, i) => {
+          lines.push('', `  ${i + 1}. [${d.id}]${d.path ? ` ${d.path}` : ''} · progress=${d.progress}`);
+          lines.push(`     evidence: ${d.progress_evidence ? JSON.stringify(d.progress_evidence) : '(无)'}`);
+          if (d.decision_scope) lines.push(`     decision.scope: ${d.decision_scope}`);
+        });
+      }
+      return { message: lines.join('\n'), data: debts };
     }
 
     default:
