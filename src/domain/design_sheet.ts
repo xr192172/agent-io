@@ -6,9 +6,15 @@
  *     只不过那个是机器算出来的，而你是对于项目的一个设计。"*
  *   ⇒ 两份**同性质**的 DSL（`design/<f>.dsl.json` 与 `live/<f>.dsl.json`）**直接对拍**。
  *
- * ## 配对规则（★ 开发者已拍的身份规则，本模块**只照做**、不改）
- *   两份图**各用各的 `id`**，对拍时**按 id 同名配对**：
- *     · 两边都有 ⇒ **比属性**（差异块）—— 只列**有差**的（逐字段给两边原值）；
+ * ## 配对规则（★ 用户已拍的身份规则，本模块**只照做**、不改）
+ *   ★★ 用户逐字：*"那就是**实现了的，有 ID；没实现的没 ID**，不就好了"* ⇒ **id 空间只有一套（扫描给的）**。
+ *   ⇒ 对拍时两边的**指代**分两半（见 {@link designSheetRef}，口径只此一处）：
+ *     · **已实现**的对象 ⇒ 用**扫描给的 `id`** 指代（设计侧写了 id 就是"我要这个已存在的东西"）；
+ *     · ★ **未实现**的对象 ⇒ 用**「名字/路径」**指代（对齐 `expectations` 六种 kind 与
+ *       `overlay.nodePath` 的既有做法：`file-exists {path}` / `files:<路径>` 都靠名字指代，
+ *       **无一自造 id**）—— ★ 所以**不必**给"想要的东西"编一个 `node_pending_x`。
+ *   三类判定（**语义不变**，只换指代）：
+ *     · 两指代相同 ⇒ **比属性**（差异块）—— 只列**有差**的（逐字段给两边原值）；
  *     · ★ **只在设计里** ⇒ 判为「**要实现**」（这正是"挪建筑"出来的任务）；
  *     · **只在 live 里** ⇒ 判为「**未纳入设计**」（提示，未必是错 —— 扫描看清了、设计还没写进去）。
  *
@@ -25,7 +31,7 @@ import type { DesignDSL } from './types.js';
  *
  * ★ 为什么是清单而不是"比整份 JSON"：`geometry.nodes[]` 里混着渲染/派生字段（`x`/`y`/`style`/
  *   `swimlane` 等），全比 ⇒ 一行坐标差就把对拍淹了，真正的结构差异反而看不见。清单**只列意图字段**。
- * ★ `id` 本身是**配对键**、不在清单里（同 id 才进比属性这一步）。
+ * ★ `id` 本身是**配对键的一半**、不在清单里（★ 两边**指代相同**才进比属性这一步；指代口径见 {@link designSheetRef}）。
  * ★ `attributes` 是决策卡的**类型化参数表**（本仓既有定义：`Node.attributes`，机器可对拍的那一档）。
  */
 export const DESIGN_SHEET_NODE_KEYS = [
@@ -41,7 +47,7 @@ export const DESIGN_SHEET_NODE_KEYS = [
 
 /** 某个属性在一侧的取值 */
 export interface NodeAttrDiff {
-  /** 节点 id（配对键） */
+  /** 节点**指代**（配对键：实现的 = id；未实现的 = 名字/路径） */
   id: string;
   /** 属性名（∈ {@link DESIGN_SHEET_NODE_KEYS}） */
   key: string;
@@ -51,26 +57,31 @@ export interface NodeAttrDiff {
   live: unknown;
 }
 
-/** 同名节点：两边都有，但**至少一个属性不同** */
+/** 两指代相同的节点：两边都有，但**至少一个属性不同** */
 export interface SameIdDiff {
+  /** 节点**指代**（配对键） */
   id: string;
   attrs: NodeAttrDiff[];
 }
 
 /** 对拍结果（三类差异 + 计数） */
 export interface DesignSheetDiff {
-  /** ① 同名属性差：两边都有、且至少一个属性不同（★ 只含有差的） */
+  /** ① 指代相同但属性有差：两边都有、且至少一个属性不同（★ 只含有差的） */
   same_id: SameIdDiff[];
-  /** ② ★ 只在设计里 ⇒ 「要实现」 */
+  /**
+   * ② ★ 只在设计里 ⇒ 「要实现」。
+   * ★ 列的是**设计侧的指代**（见 {@link designSheetRef}）：已实现的对象 = `id`；
+   *   **未实现的对象 = 名字/路径**（★ 不给"想要的东西"自造 id）。
+   */
   design_only: string[];
-  /** ③ 只在 live 里 ⇒ 「未纳入设计」 */
+  /** ③ 只在 live 里 ⇒ 「未纳入设计」（live 全是已实现的 ⇒ 列 `id`） */
   live_only: string[];
   counts: {
     /** 设计图节点数 */
     design: number;
     /** live 节点数 */
     live: number;
-    /** 同名且**逐字段一致**的节点数 */
+    /** 指代相同且**逐字段一致**的节点数 */
     same_identical: number;
   };
 }
@@ -88,7 +99,32 @@ function sameValue(a: unknown, b: unknown): boolean {
 }
 
 /**
- * 对拍两份同性质 DSL（**按 id 同名配对**）—— 纯函数，同一输入两次结果逐字相同。
+ * ★★ 一个节点的**指代**（"这份图里怎么称呼它"）—— ★ **口径只此一处**，别处不许再推一遍。
+ *
+ * ## 规则（用户已拍的身份规则，逐字见文件头）
+ *   · **有 `id`** ⇒ 这是「**已实现**的对象」⇒ 指代 = `id`（★ **只有一套 id 空间**：扫描给的）；
+ *   · ★ **没有 `id`** ⇒ 这是「**未实现**的对象」⇒ 指代 = **名字/路径**（**不自造 id**）：
+ *       - `file` 节点：**路径**住 `description`（★ 与 `overlay.nodePath` **同口径**：`if (n.type === 'file') return n.description ?? n.id`）；
+ *       - 其余节点：**名字**取 `label`（缺则 `description`）。
+ *
+ * ## 对齐哪条既有解法（不是新造）
+ *   `expectations` 六种 kind 全用「路径/符号名」指代、无一用 id（`domain/expectation.ts:35`），
+ *   且 `file-exists {path}` 能指向**还不存在的文件**、**重建后活着**；
+ *   `scope` 的 `files:<路径>`（`domain/scope.ts:31`）与 `overlay` 的对账（按 `path` 认亲，`domain/overlay.ts:406`）同款。
+ */
+export function designSheetRef(n: Node): string {
+  const id = typeof n.id === 'string' ? n.id.trim() : '';
+  if (id) return id; // ★ 已实现：唯一 id 空间（扫描给的）
+  const desc = (n.description ?? '').trim();
+  const name = (n.label ?? '').trim();
+  // ★ 未实现：名字/路径指代（file 用路径，其余用名字；都缺时给一个响亮可见的兜底，不静默）
+  return (n.type === 'file' ? desc || name : name || desc) || `<无名占位:${n.type ?? 'node'}>`;
+}
+
+/**
+ * 对拍两份同性质 DSL（**按 {@link designSheetRef} 的指代配对**）—— 纯函数，同一输入两次结果逐字相同。
+ *
+ * ★ 设计侧键 = `designSheetRef`（有 id ⇒ id；无 id ⇒ 名字/路径）；live 侧键 = `id`（扫描给的唯一 id 空间）。
  *
  * @param design 手写设计图（`design/<f>.dsl.json`）
  * @param live   扫描产物（`live/<f>.dsl.json`）
@@ -96,28 +132,30 @@ function sameValue(a: unknown, b: unknown): boolean {
 export function diffDesignSheet(design: DesignDSL, live: DesignDSL): DesignSheetDiff {
   const dNodes = nodesOf(design);
   const lNodes = nodesOf(live);
-  const dById = new Map(dNodes.map((n) => [n.id, n]));
+  // ★ 设计侧用**指代**（未实现的没有 id ⇒ 用名字/路径）；live 侧一律用扫描给的 id
+  const dByRef = new Map<string, Node>(dNodes.map((n) => [designSheetRef(n), n]));
   const lById = new Map(lNodes.map((n) => [n.id, n]));
 
   const same_id: SameIdDiff[] = [];
   let sameIdentical = 0;
-  for (const [id, dn] of dById) {
-    const ln = lById.get(id);
+  for (const [ref, dn] of dByRef) {
+    const ln = lById.get(ref);
     if (!ln) continue;
     const attrs: NodeAttrDiff[] = [];
     for (const key of DESIGN_SHEET_NODE_KEYS) {
       const dv = (dn as unknown as Record<string, unknown>)[key];
       const lv = (ln as unknown as Record<string, unknown>)[key];
-      if (!sameValue(dv, lv)) attrs.push({ id, key, design: dv, live: lv });
+      if (!sameValue(dv, lv)) attrs.push({ id: ref, key, design: dv, live: lv });
     }
     if (attrs.length === 0) sameIdentical++;
-    else same_id.push({ id, attrs });
+    else same_id.push({ id: ref, attrs });
   }
 
   // ★ 只排序输出（便于人读与逐字比对），**不改变**配对语义
   same_id.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
-  const design_only = [...dById.keys()].filter((id) => !lById.has(id)).sort();
-  const live_only = [...lById.keys()].filter((id) => !dById.has(id)).sort();
+  // ★ 「只在设计里」列的是**设计侧的指代**：已实现的对象 = id；未实现的 = 名字/路径（无 id）
+  const design_only = [...dByRef.keys()].filter((ref) => !lById.has(ref)).sort();
+  const live_only = [...lById.keys()].filter((id) => !dByRef.has(id)).sort();
 
   return { same_id, design_only, live_only, counts: { design: dNodes.length, live: lNodes.length, same_identical: sameIdentical } };
 }

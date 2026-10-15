@@ -91,11 +91,24 @@ console.log('════ 0. 三条缺口的"定义/字段在同一段读数里"
 
   // ① 定义（闸函数长什么样）+ 字段（rename_files 有没有依赖/调用它）
   dump('① 定义 · write_gate.ts 里的闸函数', wg.filter((l) => /export function assertSourceWriteRegistered/.test(l)).join('\n'));
-  dump('① 字段 · rename_files.ts 的 import 段（★ 逐行读：无 write_gate）', rf.filter((l) => /^import/.test(l)).join('\n'));
+  dump('① 字段 · rename_files.ts 的 import 段（★ 逐行读）', rf.filter((l) => /^import/.test(l)).join('\n'));
+  // ★★ §34.3（2026-10-16 订正）：**证不许断言"某时点的真仓现状"** —— 本行原写"真仓 rename_files.ts **不** import write_gate"，
+  //   那是 2026-10-16 的时点状态；而源码已按本证的期望改好（`b4c435b` 补了闸），断言于是**随现实变红**（36/1）。
+  //   ⇒ 改为：**断言方向**（这条判据的**绿**与**红**两个方向都真的成立 —— 由本证 3. 的两处偏离在**夹具**里逐条证明：
+  //     夹具 `rename_files.ts` **import 了** write_gate ⇒ 方向 1（能绿）；摘掉 import（偏离 B）/ 摘掉调用（偏离 A）⇒ 方向 2（能红））；
+  //     **真仓此刻的读数只打印、不判红**（时点读数仅作参考，不是判据）。
+  const rfImportsGate = rf.some((l) => /write_gate/.test(l));
+  dump(
+    '① 时点读数（★ 仅参考、**不判红**）· 真仓 rename_files.ts 是否 import write_gate',
+    rfImportsGate
+      ? '是 ⇒ 本证缺口① 的那条期望**已在真仓改好**（T336 之后补的闸）；本证不复判真仓，两方向在夹具里验。'
+      : '否 ⇒ 真仓缺口仍在；本证不复判真仓，两方向在夹具里验。',
+  );
   chk(
-    wg.some((l) => /export function assertSourceWriteRegistered/.test(l)) &&
-      !rf.some((l) => /write_gate/.test(l)),
-    '① 定义与字段同段：`assertSourceWriteRegistered` 已定义，而 `rename_files.ts` **不 import write_gate**',
+    wg.some((l) => /export function assertSourceWriteRegistered/.test(l)),
+    '① 定义与字段同段：`assertSourceWriteRegistered` **已定义**（★ 方向判据：闸**存在** ⇒"能绿"有前提；'
+      + '"能红"由本证 3. 的两处偏离在夹具里证）',
+    `真仓时点读数（仅参考）：rename_files.ts import write_gate = ${rfImportsGate}`,
   );
 
   // ② 定义（source_node_id 字段）+ 字段（谁写它 / 有没有读端）

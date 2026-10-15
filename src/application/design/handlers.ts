@@ -30,7 +30,7 @@ import { buildDiffBlocks, hasDiff, type FileDiff } from '../../domain/diff_block
 import { collectExpectations, describeExpectation, expectationSubjectPath, expectationPaths, normPath } from '../../domain/expectation.js';
 import { judgeExpectations } from './intent/expectations.js';
 // ★★ 2026-10-15：设计图（手写）vs 实际（扫描）的**只读对拍** —— 纯比对住 domain（无 IO）。
-import { diffDesignSheet, diffDesignSheetLine } from '../../domain/design_sheet.js';
+import { diffDesignSheet, diffDesignSheetLine, designSheetRef } from '../../domain/design_sheet.js';
 
 /** consistency_check：一致性。★ wrapData（2026-09-29）：[B] 回 `ConsistencyResult`
  *   = `{ message, fileResults[], invariantResults[], summary{totals…} }` ——
@@ -593,11 +593,12 @@ function groupExpectationFails(
  *   ② `live/<f>.dsl.json`  —— 扫描产物（`getLiveFeatureResolved`，走候选链，与 diff_views 同款）
  *   ③ 现设计视图          —— `features/<f>.json`（= 扫描 ⊕ overlay 的合并结果，`getDSLByView(…,'design')`）
  *      ★ 第 ③ 份**只作上下文**（"这个『要实现』的点是否已记进现设计视图"），**不参与**三类差异的配对 ——
- *        配对永远是 ①②**两份同性质 DSL 按 id 同名**（身份规则由开发者拍板，本入口不改）。
+ *        配对永远是 ①②**两份同性质 DSL 按指代对齐**（★ 已实现的用扫描给的 `id`、**未实现的用名字/路径**，
+ *        身份规则口径唯一住在 `domain/design_sheet.ts#designSheetRef`，本入口不改）。
  *
  * ## 输出三类差异（判据住在 `domain/design_sheet.ts`，此处只渲染 + 报账）
- *   · **同名属性差** —— 两边都有、至少一个属性不同（逐字段给两边原值）
- *   · **只在设计里 ⇒ 「要实现」** ★ 这正是"挪建筑"出来的任务
+ *   · **指代相同但属性差** —— 两边都有、至少一个属性不同（逐字段给两边原值）
+ *   · **只在设计里 ⇒ 「要实现」** ★ 这正是"挪建筑"出来的任务（列**指代**：id 或 名字/路径）
  *   · **只在 live 里 ⇒ 「未纳入设计」**（提示，未必是错）
  *
  * ## ★ 只读、不落盘（不许新增缓存/存储）
@@ -626,7 +627,10 @@ export const diffDesignSheetHandler = wrapData(async (a) => {
   // ③ 现设计视图（**只作上下文**，不参与配对）
   const currentDesign = getDSLByView(feature, 'design');
   const currentIds = new Set((currentDesign?.geometry?.nodes ?? []).map((n) => n.id));
-  const designOnlyAlreadyInCurrent = d.design_only.filter((id) => currentIds.has(id));
+  // ★ 未实现的"要实现"点是**名字/路径**指代 ⇒ 上下文比对也要按同一口径（`designSheetRef`）取现设计视图的指代，
+  //   否则一个已经在现设计视图里的路径点会被误报成"还没有"（判据不在此处，但**不许给错标签**）
+  const currentRefs = new Set((currentDesign?.geometry?.nodes ?? []).map((n) => designSheetRef(n)));
+  const designOnlyAlreadyInCurrent = d.design_only.filter((ref) => currentIds.has(ref) || currentRefs.has(ref));
 
   const lines: string[] = [
     `设计图 vs 实际 · 只读对拍（feature "${feature}"）`,
@@ -647,7 +651,7 @@ export const diffDesignSheetHandler = wrapData(async (a) => {
   if (d.design_only.length) {
     lines.push(`\n══ 只在设计里 ⇒ **要实现**（${d.design_only.length}）══`);
     for (const id of d.design_only) {
-      const inCur = currentIds.has(id) ? '（★ 现设计视图里已有它）' : '（★ 现设计视图里还没有）';
+      const inCur = currentIds.has(id) || currentRefs.has(id) ? '（★ 现设计视图里已有它）' : '（★ 现设计视图里还没有）';
       lines.push(`· ${id} ${inCur}`);
     }
   }

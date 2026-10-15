@@ -1197,3 +1197,40 @@ MCP 传输/schema 层 · daemon 转发分支；★ **六种 kind 本节点只用
 **代价总在事后出现**。★ 今天已经出现 **6 次以上**：`scope` 只做语法校验 · 判据恒真 · 装饰闸 ·
 夹具读数当真仓读数 · 自造 id · 证断言写死当时现状。
 ⇒ ★ **对策不能靠"我更小心"，要靠规格与纪律里的硬要求。**
+
+---
+
+## 42. 2026-10-16 收窄配对规则 + 修过期断言（`t338` 13/0 · `t336` 37/0）+ ★ 我的裁定
+
+### 42.1 ★ 新纪律第一次生效：**第 0 步先列 ≥2 处同类既有解法**（它给了 4 处，没硬造）
+① `src/domain/expectation.ts:35-36`：六 kind 全用「路径/符号名」（`file-exists{path}` 可指不存在的文件）；
+② `src/domain/scope.ts:31` + `:213-217`：`files:<仓库相对路径>` 按**名字**命中（不是 id）；
+③ `src/domain/overlay.ts:332` `nodePath` + `:406` `byPath.get(a.path)` **按名字认亲** + `:416` `orphaned` + `:429` `_migratedFrom` 对账；
+④ `src/domain/validator.ts:159` `validateDSL`（t337 1-c 已在用）。
+⇒ ★★ **这就是"先找既有解法"该有的样子** —— 上一轮我"造新 id 方案"的病，这次没犯。
+
+### 42.2 活一：按用户规则收窄（未实现节点**不自造 id**，用名字/路径）
+- 新增**唯一口径** `designSheetRef`（`design_sheet.ts:107-117`：**有 id ⇒ id；无 id ⇒ 名字/路径**，file 取 `description`），
+  配对改用它（`:132-136`）；头注释同步收窄（`:9-18`）；
+- **落盘原文**（无 id）：`{"type":"file","label":"待建模块 X","title":"尚未存在的文件（要实现）","description":"src/planned/thing.ts","status":"draft"}`；
+- **判据（新证 `t338` = 13/0，走工具层 `diffDesignSheetHandler`）**：
+  ① 上述原文**无 `id`** ✅；② `design_only=["src/planned/thing.ts"]`、回执含 **`只在设计里 ⇒ 要实现`**、无 `node_pending_*` ✅；
+  ③ `rebuild_design=true` **前后 884→884 字节相同**、**重建后节点仍在**（`<无id:src/planned/thing.ts>`）✅；
+  旁证三类语义未变：`same_id` 命中 `file_src_a_ts` · `live_only=["dir_src","file_src_b_ts"]` ✓
+
+### 42.3 活二：`t336` 过期断言修好
+改前 `36/1` → 改后 **`37/0`**（① 由"真仓**某时点**不 import write_gate"改为"**闸定义存在（方向）** + 真仓读数**只打印不判红**"；
+两方向夹具断言**逐条未动**，PASS 不减反 +1）✓
+
+### 42.4 ★★★ 我的裁定：**未实现的占位不该进 `nodes[]`**（第三条路）
+- **它带回的冲突**：`validateDSL` **要求 `Node.id`**（`schema/design_dsl.schema.json` `definitions.Node.required=["id"]`）
+  ⇒ 无 id 的占位节点 `valid=false`；另一条路是"**把路径写进 `id`**"（`valid=true` 但是 hack）。
+- **裁定依据（正是"先找既有解法"）**：★ **`expectations` 与 `scope` 的"无 id 指代"根本不在 `nodes[]` 里**
+  （前者挂在 decision 上、后者是字符串）⇒ **`nodes` 本就是"已实现的结构"** ⇒ schema 要求 id **是对的**；
+  **把"未实现"混进去 = 自己把自己拧了**。
+- **⇒ 选第三条路**：**未实现的部分单列一区、就用名字/路径**（即 `expectations` 那种形态），**不伪装成 node**；
+  ★ **"把路径塞进 `id`"不选**（同时违反"没实现的没 ID"与 id 唯一性）。
+- ★ **待做**：把 `design_sheet` 里的无 id 占位**移出 `nodes[]`**（改单列区块），并让 `design/<f>.dsl.json` **能过 `validateDSL`**
+  （判据：`valid=true`）。**本笔未改 schema。**
+- ★ `[未核]`（它如实报）：MCP `tools/list` schema 层 · daemon 分支 · 真仓 `design/<f>.dsl.json`（**从不存在，全程夹具**）；
+  另 `t336` 的 ②/③ 仍是同类"时点现状"断言（本轮按题未动）。
