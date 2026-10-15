@@ -49,6 +49,8 @@ export interface UpdateStatusInput {
   /**
    * ★ T328：`status === 'done'` 时**必须**给（三档之一，见 `ProgressEvidence`）；
    * 不给 ⇒ 抛错并说清理由（**不静默、不自动补**）。
+   * ★ T333：**形状与以前完全一样**（`attestation` 仍是 `{ kind, by, at, why }`）——
+   * `attestation` 的 `source_node_id` 由本写端**自动填**，调用方**不传**（传了也被覆盖）。
    */
   evidence?: ProgressEvidence;
 }
@@ -59,7 +61,17 @@ export interface StatusResult {
 }
 
 export function updateStatus(input: UpdateStatusInput): StatusResult {
-  const { feature, node_id, status, evidence } = input;
+  const { feature, node_id, status } = input;
+
+  // ★★★ T333（2026-10-15）：`attestation` 落盘 **自动绑定来源节点**（★ 调用方零改动）。
+  //   写路径**此刻手里就有** `node_id`（= 它要写的那条锚点键 `ov.anchors[node_id]`）⇒ 由写端替调用方填，
+  //   ★ **不要求调用方多传一个参数**。理由：一条没署名的口供说不清它在给**谁**作证
+  //   （与 T118「事实要能追溯到来源」同族）；带上节点 id 后，"节点改名/重挂"时旧口供与节点对不上
+  //   ⇒ **自然失效**（不再冒充新节点的完成）。★ 一律以写端为准 ⇒ 调用方传了也会被覆盖。
+  const evidence: ProgressEvidence | undefined =
+    input.evidence?.kind === 'attestation'
+      ? { ...input.evidence, source_node_id: node_id }
+      : input.evidence;
 
   const dsl = getDSL(feature);
   if (!dsl) {
@@ -80,6 +92,25 @@ export function updateStatus(input: UpdateStatusInput): StatusResult {
   // ① 权威写：overlay 锚点的 `progress`（+ evidence）——「人写的意图不许被重建冲掉」
   const ov: DesignOverlay = loadOverlay(feature) ?? seedOverlayFromDsl(dsl);
   const prev = ov.anchors[node_id];
+
+  // ★★★ T333（2026-10-15）：**`attestation` 与已有机器判据互斥** —— 同一锚点**已存在**
+  //   `progress_evidence.kind === 'expectations'`（机器可跑的判据）时，**不许**用 `attestation`（口供）覆盖它。
+  //   ★ 只在"**已经**存在 expectations"时禁 ⇒ **不影响任何没有机器判据的场景**（那是 attestation 的本职）。
+  if (evidence?.kind === 'attestation' && prev?.progress_evidence?.kind === 'expectations') {
+    throw new Error(
+      `拒绝：节点 "${node_id}" **已有机器判据**（progress_evidence.kind='expectations'）` +
+        ` ⇒ **不许用 \`attestation\`（口供）覆盖** —— **有机器可跑的判据就别用口供**。\n` +
+        `★ 怎么办（二选一）：\n` +
+        `  ① 要更新这条进度 ⇒ 仍走**机器判据**：再给一次 ` +
+        `\`{ kind:'expectations', all_green:true, unsupported:0 }\`（让程序重判，别改成口供）；\n` +
+        `  ② 若本节点**确实**该由人下判断（机器判不了的那部分）⇒ 给机器判据补 \`decision.expectations\`\n` +
+        `     （可判六类结构事实：signature-matches / symbol-exists / path-exists / import-resolves / line-count / token-count，` +
+        `见 docs/_design/D-anti-cheat.md §4.3）。\n` +
+        `★ 拦的范围（只此一条）：该锚点**当前**的 progress_evidence.kind==='expectations' 时再写 attestation；` +
+        `**没有 expectations 的节点不受影响**（attestation 的本职）。`,
+    );
+  }
+
   const anchor: OverlayAnchor = {
     ...(prev ?? { path: cand?.path ?? semFile!.path, kind: cand?.kind ?? 'file' }),
   };

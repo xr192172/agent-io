@@ -83,8 +83,14 @@ export type ProgressEvidence =
   | { kind: 'expectations'; all_green: true; unsupported: 0; ref?: string }
   /** ② 半自动：一条可复跑的读数 */
   | { kind: 'reading'; command: string; observed: string; at: string }
-  /** ③ 诚实兜底：显式人工确认（署名 + 时间 + 为什么） */
-  | { kind: 'attestation'; by: 'human' | 'llm'; at: string; why: string };
+  /**
+   * ③ 诚实兜底：显式人工确认（署名 + 时间 + 为什么）
+   * ★★★ T333（2026-10-15）：`source_node_id` = **来源节点 id，由唯一写端 `updateStatus` 在落盘前自动填**
+   *   （填成它正在写的那条锚点键 `ov.anchors[node_id]`）⇒ ★ **调用方不必传、传了也被覆盖（零改动）**。
+   *   理由：一条没署名的口供说不清它在给**谁**作证（与 T118「事实要能追溯到来源」同族）；带上节点 id 后，
+   *   "节点改名/重挂"时旧口供与节点对不上 ⇒ **自然失效**（不再冒充新节点的完成）。
+   */
+  | { kind: 'attestation'; by: 'human' | 'llm'; at: string; why: string; source_node_id?: string };
 
 /**
  * ★★★ **"不许默默勾上"的校验器**（T328）—— 判据只住这一处。
