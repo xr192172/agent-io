@@ -871,3 +871,42 @@ C 稿测出"**关卡有名字没内容**"；甲核出**判据体系本身没错*
 `feature_map.detectRepeatedFamilies` 是**文件名词根启发**（≥3 同词根），**非**"同名同签"；
 ★ **仓内单 feature 的"同名同签"是否已有现成判据未找到**（`grep duplicate` 只命中 `cross_repo`（跨项目）与 `code_workbench`）
 ⇒ 若确无，那"该去重"这一事实的落点应是 **`lifecycle.merged`**（**仍不是** expectations）。
+
+---
+
+## 32. 2026-10-15 ★★★ `acceptance → expectations` **走通了**，并量出内容生产的真实瓶颈
+
+### 32.1 核验翻案（两条）
+- ★★ **视图不同、答案相反**：`live` 快照里 `decision` 节点 = **0**（设计意图按构造不在那），
+  而**设计侧**（`features/run82.json` / 活态 `agent-io.json`）里 **`acceptance` 有 10 个节点**（真内容）。
+  ⇒ ★ 我先前那句"`expected_apis` 总数 = 0"是**看错了视图** ⇒ 又一次印证"**先读设计侧 DSL**"的纪律。
+- **这条路"通，只是没人走"**：`op_data_spec` 的 `decision` 已知键**含 `expectations`**（写入 `update_feature.ts:811`），
+  判定器 `judgeExpectations` 已挂在 `consistency_check` 里。
+
+### 32.2 翻译作业（真实节点，1 条 → 3 条）
+`file_src_application_refactor_rename_rename_file_ts` 的 `acceptance` 原文：
+*"目录 ⇒ `ok:false` + `blocked` + ★ **整体未落盘**；回归：对 `src/domain/chain_wiring.ts` 改名 `dry-run` ⇒
+**仍报出真实引用**（`contract_page.ts` / `first_hop_args.ts`）。"*
+⇒ 译出 3 条：`file-exists src/domain/chain_wiring.ts` · `edge-exists contract_page.ts → chain_wiring.ts` ·
+`edge-exists first_hop_args.ts → chain_wiring.ts`。
+⇒ ★ **明说不译**"目录 ⇒ ok:false+blocked+整体未落盘"（**运行期回执**，六种 kind 无一能表达）—— 硬译 = 永远绿假项。
+
+### 32.3 ★★★ 证伪"转录现状"的判据**真的奏效**（最值钱处）
+- 基线：`checked=3 passed=3 failed=0` · **blocks=0**；
+- **偏离 A**（夹具里把 `chain_wiring.ts` 改名）⇒ **`failed=1`**，**差异块真的出现**
+  （块名 `files:…contract_page.ts,…,chain_wiring.ts`，`expectation_failures=1`）；偏离 B 同块名；
+- ★ **期望文本改前 == 改后逐字相等**（`EXP_BEFORE===EXP_AFTER`）。
+⇒ **期望不是现状的转录**（能判 fail、不随现状变）。★ 这条判据值得复用。
+
+### 32.4 ★★★ 真实瓶颈被量化（本轮最重要）
+逐条核过 **9–10 个有 `acceptance` 的节点**：**只有 1 个能译出可判子集**，其余都是**运行期回执 / 探针结果 / 文案约束**
+⇒ ★ **根因不是缺 kind、不是缺工具，而是 `acceptance` 的写法：写成了"跑一下会发生什么"，而不是"目标形状是什么"。**
+⇒ 解法：① **改 `acceptance` 的写法**（纪律，不是代码）② 判不了的 ⇒ 走 `attestation`（人签带署名）。
+
+### 32.5 读数
+新证 `certs/t335-expectation-from-acceptance-cert.mjs` **PASS=14 FAIL=0**（★ 走工具层：写 = `editDslHandler`、判 = `consistencyHandler`；
+并自证"未知键被 `checkOpSpec` 点名" = 只有那一层才有的特征）· `build` ✓ · `verify` 4/4 ✓ · 九证全绿 ·
+**`src/` 0 改动** · **真 `run82` 只读、未写入**（夹具 `certs/.work/tmp335` 自清）。
+
+### 32.6 `[未核]`
+MCP 传输/schema 层 · daemon 转发分支；★ **六种 kind 本节点只用到 2 种，其余 4 种不声称覆盖**。
