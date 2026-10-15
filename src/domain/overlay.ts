@@ -13,7 +13,7 @@
  */
 import { createHash } from 'node:crypto';
 import type { DesignDSL } from './types.js';
-import type { NodeDecision, DecisionHistoryEntry } from './geometry.js';
+import type { DiagramStatus, NodeDecision, DecisionHistoryEntry } from './geometry.js';
 import type { Annotation } from './annotation.js';
 import type { ThemeId, UserNode } from './types.js';
 import type { ExpectedApi, Symbol, FileLifecycle } from './semantic.js';
@@ -35,6 +35,7 @@ export function hasAnchorPayload(a: OverlayAnchor): boolean {
     a.decision_history ||
     a.attributes ||
     a.lifecycle ||
+    a.progress ||
     a.signature ||
     a.stale ||
     a.orphaned ||
@@ -93,6 +94,22 @@ export interface OverlayAnchor {
    *   （`archive_node.ts` 就是靠这个找文件级决策卡的）⇒ 不需要新造索引。
    */
   lifecycle?: FileLifecycle;
+  /**
+   * ★★★ **实现进度（进度轴收归，2026-10-15）** —— `draft | in_progress | done`（复用 `DiagramStatus`）。
+   *
+   * ## ★★ 为什么不叫 `status`（两个问句，必须两个名字）—— 核过的实情
+   * 本仓**已有的** `status?: 'open' | 'resolved'`（`/** 意图存活状态 *​/`，`overlay.ts:154`）
+   * 挂在 **`OverlayEdgeIntent`** 上（**不在 `OverlayAnchor` 上** —— 逐字核过：本接口 60-96 行内无 `status`）；`OverlayGoal.status` 另是一套（`active|done|parked|dropped`）。
+   * 它问的是 「**这条意图还需不需要处理**」（存活），本条问的是 「**这个实现做完了没有**」（进度）。
+   * ⇒ ★ **同一字段名 = 一个名字两个问句 = 本仓正在治的那个病** ⇒ 进度**必须另起一名**：`progress`。
+   *
+   * ## 为什么住 overlay（T100/T75 立过、T182 跟上的同一条规矩）
+   * 人登记的进度（"我把它做到一半了"）**扫描产不出**、**base 可再生成** ⇒ 只写 base 的话
+   * `import_project` 的 `rebuild_design=true` **一重建就丢**。⇒ 与 `lifecycle` 同款：权威住 overlay，
+   * `applyOverlay` 把它投影回 base（`geometry.nodes[].status` / `semantic.files[].status`），
+   * `seedOverlayFromDsl` 首次迁移时把 base 上已有的进度搬进来。
+   */
+  progress?: DiagramStatus;
 }
 
 /** overlay 全局件（不挂在具体节点上） */
@@ -355,6 +372,9 @@ export function applyOverlay(base: DesignDSL, overlay: DesignOverlay): DesignDSL
       ...(a.decision ? { decision: a.decision } : {}),
       ...(a.decision_history ? { decision_history: a.decision_history } : {}),
       ...(a.attributes ? { attributes: a.attributes } : {}),
+      // ★★ 进度轴（2026-10-15）：overlay.progress → `Node.status`（与 tag/决策卡同款"重建时投影回来"）。
+      //   ★ overlay 没写 progress 就**原样保留 base**（不抹成 undefined）—— 让扫描侧的值当"读侧默认"。
+      ...(a.progress ? { status: a.progress } : {}),
     };
   });
   out.geometry = { ...base.geometry!, nodes };
@@ -368,7 +388,13 @@ export function applyOverlay(base: DesignDSL, overlay: DesignOverlay): DesignDSL
   if (base.semantic) {
     const files = base.semantic.files.map((f) => {
       const a = overlay.anchors[f.id];
-      return a?.lifecycle ? { ...f, lifecycle: a.lifecycle } : f;
+      if (!a || (!a.lifecycle && !a.progress)) return f;
+      return {
+        ...f,
+        ...(a.lifecycle ? { lifecycle: a.lifecycle } : {}),
+        // ★★ 进度轴（2026-10-15）：overlay.progress → `SemanticFile.status`（与上面 Node.status 同款投影）。
+        ...(a.progress ? { status: a.progress } : {}),
+      };
     });
     out.semantic = { ...base.semantic, files };
   }
@@ -439,24 +465,46 @@ export function seedOverlayFromDsl(dsl: DesignDSL | null): DesignOverlay {
     if (f.lifecycle) lifecycleById.set(f.id, f.lifecycle);
   }
 
+  // ★★ 进度轴（2026-10-15）：实现进度的锚点 id 同样是 `n.id` / `f.id`（几何节点与语义文件**共用 id**）。
+  //   来源：几何节点 `status` 优先，其次语义文件 `status`（兜底"只有 semantic、几何层没有"的节点）。
+  //   ★★ 它必须并进下面的**跳过条件**：否则"只有进度、没有决策/参数/标注/lifecycle"的节点
+  //     会被 `continue` 跳过 ⇒ **首次迁移就漏掉它**
+  //     （与 T182 在 `lifecycle` 上踩过的坑**完全同形**：该处注释逐字 "判据加了 lc…否则首次迁移就漏掉它"）。
+  const progressById = new Map<string, DiagramStatus>();
+  for (const n of dsl?.geometry?.nodes ?? []) {
+    if (n.status) progressById.set(n.id, n.status);
+  }
+  for (const f of dsl?.semantic?.files ?? []) {
+    if (f.status && !progressById.has(f.id)) progressById.set(f.id, f.status);
+  }
+
   for (const n of dsl?.geometry?.nodes ?? []) {
     const anns = annIndex.get(n.id);
     const lc = lifecycleById.get(n.id);
-    // ★ 判据加了 `lc`：否则"只有 lifecycle、没有决策"的文件会被 `continue` 跳过 ⇒ 首次迁移就漏掉它。
-    if (!n.decision && !n.decision_history && !n.attributes && !anns?.length && !lc) continue;
+    const pg = progressById.get(n.id);
+    // ★ 判据加了 `lc`（T182）与 `pg`（进度轴）：否则"只有 lifecycle / 只有进度、没有决策"的文件
+    //   会被 `continue` 跳过 ⇒ 首次迁移就漏掉它。
+    if (!n.decision && !n.decision_history && !n.attributes && !anns?.length && !lc && !pg) continue;
     const a: OverlayAnchor = { path: nodePath(n), kind: nodePathKind(n) };
     if (n.decision) a.decision = n.decision;
     if (n.decision_history) a.decision_history = n.decision_history;
     if (n.attributes) a.attributes = n.attributes;
     if (anns?.length) a.annotations = anns;
     if (lc) a.lifecycle = lc;
+    if (pg) a.progress = pg;
     anchors[n.id] = a as OverlayAnchor;
   }
 
   // ★ 兜底：`semantic.files` 里有、而几何层没有同名节点的（不该发生，但**不静默丢**）。
   for (const f of dsl?.semantic?.files ?? []) {
-    if (!f.lifecycle || anchors[f.id]) continue;
-    anchors[f.id] = { path: f.path, kind: 'file', lifecycle: f.lifecycle } as OverlayAnchor;
+    const pg = progressById.get(f.id);
+    if (anchors[f.id] || (!f.lifecycle && !pg)) continue;
+    anchors[f.id] = {
+      path: f.path,
+      kind: 'file',
+      ...(f.lifecycle ? { lifecycle: f.lifecycle } : {}),
+      ...(pg ? { progress: pg } : {}),
+    } as OverlayAnchor;
   }
 
   if (dsl?.title) global.title = dsl.title;

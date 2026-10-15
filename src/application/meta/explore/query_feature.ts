@@ -48,6 +48,7 @@ import { listTemplates } from '../../design/lifecycle/templates.js';
 import { getSimulationState } from '../../design/lifecycle/simulation.js';
 import { diffFeatures } from '../../../infrastructure/analysis/impact/diff.js';
 import type { Node, Edge, NodeDecision } from '../../../domain/geometry.js';
+import { resolveDiagramStatus } from '../../../domain/geometry.js';
 import type { SemanticFile } from '../../../domain/semantic.js';
 import { getProjectCacheDb } from '../../../infrastructure/index/db.js';
 import type { Database } from '../../../infrastructure/index/db.js';
@@ -278,7 +279,7 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
 
       const lines: string[] = [
         `══ feature "${dsl.feature}" ${viewTag} ══`,
-        `  ID: ${dsl.id} · 状态: ${dsl.status ?? 'draft'}${dsl.version ? ` · 版本: ${dsl.version}` : ''}`,
+        `  ID: ${dsl.id} · 状态: ${resolveDiagramStatus(dsl)}${dsl.version ? ` · 版本: ${dsl.version}` : ''}`,
         '',
         `  ─ 几何层 ─`,
       ];
@@ -348,7 +349,7 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
         const fileCount = dsl.semantic?.files?.length ?? 0;
         const decisionCount = dsl.geometry?.nodes?.filter((n) => n.decision).length ?? 0;
         const invariantCount = dsl.semantic?.multi_file_invariants?.length ?? 0;
-        const status = dsl.status ?? 'draft';
+        const status = resolveDiagramStatus(dsl);
         return `${i + 1}. ${dsl.feature} (${status}, ${fileCount} 文件, ${decisionCount} 决策, ${invariantCount} 不变式) [${dsl.id}]`;
       });
       return {
@@ -356,7 +357,7 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
         data: dsls.map((d) => ({
           id: d.id,
           feature: d.feature,
-          status: d.status,
+          status: resolveDiagramStatus(d),
           decisions: d.geometry?.nodes?.filter((n) => n.decision).length ?? 0,
         })),
       };

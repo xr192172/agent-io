@@ -9,6 +9,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { getDSL } from '../storage.js';
 import type { DesignDSL, Node, Edge } from '../../domain/types.js';
+import { resolveDiagramStatus } from '../../domain/geometry.js';
 
 function ensureDir(filePath: string): void {
   const dir = path.dirname(filePath);
@@ -168,7 +169,7 @@ export function exportMarkdown(input: ExportMarkdownInput): ExportMarkdownResult
     lines.push(`> ${dsl.title}`);
     lines.push('');
   }
-  lines.push(`**状态**: ${dsl.status ?? 'draft'}  |  **版本**: ${dsl.version ?? '0.1.0'}  |  **主题**: ${dsl.theme ?? 'blue'}`);
+  lines.push(`**状态**: ${resolveDiagramStatus(dsl)}  |  **版本**: ${dsl.version ?? '0.1.0'}  |  **主题**: ${dsl.theme ?? 'blue'}`);
   lines.push('');
 
   // 节点列表

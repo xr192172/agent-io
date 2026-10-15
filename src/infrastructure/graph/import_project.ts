@@ -939,7 +939,11 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       version: '1.0.0',
       title: input.title || feature,
       source_root: input.source_root ?? input.project_dir,
-      status: 'done',
+      // ★★★ 2026-10-15（进度轴收归，replan §19.4 第4步）：**扫描侧不再写 doc 级 `status`**
+      //   —— 此前这里逐字是 `status: 'done'`，把"实现进度"当存储用（一个没有来源署名的值）。
+      //   现在它的权威住 `<feature>.overlay.json` 的锚点（`OverlayAnchor.progress`）；
+      //   这个 `'done'` **降为读侧默认**（`resolveDiagramStatus`，见 `domain/geometry.ts`）⇒
+      //   "没有 overlay 进度时读出来的值与以前一致"（`done`），且**不再落库**（`saveDSL` 里没有它）。
       geometry: {
         layout: 'free',
         width: Math.max(canvasW, 800),

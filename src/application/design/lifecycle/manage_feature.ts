@@ -27,6 +27,7 @@ import { requireStr, optionalStr } from '../../plumbing.js';
 import { createFeature, cloneFeature } from '../dsl_ops/feature_ops.js';
 import { createFromTemplate, listTemplates } from './templates.js';
 import { listFeatures as listStoredFeatures, deleteFeature } from '../../../infrastructure/storage.js';
+import { resolveDiagramStatus } from '../../../domain/geometry.js';
 
 export const MANAGE_ACTIONS = ['create', 'clone', 'template', 'list_templates', 'list', 'delete'] as const;
 export type ManageAction = (typeof MANAGE_ACTIONS)[number];
@@ -102,12 +103,12 @@ export function manageFeature(input: ManageFeatureInput): ManageFeatureResult {
       const lines = dsls.map((d, i) => {
         const fileCount = d.semantic?.files?.length ?? 0;
         const invariantCount = d.semantic?.multi_file_invariants?.length ?? 0;
-        const status = d.status ?? 'draft';
+        const status = resolveDiagramStatus(d);
         return `${i + 1}. ${d.feature} (${status}, ${fileCount} 文件, ${invariantCount} 不变式) [${d.id}]`;
       });
       return {
         message: ['已设计的 feature：', ...lines].join('\n'),
-        data: dsls.map((d) => ({ id: d.id, feature: d.feature, status: d.status })),
+        data: dsls.map((d) => ({ id: d.id, feature: d.feature, status: resolveDiagramStatus(d) })),
       };
     }
     case 'delete': {

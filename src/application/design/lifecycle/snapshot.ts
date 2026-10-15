@@ -16,6 +16,7 @@ import path from 'node:path';
 import { getDSL, saveDSL } from '../../../infrastructure/storage.js';
 import { getStorageRoot } from '../../../infrastructure/storage.js';
 import type { DesignDSL } from '../../../domain/types.js';
+import { resolveDiagramStatus } from '../../../domain/geometry.js';
 
 /** 快照存储目录 */
 function getSnapshotsDir(feature: string): string {
@@ -92,7 +93,7 @@ export function saveSnapshot(input: SaveSnapshotInput): SaveSnapshotResult {
       `feature: ${feature}`,
       `时间: ${timestamp}`,
       `节点: ${nodeCount}, 边: ${edgeCount}`,
-      `状态: ${dsl.status ?? 'draft'}`,
+      `状态: ${resolveDiagramStatus(dsl)}`,
       `文件: ${filePath}`,
     ].join('\n'),
     feature,
@@ -292,7 +293,7 @@ export function rollbackSnapshot(input: RollbackSnapshotInput): RollbackSnapshot
       `feature: ${feature}`,
       `快照时间: ${snap.timestamp || snapshot_id}`,
       `节点: ${nodeCount}, 边: ${edgeCount}`,
-      `状态: ${restored.status ?? 'draft'}`,
+      `状态: ${resolveDiagramStatus(restored)}`,
       '',
       '当前状态已自动备份为"回滚前自动备份"快照',
     ].join('\n'),

@@ -10,6 +10,21 @@ import type { NodeShapes } from './animation.js';
 export type DiagramStatus = 'draft' | 'in_progress' | 'done';
 
 /**
+ * feature 级进度的**读侧默认**（2026-10-15，进度轴收归；`docs/replan-2026-10-15.md` §19.4 第4步）。
+ *
+ * `import_project`（扫描侧）**不再把** doc 级 `status: 'done'` 落库 —— 它曾写的那个 `'done'`
+ * 降为读侧默认：`DesignDSL.status` 缺席时，若是**扫描产物**（`id` 以 `imported_` 开头，见
+ * `import_project.ts:936`）⇒ 读作 `'done'`（与该处原先落库的值一致）；其余仍 `'draft'`
+ * —— **不改既有 `?? 'draft'` 的语义** ⇒ 读侧行为尽量不变。
+ *
+ * ★ 只兜底、不落库：调用方拿它当**展示/读值**用，**不写回** DSL（写回就又变成"把进度当存储"）。
+ */
+export function resolveDiagramStatus(dsl: { id?: string; status?: DiagramStatus }): DiagramStatus {
+  if (dsl.status) return dsl.status;
+  return dsl.id?.startsWith('imported_') ? 'done' : 'draft';
+}
+
+/**
  * 职责分层：节点/边按职责分三层，渲染时渐进披露（默认只显示 main 层）
  * - main：主干数据流转（默认显示）
  * - error：异常处理（深层，默认折叠，宿主节点 ⚠ 角标展开）
