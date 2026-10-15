@@ -841,3 +841,33 @@ M5 命中数与语义无关（1364 条命中里写端仅 1 条）· ★ **M6 读
 ### 30.5 读数
 `build` ✓ · `verify` 4/4 ✓ · 新证 `t334` 11/11 · `t326`（工具面）**曾红 546**（`status` op 补说明）
 ⇒ 属**修复的一部分** ⇒ 按设计 `--update`；其余证全绿。
+
+
+---
+
+## 31. 2026-10-15 ★★★ 第 1 条（`expectations` 补"该重写"）**结论：不该做** —— 我抽验成立，第 1 条被改写
+
+### 31.1 甲先核后停手，给的依据（★ 我逐条抽验，原文成立）
+1. `expectation.ts` 自述逐字：*"`acceptance` 与 `expectations` 不是替代关系：前者是人读的一句话，后者是**其中可机器判定的那一部分**。
+   一句话里判不了的（"代码要更清晰"）**不该进 expectations** —— 硬塞进去只会造出"**永远绿**"的假项。"*
+2. `diff_blocks.ts:4-6` 自述逐字：*用户口述的目标工作流：**"对比项目现状与设计，得到区别的地方，然后分区域将它重写。"**
+   ⇒ 把"一串文件差异"折成"**几块区域**"…下游就能说"**先重写这块**"* ⇒ **"该重写"的家 = 差异块**；
+3. `semantic.ts:48-49/55/57`：**"该删/该合并"的家 = `FileLifecycle`**（`deprecated|merged|superseded|split` + `retire_reason` + `merged_from`）。
+
+### 31.2 ⇒ 结论：**加新 kind 不该做**（三条理由）
+- "该重写"是**处置/动作**，而 `expectations` 判的是**目标形状**（判不了"重写过没有"）；
+- 它表达的事实**已有家**（差异块 / `lifecycle` / `detect_drift` / `structure_gap` / `code_health` / 重复实现家族）
+  ⇒ **加 kind = 同一判据住两处**（本仓头号病根）；
+- 本仓自己写明了"判不了的别塞进 expectations"。
+
+### 31.3 ★★ 于是第 1 条被改写（这才是真问题）
+C 稿测出"**关卡有名字没内容**"；甲核出**判据体系本身没错**（六种 kind 是"目标形状"层，够用）
+⇒ ★ **缺的不是 kind，是"往已有 kind 里填内容"**：`expected_apis` 在 self/run82 上**总条数 = 0**
+⇒ `diff_blocks.hasDiff` 只剩 `expectation_failures`/`retire` ⇒ **差异块产不出块** ⇒ 下游没有"先重写这块"。
+⇒ **改写后的第 1 条**：**让差异块真的能产出块** = 把 `expected_apis` / `expectations` **填上真实条目**
+（★ 用**已有六种 kind**，不新增）。
+
+### 31.4 仍留的 `[未核]`（甲主动报）
+`feature_map.detectRepeatedFamilies` 是**文件名词根启发**（≥3 同词根），**非**"同名同签"；
+★ **仓内单 feature 的"同名同签"是否已有现成判据未找到**（`grep duplicate` 只命中 `cross_repo`（跨项目）与 `code_workbench`）
+⇒ 若确无，那"该去重"这一事实的落点应是 **`lifecycle.merged`**（**仍不是** expectations）。
