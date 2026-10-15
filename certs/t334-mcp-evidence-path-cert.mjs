@@ -24,6 +24,14 @@
  *   ④ ★ **自证"走的是工具层"**：同一次调用里塞一个**未知键** ⇒ 被 `checkOpSpec` 点名
  *      「不被认的键」且**已知键里出现 `evidence`** —— 若我们绕过了工具层，这一条不可能发生。
  *
+ * ## ★ 覆盖边界（诚实清单 · [未核] —— 2026-10-15 复核所加）
+ *   本证每条判据都到 **`edit_dsl` 的 handler（`editDslHandler`）为止**：
+ *   ★ 虽名为 "MCP evidence path"，但**MCP 传输层 / MCP schema 层 [未核]**：本证**直接 import handler**，
+ *     **没有**经 MCP server 的协议 / `tools/list` 那条 JSON Schema 的准入走一遍 ⇒ 传输与 schema 校验**不在本证射程**。
+ *   ★ **daemon 转发分支 [未核]**：本证**不起 daemon**，**没有**跑过 daemon 那条转发 / 代理分支。
+ *   ⇒ 要覆盖这两层需起 MCP server / daemon —— 本证**刻意不引入**这份脆弱依赖（判据是"handler 层可达"）；
+ *     超出即 [未核]，**不写成"已覆盖"**。
+ *
  * ## 用法
  *   node certs/t334-mcp-evidence-path-cert.mjs
  * ★ 夹具住 `certs/.work/tmp`（`AGENT_IO_HOME` 也指到那里 ⇒ 不碰真仓的 `.agent-io/`）。
@@ -172,10 +180,22 @@ console.log('\n════ ④ 自证走的是工具层（未知键被 checkOpS
     definitely_bogus_key: 1,
   });
   dump('拒绝原文 · 未知键', res.text);
+  // ★★ 2026-10-15 复核（验收者指出的"**假满足**"）：**只匹配整段回执的 `/evidence/` 不够硬** ——
+  //   回执有**两段**：第一段列"不被认的键"、第二段列"已知键"。`evidence` 若**不被认**，它会落在
+  //   **第一段**里 ⇒ 整段 `/evidence/` 照样命中，断言为真却什么都没证（与 t328 D3 同一把尺）。
+  //   实测反例（本证复核时亲跑，见 t328 D3 注释）：拿掉已知键里的 evidence 后，回执第一段 =
+  //   `不被认的键：evidence / definitely_bogus_key`，旧断言 = true（假绿）。
+  //   ⇒ 现在**只认第二段（已知键）**，并要求**第一段（未知键）不含 evidence**（fail-closed）。
+  const unknownSeg = res.text.split('\n').find((l) => /不被认的键/.test(l)) ?? '';
+  const knownSeg = res.text.split('\n').find((l) => /已知键/.test(l)) ?? '';
   chk(
-    res.isError === true && /不被认的键/.test(res.text) && /definitely_bogus_key/.test(res.text) && /evidence/.test(res.text),
-    '④ 未知键 ⇒ 被 `checkOpSpec` 点名「不被认的键」，且**已知键清单里出现 `evidence`**（⇒ 本证确实在工具层之后）',
-    res.isError ? res.text.split('\n')[0] : '★★ 没被拒（说明根本没走 checkOpSpec）',
+    res.isError === true &&
+      /definitely_bogus_key/.test(unknownSeg) && !/evidence/.test(unknownSeg) &&
+      /evidence/.test(knownSeg),
+    '④ 未知键 ⇒ 被 `checkOpSpec` 点名「不被认的键」，且**已知键那一段含 `evidence`**（未知键那段**不含**）（⇒ 本证确实在工具层之后）',
+    res.isError
+      ? `未知键段=${JSON.stringify(unknownSeg)} · 已知键段=${JSON.stringify(knownSeg)}`
+      : '★★ 没被拒（说明根本没走 checkOpSpec）',
   );
 }
 

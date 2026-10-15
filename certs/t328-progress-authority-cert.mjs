@@ -20,6 +20,16 @@
  *      C1 无证据 ⇒ 拒 + 说清三档 + **拒了不许偷偷写**（C1b）· C2 `unsupported>0` ⇒ 拒
  *      （"没判"不是"通过"）· C3 `reading` 缺字段 ⇒ 拒 · C4 带 `attestation` ⇒ 通过且**落进 overlay**
  *      · C5 权威被**投影回 base**（`get_dsl` 当下可读）· C6 `draft/in_progress` 不需要证据，且旧证据不残留。
+ *   **D 经工具层置 `done`**（T334 纪律）：D1 无证据经 `edit_dsl` handler ⇒ 拒 · D1b 被拒不落盘 ·
+ *      D2 带合法证据 ⇒ 成功且落盘 · D3 未知键自证"确实在工具层之后"。
+ *
+ * ## ★ 覆盖边界（诚实清单 · [未核] —— 2026-10-15 复核所加）
+ *   本证每条判据都到 **`edit_dsl` 的 handler（`editDslHandler`）为止**：
+ *   ★ **MCP 传输层 / MCP schema 层 [未核]**：本证**直接 import handler**，**没有**经 MCP server 的协议 /
+ *     `tools/list` 那条 JSON Schema 的准入走一遍 ⇒ 传输与 schema 校验**不在本证射程**。
+ *   ★ **daemon 转发分支 [未核]**：本证**不起 daemon**，**没有**跑过 daemon 那条转发 / 代理分支。
+ *   ⇒ 要覆盖这两层需起 MCP server / daemon —— 本证**刻意不引入**这份脆弱依赖（判据是"handler 层可达"）；
+ *     超出即 [未核]，**不写成"已覆盖"**。
  *
  * ## 用法
  *   node certs/t328-progress-authority-cert.mjs
@@ -69,6 +79,8 @@ const { importProject } = await import('../dist/src/infrastructure/graph/import_
 const { getDSL, saveDSL } = await import('../dist/src/infrastructure/storage.js');
 const { loadOverlay } = await import('../dist/src/infrastructure/storage_overlay.js');
 const { updateStatus } = await import('../dist/src/application/design/dsl_ops/status_tools.js');
+// ★★ T334 证书纪律：每张证至少一条判据走**工具层**（`edit_dsl` 的 handler），不许只直调内部函数。
+const { editDslHandler } = await import('../dist/src/application/design/handlers.js');
 
 console.log('════ A · 首次迁移不漏（seedOverlayFromDsl）════');
 // ── A1：只有 progress、没有 decision/attributes/annotations/lifecycle 的节点 ──────────
@@ -245,6 +257,84 @@ console.log('\n════ C · 不带 evidence 置 done 被拒（"不许默默
   // C7：校验器是**纯函数**、可单独调（判据只住一处 —— 与 C1~C3 同一把尺）
   const v = validateProgressEvidence('done', undefined);
   chk(v.ok === false && validateProgressEvidence('in_progress', undefined).ok === true, 'C7 校验器可单独调用且同一判据（done⇒拒 / in_progress⇒放行）', `done=${JSON.stringify(v.ok)} · in_progress=${JSON.stringify(validateProgressEvidence('in_progress', undefined).ok)}`);
+}
+
+// ════ D · ★ 工具层路径（T334 证书纪律 · 2026-10-15）：经 `edit_dsl` 的 handler 置 done ════
+//   为什么补这一节：C 节（C1~C7）**全部直调 `updateStatus`** —— 而工具层那条链
+//   （`edit_dsl` → `editDslHandler` → `dispatchDslEdit` → `updateFeature` 的 `case 'status'`）
+//   **可能少收/少传参数**（T334 实测 `evidence` 曾经传不进去）⇒ 直调全绿**证明不了**工具层可达。
+//   ⇒ 本节的每条判据**只经工具层**（`editDslHandler`，即 `edit_dsl` 的 handler），**绝不直调**。
+console.log('\n════ D · ★ 经工具层（edit_dsl → editDslHandler）置 done ════');
+{
+  const feat = 'd328';
+  saveDSL({
+    id: `feature_${feat}`, type: 'feature_diagram', feature: feat, version: '1.0.0', title: feat,
+    geometry: {
+      layout: 'free', width: 800, height: 600,
+      nodes: [{ id: 'file_d', type: 'file', description: 'src/d.ts' }],
+      edges: [],
+    },
+    semantic: { files: [{ id: 'file_d', path: 'src/d.ts', responsibility: 'T328 工具层夹具' }] },
+  });
+  const progressOf = () => loadOverlay(feat)?.anchors?.['file_d']?.progress;
+  const evidenceOf = () => loadOverlay(feat)?.anchors?.['file_d']?.progress_evidence;
+  // ★★ 唯一入口：**工具层**（`edit_dsl` 的 handler）。`wrap()` 把抛出的错转成 `{text,isError:true}`（不抛）。
+  //   `weight:'routine'` ⇒ 轻量写路径（仍留 L1-L3）；`reason` 里点名节点 id 以过 L3「实体绑定」。
+  const callEditDsl = (id, data) =>
+    editDslHandler({
+      feature: feat,
+      weight: 'routine',
+      reason: `经 edit_dsl 标记节点 ${id} 的完成状态，因为它的实现已由证据核实（T328 走工具层）`,
+      operations: [{ type: 'status', op: 'update', id, data }],
+    });
+
+  // D1：不带 evidence 置 done ⇒ 经工具层被拒
+  const r1 = await callEditDsl('file_d', { status: 'done' });
+  chk(
+    r1.isError === true && /拒绝/.test(r1.text) && /三档/.test(r1.text),
+    'D1 **经工具层**不带 evidence 置 done ⇒ 被拒（理由说清三档）',
+    r1.isError ? r1.text.split('\n').slice(-1)[0] : '★ 没被拒（静默接受了 done）',
+  );
+  chk(progressOf() === undefined, 'D1b 经工具层被拒后**没有偷偷落盘**（overlay 里该节点无 progress）', `overlay.progress=${JSON.stringify(progressOf())}`);
+
+  // D2：带合法 evidence（attestation）置 done ⇒ 经工具层**成功**，且落盘有 progress
+  const r2 = await callEditDsl('file_d', {
+    status: 'done',
+    evidence: { kind: 'attestation', by: 'human', at: '2026-10-15T00:00:00.000Z', why: '我亲手核过（T328 工具层夹具）' },
+  });
+  chk(
+    r2.isError !== true && progressOf() === 'done' && evidenceOf()?.kind === 'attestation',
+    'D2 **经工具层**带合法 evidence 置 done ⇒ 成功，且 progress + evidence 落进 overlay（落盘有 progress）',
+    r2.isError ? `★ 被拒：${r2.text.split('\n').slice(-1)[0]}`
+      : `progress=${JSON.stringify(progressOf())} · evidence.kind=${JSON.stringify(evidenceOf()?.kind)}`,
+  );
+
+  // D3：★ 自证"真的走了工具层"：同一调用里塞未知键 ⇒ 被 `checkOpSpec` 点名「不被认的键」，
+  //   且**已知键那一段里出现 `evidence`** —— 若我们绕过了工具层，这一条不可能发生（与 t334 ④ 同一把尺）。
+  //   ★★ 2026-10-15 复核（验收者指出的"**假满足**"）：**只看整段回执里有没有 `/evidence/` 不够硬** ——
+  //     `checkOpSpec` 的回执有**两段**：**第一段**列"不被认的键"、**第二段**列"已知键"。
+  //     `evidence` 若**不被认**，它会落到**第一段**里 ⇒ 整段 `/evidence/` 照样命中，断言为真却什么都没证。
+  //     ★ 实测反例（本证复核时亲跑）：把 `TYPE_KNOWN_KEYS.status` 拿掉 `evidence` 后走真实工具层，
+  //       回执 = `… 不被认的键：evidence / definitely_bogus_key` + `★ status 的已知键（1 个）：status`
+  //       ⇒ 旧断言 `/evidence/` = **true**（假绿）。
+  //     ⇒ 现在**只认第二段（已知键）**，并要求**第一段（未知键）不含 `evidence`**（fail-closed：
+  //       若回执格式变了、两段分不出来，`unknownSeg` 取到整段 ⇒ 含 evidence ⇒ 断言**判红**而非假绿）。
+  const r3 = await callEditDsl('file_d', {
+    status: 'done',
+    evidence: { kind: 'attestation', by: 'human', at: '2026-10-15T00:00:00.000Z', why: 'x' },
+    definitely_bogus_key: 1,
+  });
+  const unknownSeg3 = r3.text.split('\n').find((l) => /不被认的键/.test(l)) ?? '';
+  const knownSeg3 = r3.text.split('\n').find((l) => /已知键/.test(l)) ?? '';
+  chk(
+    r3.isError === true &&
+      /definitely_bogus_key/.test(unknownSeg3) && !/evidence/.test(unknownSeg3) &&
+      /evidence/.test(knownSeg3),
+    'D3 未知键被 `checkOpSpec` 点名「不被认的键」，且**已知键那一段含 `evidence`**（未知键那段**不含**） ⇒ 自证本证确实在工具层之后',
+    r3.isError
+      ? `未知键段=${JSON.stringify(unknownSeg3)} · 已知键段=${JSON.stringify(knownSeg3)}`
+      : '★ 没被拒（说明根本没走 checkOpSpec）',
+  );
 }
 
 // ★★ 清理：**全证只此 1 次删除操作**（本仓"宿主删除闸"按删除【操作】数累计，阈值 50，见 t316 头注释）
