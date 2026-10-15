@@ -7,6 +7,9 @@ import { getDSL, saveDSL } from '../../../infrastructure/storage.js';
 import type { EditResult } from './edit_result.js';
 // ★★ 2026-10-09（T74）：`expectations` 会被程序判 ⇒ 写进来时校验（坏形状响亮拒绝）
 import { assertValidExpectations } from '../../../domain/expectation.js';
+// ★★★ T329（2026-10-15）：决策卡的 `scope`（这条决策管哪一片）—— 文法与解析的**唯一落点**是 `domain/scope.ts`
+//   ⇒ 写进来时**必须走它**校验（不在这里另写一把尺）。见 `applyDecisionWrite`。
+import { parseScope, formatScope } from '../../../domain/scope.js';
 // ★★★ T328（2026-10-15，进度轴收归）：进度的**唯一权威写入**是 `overlay` 锚点的 `progress`
 //   （+ evidence 闸）。node 的 add/update 只是**入口** ⇒ 一律路由到 `updateStatus`，**不再裸写** base 的 `Node.status`。
 import { updateStatus } from './status_tools.js';
@@ -145,9 +148,10 @@ export function addNode(input: AddNodeInput): EditResult {
   const lines = [
     // ★ 首行是 `updateFeatureCore` **唯一透出**的那行 ⇒ 内联决策卡的「署名/未署名」必须进首行，否则静默。
     nodeDecision
-      ? `已添加节点: ${node_id} · 决策卡 ${nodeDecision.summary} · ${
-          nodeDecision.agent ? `署名 ${nodeDecision.agent}` : '★ 未署名（本次调用未传 agent 身份 ⇒ 无发起者编号）'
-        }`
+      ? `已添加节点: ${node_id} · 决策卡 ${nodeDecision.summary}` +
+        // ★ T329：范围（若有）显形 —— 它是**规范化后**存的，读端要知道这条管哪一片。
+        (nodeDecision.scope ? ` · 范围 ${nodeDecision.scope}` : '') +
+        ` · ${nodeDecision.agent ? `署名 ${nodeDecision.agent}` : '★ 未署名（本次调用未传 agent 身份 ⇒ 无发起者编号）'}`
       : `已添加节点: ${node_id}`,
     `标签: ${node.label}`,
     `位置: (${node.x ?? 'auto'}, ${node.y ?? 'auto'})`,
@@ -247,6 +251,25 @@ export function applyDecisionWrite(
       '决策卡缺 `summary`（结论）—— 它是 NodeDecision 里**唯一必填**字段（geometry.ts:172）。' +
         '★ 只改别的字段时**不必重给** `summary`（合并语义会保留旧值）；★ 若是首版，`summary` 必须给。',
     );
+  }
+  // ★★★ T329（2026-10-15）：`scope`（这条决策管哪一片）—— 给了就**走唯一解析落点**校验。
+  //   ★ 唯一落点 = `domain/scope.ts` 的 `parseScope`（文法与解析只有那一处；这里**不另写一把尺**）。
+  //   ★ 非法 ⇒ **响亮抛**（`parseScope` 的报错已含"缺参数 / 未知种类"与文法指引），**不静默、不自动丢弃**。
+  //   ★ 落库的是 `formatScope(parseScope(s))` —— **同一片写同一个规范名**（scope.ts 纪律 #1：路径归一、
+  //     列表排序去重）⇒ 同一片不会因写法不同存成两个名字。★ **只存字符串**（绝不把节点集落库）。
+  //   ★ 显式空串 / 全空白 = **清除该字段**（与 decision 其余字段的"给空=清空"合并语义同款）；
+  //     要表达"整份 DSL"请显式写 `scope:"all"`（`parseScope('')` 本身也读作 all，此处按合并纪律处理）。
+  if (next.scope !== undefined) {
+    if (typeof next.scope !== 'string') {
+      throw new Error(
+        `决策卡 scope 必须是字符串（一行 scope 表达式），收到 ${JSON.stringify(next.scope)}。文法见 src/domain/scope.ts。`,
+      );
+    }
+    if (next.scope.trim() === '') {
+      delete decision.scope;
+    } else {
+      decision.scope = formatScope(parseScope(next.scope));
+    }
   }
   if (opts?.author) decision.author = opts.author;
   if (opts?.agent) decision.agent = opts.agent;
@@ -353,6 +376,8 @@ export function updateNode(input: UpdateNodeInput): EditResult {
     `尺寸: ${node.width ?? 'auto'} × ${node.height ?? 'auto'}`,
   ];
   if (status) lines.push(`状态: ${status}`);
+  // ★ T329：决策范围（若有）显形（写的是规范化后的字符串）。
+  if (node.decision?.scope) lines.push(`决策范围: ${node.decision.scope}`);
 
   return { message: lines.join('\n'), feature };
 }

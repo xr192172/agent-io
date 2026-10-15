@@ -66,7 +66,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
       'query: dsl（完整 DSL JSON）/ features（所有 feature 列表）/ ' +
       'nodes（节点摘要列表，支持 layer/type 过滤）/ edges（边摘要列表，支持 layer 过滤）/ ' +
       'node（单个节点详情，需 node_id，含决策卡与版本史）/ ' +
-      'decisions（决策卡目录，按功能线 thread 分组，支持 thread/decision_status 过滤）/ ' +
+      'decisions（决策卡目录，按功能线 thread 分组，支持 thread/decision_status/scope 过滤）/ ' +
       'files（语义文件摘要列表，支持 file_layer/file_status 过滤；★ 每项出 `file`（仓库相对路径）与 `symbols`' +
       '（**实际符号的 qualified_name**，取 cache.db 事实、不再是计数）—— 这两个词就是 find_references 的入参词，' +
       '可直接接力）/ ' +
@@ -91,7 +91,8 @@ export const DESIGN_TOOLS: ToolDef[] = [
           'query=scope 时：**圈定范围**的一行表达式（文法唯一落点在 src/domain/scope.ts）：' +
             'all=整份(顶层) | layer:main|error|detail | swimlane:<泳道id> | arch_layer:<架构层id> | ' +
             'subtree:<node_id>  (±尾缀 ! 表示下钻进子图) | nodes:<id>,<id> | files:<相对路径>,<目录/>。缺省=all。' +
-            '★ 解析是**纯函数**（同一输入两次结果逐字相同）⇒ 可作下游"分区域重写/对账"的稳定命名。',
+            '★ 解析是**纯函数**（同一输入两次结果逐字相同）⇒ 可作下游"分区域重写/对账"的稳定命名。' +
+            '★ query=decisions 时本参数改为**按范围过滤决策卡**（列出"管这一片"的决策）。',
         ),
       view: z.enum(['design', 'live']).default('design').describe('视图层级：design=设计视图（默认），live=实际代码快照'),
       feature: z.string().optional().describe('feature 名（nodes/edges/node/decisions/files/file/digest/annotations/approvals 等需要）'),

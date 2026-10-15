@@ -92,6 +92,8 @@ export interface QueryFeatureInput {
    * ★★ scope：**圈定范围**的一行表达式（2026-10-09，T72）。
    * 文法与解析**唯一落点**在 `src/domain/scope.ts`（这里只转手，**不重写一份语法**）：
    * `all` · `layer:main` · `swimlane:<id>` · `arch_layer:<id>` · `subtree:<node_id>[!]` · `nodes:a,b` · `files:p1,p2`
+   * ★ T329（2026-10-15）：`query=decisions` 时，本参数改为**按范围过滤决策卡** ——
+   *   只列"**管这一片**"的决策（决策卡自身的 `NodeDecision.scope` 与本 scope 解析出的**节点集合有交集**）。
    */
   scope?: string;
   /** decisions：按功能线过滤（不传=全部，按 thread 分组输出） */
@@ -574,15 +576,43 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
       if (input.decision_status)
         entries = entries.filter((n) => (n.decision!.status ?? 'active') === input.decision_status);
 
+      // ★★★ T329（2026-10-15）：按**范围**过滤 —— 给一个 scope ⇒ 只列"**管这一片**"的决策。
+      //   口径（不落副本、只比集合）：query scope 与决策卡自身的 `scope` **各自**经 `domain/scope.ts`
+      //   的**唯一解析落点**（`resolveScopeText` = parse + resolve）解析成**节点集合**；两集合**有交集**
+      //   ⇒ 这条决策管到这片。★ 若决策未标 `scope` ⇒ **不参与**范围过滤（"没标范围" ≠ "管全世界"）。
+      //   ★ 输入 scope 非法 ⇒ `resolveScopeText` **抛**（读端也走唯一落点，不另写一把尺）。
+      const scopeNotes: string[] = [];
+      if (input.scope !== undefined) {
+        const q = resolveScopeText(dsl, input.scope);
+        const qIds = new Set(q.node_ids);
+        entries = entries.filter((n) => {
+          const s = n.decision!.scope;
+          if (!s) return false;
+          try {
+            return resolveScopeText(dsl, s).node_ids.some((id) => qIds.has(id));
+          } catch (e) {
+            // ★ 不许静默：卡上存了**解析不出来的 scope**（指向已消失的节点等）——
+            //   响亮记下，不把它当成"命中"或"没命中"里的任何一边（它**既没被证明管到、也没被证明不管**）。
+            scopeNotes.push(`节点 ${n.id} 的 scope "${s}" **解析失败**，已跳过：${(e as Error).message.split('\n')[0]}`);
+            return false;
+          }
+        });
+      }
+
       if (entries.length === 0) {
         const filters = [
           input.thread ? `功能线="${input.thread}"` : null,
           input.decision_status ? `状态=${input.decision_status}` : null,
+          input.scope !== undefined ? `范围="${input.scope}"` : null,
         ]
           .filter(Boolean)
           .join(', ');
         return {
-          message: `feature "${dsl.feature}" 无匹配决策卡${filters ? `（${filters}）` : ''} ${viewTag}`,
+          message:
+            `feature "${dsl.feature}" 无匹配决策卡${filters ? `（${filters}）` : ''} ${viewTag}` +
+            (scopeNotes.length
+              ? `\n★ 另有 ${scopeNotes.length} 条决策的 scope 解析失败（已跳过，**不静默**）：\n  · ${scopeNotes.join('\n  · ')}`
+              : ''),
           data: [],
         };
       }
@@ -604,9 +634,23 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
 
       const lines: string[] = [
         `feature "${dsl.feature}" 决策目录 ${viewTag}`,
-        `决策总数: ${entries.length} · 功能线: ${groups.size}${input.decision_status ? ` · 状态过滤: ${input.decision_status}` : ''}`,
+        `决策总数: ${entries.length} · 功能线: ${groups.size}` +
+          `${input.decision_status ? ` · 状态过滤: ${input.decision_status}` : ''}` +
+          `${input.scope !== undefined ? ` · 范围过滤: ${input.scope}` : ''}`,
         '',
       ];
+      // ★ T329：范围过滤的**口径**与"解析失败已跳过"都要出声（不许静默）。
+      if (input.scope !== undefined) {
+        lines.push(
+          '  ★ 范围过滤口径：query scope 与决策卡 scope 各自解析成**节点集合**，有交集即算"管到这片"；' +
+            '未标 scope 的决策不参与（文法唯一落点 = src/domain/scope.ts）。',
+        );
+        if (scopeNotes.length) {
+          lines.push(`  ★ 有 ${scopeNotes.length} 条决策的 scope **解析失败**，已跳过（**不静默**）：`);
+          for (const n of scopeNotes) lines.push(`    · ${n}`);
+        }
+        lines.push('');
+      }
 
       for (const thread of sortedThreads) {
         const group = groups.get(thread)!;
@@ -622,6 +666,8 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
           const signTag = d.agent ? `署名 ${d.agent}` : '未署名';
           lines.push(`    ${authorTag} · ${signTag}`);
           lines.push(`    节点: ${n.id}`);
+          // ★ T329：这条决策管哪一片（若有）—— 范围只存字符串，此处**原样透出**。
+          if (d.scope) lines.push(`    范围: ${d.scope}`);
         }
         lines.push('');
       }

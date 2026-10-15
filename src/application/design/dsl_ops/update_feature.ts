@@ -875,6 +875,16 @@ function applyDecisionOp(feature: string, op: CheckedOperation<FeatureOperation>
     }
     decision.tags = data.tags as string[];
   }
+  // ★★★ T329（2026-10-15）：`scope`（这条决策管哪一片）—— 一行表达式，如 `subtree:mod!` / `files:src/a.ts`。
+  //   ★ **不在此校验/规范化**：原样交给下方 `applyDecisionWrite`——它是**唯一**决策写入口，
+  //     用 `domain/scope.ts` 的 `parseScope` 校验（同一把尺；别处再写一份 = 判据分叉）。
+  //   ★ 这里只做**形状**（非字符串 ⇒ 报），与同袋子里 `rationale` / `thread` 等字段**同款纪律**。
+  if (data.scope !== undefined) {
+    if (typeof data.scope !== 'string') {
+      throw new Error(`decision.update 的 data.scope 必须是字符串（一行 scope 表达式），收到 ${JSON.stringify(data.scope)}。`);
+    }
+    decision.scope = data.scope;
+  }
   // ★★ 作者**类别**（可信度轴）：只认 'human' | 'llm' —— 收口（从前是自由文本，把类别/身份挤在一格）。
   //   ★ 身份（谁：Agent 编号/名字）是**另一个维度**，走**顶层入参 `agent`**，不许再塞进 author。
   let author: DecisionAuthor | undefined;
@@ -929,6 +939,8 @@ function applyDecisionOp(feature: string, op: CheckedOperation<FeatureOperation>
   if (nd.rationale) lines.push(`  理由: ${nd.rationale}`);
   if (nd.alternatives?.length) lines.push(`  已排除方案 ${nd.alternatives.length} 个（alternatives：option + rejected_because）`);
   if (nd.dissent?.length) lines.push(`  ★ 未决分歧 ${nd.dissent.length} 个（dissent：**待对拍**，非已排除）`);
+  // ★ T329：范围（若有）显形（存的是**规范化后**的字符串；文法唯一落点 = src/domain/scope.ts）。
+  if (nd.scope) lines.push(`  范围: ${nd.scope}`);
   if (nd.votes !== undefined) lines.push(`  证据支持: ${nd.votes} 份${nd.evidence_source?.length ? `（${nd.evidence_source.join('+')}）` : ''}`);
   lines.push(
     prev

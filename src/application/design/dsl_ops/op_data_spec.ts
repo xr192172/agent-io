@@ -314,6 +314,11 @@ export const TYPE_KNOWN_KEYS: Record<string, readonly string[]> = {
     //     —— 实测加一条 `file-exists` ⇒ 对拍 `checked 2→3 · passed 0→1`）。
     //   ★ 补上之后两条路**同一判据**（判据仍只有这一张表 + `assertValidExpectations`）。
     'expectations',
+    // ★★★ T329（2026-10-15）：补 `scope`（**这条决策管哪一片**，`domain/geometry.ts` 的 `NodeDecision.scope`）。
+    //   ★ 不补会怎样：从 `decision` op 写它 ⇒ 报「data 里有**不被认的键**：scope」
+    //     ⇒ **从决策卡写入口写不进"范围"**（而 `node` op 的 `data.decision` 那条路本来就能写）。
+    //   ★ 校验仍只有一把尺：`domain/scope.ts` 的 `parseScope`（由 `applyDecisionWrite` 调用）。
+    'scope',
   ],
 };
 /** ★★ 断言：`TYPE_KNOWN_KEYS` 的键集**必须恰好覆盖 `OP_SPECS` 的全部 type**（多 / 少都红）。 */
