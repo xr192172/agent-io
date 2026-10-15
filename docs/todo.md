@@ -3215,3 +3215,18 @@
       ⇒ **阻塞项（⑥ 之前必须先解）**：`NodeDecision` / `Expectation` **无稳定 id** ⇒ "引用而不复制"表达不出来。
       ⇒ **判据**：写入点清单只剩 overlay 那条路 · `rebuild_design=true` 后人写的 progress 仍在 · 不带 evidence 置 done 被拒 ·
         证书进 runner（`certs/` 命名匹配 `t\d+.*-cert\.mjs`）。
+
+- [ ] **T329 ★★★ 【增补】范围型决策：给决策卡加 `scope` 引用（补上用户原话"这一范围"缺的那个字段）**
+      *(来源：`docs/replan-2026-10-15.md` §24.3 第 1 条；核验见 §25。)*
+      ⇒ **核验结论（已实测）**：`subtree:<id>` 的 id **就是 node id**（`scope.ts:187`）、`files:` 同理（`types.ts:189`）
+        ⇒ 挂**范围根节点**的决策**今天就能表达**；但 `swimlane:<id>` / `arch_layer:<id>` 是 `Swimlane.id` / `ArchLayer.id`
+        （`geometry.ts:133` / `types.ts:136-138`）**不是 node id ⇒ 无节点可挂**。`thread` 是**自由文本**聚合标签、
+        **不解析成节点集**；`diff_blocks.ts` **0 处 decision**、`consistency.ts` **0 处 decision/thread**（两查询从未相遇）。
+      ⇒ **要做（最小形状，不变存储形状）**：`NodeDecision` 加**可选** `scope?: string`（存 scope 字符串、**不复制节点集**）；
+        写路径给 `scope` 时**必须经 `src/domain/scope.ts` 的唯一解析落点校验**（非法 ⇒ 拒绝并说清，**不静默**）；
+        `query=decisions` 支持**按范围过滤**。
+      ⇒ **为什么是这个形状**：① `scope` 文法**已有唯一落点**、不新增语言；② `consistency_check` **已在吃它**（差异块按它命名）
+        ⇒ 接上后**对拍能按范围折块**（点亮 §24.2 判据④）；③ **不动存储形状** ⇒ 不触发"决策 1:N"的破坏性改动（判据②的风险点）。
+      ⇒ **判据**：① 带 `scope` 的决策登记成功 ② 非法 `scope` **被拒**（含原文）③ `query decisions` 能**按范围过滤**出来
+        ④ **存储里没有节点集副本**（只存字符串）⑤ 新证进 `certs/`（命名匹配 `t\d+.*-cert\.mjs`）；
+        门：build ✓ · verify 4/4 ✓ · **既有 `t328` 证书仍 14/14**（不许打红）。
