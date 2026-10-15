@@ -745,3 +745,36 @@ M5 命中数与语义无关（1364 条命中里写端仅 1 条）· ★ **M6 读
   `{id, path, progress, progress_evidence, decision?.scope}` ⇒ ★ **不新增存储、不落盘**（纯可复算投影）。
 - **B（下一轮）· 前置/解锁**：需 ① 给任务一个**随数据变化的前置**（不能复用静态 `Prerequisite`）
   ② **goal ↔ 节点映射**（今天没有）③ `write_gate` 追加"前置未满足"的拦截 ⇒ ★ **这一半贵在"映射"与"拦截口径"**，不许当小改动。
+
+
+---
+
+## 28. 2026-10-15 现状复核（照入口 §0.5 基线表）+ B 半先核 —— ★ 逮到一张红灯、撤掉我一条设计判断
+
+### 28.1 复核结果：**三条读数里两条一致、一条红**
+- ① 旧轴 `status` 直写：过滤后只剩**注释**与**另一个类型**（`llm_decider` 的 `applied_statuses`）⇒ 与基线表一致（豁免 `opl.ts:322` / `simulation_engine.ts:326`）✓
+- ② `progress` 写端：**权威 1**（`status_tools.ts:86 anchor.progress = status`）+ 投影/迁移（`overlay.ts:598/610`）+ 只读（`query_feature.ts:1331`）⇒ 与基线表一致 ✓
+- ③ ★ **五张证里 `t326` 红了**：当前 **157,097** / 基线 156,765 ⇒ **差 +332 字符（+0.21%）**，来源 = `edit_dsl` +36 · `get_dsl` +296（今天补 `scope`/`pending` 说明）。
+  ⇒ ★★ **它按设计工作了**（"工具面增长要说明理由"）⇒ 真实新增能力 ⇒ 按设计 `--update` 并写清理由。
+  ⇒ ★ 复核的价值在此：**0.21% 的漂移没人会注意到，但证注意到了。**
+
+### 28.2 B 半（前置/解锁）先核结论 —— ★★ **撤掉我一条设计判断**
+- **`OverlayGoal` = feature 级扁平目标列表**（`overlay.ts:254-260` 同读：`interface OverlayGoal {` + `id/title/description?/status?`），
+  **无任何节点/文件/范围字段** ⇒ `goal ↔ 节点` 映射**要新建、没有半个**；
+- ★★★ **但 `goal` 与 `progress` 本来不是同一件事**：`progress` 是**节点级**"做完没"（`overlay.ts:158/209`），
+  `goal` 是**feature 级**"往哪走"；全仓**无一处同时读两者**。
+  ⇒ ★ **§24.3 第 4 条"收归 `progress` 与 `OverlayGoal.status`"应撤销** —— 前提（"两者都在讲这条活到哪了"）**是错的**，
+  硬收会制造一个**四不像字段**。★ 今天第 N 次"我的名单不准"，且这次是**方向性错误**（会导致错误改动）。
+- `edit_dsl` **不能写 goal**；goal 的写入口是**另一个工具 `design_intent`**（`action: set|propose`（默认 set）· 必填 `feature` ·
+  `goals[]` 每条必填 `title`；★ **`set` 是全量替换**）。
+- ★ **有现成的"A 依赖 B"结构可复用**：`OverlayEdgeIntent`（`overlay.ts:263-275` 同读：`from/to/reason/boundary`）
+  与 base `Edge` 的 `intent` ⇒ **不必新造**。
+
+### 28.3 B 半的最小形状（已核出，**未实施**）
+- **前置住 edge intent**（加字段如 `requires`，**引节点 id**，条件 = 被引节点 `progress === 'done'`）；
+- **解锁由 `write_gate` 追加判据**（不新建闸门）；
+- **属 overlay 侧 = 不可再生（权威）**，随 edge intent 走 `applyOverlay` 投影回 base；
+- ★★ **最贵一步**：**区分"任务先后"与"真实代码依赖"** —— edge 现在装的是 **import 依赖**，不等于任务前置；
+  不区分会**把所有 import 边误当解锁条件**（贵在**语义判据**，不在存储）；
+- ★ **能先做一半**：便宜半 = 复用 edge intent 标 `requires` + `write_gate` 读 `progress==='done'`
+  （**不建 goal↔节点映射**，拿文件节点 id 当任务载体）；**贵的语义区分留后**。

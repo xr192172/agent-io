@@ -1,12 +1,12 @@
 {
   "note": "T326 工具面固定开销基线。★ 只许\"不增长\"自动通过；增长必须显式 --update（有意识的动作），且本文件的 diff 会在评审里可见。",
   "tools": 69,
-  "chars": 156765,
+  "chars": 157097,
   "capturedAt": "2026-10-15",
   "top10": [
     [
       "edit_dsl",
-      11659
+      11695
     ],
     [
       "refactor_pipeline",
@@ -14,7 +14,7 @@
     ],
     [
       "get_dsl",
-      6472
+      6768
     ],
     [
       "remove_dead_imports",
