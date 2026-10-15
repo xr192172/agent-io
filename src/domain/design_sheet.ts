@@ -8,11 +8,14 @@
  *
  * ## 配对规则（★ 用户已拍的身份规则，本模块**只照做**、不改）
  *   ★★ 用户逐字：*"那就是**实现了的，有 ID；没实现的没 ID**，不就好了"* ⇒ **id 空间只有一套（扫描给的）**。
- *   ⇒ 对拍时两边的**指代**分两半（见 {@link designSheetRef}，口径只此一处）：
+ *   ⇒ 对拍时两边的**指代**分两半（口径只此两处：{@link designSheetRef} / {@link designSheetPendingRefs}）：
  *     · **已实现**的对象 ⇒ 用**扫描给的 `id`** 指代（设计侧写了 id 就是"我要这个已存在的东西"）；
  *     · ★ **未实现**的对象 ⇒ 用**「名字/路径」**指代（对齐 `expectations` 六种 kind 与
  *       `overlay.nodePath` 的既有做法：`file-exists {path}` / `files:<路径>` 都靠名字指代，
  *       **无一自造 id**）—— ★ 所以**不必**给"想要的东西"编一个 `node_pending_x`。
+ *   ★★ 且未实现的条目**根本不进 `geometry.nodes[]`**（见 {@link designSheetPendingRefs} 上方）：
+ *      `nodes[]` 是"**已实现的结构**"，而 `validateDSL` 要求 `Node.id`
+ *      （`schema/design_dsl.schema.json` → `definitions.Node.required=["id"]`）—— 两条都指向同一件事。
  *   三类判定（**语义不变**，只换指代）：
  *     · 两指代相同 ⇒ **比属性**（差异块）—— 只列**有差**的（逐字段给两边原值）；
  *     · ★ **只在设计里** ⇒ 判为「**要实现**」（这正是"挪建筑"出来的任务）；
@@ -70,8 +73,9 @@ export interface DesignSheetDiff {
   same_id: SameIdDiff[];
   /**
    * ② ★ 只在设计里 ⇒ 「要实现」。
-   * ★ 列的是**设计侧的指代**（见 {@link designSheetRef}）：已实现的对象 = `id`；
-   *   **未实现的对象 = 名字/路径**（★ 不给"想要的东西"自造 id）。
+   * ★ 列的是**设计侧的指代**：`nodes[]` 里已实现的对象 = `id`（见 {@link designSheetRef}）；
+   *   **未实现的条目 = 名字/路径**（见 {@link designSheetPendingRefs}，★ 它**不住 `nodes[]`**，
+   *   住 `meta.goals`）—— ★ 不给"想要的东西"自造 id。
    */
   design_only: string[];
   /** ③ 只在 live 里 ⇒ 「未纳入设计」（live 全是已实现的 ⇒ 列 `id`） */
@@ -122,9 +126,59 @@ export function designSheetRef(n: Node): string {
 }
 
 /**
+ * ★★ 「**要实现**」的条目（**未实现**）住在哪 + 怎么指代 —— ★ **口径只此一处**。
+ *
+ * ## 为什么**不在 `nodes[]` 里**（这是裁定，不是偏好）
+ *   `geometry.nodes[]` 是「**已实现的结构**」：`validateDSL` **要求 `Node.id`**
+ *   （`schema/design_dsl.schema.json` → `definitions.Node.required=["id"]`），而用户已拍的身份规则是
+ *   **"实现了的有 ID、没实现的没 ID"** ⇒ 把无 id 的"想要的东西"塞进 `nodes[]`，
+ *   **这两条会互相拧**（实测：`valid=false`，`[required] /geometry/nodes/1: must have required property 'id'`）。
+ *   ★ 依据（先找既有解法）：本仓**无 id 的指代本来都不在 `nodes[]` 里** ——
+ *     `expectations` 挂在决策卡上（`domain/expectation.ts:35-40`，`file-exists {path}` 可指**还不存在的文件**）、
+ *     `scope` 是字符串（`domain/scope.ts:31` `files:<仓库相对路径>`）。
+ *
+ * ## 住哪：**复用既有的 `meta.goals`**（★ 零新增区块）
+ *   `meta` 是本仓**已声明**的"**无类型袋子**"、`goals` **已住此处**
+ *   （`application/design/dsl_ops/update_feature.ts:554` 逐字；
+ *    `overlay.global.goals` 由 `applyOverlay` 投影进 `base.meta.goals` —— `domain/overlay.ts:550-559`；
+ *    读回见 `:638-640`）。★ 而 `goals` 每一格正是"**待建条目**"的形状（`title` 名字 / `description` 细节 /
+ *   `status`），**且工具层允许它没有 `id`**（`application/design/index.ts:736` `id: z.string().optional()`，
+ *   `title` 才是必填）⇒ 与"**未实现的不自造 id、用名字/路径指代**"**同一条规则**。
+ *   ★ `validateDSL` 实测**接受**这份形状（`meta` 不在 schema 的 `properties` 里、而 schema 未设
+ *   `additionalProperties:false` ⇒ 不拦）—— 读数见 `certs/t339-*.mjs` 判据 ①。
+ *
+ * ## 指代口径（与 {@link designSheetRef} 同款：**路径优先、名字兜底**）
+ *   · `description`（细节位；本仓把**仓库相对路径**放这儿的既有做法：`overlay.nodePath` —— `domain/overlay.ts:331-333`
+ *     `if (n.type === 'file') return n.description ?? n.id`）⇒ 取它作为**路径指代**；
+ *   · 缺则 `title`（名字）；
+ *   · 都缺 ⇒ **响亮可见**的兜底，不静默。
+ *
+ * ## ★ 有 `id` 的 goal **不是**"要实现"条目
+ *   与 `designSheetRef` 同一条规则：**有 id ⇒ 指的是"已实现的对象"** ⇒ 它不是待建占位，
+ *   于是**不进** `只在设计里(要实现)`（既有带 id 的目标**不被误伤**，读数见 `certs/t339-*.mjs` 判据 ④）。
+ */
+export function designSheetPendingRefs(dsl: DesignDSL | null | undefined): string[] {
+  const meta = (dsl as unknown as { meta?: { goals?: unknown } } | null | undefined)?.meta;
+  const goals = meta?.goals;
+  if (!Array.isArray(goals)) return [];
+  const out: string[] = [];
+  for (const g of goals) {
+    if (!g || typeof g !== 'object') continue;
+    const o = g as Record<string, unknown>;
+    const id = typeof o.id === 'string' ? o.id.trim() : '';
+    if (id) continue; // ★ 已实现：由 `designSheetRef`/扫描给的 id 指代，不算"要实现"
+    const desc = typeof o.description === 'string' ? o.description.trim() : '';
+    const title = typeof o.title === 'string' ? o.title.trim() : '';
+    out.push(desc || title || '<无名占位:goal>');
+  }
+  return out;
+}
+
+/**
  * 对拍两份同性质 DSL（**按 {@link designSheetRef} 的指代配对**）—— 纯函数，同一输入两次结果逐字相同。
  *
- * ★ 设计侧键 = `designSheetRef`（有 id ⇒ id；无 id ⇒ 名字/路径）；live 侧键 = `id`（扫描给的唯一 id 空间）。
+ * ★ 设计侧键 = `designSheetRef`（`nodes[]` 里：有 id ⇒ id；无 id ⇒ 名字/路径）**∪** {@link designSheetPendingRefs}
+ *   （★ 未实现条目，住 `meta.goals`，用名字/路径）；live 侧键 = `id`（扫描给的唯一 id 空间）。
  *
  * @param design 手写设计图（`design/<f>.dsl.json`）
  * @param live   扫描产物（`live/<f>.dsl.json`）
@@ -153,9 +207,11 @@ export function diffDesignSheet(design: DesignDSL, live: DesignDSL): DesignSheet
 
   // ★ 只排序输出（便于人读与逐字比对），**不改变**配对语义
   same_id.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
-  // ★ 「只在设计里」列的是**设计侧的指代**：已实现的对象 = id；未实现的 = 名字/路径（无 id）
-  const design_only = [...dByRef.keys()].filter((ref) => !lById.has(ref)).sort();
-  const live_only = [...lById.keys()].filter((id) => !dByRef.has(id)).sort();
+  // ★ 「只在设计里」列的是**设计侧的指代**：`nodes[]` 里已实现的对象 = id；
+  //   **未实现的条目 = 名字/路径**（★ 它**不住 `nodes[]`**，住 `meta.goals` —— 见 {@link designSheetPendingRefs}）
+  const designRefs = new Set<string>([...dByRef.keys(), ...designSheetPendingRefs(design)]);
+  const design_only = [...designRefs].filter((ref) => !lById.has(ref)).sort();
+  const live_only = [...lById.keys()].filter((id) => !designRefs.has(id)).sort();
 
   return { same_id, design_only, live_only, counts: { design: dNodes.length, live: lNodes.length, same_identical: sameIdentical } };
 }

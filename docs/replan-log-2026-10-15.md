@@ -1234,3 +1234,37 @@ MCP 传输/schema 层 · daemon 转发分支；★ **六种 kind 本节点只用
   （判据：`valid=true`）。**本笔未改 schema。**
 - ★ `[未核]`（它如实报）：MCP `tools/list` schema 层 · daemon 分支 · 真仓 `design/<f>.dsl.json`（**从不存在，全程夹具**）；
   另 `t336` 的 ②/③ 仍是同类"时点现状"断言（本轮按题未动）。
+
+---
+
+## 43. 2026-10-16 ★★★ 占位移出 `nodes[]` ⇒ **手写设计图与扫描图"同性质"落定**（`t339` 17/0）
+
+### 43.1 ★★ 第 0 步（先找既有解法）这次省掉一整块新设计：**`meta.goals` 就是那个住处**
+- 既有解法（它核出 3 处）：① `expectation.ts:35-40` 六 kind 用**路径/符号名**、挂决策卡 ⇒ **不在 `nodes[]`**；
+  ② `scope.ts:31` `files:<路径>` 是**字符串** ⇒ 不在 `nodes[]`；③ `overlay.ts:331-333` `nodePath`：**file 的路径住 `description`**；
+- ★★ **`goals` 能承担**（关键三行证据）：`meta` 是本仓**已声明**的"无类型袋子（`goals`/`storyboard` 已住此处）"（`update_feature.ts:554`）·
+  `OverlayGoal {id?;title;description?;status?}`（`overlay.ts:262-268`）· ★ **工具层 `id` 本来就是 optional**
+  （`index.ts:736` `id: z.string().optional()`，只有 `title` 必填）⇒ **与"未实现的不自造 id"完全同规则**。
+⇒ **零新增区块**：未实现条目 = `meta.goals` 里**无 `id`** 的 goal；指代口径新增唯一一处 `designSheetPendingRefs`（路径取 `description`、名字兜底 `title`）。
+
+### 43.2 判据（`t339` **PASS=17 FAIL=0**）
+- ① ★★ **`validDSL` ⇒ `valid=true`（`errors=[]`）**；★ **对照**：把占位**塞回 `nodes[]`** ⇒ `valid=false`，
+  报逐字 `[required] /geometry/nodes/1: must have required property 'id'` ⇒ **"移出是对的"有了硬对照**；
+- ② 工具层回执 **`只在设计里 ⇒ 要实现（1） · src/planned/thing.ts`**；落盘原文
+  `{"title":"待建模块 X","description":"src/planned/thing.ts","status":"active"}`（**键 = `meta.goals`**），`nodes[]=["file_src_a_ts"]`；
+- ③ 重建前后 **971→971 字节逐字节相同**、条目仍在；
+- ④ 带 id 的 `goal_existing` **原样、不进 `design_only`**（**没误伤**）。
+⇒ ★★★ **"手写设计图"与"扫描图"现在过的是同一把 `validateDSL`** ⇒ 用户要的"**两份同性质**"最后一块硬证据落定。
+
+### 43.3 ★ 两件必须记的事（它诚实报的）
+1. **它动了 `certs/t338`**：t338 夹具把占位放 `nodes[]`（正是 §42.4 否掉的形态）⇒ 移出后必红 ⇒ 按 §42.3 先例
+   **改夹具 + 同步 ①/①-b/③ 三处读数**（仍钉"无 id、用名字/路径"，容器换 `meta.goals`），**PASS 计数不变 = 13**；
+   ★ **未 `--update` 任何基线**，`t326` 未动。
+2. ★★★ **`validateDSL` 全仓只被 `serve.ts:194` 用，而那个已退役** ⇒ **今天没有任何"活的入口"会跑它** ——
+   这比 §36 的判断更狠："设计自洽"不只是"没接在改设计的路上"，而是**当前完全没有活的入口在新跑**。
+   ⇒ ★ 这也解释它为何如实标注："唯一非工具层的判据是 ①（本仓**没有**校验 design 文件的工具入口）"。
+
+### 43.4 读数
+`t339` **17/0** · `build` ✓ · `verify` **4/4** ✓ · 既有十二证全绿（`t326` 4/4 · `t328` 18/18 · `t329` 12/12 · `t330` 7/7 · `t331` 3/3 ·
+`t332` 10/10 · `t333` 16/16 · `t334` 11/11 · `t335` 14/14 · `t336` 37/37 · `t337` 14/14 · `t338` 13/13）。
+★ `[未核]`：MCP `tools/list` schema 层 · daemon 转发 · **overlay 链对 id-less goal 的行为** · 真仓 `design/<f>.dsl.json`（**从不存在，全程夹具**）。

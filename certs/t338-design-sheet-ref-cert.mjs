@@ -17,12 +17,21 @@
  *   · `scope` 的 `files:<路径>`（`src/domain/scope.ts:31`，按**仓库相对路径**命中）；
  *   · `overlay` 对账**按 `path` 认亲**（`src/domain/overlay.ts:406` `byPath.get(a.path)`）、
  *     认不出才标孤儿（`:416`）、改名记 `_migratedFrom`（`:429`）。
- *   ⇒ 三条都是"**用名字/路径当身份、不自造 id**"。本笔照抄这套做法（口径只此一处：`designSheetRef`）。
+ *   ⇒ 三条都是"**用名字/路径当身份、不自造 id**"。本笔照抄这套做法（口径只此两处：
+ *     `designSheetRef` 管 `nodes[]`、`designSheetPendingRefs` 管 `meta.goals`）。
+ *
+ * ## ★★ 2026-10-16 改夹具（T339 落地 `docs/replan-log-2026-10-15.md` §42.4）：条目**移出 `nodes[]`**
+ *   · 旧夹具把那条"要实现"（无 id）**放在 `nodes[]` 里** ⇒ `validateDSL` 报
+ *     `[required] /geometry/nodes/1: must have required property 'id'`（本证曾如实贴出该读数，见 git 历史）；
+ *   · §42.4 裁定：**未实现的不该进 `nodes[]`**（`nodes[]` 是"已实现的结构"；`expectations`/`scope` 的
+ *     无 id 指代**本来都不在 `nodes[]` 里**）⇒ 本条**改用既有的 `meta.goals`**（零新增区块，见 `T339`）。
+ *   · ★ 本证因此改 3 处读数（① / ①-b / ③）：**仍钉"无 id、用名字/路径指代"这条规则**，
+ *     只是**容器**从 `nodes[]` 换成 `meta.goals`；PASS 计数**不变（13）**。
  *
  * ## 判据（★ 每条都亲手跑、贴原文）
- *   ① ★★ 设计图里那个"要实现"的占位节点**没有自造 id**（**贴落盘原文**：该节点**没有 `id` 键**）；
+ *   ① ★★ 那条"要实现"的条目**没有自造 id**、且**不在 `nodes[]` 里**（**贴落盘原文**：无 `id` 键 + 它所在的键）；
  *   ② ★ 它**仍被正确判为 `只在设计里(要实现)`**（经**工具层** `diffDesignSheetHandler`，输出里贴出来）；
- *   ③ ★★ `rebuild_design=true` 前后 `design/<f>.dsl.json` **逐字节相同**、那个节点**重建后仍在**（不许退化）。
+ *   ③ ★★ `rebuild_design=true` 前后 `design/<f>.dsl.json` **逐字节相同**、那条**重建后仍在**（不许退化）。
  *   ★ 另三条只作"三类判定**语义未变**"的旁证：同名属性差 · 只在 live 里 · 现设计视图上下文。
  *
  * ## ★★ 走工具层（本仓纪律：证必须走工具层）
@@ -31,11 +40,10 @@
  *   而纯函数没有这道守卫）。
  *
  * ## ★★ 诚实清单（[未核] —— 不许把推测写成实测）
- *   · ★★ **发现（本条须人裁定）**：`validateDSL` 要求 `Node.id`（`schema/design_dsl.schema.json`
- *     → `definitions.Node.required = ["id"]`）⇒ 一个**没有 `id` 键**的占位节点**过不了** `validateDSL`。
- *     ⇒ 两条路（**本证不替人决定，也不改 schema**）：(a) 设计侧 schema 放宽 `id` 必填；
- *     (b) 把**路径本身**写进 `id`（仍无"自造 token"）。本证按用户原话（"**没实现的没 ID**"）走 (a) 的读法，
- *     并在第 1 节**贴出 `validateDSL` 的实测读数**，不藏。
+ *   · ★★ **发现（原为待裁定，现由 §42.4 落地）**：`validateDSL` 要求 `Node.id`（`schema/design_dsl.schema.json`
+ *     → `definitions.Node.required = ["id"]`）⇒ 无 id 的占位**过不了** `validateDSL`。
+ *     ⇒ §42.4 选**第三条路**（**移出 `nodes[]`**、就用名字/路径），★ **本证与 T339 都没改 schema**；
+ *     第 1 节 ①-c/①-d 贴出**两个方向的实测读数**（移出后 `valid=true`；塞回 `nodes[]` 则 `valid=false`）。
  *   · **MCP 可达性 [未核]**：本入口未注册进 `TOOL_DEFS`（`t326` 工具面零余量）⇒ LLM 暂时调不到它。
  *   · **传输 / MCP schema 层 [未核]**：直接 import handler，没经 MCP server 的 `tools/list`。
  *   · **daemon 转发分支 [未核]**：不起 daemon。
@@ -75,7 +83,7 @@ const { parseDataBlock } = await import('../dist/src/application/plumbing.js');
 const { importProject } = await import('../dist/src/infrastructure/graph/import_project.js');
 const { getLiveFeature } = await import('../dist/src/infrastructure/storage.js');
 const { validateDSL } = await import('../dist/src/domain/validator.js');
-const { designSheetRef } = await import('../dist/src/domain/design_sheet.js');
+const { designSheetPendingRefs } = await import('../dist/src/domain/design_sheet.js');
 
 const FEAT = 't338';
 /** ★ 未实现的对象：**没有 id**，只有**名字/路径**（用户规则："没实现的没 ID"） */
@@ -98,7 +106,7 @@ chk(liveFileIds.length >= 2, '0 夹具就位：live 里有 ≥2 个文件节点'
 const SAME = liveFileIds[0]; // 两边都有（同 id）⇒ 比属性
 const LIVE_ONLY = liveFileIds[1]; // 设计**故意不写它** ⇒ 只在 live 里
 
-console.log('\n════ 1. 手写 design/<f>.dsl.json（★ 未实现的那个节点：**没有 id**、用名字/路径指代）════');
+console.log('\n════ 1. 手写 design/<f>.dsl.json（★ 未实现的那条：**没有 id**、用名字/路径指代；且**不住 nodes[]**）════');
 const designSheet = {
   id: `design_${FEAT}`,
   type: 'feature_diagram',
@@ -113,10 +121,15 @@ const designSheet = {
     nodes: [
       // ① 已实现 ⇒ 用**扫描给的 id** 指代（与 live 同 id ⇒ 进"比属性"）
       { id: SAME, type: 'file', label: '手写：a', title: '手写标题 A', description: '手写设计：A 的职责（与扫描给的不一样）' },
-      // ② ★ 未实现 ⇒ **没有 id**，用**名字/路径**指代（★ 这就是本证要钉的那件事）
-      { type: 'file', label: PENDING_NAME, title: '尚未存在的文件（要实现）', description: PENDING_PATH, status: 'draft' },
+      // ★★ 未实现的**不进 `nodes[]`**（`nodes[]` 是"已实现的结构"：`validateDSL` 要求 `Node.id`）
     ],
     edges: [],
+  },
+  // ★★ 未实现的那条：**没有 id**、用**名字/路径**指代，**复用既有的 `meta.goals`**（见文件头「住处」一节）
+  meta: {
+    goals: [
+      { title: PENDING_NAME, description: PENDING_PATH, status: 'active' },
+    ],
   },
   semantic: { files: [{ id: SAME, path: 'src/a.ts', responsibility: '手写设计：A 的职责（与扫描给的不一样）' }] },
 };
@@ -128,32 +141,34 @@ chk(
   `getDesignSheetFile → ${dsFile}`,
 );
 
-// ── ① ★★ 落盘原文：那个"要实现"的占位节点**没有自造 id** ──
+// ── ① ★★ 落盘原文：那个"要实现"的条目**没有自造 id**，且**不在 `nodes[]` 里** ──
 const rawObj = JSON.parse(rawBefore);
-const pendingNode = (rawObj.geometry?.nodes ?? []).find((n) => n.description === PENDING_PATH);
-dump('① 落盘原文 · 那个"要实现"的占位节点（**整个节点对象**）', JSON.stringify(pendingNode, null, 2));
+const pendingNode = (rawObj.meta?.goals ?? []).find((g) => g.description === PENDING_PATH);
+if (!pendingNode) throw new Error(`夹具异常：未实现条目不在 meta.goals 里（nodes[] 里也没有）`);
+dump('① 落盘原文 · 那个"要实现"的条目（**整个对象**）', JSON.stringify(pendingNode, null, 2));
 chk(
-  !!pendingNode && !('id' in pendingNode),
-  '① ★★ 落盘原文里：那个"要实现"的占位节点**没有 `id` 键**（没有 `node_pending_x` 这种自造 token）',
-  `该节点的键 = [${Object.keys(pendingNode ?? {}).join(', ')}]`,
+  !('id' in pendingNode) && !(rawObj.geometry?.nodes ?? []).some((n) => n.description === PENDING_PATH),
+  '① ★★ 落盘原文里：那个"要实现"的条目**没有 `id` 键**（没有 `node_pending_x` 这种自造 token），且**不住 `nodes[]`**',
+  `该条目的键 = [${Object.keys(pendingNode).join(', ')}] · 它所在的键 = meta.goals · nodes[] 里 ${(rawObj.geometry?.nodes ?? []).length} 个节点（全是已实现的）`,
 );
 chk(
-  designSheetRef(pendingNode) === PENDING_PATH,
-  '①-b ★ 它的**指代** = **名字/路径**（`designSheetRef` 唯一口径；file 节点取路径 `description`，与 `overlay.nodePath` 同口径）',
-  `designSheetRef = ${JSON.stringify(designSheetRef(pendingNode))}`,
+  designSheetPendingRefs(rawObj).includes(PENDING_PATH),
+  '①-b ★ 它的**指代** = **名字/路径**（`designSheetPendingRefs` 唯一口径；路径取 `description`，与 `overlay.nodePath` 对 file 的取法同口径）',
+  `designSheetPendingRefs = ${JSON.stringify(designSheetPendingRefs(rawObj))}`,
 );
 {
   const v = validateDSL(JSON.parse(rawBefore));
-  // ★ 只**报读数**、不判红：这是"schema 仍要求 Node.id"的诚实声明（见头注释「诚实清单」）
-  dump('①-c ★ 诚实读数：这份**含无 id 占位节点**的设计图过 validateDSL 的结果（不藏）', `valid=${v.valid}` + (v.valid ? '' : `\n${v.errors.slice(0, 3).join('\n')}`));
+  // ★★ 2026-10-16（§42.4 落地）：未实现条目**移出 `nodes[]`** 后，这份设计图**过同一把** `validateDSL`
+  dump('①-c ★ 诚实读数：这份设计图过 validateDSL 的结果', `valid=${v.valid}` + (v.valid ? '' : `\n${v.errors.slice(0, 3).join('\n')}`));
 }
 {
-  // ★ 另一条读法（**并行给出，不藏**）：把**路径本身**写进 `id` ⇒ 依然没有"自造 token"、且**过 schema**。
-  const alt = { ...pendingNode, id: PENDING_PATH };
-  const vAlt = validateDSL({ ...rawObj, geometry: { ...rawObj.geometry, nodes: [rawObj.geometry.nodes[0], alt] } });
+  // ★ 对照读数（**并行给出，不藏**）：同一条"要实现"条目若**塞回 `nodes[]`**（无 id）⇒ schema 当场拒。
+  //   ★ 这正是本证 2026-10-16 改夹具（移出 `nodes[]`）的原因，判据见 `docs/replan-log-2026-10-15.md` §42.4。
+  const back = { ...rawObj, geometry: { ...rawObj.geometry, nodes: [...rawObj.geometry.nodes, { type: 'file', label: PENDING_NAME, description: PENDING_PATH }] } };
+  const vBack = validateDSL(back);
   dump(
-    '①-d ★ 同一条规则的**另一读法**（把路径写进 `id`，仍无"自造 token"）',
-    `designSheetRef = ${JSON.stringify(designSheetRef(alt))}（← 指代仍是**路径**） · validateDSL.valid = ${vAlt.valid}`,
+    '①-d ★ 对照：同一条目**塞回 `nodes[]`**（无 id）',
+    `validateDSL.valid = ${vBack.valid} · ${vBack.errors[0] ?? ''}`,
   );
 }
 
@@ -203,9 +218,9 @@ chk(
 {
   const after = getDesignSheet(FEAT);
   chk(
-    (after?.geometry?.nodes ?? []).some((n) => n.description === PENDING_PATH && !('id' in n)),
-    '③ ★★ 那个**无 id** 的占位节点**重建之后仍在**设计图里（★ 不许退化：这正是"挪建筑"的判据）',
-    `重建后设计图节点键=${JSON.stringify((after?.geometry?.nodes ?? []).map((n) => (n.id === undefined ? `<无id:${n.description}>` : n.id)))}`,
+    designSheetPendingRefs(after).includes(PENDING_PATH) && !(after?.geometry?.nodes ?? []).some((n) => n.description === PENDING_PATH),
+    '③ ★★ 那条**无 id** 的"要实现"条目**重建之后仍在**设计图里（住 `meta.goals`，★ 仍不在 `nodes[]`）—— 不许退化："挪建筑"的判据',
+    `重建后 meta.goals 的指代 = ${JSON.stringify(designSheetPendingRefs(after))} · nodes[] = ${JSON.stringify((after?.geometry?.nodes ?? []).map((n) => n.id ?? `<无id:${n.description}>`))}`,
   );
 }
 // ③ 复核：重建后工具层读数不变（那个点仍判"要实现"）
