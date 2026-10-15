@@ -1268,3 +1268,43 @@ MCP 传输/schema 层 · daemon 转发分支；★ **六种 kind 本节点只用
 `t339` **17/0** · `build` ✓ · `verify` **4/4** ✓ · 既有十二证全绿（`t326` 4/4 · `t328` 18/18 · `t329` 12/12 · `t330` 7/7 · `t331` 3/3 ·
 `t332` 10/10 · `t333` 16/16 · `t334` 11/11 · `t335` 14/14 · `t336` 37/37 · `t337` 14/14 · `t338` 13/13）。
 ★ `[未核]`：MCP `tools/list` schema 层 · daemon 转发 · **overlay 链对 id-less goal 的行为** · 真仓 `design/<f>.dsl.json`（**从不存在，全程夹具**）。
+
+---
+
+## 44. 2026-10-16 ★★★ 把 `validateDSL` 接上活入口（`t340` 14/0）—— "先量现状"救了这一步
+
+### 44.1 ★★ 第 0 步 (a)：既有解法 4 处（照它们的口径办）
+`write_gate.ts:543`（落盘前判未登记/前置⇒抛，**错里给"怎么登记"**）· `op_data_spec.ts:385 checkOpSpec`
+（逐 op **写前**键校验、**点名**缺哪些键）· `status_tools.ts:81-83`（先过 `validateProgressEvidence` 再 `saveDSL`）·
+`import_project.ts:1055 allow_design_drop`（**点名丢谁** + 三选一）。
+⇒ 本笔照其口径：**给 error 原文 + "怎么改"** ✓
+
+### 44.2 ★★★ 第 0 步 (b) 现状读数 —— **这一步救了它**
+- `self-2026-10-15` **valid=true/errors=0** · `run82` **valid=true/errors=0**（主 feature 干净）；
+- ★★ **但全量扫描发现**：真仓 feature **`observe-skeleton` 现状 `valid=false`（5 条 `[anchor_broken]`）**；
+  且**既有证 `t329`/`t330` 的夹具 DSL 本身不过 schema**（edges 缺 `id` / files 缺 `responsibility`）。
+⇒ ★★ **若"拦全部"**：会**当场红两张既有证** + 把与本次无关的既有错算到本次头上 ⇒
+  **故改选"只拦本次新引入的"**（`after.errors − 调用前 errors`，**照 `checkOpSpec` 的"只看本次"口径**）。
+⇒ ★★★ **如果我没在规格里要求"先量现状"，它大概率会直接拦全部、然后红两张证** —— 这一步的价值在此。
+
+### 44.3 实现
+`updateFeatureCore` 全量 op 应用完 → 回读落定 DSL → **有新增错则 `saveDSL(backup)` + 抛**（照该文件既有回滚惯例 `182-189`）。
+★ **`edit_dsl` 不走 `write_gate`**（改 DSL 非源码，`update_feature.ts:204`「不给 written_files」）⇒ 两者**不同路径、无先后**；
+`edit_dsl` 内部顺序 = 逐 op 写前 `checkOpSpec` → **全量应用后本闸**。
+
+### 44.4 判据（`t340` **PASS=14 FAIL=0**）
+- ① 经 `edit_dsl` 回滚到含悬空边的快照 ⇒ **被拒**，原文：
+  `拒绝提交（自洽性闸 validateDSL）：…（新增 1 条）… · [dangling_edge] edge "edge_ab".to "node_b" 在 geometry.nodes 中找不到 …★ 怎么改…★ 已回滚`；
+- ② `node/add` 合法写入 ⇒ **成功**、DSL 仍 valid（**没误伤**）；
+- ③ ★ **对照**：绕过本闸直调底层 `rollbackSnapshot` ⇒ 同一条悬空边**真的落进 DSL**（`validateDSL` 当场判 `[dangling_edge]`）⇒ 闸确实在起作用。
+
+### 44.5 ★ 我的裁定 + 两个待办
+- ★ **接受"只拦新增"**：「拦全部」**要等数据先干净**（`observe-skeleton` 5 条 + 两张证夹具），那是另一件事（**选项①留待**）；
+- ★★ **它标出的口径脆弱点是真的**：**"错误文本差集"在重命名时会误判**（改名字 ⇒ 错误消息文本变 ⇒ 被当成"本次新增"）
+  ⇒ 更好的口径 = **按"错误键"（如边的 id）比较，而不是按文本** ⇒ **记为待办**；
+- ★ **真仓一条真缺陷**：`observe-skeleton` 有 **5 条 `[anchor_broken]`**。
+
+### 44.6 读数
+`t340` **14/0** · `build` ✓ · `verify` **4/4** ✓ · **十三证全绿**（数字与基线一致）。
+★ `[未核]`：MCP 传输/`tools/list` schema 层 · daemon 转发分支 ·
+**悬空边在 `edit_dsl` 常规写边路径进不来**（`addEdge:32-37` 查端点、`deleteNode:410` 级联）⇒ ①③只能用 `snapshot rollback` 复现。

@@ -29,6 +29,9 @@ import type { AddFileInput, UpdateFileInput } from './file_ops.js';
 import { checkOpSpec, OP_SPECS, type CheckedOperation } from './op_data_spec.js';
 import { addExpectedApi, updateExpectedApi, deleteExpectedApi, setExpectedApis, setNodeSemantic } from './api_ops.js';
 import { updateStatus } from './status_tools.js';
+// ★★★ T340：**自洽性闸** —— 改设计即校验自洽。判据是现成的 `validateDSL`（`domain/validator.ts:159`，
+//   查 dangling_edge / duplicate_id / anchor_broken / reasoning 引用），**本处只调不改**（判定与 schema 都不动）。
+import { validateDSL } from '../../../domain/validator.js';
 // ★ T334：`status` op 的 `data.evidence` 形状 —— ★ **类型引用**（不新增判据；判据在 `domain/overlay.ts`）。
 import type { ProgressEvidence } from '../../../domain/overlay.js';
 import { addAnnotationByTool, resolveAnnotation } from './annotation_tools.js';
@@ -159,6 +162,14 @@ function updateFeatureCore(input: UpdateFeatureInput): EditResult {
   const backup = JSON.parse(JSON.stringify(original)) as Record<string, unknown>;
   delete backup._sync;
 
+  // ★★★ T340（2026-10-16）：**自洽性闸的基线读数** —— 本次调用**前**的 `validateDSL` 错误集。
+  //   ★ 为什么要基线（而不是"见错就拒"）：★ **实测现状并非全过** —— 真仓 feature `observe-skeleton`
+  //     就有 5 条 `anchor_broken`，且**既有证** `t329` / `t330` 的夹具 DSL 本身就缺 `id`（edges）/
+  //     `responsibility`（files）⇒ 若"拦全部"，会把**与本次改动无关的既有错**也算到本次头上
+  //     ⇒ **拦住一切写入**（含 t329/t330 这两张既有证，违反"既有十三证不许红"）。
+  //   ⇒ 判据取 `after.errors − baseline.errors`：**只拦"本次新引入的"**（`checkOpSpec` 那种"只看本次"的口径）。
+  const baselineErrors = new Set(validateDSL(original).errors);
+
   const results: string[] = [];
   // ★ T160（2026-10-11）：收集每个 op 的**结构化产物**（`EditResult.data`）。
   //   ★★ 为什么必须收：本循环下面**只取 `message` 首行**做摘要 ⇒ op 自己算出来的结构化结果
@@ -185,6 +196,57 @@ function updateFeatureCore(input: UpdateFeatureInput): EditResult {
     throw new Error(
       `操作 ${results.length + 1}/${operations.length} 失败，已回滚全部 ${results.length} 个已应用变更\n` +
         `失败原因: ${(e as Error).message}`,
+    );
+  }
+
+  // ★★★ T340（2026-10-16）：**自洽性闸** —— 改设计即校验自洽。
+  //   ## 位置（为什么在这一处）
+  //   `edit_dsl` 的各 op **逐条 `saveDSL`**（`node_ops` / `edge_ops` / `file_ops` … 各自落盘）
+  //   ⇒ 本路径**没有单一"落盘前"点**。本闸就是这一道**提交前**闸：全量 op 应用完 ⇒ **回读落定后的 DSL**
+  //   跑 `validateDSL`；**有本次新引入的错误** ⇒ **恢复 backup**（★ 照本文件 182-189 那条**既有回滚惯例**）+ 抛。
+  //   ⇒ 净效果 = 「本次改动若让设计变得不自洽 ⇒ 拒，且一个坏字节都不留在盘上」（与 `write_gate` 同款口径）。
+  //   ## 为什么验**落定后的最终态**（而非"仅本次引入的 op"）
+  //   `validateDSL` 查的是**跨引用完整性**（edge→node / semantic.files→node / reasoning→node）——
+  //   这类事实**只有把全部 op 应用完才成立**，逐 op 判会误伤（例：先 add node 再 add edge 指向它）。
+  //   ## 为什么"只拦本次新引入"（见上方 `baselineErrors` 的判据说明）—— 现状并非全过，见那里
+  //   ## 边界（★ 如实标注）
+  //   本闸**不改 `validateDSL` 判定、不改 schema、不碰 overlay 既有行为**（只读 DSL、只调现成校验器）。
+  const draft = getDSL(feature);
+  if (!draft) {
+    // 极端情形（写完回读不到）：fail-closed —— 不许降级放行
+    saveDSL(backup as never);
+    throw new Error(
+      `拒绝提交（自洽性闸）：edit_dsl 写完后**回读不到** feature "${feature}" 的 DSL ⇒ 无法判定自洽性。` +
+        `本次改动已回滚到调用前状态。`,
+    );
+  }
+  const verdict = validateDSL(draft);
+  // ★ 只拦**本次新引入的**错误（`after.errors − baseline.errors`）；本次没新增 ⇒ 放行（既有错不背在本次头上）
+  const newErrors = verdict.errors.filter((e) => !baselineErrors.has(e));
+  if (newErrors.length > 0) {
+    const prefixFix: Record<string, string> = {
+      dangling_edge: 'edge.from / edge.to 指向了不存在的节点 ⇒ 先 `node/add` 那个节点，或把该 edge 改指已存在的 id',
+      duplicate_id: '同一个 node.id 出现两次 ⇒ 改成唯一 id',
+      anchor_broken: 'semantic.files.id 没有对应 geometry 节点 ⇒ 为它 `node/add` 一个同 id 节点，或删掉该 semantic.files 条目',
+      reasoning: 'reasoning 引用的 node / step 不存在 ⇒ 一并修正 reasoning 的 entry / steps / folds',
+    };
+    // ★ 按**错误前缀**给出对症的"怎么改"（`[dangling_edge]` ⇒ 命中 `dangling_edge`；`[reasoning_*]` ⇒ 命中 `reasoning`）
+    const hitKeys = new Set<string>();
+    for (const e of newErrors) {
+      const kw = e.match(/^\[([a-z_]+)\]/)?.[1] ?? '';
+      for (const key of Object.keys(prefixFix)) if (kw.startsWith(key)) hitKeys.add(key);
+    }
+    const howTo = [...hitKeys].map((k) => `  · [${k}*] ${prefixFix[k]}`);
+    saveDSL(backup as never);
+    throw new Error(
+      `拒绝提交（自洽性闸 validateDSL）：本次 edit_dsl 让 feature "${feature}" 的 DSL **变得不自洽**（新增 ${newErrors.length} 条）—— ` +
+        `本仓纪律：设计 DSL 天然应当逻辑自洽（dangling_edge / duplicate_id / anchor_broken / reasoning 引用都算）。\n` +
+        `★ 本次新引入的错误原文（唯一判据 = \`domain/validator.ts:159\`，本次未改它）：\n` +
+        newErrors.map((e) => `  · ${e}`).join('\n') +
+        (howTo.length ? `\n★ 怎么改：\n${howTo.join('\n')}` : '') +
+        `\n★ 本次改动已**回滚到调用前状态**（backup 已恢复，未把不自洽的 DSL 留在盘上）。` +
+        `\n★ 判据范围（只此一条）：**只拦"本次新引入的"错误**（\`after.errors − 调用前 errors\`）；` +
+        `调用前就有的错**不计入本次**（本次未把它改坏 ⇒ 放行）。`,
     );
   }
 
