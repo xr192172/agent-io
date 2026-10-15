@@ -629,6 +629,8 @@ export function assertSourceWriteRegistered(
         `       reason: '完成前置 ${need}',\n` +
         `       operations: [{ type:'status', op:'update', id:'${need}',\n` +
         `                      data:{ status:'done', evidence:{ kind:'attestation', by:'human', at:'<ISO>', why:'<为什么算完成>' } } }] }\n` +
+        `★ 建议（不强制，但请当真）：**不要自己验收自己** —— 发布任务后派**子代理**去完成，**自己来验收**；\n` +
+        `  验收要附**你自己跑过的读数**（命令 + 输出），**不要只读对方的总结**（对方报的常与实况不符）。\n` +
         `  ② 若这个前置判断已过时 ⇒ 用 \`design_intent\` 显式**解除**它（requires 住 overlay = 权威）：\n` +
         `     { action:'set', feature:'${first.feature}', edge_intents:[{ id:'${first.edgeId}', requires: [] }] }   // 空数组 = 解除该边前置\n` +
         `\n★ 本闸**不会替你登记进度、不会自动补前置、也不会降级放行** —— 拒绝就是拒绝。\n` +

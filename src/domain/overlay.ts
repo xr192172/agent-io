@@ -108,6 +108,8 @@ export function validateProgressEvidence(
       `\n    ① { kind:'expectations', all_green:true, unsupported:0 }  —— 机器判（expectations 全绿）` +
       `\n    ② { kind:'reading', command, observed, at }                —— 一条可复跑的读数` +
       `\n    ③ { kind:'attestation', by:'human'|'llm', at, why }        —— 显式人工确认（署名）` +
+      `\n      ★ 建议（不强制，但请当真）：**不要自己验收自己** —— 发布任务后派**子代理**去完成，**自己来验收**；` +
+      `\n        验收时要附**你自己跑过的读数**（命令 + 输出），**不要只读对方的总结**（对方报的常与实况不符）。` +
       `\n  ★ 本校验器**不会**替你自动补一条，也不会把 done 降级成 in_progress。`,
   });
 
