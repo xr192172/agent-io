@@ -910,3 +910,47 @@ C 稿测出"**关卡有名字没内容**"；甲核出**判据体系本身没错*
 
 ### 32.6 `[未核]`
 MCP 传输/schema 层 · daemon 转发分支；★ **六种 kind 本节点只用到 2 种，其余 4 种不声称覆盖**。
+
+---
+
+## 33. 2026-10-16 ★★★ 用户点出我一天没做的事：**先写设计 DSL** —— 实测这条路通了，且"DSL 好写"成立
+
+### 33.1 用户原话（这才是本项目最初设想的主流程）
+*"你先把所有的设计全都转化为设计 DSL，这样的话我们就能去改源码，因为设计 DSL 应该是比较容易写的，
+**书写难度比实际写源码简单**，因为写源码要考虑很多依赖关系，但**设计 DSL 可以忽略这些依赖关系**。"*
+⇒ ★★ **我认这个漏**：我一整天在用文档与代码讨论"该不该加 kind""画板""状态轴"，甚至自己写过
+"**设计的正式住处是 DSL，md 只是草稿**"——**然后就没去做**。设想一条都没进 DSL。
+
+### 33.2 实测（`certs/t336-design-to-diffblocks-cert.mjs`，**PASS=37 FAIL=0**）
+把**三条真实缺口**写成 **5 张决策卡 + 6 条 expectations**（★ **全部经工具层 `edit_dsl` 写入并落盘**）：
+| 缺口 | 写成的形状 |
+|---|---|
+| ① `rename_files` 走自家快照、未接 `write_gate` | `edge-exists`：`rename_files.ts → write_gate.ts`；★ `call-exists`：`renameFilesCore` **应调用** `assertSourceWriteRegistered`（理由逐字：*"只 import 不调用 = **装饰闸**"*） |
+| ② `attestation.source_node_id` **只写不读**（改名失效无代码） | `symbol-exists`：`overlay.ts` 应有 `attestationAppliesTo` |
+| ③ `opl.ts` **拿现状签名喂 LLM 声明契约**（恒真来源） | `call-exists`：`oplIntegrate` 应调用 `assertContractNotFromCode` |
+★ **它写的是"应存在一条边 / 一个调用 / 一个符号"** —— **不碰依赖、不碰类型、不碰实现** ⇒ **用户那句"DSL 可以忽略依赖关系"实测成立**。
+
+### 33.3 对拍（这就是"任务清单"）
+- **方向 1（能绿）**：夹具满足形状 ⇒ 6 条**全判且全绿**（`checked=6 passed=6 failed=0`）⇒ **这些期望既不是"永远红"也不是"永远绿"**；
+  满足时**无差异块**、6 文件全在 `clean_files` ✓
+- **方向 2（能红，三个偏离各测一种 kind）**：摘掉闸调用 ⇒ `failed=1`（块 `arch_layer:core`/`rename_files.ts`）；
+  摘掉 write_gate 依赖 ⇒ `failed=2`；把 `attestationAppliesTo` 改名 ⇒ `failed=1`（块 `arch_layer:service`/`overlay.ts`）
+  ⇒ ★ **每次都真的产出了差异块**（贴了块名 + `expectation_failures`）✓
+- ★★★ **对拍输出自带的一条 `notes`（把方法论说穿了）**：
+  > *"本次差异**全部来自"人写的验收"**，扫描侧对账是干净的 —— ★ **这是常态：设计 DSL 的结构是从扫描 fork 的**，
+  > `expected_apis` 与代码同源 ⇒ 它那一路对出来必然一致；**真正会不一样的只有人写的意图（决策卡上的验收）**。"*
+  ⇒ ★★ **所以"写设计"的全部价值就在写 `acceptance` / `expectations`。**
+
+### 33.4 ★★ 对拍精确地指出了一条真任务
+三条缺口写进去后，**现状只有 1 条红**：
+`rename_files.ts` 的 **`renameFilesCore()` 没有调用 `assertSourceWriteRegistered()`**（详情逐字："该符号没有任何出调用"）。
+而 `rename_file.ts` / `symbol_move.ts` **已经调用了**（L4）⇒ ★ **对拍把"三条缺口"精确收敛成
+"具体一个文件里、具体一个函数、少了一个调用"** —— 这就是"分区域重写"里那个"区域"。
+
+### 33.5 另一条 `notes`（如实记）
+`baselineDrift`：本 feature **没有基线事实**（`baseline/<feature>.facts.json` 不存在）⇒ **线 1（代码相对基线的变更）判不了**；
+★ 修法（系统自己给的）：重新 `import_project` 锚定即可。
+
+### 33.6 读数
+九证全绿（`t326` 4/4 · `t328` 18/18 · `t329` 12/12 · `t330` 7/7 · `t331` 3/3 · `t332` 10/10 · `t333` 16/16 ·
+`t334` 11/11 · `t335` 14/14）+ 新证 `t336` **37/37** · **`src/` 零改动** · **真实设计数据未被写**（`run82.json`/`overlay` mtime 未变）。
