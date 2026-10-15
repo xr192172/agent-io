@@ -318,6 +318,21 @@ export const goObservePack: ObserveLangPack = {
     '探针包会**拷进**被测工程的 `internal/camprobe/`，注入的 import 指向它 ⇒ **被测工程的 go.mod 无需任何改动**；`uninstrument` 会连该目录一起删。',
   ],
   manifestFiles: ['go.mod'],
+  // ★★★ T319（2026-10-15）：**Go 侧原先没有 sinkHint** ⇒ 掉进 renderer 的 else 分支，
+  //   被印上**TS 专用的接法**（`import { setGlobalProbeSink, TSProbeCapture } from '…'`）——
+  //   `import` 在 Go 里不是这个语法，照抄必错。★ 这正是 T269 那句警告的翻版：
+  //   「恒印 TS 那套会把用户引到一条死路」（Python 已经单独立过一条，Go 漏了）。
+  sinkHint: [
+    '  ★ 探针已就位，但【默认不出事件】：Go 侧没接 sink 时 camprobe.Capture 是 no-op。',
+    '    ⇒ 要真观测，被测项目须在入口处接一次 sink（Go 语法，注意下面第 2 行的**别名**）：',
+    '      import camprobe "<你的 module 名>/internal/camprobe"   // ★ 必须起别名，见下',
+    '      s, err := camprobe.NewSink("events.jsonl"); if err != nil { log.Fatal(err) }',
+    '      camprobe.SetGlobalSink(s); defer s.Close()',
+    '  ★★ 为什么**必须写别名** `camprobe "…"`：探针拷进来落在 `internal/camprobe/` 目录，',
+    '     但目录里的文件声明的是 `package probe` ⇒ 目录名 ≠ 包名。',
+    '     不写别名会报一个很误导的错："…/internal/camprobe" imported as probe and not used。',
+    '     （本仓插桩器自己在注入端就是 `import camprobe "<module>/internal/camprobe"`。）',
+  ],
   async instrument(root, opts) {
     const out = await instrumentGoProject(root, {
       dryRun: opts.dryRun,

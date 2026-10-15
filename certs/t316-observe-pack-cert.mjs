@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * cert T316 —— **observe 语言包出生证**（TS/JS 与 Python 两份；Go 待 T311）。
+ * cert T316 —— **observe 语言包出生证**（TS/JS · Python · Go 三份）。
  *
  * ## 为什么要有它（本仓的"语言包"到底该被什么判住）
  * 骨架（`instrument_skeleton.ts`）把**语言无关**的部分收成一份之后，"加一门语言"只剩
@@ -44,6 +44,7 @@ const REPO = path.resolve(HERE, '..');
 const require = createRequire(import.meta.url);
 const instr = require(path.join(REPO, 'dist/src/infrastructure/analysis/observe/instrument.js'));
 const instrPy = require(path.join(REPO, 'dist/src/infrastructure/analysis/observe/instrument_py.js'));
+const instrGo = require(path.join(REPO, 'dist/src/infrastructure/analysis/observe/go_instrument.js'));
 
 const TMP_BASE = path.join(HERE, '.work/tmp');
 fs.mkdirSync(TMP_BASE, { recursive: true });
@@ -87,7 +88,7 @@ console.log('=== T316 · observe 语言包出生证 ===');
 
 // ══════════ 1) TS/JS 包 ══════════
 {
-  console.log('\n── [1/3] TS/JS 包（8 扩展名里的 JS 家族 + TS 家族）──');
+  console.log('\n── [1/4] TS/JS 包（8 扩展名里的 JS 家族 + TS 家族）──');
   const work = fs.mkdtempSync(path.join(TMP_BASE, 'ts-'));
   mk(work, TS_FILES);
   const before = snap(work, TS_FILES);
@@ -126,7 +127,7 @@ console.log('=== T316 · observe 语言包出生证 ===');
 
 // ══════════ 2) T314 语法分叉 ══════════
 {
-  console.log('\n── [2/3] T314：注入文本必须随【宿主语法】分叉 ──');
+  console.log('\n── [2/4] T314：注入文本必须随【宿主语法】分叉 ──');
   const work = fs.mkdtempSync(path.join(TMP_BASE, 'syn-'));
   const body = `export function f(x) {\n  try { return x; } catch (e) { return 'c'; }\n}\n`;
   fs.writeFileSync(path.join(work, 'a.mjs'), body, 'utf8');
@@ -141,7 +142,7 @@ console.log('=== T316 · observe 语言包出生证 ===');
 
 // ══════════ 3) Python 包 ══════════
 {
-  console.log('\n── [3/3] Python 包 ──');
+  console.log('\n── [3/4] Python 包 ──');
   const work = fs.mkdtempSync(path.join(TMP_BASE, 'py-'));
   mk(work, PY_FILES);
   const before = snap(work, PY_FILES);
@@ -178,6 +179,119 @@ console.log('=== T316 · observe 语言包出生证 ===');
   check('④ 还原逐字节相同', bad.length === 0, bad.join(',') || '全部相同');
 }
 
+// ══════════ 4) Go 包 ══════════
+// ★ Go 与上面两门**架构完全不同**：插桩器是**独立的 Go 程序**（`go run ./cmd/instrument`），
+//   探针包要**拷进被测工程**（`internal/camprobe/`），注入的 import 指向它。
+//   ⇒ 这一节要额外证明"**拷进来的探针包 + 注入的 import 真的能编译能跑**"——
+//     那正是 T268 之后最容易悄悄坏掉的一环（换个机器/换盘符就失效的老路已废）。
+{
+  console.log('\n── [4/4] Go 包（外部进程 + 探针包拷入被测工程）──');
+  const work = fs.mkdtempSync(path.join(TMP_BASE, 'go-'));
+  const MODULE = 'camfixture';
+  const GO_FILES = {
+    'go.mod': `module ${MODULE}\n\ngo 1.21\n`,
+    'main.go': `package main
+
+import "fmt"
+
+func add(a, b int) int { return a + b }
+
+func sign(n int) string {
+	if n > 0 {
+		return "pos"
+	}
+	return "neg"
+}
+
+// 命名返回值 + defer/recover（T279 那条路的现场）
+func risky(x int) (out string) {
+	defer func() {
+		if r := recover(); r != nil {
+			out = "recovered"
+		}
+	}()
+	if x < 0 {
+		panic("neg")
+	}
+	return "ok"
+}
+
+func main() {
+	fmt.Println(add(1, 2), sign(-1), risky(5), risky(-1))
+}
+`,
+  };
+  mk(work, GO_FILES);
+  const before = snap(work, GO_FILES);
+  const go = (args) => spawnSync('go', args, { cwd: work, encoding: 'utf8' });
+
+  const base = go(['run', '.']);
+  check('① 基线可跑（先证明夹具本身是好的）', base.status === 0, `exit=${base.status} ${(base.stderr || '').split('\n')[0]}`);
+
+  const out = await instrGo.instrumentGoProject(work, { dryRun: false });
+  const sites = out.files.reduce((n, f) => n + (f.sites?.length ?? 0), 0);
+  const errs = out.files.filter((f) => f.error);
+  check('插桩：有探针点且无文件报错', sites > 0 && errs.length === 0, `sites=${sites} 文件=${out.files.length} 报错=${errs.length}`);
+
+  const after = go(['run', '.']);
+  check('① 插桩后宿主仍跑得起来（探针不打断宿主）', after.status === 0, `exit=${after.status} ${(after.stderr || '').split('\n')[0].slice(0, 160)}`);
+  check('② 插桩后 stdout 逐字不变', after.stdout === base.stdout, `base=${JSON.stringify(base.stdout.trim())} now=${JSON.stringify(after.stdout.trim())}`);
+
+  // ③ 接 sink ⇒ 真出事件。★ 用被测工程**自己**的 go test 驱动：探针包已拷进它 ⇒ 它能直接 import。
+  const ev = path.join(work, 'events.jsonl');
+  fs.writeFileSync(
+    path.join(work, 'sink_cert_test.go'),
+    `package main
+
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	// 【本证自己撞上过的坑，故在此标明】
+	// 必须起**显式别名** camprobe：探针落在 internal/camprobe/ 目录，但里面声明的是 package probe
+	// ⇒ 目录名 != 包名；不起别名会报 imported as probe and not used（T319）。
+	camprobe "${MODULE}/internal/camprobe"
+)
+
+func TestGoSinkCaptures(t *testing.T) {
+	ev := ${JSON.stringify(ev.replaceAll('\\', '/'))}
+	s, err := camprobe.NewSink(ev)
+	if err != nil {
+		t.Fatal(err)
+	}
+	camprobe.SetGlobalSink(s)
+	add(1, 2)
+	sign(-1)
+	risky(5)
+	if err := s.Close(); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(ev)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Count(string(data), "\\n") == 0 {
+		t.Fatal("接 sink 后零事件（探针就位 ≠ 有数据）")
+	}
+	t.Logf("事件行数=%d", strings.Count(string(data), "\\n"))
+	_ = filepath.Join
+	_ = os.Getenv
+}
+`,
+    'utf8',
+  );
+  const goTest = go(['test', '.', '-run', 'TestGoSinkCaptures', '-count=1', '-v']);
+  check('③ 接 sink ⇒ events 行数 > 0', goTest.status === 0 && lines(ev) > 0, `exit=${goTest.status} 行数=${lines(ev)} ${(goTest.stderr || '').split('\n')[0].slice(0, 140)}`);
+
+  await instrGo.restoreGoProject(work);
+  const bad = changed(before, snap(work, GO_FILES));
+  check('④ 还原逐字节相同', bad.length === 0, bad.join(',') || '全部相同');
+  // ★ T296：拷进去的探针包必须**连目录一起**删掉（它是生成物，不该留在被测工程里）
+  check('④ 拷入的探针包已删除（连空掉的 internal/ 一起）', !fs.existsSync(path.join(work, 'internal')), fs.existsSync(path.join(work, 'internal')) ? 'internal/ 仍在' : '已清理');
+}
+
 try {
   fs.rmSync(TMP_BASE, { recursive: true, force: true });
 } catch {
@@ -186,4 +300,4 @@ try {
 
 console.log(`\n════ 汇总：PASS=${P}  FAIL=${F}`);
 if (F > 0) process.exit(1);
-console.log('★ 两份语言包都满足：能跑 / 不改行为 / 真出事件 / 可还原 —— 骨架的「语言包契约」成立。');
+console.log('★ 三份语言包（TS/JS · Python · Go）都满足：能跑 / 不改行为 / 真出事件 / 可还原 —— 骨架的「语言包契约」成立。');

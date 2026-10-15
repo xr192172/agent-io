@@ -2936,3 +2936,29 @@
         ★★ **单张证【不该】自己去改宿主的进程环境** —— 那等于"测试脚本自己把安全阀拆了"，
           正是本仓 ARC-7 最反对的形态（把"检查不到"伪装成"检查通过"）。
       ⇒ ★ 这也是一条**环境类**结论：本仓的"全量绿"在带删除闸的宿主上**默认拿不到**，报告时必须说明口径。
+
+- [x] **T311 ★★ 【已做】给 Go 侧补同一份骨架验收（④ sink 契约 + ⑤ 错误传播）—— `observe-lang-go/probe/skeleton_cert_test.go`**
+      *(来源：第 2 步收尾；TS 侧已做（`certs/observe-skeleton-cert.mjs`），Go 侧原先没有。)*
+      ⇒ **做法**：Go 侧有 `go test` 基建 ⇒ **用语言自带的量具**，不为了"形式统一"去借壳（TS 侧没有测试框架才写 certs）。
+      ⇒ 三条（与 TS 侧同源判据）：
+        · **④-1** `TestSkeletonNoSinkIsNoOp`：**探针就位 ≠ 有数据** —— 没接 sink 时 `Capture` 是 no-op（0 事件、不报错、连目录都不建）；
+        · **④-2** `TestSkeletonSinkEmitsEvents`：接上 `NewSink` + `SetGlobalSink` ⇒ events 行数 > 0 且含探针名（实测 **2 行**）；
+        · **⑤** `TestSkeletonSinkFailureIsLoud`：sink 写不出去时**宿主不崩**且 **stderr 有话说**（实测 **390 字节**，含探针名）。
+      ⇒ **"sink 不可写"的取法**：`Close()` 之后再 `Emit` —— `os.File` 已置 nil，Go 的 `(*File).Write` 对 nil 接收者返回 `ErrInvalid`（**不 panic**）。
+        对应真实场景：**进程收尾时探针还在热路径上跑**。（实测确认过：不崩，错误经 `reportProbeError` 打到 stderr。）
+      ⇒ **隔离**：`Capture` 的路由优先级是 **Tiered → Sink → no-op** ⇒ 用例必须**同时清两个**全局
+        （只清 Sink 而留着 Tiered，会被同包别的测试留下的 Tiered 悄悄接管）。
+        ★ 已用 `go test -shuffle=on -count=1` **打乱顺序复跑**，14 条全过 ⇒ 隔离是真的。
+      ⇒ **白盒一处**：为让"第 1 次必打"，把 `reportProbeError` 的限流计数归零（同包，仅测试用；不改产品行为）。
+      ⇒ **门**：`go test ./...` **全绿** · `go build ./...` 退 0 · `npm run verify` 4/4 ✓
+
+- [ ] **T319 ★★ 【已修·同族】Go 侧**没有** `sinkHint` ⇒ 回执给 Go 用户印上**TS 专用接法**（`import { setGlobalProbeSink … }`，Go 里根本不是合法语法）**
+      *(来源：给 `certs/t316-observe-pack-cert.mjs` 加 Go 节时撞上 —— 我照着回执那套写，结果自己写不出来。)*
+      ⇒ **根因**：`renderInstrumentReport` 的三段式：语言包自带 → scope 专用 → **TS 兜底**。
+        `pyObservePack` 单独立了一条（当初就是为这件事立的），**`goObservePack` 漏了** ⇒ 掉进 else 分支。
+      ⇒ ★ 这正是 `handlers.ts` 里 T269 注释早就警告过的翻版：「**恒印 TS 那套会把用户引到一条死路**」。
+      ⇒ **顺带撞上第二件事**：拷进去的探针在 `internal/camprobe/` **目录**里，但文件声明的是 `package probe`
+        ⇒ **目录名 ≠ 包名**；不起别名会报一个很误导的错 `"…/internal/camprobe" imported as probe and not used`。
+        （插桩器注入端本来就是 `import camprobe "<module>/internal/camprobe"`，是**带别名**的。）
+      ⇒ **修**：`goObservePack` 补 Go 语法的 `sinkHint`，并把「**必须起别名**」单独写成一行说明。
+      ⇒ **判据**：`src/infrastructure/analysis/observe/observe_langs.ts` 的 `goObservePack.sinkHint` 非空且为 Go 语法。
