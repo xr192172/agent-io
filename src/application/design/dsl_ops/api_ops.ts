@@ -233,11 +233,12 @@ export function setNodeSemantic(input: SetNodeSemanticInput): EditResult {
   const file = dsl.semantic?.files.find(f => f.id === file_id);
   if (!file) throw new Error(`文件 "${file_id}" 不存在`);
 
-  if (sync_status) {
-    const targetStatus = file.status || node.status || 'draft';
-    node.status = targetStatus;
-    file.status = targetStatus;
-  }
+  // ★★★ T328（2026-10-15，进度轴收归）：**不再手写 `node.status`/`file.status` 的"状态同步"**。
+  //   · 它属于**派生**（把一个已有进度**复制**给另一个对象），不是"人显式设进度" ⇒ 按分类法**降为读侧默认**（不落库）；
+  //   · 进度有唯一权威（`overlay` 锚点的 `progress`），base 上两份都只是 `applyOverlay` 的**投影**；
+  //   · 而文件节点在 `geometry.nodes` 与 `semantic.files` 里**共用同一个 id**（同一锚点）⇒ 一次投影两处，
+  //     手写同步 = **第二处判据**（会漂移，且会经 `seedOverlayFromDsl` 把非投影值灌回 `progress`、**绕过 evidence 闸**）。
+  //   ★ 行为变化：`node_id` 与 `file_id` **不同 id** 时不再被强制对齐（各自投影各自的 `progress`）—— 见本次报告。
 
   saveDSL(dsl);
 
@@ -246,7 +247,8 @@ export function setNodeSemantic(input: SetNodeSemanticInput): EditResult {
       `已绑定节点 "${node_id}" 与文件 "${file_id}"`,
       `节点标签: ${node.label}`,
       `文件路径: ${file.path}`,
-      sync_status ? `状态同步: ${node.status}` : '状态不同步',
+      // ★ T328：不再同步 ⇒ 这里读的是 base 上的**投影值**（不是被本 op 改出来的）。
+      sync_status ? `状态（读 base 投影）: ${node.status ?? '-'}` : '状态不同步',
     ].join('\n'),
     feature,
   };

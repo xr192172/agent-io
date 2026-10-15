@@ -11,6 +11,9 @@ import { removeFileFromDsl } from '../../../domain/dsl_removal.js';
 import { dropLifecycleFromOverlay } from '../../../infrastructure/storage_overlay.js';
 import { getDSL, saveDSL } from '../../../infrastructure/storage.js';
 import type { EditResult } from './edit_result.js';
+// ★★★ T328（2026-10-15，进度轴收归）：进度的**唯一权威写入**是 `overlay` 锚点的 `progress`
+//   （+ evidence 闸）。file 的 add/update 只是**入口** ⇒ 一律路由到 `updateStatus`，**不再裸写** base 的 `SemanticFile.status`。
+import { updateStatus } from './status_tools.js';
 
 // ─────────────────────────────────────────────────────────────
 // add_file：添加语义文件
@@ -49,11 +52,15 @@ export function addFile(input: AddFileInput): EditResult {
     expected_apis,
     expected_deps,
     expected_behavior,
-    status,
+    // ★★★ T328：**不再把 `status` 落进 base**（旧轴直写）。进度改走权威（下面的 `updateStatus`）——
+    //   它同时也是 evidence 闸的入口：不带证据置 `done` ⇒ 当场拒（"不许默默勾上"）。
   };
 
   dsl.semantic.files.push(file);
   saveDSL(dsl);
+
+  // ★★★ T328：进度走权威（`overlay.progress` + 闸 + 投影回 base）；文件已落盘 ⇒ `updateStatus` 能查到它。
+  if (status !== undefined) updateStatus({ feature, node_id: file_id, status });
 
   return {
     message: [
@@ -106,7 +113,7 @@ export function updateFile(input: UpdateFileInput): EditResult {
   if (responsibility !== undefined) file.responsibility = responsibility;
   if (expected_deps !== undefined) file.expected_deps = expected_deps;
   if (expected_behavior !== undefined) file.expected_behavior = expected_behavior;
-  if (status !== undefined) file.status = status;
+  // ★★★ T328：进度**不在此裸写** `SemanticFile.status`（旧轴/base）—— 见下方 saveDSL 后的 `updateStatus`。
   // ★★★ T181：生命周期标记（★ 校验与写入**都只有这一处**，`archive_node` 共用同一个 `assertLifecycle`）。
   //   ★★ **合并写、非覆盖** —— 覆盖会把 `merged_from`/`archive_id` 等历史抹掉（三方评审指出）。
   //   ★★ 写 `"archived"` 会被 `assertLifecycle` 拒（T183：那个值已从类型里删掉 ——
@@ -118,6 +125,12 @@ export function updateFile(input: UpdateFileInput): EditResult {
   }
 
   saveDSL(dsl);
+
+  // ★★★ T328（进度轴收归）：**进度改走权威** —— 唯一权威住 `overlay` 锚点的 `progress`，
+  //   base 上的 `SemanticFile.status` 只是 `applyOverlay` 的**投影**。裸写 base 会在
+  //   `rebuild_design=true` 时被冲掉，且会经 `seedOverlayFromDsl` 灌进 `progress`、**绕过 evidence 闸**。
+  //   ⇒ 路由到唯一写函数 `updateStatus`（自带 evidence 闸与投影；它同时接受 semantic-only 的文件 id）。
+  if (status !== undefined) updateStatus({ feature, node_id: file_id, status });
 
   return {
     message: `已更新文件: ${file_id}\n路径: ${file.path}\n职责: ${file.responsibility}`,

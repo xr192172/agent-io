@@ -7,6 +7,9 @@ import { getDSL, saveDSL } from '../../../infrastructure/storage.js';
 import type { EditResult } from './edit_result.js';
 // ★★ 2026-10-09（T74）：`expectations` 会被程序判 ⇒ 写进来时校验（坏形状响亮拒绝）
 import { assertValidExpectations } from '../../../domain/expectation.js';
+// ★★★ T328（2026-10-15，进度轴收归）：进度的**唯一权威写入**是 `overlay` 锚点的 `progress`
+//   （+ evidence 闸）。node 的 add/update 只是**入口** ⇒ 一律路由到 `updateStatus`，**不再裸写** base 的 `Node.status`。
+import { updateStatus } from './status_tools.js';
 
 /** 形状卡轻校验：type 枚举 + properties/items 递归（防止渲染垃圾） */
 function assertValidSchema(s: AnimationValueSchema, path: string): void {
@@ -121,7 +124,8 @@ export function addNode(input: AddNodeInput): EditResult {
     style: Object.keys(style).length > 0 ? style : undefined,
     type,
     description,
-    status,
+    // ★★★ T328：**不再把 `status` 落进 base**（旧轴直写）。进度改走权威（下面的 `updateStatus`）——
+    //   它同时也是 evidence 闸的入口：不带证据置 `done` ⇒ 当场拒（"不许默默勾上"）。
     swimlane,
     content,
     sub_dsl,
@@ -134,6 +138,9 @@ export function addNode(input: AddNodeInput): EditResult {
 
   dsl.geometry.nodes.push(node);
   saveDSL(dsl);
+
+  // ★★★ T328：进度走权威（`overlay.progress` + 闸 + 投影回 base）；节点已落盘 ⇒ `updateStatus` 能查到它。
+  if (status !== undefined) updateStatus({ feature, node_id, status });
 
   const lines = [
     // ★ 首行是 `updateFeatureCore` **唯一透出**的那行 ⇒ 内联决策卡的「署名/未署名」必须进首行，否则静默。
@@ -275,7 +282,7 @@ export function updateNode(input: UpdateNodeInput): EditResult {
   if (height !== undefined) node.height = height;
   if (type !== undefined) node.type = type;
   if (description !== undefined) node.description = description;
-  if (status !== undefined) node.status = status;
+  // ★★★ T328：进度**不在此裸写** `Node.status`（旧轴/base）—— 见下方 saveDSL 后的 `updateStatus`。
   if (swimlane !== undefined) node.swimlane = swimlane;
   if (content !== undefined) node.content = content;
   if (sub_dsl !== undefined) node.sub_dsl = sub_dsl;
@@ -332,6 +339,12 @@ export function updateNode(input: UpdateNodeInput): EditResult {
   if (opacity !== undefined) node.style.opacity = opacity;
 
   saveDSL(dsl);
+
+  // ★★★ T328（进度轴收归）：**进度改走权威** —— 唯一权威住 `overlay` 锚点的 `progress`，
+  //   base 上的 `Node.status` 只是 `applyOverlay` 的**投影**。裸写 base 会在 `rebuild_design=true`
+  //   时被冲掉，且会经 `seedOverlayFromDsl` 灌进 `progress`、**绕过 evidence 闸**。
+  //   ⇒ 路由到唯一写函数 `updateStatus`（它自带 evidence 闸与投影）。
+  if (status !== undefined) updateStatus({ feature, node_id, status });
 
   const lines = [
     `已更新节点: ${node_id}`,

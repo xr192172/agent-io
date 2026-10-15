@@ -114,7 +114,11 @@ function narrateStepCore(input: NarrateStepInput): NarrateStepResult {
         path: `${title}-叙事`,
         responsibility: `${title}：把「${file}」讲成人话的叙事砖（积木黑盒：分镜 ${scenes.length} 镜）`,
         expected_apis: scenes.map((s) => ({ name: s.title, signature: `叙述「${s.title}」` })),
-        status: 'done',
+        // ★★★ T328（2026-10-15，进度轴收归）：**不再把 `status: 'done'` 落进 base**。
+        //   · 它是**生成物默认值**（"砖刚生成出来 ⇒ 完成"），是**派生**、不是人对"做到哪一步"的判断
+        //     ⇒ 与 `import_project` 的扫描默认 `'done'` **同款**，一并**降为读侧默认**（不落库）。
+        //   · ★ 关键：留在这里会被 `seedOverlayFromDsl` 读进 `overlay.progress`，**绕过 evidence 闸**
+        //     （"不许默默勾上"）—— 即"base 直写 → 首次迁移灌进权威"的静默通道，必须堵死。
         layer: 'feature',
       });
       saveDSL(dsl, 'mcp');
