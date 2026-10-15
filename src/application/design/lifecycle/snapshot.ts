@@ -188,7 +188,11 @@ export function listSnapshots(input: ListSnapshotsInput): ListSnapshotsResult {
         file,
         node_count: data.geometry?.nodes?.length ?? 0,
         edge_count: data.geometry?.edges?.length ?? 0,
-        status: data.status ?? 'draft',
+        // ★★★ 2026-10-15（进度轴收归，T328）：原先逐字 `data.status ?? 'draft'` —— 那是**直接读旧轴**
+        //   （而扫描侧自 T328 起**不再落** doc 级 `status`）⇒ 这里改走**唯一读侧口径**
+        //   `resolveDiagramStatus`（`domain/geometry.ts`）：有 `status` 就用它，没有则按 id 判
+        //   （`imported_` ⇒ `'done'`，其余 ⇒ `'draft'`）⇒ 历史快照的读数与原先一致。
+        status: resolveDiagramStatus(data),
       });
     } catch {
       // 跳过无法解析的文件

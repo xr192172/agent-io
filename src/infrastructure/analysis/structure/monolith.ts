@@ -584,7 +584,6 @@ export function buildSplitPreviewDsl(
       width: contW,
       height: contH,
       type: 'module',
-      status: isCrit ? 'in_progress' : 'done',
       description: r.suggestion,
       style: {
         bg: isCrit ? 'rgba(233,69,96,0.08)' : 'rgba(255,152,0,0.08)',
@@ -605,7 +604,6 @@ export function buildSplitPreviewDsl(
         width: PV_NODE_W,
         height: PV_NODE_H,
         type: 'file',
-        status: 'draft',
         description: `声明: ${c.decls.join(', ')}\n内聚引用: ${c.internal_refs}`,
         style: { borderRadius: 6 },
       });
@@ -637,7 +635,13 @@ export function buildSplitPreviewDsl(
     feature,
     version: '1.0.0',
     title: `拆分建议预览（warning≥${warn} 行 / critical≥${crit} 行）`,
-    status: 'draft',
+    // ★★★ 2026-10-15（进度轴收归，T328）：**不再落 doc 级 `status: 'draft'`** ——
+    //   它是**扫描/结构算出来的**预览件（`id` 是 `${feature}_split_preview`，不是真的设计进度）⇒
+    //   按本仓分类法属"可再生的派生字段"⇒ 降为读侧默认（`domain/geometry.ts#resolveDiagramStatus`
+    //   对非 `imported_` 的 id 读作 `'draft'` ⇒ **读出来的值与原先一致**，但不占 base 的字段）。
+    //   ★ 同一处上方两个节点级的 `status`（`isCrit ? 'in_progress' : 'done'` / `'draft'`）也一并摘掉：
+    //     那两处更离谱 —— 它们把"**超标严重度**"塞进了"**实现进度**"这个字段（一个名字两个问句）。
+    //     视觉区分本来就走 `style.bg/border`（见上），不依赖 `status`。
     geometry: {
       layout: 'free',
       width: Math.max(800, PV_PAD * 4 + PV_COLS * PV_NODE_W + (PV_COLS - 1) * PV_GAP_X),

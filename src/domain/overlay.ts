@@ -36,6 +36,7 @@ export function hasAnchorPayload(a: OverlayAnchor): boolean {
     a.attributes ||
     a.lifecycle ||
     a.progress ||
+    a.progress_evidence ||
     a.signature ||
     a.stale ||
     a.orphaned ||
@@ -55,6 +56,102 @@ export function computeFileSignature(
     String(lineCount ?? 0),
   ].join('\n');
   return createHash('sha1').update(parts).digest('hex').slice(0, 12);
+}
+
+/**
+ * ★★★ **置 `progress='done'` 时必须附的证据**（T328，2026-10-15）—— 「不许默默勾上」的机制化。
+ *
+ * ## 为什么必须有它（本仓已证过的一类腐坏）
+ * md todo 侧的历史读数：**26 勾 vs 77 未勾**，而"勾了"≠"做了" —— 说明
+ * **一个能被随手写上去的 `done` 没有任何判断力**。⇒ 所以 `done` 不许是"默认可写枚举"，
+ * 必须**带一条能被复核的证据**（`docs/replan-2026-10-15.md` §9.3 / §10.3 定死**只许三档**）。
+ *
+ * ## 三档（`kind` 判别；★ 不许第四种，也**不许降级为"默认下沉"**）
+ * · `expectations` —— **机器判**：该锚点/决策卡的 `expectations` 全绿。
+ *   ★ 形状里钉死 `all_green: true` 与 `unsupported: 0`：`unsupported` 不为 0 就是"判不了"，
+ *   而"判不了"**不是**"通过"（本仓头号病：把"没判"读成"通过"）。
+ * · `reading` —— **半自动**：附一条**可复跑的读数**（跑什么命令、看到什么、什么时候）。
+ * · `attestation` —— **诚实兜底**：**显式人工确认**（谁说的 `by` + 什么时候 `at` + 为什么算完成 `why`）。
+ *
+ * ## 它住哪
+ * 与 `progress` 同层、挂在**锚点**上（`OverlayAnchor.progress_evidence`），落盘进
+ * `<feature>.overlay.json` ⇒ 与进度**同生共死**：`rebuild_design=true` 重建时一起保留。
+ * ★ 不落 base：它跟的是"人/工具的那句判断"，而 base 可再生成（与 `progress` 同理）。
+ */
+export type ProgressEvidence =
+  /** ① 机器判：expectations 全绿且 unsupported==0 */
+  | { kind: 'expectations'; all_green: true; unsupported: 0; ref?: string }
+  /** ② 半自动：一条可复跑的读数 */
+  | { kind: 'reading'; command: string; observed: string; at: string }
+  /** ③ 诚实兜底：显式人工确认（署名 + 时间 + 为什么） */
+  | { kind: 'attestation'; by: 'human' | 'llm'; at: string; why: string };
+
+/**
+ * ★★★ **"不许默默勾上"的校验器**（T328）—— 判据只住这一处。
+ *
+ * 规则逐字：`progress === 'done'` 且**没有** `evidence` ⇒ **拒绝**（`ok:false` + 说清理由）。
+ * ★ **不静默、不自动补**：本函数**不**替调用方造一条证据，也**不**把 `done` 悄悄降级成
+ * `in_progress` —— 拒绝就是拒绝（§2.3「不报错的错」的反面）。
+ * ★ `progress !== 'done'` ⇒ 放行（`draft` / `in_progress` 不需要证据）；但**若附了 evidence**，
+ * 仍校验其形状 —— 否则会存进一条"看着像证据其实残缺"的记录（同族：宁可拒也不存半条）。
+ */
+export function validateProgressEvidence(
+  progress: DiagramStatus | undefined,
+  evidence: ProgressEvidence | undefined,
+): { ok: true } | { ok: false; reason: string } {
+  const bad = (why: string): { ok: false; reason: string } => ({
+    ok: false,
+    reason:
+      `拒绝：progress='done' 必须带一条 evidence（三档之一），${why}。` +
+      `\n  ★ 为什么（不是形式主义）：一个能被随手写上去的 done 是"没有判断力"的（md todo 侧 26 勾 vs 77 未勾，` +
+      `"勾了"≠"做了"）。\n  ★ 三档（只许这三档）：` +
+      `\n    ① { kind:'expectations', all_green:true, unsupported:0 }  —— 机器判（expectations 全绿）` +
+      `\n    ② { kind:'reading', command, observed, at }                —— 一条可复跑的读数` +
+      `\n    ③ { kind:'attestation', by:'human'|'llm', at, why }        —— 显式人工确认（署名）` +
+      `\n  ★ 本校验器**不会**替你自动补一条，也不会把 done 降级成 in_progress。`,
+  });
+
+  if (progress !== 'done') {
+    if (evidence === undefined) return { ok: true };
+    return validateEvidenceShape(evidence);
+  }
+  if (evidence === undefined) {
+    return bad('而这次一个 evidence 都没给');
+  }
+  return validateEvidenceShape(evidence);
+}
+
+/** evidence 的**形状**校验（三档各自必填字段；★ 与 `validateProgressEvidence` 同属一条判据链） */
+function validateEvidenceShape(evidence: ProgressEvidence): { ok: true } | { ok: false; reason: string } {
+  const no = (why: string): { ok: false; reason: string } => ({ ok: false, reason: `拒绝：evidence 形状不完整 —— ${why}` });
+  const e = evidence as Partial<Record<string, unknown>> & { kind?: unknown };
+  switch (e.kind) {
+    case 'expectations':
+      if (e.all_green !== true) return no(`kind='expectations' 要求 all_green:true（实得 ${JSON.stringify(e.all_green)}）`);
+      if (e.unsupported !== 0) {
+        return no(
+          `kind='expectations' 要求 unsupported:0（实得 ${JSON.stringify(e.unsupported)}）` +
+            ` —— unsupported>0 = "还有些没判"，而"没判"不是"通过"`,
+        );
+      }
+      return { ok: true };
+    case 'reading':
+      if (!nonEmpty(e.command)) return no(`kind='reading' 要求 command 非空（跑什么）`);
+      if (!nonEmpty(e.observed)) return no(`kind='reading' 要求 observed 非空（看到什么）`);
+      if (!nonEmpty(e.at)) return no(`kind='reading' 要求 at 非空（什么时候跑的）`);
+      return { ok: true };
+    case 'attestation':
+      if (e.by !== 'human' && e.by !== 'llm') return no(`kind='attestation' 要求 by:'human'|'llm'（实得 ${JSON.stringify(e.by)}）`);
+      if (!nonEmpty(e.at)) return no(`kind='attestation' 要求 at 非空`);
+      if (!nonEmpty(e.why)) return no(`kind='attestation' 要求 why 非空（为什么算完成）`);
+      return { ok: true };
+    default:
+      return no(`kind 必须是 'expectations' | 'reading' | 'attestation' 之一（实得 ${JSON.stringify(e.kind)}）`);
+  }
+}
+
+function nonEmpty(v: unknown): boolean {
+  return typeof v === 'string' && v.trim().length > 0;
 }
 
 /** overlay 锚点：一份挂在稳定锚点上的设计意图 */
@@ -110,6 +207,13 @@ export interface OverlayAnchor {
    * `seedOverlayFromDsl` 首次迁移时把 base 上已有的进度搬进来。
    */
   progress?: DiagramStatus;
+  /**
+   * ★★★ **置 `progress='done'` 的证据**（T328，2026-10-15）—— 形状与校验器见上方的
+   * `ProgressEvidence` / `validateProgressEvidence`。★ 与 `progress` **同层同生共死**：
+   * 一起落 `<feature>.overlay.json`、一起被 `seedOverlayFromDsl` 収下、一起在重建后保留。
+   * ★ `progress` 不是 `'done'` 时它一般缺席（`draft`/`in_progress` 不需要证据）。
+   */
+  progress_evidence?: ProgressEvidence;
 }
 
 /** overlay 全局件（不挂在具体节点上） */

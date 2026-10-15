@@ -1335,7 +1335,6 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       width: FILE_W,
       height: FILE_H,
       type: 'file',
-      status: 'done',
       description: f.rel,
       style: { ...colors, borderRadius: 4 },
     });
@@ -1348,7 +1347,10 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       id: fileNodeId(f.rel),
       path: f.rel,
       responsibility: `${f.dir === '.' ? '根目录' : f.dir} — ${apiCount} 个 API（导入自 ${(p?.imports.length || 0)} 个模块）`,
-      status: 'done',
+      // ★★★ 2026-10-15（进度轴收归，T328）：**扫描侧不再写文件级 `status: 'done'`** —— 与上面
+      //   doc 级那处（本文件 `finalizeDsl`）同一条口径：`'done'` 曾把"实现进度"当存储用，
+      //   而它**扫描算出来的**、没有来源署名 ⇒ 降为读侧默认，**不再落库**。
+      //   人来登的进度请走 `edit_dsl` 的 `type:"status"` op（现写 `overlay` 锚点的 `progress`）。
       // ★★★ 2026-10-09（T85/D1）：**已摘掉 expected_apis: apis** —— 见上一条同款注释。
       symbols: syms.length > 0 ? syms : undefined,
       lines: lineCounts.get(f.rel) ?? 0,
@@ -1389,7 +1391,7 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
         width: FILE_W,
         height: FILE_H,
         type: 'doc',
-        status: 'done',
+        // ★★★ 2026-10-15（进度轴收归，T328）：同上面两处 —— 扫描侧的 `status: 'done'` **不再落库**。
         // ★ 与 file 节点同款：**路径放 `description`** ⇒ `nodePath()` 的 else 分支能原样取到 ✓
         description: rel,
         style: { ...DEFAULT_FILE_COLOR, borderRadius: 4 },

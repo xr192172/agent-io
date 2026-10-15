@@ -40,7 +40,11 @@ export function createFeature(input: CreateFeatureInput): EditResult {
     feature,
     version: '1.0.0',
     title: title || feature,
-    status: 'draft',
+    // ★★★ 2026-10-15（进度轴收归，T328）：**不再落 doc 级 `status: 'draft'`**。
+    //   · 它原来的角色是"新建即未开工"—— 那是**创建时的默认**，不是一条**人判的进度**；
+    //   · 读侧有唯一出处：`domain/geometry.ts#resolveDiagramStatus` 对非 `imported_` 的 id 读作
+    //     `'draft'` ⇒ ★ **与本行原值逐字同值**（所以这不是"改语义"，是"把默认放回读侧"）；
+    //   · 真进度由 `edit_dsl` 的 `type:"status"` op 写进 overlay 锚点的 `progress`（唯一权威）。
     geometry: {
       layout: 'vertical_flow',
       width: 800,

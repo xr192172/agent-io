@@ -30,6 +30,11 @@ interface Template {
 
 // ─────────────────────────────────────────────────────────────
 // 模板定义
+//
+// ★★★ 2026-10-15（进度轴收归，T328）：**四个模板原先各写一行 doc 级 `status: 'draft'`，已全部摘掉。**
+//   理由与 `feature_ops.ts#createFeature` 逐字同一条：那是**创建时的默认**，不是人判的进度；
+//   而读侧有唯一出处 `domain/geometry.ts#resolveDiagramStatus`（非 `imported_` 的 id ⇒ `'draft'`）
+//   ⇒ **读出来的值与原先逐字一致**，但不占 base 字段、也不会被 `rebuild_design` 当"上一轮的进度"搬来搬去。
 // ─────────────────────────────────────────────────────────────
 
 const templates: Template[] = [
@@ -48,7 +53,6 @@ const templates: Template[] = [
       feature,
       version: '1.0.0',
       title: title || 'CRUD 服务',
-      status: 'draft',
       geometry: {
         layout: 'vertical_flow',
         width: 600,
@@ -86,7 +90,6 @@ const templates: Template[] = [
       feature,
       version: '1.0.0',
       title: title || '事件驱动架构',
-      status: 'draft',
       geometry: {
         layout: 'vertical_flow',
         width: 700,
@@ -126,7 +129,6 @@ const templates: Template[] = [
       feature,
       version: '1.0.0',
       title: title || '微服务拓扑',
-      status: 'draft',
       geometry: {
         layout: 'vertical_flow',
         width: 700,
@@ -170,7 +172,6 @@ const templates: Template[] = [
       feature,
       version: '1.0.0',
       title: title || '数据管道',
-      status: 'draft',
       geometry: {
         layout: 'horizontal_flow',
         width: 900,
