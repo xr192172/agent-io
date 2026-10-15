@@ -167,8 +167,17 @@ function updateFeatureCore(input: UpdateFeatureInput): EditResult {
   //     就有 5 条 `anchor_broken`，且**既有证** `t329` / `t330` 的夹具 DSL 本身就缺 `id`（edges）/
   //     `responsibility`（files）⇒ 若"拦全部"，会把**与本次改动无关的既有错**也算到本次头上
   //     ⇒ **拦住一切写入**（含 t329/t330 这两张既有证，违反"既有十三证不许红"）。
-  //   ⇒ 判据取 `after.errors − baseline.errors`：**只拦"本次新引入的"**（`checkOpSpec` 那种"只看本次"的口径）。
-  const baselineErrors = new Set(validateDSL(original).errors);
+  //   ⇒ 判据取 `after − baseline`：**只拦"本次新引入的"**（`checkOpSpec` 那种"只看本次"的口径）。
+  //   ★★★ T341（2026-10-16）：**比较的是"错误键"而非"错误文本"**（唯一改动）。
+  //     · 病（T340 自己报的）：原先取 `validateDSL(...).errors` 的**字符串差集** ⇒ 只要某次编辑让
+  //       **既有错的文本**变了（典型：**重命名**"被指向的名字" ⇒ `[dangling_edge] edge "e".to "旧名"`
+  //       变成 `"新名"`）⇒ 旧文本消失/新文本出现 ⇒ **被当成"本次新增"** ⇒ **误拦合法编辑**。
+  //     · 药（照本仓既有"认亲"口径 —— `overlay.ts` 的 `byPath` / `_migratedFrom` 是按**名字/路径**
+  //       对账，不是按整段文本）：`validator.ts` 的每条错**另产出稳定"键"**
+  //       （`errors[i] ↔ keys[i]`，键 = `code` + **出错位置/主体**如 edge.id / 端点 from|to / file.id），
+  //       ★ **键不含"被指向的对方名字"** ⇒ 重命名被指向的名字**不改键** ⇒ 仍被认作**同一条错**。
+  //     · ★ 判定本身**未动**：`validateDSL` 判什么/判几条/文本一字未改，只是**附加**了键字段。
+  const baselineKeys = new Set(validateDSL(original).keys);
 
   const results: string[] = [];
   // ★ T160（2026-10-11）：收集每个 op 的**结构化产物**（`EditResult.data`）。
@@ -221,8 +230,18 @@ function updateFeatureCore(input: UpdateFeatureInput): EditResult {
     );
   }
   const verdict = validateDSL(draft);
-  // ★ 只拦**本次新引入的**错误（`after.errors − baseline.errors`）；本次没新增 ⇒ 放行（既有错不背在本次头上）
-  const newErrors = verdict.errors.filter((e) => !baselineErrors.has(e));
+  // ★★ T341：只拦**本次新引入的**错误 —— 按 **错误键**（不是文本）与基线对账：
+  //   `newErrors = { after 的每条错 | 其**键**不在 baseline 且本次未见过 }`。
+  //   ★ 键稳定（= 出错位置/主体，不含被指向的名字）⇒ "既有错只是文本变了"**不算新增** ⇒ 不误拦。
+  //   ★ 键与 errors **同长同序**（`validator.ts` 的 `toResult` 一处产出），故这里按同一 index 取原文。
+  const newErrors: string[] = [];
+  const seenKeys = new Set<string>();
+  for (let i = 0; i < verdict.errors.length; i++) {
+    const key = verdict.keys[i];
+    if (baselineKeys.has(key) || seenKeys.has(key)) continue; // 既有同键错 / 本次起重复 ⇒ 不算新增
+    seenKeys.add(key);
+    newErrors.push(verdict.errors[i]);
+  }
   if (newErrors.length > 0) {
     const prefixFix: Record<string, string> = {
       dangling_edge: 'edge.from / edge.to 指向了不存在的节点 ⇒ 先 `node/add` 那个节点，或把该 edge 改指已存在的 id',
@@ -245,8 +264,8 @@ function updateFeatureCore(input: UpdateFeatureInput): EditResult {
         newErrors.map((e) => `  · ${e}`).join('\n') +
         (howTo.length ? `\n★ 怎么改：\n${howTo.join('\n')}` : '') +
         `\n★ 本次改动已**回滚到调用前状态**（backup 已恢复，未把不自洽的 DSL 留在盘上）。` +
-        `\n★ 判据范围（只此一条）：**只拦"本次新引入的"错误**（\`after.errors − 调用前 errors\`）；` +
-        `调用前就有的错**不计入本次**（本次未把它改坏 ⇒ 放行）。`,
+        `\n★ 判据范围（只此一条）：**只拦"本次新引入的"错误**（按**错误键**与调用前对账，\`after.keys − 调用前 keys\`）；` +
+        `调用前就有的错**不计入本次**（本次未把它改坏 ⇒ 放行；★ 既有错**只是文本变了**（如重命名）也**不算新增**）。`,
     );
   }
 
