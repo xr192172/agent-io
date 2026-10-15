@@ -171,6 +171,36 @@ export interface CollectSitesCtx {
   scope: boolean;
   /** 语言包把编辑 push 到这里。 */
   insertions: Insertion[];
+  /**
+   * ★ 单文件【硬失败】通道（2026-10-15 加，Java 打包文件用）：语言包发现"这个文件形态插不了"
+   *   （如 Java 打包文件里的默认包探针永远解析不了）时调它 ⇒ 记进 `result.error`、**不写盘**、不静默跳过一个字。
+   *   ★ 为什么不是 throw：throw 会让整个运行中断，而**之前的文件已经写盘** ⇒ 留下半插桩项目（T315 同族的教训）。
+   */
+  fail?: (message: string) => void;
+}
+
+// ─────────────────────────────────────────────────────────────
+// 跨语言共享的【判据】（原 TS / Python 各有一份 ⇒ 收到这里，只住一处）
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * `return` 是否是某控制语句的【无花括号单语句体】（如 `if (c) return 1;` / `else return 2;` / `for (…) return;`）。
+ *
+ * ★ 这种位置【不能做两段法改写】（`T = expr; probe; return T` 三句）：
+ *   ① 赋值/声明语句不能当控制语句的单语句体 ⇒ 语法错（`if (c) T = 1` 非法）；
+ *   ② 硬插的话，探针与 return 会**逃逸成无条件执行** ⇒ **静默改宿主行为**（T273）。
+ *   ⇒ 调用方必须【包成块】：`if (c) { T = expr; probe; return T; }`（T273/T276）。
+ *
+ * ★ 判据**只看直接父节点**是不是控制语句：tree-sitter 的父节点即直接父 ⇒
+ *   块体内的 return 父节点是那个块，到不了这里；反之父节点是控制语句 ⇒ return 就是它的体。
+ *   ★★ **别加"父节点有没有块子节点"的判断** —— `if (c) return 1; else { … }` 的 then 分支
+ *      父节点是 if_statement 且它**有**块子节点（else 块），加了的会把 then 分支误判为"安全" ⇒ 踩回 T273。
+ *
+ * @param guardTypes 该语言的控制语句节点类型表（**每语言不同**：TS 有 `else_clause` 节点；
+ *   tree-sitter-java **没有** —— else 体是 `if_statement` 的直接子节点，靠父类型一并覆盖）
+ */
+export function isBracelessBodyReturn(parent: AstNode | undefined, guardTypes: ReadonlySet<string>): boolean {
+  return !!parent && guardTypes.has(parent.type);
 }
 
 /**
@@ -274,8 +304,26 @@ export async function instrumentFileWithHooks(
 
   const insertions: Insertion[] = [];
   const probes = opts.contractProbes;
+  // ★ 单文件硬失败通道：语言包发现"这文件插不了"时记下来（见 CollectSitesCtx.fail）—— 不写盘、不静默。
+  let fileError: string | undefined;
+  const sitesCtx: CollectSitesCtx = {
+    root,
+    file,
+    content,
+    fileRel,
+    probes,
+    scope: opts.scope === true,
+    insertions,
+    fail: (m) => {
+      fileError ??= m;
+    },
+  };
   if (!hasCore) {
-    hooks.collectSites({ root, file, content, fileRel, probes, scope: opts.scope === true, insertions });
+    hooks.collectSites(sitesCtx);
+  }
+  if (fileError) {
+    result.error = fileError;
+    return result;
   }
   if (enableDeep && !hasDeep && hooks.collectDeepSites) {
     hooks.collectDeepSites({ root, file, content, fileRel, probes, scope: opts.scope === true, insertions });

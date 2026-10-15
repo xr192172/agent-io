@@ -2962,3 +2962,60 @@
         （插桩器注入端本来就是 `import camprobe "<module>/internal/camprobe"`，是**带别名**的。）
       ⇒ **修**：`goObservePack` 补 Go 语法的 `sinkHint`，并把「**必须起别名**」单独写成一行说明。
       ⇒ **判据**：`src/infrastructure/analysis/observe/observe_langs.ts` 的 `goObservePack.sinkHint` 非空且为 Go 语法。
+
+- [ ] **T320 ★ 【缺口】探针运行时【不会】自动拷进被测工程**（Go 侧 T268 会；Java 侧不会）
+      *(来源：Java 包（第 4 门语言）落地时发现 —— 代码注释里早写了"已记 T320"，但清单里一直没有这条。)*
+      ⇒ **现状**：调用方须自己把 `observe-lang-java/` **整个目录**拷到被测工程根下
+        （即 `<项目根>/observe-lang-java/Camprobe.java`；它同时是**项目根推断的路标**）。
+        若平拷到根目录，则须显式传 `project_root`。
+      ⇒ **要做**：要么像 Go 侧那样插桩时自动拷（要先定"拷到哪"——根？还是探针包目录？），
+        要么在回执里**响亮提示**"没找到路标 ⇒ 请先拷贝探针目录"（现在推断失败才说，太晚）。
+
+- [ ] **T321 ★★ 【设计升级】Java 只支持【默认包】文件 —— 打包项目插不了**
+      *(来源：给 Java 包写 limitations 时想清楚了这个缺口；2026-10-15 用 `fail` 通道做成了**硬失败**。)*
+      ⇒ **根因（语言级，非实现懒）**：探针类 `Camprobe` 在**默认包**，而 **Java 禁止从默认包 import**
+        ⇒ 打包文件（`package com.foo;`）里注入的 `Camprobe.capture(...)` **永远解析不了**。
+      ⇒ **现状**：这类文件**硬失败**（记进 `result.error`、不写盘、不静默产出编译不过的代码 —— T315 同族）。
+      ⇒ **要做**：探针类放进**真实包**（如 `observe.probe`）+ 按文件生成 `import observe.probe.Camprobe;`
+        （`buildImportStmt` 已留好钩子，Java 侧现在返回空串）。★ 改完 t316 的 Java 节要加**打包夹具**：
+        现在那节只覆盖默认包。
+
+- [x] **T322 ★★★ 【已修·真缺陷】Java 插桩 return 改写三连崩 —— 出生证第一次跑抓到 5 个 FAIL**
+      *(来源：`certs/t316-observe-pack-cert.mjs` 第 5 节（Java）首跑：基线编译就挂、插桩后编译挂、stdout 检查恒真、重载检查自身数错。)*
+      ⇒ **缺陷 ①（封喉）**：`observe-lang-java/Camprobe.java` 第 1 行是 `/ observe:instrumented`
+        —— 幂等标记**少一根斜杠** ⇒ javac "需要 class/interface/enum 或 record"。
+        ★ 根因：MSYS(Git Bash) 会把裸 `//` 当路径根并掉（生成器注释里警告过，但**探针运行时是手写的，没走生成器**）。
+      ⇒ **缺陷 ②（同族三连）**：两段法 return 改写**整体不合法** —— TS 靠 **ASI** 蒙混（`T = 1\nprobe()`
+        自动补分号），Java 没有 ASI：① 临时变量**无类型声明**（`__cam_ret_3_20 = 1` ⇒ 找不到符号）；
+        ② 赋值**无分号收尾**（`;` 被 stage-2 的 removeTo 吃掉 ⇒ `t = 1 Camprobe.capture(…)` 语法错）。
+        ⇒ **修**：stage-1 注入 `<声明返回类型> <tv> = `（类型取外层方法 `childForFieldName('type')` 原文；
+        ★ 不用 `var` —— 菱形推断会丢目标类型，`return new ArrayList<>()` 在 `List<String>` 方法里换成 var 就编译不过）；
+        stage-2 以 `;` 开头收尾。
+      ⇒ **缺陷 ③（静默改行为）**：无花括号 guard return（`if (n > 0) return 1;`）走两段法 ⇒ 探针与 return
+        **逃逸成无条件执行**（T273 同族）＋ 语法错。⇒ **修**：包成块 `{ <类型> <tv> = <expr>; <探针>; return <tv>; }`。
+      ⇒ **量具自身两缺陷**（★ 又是"量具先被验"的一课）：① 重载检查**把 enter/exit 都数进去**（期望 2 实得 4，
+        而去重其实生效了）⇒ 改成数**方法基名**（剥 `.enter/.exit`）；② "stdout 逐字不变"在两个**空串**之间
+        **恒真**（基线编译失败 ⇒ 两边都空）⇒ 基线检查加 `stdout 非空`。
+      ⇒ **顺带**：`package.json` 缺 `new-observe-lang` script（代码注释引用了 `npm run new-observe-lang`）⇒ 补上。
+      ⇒ **判据**：t316 第 5 节 **10/10 全绿**（31/31 总）；最小复现另验：插桩后 javac 过、stdout 逐字相同、
+        接 sink 出 9 事件、还原逐字相同。
+
+- [x] **T323 ★★★ 【已修·事故】仓内 `observe-lang-java/Camprobe.java` 被插桩后【从未还原】**
+      *(来源：接手在飞工作时跑最小复现，发现探针运行时自身带着 `Camprobe.capture(...)` 注入（旧版破损格式）。)*
+      ⇒ **事实**：上一会话（10-15 11:39）在**仓里**跑插桩，把 `observe-lang-java/Camprobe.java` 一起插了
+        （当时还没有"按文件名排除探针运行时"的判据）⇒ 写了备份 `.agent-io/observe-backup/…` 但**没还原**。
+        ★ 那行坏标记 `/ observe:instrumented` 就是那次插桩写进去的幂等标记（`//` 被 MSYS 吞了一根）。
+      ⇒ **修**：用工具自己的 `restoreInstrumented(REPO)` 从备份还原（129 行、0 处探针注入）⇒ 备份目录已由工具删除。
+        ★ 全仓扫描确认无其它污染（源码里的 `observe:instrumented` 命中都是标记**常量定义**，正常）。
+      ⇒ ★ **T199 同族再现**（"注入实验前先问状态住在几个文件里；还原要列全"）——
+        这次连"探针运行时自己会被插"都是**撞上后才补的判据**（`isInstrumentableJavaFile` 的 basename 排除）。
+      ⇒ **教训（已写进当日日志）**：**在自家仓里跑插桩 = 高危操作**；跑完必须 `git status` + 备份目录双查。
+
+- [x] **T324 ★★ 【已修·latent】TS 侧 `isBracelessGuardReturn` 的"有块子节点⇒安全"扫描会误判**
+      *(来源：给 Java 包修 T322 缺陷 ③ 时，把两侧判据收进骨架 `isBracelessBodyReturn` —— 收口时发现 TS 那份是坏的。)*
+      ⇒ **病**：TS 版判据 = "父是控制语句 **且** 父没有 `statement_block` 子节点"。
+        `if (x) return 1; else { return 2; }` 的 **then 分支**父节点是 if_statement，而它**有**块子节点（else 块）
+        ⇒ 被误判为"安全" ⇒ 走替换分支 ⇒ `if (x) const T = 1;`（JS 里声明不能当 if 体）⇒ **SyntaxError、整模块挂**。
+      ⇒ **修**：判据收成骨架 `isBracelessBodyReturn(parent, guardTypes)` —— **只看父类型**（tree-sitter 父节点即直接父，
+        块内的 return 父节点是块，根本到不了这里；`else_clause` 只在 TS 表里，Java 没有该节点靠 if_statement 一并覆盖）。
+      ⇒ ★ 这是"同一判据住两处"的第 N 次罚款：**收口时顺带修掉了另一侧的 latent bug**。

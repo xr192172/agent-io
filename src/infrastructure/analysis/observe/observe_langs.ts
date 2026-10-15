@@ -60,6 +60,9 @@ import {
 // ★★★ 2026-10-15：**第 3 门语言（Python）** —— 语言包住在 `instrument_py.ts`，走**同一套骨架**
 //   （`instrument_skeleton.ts` 的 `instrumentFileWithHooks`）⇒ 这里只注册、不复制主流程。
 import { collectPyFiles, instrumentPyProject, isInstrumentablePyFile } from './instrument_py.js';
+// ★★★ 2026-10-15：**第 4 门语言（Java）** —— 整份由 `npm run new-observe-lang java …` 生成的**填空题**填出来
+//   （只填 ①命名 / ②遍历 / ⑥取值 / probeCall / buildImport 五处）⇒ 走**同一套骨架**。
+import { collectJavaFiles, instrumentJavaProject, isInstrumentableJavaFile } from './instrument_java.js';
 
 // ─────────────────────────────────────────────────────────────
 // 统一形状（两门语言都落到这里 ⇒ handler 一份渲染管两门）
@@ -459,6 +462,75 @@ export const pyObservePack: ObserveLangPack = {
   },
 };
 
+/**
+ * ★★★ **Java 包（第 4 门语言）** —— 2026-10-15 加，**整份由 `npm run new-observe-lang` 生成的填空题填出来的**。
+ *
+ * ## 它证明什么（这是本仓"补语言到底多贵"的第二次实测）
+ * Python（第 3 门）是**手写**的 319 行 / 去注释 205 行；Java 这份**只填了 4 个函数**
+ *（①命名 ②遍历 ⑥取值 + probeCall/buildImport）⇒ 整套 pack 291 行、去注释 **238 行**
+ *（全部来自模板：头注、SINK 契约说明、通用收集流程、缩进小件）。
+ * ⇒ **模板把"必须自己想清楚的事"压到 4 个函数**；剩下的都是照抄的通用流程。
+ *
+ * ★ 但**有一样没被模板吃掉**：探针运行时要另写（Java 侧 120 行 `observe-lang-java/Camprobe.java`）。
+ *   Python 那份是 148 行。⇒ "补一门语言" = 语言包（填空）+ 运行时（新写）。
+ */
+export const javaObservePack: ObserveLangPack = {
+  lang: 'java',
+  label: 'Java',
+  isSourceFile: (rel) => isInstrumentableJavaFile(rel),
+  inProcess: true,
+  manifestFiles: ['pom.xml', 'build.gradle', 'build.gradle.kts'],
+  limitations: [
+    '★★ **只支持【默认包】的 .java 文件** —— 探针类 Camprobe 在默认包，而 Java 禁止从默认包 import ⇒ ' +
+      '打包文件（`package com.foo;`）注入的探针永远解析不了。这类文件会【硬失败】并记进回执 error（不静默产出编译不过的代码）。' +
+      '要支持打包项目：探针类放进真实包 + 按文件生成 import（已记 T321）。',
+    '★ **探针类不会自动拷进被测工程**（不像 Go 侧 T268）⇒ 调用方需自己把 ' +
+      '`observe-lang-java/` **整个目录**拷到被测工程根下（即 `<项目根>/observe-lang-java/Camprobe.java`；' +
+      '它同时是**项目根推断的路标**）。若平拷到根目录，则须显式传 project_root。已记 T320。',
+    '接口/抽象方法没有体 ⇒ 记 0 探针（台账判据③会把它当"本就无函数"处理）。',
+    '`Map.of` 不收 null 且限 10 对 ⇒ 探针走 **flat key/value varargs**，由运行时自行拼装（见 probeCall 头注）。',
+    'lambda / 匿名内部类 / 局部类 / 静态初始化块**未观测**（且它们内部的 return **不会**被误记成外层方法的探针）。',
+  ],
+  sinkHint: [
+    '  ★ 探针已就位，但【默认不出事件】：Java 侧没接 sink 时 Camprobe.capture 是 no-op。',
+    '    ⇒ 要真观测，须在被测工程入口处接一次 sink（先确认 Camprobe.java 已在同包同目录）：',
+    '      import java.io.IOException;',
+    '      Camprobe.setGlobalSink(new Camprobe.JsonlSink("events.jsonl"));',
+    '      // 程序退出前可 Camprobe.setGlobalSink(null);',
+  ],
+  async instrument(root, opts) {
+    const scanned = collectJavaFiles(root).length;
+    const results = await instrumentJavaProject(root, {
+      projectRoot: opts.projectRoot,
+      write: !opts.dryRun,
+      contractProbes: opts.contractProbes,
+    });
+    const rep: ObserveInstrumentReport = {
+      lang: 'java',
+      dryRun: opts.dryRun,
+      scanned,
+      files: results.map((r) => ({
+        file: r.file,
+        sites: r.sites.map((s) => ({ line: s.line, kind: s.kind, level: s.level, probe: s.probe })),
+        error: r.error,
+      })),
+      sinkHint: javaObservePack.sinkHint,
+    };
+    const total = rep.files.reduce((n, f) => n + (f.error ? 0 : f.sites.length), 0);
+    if (!opts.dryRun && total > 0) {
+      // 复用 TS 侧**同一份**台账实现（判据只住一处）
+      const ledger = buildProbeLedger(results, root, { contractMode: opts.contractProbes !== undefined });
+      rep.ledger = { file: saveProbeLedger(root, ledger), summary: ledgerSummary(ledger), raw: ledger };
+    }
+    return rep;
+  },
+  async uninstrument(root) {
+    const restored = restoreInstrumented(root);
+    const cleared = clearProbeLedger(root);
+    return { lang: 'java', restored: restored.length, restoredFiles: restored, ledgerCleared: cleared };
+  },
+};
+
 // ─────────────────────────────────────────────────────────────
 // 注册表（照 RefactorLangRegistry 的形状）
 // ─────────────────────────────────────────────────────────────
@@ -499,3 +571,4 @@ export const observeLangs = new ObserveLangRegistry();
 observeLangs.register(tsJsObservePack);
 observeLangs.register(goObservePack);
 observeLangs.register(pyObservePack);
+observeLangs.register(javaObservePack);

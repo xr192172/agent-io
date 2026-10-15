@@ -41,6 +41,7 @@ import {
   collectSourceFiles,
   instrumentFileWithHooks,
   instrumentProjectWithHooks,
+  isBracelessBodyReturn,
   matchesContract,
   type Insertion as SkeletonInsertion,
   type InstrumentHooks,
@@ -733,24 +734,26 @@ function isSimpleExpr(n: InstrNode): boolean {
 
 /**
  * 判断 return 是否处于「无大括号控制语句的单语句体」中（如 `if (x) return null;`）。
- * 此时 return 是其父控制语句的 consequent，且父节点没有 statement_block 包裹。
  * 这种位置不能做值捕获替换（会破坏语法），只能降级为返回标记。
+ *
+ * ★ 2026-10-15：判据已**收进骨架** `isBracelessBodyReturn`（TS / Java 各写一份 = 同一判据住两处，
+ *   本仓头号病根）。这里只留**语言专属的那张表**。
+ * ★★ 原先这里还有一段"父控制语句有 statement_block 子节点 ⇒ 判安全"的扫描 —— **有害**：
+ *   `if (x) return 1; else { … }` 的 then 分支父节点是 if_statement 且它**有**块子节点（else 块）
+ *   ⇒ 被误判为安全 ⇒ 走替换分支 ⇒ `if (x) const T = 1;`（JS 里声明不能当 if 体）⇒ SyntaxError
+ *   ⇒ 整模块 import 失败。tree-sitter 里父节点即直接父，块内的 return 父节点是块，根本到不了这里。
  */
+const TS_GUARD_TYPES = new Set([
+  'if_statement',
+  'else_clause', // ★ T274：tree-sitter-ts 的 else 体是独立节点（Java 没有，靠 if_statement 一并覆盖）
+  'for_statement',
+  'for_in_statement',
+  'while_statement',
+  'do_statement',
+  'labeled_statement',
+]);
 function isBracelessGuardReturn(parent: InstrNode | undefined): boolean {
-  if (!parent) return false;
-  // ★★★ T274（2026-10-14）：**补上 `else_clause`** —— 原先这张表里没有它
-  //   ⇒ `if (x>0) return 1; else return 2;` 的 **else 分支**认不出"无大括号"
-  //   ⇒ 走**替换**分支 ⇒ 注入成 **`else const __cam_ret15 = 2;…`**
-  //   ⇒ `SyntaxError: Expression expected` ⇒ 整模块 import 失败。
-  //   ★ 而 `if` 体无大括号走的是**内联**（见下面 T273 那段）—— ★★ **同一个语言构造、两个分支两套处理**。
-  const guardTypes = new Set(['if_statement', 'else_clause', 'for_statement', 'for_in_statement', 'while_statement', 'do_statement', 'labeled_statement']);
-  if (!guardTypes.has(parent.type)) return false;
-  // 若父控制语句有 statement_block 子节点（即花括号体），说明 return 在块内，安全。
-  for (let i = 0; i < parent.childCount; i++) {
-    const c = parent.child(i);
-    if (c && c.type === 'statement_block') return false;
-  }
-  return true;
+  return isBracelessBodyReturn(parent, TS_GUARD_TYPES);
 }
 
 /** 一次编辑：`[index, removeTo)` 被替换（无 `removeTo` 则是在 `index` 处纯插入）。 */

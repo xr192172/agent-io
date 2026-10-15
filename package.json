@@ -54,6 +54,7 @@
     "setup": "node scripts/setup.mjs",
     "doctor": "node scripts/setup.mjs --doctor",
     "rebuild": "node scripts/rebuild_feature.mjs",
+    "new-observe-lang": "node scripts/new-observe-lang.mjs",
     "translate": "node dist/src/presentation/cli/cli.js translate_go_ts",
     "dogfood": "node dist/src/infrastructure/dogfood_stats.js",
     "brickify": "node dist/src/presentation/cli/brickify_cli.js",

@@ -45,6 +45,7 @@ const require = createRequire(import.meta.url);
 const instr = require(path.join(REPO, 'dist/src/infrastructure/analysis/observe/instrument.js'));
 const instrPy = require(path.join(REPO, 'dist/src/infrastructure/analysis/observe/instrument_py.js'));
 const instrGo = require(path.join(REPO, 'dist/src/infrastructure/analysis/observe/go_instrument.js'));
+const instrJava = require(path.join(REPO, 'dist/src/infrastructure/analysis/observe/instrument_java.js'));
 
 const TMP_BASE = path.join(HERE, '.work/tmp');
 fs.mkdirSync(TMP_BASE, { recursive: true });
@@ -88,7 +89,7 @@ console.log('=== T316 · observe 语言包出生证 ===');
 
 // ══════════ 1) TS/JS 包 ══════════
 {
-  console.log('\n── [1/4] TS/JS 包（8 扩展名里的 JS 家族 + TS 家族）──');
+  console.log('\n── [1/5] TS/JS 包（8 扩展名里的 JS 家族 + TS 家族）──');
   const work = fs.mkdtempSync(path.join(TMP_BASE, 'ts-'));
   mk(work, TS_FILES);
   const before = snap(work, TS_FILES);
@@ -127,7 +128,7 @@ console.log('=== T316 · observe 语言包出生证 ===');
 
 // ══════════ 2) T314 语法分叉 ══════════
 {
-  console.log('\n── [2/4] T314：注入文本必须随【宿主语法】分叉 ──');
+  console.log('\n── [2/5] T314：注入文本必须随【宿主语法】分叉 ──');
   const work = fs.mkdtempSync(path.join(TMP_BASE, 'syn-'));
   const body = `export function f(x) {\n  try { return x; } catch (e) { return 'c'; }\n}\n`;
   fs.writeFileSync(path.join(work, 'a.mjs'), body, 'utf8');
@@ -142,7 +143,7 @@ console.log('=== T316 · observe 语言包出生证 ===');
 
 // ══════════ 3) Python 包 ══════════
 {
-  console.log('\n── [3/4] Python 包 ──');
+  console.log('\n── [3/5] Python 包 ──');
   const work = fs.mkdtempSync(path.join(TMP_BASE, 'py-'));
   mk(work, PY_FILES);
   const before = snap(work, PY_FILES);
@@ -185,7 +186,7 @@ console.log('=== T316 · observe 语言包出生证 ===');
 //   ⇒ 这一节要额外证明"**拷进来的探针包 + 注入的 import 真的能编译能跑**"——
 //     那正是 T268 之后最容易悄悄坏掉的一环（换个机器/换盘符就失效的老路已废）。
 {
-  console.log('\n── [4/4] Go 包（外部进程 + 探针包拷入被测工程）──');
+  console.log('\n── [4/5] Go 包（外部进程 + 探针包拷入被测工程）──');
   const work = fs.mkdtempSync(path.join(TMP_BASE, 'go-'));
   const MODULE = 'camfixture';
   const GO_FILES = {
@@ -292,6 +293,103 @@ func TestGoSinkCaptures(t *testing.T) {
   check('④ 拷入的探针包已删除（连空掉的 internal/ 一起）', !fs.existsSync(path.join(work, 'internal')), fs.existsSync(path.join(work, 'internal')) ? 'internal/ 仍在' : '已清理');
 }
 
+// ══════════ 5) Java 包 ══════════
+// ★ 第 4 门语言，**整份由 `npm run new-observe-lang` 的填空题填出来**（只填 ①/②/⑥ + 两个语句渲染件）
+//   ⇒ 这一节是"补一门语言到底要多久"的判据，而**不是**再证明一次"骨架能用"。
+// ★ 接线方式（Java 版）：探针类是 default package ⇒ **同包同目录零 import**
+//   ⇒ 夹具把 `observe-lang-java/` 整个目录拷进来当被测工程（已记 T320：语言包自己不拷），
+//     且**不显式传 projectRoot** —— 让"项目根路标推断"也在这节里被真跑一次。
+// ★ 夹具刻意覆盖的形态（都是 2026-10-15 出生证第一次跑撞出来的）：
+//   · 无大括号 guard return（`if (n > 0) return 1;`）—— 必须包块，否则探针逃逸成无条件；
+//   · then 无大括号 + else 有大括号的混合形态 —— 两个分支两种改写，都不能错；
+//   · 单行体方法（`int oneLine(int n) { … }`）—— enter/return 改写都应保持单行合法；
+//   · lambda / 匿名类里的 return —— 不得误记成外层方法的 exit 探针；
+//   · 重载方法 —— 探针名不得撞车（T303 同族）。
+{
+  console.log('\n── [5/5] Java 包（第 4 门：由填空题填出）──');
+  const work = fs.mkdtempSync(path.join(TMP_BASE, 'java-'));
+  const JAVA_FILES = {
+    'Box.java': `public class Box {
+    private int v;
+    public Box(int v) { this.v = v; }
+    public int get() { return v; }
+    public static int twice(int n) { return n * 2; }
+    int guarded(int n) {
+        if (n > 0) return 1;
+        return 0;
+    }
+    // 混合形态：then 无大括号 + else 有大括号 ⇒ 两个分支的 return 形态不同，探针都不能逃逸
+    int mixed(int n) {
+        if (n > 0) return 1; else { return 2; }
+    }
+    // 单行体方法：enter 与两处 return 改写都应保持单行且合法
+    int oneLine(int n) { if (n > 0) return n; return -n; }
+    // Java 重载：同名不同参 ⇒ 探针名必须区分（T303 同族），否则撞车
+    String show(int n) { return "i" + n; }
+    String show(String s) { return "s" + s; }
+}
+`,
+    'Main.java': `public class Main {
+    public static void main(String[] args) throws Exception {
+        if (args.length > 0) Camprobe.setGlobalSink(new Camprobe.JsonlSink(args[0]));
+        Box b = new Box(7);
+        // lambda / 匿名类里的 return：不观测，但【不得误记】成 Main.main 的探针
+        java.util.function.Supplier<Integer> s = () -> { return 5; };
+        Runnable r = new Runnable() { public void run() { return; } };
+        r.run();
+        System.out.println(b.get() + " " + Box.twice(3) + " " + b.guarded(-1) + " " + b.mixed(3) + " " + b.oneLine(-4) + " " + b.show(1) + b.show("x") + " " + s.get());
+    }
+}
+`,
+  };
+  mk(work, JAVA_FILES);
+  // 探针运行时整个目录拷进被测工程（同包零 import）—— 由夹具代做，语言包自己不拷（T320）
+  fs.cpSync(path.join(REPO, 'observe-lang-java'), path.join(work, 'observe-lang-java'), { recursive: true });
+  const probeSrc = fs.readFileSync(path.join(work, 'observe-lang-java/Camprobe.java'), 'utf8');
+  const before = snap(work, JAVA_FILES);
+  const javac = () => spawnSync('javac', ['-encoding', 'UTF-8', '-d', '.', 'Box.java', 'Main.java', 'observe-lang-java/Camprobe.java'], { cwd: work, encoding: 'utf8' });
+  const runMain = (extra = []) => spawnSync('java', ['Main', ...extra], { cwd: work, encoding: 'utf8' });
+
+  const c0 = javac();
+  check('① 基线可编译', c0.status === 0, `javac exit=${c0.status} ${(c0.stderr || '').split('\n')[0]}`);
+  const base = runMain();
+  // ★ 基线必须**真的打印东西** —— 否则下面"stdout 逐字不变"会在两个空串之间恒真（判据装饰）
+  check('① 基线可跑（先证明夹具本身是好的）', base.status === 0 && base.stdout.trim().length > 0, `exit=${base.status} stdout=${JSON.stringify(base.stdout.trim())} ${(base.stderr || '').split('\n')[0]}`);
+
+  // ★ 不传 projectRoot ⇒ 项目根靠路标 `observe-lang-java/Camprobe.java` 推断（推断失败会响亮抛）
+  const out = await instrJava.instrumentJavaProject(work, { write: true });
+  const sites = out.reduce((n, r) => n + r.sites.length, 0);
+  const errs = out.filter((r) => r.error);
+  check('插桩：有探针点且无文件报错', sites > 0 && errs.length === 0, `sites=${sites} 文件=${out.length} 报错=${errs.length}`);
+
+  const c1 = javac();
+  check('① 插桩后仍能编译（探针不打断宿主）', c1.status === 0, `javac exit=${c1.status} ${(c1.stderr || '').split('\n')[0].slice(0, 200)}`);
+  const after = runMain();
+  check('② 插桩后 stdout 逐字不变', after.stdout === base.stdout, `base=${JSON.stringify(base.stdout.trim())} now=${JSON.stringify(after.stdout.trim())}`);
+
+  const ev = path.join(work, 'events.jsonl');
+  const sinkRun = runMain([ev]);
+  check('③ 接 sink ⇒ events 行数 > 0', sinkRun.status === 0 && lines(ev) > 0, `exit=${sinkRun.status} 行数=${lines(ev)}`);
+
+  // Java 重载必须区分（T303 同族）：两个 show 不得撞成同一个探针名
+  // ★ 判据数的是【方法基名】（剥掉 .enter/.exit）—— 每个方法有 enter+exit 两条探针，
+  //   直接数探针名会把 2 个方法数成 4 条（出生证第一次跑就把这道检查本身写错了）。
+  const names = new Set(out.flatMap((f) => f.sites.map((s) => s.probe)));
+  const showBases = new Set([...names].filter((n) => n.includes('.show')).map((n) => n.replace(/\.(enter|exit)$/, '')));
+  check('重载方法探针名互不撞车（T303 同族）', showBases.size === 2, [...showBases].join(' | '));
+
+  // lambda / 匿名内部类内的 return 不得被误记成外层方法的探针（误记比不观测更坏）
+  const mainExits = [...names].filter((n) => n === 'Main.main.exit');
+  check('lambda/匿名类内的 return 不误记成 Main.main.exit', mainExits.length === 0, mainExits.join(',') || '无（main 无 return，本就不该有 exit 探针）');
+
+  // 探针运行时自身不被插桩（排除判据：文件名 Camprobe.java）—— 与仓内原件逐字相同
+  check('探针运行时自身不被插桩', fs.readFileSync(path.join(work, 'observe-lang-java/Camprobe.java'), 'utf8') === probeSrc, '与仓内原件逐字相同');
+
+  instr.restoreInstrumented(work); // 备份/台账语言无关（.agent-io 同一套）⇒ 复用 TS 侧实现
+  const bad = changed(before, snap(work, JAVA_FILES));
+  check('④ 还原逐字节相同', bad.length === 0, bad.join(',') || '全部相同');
+}
+
 try {
   fs.rmSync(TMP_BASE, { recursive: true, force: true });
 } catch {
@@ -300,4 +398,5 @@ try {
 
 console.log(`\n════ 汇总：PASS=${P}  FAIL=${F}`);
 if (F > 0) process.exit(1);
-console.log('★ 三份语言包（TS/JS · Python · Go）都满足：能跑 / 不改行为 / 真出事件 / 可还原 —— 骨架的「语言包契约」成立。');
+console.log('★ 四份语言包（TS/JS · Python · Go · Java）都满足：能跑 / 不改行为 / 真出事件 / 可还原。');
+console.log('★ Java 那份是**填空题填出来的**（只填 ①/②/⑥ + 两个语句渲染件）⇒ 这就是"补语言只补填空"的实测。');
