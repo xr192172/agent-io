@@ -1334,3 +1334,28 @@ MCP 传输/schema 层 · daemon 转发分支；★ **六种 kind 本节点只用
 ### 45.4 读数
 `t341` **13/0** · `build` ✓ · `verify` **4/4** ✓ · **十四张既有证不许红**（据它报：全绿）。
 ★ 改动集：`update_feature.ts`（判据改键差集）+ `validator.ts`（**只加 `keys` 平行数组，判定与文本未动**）+ 新证 `t341`。
+
+---
+
+## 46. 2026-10-16 ★★ 修真仓 `observe-skeleton` 的 5 条 `[anchor_broken]`（`t342` 10/0）
+
+### 46.1 判定：**"该在"**（补节点），不是"一律删"
+- 病：`semantic.files` 里有 5 个 file 条目，其 id **不在 `geometry.nodes`** 里（`validator.ts:75` 的 `[anchor_broken]`）；
+- 判法：**5 个条目各有同 id / `type='file'` / `description=path` 的几何节点**（证书 B4）⇒ ★ **它们是"该在"** ⇒
+  **补的是"同 id 几何节点"**（不是删条目、不是改 id）；
+- ★ 它**把两条既有口径都试了**并如实报：**A2** 经工具层 `edit_dsl` `node/add`（同 id）⇒ 成功、`valid=true`；
+  **A3** 对照：`edit_dsl` `file/delete` 该条目 ⇒ 同样 `valid=true` ⇒ **两条口径都成立**（它选了前者并说明）。
+
+### 46.2 判据（`t342` **PASS=10 FAIL=0**）
+- **B1** 经工具层 `get_dsl(query:"nodes")` 看得到 10 个节点、5 个 `file_*` 都在；
+- ★★ **B2** 真仓 `observe-skeleton`：**`valid=true / errors=0`**（改前 `valid=false` + 5 条 `anchor_broken`）；
+- ★ **B3 不变式**：`semantic.files` 里每个 id 都在 `geometry.nodes`（**orphan = 0**）；
+- ★ **B5/B6**：`self-2026-10-15` **valid=true** · `run82` **valid=true**（**没被弄坏**）；
+- ★ **A0–A3**：夹具**复现同一个病**（A1 同判据报 `[anchor_broken]`）⇒ **A2 经工具层补节点 ⇒ 绿，且未被 T340 自洽性闸拦**；
+  **A3** 另一条既有口径也成立。
+
+### 46.3 ★ 真数据改动（如实）
+`.agent-io/features/observe-skeleton.json` + `observe-skeleton.overlay.json`（mtime **07:26**）——
+补了 5 个**同 id 的几何节点**；`src/` 零改动（`git status` 只有新证 `?? certs/t342-…mjs`）。
+### 46.4 读数
+`t342` **10/0** · `build` ✓ · `verify` 4/4 ✓ · 既有十五证全绿（据它报）。
