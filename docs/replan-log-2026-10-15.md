@@ -811,3 +811,33 @@ M5 命中数与语义无关（1364 条命中里写端仅 1 条）· ★ **M6 读
 2. **未把 `requires` 投影回 base `Edge.intent`**（闸直读 overlay 权威）⇒ **接受**：符合"权威 = overlay、投影可选"；
    ★ 但**记下文档与实现的这处不一致**（本文件 §28.3 曾写"随 `applyOverlay` 投影回 base"）—— 以**实现为准**，文档该改；
 3. **拦截取"节点级"**（只拦该边 `from` 的文件）而非 feature 级 ⇒ **接受**（更窄、更安全，将来可扩）。
+
+
+---
+
+## 30. 2026-10-15 ★★★ 修一只"装饰闸"：`evidence` 在工具层传不进去（T333/T334）
+
+### 30.1 缺陷（我方核出的原文）
+- `status_tools.ts` 的 `updateStatus` **有闸**：`validateProgressEvidence(status, evidence)` 不过就抛 ⇒ **置 `done` 无证据必拒**；
+- 但**工具层传不进 `evidence`**：`update_feature.ts` 的 `case 'status'` 只传 `{feature,node_id,status}`；
+  且 `op_data_spec.ts` 的已知键是 `status: ['status']` ⇒ 传 `data.evidence` 判 **"不被认的键"**；
+- ⇒ ★★ **净效果**：**LLM 无法经 MCP 标记任何"完成"**（传 ⇒ 键不认；不传 ⇒ 闸拒）
+  ⇒ **"完成必须带证据"这道闸，在真实路径上是装饰**；而**六张证全绿**。
+- ★★ **根因（最值钱的一条）**：`t328` / `t333` **只直调内部函数**（都不 import 工具层）⇒
+  **"证全绿"与"路径通"是两件事**。这正是今天反复出现的同一族错误，只是这次代价最大。
+
+### 30.2 修（3 处 src + 1 张新证）
+- `op_data_spec.ts`：已知键补 `evidence`（`TYPE_KNOWN_KEYS` 是**允许的键**全集；必填另在 `OP_SPECS[].required`）；
+  并给 `status` op 的说明**补上"置 done 必须带 evidence + 三档形状"**（★ 不补则调用方不知道传什么 —— 这正是成因）；
+- `update_feature.ts`：`case 'status'` 把 `op.data.evidence` 传给 `updateStatus`（形状照 `ProgressEvidence`，未发明字段）；
+- 新证 `certs/t334-mcp-evidence-path-cert.mjs`（**PASS=11 FAIL=0**），★ **全部判据走工具层 `editDslHandler`**：
+  ① 无 evidence 置 done ⇒ **被拒**（原文含三档形状）② 三档各试 ⇒ **成功**（落盘原文含 `source_node_id`）
+  ③ 非法 kind / 缺 `why` ⇒ **被拒** ④ 未知键 ⇒ 报"已知键（2 个）：status / evidence"。
+
+### 30.3 新立的纪律（写进入口）
+> **每张证必须至少有一条判据走"工具层路径"**；**没有任何一条走工具入口 ⇒ 视为未覆盖真实路径**。
+### 30.4 待办（如实）
+`t328` / `t333` **确有"只走直调"的同类问题**（都不 import 工具层）⇒ 应各补一条工具层判据（本轮未改它们的判据）。
+### 30.5 读数
+`build` ✓ · `verify` 4/4 ✓ · 新证 `t334` 11/11 · `t326`（工具面）**曾红 546**（`status` op 补说明）
+⇒ 属**修复的一部分** ⇒ 按设计 `--update`；其余证全绿。

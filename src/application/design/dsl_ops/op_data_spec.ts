@@ -111,7 +111,24 @@ export const OP_SPECS: readonly OpSpec[] = [
     note: '`update` 二选一：① **整块重写** `data.expected_apis=[{signature,notes?},…]`（**推荐**，不看旧串）；② 单条改 `data.signature`=**原签名串逐字**',
   },
   { type: 'binding', ops: ['update'], idRequired: true, required: { update: ['file_id'] } },
-  { type: 'status', ops: ['update'], idRequired: true, required: { update: ['status'] } },
+  {
+    type: 'status',
+    ops: ['update'],
+    idRequired: true,
+    required: { update: ['status'] },
+    // ★★★ T334（2026-10-15）：**置 `done` 的证据怎么传，此前在这张表里【一个字都没有】** ——
+    //   而写端 `updateStatus`（`status_tools.ts:82`）**有闸**：`status==='done'` 且无 `evidence` ⇒ 抛。
+    //   ⇒ 调用方**只能**从本段知道"要传什么"。★ 之前没有这段 ⇒ 能力**在 MCP 面之外**（同族：T181 `lifecycle`）。
+    //   ★ 这里是**渲染**（不新增判据）：真正的判据只有一把尺 = `domain/overlay.ts#validateProgressEvidence`
+    //     （三档形状逐字定义在 `ProgressEvidence`）。
+    note:
+      '★ `data.evidence`（**T334：`op=update` 时可选、`data.status="done"` 时【必须给】** —— 否则被拒，' +
+      '理由见回执）：**置"完成"必须带一条能被复核的证据**（"不许默默勾上"）。★ 形状**三档择一**（按 `kind` 判别）：' +
+      '① `{kind:"expectations", all_green:true, unsupported:0}` —— **机器判**（expectations 全绿；`unsupported` 必须为 0 —— **"没判"≠"通过"**）；' +
+      '② `{kind:"reading", command, observed, at}` —— **一条可复跑的读数**（跑什么 / 看到什么 / 什么时候跑的）；' +
+      '③ `{kind:"attestation", by:"human"|"llm", at, why}` —— **显式人工确认**（署名）。' +
+      '★ `draft` / `in_progress` **不需要** evidence。★ 判据唯一住处 = `domain/overlay.ts#validateProgressEvidence`。',
+  },
   {
     type: 'annotation',
     ops: ['add', 'resolve'],
@@ -293,7 +310,11 @@ export const TYPE_KNOWN_KEYS: Record<string, readonly string[]> = {
   file: FILE_DATA_KEYS,
   api: ['signature', 'new_signature', 'notes', 'note', 'expected_apis'],
   binding: ['file_id', 'sync_status'],
-  status: ['status'],
+  // ★★★ T334（2026-10-15）：**补 `evidence`** —— 写端 `updateStatus` 认它（`ProgressEvidence`），
+  //   而本键集此前只有 `status` ⇒ ★ 经工具层传 `data.evidence` 会报「不被认的键」⇒
+  //   **"置 done 必带证据"这道闸在真实路径上根本进不去**（传 ⇒ 键不认；不传 ⇒ 闸拒）。
+  //   ★ 键集仍**从实现读出**：`update_feature.ts` 的 `case 'status'` 现在读 `op.data.evidence`。
+  status: ['status', 'evidence'],
   annotation: ['text', 'annotation_id', 'node_id', 'author', 'resolution_note', 'severity'],
   approval: ['annotation_id', 'assignee', 'comment', 'decision', 'reviewer', 'submitter'],
   snapshot: ['label', 'description', 'snapshot_id'],

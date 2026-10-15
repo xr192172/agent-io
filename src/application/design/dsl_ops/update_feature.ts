@@ -29,6 +29,8 @@ import type { AddFileInput, UpdateFileInput } from './file_ops.js';
 import { checkOpSpec, OP_SPECS, type CheckedOperation } from './op_data_spec.js';
 import { addExpectedApi, updateExpectedApi, deleteExpectedApi, setExpectedApis, setNodeSemantic } from './api_ops.js';
 import { updateStatus } from './status_tools.js';
+// ★ T334：`status` op 的 `data.evidence` 形状 —— ★ **类型引用**（不新增判据；判据在 `domain/overlay.ts`）。
+import type { ProgressEvidence } from '../../../domain/overlay.js';
 import { addAnnotationByTool, resolveAnnotation } from './annotation_tools.js';
 import { submitApproval, reviewAnnotation, type ApprovalDecision } from '../../observe/reconcile/approval.js';
 import { saveSnapshot, rollbackSnapshot, deleteSnapshot, saveAutoSnapshot, pruneSnapshots } from '../lifecycle/snapshot.js';
@@ -357,10 +359,15 @@ function applyOperation(feature: string, rawOp: FeatureOperation, agent?: string
     }
     case 'status': {
       // ★ T170：三条已由 `checkOpSpec` 判（见 `OP_SPECS`）—— 此处不再重复。
+      // ★★★ T334（2026-10-15）：`data.evidence`（`ProgressEvidence` 三档之一）**必须传下去** ——
+      //   写端 `updateStatus` 置 `done` 时有闸（`validateProgressEvidence`）⇒ 不传 ⇒ 必然抛
+      //   ⇒ 整套"完成必须带证据"的闸**在真实路径上是装饰**（t334 证书钉的就是这条真实路径）。
+      //   ★ 形状不必在此再校验：闸（`validateProgressEvidence`）是**唯一一把尺**，形状错它会点名拒。
       return updateStatus({
         feature,
         node_id: op.id as string,
         status: op.data!.status as DiagramStatus,
+        evidence: op.data!.evidence as ProgressEvidence | undefined,
       });
     }
     case 'annotation':
