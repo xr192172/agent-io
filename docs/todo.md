@@ -3200,3 +3200,18 @@
         **而这三格都不需要新工具族**，只需把**已有的文法 / 块名 / 账**接起来。
       ⇒ **建议顺序**（按"能解放多少重复劳动 × 判据现成度"）：③ 最小最具体（缺口已被点名三次）⇒ ②+① 合成"那只手"
         ⇒ ⑤ 需先定"记什么"（属 T146 那三条脊柱里的 ③ 交接物契约）。
+
+- [ ] **T328 ★★★ 【收归】进度轴：新权威（`progress`@overlay）已立，**旧轴写入点仍在** ⇒ 收归只做了一半**
+      *(来源：2026-10-15 用户"把任务系统建好"；已完成前四步，见 `docs/replan-2026-10-15.md` §19–§20。)*
+      ⇒ **已做**：`OverlayAnchor.progress`（+ 注释区分"实现进度"与"意图存活"两个问句）· seed 归类 + **加进 `continue` 跳过条件**
+        （同 T182 lifecycle 之坑）· `applyOverlay` 投影回 base · `resolveDiagramStatus` 供读侧统一取值 ·
+        `import_project.ts:942` 的 `status:'done'` 降为读侧默认。**夹具 A/B2 均 PASS，build ✓ verify 4/4 ✓**。
+      ⇒ ★★ **未达成（判据①：写入点 9→1）**：`progress` 新权威只有 1 个写入点，但**旧轴 `status` 的写入点仍在**：
+        `import_project.ts:1338 / :1351` · `monolith.ts:587` · `simulation_engine.ts:326` ·
+        `status_tools.ts` 多处 · `feature_ops.ts:43` · `templates.ts`。⇒ **"新家住上、老家还在" = 半修**。
+      ⇒ **要做**：① 逐个降级/改调权威，直到判据①真达成；② **置 `progress='done'` 必须带 `evidence`**
+        （三档之一：`expectations` 全绿 / 可复跑读数 / 显式人工确认署名），否则**拒绝**（不静默）；
+        ③ 把 `tmp_fixture_progress.mjs` 升格为 **`certs/` 下的正式证书**（判据不许住临时脚本）。
+      ⇒ **阻塞项（⑥ 之前必须先解）**：`NodeDecision` / `Expectation` **无稳定 id** ⇒ "引用而不复制"表达不出来。
+      ⇒ **判据**：写入点清单只剩 overlay 那条路 · `rebuild_design=true` 后人写的 progress 仍在 · 不带 evidence 置 done 被拒 ·
+        证书进 runner（`certs/` 命名匹配 `t\d+.*-cert\.mjs`）。
