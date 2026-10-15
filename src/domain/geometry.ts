@@ -189,8 +189,14 @@ export interface NodeDecision {
    * ★ 形状与判据见 `src/domain/expectation.ts`；判定器在 `application/design/intent/expectations.ts`。
    */
   expectations?: import('./expectation.js').Expectation[];
-  /** 生效状态：active=当前生效（默认）；superseded=已被新版取代（历史版不删，进 decision_history）；draft=讨论中未定稿 */
-  status?: 'active' | 'superseded' | 'draft';
+  /**
+   * 生效状态：active=当前生效（默认）；draft=讨论中未定稿。
+   *
+   * ★ 原 `'superseded'`（已被新版取代）**已退场**（2026-10-15）：它是 `decision_history` 的**重复表达** ——
+   *   update 时旧版本会被自动压入 `decision_history`（见 `dsl_ops/node_ops.ts` 的 `applyDecisionWrite`），
+   *   无需再用一个 status 值表达"被取代"。历史版本照样不删（进 decision_history）。
+   */
+  status?: 'active' | 'draft';
   /** 功能线：同类决策的聚合标签（如"内存治理"/"链路追踪"），query decisions 按此分组，相似功能线合并视图 */
   thread?: string;
   /** 自由标签：跨功能线检索（如 "blackbox" "performance"） */

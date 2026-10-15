@@ -95,8 +95,8 @@ export interface QueryFeatureInput {
   scope?: string;
   /** decisions：按功能线过滤（不传=全部，按 thread 分组输出） */
   thread?: string;
-  /** decisions：按状态过滤（active/superseded/draft；不传=全部） */
-  decision_status?: 'active' | 'superseded' | 'draft';
+  /** decisions：按状态过滤（active/draft；不传=全部）。★ 原 'superseded' 已退场（由 decision_history 自动压栈表达，见 geometry.ts 的 NodeDecision.status） */
+  decision_status?: 'active' | 'draft';
   /** file：文件 ID（对应 SemanticFile.id = geometry Node.id） */
   file_id?: string;
   /** nodes：按职责分层过滤（main/error/detail） */

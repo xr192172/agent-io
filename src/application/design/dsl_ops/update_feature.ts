@@ -849,7 +849,16 @@ function applyDecisionOp(feature: string, op: CheckedOperation<FeatureOperation>
     decision.evidence_source = data.evidence_source as string[];
   }
   if (typeof data.status === 'string') {
-    if (!['active', 'superseded', 'draft'].includes(data.status)) throw new Error(`decision.update 的 data.status 非法：${data.status}`);
+    // ★ 'superseded' 已退场（2026-10-15）：**显式拒绝并说明理由**，不静默并入通用"非法"（否则调用方会以为是自己拼错）。
+    //   退场理由：'被取代'由 decision_history 的**自动压栈**表达（update 时旧版自动入栈），该 status 值是重复表达。
+    if (data.status === 'superseded') {
+      throw new Error(
+        "decision.update 的 data.status='superseded' 已退场、不再合法：" +
+          "'被取代'由 decision_history 的自动压栈表达（update 时旧版本自动入栈），不需要单独的 status 值。" +
+          "请改用 'active'|'draft'。",
+      );
+    }
+    if (!['active', 'draft'].includes(data.status)) throw new Error(`decision.update 的 data.status 非法：${data.status}`);
     decision.status = data.status as NodeDecision['status'];
   }
   if (data.thread !== undefined) {

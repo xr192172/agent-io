@@ -170,7 +170,7 @@ export const OP_SPECS: readonly OpSpec[] = [
       '★ **`data` 各字段的形状（2026-10-11 T174 从实现逐个读出 —— 照填）**：' +
       '`rationale` / `consequences` / **`acceptance`** / `thread` = **字符串**（★ **不是数组**）· ' +
       '`votes` = 数字 · `evidence_source` / `tags` = **字符串数组** · ' +
-      '`status` = `active`｜`superseded`｜`draft` · `author` = `human`｜`llm` · ' +
+      '`status` = `active`｜`draft`（★ 原 `superseded` 已退场，见 `NodeDecision.status` 注释） · `author` = `human`｜`llm` · ' +
       '`note` = **字符串**（修订说明）· ' +
       '`dissent` = 数组，每项 `{option: 字符串(必填), votes?: 数字, evidence_source?: 字符串数组}`（★ **未决分歧**放这，待对拍）· ' +
       '`alternatives` = 数组，每项 `{option, rejected_because}` 两个都要（★ **已被排除的方案**放这，缺 `rejected_because` 会被拒）',
