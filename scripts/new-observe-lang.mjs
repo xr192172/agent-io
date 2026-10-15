@@ -16,20 +16,26 @@
  *   node scripts/new-observe-lang.mjs ruby --ext rb --probe-module camprobe \
  *       --comment hash --root-marker 'observe-lang-ruby/camprobe.rb' \
  *       --return-node return --fn-types method --implicit-return
- *   // Java（braces 体 + 探针类要拷进被测工程）：
+ *   // Java（braces 体 + 探针类拷进被测工程 + 真实包 import —— v2 起）：
  *   node scripts/new-observe-lang.mjs java --ext java --probe-module Camprobe \
- *       --comment slash --root-marker 'observe-lang-java/Camprobe.java' \
+ *       --comment slash --root-marker 'observe-lang-java/observe/probe/Camprobe.java' \
  *       --return-node return_statement --fn-types method_declaration,constructor_declaration \
- *       --body-style braces --indent-unit '    ' --probe-file Camprobe.java
+ *       --body-style braces --indent-unit '    ' --probe-file Camprobe.java \
+ *       --guard-types if_statement,for_statement,enhanced_for_statement,while_statement,do_statement,labeled_statement \
+ *       --return-stop-types lambda_expression,class_body,enum_body,interface_body,record_body \
+ *       --package-decl-node package_declaration
  *
  * ★ `--comment` **用助记词** slash / hash / dash，别传字面量：
  *   Git Bash(MSYS) 会把**裸 `//`** 当路径根并掉（实测 `--comment '//'` 拿到的是 `/`）
  *   ⇒ 生成的幂等标记少一根斜杠 ⇒ 宿主编译不过（2026-10-15 实测踩到）。
  *
- * ## 为什么这样切（本仓 "六格" 的落地）
+ * ## 为什么这样切（本仓 "六格+⑦" 的落地）
  *   · 骨架里有：③应用模型 / ④sink契约 / ⑤错误传播 / 主流程 / 项目级四件 ⇒ **语言无关**；
- *   · 空格里只有：①命名 / ②遍历 / ⑥取值 + 语法小抄 ⇒ **语言专属**。
- *   ⇒ 这就是"加语言只补小文件"的**可执行版本**：文件是生成的，你只填三个函数。
+ *   · 空格里只有：①命名 / ②遍历 / ⑥取值 / ⑦引用方式 + 语法小抄 ⇒ **语言专属**。
+ *   ⇒ 这就是"加语言只补小文件"的**可执行版本**：文件是生成的，你只填四个函数 + 小抄。
+ *   ★ v2（2026-10-15）：模板与修好的 Java 包同步（T322 三连崩的修复全沉进通用流程），
+ *     并新增 **⑦ 引用方式**（`buildImport` + `packageDeclNode`）—— 把"同包零 import"
+ *     这个隐假设变成显式决策，支撑打包文件（T321）。
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -46,7 +52,8 @@ if (!langId || langId.startsWith('--')) {
     '用法: node scripts/new-observe-lang.mjs <langId>' +
       ' [--ext e] [--probe-module m] [--comment slash|hash|c] [--root-marker p] [--return-node t]' +
       ' [--fn-types a,b,c] [--implicit-return] [--body-style braces|indent]' +
-      " [--indent-unit s] [--probe-file f]",
+      " [--indent-unit s] [--probe-file f] [--guard-types a,b,c] [--return-stop-types a,b,c]" +
+      ' [--package-decl-node t]',
   );
   process.exit(2);
 }
@@ -80,6 +87,20 @@ const fnTypes = opt('fn-types', '')
   .split(',')
   .map((s) => s.trim())
   .filter(Boolean);
+/** ★★ 控制语句节点类型表（T273/T276/T322）：判「return 是无花括号单语句体」用（braces 体必填）。
+ *   indent 体语言留空（单行 suite 用 `; ` 展开，不需要包块）。 */
+const guardTypes = opt('guard-types', '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+/** ★ `collectReturns` 不停进去的容器（lambda 体 / 类体…）：漏填会把里层的 return
+ *   误记成外层函数的 exit 探针（T322：误记比不观测更坏）。 */
+const returnStopTypes = opt('return-stop-types', '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+/** ★ ⑦ 引用方式的落点：package 声明节点类型（Java `package_declaration`；没有 package 概念的语言不传）。 */
+const packageDeclNode = opt('package-decl-node', '');
 
 if (!ext) { console.error('缺 --ext（这门语言的源文件扩展名，不含点）。例：--ext rb'); process.exit(2); }
 if (bodyStyle !== 'braces' && bodyStyle !== 'indent') {
@@ -113,7 +134,10 @@ let src = tmpl
   .replaceAll('{{BODY_STYLE}}', bodyStyle)
   .replaceAll('{{INDENT_UNIT}}', indentUnit)
   .replaceAll('{{PROBE_FILE}}', probeFile)
-  .replaceAll('{{FN_TYPES}}', fnTypes.map((t) => `'${t}'`).join(', '));
+  .replaceAll('{{FN_TYPES}}', fnTypes.map((t) => `'${t}'`).join(', '))
+  .replaceAll('{{GUARD_TYPES}}', guardTypes.map((t) => `'${t}'`).join(', '))
+  .replaceAll('{{RETURN_STOP_TYPES}}', returnStopTypes.map((t) => `'${t}'`).join(', '))
+  .replaceAll('{{PACKAGE_DECL_NODE}}', packageDeclNode ? `'${packageDeclNode}'` : 'undefined');
 
 // 模板里 `{{...}}` 一个都不该剩
 const leftover = src.match(/\{\{[A-Z_]+\}\}/g);
@@ -126,13 +150,22 @@ fs.writeFileSync(out, src, 'utf8');
 
 console.log(`✅ 已生成填空题：${path.relative(REPO, out)}`);
 console.log('');
-console.log('── 还差这几格（每格一个具名函数；**没填就抛错，不会静默**）──');
+console.log('── 还差这几格（每格一个具名函数/一处数据；**没填就抛错，不会静默**）──');
 console.log(`  ① 命名规则   probeNameOf(fn, mod)      —— 探针叫什么（含所属 + 匿名块带 @L行C列）`);
-console.log(`  ② 遍历模型   scanFunctions(root)        —— 函数在哪 / body 是哪段（知识点类型建议：${fnTypes.join(', ')}）`);
+console.log(`  ② 遍历模型   scanFunctions(root)        —— 函数在哪 / body 是哪段（函数节点类型：${fnTypes.join(', ')}）`);
 console.log(`  ⑥ 取值时机   returnValueOf(ret)        —— return 的返回值节点（node 类型经验值：${returnNode}）`);
+console.log(`  ⑦ 引用方式   buildImport(spec)          —— 头部 import 怎么写（同包 ⇒ 空串）；落点看 SYNTAX.packageDeclNode`);
 console.log(`  · 语句渲染   probeCall(name, fields)    —— 一条探针调用语句在你语言里长什么样`);
-console.log(`  · 语句渲染   buildImport(spec)          —— 头部 import 怎么写`);
-console.log(`  · 语法小抄   ${LANG_CC}_SYNTAX            —— comment / fnTypes / rootMarker`);
+console.log(`  · 语法小抄   ${LANG_CC}_SYNTAX            —— comment / fnTypes / rootMarker / bodyStyle / indentUnit / probeFile`);
+console.log(`  · 语法小抄   guardTypes                 —— 控制语句类型表（${guardTypes.length ? guardTypes.join(', ') : '【空】'}）`);
+console.log(`  · 语法小抄   tempVarDecl                —— 临时变量声明（'' / 'const ' / (fn) => 类型；**必填**）`);
+console.log(`  · 语法小抄   returnStopTypes            —— collectReturns 不停进去的容器（${returnStopTypes.length ? returnStopTypes.join(', ') : '【空】'}）`);
+console.log(`  · 语法小抄   packageDeclNode            —— head 落点（${packageDeclNode || '文件头'}）`);
+if (bodyStyle === 'braces' && guardTypes.length === 0) {
+  console.log('');
+  console.log('  ★★ braces 体语言但没传 --guard-types：无花括号 return（`if (c) return 1;`）会被两段法改写');
+  console.log('     ⇒ 语法错 + 探针逃逸成无条件执行（T322 三连崩）⇒ 请补 --guard-types <该语言控制语句类型>。');
+}
 console.log('');
 console.log('── 还得做（不是填空，是各语言的必然件）──');
 console.log(`  1) 写探针运行时：observe-lang-${langId}/（Python 那份是 148 行的量级参照）`);

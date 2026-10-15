@@ -2971,14 +2971,19 @@
       ⇒ **要做**：要么像 Go 侧那样插桩时自动拷（要先定"拷到哪"——根？还是探针包目录？），
         要么在回执里**响亮提示**"没找到路标 ⇒ 请先拷贝探针目录"（现在推断失败才说，太晚）。
 
-- [ ] **T321 ★★ 【设计升级】Java 只支持【默认包】文件 —— 打包项目插不了**
+- [x] **T321 ★★ 【已修·设计升级】Java 只支持【默认包】文件 —— 打包项目插不了**
       *(来源：给 Java 包写 limitations 时想清楚了这个缺口；2026-10-15 用 `fail` 通道做成了**硬失败**。)*
       ⇒ **根因（语言级，非实现懒）**：探针类 `Camprobe` 在**默认包**，而 **Java 禁止从默认包 import**
         ⇒ 打包文件（`package com.foo;`）里注入的 `Camprobe.capture(...)` **永远解析不了**。
-      ⇒ **现状**：这类文件**硬失败**（记进 `result.error`、不写盘、不静默产出编译不过的代码 —— T315 同族）。
-      ⇒ **要做**：探针类放进**真实包**（如 `observe.probe`）+ 按文件生成 `import observe.probe.Camprobe;`
-        （`buildImportStmt` 已留好钩子，Java 侧现在返回空串）。★ 改完 t316 的 Java 节要加**打包夹具**：
-        现在那节只覆盖默认包。
+      ⇒ **已修（2026-10-15 v2）**：① 探针类搬进**真实包** `observe-lang-java/observe/probe/Camprobe.java`
+        （`package observe.probe;`）；② 每个被插桩文件统一 `import observe.probe.Camprobe;`
+        （Java 允许从命名包 import 进默认包）；③ 骨架 `InstrumentHooks` 加 `packageDeclNode` 数据，
+        head（import + 幂等标记）落在 package 声明**之后**（`headOffset`；默认行为不变，TS/Py 不受影响）；
+        ④ 删掉 Java 侧打包硬失败。⇒ **默认包与打包文件一视而同**。
+      ⇒ **判据**：t316 Java 节加打包夹具（`com/foo/Packaged.java`）：无硬失败、import 落在 package 之后、
+        插桩后 javac 过、stdout 逐字不变、接 sink 出 20 事件、还原逐字相同 ⇒ **34/34 全绿**。
+      ⇒ ★ 遗留（如实）：编译时须把 `<项目根>/observe-lang-java/` 加进 sourcepath/classpath
+        （或把 Camprobe.java 一并传给 javac）—— 已写进 javaObservePack.limitations。
 
 - [x] **T322 ★★★ 【已修·真缺陷】Java 插桩 return 改写三连崩 —— 出生证第一次跑抓到 5 个 FAIL**
       *(来源：`certs/t316-observe-pack-cert.mjs` 第 5 节（Java）首跑：基线编译就挂、插桩后编译挂、stdout 检查恒真、重载检查自身数错。)*
@@ -3019,3 +3024,25 @@
       ⇒ **修**：判据收成骨架 `isBracelessBodyReturn(parent, guardTypes)` —— **只看父类型**（tree-sitter 父节点即直接父，
         块内的 return 父节点是块，根本到不了这里；`else_clause` 只在 TS 表里，Java 没有该节点靠 if_statement 一并覆盖）。
       ⇒ ★ 这是"同一判据住两处"的第 N 次罚款：**收口时顺带修掉了另一侧的 latent bug**。
+
+- [x] **T325 ★★★ 【已修·框架】new-observe-lang 填空题模板 v2 重写：同步修复 + 新增第 ⑦ 格「引用方式」**
+      *(来源：用户要求「按照重写流程把填空题重写成更通用的框架（多加一个填空题）」—— §6.6 整块重写。)*
+      ⇒ **事实（动手前数出来的）**：v1 模板的 `collectSitesImpl`/`collectReturns` 是**修复前旧版**
+        （无父节点、无 lambda 拦截、无包块、无类型声明）—— T322 给 Java 包的修复**只落在
+        instrument_java.ts，没回流模板** ⇒ 下一门语言会**原样复现**三连崩（"半修"的活标本）。
+      ⇒ **修 ①（同步）**：T322 三形态全沉进通用流程 —— braceless guard **包块**、两段法带**声明**+
+        **行+列**临时变量、`collectReturns` 记**父节点** + 拦 lambda/类体；indent 分支同步 Python
+        已验证的形状（单行 suite 换行展开 / `; ` 分隔 / 隐式返回尾部探针落点）。
+      ⇒ **修 ②（多加一格）**：新增 **⑦ 引用方式** = `buildImport(spec)` 升级为具名填空格 +
+        `SYNTAX.packageDeclNode`（head 落点数据）；骨架 `InstrumentHooks.packageDeclNode` +
+        导出 `headOffset(root, packageDeclNode)`（package 声明之后；不填 ⇒ 文件头，行为不变）。
+        ⇒ 把 Java v1「同包零 import」这个**隐假设**变成显式决策 —— 它正是 T321 的根。
+      ⇒ **修 ③（T322 陷阱数据化）**：SYNTAX 增 `guardTypes`（控制语句表）/ `tempVarDecl`
+        （临时变量声明：固定串或 AST 推导函数）/ `returnStopTypes`（collectReturns 不停进去的容器）。
+      ⇒ **生成器**：新增 `--guard-types` / `--return-stop-types` / `--package-decl-node`，
+        填空清单印出 ⑦ 与三项小抄；braces 体但没传 guard-types 时**显式警告**（T322 会复现）。
+      ⇒ **判据**：① 生成两门虚拟语言（indent/braces）⇒ `tsc --noEmit` 全绿、无残留占位符；
+        ② t316 34/34（含新增打包夹具）；③ verify 4/4；④ observe-skeleton 4/4；t186b 23/23、t201 15/15、
+        t198/t203 exit 0。⑤ Java 包 v2 落地（T321 结单）共用同一条判据。
+      ⇒ ★ 量具自身修一处：证书 detail 用 `?? '文件未被扫描到'` 会在**成功分支**也印该串
+        （error 为 undefined）⇒ 改成三分支；又一次"输出误导"。

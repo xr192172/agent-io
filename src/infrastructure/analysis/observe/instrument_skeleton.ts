@@ -22,7 +22,7 @@
  *     ① **命名规则**、⑥ **取值时机** 是实现 `collectSites` 的内部件（见 `instrument_py.ts` 的分节）。
  *   其余是**每语言必需的语法/位置管道**（不同语言无法共用）：
  *     `markers`（幂等标记串）· `comment`（标记注释前缀）· `probeImport`（探针模块引用）·
- *     `buildImportStmt`（头部 import 语句）。
+ *     `buildImportStmt`（头部 import 语句）· `packageDeclNode`（head 落点：package 声明之后）。
  *
  * ## ★★ 2026-10-15 第二笔：把「项目级四件」也收进骨架（本笔）
  * 上一笔只抽走了**单文件**的主流程；**项目级**那几件（收文件 / 数函数 / 向上找根 / 逐文件循环）
@@ -158,6 +158,25 @@ export function prependAfterShebang(content: string, head: string): string {
   return content.slice(0, nl + 1) + head + content.slice(nl + 1);
 }
 
+/**
+ * ★ ⑦ 引用方式的**落点偏移**（2026-10-15 v2）：文件里有 `packageDeclNode` 节点 ⇒ 返回它的 **endIndex**
+ * （head 落在 package 声明**之后** —— Java 语法：import 必须在 package 之后）；
+ * 没填或文件里没有该节点 ⇒ 0（落文件头，走 `prependAfterShebang`）。
+ *
+ * ★ 为什么直接拿 endIndex 当插入点就是对的：package 声明是文件第一条语句，**在任何函数体之前**
+ *   ⇒ 该偏移不受 `collectSites` 产出的任何编辑影响；且 `applyInsertions` 按**原文偏移**拼接
+ *   ⇒ 偏移语义与原 insertions 一致，不需要任何换算。
+ */
+export function headOffset(root: AstNode, packageDeclNode?: string): number {
+  if (packageDeclNode) {
+    for (let i = 0; i < root.childCount; i++) {
+      const c = root.child(i);
+      if (c && c.type === packageDeclNode) return c.endIndex;
+    }
+  }
+  return 0;
+}
+
 /** `collectSites` / `collectDeepSites` 的入参（语言包据此产出编辑）。 */
 export interface CollectSitesCtx {
   root: AstNode;
@@ -228,6 +247,16 @@ export interface InstrumentHooks {
   rootHint?: string;
   /** 头部 import 语句（语言语法不同：`import … from` / `const {…}=require` / `from … import …`）。 */
   buildImportStmt(probeImport: string, content: string, file: string): string;
+  /**
+   * ★ ⑦ **引用方式的落点数据**（2026-10-15 v2 新增）：package 声明节点类型
+   * （Java `package_declaration`；没有 package 概念的语言不填）。
+   *
+   * 填了 ⇒ 头部 import/标记落在该节点**之后**（Java 语法：import 必须在 package 声明之后）；
+   * 不填 ⇒ 落在文件头（`prependAfterShebang`，保住 shebang）。
+   * ★ 为什么是数据不是钩子：两侧只差"落在哪"这一个事实；而落点**必须先于所有其它编辑**确定
+   *   （package 声明在任何函数体之前 ⇒ 它的 endIndex 不受其它编辑影响 ⇒ 偏移恒有效）。
+   */
+  packageDeclNode?: string;
   /**
    * ★ 「函数」节点类型集合（台账判据③的口径）。**数据，不是钩子** —— 两侧只差这一个集合。
    * ★★ 2026-10-15 由 `countFunctions(root)` 降级：那个钩子的两份实现是同一个递归。
@@ -333,14 +362,30 @@ export async function instrumentFileWithHooks(
 
   const importStmt = hooks.buildImportStmt(probeImport, content, file);
 
-  // ★ `let`（不是 const）：下面还要补 import/标记头
-  let out = applyInsertions(content, insertions);
   // 头部补 import 与分级标记（shebang 兼容：shebang 必须留在文件首行）
   // scope 模式走 globalThis.__probeScope，无需每文件 import 探针 → 不注入 importStmt
   let head = '';
   if (!hasCore) head += (opts.scope === true ? '' : importStmt) + `${hooks.comment} ${hooks.markers.core}\n`;
   if (enableDeep && !hasDeep) head += `${hooks.comment} ${hooks.markers.deep}\n`;
-  if (head) out = prependAfterShebang(out, head);
+
+  // ★ ⑦ 引用方式的落点（2026-10-15 v2）：填了 `packageDeclNode` 且文件真有该节点
+  //   （如 Java 的 package 声明）⇒ head 作为一条**纯插入**参与分段拼接，落在 package 声明之后
+  //   （Java 语法：import 必须在 package 之后；package 声明在任何函数体之前 ⇒ 该偏移恒有效）。
+  //   否则落文件头（`prependAfterShebang`）。
+  //   ★ head **不是探针点** ⇒ 从 `insertions`（原表）映射 result.sites，不混进台账。
+  const headAt = head ? headOffset(root, hooks.packageDeclNode) : 0;
+  const all: Insertion[] =
+    headAt > 0
+      ? [
+          ...insertions,
+          {
+            index: headAt,
+            site: { probe: 'observe:head', file, line: 0, kind: 'enter', level: 'core', injected: `\n${head}` },
+          },
+        ]
+      : insertions;
+  let out = applyInsertions(content, all);
+  if (head && headAt === 0) out = prependAfterShebang(out, head);
 
   result.sites = insertions.map((i) => i.site);
   if (applyWrite) {

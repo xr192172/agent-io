@@ -6,13 +6,14 @@
  * 骨架（`instrument_skeleton.ts`）已经把**语言无关**的那几格全包了：
  *   ③ 应用模型（分段拼接）· ④ sink 契约 · ⑤ 错误传播 · 主流程（读盘/幂等/解析/应用/备份/写盘）·
  *   项目级四件（收文件 / 数函数 / 向上找根 / 逐文件循环）。
- * ⇒ 一门新语言要决定的**只剩这三件事**，各对应**一个具名函数**：
+ * ⇒ 一门新语言要决定的**只剩这几件事**，各对应**一个具名函数或一处数据**：
  *
  *   ① **命名规则** `probeNameOf(fn, mod)`  —— 这个函数叫什么探针名
  *   ② **遍历模型** `scanFunctions(root)`   —— 函数在哪、它的 body 是哪一段
  *   ⑥ **取值时机** `returnValueOf(ret)`    —— `return` 的返回值是哪个节点（没有则 null）
+ *   ⑦ **引用方式** `buildImport(spec)` + `SYNTAX.packageDeclNode` —— 探针怎么被引进来、head 落哪
  *
- * 外加**两个语句渲染件**（`probeCall` / `buildImport`）与一份**语法小抄** `SYNTAX`
+ * 外加**一个语句渲染件**（`probeCall`）与一份**语法小抄** `SYNTAX`
  *   —— 它们是字符串与数据，照邻语改写即可，不是逻辑。
  *
  * ★★★ **没填的格子会当场抛错**，并告诉你"该填哪个文件的哪个函数" ——
@@ -57,6 +58,14 @@ const PROBE_MODULE = 'Camprobe';
 const LANG_ID = 'java';
 const MARKER = 'observe:instrumented';
 const DEEP_MARKER = 'observe:deep';
+/**
+ * ★ ⑦ 引用方式（2026-10-15 v2）：探针类的**全限定名**（FQCN）。
+ * 探针运行时住在 `observe-lang-java/observe/probe/Camprobe.java`，声明 `package observe.probe;`
+ * ⇒ 每个被插桩文件统一 `import observe.probe.Camprobe;`（Java 允许从命名包 import 进默认包）。
+ * ★ v1 是"探针在默认包、同包零 import"⇒ 打包文件（`package com.foo;`）永远解析不了（T321）——
+ *   v2 把那个**隐假设**变成显式决策：探针进真实包 + 按文件 import，默认包与打包文件一视同仁。
+ */
+const PROBE_FQCN = 'observe.probe.Camprobe';
 
 /** ② 遍历模型：一个「函数」槽位。① ⑥ 都从它出发表。 */
 export interface JavaFnSlot {
@@ -220,10 +229,10 @@ export const Java_SYNTAX = {
   comment: '//',
   /** 「函数」节点类型集合 —— 同时是台账判据③的口径（hooks.fnTypes） */
   fnTypes: new Set<string>(['method_declaration', 'constructor_declaration']),
-  /** 项目根路标（相对根、posix）：从文件向上找含它的目录 */
-  rootMarker: 'observe-lang-java/Camprobe.java',
-  /** **隐式返回**：函数体最后一个表达式就是返回值（Ruby / Python 的多数函数）
-   *  ⇒ 没有显式 return 时骨架会在函数体末尾补一条出口探针，否则这类函数只剩 enter。 */
+  /** 项目根路标（相对根、posix）：从文件向上找含它的目录。
+   *  ★ v2：探针进了真实包 ⇒ 路标是 `observe-lang-java/observe/probe/Camprobe.java`。 */
+  rootMarker: 'observe-lang-java/observe/probe/Camprobe.java',
+  /** **隐式返回**：Java 没有（每个方法要么显式 return、要么 void）⇒ false。 */
   implicitReturn: false,
   /**
    * ★★ **函数体形态**（2026-10-15 加 —— 加 Java 时踩出来的第 4 个轴，前 3 个是 ① ② ⑥）：
@@ -236,6 +245,27 @@ export const Java_SYNTAX = {
   indentUnit: '    ',
   /** 探针运行时文件名 —— ★ **必须从「收哪些文件」里排除**，否则会把探针打进探针自己。 */
   probeFile: 'Camprobe.java',
+  /** ★ 控制语句类型表（T273/T276/T322）：无花括号 return 的父节点判定。 */
+  guardTypes: JAVA_GUARD_TYPES,
+  /**
+   * ★ 两段法/包块改写的临时变量**声明前缀**：取外层方法的**声明返回类型**（`int` / `List<String>`…）。
+   * ★ 为什么不用 `var`：`var` 会丢掉菱形推断的目标类型 —— `return new ArrayList<>();`
+   *   在方法返回 `List<String>` 时靠**目标类型**推断，换成 `var tv = new ArrayList<>();`
+   *   会钉成 `ArrayList<Object>` ⇒ `return tv;` 编译不过。用声明类型则与原 return 推断完全一致。
+   * ★ 取不到 ⇒ 抛（见 `declTypeOf`）：AST 形态意外 = 本包的 bug，不静默降级成 `ret: undefined`。
+   */
+  tempVarDecl: (fn: JavaFnSlot): string => declTypeOf(fn),
+  /**
+   * ★ `collectReturns` 不停进去的容器（T322 的"误记"陷阱）：lambda 体与各种类体里的 return
+   *   **不属于本方法** —— 不停会把它们记成【本方法】的 exit 探针 ⇒ 误记比不观测更坏
+   *   （limitations 已声明 lambda/匿名类不观测）。
+   */
+  returnStopTypes: new Set<string>(['lambda_expression', 'class_body', 'enum_body', 'interface_body', 'record_body']),
+  /**
+   * ★ ⑦ 引用方式的落点：Java 的 import 必须在 package 声明**之后** ⇒ 填 `package_declaration`，
+   *   骨架会把 head（import + 幂等标记）落到它后面；默认包文件没有该节点 ⇒ 落文件头。
+   */
+  packageDeclNode: 'package_declaration',
 };
 
 /** 是否可插桩的 java 源文件 */
@@ -270,9 +300,11 @@ export const javaInstrumentHooks: InstrumentHooks = {
   comment: Java_SYNTAX.comment,
   rootMarker: Java_SYNTAX.rootMarker,
   fnTypes: Java_SYNTAX.fnTypes,
-  probeImport: (file, projectRoot) =>
-    path.relative(path.dirname(file), path.join(projectRoot, PROBE_DIR_REL)).replaceAll('\\', '/') || '.',
+  // ★ ⑦ 引用方式：spec = 探针类 **FQCN**（不是相对路径 —— Java 按限定名 import，与文件位置无关）
+  probeImport: () => PROBE_FQCN,
   buildImportStmt: (spec) => buildImport(spec),
+  // ★ ⑦ 落点：import 必须在 package 声明之后 ⇒ 骨架把 head 落到它后面（默认包文件落文件头）
+  packageDeclNode: Java_SYNTAX.packageDeclNode,
   collectSites: (ctx) => collectSitesImpl(ctx),
 };
 
@@ -308,9 +340,14 @@ function probeCall(name: string, f: ProbeFields): string {
   return `Camprobe.capture(${str(name)}${kv.length ? ', ' + kv.join(', ') : ''})`;
 }
 
-/** 同包同目录 ⇒ **不需要 import**（探针类与被插桩代码都在 default package）。 */
-function buildImport(_spec: string): string {
-  return '';
+/**
+ * ⑦ 引用方式：`import observe.probe.Camprobe;`
+ * ★ 为什么不是相对路径：Java 按**限定名** import，与文件位置无关 ⇒ spec（FQCN）直接用。
+ * ★ 默认包文件也这么写：Java 允许从命名包 import 进默认包 —— v1 的"同包零 import"反而不支持打包文件。
+ * ★ v1 的形态（返回空串）随 T321 一起废弃：那意味着"探针必须在默认包"，是隐假设不是决策。
+ */
+function buildImport(spec: string): string {
+  return `import ${spec};\n`;
 }
 
 // ═════════════════════════════════════════════════════════════
@@ -318,25 +355,13 @@ function buildImport(_spec: string): string {
 // ═════════════════════════════════════════════════════════════
 
 function collectSitesImpl(ctx: CollectSitesCtx): void {
-  const { root, file, content, fileRel, probes, insertions, fail } = ctx;
+  const { root, file, content, fileRel, probes, insertions } = ctx;
 
-  // ★★★ 打包文件（`package com.foo;`）【硬失败】—— Java 禁止从默认包 import，而探针类 Camprobe
-  //   就在默认包 ⇒ 注入的 `Camprobe.capture(...)` 在打包文件里永远解析不了。
-  //   ⇒ 与 T315（跨盘 import 表达不出来）同族：只能响亮失败，不静默产出编译不过的代码（ARC-7）。
-  //   ★ 用 `fail`（不是 throw）：throw 会中断整个运行，而**之前的文件已经写盘** ⇒ 留下半插桩项目。
-  for (let i = 0; i < root.childCount; i++) {
-    const c = root.child(i);
-    if (c && c.type === 'package_declaration') {
-      const pkg = c.text.replace(/;[\s\S]*$/, '').replace(/^package\s+/, '').trim();
-      fail?.(
-        `Java 打包文件暂不支持插桩：本文件声明了 package ${pkg}，而探针类 Camprobe 在【默认包】。\n` +
-          `  Java 禁止从默认包 import ⇒ 注入的探针调用在这里永远解析不了（javac "找不到符号"）。\n` +
-          `  ⇒ 现状只支持【默认包】的 .java 文件（探针与被插桩代码同包、零 import）。\n` +
-          `  ⇒ 要支持打包项目：探针类放进真实包 + 按文件生成 import（已记 T321，设计升级项）。`,
-      );
-      return;
-    }
-  }
+  // ★★★ T321（2026-10-15 v2 已解）：v1 在这里对**打包文件**（`package com.foo;`）硬失败 ——
+  //   那时探针类在默认包，Java 禁止从默认包 import ⇒ 注入的探针在打包文件里永远解析不了。
+  //   v2 探针进真实包 `observe.probe` + 按文件 `import observe.probe.Camprobe;`
+  //   （⑦ 格，head 落在 package 声明之后）⇒ 默认包与打包文件**一视同仁**，这里不再需要拦。
+  //   （`fail` 通道本身留在骨架里，供后续语言包对"这个文件形态插不了"做单文件硬失败。）
 
   const mod = path.basename(file).replace(new RegExp(`\\.java$`), '');
   const S = Java_SYNTAX.bodyStyle === 'braces';
@@ -396,7 +421,7 @@ function collectSitesImpl(ctx: CollectSitesCtx): void {
       // ★ Java 无 ASI ⇒ 临时变量必须带【类型声明】与分号（TS 的 `const` / Python 的无声明在这里都不成立）。
       if (isBracelessBodyReturn(parent, JAVA_GUARD_TYPES)) {
         const injected = v
-          ? `{ ${declTypeOf(fn)} ${tv} = ${content.slice(v.startIndex, v.endIndex)}; ${exitCall(tv)}${sep} return ${tv}${sep} }`
+          ? `{ ${declFor(fn)}${tv} = ${content.slice(v.startIndex, v.endIndex)}; ${exitCall(tv)}${sep} return ${tv}${sep} }`
           : `{ ${exitCall(null)}${sep} return${sep} }`;
         insertions.push({
           index: ret.startIndex, removeTo: ret.endIndex,
@@ -428,7 +453,7 @@ function collectSitesImpl(ctx: CollectSitesCtx): void {
       const { indent, inline } = lineInfo(content, ret.startIndex);
       insertions.push({
         index: ret.startIndex, removeTo: v.startIndex,
-        site: { probe: `${base}.exit`, file, line: rline, kind: 'exit', level: 'core', injected: `${declTypeOf(fn)} ${tv} = ` },
+        site: { probe: `${base}.exit`, file, line: rline, kind: 'exit', level: 'core', injected: `${declFor(fn)}${tv} = ` },
       });
       insertions.push({
         index: v.endIndex, removeTo: ret.endIndex,
@@ -441,6 +466,16 @@ function collectSitesImpl(ctx: CollectSitesCtx): void {
       });
     }
   }
+}
+
+/**
+ * 临时变量声明前缀（`Java_SYNTAX.tempVarDecl`：固定串或 AST 推导函数；含尾随空格，空串则不加）。
+ * ★ Java 这份是函数形态（要 AST 推导返回类型）；固定串形态（Python 的 `''`）由模板直接可用。
+ */
+function declFor(fn: JavaFnSlot): string {
+  const d = Java_SYNTAX.tempVarDecl;
+  const s = typeof d === 'function' ? d(fn) : d;
+  return s ? `${s} ` : '';
 }
 
 /**
@@ -462,24 +497,19 @@ function declTypeOf(fn: JavaFnSlot): string {
 }
 
 /**
- * 函数体内所有 return（**不进嵌套函数/lambda/类**）—— 各带【直接父节点】（判无花括号控制体用）。
+ * 函数体内所有 return（**不进嵌套函数/lambda/类体**）—— 各带【直接父节点】（判无花括号控制体用）。
  * ★ 为什么记父节点：`if (c) return 1;` 的 return 父节点是 if_statement（块内的父节点是 block）
  *   ⇒ 父类型就能区分"包块改写"与"两段法改写"两种形态。
+ * ★ 为什么拦 `fnTypes` ∪ `returnStopTypes`：它们里面的 return **不属于本方法** ——
+ *   不停会把嵌套方法（含匿名类的）、lambda 体、局部/匿名类体里的 return 记成【本方法】的 exit 探针
+ *   ⇒ 误记比不观测更坏（limitations 已声明不观测）。
  */
 function collectReturns(body: AstNode): Array<{ node: AstNode; parent: AstNode }> {
   const out: Array<{ node: AstNode; parent: AstNode }> = [];
+  const stop = new Set<string>([...Java_SYNTAX.fnTypes, ...Java_SYNTAX.returnStopTypes]);
   const walk = (n: AstNode, parent: AstNode): void => {
     if (n.type === 'return_statement') { out.push({ node: n, parent }); return; }
-    // ★ 以下容器里的 return **不属于本函数**：嵌套方法（含匿名类的）、lambda 体、局部/匿名类体
-    //   ⇒ 不停会把它们的 return 记成【本方法】的 exit 探针 —— 误记比不观测更坏（ limitations 已声明不观测）。
-    if (
-      Java_SYNTAX.fnTypes.has(n.type) ||
-      n.type === 'lambda_expression' ||
-      n.type === 'class_body' ||
-      n.type === 'enum_body' ||
-      n.type === 'interface_body' ||
-      n.type === 'record_body'
-    ) return;
+    if (stop.has(n.type)) return;
     for (let i = 0; i < n.childCount; i++) {
       const c = n.child(i);
       if (c) walk(c, n);

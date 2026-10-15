@@ -6,13 +6,16 @@
  * 骨架（`instrument_skeleton.ts`）已经把**语言无关**的那几格全包了：
  *   ③ 应用模型（分段拼接）· ④ sink 契约 · ⑤ 错误传播 · 主流程（读盘/幂等/解析/应用/备份/写盘）·
  *   项目级四件（收文件 / 数函数 / 向上找根 / 逐文件循环）。
- * ⇒ 一门新语言要决定的**只剩这三件事**，各对应**一个具名函数**：
+ * ⇒ 一门新语言要决定的**只剩这几件事**，各对应**一个具名函数或一处数据**：
  *
  *   ① **命名规则** `probeNameOf(fn, mod)`  —— 这个函数叫什么探针名
  *   ② **遍历模型** `scanFunctions(root)`   —— 函数在哪、它的 body 是哪一段
  *   ⑥ **取值时机** `returnValueOf(ret)`    —— `return` 的返回值是哪个节点（没有则 null）
+ *   ⑦ **引用方式** `buildImport(spec)` + `SYNTAX.packageDeclNode`
+ *      —— 探针运行时怎么被引进来（同包零 import / FQCN import / 相对路径 import），
+ *        以及头部落在**哪**（有 package 声明的语言，import 必须在它之后）。
  *
- * 外加**两个语句渲染件**（`probeCall` / `buildImport`）与一份**语法小抄** `SYNTAX`
+ * 外加**一个语句渲染件**（`probeCall`）与一份**语法小抄** `SYNTAX`
  *   —— 它们是字符串与数据，照邻语改写即可，不是逻辑。
  *
  * ★★★ **没填的格子会当场抛错**，并告诉你"该填哪个文件的哪个函数" ——
@@ -22,6 +25,12 @@
  *   **合成名必须含「所属」与「位置」** —— 只给函数名会撞
  *   （同名方法 / 两个匿名块 / get-set / 重载 / 实例方法与类方法同名）。
  * ─────────────────────────────────────────────────────────────
+ * ★★ 2026-10-15 v2（本模板第二次重写，§6.6 整块重写）—— 两件事：
+ *   ① **与修好的 Java 包同步**：v1 模板的 return 改写是**修复前旧版**（无父节点、无 lambda 拦截、
+ *      无包块、无类型声明）—— Java 包踩的三连崩（T322）会**原样复现**到下一门语言。
+ *      本版把修复全部沉进通用流程（下方 `collectSitesImpl` 三形态 + `collectReturns` 记父节点）。
+ *   ② **新增第 ⑦ 格「引用方式」**：把 Java v1「同包零 import」这个**隐假设**变成显式决策
+ *      （`buildImport` + `packageDeclNode`）⇒ 支撑 T321 的打包文件支持。
  */
 
 import path from 'node:path';
@@ -29,6 +38,7 @@ import {
   collectSourceFiles,
   instrumentFileWithHooks,
   instrumentProjectWithHooks,
+  isBracelessBodyReturn,
   matchesContract,
   type AstNode,
   type CollectSitesCtx,
@@ -107,6 +117,26 @@ export function returnValueOf(ret: AstNode): AstNode | null {
 }
 
 // ═════════════════════════════════════════════════════════════
+// ⑦ 填空：**引用方式**（2026-10-15 v2 新增；见文件头「v2 两件事」）
+// ═════════════════════════════════════════════════════════════
+
+/**
+ * ⑦ 探针运行时怎么被**引进来**。三种典型填法：
+ *   · **同包/同目录** ⇒ 空串（探针类与被插桩代码同一个包/目录，如 Java v1）；
+ *   · **固定限定名** ⇒ 用 `spec`（= `hooks.probeImport` 给出的引用）拼一句 import
+ *     （Java v2：`import observe.probe.Camprobe;` —— 探针进真实包，按文件 import）；
+ *   · **相对路径** ⇒ `spec` 是相对路径说明符（TS/Python 那两路）。
+ * ★ 落点由 `SYNTAX.packageDeclNode` 决定：import 必须在 package 声明**之后**的语言
+ *   （Java）填 `package_declaration`，骨架会把头部落到它后面；否则落文件头。
+ */
+function buildImport(spec: string): string {
+  throw new Error(
+    `【填空 ⑦ 引用方式】还没填：src/infrastructure/analysis/observe/instrument_{{LANG}}.ts 的 buildImport()。\n` +
+      `  规则：返回把探针运行时引进来的那句 import（同包 ⇒ 空串）；head 落点看 SYNTAX.packageDeclNode。`,
+  );
+}
+
+// ═════════════════════════════════════════════════════════════
 // 语法小抄（数据，不是逻辑）—— 换语言通常只改这一块
 // ═════════════════════════════════════════════════════════════
 
@@ -117,20 +147,66 @@ export const {{LANG_CC}}_SYNTAX = {
   fnTypes: new Set<string>([{{FN_TYPES}}]),
   /** 项目根路标（相对根、posix）：从文件向上找含它的目录 */
   rootMarker: '{{ROOT_MARKER}}',
-  /** **隐式返回**：函数体最后一个表达式就是返回值（Ruby / Python 的多数函数）
-   *  ⇒ 没有显式 return 时骨架会在函数体末尾补一条出口探针，否则这类函数只剩 enter。 */
+  /** **隐式返回**：函数体最后一个表达式就是返回值（Ruby / Python 的多数函数 / Rust）
+   *  ⇒ 没有显式 return 时骨架会在函数体末尾补一条出口探针，否则这类函数只剩 enter。
+   *  ★ braces 体也支持（探针插在 `}` 之前）；indent 体插在 body 末尾。 */
   implicitReturn: {{IMPLICIT_RETURN}},
   /**
    * ★★ **函数体形态**（2026-10-15 加 —— 加 Java 时踩出来的第 4 个轴，前 3 个是 ① ② ⑥）：
    *   · `'braces'`：体有花括号分隔（Java / C / Go / JS）⇒ enter 必须插在 `{` **之后**、
    *     语句以 `;` 结尾；插在 `{` 之前会**打断宿主**（本证实测：javac 报一串「需要 ';'」）。
-   *   · `'indent'`：体就是语句列表（Python / Ruby）⇒ enter 插在第一个语句前、换行分隔。
+   *   · `'indent'`：体就是语句列表（Python / Ruby）⇒ enter 插在第一个语句前、换行分隔；
+   *     单行 suite（`def f(): return 1`）先**换行展开**再注入。
    */
   bodyStyle: '{{BODY_STYLE}}' as 'braces' | 'indent',
   /** 缩进单位（braces 风格下给体内语句用的） */
   indentUnit: '{{INDENT_UNIT}}',
   /** 探针运行时文件名 —— ★ **必须从「收哪些文件」里排除**，否则会把探针打进探针自己。 */
   probeFile: '{{PROBE_FILE}}',
+  /**
+   * ★★ **控制语句节点类型表**（T273/T276/T322 三次实测的教训，v2 数据化）。
+   * 判据住在骨架 `isBracelessBodyReturn(parent, guardTypes)` —— **只看 return 的直接父节点**：
+   *   · `if (c) return 1;` 的 return 父节点是 `if_statement` ⇒ 判中是；
+   *   · 块体内的 return 父节点是块 ⇒ 判不中（走两段法）。
+   * ★ 为什么必须填（braces 体语言）：这种位置**不能做两段法改写** ——
+   *   ① 声明/赋值语句不能当控制语句的单语句体（`if (c) int t = 1;` 语法错）；
+   *   ② 不包块的话探针与 return **逃逸成无条件执行** ⇒ **静默改宿主行为**（T273 实测）。
+   *   ⇒ 判中时骨架把它**包成块**：`{ <声明> <tv> = <expr>; <探针>; return <tv>; }`。
+   * ★ indent 体语言（Python/Ruby）留**空集**：单行 suite 用 `; ` 分隔展开，不需要包块。
+   * ★ 每语言的表不同：TS 有 `else_clause` 节点；tree-sitter-java **没有**
+   *   （else 体是 `if_statement` 的直接子节点 ⇒ 靠 `if_statement` 一并覆盖）。
+   */
+  guardTypes: new Set<string>([{{GUARD_TYPES}}]),
+  /**
+   * ★ 两段法/包块改写里临时变量的**声明前缀**（`return <expr>` ⇒ `<声明> <tv> = <expr>`）。
+   *   · 固定串：`''`（Python：无声明）· `'const '`（TS）· `'var '`（C#）…
+   *   · 函数：需要 AST 推导时（Java：取外层方法的**声明返回类型** ——
+   *     ★ 不用 `var`：菱形推断会丢目标类型，`return new ArrayList<>()` 在返回 `List<String>`
+   *       的方法里换成 `var` 就编译不过。取不到就抛：AST 形态意外 = 本包 bug，不静默降级）。
+   * ★ 为什么单列：Java 无 ASI ⇒ 临时变量必须带类型声明与分号；Python 无声明 ——
+   *   这是**语法事实**，住小抄，不住流程。
+   */
+  tempVarDecl: (_fn: {{LANG_CC}}FnSlot): string => {
+    throw new Error(
+      `【填空 · 语法小抄 tempVarDecl】还没填：src/infrastructure/analysis/observe/instrument_{{LANG}}.ts 的 {{LANG_CC}}_SYNTAX.tempVarDecl。\n` +
+        `  填法：固定串（'' / 'const ' / 'var '）或函数 (fn) => 声明类型（Java 那种要 AST 推导的）。`,
+    );
+  },
+  /**
+   * ★ `collectReturns` **额外**不停进去的容器（T322 的"误记"陷阱，v2 数据化）。
+   * lambda 体 / 类体 / 枚举体… 里的 return **不属于本函数** —— 不停会把它们的 return
+   * 记成【本函数】的 exit 探针 ⇒ **误记比不观测更坏**（观测侧多出不存在的数据流）。
+   * ★ 与 `fnTypes` 的分工：`fnTypes` 是"哪些节点算函数"（② 的口径 + 台账判据③）；
+   *   本表是"遍历 return 时哪些容器要跳过"（⑥ 的口径）—— 两件事，两个集合。
+   */
+  returnStopTypes: new Set<string>([{{RETURN_STOP_TYPES}}]),
+  /**
+   * ★ ⑦ 引用方式的**落点数据**：package 声明节点类型（Java `package_declaration`；
+   *   没有 package 概念的语言留 `undefined`）。
+   *   填了 ⇒ 头部 import/标记落在它**之后**（Java 语法：import 必须在 package 声明之后）；
+   *   不填 ⇒ 落在文件头（TS/Python 等；shebang 仍由骨架保住）。
+   */
+  packageDeclNode: {{PACKAGE_DECL_NODE}},
 };
 
 /** 是否可插桩的 {{LANG}} 源文件 */
@@ -165,9 +241,14 @@ export const {{LANG}}InstrumentHooks: InstrumentHooks = {
   comment: {{LANG_CC}}_SYNTAX.comment,
   rootMarker: {{LANG_CC}}_SYNTAX.rootMarker,
   fnTypes: {{LANG_CC}}_SYNTAX.fnTypes,
+  // ⑦ 引用方式：探针模块引用（写进报告 `probeImport` 字段 + `buildImportStmt` 的入参）。
+  //   ★ 默认按**相对路径**算（TS/Python 那路）；按限定名 import 的语言（Java v2）改成返回 FQCN。
   probeImport: (file, projectRoot) =>
     path.relative(path.dirname(file), path.join(projectRoot, PROBE_DIR_REL)).replaceAll('\\', '/') || '.',
+  // ⑦ 引用方式：import 语句文本
   buildImportStmt: (spec) => buildImport(spec),
+  // ⑦ 引用方式：head 落点（package 声明之后）；undefined ⇒ 文件头
+  packageDeclNode: {{LANG_CC}}_SYNTAX.packageDeclNode,
   collectSites: (ctx) => collectSitesImpl(ctx),
 };
 
@@ -184,7 +265,7 @@ export interface ProbeFields {
 }
 
 /**
- * 语句渲染 ①：一条探针调用语句。★ 换语言时这里几乎一定要改（各语言字面量语法不同）。
+ * 语句渲染：一条探针调用语句。★ 换语言时这里几乎一定要改（各语言字面量语法不同）。
  * ★ 骨架负责"在哪注入 / 怎么重写 return / 幂等 / 备份"，本函数只回答"这句话长什么样"。
  */
 function probeCall(name: string, f: ProbeFields): string {
@@ -193,110 +274,161 @@ function probeCall(name: string, f: ProbeFields): string {
   );
 }
 
-/** 语句渲染 ②：头部 import（把探针模块引进来；同包/同文件的语言可以返回空串）。 */
-function buildImport(spec: string): string {
-  throw new Error(
-    `【填空 · 语句渲染】头部 import 还没填：src/infrastructure/analysis/observe/instrument_{{LANG}}.ts 的 buildImport()。`,
-  );
-}
-
 // ═════════════════════════════════════════════════════════════
-// 收集编辑（通用流程：① ② ⑥ + 骨架应用层；填空之外不用改）
+// 收集编辑（通用流程：① ② ⑥ ⑦ + 骨架应用层；填空之外不用改）
+//
+// ★★ 本段是 **T322 三连崩的修复版**（2026-10-15 v2 同步进模板）—— 三处必修：
+//   ① return 改写分**三形态**（见下）：无花括号控制体【包块】/ 裸 return / 块内带值【两段法】；
+//   ② 两段法的临时变量带**声明**（`SYNTAX.tempVarDecl`）与**行+列**（T300：同行多 return 会撞名）；
+//   ③ `collectReturns` 记**父节点** + 不进 lambda/类体（误记比不观测更坏）。
+//   ★ v1 模板缺的就是这三样 ⇒ 下一门语言会原样复现 Java 踩过的坑。别在这里"省"。
 // ═════════════════════════════════════════════════════════════
 
 function collectSitesImpl(ctx: CollectSitesCtx): void {
   const { root, file, content, fileRel, probes, insertions } = ctx;
   const mod = path.basename(file).replace(new RegExp(`\\.{{EXT}}$`), '');
   const S = {{LANG_CC}}_SYNTAX.bodyStyle === 'braces';
-  const sep = S ? ';' : ''; // 语句终止符（braces 语言必须补回来，否则语法错）
+  const sep = S ? ';' : ''; // 行尾语句终止符（braces 语言必须补回来，否则语法错）
+  const isep = '; '; // 单行内的语句分隔（braces 行内 / indent 单行 suite 都合法）
   for (const fn of scanFunctions(root)) {
     if (!fn.body) continue; // 没有可注入的体 ⇒ 记 0 探针（台账判据③会说话）
     const base = probeNameOf(fn, mod);
     const line = fn.node.startPosition.row + 1;
-    // ★ 落点与缩进**按体形态分叉**：
+
+    // ── enter：落点与缩进**按体形态分叉** ──
     //   braces ⇒ 插在 `{` **之后**；缩进 = 含 `{` 那行的缩进 + 一个单位；
-    //   indent ⇒ 插在 body 起点；缩进 = 该行已有的缩进。
+    //     单行体（`int get() { return 42; }`）⇒ `{` 之后同行还有代码 ⇒ 保持单行（`; ` 收尾）。
+    //   indent ⇒ 插在 body 起点；单行 suite（`def f(): return 1`）⇒ 起点同行之前已有代码
+    //     ⇒ 先**换行展开**再注入（Python 侧同款判据）。
     const enterAt = S ? braceInner(content, fn.body.startIndex) : fn.body.startIndex;
+    const enterInline = S && /\S/.test(content.slice(enterAt, lineEnd(content, enterAt)));
     const pad = S
       ? lineIndent(content, fn.body.startIndex) + {{LANG_CC}}_SYNTAX.indentUnit
-      : indentOf(content, fn.body.startIndex);
-
+      : lineInfo(content, fn.body.startIndex).indent;
+    const bodyInfo = lineInfo(content, fn.body.startIndex);
     if (matchesContract(`${base}.enter`, probes)) {
+      const enterCall = probeCall(`${base}.enter`, {
+        fileRel, args: fn.params.map((p) => [p, p]), ret: null, level: 'core',
+      });
       insertions.push({
         index: enterAt,
         site: {
           probe: `${base}.enter`, file, line, kind: 'enter', level: 'core',
-          injected: `${S ? '\n' : ''}${pad}${probeCall(`${base}.enter`, {
-            fileRel, args: fn.params.map((p) => [p, p]), ret: null, level: 'core',
-          })}${sep}\n${pad}`,
+          injected: S
+            ? enterInline
+              ? `${enterCall}${sep} `
+              : `\n${pad}${enterCall}${sep}\n${pad}`
+            : `${bodyInfo.inline ? `\n${bodyInfo.indent}` : ''}${enterCall}\n${bodyInfo.indent}`,
         },
       });
     }
 
     const returns = collectReturns(fn.body);
     // ★ 隐式返回的语言：一个显式 return 都没有 ⇒ 末尾补出口探针（否则观测侧只剩 enter）
+    //   braces ⇒ 插在 `}` **之前**（body.endIndex - 1）；indent ⇒ 插在 body 末尾。
     if (returns.length === 0 && {{LANG_CC}}_SYNTAX.implicitReturn && matchesContract(`${base}.exit`, probes)) {
+      const exitCall = probeCall(`${base}.exit`, { fileRel, args: [], ret: 'null', level: 'core' });
       insertions.push({
-        index: fn.body.endIndex,
+        index: S ? Math.max(fn.body.startIndex, fn.body.endIndex - 1) : fn.body.endIndex,
         site: {
           probe: `${base}.exit`, file, line, kind: 'exit', level: 'core',
-          injected: `\n${pad}${probeCall(`${base}.exit`, {
-            fileRel, args: [], ret: 'null', level: 'core',
-          })}${sep}\n${pad}`,
+          injected: S
+            ? `\n${pad}${exitCall}${sep}\n${pad}`
+            : bodyInfo.inline
+              ? `${isep}${exitCall}`
+              : `\n${bodyInfo.indent}${exitCall}`,
         },
       });
     }
 
-    for (const ret of returns) {
+    for (const { node: ret, parent } of returns) {
       if (!matchesContract(`${base}.exit`, probes)) continue;
       const v = returnValueOf(ret);
       const rline = ret.startPosition.row + 1;
+      // ★★ 临时变量名必须带【行+列】（T300：同一行多个 return 只带行号会撞名）
+      const tv = `__cam_ret_${rline}_${ret.startPosition.column + 1}`;
+      const exitCall = (retExpr: string | null) =>
+        probeCall(`${base}.exit`, { fileRel, args: [], ret: retExpr, level: 'core' });
+
+      // ── 形态一：return 是控制语句的【无花括号单语句体】（`if (n > 0) return 1;` / `else return 2;`）──
+      // ★★★ T273/T276/T322 同族：必须【包成块】——
+      //   ① 三句改写（声明 + 探针 + return）不能当控制语句的单语句体（`if (c) int t = 1;` 语法错）；
+      //   ② 不包的话探针与 return **逃逸成无条件执行** ⇒ 静默改宿主行为（T273 实测过）。
+      // ★ Java 无 ASI ⇒ 临时变量必须带【类型声明】与分号（TS 的 `const` / Python 的无声明在这里都不成立）。
+      // ★ 只对 braces 体语言生效（guardTypes 非空）；indent 语言的单行 suite 走形态二/三的 inline 分支。
+      if (isBracelessBodyReturn(parent, {{LANG_CC}}_SYNTAX.guardTypes)) {
+        const injected = v
+          ? `{ ${declFor(fn)}${tv} = ${content.slice(v.startIndex, v.endIndex)}; ${exitCall(tv)}${isep}return ${tv}${sep} }`
+          : `{ ${exitCall(null)}${isep}return${sep} }`;
+        insertions.push({
+          index: ret.startIndex, removeTo: ret.endIndex,
+          site: { probe: `${base}.exit`, file, line: rline, kind: 'exit', level: 'core', injected },
+        });
+        continue;
+      }
+
+      const { indent, inline } = lineInfo(content, ret.startIndex);
+
+      // ── 形态二：裸 return ⇒ 探针 + return 原样（无值可捕获）──
       if (!v) {
         insertions.push({
           index: ret.startIndex, removeTo: ret.endIndex,
           site: {
             probe: `${base}.exit`, file, line: rline, kind: 'exit', level: 'core',
-            injected: `${probeCall(`${base}.exit`, {
-              fileRel, args: [], ret: 'null', level: 'core',
-            })}${sep}\n${pad}return${sep}`,
+            injected: `${exitCall(null)}${inline ? isep : `${sep}\n${indent}`}return${sep}`,
           },
         });
         continue;
       }
-      // 两段法（TS 的 T270/T300、Python 的同族都走它）：
-      //   `return <expr>` ⇒ `T = <expr>` + `<探针>; return T` ⇒ 单次求值。
-      const tv = `__cam_ret_${ret.startPosition.row + 1}_${ret.startPosition.column + 1}`;
+
+      // ── 形态三：块内带值 return ⇒ 两段法（TS T270/T300、Python 的同族都走它）：单次求值 ──
+      //   `return <expr>;` ⇒ `<声明> <tv> = <expr>` + `<探针>; return <tv>;`
+      // ★★ 与 TS 的两处必要差异：① 无 ASI 的语言 stage-2 必须以 `;` 开头收尾 stage-1 的赋值
+      //    （TS 靠 ASI 蒙混，Java 里 `t = 1\nprobe()` 是语法错 —— 本包出生证第一次跑就撞到）；
+      //    ② 临时变量名带【行+列】（T300：同一行多个 return 只带行号会撞名）。
       insertions.push({
         index: ret.startIndex, removeTo: v.startIndex,
-        site: { probe: `${base}.exit`, file, line: rline, kind: 'exit', level: 'core', injected: `${tv} = ` },
+        site: { probe: `${base}.exit`, file, line: rline, kind: 'exit', level: 'core', injected: `${declFor(fn)}${tv} = ` },
       });
       insertions.push({
         index: v.endIndex, removeTo: ret.endIndex,
         site: {
           probe: `${base}.exit`, file, line: rline, kind: 'exit', level: 'core',
-          injected: `\n${pad}${probeCall(`${base}.exit`, {
-            fileRel, args: [], ret: tv, level: 'core',
-          })}${sep}\n${pad}return ${tv}${sep}`,
+          injected: `${inline ? isep : `${sep}\n${indent}`}${exitCall(tv)}${inline ? isep : `${sep}\n${indent}`}return ${tv}${sep}`,
         },
       });
     }
   }
 }
 
-/** 函数体内所有 return（不进嵌套函数 / 类）。 */
-function collectReturns(body: AstNode): AstNode[] {
-  const out: AstNode[] = [];
-  const walk = (n: AstNode): void => {
-    if (n.type === '{{RETURN_NODE}}') { out.push(n); return; }
-    if ({{LANG_CC}}_SYNTAX.fnTypes.has(n.type)) return;
+/** 临时变量声明前缀（`SYNTAX.tempVarDecl`：固定串或 AST 推导函数；含尾随空格，空串则不加）。 */
+function declFor(fn: {{LANG_CC}}FnSlot): string {
+  const d = {{LANG_CC}}_SYNTAX.tempVarDecl;
+  const s = typeof d === 'function' ? d(fn) : d;
+  return s ? `${s} ` : '';
+}
+
+/**
+ * 函数体内所有 return（**不进嵌套函数/lambda/类体**）—— 各带【直接父节点】（判无花括号控制体用）。
+ * ★ 为什么记父节点：`if (c) return 1;` 的 return 父节点是 if_statement（块内的父节点是 block）
+ *   ⇒ 父类型就能区分"包块改写"与"两段法改写"两种形态（判据住骨架 `isBracelessBodyReturn`）。
+ * ★ 为什么拦 `fnTypes` ∪ `returnStopTypes`：它们里面的 return **不属于本函数** ——
+ *   不停会把嵌套方法/lambda/类体里的 return 记成【本函数】的 exit 探针 ⇒ 误记比不观测更坏。
+ */
+function collectReturns(body: AstNode): Array<{ node: AstNode; parent: AstNode }> {
+  const out: Array<{ node: AstNode; parent: AstNode }> = [];
+  const stop = new Set<string>([...{{LANG_CC}}_SYNTAX.fnTypes, ...{{LANG_CC}}_SYNTAX.returnStopTypes]);
+  const walk = (n: AstNode, parent: AstNode): void => {
+    if (n.type === '{{RETURN_NODE}}') { out.push({ node: n, parent }); return; }
+    if (stop.has(n.type)) return;
     for (let i = 0; i < n.childCount; i++) {
       const c = n.child(i);
-      if (c) walk(c);
+      if (c) walk(c, n);
     }
   };
   for (let i = 0; i < body.childCount; i++) {
     const c = body.child(i);
-    if (c) walk(c);
+    if (c) walk(c, body);
   }
   return out;
 }
@@ -314,10 +446,19 @@ function lineIndent(content: string, index: number): string {
   const ls = content.lastIndexOf('\n', index - 1) + 1;
   return /^[ \t]*/.exec(content.slice(ls))?.[0] ?? '';
 }
-/** 某偏移所在行的缩进（该行它之前是否已有代码 ⇒ 单行语句要退回 `;`）。 */
-function indentOf(content: string, index: number): string {
+/** 某偏移所在行的行尾偏移（换行符前；无换行 ⇒ 文末）。 */
+function lineEnd(content: string, index: number): number {
+  const nl = content.indexOf('\n', index);
+  return nl < 0 ? content.length : nl;
+}
+/**
+ * 某偏移所在行的缩进；★ 本行在它之前**已有代码** ⇒ `inline=true`：
+ *   · braces：单行体（`int get() { return 42; }`）⇒ 注入走 `; ` 分隔**不换行**；
+ *   · indent：单行 suite（`def f(): return 1`）⇒ 先换行展开再注入。
+ */
+function lineInfo(content: string, index: number): { indent: string; inline: boolean } {
   const ls = content.lastIndexOf('\n', index - 1) + 1;
   const pre = content.slice(ls, index);
-  if (/^[ \t]*$/.test(pre)) return pre;
-  return (/^[ \t]*/.exec(content.slice(ls))?.[0] ?? '') + '  ';
+  if (/^[ \t]*$/.test(pre)) return { indent: pre, inline: false };
+  return { indent: (/^[ \t]*/.exec(content.slice(ls))?.[0] ?? '') + {{LANG_CC}}_SYNTAX.indentUnit, inline: true };
 }

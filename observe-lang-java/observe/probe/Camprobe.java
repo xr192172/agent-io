@@ -1,3 +1,5 @@
+package observe.probe;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -22,8 +24,12 @@ import java.util.Map;
  * ## 两处必须注意的语言差异
  *   · **flat key/value varargs** 而不是 `Map.of(...)`：`Map.of` 不收 null 且最多 10 对，
  *     而方法的参数本来就可以是 null。⇒ 由本类在入口处拼 map。
- *   · **无 package 声明**（default package）：探针类与被插桩类同包同目录才能零 import。
- *     ⇒ 调用方需把本文件**拷进被测工程**（见 observe_langs.ts 里 javaObservePack.limitations）。
+ *   · **住在真实包 `observe.probe`**（2026-10-15 v2；v1 是 default package、靠"同包零 import"）：
+ *     v1 的代价是**打包文件（`package com.foo;`）永远解析不了** —— Java 禁止从默认包 import（T321）。
+ *     v2 每个被插桩文件统一 `import observe.probe.Camprobe;`（Java 允许从命名包 import 进默认包）
+ *     ⇒ 默认包与打包文件一视同仁；import 落在 package 声明之后（见 instrument_java.ts 的 ⑦ 格）。
+ *     ⇒ 调用方需把 `observe-lang-java/` 拷进被测工程，且编译时把该目录加进
+ *       sourcepath/classpath（或把本文件一并传给 javac）。
  */
 public final class Camprobe {
 

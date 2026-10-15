@@ -61,7 +61,7 @@ import {
 //   （`instrument_skeleton.ts` 的 `instrumentFileWithHooks`）⇒ 这里只注册、不复制主流程。
 import { collectPyFiles, instrumentPyProject, isInstrumentablePyFile } from './instrument_py.js';
 // ★★★ 2026-10-15：**第 4 门语言（Java）** —— 整份由 `npm run new-observe-lang java …` 生成的**填空题**填出来
-//   （只填 ①命名 / ②遍历 / ⑥取值 / probeCall / buildImport 五处）⇒ 走**同一套骨架**。
+//   （只填 ①命名 / ②遍历 / ⑥取值 / ⑦引用方式 / probeCall + 小抄数据）⇒ 走**同一套骨架**。
 import { collectJavaFiles, instrumentJavaProject, isInstrumentableJavaFile } from './instrument_java.js';
 
 // ─────────────────────────────────────────────────────────────
@@ -471,8 +471,10 @@ export const pyObservePack: ObserveLangPack = {
  *（全部来自模板：头注、SINK 契约说明、通用收集流程、缩进小件）。
  * ⇒ **模板把"必须自己想清楚的事"压到 4 个函数**；剩下的都是照抄的通用流程。
  *
- * ★ 但**有一样没被模板吃掉**：探针运行时要另写（Java 侧 120 行 `observe-lang-java/Camprobe.java`）。
- *   Python 那份是 148 行。⇒ "补一门语言" = 语言包（填空）+ 运行时（新写）。
+ * ★ 但**有一样没被模板吃掉**：探针运行时要另写（Java 侧 `observe-lang-java/observe/probe/Camprobe.java`，
+ *   v2 起住真实包 `observe.probe`）。Python 那份是 148 行。⇒ "补一门语言" = 语言包（填空）+ 运行时（新写）。
+ *
+ * ★★ v2（2026-10-15，T321）：探针从**默认包**搬进真实包 ⇒ 打包文件也能插了（见 limitations 第 1 条）。
  */
 export const javaObservePack: ObserveLangPack = {
   lang: 'java',
@@ -481,22 +483,27 @@ export const javaObservePack: ObserveLangPack = {
   inProcess: true,
   manifestFiles: ['pom.xml', 'build.gradle', 'build.gradle.kts'],
   limitations: [
-    '★★ **只支持【默认包】的 .java 文件** —— 探针类 Camprobe 在默认包，而 Java 禁止从默认包 import ⇒ ' +
-      '打包文件（`package com.foo;`）注入的探针永远解析不了。这类文件会【硬失败】并记进回执 error（不静默产出编译不过的代码）。' +
-      '要支持打包项目：探针类放进真实包 + 按文件生成 import（已记 T321）。',
-    '★ **探针类不会自动拷进被测工程**（不像 Go 侧 T268）⇒ 调用方需自己把 ' +
-      '`observe-lang-java/` **整个目录**拷到被测工程根下（即 `<项目根>/observe-lang-java/Camprobe.java`；' +
-      '它同时是**项目根推断的路标**）。若平拷到根目录，则须显式传 project_root。已记 T320。',
+    // ★★★ T321（2026-10-15 v2 **已解**）：v1 是"探针类在默认包 + 同包零 import"⇒ 打包文件
+    //   （`package com.foo;`）里的探针永远解析不了（Java 禁止从默认包 import）⇒ 只能硬失败。
+    //   v2 把那个**隐假设**变成显式决策（⑦ 引用方式）：探针进真实包 `observe.probe`，
+    //   每个被插桩文件注入 `import observe.probe.Camprobe;`（head 落在 package 声明之后）
+    //   ⇒ **默认包与打包文件一视同仁**。代价：编译时该目录须在 sourcepath/classpath 上。
+    '★★ 探针类在真实包 `observe.probe`：插桩会往每个文件注入 `import observe.probe.Camprobe;`' +
+      '（落在 package 声明之后）⇒ 默认包与打包文件一视同仁。⇒ **编译时须把 `<项目根>/observe-lang-java/` ' +
+      '加进 sourcepath/classpath**（或把 `observe-lang-java/observe/probe/Camprobe.java` 一并传给 javac），否则 import 解析不了。',
+    '★ **探针运行时【不会】自动拷进被测工程**（不像 Go 侧 T268）⇒ 调用方需自己把 ' +
+      '`observe-lang-java/` **整个目录**拷到被测工程根下（探针类落在 ' +
+      '`observe-lang-java/observe/probe/Camprobe.java`；它同时是**项目根推断的路标**）。已记 T320。',
     '接口/抽象方法没有体 ⇒ 记 0 探针（台账判据③会把它当"本就无函数"处理）。',
     '`Map.of` 不收 null 且限 10 对 ⇒ 探针走 **flat key/value varargs**，由运行时自行拼装（见 probeCall 头注）。',
     'lambda / 匿名内部类 / 局部类 / 静态初始化块**未观测**（且它们内部的 return **不会**被误记成外层方法的探针）。',
   ],
   sinkHint: [
     '  ★ 探针已就位，但【默认不出事件】：Java 侧没接 sink 时 Camprobe.capture 是 no-op。',
-    '    ⇒ 要真观测，须在被测工程入口处接一次 sink（先确认 Camprobe.java 已在同包同目录）：',
-    '      import java.io.IOException;',
+    '    ⇒ 要真观测，须在被测工程入口处接一次 sink（插桩已自动注入 import，无需手写）：',
     '      Camprobe.setGlobalSink(new Camprobe.JsonlSink("events.jsonl"));',
     '      // 程序退出前可 Camprobe.setGlobalSink(null);',
+    '    （探针类在 observe.probe 包：<项目根>/observe-lang-java/observe/probe/Camprobe.java，编译时见 limitations。）',
   ],
   async instrument(root, opts) {
     const scanned = collectJavaFiles(root).length;
