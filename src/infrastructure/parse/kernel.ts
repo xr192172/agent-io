@@ -453,7 +453,12 @@ function traverseAndExtract(
 interface LangImportAdapter {
   /** 调用节点类型（数组 = 该语言有多种调用形态，如 PHP 三种 / Groovy 两种） */
   callNode?: string | string[];
-  /** 顶层调用也提取（无包裹函数的脚本语言，如 Python） */
+  /**
+   * 顶层调用也提取（**模块顶层代码是会执行的**语言：Python · TS 系）。
+   * ★ T136（2026-10-15）：语义是"**模块顶层（无包裹函数）的调用归属 `<module>`**"，且**走子树**——
+   *   `const VALUE = usedTwo();` 这类**表达式位置的顶层调用**同样要建边（原先只看直接子节点 ⇒ 漏）。
+   *   ★ 不开此开关的语言（Java/C# 等：顶层没有可执行语句）行为不变。
+   */
   topLevelCall?: boolean;
   /**
    * 被调名候选【字段名】，按序试、命中即取。
@@ -872,10 +877,10 @@ export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
   //   ★ 原先这四门在 kernel 里被两处**按语言 if** 特判（import 源提取、TS_FAMILY_LANGS 的
   //     type-only 判定），现各自表项声明；四门形同一份数据，故意不合并成别名——
   //     每门都是独立 npm 包 + 独立扩展名，表项自足才符合"加语言 = 加一行"。
-  typescript: { callNode: 'call_expression', calleeFields: ['function'], importSourceField: 'source', erasedModuleStatements: true },
-  tsx: { callNode: 'call_expression', calleeFields: ['function'], importSourceField: 'source', erasedModuleStatements: true },
-  javascript: { callNode: 'call_expression', calleeFields: ['function'], importSourceField: 'source', erasedModuleStatements: true },
-  jsx: { callNode: 'call_expression', calleeFields: ['function'], importSourceField: 'source', erasedModuleStatements: true },
+  typescript: { callNode: 'call_expression', calleeFields: ['function'], importSourceField: 'source', erasedModuleStatements: true, topLevelCall: true },
+  tsx: { callNode: 'call_expression', calleeFields: ['function'], importSourceField: 'source', erasedModuleStatements: true, topLevelCall: true },
+  javascript: { callNode: 'call_expression', calleeFields: ['function'], importSourceField: 'source', erasedModuleStatements: true, topLevelCall: true },
+  jsx: { callNode: 'call_expression', calleeFields: ['function'], importSourceField: 'source', erasedModuleStatements: true, topLevelCall: true },
 
   // ═══════════════════════════════════════════════════════════════════
   // 2026-09-29 新增 5 门（scala / groovy / julia / haskell / elixir）
@@ -1441,13 +1446,17 @@ function traverseAndExtractCalls(
   for (let i = 0; i < node.childCount; i++) {
     const child = node.child(i);
     if (!child) continue;
-    // 模块顶层调用（Python 等）：无包裹函数，调用归属 <module>；只在不进函数体内时提取（函数内由 extractCallsFromBody 处理）
-    if (LANG_ADAPTERS[lang.name]?.topLevelCall && funcStack.length === 0 && isCallNode(child, lang)) {
-      const c = extractCallee(child, lang.name);
-      if (c) {
-        const sym = symbols.find((s) => s.name === c.name);
-        calls.push({ caller: '<module>', callee: c.name, callee_expr: c.expr, line: child.startPosition.row + 1, resolved: !!sym, callee_qn: sym ? sym.qualified_name : undefined });
-      }
+    // 模块顶层调用（无包裹函数的脚本语言）：调用归属 `<module>`；只在不进函数体内时提取（函数内由 extractCallsFromBody 处理）
+    // ★★★ T136（2026-10-15 修）：**不能只看"直接子节点是不是 call"** —— `const VALUE = usedTwo();`
+    //   的直接子节点是**声明语句**，调用在它的**初始化器**里 ⇒ 那样写会漏掉**一切"表达式位置的顶层调用"**
+    //   ⇒ `unused_export` 把 `usedTwo` 误报成"项目内无引用"（实测假阳：夹具 `C:/tmp/t136/ch_fix`
+    //   `provider.ts:1 usedTwo`；唯一变量对照 `ch_ctl`——只把调用挪进函数体——就不报 ⇒ 归因确定）。
+    //   ⇒ 改成走**子树**，复用 `extractCallsFromBody`：它开头就 `if (isSymbolNode(node, lang)) return;`
+    //     ⇒ **嵌套函数/类子树里的调用仍归其自身**（由下面的符号支处理），不会被记成 `<module>` ⇒
+    //     两支的分工不变、**不重复收集**；差别只在"同一个顶层语句里的调用能全被抓到"。
+    //   ★ 数据驱动不变：仍是 `topLevelCall` 这个**开关**决定谁走这条支（不新造按语言 if）。
+    if (LANG_ADAPTERS[lang.name]?.topLevelCall && funcStack.length === 0) {
+      extractCallsFromBody(child, lang, '<module>', calls, symbols, depth + 1);
     }
     if (child) traverseAndExtractCalls(child, lang, symbols, calls, funcStack, depth + 1);
   }
