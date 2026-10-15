@@ -749,6 +749,13 @@ export const DESIGN_TOOLS: ToolDef[] = [
             to: z.string().optional().describe('目标节点 id'),
             reason: z.string().optional().describe('A 为何依赖 B'),
             boundary: z.string().optional().describe('边界归属说明'),
+            requires: z
+              .array(z.string())
+              .optional()
+              .describe(
+                '任务前置（显式声明）：引节点 id，须先 progress=done 才准改本边**源节点(from)**的源码（write_gate 拦）。' +
+                  '★ 不传=不拦（edge 的 import 依赖 ≠ 任务前置）；[]=解除',
+              ),
             status: z.enum(['open', 'resolved']).optional(),
           }),
         )

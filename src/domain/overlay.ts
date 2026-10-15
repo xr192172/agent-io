@@ -269,6 +269,19 @@ export interface OverlayEdgeIntent {
   reason?: string;
   /** 边界归属说明（该依赖跨边界的理由/归属） */
   boundary?: string;
+  /**
+   * ★★★ **任务前置（显式声明，T332）** —— 引**节点 id**，语义 = 这些节点须先 `progress === 'done'`，
+   * 本边的**源节点 `from` 的源码**才允许被 `write_gate` 落盘（"完成 A 才准开始 B"）。
+   *
+   * ## ★★ 为什么必须是**显式**字段（本条的成败在此）
+   * 本仓的 edge 默认装的是 **import 依赖**（`Edge.intent` / 扫描产出的依赖边）—— ★ 它**不等于任务前置**。
+   * ⇒ 若"凡是 edge 就当前置 / 有 import 边就拦"，会把**全仓的 import 依赖误当解锁条件**（replan-log §28.3：最贵的一步）。
+   * ⇒ 所以：**只有显式标了 `requires` 的 edge 才产生拦截**；**没标 `requires`（undefined/空数组）一律不拦**。
+   *
+   * ## 住在 overlay（= 不可再生、权威）
+   * 与 `reason`/`boundary` 同族，由 `design_intent` 写、`reconcileOverlay` 随边对账保留、`applyOverlay` 投影回 base。
+   */
+  requires?: string[];
   /** 挂在边上的标注 */
   annotations?: Annotation[];
   /** 意图存活状态 */

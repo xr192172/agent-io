@@ -1,7 +1,7 @@
 {
   "note": "T326 工具面固定开销基线。★ 只许\"不增长\"自动通过；增长必须显式 --update（有意识的动作），且本文件的 diff 会在评审里可见。",
   "tools": 69,
-  "chars": 157097,
+  "chars": 157715,
   "capturedAt": "2026-10-15",
   "top10": [
     [
@@ -17,16 +17,16 @@
       6768
     ],
     [
+      "design_intent",
+      6044
+    ],
+    [
       "remove_dead_imports",
       5712
     ],
     [
       "apply_refactor_plan",
       5497
-    ],
-    [
-      "design_intent",
-      5426
     ],
     [
       "edit_code",

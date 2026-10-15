@@ -533,6 +533,12 @@ function coveringFeatures(absRoot: string): Array<{ feature: string; byPath: Map
  *    ∧ `覆盖它的那些 feature 里【没有一条】给该节点登记过 progress`。
  * 放行：该项目**没有** feature 指向它 · 文件**不是**任何一条的节点（新建文件 / 未纳入设计）·
  *      文件在**任一**覆盖它的 feature 里已登记（`progress` 非空）。
+ *
+ * ## ★★ T332（2026-10-15）**追加**的第二条判据：前置闸（解锁）
+ * 上面这条（未登记）之外，**追加**：某条 edge intent **显式**声明了 `requires`（非空）∧ 该边源节点(from)
+ * 是本次要改的文件节点 ∧ requires 里有节点未 `done` ⇒ 拒绝（"完成 A 才准开始 B"）。
+ * ★ **只认显式 `requires`** —— edge 默认装 import 依赖 ≠ 任务前置 ⇒ **没标 requires 一律不拦**（防误伤，
+ *   别把全仓 import 边当成解锁条件）。判据与"怎么办"见下方 `unmetPrereq` 段。
  */
 export function assertSourceWriteRegistered(
   projectRoot: string,
@@ -556,6 +562,81 @@ export function assertSourceWriteRegistered(
     if (!ovByFeature.has(feature)) ovByFeature.set(feature, loadOverlay(feature));
     return ovByFeature.get(feature)?.anchors?.[nodeId]?.progress;
   };
+
+  // ★★★ T332（2026-10-15）：**前置闸（解锁）** —— **追加判据**（不新建闸门，与下面"未登记"并列）。
+  //
+  // ## 判据（★ 只认**显式**声明 —— 本条的成败在此）
+  // 覆盖该文件的 feature 的 overlay 里，**某条 edge intent 显式标了 `requires`（非空）**，
+  // 该边**源节点 `from`** 正是本次要改的文件节点，而 `requires` 里有节点**未 `progress === 'done'`**
+  // ⇒ **拒绝落盘**，并给出"怎么办"。
+  //
+  // ## ★★ 为什么只认显式 requires（防误伤，本条的全部意义）
+  // edge 默认装的是 **import 依赖**（扫描产出的依赖边 / `Edge.intent`）—— ★ 它**不等于任务前置**。
+  // ⇒ 若"有 import 边就拦"，会把**全仓 import 依赖误当解锁条件**（replan-log §28.3 记的"最贵一步"）。
+  // ⇒ 判据：**`requires` 为 undefined / 空数组 ⇒ 一律不拦**；只有显式列了节点 id 的才拦。
+  //
+  // ## 拦的范围（明写，便于判"谁被拦/谁不被拦"）
+  // 拦：该文件是某 covering feature 的文件节点 N ∧ 该 feature overlay 里存在 edge intent `e`，
+  //     `e.from === N` ∧ `e.requires` 非空 ∧ 其中某被引节点 `progress !== 'done'`。
+  // 放行：没有任何 requires 声明 · 该文件不是任何 covering feature 的节点 ·
+  //      没有"源节点=N 且带 requires"的边 · requires 里的节点已全部 done。
+  const unmetPrereq: Array<{
+    rel: string;
+    feature: string;
+    nodeId: string;
+    edgeId: string;
+    missing: Array<{ id: string; progress: unknown }>;
+  }> = [];
+  {
+    const edgesOf = (feature: string) => {
+      if (!ovByFeature.has(feature)) ovByFeature.set(feature, loadOverlay(feature));
+      return ovByFeature.get(feature)?.edges ?? {};
+    };
+    for (const rel of rels) {
+      const cands = covering
+        .map((c) => ({ feature: c.feature, nodeId: c.byPath.get(rel) }))
+        .filter((x): x is { feature: string; nodeId: string } => !!x.nodeId);
+      for (const { feature, nodeId } of cands) {
+        for (const [edgeId, ei] of Object.entries(edgesOf(feature))) {
+          if (!ei.requires || ei.requires.length === 0) continue; // ★★ 没标 requires ⇒ 不拦
+          if (ei.from !== nodeId) continue; // ★ 只拦"该边源节点(from)"的源码写入
+          const missing = ei.requires
+            .map((rid) => ({ id: rid, progress: progressOf(feature, rid) }))
+            .filter((x) => x.progress !== 'done');
+          if (missing.length) unmetPrereq.push({ rel, feature, nodeId, edgeId, missing });
+        }
+      }
+    }
+  }
+  if (unmetPrereq.length) {
+    const first = unmetPrereq[0];
+    const list = unmetPrereq
+      .map(
+        (u) =>
+          `  · ${u.rel}（节点 ${u.nodeId}，feature=${u.feature}）被边 ${u.edgeId} 的任务前置挡住：` +
+          u.missing.map((m) => `${m.id}（progress=${JSON.stringify(m.progress)}）`).join(' / ') +
+          ' **尚未 done**',
+      )
+      .join('\n');
+    const need = first.missing[0].id;
+    throw new Error(
+      `拒绝落盘（前置闸）：这次要改的 ${unmetPrereq.length} 个文件**任务前置未满足** —— ` +
+        `本仓纪律：\`requires\` 是**显式声明**的前置，被引节点未 done ⇒ 不许开工（**完成 A 才准开始 B**）。\n` +
+        `${list}\n` +
+        `\n★ 怎么办（二选一）：\n` +
+        `  ① 先完成前置节点（唯一权威写端 \`edit_dsl\`，最小参数；★ 置 done 另需 evidence）：\n` +
+        `     { feature: '${first.feature}',\n` +
+        `       reason: '完成前置 ${need}',\n` +
+        `       operations: [{ type:'status', op:'update', id:'${need}',\n` +
+        `                      data:{ status:'done', evidence:{ kind:'attestation', by:'human', at:'<ISO>', why:'<为什么算完成>' } } }] }\n` +
+        `  ② 若这个前置判断已过时 ⇒ 用 \`design_intent\` 显式**解除**它（requires 住 overlay = 权威）：\n` +
+        `     { action:'set', feature:'${first.feature}', edge_intents:[{ id:'${first.edgeId}', requires: [] }] }   // 空数组 = 解除该边前置\n` +
+        `\n★ 本闸**不会替你登记进度、不会自动补前置、也不会降级放行** —— 拒绝就是拒绝。\n` +
+        `★ 拦的范围（只此一条）：覆盖该文件的 feature 里，某条 edge intent **显式**标了 \`requires\`（非空）` +
+        `∧ 该边源节点(from) 正是本次要改的文件节点 ∧ requires 里有节点未 done。\n` +
+        `  放行：没有任何 requires 声明 / 该文件不是 covering feature 的节点 / requires 里的节点已全部 done。`,
+    );
+  }
 
   const unregistered: Array<{ rel: string; cands: Array<{ feature: string; nodeId: string }> }> = [];
   let checked = 0;

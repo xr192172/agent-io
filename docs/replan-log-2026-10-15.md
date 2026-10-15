@@ -778,3 +778,36 @@ M5 命中数与语义无关（1364 条命中里写端仅 1 条）· ★ **M6 读
   不区分会**把所有 import 边误当解锁条件**（贵在**语义判据**，不在存储）；
 - ★ **能先做一半**：便宜半 = 复用 edge intent 标 `requires` + `write_gate` 读 `progress==='done'`
   （**不建 goal↔节点映射**，拿文件节点 id 当任务载体）；**贵的语义区分留后**。
+
+
+---
+
+## 29. 2026-10-15 B 半落地（`requires` 前置 + 解锁闸）+ ★ 用户指出的一条**方法错**
+
+### 29.1 用户的问题（我认）
+*"为什么你没有去看我们的现状 DSL？直接看现状 DSL 不应该更快吗？"* ⇒ **对，这是我的方法错**。
+一条命令就答出了我 grep 源码问了一天的东西：`semantic.files[0].id = file_src_a_ts`（文件节点 id 长什么样）、
+`swimlanes/arch_layers 数 = 0`（为什么 `swimlane:` 无节点可挂）。⇒ **纪律已写进入口**（"先读 DSL，再 grep 源码"）。
+
+### 29.2 B 半（便宜的一半）落地
+- `OverlayEdgeIntent` 加 **`requires?: string[]`**（引节点 id；注释写清"须先 `progress==='done'`"）；
+- 写入口 `setDesignIntent`（`design_intent` 工具）**加存在性校验**（引用不存在的节点 ⇒ **抛错、不落盘**）；
+  ★ 这一格**补上了 T329 `scope` 留的那个坑**（那里只做语法校验）；
+- `write_gate` **追加**判据（不新建闸门）：**前置未满足 ⇒ 拒绝落盘**，错误信息里给"怎么办"；
+- `design/index.ts` 的 zod schema 加 `requires`（否则嵌套对象会被**静默 strip**）。
+
+### 29.3 判据（实测）
+- ① 前置未 done ⇒ 落盘被拒（原文：`拒绝落盘（前置闸）：…被边 e_xy 的任务前置挡住：n_y（progress=undefined）尚未 done`）；
+- ② 前置置 done（带 evidence）⇒ 同一改动**通过**；
+- ③ ★★ **没标 `requires` 的 edge 不拦** ⇒ 同类 import 边场景**落盘成功**（**防误伤**的关键判据）；
+- ④ 非法 `requires`（不存在的节点 id）⇒ **被拒**，且 overlay 未被改写；
+- 新证 `certs/t332-requires-gate-cert.mjs` **PASS=10 FAIL=0**；`build` ✓ · `verify` 4/4 ✓ ·
+  五证全绿（`t326` 4/4 · `t328` 14/14 · `t329` 12/12 · `t330` 7/7 · `t331` 3/3）；
+  ★ **本仓 0 条 `requires` ⇒ 现无任何文件会被拦**（无锁死风险，已自核）。
+
+### 29.4 我裁定的三处（子代理如实报上来的偏离）
+1. **`t326` 基线 `--update`（+1074）⇒ 保留**：因 `design_intent` 新增 `requires` 进了 `TOOL_DEFS`（序列化两次）
+   ⇒ 属真实新增能力，与该证"确有必要 ⇒ --update 并写明理由"的路径一致；
+2. **未把 `requires` 投影回 base `Edge.intent`**（闸直读 overlay 权威）⇒ **接受**：符合"权威 = overlay、投影可选"；
+   ★ 但**记下文档与实现的这处不一致**（本文件 §28.3 曾写"随 `applyOverlay` 投影回 base"）—— 以**实现为准**，文档该改；
+3. **拦截取"节点级"**（只拦该边 `from` 的文件）而非 feature 级 ⇒ **接受**（更窄、更安全，将来可扩）。

@@ -36,6 +36,12 @@ export interface DesignEdgeIntentWrite {
   reason?: string;
   /** 边界归属 */
   boundary?: string;
+  /**
+   * ★ T332：**任务前置**（显式声明）—— 引**节点 id**，语义 = 这些节点须先 `progress === 'done'`，
+   * 该边**源节点（from）**的源码才允许被 `write_gate` 落盘。
+   * ★ 不传 = 不声明前置 = 永不拦（edge 默认装 import 依赖，**不等于**任务前置）；传空数组 = 显式解除已有前置。
+   */
+  requires?: string[];
   status?: 'open' | 'resolved';
 }
 
@@ -67,6 +73,35 @@ function setDesignIntentCore(input: SetDesignIntentInput): SetDesignIntentResult
 
   // —— 边意图：按 id / from+to 匹配 base 边挂载 ——
   const intents = Array.isArray(input.edge_intents) ? input.edge_intents : [];
+
+  // ★★★ T332：**写路径校验（引用存在性）** —— `requires` 引的节点 id 必须在当前 base 里**真的存在**。
+  //   ★ 与 T329 的 `scope` 那个坑（"只做语法校验、不校验引用存在性"）不同：`scope` 引的是**路径词**
+  //     （全仓口径未统一 ⇒ 只能做语法校验）；而 `requires` 引的是 **base 节点 id**，id 就住在
+  //     `dsl.geometry.nodes` / `dsl.semantic.files` 上 ⇒ ★ **这里能做、也真的做**存在性校验（不跳步）。
+  //   ★ **不静默、不自动补节点、不降级放行**：非法 ⇒ 当场抛，且**一个字节都不落盘**（校验在 save 之前）。
+  const nodeIds = new Set<string>([
+    ...(dsl.geometry?.nodes ?? []).map((n) => n.id),
+    ...(dsl.semantic?.files ?? []).map((f) => f.id),
+  ]);
+  const badRequires: Array<{ edge: string; missing: string[] }> = [];
+  for (const it of intents) {
+    if (!it.requires || it.requires.length === 0) continue;
+    const missing = it.requires.filter((id) => !nodeIds.has(id));
+    if (missing.length) badRequires.push({ edge: it.id || `${it.from}->${it.to}`, missing });
+  }
+  if (badRequires.length) {
+    throw new Error(
+      `拒绝写入（requires 引用不存在）：edge 的 \`requires\` 必须引**已存在的节点 id**` +
+        `（id 住在 base 的 geometry.nodes / semantic.files 上）。\n` +
+        badRequires.map((b) => `  · edge ${b.edge} 引了不存在的节点：${b.missing.join(', ')}`).join('\n') +
+        `\n★ 怎么办：\n` +
+        `  1. 用 \`get_dsl\`（或 design_intent 读侧）核对该 feature 里**真实的节点 id**，改对拼写；\n` +
+        `  2. 若该节点还不存在，先用 \`import_project\` / \`edit_dsl\` 把它建成节点，再回来加 requires；\n` +
+        `  3. ★ 本校验**不静默、不自动补节点、不降级放行** —— 要么改对 id，要么去掉该 requires。\n` +
+        `★ 拦的范围（只此一条）：requires 里出现当前 feature base 上不存在的节点 id。`,
+    );
+  }
+
   const edges_written: SetDesignIntentResult['edges_written'] = [];
   const unmatched: SetDesignIntentResult['unmatched'] = [];
   if (intents.length > 0) {
@@ -85,6 +120,8 @@ function setDesignIntentCore(input: SetDesignIntentInput): SetDesignIntentResult
         to: edge.to,
         reason: it.reason ?? prev?.reason,
         boundary: it.boundary ?? prev?.boundary,
+        // ★ T332：任务前置 —— 显式传入即覆盖（含空数组=解除前置）；未传则沿用旧值（不静默清空）。
+        requires: it.requires ?? prev?.requires,
         status: it.status ?? prev?.status,
       };
       // 此前孤儿、现在真相重现 → 复原（清孤儿标记）
