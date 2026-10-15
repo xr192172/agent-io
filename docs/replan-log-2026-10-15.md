@@ -991,3 +991,39 @@ MCP 传输/schema 层 · daemon 转发分支；★ **六种 kind 本节点只用
 ### 34.5 读数
 `build` ✓ · `verify` 4/4 ✓ · **十一证**：`t326` 4/4 · `t328` 18/18 · `t329` 12/12 · `t330` 7/7 · `t331` 3/3 ·
 `t332` 10/10 · `t333` 16/16 · `t334` 11/11 · `t335` 14/14 · `t336` **36/1**[见 34.3]。
+
+---
+
+## 35. 2026-10-16 用户问"两副 DSL 是不是同一个文件"—— 答案：**是两个文件**，但"挪建筑"今天只能靠 `expectations`
+
+### 35.1 结构（已核，落盘路径为证）
+| | 文件 | 谁写它 |
+|---|---|---|
+| **实际侧** | `.agent-io/live/<feature>.dsl.json` | `saveLiveFeature(layered)`（"实际代码快照"） |
+| **设计侧** | `.agent-io/features/<feature>.json`（+ `.overlay.json`） | `saveDSL(mergeDesignLayer(layered))` |
+⇒ **天然分离** ⇒ 对拍 = `view=design` vs `view=live` ⇒ ★ **"改设计会把实际改掉"不会发生**（用户担心的那点成立）。
+
+### 35.2 ★★ 但"设计文件"只有一半是"真设计"
+`mergeDesignLayer` = **base ⊕ overlay** ⇒ 设计文件是**"扫描副本 + 覆盖层"的合并投影**：
+- **结构层**（节点/边/文件的 path/symbols/lines）：**从扫描 fork** ⇒ 改它 = 改了个投影；
+- **意图层**（决策卡/验收/参数/标注/`progress`/`lifecycle`/边意图/标题/主题/goals）：**住 `.overlay.json`** ⇒ 改它才是真改。
+
+### 35.3 ★★★ 实测："在设计里加一个现状不存在的节点"会怎样（夹具里做，真数据未碰）
+- 往夹具设计里 `node/add` 一个 `node_want_future`（带 `expectations: [{kind:'file-exists', path:'src/future.ts'}]`）⇒ 写进了 `features/fx1.json` + `fx1.overlay.json`；
+- **重建**：★ 先**被闸拒**，原文逐字：`拒绝重建设计 DSL：本次重建会**抹掉 1 个"扫描产不出的"节点**…· node_want_future`；
+  补 `allow_design_drop=true` 才放行并**点名**丢掉的是谁；
+- 重建后：`fx1.json` 里**没了**；但 overlay 里那个锚点**没被静默删**，而是标 `"orphaned": true`（既有机制："真相面已删除该锚点 → 设计暂存待决"）。
+⇒ ★ **不能**靠"加节点/文件"表达现状不存在的东西（**但不是静默抹掉：有闸拦 + 有孤儿标记** —— 这点比预期好）。
+
+### 35.4 ★ 今天"挪建筑"的唯一可行姿势 = `expectations`（挂在**已存在**节点上）
+```json
+{ "type":"decision", "op":"update", "id":"<已存在节点id>",
+  "data":{ "expectations":[ {"kind":"file-exists","path":"src/planned.ts","why":"…"} ] } }
+```
+⇒ 实测**重建后它活着**（`file_src_math_ts.decision.expectations` 仍在）✓
+⇒ ★ 这正是用户描述的流程：**只动意图层，源码实现对拍后再跟**；**结构层留给扫描，不去动**。
+
+### 35.5 ★ 一个真实例外（下一步最该核的一件事）
+`overlay.global.user_nodes`（有投影在 `overlay.ts:549/:550`）—— ★ **光看名字它就是"用户自己加的节点"的正式住处**。
+**若它能活过重建，那"挪建筑"就真能做了**（而不只是"写一句期望"）。★ 本次 `[未核]`：
+另 `oplAdd` 写 `user_nodes` **只落 base**（`opl.ts:96`），是否被重建冲掉**未测**。
