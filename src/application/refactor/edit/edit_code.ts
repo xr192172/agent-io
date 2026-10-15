@@ -49,7 +49,7 @@ import { syncFile } from '../../../infrastructure/index/symbols.js';
 import { getProjectCacheDb } from '../../../infrastructure/index/db.js';
 import { splitKeepEnds, detectEol, isBlankLine } from '../../../infrastructure/text/line_utils.js';
 import { snapshotBeforeWrite } from '../snapshot/file_snapshot.js';
-import { reopenAndResolveAfterWrite, reopenNote } from '../../write_gate.js';
+import { assertSourceWriteRegistered, reopenAndResolveAfterWrite, reopenNote } from '../../write_gate.js';
 import { toIndexKey } from '../../../infrastructure/index/symbols.js';
 import { locateReplaceText, realignNewTextTo, FUZZY_LEVEL_LABEL } from '../../../infrastructure/parse/fuzzy_match.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
@@ -480,6 +480,10 @@ async function editCodeInner(args: EditCodeArgs): Promise<{ message: string; dat
   // 逐文件（本工具一次只改一个文件）+ 编辑前（校验之前）就快照 —— 两条都是**有意**的形态，
   // 且是"不并入 applyWrites"的两条原因之一，理由与实测证据见文件头「落盘形态」块。
   if (args.dry_run !== true) {
+    // ★★★ T328 步 6：**未登记不许落盘** —— 本工具**不走 `writeSourceFiles`**（内联四件套），
+    //   所以闸必须在这里**显式**调一次，否则最大的那条"改源码"路会成为绕过口。
+    //   ★ 位置：快照**之前**（拒绝就是拒绝，连快照都不该建）。
+    assertSourceWriteRegistered(projectRoot, [relPath]);
     snapshotBeforeWrite(projectRoot, `edit_code:${op}:${relPath}`, [relPath]);
   }
 
@@ -931,6 +935,8 @@ async function editCodeBatch(args: EditCodeArgs): Promise<{ message: string; dat
   const indexStatusByFile = new Map<string, string>();
   const writtenFiles = new Set<string>();
   if (!dry && !blockedByAtomic) {
+    // ★★★ T328 步 6：**未登记不许落盘** —— 整批先过一次闸（一次判定，失败 ⇒ 一个文件都不写）。
+    assertSourceWriteRegistered(projectRoot, [...new Set(plans.filter((p) => p.ok).map((p) => p.file))]);
     for (const absPath of [...new Set(plans.filter((p) => p.ok).map((p) => p.absPath))]) {
       const rel = path.relative(projectRoot, absPath).split(path.sep).join('/');
       // 逐文件一份快照（**不是**"一份含全部文件"）。粒度这条**证不出必要性**（见文件头「落盘形态」块），

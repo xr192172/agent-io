@@ -59,6 +59,11 @@ import { syncFile, syncFileSync, removeFile, changedSymbolNames, reopenRefsTo, r
 import { canParseFileSync } from '../infrastructure/parse/index.js';
 import { snapshotBeforeWrite, type FileSnapshotMeta } from './refactor/snapshot/file_snapshot.js';
 import { indexCoversDisk } from '../infrastructure/index/index_freshness.js';
+// ★★★ T328 步 6：**任务闸**要读「项目 → 设计 feature」的反查与 overlay 的 progress（唯一权威）。
+//   ★ 反查口径**与 `file_snapshot.ts`（T90）逐字同款**（`DSL.source_root === 项目根`）——
+//     那条路已在本仓跑过（它记"写前那一刻的决策"），此处**复用同一把尺**，不另立一套。
+import { listFeatures } from '../infrastructure/storage.js';
+import { loadOverlay } from '../infrastructure/storage_overlay.js';
 
 // ─────────────────────────────────────────────────────────────
 // 索引写穿的结果类型（一个类型 + 可选字段：调用方统一渲染，不用分三种形状）
@@ -101,6 +106,12 @@ export interface SourceWriteReport {
   snapshot?: FileSnapshotMeta | null;
   /** 索引写穿结果 */
   index: WriteThroughOutcome | null;
+  /**
+   * ★★★ **任务闸的一句话留痕**（T328 步 6）—— "这次写入有没有挂到任务/进度登记上"。
+   * ★ **非空即已报**（不静默）：要么"已登记"，要么"闸不适用 + 依据"。
+   * ★ 被拒时**不会**走到这里（`assertSourceWriteRegistered` 直接抛）。
+   */
+  task_gate?: string;
 }
 
 const EMPTY_CROSS = { total: 0, resolved: 0, external: 0, failed: 0 };
@@ -459,6 +470,141 @@ export function syncSelfWritesSync(
 }
 
 // ─────────────────────────────────────────────────────────────
+// ★★★ 任务闸（T328 步 6，2026-10-15）：**未登记不许落盘**
+// ─────────────────────────────────────────────────────────────
+
+/** 任务闸的判据结果 —— `applicable:false` = 该项目/该文件不在任务系统里（**要报出来，不许静默**） */
+export interface TaskGateOutcome {
+  applicable: boolean;
+  /** 人读原因（放行时给出依据：凭什么放行） */
+  note: string;
+}
+
+/**
+ * 该项目根上「**覆盖某批文件**」的设计 feature 列表（每个带 `path → node_id` 表）。
+ *
+ * ★ 反查口径与 `file_snapshot.ts`（T90）**逐字同款**：`path.resolve(DSL.source_root) === 项目根`。
+ * ★ 与 T90 的差别（**有意**，别照着 T90 的 `hits.length===1` 改回来）：T90 是"给快照**贴一条**意图"，
+ *   贴错比不贴坏 ⇒ 只认**唯一命中**；本闸问的是"这次改动**有没有挂在任何一条**任务上"
+ *   （要求原文："**没有挂到任何任务/进度登记上** ⇒ 拒绝"）⇒ 只要**覆盖了**就要登记，
+ *   多feature 时只要**任一**登记过就算通过 —— ★ 仍然**不需要替人挑**哪一条。
+ */
+function coveringFeatures(absRoot: string): Array<{ feature: string; byPath: Map<string, string> }> {
+  const out: Array<{ feature: string; byPath: Map<string, string> }> = [];
+  for (const d of listFeatures()) {
+    if (!d.source_root || path.resolve(d.source_root) !== absRoot) continue;
+    const byPath = new Map<string, string>();
+    for (const n of d.geometry?.nodes ?? []) {
+      if (n.type !== 'file') continue;
+      if (typeof n.description !== 'string' || !n.description) continue;
+      byPath.set(n.description.split(path.sep).join('/'), n.id);
+    }
+    // 兜底：`semantic.files` 里有、几何层没有同名节点的（不该发生，但**不静默漏判**）
+    for (const f of d.semantic?.files ?? []) {
+      if (f.path && !byPath.has(f.path)) byPath.set(f.path.split(path.sep).join('/'), f.id);
+    }
+    if (byPath.size) out.push({ feature: d.feature, byPath });
+  }
+  return out;
+}
+
+/**
+ * ★★★ **任务闸：改源码可以，但不登记不许悄悄改**（T328 步 6）。
+ *
+ * ## 它回答什么
+ * 「这次要落盘的改动，**挂在哪一条任务/进度登记上**？」——没挂 ⇒ **拒绝落盘**，
+ * 并在错误信息里给出「**怎么登记**」（工具名 + 最小参数）。
+ *
+ * ## ★ 为什么是"拒"而不是"提示"（本仓已证过的一类腐坏）
+ * 靠提示词要求"自己记得登记"= **又一条会腐的软约束**（md todo 侧实测：26 勾 vs 77 未勾，
+ * 且"勾了"≠"做了"）⇒ 唯一"结构上不可能绕过"的位置就是**写入咽喉**（`docs/replan-2026-10-15.md` §12.5）。
+ *
+ * ## ★★ 两条**硬**纪律（与 `validateProgressEvidence` 同族）
+ * 1. **不静默**：被拒 ⇒ 抛错，且错误信息里含登记入口；放行的分支 ⇒ 由调用方**报出** `note`。
+ * 2. **不自动补登记**：本函数**绝不**替调用方写 progress，也**不**把这次写入降级放行 —— 拒绝就是拒绝。
+ *
+ * ## 登记是什么（唯一权威）
+ * `progress` 住在 **`<feature>.overlay.json` 锚点**上（`OverlayAnchor.progress`，T328 收归），
+ * 写端只有一个：`status_tools.updateStatus`（经 `edit_dsl` 的 `{type:'status'}` 操作进入）。
+ * ⇒ 本闸**只读**它，判据与权威**同源**（不另立第二份"登记"）。
+ *
+ * ## ★ 拦的范围（明写，便于判"谁被拦/谁不被拦"）
+ * 拦：`项目根上有设计 feature 覆盖该文件（DSL.source_root === 项目根 ∧ 该文件是它的文件节点）`
+ *    ∧ `覆盖它的那些 feature 里【没有一条】给该节点登记过 progress`。
+ * 放行：该项目**没有** feature 指向它 · 文件**不是**任何一条的节点（新建文件 / 未纳入设计）·
+ *      文件在**任一**覆盖它的 feature 里已登记（`progress` 非空）。
+ */
+export function assertSourceWriteRegistered(
+  projectRoot: string,
+  files: readonly string[],
+): TaskGateOutcome {
+  const root = path.resolve(projectRoot);
+  const rels = [...new Set(files.map((f) => toIndexKey(root, f)).filter((r): r is string => !!r))];
+  if (!rels.length) return { applicable: false, note: '没有落在项目根内的文件 ⇒ 任务闸不适用（放行）' };
+
+  const covering = coveringFeatures(root);
+  if (!covering.length) {
+    return {
+      applicable: false,
+      note: '项目根上没有设计 feature 指向它（没有任何 feature 的 source_root 指到这里）⇒ 任务闸不适用（放行）',
+    };
+  }
+
+  // overlay 按 feature 懒读一次（权威 = `<feature>.overlay.json` 锚点的 progress）
+  const ovByFeature = new Map<string, ReturnType<typeof loadOverlay>>();
+  const progressOf = (feature: string, nodeId: string): unknown => {
+    if (!ovByFeature.has(feature)) ovByFeature.set(feature, loadOverlay(feature));
+    return ovByFeature.get(feature)?.anchors?.[nodeId]?.progress;
+  };
+
+  const unregistered: Array<{ rel: string; cands: Array<{ feature: string; nodeId: string }> }> = [];
+  let checked = 0;
+  for (const rel of rels) {
+    const cands = covering
+      .map((c) => ({ feature: c.feature, nodeId: c.byPath.get(rel) }))
+      .filter((x): x is { feature: string; nodeId: string } => !!x.nodeId);
+    if (!cands.length) continue; // 不是任何一条 feature 的节点（新建/未纳入设计）⇒ 无任务可挂 ⇒ 不拦
+    checked++;
+    // ★ "挂到【任何】一条任务上" ⇒ 任一 feature 登记过 progress 即通过（不替人挑哪一条）
+    if (cands.some((c) => progressOf(c.feature, c.nodeId) !== undefined)) continue;
+    unregistered.push({ rel, cands });
+  }
+  if (!unregistered.length) {
+    return {
+      applicable: true,
+      note:
+        `已登记：${checked} 个设计节点都有 progress（覆盖 feature：${covering.map((c) => c.feature).join(', ')}；` +
+        `另有 ${rels.length - checked} 个文件不是任何一条的节点，不计）`,
+    };
+  }
+
+  const first = unregistered[0];
+  const list = unregistered
+    .map(
+      (u) =>
+        `  · ${u.rel}  ⇒ ${u.cands
+          .map((c) => `${c.nodeId}（feature=${c.feature}）`)
+          .join(' / ')} **都没有 progress 登记**`,
+    )
+    .join('\n');
+  throw new Error(
+    `拒绝落盘（任务闸）：这次要改的 ${unregistered.length} 个文件**没有挂到任何任务/进度登记上** —— ` +
+      `本仓纪律：改源码可以，但**不登记不许悄悄改**。\n` +
+      `${list}\n` +
+      `\n★ 怎么登记（唯一权威写端；工具名 \`edit_dsl\`，最小参数）：\n` +
+      `  { feature: '${first.cands[0].feature}',\n` +
+      `    reason: '开始实现 ${first.cands[0].nodeId}',\n` +
+      `    operations: [{ type:'status', op:'update', id:'${first.cands[0].nodeId}', data:{ status:'in_progress' } }] }\n` +
+      `  · status 三态：draft / in_progress / done（★ 置 done 另有一道 evidence 闸，见 update_status）。\n` +
+      `  · 覆盖这条改动的 feature 有多条时，登记**任一条**即可（本闸不替你挑）。\n` +
+      `\n★ 本闸**不会替你登记**，也**不会把这次写入降级放行** —— 拒绝就是拒绝；登记后再改即可。\n` +
+      `★ 拦的范围（只此一条）：项目根上有设计 feature 覆盖该文件（` +
+      `source_root === 项目根 ∧ 该文件是它的文件节点）∧ 覆盖它的 feature 里**没有一条**给该节点登记过 progress。\n` +
+      `  放行：项目无 feature 指向它 / 文件不是任何一条的节点（新建或未纳入设计）/ 已在任一条里登记。`,
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
 // 统一写入闸
 // ─────────────────────────────────────────────────────────────
 
@@ -532,6 +678,10 @@ export async function writeSourceFiles<T>(
   const norm = (): string[] =>
     [...new Set(files.map((f) => toIndexKey(root, f)).filter((r): r is string => !!r))];
 
+  // ★★★ T328 步 6：**未登记不许落盘** —— 闸在快照/真写**之前**（拒绝就是拒绝，绝不偷偷写一半）。
+  //   ★ 它抛 ⇒ 本次一个字节都不落盘（`mutate` 不会被调用），调用方按普通错误上抛即可。
+  const taskGate = assertSourceWriteRegistered(root, files);
+
   // ① 写前快照（失败绝不阻断：可撤回是增强，不是前提）
   //    用"写前可见的列表" —— 有些改动集合只有跑完才知道，那时再补快照已经晚了。
   const snapshot = opts.snapshot === false ? null : snapshotBeforeWrite(root, opts.label ?? 'source write', norm());
@@ -563,7 +713,7 @@ export async function writeSourceFiles<T>(
     };
   }
 
-  return { value, report: { touched: rels, snapshot, index } };
+  return { value, report: { touched: rels, snapshot, index, task_gate: taskGate.note } };
 }
 
 /**
@@ -577,6 +727,9 @@ export function snapshotAndRecordSelfWrite(
 ): WriteThroughOutcome {
   const root = path.resolve(projectRoot);
   const rels = [...new Set(files.map((f) => toIndexKey(root, f)).filter((r): r is string => !!r))];
+  // ★★★ T328 步 6：**未登记不许落盘** —— 同步签名的工具（remove_dead_imports / scaffold）走这条。
+  //   ★ 闸在快照 + 自写登记**之前**（拒绝就是拒绝；否则"登记了自写却没落盘"会留下假账）。
+  assertSourceWriteRegistered(root, files);
   const hasIndex = hasLiveIndex(root);
   if (opts.snapshot !== false) snapshotBeforeWrite(root, opts.label ?? 'source write', rels);
   if (!hasIndex) return { ok: false, mode: 'skipped', note: '该项目还没有索引 ⇒ 只真写，未登记' };
