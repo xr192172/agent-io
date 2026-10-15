@@ -164,6 +164,64 @@ export function getLiveFeature(feature: string, baseDir?: string): DesignDSL | n
   }
 }
 
+// ─────────────────────────────────────────────────────────────
+// ★★★ 「设计那一侧」的**独立住处**（2026-10-15）：<dataHome>/.agent-io/design/<feature>.dsl.json
+//
+// ## 它要解决什么（用户逐字）
+//   *"机器只能算出它的那些 DSL，我的意思是让你手写一份和机器算出来的东西同一性质的东西，
+//     只不过那个是机器算出来的，而你是对于项目的一个设计。"*
+//   ⇒ **两份同性质的 DSL**、**直接对拍**：`live/<f>.dsl.json`（扫描产物）vs `design/<f>.dsl.json`（手写设计）。
+//
+// ## 为什么必须是**独立文件**（而不是往 overlay 里加）
+//   overlay 的锚点**按扫描 id 对齐** ⇒ 它**只能改扫描认得出的对象、声明不了新结构**：
+//   实测往设计里 `node/add` 一个现状不存在的节点 ⇒ `import_project` 重建时被 `allow_design_drop` 拦、
+//   归 `orphaned`、**没了**（见 `graph/import_project.ts` 的 `willDrop` 那一段）。
+//   ★ 独立文件与 overlay **并存、互不干扰**：overlay 继续管"同名节点的属性补丁"，本文件管"**结构层**"。
+//   ★ 且 `import_project` 的**任何**分支都**不写这个目录**（重建不碰它）——
+//     判据（实测）见 `certs/t337-design-sheet-cert.mjs`：`rebuild_design=true` 前后文件逐字节相同。
+//
+// ## schema：**与 `live/<f>.dsl.json` 同 schema**
+//   同一个 `DesignDSL`（`domain/types.ts`），同样附 `_sync` 标记 —— ★ 刻意**不另发明字段**：
+//   两份要"同性质"才谈得上对拍（自己发明的字段 = 让对拍从第一步就不可比）。
+// ─────────────────────────────────────────────────────────────
+
+/** 设计图目录：<baseDir>/.agent-io/design（与 live/ baseline/ 同族） */
+export function getDesignDir(baseDir?: string): string {
+  return path.join(baseDir ?? getDataHome(), DATA_DIR_NAME, 'design');
+}
+
+/** 设计图文件路径：<baseDir>/.agent-io/design/<feature>.dsl.json（★ 与 live/<f>.dsl.json 同 schema） */
+export function getDesignSheetFile(feature: string, baseDir?: string): string {
+  if (!/^[a-zA-Z0-9_-]+$/.test(feature)) {
+    throw new Error(`非法 feature 名: "${feature}"，必须匹配 ^[a-zA-Z0-9_-]+$`);
+  }
+  return path.join(getDesignDir(baseDir), `${feature}.dsl.json`);
+}
+
+/** 保存设计图（**手写**那一份；带 `_sync` 标记，与 `saveLiveFeature` 同形 ⇒ 两份文件形状一致） */
+export function saveDesignSheet(dsl: DesignDSL, baseDir?: string): string {
+  const dir = getDesignDir(baseDir);
+  fs.mkdirSync(dir, { recursive: true });
+  const file = getDesignSheetFile(dsl.feature, baseDir);
+  const data = {
+    ...dsl,
+    _sync: { saved_at: new Date().toISOString(), source: 'design_sheet', feature: dsl.feature },
+  };
+  fs.writeFileSync(file, JSON.stringify(data, null, 2), 'utf-8');
+  return file;
+}
+
+/** 读取设计图，不存在返回 null */
+export function getDesignSheet(feature: string, baseDir?: string): DesignDSL | null {
+  const file = getDesignSheetFile(feature, baseDir);
+  if (!fs.existsSync(file)) return null;
+  try {
+    return JSON.parse(fs.readFileSync(file, 'utf-8')) as DesignDSL;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * 基线（baseline）快照存储：契约创立时刻的参考基准。
  *

@@ -8,9 +8,9 @@
  * 本文件由 `edit_code`（AST 取边界）从原文件逐符号搬入，**不是手抄**；tsc 是闸门。
  */
 
-import { wrap, wrapData } from '.././plumbing.js';
+import { wrap, wrapData, requireStr } from '.././plumbing.js';
 import { dispatchDslEdit } from '.././dispatch.js';
-import { getDSLByView, getLiveDir, requireProjectRoot } from '../../infrastructure/storage.js';
+import { getDSLByView, getDesignSheet, getDesignSheetFile, getLiveFeatureResolved, getLiveDir, requireProjectRoot } from '../../infrastructure/storage.js';
 import { checkConsistencyReport, retireMarksOf } from '.././design/intent/consistency.js';
 import { deriveMindMap } from '.././meta/view/derive_mind_map.js';
 import { detectDrift } from '.././design/intent/detect_drift.js';
@@ -29,6 +29,8 @@ import { buildDiffBlocks, hasDiff, type FileDiff } from '../../domain/diff_block
 // ★★ 2026-10-09（T74）：验收执行 —— 类型/格式化在 domain，判定器在 application（domain 不许 import infrastructure）
 import { collectExpectations, describeExpectation, expectationSubjectPath, expectationPaths, normPath } from '../../domain/expectation.js';
 import { judgeExpectations } from './intent/expectations.js';
+// ★★ 2026-10-15：设计图（手写）vs 实际（扫描）的**只读对拍** —— 纯比对住 domain（无 IO）。
+import { diffDesignSheet, diffDesignSheetLine } from '../../domain/design_sheet.js';
 
 /** consistency_check：一致性。★ wrapData（2026-09-29）：[B] 回 `ConsistencyResult`
  *   = `{ message, fileResults[], invariantResults[], summary{totals…} }` ——
@@ -581,3 +583,89 @@ function groupExpectationFails(
   }
   return { failByPath, outsideScope, unsupportedInScope, unsupportedOutside };
 }
+
+/**
+ * ★★★ 设计图（`design/<f>.dsl.json`，**手写**）vs 实际（`live/<f>.dsl.json`，**扫描**）的
+ * **只读对拍入口**（2026-10-15）—— 「给设计那一侧一份独立的住处」的第 2 件。
+ *
+ * ## 读三份（**全是读**）
+ *   ① `design/<f>.dsl.json` —— 手写设计图（★ 与 live 同 schema；`storage.ts#getDesignSheet`）
+ *   ② `live/<f>.dsl.json`  —— 扫描产物（`getLiveFeatureResolved`，走候选链，与 diff_views 同款）
+ *   ③ 现设计视图          —— `features/<f>.json`（= 扫描 ⊕ overlay 的合并结果，`getDSLByView(…,'design')`）
+ *      ★ 第 ③ 份**只作上下文**（"这个『要实现』的点是否已记进现设计视图"），**不参与**三类差异的配对 ——
+ *        配对永远是 ①②**两份同性质 DSL 按 id 同名**（身份规则由开发者拍板，本入口不改）。
+ *
+ * ## 输出三类差异（判据住在 `domain/design_sheet.ts`，此处只渲染 + 报账）
+ *   · **同名属性差** —— 两边都有、至少一个属性不同（逐字段给两边原值）
+ *   · **只在设计里 ⇒ 「要实现」** ★ 这正是"挪建筑"出来的任务
+ *   · **只在 live 里 ⇒ 「未纳入设计」**（提示，未必是错）
+ *
+ * ## ★ 只读、不落盘（不许新增缓存/存储）
+ *   三份都只 `readFileSync`；本入口**不写任何文件**、不碰 overlay、不碰 `edit_dsl` 的既有行为。
+ *   ⇒ 它是 `diff_views`（三方：baseline/design/live，文件语义级）的**姊妹入口**，但配对不同：
+ *     本入口配的是「**手写设计图** vs 扫描」，而不是「现设计视图（寄生在扫描上）vs 扫描」。
+ */
+export const diffDesignSheetHandler = wrapData(async (a) => {
+  const feature = requireStr(a, 'feature');
+  const liveDir = typeof a.live_dir === 'string' && a.live_dir ? a.live_dir : undefined;
+
+  const designSheet = getDesignSheet(feature, liveDir);
+  if (!designSheet) {
+    throw new Error(
+      `没有设计图：${getDesignSheetFile(feature, liveDir)} 不存在。\n` +
+        `★ 本入口只读**已存在**的手写设计图 —— 先写一份 \`design/${feature}.dsl.json\`（schema 与 live/<f>.dsl.json 相同）再对拍。`,
+    );
+  }
+  const live = getLiveFeatureResolved(feature, liveDir);
+  if (!live) {
+    throw new Error(`没有实际快照：live/${feature}.dsl.json 不存在（先 import_project 生成"实际"，或传 live_dir）。`);
+  }
+
+  const d = diffDesignSheet(designSheet, live);
+
+  // ③ 现设计视图（**只作上下文**，不参与配对）
+  const currentDesign = getDSLByView(feature, 'design');
+  const currentIds = new Set((currentDesign?.geometry?.nodes ?? []).map((n) => n.id));
+  const designOnlyAlreadyInCurrent = d.design_only.filter((id) => currentIds.has(id));
+
+  const lines: string[] = [
+    `设计图 vs 实际 · 只读对拍（feature "${feature}"）`,
+    `· ① 设计图（手写）: ${getDesignSheetFile(feature, liveDir)}`,
+    `· ② 实际（扫描）  : live/${feature}.dsl.json`,
+    `· ③ 现设计视图   : ${currentDesign ? `${currentIds.size} 节点（= 扫描 ⊕ overlay，仅作上下文）` : '**不存在**'}`,
+    diffDesignSheetLine(d),
+  ];
+  if (d.same_id.length) {
+    lines.push(`\n══ 同名属性差（${d.same_id.length} 个节点）══`);
+    for (const s of d.same_id) {
+      lines.push(`· ${s.id}`);
+      for (const at of s.attrs) {
+        lines.push(`    ${at.key}: 设计=${JSON.stringify(at.design)} · live=${JSON.stringify(at.live)}`);
+      }
+    }
+  }
+  if (d.design_only.length) {
+    lines.push(`\n══ 只在设计里 ⇒ **要实现**（${d.design_only.length}）══`);
+    for (const id of d.design_only) {
+      const inCur = currentIds.has(id) ? '（★ 现设计视图里已有它）' : '（★ 现设计视图里还没有）';
+      lines.push(`· ${id} ${inCur}`);
+    }
+  }
+  if (d.live_only.length) {
+    lines.push(`\n══ 只在 live 里 ⇒ **未纳入设计**（${d.live_only.length}）══`);
+    for (const id of d.live_only) lines.push(`· ${id}`);
+  }
+
+  return {
+    message: lines.join('\n'),
+    data: {
+      feature,
+      diff: d,
+      current_design_view: {
+        exists: !!currentDesign,
+        nodes: currentIds.size,
+        design_only_already_in_current: designOnlyAlreadyInCurrent,
+      },
+    },
+  };
+});
