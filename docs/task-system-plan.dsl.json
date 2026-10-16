@@ -65,9 +65,9 @@
             },
             {
               "kind": "symbol-exists",
-              "path": "src/domain/task_machine.ts",
-              "symbol": "NEGATIVE_KINDS",
-              "why": "★ 前态判据（edge-absent 等）必须被显式剔除，否则任务还没领就被误收口"
+              "path": "src/domain/expectation.ts",
+              "symbol": "expectationPhase",
+              "why": "★ T10 收归：前态判据（edge-absent 等）的分类由「期望自带的 phase」决定，不再由状态机里的一份清单（NEGATIVE_KINDS，已删）决定 ⇒ 否则任务还没领就被误收口"
             },
             {
               "kind": "symbol-exists",
@@ -464,9 +464,9 @@
     "invariant_checks": [
       {
         "invariant": "★ 前态判据（edge-absent 一类）不得用作「已满足」的判据",
-        "check": "NEGATIVE_KINDS 必须**真的含** 'edge-absent'，且 canClaim 用它做剔除 —— 只判『NEGATIVE_KINDS 这个符号存在』是空判据（有人把它设成 [] 也照样绿）",
-        "cmd": "node -e \"const fs=require('fs');let s='';try{s=fs.readFileSync('src/domain/task_machine.ts','utf8')}catch(e){process.exit(1)}const i=s.indexOf('NEGATIVE_KINDS'),j=s.indexOf('edge-absent');process.exit(i>=0&&j>=0&&j-i<300?0:1)\"",
-        "red_when": "exit!=0 ⇒ 该 invariant 只是注释、无人执行"
+        "check": "★ T10 收归后重钉（原判据钉的是补丁 NEGATIVE_KINDS 本身，已随补丁删除）：① **分类由期望自带的 phase 决定** —— `src/domain/expectation.ts` 里有 `export function expectationPhase`，且其 kind⇒phase 总表把 `'edge-absent'` 标成 `'pre'`（总表用 `Record<Expectation['kind'],…>` ⇒ 新增 kind 漏标 phase **编不过**，这层由 ts 门兜）；② **补丁确实已删** —— `src/domain/task_machine.ts` 里**不再有** `export const NEGATIVE_KINDS` / `export function positiveExpectations` / `export function isNegativeExpectation`（只看 export 声明，**不误伤**解释收归的注释）。两者**同时**成立才算过（只判『某个符号存在』是空判据）。",
+        "cmd": "node -e \"const fs=require('fs');const e=fs.readFileSync('src/domain/expectation.ts','utf8');const m=fs.readFileSync('src/domain/task_machine.ts','utf8');const a=/export function expectationPhase/.test(e);const b=/edge-absent'\\s*:\\s*'pre'/.test(e);const c=!/export (const|function) (NEGATIVE_KINDS|positiveExpectations|isNegativeExpectation)/.test(m);console.log('phaseFn='+a+' map=edge-absent:pre='+b+' patchGone='+c);process.exit(a&&b&&c?0:1)\"",
+        "red_when": "exit!=0 ⇒ 要么分类退回外部清单（phase 没了），要么补丁还留在状态机里（『前态判据』又变成一处需记得的清单）"
       },
       {
         "invariant": "设计侧不复制事实（能由 DB 现算的字段不许落盘）",
@@ -507,7 +507,7 @@
           "guard": {
             "clauses": [
               "canClaim(card) === true",
-              "★ 原文案『剔除前态判据后**未必**全过』把判据写反了 ⇒ 改成：剔前态判据(NEGATIVE_KINDS)后剩余 expectations **全过**",
+              "★ （T10 收归）按期望自带的 phase 选取「后态判据」（phase=post；前态判据 phase=pre 不参与）后，剩余 expectations **全过** —— ★ 不再有『剔前态判据(NEGATIVE_KINDS)』这一步",
               "且 剩余 expectations 条数 > 0（空集不按『全过』算，见 OQ5）",
               "target 在 DB 存在（不存在则走 t_void）",
               "CAS: UPDATE tasks SET owner=?,state='claimed' WHERE id=? AND state='candidate' AND owner IS NULL 的 changes === 1"
@@ -546,7 +546,7 @@
           "guard": {
             "clauses": [
               "owner !== null（★ 必须已领）",
-              "judgeExpectations(card.expectations) failed === 0 且剔前态后剩余条数 > 0",
+              "judgeExpectations(card.expectations) failed === 0 且按 phase 选取后态判据后剩余条数 > 0",
               "validateProgressEvidence 过"
             ],
             "read": "judgeExpectations 报告的 failed 计数"

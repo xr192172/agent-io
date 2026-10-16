@@ -4,15 +4,25 @@
  * 设计出处：`docs/task-system-plan.dsl.json` 的节点 `file_src_domain_task_machine_ts`
  * （`task_plan.state_machine` 的 `transitions` / `patrols` 是本文件的语义来源）。
  *
- * ## ★★ 前态判据（NEGATIVE_KINDS：`edge-absent` 一类）必须被**显式剔除**
+ * ## ★★ 前态判据（`phase='pre'`，如 `edge-absent`）由「期望自带」—— 本文件**不再有任何清单**
  * 「前态判据」= 在**未施工**时**天然成立**的判据（`edge-absent`："不许依赖 X" —— 还没写当然不依赖）。
  * ⇒ 若拿它们一起判"是否已满足"，**每一张刚出生的卡都会「全过」** ⇒
- *   ★ **任务还没领就被误收口**。所以判定前必须先剔除（只此一处：{@link positiveExpectations}）。
+ *   ★ **任务还没领就被误收口**。所以判定前必须先**选取后态判据**（按期望自带的 `phase`）。
+ *
+ * ★★★ 2026-10-16（T10 · `docs/principle-rewrite-not-patch.md` §四）：**这一段原先是一处补丁**——
+ *   本文件曾自带一份清单 `NEGATIVE_KINDS = ['edge-absent']` + `positiveExpectations()`（"判定前记得剔除"）。
+ *   ★ 它是"补丁"的三个特征都占：① 别处要**记得**剔；② 同类问题再来一次要**再加一条**；③ 需注释解释缘由。
+ *   ⇒ 已**收归进原生结构**：`Expectation` 现在**自带 `phase` 维度**
+ *     （`domain/expectation.ts#expectationPhase` / `#postExpectations`）——
+ *     **分类由 phase 决定**，本文件里"前态判据"这件事**已从 phase 派生**（不再有自己的清单）。
+ * ★ 残留（如实报）：`canClaim` 仍要**选取**后态判据（`postExpectations`）才能判 —— ★ 这一步**删不掉**：
+ *   前态判据本身也可能判成 `unsupported`（依赖事实取不到），若把它们并进报告会**改变 ok 的结论**。
+ *   ⇒ 收归改变的是"它**怎么被认出来**"（由期望自带的 phase），不是"要不要选"。
  *
  * ## 判定器复用（★ 不新造第二把尺）
  * 判据的判定一律走既有 `judgeExpectations`（`application/design/intent/expectations.ts`）——
  * 它已经会区分 `pass / fail / unsupported`，且 `unsupported` **不算通过**。
- * 本文件**只**做三件事：① 剔前态判据 ② 编排判定 ③ 出迁移判据 / 租约回收。
+ * 本文件**只**做三件事：① 选取后态判据 ② 编排判定 ③ 出迁移判据 / 租约回收。
  *
  * ## 迁移表（★ 逐条照设计 DSL；`candidate → done` **不实现**）
  * 见 {@link TRANSITIONS}。其中 `t_done_from_candidate` 带
@@ -20,44 +30,14 @@
  * ★ **没有任何代码路径**能执行它，等用户裁定（"『已满足』的卡：自动收口还是只提示"）。
  */
 import { judgeExpectations, type ExpectationsReport } from '../application/design/intent/expectations.js';
-import type { Expectation } from './expectation.js';
+import { postExpectations, type Expectation } from './expectation.js';
 import { isTaskState, type TaskSpec, type TaskState } from './task_schema.js';
-
-/**
- * ★★ **前态判据集合**（`edge-absent` 一类）—— 判定前必须剔除。
- *
- * | kind | 为什么算前态判据 |
- * |---|---|
- * | `edge-absent` | "**不许**依赖 X" 在**未施工**时天然成立（还没写当然不依赖）⇒ 拿它判"已满足"= 假绿 |
- *
- * ★ **为什么不把 `call-exists` 也算进来**（`docs/plan-task-system.md:11` 把它与 `edge-absent` 并列）：
- *   `call-exists` 要求的是"**必须**调用 X"——**没调用就是不满足**，它在未施工时**不成立**
- *   ⇒ 把它剔掉会让"该调的没调"**永远不判**（那是假绿的另一半）。
- *   ⇒ 本表只收**在未施工时天然为真**的那一类；`call-exists` 不在其中。★ 此分歧已列待裁（见报告 OQ8）。
- */
-export const NEGATIVE_KINDS = ['edge-absent'] as const;
-
-/** 前态判据的 kind 之一。 */
-export type NegativeKind = (typeof NEGATIVE_KINDS)[number];
-
-/** 这条判据是不是「前态判据」（未施工时天然成立）。 */
-export function isNegativeExpectation(e: Expectation): boolean {
-  return (NEGATIVE_KINDS as readonly string[]).includes(e.kind);
-}
-
-/**
- * **剔除前态判据**（唯一一处 —— 谁要判"是否已满足"都必须走这里，别各自过滤一遍）。
- * ★ 空集**不**是"全过"（真空真会误收口）—— 这里只负责剔，空集怎么办由调用方明写（见 {@link canClaim}）。
- */
-export function positiveExpectations(expectations: readonly Expectation[]): Expectation[] {
-  return expectations.filter((e) => !isNegativeExpectation(e));
-}
 
 /** `canClaim` 的结论（★ 带理由 + 原始报告 ⇒ 拒绝时能说清"卡在哪一条"）。 */
 export interface CanClaimVerdict {
   ok: boolean;
   reason: string;
-  /** ★ 真正参与判定的那批（= 剔前态判据后的剩余集合） */
+  /** ★ 真正参与判定的那批（= **后态判据**，`phase === 'post'`；前态判据由期望自带的 phase 排除） */
   judged: readonly Expectation[];
   /** 判定器原样报告（★ 不落盘、不缓存 —— 读数永远现算） */
   report?: ExpectationsReport;
@@ -67,10 +47,11 @@ export interface CanClaimVerdict {
  * ★★ **可领性判定**（设计 DSL：`task_machine` 节点的 `canClaim`）。
  *
  * ## 判据（逐条对应 `task_plan.state_machine.transitions[t_claim].guard.clauses`）
- * 1. 剔前态判据（{@link NEGATIVE_KINDS}）—— ★ 不剔 ⇒ 未施工的卡天然"全过" ⇒ 误收口；
- * 2. 剩余条数 **> 0**（空集不按"全过"算 —— 真空真会误收口，见 OQ5）；
+ * 1. 选取**后态判据**（`postExpectations`，按期望自带的 `phase === 'post'`）——
+ *    ★ 前态判据在未施工时**天然成立**，拿它判"已满足"会**恒真** ⇒ 不选它，否则误收口；
+ * 2. 选取后剩余条数 **> 0**（空集不按"全过"算 —— 真空真会误收口，见 OQ5）；
  * 3. 剩余判据 `judgeExpectations` 判定：`unsupported === 0`（★ **判不了 ≠ 通过**）；
- * 4. 且 `failed === 0`（剔前态后**全过**）。
+ * 4. 且 `failed === 0`（后态判据**全过**）。
  *
  * ## ★ 已知语义张力（已列待裁，不在此静默改）
  * 本判据与 `t_done_from_claimed` 的判据**同形**，而 `docs/plan-task-system.md` 的表格写的是
@@ -81,13 +62,14 @@ export interface CanClaimVerdict {
  * @param opts.root 被分析项目的根（`judgeExpectations` 要拿它去读代码 / 索引）
  */
 export async function canClaim(card: TaskSpec, opts: { root: string }): Promise<CanClaimVerdict> {
-  const judged = positiveExpectations(card.expectations);
+  // ★ 按期望**自带的 phase** 选取后态判据（收归：不再"剔前态判据（NEGATIVE_KINDS）"）
+  const judged = postExpectations(card.expectations);
 
-  // ★ 空集不按"全过"算（OQ5：真空真 ⇒ 未领卡会被自动收口）
+  // ★ 选取后为空 = 没有一条"施工后才可能成立"的判据 ⇒ 判不了（真空真 ⇒ 未领卡会被自动收口）
   if (judged.length === 0) {
     return {
       ok: false,
-      reason: '剔前态判据后一条不剩（空集不按「全过」算）⇒ 判不了，不许据此收口',
+      reason: '后态判据（phase=post）一条不剩（空集不按「全过」算）⇒ 判不了，不许据此收口',
       judged,
     };
   }
@@ -100,17 +82,17 @@ export async function canClaim(card: TaskSpec, opts: { root: string }): Promise<
   if (report.unsupported > 0) {
     return {
       ok: false,
-      reason: `剔前态判据后仍有 ${report.unsupported} 条**判不了**（unsupported 既不算过也不算不过）`,
+      reason: `后态判据里仍有 ${report.unsupported} 条**判不了**（unsupported 既不算过也不算不过）`,
       judged,
       report,
     };
   }
   if (report.failed > 0) {
-    return { ok: false, reason: `剔前态判据后仍有 ${report.failed} 条**未满足**`, judged, report };
+    return { ok: false, reason: `后态判据里仍有 ${report.failed} 条**未满足**`, judged, report };
   }
   return {
     ok: true,
-    reason: `剔前态判据后 ${report.passed} 条**全过**（前态判据 ${card.expectations.length - judged.length} 条已剔除）`,
+    reason: `后态判据 ${report.passed} 条**全过**（前态判据 ${card.expectations.length - judged.length} 条按 phase 不参与「已满足」判定）`,
     judged,
     report,
   };
@@ -215,7 +197,7 @@ export const TRANSITIONS: readonly TaskTransition[] = [
     guard: {
       clauses: [
         'canClaim(card) === true',
-        '★ 剔前态判据（NEGATIVE_KINDS）后剩余 expectations 全过（条数必须 > 0）',
+        '★ 按期望自带的 phase 选取后态判据（phase=post；前态判据 phase=pre 不参与）后，剩余 expectations 全过（条数必须 > 0）',
         'target 在 DB 存在（不存在则走 t_void）',
         'CAS：state=candidate ∧ owner IS NULL 时才写 owner（changes === 1）',
       ],
@@ -250,7 +232,7 @@ export const TRANSITIONS: readonly TaskTransition[] = [
     guard: {
       clauses: [
         'owner !== null（★ 必须已领）',
-        'judgeExpectations 的 failed === 0 且剔前态后剩余条数 > 0',
+        'judgeExpectations 的 failed === 0 且按 phase 选取后态判据后剩余条数 > 0',
         'validateProgressEvidence 过（★ 复用既有证据闸，不新造第二把尺）',
       ],
     },

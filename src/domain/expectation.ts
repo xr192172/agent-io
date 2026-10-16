@@ -53,6 +53,74 @@ export type Expectation =
 
 export const EXPECTATION_KINDS = ['file-exists', 'symbol-exists', 'signature-matches', 'edge-exists', 'edge-absent', 'call-exists'] as const;
 
+/**
+ * ★★★ 判据的**阶段**维度（2026-10-16 · T10 · `docs/principle-rewrite-not-patch.md` §四）。
+ *
+ * ## 要收归的那个补丁是什么
+ * 原先判定"是否已满足"的调用方（`src/domain/task_machine.ts` 的 `canClaim`）**自带一份清单**
+ * `NEGATIVE_KINDS = ['edge-absent']` + `positiveExpectations()` —— ★ **判定前必须"记得剔除"**。
+ * 那是补丁，不是结构（三个特征都占）：
+ *   ① **别处要"记得"配合**（`canClaim` 忘了调 ⇒ "任务没领就被误收口"）；
+ *   ② **同类问题再来一次时要"再加一条"**（将来再来一种前态判据 ⇒ 回头改那份清单）；
+ *   ③ **它需要注释解释"为什么要这样"**。
+ * ⇒ 缺的那一维是：**「期望」这个概念本身，不知道自己属于哪个阶段。**
+ *
+ * ## 收归成的结构
+ * 每种 `kind` **自带**自己的 `phase` —— ★ **分类由 phase 决定，不再由任何外部清单决定**。
+ *   · `pre`（前态判据）= 在**未施工**时**天然成立**的判据（`edge-absent`："不许依赖 X" —— 还没写当然不依赖）。
+ *     ⇒ 拿它判"是否已满足"会**恒真** ⇒ **没领的卡会被误收口**（所以它不参与"已满足"判定）。
+ *   · `post`（后态判据）= 施工**之后**才可能成立的判据（"必须有 X" / "必须调用 Y"）。
+ *
+ * ## ★ 为什么是"由 kind 派生 phase"，而不是"每个期望存一个 phase 字段"
+ * `Expectation` 是**扁平的判别联合**，且被**当作纯数据**嵌进设计 DSL
+ * （`geometry.nodes[].decision.expectations`）与真仓 `.agent-io/features/*.json`
+ * （实测：`self-2026-10-15.json` 有 583 节点、其 `edge-absent` 已存在）。
+ * ⇒ 若把 `phase` 做成**必须落盘**的字段，就等于：
+ *   ① 把"kind ⇒ phase"这条事实**存两处**（★ 本仓头号病：同一判据住两处）；
+ *   ② 要回改**大量既有 / 受保护的设计 JSON**（`Expectation` 被当纯数据用 ⇒ **切不动**）。
+ * ⇒ 故把这一维做成 **`kind` 的原生派生属性**：**唯一权威处**就是下面这张
+ *   `Record<Expectation['kind'], ExpectationPhase>` —— ★ 与联合类型**同住本文件**，
+ *   且由**编译器**保证"新加一种 kind 漏标 phase 就编不过"。
+ *
+ * ★★ **新加一种前态判据时：只需在 `PHASE_BY_KIND` 里标它自己那一行 `'pre'`** ——
+ *    不回头改任何清单（这是"结构"的判据：加的是**一维**，不是**一条**）。
+ */
+export type ExpectationPhase = 'pre' | 'post';
+
+/**
+ * ★★ **kind ⇒ phase**（唯一权威处）。
+ * `Record<Expectation['kind'], ExpectationPhase>` ⇒ ★ **穷尽性由编译器钉死**：
+ *   往 `Expectation` 联合里加一个 `kind` 而忘了在这里标注 phase ⇒ **`tsc` 直接报错**（漏标不可能）。
+ */
+const PHASE_BY_KIND: Record<Expectation['kind'], ExpectationPhase> = {
+  'file-exists': 'post',
+  'symbol-exists': 'post',
+  'signature-matches': 'post',
+  'edge-exists': 'post',
+  'edge-absent': 'pre', // ★ 前态判据：A 不许依赖 B —— 未施工时天然成立
+  'call-exists': 'post',
+};
+
+/**
+ * 这条期望属于哪个阶段（★ 「前态判据」的**唯一判据** —— 分类由期望**自带**，不查任何外部清单）。
+ * ★ 它就是原先 `task_machine.ts` 里 `NEGATIVE_KINDS` + `isNegativeExpectation` 的**收归去处**：
+ *   那些符号已从状态机删除，这一维搬到了**期望自己的模块**里。
+ */
+export function expectationPhase(e: Expectation): ExpectationPhase {
+  return PHASE_BY_KIND[e.kind];
+}
+
+/**
+ * **参与「是否已满足」判定的那批**（= 后态判据，`phase === 'post'`）。
+ * ★ 用法只有一处：`task_machine.canClaim` —— 收归后它**不再**"剔前态判据（清单）"，
+ *   而是**按期望自带的 phase 选取**。
+ * ★ 这一步**删不掉**（如实声明）：前态判据本身也可能判成 `unsupported`（依赖事实取不到），
+ *   若把它们并进报告会**改变 ok 的结论** ⇒ 收归改变的是"它怎么被认出来"（由 phase），而非"要不要选"。
+ */
+export function postExpectations(expectations: readonly Expectation[]): Expectation[] {
+  return expectations.filter((e) => expectationPhase(e) === 'post');
+}
+
 /** 规范化路径（`\`→`/`、去前导 `./`）—— ★ 与 `scope.ts` 同一个口径，别再造第三种写法 */
 export function normPath(p: string): string {
   return p.replace(/\\/g, '/').replace(/^\.\//, '');
