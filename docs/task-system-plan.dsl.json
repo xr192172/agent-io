@@ -487,6 +487,7 @@
         "red_when": "exit!=0 ⇒ 要么微缩把 user_quote 带出来了（『不直接展示』变空话 / 字段级排除失效），要么展开条件不再机器可判"
       }
     ],
+    "invariant_checks_runner": "scripts/run-invariant-checks.mjs —— ★ 上面 invariant_checks 里每条 cmd 的**执行者**（T4 / G5）。判据：`npm run invariants` 逐条真跑 cmd（原样交 shell，不重写），exit code 0 ⇒ PASS，非 0 ⇒ FAIL，任一 FAIL ⇒ exit 1；★ 有判据但**无 cmd** 也判 FAIL（『判据没有执行者 = 等于没有』不许从 DSL 挪进 runner 藏起来）。",
     "invariant_unjudgeable": [
       "「一处权威 + 一处渲染（同一批数据不许两处都存）」—— 落不成单条读数（要判『两处』先要知道谁是权威）⇒ 列 OQ4，不进 invariant_checks"
     ],
@@ -800,7 +801,8 @@
           "id": "anti_idle",
           "check": "★ 每条判据都在跑吗？",
           "red": "存在判据但无 runner ⇒ 判据没有执行者 = 等于没有",
-          "real_case_2026_10_16": "★★★ G5：invariant_checks 全仓无 runner"
+          "real_case_2026_10_16": "★★★ G5：invariant_checks 全仓无 runner",
+          "fixed_2026_10_16": "★ runner 已落地：task_plan.invariant_checks_runner = scripts/run-invariant-checks.mjs（`npm run invariants`）—— 逐条真跑每条 cmd，任一 FAIL ⇒ exit 1；无 cmd 亦判 FAIL。读数：可真仓 4 条全 PASS（exit 0）；改坏夹具（第0条期望加一个不存在的标记）⇒ FAIL=1 / exit 1。"
         }
       ]
     },
