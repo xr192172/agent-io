@@ -1597,3 +1597,54 @@ MCP 传输/schema 层 · daemon 转发分支；★ **六种 kind 本节点只用
 理由：形状要改（见 54.4）⇒ ★ **不该让工作区长期停在"半修"状态**（本仓铁律：半修比不修更坏）；
 ★ 它的内容**完整记在 §53.3**（一行 `if (designSheet) return designSheet;`），随时可重做。
 ★ **下一步先"核"再动手**：① `edit_dsl` 今天 op 的寻址键到底是什么（`node_ops.ts:80/291` 读的是哪份）；② **在 `design/<f>` 里自造的节点能不能带自己的 id**（schema 允许、且重建不抹 —— T336 只证了"能活"，没证"能带 id"）。
+
+---
+
+## 55. 2026-10-16 ★★★ 只读核清：`edit_dsl` 写的是"投影"、op 强制 id 寻址、而"对拍读的那份根本没人写"
+
+### 55.1 ★★ ① `edit_dsl` 的落盘链（确认用户判断）
+`index.ts:136` → `handlers.ts:360 editDslHandler` → `:484 dispatchDslEdit` →（daemon 或）`update_feature.ts:356 updateFeature`
+→ `:194 applyOperation` → `node_ops.ts:364 updateNode` → **`saveDSL`**
+⇒ ★ **最终落两个文件**：`<storageRoot>/features/<f>.json`（`storage.ts:550`）+ **`<dataHome>/agent-io.json`（活态单文件）**（`:568`）
+⇒ ★★ **不写 `design/`、不写 `live/`** —— **写的是"投影"，既不是实际、也不是设计**（= 用户那句"你要去 edit 它干嘛"的准确含义）。
+
+### 55.2 ★★★ ② op 的寻址键：**今天强制 id**（`decision` 是唯一例外）
+`op_data_spec.ts:65` OP_SPECS：**node / file / edge / api / binding / status / decision 全部 `idRequired:true`**；
+`node` → `node_ops.ts:296 find(n => n.id === node_id)` · `file` → `file_ops.ts:109 find(f => f.id === file_id)` ·
+`edge` → `update_feature.ts:1090 e.id===id`；★ **只 `decision` 认 path**（`findDecisionTargetNode`，`op_data_spec.ts:184` 同述）。
+★★ **只给名字/路径、无 id ⇒ 不认**：`op_data_spec.ts:400` 无 id 直接抛「needs id」；给非 id 名字 ⇒ 「节点 "X" 不存在」/「文件 "X" 不存在」。
+⇒ ★★★ **完全坐实用户 §54 的判断**：**设计里自造的东西（无 live id）今天根本寻址不到** ⇒ 必须改成"**设计侧标识（自有 id 优先 → 名字/路径兜底）**"。
+
+### 55.3 ★★ ③ "合并视图"的写入口：**`saveDSL(` 全仓 57 处**
+- **经 `edit_dsl` 一族**（~20 处）：`node_ops.ts:143/364/413` · `file_ops.ts:60/127/171` · `edge_ops.ts:55/97` ·
+  `api_ops.ts`（5 处）· `annotation_tools.ts:127/170` · `update_feature.ts:756/1017/1067/204/226/259` ·
+  `status_tools.ts:125` · `feature_ops.ts:62/115` · `snapshot.ts:289`；
+- **非 `edit_dsl`**（~30+ 处）：`import_project.ts:1078` · `derive_feature_tree.ts:250/487` · `arch_layer.ts:242` ·
+  `monolith.ts:751` · `templates.ts:254` · `dag_layout.ts`（3 处）· `code_workbench.ts:418` · `set_design_intent.ts:140` ·
+  `archive_node.ts:120` · `meta/index.ts:678` · `llm_decider.ts:392` · `sync_contracts.ts:166` · `opl.ts:108/400` ·
+  **`serve.ts:211/1362/1420/1594/1659`（HTTP/SSE）**；
+- 写 **overlay**（`storage_overlay.ts:26 saveOverlay` → `features/<f>.overlay.json`）：`status_tools.ts:121`（**唯一进度权威**）·
+  `set_design_intent.ts:138` · `storage_overlay.ts` 五处 ← `update_feature.ts:375/376/382`（edit_dsl 收口 decisions/tags/lifecycle）·
+  `archive_node.ts:130/131` · `file_ops.ts:177` · `import_project.ts:1073 mergeDesignLayer`。
+
+### 55.4 ★ ④ `design/<f>.dsl.json`：**今天无任何生产写者**
+`saveDesignSheet`（`storage.ts:202`）全仓引用**只在夹具**（`certs/t337/t338/t339/t344`）；
+`getDesignSheet` 在 src 内**只被 `handlers.ts:616/619/640` 读**（`diff_design_sheet`，自述只读）。
+
+### 55.5 ★★★ "读A写B"错位清单（本次最值钱）
+1. `derive_feature_tree.ts:276` 读 `getDSLByView(f,'live')`（**读 `live/`**）→ `:487 saveDSL(liveDsl,'feature_tree')`
+   **写进 `features/<f>.json` + 活态**；★ `:478` 注释自称"写回 live 快照"**与实现不符**；
+2. ★★★ **设计侧三方分叉**：**`edit_dsl` 写的"设计" = `features/<f>.json`**，
+   而 **`diff_design_sheet`（对拍）读的"设计" = `design/<f>.dsl.json`** ⇒ ★★ **写侧没有、读侧独有**
+   ⇒ **对拍今天对的是"一份没人写的东西"** ⇒ ★ 这解释了"为什么真仓对拍只有 6 条期望"（**设计图那一侧是空的**）。
+
+### 55.6 ★★★ 我的裁定（务实版）：分清「**本体写**」与「**投影写**」
+- ★★ **57 处 `saveDSL` 不等于要改 57 处**：其中 ~30+ 处是 **`import_project` / `arch_layer` / `monolith` / `dag_layout` /
+  `templates` / `derive_*`** 这类"**重建/派生**"动作 —— ★ **它们写"投影"本来就对**（投影是它们的产物）；
+- ★★★ **要改的只有"本体写"一族**：**`edit_dsl`（唯一"人在改设计"的入口）** ⇒ 写目标改 **`design/<f>.dsl.json`**；
+- ⇒ **判据（一句话）**：**`edit_dsl` 写本体；其余写投影**；★ 而 `live/` 永远只读（每次扫描重算）。
+- ★ 优先修 55.5 第 2 条（**对拍读的那份没人写**）—— 否则"设计 vs 实际"这条路**名不副实**。
+
+### 55.7 读数
+`git status` **干净**（`--porcelain` 空，本笔纯只读）· `[未核]`：`serve.ts:211` 的 `baseRev` 乐观锁并发边界 ·
+`feature_tree` 误覆盖设计 base 是否实际丢设计改动（仅静态读，未真跑）· daemon `postDsl` 服务端落盘是否仍只经 `updateFeature`。
