@@ -221,6 +221,12 @@
               "path": "src/domain/discussion_log.ts",
               "symbol": "shouldExpand",
               "why": "展开条件必须可判，否则又靠人记"
+            },
+            {
+              "kind": "edge-exists",
+              "from": "src/domain/discussion_log.ts",
+              "to": "src/domain/task_schema.ts",
+              "why": "★ T3/G2：本块的唯一依赖是 `import type { TaskDiscussion } from './task_schema.js'`（type-only，运行时擦除）。按设计 type-only **不建依赖边**（infrastructure/index/symbols.ts:435）⇒ 正确判定是 **unsupported（判不了）**，**不是 fail**（假红）。★ 这条判据正是 §83.3 里'不修就先别补'的那条边：expectations.ts:337 的 type-only 冤案排解是死代码时，它一跑就是假红（把合法的 import type 读成'不存在'）；本笔先把死代码修掉，再落这条判据 ⇒ 判据从此诚实。"
             }
           ]
         }
@@ -333,13 +339,13 @@
       "reading_now": {
         "at": "2026-10-16",
         "method": "实跑 judgeExpectations（本笔亲手跑，非推断）",
-        "checked": 24,
+        "checked": 25,
         "passed": 12,
         "failed": 12,
-        "unsupported": 0,
+        "unsupported": 1,
         "conflicts": 0,
-        "note": "★ 已实现两块：第一块（task_schema + task_machine，共 9 条）+ 第二块（discussion_log，共 3 条）= 12 条全绿；余 3 块 12 条仍红（task_ops 5 + task_drift 7）= 剩下的活。",
-        "note_readings": "★ 两处读数都要看（同一入口 certs/.work/probe-plan-detail.mjs，差别只在 root）：① 真仓 root：passed 10 / failed 12 / unsupported 2 —— 那 2 条是状态机节点的 call-exists 与 edge-exists，它们只取自索引（expectations.ts 的 call/edge 分支），新文件还没进真仓 cache.db ⇒ 判 unsupported（诚实的『判不了』，不算绿）；② 重算后的 root（临时目录 + 独立 AGENT_IO_HOME）：passed 12 / failed 12 / unsupported 0 ⇒ 已实现的两块真绿。★ 所以『12 绿』的前提是索引重算过（= 路线图第 ④ 步）。",
+        "note": "★ 已实现两块：第一块（task_schema + task_machine，共 9 条）+ 第二块（discussion_log，共 4 条 = 3 绿 + 1 判不了[type-only 依赖边，T3 起显式判 unsupported]）= 13 条；余 2 块 12 条仍红（task_ops 5 + task_drift 7）= 剩下的活。",
+        "note_readings": "★ 两处读数都要看（同一入口 certs/.work/probe-plan-detail.mjs，差别只在 root）：① 真仓 root：passed 10 / failed 12 / unsupported 3 —— 3 条判不了 = 状态机节点的 call-exists + edge-exists（新文件还没进真仓 cache.db）+ discussion_log 的 edge-exists（同理：真仓索引里还没有 discussion_log.ts）；② 重算后的 root（临时目录 + 独立 AGENT_IO_HOME）：passed 12 / failed 12 / unsupported 1 —— 那 1 条 = discussion_log→task_schema 的 **type-only** 依赖（T3/G2：按设计不建依赖边 ⇒ 正确判定是『判不了』，**不是 fail** 的假红）。★ 所以『12 绿』的前提是索引重算过（= 路线图第 ④ 步）。",
         "stale_criteria": "★ 本字段改动后，同目录 red_green.red_now 的 pass_when（『passed==0 且 failed==checked』= 全红）对**已实现的两块**已不成立 ⇒ 它现在只是『开工前』的判据，不再是『此刻』的判据。"
       },
       "block_readings": {
@@ -658,6 +664,12 @@
         "oq": "块计数 6 vs 9",
         "ruling": "采纳 9（块=依赖闭包，见 block_rule）",
         "status": "裁定"
+      },
+      {
+        "oq": "OQ10（更新）",
+        "ruling": "闸的判据应从'节点登记过'升级为'该节点上有 state=claimed 的任务卡'；且【无任务 ⇒ 先写设计 DSL + 挂任务】",
+        "why": "用户 2026-10-16 明确要求'强制'",
+        "status": "裁定（用户强制要求）"
       }
     ],
     "block_order": {
@@ -697,7 +709,20 @@
         "不验收：多笔以\"报告说已修好\"收账（子代理报'已修好'实际不符 / 只给回执）",
         "验收验错：报\"9红→0红（真绿，unsupported 0）\"而全量汇总是 unsupported:2；以及\"十九证全绿\"被当成\"本笔被验\""
       ],
-      "note_relation_to_existing": "★ 与既有构件的关系：发布/领取/回执/验收 = **在 task 格之上的一个\"榜单\"角色**；★ 验收引擎**复用 judgeExpectations**（不新造）；★ 回执 = `TaskEvidenceRecord`（只落动作+结论，不落读数快照）"
+      "note_relation_to_existing": "★ 与既有构件的关系：发布/领取/回执/验收 = **在 task 格之上的一个\"榜单\"角色**；★ 验收引擎**复用 judgeExpectations**（不新造）；★ 回执 = `TaskEvidenceRecord`（只落动作+结论，不落读数快照）",
+      "precondition": {
+        "note": "★★★ 用户 2026-10-16 追加：改源码之前【强制】先有任务 —— 这是闸，不是记账。",
+        "why": "★ 用户原话：\"在改源码之前，你就要去强制你去写设计 DSL，或者说强制你写接任务，就是说如果有这个任务，你就去接这个任务，如果没有这个任务，你就要自己去写设计 DSL，自己去挂任务，然后继续完成这一部分\"",
+        "rule": [
+          "1. 要改源码 ⇒ 先查：该节点上有没有一张 state=claimed 的任务卡？",
+          "2. 有 ⇒ 接这个任务（claim，CAS 写 owner）",
+          "3. 没有 ⇒ ★ 先写设计 DSL（把它做成期望）⇒ 自己挂任务（发布到榜单）⇒ 再 claim ⇒ 才动源码",
+          "4. ★ 违反 ⇒ 闸拒（未挂任务不许落盘）"
+        ],
+        "solves": "★ 这就是 OQ10 的目标语义：闸 assertSourceWriteRegistered 今天判的是'节点是否登记过'（edit_dsl status），实测【登记对闸不生效】⇒ 应升级为'该节点上是否有一张已领取的任务卡'",
+        "relation": "★ 与既有 write_gate 的接法：仍然是 assertSourceWriteRegistered（不新造），只是它读的来源从 overlay 的 progress 换成 task 格的 state",
+        "anti_pattern": "★ 今天实测：第一块落地时闸挡着新文件，最后走的是 scaffoldCore 通道（scaffold 大概率是既有豁免）⇒ 说明闸在干活，但'认什么'不对"
+      }
     }
   }
 }

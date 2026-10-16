@@ -334,7 +334,23 @@ export async function judgeExpectations(
         //   `import type` 运行时擦除 ⇒ 按设计**不建边**（`symbols.ts:390`）⇒ 这是"判不了"，不是"不存在"
         if (e.kind === 'edge-exists' && !has) {
           const raw = getRawImportsOfFile(getProjectCacheDb(root), from);
-          const rawHit = raw.find((r) => to.startsWith(normPath(r.source).replace(/^\.\//, '')) || r.source.includes(to.split('/').pop() ?? ''));
+          // ★★★ T3（G2 修复，2026-10-16；`docs/board.md` T3 / `docs/replan-log-2026-10-15.md` §83.3）：
+          //   **按「basename 去扩展名」比较**，不再拿"带扩展名的串"硬比。
+          //   · 原实现：`raw.find((r) => to.startsWith(normPath(r.source).replace(/^\.\//, '')) || r.source.includes(to.split('/').pop() ?? ''))`
+          //     —— 两个子句**都是死代码**：`to` 是 `.../task_schema.ts`（带 `.ts`），而 raw import 的
+          //     `r.source` 是 `'./task_schema.js'`（带 `.js`；**本仓 ESM/NodeNext 约定：源码写 `.js`、
+          //     真实文件是 `.ts`**）⇒ `includes('task_schema.ts')` **永不命中**
+          //     ⇒ 整段 type-only 冤案排解对本仓是死的 ⇒ 把合法的 `import type` 读成"不存在" ⇒ **假红**
+          //     （实测：`edge-exists discussion_log→task_schema` 判 **fail**，而正确判定是"按设计不建边 ⇒ 判不了"）。
+          //   · 修法（§83.3 给的补丁）：两侧都取 **basename 并去掉扩展名** 再比 ⇒ `task_schema.ts` ↔ `task_schema.js` 命中。
+          //   ★ 已知限度（如实声明）：只比 basename ⇒ 若 `to` 与某条 **type-only 导入同名不同目录**，
+          //     会误判成"判不了"（= 假 unsupported；比假红轻，但仍是错）。本分支**只在 `has===false`
+          //     且仅用于区分 fail/unsupported**，不判"存在"⇒ 最坏也只是把一条"该红"读成"判不了"。
+          const baseNoExt = (s: string): string => {
+            const base = normPath(s).split('/').pop() ?? '';
+            return base.replace(/\.[^.]*$/, '');
+          };
+          const rawHit = raw.find((r) => baseNoExt(r.source) === baseNoExt(to));
           if (rawHit?.type_only) {
             push(it, 'unsupported', `${from} 对 ${to} 的导入是 **type-only**（\`import type\`），按设计**不建依赖边** ⇒ 判不了（不是"不存在"）`);
             break;

@@ -17,6 +17,7 @@
 |---|---|---|---|---|---|
 | T1 | **第一块**：`task_schema.ts` + `task_machine.ts` | 子代理 | 两个新文件（130+292 行）；`NEGATIVE_KINDS`/`positiveExpectations`/`canClaim`/`releaseIfExpired` | 该块 **0红/9绿**，其他块 5/7/3 红不变；build ✓ · verify 4/4 ✓ · 十九证 19/19 | ★ **我逮到它报过头**：称"真绿, unsupported 0"，实测 **`unsupported=2`**（⇒ **判为"7 绿 + 2 判不了"**，不算全绿） |
 | T2 | **第二块**：`discussion_log.ts` | 子代理 | `renderMicro`（白名单只出 `micro`+`open_count`）· `shouldExpand`（三触发） | 该块 **3红→0红**；★ 端到端：`user_quote` **三段子串全 false（连键名也 false）**；★ **先验了引文真实性**（逐字在 md 中 = true） | ★ 我核了：**真仓 4 文件 mtime+md5 逐字相同**；★ 并**问清了 `unsupported=2` 的来源**（索引未刷新 ⇒ **重算后 0**） |
+| T3 | ★★★ **修 G2**：`expectations.ts:335-337` type-only 排解的扩展名口径（`.ts` basename vs `.js` 说明符）⇒ 死代码 ⇒ 假红 | 子代理 | `rawHit = raw.find(r => baseNoExt(r.source) === baseNoExt(to))`（+18/−1）；并把那条边补进设计 DSL（+1 期望） | ★ **fail → unsupported（不是 pass）**：修前 `[fail] edge-exists discussion_log→task_schema` ⇒ 修后 `[unsupported]`（detail 写明"type-only ⇒ 按设计不建边 ⇒ 判不了"）；全量 diff **只差 2 行**（1–24 条逐字相同）· 新证 **t346 PASS=10/FAIL=0**（含 (a) 真 type-only⇒unsupported / (b) 真有边⇒pass 双对照）· 20 张证全绿 · verify 4/4 | ★ **我自跑：`checked 25/passed 10/failed 12/unsupported 3`**（`discussion` 块 3绿→4绿、unsupported 2→3）⇒ **与回执数字一致**；★ 它自报的 `[未核]`：basename 去扩展名的唯一性未在全仓枚举同名不同目录（**已在代码注释声明限度**） |
 
 ---
 
@@ -24,7 +25,6 @@
 
 | # | 任务 | 为什么排这个位 | 抽自 |
 |---|---|---|---|
-| T3 | ★★★ **修 G2**：`expectations.ts:337` type-only 排解拿带 `.ts` 的 basename 去比带 `.js` 的 raw import ⇒ **永不命中=死代码** ⇒ `edge-exists` 判**假红** | ★ **它是地基**：对拍不准，后面全错 | 设计 DSL `block_readings` / §83.3 |
 | T4 | ★★★ **给 `invariant_checks` 做 runner**（G5） | ★ **判据没有执行者 = 等于没有**（全仓靠人记得跑） | §83.4 G5 |
 | T5 | **第三块 `task_ops.ts`**（5红） | 依赖已落地的 `task_machine` | 设计 DSL 的 `block_order` |
 | T6 | **第四块 `task_drift.ts`**（7红） | 要跑 live 重算，最重 | 同上 |
