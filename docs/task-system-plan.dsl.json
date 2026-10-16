@@ -678,6 +678,12 @@
         "ruling": "走 B：给 task 格立原生家 + 唯一写端（★ 不选 A）",
         "why": "A 是把五态映射进 progress 三值轴 ⇒ 一事实两权威没解决、只是藏起来 = 打补丁；B 是把那一维加进结构 = 收归；且 B 正是用户最初意图「把任务系统直接做进设计 DSL 里面」",
         "status": "裁定（开发者自裁，依据 principle-rewrite-not-patch）"
+      },
+      {
+        "oq": "OQ11 的落地形状",
+        "ruling": "家 = geometry.nodes[].task（与节点同居）；唯一写端 = edit_dsl{type:'task'}；progress 改为由 task.state 派生（void/superseded 返回 undefined 而非硬塞）",
+        "why": "把'状态写到哪'这一维加进结构；★ 并消掉两轴并存",
+        "status": "裁定（开发者自裁）"
       }
     ],
     "block_order": {
@@ -813,6 +819,33 @@
         }
       ]
     },
-    "task_plan_note": "★ T5 已因 OQ11 阻塞停手（未动源码）；下一步 = 按 B 做「收归第二刀」：给 task 格立原生家 + 唯一写端。"
+    "task_plan_note": "★ T5 已因 OQ11 阻塞停手（未动源码）；下一步 = 按 B 做「收归第二刀」：给 task 格立原生家 + 唯一写端。",
+    "task_home": {
+      "note": "★★★ OQ11 裁定 B 的展开：给 task 格立原生家 + 唯一写端。★ 这一维是 T5 停手时核出的（任务格无家 / claim 无合法写端 / 两轴无映射）。",
+      "where": "geometry.nodes[].task —— ★ 任务与节点同居（设计侧）",
+      "why_not_top_level": "★ 独立顶层 tasks[] 会让'任务'与'节点'分居 ⇒ 判据对着节点判、状态却去别处找 ⇒ 又是一次'同一判据住两处'（本仓头号病）",
+      "writer": "★ 唯一写端 = edit_dsl {type:'task'}（action: claim | release | complete）—— 三者都是它的 action，★ 不许别处直接改 state",
+      "why_single_writer": "★ 今天实测的病：状态变更散落 ⇒ 一事实两权威（progress 三轴 vs TASK_STATES 五轴，两轴无映射）",
+      "axis_dedup": {
+        "problem": "progress（draft|in_progress|done，三轴）与 task.state（candidate|claimed|done|void|superseded，五轴）并存 ⇒ 两轴无映射 = 一事实两权威",
+        "ruling": "★ 单一权威 = task.state；★ progress 改为【派生】（读时由 task.state 现算），不再落盘",
+        "derived_map": {
+          "candidate": "draft",
+          "claimed": "in_progress",
+          "done": "done",
+          "void": "<不适用>",
+          "superseded": "<不适用>"
+        },
+        "note": "★ void/superseded 不映射进三轴 ⇒ 由 progressOf(task) 返回 undefined，★ 而不是硬塞一个值（硬塞就是新的补丁）"
+      },
+      "gate": "assertSourceWriteRegistered 的判据从'节点是否登记过（edit_dsl status）'改为'该节点上是否有 state=claimed 的 task'（OQ10 裁定）",
+      "migration_order": [
+        "① 设计侧落 task 格",
+        "② 读端 progress 改派生（读不到 task 才回落 overlay）",
+        "③ 闸改判据",
+        "④ overlay 的 progress 退役"
+      ],
+      "open": "★ 交接期不动 overlay（★ 否则读端会断 —— 见 §75 那条教训）"
+    }
   }
 }

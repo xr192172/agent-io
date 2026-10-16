@@ -41,6 +41,7 @@
 | T7 | **OQ9 重构**：`task_machine` 抽成 domain 纯函数（`{facts, expectations}`） | ★ 已裁定未做；且**让判定可单测** | `rulings_2026_10_16` |
 | T8 | **`board` 组件**（★ 本榜单的自动化版） | 治"做完不勾/不验收/验错" | `task_plan.board` |
 | T9 | ★★★ **给设计 DSL 做健康检查**（消"图本身可能是错的"这个不确定）：① 反装饰（每条边/断言有判据吗）② 反空谈（每个承诺有判据钉吗）③ ★ **反空转（每条判据都在跑吗）** | ★★ 用户 2026-10-16 提出的核心疑虑；★ 实测依据：我今天写 DSL 错了 **7 处，0 处是"自己读一遍看出来的"** | 设计 DSL `design_dsl_health`（五层：形状/语义/事实/反向/盲点） |
+| T11 | ★★★ **收归第二刀（OQ11=B）：给 task 格立原生家 + 唯一写端** —— ① `geometry.nodes[].task` 为家 ② 唯一写端 `edit_dsl{type:'task'}` ③ **progress 改由 `task.state` 派生**（消"两轴无映射"= 一事实两权威） ④ 闸改读 `node.task.state===claimed`（OQ10） | ★ T5 停手时核出（任务格无家/claim 无合法写端）· 设计见设计 DSL 的 `task_home` | 设计 DSL `task_home` 段 |
 | T10 | ★★★ **收归：`NEGATIVE_KINDS` → `Expectation` 原生 phase**（`docs/principle-rewrite-not-patch.md`） | 子代理 | 把「前态/后态」从外部清单改成 **`kind ⇒ phase` 派生**（★ **唯一权威处**，且 **`tsc` 保证漏标编不过**）；★ **`NEGATIVE_KINDS` 从代码里消失**；`canClaim` 改为 `postExpectations(...)`（`task_machine.ts:66`） | ★ **结构判据①：新增一种前态判据只改 1 处**（它自己的 kind⇒phase 标注）· ★ 全量对拍 `passed 10→12 · unsupported 3→1` · 新证 `t348 PASS=17/FAIL=0` · 22 张证全绿 · verify 4/4 · invariants 4/4 · validateDSL 0 问题 | ★ **我核**：① `phase` 确由 kind 派生（**不是**落盘字段 ⇒ 避开"存两处"= 本仓头号病）② `NEGATIVE_KINDS` 只剩注释里的历史说明 ③ 我自跑对拍与它一致；★ 它**如实报了一条残留**：`canClaim` 仍要"选取"后态判据 —— ★ **而这判断正确**（选取是按自带属性筛选，不是"记得剔除") |
 
 ---
