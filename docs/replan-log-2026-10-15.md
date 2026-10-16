@@ -2026,3 +2026,35 @@ A/B 顶层键仅 `id,type,feature,version,title,source_root[,status],geometry,se
 3. ★★ **回到对拍**：`设计（人写的图）` vs `实际（从 DB 现渲染的图）`；四类判定语义不变，★ **且 age 是新的**。
 ★ **为什么第 1 步必须先做**：第 2 步成败**完全押在"渲染可复现"**上；抖一格 ⇒ "把确定性换成噪声"。
 ★ **第 3 步之后**，`live/` 这份冻结文件才可以谈退役（退成"一次渲染的缓存"，而非"权威的一方"）。
+
+---
+
+## 65. 2026-10-16 ★★★ 验"布局字节稳定"（第 1 步）⇒ 结论"一半"：**同 locale 稳定、跨 locale 会变** ⇒ 修掉 3 处 `localeCompare`
+
+### 65.1 实验（临时目录 + 独立 `AGENT_IO_HOME`，★ 真仓零写入）
+夹具 = 真仓 `src/domain/` 全 20 个 .ts（⇒ 22 节点 = 20 `file_` + 2 `dir_`；70 symbols；3 dep_edges；画布 1180×1048）。
+- **① 同 locale 两跑**：coord `sha256=0ead7361…` **相等** · 几何层 `64784d86…` 相等 · 整份 DSL `8875b5fd…` 相等
+  （落盘文件 sha256 四次全同）⇒ ★ **同 locale 稳定** ✓；
+- **② 跨 locale：本机设不了** —— ★ **Node(Win) locale 恒 `zh-CN`**（`LANG`/`LC_ALL`/`LANGUAGE` 全无效，
+  `Intl…resolvedOptions().locale` 仍 `zh-CN`）⇒ ★ **真跨 locale 端到端 `[未核]`**（如实报，未假装跑过）；
+- **③ ★★★ 但机制探针把嫌疑坐实**：真仓 `layoutGroup` 直测（mixed-case 14 节点）——
+  **`zh-CN` vs `tr-TR` 动 7/14** · **vs `da-DK` 动 14/14**；首差 `file_src_Index_ts` zh-CN`(350,104)` → tr/da`(0,104)`
+  （`tr-TR`：`I<i`；`da-DK`：大写在前）；★ 夹具 20 节点**高度全 64** ⇒ **主键全平 ⇒ tie-break 完全由 id 序决定**。
+
+### 65.2 修（★ 3 处、只换比较函数；`git diff -- src/` 核实）
+- `import_project.ts:607`（`layoutGroup`）：`a.id.localeCompare(b.id)` → `a.id < b.id ? -1 : a.id > b.id ? 1 : 0`；
+- `:1400`（dir 排序 `a.rel`）与 `:1458`（dep 边 `x.from`/`x.to`）同法替换。
+⇒ ★ `grep -rn "localeCompare" src/infrastructure/graph/` = **空**（已无残留）；
+★ **未动**主序（仍是 `b.h - a.h` 等）、未动 `layoutGroup`/`layoutDir` 算法、未动其他目录的 `localeCompare`。
+
+### 65.3 ★★ 行为改变（如实）
+- ★ **现有真仓布局在下次重建时可能与今天不同** —— 因为**码点序 ≠ `zh-CN` 的 `localeCompare` 序**；
+  ★ 本笔**没有对真仓跑 `import_project`** ⇒ 真仓文件未变（mtime = `11:01:53` 未动）；
+- ★ 收益：**渲染顺序不再依赖运行环境的 locale** ⇒ "按需渲染"的**可复现性前提成立**（这是本笔的全部目的）；
+- ★ `[未核]`：真跨 locale 端到端（Windows 设不了）；夹具 id 全小写 ⇒ **夹具本身无 locale 判别力**（判别力来自机制探针）。
+
+### 65.4 读数
+`npm run build` ✓ · `npm run verify` 4/4 ✓ · 抽查 **`t331` 3/3 · `t334` 11/11 · `t337` 14/14 · `t344` 18/18** 全绿 ·
+真仓 `.agent-io/features/self-2026-10-15.json` **mtime 未变**（11:01:53）。
+⇒ ★★ **第 1 步的结论**：**"字节稳定"同一环境成立、跨环境原本不成立**；**修完后排序与 locale 解耦** ⇒
+  **可以进入第 2 步**（摘掉 DSL 里的"事实副本"字段 + 给 `_sync` 补 `scanRev`/`age`）。

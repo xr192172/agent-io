@@ -607,7 +607,7 @@ export function layoutGroup(items: LayoutItem[], deps: Array<[string, string]>):
     const area = items.reduce((s, i) => s + (i.w + COL_GAP) * (i.h + ROW_GAP), 0);
     const maxItemW = Math.max(...items.map((i) => i.w));
     const targetW = Math.max(Math.sqrt(area * 1.5), maxItemW);
-    const sorted = [...items].sort((a, b) => b.h - a.h || a.id.localeCompare(b.id));
+    const sorted = [...items].sort((a, b) => b.h - a.h || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
     let x = 0;
     let y = 0;
     let shelfH = 0;
@@ -1400,7 +1400,7 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
     if (docRels.length) docNote = `文档 ${docRels.length} 篇（type=doc，可挂设计意图）`;
   }
 
-  for (const d of [...dirByRel.values()].sort((a, b) => a.rel.localeCompare(b.rel))) {
+  for (const d of [...dirByRel.values()].sort((a, b) => (a.rel < b.rel ? -1 : a.rel > b.rel ? 1 : 0))) {
     if (d.rel === '') continue;
     const parentRel = path.posix.dirname(d.rel);
     const parentId = parentRel === '.' || parentRel === '' ? null : dirNodeId(parentRel);
@@ -1458,7 +1458,7 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       type: 'dashed',
     });
   }
-  const aggSorted = [...aggEdges.values()].sort((x, y) => x.from.localeCompare(y.from) || x.to.localeCompare(y.to));
+  const aggSorted = [...aggEdges.values()].sort((x, y) => (x.from < y.from ? -1 : x.from > y.from ? 1 : 0) || (x.to < y.to ? -1 : x.to > y.to ? 1 : 0));
   for (const { from, to, n } of aggSorted) {
     edges.push({
       id: `dep_${sanitize(from)}_${sanitize(to)}`,
