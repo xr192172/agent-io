@@ -58,6 +58,16 @@ export interface OplState {
   integrated: boolean;
   /** 自驱产线的一次执行痕迹（人观察每一步做了什么） */
   oplog?: string[];
+  /**
+   * ★★★ T343（缺口③）：**声明阶段喂给 LLM 的"现状签名"**（由 `llmDeclare` 记录，只读端 `oplIntegrate` 用）。
+   *
+   * 为什么要记它：`llmDeclare` 把 `apiSignaturesOf(root, x.path)` 的**现状签名**拼进 LLM 上下文，
+   * 产物直接落成 `expected_apis` ⇒ 期望与代码**同源**（恒真）。`assertContractNotFromCode` 的判据
+   * 只能看"**源头喂了什么**"（★ 不做结果比对 —— 结果逐字相同在合法情况下也会发生），
+   * 而源头在声明阶段 ⇒ 该判据必须被**记下来**，才能在写 `expected_apis` 的那一步（`oplIntegrate`）复核。
+   * ★ 缺省 `undefined` = 声明时**没喂**现状签名（如规则路径 / 人手传 `overrides`）⇒ 守卫放行。
+   */
+  decl_code_context?: string[];
   created: string;
   updated: string;
 }
@@ -134,13 +144,56 @@ function langFromPath(p: string): OplDeclFile['lang'] {
   return e === '.go' ? 'go' : e === '.py' ? 'py' : e === '.js' ? 'js' : 'ts';
 }
 
+/**
+ * ★★★ T343（缺口③）：**防「契约与代码同源 ⇒ 恒真」的守卫**。
+ *
+ * ## 病（真仓实测）
+ * `llmDeclare` 把 `apiSignaturesOf(root, x.path)` 的**现状签名**拼进 LLM 上下文，产出的契约
+ * 直接经 `oplIntegrate` 落成 `expected_apis` ⇒ 期望侧（设计）与实现侧（代码）**同源** ⇒ 对拍恒真。
+ *
+ * ## 判据：**只看源头，不做结果比对**（★ 关键）
+ * 不比对"写出来的 `expected_apis` 是否与现状逐字相同" —— 因为**结果逐字相同在合法情况下也会发生**
+ * （人真就想要那个签名），比对会**误伤**。
+ * ⇒ 改判**喂给 LLM 的上下文**：上下文里**不许含现状签名**（喂了 ⇒ 产出的契约**必然**同源）。
+ * 调用方若把现状签名当上下文传进来 ⇒ **抛错**。
+ *
+ * ## 为什么放在写 `expected_apis` 的那一步核（`oplIntegrate`）
+ * 源头（声明）在另一个阶段，判据要能**事后复核** ⇒ 由 `llmDeclare` 把"喂进去的现状签名"记进
+ * `OplState.decl_code_context`，写盘前（`oplIntegrate`）拿它复核。
+ * ★ 「源头判据」指的是**判什么**（上下文，不是结果）；「复核发生在写盘前」是**在哪儿调**。
+ *
+ * @param codeSignaturesFedAsContext 本应当作 LLM 上下文喂进去的**现状签名**（应恒为空）
+ */
+export function assertContractNotFromCode(codeSignaturesFedAsContext: readonly string[]): void {
+  const bad = (codeSignaturesFedAsContext ?? []).filter((s) => typeof s === 'string' && s.trim().length > 0);
+  if (bad.length === 0) return;
+  throw new Error(
+    `拒绝：不许把**现状签名**当上下文喂给 LLM（本次传入 ${bad.length} 条：` +
+      `${bad
+        .slice(0, 3)
+        .map((s) => `\`${s}\``)
+        .join('、')}${bad.length > 3 ? ' …' : ''}）。\n` +
+      `  ★ 为什么拒（不是形式主义）：喂了现状签名 ⇒ LLM 产出的 \`expected_apis\` 与代码**同源**\n` +
+      `    ⇒ "设计 ↔ 实现"的**期望侧 = 实现侧** = 自己测自己（**恒真、永远绿**）—— 正是本仓最忌的"装饰闸"。\n` +
+      `  ★ 怎么办：上下文里**只放意图**（文件 path / 职责）。现状签名是"**实际**"侧，要读请走\n` +
+      `    \`apiSignaturesOf\`（infrastructure/index/file_facts），**不许经由**"声明契约"这条路。`,
+  );
+}
+
 // ── 阶段 4 DECLARE：加设计 DSL（落地文件 + 契约）→ 在 impl 沙箱写占位骨架 ──
-export function oplDeclare(feature: string, id: string, overrides?: { files?: OplDeclFile[] }): OplState {
+export function oplDeclare(
+  feature: string,
+  id: string,
+  overrides?: { files?: OplDeclFile[]; declCodeContext?: string[] },
+): OplState {
   const s = readState(feature, id);
   const files: OplDeclFile[] = overrides?.files?.length
     ? overrides.files
     : [{ path: `${slugify(s.title) || 'feature'}.ts`, lang: 'ts', apis: [] }];
   s.decl = files;
+  // ★ T343：记下"声明时喂给 LLM 的现状签名"（供 `oplIntegrate` 复核；缺省不喂 ⇒ 删除旧记录）
+  if (overrides?.declCodeContext) s.decl_code_context = overrides.declCodeContext;
+  else delete s.decl_code_context;
   // 在 impl 沙箱为每个声明文件写骨架（含契约头注释 + 空实现），供人/LLM 填充
   for (const f of files) {
     const abs = path.join(implRoot(feature, id), f.path);
@@ -305,6 +358,11 @@ export async function oplIntegrate(feature: string, id: string): Promise<OplStat
   const accepted = s.decl.filter((f) => (s.live.find((l) => l.path === f.path)?.state) === 'accepted');
   if (accepted.length === 0) throw new Error('没有通过比较的实现可接入（先实现声明 API）');
 
+  // ★★★ T343（缺口③）：**写 `expected_apis` 之前**过"契约不得自源"守卫 ——
+  //   判据看**源头**（声明时喂给 LLM 的现状签名），不看结果（理由见 `assertContractNotFromCode`）。
+  //   ★ 有守卫不调用 = 装饰闸（正是 T336 缺口③ 要堵的）⇒ 这里必须真调。
+  assertContractNotFromCode(s.decl_code_context ?? []);
+
   const dsl = getDSL(feature);
   if (!dsl) throw new Error(`feature "${feature}" 不存在`);
   dsl.semantic = dsl.semantic ?? { files: [] };
@@ -392,22 +450,28 @@ function parseLlmJson(raw: string): unknown {
   return JSON.parse(start >= 0 && end > start ? t.slice(start, end + 1) : t);
 }
 
-/** LLM 下探真实文件：依据 feature DSL 的真实 API 清单 + 主人愿望，产出落地契约（文件+API 签名） */
+/**
+ * LLM 下探真实文件：依据 feature DSL 的真实 API 清单 + 主人愿望，产出落地契约（文件+API 签名）。
+ * ★ T343：返回体额外带 `fedSignatures` —— 本次**喂进上下文**的**现状签名**（供 `assertContractNotFromCode` 复核）。
+ */
 async function llmDeclare(
   feature: string,
   s: OplState,
   cfg: ReturnType<typeof loadLlmConfig>,
-): Promise<OplDeclFile[] | null> {
+): Promise<{ files: OplDeclFile[]; fedSignatures: string[] } | null> {
   if (!cfg) return null;
   const dsl = getDSL(feature);
   const files = (dsl?.semantic?.files ?? []).slice(0, 40);
   // 事实的权威只在解析数据（cache.db）——读 fileFacts，不再读 DSL 里的 actual_apis 镜像。
   // root 取 dsl.source_root；取不到根 / 该文件无事实时，退回意图（expected_apis）。
   const root = dsl?.source_root;
+  /** ★ T343：记下**实际喂进上下文的现状签名**（`apiSignaturesOf` 现取的那批）—— 缺口③的判据源头。 */
+  const fedSignatures: string[] = [];
   const context = files.length
     ? files
         .map((x) => {
           const factSigs = root ? apiSignaturesOf(root, x.path, feature) : [];
+          if (factSigs.length) fedSignatures.push(...factSigs);
           const sigs = factSigs.length ? factSigs : (x.expected_apis ?? []).map((a) => a.signature).filter(Boolean);
           return `- ${x.path}：${x.responsibility ?? ''}${sigs.length ? `  API=${sigs.join(', ')}` : ''}`;
         })
@@ -434,7 +498,7 @@ async function llmDeclare(
           .filter((a) => a && typeof a.name === 'string' && a.name.trim())
           .map((a) => ({ name: (a.name as string).trim(), signature: (a.signature ?? '').trim() })),
       }));
-    return files.length ? files : null;
+    return files.length ? { files, fedSignatures } : null;
   } catch {
     return null;
   }
@@ -492,10 +556,12 @@ async function oplAutoImpl(feature: string, id: string, s0: OplState): Promise<O
   try {
     // 下探真实文件 + 加设计 DSL（无 decl 才做；有则跳过 = 局部增量）
     if (!s.decl || s.decl.length === 0) {
-      const files = (await llmDeclare(feature, s, cfg)) ?? [
+      const llm = await llmDeclare(feature, s, cfg);
+      const files = llm?.files ?? [
         { path: `${slugify(s.title) || 'feature'}.ts`, lang: 'ts', apis: [] as OplApi[] },
       ];
-      s = oplDeclare(feature, id, { files });
+      // ★ T343：把"声明时喂给 LLM 的现状签名"一并落进状态 ⇒ 写 `expected_apis` 前由守卫复核
+      s = oplDeclare(feature, id, { files, declCodeContext: llm?.fedSignatures });
       log.push(`下探真实文件 → 声明契约：${files.map((x) => x.path).join(', ')}（${cfg ? 'LLM' : '规则'}）`);
     }
     // 改真实文件（LLM 写；无 LLM 写不出则保留占位壳，check 会如实报 missing）

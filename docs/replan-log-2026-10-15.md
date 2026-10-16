@@ -1393,3 +1393,52 @@ MCP 传输/schema 层 · daemon 转发分支；★ **六种 kind 本节点只用
 
 ### 48.4 真仓对拍的**真实终值**
 **`检查项 6 · 通过 4 · 不满足 2 · 判不了 0`**（`rename_*` 三条已绿；剩 `opl.ts` / `overlay.ts` 两条 = **真任务，需新建守卫**）。
+
+---
+
+## 49. 2026-10-16 ★★★ 两条真任务落地 ⇒ **真仓对拍「通过 6 · 不满足 0」**（`t343` 31/0）
+
+### 49.1 第 0 步（先找既有解法）—— 这次找到了**直击要害**的一处
+- ① 的同类解法：★ `import_project.ts:1354`（**T85/D1 已摘掉 `expected_apis: apis`** = **源头不填**）·
+  `:1357`（`actual_apis`/`actual_deps` 不回填进 DSL，事实唯一权威 = cache.db）· `consistency.ts:68`（*"自己测自己算什么对拍"*）；
+- ② 的同类解法：`overlay.ts:406` `byPath.get(a.path)` **按 path 认亲** · `:409-411` `bySig.get(signature)`
+  ★ **按签名认亲 = 改名检测** · `:414-417` 认不到 ⇒ `orphaned:true` · `:429` `_migratedFrom`。
+
+### 49.2 两个函数（★ **都是真行为，不是空壳**）
+**① `assertContractNotFromCode(codeSignaturesFedAsContext: readonly string[]): void`**（`opl.ts:167`）
+- 语义：**非空（= 喂过现状签名）⇒ 抛**；关键行 `if (bad.length === 0) return;` + `throw`；
+- 调用点 `opl.ts:364`（`oplIntegrate` **写 `expected_apis` 之前**）；
+- 判据：**a** 传 ⇒ **抛**（原文 `拒绝：不许把现状签名当上下文喂给 LLM（本次传入 1 条：\`(a: string) => void\`）…`）·
+  **b** 不传 ⇒ **通过**（不误伤）· **c** ★ **对照**：绕过（清记录）⇒ 写出 `[{"name":"foo","signature":"(a: string) => void"}]`
+  —— **与现状逐字相同**（**同源契约真的会被造出来**）✓
+
+**② `attestationAppliesTo(att, currentNodeId): boolean`**（`overlay.ts:188`）
+- 语义：`bound = att.source_node_id` ⇒ **无出处 ⇒ `false`（保守）**；否则 `bound === currentNodeId`；
+- ★★ **`node.id` 是否路径派生的证据**：`import_project.ts:889-890` `const fileNodeId = rel => \`file_${sanitize(rel)}\``；
+  真仓该节点 id = `file_src_application_design_derive_opl_ts` ← `src/application/design/derive/opl.ts` ⇒ ★ **改名换 id** ✓；
+- 判据：**a** 同 id ⇒ `true` · **b** 改名后（新 id）⇒ **`false`** · **c** ★ **对照**：不调它（只看 `kind`）⇒ 旧口供在新节点**仍判"有效"** ✓
+
+### 49.3 ★★★ 真仓对拍终值（**明细**，不是只报总数）
+`检查项 6 条 · **通过 6** · **不满足 0** · **判不了 0**`
+```
+✅ [opl]         call-exists  oplIntegrate() → assertContractNotFromCode()（L364）
+✅ [rename_file] call-exists  renameFileCore() → assertSourceWriteRegistered()（L526）
+✅ [rename_files] edge-exists → src/application/write_gate.ts
+✅ [rename_files] call-exists renameFilesCore() → assertSourceWriteRegistered()（L140）
+✅ [symbol_move] call-exists  moveSymbolCore() → assertSourceWriteRegistered()（L488）
+✅ [overlay]     symbol-exists attestationAppliesTo（L188-196）
+```
+
+### 49.4 ★ 行为改变（如实）· 一个我该裁的张力 · 待办
+1. ★ **真实的连锁**：① 的守卫让 **`oplIntegrate` 在"声明喂过现状签名"时抛** —— 而现行的 `llmDeclare` **恒喂**现状签名
+   ⇒ **真 LLM 自动产线会在 integrate 步被拦**（= **闸按设计生效**）⇒ ★ **待办：让 `llmDeclare` 不再喂现状签名**（那是产线的事）；
+2. ★ **② 未接线**（只加纯函数 + 判据）：消费者候选 = `query_feature.ts` 的 `pending`(`1327/1352`) · `status_tools.ts` 的 `doneCount`(`153`) —— **待我点头再接**；
+3. ★ **它自己指出的可争议处（我裁定接受现状）**：① 的守卫落在 `oplIntegrate`（**写盘前**）、而**判据是源头（上下文）**；
+   因为 DSL 的 `call-exists` **只能指 `oplIntegrate`**（期望写的是它）⇒ ★ **两者不冲突**：**闸守的是"别写同源契约"这个动作**，
+   "怎么喂"是产线的事 ⇒ ★ **接受**，并把"让 `llmDeclare` 不再喂"记为待办（见 49.4.1）；
+4. 真数据改动：`self-2026-10-15` 两节点经 `edit_dsl` 登记为 `in_progress`（**我要求的登记**）+ 备份 `.inspect/*.bak-t343`；
+   `cache.db` 对两文件保鲜；★ 真实期望 / git 未动。
+
+### 49.5 读数
+`t343` **PASS=31 FAIL=0** · `build` ✓ · `verify` 4/4 ✓ · **十六证全绿**（`t326` 未红）。
+★ `[未核]`：MCP schema/传输层 · daemon 分支 · 真 LLM 跑 `oplAuto` · 全量 `npm run certs`（只跑了点名的十七证）。

@@ -162,6 +162,39 @@ function nonEmpty(v: unknown): boolean {
   return typeof v === 'string' && v.trim().length > 0;
 }
 
+/**
+ * ★★★ **读端**：这条 `attestation` 是否**仍适用于**当前节点（T343，缺口②）。
+ *
+ * ## 为什么必须有它（本仓已证过的一类"只在注释里的承诺"）
+ * `attestation.source_node_id` 由**唯一写端** `updateStatus` 在落盘前自动填（`status_tools.ts:73`），
+ * 注释里承诺"**节点改名/重挂 ⇒ 旧口供自然失效**"（`overlay.ts` 上面 `ProgressEvidence` 那段）。
+ * ★ 但全仓 grep 过：**`source_node_id` 只写不读** —— 那句承诺**没有任何代码**。
+ * ⇒ 本条把"比对"补上：口供绑的节点 ≠ 当前节点 ⇒ **不适用** ⇒ 不许再冒充"该节点已完成"。
+ *
+ * ## 判据为什么是"比 id"（★ 先核清 `node.id` 是**路径派生**的）
+ * `node.id` 不是稳定 uid，而是**从路径现算**的：`file_` 节点的 id =
+ * `file_${sanitize(rel)}`（`infrastructure/graph/import_project.ts:890`，`sanitize` 把非字母数字换成 `_`）。
+ * ★ 实据就在本仓的决策卡上：`src/application/design/derive/opl.ts` 的节点 id 是
+ * `file_src_application_design_derive_opl_ts`（= `file_` + `src/application/design/derive/opl.ts` 去符号）。
+ * ⇒ **改名 = 换 id** ⇒ `source_node_id`（旧 id）与新节点 id **对不上** ⇒ 本条判"不适用" ✓。
+ * （若将来 `node.id` 换成不随改名变的稳定 uid ⇒ 本判据要换成比对 `path`，见 `OverlayAnchor.path`。）
+ *
+ * ## 缺 `source_node_id` ⇒ `false`（保守）
+ * 一条**没有出处**的口供"说不清它在给谁作证"（与 T118「事实要能追溯到来源」同族）⇒ 不许拿它
+ * 声称**这个**节点已完成。这与本仓「没判 ≠ 通过」同一条尺：宁可判"不适用"，不判"有效"。
+ *
+ * ★ 纯函数（不读盘、不改盘）：只做"这条口供 vs 这个节点 id"的判据。
+ */
+export function attestationAppliesTo(
+  att: Extract<ProgressEvidence, { kind: 'attestation' }>,
+  currentNodeId: string,
+): boolean {
+  const bound = att.source_node_id;
+  // 无出处 ⇒ 说不清给谁作证 ⇒ 不适用（不是"有效"）
+  if (!nonEmpty(bound)) return false;
+  return bound === currentNodeId;
+}
+
 /** overlay 锚点：一份挂在稳定锚点上的设计意图 */
 export interface OverlayAnchor {
   /** 相对路径（file=rel 路径；dir/brick=解码后的路径名） */
