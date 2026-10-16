@@ -2755,3 +2755,50 @@ assertSourceWriteRegistered(projectRoot, files): TaskGateOutcome                
 4. ★★★ **OQ10「登记」对闸不生效** ⇒ ★★ **这说明 `edit_dsl status` 登记没有让闸放行**（★ 我原本拍的"最小版领取"**失效**了）
    ⇒ ★ **那"新建文件"就只剩 `scaffoldCore` 通道**（★ 与 §81.4 的结论一致，但**"登记"这条路不通**要记下）。
 ★ 另一件它提的：**"新建文件是否必须走既有通道 —— 它会写真仓 `.agent-io`"** ⇒ ★ **是的，本笔确实动了真仓 `.agent-io`**（★ 但它报了 mtime 未变 ⇒ ★ **说明它动的是别处**，★ 待核）。
+
+---
+
+## 83. 2026-10-16 ★★★ 狗食第二块走通（`discussion_log`）+ ★★ 它逮到"对拍会撒谎"的真 bug
+
+### 83.1 我（开发者）当天的自裁（★ 用户授权："你自己就是用户，哪里不顺手你自己都知道"）
+| 待裁 | 裁定 | 理由 |
+|---|---|---|
+| ★★ **OQ9 层级倒挂** | **抽 domain 纯函数**：`task_machine` 只接 `{facts, expectations}` 做纯判定，取事实由 application 传入 | domain 定义"怎么判"，application 负责"去哪取"；且判定可单测 |
+| ★★ **OQ10 登记对闸不生效** | **先不改闸**，记进 open | 新建文件走 `scaffoldCore` 已通；"登记"语义不清（`in_progress`=已登记≠认领）⇒ 等「领取」有真语义再接 |
+| ★ **块的定义** | ★★ **块 = 依赖闭包**（不是单节点） | "整块重写"要连带依赖一起改 |
+| ★★ **下一块排序** | `discussion_log` → `task_ops` → `task_drift` | ★ **按"既服务施工、又服务我自己"排** —— `discussion_log` 治今天最疼的病（"结论没有住处"） |
+
+### 83.2 第二块读数（我核过它的报告，逐条）
+- ★ **判据①：本块 3红→0红** ✓（真仓 root `checked 24 · passed 7→10 · failed 15→12 · **unsupported 2→2**`）；
+  ★★ **它如实报了 `unsupported=2`**（上一块有人报"真绿"而实际 unsupported=2 ⇒ 这次规矩了），
+  并**解释了来源**：状态机节点的 `call-exists`/`edge-exists` 只取自索引、**新文件未进真仓 cache.db** ⇒ 判不了；
+- ★ **其他块不变**（`task_ops` 5红 · `task_drift` 7红）✓；
+- ★★ **端到端（这条漂亮）**：`renderMicro` = `{"micro":"决策卡 = 候选任务（待领取）⇒ 领取时校验（过期？还成立吗？）⇒ …对拍。","open_count":4}`
+  ⇒ ★ **输出键只有 `["micro","open_count"]`，白名单外键数 0**；★ **`user_quote` 三段子串全 false（连键名也 false）** ⇒ **微缩里没有 user_quote** ✓✓；
+  ★ 且**先验了"引文是真的"**（`user_quote` 归一化后逐字出现在 `docs/discussion-log.md`，200 字 = true）；
+  ★ `shouldExpand`：三种触发全 **true**；反例（`{}` / 三否定 / `expand:'all'` / `discussion:null`）全 **false**；exit=0；
+- ★ **⑦ 落回设计 DSL**：新增 `block_readings`（逐块读数）+ **第 4 条 `invariant_checks`**
+  （★ **把"展开条件机器可判"从散文变成有 exit code 的判据**）；**`valid=true`**；★ **expectations 未动（24 条）⇒ 审计基准不变**（好纪律）；
+- ★ **⑧⑨ 重算 + 再对拍**：临时 home `import_project` ⇒ files 352 / nodes 4912；
+  **重算 root `checked 24 · passed 12 · failed 12 · unsupported 0`** ↔ 真仓 root `10/12/2`
+  ⇒ ★★ **对照说明：真仓那 2 条 `unsupported` 的来源是"索引未刷新"，不是 bug**（重算后即 0）；
+- ★ `build` ✓ · `verify` **4/4** ✓ · **十九证 19/19 全绿** ✓ · ★ **真仓四文件 mtime+md5 逐字相同** ✓ · ★ 记账第 10 行 ✓。
+
+### 83.3 ★★★ 它逮到的真 bug（**G2：对拍会撒谎**）
+**`expectations.ts:337`** 的 type-only 冤案排解：拿**带 `.ts` 的** `to.split('/').pop()` 去比 raw import 的 **`'./task_schema.js'`（带 `.js`）**
+⇒ ★★ **永不命中 = 死代码**；★ **实测**：`edge-exists discussion_log→task_schema` 判 **`fail`**（★ **本该是"不建边 ⇒ 判不了"**）
+⇒ ★★★ **这是一个"假红"源 —— 会让对拍输出错误结论**（★ 而"对拍"正是我们整条流程的地基）。
+★ 它给的补丁：**按 basename 去扩展名比较**，或**新增 kind `type-dep-exists`**；
+★ 并明确：**"不修就先别补这条边，否则补出来的是假红"** ✓✓✓
+
+### 83.4 ★★ 它给的缺口清单 G1–G5（= "哪里不顺手"）
+- **G1**：`geometry.edges` 缺 `e_discussion_to_schema`（真实依赖只是 type-import）⇒ **`block_rule` 的"沿 imports 边闭包"看不见它**；★ 补边必配判据，否则又是装饰边；
+- ★★★ **G2**：见 83.3（**对拍撒谎**）；
+- **G3**：该节点责任写了"版本链（`decided_at`/`supersedes`）"却**无判据钉、无消费方**（= OQ4）⇒ 目前只是注释；
+- **G4**：本块**无判据钉"谁调它"** ⇒ 端到端只在探针里成立（建议加 `call-exists` 或一条 `invariant_check` 钉消费者）；
+- ★★★ **G5：`invariant_checks` 全仓无 runner**（★ 靠人记得跑 —— ★ **与 `NEGATIVE_KINDS` 那条同形**）
+  ⇒ ★★ **这条是要害：判据没有执行者 = 等于没有。**
+
+### 83.5 `[未核]`（它标的）
+★ **`renderMicro`/`shouldExpand` 目前无生产调用方** ⇒ "结论有住处"只到"**能存能取**"，**接点没接**；
+★ OQ9 对 `task_machine` 的纯函数重构**未做**（★ 越块，本笔没碰）。
