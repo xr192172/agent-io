@@ -29,6 +29,12 @@
  *     ★ **判定逻辑（判什么 / 判几条 / 文本）一字未改**，只是每条错**另产出** `key`（见 `validator.ts` 的 `ValidationErrorItem`）。
  *
  * ## 判据（★ 每条都亲手跑、贴原文）
+ *   ⓿ ★★★ **活 A（T345 前置，2026-10-16 追加）**：悬空边**不再由"夹具对象直写 `d.geometry.edges`"造出**
+ *      —— (c) 摘掉 `geometry.edges` 里纯事实边后那条通路不再成立 ⇒ 改走 **"注入到判据真正读的那份图"**
+ *      （先 `saveDSL` 落自洽基线，再把悬空边注入 `getLiveDslFile()` 那份图）。
+ *      ★ 判据：注入后从**读入口读回的图**上，`validateDSL` 确实报 `[dangling_edge]`（见 0×）。
+ *      ★ **真正要证的东西逐条未动**：0 / 0-b..0-e / ①-0 / ① / ①-b / ④ / ②-0 / ② / ②-b / ③ **原样保留**，
+ *        PASS 数由 13 **增到 14**（只增不减）。
  *   ① ★★ **核心场景（造那个误判）**：让一条**既有错**的文本变化（悬空边 `edge_ab.to` 的**被指向名字**
  *      由 `"node_bb"` 变为 `"node_b"`，**错误条数/性质不变**，仍是那一条 `[dangling_edge]`）
  *      ⇒ 经工具层 `edit_dsl`（`snapshot rollback`）**必须不被判为"本次新增"**（放行）。
@@ -84,7 +90,7 @@ const dump = (label, text) => {
 const HOME = fs.mkdtempSync(path.join(TMP, 'home-'));
 process.env.AGENT_IO_HOME = HOME;
 
-const { saveDSL, getDSL } = await import('../dist/src/infrastructure/storage.js');
+const { saveDSL, getDSL, getLiveDslFile } = await import('../dist/src/infrastructure/storage.js');
 const { editDslHandler } = await import('../dist/src/application/design/handlers.js');
 const { saveSnapshot } = await import('../dist/src/application/design/lifecycle/snapshot.js');
 const { validateDSL } = await import('../dist/src/domain/validator.js');
@@ -115,7 +121,7 @@ const validDsl = () => ({
     ],
   },
 });
-// ── 夹具：「悬空边」旧状态 —— `edge_ab.to` 指向**已被摘掉的** node；`to` 的名字可调（模拟"被指向的名字"）──
+// ── 夹具：「悬空边」图 —— `edge_ab.to` 指向**已被摘掉的** node；`to` 的名字可调（模拟"被指向的名字"）──
 const danglingTo = (target) => {
   const d = validDsl();
   d.geometry.nodes = d.geometry.nodes.filter((n) => n.id !== 'node_b');
@@ -124,11 +130,57 @@ const danglingTo = (target) => {
   return d;
 };
 
+// ════════════════════════════════════════════════════════════════════════════
+// ★★★ 活 A（T345 前置）：**悬空边不再由"夹具对象直写 `d.geometry.edges`"造出**
+//
+// 为什么要改：`docs/dsl-keep-list-2026-10-16.md` §三' 的 **(c)** 要摘掉 `geometry.edges` 里
+//   **可 DB 现算**的那部分 ⇒ ★ **"直写夹具对象的 `d.geometry.edges` 并指望它经 saveDSL 落盘"这条
+//   通路在 (c) 之后不再成立** ⇒ 本探针**造不出悬空边** ⇒ `[dangling_edge]` **永不触发**、**证失效**。
+//   （实测：`edge/add` 自带端点检查 `edge_ops.ts:32-37`、`node/delete` 自带清边 `node_ops.ts:410-411`
+//     ⇒ ★ **合法 op 里没有一条能造出悬空边**；`edit_dsl` 能引入它的唯一路径是 `snapshot op=rollback`。）
+//
+// ★ 改法（题面 (b)：**在"判据真正读的那份图"上注入**）：
+//   · **判据真正读的那份图** = `getDSL(FEAT)` 读出来的图，即 **活态文件** `getLiveDslFile()`；
+//   · 先走**合法写入通路** `saveDSL(validDsl())` 落一份**自洽基线**（这一步完全不碰 edges 的"造法"）；
+//   · **再**把悬空边**注入到那份文件的图上**（读回 → 注入 → 写回）。
+//
+// ★ 为什么"注入这份"就**等于"重建后的图"**：(c) 之后，**写侧**装配出的 `geometry.edges` 不再是权威
+//   （可现算的那部分被摘），而**读侧**（本笔活 B：`storage.ts#withFacts` 按需从 DB 现渲染补齐）才是权威
+//   ⇒ **判据看到的图 = 读入口返回的图**。把悬空边注入这份图 == 注入到"重建后的图"上
+//   （★ 注入发生在**写侧之后**、**读侧之前** ⇒ 不受"写侧摘边"影响）。
+// ════════════════════════════════════════════════════════════════════════════
+/** 落一份自洽基线（合法通路），再把"悬空边"注入到**判据真正读的那份图**（活态文件）。 */
+const commitDangling = (target) => {
+  saveDSL(validDsl()); // ① 合法写入通路：自洽基线落盘
+  const file = getLiveDslFile(); // ② 判据真正读的那份图 = 活态文件（getDSL 优先读它）
+  const cur = JSON.parse(fs.readFileSync(file, 'utf-8'));
+  cur.geometry.nodes = cur.geometry.nodes.filter((n) => n.id !== 'node_b');
+  cur.semantic.files = cur.semantic.files.filter((f) => f.id !== 'node_b');
+  cur.geometry.edges = [{ id: 'edge_ab', from: 'node_a', to: target }]; // ★ 注入（悬空：target 不在 nodes[]）
+  fs.writeFileSync(file, JSON.stringify(cur, null, 2), 'utf-8');
+  return cur;
+};
+
 console.log('════ 0. 夹具就位 + `validateDSL` 的 error 形状（纯字符串 + 附加键）════');
 saveDSL(validDsl());
 {
   const v = validateDSL(getDSL(FEAT));
   chk(v.valid === true, '0 基线自洽：`validateDSL` 对夹具基线返回 valid=true', `valid=${v.valid} · errors=${JSON.stringify(v.errors)}`);
+}
+{
+  // ★★ 活 A 证据：**注入后**，`validateDSL` 确实从"判据真正读的那份图"上报出 `[dangling_edge]`。
+  const landed = commitDangling('node_b');
+  const read = getDSL(FEAT);
+  const v = validateDSL(read);
+  dump(
+    '注入悬空边后 · 从读入口(活态文件)读回的图',
+    `edges=${JSON.stringify(read.geometry?.edges)}\nvalid=${v.valid}\nerrors=${JSON.stringify(v.errors)}\nkeys  =${JSON.stringify(v.keys)}`,
+  );
+  chk(
+    v.valid === false && v.errors.length === 1 && v.errors[0] === '[dangling_edge] edge "edge_ab".to "node_b" 在 geometry.nodes 中找不到',
+    '0× ★★ 活A证据：悬空边**经"注入到判据真正读的那份图"造出** ⇒ `validateDSL` 从**读入口读回的图**上确实报 `[dangling_edge]`',
+    `注入的是活态文件（getLiveDslFile）：注入前 edges 自洽、注入后 edges=${JSON.stringify(landed.geometry.edges)}`,
+  );
 }
 {
   // ★ 核 error 形状：errors 是**字符串数组**（真仓类型 = ValidationResult.errors: string[]）；
@@ -162,9 +214,10 @@ saveDSL(validDsl());
 console.log('\n════ ① ★★ 既有 `[dangling_edge]` 的文本变化（"node_bb" → "node_b"）⇒ 不得判为本次新增 ════');
 {
   // 布置：先存一份"悬空指向 node_b"的旧态并快照；再让落定态变成"悬空指向 node_bb"（模拟改名后的现状）
-  saveDSL(danglingTo('node_b'));
+  // ★ 活 A：悬空边走"注入到判据真正读的那份图"（`commitDangling`），不再由夹具对象直写 `geometry.edges`。
+  commitDangling('node_b');
   const snap = saveSnapshot({ feature: FEAT, label: 'dangling-to-node_b' });
-  saveDSL(danglingTo('node_bb')); // ← 调用前落定态：同一条边，被指向的名字 = "node_bb"
+  commitDangling('node_bb'); // ← 调用前落定态：同一条边，被指向的名字 = "node_bb"
   const before = validateDSL(getDSL(FEAT));
   dump('调用前 (to="node_bb") 读数', `errors=${JSON.stringify(before.errors)}\nkeys  =${JSON.stringify(before.keys)}`);
 
@@ -208,7 +261,7 @@ console.log('\n════ ② 真新引入的错 ⇒ 仍被拦（经工具层 
 {
   // 干净基线（0 错）→ 一份含悬空边的快照 → 再回滚到它 ⇒ 相对基线**新引入** 1 条 dangling_edge
   saveDSL(validDsl());
-  saveDSL(danglingTo('node_zzz'));
+  commitDangling('node_zzz'); // ★ 活 A：悬空边经"注入到判据真正读的那份图"造出
   const snapBad = saveSnapshot({ feature: FEAT, label: 'dangling-to-node_zzz' });
   saveDSL(validDsl()); // 落定态恢复为自洽（基线 0 错）
   const before = validateDSL(getDSL(FEAT));

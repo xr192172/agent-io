@@ -161,12 +161,19 @@ export function getLiveFeatureFile(feature: string, baseDir?: string): string {
 function syncMeta(dsl: DesignDSL, source: string): Record<string, unknown> {
   const now = Date.now();
   const { rev } = scanRevOf({ feature: dsl.feature, sourceRoot: dsl.source_root });
+  // ★★ T345（第 2 步 (c) 前置）：**保留调用方声明的"事实外置"标记**（`_sync.facts === 'db'`）。
+  //   为什么必须在这里保留：`_sync` 是本函数**整体重建**的（下面那个字面量）⇒ 调用方在
+  //   `dsl._sync.facts` 上写的声明会被**静默冲掉**。而它正是读取侧"要不要按需从 DB 补齐"的**唯一开关**
+  //   （见 `withFacts`）⇒ 丢了它，(c) 摘字段后读侧就**不知道要补**。
+  //   ★ 只有调用方**真的写过**才带上（谁也不写 ⇒ 返回值与改前**逐字相同** ⇒ 零行为改变）。
+  const facts = (dsl as unknown as { _sync?: Record<string, unknown> })._sync?.facts;
   return {
     saved_at: new Date(now).toISOString(),
     source,
     feature: dsl.feature,
     scanRev: rev,
     age: rev == null ? null : Math.max(0, now - rev),
+    ...(facts ? { facts } : {}),
   };
 }
 
@@ -417,7 +424,8 @@ export function getBaselineFeature(feature: string, baseDir?: string): DesignDSL
 export function viewBaseDirCandidates(feature: string, explicit?: string): string[] {
   const out: string[] = [];
   if (explicit) out.push(explicit);
-  const sr = getDSL(feature)?.source_root;
+  // ★ 用 readDSLRaw：只是在**反查 source_root**，不该因为"事实外置"而触发一次 DB 现渲染。
+  const sr = readDSLRaw(feature)?.source_root;
   if (sr) out.push(sr);
   out.push(getDataHome());
   return [...new Set(out.map((d) => path.resolve(d)))];
@@ -439,7 +447,9 @@ function readViewAtCandidates<T>(
 /** 读 `live` 视图（**按候选链找**，不猜单一根）。 */
 export function getLiveFeatureResolved(feature: string, explicit?: string): DesignDSL | null {
   const fromFile = readViewAtCandidates(feature, explicit, (b) => getLiveFeatureFile(feature, b), (b) => getLiveFeature(feature, b));
-  if (fromFile) return fromFile;
+  // ★ T345：文件在位时，若它声明了"事实外置"（`_sync.facts==='db'`）⇒ 按需补齐（见 `withFacts`）。
+  //   ★ 没这个标记 ⇒ `withFacts` 原样返回 ⇒ **读文件的行为一字未动**（判据②）。
+  if (fromFile) return withFacts(fromFile, feature);
   // ★★★ 2026-10-16（第 2 步 (b)）：**文件不在 ⇒ 走"DB 现渲染"通路**（`index/live_render.ts`）。
   //   · **文件存在时上面已 return ⇒ 现有读取行为一字未动**（判据②）；
   //   · 文件缺失（含候选链每一处都没有）时才现渲染 —— 让"实际图"不再依赖那份冻结副本（判据①）；
@@ -662,11 +672,12 @@ export function isLiveDslParseable(): boolean {
 
 /** 当前磁盘 rev：优先活态文件，回退 feature 存档，缺失为 0 */
 function currentDslRev(feature: string): number {
-  return getDSL(feature)?._dsl_rev ?? 0;
+  // ★ 用 readDSLRaw：这只在算**乐观锁 rev**，不该因为"事实外置"而去触发一次 DB 现渲染。
+  return readDSLRaw(feature)?._dsl_rev ?? 0;
 }
 
 /** 读取 DSL，不存在返回 null。优先读取活态文件 */
-export function getDSL(feature: string): DesignDSL | null {
+function readDSLRaw(feature: string): DesignDSL | null {
   // 优先读取活态文件（LLM 最新修改）
   const liveFile = getLiveDslFile();
   if (fs.existsSync(liveFile)) {
@@ -709,6 +720,87 @@ export function getDSL(feature: string): DesignDSL | null {
   if (!fs.existsSync(file)) return null;
   const content = fs.readFileSync(file, 'utf-8');
   return JSON.parse(content) as DesignDSL;
+}
+
+// ─────────────────────────────────────────────────────────────
+// ★★ T345（`docs/dsl-keep-list-2026-10-16.md` §三' 第 2 步 **(c) 的前置**）：
+//    「事实字段缺席 ⇒ 读侧按需从 DB 现渲染补齐」（**一处收口**，消费点一字不改）
+//
+// ## 为什么在这一层收口（而不是改 ~14 个消费文件）
+//   (c) 要把 `semantic.files[].symbols[]` / `[] .lines` / `geometry.edges[]` 里**可 DB 现算**的那部分
+//   摘掉。消费点实测 **~14 个文件**（`query_feature` / `derive_mind_map` / `diff_views` / `validator` / …）。
+//   ⇒ ★ 逐个改 = 改动面大、易漏、难回滚。**在唯一读取入口补一次** ⇒ 消费点**零改动**。
+//
+// ## ★★ 开关（**为什么必须有它，而不是"看字段在不在"**）
+//   若按"字段缺席就补"，会**误伤现有夹具**：`t335` / `t336` / `t343` 等证写的**手搭 DSL**
+//   本就**不带** `symbols`/`lines`、且 `source_root` 指着一份真 `cache.db`
+//   ⇒ 会被"补齐"出一份**它们从没写过**的数据 ⇒ **行为改变**（这是实测到的风险，不是推测）。
+//   ⇒ 开关 = **DSL 自己声明"我的扫描事实是外置的"**：`_sync.facts === 'db'`。
+//      · **(c) 摘字段时写这个标记**（经 `saveDSL`/`saveLiveFeature` ⇒ `syncMeta` 保留它）；
+//      · **没这个标记 ⇒ `withFacts` 原样返回** ⇒ 在位/未摘 ⇒ **逐项零行为改变**（判据②）。
+//
+// ## 「重建后的图」= `renderLiveFromDb`
+//   它就是 (b) 建的那条通路：**只读** `cache.db`，按 `import_project` 同一口径现装配
+//   （文件集/事实/布局/contains 由路径重导）⇒ 补进来的 symbols/lines/edges 与写端**同源同代**。
+//
+// ## 只补不缺（不造"另一个图"）
+//   · **只填 `dsl` 里已有的文件**（按 `id` 对齐，退回 `path`）——**不新增、不删除**任何文件/节点；
+//   · `symbols` / `lines` **只在该条自己的该字段缺席时**才写（已有的**一律不覆盖**）；
+//   · `geometry.edges` **只在整字段缺席（`undefined`）时**才补；
+//   · 渲染不可得（无 root / 无库 / 库无行）⇒ **原样返回**（不静默降级成"空事实"）。
+// ─────────────────────────────────────────────────────────────
+
+/** 该 DSL 是否**声明**了"扫描事实已外置到 DB"（(c) 摘字段时写下这个标记）。 */
+function factsExternalized(dsl: DesignDSL | null): boolean {
+  return (dsl as unknown as { _sync?: Record<string, unknown> } | null)?._sync?.facts === 'db';
+}
+
+/**
+ * 递归闸：`renderLiveFromDb` 内部会再调 `getDSL` 取 `source_root`
+ * ⇒ 不挡就会出现 `getDSL → withFacts → renderLiveFromDb → getDSL → …`。
+ * 挡住的那一次**不补**（渲染只需要 `source_root`，不需要事实）⇒ 终止且不丢东西。
+ */
+let factsBackfillBusy = false;
+
+/** 把 `rendered` 的扫描事实**补进** `dsl` 的缺口（见上方"只补不缺"）。 */
+function mergeFacts(dsl: DesignDSL, rendered: DesignDSL): DesignDSL {
+  const byId = new Map((rendered.semantic?.files ?? []).map((f) => [f.id, f]));
+  const byPath = new Map((rendered.semantic?.files ?? []).map((f) => [f.path, f]));
+  const files = (dsl.semantic?.files ?? []).map((f) => {
+    const src = byId.get(f.id) ?? (f.path ? byPath.get(f.path) : undefined);
+    if (!src) return f;
+    if (f.symbols !== undefined && typeof f.lines === 'number') return f;
+    const out = { ...f };
+    if (out.symbols === undefined && src.symbols !== undefined) out.symbols = src.symbols;
+    if (typeof out.lines !== 'number' && typeof src.lines === 'number') out.lines = src.lines;
+    return out;
+  });
+  const g = dsl.geometry;
+  return {
+    ...dsl,
+    geometry: g && g.edges === undefined ? { ...g, edges: rendered.geometry?.edges ?? [] } : g,
+    semantic: dsl.semantic ? { ...dsl.semantic, files } : dsl.semantic,
+  } as DesignDSL;
+}
+
+/** ★ 读取入口的"事实补齐"闸（**唯一一处**；见上方长注释的开关与口径）。 */
+function withFacts(dsl: DesignDSL | null, feature: string): DesignDSL | null {
+  if (!dsl || factsBackfillBusy || !factsExternalized(dsl)) return dsl;
+  factsBackfillBusy = true;
+  try {
+    const rendered = renderLiveFromDb(feature);
+    return rendered ? mergeFacts(dsl, rendered) : dsl;
+  } catch {
+    // 现渲染出任何岔子 ⇒ **原样返回**（读侧可用性不拿来赌；与 `getLiveFeatureResolved` 的容错同款）
+    return dsl;
+  } finally {
+    factsBackfillBusy = false;
+  }
+}
+
+/** 读取 DSL，不存在返回 null。优先读取活态文件。★ T345：声明了"事实外置"时按需补齐（见 `withFacts`）。 */
+export function getDSL(feature: string): DesignDSL | null {
+  return withFacts(readDSLRaw(feature), feature);
 }
 
 /** 视图层级：design=设计视图（活态文件+存档），live=实际视图（代码快照，只读） */
