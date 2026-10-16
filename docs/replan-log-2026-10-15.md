@@ -2509,3 +2509,40 @@ t336 37/37 · t337 14/14 · t338 13/13 · t339 17/17 · t340 14/14 · t341 14/14
 ⇒ ★★★ **结论（对用户方法论的证明）**：**"用 DSL 当讨论桌"不只是"快"** ——
 ★ **它把"我说不清的东西"变成了"校验器能报的错"**。★ 闭环：**写方案（DSL）→ 校验器报错 → 修 → 再验 → green**。
 ★ 而这 4 个错里，**至少 3 个是"我读文档也读不出来"的**（schema 的真实形状）。
+
+---
+
+## 76. 2026-10-16 ★★★ 以 DSL 为讨论桌的一场评审（6 处补丁，valid 仍=true）
+
+★ **规则**：评审人**只许提 DSL 补丁**（不写散文），且**任何补丁必须保持 `valid=true`**。
+
+### 76.1 它改的 6 处（`git diff --stat` = 1 file, +127/−14；我逐条核过）
+1. ★★★ **`t_claim` 的 guard 我「判据写反了」**：原文案"剔前态判据后**未必**全过" ⇒ ★ 改成 **"剔前态(`NEGATIVE_KINDS`)后剩余 expectations **全过** 且 条数>0 且 CAS `changes===1`"**；
+   ★★ 而且它**把"我错在哪"写进了 DSL 本身**（★ 比写在报告里强 —— **纠正留在图里**）；
+2. ★★ **拆掉合写**：`candidate|claimed → done` ⇒ `t_done_from_claimed`（要求 `owner!==null`）+ `t_done_from_candidate`
+   （★ 带 **`blocked_by_open_question: "OQ1"`** ⇒ **未定的东西被显式挡在原地，不假装已定**）；
+   理由逐字："原写法是**合写**：掩盖了『未领就被收口』这条路径"；
+3. ★★ **`patrols` 的 `red` 从散文改成可判**：`metric/op/threshold/read`；且 `drift` 由"或"**拆成** `missed_close` / `should_void`；
+4. ★★ **补 3 条 `expectations`** —— ★ 因为它发现**我原 `geometry.edges` 的 3 条边里有 2 条「无判据 = 装饰」**（★★ **本仓最忌的"装饰闸"，我自己的方案里就有**）；
+5. ★★ **加 `invariant_checks`（2 条可执行）+ `invariant_unjudgeable`（1 条落不成读数，诚实单列）**
+   —— ★ **它把我的一条 invariant 明确标成"判不了"**；
+6. ★ `open_questions` 全体编号 + 加 **OQ5**（剔前态后若**空集**，"全过"算**真空真**吗？空集 ⇒ 未领卡被自动收口）/ **OQ6**（★ **不同意**把 TTL 当单一全局数 ⇒ 应按卡类分档）；
+   ★★ **它"不同意但不改"，照格式列 open** —— 这正是讨论桌该有的行为。
+
+### 76.2 可判依据（它给的，我复核）
+★ `node certs/.work/probe-validate-plan.mjs` ⇒ ★ **我亲跑：`valid = true`，问题数 0**；
+★ `invariant_check1` **对桩**：写对 `exit=0` / 写错 `exit=1`；★ `check2` 干净副本 `exit=0` / **注入 `"hash"` 键 `exit=1`**（在 `/tmp` 副本上验，仓内未动）；
+★ 状态机读数 = `judgeExpectations` 的 `failed` 计数；★ 巡检读数 = `DriftReport.missed_close / should_void`。
+
+### 76.3 我自核的结构读数
+★ 状态机 **6 条迁移，guard 全为对象式**（`clauses` + `read`）：
+- `t_claim`（含"我错在哪"的原话纠正）· `t_void`（带 **`distinct_from`** = "失效 ≠ 已满足"）·
+- `t_release`（★ 要求"**不得静默改 state**"）· `t_done_from_claimed` · `t_done_from_candidate`（带 OQ1）· `t_supersede`；
+★ `invariant_checks = 2` · `invariant_unjudgeable = 1` · `open_questions = 6`。
+
+### 76.4 ★★★ 结论
+★ **这场"DSL 讨论"的产出质量，明显高于今天任何一场自然语言讨论**：它逮到**我的 guard 写反**、发现**我方案里自己就有 2 条"装饰边"**、
+把**散文改成可判**、**承认一条 invariant 判不了**、并提出**"真空真"这个真悖论**。
+⇒ ★★ **成品形态**：**图里既有"结论"，也有"我错在哪"、"未定的是什么"、"哪条判不了"** —— **一份自洽、可判、可 diff 的讨论记录**。
+★ `[未核]`（它标的）：drift 的 `call-exists(patrolDrift→releaseIfExpired)` 是否真被 DB 记成跨文件 call 边；
+  `blocked_by_open_question` **是否真有消费方读 —— 若无人读，它只是注释**（★ 很诚实）。

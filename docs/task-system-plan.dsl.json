@@ -74,6 +74,17 @@
               "path": "src/domain/task_machine.ts",
               "symbol": "releaseIfExpired",
               "why": "TTL 超时回收：claimed_at 不配超时就是死锁字段"
+            },
+            {
+              "kind": "file-exists",
+              "path": "src/domain/task_machine.ts",
+              "why": "★ 其余 4 个节点都对自己的 path 有 file-exists，唯此节点漏了 ⇒ 补上（做不到时 file-exists 判 fail = 红）"
+            },
+            {
+              "kind": "edge-exists",
+              "from": "src/domain/task_machine.ts",
+              "to": "src/domain/task_schema.ts",
+              "why": "★ geometry.edges 有 e_machine_to_schema，但 expectations 里没有对应判据 ⇒ 那条边只是装饰；补上后才可判"
             }
           ]
         }
@@ -138,6 +149,19 @@
               "path": "src/application/patrol/task_drift.ts",
               "symbol": "DriftReport",
               "why": "要机器可读出口（不是只打印一句话）"
+            },
+            {
+              "kind": "edge-exists",
+              "from": "src/application/patrol/task_drift.ts",
+              "to": "src/domain/task_machine.ts",
+              "why": "★ geometry.edges 的 e_patrol_to_machine 无判据 ⇒ 补上；漂移判定只许经状态机，不许自己判状态"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/patrol/task_drift.ts",
+              "symbol": "patrolDrift",
+              "target": "releaseIfExpired",
+              "why": "★ 让 patrol 出的『应回收』与状态机回收**同一处**（两处各写一份回收逻辑 = 第二种权威）；做不到时 call-exists 判 fail = 红。[未核]：需确认索引会记跨文件调用边"
             }
           ]
         }
@@ -254,6 +278,23 @@
       "设计侧不复制事实（能由 DB 现算的字段不许落盘）",
       "★ 前态判据（edge-absent 一类）不得用作「已满足」的判据"
     ],
+    "invariant_checks": [
+      {
+        "invariant": "★ 前态判据（edge-absent 一类）不得用作「已满足」的判据",
+        "check": "NEGATIVE_KINDS 必须**真的含** 'edge-absent'，且 canClaim 用它做剔除 —— 只判『NEGATIVE_KINDS 这个符号存在』是空判据（有人把它设成 [] 也照样绿）",
+        "cmd": "node -e \"const fs=require('fs');let s='';try{s=fs.readFileSync('src/domain/task_machine.ts','utf8')}catch(e){process.exit(1)}const i=s.indexOf('NEGATIVE_KINDS'),j=s.indexOf('edge-absent');process.exit(i>=0&&j>=0&&j-i<300?0:1)\"",
+        "red_when": "exit!=0 ⇒ 该 invariant 只是注释、无人执行"
+      },
+      {
+        "invariant": "设计侧不复制事实（能由 DB 现算的字段不许落盘）",
+        "check": "task 格里不得出现 line/loc/hash/sha1/reads/call_count 等可由 DB 现算的键",
+        "cmd": "node -e \"const fs=require('fs');const d=JSON.parse(fs.readFileSync('docs/task-system-plan.dsl.json','utf8'));const bad=['line','lines','loc','hash','sha1','reads','call_count'];const s=JSON.stringify(d.geometry.nodes);process.exit(bad.some(k=>s.includes('\\\"'+k+'\\\"'))?1:0)\"",
+        "red_when": "exit!=0 ⇒ task 格落了快照、复制了事实"
+      }
+    ],
+    "invariant_unjudgeable": [
+      "「一处权威 + 一处渲染（同一批数据不许两处都存）」—— 落不成单条读数（要判『两处』先要知道谁是权威）⇒ 列 OQ4，不进 invariant_checks"
+    ],
     "state_machine": {
       "states": [
         "candidate",
@@ -264,44 +305,114 @@
       ],
       "transitions": [
         {
+          "id": "t_claim",
           "from": "candidate",
           "to": "claimed",
-          "guard": "canClaim: 剔除前态判据后未必全过 && target 存在 && CAS(owner)"
+          "guard": {
+            "clauses": [
+              "canClaim(card) === true",
+              "★ 原文案『剔除前态判据后**未必**全过』把判据写反了 ⇒ 改成：剔前态判据(NEGATIVE_KINDS)后剩余 expectations **全过**",
+              "且 剩余 expectations 条数 > 0（空集不按『全过』算，见 OQ5）",
+              "target 在 DB 存在（不存在则走 t_void）",
+              "CAS: UPDATE tasks SET owner=?,state='claimed' WHERE id=? AND state='candidate' AND owner IS NULL 的 changes === 1"
+            ],
+            "read": "canClaim 返回值 + CAS 的 changes 行数"
+          }
         },
         {
+          "id": "t_void",
           "from": "candidate",
           "to": "void",
-          "guard": "target 在 DB 里已不存在（★ 与『已满足』是两种不同结局）"
+          "guard": {
+            "clauses": ["target 在 DB 查不到（files/edges 任一查无此 target）"],
+            "read": "existsTarget(target) === false",
+            "distinct_from": "done：『失效』(target 没了) ≠ 『已满足』(expectations 全过)"
+          }
         },
         {
+          "id": "t_release",
           "from": "claimed",
           "to": "candidate",
-          "guard": "显式 release || now - claimed_at > TTL"
+          "guard": {
+            "clauses": [
+              "显式 release 事件（带 by + reason），或",
+              "now - claimed_at > TTL：由 releaseIfExpired 产出 release 事件后再回 candidate，★ 不得静默改 state"
+            ],
+            "read": "release 事件数 / patrol lease_ttl 计数"
+          }
         },
         {
-          "from": "candidate|claimed",
+          "id": "t_done_from_claimed",
+          "from": "claimed",
           "to": "done",
-          "guard": "judgeExpectations 全过 && validateProgressEvidence 过"
+          "guard": {
+            "clauses": [
+              "owner !== null（★ 必须已领）",
+              "judgeExpectations(card.expectations) failed === 0 且剔前态后剩余条数 > 0",
+              "validateProgressEvidence 过"
+            ],
+            "read": "judgeExpectations 报告的 failed 计数"
+          }
         },
         {
+          "id": "t_done_from_candidate",
+          "from": "candidate",
+          "to": "done",
+          "guard": {
+            "blocked_by_open_question": "OQ1",
+            "clauses": [
+              "★ 原写法 `candidate|claimed → done` 是**合写**：掩盖了『未领就被收口』这条路径",
+              "仅当 OQ1 裁定为『自动收口』才允许存在；否则此迁移必须不存在",
+              "即便允许，也只能由 patrol drift 的 missed_close 计数**提示**，不得由 patrol 直接置 done"
+            ],
+            "read": "patrol drift 的 missed_close 计数（只提示）"
+          }
+        },
+        {
+          "id": "t_supersede",
           "from": "candidate",
           "to": "superseded",
-          "guard": "新卡 replaces: <old_id>"
+          "guard": {
+            "clauses": ["新卡带 replaces: <old_id>，且 old_id 在卡集里存在"],
+            "read": "新卡的 replaces 字段"
+          }
         }
-      ]
+      ],
+      "terminal_states": ["done", "void", "superseded"]
     },
     "patrols": [
       {
         "id": "lease_ttl",
-        "red": "state=claimed && now-claimed_at>TTL && 无 release 事件 的卡数 > 0"
+        "metric": "count(cards where state='claimed' and now-claimed_at > TTL and no release event)",
+        "op": ">",
+        "threshold": 0,
+        "read": "patrol 报告 lease_ttl.count"
       },
       {
         "id": "drift",
-        "red": "候选且(剔前态后)全过（漏收口） 或 target 从 DB 消失（应转 void） 的卡数 > 0"
+        "split_reason": "★ 原 red 用『或』把两种结局并成一个计数 ⇒ 『漏收口(该 done)』与『应失效(该 void)』不可分辨，且处置相反",
+        "metrics": [
+          {
+            "name": "missed_close",
+            "expr": "count(cards where state=候选 and 剔前态后 expectations 非空 且 全过)",
+            "op": ">",
+            "threshold": 0
+          },
+          {
+            "name": "should_void",
+            "expr": "count(cards where state != done and target 不在 DB)",
+            "op": ">",
+            "threshold": 0
+          }
+        ],
+        "read": "DriftReport.missed_close / DriftReport.should_void"
       },
       {
         "id": "dual_write",
-        "red": "overlay 与设计侧同名卡数 > 0 且任一边 updated_at 晚于另一边 ⇒ 权威不明"
+        "metric": "count(cards where overlay 与设计侧同名 and 仅一边的 updated_at 更新)",
+        "op": ">",
+        "threshold": 0,
+        "read": "DriftReport.authority_unknown"
       }
     ],
     "migration_order": [
@@ -311,10 +422,12 @@
       "才退 overlay"
     ],
     "open_questions": [
-      "『已满足』的卡：自动收口(标 done) 还是只提示？—— 用户尚未拍",
-      "TTL 取值",
-      "void 的卡是否留档",
-      "discussion 版本链要不要可 diff（讨论本身进对拍？）"
+      "OQ1: 『已满足』的卡：自动收口(标 done) 还是只提示？—— 用户尚未拍（t_done_from_candidate 正卡在这条）",
+      "OQ2: TTL 取值",
+      "OQ3: void 的卡是否留档",
+      "OQ4: discussion 版本链要不要可 diff（讨论本身进对拍？）；另：invariant『一处权威 + 一处渲染』落不成读数，也挂这条",
+      "OQ5（新·本笔）：★ 剔前态判据后若**一条不剩（空集）**，『全过』算不算真？空集 = 真空真(vacuous truth) ⇒ 未领卡会被自动收口；另一解是空集判『判不了』。未拍 ⇒ t_claim / t_done_from_claimed 里的『剩余条数 > 0』只是我加的保护，需裁",
+      "OQ6（新·本笔）：★ 我不同意把 OQ2『TTL 取值』当成**单一全局数**处理 —— TTL 是领主的续租超时，不同卡类（改一行 vs 重构一文件）不该共用一个数 ⇒ 建议改成按卡类分档；此条待裁，未并入 invariants"
     ]
   }
 }
