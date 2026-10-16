@@ -346,11 +346,46 @@
         "note": "★ 逐块读数（同一入口 probe-plan-detail.mjs；★『红』= verdict=='fail'，unsupported 单列——它既不算活也不算绿）。",
         "at": "2026-10-16",
         "items": [
-          { "node": "file_src_domain_task_schema_ts", "label": "task 格", "red": 0, "green": 3, "unsupported": 0, "block": "第一块（已实现）" },
-          { "node": "file_src_domain_task_machine_ts", "label": "状态机", "red": 0, "green": 4, "unsupported": 2, "block": "第一块（已实现）" },
-          { "node": "file_src_domain_discussion_log_ts", "label": "discussion 格", "red": 0, "green": 3, "unsupported": 0, "block": "第二块（本笔实现）" },
-          { "node": "file_src_application_design_dsl_ops_task_ops_ts", "label": "task_ops", "red": 5, "green": 0, "unsupported": 0, "block": "第三块（未做）" },
-          { "node": "file_src_application_patrol_task_drift_ts", "label": "漂移巡检", "red": 7, "green": 0, "unsupported": 0, "block": "第四块（未做）" }
+          {
+            "node": "file_src_domain_task_schema_ts",
+            "label": "task 格",
+            "red": 0,
+            "green": 3,
+            "unsupported": 0,
+            "block": "第一块（已实现）"
+          },
+          {
+            "node": "file_src_domain_task_machine_ts",
+            "label": "状态机",
+            "red": 0,
+            "green": 4,
+            "unsupported": 2,
+            "block": "第一块（已实现）"
+          },
+          {
+            "node": "file_src_domain_discussion_log_ts",
+            "label": "discussion 格",
+            "red": 0,
+            "green": 3,
+            "unsupported": 0,
+            "block": "第二块（本笔实现）"
+          },
+          {
+            "node": "file_src_application_design_dsl_ops_task_ops_ts",
+            "label": "task_ops",
+            "red": 5,
+            "green": 0,
+            "unsupported": 0,
+            "block": "第三块（未做）"
+          },
+          {
+            "node": "file_src_application_patrol_task_drift_ts",
+            "label": "漂移巡检",
+            "red": 7,
+            "green": 0,
+            "unsupported": 0,
+            "block": "第四块（未做）"
+          }
         ]
       }
     },
@@ -633,6 +668,36 @@
         "task_drift"
       ],
       "why": "discussion_log 最小最独立，且治今天最疼的病（检索历史会话 0 命中 ⇒ 你被迫复述 ⇒ 我一直在重新发现）"
+    },
+    "board": {
+      "note": "★★★ 用户 2026-10-16 补充的、原方案里缺的部分：任务榜单（发布处 + 验收处）+ 回执 + 双验。",
+      "why": "★ 用户原话：\"应该比直接的 ToDo 文档是要好的，因为它【强制你管理】…… 我发现你有的时候 ToDo 做完了之后不勾掉，也不验收，验收的话也可能验收错\";",
+      "intent": "把\"一次设想里写了很多处、但一次做不完\"的内容，抽出\"这次要做的部分\"形成一个任务，发布到榜单上；也可把现有内容全抽出、各成任务上榜单。",
+      "roles": {
+        "board": "榜单：发布 + 领取登记 + 收受回执 + **验收**；★ 它是唯一的\"完成判定者\"（不是做的人自己说完成）",
+        "claimant": "领取者（我或子代理）：领取 ⇒ 做 ⇒ 交回执",
+        "verifier": "★ 验收：**双验** = ① 榜单按判据验收（机器）② 自己再验一遍（人/agent）"
+      },
+      "flow": [
+        "1. 发布：从设计 DSL 抽出\"这次要做的那一块\" ⇒ 形成任务 ⇒ **发布到榜单**（★ 未上榜单 = 不算在办）",
+        "2. 领取：自己或子代理领取 ⇒ 记录 owner（★ 未领取不得开工）",
+        "3. 做",
+        "4. ★ 回执：交回执 = {做了什么, 判据读数, 未核项, 行为改变}（★ 不许\"我觉得做完了\"）",
+        "5. ★★ 验收：榜单按 **该任务的 expectations** 判（★ 复用 judgeExpectations）",
+        "6. ★★ 双验：自己再验一遍（★ 因为\"验收也可能验错\"—— 今天实测 2 次）",
+        "7. 收口：验收通过才置 done；★ 未通过 ⇒ 退回候选"
+      ],
+      "forces": [
+        "★ 强制勾掉：**上过榜单的任务，必须有终态**（done/void/superseded）—— 今天实测：3 条 in_progress 挂了一整天无人管",
+        "★ 强制验收：**done 必须有验收读数**（不是\"我改好了\"）—— 今天实测：\"十九证全绿 ≠ 本笔被验\"",
+        "★ 强制双验：**验收本身也会错** —— 今天实测：报\"真绿\"而实际 unsupported=2"
+      ],
+      "anti_patterns_measured_2026_10_16": [
+        "做完不勾：progress 里 3 条 in_progress 挂了一整天（opl.ts / rename_files.ts / overlay.ts）",
+        "不验收：多笔以\"报告说已修好\"收账（子代理报'已修好'实际不符 / 只给回执）",
+        "验收验错：报\"9红→0红（真绿，unsupported 0）\"而全量汇总是 unsupported:2；以及\"十九证全绿\"被当成\"本笔被验\""
+      ],
+      "note_relation_to_existing": "★ 与既有构件的关系：发布/领取/回执/验收 = **在 task 格之上的一个\"榜单\"角色**；★ 验收引擎**复用 judgeExpectations**（不新造）；★ 回执 = `TaskEvidenceRecord`（只落动作+结论，不落读数快照）"
     }
   }
 }
