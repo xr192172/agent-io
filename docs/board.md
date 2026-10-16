@@ -21,16 +21,25 @@
 
 ---
 
+## 一·五、待验（★ 已交回执 · 等「不是做的人」双验 —— ★ 依 §四 第 3 条，做的人不许自己填双验）
+
+| # | 任务 | 领取者 | 回执（做了什么） | ★ 验收读数 | ★ 双验（★ 必须由**不是做的人**填） |
+|---|---|---|---|---|---|
+| T4 | ★★★ **给 `invariant_checks` 做 runner**（G5） | 主代理（2026-10-16 小会） | 新增 `scripts/run-invariant-checks.mjs`（逐条**原样**跑 `task_plan.invariant_checks[i].cmd`，exit 0⇒PASS / 非 0⇒FAIL，**无 cmd 亦判 FAIL**）· `package.json` 加 `npm run invariants` · DSL 加 `task_plan.invariant_checks_runner` | 真仓读数：`npm run invariants` ⇒ `checks=4 PASS=4 FAIL=0`（exit 0）；★ **抓坏证明**：改坏夹具（第0条期望加一个不存在的标记 `NOT_A_REAL_KIND`）⇒ `checks=4 PASS=3 FAIL=1`（exit 1），且 runner 打出被改坏 cmd 的 marker `MARKER:tampered-cmd-ran` ⇒ **证明它真在跑 `cmd` 字段**；另：删掉第3条 `cmd` ⇒ FAIL=1（"无执行者"守门）· validateDSL valid=true 问题数 0 | ⏳ **待填**（★ 由非做的人：逐条比对 `cmd` 原文与 runner 输出、复核夹具是否真被改坏） |
+
+---
+
 ## 二、待发布（★ 已抽出，未上榜单 = 不算在办）
 
 | # | 任务 | 为什么排这个位 | 抽自 |
 |---|---|---|---|
-| T4 | ★★★ **给 `invariant_checks` 做 runner**（G5） | ★ **判据没有执行者 = 等于没有**（全仓靠人记得跑） | §83.4 G5 |
+| ~~T4~~ | ~~给 `invariant_checks` 做 runner（G5）~~ | ★ 已做完 ⇒ **移入 §一·五 待验**（★ 榜单规矩：做完不许留在这里不勾） | §83.4 G5 |
 | T5 | **第三块 `task_ops.ts`**（5红） | 依赖已落地的 `task_machine` | 设计 DSL 的 `block_order` |
 | T6 | **第四块 `task_drift.ts`**（7红） | 要跑 live 重算，最重 | 同上 |
 | T7 | **OQ9 重构**：`task_machine` 抽成 domain 纯函数（`{facts, expectations}`） | ★ 已裁定未做；且**让判定可单测** | `rulings_2026_10_16` |
 | T8 | **`board` 组件**（★ 本榜单的自动化版） | 治"做完不勾/不验收/验错" | `task_plan.board` |
 | T9 | ★★★ **给设计 DSL 做健康检查**（消"图本身可能是错的"这个不确定）：① 反装饰（每条边/断言有判据吗）② 反空谈（每个承诺有判据钉吗）③ ★ **反空转（每条判据都在跑吗）** | ★★ 用户 2026-10-16 提出的核心疑虑；★ 实测依据：我今天写 DSL 错了 **7 处，0 处是"自己读一遍看出来的"** | 设计 DSL `design_dsl_health`（五层：形状/语义/事实/反向/盲点） |
+| T10 | ★★★ **把 `NEGATIVE_KINDS` 收归成 `Expectation.phase`**（原则见 `docs/principle-rewrite-not-patch.md`）：现在"剔除前态判据"是状态机里的一段逻辑（★ 别处要"记得剔"= 补丁特征）⇒ 改为 **`Expectation` 原生带 `phase: pre\|post`** | ★ 用户 2026-10-16 重申"不打补丁，收归原生结构" | 原则文件 §四 |
 
 ---
 
