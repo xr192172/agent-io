@@ -1521,3 +1521,47 @@ MCP 传输/schema 层 · daemon 转发分支；★ **六种 kind 本节点只用
 
 ### 52.4 读数（它给的改前基线，可直接对照）
 十七证全绿 · ★ **`t344` `════ 汇总：PASS=18 FAIL=0`**（上一轮被 `head` 截断的那句，**补上了**）· **本轮零改动**（`git status` 干净）。
+
+---
+
+## 53. 2026-10-16 ★★★ 路线 (B) 第一步（读侧接设计图）—— **又命中"读A写B"，且发现比"读不到"更坏：编辑会静默丢失**
+
+### 53.1 (a) 既有读法 3 处（照其口径办）
+`storage.ts:634` `getDSL` 自身：**逐级降级**（活态 `agent-io.json` → `features/<f>.json`），**每段先 `existsSync` 再读**；
+`storage.ts:385/395` `viewBaseDirCandidates` + `readViewAtCandidates`：**候选链取第一个存在的**；
+同款 `db.ts:128 findCacheDb` · `llm_focus.ts:54 configFileReadPath`（新位置优先、缺失回退旧）。
+
+### 53.2 ★★★ (b) 现状读数：**真仓「零行为改变」**
+`.agent-io/design/` **不存在** ⇒ **真仓 0 份** `design/<f>.dsl.json` ⇒ 本笔对真仓**只多一次 `existsSync`**
+（夹具里 t337/t338/t339/t344 各建 1 份）。
+
+### 53.3 改动（只一处）与判据
+`src/infrastructure/storage.ts:634` 顶端加：`const designSheet = getDesignSheet(feature); if (designSheet) return designSheet;`
+⇒ 降级顺序 = **设计图 → 活态 `agent-io.json` → `features/<f>.json`**（后两级原样）。写侧/`view:'live'`/schema/T340/T341 **均未动**。
+- ① ★★ 改前 `getDSL("p") = null` → **改后 `["node_x"]`**（**含改前对照**）；
+- ② `getLiveFeature("p") = ['dir_src','file_src_a_ts','file_src_b_ts']`，**不含** `node_x` ⇒ **live 不受影响**；
+- ③ 删设计图 ⇒ `getDSL("p") = ['dir_src']`（回合并视图、非 null、不报错）；
+- ④ `rebuild_design=true` 前后 `design/p.dsl.json` **sha1 相同**、`getDSL` 仍读得到；
+- ⑤ 四类语义未变（`same_id=[dir_src]` · `design_only=['src/planned/thing.ts']` · `live_only=[file_src_a_ts,file_src_b_ts]` · `resolved=[]`）。
+
+### 53.4 ★★★ 硬要求 #4 命中 ⇒ 它停手（未写新证、未 add/commit）：**"读A写B"错位**
+`edit_dsl` 侧 **读 `getDSL`**（`dsl_ops/node_ops.ts:80/291`；`update_feature.ts:340/368` 同）
+**但写 `saveDSL → features/<f>.json`**（`node_ops.ts:143/364`）；`import_project.ts:1045` 也拿 `getDSL` 当"设计"。
+**实测**：设计图存在时 `updateNode(label=…)` 之后 **`getDSL(f).label 仍是旧值（编辑丢了）**，而 `features/p.json` 已变。
+⇒ ★★★ **一旦写了设计图，`edit_dsl` 立即失效** —— ★ **比"读不到"更坏**（**静默丢编辑**，本仓最忌的形态）
+⇒ ★★ **B1 不能单独上，必须与 B2（写目标改道设计图）同笔。**
+
+### 53.5 十八证读数（容忍红，逐张）
+`t326` 4/4 · `t328` 18/18 · `t329` 12/12 · `t330` 7/7 · `t331` 3/3 · `t332` 10/10 · `t333` 16/16 · `t334` 11/11 · `t335` 14/14 ·
+`t336` 37/37 · **`t337` 12/14 ✗** · `t338` 13/13 · `t339` 17/17 · `t340` 14/14 · `t341` 13/13 · `t342` 10/10 · `t343` 31/31 · `t344` 18/18。
+★ **`t337` 红的两条**（`2-b` 期望重建后 `getDSL` 不含 `node_pending_x`；`3-b` 期望 `design_only_already_in_current=[]`）
+—— ★ **它们假设 `getDSL` 读合并视图**，而那个假设**现在正好被推翻** ⇒ **`t337` 的红恰恰是"改动生效"的证据**；
+★ **它未改 `t337` 断言**（按我要求）。
+
+### 53.6 ★★ 我的修正与裁定
+- 我上轮预估受影响 4 张 ⇒ **实际 5 张**（`t329`/`t340`/`t341`/`t342` + **`t337`**）；
+- ★★ **裁定：B1 + B2 同笔做**；★ **B1 改动留在工作区、本轮不单独提交**
+  （**免得留下"半修"状态** —— 本仓铁律："**半修比不修更坏**"）；
+- ★★★ **B2 的形状现在清楚了**：`edit_dsl` 的**结构类 op 目标是设计图**；
+  **设计图里没有该 id ⇒ 先从 live「认亲拷入」再改**（照 `design_sheet.ts:295-321` 的键序）
+  ⇒ **这正是用户说的"赋予同一个 ID"，也是 T344 认亲的另一面。**
