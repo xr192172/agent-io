@@ -1792,3 +1792,38 @@ MCP 传输/schema 层 · daemon 转发分支；★ **六种 kind 本节点只用
 - ★★ **洞 B 前置**（先写"`unadopted_drift` 不许派工"**禁令**）—— 它是唯一**不可逆**的；
 - ★ **洞 A 键改用 git rename 边**（非启发式 path 匹配）；
 - ★★ **把"一致性 ≠ 有用性"写进验收原则**（比"总数变绿 ≠ 每条真绿"更根本）。
+
+---
+
+## 60. 2026-10-16 ★★★ 核"实际 DSL 是不是文件索引 / 谁在更新它" —— 纠正我的错 + 翻出更根本的问题
+
+### 60.1 ★★ 意外发现：用户点名的那批工具（`rename` 等）**今天不读任何 DSL**
+- `rename_file` / `rename_files` / `symbol_move` / `edit_code`：对 `storage.js|getDSL|getLiveFeature|listFeatures|loadOverlay`
+  **grep 全空** ⇒ ★ **它们走 `cache.db` + 入参（`project_dir`/`files`）**；
+- `write_gate` 读 `listFeatures()`（=`features/*.json`）+ `loadOverlay()` —— **不读 live**；
+- `scope` 的 `files:` ⇒ `getDSLByView(f, 'design')` ⇒ **`getDSL`**（不读 live）；
+- ★ **真正读 live 的是别处**：`diff_views.ts:264` · `diffDesignSheetHandler`（`handlers.ts:623`）· `derive_feature_tree.ts:276` · `query_feature.ts:175`。
+⇒ ★ 所以"实际 DSL 关联 Rename 工具"这条**在今天不成立**（它们不读 DSL，读的是 cache.db + 入参）。
+★ **降级链（贴原文）**：`getLiveFeatureResolved` 只探 **`live/<f>.dsl.json`**，**三处都不存在 ⇒ `return null`
+（不回落活态、不回落 `features/`、不报错）**。
+
+### 60.2 ★★ 纠正我的错："扫描不写 live"**不成立**
+- **扫描 `import_project` 三处都写**：`saveDSL@1078`（features + 活态）+ **`saveLiveFeature@1084`（写 live）**；
+- `saveLiveFeature` 全仓**只有两处调用**（`import_project.ts:1036` `wantsDesign=false` · `:1084` fork/`rebuild_design`）
+  ⇒ "只由 import/watch 写"成立 ✅；
+- ★★ **真因**：**「设计侧写入」（`saveDSL`，`source:'mcp'`）只写 features + 活态、不写 live** ⇒
+  **live 只在扫描/watch rebuild 时刷新**。
+
+### 60.3 ★★★ 翻出的更根本问题：**live 是"上次重算时的实际"，不是"此刻的实际"**
+- **判据读数**：`self-2026-10-15` —— `live/<f>` `_sync.saved_at=2026-10-15T16:19:48Z`、**file 节点 200 个**；
+  `features/<f>` + 活态 `saved_at=2026-10-16T03:01:53Z`、**479 个** ⇒ ★ **live 缺 295 个文件（落后 ~10.7h）**
+  （含 `src/application/observe/runtime/watch_project_tool.ts` 等）⇒ **"改一个文件名后按 live 找"会找不到**；
+- ★ **但**：**点名的那批工具今天不读 live** ⇒ **陈旧暂未咬到它们**；
+  ★★ **被咬的是**：`diff_views` / `design_sheet` / `derive_feature_tree` / `query_feature(view=live)`
+  ⇒ ★★ **它们对的是"上次重算时的实际"**；
+- ★★★ **我的裁定（修正 P3）**：
+  1. **"live 落后"不是 bug，是"设计写 ≠ 重算写"的正常差异** —— ★ **问题不是"live 陈旧"，而是"谁在拿 live 当最新的用"**；
+  2. ⇒ ★★ **对拍前必须刷新 live**（= 用户模型里"实际是每次实时重算的"那条的字面执行），
+     并给 live 带 **`age` / `scanRev` 读数**（★ 与第三份意见的 `scanRev`/报告可寻址**完全呼应**）；
+  3. ★★ **P3 必须改口径**：**不是"让扫描写 live"（它已经写了），而是"定清「何时刷新 live」+ 让消费者知道它的代"**
+     —— 否则"把工具改读 live"就是**"归位到一个陈旧索引"**。
