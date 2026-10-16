@@ -43,6 +43,8 @@ import { getProjectCacheDb } from '../../../infrastructure/index/db.js';
 import { splitKeepEnds, detectEol, isBlankLine } from '../../../infrastructure/text/line_utils.js';
 import { snapshotBeforeWrite } from '../snapshot/file_snapshot.js';
 import { reopenAndResolveAfterWrite } from '../../write_gate.js';
+// ★ T336（2026-10-16）：接上唯一写盘闸 —— 未登记不许落盘（同族：`rename_files` / `rename_file` / `edit_code`）
+import { assertSourceWriteRegistered } from '../../write_gate.js';
 import type { ScanBounds } from '../../../infrastructure/scan_bounds.js';
 
 // ─────────────────────────────────────────────
@@ -479,6 +481,11 @@ async function moveSymbolCore(input: MoveSymbolInput): Promise<MoveSymbolResult>
   // ★ 可撤回：落盘前把受影响文件（源+目标+各 importer）各存一份。
   // affectedFiles 正是本次会改到的完整集合（dry_run 时也算了，但只在真落盘前快照）。
   if (!dryRun) {
+    // ★★★ T336（2026-10-16）：**未登记不许落盘** —— 本函数是"真正落盘"的那一层，必须过任务闸。
+    //   同族（`rename_files.ts` / `rename_file.ts` / `edit_code.ts`）：闸调在**落盘前**、且**在拍快照之前**
+    //   （拒绝就是拒绝 —— 连快照都不该建）。★ 闸的对象 = `affectedFiles`（源 + 目标 + 各 importer），复用既有集合。
+    //   ★ 闸**不会**替你登记、也不降级放行：未登记 ⇒ 抛错、不落盘。
+    assertSourceWriteRegistered(resolvedRoot, affectedFiles);
     snapshotBeforeWrite(
       resolvedRoot,
       `move_symbol:${input.symbol}→${path.basename(toAbs)}`,

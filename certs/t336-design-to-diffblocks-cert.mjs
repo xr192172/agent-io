@@ -126,15 +126,39 @@ console.log('════ 0. 三条缺口的"定义/字段在同一段读数里"
       readers.push(`${rel}:${i + 1}: ${code}`);
     });
   }
-  dump('② 字段 · 全仓 `source_node_id` 的**其他**出现处（读端？）', readers.length ? readers.join('\n') : '（无 —— 除类型定义与那处写入外，**没有任何读端**）');
-  chk(readers.length === 0, '② 定义与字段同段：字段有定义、有写端，但**没有读端** ⇒ "改名后旧口供失效"没有代码', `读端条数=${readers.length}`);
+  // ★★ §34.3（2026-10-16 订正）：**证不许断言"某时点的真仓现状"** —— 本行原写「**没有读端** ⇒ 缺口仍在」，
+  //   那是 2026-10-16 的时点状态；一旦按缺口②的期望补上读端（`attestationAppliesTo`），断言就**随现实变红**。
+  //   ⇒ 改为：**断言方向**（缺口②那条 `symbol-exists` 的**绿**与**红**两方向都真的成立 —— 由本证 3. 偏离 C 在**夹具**里证明：
+  //     夹具 `overlay.ts` **有** `attestationAppliesTo` ⇒ 方向 1（能绿）；把它改名 ⇒ 方向 2（能红））；
+  //     **真仓此刻的读端读数只打印、不判红**（时点读数仅作参考，不是判据）。
+  dump('② 时点读数（★ 仅参考、**不判红**）· 全仓 `source_node_id` 的读端', readers.length ? readers.join('\n') : '（无 —— 除类型定义与那处写入外，**没有任何读端**）');
+  chk(
+    ov.some((l) => /kind: 'attestation'/.test(l)) && ov.some((l) => /source_node_id\?:/.test(l)),
+    '② 定义与字段同段：`attestation` 形状**定义了** `source_node_id` 字段（★ 方向判据：字段**存在** ⇒'
+      + '「要有一处读端把口供绑的节点与当前节点比对」这个目标形状**有可比对的对象**；'
+      + '"能红"由本证 3. 偏离 C 在夹具里证）',
+    `真仓时点读数（仅参考）：除类型定义与写入端外，读端条数=${readers.length}`,
+  );
 
   // ③ 定义（现状签名 accessor 被喂给 LLM）+ 字段（其产物被写成 expected_apis）
   dump('③ 定义 · opl.ts 里 decl 的来源（喂 LLM 的那行 = apiSignaturesOf 现状签名）', opl.filter((l) => /apiSignaturesOf/.test(l)).join('\n'));
   dump('③ 字段 · opl.ts 里把 decl 写成 expected_apis 的那一行', opl.filter((l) => /expected_apis: f\.apis\.map/.test(l)).join('\n'));
+  // ★★ §34.3（2026-10-16 订正）：同上 —— 原写「这行/那行**都在**」，那是把时点现状写进断言（opl.ts 一改就红）。
+  //   ⇒ 改为：**断言方向**（缺口③那条 `call-exists` 的绿/红两方向由本证 3. 偏离 D 在**夹具**里证：
+  //     夹具 `oplIntegrate` **调了**守卫 ⇒ 方向 1（能绿）；删掉调用 ⇒ 方向 2（能红））；
+  //     真仓此刻"现状签名喂 LLM / 产物写成 expected_apis"两条只打印、不判红。
+  const oplHasApiSignatures = opl.some((l) => /apiSignaturesOf/.test(l));
+  const oplWritesExpectedApis = opl.some((l) => /expected_apis: f\.apis\.map/.test(l));
+  dump(
+    '③ 时点读数（★ 仅参考、**不判红**）· "现状签名喂 LLM" 与 "产物写成 expected_apis" 是否都在',
+    `apiSignaturesOf=${oplHasApiSignatures} · expected_apis 写端=${oplWritesExpectedApis}`,
+  );
   chk(
-    opl.some((l) => /apiSignaturesOf/.test(l)) && opl.some((l) => /expected_apis: f\.apis\.map/.test(l)),
-    '③ 定义与字段同段：LLM 声明契约的**上下文取自现状签名**，而该产物**直接写成 `expected_apis`** ⇒ 期望与代码同源',
+    opl.some((l) => /export (async )?function oplIntegrate/.test(l)),
+    '③ 定义与字段同段：`oplIntegrate` **已定义**（★ 方向判据：期望的**主体符号存在** ⇒'
+      + '「写 expected_apis 前必须过契约不得自源校验」这条 call-exists **有主体可判**；'
+      + '"能红"由本证 3. 偏离 D 在夹具里证）',
+    `真仓时点读数（仅参考）：apiSignaturesOf=${oplHasApiSignatures} · expected_apis 写端=${oplWritesExpectedApis}`,
   );
 }
 
