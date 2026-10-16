@@ -1866,3 +1866,60 @@ MCP 传输/schema 层 · daemon 转发分支；★ **六种 kind 本节点只用
 - ★★★ **那四个消费者读旧快照、且不做任何过期检查** ⇒ **"对拍用的是 10.7 小时前的实际"**
   ⇒ ★ **我上午那些对拍读数（"通过 6 · 不满足 2"）对的是 10-15 16:19 的实际**（这点要显式记下）；
 - ⇒ **P0 的建议更确定**：**给 live 带 `age` / `scanRev`，并要求"消费 live 前刷新"或"看到 age 就拒绝下结论"**。
+
+---
+
+## 62. 2026-10-16 ★★★ 用 DSL 读项目（用户纠正我的方法）—— 全景 + 两处纠正
+
+### 62.1 ★★ 用户的方法纠正（我认）
+*"你怎么一直在连蒙带猜，你是不是理解这个项目依旧是使用 grep 和 read 工具？**你应该直接去读它的设计 DSL 啊** …
+派子代理去读设计 DSL，让它给你一份**整个项目的全景** … **以后自己用实际 DSL 去理解项目，不要再用 Grep，
+Grep 只能是辅助理解，也就是你自己做校验的时候用**。"*
+⇒ ★ 认：**这个项目本身就是"为让 LLM 用 DSL 理解项目"而造的，而我三天一直用 grep+read 去理解它** ——
+  等于**用最原始的手段去理解一个专门为此造的工具**；★ 这也解释了"为什么总在撞碎片"（**没有全景**）。
+
+### 62.2 ★★★ 纠正一："DB 里的 DSL"**不存在**（纠正用户的假设）
+`cache.db` **没有任何 DSL / decision / overlay 表**（15 表全列过，无匹配）—— **DB 是"代码事实层"**
+（`edges` 只有 `call`/`type_ref`/`import`；`nodes` 是符号）；**DSL 是"装配产物"**，不是 DB 的一列。
+项目自己的口径：`get_dsl query=digest` 表头 *"权威仍为 cache.db + DSL"*；`COGNITION.txt:5` *"真相在 `.agent-io/features/<feature>.json`（+ `.overlay.json`）"*。
+
+### 62.3 ★★ live 快照的"唯一存在理由"（回答用户之问）
+逐项对照（DSL 字段 vs DB 能否现算）：`symbols/lines` ✅（DB 且**更新**）· `edges` ✅ ·
+`responsibility` ❌但**可现算**（digest 已"现渲染·不落盘"）· `layers/arch_layer` ❌（**规则派生**）·
+`x/y/w/h`（布局）❌（可现算但**有抖动风险**）· `decision/annotations` ❌（真身在 **overlay + features 存档**）· `meta` ❌（**两边都没有**）。
+⇒ ★★ **live 里"唯一只有它有的" = 布局坐标 + 渲染后的 layers/responsibility 这份成品**，**全是可重算的派生量**；
+⇒ ★★★ **它的真实用途（`storage.js:213-223` 注释）=「三方对比的一方」**（`baseline→live = 实现增量`、`baseline→design = 意图增量`）—— **这才是它存在的唯一理由**。
+**两个选项**：① **退役**（改成按需从 `D + 规则 + overlay` 现渲染；代价 = 装配流水线须提成**确定性纯函数**，
+★ **唯一真风险 = 布局抖动 ⇒ 字节 diff 不稳**）；② **必须留**（若需"冻结的、可字节 diff 的实现快照"，
+★ 代价 = **必须补过期校验/保鲜**）。
+★ 补充（很关键）：**`live` 快照里 decision 数 = 0**（决策 16:06 之后才有，B 早于它）。
+
+### 62.4 ★★★ 纠正二：**DSL 里根本没有 `meta`**（推翻我昨天一个论断）
+A/B 顶层键仅 `id,type,feature,version,title,source_root[,status],geometry,semantic,layers,annotations,_dsl_rev,_sync`；
+全 JSON 检索 `meta`/`goals`/`storyboard` **命中 0**；`annotations` 存在但**为空数组**。
+⇒ ★ 我昨天说"`meta.goals` 是既有的无类型袋子、可放未实现条目" —— ★★ **那是从 `OverlayGoal` 接口推的，不是实测**；
+  **DSL 里没有 `meta`** ⇒ ★ **T339 那条"占位放 meta.goals"的结论需要重新核**（它**过了 `validateDSL`**，
+  但那可能是因为 schema 允许额外字段）。**记为待核/待纠**。
+
+### 62.5 ★★ 项目全景（从 DSL 读出，标来源）
+- **A = `<repo>/agent-io.json`（活态）**：`saved_at=2026-10-16T03:01:53Z, source=mcp, _dsl_rev=14`；
+  **479 file / 583 node / 1074 edge**（含多重性的真实导入 = **1318**）；
+- **B = `.agent-io/live/self-2026-10-15.dsl.json`**：`saved_at=2026-10-15T16:19:48Z`，**200 file / 239 node / 325 edge**（**落后 A 10.7h**，实测复核）；
+- 顶层目录（A）：`src 342 · certs 46 · scripts 42 · third_party 33 · observe-lang-go 12 · dogfood 4`；
+- ★ **架构层次 8 层**（DSL `layers[]` 里有，直接用）：`core 381 · entry 32 · ui 28 · service 25 · api 5 · data 4 · utility 2 · types 2`；
+  每个 file 节点带 `arch_layer`/`description`/`status`；
+- **依赖骨架**（现聚合）：同层 260 / 跨层 66；`entry→core 16 · core→types 9 · utility→core 9 · entry→data 6 · entry→api 5 …`；
+  被依赖最多：`infrastructure/storage.ts`(9) · `observe/probe.ts`(9) · `authoring/translate/unit.ts`(9) · `application/types.ts`(8) · `diagnosis/contract.ts`(8)；
+- ★ **决策卡 5 条**（全挂 file 节点，`status=active`、`updated_at=10-15T16:06`）—— **正是我们补的三个缺口**：
+  ①`rename_file`/`rename_files`/`symbol_move` → 过 `write_gate` ②`overlay.ts` → `attestationAppliesTo` ③`opl.ts` → `assertContractNotFromCode`；
+- ★★ **文件状态：`done 476 / in_progress 3`** —— 那 3 个正是 `opl.ts` / `rename_files.ts` / `overlay.ts`（**我们上午登记过的**）；
+- **规模**：符号 **3530**（type 2496 / interface 1015 / class 19）；`D(cache.db)` 对照：files 531 / nodes 8446 / edges 13283 / imports 2368 / unresolved_refs 32530 / symbol_diffs 845。
+
+### 62.6 ★★ 用 DSL 理解的体验（决定以后怎么用）
+**够用**：顶层结构 / 规模 / 层次 / 依赖流向 / 决策卡 —— **只读 DSL 就能拿到**（不必读源码）；
+`get_dsl query=features|decisions|digest|nodes|edges` 是有效入口，且自带"下一棒/告警"协议。
+**缺**：① **无 `meta`/目的**（没有"这份图要解决什么"的一句话）；② **层间依赖要自算**（DSL 只给 `layers[].count`，无"层→层"边）；
+③ **API/契约只在文本里**（`responsibility` 是自然语言，机器判不了）；④ ★★★ **无新鲜度信号**（`_sync` 只有 `saved_at`，
+**没有"vs cache.db 落后多少/是否过期"** ⇒ **用 DSL 时无法自证新旧** —— 本笔只能靠对比两份文件才发现 10.7h 差）；
+⑤ schema 声明了 `theme/animations_v2/simulation/reasoning/canvas_notes` 但**实际 DSL 未使用**。
+⇒ ★ **④ 与我上一条要的 P0（给 live 带 `age`/`scanRev`）是同一件事** —— 而且它是"用 DSL 理解项目"的**前提**。
