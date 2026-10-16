@@ -2670,3 +2670,49 @@ DB `nodes` 定位（grep 兜底并标注）· `write_gate` + `validateDSL` · `v
 2. ★ **OQ2 / OQ5 / OQ7** 同类（TTL 取值 / **空集算不算真空真** / 渲染与 patrol 的连线方向）；
 3. ★★★ **然后就是施工** —— ★ 因为方案现在是一张**"可对拍的红图"（24 条待办）**，
    **继续讨论的边际收益已经低于动手。**
+
+---
+
+## 81. 2026-10-16 ★★★ 用户指令：**"你自己去走一遍那个流程，直到走通为止"** —— 狗食开始（①–⑤ 已走通）
+
+### 81.1 用户描述的完整流程（逐字）
+*"① **使用设计 DSL 写项目设计** ② **拿设计 DSL 去指导实际 DSL 对应的** —— 对拍 ③ 对拍之后**会发现实际 DSL 和设计 DSL 有区别**
+④ **拿这个区别，往下找到 DB 里的区别** ⑤ **根据 DB 里那一整块区别的地方，去读它的周边牵扯到的那些区域，整个的读取这一块的区域**
+⑥ **然后进行整块区域的重写** ⑦ **重写完了之后写成这个设计 DSL 的形状** ⑧ **然后进行重算实际 DSL** ⑨ **实际 DSL 再和设计 DSL 进行对拍**
+⇒ 这么一个流程，然后**中间的这些领任务、挂任务这些就你们自己去讨论**怎么挂好、怎么领好、怎么安排好。"*
+★ 用户还说了两句重的：
+- *"我其实一直都是希望你这么叠的 …… 我才知道你一直是用 Grep 和 Read 去理解项目，**这样子实际上我是很无奈的**。"*
+- ★★★ *"**如果按照这个解法的话，其实我们早就做完了**，这种狗食的写法。"*
+
+### 81.2 ①–③ 走通：对拍出了"区别"（★ 用今天做出来的东西）
+★ 那份设计 DSL（`docs/task-system-plan.dsl.json`）**自带红绿流程**，★ 我用**同一个入口 `judgeExpectations`** 跑出明细：
+```
+汇总: {checked:24, passed:0, failed:24, unsupported:0}
+--- 按块（每块 = 一个文件节点）---
+3红  task 格（节点上的任务对象）        [file-exists, symbol-exists]
+6红  状态机（五态 + 迁移判据）          [symbol-exists, call-exists, file-exists, edge-exists]
+5红  task_ops（领取/释放/完成三个动作）  [file-exists, call-exists, edge-exists]
+7红  漂移巡检（live 每次重算后跑）       [file-exists, call-exists, symbol-exists, edge-exists]
+3红  discussion 格（讨论登记）          [file-exists, symbol-exists]
+```
+★ **如实交代一处**：它给的那条 `red_now` 命令**我没跑成**（`/tmp` 里文件没找到、`exit=0` 是空命令的假绿）
+  ⇒ **上面的汇总是我用同一入口自己跑的**（数字与它报告一致）。
+
+### 81.3 ④⑤ 走通：**用 DB 读"那一块的周边牵扯区域"（带签名）**
+```
+judgeExpectations(root, items): Promise<ExpectationsReport>                      @ intent/expectations.ts:195-381
+validateProgressEvidence(progress, evidence): {ok:true}|{ok:false,reason}        @ domain/overlay.ts:104-130
+updateStatus(input: UpdateStatusInput): StatusResult                             @ dsl_ops/status_tools.ts:63-138
+assertSourceWriteRegistered(projectRoot, files): TaskGateOutcome                 @ write_gate.ts:543-688
+既有类型: Expectation(domain/expectation.ts) · ProgressEvidence(domain/overlay.ts) ·
+          ExpectationItem/Report/Conflict(intent/expectations.ts) · SourceWriteReport/TaskGateOutcome(write_gate.ts)
+```
+⇒ ★★★ **这就是"整块重写"要对接的全部接口** —— **DB 一次读出，没 grep、没读文件**。
+
+### 81.4 ★ 第 ⑥ 步撞到的真问题（以及它怎么破的）
+- **撞到**：要写 `src/domain/task_schema.ts`（**新文件**）⇒ 必须过 `write_gate`（未登记不许落盘）
+  ⇒ 而"登记"要"节点存在" ⇒ 节点存在又要求"文件已建" ⇒ ★★ **鸡生蛋**；
+- **查清**：★ 闸的候选来源 = overlay 的 **`buildCandidates`**（`domain/overlay.ts:378`）；
+  ★★ **而"新建文件"有既有通道**：**`scaffoldCore`（`lifecycle/scaffold.ts`）** · `applyWritesCore` · `editCodeInner` · `writeThroughLine`
+  ⇒ ★★ **不必硬写，走既有通道** ⇒ **鸡生蛋破了**。
+- ★ 两个新文件在 DB **命中 0**（确认"还没建"）；overlay 结构 = `{version, feature, anchors[]}`（`observe-skeleton` 有 6 个锚点）。
