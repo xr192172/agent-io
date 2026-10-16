@@ -36,6 +36,16 @@
 ⇒ ★ **判据（能判真假）**：**DSL 文件里凡是"删了能靠 DB 重建"的字段，都是复制**；
 操作化：**把 DSL 里每个字段问一句"DB 能不能现算"** —— 能 ⇒ 删；不能 ⇒ 留。
 
+## 三'、★★ 更正（2026-10-16 实测后，覆盖原 §三 的粗判）
+★ 原 §三 把 `geometry.edges[]` / `symbols[]` 一律当"事实副本" ⇒ **实测发现三处错**：
+1. ★★ **`geometry.edges` 与 `symbols[].decision` 不只是事实，还是「意图载体」**（手绘边住 `geometry.edges`：`derive_chain.ts:755`/`edge_ops.ts:54`；
+   `Symbol.decision` 在 `diff_views.ts:933` 被读）⇒ **不能按"事实副本"摘**；
+2. ★ **`node_count` 是空目标**（类型与数据里都不存在）⇒ **从清单移除**；
+3. ★★ **`contains` 边在 DB 里没有对应**（DB 只有 call/import/type_ref）⇒ "查 DB edges 替代"对**部分边**不成立（`contains` 要**由路径重导**）。
+★ **正确的做法顺序**（实测得出）：
+**(a)** 先补 `_sync.scanRev/age`（**已完成**，见流水账 §66.3）→ **(b)** 让**读取侧**改走 DB（建 live 视图的"DB 现渲染"通路）
+→ **(c)** 才摘字段（★ 且**先修 `t341`**：它的悬空边探针直写 `geometry.edges`，摘边后会**失效**）。
+★ **判据**：**(c) 之前，"删掉 `live` 文件仍能给出同一份实际图"（判据①）无法成立** —— 实测：删 live ⇒ `getDSLByView(vm=live)` = `null`。
 ## 四、★ 一个必须一起处理的发现：`arch_layer` 是"路径字符串匹配"
 
 `layer_detect.ts:128-141`：相对路径按 `/` 切段、去扩展名转小写、与 patterns **精确串等**，

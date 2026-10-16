@@ -16,6 +16,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { DesignDSL } from '../domain/types.js';
+import { scanRevOf } from './index/scan_rev.js';
 
 /**
  * agent-io 包根：从模块自身位置**按路标上溯**（找 `package.json` 且 `name === PKG_NAME` 的目录）。
@@ -138,6 +139,36 @@ export function getLiveFeatureFile(feature: string, baseDir?: string): string {
   return path.join(getLiveDir(baseDir), `${feature}.dsl.json`);
 }
 
+/**
+ * ★★ 构造 `_sync` 元数据（**唯一写端**；四个落盘口共用 ⇒ `_sync` 形状不会分叉）。
+ *
+ * 由 `dsl-keep-list §六`：「`_sync` 必须补"代"（否则用 DSL 无法自证新旧）」。
+ *
+ * ## 字段
+ * · `saved_at`（原有）：**写入时刻**（ISO 8601）。
+ * · `source` / `feature`（原有）：身份。
+ * · **`scanRev`（新）**：底层事实库的扫描代 = `cache.db` 的 `max(files.indexed_at)`（毫秒）。
+ *   `null` = 无库 / 无 files 行 ⇒ ★ **本轮没有可自证的扫描代**（不是 0）。
+ * · **`age`（新）**：写入时刻，**底层扫描已有多旧**（毫秒）= `now - scanRev`（钳到 ≥0）。
+ *   `null` = `scanRev` 不可得。
+ *
+ * ## ★ 读端怎么用（写清，免得当成"越读越新的年龄"）
+ * `age` 是**写入那一刻的快照**，不会自己增长。要判"**现在**这份 DSL 有多旧"：
+ *   `现在年龄 = (现在 - saved_at) + age`，或等价地 `now - scanRev`。
+ * ★ 并在读端规定：**age 超阈值 ⇒ 拒绝下结论**（不是"提示"，见 §六）。
+ */
+function syncMeta(dsl: DesignDSL, source: string): Record<string, unknown> {
+  const now = Date.now();
+  const { rev } = scanRevOf({ feature: dsl.feature, sourceRoot: dsl.source_root });
+  return {
+    saved_at: new Date(now).toISOString(),
+    source,
+    feature: dsl.feature,
+    scanRev: rev,
+    age: rev == null ? null : Math.max(0, now - rev),
+  };
+}
+
 /** 保存实际 DSL（动态快照，带 _sync 标记；不触发 dslChangeCallback，避免打扰设计视图刷新）
  *  baseDir 可选：指定写入的项目根（默认 dataHome）。watch_project 监听任意项目时传 project_dir，
  *  使实际 DSL 与该项目 cache.db 同目录归位。 */
@@ -147,7 +178,7 @@ export function saveLiveFeature(dsl: DesignDSL, baseDir?: string): string {
   const file = getLiveFeatureFile(dsl.feature, baseDir);
   const data = {
     ...dsl,
-    _sync: { saved_at: new Date().toISOString(), source: 'live', feature: dsl.feature },
+    _sync: syncMeta(dsl, 'live'),
   };
   fs.writeFileSync(file, JSON.stringify(data, null, 2), 'utf-8');
   return file;
@@ -205,7 +236,7 @@ export function saveDesignSheet(dsl: DesignDSL, baseDir?: string): string {
   const file = getDesignSheetFile(dsl.feature, baseDir);
   const data = {
     ...dsl,
-    _sync: { saved_at: new Date().toISOString(), source: 'design_sheet', feature: dsl.feature },
+    _sync: syncMeta(dsl, 'design_sheet'),
   };
   fs.writeFileSync(file, JSON.stringify(data, null, 2), 'utf-8');
   return file;
@@ -343,7 +374,7 @@ export function saveBaselineFeature(dsl: DesignDSL, baseDir?: string): string {
   const file = getBaselineFeatureFile(dsl.feature, baseDir);
   const data = {
     ...dsl,
-    _sync: { saved_at: new Date().toISOString(), source: 'baseline', feature: dsl.feature },
+    _sync: syncMeta(dsl, 'baseline'),
   };
   fs.writeFileSync(file, JSON.stringify(data, null, 2), 'utf-8');
   return file;
@@ -568,11 +599,7 @@ export function saveDSL(dsl: DesignDSL, source: string = 'mcp', base_dsl_rev?: n
   const liveFile = getLiveDslFile();
   const liveData = {
     ...dsl,
-    _sync: {
-      saved_at: new Date().toISOString(),
-      source: source,
-      feature: dsl.feature,
-    },
+    _sync: syncMeta(dsl, source),
   };
   // ★ T188：活态文件同样走原子写 —— ★ 它**正是**那个被并发读的目标（`getDSL` 优先读它）。
   writeAtomic(liveFile, JSON.stringify(liveData, null, 2));

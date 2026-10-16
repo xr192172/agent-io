@@ -2058,3 +2058,53 @@ A/B 顶层键仅 `id,type,feature,version,title,source_root[,status],geometry,se
 真仓 `.agent-io/features/self-2026-10-15.json` **mtime 未变**（11:01:53）。
 ⇒ ★★ **第 1 步的结论**：**"字节稳定"同一环境成立、跨环境原本不成立**；**修完后排序与 locale 解耦** ⇒
   **可以进入第 2 步**（摘掉 DSL 里的"事实副本"字段 + 给 `_sync` 补 `scanRev`/`age`）。
+
+---
+
+## 66. 2026-10-16 ★★★ 第 2 步（让 DSL 不再复制事实）—— 子代理**自主分阶段**，只做 (a)，(b)(c) 交回
+
+### 66.1 ★★★ 第 0 步影响面：量出**我清单里的一个洞**
+- `symbols[]` 消费点：`query_feature.ts:333/836-845` · `diff_views.ts`（10+ 处）—— ★★ **且 `diff_views.ts:933` 读 `s.decision`（符号级意图卡）**；
+- `lines`：`query_feature.ts:765/801` · `derive_mind_map.ts`（10+ 处，含 `(f.lines??999)>=10` 过滤）· `diff_views.ts`；
+- `geometry.edges[]`：`validator.ts:88/118`（悬空边判据）· `export.ts` · `dag_layout.ts` · `dsl_removal` · `impact/diff` · `guided_tour` ·
+  `dsl_ops/*` · `templates` · `derive/*` ⇒ ★ **~10 个文件**；
+- ★ **`node_count` 在类型与数据里都不存在** ⇒ **我清单里的"该去"字段是个空目标**（它逮到了）；
+- ★ **会红的证**：`t341:123`（直写 `d.geometry.edges` 造悬空边 ⇒ **摘边后 `dangling_edge` 永不触发、证失效**）· 证外 `t185:55` 数 `edges.length`；
+- ★ `getDSL(` 实测 **117 处 / 51 文件**（与题面 112/20 **口径不同**，它标了 [未核口径]）。
+
+### 66.2 ★★★ 它的分阶段决定：**只做 (a)**（理由全是实测）
+(i) **判据①需要"DB 现渲染"通路，而它不存在**（删 live ⇒ 取到 `null`）；
+(ii) ★★ **摘 `edges` 会连带丢意图** —— **手绘/派生边也住 `geometry.edges`**（`derive_chain.ts:755` / `edge_ops.ts:54` 写它）⇒ **它不是纯事实**；
+(iii) ★ **摘 `symbols` 会丢 `Symbol.decision` 意图**；
+(iv) 读侧改造面 = 边 ~10 文件 + 符号/行数 ~4 文件。
+⇒ ★★★ **所以"摘字段"不是"去掉副本"，而是"会切掉意图载体"** ⇒ ★ **我 `dsl-keep-list` §三 有洞**（见 66.5 更正）。
+
+### 66.3 (a) 做了什么（低风险、独立有用）
+- 新增 `src/infrastructure/index/scan_rev.ts`：`scanRevOf` —— **只读**打开 `findCacheDb` 命中的 `cache.db`，取 `max(files.indexed_at)`；
+  ★ **无库/无表 ⇒ 返回 `null`**（不降级成 0）；
+- `storage.ts:142-175` 新增**唯一** `syncMeta()`，替换 4 处 `_sync` 字面量（`:181 live` · `:239 design_sheet` · `:377 baseline` · `:602 saveDSL`）；
+- ★ **`_sync` 原文**：saved_at 07:35:30.292Z · source live · feature syncprobe · **scanRev 1792131992126** · **age 4138166**
+  ⇒ ★ **`scanRev` 对上 DB `max(indexed_at)`** ✓；★ **向后兼容**：老 `_sync`（无新键）回读 OK、未抛 ✓。
+
+### 66.4 ★★ 核心判据
+- **判据②（投影读数）**：真实 `live/self-2026-10-15.dsl.json` = **729,656 B**；
+  其中 `symbols` **280,694** + `lines` 2,546 + `edges` **59,308** = **342,548（46.9%）** ⇒ **剥离后 150,365 B（↓79.4%）**；
+- ★ **判据① 实测不通过**：临时 home 删 `live/<f>.dsl.json` 后 `getDSLByView(vm=live)` = **`null`**、`getLiveFeatureResolved()` = **`null`**
+  ⇒ ★★ **live 视图是"纯文件驱动、无 DB 重建"** ⇒ **这正是 (b) 该做的活**；
+- DB 可复原性：★ **200/200 DSL 文件在 DB 命中（miss 0）** · DSL symbols 2,289 vs DB 同批 **3,183（DB 是超集）** ·
+  `lines` 可由 file 节点 `end_line` **精确复原**（样例 108=108）；★★ **但 DB `edges` 无 `contains`**（只有 call 7390 / import 1193 / type_ref 4700）
+  ⇒ **§三 的"查 DB edges"对 `contains` 不成立**。
+
+### 66.5 ★★ 我 `dsl-keep-list` 的三处更正（已写入该文档 §三'）
+1. ★★ **`geometry.edges` 与 `symbols[].decision` 不只是事实，还是「意图载体」** ⇒ **不能按"事实副本"摘**；
+2. ★ **`node_count` 是空目标**（类型与数据里都不存在）⇒ **移除**；
+3. ★★ **`contains` 边 DB 里没有对应** ⇒ "查 DB edges 替代"对**部分边**不成立（`contains` 要**由路径重导**）。
+★ **正确顺序**：**(a)** 补 `_sync.scanRev/age`（**完成**）→ **(b)** 读取侧改走 DB（建"DB 现渲染"通路）→ **(c)** 才摘字段（★ **且先修 `t341`**）。
+
+### 66.6 读数 · 披露
+`build` ✓（tsc 净、699 产物 / 孤儿 0）· `verify` **4/4** ✓ · **十八证改前 / 改后各跑一遍均全绿** ·
+真仓 mtime 跑前=跑后：`features/self-2026-10-15.json` **11:01:53.032004** · `live/self-2026-10-15.dsl.json` **00:19:48.114525**（**未删/未改**）。
+★ **它的诚实披露**：早期用**读写**方式开过一次真仓 `cache.db` 做结构探测 ⇒ **其 mtime 由 14:26 变 15:32**
+（**数据未改，仅 WAL/句柄**；此后一律只读）—— ★ **虽然无害，但"动过真仓"必须留痕**。
+★★ **它标出的两个必然后续**：① **判据①在 (c) 前无法成立**（live 视图无 DB 重建）⇒ **(c) 必在 (b) 之后**；
+② **§三 对 `contains` 边的替代，DB 里没有**。
