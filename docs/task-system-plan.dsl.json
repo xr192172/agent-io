@@ -723,6 +723,87 @@
         "relation": "★ 与既有 write_gate 的接法：仍然是 assertSourceWriteRegistered（不新造），只是它读的来源从 overlay 的 progress 换成 task 格的 state",
         "anti_pattern": "★ 今天实测：第一块落地时闸挡着新文件，最后走的是 scaffoldCore 通道（scaffold 大概率是既有豁免）⇒ 说明闸在干活，但'认什么'不对"
       }
-    }
+    },
+    "design_dsl_health": {
+      "note": "★★★ 用户 2026-10-16 的核心疑虑：\"我不确定你写下去的设计 DSL 是否真正正确\"。★ 本段就是消它的机制。",
+      "stance": "★ 不靠\"保证写对\"，靠\"写完必过几层校验\"。",
+      "evidence_2026_10_16": {
+        "mistakes_i_made": 7,
+        "caught_by_self_reading": 0,
+        "caught_by": {
+          "validateDSL": [
+            "/type 非 const",
+            "/version 用数字",
+            "semantic.files 写成字典",
+            "semantic.files[].id 用路径而非节点 id",
+            "★ 我的认知错：一直以为 semantic.files 是 map"
+          ],
+          "independent_review_patch_only": [
+            "★★★ t_claim guard 判据写反（\"未必全过\"应为\"剔前态后全过\"）",
+            "★★ 2 条装饰边（geometry.edges 里无判据的边）",
+            "合写 candidate|claimed→done 掩盖了\"未领就被收口\"路径"
+          ]
+        },
+        "conclusion": "★★★ 7 处错误，0 处是\"我自己读一遍看出来的\" ⇒ 所以答案不是\"我保证写对\"，而是\"每次写完都过这几层\"。"
+      },
+      "layers": [
+        {
+          "id": "L1_shape",
+          "name": "形状校验",
+          "tool": "validateDSL",
+          "checks": "结构自洽（锚点/类型/必填/const）",
+          "caught_2026_10_16": 4
+        },
+        {
+          "id": "L2_semantics",
+          "name": "语义校验",
+          "tool": "独立评审（★ 只许提补丁，不许写散文）",
+          "checks": "图说得对不对（guard 是否写反/是否合写掩盖/是否有装饰）",
+          "caught_2026_10_16": 3
+        },
+        {
+          "id": "L3_facts",
+          "name": "事实校验",
+          "tool": "对拍 judgeExpectations + DB 交叉",
+          "checks": "图符不符合真实",
+          "caught_2026_10_16": "1（决策卡说没闸、DB 说有 ⇒ 图与事实矛盾）"
+        },
+        {
+          "id": "L4_reverse",
+          "name": "反向校验",
+          "tool": "实现完 ⇒ 图要反过来对",
+          "checks": "图与实现一致（实现后图要不要更新）",
+          "caught_2026_10_16": "第 ⑥ 步的 reading_now / block_readings 更新"
+        },
+        {
+          "id": "L5_blindspot",
+          "name": "★ 盲点",
+          "tool": "—— 图与事实都没提过的东西，只能靠上面四层互相反照",
+          "checks": "无",
+          "caught_2026_10_16": "——"
+        }
+      ],
+      "anti_blindspot_checks": [
+        {
+          "id": "anti_decoration",
+          "check": "每条边/每条断言有判据吗？",
+          "red": "无判据的边/断言数 > 0",
+          "real_case_2026_10_16": "★ 实测逮到 2 条无判据的边"
+        },
+        {
+          "id": "anti_comment",
+          "check": "每个\"责任/承诺\"有判据钉吗？",
+          "red": "只有文字、无判据钉的承诺数 > 0",
+          "real_case_2026_10_16": "★ G3（版本链无判据钉、无消费方）· G4（无\"谁调它\"判据）"
+        },
+        {
+          "id": "anti_idle",
+          "check": "★ 每条判据都在跑吗？",
+          "red": "存在判据但无 runner ⇒ 判据没有执行者 = 等于没有",
+          "real_case_2026_10_16": "★★★ G5：invariant_checks 全仓无 runner"
+        }
+      ]
+    },
+    "task_plan_note": "★ board 的 T9 就是消上面这个不确定的：给设计 DSL 本身做健康检查。"
   }
 }
