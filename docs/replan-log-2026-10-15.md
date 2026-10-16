@@ -1827,3 +1827,42 @@ MCP 传输/schema 层 · daemon 转发分支；★ **六种 kind 本节点只用
      并给 live 带 **`age` / `scanRev` 读数**（★ 与第三份意见的 `scanRev`/报告可寻址**完全呼应**）；
   3. ★★ **P3 必须改口径**：**不是"让扫描写 live"（它已经写了），而是"定清「何时刷新 live」+ 让消费者知道它的代"**
      —— 否则"把工具改读 live"就是**"归位到一个陈旧索引"**。
+
+---
+
+## 61. 2026-10-16 ★★★ 核"保鲜机制" —— 用户印象**对一半**：保鲜真有，但只管索引、不管 live 快照
+
+### 61.1 保鲜是什么（`file:line` + 原文）
+`ensureFreshIndex`（`src/infrastructure/index/index_freshness.ts:555`，**文件头自称"索引自动保鲜"** `:1-2`）；
+- **核心判据** = **逐文件 stat 比 `modified_at`（mtimeMs 取整）+ `size`**（`:621`），变了才走 `syncFile`（`content_hash` 二道闸 `:19/635`）；
+- **触发** = ★ **`invokeTool` 每次调用前置 `ensureStage('symbol_index')`**
+  （`server_registry.ts:775` → `ensureProjectIndex` `:496` → `ensureFreshIndex`）。
+
+### 61.2 ★★★ 作用范围（关键）：**文件级，且只作用于 `cache.db`**
+- 定义原文（`:4`）：*"符号索引（**cache.db files/nodes/edges**）只在自己 edit_code 后重建，外部一改就过期"*；
+- ⇒ ★★ **它不碰 `live/<f>.dsl.json`**。live 的唯一写方是 `saveLiveFeature`（调用点仅
+  `import_project.ts:1036` · `:1084` + watch rebuild（**opt-in**：`rebuild_on_change ?? Boolean(feature)`））
+  ⇒ ★★★ **live 不会被自动刷新**，只有显式 `import_project` 或 watch(rebuild) 整份重写；
+- ★ **术语纠正**：**仓里叫"保鲜"的就是 cache.db 的增量同步，不是整份 DSL 保鲜**（别把两者混为一谈）。
+
+### 61.3 ★★ 四个"读 live"的消费者：**全都没有过期校验**
+★ 全仓 grep：**没有任何比较 `saved_at` 的代码**。
+- `diff_views.ts:264`（`getLiveFeatureResolved`）→ **没有** · `handlers.ts:623`（`diffDesignSheetHandler`）→ **没有** ·
+  `derive_feature_tree.ts:276`（`getDSLByView(f,'live')`）→ **没有** · `query_feature.ts:175` → **没有**；
+- ★★ 且 `query_feature.ts:175` 的**默认 `view='design'` 读的是活态 `agent-io.json`（那份 479 的新档）**
+  ⇒ ★ **只有显式 `view='live'` 才读到旧的 200 档**（默认路径没问题）。
+
+### 61.4 结论 + **判据**（能判真假）
+*"源码改动后会自动保鲜"*：
+- ✅ **对 cache.db 的消费者成立**（走过 `ensureFreshIndex` 的：`find_references` / `explore_code` / `query=calls` …
+  ⇒ **下次调用即重同步**）；
+- ❌ **对读 live DSL 的四个消费者不成立**（除非重跑 `import_project` 或 watch(rebuild)）。
+⇒ ★★ **用户印象"对一半"**：保鲜真有，但**只管索引、不管 live 快照**。
+⇒ **判据**：改一个源文件 X 后 —— **会看到** = 走 `ensureFreshIndex` 的索引消费（下次调用即重同步 X）；
+  **不会看到** = `diff_views` / `diff_design_sheet` / `derive_feature_tree` / `query_feature(view=live)`。
+
+### 61.5 ★★ 对上一条的确认与加强
+- ★★ **live 是"整份快照"，只在 rebuild 时写** ⇒ **落后 10.7h 是结构性的**（不是 bug，但**也不是"新鲜"**）；
+- ★★★ **那四个消费者读旧快照、且不做任何过期检查** ⇒ **"对拍用的是 10.7 小时前的实际"**
+  ⇒ ★ **我上午那些对拍读数（"通过 6 · 不满足 2"）对的是 10-15 16:19 的实际**（这点要显式记下）；
+- ⇒ **P0 的建议更确定**：**给 live 带 `age` / `scanRev`，并要求"消费 live 前刷新"或"看到 age 就拒绝下结论"**。
