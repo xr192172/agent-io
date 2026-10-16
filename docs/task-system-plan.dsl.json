@@ -334,13 +334,24 @@
         "at": "2026-10-16",
         "method": "实跑 judgeExpectations（本笔亲手跑，非推断）",
         "checked": 24,
-        "passed": 9,
-        "failed": 15,
+        "passed": 12,
+        "failed": 12,
         "unsupported": 0,
         "conflicts": 0,
-        "note": "★ 第一块（file_src_domain_task_schema_ts + file_src_domain_task_machine_ts，共 9 条）已实现 ⇒ 该块 9 条全绿；余 4 块 15 条仍红（5+7+3）= 剩下的活。",
-        "note_readings": "★ 两处读数都要看（同一入口 certs/.work/probe-plan-detail.mjs，差别只在 root）：① 真仓 root：passed 7 / unsupported 2 —— 那 2 条是 call-exists 与 edge-exists，它们只取自索引（expectations.ts 的 call/edge 分支），新文件还没进真仓 cache.db ⇒ 判 unsupported（诚实的『判不了』，不算绿）；② 重算后的 root（临时目录 + 独立 AGENT_IO_HOME）：passed 9 / unsupported 0 ⇒ 真绿。★ 所以『9 绿』的前提是索引重算过（= 路线图第 ④ 步）。",
-        "stale_criteria": "★ 本字段改动后，同目录 red_green.red_now 的 pass_when（『passed==0 且 failed==checked』= 全红）对**第一块**已不成立 ⇒ 它现在只是『开工前』的判据，不再是『此刻』的判据。"
+        "note": "★ 已实现两块：第一块（task_schema + task_machine，共 9 条）+ 第二块（discussion_log，共 3 条）= 12 条全绿；余 3 块 12 条仍红（task_ops 5 + task_drift 7）= 剩下的活。",
+        "note_readings": "★ 两处读数都要看（同一入口 certs/.work/probe-plan-detail.mjs，差别只在 root）：① 真仓 root：passed 10 / failed 12 / unsupported 2 —— 那 2 条是状态机节点的 call-exists 与 edge-exists，它们只取自索引（expectations.ts 的 call/edge 分支），新文件还没进真仓 cache.db ⇒ 判 unsupported（诚实的『判不了』，不算绿）；② 重算后的 root（临时目录 + 独立 AGENT_IO_HOME）：passed 12 / failed 12 / unsupported 0 ⇒ 已实现的两块真绿。★ 所以『12 绿』的前提是索引重算过（= 路线图第 ④ 步）。",
+        "stale_criteria": "★ 本字段改动后，同目录 red_green.red_now 的 pass_when（『passed==0 且 failed==checked』= 全红）对**已实现的两块**已不成立 ⇒ 它现在只是『开工前』的判据，不再是『此刻』的判据。"
+      },
+      "block_readings": {
+        "note": "★ 逐块读数（同一入口 probe-plan-detail.mjs；★『红』= verdict=='fail'，unsupported 单列——它既不算活也不算绿）。",
+        "at": "2026-10-16",
+        "items": [
+          { "node": "file_src_domain_task_schema_ts", "label": "task 格", "red": 0, "green": 3, "unsupported": 0, "block": "第一块（已实现）" },
+          { "node": "file_src_domain_task_machine_ts", "label": "状态机", "red": 0, "green": 4, "unsupported": 2, "block": "第一块（已实现）" },
+          { "node": "file_src_domain_discussion_log_ts", "label": "discussion 格", "red": 0, "green": 3, "unsupported": 0, "block": "第二块（本笔实现）" },
+          { "node": "file_src_application_design_dsl_ops_task_ops_ts", "label": "task_ops", "red": 5, "green": 0, "unsupported": 0, "block": "第三块（未做）" },
+          { "node": "file_src_application_patrol_task_drift_ts", "label": "漂移巡检", "red": 7, "green": 0, "unsupported": 0, "block": "第四块（未做）" }
+        ]
       }
     },
     "constructs_wiring": {
@@ -427,6 +438,12 @@
         "check": "收集所有 transition.guard.blocked_by_open_question 的取值 X；要求每条 X 都能在 task_plan.open_questions 里找到编号前缀相同的一条（OQ 编号按 /^OQ[0-9]+/ 取）。OQ 一旦结题被移出清单 ⇒ 此处变红 ⇒ 强制把引用它的迁移一并处置（删掉 / 或改为已启用），不许留悬空引用。★ 这就是该字段的**消费方**：它不再没人读。",
         "cmd": "node -e \"const fs=require('fs');const d=JSON.parse(fs.readFileSync('docs/task-system-plan.dsl.json','utf8'));const oqs=(d.task_plan.open_questions||[]).map(s=>(String(s).match(/^OQ[0-9]+/)||[''])[0]).filter(Boolean);const bl=(d.task_plan.state_machine.transitions||[]).map(t=>t.guard&&t.guard.blocked_by_open_question).filter(Boolean);console.log('OQ='+JSON.stringify(oqs),'blocked='+JSON.stringify(bl));process.exit(bl.length>0&&bl.every(x=>oqs.includes(x))?0:1)\"",
         "red_when": "exit!=0 ⇒ blocked 指向的 OQ 不在 open_questions 里（悬空引用 / 该字段没人读）"
+      },
+      {
+        "invariant": "★ discussion 格「微缩在前、按需展开」：默认渲染只出 micro + open 计数（user_quote 等**结构上**到不了默认视野），且展开的三个触发（claim / judge-failed / explicit）**机器可判**",
+        "check": "跑本块的端到端夹具（真讨论 ← docs/discussion-log.md §①，灌成 TaskDiscussion 再取出来）：① renderMicro 的输出键 == MICRO_KEYS 且白名单外键数 == 0、输出正文里不含 user_quote 的任一段；② shouldExpand 在三种触发下 == true、无触发 == false、discussion 为空 == false。★ 若只把这三条写在 decision.acceptance 的**散文**里，就是『靠人记』—— 本 check 把它变成一条**有 exit code 的判据**。",
+        "cmd": "node certs/.work/probe-discussion-e2e.mjs",
+        "red_when": "exit!=0 ⇒ 要么微缩把 user_quote 带出来了（『不直接展示』变空话 / 字段级排除失效），要么展开条件不再机器可判"
       }
     ],
     "invariant_unjudgeable": [
@@ -461,7 +478,9 @@
           "from": "candidate",
           "to": "void",
           "guard": {
-            "clauses": ["target 在 DB 查不到（files/edges 任一查无此 target）"],
+            "clauses": [
+              "target 在 DB 查不到（files/edges 任一查无此 target）"
+            ],
             "read": "existsTarget(target) === false",
             "distinct_from": "done：『失效』(target 没了) ≠ 『已满足』(expectations 全过)"
           }
@@ -510,12 +529,18 @@
           "from": "candidate",
           "to": "superseded",
           "guard": {
-            "clauses": ["新卡带 replaces: <old_id>，且 old_id 在卡集里存在"],
+            "clauses": [
+              "新卡带 replaces: <old_id>，且 old_id 在卡集里存在"
+            ],
             "read": "新卡的 replaces 字段"
           }
         }
       ],
-      "terminal_states": ["done", "void", "superseded"]
+      "terminal_states": [
+        "done",
+        "void",
+        "superseded"
+      ]
     },
     "patrols": [
       {
@@ -569,6 +594,45 @@
       "OQ8（新·第一块落地时撞出）：★ t_claim 的 guard 第 2 条与 t_done_from_claimed 的 guard 第 2 条**同形**（都是『剔前态判据后剩余全过 且 条数 > 0』）⇒ 领取闸与收口闸用**同一把尺**，于是 canClaim 判『该收口』而不是『可领』。而 docs/plan-task-system.md 的表格写的是『剔除前态判据后 期望**未**全过』—— 与 t_claim 的第 2 条**相反**，两处不能同时成立。★ 本笔的 task_machine.canClaim 按 t_claim 逐字实现（『全过』），并把这条张力写成代码注释 + 本 OQ。需裁：领取的判据到底是『未全过（还有活）』还是『全过（可收口）』；若为前者，t_claim 第 2 条要改，且『漏收口』判据得另立一个函数（patrol 的 missed_close 才该用『全过』）。",
       "OQ9（新·第一块落地时撞出）：★ t_claim / t_done_from_claimed 里的 canClaim→judgeExpectations，把一条**反向依赖**写成了硬期望 —— src/domain/task_machine.ts（arch_layer: core）必须调用 src/application/design/intent/expectations.ts 的 judgeExpectations。而本仓既有铁律是『**domain 不许 import infrastructure**』（src/domain/expectation.ts 文件头逐字：判定器之所以不住 domain，就是因为那边不许 import infrastructure）⇒ domain→application→infrastructure 是**层级倒挂**。本笔照样实现了（用户裁定『语义必须照设计 DSL』），但这是设计 DSL 自己要修的一处：三选一 —— ① 把 canClaim 挪到 application 层（core 只剩纯判据编排）；② 定义端口（domain 声明 `JudgePort`，application 实现并注入）；③ 接受倒挂并在 DSL 里写明豁免。未拍。",
       "OQ10（新·第一块落地时撞出）：★ 『登记 = 临时版 claim』这条**对闸不生效** —— 实测（certs/.work/probe-block1-claim.mjs）：`seedOverlayFromDsl`（src/domain/overlay.ts:631-633）把几何节点的 `status` **播种成** overlay 锚点的 `progress`，而闸的『未登记』判据（src/application/write_gate.ts:652）只问 `progress !== undefined` ⇒ 一份刚播种的 overlay 里**每个节点都已『登记』**（哪怕从没调过 edit_dsl）⇒ 那条分支对已播种的 feature 是装饰。要让它有牙，需区分『播种来的 progress』与『人显式登记的 progress』（如播种不写 progress、或加 `progress_source`）。未拍。"
-    ]
+    ],
+    "block_rule": {
+      "note": "★ 裁定（2026-10-16，开发者自裁）：块 = 依赖闭包，不是单个节点。",
+      "expr": "block(n) = 以 n 为根的强连通/依赖闭包（沿 geometry.edges 的 imports 边向下）",
+      "why": "\"整块重写\"的意义就是连带依赖一起改；按单节点划块会把依赖切两半（实测：task_schema→task_machine 是一块）",
+      "example": "task 格(schema) + 状态机(machine) = 一块（因 e_machine_to_schema）"
+    },
+    "rulings_2026_10_16": [
+      {
+        "oq": "OQ9",
+        "ruling": "抽 domain 纯函数：task_machine 只接 {facts, expectations} 做纯判定；取事实由 application 传入",
+        "why": "domain 定义\"怎么判\"，application 负责\"去哪取\"；且判定可单测",
+        "status": "裁定"
+      },
+      {
+        "oq": "OQ10",
+        "ruling": "先不改闸，记进 open",
+        "why": "新建文件走 scaffoldCore 已通（第一块就是这么落的）；而\"登记\"语义现在不清（in_progress=已登记≠认领）⇒ 等「领取」有真语义再接闸",
+        "status": "裁定"
+      },
+      {
+        "oq": "OQ1",
+        "ruling": "仍待用户拍（自动收口 vs 只提示）—— 不阻塞其他块",
+        "status": "待用户"
+      },
+      {
+        "oq": "块计数 6 vs 9",
+        "ruling": "采纳 9（块=依赖闭包，见 block_rule）",
+        "status": "裁定"
+      }
+    ],
+    "block_order": {
+      "note": "★ 裁定：按\"既服务施工、又服务我自己\"排序 —— discussion 先做（它治\"结论没有住处\"）",
+      "order": [
+        "discussion_log",
+        "task_ops",
+        "task_drift"
+      ],
+      "why": "discussion_log 最小最独立，且治今天最疼的病（检索历史会话 0 命中 ⇒ 你被迫复述 ⇒ 我一直在重新发现）"
+    }
   }
 }
