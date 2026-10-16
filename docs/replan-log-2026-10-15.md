@@ -2634,3 +2634,39 @@ DB `nodes` 定位（grep 兜底并标注）· `write_gate` + `validateDSL` · `v
 
 ### 79.4 已固化进 Skill（`dsl-first` 的必做动作加第 4 条）
 ★ 追加一行到 `docs/accounting.jsonl`，并注明**为什么是记账不是闸**（★ 先看清哪种违反最常见，再升级）。
+
+---
+
+## 80. 2026-10-16 ★★★ 第二代迭代：**"方案 → 施工单"做成可跑流程**（24 条待实现的活）+ 迭代该收在哪
+
+### 80.1 我先用 DB 把上轮两个 `[未核]` 查掉了（★ 一条 SQL 各，不猜）
+- `patrolDrift → releaseIfExpired` 跨文件 call 边 **命中 0** ⇒ ★★ 因那些文件**还是方案里的新文件** ⇒ **那条期望现在本就该是红的**（= 待实现的活）；
+- `blocked_by_open_question` 消费方 **命中 0** ⇒ ★★ **评审那句"若无人读，它只是注释"成立** ⇒ 必须二选一；
+- 附带取到**既有构件清单**（"接法"的底料）：`assertSourceWriteRegistered` · `judgeExpectations` · `renderLiveFromDb` · `scanRevOf` · `updateStatus` · `validateProgressEvidence`。
+
+### 80.2 第二轮补丁（`git diff --stat` = **+137/−1**；★ 我逐条核过）
+★ 新键 **`task_plan.plan_to_work`**（其键：`note / extract / judge / work_rule / red_green / reading_now`）：
+- `judge.entry = judgeExpectations`；
+- `work_rule`：把 report 里 `verdict === 'fail'` 的项取出来当"活"；
+- **红/绿判据**：`red_now` 通过条件 = `checked==count_expr && passed==0 && failed==checked && unsupported==0`；`green_done` = `failed==0 && unsupported==0`；
+- ★★★ **实跑读数**：`{"checked":24,"passed":0,"failed":24,"unsupported":0}` ⇒ `red_now` **EXIT=0**（判据成立）· `green_done` **EXIT=1**（未实现）
+  ⇒ ★★ **"24 条 fail = 24 条待实现的活"** —— **这就是"方案 → 施工单"**。
+
+★ **攻点二**（`blocked` 命中 0）⇒ 它选 **(a) 补可判消费方**：`invariant_checks` 要求 `blocked_by_open_question` **必须命中** `open_questions` 的 OQ 编号（`/^OQ[0-9]+/`）；
+- ★ 实跑 EXIT=0、`OQ=[OQ1…OQ7] blocked=[OQ1]`；★★ **"OQ 结题被移出清单 ⇒ 变红 ⇒ 强制一并处置该迁移"**（★ 妙：**字段从此有人读**）；
+★ **攻点三**：接点 **6/6 全复用、0 新造**（逐条对上那 6 个既有构件）；`task_ops` +2 断言 · `task_drift` +2 断言；
+★ 新键 `task_plan.constructs_wiring`；`open_questions` → **7** 条；`invariant_checks` → **3** 条；★ **`valid = true`**。
+
+### 80.3 ★★ 我自核的交叉验证（两个独立数字对上）
+★ 方案内 `expectations` **总数 = 24**（我自己数的）· 它实跑 `red_now` 的 `checked = 24` ⇒ **一致**
+  ⇒ ★ **"red_now 判据成立"这件事被两处独立读数确认**。
+
+### 80.4 ★★★ 迭代该收在哪（它自己给的判断 + 我的裁决）
+★ 它自评：*"**本轮有实质补丁**（改判据 / 改 guard / 新增可跑红绿流程），**但价值递减** ——
+剩的是 **OQ1/OQ2/OQ5/OQ7 这类「人的裁」**，补丁解不了。"*
+⇒ ★★ **这恰好印证我给的停止条件**：**当一轮里只剩"人的裁"与措辞 ⇒ 停**。
+⇒ ★★★ **我的裁决：两轮够了，第三轮不该是"讨论"，该是"人的裁 + 施工"**：
+1. ★★ **要用户拍 OQ1**（"已满足"自动收口还是只提示）—— ★ 它挡着 `t_done_from_candidate` 这条迁移；
+2. ★ **OQ2 / OQ5 / OQ7** 同类（TTL 取值 / **空集算不算真空真** / 渲染与 patrol 的连线方向）；
+3. ★★★ **然后就是施工** —— ★ 因为方案现在是一张**"可对拍的红图"（24 条待办）**，
+   **继续讨论的边际收益已经低于动手。**

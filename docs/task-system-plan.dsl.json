@@ -117,6 +117,20 @@
               "from": "src/application/design/dsl_ops/task_ops.ts",
               "to": "src/domain/task_machine.ts",
               "why": "op 层只能调状态机，不许自己判状态"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/design/dsl_ops/task_ops.ts",
+              "symbol": "completeTask",
+              "target": "validateProgressEvidence",
+              "why": "★ 接点③（证据闸）：置 done 前必须过既有 validateProgressEvidence（overlay.ts）—— ★ 复用，不新造第二把证据尺"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/design/dsl_ops/task_ops.ts",
+              "symbol": "completeTask",
+              "target": "updateStatus",
+              "why": "★ 接点④（状态唯一入口）：状态落盘只许走既有 updateStatus（status_tools.ts），不在 task 侧另写一份写盘 —— ★ 复用"
             }
           ]
         }
@@ -162,6 +176,20 @@
               "symbol": "patrolDrift",
               "target": "releaseIfExpired",
               "why": "★ 让 patrol 出的『应回收』与状态机回收**同一处**（两处各写一份回收逻辑 = 第二种权威）；做不到时 call-exists 判 fail = 红。[未核]：需确认索引会记跨文件调用边"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/patrol/task_drift.ts",
+              "symbol": "patrolDrift",
+              "target": "renderLiveFromDb",
+              "why": "★ 接点⑤（渲染唯一来源）：巡检的输入 = live 图（renderLiveFromDb，live_render.ts），不许自己拼一份 DB 读 —— ★ 复用，不新造第三个读端"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/patrol/task_drift.ts",
+              "symbol": "patrolDrift",
+              "target": "scanRevOf",
+              "why": "★ 接点⑥（判新旧）：报告必须铸上扫描版本 scanRevOf（scan_rev.ts），否则会拿旧实际判红 —— ★ 复用"
             }
           ]
         }
@@ -271,6 +299,107 @@
   "annotations": [],
   "task_plan": {
     "note": "★ 这份 JSON 本身 = 讨论桌：每一条'该做什么'都写成了六种 kind 的可判期望。",
+    "plan_to_work": {
+      "note": "★ 这不是『按顺序执行』的清单，而是一次**对拍**：把方案里的全部 expectations 抽出来交给 judgeExpectations，fail 的条**就是**待实现的活（无 fail ⇒ 无活，方案已实现）。",
+      "extract": {
+        "sel": "geometry.nodes[].decision.expectations",
+        "item_shape": "{ node_id, node_label, expectation }",
+        "count_expr": "len(flatten(n.decision.expectations for n in geometry.nodes))",
+        "rule": "每条 expectation 生成一条 item；node_id = 其宿主节点 id（与 judgeExpectations 的入参同形）"
+      },
+      "judge": {
+        "entry": "judgeExpectations",
+        "path": "src/application/design/intent/expectations.ts",
+        "call": "judgeExpectations(source_root, items)",
+        "report": "ExpectationsReport{checked,passed,failed,unsupported,conflicts,items}"
+      },
+      "work_rule": {
+        "expr": "work = [i for i in report.items if i.verdict == 'fail']",
+        "why": "fail = 此刻代码里没有该期望所要求的事实 ⇒ 缺什么造什么（file-exists⇒造文件 · symbol-exists⇒补符号 · call-exists⇒接调用 · edge-exists⇒接依赖）",
+        "unsupported_not_work": "verdict=='unsupported' 既不算活也不能算绿（expectations.ts 纪律 3）"
+      },
+      "red_green": {
+        "red_now": {
+          "cmd": "node --input-type=module -e \"import fs from 'node:fs';import{judgeExpectations}from'./dist/src/application/design/intent/expectations.js';const d=JSON.parse(fs.readFileSync('docs/task-system-plan.dsl.json','utf8'));const it=d.geometry.nodes.flatMap(n=>(n.decision?.expectations||[]).map(e=>({node_id:n.id,node_label:n.label||n.id,expectation:e})));const r=await judgeExpectations('.',it);console.log(JSON.stringify({checked:r.checked,passed:r.passed,failed:r.failed,unsupported:r.unsupported}));process.exit(r.checked===it.length&&r.passed===0&&r.failed===r.checked&&r.unsupported===0?0:1)\"",
+          "pass_when": "exit==0 ⇒ checked==count_expr 且 passed==0 且 failed==checked 且 unsupported==0（全红，红的条数 == 可数项 count_expr）",
+          "meaning": "现在应为红：方案里的文件/符号/调用/边在真仓都还没有 ⇒ 期望全 fail。★ 这不是失败，是**待实现的活**。"
+        },
+        "green_done": {
+          "cmd": "node --input-type=module -e \"import fs from 'node:fs';import{judgeExpectations}from'./dist/src/application/design/intent/expectations.js';const d=JSON.parse(fs.readFileSync('docs/task-system-plan.dsl.json','utf8'));const it=d.geometry.nodes.flatMap(n=>(n.decision?.expectations||[]).map(e=>({node_id:n.id,node_label:n.label||n.id,expectation:e})));const r=await judgeExpectations('.',it);console.log(JSON.stringify({checked:r.checked,failed:r.failed,unsupported:r.unsupported}));process.exit(r.failed===0&&r.unsupported===0?0:1)\"",
+          "pass_when": "exit==0 ⇒ failed==0 且 unsupported==0（方案已被实现）",
+          "meaning": "绿 = 活干完了。★ unsupported>0 不算绿（判不了≠通过）"
+        }
+      },
+      "reading_now": {
+        "at": "2026-10-16",
+        "method": "实跑 judgeExpectations（本笔亲手跑，非推断）",
+        "checked": 24,
+        "passed": 0,
+        "failed": 24,
+        "unsupported": 0,
+        "conflicts": 0,
+        "note": "★ 24 条全红 = 24 条待实现的活。"
+      }
+    },
+    "constructs_wiring": {
+      "note": "★ 攻点三『接法』：task_plan 里与 闸/对拍/证据/状态/渲染/新旧 相接处，逐条对上**既有构件**；每条给一条断言或 read。★ 6 条全部复用，无一新造。",
+      "entries": [
+        {
+          "touchpoint": "①闸 —— 实现本方案要落 src/ 新文件时，写路径必须过任务闸",
+          "construct": "assertSourceWriteRegistered",
+          "construct_path": "src/application/write_gate.ts",
+          "form": "read",
+          "read": "落盘前 assertSourceWriteRegistered(project_root, touched_files).applicable==true ⇒ 必须有 design feature 指向它；否则放行（不阻断非设计区改动）",
+          "reuse": true,
+          "why_reuse": "闸已在写路径上；task 侧只需**被它覆盖**，不自建第二个闸"
+        },
+        {
+          "touchpoint": "②对拍 —— 领取校验 + 巡检判定都用对拍器",
+          "construct": "judgeExpectations",
+          "construct_path": "src/application/design/intent/expectations.ts",
+          "form": "expectation",
+          "expr": "call-exists canClaim→judgeExpectations（node2） 与 patrolDrift→judgeExpectations（node4）",
+          "reuse": true,
+          "why_reuse": "对拍器只此一把；本方案只加**新的 expectations**，不加新的判定器"
+        },
+        {
+          "touchpoint": "③证据 —— 置 done 前必须带一条证据",
+          "construct": "validateProgressEvidence",
+          "construct_path": "src/domain/overlay.ts",
+          "form": "expectation",
+          "expr": "call-exists completeTask→validateProgressEvidence（node3）",
+          "reuse": true,
+          "why_reuse": "三档证据（expectations/reading/attestation）已是全仓唯一证据尺；★ 不新造 task 专用证据格式"
+        },
+        {
+          "touchpoint": "④状态 —— 状态落盘的唯一入口",
+          "construct": "updateStatus",
+          "construct_path": "src/application/design/dsl_ops/status_tools.ts",
+          "form": "expectation",
+          "expr": "call-exists completeTask→updateStatus（node3）",
+          "reuse": true,
+          "why_reuse": "updateStatus 已内含『先过闸再落盘』；task 侧复用，不另写一份写盘"
+        },
+        {
+          "touchpoint": "⑤渲染 —— 巡检输入 = live 图",
+          "construct": "renderLiveFromDb",
+          "construct_path": "src/infrastructure/index/live_render.ts",
+          "form": "expectation",
+          "expr": "call-exists patrolDrift→renderLiveFromDb（node4）",
+          "reuse": true,
+          "why_reuse": "live 图的唯一来源是 renderLiveFromDb；★ 巡检不许自己拼一份 DB 读 [未核]：连线方向（live 触发 patrol vs patrol 自取 live）待裁，见 OQ7"
+        },
+        {
+          "touchpoint": "⑥新旧 —— 报告必须带扫描版本",
+          "construct": "scanRevOf",
+          "construct_path": "src/infrastructure/index/scan_rev.ts",
+          "form": "expectation",
+          "expr": "call-exists patrolDrift→scanRevOf（node4）",
+          "reuse": true,
+          "why_reuse": "判『设计 vs 实际』新旧只此一把尺（_sync.scanRev）；报告不带它就可能是拿旧实际判红"
+        }
+      ]
+    },
     "invariants": [
       "任务 = 意图 ⇒ 住设计侧；实际侧只有事实",
       "只落意图与事件，不落读数快照、不落校验结果",
@@ -290,6 +419,12 @@
         "check": "task 格里不得出现 line/loc/hash/sha1/reads/call_count 等可由 DB 现算的键",
         "cmd": "node -e \"const fs=require('fs');const d=JSON.parse(fs.readFileSync('docs/task-system-plan.dsl.json','utf8'));const bad=['line','lines','loc','hash','sha1','reads','call_count'];const s=JSON.stringify(d.geometry.nodes);process.exit(bad.some(k=>s.includes('\\\"'+k+'\\\"'))?1:0)\"",
         "red_when": "exit!=0 ⇒ task 格落了快照、复制了事实"
+      },
+      {
+        "invariant": "★ 被未决项挡住的迁移：blocked_by_open_question 必须命中未结题的 OQ（否则该字段是一句没人读的字符串）",
+        "check": "收集所有 transition.guard.blocked_by_open_question 的取值 X；要求每条 X 都能在 task_plan.open_questions 里找到编号前缀相同的一条（OQ 编号按 /^OQ[0-9]+/ 取）。OQ 一旦结题被移出清单 ⇒ 此处变红 ⇒ 强制把引用它的迁移一并处置（删掉 / 或改为已启用），不许留悬空引用。★ 这就是该字段的**消费方**：它不再没人读。",
+        "cmd": "node -e \"const fs=require('fs');const d=JSON.parse(fs.readFileSync('docs/task-system-plan.dsl.json','utf8'));const oqs=(d.task_plan.open_questions||[]).map(s=>(String(s).match(/^OQ[0-9]+/)||[''])[0]).filter(Boolean);const bl=(d.task_plan.state_machine.transitions||[]).map(t=>t.guard&&t.guard.blocked_by_open_question).filter(Boolean);console.log('OQ='+JSON.stringify(oqs),'blocked='+JSON.stringify(bl));process.exit(bl.length>0&&bl.every(x=>oqs.includes(x))?0:1)\"",
+        "red_when": "exit!=0 ⇒ blocked 指向的 OQ 不在 open_questions 里（悬空引用 / 该字段没人读）"
       }
     ],
     "invariant_unjudgeable": [
@@ -427,7 +562,8 @@
       "OQ3: void 的卡是否留档",
       "OQ4: discussion 版本链要不要可 diff（讨论本身进对拍？）；另：invariant『一处权威 + 一处渲染』落不成读数，也挂这条",
       "OQ5（新·本笔）：★ 剔前态判据后若**一条不剩（空集）**，『全过』算不算真？空集 = 真空真(vacuous truth) ⇒ 未领卡会被自动收口；另一解是空集判『判不了』。未拍 ⇒ t_claim / t_done_from_claimed 里的『剩余条数 > 0』只是我加的保护，需裁",
-      "OQ6（新·本笔）：★ 我不同意把 OQ2『TTL 取值』当成**单一全局数**处理 —— TTL 是领主的续租超时，不同卡类（改一行 vs 重构一文件）不该共用一个数 ⇒ 建议改成按卡类分档；此条待裁，未并入 invariants"
+      "OQ6（新·本笔）：★ 我不同意把 OQ2『TTL 取值』当成**单一全局数**处理 —— TTL 是领主的续租超时，不同卡类（改一行 vs 重构一文件）不该共用一个数 ⇒ 建议改成按卡类分档；此条待裁，未并入 invariants",
+      "OQ7（新·本笔）：★ 接点⑤的**连线方向**未定 —— 是 live 重算**触发** patrol（live_render 侧调 patrolDrift），还是 patrol **自取** live（patrolDrift 调 renderLiveFromDb）？我按『patrol 自取』写了 call-exists，但若实际设计是前者，该断言方向反了、应挂到 live_render 那侧。未拍，未并入 invariants"
     ]
   }
 }
