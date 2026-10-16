@@ -1,0 +1,150 @@
+{
+  "id": "task_system_plan",
+  "type": "plan",
+  "feature": "task-system-plan",
+  "version": 2,
+  "title": "任务系统做进设计 DSL —— 用 DSL 写的方案（v2）",
+  "source_root": ".",
+  "status": "draft",
+  "geometry": {
+    "nodes": [
+      {
+        "id": "file_src_domain_task_schema_ts",
+        "type": "file",
+        "label": "task 格（节点上的任务对象）",
+        "path": "src/domain/task_schema.ts",
+        "arch_layer": "core",
+        "status": "draft",
+        "decision": {
+          "summary": "在 design/<f>.dsl.json 的几何节点上加 task 格：任务 = 设计侧对象，不挂 overlay",
+          "acceptance": "task 格能落在 design/<f>.dsl.json 上、过 validateDSL、且重建不抹",
+          "expectations": [
+            { "kind": "file-exists", "path": "src/domain/task_schema.ts", "why": "任务对象要有类型定义" },
+            { "kind": "symbol-exists", "path": "src/domain/task_schema.ts", "symbol": "TaskState", "why": "五态要是显式类型，不许散落字符串" },
+            { "kind": "symbol-exists", "path": "src/domain/task_schema.ts", "symbol": "TaskSpec", "why": "任务格的结构要有具名类型" }
+          ]
+        }
+      },
+      {
+        "id": "file_src_domain_task_machine_ts",
+        "type": "file",
+        "label": "状态机（五态 + 迁移判据）",
+        "path": "src/domain/task_machine.ts",
+        "arch_layer": "core",
+        "status": "draft",
+        "decision": {
+          "summary": "五态：候选 → 已领 → 已完成；另有 失效（target 没了）与被取代（replaces）",
+          "acceptance": "每条迁移都有触发条件，且 候选→已领 必须 CAS 原子写 owner",
+          "expectations": [
+            { "kind": "symbol-exists", "path": "src/domain/task_machine.ts", "symbol": "canClaim", "why": "领取前的可领性判定要独立成函数，便于对拍" },
+            { "kind": "call-exists", "path": "src/domain/task_machine.ts", "symbol": "canClaim", "target": "judgeExpectations", "why": "★ 领取时校验 = 对着 DB 判 expectations（复用现成，不新造）" },
+            { "kind": "symbol-exists", "path": "src/domain/task_machine.ts", "symbol": "NEGATIVE_KINDS", "why": "★ 前态判据（edge-absent 等）必须被显式剔除，否则任务还没领就被误收口" },
+            { "kind": "symbol-exists", "path": "src/domain/task_machine.ts", "symbol": "releaseIfExpired", "why": "TTL 超时回收：claimed_at 不配超时就是死锁字段" }
+          ]
+        }
+      },
+      {
+        "id": "file_src_application_design_dsl_ops_task_ops_ts",
+        "type": "file",
+        "label": "task_ops（领取/释放/完成三个动作）",
+        "path": "src/application/design/dsl_ops/task_ops.ts",
+        "arch_layer": "service",
+        "status": "draft",
+        "decision": {
+          "summary": "claim / release / complete 三个 op，写 design/<f>.dsl.json 的 task 格",
+          "acceptance": "三个 op 各过一枚证；claim 在并发下不互相覆盖",
+          "expectations": [
+            { "kind": "file-exists", "path": "src/application/design/dsl_ops/task_ops.ts", "why": "动作要有落点" },
+            { "kind": "call-exists", "path": "src/application/design/dsl_ops/task_ops.ts", "symbol": "claimTask", "target": "canClaim", "why": "claim 必须先过可领性判定" },
+            { "kind": "edge-exists", "from": "src/application/design/dsl_ops/task_ops.ts", "to": "src/domain/task_machine.ts", "why": "op 层只能调状态机，不许自己判状态" }
+          ]
+        }
+      },
+      {
+        "id": "file_src_application_patrol_task_drift_ts",
+        "type": "file",
+        "label": "漂移巡检（live 每次重算后跑）",
+        "path": "src/application/patrol/task_drift.ts",
+        "arch_layer": "service",
+        "status": "draft",
+        "decision": {
+          "summary": "live 重算后对所有非 done 的卡跑 judgeExpectations ⇒ 抓「漏收口」与「应转失效」",
+          "acceptance": "两类异常都有计数出口；红时给出卡 id",
+          "expectations": [
+            { "kind": "file-exists", "path": "src/application/patrol/task_drift.ts", "why": "巡检要有落点" },
+            { "kind": "call-exists", "path": "src/application/patrol/task_drift.ts", "symbol": "patrolDrift", "target": "judgeExpectations", "why": "复用现成对拍器" },
+            { "kind": "symbol-exists", "path": "src/application/patrol/task_drift.ts", "symbol": "DriftReport", "why": "要机器可读出口（不是只打印一句话）" }
+          ]
+        }
+      },
+      {
+        "id": "file_src_domain_discussion_log_ts",
+        "type": "file",
+        "label": "discussion 格（讨论登记）",
+        "path": "src/domain/discussion_log.ts",
+        "arch_layer": "core",
+        "status": "draft",
+        "decision": {
+          "summary": "micro / user_quote / conclusion / open[] / decided_at / supersedes；默认只渲染 micro + open 计数",
+          "acceptance": "展开条件是机器可判的（领取时 / 判失败需裁决时 / expand=discussion）",
+          "expectations": [
+            { "kind": "file-exists", "path": "src/domain/discussion_log.ts", "why": "讨论登记要有落点" },
+            { "kind": "symbol-exists", "path": "src/domain/discussion_log.ts", "symbol": "renderMicro", "why": "★ 默认渲染只出 micro 一行（字段级排除机制，"不直接展示"才不是空话）" },
+            { "kind": "symbol-exists", "path": "src/domain/discussion_log.ts", "symbol": "shouldExpand", "why": "展开条件必须可判，否则又靠人记" }
+          ]
+        }
+      }
+    ],
+    "edges": [
+      { "id": "e_ops_to_machine", "from": "file_src_application_design_dsl_ops_task_ops_ts", "to": "file_src_domain_task_machine_ts", "label": "imports", "type": "solid" },
+      { "id": "e_machine_to_schema", "from": "file_src_domain_task_machine_ts", "to": "file_src_domain_task_schema_ts", "label": "imports", "type": "solid" },
+      { "id": "e_patrol_to_machine", "from": "file_src_application_patrol_task_drift_ts", "to": "file_src_domain_task_machine_ts", "label": "imports", "type": "solid" }
+    ]
+  },
+  "semantic": {
+    "files": {
+      "src/domain/task_schema.ts": { "path": "src/domain/task_schema.ts", "responsibility": "任务格的形状：五态 + owner/claimed_at/replaces/evidence/discussion" },
+      "src/domain/task_machine.ts": { "path": "src/domain/task_machine.ts", "responsibility": "状态迁移与可领性判定（含前态判据剔除、CAS、TTL 回收）" },
+      "src/application/design/dsl_ops/task_ops.ts": { "path": "src/application/design/dsl_ops/task_ops.ts", "responsibility": "claim / release / complete 三个动作，写设计副作用" },
+      "src/application/patrol/task_drift.ts": { "path": "src/application/patrol/task_drift.ts", "responsibility": "漂移巡检：漏收口 / 应转失效 / 双写哨兵，出机器可读报告" },
+      "src/domain/discussion_log.ts": { "path": "src/domain/discussion_log.ts", "responsibility": "讨论登记：微缩在前、按需展开、版本链（decided_at/supersedes）" }
+    }
+  },
+  "layers": [
+    { "id": "core", "name": "core", "count": 3 },
+    { "id": "service", "name": "service", "count": 2 }
+  ],
+  "annotations": [],
+  "task_plan": {
+    "note": "★ 这份 JSON 本身 = 讨论桌：每一条'该做什么'都写成了六种 kind 的可判期望。",
+    "invariants": [
+      "任务 = 意图 ⇒ 住设计侧；实际侧只有事实",
+      "只落意图与事件，不落读数快照、不落校验结果",
+      "一处权威 + 一处渲染（同一批数据不许两处都存）",
+      "设计侧不复制事实（能由 DB 现算的字段不许落盘）",
+      "★ 前态判据（edge-absent 一类）不得用作「已满足」的判据"
+    ],
+    "state_machine": {
+      "states": ["candidate", "claimed", "done", "void", "superseded"],
+      "transitions": [
+        { "from": "candidate", "to": "claimed", "guard": "canClaim: 剔除前态判据后未必全过 && target 存在 && CAS(owner)" },
+        { "from": "candidate", "to": "void", "guard": "target 在 DB 里已不存在（★ 与『已满足』是两种不同结局）" },
+        { "from": "claimed", "to": "candidate", "guard": "显式 release || now - claimed_at > TTL" },
+        { "from": "candidate|claimed", "to": "done", "guard": "judgeExpectations 全过 && validateProgressEvidence 过" },
+        { "from": "candidate", "to": "superseded", "guard": "新卡 replaces: <old_id>" }
+      ]
+    },
+    "patrols": [
+      { "id": "lease_ttl", "red": "state=claimed && now-claimed_at>TTL && 无 release 事件 的卡数 > 0" },
+      { "id": "drift", "red": "候选且(剔前态后)全过（漏收口） 或 target 从 DB 消失（应转 void） 的卡数 > 0" },
+      { "id": "dual_write", "red": "overlay 与设计侧同名卡数 > 0 且任一边 updated_at 晚于另一边 ⇒ 权威不明" }
+    ],
+    "migration_order": ["设计侧落地", "读端切过去(读不到回退 overlay)", "测回退", "才退 overlay"],
+    "open_questions": [
+      "『已满足』的卡：自动收口(标 done) 还是只提示？—— 用户尚未拍",
+      "TTL 取值",
+      "void 的卡是否留档",
+      "discussion 版本链要不要可 diff（讨论本身进对拍？）"
+    ]
+  }
+}
