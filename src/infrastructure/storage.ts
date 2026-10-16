@@ -17,6 +17,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { DesignDSL } from '../domain/types.js';
 import { scanRevOf } from './index/scan_rev.js';
+import { renderLiveFromDb } from './index/live_render.js';
 
 /**
  * agent-io 包根：从模块自身位置**按路标上溯**（找 `package.json` 且 `name === PKG_NAME` 的目录）。
@@ -437,7 +438,14 @@ function readViewAtCandidates<T>(
 
 /** 读 `live` 视图（**按候选链找**，不猜单一根）。 */
 export function getLiveFeatureResolved(feature: string, explicit?: string): DesignDSL | null {
-  return readViewAtCandidates(feature, explicit, (b) => getLiveFeatureFile(feature, b), (b) => getLiveFeature(feature, b));
+  const fromFile = readViewAtCandidates(feature, explicit, (b) => getLiveFeatureFile(feature, b), (b) => getLiveFeature(feature, b));
+  if (fromFile) return fromFile;
+  // ★★★ 2026-10-16（第 2 步 (b)）：**文件不在 ⇒ 走"DB 现渲染"通路**（`index/live_render.ts`）。
+  //   · **文件存在时上面已 return ⇒ 现有读取行为一字未动**（判据②）；
+  //   · 文件缺失（含候选链每一处都没有）时才现渲染 —— 让"实际图"不再依赖那份冻结副本（判据①）；
+  //   · 库缺 / 该 feature 在库无行 / 根不在盘上 ⇒ `renderLiveFromDb` 返回 `null`（与改前"读不到"同语义，判据③）。
+  //   ★ 只读 cache.db（readOnly）；本函数不改任何落盘文件 ⇒ 可回滚（把这两行删掉即回到 (a) 后的状态）。
+  return renderLiveFromDb(feature);
 }
 
 /** 读 `baseline` 视图（**按候选链找**，不猜单一根）。 */

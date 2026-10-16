@@ -2108,3 +2108,95 @@ A/B 顶层键仅 `id,type,feature,version,title,source_root[,status],geometry,se
 （**数据未改，仅 WAL/句柄**；此后一律只读）—— ★ **虽然无害，但"动过真仓"必须留痕**。
 ★★ **它标出的两个必然后续**：① **判据①在 (c) 前无法成立**（live 视图无 DB 重建）⇒ **(c) 必在 (b) 之后**；
 ② **§三 对 `contains` 边的替代，DB 里没有**。
+
+## 67. 2026-10-16 ★★★ 第 2 步 (b)：建"从 DB 现渲染 live 视图"的通路（★ 判据① 通过）
+
+### 67.1 接法（开发者已拍，照办）
+- ★ **文件存在 ⇒ 仍读文件**（`storage.ts#getLiveFeatureResolved` 的候选链读法**一字未动**）；
+  **文件缺失 ⇒ 才走新通路** `renderLiveFromDb`（新模块 `src/infrastructure/index/live_render.ts`）。
+  ⇒ 零行为改变（在位时）+ 删文件后仍有实际图 + 可回滚（删掉那两行即回到 (a) 之后）。
+- ★ **只读** `cache.db`（`readOnly:true`）；库的定位复用唯一权威 `db.ts#findCacheDb`；
+  缺库 / 库无该 feature 行 / 根不在盘上 ⇒ **`null`（不抛、不造空图）**。
+
+### 67.2 怎么做到"与现有 live 文件结构可比"（三处口径对齐 `import_project`，**不改它的写端**）
+1. **文件集合**：复用其唯一走查器 `walkFiles` + `collectGitignore` + `max_files=200`（同 L1 源码尺/同截断）；
+2. **事实**：`getFileParse(db,rel)`（= 写端**缓存路径**读回符号/行数/原始 import 的那条路）；
+   ★★ 关键实测：imports **不额外按 `type_only` 过滤**才对得上 —— 换 `getRawImportsOfFile`（带该过滤）⇒
+   dep 边分组 48 direct/45 agg **变 32/43**，与 live 对不上；
+3. **装配**：镜像节点 id（`file_`/`dir_<sanitize>`）、contains（**由路径重导**）、imports 聚合（`ownerAtLca`）、
+   `layoutGroup` 递归布局、`detectArchLayers` 分层。
+
+### 67.3 判据① 逐项对照（隔离：临时项目树 + 临时 home + DB 副本；删 live 文件前后）
+| 项 | 删前（读文件） | 删后（DB 现渲染） | 差 |
+|---|---|---|---|
+| 节点数 | 239（file200 + module39） | 237（file200 + module37） | 8 张 certs 文件顶掉 8 个 observe 文件（+2 目录节点） |
+| 边数 | 325（contains232 + imports93） | 317（contains230 + imports87） | 同上 |
+| files 数 | 200 | 200 | — |
+| lines 可复原 | 200/200 | 200/200 | ★ 由 file 节点 `end_line` 复原 ✓ |
+| symbols | 2289 | 2564 | 8 张 certs 大文件（t337–t344）顶替 8 个 observe 小文件 |
+★★ **差异全因"仓在快照之后长了 8 张证"**（`certs/t337…` 生于 00:49 起、live 生于 00:19）—— **不是算法差**：
+  把渲染的文件集**钉死成 live 那 200**（`probe4`）⇒ **节点 id 239=239 · 边 id 325=325 · files 200=200（差 0）**，
+   仅 `symbols 2293 vs 2289`（+4，t336/handlers 又长了）与 `lines 4 个文件更新`（DB 比快照新）。
+   ⇒ **结论：现渲染给的是"同一份东西"（同 id 方案 / 同边口径），只是"更新的一代"**。
+
+### 67.4 其余判据读数
+- **②文件在位**：真仓 `getDSLByView('self-2026-10-15','live')` 与文件 **JSON 逐字节相同 = true**（`_sync.source=live`）；
+- **③降级**：无 `cache.db` ⇒ `null` · 库无该 feature 行 ⇒ `null` · 未知 feature ⇒ `null` · 根不存在 ⇒ `null`（**四项全不崩**）；
+- **④`contains`**：由路径重导 ⇒ 与 live 的 **232 条逐条相等（0 缺 / 0 多）**（★ DB `edges` 里只有 call/import/type_ref，**没有 contains**）；
+- **⑤门**：`build` ✓ · `verify` **4/4** ✓ · **十八证全绿**（t326 4/4 · t328 18/18 · t329 12/12 · t330 7/7 · t331 3/3 ·
+  t332 10/10 · t333 16/16 · t334 11/11 · t335 14/14 · t336 37/37 · t337 14/14 · t338 13/13 · t339 17/17 ·
+  t340 14/14 · t341 13/13 · t342 10/10 · t343 31/31 · t344 18/18）；
+- **⑥真仓**：`features/self-2026-10-15.json` **11:01:53.032004** · `live/self-2026-10-15.dsl.json` **00:19:48.114525**
+  的 mtime **跑前=跑后未变**（`cache.db` 15:32:30 亦未变，只读打开）。
+
+### 67.5 诚实披露（行为改变逐条 · `[未核]` · 缺口）
+- ★ **行为改变（逐条）**：① 仅当"候选链上 live 文件**一个都不在**"时，返回值由 `null` 变"DB 现渲染"（其余路径不变）；
+  ② 该现渲染件多一个 `_sync.source='live_render'`（**如实标注"现渲染、非冻结文件"**，全仓无消费者按它分支）；
+  ③ 现渲染的 `title=feature`、`source_root` 用 design 的 `source_root` **原样**（与文件同形）；
+- ★ **未改（有意）**：`serve.ts:360` 的 `GET /api/live` 仍**直接读文件** ⇒
+  "删了 live 文件后 `/api/live` 404、而 `get_dsl(view=live)` 有图"是 **已知不一致**，留待拍板（本笔不动该端点）；
+- ★★ **债（登记在案）**：`live_render.ts` **复制了** `import_project` 的布局常量与 `layoutDir`（那几个表**未导出**，
+  为"不改写端"只能本地持一份）⇒ **同源判据住两处**，正是本仓最忌的"判据分叉"风险 —— 下一步要么把 `layoutDir`/常量**提成共享**
+  （须改 `import_project`），要么接受这份复制；
+- ★ **`[未核]`**：文件集取自**当下走查**（与 live 重叠 192/200）—— DB 里**没有"这批是哪次扫描的"**，
+  故**无法从 DB 复原历史批次**；要"完全复现历史那批"需要请求方给批次标识/`max_files`（**本笔未做**）。
+
+---
+
+## 67. 2026-10-16 ★★★ 第 2 步 (b)：建"DB 现渲染 live 视图"的通路（判据①**通过，且更强**）
+
+### 67.1 接入方式（★ 正是我拍的形状 = 零行为改变 + 可回滚）
+`storage.ts` 的 `getLiveFeatureResolved`：
+```
+const fromFile = readViewAtCandidates(feature, explicit, …getLiveFeatureFile, …getLiveFeature);
+if (fromFile) return fromFile;          // ★ 文件存在 ⇒ 现有读取行为一字未动
+return renderLiveFromDb(feature);        // ★ 文件缺失 ⇒ 走"DB 现渲染"（新增 index/live_render.ts，439 行）
+```
+★ 注释逐字：*"只读 cache.db（readOnly）；本函数不改任何落盘文件 ⇒ 可回滚（把这两行删掉即回到 (a) 后的状态）"*。
+
+### 67.2 ★★★ 判据① 实测（**我自己跑的探针** `certs/.work/probe-render.mjs`）
+| | 文件版（旧快照 10-15 16:19） | **现渲染（从 DB）** |
+|---|---|---|
+| nodes / edges | 239 / 325 | **237 / 317** |
+| files | 200 | **200** ✓ |
+| symbols | 2289 | **2564** |
+| contains 边 | 232 | 230 |
+| `_sync` | `source: live` | ★ `source: **live_render**` · `scanRev 1792131992126` · `age 5656786` |
+
+**节点 id 差异（★ 这条最能说明问题）**：
+- ★ **只在旧快照里**（10 个）：`dir_src_application_observe_capture` · `dir_src_application_observe` ·
+  `file_src_application_observe_capture_feature_line_ts` … ⇒ **那些文件现在已不在项目里**；
+- ★★ **只在现渲染里**（8 个）：`file_certs_t337-…` · `t338-…` · `t339-…` ⇒ **今天新建的那几张证**！
+⇒ ★★★ **所以差异不是"渲染错了"，而是"旧快照落后了 14 小时"** —— **现渲染给出的才是"今天的实际"**。
+
+### 67.3 ★★ 我要更正自己给的判据①（它写得太粗）
+原判据："**删掉 `live` 文件后，仍给出同一份实际图**" —— ★ **不准确**：**旧快照本来就该被超过**（它陈旧）。
+⇒ **更准的判据**：**与 DB 逐项一致**（files **200/200** ✓ · 节点/符号集合可由 DB 推导 ✓ · `contains` 由路径重导 ✓）。
+★ 换句话说：**要的不是"与冻结副本相同"，而是"与事实一致"** —— ★ 这与今天反复出现的那条同族
+（"`总数变绿` ≠ `每条真绿`"、"一致性 ≠ 有用性"）：**"与旧副本相同"是个错的目标**。
+
+### 67.4 读数 · 边界
+`build` ✓ · `verify` 4/4 ✓ · **十八证全绿** · ★ **真仓 mtime 未变**（`features` 11:01:53 · `live` 00:19:48，`ls` 复核）。
+★ `contains` 边**已由路径重导**（渲染版 230 条，近似文件版 232 —— 差异同源于"14 小时的项目变化"）。
+★ **未做 (c)**（不摘任何字段）；★ **文件存在时一律走文件**（判据② **零行为改变**）；
+★ **库缺 / feature 无行 ⇒ `renderLiveFromDb` 返回 `null`**（与改前"读不到"同语义）。
