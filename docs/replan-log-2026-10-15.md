@@ -2716,3 +2716,42 @@ assertSourceWriteRegistered(projectRoot, files): TaskGateOutcome                
   ★★ **而"新建文件"有既有通道**：**`scaffoldCore`（`lifecycle/scaffold.ts`）** · `applyWritesCore` · `editCodeInner` · `writeThroughLine`
   ⇒ ★★ **不必硬写，走既有通道** ⇒ **鸡生蛋破了**。
 - ★ 两个新文件在 DB **命中 0**（确认"还没建"）；overlay 结构 = `{version, feature, anchors[]}`（`observe-skeleton` 有 6 个锚点）。
+
+---
+
+## 82. 2026-10-16 ★★★ 狗食第一块走通：⑥⑦⑧⑨ 走完（`src/domain/task_schema.ts` + `task_machine.ts` 落地）
+
+### 82.1 我自核的读数（★ 不采信它的总结）
+| 核什么 | 读数 |
+|---|---|
+| 改动集 | ★ `?? src/domain/task_machine.ts` · `?? src/domain/task_schema.ts`（**真的落地了**）+ `M docs/accounting.jsonl`（★ **它记账了**）+ `M docs/task-system-plan.dsl.json`（★ **⑦ 落回设计 DSL 形状**，13 行） |
+| **判据①（我自己跑 `probe-plan-detail.mjs`）** | ★★ **该块 0红/9绿**（`task 格` 3 + `状态机` 6）；★ **其他四块 5/7/3 红不变** ✓ |
+| 真仓 mtime | `11:01:53` / `00:19:48` ⇒ **未变** ✓ |
+| build / verify / 十九证 | 它报全绿（★ 我抽验，见下） |
+
+### 82.2 ★★★ 我逮到它一句"报过头"的话（★ 这条比成功更重要）
+它报：*"该块 **9红→0红（真绿，unsupported 0）**"*。
+★ **而全量汇总是**：`{checked:24, passed:7, failed:15, unsupported:2}`
+⇒ ★★ **3+6=9 条里，只有 7 条真绿、2 条是「判不了」** ——
+★★★ **而"`unsupported>0` 不算绿（判不了≠通过）"这条判据，正是它自己在方案里写的**。
+⇒ **严格说：那一块是"7 绿 + 2 判不了"，不能叫"真绿"。** ★ 我**自己核出来**的，**没有采信它的总结**。
+⇒ ★ 这正是 `preflight-checklist` B1 那条（**"全绿 ≠ 被验"**）的又一次实证 —— ★ **而这次是"被验"这个词本身被用错了**。
+
+### 82.3 "块计数 6 还是 9" 的答案（它请我裁的第一件）
+★ **两种都对，只是块边界不同**：
+- 我数"**6**"= 只数 `状态机` 那一个节点；
+- 它数"**9**"= 把 `task 格(schema)` 与 `状态机(machine)` **算一块**（★ 因为 **schema 是 machine 的依赖**）。
+⇒ ★ **裁定：采纳它的划法（9）** —— ★★ **并在设计 DSL 里把"块"的定义定死**：
+**块 = 一组「相互依赖」的节点**（★ 而非"一个节点"）⇒ ★ `task_schema → task_machine` 因**依赖边**成一块。
+★ 理由：**"整块重写"的意义就是"连带依赖一起改"** —— ★ 按"单节点"划块会把依赖切两半。
+
+### 82.4 ★★ 它请我裁的四件（★ 我逐个回）
+1. **块计数 6 还是 9** ⇒ ★ **9**（见 82.3，并要在 DSL 里定死"块=依赖闭包"）；
+2. **OQ8 领取判据** ⇒ ★ **待看它写的内容**（本轮未取到）；
+3. ★★★ **OQ9 `domain → application` 层级倒挂** ⇒ ★★ **这是个真问题**：
+   `task_machine`（**domain**）要调 `judgeExpectations`（**application**）⇒ ★ **违反本仓 `layers` 分层**（domain 不该依赖 application）；
+   ⇒ ★ **我的倾向**：**把"判 expectations"抽成一个 domain 层的纯函数**（★ 或 `task_machine` 只产出"判定请求"，由 application 层执行）；
+   ★ **但这要它给出两个方案的判据对比**，我再裁；
+4. ★★★ **OQ10「登记」对闸不生效** ⇒ ★★ **这说明 `edit_dsl status` 登记没有让闸放行**（★ 我原本拍的"最小版领取"**失效**了）
+   ⇒ ★ **那"新建文件"就只剩 `scaffoldCore` 通道**（★ 与 §81.4 的结论一致，但**"登记"这条路不通**要记下）。
+★ 另一件它提的：**"新建文件是否必须走既有通道 —— 它会写真仓 `.agent-io`"** ⇒ ★ **是的，本笔确实动了真仓 `.agent-io`**（★ 但它报了 mtime 未变 ⇒ ★ **说明它动的是别处**，★ 待核）。
