@@ -334,11 +334,13 @@
         "at": "2026-10-16",
         "method": "实跑 judgeExpectations（本笔亲手跑，非推断）",
         "checked": 24,
-        "passed": 0,
-        "failed": 24,
+        "passed": 9,
+        "failed": 15,
         "unsupported": 0,
         "conflicts": 0,
-        "note": "★ 24 条全红 = 24 条待实现的活。"
+        "note": "★ 第一块（file_src_domain_task_schema_ts + file_src_domain_task_machine_ts，共 9 条）已实现 ⇒ 该块 9 条全绿；余 4 块 15 条仍红（5+7+3）= 剩下的活。",
+        "note_readings": "★ 两处读数都要看（同一入口 certs/.work/probe-plan-detail.mjs，差别只在 root）：① 真仓 root：passed 7 / unsupported 2 —— 那 2 条是 call-exists 与 edge-exists，它们只取自索引（expectations.ts 的 call/edge 分支），新文件还没进真仓 cache.db ⇒ 判 unsupported（诚实的『判不了』，不算绿）；② 重算后的 root（临时目录 + 独立 AGENT_IO_HOME）：passed 9 / unsupported 0 ⇒ 真绿。★ 所以『9 绿』的前提是索引重算过（= 路线图第 ④ 步）。",
+        "stale_criteria": "★ 本字段改动后，同目录 red_green.red_now 的 pass_when（『passed==0 且 failed==checked』= 全红）对**第一块**已不成立 ⇒ 它现在只是『开工前』的判据，不再是『此刻』的判据。"
       }
     },
     "constructs_wiring": {
@@ -563,7 +565,10 @@
       "OQ4: discussion 版本链要不要可 diff（讨论本身进对拍？）；另：invariant『一处权威 + 一处渲染』落不成读数，也挂这条",
       "OQ5（新·本笔）：★ 剔前态判据后若**一条不剩（空集）**，『全过』算不算真？空集 = 真空真(vacuous truth) ⇒ 未领卡会被自动收口；另一解是空集判『判不了』。未拍 ⇒ t_claim / t_done_from_claimed 里的『剩余条数 > 0』只是我加的保护，需裁",
       "OQ6（新·本笔）：★ 我不同意把 OQ2『TTL 取值』当成**单一全局数**处理 —— TTL 是领主的续租超时，不同卡类（改一行 vs 重构一文件）不该共用一个数 ⇒ 建议改成按卡类分档；此条待裁，未并入 invariants",
-      "OQ7（新·本笔）：★ 接点⑤的**连线方向**未定 —— 是 live 重算**触发** patrol（live_render 侧调 patrolDrift），还是 patrol **自取** live（patrolDrift 调 renderLiveFromDb）？我按『patrol 自取』写了 call-exists，但若实际设计是前者，该断言方向反了、应挂到 live_render 那侧。未拍，未并入 invariants"
+      "OQ7（新·本笔）：★ 接点⑤的**连线方向**未定 —— 是 live 重算**触发** patrol（live_render 侧调 patrolDrift），还是 patrol **自取** live（patrolDrift 调 renderLiveFromDb）？我按『patrol 自取』写了 call-exists，但若实际设计是前者，该断言方向反了、应挂到 live_render 那侧。未拍，未并入 invariants",
+      "OQ8（新·第一块落地时撞出）：★ t_claim 的 guard 第 2 条与 t_done_from_claimed 的 guard 第 2 条**同形**（都是『剔前态判据后剩余全过 且 条数 > 0』）⇒ 领取闸与收口闸用**同一把尺**，于是 canClaim 判『该收口』而不是『可领』。而 docs/plan-task-system.md 的表格写的是『剔除前态判据后 期望**未**全过』—— 与 t_claim 的第 2 条**相反**，两处不能同时成立。★ 本笔的 task_machine.canClaim 按 t_claim 逐字实现（『全过』），并把这条张力写成代码注释 + 本 OQ。需裁：领取的判据到底是『未全过（还有活）』还是『全过（可收口）』；若为前者，t_claim 第 2 条要改，且『漏收口』判据得另立一个函数（patrol 的 missed_close 才该用『全过』）。",
+      "OQ9（新·第一块落地时撞出）：★ t_claim / t_done_from_claimed 里的 canClaim→judgeExpectations，把一条**反向依赖**写成了硬期望 —— src/domain/task_machine.ts（arch_layer: core）必须调用 src/application/design/intent/expectations.ts 的 judgeExpectations。而本仓既有铁律是『**domain 不许 import infrastructure**』（src/domain/expectation.ts 文件头逐字：判定器之所以不住 domain，就是因为那边不许 import infrastructure）⇒ domain→application→infrastructure 是**层级倒挂**。本笔照样实现了（用户裁定『语义必须照设计 DSL』），但这是设计 DSL 自己要修的一处：三选一 —— ① 把 canClaim 挪到 application 层（core 只剩纯判据编排）；② 定义端口（domain 声明 `JudgePort`，application 实现并注入）；③ 接受倒挂并在 DSL 里写明豁免。未拍。",
+      "OQ10（新·第一块落地时撞出）：★ 『登记 = 临时版 claim』这条**对闸不生效** —— 实测（certs/.work/probe-block1-claim.mjs）：`seedOverlayFromDsl`（src/domain/overlay.ts:631-633）把几何节点的 `status` **播种成** overlay 锚点的 `progress`，而闸的『未登记』判据（src/application/write_gate.ts:652）只问 `progress !== undefined` ⇒ 一份刚播种的 overlay 里**每个节点都已『登记』**（哪怕从没调过 edit_dsl）⇒ 那条分支对已播种的 feature 是装饰。要让它有牙，需区分『播种来的 progress』与『人显式登记的 progress』（如播种不写 progress、或加 `progress_source`）。未拍。"
     ]
   }
 }
