@@ -596,8 +596,11 @@ function groupExpectationFails(
  *        配对永远是 ①②**两份同性质 DSL 按指代对齐**（★ 已实现的用扫描给的 `id`、**未实现的用名字/路径**，
  *        身份规则口径唯一住在 `domain/design_sheet.ts#designSheetRef`，本入口不改）。
  *
- * ## 输出三类差异（判据住在 `domain/design_sheet.ts`，此处只渲染 + 报账）
+ * ## 输出四类差异（判据住在 `domain/design_sheet.ts`，此处只渲染 + 报账）
  *   · **指代相同但属性差** —— 两边都有、至少一个属性不同（逐字段给两边原值）
+ *   · ★★ **已认亲 ⇒ 赋予同一个 ID** —— 设计侧**无 id** 的条目（如 `meta.goals` 里 `description:"…/thing.ts"`）
+ *     按**路径/名字**在 live 里认出**已存在**的节点 ⇒ 带出它认到的 live `id`，**不再计入「要实现」**
+ *     （= "要实现"**自己收口**：东西做好了它就不再挂着；认不到 ⇒ 仍留在下一类）
  *   · **只在设计里 ⇒ 「要实现」** ★ 这正是"挪建筑"出来的任务（列**指代**：id 或 名字/路径）
  *   · **只在 live 里 ⇒ 「未纳入设计」**（提示，未必是错）
  *
@@ -646,6 +649,13 @@ export const diffDesignSheetHandler = wrapData(async (a) => {
       for (const at of s.attrs) {
         lines.push(`    ${at.key}: 设计=${JSON.stringify(at.design)} · live=${JSON.stringify(at.live)}`);
       }
+    }
+  }
+  if (d.resolved.length) {
+    lines.push(`\n══ 已认亲 ⇒ **赋予同一个 ID**（${d.resolved.length}）══`);
+    for (const r of d.resolved) {
+      const by = r.matched_by === 'path' ? '路径' : '名字';
+      lines.push(`· ${r.ref} ⇒ live id = ${r.id}（按${by}认亲；★ 不再计入「要实现」）`);
     }
   }
   if (d.design_only.length) {

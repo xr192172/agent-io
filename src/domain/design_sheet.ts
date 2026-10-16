@@ -16,10 +16,20 @@
  *   ★★ 且未实现的条目**根本不进 `geometry.nodes[]`**（见 {@link designSheetPendingRefs} 上方）：
  *      `nodes[]` 是"**已实现的结构**"，而 `validateDSL` 要求 `Node.id`
  *      （`schema/design_dsl.schema.json` → `definitions.Node.required=["id"]`）—— 两条都指向同一件事。
- *   三类判定（**语义不变**，只换指代）：
+ *   四类判定（前三类**语义不变**，只换指代；第四类是 2026-10-16 补的收口）：
  *     · 两指代相同 ⇒ **比属性**（差异块）—— 只列**有差**的（逐字段给两边原值）；
  *     · ★ **只在设计里** ⇒ 判为「**要实现**」（这正是"挪建筑"出来的任务）；
- *     · **只在 live 里** ⇒ 判为「**未纳入设计**」（提示，未必是错 —— 扫描看清了、设计还没写进去）。
+ *     · **只在 live 里** ⇒ 判为「**未纳入设计**」（提示，未必是错 —— 扫描看清了、设计还没写进去）；
+ *     · ★★ **设计侧"无 id"的条目，其实在 live 里已经存在**（靠"名字/路径"认出来）⇒ 判为
+ *       「**已认亲**」（{@link ResolvedDiff}，**带上它认到的 live 节点 id**），**不再计入 `design_only`**。
+ *
+ * ## ★★ 第四类的病（用户逐字，本类存在的全部理由）
+ *   *"对拍的话，不应该是发现有一模一样的节点，然后一边是已实现一边是未实现，就是说一边有 ID 一边没 ID，
+ *     就自动把这个一模一样的节点赋予实际的 ID 吗？… 只有这几个点的 ID 没定好，但它们的形状是一模一样的，
+ *     能不能拍出来？然后赋予同一个 ID"*
+ *   ⇒ 旧口径**只看 id**：无 id 条目（住 `meta.goals`）的指代是"名字/路径"，**永远 ≠ live 的 id**
+ *     ⇒ 那条**永远被判成"要实现"**（东西做好了它还挂着 —— **"要实现"永远不会自己收口**）。
+ *   ⇒ 本类**照 `overlay` 对账的既有口径办**（认亲用什么键、认不到怎么办，见 {@link diffDesignSheet} 内注释）。
  *
  * ## 本模块是**纯函数**（无 IO、不落盘、不新增存储）
  *   三份的"读"在 `application/design/handlers.ts` 的 `diffDesignSheetHandler`（infrastructure 侧存储见
@@ -28,6 +38,7 @@
  */
 import type { Node } from './geometry.js';
 import type { DesignDSL } from './types.js';
+import { nodePath } from './overlay.js';
 
 /**
  * 参与对拍的节点属性 —— ★ **显式清单**（只比"设计上说得清"的那几个字段）。
@@ -67,7 +78,23 @@ export interface SameIdDiff {
   attrs: NodeAttrDiff[];
 }
 
-/** 对拍结果（三类差异 + 计数） */
+/**
+ * ★★ 第四类：**设计侧"无 id"的条目，在 live 里其实已经存在**（靠"名字/路径"认出来）⇒ 「**已认亲**」。
+ *
+ * ★ 与 `overlay.reconcileOverlay` 的"认亲"同族（`domain/overlay.ts:439` 按 `path` 认亲、
+ *   `:442-444` 路径漂移时按签名认亲、`:447-451` 认不到 ⇒ 标 `orphaned` 不静默丢）——
+ *   本类**照同一口径办**，只换键（这里是 `path`/`name`）。★ 用户原话："**赋予同一个 ID**" ⇒ 输出带 `id`。
+ */
+export interface ResolvedDiff {
+  /** 设计侧**无 id** 条目的**指代**（名字/路径；与 {@link designSheetRef} 同口径） */
+  ref: string;
+  /** ★ 认到的 **live 节点 id**（这就是"赋予同一个 ID"的那个 id） */
+  id: string;
+  /** 认亲所用键：`path`（路径优先）| `name`（名字兜底）—— 对齐 `overlay` 的"路径优先、认不到再换键" */
+  matched_by: 'path' | 'name';
+}
+
+/** 对拍结果（四类差异 + 计数） */
 export interface DesignSheetDiff {
   /** ① 指代相同但属性有差：两边都有、且至少一个属性不同（★ 只含有差的） */
   same_id: SameIdDiff[];
@@ -76,10 +103,17 @@ export interface DesignSheetDiff {
    * ★ 列的是**设计侧的指代**：`nodes[]` 里已实现的对象 = `id`（见 {@link designSheetRef}）；
    *   **未实现的条目 = 名字/路径**（见 {@link designSheetPendingRefs}，★ 它**不住 `nodes[]`**，
    *   住 `meta.goals`）—— ★ 不给"想要的东西"自造 id。
+   * ★★ 第四类（{@link ResolvedDiff}）的条目**已从此列移出**（它们不再"只在设计里"）。
    */
   design_only: string[];
   /** ③ 只在 live 里 ⇒ 「未纳入设计」（live 全是已实现的 ⇒ 列 `id`） */
   live_only: string[];
+  /**
+   * ④ ★★ **已认亲**：设计侧**无 id** 的条目按"名字/路径"在 live 里认到了**已存在**的节点
+   * （★ 带上它认到的 live 节点 `id`）—— 这正是"要实现"**自己收口**的那一类。
+   * ★ 判据：**认不到就仍留在 `design_only`**（**不**把认不出的一律当已实现）。
+   */
+  resolved: ResolvedDiff[];
   counts: {
     /** 设计图节点数 */
     design: number;
@@ -158,20 +192,58 @@ export function designSheetRef(n: Node): string {
  *   于是**不进** `只在设计里(要实现)`（既有带 id 的目标**不被误伤**，读数见 `certs/t339-*.mjs` 判据 ④）。
  */
 export function designSheetPendingRefs(dsl: DesignDSL | null | undefined): string[] {
-  const meta = (dsl as unknown as { meta?: { goals?: unknown } } | null | undefined)?.meta;
-  const goals = meta?.goals;
+  // ★ 口径 = {@link goalPendingEntries}（住 `meta.goals` 的那组）—— 与本函数原语义逐字相同
+  return goalPendingEntries(dsl).map((e) => e.ref);
+}
+
+/**
+ * 设计侧**无 id** 条目的**结构化**形状 —— ★ **认亲（第四类）与"要实现"（第二类）共用的唯一口径**。
+ *   · {@link PendingEntry.ref} = 指代（{@link designSheetRef} 同款：路径优先、名字兜底）；
+ *   · {@link PendingEntry.path} / {@link PendingEntry.name} = **认亲的两个键**（见 {@link diffDesignSheet}）。
+ */
+interface PendingEntry {
+  /** 指代（列进 `design_only` 的那个字符串） */
+  ref: string;
+  /** 路径位：`description`（本仓把仓库相对路径放此处：`overlay.nodePath` —— `domain/overlay.ts:365-370`） */
+  path: string;
+  /** 名字位：goal 的 `title` / node 的 `label`（缺则 `title`）—— 对齐"名字兜底" */
+  name: string;
+}
+
+const trimStr = (v: unknown): string => (typeof v === 'string' ? v.trim() : '');
+
+/** 取 `meta.goals`（本仓**已声明**的无类型袋子里的既有住处；非数组 ⇒ 空） */
+function goalsOf(dsl: DesignDSL | null | undefined): Array<Record<string, unknown>> {
+  const goals = (dsl as unknown as { meta?: { goals?: unknown } } | null | undefined)?.meta?.goals;
   if (!Array.isArray(goals)) return [];
-  const out: string[] = [];
-  for (const g of goals) {
-    if (!g || typeof g !== 'object') continue;
-    const o = g as Record<string, unknown>;
-    const id = typeof o.id === 'string' ? o.id.trim() : '';
-    if (id) continue; // ★ 已实现：由 `designSheetRef`/扫描给的 id 指代，不算"要实现"
-    const desc = typeof o.description === 'string' ? o.description.trim() : '';
-    const title = typeof o.title === 'string' ? o.title.trim() : '';
-    out.push(desc || title || '<无名占位:goal>');
+  return goals.filter((g): g is Record<string, unknown> => !!g && typeof g === 'object');
+}
+
+/** 设计侧**无 id** 的条目：住 `meta.goals` 的那一组（`title` 名字 / `description` 细节） */
+function goalPendingEntries(dsl: DesignDSL | null | undefined): PendingEntry[] {
+  const out: PendingEntry[] = [];
+  for (const o of goalsOf(dsl)) {
+    if (trimStr(o.id)) continue; // ★ 有 id ⇒ 指的是"已实现的对象"，不是"要实现"
+    const desc = trimStr(o.description);
+    const title = trimStr(o.title);
+    out.push({ ref: desc || title || '<无名占位:goal>', path: desc, name: title });
   }
   return out;
+}
+
+/** 设计侧**无 id** 的条目：住在 `nodes[]` 里但**没有 id** 的节点（正常过不了 `validateDSL`；纯函数仍自洽） */
+function nodePendingEntries(dsl: DesignDSL | null | undefined): PendingEntry[] {
+  const out: PendingEntry[] = [];
+  for (const n of nodesOf(dsl)) {
+    if (trimStr(n.id)) continue;
+    out.push({ ref: designSheetRef(n), path: trimStr(n.description), name: trimStr(n.label) || trimStr(n.title) });
+  }
+  return out;
+}
+
+/** 设计侧**全部**"无 id"条目（两组之并）—— 第四类**认亲**的输入 */
+function pendingEntries(dsl: DesignDSL | null | undefined): PendingEntry[] {
+  return [...goalPendingEntries(dsl), ...nodePendingEntries(dsl)];
 }
 
 /**
@@ -207,21 +279,71 @@ export function diffDesignSheet(design: DesignDSL, live: DesignDSL): DesignSheet
 
   // ★ 只排序输出（便于人读与逐字比对），**不改变**配对语义
   same_id.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+
+  // ═══ ④ 认亲（第四类）：设计侧**无 id** 的条目，靠「名字/路径」在 live 里认出**同一个东西** ═══
+  //
+  // ## ★ 照 `overlay.reconcileOverlay` 的既有口径办（不是新造）
+  //   · **键**：路径优先、认不到再换键 —— `overlay.ts:439` 先按 `path` 认亲（`byPath.get(a.path)`）、
+  //     `:442-444` 路径漂移时再按 `signature` 认亲（`bySig.get(a.signature)?.[0]`）；
+  //   · **认不到怎么办**：不冒充命中 —— `overlay.ts:447-451` 认不到 ⇒ 标 `orphaned`（**不静默丢**）。
+  //     本类**同款**：认不到 ⇒ **仍留在 `design_only`（要实现）**，**绝不**把认不出的一律当已实现。
+  //   · live 侧的"路径"用**同一把** `nodePath`（`overlay.ts:365-370`）算，保证两边同口径。
+  //
+  // ## 键（开发者已拍，不许自行改）
+  //   · **路径**：设计侧条目的 `description` ↔ live 节点的 `nodePath(n)`（file ⇒ `description`=rel path）；
+  //   · **名字兜底**：设计侧条目的 `title`/`label` ↔ live 节点的 `label` / `title`。
+  const entries = pendingEntries(design);
+  const lByPath = new Map<string, Node>();
+  const lByName = new Map<string, Node>();
+  for (const n of lNodes) {
+    const p = nodePath(n).trim();
+    if (p && !lByPath.has(p)) lByPath.set(p, n);
+    for (const raw of [n.label, n.title]) {
+      const t = trimStr(raw);
+      if (t && !lByName.has(t)) lByName.set(t, n);
+    }
+  }
+  const resolved: ResolvedDiff[] = [];
+  const resolvedRefs = new Set<string>();
+  for (const e of entries) {
+    if (resolvedRefs.has(e.ref)) continue; // 同名指代只认一次（首个命中为准）
+    if (lById.has(e.ref)) continue; // 指代本身就是 live 的 id ⇒ 归 `same_id`，不重复认亲
+    let hit = e.path ? lByPath.get(e.path) : undefined;
+    let matched_by: ResolvedDiff['matched_by'] = 'path';
+    if (!hit && e.name) {
+      hit = lByName.get(e.name); // ★ 名字兜底（对齐 overlay 的"路径认不到再换键"）
+      matched_by = 'name';
+    }
+    if (hit) {
+      resolved.push({ ref: e.ref, id: hit.id, matched_by }); // ★ 「赋予同一个 ID」
+      resolvedRefs.add(e.ref);
+    }
+  }
+  resolved.sort((a, b) => (a.ref < b.ref ? -1 : a.ref > b.ref ? 1 : 0));
+
   // ★ 「只在设计里」列的是**设计侧的指代**：`nodes[]` 里已实现的对象 = id；
   //   **未实现的条目 = 名字/路径**（★ 它**不住 `nodes[]`**，住 `meta.goals` —— 见 {@link designSheetPendingRefs}）
-  const designRefs = new Set<string>([...dByRef.keys(), ...designSheetPendingRefs(design)]);
-  const design_only = [...designRefs].filter((ref) => !lById.has(ref)).sort();
+  //   ★★ 第四类（`resolvedRefs`）**已认亲 ⇒ 不再计入**（这就是"要实现"自己收口：做好了它就不再挂着）
+  const designRefs = new Set<string>([...dByRef.keys(), ...entries.map((e) => e.ref)]);
+  const design_only = [...designRefs].filter((ref) => !lById.has(ref) && !resolvedRefs.has(ref)).sort();
   const live_only = [...lById.keys()].filter((id) => !designRefs.has(id)).sort();
 
-  return { same_id, design_only, live_only, counts: { design: dNodes.length, live: lNodes.length, same_identical: sameIdentical } };
+  return {
+    same_id,
+    design_only,
+    live_only,
+    resolved,
+    counts: { design: dNodes.length, live: lNodes.length, same_identical: sameIdentical },
+  };
 }
 
-/** 三类差异的**一行摘要**（渲染用；判据不在此处） */
+/** 四类差异的**一行摘要**（渲染用；判据不在此处） */
 export function diffDesignSheetLine(d: DesignSheetDiff): string {
   const attrs = d.same_id.reduce((n, s) => n + s.attrs.length, 0);
   return (
     `设计图 ${d.counts.design} 节点 · live ${d.counts.live} 节点 ⇒ ` +
     `同名属性差 ${d.same_id.length} 个节点/${attrs} 个属性 · ` +
-    `只在设计里（要实现）${d.design_only.length} · 只在 live 里（未纳入设计）${d.live_only.length}`
+    `只在设计里（要实现）${d.design_only.length} · 只在 live 里（未纳入设计）${d.live_only.length} · ` +
+    `已认亲（赋予同一个 ID）${d.resolved.length}`
   );
 }
