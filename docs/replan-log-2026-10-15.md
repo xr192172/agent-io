@@ -1359,3 +1359,37 @@ MCP 传输/schema 层 · daemon 转发分支；★ **六种 kind 本节点只用
 补了 5 个**同 id 的几何节点**；`src/` 零改动（`git status` 只有新证 `?? certs/t342-…mjs`）。
 ### 46.4 读数
 `t342` **10/0** · `build` ✓ · `verify` 4/4 ✓ · 既有十五证全绿（据它报）。
+
+---
+
+## 48. 2026-10-16 ★★★ 查清 §47.3 那个 `[未核]` —— **答案是打我自己脸的**
+
+### 48.1 真相：**真仓对拍不是 `passed=6 failed=0`，而是「通过 4 · 不满足 2」**
+`consistentHandler` 的 `text` 里「── 验收执行（决策卡上的 expectations）──」逐字：
+```
+  检查项 6 条 · **通过 4** · **不满足 2** · **判不了 0**
+    ❌ [file_src_application_design_derive_opl_ts] call-exists  opl.ts :: oplIntegrate() → assertContractNotFromCode()
+        … **没有**调用…（它实际调用的是：readState, implRoot, slugify, writeState, deriveMindMap, getDSL, saveDSL）
+    ✅ rename_file.ts   renameFileCore()  → assertSourceWriteRegistered()（L526）
+    ✅ rename_files.ts  edge-exists
+    ✅ rename_files.ts  renameFilesCore() → assertSourceWriteRegistered()（L140）
+    ✅ symbol_move.ts   moveSymbolCore()   → assertSourceWriteRegistered()
+```
+⇒ ★★★ **§47.2 里我引用的 `passed=6 failed=0` 是错的**（那是子代理回报的数字，**我没核就引用了**）——
+**我犯的正是我自己刚总结的那条错：`总数变绿` ≠ `每一条都真的绿了`，而且我连"总数"都没核。**
+⇒ 那 2 条不满足的（`opl.ts` / `overlay.ts`）**正是"目标符号不存在、需新建函数"的那两条** ⇒ 与我的判断一致：
+**它们没绿**，是**真任务**（按我划的边界，**不许拿空壳去凑**）。**这才是"按图施工"剩下的活。**
+
+### 48.2 顺带第二个发现：机器可读结果**没有独立字段**
+`consistencyHandler` 的返回值 **`KEYS = ['text']`** —— `expectation_results` **不在返回值里**，
+它被**内联成 `text` 里的一行 JSON**（`{"fileResults":[…]}`）⇒ ★ **这正是"`0/0/0` 会被读成'查过、没事'"那个病的机制**：
+  要么人读文本、要么自己去 text 里刨那行 JSON（**脆**）。
+
+### 48.3 ★ 该记的教训（两条）
+1. ★★★ **不许引用别人的数字而不核**：`passed=6 failed=0` 我引了两轮，**直到自己跑探针才发现是 `4/2`** ——
+   这与"夹具读数当真仓读数"同族，但更严重：**那是别人给的、我未经核实的读数**；
+2. ★★ **"总数变绿"要核"分母是谁"**：这里的分母是 **6 条期望**（不是 479 个文件、也不是"全部"），
+   而系统自己早就写着：*"没得比 ⇒ 给不出结论 … 报告里若只剩 `0/0/0` + 一句'无待办'，会被读成'查过、没事' —— **而真相是"什么都没查"**"*。
+
+### 48.4 真仓对拍的**真实终值**
+**`检查项 6 · 通过 4 · 不满足 2 · 判不了 0`**（`rename_*` 三条已绿；剩 `opl.ts` / `overlay.ts` 两条 = **真任务，需新建守卫**）。
