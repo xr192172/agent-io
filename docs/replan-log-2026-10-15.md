@@ -2361,3 +2361,54 @@ t336 37/37 · t337 14/14 · t338 13/13 · t339 17/17 · t340 14/14 · t341 14/14
 - ★ **已在仓外重新 build**（`dist` 产物含 `scanRev` + `renderLiveFromDb`，mtime 19:37:08）⇒ **工具层现在看到的是今天的代码**；
 - ★ **本笔零改动**（`git status` 干净）；★ 真仓 `cache.db` **只读**打开。
 - ⇒ ★★ **给入口加一条**：**决策卡与现状脱节**是个真缺口（**有决策卡 ⇒ 必须能判"它是否已被满足"**，否则它永远显示为欠账）。
+
+---
+
+## 72. 2026-10-16 ★★★ 用户的统一："决策卡 = 候选任务" —— 实测今天**已存在大半**，缺的一环只是"接一根线"
+
+### 72.1 用户原话（逐字）
+*"这个决策卡实际上和我们的**任务系统**不是一样的吗？就是他做好决策，就是**发布任务**嘛。或者说它是**任务的上一步**，
+它是那个**待领取的任务 / 待发布的任务**，它是**候选任务**，然后**有人要领任务的时候才把它真正发布出去**。
+或者说它本身就是任务，然后**接入任务系统之后有人去领取它，然后它就固定下来**。
+那个**做最后一次校验**（就是这个角色看看**有没有过期**），**校验确定这个任务是对的之后领取这个任务，然后去做，
+做完之后拿这个任务对拍**。"*
+⇒ 我的复述：**决策卡 = 候选任务（待领取）⇒ 领取时校验（过期？还成立吗？）⇒ 通过则锁定 ⇒ 去做 ⇒ 做完用【它自带的期望】对拍**。
+
+### 72.2 ★★ 这个统一**顺手解掉了我上一条的担忧**
+我说"决策卡会 stale" ⇒ ★ **错了**：**候选任务不需要"一直是最新的"** —— **它只在"被领取的那一刻"被判真伪**。
+⇒ ★★ **"决策卡 stale"根本不是 bug，是"它还没被领"**（★ 我上一条把它当成了"报告"，而它是"候选任务"）。
+
+### 72.3 ★★★ 实测：今天已存在多少（逐条带读处）
+| 项 | 判定 | 读处 / 证据 |
+|---|---|---|
+| **"任务"是对象吗** | ★ **部分**（有载体，无"任务"命名） | 载体 = **overlay 锚点**（`get_dsl query=pending` 直读 `<feature>.overlay.json` 锚点）；字段 `path/kind/decision/progress/progress_evidence` ⇒ **有 id(=node_id) · 有状态(`progress`) · 有期望(`decision.expectations`) · 无领取人** |
+| **"领取(claim)"** | ⚠ **不存在** | `progress = draft\|in_progress\|done`，唯一写端 `edit_dsl{type:'status'}`→`updateStatus`（`status_tools.ts:63`）；★ **无 claim/lock/assignee**；★ 辅助 grep 全仓**无 claim 语义**；★ `in_progress` 语义是"**已登记**"**非"被认领锁定"** |
+| **"领取前校验"** | ⚠ **部分 —— 有闸，但判据不是"期望是否满足"** | 任务闸 `assertSourceWriteRegistered`（`write_gate.ts:543`）：①未登记不许落盘（`progress` undefined ⇒ 抛，`:652/673`）②前置闸 `requires`（`:611`/T332）⇒ ★ **但它只读 `progress`，不判 `expectations`** |
+| **"做完对拍"** | ✅ **已存在，而且已在用** | `judgeExpectations`（`intent/expectations.ts:195`，经 `handlers.ts:52`）+ `done` 的 evidence 闸 `validateProgressEvidence`（`overlay.ts:104` 三档）；★ **实例**：`rename_file`/`symbol_move` 锚点的 `progress_evidence.kind='reading'` 记着 **"真仓对拍 checked=6 passed=3 failed=3"** |
+
+### 72.4 一条真实决策卡的字段（节点 `file_src_domain_overlay_ts`）
+`node_id` · `label` · `summary` · `expectations[]` · `acceptance` · `updated_at` · `thread:null` · `tags:[]` ·
+`status:"active"` · `revisions:0` · **`author:null` · `agent:null`**；几何节点另有 `type:file` · `status:"in_progress"` · `arch_layer:service`。
+★ 逐字段判"像不像任务"：
+- **像"状态"** ⇒ ★★ **有两个、且不统一**：`decision.status`(active/draft) 与 `node.status`/锚点 `progress`(draft/in_progress/done)；
+- **像"期望"** ⇒ `expectations[]`（**六类机器可判**：`file-exists`/`symbol-exists`/`signature-matches`/`edge-exists`/`edge-absent`/`call-exists`）+ `acceptance`（人读一句）；
+- **像"领取人"** ⇒ ★ **没有**（最接近 `ProgressEvidence.by`(human|llm)，但那是"**作证者**"非"**领取者**"）；
+- **"过期"** ⇒ ★ **无字段**，只有 `updated_at`。
+
+### 72.5 `pending` 那 3 条（原文）
+```
+[{"id":"file_src_application_design_derive_opl_ts","path":"src/application/design/derive/opl.ts","progress":"in_progress"},
+ {"id":"file_src_application_refactor_rename_rename_files_ts","path":"src/application/refactor/rename/rename_files.ts","progress":"in_progress"},
+ {"id":"file_src_domain_overlay_ts","path":"src/domain/overlay.ts","progress":"in_progress"}]
+```
+⇒ ★ **`pending ⊂ decisions`**（同 node_id 集）；overlay **5 个锚点与 5 条决策卡 1:1 同节点**；
+★ 5 条里 `rename_file`/`symbol_move` 已 `progress=done` ⇒ **余 3 条进 pending**（★ **正是我们登记过的那三个**）；
+⇒ ★★ **3 条都能被判满足**（kind = `call-exists` · `edge-exists`+`call-exists` · `symbol-exists`，**均机器可判**）。
+
+### 72.6 ★★★ 「领取时校验」缺口清单（★ 最小补充）
+1. ⚠ **【根本没有】"领取"动作与状态位**（无 claim/owner/assignee）⇒ 需**新增领取动作 + owner 字段 + 状态迁移**（候选⇒认领）；
+2. ★★★ **【缺失接点】领取闸未判 `expectations`** —— ★ **`judgeExpectations` 是独立工具，不在 `assertSourceWriteRegistered` 的路径上**
+   ⇒ ★★ **最小补充只有一句：在闸里对目标节点调一次「对着 DB 判 expectations」**（**复用现成 `judgeExpectations`，不新造**）；
+3. ⚠ **【根本没有】"过期/是否已满足"判据**（无 TTL/staleness）⇒ 需一条"`updated_at` 早于最后一次 import/扫描 ⇒ 标记陈旧"的检查；
+4. ★ **【部分】`done` 的 evidence 闸已有**（`overlay.ts:104` 三档）⇒ **可复用**为"校验通过才可 `done`"的落点，**不必新造**。
+⇒ ★★★ **所以这个统一的落地成本，可能只是"把两样既有的东西连起来"**（闸 ← `judgeExpectations`）。
