@@ -1490,3 +1490,34 @@ MCP 传输/schema 层 · daemon 转发分支；★ **六种 kind 本节点只用
 ### 51.5 改动与读数
 `src/domain/design_sheet.ts`（+160/−20）· `src/application/design/handlers.ts`（+12/−）· 新证 `t344`。
 ★ 我看到的所有断言**全 ✓**；★ **汇总行被 `head` 截断、我没抓到**（如实记）—— ★ 待下次核那句 `════ 汇总`。
+
+---
+
+## 52. 2026-10-16 ★★★ 「让 `edit_dsl` 写设计侧」—— **先量现状后又救了一次**：这是架构手术，不是小改
+
+### 52.1 ★★ 新纪律 + "先量现状"共同起了作用：子代理**按阈值停手**
+(a) 既有解法 4 处 ✓：`overlay.ts:411 reconcileOverlay`（按 `path` 认亲 `:439`／换 `signature` `:443`／不认识标 `orphaned` `:449`）+
+`:522 applyOverlay` + `:603 seedOverlayFromDsl`（**权威写一处、另一处是投影**）· `storage.ts` 三住处分工
+（`getDSL:634` 合并视图 / `saveLiveFeature:144` `live/` / `saveDesignSheet:202` `design/`）·
+`import_project.ts:1045-1064`（重建前**点名要丢什么** + 三选一）· `design_sheet.ts:295-321`（认亲键序）。
+(b) ★★★ **现状读数：十七证里 4 张依赖"`edit_dsl` 写合并视图"** ⇒ **>2 张 ⇒ 按纪律停手、一行 src 未改**：
+`t329`(`:105/:108` `node/update`+`decision`，`:89` 读回) · `t340`(`:183/:190`、`:263/:267`，且 `:277` 靠闸回读才判"新增 anchor_broken") ·
+`t341`(`:244/:250`) · `t342`(`:236/:241`、`:255/:259`)。
+
+### 52.2 ★★★ 决定性机制读数（探针同一次读数里定义与字段同现）
+- `saveDesignSheet` → `.agent-io/design/p.dsl.json`；`getDesignSheet('p').nodes=['node_x']` 而 **`getDSL('p') = null`**；
+- `saveDSL` → `.agent-io/features/p.json`；`getDSL('p').nodes=['node_x']`；
+- ★★ **`getDSLByView('p','design')` = `getDSL`**（`storage.ts:687/694`）⇒ **写进设计图的节点，读侧一律读不到**；
+- ⇒ **回执（`handlers.ts:373/464`）· 自洽闸（`update_feature.ts:152/223/232`）· overlay 同步（`:368`）· `touchedNodeIds`（`:340`）全读合并视图**。
+
+### 52.3 ★★★ 我的路线裁定：走 **(B) 把读侧也接上设计图**（不选双写）
+- **(A) 双写**（同时写设计图 + 合并视图）：短期零破坏，但★ **它造出"两处住处"** ——
+  **正是用户问了三轮的那个病**（"为什么还是同一个文件 + 一个补丁"）⇒ **不能用**；
+- ★★ **(B) `getDSL` / `get_dsl(view:'design')` 优先读 `design/<f>.dsl.json`（存在时）** ⇒ **设计图这才成为本体**；
+  ★ 代价：那 4 张证**必须改断言** —— 但这是**合法的**（**行为确实变了**；它们写死的是**旧行为与旧假设**，不是判据）
+  ⇒ ★ **规矩：逐张说明"改的是假设、不是判据"**，并**保留每张证真正要证的东西**。
+- ★ 它也如实报了一个**超出范围的发现**：`design/<f>.dsl.json` **今天无任何生产写者**
+  （`saveDesignSheet` 只被 `t337/t338/t339/t344` 调用），`get_dsl` 也没接它 ⇒ 这笔"要么动读侧、要么双写"，**是个大手术**。
+
+### 52.4 读数（它给的改前基线，可直接对照）
+十七证全绿 · ★ **`t344` `════ 汇总：PASS=18 FAIL=0`**（上一轮被 `head` 截断的那句，**补上了**）· **本轮零改动**（`git status` 干净）。
