@@ -1923,3 +1923,61 @@ A/B 顶层键仅 `id,type,feature,version,title,source_root[,status],geometry,se
 **没有"vs cache.db 落后多少/是否过期"** ⇒ **用 DSL 时无法自证新旧** —— 本笔只能靠对比两份文件才发现 10.7h 差）；
 ⑤ schema 声明了 `theme/animations_v2/simulation/reasoning/canvas_notes` 但**实际 DSL 未使用**。
 ⇒ ★ **④ 与我上一条要的 P0（给 live 带 `age`/`scanRev`）是同一件事** —— 而且它是"用 DSL 理解项目"的**前提**。
+
+---
+
+## 63. 2026-10-16 ★★★ 真读 `cache.db` ⇒ 三选一裁决（"DB 完善还是优化 DSL"）
+
+### 63.1 ★★ DB 结构（实测）
+11 张表（10 + 1 FTS 虚表）：`files` 531（PK path；`content_hash`/`norm_hash`/`modified_at`/`indexed_at`）·
+`nodes` **8446**（PK id；kind/name/file_path/line/signature/`sym_hash`）· `edges` **13283**（call 7390 / type_ref 4700 / import 1193）·
+`imports` 2368 · `unresolved_refs` **32530** · `symbol_diffs` 845 · `embedding_cache` 0 · `project_metadata` 0 · `schema_versions` v8。
+
+### 63.2 ★★★ 对照表：什么在 DB、什么只在 DSL（关键词扫描全库列名 ⇒ 全 `(none)`）
+| 类别 | 项 | DB | DSL |
+|---|---|---|---|
+| **事实** | path/symbols/lines/imports/**call/type_ref**/hash | ✅ **全有（且更新鲜）** | ✅ 但只是**降采样投影**（`symbols` 583 vs `nodes` 8446 ⇒ **小 14×**） |
+| ★★ **意图** | `decision`/`expectations`/`status`/`annotations`/`responsibility` | ★ **一列都没有** | ✅ 有（本 DSL 命中 5 条） |
+| ★★ **规则派生** | `arch_layer`/`layers[]`/布局 `x/y/w/h` | ★ **没有** | ✅ 有（代码里的规则当场算） |
+
+### 63.3 ★★★ 挖到 DSL 的**真正本质**（存储层注释原文，今天最重要的发现）
+`src/infrastructure/storage.ts:225-237`：
+> *"**基线（baseline）快照**：契约创立时刻的参考基准。**Git 语义**：首次为 feature 生成 live 快照时，
+> 顺带把同一份 DSL 写入 `baseline/`，作为「**共同祖先**」。之后 live 随代码演进、design 随意图演进，
+> 两者都相对 baseline 各自前进。**diff_views 三方对比**：`baseline→design = 意图增量` / `baseline→live = 实现增量` /
+> 两侧都改且不一致 = 冲突（交 LLM 裁决）。**baseline 只在首次 fork 时写入，绝不随 live/design 更新而移动**。"*
+⇒ ★★★ **DSL 不是"缓存"、也不是"索引"，而是「Git 式三方基线」里的一方**（`baseline` / `live` / `design`）。
+★ 另：`import_project.ts:32` 原文 —— *"★ T85/D2：基线事实**独立取**（索引器的事实）—— **绝不从 DSL 取**（那是**「自己测自己」**）"*
+  ⇒ **方向是 DB → DSL，DSL 是静止副本，无回写、无保鲜**。
+
+### 63.4 ★ `layers`（那 8 层）从哪来 —— **是路径字符串匹配，不是架构分析**
+`layer_detect.ts:33 LAYER_DEFS`（10 条 patterns）+ `:128-141 matchLayer(rel)`：
+**把相对路径按 `/` 切段、每段去扩展名转小写、与每层 patterns 精确串等（`base === p || base === p + 's'`），
+第一命中即返回，全不命中 → `'core'`** ⇒ ★★ **目录名/文件名启发式**（所以 `core 381` 这个数字是**匹配出来的**）。
+
+### 63.5 ★★ DB 的"权威性"靠什么（三条读处）
+1. **约束极薄**：`CHECK` **0 个**；`UNIQUE` 仅 1（`idx_edges_identity`）；`FK` 3 条（全 CASCADE）；`TRIGGER` 3 个**全是 `nodes`→`nodes_fts` 同步**、**无业务校验**；
+2. **写入点**：`symbols.ts` 的 `syncFile` —— **幂等重建**（`ON CONFLICT DO UPDATE` + `DELETE`/`INSERT`）；
+3. ★★★ **真正的权威机制是「读前自证」**（`index_freshness.ts:1-33` 原文）：
+   *"索引自动保鲜：**查询前懒校验**，外部改动（git pull / 手动编辑 / 其他 agent）自动增量重同步 ……
+   **「第一性工具」的前提是索引永远可信**"*。
+
+### 63.6 ★ 陈旧读数（now = 2026-10-16T06:34Z）
+`cache.db` `max(files.indexed_at)` 落后 **0.14h**（新鲜）· `live/<f>` 落后 **14.25h** · `features/<f>`（设计/存档）落后 **3.55h**；
+`getDSL(` 共 **112 处调用点 / 20 个文件**，其中**只有 3 个文件**出现过 `ensureFreshIndex`（且非为校验 DSL 而调）。
+
+### 63.7 ★★★ 三选一裁决（每条带判据）
+- **① 完善 DB、让 DSL 退役 —— 不成立（作为"完善"），但方向半对**：
+  事实类 DB **已是权威、无需完善**；要搬的是**意图 + 规则派生**（DB **0 列**）⇒ 只能给 `nodes`/`files` **加列**
+  ⇒ ★★ **直接污染事实权威**（事实行由 `syncFile` **幂等重建**；而意图是**手写、不可重算** ⇒ **重建即冲掉手写**，
+  除非再压一层保护逻辑 = 把 overlay 塞进 SQL）。
+  **判据**：加列后跑一次重建，`SELECT count(*) FROM nodes WHERE decision IS NOT NULL` 是否仍 >0
+  （**今天该值为 0**；若加列后重建即归 0 ⇒ **命题证伪**）。
+- **② 保持现状 —— 可用，但代价已被读数写死**：事实侧 0.14h vs **意图侧 14.25h**；且**消费者普遍不校验**。
+  **判据**：`live._sync.saved_at − max(files.indexed_at)`（今天 = **14.11h**）>0 且消费者无校验 ⇒ "读到陈旧事实"成立。
+- **③ 优化 DSL（只留 DB 没有的）—— 可行，三者中最优**：
+  DB 缺的恰好是**意图 + 规则派生**；而 DSL 的 `symbols/lines`（583）**纯是 `nodes`(8446) 的降采样投影、删之无损**。
+  代价：**(a)** 符号"按需渲染"要求 DB 可读 ⇒ **离线/跨机/单文件分享场景失效**；
+  **(b)** ★ **布局抖动**（`layoutGroup` 排序键含 `a.id.localeCompare(b.id)`、**locale 相关**；且布局是"输入文件集"的整体函数，增删会整体重排）。
+  **判据**：**字节稳定** —— 同一输入跑两次 `import_project`，比
+  `sha256(JSON.stringify(nodes.map(n => [id,x,y,w,h])))` 是否相等。
