@@ -1241,6 +1241,30 @@
       "note_on_total": "★ 49=清点器按「判据类字段」数的；48 是人工初看时漏了 parallel_claim.criteria 改后的新键。以清点器为准。",
       "why_list_not_count": "★★★ 第一版闸只比总数⇒加一条 unjudged 也会因为总数低于历史基线而不报红（自测实测）。所以改成【比对名单】：新出现的 path ⇒ 红。",
       "cleared_2026_10_17": "★ service_flow 的 7 条判据已按「领到任务先补全」逐条定归属 ⇒ unjudged 40→35（machine 9→13，review 0→1）。★ 余 2 条（上架读端 D-T8 / 双验角色 D-verifier-role）如实留欠账。"
+    },
+    "vocabulary": {
+      "user_asked_2026_10_17": "这图上的这些选项需不需要注册进去，就是这些契约需不需要注册进去，以便下个人填写的时候简便填写，不用自己去拟造。",
+      "answer": "★ 要，但注册在【校验端】，导出成【填充端可查的清单】；★ 不许往 DSL 里再抄一份（那就是又一处形状）。",
+      "authority": "scripts/vocabulary.mjs（★ 它从代码/schema/DSL 三处抽取，不复制）",
+      "rule": "★ 填卡前先查表：查得到的 ⇒ 选；查不到的合法值 ⇒ 说明该枚举不全 ⇒ ★ 那是 L1 建构任务（补全枚举），不是自己拟造。",
+      "strength_levels": {
+        "strong": "编译期穷尽 Record<K,V> + 运行时抛错并列出合法值 ⇒ 拟造不出来",
+        "weak": "★ 有单一名单，但无编译期保证 ⇒ 填错可能静默通过",
+        "none": "只有散文 ⇒ 必须人工对"
+      },
+      "current_2026_10_17": {
+        "namespaces": 4,
+        "strong": 1,
+        "detail": "expectation.kind=strong(6 项) · provenance.source=weak(5 项) · assertion.kind=weak(3 项) · schema.enum=weak(23 处)"
+      },
+      "real_gap": "★★★ 不是「没注册」，而是【校验端知道合法值，填充端不知道】：EXPECTATION_KINDS 只用于校验，get_dsl / 读取端一个都读不到 ⇒ 填卡的人只能靠记忆或猜 ⇒ 必然拟造。",
+      "gaps_to_close": [
+        "★ provenance.source 提成 src/domain 常量 + Record 穷尽（像 EXPECTATION_KINDS 那样）⇒ weak → strong",
+        "★ assertion.kind 同上",
+        "★★ 让读取端能拿到词汇表（get_dsl 返回 vocabulary 字段）⇒ 填充端不必记，查就行",
+        "★ vocabulary.mjs 加 --check：某命名空间若既无 strong 也无单一名单 ⇒ 报红（裸奔枚举）"
+      ],
+      "why_not_duplicate": "★ 清单只住一处（代码或 schema）；DSL 这一段只记「有哪些命名空间、权威在哪、强度多少、缺口是哪些」——★ 一旦把 6 个 kind 抄进 DSL，代码加第 7 个就漏了。"
     }
   }
 }
