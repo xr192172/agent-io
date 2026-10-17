@@ -283,8 +283,28 @@
 ③ get_dsl { query:'diff', feature_a, feature_b, view_b:'live' }  ⇒ 差异 = 要挂的任务
 ```
 
-★ **`<dataHome>` 的解析**：`AGENT_IO_HOME ?? os.homedir()`（`storage.ts:63`）⇒ 本机默认 `C:\Users\Admin`。
-★★ 已知坑：`handlers.ts:616` 把 `liveDir` 传给 `getDesignSheet(feature, liveDir)`，而 `getDesignSheetFile` 内部又走 `getDesignDir(baseDir)` ⇒ **路径可能双重嵌套**（`live/.agent-io/design/`）。★ **待核**（未实测）。
+★ **`<dataHome>` 的解析**：`AGENT_IO_HOME ?? getPackageRoot()`（`storage.ts:63`）⇒ 实测 = **项目根**（`D:\project_develop\design-canvas`），**不是主目录**。
+★★ 已知坑（已修）：`getDesignDir` 原指 `.agent-io/design`，而 `.gitignore:37` 忽略整个 `.agent-io/` ⇒ **设计 DSL 永远进不了 git**。2026-10-18 改成 `<baseDir>/docs` ⇒ `docs/task-system-plan.dsl.json` **就是设计 DSL 的真身**（`getDesignSheet` 实测读到 11 节点 / 15 边）。
+
+### ★★★ 2026-10-18 第一次真对拍的结果（设计 11 节点 × 实际 640 节点）
+
+```
+.agent-io/live/task-system-plan.dsl.json  = 1,809,866 B · 640 节点 · 1161 边
+（import_project 的承诺兑现：★ 设计 sha 未变 27044c7e→27044c7e，"设计已存在 ⇒ 不碰设计"）
+```
+
+| 维度 | 结果 | 是真的吗 |
+|---|---|---|
+| **节点** | 存在 **10 / 11**，缺的是 `board_pool.ts` | ★ **真差异** —— 那正是还没建的文件 |
+| **边** | 存在 7 / 15 | ★★ **假差异** —— 见下 |
+| **符号层（semantics）** | 实际侧 **0 / 640** 个节点有 | ★ 故 `symbol-exists` 在 live 上**判不了**，只能对 `cache.db` 判 |
+
+★★★ **边为什么是假差异**：**live 的边是 `contains`（目录包含文件），设计的边是 `imports`（依赖）** ——
+证据：`task_ops.ts` 在 live 里只有 2 条出边（`edit_result.ts` / `status_tools.ts`），**没有 `task_machine.ts`**，而它明明 import 了。
+样例：`{ id:'contains_certs_…', from:'dir_certs', to:'file_certs_…', label:'contains' }`。
+
+⇒ ★ **结论：结构对拍目前只有「节点」这一维是真的**；「边」要先把 live 的 import 边补齐（或改成对 `cache.db` 比）；
+「判据」只能对 `cache.db`（`judgeExpectations`，46 条 → 41 pass / 3 fail / 2 unjudged）。
 
 ## 附 · 文件约定
 
