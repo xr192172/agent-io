@@ -350,6 +350,120 @@
             }
           ]
         }
+      },
+      {
+        "id": "file_src_domain_expectation_ts",
+        "type": "file",
+        "label": "期望（判据的类型定义处）",
+        "path": "src/domain/expectation.ts",
+        "status": "draft",
+        "decision": {
+          "summary": "六种 kind + phase(pre/post) + 判定入口的契约；★ 新增 kind 漏标 phase 编不过",
+          "acceptance": "EXPECTATION_KINDS 是唯一清单；phase 由 Record<kind,…> 穷尽；非法 kind 抛错并列出合法值",
+          "provenance": {
+            "kind": "defect",
+            "where": "静态扫描：设计缺口 D1（要改的文件无节点）",
+            "note": "★ 补它是为了\"设计覆盖完整\"——让写闸能认这文件、增量验证能命中它；不是因为它有红"
+          },
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/expectation.ts",
+              "symbol": "EXPECTATION_KINDS",
+              "why": "★ 六种 kind 的唯一清单（填卡时查它，不许拟造）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/expectation.ts",
+              "symbol": "expectationPhase",
+              "why": "★ 分类由期望自带 ⇒ 状态机不必\"记得剔除\"前态判据"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/expectation.ts",
+              "symbol": "postExpectations",
+              "why": "★ 满足度只由后态算（这是 edge-absent 不污染满足度的关键）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/expectation.ts",
+              "symbol": "assertValidExpectations",
+              "why": "运行时抛错并列出合法值 ⇒ 拟造不出来"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/expectation.ts",
+              "symbol": "expectationSubjectPath",
+              "why": "★ 一只红落在谁的 path 上 —— cardStanding 的归属判据靠它"
+            }
+          ]
+        }
+      },
+      {
+        "id": "file_src_domain_geometry_ts",
+        "type": "file",
+        "label": "节点/边的结构",
+        "path": "src/domain/geometry.ts",
+        "status": "draft",
+        "decision": {
+          "summary": "Node 类型（含正式字段 path）+ Edge + decision 的形状",
+          "acceptance": "path 优先、description 回落（与 write_gate / task_machine / overlay 同一把尺）",
+          "provenance": {
+            "kind": "defect",
+            "where": "静态扫描：设计缺口 D1（要改的文件无节点）",
+            "note": "★ 补它是为了\"设计覆盖完整\"——让写闸能认这文件、增量验证能命中它；不是因为它有红"
+          },
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/geometry.ts",
+              "symbol": "Node",
+              "why": "★ 节点的形状（path 是正式字段 —— 写端造得出\"只带路径\"的节点）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/geometry.ts",
+              "symbol": "NodeDecision",
+              "why": "★ 决策卡的形状：summary + acceptance + expectations"
+            }
+          ]
+        }
+      },
+      {
+        "id": "file_src_application_design_dsl_ops_node_ops_ts",
+        "type": "file",
+        "label": "节点的写入端",
+        "path": "src/application/design/dsl_ops/node_ops.ts",
+        "status": "draft",
+        "decision": {
+          "summary": "node add/update；★ data 键集由 NODE_DATA_KEYS 静态维护，interface 改了不跟则 tsc 红",
+          "acceptance": "path 非空/相对路径/kind 合法的写端校验；decision.update 可在任意卡状态下改（★ A6 待收）",
+          "provenance": {
+            "kind": "defect",
+            "where": "静态扫描：设计缺口 D1（要改的文件无节点）",
+            "note": "★ 补它是为了\"设计覆盖完整\"——让写闸能认这文件、增量验证能命中它；不是因为它有红"
+          },
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/op_data_spec.ts",
+              "symbol": "NODE_DATA_KEYS",
+              "why": "★ data 键的唯一清单（含 path）—— 写端能造什么由它钉死；★ 它住在 op_data_spec.ts，不在 node_ops.ts"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/node_ops.ts",
+              "symbol": "addNode",
+              "why": "节点新增入口"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/node_ops.ts",
+              "symbol": "updateNode",
+              "why": "节点更新入口"
+            }
+          ]
+        }
       }
     ],
     "edges": [
@@ -1516,6 +1630,50 @@
       },
       "direct_answer": "★ 要，但注册在【校验端】，导出成【填充端可查的清单】；★ 不许往 DSL 里再抄一份（那就是又一处形状）。",
       "naming_note": "★★ 本段原用 answer 作键名,被 plan-assertions 误判成一条判据(总数 49→50) —— 因为 answer 在 what_a_card_proves 里是判据语义。★ 这暴露清点器靠【键名猜】而不是【显式标记】:一义两用就误判。正解是显式标记(见 frictions)。"
+    },
+    "design_completeness": {
+      "why": "★★★ 用户 2026-10-17：先把设计 DSL 迭代到全，再根据它写源码；不要一遍遍追。设计迭代的代价特别低（只改 JSON），且有 git。",
+      "note": "★ 这份是「设计全不全」的判据 —— 也就是 L1 建构卡的判据（补上 two_level_tasks.L1_construct 缺的那一维）。",
+      "criteria": [
+        {
+          "id": "D1",
+          "name": "覆盖",
+          "rule": "要改的每个文件都有节点（path 命中）",
+          "now": "6/9 → 9/9（补齐 expectation / geometry / node_ops）；★ 另发现 op_data_spec.ts（data 契约定义处）也无节点 —— 待补"
+        },
+        {
+          "id": "D2",
+          "name": "节点完整",
+          "rule": "每个节点有 path + decision{summary, acceptance, ≥1 expectation}",
+          "now": "7/7 ✓ → 10/10"
+        },
+        {
+          "id": "D3",
+          "name": "可判",
+          "rule": "每条 expectation 的 kind ∈ EXPECTATION_KINDS（validateDSL 兜）",
+          "now": "✓（validate 通过）"
+        },
+        {
+          "id": "D4",
+          "name": "迁移状态",
+          "rule": "每条迁移 state 必填；ready 的必须有代码执行它",
+          "now": "4 ready / 1 blocked(OQ1) / 2 unimplemented —— ★ 2 条 unimplemented 待裁定：实现还是从设计里删"
+        },
+        {
+          "id": "D5",
+          "name": "执行者",
+          "rule": "每条判据有归属（machine / review / unjudged + 欠账号）",
+          "now": "★ 49 条里 35 条 unjudged（最大缺口）"
+        },
+        {
+          "id": "D6",
+          "name": "接线",
+          "rule": "每个 export 至少 1 个消费者（防\"建了没接\"）",
+          "now": "★ 已知 3 处缺：patrolDrift(A1) / renderMicro(B5) / WriteActor 旧链未接(A7)"
+        }
+      ],
+      "judged_by": "★ 本段**目前没有检查器** —— 这本身就是 D5 的一条 unjudged（欠账 D-design-completeness）。★ 写法与 invariant_checks 同构（判据 + cmd + runner），等 `Expectation` 与 `invariant` 合成同一个可执行抽象后，这一段就能变成可跑的判据。",
+      "order": "★ 顺序：先把 D1/D2 补满 → 处理 D4 的 2 条 unimplemented → 收 D5 的 35 条 → 最后才写源码（L2）。"
     }
   }
 }
