@@ -969,6 +969,44 @@
         "note": "★ 两级的判据不同：L1 看\"DSL 建构完整\"，L2 看\"对拍红变绿\"；★ 于是\"隐形的活\"（今天设计 DSL 那几轮讨论）终于有卡、有验收"
       },
       "anti_pattern": "★ 今天实测：我干过多轮 L1（设计 DSL 的补丁/讨论），★ 但从未把它当任务 ⇒ 不计进度、不被验收、做完也不算数"
+    },
+    "what_a_card_proves": {
+      "note": "★★★ 用户 2026-10-17 答 D16（反形式主义）：「有 decision 说明有过讨论和决策，然后任务挂在那里并不代表它就已经开始了，你要去接取任务，接取任务之后就有接取的状态、有进行中的状态、有完成的状态」。",
+      "answer": "★ 「有卡」证明的是【有过讨论和决策】，不是【有人在认真做】。",
+      "layers": [
+        {
+          "layer": "decision 存在",
+          "proves": "想过（讨论/决策发生过）",
+          "gate": "★ 唯一的质量闸：★ 没有 decision 就没有卡（publish 翻决策卡，不接受手写 summary）"
+        },
+        {
+          "layer": "card in pool (candidate)",
+          "proves": "挂着了",
+          "note": "★ ≠ 已经开始 —— 所以 candidate 派生为 draft，而不是 in_progress"
+        },
+        {
+          "layer": "claimed",
+          "proves": "有人真的接了",
+          "note": "★ 接取 = 开始"
+        },
+        {
+          "layer": "done",
+          "proves": "做完了、且验过",
+          "note": "★ 必须带回执 + 验收读数"
+        }
+      ],
+      "anti_formalism": {
+        "where_the_risk_is": "★ 不在「卡」，而在「decision 是不是真的」",
+        "defense": "★ provenance（五类出处 + 逐字原文）；★ 卡的内容由 publish 从 decision 翻出，不接受手写 ⇒ 造假的入口被收窄到 decision 一处",
+        "residual_risk": "★ 若 decision 本身是编的 ⇒ 卡也编得出来；★ 但那样 provenance 就露了（追不到出处 / 出处是编的）"
+      },
+      "claimed_vs_in_progress": {
+        "user_said": "「有接取的状态、有进行中的状态、有完成的状态」",
+        "my_doubt": "★ 若「接取」与「进行中」之间没有【可判】区别 ⇒ 拆成两个状态就是形式主义（D16 的那个陷阱）",
+        "proposal": "★ 不拆状态；给 claimed 一个【可判的活跃信号】：last_active_at（最近一次对源/对卡的动作）。★ 领了不动 = last_active_at 老旧 ⇒ TTL 回收；领了在干 = last_active_at 新鲜",
+        "why": "★ 少一个状态、信息不丢 = 收归；★ 而拆一个不可判的状态 = 多一个要记得维护的空壳",
+        "status": "待用户裁定（若你认为「接取」与「进行中」在语义上必须分开，我再拆，并给出判据）"
+      }
     }
   }
 }
