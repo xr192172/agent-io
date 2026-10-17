@@ -1,0 +1,238 @@
+# 任务系统 · 设计文档
+
+> ★★★ **2026-10-17 重写，本文件是唯一活文档。**
+> 老的 54 个 md（handoff / replan / decision-sheet / review-3models / todo / 各种 discussion）**已清理** ——
+> **git 有完整历史**（`git log -- docs/<老文件>`），项目外另有一份整目录备份。
+> ★ **理由**：文档兼任"考古"的结果是**谁都不读**；而窗口装不下 3.3MB 的考古。
+
+**目录**：0 三十秒 · 1 五条原则 · 2 全貌 · 3 当前真相 · 4 已知缺陷 · 5 每笔怎么做 · 6 欠账
+
+---
+
+## 0 · 三十秒读懂
+
+**这是什么**：把"设计意图"变成"可判任务"的系统。
+
+**一句话流程**：
+```
+设计写在 DSL 里（节点的 decision.expectations）
+   → 对拍（judgeExpectations 真去读代码）→ 红
+   → 红 = 任务 → publish 成卡 → claim 领 → 做 → 回执 → 验收
+```
+
+**它想防的病**：设计说了、代码没做，而没人知道。
+
+**现在什么状态**：★ 骨架在、闸有了、但**覆盖面只有 1.7%**，且**闸管不到绕过它的人**（见 §4）。
+
+---
+
+## 1 · 五条原则（每条都带判据，不是口号）
+
+### P1 · 闸是**校验器**，不是关卡
+> 遇到"不通过"先问：**它会损坏数据吗？**
+> · **不会** ⇒ **提醒 + 放行 + 留痕**（"没在账上"是记录问题，不是数据问题）
+> · **会** ⇒ 阻断
+> ★ **不问就阻断 = 造死循环。**
+
+三种职责：**校验**（主体，输出通过/不通过+判据）· **提醒**（无害时放行）· **阻断**（例外）。
+★ 每个环节要有**独立入口**；若某入口"必须有下游产物才能进"⇒ **那不是闸，是环**。
+
+### P2 · 不打补丁，**收归进结构**
+> 有补丁说明原设计有问题 ⇒ 连补丁一起重新设计。
+
+**认补丁的四条判据**：
+| 症状 | 说明它是补丁 |
+|---|---|
+| 别处要"记得"配合它 | 规则没进结构 |
+| 它生活在目标结构"外面"（另建清单 / 另写 runner / 另挂字段） | 不是原生属性 |
+| 同类问题再来一次要"再加一条" | ★ 结构缺**一维** |
+| 需要注释解释"为什么要这样" | 与结构不自然 |
+
+★ **收归 = 让错误组合在类型上无法表达**（例：`TransitionState` 三值必填，取代 `enabled` + `blocked_by_open_question`）。
+
+### P3 · **提醒必须稀缺**
+> 覆盖率 1.7% 时若每笔都提醒 ⇒ 98.3% 的操作都在响 ⇒ 半小时内学会忽略 ⇒ **噪音比没有更坏**（它看起来在工作）。
+
+⇒ hook 每会话每文件**只提醒一次**。
+
+### P4 · 判据必须有**执行者**
+> "判据没有执行者 = 等于没有。"
+
+每条判据三态：**machine**（有 cmd/runner）· **review**（有 `by` + `where`）· **unjudged**（★ 明确承认没人判，**不许当成"已经保证了"**）。
+★ 新登记的判据**不许**是 `unjudged`。读数：`node scripts/plan-assertions.mjs`
+
+### P5 · **一维一处**
+同一件事不许两个字段/两处表达。今天的三个实例：
+- `enabled` + `blocked_by_open_question` → `TransitionState`（已收）
+- 设计的 `blocked_by_open_question` vs 代码的 `enabled`（已收）
+- `own/foreign/orphan` 三个局部变量 → `RedAttribution`（已收）
+
+---
+
+## 2 · 全貌
+
+### 2.1 代码索引（9 个文件 ≈ 3539 行）
+
+| 文件 | 职责 | 行数 |
+|---|---|---|
+| `src/domain/task_schema.ts` | 任务格结构（五态 / `TaskSpec`） | 203 |
+| `src/domain/task_machine.ts` | 状态机 · `cardStanding` 五值 · `RED_DISPOSITION` · `TransitionState` · TTL | 520 |
+| `src/domain/expectation.ts` | 六种 kind · `phase`(pre/post) · 判定入口 | 207 |
+| `src/domain/geometry.ts` | 节点/边（`path` 是正式字段） | 432 |
+| `src/domain/discussion_log.ts` | 讨论登记格 | 153 |
+| `src/application/design/dsl_ops/task_ops.ts` | publish / claim / release / complete | 671 |
+| `src/application/design/dsl_ops/node_ops.ts` | 节点 add/update（含 decision 写入） | 504 |
+| `src/application/patrol/task_drift.ts` | 漂移巡检 | 197 |
+| `src/application/write_gate.ts` | 写源码前的任务闸 | 1125 |
+
+★ 更细的符号行号见 `node scripts/…`（索引由代码生成，不手写）。
+
+### 2.2 七步服务流程
+
+| # | 步 | 输入 → 输出 | 门槛（判据） |
+|---|---|---|---|
+| 1 | 填表 | 讨论/文档/滞涩/缺陷 → `node.decision` | 有 decision 且 expectations 可判 |
+| 2 | 交表 | decision → `task{state:candidate}` | ★ 无 decision / 太粗 ⇒ **生成 L1 建构卡**（不拒） |
+| 3 | 上架 | 卡 → 池 | ★ **读端未建**（欠账 D-T8） |
+| 4 | 接取 | 无主卡 → `claimed + owner` | ★ 有活干（≥1 条后态判据没过），**不是"全过"** |
+| 5 | 做事 | 已领卡 → 代码 | 闸放行（该节点有 claimed 卡，★ owner 未校验） |
+| 6 | 回执 | 事 → 五栏 + 读数 | `check-receipt` 五栏齐 |
+| 7 | 验收 | 回执 → 读数 | 红变绿 + `unsupported=0` ★ 双验无角色（D-verifier-role） |
+
+★★ **四条死锁的共同形态**：不是"状态不够"，而是**异常/重入分支**与**角色**两样没定义。
+
+### 2.3 状态机：迁移**能不能走**是 `TransitionState`
+
+```ts
+{ kind: 'ready' } | { kind: 'blocked', by: OQ编号 } | { kind: 'unimplemented', why }
+```
+| 迁移 | 状态 |
+|---|---|
+| `t_claim` candidate→claimed | ready |
+| `t_release` claimed→candidate | ready |
+| `t_done_from_claimed` claimed→done | ready |
+| `t_done_from_candidate` | ★ **blocked（OQ1 未拍）** |
+| `t_void` | ★ **unimplemented**（没有代码写 `state:"void"`） |
+| `t_supersede` | ★ **unimplemented**（`replaces` 无写入方也无读取方） |
+
+★ `applicableTransitions(state)` 只返回 `ready` ⇒ **不再宣告"可走"然后撞"不支持"**。
+
+### 2.4 卡的五个读数（`cardStanding`）
+
+| 值 | 含义 | 可领？ |
+|---|---|---|
+| `work` | 有红且**本卡能改**（own 或 orphan） | ✓ |
+| `violated` | 后态全过、**前态有红**（越权/非法依赖） | ✓（去拆），**不许收口** |
+| `blocked` | 红**没有一条本卡能改**（全落在别人节点上） | ✗ |
+| `satisfied` | 后态全过 ∧ 前态无红 | ✗（只可收口） |
+| `unknowable` | 后态判不了 / 一条不剩 | ✗ |
+
+★ **红的归属**：`RedAttribution = own | orphan | dep-pending{nodeId} | dep-done{nodeId}`
+★ **处置表** `RED_DISPOSITION`：`own/orphan → claim`，`dep-pending/dep-done → wait`
+★ **为什么 dep-done 也算 wait**：闸只认"**该节点**有 claimed 卡"，已 done 也一样改不动 ⇒ 处置是**重开那张卡**。
+
+### 2.5 判据的六种 kind（都对着**代码**判）
+
+| kind | 必填 | phase |
+|---|---|---|
+| `file-exists` | path | post |
+| `symbol-exists` | path + symbol | post |
+| `signature-matches` | path + symbol + signature | post |
+| `edge-exists` | from + to | post |
+| `call-exists` | path + symbol + target | post |
+| `edge-absent` | from + to | ★ **pre（前态）** |
+
+★★ **选错的后果不是报错，是【假绿】**：
+- `file-exists` 证明不了"实现了什么"
+- ★ **`edge-exists` 证明不了"用了对的那个符号"**（实测：要 `math.add`、写成 `mul`，边还在 ⇒ 全绿）
+- ★★★ **`edge-absent` 是 pre**：未施工时天然成立 ⇒ 混进满足度会让卡显示"已满足"而实际没做
+
+### 2.6 词表（填卡前查，别拟造）
+
+- **出处** `provenance.source`：`doc` · `utterance`（逐字，不许改写）· `thought`（要写"何时因何想起"）· `friction`（真被卡过）· `defect`（对拍的红/体检发现）
+- **判据三态** `assertion.kind`：`machine` · `review` · `unjudged`
+- ★ **查不到的合法值 ⇒ 枚举不全 ⇒ 那是 L1 建构任务，不是自己拟造**
+
+---
+
+## 3 · 当前真相（2026-10-17 22:00 读数）
+
+| 项 | 读数 |
+|---|---|
+| 设计 DSL | 7 节点 · 3 边 · 31 条期望 |
+| 对拍 | `checked 34 / passed 26 / failed 5 / unsupported 3` |
+| 判据清点 | 49 条 · machine 13 · review 1 · **unjudged 35** |
+| 节点覆盖率 | ★ **1.7%**（356 个源文件 / 6 个有节点 / 1 个有卡） |
+| 证 | t350 37/0 · t351 41/0 · t352 18/0 · t353 39/0 · t354 14/0 |
+| 不变量 | 4/4 PASS |
+
+★ **`unsupported 3` 里 2 条挂账未核**：疑"改了源码 ⇒ 索引与源码不一致"（T353 遇过同类），未在真仓跑 `rebuild` 验证。
+
+---
+
+## 4 · 已知缺陷（还活着的 12 条；**已修的不列在这里**）
+
+### ★ 最近修好的（2026-10-17，只记结果，过程见 git）
+- **A2 `cardStanding` 的红归属**：`blocked` 两头都漏（漏 orphan ⇒ 假 blocked 且 reason 撒谎；漏"部分 pending" ⇒ 假 work）⇒ 重写成 **`RedAttribution` + `RED_DISPOSITION`** 穷尽表；★ 顺带想清 **`dep-done` 也算 wait**（闸只认该节点的卡）。
+- **B3 `t_void` / `t_supersede`**：标着"可走"但全仓没有代码写那两个 state ⇒ 改为 **`unimplemented`**，不再宣告"可走"然后撞"不支持"。
+- **B4 `blocked_by_open_question` 只有一半消费**：与 `enabled` 合成 **`TransitionState`**（三值必填）⇒ **"声明可走却挂着未决项"这个组合在类型上不存在**。
+
+### A 级（会让人做错事 / 数据不一致）
+
+| # | 位置 | 缺陷 | 怎么判 |
+|---|---|---|---|
+| **A1** | `task_drift.ts:97` | ★★★ **`patrolDrift` 全仓零调用方** ⇒ 巡检一次都不跑 ⇒ `lease_ttl` 永不回收 ⇒ `claimed_at` 成死锁字段 | 该文件每个 export 至少要有 1 条 call 边；今天 0 |
+| **A3** | `task_ops.ts:462` | claim 是 check-then-act（读→判→写，中间夹异步 `cardStanding`，无锁） | 静态判"写前是否重读并比对 state/owner" —— 不成立 |
+| **A4** | `task_ops.ts:601` | ★★ 证据闸只校验**形状**：L1 卡可用手填 `{all_green:true}` 收口，**从不与真实判定对账** | L1 遇 `kind:'expectations'` 直接拒；L2 断言与本次 report 一致 |
+| **A5** | `task_drift.ts:168` | L1 卡永远进不了 `missed_close` | ★ **真根因见 §6「L1 判据缺口」** |
+| **A6** | `node_ops.ts:419` | 已领卡的 decision 可静默漂移（第四条死锁成因没有执行者） | `claimed/done` 的 L2 卡：`card.expectations` 必须深等于 `node.decision.expectations` |
+| **A7** | `write_gate.ts:894` | ★★★ 写闸只认"有 claimed 卡"，**不认人、不认时效** | ★ 需给写链加 `actor` 维度（已挂卡） |
+
+★★ **A1 + A7 叠加才致命**：巡检不跑 ⇒ 卡不过期 ⇒ 写闸的"有 claimed 卡"**永不过期** ⇒ **别人领的卡 = 永久万能钥匙**。
+★ 实测样本（只读）：`write_gate.ts` 归 `agent-t352`、`task_drift.ts` 归 `agent-flowcheck-1`。
+
+### B 级
+- **B1** `task_drift.ts:179/181` 两个计数器口径与设计不一致（`should_void` 把"该去修"和"该 void"装进一个数组）
+- **B2** DSL 里的读数已过期（写 `25/12/12`，实跑 `31/27/3`），而 `invariants` 第一条就是"不落读数快照"
+- **B5** `discussion_log.ts` 的 `renderMicro`/`shouldExpand` **src 里零调用**（唯一调用方是探针）
+- **B6** `edit_dsl` 整批回滚只恢复 **base** 快照，overlay（进度轴权威）不在回滚范围
+
+### C 级
+- **C1** 注释里计数过期（`expectation.ts:25` 写"五种 kind"，实为六种；`task_ops.ts:667` 写"三个 op"，实为四个）
+- **C2** 终态集合有两个家（`TERMINAL_TASK_STATES` 零使用 + `isTerminalTaskState` 里三个字面量）
+
+---
+
+## 5 · 每笔怎么做（操作清单，六条）
+
+1. **先读结构**：知道改的东西在哪、谁消费它（别信旧结论 —— 现状必须带 `file:line`）。
+2. **领卡**：核对这张卡赖以成立的东西全不全（无 decision / 判据无归属 / 文件不在任何 `expectation.path` / 上游是环）⇒ 不全就**先补全**，再做事。
+3. **动手**：按 §1 的 P2 —— 要改的是**缺的那一维**，不是加一条 if。
+4. **验**：build · 期望对拍 · 证逐张 · `plan-assertions --fail-on-debt` · 不变量。
+5. **回执**：五栏（做了什么 / 判据读数 / `[未核]` / 行为改变 / 滞涩）⇒ `docs/frictions.jsonl`。
+6. **说清不确定**：给不出 `file:line` 的现状标「待核」；没跑过的写"未验证"。
+
+★ **改中文文本用精确编辑工具**（python 引号、shell 反引号，今天各踩两次）。
+
+---
+
+## 6 · 欠账
+
+| 编号 | 内容 | 状态 |
+|---|---|---|
+| **A1** | `patrolDrift` 挂上 live 重算（否则巡检永不跑） | 待做（最致命） |
+| **A7** | 写闸加 `actor` 维度（已挂卡：`file_src_application_write_gate_ts`，2 条判据真红） | 待做（最致命） |
+| **D-T8** | 上架读端（`board/pool.ts`：`BoardView` + `listPool`） | 待做（3 红） |
+| **D-verifier-role** | 第 7 步"双验"没有角色（单 agent 时无解） | 待裁 |
+| ★ **L1 判据缺口** | **6 种 kind 全对着代码判 ⇒ 没有一种能表达"DSL 自己全不全" ⇒ L1 卡建不出来**（★ 这才是 A5 的真根因）。解药：`Expectation` 与 `invariant` **合成同一个可执行抽象**（判据自带"可跑"属性） | 待做（**卡住 L1**） |
+| — | `touches` 覆盖率 1/64（增量验证的第 3 步永远退化） | 待补 |
+| — | 对拍 `unsupported +2` 机制未核 | 待核 |
+
+---
+
+## 附 · 文件约定
+
+- **`docs/task-system-plan.dsl.json`** —— 设计数据（不是文档）
+- **`docs/frictions.jsonl`** —— 滞涩台账（程序读；也是 `provenance.kind='friction'` 的出处）
+- **`docs/discussion-log.md`** —— 讨论登记（`provenance.kind='doc'` 的出处）
+- **本文件** —— 唯一的文档。★ 新增内容进这里，**不要再开新 md**。

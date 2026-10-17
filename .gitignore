@@ -121,6 +121,14 @@ docs/*
 # 例外：产品规划文档（工具收敛清单等）随仓库追溯，需入库
 !docs/tool-convergence.md
 !docs/go-ts-translate.md
+# ★★★ 2026-10-17：docs/* 默认不进 git ⇒ 但下面这 5 个是【活资产】，必须进版本控制。
+#   ★ 尤其 docs/DESIGN.md —— 它是【唯一文档】。★ 曾经它不在 git 里（写完才发现），
+#     而项目外备份是在写它之前做的 ⇒ 一旦本地丢失就全丢。（这是 priciple P4「判据要有执行者」的反面：文档也得有人守）
+!docs/DESIGN.md
+!docs/todo.md
+!docs/discussion-log.md
+!docs/frictions.jsonl
+!docs/task-system-plan.dsl.json
 # 内部交接/狗食试产产物
 HANDOVER_DOGFOOD.md
 # 内部后续开发路径规划（含竞品/许可/变现/缺陷审计等内部结论，不入发布仓库）
