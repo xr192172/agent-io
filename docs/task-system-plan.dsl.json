@@ -917,7 +917,9 @@
           },
           "state": {
             "kind": "unimplemented",
-            "why": "全仓没有代码写 state=\"void\"（grep 赋值 0 处）；task_ops 也没有对应 op"
+            "why": "★ 全仓没有代码写 state=\"void\"（task_ops 也没有对应 op）—— 但它【该要】",
+            "depends_on": "A1（patrolDrift 全仓零调用 ⇒ should_void 根本不跑）",
+            "why_wait": "★★ 先有\"报\"，才谈\"能作废\"：A1 修好之前，patrolDrift 的 should_void 不会执行 ⇒ 单独实现 void 动作也没人触发。⇒ t_void 的实现与 A1 一起做（同一条链：巡检报出该 void 的卡 → 有动作能作废它）。"
           }
         },
         {
@@ -967,27 +969,24 @@
             "kind": "blocked",
             "by": "OQ1"
           }
-        },
-        {
-          "id": "t_supersede",
-          "from": "candidate",
-          "to": "superseded",
-          "guard": {
-            "clauses": [
-              "新卡带 replaces: <old_id>，且 old_id 在卡集里存在"
-            ],
-            "read": "新卡的 replaces 字段"
-          },
-          "state": {
-            "kind": "unimplemented",
-            "why": "全仓没有代码写 state=\"superseded\"；replaces 字段既无写入方也无读取方"
-          }
         }
       ],
       "terminal_states": [
         "done",
         "void",
         "superseded"
+      ],
+      "removed_2026_10_17": [
+        {
+          "id": "t_supersede",
+          "was": "candidate → superseded（条件：新卡带 replaces: <old_id>）",
+          "why_removed": "★ 用户 2026-10-17 认可删除：「决策改了」这条场景已由现有手段覆盖 —— candidate 卡 ⇒ publish 重翻；claimed 卡 ⇒ release 后重立。而 superseded 这个终态与 replaces 字段【从设计到实现都是空的】（全仓无人写、无人读）。",
+          "source_pending": [
+            "★ 源码待跟 ①：src/domain/task_machine.ts 的 TRANSITIONS 删掉 t_supersede 这一条（现在设计 5 条 vs 代码 6 条）",
+            "★★ 源码待跟 ②：src/domain/task_schema.ts 的 TASK_STATES 删掉 superseded —— 否则它成了【死状态】：没有任何迁移能到达它，但类型里还留着 ⇒ 下一个人会以为它能用"
+          ],
+          "note": "★ 这两条源码改动等\"设计全部写完、子代理也看不出毛病\"之后再动；现在只记在这里，不动代码"
+        }
       ]
     },
     "patrols": [
@@ -1837,7 +1836,7 @@
           "id": "D4",
           "name": "迁移状态",
           "rule": "每条迁移 state 必填；ready 的必须有代码执行它",
-          "now": "4 ready / 1 blocked(OQ1) / 2 unimplemented —— ★ 2 条 unimplemented 待裁定：实现还是从设计里删",
+          "now": "★ 5 条迁移:ready 3(t_claim/t_release/t_done_from_claimed)· blocked 1(t_done_from_candidate/OQ1)· unimplemented 1(t_void,depends_on=A1);t_supersede 已删(2026-10-17,用户认可)+ 两条源码待跟已记",
           "unjudged": "★ 设计完整性的判据目前没有检查器（等 Expectation 与 invariant 合成一个抽象后才能跑）",
           "debt": "D-design-completeness"
         },
