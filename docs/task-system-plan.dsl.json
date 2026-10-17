@@ -1007,6 +1007,77 @@
         "why": "★ 少一个状态、信息不丢 = 收归；★ 而拆一个不可判的状态 = 多一个要记得维护的空壳",
         "status": "待用户裁定（若你认为「接取」与「进行中」在语义上必须分开，我再拆，并给出判据）"
       }
+    },
+    "service_flow": {
+      "note": "★★★ 用户 2026-10-17 的比喻：「就像你去窗口办事，要先填注册表，注册完了才能把任务交过去…… 你要做什么功能，就先填决策表、填 DSL，系统帮你把决策上架到任务里，然后有人去接。」⇒ ★ 本段把它落成七步服务流程。",
+      "why": "★ 用户原话：\"你可以把它安排成像一条服务流程…… 这语义什么的你自己随便自理呀，我只是随意的表述，你要自己去整理它\"",
+      "states": "★ 整理（用户已确认『接取』与『进行中』是同一个状态）：待接取(candidate) → 已接取进行中(claimed) → 完成(done)；旁支：失效(void) / 被取代(superseded)",
+      "steps": [
+        {
+          "n": 1,
+          "name": "填表",
+          "input": "讨论 / 文档 / 滞涩 / 缺陷",
+          "output": "node.decision（semantics + expectations）",
+          "window": "我（L1 建构）",
+          "criteria": "有 decision 且 expectations 可判"
+        },
+        {
+          "n": 2,
+          "name": "交表",
+          "input": "该节点的 decision",
+          "output": "task{state:candidate}",
+          "window": "★ 系统（publish 翻卡，不接受手写 summary）",
+          "criteria": "无 decision ⇒ 拒（点名『没有决策卡可翻』）"
+        },
+        {
+          "n": 3,
+          "name": "上架",
+          "input": "卡",
+          "output": "待接取池（pool / board）",
+          "window": "★ 系统（读端 = T8）",
+          "criteria": "卡在 pool 里可见；shown + folded == total"
+        },
+        {
+          "n": 4,
+          "name": "接取",
+          "input": "无主的卡",
+          "output": "claimed + owner",
+          "window": "我 / 子代理",
+          "criteria": "★ 无主 + 【至少一条后态判据没过】(= 有活干) + target 在 —— ★ 不许要求『全过』"
+        },
+        {
+          "n": 5,
+          "name": "做事",
+          "input": "已领的卡",
+          "output": "代码 / 文档",
+          "window": "领取者",
+          "criteria": "闸放行（该节点有 claimed 卡）"
+        },
+        {
+          "n": 6,
+          "name": "交回执",
+          "input": "做的事",
+          "output": "回执五栏 + 读数",
+          "window": "领取者",
+          "criteria": "check-receipt 五栏齐"
+        },
+        {
+          "n": 7,
+          "name": "验收 + 双验",
+          "input": "回执",
+          "output": "验收读数",
+          "window": "榜单 + 非做者",
+          "criteria": "红变绿 + unsupported=0"
+        }
+      ],
+      "root_cause_of_the_4_deadlocks": {
+        "claim": "★★ 把第 7 步（验收）的条件写进了第 4 步（接取）⇒ 『做完才让领』⇒ 死锁。★ 正解：接取的判据是『有活干』（≥1 条后态判据没过），不是『全过』",
+        "double_verify": "★ 第 7 步需要一个【角色】『非做者』，而流程里没定义谁扮演 ⇒ 单 agent 时无解。★ 缺的不是状态，是角色（verifier_kind 降级规则）",
+        "void": "★ 『已领后要退』是第 5 步的【异常出口】，流程里只给了 candidate 的出口 ⇒ 缺异常分支",
+        "supersede_on_claimed": "★ 『决策卡变了』是第 3 步的【重入】，流程里没定重入规则 ⇒ 已领的卡停在旧判据上静默漂移",
+        "common_form": "★★★ 四条的共同形态：★ 不是『状态不够』，而是【异常/重入分支】与【角色】两样没定义"
+      },
+      "note2": "★ 于是『状态机』只是这套服务流程的投影；★ 流程才是主视图（★ 它天然解释了『顺序』—— 每一步的门槛只能用上游的产物）"
     }
   }
 }
