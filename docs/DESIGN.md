@@ -175,6 +175,7 @@
 ### ★ 最近修好的（2026-10-17，只记结果，过程见 git）
 - **A2 `cardStanding` 的红归属**：`blocked` 两头都漏（漏 orphan ⇒ 假 blocked 且 reason 撒谎；漏"部分 pending" ⇒ 假 work）⇒ 重写成 **`RedAttribution` + `RED_DISPOSITION`** 穷尽表；★ 顺带想清 **`dep-done` 也算 wait**（闸只认该节点的卡）。
 - **B3 `t_void` / `t_supersede`**：标着"可走"但全仓没有代码写那两个 state ⇒ 改为 **`unimplemented`**，不再宣告"可走"然后撞"不支持"。
+- **A7 写闸的「谁在写」**：原来只认"有 claimed 卡"，不认人 ⇒ 加 `WriteActor` / `resolveActor` / `assertSourceWriteRegisteredFor`；★ **三种情形三种处置**（匹配放行 / 不匹配阻断 / 无 actor 提醒+放行）。实测：`34/26/5/3` → `34/28/3/3`，`t352` 18/0。
 - **B4 `blocked_by_open_question` 只有一半消费**：与 `enabled` 合成 **`TransitionState`**（三值必填）⇒ **"声明可走却挂着未决项"这个组合在类型上不存在**。
 
 ### A 级（会让人做错事 / 数据不一致）
@@ -186,7 +187,7 @@
 | **A4** | `task_ops.ts:601` | ★★ 证据闸只校验**形状**：L1 卡可用手填 `{all_green:true}` 收口，**从不与真实判定对账** | L1 遇 `kind:'expectations'` 直接拒；L2 断言与本次 report 一致 |
 | **A5** | `task_drift.ts:168` | L1 卡永远进不了 `missed_close` | ★ **真根因见 §6「L1 判据缺口」** |
 | **A6** | `node_ops.ts:419` | 已领卡的 decision 可静默漂移（第四条死锁成因没有执行者） | `claimed/done` 的 L2 卡：`card.expectations` 必须深等于 `node.decision.expectations` |
-| **A7** | `write_gate.ts:894` | ★★★ 写闸只认"有 claimed 卡"，**不认人、不认时效** | ★ 需给写链加 `actor` 维度（已挂卡） |
+
 
 ★★ **A1 + A7 叠加才致命**：巡检不跑 ⇒ 卡不过期 ⇒ 写闸的"有 claimed 卡"**永不过期** ⇒ **别人领的卡 = 永久万能钥匙**。
 ★ 实测样本（只读）：`write_gate.ts` 归 `agent-t352`、`task_drift.ts` 归 `agent-flowcheck-1`。

@@ -747,9 +747,48 @@ function recordUnaddressableWarnings(
  * ★ 本条里的"是否 done"读**派生进度**：有 task ⇒ `progressOf(task)`；没有才回落 overlay 的 `progress`
  *   （交接期两轴并存，派生值优先 —— 与 `overlay.ts#applyOverlay` 同一把尺）。
  */
+/**
+ * ★★★ **谁在写**（2026-10-17 · A7 · `docs/DESIGN.md` A7）。
+ *
+ * ## 它补的是什么洞
+ * 闸原来的唯一判据是「覆盖该文件的节点上**存在** `state==='claimed'` 的卡」——
+ * ★ **不问 owner、不问时效** ⇒ 历史上任何人领过的卡，都是该文件的**永久万能钥匙**。
+ * ★ 叠加另一个洞（`patrolDrift` 全仓零调用 ⇒ 卡永不过期）后：**任务闸对"谁在改"完全不设防**。
+ *
+ * ## 三种情形三种处置（`docs/GOAL.md` G2 的一次实演 —— 同一道闸，不是"要么全放要么全拦"）
+ * | 情形 | 处置 | 依据 |
+ * |---|---|---|
+ * | 有 actor，且 `owner` 不匹配 | ★ **阻断**（throw） | "改别人的活"**会**覆盖别人的工作 ⇒ 损坏数据 ⇒ 该堵 |
+ * | 有 actor，且 `owner` 匹配 | 放行 | |
+ * | **拿不到 actor** | ★ **提醒 + 放行 + 留痕**（warning） | 不知道是谁 ⇒ 不损坏数据 ⇒ 不该堵 |
+ * ★ 还有一格：卡上 `owner` 为空（匿名领的）⇒ 无法比对 ⇒ 放行（同上）。
+ */
+export type WriteActor = string;
+
+/** ★ actor 从哪来：显式传参优先；否则读 `AGENT_IO_ACTOR`；都没有 ⇒ `null`（走"提醒+放行"那一格）。 */
+export function resolveActor(explicit?: WriteActor | null): WriteActor | null {
+  if (explicit && explicit.trim()) return explicit.trim();
+  const env = process.env.AGENT_IO_ACTOR;
+  return env && env.trim() ? env.trim() : null;
+}
+
+/**
+ * ★★ **按 actor 判定的入口**（A7 的正式写法）。
+ * ★ 旧入口 `assertSourceWriteRegistered(root, files)` 保留 —— 不关心身份的调用方不受影响
+ *   （它等价于 `actor = null` ⇒ 走"提醒 + 放行"那一格，**行为不变**）。
+ */
+export function assertSourceWriteRegisteredFor(
+  projectRoot: string,
+  files: readonly string[],
+  actor?: WriteActor | null,
+): TaskGateOutcome {
+  return assertSourceWriteRegistered(projectRoot, files, { actor: resolveActor(actor) });
+}
+
 export function assertSourceWriteRegistered(
   projectRoot: string,
   files: readonly string[],
+  opts?: { actor?: WriteActor | null },
 ): TaskGateOutcome {
   const root = path.resolve(projectRoot);
   const rels = [...new Set(files.map((f) => toIndexKey(root, f)).filter((r): r is string => !!r))];
@@ -874,7 +913,12 @@ export function assertSourceWriteRegistered(
     );
   }
 
+  const actor = resolveActor(opts?.actor);
   const unclaimed: Array<{ rel: string; cands: Array<{ feature: string; nodeId: string; state: string | undefined }> }> = [];
+  /** ★ A7：有 claimed 卡，但 **owner 不是本次写入者** ⇒ 阻断（会覆盖别人的工作） */
+  const foreignClaim: Array<{ rel: string; feature: string; nodeId: string; owner: string; actor: string }> = [];
+  /** ★ A7：有 claimed 卡，但**拿不到 actor / 卡上没有 owner** ⇒ 提醒 + 放行（不知道是谁，不损坏数据） */
+  const actorWarnings: string[] = [];
   /** ★ 这批文件里**不在任何 covering feature 里**的（新建文件 / 未纳入设计）—— 放行，但**逐个点名** */
   const unmapped: string[] = [];
   let checked = 0;
@@ -890,9 +934,31 @@ export function assertSourceWriteRegistered(
     // ★★★ OQ10 裁定：只有"该节点上有一张 **claimed** 的任务卡"才算登记。
     //   ★ 任一 feature 满足即通过（不替人挑哪一条）；★ 看的是 `task.state`，**不看** progress
     //   （progress 是派生值，且"已播种"的 progress 会让旧判据变成装饰 —— 那正是 OQ10）。
-    const states = cands.map((c) => ({ ...c, state: taskByFeature.get(c.feature)?.get(c.nodeId)?.state }));
-    if (states.some((c) => c.state === 'claimed')) continue;
-    unclaimed.push({ rel, cands: states });
+    // ★★★ A7（2026-10-17）：**还要问"这张卡是不是你的"** —— 三种情形三种处置（见 `WriteActor` 的注释表）。
+    const cards = cands.map((c) => ({ ...c, task: taskByFeature.get(c.feature)?.get(c.nodeId) }));
+    const claimed = cards.find((c) => c.task?.state === 'claimed');
+    if (!claimed) {
+      unclaimed.push({
+        rel,
+        cands: cards.map((c) => ({ feature: c.feature, nodeId: c.nodeId, state: c.task?.state })),
+      });
+      continue;
+    }
+    const owner = claimed.task?.owner ?? null;
+    if (!actor) {
+      // ★ G2 的"提醒"那一支：不知道是谁 ⇒ 不损坏数据 ⇒ 不该堵
+      actorWarnings.push(
+        `${rel}：节点 ${claimed.nodeId} 上有 claimed 卡（owner=${owner || '（空）'}），但**拿不到"谁在写"**` +
+          `（未传 actor，也没有 AGENT_IO_ACTOR）⇒ 按 G2 **提醒 + 放行**`,
+      );
+      continue;
+    }
+    if (owner && owner !== actor) {
+      // ★ G2 的"阻断"那一支：改别人的活会覆盖别人的工作 ⇒ 真损坏
+      foreignClaim.push({ rel, feature: claimed.feature, nodeId: claimed.nodeId, owner, actor });
+      continue;
+    }
+    // owner 匹配，或卡上没有 owner（无法比对）⇒ 放行
   }
   if (!checked) {
     // ★ 2026-10-17：收集失败**不再抛**（`gate-principle.md` §二）。★ 但也不许混进
@@ -924,6 +990,25 @@ export function assertSourceWriteRegistered(
       warnings,
     };
   }
+  // ★★★ A7（2026-10-17）：`owner` 不匹配 ⇒ **阻断**。
+  //   ★ 这一支与"没挂任务"**不同**：不是"没在账上"（那是记录问题，按 G2 只提醒），
+  //     而是**会覆盖别人的工作**（真损坏）⇒ 该堵。
+  if (foreignClaim.length) {
+    throw new Error(
+      `拒绝落盘（任务闸 · A7「谁在写」）：这次要改的 ${foreignClaim.length} 个文件，其任务卡**不是你领的**\n` +
+        foreignClaim
+          .map((x) => `  · ${x.rel} → 节点 ${x.nodeId} 的卡 owner=${x.owner}，本次写入者=${x.actor}`)
+          .join('\n') +
+        `\n★ 为什么拦：改别人的活**会**覆盖对方的工作 ⇒ 那是**真损坏**，不是"没在账上"（后者按 G2 只提醒）。\n` +
+        `★ 怎么办（二选一）：\n` +
+        `  ① 对方已放弃 ⇒ 先 \`release\` 那张卡，再 claim 一张自己的；\n` +
+        `  ② 对方还在做 ⇒ 别动这个文件（你改了会和它对撞）。`,
+    );
+  }
+
+  // ★ A7：拿不到 actor 的那些 ⇒ 提醒（放行，但要留痕 —— 否则"不知道是谁"从此无人知晓）
+  if (actorWarnings.length) warnings.push(...actorWarnings);
+
   if (!unclaimed.length) {
     return {
       applicable: true,

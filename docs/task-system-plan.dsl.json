@@ -337,8 +337,18 @@
               "why": "★ 按 actor 判定的入口：要求\"覆盖该文件的节点上存在 claimed 卡，且 owner === actor\"（现在只要求\"存在 claimed 卡\"）"
             }
           ],
-          "state": "candidate",
-          "owner": null
+          "state": "done",
+          "owner": "main-agent",
+          "claimed_at": "2026-10-17T14:32:42.228Z",
+          "evidence": [
+            {
+              "kind": "attestation",
+              "at": "2026-10-17T14:32:42.229Z",
+              "by": "main-agent（A7）",
+              "verdict": "pass",
+              "why": "对拍 34/26/5/3 → 34/28/3/3（卡的两条判据红变绿）；三种情形实测：匹配放行 / 不匹配阻断 / 无 actor 放行+留痕；t352 18/0 未退化"
+            }
+          ]
         }
       }
     ],
