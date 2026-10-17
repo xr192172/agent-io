@@ -866,9 +866,9 @@
       },
       {
         "covered_by": "invariant_unjudgeable[0]",
-        "debt": "OQ4",
         "text": "一处权威 + 一处渲染（同一批数据不许两处都存）",
-        "criterion": false
+        "criterion": false,
+        "debt_note": "★ 2026-10-18：原 debt:\"OQ4\" —— OQ4 是【未决项编号】不是台账债号 ⇒ 删（covered_by 已指向 invariant_unjudgeable[0]，属\"判不了但已记账\"）。★ 这条是闸 C 抓出来的。"
       },
       {
         "covered_by": "invariant_checks[1]",
@@ -1605,16 +1605,16 @@
       "problem": "现在只能全量: 证不知道自己碰了什么(72 张里只有 t354 有机器可读的 touches 声明), run-all 无增量模式 ⇒ 每笔都跑 72 张 ⇒ 慢 + 3 张会崩 + 子代理看起来像卡住",
       "design": [
         "① 用 git diff --name-only 拿本次改动的文件列表",
-        "② 查【契约为先】: 期望里带 path 的命中哪些(46 条里 42 条带 path) ⇒ 只跑那些期望",
+        "② 查【契约为先】: 期望里带 path 的命中哪些(46 条里 43 条带 path) ⇒ 只跑那些期望",
         "③ 查【证为后】: 只有 touches 声明命中改动文件的证才跑",
         "④ 全量证只在三种时候跑: 收口 / 日终 / 改 schema 或证框架本身"
       ],
       "criteria": "★ 改一个文件 ⇒ 本次跑的证数 ≤ 5（现在 72）",
-      "gap": "★ 缺 touches 的覆盖率(t351 之外都没有) ⇒ 这是要补的一维: 每张证声明它碰的文件",
+      "gap": "★ 缺 touches 的覆盖率(t354 之外都没有) ⇒ 这是要补的一维: 每张证声明它碰的文件",
       "note": "★ 局部契约对上 = 用户原话; 契约(path 命中)优先于证(touches 命中), 因为契约更便宜",
       "runner": "scripts/verify-changed.mjs",
       "runner_note": "★ 它算\"改一个文件命中几个证\"",
-      "problem_note": "★ 2026-10-17 更正（M15）：① 唯一机器可读的 `touches:` 在 **t354**（certs/t354-incremental-verify-cert.mjs:36），t351 只是在散文里提到这个词；② 可收集证是 **72** 张（不是 64）；③ \"28 条里 24 条带 path\"实为 **46 条里 42 条**。"
+      "problem_note": "★ 2026-10-17 更正（M15）：① 唯一机器可读的 `touches:` 在 **t354**（certs/t354-incremental-verify-cert.mjs:36），t351 只是在散文里提到这个词；② 可收集证是 **72** 张（不是 64）；③ \"28 条里 24 条带 path\"实为 **46 条里 43 条**。"
     },
     "touches_gap": {
       "why": "用户 2026-10-17: 这个缺口也一并登记到设计 DSL 里",
@@ -2147,6 +2147,16 @@
       ],
       "source_pending": "★ 这是一次重构（改 domain 的依赖方向），等设计全部写完 + 子代理再审过之后再动源码"
     },
-    "open_questions_note": "★★ 2026-10-17（Q2）：移出 OQ8, OQ10, OQ11 —— 它们的文本自己写着\"已裁/已落地\"，不是\"未结题\"。★ 为什么重要：`invariant_checks[2]` 的 cmd 只做\"成员检查\"（`oqs.includes(by)`）⇒ 若某条迁移写 `by = \"OQ8\"`，它**会通过**，尽管那条早裁了 ⇒ **不变量说的\"未结题\"比机器实际判的强**。★ 修法：让 `open_questions` 只放未结题（语义即如此），cmd 不用改。已裁的进 `rulings_*`。"
+    "open_questions_note": "★★ 2026-10-17（Q2）：移出 OQ8, OQ10, OQ11 —— 它们的文本自己写着\"已裁/已落地\"，不是\"未结题\"。★ 为什么重要：`invariant_checks[2]` 的 cmd 只做\"成员检查\"（`oqs.includes(by)`）⇒ 若某条迁移写 `by = \"OQ8\"`，它**会通过**，尽管那条早裁了 ⇒ **不变量说的\"未结题\"比机器实际判的强**。★ 修法：让 `open_questions` 只放未结题（语义即如此），cmd 不用改。已裁的进 `rulings_*`。",
+    "rulings_2026_10_17_oq8": {
+      "id": "OQ8",
+      "decided": "已裁（源码可证）—— 不是 2026-10-17 才裁的，而是更早，但一直没落进 rulings",
+      "evidence": [
+        "`isClaimable` / `isSatisfied` 已分家（task_machine.ts:320 / :340）",
+        "`export canClaim` 已删（全仓 0 命中）",
+        "`certs/t351-card-standing-cert.mjs` 是它的证"
+      ],
+      "note": "★★ 2026-10-18（第四道闸指出）：Q2 把 OQ8 从 open_questions 移出，但**没在 rulings 里落一条** ⇒ 那唯一带\"已裁\"标注的文本被删掉后，裁定只剩 git 历史。⇒ 补这一条。"
+    }
   }
 }

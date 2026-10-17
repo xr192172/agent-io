@@ -254,6 +254,8 @@
 | **D-design-completeness** | D1–D9 本身没有检查器 | 待做 |
 | — | `touches` 覆盖率 1/72（唯一机器可读声明在 `t354`） | 待补 |
 | — | 历史读数快照需标 `as_of`（N5） | 待做 |
+| **D-gate-text** | `task_home.gate` / `what_a_card_proves.layers[*].gate` —— 读起来像要求，但不是判据（`gate` 不在 CLAIM_KEYS） | 待做 |
+| **D-edge-id-unique** | `validator.ts:73-85` 只查 `nodes.id` 唯一、**不查 `edges.id`** ⇒ 重复 id 能过校验，而 `overlay.edges` 按 id 键控会串 | 待做（源码） |
 
 ★ **判据（M18 的原话）：`debt` 值必须能在本表里查到** —— 否则它只是一句没人读的字符串。
 ★ **2026-10-17 补登 12 个**（N4 指出：本轮新挂的 7 个 + 修复前的 5 个，此前全仓 grep 0 命中）。
