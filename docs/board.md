@@ -36,6 +36,7 @@
 
 | # | 任务 | 为什么排这个位 | 抽自 |
 |---|---|---|---|
+| **T12** | ★★★ **补 `publish`（立卡）—— 最高优先**：T11 落地后闸变严，而真仓节点**一张 task 都没有** ⇒ **改任何源码都会被拒**（闸把仓锁死了）⇒ 加 `edit_dsl{type:'task', op:'publish'}`（`data.summary/expectations`），并把"从设计 DSL 抽出这块 ⇒ 立卡"接进 `board` 的发布 | ★ T11 自报"缺一维"（`task_home` 只有 claim/release/complete）· ★ **不选"闸只告警"那种退法**（那等于闸失效） | 设计 DSL `task_home` + T11 回执 |
 | ~~T4~~ | ~~给 `invariant_checks` 做 runner（G5）~~ | ★ 已做完 ⇒ **移入 §一·五 待验**（★ 榜单规矩：做完不许留在这里不勾） | §83.4 G5 |
 | ~~T5~~ | ~~**第三块 `task_ops.ts`**（5红）~~ | ★ **已领取 ⇒ 开工前核出阻塞 ⇒ 停手**（见 §一·五 T5） | 设计 DSL 的 `block_order` |
 | T6 | **第四块 `task_drift.ts`**（7红） | 要跑 live 重算，最重 | 同上 |
