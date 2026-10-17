@@ -1080,15 +1080,6 @@
         "status": "裁定（开发者自裁）"
       }
     ],
-    "block_order": {
-      "note": "★ 裁定：按\"既服务施工、又服务我自己\"排序 —— discussion 先做（它治\"结论没有住处\"）",
-      "order": [
-        "discussion_log",
-        "task_ops",
-        "task_drift"
-      ],
-      "why": "discussion_log 最小最独立，且治今天最疼的病（检索历史会话 0 命中 ⇒ 你被迫复述 ⇒ 我一直在重新发现）"
-    },
     "board": {
       "note": "★★★ 用户 2026-10-16 补充的、原方案里缺的部分：任务榜单（发布处 + 验收处）+ 回执 + 双验。",
       "why": "★ 用户原话：\"应该比直接的 ToDo 文档是要好的，因为它【强制你管理】…… 我发现你有的时候 ToDo 做完了之后不勾掉，也不验收，验收的话也可能验收错\";",
@@ -1809,6 +1800,12 @@
           "name": "接线",
           "rule": "每个 export 至少 1 个消费者（防\"建了没接\"）",
           "now": "★ 已知 3 处缺：patrolDrift(A1) / renderMicro(B5) / WriteActor 旧链未接(A7)"
+        },
+        {
+          "id": "D7",
+          "name": "检查器自身可信",
+          "rule": "每个体检项必须能【自己坏】（故意造一个反例 ⇒ 它要报）；且检查器认得的判据形式要与真实一致",
+          "now": "★ 2026-10-17 已抓 5 次检查器假读数：① 读空文件（路径分隔符不一致）⇒ 报「全 0」假绿；② 只数「其他文件」的引用 ⇒ 报 42 个假孤儿；③ 正则转义多套一层 ⇒ 报 105 个假死代码；④ 漏 ESM 的 js→ts 映射 ⇒ 报「全部无依赖」；⑤ 只认 判据/criteria/rule/check/cmd ⇒ 把 expr / metric / threshold 报成「无判据」（假红）。"
         }
       ],
       "judged_by": "★ 本段**目前没有检查器** —— 这本身就是 D5 的一条 unjudged（欠账 D-design-completeness）。★ 写法与 invariant_checks 同构（判据 + cmd + runner），等 `Expectation` 与 `invariant` 合成同一个可执行抽象后，这一段就能变成可跑的判据。",
