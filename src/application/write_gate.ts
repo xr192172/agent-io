@@ -477,11 +477,81 @@ export function syncSelfWritesSync(
 // ★★★ 任务闸（T328 步 6，2026-10-15）：**未登记不许落盘**
 // ─────────────────────────────────────────────────────────────
 
-/** 任务闸的判据结果 —— `applicable:false` = 该项目/该文件不在任务系统里（**要报出来，不许静默**） */
+/** 任务闸的判据结果 —— `applicable:false` **只**表示「本项目不用任务系统」（**要报出来，不许静默**） */
 export interface TaskGateOutcome {
   applicable: boolean;
   /** 人读原因（放行时给出依据：凭什么放行） */
   note: string;
+  /**
+   * ★★★ 放行/不适用的**依据分类**（2026-10-17 · T352 · `docs/_extract/flow-check-1.md` F7）。
+   *
+   * 为什么必须分类：`applicable:false` 原先同时装着两种完全不同的处境 ——
+   *   ①「本项目**不用**任务系统」（配置层面，合法放行）；
+   *   ②「我**该找到节点却没找到**」（收集失败：节点缺 `path`/`description`）。
+   * ⇒ ② 被静默混进 ① ⇒ 注释写着"不许静默"，代码在静默 ⇒ **闸看不见卡**。
+   * ⇒ 现在 `applicable:false` **只许**来自 `no-files` / `no-feature-for-root`；
+   *   收集失败**抛错**（见 `GateCoverage.unaddressable`），**不走本字段**。
+   */
+  basis: TaskGateBasis;
+}
+
+/** 任务闸放行的依据分类（★ 唯一取值处；`applicable:false` 只许前两格） */
+export type TaskGateBasis =
+  | 'no-files' // 没有落在项目根内的文件
+  | 'no-feature-for-root' // 没有任何 feature 的 source_root 指到项目根（= 本项目不用任务系统）
+  | 'files-not-in-design' // 有 feature 指到根，但这批文件不在任何一条里（新建 / 未纳入设计）
+  | 'covered'; // 有覆盖 feature，已逐个判过任务卡
+
+/** 一条 covering feature 的 `path → node_id` 表 + 任务格 */
+export interface GateCoverageFeature {
+  feature: string;
+  byPath: Map<string, string>;
+  /** ★ node_id → 任务格（`geometry.nodes[].task`）—— 闸的判据读它（OQ10） */
+  taskById: Map<string, TaskSpec>;
+}
+
+/**
+ * ★★★ **收集**的结果（与"判定放行"分家 —— 这是本刀的结构）。
+ *
+ * 为什么分开：放行是一句**结论**，而"有没有收集到节点"是它的**前提**。
+ * 前提失败而结论照给（`applicable:false`）就是**静默 fail-open**。
+ * ⇒ 收集失败那一格（`unaddressable`）在 `assertSourceWriteRegistered`
+ *   里**先于**任何放行分支被检查，且**抛错**。
+ */
+export interface GateCoverage {
+  /** 收集到的 covering feature（有 `path → node_id` 表的那些） */
+  features: GateCoverageFeature[];
+  /** `listFeatures()` 里一共有多少条（放行 note 的依据读数） */
+  totalFeatures: number;
+  /** `source_root` 指到项目根的 feature 条数（= 0 ⇒ 合法的 applicable:false） */
+  rootFeatureCount: number;
+  /** ★ 收集失败：文件/文档节点**既无 `path` 也无 `description`** ⇒ 必须点名报出 */
+  unaddressable: Array<{ feature: string; nodeId: string; type: string | undefined }>;
+}
+
+/**
+ * 一个节点指向的**仓库相对路径**（`path → node_id` 的左边）。
+ *
+ * ★★ 口径（2026-10-17 · T352）：**`path` 优先，回落 `description`** —— 两个都是既有字段，不新造。
+ *   · `path` = **显式文件指针**（`Node` 类型没声明它，但设计 DSL 里已有；`task_machine.ts` 的
+ *     `StandingNode.path` 与 `task_ops` 的归属判定读的是同一个字段）⇒ 一律认，不看 `type`；
+ *   · `description` = **老写法**（scan 产出的文件/文档节点把路径写在 `description` 里）⇒
+ *     只对 `file`/`doc` 节点读（别的节点上那是人话，不是路径）。
+ *
+ * ★ 为什么必须补 `path`：本仓的 `task-system-plan` feature 5 个文件节点**全部用 `path`、
+ *   `description` 为 0** ⇒ 旧口径（只认 description）把它们全漏掉 ⇒ 整条 feature 被跳过
+ *   ⇒ 写闸对"人写的 DSL"是装饰（F7 实测）。
+ */
+function nodeFilePath(
+  n: { type?: string; description?: string } & { path?: string },
+  sep: string,
+): string | undefined {
+  const explicit = n.path;
+  if (typeof explicit === 'string' && explicit.trim()) return explicit.split(sep).join('/');
+  if (n.type !== 'file' && n.type !== 'doc') return undefined;
+  const legacy = n.description;
+  if (typeof legacy !== 'string' || !legacy.trim()) return undefined;
+  return legacy.split(sep).join('/');
 }
 
 /**
@@ -492,31 +562,47 @@ export interface TaskGateOutcome {
  *   贴错比不贴坏 ⇒ 只认**唯一命中**；本闸问的是"这次改动**有没有挂在任何一条**任务上"
  *   （要求原文："**没有挂到任何任务/进度登记上** ⇒ 拒绝"）⇒ 只要**覆盖了**就要登记，
  *   多feature 时只要**任一**登记过就算通过 —— ★ 仍然**不需要替人挑**哪一条。
+ *
+ * ★★★ 与旧版的差别（T352）：**收集失败不再被 `if (byPath.size)` 静默吞掉** —— 旧版
+ *   一个 feature 的 `byPath` 为空就 `continue`，于是"节点缺 description"变成"这条 feature 不存在"
+ *   ⇒ 调用方读到 `applicable:false`（放行）。现在把它们分装在 `unaddressable`
+ *   里**交给调用方抛**，并额外带出 `totalFeatures` / `rootFeatureCount` 作为放行依据的读数。
  */
-function coveringFeatures(absRoot: string): Array<{
-  feature: string;
-  byPath: Map<string, string>;
-  /** ★ node_id → 任务格（`geometry.nodes[].task`）—— 闸的新判据读它（OQ10） */
-  taskById: Map<string, TaskSpec>;
-}> {
-  const out: Array<{ feature: string; byPath: Map<string, string>; taskById: Map<string, TaskSpec> }> = [];
+export function collectGateCoverage(rootArg: string): GateCoverage {
+  // ★ 入口自己归一（导出函数，调用方可能给相对路径；与 `assertSourceWriteRegistered` 同一把尺）
+  const absRoot = path.resolve(rootArg);
+  const cov: GateCoverage = {
+    features: [],
+    totalFeatures: 0,
+    rootFeatureCount: 0,
+    unaddressable: [],
+  };
   for (const d of listFeatures()) {
+    cov.totalFeatures++;
     if (!d.source_root || path.resolve(d.source_root) !== absRoot) continue;
+    cov.rootFeatureCount++;
     const byPath = new Map<string, string>();
     const taskById = new Map<string, TaskSpec>();
     for (const n of d.geometry?.nodes ?? []) {
       if (n.task) taskById.set(n.id, n.task);
-      if (n.type !== 'file') continue;
-      if (typeof n.description !== 'string' || !n.description) continue;
-      byPath.set(n.description.split(path.sep).join('/'), n.id);
+      const rel = nodeFilePath(n as { type?: string; description?: string } & { path?: string }, path.sep);
+      if (rel) {
+        byPath.set(rel, n.id);
+        continue;
+      }
+      // ★ 只有"文件型节点"才算收集失败 —— 聚合/模块节点本来就不指文件。
+      if (n.type === 'file' || n.type === 'doc') {
+        cov.unaddressable.push({ feature: d.feature, nodeId: n.id, type: n.type });
+      }
     }
     // 兜底：`semantic.files` 里有、几何层没有同名节点的（不该发生，但**不静默漏判**）
     for (const f of d.semantic?.files ?? []) {
       if (f.path && !byPath.has(f.path)) byPath.set(f.path.split(path.sep).join('/'), f.id);
     }
-    if (byPath.size) out.push({ feature: d.feature, byPath, taskById });
+    // ★ `byPath` 为空且 `fileNodes > 0` 已在上面进 `unaddressable`（那只可能是"节点不可寻址"这一种病因）
+    if (byPath.size) cov.features.push({ feature: d.feature, byPath, taskById });
   }
-  return out;
+  return cov;
 }
 
 /**
@@ -545,8 +631,11 @@ function coveringFeatures(absRoot: string): Array<{
  * ## ★ 拦的范围（明写，便于判"谁被拦/谁不被拦"）
  * 拦：`项目根上有设计 feature 覆盖该文件（DSL.source_root === 项目根 ∧ 该文件是它的文件节点）`
  *    ∧ `覆盖它的那些 feature 里【没有一条】在该节点上有一张 claimed 任务卡`。
- * 放行：该项目**没有** feature 指向它 · 文件**不是**任何一条的节点（新建文件 / 未纳入设计）·
- *      在**任一**覆盖它的 feature 里该节点有 `state='claimed'` 的 task。
+ * 放行：该项目**没有** feature 指向它（`no-feature-for-root`，合法）· 文件**不是**任何一条的节点
+ *      （新建文件 / 未纳入设计，`files-not-in-design`，逐个点名）·
+ *      在**任一**覆盖它的 feature 里该节点有 `state='claimed'` 的 task（`covered`）。
+ * ★★★ 拒绝之外的第三种结果（T352）：**收集失败 ⇒ 抛错**（`unaddressable`）。
+ *      它不是"不适用"，也**不许**被读成放行 —— 详见 `collectGateCoverage` 的头注释。
  *
  * ## ★★ T332（2026-10-15）**追加**的第二条判据：前置闸（解锁）
  * 上面这条之外，**追加**：某条 edge intent **显式**声明了 `requires`（非空）∧ 该边源节点(from)
@@ -562,15 +651,45 @@ export function assertSourceWriteRegistered(
 ): TaskGateOutcome {
   const root = path.resolve(projectRoot);
   const rels = [...new Set(files.map((f) => toIndexKey(root, f)).filter((r): r is string => !!r))];
-  if (!rels.length) return { applicable: false, note: '没有落在项目根内的文件 ⇒ 任务闸不适用（放行）' };
-
-  const covering = coveringFeatures(root);
-  if (!covering.length) {
+  if (!rels.length) {
     return {
       applicable: false,
-      note: '项目根上没有设计 feature 指向它（没有任何 feature 的 source_root 指到这里）⇒ 任务闸不适用（放行）',
+      basis: 'no-files',
+      note: '没有落在项目根内的文件 ⇒ 任务闸不适用（放行；依据：入参里 0 个文件落在项目根内）',
     };
   }
+
+  // ★★★ T352：**先收集、再判定** —— 收集失败（节点缺 path/description）**当场抛**，
+  //   绝不让它走到下面任何 "applicable:false（放行）" 的分支。这是本刀堵的那个洞：
+  //   旧版 `if (byPath.size) continue` 把"我该找到节点却没找到"静默变成"这条 feature 不存在"。
+  const cov = collectGateCoverage(root);
+  if (cov.unaddressable.length) {
+    const list = cov.unaddressable
+      .map((u) => `  · ${u.nodeId}（feature=${u.feature}，type=${u.type ?? '?'}）**既无 path 也无 description**`)
+      .join('\n');
+    throw new Error(
+      `拒绝放行（任务闸·收集失败）：${cov.unaddressable.length} 个文件节点**没有可收集的路径** —— ` +
+        `本仓纪律：\`applicable:false\` 只许表示「本项目不用任务系统」，**不许**用来表示「我该找到节点却没找到」。\n` +
+        `${list}\n` +
+        `\n★ 为什么这是硬错而不是放行：闸要回答"这次改动挂在哪个已领取的任务上"；` +
+        `节点没有 path/description ⇒ 它连"哪个文件"都指不出来 ⇒ **闸对它是瞎的**。\n` +
+        `★ 怎么办（二选一）：\n` +
+        `  ① 给该节点补 \`path\`（仓库相对路径；显式文件指针，推荐）或 \`description\`（老写法，仅 file/doc 节点认）：\n` +
+        `     edit_dsl { feature:'<f>', operations:[{ type:'node', op:'update', id:'<node_id>', data:{ description:'<仓库相对路径>' } }] }\n` +
+        `  ② 若这些节点确实**不指向任何文件**（聚合/概念节点）⇒ 把它们改成 \`type\` 非 file/doc，闸就不再把它们当文件节点。\n` +
+        `★ 本闸**不会**替你补字段，也**不会**降级放行。`,
+    );
+  }
+  if (!cov.rootFeatureCount) {
+    return {
+      applicable: false,
+      basis: 'no-feature-for-root',
+      note:
+        `本项目不用任务系统：${cov.totalFeatures} 条 feature 里，**0 条**的 source_root 指到 ${root} ` +
+        `（判据：path.resolve(source_root) === 项目根）⇒ 任务闸不适用（放行）`,
+    };
+  }
+  const covering = cov.features;
 
   // overlay 按 feature 懒读一次（★ 只作**前置闸**的回落值：有 task 的节点用派生进度）
   const ovByFeature = new Map<string, ReturnType<typeof loadOverlay>>();
@@ -665,12 +784,17 @@ export function assertSourceWriteRegistered(
   }
 
   const unclaimed: Array<{ rel: string; cands: Array<{ feature: string; nodeId: string; state: string | undefined }> }> = [];
+  /** ★ 这批文件里**不在任何 covering feature 里**的（新建文件 / 未纳入设计）—— 放行，但**逐个点名** */
+  const unmapped: string[] = [];
   let checked = 0;
   for (const rel of rels) {
     const cands = covering
       .map((c) => ({ feature: c.feature, nodeId: c.byPath.get(rel) }))
       .filter((x): x is { feature: string; nodeId: string } => !!x.nodeId);
-    if (!cands.length) continue; // 不是任何一条 feature 的节点（新建/未纳入设计）⇒ 无任务可挂 ⇒ 不拦
+    if (!cands.length) {
+      unmapped.push(rel); // 本项目有任务系统，但这条路径确实不在设计里 ⇒ 放行（下面 note 逐个点名）
+      continue;
+    }
     checked++;
     // ★★★ OQ10 裁定：只有"该节点上有一张 **claimed** 的任务卡"才算登记。
     //   ★ 任一 feature 满足即通过（不替人挑哪一条）；★ 看的是 `task.state`，**不看** progress
@@ -679,12 +803,25 @@ export function assertSourceWriteRegistered(
     if (states.some((c) => c.state === 'claimed')) continue;
     unclaimed.push({ rel, cands: states });
   }
+  if (!checked) {
+    return {
+      applicable: true, // 本项目**有**任务系统，只是这批文件不在设计里 ⇒ 不是"不适用"，是"这次没有可挂的节点"
+      basis: 'files-not-in-design',
+      note:
+        `本批 ${unmapped.length} 个文件都**不在任何 covering feature 里**（不是任何一个文件节点的 path/description、` +
+        `也不在 semantic.files）⇒ 无任务可挂、放行。逐个点名：${unmapped.join(', ')}\n` +
+        `  ★ 依据读数：${cov.totalFeatures} 条 feature 里 ${cov.rootFeatureCount} 条 source_root 指到本根、` +
+        `${covering.length} 条收集到了 path→node 表（共 ${covering.reduce((s, c) => s + c.byPath.size, 0)} 条路径）。\n` +
+        `  ★ 若其中某条其实**已经在设计里**（只是节点缺 path/description）⇒ 那属于"收集失败"，本函数**会抛**而不是走到这里。`,
+    };
+  }
   if (!unclaimed.length) {
     return {
       applicable: true,
+      basis: 'covered',
       note:
-        `已领任务：${checked} 个设计节点上都有 state=claimed 的任务卡（覆盖 feature：${covering.map((c) => c.feature).join(', ')}；` +
-        `另有 ${rels.length - checked} 个文件不是任何一条的节点，不计）`,
+        `已领任务：${checked} 个设计节点上都有 state=claimed 的任务卡（覆盖 feature：${covering.map((c) => c.feature).join(', ')}` +
+        `${unmapped.length ? `；另有 ${unmapped.length} 个文件不在设计里、无任务可挂：${unmapped.join(', ')}` : ''}）`,
     };
   }
 
