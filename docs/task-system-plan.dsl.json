@@ -530,10 +530,10 @@
         "red_when": "exit!=0 ⇒ task 格落了快照、复制了事实"
       },
       {
-        "invariant": "★ 被未决项挡住的迁移：blocked_by_open_question 必须命中未结题的 OQ（否则该字段是一句没人读的字符串）",
-        "check": "收集所有 transition.guard.blocked_by_open_question 的取值 X；要求每条 X 都能在 task_plan.open_questions 里找到编号前缀相同的一条（OQ 编号按 /^OQ[0-9]+/ 取）。OQ 一旦结题被移出清单 ⇒ 此处变红 ⇒ 强制把引用它的迁移一并处置（删掉 / 或改为已启用），不许留悬空引用。★ 这就是该字段的**消费方**：它不再没人读。",
-        "cmd": "node -e \"const fs=require('fs');const d=JSON.parse(fs.readFileSync('docs/task-system-plan.dsl.json','utf8'));const oqs=(d.task_plan.open_questions||[]).map(s=>(String(s).match(/^OQ[0-9]+/)||[''])[0]).filter(Boolean);const bl=(d.task_plan.state_machine.transitions||[]).map(t=>t.guard&&t.guard.blocked_by_open_question).filter(Boolean);console.log('OQ='+JSON.stringify(oqs),'blocked='+JSON.stringify(bl));process.exit(bl.length>0&&bl.every(x=>oqs.includes(x))?0:1)\"",
-        "red_when": "exit!=0 ⇒ blocked 指向的 OQ 不在 open_questions 里（悬空引用 / 该字段没人读）"
+        "invariant": "★ 被未决项挡住的迁移：state.kind=\"blocked\" 必须命中未结题的 OQ（否则该状态是一句没人读的字符串）",
+        "check": "收集所有 transition.state.kind===\"blocked\" 的 by 取值；每条都要在 task_plan.open_questions 里找到编号前缀相同的一条。★ 代码侧同形：TransitionState（task_machine.ts）—— 声明 blocked 必须带 by，且 applicableTransitions 只认 ready。",
+        "cmd": "node -e \"const fs=require('fs');const d=JSON.parse(fs.readFileSync('docs/task-system-plan.dsl.json','utf8'));const oqs=(d.task_plan.open_questions||[]).map(s=>(String(s).match(/^OQ[0-9]+/)||[''])[0]).filter(Boolean);const bl=(d.task_plan.state_machine.transitions||[]).map(t=>t.state&&t.state.kind==='blocked'?t.state.by:null).filter(Boolean);console.log('OQ='+JSON.stringify(oqs),'blocked='+JSON.stringify(bl));process.exit(bl.every(x=>oqs.includes(x))?0:1)\"",
+        "red_when": "exit!=0 ⇒ 某条迁移声称被 X 挡住，但 X 不在 open_questions 里（悬空引用）；或 blocked 却没写 by"
       },
       {
         "invariant": "★ discussion 格「微缩在前、按需展开」：默认渲染只出 micro + open 计数（user_quote 等**结构上**到不了默认视野），且展开的三个触发（claim / judge-failed / explicit）**机器可判**",
@@ -569,6 +569,9 @@
               "★★★ 归属判据（2026-10-17 重写，判据只住 RED_DISPOSITION 一处）：每条红先分类成 own / orphan / dep-pending / dep-done；own 与 orphan = 本卡能改（claim），dep-pending 与 dep-done = 改不动（wait）。blocked ⟺ 没有一条能改；否则 work。★ dep-done 也算 wait：闸只认该节点的 claimed 卡，本卡改不动已 done 节点的文件，处置是重开那张卡"
             ],
             "read": "cardStanding 的 standing 值 + CAS 的 changes 行数"
+          },
+          "state": {
+            "kind": "ready"
           }
         },
         {
@@ -581,6 +584,10 @@
             ],
             "read": "existsTarget(target) === false",
             "distinct_from": "done：『失效』(target 没了) ≠ 『已满足』(expectations 全过)"
+          },
+          "state": {
+            "kind": "unimplemented",
+            "why": "全仓没有代码写 state=\"void\"（grep 赋值 0 处）；task_ops 也没有对应 op"
           }
         },
         {
@@ -593,6 +600,9 @@
               "now - claimed_at > TTL：由 releaseIfExpired 产出 release 事件后再回 candidate，★ 不得静默改 state"
             ],
             "read": "release 事件数 / patrol lease_ttl 计数"
+          },
+          "state": {
+            "kind": "ready"
           }
         },
         {
@@ -606,6 +616,9 @@
               "validateProgressEvidence 过"
             ],
             "read": "isSatisfied 的 satisfied 布尔 + cardStanding 的 standing 值"
+          },
+          "state": {
+            "kind": "ready"
           }
         },
         {
@@ -613,13 +626,16 @@
           "from": "candidate",
           "to": "done",
           "guard": {
-            "blocked_by_open_question": "OQ1",
             "clauses": [
               "★ 原写法 `candidate|claimed → done` 是**合写**：掩盖了『未领就被收口』这条路径",
               "仅当 OQ1 裁定为『自动收口』才允许存在；否则此迁移必须不存在",
               "即便允许，也只能由 patrol drift 的 missed_close 计数**提示**，不得由 patrol 直接置 done"
             ],
             "read": "patrol drift 的 missed_close 计数（只提示）"
+          },
+          "state": {
+            "kind": "blocked",
+            "by": "OQ1"
           }
         },
         {
@@ -631,6 +647,10 @@
               "新卡带 replaces: <old_id>，且 old_id 在卡集里存在"
             ],
             "read": "新卡的 replaces 字段"
+          },
+          "state": {
+            "kind": "unimplemented",
+            "why": "全仓没有代码写 state=\"superseded\"；replaces 字段既无写入方也无读取方"
           }
         }
       ],

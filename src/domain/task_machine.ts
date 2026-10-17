@@ -33,7 +33,7 @@
  *
  * ## 迁移表（★ 逐条照设计 DSL；`candidate → done` **不实现**）
  * 见 {@link TRANSITIONS}。其中 `t_done_from_candidate` 带
- * `blocked_by_open_question: 'OQ1'` ⇒ **声明为存在但 `enabled:false`**：
+ * `state: { kind: 'blocked', by: 'OQ1' }` ⇒ **声明为存在但不可走**：
  * ★ **没有任何代码路径**能执行它，等用户裁定（"『已满足』的卡：自动收口还是只提示"）。
  */
 import { judgeExpectations, type ExpectationsReport } from '../application/design/intent/expectations.js';
@@ -407,28 +407,45 @@ export function releaseIfExpired(
 // 迁移表（★ 逐条照设计 DSL 的 task_plan.state_machine.transitions）
 // ─────────────────────────────────────────────────────────────
 
+/**
+ * ★★★ 一条迁移**能不能走**（2026-10-17 重写：这一维原本有两个字段表达同一件事，且设计↔代码不一致）。
+ *
+ * ## 收归前（两处形状）
+ * · 代码：`enabled: boolean`（`applicableTransitions` 唯一读它）+ `guard.blocked_by_open_question`（★ **没有读者**）
+ * · 设计 DSL：6 条迁移**都没有 `enabled`**，只有 `t_done_from_candidate` 有 `blocked_by_open_question`
+ * ⇒ ★ 同一件事（能不能走）：**设计用 A 表达、代码用 B 表达**，而代码那半边 `blocked_by_open_question` 没人读
+ *   ⇒ 把 `enabled` 改 `true`、OQ1 仍开放，4 条不变量照样全 PASS（2026-10-17 实测）。
+ * ★ 用"再加一条不变量"去补 = **补丁**（事后检查）；**改成一个字段 = 结构上不可能**。
+ *
+ * ## 现在（一维一处）
+ * `state` 是**必填**的联合类型 ⇒ 每条迁移**必须**声明自己处在哪一格，漏声明**编不过**；
+ * 且 `blocked` 自带 OQ 编号 ⇒ **不存在**"声明可走却挂着一个未决项"这种组合（那个字段已不存在）。
+ *
+ * ★ `unimplemented` 这一格是**诚实**用的：迁移表里有这一条，但**没有代码会执行它**
+ *   ⇒ `applicableTransitions` 不返回它 ⇒ 调用方不会以为"可走"然后撞到"不支持操作"。
+ */
+export type TransitionState =
+  | { kind: 'ready' }
+  | { kind: 'blocked'; by: string }
+  | { kind: 'unimplemented'; why: string };
+
 /** 一条迁移（`guard.clauses` 是**人读判据**；机器可判的那部分由本模块的函数实现）。 */
 export interface TaskTransition {
   id: string;
   from: TaskState;
   to: TaskState;
-  /**
-   * ★ `false` ⇒ **本笔没有实现它**，`applicableTransitions` 不会返回它。
-   *   用到它的唯一情形是被未决项挡住（见 `blocked_by_open_question`）。
-   */
-  enabled: boolean;
+  /** ★ 能不能走（**唯一**表达；`applicableTransitions` 只认 `kind === 'ready'`） */
+  state: TransitionState;
   guard: {
     clauses: readonly string[];
-    /** ★ 该迁移被哪条未决项挡住（未结题 ⇒ 不许启用） */
-    blocked_by_open_question?: string;
   };
 }
 
 /**
  * ★★ **迁移表**（唯一住处；读处见 {@link applicableTransitions}）。
  *
- * ★ `t_done_from_candidate`（`candidate → done`）带 `blocked_by_open_question: 'OQ1'`
- *   ⇒ **`enabled: false`**：设计 DSL 明写"仅当 OQ1 裁定为『自动收口』才允许存在；否则此迁移必须不存在"，
+ * ★ `t_done_from_candidate`（`candidate → done`）带 `state: { kind: 'blocked', by: 'OQ1' }`
+ *   ⇒ **不可走**：设计 DSL 明写"仅当 OQ1 裁定为『自动收口』才允许存在；否则此迁移必须不存在"，
  *   而 OQ1 **用户尚未拍** ⇒ ★ **本笔不实现它**（没有任何代码路径会执行它）。
  *   ★ 它留在表里 = 让"被未决项挡住的迁移"**可见**（否则"少了一条迁移"与"没想到"分不清）。
  */
@@ -437,7 +454,7 @@ export const TRANSITIONS: readonly TaskTransition[] = [
     id: 't_claim',
     from: 'candidate',
     to: 'claimed',
-    enabled: true,
+    state: { kind: 'ready' },
     guard: {
       clauses: [
         'isClaimable(cardStanding(card)) === true（★ 取五值里的 work / violated 两格 —— 有活干、或有违约要拆）',
@@ -452,7 +469,7 @@ export const TRANSITIONS: readonly TaskTransition[] = [
     id: 't_void',
     from: 'candidate',
     to: 'void',
-    enabled: true,
+    state: { kind: 'unimplemented', why: '全仓没有代码写 state:"void"（grep 赋值 0 处）；task_ops 也没有对应 op' },
     guard: {
       clauses: ['target 在 DB 查不到（files / edges 任一查无此 target）'],
     },
@@ -461,7 +478,7 @@ export const TRANSITIONS: readonly TaskTransition[] = [
     id: 't_release',
     from: 'claimed',
     to: 'candidate',
-    enabled: true,
+    state: { kind: 'ready' },
     guard: {
       clauses: [
         '显式 release 事件（带 by + reason），或',
@@ -473,7 +490,7 @@ export const TRANSITIONS: readonly TaskTransition[] = [
     id: 't_done_from_claimed',
     from: 'claimed',
     to: 'done',
-    enabled: true,
+    state: { kind: 'ready' },
     guard: {
       clauses: [
         'owner !== null（★ 必须已领）',
@@ -487,9 +504,8 @@ export const TRANSITIONS: readonly TaskTransition[] = [
     from: 'candidate',
     to: 'done',
     // ★★ OQ1 未拍 ⇒ 不实现（设计 DSL 逐字："否则此迁移必须不存在"）
-    enabled: false,
+    state: { kind: 'blocked', by: 'OQ1' },
     guard: {
-      blocked_by_open_question: 'OQ1',
       clauses: [
         '仅当 OQ1 裁定为「自动收口」才允许存在；否则此迁移必须不存在',
         '即便允许，也只能由 patrol drift 的 missed_close **提示**，不得由 patrol 直接置 done',
@@ -500,7 +516,7 @@ export const TRANSITIONS: readonly TaskTransition[] = [
     id: 't_supersede',
     from: 'candidate',
     to: 'superseded',
-    enabled: true,
+    state: { kind: 'unimplemented', why: '全仓没有代码写 state:"superseded"；replaces 字段既无写入方也无读取方' },
     guard: {
       clauses: ['新卡带 replaces: <old_id>，且 old_id 在卡集里存在'],
     },
@@ -508,12 +524,12 @@ export const TRANSITIONS: readonly TaskTransition[] = [
 ];
 
 /**
- * 某个状态**此刻可走**的迁移（★ 读处：`enabled:false` 的与终态出发的一律不返回）。
+ * 某个状态**此刻可走**的迁移（★ 读处：只返回 `state.kind === 'ready'` 的；`blocked` / `unimplemented` 与终态出发的一律不返回）。
  *
  * ★ 为什么要有它，而不是让调用方自己 `TRANSITIONS.filter(...)`：
  *   漏掉 `enabled` 这一条判断 ⇒ **被 OQ1 挡住的 `candidate → done` 会被当成可走**
  *   ⇒ 那正是设计 DSL 要防的"未领就被收口"。判据只住一处。
  */
 export function applicableTransitions(from: TaskState): TaskTransition[] {
-  return TRANSITIONS.filter((t) => t.enabled && t.from === from);
+  return TRANSITIONS.filter((t) => t.state.kind === 'ready' && t.from === from);
 }
