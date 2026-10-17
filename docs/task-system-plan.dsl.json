@@ -307,8 +307,7 @@
               "symbol": "listPool",
               "why": "★ 唯一的读取入口；没有它，pool 就又只能 node -e 看"
             }
-          ],
-          "open": "★ 接入点未定：要接进 queryFeature（getDslHandler → queryFeature），但 queryFeature 住哪个文件我还没核 ⇒ 这条【还没有判据】，如实标 unjudged（欠账 D-T8-wire）"
+          ]
         }
       },
       {
@@ -679,7 +678,7 @@
   "task_plan": {
     "note": "★ 这份 JSON 本身 = 讨论桌：每一条'该做什么'都写成了六种 kind 的可判期望。",
     "plan_to_work": {
-      "note": "★ 这不是『按顺序执行』的清单，而是一次**对拍**：把方案里的全部 expectations 抽出来交给 judgeExpectations，fail 的条**就是**待实现的活（无 fail ⇒ 无活，方案已实现）。",
+      "note": "★ 这不是『按顺序执行』的清单，而是一次**对拍**：把方案里的全部 expectations 抽出来交给 judgeExpectations，fail 的条**就是**待实现的活（★ **无 fail 且 unsupported==0** ⇒ 才叫已实现 —— 与同段 `green_done.pass_when` 同式；原写\"无 fail ⇒ 已实现\"会漏掉 unsupported，M16 指出）。",
       "extract": {
         "sel": "geometry.nodes[].decision.expectations",
         "item_shape": "{ node_id, node_label, expectation }",
@@ -840,11 +839,39 @@
       ]
     },
     "invariants": [
-      "任务 = 意图 ⇒ 住设计侧；实际侧只有事实",
-      "只落意图与事件，不落读数快照、不落校验结果",
-      "一处权威 + 一处渲染（同一批数据不许两处都存）",
-      "设计侧不复制事实（能由 DB 现算的字段不许落盘）",
-      "★ 前态判据（edge-absent 一类）不得用作「已满足」的判据"
+      {
+        "covered_by": null,
+        "debt": "D-invariant-0",
+        "note": "★ 无 check；且\"实际侧只有事实\"目前没有读数能判",
+        "text": "任务 = 意图 ⇒ 住设计侧；实际侧只有事实"
+      },
+      {
+        "covered_by": null,
+        "debt": "D-invariant-1",
+        "note": "★★ DSL 自己违反了这条：reading_now / block_readings / layers[].count 都是读数快照（M8 指出）",
+        "text": "只落意图与事件，不落读数快照、不落校验结果"
+      },
+      {
+        "covered_by": "invariant_unjudgeable[0]",
+        "debt": "OQ4",
+        "text": "一处权威 + 一处渲染（同一批数据不许两处都存）"
+      },
+      {
+        "covered_by": "invariant_checks[1]",
+        "text": "设计侧不复制事实（能由 DB 现算的字段不许落盘）"
+      },
+      {
+        "covered_by": "invariant_checks[0]",
+        "text": "前态判据（edge-absent 一类）不得用作「已满足」的判据"
+      },
+      {
+        "covered_by": "invariant_checks[2]",
+        "text": "被未决项挡住的迁移：state.kind=\"blocked\" 必须命中未结题的 OQ"
+      },
+      {
+        "covered_by": "invariant_checks[3]",
+        "text": "discussion 格：微缩在前、按需展开（user_quote 到不了默认视野）"
+      }
     ],
     "invariant_checks": [
       {
@@ -1298,7 +1325,8 @@
           }
         },
         "note_one_ruler": "判据复用：`postExpectations`（与 `cardStanding` 同一把尺 —— ★ 满足度只看后态、违约轴只看前态）+ `checkOpSpec`（未知键闸）+ `progressOf`（进度派生）—— 本笔**没有**新造第二条判据。"
-      }
+      },
+      "gate_note": "★ 这是【质量闸的说明】，不是判据（字段名 gate 不在 CLAIM_KEYS）—— M17"
     },
     "provenance": {
       "note": "★★★ 用户 2026-10-17 给的第一性描述：任务的来源 = 对设计 DSL 的设计；设计 DSL 的设计来源 = 项目设计文档 + 用户讨论。",
@@ -1359,7 +1387,7 @@
         "name": "DSL 建构任务",
         "input": "一张很粗的决策卡（\"我要实现 X\"）",
         "output": "可判的期望 / 节点 / 边（validateDSL 通过 + 至少一条 expectation）",
-        "criteria": "建构完整（★ 不是代码跑通）",
+        "criteria": "★ 与代码一致（`task_ops.ts:234 constructionVerdict`）：**summary 非空 ∧ ≥1 条 `phase=post` 的 expectation**。★★ 2026-10-17 修正（M12）：原写\"建构完整\"（形容词，不可判），且与 `output` 的\"≥1 条 expectation（任意 phase）\"、代码的\"≥1 条 post\"**三处不一致** ⇒ 边界例：只有 edge-absent（pre）的节点，按两处算\"完整\"、按代码算\"不完整\" ⇒ 它的 L1 卡永远 complete 不掉。",
         "why_needed": "★ 否则\"没有 decision 就不许 publish\"会鸡生蛋 —— 第一个 decision 从哪来？",
         "missing_judge_kind": {
           "found_2026_10_17": "★★★ 尝试为「任务系统重建」建一张 L1 卡时撞到的：L1 的判据是「DSL 建构完整」，但现有 6 种 kind（file-exists / symbol-exists / signature-matches / edge-exists / edge-absent / call-exists）**全部对着代码判** ⇒ 没有任何 kind 能表达「DSL 自己全不全」⇒ ★ L1 卡建不出来。",
@@ -1369,7 +1397,8 @@
           "order": "★ 先做这个收归，再建 L1 卡（否则建出来的卡的判据是空的 ⇒ 又是一张 \"绿得没意义\" 的卡）"
         },
         "by": "主代理（回执里给出读数）",
-        "where": "certs/.work/receipt-*.md"
+        "where": "certs/.work/receipt-*.md",
+        "criteria_was_wrong": "★ 由不知情子代理指出（M12）；★ 另外它因本对象带 by+where 被判成 review（\"主代理自审\"）—— 把\"不可判\"算成了\"有人判\"。"
       },
       "L2_implement": {
         "name": "实现任务",
@@ -1408,7 +1437,8 @@
         {
           "layer": "decision 存在",
           "proves": "想过（讨论/决策发生过）",
-          "gate": "★ 唯一的质量闸：★ 没有 decision 就没有卡（publish 翻决策卡，不接受手写 summary）"
+          "gate": "★ 唯一的质量闸：★ 没有 decision 就没有卡（publish 翻决策卡，不接受手写 summary）",
+          "gate_note": "★ 说明性质（同上，M17）"
         },
         {
           "layer": "card in pool (candidate)",
@@ -1471,9 +1501,9 @@
           "output": "待接取池（pool / board）",
           "window": "★ 系统（读端 = T8）",
           "criteria": "上架：卡在 pool 里可见；shown + folded == total",
-          "unjudged": "★ 读端（T8）还没建 —— 今天实测只能 node -e 看 candidate",
+          "unjudged": "★ 上架读端（**D-T8**）：`src/application/design/board/pool.ts` 未实现 ⇒ 第 3 步没有读端，卡挂了看不见。★★ 且**接入点未定**：要接进 `queryFeature`（`handlers.ts:492 getDslHandler` → `queryFeature`），但 `queryFeature` 住在哪个文件**未核** ⇒ 欠账 **D-T8-wire**（这条\"接线\"本身还没有判据）。★ 2026-10-17 从 `geometry.nodes[pool].decision.open` 挪到这里（M18：那个字段不被清点器扫，两边都数不到）。",
           "why": "没有读端 ⇒ 这条判据没有判者",
-          "debt": "D-T8"
+          "debt": "D-T8 / D-T8-wire"
         },
         {
           "n": 4,
@@ -1541,25 +1571,26 @@
     "incremental_verify": {
       "authority": "docs/DESIGN.md 的 B.5",
       "why": "用户 2026-10-17: 我们的闸应该不用全量运行吧, 改了哪里运行哪里应该就可以了. 而且我们不是直接有契约的吗? 只有契约, 局部契约对上应该就可以了呀",
-      "problem": "现在只能全量: 证不知道自己碰了什么(72 张里只有 t351 有 touches), run-all 无增量模式 ⇒ 每笔都跑 64 张 ⇒ 慢 + 3 张会崩 + 子代理看起来像卡住",
+      "problem": "现在只能全量: 证不知道自己碰了什么(72 张里只有 t354 有机器可读的 touches 声明), run-all 无增量模式 ⇒ 每笔都跑 72 张 ⇒ 慢 + 3 张会崩 + 子代理看起来像卡住",
       "design": [
         "① 用 git diff --name-only 拿本次改动的文件列表",
         "② 查【契约为先】: 期望里带 path 的命中哪些(28 条里 24 条带 path) ⇒ 只跑那些期望",
         "③ 查【证为后】: 只有 touches 声明命中改动文件的证才跑",
         "④ 全量证只在三种时候跑: 收口 / 日终 / 改 schema 或证框架本身"
       ],
-      "criteria": "★ 改一个文件 ⇒ 本次跑的证数 ≤ 5（现在 64）",
+      "criteria": "★ 改一个文件 ⇒ 本次跑的证数 ≤ 5（现在 72）",
       "gap": "★ 缺 touches 的覆盖率(t351 之外都没有) ⇒ 这是要补的一维: 每张证声明它碰的文件",
       "note": "★ 局部契约对上 = 用户原话; 契约(path 命中)优先于证(touches 命中), 因为契约更便宜",
       "runner": "scripts/verify-changed.mjs",
-      "runner_note": "★ 它算\"改一个文件命中几个证\""
+      "runner_note": "★ 它算\"改一个文件命中几个证\"",
+      "problem_note": "★ 2026-10-17 更正（M15）：① 唯一机器可读的 `touches:` 在 **t354**（certs/t354-incremental-verify-cert.mjs:36），t351 只是在散文里提到这个词；② 可收集证是 **72** 张（不是 64）；③ \"28 条里 24 条带 path\"实为 **46 条里 42 条**。"
     },
     "touches_gap": {
       "why": "用户 2026-10-17: 这个缺口也一并登记到设计 DSL 里",
       "problem": "72 张证里只有 t351 声明了 touches(1/72) ⇒ 增量验证的第 ③ 步(只跑 touches 命中改动文件的证)永远退化成全跑",
       "requirement": "每张证声明它碰哪些文件(touches)",
       "criteria": "★ touches 覆盖率 100%（★ 现在 1/72）",
-      "note": "★ 契约(path 命中)已经可用(24/28) ⇒ 所以次序是: 先把契约那一路跑通(便宜), 再补 touches(贵)",
+      "note": "★ 契约(path 命中)已经可用(42/46) ⇒ 所以次序是: 先把契约那一路跑通(便宜), 再补 touches(贵)",
       "runner": "scripts/verify-changed.mjs",
       "runner_note": "★ 同上（touches 覆盖率由它统计）"
     },
@@ -1603,7 +1634,7 @@
       "rule": "★ 新登记的任何一条判据，不许是 unjudged（否则就是拿文字冒充保证）。存量 unjudged 要逐轮下降。",
       "measure": "★ 读数 = task_plan 内判据类字段的 machine / review / unjudged 条数（scripts/plan-assertions.mjs）",
       "progress_2026_10_17": "★ service_flow 7 条判据按「补全」动作定归属：4 条 machine（指向真实存在的证 t350/t351/t352 + plan-assertions）、1 条 review（回执：机器判不了内容真伪）、2 条如实留 unjudged 并挂欠账（D-T8 读端未建 / D-verifier-role 双验无角色）。★ 没造假 runner。",
-      "naming_rule": "★★★ 判据字段名固定为 criteria/check/red_when/gate/expr 等（见 scripts/plan-assertions.mjs 的 CLAIM_KEYS）。★ 不许为了「看起来补全了」而改名 —— 改名会让清点器看不见它，等于把债务藏起来。★ 2026-10-17 我当场就犯过一次（用 assertion.what 替代 criteria，7 条判据从统计里消失，总数 49→42）。",
+      "naming_rule": "★★★ 判据字段名固定为 criteria/check/red_when/rule/expr/cmd/metric/threshold（★ 即 CLAIM_KEYS 的全部）（见 scripts/plan-assertions.mjs 的 CLAIM_KEYS）。★ 不许为了「看起来补全了」而改名 —— 改名会让清点器看不见它，等于把债务藏起来。★ 2026-10-17 我当场就犯过一次（用 assertion.what 替代 criteria，7 条判据从统计里消失，总数 49→42）。 ★★ 2026-10-17 更正（M17）：原文点名了 `gate`，但它不在 CLAIM_KEYS ⇒ `task_home.gate` 与 `what_a_card_proves.layers[*].gate` 这两处\"读起来像要求\"的句子**既不进清点、也没 runner、也没挂债** ⇒ 已改成本清单，并给那两处加了 note（它们是\"质量闸的说明\"，不是判据）。",
       "rewrite_2026_10_17": "★ task_machine 的「红归属」那一维原先是三个局部变量 + 四段 if（补丁形态：加一类归属就要再加一条 if、漏一类就静默错判且 reason 撒谎）；已重写成【具名类型 RedAttribution + 穷尽表 RED_DISPOSITION + 由归属计数生成 reason】⇒ 加一类只加一个枚举值 + 表里一行，漏标就编不过（与 PHASE_BY_KIND 同一手法）。行为改变 1 条：红全落在已 done 节点 ⇒ 旧 work / 新 blocked（因为闸只认该节点的卡）。",
       "runner": "scripts/plan-assertions.mjs",
       "runner_note": "★ \"新判据不许 unjudged\" 由 --fail-on-debt 守"
@@ -2023,7 +2054,22 @@
           "M14 D2.now"
         ],
         "note": "★ 只修了纯 DSL 的（M2/M3/M9/M13/M14）；M1/M5/M6/M10/M11/M12 涉及源码或裁定，M8/M15/M16/M17/M18 待修。"
+      },
+      "fixed_round2": {
+        "at": "2026-10-17",
+        "items": [
+          "M8 invariants 7 条带归属",
+          "M12 L1_construct.criteria 改成与 constructionVerdict 同式",
+          "M15 t351→t354 / 64→72",
+          "M15 touches_gap 比例",
+          "M16 note 与 green_done 同式",
+          "M17 naming_rule 去掉 gate",
+          "M17 两处加 gate_note",
+          "M18 删 pool.decision.open",
+          "M18 挪进 service_flow.steps[2] + 定义 D-T8-wire"
+        ]
       }
-    }
+    },
+    "invariants_note": "★★ 2026-10-17（M8）：原来 5 条 invariants 与 4 条 checks + 1 条 unjudgeable 只是数字巧合（4+1=5）——实际 checks[2]/[3] 不在 invariants 里，invariants[0]/[1] 没有任何 check。⇒ 现在每条 invariants 都带 `covered_by`（指向 checks/unjudgeable）或 `debt`。★ 判据：每条 invariants 必须二选一（covered_by | debt），空着就是漏。 ★★ 2026-10-17 二次更正：字段名 rule → text —— 因为 rule 在 CLAIM_KEYS 里，会把 7 条不变量误当判据（清点器立刻报新增 unjudged）。★ 这是「同名两义」第 N 次：design_completeness.criteria[].rule 是判据，invariants[].rule 不是。"
   }
 }
