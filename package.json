@@ -101,7 +101,8 @@
     "manifest:check": "node scripts/gen_manifest.mjs --check",
     "cognition": "node scripts/gen_cognition.mjs",
     "cognition:check": "node scripts/gen_cognition.mjs --check",
-    "contract": "tsc --noEmit -p tsconfig.contract.json"
+    "contract": "tsc --noEmit -p tsconfig.contract.json",
+    "contract:calls": "node scripts/contract-calls.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
