@@ -224,9 +224,29 @@ export function getLiveFeature(feature: string, baseDir?: string): DesignDSL | n
 //   两份要"同性质"才谈得上对拍（自己发明的字段 = 让对拍从第一步就不可比）。
 // ─────────────────────────────────────────────────────────────
 
-/** 设计图目录：<baseDir>/.agent-io/design（与 live/ baseline/ 同族） */
+/**
+ * 设计图目录：`<baseDir>/docs`
+ *
+ * ★★★ 2026-10-18 改：原来是 `<baseDir>/.agent-io/design`（与 live/ baseline/ 同族）。
+ *
+ * ## 为什么改
+ * `.gitignore:37` 忽略整个 `.agent-io/` ⇒ **放进那里的设计 DSL 进不了 git**。
+ * 而设计 DSL 是**最重要的资产**（手写、人读、一切判据的源）—— 它必须能版本化、能 diff、能 review。
+ * ★ 实测（2026-10-18）：`git ls-files .agent-io/` = **0 个**；`getDesignDir()` = `<项目根>/.agent-io/design`。
+ *
+ * ## 改后
+ * | 文件 | 位置 | 进 git |
+ * |---|---|---|
+ * | ★ **设计 DSL**（手写权威） | `<baseDir>/docs/<f>.dsl.json` | ✅ |
+ * | 实际 DSL（扫描产物） | `<baseDir>/.agent-io/live/<f>.dsl.json` | ❌（产物不该进） |
+ * | 派生（扫描 ⊕ overlay） | `<baseDir>/.agent-io/features/<f>.json` | ❌ |
+ *
+ * ★ **为什么放 `docs/` 而不是仓库根**：设计 DSL **本身就是一份文档**（人写、可读、可 review），
+ *   与 `DESIGN.md` 同族；而不是"工具的内部数据"。
+ * ★ **代价（明说）**：`docs/` 下所有 `<f>.dsl.json` 都会被视为设计图 —— 目前只有 `task-system-plan` 一个。
+ */
 export function getDesignDir(baseDir?: string): string {
-  return path.join(baseDir ?? getDataHome(), DATA_DIR_NAME, 'design');
+  return path.join(baseDir ?? getDataHome(), 'docs');
 }
 
 /** 设计图文件路径：<baseDir>/.agent-io/design/<feature>.dsl.json（★ 与 live/<f>.dsl.json 同 schema） */
