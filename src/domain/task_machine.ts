@@ -238,14 +238,23 @@ export async function cardStanding(card: TaskSpec, opts: StandingInput): Promise
   const depIds = [...new Set(foreignOwners.map((n) => n.id))].sort();
   const pendingDeps = depIds.filter((id) => opts.nodes.find((n) => n.id === id)?.task?.state !== 'done');
 
-  if (own.length === 0 && depIds.length > 0 && pendingDeps.length === depIds.length) {
+  // ★★★ 2026-10-17（静态分析，两路独立撞到）：blocked 的判据原来只对了"dep 全 pending"这一半 ⇒ 两头都漏。
+  //   ① 漏 `orphan`：有 orphan 红时也判 blocked ⇒ reason 还谎称"主体**全落在** dep 的 path 上"（实际只有一部分）
+  //      ⇒ ★ 那张卡其实有本卡该干的活（orphan），却被劝"等别人" ⇒ 活永远没人干。
+  //   ② 漏"部分 pending"：一条红落在未完成 dep、别的落在已 done dep ⇒ 判 work
+  //      ⇒ ★ 但落在未完成 dep 上的那条，领了也改不动（闸只认该节点的 claimed 卡）⇒ 假"有活干"。
+  //   ⇒ 现在：blocked ⟺ 没有 own ∧ 没有 orphan ∧ 【存在】pending dep（不要求"全部"）。
+  //     理由：只要有活落在"别人未完成"的节点上，本卡的闸就改不动它 —— 那一条就足以构成"等别人"。
+  if (own.length === 0 && orphan === 0 && pendingDeps.length > 0) {
+    const doneDeps = depIds.filter((id) => !pendingDeps.includes(id));
     return {
       ...base,
       standing: 'blocked',
-      blockedBy: depIds,
+      blockedBy: pendingDeps,
       reason:
-        `等别人：后态判据红 ${satisfaction.failed} 条，主体**全落在**节点 ${depIds.join(' / ')} 的 path 上，` +
-        `且它们都**没有 done 的卡** ⇒ 领这张卡改不动那些文件（闸只认该节点的 claimed 卡）`,
+        `等别人：后态判据红 ${satisfaction.failed} 条，主体落在节点 ${pendingDeps.join(' / ')} 的 path 上，` +
+        `且它们都**没有 done 的卡** ⇒ 领这张卡改不动那些文件（闸只认该节点的 claimed 卡）` +
+        (doneDeps.length > 0 ? `；另有 ${doneDeps.length} 个节点（${doneDeps.join(' / ')}）已 done，它们的红是旧判据/漂移` : ''),
     };
   }
 
@@ -259,13 +268,22 @@ export async function cardStanding(card: TaskSpec, opts: StandingInput): Promise
     };
   }
   if (depIds.length > 0) {
-    // ★ 红在别人节点上，但那些节点已 done ⇒ 不是"等它做完"（该红是旧判据/漂移），仍算本卡有活
+    // ★ 红在别人节点上，但**本卡也还有 orphan 红**（或那些节点已 done）⇒ 不是"纯等它"，仍算本卡有活。
+    // ★★ 2026-10-17（夹具1 实测抓到）：本分支原先把 reason 写死成"它们**已有 done 的卡**" ——
+    //    但 `orphan > 0` 的路径会把【未完成】的 dep 带进来 ⇒ 那句话就成了假话（nodeC 没有 task 却说它 done）。
+    //    ⇒ 现在按 pendingDeps 实际为空/非空分两句，**两边都不许撒谎**。
+    const stillPending = depIds.filter((id) => pendingDeps.includes(id));
+    const doneDeps = depIds.filter((id) => !pendingDeps.includes(id));
     return {
       ...base,
       standing: 'work',
       reason:
-        `有活干：后态判据红 ${satisfaction.failed} 条，主体落在节点 ${depIds.join(' / ')} 上，` +
-        `但它们**已有 done 的卡** ⇒ 不构成「等依赖」（红是旧判据/漂移，要本卡处置）`,
+        stillPending.length === 0
+          ? `有活干：后态判据红 ${satisfaction.failed} 条，主体落在节点 ${doneDeps.join(' / ')} 上，` +
+            `但它们**已有 done 的卡** ⇒ 不构成「等依赖」（红是旧判据/漂移，要本卡处置）`
+          : `有活干：后态判据红 ${satisfaction.failed} 条，其中 ${orphan} 条**不对应任何设计节点**（本卡该处置）；` +
+            `另有红落在**未完成**节点 ${stillPending.join(' / ')} 上（那部分领了也改不动，但本卡不是"纯等它"）` +
+            (doneDeps.length > 0 ? `；还有 ${doneDeps.length} 个节点（${doneDeps.join(' / ')}）已 done，其红是旧判据/漂移` : ''),
     };
   }
   return {
