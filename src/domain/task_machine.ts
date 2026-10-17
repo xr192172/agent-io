@@ -128,6 +128,45 @@ export interface StandingVerdict {
 }
 
 /**
+ * ★★★ **一条红的归属**（2026-10-17 重写：这一维原本不存在，所以每遇到一种新情况都要"再加一条 if"）。
+ *
+ * ## 它收归的是什么（`docs/principle-rewrite-not-patch.md` 的判据）
+ * 收归前，"红落在谁那儿"用 `own / foreignOwners / orphan` **三个局部变量 + 四段 if** 表达，
+ * 而"每种归属意味着什么（可领 / 等谁 / 只是漂移）"**散在四段 reason 文案里**。于是：
+ *   · ★ 加一类归属 ⇒ 要**再加一条 if** 并**再写一遍 reason**（= 补丁的定义）；
+ *   · ★ 漏一类 ⇒ **静默错判，且 reason 会撒谎**（2026-10-17 两路独立撞到：假 `blocked` 与假 `work` 各一次）；
+ *   · ★ orphan 只能是"减出来的余数"（`reds.length - own - foreign`），**它没有名字**，所以永远想不周全。
+ * ⇒ 现在：归属是**具名类型**，处置是**一张穷尽表**（{@link RED_DISPOSITION}），reason 由归属计数生成。
+ *   ★ 加一类归属**只加一个枚举值 + 表里一行**，不可能忘（漏标 ⇒ `Record` 让人编不过）。
+ */
+export type RedAttribution =
+  | { kind: 'own' }
+  | { kind: 'orphan' }
+  | { kind: 'dep-pending'; nodeId: string }
+  | { kind: 'dep-done'; nodeId: string };
+
+/** 归属的处置只有两种：本卡能改（claim）/ 改不动（wait）。 */
+export type RedDisposition = 'claim' | 'wait';
+
+/**
+ * ★★★ **归属 ⇒ 处置**（唯一的判据住处）。
+ *
+ * ★ `Record<RedAttribution['kind'], RedDisposition>` ⇒ **新增归属漏标就编不过**
+ *   —— 与 `expectation.ts#PHASE_BY_KIND` 同一手法（穷尽性由编译器钉死，不靠"记得补"）。
+ *
+ * ★★ 为什么 `dep-done` 也归 `wait`（2026-10-17 重写时想清的一层）：
+ *   写闸只认「**该节点**有 claimed 卡」⇒ 别的节点哪怕是 `done`，本卡也**改不动它路径上的文件**。
+ *   ⇒ 红落在已 done 的节点上时，本卡能做的只有"**重开那张卡**"，那仍是"等/换一张卡"，不是"本卡能改"。
+ *   （收归前这里判 `work`，理由是"红是旧判据/漂移，要本卡处置"—— ★ 但本卡其实处置不了。）
+ */
+export const RED_DISPOSITION: Record<RedAttribution['kind'], RedDisposition> = {
+  own: 'claim',
+  orphan: 'claim',
+  'dep-pending': 'wait',
+  'dep-done': 'wait',
+};
+
+/**
  * ★★★ **五值读数**（唯一的判据编排处；设计 DSL：`task_machine` 节点的 `cardStanding`）。
  *
  * ## 编排（★ 三件事，不造第二把尺）
@@ -142,8 +181,10 @@ export interface StandingVerdict {
  * 后态 failed === 0 ∧ 前态 failed > 0   ⇒ violated
  * 后态 failed === 0 ∧ 前态 unsupported > 0 ⇒ unknowable（满足度成立，但不敢说"没有违约"）
  * 后态 failed === 0 ∧ 前态无红           ⇒ satisfied
- * 后态有红 ∧ 无 own ∧ 全是 foreign 且那些节点都没 done ⇒ blocked（点名 dep）
- * 后态有红 ∧ 其余                        ⇒ work
+ * 后态有红 ∧ 没有一条「本卡能改」（`RED_DISPOSITION` 全为 `wait`） ⇒ blocked（点名 dep）
+ *   ★ 含已 `done` 的 dep —— 闸只认该节点的 claimed 卡，本卡改不动它，处置方式是【重开那张卡】
+ * 后态有红 ∧ 至少一条「本卡能改」                          ⇒ work
+ *   ★ 但若同时有 pending dep，reason 会明说"即便做完全部也收不了口"（不假装能做干净）
  * ```
  *
  * @param card 任务格（`state` 不参与判定；★ 状态迁移由调用方先过 `applicableTransitions`）
@@ -222,76 +263,53 @@ export async function cardStanding(card: TaskSpec, opts: StandingInput): Promise
     };
   }
 
-  // ── ④ 后态有红：看红的主体落在谁的 path 上（own / foreign / orphan）
+  // ── ④ 后态有红：每条红先给【归属】，再由归属的处置派生 standing（★ 判据只住 RED_DISPOSITION 一处）
   const self = opts.nodes.find((n) => n.id === card.id);
   const selfPath = self?.path ? normPath(self.path) : '';
-  const isForeign = (e: Expectation): StandingNode | undefined => {
-    const p = expectationSubjectPath(e);
-    if (selfPath && p === selfPath) return undefined; // own
-    return opts.nodes.find((n) => n.id !== card.id && n.path && normPath(n.path) === p);
-  };
-  const reds = report.items.filter((i) => i.verdict === 'fail').map((i) => i.expectation);
-  const own = reds.filter((e) => selfPath !== '' && expectationSubjectPath(e) === selfPath);
-  const foreignOwners = reds.filter((e) => own.indexOf(e) === -1).map(isForeign).filter((n): n is StandingNode => !!n);
-  const orphan = reds.length - own.length - foreignOwners.length;
-  // ★ 去重 + 稳定排序（★ 不用 localeCompare：跨 locale 坐标会变，见 B.4）
-  const depIds = [...new Set(foreignOwners.map((n) => n.id))].sort();
-  const pendingDeps = depIds.filter((id) => opts.nodes.find((n) => n.id === id)?.task?.state !== 'done');
 
-  // ★★★ 2026-10-17（静态分析，两路独立撞到）：blocked 的判据原来只对了"dep 全 pending"这一半 ⇒ 两头都漏。
-  //   ① 漏 `orphan`：有 orphan 红时也判 blocked ⇒ reason 还谎称"主体**全落在** dep 的 path 上"（实际只有一部分）
-  //      ⇒ ★ 那张卡其实有本卡该干的活（orphan），却被劝"等别人" ⇒ 活永远没人干。
-  //   ② 漏"部分 pending"：一条红落在未完成 dep、别的落在已 done dep ⇒ 判 work
-  //      ⇒ ★ 但落在未完成 dep 上的那条，领了也改不动（闸只认该节点的 claimed 卡）⇒ 假"有活干"。
-  //   ⇒ 现在：blocked ⟺ 没有 own ∧ 没有 orphan ∧ 【存在】pending dep（不要求"全部"）。
-  //     理由：只要有活落在"别人未完成"的节点上，本卡的闸就改不动它 —— 那一条就足以构成"等别人"。
-  if (own.length === 0 && orphan === 0 && pendingDeps.length > 0) {
-    const doneDeps = depIds.filter((id) => !pendingDeps.includes(id));
+  const classifyRed = (e: Expectation): RedAttribution => {
+    const p = expectationSubjectPath(e);
+    if (selfPath && p === selfPath) return { kind: 'own' };
+    const owner = opts.nodes.find((n) => n.id !== card.id && n.path && normPath(n.path) === p);
+    if (!owner) return { kind: 'orphan' };
+    return owner.task?.state === 'done'
+      ? { kind: 'dep-done', nodeId: owner.id }
+      : { kind: 'dep-pending', nodeId: owner.id };
+  };
+
+  const reds = report.items.filter((i) => i.verdict === 'fail').map((i) => i.expectation);
+  const attrs = reds.map(classifyRed);
+  const count = (k: RedAttribution['kind']) => attrs.filter((a) => a.kind === k).length;
+  const idsOf = (k: 'dep-pending' | 'dep-done'): string[] =>
+    [...new Set(attrs.flatMap((a) => (a.kind === k ? [a.nodeId] : [])))].sort();
+
+  const mine = attrs.filter((a) => RED_DISPOSITION[a.kind] === 'claim').length;
+  const pendingIds = idsOf('dep-pending');
+  const doneIds = idsOf('dep-done');
+
+  // ── ⑤ 处置：没有一条本卡能改 ⇒ 等别人（blocked）；否则有活干（work）──
+  if (mine === 0) {
     return {
       ...base,
       standing: 'blocked',
-      blockedBy: pendingDeps,
+      blockedBy: [...pendingIds, ...doneIds].sort(),
       reason:
-        `等别人：后态判据红 ${satisfaction.failed} 条，主体落在节点 ${pendingDeps.join(' / ')} 的 path 上，` +
-        `且它们都**没有 done 的卡** ⇒ 领这张卡改不动那些文件（闸只认该节点的 claimed 卡）` +
-        (doneDeps.length > 0 ? `；另有 ${doneDeps.length} 个节点（${doneDeps.join(' / ')}）已 done，它们的红是旧判据/漂移` : ''),
+        `等别人：后态判据红 ${satisfaction.failed} 条，**没有一条是本卡能改的**` +
+        `（闸只认本节点 ${selfPath || '（本节点没有 path）'} 的 claimed 卡）` +
+        (pendingIds.length ? `；未完成节点 ${pendingIds.join(' / ')}` : '') +
+        (doneIds.length ? `；已 done 的节点 ${doneIds.join(' / ')} —— 它们的红是旧判据/漂移，要处置得先重开那张卡` : ''),
     };
   }
 
-  if (own.length > 0) {
-    return {
-      ...base,
-      standing: 'work',
-      reason:
-        `有活干：后态判据红 ${satisfaction.failed} 条，其中 ${own.length} 条的主体是**本节点**（${selfPath}` +
-        `${orphan > 0 ? `；另 ${orphan} 条不对应任何节点` : ''}）`,
-    };
-  }
-  if (depIds.length > 0) {
-    // ★ 红在别人节点上，但**本卡也还有 orphan 红**（或那些节点已 done）⇒ 不是"纯等它"，仍算本卡有活。
-    // ★★ 2026-10-17（夹具1 实测抓到）：本分支原先把 reason 写死成"它们**已有 done 的卡**" ——
-    //    但 `orphan > 0` 的路径会把【未完成】的 dep 带进来 ⇒ 那句话就成了假话（nodeC 没有 task 却说它 done）。
-    //    ⇒ 现在按 pendingDeps 实际为空/非空分两句，**两边都不许撒谎**。
-    const stillPending = depIds.filter((id) => pendingDeps.includes(id));
-    const doneDeps = depIds.filter((id) => !pendingDeps.includes(id));
-    return {
-      ...base,
-      standing: 'work',
-      reason:
-        stillPending.length === 0
-          ? `有活干：后态判据红 ${satisfaction.failed} 条，主体落在节点 ${doneDeps.join(' / ')} 上，` +
-            `但它们**已有 done 的卡** ⇒ 不构成「等依赖」（红是旧判据/漂移，要本卡处置）`
-          : `有活干：后态判据红 ${satisfaction.failed} 条，其中 ${orphan} 条**不对应任何设计节点**（本卡该处置）；` +
-            `另有红落在**未完成**节点 ${stillPending.join(' / ')} 上（那部分领了也改不动，但本卡不是"纯等它"）` +
-            (doneDeps.length > 0 ? `；还有 ${doneDeps.length} 个节点（${doneDeps.join(' / ')}）已 done，其红是旧判据/漂移` : ''),
-    };
-  }
   return {
     ...base,
     standing: 'work',
     reason:
-      `有活干：后态判据红 ${satisfaction.failed} 条，主体**不对应任何设计节点**（orphan_path）` +
-      ` ⇒ 没有"该等谁"，按本卡有活处置`,
+      `有活干：后态判据红 ${satisfaction.failed} 条，其中 ${mine} 条本卡能改` +
+      (count('own') ? `（本节点 ${selfPath}）` : '') +
+      (count('orphan') ? `（含 ${count('orphan')} 条不对应任何节点）` : '') +
+      (pendingIds.length ? `；另 ${pendingIds.join(' / ')} 未完成 ⇒ 那部分改不动，本卡即便做完全部也收不了口` : '') +
+      (doneIds.length ? `；${doneIds.join(' / ')} 已 done，其红是旧判据/漂移` : ''),
   };
 }
 

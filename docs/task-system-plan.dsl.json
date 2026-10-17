@@ -565,7 +565,8 @@
               "★ 分区口径：phase=post 供满足度，phase=pre 供违约轴；satisfied **不在可领之列**（没活干不许领）；blocked / unknowable 都拒（依赖未做 / 判不了，拒因分别点名）",
               "★ 集齐判据要用**全部设计节点**（blocked 的归属 = 红的主体 path 落在谁头上、那个节点做没做完）",
               "target 在 DB 存在（不存在则走 t_void）",
-              "CAS: UPDATE tasks SET owner=?,state='claimed' WHERE id=? AND state='candidate' AND owner IS NULL 的 changes === 1"
+              "CAS: UPDATE tasks SET owner=?,state='claimed' WHERE id=? AND state='candidate' AND owner IS NULL 的 changes === 1",
+              "★★★ 归属判据（2026-10-17 重写，判据只住 RED_DISPOSITION 一处）：每条红先分类成 own / orphan / dep-pending / dep-done；own 与 orphan = 本卡能改（claim），dep-pending 与 dep-done = 改不动（wait）。blocked ⟺ 没有一条能改；否则 work。★ dep-done 也算 wait：闸只认该节点的 claimed 卡，本卡改不动已 done 节点的文件，处置是重开那张卡"
             ],
             "read": "cardStanding 的 standing 值 + CAS 的 changes 行数"
           }
@@ -1227,7 +1228,8 @@
       "rule": "★ 新登记的任何一条判据，不许是 unjudged（否则就是拿文字冒充保证）。存量 unjudged 要逐轮下降。",
       "measure": "★ 读数 = task_plan 内判据类字段的 machine / review / unjudged 条数（scripts/plan-assertions.mjs）",
       "progress_2026_10_17": "★ service_flow 7 条判据按「补全」动作定归属：4 条 machine（指向真实存在的证 t350/t351/t352 + plan-assertions）、1 条 review（回执：机器判不了内容真伪）、2 条如实留 unjudged 并挂欠账（D-T8 读端未建 / D-verifier-role 双验无角色）。★ 没造假 runner。",
-      "naming_rule": "★★★ 判据字段名固定为 criteria/check/red_when/gate/expr 等（见 scripts/plan-assertions.mjs 的 CLAIM_KEYS）。★ 不许为了「看起来补全了」而改名 —— 改名会让清点器看不见它，等于把债务藏起来。★ 2026-10-17 我当场就犯过一次（用 assertion.what 替代 criteria，7 条判据从统计里消失，总数 49→42）。"
+      "naming_rule": "★★★ 判据字段名固定为 criteria/check/red_when/gate/expr 等（见 scripts/plan-assertions.mjs 的 CLAIM_KEYS）。★ 不许为了「看起来补全了」而改名 —— 改名会让清点器看不见它，等于把债务藏起来。★ 2026-10-17 我当场就犯过一次（用 assertion.what 替代 criteria，7 条判据从统计里消失，总数 49→42）。",
+      "rewrite_2026_10_17": "★ task_machine 的「红归属」那一维原先是三个局部变量 + 四段 if（补丁形态：加一类归属就要再加一条 if、漏一类就静默错判且 reason 撒谎）；已重写成【具名类型 RedAttribution + 穷尽表 RED_DISPOSITION + 由归属计数生成 reason】⇒ 加一类只加一个枚举值 + 表里一行，漏标就编不过（与 PHASE_BY_KIND 同一手法）。行为改变 1 条：红全落在已 done 节点 ⇒ 旧 work / 新 blocked（因为闸只认该节点的卡）。"
     },
     "assertion_baseline_2026_10_17": {
       "measured_by": "scripts/plan-assertions.mjs",
