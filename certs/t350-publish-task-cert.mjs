@@ -78,15 +78,28 @@ if (!REAL2?.decision) {
   process.exit(1);
 }
 // ★★ 2026-10-17（T13 · cardStanding）：`satisfied` 卡**不可领**（没活干不许领）⇒
-//   claim 链路（④/⑤c/⑦）不能再用"后态全过"的真卡（A/C 都是全绿），改用第三张**有红**的真卡
-//   （漂移巡检：task_drift.ts 尚未实现 ⇒ 后态 file-exists 红 ⇒ work ⇒ 可领）。
-//   ★ 这不是放宽判据：claim 自身的"可领/不可领"由 certs/t351-card-standing-cert.mjs 覆盖。
-const NODED = 'file_src_application_patrol_task_drift_ts';
-const REAL3 = PLAN.geometry.nodes.find((n) => n.id === NODED);
-if (!REAL3?.decision) {
-  console.error('✗ 夹具前置不成立：找不到第三张真决策卡（漂移巡检）');
-  process.exit(1);
-}
+//   claim 链路（④/⑤c/⑦）不能用"后态全过"的真卡（A/C 都是全绿）。
+// ★★★ 2026-10-17（流程体检 #1）：原先借的是**真卡**「漂移巡检（task_drift）」—— 那卡当时红。
+//   而 task_drift 一旦被**做完**（本笔就做完了），该卡变 `satisfied` ⇒ **证自己红**。
+//   ⇒ 那是一条"证的夹具依赖外部真实待办"的隐式耦合（★ 与 `docs/frictions.jsonl` 里
+//     『夹具前置是隐形消费方』同族，方向相反：不是改判据打断夹具，而是**待办被做完**打断夹具）。
+//   ⇒ 改成**自造**一张 work 卡：盘上不存在的路径 + 一条 `file-exists` ⇒ 永远红、永远可领。
+//     ★ 这不动任何断言：claim 的"可领/不可领"仍由 certs/t351-card-standing-cert.mjs 覆盖。
+const NODED = 'node_work_fixture';
+const WORK_PATH = 'src/domain/t350_work_fixture.ts'; // ★ 盘上不存在 ⇒ file-exists 必红 ⇒ standing=work
+const REAL3 = {
+  id: NODED,
+  type: 'file',
+  label: 'work 夹具卡（自造）',
+  path: WORK_PATH,
+  description: WORK_PATH,
+  decision: {
+    summary: 'T350 夹具：一条必红的 file-exists ⇒ 这张卡永远 work（可领）',
+    expectations: [
+      { kind: 'file-exists', path: WORK_PATH, why: 'T350 夹具：该文件不存在 ⇒ 后态必红 ⇒ claim 链路可跑' },
+    ],
+  },
+};
 
 const FEAT = 't350';
 const A = REAL.id;
@@ -140,7 +153,7 @@ const seed = (overrides = {}) =>
       files: [
         { id: A, path: REAL.path, responsibility: '真决策卡夹具' },
         { id: C, path: REAL2.path, responsibility: '第二张真决策卡' },
-        { id: D, path: REAL3.path, responsibility: '第三张真决策卡（有红 ⇒ claim 链路用）' },
+        { id: D, path: REAL3.path, responsibility: 'work 夹具卡（自造：file-exists 必红 ⇒ 可领）' },
         { id: N, path: 'src/domain/discussion_log.ts', responsibility: '无 decision 的节点' },
         { id: PRE, path: 'src/domain/pre_only_fixture.ts', responsibility: '只有前态判据的节点' },
       ],

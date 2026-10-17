@@ -240,6 +240,13 @@
       "note": "**运行时治理族**：`write_gate`（**写闸**：把「写源码」与「索引保鲜」合成同一件事 —— 用户 2026-09-14「我们自己改的，我们自己登记」）/ `stale_check`（STALE BUILD 检测：源码比编译产物新，文件级精确 —— 防「改了 src 忘了 build，跑的却是旧 dist」）/ `run_tests`（跑测试并汇总，结构化失败定位）。"
     },
     {
+      "id": "patrol",
+      "layer": "application",
+      "role": "capability",
+      "dir": "src/application/patrol",
+      "note": "**巡检族**：`task_drift`（live 重算后对非终态卡跑 `judgeExpectations`，抓「漏收口」与「应转失效」；只读，产出 `DriftReport`，不改状态）。"
+    },
+    {
       "id": "design-intent",
       "layer": "application",
       "role": "capability",
