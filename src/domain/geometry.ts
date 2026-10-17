@@ -5,6 +5,7 @@
 
 import type { DesignDSL } from './types.js';
 import type { NodeShapes } from './animation.js';
+import type { TaskSpec } from './task_schema.js';
 
 /** 图纸/节点状态 */
 export type DiagramStatus = 'draft' | 'in_progress' | 'done';
@@ -130,6 +131,20 @@ export interface Node {
   sub_dsl?: DesignDSL;
   /** 节点实现状态：draft=待实现, in_progress=实现中, done=已完成 */
   status?: DiagramStatus;
+  /**
+   * ★★★ **任务格的家**（2026-10-17 · `docs/task-system-plan.dsl.json` 的 `task_plan.task_home`）。
+   *
+   * 设计裁定（OQ11=B）：「任务与节点**同居**」—— 任务挂在它要改的那个节点上，
+   * **不设顶层 `tasks[]`**。理由：顶层数组会让"判据对着节点判、状态却去别处找"，
+   * 又是「同一判据住两处」（本仓头号病）。
+   *
+   * ★★★ **唯一写端** = `edit_dsl {type:'task'}`（`claim` / `release` / `complete`，
+   * 见 `application/design/dsl_ops/task_ops.ts`）—— **不许别处直接改 `state`**。
+   * ★★ **两轴消歧**：任务态（五值，`TaskState`）是**唯一权威**；
+   * `status`（三值 progress 轴）对**有 task 的节点**是**派生值**（`task_schema.ts#progressOf`），
+   * 读时现算、不落盘 —— 见 `overlay.ts#applyOverlay`。
+   */
+  task?: TaskSpec;
   /** 所属泳道 ID（对应 geometry.swimlanes[].id） */
   swimlane?: string;
   /** 节点类型描述（如 service/module/database/api/queue/ui） */

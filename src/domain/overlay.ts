@@ -17,6 +17,9 @@ import type { DiagramStatus, NodeDecision, DecisionHistoryEntry } from './geomet
 import type { Annotation } from './annotation.js';
 import type { ThemeId, UserNode } from './types.js';
 import type { ExpectedApi, Symbol, FileLifecycle } from './semantic.js';
+// ★★★ 2026-10-17（task_home）：有 task 的节点，进度是**派生值**（`task.state ⇒ 三轴`）。
+//   ★ 只取这一个纯函数（task_schema 对 overlay 只有 `import type` ⇒ 不成运行期环）。
+import { progressOf } from './task_schema.js';
 
 /**
  * ★★★ **锚点"有内容"的唯一判据**（T182，2026-10-11）。
@@ -522,18 +525,32 @@ function mergeById<T extends { id: string }>(list: T[], add: T[]): T[] {
 export function applyOverlay(base: DesignDSL, overlay: DesignOverlay): DesignDSL {
   const out: DesignDSL = { ...base };
 
+  /** ★ node_id → task（文件节点与几何节点**共用 id**，下面 semantic 层也要用同一把尺） */
+  const taskById = new Map<string, NonNullable<(typeof base.geometry.nodes)[number]['task']>>();
+  for (const n of base.geometry?.nodes ?? []) if (n.task) taskById.set(n.id, n.task);
+
   const nodes = (base.geometry?.nodes ?? []).map((n) => {
     const a = overlay.anchors[n.id];
-    if (!a) return n;
-    return {
-      ...n,
-      ...(a.decision ? { decision: a.decision } : {}),
-      ...(a.decision_history ? { decision_history: a.decision_history } : {}),
-      ...(a.attributes ? { attributes: a.attributes } : {}),
-      // ★★ 进度轴（2026-10-15）：overlay.progress → `Node.status`（与 tag/决策卡同款"重建时投影回来"）。
-      //   ★ overlay 没写 progress 就**原样保留 base**（不抹成 undefined）—— 让扫描侧的值当"读侧默认"。
-      ...(a.progress ? { status: a.progress } : {}),
-    };
+    const merged = a
+      ? ({
+          ...n,
+          ...(a.decision ? { decision: a.decision } : {}),
+          ...(a.decision_history ? { decision_history: a.decision_history } : {}),
+          ...(a.attributes ? { attributes: a.attributes } : {}),
+        } as typeof n)
+      : { ...n };
+    // ★★★ 2026-10-17（task_home · 两轴消歧）：**有 task ⇒ 进度是派生值**（`progressOf(task)`），
+    //   `overlay.progress` 对这类节点**不再有话语权**（它是交接期的影子副本，第 ④ 步退役）。
+    //   ★ `void`/`superseded` ⇒ 派生值 = `undefined` ⇒ **如实无值**（不回落 overlay，也不硬塞 `draft`）。
+    if (n.task) {
+      const derived = progressOf(n.task);
+      if (derived) merged.status = derived;
+      else delete merged.status;
+      return merged;
+    }
+    // ★★ 进度轴（2026-10-15）：overlay.progress → `Node.status`（与 tag/决策卡同款"重建时投影回来"）。
+    //   ★ overlay 没写 progress 就**原样保留 base**（不抹成 undefined）—— 让扫描侧的值当"读侧默认"。
+    return a?.progress ? { ...merged, status: a.progress } : merged;
   });
   out.geometry = { ...base.geometry!, nodes };
 
@@ -546,13 +563,22 @@ export function applyOverlay(base: DesignDSL, overlay: DesignOverlay): DesignDSL
   if (base.semantic) {
     const files = base.semantic.files.map((f) => {
       const a = overlay.anchors[f.id];
-      if (!a || (!a.lifecycle && !a.progress)) return f;
-      return {
+      const t = taskById.get(f.id);
+      if (!a && !t) return f;
+      const merged = {
         ...f,
-        ...(a.lifecycle ? { lifecycle: a.lifecycle } : {}),
-        // ★★ 进度轴（2026-10-15）：overlay.progress → `SemanticFile.status`（与上面 Node.status 同款投影）。
-        ...(a.progress ? { status: a.progress } : {}),
-      };
+        ...(a?.lifecycle ? { lifecycle: a.lifecycle } : {}),
+      } as (typeof base.semantic.files)[number];
+      // ★★★ 2026-10-17（task_home）：文件节点的进度同样**从 task 派生**（几何层与语义层同一把尺）；
+      //   没有 task 才走 overlay.progress 投影（与上面 Node.status 同款）。
+      if (t) {
+        const derived = progressOf(t);
+        if (derived) merged.status = derived;
+        else delete merged.status;
+      } else if (a?.progress) {
+        merged.status = a.progress;
+      }
+      return merged;
     });
     out.semantic = { ...base.semantic, files };
   }
@@ -629,10 +655,15 @@ export function seedOverlayFromDsl(dsl: DesignDSL | null): DesignOverlay {
   //     会被 `continue` 跳过 ⇒ **首次迁移就漏掉它**
   //     （与 T182 在 `lifecycle` 上踩过的坑**完全同形**：该处注释逐字 "判据加了 lc…否则首次迁移就漏掉它"）。
   const progressById = new Map<string, DiagramStatus>();
+  // ★★★ 2026-10-17（task_home）：**有 task 的节点不播种进度** —— 它的进度是 `task.state` 的派生值，
+  //   ★ 把派生值写进 overlay 就是把"读时现算"偷偷变成"落盘"（第 ④ 步退役前的自伤）。
+  const taskIds = new Set((dsl?.geometry?.nodes ?? []).filter((n) => n.task).map((n) => n.id));
   for (const n of dsl?.geometry?.nodes ?? []) {
+    if (n.task) continue;
     if (n.status) progressById.set(n.id, n.status);
   }
   for (const f of dsl?.semantic?.files ?? []) {
+    if (taskIds.has(f.id)) continue;
     if (f.status && !progressById.has(f.id)) progressById.set(f.id, f.status);
   }
 

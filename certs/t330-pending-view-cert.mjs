@@ -80,7 +80,7 @@ saveDSL({
 });
 
 // C：挂一张带 scope 的决策卡，但**不登记任何 progress**（锚点会存在、但没有 progress）
-updateFeature({
+await updateFeature({
   feature: FEAT,
   operations: [{ type: 'decision', op: 'update', id: C, data: { summary: 'C 有决策但没进度', scope: 'files:src/c.ts' } }],
 });
@@ -93,7 +93,7 @@ updateStatus({
   evidence: { kind: 'reading', command: 'npm run build', observed: 'exit 0（T330 夹具）', at: '2026-10-15T00:00:00.000Z' },
 });
 // A：再挂 scope（证明欠账项会带出 decision_scope）
-updateFeature({
+await updateFeature({
   feature: FEAT,
   operations: [{ type: 'decision', op: 'update', id: A, data: { summary: 'A 的范围决策', scope: 'files:src/a.ts' } }],
 });

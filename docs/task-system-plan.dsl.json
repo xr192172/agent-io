@@ -635,8 +635,8 @@
       "OQ7（新·本笔）：★ 接点⑤的**连线方向**未定 —— 是 live 重算**触发** patrol（live_render 侧调 patrolDrift），还是 patrol **自取** live（patrolDrift 调 renderLiveFromDb）？我按『patrol 自取』写了 call-exists，但若实际设计是前者，该断言方向反了、应挂到 live_render 那侧。未拍，未并入 invariants",
       "OQ8（新·第一块落地时撞出）：★ t_claim 的 guard 第 2 条与 t_done_from_claimed 的 guard 第 2 条**同形**（都是『剔前态判据后剩余全过 且 条数 > 0』）⇒ 领取闸与收口闸用**同一把尺**，于是 canClaim 判『该收口』而不是『可领』。而 docs/plan-task-system.md 的表格写的是『剔除前态判据后 期望**未**全过』—— 与 t_claim 的第 2 条**相反**，两处不能同时成立。★ 本笔的 task_machine.canClaim 按 t_claim 逐字实现（『全过』），并把这条张力写成代码注释 + 本 OQ。需裁：领取的判据到底是『未全过（还有活）』还是『全过（可收口）』；若为前者，t_claim 第 2 条要改，且『漏收口』判据得另立一个函数（patrol 的 missed_close 才该用『全过』）。",
       "OQ9（新·第一块落地时撞出）：★ t_claim / t_done_from_claimed 里的 canClaim→judgeExpectations，把一条**反向依赖**写成了硬期望 —— src/domain/task_machine.ts（arch_layer: core）必须调用 src/application/design/intent/expectations.ts 的 judgeExpectations。而本仓既有铁律是『**domain 不许 import infrastructure**』（src/domain/expectation.ts 文件头逐字：判定器之所以不住 domain，就是因为那边不许 import infrastructure）⇒ domain→application→infrastructure 是**层级倒挂**。本笔照样实现了（用户裁定『语义必须照设计 DSL』），但这是设计 DSL 自己要修的一处：三选一 —— ① 把 canClaim 挪到 application 层（core 只剩纯判据编排）；② 定义端口（domain 声明 `JudgePort`，application 实现并注入）；③ 接受倒挂并在 DSL 里写明豁免。未拍。",
-      "OQ10（新·第一块落地时撞出）：★ 『登记 = 临时版 claim』这条**对闸不生效** —— 实测（certs/.work/probe-block1-claim.mjs）：`seedOverlayFromDsl`（src/domain/overlay.ts:631-633）把几何节点的 `status` **播种成** overlay 锚点的 `progress`，而闸的『未登记』判据（src/application/write_gate.ts:652）只问 `progress !== undefined` ⇒ 一份刚播种的 overlay 里**每个节点都已『登记』**（哪怕从没调过 edit_dsl）⇒ 那条分支对已播种的 feature 是装饰。要让它有牙，需区分『播种来的 progress』与『人显式登记的 progress』（如播种不写 progress、或加 `progress_source`）。未拍。",
-      "OQ11（新·第三块 task_ops 开工前撞出 ⇒ 该块**停手**，本节点 5 红不落）：★ task_ops 的三个动作（claim/release/complete）**缺两个原生落点**，本节点的 design 只钉了「动作存在 + 调谁」，没钉「状态写到哪」这一维 ⇒ 照现状实现必得**半修**。三处实测：① **任务格没有家** —— `TaskSpec`（src/domain/task_schema.ts:109）全仓**消费点只有 task_machine.ts**（第一块自己），`Node`（src/domain/geometry.ts:114-166）**无 `task` 字段**、`schema/design_dsl.schema.json` 无、`src/infrastructure/index/schema.ts` 的 8 张表无 `tasks` ⇒ 『写 design/<f>.dsl.json 的 task 格』这半句**无落点**；② **claim 的状态迁移没有 sanctioned 写端** —— 唯一状态写端 `updateStatus`（status_tools.ts:63）写的是 overlay 锚点的 `progress`（三值 `draft|in_progress|done`，geometry.ts:10），而 task 态是**另一条五值轴**（task_schema.ts:41 `candidate|claimed|done|void|superseded`）⇒ 二者无映射；照设计的 `completeTask→updateStatus` 走 progress 轴、而 claim 要写 task 轴 ⇒ **一件事两处权威**（违反本 DSL 自己的 invariant『一处权威 + 一处渲染』）；③ **要让它可被调用就得进 edit_dsl 的 op 家族** —— 至少 4 处协同（index.ts:214 op enum + :217 type enum · update_feature.ts:89-102 type 联合 + :424-466 applyOperation switch · op_data_spec.ts:65 OP_SPECS + :307 TYPE_KNOWN_KEYS，且 :346/:350 两条编译器断言把 OP_SPECS↔TYPE_KNOWN_KEYS 钉死）。★ 收归那一维的候选（待裁，二选一）：(A) **收归进既有单轴** —— 把 task 态**塌进 progress**（claim=置 `in_progress` 并落 owner 事件），三动作成为 `updateStatus` 的薄封装，不新增轴、不新增写端；(B) **给 task 格立原生家** —— `Node.task?: TaskSpec` + schema + 一个**唯一**的 task 状态写端（与 `updateStatus` 并列或合一），并在本节点补一条『状态写到哪』的可判期望；在此之前 task_ops **不许开工**（半修比不修更坏）。未拍。"
+      "OQ10（新·第一块落地时撞出）：★ 『登记 = 临时版 claim』这条**对闸不生效** —— 实测（certs/.work/probe-block1-claim.mjs）：`seedOverlayFromDsl`（src/domain/overlay.ts:631-633）把几何节点的 `status` **播种成** overlay 锚点的 `progress`，而闸的『未登记』判据（src/application/write_gate.ts:652）只问 `progress !== undefined` ⇒ 一份刚播种的 overlay 里**每个节点都已『登记』**（哪怕从没调过 edit_dsl）⇒ 那条分支对已播种的 feature 是装饰。要让它有牙，需区分『播种来的 progress』与『人显式登记的 progress』（如播种不写 progress、或加 `progress_source`）。未拍。【★ 2026-10-17 已裁并落地：判据改成『该节点上有 state=claimed 的 task』，见 task_home.landed；★ 现在 seedOverlayFromDsl 对**有 task 的节点**不再播种进度】",
+      "OQ11（新·第三块 task_ops 开工前撞出 ⇒ 该块**停手**，本节点 5 红不落）：★ task_ops 的三个动作（claim/release/complete）**缺两个原生落点**，本节点的 design 只钉了「动作存在 + 调谁」，没钉「状态写到哪」这一维 ⇒ 照现状实现必得**半修**。三处实测：① **任务格没有家** —— `TaskSpec`（src/domain/task_schema.ts:109）全仓**消费点只有 task_machine.ts**（第一块自己），`Node`（src/domain/geometry.ts:114-166）**无 `task` 字段**、`schema/design_dsl.schema.json` 无、`src/infrastructure/index/schema.ts` 的 8 张表无 `tasks` ⇒ 『写 design/<f>.dsl.json 的 task 格』这半句**无落点**；② **claim 的状态迁移没有 sanctioned 写端** —— 唯一状态写端 `updateStatus`（status_tools.ts:63）写的是 overlay 锚点的 `progress`（三值 `draft|in_progress|done`，geometry.ts:10），而 task 态是**另一条五值轴**（task_schema.ts:41 `candidate|claimed|done|void|superseded`）⇒ 二者无映射；照设计的 `completeTask→updateStatus` 走 progress 轴、而 claim 要写 task 轴 ⇒ **一件事两处权威**（违反本 DSL 自己的 invariant『一处权威 + 一处渲染』）；③ **要让它可被调用就得进 edit_dsl 的 op 家族** —— 至少 4 处协同（index.ts:214 op enum + :217 type enum · update_feature.ts:89-102 type 联合 + :424-466 applyOperation switch · op_data_spec.ts:65 OP_SPECS + :307 TYPE_KNOWN_KEYS，且 :346/:350 两条编译器断言把 OP_SPECS↔TYPE_KNOWN_KEYS 钉死）。★ 收归那一维的候选（待裁，二选一）：(A) **收归进既有单轴** —— 把 task 态**塌进 progress**（claim=置 `in_progress` 并落 owner 事件），三动作成为 `updateStatus` 的薄封装，不新增轴、不新增写端；(B) **给 task 格立原生家** —— `Node.task?: TaskSpec` + schema + 一个**唯一**的 task 状态写端（与 `updateStatus` 并列或合一），并在本节点补一条『状态写到哪』的可判期望；在此之前 task_ops **不许开工**（半修比不修更坏）。未拍。【★ 2026-10-17 已裁 B 并按 task_home 落地 ①②③：家 = geometry.nodes[].task · 唯一写端 = edit_dsl{type:'task'} · progress 派生 · 闸认 claimed task ⇒ 本块 5红→0红；★ 第 ④ 步（overlay progress 退役）另上榜单】"
     ],
     "block_rule": {
       "note": "★ 裁定（2026-10-16，开发者自裁）：块 = 依赖闭包，不是单个节点。",
@@ -819,7 +819,7 @@
         }
       ]
     },
-    "task_plan_note": "★ T5 已因 OQ11 阻塞停手（未动源码）；下一步 = 按 B 做「收归第二刀」：给 task 格立原生家 + 唯一写端。",
+    "task_plan_note": "★ T5 曾因 OQ11 阻塞停手（未动源码）；★ 2026-10-17 T11 已按裁定 B 落 ①②③（task 格立家 + 唯一写端 + 两轴消歧 + 闸换判据），task_ops 块 5红→0红；★ 第 ④ 步（overlay 的 progress 退役）单独上榜单。读数见 task_home.landed。",
     "task_home": {
       "note": "★★★ OQ11 裁定 B 的展开：给 task 格立原生家 + 唯一写端。★ 这一维是 T5 停手时核出的（任务格无家 / claim 无合法写端 / 两轴无映射）。",
       "where": "geometry.nodes[].task —— ★ 任务与节点同居（设计侧）",
@@ -845,7 +845,28 @@
         "③ 闸改判据",
         "④ overlay 的 progress 退役"
       ],
-      "open": "★ 交接期不动 overlay（★ 否则读端会断 —— 见 §75 那条教训）"
+      "open": "★ 交接期不动 overlay（★ 否则读端会断 —— 见 §75 那条教训）",
+      "landed": {
+        "at": "2026-10-17",
+        "board": "T11",
+        "steps_done": [
+          "① 设计侧落 task 格（Node.task + schema 的 task 属性）",
+          "② 读端 progress 改派生（progressOf；applyOverlay 对 task 节点派生优先；seedOverlayFromDsl 不播种派生值）",
+          "③ 闸改判据（assertSourceWriteRegistered 读 node.task.state === 'claimed'）"
+        ],
+        "steps_pending": [
+          "④ overlay 的 progress 退役 —— ★ 单独上榜单（交接期不动 overlay，否则读端会断）"
+        ],
+        "readings": {
+          "task_ops_block": "5红/0绿 → 0红/5绿（同一入口 certs/.work/probe-plan-detail.mjs；临时目录 + 独立 AGENT_IO_HOME 重算：checked 25 · passed 12→17 · failed 12→7 · unsupported 1（恒定，且那一条是 discussion_log 的 type-only 边，与本块无关））。其他块逐字不变：task 0/3 · 状态机 0/6 · task_drift 7/0 · discussion 0/4。",
+          "axis_map": "candidate⇒draft · claimed⇒in_progress · done⇒done · void/superseded⇒undefined（★ 不硬塞；认不出的态亦 undefined）",
+          "writer": "src/application/design/dsl_ops/task_ops.ts（claimTask / releaseTask / completeTask）；入口 edit_dsl {type:'task'}；op 家族四处同改（index.ts 的 op/type enum · update_feature.ts 的联合 + applyOperation case · op_data_spec.ts 的 OP_SPECS + TYPE_KNOWN_KEYS），且编译器断言把表与实现钉死。",
+          "gate": "write_gate.ts#assertSourceWriteRegistered：判据 = 该节点上有 state='claimed' 的 task（无 task ⇒ 拒；claimed ⇒ 放行；★ 已播种 overlay.progress 的旧路径**不再**放行 —— 那正是 OQ10）。",
+          "cert": "certs/t349-task-home-cert.mjs = PASS=34 FAIL=0（含能自己坏的对照：播种 progress 而无 task ⇒ 仍拒）"
+        },
+        "known_transition_cost": "交接期 overlay 的 progress 仍是**投影**（completeTask 按设计期望调 updateStatus）⇒ 直接读 overlay 本体（如 query_feature 的 progress 列）会**滞后**于派生值；第 ④ 步退役后消失。",
+        "gap": "★ 立卡（发布任务）**没有写端** —— 本笔的 writer 只有 claim/release/complete；创建任务格归 board（T8）。"
+      }
     }
   }
 }

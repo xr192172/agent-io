@@ -29,6 +29,9 @@ import type { AddFileInput, UpdateFileInput } from './file_ops.js';
 import { checkOpSpec, OP_SPECS, type CheckedOperation } from './op_data_spec.js';
 import { addExpectedApi, updateExpectedApi, deleteExpectedApi, setExpectedApis, setNodeSemantic } from './api_ops.js';
 import { updateStatus } from './status_tools.js';
+// ★★★ 2026-10-17（task_home）：任务格的**唯一写端**（claim / release / complete）。
+//   ★ 本文件只做**路由**；任务态的迁移与判定住 `task_ops.ts`（不在别处直接改 state）。
+import { applyTaskOp } from './task_ops.js';
 // ★★★ T340：**自洽性闸** —— 改设计即校验自洽。判据是现成的 `validateDSL`（`domain/validator.ts:159`，
 //   查 dangling_edge / duplicate_id / anchor_broken / reasoning 引用），**本处只调不改**（判定与 schema 都不动）。
 import { validateDSL } from '../../../domain/validator.js';
@@ -60,6 +63,8 @@ export interface FeatureOperation {
    *   id = 文件节点 id 或仓库相对路径；data.summary 必填，可带 rationale/alternatives/consequences/
    *   acceptance/dissent/votes/evidence_source/author/note。★ 未决分歧进 `dissent`，**不是** `alternatives`；
    *   ★ `data.author` 是**类别**（只认 'human' | 'llm'，说可信度）；**身份**（谁）走**顶层入参 `agent`**）
+   * - task：**任务格状态**（claim=领 / release=放回候选 / complete=收口；id = 节点 id。
+   *   ★ 任务态**只**从这里改 —— 唯一写端见 `task_ops.ts`；★ `node.status` 对它只是派生值）
    */
   op:
     | 'add'
@@ -72,7 +77,10 @@ export interface FeatureOperation {
     | 'save'
     | 'rollback'
     | 'apply'
-    | 'reset';
+    | 'reset'
+    | 'claim'
+    | 'release'
+    | 'complete';
   /**
    * 目标类型：
    * - node / edge / file：几何层节点、边、语义层文件
@@ -85,6 +93,7 @@ export interface FeatureOperation {
    * - layout：自动布局（op=apply data.algo=dag|force|grid + 各算法参数）
    * - simulation：仿真（op=reset 重置到初始状态）
    * - tag：功能标记（op=add/delete，data.tag 必填；data.files = 成员文件（仓库相对路径或文件 id），省略 = 只动这个 tag 自身）
+   * - task：任务格（op=claim/release/complete，id 为 node_id；★ 任务态**唯一写端**）
    */
   type:
     | 'node'
@@ -99,7 +108,8 @@ export interface FeatureOperation {
     | 'layout'
     | 'simulation'
     | 'tag'
-    | 'decision';
+    | 'decision'
+    | 'task';
   /** 目标 ID：node_id / edge_id / file_id（api 类型为所属 file_id）；annotation/approval/snapshot/layout/simulation 用 data 传参，本字段可空 */
   id?: string;
   /** 操作数据（add/update/move 时按目标类型提供对应字段） */
@@ -142,7 +152,14 @@ export interface UpdateFeatureInput {
 // 主入口
 // ─────────────────────────────────────────────────────────────
 
-function updateFeatureCore(input: UpdateFeatureInput): EditResult {
+/**
+ * ★★ 2026-10-17（task_home）：本函数与下面的 `applyOperation` **改成 async** ——
+ * 因为 `task` 的 `claim`/`complete` 必须在写前跑 `canClaim`（它要 `judgeExpectations`，异步）。
+ * ★ 这条 async 是**结构性的**，不是风格：若把"先判可领性"留给调用方"记得调"，那就是补丁
+ * （别处要配合）⇒ 判定必须住在写端里面。⇒ 写链三处随之上浮：本函数 / `updateFeature` /
+ * `dispatchDslEdit` 的 localRun / daemon 的 `dslWriteHandler`（都**顺序 await**，不并发）。
+ */
+async function updateFeatureCore(input: UpdateFeatureInput): Promise<EditResult> {
   const { feature, operations, agent } = input;
 
   if (!operations || operations.length === 0) {
@@ -191,7 +208,7 @@ function updateFeatureCore(input: UpdateFeatureInput): EditResult {
   const changeReason = typeof input.reason === 'string' ? input.reason.trim() : '';
   try {
     for (const [i, op] of operations.entries()) {
-      const result = applyOperation(feature, op, agent, changeReason);
+      const result = await applyOperation(feature, op, agent, changeReason);
       // ★★ 摘要 = **首行**。⇒ 〔继承下笔人的判据〕**op 的首行必须自足**：
       //   它是**唯一保证被看见**的那一行（明细与结构化产物都可能在传输/汇总时丢掉）。
       //   例：破坏性操作（删条目）必须把"删了几条"写进首行，并带 ⚠。
@@ -301,6 +318,8 @@ function touchedOf(input: UpdateFeatureInput): Touched {
  *   · `node`     —— 通用增/删/改/移，`id` = `node_id`（见 `applyNodeOp`：`addNode({node_id: id, …})`）；
  *   · `binding`  —— `setNodeSemantic({node_id: op.id, …})`；
  *   · `status`   —— `updateStatus({node_id: op.id, …})`；
+ *   · `task`     —— 任务格（2026-10-17）：`id` = **任务格所在的 node_id**（与节点同居，
+ *     `docs/task-system-plan.dsl.json#task_home`）⇒ 它确实是节点 id；
  *   · `decision` —— 决策写入口，`id` = **文件/文档节点 id 或仓库相对路径**（2026-10-10 T106 加）；
  *     ★★ 2026-10-10（T-e2e Bug2 修）：**路径必须先解析成真节点 id**（`findDecisionTargetNode`）再收 ——
  *     此前把 `op.id`（可能是路径）原样丢进 `alive.has(id)` ⇒ 路径永远匹配不上 ⇒ `nodes` 整项省略。
@@ -317,9 +336,10 @@ function touchedOf(input: UpdateFeatureInput): Touched {
  *   与 `rename_symbols.symbols` 给**新名**同口径。
  */
 function touchedNodeIds(input: UpdateFeatureInput): string[] {
-  // ① `id` **本身就是节点 id** 的那几类（node/binding/status）—— 直接取。
+  // ① `id` **本身就是节点 id** 的那几类（node/binding/status/**task**）—— 直接取。
+  //   ★ 2026-10-17（task_home）：`task` 的 `id` = 任务格所在的 node_id（与节点同居）⇒ 它**确实是**节点 id。
   const directIds = input.operations
-    .filter((op) => op.type === 'node' || op.type === 'binding' || op.type === 'status')
+    .filter((op) => op.type === 'node' || op.type === 'binding' || op.type === 'status' || op.type === 'task')
     .map((op) => op.id)
     .filter((id): id is string => typeof id === 'string' && id.length > 0);
   // ② `decision` 的 `id` 可能是**节点 id**、也可能是**仓库相对路径**（见 resolveDecisionTarget）
@@ -353,8 +373,8 @@ function touchedNodeIds(input: UpdateFeatureInput): string[] {
   return [...new Set([...directIds, ...resolvedDecisionIds])].filter((id) => alive.has(id));
 }
 
-export function updateFeature(input: UpdateFeatureInput): TouchedProduct<EditResult> {
-  const r = updateFeatureCore(input);
+export async function updateFeature(input: UpdateFeatureInput): Promise<TouchedProduct<EditResult>> {
+  const r = await updateFeatureCore(input);
   // ★★★ 2026-10-09（T75）：一次 `edit_dsl` 调用结束后，**把 base 上的决策卡同步进 overlay**。
   //   为什么放在这一处（而不是每个 op 里各写一遍）：**这里是所有写操作的唯一收口**
   //   （node / file / edge / status / annotation … 都从这里出去），一处覆盖全部，不会漏。
@@ -409,7 +429,12 @@ export function updateFeature(input: UpdateFeatureInput): TouchedProduct<EditRes
 // 操作路由
 // ─────────────────────────────────────────────────────────────
 
-function applyOperation(feature: string, rawOp: FeatureOperation, agent?: string, changeReason?: string): EditResult {
+async function applyOperation(
+  feature: string,
+  rawOp: FeatureOperation,
+  agent?: string,
+  changeReason?: string,
+): Promise<EditResult> {
   // ★★ T170（2026-10-11）：**形状校验的唯一入口**（type 合法性 / op 合法性 / id / data 必需键 / 二选一）。
   //   原先这些判据**散在下面各 case 里**（19 处 `if (!op.data?.X) throw`，还有几处 `if (op.op !== 'x') throw`）
   //   ⇒ ★ **LLM 看不见**，只能"故意发一个残缺请求、读报错"来发现字段（黑盒实验实测：**24 次调用里 8 次是试形状**）。
@@ -465,6 +490,10 @@ function applyOperation(feature: string, rawOp: FeatureOperation, agent?: string
       return applyTagOp(feature, op);
     case 'decision':
       return applyDecisionOp(feature, op, agent, changeReason);
+    case 'task':
+      // ★★★ 2026-10-17（task_home）：任务态的**唯一写端** —— 三个 action 都进 `task_ops`，
+      //   不在本文件里直接改 `node.task.state`（那是"第二个写端"）。
+      return applyTaskOp(feature, op, agent);
     default:
       throw new Error(`未知操作类型: ${op.type satisfies never}`);
   }

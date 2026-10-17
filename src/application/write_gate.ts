@@ -64,6 +64,10 @@ import { indexCoversDisk } from '../infrastructure/index/index_freshness.js';
 //     那条路已在本仓跑过（它记"写前那一刻的决策"），此处**复用同一把尺**，不另立一套。
 import { listFeatures } from '../infrastructure/storage.js';
 import { loadOverlay } from '../infrastructure/storage_overlay.js';
+// ★★★ 2026-10-17（OQ10 裁定）：闸的判据从「overlay 的 progress 是否登记过」改成
+//   「**该节点上是否有 state=claimed 的 task**」—— 任务格是唯一权威（`task_plan.task_home`），
+//   progress 对它只是派生值（`progressOf`）。
+import { progressOf, type TaskSpec } from '../domain/task_schema.js';
 
 // ─────────────────────────────────────────────────────────────
 // 索引写穿的结果类型（一个类型 + 可选字段：调用方统一渲染，不用分三种形状）
@@ -489,12 +493,19 @@ export interface TaskGateOutcome {
  *   （要求原文："**没有挂到任何任务/进度登记上** ⇒ 拒绝"）⇒ 只要**覆盖了**就要登记，
  *   多feature 时只要**任一**登记过就算通过 —— ★ 仍然**不需要替人挑**哪一条。
  */
-function coveringFeatures(absRoot: string): Array<{ feature: string; byPath: Map<string, string> }> {
-  const out: Array<{ feature: string; byPath: Map<string, string> }> = [];
+function coveringFeatures(absRoot: string): Array<{
+  feature: string;
+  byPath: Map<string, string>;
+  /** ★ node_id → 任务格（`geometry.nodes[].task`）—— 闸的新判据读它（OQ10） */
+  taskById: Map<string, TaskSpec>;
+}> {
+  const out: Array<{ feature: string; byPath: Map<string, string>; taskById: Map<string, TaskSpec> }> = [];
   for (const d of listFeatures()) {
     if (!d.source_root || path.resolve(d.source_root) !== absRoot) continue;
     const byPath = new Map<string, string>();
+    const taskById = new Map<string, TaskSpec>();
     for (const n of d.geometry?.nodes ?? []) {
+      if (n.task) taskById.set(n.id, n.task);
       if (n.type !== 'file') continue;
       if (typeof n.description !== 'string' || !n.description) continue;
       byPath.set(n.description.split(path.sep).join('/'), n.id);
@@ -503,42 +514,47 @@ function coveringFeatures(absRoot: string): Array<{ feature: string; byPath: Map
     for (const f of d.semantic?.files ?? []) {
       if (f.path && !byPath.has(f.path)) byPath.set(f.path.split(path.sep).join('/'), f.id);
     }
-    if (byPath.size) out.push({ feature: d.feature, byPath });
+    if (byPath.size) out.push({ feature: d.feature, byPath, taskById });
   }
   return out;
 }
 
 /**
- * ★★★ **任务闸：改源码可以，但不登记不许悄悄改**（T328 步 6）。
+ * ★★★ **任务闸：改源码可以，但不领任务不许悄悄改**（T328 步 6；★ 判据 2026-10-17 按 OQ10 换过）。
  *
  * ## 它回答什么
- * 「这次要落盘的改动，**挂在哪一条任务/进度登记上**？」——没挂 ⇒ **拒绝落盘**，
- * 并在错误信息里给出「**怎么登记**」（工具名 + 最小参数）。
+ * 「这次要落盘的改动，**挂在哪个已领取的任务上**？」——没有 ⇒ **拒绝落盘**，
+ * 并在错误信息里给出「**怎么领**」（工具名 + 最小参数）。
  *
  * ## ★ 为什么是"拒"而不是"提示"（本仓已证过的一类腐坏）
  * 靠提示词要求"自己记得登记"= **又一条会腐的软约束**（md todo 侧实测：26 勾 vs 77 未勾，
  * 且"勾了"≠"做了"）⇒ 唯一"结构上不可能绕过"的位置就是**写入咽喉**（`docs/replan-2026-10-15.md` §12.5）。
  *
  * ## ★★ 两条**硬**纪律（与 `validateProgressEvidence` 同族）
- * 1. **不静默**：被拒 ⇒ 抛错，且错误信息里含登记入口；放行的分支 ⇒ 由调用方**报出** `note`。
- * 2. **不自动补登记**：本函数**绝不**替调用方写 progress，也**不**把这次写入降级放行 —— 拒绝就是拒绝。
+ * 1. **不静默**：被拒 ⇒ 抛错，且错误信息里含领取入口；放行的分支 ⇒ 由调用方**报出** `note`。
+ * 2. **不自动补登记**：本函数**绝不**替调用方 claim，也**不**把这次写入降级放行 —— 拒绝就是拒绝。
  *
- * ## 登记是什么（唯一权威）
- * `progress` 住在 **`<feature>.overlay.json` 锚点**上（`OverlayAnchor.progress`，T328 收归），
- * 写端只有一个：`status_tools.updateStatus`（经 `edit_dsl` 的 `{type:'status'}` 操作进入）。
- * ⇒ 本闸**只读**它，判据与权威**同源**（不另立第二份"登记"）。
+ * ## ★★★ 登记是什么（唯一权威 = `task.state`；2026-10-17 换判据）
+ * 旧判据（T328）：`<feature>.overlay.json` 锚点的 `progress !== undefined`。
+ * ★ 实测它**对已播种的 feature 是装饰**（OQ10）：`seedOverlayFromDsl` 会把几何节点的 `status`
+ *   播种成 `progress` ⇒ 每个节点"都已登记"（哪怕从没调过 `edit_dsl`）。
+ * 新判据（OQ10 裁定）：**该节点上有 `state === 'claimed'` 的 task**（任务格 = `geometry.nodes[].task`，
+ *   唯一写端 `edit_dsl {type:'task', op:'claim'}`，见 `dsl_ops/task_ops.ts`）。
+ * ⇒ 本闸**只读**任务格，与"唯一权威"同源（不另立第二份"登记"）。
  *
  * ## ★ 拦的范围（明写，便于判"谁被拦/谁不被拦"）
  * 拦：`项目根上有设计 feature 覆盖该文件（DSL.source_root === 项目根 ∧ 该文件是它的文件节点）`
- *    ∧ `覆盖它的那些 feature 里【没有一条】给该节点登记过 progress`。
+ *    ∧ `覆盖它的那些 feature 里【没有一条】在该节点上有一张 claimed 任务卡`。
  * 放行：该项目**没有** feature 指向它 · 文件**不是**任何一条的节点（新建文件 / 未纳入设计）·
- *      文件在**任一**覆盖它的 feature 里已登记（`progress` 非空）。
+ *      在**任一**覆盖它的 feature 里该节点有 `state='claimed'` 的 task。
  *
  * ## ★★ T332（2026-10-15）**追加**的第二条判据：前置闸（解锁）
- * 上面这条（未登记）之外，**追加**：某条 edge intent **显式**声明了 `requires`（非空）∧ 该边源节点(from)
+ * 上面这条之外，**追加**：某条 edge intent **显式**声明了 `requires`（非空）∧ 该边源节点(from)
  * 是本次要改的文件节点 ∧ requires 里有节点未 `done` ⇒ 拒绝（"完成 A 才准开始 B"）。
  * ★ **只认显式 `requires`** —— edge 默认装 import 依赖 ≠ 任务前置 ⇒ **没标 requires 一律不拦**（防误伤，
  *   别把全仓 import 边当成解锁条件）。判据与"怎么办"见下方 `unmetPrereq` 段。
+ * ★ 本条里的"是否 done"读**派生进度**：有 task ⇒ `progressOf(task)`；没有才回落 overlay 的 `progress`
+ *   （交接期两轴并存，派生值优先 —— 与 `overlay.ts#applyOverlay` 同一把尺）。
  */
 export function assertSourceWriteRegistered(
   projectRoot: string,
@@ -556,18 +572,26 @@ export function assertSourceWriteRegistered(
     };
   }
 
-  // overlay 按 feature 懒读一次（权威 = `<feature>.overlay.json` 锚点的 progress）
+  // overlay 按 feature 懒读一次（★ 只作**前置闸**的回落值：有 task 的节点用派生进度）
   const ovByFeature = new Map<string, ReturnType<typeof loadOverlay>>();
-  const progressOf = (feature: string, nodeId: string): unknown => {
+  const overlayProgress = (feature: string, nodeId: string): unknown => {
     if (!ovByFeature.has(feature)) ovByFeature.set(feature, loadOverlay(feature));
     return ovByFeature.get(feature)?.anchors?.[nodeId]?.progress;
   };
 
-  // ★★★ T332（2026-10-15）：**前置闸（解锁）** —— **追加判据**（不新建闸门，与下面"未登记"并列）。
+  // ★★ 一个问句一把尺：**该节点此刻的进度** —— 有 task ⇒ 派生（`progressOf`），没有才回落 overlay。
+  //   ★ 两处（前置闸 / 放行回执）都读它，不各写一遍（交接期两轴并存时，派生值优先）。
+  const taskByFeature = new Map(covering.map((c) => [c.feature, c.taskById] as const));
+  const effectiveProgress = (feature: string, nodeId: string): unknown => {
+    const t = taskByFeature.get(feature)?.get(nodeId);
+    return t ? progressOf(t) : overlayProgress(feature, nodeId);
+  };
+
+  // ★★★ T332（2026-10-15）：**前置闸（解锁）** —— **追加判据**（不新建闸门，与下面"未领"并列）。
   //
   // ## 判据（★ 只认**显式**声明 —— 本条的成败在此）
   // 覆盖该文件的 feature 的 overlay 里，**某条 edge intent 显式标了 `requires`（非空）**，
-  // 该边**源节点 `from`** 正是本次要改的文件节点，而 `requires` 里有节点**未 `progress === 'done'`**
+  // 该边**源节点 `from`** 正是本次要改的文件节点，而 `requires` 里有节点**未 done**（派生进度）
   // ⇒ **拒绝落盘**，并给出"怎么办"。
   //
   // ## ★★ 为什么只认显式 requires（防误伤，本条的全部意义）
@@ -577,7 +601,7 @@ export function assertSourceWriteRegistered(
   //
   // ## 拦的范围（明写，便于判"谁被拦/谁不被拦"）
   // 拦：该文件是某 covering feature 的文件节点 N ∧ 该 feature overlay 里存在 edge intent `e`，
-  //     `e.from === N` ∧ `e.requires` 非空 ∧ 其中某被引节点 `progress !== 'done'`。
+  //     `e.from === N` ∧ `e.requires` 非空 ∧ 其中某被引节点**进度不是 done**（派生进度优先）。
   // 放行：没有任何 requires 声明 · 该文件不是任何 covering feature 的节点 ·
   //      没有"源节点=N 且带 requires"的边 · requires 里的节点已全部 done。
   const unmetPrereq: Array<{
@@ -601,7 +625,7 @@ export function assertSourceWriteRegistered(
           if (!ei.requires || ei.requires.length === 0) continue; // ★★ 没标 requires ⇒ 不拦
           if (ei.from !== nodeId) continue; // ★ 只拦"该边源节点(from)"的源码写入
           const missing = ei.requires
-            .map((rid) => ({ id: rid, progress: progressOf(feature, rid) }))
+            .map((rid) => ({ id: rid, progress: effectiveProgress(feature, rid) }))
             .filter((x) => x.progress !== 'done');
           if (missing.length) unmetPrereq.push({ rel, feature, nodeId, edgeId, missing });
         }
@@ -640,7 +664,7 @@ export function assertSourceWriteRegistered(
     );
   }
 
-  const unregistered: Array<{ rel: string; cands: Array<{ feature: string; nodeId: string }> }> = [];
+  const unclaimed: Array<{ rel: string; cands: Array<{ feature: string; nodeId: string; state: string | undefined }> }> = [];
   let checked = 0;
   for (const rel of rels) {
     const cands = covering
@@ -648,42 +672,50 @@ export function assertSourceWriteRegistered(
       .filter((x): x is { feature: string; nodeId: string } => !!x.nodeId);
     if (!cands.length) continue; // 不是任何一条 feature 的节点（新建/未纳入设计）⇒ 无任务可挂 ⇒ 不拦
     checked++;
-    // ★ "挂到【任何】一条任务上" ⇒ 任一 feature 登记过 progress 即通过（不替人挑哪一条）
-    if (cands.some((c) => progressOf(c.feature, c.nodeId) !== undefined)) continue;
-    unregistered.push({ rel, cands });
+    // ★★★ OQ10 裁定：只有"该节点上有一张 **claimed** 的任务卡"才算登记。
+    //   ★ 任一 feature 满足即通过（不替人挑哪一条）；★ 看的是 `task.state`，**不看** progress
+    //   （progress 是派生值，且"已播种"的 progress 会让旧判据变成装饰 —— 那正是 OQ10）。
+    const states = cands.map((c) => ({ ...c, state: taskByFeature.get(c.feature)?.get(c.nodeId)?.state }));
+    if (states.some((c) => c.state === 'claimed')) continue;
+    unclaimed.push({ rel, cands: states });
   }
-  if (!unregistered.length) {
+  if (!unclaimed.length) {
     return {
       applicable: true,
       note:
-        `已登记：${checked} 个设计节点都有 progress（覆盖 feature：${covering.map((c) => c.feature).join(', ')}；` +
+        `已领任务：${checked} 个设计节点上都有 state=claimed 的任务卡（覆盖 feature：${covering.map((c) => c.feature).join(', ')}；` +
         `另有 ${rels.length - checked} 个文件不是任何一条的节点，不计）`,
     };
   }
 
-  const first = unregistered[0];
-  const list = unregistered
+  const first = unclaimed[0];
+  const list = unclaimed
     .map(
       (u) =>
         `  · ${u.rel}  ⇒ ${u.cands
-          .map((c) => `${c.nodeId}（feature=${c.feature}）`)
-          .join(' / ')} **都没有 progress 登记**`,
+          .map((c) => `${c.nodeId}（feature=${c.feature}，task.state=${JSON.stringify(c.state ?? null)}）`)
+          .join(' / ')} **都没有 claimed 的任务卡**`,
     )
     .join('\n');
   throw new Error(
-    `拒绝落盘（任务闸）：这次要改的 ${unregistered.length} 个文件**没有挂到任何任务/进度登记上** —— ` +
-      `本仓纪律：改源码可以，但**不登记不许悄悄改**。\n` +
+    `拒绝落盘（任务闸）：这次要改的 ${unclaimed.length} 个文件**没有挂到任何已领取的任务上** —— ` +
+      `本仓纪律：改源码可以，但**不领任务不许悄悄改**。\n` +
       `${list}\n` +
-      `\n★ 怎么登记（唯一权威写端；工具名 \`edit_dsl\`，最小参数）：\n` +
+      `\n★ 怎么领（唯一写端；工具名 \`edit_dsl\`，最小参数）：\n` +
       `  { feature: '${first.cands[0].feature}',\n` +
       `    reason: '开始实现 ${first.cands[0].nodeId}',\n` +
-      `    operations: [{ type:'status', op:'update', id:'${first.cands[0].nodeId}', data:{ status:'in_progress' } }] }\n` +
-      `  · status 三态：draft / in_progress / done（★ 置 done 另有一道 evidence 闸，见 update_status）。\n` +
-      `  · 覆盖这条改动的 feature 有多条时，登记**任一条**即可（本闸不替你挑）。\n` +
-      `\n★ 本闸**不会替你登记**，也**不会把这次写入降级放行** —— 拒绝就是拒绝；登记后再改即可。\n` +
+      `    agent: '<你的身份>',\n` +
+      `    operations: [{ type:'task', op:'claim', id:'${first.cands[0].nodeId}', data:{ owner: '<你的身份>' } }] }\n` +
+      `  · 任务格住在节点上：\`geometry.nodes[].task\`（★ 不是顶层 tasks[]、不是 overlay）。\n` +
+      `  · 任务态五态：candidate / claimed / done / void / superseded；\n` +
+      `    ★ \`node.status\`（draft / in_progress / done）对它是**派生值**（progressOf），**不许直接改**。\n` +
+      `  · claim 写前必过后态判据（canClaim）；complete 另需 \`data.evidence\`（与 status 同一把证据尺）。\n` +
+      `  · 覆盖这条改动的 feature 有多条时，在**任一条**里 claim 即可（本闸不替你挑）。\n` +
+      `\n★ 本闸**不会替你 claim**，也**不会把这次写入降级放行** —— 拒绝就是拒绝；领到后再改即可。\n` +
       `★ 拦的范围（只此一条）：项目根上有设计 feature 覆盖该文件（` +
-      `source_root === 项目根 ∧ 该文件是它的文件节点）∧ 覆盖它的 feature 里**没有一条**给该节点登记过 progress。\n` +
-      `  放行：项目无 feature 指向它 / 文件不是任何一条的节点（新建或未纳入设计）/ 已在任一条里登记。`,
+      `source_root === 项目根 ∧ 该文件是它的文件节点）∧ 覆盖它的 feature 里**没有一条**在该节点上有一张 ` +
+      `state='claimed' 的任务卡。\n` +
+      `  放行：项目无 feature 指向它 / 文件不是任何一条的节点（新建或未纳入设计）/ 已在任一条里 claim。`,
   );
 }
 

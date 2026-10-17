@@ -129,6 +129,26 @@
             "borderRadius": { "type": "number" }
           },
           "additionalProperties": true
+        },
+        "task": {
+          "type": "object",
+          "description": "任务格（★ 与节点同居；唯一写端 = edit_dsl {type:'task'}）。★ 五态 state 是唯一权威，node.status 对它只是派生值（见 src/domain/task_schema.ts#progressOf）",
+          "required": ["id", "summary", "expectations", "state"],
+          "properties": {
+            "id": { "type": "string", "description": "任务 id（= 所在节点的 id）" },
+            "summary": { "type": "string", "description": "要做什么（人读一句）" },
+            "expectations": { "type": "array", "description": "判据（六类可判期望，domain/expectation.ts）", "items": { "type": "object" } },
+            "state": { "type": "string", "enum": ["candidate", "claimed", "done", "void", "superseded"] },
+            "owner": { "type": ["string", "null"] },
+            "claimed_at": { "type": ["string", "null"] },
+            "release_reason": { "type": "string" },
+            "released_by": { "type": ["string", "null"] },
+            "released_at": { "type": ["string", "null"] },
+            "replaces": { "type": "string" },
+            "evidence": { "type": "array", "items": { "type": "object" } },
+            "discussion": { "type": "object" }
+          },
+          "additionalProperties": true
         }
       }
     },

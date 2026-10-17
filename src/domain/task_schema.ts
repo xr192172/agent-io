@@ -23,6 +23,7 @@
  */
 import type { Expectation } from './expectation.js';
 import type { ProgressEvidence } from './overlay.js';
+import type { DiagramStatus } from './geometry.js';
 
 /**
  * 五态（★ 要**显式类型**，不许散落字符串）。
@@ -64,6 +65,44 @@ export function isTerminalTaskState(s: TaskState): boolean {
       return true;
     default:
       return false;
+  }
+}
+
+/**
+ * ★★★ **两轴消歧的唯一映射**（2026-10-17 · `task_plan.task_home.axis_dedup`）：
+ * 任务态（五值）⇒ 进度（三值 `DiagramStatus`）的**派生值**。
+ *
+ * ## 为什么是派生，而不是落盘
+ * 收归前：`progress`（三轴）与 `task.state`（五轴）**并存且无映射** ⇒ 同一件事两处权威。
+ * 裁定：**单一权威 = `task.state`**；`progress` **读时现算**（本函数），**不再落盘**。
+ * ★ 若把它做成"写 task 时顺手写一份 progress"⇒ 就是**用新补丁换旧补丁**（本仓 2026-10-16 已裁过）。
+ *
+ * ## 映射表（逐字照设计 DSL；★ 缺一不可）
+ * | state | progress |
+ * |---|---|
+ * | `candidate` | `draft` |
+ * | `claimed` | `in_progress` |
+ * | `done` | `done` |
+ * | `void` | **`undefined`**（不映射进三轴） |
+ * | `superseded` | **`undefined`**（不映射进三轴） |
+ *
+ * ★★★ `void` / `superseded` **不许硬塞一个值**（如塞 `draft`）—— 那会让"失效"看起来像"还没开始"，
+ *   是**新的补丁**。⇒ 返回 `undefined`，由读端如实呈现"这一轴没有值"。
+ */
+export function progressOf(task: Pick<TaskSpec, 'state'> | null | undefined): DiagramStatus | undefined {
+  if (!task) return undefined;
+  // ★ 运行期守卫：state 从 JSON 读回时静态类型不再有保证 ⇒ 认不出的态一律"无值"（不猜）
+  if (!isTaskState(task.state)) return undefined;
+  switch (task.state) {
+    case 'candidate':
+      return 'draft';
+    case 'claimed':
+      return 'in_progress';
+    case 'done':
+      return 'done';
+    case 'void':
+    case 'superseded':
+      return undefined;
   }
 }
 
@@ -121,6 +160,15 @@ export interface TaskSpec {
   claimed_at?: string | null;
   /** 释放 / 失效原因（可选） */
   release_reason?: string;
+  /**
+   * ★ **谁释放的 / 何时释放的**（2026-10-17）—— 与 `release_reason` 同属**一个 release 事件**。
+   * 为什么必须落：`t_release` 的 guard 逐字要求「显式 release 事件（**带 by + reason**）」——
+   * 只有 `release_reason` 时，"谁放的"**没有落点**（回执里说完就没了）。★ 三问（谁/何时/为何）同住一处，
+   * 不另建事件表（那是又一维；本笔只补这一维）。
+   */
+  released_by?: string | null;
+  /** 释放时刻（ISO 8601；与 `released_by` 同生共死） */
+  released_at?: string | null;
   /** ★ 取代了哪张卡（新卡带 `replaces: <old_id>` ⇒ 旧卡转 `superseded`） */
   replaces?: string;
   /** ★ 证据记录（只落 `{kind, at, by, verdict}`，不落读数） */

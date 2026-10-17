@@ -36,6 +36,15 @@ const chk = (ok, label, extra = '') => {
   console.log(`${ok ? '✓' : '✗'} ${label}${extra ? `\n     ${extra}` : ''}`);
   ok ? P++ : F++;
 };
+/** ★ 2026-10-17（T11）：写链改 async（task claim 要跑 canClaim）⇒ 需要异步版的『应当抛』捕获 */
+const catchMsgAsync = async (fn) => {
+  try {
+    await fn();
+    return '';
+  } catch (e) {
+    return String((e && e.message) || e);
+  }
+};
 /** 跑一段"应当抛"的代码，返回错误文案（没抛 ⇒ 返回空串） */
 const catchMsg = (fn) => {
   try {
@@ -91,7 +100,7 @@ const scopeOf = (id) => getDSL(FEAT)?.geometry?.nodes?.find((n) => n.id === id)?
 console.log('════ ① 登记带 scope 的决策 ⇒ 成功（两条写路径）════');
 // ①-a：`decision` op（`update_feature.ts` 的决策写入口）
 {
-  const r = updateFeature({
+  const r = await updateFeature({
     feature: FEAT,
     operations: [{ type: 'decision', op: 'update', id: 'mod_root', data: { summary: '模块根的决策', scope: 'subtree:mod_root' } }],
   });
@@ -99,7 +108,7 @@ console.log('════ ① 登记带 scope 的决策 ⇒ 成功（两条写�
 }
 // ①-b：`node` op 的内联 `decision`，且**规范化**（files 列表排序）—— 同一片写同一个名（scope.ts 纪律#1）
 {
-  updateFeature({
+  await updateFeature({
     feature: FEAT,
     operations: [
       { type: 'node', op: 'update', id: 'child_b', data: { decision: { summary: '文件B的决策', scope: 'files:src/b.ts,src/a.ts' } } },
@@ -109,7 +118,7 @@ console.log('════ ① 登记带 scope 的决策 ⇒ 成功（两条写�
 }
 // ①-c：**不带** scope 的决策（用于 ③ 验证"未标范围不参与范围过滤"）
 {
-  updateFeature({
+  await updateFeature({
     feature: FEAT,
     operations: [{ type: 'decision', op: 'update', id: 'child_a', data: { summary: '文件A的决策（未标范围）' } }],
   });
@@ -122,8 +131,8 @@ const reasonLine = (msg, re) => (String(msg).split('\n').find((l) => re.test(l))
 console.log('\n════ ② 非法 scope ⇒ 被拒（贴错误原文）════');
 // ②-a：swimlane 空 id
 {
-  const msg = catchMsg(() =>
-    updateFeature({
+  const msg = await catchMsgAsync(async () =>
+    await updateFeature({
       feature: FEAT,
       operations: [{ type: 'decision', op: 'update', id: 'mod_root', data: { summary: '坏范围', scope: 'swimlane:' } }],
     }),
@@ -134,8 +143,8 @@ console.log('\n════ ② 非法 scope ⇒ 被拒（贴错误原文）═�
 }
 // ②-b：未知种类（语法不存在）
 {
-  const msg = catchMsg(() =>
-    updateFeature({
+  const msg = await catchMsgAsync(async () =>
+    await updateFeature({
       feature: FEAT,
       operations: [{ type: 'node', op: 'update', id: 'other_c', data: { decision: { summary: '坏种类', scope: 'totally:bogus' } } }],
     }),

@@ -192,6 +192,21 @@ export const OP_SPECS: readonly OpSpec[] = [
       '`dissent` = 数组，每项 `{option: 字符串(必填), votes?: 数字, evidence_source?: 字符串数组}`（★ **未决分歧**放这，待对拍）· ' +
       '`alternatives` = 数组，每项 `{option, rejected_because}` 两个都要（★ **已被排除的方案**放这，缺 `rejected_because` 会被拒）',
   },
+  {
+    // ★★★ 2026-10-17（T11 · `docs/task-system-plan.dsl.json#task_home`）：
+    //   **任务格的唯一写端**。`id` = 任务格所在的**节点 id**（任务与节点同居）——
+    //   ★ 不是顶层 `tasks[]`，也不是 overlay 锚点。
+    type: 'task',
+    ops: ['claim', 'release', 'complete'],
+    idRequired: true,
+    idNote: '任务格所在节点的 id（`geometry.nodes[].task`；★ 任务与节点同居）',
+    required: { claim: ['owner'], release: ['reason'], complete: ['evidence'] },
+    note:
+      '★ **任务态唯一写端**（五态 `candidate|claimed|done|void|superseded`）；`node.status` 只是它的**派生值**（`task_schema.ts#progressOf`），不许直接改。' +
+      'claim:`data.owner`（CAS 写的就是它，写前必过 `canClaim`）· release:`data.reason`（by 走顶层 `agent`）· ' +
+      'complete:`data.evidence`（★ 与 `status` **同一把尺** `validateProgressEvidence`，三档见上条 status）。' +
+      '★ 只改状态、**不造卡**（立卡 = 发布任务，归 board）。',
+  },
 ];
 
 const BY_TYPE = new Map(OP_SPECS.map((s) => [s.type, s]));
@@ -341,6 +356,10 @@ export const TYPE_KNOWN_KEYS: Record<string, readonly string[]> = {
     //   ★ 校验仍只有一把尺：`domain/scope.ts` 的 `parseScope`（由 `applyDecisionWrite` 调用）。
     'scope',
   ],
+  // ★★★ 2026-10-17（T11）：`task` 的键集 —— **从实现读出**（`task_ops.ts` 的 `applyTaskOp` 只读
+  //   `owner` / `reason` / `evidence`；`state` **不在这里**：它只能由 op（claim/release/complete）改，
+  //   不是"data 里可以随便给的字段" —— 那会把唯一写端变成"谁都能把 state 塞成 done"）。
+  task: ['owner', 'reason', 'evidence'],
 };
 /** ★★ 断言：`TYPE_KNOWN_KEYS` 的键集**必须恰好覆盖 `OP_SPECS` 的全部 type**（多 / 少都红）。 */
 export type KnownKeysMissingTypes = Exclude<(typeof OP_SPECS)[number]['type'], keyof typeof TYPE_KNOWN_KEYS>;

@@ -82,7 +82,9 @@ function regionsOverlap(a: string[], b: string[]): boolean {
  *  daemon 在执行前比对磁盘当前 rev，不一致即冲突拒绝（返回 current_rev 供 rebase），
  *  避免多会话/多窗口并发改同一 feature 时静默丢改动。
  */
-function dslWriteHandler(req: DslWriteRequest): Promise<DslWriteResult> {
+// ★★ 2026-10-17（task_home）：改成 `async` —— 写链里的 `task` op（claim/complete）要在写前
+//   跑 `canClaim`（异步）。★ 队列里的"串行"靠的是 `await` 这一次调用，语义未变。
+async function dslWriteHandler(req: DslWriteRequest): Promise<DslWriteResult> {
   const feature = req.feature as string;
   const ops = req.ops as Record<string, unknown> | undefined;
   const expectRev = req.base_dsl_rev;
@@ -120,7 +122,7 @@ function dslWriteHandler(req: DslWriteRequest): Promise<DslWriteResult> {
     // ★ 2026-10-06：「整份 dsl 提交」分支已删（理由见函数头注释与 `DslWriteRequest`）——
     //   它**零调用方**，且是唯一能**直写整份 DSL**、跳过 MCP 侧 T20 闸与 view 护栏的旁路。
     //   现在只剩 `ops` 一种形态 ⇒ 必经 `updateFeature`（内部 `saveDSL` 落盘），语义与 `edit_dsl` 一致。
-    const r = updateFeature(ops as never);
+    const r = await updateFeature(ops as never);
     // 写成功后记录该 feature 的最新依赖区域（供后续提交重叠判断）
     lastTouchedByFeature.set(feature, touched);
     return Promise.resolve({ ok: true, rev: getDSL(feature)?._dsl_rev ?? currentRev + 1, touched, message: r.message });

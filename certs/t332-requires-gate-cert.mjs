@@ -54,11 +54,39 @@ const catchMsg = (fn) => {
 const HOME = fs.mkdtempSync(path.join(TMP, 'home-'));
 process.env.AGENT_IO_HOME = HOME;
 
-const { saveDSL } = await import('../dist/src/infrastructure/storage.js');
+const { saveDSL, getDSL } = await import('../dist/src/infrastructure/storage.js');
 const { loadOverlay } = await import('../dist/src/infrastructure/storage_overlay.js');
 const { setDesignIntent } = await import('../dist/src/application/design/intent/set_design_intent.js');
 const { updateStatus } = await import('../dist/src/application/design/dsl_ops/status_tools.js');
+const { claimTask } = await import('../dist/src/application/design/dsl_ops/task_ops.js');
 const { assertSourceWriteRegistered } = await import('../dist/src/application/write_gate.js');
+
+/**
+ * ★★★ 2026-10-17（T11 · OQ10 落地后**必须跟着改的夹具**）：「登记」的定义换了 ——
+ * 旧版用 `updateStatus(status:'in_progress')` 把节点"登记"上一个 progress（过掉既有"未登记"闸）；
+ * 新版判据是『该节点上有 **state=claimed 的 task**』⇒ 旧写法**不再放行**。
+ * ⇒ 本夹具改为：先按 task_home 在节点上立一张卡（立卡 = 发布，属 board；夹具里直接写 DSL），
+ *   再走**唯一写端** `claimTask` 领取。
+ * ★ 这不是本证的判据变了（判据仍是 ①②③④⑤ 五条 requires 行为），而是**前置条件的那一维**按新契约更新。
+ */
+async function registerNode(feature, nodeId, rel) {
+  const dsl = getDSL(feature);
+  const nodes = dsl.geometry.nodes.map((n) =>
+    n.id === nodeId
+      ? {
+          ...n,
+          task: {
+            id: nodeId,
+            summary: `T332 夹具：${nodeId} 的任务格`,
+            expectations: [{ kind: 'file-exists', path: rel, why: 'T332 夹具：后态判据（文件存在 ⇒ 可 claim）' }],
+            state: 'candidate',
+          },
+        }
+      : n,
+  );
+  saveDSL({ ...dsl, geometry: { ...dsl.geometry, nodes } });
+  await claimTask({ feature, node_id: nodeId, owner: 't332-fixture' });
+}
 
 /** 造一个"项目根 + 设计 feature（两个文件节点 + 一条边 n_x→n_y）"的夹具 */
 function fixture(feature, suffix) {
@@ -91,8 +119,9 @@ function fixture(feature, suffix) {
 console.log('════ ① · 显式 requires（前置未 done）⇒ 改源码被拒 ════');
 const A = fixture('fx', 'a');
 {
-  // 先把 n_x 登记进度（in_progress）⇒ 过掉"未登记"那道既有闸，隔离出本笔的"前置闸"。
-  updateStatus({ feature: 'fx', node_id: 'n_x', status: 'in_progress' });
+  // ★ 2026-10-17（T11）：把 n_x **登记** = 在它上面立卡并 claim（旧版是 updateStatus(in_progress)）。
+  //   目的不变：过掉"未登记"那道既有闸，隔离出本笔的"前置闸"。
+  await registerNode('fx', 'n_x', 'src/x.ts');
 
   // 标 requires：e_xy（from=n_x）要求先完成 n_y。
   const r = setDesignIntent({
@@ -147,7 +176,7 @@ console.log('\n════ ③ · ★★ 只有 import 依赖、没有 requires
 {
   const C = fixture('fy', 'c');
   // 同款场景：n_x 依赖 n_y（import 边），但**不标 requires** ⇒ 必须放行。
-  updateStatus({ feature: 'fy', node_id: 'n_x', status: 'in_progress' }); // 登记进度（过既有闸）
+  await registerNode('fy', 'n_x', 'src/x.ts'); // ★ 2026-10-17：登记 = 立卡 + claim（旧版是 updateStatus）
   setDesignIntent({
     feature: 'fy',
     edge_intents: [{ id: 'e_xy', from: 'n_x', to: 'n_y', reason: 'import 依赖（扫描产出）', boundary: '同层' }],
