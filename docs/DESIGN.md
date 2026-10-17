@@ -262,6 +262,30 @@
 
 ---
 
+## 7 · 文件地图（★ 四份东西，别混）
+
+★★★ **2026-10-18 查清并写死** —— 此前一直混着用，导致"在错的对象上做验证"。
+
+| 文件 | 是什么 | 谁读它 | 存在吗 |
+|---|---|---|---|
+| **`docs/task-system-plan.dsl.json`** | ★★★ **讨论桌 / 方案文档**（人写，用 DSL 语法承载讨论，为让分歧显形）。★ **commit 749beb4（2026-10-16）建它时就说清了："方案写成 DSL""讨论产物"** | 只有 `certs/.work/probe-plan-detail.mjs` 这类**探针**；**本仓工具从不读** | ✅ 11 节点 |
+| **`<baseDir>/.agent-io/design/<f>.dsl.json`** | ★★★ **真·设计 DSL**（**手写**，与 live 同 schema） | `storage.ts#getDesignSheet` | ❌ **目录不存在** |
+| **`<baseDir>/.agent-io/live/<f>.dsl.json`** | ★★★ **真·实际 DSL**（**扫描产物**） | `storage.ts#getLiveFeatureResolved` | ✅ 10 个，但**没有 `task-system-plan`** |
+| **`<dataHome>/.agent-io/features/<f>.json`** | **派生结果**（扫描 ⊕ overlay **合并**） | `getDSL` / `edit_dsl` / 写闸 / 巡检 | ⚠️ 只有 cwd 残留（5 节点，10-17 15:49），`~/.agent-io` 下没有 |
+
+★★★ **因此：「设计 DSL × 实际 DSL 对拍」在本仓【从未发生过】**（`design/` 一份都没有、`task-system-plan` 也没有 live）。
+★ 而**今天所有"对拍绿了"** —— 比的是「**讨论桌里的期望 × 代码**」，**不是**「设计 DSL × 实际 DSL」。
+
+### 对拍应该怎么跑（正路）
+```
+① 把结论落成 <baseDir>/.agent-io/design/<f>.dsl.json（手写，schema 同 live）
+② import_project 生成 <baseDir>/.agent-io/live/<f>.dsl.json（扫描）
+③ get_dsl { query:'diff', feature_a, feature_b, view_b:'live' }  ⇒ 差异 = 要挂的任务
+```
+
+★ **`<dataHome>` 的解析**：`AGENT_IO_HOME ?? os.homedir()`（`storage.ts:63`）⇒ 本机默认 `C:\Users\Admin`。
+★★ 已知坑：`handlers.ts:616` 把 `liveDir` 传给 `getDesignSheet(feature, liveDir)`，而 `getDesignSheetFile` 内部又走 `getDesignDir(baseDir)` ⇒ **路径可能双重嵌套**（`live/.agent-io/design/`）。★ **待核**（未实测）。
+
 ## 附 · 文件约定
 
 - **`docs/task-system-plan.dsl.json`** —— 设计数据（不是文档）
