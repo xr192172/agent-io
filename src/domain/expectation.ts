@@ -112,10 +112,10 @@ export function expectationPhase(e: Expectation): ExpectationPhase {
 
 /**
  * **参与「是否已满足」判定的那批**（= 后态判据，`phase === 'post'`）。
- * ★ 用法只有一处：`task_machine.canClaim` —— 收归后它**不再**"剔前态判据（清单）"，
- *   而是**按期望自带的 phase 选取**。
+ * ★ 用法只有两处，都在 `task_machine.cardStanding` 里：**满足度**那一轴选它（前态同时选出，供违约轴）。
+ *   收归后它**不再**"剔前态判据（清单）"，而是**按期望自带的 phase 选取**。
  * ★ 这一步**删不掉**（如实声明）：前态判据本身也可能判成 `unsupported`（依赖事实取不到），
- *   若把它们并进报告会**改变 ok 的结论** ⇒ 收归改变的是"它怎么被认出来"（由 phase），而非"要不要选"。
+ *   若把它们并进后态报告会**改变 `satisfied` 的结论** ⇒ 收归改变的是"它怎么被认出来"（由 phase），而非"要不要选"。
  */
 export function postExpectations(expectations: readonly Expectation[]): Expectation[] {
   return expectations.filter((e) => expectationPhase(e) === 'post');

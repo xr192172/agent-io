@@ -716,7 +716,7 @@ export function assertSourceWriteRegistered(
       `  · 任务格住在节点上：\`geometry.nodes[].task\`（★ 不是顶层 tasks[]、不是 overlay）。\n` +
       `  · 任务态五态：candidate / claimed / done / void / superseded；\n` +
       `    ★ \`node.status\`（draft / in_progress / done）对它是**派生值**（progressOf），**不许直接改**。\n` +
-      `  · claim 写前必过后态判据（canClaim）；complete 另需 \`data.evidence\`（与 status 同一把证据尺）。\n` +
+      `  · claim 写前必过「可领」读数（cardStanding ∈ work/violated）；complete 必过「可收口」读数（isSatisfied）且另需 \`data.evidence\`（与 status 同一把证据尺）。\n` +
       `  · 覆盖这条改动的 feature 有多条时，在**任一条**里 claim 即可（本闸不替你挑）。\n` +
       `\n★ 本闸**不会替你 claim**，也**不会把这次写入降级放行** —— 拒绝就是拒绝；领到后再改即可。\n` +
       `★ 拦的范围（只此一条）：项目根上有设计 feature 覆盖该文件（` +

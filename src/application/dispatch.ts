@@ -89,7 +89,7 @@ export async function dispatchDslEdit(
     }
   }
   // ★★ 2026-10-17（task_home）：`localRun` 现在可能返回 Promise —— 写链里有 `task` 的
-  //   `claim`/`complete`（写前要跑 `canClaim` ⇒ 异步）。★ `await` 对同步返回值同样成立（不改变既有路径）。
+  //   `claim`/`complete`（写前要跑 `cardStanding` / `isSatisfied` ⇒ 异步）。★ `await` 对同步返回值同样成立（不改变既有路径）。
   const result = (await localRun(input)) as { message: string; feature: string };
   return { result, viaDaemon: false };
 }

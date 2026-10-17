@@ -96,7 +96,7 @@ export function excludedFields(discussion: TaskDiscussion): ExpandOnlyField[] {
  *
  * | 触发 | 何时 | 谁给 |
  * |---|---|---|
- * | `claim` | **闸内领取该卡时**（`canClaim` / claim 路径上） | `task_machine` 侧 |
+ * | `claim` | **闸内领取该卡时**（`isClaimable(cardStanding(...))` / claim 路径上） | `task_machine` 侧 |
  * | `judge-failed` | **`judgeExpectations` 判失败、需人工裁决时** | 判定器报告（`failed > 0`） |
  * | `explicit` | **调用方显式 `expand='discussion'`** | 调用方逐字传 |
  */
@@ -110,7 +110,7 @@ export const EXPAND_TRIGGERS = ['claim', 'judge-failed', 'explicit'] as const;
  * ★ 三个字段**互相独立**：任一为真即展开；全不为真即不展开（默认只看微缩）。
  */
 export interface ExpandContext {
-  /** ① **闸内领取该卡时**（`canClaim` / claim 路径上；见 `src/domain/task_machine.ts`） */
+  /** ① **闸内领取该卡时**（`isClaimable(cardStanding(...))` / claim 路径上；见 `src/domain/task_machine.ts`） */
   claiming?: boolean;
   /** ② **`judgeExpectations` 判失败、需人工裁决时**（★ 传"判失败"这一事实，不必传报告） */
   judgeFailed?: boolean;

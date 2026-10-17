@@ -77,10 +77,21 @@ if (!REAL2?.decision) {
   console.error('✗ 夹具前置不成立：找不到第二张真决策卡');
   process.exit(1);
 }
+// ★★ 2026-10-17（T13 · cardStanding）：`satisfied` 卡**不可领**（没活干不许领）⇒
+//   claim 链路（④/⑤c/⑦）不能再用"后态全过"的真卡（A/C 都是全绿），改用第三张**有红**的真卡
+//   （漂移巡检：task_drift.ts 尚未实现 ⇒ 后态 file-exists 红 ⇒ work ⇒ 可领）。
+//   ★ 这不是放宽判据：claim 自身的"可领/不可领"由 certs/t351-card-standing-cert.mjs 覆盖。
+const NODED = 'file_src_application_patrol_task_drift_ts';
+const REAL3 = PLAN.geometry.nodes.find((n) => n.id === NODED);
+if (!REAL3?.decision) {
+  console.error('✗ 夹具前置不成立：找不到第三张真决策卡（漂移巡检）');
+  process.exit(1);
+}
 
 const FEAT = 't350';
 const A = REAL.id;
 const C = REAL2.id;
+const D = REAL3.id; // ★ 有红的真卡（claim 链路用）
 const N = 'node_without_decision'; // ★ ⑥ 反面夹具：没有 decision
 const PRE = 'node_only_pre_criteria'; // ★ ⑩ 夹具：有 decision，但**只有前态判据**
 const EDIT = 'src/domain/overlay.ts'; // ★ 只用于"没有任何卡"的闸对照（该文件不是本夹具的节点 ⇒ 见下方 ⑤a 说明）
@@ -102,6 +113,7 @@ const seed = (overrides = {}) =>
         // ★ decision 逐字搬（JSON 深拷，夹具不改一个字段）
         { ...JSON.parse(JSON.stringify(REAL)), description: REAL.path },
         { ...JSON.parse(JSON.stringify(REAL2)), description: REAL2.path },
+        { ...JSON.parse(JSON.stringify(REAL3)), description: REAL3.path },
         { id: N, type: 'file', label: 'no decision', description: 'src/domain/discussion_log.ts' },
         {
           id: PRE,
@@ -128,6 +140,7 @@ const seed = (overrides = {}) =>
       files: [
         { id: A, path: REAL.path, responsibility: '真决策卡夹具' },
         { id: C, path: REAL2.path, responsibility: '第二张真决策卡' },
+        { id: D, path: REAL3.path, responsibility: '第三张真决策卡（有红 ⇒ claim 链路用）' },
         { id: N, path: 'src/domain/discussion_log.ts', responsibility: '无 decision 的节点' },
         { id: PRE, path: 'src/domain/pre_only_fixture.ts', responsibility: '只有前态判据的节点' },
       ],
@@ -207,10 +220,11 @@ console.log('\n════ ③ 进度派生：立卡**不写 progress**（candi
 }
 
 // ════════════════════════════════════════════════════════════════════
-console.log('\n════ ④ claim（candidate ⇒ claimed）════');
+console.log('\n════ ④ claim（candidate ⇒ claimed；★ 用**有红**的真卡 D —— satisfied 卡不可领）════');
 {
-  const r = await run([{ type: 'task', op: 'claim', id: A, data: { owner: 'agent-t350' } }], `领取 ${A}`);
-  const n = nodeOf(A);
+  await run([{ type: 'task', op: 'publish', id: D }], `从漂移巡检的决策卡立卡 ${D}`);
+  const r = await run([{ type: 'task', op: 'claim', id: D, data: { owner: 'agent-t350' } }], `领取 ${D}`);
+  const n = nodeOf(D);
   console.log('     message =', r.text.split('\n')[0]);
   chk(!r.isError, '④a 工具层 claim 成功');
   chk(n.task?.state === 'claimed' && n.task?.owner === 'agent-t350', `④a state=${n.task?.state} owner=${n.task?.owner}`);
@@ -219,7 +233,7 @@ console.log('\n════ ④ claim（candidate ⇒ claimed）════');
 
 console.log('\n════ ⑤c 闸对照三：claimed ⇒ **放行**════');
 {
-  const g = gate(REAL.path);
+  const g = gate(REAL3.path);
   chk(g.ok, `claimed 后同一文件**放行**`, (g.note ?? '').split('\n')[0]);
 }
 
@@ -274,9 +288,9 @@ console.log('\n════ ② 内容跟随 decision（改 decision ⇒ 重翻�
 // ════════════════════════════════════════════════════════════════════
 console.log('\n════ ⑦ 不覆盖已领的卡（claimed 上再 publish ⇒ 拒）════');
 {
-  const r = await run([{ type: 'task', op: 'publish', id: A }], `试图覆盖已领的卡 ${A}`);
+  const r = await run([{ type: 'task', op: 'publish', id: D }], `试图覆盖已领的卡 ${D}`);
   chk(r.isError && /state=claimed/.test(r.text), '⑦a 拒绝并点名已有卡的 state', r.text.split('\n')[0]);
-  chk(nodeOf(A)?.task?.owner === 'agent-t350', '⑦b 已领的卡**原样还在**（owner 没被抹掉）');
+  chk(nodeOf(D)?.task?.owner === 'agent-t350', '⑦b 已领的卡**原样还在**（owner 没被抹掉）');
 }
 
 // ════════════════════════════════════════════════════════════════════

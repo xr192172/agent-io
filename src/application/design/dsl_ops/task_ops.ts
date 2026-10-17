@@ -15,7 +15,7 @@
  *   base 上那份是"应用结果"，不是独立副本）—— 这样 `get_dsl` 当下即可读到，而权威仍是 `task.state`。
  *
  * ## ★★★ 为什么这几步是 async
- * `t_claim` 的 guard 逐字要求 **`canClaim(card) === true`**，而 `canClaim` 要跑
+ * `t_claim` 的 guard 逐字要求 **`isClaimable(cardStanding(card)) === true`**，而 `cardStanding` 要跑
  * `judgeExpectations`（读索引 / 读盘，异步）。⇒ 若把"先判可领性"留给调用方"记得调"，
  * 那就是**补丁**（别处要记得配合）⇒ 于是把 **claim→判定** 收进本函数，写链随之 async。
  *
@@ -39,7 +39,7 @@ import type { EditResult } from './edit_result.js';
 import { getDSL, saveDSL } from '../../../infrastructure/storage.js';
 import { loadOverlay } from '../../../infrastructure/storage_overlay.js';
 import { applyOverlay, seedOverlayFromDsl, validateProgressEvidence, type ProgressEvidence } from '../../../domain/overlay.js';
-import { applicableTransitions, canClaim } from '../../../domain/task_machine.js';
+import { applicableTransitions, cardStanding, isClaimable, isSatisfied } from '../../../domain/task_machine.js';
 import { postExpectations } from '../../../domain/expectation.js';
 import { progressOf, type TaskSpec, type TaskState } from '../../../domain/task_schema.js';
 import { updateStatus } from './status_tools.js';
@@ -148,8 +148,8 @@ function writeTask(feature: string, nodeId: string, next: TaskSpec): void {
  * ## ★★★ 判据（本函数的全部意义：它在"翻卡"，不在"造卡"）
  * 1. **有决策卡**：`node.decision.summary` 非空 —— 否则**拒**，并点名"没有决策卡可翻"；
  * 2. **有判据**：`decision.expectations` 里**至少一条后态判据**（`phase==='post'`）——
- *    否则拒。★ 理由不是"我加个规矩"，而是 `t_claim` 自己的 guard：`canClaim` 对
- *    "后态判据一条不剩"返回 `ok:false`（空集不按全过算）⇒ 翻出来的卡**必然领不了** ⇒
+ *    否则拒。★ 理由不是"我加个规矩"，而是 `t_claim` 自己的 guard：`cardStanding` 对
+ *    "后态判据一条不剩"给 `unknowable`（空集不按全过算）⇒ 翻出来的卡**必然领不了** ⇒
  *    在 publish 当场点名，好过让人到 claim 时才发现；
  * 3. **内容逐字来自 decision**：`summary = decision.summary` · `expectations = decision.expectations`
  *    （浅拷贝一层，避免与 `node.decision` 共享同一批对象）。★ **不接受任何手写内容**：
@@ -211,7 +211,7 @@ export function publishTask(input: TaskOpInput): EditResult {
   if (!post.length) {
     throw new Error(
       `publish 被拒：节点 "${node_id}" 的决策卡只有**前态判据**（\`phase='pre'\`，如 edge-absent），` +
-        `后态判据（\`phase='post'\`）一条不剩 ⇒ 翻出来的卡**必然领不了**（\`canClaim\` 对空集给 ok:false —— 空集不按"全过"算）。\n` +
+        `后态判据（\`phase='post'\`）一条不剩 ⇒ 翻出来的卡**必然领不了**（\`cardStanding\` 对空集给 unknowable —— 空集不按"全过"算）。\n` +
         `★ decision.expectations 现有 ${expectations.length} 条，全是 pre-phase。`,
     );
   }
@@ -264,7 +264,10 @@ export function publishTask(input: TaskOpInput): EditResult {
  * 领取（`candidate → claimed`）。
  *
  * guard（逐条照 `task_plan.state_machine.transitions[t_claim]`）：
- *  ① `canClaim(card) === true`（★ 本函数内直接调用 —— 不把"记得先判"留给调用方）；
+ *  ① `isClaimable(cardStanding(card))`（★ 本函数内直接调用 —— 不把"记得先判"留给调用方）；
+ *     ★ 读的是**五值读数里的"可领"两格**（`work` / `violated`），**不是**"判据全过"。
+ *     ★★ `satisfied` 卡在这里**必拒**（没活干不许领）—— 这条与 `complete` 的判据**分开**：
+ *        收口侧读 `isSatisfied`，两侧同源（都读 `cardStanding`）但**不是同一个谓词**。
  *  ② CAS：`state === 'candidate'` ∧ `owner` 为空 —— 否则**拒**（不覆盖别人的领）；
  *  ③ 写 `owner` + `claimed_at`（`releaseIfExpired` 的 TTL 靠它）。
  */
@@ -280,10 +283,13 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
   assertTransition(card.state, 'claimed', 'claim');
 
   const root = requireRoot(dsl as { source_root?: string });
-  // ★★ 判据复用（不新造第二把尺）：`canClaim` 按 phase 选后态判据 + `judgeExpectations` 判。
-  const verdict = await canClaim(card, { root });
-  if (!verdict.ok) {
-    throw new Error(`claim 被拒（可领性）：${verdict.reason}\n★ 判据唯一出处 = src/domain/task_machine.ts#canClaim。`);
+  // ★★ 判据复用（不新造第二把尺）：`cardStanding` 按 phase 分区 + `judgeExpectations` 判 + 派生五值。
+  const standing = await cardStanding(card, { root, nodes: dsl.geometry?.nodes ?? [] });
+  if (!isClaimable(standing.standing)) {
+    throw new Error(
+      `claim 被拒（可领性：${standing.standing}）：${standing.reason}\n` +
+        `★ 可领判据唯一出处 = src/domain/task_machine.ts#isClaimable（work / violated 才可领；satisfied 只可收口）。`,
+    );
   }
 
   // ★ CAS（单写者队列下等价于"读到的还是那张 candidate 卡"）：不满足 ⇒ 拒，不抢别人的领。
@@ -308,10 +314,17 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
 
   return {
     message:
-      `已领取任务 "${node_id}"（owner=${owner}，claimed_at=${claimedAt}）—— 后态判据 ${verdict.judged.length} 条全过。` +
+      `已领取任务 "${node_id}"（owner=${owner}，claimed_at=${claimedAt}）—— 站位=${standing.standing}；${standing.reason}` +
       `\n★ 进度是**派生值**：task.state=claimed ⇒ progress=in_progress（不落第二份）。`,
     feature,
-    data: { node_id, state: 'claimed' as TaskState, owner, claimed_at: claimedAt, progress: progressOf({ state: 'claimed' }) },
+    data: {
+      node_id,
+      state: 'claimed' as TaskState,
+      owner,
+      claimed_at: claimedAt,
+      standing: standing.standing,
+      progress: progressOf({ state: 'claimed' }),
+    },
   };
 }
 
@@ -363,7 +376,10 @@ export async function releaseTask(input: TaskOpInput): Promise<EditResult> {
  *
  * guard（逐条照 `t_done_from_claimed`）：
  *  ① `owner` 非空（★ 必须已领）；
- *  ② 后态判据 `failed === 0`（★ 复用 `canClaim`，不另写一把判据）；
+ *  ② `isSatisfied(card) === true`（★ 读**收口**那一侧：`cardStanding === 'satisfied'`）——
+ *     ★★ **不再调旧的「可领」判据**：那个函数已从状态机删除（本文件对它的引用数为 **0**，可 grep 验）；
+ *        若这里与 claim 共用"全过"判据，收口闸会放行 `violated` 卡（后态全过、前态越权）——
+ *        那比收归前更坏（讨论 2 的 P31）。
  *  ③ `validateProgressEvidence` 过（★ 复用既有证据闸，不新造第二把尺）；
  *  ④ 写完 task 状态后**调 `updateStatus`**（既有状态入口）—— 交接期让 overlay 的 `progress`
  *     仍有一份**投影**，读端不断（★ 第 ④ 步"overlay progress 退役"另上榜单）。
@@ -379,9 +395,12 @@ export async function completeTask(input: TaskOpInput): Promise<EditResult> {
   }
 
   const root = requireRoot(dsl as { source_root?: string });
-  const verdict = await canClaim(card, { root });
-  if (!verdict.ok) {
-    throw new Error(`complete 被拒（判据未满足）：${verdict.reason}`);
+  const satisfied = await isSatisfied(card, { root, nodes: dsl.geometry?.nodes ?? [] });
+  if (!satisfied.satisfied) {
+    throw new Error(
+      `complete 被拒（可收口性：${satisfied.standing}）：${satisfied.reason}\n` +
+        `★ 收口判据唯一出处 = src/domain/task_machine.ts#isSatisfied（只有 satisfied 可收口；work/violated 可领但不可收口）。`,
+    );
   }
   // ★ 证据闸（唯一一把尺）：没证据 / 形状不对/期望类证据没全绿 ⇒ 当场拒。
   const gate = validateProgressEvidence('done', evidence);
@@ -403,12 +422,14 @@ export async function completeTask(input: TaskOpInput): Promise<EditResult> {
 
   return {
     message:
-      `已完成任务 "${node_id}"（owner=${card.owner}）—— 后态判据 ${verdict.judged.length} 条全过、证据 kind=${evidence!.kind}。` +
+      `已完成任务 "${node_id}"（owner=${card.owner}）—— 站位=satisfied（后态判据 ${satisfied.verdict.satisfaction.passed} 条全过、` +
+      `前态判据 ${satisfied.verdict.violation.checked} 条无红）、证据 kind=${evidence!.kind}。` +
       `\n${legacy.message.split('\n')[0]}`,
     feature,
     data: {
       node_id,
       state: 'done' as TaskState,
+      standing: satisfied.standing,
       progress: progressOf({ state: 'done' }),
       evidence_kind: evidence!.kind,
     },

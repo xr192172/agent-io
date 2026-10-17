@@ -53,15 +53,21 @@
             {
               "kind": "symbol-exists",
               "path": "src/domain/task_machine.ts",
-              "symbol": "canClaim",
-              "why": "领取前的可领性判定要独立成函数，便于对拍"
+              "symbol": "cardStanding",
+              "why": "★ 讨论 2 · P30：『这张卡此刻处在哪种处境』要有**一个具名读数**（work/violated/blocked/satisfied/unknowable），否则接取闸与收口闸只能共用一条布尔（= 一处判据两用）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/task_machine.ts",
+              "symbol": "isSatisfied",
+              "why": "★ 讨论 2 · P30：收口侧要能**独立**被问（complete 与 patrol 的 missed_close 都要问『该收而没收吗』）⇒ 不许把它藏在『可领』函数的内部逻辑里"
             },
             {
               "kind": "call-exists",
               "path": "src/domain/task_machine.ts",
-              "symbol": "canClaim",
+              "symbol": "cardStanding",
               "target": "judgeExpectations",
-              "why": "★ 领取时校验 = 对着 DB 判 expectations（复用现成，不新造）"
+              "why": "★ 五值读数 = 对着代码判 expectations（复用现成判定器，不新造第二把尺）"
             },
             {
               "kind": "symbol-exists",
@@ -109,14 +115,21 @@
               "kind": "call-exists",
               "path": "src/application/design/dsl_ops/task_ops.ts",
               "symbol": "claimTask",
-              "target": "canClaim",
-              "why": "claim 必须先过可领性判定"
+              "target": "cardStanding",
+              "why": "★ 讨论 2 · P30：claim 读**可领**那一侧（work/violated 才可领）；satisfied 必拒（没活干不许领）"
             },
             {
               "kind": "edge-exists",
               "from": "src/application/design/dsl_ops/task_ops.ts",
               "to": "src/domain/task_machine.ts",
               "why": "op 层只能调状态机，不许自己判状态"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/design/dsl_ops/task_ops.ts",
+              "symbol": "completeTask",
+              "target": "isSatisfied",
+              "why": "★ 讨论 2 · P30 的结构判据：complete 读**可收口**那一侧（isSatisfied），★ 不许再与 claim 共用同一个判据 —— 共用会放行 violated 卡（后态全过、前态越权）"
             },
             {
               "kind": "call-exists",
@@ -418,7 +431,7 @@
           "construct": "judgeExpectations",
           "construct_path": "src/application/design/intent/expectations.ts",
           "form": "expectation",
-          "expr": "call-exists canClaim→judgeExpectations（node2） 与 patrolDrift→judgeExpectations（node4）",
+          "expr": "call-exists cardStanding→judgeExpectations（node2） 与 patrolDrift→judgeExpectations（node4）",
           "reuse": true,
           "why_reuse": "对拍器只此一把；本方案只加**新的 expectations**，不加新的判定器"
         },
@@ -512,13 +525,13 @@
           "to": "claimed",
           "guard": {
             "clauses": [
-              "canClaim(card) === true",
-              "★ （T10 收归）按期望自带的 phase 选取「后态判据」（phase=post；前态判据 phase=pre 不参与）后，剩余 expectations **全过** —— ★ 不再有『剔前态判据(NEGATIVE_KINDS)』这一步",
-              "且 剩余 expectations 条数 > 0（空集不按『全过』算，见 OQ5）",
+              "isClaimable(cardStanding(card)) === true —— ★ 五值读数里的 work / violated 两格（有活干、或有违约要拆）",
+              "★ 分区口径：phase=post 供满足度，phase=pre 供违约轴；satisfied **不在可领之列**（没活干不许领）；blocked / unknowable 都拒（依赖未做 / 判不了，拒因分别点名）",
+              "★ 集齐判据要用**全部设计节点**（blocked 的归属 = 红的主体 path 落在谁头上、那个节点做没做完）",
               "target 在 DB 存在（不存在则走 t_void）",
               "CAS: UPDATE tasks SET owner=?,state='claimed' WHERE id=? AND state='candidate' AND owner IS NULL 的 changes === 1"
             ],
-            "read": "canClaim 返回值 + CAS 的 changes 行数"
+            "read": "cardStanding 的 standing 值 + CAS 的 changes 行数"
           }
         },
         {
@@ -552,10 +565,10 @@
           "guard": {
             "clauses": [
               "owner !== null（★ 必须已领）",
-              "judgeExpectations(card.expectations) failed === 0 且按 phase 选取后态判据后剩余条数 > 0",
+              "isSatisfied(card) === true —— ★ = cardStanding === 'satisfied'：后态全过 ∧ 前态无红；★ 与 t_claim 的谓词**不是同一个**（不许一处判据两用）",
               "validateProgressEvidence 过"
             ],
-            "read": "judgeExpectations 报告的 failed 计数"
+            "read": "isSatisfied 的 satisfied 布尔 + cardStanding 的 standing 值"
           }
         },
         {
@@ -639,7 +652,7 @@
       "OQ5（新·本笔）：★ 剔前态判据后若**一条不剩（空集）**，『全过』算不算真？空集 = 真空真(vacuous truth) ⇒ 未领卡会被自动收口；另一解是空集判『判不了』。未拍 ⇒ t_claim / t_done_from_claimed 里的『剩余条数 > 0』只是我加的保护，需裁",
       "OQ6（新·本笔）：★ 我不同意把 OQ2『TTL 取值』当成**单一全局数**处理 —— TTL 是领主的续租超时，不同卡类（改一行 vs 重构一文件）不该共用一个数 ⇒ 建议改成按卡类分档；此条待裁，未并入 invariants",
       "OQ7（新·本笔）：★ 接点⑤的**连线方向**未定 —— 是 live 重算**触发** patrol（live_render 侧调 patrolDrift），还是 patrol **自取** live（patrolDrift 调 renderLiveFromDb）？我按『patrol 自取』写了 call-exists，但若实际设计是前者，该断言方向反了、应挂到 live_render 那侧。未拍，未并入 invariants",
-      "OQ8（新·第一块落地时撞出）：★ t_claim 的 guard 第 2 条与 t_done_from_claimed 的 guard 第 2 条**同形**（都是『剔前态判据后剩余全过 且 条数 > 0』）⇒ 领取闸与收口闸用**同一把尺**，于是 canClaim 判『该收口』而不是『可领』。而 docs/plan-task-system.md 的表格写的是『剔除前态判据后 期望**未**全过』—— 与 t_claim 的第 2 条**相反**，两处不能同时成立。★ 本笔的 task_machine.canClaim 按 t_claim 逐字实现（『全过』），并把这条张力写成代码注释 + 本 OQ。需裁：领取的判据到底是『未全过（还有活）』还是『全过（可收口）』；若为前者，t_claim 第 2 条要改，且『漏收口』判据得另立一个函数（patrol 的 missed_close 才该用『全过』）。",
+      "OQ8（新·第一块落地时撞出）：★ t_claim 的 guard 第 2 条与 t_done_from_claimed 的 guard 第 2 条**同形**（都是『剔前态判据后剩余全过 且 条数 > 0』）⇒ 领取闸与收口闸用**同一把尺**，于是 canClaim 判『该收口』而不是『可领』。而 docs/plan-task-system.md 的表格写的是『剔除前态判据后 期望**未**全过』—— 与 t_claim 的第 2 条**相反**，两处不能同时成立。★ 本笔的 task_machine.canClaim 按 t_claim 逐字实现（『全过』），并把这条张力写成代码注释 + 本 OQ。需裁：领取的判据到底是『未全过（还有活）』还是『全过（可收口）』；若为前者，t_claim 第 2 条要改，且『漏收口』判据得另立一个函数（patrol 的 missed_close 才该用『全过』）。★★ 2026-10-17 已裁（讨论第 2 场 · P30）：**领取 = cardStanding ∈ {work, violated}**、**收口 = isSatisfied（= satisfied）** —— 两处判据已分家，`canClaim` 已删除（见 t_claim clause[0] 与 t_done_from_claimed clause[1]，证 certs/t351-card-standing-cert.mjs）。",
       "OQ9（新·第一块落地时撞出）：★ t_claim / t_done_from_claimed 里的 canClaim→judgeExpectations，把一条**反向依赖**写成了硬期望 —— src/domain/task_machine.ts（arch_layer: core）必须调用 src/application/design/intent/expectations.ts 的 judgeExpectations。而本仓既有铁律是『**domain 不许 import infrastructure**』（src/domain/expectation.ts 文件头逐字：判定器之所以不住 domain，就是因为那边不许 import infrastructure）⇒ domain→application→infrastructure 是**层级倒挂**。本笔照样实现了（用户裁定『语义必须照设计 DSL』），但这是设计 DSL 自己要修的一处：三选一 —— ① 把 canClaim 挪到 application 层（core 只剩纯判据编排）；② 定义端口（domain 声明 `JudgePort`，application 实现并注入）；③ 接受倒挂并在 DSL 里写明豁免。未拍。",
       "OQ10（新·第一块落地时撞出）：★ 『登记 = 临时版 claim』这条**对闸不生效** —— 实测（certs/.work/probe-block1-claim.mjs）：`seedOverlayFromDsl`（src/domain/overlay.ts:631-633）把几何节点的 `status` **播种成** overlay 锚点的 `progress`，而闸的『未登记』判据（src/application/write_gate.ts:652）只问 `progress !== undefined` ⇒ 一份刚播种的 overlay 里**每个节点都已『登记』**（哪怕从没调过 edit_dsl）⇒ 那条分支对已播种的 feature 是装饰。要让它有牙，需区分『播种来的 progress』与『人显式登记的 progress』（如播种不写 progress、或加 `progress_source`）。未拍。【★ 2026-10-17 已裁并落地：判据改成『该节点上有 state=claimed 的 task』，见 task_home.landed；★ 现在 seedOverlayFromDsl 对**有 task 的节点**不再播种进度】",
       "OQ11（新·第三块 task_ops 开工前撞出 ⇒ 该块**停手**，本节点 5 红不落）：★ task_ops 的三个动作（claim/release/complete）**缺两个原生落点**，本节点的 design 只钉了「动作存在 + 调谁」，没钉「状态写到哪」这一维 ⇒ 照现状实现必得**半修**。三处实测：① **任务格没有家** —— `TaskSpec`（src/domain/task_schema.ts:109）全仓**消费点只有 task_machine.ts**（第一块自己），`Node`（src/domain/geometry.ts:114-166）**无 `task` 字段**、`schema/design_dsl.schema.json` 无、`src/infrastructure/index/schema.ts` 的 8 张表无 `tasks` ⇒ 『写 design/<f>.dsl.json 的 task 格』这半句**无落点**；② **claim 的状态迁移没有 sanctioned 写端** —— 唯一状态写端 `updateStatus`（status_tools.ts:63）写的是 overlay 锚点的 `progress`（三值 `draft|in_progress|done`，geometry.ts:10），而 task 态是**另一条五值轴**（task_schema.ts:41 `candidate|claimed|done|void|superseded`）⇒ 二者无映射；照设计的 `completeTask→updateStatus` 走 progress 轴、而 claim 要写 task 轴 ⇒ **一件事两处权威**（违反本 DSL 自己的 invariant『一处权威 + 一处渲染』）；③ **要让它可被调用就得进 edit_dsl 的 op 家族** —— 至少 4 处协同（index.ts:214 op enum + :217 type enum · update_feature.ts:89-102 type 联合 + :424-466 applyOperation switch · op_data_spec.ts:65 OP_SPECS + :307 TYPE_KNOWN_KEYS，且 :346/:350 两条编译器断言把 OP_SPECS↔TYPE_KNOWN_KEYS 钉死）。★ 收归那一维的候选（待裁，二选一）：(A) **收归进既有单轴** —— 把 task 态**塌进 progress**（claim=置 `in_progress` 并落 owner 事件），三动作成为 `updateStatus` 的薄封装，不新增轴、不新增写端；(B) **给 task 格立原生家** —— `Node.task?: TaskSpec` + schema + 一个**唯一**的 task 状态写端（与 `updateStatus` 并列或合一），并在本节点补一条『状态写到哪』的可判期望；在此之前 task_ops **不许开工**（半修比不修更坏）。未拍。【★ 2026-10-17 已裁 B 并按 task_home 落地 ①②③：家 = geometry.nodes[].task · 唯一写端 = edit_dsl{type:'task'} · progress 派生 · 闸认 claimed task ⇒ 本块 5红→0红；★ 第 ④ 步（overlay progress 退役）另上榜单】"
@@ -892,7 +905,7 @@
             "cert": "certs/t350-publish-task-cert.mjs = PASS=32 FAIL=0（含「自己坏」对照：把卡改成手写 ⇒ 出处判据当场变假）"
           }
         },
-        "note_one_ruler": "判据复用：`postExpectations`（与 `canClaim` 同一把尺判「有没有可领的后态判据」）+ `checkOpSpec`（未知键闸）+ `progressOf`（进度派生）—— 本笔**没有**新造第二条判据。"
+        "note_one_ruler": "判据复用：`postExpectations`（与 `cardStanding` 同一把尺 —— ★ 满足度只看后态、违约轴只看前态）+ `checkOpSpec`（未知键闸）+ `progressOf`（进度派生）—— 本笔**没有**新造第二条判据。"
       }
     },
     "provenance": {

@@ -67,12 +67,24 @@ const B = 'file_src_b_ts'; // **无 task**（闸必须拒）
 const C = 'file_src_c_ts'; // 有 task（claim → release）
 const D = 'file_src_b_ts'; // 复用 B：补一份"overlay 已播种 progress"的影子 —— 见 ③c
 
+// ★ 2026-10-17（T13 · cardStanding）：`satisfied` 卡**不可领**（没活干不许领）⇒
+//   夹具卡必须是"有活干"的那一格（一条**未满足**的后态判据），否则 ④b 的 claim 会被拒。
+//   ★ 施工完成由 `markSatisfied()` 摆态（真实流程里是"把活干完"）。
 const card = (id, p) => ({
   id,
   summary: `T349 ${id}`,
-  expectations: [{ kind: 'file-exists', path: p, why: 'T349 夹具：后态判据（文件已存在 ⇒ 可 claim）' }],
+  expectations: [{ kind: 'file-exists', path: `${p}.todo`, why: 'T349 夹具：**未满足**的后态判据（有活干 ⇒ 可领）' }],
   state: 'candidate',
 });
+
+/** ★ 夹具摆态：把该卡的判据换成一条**已满足**的（模拟"活干完了"）。不是产品行为。 */
+const markSatisfied = (id, p) => {
+  const dsl = getDSL(FEAT);
+  const nodes = dsl.geometry.nodes.map((n) =>
+    n.id === id ? { ...n, task: { ...n.task, expectations: [{ kind: 'file-exists', path: p, why: 'T349 夹具：活干完了（后态判据已满足）' }] } } : n,
+  );
+  saveDSL({ ...dsl, geometry: { ...dsl.geometry, nodes } });
+};
 
 saveDSL({
   id: `feature_${FEAT}`,
@@ -229,6 +241,10 @@ console.log('\n════ ④ 走工具层：edit_dsl {type:task}（claim / co
     "④d ★ 旧写端 updateStatus(status='draft') 之后：task.state 仍是 claimed、读到的 status 仍是 in_progress（派生压过旧轴）",
     JSON.stringify({ state: a2.task.state, status: a2.status }),
   );
+
+  // ★ 2026-10-17（T13）：收口判据已换成 `isSatisfied`（只有 satisfied 可收口）⇒
+  //   先把 A 的判据摆成"已满足"（模拟活干完了），④e/f 才测得的是**证据闸与收口**，不是"还有活"。
+  markSatisfied(A, 'src/a.ts');
 
   // (e) complete 无证据 ⇒ 被 OP_SPECS 拒
   const noEv = await edit([{ type: 'task', op: 'complete', id: A, data: {} }], 'T349：完成任务但不给证据（应被拒）');

@@ -157,7 +157,7 @@ export interface UpdateFeatureInput {
 
 /**
  * ★★ 2026-10-17（task_home）：本函数与下面的 `applyOperation` **改成 async** ——
- * 因为 `task` 的 `claim`/`complete` 必须在写前跑 `canClaim`（它要 `judgeExpectations`，异步）。
+ * 因为 `task` 的 `claim`/`complete` 必须在写前跑 `cardStanding` / `isSatisfied`（要 `judgeExpectations`，异步）。
  * ★ 这条 async 是**结构性的**，不是风格：若把"先判可领性"留给调用方"记得调"，那就是补丁
  * （别处要配合）⇒ 判定必须住在写端里面。⇒ 写链三处随之上浮：本函数 / `updateFeature` /
  * `dispatchDslEdit` 的 localRun / daemon 的 `dslWriteHandler`（都**顺序 await**，不并发）。

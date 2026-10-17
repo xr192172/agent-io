@@ -78,7 +78,16 @@ async function registerNode(feature, nodeId, rel) {
           task: {
             id: nodeId,
             summary: `T332 夹具：${nodeId} 的任务格`,
-            expectations: [{ kind: 'file-exists', path: rel, why: 'T332 夹具：后态判据（文件存在 ⇒ 可 claim）' }],
+            expectations: [
+              {
+                // ★ 2026-10-17（T13 · cardStanding）：`satisfied` 卡**不可领**（没活干不许领）⇒
+                //   夹具的判据必须是"有活干"的那一格（一条**未满足**的后态判据）。
+                //   ★ 不是本证判据变松：这里只为把节点领到 claimed，判据内容与 requires 无关。
+                kind: 'file-exists',
+                path: `${rel}.todo`,
+                why: 'T332 夹具：未满足的后态判据 ⇒ standing=work ⇒ 可领（仅为登记该节点）',
+              },
+            ],
             state: 'candidate',
           },
         }

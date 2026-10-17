@@ -83,7 +83,7 @@ function regionsOverlap(a: string[], b: string[]): boolean {
  *  避免多会话/多窗口并发改同一 feature 时静默丢改动。
  */
 // ★★ 2026-10-17（task_home）：改成 `async` —— 写链里的 `task` op（claim/complete）要在写前
-//   跑 `canClaim`（异步）。★ 队列里的"串行"靠的是 `await` 这一次调用，语义未变。
+//   跑 `cardStanding` / `isSatisfied`（异步）。★ 队列里的"串行"靠的是 `await` 这一次调用，语义未变。
 async function dslWriteHandler(req: DslWriteRequest): Promise<DslWriteResult> {
   const feature = req.feature as string;
   const ops = req.ops as Record<string, unknown> | undefined;

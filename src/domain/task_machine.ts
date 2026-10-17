@@ -15,14 +15,21 @@
  *   ⇒ 已**收归进原生结构**：`Expectation` 现在**自带 `phase` 维度**
  *     （`domain/expectation.ts#expectationPhase` / `#postExpectations`）——
  *     **分类由 phase 决定**，本文件里"前态判据"这件事**已从 phase 派生**（不再有自己的清单）。
- * ★ 残留（如实报）：`canClaim` 仍要**选取**后态判据（`postExpectations`）才能判 —— ★ 这一步**删不掉**：
- *   前态判据本身也可能判成 `unsupported`（依赖事实取不到），若把它们并进报告会**改变 ok 的结论**。
+ * ★ 残留（如实报）：`cardStanding` 仍要**选取**后态判据（`postExpectations`）才能算满足度 —— ★ 这一步**删不掉**：
+ *   前态判据本身也可能判成 `unsupported`（依赖事实取不到），若把它们并进后态报告会**改变 satisfied 的结论**。
  *   ⇒ 收归改变的是"它**怎么被认出来**"（由期望自带的 phase），不是"要不要选"。
+ *   ★ 但 `unsupported` 的**处置**已经分开：前态判不了 ⇒ `violated` 轴判不了（`unknowable`），
+ *     而不是像收归前那样"整张卡的 ok 被前态的 unsupported 拉红"。
+ *
+ * ## ★★ 两把尺 ⇒ 一个读数 + 两个谓词（2026-10-17 · 讨论 2 / P30）
+ * 收归前 `canClaim` 被 `claim` 与 `complete` **同一个函数**共用（`task_ops.ts` 两处）⇒
+ * 一处判据两用：要么"没活干也能领"，要么"有红也能收口"，二者必居其一。
+ * ⇒ 现在：`cardStanding` 出**五值**，`isClaimable` 与 `isSatisfied` 各读一侧。
  *
  * ## 判定器复用（★ 不新造第二把尺）
  * 判据的判定一律走既有 `judgeExpectations`（`application/design/intent/expectations.ts`）——
  * 它已经会区分 `pass / fail / unsupported`，且 `unsupported` **不算通过**。
- * 本文件**只**做三件事：① 选取后态判据 ② 编排判定 ③ 出迁移判据 / 租约回收。
+ * 本文件**只**做四件事：① 按 phase 分区 ② 编排判定 ③ 派生五值 ④ 出迁移判据 / 租约回收。
  *
  * ## 迁移表（★ 逐条照设计 DSL；`candidate → done` **不实现**）
  * 见 {@link TRANSITIONS}。其中 `t_done_from_candidate` 带
@@ -30,72 +37,273 @@
  * ★ **没有任何代码路径**能执行它，等用户裁定（"『已满足』的卡：自动收口还是只提示"）。
  */
 import { judgeExpectations, type ExpectationsReport } from '../application/design/intent/expectations.js';
-import { postExpectations, type Expectation } from './expectation.js';
+import { expectationPhase, expectationSubjectPath, normPath, postExpectations, type Expectation } from './expectation.js';
 import { isTaskState, type TaskSpec, type TaskState } from './task_schema.js';
 
-/** `canClaim` 的结论（★ 带理由 + 原始报告 ⇒ 拒绝时能说清"卡在哪一条"）。 */
-export interface CanClaimVerdict {
-  ok: boolean;
+/**
+ * ★★★ 一张卡的**五值读数**（`docs/_extract/task-system-discussion-2.md` §5.1 `P30` 的裁决）。
+ *
+ * ## 它收归的是什么（铁律 3：补丁 ⇒ 结构）
+ * 收归前，"这张卡现在能干什么"被**四处各判一次**：
+ *   ① `canClaim` 的 `unsupported > 0`；② 同一函数的 `failed > 0`；
+ *   ③ `complete` 调**同一个** `canClaim`（`task_ops.ts` 两处共用一把尺）；
+ *   ④ 前态判据（`edge-absent`）**没有任何一处判**（`task_machine.ts` 只取 post）。
+ * ⇒ 缺的那一维是：**「这张卡此刻处在哪种处境」没有一个具名读数** ——
+ *   于是"接取闸"与"收口闸"只能共用一条布尔，必然一处判两用。
+ * ⇒ 收归成**一个读数**（本函数）+ **两个谓词**（`isClaimable` / `isSatisfied`）：
+ *   谁要用哪一侧，就调哪个谓词；**五值的语义只在这里派生一次**。
+ *
+ * ## 语义（逐条按裁决，不许在调用处再解释一遍）
+ *   · `work`      —— 后态判据有红，且红里有**本节点**的（或不对应任何节点）⇒ ★ 可领；
+ *   · `violated`  —— 后态全过、**前态有红**（非法依赖/边界越权）⇒ ★ 可领（去拆），★ **不许收口**；
+ *   · `blocked`   —— 后态有红，且**全部**落在**别的未完成节点**上 ⇒ ★ 拒（依赖未做，领了也改不动）；
+ *   · `satisfied` —— 后态全过 ∧ 前态无红 ⇒ ★ **只可收口，不可领**（没活干）；
+ *   · `unknowable`—— 后态一条不剩 / 后态有 unsupported / 后态全过但前态判不了 ⇒ ★ 拒（判不了）。
+ *
+ * ## ★ 两个读数轴是**分开**的（这是 `phase` 唯一的用处）
+ *   · **满足度**（`satisfaction`）**只**由后态判据算出 —— 前态判据**不参与** `satisfied` 的计算；
+ *   · **违约轴**（`violation`）**只**由前态判据算出。
+ * ⇒ 所以 `satisfied` 要求"后态全过 ∧ 前态无红"，而不是"把前态并进后态一起数条数"。
+ *   ★ 这两句话不是同义的：前者让 `edge-absent` 的**失败**有处置（violated），
+ *     又不让它把**满足度**污染成"天然成立"。
+ */
+export type CardStanding = 'work' | 'violated' | 'blocked' | 'satisfied' | 'unknowable';
+
+/** 归属分类里要用到的「设计节点」（★ 只取三样 ⇒ 不把整张 DSL 塞进判据）。 */
+export interface StandingNode {
+  id: string;
+  path?: string;
+  task?: TaskSpec;
+}
+
+export interface StandingInput {
+  /** 被分析项目的根（`judgeExpectations` 要拿它去读代码 / 索引） */
+  root: string;
+  /**
+   * ★ **全部**设计节点（`geometry.nodes`）。
+   * 为什么必须在这里：`blocked` 的定义是"红**全落在别人未完成的节点**上"，
+   * 而"别人是谁 / 做完没有"只能由节点表回答。★ 只给本节点是不够的；
+   * ★ 给半份表会把 `foreign` 读成 `orphan`（= 把"等别人"误读成"有活干"）。
+   * ★★ 已知限度（如实声明）：归属用的是 `expectationSubjectPath` 与**节点的 `path`** 比对；
+   *   若某节点**没有 `path`**（只有 `description`/`semantic.files`），它既不是 own 也不是 foreign
+   *   ⇒ 那些红按 `orphan` 归到 `work`。今天 `geometry.nodes[].path` 是设计侧的正规字段
+   *   （`Node.path`），但**没有再加一层"必须填 path"的校验** —— 那会变成第二处判据（校验住 A.3）。
+   */
+  nodes: readonly StandingNode[];
+}
+
+/** 满足度（★ **只**由后态判据得出） */
+export interface SatisfactionCounts {
+  checked: number;
+  passed: number;
+  failed: number;
+  unsupported: number;
+}
+
+/** 违约轴（★ **只**由前态判据得出） */
+export interface ViolationCounts {
+  checked: number;
+  failed: number;
+  unsupported: number;
+}
+
+export interface StandingVerdict {
+  standing: CardStanding;
+  /** ★ 人话拒因/放行因（★ 五值**各有各的句子**，不许共用——否则回执里看不出是哪种处境） */
   reason: string;
-  /** ★ 真正参与判定的那批（= **后态判据**，`phase === 'post'`；前态判据由期望自带的 phase 排除） */
-  judged: readonly Expectation[];
-  /** 判定器原样报告（★ 不落盘、不缓存 —— 读数永远现算） */
-  report?: ExpectationsReport;
+  /** 满足度（后态） */
+  satisfaction: SatisfactionCounts;
+  /** 违约轴（前态） */
+  violation: ViolationCounts;
+  /** 后态判定器原样报告（★ 不落盘、不缓存 —— 读数永远现算） */
+  report: ExpectationsReport;
+  /** 前态判定器原样报告（★ 没有前态判据时为 undefined） */
+  preReport?: ExpectationsReport;
+  /** 参与判定的两批（★ 分区只在这里做一次） */
+  judged: { post: readonly Expectation[]; pre: readonly Expectation[] };
+  /** ★ 判不了时也报"看到几条红"（`unknowable` 不许把红吞掉 —— 讨论 2 的 R2） */
+  redSeen: number;
+  /** `blocked` 时点名的依赖节点（★ 拒因必须能指出是谁） */
+  blockedBy?: string[];
 }
 
 /**
- * ★★ **可领性判定**（设计 DSL：`task_machine` 节点的 `canClaim`）。
+ * ★★★ **五值读数**（唯一的判据编排处；设计 DSL：`task_machine` 节点的 `cardStanding`）。
  *
- * ## 判据（逐条对应 `task_plan.state_machine.transitions[t_claim].guard.clauses`）
- * 1. 选取**后态判据**（`postExpectations`，按期望自带的 `phase === 'post'`）——
- *    ★ 前态判据在未施工时**天然成立**，拿它判"已满足"会**恒真** ⇒ 不选它，否则误收口；
- * 2. 选取后剩余条数 **> 0**（空集不按"全过"算 —— 真空真会误收口，见 OQ5）；
- * 3. 剩余判据 `judgeExpectations` 判定：`unsupported === 0`（★ **判不了 ≠ 通过**）；
- * 4. 且 `failed === 0`（后态判据**全过**）。
+ * ## 编排（★ 三件事，不造第二把尺）
+ * 1. 按期望**自带的 `phase`** 分成两批（`postExpectations` + `phase==='pre'`，★ T10 的收归）；
+ * 2. 两批各跑**同一个** `judgeExpectations`（`pass / fail / unsupported` 只有它一套）；
+ * 3. 由两份报告**派生**五值 + 归属（`own / foreign / orphan`，用既有 `expectationSubjectPath`）。
  *
- * ## ★ 已知语义张力（已列待裁，不在此静默改）
- * 本判据与 `t_done_from_claimed` 的判据**同形**，而 `docs/plan-task-system.md` 的表格写的是
- * "剔除前态判据后期望**未**全过"。两种写法**相反**，不能同时成立（详见报告 OQ8 / 补丁清单）。
- * 本实现**照设计 DSL 的 `task_plan` 逐字**（用户裁定"语义必须照设计 DSL"），故取"**全过**"。
+ * ## 判定顺序（= 优先级；每一格都有夹具，见 `certs/t351-card-standing-cert.mjs`）
+ * ```
+ * 后态一条不剩              ⇒ unknowable（空集不按"全过"算）
+ * 后态 unsupported > 0      ⇒ unknowable（判不了 ≠ 有活 ≠ 没活）
+ * 后态 failed === 0 ∧ 前态 failed > 0   ⇒ violated
+ * 后态 failed === 0 ∧ 前态 unsupported > 0 ⇒ unknowable（满足度成立，但不敢说"没有违约"）
+ * 后态 failed === 0 ∧ 前态无红           ⇒ satisfied
+ * 后态有红 ∧ 无 own ∧ 全是 foreign 且那些节点都没 done ⇒ blocked（点名 dep）
+ * 后态有红 ∧ 其余                        ⇒ work
+ * ```
  *
- * @param card  任务格（`state` 必须是 `candidate` 才谈得上"领"；本函数**只判判据**，不判状态）
- * @param opts.root 被分析项目的根（`judgeExpectations` 要拿它去读代码 / 索引）
+ * @param card 任务格（`state` 不参与判定；★ 状态迁移由调用方先过 `applicableTransitions`）
  */
-export async function canClaim(card: TaskSpec, opts: { root: string }): Promise<CanClaimVerdict> {
-  // ★ 按期望**自带的 phase** 选取后态判据（收归：不再"剔前态判据（NEGATIVE_KINDS）"）
-  const judged = postExpectations(card.expectations);
+export async function cardStanding(card: TaskSpec, opts: StandingInput): Promise<StandingVerdict> {
+  // ★ 分区只在这里做一次（phase 是期望自带的属性 ⇒ 不需要任何清单，"记得剔除"这一步已不存在）
+  const post = postExpectations(card.expectations);
+  const pre = card.expectations.filter((e) => expectationPhase(e) === 'pre');
+  const items = (xs: readonly Expectation[]) =>
+    xs.map((expectation) => ({ node_id: card.id, node_label: card.summary, expectation }));
 
-  // ★ 选取后为空 = 没有一条"施工后才可能成立"的判据 ⇒ 判不了（真空真 ⇒ 未领卡会被自动收口）
-  if (judged.length === 0) {
+  // ★ 两批各判一次（空批也交判定器 ⇒ 计数口径仍只有一处）
+  const report = await judgeExpectations(opts.root, items(post));
+  const preReport = pre.length ? await judgeExpectations(opts.root, items(pre)) : undefined;
+
+  const satisfaction: SatisfactionCounts = {
+    checked: report.checked,
+    passed: report.passed,
+    failed: report.failed,
+    unsupported: report.unsupported,
+  };
+  const violation: ViolationCounts = {
+    checked: pre.length,
+    failed: preReport?.failed ?? 0,
+    unsupported: preReport?.unsupported ?? 0,
+  };
+  const redSeen = satisfaction.failed + violation.failed;
+  const base = { satisfaction, violation, report, preReport, judged: { post, pre }, redSeen };
+
+  // ── ① 后态一条不剩：没有"施工后才可能成立"的判据 ⇒ 判不了（真空真会误收口，见 OQ5）
+  if (post.length === 0) {
     return {
-      ok: false,
-      reason: '后态判据（phase=post）一条不剩（空集不按「全过」算）⇒ 判不了，不许据此收口',
-      judged,
+      ...base,
+      standing: 'unknowable',
+      reason: '后态判据（phase=post）一条不剩（空集不按「全过」算）⇒ 判不了「有没有活 / 收没收口」',
     };
   }
 
-  const report = await judgeExpectations(
-    opts.root,
-    judged.map((expectation) => ({ node_id: card.id, node_label: card.summary, expectation })),
-  );
-
-  if (report.unsupported > 0) {
+  // ── ② 后态判不了：压过一切（★ 但把"另外看到几条红"带出来，不吞）
+  if (satisfaction.unsupported > 0) {
     return {
-      ok: false,
-      reason: `后态判据里仍有 ${report.unsupported} 条**判不了**（unsupported 既不算过也不算不过）`,
-      judged,
-      report,
+      ...base,
+      standing: 'unknowable',
+      reason:
+        `后态判据里 ${satisfaction.unsupported} 条**判不了**（unsupported 既不算过也不算不过）⇒ 判不了` +
+        (redSeen > 0 ? `；★ 同时看到 ${redSeen} 条红，不许当成「没活」` : ''),
     };
   }
-  if (report.failed > 0) {
-    return { ok: false, reason: `后态判据里仍有 ${report.failed} 条**未满足**`, judged, report };
+
+  // ── ③ 后态全过：分 satisfied / violated / unknowable（前态只决定"违约轴"）
+  if (satisfaction.failed === 0) {
+    if (violation.failed > 0) {
+      return {
+        ...base,
+        standing: 'violated',
+        reason:
+          `违约：后态判据 ${satisfaction.passed} 条全过，但**前态判据** ${violation.failed} 条红` +
+          `（边界越权/非法依赖）⇒ 可领（去拆），★ **不许收口**`,
+      };
+    }
+    if (violation.unsupported > 0) {
+      return {
+        ...base,
+        standing: 'unknowable',
+        reason:
+          `满足度已成立，但前态判据 ${violation.unsupported} 条**判不了** ⇒ 无法确认「没有违约」` +
+          `（不敢说 satisfied，也不许说 violated）`,
+      };
+    }
+    return {
+      ...base,
+      standing: 'satisfied',
+      reason:
+        `已满足：后态判据 ${satisfaction.passed} 条全过、前态判据 ${violation.checked} 条无红` +
+        ` ⇒ **只可收口，不可领**（没活干）`,
+    };
+  }
+
+  // ── ④ 后态有红：看红的主体落在谁的 path 上（own / foreign / orphan）
+  const self = opts.nodes.find((n) => n.id === card.id);
+  const selfPath = self?.path ? normPath(self.path) : '';
+  const isForeign = (e: Expectation): StandingNode | undefined => {
+    const p = expectationSubjectPath(e);
+    if (selfPath && p === selfPath) return undefined; // own
+    return opts.nodes.find((n) => n.id !== card.id && n.path && normPath(n.path) === p);
+  };
+  const reds = report.items.filter((i) => i.verdict === 'fail').map((i) => i.expectation);
+  const own = reds.filter((e) => selfPath !== '' && expectationSubjectPath(e) === selfPath);
+  const foreignOwners = reds.filter((e) => own.indexOf(e) === -1).map(isForeign).filter((n): n is StandingNode => !!n);
+  const orphan = reds.length - own.length - foreignOwners.length;
+  // ★ 去重 + 稳定排序（★ 不用 localeCompare：跨 locale 坐标会变，见 B.4）
+  const depIds = [...new Set(foreignOwners.map((n) => n.id))].sort();
+  const pendingDeps = depIds.filter((id) => opts.nodes.find((n) => n.id === id)?.task?.state !== 'done');
+
+  if (own.length === 0 && depIds.length > 0 && pendingDeps.length === depIds.length) {
+    return {
+      ...base,
+      standing: 'blocked',
+      blockedBy: depIds,
+      reason:
+        `等别人：后态判据红 ${satisfaction.failed} 条，主体**全落在**节点 ${depIds.join(' / ')} 的 path 上，` +
+        `且它们都**没有 done 的卡** ⇒ 领这张卡改不动那些文件（闸只认该节点的 claimed 卡）`,
+    };
+  }
+
+  if (own.length > 0) {
+    return {
+      ...base,
+      standing: 'work',
+      reason:
+        `有活干：后态判据红 ${satisfaction.failed} 条，其中 ${own.length} 条的主体是**本节点**（${selfPath}` +
+        `${orphan > 0 ? `；另 ${orphan} 条不对应任何节点` : ''}）`,
+    };
+  }
+  if (depIds.length > 0) {
+    // ★ 红在别人节点上，但那些节点已 done ⇒ 不是"等它做完"（该红是旧判据/漂移），仍算本卡有活
+    return {
+      ...base,
+      standing: 'work',
+      reason:
+        `有活干：后态判据红 ${satisfaction.failed} 条，主体落在节点 ${depIds.join(' / ')} 上，` +
+        `但它们**已有 done 的卡** ⇒ 不构成「等依赖」（红是旧判据/漂移，要本卡处置）`,
+    };
   }
   return {
-    ok: true,
-    reason: `后态判据 ${report.passed} 条**全过**（前态判据 ${card.expectations.length - judged.length} 条按 phase 不参与「已满足」判定）`,
-    judged,
-    report,
+    ...base,
+    standing: 'work',
+    reason:
+      `有活干：后态判据红 ${satisfaction.failed} 条，主体**不对应任何设计节点**（orphan_path）` +
+      ` ⇒ 没有"该等谁"，按本卡有活处置`,
   };
+}
+
+/**
+ * ★★ **"可领"谓词**（`claim` 侧唯一的读法）：`work` 与 `violated` 都可领。
+ * ★ 只此一处允许把"哪几个值算可领"写出来 —— 调用方**不许**自己写 `=== 'work'`。
+ */
+export function isClaimable(standing: CardStanding): boolean {
+  return standing === 'work' || standing === 'violated';
+}
+
+export interface SatisfactionVerdict {
+  /** ★ 可收口（= `cardStanding === 'satisfied'`；★ 不许把它简化成"后态全过"——那会放行 violated 卡） */
+  satisfied: boolean;
+  standing: CardStanding;
+  reason: string;
+  verdict: StandingVerdict;
+}
+
+/**
+ * ★★ **"可收口"判定**（`complete` / patrol 的 `missed_close` 侧唯一的读法）。
+ *
+ * ★ 为什么它必须是**独立函数**（而不是 `cardStanding` 里顺手带出来的一个布尔）：
+ *   收口闸的使用者不止 `completeTask` 一个（patrol 的 `missed_close` 也要问"这张卡是不是
+ *   该收而没收"），若那个布尔只活在 `cardStanding` 的返回值里，"谁问收口"就会各自拼条件。
+ * ★ 它与 `isClaimable` **同源**（都读 `cardStanding`）⇒ 一处判据、两个方向，不是两把尺。
+ */
+export async function isSatisfied(card: TaskSpec, opts: StandingInput): Promise<SatisfactionVerdict> {
+  const verdict = await cardStanding(card, opts);
+  return { satisfied: verdict.standing === 'satisfied', standing: verdict.standing, reason: verdict.reason, verdict };
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -196,8 +404,9 @@ export const TRANSITIONS: readonly TaskTransition[] = [
     enabled: true,
     guard: {
       clauses: [
-        'canClaim(card) === true',
-        '★ 按期望自带的 phase 选取后态判据（phase=post；前态判据 phase=pre 不参与）后，剩余 expectations 全过（条数必须 > 0）',
+        'isClaimable(cardStanding(card)) === true（★ 取五值里的 work / violated 两格 —— 有活干、或有违约要拆）',
+        '★ 按期望自带的 phase 分区（phase=post 供满足度，phase=pre 供违约轴）后：work = 后态有本节点的红；violated = 后态全过 ∧ 前态有红',
+        '★ satisfied 不在可领之列（没活干不许领）；blocked / unknowable 都拒（依赖未做 / 判不了）',
         'target 在 DB 存在（不存在则走 t_void）',
         'CAS：state=candidate ∧ owner IS NULL 时才写 owner（changes === 1）',
       ],
@@ -232,7 +441,7 @@ export const TRANSITIONS: readonly TaskTransition[] = [
     guard: {
       clauses: [
         'owner !== null（★ 必须已领）',
-        'judgeExpectations 的 failed === 0 且按 phase 选取后态判据后剩余条数 > 0',
+        'isSatisfied(card) === true（= cardStanding === \'satisfied\'：后态全过 ∧ 前态无红；★ 与 t_claim 的谓词**不是同一个**）',
         'validateProgressEvidence 过（★ 复用既有证据闸，不新造第二把尺）',
       ],
     },
