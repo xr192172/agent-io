@@ -702,6 +702,13 @@ export function assertSourceWriteRegistered(
       `本仓纪律：改源码可以，但**不领任务不许悄悄改**。\n` +
       `${list}\n` +
       `\n★ 怎么领（唯一写端；工具名 \`edit_dsl\`，最小参数）：\n` +
+      `  ① 还没有任务卡（上面 task.state=null）⇒ **先立卡**（\`publish\`：把该节点的**决策卡**翻成任务卡，★ 不接受手写 summary）：\n` +
+      `  { feature: '${first.cands[0].feature}',\n` +
+      `    reason: '从决策卡立卡 ${first.cands[0].nodeId}',\n` +
+      `    agent: '<你的身份>',\n` +
+      `    operations: [{ type:'task', op:'publish', id:'${first.cands[0].nodeId}' }] }\n` +
+      `  · ★ 该节点**没有 decision** ⇒ publish 会拒（"没有决策卡可翻"）⇒ 先写决策卡，再 publish。\n` +
+      `  ② 有了卡（candidate）⇒ 领取：\n` +
       `  { feature: '${first.cands[0].feature}',\n` +
       `    reason: '开始实现 ${first.cands[0].nodeId}',\n` +
       `    agent: '<你的身份>',\n` +

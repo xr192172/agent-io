@@ -830,7 +830,7 @@
       "note": "★★★ OQ11 裁定 B 的展开：给 task 格立原生家 + 唯一写端。★ 这一维是 T5 停手时核出的（任务格无家 / claim 无合法写端 / 两轴无映射）。",
       "where": "geometry.nodes[].task —— ★ 任务与节点同居（设计侧）",
       "why_not_top_level": "★ 独立顶层 tasks[] 会让'任务'与'节点'分居 ⇒ 判据对着节点判、状态却去别处找 ⇒ 又是一次'同一判据住两处'（本仓头号病）",
-      "writer": "★ 唯一写端 = edit_dsl {type:'task'}（action: claim | release | complete）—— 三者都是它的 action，★ 不许别处直接改 state",
+      "writer": "★ 唯一写端 = edit_dsl {type:'task'}（action: publish | claim | release | complete）—— 四个都是它的 action，★ 不许别处直接改 state",
       "why_single_writer": "★ 今天实测的病：状态变更散落 ⇒ 一事实两权威（progress 三轴 vs TASK_STATES 五轴，两轴无映射）",
       "axis_dedup": {
         "problem": "progress（draft|in_progress|done，三轴）与 task.state（candidate|claimed|done|void|superseded，五轴）并存 ⇒ 两轴无映射 = 一事实两权威",
@@ -871,7 +871,28 @@
           "cert": "certs/t349-task-home-cert.mjs = PASS=34 FAIL=0（含能自己坏的对照：播种 progress 而无 task ⇒ 仍拒）"
         },
         "known_transition_cost": "交接期 overlay 的 progress 仍是**投影**（completeTask 按设计期望调 updateStatus）⇒ 直接读 overlay 本体（如 query_feature 的 progress 列）会**滞后**于派生值；第 ④ 步退役后消失。",
-        "gap": "★ 立卡（发布任务）**没有写端** —— 本笔的 writer 只有 claim/release/complete；创建任务格归 board（T8）。"
+        "gap": "★★ **榜单读端未建（T8）**：publish 之后卡住在 `node.task`（`get_dsl` 读得到、闸读得到），但**没有**任何「榜单视图」把它读出来 ⇒ ★ 本笔**不**把「去改 docs/board.md」当成机制（那是补丁）。正解 = board **读**「对拍的红 + 设计 DSL 里现有的 task 格」派生；`docs/frictions.jsonl` 里已有同一条滞涩（status: 已上榜单 T8）。"
+      },
+      "publish": {
+        "semantics": "★★★ 立卡 = **翻决策卡**，不是造卡：TaskSpec{summary, expectations} **逐字取自该节点的 decision**（`decision.semantics` 在本仓的落点就是 `decision.summary` 这句断言）。⇒ publish 的输入**没有「我编的任务描述」**：它**一个 data 键都不收**（手写 `data.summary` 会被 `op_data_spec.checkOpSpec` 的『不被认的键』当场拒）。",
+        "source": "task_plan.provenance.chain ④⑤：决策卡挂上 DSL ⇒ 与现状对拍的红 ⇒ 红 = 任务 ⇒ publish 上榜单",
+        "writer": "src/application/design/dsl_ops/task_ops.ts#publishTask（∅ → candidate；★ 已有 candidate 允许**重翻**（决策改了、卡要跟上）；claimed 及以上**拒**覆盖 —— 覆盖等于把正在做的判据换掉）",
+        "guards": [
+          "无 `decision.summary` ⇒ 拒，并点名『没有决策卡可翻』（★ 这条就是「它在翻卡、不在造卡」的行为面判据）",
+          "`decision.expectations` 为空 ⇒ 拒（翻出来也无法验收 —— board 的验收按该卡的 expectations 判）",
+          "只有 pre-phase 判据（如 edge-absent）⇒ 拒（`t_claim` 自己的 guard：后态判据一条不剩 ⇒ 必领不了）"
+        ],
+        "landed": {
+          "at": "2026-10-17",
+          "board": "T12",
+          "readings": {
+            "block": "task_ops 1红/5绿 → 0红/6绿（同一入口 certs/.work/probe-plan-detail.mjs）。★ 同底对拍 certs/.work/probe350-before-after.mjs（HEAD 版 5 文件 vs 当前，两侧各自 importProject 现算）：checked 26 · passed 17→18 · failed 8→7 · **unsupported 1→1**；其他块逐字不变（task 0/3 · 状态机 0/6 · task_drift 7/0 · discussion 0/4）。",
+            "e2e": "真节点 `file_src_domain_task_schema_ts` 的 decision 逐字搬进夹具 ⇒ publish 后卡 `summary` **逐字相等**、`expectations` 深等 3 条；改 decision 再重翻 ⇒ 卡跟着变；`claim` ⇒ claimed；闸 无卡⇒拒 / candidate⇒仍拒 / claimed⇒放行；**无 decision ⇒ 拒**（且不留半张卡）。",
+            "progress": "立卡不写 progress：candidate ⇒ `node.status='draft'`（派生），`overlay.anchors[node].progress` 为 undefined。",
+            "cert": "certs/t350-publish-task-cert.mjs = PASS=32 FAIL=0（含「自己坏」对照：把卡改成手写 ⇒ 出处判据当场变假）"
+          }
+        },
+        "note_one_ruler": "判据复用：`postExpectations`（与 `canClaim` 同一把尺判「有没有可领的后态判据」）+ `checkOpSpec`（未知键闸）+ `progressOf`（进度派生）—— 本笔**没有**新造第二条判据。"
       }
     },
     "provenance": {
@@ -925,6 +946,29 @@
         "corrected": "★ 我上一轮写『追不到 ⇒ 那不是任务，是想法』 —— ★ 太窄了。★ 正确：追不到 ⇒ 那张卡缺【原因】；★ 而原因可以是我自己发现的，★ 但必须写下来。"
       },
       "task_legitimacy": "任务的合法性来自源头，但源头的种类是多的：文档 / 用户原话 / 我的想法 / 使用中的阻塞（frictions）/ 分析中的缺陷（对拍的红）。每条任务都能追到一张决策卡，每张卡都有一个写下来的原因。没有原因的那张卡才是想法（而想法也该补上它因何而来）。"
+    },
+    "two_level_tasks": {
+      "note": "★★★ 用户 2026-10-17：决策卡本身也可以是任务 —— 领到它发现对应的设计 DSL 还没建，那就先建构 DSL，再实现。",
+      "why": "★ 用户原话：\"其实决策卡本身也可以是任务吧，就是领到这个任务发现…这个决策卡对应的这个设计 DSL 本身没有完成，只是挂了一张决策卡在这里说我要怎么怎么样、或者说要实现什么样的功能，然后领到这张决策卡【先进行 DSL 的建构，再进行实际的】，应该这个流程也是可以的\"",
+      "L1_construct": {
+        "name": "DSL 建构任务",
+        "input": "一张很粗的决策卡（\"我要实现 X\"）",
+        "output": "可判的期望 / 节点 / 边（validateDSL 通过 + 至少一条 expectation）",
+        "criteria": "建构完整（★ 不是代码跑通）",
+        "why_needed": "★ 否则\"没有 decision 就不许 publish\"会鸡生蛋 —— 第一个 decision 从哪来？"
+      },
+      "L2_implement": {
+        "name": "实现任务",
+        "input": "L1 产出的那条红",
+        "output": "代码",
+        "criteria": "对拍红变绿"
+      },
+      "publish_rule": {
+        "corrected": "★ 纠正 T12 的规则（原写\"无 decision ⇒ 拒\" —— ★ 那会鸡生蛋）",
+        "now": "★ 该节点无 decision / decision 太粗 ⇒ 生成 【L1 建构卡】；★ 已有可判的 expectations ⇒ 生成 【L2 实现卡】",
+        "note": "★ 两级的判据不同：L1 看\"DSL 建构完整\"，L2 看\"对拍红变绿\"；★ 于是\"隐形的活\"（今天设计 DSL 那几轮讨论）终于有卡、有验收"
+      },
+      "anti_pattern": "★ 今天实测：我干过多轮 L1（设计 DSL 的补丁/讨论），★ 但从未把它当任务 ⇒ 不计进度、不被验收、做完也不算数"
     }
   }
 }

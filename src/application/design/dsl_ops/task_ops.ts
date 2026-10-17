@@ -1,9 +1,9 @@
 /**
- * task_ops.ts —— **任务格的唯一写端**（`claim` / `release` / `complete`）。
+ * task_ops.ts —— **任务格的唯一写端**（`publish` / `claim` / `release` / `complete`）。
  *
  * 设计出处：`docs/task-system-plan.dsl.json` 的 `task_plan.task_home`（OQ11 裁定 B 的展开）：
  *   · **家** = `geometry.nodes[].task`（与节点同居；★ 不设顶层 `tasks[]`）；
- *   · **唯一写端** = `edit_dsl {type:'task'}`（三个 action 都从这里进）；
+ *   · **唯一写端** = `edit_dsl {type:'task'}`（四个 action 都从这里进）；
  *   · **两轴消歧** = `task.state` 是唯一权威，`node.status`（progress 三轴）对它只是
  *     **派生值**（`task_schema.ts#progressOf`，读时现算）。
  *
@@ -19,9 +19,19 @@
  * `judgeExpectations`（读索引 / 读盘，异步）。⇒ 若把"先判可领性"留给调用方"记得调"，
  * 那就是**补丁**（别处要记得配合）⇒ 于是把 **claim→判定** 收进本函数，写链随之 async。
  *
+ * ## ★★★ `publish` 是什么（2026-10-17 · 铁律 3 的那一维）
+ * **不是"凭空新建一张卡"**，而是**把该节点上已有的决策卡翻成一张任务卡**：
+ * `decision.summary` + `decision.expectations` ⇒ `TaskSpec{summary, expectations}`。
+ * ⇒ ★ **输入里没有"我编的任务描述"**：`publish` 的 `data` 一个键都不收
+ *   （`op_data_spec.ts` 的 `TYPE_KNOWN_KEYS.task` 只有 `owner/reason/evidence`，
+ *    给 `summary` 会被"不被认的键"当场拒）—— 内容**只能**来自 `decision`。
+ * ⇒ ★ 没有 `decision` 的节点 **publish 必拒**（点名"没有决策卡可翻"）——
+ *   这条正是"它在翻卡、不在造卡"的行为面判据（`certs/t350-publish-task-cert.mjs`）。
+ *
  * ## 边界（★ 如实写明，别让读端以为它管得更宽）
- * · 本文件**不创建**任务格（发布 = 榜单/`board` 组件的事，T8）—— 格子在设计侧就位后，
- *   本文件只负责它的**状态迁移**；拿不到卡时**点名**这件事，不替人凭空造一张。
+ * · `publish` 只**翻卡**：不写 summary、不补判据、不替人编一条期望（缺 ⇒ 拒，不猜）。
+ *   它**不负责让 `docs/board.md` 显示**这张卡 —— 榜单是**读端**（T8，未建），
+ *   应当由它读「对拍的红 + 设计 DSL 里现有的 task 格」派生，而不是靠人抄表。
  * · 本文件**不判**判据的语义（六类判据的判定器只有 `judgeExpectations` 一把尺）；
  *   证据闸只有 `validateProgressEvidence` 一把尺 —— 这里只**调**它们。
  */
@@ -30,6 +40,7 @@ import { getDSL, saveDSL } from '../../../infrastructure/storage.js';
 import { loadOverlay } from '../../../infrastructure/storage_overlay.js';
 import { applyOverlay, seedOverlayFromDsl, validateProgressEvidence, type ProgressEvidence } from '../../../domain/overlay.js';
 import { applicableTransitions, canClaim } from '../../../domain/task_machine.js';
+import { postExpectations } from '../../../domain/expectation.js';
 import { progressOf, type TaskSpec, type TaskState } from '../../../domain/task_schema.js';
 import { updateStatus } from './status_tools.js';
 
@@ -78,8 +89,9 @@ function loadTask(feature: string, nodeId: string): Loaded {
   if (!node.task) {
     throw new Error(
       `节点 "${nodeId}" 上**没有任务格**（「geometry.nodes[].task」）⇒ 无卡可 claim / release / complete。\n` +
-        `★ 本工具**只改状态**，**不造卡**：发布任务（立卡）是榜单 / board 的事（docs/board.md）—— ` +
-        `卡在设计侧就位后再回来。★ 不替你凭空造一张空卡 —— 那会让"已领"看起来像"有任务"。`,
+        `★ 立卡 = \`publish\`：\`{ type:'task', op:'publish', id:'${nodeId}' }\` —— 它把该节点的**决策卡**` +
+        `（\`decision.summary\` + \`decision.expectations\`）翻成任务卡（★ 内容来自 decision，**不接受手写 summary**）。` +
+        `★ 本工具**不替你凭空造一张空卡** —— 那会让"已领"看起来像"有任务"；没有 decision 的节点 publish 会拒。`,
     );
   }
   return { dsl, nodeId, card: node.task };
@@ -121,6 +133,127 @@ function writeTask(feature: string, nodeId: string, next: TaskSpec): void {
   const nextDsl = { ...dsl, geometry: { ...dsl.geometry!, nodes } };
   const ov = loadOverlay(feature) ?? seedOverlayFromDsl(nextDsl);
   saveDSL(applyOverlay(nextDsl, ov));
+}
+
+// ─────────────────────────────────────────────────────────────
+// publish（立卡 = 翻决策卡）
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * 立卡（`∅ → candidate`）：**把节点上已有的决策卡翻成一张任务卡**。
+ *
+ * 语义来源：`docs/task-system-plan.dsl.json` 的 `task_plan.provenance.chain`
+ *   （④ 天然差异：DSL 现状 vs 决策卡 ⇒ 红 ⇒ ⑤ 红 = 任务 ⇒ publish 上榜单）。
+ *
+ * ## ★★★ 判据（本函数的全部意义：它在"翻卡"，不在"造卡"）
+ * 1. **有决策卡**：`node.decision.summary` 非空 —— 否则**拒**，并点名"没有决策卡可翻"；
+ * 2. **有判据**：`decision.expectations` 里**至少一条后态判据**（`phase==='post'`）——
+ *    否则拒。★ 理由不是"我加个规矩"，而是 `t_claim` 自己的 guard：`canClaim` 对
+ *    "后态判据一条不剩"返回 `ok:false`（空集不按全过算）⇒ 翻出来的卡**必然领不了** ⇒
+ *    在 publish 当场点名，好过让人到 claim 时才发现；
+ * 3. **内容逐字来自 decision**：`summary = decision.summary` · `expectations = decision.expectations`
+ *    （浅拷贝一层，避免与 `node.decision` 共享同一批对象）。★ **不接受任何手写内容**：
+ *    `publish` 不读 `data` —— 给 `data.summary` 会被 `checkOpSpec` 的"不被认的键"拒。
+ *
+ * ## 已有任务格时
+ * · `state === 'candidate'`（没人领）⇒ **重翻**（用当下的 decision 覆盖）—— 决策改了，卡要跟上；
+ * · 其余态（`claimed`/`done`/…）⇒ **拒**：覆盖会把"正在做的判据"换掉（那是两个写端各自为政）。
+ *
+ * ★ 本函数**不写 progress**：`node.status` 是 `task.state` 的派生值（`progressOf`），
+ *   落盘时由 `applyOverlay` 投影（candidate ⇒ draft）。
+ */
+export function publishTask(input: TaskOpInput): EditResult {
+  const { feature, node_id } = input;
+  // ★★★ publish 的输入**没有内容**：内容只能来自 decision。`owner/reason/evidence` 是 task 的已知键
+  //   （claim/release/complete 用），但**对 publish 无意义** ⇒ 显式拒，别让它们被静默忽略
+  //   （"你以为生效了、其实没有"正是 `checkOpSpec` 要防的那一类；`data.summary` 那种**未知键**由它先拒）。
+  const extra = [
+    input.owner !== undefined ? 'owner' : '',
+    input.reason !== undefined ? 'reason' : '',
+    input.evidence !== undefined ? 'evidence' : '',
+  ].filter(Boolean);
+  if (extra.length) {
+    throw new Error(
+      `publish 被拒（不接受 data）：收到 data.${extra.join(' / data.')} —— ★ 立卡的内容**只能**来自该节点的 \`decision\`，` +
+        `publish 不收任何 data 键。\n` +
+        `★ 领任务请走 \`op:'claim'\`（data.owner 是**那个** action 的参数）；立卡这一步没有可填的字段。`,
+    );
+  }
+  const dsl = getDSL(feature);
+  if (!dsl) {
+    throw new Error(`feature "${feature}" 不存在 —— 任务格住在设计 DSL 的节点上，先有 feature 才有家。`);
+  }
+  const node = (dsl.geometry?.nodes ?? []).find((n) => n.id === node_id);
+  if (!node) {
+    throw new Error(
+      `节点 "${node_id}" 不在 feature "${feature}" 的 geometry.nodes 里 —— 立卡的对象是**节点**，找不到节点就没有决策卡可翻。`,
+    );
+  }
+
+  const decision = node.decision;
+  if (!decision || typeof decision.summary !== 'string' || !decision.summary.trim()) {
+    throw new Error(
+      `publish 被拒：节点 "${node_id}" 上**没有决策卡可翻**（\`decision.summary\` 为空/缺失）。\n` +
+        `★ publish 是"把已有的决策卡翻成任务卡"，**不是凭空造一张卡** —— 没有 decision 就没有内容可翻。\n` +
+        `★ 先给该节点写决策卡（edit_dsl { type:'decision', op:'update', id:'${node_id}', data:{ summary, expectations } } ），` +
+        `再 publish；★ 本工具**不会**替你编一条 summary。`,
+    );
+  }
+  const expectations = decision.expectations ?? [];
+  if (!expectations.length) {
+    throw new Error(
+      `publish 被拒：节点 "${node_id}" 的决策卡**没有判据**（\`decision.expectations\` 为空）—— ` +
+        `任务卡翻出来也**无法验收**（board 的验收就是按该卡的 expectations 判）。\n` +
+        `★ 先给决策卡补判据（\`edit_dsl {type:'decision', op:'update', ... data:{expectations:[…]}}\`），再 publish。`,
+    );
+  }
+  const post = postExpectations(expectations);
+  if (!post.length) {
+    throw new Error(
+      `publish 被拒：节点 "${node_id}" 的决策卡只有**前态判据**（\`phase='pre'\`，如 edge-absent），` +
+        `后态判据（\`phase='post'\`）一条不剩 ⇒ 翻出来的卡**必然领不了**（\`canClaim\` 对空集给 ok:false —— 空集不按"全过"算）。\n` +
+        `★ decision.expectations 现有 ${expectations.length} 条，全是 pre-phase。`,
+    );
+  }
+
+  if (node.task && node.task.state !== 'candidate') {
+    throw new Error(
+      `publish 被拒：节点 "${node_id}" 上已有一张 state=${node.task.state} 的任务卡` +
+        (node.task.owner ? `（owner=${node.task.owner}）` : '') +
+        ` —— 覆盖它等于把"正在做/已完成"的判据换掉。\n` +
+        `★ 只允许重翻 \`candidate\`（没人领）的卡；要换已领的卡，先 \`release\`（或走 replaces/superseded —— 未实现）。`,
+    );
+  }
+
+  const refreshed = !!node.task;
+  writeTask(feature, node_id, {
+    id: node.id,
+    // ★★ 逐字来自决策卡（不裁剪、不改写、不拼 acceptance）—— 这样"卡的内容来自哪里"可对拍
+    summary: decision.summary,
+    expectations: expectations.map((e) => ({ ...e })),
+    state: 'candidate',
+  });
+
+  return {
+    message:
+      `${refreshed ? '已重翻' : '已立卡'}任务 "${node_id}"：**从该节点的决策卡翻出** ` +
+      `${expectations.length} 条判据（其中后态 ${post.length} 条可领判定）。\n` +
+      `★ 内容来源 = \`geometry.nodes[${node_id}].decision\`（summary 逐字 + expectations 逐字）—— ` +
+      `publish 不收任何手写描述。\n` +
+      `★ 进度是**派生值**：task.state=candidate ⇒ progress=draft（不落第二份）；` +
+      `下一步 \`{ op:'claim', data:{ owner } }\` 才能开工（闸只认 claimed）。\n` +
+      `★ 榜单显示不靠抄表：board 应当**读**「对拍的红 + 设计 DSL 里现有的 task 格」派生（T8，未建）。`,
+    feature,
+    data: {
+      node_id,
+      state: 'candidate' as TaskState,
+      summary: decision.summary,
+      expectations: expectations.length,
+      post_expectations: post.length,
+      refreshed,
+      progress: progressOf({ state: 'candidate' }),
+    },
+  };
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -286,7 +419,7 @@ export async function completeTask(input: TaskOpInput): Promise<EditResult> {
 // edit_dsl 路由（applyOperation 的 case 'task' 只调这里）
 // ─────────────────────────────────────────────────────────────
 
-/** `edit_dsl {type:'task', op:claim|release|complete}` 的分派（★ 三个 action 的唯一入口）。 */
+/** `edit_dsl {type:'task', op:publish|claim|release|complete}` 的分派（★ 四个 action 的唯一入口）。 */
 export async function applyTaskOp(
   feature: string,
   op: TaskOpRequest,
@@ -303,6 +436,10 @@ export async function applyTaskOp(
     agent,
   };
   switch (op.op) {
+    case 'publish':
+      // ★★★ 立卡：内容**只能**来自该节点的 decision ⇒ 这里**不传 data 的任何键**进卡片
+      //   （`data` 里有 key 也会被 `checkOpSpec` 的"不被认的键"先拒）。
+      return publishTask(input);
     case 'claim':
       return claimTask(input);
     case 'release':

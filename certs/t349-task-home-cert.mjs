@@ -202,7 +202,13 @@ console.log('\n════ ④ 走工具层：edit_dsl {type:task}（claim / co
   const noCard = await edit([{ type: 'task', op: 'claim', id: B, data: { owner: 'agent-t349' } }], 'T349：给无任务格的节点 claim（应被拒，证明不造卡）');
   const noCardText = String(noCard.text ?? '');
   chk(noCard.isError === true || /没有任务格/.test(noCardText), '④a 无任务格 ⇒ claim 被拒', noCardText.split('\n').slice(-1)[0]);
-  chk(/不造卡|not.*造卡|发布任务/.test(noCardText), '④a′ 拒因写明"只改状态、不造卡"（立卡是榜单/board 的事）');
+  // ★ 2026-10-17（T12）：文案按新契约改了 —— 立卡现在**有**写端（`publish`，从决策卡翻），
+  //   所以「不造卡」这句话的**落点**从"归 board 手抄"改成"走 publish、且 publish 不替你凭空造卡"。
+  //   ⇒ 断言跟着改成新语义（★ 不是放宽：仍要求它点名 publish 并且明说不凭空造卡）。
+  chk(
+    /不替你凭空造/.test(noCardText) && /publish/.test(noCardText),
+    '④a′ 拒因写明"不凭空造卡"且指向 publish（立卡有了写端之后的新契约）',
+  );
 
   // (b) claim A（真路径）
   const r = await edit([{ type: 'task', op: 'claim', id: A, data: { owner: 'agent-t349' } }], 'T349：领取任务 file_src_a_ts（owner=agent-t349）');

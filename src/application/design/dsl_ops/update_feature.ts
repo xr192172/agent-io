@@ -63,7 +63,8 @@ export interface FeatureOperation {
    *   id = 文件节点 id 或仓库相对路径；data.summary 必填，可带 rationale/alternatives/consequences/
    *   acceptance/dissent/votes/evidence_source/author/note。★ 未决分歧进 `dissent`，**不是** `alternatives`；
    *   ★ `data.author` 是**类别**（只认 'human' | 'llm'，说可信度）；**身份**（谁）走**顶层入参 `agent`**）
-   * - task：**任务格状态**（claim=领 / release=放回候选 / complete=收口；id = 节点 id。
+   * - task：**任务格**（publish=立卡（★ 把该节点的**决策卡**翻成任务卡，不收手写内容）/ claim=领 /
+   *   release=放回候选 / complete=收口；id = 节点 id。
    *   ★ 任务态**只**从这里改 —— 唯一写端见 `task_ops.ts`；★ `node.status` 对它只是派生值）
    */
   op:
@@ -78,6 +79,7 @@ export interface FeatureOperation {
     | 'rollback'
     | 'apply'
     | 'reset'
+    | 'publish'
     | 'claim'
     | 'release'
     | 'complete';
@@ -93,7 +95,8 @@ export interface FeatureOperation {
    * - layout：自动布局（op=apply data.algo=dag|force|grid + 各算法参数）
    * - simulation：仿真（op=reset 重置到初始状态）
    * - tag：功能标记（op=add/delete，data.tag 必填；data.files = 成员文件（仓库相对路径或文件 id），省略 = 只动这个 tag 自身）
-   * - task：任务格（op=claim/release/complete，id 为 node_id；★ 任务态**唯一写端**）
+   * - task：任务格（op=publish/claim/release/complete，id 为 node_id；★ 任务态**唯一写端**；
+   *   ★ publish 的内容来自该节点的 `decision`，**不收** data 里的手写描述）
    */
   type:
     | 'node'
@@ -491,7 +494,7 @@ async function applyOperation(
     case 'decision':
       return applyDecisionOp(feature, op, agent, changeReason);
     case 'task':
-      // ★★★ 2026-10-17（task_home）：任务态的**唯一写端** —— 三个 action 都进 `task_ops`，
+      // ★★★ 2026-10-17（task_home）：任务格的**唯一写端** —— 四个 action 都进 `task_ops`，
       //   不在本文件里直接改 `node.task.state`（那是"第二个写端"）。
       return applyTaskOp(feature, op, agent);
     default:

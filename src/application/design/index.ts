@@ -223,12 +223,13 @@ export const DESIGN_TOOLS: ToolDef[] = [
                 'rollback',
                 'apply',
                 'reset',
+                'publish',
                 'claim',
                 'release',
                 'complete',
               ])
               .describe(
-                '操作：add/update/delete/move 通用；resolve=关闭标注；submit/review=审批；save/rollback/delete=快照；apply=布局；reset=仿真；claim/release/complete=任务格（type=task）',
+                '操作：add/update/delete/move 通用；resolve=关闭标注；submit/review=审批；save/rollback/delete=快照；apply=布局；reset=仿真；publish/claim/release/complete=任务格（type=task；★ publish=立卡，内容来自该节点的 decision，**不收** data）',
               ),
             type: z
               .enum([
@@ -248,7 +249,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
                 'task',
               ])
               .describe(
-                '目标类型：node/edge/file/api/binding/status 几何与语义；annotation/approval/snapshot/layout/simulation 协作与整理；tag=功能标记；decision=决策卡写入口（★ **字段清单与形状见描述里的「data 契约」段**；★ 未决分歧进 data.dissent，**不是** data.alternatives）；task=任务格状态（★ 唯一写端：claim/release/complete）',
+                '目标类型：node/edge/file/api/binding/status 几何与语义；annotation/approval/snapshot/layout/simulation 协作与整理；tag=功能标记；decision=决策卡写入口（★ **字段清单与形状见描述里的「data 契约」段**；★ 未决分歧进 data.dissent，**不是** data.alternatives）；task=任务格（★ 唯一写端：publish/claim/release/complete；★ publish 把节点的 decision 翻成任务卡）',
               ),
             id: z.string().optional().describe('目标 ID（annotation/approval/snapshot/layout/simulation 可省略，用 data 传参）'),
             data: z.record(z.string(), z.unknown()).optional(),

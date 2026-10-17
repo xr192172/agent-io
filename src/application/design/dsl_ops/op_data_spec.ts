@@ -197,15 +197,16 @@ export const OP_SPECS: readonly OpSpec[] = [
     //   **任务格的唯一写端**。`id` = 任务格所在的**节点 id**（任务与节点同居）——
     //   ★ 不是顶层 `tasks[]`，也不是 overlay 锚点。
     type: 'task',
-    ops: ['claim', 'release', 'complete'],
+    ops: ['publish', 'claim', 'release', 'complete'],
     idRequired: true,
     idNote: '任务格所在节点的 id（`geometry.nodes[].task`；★ 任务与节点同居）',
     required: { claim: ['owner'], release: ['reason'], complete: ['evidence'] },
     note:
       '★ **任务态唯一写端**（五态 `candidate|claimed|done|void|superseded`）；`node.status` 只是它的**派生值**（`task_schema.ts#progressOf`），不许直接改。' +
+      'publish:**立卡 = 把该节点的决策卡翻成任务卡**（`decision.summary` + `decision.expectations`；★ **不收任何 data**，' +
+      '因为内容只能来自 decision —— 没有 decision 的节点会被拒）· ' +
       'claim:`data.owner`（CAS 写的就是它，写前必过 `canClaim`）· release:`data.reason`（by 走顶层 `agent`）· ' +
-      'complete:`data.evidence`（★ 与 `status` **同一把尺** `validateProgressEvidence`，三档见上条 status）。' +
-      '★ 只改状态、**不造卡**（立卡 = 发布任务，归 board）。',
+      'complete:`data.evidence`（★ 与 `status` **同一把尺** `validateProgressEvidence`，三档见上条 status）。',
   },
 ];
 
