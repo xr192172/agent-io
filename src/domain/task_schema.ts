@@ -22,6 +22,7 @@
  *    ★ **读数永远现算**（见 `TaskEvidenceRecord`）。
  */
 import type { Expectation } from './expectation.js';
+import { postExpectations } from './expectation.js';
 import type { ProgressEvidence } from './overlay.js';
 import type { DiagramStatus } from './geometry.js';
 
@@ -175,4 +176,27 @@ export interface TaskSpec {
   evidence?: TaskEvidenceRecord[];
   /** 讨论登记格（默认只渲染 `micro`） */
   discussion?: TaskDiscussion;
+}
+
+/**
+ * ★★★ **任务卡的两级：L1 建构卡 / L2 实现卡**（2026-10-17 · `docs/task-system-plan.dsl.json`
+ * 的 `task_plan.two_level_tasks` + `publish_rule.corrected`）。
+ *
+ * ## 语义（逐字来自设计 DSL）
+ * · **L1 建构**：输入 = 一张很粗的决策卡（"我要实现 X"）；输出 = **可判的期望**；
+ *   判据 = **DSL 建构完整**（★ **不是**代码跑通）；
+ * · **L2 实现**：输入 = L1 产出的那条红；输出 = 代码；判据 = 对拍红变绿。
+ *
+ * ## ★★★ 为什么是**派生值**，不是落盘字段
+ * "这张卡是 L1 还是 L2"**完全等价于**"它有没有可判的后态判据"——
+ * 有 ⇒ 能按对拍判（L2）；没有 ⇒ 只能判"DSL 建起来了没有"（L1）。
+ * ⇒ 若再落一个 `level` 字段，就会出现"level=L2 而 expectations 空"这种**两处权威**（本仓头号病）。
+ * ★ 所以唯一判据住这里，调用方（publish / claim / complete）都读它，别各自写 `post.length > 0`。
+ *
+ * ★ 与设计 DSL 的对应：`publish_rule.corrected` 写着"无 decision / decision 太粗 ⇒ L1；
+ *   已有**可判的** expectations ⇒ L2"——"太粗"的可判形态就是**没有后态判据**
+ *   （全 `phase='pre'` 的卡按 `cardStanding` 必 `unknowable` ⇒ 翻成 L2 也**必然领不了**）。
+ */
+export function taskLevel(card: Pick<TaskSpec, 'expectations'>): 'L1' | 'L2' {
+  return postExpectations(card.expectations ?? []).length > 0 ? 'L2' : 'L1';
 }

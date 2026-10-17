@@ -18,15 +18,20 @@
  *   ③ **谁负责让 board 显示它**：publish **不写** board、也不写 progress —— 榜单是**读端**（T8）；
  *   ④ **claim 链路**：candidate ⇒ `claim` ⇒ claimed；
  *   ⑤ **闸两个对照 + 一个中间态**：无卡 ⇒ **拒** · candidate ⇒ **仍拒** · claimed ⇒ **放行**；
- *   ⑥ ★★ **反面（这条证明它真在"翻卡"）**：**没有 decision 的节点 publish ⇒ 必拒**（点名"没有决策卡可翻"）；
- *      另：**给了手写 `data.summary` ⇒ 被"不被认的键"拒**（输入里塞不进我编的描述）；
+ *   ⑥ ★★ **两级对照（2026-10-17 按 `publish_rule.corrected` 改）**：
+ *      · **没有 decision ⇒ 不再是"拒"**，而是 **L1 建构卡**（summary 只拼既有字段 + **0 条期望**）；
+ *      · **只有前态判据 ⇒ 同样是 L1**（翻成 L2 必 `unknowable`，旧版拒、现在立 L1 并说明原因）；
+ *      · **有可判的后态判据 ⇒ L2 实现卡**（①/② 的逐字搬运）。
+ *      ★ L1 的详细判据（summary 出处 / 不编判据 / claim / complete / 升 L2）住 `certs/t353-*.mjs`；
+ *        本节只保留"L2 → L1 的分界没有把 ① 的翻卡行为改坏"。
  *   ⑦ **不覆盖已领的卡**：claimed 上再 publish ⇒ 拒（覆盖 = 换掉正在做的判据）；
  *   ⑧ **进度派生不受影响**：立卡**不写 progress**（overlay 无 progress 落盘），`candidate ⇒ draft` 由 `progressOf` 派生。
  *
  * ## ★★ "自己坏"的对照（B.1；证必须能被自己的反面打红）
- *   · ⑥a：把 publish 退回"造卡"（接受 `data.summary` 凭空立卡）⇒ **⑥b 会变绿**（手写 summary 能进卡）⇒ 本证报红；
- *   · ⑥a：把 publish 退回"接受任何节点"⇒ **⑥a 会变绿**（无 decision 也立出卡）⇒ 本证报红。
- *   （两条都在同一份夹具上、同一次读数里：⑥a 要拒、⑥b 要拒 —— **一条放宽，另一条就会露馅**。）
+ *   · ⑥：把 publish 退回"造卡"（接受 `data.summary` 凭空立卡）⇒ **⑥d 会变绿**（手写 summary 能进卡）⇒ 本证报红；
+ *   · ⑥：把 publish 退回"L1 也编一条期望"⇒ **⑥c 会变绿**（卡上出现实现判据）⇒ 本证报红；
+ *   · ⑥：把 L2 分支也降成 L1（不再逐字搬 decision）⇒ **②a/②b 会变绿失败** ⇒ 本证报红。
+ *   （三条都在同一份夹具上、同一次读数里：L1 要"无判据"、L2 要"逐字"—— **一条放宽，另一条就会露馅**。）
  *
  * ## 覆盖边界（诚实清单 · [未核]）
  *   · 不写真仓 `.agent-io/`：`AGENT_IO_HOME` 指向临时 home；夹具 feature 住那里；
@@ -105,7 +110,8 @@ const FEAT = 't350';
 const A = REAL.id;
 const C = REAL2.id;
 const D = REAL3.id; // ★ 有红的真卡（claim 链路用）
-const N = 'node_without_decision'; // ★ ⑥ 反面夹具：没有 decision
+const N = 'node_without_decision'; // ★ ⑥ 夹具：没有 decision（⇒ 现在立 L1 建构卡）
+const N2 = 'node_no_card'; // ★ ⑧ 夹具：**既没有 decision 也没有卡**（claim 的"无任务格"仍要拒）
 const PRE = 'node_only_pre_criteria'; // ★ ⑩ 夹具：有 decision，但**只有前态判据**
 const EDIT = 'src/domain/overlay.ts'; // ★ 只用于"没有任何卡"的闸对照（该文件不是本夹具的节点 ⇒ 见下方 ⑤a 说明）
 
@@ -128,6 +134,7 @@ const seed = (overrides = {}) =>
         { ...JSON.parse(JSON.stringify(REAL2)), description: REAL2.path },
         { ...JSON.parse(JSON.stringify(REAL3)), description: REAL3.path },
         { id: N, type: 'file', label: 'no decision', description: 'src/domain/discussion_log.ts' },
+        { id: N2, type: 'file', label: 'no card', description: 'src/domain/no_card_fixture.ts' },
         {
           id: PRE,
           type: 'file',
@@ -154,7 +161,8 @@ const seed = (overrides = {}) =>
         { id: A, path: REAL.path, responsibility: '真决策卡夹具' },
         { id: C, path: REAL2.path, responsibility: '第二张真决策卡' },
         { id: D, path: REAL3.path, responsibility: 'work 夹具卡（自造：file-exists 必红 ⇒ 可领）' },
-        { id: N, path: 'src/domain/discussion_log.ts', responsibility: '无 decision 的节点' },
+        { id: N, path: 'src/domain/discussion_log.ts', responsibility: '讨论记录：把讨论日志落成设计 DSL 里的一条' },
+        { id: N2, path: 'src/domain/no_card_fixture.ts', responsibility: '无卡节点（⑧ 用）' },
         { id: PRE, path: 'src/domain/pre_only_fixture.ts', responsibility: '只有前态判据的节点' },
       ],
     },
@@ -251,29 +259,46 @@ console.log('\n════ ⑤c 闸对照三：claimed ⇒ **放行**═══�
 }
 
 // ════════════════════════════════════════════════════════════════════
-console.log('\n════ ⑥ 反面：没有决策卡 ⇒ publish **必拒**（它真在"翻卡"，不在"造卡"）════');
+console.log('\n════ ⑥ 两级分界：没有 decision ⇒ **L1 建构卡**（不再是拒；0 条期望，不编判据）════');
 {
-  const r1 = await run([{ type: 'task', op: 'publish', id: N }], `试图给无 decision 的节点立卡 ${N}`);
-  chk(r1.isError && /没有决策卡可翻/.test(r1.text), '⑥a 拒绝并**点名"没有决策卡可翻"**', r1.text.split('\n')[0]);
-  chk(nodeOf(N)?.task === undefined, '⑥b 该节点上**没有**留下任何卡（拒 = 一个字节都不写）');
-
-  const r2 = await run(
-    [{ type: 'task', op: 'publish', id: N, data: { summary: 'T350 我编的任务描述' } }],
-    `试图手写 summary 立卡 ${N}`,
+  const r1 = await run([{ type: 'task', op: 'publish', id: N }], `给无 decision 的节点立 L1 卡 ${N}`);
+  console.log('     message =', r1.text.split('\n').slice(0, 3).join(' ｜ '));
+  const card = nodeOf(N)?.task;
+  chk(!r1.isError && /L1 建构卡/.test(r1.text), '⑥a 立卡**成功**，回执点名"级别 = L1 建构卡"', r1.text.split('\n')[0]);
+  chk(card?.state === 'candidate', `⑥b 卡落在节点上：state=${JSON.stringify(card?.state)}`);
+  chk(
+    Array.isArray(card?.expectations) && card.expectations.length === 0,
+    '⑥c ★★ 卡上 **0 条期望** —— L1 的验收是"DSL 建构完整"，**不编实现判据**',
+    `expectations=${JSON.stringify(card?.expectations)}`,
   );
   chk(
-    r2.isError && /不被认的键/.test(r2.text) && /summary/.test(r2.text),
-    '⑥c 手写 data.summary ⇒ 被"不被认的键"拒',
-    r2.text.split('\n')[0],
+    /待建构/.test(card?.summary ?? '') && (card?.summary ?? '').includes(N) && /讨论记录/.test(card?.summary ?? ''),
+    '⑥d summary 注明"待建构"，且**出处来自既有字段**（semantic.responsibility + id），不是编的',
+    `summary=${JSON.stringify(card?.summary)}\n     summary_source=${JSON.stringify(r1.text.includes('semantic.files') ? 'semantic.files[].responsibility（回执已显形）' : '?')}`,
   );
-  chk(nodeOf(N)?.task === undefined, '⑥d 仍然没有卡（★ 这两条一起把"造卡"这条路封死）');
+  chk(
+    /不编/.test(r1.text) && /不是代码跑通|不是"代码跑通"|不是代码跑通/.test(r1.text),
+    '⑥e 回执明说"不编判据"+"判据不是代码跑通"',
+    r1.text.split('\n')[1] ?? '',
+  );
+  chk(
+    card?.discussion?.micro?.includes('summary 出处') === true,
+    '⑥f 卡上 `discussion.micro` 记了 **summary 的出处**（内容可对拍）',
+    JSON.stringify(card?.discussion),
+  );
 
-  const r3 = await run(
-    [{ type: 'task', op: 'publish', id: N, data: { owner: 'agent-t350' } }],
-    `试图给 publish 塞 data.owner ${N}`,
+  // ★ 手写内容仍然进不来（这条没变）
+  const r2 = await run(
+    [{ type: 'task', op: 'publish', id: N2, data: { summary: 'T350 我编的任务描述' } }],
+    `试图手写 summary 立卡 ${N2}`,
   );
-  chk(r3.isError && /不接受 data/.test(r3.text) && /owner/.test(r3.text), '⑥e publish 连 data.owner 都拒（别让已知键被静默忽略）', r3.text.split('\n')[0]);
-  chk(nodeOf(N)?.task === undefined, '⑥f 仍然没有卡');
+  chk(r2.isError && /不被认的键/.test(r2.text) && /summary/.test(r2.text), '⑥g 手写 data.summary ⇒ 仍被"不被认的键"拒', r2.text.split('\n')[0]);
+  const r3 = await run(
+    [{ type: 'task', op: 'publish', id: N2, data: { owner: 'agent-t350' } }],
+    `试图给 publish 塞 data.owner ${N2}`,
+  );
+  chk(r3.isError && /不接受 data/.test(r3.text) && /owner/.test(r3.text), '⑥h publish 连 data.owner 都拒（别让已知键被静默忽略）', r3.text.split('\n')[0]);
+  chk(nodeOf(N2)?.task === undefined, '⑥i 两次被拒 ⇒ 该节点上**一个字节都没写**（拒 = 不落盘）');
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -307,9 +332,9 @@ console.log('\n════ ⑦ 不覆盖已领的卡（claimed 上再 publish �
 }
 
 // ════════════════════════════════════════════════════════════════════
-console.log('\n════ ⑧ 回归：没有卡的节点 claim ⇒ 仍拒，且文案指向 publish ════');
+console.log('\n════ ⑧ 回归：**没有任何卡**的节点 claim ⇒ 仍拒，且文案指向 publish ════');
 {
-  const r = await run([{ type: 'task', op: 'claim', id: N, data: { owner: 'agent-t350' } }], `无卡领取 ${N}`);
+  const r = await run([{ type: 'task', op: 'claim', id: N2, data: { owner: 'agent-t350' } }], `无卡领取 ${N2}`);
   chk(
     r.isError && /没有任务格/.test(r.text) && /publish/.test(r.text),
     '⑧a 无卡 claim 被拒，且教的是 publish（不是"去 board 手抄"）',
@@ -340,11 +365,19 @@ console.log('\n════ ⑨ "自己坏"对照：把卡改成手写内容 ⇒
 }
 
 // ════════════════════════════════════════════════════════════════════
-console.log('\n════ ⑩ 有 decision 但**只有前态判据** ⇒ 也拒（翻出来的卡必然领不了）════');
+console.log('\n════ ⑩ 有 decision 但**只有前态判据** ⇒ 也是 L1（翻成 L2 必 unknowable）════');
 {
   const r = await run([{ type: 'task', op: 'publish', id: PRE }], `只有前态判据的卡 ${PRE}`);
-  chk(r.isError && /前态判据/.test(r.text) && /必然领不了/.test(r.text), '⑩a 拒绝并说明"后态判据一条不剩"', r.text.split('\n')[0]);
-  chk(nodeOf(PRE)?.task === undefined, '⑩b 没有留下卡');
+  chk(
+    !r.isError && /L1/.test(r.text) && /前态判据/.test(r.text) && /0 条/.test(r.text),
+    '⑩a 立 **L1**，回执**点名原因**（"只有前态判据 / 后态 0 条"）',
+    r.text.split('\n')[0],
+  );
+  chk(
+    nodeOf(PRE)?.task?.expectations?.length === 0,
+    `⑩b 卡上 0 条期望（★ 不把前态判据抄进 L1 卡 —— 抄进去就变成"天然全过"的假判据）`,
+    JSON.stringify(nodeOf(PRE)?.task?.expectations),
+  );
 }
 
 // ════════════════════════════════════════════════════════════════════

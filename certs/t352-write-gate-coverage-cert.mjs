@@ -14,8 +14,11 @@
  *      同一夹具 `publish`+`claim` 后 ⇒ **放行**（`basis=covered`）—— 证明拒是因为"看见了节点"。
  *   ② **合法的"不用任务系统"仍能 `applicable:false`**：0 条 feature 指到根 ⇒
  *      `basis=no-feature-for-root`，note 点名"0 条 / 根路径"。
- *   ③ **收集失败必须点名**：文件节点**既无 path 也无 description** ⇒ 抛错并点出 node_id，
- *      **不许**混进 `applicable:false`。
+ *   ③ **收集失败必须点名**：文件节点**既无 path 也无 description** ⇒ **放行**（★ 2026-10-17 按
+ *      `docs/gate-principle.md` §二 从"抛错"退成"点名 + 放行 + 留痕"），`basis:'unaddressable'`，
+ *      **不许**混进 `applicable:false`（那仍然只许表示"本项目不用任务系统"）；
+ *      ★ **点名**（node_id + 为什么）与**留痕**（`annotations` 里一条 `severity=warning`、可用
+ *      `query_feature {query:'annotations'}` 读到）**两者都要有** —— 退回"不报、直接放行"照样是错。
  *   ④ **"自己坏"对照**：用旧口径（只认 description）重算同一批夹具 ⇒ 0 条 coverage
  *      ⇒ 若有人把 `path` 回落删掉，①的"抛未领任务"会退化成"静默放行"，本证当场红。
  *
@@ -170,13 +173,43 @@ console.log('\n════ ② 合法的"本项目不用任务系统"仍能 app
 }
 
 // ════════════════════════════════════════════════════════════════════
-console.log('\n════ ③ 收集失败必须点名（不许混进 applicable:false）════');
+console.log('\n════ ③ 收集失败：点名 + 放行 + 留痕（★ 不再抛；也不许混进 applicable:false）════');
 {
   seed([{ id: 'file_src_a_ts', type: 'file', label: 'a.ts' }]); // ★ 既无 path 也无 description
   const r = gate('src/a.ts');
-  chk(r.threw && /收集失败/.test(r.msg), '③a 抛"收集失败"（不是 applicable:false）', r.threw ? r.msg.split('\n')[0] : JSON.stringify(r.out));
-  chk(r.threw && r.msg.includes('file_src_a_ts') && /既无 path 也无 description/.test(r.msg), '③b **点名**哪个节点缺 path/description', r.threw ? r.msg.split('\n')[1].trim() : '');
-  chk(r.threw && !/不适用（放行）/.test(r.msg), '③c 错误文案里**没有**"不适用（放行）"的措辞（两件事不许混）');
+  chk(
+    !r.threw && r.out.applicable === true && r.out.basis === 'unaddressable',
+    '③a **放行**（applicable:true · basis=unaddressable）—— 不是抛错、也不是 applicable:false',
+    r.threw ? r.msg.split('\n')[0] : JSON.stringify({ applicable: r.out.applicable, basis: r.out.basis }),
+  );
+  chk(
+    !r.threw && r.out.note.includes('file_src_a_ts') && /既无 path 也无 description/.test(r.out.note),
+    '③b **点名**哪个节点缺 path/description（"不许静默"这条没退）',
+    r.threw ? '' : r.out.note.split('\n').filter((l) => l.includes('file_src_a_ts'))[0],
+  );
+  chk(
+    !r.threw && !/不适用（放行）/.test(r.out.note),
+    '③c 文案里**没有**"不适用（放行）"的措辞（两件事不许混）',
+  );
+  // ★ 留痕：落点 = dsl.annotations（读端 = listAnnotations / query_feature query='annotations'）
+  const { listAnnotations } = await import('../dist/src/application/design/dsl_ops/annotation_tools.js');
+  const anns = listAnnotations({ feature: FEAT, unresolved_only: true }).annotations;
+  const hit = anns.find((a) => a.node_id === 'file_src_a_ts' && a.severity === 'warning');
+  chk(
+    !!hit && hit.type === 'issue' && !hit.resolved,
+    '③d ★★ **留痕能被读到**：`listAnnotations` 读出该节点上一条未解决的 warning',
+    JSON.stringify(hit ?? null),
+  );
+  chk(
+    /既无 path 也无 description/.test(hit?.text ?? '') && /task\.state|任务闸/.test(hit?.text ?? ''),
+    '③e 留痕正文写清了**为什么**（不是一条"警告"空壳）',
+    (hit?.text ?? '').split('\n')[0],
+  );
+  // ★ 幂等：同一夹具再跑一次 ⇒ 不重复写（同一天同一节点只留一条）
+  const before = listAnnotations({ feature: FEAT, unresolved_only: true }).annotations.length;
+  gate('src/a.ts');
+  const after = listAnnotations({ feature: FEAT, unresolved_only: true }).annotations.length;
+  chk(after === before, `③f 幂等：再跑一次不追加（${before} → ${after}）`);
 }
 
 // ════════════════════════════════════════════════════════════════════

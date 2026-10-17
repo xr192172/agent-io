@@ -40,10 +40,10 @@
 
 | # | 在哪 | ★ 按本原则该怎么改 | 状态 |
 |---|---|---|---|
-| 1 | `publish`：无 `decision` ⇒ **拒** | ★ 改成**生成 L1 建构卡**（★ 已在 `two_level_tasks.publish_rule.corrected` 记了，★ **但代码里还是拒**） | 待改 |
-| 2 | `NODE_DATA_KEYS` 无 `path` ⇒ **造不出 `path` 型节点** | ★★ **补独立入口**：★ 造节点的工作端必须先生存 | 待上榜单 |
-| 3 | `write_gate`：收集失败 ⇒ **抛错** | ★ 改成 **点名 + 放行 + 留痕** —— ★ 因为"无卡改源码"**不损坏数据**，只是**没在账上** | 待改 |
-| 4 | `claim`：`blocked` / `unknowable` ⇒ **拒** | ★ 有争议：★ `blocked` = 依赖未做 ⇒ 领了也做不了（★ 拒合理）；★ 但按本原则也可"提醒 + 让过" | 待议 |
+| 1 | `publish`：无 `decision` ⇒ **拒** | ★ 改成**生成 L1 建构卡**（★ 已在 `two_level_tasks.publish_rule.corrected` 记了，★ **但代码里还是拒**） | ★ **已改**（2026-10-17）：`task_ops.ts#publishTask` 两级（L1 0 条期望 / L2 逐字翻）；证 `certs/t353-gate-principle-unblock-cert.mjs` |
+| 2 | `NODE_DATA_KEYS` 无 `path` ⇒ **造不出 `path` 型节点** | ★★ **补独立入口**：★ 造节点的工作端必须先生存 | ★ **已改**（2026-10-17）：`node.add/update` 接 `path`（校验住 `node_ops.ts#normalizeNodePath`）；`nodePath` 改成 **path 优先** |
+| 3 | `write_gate`：收集失败 ⇒ **抛错** | ★ 改成 **点名 + 放行 + 留痕** —— ★ 因为"无卡改源码"**不损坏数据**，只是**没在账上** | ★ **已改**（2026-10-17）：`basis:'unaddressable'` + 留痕写 `dsl.annotations`（读端 `query_feature {query:'annotations'}`）；★ **前置闸（`requires`）仍阻断**（违背显式声明会造成不一致） |
+| 4 | `claim`：`blocked` / `unknowable` ⇒ **拒** | ★ 有争议：★ `blocked` = 依赖未做 ⇒ 领了也做不了（★ 拒合理）；★ 但按本原则也可"提醒 + 让过" | 待议（★ 本笔**未动**；L1 建构卡走的是另一把尺，不是放宽 `cardStanding`） |
 
 ★★ **注意第 3 条**：★ 它和"堵住静默 fail-open"那笔**不矛盾** ——
 ★ 那笔修的是"**静默**"（★ 改前：不报，直接放行），★ 改成"**点名**"；

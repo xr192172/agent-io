@@ -149,6 +149,22 @@ export interface Node {
   swimlane?: string;
   /** 节点类型描述（如 service/module/database/api/queue/ui） */
   type?: string;
+  /**
+   * ★★★ **显式文件指针（仓库相对路径）**（2026-10-17 · `docs/gate-principle.md` §三「每个环节独立的入口」）。
+   *
+   * ## 它补的是什么洞
+   * 写闸 / 任务机 / 设计单（`write_gate.ts#nodeFilePath`、`task_machine.ts#StandingNode`、
+   * `design_sheet.ts#PendingEntry`）都按**路径**认亲；而此前路径**只能写在 `description` 里**
+   * （老写法，仅 `file`/`doc` 节点认）⇒ ★ **写端造不出"只带路径"的节点**：
+   * `edit_dsl {type:'node', op:'add'}` 的 data 键集（`NODE_DATA_KEYS`）里没有 `path` ⇒
+   * 传它会被"不被认的键"拒 ⇒ 只能**先有老节点**再挂卡 = 入口依赖下游产物 = 环。
+   * ⇒ 现在 `path` 是**正式字段**（写端 `node_ops.ts` 校验：非空 / 相对路径 / kind 合法）。
+   *
+   * ## 口径（唯一，别处不再各定一套）
+   * ★ **`path` 优先、`description` 回落** —— 与 `write_gate.ts#nodeFilePath`（T352）**同一把尺**，
+   * `overlay.ts#nodePath` 也照此取值。★ 两者都没给的情况仍按"不可寻址"处理（点名，不静默）。
+   */
+  path?: string;
   /** 节点描述/备注 */
   description?: string;
   /** 人话主标题：LLM 生成的职责摘要（如"配置加载与校验"），渲染端优先展示，label 兜底 */

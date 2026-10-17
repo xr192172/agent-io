@@ -20,16 +20,20 @@
  * 那就是**补丁**（别处要记得配合）⇒ 于是把 **claim→判定** 收进本函数，写链随之 async。
  *
  * ## ★★★ `publish` 是什么（2026-10-17 · 铁律 3 的那一维）
- * **不是"凭空新建一张卡"**，而是**把该节点上已有的决策卡翻成一张任务卡**：
- * `decision.summary` + `decision.expectations` ⇒ `TaskSpec{summary, expectations}`。
+ * **把该节点上已有的决策卡翻成一张任务卡**——但按**两级**（`two_level_tasks`）：
+ * · 有**可判的后态判据** ⇒ **L2 实现卡**：`decision.summary` + `decision.expectations` 逐字搬；
+ * · 无 decision / decision 太粗（**没有后态判据**）⇒ **L1 建构卡**：`summary` 只从
+ *   `semantic.responsibility`/`title`/`label`/文件名/id 里**已有的**拼，`expectations` **空**（★ 不编判据）。
  * ⇒ ★ **输入里没有"我编的任务描述"**：`publish` 的 `data` 一个键都不收
  *   （`op_data_spec.ts` 的 `TYPE_KNOWN_KEYS.task` 只有 `owner/reason/evidence`，
- *    给 `summary` 会被"不被认的键"当场拒）—— 内容**只能**来自 `decision`。
- * ⇒ ★ 没有 `decision` 的节点 **publish 必拒**（点名"没有决策卡可翻"）——
- *   这条正是"它在翻卡、不在造卡"的行为面判据（`certs/t350-publish-task-cert.mjs`）。
+ *    给 `summary` 会被"不被认的键"当场拒）—— 内容**只能**来自节点/语义层既有字段。
+ * ⇒ ★ 旧判据"没有 decision 的节点 publish **必拒**"**已按 `publish_rule.corrected` 纠正**：
+ *   那会鸡生蛋（第一个 decision 从哪来）；现在改成 L1 建构卡。
+ *   行为面判据见 `certs/t350-publish-task-cert.mjs`（L2 翻卡）与 `certs/t353-*.mjs`（L1 / L2 对照）。
  *
  * ## 边界（★ 如实写明，别让读端以为它管得更宽）
- * · `publish` 只**翻卡**：不写 summary、不补判据、不替人编一条期望（缺 ⇒ 拒，不猜）。
+ * · `publish` **只做两件事**：翻 L2（逐字搬 decision）· 立 L1（summary 只拼既有字段、**0 条期望**）。
+ *   ★ 它**不补判据、不替人编一条期望**（缺 ⇒ L1 并**如实说缺什么**，不猜）。
  *   它**不负责让 `docs/board.md` 显示**这张卡 —— 榜单是**读端**（T8，未建），
  *   应当由它读「对拍的红 + 设计 DSL 里现有的 task 格」派生，而不是靠人抄表。
  * · 本文件**不判**判据的语义（六类判据的判定器只有 `judgeExpectations` 一把尺）；
@@ -39,9 +43,9 @@ import type { EditResult } from './edit_result.js';
 import { getDSL, saveDSL } from '../../../infrastructure/storage.js';
 import { loadOverlay } from '../../../infrastructure/storage_overlay.js';
 import { applyOverlay, seedOverlayFromDsl, validateProgressEvidence, type ProgressEvidence } from '../../../domain/overlay.js';
-import { applicableTransitions, cardStanding, isClaimable, isSatisfied } from '../../../domain/task_machine.js';
+import { applicableTransitions, cardStanding, isClaimable, isSatisfied, type CardStanding } from '../../../domain/task_machine.js';
 import { postExpectations } from '../../../domain/expectation.js';
-import { progressOf, type TaskSpec, type TaskState } from '../../../domain/task_schema.js';
+import { progressOf, taskLevel, type TaskDiscussion, type TaskSpec, type TaskState } from '../../../domain/task_schema.js';
 import { updateStatus } from './status_tools.js';
 
 /** 本文件接受的 op（**结构类型**，不 import `update_feature` —— 那是反向依赖，会成环）。 */
@@ -91,7 +95,8 @@ function loadTask(feature: string, nodeId: string): Loaded {
       `节点 "${nodeId}" 上**没有任务格**（「geometry.nodes[].task」）⇒ 无卡可 claim / release / complete。\n` +
         `★ 立卡 = \`publish\`：\`{ type:'task', op:'publish', id:'${nodeId}' }\` —— 它把该节点的**决策卡**` +
         `（\`decision.summary\` + \`decision.expectations\`）翻成任务卡（★ 内容来自 decision，**不接受手写 summary**）。` +
-        `★ 本工具**不替你凭空造一张空卡** —— 那会让"已领"看起来像"有任务"；没有 decision 的节点 publish 会拒。`,
+        `★ 没有 decision / decision 太粗（无后态判据）⇒ 立的是 **L1 建构卡**（0 条期望，判据 = DSL 建构完整）；` +
+        `有可判的后态判据 ⇒ **L2 实现卡**。★ 本工具**不替你凭空造一张空卡**。`,
     );
   }
   return { dsl, nodeId, card: node.task };
@@ -140,28 +145,111 @@ function writeTask(feature: string, nodeId: string, next: TaskSpec): void {
 // ─────────────────────────────────────────────────────────────
 
 /**
- * 立卡（`∅ → candidate`）：**把节点上已有的决策卡翻成一张任务卡**。
+ * 立卡（`∅ → candidate`）：**两级**（`task_plan.two_level_tasks` + `publish_rule.corrected`）。
  *
- * 语义来源：`docs/task-system-plan.dsl.json` 的 `task_plan.provenance.chain`
- *   （④ 天然差异：DSL 现状 vs 决策卡 ⇒ 红 ⇒ ⑤ 红 = 任务 ⇒ publish 上榜单）。
+ * ## ★★★ 为什么这一条从"拒"改成"L1 建构卡"（2026-10-17 · `docs/gate-principle.md`）
+ * 旧判据（T12）：`没有 decision / 没有 expectations / 只有前态判据 ⇒ 一律拒`。
+ * ★ 用户 2026-10-17 的原话与裁定（`two_level_tasks.why_needed` 逐字）：
+ *   "**第一个 decision 从哪来？**" —— 拒的这条**把第一个决策卡也挡在门外** = 鸡生蛋 = 环。
+ * ⇒ 现在按**两级**分：
+ *   · **L1 建构卡**（无 decision / decision 太粗 = **没有后态判据**）：
+ *     ★ 判据 = **DSL 建构完整**（不是代码跑通）；★ 卡上 **0 条期望**（★ **不编实现判据**）；
+ *   · **L2 实现卡**（有可判的后态判据）：`summary` + `expectations` **逐字来自 decision**（旧行为不变）。
+ * ★ "哪一级"**不是落盘字段**，是派生值（`task_schema.ts#taskLevel`：有 post 判据 ⇒ L2）。
  *
- * ## ★★★ 判据（本函数的全部意义：它在"翻卡"，不在"造卡"）
- * 1. **有决策卡**：`node.decision.summary` 非空 —— 否则**拒**，并点名"没有决策卡可翻"；
- * 2. **有判据**：`decision.expectations` 里**至少一条后态判据**（`phase==='post'`）——
- *    否则拒。★ 理由不是"我加个规矩"，而是 `t_claim` 自己的 guard：`cardStanding` 对
- *    "后态判据一条不剩"给 `unknowable`（空集不按全过算）⇒ 翻出来的卡**必然领不了** ⇒
- *    在 publish 当场点名，好过让人到 claim 时才发现；
- * 3. **内容逐字来自 decision**：`summary = decision.summary` · `expectations = decision.expectations`
- *    （浅拷贝一层，避免与 `node.decision` 共享同一批对象）。★ **不接受任何手写内容**：
- *    `publish` 不读 `data` —— 给 `data.summary` 会被 `checkOpSpec` 的"不被认的键"拒。
+ * ## L1 卡的内容从哪来（★ 不许凭空造）
+ * `summary` **只**由这四样里**已有的**拼：
+ *   ① `semantic.files[id].responsibility`（本仓的"语义层"，最像"这是干什么的"）·
+ *   ② `node.title` / `node.label`（且 `label !== id` —— 自动生成的 label 等于 id，不算内容）·
+ *   ③ 文件名（`node.path` / `semantic.files[].path` / file|doc 节点的 `description`）·
+ *   ④ `node.id`（**最后兜底**）。
+ * ★ 若 ①~③ **一个都没有** ⇒ 卡上只有 id，并在 `discussion.open` 里**如实写明**：
+ *   "要做什么需要用户/我手写一句『我要实现什么』（**本工具不编**）"。
+ * ★ 同时把"出处"写进 `discussion.micro`（`summary` 是从哪一格读来的）—— 让"卡的内容可对拍"。
  *
  * ## 已有任务格时
  * · `state === 'candidate'`（没人领）⇒ **重翻**（用当下的 decision 覆盖）—— 决策改了，卡要跟上；
- * · 其余态（`claimed`/`done`/…）⇒ **拒**：覆盖会把"正在做的判据"换掉（那是两个写端各自为政）。
+ * · `state === 'done'` 且**旧卡是 L1** ∧ 现在够得上 L2 ⇒ **升一级**（L1 干完了，正路是出 L2 卡）；
+ *   ★ 旧卡的 `evidence` **逐条搬进新卡**（`TaskSpec` 没有卡片历史 —— 不静默丢证据）；
+ * · 其余（`claimed` / L2 已 done / …）⇒ **拒**：覆盖会把"正在做的判据"换掉。
  *
  * ★ 本函数**不写 progress**：`node.status` 是 `task.state` 的派生值（`progressOf`），
  *   落盘时由 `applyOverlay` 投影（candidate ⇒ draft）。
  */
+
+/** L1 卡的 `summary` 出处（人读一句话；进 `discussion.micro`，让"内容来自哪"可对拍） */
+interface ConstructBasis {
+  summary: string;
+  source: string;
+  /** 缺什么（空数组 = 至少有 ①~③ 之一）。非空 ⇒ 原话进 `discussion.open` */
+  missing: string[];
+}
+
+/**
+ * ★ L1 建构卡的 `summary` **只**从既有字段拼（见函数上方的 ①~④），**一个字的实现判据都不编**。
+ */
+function constructBasis(
+  dsl: NonNullable<ReturnType<typeof getDSL>>,
+  node: { id: string; type?: string; label?: string; title?: string; description?: string; path?: string },
+): ConstructBasis {
+  const sem = (dsl.semantic?.files ?? []).find((f) => f.id === node.id);
+  const resp = (sem?.responsibility ?? '').trim();
+  const title = (node.title ?? '').trim();
+  // ★ 自动生成的 label 等于 id（`addNode` 的 `label || node_id`）⇒ 它不携带任何信息，不算"内容"
+  const label = (node.label ?? '').trim();
+  const labelUsable = label && label !== node.id ? label : '';
+  const filePath =
+    (node.path ?? '').trim() ||
+    (sem?.path ?? '').trim() ||
+    (node.type === 'file' || node.type === 'doc' ? (node.description ?? '').trim() : '');
+  const where = filePath ? `（${filePath}）` : '';
+  const what = resp || title || labelUsable;
+  if (what) {
+    const source = resp
+      ? `semantic.files["${node.id}"].responsibility`
+      : (node.title ?? '').trim()
+        ? `node.title`
+        : `node.label`;
+    return { summary: `【L1 待建构】${what}${where} ← 节点 ${node.id}`, source, missing: [] };
+  }
+  return {
+    summary: `【L1 待建构】节点 ${node.id}${where}`,
+    source: 'node.id（★ 没有 semantics / title / 有意义的 label / 文件名可依）',
+    missing: [
+      `节点 ${node.id} 上**没有任何可用的"这是干什么的"**（semantic.files[].responsibility / title / label / 文件名皆无）` +
+        ` ⇒ 卡上只有 id。**要做什么需要用户/我手写一句"我要实现什么"**（★ 本工具不编）。`,
+    ],
+  };
+}
+
+/**
+ * ★★ **L1 的验收判据**（`two_level_tasks.L1_construct`）：**DSL 建构完整**，不是代码跑通。
+ *
+ * 判据逐字来自设计 DSL 的 `L1_construct.output` = "**可判的期望** / 节点 / 边（… + **至少一条 expectation**）"
+ * ⇒ 机器可判的形态只有两条（且都在**该节点的 decision** 上，不在卡上）：
+ *   ① `decision.summary` 非空（"我要实现什么"说清楚了）；
+ *   ② `decision.expectations` 里**至少一条后态判据**（`phase='post'` —— 否则建出来的卡仍领不了）。
+ * ★ 这是**同一个判据的正反两面**：publish/claim 说"还没建好"、complete 说"建好了"，用的是同一个函数。
+ */
+function constructionVerdict(
+  dsl: NonNullable<ReturnType<typeof getDSL>>,
+  nodeId: string,
+): { complete: boolean; missing: string[]; post: number } {
+  const node = (dsl.geometry?.nodes ?? []).find((n) => n.id === nodeId);
+  const decision = node?.decision;
+  const hasSummary = typeof decision?.summary === 'string' && decision.summary.trim().length > 0;
+  const post = postExpectations(decision?.expectations ?? []);
+  const missing: string[] = [];
+  if (!hasSummary) missing.push('决策卡的 `summary` 还是空的（"我要实现什么"没有一句结论）');
+  if (!post.length) {
+    missing.push(
+      `决策卡没有**后态判据**（phase=post）：现有 ${decision?.expectations?.length ?? 0} 条` +
+        `${(decision?.expectations?.length ?? 0) > 0 ? '（全是前态/或形状不对）' : '（一条都没有）'}`,
+    );
+  }
+  return { complete: missing.length === 0, missing, post: post.length };
+}
+
 export function publishTask(input: TaskOpInput): EditResult {
   const { feature, node_id } = input;
   // ★★★ publish 的输入**没有内容**：内容只能来自 decision。`owner/reason/evidence` 是 task 的已知键
@@ -191,66 +279,116 @@ export function publishTask(input: TaskOpInput): EditResult {
   }
 
   const decision = node.decision;
-  if (!decision || typeof decision.summary !== 'string' || !decision.summary.trim()) {
-    throw new Error(
-      `publish 被拒：节点 "${node_id}" 上**没有决策卡可翻**（\`decision.summary\` 为空/缺失）。\n` +
-        `★ publish 是"把已有的决策卡翻成任务卡"，**不是凭空造一张卡** —— 没有 decision 就没有内容可翻。\n` +
-        `★ 先给该节点写决策卡（edit_dsl { type:'decision', op:'update', id:'${node_id}', data:{ summary, expectations } } ），` +
-        `再 publish；★ 本工具**不会**替你编一条 summary。`,
-    );
-  }
-  const expectations = decision.expectations ?? [];
-  if (!expectations.length) {
-    throw new Error(
-      `publish 被拒：节点 "${node_id}" 的决策卡**没有判据**（\`decision.expectations\` 为空）—— ` +
-        `任务卡翻出来也**无法验收**（board 的验收就是按该卡的 expectations 判）。\n` +
-        `★ 先给决策卡补判据（\`edit_dsl {type:'decision', op:'update', ... data:{expectations:[…]}}\`），再 publish。`,
-    );
-  }
+  const hasSummary = typeof decision?.summary === 'string' && (decision?.summary ?? '').trim().length > 0;
+  const expectations = decision?.expectations ?? [];
   const post = postExpectations(expectations);
-  if (!post.length) {
-    throw new Error(
-      `publish 被拒：节点 "${node_id}" 的决策卡只有**前态判据**（\`phase='pre'\`，如 edge-absent），` +
-        `后态判据（\`phase='post'\`）一条不剩 ⇒ 翻出来的卡**必然领不了**（\`cardStanding\` 对空集给 unknowable —— 空集不按"全过"算）。\n` +
-        `★ decision.expectations 现有 ${expectations.length} 条，全是 pre-phase。`,
-    );
-  }
+  // ★★ 级别是**派生值**（`taskSchema.ts#taskLevel` 同一把尺）：有后态判据 ⇒ L2；否则 ⇒ L1 建构卡。
+  const level: 'L1' | 'L2' = hasSummary && post.length > 0 ? 'L2' : 'L1';
 
+  // ★ 为什么是 L1（点名原因 —— 旧版这三条是"拒"，现在改成"建档卡并说明为什么不是 L2"；
+  //   ★ 信息一点不丢，只是不再把流程堵死）。
+  const whyL1 = !hasSummary
+    ? `节点 "${node_id}" 上**没有决策卡可翻**（\`decision.summary\` 为空/缺失）`
+    : !expectations.length
+      ? `节点 "${node_id}" 的决策卡**没有判据**（\`decision.expectations\` 为空）⇒ 翻成 L2 也**无法验收**`
+      : `节点 "${node_id}" 的决策卡只有**前态判据**（\`phase='pre'\`，如 edge-absent）：现有 ${expectations.length} 条、` +
+        `后态判据（\`phase='post'\`）**0 条** ⇒ 翻成 L2 的卡**必然领不了**（\`cardStanding\` 对空集给 unknowable）`;
+
+  // 已有任务格：只允许 ① 重翻 candidate ② L1(done) ⇒ L2 升一级；其余拒
+  let advance = false;
   if (node.task && node.task.state !== 'candidate') {
-    throw new Error(
-      `publish 被拒：节点 "${node_id}" 上已有一张 state=${node.task.state} 的任务卡` +
-        (node.task.owner ? `（owner=${node.task.owner}）` : '') +
-        ` —— 覆盖它等于把"正在做/已完成"的判据换掉。\n` +
-        `★ 只允许重翻 \`candidate\`（没人领）的卡；要换已领的卡，先 \`release\`（或走 replaces/superseded —— 未实现）。`,
-    );
+    advance = node.task.state === 'done' && taskLevel(node.task) === 'L1' && level === 'L2';
+    if (!advance) {
+      throw new Error(
+        `publish 被拒：节点 "${node_id}" 上已有一张 state=${node.task.state} 的任务卡` +
+          (node.task.owner ? `（owner=${node.task.owner}）` : '') +
+          `（级别 ${taskLevel(node.task)}） —— 覆盖它等于把"正在做/已完成"的判据换掉。\n` +
+          `★ 允许重翻 \`candidate\`（没人领）；★ 另允许一件事：**L1 已 done 且现在够得上 L2** ⇒ 升一级（` +
+          `这正是两级流程的正路，不是覆盖别人的活）。\n` +
+          `★ 要换其他已领/已完成（L2）的卡 ⇒ 先 \`release\`（或走 replaces/superseded —— 未实现）。`,
+      );
+    }
   }
 
-  const refreshed = !!node.task;
+  if (level === 'L2') {
+    const refreshed = !!node.task;
+    writeTask(feature, node_id, {
+      id: node.id,
+      // ★★ 逐字来自决策卡（不裁剪、不改写、不拼 acceptance）—— 这样"卡的内容来自哪里"可对拍
+      summary: decision?.summary ?? '',
+      expectations: expectations.map((e) => ({ ...e })),
+      state: 'candidate',
+      // ★ L1 ⇒ L2 升级：旧 L1 卡的证据**逐条搬进新卡**（TaskSpec 无卡片历史 ⇒ 不静默丢证据）
+      ...(advance && node.task?.evidence?.length ? { evidence: node.task.evidence } : {}),
+    });
+
+    return {
+      message:
+        `${advance ? '已升级为 L2 实现卡' : refreshed ? '已重翻' : '已立卡'}任务 "${node_id}"：**从该节点的决策卡翻出** ` +
+        `${expectations.length} 条判据（其中后态 ${post.length} 条可领判定）。\n` +
+        `★ 级别 = **L2 实现卡**（有可判的后态判据 ⇒ 验收看"对拍红变绿"）。\n` +
+        `★ 内容来源 = \`geometry.nodes[${node_id}].decision\`（summary 逐字 + expectations 逐字）—— ` +
+        `publish 不收任何手写描述。\n` +
+        (advance ? `★ 上一张 L1 建构卡的 \`evidence\` 已逐条搬进本卡（不静默丢）。\n` : '') +
+        `★ 进度是**派生值**：task.state=candidate ⇒ progress=draft（不落第二份）；` +
+        `下一步 \`{ op:'claim', data:{ owner } }\` 才能开工（闸只认 claimed）。\n` +
+        `★ 榜单显示不靠抄表：board 应当**读**「对拍的红 + 设计 DSL 里现有的 task 格」派生（T8，未建）。`,
+      feature,
+      data: {
+        node_id,
+        level: 'L2',
+        state: 'candidate' as TaskState,
+        summary: decision?.summary ?? '',
+        expectations: expectations.length,
+        post_expectations: post.length,
+        refreshed,
+        ...(advance ? { advanced_from: 'L1' } : {}),
+        progress: progressOf({ state: 'candidate' }),
+      },
+    };
+  }
+
+  // ── L1 建构卡（★ 0 条期望：L1 的验收不看对拍，看"DSL 建构完整"）──────────────────
+  const basis = constructBasis(dsl, node);
+  const discussion: TaskDiscussion = {
+    micro: `L1 建构卡 · summary 出处：${basis.source}`,
+    ...(basis.missing.length ? { open: basis.missing } : {}),
+  };
   writeTask(feature, node_id, {
     id: node.id,
-    // ★★ 逐字来自决策卡（不裁剪、不改写、不拼 acceptance）—— 这样"卡的内容来自哪里"可对拍
-    summary: decision.summary,
-    expectations: expectations.map((e) => ({ ...e })),
+    summary: basis.summary,
+    // ★★★ **空数组**（不是我没填）：L1 的判据是"DSL 建构完整"，用现有六类期望**表达不出来**；
+    //   编一条 `file-exists` 之类 = **编造实现判据** ⇒ 那正是本笔要避免的。
+    expectations: [],
     state: 'candidate',
+    // ★ L1 ⇒ L2 之外的重翻：若旧卡是 L1（candidate）也不带证据（从没被 complete 过）；带上更安全。
+    ...(node.task?.evidence?.length ? { evidence: node.task.evidence } : {}),
+    discussion,
   });
 
   return {
     message:
-      `${refreshed ? '已重翻' : '已立卡'}任务 "${node_id}"：**从该节点的决策卡翻出** ` +
-      `${expectations.length} 条判据（其中后态 ${post.length} 条可领判定）。\n` +
-      `★ 内容来源 = \`geometry.nodes[${node_id}].decision\`（summary 逐字 + expectations 逐字）—— ` +
-      `publish 不收任何手写描述。\n` +
-      `★ 进度是**派生值**：task.state=candidate ⇒ progress=draft（不落第二份）；` +
-      `下一步 \`{ op:'claim', data:{ owner } }\` 才能开工（闸只认 claimed）。\n` +
-      `★ 榜单显示不靠抄表：board 应当**读**「对拍的红 + 设计 DSL 里现有的 task 格」派生（T8，未建）。`,
+      // ★★★ 首行必须自足：`edit_dsl` 的回执**只透出首行**（其余行进 `data`/被丢弃，实测）。
+      //   所以"级别 / 0 条期望 / 不编判据 / 缺什么"全放首行，后面的行只是展开。
+      `${node.task ? '已重翻' : '已立卡'}任务 "${node_id}" —— 级别 = **L1 建构卡**` +
+      `（**0 条期望**：判据 = **DSL 建构完整**，**不是代码跑通**；★ 不编实现判据）：${whyL1}` +
+      (basis.missing.length ? `。★★ 缺"要做什么"：需要用户/我手写一句"我要实现什么"（本工具不编）` : '') +
+      `\n★ summary 出处：${basis.source} ⇒ ${JSON.stringify(basis.summary)}\n` +
+      (basis.missing.length ? `★★ ${basis.missing.join('\n★★ ')}\n` : '') +
+      `★ 做完 L1 = 给该节点写决策卡（summary + 至少一条相位 post 的 expectation），再 \`complete\`；` +
+      `之后再 \`publish\` 就会翻成 **L2 实现卡**（旧的 L1 证据会带过去）。\n` +
+      `★ 进度派生：task.state=candidate ⇒ progress=draft。任务格住在 \`geometry.nodes[].task\`（不设顶层 tasks[]）。`,
     feature,
     data: {
       node_id,
+      level: 'L1',
       state: 'candidate' as TaskState,
-      summary: decision.summary,
-      expectations: expectations.length,
-      post_expectations: post.length,
-      refreshed,
+      summary: basis.summary,
+      summary_source: basis.source,
+      expectations: 0,
+      post_expectations: 0,
+      missing: basis.missing,
+      refreshed: !!node.task,
       progress: progressOf({ state: 'candidate' }),
     },
   };
@@ -270,6 +408,13 @@ export function publishTask(input: TaskOpInput): EditResult {
  *        收口侧读 `isSatisfied`，两侧同源（都读 `cardStanding`）但**不是同一个谓词**。
  *  ② CAS：`state === 'candidate'` ∧ `owner` 为空 —— 否则**拒**（不覆盖别人的领）；
  *  ③ 写 `owner` + `claimed_at`（`releaseIfExpired` 的 TTL 靠它）。
+ *
+ * ## ★★★ L1 建构卡为什么不走 `cardStanding`（2026-10-17）
+ * L1 卡 `expectations: []` ⇒ `cardStanding` 必给 **`unknowable`**（空集不按全过算）⇒ 若照②拒，
+ * **L1 卡永远领不了** = 把"生成 L1 卡"这道口子又堵回去（同一个环的另一种形态）。
+ * ★ L1 的"有没有活"是**另一把可判的尺**（不是放宽标准，是换对尺）：
+ * **DSL 建构完整吗？** 不完整 ⇒ 有活（可领）；已完整 ⇒ 没活（拒，并指向 publish 出 L2）。
+ * 判据唯一出处 = `constructionVerdict`（complete 侧用**同一个函数**判收口）。
  */
 export async function claimTask(input: TaskOpInput): Promise<EditResult> {
   const { feature, node_id } = input;
@@ -282,14 +427,35 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
   const { dsl, card } = loadTask(feature, node_id);
   assertTransition(card.state, 'claimed', 'claim');
 
-  const root = requireRoot(dsl as { source_root?: string });
-  // ★★ 判据复用（不新造第二把尺）：`cardStanding` 按 phase 分区 + `judgeExpectations` 判 + 派生五值。
-  const standing = await cardStanding(card, { root, nodes: dsl.geometry?.nodes ?? [] });
-  if (!isClaimable(standing.standing)) {
-    throw new Error(
-      `claim 被拒（可领性：${standing.standing}）：${standing.reason}\n` +
-        `★ 可领判据唯一出处 = src/domain/task_machine.ts#isClaimable（work / violated 才可领；satisfied 只可收口）。`,
-    );
+  // ── L1 建构卡：可领性看「DSL 建构完整吗」，不看对拍 ───────────────────────────
+  const level = taskLevel(card);
+  let levelNote: string;
+  /** L2 的站位读数（L1 没有它 —— 不伪造成 `work`：那是把"判不了"读成"有活"） */
+  let claimStanding: CardStanding | undefined;
+  if (level === 'L1') {
+    const c = constructionVerdict(dsl, node_id);
+    if (c.complete) {
+      throw new Error(
+        `claim 被拒（L1 无活可干）：节点 "${node_id}" 的 **DSL 已经建构完整**` +
+          `（decision.summary 有、后态判据 ${c.post} 条）⇒ 这张 L1 建构卡没有活。\n` +
+          `★ 下一步是 \`publish\`（现在会翻成 **L2 实现卡**，旧的 L1 证据会带过去），不是领它。`,
+      );
+    }
+    levelNote =
+      `★ 级别 = **L1 建构卡**：可领性判据 = **DSL 建构完整吗**（不看对拍）—— 当前**不完整**` +
+      `（${c.missing.join('；')}）⇒ 有活可干。`;
+  } else {
+    const root = requireRoot(dsl as { source_root?: string });
+    // ★★ 判据复用（不新造第二把尺）：`cardStanding` 按 phase 分区 + `judgeExpectations` 判 + 派生五值。
+    const standing = await cardStanding(card, { root, nodes: dsl.geometry?.nodes ?? [] });
+    if (!isClaimable(standing.standing)) {
+      throw new Error(
+        `claim 被拒（可领性：${standing.standing}）：${standing.reason}\n` +
+          `★ 可领判据唯一出处 = src/domain/task_machine.ts#isClaimable（work / violated 才可领；satisfied 只可收口）。`,
+      );
+    }
+    levelNote = `站位=${standing.standing}；${standing.reason}`;
+    claimStanding = standing.standing;
   }
 
   // ★ CAS（单写者队列下等价于"读到的还是那张 candidate 卡"）：不满足 ⇒ 拒，不抢别人的领。
@@ -314,15 +480,21 @@ export async function claimTask(input: TaskOpInput): Promise<EditResult> {
 
   return {
     message:
-      `已领取任务 "${node_id}"（owner=${owner}，claimed_at=${claimedAt}）—— 站位=${standing.standing}；${standing.reason}` +
-      `\n★ 进度是**派生值**：task.state=claimed ⇒ progress=in_progress（不落第二份）。`,
+      // ★ 首行自足（回执只透出首行）
+      `已领取任务 "${node_id}"（owner=${owner}，claimed_at=${claimedAt}）—— ${levelNote}` +
+      `\n★ 进度是**派生值**：task.state=claimed ⇒ progress=in_progress（不落第二份）。` +
+      (level === 'L1'
+        ? `\n★ L1 收口判据 = **DSL 建构完整**（给该节点写 decision.summary + 至少一条 phase=post 的 expectation），` +
+          `\`complete\` 也是用这同一把尺判。`
+        : ''),
     feature,
     data: {
       node_id,
+      level,
       state: 'claimed' as TaskState,
       owner,
       claimed_at: claimedAt,
-      standing: standing.standing,
+      ...(claimStanding ? { standing: claimStanding } : {}),
       progress: progressOf({ state: 'claimed' }),
     },
   };
@@ -394,13 +566,36 @@ export async function completeTask(input: TaskOpInput): Promise<EditResult> {
     throw new Error(`complete 被拒：节点 "${node_id}" 的任务格没有 owner ⇒ 未领不可能被收口（t_done_from_claimed 第 1 条）。`);
   }
 
-  const root = requireRoot(dsl as { source_root?: string });
-  const satisfied = await isSatisfied(card, { root, nodes: dsl.geometry?.nodes ?? [] });
-  if (!satisfied.satisfied) {
-    throw new Error(
-      `complete 被拒（可收口性：${satisfied.standing}）：${satisfied.reason}\n` +
-        `★ 收口判据唯一出处 = src/domain/task_machine.ts#isSatisfied（只有 satisfied 可收口；work/violated 可领但不可收口）。`,
-    );
+  // ★ L1 / L2 两条收口尺（★ 各自唯一，别在这里就地判期望条数）
+  const level = taskLevel(card);
+  let closeNote: string;
+  let standing: CardStanding | undefined;
+  if (level === 'L1') {
+    const c = constructionVerdict(dsl, node_id);
+    if (!c.complete) {
+      throw new Error(
+        `complete 被拒（L1 建构未完成）：${c.missing.join('；')}。\n` +
+          `★ L1 的收口判据 = **DSL 建构完整**（\`docs/task-system-plan.dsl.json\` 的 \`two_level_tasks.L1_construct\`：` +
+          `输出"可判的期望"，判据"建构完整" —— ★ **不是代码跑通**）。\n` +
+          `★ 怎么办：给节点写决策卡 \`edit_dsl {type:'decision', op:'update', id:'${node_id}', data:{ summary, expectations } }\` ` +
+          `（至少一条**相位 post** 的期望，如 \`file-exists\` / \`symbol-exists\`），再 complete。\n` +
+          `★ 本工具**不替你编一条期望**（那会变成"永远不判的假验收"）。`,
+      );
+    }
+    closeNote = `L1 建构完整（decision.summary + 后态判据 ${c.post} 条）—— ★ 判据是"DSL 建构完整"，不是代码跑通`;
+  } else {
+    const root = requireRoot(dsl as { source_root?: string });
+    const satisfied = await isSatisfied(card, { root, nodes: dsl.geometry?.nodes ?? [] });
+    if (!satisfied.satisfied) {
+      throw new Error(
+        `complete 被拒（可收口性：${satisfied.standing}）：${satisfied.reason}\n` +
+          `★ 收口判据唯一出处 = src/domain/task_machine.ts#isSatisfied（只有 satisfied 可收口；work/violated 可领但不可收口）。`,
+      );
+    }
+    standing = satisfied.standing;
+    closeNote =
+      `站位=satisfied（后态判据 ${satisfied.verdict.satisfaction.passed} 条全过、` +
+      `前态判据 ${satisfied.verdict.violation.checked} 条无红）`;
   }
   // ★ 证据闸（唯一一把尺）：没证据 / 形状不对/期望类证据没全绿 ⇒ 当场拒。
   const gate = validateProgressEvidence('done', evidence);
@@ -422,14 +617,15 @@ export async function completeTask(input: TaskOpInput): Promise<EditResult> {
 
   return {
     message:
-      `已完成任务 "${node_id}"（owner=${card.owner}）—— 站位=satisfied（后态判据 ${satisfied.verdict.satisfaction.passed} 条全过、` +
-      `前态判据 ${satisfied.verdict.violation.checked} 条无红）、证据 kind=${evidence!.kind}。` +
-      `\n${legacy.message.split('\n')[0]}`,
+      `已完成任务 "${node_id}"（owner=${card.owner}，级别=${level}）—— ${closeNote}、证据 kind=${evidence!.kind}。` +
+      `\n${legacy.message.split('\n')[0]}` +
+      (level === 'L1' ? `\n★ 下一步：\`publish\` 会把这个节点翻成 **L2 实现卡**（旧 L1 卡的证据会带过去）。` : ''),
     feature,
     data: {
       node_id,
+      level,
       state: 'done' as TaskState,
-      standing: satisfied.standing,
+      ...(standing ? { standing } : {}),
       progress: progressOf({ state: 'done' }),
       evidence_kind: evidence!.kind,
     },

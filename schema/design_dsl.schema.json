@@ -98,6 +98,10 @@
           "description": "节点 ID，语义层 file.id 通过它锚定"
         },
         "label": { "type": "string" },
+        "path": {
+          "type": "string",
+          "description": "显式文件指针（仓库相对路径）。写闸/任务机/设计单按它认亲（path 优先、回落 description）；校验见 src/application/design/dsl_ops/node_ops.ts#normalizeNodePath"
+        },
         "x": { "type": "number" },
         "y": { "type": "number" },
         "width": { "type": "number" },

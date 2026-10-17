@@ -364,8 +364,18 @@ export interface ReconcileStats {
   stale: number;
 }
 
-/** 从节点推导稳定路径（file 用 description=rel；dir/brick 解码 id 前缀）。base 与 seed 共用，保证两次对齐一致 */
-export function nodePath(n: { id: string; type?: string; description?: string }): string {
+/**
+ * 从节点推导稳定路径（file 用 description=rel；dir/brick 解码 id 前缀）。base 与 seed 共用，保证两次对齐一致
+ *
+ * ★★★ 2026-10-17（`docs/gate-principle.md` §三 · 造节点入口）：**`path` 优先，回落 `description`** ——
+ *   与 `application/write_gate.ts#nodeFilePath`（T352）**同一把尺**，不再各定一套。
+ *   为什么必须加这一级：`path` 此前不是 `Node` 的字段（只能写 `description`）⇒ 造出的
+ *   `path` 型节点在锚点上会**退回 `id`** 当路径（`nodePath` 的 `else` 分支）⇒
+ *   设计单/写闸按路径认亲时对不上（一事实两口径）。★ 实测真仓无"两者都给且不同"的节点（both=0）。
+ */
+export function nodePath(n: { id: string; type?: string; description?: string; path?: string }): string {
+  const explicit = typeof n.path === 'string' ? n.path.trim() : '';
+  if (explicit) return explicit.split('\\').join('/');
   if (n.type === 'file') return n.description ?? n.id;
   if (n.type === 'module' && n.id.startsWith('dir_')) return decodeDirId(n.id);
   if (n.id.startsWith('brick_')) return n.id.slice('brick_'.length);

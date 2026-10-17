@@ -79,7 +79,7 @@ export const OP_SPECS: readonly OpSpec[] = [
       '`shape`(rect|rounded|circle|diamond|freeform) `shadow` `opacity`\n' +
       '        · 几何：`x` `y` `width` `height`\n' +
       '        · 结构与内容：`layer` `host`(宿主节点 id) `swimlane` `shapes` `content` `sub_dsl`(子图 DSL) ' +
-      '`attributes`(Record<string,string|number|boolean>)\n' +
+      '`attributes`(Record<string,string|number|boolean>) `path`(文件指针=仓库相对路径，校验见 `node_ops.ts`)\n' +
       '        · 语义：`decision`（决策卡对象，**字段形状同下面 `decision` 那张表**）· ' +
       '`decision_note`（**update 专有**）· `author`（**update 专有**，`human`｜`llm`）',
   },
@@ -203,10 +203,10 @@ export const OP_SPECS: readonly OpSpec[] = [
     required: { claim: ['owner'], release: ['reason'], complete: ['evidence'] },
     note:
       '★ **任务态唯一写端**（五态 `candidate|claimed|done|void|superseded`）；`node.status` 只是它的**派生值**（`task_schema.ts#progressOf`），不许直接改。' +
-      'publish:**立卡 = 把该节点的决策卡翻成任务卡**（`decision.summary` + `decision.expectations`；★ **不收任何 data**，' +
-      '因为内容只能来自 decision —— 没有 decision 的节点会被拒）· ' +
-      'claim:`data.owner`（CAS 写的就是它；写前须 cardStanding 可领）· release:`data.reason`（by 走顶层 `agent`）· ' +
-      'complete:`data.evidence`（同 `validateProgressEvidence` 一把尺；写前须 isSatisfied）。',
+      'publish:**立卡=翻该节点的决策卡**：有后态判据⇒**L2**（summary+expectations 逐字搬）；' +
+      '无 decision/太粗⇒**L1 建构卡**（**0 条期望**，验收=DSL 建构完整）；★不收 data · ' +
+      'claim:`data.owner`（L2 须可领＝cardStanding，L1 看建构缺口）· release:`data.reason`（by 走顶层 `agent`）· ' +
+      'complete:`data.evidence`（同一把证据尺；L2 须 isSatisfied，L1 须建构完整）。',
   },
 ];
 
@@ -245,6 +245,12 @@ export const NODE_DATA_KEYS = [
   'content',
   'sub_dsl',
   'attributes',
+  // ★★★ 2026-10-17（`docs/gate-principle.md` §三「每个环节独立的入口」）：**补 `path`**。
+  //   此前 data 键集里**没有** `path` ⇒ 经 `edit_dsl {type:'node', op:'add'}` 造 `path` 型节点
+  //   会被"不被认的键"拒 ⇒ 写端只能给**老节点**挂卡、不能**新建**指向文件的节点
+  //   ⇒ 「接取要 path 型节点」而「造节点要已有节点」= 环。
+  //   ★ 判据（非空 / 仓库相对 / kind 合法）住 `node_ops.ts#normalizeNodePath` 一处，本清单只声明"认这个键"。
+  'path',
   'decision',
   'decision_note',
   'author',

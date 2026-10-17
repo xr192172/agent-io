@@ -34,6 +34,64 @@ function assertValidShapes(shapes: NodeShapes): void {
 }
 
 // ─────────────────────────────────────────────────────────────
+// ★★★ `path` 型节点（2026-10-17 · `docs/gate-principle.md` §三「每个环节独立的入口」）
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * ★ **`path` 型节点允许的 `type`（kind）—— 唯一值域**。
+ *
+ * 依据不是我的偏好，而是**锚点模型**（`domain/overlay.ts#AnchorCandidate.kind`：
+ * `file | dir | brick | symbol | doc`）：只有这几类节点"指一个仓库路径"才**有意义**；
+ * 其余类型（`service` / `database` / 人话概念节点）本来就不对应某个文件。
+ * ★ 收窄的代价如实写：想让 `service` 节点也指路径 ⇒ 用 `file`/`module`，别开第二套 kind。
+ */
+export const PATH_NODE_KINDS = ['file', 'doc', 'module', 'symbol'] as const;
+export type PathNodeKind = (typeof PATH_NODE_KINDS)[number];
+
+/**
+ * ★ **造节点入口自己的校验**（`gate-principle.md` §三：入口要有校验，不能乱造）。
+ *
+ * 三条，都是"会损坏数据/造成不一致"的那一类（⇒ 必须**阻断**，不是提醒）：
+ *   ① `path` 非空 —— 空路径 = 一个指不到任何文件的"文件指针"（`byPath` 会拿空串认亲 ⇒ 串味）；
+ *   ② 必须是**仓库相对路径** —— 绝对路径（`C:/…` / `/…`）越出 `source_root`，闸和设计单都按相对路径比；
+ *      含 `..` 段 = 越界（同上）；
+ *   ③ `type`（kind）必须在 {@link PATH_NODE_KINDS} 里 —— 否则"这个节点指哪个文件"在锚点模型里无解。
+ *
+ * ★ 分隔符统一成 `/`（Windows 上 `byPath` 两侧各自 `split(sep).join('/')`，这里先归一，少一处换算）。
+ */
+function normalizeNodePath(raw: unknown, kind: unknown): string {
+  if (typeof raw !== 'string') {
+    throw new Error(`path 必须是字符串（仓库相对路径），收到 ${JSON.stringify(raw)}。`);
+  }
+  const p = raw.trim();
+  if (!p) {
+    throw new Error(
+      'path 不能为空 —— `path` 是**显式文件指针**（仓库相对路径）；空串会让"这个节点指哪个文件"变成一句空话。' +
+        '★ 若这个节点本来就不指文件（概念/聚合节点）⇒ 别给 `path`。',
+    );
+  }
+  if (/^[A-Za-z]:[\\/]/.test(p) || p.startsWith('/') || p.startsWith('\\')) {
+    throw new Error(
+      `path 必须是**仓库相对路径**（如 "src/domain/overlay.ts"），收到绝对路径 ${JSON.stringify(p)} —— ` +
+        '绝对路径越出 `source_root`，写闸与设计单都按相对路径认亲，会静默对不上。',
+    );
+  }
+  if (p.split(/[\\/]+/).some((seg) => seg === '..')) {
+    throw new Error(`path 不许含 ".."（越出仓库根）：${JSON.stringify(p)}。`);
+  }
+  const kindStr = kind === undefined || kind === null ? 'file' : String(kind);
+  if (!(PATH_NODE_KINDS as readonly string[]).includes(kindStr)) {
+    throw new Error(
+      `path 型节点的 kind 非法：type=${JSON.stringify(kind)} ⇒ 只能取 ${PATH_NODE_KINDS.join(' / ')} ` +
+        '（依据 = 锚点模型的 kind：file | dir | brick | symbol | doc；其余类型不对应具体文件）。' +
+        '★ 不给 type 时按 file 处理。',
+    );
+  }
+  return p.split(/[\\/]+/).join('/');
+}
+
+
+// ─────────────────────────────────────────────────────────────
 // add_node：添加节点
 // ─────────────────────────────────────────────────────────────
 
@@ -53,6 +111,8 @@ export interface AddNodeInput {
   shadow?: string;
   opacity?: number;
   type?: string;
+  /** ★ 显式文件指针（仓库相对路径）—— 见 `Node.path`；给了就按 `PATH_NODE_KINDS` 校验 kind */
+  path?: string;
   description?: string;
   status?: DiagramStatus;
   swimlane?: string;
@@ -75,7 +135,7 @@ export interface AddNodeInput {
 }
 
 export function addNode(input: AddNodeInput): EditResult {
-  const { feature, node_id, label, x, y, width, height, bg, color, border, borderRadius, shape, shadow, opacity, type, description, status, swimlane, content, sub_dsl, layer, host, shapes, attributes, decision, agent } = input;
+  const { feature, node_id, label, x, y, width, height, bg, color, border, borderRadius, shape, shadow, opacity, type, path: nodePathInput, description, status, swimlane, content, sub_dsl, layer, host, shapes, attributes, decision, agent } = input;
 
   const dsl = getDSL(feature);
   if (!dsl) {
@@ -101,6 +161,11 @@ export function addNode(input: AddNodeInput): EditResult {
   if (host && !dsl.geometry.nodes.find(n => n.id === host)) {
     throw new Error(`host 节点 "${host}" 不存在`);
   }
+  // ★★★ `path` 型节点（2026-10-17）：**造节点这个入口自己校验**（id 唯一已由上面那条判过）。
+  //   · path 非空 / 仓库相对 / 无 `..`（`normalizeNodePath`）；
+  //   · kind（`type`）必须在 `PATH_NODE_KINDS` 里；不给 type ⇒ 按 `file`（文件指针的默认 kind）。
+  const nodePathValue = nodePathInput === undefined ? undefined : normalizeNodePath(nodePathInput, type);
+  const nodeType = type ?? (nodePathValue ? 'file' : undefined);
   if (shapes) assertValidShapes(shapes);
   // ★★ 2026-10-09（T74）：与 update 路径同一个校验（`expectations` 是会被程序判的字段）
   if (decision?.expectations !== undefined) assertValidExpectations(decision.expectations);
@@ -125,7 +190,8 @@ export function addNode(input: AddNodeInput): EditResult {
     width,
     height,
     style: Object.keys(style).length > 0 ? style : undefined,
-    type,
+    type: nodeType,
+    path: nodePathValue,
     description,
     // ★★★ T328：**不再把 `status` 落进 base**（旧轴直写）。进度改走权威（下面的 `updateStatus`）——
     //   它同时也是 evidence 闸的入口：不带证据置 `done` ⇒ 当场拒（"不许默默勾上"）。
@@ -157,7 +223,9 @@ export function addNode(input: AddNodeInput): EditResult {
     `位置: (${node.x ?? 'auto'}, ${node.y ?? 'auto'})`,
     `尺寸: ${node.width ?? 'auto'} × ${node.height ?? 'auto'}`,
   ];
-  if (type) lines.push(`类型: ${type}`);
+  if (nodeType) lines.push(`类型: ${nodeType}`);
+  // ★ 造了一个 `path` 型节点 ⇒ 回执里**显形**（这是它能被写闸 / 任务机认亲的依据）
+  if (nodePathValue) lines.push(`路径: ${nodePathValue}（显式文件指针，写闸与任务机按它认亲）`);
   if (status) lines.push(`状态: ${status}`);
   if (shape) lines.push(`形状: ${shape}`);
   if (swimlane) lines.push(`泳道: ${swimlane}`);
@@ -187,6 +255,8 @@ export interface UpdateNodeInput {
   shadow?: string;
   opacity?: number;
   type?: string;
+  /** ★ 显式文件指针；`null` = 清除该字段（该节点不再指向具体文件） */
+  path?: string | null;
   description?: string;
   status?: DiagramStatus;
   swimlane?: string;
@@ -286,7 +356,7 @@ export function applyDecisionWrite(
 }
 
 export function updateNode(input: UpdateNodeInput): EditResult {
-  const { feature, node_id, label, x, y, width, height, bg, color, border, borderRadius, shape, shadow, opacity, type, description, status, swimlane, content, sub_dsl, layer, host, shapes, attributes, decision, decision_note, author, agent } = input;
+  const { feature, node_id, label, x, y, width, height, bg, color, border, borderRadius, shape, shadow, opacity, type, path: nodePathInput, description, status, swimlane, content, sub_dsl, layer, host, shapes, attributes, decision, decision_note, author, agent } = input;
 
   const dsl = getDSL(feature);
   if (!dsl) {
@@ -304,6 +374,15 @@ export function updateNode(input: UpdateNodeInput): EditResult {
   if (width !== undefined) node.width = width;
   if (height !== undefined) node.height = height;
   if (type !== undefined) node.type = type;
+  // ★ `path`：`null` = 清除；给了字符串 ⇒ 与造节点**同一把尺**（非空 / 相对 / kind 合法）。
+  //   ★ kind 判定用"本次给的 type，否则节点现有的 type"—— 否则"先建 file 节点、再补 path"会被误判。
+  if (nodePathInput === undefined) {
+    // 不改
+  } else if (nodePathInput === null) {
+    delete node.path;
+  } else {
+    node.path = normalizeNodePath(nodePathInput, type ?? node.type);
+  }
   if (description !== undefined) node.description = description;
   // ★★★ T328：进度**不在此裸写** `Node.status`（旧轴/base）—— 见下方 saveDSL 后的 `updateStatus`。
   if (swimlane !== undefined) node.swimlane = swimlane;
@@ -376,6 +455,7 @@ export function updateNode(input: UpdateNodeInput): EditResult {
     `尺寸: ${node.width ?? 'auto'} × ${node.height ?? 'auto'}`,
   ];
   if (status) lines.push(`状态: ${status}`);
+  if (node.path) lines.push(`路径: ${node.path}（显式文件指针）`);
   // ★ T329：决策范围（若有）显形（写的是规范化后的字符串）。
   if (node.decision?.scope) lines.push(`决策范围: ${node.decision.scope}`);
 

@@ -62,8 +62,9 @@ import { indexCoversDisk } from '../infrastructure/index/index_freshness.js';
 // ★★★ T328 步 6：**任务闸**要读「项目 → 设计 feature」的反查与 overlay 的 progress（唯一权威）。
 //   ★ 反查口径**与 `file_snapshot.ts`（T90）逐字同款**（`DSL.source_root === 项目根`）——
 //     那条路已在本仓跑过（它记"写前那一刻的决策"），此处**复用同一把尺**，不另立一套。
-import { listFeatures } from '../infrastructure/storage.js';
+import { listFeatures, getDSL, saveDSL } from '../infrastructure/storage.js';
 import { loadOverlay } from '../infrastructure/storage_overlay.js';
+import type { Annotation } from '../domain/annotation.js';
 // ★★★ 2026-10-17（OQ10 裁定）：闸的判据从「overlay 的 progress 是否登记过」改成
 //   「**该节点上是否有 state=claimed 的 task**」—— 任务格是唯一权威（`task_plan.task_home`），
 //   progress 对它只是派生值（`progressOf`）。
@@ -490,9 +491,24 @@ export interface TaskGateOutcome {
    *   ②「我**该找到节点却没找到**」（收集失败：节点缺 `path`/`description`）。
    * ⇒ ② 被静默混进 ① ⇒ 注释写着"不许静默"，代码在静默 ⇒ **闸看不见卡**。
    * ⇒ 现在 `applicable:false` **只许**来自 `no-files` / `no-feature-for-root`；
-   *   收集失败**抛错**（见 `GateCoverage.unaddressable`），**不走本字段**。
+   *   收集失败**不走本字段**：它走 `basis:'unaddressable'`（`applicable:true` = 放行）+
+   *   `warnings`（★ 2026-10-17：从"抛错"退成"点名 + 放行 + 留痕"，见 `recordUnaddressableWarnings`）。
    */
   basis: TaskGateBasis;
+  /**
+   * ★★★ **放行时留下的警告**（2026-10-17 · `docs/gate-principle.md` §二「提醒」）。
+   *
+   * 来源只有一个：**收集失败**（文件节点既无 `path` 也无 `description`）。
+   * ★ 它**不损坏数据**（只是"这次写没在账上被核对"）⇒ 按原则**放行 + 留痕**，
+   *   而不是抛错（抛错仍然是把流程堵死：`write_gate` 是"改源码"的咽喉，
+   *   一个缺 `path` 的老节点会让**整个项目的源码都改不动** = 死循环）。
+   * ★ 留痕的**真落点**不是这里（这里是"本次调用"的读数）：每条警告同时写进该 feature 的
+   *   `dsl.annotations[]`（`type:'issue'` · `severity:'warning'` · `resolved:false` · `author:'write_gate'`），
+   *   读端 = `query_feature {query:'annotations', feature, unresolved_only:true}`（`annotation_tools.ts#listAnnotations`）。
+   *   ★ 为什么落那儿：它是本仓**唯一**带"问题/未解决"语义、且**已有读工具**的记录位；
+   *   `overlay` 的警告列表没有读端（写进去等于又一处"写而无人读"）。
+   */
+  warnings: string[];
 }
 
 /** 任务闸放行的依据分类（★ 唯一取值处；`applicable:false` 只许前两格） */
@@ -500,6 +516,7 @@ export type TaskGateBasis =
   | 'no-files' // 没有落在项目根内的文件
   | 'no-feature-for-root' // 没有任何 feature 的 source_root 指到项目根（= 本项目不用任务系统）
   | 'files-not-in-design' // 有 feature 指到根，但这批文件不在任何一条里（新建 / 未纳入设计）
+  | 'unaddressable' // ★ 2026-10-17：有文件节点**收集失败**（缺 path/description）⇒ 放行 + 留痕（不再抛错）
   | 'covered'; // 有覆盖 feature，已逐个判过任务卡
 
 /** 一条 covering feature 的 `path → node_id` 表 + 任务格 */
@@ -515,8 +532,9 @@ export interface GateCoverageFeature {
  *
  * 为什么分开：放行是一句**结论**，而"有没有收集到节点"是它的**前提**。
  * 前提失败而结论照给（`applicable:false`）就是**静默 fail-open**。
- * ⇒ 收集失败那一格（`unaddressable`）在 `assertSourceWriteRegistered`
- *   里**先于**任何放行分支被检查，且**抛错**。
+ * ⇒ 收集失败那一格（`unaddressable`）在 `assertSourceWriteRegistered` 里
+ *   **先于**任何"看起来像不适用"的分支被单独处理：★ 2026-10-17 起 = **点名 + 放行 + 留痕**
+ *   （`basis:'unaddressable'` + 写 `annotations`）—— **不是静默**，也**不是抛错**（那会造死循环）。
  */
 export interface GateCoverage {
   /** 收集到的 covering feature（有 `path → node_id` 表的那些） */
@@ -566,7 +584,8 @@ function nodeFilePath(
  * ★★★ 与旧版的差别（T352）：**收集失败不再被 `if (byPath.size)` 静默吞掉** —— 旧版
  *   一个 feature 的 `byPath` 为空就 `continue`，于是"节点缺 description"变成"这条 feature 不存在"
  *   ⇒ 调用方读到 `applicable:false`（放行）。现在把它们分装在 `unaddressable`
- *   里**交给调用方抛**，并额外带出 `totalFeatures` / `rootFeatureCount` 作为放行依据的读数。
+ *   里**交给调用方点名 + 留痕**（★ 2026-10-17：不再抛 —— 见 `recordUnaddressableWarnings`），
+ *   并额外带出 `totalFeatures` / `rootFeatureCount` 作为放行依据的读数。
  */
 export function collectGateCoverage(rootArg: string): GateCoverage {
   // ★ 入口自己归一（导出函数，调用方可能给相对路径；与 `assertSourceWriteRegistered` 同一把尺）
@@ -606,6 +625,87 @@ export function collectGateCoverage(rootArg: string): GateCoverage {
 }
 
 /**
+ * ★★★ **收集失败的留痕**（2026-10-17 · `docs/gate-principle.md` §二「提醒」+ §四 #3）。
+ *
+ * ## 改前 / 改后（一句话）
+ * · 改前（T352）：`unaddressable` 非空 ⇒ **抛错**，源码**一个字节都不写**；
+ * · 改后（本笔）：**点名 + 放行 + 留痕** —— 因为"某个老节点没写 `path`"**不损坏数据**，
+ *   它只说明"这次写**没在账上**"（= 记录问题，不是数据问题）。
+ *   ★ 继续抛的代价是**死循环**：`write_gate` 是所有源码写的咽喉，一个缺字段的节点
+ *     会让整个项目改不动，而要补字段又得先改……（正是 `gate-principle.md` §三 说的"环"）。
+ * ★★ **"不许静默"这条没有退**：改前是"抛"，现在必须**点名 + 落盘留痕**，
+ *    退回"不报、直接放行"照样是本证要打红的错。
+ *
+ * ## 留痕落点（为什么是 `dsl.annotations[]`）
+ * 候选三处，逐条否掉两处：
+ *   · `overlay` 锚点的警告列表 —— **没有读端**（本仓头号病：写进去没人读）；
+ *   · 卡上的 `discussion` —— **该节点没有卡**（收集失败恰恰发生在"连节点都指不出文件"时）；
+ *   · ✅ `dsl.annotations[]` —— 唯一**既有读工具**（`query_feature {query:'annotations'}` /
+ *     `annotation_tools.ts#listAnnotations`）且语义就是"问题、可 resolve"的记录位；
+ *     ★ 且 base 的 annotations 会被 `seedOverlayFromDsl` 搬进 overlay（`overlay.ts:634`）⇒ 重建不丢。
+ * ★ 幂等：同一天同一节点**只留一条**（`gate_warn_<nodeId>_<yyyymmdd>`）；已被 `resolve` 的不重开。
+ *
+ * ★ 本函数**绝不抛**（留痕失败不许反过来堵住写盘）：失败如实写进返回的警告行里。
+ */
+function recordUnaddressableWarnings(
+  items: GateCoverage['unaddressable'],
+  rels: readonly string[],
+): string[] {
+  const out: string[] = [];
+  const now = new Date().toISOString();
+  const day = now.slice(0, 10).replace(/-/g, '');
+  const files = rels.slice(0, 5).join(', ') + (rels.length > 5 ? ` 等 ${rels.length} 个` : '');
+  for (const u of items) {
+    const id = `gate_warn_${u.nodeId}_${day}`;
+    const text =
+      `写闸放行留痕（收集失败）：节点 "${u.nodeId}"**既无 path 也无 description** ⇒ 它指不出"哪个文件"，` +
+      `本次写盘的任务闸**无法核对**该节点。\n` +
+      `★ 本次放行的文件：${files}\n` +
+      `★ 为什么不拦：缺字段**不损坏数据**，只是"这次写没在账上"（记录问题）；拦它会让整个项目改不动。\n` +
+      `★ 怎么消掉这条：给该节点补 \`path\`（仓库相对路径，推荐）或 \`description\`（老写法，仅 file/doc 节点）：\n` +
+      `  edit_dsl { feature:'${u.feature}', reason:'补文件指针', operations:[{ type:'node', op:'update', id:'${u.nodeId}', data:{ path:'<仓库相对路径>' } }] }\n` +
+      `  或若它确实不指文件（聚合/概念节点）⇒ 把 type 改成非 file/doc。`;
+    let where: string;
+    try {
+      const dsl = getDSL(u.feature);
+      if (!dsl) {
+        where = `★ 留痕失败：feature "${u.feature}" 读不到（没有落点）`;
+      } else {
+        const anns: Annotation[] = dsl.annotations ?? [];
+        const exist = anns.find((a) => a.id === id);
+        if (exist) {
+          where = exist.resolved
+            ? `同日留痕已存在且**已被 resolve**（id=${id}）⇒ 不重开`
+            : `同日留痕已在（id=${id}，unresolved）⇒ 不重复写`;
+        } else {
+          anns.push({
+            id,
+            node_id: u.nodeId,
+            text,
+            type: 'issue',
+            severity: 'warning',
+            author: 'write_gate',
+            created: now,
+            timestamp: now,
+            resolved: false,
+          });
+          dsl.annotations = anns;
+          saveDSL(dsl);
+          where = `留痕已写入 feature "${u.feature}" 的 annotations（id=${id}，severity=warning，unresolved）`;
+        }
+      }
+    } catch (e) {
+      where = `★ 留痕失败：${(e as Error).message}`;
+    }
+    out.push(
+      `· 节点 ${u.nodeId}（feature=${u.feature}，type=${u.type ?? '?'}）**既无 path 也无 description**；${where}\n` +
+        `  ★ 读它：query_feature { query:'annotations', feature:'${u.feature}', unresolved_only:true }`,
+    );
+  }
+  return out;
+}
+
+/**
  * ★★★ **任务闸：改源码可以，但不领任务不许悄悄改**（T328 步 6；★ 判据 2026-10-17 按 OQ10 换过）。
  *
  * ## 它回答什么
@@ -634,8 +734,10 @@ export function collectGateCoverage(rootArg: string): GateCoverage {
  * 放行：该项目**没有** feature 指向它（`no-feature-for-root`，合法）· 文件**不是**任何一条的节点
  *      （新建文件 / 未纳入设计，`files-not-in-design`，逐个点名）·
  *      在**任一**覆盖它的 feature 里该节点有 `state='claimed'` 的 task（`covered`）。
- * ★★★ 拒绝之外的第三种结果（T352）：**收集失败 ⇒ 抛错**（`unaddressable`）。
- *      它不是"不适用"，也**不许**被读成放行 —— 详见 `collectGateCoverage` 的头注释。
+ * ★★★ 拒绝之外的第三种结果（T352 → **2026-10-17 改**）：收集失败 ⇒ 既**不是拒绝**、也**不许**被读成"不适用"：
+ *      **放行 + 点名 + 留痕**（`basis:'unaddressable'`；留痕写进该 feature 的 `annotations`）。
+ *      ★ 为什么不拒：它**不损坏数据**（只是"这次写没在账上"）；拒会让"一个老节点缺字段"把整个项目锁死
+ *      （`gate-principle.md` §二 的判据）。★ 前置闸（下一条）**仍然拒** —— 那一条会真的造成不一致。
  *
  * ## ★★ T332（2026-10-15）**追加**的第二条判据：前置闸（解锁）
  * 上面这条之外，**追加**：某条 edge intent **显式**声明了 `requires`（非空）∧ 该边源节点(from)
@@ -656,30 +758,18 @@ export function assertSourceWriteRegistered(
       applicable: false,
       basis: 'no-files',
       note: '没有落在项目根内的文件 ⇒ 任务闸不适用（放行；依据：入参里 0 个文件落在项目根内）',
+      warnings: [],
     };
   }
 
-  // ★★★ T352：**先收集、再判定** —— 收集失败（节点缺 path/description）**当场抛**，
-  //   绝不让它走到下面任何 "applicable:false（放行）" 的分支。这是本刀堵的那个洞：
-  //   旧版 `if (byPath.size) continue` 把"我该找到节点却没找到"静默变成"这条 feature 不存在"。
+  // ★ T352：**先收集、再判定**。★ 2026-10-17：收集失败（`unaddressable`）从"抛"改成"放行 + 留痕"，
+  //   但**仍先收集**、且**仍点名**（见 `recordUnaddressableWarnings`）—— 退回"静默跳过"照样是错。
   const cov = collectGateCoverage(root);
-  if (cov.unaddressable.length) {
-    const list = cov.unaddressable
-      .map((u) => `  · ${u.nodeId}（feature=${u.feature}，type=${u.type ?? '?'}）**既无 path 也无 description**`)
-      .join('\n');
-    throw new Error(
-      `拒绝放行（任务闸·收集失败）：${cov.unaddressable.length} 个文件节点**没有可收集的路径** —— ` +
-        `本仓纪律：\`applicable:false\` 只许表示「本项目不用任务系统」，**不许**用来表示「我该找到节点却没找到」。\n` +
-        `${list}\n` +
-        `\n★ 为什么这是硬错而不是放行：闸要回答"这次改动挂在哪个已领取的任务上"；` +
-        `节点没有 path/description ⇒ 它连"哪个文件"都指不出来 ⇒ **闸对它是瞎的**。\n` +
-        `★ 怎么办（二选一）：\n` +
-        `  ① 给该节点补 \`path\`（仓库相对路径；显式文件指针，推荐）或 \`description\`（老写法，仅 file/doc 节点认）：\n` +
-        `     edit_dsl { feature:'<f>', operations:[{ type:'node', op:'update', id:'<node_id>', data:{ description:'<仓库相对路径>' } }] }\n` +
-        `  ② 若这些节点确实**不指向任何文件**（聚合/概念节点）⇒ 把它们改成 \`type\` 非 file/doc，闸就不再把它们当文件节点。\n` +
-        `★ 本闸**不会**替你补字段，也**不会**降级放行。`,
-    );
-  }
+  // ★★★ 2026-10-17（`docs/gate-principle.md` §二 + §四 #3）：**收集失败不再抛** ——
+  //   它不损坏数据（只是"这次写没在账上"），按"**点名 + 放行 + 留痕**"处理。
+  //   ★ 判据仍是 T352 那条不变量：`applicable:false` **只许**表示「本项目不用任务系统」；
+  //     所以收集失败**不走** `applicable:false`，而是走 `basis:'unaddressable'`（applicable:true）。
+  const warnings = cov.unaddressable.length ? recordUnaddressableWarnings(cov.unaddressable, rels) : [];
   if (!cov.rootFeatureCount) {
     return {
       applicable: false,
@@ -687,6 +777,7 @@ export function assertSourceWriteRegistered(
       note:
         `本项目不用任务系统：${cov.totalFeatures} 条 feature 里，**0 条**的 source_root 指到 ${root} ` +
         `（判据：path.resolve(source_root) === 项目根）⇒ 任务闸不适用（放行）`,
+      warnings,
     };
   }
   const covering = cov.features;
@@ -804,6 +895,22 @@ export function assertSourceWriteRegistered(
     unclaimed.push({ rel, cands: states });
   }
   if (!checked) {
+    // ★ 2026-10-17：收集失败**不再抛**（`gate-principle.md` §二）。★ 但也不许混进
+    //   `files-not-in-design` 那句"都不在设计里"——那会变成**一句假话**（节点在，只是指不出文件）。
+    if (cov.unaddressable.length) {
+      return {
+        applicable: true, // ★ 本项目**有**任务系统 ⇒ 不许 applicable:false（T352 的不变量）
+        basis: 'unaddressable',
+        note:
+          `放行（收集失败）：本批 ${unmapped.length} 个文件**都不在任何"可寻址"的节点上**，` +
+          `其中 ${cov.unaddressable.length} 个文件节点**收集失败**（既无 path 也无 description）⇒ ` +
+          `闸对它们**是瞎的** ⇒ 按 \`gate-principle.md\` §二 **点名 + 放行 + 留痕**（★ 缺字段不损坏数据，只是"没在账上"）。\n` +
+          `★ 点名：\n${warnings.join('\n')}\n` +
+          `★ 依据读数：${cov.totalFeatures} 条 feature 里 ${cov.rootFeatureCount} 条 source_root 指到本根、` +
+          `${covering.length} 条收集到了 path→node 表（共 ${covering.reduce((s, c) => s + c.byPath.size, 0)} 条路径）。`,
+        warnings,
+      };
+    }
     return {
       applicable: true, // 本项目**有**任务系统，只是这批文件不在设计里 ⇒ 不是"不适用"，是"这次没有可挂的节点"
       basis: 'files-not-in-design',
@@ -812,7 +919,9 @@ export function assertSourceWriteRegistered(
         `也不在 semantic.files）⇒ 无任务可挂、放行。逐个点名：${unmapped.join(', ')}\n` +
         `  ★ 依据读数：${cov.totalFeatures} 条 feature 里 ${cov.rootFeatureCount} 条 source_root 指到本根、` +
         `${covering.length} 条收集到了 path→node 表（共 ${covering.reduce((s, c) => s + c.byPath.size, 0)} 条路径）。\n` +
-        `  ★ 若其中某条其实**已经在设计里**（只是节点缺 path/description）⇒ 那属于"收集失败"，本函数**会抛**而不是走到这里。`,
+        `  ★ 若其中某条其实**已经在设计里**（只是节点缺 path/description）⇒ 那属于"收集失败"：` +
+        `本函数**不抛**，而是**放行 + 把警告写进该 feature 的 annotations**（见 basis:'unaddressable' 那一支）。`,
+      warnings,
     };
   }
   if (!unclaimed.length) {
@@ -821,7 +930,9 @@ export function assertSourceWriteRegistered(
       basis: 'covered',
       note:
         `已领任务：${checked} 个设计节点上都有 state=claimed 的任务卡（覆盖 feature：${covering.map((c) => c.feature).join(', ')}` +
-        `${unmapped.length ? `；另有 ${unmapped.length} 个文件不在设计里、无任务可挂：${unmapped.join(', ')}` : ''}）`,
+        `${unmapped.length ? `；另有 ${unmapped.length} 个文件不在设计里、无任务可挂：${unmapped.join(', ')}` : ''}）` +
+        (warnings.length ? `\n★ 另有 ${cov.unaddressable.length} 个节点收集失败（已放行 + 留痕）：\n${warnings.join('\n')}` : ''),
+      warnings,
     };
   }
 
@@ -844,7 +955,8 @@ export function assertSourceWriteRegistered(
       `    reason: '从决策卡立卡 ${first.cands[0].nodeId}',\n` +
       `    agent: '<你的身份>',\n` +
       `    operations: [{ type:'task', op:'publish', id:'${first.cands[0].nodeId}' }] }\n` +
-      `  · ★ 该节点**没有 decision** ⇒ publish 会拒（"没有决策卡可翻"）⇒ 先写决策卡，再 publish。\n` +
+      `  · ★ 该节点**没有 decision / 太粗**（无后态判据）⇒ publish 会立 **L1 建构卡**（0 条期望，验收看"DSL 建构完整"）；` +
+      `有可判的后态判据 ⇒ **L2 实现卡**。两条都不收手写 summary。\n` +
       `  ② 有了卡（candidate）⇒ 领取：\n` +
       `  { feature: '${first.cands[0].feature}',\n` +
       `    reason: '开始实现 ${first.cands[0].nodeId}',\n` +
@@ -859,7 +971,8 @@ export function assertSourceWriteRegistered(
       `★ 拦的范围（只此一条）：项目根上有设计 feature 覆盖该文件（` +
       `source_root === 项目根 ∧ 该文件是它的文件节点）∧ 覆盖它的 feature 里**没有一条**在该节点上有一张 ` +
       `state='claimed' 的任务卡。\n` +
-      `  放行：项目无 feature 指向它 / 文件不是任何一条的节点（新建或未纳入设计）/ 已在任一条里 claim。`,
+      `  放行：项目无 feature 指向它 / 文件不是任何一条的节点（新建或未纳入设计）/ 已在任一条里 claim。` +
+      (warnings.length ? `\n★ 另：本批有 ${cov.unaddressable.length} 个节点**收集失败**（已按"放行 + 留痕"处理）：\n${warnings.join('\n')}` : ''),
   );
 }
 
