@@ -1,0 +1,2240 @@
+{
+  "id": "task_system_plan",
+  "type": "feature_diagram",
+  "feature": "task-system-plan",
+  "version": "0.2",
+  "title": "任务系统做进设计 DSL —— 用 DSL 写的方案（v2）",
+  "source_root": ".",
+  "status": "draft",
+  "geometry": {
+    "nodes": [
+      {
+        "id": "file_src_domain_task_schema_ts",
+        "type": "file",
+        "label": "task 格（节点上的任务对象）",
+        "path": "src/domain/task_schema.ts",
+        "arch_layer": "core",
+        "status": "draft",
+        "decision": {
+          "summary": "在 design/<f>.dsl.json 的几何节点上加 task 格：任务 = 设计侧对象，不挂 overlay",
+          "acceptance": "task 格能落在 design/<f>.dsl.json 上、过 validateDSL、且重建不抹",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/domain/task_schema.ts",
+              "why": "任务对象要有类型定义"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/task_schema.ts",
+              "symbol": "TaskState",
+              "why": "五态要是显式类型，不许散落字符串"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/task_schema.ts",
+              "symbol": "TaskSpec",
+              "why": "任务格的结构要有具名类型"
+            }
+          ],
+          "provenance": {
+            "kind": "defect",
+            "where": "静态体检【4】：缺 provenance",
+            "note": "★ 补登 —— 任务格的结构（五态 / TaskSpec）；该节点早于 provenance 这一维，原始出处见 git 历史（不编造）"
+          }
+        }
+      },
+      {
+        "id": "file_src_domain_task_machine_ts",
+        "type": "file",
+        "label": "状态机（五态 + 迁移判据）",
+        "path": "src/domain/task_machine.ts",
+        "arch_layer": "core",
+        "status": "draft",
+        "decision": {
+          "summary": "五态：候选 → 已领 → 已完成；另有 失效（target 没了）与被取代（replaces）",
+          "acceptance": "每条迁移都有触发条件，且 候选→已领 必须 CAS 原子写 owner",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/task_machine.ts",
+              "symbol": "cardStanding",
+              "why": "★ 讨论 2 · P30：『这张卡此刻处在哪种处境』要有**一个具名读数**（work/violated/blocked/satisfied/unknowable），否则接取闸与收口闸只能共用一条布尔（= 一处判据两用）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/task_machine.ts",
+              "symbol": "isSatisfied",
+              "why": "★ 讨论 2 · P30：收口侧要能**独立**被问（complete 与 patrol 的 missed_close 都要问『该收而没收吗』）⇒ 不许把它藏在『可领』函数的内部逻辑里"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/domain/task_machine.ts",
+              "symbol": "cardStanding",
+              "target": "judgeExpectations",
+              "why": "★ 五值读数 = 对着代码判 expectations（复用现成判定器，不新造第二把尺）",
+              "pending_change": "★★ 2026-10-17 用户拍 A：采纳\"抽 JudgePort\" ⇒ 这条期望描述的【现状】保留，但方向是把 target 换成 `JudgePort`（domain 定义、application 注入）。欠账 D-judge-port。"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/expectation.ts",
+              "symbol": "expectationPhase",
+              "why": "★ T10 收归：前态判据（edge-absent 等）的分类由「期望自带的 phase」决定，不再由状态机里的一份清单（NEGATIVE_KINDS，已删）决定 ⇒ 否则任务还没领就被误收口"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/task_machine.ts",
+              "symbol": "releaseIfExpired",
+              "why": "TTL 超时回收：claimed_at 不配超时就是死锁字段"
+            },
+            {
+              "kind": "file-exists",
+              "path": "src/domain/task_machine.ts",
+              "why": "★ 其余 4 个节点都对自己的 path 有 file-exists，唯此节点漏了 ⇒ 补上（做不到时 file-exists 判 fail = 红）"
+            },
+            {
+              "kind": "edge-exists",
+              "from": "src/domain/task_machine.ts",
+              "to": "src/domain/task_schema.ts",
+              "why": "★ geometry.edges 有 e_machine_to_schema，但 expectations 里没有对应判据 ⇒ 那条边只是装饰；补上后才可判"
+            }
+          ],
+          "provenance": {
+            "kind": "defect",
+            "where": "静态体检【4】：缺 provenance",
+            "note": "★ 补登 —— 状态机 + cardStanding 五值；该节点早于 provenance 这一维，原始出处见 git 历史（不编造）"
+          }
+        }
+      },
+      {
+        "id": "file_src_application_design_dsl_ops_task_ops_ts",
+        "type": "file",
+        "label": "task_ops（领取/释放/完成三个动作）",
+        "path": "src/application/design/dsl_ops/task_ops.ts",
+        "arch_layer": "service",
+        "status": "draft",
+        "decision": {
+          "summary": "claim / release / complete 三个 op，写 design/<f>.dsl.json 的 task 格",
+          "acceptance": "三个 op 各过一枚证；claim 在并发下不互相覆盖",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/design/dsl_ops/task_ops.ts",
+              "why": "动作要有落点"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/design/dsl_ops/task_ops.ts",
+              "symbol": "claimTask",
+              "target": "cardStanding",
+              "why": "★ 讨论 2 · P30：claim 读**可领**那一侧（work/violated 才可领）；satisfied 必拒（没活干不许领）"
+            },
+            {
+              "kind": "edge-exists",
+              "from": "src/application/design/dsl_ops/task_ops.ts",
+              "to": "src/domain/task_machine.ts",
+              "why": "op 层只能调状态机，不许自己判状态"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/design/dsl_ops/task_ops.ts",
+              "symbol": "completeTask",
+              "target": "isSatisfied",
+              "why": "★ 讨论 2 · P30 的结构判据：complete 读**可收口**那一侧（isSatisfied），★ 不许再与 claim 共用同一个判据 —— 共用会放行 violated 卡（后态全过、前态越权）"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/design/dsl_ops/task_ops.ts",
+              "symbol": "completeTask",
+              "target": "validateProgressEvidence",
+              "why": "★ 接点③（证据闸）：置 done 前必须过既有 validateProgressEvidence（overlay.ts）—— ★ 复用，不新造第二把证据尺"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/design/dsl_ops/task_ops.ts",
+              "symbol": "completeTask",
+              "target": "updateStatus",
+              "why": "★ 接点④（状态唯一入口）：状态落盘只许走既有 updateStatus（status_tools.ts），不在 task 侧另写一份写盘 —— ★ 复用"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/task_ops.ts",
+              "symbol": "publishTask",
+              "why": "立卡：从设计 DSL 抽出这一块 ⇒ 形成任务卡（= board 的发布动作）。★ 缺它则闸对'尚无任何 task'的 feature 不可满足"
+            }
+          ],
+          "provenance": {
+            "kind": "defect",
+            "where": "静态体检【4】：缺 provenance",
+            "note": "★ 补登 —— publish / claim / release / complete；该节点早于 provenance 这一维，原始出处见 git 历史（不编造）"
+          }
+        }
+      },
+      {
+        "id": "file_src_application_patrol_task_drift_ts",
+        "type": "file",
+        "label": "漂移巡检（live 每次重算后跑）",
+        "path": "src/application/patrol/task_drift.ts",
+        "arch_layer": "service",
+        "status": "draft",
+        "decision": {
+          "summary": "live 重算后对所有非 done 的卡跑 judgeExpectations ⇒ 抓「漏收口」与「应转失效」",
+          "acceptance": "两类异常都有计数出口；红时给出卡 id",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/patrol/task_drift.ts",
+              "why": "巡检要有落点"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/patrol/task_drift.ts",
+              "symbol": "patrolDrift",
+              "target": "judgeExpectations",
+              "why": "复用现成对拍器"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/patrol/task_drift.ts",
+              "symbol": "DriftReport",
+              "why": "要机器可读出口（不是只打印一句话）"
+            },
+            {
+              "kind": "edge-exists",
+              "from": "src/application/patrol/task_drift.ts",
+              "to": "src/domain/task_machine.ts",
+              "why": "★ geometry.edges 的 e_patrol_to_machine 无判据 ⇒ 补上；漂移判定只许经状态机，不许自己判状态"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/patrol/task_drift.ts",
+              "symbol": "patrolDrift",
+              "target": "releaseIfExpired",
+              "why": "★ 让 patrol 出的『应回收』与状态机回收**同一处**（两处各写一份回收逻辑 = 第二种权威）；做不到时 call-exists 判 fail = 红。[未核]：需确认索引会记跨文件调用边"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/patrol/task_drift.ts",
+              "symbol": "patrolDrift",
+              "target": "renderLiveFromDb",
+              "why": "★ 接点⑤（渲染唯一来源）：巡检的输入 = live 图（renderLiveFromDb，live_render.ts），不许自己拼一份 DB 读 —— ★ 复用，不新造第三个读端"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/patrol/task_drift.ts",
+              "symbol": "patrolDrift",
+              "target": "scanRevOf",
+              "why": "★ 接点⑥（判新旧）：报告必须铸上扫描版本 scanRevOf（scan_rev.ts），否则会拿旧实际判红 —— ★ 复用"
+            }
+          ],
+          "provenance": {
+            "kind": "defect",
+            "where": "静态体检【4】：缺 provenance",
+            "note": "★ 补登 —— 漂移巡检；该节点早于 provenance 这一维，原始出处见 git 历史（不编造）"
+          }
+        }
+      },
+      {
+        "id": "file_src_domain_discussion_log_ts",
+        "type": "file",
+        "label": "discussion 格（讨论登记）",
+        "path": "src/domain/discussion_log.ts",
+        "arch_layer": "core",
+        "status": "draft",
+        "decision": {
+          "summary": "micro / user_quote / conclusion / open[] / decided_at / supersedes；默认只渲染 micro + open 计数",
+          "acceptance": "展开条件是机器可判的（领取时 / 判失败需裁决时 / expand=discussion）",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/domain/discussion_log.ts",
+              "why": "讨论登记要有落点"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/discussion_log.ts",
+              "symbol": "renderMicro",
+              "why": "★ 默认渲染只出 micro 一行（字段级排除机制，「不直接展示」才不是空话）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/discussion_log.ts",
+              "symbol": "shouldExpand",
+              "why": "展开条件必须可判，否则又靠人记"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/task_schema.ts",
+              "symbol": "TaskDiscussion",
+              "why": "★ 讨论格复用 `task_schema` 的 `TaskDiscussion` 类型（原为 edge-exists discussion_log→task_schema）。★★ 2026-10-17 修正（M4）：那条边是 **type-only** ⇒ `judgeExpectations` 会给 `unsupported` ⇒ 而 `cardStanding` 对\"后态 unsupported>0\"一律 `unknowable` ⇒ **该节点一旦立卡就是永久死卡**。⇒ 换成可判的 `symbol-exists`（类型确实存在），意图不变、可判。",
+              "replaced_from": {
+                "kind": "edge-exists",
+                "from": "src/domain/discussion_log.ts",
+                "to": "src/domain/task_schema.ts",
+                "why": "★ T3/G2：本块的唯一依赖是 `import type { TaskDiscussion } from './task_schema.js'`（type-only，运行时擦除）。按设计 type-only **不建依赖边**（infrastructure/index/symbols.ts:435）⇒ 正确判定是 **unsupported（判不了）**，**不是 fail**（假红）。★ 这条判据正是 §83.3 里'不修就先别补'的那条边：expectations.ts:337 的 type-only 冤案排解是死代码时，它一跑就是假红（把合法的 import type 读成'不存在'）；本笔先把死代码修掉，再落这条判据 ⇒ 判据从此诚实。"
+              }
+            }
+          ],
+          "provenance": {
+            "kind": "defect",
+            "where": "静态体检【4】：缺 provenance",
+            "note": "★ 补登 —— 讨论登记格；该节点早于 provenance 这一维，原始出处见 git 历史（不编造）"
+          }
+        }
+      },
+      {
+        "id": "file_src_application_design_board_pool_ts",
+        "type": "file",
+        "label": "上架读端（待接取池）",
+        "path": "src/application/design/board/pool.ts",
+        "status": "draft",
+        "decision": {
+          "summary": "把各节点 task 格按 state 收集成\"池\"：一条只读调用就能看到 candidate / claimed / done",
+          "acceptance": "listPool 返回 BoardView{byState,total,folded} 且 shown+folded==total；能经 get_dsl 的查询触达",
+          "provenance": {
+            "kind": "friction",
+            "where": "docs/_extract/flow-check-1.md 第③步「完全没有读端」+ frictions.jsonl",
+            "note": "★ 今天实测：卡挂了以后只能 node -e 读到 state=candidate，没有任何读端"
+          },
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/design/board/pool.ts",
+              "why": "读端要有个家"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/board/pool.ts",
+              "symbol": "BoardView",
+              "why": "池的读数是具名类型（不许散装对象 —— 否则又是\"形状没人定\"）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/board/pool.ts",
+              "symbol": "listPool",
+              "why": "★ 唯一的读取入口；没有它，pool 就又只能 node -e 看"
+            }
+          ]
+        }
+      },
+      {
+        "id": "file_src_application_write_gate_ts",
+        "type": "file",
+        "label": "写源码前的任务闸",
+        "path": "src/application/write_gate.ts",
+        "status": "draft",
+        "decision": {
+          "summary": "写源码前必须挂任务，且【挂的是你自己的任务】—— 现在只判\"该节点有 claimed 卡\"，不问 owner、不问时效",
+          "acceptance": "写链调用时能拿到 actor；判定为「该节点存在 claimed 卡 ∧ owner === actor」；owner 不符 ⇒ 提醒/阻断（按 gate-principle 判它是否损坏数据）",
+          "provenance": {
+            "kind": "friction",
+            "where": "docs/_extract/static-review-1.md 的 A7 + A1（叠加）：巡检不跑 ⇒ 卡永不过期 ⇒ 别人领的卡 = 永久万能钥匙",
+            "note": "★ 活证据：今天我自己裸改 10+ 个源文件、一张卡都没挂、闸一次都没拦 —— 因为我直接写盘，闸压根没被调用"
+          },
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/write_gate.ts",
+              "symbol": "WriteActor",
+              "why": "★ 写闸要知道\"谁在写\" —— 现在 assertSourceWriteRegistered(projectRoot, files) 签名里没有身份维度"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/write_gate.ts",
+              "symbol": "assertSourceWriteRegisteredFor",
+              "why": "★ 按 actor 判定的入口：要求\"覆盖该文件的节点上存在 claimed 卡，且 owner === actor\"（现在只要求\"存在 claimed 卡\"）"
+            },
+            {
+              "kind": "file-exists",
+              "path": "src/application/write_gate.ts",
+              "why": "节点地址（已存在，作为基线）"
+            }
+          ]
+        },
+        "task": {
+          "id": "file_src_application_write_gate_ts",
+          "summary": "写闸加\"谁在写\"这一维：覆盖该文件的节点上须有 claimed 卡，且 owner === 本次写入者",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/write_gate.ts",
+              "symbol": "WriteActor",
+              "why": "★ 写闸要知道\"谁在写\" —— 现在 assertSourceWriteRegistered(projectRoot, files) 签名里没有身份维度"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/write_gate.ts",
+              "symbol": "assertSourceWriteRegisteredFor",
+              "why": "★ 按 actor 判定的入口：要求\"覆盖该文件的节点上存在 claimed 卡，且 owner === actor\"（现在只要求\"存在 claimed 卡\"）"
+            }
+          ],
+          "state": "done",
+          "owner": "main-agent",
+          "claimed_at": "2026-10-17T14:32:42.228Z",
+          "evidence": [
+            {
+              "kind": "attestation",
+              "at": "2026-10-17T14:32:42.229Z",
+              "by": "main-agent（A7）",
+              "verdict": "pass",
+              "why": "对拍 34/26/5/3 → 34/28/3/3（卡的两条判据红变绿）；三种情形实测：匹配放行 / 不匹配阻断 / 无 actor 放行+留痕；t352 18/0 未退化"
+            }
+          ]
+        }
+      },
+      {
+        "id": "file_src_domain_expectation_ts",
+        "type": "file",
+        "label": "期望（判据的类型定义处）",
+        "path": "src/domain/expectation.ts",
+        "status": "draft",
+        "decision": {
+          "summary": "六种 kind + phase(pre/post) + 判定入口的契约；★ 新增 kind 漏标 phase 编不过",
+          "acceptance": "EXPECTATION_KINDS 是唯一清单；phase 由 Record<kind,…> 穷尽；非法 kind 抛错并列出合法值",
+          "provenance": {
+            "kind": "defect",
+            "where": "静态扫描：设计缺口 D1（要改的文件无节点）",
+            "note": "★ 补它是为了\"设计覆盖完整\"——让写闸能认这文件、增量验证能命中它；不是因为它有红"
+          },
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/expectation.ts",
+              "symbol": "EXPECTATION_KINDS",
+              "why": "★ 六种 kind 的唯一清单（填卡时查它，不许拟造）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/expectation.ts",
+              "symbol": "expectationPhase",
+              "why": "★ 分类由期望自带 ⇒ 状态机不必\"记得剔除\"前态判据"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/expectation.ts",
+              "symbol": "postExpectations",
+              "why": "★ 满足度只由后态算（这是 edge-absent 不污染满足度的关键）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/expectation.ts",
+              "symbol": "assertValidExpectations",
+              "why": "运行时抛错并列出合法值 ⇒ 拟造不出来"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/expectation.ts",
+              "symbol": "expectationSubjectPath",
+              "why": "★ 一只红落在谁的 path 上 —— cardStanding 的归属判据靠它"
+            }
+          ]
+        }
+      },
+      {
+        "id": "file_src_domain_geometry_ts",
+        "type": "file",
+        "label": "节点/边的结构",
+        "path": "src/domain/geometry.ts",
+        "status": "draft",
+        "decision": {
+          "summary": "Node 类型（含正式字段 path）+ Edge + decision 的形状",
+          "acceptance": "path 优先、description 回落（与 write_gate / task_machine / overlay 同一把尺）",
+          "provenance": {
+            "kind": "defect",
+            "where": "静态扫描：设计缺口 D1（要改的文件无节点）",
+            "note": "★ 补它是为了\"设计覆盖完整\"——让写闸能认这文件、增量验证能命中它；不是因为它有红"
+          },
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/geometry.ts",
+              "symbol": "Node",
+              "why": "★ 节点的形状（path 是正式字段 —— 写端造得出\"只带路径\"的节点）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/geometry.ts",
+              "symbol": "NodeDecision",
+              "why": "★ 决策卡的形状：summary + acceptance + expectations"
+            }
+          ]
+        }
+      },
+      {
+        "id": "file_src_application_design_dsl_ops_node_ops_ts",
+        "type": "file",
+        "label": "节点的写入端",
+        "path": "src/application/design/dsl_ops/node_ops.ts",
+        "status": "draft",
+        "decision": {
+          "summary": "node add/update；★ data 键集由 NODE_DATA_KEYS 静态维护，interface 改了不跟则 tsc 红",
+          "acceptance": "path 非空/相对路径/kind 合法的写端校验；decision.update 可在任意卡状态下改（★ A6 待收）",
+          "provenance": {
+            "kind": "defect",
+            "where": "静态扫描：设计缺口 D1（要改的文件无节点）",
+            "note": "★ 补它是为了\"设计覆盖完整\"——让写闸能认这文件、增量验证能命中它；不是因为它有红"
+          },
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/op_data_spec.ts",
+              "symbol": "NODE_DATA_KEYS",
+              "why": "★ data 键的唯一清单（含 path）—— 写端能造什么由它钉死；★ 它住在 op_data_spec.ts，不在 node_ops.ts"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/node_ops.ts",
+              "symbol": "addNode",
+              "why": "节点新增入口"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/node_ops.ts",
+              "symbol": "updateNode",
+              "why": "节点更新入口"
+            }
+          ]
+        }
+      },
+      {
+        "id": "file_src_application_design_dsl_ops_op_data_spec_ts",
+        "type": "file",
+        "label": "DSL 操作的 data 契约",
+        "path": "src/application/design/dsl_ops/op_data_spec.ts",
+        "status": "draft",
+        "decision": {
+          "summary": "edit_dsl 各 type/op 的 data 键集（NODE_DATA_KEYS / OP_SPECS），由类型级断言防漂移",
+          "acceptance": "interface 改了而清单没跟 ⇒ tsc 红（不靠\"有人发现\"）",
+          "provenance": {
+            "kind": "defect",
+            "where": "静态体检【1】/【D1】：它是 data 契约定义处，却不在设计里",
+            "note": "补建；目的是让写端/增量验证能认到它"
+          },
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/op_data_spec.ts",
+              "symbol": "OP_SPECS",
+              "why": "★ 四个 op 的唯一清单（publish/claim/release/complete）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/op_data_spec.ts",
+              "symbol": "NodeKeysMissingFromList",
+              "why": "★ 类型级断言：interface 有、清单没有 ⇒ tsc 红"
+            }
+          ]
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "e_ops_to_machine",
+        "from": "file_src_application_design_dsl_ops_task_ops_ts",
+        "to": "file_src_domain_task_machine_ts",
+        "label": "imports",
+        "type": "solid"
+      },
+      {
+        "id": "e_machine_to_schema",
+        "from": "file_src_domain_task_machine_ts",
+        "to": "file_src_domain_task_schema_ts",
+        "label": "imports",
+        "type": "solid"
+      },
+      {
+        "id": "e_patrol_to_machine",
+        "from": "file_src_application_patrol_task_drift_ts",
+        "to": "file_src_domain_task_machine_ts",
+        "label": "imports",
+        "type": "solid"
+      },
+      {
+        "id": "e_schema_to_expectation",
+        "from": "file_src_domain_task_schema_ts",
+        "to": "file_src_domain_expectation_ts",
+        "label": "imports",
+        "type": "solid"
+      },
+      {
+        "id": "e_schema_to_geometry",
+        "from": "file_src_domain_task_schema_ts",
+        "to": "file_src_domain_geometry_ts",
+        "label": "type-only",
+        "type": "solid",
+        "note": "★ M4：type-only 边，判定器给 unsupported ⇒ 不要拿它做要求（已把 discussion_log 那条期望换成 symbol-exists）"
+      },
+      {
+        "id": "e_machine_to_expectation",
+        "from": "file_src_domain_task_machine_ts",
+        "to": "file_src_domain_expectation_ts",
+        "label": "imports",
+        "type": "solid"
+      },
+      {
+        "id": "e_geometry_to_schema",
+        "from": "file_src_domain_geometry_ts",
+        "to": "file_src_domain_task_schema_ts",
+        "label": "type-only",
+        "type": "solid",
+        "note": "★ M4：type-only 边，判定器给 unsupported ⇒ 不要拿它做要求（已把 discussion_log 那条期望换成 symbol-exists）"
+      },
+      {
+        "id": "e_log_to_schema",
+        "from": "file_src_domain_discussion_log_ts",
+        "to": "file_src_domain_task_schema_ts",
+        "label": "type-only",
+        "type": "solid",
+        "note": "★ M4：type-only 边，判定器给 unsupported ⇒ 不要拿它做要求（已把 discussion_log 那条期望换成 symbol-exists）"
+      },
+      {
+        "id": "e_ops_to_expectation",
+        "from": "file_src_application_design_dsl_ops_task_ops_ts",
+        "to": "file_src_domain_expectation_ts",
+        "label": "imports",
+        "type": "solid"
+      },
+      {
+        "id": "e_ops_to_schema",
+        "from": "file_src_application_design_dsl_ops_task_ops_ts",
+        "to": "file_src_domain_task_schema_ts",
+        "label": "imports",
+        "type": "solid"
+      },
+      {
+        "id": "e_nodeops_to_expectation",
+        "from": "file_src_application_design_dsl_ops_node_ops_ts",
+        "to": "file_src_domain_expectation_ts",
+        "label": "imports",
+        "type": "solid",
+        "note": "★ M10：原 id e_ops_to_expectation 与另一条边重复（下游 overlay.edges 按 id 键控 ⇒ 会串）；已改为 e_nodeops_to_expectation"
+      },
+      {
+        "id": "e_drift_to_schema",
+        "from": "file_src_application_patrol_task_drift_ts",
+        "to": "file_src_domain_task_schema_ts",
+        "label": "imports",
+        "type": "solid"
+      },
+      {
+        "id": "e_drift_to_expectation",
+        "from": "file_src_application_patrol_task_drift_ts",
+        "to": "file_src_domain_expectation_ts",
+        "label": "imports",
+        "type": "solid"
+      },
+      {
+        "id": "e_gate_to_schema",
+        "from": "file_src_application_write_gate_ts",
+        "to": "file_src_domain_task_schema_ts",
+        "label": "imports",
+        "type": "solid"
+      },
+      {
+        "id": "e_spec_to_ops",
+        "from": "file_src_application_design_dsl_ops_op_data_spec_ts",
+        "to": "file_src_application_design_dsl_ops_node_ops_ts",
+        "label": "imports",
+        "type": "solid"
+      }
+    ]
+  },
+  "semantic": {
+    "files": [
+      {
+        "path": "src/domain/task_schema.ts",
+        "responsibility": "任务格的形状：五态 + owner/claimed_at/replaces/evidence/discussion",
+        "id": "file_src_domain_task_schema_ts",
+        "language": "ts"
+      },
+      {
+        "path": "src/domain/task_machine.ts",
+        "responsibility": "状态迁移与可领性判定（含前态判据剔除、CAS、TTL 回收）",
+        "id": "file_src_domain_task_machine_ts",
+        "language": "ts"
+      },
+      {
+        "path": "src/application/design/dsl_ops/task_ops.ts",
+        "responsibility": "claim / release / complete 三个动作，写设计副作用",
+        "id": "file_src_application_design_dsl_ops_task_ops_ts",
+        "language": "ts"
+      },
+      {
+        "path": "src/application/patrol/task_drift.ts",
+        "responsibility": "漂移巡检：漏收口 / 应转失效 / 双写哨兵，出机器可读报告",
+        "id": "file_src_application_patrol_task_drift_ts",
+        "language": "ts"
+      },
+      {
+        "path": "src/domain/discussion_log.ts",
+        "responsibility": "讨论登记：微缩在前、按需展开、版本链（decided_at/supersedes）",
+        "id": "file_src_domain_discussion_log_ts",
+        "language": "ts"
+      }
+    ]
+  },
+  "layers": [
+    {
+      "id": "core",
+      "name": "core",
+      "count": 3
+    },
+    {
+      "id": "service",
+      "name": "service",
+      "count": 2
+    }
+  ],
+  "annotations": [],
+  "task_plan": {
+    "note": "★ 这份 JSON 本身 = 讨论桌：每一条'该做什么'都写成了六种 kind 的可判期望。",
+    "plan_to_work": {
+      "note": "★ 这不是『按顺序执行』的清单，而是一次**对拍**：把方案里的全部 expectations 抽出来交给 judgeExpectations，fail 的条**就是**待实现的活（★ **无 fail 且 unsupported==0** ⇒ 才叫已实现 —— 与同段 `green_done.pass_when` 同式；原写\"无 fail ⇒ 已实现\"会漏掉 unsupported，M16 指出）。",
+      "extract": {
+        "sel": "geometry.nodes[].decision.expectations",
+        "item_shape": "{ node_id, node_label, expectation }",
+        "count_expr": "len(flatten(n.decision.expectations for n in geometry.nodes))",
+        "rule": "每条 expectation 生成一条 item；node_id = 其宿主节点 id（与 judgeExpectations 的入参同形）",
+        "runner": "certs/.work/probe-plan-detail.mjs"
+      },
+      "judge": {
+        "entry": "judgeExpectations",
+        "path": "src/application/design/intent/expectations.ts",
+        "call": "judgeExpectations(source_root, items)",
+        "report": "ExpectationsReport{checked,passed,failed,unsupported,conflicts,items}"
+      },
+      "work_rule": {
+        "expr": "work = [i for i in report.items if i.verdict == 'fail']",
+        "why": "fail = 此刻代码里没有该期望所要求的事实 ⇒ 缺什么造什么（file-exists⇒造文件 · symbol-exists⇒补符号 · call-exists⇒接调用 · edge-exists⇒接依赖）",
+        "unsupported_not_work": "verdict=='unsupported' 既不算活也不能算绿（expectations.ts 纪律 3）",
+        "runner": "certs/.work/probe-plan-detail.mjs"
+      },
+      "red_green": {
+        "red_now": {
+          "cmd": "node --input-type=module -e \"import fs from 'node:fs';import{judgeExpectations}from'./dist/src/application/design/intent/expectations.js';const d=JSON.parse(fs.readFileSync('docs/task-system-plan.dsl.json','utf8'));const it=d.geometry.nodes.flatMap(n=>(n.decision?.expectations||[]).map(e=>({node_id:n.id,node_label:n.label||n.id,expectation:e})));const r=await judgeExpectations('.',it);console.log(JSON.stringify({checked:r.checked,passed:r.passed,failed:r.failed,unsupported:r.unsupported}));process.exit(r.checked===it.length&&r.passed===0&&r.failed===r.checked&&r.unsupported===0?0:1)\"",
+          "pass_when": "exit==0 ⇒ checked==count_expr 且 passed==0 且 failed==checked 且 unsupported==0（全红，红的条数 == 可数项 count_expr）",
+          "meaning": "现在应为红：方案里的文件/符号/调用/边在真仓都还没有 ⇒ 期望全 fail。★ 这不是失败，是**待实现的活**。"
+        },
+        "green_done": {
+          "cmd": "node --input-type=module -e \"import fs from 'node:fs';import{judgeExpectations}from'./dist/src/application/design/intent/expectations.js';const d=JSON.parse(fs.readFileSync('docs/task-system-plan.dsl.json','utf8'));const it=d.geometry.nodes.flatMap(n=>(n.decision?.expectations||[]).map(e=>({node_id:n.id,node_label:n.label||n.id,expectation:e})));const r=await judgeExpectations('.',it);console.log(JSON.stringify({checked:r.checked,failed:r.failed,unsupported:r.unsupported}));process.exit(r.failed===0&&r.unsupported===0?0:1)\"",
+          "pass_when": "exit==0 ⇒ failed==0 且 unsupported==0（方案已被实现）",
+          "meaning": "绿 = 活干完了。★ unsupported>0 不算绿（判不了≠通过）"
+        }
+      },
+      "reading_now": {
+        "at": "2026-10-16",
+        "method": "实跑 judgeExpectations（本笔亲手跑，非推断）",
+        "checked": 25,
+        "passed": 12,
+        "failed": 12,
+        "unsupported": 1,
+        "conflicts": 0,
+        "note": "★ 已实现两块：第一块（task_schema + task_machine，共 9 条）+ 第二块（discussion_log，共 4 条 = 3 绿 + 1 判不了[type-only 依赖边，T3 起显式判 unsupported]）= 13 条；余 2 块 12 条仍红（task_ops 5 + task_drift 7）= 剩下的活。",
+        "note_readings": "★ 两处读数都要看（同一入口 certs/.work/probe-plan-detail.mjs，差别只在 root）：① 真仓 root：passed 10 / failed 12 / unsupported 3 —— 3 条判不了 = 状态机节点的 call-exists + edge-exists（新文件还没进真仓 cache.db）+ discussion_log 的 edge-exists（同理：真仓索引里还没有 discussion_log.ts）；② 重算后的 root（临时目录 + 独立 AGENT_IO_HOME）：passed 12 / failed 12 / unsupported 1 —— 那 1 条 = discussion_log→task_schema 的 **type-only** 依赖（T3/G2：按设计不建依赖边 ⇒ 正确判定是『判不了』，**不是 fail** 的假红）。★ 所以『12 绿』的前提是索引重算过（= 路线图第 ④ 步）。",
+        "stale_criteria": "★ 本字段改动后，同目录 red_green.red_now 的 pass_when（『passed==0 且 failed==checked』= 全红）对**已实现的两块**已不成立 ⇒ 它现在只是『开工前』的判据，不再是『此刻』的判据。"
+      },
+      "block_readings": {
+        "note": "★ 逐块读数（同一入口 probe-plan-detail.mjs；★『红』= verdict=='fail'，unsupported 单列——它既不算活也不算绿）。",
+        "at": "2026-10-16",
+        "items": [
+          {
+            "node": "file_src_domain_task_schema_ts",
+            "label": "task 格",
+            "red": 0,
+            "green": 3,
+            "unsupported": 0,
+            "block": "第一块（已实现）"
+          },
+          {
+            "node": "file_src_domain_task_machine_ts",
+            "label": "状态机",
+            "red": 0,
+            "green": 4,
+            "unsupported": 2,
+            "block": "第一块（已实现）"
+          },
+          {
+            "node": "file_src_domain_discussion_log_ts",
+            "label": "discussion 格",
+            "red": 0,
+            "green": 3,
+            "unsupported": 0,
+            "block": "第二块（本笔实现）"
+          },
+          {
+            "node": "file_src_application_design_dsl_ops_task_ops_ts",
+            "label": "task_ops",
+            "red": 5,
+            "green": 0,
+            "unsupported": 0,
+            "block": "第三块（未做）"
+          },
+          {
+            "node": "file_src_application_patrol_task_drift_ts",
+            "label": "漂移巡检",
+            "red": 7,
+            "green": 0,
+            "unsupported": 0,
+            "block": "第四块（未做）"
+          }
+        ]
+      }
+    },
+    "constructs_wiring": {
+      "note": "★ 攻点三『接法』：task_plan 里与 闸/对拍/证据/状态/渲染/新旧 相接处，逐条对上**既有构件**；每条给一条断言或 read。★ 6 条全部复用，无一新造。",
+      "entries": [
+        {
+          "touchpoint": "①闸 —— 实现本方案要落 src/ 新文件时，写路径必须过任务闸",
+          "construct": "assertSourceWriteRegistered",
+          "construct_path": "src/application/write_gate.ts",
+          "form": "read",
+          "read": "落盘前 assertSourceWriteRegistered(project_root, touched_files).applicable==true ⇒ 必须有 design feature 指向它；否则放行（不阻断非设计区改动）",
+          "reuse": true,
+          "why_reuse": "闸已在写路径上；task 侧只需**被它覆盖**，不自建第二个闸"
+        },
+        {
+          "touchpoint": "②对拍 —— 领取校验 + 巡检判定都用对拍器",
+          "construct": "judgeExpectations",
+          "construct_path": "src/application/design/intent/expectations.ts",
+          "form": "expectation",
+          "expr": "call-exists cardStanding→judgeExpectations（node2） 与 patrolDrift→judgeExpectations（node4）",
+          "reuse": true,
+          "why_reuse": "对拍器只此一把；本方案只加**新的 expectations**，不加新的判定器",
+          "runner": "certs/.work/probe-plan-detail.mjs",
+          "runner_note": "★ 这些 call-exists / edge-exists 由对拍脚本跑（不是\"没人判\"）—— 2026-10-17 补标"
+        },
+        {
+          "touchpoint": "③证据 —— 置 done 前必须带一条证据",
+          "construct": "validateProgressEvidence",
+          "construct_path": "src/domain/overlay.ts",
+          "form": "expectation",
+          "expr": "call-exists completeTask→validateProgressEvidence（node3）",
+          "reuse": true,
+          "why_reuse": "三档证据（expectations/reading/attestation）已是全仓唯一证据尺；★ 不新造 task 专用证据格式",
+          "runner": "certs/.work/probe-plan-detail.mjs",
+          "runner_note": "★ 这些 call-exists / edge-exists 由对拍脚本跑（不是\"没人判\"）—— 2026-10-17 补标"
+        },
+        {
+          "touchpoint": "④状态 —— 状态落盘的唯一入口",
+          "construct": "updateStatus",
+          "construct_path": "src/application/design/dsl_ops/status_tools.ts",
+          "form": "expectation",
+          "expr": "call-exists completeTask→updateStatus（node3）",
+          "reuse": true,
+          "why_reuse": "updateStatus 已内含『先过闸再落盘』；task 侧复用，不另写一份写盘",
+          "runner": "certs/.work/probe-plan-detail.mjs",
+          "runner_note": "★ 这些 call-exists / edge-exists 由对拍脚本跑（不是\"没人判\"）—— 2026-10-17 补标"
+        },
+        {
+          "touchpoint": "⑤渲染 —— 巡检输入 = live 图",
+          "construct": "renderLiveFromDb",
+          "construct_path": "src/infrastructure/index/live_render.ts",
+          "form": "expectation",
+          "expr": "call-exists patrolDrift→renderLiveFromDb（node4）",
+          "reuse": true,
+          "why_reuse": "live 图的唯一来源是 renderLiveFromDb；★ 巡检不许自己拼一份 DB 读 [未核]：连线方向（live 触发 patrol vs patrol 自取 live）待裁，见 OQ7",
+          "runner": "certs/.work/probe-plan-detail.mjs",
+          "runner_note": "★ 这些 call-exists / edge-exists 由对拍脚本跑（不是\"没人判\"）—— 2026-10-17 补标"
+        },
+        {
+          "touchpoint": "⑥新旧 —— 报告必须带扫描版本",
+          "construct": "scanRevOf",
+          "construct_path": "src/infrastructure/index/scan_rev.ts",
+          "form": "expectation",
+          "expr": "call-exists patrolDrift→scanRevOf（node4）",
+          "reuse": true,
+          "why_reuse": "判『设计 vs 实际』新旧只此一把尺（_sync.scanRev）；报告不带它就可能是拿旧实际判红",
+          "runner": "certs/.work/probe-plan-detail.mjs",
+          "runner_note": "★ 这些 call-exists / edge-exists 由对拍脚本跑（不是\"没人判\"）—— 2026-10-17 补标"
+        }
+      ]
+    },
+    "invariants": [
+      {
+        "covered_by": null,
+        "debt": "D-invariant-0",
+        "note": "★ 无 check；且\"实际侧只有事实\"目前没有读数能判",
+        "text": "任务 = 意图 ⇒ 住设计侧；实际侧只有事实",
+        "criterion": false
+      },
+      {
+        "covered_by": null,
+        "debt": "D-invariant-1",
+        "note": "★★ DSL 自己违反了这条：reading_now / block_readings / layers[].count 都是读数快照（M8 指出）",
+        "text": "只落意图与事件，不落读数快照、不落校验结果",
+        "criterion": false
+      },
+      {
+        "covered_by": "invariant_unjudgeable[0]",
+        "text": "一处权威 + 一处渲染（同一批数据不许两处都存）",
+        "criterion": false,
+        "debt_note": "★ 2026-10-18：原 debt:\"OQ4\" —— OQ4 是【未决项编号】不是台账债号 ⇒ 删（covered_by 已指向 invariant_unjudgeable[0]，属\"判不了但已记账\"）。★ 这条是闸 C 抓出来的。"
+      },
+      {
+        "covered_by": "invariant_checks[1]",
+        "text": "设计侧不复制事实（能由 DB 现算的字段不许落盘）",
+        "criterion": false
+      },
+      {
+        "covered_by": "invariant_checks[0]",
+        "text": "前态判据（edge-absent 一类）不得用作「已满足」的判据",
+        "criterion": false
+      },
+      {
+        "covered_by": "invariant_checks[2]",
+        "text": "被未决项挡住的迁移：state.kind=\"blocked\" 必须命中未结题的 OQ",
+        "criterion": false
+      },
+      {
+        "covered_by": "invariant_checks[3]",
+        "text": "discussion 格：微缩在前、按需展开（user_quote 到不了默认视野）",
+        "criterion": false
+      }
+    ],
+    "invariant_checks": [
+      {
+        "invariant": "★ 前态判据（edge-absent 一类）不得用作「已满足」的判据",
+        "check": "★ T10 收归后重钉（原判据钉的是补丁 NEGATIVE_KINDS 本身，已随补丁删除）：① **分类由期望自带的 phase 决定** —— `src/domain/expectation.ts` 里有 `export function expectationPhase`，且其 kind⇒phase 总表把 `'edge-absent'` 标成 `'pre'`（总表用 `Record<Expectation['kind'],…>` ⇒ 新增 kind 漏标 phase **编不过**，这层由 ts 门兜）；② **补丁确实已删** —— `src/domain/task_machine.ts` 里**不再有** `export const NEGATIVE_KINDS` / `export function positiveExpectations` / `export function isNegativeExpectation`（只看 export 声明，**不误伤**解释收归的注释）。两者**同时**成立才算过（只判『某个符号存在』是空判据）。",
+        "cmd": "node -e \"const fs=require('fs');const e=fs.readFileSync('src/domain/expectation.ts','utf8');const m=fs.readFileSync('src/domain/task_machine.ts','utf8');const a=/export function expectationPhase/.test(e);const b=/edge-absent'\\s*:\\s*'pre'/.test(e);const c=!/export (const|function) (NEGATIVE_KINDS|positiveExpectations|isNegativeExpectation)/.test(m);console.log('phaseFn='+a+' map=edge-absent:pre='+b+' patchGone='+c);process.exit(a&&b&&c?0:1)\"",
+        "red_when": "exit!=0 ⇒ 要么分类退回外部清单（phase 没了），要么补丁还留在状态机里（『前态判据』又变成一处需记得的清单）"
+      },
+      {
+        "invariant": "设计侧不复制事实（能由 DB 现算的字段不许落盘）",
+        "check": "task 格里不得出现 line/loc/hash/sha1/reads/call_count 等可由 DB 现算的键",
+        "cmd": "node -e \"const fs=require('fs');const d=JSON.parse(fs.readFileSync('docs/task-system-plan.dsl.json','utf8'));const bad=['line','lines','loc','hash','sha1','reads','call_count'];const s=JSON.stringify(d.geometry.nodes);process.exit(bad.some(k=>s.includes('\\\"'+k+'\\\"'))?1:0)\"",
+        "red_when": "exit!=0 ⇒ task 格落了快照、复制了事实"
+      },
+      {
+        "invariant": "★ 被未决项挡住的迁移：state.kind=\"blocked\" 必须命中未结题的 OQ（否则该状态是一句没人读的字符串）",
+        "check": "收集所有 transition.state.kind===\"blocked\" 的 by 取值；每条都要在 task_plan.open_questions 里找到编号前缀相同的一条。★ 代码侧同形：TransitionState（task_machine.ts）—— 声明 blocked 必须带 by，且 applicableTransitions 只认 ready。",
+        "cmd": "node -e \"const fs=require('fs');const d=JSON.parse(fs.readFileSync('docs/task-system-plan.dsl.json','utf8'));const oqs=(d.task_plan.open_questions||[]).map(s=>(String(s).match(/^OQ[0-9]+/)||[''])[0]).filter(Boolean);const bl=(d.task_plan.state_machine.transitions||[]).map(t=>t.state&&t.state.kind==='blocked'?t.state.by:null).filter(Boolean);console.log('OQ='+JSON.stringify(oqs),'blocked='+JSON.stringify(bl));process.exit(bl.every(x=>oqs.includes(x))?0:1)\"",
+        "red_when": "exit!=0 ⇒ 某条迁移声称被 X 挡住，但 X 不在 open_questions 里（悬空引用）；或 blocked 却没写 by"
+      },
+      {
+        "invariant": "★ discussion 格「微缩在前、按需展开」：默认渲染只出 micro + open 计数（user_quote 等**结构上**到不了默认视野），且展开的三个触发（claim / judge-failed / explicit）**机器可判**",
+        "check": "跑本块的端到端夹具（真讨论 ← docs/discussion-log.md §①，灌成 TaskDiscussion 再取出来）：① renderMicro 的输出键 == MICRO_KEYS 且白名单外键数 == 0、输出正文里不含 user_quote 的任一段；② shouldExpand 在三种触发下 == true、无触发 == false、discussion 为空 == false。★ 若只把这三条写在 decision.acceptance 的**散文**里，就是『靠人记』—— 本 check 把它变成一条**有 exit code 的判据**。",
+        "cmd": "node certs/.work/probe-discussion-e2e.mjs",
+        "red_when": "exit!=0 ⇒ 要么微缩把 user_quote 带出来了（『不直接展示』变空话 / 字段级排除失效），要么展开条件不再机器可判"
+      }
+    ],
+    "invariant_checks_runner": "scripts/run-invariant-checks.mjs —— ★ 上面 invariant_checks 里每条 cmd 的**执行者**（T4 / G5）。判据：`npm run invariants` 逐条真跑 cmd（原样交 shell，不重写），exit code 0 ⇒ PASS，非 0 ⇒ FAIL，任一 FAIL ⇒ exit 1；★ 有判据但**无 cmd** 也判 FAIL（『判据没有执行者 = 等于没有』不许从 DSL 挪进 runner 藏起来）。",
+    "invariant_unjudgeable": [
+      "「一处权威 + 一处渲染（同一批数据不许两处都存）」—— 落不成单条读数（要判『两处』先要知道谁是权威）⇒ 列 OQ4，不进 invariant_checks"
+    ],
+    "state_machine": {
+      "states": [
+        "candidate",
+        "claimed",
+        "done",
+        "void"
+      ],
+      "transitions": [
+        {
+          "id": "t_claim",
+          "from": "candidate",
+          "to": "claimed",
+          "guard": {
+            "clauses": [
+              "isClaimable(cardStanding(card)) === true —— ★ 五值读数里的 work / violated 两格（有活干、或有违约要拆）",
+              "★ 分区口径：phase=post 供满足度，phase=pre 供违约轴；satisfied **不在可领之列**（没活干不许领）；blocked / unknowable 都拒（依赖未做 / 判不了，拒因分别点名）",
+              "★ 集齐判据要用**全部设计节点**（blocked 的归属 = 红的主体 path 落在谁头上、那个节点做没做完）",
+              "target 在 DB 存在（不存在则走 t_void）",
+              "CAS: UPDATE tasks SET owner=?,state='claimed' WHERE id=? AND state='candidate' AND owner IS NULL 的 changes === 1",
+              "★★★ 归属判据（2026-10-17 重写，判据只住 RED_DISPOSITION 一处）：每条红先分类成 own / orphan / dep-pending / dep-done；own 与 orphan = 本卡能改（claim），dep-pending 与 dep-done = 改不动（wait）。blocked ⟺ 没有一条能改；否则 work。★ dep-done 也算 wait：闸只认该节点的 claimed 卡，本卡改不动已 done 节点的文件，处置是重开那张卡"
+            ],
+            "read": "cardStanding 的 standing 值 + CAS 的 changes 行数",
+            "clause_coverage": {
+              "0": "isClaimable(cardStanding) —— task_machine.ts:320",
+              "1": "同 0（phase 分区在 cardStanding 内，task_machine.ts:153-154）",
+              "2": "同 0（satisfied 不可领 / blocked / unknowable 都拒）",
+              "3": "★★ 无执行者：全仓 0 处「target 在 DB 存在」检查（`existsTarget` 0 命中）—— debt: D-target-exists",
+              "4": "CAS 在 task_ops.ts:462 —— ★ 但它是 check-then-act（见 A3），不是真 CAS",
+              "5": "RED_DISPOSITION（task_machine.ts:153-170 的归属⇒处置表）—— ★ 2026-10-17 补挂（N2：原来 6 条 clause 只挂 5 条，漏的正是这条最重的）"
+            },
+            "clause_note": "★ 每条 clause 必须挂归属（执行者 | debt）；clause 共 6 条，coverage 已覆盖 0..5。★★ 2026-10-17（N2）：原来只挂 0..4，漏了 clause[5]（RED_DISPOSITION 那条），且修复记录还写成\"5 条\"——已更正。"
+          },
+          "state": {
+            "kind": "ready"
+          }
+        },
+        {
+          "id": "t_void",
+          "from": "candidate",
+          "to": "void",
+          "guard": {
+            "clauses": [
+              "target 在 DB 查不到（files/edges 任一查无此 target）"
+            ],
+            "read": "existsTarget(target) === false",
+            "distinct_from": "done：『失效』(target 没了) ≠ 『已满足』(expectations 全过)"
+          },
+          "state": {
+            "kind": "unimplemented",
+            "why": "★ 全仓没有代码写 state=\"void\"（task_ops 也没有对应 op）—— 但它【该要】",
+            "depends_on": "A1（patrolDrift 全仓零调用 ⇒ should_void 根本不跑）",
+            "why_wait": "★★ 先有\"报\"，才谈\"能作废\"：A1 修好之前，patrolDrift 的 should_void 不会执行 ⇒ 单独实现 void 动作也没人触发。⇒ t_void 的实现与 A1 一起做（同一条链：巡检报出该 void 的卡 → 有动作能作废它）。"
+          }
+        },
+        {
+          "id": "t_release",
+          "from": "claimed",
+          "to": "candidate",
+          "guard": {
+            "clauses": [
+              "显式 release 事件（带 by + reason），或",
+              "now - claimed_at > TTL：由 releaseIfExpired 产出 release 事件后再回 candidate，★ 不得静默改 state"
+            ],
+            "read": "release 事件数 / patrol lease_ttl 计数",
+            "clause_coverage": {
+              "0": "★★ 只强制了 reason —— `releaseTask:524` 是 `input.agent ?? null`，而 schema 里 `released_by` 可空 ⇒ \"带 by\"无执行者 —— debt: D-release-by",
+              "1": "releaseIfExpired（task_machine.ts:343）产出事件后再回 candidate"
+            }
+          },
+          "state": {
+            "kind": "ready"
+          }
+        },
+        {
+          "id": "t_done_from_claimed",
+          "from": "claimed",
+          "to": "done",
+          "guard": {
+            "clauses": [
+              "owner !== null（★ 必须已领）",
+              "isSatisfied(card) === true —— ★ = cardStanding === 'satisfied'：后态全过 ∧ 前态无红；★ 与 t_claim 的谓词**不是同一个**（不许一处判据两用）",
+              "validateProgressEvidence 过"
+            ],
+            "read": "isSatisfied 的 satisfied 布尔 + cardStanding 的 standing 值"
+          },
+          "state": {
+            "kind": "ready"
+          }
+        },
+        {
+          "id": "t_done_from_candidate",
+          "from": "candidate",
+          "to": "done",
+          "guard": {
+            "clauses": [
+              "★ 原写法 `candidate|claimed → done` 是**合写**：掩盖了『未领就被收口』这条路径",
+              "仅当 OQ1 裁定为『自动收口』才允许存在；否则此迁移必须不存在",
+              "即便允许，也只能由 patrol drift 的 missed_close 计数**提示**，不得由 patrol 直接置 done"
+            ],
+            "read": "patrol drift 的 missed_close 计数（只提示）"
+          },
+          "state": {
+            "kind": "blocked",
+            "by": "OQ1"
+          }
+        }
+      ],
+      "terminal_states": [
+        "done",
+        "void"
+      ],
+      "removed_2026_10_17": [
+        {
+          "id": "t_supersede",
+          "was": "candidate → superseded（条件：新卡带 replaces: <old_id>）",
+          "why_removed": "★ 用户 2026-10-17 认可删除：「决策改了」这条场景已由现有手段覆盖 —— candidate 卡 ⇒ publish 重翻；claimed 卡 ⇒ release 后重立。而 superseded 这个终态与 replaces 字段【从设计到实现都是空的】（全仓无人写、无人读）。",
+          "source_pending": [
+            "★ 源码待跟 ①：src/domain/task_machine.ts 的 TRANSITIONS 删掉 t_supersede 这一条（现在设计 5 条 vs 代码 6 条）",
+            "★★ 源码待跟 ②：src/domain/task_schema.ts 的 TASK_STATES 删掉 superseded —— 否则它成了【死状态】：没有任何迁移能到达它，但类型里还留着 ⇒ 下一个人会以为它能用"
+          ],
+          "note": "★ 这两条源码改动等\"设计全部写完、子代理也看不出毛病\"之后再动；现在只记在这里，不动代码"
+        }
+      ],
+      "states_note": "★ 2026-10-17：删 `superseded`（t_supersede 已删 ⇒ 它零条入边 = 死状态）。★★ 源码待跟：`task_schema.ts` 的 `TASK_STATES` 也要删（否则类型里还留着，下一个人以为能用）—— 已并进 `removed_2026_10_17.source_pending`。"
+    },
+    "patrols": [
+      {
+        "id": "lease_ttl",
+        "metric": "count(cards where state='claimed' and now-claimed_at > TTL and no release event)",
+        "op": ">",
+        "threshold": 0,
+        "read": "patrol 报告 lease_ttl.count",
+        "unjudged": "★ patrolDrift 全仓零调用（A1）⇒ 这个 metric 真的一次都没被算过",
+        "debt": "A1"
+      },
+      {
+        "id": "drift",
+        "split_reason": "★ 原 red 用『或』把两种结局并成一个计数 ⇒ 『漏收口(该 done)』与『应失效(该 void)』不可分辨，且处置相反",
+        "metrics": [
+          {
+            "name": "missed_close",
+            "expr": "count(cards where state=候选 and 剔前态后 expectations 非空 且 全过)",
+            "op": ">",
+            "threshold": 0,
+            "unjudged": "★ patrolDrift 全仓零调用（A1）⇒ 这个 metric 真的一次都没被算过",
+            "debt": "A1"
+          },
+          {
+            "name": "should_void",
+            "expr": "count(cards where state != done and target 不在 DB)",
+            "op": ">",
+            "threshold": 0,
+            "unjudged": "★ patrolDrift 全仓零调用（A1）⇒ 这个 metric 真的一次都没被算过",
+            "debt": "A1"
+          }
+        ],
+        "read": "DriftReport.missed_close / DriftReport.should_void"
+      },
+      {
+        "id": "dual_write",
+        "metric": "★ **算不出来**（2026-10-17 M11 定案）：原 metric 引用的两个操作数都不存在 —— `OverlayAnchor` 无 `updated_at`；`DriftReport` 无 `authority_unknown`。★ 要做它，先要：① `OverlayAnchor` 加 `updated_at`；② `DriftReport` 加 `authority_unknown` 字段。★ 在此之前本 patrol **不可实现**（不是\"巡检不跑\"那种，是\"算不出来\"）。",
+        "op": ">",
+        "threshold": 0,
+        "read": "（无 —— metric 算不出来）",
+        "unjudged": "★★ 不是\"巡检不跑\"（A1），而是**这条 metric 写不成代码**：① `OverlayAnchor` 没有 `updated_at`；② 设计侧 11 个 decision **0 个带 updated_at**（手写 JSON 绕过 node_ops 注入）；③ `DriftReport` 没有 `authority_unknown` 字段（src 0 命中）。",
+        "debt": "D-dual-write",
+        "note": "★ 2026-10-17（M11）：原来只挂 debt:A1，掩盖了\"三个前提都不存在\"这个更根本的问题。",
+        "metric_original": "count(cards where overlay 与设计侧同名 and 仅一边的 updated_at 更新)"
+      }
+    ],
+    "migration_order": [
+      "设计侧落地",
+      "读端切过去(读不到回退 overlay)",
+      "测回退",
+      "才退 overlay"
+    ],
+    "open_questions": [
+      "OQ1: 『已满足』的卡：自动收口(标 done) 还是只提示？—— 用户尚未拍（t_done_from_candidate 正卡在这条）",
+      "OQ2: TTL 取值",
+      "OQ3: void 的卡是否留档",
+      "OQ4: discussion 版本链要不要可 diff（讨论本身进对拍？）；另：invariant『一处权威 + 一处渲染』落不成读数，也挂这条",
+      "OQ5（新·本笔）：★ 剔前态判据后若**一条不剩（空集）**，『全过』算不算真？空集 = 真空真(vacuous truth) ⇒ 未领卡会被自动收口；另一解是空集判『判不了』。未拍 ⇒ t_claim / t_done_from_claimed 里的『剩余条数 > 0』只是我加的保护，需裁",
+      "OQ6（新·本笔）：★ 我不同意把 OQ2『TTL 取值』当成**单一全局数**处理 —— TTL 是领主的续租超时，不同卡类（改一行 vs 重构一文件）不该共用一个数 ⇒ 建议改成按卡类分档；此条待裁，未并入 invariants",
+      "OQ7（新·本笔）：★ 接点⑤的**连线方向**未定 —— 是 live 重算**触发** patrol（live_render 侧调 patrolDrift），还是 patrol **自取** live（patrolDrift 调 renderLiveFromDb）？我按『patrol 自取』写了 call-exists，但若实际设计是前者，该断言方向反了、应挂到 live_render 那侧。未拍，未并入 invariants"
+    ],
+    "block_rule": {
+      "note": "★ 裁定（2026-10-16，开发者自裁）：块 = 依赖闭包，不是单个节点。",
+      "expr": "block(n) = 以 n 为根的强连通/依赖闭包（沿 geometry.edges 的 imports 边向下）",
+      "why": "\"整块重写\"的意义就是连带依赖一起改；按单节点划块会把依赖切两半（实测：task_schema→task_machine 是一块）",
+      "example": "task 格(schema) + 状态机(machine) = 一块（因 e_machine_to_schema）",
+      "by": "主代理（划块时人工核）",
+      "where": "回执里列出本次的块"
+    },
+    "rulings_2026_10_16": [
+      {
+        "oq": "OQ9",
+        "ruling": "抽 domain 纯函数：task_machine 只接 {facts, expectations} 做纯判定；取事实由 application 传入",
+        "why": "domain 定义\"怎么判\"，application 负责\"去哪取\"；且判定可单测",
+        "status": "裁定"
+      },
+      {
+        "oq": "OQ10",
+        "ruling": "先不改闸，记进 open",
+        "why": "新建文件走 scaffoldCore 已通（第一块就是这么落的）；而\"登记\"语义现在不清（in_progress=已登记≠认领）⇒ 等「领取」有真语义再接闸",
+        "status": "裁定"
+      },
+      {
+        "oq": "OQ1",
+        "ruling": "仍待用户拍（自动收口 vs 只提示）—— 不阻塞其他块",
+        "status": "待用户"
+      },
+      {
+        "oq": "块计数 6 vs 9",
+        "ruling": "采纳 9（块=依赖闭包，见 block_rule）",
+        "status": "裁定"
+      },
+      {
+        "oq": "OQ10（更新）",
+        "ruling": "闸的判据应从'节点登记过'升级为'该节点上有 state=claimed 的任务卡'；且【无任务 ⇒ 先写设计 DSL + 挂任务】",
+        "why": "用户 2026-10-16 明确要求'强制'",
+        "status": "裁定（用户强制要求）"
+      },
+      {
+        "oq": "OQ11（T5 停手时挂出）",
+        "ruling": "走 B：给 task 格立原生家 + 唯一写端（★ 不选 A）",
+        "why": "A 是把五态映射进 progress 三值轴 ⇒ 一事实两权威没解决、只是藏起来 = 打补丁；B 是把那一维加进结构 = 收归；且 B 正是用户最初意图「把任务系统直接做进设计 DSL 里面」",
+        "status": "裁定（开发者自裁，依据 principle-rewrite-not-patch）"
+      },
+      {
+        "oq": "OQ11 的落地形状",
+        "ruling": "家 = geometry.nodes[].task（与节点同居）；唯一写端 = edit_dsl{type:'task'}；progress 改为由 task.state 派生（void/superseded 返回 undefined 而非硬塞）",
+        "why": "把'状态写到哪'这一维加进结构；★ 并消掉两轴并存",
+        "status": "裁定（开发者自裁）"
+      }
+    ],
+    "board": {
+      "note": "★★★ 用户 2026-10-16 补充的、原方案里缺的部分：任务榜单（发布处 + 验收处）+ 回执 + 双验。",
+      "why": "★ 用户原话：\"应该比直接的 ToDo 文档是要好的，因为它【强制你管理】…… 我发现你有的时候 ToDo 做完了之后不勾掉，也不验收，验收的话也可能验收错\";",
+      "intent": "把\"一次设想里写了很多处、但一次做不完\"的内容，抽出\"这次要做的部分\"形成一个任务，发布到榜单上；也可把现有内容全抽出、各成任务上榜单。",
+      "roles": {
+        "board": "榜单：发布 + 领取登记 + 收受回执 + **验收**；★ 它是唯一的\"完成判定者\"（不是做的人自己说完成）",
+        "claimant": "领取者（我或子代理）：领取 ⇒ 做 ⇒ 交回执",
+        "verifier": "★ 验收：**双验** = ① 榜单按判据验收（机器）② 自己再验一遍（人/agent）"
+      },
+      "flow": [
+        "1. 发布：从设计 DSL 抽出\"这次要做的那一块\" ⇒ 形成任务 ⇒ **发布到榜单**（★ 未上榜单 = 不算在办）",
+        "2. 领取：自己或子代理领取 ⇒ 记录 owner（★ 未领取不得开工）",
+        "3. 做",
+        "4. ★ 回执：交回执 = {做了什么, 判据读数, 未核项, 行为改变}（★ 不许\"我觉得做完了\"）",
+        "5. ★★ 验收：榜单按 **该任务的 expectations** 判（★ 复用 judgeExpectations）",
+        "6. ★★ 双验：自己再验一遍（★ 因为\"验收也可能验错\"—— 今天实测 2 次）",
+        "7. 收口：验收通过才置 done；★ 未通过 ⇒ 退回候选"
+      ],
+      "forces": [
+        "★ 强制勾掉：**上过榜单的任务，必须有终态**（done / void）★ 2026-10-17 删 superseded—— 今天实测：3 条 in_progress 挂了一整天无人管",
+        "★ 强制验收：**done 必须有验收读数**（不是\"我改好了\"）—— 今天实测：\"十九证全绿 ≠ 本笔被验\"",
+        "★ 强制双验：**验收本身也会错** —— 今天实测：报\"真绿\"而实际 unsupported=2"
+      ],
+      "anti_patterns_measured_2026_10_16": [
+        "做完不勾：progress 里 3 条 in_progress 挂了一整天（opl.ts / rename_files.ts / overlay.ts）",
+        "不验收：多笔以\"报告说已修好\"收账（子代理报'已修好'实际不符 / 只给回执）",
+        "验收验错：报\"9红→0红（真绿，unsupported 0）\"而全量汇总是 unsupported:2；以及\"十九证全绿\"被当成\"本笔被验\""
+      ],
+      "note_relation_to_existing": "★ 与既有构件的关系：发布/领取/回执/验收 = **在 task 格之上的一个\"榜单\"角色**；★ 验收引擎**复用 judgeExpectations**（不新造）；★ 回执 = `TaskEvidenceRecord`（只落动作+结论，不落读数快照）",
+      "precondition": {
+        "note": "★★★ 用户 2026-10-16 追加：改源码之前【强制】先有任务 —— 这是闸，不是记账。",
+        "why": "★ 用户原话：\"在改源码之前，你就要去强制你去写设计 DSL，或者说强制你写接任务，就是说如果有这个任务，你就去接这个任务，如果没有这个任务，你就要自己去写设计 DSL，自己去挂任务，然后继续完成这一部分\"",
+        "rule": [
+          "1. 要改源码 ⇒ 先查：该节点上有没有一张 state=claimed 的任务卡？",
+          "2. 有 ⇒ 接这个任务（claim，CAS 写 owner）",
+          "3. 没有 ⇒ ★ 先写设计 DSL（把它做成期望）⇒ 自己挂任务（发布到榜单）⇒ 再 claim ⇒ 才动源码",
+          "4. ★ 违反 ⇒ 闸拒（未挂任务不许落盘）"
+        ],
+        "solves": "★ 这就是 OQ10 的目标语义：闸 assertSourceWriteRegistered 今天判的是'节点是否登记过'（edit_dsl status），实测【登记对闸不生效】⇒ 应升级为'该节点上是否有一张已领取的任务卡'",
+        "relation": "★ 与既有 write_gate 的接法：仍然是 assertSourceWriteRegistered（不新造），只是它读的来源从 overlay 的 progress 换成 task 格的 state",
+        "anti_pattern": "★ 今天实测：第一块落地时闸挡着新文件，最后走的是 scaffoldCore 通道（scaffold 大概率是既有豁免）⇒ 说明闸在干活，但'认什么'不对"
+      }
+    },
+    "design_dsl_health": {
+      "note": "★★★ 用户 2026-10-16 的核心疑虑：\"我不确定你写下去的设计 DSL 是否真正正确\"。★ 本段就是消它的机制。",
+      "stance": "★ 不靠\"保证写对\"，靠\"写完必过几层校验\"。",
+      "evidence_2026_10_16": {
+        "mistakes_i_made": 7,
+        "caught_by_self_reading": 0,
+        "caught_by": {
+          "validateDSL": [
+            "/type 非 const",
+            "/version 用数字",
+            "semantic.files 写成字典",
+            "semantic.files[].id 用路径而非节点 id",
+            "★ 我的认知错：一直以为 semantic.files 是 map"
+          ],
+          "independent_review_patch_only": [
+            "★★★ t_claim guard 判据写反（\"未必全过\"应为\"剔前态后全过\"）",
+            "★★ 2 条装饰边（geometry.edges 里无判据的边）",
+            "合写 candidate|claimed→done 掩盖了\"未领就被收口\"路径"
+          ]
+        },
+        "conclusion": "★★★ 7 处错误，0 处是\"我自己读一遍看出来的\" ⇒ 所以答案不是\"我保证写对\"，而是\"每次写完都过这几层\"。"
+      },
+      "layers": [
+        {
+          "id": "L1_shape",
+          "name": "形状校验",
+          "tool": "validateDSL",
+          "checks": "结构自洽（锚点/类型/必填/const）",
+          "caught_2026_10_16": 4
+        },
+        {
+          "id": "L2_semantics",
+          "name": "语义校验",
+          "tool": "独立评审（★ 只许提补丁，不许写散文）",
+          "checks": "图说得对不对（guard 是否写反/是否合写掩盖/是否有装饰）",
+          "caught_2026_10_16": 3
+        },
+        {
+          "id": "L3_facts",
+          "name": "事实校验",
+          "tool": "对拍 judgeExpectations + DB 交叉",
+          "checks": "图符不符合真实",
+          "caught_2026_10_16": "1（决策卡说没闸、DB 说有 ⇒ 图与事实矛盾）"
+        },
+        {
+          "id": "L4_reverse",
+          "name": "反向校验",
+          "tool": "实现完 ⇒ 图要反过来对",
+          "checks": "图与实现一致（实现后图要不要更新）",
+          "caught_2026_10_16": "第 ⑥ 步的 reading_now / block_readings 更新"
+        },
+        {
+          "id": "L5_blindspot",
+          "name": "★ 盲点",
+          "tool": "—— 图与事实都没提过的东西，只能靠上面四层互相反照",
+          "checks": "无",
+          "caught_2026_10_16": "——"
+        }
+      ],
+      "anti_blindspot_checks": [
+        {
+          "id": "anti_decoration",
+          "check": "每条边/每条断言有判据吗？",
+          "red": "无判据的边/断言数 > 0",
+          "real_case_2026_10_16": "★ 实测逮到 2 条无判据的边",
+          "unjudged": "★ 没有检查器：anti_decoration / anti_comment 靠人看",
+          "debt": "D-anti-decoration"
+        },
+        {
+          "id": "anti_comment",
+          "check": "每个\"责任/承诺\"有判据钉吗？",
+          "red": "只有文字、无判据钉的承诺数 > 0",
+          "real_case_2026_10_16": "★ G3（版本链无判据钉、无消费方）· G4（无\"谁调它\"判据）",
+          "unjudged": "★ 没有检查器：anti_decoration / anti_comment 靠人看",
+          "debt": "D-anti-decoration"
+        },
+        {
+          "id": "anti_idle",
+          "check": "★ 每条判据都在跑吗？",
+          "red": "存在判据但无 runner ⇒ 判据没有执行者 = 等于没有",
+          "real_case_2026_10_16": "★★★ G5：invariant_checks 全仓无 runner",
+          "fixed_2026_10_16": "★ runner 已落地：task_plan.invariant_checks_runner = scripts/run-invariant-checks.mjs（`npm run invariants`）—— 逐条真跑每条 cmd，任一 FAIL ⇒ exit 1；无 cmd 亦判 FAIL。读数：可真仓 4 条全 PASS（exit 0）；改坏夹具（第0条期望加一个不存在的标记）⇒ FAIL=1 / exit 1。",
+          "runner": "scripts/plan-assertions.mjs",
+          "runner_note": "★ 它就是 anti_idle 的实现"
+        }
+      ]
+    },
+    "task_plan_note": "★ T5 曾因 OQ11 阻塞停手（未动源码）；★ 2026-10-17 T11 已按裁定 B 落 ①②③（task 格立家 + 唯一写端 + 两轴消歧 + 闸换判据），task_ops 块 5红→0红；★ 第 ④ 步（overlay 的 progress 退役）单独上榜单。读数见 task_home.landed。",
+    "task_home": {
+      "note": "★★★ OQ11 裁定 B 的展开：给 task 格立原生家 + 唯一写端。★ 这一维是 T5 停手时核出的（任务格无家 / claim 无合法写端 / 两轴无映射）。",
+      "where": "geometry.nodes[].task —— ★ 任务与节点同居（设计侧）",
+      "why_not_top_level": "★ 独立顶层 tasks[] 会让'任务'与'节点'分居 ⇒ 判据对着节点判、状态却去别处找 ⇒ 又是一次'同一判据住两处'（本仓头号病）",
+      "writer": "★ 唯一写端 = edit_dsl {type:'task'}（action: publish | claim | release | complete）—— 四个都是它的 action，★ 不许别处直接改 state",
+      "why_single_writer": "★ 今天实测的病：状态变更散落 ⇒ 一事实两权威（progress 三轴 vs TASK_STATES 五轴，两轴无映射）",
+      "axis_dedup": {
+        "problem": "progress（draft|in_progress|done，三轴）与 task.state（candidate|claimed|done|void|superseded，五轴）并存 ⇒ 两轴无映射 = 一事实两权威",
+        "ruling": "★ 单一权威 = task.state；★ progress 改为【派生】（读时由 task.state 现算），不再落盘",
+        "derived_map": {
+          "candidate": "draft",
+          "claimed": "in_progress",
+          "done": "done",
+          "void": "<不适用>",
+          "superseded": "<不适用>"
+        },
+        "note": "★ void/superseded 不映射进三轴 ⇒ 由 progressOf(task) 返回 undefined，★ 而不是硬塞一个值（硬塞就是新的补丁）"
+      },
+      "gate": "assertSourceWriteRegistered 的判据从'节点是否登记过（edit_dsl status）'改为'该节点上是否有 state=claimed 的 task'（OQ10 裁定）",
+      "migration_order": [
+        "① 设计侧落 task 格",
+        "② 读端 progress 改派生（读不到 task 才回落 overlay）",
+        "③ 闸改判据",
+        "④ overlay 的 progress 退役"
+      ],
+      "open": "★ 交接期不动 overlay（★ 否则读端会断 —— 见 §75 那条教训）",
+      "landed": {
+        "at": "2026-10-17",
+        "board": "T11",
+        "steps_done": [
+          "① 设计侧落 task 格（Node.task + schema 的 task 属性）",
+          "② 读端 progress 改派生（progressOf；applyOverlay 对 task 节点派生优先；seedOverlayFromDsl 不播种派生值）",
+          "③ 闸改判据（assertSourceWriteRegistered 读 node.task.state === 'claimed'）"
+        ],
+        "steps_pending": [
+          "④ overlay 的 progress 退役 —— ★ 单独上榜单（交接期不动 overlay，否则读端会断）"
+        ],
+        "readings": {
+          "task_ops_block": "5红/0绿 → 0红/5绿（同一入口 certs/.work/probe-plan-detail.mjs；临时目录 + 独立 AGENT_IO_HOME 重算：checked 25 · passed 12→17 · failed 12→7 · unsupported 1（恒定，且那一条是 discussion_log 的 type-only 边，与本块无关））。其他块逐字不变：task 0/3 · 状态机 0/6 · task_drift 7/0 · discussion 0/4。",
+          "axis_map": "candidate⇒draft · claimed⇒in_progress · done⇒done · void/superseded⇒undefined（★ 不硬塞；认不出的态亦 undefined）",
+          "writer": "src/application/design/dsl_ops/task_ops.ts（claimTask / releaseTask / completeTask）；入口 edit_dsl {type:'task'}；op 家族四处同改（index.ts 的 op/type enum · update_feature.ts 的联合 + applyOperation case · op_data_spec.ts 的 OP_SPECS + TYPE_KNOWN_KEYS），且编译器断言把表与实现钉死。",
+          "gate": "write_gate.ts#assertSourceWriteRegistered：判据 = 该节点上有 state='claimed' 的 task（无 task ⇒ 拒；claimed ⇒ 放行；★ 已播种 overlay.progress 的旧路径**不再**放行 —— 那正是 OQ10）。",
+          "cert": "certs/t349-task-home-cert.mjs = PASS=34 FAIL=0（含能自己坏的对照：播种 progress 而无 task ⇒ 仍拒）"
+        },
+        "known_transition_cost": "交接期 overlay 的 progress 仍是**投影**（completeTask 按设计期望调 updateStatus）⇒ 直接读 overlay 本体（如 query_feature 的 progress 列）会**滞后**于派生值；第 ④ 步退役后消失。",
+        "gap": "★★ **榜单读端未建（T8）**：publish 之后卡住在 `node.task`（`get_dsl` 读得到、闸读得到），但**没有**任何「榜单视图」把它读出来 ⇒ ★ 本笔**不**把「去改 docs/DESIGN.md」当成机制（那是补丁）。正解 = board **读**「对拍的红 + 设计 DSL 里现有的 task 格」派生；`docs/frictions.jsonl` 里已有同一条滞涩（status: 已上榜单 T8）。"
+      },
+      "publish": {
+        "semantics": "★★★ 立卡 = **翻决策卡**，不是造卡：TaskSpec{summary, expectations} **逐字取自该节点的 decision**（`decision.semantics` 在本仓的落点就是 `decision.summary` 这句断言）。⇒ publish 的输入**没有「我编的任务描述」**：它**一个 data 键都不收**（手写 `data.summary` 会被 `op_data_spec.checkOpSpec` 的『不被认的键』当场拒）。",
+        "source": "task_plan.provenance.chain ④⑤：决策卡挂上 DSL ⇒ 与现状对拍的红 ⇒ 红 = 任务 ⇒ publish 上榜单",
+        "writer": "src/application/design/dsl_ops/task_ops.ts#publishTask（∅ → candidate；★ 已有 candidate 允许**重翻**（决策改了、卡要跟上）；claimed 及以上**拒**覆盖 —— 覆盖等于把正在做的判据换掉）",
+        "guards": [
+          "★ **无 `decision` / `decision.summary` ⇒ 不拒**：降级生成【L1 建构卡】（`task_ops.ts:253 publishTask` → level 派生 `:279` → L1 分支 `:353`，`expectations: []`）。★ 2026-10-17 T13 改的行为：原文写\"拒\"——那会鸡生蛋（第一个 decision 从哪来）。",
+          "★ `decision.expectations` 为空 ⇒ 同上，**L1 卡**（不是拒）。",
+          "★ 只有 pre-phase 判据（如 edge-absent）⇒ **post 数 = 0 ⇒ 派生为 L1 卡**（`task_ops.ts:286` `level = hasSummary && post.length>0 ? 'L2' : 'L1'`；`task_schema.ts:200 taskLevel` 同口径）。★★ **L1 卡不走 cardStanding**（`task_ops.ts:410-435` 有整段\"L1 建构卡为什么不走 cardStanding\"）⇒**它是可领的**，活 = 补一条后态判据（`constructionVerdict` 判 `complete=false`，`:234-253`）。★★★ 2026-10-17 更正（N3，第三道闸指出）：这里原写\"仍是 L2 卡 ⇒ unknowable ⇒ 领不了\"，**与代码相反** —— 而 M2 修的正是\"照文档实现会退回旧行为\"，这一条又把行为写反了一次。"
+        ],
+        "landed": {
+          "at": "2026-10-17",
+          "board": "T12",
+          "readings": {
+            "block": "task_ops 1红/5绿 → 0红/6绿（同一入口 certs/.work/probe-plan-detail.mjs）。★ 同底对拍 certs/.work/probe350-before-after.mjs（HEAD 版 5 文件 vs 当前，两侧各自 importProject 现算）：checked 26 · passed 17→18 · failed 8→7 · **unsupported 1→1**；其他块逐字不变（task 0/3 · 状态机 0/6 · task_drift 7/0 · discussion 0/4）。",
+            "e2e": "真节点 `file_src_domain_task_schema_ts` 的 decision 逐字搬进夹具 ⇒ publish 后卡 `summary` **逐字相等**、`expectations` 深等 3 条；改 decision 再重翻 ⇒ 卡跟着变；`claim` ⇒ claimed；闸 无卡⇒拒 / candidate⇒仍拒 / claimed⇒放行；**无 decision ⇒ 降级 L1 卡**（2026-10-17 T13 起；不是拒）。",
+            "progress": "立卡不写 progress：candidate ⇒ `node.status='draft'`（派生），`overlay.anchors[node].progress` 为 undefined。",
+            "cert": "certs/t350-publish-task-cert.mjs = PASS=32 FAIL=0（含「自己坏」对照：把卡改成手写 ⇒ 出处判据当场变假）"
+          }
+        },
+        "note_one_ruler": "判据复用：`postExpectations`（与 `cardStanding` 同一把尺 —— ★ 满足度只看后态、违约轴只看前态）+ `checkOpSpec`（未知键闸）+ `progressOf`（进度派生）—— 本笔**没有**新造第二条判据。"
+      },
+      "gate_note": "★★ 2026-10-17（M17）：这句话读起来像要求（\"闸的判据改成…\"），但它**不是判据**（`gate` 不在 CLAIM_KEYS）⇒ 既没 runner 也没 debt。⇒ 现在挂 `D-gate-text`（台账在 DESIGN §6）。★ 真正的判据在 `state_machine.transitions[t_claim]` 与 `write_gate` 的决策卡里。",
+      "gate_debt": "D-gate-text"
+    },
+    "provenance": {
+      "note": "★★★ 用户 2026-10-17 给的第一性描述：任务的来源 = 对设计 DSL 的设计；设计 DSL 的设计来源 = 项目设计文档 + 用户讨论。",
+      "why": "★ 用户原话：\"任务的来源是我们对于设计 DSL 的设计，设计 DSL 的设计来源是项目的设计文档，用户和你的讨论。也就是说，你在翻译那个项目文档的时候，把它翻译成决策卡，与此同时决策卡要挂载在修改的设计 DSL 上，这就天然出现了差异。以及用户，你和用户进行理解，进行交流，用户的需求也被你翻译成决策卡和设计 DSL，这样的话他们就天然的出现了这个任务。\"",
+      "chain": [
+        "① 源头：项目设计文档 · 用户需求 / 讨论",
+        "② 翻译：⇒ 「决策卡」（一条『应该是什么』的断言 + 它的判据）",
+        "③ 挂载：决策卡挂到设计 DSL 的对应节点上",
+        "④ ★ 天然差异：DSL 现状 vs 决策卡 ⇒ 对拍 ⇒ 红",
+        "⑤ 红 = 任务 ⇒ publish 上榜单 ⇒ claim ⇒ 做 ⇒ 回执 ⇒ 验收 ⇒ 双验"
+      ],
+      "decision_card": {
+        "what": "一条『应该是什么』的断言 + 它的判据",
+        "in_this_dsl": "= 节点的 decision（semantics + expectations）",
+        "missing_dimension": "★ source（出处）：这张卡是从哪段文档 / 哪句用户原话翻译来的",
+        "why_source": "★ 没有出处 ⇒ ① 无法回溯 ② 无法判断它还是不是用户要的 ③ 需求变化时找不到该改哪张卡",
+        "note": "★ 补 source 是『收归』而非加字段：出处是决策卡的原生属性（就像 kind⇒phase 之于期望）。★ 且 source 是【多态】的，不是只认文档/用户原话。",
+        "source_kinds": [
+          {
+            "kind": "doc",
+            "what": "项目设计文档 / 讨论登记",
+            "where": "docs/discussion-log.md 等",
+            "note": "被翻译出来的那一段"
+          },
+          {
+            "kind": "utterance",
+            "what": "用户原话",
+            "where": "流水账里逐字引用的那些",
+            "note": "★ 必须逐字，不许改写"
+          },
+          {
+            "kind": "thought",
+            "what": "我自己的想法",
+            "where": "——",
+            "note": "★ 最软的一种 ⇒ 但也要写『何时、因何想起』（否则无法回溯）"
+          },
+          {
+            "kind": "friction",
+            "what": "★ 我用这个工具时遇到的阻塞",
+            "where": "★ docs/frictions.jsonl 的某一条",
+            "note": "★★ 天然是结构化证据；★ 滞涩台账不只是待改清单，它是决策卡的来源"
+          },
+          {
+            "kind": "defect",
+            "what": "★ 我分析这个项目时发现的缺陷",
+            "where": "★ 对拍的红 / 体检发现（G1–G5 那一类）",
+            "note": "★ 分支同理：体检的缺陷 = 合法决策卡"
+          }
+        ],
+        "corrected": "★ 我上一轮写『追不到 ⇒ 那不是任务，是想法』 —— ★ 太窄了。★ 正确：追不到 ⇒ 那张卡缺【原因】；★ 而原因可以是我自己发现的，★ 但必须写下来。"
+      },
+      "task_legitimacy": "任务的合法性来自源头，但源头的种类是多的：文档 / 用户原话 / 我的想法 / 使用中的阻塞（frictions）/ 分析中的缺陷（对拍的红）。每条任务都能追到一张决策卡，每张卡都有一个写下来的原因。没有原因的那张卡才是想法（而想法也该补上它因何而来）。"
+    },
+    "two_level_tasks": {
+      "note": "★★★ 用户 2026-10-17：决策卡本身也可以是任务 —— 领到它发现对应的设计 DSL 还没建，那就先建构 DSL，再实现。",
+      "why": "★ 用户原话：\"其实决策卡本身也可以是任务吧，就是领到这个任务发现…这个决策卡对应的这个设计 DSL 本身没有完成，只是挂了一张决策卡在这里说我要怎么怎么样、或者说要实现什么样的功能，然后领到这张决策卡【先进行 DSL 的建构，再进行实际的】，应该这个流程也是可以的\"",
+      "L1_construct": {
+        "name": "DSL 建构任务",
+        "input": "一张很粗的决策卡（\"我要实现 X\"）",
+        "output": "可判的期望 / 节点 / 边（`validateDSL` 通过 + **≥1 条 `phase=post` 的 expectation**）★ 2026-10-17 更正（M12）：原写\"至少一条 expectation\"（任意 phase），与 `criteria` 和代码 `constructionVerdict` 的\"≥1 post\"冲突。",
+        "criteria": "★ 与代码一致（`task_ops.ts:234 constructionVerdict`）：**summary 非空 ∧ ≥1 条 `phase=post` 的 expectation**。★★ 2026-10-17 修正（M12）：原写\"建构完整\"（形容词，不可判），且与 `output` 的\"≥1 条 expectation（任意 phase）\"、代码的\"≥1 条 post\"**三处不一致** ⇒ 边界例：只有 edge-absent（pre）的节点，按两处算\"完整\"、按代码算\"不完整\" ⇒ 它的 L1 卡永远 complete 不掉。",
+        "why_needed": "★ 否则\"没有 decision 就不许 publish\"会鸡生蛋 —— 第一个 decision 从哪来？",
+        "missing_judge_kind": {
+          "found_2026_10_17": "★★★ 尝试为「任务系统重建」建一张 L1 卡时撞到的：L1 的判据是「DSL 建构完整」，但现有 6 种 kind（file-exists / symbol-exists / signature-matches / edge-exists / edge-absent / call-exists）**全部对着代码判** ⇒ 没有任何 kind 能表达「DSL 自己全不全」⇒ ★ L1 卡建不出来。",
+          "explains": "★ 这是 A5（L1 卡永远进不了 missed_close）的真正根因 —— 不只是「patrol 用了另一把尺」，而是【L1 根本没有能用的判据类型】。两把尺只是表征。",
+          "the_fix_already_written": "★ principle-rewrite-not-patch.md 第 39 行早就写了方向：invariant_checks（挂在 DSL 外的 cmd + 另写 runner）= 补丁，正解是【判据自带「可跑」属性 —— Expectation 与 invariant 同一个可执行抽象，不两套】。",
+          "what_it_means": "★ 收归后：expectation 除了「对代码判」的 6 种，还要能「对 DSL 判 / 跑一段命令判」⇒ 那时 L1 卡与 invariant_checks 用同一个抽象，且 L1 也能进 missed_close。",
+          "order": "★ 先做这个收归，再建 L1 卡（否则建出来的卡的判据是空的 ⇒ 又是一张 \"绿得没意义\" 的卡）"
+        },
+        "by": "主代理（回执里给出读数）",
+        "where": "certs/.work/receipt-*.md",
+        "criteria_was_wrong": "★ 由不知情子代理指出（M12）；★ 另外它因本对象带 by+where 被判成 review（\"主代理自审\"）—— 把\"不可判\"算成了\"有人判\"。"
+      },
+      "L2_implement": {
+        "name": "实现任务",
+        "input": "L1 产出的那条红",
+        "output": "代码",
+        "criteria": "对拍红变绿",
+        "by": "主代理（回执里给出读数）",
+        "where": "certs/.work/receipt-*.md"
+      },
+      "publish_rule": {
+        "corrected": "★ 纠正 T12 的规则（原写\"无 decision ⇒ 拒\" —— ★ 那会鸡生蛋）",
+        "now": "★ 该节点无 decision / decision 太粗 ⇒ 生成 【L1 建构卡】；★ 已有可判的 expectations ⇒ 生成 【L2 实现卡】",
+        "note": "★ 两级的判据不同：L1 看\"DSL 建构完整\"，L2 看\"对拍红变绿\"；★ 于是\"隐形的活\"（今天设计 DSL 那几轮讨论）终于有卡、有验收"
+      },
+      "anti_pattern": "★ 今天实测：我干过多轮 L1（设计 DSL 的补丁/讨论），★ 但从未把它当任务 ⇒ 不计进度、不被验收、做完也不算数",
+      "claim_incomplete_rule": {
+        "user_said_2026_10_17": "没领到一个任务的时候，如果这个任务有不全，当前的工作流就是把它补全。",
+        "rule": "★ 领到一张卡 ⇒ 第一件事不是写代码，是【检查这张卡赖以成立的东西全不全】；不全 ⇒ 本步的动作就是【补全它】，补完再做事。",
+        "what_counts_as_incomplete": [
+          "★ 卡没有 decision（或 decision 太粗，无 expectations）⇒ 补 L1 建构",
+          "★★ 期望没有判据（判据类字段是散文、无 cmd/runner/review 归属）⇒ 补判据归属",
+          "★★★ 卡要改的文件不在任何 expectation.path 里 ⇒ 补 path（否则增量验证永远命中不到它）",
+          "★ 卡依赖的上游步骤没有入口（是「环」）⇒ 先把入口补出来"
+        ],
+        "why": "★ 这是把 L1 规则从「没有 decision 时」推广到「任何依据不全时」：★ 补全不是额外负担，它就是这一步的工作内容。",
+        "measure": "★ 每笔收口时报：本笔补全了几条依据（unjudged → machine/review 的条数）",
+        "relates_to": "assertion_kinds（三态）/ touches_gap / gate_principle 的「环」诊断",
+        "unjudged": "★ \"领到先查依据\"由人执行，无机器检查器",
+        "debt": "D-claim-incomplete"
+      }
+    },
+    "what_a_card_proves": {
+      "note": "★★★ 用户 2026-10-17 答 D16（反形式主义）：「有 decision 说明有过讨论和决策，然后任务挂在那里并不代表它就已经开始了，你要去接取任务，接取任务之后就有接取的状态、有进行中的状态、有完成的状态」。",
+      "answer": "★ 「有卡」证明的是【有过讨论和决策】，不是【有人在认真做】。",
+      "layers": [
+        {
+          "layer": "decision 存在",
+          "proves": "想过（讨论/决策发生过）",
+          "gate": "★ 质量的真实闸是「**decision 有没有实质内容**」—— ★ 但**\"没有 decision 就没有卡\"这句已经不成立**：publishTask 对无 decision / 空 expectations 一律**降级生成 L1 建构卡**（`task_ops.ts:286-290` 派生 level、`:349-362` 写 `expectations: []`）⇒ **卡是有的**。★★ 2026-10-17 更正（Q1，第三道闸指出）：M2 修了 `publish.guards`，这一句没跟着改 ⇒ 自述是假的。",
+          "gate_note": "★ 说明性质（同上，M17）",
+          "gate_debt": "D-gate-text"
+        },
+        {
+          "layer": "card in pool (candidate)",
+          "proves": "挂着了",
+          "note": "★ ≠ 已经开始 —— 所以 candidate 派生为 draft，而不是 in_progress"
+        },
+        {
+          "layer": "claimed",
+          "proves": "有人真的接了",
+          "note": "★ 接取 = 开始"
+        },
+        {
+          "layer": "done",
+          "proves": "做完了、且验过",
+          "note": "★ 必须带回执 + 验收读数"
+        }
+      ],
+      "anti_formalism": {
+        "where_the_risk_is": "★ 不在「卡」，而在「decision 是不是真的」",
+        "defense": "★ provenance（五类出处 + 逐字原文）；★ 卡的内容由 publish 从 decision 翻出，不接受手写 ⇒ 造假的入口被收窄到 decision 一处",
+        "residual_risk": "★ 若 decision 本身是编的 ⇒ 卡也编得出来；★ 但那样 provenance 就露了（追不到出处 / 出处是编的）"
+      },
+      "claimed_vs_in_progress": {
+        "user_said": "「有接取的状态、有进行中的状态、有完成的状态」",
+        "my_doubt": "★ 若「接取」与「进行中」之间没有【可判】区别 ⇒ 拆成两个状态就是形式主义（D16 的那个陷阱）",
+        "proposal": "★ 不拆状态；给 claimed 一个【可判的活跃信号】：last_active_at（最近一次对源/对卡的动作）。★ 领了不动 = last_active_at 老旧 ⇒ TTL 回收；领了在干 = last_active_at 新鲜",
+        "why": "★ 少一个状态、信息不丢 = 收归；★ 而拆一个不可判的状态 = 多一个要记得维护的空壳",
+        "status": "待用户裁定（若你认为「接取」与「进行中」在语义上必须分开，我再拆，并给出判据）"
+      }
+    },
+    "service_flow": {
+      "note": "★★★ 用户 2026-10-17 的比喻：「就像你去窗口办事，要先填注册表，注册完了才能把任务交过去…… 你要做什么功能，就先填决策表、填 DSL，系统帮你把决策上架到任务里，然后有人去接。」⇒ ★ 本段把它落成七步服务流程。",
+      "why": "★ 用户原话：\"你可以把它安排成像一条服务流程…… 这语义什么的你自己随便自理呀，我只是随意的表述，你要自己去整理它\"",
+      "states": "★ 整理（用户已确认『接取』与『进行中』是同一个状态）：待接取(candidate) → 已接取进行中(claimed) → 完成(done)；旁支：失效(void) / 被取代(superseded)",
+      "steps": [
+        {
+          "n": 1,
+          "name": "填表",
+          "input": "讨论 / 文档 / 滞涩 / 缺陷",
+          "output": "node.decision（semantics + expectations）",
+          "window": "我（L1 建构）",
+          "criteria": "填表：有 decision 且 expectations 可判",
+          "runner": "scripts/plan-assertions.mjs",
+          "note2": "★ 清点器判「这条判据有没有可判者」；decision 有无由 publish 判（第 2 步）"
+        },
+        {
+          "n": 2,
+          "name": "交表",
+          "input": "该节点的 decision",
+          "output": "task{state:candidate}",
+          "window": "★ 系统（publish 翻卡，不接受手写 summary）",
+          "criteria": "交表：无 decision ⇒ 生成 L1 建构卡（不再拒）",
+          "runner": "certs/t350-publish-task-cert.mjs",
+          "note2": "★ T13 已落：L1 卡由 publish 生成"
+        },
+        {
+          "n": 3,
+          "name": "上架",
+          "input": "卡",
+          "output": "待接取池（pool / board）",
+          "window": "★ 系统（读端 = T8）",
+          "criteria": "上架：卡在 pool 里可见；shown + folded == total",
+          "unjudged": "★ 上架读端（**D-T8**）：`src/application/design/board/pool.ts` 未实现 ⇒ 第 3 步没有读端，卡挂了看不见。★★ 且**接入点未定**：要接进 `queryFeature`（`handlers.ts:492 getDslHandler` → `queryFeature`），但 `queryFeature` 住在哪个文件**未核** ⇒ 欠账 **D-T8-wire**（这条\"接线\"本身还没有判据）。★ 2026-10-17 从 `geometry.nodes[pool].decision.open` 挪到这里（M18：那个字段不被清点器扫，两边都数不到）。",
+          "why": "没有读端 ⇒ 这条判据没有判者",
+          "debt": "D-T8 / D-T8-wire"
+        },
+        {
+          "n": 4,
+          "name": "接取",
+          "input": "无主的卡",
+          "output": "claimed + owner",
+          "window": "我 / 子代理",
+          "criteria": "★ 无主 + `cardStanding ∈ {work, violated}`（`task_machine.ts:320 isClaimable`）——★★ 不是\"至少一条后态判据没过\"：那句话**双向都错**（violated 卡后态全过、照样可领；blocked 卡后态有红、但不能领）。",
+          "runner": "certs/t351-card-standing-cert.mjs",
+          "note2": "★ 五值 cardStanding + 两把尺分开",
+          "criteria_was_wrong": "★ 原判据「至少一条后态判据没过」于 2026-10-17 由不知情子代理指出双向错误（M3）；它自己点名的 runner（t351）证的是 `work|violated`，与旧文本相反。"
+        },
+        {
+          "n": 5,
+          "name": "做事",
+          "input": "已领的卡",
+          "output": "代码 / 文档",
+          "window": "领取者",
+          "criteria": "做事：闸放行（该节点有 claimed 卡）",
+          "runner": "certs/t352-write-gate-coverage-cert.mjs",
+          "note2": "★ 含「该找到节点却没找到必须点名」"
+        },
+        {
+          "n": 6,
+          "name": "交回执",
+          "input": "做的事",
+          "output": "回执五栏 + 读数",
+          "window": "领取者",
+          "criteria": "交回执：check-receipt 五栏齐",
+          "by": "领取者本人",
+          "where": "certs/.work/receipt-*.md + check-receipt 的 exit code",
+          "note2": "★ 机器只判「五栏在不在」，判不了「内容真不真」⇒ 归 review"
+        },
+        {
+          "n": 7,
+          "name": "验收 + 双验",
+          "input": "回执",
+          "output": "验收读数",
+          "window": "榜单 + 非做者",
+          "criteria": "验收 + 双验：红变绿 + unsupported=0",
+          "unjudged": "★ 双验没有执行者（grep 双验 src/ = 0），今天全靠自觉",
+          "why": "第 7 步缺角色（root_cause_of_the_4_deadlocks.double_verify 已记）",
+          "debt": "D-verifier-role"
+        }
+      ],
+      "root_cause_of_the_4_deadlocks": {
+        "claim": "★★ 把第 7 步（验收）的条件写进了第 4 步（接取）⇒ 『做完才让领』⇒ 死锁。★ 正解：接取的判据是『有活干』（`cardStanding ∈ {work, violated}`），不是『全过』",
+        "double_verify": "★ 第 7 步需要一个【角色】『非做者』，而流程里没定义谁扮演 ⇒ 单 agent 时无解。★ 缺的不是状态，是角色（verifier_kind 降级规则）",
+        "void": "★ 『已领后要退』是第 5 步的【异常出口】，流程里只给了 candidate 的出口 ⇒ 缺异常分支",
+        "supersede_on_claimed": "★ 『决策卡变了』是第 3 步的【重入】，流程里没定重入规则 ⇒ 已领的卡停在旧判据上静默漂移",
+        "common_form": "★★★ 四条的共同形态：★ 不是『状态不够』，而是【异常/重入分支】与【角色】两样没定义"
+      },
+      "note2": "★ 于是『状态机』只是这套服务流程的投影；★ 流程才是主视图（★ 它天然解释了『顺序』—— 每一步的门槛只能用上游的产物）"
+    },
+    "gate_principle": {
+      "authority": "docs/DESIGN.md §1 五条原则（P1）",
+      "core": "闸默认是【校验器】,不是【关卡】. 三职责: 校验(主体) / 提醒(不通过但无害=>放行+留痕) / 阻断(例外,只在会损坏数据/造成不一致时). 判据: 遇到不通过先问【它会损坏数据吗】— 不会=>提醒+放行; 会=>阻断. 不问就阻断=造死循环.",
+      "independent_entries": {
+        "steps_ref": "service_flow.steps（★ 步骤清单只在那一处；本段不再重复，避免同一维两处形状）",
+        "what_this_adds": "★ 本段只加一件 service_flow 没有的东西：判断某一步是不是【环】的诊断法。",
+        "diagnostic": "★ 若某个入口「必须有下游的产物才能进」⇒ 那不是闸，是【环】。（今天三个鸡生蛋同形态：新文件 vs 闸 / publish 要 decision / claim 要 path 型节点）"
+      },
+      "why": "用户 2026-10-17: 我们就缺少一个每一个环节独立的入口, 每个闸应该是提醒和校验, 而不是堵到其他的产生死循环."
+    },
+    "incremental_verify": {
+      "authority": "docs/DESIGN.md 的 B.5",
+      "why": "用户 2026-10-17: 我们的闸应该不用全量运行吧, 改了哪里运行哪里应该就可以了. 而且我们不是直接有契约的吗? 只有契约, 局部契约对上应该就可以了呀",
+      "problem": "现在只能全量: 证不知道自己碰了什么(72 张里只有 t354 有机器可读的 touches 声明), run-all 无增量模式 ⇒ 每笔都跑 72 张 ⇒ 慢 + 3 张会崩 + 子代理看起来像卡住",
+      "design": [
+        "① 用 git diff --name-only 拿本次改动的文件列表",
+        "② 查【契约为先】: 期望里带 path 的命中哪些(46 条里 43 条带 path) ⇒ 只跑那些期望",
+        "③ 查【证为后】: 只有 touches 声明命中改动文件的证才跑",
+        "④ 全量证只在三种时候跑: 收口 / 日终 / 改 schema 或证框架本身"
+      ],
+      "criteria": "★ 改一个文件 ⇒ 本次跑的证数 ≤ 5（现在 72）",
+      "gap": "★ 缺 touches 的覆盖率(t354 之外都没有) ⇒ 这是要补的一维: 每张证声明它碰的文件",
+      "note": "★ 局部契约对上 = 用户原话; 契约(path 命中)优先于证(touches 命中), 因为契约更便宜",
+      "runner": "scripts/verify-changed.mjs",
+      "runner_note": "★ 它算\"改一个文件命中几个证\"",
+      "problem_note": "★ 2026-10-17 更正（M15）：① 唯一机器可读的 `touches:` 在 **t354**（certs/t354-incremental-verify-cert.mjs:36），t351 只是在散文里提到这个词；② 可收集证是 **72** 张（不是 64）；③ \"28 条里 24 条带 path\"实为 **46 条里 43 条**。"
+    },
+    "touches_gap": {
+      "why": "用户 2026-10-17: 这个缺口也一并登记到设计 DSL 里",
+      "problem": "72 张证里只有 t354 声明了 touches(1/72) ⇒ 增量验证的第 ③ 步(只跑 touches 命中改动文件的证)永远退化成全跑",
+      "requirement": "每张证声明它碰哪些文件(touches)",
+      "criteria": "★ touches 覆盖率 100%（★ 现在 1/72）",
+      "note": "★ 契约(path 命中)已经可用(42/46) ⇒ 所以次序是: 先把契约那一路跑通(便宜), 再补 touches(贵)",
+      "runner": "scripts/verify-changed.mjs",
+      "runner_note": "★ 同上（touches 覆盖率由它统计）"
+    },
+    "parallel_claim": {
+      "why": "用户 2026-10-17: 能不能多个并行任务派多个子代理各自去领各自的任务?",
+      "answer": "★ 能。硬约束只有一条: ★ 文件不重叠。",
+      "how": "★ 用契约算重叠: 每张卡的 target 文件集合从 expectations 的 path 取; 两两求交",
+      "disciplines": [
+        "① 各自独立 AGENT_IO_HOME（★ 今天实测: 证套件写真仓 home, run82.json mtime 被重置）",
+        "② 不许 git add -A（★ 会扫进别人正在改的文件 ⇒ 提交信息与实际内容不符 + 提交半成品）",
+        "③ 提交由主 agent 做, 显式列路径",
+        "④ claim 的 CAS 保留 —— ★ 抢同一张卡属于\"会损坏数据\"那一类, 按 gate-principle 是【真阻断】"
+      ],
+      "criteria": "★ 并行 N 笔 ⇒ 两两 verdict 均为 disjoint（★ 出现 unknown 即不许并行，先补 path/touches）",
+      "diagnostic": "★ 若两笔改同一个文件 ⇒ 不是并行, 是【抢】⇒ 串行 + 让先领的做完",
+      "verdict_three": {
+        "overlap": "有交集 ⇒ 【串行】（★ 真会冲突）",
+        "disjoint": "无交集且两侧都非空 ⇒ 【可并行】",
+        "unknown": "★★ 任一方为空集 ⇒ 【未知，不许当可并行】—— ★ 空集不等于「没有冲突」，等于「算不出有没有冲突」"
+      },
+      "logic_hole_fixed": "★★★ 原判据「无交集 ⇒ 可并行」有洞：path 只覆盖 5 个 src 文件（touches_gap 已记），绝大多数卡的 target 会是空集 ⇒ 两两相交为空 ⇒ 全判「可并行」⇒ 假并行。按「unsupported 不算绿」同源铁律：空集必须报 unknown。",
+      "unjudged": "★ \"两两交集为空\"需要先能算出每张卡的 target 文件集合（path 覆盖率不够）",
+      "debt": "D-parallel"
+    },
+    "assertion_kinds": {
+      "note": "★★★ 2026-10-17 定。anti_idle 说「判据没有执行者 = 等于没有」，但那条规矩一直只施加在 invariant_checks 上。本段把它扩到整份 task_plan：每条判据必须有归属，归属只有三种。",
+      "kinds": {
+        "machine": {
+          "def": "有 cmd（或指名 runner），能机器判真假",
+          "require": "cmd + runner，红时 exit 1"
+        },
+        "review": {
+          "def": "机器判不了，但有指定的判者角色与留痕点",
+          "require": "by（谁看）+ where（留痕在哪）"
+        },
+        "unjudged": {
+          "def": "★ 明确承认没人判 —— 不许被当成「已经保证了」",
+          "require": "why（为什么判不了）+ debt（欠账编号）。★ 允许写成 `unjudged` 字段内的说明（不必单独 why 键）",
+          "require_note": "★★ 2026-10-17（Q3）：原写\"why + debt 两个键\"，实测 17 条里 **13 条没有 `why` 键**（解释写在 `unjudged` 字段里）⇒ 要求与实存不符，而这条要求本身没有 runner 校。⇒ 现在明说\"解释可以写在 unjudged 字段内\"。"
+        }
+      },
+      "rule": "★ 新登记的任何一条判据，不许是 unjudged（否则就是拿文字冒充保证）。存量 unjudged 要逐轮下降。",
+      "measure": "★ 读数 = task_plan 内判据类字段的 machine / review / unjudged 条数（scripts/plan-assertions.mjs）",
+      "progress_2026_10_17": "★ service_flow 7 条判据按「补全」动作定归属：4 条 machine（指向真实存在的证 t350/t351/t352 + plan-assertions）、1 条 review（回执：机器判不了内容真伪）、2 条如实留 unjudged 并挂欠账（D-T8 读端未建 / D-verifier-role 双验无角色）。★ 没造假 runner。",
+      "naming_rule": "★★★ 判据字段名固定为 criteria/check/red_when/rule/expr/cmd/metric/threshold（★ 即 CLAIM_KEYS 的全部）（见 scripts/plan-assertions.mjs 的 CLAIM_KEYS）。★ 不许为了「看起来补全了」而改名 —— 改名会让清点器看不见它，等于把债务藏起来。★ 2026-10-17 我当场就犯过一次（用 assertion.what 替代 criteria，7 条判据从统计里消失，总数 49→42）。 ★★ 2026-10-17 更正（M17）：原文点名了 `gate`，但它不在 CLAIM_KEYS ⇒ `task_home.gate` 与 `what_a_card_proves.layers[*].gate` 这两处\"读起来像要求\"的句子**既不进清点、也没 runner、也没挂债** ⇒ 已改成本清单，并给那两处加了 note（它们是\"质量闸的说明\"，不是判据）。",
+      "rewrite_2026_10_17": "★ task_machine 的「红归属」那一维原先是三个局部变量 + 四段 if（补丁形态：加一类归属就要再加一条 if、漏一类就静默错判且 reason 撒谎）；已重写成【具名类型 RedAttribution + 穷尽表 RED_DISPOSITION + 由归属计数生成 reason】⇒ 加一类只加一个枚举值 + 表里一行，漏标就编不过（与 PHASE_BY_KIND 同一手法）。行为改变 1 条：红全落在已 done 节点 ⇒ 旧 work / 新 blocked（因为闸只认该节点的卡）。",
+      "runner": "scripts/plan-assertions.mjs",
+      "runner_note": "★ \"新判据不许 unjudged\" 由 --fail-on-debt 守"
+    },
+    "assertion_baseline_2026_10_17": {
+      "measured_by": "scripts/plan-assertions.mjs",
+      "total": 51,
+      "machine": 30,
+      "review": 4,
+      "unjudged": 17,
+      "verdict": "★ 2026-10-17 更正：本对象内必须自洽（total == machine+review+unjudged）。当前 51 = 30 + 4 + 17。★★ 原 verdict 写\"42 条没有执行者\"（与同对象 unjudged=17 矛盾），已作废。",
+      "policy": "★ 不一次性补 42 条（会造假 runner）；改为：每领一张卡，顺手把它触及的判据升到 machine 或 review，unjudged 逐轮下降。",
+      "unjudged_paths": [
+        "patrols[0].metric",
+        "patrols[1].metrics[0].expr",
+        "patrols[1].metrics[1].expr",
+        "patrols[2].metric",
+        "design_dsl_health.anti_blindspot_checks[0].check",
+        "design_dsl_health.anti_blindspot_checks[1].check",
+        "two_level_tasks.claim_incomplete_rule.rule",
+        "service_flow.steps[2].criteria",
+        "service_flow.steps[6].criteria",
+        "parallel_claim.criteria",
+        "design_completeness.criteria[0].rule",
+        "design_completeness.criteria[1].rule",
+        "design_completeness.criteria[2].rule",
+        "design_completeness.criteria[3].rule",
+        "design_completeness.criteria[4].rule",
+        "design_completeness.criteria[5].rule",
+        "design_completeness.criteria[6].rule"
+      ],
+      "note_on_total": "★ 51 是清点器按【能执行/能判真假】的判据键（criteria/check/red_when/rule/expr/cmd/metric/threshold）数的；★ 早先 49/48 是旧口径（含 answer/proves/core/now 等说明性字段）。以清点器为准。",
+      "why_list_not_count": "★★★ 第一版闸只比总数⇒加一条 unjudged 也会因为总数低于历史基线而不报红（自测实测）。所以改成【比对名单】：新出现的 path ⇒ 红。",
+      "cleared_2026_10_17": "★ service_flow 的 7 条判据已按「领到任务先补全」逐条定归属 ⇒ unjudged 40→35（machine 9→13，review 0→1）。★ 余 2 条（上架读端 D-T8 / 双验角色 D-verifier-role）如实留欠账。",
+      "refreshed_2026_10_17": "★ 基线从 49/13/1/35 刷新为 51/30/4/17 —— ★ 教训：基线本身会过期；过期基线会让\"新增债务\"检查失效（它比对的是旧名单）。",
+      "note_on_json_impurity": "★★ `plan-assertions.mjs --json` 的输出里混了人类可读行（某个字段内容含 `{summary, acceptance…}`）⇒ 取数方不能简单用 indexOf(\"{\") 。★ 该修：--json 模式应只输出 JSON。"
+    },
+    "vocabulary": {
+      "user_asked_2026_10_17": "这图上的这些选项需不需要注册进去，就是这些契约需不需要注册进去，以便下个人填写的时候简便填写，不用自己去拟造。",
+      "authority": "scripts/vocabulary.mjs（★ 它从代码/schema/DSL 三处抽取，不复制）",
+      "rule": "★ 填卡前先查表：查得到的 ⇒ 选；查不到的合法值 ⇒ 说明该枚举不全 ⇒ ★ 那是 L1 建构任务（补全枚举），不是自己拟造。",
+      "strength_levels": {
+        "strong": "编译期穷尽 Record<K,V> + 运行时抛错并列出合法值 ⇒ 拟造不出来",
+        "weak": "★ 有单一名单，但无编译期保证 ⇒ 填错可能静默通过",
+        "none": "只有散文 ⇒ 必须人工对"
+      },
+      "current_2026_10_17": {
+        "namespaces": 4,
+        "strong": 1,
+        "detail": "expectation.kind=strong(6 项) · provenance.source=weak(5 项) · assertion.kind=weak(3 项) · schema.enum=weak(23 处)"
+      },
+      "real_gap": "★★★ 不是「没注册」，而是【校验端知道合法值，填充端不知道】：EXPECTATION_KINDS 只用于校验，get_dsl / 读取端一个都读不到 ⇒ 填卡的人只能靠记忆或猜 ⇒ 必然拟造。",
+      "gaps_to_close": [
+        "★ provenance.source 提成 src/domain 常量 + Record 穷尽（像 EXPECTATION_KINDS 那样）⇒ weak → strong",
+        "★ assertion.kind 同上",
+        "★★ 让读取端能拿到词汇表（get_dsl 返回 vocabulary 字段）⇒ 填充端不必记，查就行",
+        "★ vocabulary.mjs 加 --check：某命名空间若既无 strong 也无单一名单 ⇒ 报红（裸奔枚举）"
+      ],
+      "why_not_duplicate": "★ 清单只住一处（代码或 schema）；DSL 这一段只记「有哪些命名空间、权威在哪、强度多少、缺口是哪些」——★ 一旦把 6 个 kind 抄进 DSL，代码加第 7 个就漏了。",
+      "principle": "★★★ 用户 2026-10-17：不把「怎样是对的」告诉人家，就是让人去猜。所以每个可选值必须带三样：①该用它证明什么 ②★ 它证明不了什么（选错了会假绿）③真例子。",
+      "fill_guide": {
+        "expectation.kind": {
+          "note": "★ 选它的判据是「你想证明什么 × 它能证明什么」。★ 选错的后果不是报错（kind 合法照样过），而是【假绿】。",
+          "items": [
+            {
+              "value": "file-exists",
+              "fields": "path + why",
+              "phase": "post",
+              "impl": "src/application/design/intent/expectations.ts:207",
+              "use_when": "只需证明「这个文件存在」",
+              "not_when": "★ 想证明「文件里实现了什么」⇒ 用它只会假绿（文件在 ≠ 实现对）",
+              "because": "它只 stat 文件"
+            },
+            {
+              "value": "symbol-exists",
+              "fields": "path + symbol + why",
+              "phase": "post",
+              "impl": "expectations.ts:214",
+              "use_when": "证明「这个名字在文件里存在」（函数/类/常量）",
+              "not_when": "★ 想证明「签名对不对」⇒ 用 signature-matches；想证明「它调了谁」⇒ 用 call-exists",
+              "because": "它只查符号名，不看签名、不看调用"
+            },
+            {
+              "value": "signature-matches",
+              "fields": "path + symbol + signature + why",
+              "phase": "post",
+              "impl": "expectations.ts:215",
+              "use_when": "证明「符号的签名与设计一致」（参数个数/类型/返回）",
+              "not_when": "★ 想证明「函数体怎么实现的」⇒ 签名对 ≠ 实现对；那要用 call-exists",
+              "because": "它只比签名文本"
+            },
+            {
+              "value": "edge-exists",
+              "fields": "from + to + why",
+              "phase": "post",
+              "impl": "expectations.ts:322",
+              "use_when": "证明「A 依赖了 B」（import/依赖边存在）",
+              "not_when": "★★ 想证明「必须用某个具体符号」⇒ ★ 实测过：设计要 math.add、实现换成 mul，edge-exists 照样绿（边还在）⇒ 必须用 call-exists",
+              "because": "边存在 ≠ 用了对的那个符号"
+            },
+            {
+              "value": "call-exists",
+              "fields": "path + symbol + target + why",
+              "phase": "post",
+              "impl": "expectations.ts:266",
+              "use_when": "★ 证明「path 里的 symbol 真的调用了 target」—— 这是表达「必须复用哪个符号」的唯一手段",
+              "not_when": "★ 别用它代替 edge-exists 表达「有依赖」（它更严，会漏掉只是 import 没用的情况）",
+              "because": "读 cache.db 的 call 边，节点 id = <fileNodeId>#<Symbol>"
+            },
+            {
+              "value": "edge-absent",
+              "fields": "from + to + why",
+              "phase": "★ pre",
+              "impl": "expectations.ts:323",
+              "use_when": "★ 证明「A 不许依赖 B」（前态就成立，用来锁边界归属）",
+              "not_when": "★★★ 绝不能拿它判断「已经满足了」—— 它是 pre 阶段：未施工时天然成立 ⇒ 若混进满足度，卡会显示\"已满足\"而实际什么都没做",
+              "because": "phase=pre，见 expectationPhase"
+            }
+          ]
+        },
+        "provenance.source": {
+          "note": "★ 一条决策卡的出处该选哪类，取决于「这个断言是从哪儿来的」。★ 选错不会报错，但会失去可回溯性。",
+          "items": [
+            {
+              "value": "doc",
+              "use_when": "从项目设计文档 / 讨论登记的某一段翻译来的",
+              "not_when": "★ 别拿它装「我自己的想法」——那是 thought",
+              "where": "docs/discussion-log.md 等"
+            },
+            {
+              "value": "utterance",
+              "use_when": "用户说过的原话",
+              "not_when": "★★ 必须逐字引用，不许改写/概括（改写了就不是出处）",
+              "where": "流水账里的逐字引用"
+            },
+            {
+              "value": "thought",
+              "use_when": "我自己想出来的",
+              "not_when": "★ 必须写「何时、因何想起」，否则无法回溯（这是最软的一类）",
+              "where": "——"
+            },
+            {
+              "value": "friction",
+              "use_when": "★ 我用这套工具时实际被卡住过",
+              "not_when": "★ 别把「我觉得可能有问题」算 friction —— 那要真被卡过",
+              "where": "docs/frictions.jsonl 某一条"
+            },
+            {
+              "value": "defect",
+              "use_when": "★ 分析项目时发现的缺陷（对拍的红、体检发现）",
+              "not_when": "★ 别把「设计上我觉得不优雅」算缺陷 —— 它要有判据或红",
+              "where": "对拍红 / G1–G5 那一类"
+            }
+          ]
+        },
+        "assertion.kind": {
+          "note": "★ 一条判据该归哪一态，取决于「谁在判它」。",
+          "items": [
+            {
+              "value": "machine",
+              "use_when": "有 cmd/runner，机器能判真假",
+              "not_when": "★★ 别为了让它变 machine 而造一个「永远通过」的假 runner —— 那是把 unjudged 伪装成机器判",
+              "need": "cmd 或 runner，红时 exit 1"
+            },
+            {
+              "value": "review",
+              "use_when": "机器判不了，但能指名谁看、在哪留痕",
+              "not_when": "★ 别用它逃债 —— by/where 必须真的会有人看",
+              "need": "by + where"
+            },
+            {
+              "value": "unjudged",
+              "use_when": "★ 如实承认没人判（暂时）",
+              "not_when": "★★★ 不许把它当成「已经保证了」；也不许新登记的判据一上来就是 unjudged",
+              "need": "why + debt 编号"
+            }
+          ]
+        }
+      },
+      "direct_answer": "★ 要，但注册在【校验端】，导出成【填充端可查的清单】；★ 不许往 DSL 里再抄一份（那就是又一处形状）。",
+      "naming_note": "★★ 本段原用 answer 作键名,被 plan-assertions 误判成一条判据(总数 49→50) —— 因为 answer 在 what_a_card_proves 里是判据语义。★ 这暴露清点器靠【键名猜】而不是【显式标记】:一义两用就误判。正解是显式标记(见 frictions)。",
+      "runner": "scripts/vocabulary.mjs",
+      "runner_note": "★ 填卡前查表，由它输出合法值"
+    },
+    "design_completeness": {
+      "why": "★★★ 用户 2026-10-17：先把设计 DSL 迭代到全，再根据它写源码；不要一遍遍追。设计迭代的代价特别低（只改 JSON），且有 git。",
+      "note": "★ 这份是「设计全不全」的判据 —— 也就是 L1 建构卡的判据（补上 two_level_tasks.L1_construct 缺的那一维）。",
+      "criteria": [
+        {
+          "id": "D1",
+          "name": "覆盖",
+          "rule": "要改的每个文件都有节点（path 命中）",
+          "now": "★ 11 节点覆盖 9/9 个任务系统文件 + `op_data_spec.ts`（已补）。★★ 但**分母漏了**：还有三个「设计要求改」的文件没有节点 —— `overlay.ts`（task_home 的 progress 退役）、`expectations.ts`（L1 判据缺口的解药）、`status_tools.ts`（complete 的必经投影）。★ 由不知情子代理指出（M13）：D1 是\"设计全不全\"的头号判据，**分母错了，D2/D5/D7 全跟着错**。",
+          "unjudged": "★ 设计完整性的判据目前没有检查器（等 Expectation 与 invariant 合成一个抽象后才能跑）",
+          "debt": "D-design-completeness",
+          "gap_rule": "判据的分母必须【可算】：所有 debt/steps_pending/OQ 解决路径里出现的 src 路径 ∪ 所有 expectations 的 path ⊆ nodes.path"
+        },
+        {
+          "id": "D2",
+          "name": "节点完整",
+          "rule": "每个节点有 path + decision{summary, acceptance, ≥1 expectation}",
+          "now": "✓ 11/11 全齐（path + summary + acceptance + provenance）。",
+          "unjudged": "★ 设计完整性的判据目前没有检查器（等 Expectation 与 invariant 合成一个抽象后才能跑）",
+          "debt": "D-design-completeness"
+        },
+        {
+          "id": "D3",
+          "name": "可判",
+          "rule": "每条 expectation 的 kind ∈ EXPECTATION_KINDS（validateDSL 兜）",
+          "now": "✓（validate 通过）",
+          "unjudged": "★ 设计完整性的判据目前没有检查器（等 Expectation 与 invariant 合成一个抽象后才能跑）",
+          "debt": "D-design-completeness"
+        },
+        {
+          "id": "D4",
+          "name": "迁移状态",
+          "rule": "每条迁移 state 必填；ready 的必须有代码执行它",
+          "now": "★ 5 条迁移:ready 3(t_claim/t_release/t_done_from_claimed)· blocked 1(t_done_from_candidate/OQ1)· unimplemented 1(t_void,depends_on=A1);t_supersede 已删(2026-10-17,用户认可)+ 两条源码待跟已记",
+          "unjudged": "★ 设计完整性的判据目前没有检查器（等 Expectation 与 invariant 合成一个抽象后才能跑）",
+          "debt": "D-design-completeness"
+        },
+        {
+          "id": "D5",
+          "name": "执行者",
+          "rule": "每条判据有归属（machine / review / unjudged + 欠账号）",
+          "now": "★ 51 条：machine 30 / review 4 / unjudged 17（17 条全部带 debt 编号）。★ 与 assertion_baseline 同一组数（2026-10-17 统一）。",
+          "unjudged": "★ 设计完整性的判据目前没有检查器（等 Expectation 与 invariant 合成一个抽象后才能跑）",
+          "debt": "D-design-completeness"
+        },
+        {
+          "id": "D6",
+          "name": "接线",
+          "rule": "每个 export 至少 1 个消费者（防\"建了没接\"）",
+          "now": "★ 3 处缺：patrolDrift（A1）/ renderMicro（B5）/ WriteActor 旧链未接（A7）。★★ 而设计侧【表达不了】这三处：`call-exists` 需要\"调用者的 path\"，但这三处的调用者【根本不存在】⇒ 见 D8。",
+          "unjudged": "★ 设计完整性的判据目前没有检查器（等 Expectation 与 invariant 合成一个抽象后才能跑）",
+          "debt": "D-design-completeness"
+        },
+        {
+          "id": "D7",
+          "name": "检查器自身可信",
+          "rule": "每个体检项必须能【自己坏】（故意造一个反例 ⇒ 它要报）；且检查器认得的判据形式要与真实一致",
+          "now": "★ 2026-10-17 已抓 5 次检查器假读数：① 读空文件（路径分隔符不一致）⇒ 报「全 0」假绿；② 只数「其他文件」的引用 ⇒ 报 42 个假孤儿；③ 正则转义多套一层 ⇒ 报 105 个假死代码；④ 漏 ESM 的 js→ts 映射 ⇒ 报「全部无依赖」；⑤ 只认 判据/criteria/rule/check/cmd ⇒ 把 expr / metric / threshold 报成「无判据」（假红）。",
+          "unjudged": "★ 设计完整性的判据目前没有检查器（等 Expectation 与 invariant 合成一个抽象后才能跑）",
+          "debt": "D-design-completeness"
+        },
+        {
+          "id": "D8",
+          "name": "kind 的表达力缺口",
+          "now": "★ 现有 6 种 kind 表达不了：`call-exists` 要 from（调用者）⇒ 调用者不存在就写不出来；`edge-absent` 语义相反（它说的是\"不许有\"）。★★ 与 L1 判据缺口同源：都缺\"对设计自己判、对缺失处判\"的能力。",
+          "unjudged": "★ 没有检查器，也没有能表达它的 kind",
+          "debt": "D-kind-expressiveness",
+          "relates_to": "two_level_tasks.L1_construct.missing_judge_kind",
+          "gap": "设计要能表达\"应该有人调用 X，但现在没有\"",
+          "note": "★ 本字段用 gap 而非 rule —— 因为它是【缺口的描述】,不是一条要执行的判据;若写成 rule,清点器会判它 unjudged ⇒ 违反 assertion_kinds.rule(新判据不许 unjudged)"
+        },
+        {
+          "id": "D9",
+          "name": "外部审查通过",
+          "gap": "第二道验收闸（不知情子代理）审完，且【清单之外】的毛病为 0",
+          "now": "★ 2026-10-17 第一次审：18 条（A6/B7/C5）⇒ 没过",
+          "by": "不知情子代理（不给它已有结论，只问\"有没有没被记账的毛病\"）",
+          "where": "task_plan.static_review_2_2026_10_17",
+          "note": "★ 用 gap 而非 rule（同 D8）：它描述\"要达到什么\"，不是一条能独立执行的判据；★ 它也要求被审方给出\"查了哪些维度\"，否则\"看不出毛病\"是空话"
+        }
+      ],
+      "judged_by": "★ 本段**目前没有检查器** —— 这本身就是 D5 的一条 unjudged（欠账 D-design-completeness）。★ 写法与 invariant_checks 同构（判据 + cmd + runner），等 `Expectation` 与 `invariant` 合成同一个可执行抽象后，这一段就能变成可跑的判据。",
+      "order": "★ 顺序：先把 D1/D2 补满 → 处理 D4 的 2 条 unimplemented → 收 D5 的 35 条 → 最后才写源码（L2）。"
+    },
+    "static_review_2_2026_10_17": {
+      "reviewed_by": "不知情子代理（第二道验收闸 · 2026-10-17）",
+      "verdict": "✗ 第二道闸【没过】—— 发现 18 条清单之外的毛病（A6 / B7 / C5）",
+      "note": "★ 它被要求只找\"没被记账的\"问题；给它的分野是：带 debt/D 编号的都不算新发现。",
+      "same_origin": [
+        "M1 ↔ M6：判据只证明\"符号存在\"，于是连\"不存在的闸\"也变绿（M6 是 D8 的一个实例）",
+        "M2 ↔ M3：流程主视图（task_home / service_flow）的判据文本已与代码/裁定分家",
+        "M4：唯一\"按设计自己的规则正确判定、却把卡判死\"的闭环漏洞 —— 建议单独复核"
+      ],
+      "items": [
+        {
+          "id": "M1",
+          "level": "A",
+          "where": "design_completeness.D3",
+          "what": "D3 说「kind 由 validateDSL 兜」⇒ 假绿：validateDSL 不看 decision（validator.ts:204 只 ajv(schema)+2 条语义；schema 的 Node.properties 没有 decision）。实测：kind 拼成 file-exist ⇒ valid 仍 true",
+          "why": "★ 设计 DSL 的 decision 从未被校验器管过 —— 而它就是\"这张卡要证明什么\""
+        },
+        {
+          "id": "M2",
+          "level": "A",
+          "where": "task_home.publish.guards[0..2] / landed.readings.e2e",
+          "what": "三条 guard 都写\"拒\"，而 task_ops.ts:253 已改成降级 L1（不拒）；service_flow.steps[2] 与 t350 ⑥ 也说\"不再拒\"",
+          "why": "publish 是第 2 步，照 guards 实现会退回\"拒\""
+        },
+        {
+          "id": "M3",
+          "level": "A",
+          "where": "service_flow.steps[3].criteria（+ root_cause.claim + DESIGN §2.2 第4步）",
+          "what": "写「至少一条后态判据没过」，而代码是 isClaimable = {work, violated} ⇒ ★ 双向都错：violated 后态全过也能领；blocked 后态有红但不能领",
+          "why": "这条判据自己点名的 runner（t351）证的是 work|violated，与文本相反"
+        },
+        {
+          "id": "M4",
+          "level": "A",
+          "where": "geometry.nodes[discussion_log].decision.expectations[3]（edge-exists）",
+          "what": "why 自己写「type-only ⇒ 正确判定是 unsupported」；而 cardStanding 对 unsupported>0 ⇒ unknowable ⇒ 该节点一旦立卡就【永久死卡】",
+          "why": "★ 唯一一条\"按设计自己的规则正确判定，却把卡判死\"的闭环漏洞"
+        },
+        {
+          "id": "M5",
+          "level": "A",
+          "where": "open_questions[OQ9] × rulings[OQ9] × task_machine.expectations[2] × 源码",
+          "what": "四处四种说法：OQ 说\"未拍\"、rulings 说\"已裁定抽 domain 纯函数\"、DSL 有 call-exists 强制直接调、task_machine.ts:39 确实 domain→application 倒挂；grep JudgePort = 0",
+          "why": "一条已签字的裁定与一条机器强制的期望正面互斥"
+        },
+        {
+          "id": "M6",
+          "level": "A",
+          "where": "DESIGN §4/§6 + GOAL §5 + write_gate.decision.summary + 该节点的 task(done)",
+          "what": "四处互斥（已修/待做/排第1/仍写\"现在只判 claimed\"）；静态核：assertSourceWriteRegisteredFor 零调用 · AGENT_IO_ACTOR 全仓无赋值 · 无一纸证出现 WriteActor",
+          "why": "★★ A7 卡 done 而交付物是死码 —— 与今日反复批判的\"绿得没意义\"同型"
+        },
+        {
+          "id": "M7",
+          "level": "B",
+          "where": "state_machine.transitions[t_claim].clauses[3] / [t_release].clauses[0]",
+          "what": "8 条 guard clause 里 2 条没有执行者：「target 在 DB 存在」（全仓无 existsTarget）与「带 by」（releaseTask:524 是 input.agent ?? null）",
+          "why": "★ \"宣告可走但没实现\"从状态挪到了条款"
+        },
+        {
+          "id": "M8",
+          "level": "B",
+          "where": "invariants(5) vs invariant_checks(4)+unjudgeable(1)",
+          "what": "数字巧合 4+1=5，实际 2 条不变量无 check（invariants[0][1]）、2 条 check 不在 invariants 里（checks[2][3]）",
+          "why": "runner 只遍历 invariant_checks ⇒ \"每条不变量都有判据\"没有任何检查"
+        },
+        {
+          "id": "M9",
+          "level": "B",
+          "where": "state_machine.states / terminal_states + board.forces[0]",
+          "what": "superseded 已从 transitions 删掉，但 states/terminal_states 仍列着（零入边=死状态）；而 board.forces 要求\"上过榜单必须有终态\"",
+          "why": "★ target 被删的卡：void 未实现、done 不可能、superseded 无迁移 ⇒ 永远没有终态"
+        },
+        {
+          "id": "M10",
+          "level": "B",
+          "where": "geometry.edges（e_ops_to_expectation 出现两次）",
+          "what": "task_ops→expectation 与 node_ops→expectation 共用同一个 edge id；validateDSL 只查 node id 唯一（validator.ts:73-85）",
+          "why": "★★ 下游按 edge id 键控（overlay.edges Record）⇒ 标 requires 会同时作用两个文件"
+        },
+        {
+          "id": "M11",
+          "level": "B",
+          "where": "patrols[2]（dual_write）",
+          "what": "metric 的两个操作数都不存在：OverlayAnchor 无 updated_at、DriftReport 无 authority_unknown（src 0 命中）",
+          "why": "★ 被 unjudged+debt:A1 掩盖了 —— A1 修好后它依然算不出来"
+        },
+        {
+          "id": "M12",
+          "level": "B",
+          "where": "two_level_tasks.L1_construct（output / criteria / 代码 constructionVerdict）",
+          "what": "三处三种定义：≥1 expectation（任意 phase）/ \"建构完整\"（形容词）/ ≥1 phase=post；且它因带 by+where 被判成 review",
+          "why": "★ 只有 edge-absent 的节点永远 complete 不掉；\"不可判\"被算成\"有人判\""
+        },
+        {
+          "id": "M13",
+          "level": "B",
+          "where": "design_completeness.D1 的分母",
+          "what": "D1 分母是 9，但待改文件还有 overlay.ts（progress 退役）/ expectations.ts（L1 判据缺口的解药）/ status_tools.ts（complete 必经），三者无节点且不在任何缺口清单",
+          "why": "★ 头号判据的分母错了 ⇒ D2/D5/D7 全跟着错"
+        },
+        {
+          "id": "M14",
+          "level": "C",
+          "where": "assertion_baseline / D5.now / DESIGN §3",
+          "what": "同一指标三处三个数：51/30/4/17（实跑）· 49/35 · 49/13/1/35；且 assertion_baseline.verdict 里的\"42 条\"与同对象 unjudged=17 矛盾",
+          "why": "同一对象内自洽：total == machine+review+unjudged"
+        },
+        {
+          "id": "M15",
+          "level": "C",
+          "where": "incremental_verify.problem / touches_gap / DESIGN §6",
+          "what": "touches 声明唯一在 t354（不是 t351）；证数分母 64 vs 72；\"28 条里 24 条带 path\"实为 46 里 42",
+          "why": "证数 = COLLECT_RE 命中数（今天 72）"
+        },
+        {
+          "id": "M16",
+          "level": "C",
+          "where": "plan_to_work.note",
+          "what": "note 写「无 fail ⇒ 方案已实现」，而同段 green_done.pass_when 要求 unsupported==0",
+          "why": "★ M4 那条 type-only 正好让 failed==0 而 unsupported==1 ⇒ 按 note 就是\"已实现\""
+        },
+        {
+          "id": "M17",
+          "level": "C",
+          "where": "assertion_kinds.naming_rule",
+          "what": "naming_rule 点名了 gate，但 CLAIM_KEYS 没有 gate ⇒ task_home.gate 与 what_a_card_proves.layers[0].gate 不进清点、无 runner、无 debt",
+          "why": "★ 藏了两条债"
+        },
+        {
+          "id": "M18",
+          "level": "C",
+          "where": "geometry.nodes[pool].decision.open + D-T8-wire",
+          "what": "NodeDecision 没有 open 字段；open 不在 CLAIM_KEYS；plan-assertions 只扫 task_plan（不扫 geometry）⇒ 这条\"unjudged\"两边都数不到；D-T8-wire 全仓 0 处定义",
+          "why": "debt 值必须能在台账里查到"
+        }
+      ],
+      "fixed": {
+        "at": "2026-10-17",
+        "items": [
+          "M2 guards",
+          "M2 e2e",
+          "M3 step4",
+          "M9 states",
+          "M9 board.forces",
+          "M13 D1",
+          "M14 baseline.verdict",
+          "M14 D5.now",
+          "M14 D2.now"
+        ],
+        "note": "★ 只修了纯 DSL 的（M2/M3/M9/M13/M14）；M1/M5/M6/M10/M11/M12 涉及源码或裁定，M8/M15/M16/M17/M18 待修。"
+      },
+      "fixed_round2": {
+        "at": "2026-10-17",
+        "items": [
+          "M8 invariants 7 条带归属",
+          "M12 L1_construct.criteria 改成与 constructionVerdict 同式",
+          "M15 t351→t354 / 64→72",
+          "M15 touches_gap 比例",
+          "M16 note 与 green_done 同式",
+          "M17 naming_rule 去掉 gate",
+          "M17 两处加 gate_note",
+          "M18 删 pool.decision.open",
+          "M18 挪进 service_flow.steps[2] + 定义 D-T8-wire"
+        ]
+      },
+      "fixed_round3": {
+        "at": "2026-10-17",
+        "items": [
+          "M5 open_questions 11 → 10（OQ9 移出）",
+          "M5 标注 call-exists 的 pending_change",
+          "M4 discussion_log 的 edge-exists → symbol-exists（4 条不变）",
+          "M4 3 条 type-only 边改 label",
+          "M7 t_claim 5 条 clause 全挂归属",
+          "M7 t_release 2 条 clause 全挂归属",
+          "M10 重复 edge id 修 1 处",
+          "M11 dual_write 改挂 D-dual-write"
+        ]
+      },
+      "debt_ledger_note": "★★★ 2026-10-17（N4，第三道闸指出）：本轮新挂了 7 个债号，但 DESIGN.md §6 的台账里**一个都没有** ⇒ \"已挂债\"形式上成立、**可追溯上不成立**（grep 全仓 0 命中）。★ 已在 DESIGN.md §6 台账补登：D-judge-port / D-invariant-0 / D-invariant-1 / D-target-exists / D-release-by / D-dual-write / D-T8-wire（+ 修复前的 5 个：D-design-completeness / D-kind-expressiveness / D-anti-decoration / D-parallel / D-claim-incomplete）。★ 判据：**debt 值必须在台账里能查到**（M18 的原话），否则它只是一句没人读的字符串。",
+      "stale_readings": "★★ 2026-10-17（N5）：M4 把 discussion_log 的 type-only 期望换成 symbol-exists 之后，「unsupported=1 且那一条是 discussion_log 的 type-only 边」这句话**不可能再成立**。★ 仍指认它的四处：plan_to_work.reading_now · block_readings.items[2] · task_home.landed.readings.task_ops_block · task_home.publish.landed.readings.block。★ 处理：这些是**历史读数快照**（记录当时的事实），不改成\"现在\"；但必须标 `as_of` —— 否则下一个人会把它们当现状。",
+      "review3_2026_10_17": {
+        "reviewed_by": "不知情子代理（第三道验收闸 · 复审修复）",
+        "verdict": "✗ 不满足\"修复是对的且没引入新毛病\"：16 条里只有 3 条彻底（M9/M14/M16），13 条部分；新引入 5 条（N1–N5）+ 清单外 4 条（Q1–Q4）",
+        "hardest": [
+          "★ N1 rule→text = 改名掩盖（反事实：改回 rule ⇒ 51→58、17→24）；而我自己的 naming_rule 正是禁止这么做",
+          "★ N3 guards[2] 与代码相反（说领不了、实际 L1 卡能领）",
+          "★ N2 t_claim 6 条 clause 只挂 5 条，漏的正是最重的归属判据",
+          "★ N4 7 个新债号在台账里 0 命中 ⇒ \"已挂债\"不可追溯",
+          "★ M4 死卡真解了，但\"复用类型\"的意图从可判退成不可判、且没挂债",
+          "★ M5 的 source_pending 不可执行；call-exists 仍机器强制 ⇒ \"把炸弹写进注记\"",
+          "★ M8 的 covered_by 索引全对，但改名后 7 条彻底不进任何检查 ⇒ 病被上移一层"
+        ]
+      },
+      "debt_ledger_extra": {
+        "D-edge-id-unique": "★ M10 的根因：`src/domain/validator.ts:72-83` 只查 `nodes.id` 唯一、**不查 edges.id** ⇒ 重复 edge id 能过校验，而下游 `overlay.edges` 按 id 键控 ⇒ 会串。已记（台账在 DESIGN §6）。"
+      },
+      "ledger_2026_10_18": {
+        "as_of": "2026-10-18 00:20",
+        "why": "★★★ 用户问「还有多少设计没销账」。先记账本的病：脚本按【字符串包含】算，得出\"M1–M18 全动过\" —— 但那只是\"提到过\"，不是\"修好\"；而 N2/N3/Q1/Q3/Q4 明明修了却没记进 fixed_round3。⇒ 本段是【人工核过】的账。",
+        "M": {
+          "total": 18,
+          "verified_fixed": [
+            "M3",
+            "M9",
+            "M11",
+            "M14",
+            "M16"
+          ],
+          "verified_fixed_note": "★ 第三/四道闸独立认可\"完全对\"的 5 条",
+          "partial_fixed": [
+            "M2",
+            "M4",
+            "M5",
+            "M7",
+            "M8",
+            "M10",
+            "M12",
+            "M13",
+            "M15",
+            "M17",
+            "M18"
+          ],
+          "partial_note": "★ \"主句对了、边角没跟上\"（如 M12 的 output 多一句、M15 的数字、M17/M10 的债号）—— 其中 M15/M17/M10 的边角已在 2026-10-18 补齐；M12 剩一处属源码",
+          "source_pending": [
+            "M1",
+            "M6"
+          ],
+          "source_pending_note": "★ 设计阶段**销不掉**：M1 = validateDSL 不看 decision；M6 = actor 接线是死码"
+        },
+        "review3": {
+          "total": 9,
+          "fixed": [
+            "N1",
+            "N2",
+            "N3",
+            "Q1",
+            "Q2",
+            "Q3",
+            "Q4"
+          ],
+          "recorded": [
+            "N4",
+            "N5"
+          ],
+          "note": "★ N1 是\"重做\"（4 条闸 + 实测），不是改字；Q2 补了 OQ8 的裁定记录"
+        },
+        "review4": {
+          "total": 4,
+          "fixed": [
+            "闸A",
+            "闸B",
+            "闸C",
+            "闸D"
+          ],
+          "note": "★ 4 条闸全部实测生效；闸 C 一上线就抓到 invariants[2] 的 debt:\"OQ4\" 不在台账",
+          "new_from_review4": "★ 第五道闸（审这 4 条闸自身）进行中"
+        },
+        "source_pending_all": [
+          "M1 · validateDSL 不看 decision ⇒ D-validate-decision",
+          "M6 · assertSourceWriteRegisteredFor 零调用 + AGENT_IO_ACTOR 无赋值 ⇒ D-actor-wire",
+          "M10 根因 · validator.ts 不查 edges.id 唯一 ⇒ D-edge-id-unique",
+          "M12 · L1_construct.output 多一句\"validateDSL 通过\"（无执行者）+ task_ops.ts:228 注释仍引旧 output",
+          "t_supersede 删除的连带：TRANSITIONS 少一条 + TASK_STATES 删 superseded ⇒ removed_2026_10_17.source_pending"
+        ],
+        "design_unjudged": {
+          "D_criteria": 9,
+          "D_unjudged": 8,
+          "D_review": 1,
+          "note": "★ D1–D9 本身大多 unjudged（\"设计完整性\"的判据还缺检查器）—— 这是账上最大的一块",
+          "claims_unjudged": 17,
+          "debt_ids": 15
+        },
+        "headline": "★ 设计层还有三块没销：①11 条\"部分修\"（边角） ②D1–D9 里 8 条 unjudged ③17 条判据 unjudged（都带债号）。★★ 而 5 项是【源码待跟】，设计阶段销不掉 —— 它们要等\"动手写代码\"那一轮。"
+      }
+    },
+    "invariants_note": "★★ 2026-10-17（M8）：原来 5 条 invariants 与 4 条 checks + 1 条 unjudgeable 只是数字巧合（4+1=5）——实际 checks[2]/[3] 不在 invariants 里，invariants[0]/[1] 没有任何 check。⇒ 现在每条 invariants 都带 `covered_by`（指向 checks/unjudgeable）或 `debt`。★ 判据：每条 invariants 必须二选一（covered_by | debt），空着就是漏。 ★★ 2026-10-17 二次更正：字段名 rule → text —— 因为 rule 在 CLAIM_KEYS 里，会把 7 条不变量误当判据（清点器立刻报新增 unjudged）。★ 这是「同名两义」第 N 次：design_completeness.criteria[].rule 是判据，invariants[].rule 不是。",
+    "rulings_2026_10_17_judge_port": {
+      "decided_at": "2026-10-17",
+      "by": "用户拍板（A）",
+      "decision": "★ 采纳 rulings_2026_10_16[OQ9]：抽 domain 纯函数 / 端口，破 domain → application 倒挂",
+      "why_a_not_b": "B（承认 domain 直接调 application）违反架构铁律，且以后每加一个判定器都要再倒挂一次 ⇒ 一次重构换长期干净。",
+      "design_impact": [
+        "★ `domain` 定义 `JudgePort` 接口（输入 {facts, expectations} ⇒ 输出 report），`application` 注入实现",
+        "★ `cardStanding` 改签名：从\"自己 import judgeExpectations\"改成\"接一个 judge（注入）\"",
+        "★★ 现状那条 `call-exists cardStanding→judgeExpectations` **保留**（它描述的是现状），但标注：采纳裁定后应改成 `cardStanding → JudgePort`",
+        "★ 全仓 `grep JudgePort = 0` ⇒ 裁定从未落地 ⇒ 欠账 `D-judge-port`"
+      ],
+      "source_pending": "★ 这是一次重构（改 domain 的依赖方向），等设计全部写完 + 子代理再审过之后再动源码"
+    },
+    "open_questions_note": "★★ 2026-10-17（Q2）：移出 OQ8, OQ10, OQ11 —— 它们的文本自己写着\"已裁/已落地\"，不是\"未结题\"。★ 为什么重要：`invariant_checks[2]` 的 cmd 只做\"成员检查\"（`oqs.includes(by)`）⇒ 若某条迁移写 `by = \"OQ8\"`，它**会通过**，尽管那条早裁了 ⇒ **不变量说的\"未结题\"比机器实际判的强**。★ 修法：让 `open_questions` 只放未结题（语义即如此），cmd 不用改。已裁的进 `rulings_*`。",
+    "rulings_2026_10_17_oq8": {
+      "id": "OQ8",
+      "decided": "已裁（源码可证）—— 不是 2026-10-17 才裁的，而是更早，但一直没落进 rulings",
+      "evidence": [
+        "`isClaimable` / `isSatisfied` 已分家（task_machine.ts:320 / :340）",
+        "`export canClaim` 已删（全仓 0 命中）",
+        "`certs/t351-card-standing-cert.mjs` 是它的证"
+      ],
+      "note": "★★ 2026-10-18（第四道闸指出）：Q2 把 OQ8 从 open_questions 移出，但**没在 rulings 里落一条** ⇒ 那唯一带\"已裁\"标注的文本被删掉后，裁定只剩 git 历史。⇒ 补这一条。"
+    }
+  }
+}

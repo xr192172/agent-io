@@ -125,6 +125,7 @@ docs/*
 #   ★ 尤其 docs/DESIGN.md —— 它是【唯一文档】。★ 曾经它不在 git 里（写完才发现），
 #     而项目外备份是在写它之前做的 ⇒ 一旦本地丢失就全丢。（这是 priciple P4「判据要有执行者」的反面：文档也得有人守）
 !docs/DESIGN.md
+!docs/task-system-plan.handwritten.json
 !docs/accounting.jsonl
 !docs/board.md
 !docs/GOAL.md
