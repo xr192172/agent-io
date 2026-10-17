@@ -285,6 +285,61 @@
           ],
           "open": "★ 接入点未定：要接进 queryFeature（getDslHandler → queryFeature），但 queryFeature 住哪个文件我还没核 ⇒ 这条【还没有判据】，如实标 unjudged（欠账 D-T8-wire）"
         }
+      },
+      {
+        "id": "file_src_application_write_gate_ts",
+        "type": "file",
+        "label": "写源码前的任务闸",
+        "path": "src/application/write_gate.ts",
+        "status": "draft",
+        "decision": {
+          "summary": "写源码前必须挂任务，且【挂的是你自己的任务】—— 现在只判\"该节点有 claimed 卡\"，不问 owner、不问时效",
+          "acceptance": "写链调用时能拿到 actor；判定为「该节点存在 claimed 卡 ∧ owner === actor」；owner 不符 ⇒ 提醒/阻断（按 gate-principle 判它是否损坏数据）",
+          "provenance": {
+            "kind": "friction",
+            "where": "docs/_extract/static-review-1.md 的 A7 + A1（叠加）：巡检不跑 ⇒ 卡永不过期 ⇒ 别人领的卡 = 永久万能钥匙",
+            "note": "★ 活证据：今天我自己裸改 10+ 个源文件、一张卡都没挂、闸一次都没拦 —— 因为我直接写盘，闸压根没被调用"
+          },
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/write_gate.ts",
+              "symbol": "WriteActor",
+              "why": "★ 写闸要知道\"谁在写\" —— 现在 assertSourceWriteRegistered(projectRoot, files) 签名里没有身份维度"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/write_gate.ts",
+              "symbol": "assertSourceWriteRegisteredFor",
+              "why": "★ 按 actor 判定的入口：要求\"覆盖该文件的节点上存在 claimed 卡，且 owner === actor\"（现在只要求\"存在 claimed 卡\"）"
+            },
+            {
+              "kind": "file-exists",
+              "path": "src/application/write_gate.ts",
+              "why": "节点地址（已存在，作为基线）"
+            }
+          ]
+        },
+        "task": {
+          "id": "file_src_application_write_gate_ts",
+          "summary": "写闸加\"谁在写\"这一维：覆盖该文件的节点上须有 claimed 卡，且 owner === 本次写入者",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/write_gate.ts",
+              "symbol": "WriteActor",
+              "why": "★ 写闸要知道\"谁在写\" —— 现在 assertSourceWriteRegistered(projectRoot, files) 签名里没有身份维度"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/write_gate.ts",
+              "symbol": "assertSourceWriteRegisteredFor",
+              "why": "★ 按 actor 判定的入口：要求\"覆盖该文件的节点上存在 claimed 卡，且 owner === actor\"（现在只要求\"存在 claimed 卡\"）"
+            }
+          ],
+          "state": "candidate",
+          "owner": null
+        }
       }
     ],
     "edges": [
