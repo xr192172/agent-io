@@ -10,12 +10,20 @@ description: design-canvas / agent-io 仓的「开发规范入口」。凡在本
 >
 > | 权威是什么 | 在哪 |
 > |---|---|
-> | ★ **检查项清单**（动手前 / 做完后 / 分工） | `docs/preflight-checklist.md` |
-> | ★★ **原则：不打补丁，收归原生结构** | `docs/principle-rewrite-not-patch.md` |
+> | ★★★ **为什么（全局目标 + 四条支撑 + 六条工作方式）** | `docs/GOAL.md` |
+> | ★★ **设计全貌**（原则 / 七步 / 状态机 / 卡五值 / 判据三态 / 缺陷 / 怎么做 / 欠账） | `docs/DESIGN.md` |
+> | ★ **检查项清单**（动手前 / 做完后 / 分工） | `docs/DESIGN.md §5`（六条） |
+> | ★★ **原则：不打补丁，收归原生结构** | `docs/DESIGN.md §1 · P2` |
 > | ★ **在办任务 / 验收读数 / 双验** | `docs/board.md` |
 > | ★ 方案（用 DSL 写的那份） | `docs/task-system-plan.dsl.json` |
 > | ★ 记账 / 滞涩台账 | `docs/accounting.jsonl` · `docs/frictions.jsonl` |
-> | ★ 讨论登记（用户原话 + 整理结果 + 未定） | `docs/discussion-log.md` |
+> | ★ 讨论登记（结论 + 去向；原话见 git） | `docs/discussion-log.md` |
+>
+> ★★★ **2026-10-17 教训（本 Skill 自己被违反过一次）**：当天把 54 个文档收敛成一份时，
+> **把上表的 4 个指向删掉了**（`preflight-checklist` / `principle-rewrite-not-patch` / `board` / `accounting`）
+> ⇒ **Skill 全部指向空文件**，而**当天的工作也全部没按本 Skill 走**（没上榜单、没双验、补丁两次）。
+> ★ **结论**：**"入口文件"也是资产** —— 改文档时必须**反向检查谁指向它**（`grep -r "docs/xxx" .workbuddy`）。
+> ★ 其中 `board.md` / `accounting.jsonl` 是**台账不是考古**（已从备份恢复）；`preflight` / `principle` 的内容已并入 `DESIGN.md`。
 
 ---
 
