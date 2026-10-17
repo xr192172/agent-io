@@ -1857,10 +1857,157 @@
           "relates_to": "two_level_tasks.L1_construct.missing_judge_kind",
           "gap": "设计要能表达\"应该有人调用 X，但现在没有\"",
           "note": "★ 本字段用 gap 而非 rule —— 因为它是【缺口的描述】,不是一条要执行的判据;若写成 rule,清点器会判它 unjudged ⇒ 违反 assertion_kinds.rule(新判据不许 unjudged)"
+        },
+        {
+          "id": "D9",
+          "name": "外部审查通过",
+          "gap": "第二道验收闸（不知情子代理）审完，且【清单之外】的毛病为 0",
+          "now": "★ 2026-10-17 第一次审：18 条（A6/B7/C5）⇒ 没过",
+          "by": "不知情子代理（不给它已有结论，只问\"有没有没被记账的毛病\"）",
+          "where": "task_plan.static_review_2_2026_10_17",
+          "note": "★ 用 gap 而非 rule（同 D8）：它描述\"要达到什么\"，不是一条能独立执行的判据；★ 它也要求被审方给出\"查了哪些维度\"，否则\"看不出毛病\"是空话"
         }
       ],
       "judged_by": "★ 本段**目前没有检查器** —— 这本身就是 D5 的一条 unjudged（欠账 D-design-completeness）。★ 写法与 invariant_checks 同构（判据 + cmd + runner），等 `Expectation` 与 `invariant` 合成同一个可执行抽象后，这一段就能变成可跑的判据。",
       "order": "★ 顺序：先把 D1/D2 补满 → 处理 D4 的 2 条 unimplemented → 收 D5 的 35 条 → 最后才写源码（L2）。"
+    },
+    "static_review_2_2026_10_17": {
+      "reviewed_by": "不知情子代理（第二道验收闸 · 2026-10-17）",
+      "verdict": "✗ 第二道闸【没过】—— 发现 18 条清单之外的毛病（A6 / B7 / C5）",
+      "note": "★ 它被要求只找\"没被记账的\"问题；给它的分野是：带 debt/D 编号的都不算新发现。",
+      "same_origin": [
+        "M1 ↔ M6：判据只证明\"符号存在\"，于是连\"不存在的闸\"也变绿（M6 是 D8 的一个实例）",
+        "M2 ↔ M3：流程主视图（task_home / service_flow）的判据文本已与代码/裁定分家",
+        "M4：唯一\"按设计自己的规则正确判定、却把卡判死\"的闭环漏洞 —— 建议单独复核"
+      ],
+      "items": [
+        {
+          "id": "M1",
+          "level": "A",
+          "where": "design_completeness.D3",
+          "what": "D3 说「kind 由 validateDSL 兜」⇒ 假绿：validateDSL 不看 decision（validator.ts:204 只 ajv(schema)+2 条语义；schema 的 Node.properties 没有 decision）。实测：kind 拼成 file-exist ⇒ valid 仍 true",
+          "why": "★ 设计 DSL 的 decision 从未被校验器管过 —— 而它就是\"这张卡要证明什么\""
+        },
+        {
+          "id": "M2",
+          "level": "A",
+          "where": "task_home.publish.guards[0..2] / landed.readings.e2e",
+          "what": "三条 guard 都写\"拒\"，而 task_ops.ts:253 已改成降级 L1（不拒）；service_flow.steps[2] 与 t350 ⑥ 也说\"不再拒\"",
+          "why": "publish 是第 2 步，照 guards 实现会退回\"拒\""
+        },
+        {
+          "id": "M3",
+          "level": "A",
+          "where": "service_flow.steps[3].criteria（+ root_cause.claim + DESIGN §2.2 第4步）",
+          "what": "写「至少一条后态判据没过」，而代码是 isClaimable = {work, violated} ⇒ ★ 双向都错：violated 后态全过也能领；blocked 后态有红但不能领",
+          "why": "这条判据自己点名的 runner（t351）证的是 work|violated，与文本相反"
+        },
+        {
+          "id": "M4",
+          "level": "A",
+          "where": "geometry.nodes[discussion_log].decision.expectations[3]（edge-exists）",
+          "what": "why 自己写「type-only ⇒ 正确判定是 unsupported」；而 cardStanding 对 unsupported>0 ⇒ unknowable ⇒ 该节点一旦立卡就【永久死卡】",
+          "why": "★ 唯一一条\"按设计自己的规则正确判定，却把卡判死\"的闭环漏洞"
+        },
+        {
+          "id": "M5",
+          "level": "A",
+          "where": "open_questions[OQ9] × rulings[OQ9] × task_machine.expectations[2] × 源码",
+          "what": "四处四种说法：OQ 说\"未拍\"、rulings 说\"已裁定抽 domain 纯函数\"、DSL 有 call-exists 强制直接调、task_machine.ts:39 确实 domain→application 倒挂；grep JudgePort = 0",
+          "why": "一条已签字的裁定与一条机器强制的期望正面互斥"
+        },
+        {
+          "id": "M6",
+          "level": "A",
+          "where": "DESIGN §4/§6 + GOAL §5 + write_gate.decision.summary + 该节点的 task(done)",
+          "what": "四处互斥（已修/待做/排第1/仍写\"现在只判 claimed\"）；静态核：assertSourceWriteRegisteredFor 零调用 · AGENT_IO_ACTOR 全仓无赋值 · 无一纸证出现 WriteActor",
+          "why": "★★ A7 卡 done 而交付物是死码 —— 与今日反复批判的\"绿得没意义\"同型"
+        },
+        {
+          "id": "M7",
+          "level": "B",
+          "where": "state_machine.transitions[t_claim].clauses[3] / [t_release].clauses[0]",
+          "what": "8 条 guard clause 里 2 条没有执行者：「target 在 DB 存在」（全仓无 existsTarget）与「带 by」（releaseTask:524 是 input.agent ?? null）",
+          "why": "★ \"宣告可走但没实现\"从状态挪到了条款"
+        },
+        {
+          "id": "M8",
+          "level": "B",
+          "where": "invariants(5) vs invariant_checks(4)+unjudgeable(1)",
+          "what": "数字巧合 4+1=5，实际 2 条不变量无 check（invariants[0][1]）、2 条 check 不在 invariants 里（checks[2][3]）",
+          "why": "runner 只遍历 invariant_checks ⇒ \"每条不变量都有判据\"没有任何检查"
+        },
+        {
+          "id": "M9",
+          "level": "B",
+          "where": "state_machine.states / terminal_states + board.forces[0]",
+          "what": "superseded 已从 transitions 删掉，但 states/terminal_states 仍列着（零入边=死状态）；而 board.forces 要求\"上过榜单必须有终态\"",
+          "why": "★ target 被删的卡：void 未实现、done 不可能、superseded 无迁移 ⇒ 永远没有终态"
+        },
+        {
+          "id": "M10",
+          "level": "B",
+          "where": "geometry.edges（e_ops_to_expectation 出现两次）",
+          "what": "task_ops→expectation 与 node_ops→expectation 共用同一个 edge id；validateDSL 只查 node id 唯一（validator.ts:73-85）",
+          "why": "★★ 下游按 edge id 键控（overlay.edges Record）⇒ 标 requires 会同时作用两个文件"
+        },
+        {
+          "id": "M11",
+          "level": "B",
+          "where": "patrols[2]（dual_write）",
+          "what": "metric 的两个操作数都不存在：OverlayAnchor 无 updated_at、DriftReport 无 authority_unknown（src 0 命中）",
+          "why": "★ 被 unjudged+debt:A1 掩盖了 —— A1 修好后它依然算不出来"
+        },
+        {
+          "id": "M12",
+          "level": "B",
+          "where": "two_level_tasks.L1_construct（output / criteria / 代码 constructionVerdict）",
+          "what": "三处三种定义：≥1 expectation（任意 phase）/ \"建构完整\"（形容词）/ ≥1 phase=post；且它因带 by+where 被判成 review",
+          "why": "★ 只有 edge-absent 的节点永远 complete 不掉；\"不可判\"被算成\"有人判\""
+        },
+        {
+          "id": "M13",
+          "level": "B",
+          "where": "design_completeness.D1 的分母",
+          "what": "D1 分母是 9，但待改文件还有 overlay.ts（progress 退役）/ expectations.ts（L1 判据缺口的解药）/ status_tools.ts（complete 必经），三者无节点且不在任何缺口清单",
+          "why": "★ 头号判据的分母错了 ⇒ D2/D5/D7 全跟着错"
+        },
+        {
+          "id": "M14",
+          "level": "C",
+          "where": "assertion_baseline / D5.now / DESIGN §3",
+          "what": "同一指标三处三个数：51/30/4/17（实跑）· 49/35 · 49/13/1/35；且 assertion_baseline.verdict 里的\"42 条\"与同对象 unjudged=17 矛盾",
+          "why": "同一对象内自洽：total == machine+review+unjudged"
+        },
+        {
+          "id": "M15",
+          "level": "C",
+          "where": "incremental_verify.problem / touches_gap / DESIGN §6",
+          "what": "touches 声明唯一在 t354（不是 t351）；证数分母 64 vs 72；\"28 条里 24 条带 path\"实为 46 里 42",
+          "why": "证数 = COLLECT_RE 命中数（今天 72）"
+        },
+        {
+          "id": "M16",
+          "level": "C",
+          "where": "plan_to_work.note",
+          "what": "note 写「无 fail ⇒ 方案已实现」，而同段 green_done.pass_when 要求 unsupported==0",
+          "why": "★ M4 那条 type-only 正好让 failed==0 而 unsupported==1 ⇒ 按 note 就是\"已实现\""
+        },
+        {
+          "id": "M17",
+          "level": "C",
+          "where": "assertion_kinds.naming_rule",
+          "what": "naming_rule 点名了 gate，但 CLAIM_KEYS 没有 gate ⇒ task_home.gate 与 what_a_card_proves.layers[0].gate 不进清点、无 runner、无 debt",
+          "why": "★ 藏了两条债"
+        },
+        {
+          "id": "M18",
+          "level": "C",
+          "where": "geometry.nodes[pool].decision.open + D-T8-wire",
+          "what": "NodeDecision 没有 open 字段；open 不在 CLAIM_KEYS；plan-assertions 只扫 task_plan（不扫 geometry）⇒ 这条\"unjudged\"两边都数不到；D-T8-wire 全仓 0 处定义",
+          "why": "debt 值必须能在台账里查到"
+        }
+      ]
     }
   }
 }
