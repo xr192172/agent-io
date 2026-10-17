@@ -233,12 +233,30 @@
 | 编号 | 内容 | 状态 |
 |---|---|---|
 | **A1** | `patrolDrift` 挂上 live 重算（否则巡检永不跑） | 待做（最致命） |
-| **A7** | 写闸加 `actor` 维度（已挂卡：`file_src_application_write_gate_ts`，2 条判据真红） | 待做（最致命） |
+| **A7** | 写闸加 `actor` 维度（已挂卡，2 条判据真红） | ★ **形式上 done、可追溯上没完成** —— 见 `D-actor-wire` |
 | **D-T8** | 上架读端（`board/pool.ts`：`BoardView` + `listPool`） | 待做（3 红） |
+| **D-T8-wire** | 上架读端的**接入点**（`queryFeature` 住哪个文件未核） | 待核 |
 | **D-verifier-role** | 第 7 步"双验"没有角色（单 agent 时无解） | 待裁 |
-| ★ **L1 判据缺口** | **6 种 kind 全对着代码判 ⇒ 没有一种能表达"DSL 自己全不全" ⇒ L1 卡建不出来**（★ 这才是 A5 的真根因）。解药：`Expectation` 与 `invariant` **合成同一个可执行抽象**（判据自带"可跑"属性） | 待做（**卡住 L1**） |
-| — | `touches` 覆盖率 1/64（增量验证的第 3 步永远退化） | 待补 |
-| — | 对拍 `unsupported +2` 机制未核 | 待核 |
+| ★ **L1 判据缺口** | 6 种 kind 全对着代码判 ⇒ 表达不了"DSL 自己全不全" ⇒ L1 卡建不出来。解药：`Expectation` 与 `invariant` 合成同一个可执行抽象 | 待做（**卡住 L1**） |
+| ★ **D8 · kind 表达力缺口** | 表达不了"应该有人调用 X，但现在没有"（`call-exists` 要 from=调用者，而调用者不存在） | 待做 |
+| **D-judge-port** | 抽 `JudgePort` 破 domain→application 倒挂（用户 2026-10-17 拍 A） | 待做（重构） |
+| **D-invariant-0** | 不变量「任务=意图住设计侧」没有 check | 待做 |
+| **D-invariant-1** | 不变量「不落读数快照」—— ★ **DSL 自己违反了**（`reading_now` / `block_readings` 都是快照） | 待做 |
+| **D-target-exists** | `t_claim` 的「target 在 DB 存在」无执行者（全仓 0 处） | 待做 |
+| **D-release-by** | `t_release` 的「带 by」无执行者（`releaseTask` 是 `input.agent ?? null`） | 待做 |
+| **D-dual-write** | `dual_write` 的三个前提都不存在（`OverlayAnchor` 无 `updated_at` / `DriftReport` 无 `authority_unknown`） | 待做 |
+| **D-actor-wire** | `assertSourceWriteRegisteredFor` 零调用 + `AGENT_IO_ACTOR` 全仓无赋值 ⇒ **A7 的阻断永不触发** | 待做（源码） |
+| **D-validate-decision** | `validateDSL` 不看 `decision`（M1）⇒ D3 的"✓"是假绿 | 待做（源码） |
+| **D-kind-expressiveness** | 同 D8 | 待做 |
+| **D-anti-decoration** | 11/15 条边没有判据 | 待做 |
+| **D-parallel** | "两两交集为空"算不出来（path 覆盖率不够） | 待做 |
+| **D-claim-incomplete** | "领到先查依据"由人执行，无机器检查器 | 待做 |
+| **D-design-completeness** | D1–D9 本身没有检查器 | 待做 |
+| — | `touches` 覆盖率 1/72（唯一机器可读声明在 `t354`） | 待补 |
+| — | 历史读数快照需标 `as_of`（N5） | 待做 |
+
+★ **判据（M18 的原话）：`debt` 值必须能在本表里查到** —— 否则它只是一句没人读的字符串。
+★ **2026-10-17 补登 12 个**（N4 指出：本轮新挂的 7 个 + 修复前的 5 个，此前全仓 grep 0 命中）。
 
 ---
 

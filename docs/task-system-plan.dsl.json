@@ -941,9 +941,10 @@
               "1": "同 0（phase 分区在 cardStanding 内，task_machine.ts:153-154）",
               "2": "同 0（satisfied 不可领 / blocked / unknowable 都拒）",
               "3": "★★ 无执行者：全仓 0 处「target 在 DB 存在」检查（`existsTarget` 0 命中）—— debt: D-target-exists",
-              "4": "CAS 在 task_ops.ts:462 —— ★ 但它是 check-then-act（见 A3），不是真 CAS"
+              "4": "CAS 在 task_ops.ts:462 —— ★ 但它是 check-then-act（见 A3），不是真 CAS",
+              "5": "RED_DISPOSITION（task_machine.ts:153-170 的归属⇒处置表）—— ★ 2026-10-17 补挂（N2：原来 6 条 clause 只挂 5 条，漏的正是这条最重的）"
             },
-            "clause_note": "★ 2026-10-17（M7）：每条 clause 必须挂归属（执行者 | debt）；原来 8 条里有 2 条三者皆无。"
+            "clause_note": "★ 每条 clause 必须挂归属（执行者 | debt）；clause 共 6 条，coverage 已覆盖 0..5。★★ 2026-10-17（N2）：原来只挂 0..4，漏了 clause[5]（RED_DISPOSITION 那条），且修复记录还写成\"5 条\"——已更正。"
           },
           "state": {
             "kind": "ready"
@@ -1335,7 +1336,7 @@
         "guards": [
           "★ **无 `decision` / `decision.summary` ⇒ 不拒**：降级生成【L1 建构卡】（`task_ops.ts:253 publishTask` → level 派生 `:279` → L1 分支 `:353`，`expectations: []`）。★ 2026-10-17 T13 改的行为：原文写\"拒\"——那会鸡生蛋（第一个 decision 从哪来）。",
           "★ `decision.expectations` 为空 ⇒ 同上，**L1 卡**（不是拒）。",
-          "★ 只有 pre-phase 判据 ⇒ **仍是 L2 卡**，但 `cardStanding` 会给 `unknowable`（后态一条不剩）⇒ 领不了。★★ 这是「判据不可判」而非「拒绝 publish」—— 两件事不要混（M4 就是这一族的极端案例）。"
+          "★ 只有 pre-phase 判据（如 edge-absent）⇒ **post 数 = 0 ⇒ 派生为 L1 卡**（`task_ops.ts:286` `level = hasSummary && post.length>0 ? 'L2' : 'L1'`；`task_schema.ts:200 taskLevel` 同口径）。★★ **L1 卡不走 cardStanding**（`task_ops.ts:410-435` 有整段\"L1 建构卡为什么不走 cardStanding\"）⇒**它是可领的**，活 = 补一条后态判据（`constructionVerdict` 判 `complete=false`，`:234-253`）。★★★ 2026-10-17 更正（N3，第三道闸指出）：这里原写\"仍是 L2 卡 ⇒ unknowable ⇒ 领不了\"，**与代码相反** —— 而 M2 修的正是\"照文档实现会退回旧行为\"，这一条又把行为写反了一次。"
         ],
         "landed": {
           "at": "2026-10-17",
@@ -1460,7 +1461,7 @@
         {
           "layer": "decision 存在",
           "proves": "想过（讨论/决策发生过）",
-          "gate": "★ 唯一的质量闸：★ 没有 decision 就没有卡（publish 翻决策卡，不接受手写 summary）",
+          "gate": "★ 质量的真实闸是「**decision 有没有实质内容**」—— ★ 但**\"没有 decision 就没有卡\"这句已经不成立**：publishTask 对无 decision / 空 expectations 一律**降级生成 L1 建构卡**（`task_ops.ts:286-290` 派生 level、`:349-362` 写 `expectations: []`）⇒ **卡是有的**。★★ 2026-10-17 更正（Q1，第三道闸指出）：M2 修了 `publish.guards`，这一句没跟着改 ⇒ 自述是假的。",
           "gate_note": "★ 说明性质（同上，M17）"
         },
         {
@@ -1651,7 +1652,8 @@
         },
         "unjudged": {
           "def": "★ 明确承认没人判 —— 不许被当成「已经保证了」",
-          "require": "why（为什么判不了）+ debt（欠账编号）"
+          "require": "why（为什么判不了）+ debt（欠账编号）。★ 允许写成 `unjudged` 字段内的说明（不必单独 why 键）",
+          "require_note": "★★ 2026-10-17（Q3）：原写\"why + debt 两个键\"，实测 17 条里 **13 条没有 `why` 键**（解释写在 `unjudged` 字段里）⇒ 要求与实存不符，而这条要求本身没有 runner 校。⇒ 现在明说\"解释可以写在 unjudged 字段内\"。"
         }
       },
       "rule": "★ 新登记的任何一条判据，不许是 unjudged（否则就是拿文字冒充保证）。存量 unjudged 要逐轮下降。",
@@ -2103,6 +2105,21 @@
           "M7 t_release 2 条 clause 全挂归属",
           "M10 重复 edge id 修 1 处",
           "M11 dual_write 改挂 D-dual-write"
+        ]
+      },
+      "debt_ledger_note": "★★★ 2026-10-17（N4，第三道闸指出）：本轮新挂了 7 个债号，但 DESIGN.md §6 的台账里**一个都没有** ⇒ \"已挂债\"形式上成立、**可追溯上不成立**（grep 全仓 0 命中）。★ 已在 DESIGN.md §6 台账补登：D-judge-port / D-invariant-0 / D-invariant-1 / D-target-exists / D-release-by / D-dual-write / D-T8-wire（+ 修复前的 5 个：D-design-completeness / D-kind-expressiveness / D-anti-decoration / D-parallel / D-claim-incomplete）。★ 判据：**debt 值必须在台账里能查到**（M18 的原话），否则它只是一句没人读的字符串。",
+      "stale_readings": "★★ 2026-10-17（N5）：M4 把 discussion_log 的 type-only 期望换成 symbol-exists 之后，「unsupported=1 且那一条是 discussion_log 的 type-only 边」这句话**不可能再成立**。★ 仍指认它的四处：plan_to_work.reading_now · block_readings.items[2] · task_home.landed.readings.task_ops_block · task_home.publish.landed.readings.block。★ 处理：这些是**历史读数快照**（记录当时的事实），不改成\"现在\"；但必须标 `as_of` —— 否则下一个人会把它们当现状。",
+      "review3_2026_10_17": {
+        "reviewed_by": "不知情子代理（第三道验收闸 · 复审修复）",
+        "verdict": "✗ 不满足\"修复是对的且没引入新毛病\"：16 条里只有 3 条彻底（M9/M14/M16），13 条部分；新引入 5 条（N1–N5）+ 清单外 4 条（Q1–Q4）",
+        "hardest": [
+          "★ N1 rule→text = 改名掩盖（反事实：改回 rule ⇒ 51→58、17→24）；而我自己的 naming_rule 正是禁止这么做",
+          "★ N3 guards[2] 与代码相反（说领不了、实际 L1 卡能领）",
+          "★ N2 t_claim 6 条 clause 只挂 5 条，漏的正是最重的归属判据",
+          "★ N4 7 个新债号在台账里 0 命中 ⇒ \"已挂债\"不可追溯",
+          "★ M4 死卡真解了，但\"复用类型\"的意图从可判退成不可判、且没挂债",
+          "★ M5 的 source_pending 不可执行；call-exists 仍机器强制 ⇒ \"把炸弹写进注记\"",
+          "★ M8 的 covered_by 索引全对，但改名后 7 条彻底不进任何检查 ⇒ 病被上移一层"
         ]
       }
     },
