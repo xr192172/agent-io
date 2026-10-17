@@ -1080,7 +1080,14 @@
         "input": "一张很粗的决策卡（\"我要实现 X\"）",
         "output": "可判的期望 / 节点 / 边（validateDSL 通过 + 至少一条 expectation）",
         "criteria": "建构完整（★ 不是代码跑通）",
-        "why_needed": "★ 否则\"没有 decision 就不许 publish\"会鸡生蛋 —— 第一个 decision 从哪来？"
+        "why_needed": "★ 否则\"没有 decision 就不许 publish\"会鸡生蛋 —— 第一个 decision 从哪来？",
+        "missing_judge_kind": {
+          "found_2026_10_17": "★★★ 尝试为「任务系统重建」建一张 L1 卡时撞到的：L1 的判据是「DSL 建构完整」，但现有 6 种 kind（file-exists / symbol-exists / signature-matches / edge-exists / edge-absent / call-exists）**全部对着代码判** ⇒ 没有任何 kind 能表达「DSL 自己全不全」⇒ ★ L1 卡建不出来。",
+          "explains": "★ 这是 A5（L1 卡永远进不了 missed_close）的真正根因 —— 不只是「patrol 用了另一把尺」，而是【L1 根本没有能用的判据类型】。两把尺只是表征。",
+          "the_fix_already_written": "★ principle-rewrite-not-patch.md 第 39 行早就写了方向：invariant_checks（挂在 DSL 外的 cmd + 另写 runner）= 补丁，正解是【判据自带「可跑」属性 —— Expectation 与 invariant 同一个可执行抽象，不两套】。",
+          "what_it_means": "★ 收归后：expectation 除了「对代码判」的 6 种，还要能「对 DSL 判 / 跑一段命令判」⇒ 那时 L1 卡与 invariant_checks 用同一个抽象，且 L1 也能进 missed_close。",
+          "order": "★ 先做这个收归，再建 L1 卡（否则建出来的卡的判据是空的 ⇒ 又是一张 \"绿得没意义\" 的卡）"
+        }
       },
       "L2_implement": {
         "name": "实现任务",

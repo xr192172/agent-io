@@ -20,6 +20,13 @@
  *
  * ## 用法（dry-run 不挂 hook 也能测）
  *   echo '{"tool_input":{"file_path":"src/domain/task_machine.ts"}}' | node scripts/hook-task-gate.mjs
+ *
+ * ★★★ **提醒频率：每会话每个文件只提醒一次**（2026-10-17 实测后的决定）
+ *   覆盖率只有 1.7%（356 个源文件 / 6 个有节点）⇒ 若每次都提醒，**98.3% 的写操作都在响**
+ *   ⇒ 半小时内就会学会忽略它 ⇒ ★ **噪音比没有更坏，因为它看起来在工作**。
+ *   ⇒ 所以同一会话内，同一个文件**只提醒一次**（记在 `certs/.work/hook-seen-<session>.json`）；
+ *     新会话会重新提醒一次（新人新账，不算重复）。
+ *   ★ 这不是"降低监管" —— 而是让"监管"配得上被听见。
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -50,17 +57,23 @@ process.stdin.on('end', () => {
   const target = idx >= 0 ? n.slice(idx) : n;
 
   const nodes = (d.geometry && d.geometry.nodes) || [];
+  /** ★ 提醒 = 每会话每文件一次 */
+  const remind = (msg) => {
+    if (alreadySeen(root, String(input.session_id || input.sessionId || 'nosession'), target)) return done('');
+    return done(msg);
+  };
+
   const hit = nodes.find((x) => x.path && norm(x.path) === target);
 
   if (!hit) {
-    return done(`★ 账外提醒：${target} 不属于任何设计节点 ⇒ 这次改动没有卡能追（可能该先给它建节点/卡）`);
+    return remind(`★ 账外提醒：${target} 不属于任何设计节点 ⇒ 这次改动没有卡能追（可能该先给它建节点/卡）`);
   }
   const card = hit.task;
   if (!card) {
-    return done(`★ 账外提醒：节点 ${hit.id} 上没有任务卡 ⇒ 这次改动挂在账外（gate-principle：提醒，不阻断）`);
+    return remind(`★ 账外提醒：节点 ${hit.id} 上没有任务卡 ⇒ 这次改动挂在账外（gate-principle：提醒，不阻断）`);
   }
   if (card.state !== 'claimed') {
-    return done(`★ 提醒：节点 ${hit.id} 的卡是「${card.state}」（不是 claimed）⇒ 你改的不是"你在做的活"`);
+    return remind(`★ 提醒：节点 ${hit.id} 的卡是「${card.state}」（不是 claimed）⇒ 你改的不是"你在做的活"`);
   }
   // ★ 有 claimed 卡 ⇒ 静默（★ 还差"是不是你领的" —— 见文件头）
   return done('');
@@ -69,4 +82,22 @@ process.stdin.on('end', () => {
 function done(msg) {
   if (msg) process.stdout.write(msg + '\n');
   process.exit(0); // ★ 永远放行
+}
+
+/**
+ * ★ 同一个文件在本会话内只提醒一次。
+ * 返回 true ⇒ 已经提醒过（调用方应静默）。
+ */
+function alreadySeen(root, sessionId, target) {
+  const dir = path.join(root, 'certs/.work');
+  const f = path.join(dir, `hook-seen-${String(sessionId || 'nosession').slice(0, 12)}.json`);
+  let seen = {};
+  try { seen = JSON.parse(fs.readFileSync(f, 'utf8')); } catch { /* 首次 */ }
+  if (seen[target]) return true;
+  seen[target] = new Date().toISOString();
+  try {
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(f, JSON.stringify(seen, null, 1));
+  } catch { /* 记不住就不记，宁可多提醒一次 */ }
+  return false;
 }
