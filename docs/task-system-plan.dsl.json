@@ -881,8 +881,7 @@
         "candidate",
         "claimed",
         "done",
-        "void",
-        "superseded"
+        "void"
       ],
       "transitions": [
         {
@@ -973,8 +972,7 @@
       ],
       "terminal_states": [
         "done",
-        "void",
-        "superseded"
+        "void"
       ],
       "removed_2026_10_17": [
         {
@@ -987,7 +985,8 @@
           ],
           "note": "★ 这两条源码改动等\"设计全部写完、子代理也看不出毛病\"之后再动；现在只记在这里，不动代码"
         }
-      ]
+      ],
+      "states_note": "★ 2026-10-17：删 `superseded`（t_supersede 已删 ⇒ 它零条入边 = 死状态）。★★ 源码待跟：`task_schema.ts` 的 `TASK_STATES` 也要删（否则类型里还留着，下一个人以为能用）—— 已并进 `removed_2026_10_17.source_pending`。"
     },
     "patrols": [
       {
@@ -1120,7 +1119,7 @@
         "7. 收口：验收通过才置 done；★ 未通过 ⇒ 退回候选"
       ],
       "forces": [
-        "★ 强制勾掉：**上过榜单的任务，必须有终态**（done/void/superseded）—— 今天实测：3 条 in_progress 挂了一整天无人管",
+        "★ 强制勾掉：**上过榜单的任务，必须有终态**（done / void）★ 2026-10-17 删 superseded—— 今天实测：3 条 in_progress 挂了一整天无人管",
         "★ 强制验收：**done 必须有验收读数**（不是\"我改好了\"）—— 今天实测：\"十九证全绿 ≠ 本笔被验\"",
         "★ 强制双验：**验收本身也会错** —— 今天实测：报\"真绿\"而实际 unsupported=2"
       ],
@@ -1284,16 +1283,16 @@
         "source": "task_plan.provenance.chain ④⑤：决策卡挂上 DSL ⇒ 与现状对拍的红 ⇒ 红 = 任务 ⇒ publish 上榜单",
         "writer": "src/application/design/dsl_ops/task_ops.ts#publishTask（∅ → candidate；★ 已有 candidate 允许**重翻**（决策改了、卡要跟上）；claimed 及以上**拒**覆盖 —— 覆盖等于把正在做的判据换掉）",
         "guards": [
-          "无 `decision.summary` ⇒ 拒，并点名『没有决策卡可翻』（★ 这条就是「它在翻卡、不在造卡」的行为面判据）",
-          "`decision.expectations` 为空 ⇒ 拒（翻出来也无法验收 —— board 的验收按该卡的 expectations 判）",
-          "只有 pre-phase 判据（如 edge-absent）⇒ 拒（`t_claim` 自己的 guard：后态判据一条不剩 ⇒ 必领不了）"
+          "★ **无 `decision` / `decision.summary` ⇒ 不拒**：降级生成【L1 建构卡】（`task_ops.ts:253 publishTask` → level 派生 `:279` → L1 分支 `:353`，`expectations: []`）。★ 2026-10-17 T13 改的行为：原文写\"拒\"——那会鸡生蛋（第一个 decision 从哪来）。",
+          "★ `decision.expectations` 为空 ⇒ 同上，**L1 卡**（不是拒）。",
+          "★ 只有 pre-phase 判据 ⇒ **仍是 L2 卡**，但 `cardStanding` 会给 `unknowable`（后态一条不剩）⇒ 领不了。★★ 这是「判据不可判」而非「拒绝 publish」—— 两件事不要混（M4 就是这一族的极端案例）。"
         ],
         "landed": {
           "at": "2026-10-17",
           "board": "T12",
           "readings": {
             "block": "task_ops 1红/5绿 → 0红/6绿（同一入口 certs/.work/probe-plan-detail.mjs）。★ 同底对拍 certs/.work/probe350-before-after.mjs（HEAD 版 5 文件 vs 当前，两侧各自 importProject 现算）：checked 26 · passed 17→18 · failed 8→7 · **unsupported 1→1**；其他块逐字不变（task 0/3 · 状态机 0/6 · task_drift 7/0 · discussion 0/4）。",
-            "e2e": "真节点 `file_src_domain_task_schema_ts` 的 decision 逐字搬进夹具 ⇒ publish 后卡 `summary` **逐字相等**、`expectations` 深等 3 条；改 decision 再重翻 ⇒ 卡跟着变；`claim` ⇒ claimed；闸 无卡⇒拒 / candidate⇒仍拒 / claimed⇒放行；**无 decision ⇒ 拒**（且不留半张卡）。",
+            "e2e": "真节点 `file_src_domain_task_schema_ts` 的 decision 逐字搬进夹具 ⇒ publish 后卡 `summary` **逐字相等**、`expectations` 深等 3 条；改 decision 再重翻 ⇒ 卡跟着变；`claim` ⇒ claimed；闸 无卡⇒拒 / candidate⇒仍拒 / claimed⇒放行；**无 decision ⇒ 降级 L1 卡**（2026-10-17 T13 起；不是拒）。",
             "progress": "立卡不写 progress：candidate ⇒ `node.status='draft'`（派生），`overlay.anchors[node].progress` 为 undefined。",
             "cert": "certs/t350-publish-task-cert.mjs = PASS=32 FAIL=0（含「自己坏」对照：把卡改成手写 ⇒ 出处判据当场变假）"
           }
@@ -1482,9 +1481,10 @@
           "input": "无主的卡",
           "output": "claimed + owner",
           "window": "我 / 子代理",
-          "criteria": "接取：无主 + 至少一条后态判据没过（不是全过）",
+          "criteria": "★ 无主 + `cardStanding ∈ {work, violated}`（`task_machine.ts:320 isClaimable`）——★★ 不是\"至少一条后态判据没过\"：那句话**双向都错**（violated 卡后态全过、照样可领；blocked 卡后态有红、但不能领）。",
           "runner": "certs/t351-card-standing-cert.mjs",
-          "note2": "★ 五值 cardStanding + 两把尺分开"
+          "note2": "★ 五值 cardStanding + 两把尺分开",
+          "criteria_was_wrong": "★ 原判据「至少一条后态判据没过」于 2026-10-17 由不知情子代理指出双向错误（M3）；它自己点名的 runner（t351）证的是 `work|violated`，与旧文本相反。"
         },
         {
           "n": 5,
@@ -1614,7 +1614,7 @@
       "machine": 30,
       "review": 4,
       "unjudged": 17,
-      "verdict": "★★★ 42 条没有执行者 ⇒ 按 anti_idle 自己的定义，它们目前「等于没有」。这不是新问题，是今天所有卡点的共同根：规则写下了，但没人能判它是否被守。",
+      "verdict": "★ 2026-10-17 更正：本对象内必须自洽（total == machine+review+unjudged）。当前 51 = 30 + 4 + 17。★★ 原 verdict 写\"42 条没有执行者\"（与同对象 unjudged=17 矛盾），已作废。",
       "policy": "★ 不一次性补 42 条（会造假 runner）；改为：每领一张卡，顺手把它触及的判据升到 machine 或 review，unjudged 逐轮下降。",
       "unjudged_paths": [
         "patrols[0].metric",
@@ -1635,7 +1635,7 @@
         "design_completeness.criteria[5].rule",
         "design_completeness.criteria[6].rule"
       ],
-      "note_on_total": "★ 49=清点器按「判据类字段」数的；48 是人工初看时漏了 parallel_claim.criteria 改后的新键。以清点器为准。",
+      "note_on_total": "★ 51 是清点器按【能执行/能判真假】的判据键（criteria/check/red_when/rule/expr/cmd/metric/threshold）数的；★ 早先 49/48 是旧口径（含 answer/proves/core/now 等说明性字段）。以清点器为准。",
       "why_list_not_count": "★★★ 第一版闸只比总数⇒加一条 unjudged 也会因为总数低于历史基线而不报红（自测实测）。所以改成【比对名单】：新出现的 path ⇒ 红。",
       "cleared_2026_10_17": "★ service_flow 的 7 条判据已按「领到任务先补全」逐条定归属 ⇒ unjudged 40→35（machine 9→13，review 0→1）。★ 余 2 条（上架读端 D-T8 / 双验角色 D-verifier-role）如实留欠账。",
       "refreshed_2026_10_17": "★ 基线从 49/13/1/35 刷新为 51/30/4/17 —— ★ 教训：基线本身会过期；过期基线会让\"新增债务\"检查失效（它比对的是旧名单）。",
@@ -1796,15 +1796,16 @@
           "id": "D1",
           "name": "覆盖",
           "rule": "要改的每个文件都有节点（path 命中）",
-          "now": "6/9 → 9/9（补齐 expectation / geometry / node_ops）；★ 另发现 op_data_spec.ts（data 契约定义处）也无节点 —— 待补",
+          "now": "★ 11 节点覆盖 9/9 个任务系统文件 + `op_data_spec.ts`（已补）。★★ 但**分母漏了**：还有三个「设计要求改」的文件没有节点 —— `overlay.ts`（task_home 的 progress 退役）、`expectations.ts`（L1 判据缺口的解药）、`status_tools.ts`（complete 的必经投影）。★ 由不知情子代理指出（M13）：D1 是\"设计全不全\"的头号判据，**分母错了，D2/D5/D7 全跟着错**。",
           "unjudged": "★ 设计完整性的判据目前没有检查器（等 Expectation 与 invariant 合成一个抽象后才能跑）",
-          "debt": "D-design-completeness"
+          "debt": "D-design-completeness",
+          "gap_rule": "判据的分母必须【可算】：所有 debt/steps_pending/OQ 解决路径里出现的 src 路径 ∪ 所有 expectations 的 path ⊆ nodes.path"
         },
         {
           "id": "D2",
           "name": "节点完整",
           "rule": "每个节点有 path + decision{summary, acceptance, ≥1 expectation}",
-          "now": "7/7 ✓ → 10/10",
+          "now": "✓ 11/11 全齐（path + summary + acceptance + provenance）。",
           "unjudged": "★ 设计完整性的判据目前没有检查器（等 Expectation 与 invariant 合成一个抽象后才能跑）",
           "debt": "D-design-completeness"
         },
@@ -1828,7 +1829,7 @@
           "id": "D5",
           "name": "执行者",
           "rule": "每条判据有归属（machine / review / unjudged + 欠账号）",
-          "now": "★ 49 条里 35 条 unjudged（最大缺口）",
+          "now": "★ 51 条：machine 30 / review 4 / unjudged 17（17 条全部带 debt 编号）。★ 与 assertion_baseline 同一组数（2026-10-17 统一）。",
           "unjudged": "★ 设计完整性的判据目前没有检查器（等 Expectation 与 invariant 合成一个抽象后才能跑）",
           "debt": "D-design-completeness"
         },
@@ -2007,7 +2008,22 @@
           "what": "NodeDecision 没有 open 字段；open 不在 CLAIM_KEYS；plan-assertions 只扫 task_plan（不扫 geometry）⇒ 这条\"unjudged\"两边都数不到；D-T8-wire 全仓 0 处定义",
           "why": "debt 值必须能在台账里查到"
         }
-      ]
+      ],
+      "fixed": {
+        "at": "2026-10-17",
+        "items": [
+          "M2 guards",
+          "M2 e2e",
+          "M3 step4",
+          "M9 states",
+          "M9 board.forces",
+          "M13 D1",
+          "M14 baseline.verdict",
+          "M14 D5.now",
+          "M14 D2.now"
+        ],
+        "note": "★ 只修了纯 DSL 的（M2/M3/M9/M13/M14）；M1/M5/M6/M10/M11/M12 涉及源码或裁定，M8/M15/M16/M17/M18 待修。"
+      }
     }
   }
 }
