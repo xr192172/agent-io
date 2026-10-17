@@ -1244,7 +1244,6 @@
     },
     "vocabulary": {
       "user_asked_2026_10_17": "这图上的这些选项需不需要注册进去，就是这些契约需不需要注册进去，以便下个人填写的时候简便填写，不用自己去拟造。",
-      "answer": "★ 要，但注册在【校验端】，导出成【填充端可查的清单】；★ 不许往 DSL 里再抄一份（那就是又一处形状）。",
       "authority": "scripts/vocabulary.mjs（★ 它从代码/schema/DSL 三处抽取，不复制）",
       "rule": "★ 填卡前先查表：查得到的 ⇒ 选；查不到的合法值 ⇒ 说明该枚举不全 ⇒ ★ 那是 L1 建构任务（补全枚举），不是自己拟造。",
       "strength_levels": {
@@ -1264,7 +1263,129 @@
         "★★ 让读取端能拿到词汇表（get_dsl 返回 vocabulary 字段）⇒ 填充端不必记，查就行",
         "★ vocabulary.mjs 加 --check：某命名空间若既无 strong 也无单一名单 ⇒ 报红（裸奔枚举）"
       ],
-      "why_not_duplicate": "★ 清单只住一处（代码或 schema）；DSL 这一段只记「有哪些命名空间、权威在哪、强度多少、缺口是哪些」——★ 一旦把 6 个 kind 抄进 DSL，代码加第 7 个就漏了。"
+      "why_not_duplicate": "★ 清单只住一处（代码或 schema）；DSL 这一段只记「有哪些命名空间、权威在哪、强度多少、缺口是哪些」——★ 一旦把 6 个 kind 抄进 DSL，代码加第 7 个就漏了。",
+      "principle": "★★★ 用户 2026-10-17：不把「怎样是对的」告诉人家，就是让人去猜。所以每个可选值必须带三样：①该用它证明什么 ②★ 它证明不了什么（选错了会假绿）③真例子。",
+      "fill_guide": {
+        "expectation.kind": {
+          "note": "★ 选它的判据是「你想证明什么 × 它能证明什么」。★ 选错的后果不是报错（kind 合法照样过），而是【假绿】。",
+          "items": [
+            {
+              "value": "file-exists",
+              "fields": "path + why",
+              "phase": "post",
+              "impl": "src/application/design/intent/expectations.ts:207",
+              "use_when": "只需证明「这个文件存在」",
+              "not_when": "★ 想证明「文件里实现了什么」⇒ 用它只会假绿（文件在 ≠ 实现对）",
+              "because": "它只 stat 文件"
+            },
+            {
+              "value": "symbol-exists",
+              "fields": "path + symbol + why",
+              "phase": "post",
+              "impl": "expectations.ts:214",
+              "use_when": "证明「这个名字在文件里存在」（函数/类/常量）",
+              "not_when": "★ 想证明「签名对不对」⇒ 用 signature-matches；想证明「它调了谁」⇒ 用 call-exists",
+              "because": "它只查符号名，不看签名、不看调用"
+            },
+            {
+              "value": "signature-matches",
+              "fields": "path + symbol + signature + why",
+              "phase": "post",
+              "impl": "expectations.ts:215",
+              "use_when": "证明「符号的签名与设计一致」（参数个数/类型/返回）",
+              "not_when": "★ 想证明「函数体怎么实现的」⇒ 签名对 ≠ 实现对；那要用 call-exists",
+              "because": "它只比签名文本"
+            },
+            {
+              "value": "edge-exists",
+              "fields": "from + to + why",
+              "phase": "post",
+              "impl": "expectations.ts:322",
+              "use_when": "证明「A 依赖了 B」（import/依赖边存在）",
+              "not_when": "★★ 想证明「必须用某个具体符号」⇒ ★ 实测过：设计要 math.add、实现换成 mul，edge-exists 照样绿（边还在）⇒ 必须用 call-exists",
+              "because": "边存在 ≠ 用了对的那个符号"
+            },
+            {
+              "value": "call-exists",
+              "fields": "path + symbol + target + why",
+              "phase": "post",
+              "impl": "expectations.ts:266",
+              "use_when": "★ 证明「path 里的 symbol 真的调用了 target」—— 这是表达「必须复用哪个符号」的唯一手段",
+              "not_when": "★ 别用它代替 edge-exists 表达「有依赖」（它更严，会漏掉只是 import 没用的情况）",
+              "because": "读 cache.db 的 call 边，节点 id = <fileNodeId>#<Symbol>"
+            },
+            {
+              "value": "edge-absent",
+              "fields": "from + to + why",
+              "phase": "★ pre",
+              "impl": "expectations.ts:323",
+              "use_when": "★ 证明「A 不许依赖 B」（前态就成立，用来锁边界归属）",
+              "not_when": "★★★ 绝不能拿它判断「已经满足了」—— 它是 pre 阶段：未施工时天然成立 ⇒ 若混进满足度，卡会显示\"已满足\"而实际什么都没做",
+              "because": "phase=pre，见 expectationPhase"
+            }
+          ]
+        },
+        "provenance.source": {
+          "note": "★ 一条决策卡的出处该选哪类，取决于「这个断言是从哪儿来的」。★ 选错不会报错，但会失去可回溯性。",
+          "items": [
+            {
+              "value": "doc",
+              "use_when": "从项目设计文档 / 讨论登记的某一段翻译来的",
+              "not_when": "★ 别拿它装「我自己的想法」——那是 thought",
+              "where": "docs/discussion-log.md 等"
+            },
+            {
+              "value": "utterance",
+              "use_when": "用户说过的原话",
+              "not_when": "★★ 必须逐字引用，不许改写/概括（改写了就不是出处）",
+              "where": "流水账里的逐字引用"
+            },
+            {
+              "value": "thought",
+              "use_when": "我自己想出来的",
+              "not_when": "★ 必须写「何时、因何想起」，否则无法回溯（这是最软的一类）",
+              "where": "——"
+            },
+            {
+              "value": "friction",
+              "use_when": "★ 我用这套工具时实际被卡住过",
+              "not_when": "★ 别把「我觉得可能有问题」算 friction —— 那要真被卡过",
+              "where": "docs/frictions.jsonl 某一条"
+            },
+            {
+              "value": "defect",
+              "use_when": "★ 分析项目时发现的缺陷（对拍的红、体检发现）",
+              "not_when": "★ 别把「设计上我觉得不优雅」算缺陷 —— 它要有判据或红",
+              "where": "对拍红 / G1–G5 那一类"
+            }
+          ]
+        },
+        "assertion.kind": {
+          "note": "★ 一条判据该归哪一态，取决于「谁在判它」。",
+          "items": [
+            {
+              "value": "machine",
+              "use_when": "有 cmd/runner，机器能判真假",
+              "not_when": "★★ 别为了让它变 machine 而造一个「永远通过」的假 runner —— 那是把 unjudged 伪装成机器判",
+              "need": "cmd 或 runner，红时 exit 1"
+            },
+            {
+              "value": "review",
+              "use_when": "机器判不了，但能指名谁看、在哪留痕",
+              "not_when": "★ 别用它逃债 —— by/where 必须真的会有人看",
+              "need": "by + where"
+            },
+            {
+              "value": "unjudged",
+              "use_when": "★ 如实承认没人判（暂时）",
+              "not_when": "★★★ 不许把它当成「已经保证了」；也不许新登记的判据一上来就是 unjudged",
+              "need": "why + debt 编号"
+            }
+          ]
+        }
+      },
+      "direct_answer": "★ 要，但注册在【校验端】，导出成【填充端可查的清单】；★ 不许往 DSL 里再抄一份（那就是又一处形状）。",
+      "naming_note": "★★ 本段原用 answer 作键名,被 plan-assertions 误判成一条判据(总数 49→50) —— 因为 answer 在 what_a_card_proves 里是判据语义。★ 这暴露清点器靠【键名猜】而不是【显式标记】:一义两用就误判。正解是显式标记(见 frictions)。"
     }
   }
 }
