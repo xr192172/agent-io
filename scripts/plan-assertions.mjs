@@ -24,8 +24,12 @@ const PLAN = 'docs/task-system-plan.dsl.json';
 
 /** 判据类字段名（值必须是字符串） */
 const CLAIM_KEYS = new Set([
-  'criteria', 'check', 'red_when', 'red', 'gate', 'proves',
-  'expr', 'answer', 'core', 'now', 'corrected', 'verdict',
+  // ★★★ 2026-10-17（第 6 次校准）：只留【能执行/能判真假】的键。
+  //   ★ 删掉的：answer / proves / core / now / corrected / verdict ——
+  //     它们是【语义说明】（"这证明什么""当前状态""纠正了什么"），不是判据。
+  //     ★ 靠键名猜判据的代价实测：42 条 unjudged 里 32 条是这类误判（假红）。
+  "criteria", "check", "red_when", "rule",
+  "expr", "cmd", "metric", "threshold",
 ]);
 
 /** 同一对象里出现这些键，说明这条判据有机器执行者 */

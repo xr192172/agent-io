@@ -684,7 +684,8 @@
         "sel": "geometry.nodes[].decision.expectations",
         "item_shape": "{ node_id, node_label, expectation }",
         "count_expr": "len(flatten(n.decision.expectations for n in geometry.nodes))",
-        "rule": "每条 expectation 生成一条 item；node_id = 其宿主节点 id（与 judgeExpectations 的入参同形）"
+        "rule": "每条 expectation 生成一条 item；node_id = 其宿主节点 id（与 judgeExpectations 的入参同形）",
+        "runner": "certs/.work/probe-plan-detail.mjs"
       },
       "judge": {
         "entry": "judgeExpectations",
@@ -695,7 +696,8 @@
       "work_rule": {
         "expr": "work = [i for i in report.items if i.verdict == 'fail']",
         "why": "fail = 此刻代码里没有该期望所要求的事实 ⇒ 缺什么造什么（file-exists⇒造文件 · symbol-exists⇒补符号 · call-exists⇒接调用 · edge-exists⇒接依赖）",
-        "unsupported_not_work": "verdict=='unsupported' 既不算活也不能算绿（expectations.ts 纪律 3）"
+        "unsupported_not_work": "verdict=='unsupported' 既不算活也不能算绿（expectations.ts 纪律 3）",
+        "runner": "certs/.work/probe-plan-detail.mjs"
       },
       "red_green": {
         "red_now": {
@@ -787,7 +789,9 @@
           "form": "expectation",
           "expr": "call-exists cardStanding→judgeExpectations（node2） 与 patrolDrift→judgeExpectations（node4）",
           "reuse": true,
-          "why_reuse": "对拍器只此一把；本方案只加**新的 expectations**，不加新的判定器"
+          "why_reuse": "对拍器只此一把；本方案只加**新的 expectations**，不加新的判定器",
+          "runner": "certs/.work/probe-plan-detail.mjs",
+          "runner_note": "★ 这些 call-exists / edge-exists 由对拍脚本跑（不是\"没人判\"）—— 2026-10-17 补标"
         },
         {
           "touchpoint": "③证据 —— 置 done 前必须带一条证据",
@@ -796,7 +800,9 @@
           "form": "expectation",
           "expr": "call-exists completeTask→validateProgressEvidence（node3）",
           "reuse": true,
-          "why_reuse": "三档证据（expectations/reading/attestation）已是全仓唯一证据尺；★ 不新造 task 专用证据格式"
+          "why_reuse": "三档证据（expectations/reading/attestation）已是全仓唯一证据尺；★ 不新造 task 专用证据格式",
+          "runner": "certs/.work/probe-plan-detail.mjs",
+          "runner_note": "★ 这些 call-exists / edge-exists 由对拍脚本跑（不是\"没人判\"）—— 2026-10-17 补标"
         },
         {
           "touchpoint": "④状态 —— 状态落盘的唯一入口",
@@ -805,7 +811,9 @@
           "form": "expectation",
           "expr": "call-exists completeTask→updateStatus（node3）",
           "reuse": true,
-          "why_reuse": "updateStatus 已内含『先过闸再落盘』；task 侧复用，不另写一份写盘"
+          "why_reuse": "updateStatus 已内含『先过闸再落盘』；task 侧复用，不另写一份写盘",
+          "runner": "certs/.work/probe-plan-detail.mjs",
+          "runner_note": "★ 这些 call-exists / edge-exists 由对拍脚本跑（不是\"没人判\"）—— 2026-10-17 补标"
         },
         {
           "touchpoint": "⑤渲染 —— 巡检输入 = live 图",
@@ -814,7 +822,9 @@
           "form": "expectation",
           "expr": "call-exists patrolDrift→renderLiveFromDb（node4）",
           "reuse": true,
-          "why_reuse": "live 图的唯一来源是 renderLiveFromDb；★ 巡检不许自己拼一份 DB 读 [未核]：连线方向（live 触发 patrol vs patrol 自取 live）待裁，见 OQ7"
+          "why_reuse": "live 图的唯一来源是 renderLiveFromDb；★ 巡检不许自己拼一份 DB 读 [未核]：连线方向（live 触发 patrol vs patrol 自取 live）待裁，见 OQ7",
+          "runner": "certs/.work/probe-plan-detail.mjs",
+          "runner_note": "★ 这些 call-exists / edge-exists 由对拍脚本跑（不是\"没人判\"）—— 2026-10-17 补标"
         },
         {
           "touchpoint": "⑥新旧 —— 报告必须带扫描版本",
@@ -823,7 +833,9 @@
           "form": "expectation",
           "expr": "call-exists patrolDrift→scanRevOf（node4）",
           "reuse": true,
-          "why_reuse": "判『设计 vs 实际』新旧只此一把尺（_sync.scanRev）；报告不带它就可能是拿旧实际判红"
+          "why_reuse": "判『设计 vs 实际』新旧只此一把尺（_sync.scanRev）；报告不带它就可能是拿旧实际判红",
+          "runner": "certs/.work/probe-plan-detail.mjs",
+          "runner_note": "★ 这些 call-exists / edge-exists 由对拍脚本跑（不是\"没人判\"）—— 2026-10-17 补标"
         }
       ]
     },
@@ -984,7 +996,9 @@
         "metric": "count(cards where state='claimed' and now-claimed_at > TTL and no release event)",
         "op": ">",
         "threshold": 0,
-        "read": "patrol 报告 lease_ttl.count"
+        "read": "patrol 报告 lease_ttl.count",
+        "unjudged": "★ patrolDrift 全仓零调用（A1）⇒ 这个 metric 真的一次都没被算过",
+        "debt": "A1"
       },
       {
         "id": "drift",
@@ -994,13 +1008,17 @@
             "name": "missed_close",
             "expr": "count(cards where state=候选 and 剔前态后 expectations 非空 且 全过)",
             "op": ">",
-            "threshold": 0
+            "threshold": 0,
+            "unjudged": "★ patrolDrift 全仓零调用（A1）⇒ 这个 metric 真的一次都没被算过",
+            "debt": "A1"
           },
           {
             "name": "should_void",
             "expr": "count(cards where state != done and target 不在 DB)",
             "op": ">",
-            "threshold": 0
+            "threshold": 0,
+            "unjudged": "★ patrolDrift 全仓零调用（A1）⇒ 这个 metric 真的一次都没被算过",
+            "debt": "A1"
           }
         ],
         "read": "DriftReport.missed_close / DriftReport.should_void"
@@ -1010,7 +1028,9 @@
         "metric": "count(cards where overlay 与设计侧同名 and 仅一边的 updated_at 更新)",
         "op": ">",
         "threshold": 0,
-        "read": "DriftReport.authority_unknown"
+        "read": "DriftReport.authority_unknown",
+        "unjudged": "★ patrolDrift 全仓零调用（A1）⇒ 这个 metric 真的一次都没被算过",
+        "debt": "A1"
       }
     ],
     "migration_order": [
@@ -1036,7 +1056,9 @@
       "note": "★ 裁定（2026-10-16，开发者自裁）：块 = 依赖闭包，不是单个节点。",
       "expr": "block(n) = 以 n 为根的强连通/依赖闭包（沿 geometry.edges 的 imports 边向下）",
       "why": "\"整块重写\"的意义就是连带依赖一起改；按单节点划块会把依赖切两半（实测：task_schema→task_machine 是一块）",
-      "example": "task 格(schema) + 状态机(machine) = 一块（因 e_machine_to_schema）"
+      "example": "task 格(schema) + 状态机(machine) = 一块（因 e_machine_to_schema）",
+      "by": "主代理（划块时人工核）",
+      "where": "回执里列出本次的块"
     },
     "rulings_2026_10_16": [
       {
@@ -1187,20 +1209,26 @@
           "id": "anti_decoration",
           "check": "每条边/每条断言有判据吗？",
           "red": "无判据的边/断言数 > 0",
-          "real_case_2026_10_16": "★ 实测逮到 2 条无判据的边"
+          "real_case_2026_10_16": "★ 实测逮到 2 条无判据的边",
+          "unjudged": "★ 没有检查器：anti_decoration / anti_comment 靠人看",
+          "debt": "D-anti-decoration"
         },
         {
           "id": "anti_comment",
           "check": "每个\"责任/承诺\"有判据钉吗？",
           "red": "只有文字、无判据钉的承诺数 > 0",
-          "real_case_2026_10_16": "★ G3（版本链无判据钉、无消费方）· G4（无\"谁调它\"判据）"
+          "real_case_2026_10_16": "★ G3（版本链无判据钉、无消费方）· G4（无\"谁调它\"判据）",
+          "unjudged": "★ 没有检查器：anti_decoration / anti_comment 靠人看",
+          "debt": "D-anti-decoration"
         },
         {
           "id": "anti_idle",
           "check": "★ 每条判据都在跑吗？",
           "red": "存在判据但无 runner ⇒ 判据没有执行者 = 等于没有",
           "real_case_2026_10_16": "★★★ G5：invariant_checks 全仓无 runner",
-          "fixed_2026_10_16": "★ runner 已落地：task_plan.invariant_checks_runner = scripts/run-invariant-checks.mjs（`npm run invariants`）—— 逐条真跑每条 cmd，任一 FAIL ⇒ exit 1；无 cmd 亦判 FAIL。读数：可真仓 4 条全 PASS（exit 0）；改坏夹具（第0条期望加一个不存在的标记）⇒ FAIL=1 / exit 1。"
+          "fixed_2026_10_16": "★ runner 已落地：task_plan.invariant_checks_runner = scripts/run-invariant-checks.mjs（`npm run invariants`）—— 逐条真跑每条 cmd，任一 FAIL ⇒ exit 1；无 cmd 亦判 FAIL。读数：可真仓 4 条全 PASS（exit 0）；改坏夹具（第0条期望加一个不存在的标记）⇒ FAIL=1 / exit 1。",
+          "runner": "scripts/plan-assertions.mjs",
+          "runner_note": "★ 它就是 anti_idle 的实现"
         }
       ]
     },
@@ -1341,13 +1369,17 @@
           "the_fix_already_written": "★ principle-rewrite-not-patch.md 第 39 行早就写了方向：invariant_checks（挂在 DSL 外的 cmd + 另写 runner）= 补丁，正解是【判据自带「可跑」属性 —— Expectation 与 invariant 同一个可执行抽象，不两套】。",
           "what_it_means": "★ 收归后：expectation 除了「对代码判」的 6 种，还要能「对 DSL 判 / 跑一段命令判」⇒ 那时 L1 卡与 invariant_checks 用同一个抽象，且 L1 也能进 missed_close。",
           "order": "★ 先做这个收归，再建 L1 卡（否则建出来的卡的判据是空的 ⇒ 又是一张 \"绿得没意义\" 的卡）"
-        }
+        },
+        "by": "主代理（回执里给出读数）",
+        "where": "certs/.work/receipt-*.md"
       },
       "L2_implement": {
         "name": "实现任务",
         "input": "L1 产出的那条红",
         "output": "代码",
-        "criteria": "对拍红变绿"
+        "criteria": "对拍红变绿",
+        "by": "主代理（回执里给出读数）",
+        "where": "certs/.work/receipt-*.md"
       },
       "publish_rule": {
         "corrected": "★ 纠正 T12 的规则（原写\"无 decision ⇒ 拒\" —— ★ 那会鸡生蛋）",
@@ -1366,7 +1398,9 @@
         ],
         "why": "★ 这是把 L1 规则从「没有 decision 时」推广到「任何依据不全时」：★ 补全不是额外负担，它就是这一步的工作内容。",
         "measure": "★ 每笔收口时报：本笔补全了几条依据（unjudged → machine/review 的条数）",
-        "relates_to": "assertion_kinds（三态）/ touches_gap / gate_principle 的「环」诊断"
+        "relates_to": "assertion_kinds（三态）/ touches_gap / gate_principle 的「环」诊断",
+        "unjudged": "★ \"领到先查依据\"由人执行，无机器检查器",
+        "debt": "D-claim-incomplete"
       }
     },
     "what_a_card_proves": {
@@ -1517,14 +1551,18 @@
       ],
       "criteria": "★ 改一个文件 ⇒ 本次跑的证数 ≤ 5（现在 64）",
       "gap": "★ 缺 touches 的覆盖率(t351 之外都没有) ⇒ 这是要补的一维: 每张证声明它碰的文件",
-      "note": "★ 局部契约对上 = 用户原话; 契约(path 命中)优先于证(touches 命中), 因为契约更便宜"
+      "note": "★ 局部契约对上 = 用户原话; 契约(path 命中)优先于证(touches 命中), 因为契约更便宜",
+      "runner": "scripts/verify-changed.mjs",
+      "runner_note": "★ 它算\"改一个文件命中几个证\""
     },
     "touches_gap": {
       "why": "用户 2026-10-17: 这个缺口也一并登记到设计 DSL 里",
       "problem": "72 张证里只有 t351 声明了 touches(1/72) ⇒ 增量验证的第 ③ 步(只跑 touches 命中改动文件的证)永远退化成全跑",
       "requirement": "每张证声明它碰哪些文件(touches)",
       "criteria": "★ touches 覆盖率 100%（★ 现在 1/72）",
-      "note": "★ 契约(path 命中)已经可用(24/28) ⇒ 所以次序是: 先把契约那一路跑通(便宜), 再补 touches(贵)"
+      "note": "★ 契约(path 命中)已经可用(24/28) ⇒ 所以次序是: 先把契约那一路跑通(便宜), 再补 touches(贵)",
+      "runner": "scripts/verify-changed.mjs",
+      "runner_note": "★ 同上（touches 覆盖率由它统计）"
     },
     "parallel_claim": {
       "why": "用户 2026-10-17: 能不能多个并行任务派多个子代理各自去领各自的任务?",
@@ -1543,7 +1581,9 @@
         "disjoint": "无交集且两侧都非空 ⇒ 【可并行】",
         "unknown": "★★ 任一方为空集 ⇒ 【未知，不许当可并行】—— ★ 空集不等于「没有冲突」，等于「算不出有没有冲突」"
       },
-      "logic_hole_fixed": "★★★ 原判据「无交集 ⇒ 可并行」有洞：path 只覆盖 5 个 src 文件（touches_gap 已记），绝大多数卡的 target 会是空集 ⇒ 两两相交为空 ⇒ 全判「可并行」⇒ 假并行。按「unsupported 不算绿」同源铁律：空集必须报 unknown。"
+      "logic_hole_fixed": "★★★ 原判据「无交集 ⇒ 可并行」有洞：path 只覆盖 5 个 src 文件（touches_gap 已记），绝大多数卡的 target 会是空集 ⇒ 两两相交为空 ⇒ 全判「可并行」⇒ 假并行。按「unsupported 不算绿」同源铁律：空集必须报 unknown。",
+      "unjudged": "★ \"两两交集为空\"需要先能算出每张卡的 target 文件集合（path 覆盖率不够）",
+      "debt": "D-parallel"
     },
     "assertion_kinds": {
       "note": "★★★ 2026-10-17 定。anti_idle 说「判据没有执行者 = 等于没有」，但那条规矩一直只施加在 invariant_checks 上。本段把它扩到整份 task_plan：每条判据必须有归属，归属只有三种。",
@@ -1565,7 +1605,9 @@
       "measure": "★ 读数 = task_plan 内判据类字段的 machine / review / unjudged 条数（scripts/plan-assertions.mjs）",
       "progress_2026_10_17": "★ service_flow 7 条判据按「补全」动作定归属：4 条 machine（指向真实存在的证 t350/t351/t352 + plan-assertions）、1 条 review（回执：机器判不了内容真伪）、2 条如实留 unjudged 并挂欠账（D-T8 读端未建 / D-verifier-role 双验无角色）。★ 没造假 runner。",
       "naming_rule": "★★★ 判据字段名固定为 criteria/check/red_when/gate/expr 等（见 scripts/plan-assertions.mjs 的 CLAIM_KEYS）。★ 不许为了「看起来补全了」而改名 —— 改名会让清点器看不见它，等于把债务藏起来。★ 2026-10-17 我当场就犯过一次（用 assertion.what 替代 criteria，7 条判据从统计里消失，总数 49→42）。",
-      "rewrite_2026_10_17": "★ task_machine 的「红归属」那一维原先是三个局部变量 + 四段 if（补丁形态：加一类归属就要再加一条 if、漏一类就静默错判且 reason 撒谎）；已重写成【具名类型 RedAttribution + 穷尽表 RED_DISPOSITION + 由归属计数生成 reason】⇒ 加一类只加一个枚举值 + 表里一行，漏标就编不过（与 PHASE_BY_KIND 同一手法）。行为改变 1 条：红全落在已 done 节点 ⇒ 旧 work / 新 blocked（因为闸只认该节点的卡）。"
+      "rewrite_2026_10_17": "★ task_machine 的「红归属」那一维原先是三个局部变量 + 四段 if（补丁形态：加一类归属就要再加一条 if、漏一类就静默错判且 reason 撒谎）；已重写成【具名类型 RedAttribution + 穷尽表 RED_DISPOSITION + 由归属计数生成 reason】⇒ 加一类只加一个枚举值 + 表里一行，漏标就编不过（与 PHASE_BY_KIND 同一手法）。行为改变 1 条：红全落在已 done 节点 ⇒ 旧 work / 新 blocked（因为闸只认该节点的卡）。",
+      "runner": "scripts/plan-assertions.mjs",
+      "runner_note": "★ \"新判据不许 unjudged\" 由 --fail-on-debt 守"
     },
     "assertion_baseline_2026_10_17": {
       "measured_by": "scripts/plan-assertions.mjs",
@@ -1759,7 +1801,9 @@
         }
       },
       "direct_answer": "★ 要，但注册在【校验端】，导出成【填充端可查的清单】；★ 不许往 DSL 里再抄一份（那就是又一处形状）。",
-      "naming_note": "★★ 本段原用 answer 作键名,被 plan-assertions 误判成一条判据(总数 49→50) —— 因为 answer 在 what_a_card_proves 里是判据语义。★ 这暴露清点器靠【键名猜】而不是【显式标记】:一义两用就误判。正解是显式标记(见 frictions)。"
+      "naming_note": "★★ 本段原用 answer 作键名,被 plan-assertions 误判成一条判据(总数 49→50) —— 因为 answer 在 what_a_card_proves 里是判据语义。★ 这暴露清点器靠【键名猜】而不是【显式标记】:一义两用就误判。正解是显式标记(见 frictions)。",
+      "runner": "scripts/vocabulary.mjs",
+      "runner_note": "★ 填卡前查表，由它输出合法值"
     },
     "design_completeness": {
       "why": "★★★ 用户 2026-10-17：先把设计 DSL 迭代到全，再根据它写源码；不要一遍遍追。设计迭代的代价特别低（只改 JSON），且有 git。",
@@ -1769,43 +1813,57 @@
           "id": "D1",
           "name": "覆盖",
           "rule": "要改的每个文件都有节点（path 命中）",
-          "now": "6/9 → 9/9（补齐 expectation / geometry / node_ops）；★ 另发现 op_data_spec.ts（data 契约定义处）也无节点 —— 待补"
+          "now": "6/9 → 9/9（补齐 expectation / geometry / node_ops）；★ 另发现 op_data_spec.ts（data 契约定义处）也无节点 —— 待补",
+          "unjudged": "★ 设计完整性的判据目前没有检查器（等 Expectation 与 invariant 合成一个抽象后才能跑）",
+          "debt": "D-design-completeness"
         },
         {
           "id": "D2",
           "name": "节点完整",
           "rule": "每个节点有 path + decision{summary, acceptance, ≥1 expectation}",
-          "now": "7/7 ✓ → 10/10"
+          "now": "7/7 ✓ → 10/10",
+          "unjudged": "★ 设计完整性的判据目前没有检查器（等 Expectation 与 invariant 合成一个抽象后才能跑）",
+          "debt": "D-design-completeness"
         },
         {
           "id": "D3",
           "name": "可判",
           "rule": "每条 expectation 的 kind ∈ EXPECTATION_KINDS（validateDSL 兜）",
-          "now": "✓（validate 通过）"
+          "now": "✓（validate 通过）",
+          "unjudged": "★ 设计完整性的判据目前没有检查器（等 Expectation 与 invariant 合成一个抽象后才能跑）",
+          "debt": "D-design-completeness"
         },
         {
           "id": "D4",
           "name": "迁移状态",
           "rule": "每条迁移 state 必填；ready 的必须有代码执行它",
-          "now": "4 ready / 1 blocked(OQ1) / 2 unimplemented —— ★ 2 条 unimplemented 待裁定：实现还是从设计里删"
+          "now": "4 ready / 1 blocked(OQ1) / 2 unimplemented —— ★ 2 条 unimplemented 待裁定：实现还是从设计里删",
+          "unjudged": "★ 设计完整性的判据目前没有检查器（等 Expectation 与 invariant 合成一个抽象后才能跑）",
+          "debt": "D-design-completeness"
         },
         {
           "id": "D5",
           "name": "执行者",
           "rule": "每条判据有归属（machine / review / unjudged + 欠账号）",
-          "now": "★ 49 条里 35 条 unjudged（最大缺口）"
+          "now": "★ 49 条里 35 条 unjudged（最大缺口）",
+          "unjudged": "★ 设计完整性的判据目前没有检查器（等 Expectation 与 invariant 合成一个抽象后才能跑）",
+          "debt": "D-design-completeness"
         },
         {
           "id": "D6",
           "name": "接线",
           "rule": "每个 export 至少 1 个消费者（防\"建了没接\"）",
-          "now": "★ 已知 3 处缺：patrolDrift(A1) / renderMicro(B5) / WriteActor 旧链未接(A7)"
+          "now": "★ 已知 3 处缺：patrolDrift(A1) / renderMicro(B5) / WriteActor 旧链未接(A7)",
+          "unjudged": "★ 设计完整性的判据目前没有检查器（等 Expectation 与 invariant 合成一个抽象后才能跑）",
+          "debt": "D-design-completeness"
         },
         {
           "id": "D7",
           "name": "检查器自身可信",
           "rule": "每个体检项必须能【自己坏】（故意造一个反例 ⇒ 它要报）；且检查器认得的判据形式要与真实一致",
-          "now": "★ 2026-10-17 已抓 5 次检查器假读数：① 读空文件（路径分隔符不一致）⇒ 报「全 0」假绿；② 只数「其他文件」的引用 ⇒ 报 42 个假孤儿；③ 正则转义多套一层 ⇒ 报 105 个假死代码；④ 漏 ESM 的 js→ts 映射 ⇒ 报「全部无依赖」；⑤ 只认 判据/criteria/rule/check/cmd ⇒ 把 expr / metric / threshold 报成「无判据」（假红）。"
+          "now": "★ 2026-10-17 已抓 5 次检查器假读数：① 读空文件（路径分隔符不一致）⇒ 报「全 0」假绿；② 只数「其他文件」的引用 ⇒ 报 42 个假孤儿；③ 正则转义多套一层 ⇒ 报 105 个假死代码；④ 漏 ESM 的 js→ts 映射 ⇒ 报「全部无依赖」；⑤ 只认 判据/criteria/rule/check/cmd ⇒ 把 expr / metric / threshold 报成「无判据」（假红）。",
+          "unjudged": "★ 设计完整性的判据目前没有检查器（等 Expectation 与 invariant 合成一个抽象后才能跑）",
+          "debt": "D-design-completeness"
         }
       ],
       "judged_by": "★ 本段**目前没有检查器** —— 这本身就是 D5 的一条 unjudged（欠账 D-design-completeness）。★ 写法与 invariant_checks 同构（判据 + cmd + runner），等 `Expectation` 与 `invariant` 合成同一个可执行抽象后，这一段就能变成可跑的判据。",
