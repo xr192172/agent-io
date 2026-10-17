@@ -981,7 +981,20 @@
         "now": "★ 该节点无 decision / decision 太粗 ⇒ 生成 【L1 建构卡】；★ 已有可判的 expectations ⇒ 生成 【L2 实现卡】",
         "note": "★ 两级的判据不同：L1 看\"DSL 建构完整\"，L2 看\"对拍红变绿\"；★ 于是\"隐形的活\"（今天设计 DSL 那几轮讨论）终于有卡、有验收"
       },
-      "anti_pattern": "★ 今天实测：我干过多轮 L1（设计 DSL 的补丁/讨论），★ 但从未把它当任务 ⇒ 不计进度、不被验收、做完也不算数"
+      "anti_pattern": "★ 今天实测：我干过多轮 L1（设计 DSL 的补丁/讨论），★ 但从未把它当任务 ⇒ 不计进度、不被验收、做完也不算数",
+      "claim_incomplete_rule": {
+        "user_said_2026_10_17": "没领到一个任务的时候，如果这个任务有不全，当前的工作流就是把它补全。",
+        "rule": "★ 领到一张卡 ⇒ 第一件事不是写代码，是【检查这张卡赖以成立的东西全不全】；不全 ⇒ 本步的动作就是【补全它】，补完再做事。",
+        "what_counts_as_incomplete": [
+          "★ 卡没有 decision（或 decision 太粗，无 expectations）⇒ 补 L1 建构",
+          "★★ 期望没有判据（判据类字段是散文、无 cmd/runner/review 归属）⇒ 补判据归属",
+          "★★★ 卡要改的文件不在任何 expectation.path 里 ⇒ 补 path（否则增量验证永远命中不到它）",
+          "★ 卡依赖的上游步骤没有入口（是「环」）⇒ 先把入口补出来"
+        ],
+        "why": "★ 这是把 L1 规则从「没有 decision 时」推广到「任何依据不全时」：★ 补全不是额外负担，它就是这一步的工作内容。",
+        "measure": "★ 每笔收口时报：本笔补全了几条依据（unjudged → machine/review 的条数）",
+        "relates_to": "assertion_kinds（三态）/ touches_gap / gate_principle 的「环」诊断"
+      }
     },
     "what_a_card_proves": {
       "note": "★★★ 用户 2026-10-17 答 D16（反形式主义）：「有 decision 说明有过讨论和决策，然后任务挂在那里并不代表它就已经开始了，你要去接取任务，接取任务之后就有接取的状态、有进行中的状态、有完成的状态」。",
@@ -1032,7 +1045,9 @@
           "input": "讨论 / 文档 / 滞涩 / 缺陷",
           "output": "node.decision（semantics + expectations）",
           "window": "我（L1 建构）",
-          "criteria": "有 decision 且 expectations 可判"
+          "criteria": "填表：有 decision 且 expectations 可判",
+          "runner": "scripts/plan-assertions.mjs",
+          "note2": "★ 清点器判「这条判据有没有可判者」；decision 有无由 publish 判（第 2 步）"
         },
         {
           "n": 2,
@@ -1040,7 +1055,9 @@
           "input": "该节点的 decision",
           "output": "task{state:candidate}",
           "window": "★ 系统（publish 翻卡，不接受手写 summary）",
-          "criteria": "无 decision ⇒ 拒（点名『没有决策卡可翻』）"
+          "criteria": "交表：无 decision ⇒ 生成 L1 建构卡（不再拒）",
+          "runner": "certs/t350-publish-task-cert.mjs",
+          "note2": "★ T13 已落：L1 卡由 publish 生成"
         },
         {
           "n": 3,
@@ -1048,7 +1065,10 @@
           "input": "卡",
           "output": "待接取池（pool / board）",
           "window": "★ 系统（读端 = T8）",
-          "criteria": "卡在 pool 里可见；shown + folded == total"
+          "criteria": "上架：卡在 pool 里可见；shown + folded == total",
+          "unjudged": "★ 读端（T8）还没建 —— 今天实测只能 node -e 看 candidate",
+          "why": "没有读端 ⇒ 这条判据没有判者",
+          "debt": "D-T8"
         },
         {
           "n": 4,
@@ -1056,7 +1076,9 @@
           "input": "无主的卡",
           "output": "claimed + owner",
           "window": "我 / 子代理",
-          "criteria": "★ 无主 + 【至少一条后态判据没过】(= 有活干) + target 在 —— ★ 不许要求『全过』"
+          "criteria": "接取：无主 + 至少一条后态判据没过（不是全过）",
+          "runner": "certs/t351-card-standing-cert.mjs",
+          "note2": "★ 五值 cardStanding + 两把尺分开"
         },
         {
           "n": 5,
@@ -1064,7 +1086,9 @@
           "input": "已领的卡",
           "output": "代码 / 文档",
           "window": "领取者",
-          "criteria": "闸放行（该节点有 claimed 卡）"
+          "criteria": "做事：闸放行（该节点有 claimed 卡）",
+          "runner": "certs/t352-write-gate-coverage-cert.mjs",
+          "note2": "★ 含「该找到节点却没找到必须点名」"
         },
         {
           "n": 6,
@@ -1072,7 +1096,10 @@
           "input": "做的事",
           "output": "回执五栏 + 读数",
           "window": "领取者",
-          "criteria": "check-receipt 五栏齐"
+          "criteria": "交回执：check-receipt 五栏齐",
+          "by": "领取者本人",
+          "where": "certs/.work/receipt-*.md + check-receipt 的 exit code",
+          "note2": "★ 机器只判「五栏在不在」，判不了「内容真不真」⇒ 归 review"
         },
         {
           "n": 7,
@@ -1080,7 +1107,10 @@
           "input": "回执",
           "output": "验收读数",
           "window": "榜单 + 非做者",
-          "criteria": "红变绿 + unsupported=0"
+          "criteria": "验收 + 双验：红变绿 + unsupported=0",
+          "unjudged": "★ 双验没有执行者（grep 双验 src/ = 0），今天全靠自觉",
+          "why": "第 7 步缺角色（root_cause_of_the_4_deadlocks.double_verify 已记）",
+          "debt": "D-verifier-role"
         }
       ],
       "root_cause_of_the_4_deadlocks": {
@@ -1159,14 +1189,16 @@
         }
       },
       "rule": "★ 新登记的任何一条判据，不许是 unjudged（否则就是拿文字冒充保证）。存量 unjudged 要逐轮下降。",
-      "measure": "★ 读数 = task_plan 内判据类字段的 machine / review / unjudged 条数（scripts/plan-assertions.mjs）"
+      "measure": "★ 读数 = task_plan 内判据类字段的 machine / review / unjudged 条数（scripts/plan-assertions.mjs）",
+      "progress_2026_10_17": "★ service_flow 7 条判据按「补全」动作定归属：4 条 machine（指向真实存在的证 t350/t351/t352 + plan-assertions）、1 条 review（回执：机器判不了内容真伪）、2 条如实留 unjudged 并挂欠账（D-T8 读端未建 / D-verifier-role 双验无角色）。★ 没造假 runner。",
+      "naming_rule": "★★★ 判据字段名固定为 criteria/check/red_when/gate/expr 等（见 scripts/plan-assertions.mjs 的 CLAIM_KEYS）。★ 不许为了「看起来补全了」而改名 —— 改名会让清点器看不见它，等于把债务藏起来。★ 2026-10-17 我当场就犯过一次（用 assertion.what 替代 criteria，7 条判据从统计里消失，总数 49→42）。"
     },
     "assertion_baseline_2026_10_17": {
       "measured_by": "scripts/plan-assertions.mjs",
       "total": 49,
-      "machine": 9,
-      "review": 0,
-      "unjudged": 40,
+      "machine": 13,
+      "review": 1,
+      "unjudged": 35,
       "verdict": "★★★ 42 条没有执行者 ⇒ 按 anti_idle 自己的定义，它们目前「等于没有」。这不是新问题，是今天所有卡点的共同根：规则写下了，但没人能判它是否被守。",
       "policy": "★ 不一次性补 42 条（会造假 runner）；改为：每领一张卡，顺手把它触及的判据升到 machine 或 review，unjudged 逐轮下降。",
       "unjudged_paths": [
@@ -1198,12 +1230,7 @@
         "what_a_card_proves.layers[1].proves",
         "what_a_card_proves.layers[2].proves",
         "what_a_card_proves.layers[3].proves",
-        "service_flow.steps[0].criteria",
-        "service_flow.steps[1].criteria",
         "service_flow.steps[2].criteria",
-        "service_flow.steps[3].criteria",
-        "service_flow.steps[4].criteria",
-        "service_flow.steps[5].criteria",
         "service_flow.steps[6].criteria",
         "gate_principle.core",
         "incremental_verify.criteria",
@@ -1212,7 +1239,8 @@
         "parallel_claim.criteria"
       ],
       "note_on_total": "★ 49=清点器按「判据类字段」数的；48 是人工初看时漏了 parallel_claim.criteria 改后的新键。以清点器为准。",
-      "why_list_not_count": "★★★ 第一版闸只比总数⇒加一条 unjudged 也会因为总数低于历史基线而不报红（自测实测）。所以改成【比对名单】：新出现的 path ⇒ 红。"
+      "why_list_not_count": "★★★ 第一版闸只比总数⇒加一条 unjudged 也会因为总数低于历史基线而不报红（自测实测）。所以改成【比对名单】：新出现的 path ⇒ 红。",
+      "cleared_2026_10_17": "★ service_flow 的 7 条判据已按「领到任务先补全」逐条定归属 ⇒ unjudged 40→35（machine 9→13，review 0→1）。★ 余 2 条（上架读端 D-T8 / 双验角色 D-verifier-role）如实留欠账。"
     }
   }
 }
