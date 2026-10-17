@@ -72,7 +72,8 @@
               "path": "src/domain/task_machine.ts",
               "symbol": "cardStanding",
               "target": "judgeExpectations",
-              "why": "★ 五值读数 = 对着代码判 expectations（复用现成判定器，不新造第二把尺）"
+              "why": "★ 五值读数 = 对着代码判 expectations（复用现成判定器，不新造第二把尺）",
+              "pending_change": "★★ 2026-10-17 用户拍 A：采纳\"抽 JudgePort\" ⇒ 这条期望描述的【现状】保留，但方向是把 target 换成 `JudgePort`（domain 定义、application 注入）。欠账 D-judge-port。"
             },
             {
               "kind": "symbol-exists",
@@ -262,10 +263,16 @@
               "why": "展开条件必须可判，否则又靠人记"
             },
             {
-              "kind": "edge-exists",
-              "from": "src/domain/discussion_log.ts",
-              "to": "src/domain/task_schema.ts",
-              "why": "★ T3/G2：本块的唯一依赖是 `import type { TaskDiscussion } from './task_schema.js'`（type-only，运行时擦除）。按设计 type-only **不建依赖边**（infrastructure/index/symbols.ts:435）⇒ 正确判定是 **unsupported（判不了）**，**不是 fail**（假红）。★ 这条判据正是 §83.3 里'不修就先别补'的那条边：expectations.ts:337 的 type-only 冤案排解是死代码时，它一跑就是假红（把合法的 import type 读成'不存在'）；本笔先把死代码修掉，再落这条判据 ⇒ 判据从此诚实。"
+              "kind": "symbol-exists",
+              "path": "src/domain/task_schema.ts",
+              "symbol": "TaskDiscussion",
+              "why": "★ 讨论格复用 `task_schema` 的 `TaskDiscussion` 类型（原为 edge-exists discussion_log→task_schema）。★★ 2026-10-17 修正（M4）：那条边是 **type-only** ⇒ `judgeExpectations` 会给 `unsupported` ⇒ 而 `cardStanding` 对\"后态 unsupported>0\"一律 `unknowable` ⇒ **该节点一旦立卡就是永久死卡**。⇒ 换成可判的 `symbol-exists`（类型确实存在），意图不变、可判。",
+              "replaced_from": {
+                "kind": "edge-exists",
+                "from": "src/domain/discussion_log.ts",
+                "to": "src/domain/task_schema.ts",
+                "why": "★ T3/G2：本块的唯一依赖是 `import type { TaskDiscussion } from './task_schema.js'`（type-only，运行时擦除）。按设计 type-only **不建依赖边**（infrastructure/index/symbols.ts:435）⇒ 正确判定是 **unsupported（判不了）**，**不是 fail**（假红）。★ 这条判据正是 §83.3 里'不修就先别补'的那条边：expectations.ts:337 的 type-only 冤案排解是死代码时，它一跑就是假红（把合法的 import type 读成'不存在'）；本笔先把死代码修掉，再落这条判据 ⇒ 判据从此诚实。"
+              }
             }
           ],
           "provenance": {
@@ -553,8 +560,9 @@
         "id": "e_schema_to_geometry",
         "from": "file_src_domain_task_schema_ts",
         "to": "file_src_domain_geometry_ts",
-        "label": "imports",
-        "type": "solid"
+        "label": "type-only",
+        "type": "solid",
+        "note": "★ M4：type-only 边，判定器给 unsupported ⇒ 不要拿它做要求（已把 discussion_log 那条期望换成 symbol-exists）"
       },
       {
         "id": "e_machine_to_expectation",
@@ -567,15 +575,17 @@
         "id": "e_geometry_to_schema",
         "from": "file_src_domain_geometry_ts",
         "to": "file_src_domain_task_schema_ts",
-        "label": "imports",
-        "type": "solid"
+        "label": "type-only",
+        "type": "solid",
+        "note": "★ M4：type-only 边，判定器给 unsupported ⇒ 不要拿它做要求（已把 discussion_log 那条期望换成 symbol-exists）"
       },
       {
         "id": "e_log_to_schema",
         "from": "file_src_domain_discussion_log_ts",
         "to": "file_src_domain_task_schema_ts",
-        "label": "imports",
-        "type": "solid"
+        "label": "type-only",
+        "type": "solid",
+        "note": "★ M4：type-only 边，判定器给 unsupported ⇒ 不要拿它做要求（已把 discussion_log 那条期望换成 symbol-exists）"
       },
       {
         "id": "e_ops_to_expectation",
@@ -592,11 +602,12 @@
         "type": "solid"
       },
       {
-        "id": "e_ops_to_expectation",
+        "id": "e_nodeops_to_expectation",
         "from": "file_src_application_design_dsl_ops_node_ops_ts",
         "to": "file_src_domain_expectation_ts",
         "label": "imports",
-        "type": "solid"
+        "type": "solid",
+        "note": "★ M10：原 id e_ops_to_expectation 与另一条边重复（下游 overlay.edges 按 id 键控 ⇒ 会串）；已改为 e_nodeops_to_expectation"
       },
       {
         "id": "e_drift_to_schema",
@@ -924,7 +935,15 @@
               "CAS: UPDATE tasks SET owner=?,state='claimed' WHERE id=? AND state='candidate' AND owner IS NULL 的 changes === 1",
               "★★★ 归属判据（2026-10-17 重写，判据只住 RED_DISPOSITION 一处）：每条红先分类成 own / orphan / dep-pending / dep-done；own 与 orphan = 本卡能改（claim），dep-pending 与 dep-done = 改不动（wait）。blocked ⟺ 没有一条能改；否则 work。★ dep-done 也算 wait：闸只认该节点的 claimed 卡，本卡改不动已 done 节点的文件，处置是重开那张卡"
             ],
-            "read": "cardStanding 的 standing 值 + CAS 的 changes 行数"
+            "read": "cardStanding 的 standing 值 + CAS 的 changes 行数",
+            "clause_coverage": {
+              "0": "isClaimable(cardStanding) —— task_machine.ts:320",
+              "1": "同 0（phase 分区在 cardStanding 内，task_machine.ts:153-154）",
+              "2": "同 0（satisfied 不可领 / blocked / unknowable 都拒）",
+              "3": "★★ 无执行者：全仓 0 处「target 在 DB 存在」检查（`existsTarget` 0 命中）—— debt: D-target-exists",
+              "4": "CAS 在 task_ops.ts:462 —— ★ 但它是 check-then-act（见 A3），不是真 CAS"
+            },
+            "clause_note": "★ 2026-10-17（M7）：每条 clause 必须挂归属（执行者 | debt）；原来 8 条里有 2 条三者皆无。"
           },
           "state": {
             "kind": "ready"
@@ -957,7 +976,11 @@
               "显式 release 事件（带 by + reason），或",
               "now - claimed_at > TTL：由 releaseIfExpired 产出 release 事件后再回 candidate，★ 不得静默改 state"
             ],
-            "read": "release 事件数 / patrol lease_ttl 计数"
+            "read": "release 事件数 / patrol lease_ttl 计数",
+            "clause_coverage": {
+              "0": "★★ 只强制了 reason —— `releaseTask:524` 是 `input.agent ?? null`，而 schema 里 `released_by` 可空 ⇒ \"带 by\"无执行者 —— debt: D-release-by",
+              "1": "releaseIfExpired（task_machine.ts:343）产出事件后再回 candidate"
+            }
           },
           "state": {
             "kind": "ready"
@@ -1054,8 +1077,9 @@
         "op": ">",
         "threshold": 0,
         "read": "DriftReport.authority_unknown",
-        "unjudged": "★ patrolDrift 全仓零调用（A1）⇒ 这个 metric 真的一次都没被算过",
-        "debt": "A1"
+        "unjudged": "★★ 不是\"巡检不跑\"（A1），而是**这条 metric 写不成代码**：① `OverlayAnchor` 没有 `updated_at`；② 设计侧 11 个 decision **0 个带 updated_at**（手写 JSON 绕过 node_ops 注入）；③ `DriftReport` 没有 `authority_unknown` 字段（src 0 命中）。",
+        "debt": "D-dual-write",
+        "note": "★ 2026-10-17（M11）：原来只挂 debt:A1，掩盖了\"三个前提都不存在\"这个更根本的问题。"
       }
     ],
     "migration_order": [
@@ -1073,7 +1097,6 @@
       "OQ6（新·本笔）：★ 我不同意把 OQ2『TTL 取值』当成**单一全局数**处理 —— TTL 是领主的续租超时，不同卡类（改一行 vs 重构一文件）不该共用一个数 ⇒ 建议改成按卡类分档；此条待裁，未并入 invariants",
       "OQ7（新·本笔）：★ 接点⑤的**连线方向**未定 —— 是 live 重算**触发** patrol（live_render 侧调 patrolDrift），还是 patrol **自取** live（patrolDrift 调 renderLiveFromDb）？我按『patrol 自取』写了 call-exists，但若实际设计是前者，该断言方向反了、应挂到 live_render 那侧。未拍，未并入 invariants",
       "OQ8（新·第一块落地时撞出）：★ t_claim 的 guard 第 2 条与 t_done_from_claimed 的 guard 第 2 条**同形**（都是『剔前态判据后剩余全过 且 条数 > 0』）⇒ 领取闸与收口闸用**同一把尺**，于是 canClaim 判『该收口』而不是『可领』。而 docs/DESIGN.md 的表格写的是『剔除前态判据后 期望**未**全过』—— 与 t_claim 的第 2 条**相反**，两处不能同时成立。★ 本笔的 task_machine.canClaim 按 t_claim 逐字实现（『全过』），并把这条张力写成代码注释 + 本 OQ。需裁：领取的判据到底是『未全过（还有活）』还是『全过（可收口）』；若为前者，t_claim 第 2 条要改，且『漏收口』判据得另立一个函数（patrol 的 missed_close 才该用『全过』）。★★ 2026-10-17 已裁（讨论第 2 场 · P30）：**领取 = cardStanding ∈ {work, violated}**、**收口 = isSatisfied（= satisfied）** —— 两处判据已分家，`canClaim` 已删除（见 t_claim clause[0] 与 t_done_from_claimed clause[1]，证 certs/t351-card-standing-cert.mjs）。",
-      "OQ9（新·第一块落地时撞出）：★ t_claim / t_done_from_claimed 里的 canClaim→judgeExpectations，把一条**反向依赖**写成了硬期望 —— src/domain/task_machine.ts（arch_layer: core）必须调用 src/application/design/intent/expectations.ts 的 judgeExpectations。而本仓既有铁律是『**domain 不许 import infrastructure**』（src/domain/expectation.ts 文件头逐字：判定器之所以不住 domain，就是因为那边不许 import infrastructure）⇒ domain→application→infrastructure 是**层级倒挂**。本笔照样实现了（用户裁定『语义必须照设计 DSL』），但这是设计 DSL 自己要修的一处：三选一 —— ① 把 canClaim 挪到 application 层（core 只剩纯判据编排）；② 定义端口（domain 声明 `JudgePort`，application 实现并注入）；③ 接受倒挂并在 DSL 里写明豁免。未拍。",
       "OQ10（新·第一块落地时撞出）：★ 『登记 = 临时版 claim』这条**对闸不生效** —— 实测（certs/.work/probe-block1-claim.mjs）：`seedOverlayFromDsl`（src/domain/overlay.ts:631-633）把几何节点的 `status` **播种成** overlay 锚点的 `progress`，而闸的『未登记』判据（src/application/write_gate.ts:652）只问 `progress !== undefined` ⇒ 一份刚播种的 overlay 里**每个节点都已『登记』**（哪怕从没调过 edit_dsl）⇒ 那条分支对已播种的 feature 是装饰。要让它有牙，需区分『播种来的 progress』与『人显式登记的 progress』（如播种不写 progress、或加 `progress_source`）。未拍。【★ 2026-10-17 已裁并落地：判据改成『该节点上有 state=claimed 的 task』，见 task_home.landed；★ 现在 seedOverlayFromDsl 对**有 task 的节点**不再播种进度】",
       "OQ11（新·第三块 task_ops 开工前撞出 ⇒ 该块**停手**，本节点 5 红不落）：★ task_ops 的三个动作（claim/release/complete）**缺两个原生落点**，本节点的 design 只钉了「动作存在 + 调谁」，没钉「状态写到哪」这一维 ⇒ 照现状实现必得**半修**。三处实测：① **任务格没有家** —— `TaskSpec`（src/domain/task_schema.ts:109）全仓**消费点只有 task_machine.ts**（第一块自己），`Node`（src/domain/geometry.ts:114-166）**无 `task` 字段**、`schema/design_dsl.schema.json` 无、`src/infrastructure/index/schema.ts` 的 8 张表无 `tasks` ⇒ 『写 design/<f>.dsl.json 的 task 格』这半句**无落点**；② **claim 的状态迁移没有 sanctioned 写端** —— 唯一状态写端 `updateStatus`（status_tools.ts:63）写的是 overlay 锚点的 `progress`（三值 `draft|in_progress|done`，geometry.ts:10），而 task 态是**另一条五值轴**（task_schema.ts:41 `candidate|claimed|done|void|superseded`）⇒ 二者无映射；照设计的 `completeTask→updateStatus` 走 progress 轴、而 claim 要写 task 轴 ⇒ **一件事两处权威**（违反本 DSL 自己的 invariant『一处权威 + 一处渲染』）；③ **要让它可被调用就得进 edit_dsl 的 op 家族** —— 至少 4 处协同（index.ts:214 op enum + :217 type enum · update_feature.ts:89-102 type 联合 + :424-466 applyOperation switch · op_data_spec.ts:65 OP_SPECS + :307 TYPE_KNOWN_KEYS，且 :346/:350 两条编译器断言把 OP_SPECS↔TYPE_KNOWN_KEYS 钉死）。★ 收归那一维的候选（待裁，二选一）：(A) **收归进既有单轴** —— 把 task 态**塌进 progress**（claim=置 `in_progress` 并落 owner 事件），三动作成为 `updateStatus` 的薄封装，不新增轴、不新增写端；(B) **给 task 格立原生家** —— `Node.task?: TaskSpec` + schema + 一个**唯一**的 task 状态写端（与 `updateStatus` 并列或合一），并在本节点补一条『状态写到哪』的可判期望；在此之前 task_ops **不许开工**（半修比不修更坏）。未拍。【★ 2026-10-17 已裁 B 并按 task_home 落地 ①②③：家 = geometry.nodes[].task · 唯一写端 = edit_dsl{type:'task'} · progress 派生 · 闸认 claimed task ⇒ 本块 5红→0红；★ 第 ④ 步（overlay progress 退役）另上榜单】"
     ],
@@ -2068,8 +2091,34 @@
           "M18 删 pool.decision.open",
           "M18 挪进 service_flow.steps[2] + 定义 D-T8-wire"
         ]
+      },
+      "fixed_round3": {
+        "at": "2026-10-17",
+        "items": [
+          "M5 open_questions 11 → 10（OQ9 移出）",
+          "M5 标注 call-exists 的 pending_change",
+          "M4 discussion_log 的 edge-exists → symbol-exists（4 条不变）",
+          "M4 3 条 type-only 边改 label",
+          "M7 t_claim 5 条 clause 全挂归属",
+          "M7 t_release 2 条 clause 全挂归属",
+          "M10 重复 edge id 修 1 处",
+          "M11 dual_write 改挂 D-dual-write"
+        ]
       }
     },
-    "invariants_note": "★★ 2026-10-17（M8）：原来 5 条 invariants 与 4 条 checks + 1 条 unjudgeable 只是数字巧合（4+1=5）——实际 checks[2]/[3] 不在 invariants 里，invariants[0]/[1] 没有任何 check。⇒ 现在每条 invariants 都带 `covered_by`（指向 checks/unjudgeable）或 `debt`。★ 判据：每条 invariants 必须二选一（covered_by | debt），空着就是漏。 ★★ 2026-10-17 二次更正：字段名 rule → text —— 因为 rule 在 CLAIM_KEYS 里，会把 7 条不变量误当判据（清点器立刻报新增 unjudged）。★ 这是「同名两义」第 N 次：design_completeness.criteria[].rule 是判据，invariants[].rule 不是。"
+    "invariants_note": "★★ 2026-10-17（M8）：原来 5 条 invariants 与 4 条 checks + 1 条 unjudgeable 只是数字巧合（4+1=5）——实际 checks[2]/[3] 不在 invariants 里，invariants[0]/[1] 没有任何 check。⇒ 现在每条 invariants 都带 `covered_by`（指向 checks/unjudgeable）或 `debt`。★ 判据：每条 invariants 必须二选一（covered_by | debt），空着就是漏。 ★★ 2026-10-17 二次更正：字段名 rule → text —— 因为 rule 在 CLAIM_KEYS 里，会把 7 条不变量误当判据（清点器立刻报新增 unjudged）。★ 这是「同名两义」第 N 次：design_completeness.criteria[].rule 是判据，invariants[].rule 不是。",
+    "rulings_2026_10_17_judge_port": {
+      "decided_at": "2026-10-17",
+      "by": "用户拍板（A）",
+      "decision": "★ 采纳 rulings_2026_10_16[OQ9]：抽 domain 纯函数 / 端口，破 domain → application 倒挂",
+      "why_a_not_b": "B（承认 domain 直接调 application）违反架构铁律，且以后每加一个判定器都要再倒挂一次 ⇒ 一次重构换长期干净。",
+      "design_impact": [
+        "★ `domain` 定义 `JudgePort` 接口（输入 {facts, expectations} ⇒ 输出 report），`application` 注入实现",
+        "★ `cardStanding` 改签名：从\"自己 import judgeExpectations\"改成\"接一个 judge（注入）\"",
+        "★★ 现状那条 `call-exists cardStanding→judgeExpectations` **保留**（它描述的是现状），但标注：采纳裁定后应改成 `cardStanding → JudgePort`",
+        "★ 全仓 `grep JudgePort = 0` ⇒ 裁定从未落地 ⇒ 欠账 `D-judge-port`"
+      ],
+      "source_pending": "★ 这是一次重构（改 domain 的依赖方向），等设计全部写完 + 子代理再审过之后再动源码"
+    }
   }
 }
