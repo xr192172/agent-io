@@ -2131,6 +2131,84 @@
       },
       "debt_ledger_extra": {
         "D-edge-id-unique": "★ M10 的根因：`src/domain/validator.ts:72-83` 只查 `nodes.id` 唯一、**不查 edges.id** ⇒ 重复 edge id 能过校验，而下游 `overlay.edges` 按 id 键控 ⇒ 会串。已记（台账在 DESIGN §6）。"
+      },
+      "ledger_2026_10_18": {
+        "as_of": "2026-10-18 00:20",
+        "why": "★★★ 用户问「还有多少设计没销账」。先记账本的病：脚本按【字符串包含】算，得出\"M1–M18 全动过\" —— 但那只是\"提到过\"，不是\"修好\"；而 N2/N3/Q1/Q3/Q4 明明修了却没记进 fixed_round3。⇒ 本段是【人工核过】的账。",
+        "M": {
+          "total": 18,
+          "verified_fixed": [
+            "M3",
+            "M9",
+            "M11",
+            "M14",
+            "M16"
+          ],
+          "verified_fixed_note": "★ 第三/四道闸独立认可\"完全对\"的 5 条",
+          "partial_fixed": [
+            "M2",
+            "M4",
+            "M5",
+            "M7",
+            "M8",
+            "M10",
+            "M12",
+            "M13",
+            "M15",
+            "M17",
+            "M18"
+          ],
+          "partial_note": "★ \"主句对了、边角没跟上\"（如 M12 的 output 多一句、M15 的数字、M17/M10 的债号）—— 其中 M15/M17/M10 的边角已在 2026-10-18 补齐；M12 剩一处属源码",
+          "source_pending": [
+            "M1",
+            "M6"
+          ],
+          "source_pending_note": "★ 设计阶段**销不掉**：M1 = validateDSL 不看 decision；M6 = actor 接线是死码"
+        },
+        "review3": {
+          "total": 9,
+          "fixed": [
+            "N1",
+            "N2",
+            "N3",
+            "Q1",
+            "Q2",
+            "Q3",
+            "Q4"
+          ],
+          "recorded": [
+            "N4",
+            "N5"
+          ],
+          "note": "★ N1 是\"重做\"（4 条闸 + 实测），不是改字；Q2 补了 OQ8 的裁定记录"
+        },
+        "review4": {
+          "total": 4,
+          "fixed": [
+            "闸A",
+            "闸B",
+            "闸C",
+            "闸D"
+          ],
+          "note": "★ 4 条闸全部实测生效；闸 C 一上线就抓到 invariants[2] 的 debt:\"OQ4\" 不在台账",
+          "new_from_review4": "★ 第五道闸（审这 4 条闸自身）进行中"
+        },
+        "source_pending_all": [
+          "M1 · validateDSL 不看 decision ⇒ D-validate-decision",
+          "M6 · assertSourceWriteRegisteredFor 零调用 + AGENT_IO_ACTOR 无赋值 ⇒ D-actor-wire",
+          "M10 根因 · validator.ts 不查 edges.id 唯一 ⇒ D-edge-id-unique",
+          "M12 · L1_construct.output 多一句\"validateDSL 通过\"（无执行者）+ task_ops.ts:228 注释仍引旧 output",
+          "t_supersede 删除的连带：TRANSITIONS 少一条 + TASK_STATES 删 superseded ⇒ removed_2026_10_17.source_pending"
+        ],
+        "design_unjudged": {
+          "D_criteria": 9,
+          "D_unjudged": 8,
+          "D_review": 1,
+          "note": "★ D1–D9 本身大多 unjudged（\"设计完整性\"的判据还缺检查器）—— 这是账上最大的一块",
+          "claims_unjudged": 17,
+          "debt_ids": 15
+        },
+        "headline": "★ 设计层还有三块没销：①11 条\"部分修\"（边角） ②D1–D9 里 8 条 unjudged ③17 条判据 unjudged（都带债号）。★★ 而 5 项是【源码待跟】，设计阶段销不掉 —— 它们要等\"动手写代码\"那一轮。"
       }
     },
     "invariants_note": "★★ 2026-10-17（M8）：原来 5 条 invariants 与 4 条 checks + 1 条 unjudgeable 只是数字巧合（4+1=5）——实际 checks[2]/[3] 不在 invariants 里，invariants[0]/[1] 没有任何 check。⇒ 现在每条 invariants 都带 `covered_by`（指向 checks/unjudgeable）或 `debt`。★ 判据：每条 invariants 必须二选一（covered_by | debt），空着就是漏。 ★★ 2026-10-17 二次更正：字段名 rule → text —— 因为 rule 在 CLAIM_KEYS 里，会把 7 条不变量误当判据（清点器立刻报新增 unjudged）。★ 这是「同名两义」第 N 次：design_completeness.criteria[].rule 是判据，invariants[].rule 不是。",
