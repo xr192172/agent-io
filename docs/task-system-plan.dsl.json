@@ -1095,7 +1095,11 @@
     "gate_principle": {
       "authority": "docs/gate-principle.md",
       "core": "闸默认是【校验器】,不是【关卡】. 三职责: 校验(主体) / 提醒(不通过但无害=>放行+留痕) / 阻断(例外,只在会损坏数据/造成不一致时). 判据: 遇到不通过先问【它会损坏数据吗】— 不会=>提醒+放行; 会=>阻断. 不问就阻断=造死循环.",
-      "independent_entries": "造节点/立卡/接取/做事/回执/收口 —— 各有各的门, 不许 A 依赖 B 而 B 又依赖 A. 诊断: 若某入口必须有下游产物才能进 => 那不是闸, 是环.",
+      "independent_entries": {
+        "steps_ref": "service_flow.steps（★ 步骤清单只在那一处；本段不再重复，避免同一维两处形状）",
+        "what_this_adds": "★ 本段只加一件 service_flow 没有的东西：判断某一步是不是【环】的诊断法。",
+        "diagnostic": "★ 若某个入口「必须有下游的产物才能进」⇒ 那不是闸，是【环】。（今天三个鸡生蛋同形态：新文件 vs 闸 / publish 要 decision / claim 要 path 型节点）"
+      },
       "why": "用户 2026-10-17: 我们就缺少一个每一个环节独立的入口, 每个闸应该是提醒和校验, 而不是堵到其他的产生死循环."
     },
     "incremental_verify": {
@@ -1122,15 +1126,93 @@
     "parallel_claim": {
       "why": "用户 2026-10-17: 能不能多个并行任务派多个子代理各自去领各自的任务?",
       "answer": "★ 能。硬约束只有一条: ★ 文件不重叠。",
-      "how": "★ 用契约算重叠: 每张卡的 target 文件集合从 expectations 的 path 取; 两两求交 ⇒ 有交集【串行】、无交集【可并行】",
+      "how": "★ 用契约算重叠: 每张卡的 target 文件集合从 expectations 的 path 取; 两两求交",
       "disciplines": [
         "① 各自独立 AGENT_IO_HOME（★ 今天实测: 证套件写真仓 home, run82.json mtime 被重置）",
         "② 不许 git add -A（★ 会扫进别人正在改的文件 ⇒ 提交信息与实际内容不符 + 提交半成品）",
         "③ 提交由主 agent 做, 显式列路径",
         "④ claim 的 CAS 保留 —— ★ 抢同一张卡属于\"会损坏数据\"那一类, 按 gate-principle 是【真阻断】"
       ],
-      "criteria": "★ 并行 N 笔 ⇒ 各卡 target 文件集合两两交集为空",
-      "diagnostic": "★ 若两笔改同一个文件 ⇒ 不是并行, 是【抢】⇒ 串行 + 让先领的做完"
+      "criteria": "★ 并行 N 笔 ⇒ 两两 verdict 均为 disjoint（★ 出现 unknown 即不许并行，先补 path/touches）",
+      "diagnostic": "★ 若两笔改同一个文件 ⇒ 不是并行, 是【抢】⇒ 串行 + 让先领的做完",
+      "verdict_three": {
+        "overlap": "有交集 ⇒ 【串行】（★ 真会冲突）",
+        "disjoint": "无交集且两侧都非空 ⇒ 【可并行】",
+        "unknown": "★★ 任一方为空集 ⇒ 【未知，不许当可并行】—— ★ 空集不等于「没有冲突」，等于「算不出有没有冲突」"
+      },
+      "logic_hole_fixed": "★★★ 原判据「无交集 ⇒ 可并行」有洞：path 只覆盖 5 个 src 文件（touches_gap 已记），绝大多数卡的 target 会是空集 ⇒ 两两相交为空 ⇒ 全判「可并行」⇒ 假并行。按「unsupported 不算绿」同源铁律：空集必须报 unknown。"
+    },
+    "assertion_kinds": {
+      "note": "★★★ 2026-10-17 定。anti_idle 说「判据没有执行者 = 等于没有」，但那条规矩一直只施加在 invariant_checks 上。本段把它扩到整份 task_plan：每条判据必须有归属，归属只有三种。",
+      "kinds": {
+        "machine": {
+          "def": "有 cmd（或指名 runner），能机器判真假",
+          "require": "cmd + runner，红时 exit 1"
+        },
+        "review": {
+          "def": "机器判不了，但有指定的判者角色与留痕点",
+          "require": "by（谁看）+ where（留痕在哪）"
+        },
+        "unjudged": {
+          "def": "★ 明确承认没人判 —— 不许被当成「已经保证了」",
+          "require": "why（为什么判不了）+ debt（欠账编号）"
+        }
+      },
+      "rule": "★ 新登记的任何一条判据，不许是 unjudged（否则就是拿文字冒充保证）。存量 unjudged 要逐轮下降。",
+      "measure": "★ 读数 = task_plan 内判据类字段的 machine / review / unjudged 条数（scripts/plan-assertions.mjs）"
+    },
+    "assertion_baseline_2026_10_17": {
+      "measured_by": "scripts/plan-assertions.mjs",
+      "total": 49,
+      "machine": 9,
+      "review": 0,
+      "unjudged": 40,
+      "verdict": "★★★ 42 条没有执行者 ⇒ 按 anti_idle 自己的定义，它们目前「等于没有」。这不是新问题，是今天所有卡点的共同根：规则写下了，但没人能判它是否被守。",
+      "policy": "★ 不一次性补 42 条（会造假 runner）；改为：每领一张卡，顺手把它触及的判据升到 machine 或 review，unjudged 逐轮下降。",
+      "unjudged_paths": [
+        "plan_to_work.work_rule.expr",
+        "constructs_wiring.entries[1].expr",
+        "constructs_wiring.entries[2].expr",
+        "constructs_wiring.entries[3].expr",
+        "constructs_wiring.entries[4].expr",
+        "constructs_wiring.entries[5].expr",
+        "patrols[1].metrics[0].expr",
+        "patrols[1].metrics[1].expr",
+        "block_rule.expr",
+        "design_dsl_health.anti_blindspot_checks[0].check",
+        "design_dsl_health.anti_blindspot_checks[0].red",
+        "design_dsl_health.anti_blindspot_checks[1].check",
+        "design_dsl_health.anti_blindspot_checks[1].red",
+        "design_dsl_health.anti_blindspot_checks[2].check",
+        "design_dsl_health.anti_blindspot_checks[2].red",
+        "task_home.gate",
+        "task_home.landed.readings.gate",
+        "provenance.decision_card.corrected",
+        "two_level_tasks.L1_construct.criteria",
+        "two_level_tasks.L2_implement.criteria",
+        "two_level_tasks.publish_rule.corrected",
+        "two_level_tasks.publish_rule.now",
+        "what_a_card_proves.answer",
+        "what_a_card_proves.layers[0].proves",
+        "what_a_card_proves.layers[0].gate",
+        "what_a_card_proves.layers[1].proves",
+        "what_a_card_proves.layers[2].proves",
+        "what_a_card_proves.layers[3].proves",
+        "service_flow.steps[0].criteria",
+        "service_flow.steps[1].criteria",
+        "service_flow.steps[2].criteria",
+        "service_flow.steps[3].criteria",
+        "service_flow.steps[4].criteria",
+        "service_flow.steps[5].criteria",
+        "service_flow.steps[6].criteria",
+        "gate_principle.core",
+        "incremental_verify.criteria",
+        "touches_gap.criteria",
+        "parallel_claim.answer",
+        "parallel_claim.criteria"
+      ],
+      "note_on_total": "★ 49=清点器按「判据类字段」数的；48 是人工初看时漏了 parallel_claim.criteria 改后的新键。以清点器为准。",
+      "why_list_not_count": "★★★ 第一版闸只比总数⇒加一条 unjudged 也会因为总数低于历史基线而不报红（自测实测）。所以改成【比对名单】：新出现的 path ⇒ 红。"
     }
   }
 }
