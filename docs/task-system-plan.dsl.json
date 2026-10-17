@@ -36,7 +36,12 @@
               "symbol": "TaskSpec",
               "why": "任务格的结构要有具名类型"
             }
-          ]
+          ],
+          "provenance": {
+            "kind": "defect",
+            "where": "静态体检【4】：缺 provenance",
+            "note": "★ 补登 —— 任务格的结构（五态 / TaskSpec）；该节点早于 provenance 这一维，原始出处见 git 历史（不编造）"
+          }
         }
       },
       {
@@ -92,7 +97,12 @@
               "to": "src/domain/task_schema.ts",
               "why": "★ geometry.edges 有 e_machine_to_schema，但 expectations 里没有对应判据 ⇒ 那条边只是装饰；补上后才可判"
             }
-          ]
+          ],
+          "provenance": {
+            "kind": "defect",
+            "where": "静态体检【4】：缺 provenance",
+            "note": "★ 补登 —— 状态机 + cardStanding 五值；该节点早于 provenance 这一维，原始出处见 git 历史（不编造）"
+          }
         }
       },
       {
@@ -151,7 +161,12 @@
               "symbol": "publishTask",
               "why": "立卡：从设计 DSL 抽出这一块 ⇒ 形成任务卡（= board 的发布动作）。★ 缺它则闸对'尚无任何 task'的 feature 不可满足"
             }
-          ]
+          ],
+          "provenance": {
+            "kind": "defect",
+            "where": "静态体检【4】：缺 provenance",
+            "note": "★ 补登 —— publish / claim / release / complete；该节点早于 provenance 这一维，原始出处见 git 历史（不编造）"
+          }
         }
       },
       {
@@ -210,7 +225,12 @@
               "target": "scanRevOf",
               "why": "★ 接点⑥（判新旧）：报告必须铸上扫描版本 scanRevOf（scan_rev.ts），否则会拿旧实际判红 —— ★ 复用"
             }
-          ]
+          ],
+          "provenance": {
+            "kind": "defect",
+            "where": "静态体检【4】：缺 provenance",
+            "note": "★ 补登 —— 漂移巡检；该节点早于 provenance 这一维，原始出处见 git 历史（不编造）"
+          }
         }
       },
       {
@@ -247,7 +267,12 @@
               "to": "src/domain/task_schema.ts",
               "why": "★ T3/G2：本块的唯一依赖是 `import type { TaskDiscussion } from './task_schema.js'`（type-only，运行时擦除）。按设计 type-only **不建依赖边**（infrastructure/index/symbols.ts:435）⇒ 正确判定是 **unsupported（判不了）**，**不是 fail**（假红）。★ 这条判据正是 §83.3 里'不修就先别补'的那条边：expectations.ts:337 的 type-only 冤案排解是死代码时，它一跑就是假红（把合法的 import type 读成'不存在'）；本笔先把死代码修掉，再落这条判据 ⇒ 判据从此诚实。"
             }
-          ]
+          ],
+          "provenance": {
+            "kind": "defect",
+            "where": "静态体检【4】：缺 provenance",
+            "note": "★ 补登 —— 讨论登记格；该节点早于 provenance 这一维，原始出处见 git 历史（不编造）"
+          }
         }
       },
       {
@@ -464,6 +489,36 @@
             }
           ]
         }
+      },
+      {
+        "id": "file_src_application_design_dsl_ops_op_data_spec_ts",
+        "type": "file",
+        "label": "DSL 操作的 data 契约",
+        "path": "src/application/design/dsl_ops/op_data_spec.ts",
+        "status": "draft",
+        "decision": {
+          "summary": "edit_dsl 各 type/op 的 data 键集（NODE_DATA_KEYS / OP_SPECS），由类型级断言防漂移",
+          "acceptance": "interface 改了而清单没跟 ⇒ tsc 红（不靠\"有人发现\"）",
+          "provenance": {
+            "kind": "defect",
+            "where": "静态体检【1】/【D1】：它是 data 契约定义处，却不在设计里",
+            "note": "补建；目的是让写端/增量验证能认到它"
+          },
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/op_data_spec.ts",
+              "symbol": "OP_SPECS",
+              "why": "★ 四个 op 的唯一清单（publish/claim/release/complete）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/op_data_spec.ts",
+              "symbol": "NodeKeysMissingFromList",
+              "why": "★ 类型级断言：interface 有、清单没有 ⇒ tsc 红"
+            }
+          ]
+        }
       }
     ],
     "edges": [
@@ -485,6 +540,90 @@
         "id": "e_patrol_to_machine",
         "from": "file_src_application_patrol_task_drift_ts",
         "to": "file_src_domain_task_machine_ts",
+        "label": "imports",
+        "type": "solid"
+      },
+      {
+        "id": "e_schema_to_expectation",
+        "from": "file_src_domain_task_schema_ts",
+        "to": "file_src_domain_expectation_ts",
+        "label": "imports",
+        "type": "solid"
+      },
+      {
+        "id": "e_schema_to_geometry",
+        "from": "file_src_domain_task_schema_ts",
+        "to": "file_src_domain_geometry_ts",
+        "label": "imports",
+        "type": "solid"
+      },
+      {
+        "id": "e_machine_to_expectation",
+        "from": "file_src_domain_task_machine_ts",
+        "to": "file_src_domain_expectation_ts",
+        "label": "imports",
+        "type": "solid"
+      },
+      {
+        "id": "e_geometry_to_schema",
+        "from": "file_src_domain_geometry_ts",
+        "to": "file_src_domain_task_schema_ts",
+        "label": "imports",
+        "type": "solid"
+      },
+      {
+        "id": "e_log_to_schema",
+        "from": "file_src_domain_discussion_log_ts",
+        "to": "file_src_domain_task_schema_ts",
+        "label": "imports",
+        "type": "solid"
+      },
+      {
+        "id": "e_ops_to_expectation",
+        "from": "file_src_application_design_dsl_ops_task_ops_ts",
+        "to": "file_src_domain_expectation_ts",
+        "label": "imports",
+        "type": "solid"
+      },
+      {
+        "id": "e_ops_to_schema",
+        "from": "file_src_application_design_dsl_ops_task_ops_ts",
+        "to": "file_src_domain_task_schema_ts",
+        "label": "imports",
+        "type": "solid"
+      },
+      {
+        "id": "e_ops_to_expectation",
+        "from": "file_src_application_design_dsl_ops_node_ops_ts",
+        "to": "file_src_domain_expectation_ts",
+        "label": "imports",
+        "type": "solid"
+      },
+      {
+        "id": "e_drift_to_schema",
+        "from": "file_src_application_patrol_task_drift_ts",
+        "to": "file_src_domain_task_schema_ts",
+        "label": "imports",
+        "type": "solid"
+      },
+      {
+        "id": "e_drift_to_expectation",
+        "from": "file_src_application_patrol_task_drift_ts",
+        "to": "file_src_domain_expectation_ts",
+        "label": "imports",
+        "type": "solid"
+      },
+      {
+        "id": "e_gate_to_schema",
+        "from": "file_src_application_write_gate_ts",
+        "to": "file_src_domain_task_schema_ts",
+        "label": "imports",
+        "type": "solid"
+      },
+      {
+        "id": "e_spec_to_ops",
+        "from": "file_src_application_design_dsl_ops_op_data_spec_ts",
+        "to": "file_src_application_design_dsl_ops_node_ops_ts",
         "label": "imports",
         "type": "solid"
       }
