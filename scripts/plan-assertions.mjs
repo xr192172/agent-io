@@ -44,13 +44,23 @@ function classify(obj) {
   return 'unjudged';
 }
 
-/** 递归收集：每条判据记 { path, text, kind } */
+/**
+ * 递归收集：每条判据记 { path, text, kind }
+ * ★★★ 2026-10-17（N1）：加**显式排除** —— 对象上写 `criterion: false` ⇒ 整个子树不算判据。
+ *   为什么需要它：清点器原来【只靠键名猜】（CLAIM_KEYS）。而同一个键名在不同段里语义不同
+ *   （`design_completeness.criteria[].rule` 是判据、`invariants[].rule` 不是）⇒
+ *   ★ 改名就能逃出统计（实测：7 条不变量改名后 51→44，而其中 2 条是真债 ⇒ 债被藏起来）。
+ *   ⇒ 现在：**键名只是默认值，显式标记可以覆盖它**。
+ *   ★ 但"显式排除"不等于"没人管" —— `invariants` 有**自己的**检查（见 checkInvariantsCoverage）。
+ */
 function collect(node, path, out) {
   if (node === null || typeof node !== 'object') return;
   if (Array.isArray(node)) {
     node.forEach((v, i) => collect(v, `${path}[${i}]`, out));
     return;
   }
+  // ★ 显式排除：这棵子树不是判据
+  if (node.criterion === false) return;
   for (const [k, v] of Object.entries(node)) {
     const p = path ? `${path}.${k}` : k;
     if (CLAIM_KEYS.has(k) && typeof v === 'string') {
@@ -59,6 +69,24 @@ function collect(node, path, out) {
       collect(v, p, out);
     }
   }
+}
+
+/**
+ * ★★★ 2026-10-17（N1）：`task_plan.invariants` 的**归属检查**。
+ *
+ * 为什么单开一个：那 7 条是"不变量陈述"，**不是判据**（所以 `criterion: false` 把它们挡在判据统计外）——
+ * 但"每条不变量有没有归属（covered_by 指向某条 check / 或挂 debt）"这件事**必须有人查**，
+ * 否则把它们挡在统计外 = 把债藏起来。
+ */
+function checkInvariantsCoverage(tp) {
+  const inv = tp.invariants;
+  if (!Array.isArray(inv)) return { checked: 0, uncovered: [] };
+  const uncovered = [];
+  inv.forEach((it, i) => {
+    const has = it && (it.covered_by || it.debt);
+    if (!has) uncovered.push(`invariants[${i}]：${String(it?.text || '').slice(0, 50)}`);
+  });
+  return { checked: inv.length, uncovered };
 }
 
 function main() {
@@ -111,6 +139,12 @@ function main() {
     }
     if (!added.length && !removed.length) console.log('  = 名单无变化');
   }
+
+  // ★★★ 2026-10-17（N1）：invariants 的归属检查（它们不是判据，但**每条必须有归属**）
+  const invCov = checkInvariantsCoverage(tp);
+  console.log(`\n★ invariants 归属：${invCov.checked} 条，未归属 ${invCov.uncovered.length} 条`);
+  for (const u of invCov.uncovered) console.log(`  ✗ ${u}`);
+  if (invCov.uncovered.length) degraded = true;
 
   if (process.argv.includes('--json')) {
     console.log(JSON.stringify({ total, machine: byKind.machine.length, review: byKind.review.length, unjudged: byKind.unjudged.length, items: byKind.unjudged }, null, 2));

@@ -94,7 +94,7 @@
 | 1 | 填表 | 讨论/文档/滞涩/缺陷 → `node.decision` | 有 decision 且 expectations 可判 |
 | 2 | 交表 | decision → `task{state:candidate}` | ★ 无 decision / 太粗 ⇒ **生成 L1 建构卡**（不拒） |
 | 3 | 上架 | 卡 → 池 | ★ **读端未建**（欠账 D-T8） |
-| 4 | 接取 | 无主卡 → `claimed + owner` | ★ 有活干（≥1 条后态判据没过），**不是"全过"** |
+| 4 | 接取 | 无主卡 → `claimed + owner` | ★ `cardStanding ∈ {work, violated}`（`isClaimable`）—— ★ 不是"至少一条后态判据没过"：那**双向都错**（violated 后态全过也可领；blocked 后态有红但不能领） |
 | 5 | 做事 | 已领卡 → 代码 | 闸放行（该节点有 claimed 卡，★ owner 未校验） |
 | 6 | 回执 | 事 → 五栏 + 读数 | `check-receipt` 五栏齐 |
 | 7 | 验收 | 回执 → 读数 | 红变绿 + `unsupported=0` ★ 双验无角色（D-verifier-role） |

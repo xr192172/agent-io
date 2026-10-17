@@ -854,34 +854,41 @@
         "covered_by": null,
         "debt": "D-invariant-0",
         "note": "★ 无 check；且\"实际侧只有事实\"目前没有读数能判",
-        "text": "任务 = 意图 ⇒ 住设计侧；实际侧只有事实"
+        "text": "任务 = 意图 ⇒ 住设计侧；实际侧只有事实",
+        "criterion": false
       },
       {
         "covered_by": null,
         "debt": "D-invariant-1",
         "note": "★★ DSL 自己违反了这条：reading_now / block_readings / layers[].count 都是读数快照（M8 指出）",
-        "text": "只落意图与事件，不落读数快照、不落校验结果"
+        "text": "只落意图与事件，不落读数快照、不落校验结果",
+        "criterion": false
       },
       {
         "covered_by": "invariant_unjudgeable[0]",
         "debt": "OQ4",
-        "text": "一处权威 + 一处渲染（同一批数据不许两处都存）"
+        "text": "一处权威 + 一处渲染（同一批数据不许两处都存）",
+        "criterion": false
       },
       {
         "covered_by": "invariant_checks[1]",
-        "text": "设计侧不复制事实（能由 DB 现算的字段不许落盘）"
+        "text": "设计侧不复制事实（能由 DB 现算的字段不许落盘）",
+        "criterion": false
       },
       {
         "covered_by": "invariant_checks[0]",
-        "text": "前态判据（edge-absent 一类）不得用作「已满足」的判据"
+        "text": "前态判据（edge-absent 一类）不得用作「已满足」的判据",
+        "criterion": false
       },
       {
         "covered_by": "invariant_checks[2]",
-        "text": "被未决项挡住的迁移：state.kind=\"blocked\" 必须命中未结题的 OQ"
+        "text": "被未决项挡住的迁移：state.kind=\"blocked\" 必须命中未结题的 OQ",
+        "criterion": false
       },
       {
         "covered_by": "invariant_checks[3]",
-        "text": "discussion 格：微缩在前、按需展开（user_quote 到不了默认视野）"
+        "text": "discussion 格：微缩在前、按需展开（user_quote 到不了默认视野）",
+        "criterion": false
       }
     ],
     "invariant_checks": [
@@ -1074,13 +1081,14 @@
       },
       {
         "id": "dual_write",
-        "metric": "count(cards where overlay 与设计侧同名 and 仅一边的 updated_at 更新)",
+        "metric": "★ **算不出来**（2026-10-17 M11 定案）：原 metric 引用的两个操作数都不存在 —— `OverlayAnchor` 无 `updated_at`；`DriftReport` 无 `authority_unknown`。★ 要做它，先要：① `OverlayAnchor` 加 `updated_at`；② `DriftReport` 加 `authority_unknown` 字段。★ 在此之前本 patrol **不可实现**（不是\"巡检不跑\"那种，是\"算不出来\"）。",
         "op": ">",
         "threshold": 0,
-        "read": "DriftReport.authority_unknown",
+        "read": "（无 —— metric 算不出来）",
         "unjudged": "★★ 不是\"巡检不跑\"（A1），而是**这条 metric 写不成代码**：① `OverlayAnchor` 没有 `updated_at`；② 设计侧 11 个 decision **0 个带 updated_at**（手写 JSON 绕过 node_ops 注入）；③ `DriftReport` 没有 `authority_unknown` 字段（src 0 命中）。",
         "debt": "D-dual-write",
-        "note": "★ 2026-10-17（M11）：原来只挂 debt:A1，掩盖了\"三个前提都不存在\"这个更根本的问题。"
+        "note": "★ 2026-10-17（M11）：原来只挂 debt:A1，掩盖了\"三个前提都不存在\"这个更根本的问题。",
+        "metric_original": "count(cards where overlay 与设计侧同名 and 仅一边的 updated_at 更新)"
       }
     ],
     "migration_order": [
@@ -1096,10 +1104,7 @@
       "OQ4: discussion 版本链要不要可 diff（讨论本身进对拍？）；另：invariant『一处权威 + 一处渲染』落不成读数，也挂这条",
       "OQ5（新·本笔）：★ 剔前态判据后若**一条不剩（空集）**，『全过』算不算真？空集 = 真空真(vacuous truth) ⇒ 未领卡会被自动收口；另一解是空集判『判不了』。未拍 ⇒ t_claim / t_done_from_claimed 里的『剩余条数 > 0』只是我加的保护，需裁",
       "OQ6（新·本笔）：★ 我不同意把 OQ2『TTL 取值』当成**单一全局数**处理 —— TTL 是领主的续租超时，不同卡类（改一行 vs 重构一文件）不该共用一个数 ⇒ 建议改成按卡类分档；此条待裁，未并入 invariants",
-      "OQ7（新·本笔）：★ 接点⑤的**连线方向**未定 —— 是 live 重算**触发** patrol（live_render 侧调 patrolDrift），还是 patrol **自取** live（patrolDrift 调 renderLiveFromDb）？我按『patrol 自取』写了 call-exists，但若实际设计是前者，该断言方向反了、应挂到 live_render 那侧。未拍，未并入 invariants",
-      "OQ8（新·第一块落地时撞出）：★ t_claim 的 guard 第 2 条与 t_done_from_claimed 的 guard 第 2 条**同形**（都是『剔前态判据后剩余全过 且 条数 > 0』）⇒ 领取闸与收口闸用**同一把尺**，于是 canClaim 判『该收口』而不是『可领』。而 docs/DESIGN.md 的表格写的是『剔除前态判据后 期望**未**全过』—— 与 t_claim 的第 2 条**相反**，两处不能同时成立。★ 本笔的 task_machine.canClaim 按 t_claim 逐字实现（『全过』），并把这条张力写成代码注释 + 本 OQ。需裁：领取的判据到底是『未全过（还有活）』还是『全过（可收口）』；若为前者，t_claim 第 2 条要改，且『漏收口』判据得另立一个函数（patrol 的 missed_close 才该用『全过』）。★★ 2026-10-17 已裁（讨论第 2 场 · P30）：**领取 = cardStanding ∈ {work, violated}**、**收口 = isSatisfied（= satisfied）** —— 两处判据已分家，`canClaim` 已删除（见 t_claim clause[0] 与 t_done_from_claimed clause[1]，证 certs/t351-card-standing-cert.mjs）。",
-      "OQ10（新·第一块落地时撞出）：★ 『登记 = 临时版 claim』这条**对闸不生效** —— 实测（certs/.work/probe-block1-claim.mjs）：`seedOverlayFromDsl`（src/domain/overlay.ts:631-633）把几何节点的 `status` **播种成** overlay 锚点的 `progress`，而闸的『未登记』判据（src/application/write_gate.ts:652）只问 `progress !== undefined` ⇒ 一份刚播种的 overlay 里**每个节点都已『登记』**（哪怕从没调过 edit_dsl）⇒ 那条分支对已播种的 feature 是装饰。要让它有牙，需区分『播种来的 progress』与『人显式登记的 progress』（如播种不写 progress、或加 `progress_source`）。未拍。【★ 2026-10-17 已裁并落地：判据改成『该节点上有 state=claimed 的 task』，见 task_home.landed；★ 现在 seedOverlayFromDsl 对**有 task 的节点**不再播种进度】",
-      "OQ11（新·第三块 task_ops 开工前撞出 ⇒ 该块**停手**，本节点 5 红不落）：★ task_ops 的三个动作（claim/release/complete）**缺两个原生落点**，本节点的 design 只钉了「动作存在 + 调谁」，没钉「状态写到哪」这一维 ⇒ 照现状实现必得**半修**。三处实测：① **任务格没有家** —— `TaskSpec`（src/domain/task_schema.ts:109）全仓**消费点只有 task_machine.ts**（第一块自己），`Node`（src/domain/geometry.ts:114-166）**无 `task` 字段**、`schema/design_dsl.schema.json` 无、`src/infrastructure/index/schema.ts` 的 8 张表无 `tasks` ⇒ 『写 design/<f>.dsl.json 的 task 格』这半句**无落点**；② **claim 的状态迁移没有 sanctioned 写端** —— 唯一状态写端 `updateStatus`（status_tools.ts:63）写的是 overlay 锚点的 `progress`（三值 `draft|in_progress|done`，geometry.ts:10），而 task 态是**另一条五值轴**（task_schema.ts:41 `candidate|claimed|done|void|superseded`）⇒ 二者无映射；照设计的 `completeTask→updateStatus` 走 progress 轴、而 claim 要写 task 轴 ⇒ **一件事两处权威**（违反本 DSL 自己的 invariant『一处权威 + 一处渲染』）；③ **要让它可被调用就得进 edit_dsl 的 op 家族** —— 至少 4 处协同（index.ts:214 op enum + :217 type enum · update_feature.ts:89-102 type 联合 + :424-466 applyOperation switch · op_data_spec.ts:65 OP_SPECS + :307 TYPE_KNOWN_KEYS，且 :346/:350 两条编译器断言把 OP_SPECS↔TYPE_KNOWN_KEYS 钉死）。★ 收归那一维的候选（待裁，二选一）：(A) **收归进既有单轴** —— 把 task 态**塌进 progress**（claim=置 `in_progress` 并落 owner 事件），三动作成为 `updateStatus` 的薄封装，不新增轴、不新增写端；(B) **给 task 格立原生家** —— `Node.task?: TaskSpec` + schema + 一个**唯一**的 task 状态写端（与 `updateStatus` 并列或合一），并在本节点补一条『状态写到哪』的可判期望；在此之前 task_ops **不许开工**（半修比不修更坏）。未拍。【★ 2026-10-17 已裁 B 并按 task_home 落地 ①②③：家 = geometry.nodes[].task · 唯一写端 = edit_dsl{type:'task'} · progress 派生 · 闸认 claimed task ⇒ 本块 5红→0红；★ 第 ④ 步（overlay progress 退役）另上榜单】"
+      "OQ7（新·本笔）：★ 接点⑤的**连线方向**未定 —— 是 live 重算**触发** patrol（live_render 侧调 patrolDrift），还是 patrol **自取** live（patrolDrift 调 renderLiveFromDb）？我按『patrol 自取』写了 call-exists，但若实际设计是前者，该断言方向反了、应挂到 live_render 那侧。未拍，未并入 invariants"
     ],
     "block_rule": {
       "note": "★ 裁定（2026-10-16，开发者自裁）：块 = 依赖闭包，不是单个节点。",
@@ -1350,7 +1355,8 @@
         },
         "note_one_ruler": "判据复用：`postExpectations`（与 `cardStanding` 同一把尺 —— ★ 满足度只看后态、违约轴只看前态）+ `checkOpSpec`（未知键闸）+ `progressOf`（进度派生）—— 本笔**没有**新造第二条判据。"
       },
-      "gate_note": "★ 这是【质量闸的说明】，不是判据（字段名 gate 不在 CLAIM_KEYS）—— M17"
+      "gate_note": "★★ 2026-10-17（M17）：这句话读起来像要求（\"闸的判据改成…\"），但它**不是判据**（`gate` 不在 CLAIM_KEYS）⇒ 既没 runner 也没 debt。⇒ 现在挂 `D-gate-text`（台账在 DESIGN §6）。★ 真正的判据在 `state_machine.transitions[t_claim]` 与 `write_gate` 的决策卡里。",
+      "gate_debt": "D-gate-text"
     },
     "provenance": {
       "note": "★★★ 用户 2026-10-17 给的第一性描述：任务的来源 = 对设计 DSL 的设计；设计 DSL 的设计来源 = 项目设计文档 + 用户讨论。",
@@ -1410,7 +1416,7 @@
       "L1_construct": {
         "name": "DSL 建构任务",
         "input": "一张很粗的决策卡（\"我要实现 X\"）",
-        "output": "可判的期望 / 节点 / 边（validateDSL 通过 + 至少一条 expectation）",
+        "output": "可判的期望 / 节点 / 边（`validateDSL` 通过 + **≥1 条 `phase=post` 的 expectation**）★ 2026-10-17 更正（M12）：原写\"至少一条 expectation\"（任意 phase），与 `criteria` 和代码 `constructionVerdict` 的\"≥1 post\"冲突。",
         "criteria": "★ 与代码一致（`task_ops.ts:234 constructionVerdict`）：**summary 非空 ∧ ≥1 条 `phase=post` 的 expectation**。★★ 2026-10-17 修正（M12）：原写\"建构完整\"（形容词，不可判），且与 `output` 的\"≥1 条 expectation（任意 phase）\"、代码的\"≥1 条 post\"**三处不一致** ⇒ 边界例：只有 edge-absent（pre）的节点，按两处算\"完整\"、按代码算\"不完整\" ⇒ 它的 L1 卡永远 complete 不掉。",
         "why_needed": "★ 否则\"没有 decision 就不许 publish\"会鸡生蛋 —— 第一个 decision 从哪来？",
         "missing_judge_kind": {
@@ -1462,7 +1468,8 @@
           "layer": "decision 存在",
           "proves": "想过（讨论/决策发生过）",
           "gate": "★ 质量的真实闸是「**decision 有没有实质内容**」—— ★ 但**\"没有 decision 就没有卡\"这句已经不成立**：publishTask 对无 decision / 空 expectations 一律**降级生成 L1 建构卡**（`task_ops.ts:286-290` 派生 level、`:349-362` 写 `expectations: []`）⇒ **卡是有的**。★★ 2026-10-17 更正（Q1，第三道闸指出）：M2 修了 `publish.guards`，这一句没跟着改 ⇒ 自述是假的。",
-          "gate_note": "★ 说明性质（同上，M17）"
+          "gate_note": "★ 说明性质（同上，M17）",
+          "gate_debt": "D-gate-text"
         },
         {
           "layer": "card in pool (candidate)",
@@ -1574,7 +1581,7 @@
         }
       ],
       "root_cause_of_the_4_deadlocks": {
-        "claim": "★★ 把第 7 步（验收）的条件写进了第 4 步（接取）⇒ 『做完才让领』⇒ 死锁。★ 正解：接取的判据是『有活干』（≥1 条后态判据没过），不是『全过』",
+        "claim": "★★ 把第 7 步（验收）的条件写进了第 4 步（接取）⇒ 『做完才让领』⇒ 死锁。★ 正解：接取的判据是『有活干』（`cardStanding ∈ {work, violated}`），不是『全过』",
         "double_verify": "★ 第 7 步需要一个【角色】『非做者』，而流程里没定义谁扮演 ⇒ 单 agent 时无解。★ 缺的不是状态，是角色（verifier_kind 降级规则）",
         "void": "★ 『已领后要退』是第 5 步的【异常出口】，流程里只给了 candidate 的出口 ⇒ 缺异常分支",
         "supersede_on_claimed": "★ 『决策卡变了』是第 3 步的【重入】，流程里没定重入规则 ⇒ 已领的卡停在旧判据上静默漂移",
@@ -1598,7 +1605,7 @@
       "problem": "现在只能全量: 证不知道自己碰了什么(72 张里只有 t354 有机器可读的 touches 声明), run-all 无增量模式 ⇒ 每笔都跑 72 张 ⇒ 慢 + 3 张会崩 + 子代理看起来像卡住",
       "design": [
         "① 用 git diff --name-only 拿本次改动的文件列表",
-        "② 查【契约为先】: 期望里带 path 的命中哪些(28 条里 24 条带 path) ⇒ 只跑那些期望",
+        "② 查【契约为先】: 期望里带 path 的命中哪些(46 条里 42 条带 path) ⇒ 只跑那些期望",
         "③ 查【证为后】: 只有 touches 声明命中改动文件的证才跑",
         "④ 全量证只在三种时候跑: 收口 / 日终 / 改 schema 或证框架本身"
       ],
@@ -1611,7 +1618,7 @@
     },
     "touches_gap": {
       "why": "用户 2026-10-17: 这个缺口也一并登记到设计 DSL 里",
-      "problem": "72 张证里只有 t351 声明了 touches(1/72) ⇒ 增量验证的第 ③ 步(只跑 touches 命中改动文件的证)永远退化成全跑",
+      "problem": "72 张证里只有 t354 声明了 touches(1/72) ⇒ 增量验证的第 ③ 步(只跑 touches 命中改动文件的证)永远退化成全跑",
       "requirement": "每张证声明它碰哪些文件(touches)",
       "criteria": "★ touches 覆盖率 100%（★ 现在 1/72）",
       "note": "★ 契约(path 命中)已经可用(42/46) ⇒ 所以次序是: 先把契约那一路跑通(便宜), 再补 touches(贵)",
@@ -2121,6 +2128,9 @@
           "★ M5 的 source_pending 不可执行；call-exists 仍机器强制 ⇒ \"把炸弹写进注记\"",
           "★ M8 的 covered_by 索引全对，但改名后 7 条彻底不进任何检查 ⇒ 病被上移一层"
         ]
+      },
+      "debt_ledger_extra": {
+        "D-edge-id-unique": "★ M10 的根因：`src/domain/validator.ts:72-83` 只查 `nodes.id` 唯一、**不查 edges.id** ⇒ 重复 edge id 能过校验，而下游 `overlay.edges` 按 id 键控 ⇒ 会串。已记（台账在 DESIGN §6）。"
       }
     },
     "invariants_note": "★★ 2026-10-17（M8）：原来 5 条 invariants 与 4 条 checks + 1 条 unjudgeable 只是数字巧合（4+1=5）——实际 checks[2]/[3] 不在 invariants 里，invariants[0]/[1] 没有任何 check。⇒ 现在每条 invariants 都带 `covered_by`（指向 checks/unjudgeable）或 `debt`。★ 判据：每条 invariants 必须二选一（covered_by | debt），空着就是漏。 ★★ 2026-10-17 二次更正：字段名 rule → text —— 因为 rule 在 CLAIM_KEYS 里，会把 7 条不变量误当判据（清点器立刻报新增 unjudged）。★ 这是「同名两义」第 N 次：design_completeness.criteria[].rule 是判据，invariants[].rule 不是。",
@@ -2136,6 +2146,7 @@
         "★ 全仓 `grep JudgePort = 0` ⇒ 裁定从未落地 ⇒ 欠账 `D-judge-port`"
       ],
       "source_pending": "★ 这是一次重构（改 domain 的依赖方向），等设计全部写完 + 子代理再审过之后再动源码"
-    }
+    },
+    "open_questions_note": "★★ 2026-10-17（Q2）：移出 OQ8, OQ10, OQ11 —— 它们的文本自己写着\"已裁/已落地\"，不是\"未结题\"。★ 为什么重要：`invariant_checks[2]` 的 cmd 只做\"成员检查\"（`oqs.includes(by)`）⇒ 若某条迁移写 `by = \"OQ8\"`，它**会通过**，尽管那条早裁了 ⇒ **不变量说的\"未结题\"比机器实际判的强**。★ 修法：让 `open_questions` 只放未结题（语义即如此），cmd 不用改。已裁的进 `rulings_*`。"
   }
 }
