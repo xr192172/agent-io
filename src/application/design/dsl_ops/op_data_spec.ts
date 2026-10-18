@@ -197,13 +197,13 @@ export const OP_SPECS: readonly OpSpec[] = [
     //   **任务格的唯一写端**。`id` = 任务格所在的**节点 id**（任务与节点同居）——
     //   ★ 不是顶层 `tasks[]`，也不是 overlay 锚点。
     type: 'todo',
-    ops: ['add', 'promote'],
+    ops: ['add', 'link'],
     idRequired: false,
-    required: { add: ['summary'], promote: ['node_id'] },
+    required: { add: ['summary'], link: ['node_id'] },
     note:
       '★ **无节点任务**（2026-10-18 Q5）：和 task **同一套状态机/同一套 claim/complete/void 语义**，' +
       '区别只在"挂在哪"（task 挂 geometry.nodes[].task，todo 挂顶层 todos[]）。' +
-      '★ add 只需 data.summary（可选 data.decision: creator/source/handoff）；id 自动生成 todo_<slug>。' +
+      '★ add 只需 data.summary（可选 data.decision: creator/source/handoff；data.id 可指定）。' +
       '★ 它**没有 expectations**（不是代码，判不了）⇒ 完成只收 attestation 证据。',
   },
   {

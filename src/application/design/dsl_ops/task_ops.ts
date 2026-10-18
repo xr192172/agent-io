@@ -825,24 +825,24 @@ export function applyTodoOp(
   //   **重新设计**（改 decision / 加判据），改完再 `publish` 挂载 —— **建卡是 publish 的事**。
   //   ★ 早先版本会"从 decision 翻判据、建卡、todo 标 done" ⇒ **越权**（做了落地人 + publish 的活）；
   //     且建出来的卡判据不覆盖债（实测：validator.ts 4 条全是"符号存在"，债要的是"edges.id 唯一"）。
-  //   ★ 名不副实（叫 promote 但只是"链接"）⇒ 待改名 `link`；先改行为，改名留作后续。
-  if (op.op === 'promote') {
+  //   ★ ★ 名字就叫 `link`（只是"指向"）—— 2026-10-18 从 promote 改名，因为 promote 暗示"升级/建卡"，而它不建。
+  if (op.op === 'link') {
     const todoId = op.id;
     const nodeId = typeof op.data?.node_id === 'string' ? op.data.node_id.trim() : '';
-    if (!todoId) throw new Error('todo.promote 需要 id（要挂的 todo）');
-    if (!nodeId) throw new Error('todo.promote 需要 data.node_id（这张预决策归哪个节点）');
+    if (!todoId) throw new Error('todo.link 需要 id（要挂的 todo）');
+    if (!nodeId) throw new Error('todo.link 需要 data.node_id（这张预决策归哪个节点）');
 
     const dsl0 = getDesignSheet(feature);
     if (!dsl0) throw new Error(`feature "${feature}" 不存在`);
     const todos0 = [...(dsl0.todos ?? [])];
     const ti = todos0.findIndex((t) => t.id === todoId);
-    if (ti < 0) throw new Error(`todo.promote 被拒：todos[] 里没有 "${todoId}"`);
+    if (ti < 0) throw new Error(`todo.link 被拒：todos[] 里没有 "${todoId}"`);
     const cur = todos0[ti];
     if (cur.state === 'done' || cur.state === 'void') {
-      throw new Error(`todo.promote 被拒：${todoId} 已是终态（${cur.state}）`);
+      throw new Error(`todo.link 被拒：${todoId} 已是终态（${cur.state}）`);
     }
     const node = (dsl0.geometry?.nodes ?? []).find((n) => n.id === nodeId);
-    if (!node) throw new Error(`todo.promote 被拒：geometry.nodes 里没有 "${nodeId}"`);
+    if (!node) throw new Error(`todo.link 被拒：geometry.nodes 里没有 "${nodeId}"`);
 
     // ★ 只改 todo：填 node_id。★ 状态不变（它还等人领）；★ 节点的 decision / task 一概不动。
     todos0[ti] = { ...cur, node_id: nodeId };
@@ -856,13 +856,13 @@ export function applyTodoOp(
         `  · todo 状态仍是 ${cur.state}（等人领）\n` +
         `  · 该节点有没有 decision：${node.decision ? '有' : '★ 没有 —— 落地人得先给它写设计'}\n` +
         `★ 下一步（落地人）：读该节点的设计 DSL → 重新设计（改 decision / 加判据）→ publish 挂载 → 领 → 办。\n` +
-        `★ 若无对应节点 ⇒ 别 promote，就在 todos[] 里 claim → complete（凭 attestation）。`,
+        `★ 若无对应节点 ⇒ 别 link，就在 todos[] 里 claim → complete（凭 attestation）。`,
       feature,
       data: { todo_id: todoId, node_id: nodeId, todo_state: cur.state as TaskState },
     };
   }
 
-  if (op.op !== 'add') throw new Error(`todo 仅支持 add / promote（收到 ${op.op}）`);
+  if (op.op !== 'add') throw new Error(`todo 仅支持 add / link（收到 ${op.op}）`);
   const data = op.data ?? {};
   const summary = typeof data.summary === 'string' ? data.summary.trim() : '';
   if (!summary) throw new Error('todo.add 被拒：必须给 data.summary（要做什么，一句人话）');
