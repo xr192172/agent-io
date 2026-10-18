@@ -25,7 +25,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { getDSL } from '../../infrastructure/storage.js';
+import { getDesignSheet } from '../../infrastructure/storage.js';
 import { renderLiveFromDb } from '../../infrastructure/index/live_render.js';
 import { scanRevOf, type ScanRev } from '../../infrastructure/index/scan_rev.js';
 import { judgeExpectations } from '../design/intent/expectations.js';
@@ -113,7 +113,7 @@ export async function patrolDrift(feature: string, opts: PatrolOptions): Promise
 
   // ── 1. 输入 = live 图（★ 唯一来源）。读不到 ⇒ 判不了，不造空图 ──
   const live = renderLiveFromDb(feature);
-  const design = getDSL(feature);
+  const design = getDesignSheet(feature); // ★ 2026-10-18：读【设计侧】—— 卡在 design/ 上（不是派生 features/）
   if (!live) {
     report.unavailable = `feature "${feature}" 的 live 图读不到（无 source_root / 无 cache.db / 库里查不到源文件）⇒ 判不了漂移`;
     return report;
