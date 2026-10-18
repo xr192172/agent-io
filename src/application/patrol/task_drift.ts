@@ -176,7 +176,14 @@ export async function patrolDrift(feature: string, opts: PatrolOptions): Promise
     });
 
     // ★ 异常一：漏收口 —— 状态机说"可收口"，卡却还没进终态
-    if (verdict.satisfied) report.missed_close.push(card.id);
+    // ★★★ 2026-10-18（Q3）：**只在 claimed 时报** —— candidate 的卡"满足"是【正常】的
+    //   （还没人领，不该收口；它要么该被领，要么该被作废）。此前不看 state ⇒ 把"代码先于卡存在"
+    //   的 candidate 卡也报成漏收口 ⇒ 那是今天死锁的来源之一。
+    if (verdict.satisfied && card.state === "claimed") report.missed_close.push(card.id);
+    // ★ 而 candidate + satisfied ⇒ **活已在代码里，卡是多余的** ⇒ 该作废（不是漏收口）
+    else if (verdict.satisfied && card.state === "candidate") {
+      if (!report.should_void.includes(card.id)) report.should_void.push(card.id);
+    }
     // ★ 异常二：违约 —— 前态判据被越权（收口不能放行它）
     if (verdict.standing === 'violated') report.should_void.push(card.id);
     // ★ 异常二（另一来源）：设计侧有卡，**盘上也没有**该文件 ⇒ 目标真不在了
