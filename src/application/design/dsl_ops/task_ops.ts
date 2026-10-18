@@ -626,7 +626,12 @@ export async function completeTask(input: TaskOpInput): Promise<EditResult> {
     state: 'done',
     evidence: [
       ...(card.evidence ?? []),
-      { kind: evidence!.kind, at, ...(evidence!.kind === 'attestation' ? { by: evidence!.by } : {}), verdict: 'pass' },
+      {
+        kind: evidence!.kind,
+        at,
+        ...(evidence!.kind === 'attestation' ? { by: evidence!.by, why: evidence!.why } : {}),
+        verdict: 'pass',
+      },
     ],
   });
 
