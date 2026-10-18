@@ -151,6 +151,14 @@ export interface TaskSpec {
   expectations: Expectation[];
   /** 五态之一 */
   state: TaskState;
+  /**
+   * ★★★ **仅 todo 用**：这张预决策归哪个节点（`file_xxx`）。
+   * ★ 语义（2026-10-18 用户校准）：**不是"建卡"，是"指向"** ——
+   *   预决策只挂「决策 + 现象」；**落地人**看这个 node_id 去读那里的设计 DSL、**重新设计**，
+   *   改完再 `publish` 挂载（建卡是 publish 的事）。
+   * ★ 缺省 ⇒ 无节点任务（在 todos[] 里凭 attestation 完成）。
+   */
+  node_id?: string;
   /** ★ 谁领的（CAS 写；未领 ⇒ `null` / 缺省） */
   owner?: string | null;
   /** ★ 何时领的（ISO 8601；TTL 回收要靠它 —— 没有它 `releaseIfExpired` 判不了） */

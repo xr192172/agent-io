@@ -820,79 +820,45 @@ export function applyTodoOp(
   op: { op: string; id?: string; data?: Record<string, unknown> },
   agent?: string,
 ): EditResult {
-  // ★★★ 2026-10-18：**promote** —— 把 todo（scope 未定）转成【节点任务】（挂到某个 geometry 节点）。
-  //   用途：批量生产卡（todos[]）之后，定得下挂哪的 ⇒ promote；定不下的 ⇒ 留在 todos[]。
+  // ★★★ 2026-10-18（用户校准）：**promote = 只填 node_id（指向）**，不建卡、不改节点。
+  //   预决策（todos[]）**只挂「决策 + 现象」**；**落地人**看 node_id 去读那里的设计 DSL、
+  //   **重新设计**（改 decision / 加判据），改完再 `publish` 挂载 —— **建卡是 publish 的事**。
+  //   ★ 早先版本会"从 decision 翻判据、建卡、todo 标 done" ⇒ **越权**（做了落地人 + publish 的活）；
+  //     且建出来的卡判据不覆盖债（实测：validator.ts 4 条全是"符号存在"，债要的是"edges.id 唯一"）。
+  //   ★ 名不副实（叫 promote 但只是"链接"）⇒ 待改名 `link`；先改行为，改名留作后续。
   if (op.op === 'promote') {
     const todoId = op.id;
-    const nodeId = typeof op.data?.node_id === 'string' ? op.data.node_id : '';
-    if (!todoId) throw new Error('todo.promote 需要 id（要转的 todo）');
-    if (!nodeId) throw new Error('todo.promote 需要 data.node_id（挂到哪个节点）');
+    const nodeId = typeof op.data?.node_id === 'string' ? op.data.node_id.trim() : '';
+    if (!todoId) throw new Error('todo.promote 需要 id（要挂的 todo）');
+    if (!nodeId) throw new Error('todo.promote 需要 data.node_id（这张预决策归哪个节点）');
 
     const dsl0 = getDesignSheet(feature);
     if (!dsl0) throw new Error(`feature "${feature}" 不存在`);
     const todos0 = [...(dsl0.todos ?? [])];
     const ti = todos0.findIndex((t) => t.id === todoId);
     if (ti < 0) throw new Error(`todo.promote 被拒：todos[] 里没有 "${todoId}"`);
-    if (todos0[ti].state === 'done' || todos0[ti].state === 'void') {
-      throw new Error(`todo.promote 被拒：${todoId} 已是终态（${todos0[ti].state}）`);
+    const cur = todos0[ti];
+    if (cur.state === 'done' || cur.state === 'void') {
+      throw new Error(`todo.promote 被拒：${todoId} 已是终态（${cur.state}）`);
     }
-    const nodes0 = [...(dsl0.geometry?.nodes ?? [])];
-    const ni = nodes0.findIndex((n) => n.id === nodeId);
-    if (ni < 0) throw new Error(`todo.promote 被拒：geometry.nodes 里没有 "${nodeId}"`);
+    const node = (dsl0.geometry?.nodes ?? []).find((n) => n.id === nodeId);
+    if (!node) throw new Error(`todo.promote 被拒：geometry.nodes 里没有 "${nodeId}"`);
 
-    const todo = todos0[ti];
-    const node = { ...nodes0[ni] };
-    // ★★★ 2026-10-18（改）：**目标节点没有 decision ⇒ 拒**。
-    //   ★ 为什么（重要）：**"债"不是"设计"** ——
-    //     债   = "有个问题要处理"（例：D-validate-decision：validateDSL 不看 decision）
-    //     设计 = "这个文件为什么存在"（domain/validator.ts 的意图）
-    //   ⇒ promote 是"把债挂到【已有的】设计上"，**不是替节点发明设计**。
-    //   ★ 早先版本会"用 todo.summary 起一张 decision" ⇒ 那是**用债冒充设计** ⇒ 会污染节点意图。
-    //   ⇒ 正确做法：先给该节点写 decision（edit_dsl type:'decision' op:'update'），再 promote。
-    if (!node.decision) {
-      throw new Error(
-        `todo.promote 被拒：节点 "${nodeId}" **没有决策卡**（decision）—— 债不能冒充设计。\n` +
-          `★ 先写设计：edit_dsl {type:'decision', op:'update', id:'${nodeId}', data:{ summary:'这个文件为什么存在', expectations:[...] }}，再 promote。\n` +
-          `★ 或者：这张 todo 本来就该留在 todos[]（它没有对应节点，凭 attestation 完成）。`,
-      );
-    }
-    // ★★★ 2026-10-18：**目标已有卡 ⇒ 拒**（不静默）。
-    //   陷阱：若目标卡的 state 是 done/void（终态），`if (!node.task)` 不建卡，而 todo 却标 done
-    //   ⇒ **"转了但没卡"**（用户看不见）。⇒ 明确拒，让调用方决定（换节点 / 先处理旧卡 / 两事合并成一张）。
-    if (node.task) {
-      throw new Error(
-        `todo.promote 被拒：节点 "${nodeId}" 上**已有卡**（state=${node.task.state}）—— 一个节点只许一张卡。\n` +
-          `★ 怎么办：换一个节点；或先把旧卡 void/complete；或把两件事合并成一张卡（手工写 decision）。`
-      );
-    }
-    // ② 在节点上建卡（从 decision 翻；0 条期望 ⇒ L1 建构卡，和 publish 一致）
-    if (!node.task) {
-      node.task = {
-        id: nodeId,
-        summary: node.decision.summary,
-        expectations: [...(node.decision.expectations ?? [])],
-        state: 'candidate',
-        owner: null,
-      };
-    }
-    nodes0[ni] = node;
-    // ③ todo 标 done（★ 不删 —— "这张卡转给谁了"要可追溯）
-    todo.state = 'done';
-    todo.release_reason = `promoted to ${nodeId}`;
-    todos0[ti] = todo;
-
-    const nextDsl = { ...dsl0, geometry: { ...dsl0.geometry!, nodes: nodes0 }, todos: todos0 };
+    // ★ 只改 todo：填 node_id。★ 状态不变（它还等人领）；★ 节点的 decision / task 一概不动。
+    todos0[ti] = { ...cur, node_id: nodeId };
+    const nextDsl = { ...dsl0, todos: todos0 };
     const ov = loadOverlay(feature) ?? seedOverlayFromDsl(nextDsl);
     saveDesignSheet(applyOverlay(nextDsl, ov));
 
     return {
       message:
-        `已 promote "${todoId}" → 节点 "${nodeId}"：\n` +
-        `  · 节点卡：state=candidate · ${(node.task.expectations ?? []).length} 条判据（0 条 ⇒ L1 建构卡）\n` +
-        `  · todo 标 done（release_reason="promoted to ${nodeId}" —— 不删，可追溯）\n` +
-        `★ 之后对节点用 type:'task' 的 claim/complete（★ todo 的那套规矩不再适用：节点任务有判据）。`,
+        `已把预决策 "${todoId}" 指向节点 "${nodeId}"（只填 node_id，不建卡）。\n` +
+        `  · todo 状态仍是 ${cur.state}（等人领）\n` +
+        `  · 该节点有没有 decision：${node.decision ? '有' : '★ 没有 —— 落地人得先给它写设计'}\n` +
+        `★ 下一步（落地人）：读该节点的设计 DSL → 重新设计（改 decision / 加判据）→ publish 挂载 → 领 → 办。\n` +
+        `★ 若无对应节点 ⇒ 别 promote，就在 todos[] 里 claim → complete（凭 attestation）。`,
       feature,
-      data: { todo_id: todoId, node_id: nodeId, card_state: 'candidate' as TaskState },
+      data: { todo_id: todoId, node_id: nodeId, todo_state: cur.state as TaskState },
     };
   }
 
