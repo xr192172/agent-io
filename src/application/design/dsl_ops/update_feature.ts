@@ -12,7 +12,8 @@
  * - edge 支持 update（删除后按合并数据重建，原子 ops 无独立 updateEdge）
  */
 
-import { getDSL, saveDSL } from '../../../infrastructure/storage.js';
+import fs from 'node:fs';
+import { getDSL, saveDSL, getDesignSheetFile } from '../../../infrastructure/storage.js';
 // ★★ T75：决策卡必须活过 base 重建 ⇒ 每次 edit_dsl 收口时同步进 overlay
 import { syncDecisionsToOverlay, syncTagsToOverlay, syncLifecycleToOverlay } from '../../../infrastructure/storage_overlay.js';
 import type { EditResult } from './edit_result.js';
@@ -182,6 +183,16 @@ async function updateFeatureCore(input: UpdateFeatureInput): Promise<EditResult>
   const backup = JSON.parse(JSON.stringify(original)) as Record<string, unknown>;
   delete backup._sync;
 
+  // ★★★ 2026-10-18（Q2）：**原始文件字节**备份 —— 回滚用它，不用 `saveDSL(backup)`。
+  //   病：`saveDSL(backup)` 会重新 `syncMeta` + `_dsl_rev +1` ⇒ **内容回滚了、元数据前进了**
+  //       ⇒ 乐观锁误判"有人改过"（其实是我失败的那次）。
+  //   药：回滚 = 把调用前的**字节**写回 ⇒ `_sync` / `_dsl_rev` 原样不动。
+  const designFile = getDesignSheetFile(feature);
+  const rawBackup = fs.existsSync(designFile) ? fs.readFileSync(designFile, 'utf8') : null;
+  const restoreRaw = (): void => {
+    if (rawBackup !== null) fs.writeFileSync(designFile, rawBackup, 'utf-8');
+  };
+
   // ★★★ T340（2026-10-16）：**自洽性闸的基线读数** —— 本次调用**前**的 `validateDSL` 错误集。
   //   ★ 为什么要基线（而不是"见错就拒"）：★ **实测现状并非全过** —— 真仓 feature `observe-skeleton`
   //     就有 5 条 `anchor_broken`，且**既有证** `t329` / `t330` 的夹具 DSL 本身就缺 `id`（edges）/
@@ -221,7 +232,7 @@ async function updateFeatureCore(input: UpdateFeatureInput): Promise<EditResult>
     }
   } catch (e) {
     // 回滚到操作前状态
-    saveDSL(backup as never);
+    restoreRaw();
     throw new Error(
       `操作 ${results.length + 1}/${operations.length} 失败，已回滚全部 ${results.length} 个已应用变更\n` +
         `失败原因: ${(e as Error).message}`,
@@ -243,7 +254,7 @@ async function updateFeatureCore(input: UpdateFeatureInput): Promise<EditResult>
   const draft = getDSL(feature);
   if (!draft) {
     // 极端情形（写完回读不到）：fail-closed —— 不许降级放行
-    saveDSL(backup as never);
+    restoreRaw();
     throw new Error(
       `拒绝提交（自洽性闸）：edit_dsl 写完后**回读不到** feature "${feature}" 的 DSL ⇒ 无法判定自洽性。` +
         `本次改动已回滚到调用前状态。`,
@@ -276,7 +287,7 @@ async function updateFeatureCore(input: UpdateFeatureInput): Promise<EditResult>
       for (const key of Object.keys(prefixFix)) if (kw.startsWith(key)) hitKeys.add(key);
     }
     const howTo = [...hitKeys].map((k) => `  · [${k}*] ${prefixFix[k]}`);
-    saveDSL(backup as never);
+    restoreRaw();
     throw new Error(
       `拒绝提交（自洽性闸 validateDSL）：本次 edit_dsl 让 feature "${feature}" 的 DSL **变得不自洽**（新增 ${newErrors.length} 条）—— ` +
         `本仓纪律：设计 DSL 天然应当逻辑自洽（dangling_edge / duplicate_id / anchor_broken / reasoning 引用都算）。\n` +
