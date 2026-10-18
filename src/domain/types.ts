@@ -232,6 +232,12 @@ export interface DesignDSL {
   status?: DiagramStatus;
   /** 主题 ID（默认 blue） */
   theme?: ThemeId;
+  /**
+   * ★★★ 2026-10-18（Q5）：**无节点任务**（To Do）—— 和 `geometry.nodes[].task` **同一套状态机/同一套 op 语义**，
+   * 区别只在"挂在哪"：节点任务挂代码节点，todo 挂这个顶层数组。
+   * ★ 它**没有 `expectations`**（不是代码，判不了）⇒ 完成只收 `attestation` 证据。
+   */
+  todos?: import('./task_schema.js').TaskSpec[];
   /** 几何层（必填） */
   geometry: Geometry;
   /** 语义层（无则纯示意图） */

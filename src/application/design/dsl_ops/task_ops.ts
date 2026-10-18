@@ -85,6 +85,11 @@ function loadTask(feature: string, nodeId: string): Loaded {
     throw new Error(`feature "${feature}" 不存在 —— 任务格住在设计 DSL 的节点上，先有 feature 才有家。`);
   }
   const node = (dsl.geometry?.nodes ?? []).find((n) => n.id === nodeId);
+  // ★★★ 2026-10-18（Q5）：**节点找不到 ⇒ 找 todos**（无节点任务，同一套状态机/op）
+  if (!node) {
+    const todo = (dsl.todos ?? []).find((t) => t.id === nodeId);
+    if (todo) return { dsl, nodeId, card: todo };
+  }
   if (!node) {
     throw new Error(
       `节点 "${nodeId}" 不在 feature "${feature}" 的 geometry.nodes 里 —— 任务与节点同居，找不到节点就没有家。`,
@@ -134,8 +139,11 @@ function assertTransition(from: TaskState, to: TaskState, action: string): void 
 function writeTask(feature: string, nodeId: string, next: TaskSpec): void {
   const dsl = getDesignSheet(feature);
   if (!dsl) throw new Error(`feature "${feature}" 在落盘前读不到 ⇒ 不写（绝不静默降级）。`);
-  const nodes = (dsl.geometry?.nodes ?? []).map((n) => (n.id === nodeId ? { ...n, task: next } : n));
-  const nextDsl = { ...dsl, geometry: { ...dsl.geometry!, nodes } };
+  // ★★★ 2026-10-18（Q5）：**按"挂在哪"分叉** —— todo 写 `todos[]`，节点任务写 `geometry.nodes[].task`。
+  const isTodo = (dsl.todos ?? []).some((t) => t.id === nodeId);
+  const nextDsl = isTodo
+    ? { ...dsl, todos: (dsl.todos ?? []).map((t) => (t.id === nodeId ? { ...t, ...next } : t)) }
+    : { ...dsl, geometry: { ...dsl.geometry!, nodes: (dsl.geometry?.nodes ?? []).map((n) => (n.id === nodeId ? { ...n, task: next } : n)) } };
   const ov = loadOverlay(feature) ?? seedOverlayFromDsl(nextDsl);
   saveDesignSheet(applyOverlay(nextDsl, ov));
 }
@@ -570,7 +578,18 @@ export async function completeTask(input: TaskOpInput): Promise<EditResult> {
   const level = taskLevel(card);
   let closeNote: string;
   let standing: CardStanding | undefined;
-  if (level === 'L1') {
+  // ★★★ 2026-10-18（Q5）：**todo（无节点任务）没有判据** ⇒ 不走 L1/L2 两条尺。
+  //   ★ 为什么：todo 不是代码（整理 Skill / 改 CI / 调研），`expectations` 判不了 ⇒
+  //     `taskLevel` 会给 L1 ⇒ `constructionVerdict` 要求 decision ⇒ **永远收不了口**。
+  //   ⇒ 它只凭 `evidence`（`attestation`：谁、何时、为什么算完成）——那正是"人负责"的形态。
+  const isTodo = (dsl.todos ?? []).some((t) => t.id === node_id);
+  if (isTodo) {
+    if (card.state !== 'claimed') {
+      throw new Error(`complete 被拒：todo 的 state=${card.state}，只有 claimed 才能收口（先 claim）。`);
+    }
+    assertTransition(card.state, 'done', 'complete');
+    closeNote = 'todo 完成（无判据）—— ★ 只凭 attestation 证据：谁、何时、为什么算完成';
+  } else if (level === 'L1') {
     const c = constructionVerdict(dsl, node_id);
     if (!c.complete) {
       throw new Error(
@@ -613,12 +632,15 @@ export async function completeTask(input: TaskOpInput): Promise<EditResult> {
 
   // ★ 交接期：仍调既有状态入口（设计期望 `completeTask → updateStatus`），让 overlay 的 progress
   //   有一份与派生值一致的投影（★ 权威仍是 task.state；第 ④ 步退役 overlay 后这一行随之下线）。
-  const legacy = updateStatus({ feature, node_id, status: 'done', evidence });
+  // ★★★ 2026-10-18（Q5）：**todo 没有"节点 status"可投影**（它不在 geometry/semantic）⇒ 跳过。
+  //   ★ 不跳会怎样（实测）：先 writeTask（写 done）再 updateStatus（报"节点未找到"）⇒
+  //     **报错但数据已改** —— 和 Q2 同族（"失败不等于没发生"）。
+  const legacy = isTodo ? null : updateStatus({ feature, node_id, status: 'done', evidence });
 
   return {
     message:
       `已完成任务 "${node_id}"（owner=${card.owner}，级别=${level}）—— ${closeNote}、证据 kind=${evidence!.kind}。` +
-      `\n${legacy.message.split('\n')[0]}` +
+      (legacy ? `\n${legacy.message.split('\n')[0]}` : '\n★ todo：无节点 status 可投影（不在 geometry）⇒ 跳过 updateStatus') +
       (level === 'L1' ? `\n★ 下一步：\`publish\` 会把这个节点翻成 **L2 实现卡**（旧 L1 卡的证据会带过去）。` : ''),
     feature,
     data: {
