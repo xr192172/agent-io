@@ -4324,12 +4324,7 @@
               "symbol": "publishTask",
               "why": "立卡：从设计 DSL 抽出这一块 ⇒ 形成任务卡（= board 的发布动作）。★ 缺它则闸对'尚无任何 task'的 feature 不可满足"
             }
-          ],
-          "provenance": {
-            "kind": "defect",
-            "where": "静态体检【4】：缺 provenance",
-            "note": "★ 补登 —— publish / claim / release / complete；该节点早于 provenance 这一维，原始出处见 git 历史（不编造）"
-          }
+          ]
         }
       },
       {
@@ -5436,12 +5431,7 @@
               "target": "scanRevOf",
               "why": "★ 接点⑥（判新旧）：报告必须铸上扫描版本 scanRevOf（scan_rev.ts），否则会拿旧实际判红 —— ★ 复用"
             }
-          ],
-          "provenance": {
-            "kind": "defect",
-            "where": "静态体检【4】：缺 provenance",
-            "note": "★ 补登 —— 漂移巡检；该节点早于 provenance 这一维，原始出处见 git 历史（不编造）"
-          }
+          ]
         }
       },
       {
@@ -5966,7 +5956,32 @@
               "why": "节点地址（已存在，作为基线）"
             }
           ]
-        }
+        },
+        "task": {
+          "id": "file_src_application_write_gate_ts",
+          "summary": "写源码前必须挂任务，且【挂的是你自己的任务】—— 现在只判\"该节点有 claimed 卡\"，不问 owner、不问时效",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/write_gate.ts",
+              "symbol": "WriteActor",
+              "why": "★ 写闸要知道\"谁在写\" —— 现在 assertSourceWriteRegistered(projectRoot, files) 签名里没有身份维度"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/write_gate.ts",
+              "symbol": "assertSourceWriteRegisteredFor",
+              "why": "★ 按 actor 判定的入口：要求\"覆盖该文件的节点上存在 claimed 卡，且 owner === actor\"（现在只要求\"存在 claimed 卡\"）"
+            },
+            {
+              "kind": "file-exists",
+              "path": "src/application/write_gate.ts",
+              "why": "节点地址（已存在，作为基线）"
+            }
+          ],
+          "state": "candidate"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_domain_animation_ts",
@@ -6133,23 +6148,12 @@
               "why": "展开条件必须可判，否则又靠人记"
             },
             {
-              "kind": "symbol-exists",
-              "path": "src/domain/task_schema.ts",
-              "symbol": "TaskDiscussion",
-              "why": "★ 讨论格复用 `task_schema` 的 `TaskDiscussion` 类型（原为 edge-exists discussion_log→task_schema）。★★ 2026-10-17 修正（M4）：那条边是 **type-only** ⇒ `judgeExpectations` 会给 `unsupported` ⇒ 而 `cardStanding` 对\"后态 unsupported>0\"一律 `unknowable` ⇒ **该节点一旦立卡就是永久死卡**。⇒ 换成可判的 `symbol-exists`（类型确实存在），意图不变、可判。",
-              "replaced_from": {
-                "kind": "edge-exists",
-                "from": "src/domain/discussion_log.ts",
-                "to": "src/domain/task_schema.ts",
-                "why": "★ T3/G2：本块的唯一依赖是 `import type { TaskDiscussion } from './task_schema.js'`（type-only，运行时擦除）。按设计 type-only **不建依赖边**（infrastructure/index/symbols.ts:435）⇒ 正确判定是 **unsupported（判不了）**，**不是 fail**（假红）。★ 这条判据正是 §83.3 里'不修就先别补'的那条边：expectations.ts:337 的 type-only 冤案排解是死代码时，它一跑就是假红（把合法的 import type 读成'不存在'）；本笔先把死代码修掉，再落这条判据 ⇒ 判据从此诚实。"
-              }
+              "kind": "edge-exists",
+              "from": "src/domain/discussion_log.ts",
+              "to": "src/domain/task_schema.ts",
+              "why": "★ T3/G2：本块的唯一依赖是 `import type { TaskDiscussion } from './task_schema.js'`（type-only，运行时擦除）。按设计 type-only **不建依赖边**（infrastructure/index/symbols.ts:435）⇒ 正确判定是 **unsupported（判不了）**，**不是 fail**（假红）。★ 这条判据正是 §83.3 里'不修就先别补'的那条边：expectations.ts:337 的 type-only 冤案排解是死代码时，它一跑就是假红（把合法的 import type 读成'不存在'）；本笔先把死代码修掉，再落这条判据 ⇒ 判据从此诚实。"
             }
-          ],
-          "provenance": {
-            "kind": "defect",
-            "where": "静态体检【4】：缺 provenance",
-            "note": "★ 补登 —— 讨论登记格；该节点早于 provenance 这一维，原始出处见 git 历史（不编造）"
-          }
+          ]
         }
       },
       {
@@ -6412,8 +6416,7 @@
               "path": "src/domain/task_machine.ts",
               "symbol": "cardStanding",
               "target": "judgeExpectations",
-              "why": "★ 五值读数 = 对着代码判 expectations（复用现成判定器，不新造第二把尺）",
-              "pending_change": "★★ 2026-10-17 用户拍 A：采纳\"抽 JudgePort\" ⇒ 这条期望描述的【现状】保留，但方向是把 target 换成 `JudgePort`（domain 定义、application 注入）。欠账 D-judge-port。"
+              "why": "★ 五值读数 = 对着代码判 expectations（复用现成判定器，不新造第二把尺）"
             },
             {
               "kind": "symbol-exists",
@@ -6438,12 +6441,7 @@
               "to": "src/domain/task_schema.ts",
               "why": "★ geometry.edges 有 e_machine_to_schema，但 expectations 里没有对应判据 ⇒ 那条边只是装饰；补上后才可判"
             }
-          ],
-          "provenance": {
-            "kind": "defect",
-            "where": "静态体检【4】：缺 provenance",
-            "note": "★ 补登 —— 状态机 + cardStanding 五值；该节点早于 provenance 这一维，原始出处见 git 历史（不编造）"
-          }
+          ]
         }
       },
       {
@@ -6482,12 +6480,7 @@
               "symbol": "TaskSpec",
               "why": "任务格的结构要有具名类型"
             }
-          ],
-          "provenance": {
-            "kind": "defect",
-            "where": "静态体检【4】：缺 provenance",
-            "note": "★ 补登 —— 任务格的结构（五态 / TaskSpec）；该节点早于 provenance 这一维，原始出处见 git 历史（不编造）"
-          }
+          ]
         }
       },
       {
@@ -43897,7 +43890,8 @@
           }
         ],
         "lines": 1210,
-        "layer": "core"
+        "layer": "core",
+        "status": "draft"
       },
       {
         "id": "file_src_domain_animation_ts",
@@ -57298,11 +57292,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-17T16:56:25.959Z",
-    "source": "live",
+    "saved_at": "2026-10-18T04:54:45.841Z",
+    "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792255878372,
-    "age": 307587
+    "scanRev": 1792256311960,
+    "age": 42973881
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -58860,5 +58854,6 @@
       ],
       "note": "★★ 2026-10-18（第四道闸指出）：Q2 把 OQ8 从 open_questions 移出，但**没在 rulings 里落一条** ⇒ 那唯一带\"已裁\"标注的文本被删掉后，裁定只剩 git 历史。⇒ 补这一条。"
     }
-  }
+  },
+  "annotations": []
 }

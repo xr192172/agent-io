@@ -40,7 +40,7 @@
  *   证据闸只有 `validateProgressEvidence` 一把尺 —— 这里只**调**它们。
  */
 import type { EditResult } from './edit_result.js';
-import { getDSL, saveDSL } from '../../../infrastructure/storage.js';
+import { getDesignSheet, saveDesignSheet } from '../../../infrastructure/storage.js';
 import { loadOverlay } from '../../../infrastructure/storage_overlay.js';
 import { applyOverlay, seedOverlayFromDsl, validateProgressEvidence, type ProgressEvidence } from '../../../domain/overlay.js';
 import { applicableTransitions, cardStanding, isClaimable, isSatisfied, type CardStanding } from '../../../domain/task_machine.js';
@@ -74,13 +74,13 @@ export interface TaskOpInput {
 // ─────────────────────────────────────────────────────────────
 
 interface Loaded {
-  dsl: NonNullable<ReturnType<typeof getDSL>>;
+  dsl: NonNullable<ReturnType<typeof getDesignSheet>>;
   nodeId: string;
   card: TaskSpec;
 }
 
 function loadTask(feature: string, nodeId: string): Loaded {
-  const dsl = getDSL(feature);
+  const dsl = getDesignSheet(feature);
   if (!dsl) {
     throw new Error(`feature "${feature}" 不存在 —— 任务格住在设计 DSL 的节点上，先有 feature 才有家。`);
   }
@@ -132,12 +132,12 @@ function assertTransition(from: TaskState, to: TaskState, action: string): void 
  *   权威始终是 `task.state`（`progressOf` 是唯一映射，读端见 `overlay.ts#applyOverlay`）。
  */
 function writeTask(feature: string, nodeId: string, next: TaskSpec): void {
-  const dsl = getDSL(feature);
+  const dsl = getDesignSheet(feature);
   if (!dsl) throw new Error(`feature "${feature}" 在落盘前读不到 ⇒ 不写（绝不静默降级）。`);
   const nodes = (dsl.geometry?.nodes ?? []).map((n) => (n.id === nodeId ? { ...n, task: next } : n));
   const nextDsl = { ...dsl, geometry: { ...dsl.geometry!, nodes } };
   const ov = loadOverlay(feature) ?? seedOverlayFromDsl(nextDsl);
-  saveDSL(applyOverlay(nextDsl, ov));
+  saveDesignSheet(applyOverlay(nextDsl, ov));
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -189,7 +189,7 @@ interface ConstructBasis {
  * ★ L1 建构卡的 `summary` **只**从既有字段拼（见函数上方的 ①~④），**一个字的实现判据都不编**。
  */
 function constructBasis(
-  dsl: NonNullable<ReturnType<typeof getDSL>>,
+  dsl: NonNullable<ReturnType<typeof getDesignSheet>>,
   node: { id: string; type?: string; label?: string; title?: string; description?: string; path?: string },
 ): ConstructBasis {
   const sem = (dsl.semantic?.files ?? []).find((f) => f.id === node.id);
@@ -232,7 +232,7 @@ function constructBasis(
  * ★ 这是**同一个判据的正反两面**：publish/claim 说"还没建好"、complete 说"建好了"，用的是同一个函数。
  */
 function constructionVerdict(
-  dsl: NonNullable<ReturnType<typeof getDSL>>,
+  dsl: NonNullable<ReturnType<typeof getDesignSheet>>,
   nodeId: string,
 ): { complete: boolean; missing: string[]; post: number } {
   const node = (dsl.geometry?.nodes ?? []).find((n) => n.id === nodeId);
@@ -267,7 +267,7 @@ export function publishTask(input: TaskOpInput): EditResult {
         `★ 领任务请走 \`op:'claim'\`（data.owner 是**那个** action 的参数）；立卡这一步没有可填的字段。`,
     );
   }
-  const dsl = getDSL(feature);
+  const dsl = getDesignSheet(feature);
   if (!dsl) {
     throw new Error(`feature "${feature}" 不存在 —— 任务格住在设计 DSL 的节点上，先有 feature 才有家。`);
   }
