@@ -631,14 +631,10 @@ export function saveDSL(dsl: DesignDSL, source: string = 'mcp', base_dsl_rev?: n
   };
   writeAtomic(file, JSON.stringify(dsl, null, 2));
 
-  // 同步到活态文件（带时间戳，方便 diff）
-  const liveFile = getLiveDslFile();
-  const liveData = {
-    ...dsl,
-    _sync: syncMeta(dsl, source),
-  };
-  // ★ T188：活态文件同样走原子写 —— ★ 它**正是**那个被并发读的目标（`getDSL` 优先读它）。
-  writeAtomic(liveFile, JSON.stringify(liveData, null, 2));
+  // ★★★ 2026-10-18：**停写活态文件**（`agent-io.json`）。
+  //   它是"第三份"：读侧已统一到 design/（`readDSLRaw` → `getDesignSheet`），
+  //   再写它只会让磁盘上多一份会和设计侧漂移的副本 —— ★ 而漂移的副本比没有更坏。
+  //   ★ 它的历史作用（T188 的"并发读目标"）已由 `design/<f>.dsl.json` 的原子写接替。
 
   // 触发 SSE 通知（用传入的 source，避免浏览器保存被误判为 mcp 触发 reload）
   if (dslChangeCallback) {
