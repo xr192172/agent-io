@@ -234,7 +234,7 @@
 |---|---|---|
 | **A1** | `patrolDrift` 挂上 live 重算（否则巡检永不跑） | 待做（最致命） |
 | **A7** | 写闸加 `actor` 维度（已挂卡，2 条判据真红） | ★ **形式上 done、可追溯上没完成** —— 见 `D-actor-wire` |
-| **D-T8** | 上架读端（`board/pool.ts`：`BoardView` + `listPool`） | 待做（3 红） |
+| **D-T8** | 上架读端（`board/pool.ts`：`BoardView` + `listPool`） | ✅ **已销（2026-10-18）**：`pool.ts` 已建，`BoardView` + `listPool` 都在；`tsc` 0 错 |
 | **D-T8-wire** | 上架读端的**接入点**（`queryFeature` 住哪个文件未核） | 待核 |
 | **D-verifier-role** | 第 7 步"双验"没有角色（单 agent 时无解） | 待裁 |
 | ★ **L1 判据缺口** | 6 种 kind 全对着代码判 ⇒ 表达不了"DSL 自己全不全" ⇒ L1 卡建不出来。解药：`Expectation` 与 `invariant` 合成同一个可执行抽象 | 待做（**卡住 L1**） |
@@ -246,7 +246,7 @@
 | **D-release-by** | `t_release` 的「带 by」无执行者（`releaseTask` 是 `input.agent ?? null`） | 待做 |
 | **D-dual-write** | `dual_write` 的三个前提都不存在（`OverlayAnchor` 无 `updated_at` / `DriftReport` 无 `authority_unknown`） | 待做 |
 | **D-actor-wire** | `assertSourceWriteRegisteredFor` 零调用 + `AGENT_IO_ACTOR` 全仓无赋值 ⇒ **A7 的阻断永不触发** | 待做（源码） |
-| **★★ D-updatefeature-writes-on-fail** | 子代理 B 实测：**updateFeature 任何一次调用（含失败回滚）都会重写 base** —— 把 `_sync` 整块删掉并追加 `_dsl_rev: 1` ⇒ **操作失败、数据却被动过**（回滚只回滚已应用的变更，没回滚落盘本身）。★ 严重：它让「失败」不等于「没发生」 | 待做（源码） |
+| **★★ D-updatefeature-writes-on-fail** | 子代理 B 实测：**updateFeature 任何一次调用（含失败回滚）都会重写 base** —— 把 `_sync` 整块删掉并追加 `_dsl_rev: 1` ⇒ **操作失败、数据却被动过**（回滚只回滚已应用的变更，没回滚落盘本身）。★ 严重：它让「失败」不等于「没发生」 | ✅ **已销（2026-10-18）**：回滚改成 `restoreRaw`（写回原始字节），验收 sha 不变 |
 | **★★ D-complete-nonatomic** | `completeTask` 是**写一半再报错**：先 `writeTask`（写 done）再 `updateStatus`（投影），后者失败 ⇒ **状态已变 done 但调用报错**（今天 Q5 实测：todo 不在 geometry ⇒ updateStatus 报节点未找到，而 done 已落盘）。★ Q2 只修了 `updateFeature` 的回滚，**这条路径没覆盖** | 待做（源码） |
 | **★ D-actor-entry** | ★★ **真正的缺陷不是"5 个写链没传 actor"，是「没人负责设置 `AGENT_IO_ACTOR`」** —— 那是一个**运行时入口**，而入口不存在。★ 而 `calls` 格式**表达不了"入口"**（它只有函数调用）⇒ **这是设计格式的缺口**，要新增一块（`runtime_entries`）才能表达。★ 已写进 `write_gate` 的 `decision.summary`（含"绝不许从卡的 owner 反推 —— 循环论证"） | 待做（**先补格式，再实现**） |
 | **D-validate-decision** | `validateDSL` 不看 `decision`（M1）⇒ D3 的"✓"是假绿 | 待做（源码） |
