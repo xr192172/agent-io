@@ -40,7 +40,8 @@
  *   证据闸只有 `validateProgressEvidence` 一把尺 —— 这里只**调**它们。
  */
 import type { EditResult } from './edit_result.js';
-import { getDesignSheet, saveDesignSheet } from '../../../infrastructure/storage.js';
+import fs from 'node:fs';
+import { getDesignSheet, saveDesignSheet, getDesignSheetFile } from '../../../infrastructure/storage.js';
 import { loadOverlay } from '../../../infrastructure/storage_overlay.js';
 import { applyOverlay, seedOverlayFromDsl, validateProgressEvidence, type ProgressEvidence } from '../../../domain/overlay.js';
 import { applicableTransitions, cardStanding, isClaimable, isSatisfied, type CardStanding } from '../../../domain/task_machine.js';
@@ -565,6 +566,14 @@ export async function releaseTask(input: TaskOpInput): Promise<EditResult> {
  *     仍有一份**投影**，读端不断（★ 第 ④ 步"overlay progress 退役"另上榜单）。
  */
 export async function completeTask(input: TaskOpInput): Promise<EditResult> {
+  // ★★★ 2026-10-18（D-complete-nonatomic）：**完工前备份原始字节** ——
+  //   病：先 `writeTask`（写 done）再 `updateStatus`（投影）；后者失败 ⇒ **状态已变 done 但调用报错**。
+  //   药：失败时把调用前的字节写回（★ 和 `updateFeature` 的 `restoreRaw` 同一手法）。
+  //   ★ Q5 已封了"todo 会触发"那条路径（todo 跳过 updateStatus）⇒ 本修复是**防御性**的（节点任务路径上 updateStatus 很少失败）。
+  const designFileForRollback = getDesignSheetFile(input.feature);
+  const rawBeforeComplete = fs.existsSync(designFileForRollback)
+    ? fs.readFileSync(designFileForRollback, 'utf8')
+    : null;
   const { feature, node_id } = input;
   const evidence = input.evidence;
   const { dsl, card } = loadTask(feature, node_id);
@@ -640,7 +649,19 @@ export async function completeTask(input: TaskOpInput): Promise<EditResult> {
   // ★★★ 2026-10-18（Q5）：**todo 没有"节点 status"可投影**（它不在 geometry/semantic）⇒ 跳过。
   //   ★ 不跳会怎样（实测）：先 writeTask（写 done）再 updateStatus（报"节点未找到"）⇒
   //     **报错但数据已改** —— 和 Q2 同族（"失败不等于没发生"）。
-  const legacy = isTodo ? null : updateStatus({ feature, node_id, status: 'done', evidence });
+  let legacy: ReturnType<typeof updateStatus> | null = null;
+  if (!isTodo) {
+    try {
+      legacy = updateStatus({ feature, node_id, status: 'done', evidence });
+    } catch (e) {
+      // ★ 失败 ⇒ 把调用前的字节写回（否则"状态已变 done、调用报错"）
+      if (rawBeforeComplete !== null) fs.writeFileSync(designFileForRollback, rawBeforeComplete, 'utf-8');
+      throw new Error(
+        `complete 失败（投影 updateStatus 报错，已回滚到调用前状态）：${(e as Error).message}\n` +
+          '★ 回滚方式是写回调用前的原始字节（不走 saveDSL —— 否则元数据会前进，那是 Q2 的坑）。',
+      );
+    }
+  }
 
   return {
     message:
