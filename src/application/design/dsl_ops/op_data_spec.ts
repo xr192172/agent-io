@@ -179,7 +179,7 @@ export const OP_SPECS: readonly OpSpec[] = [
   },
   {
     type: 'decision',
-    ops: ['update'],
+    ops: ['update', 'expectation.add', 'expectation.remove'],
     idRequired: true,
     idNote: '文件/文档节点 id **或**仓库相对路径（`resolveDecisionTarget` 两种都认）',
     required: { update: ['summary'] },
@@ -362,6 +362,7 @@ export const TYPE_KNOWN_KEYS: Record<string, readonly string[]> = {
     //     ⇒ **从决策卡写入口写不进"范围"**（而 `node` op 的 `data.decision` 那条路本来就能写）。
     //   ★ 校验仍只有一把尺：`domain/scope.ts` 的 `parseScope`（由 `applyDecisionWrite` 调用）。
     'scope',
+    'expectation', 'index', 'symbol',
   ],
   // ★★★ 2026-10-17（T11）：`task` 的键集 —— **从实现读出**（`task_ops.ts` 的 `applyTaskOp` 只读
   //   `owner` / `reason` / `evidence`；`state` **不在这里**：它只能由 op（claim/release/complete）改，

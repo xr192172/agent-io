@@ -82,6 +82,8 @@ export interface FeatureOperation {
     | 'reset'
     | 'publish'
     | 'claim'
+    | 'expectation.add'
+    | 'expectation.remove'
     | 'release'
     | 'complete';
   /**
@@ -915,7 +917,10 @@ function parseDissent(v: unknown): DecisionDissent[] {
 }
 
 function applyDecisionOp(feature: string, op: CheckedOperation<FeatureOperation>, agent?: string, changeReason?: string): EditResult {
-  if (op.op !== 'update') throw new Error(`decision 仅支持 update 操作（收到 ${op.op}）`);
+  const ELEMENT_OPS = ['expectation.add', 'expectation.remove'];
+  if (op.op !== 'update' && !ELEMENT_OPS.includes(op.op)) {
+    throw new Error(`decision 仅支持 update / expectation.add / expectation.remove（收到 ${op.op}）`);
+  }
   const data = op.data ?? {};
   const summary = typeof data.summary === 'string' ? data.summary.trim() : '';
 
@@ -923,14 +928,43 @@ function applyDecisionOp(feature: string, op: CheckedOperation<FeatureOperation>
   if (!dsl) throw new Error(`feature "${feature}" 不存在`);
   const target = resolveDecisionTarget(dsl, op.id, data);
 
-  const decision: NodeDecision = { summary };
+  // ★★★ 2026-10-18（Q1）：**元素级 op 不许清空 summary** ——
+  //   合并语义下，`{ summary: '' }` 会把原 summary 覆盖成空 ⇒ 必须带【原值】。
+  const decision: NodeDecision = {
+    summary: op.op === 'update' ? summary : (target.node.decision?.summary ?? ''),
+  };
   // ★★★ T256（2026-10-14）：`expectations`（**可判定的验收**）—— 决策卡里**唯一会被程序判**的字段
   //   （`collectExpectations` → `consistency_check` 的 `judgeExpectations`）。
   //   ★ 此前它**不在 `decision` op 的已知键表**（`op_data_spec.ts` 的 `TYPE_KNOWN_KEYS`）
   //     ⇒ 从本入口写不进去（实测报「data 里有不被认的键：expectations」）⇒ 已补进那张表。
   //   ★ 形状校验**复用既有唯一实现** `assertValidExpectations`（`applyDecisionWrite` 里用的是同一个）
   //     —— ★ 不给这里另写第二把尺。
-  if (data.expectations !== undefined) {
+  // ★★★ 2026-10-18（Q1）：**元素级 op** —— 不改整个数组，只加/删一条（省掉"读全量→改→写回"三步）。
+  if (op.op === 'expectation.add') {
+    const cur = target.node.decision?.expectations ?? [];
+    const e = data.expectation;
+    if (e === undefined) throw new Error('expectation.add 必须给 data.expectation（单条期望）');
+    assertValidExpectations([e] as never);
+    decision.expectations = [...cur, e as NonNullable<NodeDecision['expectations']>[number]];
+  } else if (op.op === 'expectation.remove') {
+    const cur = target.node.decision?.expectations ?? [];
+    let idx = -1;
+    if (typeof data.index === 'number') {
+      idx = data.index;
+    } else if (typeof data.symbol === 'string') {
+      const hits = cur.map((e, i) => ({ e, i })).filter(({ e }) => ('symbol' in e ? e.symbol === data.symbol : false));
+      if (hits.length !== 1) {
+        throw new Error(
+          `expectation.remove 按 symbol "${data.symbol}" 匹配到 ${hits.length} 条 ⇒ 拒绝（用 data.index 精确删）`,
+        );
+      }
+      idx = hits[0].i;
+    } else {
+      throw new Error('expectation.remove 需要 data.index（数字）或 data.symbol（字符串）');
+    }
+    if (idx < 0 || idx >= cur.length) throw new Error(`expectation.remove 的 index 越界：${idx}（共 ${cur.length} 条）`);
+    decision.expectations = cur.filter((_, i) => i !== idx);
+  } else if (data.expectations !== undefined) {
     assertValidExpectations(data.expectations);
     decision.expectations = data.expectations as NodeDecision['expectations'];
   }

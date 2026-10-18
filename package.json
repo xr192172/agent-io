@@ -106,7 +106,6 @@
     "patrol": "node scripts/patrol.mjs",
     "diff": "node scripts/design-diff.mjs",
     "fork": "node scripts/fork-design.mjs",
-    "dec": "node scripts/set-decision.mjs",
     "dep": "node scripts/dep.mjs",
     "coverage": "node scripts/coverage.mjs",
     "impact": "node scripts/impact.mjs"
