@@ -76,6 +76,12 @@ export interface DriftReport {
   vanished: string[];
   /** TTL 租约过期事件（`releaseIfExpired` 原样产出；★ 只是事件，不改 state） */
   expired: LeaseReleaseEvent[];
+  /**
+   * ★★★ 2026-10-18（todos 的读端）：**预决策待人设计** —— todo 有 `node_id`（指向某节点）
+   * 但还 `candidate`（没人领）⇒ 那个节点的设计"该改还没改"。
+   * ★ 它是 todo.link 写进 `node_id` 之后的**唯一读端** —— 没它，"指向"就没人看得见。
+   */
+  pending_design: { node_id: string; todos: string[] }[];
   /** 判不了的原因（`null` = 判了） */
   unavailable: string | null;
 }
@@ -108,6 +114,7 @@ export async function patrolDrift(feature: string, opts: PatrolOptions): Promise
     should_void: [],
     vanished: [],
     expired: [],
+    pending_design: [],
     unavailable: null,
   };
 
@@ -196,6 +203,18 @@ export async function patrolDrift(feature: string, opts: PatrolOptions): Promise
       if (!report.should_void.includes(card.id)) report.should_void.push(card.id);
     }
   }
+
+  // ── 4b. 预决策待人设计（★ todos 的 node_id 读端）──
+  //   判据：todo 有 node_id（指向某节点）且 state 还 candidate（没人领）⇒ 那个节点的设计"该改还没改"。
+  //   ★ 只看 candidate：claimed 说明有人在做；done/void 是终态。
+  const pendingByNode = new Map<string, string[]>();
+  for (const t of design.todos ?? []) {
+    if (t.node_id && t.state === 'candidate') {
+      if (!pendingByNode.has(t.node_id)) pendingByNode.set(t.node_id, []);
+      pendingByNode.get(t.node_id)!.push(t.id);
+    }
+  }
+  report.pending_design = [...pendingByNode.entries()].map(([node_id, todos]) => ({ node_id, todos }));
 
   // ── 5. 租约：只产出事件（★ 不静默改 state） ──
   report.expired = releaseIfExpired(cards, opts.now_ms, opts.ttl_ms);
