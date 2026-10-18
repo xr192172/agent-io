@@ -23,7 +23,7 @@ import { TS_JS_EXTS } from '../../../infrastructure/parse/index.js';
 import { resolveImportTarget, syncFile, removeFile } from '../../../infrastructure/index/symbols.js';
 import { getProjectCacheDb, closeProjectCacheDb } from '../../../infrastructure/index/db.js';
 import { createProtectGuard } from '../../../infrastructure/analysis/refactor/protect.js';
-import { reopenAndResolveAfterWrite } from '../../write_gate.js';
+import { reopenAndResolveAfterWrite, assertSourceWriteRegisteredFor, resolveActor } from '../../write_gate.js';
 // ★ T336（2026-10-16）：接上唯一写盘闸 —— 未登记不许落盘（同族：`rename_files` / `edit_code` / `write_gate` 是唯一权威）
 import { assertSourceWriteRegistered } from '../../write_gate.js';
 import { withTouched, type Touched, type TouchedProduct } from '../../../domain/b_terms.js';
@@ -523,7 +523,7 @@ async function renameFileCore(input: RenameFileInput): Promise<RenameFileResult>
   //   ★ 闸的对象 = 本次**会动到的全部文件**：被移动的源文件（`fromAbs`，删）+ 目标文件（`toAbs`，建/写）
   //     + 各被改写引用的 importer（`byImporter` 的 keys）—— 复用既有集合，不另立第二份清单。
   //   ★ 闸**不会**替你登记、也不降级放行：未登记 ⇒ 抛错、不落盘（与下方"中途失败回滚拷贝"同一目的）。
-  assertSourceWriteRegistered(projectRoot, [fromAbs, toAbs, ...[...byImporter.values()].map((i) => i.importerAbs)]);
+  assertSourceWriteRegisteredFor(projectRoot, [fromAbs, toAbs, ...[...byImporter.values()].map((i) => i.importerAbs)], resolveActor());
 
   // 3) 原子化执行——先复制，再改写引用，最后删除原文件。
   //    原实现是先 renameSync 再改引用，中途任何一步（文件改写/索引写入）失败

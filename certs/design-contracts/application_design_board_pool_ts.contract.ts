@@ -9,6 +9,6 @@
  */
 
 import * as m0 from '../../src/application/design/board/pool.js'; // src/application/design/board/pool.ts
-export type _0 = typeof m0.BoardView; // ★ BoardView（kind 未知⇒按 value）—— 池的读数是具名类型（不许散装对象 —— 否则又是"形状没人定"）
+export type _0 = m0.BoardView; // ★ BoardView（interface）—— 池的读数是具名类型（不许散装对象 —— 否则又是"形状没人定"）
 import * as m1 from '../../src/application/design/board/pool.js'; // src/application/design/board/pool.ts
-export type _1 = typeof m1.listPool; // ★ listPool（kind 未知⇒按 value）—— ★ 唯一的读取入口；没有它，pool 就又只能 node -e 看
+export type _1 = typeof m1.listPool; // ★ listPool（function）—— ★ 唯一的读取入口；没有它，pool 就又只能 node -e 看

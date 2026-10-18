@@ -18,7 +18,7 @@ import path from 'node:path';
 import { renameFile, type RenameFileResult } from './rename_file.js';
 import { resolveProjectRoot } from '../../../infrastructure/analysis/project_root/index.js';
 // ★ T336（2026-10-16）：接上唯一写盘闸 —— 未登记不许落盘（同族：`edit_code` / `write_gate` 是唯一权威）
-import { assertSourceWriteRegistered } from '../../write_gate.js';
+import { assertSourceWriteRegistered, assertSourceWriteRegisteredFor, resolveActor } from '../../write_gate.js';
 import { snapshotBeforeWrite } from '../snapshot/file_snapshot.js';
 // ★ T214 续8：兑现"整批不落盘"要用它 —— ★ 用**写前那份快照**回滚整批（★ 与 rename_symbols 对称 ✓）
 import { rollbackFileSnapshot } from '../snapshot/file_snapshot.js';
@@ -137,7 +137,7 @@ async function renameFilesCore(input: RenameFilesInput): Promise<RenameFilesResu
     //   ★ 闸的对象 = 本批**会动到的全部文件** —— 复用上面刚拼好的 `touched`
     //     （每条目的 from/to + 阶段 1 预览里列出的各 importer），不另立第二份清单。
     //   ★ 闸**不会**替你登记、也不降级放行：未登记 ⇒ 抛错、整批不落盘（与下方"回滚整批"同一目的）。
-    assertSourceWriteRegistered(projectDir, [...touched]);
+    assertSourceWriteRegisteredFor(projectDir, [...touched], resolveActor());
     // ★ T214 续8：**接住快照**（★ 否则失败时无从回滚 ✓ —— 原来这里把返回值丢了 ✗）
     snap = snapshotBeforeWrite(projectDir, `rename_files:${renames.length} 条`, [...touched]);
   }
