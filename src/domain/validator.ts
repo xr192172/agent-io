@@ -83,6 +83,21 @@ function validateSemanticAnchoring(dsl: DesignDSL): ValidationErrorItem[] {
     }
   }
 
+  // 1b. ★★★ 2026-10-18（D-edge-id-unique）：**edges.id 唯一** —— 此前只查 nodes.id，重复的边 id 能过校验。
+  //   ★ 为什么它要紧：`overlay.edges` 按 id 索引 ⇒ 重复 id 会让"改哪条边"变成掷骰子。
+  //   ★ 键的形态与 nodes 那条同款（`duplicate_id:edge:<id>`）—— 不含"谁指向谁"，重命名不改键。
+  const seenEdges = new Map<string, number>();
+  for (const edge of dsl.geometry.edges ?? []) {
+    const count = (seenEdges.get(edge.id) ?? 0) + 1;
+    seenEdges.set(edge.id, count);
+    if (count === 2) {
+      errors.push({
+        key: `duplicate_id:edge:${edge.id}`,
+        message: `[duplicate_id] geometry.edges.id "${edge.id}" 重复出现`,
+      });
+    }
+  }
+
   // 2. edges.from / edges.to 必须在 nodes 中存在
   const nodeIds = new Set(dsl.geometry.nodes.map((n) => n.id));
   for (const edge of dsl.geometry.edges ?? []) {
