@@ -4276,7 +4276,7 @@
         },
         "arch_layer": "core",
         "decision": {
-          "summary": "claim / release / complete 三个 op，写 design/<f>.dsl.json 的 task 格",
+          "summary": "publish / claim / release / complete 四个 op，写 design/<f>.dsl.json 的 task 格。★ 并负责「从 diff 的差异建卡」：publishFromDiff —— 差异里出现、但该节点没有卡 ⇒ 建 L1 建构卡（活 = 补 decision），对应 VISION §7 的「无卡 ⇒ 补卡」那条路。",
           "acceptance": "三个 op 各过一枚证；claim 在并发下不互相覆盖",
           "expectations": [
             {
@@ -4323,6 +4323,12 @@
               "path": "src/application/design/dsl_ops/task_ops.ts",
               "symbol": "publishTask",
               "why": "立卡：从设计 DSL 抽出这一块 ⇒ 形成任务卡（= board 的发布动作）。★ 缺它则闸对'尚无任何 task'的 feature 不可满足"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/task_ops.ts",
+              "symbol": "publishFromDiff",
+              "why": "★ diff 之后「无卡 ⇒ 补卡」的唯一入口（VISION §7）；它让差异能被上架，而不是靠人手点 publish"
             }
           ]
         }

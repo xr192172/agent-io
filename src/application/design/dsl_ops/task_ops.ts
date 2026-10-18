@@ -668,3 +668,35 @@ export async function applyTaskOp(
       throw new Error(`task 不支持操作: ${op.op}（合法值由 op_data_spec.ts 的 OP_SPECS.task.ops 判定）`);
   }
 }
+
+// ─────────────────────────────────────────────────────────────
+// publishFromDiff：从 diff 的差异建卡（VISION §7 「无卡 ⇒ 补卡」）
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * ★ **从 diff 的差异建卡**（`diff` 之后「无卡 ⇒ 补卡」的唯一入口）。
+ *
+ * ## 它是什么（不是新机制，是 `publishTask` 的一个**命名清楚的入口**）
+ * 设计侧 `docs/VISION.md §7`：
+ * ```
+ * diff 出差异
+ *   ├─ 无卡 ⇒ 补卡 → 再上架
+ *   └─ 有卡且未实现 ⇒ 直接上架
+ * ```
+ * 而 `publishTask` 本来就干这个：**该节点有 decision ⇒ 翻成 L2；没有 ⇒ 建 L1 建构卡（活 = 补 decision）**。
+ * ⇒ 所以本函数**只是把"从差异来"这个来意说清楚**，实现直接复用 `publishTask`（★ 不复制逻辑）。
+ *
+ * ## 为什么需要它（而不是让人手点 publish）
+ * 差异是**批量**的（`diff` 一次几十条）。手点 = 漏。而"差异 → 卡"该是一次调用。
+ *
+ * @param feature feature 名
+ * @param nodeId 差异里的节点 id
+ */
+export function publishFromDiff(feature: string, nodeId: string): EditResult {
+  const r = publishTask({ feature, node_id: nodeId });
+  return {
+    ...r,
+    message:
+      `★ 从 diff 建卡（VISION §7「无卡 ⇒ 补卡」）：\n` + String(r.message),
+  };
+}
