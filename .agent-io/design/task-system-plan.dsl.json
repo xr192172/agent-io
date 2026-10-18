@@ -6641,7 +6641,70 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "decision": {
+          "summary": "DSL 的【结构自洽】校验器：ajv schema + 两项 schema 表达不了的语义（nodes.id 唯一 / semantic.files.id 必须能在 nodes 里找到）。★★ 它**不判决策卡**（decision 根本不在 schema 里）—— 那是【tsc 契约】的事（设计侧符号级，certs/design-contracts）。★ 范围是【有意收窄】的：**结构错看得见，意图错看不见**；后者靠 tsc + 对拍 + 影响面。⇒ 所以「validateDSL 不看 decision」不是缺陷，是分工（本文件只答\"DSL 自不自洽\"）。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/domain/validator.ts",
+              "why": "动作要有落点（基线）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/validator.ts",
+              "symbol": "validateDSL",
+              "why": "唯一入口：DSL ⇒ 错误清单"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/validator.ts",
+              "symbol": "validateDSLJson",
+              "why": "JSON 层的入口（先拒语法错，再谈语义）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/validator.ts",
+              "symbol": "ValidationResult",
+              "why": "返回值形状是契约（errors + keys，调用方按它对账）"
+            }
+          ],
+          "acceptance": "validateDSL(dsl) 能点名每条错（code + 位置）；errors 与 keys 一一对应（★ 重命名\"被指向的名字\"不改键 ⇒ 不误报\"新增错\"）；validateDSLJson 在 JSON 层就拒掉非对象/语法错。",
+          "updated_at": "2026-10-18T11:04:51.784Z",
+          "agent": "workbuddy-main"
+        },
+        "task": {
+          "id": "file_src_domain_validator_ts",
+          "summary": "DSL 的【结构自洽】校验器：ajv schema + 两项 schema 表达不了的语义（nodes.id 唯一 / semantic.files.id 必须能在 nodes 里找到）。★★ 它**不判决策卡**（decision 根本不在 schema 里）—— 那是【tsc 契约】的事（设计侧符号级，certs/design-contracts）。★ 范围是【有意收窄】的：**结构错看得见，意图错看不见**；后者靠 tsc + 对拍 + 影响面。⇒ 所以「validateDSL 不看 decision」不是缺陷，是分工（本文件只答\"DSL 自不自洽\"）。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/domain/validator.ts",
+              "why": "动作要有落点（基线）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/validator.ts",
+              "symbol": "validateDSL",
+              "why": "唯一入口：DSL ⇒ 错误清单"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/validator.ts",
+              "symbol": "validateDSLJson",
+              "why": "JSON 层的入口（先拒语法错，再谈语义）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/validator.ts",
+              "symbol": "ValidationResult",
+              "why": "返回值形状是契约（errors + keys，调用方按它对账）"
+            }
+          ],
+          "state": "candidate",
+          "owner": null
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_alert_inbox_ts",
@@ -45443,7 +45506,8 @@
           }
         ],
         "lines": 243,
-        "layer": "service"
+        "layer": "service",
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_alert_inbox_ts",
@@ -57419,11 +57483,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-18T10:39:58.229Z",
+    "saved_at": "2026-10-18T11:05:15.393Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792314946341,
-    "age": 5051888
+    "age": 6569052
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -59053,7 +59117,7 @@
       "id": "todo_D-validate-decision",
       "summary": "validateDSL 不看 decision（M1）⇒ D3 的\"✓\"是假绿",
       "expectations": [],
-      "state": "candidate",
+      "state": "void",
       "owner": null
     },
     {
@@ -59102,8 +59166,10 @@
       "id": "todo_D-edge-id-unique",
       "summary": "validator.ts:73-85 只查 nodes.id 唯一、**不查 edges.id** ⇒ 重复 id 能过校验，而 overlay.edges 按 id 键控会串",
       "expectations": [],
-      "state": "candidate",
-      "owner": null
+      "state": "done",
+      "owner": null,
+      "release_reason": "promoted to file_src_domain_validator_ts"
     }
-  ]
+  ],
+  "_dsl_rev": 1
 }
