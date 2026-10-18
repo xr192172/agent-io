@@ -243,7 +243,7 @@
 | ★ **L1 判据缺口** | 6 种 kind 全对着代码判 ⇒ 表达不了"DSL 自己全不全" ⇒ L1 卡建不出来。解药：`Expectation` 与 `invariant` 合成同一个可执行抽象 | 待做（**卡住 L1**） |
 | ★ **D8 · kind 表达力缺口** | 表达不了"应该有人调用 X，但现在没有"（`call-exists` 要 from=调用者，而调用者不存在） | 待做 |
 | **D-judge-port** | 抽 `JudgePort` 破 domain→application 倒挂（用户 2026-10-17 拍 A） | 待做（重构） |
-| **D-invariant-0** | 不变量「任务=意图住设计侧」没有 check | 待做 |
+| **D-invariant-0** | 不变量「任务=意图住设计侧」没有 check | ✅ **不是债（2026-10-18）**：`publishTask` 只读 `decision`、显式拒手写内容 ⇒ 不变量已有执行者 |
 | **D-invariant-1** | 不变量「不落读数快照」—— ★ **DSL 自己违反了**（`reading_now` / `block_readings` 都是快照） | 待做 |
 | **D-target-exists** | `t_claim` 的「target 在 DB 存在」无执行者（全仓 0 处） | 待做 |
 | **D-release-by** | `t_release` 的「带 by」无执行者（`releaseTask` 是 `input.agent ?? null`） | 待做 |
