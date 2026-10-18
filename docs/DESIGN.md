@@ -193,7 +193,7 @@
 
 | # | 位置 | 缺陷 | 怎么判 |
 |---|---|---|---|
-| **A1** | `task_drift.ts:97` | ★★★ **`patrolDrift` 全仓零调用方** ⇒ 巡检一次都不跑 ⇒ `lease_ttl` 永不回收 ⇒ `claimed_at` 成死锁字段 | 该文件每个 export 至少要有 1 条 call 边；今天 0 |
+| **A1** | ✅ **已销（2026-10-18）**：`npm run patrol` 是运行时入口（TS 入度对运行时入口不适用）；★ 本行与 §6 的 A1 是同一问题的两种说法，已合并 | ★★★ **`patrolDrift` 全仓零调用方** ⇒ 巡检一次都不跑 ⇒ `lease_ttl` 永不回收 ⇒ `claimed_at` 成死锁字段 | 该文件每个 export 至少要有 1 条 call 边；今天 0 |
 | **A3** | `task_ops.ts:462` | claim 是 check-then-act（读→判→写，中间夹异步 `cardStanding`，无锁） | 静态判"写前是否重读并比对 state/owner" —— 不成立 |
 | **A4** | `task_ops.ts:601` | ★★ 证据闸只校验**形状**：L1 卡可用手填 `{all_green:true}` 收口，**从不与真实判定对账** | L1 遇 `kind:'expectations'` 直接拒；L2 断言与本次 report 一致 |
 | **A5** | `task_drift.ts:168` | L1 卡永远进不了 `missed_close` | ★ **真根因见 §6「L1 判据缺口」** |
