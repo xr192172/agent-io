@@ -17,11 +17,6 @@
     },
     {
       "from": "src/application/patrol/task_drift.ts#patrolDrift",
-      "to": "src/domain/task_machine.ts#cardStanding",
-      "why": "巡检要用同一把尺重算每张卡"
-    },
-    {
-      "from": "src/application/patrol/task_drift.ts#patrolDrift",
       "to": "src/domain/task_machine.ts#isSatisfied"
     },
     {
@@ -45,5 +40,12 @@
       "to": "src/infrastructure/storage.ts#getDSL"
     }
   ],
-  "removed": []
+  "removed": [
+    {
+      "from": "src/application/patrol/task_drift.ts#patrolDrift",
+      "to": "src/domain/task_machine.ts#cardStanding",
+      "why": "错的设计：状态判据只许经状态机 ⇒ 该调 isSatisfied，cardStanding 是它内部的事",
+      "removed_at": "2026-10-18T07:23:47.506Z"
+    }
+  ]
 }
