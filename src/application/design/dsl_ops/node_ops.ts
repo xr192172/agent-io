@@ -278,6 +278,39 @@ export interface UpdateNodeInput {
 }
 
 /**
+ * ★★★ 决策卡**子字段形状**的唯一判据（2026-10-18）——
+ * `summary` / `acceptance` = **字符串**，`expectations` = **数组**；形状不对 ⇒ **抛**。
+ *
+ * ## 为什么判在这里
+ * `applyDecisionWrite` 是决策的**唯一写入口**（`node.add` / `node.update` / `edit_dsl {type:'decision'}`
+ * 三条路都从它出去）⇒ 判一处，三条路一起挡。
+ * ★ 实测（补之前）：`data.decision.summary = 123`、`acceptance = ["x"]` **都被静默落库** ——
+ *   存进去的是"类型不对的决策卡"，读端（渲染 / 对拍 / 任务机）拿到数字或数组，
+ *   全程**没有任何一处报错**（§2.3「不报错的错」）。`expectations` 早有 `assertValidExpectations` 守，
+ *   另两个**一直没有守**。
+ */
+function assertDecisionFieldShapes(next: NodeDecision): void {
+  const raw: unknown = next;
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    throw new Error(
+      `决策卡必须是**对象**（{summary, acceptance?, expectations?…}），收到 ${Array.isArray(raw) ? '数组' : typeof raw}。`,
+    );
+  }
+  for (const k of ['summary', 'acceptance'] as const) {
+    const v: unknown = next[k];
+    if (v !== undefined && typeof v !== 'string') {
+      throw new Error(
+        `决策卡 \`${k}\` 必须是**字符串**，收到 ${Array.isArray(v) ? '数组' : typeof v}：${JSON.stringify(v)}。` +
+          `★ 要清空它 ⇒ 给空串 ""（合并语义：不给=保留，给空=清空）。`,
+      );
+    }
+  }
+  // ★★ 2026-10-09（T74）：`expectations` 是**会被程序判**的字段 ⇒ 写进来时必须**响亮拒绝**坏形状，
+  //   不许"存进去了但判定器读不懂"（那会变成一条永远不判的假验收）。唯一尺 = `assertValidExpectations`。
+  if (next.expectations !== undefined) assertValidExpectations(next.expectations);
+}
+
+/**
  * 决策写入纯函数（缺口①：作者/时间线）。
  * decision 更新=版本演进：旧版自动压入 decision_history（`at` 时间戳 + 修订 note + 发起人 author/agent），
  * 新版成为当前生效版，并打 `updated_at`（author/agent 若有则一并打上）。首版（无旧版）不压栈。
@@ -299,9 +332,9 @@ export function applyDecisionWrite(
   if (next === null) return { decision: undefined, decision_history: undefined };
 
   const now = opts?.now ?? new Date().toISOString();
-  // ★★ 2026-10-09（T74）：`expectations` 是**会被程序判**的字段 ⇒ 写进来时必须**响亮拒绝**坏形状，
-  //   不许"存进去了但判定器读不懂"（那会变成一条永远不判的假验收）。
-  if (next.expectations !== undefined) assertValidExpectations(next.expectations);
+  // ★★★ 2026-10-18：决策卡**子字段形状**先判（唯一判据见 `assertDecisionFieldShapes`）——
+  //   非法形状 ⇒ 抛；**不许**静默落一个"读端读不懂"的决策卡。
+  assertDecisionFieldShapes(next);
   // 新决策：时间戳恒打；author（类别）/ agent（身份）**传入才打**（不伪造）
   //
   // ★★★ T255（2026-10-14）：**这里从【覆盖】改成【合并】。**

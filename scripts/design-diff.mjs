@@ -9,7 +9,9 @@
  * - **设计侧 = fork(实际侧)** ⇒ 两边**本来就该完全一样**；
  * - **"没动过"不是 diff** —— 它两边一样，`git diff` 不会显示它；
  * - **diff 只显示三类**：
- *     `+` 只在设计侧（★ 设计了但还没有 ⇒ 要建）
+ *     `+` 只在设计侧（★ 设计了但还没有）
+ *         ├─ 扫描遗漏：live 未收录、但源码里确实有 ⇒ **不是要建**（import_project 抓不全）
+ *         └─ 真要建：源码里也查不到         ⇒ 这才是"要建"
  *     `-` 只在实际侧（★ 实际有但设计没收录 ⇒ 要补设计）
  *     `~` 两边都有但【内容不同】（★ 我改过的地方 = 决策卡 + label + 边）
  *
@@ -21,6 +23,7 @@
  *   node scripts/design-diff.mjs --detail     # 逐条列
  */
 import fs from 'node:fs';
+import path from 'node:path';
 
 const DESIGN = '.agent-io/design/task-system-plan.dsl.json'; // ★ 唯一位置（2026-10-18 统一）
 const LIVE = '.agent-io/live/task-system-plan.dsl.json';
@@ -56,6 +59,99 @@ const eOnlyLive = [...lEdges.keys()].filter((k) => !dEdges.has(k));
 
 const short = (s) => String(s).replace(/^file_src_/, '').replace(/\.ts$/, '');
 
+/**
+ * ★ 2026-10-18：`+ 只在设计侧` 的边**不能一律算"要建"**。
+ *
+ * 根因：`import_project` 的 import 边是**部分抓取**（已知限制）—— 它会给一条边记
+ * `imports ×N` 这种聚合计数，但**会漏**（例：`task_ops → task_machine` 在
+ * `src/application/design/dsl_ops/task_ops.ts:46` 明明 import 了，
+ * live 侧就是没有这条边）。所以在 `live/` 里没有，不等于"设计说错了"。
+ *
+ * 判据（浅判，**不做完整 AST**）：读 `from` 文件的源码，看它有没有引用 `to` 的
+ * 模块名 / 相对路径。三种结论：
+ *   - `verified` 源码里确有引用        ⇒ **扫描遗漏**（live 漏抓）
+ *   - `weak`     只有裸词命中          ⇒ **扫描遗漏（未核实）**
+ *   - `none`     源码里完全找不到      ⇒ 才可能是**真要建**
+ *   - `unknown`  读不到文件/判不了     ⇒ **扫描遗漏（未核实）**（★ 宁可少报）
+ *
+ * ★ 铁律：**宁可少报，不许把"可能要建"说成"必须建"** —— 所以 `unknown` 一律
+ *   归到"扫描遗漏"，不进"真要建"。
+ */
+const stripExt = (p) => String(p).replace(/\.(ts|tsx|mts|cts|js|jsx|mjs|cjs)$/, '');
+const normPath = (p) => stripExt(path.resolve(p)).replace(/[\\/]index$/, '').toLowerCase();
+
+/** 节点 id → 源码相对路径（优先用 description，那里存的是真路径） */
+function nodePath(node) {
+  const d = node?.description;
+  if (typeof d === 'string' && d.includes('/') && !/\s/.test(d)) return d;
+  return null;
+}
+
+/** 抓文件里出现过的模块说明符（浅正则，不建 AST） */
+function importSpecs(text) {
+  const specs = [];
+  const re = /(?:\bfrom|\brequire|\bimport|\bexport)\s*\(?\s*(['"])([^'"\n]+)\1/g;
+  for (const m of text.matchAll(re)) specs.push(m[2]);
+  return specs;
+}
+
+const fileCache = new Map();
+function readSrc(rel) {
+  if (fileCache.has(rel)) return fileCache.get(rel);
+  let text = null;
+  try {
+    text = fs.readFileSync(rel, 'utf8');
+  } catch {
+    text = null;
+  }
+  fileCache.set(rel, text);
+  return text;
+}
+
+/**
+ * 判定一条"只在设计侧"的边：源码里 from 是否真的 import 了 to。
+ * 返回 { verdict, evidence }
+ */
+function checkEdgeInSource(edge) {
+  const label = String(edge.label || '');
+  if (!label.startsWith('imports')) return { verdict: 'unknown', evidence: `非 imports 边（${label}）` };
+
+  const fromRel = nodePath(dNodes.get(edge.from));
+  const toRel = nodePath(dNodes.get(edge.to));
+  if (!fromRel || !toRel) return { verdict: 'unknown', evidence: '节点无路径' };
+
+  const text = readSrc(fromRel);
+  if (text == null) return { verdict: 'unknown', evidence: '读不到源文件' };
+
+  const toAbs = normPath(toRel);
+  const toBase = path.basename(stripExt(toRel));
+  const dir = path.dirname(path.resolve(fromRel));
+
+  for (const spec of importSpecs(text)) {
+    if (spec.startsWith('.')) {
+      if (normPath(path.resolve(dir, spec)) === toAbs) return { verdict: 'verified', evidence: `'${spec}'` };
+    } else {
+      // 裸说明符（包名/别名）：比对尾段
+      const tail = stripExt(spec).split('/').slice(0, 2).join('/');
+      if (spec === toBase || tail.endsWith(toBase)) return { verdict: 'verified', evidence: `'${spec}'` };
+    }
+  }
+
+  // 兜底：全文出现目标模块名（弱证据）
+  if (new RegExp(`\\b${toBase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(text)) {
+    return { verdict: 'weak', evidence: `裸词 ${toBase}` };
+  }
+  return { verdict: 'none', evidence: '' };
+}
+
+const edgeRows = eOnlyDesign.map((k) => {
+  const e = dEdges.get(k);
+  const { verdict, evidence } = checkEdgeInSource(e);
+  return { k, e, verdict, evidence };
+});
+const missedEdges = edgeRows.filter((r) => r.verdict !== 'none'); // 扫描遗漏（含 unknown/weak）
+const realMissing = edgeRows.filter((r) => r.verdict === 'none'); // 真要建
+
 console.log('════ 设计侧 × 实际侧 diff ════');
 console.log(`设计 ${dNodes.size} 节点 · ${dEdges.size} 边    实际 ${lNodes.size} 节点 · ${lEdges.size} 边\n`);
 
@@ -75,8 +171,24 @@ for (const c of detail ? changed : changed.slice(0, 12)) {
 }
 
 console.log(`\n边：+ ${eOnlyDesign.length} 条只在设计侧 · - ${eOnlyLive.length} 条只在实际侧`);
+
+/** ★ 两组分开：先"扫描遗漏"（不是要建），再"真要建" */
+const fmtEdge = (r) => r.k.split('|').map(short).join(' → ');
+console.log(`\n  ★ + 扫描遗漏（live 未收录，但源码里确实有）：${missedEdges.length} 条   ← 不是要建`);
+if (!missedEdges.length) console.log('      （无）');
+for (const r of detail ? missedEdges : missedEdges.slice(0, 12)) {
+  const tag = r.verdict === 'verified' ? '' : '（未核实）';
+  const why = r.evidence ? `   ← ${r.evidence}` : '';
+  console.log(`      + ${fmtEdge(r)}${tag}${why}`);
+}
+if (!detail && missedEdges.length > 12) console.log(`      … 另 ${missedEdges.length - 12} 条（--detail 看全）`);
+
+console.log(`\n  ★ + 真要建（源码里也没有）：${realMissing.length} 条`);
+if (!realMissing.length) console.log('      （无）');
+for (const r of detail ? realMissing : realMissing.slice(0, 12)) console.log(`      + ${fmtEdge(r)}`);
+if (!detail && realMissing.length > 12) console.log(`      … 另 ${realMissing.length - 12} 条（--detail 看全）`);
+
 if (detail) {
-  for (const k of eOnlyDesign) console.log(`    + ${k.split('|').map(short).join(' → ')}`);
   for (const k of eOnlyLive) console.log(`    - ${k.split('|').map(short).join(' → ')}`);
 }
 
@@ -84,4 +196,5 @@ const total = dNodes.size;
 const designed = [...dNodes.values()].filter((n) => n.decision).length;
 console.log(`\n────────────────────────────────────`);
 console.log(`进度：已设计 ${designed}/${total}（${((designed / total) * 100).toFixed(1)}%）`);
-console.log(`★ 上面前三类就是"要动的地方"：+ 要建 · - 要补设计 · ~ 是我已经改过的`);
+console.log(`★ 要动的地方：+ 才能建（只看"真要建"）· - 要补设计 · ~ 是我已经改过的`);
+console.log(`  边里的"扫描遗漏"是 live 扫漏，**不需要动**`);
