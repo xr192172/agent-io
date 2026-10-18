@@ -35,7 +35,6 @@ import type { DiagramStatus } from './geometry.js';
  * | `claimed` | 已领（有 owner + claimed_at） |
  * | `done` | 已完成 |
  * | `void` | 失效（target 在 DB 已查不到 —— ★ 与 `done` 是**两种不同结局**） |
- * | `superseded` | 被取代（新卡带 `replaces`） |
  *
  * ★ 五态与 `docs/task-system-plan.dsl.json` 的 `task_plan.state_machine.states` **逐字一致**；
  *   这里是**唯一住处**，别处不许再抄一份字面量。
@@ -84,9 +83,8 @@ export function isTerminalTaskState(s: TaskState): boolean {
  * | `claimed` | `in_progress` |
  * | `done` | `done` |
  * | `void` | **`undefined`**（不映射进三轴） |
- * | `superseded` | **`undefined`**（不映射进三轴） |
  *
- * ★★★ `void` / `superseded` **不许硬塞一个值**（如塞 `draft`）—— 那会让"失效"看起来像"还没开始"，
+ * ★★★ `void`（以及已退场的 `superseded`）**不许硬塞一个值**（如塞 `draft`）—— 那会让"失效"看起来像"还没开始"，
  *   是**新的补丁**。⇒ 返回 `undefined`，由读端如实呈现"这一轴没有值"。
  */
 export function progressOf(task: Pick<TaskSpec, 'state'> | null | undefined): DiagramStatus | undefined {
@@ -168,7 +166,11 @@ export interface TaskSpec {
   released_by?: string | null;
   /** 释放时刻（ISO 8601；与 `released_by` 同生共死） */
   released_at?: string | null;
-  /** ★ 取代了哪张卡（新卡带 `replaces: <old_id>` ⇒ 旧卡转 `superseded`） */
+  /**
+   * ★ **未实现**（2026-10-18 标）：原设计是「新卡带 replaces ⇒ 旧卡转 superseded」，
+   * 而 superseded 状态已于 2026-10-17 删除 ⇒ **本字段目前无状态可转、无读取方** ⇒ 死字段。
+   * ★ 要复活它，先回答「取代后旧卡变成什么」（目前只有 done / void 两个终态）。
+   */
   replaces?: string;
   /** ★ 证据记录（只落 `{kind, at, by, verdict}`，不落读数） */
   evidence?: TaskEvidenceRecord[];
