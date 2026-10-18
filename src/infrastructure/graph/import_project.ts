@@ -1066,6 +1066,44 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
           designDropNote = `★ 本次重建**丢掉了 ${willDrop.length} 个扫描产不出的节点**（已显式允许）：${willDrop.slice(0, 10).join(', ')}${willDrop.length > 10 ? ' …' : ''}`;
         }
       }
+      // ★★★ 2026-10-18：**意图保护**（这是"② 重算抹掉设计"的堵口）。
+      //
+      // ## 为什么原来那层防护挡不住
+      // 上面那个 `willDrop` 判的是「**节点 id 会不会消失**」，而它只把
+      // `!isScannedNodeId(id)` 的节点当"人手加的" —— 于是 **`file_*` 上的 `decision` / `task` 全靠不上**：
+      // 节点 id 明明还在（`nextIds` 里有），可它上面的 **决策卡和卡状态会被整段替换成扫描产物（undefined）**。
+      // ⇒ `rebuild_design=true` 时 `mergeDesignLayer` 只合并 overlay（progress/annotation），
+      //   **它对 `decision` / `task` 一个字都不管**（grep 实测：该文件里 0 处）⇒ **意图直接蒸发**。
+      //
+      // ## 所以这里补一条独立判据：**"意图会不会消失"**
+      if (input.allow_design_drop !== true) {
+        const prevNodes = prevDesign?.geometry?.nodes ?? [];
+        const nextNodes = layered.geometry?.nodes ?? [];
+        const nextById = new Map(nextNodes.map((n) => [n.id, n]));
+        const lostIntent = prevNodes
+          .filter((n) => n.decision || n.task)
+          .filter((n) => {
+            const nx = nextById.get(n.id);
+            return !nx || (!nx.decision && !nx.task);
+          });
+        if (lostIntent.length) {
+          const sample = lostIntent.slice(0, 10).map((n) => {
+            const k = [n.decision ? 'decision' : '', n.task ? 'task' : ''].filter(Boolean).join('+');
+            return `  · ${n.id}（${k}）`;
+          });
+          throw new Error(
+            `拒绝重建设计 DSL：本次重建会抹掉 ${lostIntent.length} 处**设计意图**` +
+              `（decision / task —— 节点 id 还在，但上面的意图会变 undefined）：\n` +
+              sample.join('\n') +
+              (lostIntent.length > 10 ? `\n  …另有 ${lostIntent.length - 10} 处` : '') +
+              `\n⇒ 三选一：① 只想刷新"实际"、不动设计 ⇒ 传 \`live_only=true\`（设计完整保住）；` +
+              `\n          ② 确定要放弃这些意图 ⇒ 传 \`allow_design_drop=true\`；` +
+              `\n          ③ 想留住它们 ⇒ 别重建（\`rebuild_design\` 不传即可，默认 false）。` +
+              '\n★ 而 git diff .agent-io/design/ 是你的保险 —— 万一真丢了，git checkout 能救回来。',
+          );
+        }
+      }
+
       // ★★★ 2026-10-09（T75）：**base 只在这里落一次盘，且必须落"合并后"的那份**。
       //   设计层 overlay 增量保留：真相刷新只替换 base，设计意图（决策/标注/user_node/分镜）
       //   按稳定锚点保留/迁移/孤儿/标过期（`mergeDesignLayer` 负责）。
