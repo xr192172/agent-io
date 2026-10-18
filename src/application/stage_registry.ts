@@ -43,7 +43,7 @@
  */
 
 import fs from 'node:fs';
-import { requireProjectRoot, getDSL, ensureBaseline, getBaselineFeatureFile, getDesignSheetFile, getFeatureFile, viewBaseDirCandidates } from '../infrastructure/storage.js';
+import { requireProjectRoot, getDSL, ensureBaseline, getBaselineFeatureFile, getDesignSheetFile, viewBaseDirCandidates } from '../infrastructure/storage.js';
 import { projectCacheDbPath, getProjectCacheDb } from '../infrastructure/index/db.js';
 import { ensureProjectIndex } from '../infrastructure/index/index_freshness.js';
 // ★ T238：「索引可用吗」的**唯一住处**（= cache.db 在 **且** files 非空）—— 不在这里重写第二份判据
@@ -313,7 +313,7 @@ export const STAGES: readonly Stage[] = [
     kind: 'source',
     owner: 'dataHome',
     inputs: [],
-    note: '设计 DSL（意图册）—— 活态 agent-io.json / 存档 features/<f>.json',
+    note: '设计 DSL（意图册）—— ★ 唯一位置 .agent-io/design/<f>.dsl.json（2026-10-18 统一；agent-io.json 与 features/ 已退场）',
     locate: (ctx) => getDesignSheetFile(needFeature(ctx)), // ★ 2026-10-18：读设计侧（features/ 已退场）
     why: '它是**意图**，由人/工具通过 saveDSL 写进来；没有"从别的东西派生出来"的语义 ⇒ 不是工序，是源头。',
   },

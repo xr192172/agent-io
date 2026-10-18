@@ -222,7 +222,7 @@ function renderVolumesNote(projectRoot: string): string {
   const mark = (b: boolean) => (b ? '✅ 在' : '— 未生成');
   const markManifest = hasManifest === null ? '— 未查（未指定项目）' : mark(hasManifest);
   return (
-    `\n── 读之前先看哪儿（这两个文件**都不是真相**，真相是 ${DATA_DIR_NAME}/features/<f>.json + .overlay.json）──\n` +
+    `\n── 读之前先看哪儿（这两个文件**都不是真相**，真相是 ${DATA_DIR_NAME}/design/<f>.dsl.json（★ 2026-10-18 统一；features/ 与 agent-io.json 已退场））──\n` +
     `  MANIFEST.txt             ${markManifest}  卷声明（哪几卷 · 谁是真相 · 谁能改 · 谁会被重生成）` +
     ` ⇒ 改过卷布局跑 \`npm run manifest\`、判漂 \`manifest:check\`\n` +
     `  ${DATA_DIR_NAME}/COGNITION.txt  ${mark(hasCognition)}  一行式认知索引 \`路径[层]: F:职责 | R:关系 | A:契约 | S:高熵决策\`` +

@@ -6,8 +6,8 @@
  * - `decision.acceptance`：「`listPool` 返回 `BoardView{byState,total,folded}` 且 `shown+folded==total`；能经 `get_dsl` 的查询触达」
  *
  * ## ★ 读哪一份（这是本文件最容易搞错的一处）
- * 它读 **`features/<f>.json`（派生态）**，不是 `docs/<f>.dsl.json`（设计侧）。
- * 理由：它要的是 **`task`（卡的实际状态）**，而 `task` 是运行时数据、落在派生态；
+ * 它读 **`getDSL(feature)` = `.agent-io/design/<f>.dsl.json`（设计侧，2026-10-18 统一）**。
+ * 理由：它要的是 **`task`（卡的实际状态）**，而 `task` 就住在设计侧的节点上（卡跟图纸走）；
  * 设计侧持有的是 `decision`（意图）。两者的分工见 `DESIGN.md §8`。
  *
  * ## 为什么要有它
