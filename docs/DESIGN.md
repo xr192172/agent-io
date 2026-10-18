@@ -260,7 +260,7 @@
 | **D-design-completeness** | D1–D9 本身没有检查器 | 待做 |
 | — | `touches` 覆盖率 1/72（唯一机器可读声明在 `t354`） | 待补 |
 | — | 历史读数快照需标 `as_of`（N5） | 待做 |
-| **D-gate-text** | `task_home.gate` / `what_a_card_proves.layers[*].gate` —— 读起来像要求，但不是判据（`gate` 不在 CLAIM_KEYS） | 待做 |
+| **D-gate-text** | `task_home.gate` / `what_a_card_proves.layers[*].gate` —— 读起来像要求，但不是判据（`gate` 不在 CLAIM_KEYS） | ✅ **不是债（2026-10-19）**：3 个 `gate` 是【历史裁定 / 实现描述 / 反思】三种东西，"像要求"是命名问题；且第 ② 个描述的判据真在执行 |
 | **D-edge-id-unique** | `validator.ts:73-85` 只查 `nodes.id` 唯一、**不查 `edges.id`** ⇒ 重复 id 能过校验，而 `overlay.edges` 按 id 键控会串 | ✅ **已修（2026-10-18）**：`validateSemanticAnchoring` 加 `edges.id` 唯一（键 `duplicate_id:edge:<id>`）；★ 由 `run` 契约驱动：契约先红（`valid:true` 证明债真）→ 修 → 契约绿（`keys=["duplicate_id:edge:e1"]`） |
 
 ★ **判据（M18 的原话）：`debt` 值必须能在本表里查到** —— 否则它只是一句没人读的字符串。

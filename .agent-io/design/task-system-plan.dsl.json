@@ -57790,11 +57790,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-18T23:46:54.694Z",
+    "saved_at": "2026-10-18T23:47:31.363Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792314946341,
-    "age": 52268353
+    "age": 52305022
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -59467,7 +59467,7 @@
       "id": "todo_D-gate-text",
       "summary": "task_home.gate / what_a_card_proves.layers[*].gate —— 读起来像要求，但不是判据（gate 不在 CLAIM_KEYS）",
       "expectations": [],
-      "state": "candidate",
+      "state": "void",
       "owner": null
     },
     {
