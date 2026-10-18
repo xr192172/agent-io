@@ -842,9 +842,28 @@ export function applyTodoOp(
 
     const todo = todos0[ti];
     const node = { ...nodes0[ni] };
-    // ① 节点没决策卡 ⇒ 用 todo 的 summary 起一张（有就不动 —— 那是节点的既有意图）
+    // ★★★ 2026-10-18（改）：**目标节点没有 decision ⇒ 拒**。
+    //   ★ 为什么（重要）：**"债"不是"设计"** ——
+    //     债   = "有个问题要处理"（例：D-validate-decision：validateDSL 不看 decision）
+    //     设计 = "这个文件为什么存在"（domain/validator.ts 的意图）
+    //   ⇒ promote 是"把债挂到【已有的】设计上"，**不是替节点发明设计**。
+    //   ★ 早先版本会"用 todo.summary 起一张 decision" ⇒ 那是**用债冒充设计** ⇒ 会污染节点意图。
+    //   ⇒ 正确做法：先给该节点写 decision（edit_dsl type:'decision' op:'update'），再 promote。
     if (!node.decision) {
-      node.decision = { summary: todo.summary, acceptance: '', expectations: [] };
+      throw new Error(
+        `todo.promote 被拒：节点 "${nodeId}" **没有决策卡**（decision）—— 债不能冒充设计。\n` +
+          `★ 先写设计：edit_dsl {type:'decision', op:'update', id:'${nodeId}', data:{ summary:'这个文件为什么存在', expectations:[...] }}，再 promote。\n` +
+          `★ 或者：这张 todo 本来就该留在 todos[]（它没有对应节点，凭 attestation 完成）。`,
+      );
+    }
+    // ★★★ 2026-10-18：**目标已有卡 ⇒ 拒**（不静默）。
+    //   陷阱：若目标卡的 state 是 done/void（终态），`if (!node.task)` 不建卡，而 todo 却标 done
+    //   ⇒ **"转了但没卡"**（用户看不见）。⇒ 明确拒，让调用方决定（换节点 / 先处理旧卡 / 两事合并成一张）。
+    if (node.task) {
+      throw new Error(
+        `todo.promote 被拒：节点 "${nodeId}" 上**已有卡**（state=${node.task.state}）—— 一个节点只许一张卡。\n` +
+          `★ 怎么办：换一个节点；或先把旧卡 void/complete；或把两件事合并成一张卡（手工写 decision）。`
+      );
     }
     // ② 在节点上建卡（从 decision 翻；0 条期望 ⇒ L1 建构卡，和 publish 一致）
     if (!node.task) {
