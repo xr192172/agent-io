@@ -17,7 +17,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawn, exec } from 'node:child_process';
-import { saveDSL, getDSL, getLiveDslFile, getLiveFeature, onDslChange, getStorageRoot, getFeaturesDir } from '../../infrastructure/storage.js';
+import { saveDSL, getDSL, getDesignSheetFile, getLiveDslFile, getLiveFeature, onDslChange, getStorageRoot, getFeaturesDir } from '../../infrastructure/storage.js';
 import { enableObserveFromEnv } from '../../infrastructure/analysis/observe/run_sentinel.js';
 import { judgeEvent } from '../../infrastructure/analysis/observe/judge.js';
 import { queryObserveLog } from '../../infrastructure/analysis/observe/log_query.js';
@@ -87,7 +87,23 @@ import {
 
 const PORT = parseInt(process.argv[2]) || 3000;
 const PUBLIC_DIR = path.join(process.cwd(), 'output');
-const LIVE_FILE = getLiveDslFile();
+/**
+ * ★★★ 2026-10-18：界面层的"活态 DSL"改为读【设计侧】。
+ *
+ * ## 为什么改
+ * 原来：`getLiveDslFile()` = `agent-io.json`（**全局单文件**，装"最后一次 saveDSL 的那个 feature"）。
+ * ⇒ 而 2026-10-18 起 **`saveDSL` 已停写它**（它是"第三份"）⇒ **HTTP 界面读到的是冻结的旧数据**，
+ *   而且"单文件只装一个 feature"这个设计本身也已退场（现在一 feature 一文件）。
+ *
+ * ## 现在的口径
+ * 读 `.agent-io/design/<f>.dsl.json`（**唯一权威**）。feature 取 `AGENT_IO_FEATURE`，缺省 `task-system-plan`。
+ *
+ * ## ★ 这是**临时**的（记债 `D-http-multi-feature`）
+ * 正确的做法是让界面按 `?feature=` 选，而不是靠 env 定一个 ——
+ * 但 `handleApiLoad(_req, res)` 现在**连 req 都没用**（`_req`），改签名会牵动前端路由。
+ * ⇒ 先让界面"看到正确的数据"，多 feature 支持另开一笔。
+ */
+const LIVE_FILE = getDesignSheetFile(process.env.AGENT_IO_FEATURE ?? 'task-system-plan');
 
 // 项目根：默认 process.cwd()，可用 AGENT_IO_PROJECT_DIR 覆盖（如聚焦 src/ 做设计图闭环演示）
 function getServeProjectRoot(): string {
