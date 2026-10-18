@@ -6667,10 +6667,39 @@
               "path": "src/domain/validator.ts",
               "symbol": "ValidationResult",
               "why": "返回值形状是契约（errors + keys，调用方按它对账）"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "id": "demo",
+                "type": "feature_diagram",
+                "feature": "demo",
+                "geometry": {
+                  "nodes": [
+                    {
+                      "id": "a",
+                      "type": "file"
+                    },
+                    {
+                      "id": "b",
+                      "type": "file"
+                    }
+                  ],
+                  "edges": [
+                    {
+                      "id": "e1",
+                      "from": "a",
+                      "to": "zzz"
+                    }
+                  ]
+                }
+              },
+              "expect": "validateDSL(input).keys.some(k => k.includes('dangling') || k.includes('zzz'))",
+              "why": "★ 行为契约第一次选型：边指向不存在的节点 ⇒ 必须被点名（input 合法但悬空）"
             }
           ],
           "acceptance": "validateDSL(dsl) 能点名每条错（code + 位置）；errors 与 keys 一一对应（★ 重命名\"被指向的名字\"不改键 ⇒ 不误报\"新增错\"）；validateDSLJson 在 JSON 层就拒掉非对象/语法错。",
-          "updated_at": "2026-10-18T11:04:51.784Z",
+          "updated_at": "2026-10-18T12:40:52.252Z",
           "agent": "workbuddy-main"
         },
         "task": {
@@ -6704,7 +6733,135 @@
           "state": "candidate",
           "owner": null
         },
-        "status": "draft"
+        "status": "draft",
+        "decision_history": [
+          {
+            "at": "2026-10-18T12:39:57.521Z",
+            "decision": {
+              "summary": "DSL 的【结构自洽】校验器：ajv schema + 两项 schema 表达不了的语义（nodes.id 唯一 / semantic.files.id 必须能在 nodes 里找到）。★★ 它**不判决策卡**（decision 根本不在 schema 里）—— 那是【tsc 契约】的事（设计侧符号级，certs/design-contracts）。★ 范围是【有意收窄】的：**结构错看得见，意图错看不见**；后者靠 tsc + 对拍 + 影响面。⇒ 所以「validateDSL 不看 decision」不是缺陷，是分工（本文件只答\"DSL 自不自洽\"）。",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/validator.ts",
+                  "why": "动作要有落点（基线）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/validator.ts",
+                  "symbol": "validateDSL",
+                  "why": "唯一入口：DSL ⇒ 错误清单"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/validator.ts",
+                  "symbol": "validateDSLJson",
+                  "why": "JSON 层的入口（先拒语法错，再谈语义）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/validator.ts",
+                  "symbol": "ValidationResult",
+                  "why": "返回值形状是契约（errors + keys，调用方按它对账）"
+                }
+              ],
+              "acceptance": "validateDSL(dsl) 能点名每条错（code + 位置）；errors 与 keys 一一对应（★ 重命名\"被指向的名字\"不改键 ⇒ 不误报\"新增错\"）；validateDSLJson 在 JSON 层就拒掉非对象/语法错。",
+              "updated_at": "2026-10-18T11:04:51.784Z",
+              "agent": "workbuddy-main"
+            },
+            "agent": "workbuddy-main"
+          },
+          {
+            "at": "2026-10-18T12:40:52.156Z",
+            "decision": {
+              "summary": "DSL 的【结构自洽】校验器：ajv schema + 两项 schema 表达不了的语义（nodes.id 唯一 / semantic.files.id 必须能在 nodes 里找到）。★★ 它**不判决策卡**（decision 根本不在 schema 里）—— 那是【tsc 契约】的事（设计侧符号级，certs/design-contracts）。★ 范围是【有意收窄】的：**结构错看得见，意图错看不见**；后者靠 tsc + 对拍 + 影响面。⇒ 所以「validateDSL 不看 decision」不是缺陷，是分工（本文件只答\"DSL 自不自洽\"）。",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/validator.ts",
+                  "why": "动作要有落点（基线）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/validator.ts",
+                  "symbol": "validateDSL",
+                  "why": "唯一入口：DSL ⇒ 错误清单"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/validator.ts",
+                  "symbol": "validateDSLJson",
+                  "why": "JSON 层的入口（先拒语法错，再谈语义）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/validator.ts",
+                  "symbol": "ValidationResult",
+                  "why": "返回值形状是契约（errors + keys，调用方按它对账）"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "geometry": {
+                      "nodes": [
+                        {
+                          "id": "a"
+                        },
+                        {
+                          "id": "b"
+                        }
+                      ],
+                      "edges": [
+                        {
+                          "from": "a",
+                          "to": "zzz"
+                        }
+                      ]
+                    }
+                  },
+                  "expect": "validateDSL(input).keys.some(k => k.includes('dangling_edge'))",
+                  "why": "★ 行为契约的第一次选型：坏边必须被点名（不写检查代码，只写断言表达式）"
+                }
+              ],
+              "acceptance": "validateDSL(dsl) 能点名每条错（code + 位置）；errors 与 keys 一一对应（★ 重命名\"被指向的名字\"不改键 ⇒ 不误报\"新增错\"）；validateDSLJson 在 JSON 层就拒掉非对象/语法错。",
+              "updated_at": "2026-10-18T12:39:57.521Z",
+              "agent": "workbuddy-main"
+            }
+          },
+          {
+            "at": "2026-10-18T12:40:52.252Z",
+            "decision": {
+              "summary": "DSL 的【结构自洽】校验器：ajv schema + 两项 schema 表达不了的语义（nodes.id 唯一 / semantic.files.id 必须能在 nodes 里找到）。★★ 它**不判决策卡**（decision 根本不在 schema 里）—— 那是【tsc 契约】的事（设计侧符号级，certs/design-contracts）。★ 范围是【有意收窄】的：**结构错看得见，意图错看不见**；后者靠 tsc + 对拍 + 影响面。⇒ 所以「validateDSL 不看 decision」不是缺陷，是分工（本文件只答\"DSL 自不自洽\"）。",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/validator.ts",
+                  "why": "动作要有落点（基线）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/validator.ts",
+                  "symbol": "validateDSL",
+                  "why": "唯一入口：DSL ⇒ 错误清单"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/validator.ts",
+                  "symbol": "validateDSLJson",
+                  "why": "JSON 层的入口（先拒语法错，再谈语义）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/validator.ts",
+                  "symbol": "ValidationResult",
+                  "why": "返回值形状是契约（errors + keys，调用方按它对账）"
+                }
+              ],
+              "acceptance": "validateDSL(dsl) 能点名每条错（code + 位置）；errors 与 keys 一一对应（★ 重命名\"被指向的名字\"不改键 ⇒ 不误报\"新增错\"）；validateDSLJson 在 JSON 层就拒掉非对象/语法错。",
+              "updated_at": "2026-10-18T12:40:52.156Z",
+              "agent": "workbuddy-main"
+            }
+          }
+        ]
       },
       {
         "id": "file_src_infrastructure_alert_inbox_ts",
@@ -59172,5 +59329,5 @@
       "release_reason": "promoted to file_src_domain_validator_ts"
     }
   ],
-  "_dsl_rev": 1
+  "_dsl_rev": 4
 }

@@ -263,6 +263,20 @@ export async function judgeExpectations(
         );
         break;
       }
+      // ★★★ 2026-10-18：**行为契约** —— 一条 run = 一个自包含的测试（input + expect 表达式）。
+      //   ★ 求值域只有这三个名字（不是任意代码执行）：input / root / validateDSL。
+      //   ★ 不建 fixtures/ 目录：input 就是夹具，内联在契约里。
+      case 'run': {
+        try {
+          const { validateDSL } = await import('../../../domain/validator.js');
+          const fn = new Function('input', 'root', 'validateDSL', `"use strict"; return (${e.expect});`);
+          const ok = Boolean(fn((e as { input?: unknown }).input, root, validateDSL));
+          push(it, ok ? 'pass' : 'fail', ok ? `断言成立：${e.expect}` : `断言**不成立**：${e.expect}`);
+        } catch (err) {
+          push(it, 'fail', `run 判不了：${(err as Error).message}`);
+        }
+        break;
+      }
       case 'call-exists': {
         // ★★ T79：**调用级**判据 —— 边/符号/签名三档表达不了"必须用哪个符号"，
         //   而"用错符号"恰恰是最常见的偏差（实测：设计说必须用 add，实现换成 mul，边判据照样绿）。

@@ -49,9 +49,33 @@ export type Expectation =
    * ★ 判据**已在手边**：调用边住在 `cache.db` 的 `edges(kind='call')`，
    *   节点 id 约定 `"<fileNodeId>#<SymbolName>"`；现成读取入口 = `queryFileCalls`（**复用它，不新写**）。
    */
-  | { kind: 'call-exists'; path: string; symbol: string; target: string; why: string };
+  | { kind: 'call-exists'; path: string; symbol: string; target: string; why: string }
+  /**
+   * ★★★ 2026-10-18（用户："校验的过程就是夹具"）：**行为契约** —— 一条 `run` = 一个自包含的测试。
+   *
+   * ## 为什么只有【一个】kind（而不是"返回值/退出码/输出/状态"各一种）
+   * 所有行为契约的本质 = **给输入 ⇒ 断言输出**；而"输出"可以是返回值、退出码、stdout、**跑完之后的状态**。
+   * ⇒ 用一个 `expect` **表达式**覆盖全部，**而不是为每种输出加一个 kind**（那会长成 20 个检查器）。
+   *
+   * ## 为什么不建 `fixtures/` 目录（用户："还得手动维护"）
+   * `input` **就是夹具**，内联写在契约里 ⇒ **没有第二份要同步的东西**。
+   * ★ 同一个"够坏"的输入被多条契约用（>3 次）时，才用 `input_ref` 引用 —— **不是靠目录**。
+   *
+   * ## `expect` 的可用名字
+   * `input`（就是上面那个）· `root`（被分析项目根）· ★ `validateDSL`（示范注入：DSL ⇒ 错误清单）。
+   * ★ 它**不是任意代码执行**：求值域只在这个小池子里（池子由 `judgeExpectations` 显式传入）。
+   *
+   * ## 例
+   * ```ts
+   * { kind:'run',
+   *   input:{ geometry:{ nodes:[{id:'a'},{id:'b'}], edges:[{from:'a',to:'zzz'}] } },
+   *   expect:'validateDSL(input).errors.some(e => e.code === "dangling_edge")',
+   *   why:'坏边必须被点名' }
+   * ```
+   */
+  | { kind: 'run'; input?: unknown; input_ref?: string; expect: string; why: string };
 
-export const EXPECTATION_KINDS = ['file-exists', 'symbol-exists', 'signature-matches', 'edge-exists', 'edge-absent', 'call-exists'] as const;
+export const EXPECTATION_KINDS = ['file-exists', 'symbol-exists', 'signature-matches', 'edge-exists', 'edge-absent', 'call-exists', 'run'] as const;
 
 /**
  * ★★★ 判据的**阶段**维度（2026-10-16 · T10 · `docs/principle-rewrite-not-patch.md` §四）。
@@ -93,6 +117,8 @@ export type ExpectationPhase = 'pre' | 'post';
  *   往 `Expectation` 联合里加一个 `kind` 而忘了在这里标注 phase ⇒ **`tsc` 直接报错**（漏标不可能）。
  */
 const PHASE_BY_KIND: Record<Expectation['kind'], ExpectationPhase> = {
+  // ★ run 是「跑起来看结果」⇒ 必然属【后态】（跑之前谈不上结果）
+  run: 'post',
   'file-exists': 'post',
   'symbol-exists': 'post',
   'signature-matches': 'post',
@@ -140,6 +166,7 @@ export function describeExpectation(e: Expectation): string {
     case 'edge-exists': return `edge-exists  ${normPath(e.from)} → ${normPath(e.to)}`;
     case 'edge-absent': return `edge-absent  ${normPath(e.from)} ⇸ ${normPath(e.to)}`;
     case 'call-exists': return `call-exists  ${normPath(e.path)} :: ${e.symbol}() → ${e.target}()`;
+    case 'run': return `run  ${String(e.expect).slice(0, 70)}`;
   }
 }
 
@@ -164,6 +191,7 @@ export function assertValidExpectations(v: unknown): asserts v is Expectation[] 
     else if (kind === 'symbol-exists') { need('path'); need('symbol'); }
     else if (kind === 'signature-matches') { need('path'); need('symbol'); need('signature'); }
     else if (kind === 'call-exists') { need('path'); need('symbol'); need('target'); }
+    else if (kind === 'run') { need('expect'); }
     else { need('from'); need('to'); }
   });
 }
@@ -187,11 +215,15 @@ export function assertValidExpectations(v: unknown): asserts v is Expectation[] 
  * ★ 只此一处算主体路径；别在展示层再推一遍（那是判据分叉）。
  */
 export function expectationSubjectPath(e: Expectation): string {
+  // ★ run 没有主体文件 —— 它验的是「跑起来」，不是「某个文件」⇒ 返回空串（不硬凑一个文件）
+  if (e.kind === 'run') return '';
   return normPath(e.kind === 'edge-exists' || e.kind === 'edge-absent' ? e.from : e.path);
 }
 
 /** 一条检查项**涉及的全部路径**（主体 + 对端）—— 报告里说清"牵动了谁"，但**不计入块的归属** */
 export function expectationPaths(e: Expectation): string[] {
+  // ★ run 无路径（同 subjectPath 的理由）
+  if (e.kind === 'run') return [];
   return e.kind === 'edge-exists' || e.kind === 'edge-absent' ? [normPath(e.from), normPath(e.to)] : [normPath(e.path)];
 }
 /** 汇总某个 DSL 里所有决策卡上的 expectations（★ 只读、不改；供对账用） */
