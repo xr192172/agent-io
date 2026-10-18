@@ -12,3 +12,7 @@ import * as m0 from '../../src/application/write_gate.js'; // src/application/wr
 export type _0 = m0.WriteActor; // ★ WriteActor（type）—— ★ 写闸要知道"谁在写" —— 现在 assertSourceWriteRegistered(pro
 import * as m1 from '../../src/application/write_gate.js'; // src/application/write_gate.ts
 export type _1 = typeof m1.assertSourceWriteRegisteredFor; // ★ assertSourceWriteRegisteredFor（function）—— ★ 按 actor 判定的入口：要求"覆盖该文件的节点上存在 claimed 卡，且 owner =
+import * as m2 from '../../src/application/write_gate.js'; // src/application/write_gate.ts
+export type _2 = typeof m2.resolveActor; // ★ resolveActor（function）—— ★ actor 的解析只许一处（读 AGENT_IO_ACTOR）；写链不许各自造身份
+import * as m3 from '../../src/application/write_gate.js'; // src/application/write_gate.ts
+export type _3 = typeof m3.resolveProvenance; // ★ resolveProvenance（kind 未知⇒按 value）—— ★ 决策来源的解析只许一处（多来源 → 一个可追溯结论）；写链不许各自造来源

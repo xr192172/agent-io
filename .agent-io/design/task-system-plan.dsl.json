@@ -5930,7 +5930,7 @@
         },
         "arch_layer": "core",
         "decision": {
-          "summary": "写源码前必须挂任务，且【挂的是你自己的任务】：闸要判三件事 —— 该节点有 claimed 卡 · 卡的 owner 等于 actor · 卡没过期。★ actor 的来源是【会话】：读 AGENT_IO_ACTOR，绝不许从卡的 owner 反推（那是循环论证）。★★ 而现在的缺陷不是“5 个写链没传 actor”，是【没人负责设置 AGENT_IO_ACTOR】—— 那是一个入口，而入口不存在。",
+          "summary": "写源码前必须有一个【可追溯的决策来源】—— 不是'必须是你自己的卡'。来源可以是：① 卡（node.task 的 owner/creator，含从文档翻译来的）② 文档（decision.provenance 的出处）③ 设计（decision.agent，设计时补的）④ 会话（AGENT_IO_ACTOR 兜底）。★ 闸判'至少有一个可追溯'；一个都没有 ⇒ 拒。★★ 而这是【任务大厅/政务服务中心】：来路各异（有卡、没卡、从文档翻译、设计时补），★ 不能把系统卡死在某一个环节。",
           "acceptance": "写链调用时能拿到 actor；判定为「该节点存在 claimed 卡 ∧ owner === actor」；owner 不符 ⇒ 提醒/阻断（按 gate-principle 判它是否损坏数据）",
           "provenance": {
             "kind": "friction",
@@ -5960,6 +5960,12 @@
               "path": "src/application/write_gate.ts",
               "symbol": "resolveActor",
               "why": "★ actor 的解析只许一处（读 AGENT_IO_ACTOR）；写链不许各自造身份"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/write_gate.ts",
+              "symbol": "resolveProvenance",
+              "why": "★ 决策来源的解析只许一处（多来源 → 一个可追溯结论）；写链不许各自造来源"
             }
           ]
         },
