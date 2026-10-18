@@ -57790,11 +57790,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-18T11:25:06.537Z",
+    "saved_at": "2026-10-18T23:46:54.694Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792314946341,
-    "age": 7760196
+    "age": 52268353
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -59397,14 +59397,14 @@
       "id": "todo_D-target-exists",
       "summary": "t_claim 的「target 在 DB 存在」无执行者（全仓 0 处）",
       "expectations": [],
-      "state": "candidate",
+      "state": "void",
       "owner": null
     },
     {
       "id": "todo_D-release-by",
       "summary": "t_release 的「带 by」无执行者（releaseTask 是 input.agent ?? null）",
       "expectations": [],
-      "state": "candidate",
+      "state": "void",
       "owner": null
     },
     {

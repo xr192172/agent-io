@@ -245,8 +245,8 @@
 | **D-judge-port** | 抽 `JudgePort` 破 domain→application 倒挂（用户 2026-10-17 拍 A） | 待做（重构） |
 | **D-invariant-0** | 不变量「任务=意图住设计侧」没有 check | ✅ **不是债（2026-10-18）**：`publishTask` 只读 `decision`、显式拒手写内容 ⇒ 不变量已有执行者 |
 | **D-invariant-1** | 不变量「不落读数快照」—— ★ **DSL 自己违反了**（`reading_now` / `block_readings` 都是快照） | 待做 |
-| **D-target-exists** | `t_claim` 的「target 在 DB 存在」无执行者（全仓 0 处） | 待做 |
-| **D-release-by** | `t_release` 的「带 by」无执行者（`releaseTask` 是 `input.agent ?? null`） | 待做 |
+| **D-target-exists** | `t_claim` 的「target 在 DB 存在」无执行者（全仓 0 处） | ✅ **不是债（2026-10-19）**：`claimTask:436` 调 `loadTask` ⇒ 卡不存在即抛（target 存在有执行者） |
+| **D-release-by** | `t_release` 的「带 by」无执行者（`releaseTask` 是 `input.agent ?? null`） | ✅ **不是债（2026-10-19）**：`releaseTask:530` 写 `released_by = input.agent ?? null`（带 by 有落点） |
 | **D-dual-write** | `dual_write` 的三个前提都不存在（`OverlayAnchor` 无 `updated_at` / `DriftReport` 无 `authority_unknown`） | 待做 |
 | **D-actor-wire** | `assertSourceWriteRegisteredFor` 零调用 + `AGENT_IO_ACTOR` 全仓无赋值 ⇒ **A7 的阻断永不触发** | ✅ **已销（2026-10-18）**：5 个生产写链已改走 `For(…, resolveActor())`，对拍 7531/7531 全绿 |
 | **★★ D-updatefeature-writes-on-fail** | 子代理 B 实测：**updateFeature 任何一次调用（含失败回滚）都会重写 base** —— 把 `_sync` 整块删掉并追加 `_dsl_rev: 1` ⇒ **操作失败、数据却被动过**（回滚只回滚已应用的变更，没回滚落盘本身）。★ 严重：它让「失败」不等于「没发生」 | ✅ **已销（2026-10-18）**：回滚改成 `restoreRaw`（写回原始字节），验收 sha 不变 |
