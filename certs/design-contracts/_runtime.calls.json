@@ -1,0 +1,37 @@
+{
+  "//": "★★★ 运行时入口（`calls` 表达不了的那一层）—— 见 DESIGN.md §9 的第④层「下探」与 D-actor-entry",
+  "//why": "有些东西存在与否【不是函数调用】：env 由谁设、某个命令由谁跑。塞进 calls 会污染它（calls 的语义是 'A 调 B'）。",
+  "//kinds": {
+    "env": "某个环境变量【必须在代码里被赋值】—— 判据：src/ 里存在 `process.env.<NAME> =`",
+    "script": "某个命令必须在 package.json 的 scripts 里 —— 判据：该键存在"
+  },
+
+  "runtime_entries": [
+    {
+      "target": "AGENT_IO_ACTOR",
+      "kind": "env",
+      "set_by": ["mcp:server-start", "cli:--agent"],
+      "why": "会话身份：claim 时的 owner 与写时的 actor 共用它 ⇒ 才保证 owner === actor 这条协作判据成立",
+      "debt": "D-actor-entry",
+      "note": "★ 2026-10-18 实测：全仓只有【读】它（write_gate.ts:771），没有任何一处赋值 ⇒ 这个入口不存在。★ 而它正是 A7 那 5 条写链能不能写的共同前提。"
+    },
+    {
+      "target": "patrol",
+      "kind": "script",
+      "why": "巡检的运行时入口（不是被某个函数调，而是被人/CI 跑）",
+      "debt": null
+    },
+    {
+      "target": "dec",
+      "kind": "script",
+      "why": "改设计（临时工具；标准化后会被 edit_dsl 的 OP 取代）",
+      "debt": null
+    },
+    {
+      "target": "fork",
+      "kind": "script",
+      "why": "从实际侧 fork 出设计侧（一辈子一次）",
+      "debt": null
+    }
+  ]
+}

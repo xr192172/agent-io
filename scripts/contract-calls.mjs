@@ -39,13 +39,15 @@ const short = (s) => String(s).replace(/^src\//, '').replace(/\.ts#/, '#');
 function loadDesign() {
   const calls = [];
   const removed = [];
+  const runtimeEntries = [];
   for (const f of fs.readdirSync(DIR)) {
     if (!f.endsWith('.calls.json')) continue;
     const j = JSON.parse(fs.readFileSync(path.join(DIR, f), 'utf8'));
     for (const c of j.calls ?? []) calls.push({ ...c, _file: f });
     for (const c of j.removed ?? []) removed.push({ ...c, _file: f });
+    for (const e of j.runtime_entries ?? []) runtimeEntries.push({ ...e, _file: f });
   }
-  return { calls, removed };
+  return { calls, removed, runtimeEntries };
 }
 
 function loadActual() {
@@ -82,6 +84,44 @@ function main() {
   const unexpected = design.removed.filter((c) => has(actual.set, c)); // 设计说不要，实际还有
   const ok = design.calls.length - missing.length;
 
+  // ── 运行时入口（★ calls 表达不了的那一层）──────────────────────────
+  // 判据只有两种，都能机器判：
+  //   env    ⇒ src/ 里必须存在 `process.env.<NAME> =`（有人赋值）
+  //   script ⇒ package.json 的 scripts 里必须有这个键（有人跑）
+  const srcText = (() => {
+    const out = [];
+    const walk = (dir) => {
+      for (const f of fs.readdirSync(dir, { withFileTypes: true })) {
+        const p = path.join(dir, f.name);
+        if (f.isDirectory()) walk(p);
+        else if (/\.(ts|mjs|js)$/.test(f.name)) out.push(fs.readFileSync(p, 'utf8'));
+      }
+    };
+    try {
+      walk('src');
+    } catch {
+      /* 没有 src 就当空 */
+    }
+    return out.join('\n');
+  })();
+  const pkgScripts = (() => {
+    try {
+      return JSON.parse(fs.readFileSync('package.json', 'utf8')).scripts ?? {};
+    } catch {
+      return {};
+    }
+  })();
+
+  const entriesMissing = [];
+  for (const e of design.runtimeEntries) {
+    if (e.kind === 'env') {
+      const re = new RegExp(`process\\.env\\.${e.target}\\s*=[^=]`);
+      if (!re.test(srcText)) entriesMissing.push(e);
+    } else if (e.kind === 'script') {
+      if (!(e.target in pkgScripts)) entriesMissing.push(e);
+    }
+  }
+
   if (asJson) {
     console.log(JSON.stringify({ actual: actual.count, design: design.calls.length, ok, missing, unexpected }, null, 2));
   } else {
@@ -103,6 +143,22 @@ function main() {
       for (const c of unexpected) console.log(`  ✗ ${short(c.from)} → ${short(c.to)}  ← 该拆`);
     }
     if (!missing.length && !unexpected.length) console.log('\n✓ 设计 × 实际：全部对齐');
+
+    // ── 运行时入口 ──────────────────────────────────────────
+    if (design.runtimeEntries.length) {
+      const okEntries = design.runtimeEntries.length - entriesMissing.length;
+      console.log(
+        `\n── 运行时入口（calls 表达不了的那层）── ${okEntries} / ${design.runtimeEntries.length}`,
+      );
+      for (const e of entriesMissing) {
+        console.log(`  ✗ ${e.kind}: ${e.target}  ← 入口不存在${e.debt ? `  [已挂账: ${e.debt}]` : ''}`);
+        if (e.why) console.log(`      为什么：${String(e.why).slice(0, 80)}`);
+        if (e.note) console.log(`      备注：${String(e.note).slice(0, 100)}`);
+      }
+      for (const e of design.runtimeEntries) {
+        if (!entriesMissing.includes(e)) console.log(`  ✓ ${e.kind}: ${e.target}`);
+      }
+    }
   }
 
   process.exit(missing.length || unexpected.length ? 1 : 0);
