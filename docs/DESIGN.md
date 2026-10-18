@@ -247,6 +247,7 @@
 | **D-dual-write** | `dual_write` 的三个前提都不存在（`OverlayAnchor` 无 `updated_at` / `DriftReport` 无 `authority_unknown`） | 待做 |
 | **D-actor-wire** | `assertSourceWriteRegisteredFor` 零调用 + `AGENT_IO_ACTOR` 全仓无赋值 ⇒ **A7 的阻断永不触发** | 待做（源码） |
 | **★★ D-updatefeature-writes-on-fail** | 子代理 B 实测：**updateFeature 任何一次调用（含失败回滚）都会重写 base** —— 把 `_sync` 整块删掉并追加 `_dsl_rev: 1` ⇒ **操作失败、数据却被动过**（回滚只回滚已应用的变更，没回滚落盘本身）。★ 严重：它让「失败」不等于「没发生」 | 待做（源码） |
+| **★★ D-complete-nonatomic** | `completeTask` 是**写一半再报错**：先 `writeTask`（写 done）再 `updateStatus`（投影），后者失败 ⇒ **状态已变 done 但调用报错**（今天 Q5 实测：todo 不在 geometry ⇒ updateStatus 报节点未找到，而 done 已落盘）。★ Q2 只修了 `updateFeature` 的回滚，**这条路径没覆盖** | 待做（源码） |
 | **★ D-actor-entry** | ★★ **真正的缺陷不是"5 个写链没传 actor"，是「没人负责设置 `AGENT_IO_ACTOR`」** —— 那是一个**运行时入口**，而入口不存在。★ 而 `calls` 格式**表达不了"入口"**（它只有函数调用）⇒ **这是设计格式的缺口**，要新增一块（`runtime_entries`）才能表达。★ 已写进 `write_gate` 的 `decision.summary`（含"绝不许从卡的 owner 反推 —— 循环论证"） | 待做（**先补格式，再实现**） |
 | **D-validate-decision** | `validateDSL` 不看 `decision`（M1）⇒ D3 的"✓"是假绿 | 待做（源码） |
 | **D-kind-expressiveness** | 同 D8 | 待做 |
