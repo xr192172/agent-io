@@ -253,7 +253,7 @@
 | **★★ D-complete-nonatomic** | `completeTask` 是**写一半再报错**：先 `writeTask`（写 done）再 `updateStatus`（投影），后者失败 ⇒ **状态已变 done 但调用报错**（今天 Q5 实测：todo 不在 geometry ⇒ updateStatus 报节点未找到，而 done 已落盘）。★ Q2 只修了 `updateFeature` 的回滚，**这条路径没覆盖** | ⚠️ **防御性已修（2026-10-18）**：完工前备份原始字节，失败则写回。★ **无实证**（Q5 已封 todo 路径，节点任务路径无触发场景） |
 | **★ D-actor-entry** | ★★ **真正的缺陷不是"5 个写链没传 actor"，是「没人负责设置 `AGENT_IO_ACTOR`」** —— 那是一个**运行时入口**，而入口不存在。★ 而 `calls` 格式**表达不了"入口"**（它只有函数调用）⇒ **这是设计格式的缺口**，要新增一块（`runtime_entries`）才能表达。★ 已写进 `write_gate` 的 `decision.summary`（含"绝不许从卡的 owner 反推 —— 循环论证"） | 待做（**先补格式，再实现**） |
 | **D-validate-decision** | `validateDSL` 不看 `decision`（M1）⇒ D3 的"✓"是假绿 | 待做（源码） |
-| **D-kind-expressiveness** | 同 D8 | 待做 |
+| **D-kind-expressiveness** | 同 D8 | ✅ **已合并到 D8（2026-10-18）**：本条只有「同 D8」三字、无独立内容；D8 已按"换问题"处置 |
 | **D-anti-decoration** | 11/15 条边没有判据 | 待做 |
 | **D-parallel** | "两两交集为空"算不出来（path 覆盖率不够） | 待做 |
 | **D-claim-incomplete** | "领到先查依据"由人执行，无机器检查器 | 待做 |
