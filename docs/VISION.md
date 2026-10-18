@@ -285,12 +285,11 @@ node.update 的 data.decision 是整体替换
 ⇒ 「失败」现在真的等于「没发生」
 ```
 
-## Q3 · 巡检的 `missed_close` 会把 `candidate + satisfied` 也算进去（今天死锁的来源）
+## Q3 · ✅ **已修（2026-10-18）** —— 巡检 `missed_close` 曾把 `candidate + satisfied` 也算（死锁来源）
 
 ```
-candidate 的卡"满足"是【正常】的（还没人领，不该收口）
-⇒ 它该只报 claimed 且 satisfied 的
-★ 而今天用 `voidTask` 解了死锁 —— 但判据本身仍偏宽
+★ 已修：missed_close 只看 claimed；candidate + satisfied 归 should_void（活已在、卡多余）
+★ 验收：造一张 candidate+3条期望的卡 ⇒ missed_close 0 / should_void 1
 ```
 
 ## Q4 · 非代码活没有节点可挂（`design/` 只有 `module`/`file`，`doc: 0`）
