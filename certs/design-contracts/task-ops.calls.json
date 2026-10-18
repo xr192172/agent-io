@@ -64,11 +64,6 @@
   ],
   "expected_callers": [
     {
-      "target": "src/application/patrol/task_drift.ts#patrolDrift",
-      "why": "★ 巡检必须有入口（现在零调用方）—— 否则它算得再对也没人跑",
-      "debt": "A1"
-    },
-    {
       "target": "src/domain/discussion_log.ts#renderMicro",
       "why": "★ 设计说：discussion 格的微缩渲染必须被读端调用（现在零 src 调用）",
       "debt": "B5"
@@ -77,6 +72,15 @@
       "target": "src/application/write_gate.ts#assertSourceWriteRegisteredFor",
       "why": "★ 生产写链必须调 For 入口（现在零调用方，5 个写链全调旧入口）",
       "debt": "D-actor-wire"
+    }
+  ],
+  "runtime_entries": [
+    {
+      "fn": "src/application/patrol/task_drift.ts#patrolDrift",
+      "entry": "scripts/patrol.mjs  (npm run patrol)",
+      "debt": "A1",
+      "why": "★ 巡检的正确入口是【运行时】（一个可被调的命令），不是藏在读写路径里 ⇒ ★ TS 入度对它不适用（永远 0）",
+      "note": "★ 2026-10-18 已接：node scripts/patrol.mjs 跑通，输出 DriftReport{scan_rev, live_nodes, cards:0, missed_close:0, should_void:0}。cards:0 是诚实的（docs/ 里 11 个节点一张卡都没有）。★★ 而 patrolDrift 此前不可调的真原因：PatrolOptions.ttl_ms 从来没被定值（源码注：取值待裁）⇒ 本脚本给 24h 默认，但那【是业务决定，不是代码决定】。"
     }
   ]
 }

@@ -102,7 +102,8 @@
     "cognition": "node scripts/gen_cognition.mjs",
     "cognition:check": "node scripts/gen_cognition.mjs --check",
     "contract": "tsc --noEmit -p tsconfig.contract.json",
-    "contract:calls": "node scripts/contract-calls.mjs"
+    "contract:calls": "node scripts/contract-calls.mjs",
+    "patrol": "node scripts/patrol.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
