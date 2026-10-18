@@ -262,49 +262,43 @@
 
 ---
 
-## 7 · 文件地图（★ 四份东西，别混）
+## 7 · 文件地图（★ 2026-10-18 统一：**设计侧只有一处**）
 
-★★★ **2026-10-18 查清并写死** —— 此前一直混着用，导致"在错的对象上做验证"。
+★★★ **此前有过两处（`docs/` 和 `.agent-io/design/`），语义盘根错节。用户要求统一 ⇒ 现在只有一处。**
 
-| 文件 | 是什么 | 谁读它 | 存在吗 |
+| 文件 | 是什么 | 谁读它 | 进 git |
 |---|---|---|---|
-| **`docs/task-system-plan.dsl.json`** | ★★★ **讨论桌 / 方案文档**（人写，用 DSL 语法承载讨论，为让分歧显形）。★ **commit 749beb4（2026-10-16）建它时就说清了："方案写成 DSL""讨论产物"** | 只有 `certs/.work/probe-plan-detail.mjs` 这类**探针**；**本仓工具从不读** | ✅ 11 节点 |
-| **`<baseDir>/.agent-io/design/<f>.dsl.json`** | ★★★ **真·设计 DSL**（**手写**，与 live 同 schema） | `storage.ts#getDesignSheet` | ❌ **目录不存在** |
-| **`<baseDir>/.agent-io/live/<f>.dsl.json`** | ★★★ **真·实际 DSL**（**扫描产物**） | `storage.ts#getLiveFeatureResolved` | ✅ 10 个，但**没有 `task-system-plan`** |
-| **`<dataHome>/.agent-io/features/<f>.json`** | **派生结果**（扫描 ⊕ overlay **合并**） | `getDSL` / `edit_dsl` / 写闸 / 巡检 | ⚠️ 只有 cwd 残留（5 节点，10-17 15:49），`~/.agent-io` 下没有 |
+| **`.agent-io/design/<f>.dsl.json`** | ★★★ **设计 DSL（唯一权威）** —— 手写；结构 = fork 自实际侧 + 我改的那几处（带 `decision`） | `storage.ts#getDesignSheet` · `scripts/design-diff.mjs` | ✅ **白名单**（见下） |
+| `.agent-io/live/<f>.dsl.json` | **实际 DSL**（扫描产物） | `getLiveFeatureResolved` | ❌ |
+| `.agent-io/features/<f>.json` | **派生**（扫描 ⊕ overlay 合并） | `getDSL` / `edit_dsl` / 写闸 / 巡检 | ❌ |
+| `.agent-io/cache.db` | 符号 / 调用 / import（`edges.kind = call 7528 · type_ref 4832 · import 1223`） | `get_dsl{query:'calls'}` 等 | ❌ |
+| `docs/DESIGN.md` | 设计文档（人读） | 人 | ✅ |
 
-★★★ **因此：「设计 DSL × 实际 DSL 对拍」在本仓【从未发生过】**（`design/` 一份都没有、`task-system-plan` 也没有 live）。
-★ 而**今天所有"对拍绿了"** —— 比的是「**讨论桌里的期望 × 代码**」，**不是**「设计 DSL × 实际 DSL」。
-
-### 对拍应该怎么跑（正路）
+### ★ `.gitignore` 的写法（有坑，写死）
 ```
-① 把结论落成 <baseDir>/.agent-io/design/<f>.dsl.json（手写，schema 同 live）
-② import_project 生成 <baseDir>/.agent-io/live/<f>.dsl.json（扫描）
-③ get_dsl { query:'diff', feature_a, feature_b, view_b:'live' }  ⇒ 差异 = 要挂的任务
+.agent-io/*                   ← 先忽略内容
+!.agent-io/design/            ← 再白名单目录本身
+!.agent-io/design/**          ← 以及它的内容
+certs/*/.agent-io/            ← 测试夹具里的 cache.db 也不进
 ```
+★★ **为什么不能写 `.agent-io/`（忽略整个目录）**：git 的规矩是**父目录被忽略时，子目录的 `!` 白名单无效** ⇒ 设计侧永远进不了 git。★ 这是踩过的坑。
 
-★ **`<dataHome>` 的解析**：`AGENT_IO_HOME ?? getPackageRoot()`（`storage.ts:63`）⇒ 实测 = **项目根**（`D:\project_develop\design-canvas`），**不是主目录**。
-★★ 已知坑（已修）：`getDesignDir` 原指 `.agent-io/design`，而 `.gitignore:37` 忽略整个 `.agent-io/` ⇒ **设计 DSL 永远进不了 git**。2026-10-18 改成 `<baseDir>/docs` ⇒ `docs/task-system-plan.dsl.json` **就是设计 DSL 的真身**（`getDesignSheet` 实测读到 11 节点 / 15 边）。
+### 三条命令（都在这份 document 之外，靠工具）
+| 命令 | 判什么 |
+|---|---|
+| `npm run diff` | ★ **设计侧 × 实际侧的 diff**（`+` 要建 · `-` 要补设计 · `~` 我改过的 · 边差异） |
+| `npm run contract` | 符号级契约（`tsc`）—— 符号 / 签名 / 用法 |
+| `npm run contract:calls` | 结构级契约（`cache.db`）—— 谁调谁（含"零调用方"反查） |
+| `npm run patrol` | 漂移巡检（`cards: 0` 是诚实的：还没立卡） |
 
-### ★★★ 2026-10-18 第一次真对拍的结果（设计 11 节点 × 实际 640 节点）
-
+### ★★★ 对拍 = `git diff`，不是覆盖率报告
 ```
-.agent-io/live/task-system-plan.dsl.json  = 1,809,866 B · 640 节点 · 1161 边
-（import_project 的承诺兑现：★ 设计 sha 未变 27044c7e→27044c7e，"设计已存在 ⇒ 不碰设计"）
+设计侧 = fork(实际侧) ⇒ 两边本来就该一样
+⇒ "没动过"【不是差异】（两边一样，git diff 不显示）
+⇒ 只显示：+ 只在设计侧 · - 只在实际侧 · ~ 两边都有但内容不同
 ```
+★ **所以不要"进度百分比"** —— 设计不是"把 N 个都设计一遍"，是**只改自己要改的那几处**。
 
-| 维度 | 结果 | 是真的吗 |
-|---|---|---|
-| **节点** | 存在 **10 / 11**，缺的是 `board_pool.ts` | ★ **真差异** —— 那正是还没建的文件 |
-| **边** | 存在 7 / 15 | ★★ **假差异** —— 见下 |
-| **符号层（semantics）** | 实际侧 **0 / 640** 个节点有 | ★ 故 `symbol-exists` 在 live 上**判不了**，只能对 `cache.db` 判 |
-
-★★★ **边为什么是假差异**：**live 的边是 `contains`（目录包含文件），设计的边是 `imports`（依赖）** ——
-证据：`task_ops.ts` 在 live 里只有 2 条出边（`edit_result.ts` / `status_tools.ts`），**没有 `task_machine.ts`**，而它明明 import 了。
-样例：`{ id:'contains_certs_…', from:'dir_certs', to:'file_certs_…', label:'contains' }`。
-
-⇒ ★ **结论：结构对拍目前只有「节点」这一维是真的**；「边」要先把 live 的 import 边补齐（或改成对 `cache.db` 比）；
-「判据」只能对 `cache.db`（`judgeExpectations`，46 条 → 41 pass / 3 fail / 2 unjudged）。
 
 ## 8 · 设计 DSL 的规范（★ 2026-10-18 第二版：三层三种格式）
 
