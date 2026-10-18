@@ -1,0 +1,132 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/infrastructure/authoring/translate/ts_codegen.ts（**fork 自 cache.db，全量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T06:14:45.596Z",
+    "note": "★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls = 设计说\"这些调用必须成立\"",
+  "calls": [
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#mapParam",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#renderFuncSkeleton",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#renderTypeSkeleton",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#renderTypeSkeleton",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#renderTypeSkeleton",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#renderFuncSkeleton",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#mapParam"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#renderTypeSkeleton",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#mapParam"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#renderTsSkeleton",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#renderConstSkeleton"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#renderFuncSkeleton",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#renderDecisionBody"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#renderTsSkeleton",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#renderFuncSkeleton"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#renderTsSkeleton",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#renderTypeSkeleton"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#splitTopLevel"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#splitTopLevel"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#splitTopLevel"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#renderFuncSkeleton",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#typeParamString"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#renderTypeSkeleton",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#typeParamString"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#renderTypeSkeleton",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#typeParamString"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#renderTypeSkeleton",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#typeParamString"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#renderTsSkeleton",
+      "to": "src/infrastructure/authoring/translate/unit.ts#withConstraints"
+    }
+  ],
+  "removed": []
+}

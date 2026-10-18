@@ -1,0 +1,60 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/infrastructure/authoring/version_upgrade/toolchain.ts（**fork 自 cache.db，全量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T06:14:45.598Z",
+    "note": "★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls = 设计说\"这些调用必须成立\"",
+  "calls": [
+    {
+      "from": "src/infrastructure/authoring/version_upgrade/toolchain.ts#parseToolchainVersion",
+      "to": "src/infrastructure/authoring/version_upgrade/adapters/registry.ts#adapterForLang"
+    },
+    {
+      "from": "src/infrastructure/authoring/version_upgrade/toolchain.ts#versionSatisfies",
+      "to": "src/infrastructure/authoring/version_upgrade/adapters/registry.ts#adapterForLang"
+    },
+    {
+      "from": "src/infrastructure/authoring/version_upgrade/toolchain.ts#parseDeclarationFile",
+      "to": "src/infrastructure/authoring/version_upgrade/adapters/registry.ts#adaptersForFile"
+    },
+    {
+      "from": "src/infrastructure/authoring/version_upgrade/toolchain.ts#scanToolchainDeclarations",
+      "to": "src/infrastructure/authoring/version_upgrade/toolchain.ts#collectDeclarationFiles"
+    },
+    {
+      "from": "src/infrastructure/authoring/version_upgrade/toolchain.ts#scanToolchains",
+      "to": "src/infrastructure/authoring/version_upgrade/toolchain.ts#matchRuntimes"
+    },
+    {
+      "from": "src/infrastructure/authoring/version_upgrade/toolchain.ts#parseDeclarationFile",
+      "to": "src/infrastructure/authoring/version_upgrade/toolchain.ts#parseDeclarationFile"
+    },
+    {
+      "from": "src/infrastructure/authoring/version_upgrade/toolchain.ts#scanToolchainDeclarations",
+      "to": "src/infrastructure/authoring/version_upgrade/toolchain.ts#parseDeclarationFile"
+    },
+    {
+      "from": "src/infrastructure/authoring/version_upgrade/toolchain.ts#scanToolchains",
+      "to": "src/infrastructure/authoring/version_upgrade/toolchain.ts#probeLocalRuntimes"
+    },
+    {
+      "from": "src/infrastructure/authoring/version_upgrade/toolchain.ts#probeLocalRuntimes",
+      "to": "src/infrastructure/authoring/version_upgrade/toolchain.ts#probeRuntime"
+    },
+    {
+      "from": "src/infrastructure/authoring/version_upgrade/toolchain.ts#scanToolchains",
+      "to": "src/infrastructure/authoring/version_upgrade/toolchain.ts#scanToolchainDeclarations"
+    },
+    {
+      "from": "src/infrastructure/authoring/version_upgrade/toolchain.ts#versionSatisfies",
+      "to": "src/infrastructure/authoring/version_upgrade/toolchain.ts#versionSatisfies"
+    },
+    {
+      "from": "src/infrastructure/authoring/version_upgrade/toolchain.ts#matchRuntimes",
+      "to": "src/infrastructure/authoring/version_upgrade/toolchain.ts#versionSatisfies"
+    }
+  ],
+  "removed": []
+}

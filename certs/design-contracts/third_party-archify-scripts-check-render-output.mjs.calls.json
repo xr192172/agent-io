@@ -1,0 +1,276 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— third_party/archify/scripts/check-render-output.mjs（**fork 自 cache.db，全量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T06:14:45.586Z",
+    "note": "★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls = 设计说\"这些调用必须成立\"",
+  "calls": [
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#collectDesktopReadability",
+      "to": "third_party/archify/renderers/shared/desktop-readability.mjs#projectedNodeTextPx"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#straightPathSegments",
+      "to": "third_party/archify/scripts/check-render-output.mjs#crossProduct"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#properSegmentIntersection",
+      "to": "third_party/archify/scripts/check-render-output.mjs#crossProduct"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#properSegmentIntersection",
+      "to": "third_party/archify/scripts/check-render-output.mjs#crossProduct"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#properSegmentIntersection",
+      "to": "third_party/archify/scripts/check-render-output.mjs#crossProduct"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#properSegmentIntersection",
+      "to": "third_party/archify/scripts/check-render-output.mjs#crossProduct"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#textBox",
+      "to": "third_party/archify/scripts/check-render-output.mjs#estimatedTextWidth"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#straightPathSegments",
+      "to": "third_party/archify/scripts/check-render-output.mjs#isCommand"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#straightPathSegments",
+      "to": "third_party/archify/scripts/check-render-output.mjs#isCommand"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#straightPathSegments",
+      "to": "third_party/archify/scripts/check-render-output.mjs#isCommand"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#straightPathSegments",
+      "to": "third_party/archify/scripts/check-render-output.mjs#isCommand"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#straightPathSegments",
+      "to": "third_party/archify/scripts/check-render-output.mjs#isCommand"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#pointsFromPath",
+      "to": "third_party/archify/scripts/check-render-output.mjs#isCommand"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#pointsFromPath",
+      "to": "third_party/archify/scripts/check-render-output.mjs#isCommand"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#pointsFromPath",
+      "to": "third_party/archify/scripts/check-render-output.mjs#isCommand"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#pointsFromPath",
+      "to": "third_party/archify/scripts/check-render-output.mjs#isCommand"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#pointsFromPath",
+      "to": "third_party/archify/scripts/check-render-output.mjs#isCommand"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#lineSegments",
+      "to": "third_party/archify/scripts/check-render-output.mjs#isPoint"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#straightPathSegments",
+      "to": "third_party/archify/scripts/check-render-output.mjs#isPoint"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#collectArrows",
+      "to": "third_party/archify/scripts/check-render-output.mjs#lineSegments"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#collectCompositionFrames",
+      "to": "third_party/archify/scripts/check-render-output.mjs#lineSegments"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#collectRelationshipLabelMasks",
+      "to": "third_party/archify/scripts/check-render-output.mjs#numberAttr"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#collectRelationshipLabelMasks",
+      "to": "third_party/archify/scripts/check-render-output.mjs#numberAttr"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#collectRelationshipLabelMasks",
+      "to": "third_party/archify/scripts/check-render-output.mjs#numberAttr"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#collectRelationshipLabelMasks",
+      "to": "third_party/archify/scripts/check-render-output.mjs#numberAttr"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#collectCompositionFrames",
+      "to": "third_party/archify/scripts/check-render-output.mjs#numberAttr"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#collectCompositionFrames",
+      "to": "third_party/archify/scripts/check-render-output.mjs#numberAttr"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#collectCompositionFrames",
+      "to": "third_party/archify/scripts/check-render-output.mjs#numberAttr"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#collectCompositionFrames",
+      "to": "third_party/archify/scripts/check-render-output.mjs#numberAttr"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#collectCompositionFrames",
+      "to": "third_party/archify/scripts/check-render-output.mjs#numberAttr"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#lineSegments",
+      "to": "third_party/archify/scripts/check-render-output.mjs#numberAttr"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#lineSegments",
+      "to": "third_party/archify/scripts/check-render-output.mjs#numberAttr"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#collectLegendBoxes",
+      "to": "third_party/archify/scripts/check-render-output.mjs#numberAttr"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#collectLegendBoxes",
+      "to": "third_party/archify/scripts/check-render-output.mjs#numberAttr"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#collectLegendBoxes",
+      "to": "third_party/archify/scripts/check-render-output.mjs#numberAttr"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#collectLegendBoxes",
+      "to": "third_party/archify/scripts/check-render-output.mjs#numberAttr"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#textBox",
+      "to": "third_party/archify/scripts/check-render-output.mjs#numberAttr"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#textBox",
+      "to": "third_party/archify/scripts/check-render-output.mjs#numberAttr"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#segmentsIntersect",
+      "to": "third_party/archify/scripts/check-render-output.mjs#onSegment"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#segmentsIntersect",
+      "to": "third_party/archify/scripts/check-render-output.mjs#onSegment"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#segmentsIntersect",
+      "to": "third_party/archify/scripts/check-render-output.mjs#onSegment"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#segmentsIntersect",
+      "to": "third_party/archify/scripts/check-render-output.mjs#onSegment"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#segmentsIntersect",
+      "to": "third_party/archify/scripts/check-render-output.mjs#orientation"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#segmentsIntersect",
+      "to": "third_party/archify/scripts/check-render-output.mjs#orientation"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#segmentsIntersect",
+      "to": "third_party/archify/scripts/check-render-output.mjs#orientation"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#segmentsIntersect",
+      "to": "third_party/archify/scripts/check-render-output.mjs#orientation"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#collectLegendCollisions",
+      "to": "third_party/archify/scripts/check-render-output.mjs#padBox"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#collectArrows",
+      "to": "third_party/archify/scripts/check-render-output.mjs#parseAttrs"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#collectRelationshipLabelMasks",
+      "to": "third_party/archify/scripts/check-render-output.mjs#parseAttrs"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#collectRelationshipLabelMasks",
+      "to": "third_party/archify/scripts/check-render-output.mjs#parseAttrs"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#collectCompositionFrames",
+      "to": "third_party/archify/scripts/check-render-output.mjs#parseAttrs"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#collectLegendBoxes",
+      "to": "third_party/archify/scripts/check-render-output.mjs#parseAttrs"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#collectLegendBoxes",
+      "to": "third_party/archify/scripts/check-render-output.mjs#parseAttrs"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#collectDesktopReadability",
+      "to": "third_party/archify/scripts/check-render-output.mjs#parseAttrs"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#collectArrows",
+      "to": "third_party/archify/scripts/check-render-output.mjs#parseRoutePoints"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#collectArrows",
+      "to": "third_party/archify/scripts/check-render-output.mjs#pathSegments"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#collectCompositionFrames",
+      "to": "third_party/archify/scripts/check-render-output.mjs#pathSegments"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#segmentIntersectsBox",
+      "to": "third_party/archify/scripts/check-render-output.mjs#pointInsideBox"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#pathSegments",
+      "to": "third_party/archify/scripts/check-render-output.mjs#pointsFromPath"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#collectRelationshipCrossings",
+      "to": "third_party/archify/scripts/check-render-output.mjs#properSegmentIntersection"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#collectLegendCollisions",
+      "to": "third_party/archify/scripts/check-render-output.mjs#segmentIntersectsBox"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#segmentIntersectsBox",
+      "to": "third_party/archify/scripts/check-render-output.mjs#segmentsIntersect"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#collectArrows",
+      "to": "third_party/archify/scripts/check-render-output.mjs#straightPathSegments"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#collectLegendBoxes",
+      "to": "third_party/archify/scripts/check-render-output.mjs#stripTags"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#collectDesktopReadability",
+      "to": "third_party/archify/scripts/check-render-output.mjs#stripTags"
+    },
+    {
+      "from": "third_party/archify/scripts/check-render-output.mjs#collectLegendBoxes",
+      "to": "third_party/archify/scripts/check-render-output.mjs#textBox"
+    }
+  ],
+  "removed": []
+}

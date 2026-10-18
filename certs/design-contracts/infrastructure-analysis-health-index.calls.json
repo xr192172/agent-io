@@ -1,0 +1,148 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/infrastructure/analysis/health/index.ts（**fork 自 cache.db，全量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T06:14:45.608Z",
+    "note": "★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls = 设计说\"这些调用必须成立\"",
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/health/index.ts#analyzeHealth",
+      "to": "src/infrastructure/analysis/health/index.ts#classifyLayer"
+    },
+    {
+      "from": "src/infrastructure/analysis/health/index.ts#analyzeHealth",
+      "to": "src/infrastructure/analysis/health/index.ts#classifyLayer"
+    },
+    {
+      "from": "src/infrastructure/analysis/health/index.ts#analyzeHealth",
+      "to": "src/infrastructure/analysis/health/index.ts#classifyLayer"
+    },
+    {
+      "from": "src/infrastructure/analysis/health/index.ts#extractNamedImports",
+      "to": "src/infrastructure/analysis/health/index.ts#collectImportBinds"
+    },
+    {
+      "from": "src/infrastructure/analysis/health/index.ts#importBindingFactsFromRoot",
+      "to": "src/infrastructure/analysis/health/index.ts#collectImportBinds"
+    },
+    {
+      "from": "src/infrastructure/analysis/health/index.ts#analyzeHealth",
+      "to": "src/infrastructure/analysis/health/index.ts#computeScore"
+    },
+    {
+      "from": "src/infrastructure/analysis/health/index.ts#analyzeHealth",
+      "to": "src/infrastructure/analysis/health/index.ts#estimateComplexity"
+    },
+    {
+      "from": "src/infrastructure/analysis/health/index.ts#estimateComplexity",
+      "to": "src/infrastructure/analysis/health/index.ts#estimateComplexityRegex"
+    },
+    {
+      "from": "src/infrastructure/analysis/health/index.ts#estimateComplexity",
+      "to": "src/infrastructure/analysis/health/index.ts#estimateComplexityRegex"
+    },
+    {
+      "from": "src/infrastructure/analysis/health/index.ts#extractNamedImports",
+      "to": "src/infrastructure/analysis/health/index.ts#extractNamedImportsRegex"
+    },
+    {
+      "from": "src/infrastructure/analysis/health/index.ts#unusedImportsInRegex",
+      "to": "src/infrastructure/analysis/health/index.ts#extractNamedImportsRegex"
+    },
+    {
+      "from": "src/infrastructure/analysis/health/index.ts#analyzeHealth",
+      "to": "src/infrastructure/analysis/health/index.ts#findCycles"
+    },
+    {
+      "from": "src/infrastructure/analysis/health/index.ts#unusedImportsIn",
+      "to": "src/infrastructure/analysis/health/index.ts#importBindingFactsFromRoot"
+    },
+    {
+      "from": "src/infrastructure/analysis/health/index.ts#importBindingFactsSync",
+      "to": "src/infrastructure/analysis/health/index.ts#importBindingFactsFromRoot"
+    },
+    {
+      "from": "src/infrastructure/analysis/health/index.ts#collectImportBinds",
+      "to": "src/infrastructure/analysis/health/index.ts#isValidBindName"
+    },
+    {
+      "from": "src/infrastructure/analysis/health/index.ts#collectImportBinds",
+      "to": "src/infrastructure/analysis/health/index.ts#isValidBindName"
+    },
+    {
+      "from": "src/infrastructure/analysis/health/index.ts#collectImportBinds",
+      "to": "src/infrastructure/analysis/health/index.ts#isValidBindName"
+    },
+    {
+      "from": "src/infrastructure/analysis/health/index.ts#analyzeHealth",
+      "to": "src/infrastructure/analysis/health/index.ts#judgesDeadCode"
+    },
+    {
+      "from": "src/infrastructure/analysis/health/index.ts#collectImportBinds",
+      "to": "src/infrastructure/analysis/health/index.ts#nameNodeStart"
+    },
+    {
+      "from": "src/infrastructure/analysis/health/index.ts#analyzeHealth",
+      "to": "src/infrastructure/analysis/health/index.ts#resolveImportFile"
+    },
+    {
+      "from": "src/infrastructure/analysis/health/index.ts#collectImportBinds",
+      "to": "src/infrastructure/analysis/health/index.ts#stripQuotes"
+    },
+    {
+      "from": "src/infrastructure/analysis/health/index.ts#analyzeHealth",
+      "to": "src/infrastructure/analysis/health/index.ts#unreadMark"
+    },
+    {
+      "from": "src/infrastructure/analysis/health/index.ts#analyzeHealth",
+      "to": "src/infrastructure/analysis/health/index.ts#unreadWhy"
+    },
+    {
+      "from": "src/infrastructure/analysis/health/index.ts#analyzeHealth",
+      "to": "src/infrastructure/analysis/health/index.ts#unusedImportsIn"
+    },
+    {
+      "from": "src/infrastructure/analysis/health/index.ts#unusedImportsIn",
+      "to": "src/infrastructure/analysis/health/index.ts#unusedImportsInRegex"
+    },
+    {
+      "from": "src/infrastructure/analysis/health/index.ts#analyzeHealth",
+      "to": "src/infrastructure/authoring/version_upgrade/detect.ts#collectSourceFiles"
+    },
+    {
+      "from": "src/infrastructure/analysis/health/index.ts#unreadWhy",
+      "to": "src/infrastructure/parse/lang_hint.ts#missingLanguageHint"
+    },
+    {
+      "from": "src/infrastructure/analysis/health/index.ts#unreadMark",
+      "to": "src/infrastructure/parse/probe.ts#languagePackageStatus"
+    },
+    {
+      "from": "src/infrastructure/analysis/health/index.ts#analyzeHealth",
+      "to": "src/infrastructure/parse/source_exts.ts#codeSourceExts"
+    },
+    {
+      "from": "src/infrastructure/analysis/health/index.ts#analyzeHealth",
+      "to": "src/infrastructure/parse/source_exts.ts#describeUnmatchedExt"
+    },
+    {
+      "from": "src/infrastructure/analysis/health/index.ts#judgesDeadCode",
+      "to": "src/infrastructure/parse/source_exts.ts#isTestFileName"
+    },
+    {
+      "from": "src/infrastructure/analysis/health/index.ts#analyzeHealth",
+      "to": "src/infrastructure/parse/source_exts.ts#partitionByCodeLang"
+    },
+    {
+      "from": "src/infrastructure/analysis/health/index.ts#analyzeHealth",
+      "to": "src/infrastructure/scan_bounds.ts#boundsSkipFromExcluded"
+    },
+    {
+      "from": "src/infrastructure/analysis/health/index.ts#analyzeHealth",
+      "to": "src/infrastructure/scan_bounds.ts#boundsSkipFromExcluded"
+    }
+  ],
+  "removed": []
+}

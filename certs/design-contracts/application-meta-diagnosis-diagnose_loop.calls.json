@@ -1,0 +1,76 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/application/meta/diagnosis/diagnose_loop.ts（**fork 自 cache.db，全量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T06:14:45.614Z",
+    "note": "★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls = 设计说\"这些调用必须成立\"",
+  "calls": [
+    {
+      "from": "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoop",
+      "to": "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner"
+    },
+    {
+      "from": "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner",
+      "to": "src/infrastructure/analysis/diagnosis/diagnose.ts#formatDiagnoseText"
+    },
+    {
+      "from": "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner",
+      "to": "src/infrastructure/analysis/diagnosis/diagnose.ts#formatDiagnoseText"
+    },
+    {
+      "from": "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner",
+      "to": "src/infrastructure/analysis/diagnosis/diagnose.ts#runDiagnosis"
+    },
+    {
+      "from": "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner",
+      "to": "src/infrastructure/analysis/diagnosis/repair.ts#allowedPatchFiles"
+    },
+    {
+      "from": "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner",
+      "to": "src/infrastructure/analysis/diagnosis/repair.ts#applyPatches"
+    },
+    {
+      "from": "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner",
+      "to": "src/infrastructure/analysis/diagnosis/repair.ts#formatPatchDiff"
+    },
+    {
+      "from": "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner",
+      "to": "src/infrastructure/analysis/diagnosis/repair.ts#generatePatch"
+    },
+    {
+      "from": "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner",
+      "to": "src/infrastructure/analysis/diagnosis/repair.ts#revertPatches"
+    },
+    {
+      "from": "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner",
+      "to": "src/infrastructure/analysis/diagnosis/repair.ts#revertPatches"
+    },
+    {
+      "from": "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner",
+      "to": "src/infrastructure/analysis/diagnosis/verifier.ts#detectKind"
+    },
+    {
+      "from": "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner",
+      "to": "src/infrastructure/git.ts#gitRestoreFiles"
+    },
+    {
+      "from": "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner",
+      "to": "src/infrastructure/git.ts#gitRestoreFiles"
+    },
+    {
+      "from": "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner",
+      "to": "src/infrastructure/graph/import_project.ts#walkFiles"
+    },
+    {
+      "from": "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner",
+      "to": "src/infrastructure/index/db.ts#getProjectCacheDb"
+    },
+    {
+      "from": "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner",
+      "to": "src/infrastructure/index/symbols.ts#syncProject"
+    }
+  ],
+  "removed": []
+}

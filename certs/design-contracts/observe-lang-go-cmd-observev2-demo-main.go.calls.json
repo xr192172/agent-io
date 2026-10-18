@@ -1,0 +1,88 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— observe-lang-go/cmd/observev2-demo/main.go（**fork 自 cache.db，全量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T06:14:45.599Z",
+    "note": "★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls = 设计说\"这些调用必须成立\"",
+  "calls": [
+    {
+      "from": "observe-lang-go/cmd/observev2-demo/main.go#placeOrder",
+      "to": "observe-lang-go/cmd/observev2-demo/main.go#chargePayment"
+    },
+    {
+      "from": "observe-lang-go/cmd/observev2-demo/main.go#report",
+      "to": "observe-lang-go/cmd/observev2-demo/main.go#countIncidentsByProbe"
+    },
+    {
+      "from": "observe-lang-go/cmd/observev2-demo/main.go#main",
+      "to": "observe-lang-go/cmd/observev2-demo/main.go#heapAllocMB"
+    },
+    {
+      "from": "observe-lang-go/cmd/observev2-demo/main.go#main",
+      "to": "observe-lang-go/cmd/observev2-demo/main.go#heapAllocMB"
+    },
+    {
+      "from": "observe-lang-go/cmd/observev2-demo/main.go#report",
+      "to": "observe-lang-go/cmd/observev2-demo/main.go#listIncidents"
+    },
+    {
+      "from": "observe-lang-go/cmd/observev2-demo/main.go#report",
+      "to": "observe-lang-go/cmd/observev2-demo/main.go#pass"
+    },
+    {
+      "from": "observe-lang-go/cmd/observev2-demo/main.go#report",
+      "to": "observe-lang-go/cmd/observev2-demo/main.go#pass"
+    },
+    {
+      "from": "observe-lang-go/cmd/observev2-demo/main.go#report",
+      "to": "observe-lang-go/cmd/observev2-demo/main.go#pass"
+    },
+    {
+      "from": "observe-lang-go/cmd/observev2-demo/main.go#report",
+      "to": "observe-lang-go/cmd/observev2-demo/main.go#pass"
+    },
+    {
+      "from": "observe-lang-go/cmd/observev2-demo/main.go#runChain",
+      "to": "observe-lang-go/cmd/observev2-demo/main.go#placeOrder"
+    },
+    {
+      "from": "observe-lang-go/cmd/observev2-demo/main.go#report",
+      "to": "observe-lang-go/cmd/observev2-demo/main.go#previewIncident"
+    },
+    {
+      "from": "observe-lang-go/cmd/observev2-demo/main.go#main",
+      "to": "observe-lang-go/cmd/observev2-demo/main.go#report"
+    },
+    {
+      "from": "observe-lang-go/cmd/observev2-demo/main.go#chargePayment",
+      "to": "observe-lang-go/cmd/observev2-demo/main.go#reserveInventory"
+    },
+    {
+      "from": "observe-lang-go/cmd/observev2-demo/main.go#main",
+      "to": "observe-lang-go/cmd/observev2-demo/main.go#runChain"
+    },
+    {
+      "from": "observe-lang-go/cmd/observev2-demo/main.go#main",
+      "to": "observe-lang-go/cmd/observev2-demo/main.go#runChain"
+    },
+    {
+      "from": "observe-lang-go/cmd/observev2-demo/main.go#report",
+      "to": "observe-lang-go/cmd/observev2-demo/main.go#tiered"
+    },
+    {
+      "from": "observe-lang-go/cmd/observev2-demo/main.go#report",
+      "to": "observe-lang-go/cmd/observev2-demo/main.go#tiered"
+    },
+    {
+      "from": "observe-lang-go/cmd/observev2-demo/main.go#report",
+      "to": "observe-lang-go/cmd/observev2-demo/main.go#tiered"
+    },
+    {
+      "from": "observe-lang-go/cmd/observev2-demo/main.go#report",
+      "to": "observe-lang-go/cmd/observev2-demo/main.go#verifyChain"
+    }
+  ],
+  "removed": []
+}

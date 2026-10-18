@@ -1,0 +1,40 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— observe-lang-java/observe/probe/Camprobe.java（**fork 自 cache.db，全量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T06:14:45.621Z",
+    "note": "★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls = 设计说\"这些调用必须成立\"",
+  "calls": [
+    {
+      "from": "observe-lang-java/observe/probe/Camprobe.java#Camprobe.capture",
+      "to": "observe-lang-java/observe/probe/Camprobe.java#Camprobe.Sink.emit"
+    },
+    {
+      "from": "observe-lang-java/observe/probe/Camprobe.java#Camprobe.JsonlSink.emit",
+      "to": "observe-lang-java/observe/probe/Camprobe.java#Camprobe.q"
+    },
+    {
+      "from": "observe-lang-java/observe/probe/Camprobe.java#Camprobe.JsonlSink.emit",
+      "to": "observe-lang-java/observe/probe/Camprobe.java#Camprobe.q"
+    },
+    {
+      "from": "observe-lang-java/observe/probe/Camprobe.java#Camprobe.JsonlSink.emit",
+      "to": "observe-lang-java/observe/probe/Camprobe.java#Camprobe.q"
+    },
+    {
+      "from": "observe-lang-java/observe/probe/Camprobe.java#Camprobe.v",
+      "to": "observe-lang-java/observe/probe/Camprobe.java#Camprobe.q"
+    },
+    {
+      "from": "observe-lang-java/observe/probe/Camprobe.java#Camprobe.capture",
+      "to": "observe-lang-java/observe/probe/Camprobe.java#Camprobe.reportProbeError"
+    },
+    {
+      "from": "observe-lang-java/observe/probe/Camprobe.java#Camprobe.JsonlSink.emit",
+      "to": "observe-lang-java/observe/probe/Camprobe.java#Camprobe.v"
+    }
+  ],
+  "removed": []
+}

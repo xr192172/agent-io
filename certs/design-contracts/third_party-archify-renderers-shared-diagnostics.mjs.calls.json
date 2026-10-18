@@ -1,0 +1,56 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— third_party/archify/renderers/shared/diagnostics.mjs（**fork 自 cache.db，全量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T06:14:45.583Z",
+    "note": "★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls = 设计说\"这些调用必须成立\"",
+  "calls": [
+    {
+      "from": "third_party/archify/renderers/shared/diagnostics.mjs#rendererFailure",
+      "to": "third_party/archify/renderers/shared/diagnostics.mjs#fallbackDiagnostic"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/diagnostics.mjs#recordDiagnostic",
+      "to": "third_party/archify/renderers/shared/diagnostics.mjs#normalizedDiagnostic"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/diagnostics.mjs#throwDiagnosticProblems",
+      "to": "third_party/archify/renderers/shared/diagnostics.mjs#normalizedDiagnostic"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/diagnostics.mjs#fallbackDiagnostic",
+      "to": "third_party/archify/renderers/shared/diagnostics.mjs#normalizedDiagnostic"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/diagnostics.mjs#fallbackDiagnostic",
+      "to": "third_party/archify/renderers/shared/diagnostics.mjs#normalizedDiagnostic"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/diagnostics.mjs#fallbackDiagnostic",
+      "to": "third_party/archify/renderers/shared/diagnostics.mjs#normalizedDiagnostic"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/diagnostics.mjs#normalizedDiagnostic",
+      "to": "third_party/archify/renderers/shared/diagnostics.mjs#plainObject"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/diagnostics.mjs#normalizedDiagnostic",
+      "to": "third_party/archify/renderers/shared/diagnostics.mjs#plainObject"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/diagnostics.mjs#throwDiagnosticError",
+      "to": "third_party/archify/renderers/shared/diagnostics.mjs#recordDiagnostic"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/diagnostics.mjs#installRendererDiagnosticBoundary",
+      "to": "third_party/archify/renderers/shared/diagnostics.mjs#rendererFailure"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/diagnostics.mjs#throwDiagnosticProblems",
+      "to": "third_party/archify/renderers/shared/diagnostics.mjs#throwDiagnosticError"
+    }
+  ],
+  "removed": []
+}

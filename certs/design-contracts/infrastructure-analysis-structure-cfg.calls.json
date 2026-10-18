@@ -1,0 +1,248 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/infrastructure/analysis/structure/cfg.ts（**fork 自 cache.db，全量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T06:14:45.588Z",
+    "note": "★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls = 设计说\"这些调用必须成立\"",
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#addNode"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#addNode"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#addNode"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#addNode"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#addNode"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#addNode"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#addNode"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#addNode"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#addNode"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#addNode"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#addNode"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#addNode"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#extractFunctionCfg",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#addNode"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#extractFunctionCfg",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#addNode"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#buildSeq"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#buildSeq"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#buildSeq"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#buildSeq"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#buildSeq"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#buildSeq"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#extractFunctionCfg",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#buildSeq"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#condText"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#consequenceOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#elseParts"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#findFuncNode",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#findFuncNode"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#extractFunctionCfg",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#findFuncNode"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#condText",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#headText"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#headText"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#stmtsOf",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#isNamedNode"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#unwrapElse",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#isNamedNode"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#link"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#link"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#link"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#link"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#link"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#link"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#link"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#link"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#link"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#extractFunctionCfg",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#link"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#summarize",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#oneLine"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#headText",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#oneLine"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#condText",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#oneLine"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#oneLine"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#oneLine"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#oneLine"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#oneLine"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#unwrapElse",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#stmtsOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#unwrapElse",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#stmtsOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#stmtsOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#stmtsOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#stmtsOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#stmtsOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#stmtsOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#stmtsOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#extractFunctionCfg",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#stmtsOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#summarize"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#unwrapElse"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#extractFunctionCfg",
+      "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
+    }
+  ],
+  "removed": []
+}

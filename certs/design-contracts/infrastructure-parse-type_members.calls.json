@@ -1,0 +1,40 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/infrastructure/parse/type_members.ts（**fork 自 cache.db，全量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T06:14:45.611Z",
+    "note": "★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls = 设计说\"这些调用必须成立\"",
+  "calls": [
+    {
+      "from": "src/infrastructure/parse/type_members.ts#typeDeclFromSignature",
+      "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
+    },
+    {
+      "from": "src/infrastructure/parse/type_members.ts#typeDeclFromSignature",
+      "to": "src/infrastructure/parse/type_members.ts#declNameOf"
+    },
+    {
+      "from": "src/infrastructure/parse/type_members.ts#typeDeclFromSignature",
+      "to": "src/infrastructure/parse/type_members.ts#firstTypeDecl"
+    },
+    {
+      "from": "src/infrastructure/parse/type_members.ts#typeMembersOf",
+      "to": "src/infrastructure/parse/type_members.ts#hasDirectToken"
+    },
+    {
+      "from": "src/infrastructure/parse/type_members.ts#typeMembersOf",
+      "to": "src/infrastructure/parse/type_members.ts#memberNameOf"
+    },
+    {
+      "from": "src/infrastructure/parse/type_members.ts#memberNamesOf",
+      "to": "src/infrastructure/parse/type_members.ts#typeMembersOf"
+    },
+    {
+      "from": "src/infrastructure/parse/type_members.ts#typeDeclFromSignature",
+      "to": "src/infrastructure/parse/type_members.ts#typeMembersOf"
+    }
+  ],
+  "removed": []
+}

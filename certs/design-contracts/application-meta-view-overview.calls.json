@@ -1,0 +1,144 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/application/meta/view/overview.ts（**fork 自 cache.db，全量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T06:14:45.617Z",
+    "note": "★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls = 设计说\"这些调用必须成立\"",
+  "calls": [
+    {
+      "from": "src/application/meta/view/overview.ts#getOverview",
+      "to": "src/application/meta/view/derive_mind_map.ts#deriveMindMap"
+    },
+    {
+      "from": "src/application/meta/view/overview.ts#getOverview",
+      "to": "src/application/meta/view/derive_mind_map.ts#deriveMindMap"
+    },
+    {
+      "from": "src/application/meta/view/overview.ts#getOverview",
+      "to": "src/application/meta/view/derive_mind_map.ts#deriveMindMap"
+    },
+    {
+      "from": "src/application/meta/view/overview.ts#getOverview",
+      "to": "src/application/meta/view/derive_mind_map.ts#getMindMapFile"
+    },
+    {
+      "from": "src/application/meta/view/overview.ts#getOverview",
+      "to": "src/application/meta/view/derive_mind_map.ts#getMindMapFile"
+    },
+    {
+      "from": "src/application/meta/view/overview.ts#llmSummary",
+      "to": "src/application/meta/view/explain_gen.ts#extractJsonObject"
+    },
+    {
+      "from": "src/application/meta/view/overview.ts#llmSharedDesc",
+      "to": "src/application/meta/view/explain_gen.ts#extractJsonObject"
+    },
+    {
+      "from": "src/application/meta/view/overview.ts#getOverview",
+      "to": "src/application/meta/view/overview.ts#enrichSharedDesc"
+    },
+    {
+      "from": "src/application/meta/view/overview.ts#getOverview",
+      "to": "src/application/meta/view/overview.ts#isFlatMindMap"
+    },
+    {
+      "from": "src/application/meta/view/overview.ts#enrichSharedDesc",
+      "to": "src/application/meta/view/overview.ts#llmSharedDesc"
+    },
+    {
+      "from": "src/application/meta/view/overview.ts#getOverview",
+      "to": "src/application/meta/view/overview.ts#llmSummary"
+    },
+    {
+      "from": "src/application/meta/view/overview.ts#readCachedSummary",
+      "to": "src/application/meta/view/overview.ts#overviewFile"
+    },
+    {
+      "from": "src/application/meta/view/overview.ts#writeCachedSummary",
+      "to": "src/application/meta/view/overview.ts#overviewFile"
+    },
+    {
+      "from": "src/application/meta/view/overview.ts#getOverview",
+      "to": "src/application/meta/view/overview.ts#readCachedSummary"
+    },
+    {
+      "from": "src/application/meta/view/overview.ts#getOverview",
+      "to": "src/application/meta/view/overview.ts#ruleSummary"
+    },
+    {
+      "from": "src/application/meta/view/overview.ts#enrichSharedDesc",
+      "to": "src/application/meta/view/overview.ts#sharedDescCacheFile"
+    },
+    {
+      "from": "src/application/meta/view/overview.ts#enrichSharedDesc",
+      "to": "src/application/meta/view/overview.ts#sharedDescCacheFile"
+    },
+    {
+      "from": "src/application/meta/view/overview.ts#enrichSharedDesc",
+      "to": "src/application/meta/view/overview.ts#sharedDescCacheFile"
+    },
+    {
+      "from": "src/application/meta/view/overview.ts#getOverview",
+      "to": "src/application/meta/view/overview.ts#tryDeriveFeatureTree"
+    },
+    {
+      "from": "src/application/meta/view/overview.ts#getOverview",
+      "to": "src/application/meta/view/overview.ts#writeCachedSummary"
+    },
+    {
+      "from": "src/application/meta/view/overview.ts#tryDeriveFeatureTree",
+      "to": "src/infrastructure/analysis/structure/derive_feature_tree.ts#deriveFeatureTree"
+    },
+    {
+      "from": "src/application/meta/view/overview.ts#tryDeriveFeatureTree",
+      "to": "src/infrastructure/index/db.ts#findCacheDb"
+    },
+    {
+      "from": "src/application/meta/view/overview.ts#tryDeriveFeatureTree",
+      "to": "src/infrastructure/index/db.ts#openDb"
+    },
+    {
+      "from": "src/application/meta/view/overview.ts#llmSharedDesc",
+      "to": "src/infrastructure/index/file_facts.ts#fileFacts"
+    },
+    {
+      "from": "src/application/meta/view/overview.ts#getOverview",
+      "to": "src/infrastructure/index/guided_tour.ts#guidedTour"
+    },
+    {
+      "from": "src/application/meta/view/overview.ts#llmSummary",
+      "to": "src/infrastructure/llm_gateway.ts#chatViaGateway"
+    },
+    {
+      "from": "src/application/meta/view/overview.ts#llmSharedDesc",
+      "to": "src/infrastructure/llm_gateway.ts#chatViaGateway"
+    },
+    {
+      "from": "src/application/meta/view/overview.ts#llmSummary",
+      "to": "src/infrastructure/llm_gateway.ts#hasEnabledProvider"
+    },
+    {
+      "from": "src/application/meta/view/overview.ts#llmSharedDesc",
+      "to": "src/infrastructure/llm_gateway.ts#hasEnabledProvider"
+    },
+    {
+      "from": "src/application/meta/view/overview.ts#getOverview",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/application/meta/view/overview.ts#getOverview",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/application/meta/view/overview.ts#overviewFile",
+      "to": "src/infrastructure/storage.ts#getStorageRoot"
+    },
+    {
+      "from": "src/application/meta/view/overview.ts#sharedDescCacheFile",
+      "to": "src/infrastructure/storage.ts#getStorageRoot"
+    }
+  ],
+  "removed": []
+}

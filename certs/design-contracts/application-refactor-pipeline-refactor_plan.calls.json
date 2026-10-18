@@ -1,0 +1,72 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/application/refactor/pipeline/refactor_plan.ts（**fork 自 cache.db，全量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T06:14:45.593Z",
+    "note": "★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls = 设计说\"这些调用必须成立\"",
+  "calls": [
+    {
+      "from": "src/application/refactor/pipeline/refactor_plan.ts#applyRefactorPlan",
+      "to": "src/application/refactor/edit/edit_code.ts#editCode"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_plan.ts#buildRefactorPlan",
+      "to": "src/application/refactor/edit/edit_code.ts#planReplaceText"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_plan.ts#applyRefactorPlan",
+      "to": "src/application/refactor/edit/edit_code.ts#planReplaceText"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_plan.ts#buildRefactorPlan",
+      "to": "src/application/refactor/pipeline/refactor_plan.ts#computePlanId"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_plan.ts#applyRefactorPlan",
+      "to": "src/application/refactor/pipeline/refactor_plan.ts#computePlanId"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_plan.ts#computePlanId",
+      "to": "src/application/refactor/pipeline/refactor_plan.ts#fingerprint"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_plan.ts#buildRefactorPlan",
+      "to": "src/application/refactor/pipeline/refactor_plan.ts#fingerprint"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_plan.ts#buildRefactorPlan",
+      "to": "src/application/refactor/pipeline/refactor_plan.ts#fingerprint"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_plan.ts#applyRefactorPlan",
+      "to": "src/application/refactor/pipeline/refactor_plan.ts#fingerprint"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_plan.ts#buildRefactorPlan",
+      "to": "src/application/refactor/pipeline/refactor_plan.ts#relOf"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_plan.ts#buildRefactorPlan",
+      "to": "src/application/refactor/pipeline/refactor_plan.ts#relOf"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_plan.ts#applyRefactorPlan",
+      "to": "src/infrastructure/parse/fuzzy_match.ts#locateReplaceText"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_plan.ts#applyRefactorPlan",
+      "to": "src/infrastructure/parse/fuzzy_match.ts#locateReplaceText"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_plan.ts#buildRefactorPlan",
+      "to": "src/infrastructure/text/line_utils.ts#detectEol"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_plan.ts#applyRefactorPlan",
+      "to": "src/infrastructure/text/line_utils.ts#detectEol"
+    }
+  ],
+  "removed": []
+}

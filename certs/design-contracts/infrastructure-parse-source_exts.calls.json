@@ -1,0 +1,80 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/infrastructure/parse/source_exts.ts（**fork 自 cache.db，全量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T06:14:45.620Z",
+    "note": "★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls = 设计说\"这些调用必须成立\"",
+  "calls": [
+    {
+      "from": "src/infrastructure/parse/source_exts.ts#codeSourceExtSet",
+      "to": "src/infrastructure/parse/kernel.ts#listSupportedExtensions"
+    },
+    {
+      "from": "src/infrastructure/parse/source_exts.ts#describeUnmatchedExt",
+      "to": "src/infrastructure/parse/languages.ts#findLanguageByExt"
+    },
+    {
+      "from": "src/infrastructure/parse/source_exts.ts#describeUnmatchedExt",
+      "to": "src/infrastructure/parse/languages.ts#languageModuleSpec"
+    },
+    {
+      "from": "src/infrastructure/parse/source_exts.ts#isTsExt",
+      "to": "src/infrastructure/parse/source_exts.ts#SkipDirSetImpl.has"
+    },
+    {
+      "from": "src/infrastructure/parse/source_exts.ts#isTsJsExt",
+      "to": "src/infrastructure/parse/source_exts.ts#SkipDirSetImpl.has"
+    },
+    {
+      "from": "src/infrastructure/parse/source_exts.ts#isSourceExt",
+      "to": "src/infrastructure/parse/source_exts.ts#SkipDirSetImpl.has"
+    },
+    {
+      "from": "src/infrastructure/parse/source_exts.ts#isNodeRunnableExt",
+      "to": "src/infrastructure/parse/source_exts.ts#SkipDirSetImpl.has"
+    },
+    {
+      "from": "src/infrastructure/parse/source_exts.ts#isCodeLangExt",
+      "to": "src/infrastructure/parse/source_exts.ts#SkipDirSetImpl.has"
+    },
+    {
+      "from": "src/infrastructure/parse/source_exts.ts#shouldSkipDir",
+      "to": "src/infrastructure/parse/source_exts.ts#SkipDirSetImpl.has"
+    },
+    {
+      "from": "src/infrastructure/parse/source_exts.ts#shouldSkipDir",
+      "to": "src/infrastructure/parse/source_exts.ts#SkipDirSetImpl.has"
+    },
+    {
+      "from": "src/infrastructure/parse/source_exts.ts#codeSourceExtSet",
+      "to": "src/infrastructure/parse/source_exts.ts#codeSourceExts"
+    },
+    {
+      "from": "src/infrastructure/parse/source_exts.ts#excludedNonCodeExts",
+      "to": "src/infrastructure/parse/source_exts.ts#isCodeLangExt"
+    },
+    {
+      "from": "src/infrastructure/parse/source_exts.ts#partitionByCodeLang",
+      "to": "src/infrastructure/parse/source_exts.ts#isCodeLangExt"
+    },
+    {
+      "from": "src/infrastructure/parse/source_exts.ts#isIndexSkippedFileName",
+      "to": "src/infrastructure/parse/source_exts.ts#isNoiseFileName"
+    },
+    {
+      "from": "src/infrastructure/parse/source_exts.ts#isIndexSkippedFileName",
+      "to": "src/infrastructure/parse/source_exts.ts#isTestFileName"
+    },
+    {
+      "from": "src/infrastructure/parse/source_exts.ts#isUnderSkippedDir",
+      "to": "src/infrastructure/parse/source_exts.ts#shouldSkipDir"
+    },
+    {
+      "from": "src/infrastructure/parse/source_exts.ts#SkipDirSetImpl.has",
+      "to": "src/infrastructure/parse/source_exts.ts#shouldSkipDir"
+    }
+  ],
+  "removed": []
+}

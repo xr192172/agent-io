@@ -1,0 +1,92 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/application/design/lifecycle/snapshot.ts（**fork 自 cache.db，全量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T06:14:45.621Z",
+    "note": "★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls = 设计说\"这些调用必须成立\"",
+  "calls": [
+    {
+      "from": "src/application/design/lifecycle/snapshot.ts#latestSnapshotGeometrySignature",
+      "to": "src/application/design/lifecycle/snapshot.ts#geometrySignature"
+    },
+    {
+      "from": "src/application/design/lifecycle/snapshot.ts#saveAutoSnapshot",
+      "to": "src/application/design/lifecycle/snapshot.ts#geometrySignature"
+    },
+    {
+      "from": "src/application/design/lifecycle/snapshot.ts#saveSnapshot",
+      "to": "src/application/design/lifecycle/snapshot.ts#getSnapshotsDir"
+    },
+    {
+      "from": "src/application/design/lifecycle/snapshot.ts#latestSnapshotGeometrySignature",
+      "to": "src/application/design/lifecycle/snapshot.ts#getSnapshotsDir"
+    },
+    {
+      "from": "src/application/design/lifecycle/snapshot.ts#pruneSnapshots",
+      "to": "src/application/design/lifecycle/snapshot.ts#getSnapshotsDir"
+    },
+    {
+      "from": "src/application/design/lifecycle/snapshot.ts#listSnapshots",
+      "to": "src/application/design/lifecycle/snapshot.ts#getSnapshotsDir"
+    },
+    {
+      "from": "src/application/design/lifecycle/snapshot.ts#rollbackSnapshot",
+      "to": "src/application/design/lifecycle/snapshot.ts#getSnapshotsDir"
+    },
+    {
+      "from": "src/application/design/lifecycle/snapshot.ts#deleteSnapshot",
+      "to": "src/application/design/lifecycle/snapshot.ts#getSnapshotsDir"
+    },
+    {
+      "from": "src/application/design/lifecycle/snapshot.ts#saveAutoSnapshot",
+      "to": "src/application/design/lifecycle/snapshot.ts#latestSnapshotGeometrySignature"
+    },
+    {
+      "from": "src/application/design/lifecycle/snapshot.ts#saveAutoSnapshot",
+      "to": "src/application/design/lifecycle/snapshot.ts#saveSnapshot"
+    },
+    {
+      "from": "src/application/design/lifecycle/snapshot.ts#saveSnapshot",
+      "to": "src/application/design/lifecycle/snapshot.ts#snapshotFileName"
+    },
+    {
+      "from": "src/application/design/lifecycle/snapshot.ts#rollbackSnapshot",
+      "to": "src/application/design/lifecycle/snapshot.ts#snapshotFileName"
+    },
+    {
+      "from": "src/application/design/lifecycle/snapshot.ts#saveSnapshot",
+      "to": "src/domain/geometry.ts#resolveDiagramStatus"
+    },
+    {
+      "from": "src/application/design/lifecycle/snapshot.ts#listSnapshots",
+      "to": "src/domain/geometry.ts#resolveDiagramStatus"
+    },
+    {
+      "from": "src/application/design/lifecycle/snapshot.ts#rollbackSnapshot",
+      "to": "src/domain/geometry.ts#resolveDiagramStatus"
+    },
+    {
+      "from": "src/application/design/lifecycle/snapshot.ts#saveSnapshot",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/application/design/lifecycle/snapshot.ts#saveAutoSnapshot",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/application/design/lifecycle/snapshot.ts#rollbackSnapshot",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/application/design/lifecycle/snapshot.ts#getSnapshotsDir",
+      "to": "src/infrastructure/storage.ts#getStorageRoot"
+    },
+    {
+      "from": "src/application/design/lifecycle/snapshot.ts#rollbackSnapshot",
+      "to": "src/infrastructure/storage.ts#saveDSL"
+    }
+  ],
+  "removed": []
+}

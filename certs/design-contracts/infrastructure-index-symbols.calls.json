@@ -1,0 +1,128 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/infrastructure/index/symbols.ts（**fork 自 cache.db，全量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T06:14:45.618Z",
+    "note": "★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls = 设计说\"这些调用必须成立\"",
+  "calls": [
+    {
+      "from": "src/infrastructure/index/symbols.ts#applyParsedToIndex",
+      "to": "src/infrastructure/index/db.ts#inTransaction"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#reopenRefsTo",
+      "to": "src/infrastructure/index/db.ts#inTransaction"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#resolveCrossFileCalls",
+      "to": "src/infrastructure/index/db.ts#inTransaction"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#pruneDeletedFiles",
+      "to": "src/infrastructure/index/db.ts#inTransaction"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#syncFile",
+      "to": "src/infrastructure/index/symbols.ts#applyParsedToIndex"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#syncFileSync",
+      "to": "src/infrastructure/index/symbols.ts#applyParsedToIndex"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#syncFilePrelude",
+      "to": "src/infrastructure/index/symbols.ts#contentHash"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#applyParsedToIndex",
+      "to": "src/infrastructure/index/symbols.ts#countLinesOf"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#resolveCrossFileCalls",
+      "to": "src/infrastructure/index/symbols.ts#findCrossFileTarget"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#resolveCrossFileCalls",
+      "to": "src/infrastructure/index/symbols.ts#findCrossFileTarget"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#applyParsedToIndex",
+      "to": "src/infrastructure/index/symbols.ts#hashSetsOf"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#applyParsedToIndex",
+      "to": "src/infrastructure/index/symbols.ts#mergeSymbolStatus"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#removeFile",
+      "to": "src/infrastructure/index/symbols.ts#removeFileRel"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#pruneDeletedFiles",
+      "to": "src/infrastructure/index/symbols.ts#removeFileRel"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#syncProject",
+      "to": "src/infrastructure/index/symbols.ts#resolveCrossFileCalls"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#applyParsedToIndex",
+      "to": "src/infrastructure/index/symbols.ts#resolveImportTarget"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#findCrossFileTarget",
+      "to": "src/infrastructure/index/symbols.ts#resolveImportTarget"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#applyParsedToIndex",
+      "to": "src/infrastructure/index/symbols.ts#symbolSpanHash"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#applyParsedToIndex",
+      "to": "src/infrastructure/index/symbols.ts#symbolSpanHash"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#syncProject",
+      "to": "src/infrastructure/index/symbols.ts#syncFile"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#syncFile",
+      "to": "src/infrastructure/index/symbols.ts#syncFilePrelude"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#syncFileSync",
+      "to": "src/infrastructure/index/symbols.ts#syncFilePrelude"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#toRelPath",
+      "to": "src/infrastructure/index/symbols.ts#toIndexKey"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#syncFilePrelude",
+      "to": "src/infrastructure/index/symbols.ts#toRelPath"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#removeFile",
+      "to": "src/infrastructure/index/symbols.ts#toRelPath"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#pruneDeletedFiles",
+      "to": "src/infrastructure/index/symbols.ts#toRelPath"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#pruneDeletedFiles",
+      "to": "src/infrastructure/parse/source_exts.ts#codeSourceExtSet"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#syncFile",
+      "to": "src/infrastructure/project_view.ts#invalidateProjectView"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#syncFileSync",
+      "to": "src/infrastructure/project_view.ts#invalidateProjectView"
+    }
+  ],
+  "removed": []
+}

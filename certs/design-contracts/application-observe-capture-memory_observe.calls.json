@@ -1,0 +1,124 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/application/observe/capture/memory_observe.ts（**fork 自 cache.db，全量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T06:14:45.591Z",
+    "note": "★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls = 设计说\"这些调用必须成立\"",
+  "calls": [
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#fmt",
+      "to": "src/application/observe/capture/memory_observe.ts#MB"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#memoryObserveHandler",
+      "to": "src/application/observe/capture/memory_observe.ts#MB"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#memoryObserveHandler",
+      "to": "src/application/observe/capture/memory_observe.ts#MB"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#memoryObserveHandler",
+      "to": "src/application/observe/capture/memory_observe.ts#MB"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#memoryObserveHandler",
+      "to": "src/application/observe/capture/memory_observe.ts#MB"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#memoryObserveHandler",
+      "to": "src/application/observe/capture/memory_observe.ts#MB"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#memoryObserveHandler",
+      "to": "src/application/observe/capture/memory_observe.ts#MB"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#memoryObserveHandler",
+      "to": "src/application/observe/capture/memory_observe.ts#MB"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#sampleRemote",
+      "to": "src/application/observe/capture/memory_observe.ts#connectCdp"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#memoryObserveHandler",
+      "to": "src/application/observe/capture/memory_observe.ts#connectCdp"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#sample",
+      "to": "src/application/observe/capture/memory_observe.ts#evalJson"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#memoryObserveHandler",
+      "to": "src/application/observe/capture/memory_observe.ts#evalJson"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#memoryObserveHandler",
+      "to": "src/application/observe/capture/memory_observe.ts#fmt"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#memoryObserveHandler",
+      "to": "src/application/observe/capture/memory_observe.ts#fmt"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#memoryObserveHandler",
+      "to": "src/application/observe/capture/memory_observe.ts#fmt"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#memoryObserveHandler",
+      "to": "src/application/observe/capture/memory_observe.ts#fmt"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#memoryObserveHandler",
+      "to": "src/application/observe/capture/memory_observe.ts#fmt"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#connectCdp",
+      "to": "src/application/observe/capture/memory_observe.ts#getWsCtor"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#getWsCtor",
+      "to": "src/application/observe/capture/memory_observe.ts#nodeRequire"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#memoryObserveHandler",
+      "to": "src/application/observe/capture/memory_observe.ts#resolvePort"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#sampleRemote",
+      "to": "src/application/observe/capture/memory_observe.ts#sample"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#memoryObserveHandler",
+      "to": "src/application/observe/capture/memory_observe.ts#sample"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#memoryObserveHandler",
+      "to": "src/application/observe/capture/memory_observe.ts#sample"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#memoryObserveHandler",
+      "to": "src/application/observe/capture/memory_observe.ts#sample"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#memoryObserveHandler",
+      "to": "src/application/observe/capture/memory_observe.ts#sample"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#memoryObserveHandler",
+      "to": "src/application/observe/capture/memory_observe.ts#sample"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#memoryObserveHandler",
+      "to": "src/application/observe/capture/memory_observe.ts#sample"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#memoryObserveHandler",
+      "to": "src/application/observe/capture/memory_observe.ts#snapshotToFile"
+    }
+  ],
+  "removed": []
+}

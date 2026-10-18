@@ -1,0 +1,88 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/infrastructure/analysis/structure/monolith.ts（**fork 自 cache.db，全量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T06:14:45.621Z",
+    "note": "★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls = 设计说\"这些调用必须成立\"",
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/structure/monolith.ts#checkMonolith",
+      "to": "src/infrastructure/analysis/health/health_cache.ts#fileFingerprint"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/monolith.ts#checkMonolith",
+      "to": "src/infrastructure/analysis/health/health_cache.ts#healthKey"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/monolith.ts#checkMonolith",
+      "to": "src/infrastructure/analysis/health/health_cache.ts#readHealthCache"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/monolith.ts#checkMonolith",
+      "to": "src/infrastructure/analysis/health/health_cache.ts#writeHealthCache"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/monolith.ts#checkMonolith",
+      "to": "src/infrastructure/analysis/structure/monolith.ts#analyzeFileContent"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/monolith.ts#analyzeFileContent",
+      "to": "src/infrastructure/analysis/structure/monolith.ts#assessLines"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/monolith.ts#analyzeFileContent",
+      "to": "src/infrastructure/analysis/structure/monolith.ts#buildDeclUnits"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/monolith.ts#analyzeFileContent",
+      "to": "src/infrastructure/analysis/structure/monolith.ts#buildReferenceGraph"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/monolith.ts#checkMonolith",
+      "to": "src/infrastructure/analysis/structure/monolith.ts#buildSplitPreviewDsl"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/monolith.ts#analyzeFileContent",
+      "to": "src/infrastructure/analysis/structure/monolith.ts#countLines"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/monolith.ts#analyzeFileContent",
+      "to": "src/infrastructure/analysis/structure/monolith.ts#louvain"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/monolith.ts#louvain",
+      "to": "src/infrastructure/analysis/structure/monolith.ts#louvainLocalMove"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/monolith.ts#buildSplitPreviewDsl",
+      "to": "src/infrastructure/analysis/structure/monolith.ts#sanitizeId"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/monolith.ts#analyzeFileContent",
+      "to": "src/infrastructure/analysis/structure/monolith.ts#suggestFileName"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/monolith.ts#analyzeFileContent",
+      "to": "src/infrastructure/analysis/structure/monolith.ts#symmetrize"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/monolith.ts#checkMonolith",
+      "to": "src/infrastructure/project_view.ts#getProjectView"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/monolith.ts#checkMonolith",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/monolith.ts#checkMonolith",
+      "to": "src/infrastructure/storage.ts#requireProjectRoot"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/monolith.ts#checkMonolith",
+      "to": "src/infrastructure/storage.ts#saveDSL"
+    }
+  ],
+  "removed": []
+}

@@ -1,0 +1,84 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/infrastructure/analysis/observe/approve_gated.ts（**fork 自 cache.db，全量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T06:14:45.600Z",
+    "note": "★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls = 设计说\"这些调用必须成立\"",
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/observe/approve_gated.ts#approveGated",
+      "to": "src/infrastructure/analysis/observe/approve_gated.ts#freeze"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/approve_gated.ts#approveGated",
+      "to": "src/infrastructure/analysis/observe/approve_gated.ts#freeze"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/approve_gated.ts#approveGated",
+      "to": "src/infrastructure/analysis/observe/approve_gated.ts#freeze"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/approve_gated.ts#approveGated",
+      "to": "src/infrastructure/analysis/observe/approve_gated.ts#freeze"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/approve_gated.ts#approveGated",
+      "to": "src/infrastructure/analysis/observe/decl_review.ts#reviewDeclsWithLLM"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/approve_gated.ts#approveGated",
+      "to": "src/infrastructure/analysis/observe/proposal_store.ts#validateDecls"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/approve_gated.ts#approveGated",
+      "to": "src/infrastructure/analysis/observe/verify_gate.ts#droppedDeclCount"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/approve_gated.ts#approveGated",
+      "to": "src/infrastructure/analysis/observe/verify_gate.ts#finalizeDecls"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/approve_gated.ts#approveGated",
+      "to": "src/infrastructure/analysis/observe/verify_gate.ts#mergeLoopDecls"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/approve_gated.ts#approveGated",
+      "to": "src/infrastructure/analysis/observe/verify_gate.ts#regressionDescribe"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/approve_gated.ts#approveGated",
+      "to": "src/infrastructure/analysis/observe/verify_gate.ts#regressionDescribe"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/approve_gated.ts#approveGated",
+      "to": "src/infrastructure/analysis/observe/verify_gate.ts#regressionDescribe"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/approve_gated.ts#approveGated",
+      "to": "src/infrastructure/analysis/observe/verify_gate.ts#regressionDescribe"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/approve_gated.ts#approveGated",
+      "to": "src/infrastructure/analysis/observe/verify_gate.ts#regressionDescribe"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/approve_gated.ts#approveGated",
+      "to": "src/infrastructure/analysis/observe/verify_gate.ts#regressionEvidence"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/approve_gated.ts#approveGated",
+      "to": "src/infrastructure/analysis/observe/verify_gate.ts#regressionEvidence"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/approve_gated.ts#approveGated",
+      "to": "src/infrastructure/analysis/observe/verify_gate.ts#verifyLLMCoverage"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/approve_gated.ts#approveGated",
+      "to": "src/infrastructure/analysis/observe/verify_gate.ts#verifyRuleRegression"
+    }
+  ],
+  "removed": []
+}

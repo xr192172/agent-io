@@ -1,0 +1,428 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/infrastructure/parse/kernel.ts（**fork 自 cache.db，全量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T06:14:45.622Z",
+    "note": "★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls = 设计说\"这些调用必须成立\"",
+  "calls": [
+    {
+      "from": "src/infrastructure/parse/kernel.ts#traverseAndExtract",
+      "to": "src/infrastructure/parse/kernel.ts#bodyChildren"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#traverseAndExtractCalls",
+      "to": "src/infrastructure/parse/kernel.ts#bodyChildren"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#traverseAndExtract",
+      "to": "src/infrastructure/parse/kernel.ts#buildSignature"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#resolveName",
+      "to": "src/infrastructure/parse/kernel.ts#childIndexOf"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#resolveName",
+      "to": "src/infrastructure/parse/kernel.ts#childIndexOf"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#extractCallsFromBody",
+      "to": "src/infrastructure/parse/kernel.ts#extractCallee"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#extractCallsFromBody",
+      "to": "src/infrastructure/parse/kernel.ts#extractCallsFromBody"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#traverseAndExtractCalls",
+      "to": "src/infrastructure/parse/kernel.ts#extractCallsFromBody"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#traverseAndExtractCalls",
+      "to": "src/infrastructure/parse/kernel.ts#extractCallsFromBody"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#extractImportBindings",
+      "to": "src/infrastructure/parse/kernel.ts#extractImportBindings"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#traverseAndExtractImports",
+      "to": "src/infrastructure/parse/kernel.ts#extractImportBindings"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#extractImportSources",
+      "to": "src/infrastructure/parse/kernel.ts#extractImportSources"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#traverseAndExtractImports",
+      "to": "src/infrastructure/parse/kernel.ts#extractImportSources"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#nameAtNode",
+      "to": "src/infrastructure/parse/kernel.ts#fieldText"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#buildSignature",
+      "to": "src/infrastructure/parse/kernel.ts#fieldText"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#buildSignature",
+      "to": "src/infrastructure/parse/kernel.ts#fieldText"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#buildSignature",
+      "to": "src/infrastructure/parse/kernel.ts#fieldText"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#traverseAndExtract",
+      "to": "src/infrastructure/parse/kernel.ts#fieldText"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#extractImportSources",
+      "to": "src/infrastructure/parse/kernel.ts#fieldText"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#extractImportSources",
+      "to": "src/infrastructure/parse/kernel.ts#fieldText"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#extractImportBindings",
+      "to": "src/infrastructure/parse/kernel.ts#fieldText"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#extractImportSources",
+      "to": "src/infrastructure/parse/kernel.ts#fieldText"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#isSymbolNode",
+      "to": "src/infrastructure/parse/kernel.ts#fieldText"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#symbolKind",
+      "to": "src/infrastructure/parse/kernel.ts#fieldText"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#extractCallee",
+      "to": "src/infrastructure/parse/kernel.ts#firstNamedChild"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#extractCallsFromBody",
+      "to": "src/infrastructure/parse/kernel.ts#isCallNode"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#traverseAndExtract",
+      "to": "src/infrastructure/parse/kernel.ts#isSymbolNode"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#extractCallsFromBody",
+      "to": "src/infrastructure/parse/kernel.ts#isSymbolNode"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#traverseAndExtractCalls",
+      "to": "src/infrastructure/parse/kernel.ts#isSymbolNode"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#traverseAndExtractTypeRefs",
+      "to": "src/infrastructure/parse/kernel.ts#isSymbolNode"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#traverseAndExtractImports",
+      "to": "src/infrastructure/parse/kernel.ts#isTypeOnlyModuleStatement"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#nameAtNode",
+      "to": "src/infrastructure/parse/kernel.ts#isValidIdentifier"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#nameAtNode",
+      "to": "src/infrastructure/parse/kernel.ts#isValidIdentifier"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#resolveName",
+      "to": "src/infrastructure/parse/kernel.ts#isValidIdentifier"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#resolveName",
+      "to": "src/infrastructure/parse/kernel.ts#isValidIdentifier"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#resolveName",
+      "to": "src/infrastructure/parse/kernel.ts#isValidIdentifier"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#traverseAndExtract",
+      "to": "src/infrastructure/parse/kernel.ts#isValidIdentifier"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#extractCallee",
+      "to": "src/infrastructure/parse/kernel.ts#isValidIdentifier"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#traverseAndExtractTypeRefs",
+      "to": "src/infrastructure/parse/kernel.ts#isValidIdentifier"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#extractImportBindings",
+      "to": "src/infrastructure/parse/kernel.ts#lastDotSegment"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#extractImportBindings",
+      "to": "src/infrastructure/parse/kernel.ts#lastDotSegment"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#extractImportBindings",
+      "to": "src/infrastructure/parse/kernel.ts#lastDotSegment"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#extractImportBindings",
+      "to": "src/infrastructure/parse/kernel.ts#lastDotSegment"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#extractImportBindings",
+      "to": "src/infrastructure/parse/kernel.ts#lastDotSegment"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#extractImportBindings",
+      "to": "src/infrastructure/parse/kernel.ts#lastDotSegment"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#nameViaTypes",
+      "to": "src/infrastructure/parse/kernel.ts#nameAtNode"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#resolveName",
+      "to": "src/infrastructure/parse/kernel.ts#nameAtNode"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#resolveName",
+      "to": "src/infrastructure/parse/kernel.ts#nameStep"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#nameAtNode",
+      "to": "src/infrastructure/parse/kernel.ts#nameViaTypes"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#symbolKind",
+      "to": "src/infrastructure/parse/kernel.ts#nodeTypeToKind"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#extractImportSources",
+      "to": "src/infrastructure/parse/kernel.ts#nthNamedChild"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#parseAstRootSync",
+      "to": "src/infrastructure/parse/kernel.ts#parseContent"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#parseAstRoot",
+      "to": "src/infrastructure/parse/kernel.ts#parseContent"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#parseFileFull",
+      "to": "src/infrastructure/parse/kernel.ts#parseContent"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#parseFileFullSync",
+      "to": "src/infrastructure/parse/kernel.ts#parseContent"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#parseFile",
+      "to": "src/infrastructure/parse/kernel.ts#parseFileFull"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#parseContent",
+      "to": "src/infrastructure/parse/kernel.ts#parseViaCallback"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#buildSignature",
+      "to": "src/infrastructure/parse/kernel.ts#resolveName"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#traverseAndExtract",
+      "to": "src/infrastructure/parse/kernel.ts#resolveName"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#traverseAndExtractCalls",
+      "to": "src/infrastructure/parse/kernel.ts#resolveName"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#traverseAndExtractTypeRefs",
+      "to": "src/infrastructure/parse/kernel.ts#resolveName"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#extractImportSources",
+      "to": "src/infrastructure/parse/kernel.ts#splitTopLevel"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#extractImportBindings",
+      "to": "src/infrastructure/parse/kernel.ts#splitTopLevel"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#extractImportBindings",
+      "to": "src/infrastructure/parse/kernel.ts#splitTopLevel"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#buildSignature",
+      "to": "src/infrastructure/parse/kernel.ts#stripParens"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#buildSignature",
+      "to": "src/infrastructure/parse/kernel.ts#stripParens"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#traverseAndExtract",
+      "to": "src/infrastructure/parse/kernel.ts#stripParens"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#extractImportSources",
+      "to": "src/infrastructure/parse/kernel.ts#stripQuotes"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#extractImportSources",
+      "to": "src/infrastructure/parse/kernel.ts#stripQuotes"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#traverseAndExtract",
+      "to": "src/infrastructure/parse/kernel.ts#symbolKind"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#traverseAndExtractCalls",
+      "to": "src/infrastructure/parse/kernel.ts#symbolKind"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#traverseAndExtract",
+      "to": "src/infrastructure/parse/kernel.ts#traverseAndExtract"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#traverseAndExtract",
+      "to": "src/infrastructure/parse/kernel.ts#traverseAndExtract"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#parseFileFull",
+      "to": "src/infrastructure/parse/kernel.ts#traverseAndExtract"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#parseFileFullSync",
+      "to": "src/infrastructure/parse/kernel.ts#traverseAndExtract"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#traverseAndExtractCalls",
+      "to": "src/infrastructure/parse/kernel.ts#traverseAndExtractCalls"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#traverseAndExtractCalls",
+      "to": "src/infrastructure/parse/kernel.ts#traverseAndExtractCalls"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#parseFileFull",
+      "to": "src/infrastructure/parse/kernel.ts#traverseAndExtractCalls"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#parseFileFullSync",
+      "to": "src/infrastructure/parse/kernel.ts#traverseAndExtractCalls"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#traverseAndExtractImports",
+      "to": "src/infrastructure/parse/kernel.ts#traverseAndExtractImports"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#parseFileFull",
+      "to": "src/infrastructure/parse/kernel.ts#traverseAndExtractImports"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#parseFileFullSync",
+      "to": "src/infrastructure/parse/kernel.ts#traverseAndExtractImports"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#traverseAndExtractTypeRefs",
+      "to": "src/infrastructure/parse/kernel.ts#traverseAndExtractTypeRefs"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#traverseAndExtractTypeRefs",
+      "to": "src/infrastructure/parse/kernel.ts#traverseAndExtractTypeRefs"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#parseFileFull",
+      "to": "src/infrastructure/parse/kernel.ts#traverseAndExtractTypeRefs"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#parseFileFullSync",
+      "to": "src/infrastructure/parse/kernel.ts#traverseAndExtractTypeRefs"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#parseFileFull",
+      "to": "src/infrastructure/parse/lang_hint.ts#missingLanguageHint"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#parseAstRootSync",
+      "to": "src/infrastructure/parse/languages.ts#findLanguageByExt"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#parseAstRoot",
+      "to": "src/infrastructure/parse/languages.ts#findLanguageByExt"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#_reset",
+      "to": "src/infrastructure/parse/loader.ts#clearLoaderCache"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#parseAstRoot",
+      "to": "src/infrastructure/parse/loader.ts#getParser"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#parseFileFull",
+      "to": "src/infrastructure/parse/loader.ts#getParser"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#prewarmKernel",
+      "to": "src/infrastructure/parse/loader.ts#getParser"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#parseAstRootSync",
+      "to": "src/infrastructure/parse/loader.ts#getParserSync"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#parseFileFullSync",
+      "to": "src/infrastructure/parse/loader.ts#getParserSync"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#parserReadyForFile",
+      "to": "src/infrastructure/parse/loader.ts#getParserSync"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#canParseFileSync",
+      "to": "src/infrastructure/parse/loader.ts#getParserSync"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#parseFileFull",
+      "to": "src/infrastructure/parse/probe.ts#isExtSupported"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#parseFileFullSync",
+      "to": "src/infrastructure/parse/probe.ts#isExtSupported"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#canParseFileSync",
+      "to": "src/infrastructure/parse/probe.ts#isExtSupported"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#isSupported",
+      "to": "src/infrastructure/parse/probe.ts#isExtSupported"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#prewarmKernel",
+      "to": "src/infrastructure/parse/probe.ts#isLanguageInstalled"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#listSupportedExtensions",
+      "to": "src/infrastructure/parse/probe.ts#listSupportedExts"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#listSupportedLanguages",
+      "to": "src/infrastructure/parse/probe.ts#probeInstalledLanguages"
+    }
+  ],
+  "removed": []
+}

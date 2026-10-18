@@ -1,0 +1,216 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/application/design/bricks/render_brickwork.ts（**fork 自 cache.db，全量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T06:14:45.607Z",
+    "note": "★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls = 设计说\"这些调用必须成立\"",
+  "calls": [
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#buildSandboxPreview",
+      "to": "src/application/design/bricks/brick_bag.ts#assembleBrickBagWithCall"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#buildWorkbenchPreview",
+      "to": "src/application/design/bricks/brick_bag.ts#assembleBrickBagWithCall"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#buildBrickifyPreview",
+      "to": "src/application/design/bricks/brickify.ts#buildBrickify"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#brickCard",
+      "to": "src/application/design/bricks/render_brickwork.ts#esc"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#brickCard",
+      "to": "src/application/design/bricks/render_brickwork.ts#esc"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#brickCard",
+      "to": "src/application/design/bricks/render_brickwork.ts#esc"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#brickCard",
+      "to": "src/application/design/bricks/render_brickwork.ts#esc"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#renderBrickworkHtml",
+      "to": "src/application/design/bricks/render_brickwork.ts#esc"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#renderBrickworkHtml",
+      "to": "src/application/design/bricks/render_brickwork.ts#esc"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#renderBrickworkHtml",
+      "to": "src/application/design/bricks/render_brickwork.ts#esc"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#renderBrickworkHtml",
+      "to": "src/application/design/bricks/render_brickwork.ts#esc"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#renderRefactorPage",
+      "to": "src/application/design/bricks/render_brickwork.ts#esc"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#renderRefactorPage",
+      "to": "src/application/design/bricks/render_brickwork.ts#esc"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#renderRefactorPage",
+      "to": "src/application/design/bricks/render_brickwork.ts#esc"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#renderRefactorPage",
+      "to": "src/application/design/bricks/render_brickwork.ts#esc"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#renderRefactorPage",
+      "to": "src/application/design/bricks/render_brickwork.ts#esc"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#renderIssuePage",
+      "to": "src/application/design/bricks/render_brickwork.ts#esc"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#renderIssuePage",
+      "to": "src/application/design/bricks/render_brickwork.ts#esc"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#renderIssuePage",
+      "to": "src/application/design/bricks/render_brickwork.ts#esc"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#renderWorkbenchHtml",
+      "to": "src/application/design/bricks/render_brickwork.ts#esc"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#renderWorkbenchHtml",
+      "to": "src/application/design/bricks/render_brickwork.ts#esc"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#renderWorkbenchHtml",
+      "to": "src/application/design/bricks/render_brickwork.ts#esc"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#renderWorkbenchHtml",
+      "to": "src/application/design/bricks/render_brickwork.ts#esc"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#renderBrickifyWorkbenchHtml",
+      "to": "src/application/design/bricks/render_brickwork.ts#esc"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#renderBrickifyWorkbenchHtml",
+      "to": "src/application/design/bricks/render_brickwork.ts#esc"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#renderBrickifyWorkbenchHtml",
+      "to": "src/application/design/bricks/render_brickwork.ts#esc"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#renderBrickifyWorkbenchHtml",
+      "to": "src/application/design/bricks/render_brickwork.ts#esc"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#renderBrickifyWorkbenchHtml",
+      "to": "src/application/design/bricks/render_brickwork.ts#esc"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#renderBrickifyWorkbenchHtml",
+      "to": "src/application/design/bricks/render_brickwork.ts#esc"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#renderBrickifyWorkbenchHtml",
+      "to": "src/application/design/bricks/render_brickwork.ts#esc"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#renderBrickifyWorkbenchHtml",
+      "to": "src/application/design/bricks/render_brickwork.ts#esc"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#renderBrickifyWorkbenchHtml",
+      "to": "src/application/design/bricks/render_brickwork.ts#esc"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#renderBrickifyWorkbenchHtml",
+      "to": "src/application/design/bricks/render_brickwork.ts#esc"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#renderBrickifyWorkbenchHtml",
+      "to": "src/application/design/bricks/render_brickwork.ts#esc"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#renderBrickifyWorkbenchHtml",
+      "to": "src/application/design/bricks/render_brickwork.ts#esc"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#renderBrickworkHtml",
+      "to": "src/application/design/bricks/render_brickwork.ts#jsonForScript"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#renderBrickworkHtml",
+      "to": "src/application/design/bricks/render_brickwork.ts#jsonForScript"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#renderWorkbenchHtml",
+      "to": "src/application/design/bricks/render_brickwork.ts#jsonForScript"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#renderWorkbenchHtml",
+      "to": "src/application/design/bricks/render_brickwork.ts#jsonForScript"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#buildBrickifyPreview",
+      "to": "src/application/design/bricks/render_brickwork.ts#renderBrickifyWorkbenchHtml"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#buildSandboxPreview",
+      "to": "src/application/design/bricks/render_brickwork.ts#renderBrickworkHtml"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#renderWorkbenchHtml",
+      "to": "src/application/design/bricks/render_brickwork.ts#renderIssuePage"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#renderWorkbenchHtml",
+      "to": "src/application/design/bricks/render_brickwork.ts#renderRefactorPage"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#buildWorkbenchPreview",
+      "to": "src/application/design/bricks/render_brickwork.ts#renderWorkbenchHtml"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#renderBrickworkHtml",
+      "to": "src/application/design/bricks/render_brickwork.ts#toRenderEdges"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#renderWorkbenchHtml",
+      "to": "src/application/design/bricks/render_brickwork.ts#toRenderEdges"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#buildSandboxPreview",
+      "to": "src/infrastructure/analysis/structure/feature_map.ts#buildFeatureMap"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#buildWorkbenchPreview",
+      "to": "src/infrastructure/analysis/structure/feature_map.ts#buildFeatureMap"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#buildSandboxPreview",
+      "to": "src/infrastructure/storage.ts#getStorageRoot"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#buildWorkbenchPreview",
+      "to": "src/infrastructure/storage.ts#getStorageRoot"
+    },
+    {
+      "from": "src/application/design/bricks/render_brickwork.ts#buildBrickifyPreview",
+      "to": "src/infrastructure/storage.ts#getStorageRoot"
+    }
+  ],
+  "removed": []
+}

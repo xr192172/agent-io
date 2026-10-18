@@ -1,0 +1,76 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/infrastructure/parse/probe.ts（**fork 自 cache.db，全量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T06:14:45.605Z",
+    "note": "★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls = 设计说\"这些调用必须成立\"",
+  "calls": [
+    {
+      "from": "src/infrastructure/parse/probe.ts#isLoadablePackage",
+      "to": "src/infrastructure/packages/template_compat.ts#templateCompatFromPkgJson"
+    },
+    {
+      "from": "src/infrastructure/parse/probe.ts#languagePackageStatus",
+      "to": "src/infrastructure/packages/template_compat.ts#templateCompatFromPkgJson"
+    },
+    {
+      "from": "src/infrastructure/parse/probe.ts#languagePackageStatus",
+      "to": "src/infrastructure/packages/template_compat.ts#usesNanBinding"
+    },
+    {
+      "from": "src/infrastructure/parse/probe.ts#isExtSupported",
+      "to": "src/infrastructure/parse/languages.ts#findLanguageByExt"
+    },
+    {
+      "from": "src/infrastructure/parse/probe.ts#isLanguageInstalled",
+      "to": "src/infrastructure/parse/languages.ts#languageModuleSpec"
+    },
+    {
+      "from": "src/infrastructure/parse/probe.ts#isLoadablePackage",
+      "to": "src/infrastructure/parse/probe.ts#hasBuiltBindingNear"
+    },
+    {
+      "from": "src/infrastructure/parse/probe.ts#probeInstalledLanguages",
+      "to": "src/infrastructure/parse/probe.ts#isLanguageInstalled"
+    },
+    {
+      "from": "src/infrastructure/parse/probe.ts#isExtSupported",
+      "to": "src/infrastructure/parse/probe.ts#isLanguageInstalled"
+    },
+    {
+      "from": "src/infrastructure/parse/probe.ts#resolvedIsLoadable",
+      "to": "src/infrastructure/parse/probe.ts#isLoadablePackage"
+    },
+    {
+      "from": "src/infrastructure/parse/probe.ts#resolvedIsLoadable",
+      "to": "src/infrastructure/parse/probe.ts#nearestPackageJson"
+    },
+    {
+      "from": "src/infrastructure/parse/probe.ts#languagePackageStatus",
+      "to": "src/infrastructure/parse/probe.ts#nearestPackageJson"
+    },
+    {
+      "from": "src/infrastructure/parse/probe.ts#listSupportedExts",
+      "to": "src/infrastructure/parse/probe.ts#probeInstalledLanguages"
+    },
+    {
+      "from": "src/infrastructure/parse/probe.ts#resolvedIsLoadable",
+      "to": "src/infrastructure/parse/probe.ts#resolvePackage"
+    },
+    {
+      "from": "src/infrastructure/parse/probe.ts#languagePackageStatus",
+      "to": "src/infrastructure/parse/probe.ts#resolvePackage"
+    },
+    {
+      "from": "src/infrastructure/parse/probe.ts#isLanguageInstalled",
+      "to": "src/infrastructure/parse/probe.ts#resolvedIsLoadable"
+    },
+    {
+      "from": "src/infrastructure/parse/probe.ts#resolvePackage",
+      "to": "src/infrastructure/parse/probe.ts#toFsPath"
+    }
+  ],
+  "removed": []
+}

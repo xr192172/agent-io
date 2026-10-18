@@ -1,0 +1,96 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/infrastructure/authoring/translate/project.ts（**fork 自 cache.db，全量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T06:14:45.598Z",
+    "note": "★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls = 设计说\"这些调用必须成立\"",
+  "calls": [
+    {
+      "from": "src/infrastructure/authoring/translate/project.ts#translateGoProject",
+      "to": "src/infrastructure/authoring/translate/fill.ts#fillUnitsBatched"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/project.ts#translateGoProject",
+      "to": "src/infrastructure/authoring/translate/fill.ts#fillUnitsWithRetry"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/project.ts#assembleModule",
+      "to": "src/infrastructure/authoring/translate/fixers.ts#applyDeterministicFixers"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/project.ts#translateGoProject",
+      "to": "src/infrastructure/authoring/translate/llm.ts#createPooledBatchTranslator"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/project.ts#translateGoProject",
+      "to": "src/infrastructure/authoring/translate/pairs.ts#translateGoToTs"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/project.ts#translateGoProject",
+      "to": "src/infrastructure/authoring/translate/project.ts#assembleModule"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/project.ts#translateGoProject",
+      "to": "src/infrastructure/authoring/translate/project.ts#buildProjectCallNote"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/project.ts#translateGoProject",
+      "to": "src/infrastructure/authoring/translate/project.ts#buildReport"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/project.ts#translateGoProject",
+      "to": "src/infrastructure/authoring/translate/project.ts#buildTypesMap"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/project.ts#verifyProjectTree",
+      "to": "src/infrastructure/authoring/translate/project.ts#clusterKeyFor"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/project.ts#translateGoProject",
+      "to": "src/infrastructure/authoring/translate/project.ts#collectCallRefs"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/project.ts#translateGoProject",
+      "to": "src/infrastructure/authoring/translate/project.ts#detectConflicts"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/project.ts#translateGoProject",
+      "to": "src/infrastructure/authoring/translate/project.ts#relImportPath"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/project.ts#translateGoProject",
+      "to": "src/infrastructure/authoring/translate/project.ts#toPosix"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/project.ts#translateGoProject",
+      "to": "src/infrastructure/authoring/translate/project.ts#verifyProjectTree"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/project.ts#translateGoProject",
+      "to": "src/infrastructure/authoring/translate/project.ts#walkGoFiles"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/project.ts#translateGoProject",
+      "to": "src/infrastructure/authoring/translate/project.ts#writeReport"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/project.ts#translateGoProject",
+      "to": "src/infrastructure/authoring/translate/project.ts#writeTypesMap"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/project.ts#buildProjectCallNote",
+      "to": "src/infrastructure/authoring/translate/referenced.ts#collectExternalTypeRefs"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/project.ts#translateGoProject",
+      "to": "src/infrastructure/authoring/translate/referenced.ts#collectExternalTypeRefs"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/project.ts#assembleModule",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#channelShimSource"
+    }
+  ],
+  "removed": []
+}

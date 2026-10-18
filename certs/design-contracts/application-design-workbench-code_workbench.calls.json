@@ -1,0 +1,316 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/application/design/workbench/code_workbench.ts（**fork 自 cache.db，全量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T06:14:45.612Z",
+    "note": "★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls = 设计说\"这些调用必须成立\"",
+  "calls": [
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#executeDslIntent",
+      "to": "src/application/design/intent/set_design_intent.ts#setDesignIntent"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#previewEditRange",
+      "to": "src/application/design/workbench/code_workbench.ts#absPath"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#previewSplitPlan",
+      "to": "src/application/design/workbench/code_workbench.ts#absPath"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#approveChange",
+      "to": "src/application/design/workbench/code_workbench.ts#absPath"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#executeDslRename",
+      "to": "src/application/design/workbench/code_workbench.ts#applyDslRenameEdits"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#proposeChange",
+      "to": "src/application/design/workbench/code_workbench.ts#buildLabel"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#approveChange",
+      "to": "src/application/design/workbench/code_workbench.ts#checkReviewer"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#rejectChange",
+      "to": "src/application/design/workbench/code_workbench.ts#checkReviewer"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#previewDslRename",
+      "to": "src/application/design/workbench/code_workbench.ts#collectDslRenameEdits"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#executeDslRename",
+      "to": "src/application/design/workbench/code_workbench.ts#collectDslRenameEdits"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#previewEditRange",
+      "to": "src/application/design/workbench/code_workbench.ts#detectEol"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#previewSplitPlan",
+      "to": "src/application/design/workbench/code_workbench.ts#detectEol"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#approveChange",
+      "to": "src/application/design/workbench/code_workbench.ts#detectEol"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#approveChange",
+      "to": "src/application/design/workbench/code_workbench.ts#executeDslIntent"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#approveChange",
+      "to": "src/application/design/workbench/code_workbench.ts#executeDslRename"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#addReview",
+      "to": "src/application/design/workbench/code_workbench.ts#findAndUpdate"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#approveChange",
+      "to": "src/application/design/workbench/code_workbench.ts#findAndUpdate"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#approveChange",
+      "to": "src/application/design/workbench/code_workbench.ts#findAndUpdate"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#approveChange",
+      "to": "src/application/design/workbench/code_workbench.ts#findAndUpdate"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#approveChange",
+      "to": "src/application/design/workbench/code_workbench.ts#findAndUpdate"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#approveChange",
+      "to": "src/application/design/workbench/code_workbench.ts#findAndUpdate"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#approveChange",
+      "to": "src/application/design/workbench/code_workbench.ts#findAndUpdate"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#approveChange",
+      "to": "src/application/design/workbench/code_workbench.ts#findAndUpdate"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#approveChange",
+      "to": "src/application/design/workbench/code_workbench.ts#findAndUpdate"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#rejectChange",
+      "to": "src/application/design/workbench/code_workbench.ts#findAndUpdate"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#proposeChange",
+      "to": "src/application/design/workbench/code_workbench.ts#loadChanges"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#proposeChange",
+      "to": "src/application/design/workbench/code_workbench.ts#loadChanges"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#listChanges",
+      "to": "src/application/design/workbench/code_workbench.ts#loadChanges"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#getChange",
+      "to": "src/application/design/workbench/code_workbench.ts#loadChanges"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#findAndUpdate",
+      "to": "src/application/design/workbench/code_workbench.ts#loadChanges"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#addReview",
+      "to": "src/application/design/workbench/code_workbench.ts#loadChanges"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#approveChange",
+      "to": "src/application/design/workbench/code_workbench.ts#loadChanges"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#rejectChange",
+      "to": "src/application/design/workbench/code_workbench.ts#loadChanges"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#previewEditRange",
+      "to": "src/application/design/workbench/code_workbench.ts#normalizeLines"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#previewSplitPlan",
+      "to": "src/application/design/workbench/code_workbench.ts#normalizeLines"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#proposeChange",
+      "to": "src/application/design/workbench/code_workbench.ts#nowIso"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#addReview",
+      "to": "src/application/design/workbench/code_workbench.ts#nowIso"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#pushReview",
+      "to": "src/application/design/workbench/code_workbench.ts#nowIso"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#approveChange",
+      "to": "src/application/design/workbench/code_workbench.ts#nowIso"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#approveChange",
+      "to": "src/application/design/workbench/code_workbench.ts#nowIso"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#approveChange",
+      "to": "src/application/design/workbench/code_workbench.ts#nowIso"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#approveChange",
+      "to": "src/application/design/workbench/code_workbench.ts#nowIso"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#approveChange",
+      "to": "src/application/design/workbench/code_workbench.ts#nowIso"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#rejectChange",
+      "to": "src/application/design/workbench/code_workbench.ts#nowIso"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#proposeChange",
+      "to": "src/application/design/workbench/code_workbench.ts#previewDslIntent"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#proposeChange",
+      "to": "src/application/design/workbench/code_workbench.ts#previewDslRename"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#proposeChange",
+      "to": "src/application/design/workbench/code_workbench.ts#previewEditRange"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#proposeChange",
+      "to": "src/application/design/workbench/code_workbench.ts#previewRename"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#proposeChange",
+      "to": "src/application/design/workbench/code_workbench.ts#previewSplitPlan"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#approveChange",
+      "to": "src/application/design/workbench/code_workbench.ts#pushReview"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#rejectChange",
+      "to": "src/application/design/workbench/code_workbench.ts#pushReview"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#storeFile",
+      "to": "src/application/design/workbench/code_workbench.ts#safeName"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#proposeChange",
+      "to": "src/application/design/workbench/code_workbench.ts#saveChanges"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#findAndUpdate",
+      "to": "src/application/design/workbench/code_workbench.ts#saveChanges"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#previewEditRange",
+      "to": "src/application/design/workbench/code_workbench.ts#splitKeepEnds"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#previewSplitPlan",
+      "to": "src/application/design/workbench/code_workbench.ts#splitKeepEnds"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#approveChange",
+      "to": "src/application/design/workbench/code_workbench.ts#splitKeepEnds"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#previewSplitPlan",
+      "to": "src/application/design/workbench/code_workbench.ts#splitPlanMarker"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#approveChange",
+      "to": "src/application/design/workbench/code_workbench.ts#splitPlanMarker"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#loadChanges",
+      "to": "src/application/design/workbench/code_workbench.ts#storeFile"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#saveChanges",
+      "to": "src/application/design/workbench/code_workbench.ts#storeFile"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#proposeChange",
+      "to": "src/application/design/workbench/code_workbench.ts#uid"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#approveChange",
+      "to": "src/application/refactor/edit/edit_code.ts#editCode"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#approveChange",
+      "to": "src/application/refactor/edit/edit_code.ts#editCode"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#previewRename",
+      "to": "src/application/refactor/rename/rename_file.ts#renameFile"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#approveChange",
+      "to": "src/application/refactor/rename/rename_file.ts#renameFile"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#previewDslIntent",
+      "to": "src/domain/overlay.ts#buildCandidates"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#previewDslIntent",
+      "to": "src/domain/overlay.ts#buildEdgeCandidates"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#previewDslIntent",
+      "to": "src/domain/overlay.ts#reconcileOverlay"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#previewDslIntent",
+      "to": "src/domain/overlay.ts#seedOverlayFromDsl"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#previewDslRename",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#executeDslRename",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#previewDslIntent",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#storeFile",
+      "to": "src/infrastructure/storage.ts#getStorageRoot"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#executeDslRename",
+      "to": "src/infrastructure/storage.ts#saveDSL"
+    },
+    {
+      "from": "src/application/design/workbench/code_workbench.ts#previewDslIntent",
+      "to": "src/infrastructure/storage_overlay.ts#loadOverlay"
+    }
+  ],
+  "removed": []
+}

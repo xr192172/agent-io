@@ -65,13 +65,17 @@ try {
 // ═══ ③ 调用 fork：cache.db.edges(kind='call') → <node>.calls.json（全量）═══
 const design = JSON.parse(fs.readFileSync(DESIGN, 'utf8'));
 /**
- * ★ 只给**有 decision 的节点**生成 calls（= "我改过的那 11 处"）。
- *   "全量"指的是【这个文件的所有调用】，不是【所有文件】——
- *   否则会生成 338 份（每个 file 节点一份），而其中 327 个节点我从没设计过。
+ * ★★★ **全量**（用户 2026-10-18 纠正）：**每个 file 节点都生成一份 calls.json**，不是只给"有 decision 的"。
+ *
+ * ## 为什么必须全量
+ * > "你写设计的时候也要和实际相结合呀，不然的话你设计出来的东西万一依赖什么的对不上呢？"
+ * ⇒ 只 fork 8 个文件 ⇒ **另外 633 个文件的依赖在设计侧是空白** ⇒
+ *   改那 8 个的时候，**根本不知道它们依赖谁、被谁依赖** ⇒ 设计出来的东西会对不上。
+ * ★ **"份数多"不是问题，"漏"才是问题。**
  */
 const designFileSet = new Set(
   (design.geometry?.nodes ?? [])
-    .filter((n) => n.type === 'file' && n.description && n.decision)
+    .filter((n) => n.type === 'file' && n.description)
     .map((n) => String(n.description).replace(/\\/g, '/')),
 );
 

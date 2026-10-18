@@ -1,0 +1,228 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— third_party/archify/renderers/shared/brand-marks.mjs（**fork 自 cache.db，全量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T06:14:45.583Z",
+    "note": "★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls = 设计说\"这些调用必须成立\"",
+  "calls": [
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#findBrandMark",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#asUrl"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#captureBrandReference",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#asUrl"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#prepareDiagramBrandMarks",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#asUrl"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#prepareDiagramBrandMarks",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#asUrl"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#iconCandidates",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#attribute"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#iconCandidates",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#attribute"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#iconCandidates",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#attribute"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#iconCandidates",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#attribute"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#resolveRequestTarget",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#beforeDeadline"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#brandMetadataFor",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#brandMarkFor"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#brandLabelFitWidth",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#brandMarkFor"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#brandTopRailProblem",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#brandMarkFor"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#renderBrandMark",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#brandMarkFor"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#captureBrandReference",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#captureRemoteBrand"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#remoteBrand",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#captureRemoteBrand"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#prepareDiagramBrandMarks",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#captureTimeoutMilliseconds"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#captureRemoteBrand",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#checkedFetch"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#captureRemoteBrand",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#checkedFetch"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#findBrandMark",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#domainMark"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#captureBrandReference",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#findBrandMark"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#prepareDiagramBrandMarks",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#findBrandMark"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#captureRemoteBrand",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#iconCandidates"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#captureRemoteBrand",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#imageData"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#captureRemoteBrand",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#imageData"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#ipv6Private",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#ipv4Private"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#ipv6Private",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#ipv4Private"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#ipv6Private",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#ipv4Private"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#isPrivateBrandAddress",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#ipv4Private"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#isPrivateBrandAddress",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#ipv6Private"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#resolveRequestTarget",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#isPrivateBrandAddress"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#findBrandMark",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#lookupForms"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#suggestions",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#lookupForms"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#suggestions",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#lookupForms"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#prepareDiagramBrandMarks",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#mapConcurrent"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#renderBrandMark",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#markAttrs"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#imageData",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#readLimited"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#captureRemoteBrand",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#readLimited"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#prepareDiagramBrandMarks",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#remoteBrand"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#checkedFetch",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#requestPinned"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#findBrandMark",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#requestPinned.get"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#checkedFetch",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#requestPinned.get"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#readLimited",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#requestPinned.get"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#imageData",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#requestPinned.get"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#captureRemoteBrand",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#requestPinned.get"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#remoteBrand",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#requestPinned.get"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#brandMarkFor",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#requestPinned.get"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#resolveRequestTarget",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#requestPinned.lookup"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#checkedFetch",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#resolveRequestTarget"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#prepareDiagramBrandMarks",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#suggestions"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#requestPinned",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#timeoutSignal"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#resolveRequestTarget",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#validateUrlShape"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#captureBrandReference",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#validateUrlShape"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#prepareDiagramBrandMarks",
+      "to": "third_party/archify/renderers/shared/diagnostics.mjs#throwDiagnosticError"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/brand-marks.mjs#brandTopRailProblem",
+      "to": "third_party/archify/renderers/shared/utils.mjs#textUnits"
+    }
+  ],
+  "removed": []
+}

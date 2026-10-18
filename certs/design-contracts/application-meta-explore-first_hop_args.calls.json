@@ -1,0 +1,92 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/application/meta/explore/first_hop_args.ts（**fork 自 cache.db，全量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T06:14:45.610Z",
+    "note": "★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls = 设计说\"这些调用必须成立\"",
+  "calls": [
+    {
+      "from": "src/application/meta/explore/first_hop_args.ts#prerequisiteOf",
+      "to": "src/application/meta/explore/first_hop_args.ts#acceptsFeature"
+    },
+    {
+      "from": "src/application/meta/explore/first_hop_args.ts#firstHopArgs",
+      "to": "src/application/meta/explore/first_hop_args.ts#buildStart"
+    },
+    {
+      "from": "src/application/meta/explore/first_hop_args.ts#firstHopArgs",
+      "to": "src/application/meta/explore/first_hop_args.ts#buildStart"
+    },
+    {
+      "from": "src/application/meta/explore/first_hop_args.ts#firstHopArgs",
+      "to": "src/application/meta/explore/first_hop_args.ts#hopsOfChain"
+    },
+    {
+      "from": "src/application/meta/explore/first_hop_args.ts#firstHopArgs",
+      "to": "src/application/meta/explore/first_hop_args.ts#notDetermined"
+    },
+    {
+      "from": "src/application/meta/explore/first_hop_args.ts#prerequisiteOf",
+      "to": "src/application/meta/explore/first_hop_args.ts#pathsOfTool"
+    },
+    {
+      "from": "src/application/meta/explore/first_hop_args.ts#buildStart",
+      "to": "src/application/meta/explore/first_hop_args.ts#pathsOfTool"
+    },
+    {
+      "from": "src/application/meta/explore/first_hop_args.ts#firstHopArgs",
+      "to": "src/application/meta/explore/first_hop_args.ts#pathsOfTool"
+    },
+    {
+      "from": "src/application/meta/explore/first_hop_args.ts#firstHopArgs",
+      "to": "src/application/meta/explore/first_hop_args.ts#prerequisiteOf"
+    },
+    {
+      "from": "src/application/meta/explore/first_hop_args.ts#firstHopArgs",
+      "to": "src/application/meta/explore/first_hop_args.ts#prerequisiteOf"
+    },
+    {
+      "from": "src/application/meta/explore/first_hop_args.ts#firstHopArgs",
+      "to": "src/application/meta/explore/first_hop_args.ts#prerequisiteOf"
+    },
+    {
+      "from": "src/application/meta/explore/first_hop_args.ts#buildStart",
+      "to": "src/application/meta/explore/next_hop_args.ts#assignPath"
+    },
+    {
+      "from": "src/application/meta/explore/first_hop_args.ts#buildStart",
+      "to": "src/application/meta/explore/next_hop_args.ts#assignPath"
+    },
+    {
+      "from": "src/application/meta/explore/first_hop_args.ts#buildStart",
+      "to": "src/application/meta/explore/next_hop_args.ts#intentMarker"
+    },
+    {
+      "from": "src/application/meta/explore/first_hop_args.ts#pathsOfTool",
+      "to": "src/application/meta/registry/capability_map.ts#collectInputPaths"
+    },
+    {
+      "from": "src/application/meta/explore/first_hop_args.ts#buildStart",
+      "to": "src/application/meta/registry/capability_map.ts#declaredRequiredMembersOf"
+    },
+    {
+      "from": "src/application/meta/explore/first_hop_args.ts#firstHopArgs",
+      "to": "src/application/meta/registry/capability_map.ts#declaredRequiredMembersOf"
+    },
+    {
+      "from": "src/application/meta/explore/first_hop_args.ts#firstHopArgs",
+      "to": "src/domain/chain_wiring.ts#evidenceLabel"
+    },
+    {
+      "from": "src/application/meta/explore/first_hop_args.ts#firstHopArgs",
+      "to": "src/domain/chain_wiring.ts#evidenceLabel"
+    },
+    {
+      "from": "src/application/meta/explore/first_hop_args.ts#hopsOfChain",
+      "to": "src/domain/chain_wiring.ts#hopsOf"
+    }
+  ],
+  "removed": []
+}

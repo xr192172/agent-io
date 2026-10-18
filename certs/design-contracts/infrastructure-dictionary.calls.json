@@ -1,0 +1,84 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/infrastructure/dictionary.ts（**fork 自 cache.db，全量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T06:14:45.590Z",
+    "note": "★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls = 设计说\"这些调用必须成立\"",
+  "calls": [
+    {
+      "from": "src/infrastructure/dictionary.ts#validateProjectRoot",
+      "to": "src/infrastructure/dictionary.ts#getAllowedRoots"
+    },
+    {
+      "from": "src/infrastructure/dictionary.ts#loadGlobalDict",
+      "to": "src/infrastructure/dictionary.ts#getGlobalDictFile"
+    },
+    {
+      "from": "src/infrastructure/dictionary.ts#saveGlobalEntry",
+      "to": "src/infrastructure/dictionary.ts#getGlobalDictFile"
+    },
+    {
+      "from": "src/infrastructure/dictionary.ts#loadProjectDict",
+      "to": "src/infrastructure/dictionary.ts#getProjectDictFile"
+    },
+    {
+      "from": "src/infrastructure/dictionary.ts#saveProjectEntry",
+      "to": "src/infrastructure/dictionary.ts#getProjectDictFile"
+    },
+    {
+      "from": "src/infrastructure/dictionary.ts#saveGlobalEntry",
+      "to": "src/infrastructure/dictionary.ts#loadGlobalDict"
+    },
+    {
+      "from": "src/infrastructure/dictionary.ts#buildDictionaryView",
+      "to": "src/infrastructure/dictionary.ts#loadGlobalDict"
+    },
+    {
+      "from": "src/infrastructure/dictionary.ts#buildDictionaryView",
+      "to": "src/infrastructure/dictionary.ts#loadProjectDict"
+    },
+    {
+      "from": "src/infrastructure/dictionary.ts#loadGlobalDict",
+      "to": "src/infrastructure/dictionary.ts#readDictFile"
+    },
+    {
+      "from": "src/infrastructure/dictionary.ts#loadProjectDict",
+      "to": "src/infrastructure/dictionary.ts#readDictFile"
+    },
+    {
+      "from": "src/infrastructure/dictionary.ts#saveProjectEntry",
+      "to": "src/infrastructure/dictionary.ts#readDictFile"
+    },
+    {
+      "from": "src/infrastructure/dictionary.ts#loadProjectDict",
+      "to": "src/infrastructure/dictionary.ts#validateProjectRoot"
+    },
+    {
+      "from": "src/infrastructure/dictionary.ts#saveProjectEntry",
+      "to": "src/infrastructure/dictionary.ts#validateProjectRoot"
+    },
+    {
+      "from": "src/infrastructure/dictionary.ts#saveGlobalEntry",
+      "to": "src/infrastructure/dictionary.ts#writeDictFile"
+    },
+    {
+      "from": "src/infrastructure/dictionary.ts#saveProjectEntry",
+      "to": "src/infrastructure/dictionary.ts#writeDictFile"
+    },
+    {
+      "from": "src/infrastructure/dictionary.ts#getAllowedRoots",
+      "to": "src/infrastructure/storage.ts#getDataHome"
+    },
+    {
+      "from": "src/infrastructure/dictionary.ts#getGlobalDictFile",
+      "to": "src/infrastructure/storage.ts#getDataHome"
+    },
+    {
+      "from": "src/infrastructure/dictionary.ts#loadProjectDict",
+      "to": "src/infrastructure/storage.ts#getDataHome"
+    }
+  ],
+  "removed": []
+}

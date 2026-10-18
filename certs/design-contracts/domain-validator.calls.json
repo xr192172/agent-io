@@ -1,0 +1,44 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/domain/validator.ts（**fork 自 cache.db，全量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T06:14:45.623Z",
+    "note": "★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls = 设计说\"这些调用必须成立\"",
+  "calls": [
+    {
+      "from": "src/domain/validator.ts#validateDSL",
+      "to": "src/domain/validator.ts#formatAjvErrors"
+    },
+    {
+      "from": "src/domain/validator.ts#validateDSL",
+      "to": "src/domain/validator.ts#toResult"
+    },
+    {
+      "from": "src/domain/validator.ts#validateDSL",
+      "to": "src/domain/validator.ts#toResult"
+    },
+    {
+      "from": "src/domain/validator.ts#validateDSL",
+      "to": "src/domain/validator.ts#toResult"
+    },
+    {
+      "from": "src/domain/validator.ts#validateDSLJson",
+      "to": "src/domain/validator.ts#validateDSL"
+    },
+    {
+      "from": "src/domain/validator.ts#validateDSL",
+      "to": "src/domain/validator.ts#validateReasoningIntegrity"
+    },
+    {
+      "from": "src/domain/validator.ts#validateDSL",
+      "to": "src/domain/validator.ts#validateSchema"
+    },
+    {
+      "from": "src/domain/validator.ts#validateDSL",
+      "to": "src/domain/validator.ts#validateSemanticAnchoring"
+    }
+  ],
+  "removed": []
+}

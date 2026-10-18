@@ -1,0 +1,128 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/application/refactor/rename/rename_symbols.ts（**fork 自 cache.db，全量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T06:14:45.614Z",
+    "note": "★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls = 设计说\"这些调用必须成立\"",
+  "calls": [
+    {
+      "from": "src/application/refactor/rename/rename_symbols.ts#renameSymbolsModule",
+      "to": "src/application/refactor/rename/rename_file.ts#renameFile"
+    },
+    {
+      "from": "src/application/refactor/rename/rename_symbols.ts#renameSymbolsLocal",
+      "to": "src/application/refactor/rename/rename_local.ts#renameLocals"
+    },
+    {
+      "from": "src/application/refactor/rename/rename_symbols.ts#renameSymbolsModule",
+      "to": "src/application/refactor/rename/rename_symbols.ts#applyLiteralPlan"
+    },
+    {
+      "from": "src/application/refactor/rename/rename_symbols.ts#renameSymbolsModule",
+      "to": "src/application/refactor/rename/rename_symbols.ts#buildLiteralPlan"
+    },
+    {
+      "from": "src/application/refactor/rename/rename_symbols.ts#renameSymbolsModule",
+      "to": "src/application/refactor/rename/rename_symbols.ts#buildLiteralPlan"
+    },
+    {
+      "from": "src/application/refactor/rename/rename_symbols.ts#buildLiteralPlan",
+      "to": "src/application/refactor/rename/rename_symbols.ts#camelToSnake"
+    },
+    {
+      "from": "src/application/refactor/rename/rename_symbols.ts#buildLiteralPlan",
+      "to": "src/application/refactor/rename/rename_symbols.ts#camelToSnake"
+    },
+    {
+      "from": "src/application/refactor/rename/rename_symbols.ts#buildLiteralPlan",
+      "to": "src/application/refactor/rename/rename_symbols.ts#camelToSnake"
+    },
+    {
+      "from": "src/application/refactor/rename/rename_symbols.ts#scanLiteralOccurrences",
+      "to": "src/application/refactor/rename/rename_symbols.ts#classifyLiteral"
+    },
+    {
+      "from": "src/application/refactor/rename/rename_symbols.ts#buildLiteralPlan",
+      "to": "src/application/refactor/rename/rename_symbols.ts#decideLiteral"
+    },
+    {
+      "from": "src/application/refactor/rename/rename_symbols.ts#scanLiteralOccurrences",
+      "to": "src/application/refactor/rename/rename_symbols.ts#gitIgnoredTopDirs"
+    },
+    {
+      "from": "src/application/refactor/rename/rename_symbols.ts#renameSymbolsLocal",
+      "to": "src/application/refactor/rename/rename_symbols.ts#localItemResult"
+    },
+    {
+      "from": "src/application/refactor/rename/rename_symbols.ts#renameSymbolsModule",
+      "to": "src/application/refactor/rename/rename_symbols.ts#planLinkedFileRename"
+    },
+    {
+      "from": "src/application/refactor/rename/rename_symbols.ts#renameSymbolsModule",
+      "to": "src/application/refactor/rename/rename_symbols.ts#planLinkedFileRename"
+    },
+    {
+      "from": "src/application/refactor/rename/rename_symbols.ts#renameSymbols",
+      "to": "src/application/refactor/rename/rename_symbols.ts#renameSymbolsCore"
+    },
+    {
+      "from": "src/application/refactor/rename/rename_symbols.ts#renameSymbolsCore",
+      "to": "src/application/refactor/rename/rename_symbols.ts#renameSymbolsLocal"
+    },
+    {
+      "from": "src/application/refactor/rename/rename_symbols.ts#renameSymbolsCore",
+      "to": "src/application/refactor/rename/rename_symbols.ts#renameSymbolsModule"
+    },
+    {
+      "from": "src/application/refactor/rename/rename_symbols.ts#buildLiteralPlan",
+      "to": "src/application/refactor/rename/rename_symbols.ts#scanLiteralOccurrences"
+    },
+    {
+      "from": "src/application/refactor/rename/rename_symbols.ts#scanLiteralOccurrences",
+      "to": "src/application/refactor/rename/rename_symbols.ts#scanLiteralOccurrences.walk"
+    },
+    {
+      "from": "src/application/refactor/rename/rename_symbols.ts#scanLiteralOccurrences.walk",
+      "to": "src/application/refactor/rename/rename_symbols.ts#scanLiteralOccurrences.walk"
+    },
+    {
+      "from": "src/application/refactor/rename/rename_symbols.ts#renameSymbols",
+      "to": "src/application/refactor/rename/rename_symbols.ts#touchedOf"
+    },
+    {
+      "from": "src/application/refactor/rename/rename_symbols.ts#renameSymbolsModule",
+      "to": "src/application/refactor/snapshot/file_snapshot.ts#rollbackFileSnapshot"
+    },
+    {
+      "from": "src/application/refactor/rename/rename_symbols.ts#renameSymbolsModule",
+      "to": "src/application/write_gate.ts#writeSourceFiles"
+    },
+    {
+      "from": "src/application/refactor/rename/rename_symbols.ts#renameSymbols",
+      "to": "src/domain/b_terms.ts#withTouched"
+    },
+    {
+      "from": "src/application/refactor/rename/rename_symbols.ts#renameSymbolsModule",
+      "to": "src/infrastructure/analysis/project_root/index.ts#resolveProjectRoot"
+    },
+    {
+      "from": "src/application/refactor/rename/rename_symbols.ts#renameSymbolsLocal",
+      "to": "src/infrastructure/analysis/project_root/index.ts#resolveProjectRoot"
+    },
+    {
+      "from": "src/application/refactor/rename/rename_symbols.ts#renameSymbolsModule",
+      "to": "src/infrastructure/analysis/refactor/protect.ts#createProtectGuard"
+    },
+    {
+      "from": "src/application/refactor/rename/rename_symbols.ts#renameSymbolsModule",
+      "to": "src/infrastructure/analysis/refactor/protect.ts#createProtectGuard"
+    },
+    {
+      "from": "src/application/refactor/rename/rename_symbols.ts#scanLiteralOccurrences",
+      "to": "src/infrastructure/parse/source_exts.ts#skipDirSet"
+    }
+  ],
+  "removed": []
+}

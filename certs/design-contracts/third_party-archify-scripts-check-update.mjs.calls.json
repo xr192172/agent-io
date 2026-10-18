@@ -1,0 +1,1152 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— third_party/archify/scripts/check-update.mjs（**fork 自 cache.db，全量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T06:14:45.586Z",
+    "note": "★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls = 设计说\"这些调用必须成立\"",
+  "calls": [
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#runCli",
+      "to": "third_party/archify/scripts/check-update.mjs#acknowledgeUpdate"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#checkForUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#acquireOperation"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#acknowledgeUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#acquireOperation"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#readJsonFile",
+      "to": "third_party/archify/scripts/check-update.mjs#assertBoundedRegularFile"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#readJsonFile",
+      "to": "third_party/archify/scripts/check-update.mjs#assertBoundedRegularFile"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#readJsonFile",
+      "to": "third_party/archify/scripts/check-update.mjs#assertBoundedRegularFile"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#cacheRename",
+      "to": "third_party/archify/scripts/check-update.mjs#assertCacheTargetAbsent"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#cacheRm",
+      "to": "third_party/archify/scripts/check-update.mjs#assertCacheTargetAbsent"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#cacheRm",
+      "to": "third_party/archify/scripts/check-update.mjs#assertSafeCacheEntry"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#verifyDirectorySnapshots",
+      "to": "third_party/archify/scripts/check-update.mjs#assertSafeDirectory"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#captureMutationParentSnapshots",
+      "to": "third_party/archify/scripts/check-update.mjs#assertSafeDirectory"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#verifyMutationParentSnapshots",
+      "to": "third_party/archify/scripts/check-update.mjs#assertSafeDirectory"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#stablePreparedDirectory",
+      "to": "third_party/archify/scripts/check-update.mjs#assertSafeDirectory"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#stablePreparedDirectory",
+      "to": "third_party/archify/scripts/check-update.mjs#assertSafeDirectory"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#prepareCacheDirectory",
+      "to": "third_party/archify/scripts/check-update.mjs#assertSafeDirectory"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#retireActiveClaim",
+      "to": "third_party/archify/scripts/check-update.mjs#cacheMkdir"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#prepareOperationClaim",
+      "to": "third_party/archify/scripts/check-update.mjs#cacheMkdir"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#reserveOperation",
+      "to": "third_party/archify/scripts/check-update.mjs#cacheMkdir"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#reserveOperation",
+      "to": "third_party/archify/scripts/check-update.mjs#cacheMkdir"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#cacheMkdir",
+      "to": "third_party/archify/scripts/check-update.mjs#cacheMkdirWithToken"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#prepareCacheDirectory",
+      "to": "third_party/archify/scripts/check-update.mjs#cacheMkdirWithToken"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#retireActiveClaim",
+      "to": "third_party/archify/scripts/check-update.mjs#cacheRename"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#discardPreparedClaim",
+      "to": "third_party/archify/scripts/check-update.mjs#cacheRename"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#promoteOperationClaim",
+      "to": "third_party/archify/scripts/check-update.mjs#cacheRename"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#reserveOperation",
+      "to": "third_party/archify/scripts/check-update.mjs#cacheRename"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#transitionOperation",
+      "to": "third_party/archify/scripts/check-update.mjs#cacheRename"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#fenceLowerOperations",
+      "to": "third_party/archify/scripts/check-update.mjs#cacheRename"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#commitOperation",
+      "to": "third_party/archify/scripts/check-update.mjs#cacheRename"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#commitOperation",
+      "to": "third_party/archify/scripts/check-update.mjs#cacheRm"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#cacheMkdir",
+      "to": "third_party/archify/scripts/check-update.mjs#cacheTokenFor"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#cacheWriteFile",
+      "to": "third_party/archify/scripts/check-update.mjs#cacheTokenFor"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#cacheRename",
+      "to": "third_party/archify/scripts/check-update.mjs#cacheTokenFor"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#cacheRm",
+      "to": "third_party/archify/scripts/check-update.mjs#cacheTokenFor"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#readState",
+      "to": "third_party/archify/scripts/check-update.mjs#cacheTokenFor"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#inspectActiveClaim",
+      "to": "third_party/archify/scripts/check-update.mjs#cacheTokenFor"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#hasActivePendingOperation",
+      "to": "third_party/archify/scripts/check-update.mjs#cacheTokenFor"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#operationWasFenced",
+      "to": "third_party/archify/scripts/check-update.mjs#cacheTokenFor"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#checkForUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#cacheTokenFor"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#retireActiveClaim",
+      "to": "third_party/archify/scripts/check-update.mjs#cacheWriteFile"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#prepareOperationClaim",
+      "to": "third_party/archify/scripts/check-update.mjs#cacheWriteFile"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#reserveOperation",
+      "to": "third_party/archify/scripts/check-update.mjs#cacheWriteFile"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#commitOperation",
+      "to": "third_party/archify/scripts/check-update.mjs#cacheWriteFile"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#acquireOperation",
+      "to": "third_party/archify/scripts/check-update.mjs#cancelOperation"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#commitOperation",
+      "to": "third_party/archify/scripts/check-update.mjs#cancelOperation"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#commitOperation",
+      "to": "third_party/archify/scripts/check-update.mjs#cancelOperation"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#commitOperation",
+      "to": "third_party/archify/scripts/check-update.mjs#cancelOperation"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#commitOperation",
+      "to": "third_party/archify/scripts/check-update.mjs#cancelOperation"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#resultAfterLosingOperation",
+      "to": "third_party/archify/scripts/check-update.mjs#cancelOperation"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#checkForUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#cancelOperation"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#checkForUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#cancelOperation"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#checkForUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#cancelOperation"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#checkForUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#cancelOperation"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#acknowledgeUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#cancelOperation"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#readBoundedBody",
+      "to": "third_party/archify/scripts/check-update.mjs#cancelResponseBody"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#fetchCandidate",
+      "to": "third_party/archify/scripts/check-update.mjs#cancelResponseBody"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#fetchCandidate",
+      "to": "third_party/archify/scripts/check-update.mjs#cancelResponseBody"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#prepareCacheDirectory",
+      "to": "third_party/archify/scripts/check-update.mjs#canonicalizeTrustedDirectoryPrefix"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#cacheMkdirWithToken",
+      "to": "third_party/archify/scripts/check-update.mjs#captureMutationParentSnapshots"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#cacheWriteFile",
+      "to": "third_party/archify/scripts/check-update.mjs#captureMutationParentSnapshots"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#cacheRename",
+      "to": "third_party/archify/scripts/check-update.mjs#captureMutationParentSnapshots"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#cacheRm",
+      "to": "third_party/archify/scripts/check-update.mjs#captureMutationParentSnapshots"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#runCli",
+      "to": "third_party/archify/scripts/check-update.mjs#checkForUpdate"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#checkForUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#commitOperation"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#checkForUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#commitOperation"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#acknowledgeUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#commitOperation"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#inspectActiveClaim",
+      "to": "third_party/archify/scripts/check-update.mjs#corruptClaimStatus"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#inspectActiveClaim",
+      "to": "third_party/archify/scripts/check-update.mjs#corruptClaimStatus"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#inspectActiveClaim",
+      "to": "third_party/archify/scripts/check-update.mjs#corruptClaimStatus"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#acknowledgeUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#digestForEventKey"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#promoteOperationClaim",
+      "to": "third_party/archify/scripts/check-update.mjs#discardPreparedClaim"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#promoteOperationClaim",
+      "to": "third_party/archify/scripts/check-update.mjs#discardPreparedClaim"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#promoteOperationClaim",
+      "to": "third_party/archify/scripts/check-update.mjs#discardPreparedClaim"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#promoteOperationClaim",
+      "to": "third_party/archify/scripts/check-update.mjs#discardPreparedClaim"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#promoteOperationClaim",
+      "to": "third_party/archify/scripts/check-update.mjs#discardPreparedClaim"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#normalizeState",
+      "to": "third_party/archify/scripts/check-update.mjs#emptyState"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#readState",
+      "to": "third_party/archify/scripts/check-update.mjs#emptyState"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#encodeRecoverableState",
+      "to": "third_party/archify/scripts/check-update.mjs#encodeBoundedState"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#encodeRecoverableState",
+      "to": "third_party/archify/scripts/check-update.mjs#encodeBoundedState"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#encodeRecoverableState",
+      "to": "third_party/archify/scripts/check-update.mjs#encodeBoundedState"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#encodeRecoverableState",
+      "to": "third_party/archify/scripts/check-update.mjs#encodeBoundedState"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#normalizeState",
+      "to": "third_party/archify/scripts/check-update.mjs#encodeRecoverableState"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#commitOperation",
+      "to": "third_party/archify/scripts/check-update.mjs#encodeRecoverableState"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#commitOperation",
+      "to": "third_party/archify/scripts/check-update.mjs#encodeRecoverableState"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#notification",
+      "to": "third_party/archify/scripts/check-update.mjs#eventKeyForDigest"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#commitOperation",
+      "to": "third_party/archify/scripts/check-update.mjs#fenceLowerOperations"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#checkForUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#fetchCandidate"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#checkForUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#freshStateResult"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#checkForUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#freshStateResult"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#readState",
+      "to": "third_party/archify/scripts/check-update.mjs#guardedCacheEntryRead"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#operationIsActive",
+      "to": "third_party/archify/scripts/check-update.mjs#guardedCacheEntryRead"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#inspectActiveClaim",
+      "to": "third_party/archify/scripts/check-update.mjs#guardedCacheEntryRead"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#cacheMkdirWithToken",
+      "to": "third_party/archify/scripts/check-update.mjs#guardedCacheMutation"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#cacheWriteFile",
+      "to": "third_party/archify/scripts/check-update.mjs#guardedCacheMutation"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#cacheRename",
+      "to": "third_party/archify/scripts/check-update.mjs#guardedCacheMutation"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#cacheRm",
+      "to": "third_party/archify/scripts/check-update.mjs#guardedCacheMutation"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#listOperations",
+      "to": "third_party/archify/scripts/check-update.mjs#guardedCacheRead"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#readState",
+      "to": "third_party/archify/scripts/check-update.mjs#guardedCacheRead"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#inspectActiveClaim",
+      "to": "third_party/archify/scripts/check-update.mjs#guardedCacheRead"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#hasActivePendingOperation",
+      "to": "third_party/archify/scripts/check-update.mjs#guardedCacheRead"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#operationWasFenced",
+      "to": "third_party/archify/scripts/check-update.mjs#guardedCacheRead"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#acquireOperation",
+      "to": "third_party/archify/scripts/check-update.mjs#hasActivePendingOperation"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#validateCachedCandidate",
+      "to": "third_party/archify/scripts/check-update.mjs#hasOnlyKeys"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#validateClaimOwner",
+      "to": "third_party/archify/scripts/check-update.mjs#hasOnlyKeys"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#promoteOperationClaim",
+      "to": "third_party/archify/scripts/check-update.mjs#inspectActiveClaim"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#promoteOperationClaim",
+      "to": "third_party/archify/scripts/check-update.mjs#inspectActiveClaim"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#operationOwnsActiveClaim",
+      "to": "third_party/archify/scripts/check-update.mjs#inspectActiveClaim"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#acquireOperation",
+      "to": "third_party/archify/scripts/check-update.mjs#inspectActiveClaim"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#verifyDirectorySnapshots",
+      "to": "third_party/archify/scripts/check-update.mjs#invalidateCacheToken"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#resolveCacheTarget",
+      "to": "third_party/archify/scripts/check-update.mjs#invalidateCacheToken"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#captureMutationParentSnapshots",
+      "to": "third_party/archify/scripts/check-update.mjs#invalidateCacheToken"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#stableCacheEntry",
+      "to": "third_party/archify/scripts/check-update.mjs#invalidateCacheToken"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#stablePreparedDirectory",
+      "to": "third_party/archify/scripts/check-update.mjs#invalidateCacheToken"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#assertCacheTargetAbsent",
+      "to": "third_party/archify/scripts/check-update.mjs#invalidateCacheToken"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#assertCacheTargetAbsent",
+      "to": "third_party/archify/scripts/check-update.mjs#invalidateCacheToken"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#guardedCacheMutation",
+      "to": "third_party/archify/scripts/check-update.mjs#invalidateCacheToken"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#cacheRm",
+      "to": "third_party/archify/scripts/check-update.mjs#invalidateCacheToken"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#listOperations",
+      "to": "third_party/archify/scripts/check-update.mjs#invalidateCacheToken"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#validateCachedCandidate",
+      "to": "third_party/archify/scripts/check-update.mjs#isPlainObject"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#normalizeState",
+      "to": "third_party/archify/scripts/check-update.mjs#isPlainObject"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#normalizeState",
+      "to": "third_party/archify/scripts/check-update.mjs#isPlainObject"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#normalizeState",
+      "to": "third_party/archify/scripts/check-update.mjs#isPlainObject"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#validateClaimOwner",
+      "to": "third_party/archify/scripts/check-update.mjs#isPlainObject"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#readJsonFile",
+      "to": "third_party/archify/scripts/check-update.mjs#isSameFile"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#readJsonFile",
+      "to": "third_party/archify/scripts/check-update.mjs#isSameFile"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#readJsonFile",
+      "to": "third_party/archify/scripts/check-update.mjs#isSameFile"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#verifyDirectorySnapshots",
+      "to": "third_party/archify/scripts/check-update.mjs#isSameFile"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#verifyMutationParentSnapshots",
+      "to": "third_party/archify/scripts/check-update.mjs#isSameFile"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#stableCacheEntry",
+      "to": "third_party/archify/scripts/check-update.mjs#isSameFile"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#stableCacheEntry",
+      "to": "third_party/archify/scripts/check-update.mjs#isSameFile"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#stableCacheEntry",
+      "to": "third_party/archify/scripts/check-update.mjs#isSameFile"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#stablePreparedDirectory",
+      "to": "third_party/archify/scripts/check-update.mjs#isSameFile"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#cacheWriteFile",
+      "to": "third_party/archify/scripts/check-update.mjs#isSameFile"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#canonicalizeTrustedDirectoryPrefix",
+      "to": "third_party/archify/scripts/check-update.mjs#isWithinDirectory"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#resolveCacheTarget",
+      "to": "third_party/archify/scripts/check-update.mjs#isWithinDirectory"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#readState",
+      "to": "third_party/archify/scripts/check-update.mjs#listOperations"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#inspectActiveClaim",
+      "to": "third_party/archify/scripts/check-update.mjs#listOperations"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#hasActivePendingOperation",
+      "to": "third_party/archify/scripts/check-update.mjs#listOperations"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#reserveOperation",
+      "to": "third_party/archify/scripts/check-update.mjs#listOperations"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#operationIsSuperseded",
+      "to": "third_party/archify/scripts/check-update.mjs#listOperations"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#fenceLowerOperations",
+      "to": "third_party/archify/scripts/check-update.mjs#listOperations"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#operationIsActive",
+      "to": "third_party/archify/scripts/check-update.mjs#metadataIsWithinLease"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#operationIsActive",
+      "to": "third_party/archify/scripts/check-update.mjs#metadataIsWithinLease"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#corruptClaimStatus",
+      "to": "third_party/archify/scripts/check-update.mjs#metadataIsWithinLease"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#stateAfterFailedCheck",
+      "to": "third_party/archify/scripts/check-update.mjs#nextFailedCheck"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#checkForUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#nextSuccessfulCheck"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#readState",
+      "to": "third_party/archify/scripts/check-update.mjs#normalizeState"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#resultForCandidate",
+      "to": "third_party/archify/scripts/check-update.mjs#notification"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#inspectActiveClaim",
+      "to": "third_party/archify/scripts/check-update.mjs#operationIsActive"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#promoteOperationClaim",
+      "to": "third_party/archify/scripts/check-update.mjs#operationIsActive"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#hasActivePendingOperation",
+      "to": "third_party/archify/scripts/check-update.mjs#operationIsActive"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#promoteOperationClaim",
+      "to": "third_party/archify/scripts/check-update.mjs#operationIsSuperseded"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#acquireOperation",
+      "to": "third_party/archify/scripts/check-update.mjs#operationIsSuperseded"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#prepareOperationClaim",
+      "to": "third_party/archify/scripts/check-update.mjs#operationName"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#reserveOperation",
+      "to": "third_party/archify/scripts/check-update.mjs#operationName"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#reserveOperation",
+      "to": "third_party/archify/scripts/check-update.mjs#operationName"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#reserveOperation",
+      "to": "third_party/archify/scripts/check-update.mjs#operationName"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#operationWasFenced",
+      "to": "third_party/archify/scripts/check-update.mjs#operationName"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#transitionOperation",
+      "to": "third_party/archify/scripts/check-update.mjs#operationName"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#fenceLowerOperations",
+      "to": "third_party/archify/scripts/check-update.mjs#operationName"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#commitOperation",
+      "to": "third_party/archify/scripts/check-update.mjs#operationOwnsActiveClaim"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#commitOperation",
+      "to": "third_party/archify/scripts/check-update.mjs#operationOwnsActiveClaim"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#checkForUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#operationOwnsActiveClaim"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#checkForUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#operationOwnsActiveClaim"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#reserveOperation",
+      "to": "third_party/archify/scripts/check-update.mjs#operationWasFenced"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#commitOperation",
+      "to": "third_party/archify/scripts/check-update.mjs#operationWasFenced"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#listOperations",
+      "to": "third_party/archify/scripts/check-update.mjs#parseOperationName"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#reserveOperation",
+      "to": "third_party/archify/scripts/check-update.mjs#prepareCacheDirectory"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#acquireOperation",
+      "to": "third_party/archify/scripts/check-update.mjs#prepareCacheDirectory"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#checkForUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#prepareCacheDirectory"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#acknowledgeUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#prepareCacheDirectory"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#promoteOperationClaim",
+      "to": "third_party/archify/scripts/check-update.mjs#prepareOperationClaim"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#acquireOperation",
+      "to": "third_party/archify/scripts/check-update.mjs#promoteOperationClaim"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#fetchCandidate",
+      "to": "third_party/archify/scripts/check-update.mjs#readBoundedBody"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#readState",
+      "to": "third_party/archify/scripts/check-update.mjs#readJsonFile"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#inspectActiveClaim",
+      "to": "third_party/archify/scripts/check-update.mjs#readJsonFile"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#checkForUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#readJsonFile"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#acknowledgeUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#readJsonFile"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#commitOperation",
+      "to": "third_party/archify/scripts/check-update.mjs#readState"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#resultAfterLosingOperation",
+      "to": "third_party/archify/scripts/check-update.mjs#readState"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#checkForUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#readState"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#checkForUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#readState"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#checkForUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#readState"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#acquireOperation",
+      "to": "third_party/archify/scripts/check-update.mjs#reserveOperation"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#captureMutationParentSnapshots",
+      "to": "third_party/archify/scripts/check-update.mjs#resolveCacheTarget"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#stableCacheEntry",
+      "to": "third_party/archify/scripts/check-update.mjs#resolveCacheTarget"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#assertCacheTargetAbsent",
+      "to": "third_party/archify/scripts/check-update.mjs#resolveCacheTarget"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#cacheWriteFile",
+      "to": "third_party/archify/scripts/check-update.mjs#resolveCacheTarget"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#cacheRename",
+      "to": "third_party/archify/scripts/check-update.mjs#resolveCacheTarget"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#cacheRename",
+      "to": "third_party/archify/scripts/check-update.mjs#resolveCacheTarget"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#cacheRm",
+      "to": "third_party/archify/scripts/check-update.mjs#resolveCacheTarget"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#checkForUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#resultAfterLosingOperation"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#checkForUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#resultAfterLosingOperation"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#freshStateResult",
+      "to": "third_party/archify/scripts/check-update.mjs#resultForCandidate"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#resultAfterLosingOperation",
+      "to": "third_party/archify/scripts/check-update.mjs#resultForCandidate"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#checkForUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#resultForCandidate"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#checkForUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#resultForCandidate"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#promoteOperationClaim",
+      "to": "third_party/archify/scripts/check-update.mjs#retireActiveClaim"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#commitOperation",
+      "to": "third_party/archify/scripts/check-update.mjs#silent"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#commitOperation",
+      "to": "third_party/archify/scripts/check-update.mjs#silent"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#commitOperation",
+      "to": "third_party/archify/scripts/check-update.mjs#silent"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#commitOperation",
+      "to": "third_party/archify/scripts/check-update.mjs#silent"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#resultForCandidate",
+      "to": "third_party/archify/scripts/check-update.mjs#silent"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#resultForCandidate",
+      "to": "third_party/archify/scripts/check-update.mjs#silent"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#resultForCandidate",
+      "to": "third_party/archify/scripts/check-update.mjs#silent"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#resultAfterLosingOperation",
+      "to": "third_party/archify/scripts/check-update.mjs#silent"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#checkForUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#silent"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#checkForUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#silent"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#checkForUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#silent"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#checkForUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#silent"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#checkForUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#silent"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#checkForUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#silent"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#checkForUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#silent"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#checkForUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#silent"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#checkForUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#silent"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#checkForUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#silent"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#checkForUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#silent"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#checkForUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#silent"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#acknowledgeUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#silent"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#acknowledgeUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#silent"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#acknowledgeUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#silent"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#acknowledgeUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#silent"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#acknowledgeUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#silent"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#acknowledgeUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#silent"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#acknowledgeUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#silent"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#acknowledgeUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#silent"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#acknowledgeUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#silent"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#acknowledgeUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#silent"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#runCli",
+      "to": "third_party/archify/scripts/check-update.mjs#silent"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#runCli",
+      "to": "third_party/archify/scripts/check-update.mjs#silent"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#guardedCacheEntryRead",
+      "to": "third_party/archify/scripts/check-update.mjs#stableCacheEntry"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#guardedCacheEntryRead",
+      "to": "third_party/archify/scripts/check-update.mjs#stableCacheEntry"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#guardedCacheEntryRead",
+      "to": "third_party/archify/scripts/check-update.mjs#stableCacheEntry"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#cacheMkdirWithToken",
+      "to": "third_party/archify/scripts/check-update.mjs#stableCacheEntry"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#cacheWriteFile",
+      "to": "third_party/archify/scripts/check-update.mjs#stableCacheEntry"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#cacheRename",
+      "to": "third_party/archify/scripts/check-update.mjs#stableCacheEntry"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#cacheRename",
+      "to": "third_party/archify/scripts/check-update.mjs#stableCacheEntry"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#cacheRename",
+      "to": "third_party/archify/scripts/check-update.mjs#stableCacheEntry"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#cacheRm",
+      "to": "third_party/archify/scripts/check-update.mjs#stableCacheEntry"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#cacheRm",
+      "to": "third_party/archify/scripts/check-update.mjs#stableCacheEntry"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#operationWasFenced",
+      "to": "third_party/archify/scripts/check-update.mjs#stableCacheEntry"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#cacheMkdirWithToken",
+      "to": "third_party/archify/scripts/check-update.mjs#stablePreparedDirectory"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#encodeRecoverableState",
+      "to": "third_party/archify/scripts/check-update.mjs#stateAfterAcknowledgement"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#acknowledgeUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#stateAfterAcknowledgement"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#checkForUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#stateAfterFailedCheck"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#checkForUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#stateAfterFailedCheck"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#encodeRecoverableState",
+      "to": "third_party/archify/scripts/check-update.mjs#stateWithFailureCheck"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#encodeRecoverableState",
+      "to": "third_party/archify/scripts/check-update.mjs#stateWithFailureCheck"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#stateAfterFailedCheck",
+      "to": "third_party/archify/scripts/check-update.mjs#stateWithFailureCheck"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#cancelOperation",
+      "to": "third_party/archify/scripts/check-update.mjs#transitionOperation"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#commitOperation",
+      "to": "third_party/archify/scripts/check-update.mjs#transitionOperation"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#normalizeState",
+      "to": "third_party/archify/scripts/check-update.mjs#validateCachedCandidate"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#inspectActiveClaim",
+      "to": "third_party/archify/scripts/check-update.mjs#validateClaimOwner"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#fetchCandidate",
+      "to": "third_party/archify/scripts/check-update.mjs#validateManifest"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#guardedCacheRead",
+      "to": "third_party/archify/scripts/check-update.mjs#verifyCacheToken"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#guardedCacheRead",
+      "to": "third_party/archify/scripts/check-update.mjs#verifyCacheToken"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#guardedCacheRead",
+      "to": "third_party/archify/scripts/check-update.mjs#verifyCacheToken"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#captureMutationParentSnapshots",
+      "to": "third_party/archify/scripts/check-update.mjs#verifyCacheToken"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#captureMutationParentSnapshots",
+      "to": "third_party/archify/scripts/check-update.mjs#verifyCacheToken"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#verifyMutationContext",
+      "to": "third_party/archify/scripts/check-update.mjs#verifyCacheToken"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#verifyMutationContext",
+      "to": "third_party/archify/scripts/check-update.mjs#verifyCacheToken"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#stableCacheEntry",
+      "to": "third_party/archify/scripts/check-update.mjs#verifyCacheToken"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#stableCacheEntry",
+      "to": "third_party/archify/scripts/check-update.mjs#verifyCacheToken"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#stablePreparedDirectory",
+      "to": "third_party/archify/scripts/check-update.mjs#verifyCacheToken"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#prepareCacheDirectory",
+      "to": "third_party/archify/scripts/check-update.mjs#verifyCacheToken"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#checkForUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#verifyCacheToken"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#verifyCacheToken",
+      "to": "third_party/archify/scripts/check-update.mjs#verifyDirectorySnapshots"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#guardedCacheMutation",
+      "to": "third_party/archify/scripts/check-update.mjs#verifyMutationContext"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#guardedCacheMutation",
+      "to": "third_party/archify/scripts/check-update.mjs#verifyMutationContext"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#guardedCacheMutation",
+      "to": "third_party/archify/scripts/check-update.mjs#verifyMutationContext"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#guardedCacheMutation",
+      "to": "third_party/archify/scripts/check-update.mjs#verifyMutationContext"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#cacheRm",
+      "to": "third_party/archify/scripts/check-update.mjs#verifyMutationContext"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#captureMutationParentSnapshots",
+      "to": "third_party/archify/scripts/check-update.mjs#verifyMutationParentSnapshots"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#verifyMutationContext",
+      "to": "third_party/archify/scripts/check-update.mjs#verifyMutationParentSnapshots"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#checkForUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#versionCacheDirectory"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#acknowledgeUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#versionCacheDirectory"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#acknowledgeUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#waitUntilRetry"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#acknowledgeUpdate",
+      "to": "third_party/archify/scripts/check-update.mjs#waitUntilRetry"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#normalizeState",
+      "to": "third_party/archify/scripts/update-contract.mjs#compareSemver"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#resultForCandidate",
+      "to": "third_party/archify/scripts/update-contract.mjs#compareSemver"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#validateCachedCandidate",
+      "to": "third_party/archify/scripts/update-contract.mjs#isStableCoreVersion"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#normalizeState",
+      "to": "third_party/archify/scripts/update-contract.mjs#parseSemver"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#checkForUpdate",
+      "to": "third_party/archify/scripts/update-contract.mjs#validateLocalRelease"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#acknowledgeUpdate",
+      "to": "third_party/archify/scripts/update-contract.mjs#validateLocalRelease"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#validateCachedCandidate",
+      "to": "third_party/archify/scripts/update-contract.mjs#validateReleaseNotesUrl"
+    },
+    {
+      "from": "third_party/archify/scripts/check-update.mjs#validateManifest",
+      "to": "third_party/archify/scripts/update-contract.mjs#validateStableUpdateManifest"
+    }
+  ],
+  "removed": []
+}

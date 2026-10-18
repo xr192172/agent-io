@@ -1,0 +1,80 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/application/refactor/find/similar_names.ts（**fork 自 cache.db，全量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T06:14:45.593Z",
+    "note": "★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls = 设计说\"这些调用必须成立\"",
+  "calls": [
+    {
+      "from": "src/application/refactor/find/similar_names.ts#confusable",
+      "to": "src/application/refactor/find/similar_names.ts#commonPrefixLen"
+    },
+    {
+      "from": "src/application/refactor/find/similar_names.ts#findSimilarNames",
+      "to": "src/application/refactor/find/similar_names.ts#confusable"
+    },
+    {
+      "from": "src/application/refactor/find/similar_names.ts#findSimilarNames",
+      "to": "src/application/refactor/find/similar_names.ts#describeReason"
+    },
+    {
+      "from": "src/application/refactor/find/similar_names.ts#suggestDisambiguations",
+      "to": "src/application/refactor/find/similar_names.ts#findSimilarNames"
+    },
+    {
+      "from": "src/application/refactor/find/similar_names.ts#confusable",
+      "to": "src/application/refactor/find/similar_names.ts#isAdjacentSwap"
+    },
+    {
+      "from": "src/application/refactor/find/similar_names.ts#describeReason",
+      "to": "src/application/refactor/find/similar_names.ts#isAdjacentSwap"
+    },
+    {
+      "from": "src/application/refactor/find/similar_names.ts#confusable",
+      "to": "src/application/refactor/find/similar_names.ts#isPluralPair"
+    },
+    {
+      "from": "src/application/refactor/find/similar_names.ts#confusable",
+      "to": "src/application/refactor/find/similar_names.ts#levenshtein"
+    },
+    {
+      "from": "src/application/refactor/find/similar_names.ts#describeReason",
+      "to": "src/application/refactor/find/similar_names.ts#levenshtein"
+    },
+    {
+      "from": "src/application/refactor/find/similar_names.ts#findSimilarNames",
+      "to": "src/application/refactor/find/similar_names.ts#lineAt"
+    },
+    {
+      "from": "src/application/refactor/find/similar_names.ts#confusable",
+      "to": "src/application/refactor/find/similar_names.ts#stripTrailingDigits"
+    },
+    {
+      "from": "src/application/refactor/find/similar_names.ts#confusable",
+      "to": "src/application/refactor/find/similar_names.ts#stripTrailingDigits"
+    },
+    {
+      "from": "src/application/refactor/find/similar_names.ts#describeReason",
+      "to": "src/application/refactor/find/similar_names.ts#stripTrailingDigits"
+    },
+    {
+      "from": "src/application/refactor/find/similar_names.ts#suggestDisambiguationsInFile",
+      "to": "src/application/refactor/find/similar_names.ts#suggestDisambiguations"
+    },
+    {
+      "from": "src/application/refactor/find/similar_names.ts#defaultLlmFor",
+      "to": "src/infrastructure/llm_focus.ts#callChat"
+    },
+    {
+      "from": "src/application/refactor/find/similar_names.ts#defaultLlmFor",
+      "to": "src/infrastructure/llm_focus.ts#loadLlmConfig"
+    },
+    {
+      "from": "src/application/refactor/find/similar_names.ts#findSimilarNames",
+      "to": "src/infrastructure/parse/ast_rename.ts#analyzeLocals"
+    }
+  ],
+  "removed": []
+}

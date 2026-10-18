@@ -1,0 +1,112 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/application/design/intent/consistency.ts（**fork 自 cache.db，全量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T06:14:45.613Z",
+    "note": "★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls = 设计说\"这些调用必须成立\"",
+  "calls": [
+    {
+      "from": "src/application/design/intent/consistency.ts#compareSignatures",
+      "to": "src/application/design/api_signature.ts#extractFuncName"
+    },
+    {
+      "from": "src/application/design/intent/consistency.ts#checkConsistencyReport",
+      "to": "src/application/design/api_signature.ts#extractFuncName"
+    },
+    {
+      "from": "src/application/design/intent/consistency.ts#checkConsistencyReport",
+      "to": "src/application/design/intent/consistency.ts#checkBaselineDrift"
+    },
+    {
+      "from": "src/application/design/intent/consistency.ts#checkConsistencyReport",
+      "to": "src/application/design/intent/consistency.ts#checkInvariants"
+    },
+    {
+      "from": "src/application/design/intent/consistency.ts#checkConsistencyReport",
+      "to": "src/application/design/intent/consistency.ts#compareSignatures"
+    },
+    {
+      "from": "src/application/design/intent/consistency.ts#checkConsistencyReport",
+      "to": "src/application/design/intent/consistency.ts#compareTypeContractMembers"
+    },
+    {
+      "from": "src/application/design/intent/consistency.ts#checkConsistencyReport",
+      "to": "src/application/design/intent/consistency.ts#comparisonState"
+    },
+    {
+      "from": "src/application/design/intent/consistency.ts#compareSignatures",
+      "to": "src/application/design/intent/consistency.ts#normalizeSignature"
+    },
+    {
+      "from": "src/application/design/intent/consistency.ts#compareSignatures",
+      "to": "src/application/design/intent/consistency.ts#normalizeSignature"
+    },
+    {
+      "from": "src/application/design/intent/consistency.ts#checkConsistencyReport",
+      "to": "src/application/design/intent/consistency.ts#overlayTombstones"
+    },
+    {
+      "from": "src/application/design/intent/consistency.ts#checkConsistencyReport",
+      "to": "src/application/design/intent/consistency.ts#renderBaselineDriftSection"
+    },
+    {
+      "from": "src/application/design/intent/consistency.ts#overlayTombstones",
+      "to": "src/application/design/intent/consistency.ts#retireStage"
+    },
+    {
+      "from": "src/application/design/intent/consistency.ts#checkConsistencyReport",
+      "to": "src/application/design/intent/consistency.ts#retireStage"
+    },
+    {
+      "from": "src/application/design/intent/consistency.ts#compareSignatures",
+      "to": "src/application/design/intent/consistency.ts#splitTopLevelArgs"
+    },
+    {
+      "from": "src/application/design/intent/consistency.ts#compareSignatures",
+      "to": "src/application/design/intent/consistency.ts#splitTopLevelArgs"
+    },
+    {
+      "from": "src/application/design/intent/consistency.ts#checkConsistencyReport",
+      "to": "src/application/design/intent/consistency.ts#typeContractReason"
+    },
+    {
+      "from": "src/application/design/intent/consistency.ts#checkConsistencyReport",
+      "to": "src/application/design/no_file_entries.ts#noFileEntriesMessage"
+    },
+    {
+      "from": "src/application/design/intent/consistency.ts#checkConsistencyReport",
+      "to": "src/domain/semantic.ts#hasFileEntries"
+    },
+    {
+      "from": "src/application/design/intent/consistency.ts#checkConsistencyReport",
+      "to": "src/domain/semantic.ts#hasFileEntries"
+    },
+    {
+      "from": "src/application/design/intent/consistency.ts#checkBaselineDrift",
+      "to": "src/infrastructure/index/file_facts.ts#fileFacts"
+    },
+    {
+      "from": "src/application/design/intent/consistency.ts#checkConsistencyReport",
+      "to": "src/infrastructure/parse/ast_parser.ts#isSupportedFile"
+    },
+    {
+      "from": "src/application/design/intent/consistency.ts#checkConsistencyReport",
+      "to": "src/infrastructure/parse/ast_parser.ts#parseFileSymbols"
+    },
+    {
+      "from": "src/application/design/intent/consistency.ts#checkBaselineDrift",
+      "to": "src/infrastructure/storage.ts#getBaselineFacts"
+    },
+    {
+      "from": "src/application/design/intent/consistency.ts#checkConsistencyReport",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/application/design/intent/consistency.ts#overlayTombstones",
+      "to": "src/infrastructure/storage_overlay.ts#loadOverlay"
+    }
+  ],
+  "removed": []
+}

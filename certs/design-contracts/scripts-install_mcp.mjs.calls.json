@@ -1,0 +1,144 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— scripts/install_mcp.mjs（**fork 自 cache.db，全量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T06:14:45.595Z",
+    "note": "★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls = 设计说\"这些调用必须成立\"",
+  "calls": [
+    {
+      "from": "scripts/install_mcp.mjs#stripLegacyKeys",
+      "to": "scripts/install_mcp.mjs#atKeyPath"
+    },
+    {
+      "from": "scripts/install_mcp.mjs#statusOf",
+      "to": "scripts/install_mcp.mjs#atKeyPath"
+    },
+    {
+      "from": "scripts/install_mcp.mjs#statusOf",
+      "to": "scripts/install_mcp.mjs#isInstalled"
+    },
+    {
+      "from": "scripts/install_mcp.mjs#patchToml",
+      "to": "scripts/install_mcp.mjs#isMcpServersEntry"
+    },
+    {
+      "from": "scripts/install_mcp.mjs#buildOutput",
+      "to": "scripts/install_mcp.mjs#jsonPatch"
+    },
+    {
+      "from": "scripts/install_mcp.mjs#sameTomlServer",
+      "to": "scripts/install_mcp.mjs#normForCompare"
+    },
+    {
+      "from": "scripts/install_mcp.mjs#sameCommand",
+      "to": "scripts/install_mcp.mjs#normForCompare"
+    },
+    {
+      "from": "scripts/install_mcp.mjs#sameCommand",
+      "to": "scripts/install_mcp.mjs#normForCompare"
+    },
+    {
+      "from": "scripts/install_mcp.mjs#sameTomlServer",
+      "to": "scripts/install_mcp.mjs#parseTomlAssignments"
+    },
+    {
+      "from": "scripts/install_mcp.mjs#buildOutput",
+      "to": "scripts/install_mcp.mjs#patchToml"
+    },
+    {
+      "from": "scripts/install_mcp.mjs#removedLegacyOf",
+      "to": "scripts/install_mcp.mjs#present"
+    },
+    {
+      "from": "scripts/install_mcp.mjs#buildOutput",
+      "to": "scripts/install_mcp.mjs#present"
+    },
+    {
+      "from": "scripts/install_mcp.mjs#sameTomlServer",
+      "to": "scripts/install_mcp.mjs#sameCommand"
+    },
+    {
+      "from": "scripts/install_mcp.mjs#sameServer",
+      "to": "scripts/install_mcp.mjs#sameCommand"
+    },
+    {
+      "from": "scripts/install_mcp.mjs#statusOf",
+      "to": "scripts/install_mcp.mjs#sameServer"
+    },
+    {
+      "from": "scripts/install_mcp.mjs#statusOf",
+      "to": "scripts/install_mcp.mjs#sameTomlServer"
+    },
+    {
+      "from": "scripts/install_mcp.mjs#sameTomlServer",
+      "to": "scripts/install_mcp.mjs#serverValueOf"
+    },
+    {
+      "from": "scripts/install_mcp.mjs#buildOutput",
+      "to": "scripts/install_mcp.mjs#serverValueOf"
+    },
+    {
+      "from": "scripts/install_mcp.mjs#statusOf",
+      "to": "scripts/install_mcp.mjs#serverValueOf"
+    },
+    {
+      "from": "scripts/install_mcp.mjs#tomlSectionBody",
+      "to": "scripts/install_mcp.mjs#splitTomlSections"
+    },
+    {
+      "from": "scripts/install_mcp.mjs#patchToml",
+      "to": "scripts/install_mcp.mjs#splitTomlSections"
+    },
+    {
+      "from": "scripts/install_mcp.mjs#statusOf",
+      "to": "scripts/install_mcp.mjs#splitTomlSections"
+    },
+    {
+      "from": "scripts/install_mcp.mjs#removedLegacyOf",
+      "to": "scripts/install_mcp.mjs#stripLegacyKeys"
+    },
+    {
+      "from": "scripts/install_mcp.mjs#buildOutput",
+      "to": "scripts/install_mcp.mjs#stripLegacyKeys"
+    },
+    {
+      "from": "scripts/install_mcp.mjs#patchToml",
+      "to": "scripts/install_mcp.mjs#tomlQuote"
+    },
+    {
+      "from": "scripts/install_mcp.mjs#sameTomlServer",
+      "to": "scripts/install_mcp.mjs#tomlScalar"
+    },
+    {
+      "from": "scripts/install_mcp.mjs#sameTomlServer",
+      "to": "scripts/install_mcp.mjs#tomlSectionBody"
+    },
+    {
+      "from": "scripts/install_mcp.mjs#sameTomlServer",
+      "to": "scripts/install_mcp.mjs#tomlStringArray"
+    },
+    {
+      "from": "scripts/install_mcp.mjs#tomlSectionBody",
+      "to": "scripts/install_mcp.mjs#tomlTableName"
+    },
+    {
+      "from": "scripts/install_mcp.mjs#patchToml",
+      "to": "scripts/install_mcp.mjs#tomlTableName"
+    },
+    {
+      "from": "scripts/install_mcp.mjs#statusOf",
+      "to": "scripts/install_mcp.mjs#tomlTableName"
+    },
+    {
+      "from": "scripts/install_mcp.mjs#tomlScalar",
+      "to": "scripts/install_mcp.mjs#tomlUnescape"
+    },
+    {
+      "from": "scripts/install_mcp.mjs#tomlStringArray",
+      "to": "scripts/install_mcp.mjs#tomlUnescape"
+    }
+  ],
+  "removed": []
+}

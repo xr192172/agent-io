@@ -1,0 +1,40 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/application/observe/capture/trace_evidence.ts（**fork 自 cache.db，全量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T06:14:45.601Z",
+    "note": "★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls = 设计说\"这些调用必须成立\"",
+  "calls": [
+    {
+      "from": "src/application/observe/capture/trace_evidence.ts#loadObservedTraceRecords",
+      "to": "src/application/observe/capture/observe_trace.ts#defaultEventsCandidates"
+    },
+    {
+      "from": "src/application/observe/capture/trace_evidence.ts#flatten",
+      "to": "src/application/observe/capture/trace_evidence.ts#flatten"
+    },
+    {
+      "from": "src/application/observe/capture/trace_evidence.ts#recordsFromEvents",
+      "to": "src/application/observe/capture/trace_evidence.ts#flatten"
+    },
+    {
+      "from": "src/application/observe/capture/trace_evidence.ts#loadObservedTraceRecords",
+      "to": "src/application/observe/capture/trace_evidence.ts#loadTraceRecords"
+    },
+    {
+      "from": "src/application/observe/capture/trace_evidence.ts#loadTraceRecords",
+      "to": "src/application/observe/capture/trace_evidence.ts#recordsFromEvents"
+    },
+    {
+      "from": "src/application/observe/capture/trace_evidence.ts#buildTraceResolver",
+      "to": "src/application/observe/capture/trace_evidence.ts#resolveTraceEvidence"
+    },
+    {
+      "from": "src/application/observe/capture/trace_evidence.ts#recordsFromEvents",
+      "to": "src/infrastructure/analysis/observe/run_trace_replay.ts#loadRunTracesFromText"
+    }
+  ],
+  "removed": []
+}

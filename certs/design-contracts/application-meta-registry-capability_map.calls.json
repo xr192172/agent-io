@@ -1,0 +1,112 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/application/meta/registry/capability_map.ts（**fork 自 cache.db，全量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T06:14:45.619Z",
+    "note": "★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls = 设计说\"这些调用必须成立\"",
+  "calls": [
+    {
+      "from": "src/application/meta/registry/capability_map.ts#validateLanes",
+      "to": "src/application/meta/registry/capability_map.ts#buildLanes"
+    },
+    {
+      "from": "src/application/meta/registry/capability_map.ts#laneMaintenanceReport",
+      "to": "src/application/meta/registry/capability_map.ts#buildLanes"
+    },
+    {
+      "from": "src/application/meta/registry/capability_map.ts#makeCapabilityMapHandler",
+      "to": "src/application/meta/registry/capability_map.ts#buildLanes"
+    },
+    {
+      "from": "src/application/meta/registry/capability_map.ts#renderChainVerdicts",
+      "to": "src/application/meta/registry/capability_map.ts#chainVerdictsOf"
+    },
+    {
+      "from": "src/application/meta/registry/capability_map.ts#catalogOf",
+      "to": "src/application/meta/registry/capability_map.ts#collectInputKeys"
+    },
+    {
+      "from": "src/application/meta/registry/capability_map.ts#catalogOf",
+      "to": "src/application/meta/registry/capability_map.ts#collectRequiredKeys"
+    },
+    {
+      "from": "src/application/meta/registry/capability_map.ts#buildLanes",
+      "to": "src/application/meta/registry/capability_map.ts#describeForNav"
+    },
+    {
+      "from": "src/application/meta/registry/capability_map.ts#renderUnassigned",
+      "to": "src/application/meta/registry/capability_map.ts#describeForNav"
+    },
+    {
+      "from": "src/application/meta/registry/capability_map.ts#renderDomainText",
+      "to": "src/application/meta/registry/capability_map.ts#domainsOfLane"
+    },
+    {
+      "from": "src/application/meta/registry/capability_map.ts#makeCapabilityMapHandler",
+      "to": "src/application/meta/registry/capability_map.ts#listDomains"
+    },
+    {
+      "from": "src/application/meta/registry/capability_map.ts#makeCapabilityMapHandler",
+      "to": "src/application/meta/registry/capability_map.ts#listDomains"
+    },
+    {
+      "from": "src/application/meta/registry/capability_map.ts#chainVerdictsOf",
+      "to": "src/application/meta/registry/capability_map.ts#objectInputsOf"
+    },
+    {
+      "from": "src/application/meta/registry/capability_map.ts#makeCapabilityMapHandler",
+      "to": "src/application/meta/registry/capability_map.ts#renderChainVerdicts"
+    },
+    {
+      "from": "src/application/meta/registry/capability_map.ts#makeCapabilityMapHandler",
+      "to": "src/application/meta/registry/capability_map.ts#renderDomainText"
+    },
+    {
+      "from": "src/application/meta/registry/capability_map.ts#makeCapabilityMapHandler",
+      "to": "src/application/meta/registry/capability_map.ts#renderDomainText"
+    },
+    {
+      "from": "src/application/meta/registry/capability_map.ts#makeCapabilityMapHandler",
+      "to": "src/application/meta/registry/capability_map.ts#renderLaneText"
+    },
+    {
+      "from": "src/application/meta/registry/capability_map.ts#makeCapabilityMapHandler",
+      "to": "src/application/meta/registry/capability_map.ts#renderLaneText"
+    },
+    {
+      "from": "src/application/meta/registry/capability_map.ts#makeCapabilityMapHandler",
+      "to": "src/application/meta/registry/capability_map.ts#renderUnassigned"
+    },
+    {
+      "from": "src/application/meta/registry/capability_map.ts#makeCapabilityMapHandler",
+      "to": "src/application/meta/registry/capability_map.ts#renderVolumesNote"
+    },
+    {
+      "from": "src/application/meta/registry/capability_map.ts#makeCapabilityMapHandler",
+      "to": "src/application/meta/registry/capability_map.ts#renderVolumesNote"
+    },
+    {
+      "from": "src/application/meta/registry/capability_map.ts#buildLanes",
+      "to": "src/application/meta/registry/capability_map.ts#resolveAssign"
+    },
+    {
+      "from": "src/application/meta/registry/capability_map.ts#makeCapabilityMapHandler",
+      "to": "src/application/meta/registry/tool_faces.ts#renderFaces"
+    },
+    {
+      "from": "src/application/meta/registry/capability_map.ts#chainVerdictsOf",
+      "to": "src/domain/chain_wiring.ts#hopsOf"
+    },
+    {
+      "from": "src/application/meta/registry/capability_map.ts#makeCapabilityMapHandler",
+      "to": "src/domain/chain_wiring.ts#renderChainWiring"
+    },
+    {
+      "from": "src/application/meta/registry/capability_map.ts#renderVolumesNote",
+      "to": "src/infrastructure/storage.ts#getDataHome"
+    }
+  ],
+  "removed": []
+}

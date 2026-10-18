@@ -1,0 +1,84 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/infrastructure/analysis/structure/analyze_monolith.ts（**fork 自 cache.db，全量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T06:14:45.607Z",
+    "note": "★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls = 设计说\"这些调用必须成立\"",
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/structure/analyze_monolith.ts#analyzeMonolith",
+      "to": "src/infrastructure/analysis/structure/analyze_monolith.ts#assessCommunitySubSplit"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/analyze_monolith.ts#analyzeMonolith",
+      "to": "src/infrastructure/analysis/structure/analyze_monolith.ts#buildCallGraphFromCache"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/analyze_monolith.ts#analyzeMonolith",
+      "to": "src/infrastructure/analysis/structure/analyze_monolith.ts#communityName"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/analyze_monolith.ts#assessCommunitySubSplit",
+      "to": "src/infrastructure/analysis/structure/analyze_monolith.ts#estimateLines"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/analyze_monolith.ts#analyzeMonolith",
+      "to": "src/infrastructure/analysis/structure/analyze_monolith.ts#estimateLines"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/analyze_monolith.ts#scoreAnchors",
+      "to": "src/infrastructure/analysis/structure/analyze_monolith.ts#exportScore"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/analyze_monolith.ts#scoreAnchors",
+      "to": "src/infrastructure/analysis/structure/analyze_monolith.ts#exportScore"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/analyze_monolith.ts#splitOversizedGroups",
+      "to": "src/infrastructure/analysis/structure/analyze_monolith.ts#labelPropagation"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/analyze_monolith.ts#analyzeMonolith",
+      "to": "src/infrastructure/analysis/structure/analyze_monolith.ts#labelPropagation"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/analyze_monolith.ts#buildCallGraphFromCache",
+      "to": "src/infrastructure/analysis/structure/analyze_monolith.ts#ownerOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/analyze_monolith.ts#scoreAnchors",
+      "to": "src/infrastructure/analysis/structure/analyze_monolith.ts#roleScore"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/analyze_monolith.ts#scoreAnchors",
+      "to": "src/infrastructure/analysis/structure/analyze_monolith.ts#roleScore"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/analyze_monolith.ts#splitOversizedGroups",
+      "to": "src/infrastructure/analysis/structure/analyze_monolith.ts#scoreAnchors"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/analyze_monolith.ts#analyzeMonolith",
+      "to": "src/infrastructure/analysis/structure/analyze_monolith.ts#scoreAnchors"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/analyze_monolith.ts#splitOversizedGroups",
+      "to": "src/infrastructure/analysis/structure/analyze_monolith.ts#splitOversizedGroups"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/analyze_monolith.ts#analyzeMonolith",
+      "to": "src/infrastructure/analysis/structure/analyze_monolith.ts#splitOversizedGroups"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/analyze_monolith.ts#analyzeMonolith",
+      "to": "src/infrastructure/index/db.ts#openDb"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/analyze_monolith.ts#analyzeMonolith",
+      "to": "src/infrastructure/index/db.ts#projectCacheDbPath"
+    }
+  ],
+  "removed": []
+}

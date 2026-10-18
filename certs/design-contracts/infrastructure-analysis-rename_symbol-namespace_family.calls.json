@@ -1,0 +1,40 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/infrastructure/analysis/rename_symbol/namespace_family.ts（**fork 自 cache.db，全量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T06:14:45.595Z",
+    "note": "★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls = 设计说\"这些调用必须成立\"",
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/rename_symbol/namespace_family.ts#renameNamespaceSymbol",
+      "to": "src/infrastructure/analysis/refactor/protect.ts#createProtectGuard"
+    },
+    {
+      "from": "src/infrastructure/analysis/rename_symbol/namespace_family.ts#renameNamespaceSymbol",
+      "to": "src/infrastructure/analysis/rename_symbol/parts.ts#applyEdits"
+    },
+    {
+      "from": "src/infrastructure/analysis/rename_symbol/namespace_family.ts#renameNamespaceSymbol",
+      "to": "src/infrastructure/analysis/rename_symbol/parts.ts#collectFilesByExt"
+    },
+    {
+      "from": "src/infrastructure/analysis/rename_symbol/namespace_family.ts#renameNamespaceSymbol",
+      "to": "src/infrastructure/analysis/rename_symbol/parts.ts#toOps"
+    },
+    {
+      "from": "src/infrastructure/analysis/rename_symbol/namespace_family.ts#makeNamespaceAnalyzer",
+      "to": "src/infrastructure/parse/kernel.ts#parseContent"
+    },
+    {
+      "from": "src/infrastructure/analysis/rename_symbol/namespace_family.ts#makeNamespaceAnalyzer",
+      "to": "src/infrastructure/parse/languages.ts#findLanguageByExt"
+    },
+    {
+      "from": "src/infrastructure/analysis/rename_symbol/namespace_family.ts#makeNamespaceAnalyzer",
+      "to": "src/infrastructure/parse/loader.ts#getParser"
+    }
+  ],
+  "removed": []
+}

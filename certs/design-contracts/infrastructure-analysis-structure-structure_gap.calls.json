@@ -1,0 +1,80 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/infrastructure/analysis/structure/structure_gap.ts（**fork 自 cache.db，全量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T06:14:45.611Z",
+    "note": "★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls = 设计说\"这些调用必须成立\"",
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/structure/structure_gap.ts#siblingSourceFile",
+      "to": "src/infrastructure/analysis/structure/structure_gap.ts#absOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/structure_gap.ts#computeStructureGap",
+      "to": "src/infrastructure/analysis/structure/structure_gap.ts#absOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/structure_gap.ts#computeStructureGap",
+      "to": "src/infrastructure/analysis/structure/structure_gap.ts#absOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/structure_gap.ts#computeStructureGap",
+      "to": "src/infrastructure/analysis/structure/structure_gap.ts#absOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/structure_gap.ts#computeStructureGap",
+      "to": "src/infrastructure/analysis/structure/structure_gap.ts#absOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/structure_gap.ts#computeStructureGap",
+      "to": "src/infrastructure/analysis/structure/structure_gap.ts#absOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/structure_gap.ts#readStructureConfig",
+      "to": "src/infrastructure/analysis/structure/structure_gap.ts#assertConfig"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/structure_gap.ts#structureGap",
+      "to": "src/infrastructure/analysis/structure/structure_gap.ts#computeStructureGap"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/structure_gap.ts#computeStructureGap",
+      "to": "src/infrastructure/analysis/structure/structure_gap.ts#detectRelocations"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/structure_gap.ts#structureGap",
+      "to": "src/infrastructure/analysis/structure/structure_gap.ts#readStructureConfig"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/structure_gap.ts#computeStructureGap",
+      "to": "src/infrastructure/analysis/structure/structure_gap.ts#siblingSourceFile"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/structure_gap.ts#computeStructureGap",
+      "to": "src/infrastructure/analysis/structure/structure_gap.ts#sourceFileNames"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/structure_gap.ts#computeStructureGap",
+      "to": "src/infrastructure/analysis/structure/structure_gap.ts#sourceFileNames"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/structure_gap.ts#computeStructureGap",
+      "to": "src/infrastructure/analysis/structure/structure_gap.ts#sourceFileNames"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/structure_gap.ts#readStructureConfig",
+      "to": "src/infrastructure/analysis/structure/structure_gap.ts#structureConfigPath"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/structure_gap.ts#sourceFileNames",
+      "to": "src/infrastructure/parse/source_exts.ts#isNoiseFileName"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/structure_gap.ts#sourceFileNames",
+      "to": "src/infrastructure/parse/source_exts.ts#isSourceExt"
+    }
+  ],
+  "removed": []
+}

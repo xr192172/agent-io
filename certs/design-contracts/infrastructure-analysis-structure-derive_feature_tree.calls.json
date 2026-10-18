@@ -1,0 +1,124 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/infrastructure/analysis/structure/derive_feature_tree.ts（**fork 自 cache.db，全量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T06:14:45.617Z",
+    "note": "★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls = 设计说\"这些调用必须成立\"",
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#deriveFeatureTree",
+      "to": "src/infrastructure/analysis/structure/analyze_monolith.ts#analyzeMonolith"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#groupByDir",
+      "to": "src/infrastructure/analysis/structure/derive_feature_tree.ts#communityKeyOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#deriveFeatureTree",
+      "to": "src/infrastructure/analysis/structure/derive_feature_tree.ts#communityKeyOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#deriveFeatureTree",
+      "to": "src/infrastructure/analysis/structure/derive_feature_tree.ts#communityKeyOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#deriveFeatureTree",
+      "to": "src/infrastructure/analysis/structure/derive_feature_tree.ts#deriveFeatureTree.communityOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#deriveFeatureTree",
+      "to": "src/infrastructure/analysis/structure/derive_feature_tree.ts#deriveFeatureTree.communityOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#deriveFeatureTree",
+      "to": "src/infrastructure/analysis/structure/derive_feature_tree.ts#deriveFeatureTree.inFeature"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#deriveFeatureTree",
+      "to": "src/infrastructure/analysis/structure/derive_feature_tree.ts#dirFallbackTree"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#dirFallbackTree",
+      "to": "src/infrastructure/analysis/structure/derive_feature_tree.ts#fileKeyOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#deriveFeatureTree",
+      "to": "src/infrastructure/analysis/structure/derive_feature_tree.ts#fileKeyOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#deriveFeatureTree",
+      "to": "src/infrastructure/analysis/structure/derive_feature_tree.ts#fileKeyOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#deriveFeatureTree",
+      "to": "src/infrastructure/analysis/structure/derive_feature_tree.ts#fileKeyOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#deriveFeatureTree",
+      "to": "src/infrastructure/analysis/structure/derive_feature_tree.ts#groupByDir"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#communityKeyOf",
+      "to": "src/infrastructure/analysis/structure/derive_feature_tree.ts#isTestPath"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#isTestPath",
+      "to": "src/infrastructure/analysis/structure/derive_feature_tree.ts#normPath"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#communityKeyOf",
+      "to": "src/infrastructure/analysis/structure/derive_feature_tree.ts#normPath"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#fileKeyOf",
+      "to": "src/infrastructure/analysis/structure/derive_feature_tree.ts#normPath"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#deriveFeatureTree",
+      "to": "src/infrastructure/analysis/structure/derive_feature_tree.ts#renameGroupsByLLM"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#groupByDir",
+      "to": "src/infrastructure/analysis/structure/derive_feature_tree.ts#ruleLabelOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#dirFallbackTree",
+      "to": "src/infrastructure/analysis/structure/derive_feature_tree.ts#ruleLabelOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#deriveFeatureTree",
+      "to": "src/infrastructure/analysis/structure/derive_feature_tree.ts#ruleLabelOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#renameGroupsByLLM",
+      "to": "src/infrastructure/analysis/structure/derive_feature_tree.ts#toLlmCfg"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#renameGroupsByLLM",
+      "to": "src/infrastructure/llm_focus.ts#callChat"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#renameGroupsByLLM",
+      "to": "src/infrastructure/llm_focus.ts#loadExplainConfig"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#renameGroupsByLLM",
+      "to": "src/infrastructure/llm_focus.ts#loadLlmConfig"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#deriveFeatureTree",
+      "to": "src/infrastructure/storage.ts#getDSLByView"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#dirFallbackTree",
+      "to": "src/infrastructure/storage.ts#saveDSL"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#deriveFeatureTree",
+      "to": "src/infrastructure/storage.ts#saveDSL"
+    }
+  ],
+  "removed": []
+}

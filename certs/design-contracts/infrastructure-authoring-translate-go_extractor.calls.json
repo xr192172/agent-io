@@ -1,0 +1,212 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/infrastructure/authoring/translate/go_extractor.ts（**fork 自 cache.db，全量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T06:14:45.597Z",
+    "note": "★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls = 设计说\"这些调用必须成立\"",
+  "calls": [
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#extractGo",
+      "to": "src/infrastructure/authoring/translate/const_eval.ts#constToTsLiteral"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#extractGo",
+      "to": "src/infrastructure/authoring/translate/const_eval.ts#evalConstExpr"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#unitFromFunc",
+      "to": "src/infrastructure/authoring/translate/go_extractor.ts#appendBodyHints"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#extractTypeParamBounds",
+      "to": "src/infrastructure/authoring/translate/go_extractor.ts#boundFromConstraint"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#extractParamList",
+      "to": "src/infrastructure/authoring/translate/go_extractor.ts#childField"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#extractTypeParams",
+      "to": "src/infrastructure/authoring/translate/go_extractor.ts#childField"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#extractTypeConstraints",
+      "to": "src/infrastructure/authoring/translate/go_extractor.ts#childField"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#extractTypeParamBounds",
+      "to": "src/infrastructure/authoring/translate/go_extractor.ts#childField"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#unitFromFunc",
+      "to": "src/infrastructure/authoring/translate/go_extractor.ts#childField"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#unitFromFunc",
+      "to": "src/infrastructure/authoring/translate/go_extractor.ts#childField"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#unitFromFunc",
+      "to": "src/infrastructure/authoring/translate/go_extractor.ts#childField"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#unitFromFunc",
+      "to": "src/infrastructure/authoring/translate/go_extractor.ts#childField"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#detectDecision",
+      "to": "src/infrastructure/authoring/translate/go_extractor.ts#childField"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#detectDecision",
+      "to": "src/infrastructure/authoring/translate/go_extractor.ts#childField"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#unitFromTypeSpec",
+      "to": "src/infrastructure/authoring/translate/go_extractor.ts#childField"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#unitFromTypeSpec",
+      "to": "src/infrastructure/authoring/translate/go_extractor.ts#childField"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#unitFromTypeSpec",
+      "to": "src/infrastructure/authoring/translate/go_extractor.ts#childField"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#unitFromTypeSpec",
+      "to": "src/infrastructure/authoring/translate/go_extractor.ts#childField"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#constDeclFromSpec",
+      "to": "src/infrastructure/authoring/translate/go_extractor.ts#childField"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#constDeclFromSpec",
+      "to": "src/infrastructure/authoring/translate/go_extractor.ts#childField"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#collect",
+      "to": "src/infrastructure/authoring/translate/go_extractor.ts#childField"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#collect",
+      "to": "src/infrastructure/authoring/translate/go_extractor.ts#childField"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#collect",
+      "to": "src/infrastructure/authoring/translate/go_extractor.ts#collect"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#extractGo",
+      "to": "src/infrastructure/authoring/translate/go_extractor.ts#collect"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#collect",
+      "to": "src/infrastructure/authoring/translate/go_extractor.ts#constDeclFromSpec"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#unitFromFunc",
+      "to": "src/infrastructure/authoring/translate/go_extractor.ts#detectDecision"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#extractGoFromFile",
+      "to": "src/infrastructure/authoring/translate/go_extractor.ts#extractGo"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#unitFromTypeSpec",
+      "to": "src/infrastructure/authoring/translate/go_extractor.ts#extractInterfaceMethods"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#unitFromFunc",
+      "to": "src/infrastructure/authoring/translate/go_extractor.ts#extractParamList"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#methodFromElem",
+      "to": "src/infrastructure/authoring/translate/go_extractor.ts#extractParamList"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#unitFromFunc",
+      "to": "src/infrastructure/authoring/translate/go_extractor.ts#extractTypeConstraints"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#unitFromTypeSpec",
+      "to": "src/infrastructure/authoring/translate/go_extractor.ts#extractTypeConstraints"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#unitFromFunc",
+      "to": "src/infrastructure/authoring/translate/go_extractor.ts#extractTypeParamBounds"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#unitFromTypeSpec",
+      "to": "src/infrastructure/authoring/translate/go_extractor.ts#extractTypeParamBounds"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#unitFromFunc",
+      "to": "src/infrastructure/authoring/translate/go_extractor.ts#extractTypeParams"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#unitFromTypeSpec",
+      "to": "src/infrastructure/authoring/translate/go_extractor.ts#extractTypeParams"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#extractTypeParams",
+      "to": "src/infrastructure/authoring/translate/go_extractor.ts#findChildOfType"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#extractTypeConstraints",
+      "to": "src/infrastructure/authoring/translate/go_extractor.ts#findChildOfType"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#extractTypeParamBounds",
+      "to": "src/infrastructure/authoring/translate/go_extractor.ts#findChildOfType"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#detectDecision",
+      "to": "src/infrastructure/authoring/translate/go_extractor.ts#findChildOfType"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#unitFromTypeSpec",
+      "to": "src/infrastructure/authoring/translate/go_extractor.ts#findChildOfType"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#constDeclFromSpec",
+      "to": "src/infrastructure/authoring/translate/go_extractor.ts#firstExprChild"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#extractInterfaceMethods",
+      "to": "src/infrastructure/authoring/translate/go_extractor.ts#methodFromElem"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#unitFromFunc",
+      "to": "src/infrastructure/authoring/translate/go_extractor.ts#normResult"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#methodFromElem",
+      "to": "src/infrastructure/authoring/translate/go_extractor.ts#normResult"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#methodFromElem",
+      "to": "src/infrastructure/authoring/translate/go_extractor.ts#normResult"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#unitFromFunc",
+      "to": "src/infrastructure/authoring/translate/go_extractor.ts#parseReceiver"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#boundFromConstraint",
+      "to": "src/infrastructure/authoring/translate/go_extractor.ts#scalarConstBound"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#collect",
+      "to": "src/infrastructure/authoring/translate/go_extractor.ts#unitFromFunc"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/go_extractor.ts#collect",
+      "to": "src/infrastructure/authoring/translate/go_extractor.ts#unitFromTypeSpec"
+    }
+  ],
+  "removed": []
+}

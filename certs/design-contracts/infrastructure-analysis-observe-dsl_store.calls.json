@@ -1,0 +1,88 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/infrastructure/analysis/observe/dsl_store.ts（**fork 自 cache.db，全量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T06:14:45.600Z",
+    "note": "★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls = 设计说\"这些调用必须成立\"",
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.seedDefault",
+      "to": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.appendHistory"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.save",
+      "to": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.appendHistory"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.load",
+      "to": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.dslPath"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.loadOrThrow",
+      "to": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.dslPath"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.seedDefault",
+      "to": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.dslPath"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.writeDoc",
+      "to": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.dslPath"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.history",
+      "to": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.histPath"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.appendHistory",
+      "to": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.histPath"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.rollback",
+      "to": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.history"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.loadOrThrow",
+      "to": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.load"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.save",
+      "to": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.load"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.rollback",
+      "to": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.save"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.seedDefault",
+      "to": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.writeDoc"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.save",
+      "to": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.writeDoc"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.appendHistory",
+      "to": "src/infrastructure/analysis/observe/dsl_store.ts#appendLine"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.constructor",
+      "to": "src/infrastructure/analysis/observe/dsl_store.ts#defaultDSLDir"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.history",
+      "to": "src/infrastructure/analysis/observe/dsl_store.ts#readJsonl"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.seedDefault",
+      "to": "src/infrastructure/analysis/observe/dsl_store.ts#silentErrorDiscardDSL"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/dsl_store.ts#DesignDSLStore.writeDoc",
+      "to": "src/infrastructure/analysis/observe/dsl_store.ts#writeAtomic"
+    }
+  ],
+  "removed": []
+}

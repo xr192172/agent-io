@@ -1,0 +1,260 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/application/observe/runtime/watch_project_tool.ts（**fork 自 cache.db，全量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T06:14:45.609Z",
+    "note": "★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls = 设计说\"这些调用必须成立\"",
+  "calls": [
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#runDriftCheck",
+      "to": "src/application/design/intent/detect_drift.ts#detectDrift"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#impactWatch",
+      "to": "src/application/meta/impact/impact_report.ts#listImpactReports"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#impactWatch",
+      "to": "src/application/meta/impact/impact_report.ts#readImpactReport"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#doWork",
+      "to": "src/application/meta/impact/impact_report.ts#runImpactReport"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#startWatch",
+      "to": "src/application/observe/runtime/watch_project_tool.ts#createRebuildThrottler"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#declareWatch",
+      "to": "src/application/observe/runtime/watch_project_tool.ts#createRebuildThrottler"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#watchProjectToolCore",
+      "to": "src/application/observe/runtime/watch_project_tool.ts#declareWatch"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#startWatch",
+      "to": "src/application/observe/runtime/watch_project_tool.ts#doWork"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#declareWatch",
+      "to": "src/application/observe/runtime/watch_project_tool.ts#doWork"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#runDriftCheck",
+      "to": "src/application/observe/runtime/watch_project_tool.ts#driftBrief"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#statusWatch",
+      "to": "src/application/observe/runtime/watch_project_tool.ts#driftBrief"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#doWork",
+      "to": "src/application/observe/runtime/watch_project_tool.ts#ensureObserveSink"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#doWork",
+      "to": "src/application/observe/runtime/watch_project_tool.ts#ensureObserveSink"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#declareWatch",
+      "to": "src/application/observe/runtime/watch_project_tool.ts#ensureObserveSink"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#watchProjectToolCore",
+      "to": "src/application/observe/runtime/watch_project_tool.ts#impactWatch"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#startWatch",
+      "to": "src/application/observe/runtime/watch_project_tool.ts#keyOf"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#statusWatch",
+      "to": "src/application/observe/runtime/watch_project_tool.ts#keyOf"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#stopWatch",
+      "to": "src/application/observe/runtime/watch_project_tool.ts#keyOf"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#impactWatch",
+      "to": "src/application/observe/runtime/watch_project_tool.ts#keyOf"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#declareWatch",
+      "to": "src/application/observe/runtime/watch_project_tool.ts#keyOf"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#ledgerWatch",
+      "to": "src/application/observe/runtime/watch_project_tool.ts#keyOf"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#watchProjectToolCore",
+      "to": "src/application/observe/runtime/watch_project_tool.ts#ledgerWatch"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#ensureObserveSink",
+      "to": "src/application/observe/runtime/watch_project_tool.ts#observeEventsDir"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#startWatch",
+      "to": "src/application/observe/runtime/watch_project_tool.ts#onBatchChange"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#runDriftCheck",
+      "to": "src/application/observe/runtime/watch_project_tool.ts#relOf"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#doWork",
+      "to": "src/application/observe/runtime/watch_project_tool.ts#relOf"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#declareWatch",
+      "to": "src/application/observe/runtime/watch_project_tool.ts#relOf"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#doWork",
+      "to": "src/application/observe/runtime/watch_project_tool.ts#runDriftCheck"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#startWatch",
+      "to": "src/application/observe/runtime/watch_project_tool.ts#runDriftCheck"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#watchProjectToolCore",
+      "to": "src/application/observe/runtime/watch_project_tool.ts#startWatch"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#watchProjectToolCore",
+      "to": "src/application/observe/runtime/watch_project_tool.ts#statusWatch"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#watchProjectToolCore",
+      "to": "src/application/observe/runtime/watch_project_tool.ts#stopWatch"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#watchProjectTool",
+      "to": "src/application/observe/runtime/watch_project_tool.ts#touchedOf"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#declareWatch",
+      "to": "src/application/observe/runtime/watch_project_tool.ts#watchProjectTool"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#watchProjectTool",
+      "to": "src/application/observe/runtime/watch_project_tool.ts#watchProjectToolCore"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#doWork",
+      "to": "src/application/observe/runtime/watch_project_tool.ts#watchToolEventListener"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#doWork",
+      "to": "src/application/refactor/diff_views/diff_views.ts#diffViews"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#watchProjectTool",
+      "to": "src/domain/b_terms.ts#withTouched"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#runDriftCheck",
+      "to": "src/infrastructure/alert_inbox.ts#pushAlert"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#doWork",
+      "to": "src/infrastructure/alert_inbox.ts#pushAlert"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#doWork",
+      "to": "src/infrastructure/alert_inbox.ts#pushAlert"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#declareWatch",
+      "to": "src/infrastructure/analysis/impact/diff_impact.ts#diffImpact"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#declareWatch",
+      "to": "src/infrastructure/analysis/impact/impact_ledger_store.ts#appendDeclaration"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#statusWatch",
+      "to": "src/infrastructure/analysis/impact/impact_ledger_store.ts#countOpenViolations"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#ledgerWatch",
+      "to": "src/infrastructure/analysis/impact/impact_ledger_store.ts#countOpenViolations"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#ledgerWatch",
+      "to": "src/infrastructure/analysis/impact/impact_ledger_store.ts#countOpenViolations"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#ledgerWatch",
+      "to": "src/infrastructure/analysis/impact/impact_ledger_store.ts#countOpenViolations"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#ledgerWatch",
+      "to": "src/infrastructure/analysis/impact/impact_ledger_store.ts#listLedger"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#doWork",
+      "to": "src/infrastructure/analysis/impact/impact_ledger_store.ts#markConsumed"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#startWatch",
+      "to": "src/infrastructure/analysis/impact/impact_ledger_store.ts#recoverPending"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#declareWatch",
+      "to": "src/infrastructure/analysis/impact/impact_ledger_store.ts#recoverPending"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#ledgerWatch",
+      "to": "src/infrastructure/analysis/impact/impact_ledger_store.ts#resolveViolation"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#doWork",
+      "to": "src/infrastructure/analysis/observe/probe.ts#captureProbe"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#doWork",
+      "to": "src/infrastructure/analysis/observe/probe.ts#captureProbe"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#doWork",
+      "to": "src/infrastructure/analysis/observe/probe.ts#captureProbe"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#declareWatch",
+      "to": "src/infrastructure/analysis/observe/probe.ts#captureProbe"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#ensureObserveSink",
+      "to": "src/infrastructure/analysis/observe/probe.ts#hasGlobalProbeSink"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#ensureObserveSink",
+      "to": "src/infrastructure/analysis/observe/probe.ts#setGlobalProbeSink"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#doWork",
+      "to": "src/infrastructure/graph/import_project.ts#importProject"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#doWork",
+      "to": "src/infrastructure/index/db.ts#getProjectCacheDb"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#startWatch",
+      "to": "src/infrastructure/index/db.ts#getProjectCacheDb"
+    },
+    {
+      "from": "src/application/observe/runtime/watch_project_tool.ts#startWatch",
+      "to": "src/infrastructure/index/watch_project.ts#watchProject"
+    }
+  ],
+  "removed": []
+}

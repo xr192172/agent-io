@@ -1,0 +1,108 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/application/meta/llm/llm_decider.ts（**fork 自 cache.db，全量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T06:14:45.608Z",
+    "note": "★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls = 设计说\"这些调用必须成立\"",
+  "calls": [
+    {
+      "from": "src/application/meta/llm/llm_decider.ts#decideCanvasNotes",
+      "to": "src/application/design/workbench/code_workbench.ts#proposeChange"
+    },
+    {
+      "from": "src/application/meta/llm/llm_decider.ts#decideCanvasNotes",
+      "to": "src/application/meta/docs/project_docs.ts#buildDocsPromptBlock"
+    },
+    {
+      "from": "src/application/meta/llm/llm_decider.ts#decideCanvasNotes",
+      "to": "src/application/meta/docs/project_docs.ts#listProjectDocs"
+    },
+    {
+      "from": "src/application/meta/llm/llm_decider.ts#llmDecide",
+      "to": "src/application/meta/llm/llm_decider.ts#buildNotePrompt"
+    },
+    {
+      "from": "src/application/meta/llm/llm_decider.ts#decideCanvasNotes",
+      "to": "src/application/meta/llm/llm_decider.ts#collectBatchTargets"
+    },
+    {
+      "from": "src/application/meta/llm/llm_decider.ts#decideCanvasNotes",
+      "to": "src/application/meta/llm/llm_decider.ts#decideMode"
+    },
+    {
+      "from": "src/application/meta/llm/llm_decider.ts#parseRawDecision",
+      "to": "src/application/meta/llm/llm_decider.ts#extractJson"
+    },
+    {
+      "from": "src/application/meta/llm/llm_decider.ts#decideCanvasNotes",
+      "to": "src/application/meta/llm/llm_decider.ts#llmDecide"
+    },
+    {
+      "from": "src/application/meta/llm/llm_decider.ts#decideCanvasNotes",
+      "to": "src/application/meta/llm/llm_decider.ts#mockDecide"
+    },
+    {
+      "from": "src/application/meta/llm/llm_decider.ts#llmDecide",
+      "to": "src/application/meta/llm/llm_decider.ts#normalizeChangeOp"
+    },
+    {
+      "from": "src/application/meta/llm/llm_decider.ts#llmDecide",
+      "to": "src/application/meta/llm/llm_decider.ts#parseRawDecision"
+    },
+    {
+      "from": "src/application/meta/llm/llm_decider.ts#decideCanvasNotes",
+      "to": "src/application/meta/llm/llm_decider.ts#readFileExcerpt"
+    },
+    {
+      "from": "src/application/meta/llm/llm_decider.ts#readFileExcerpt",
+      "to": "src/application/meta/llm/llm_decider.ts#safeRel"
+    },
+    {
+      "from": "src/application/meta/llm/llm_decider.ts#decideCanvasNotes",
+      "to": "src/application/meta/llm/llm_decider.ts#targetFileRel"
+    },
+    {
+      "from": "src/application/meta/llm/llm_decider.ts#decideCanvasNotes",
+      "to": "src/application/meta/view/derive_mind_map.ts#markCanvasNotesStatus"
+    },
+    {
+      "from": "src/application/meta/llm/llm_decider.ts#decideCanvasNotes",
+      "to": "src/application/meta/view/derive_mind_map.ts#resolveCanvasNoteTargets"
+    },
+    {
+      "from": "src/application/meta/llm/llm_decider.ts#llmDecide",
+      "to": "src/infrastructure/llm_focus.ts#callChat"
+    },
+    {
+      "from": "src/application/meta/llm/llm_decider.ts#decideCanvasNotes",
+      "to": "src/infrastructure/llm_focus.ts#loadLlmConfig"
+    },
+    {
+      "from": "src/application/meta/llm/llm_decider.ts#llmDecide",
+      "to": "src/infrastructure/llm_gateway.ts#chatViaGateway"
+    },
+    {
+      "from": "src/application/meta/llm/llm_decider.ts#decideMode",
+      "to": "src/infrastructure/llm_gateway.ts#hasEnabledProvider"
+    },
+    {
+      "from": "src/application/meta/llm/llm_decider.ts#llmDecide",
+      "to": "src/infrastructure/llm_gateway.ts#hasEnabledProvider"
+    },
+    {
+      "from": "src/application/meta/llm/llm_decider.ts#decideCanvasNotes",
+      "to": "src/infrastructure/llm_gateway.ts#hasEnabledProvider"
+    },
+    {
+      "from": "src/application/meta/llm/llm_decider.ts#decideCanvasNotes",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/application/meta/llm/llm_decider.ts#decideCanvasNotes",
+      "to": "src/infrastructure/storage.ts#saveDSL"
+    }
+  ],
+  "removed": []
+}

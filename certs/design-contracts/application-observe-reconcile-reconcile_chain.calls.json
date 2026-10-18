@@ -1,0 +1,80 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/application/observe/reconcile/reconcile_chain.ts（**fork 自 cache.db，全量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T06:14:45.603Z",
+    "note": "★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls = 设计说\"这些调用必须成立\"",
+  "calls": [
+    {
+      "from": "src/application/observe/reconcile/reconcile_chain.ts#reconcileChainCore",
+      "to": "src/application/design/derive/derive_chain.ts#deriveDetailChain"
+    },
+    {
+      "from": "src/application/observe/reconcile/reconcile_chain.ts#reconcileChainCore",
+      "to": "src/application/observe/reconcile/reconcile_chain.ts#discoverEventFiles"
+    },
+    {
+      "from": "src/application/observe/reconcile/reconcile_chain.ts#reconcileChainCore",
+      "to": "src/application/observe/reconcile/reconcile_chain.ts#hasDerivedChain"
+    },
+    {
+      "from": "src/application/observe/reconcile/reconcile_chain.ts#reconcileChainCore",
+      "to": "src/application/observe/reconcile/reconcile_chain.ts#legacyEventFiles"
+    },
+    {
+      "from": "src/application/observe/reconcile/reconcile_chain.ts#readDerivedChain",
+      "to": "src/application/observe/reconcile/reconcile_chain.ts#locateHostSource"
+    },
+    {
+      "from": "src/application/observe/reconcile/reconcile_chain.ts#reconcileChainCore",
+      "to": "src/application/observe/reconcile/reconcile_chain.ts#locateHostSource"
+    },
+    {
+      "from": "src/application/observe/reconcile/reconcile_chain.ts#reconcileChainCore",
+      "to": "src/application/observe/reconcile/reconcile_chain.ts#readDerivedChain"
+    },
+    {
+      "from": "src/application/observe/reconcile/reconcile_chain.ts#reconcileChain",
+      "to": "src/application/observe/reconcile/reconcile_chain.ts#reconcileChainCore"
+    },
+    {
+      "from": "src/application/observe/reconcile/reconcile_chain.ts#reconcileChain",
+      "to": "src/application/observe/reconcile/reconcile_chain.ts#touchedOf"
+    },
+    {
+      "from": "src/application/observe/reconcile/reconcile_chain.ts#reconcileChain",
+      "to": "src/domain/b_terms.ts#withTouched"
+    },
+    {
+      "from": "src/application/observe/reconcile/reconcile_chain.ts#reconcileChainCore",
+      "to": "src/infrastructure/analysis/observe/chain.ts#matchChainDecl"
+    },
+    {
+      "from": "src/application/observe/reconcile/reconcile_chain.ts#reconcileChainCore",
+      "to": "src/infrastructure/analysis/observe/chain.ts#rebuildChains"
+    },
+    {
+      "from": "src/application/observe/reconcile/reconcile_chain.ts#reconcileChainCore",
+      "to": "src/infrastructure/analysis/observe/judge.ts#judgeEvent"
+    },
+    {
+      "from": "src/application/observe/reconcile/reconcile_chain.ts#reconcileChainCore",
+      "to": "src/infrastructure/analysis/observe/log_query.ts#queryObserveLog"
+    },
+    {
+      "from": "src/application/observe/reconcile/reconcile_chain.ts#reconcileChainCore",
+      "to": "src/infrastructure/analysis/observe/probe.ts#loadTSEvents"
+    },
+    {
+      "from": "src/application/observe/reconcile/reconcile_chain.ts#reconcileChainCore",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/application/observe/reconcile/reconcile_chain.ts#reconcileChainCore",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    }
+  ],
+  "removed": []
+}

@@ -1,0 +1,104 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/infrastructure/analysis/refactor/langs/java/layering.ts（**fork 自 cache.db，全量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T06:14:45.598Z",
+    "note": "★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls = 设计说\"这些调用必须成立\"",
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/refactor/langs/java/layering.ts#rewriteJavaFile",
+      "to": "src/infrastructure/analysis/refactor/langs/java/layering.ts#analyzeJavaRefs"
+    },
+    {
+      "from": "src/infrastructure/analysis/refactor/langs/java/layering.ts#collectAnnotations",
+      "to": "src/infrastructure/analysis/refactor/langs/java/layering.ts#annotationName"
+    },
+    {
+      "from": "src/infrastructure/analysis/refactor/langs/java/layering.ts#extractJavaTypes",
+      "to": "src/infrastructure/analysis/refactor/langs/java/layering.ts#collectAnnotations"
+    },
+    {
+      "from": "src/infrastructure/analysis/refactor/langs/java/layering.ts#rewriteJavaFile",
+      "to": "src/infrastructure/analysis/refactor/langs/java/layering.ts#collectImportEdits"
+    },
+    {
+      "from": "src/infrastructure/analysis/refactor/langs/java/layering.ts#planSpringLayering",
+      "to": "src/infrastructure/analysis/refactor/langs/java/layering.ts#collectJavaFiles"
+    },
+    {
+      "from": "src/infrastructure/analysis/refactor/langs/java/layering.ts#buildSpringMvcLayeringPlan",
+      "to": "src/infrastructure/analysis/refactor/langs/java/layering.ts#collectJavaFiles"
+    },
+    {
+      "from": "src/infrastructure/analysis/refactor/langs/java/layering.ts#planSpringLayering",
+      "to": "src/infrastructure/analysis/refactor/langs/java/layering.ts#extractJavaTypes"
+    },
+    {
+      "from": "src/infrastructure/analysis/refactor/langs/java/layering.ts#rewriteJavaFile",
+      "to": "src/infrastructure/analysis/refactor/langs/java/layering.ts#findPackageNode"
+    },
+    {
+      "from": "src/infrastructure/analysis/refactor/langs/java/layering.ts#rewriteJavaFile",
+      "to": "src/infrastructure/analysis/refactor/langs/java/layering.ts#findPkgName"
+    },
+    {
+      "from": "src/infrastructure/analysis/refactor/langs/java/layering.ts#analyzeJavaRefs",
+      "to": "src/infrastructure/analysis/refactor/langs/java/layering.ts#importPathNode"
+    },
+    {
+      "from": "src/infrastructure/analysis/refactor/langs/java/layering.ts#collectImportEdits",
+      "to": "src/infrastructure/analysis/refactor/langs/java/layering.ts#importPathNode"
+    },
+    {
+      "from": "src/infrastructure/analysis/refactor/langs/java/layering.ts#planSpringLayering",
+      "to": "src/infrastructure/analysis/refactor/langs/java/layering.ts#inferBasePackage"
+    },
+    {
+      "from": "src/infrastructure/analysis/refactor/langs/java/layering.ts#analyzeJavaRefs",
+      "to": "src/infrastructure/analysis/refactor/langs/java/layering.ts#isValidTypeName"
+    },
+    {
+      "from": "src/infrastructure/analysis/refactor/langs/java/layering.ts#planSpringLayering",
+      "to": "src/infrastructure/analysis/refactor/langs/java/layering.ts#layerForType"
+    },
+    {
+      "from": "src/infrastructure/analysis/refactor/langs/java/layering.ts#extractJavaTypes",
+      "to": "src/infrastructure/analysis/refactor/langs/java/layering.ts#packageNameFrom"
+    },
+    {
+      "from": "src/infrastructure/analysis/refactor/langs/java/layering.ts#analyzeJavaRefs",
+      "to": "src/infrastructure/analysis/refactor/langs/java/layering.ts#packageNameFrom"
+    },
+    {
+      "from": "src/infrastructure/analysis/refactor/langs/java/layering.ts#buildSpringMvcLayeringPlan",
+      "to": "src/infrastructure/analysis/refactor/langs/java/layering.ts#planSpringLayering"
+    },
+    {
+      "from": "src/infrastructure/analysis/refactor/langs/java/layering.ts#springMvcLayeringHandler",
+      "to": "src/infrastructure/analysis/refactor/langs/java/layering.ts#planSpringLayering"
+    },
+    {
+      "from": "src/infrastructure/analysis/refactor/langs/java/layering.ts#springMvcLayeringHandler",
+      "to": "src/infrastructure/analysis/refactor/langs/java/layering.ts#renderLayeringText"
+    },
+    {
+      "from": "src/infrastructure/analysis/refactor/langs/java/layering.ts#buildSpringMvcLayeringPlan",
+      "to": "src/infrastructure/analysis/refactor/langs/java/layering.ts#rewriteJavaFile"
+    },
+    {
+      "from": "src/infrastructure/analysis/refactor/langs/java/layering.ts#buildSpringMvcLayeringPlan",
+      "to": "src/infrastructure/analysis/refactor/langs/java/layering.ts#targetPackage"
+    },
+    {
+      "from": "src/infrastructure/analysis/refactor/langs/java/layering.ts#extractJavaTypes",
+      "to": "src/infrastructure/analysis/refactor/langs/java/layering.ts#typeNameFrom"
+    },
+    {
+      "from": "src/infrastructure/analysis/refactor/langs/java/layering.ts#analyzeJavaRefs",
+      "to": "src/infrastructure/analysis/refactor/langs/java/layering.ts#typeNameFrom"
+    }
+  ],
+  "removed": []
+}

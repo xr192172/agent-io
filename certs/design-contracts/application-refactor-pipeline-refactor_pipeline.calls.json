@@ -1,0 +1,104 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/application/refactor/pipeline/refactor_pipeline.ts（**fork 自 cache.db，全量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T06:14:45.612Z",
+    "note": "★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls = 设计说\"这些调用必须成立\"",
+  "calls": [
+    {
+      "from": "src/application/refactor/pipeline/refactor_pipeline.ts#buildDefaultLangs",
+      "to": "src/application/refactor/annotate/function_annotation.ts#planFunctionAnnotation"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_pipeline.ts#computeDeadImportsPlan",
+      "to": "src/application/refactor/edit/remove_dead_imports.ts#langOfFile"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_pipeline.ts#computeDeadImportsPlan",
+      "to": "src/application/refactor/edit/remove_dead_imports.ts#removeImportsFromSource"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_pipeline.ts#runRefactorPipeline",
+      "to": "src/application/refactor/pipeline/refactor_pipeline.ts#collectSteps"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_pipeline.ts#buildDefaultLangs",
+      "to": "src/application/refactor/pipeline/refactor_pipeline.ts#computeDeadImportsPlan"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_pipeline.ts#buildDefaultLangs",
+      "to": "src/application/refactor/pipeline/refactor_pipeline.ts#computeDeadImportsPlan"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_pipeline.ts#buildDefaultLangs",
+      "to": "src/application/refactor/pipeline/refactor_pipeline.ts#computeDeadStatementsPlan"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_pipeline.ts#buildDefaultLangs",
+      "to": "src/application/refactor/pipeline/refactor_pipeline.ts#computeDeadStatementsPlan"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_pipeline.ts#dominantVerifyCommands",
+      "to": "src/application/refactor/pipeline/refactor_pipeline.ts#dominantExecutor"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_pipeline.ts#runRefactorPipeline",
+      "to": "src/application/refactor/pipeline/refactor_pipeline.ts#dominantVerifyCommands"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_pipeline.ts#runRefactorPipeline",
+      "to": "src/application/refactor/pipeline/refactor_pipeline.ts#runRefactorPipeline.runStage"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_pipeline.ts#runRefactorPipeline.runStage",
+      "to": "src/application/refactor/pipeline/refactor_pipeline.ts#staticRevalidate"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_pipeline.ts#runRefactorPipeline.runStage",
+      "to": "src/application/write_gate.ts#recordSelfWrite"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_pipeline.ts#runRefactorPipeline.runStage",
+      "to": "src/application/write_gate.ts#syncSelfWrites"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_pipeline.ts#runRefactorPipeline.runStage",
+      "to": "src/application/write_gate.ts#writeThroughLine"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_pipeline.ts#computeDeadStatementsPlan",
+      "to": "src/infrastructure/analysis/deadcode/dead_statements.ts#applyReachabilityRuns"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_pipeline.ts#computeDeadStatementsPlan",
+      "to": "src/infrastructure/analysis/deadcode/dead_statements.ts#flagDeadStatements"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_pipeline.ts#computeDeadImportsPlan",
+      "to": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#detectDeadImports"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_pipeline.ts#dominantExecutor",
+      "to": "src/infrastructure/analysis/refactor/refactor_langs.ts#manifestPresent"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_pipeline.ts#runRefactorPipeline",
+      "to": "src/infrastructure/analysis/submit_gate/index.ts#checkEmbedSubmissions"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_pipeline.ts#runRefactorPipeline",
+      "to": "src/infrastructure/analysis/submit_gate/index.ts#checkEmbedSubmissions"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_pipeline.ts#buildDefaultLangs",
+      "to": "src/infrastructure/verify_refactor.ts#defaultVerifyCommands"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_pipeline.ts#buildDefaultLangs",
+      "to": "src/infrastructure/verify_refactor.ts#defaultVerifyCommands"
+    }
+  ],
+  "removed": []
+}

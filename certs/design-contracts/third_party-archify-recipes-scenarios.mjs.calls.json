@@ -1,0 +1,48 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— third_party/archify/recipes/scenarios.mjs（**fork 自 cache.db，全量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T06:14:45.582Z",
+    "note": "★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls = 设计说\"这些调用必须成立\"",
+  "calls": [
+    {
+      "from": "third_party/archify/recipes/scenarios.mjs#recommendScenario",
+      "to": "third_party/archify/recipes/scenarios.mjs#detectGuideLanguage"
+    },
+    {
+      "from": "third_party/archify/recipes/scenarios.mjs#formatScenarioList",
+      "to": "third_party/archify/recipes/scenarios.mjs#listScenarioRecipes"
+    },
+    {
+      "from": "third_party/archify/recipes/scenarios.mjs#listScenarioRecipes",
+      "to": "third_party/archify/recipes/scenarios.mjs#localized"
+    },
+    {
+      "from": "third_party/archify/recipes/scenarios.mjs#recommendScenario",
+      "to": "third_party/archify/recipes/scenarios.mjs#localized"
+    },
+    {
+      "from": "third_party/archify/recipes/scenarios.mjs#recommendScenario",
+      "to": "third_party/archify/recipes/scenarios.mjs#localized"
+    },
+    {
+      "from": "third_party/archify/recipes/scenarios.mjs#publicGuideData",
+      "to": "third_party/archify/recipes/scenarios.mjs#localized"
+    },
+    {
+      "from": "third_party/archify/recipes/scenarios.mjs#scoreRecipe",
+      "to": "third_party/archify/recipes/scenarios.mjs#normalized"
+    },
+    {
+      "from": "third_party/archify/recipes/scenarios.mjs#scoreRecipe",
+      "to": "third_party/archify/recipes/scenarios.mjs#normalized"
+    },
+    {
+      "from": "third_party/archify/recipes/scenarios.mjs#recommendScenario",
+      "to": "third_party/archify/recipes/scenarios.mjs#scoreRecipe"
+    }
+  ],
+  "removed": []
+}

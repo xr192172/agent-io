@@ -1,0 +1,32 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/infrastructure/analysis/cross_repo/index.ts（**fork 自 cache.db，全量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T06:14:45.594Z",
+    "note": "★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls = 设计说\"这些调用必须成立\"",
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/cross_repo/index.ts#compareProjects",
+      "to": "src/infrastructure/analysis/cross_repo/index.ts#buildProjectIndex"
+    },
+    {
+      "from": "src/infrastructure/analysis/cross_repo/index.ts#isDuplicate",
+      "to": "src/infrastructure/analysis/cross_repo/index.ts#defFingerprint"
+    },
+    {
+      "from": "src/infrastructure/analysis/cross_repo/index.ts#compareProjects",
+      "to": "src/infrastructure/analysis/cross_repo/index.ts#isDuplicate"
+    },
+    {
+      "from": "src/infrastructure/analysis/cross_repo/index.ts#defFingerprint",
+      "to": "src/infrastructure/analysis/cross_repo/index.ts#normSig"
+    },
+    {
+      "from": "src/infrastructure/analysis/cross_repo/index.ts#buildProjectIndex",
+      "to": "src/infrastructure/analysis/impact/index.ts#buildImpactGraph"
+    }
+  ],
+  "removed": []
+}
