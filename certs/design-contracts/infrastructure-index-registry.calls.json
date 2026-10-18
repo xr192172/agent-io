@@ -2,7 +2,7 @@
   "//": "★★★ 设计侧契约（结构级·调用）—— src/infrastructure/index/registry.ts（**实际全量 + 设计意图增量**）",
   "//forked_from": {
     "db": ".agent-io\\cache.db",
-    "at": "2026-10-18T07:34:08.842Z",
+    "at": "2026-10-18T07:50:33.473Z",
     "note": "★ calls = 实际全量 ∪ 带 why 的（dep 加的）· removed = 原样保留（dep 删的）"
   },
   "//how": "对拍用 scripts/contract-calls.mjs；calls 里\"实际没有\"的会红（= 该接线）",

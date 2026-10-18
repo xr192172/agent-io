@@ -5930,8 +5930,8 @@
         },
         "arch_layer": "core",
         "decision": {
-          "summary": "改源码之前，该节点必须有一张【决策卡】（decision：summary + ≥1 条 post 期望）。★ 没卡 ⇒ 拒。**这就是全部判据**。★★ 卡是'有迹可循'的载体：它记着来源（① 用户需求 → 模型写卡；② 老项目文档 → 翻译成卡）。★ 而【不判 actor、不判来源强度】—— 那些是事后追溯的事；闸只管'改源码前有没有卡'。★ 所以 AGENT_IO_ACTOR / resolveActor / resolveProvenance 都不需要（那是给不存在的问题造解法）。",
-          "acceptance": "写链调用时能拿到 actor；判定为「该节点存在 claimed 卡 ∧ owner === actor」；owner 不符 ⇒ 提醒/阻断（按 gate-principle 判它是否损坏数据）",
+          "summary": "改源码之前，该节点必须：① 有一张决策卡（summary + ≥1 条 post 期望）② 卡被你 claim 了（owner === actor）。★ 只判①不够 —— 那会让「别人领的卡我也能写」，那不是协作，是混乱；任务系统本质是多子代理并行领活的协作系统。★ actor 的来源是会话级 AGENT_IO_ACTOR（claim 与写共用它 ⇒ 保证一致）；★ 卡上记着来源（用户需求 / 文档翻译），供事后追溯。",
+          "acceptance": "① 该节点有决策卡（summary + ≥1 条 post 期望）② 卡被 claim 了，且 owner === 当前 actor。★ actor 来源：会话级 AGENT_IO_ACTOR（claim 与写都用它 ⇒ 保证一致）。★ claim 时 owner ≠ AGENT_IO_ACTOR ⇒ 拒（那是替别人领卡）。★★ 这两条是【协作】的底线：任务系统本质是多子代理并行领活的协作系统 —— 只判①会让别人领的卡我也能写，那不是协作，是混乱。",
           "provenance": {
             "kind": "friction",
             "where": "docs/_extract/static-review-1.md 的 A7 + A1（叠加）：巡检不跑 ⇒ 卡永不过期 ⇒ 别人领的卡 = 永久万能钥匙",
@@ -5959,13 +5959,7 @@
               "kind": "symbol-exists",
               "path": "src/application/write_gate.ts",
               "symbol": "resolveActor",
-              "why": "★ actor 的解析只许一处（读 AGENT_IO_ACTOR）；写链不许各自造身份"
-            },
-            {
-              "kind": "symbol-exists",
-              "path": "src/application/write_gate.ts",
-              "symbol": "resolveProvenance",
-              "why": "★ 决策来源的解析只许一处（多来源 → 一个可追溯结论）；写链不许各自造来源"
+              "why": "★ actor 的解析只许一处（读 AGENT_IO_ACTOR）；claim 与写共用同一个解析 ⇒ 才保证 owner === actor 这条判据成立"
             }
           ]
         },
