@@ -98,18 +98,55 @@ for (const r of callRows) {
 fs.mkdirSync(OUT_DIR, { recursive: true });
 const slug = (p) => p.replace(/^src\//, '').replace(/\.ts$/, '').replace(/\//g, '-');
 let written = 0;
+let keptIntents = 0;
 for (const [file, calls] of byFile) {
+  const outFile = path.join(OUT_DIR, `${slug(file)}.calls.json`);
+
+  // ★★★ 2026-10-18（用户指出）：**fork 不许覆盖 `dep` 的增量**。
+  //   否则"重写"就失效了 —— 重写要反复跑 fork（代码变了就得重算实际），
+  //   而一跑就把"设计说必须有 / 不该有"全冲掉。
+  //
+  //   区分口径：**fork 复制的不带 `why`；`dep` 加/删的带 `why`**（那是人的意图）。
+  //   ⇒ 新 `calls` = 实际全量 ∪ 旧文件里带 `why` 的（去重）
+  //   ⇒ 新 `removed` = 旧文件的 `removed` 原样保留（"设计说不要"也是意图）
+  let oldCalls = [];
+  let oldRemoved = [];
+  if (fs.existsSync(outFile)) {
+    try {
+      const old = JSON.parse(fs.readFileSync(outFile, 'utf8'));
+      oldCalls = (old.calls ?? []).filter((c) => c.why); // ★ 只留"人的意图"
+      oldRemoved = old.removed ?? [];
+      keptIntents += oldCalls.length;
+    } catch {
+      /* 旧文件坏了 ⇒ 当没有（fork 会重建它） */
+    }
+  }
+
+  const seen = new Set(calls.map((c) => `${c.from}|${c.to}`));
+  const merged = [...calls];
+  for (const c of oldCalls) {
+    const k = `${c.from}|${c.to}`;
+    if (!seen.has(k)) {
+      merged.push(c); // ★ 设计说"必须有"、实际没有 ⇒ 保留（它会红，这才是"该接线"）
+      seen.add(k);
+    }
+  }
+
   const out = {
-    '//': `★★★ 设计侧契约（结构级·调用）—— ${file}（**fork 自 cache.db，全量**）`,
-    '//forked_from': { db: DB, at: new Date().toISOString(), note: '★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形' },
-    '//how': '对拍用 scripts/contract-calls.mjs；calls = 设计说"这些调用必须成立"',
-    calls: calls.sort((a, b) => (a.to < b.to ? -1 : 1)),
-    removed: [],
+    '//': `★★★ 设计侧契约（结构级·调用）—— ${file}（**实际全量 + 设计意图增量**）`,
+    '//forked_from': {
+      db: DB,
+      at: new Date().toISOString(),
+      note: '★ calls = 实际全量 ∪ 带 why 的（dep 加的）· removed = 原样保留（dep 删的）',
+    },
+    '//how': '对拍用 scripts/contract-calls.mjs；calls 里"实际没有"的会红（= 该接线）',
+    calls: merged.sort((a, b) => (a.to < b.to ? -1 : 1)),
+    removed: oldRemoved,
   };
-  fs.writeFileSync(path.join(OUT_DIR, `${slug(file)}.calls.json`), JSON.stringify(out, null, 2) + '\n');
+  fs.writeFileSync(outFile, JSON.stringify(out, null, 2) + '\n');
   written++;
 }
-log.push(`调用 fork：${written} 个文件 · ${total} 条调用边（全量）`);
+log.push(`调用 fork：${written} 个文件 · ${total} 条实际边 + ${keptIntents} 条设计意图（保留）`);
 
 console.log('════ fork 设计侧 ════');
 for (const l of log) console.log('  · ' + l);

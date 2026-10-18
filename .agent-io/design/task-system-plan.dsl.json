@@ -5930,7 +5930,7 @@
         },
         "arch_layer": "core",
         "decision": {
-          "summary": "写源码前必须挂任务，且【挂的是你自己的任务】—— 现在只判\"该节点有 claimed 卡\"，不问 owner、不问时效",
+          "summary": "写源码前必须挂任务，且【挂的是你自己的任务】：闸要判三件事 —— 该节点有 claimed 卡 · 卡的 owner 等于 actor · 卡没过期。★ actor 的来源是【会话】：读 AGENT_IO_ACTOR，绝不许从卡的 owner 反推（那是循环论证）。★★ 而现在的缺陷不是“5 个写链没传 actor”，是【没人负责设置 AGENT_IO_ACTOR】—— 那是一个入口，而入口不存在。",
           "acceptance": "写链调用时能拿到 actor；判定为「该节点存在 claimed 卡 ∧ owner === actor」；owner 不符 ⇒ 提醒/阻断（按 gate-principle 判它是否损坏数据）",
           "provenance": {
             "kind": "friction",
@@ -5954,6 +5954,12 @@
               "kind": "file-exists",
               "path": "src/application/write_gate.ts",
               "why": "节点地址（已存在，作为基线）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/write_gate.ts",
+              "symbol": "resolveActor",
+              "why": "★ actor 的解析只许一处（读 AGENT_IO_ACTOR）；写链不许各自造身份"
             }
           ]
         },
