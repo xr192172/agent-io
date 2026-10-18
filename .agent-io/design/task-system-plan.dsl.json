@@ -5930,7 +5930,7 @@
         },
         "arch_layer": "core",
         "decision": {
-          "summary": "写源码前必须有一个【可追溯的决策来源】—— 不是'必须是你自己的卡'。来源可以是：① 卡（node.task 的 owner/creator，含从文档翻译来的）② 文档（decision.provenance 的出处）③ 设计（decision.agent，设计时补的）④ 会话（AGENT_IO_ACTOR 兜底）。★ 闸判'至少有一个可追溯'；一个都没有 ⇒ 拒。★★ 而这是【任务大厅/政务服务中心】：来路各异（有卡、没卡、从文档翻译、设计时补），★ 不能把系统卡死在某一个环节。",
+          "summary": "改源码之前，该节点必须有一张【决策卡】（decision：summary + ≥1 条 post 期望）。★ 没卡 ⇒ 拒。**这就是全部判据**。★★ 卡是'有迹可循'的载体：它记着来源（① 用户需求 → 模型写卡；② 老项目文档 → 翻译成卡）。★ 而【不判 actor、不判来源强度】—— 那些是事后追溯的事；闸只管'改源码前有没有卡'。★ 所以 AGENT_IO_ACTOR / resolveActor / resolveProvenance 都不需要（那是给不存在的问题造解法）。",
           "acceptance": "写链调用时能拿到 actor；判定为「该节点存在 claimed 卡 ∧ owner === actor」；owner 不符 ⇒ 提醒/阻断（按 gate-principle 判它是否损坏数据）",
           "provenance": {
             "kind": "friction",
