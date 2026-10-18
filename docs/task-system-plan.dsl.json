@@ -10409,6 +10409,41 @@
           "borderRadius": 4
         },
         "arch_layer": "core"
+      },
+      {
+        "id": "file_src_application_design_board_pool_ts",
+        "type": "file",
+        "label": "上架读端（待接取池）",
+        "path": "src/application/design/board/pool.ts",
+        "status": "draft",
+        "decision": {
+          "summary": "把各节点 task 格按 state 收集成\"池\"：一条只读调用就能看到 candidate / claimed / done",
+          "acceptance": "listPool 返回 BoardView{byState,total,folded} 且 shown+folded==total；能经 get_dsl 的查询触达",
+          "provenance": {
+            "kind": "friction",
+            "where": "docs/_extract/flow-check-1.md 第③步「完全没有读端」+ frictions.jsonl",
+            "note": "★ 今天实测：卡挂了以后只能 node -e 读到 state=candidate，没有任何读端"
+          },
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/design/board/pool.ts",
+              "why": "读端要有个家"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/board/pool.ts",
+              "symbol": "BoardView",
+              "why": "池的读数是具名类型（不许散装对象 —— 否则又是\"形状没人定\"）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/board/pool.ts",
+              "symbol": "listPool",
+              "why": "★ 唯一的读取入口；没有它，pool 就又只能 node -e 看"
+            }
+          ]
+        }
       }
     ],
     "edges": [
