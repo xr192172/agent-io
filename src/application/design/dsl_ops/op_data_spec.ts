@@ -197,9 +197,9 @@ export const OP_SPECS: readonly OpSpec[] = [
     //   **任务格的唯一写端**。`id` = 任务格所在的**节点 id**（任务与节点同居）——
     //   ★ 不是顶层 `tasks[]`，也不是 overlay 锚点。
     type: 'todo',
-    ops: ['add'],
+    ops: ['add', 'promote'],
     idRequired: false,
-    required: { add: ['summary'] },
+    required: { add: ['summary'], promote: ['node_id'] },
     note:
       '★ **无节点任务**（2026-10-18 Q5）：和 task **同一套状态机/同一套 claim/complete/void 语义**，' +
       '区别只在"挂在哪"（task 挂 geometry.nodes[].task，todo 挂顶层 todos[]）。' +
@@ -379,7 +379,7 @@ export const TYPE_KNOWN_KEYS: Record<string, readonly string[]> = {
   //   `owner` / `reason` / `evidence`；`state` **不在这里**：它只能由 op（claim/release/complete）改，
   //   不是"data 里可以随便给的字段" —— 那会把唯一写端变成"谁都能把 state 塞成 done"）。
   task: ['owner', 'reason', 'evidence'],
-  todo: ['summary', 'decision', 'owner', 'id'],
+  todo: ['summary', 'decision', 'owner', 'id', 'node_id'],
 };
 /** ★★ 断言：`TYPE_KNOWN_KEYS` 的键集**必须恰好覆盖 `OP_SPECS` 的全部 type**（多 / 少都红）。 */
 export type KnownKeysMissingTypes = Exclude<(typeof OP_SPECS)[number]['type'], keyof typeof TYPE_KNOWN_KEYS>;

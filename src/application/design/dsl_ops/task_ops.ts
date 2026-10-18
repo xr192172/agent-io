@@ -820,7 +820,64 @@ export function applyTodoOp(
   op: { op: string; id?: string; data?: Record<string, unknown> },
   agent?: string,
 ): EditResult {
-  if (op.op !== 'add') throw new Error(`todo 仅支持 add（收到 ${op.op}）`);
+  // ★★★ 2026-10-18：**promote** —— 把 todo（scope 未定）转成【节点任务】（挂到某个 geometry 节点）。
+  //   用途：批量生产卡（todos[]）之后，定得下挂哪的 ⇒ promote；定不下的 ⇒ 留在 todos[]。
+  if (op.op === 'promote') {
+    const todoId = op.id;
+    const nodeId = typeof op.data?.node_id === 'string' ? op.data.node_id : '';
+    if (!todoId) throw new Error('todo.promote 需要 id（要转的 todo）');
+    if (!nodeId) throw new Error('todo.promote 需要 data.node_id（挂到哪个节点）');
+
+    const dsl0 = getDesignSheet(feature);
+    if (!dsl0) throw new Error(`feature "${feature}" 不存在`);
+    const todos0 = [...(dsl0.todos ?? [])];
+    const ti = todos0.findIndex((t) => t.id === todoId);
+    if (ti < 0) throw new Error(`todo.promote 被拒：todos[] 里没有 "${todoId}"`);
+    if (todos0[ti].state === 'done' || todos0[ti].state === 'void') {
+      throw new Error(`todo.promote 被拒：${todoId} 已是终态（${todos0[ti].state}）`);
+    }
+    const nodes0 = [...(dsl0.geometry?.nodes ?? [])];
+    const ni = nodes0.findIndex((n) => n.id === nodeId);
+    if (ni < 0) throw new Error(`todo.promote 被拒：geometry.nodes 里没有 "${nodeId}"`);
+
+    const todo = todos0[ti];
+    const node = { ...nodes0[ni] };
+    // ① 节点没决策卡 ⇒ 用 todo 的 summary 起一张（有就不动 —— 那是节点的既有意图）
+    if (!node.decision) {
+      node.decision = { summary: todo.summary, acceptance: '', expectations: [] };
+    }
+    // ② 在节点上建卡（从 decision 翻；0 条期望 ⇒ L1 建构卡，和 publish 一致）
+    if (!node.task) {
+      node.task = {
+        id: nodeId,
+        summary: node.decision.summary,
+        expectations: [...(node.decision.expectations ?? [])],
+        state: 'candidate',
+        owner: null,
+      };
+    }
+    nodes0[ni] = node;
+    // ③ todo 标 done（★ 不删 —— "这张卡转给谁了"要可追溯）
+    todo.state = 'done';
+    todo.release_reason = `promoted to ${nodeId}`;
+    todos0[ti] = todo;
+
+    const nextDsl = { ...dsl0, geometry: { ...dsl0.geometry!, nodes: nodes0 }, todos: todos0 };
+    const ov = loadOverlay(feature) ?? seedOverlayFromDsl(nextDsl);
+    saveDesignSheet(applyOverlay(nextDsl, ov));
+
+    return {
+      message:
+        `已 promote "${todoId}" → 节点 "${nodeId}"：\n` +
+        `  · 节点卡：state=candidate · ${(node.task.expectations ?? []).length} 条判据（0 条 ⇒ L1 建构卡）\n` +
+        `  · todo 标 done（release_reason="promoted to ${nodeId}" —— 不删，可追溯）\n` +
+        `★ 之后对节点用 type:'task' 的 claim/complete（★ todo 的那套规矩不再适用：节点任务有判据）。`,
+      feature,
+      data: { todo_id: todoId, node_id: nodeId, card_state: 'candidate' as TaskState },
+    };
+  }
+
+  if (op.op !== 'add') throw new Error(`todo 仅支持 add / promote（收到 ${op.op}）`);
   const data = op.data ?? {};
   const summary = typeof data.summary === 'string' ? data.summary.trim() : '';
   if (!summary) throw new Error('todo.add 被拒：必须给 data.summary（要做什么，一句人话）');
