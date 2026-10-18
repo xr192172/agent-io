@@ -57419,11 +57419,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-18T10:29:46.955Z",
+    "saved_at": "2026-10-18T10:39:58.229Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792314946341,
-    "age": 4440614
+    "age": 5051888
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -58999,6 +58999,111 @@
           "verdict": "pass"
         }
       ]
+    },
+    {
+      "id": "todo_D-judge-port",
+      "summary": "抽 JudgePort 破 domain→application 倒挂（用户 2026-10-17 拍 A）",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_D-invariant-0",
+      "summary": "不变量「任务=意图住设计侧」没有 check",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_D-invariant-1",
+      "summary": "不变量「不落读数快照」—— ★ **DSL 自己违反了**（reading_now / block_readings 都是快照）",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_D-target-exists",
+      "summary": "t_claim 的「target 在 DB 存在」无执行者（全仓 0 处）",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_D-release-by",
+      "summary": "t_release 的「带 by」无执行者（releaseTask 是 input.agent ?? null）",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_D-dual-write",
+      "summary": "dual_write 的三个前提都不存在（OverlayAnchor 无 updated_at / DriftReport 无 authority_unknown）",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_D-actor-entry",
+      "summary": "★★ **真正的缺陷不是\"5 个写链没传 actor\"，是「没人负责设置 AGENT_IO_ACTOR」** —— 那是一个**运行时入口**，而入口不存在。★ 而 calls 格",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_D-validate-decision",
+      "summary": "validateDSL 不看 decision（M1）⇒ D3 的\"✓\"是假绿",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_D-kind-expressiveness",
+      "summary": "同 D8",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_D-anti-decoration",
+      "summary": "11/15 条边没有判据",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_D-parallel",
+      "summary": "\"两两交集为空\"算不出来（path 覆盖率不够）",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_D-claim-incomplete",
+      "summary": "\"领到先查依据\"由人执行，无机器检查器",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_D-design-completeness",
+      "summary": "D1–D9 本身没有检查器",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_D-gate-text",
+      "summary": "task_home.gate / what_a_card_proves.layers[*].gate —— 读起来像要求，但不是判据（gate 不在 CLAIM_KEYS）",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_D-edge-id-unique",
+      "summary": "validator.ts:73-85 只查 nodes.id 唯一、**不查 edges.id** ⇒ 重复 id 能过校验，而 overlay.edges 按 id 键控会串",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
     }
   ]
 }

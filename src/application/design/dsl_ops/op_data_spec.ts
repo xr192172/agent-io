@@ -379,7 +379,7 @@ export const TYPE_KNOWN_KEYS: Record<string, readonly string[]> = {
   //   `owner` / `reason` / `evidence`；`state` **不在这里**：它只能由 op（claim/release/complete）改，
   //   不是"data 里可以随便给的字段" —— 那会把唯一写端变成"谁都能把 state 塞成 done"）。
   task: ['owner', 'reason', 'evidence'],
-  todo: ['summary', 'decision', 'owner'],
+  todo: ['summary', 'decision', 'owner', 'id'],
 };
 /** ★★ 断言：`TYPE_KNOWN_KEYS` 的键集**必须恰好覆盖 `OP_SPECS` 的全部 type**（多 / 少都红）。 */
 export type KnownKeysMissingTypes = Exclude<(typeof OP_SPECS)[number]['type'], keyof typeof TYPE_KNOWN_KEYS>;

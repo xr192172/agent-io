@@ -836,9 +836,14 @@ export function applyTodoOp(
     .replace(/[^\p{L}\p{N}]+/gu, '-')
     .replace(/^-|-$/g, '')
     .slice(0, 40) || 'item';
-  let id = `todo_${slug}`;
+  // ★ 允许 data.id 指定（批量导入债时用 `todo_<debt-id>`，便于追溯回 DESIGN.md#D-xxx）
+  const wantId = typeof data.id === 'string' && /^todo_[A-Za-z0-9_-]+$/.test(data.id) ? data.id : null;
+  let id = wantId ?? `todo_${slug}`;
   let k = 2;
-  while (todos.some((t) => t.id === id)) id = `todo_${slug}-${k++}`;
+  while (todos.some((t) => t.id === id)) {
+    if (wantId) throw new Error(`todo.add 被拒：id "${wantId}" 已存在（指定的 id 不许覆盖）`);
+    id = `todo_${slug}-${k++}`;
+  }
 
   const card: TaskSpec = {
     id,
