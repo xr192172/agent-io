@@ -298,3 +298,54 @@ node.update 的 data.decision 是整体替换
 "整理 Skill" / "修 scripts 的脚本" / "改字段表" —— 有的有节点（scripts/ 56 个），有的没有
 ⇒ ★ 任务系统是【代码任务系统】（用户已确认）—— 但 `doc` 类节点仍缺
 ```
+
+---
+
+# Q5 · 另设一套「To Do」—— 挂载【没有节点】的任务（2026-10-18 用户提出）
+
+> "是否还需要有另外一套 To Do 之类的东西，就是和它处于**同一套系统**，这样的话就可以**挂载那些没有节点的任务**。"
+
+## 它是什么（和 `task` 的关系）
+
+| | `task`（现有） | `todo`（新增） |
+|---|---|---|
+| **挂在哪** | `geometry.nodes[].task`（**代码节点**） | ★ **`todos[]`**（顶层数组，**无节点**） |
+| **有判据吗** | ✅ `decision.expectations` | ❌ **没有**（不是代码，判不了） |
+| **怎么算完成** | `isSatisfied` + `evidence` | ★ **`attestation` 证据**（人/agent 自证） |
+| **状态机** | `candidate/claimed/done/void` | ★ **同一套**（复用 `TRANSITIONS`） |
+| **op** | `claim/release/complete/void` | ★ **同一套语义** |
+| **例子** | "write_gate 要有 resolveActor" | ★ "整理 17 份 Skill" / "改 CI 配置" / "调研某方案" |
+
+## ★★★ 为什么必须是【同一套】而不是另一个系统
+
+```
+"挂载那些没有节点的任务" ⇒ 它和节点任务【在同一个池子里排队】
+⇒ 如果另开一个 TODO 文件/工具，就是"两个池子" ⇒ 谁先做？谁在做？看不见
+⇒ ★ 同一套 = 同一个 design/<f>.dsl.json 的 todos[] + 同一个状态机 + 同一个巡检
+```
+
+## 形态（最小）
+
+```json
+"todos": [
+  {
+    "id": "todo_<slug>",
+    "summary": "整理 17 份 Skill：去重、标过期、提炼成两份指南",
+    "state": "candidate",
+    "owner": null,
+    "created_at": "2026-10-18T…",
+    "decision": { "creator": "workbuddy-main", "source": {"kind":"user","ref":"…"}, "handoff": {"to":"impl","brief":"…"} }
+  }
+]
+```
+
+★ **`decision` 是可选但推荐** —— 它让 todo 也有"申请人 / 依据 / 交办"（§10 的表照样适用）。
+★★ **而 `expectations` 在 todo 上不该存在**（判不了）⇒ **`complete` 只收 `attestation`**。
+
+## 对实现的三条约束
+
+1. **同一套状态机**：`todo` 的迁移必须走 `TRANSITIONS`（不许另写一份）
+2. **同一套巡检**：`patrol` 要把 `todos` 一起判（`missed_close` / `should_void` 同样适用）
+3. ★ **同一套 op 语义**：`claim` 要 `owner`、`complete` 要 `evidence`、`void` 要 `reason` —— **和 `task` 一字不差**
+
+★ **而它和 `task` 的唯一区别是"挂在哪"** —— 一个挂节点，一个挂顶层数组。
