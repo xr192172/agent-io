@@ -32,7 +32,7 @@ import { addExpectedApi, updateExpectedApi, deleteExpectedApi, setExpectedApis, 
 import { updateStatus } from './status_tools.js';
 // ★★★ 2026-10-17（task_home）：任务格的**唯一写端**（claim / release / complete）。
 //   ★ 本文件只做**路由**；任务态的迁移与判定住 `task_ops.ts`（不在别处直接改 state）。
-import { applyTaskOp } from './task_ops.js';
+import { applyTodoOp, applyTaskOp } from './task_ops.js';
 // ★★★ T340：**自洽性闸** —— 改设计即校验自洽。判据是现成的 `validateDSL`（`domain/validator.ts:159`，
 //   查 dangling_edge / duplicate_id / anchor_broken / reasoning 引用），**本处只调不改**（判定与 schema 都不动）。
 import { validateDSL } from '../../../domain/validator.js';
@@ -115,7 +115,8 @@ export interface FeatureOperation {
     | 'simulation'
     | 'tag'
     | 'decision'
-    | 'task';
+    | 'task'
+    | 'todo';
   /** 目标 ID：node_id / edge_id / file_id（api 类型为所属 file_id）；annotation/approval/snapshot/layout/simulation 用 data 传参，本字段可空 */
   id?: string;
   /** 操作数据（add/update/move 时按目标类型提供对应字段） */
@@ -506,6 +507,8 @@ async function applyOperation(
       return applyTagOp(feature, op);
     case 'decision':
       return applyDecisionOp(feature, op, agent, changeReason);
+    case 'todo':
+      return applyTodoOp(feature, op, agent);
     case 'task':
       // ★★★ 2026-10-17（task_home）：任务格的**唯一写端** —— 四个 action 都进 `task_ops`，
       //   不在本文件里直接改 `node.task.state`（那是"第二个写端"）。

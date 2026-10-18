@@ -5982,7 +5982,8 @@
           "handoff": {
             "to": "design",
             "brief": "把两条判据（有卡 / 卡是你的）落成 expectations + calls；注意 resolveActor 空值必须抛错，不许返回 null"
-          }
+          },
+          "updated_at": "2026-10-18T09:59:33.117Z"
         },
         "task": {
           "id": "file_src_application_write_gate_ts",
@@ -6007,7 +6008,108 @@
             }
           ],
           "state": "void"
-        }
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-18T09:59:32.997Z",
+            "decision": {
+              "summary": "改源码之前，该节点必须：① 有一张决策卡（summary + ≥1 条 post 期望）② 卡被你 claim 了（owner === actor）。★ 只判①不够 —— 那会让「别人领的卡我也能写」，那不是协作，是混乱；任务系统本质是多子代理并行领活的协作系统。★ actor 的来源是会话级 AGENT_IO_ACTOR（claim 与写共用它 ⇒ 保证一致）；★ 卡上记着来源（用户需求 / 文档翻译），供事后追溯。",
+              "acceptance": "① 该节点有决策卡（summary + ≥1 条 post 期望）② 卡被 claim 了，且 owner === 当前 actor。★ actor 来源：会话级 AGENT_IO_ACTOR（claim 与写都用它 ⇒ 保证一致）。★ claim 时 owner ≠ AGENT_IO_ACTOR ⇒ 拒（那是替别人领卡）。★★ 这两条是【协作】的底线：任务系统本质是多子代理并行领活的协作系统 —— 只判①会让别人领的卡我也能写，那不是协作，是混乱。",
+              "provenance": {
+                "kind": "friction",
+                "where": "docs/_extract/static-review-1.md 的 A7 + A1（叠加）：巡检不跑 ⇒ 卡永不过期 ⇒ 别人领的卡 = 永久万能钥匙",
+                "note": "★ 活证据：今天我自己裸改 10+ 个源文件、一张卡都没挂、闸一次都没拦 —— 因为我直接写盘，闸压根没被调用"
+              },
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "WriteActor",
+                  "why": "★ 写闸要知道\"谁在写\" —— 现在 assertSourceWriteRegistered(projectRoot, files) 签名里没有身份维度"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "assertSourceWriteRegisteredFor",
+                  "why": "★ 按 actor 判定的入口：要求\"覆盖该文件的节点上存在 claimed 卡，且 owner === actor\"（现在只要求\"存在 claimed 卡\"）"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/application/write_gate.ts",
+                  "why": "节点地址（已存在，作为基线）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "resolveActor",
+                  "why": "★ actor 的解析只许一处（读 AGENT_IO_ACTOR）；claim 与写共用同一个解析 ⇒ 才保证 owner === actor 这条判据成立"
+                }
+              ],
+              "creator": "workbuddy-main",
+              "source": {
+                "kind": "user",
+                "ref": "2026-10-18 用户：「改设计的前提是决策卡，办什么事都要有卡」"
+              },
+              "handoff": {
+                "to": "design",
+                "brief": "把两条判据（有卡 / 卡是你的）落成 expectations + calls；注意 resolveActor 空值必须抛错，不许返回 null"
+              }
+            }
+          },
+          {
+            "at": "2026-10-18T09:59:33.117Z",
+            "decision": {
+              "summary": "改源码之前，该节点必须：① 有一张决策卡（summary + ≥1 条 post 期望）② 卡被你 claim 了（owner === actor）。★ 只判①不够 —— 那会让「别人领的卡我也能写」，那不是协作，是混乱；任务系统本质是多子代理并行领活的协作系统。★ actor 的来源是会话级 AGENT_IO_ACTOR（claim 与写共用它 ⇒ 保证一致）；★ 卡上记着来源（用户需求 / 文档翻译），供事后追溯。",
+              "acceptance": "① 该节点有决策卡（summary + ≥1 条 post 期望）② 卡被 claim 了，且 owner === 当前 actor。★ actor 来源：会话级 AGENT_IO_ACTOR（claim 与写都用它 ⇒ 保证一致）。★ claim 时 owner ≠ AGENT_IO_ACTOR ⇒ 拒（那是替别人领卡）。★★ 这两条是【协作】的底线：任务系统本质是多子代理并行领活的协作系统 —— 只判①会让别人领的卡我也能写，那不是协作，是混乱。",
+              "provenance": {
+                "kind": "friction",
+                "where": "docs/_extract/static-review-1.md 的 A7 + A1（叠加）：巡检不跑 ⇒ 卡永不过期 ⇒ 别人领的卡 = 永久万能钥匙",
+                "note": "★ 活证据：今天我自己裸改 10+ 个源文件、一张卡都没挂、闸一次都没拦 —— 因为我直接写盘，闸压根没被调用"
+              },
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "WriteActor",
+                  "why": "★ 写闸要知道\"谁在写\" —— 现在 assertSourceWriteRegistered(projectRoot, files) 签名里没有身份维度"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "assertSourceWriteRegisteredFor",
+                  "why": "★ 按 actor 判定的入口：要求\"覆盖该文件的节点上存在 claimed 卡，且 owner === actor\"（现在只要求\"存在 claimed 卡\"）"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/application/write_gate.ts",
+                  "why": "节点地址（已存在，作为基线）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "resolveActor",
+                  "why": "★ actor 的解析只许一处（读 AGENT_IO_ACTOR）；claim 与写共用同一个解析 ⇒ 才保证 owner === actor 这条判据成立"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "PROBE_Q1",
+                  "why": "Q1 验收：元素级 add"
+                }
+              ],
+              "creator": "workbuddy-main",
+              "source": {
+                "kind": "user",
+                "ref": "2026-10-18 用户：「改设计的前提是决策卡，办什么事都要有卡」"
+              },
+              "handoff": {
+                "to": "design",
+                "brief": "把两条判据（有卡 / 卡是你的）落成 expectations + calls；注意 resolveActor 空值必须抛错，不许返回 null"
+              },
+              "updated_at": "2026-10-18T09:59:32.997Z"
+            }
+          }
+        ]
       },
       {
         "id": "file_src_domain_animation_ts",
@@ -57317,11 +57419,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-18T09:31:42.578Z",
+    "saved_at": "2026-10-18T10:22:44.621Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792314946341,
-    "age": 956237
+    "age": 4018280
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -58880,5 +58982,14 @@
       "note": "★★ 2026-10-18（第四道闸指出）：Q2 把 OQ8 从 open_questions 移出，但**没在 rulings 里落一条** ⇒ 那唯一带\"已裁\"标注的文本被删掉后，裁定只剩 git 历史。⇒ 补这一条。"
     }
   },
-  "annotations": []
+  "annotations": [],
+  "todos": [
+    {
+      "id": "todo_整理-17-份-skill-通读-去重-标过期-提炼成两份指南-设计指南-使用指",
+      "summary": "整理 17 份 Skill：通读、去重、标过期、提炼成两份指南（设计指南 + 使用指南）",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    }
+  ]
 }

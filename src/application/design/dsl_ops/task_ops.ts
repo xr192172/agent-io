@@ -770,3 +770,71 @@ export function voidTask(input: TaskOpInput): EditResult {
     data: { node_id, state: 'void' as TaskState, reason: reason.trim() },
   };
 }
+
+// ─────────────────────────────────────────────────────────────
+// todo：新建一个【无节点任务】（Q5 的进口）
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * ★ **新建一个 todo**（`todos[]` 的进口）。
+ *
+ * ## 为什么不复用 `publish`
+ * `publish` 是"**翻决策卡**"（内容只能来自 `node.decision`）—— 它**要求有节点**。
+ * 而 todo **没有节点**，内容只能**手给**（`data.summary`）⇒ 两者是**不同的进口**，不能合并。
+ *
+ * ## id 怎么来
+ * `todo_<summary 的 slug>`；撞了加 `-2` / `-3`（**可读**比 `todo_<时间戳>` 重要 —— 人要在榜单上认它）。
+ *
+ * ## 与 `task` 的一致（★ 别在这里另写一套）
+ * 新建后 `state='candidate'`、`expectations=[]` —— **之后 claim / complete / void 全部复用 `task_ops` 的同一套 op**
+ * （`loadTask` 会在 `geometry` 找不到时回退到 `todos`）。
+ */
+export function applyTodoOp(
+  feature: string,
+  op: { op: string; id?: string; data?: Record<string, unknown> },
+  agent?: string,
+): EditResult {
+  if (op.op !== 'add') throw new Error(`todo 仅支持 add（收到 ${op.op}）`);
+  const data = op.data ?? {};
+  const summary = typeof data.summary === 'string' ? data.summary.trim() : '';
+  if (!summary) throw new Error('todo.add 被拒：必须给 data.summary（要做什么，一句人话）');
+
+  const dsl = getDesignSheet(feature);
+  if (!dsl) throw new Error(`feature "${feature}" 不存在 —— todo 也住在设计 DSL 里（顶层 todos[]）。`);
+
+  const next = { ...dsl };
+  const todos = [...(next.todos ?? [])];
+
+  const slug = summary
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 40) || 'item';
+  let id = `todo_${slug}`;
+  let k = 2;
+  while (todos.some((t) => t.id === id)) id = `todo_${slug}-${k++}`;
+
+  const card: TaskSpec = {
+    id,
+    summary,
+    expectations: [], // ★ todo 没有判据（不是代码，判不了）
+    state: 'candidate',
+    owner: null,
+  };
+  todos.push(card);
+  next.todos = todos;
+
+  const ov = loadOverlay(feature) ?? seedOverlayFromDsl(next);
+  saveDesignSheet(applyOverlay(next, ov));
+
+  return {
+    message:
+      `已新建 todo "${id}"：state=candidate（★ 无节点任务，挂在顶层 todos[]）。\n` +
+      `★ 要做什么：${summary}\n` +
+      `★ 它和节点任务**同一套规矩**：\`claim\`（要 owner）→ \`complete\`（要 evidence，只有 attestation）→ 或 \`void\`（要 reason）。\n` +
+      `★ 而它**没有判据**（不是代码）⇒ 巡检不会对它喊"漏收口"，只会在它 claimed 超期时报 expired。\n` +
+      (agent ? `★ 发起者：${agent}\n` : ''),
+    feature,
+    data: { todo_id: id, state: 'candidate' as TaskState, summary },
+  };
+}
