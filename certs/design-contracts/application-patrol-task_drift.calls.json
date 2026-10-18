@@ -38,6 +38,11 @@
     {
       "from": "src/application/patrol/task_drift.ts#patrolDrift",
       "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/application/patrol/task_drift.ts#patrolDrift",
+      "to": "src/domain/task_machine.ts#cardStanding",
+      "why": "巡检要用同一把尺重算每张卡"
     }
   ],
   "removed": []

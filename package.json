@@ -106,7 +106,8 @@
     "patrol": "node scripts/patrol.mjs",
     "diff": "node scripts/design-diff.mjs",
     "fork": "node scripts/fork-design.mjs",
-    "dec": "node scripts/set-decision.mjs"
+    "dec": "node scripts/set-decision.mjs",
+    "dep": "node scripts/dep.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
