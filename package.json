@@ -108,7 +108,8 @@
     "fork": "node scripts/fork-design.mjs",
     "dep": "node scripts/dep.mjs",
     "coverage": "node scripts/coverage.mjs",
-    "impact": "node scripts/impact.mjs"
+    "impact": "node scripts/impact.mjs",
+    "design:check": "node scripts/design-check.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",

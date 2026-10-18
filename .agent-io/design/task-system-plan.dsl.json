@@ -10934,7 +10934,8 @@
               "why": "★ 唯一的读取入口；没有它，pool 就又只能 node -e 看"
             }
           ]
-        }
+        },
+        "description": "src/application/design/board/pool.ts"
       }
     ],
     "edges": [
@@ -58978,7 +58979,9 @@
           "now": "★ 11 节点覆盖 9/9 个任务系统文件 + `op_data_spec.ts`（已补）。★★ 但**分母漏了**：还有三个「设计要求改」的文件没有节点 —— `overlay.ts`（task_home 的 progress 退役）、`expectations.ts`（L1 判据缺口的解药）、`status_tools.ts`（complete 的必经投影）。★ 由不知情子代理指出（M13）：D1 是\"设计全不全\"的头号判据，**分母错了，D2/D5/D7 全跟着错**。",
           "unjudged": "★ 设计完整性的判据目前没有检查器（等 Expectation 与 invariant 合成一个抽象后才能跑）",
           "debt": "D-design-completeness",
-          "gap_rule": "判据的分母必须【可算】：所有 debt/steps_pending/OQ 解决路径里出现的 src 路径 ∪ 所有 expectations 的 path ⊆ nodes.path"
+          "gap_rule": "判据的分母必须【可算】：所有 debt/steps_pending/OQ 解决路径里出现的 src 路径 ∪ 所有 expectations 的 path ⊆ nodes.path",
+          "expect": "(() => {\n    // ★ 只算\"可算的那一半\"：所有 expectations 里出现的 path，都必须是某个节点的 path。\n    //   \"debt/steps/OQ 里提到的 src 路径\"没法算（那些是散文）⇒ 那句话留在 note 里，不假装算全。\n    const need = new Set();\n    for (const n of nodes) for (const e of (n.decision?.expectations ?? [])) {\n      if (typeof e.path === 'string' && e.path.trim()) need.add(e.path.replace(/\\\\/g, '/').trim());\n    }\n    const have = new Set(paths);\n    const missing = [...need].filter((p) => !have.has(p));\n    return missing.length === 0;\n  })()",
+          "expect_note": "★ 只覆盖\"expectations 的 path ⊆ nodes.path\"这一半；\"debt/steps/OQ 里的 src 路径\"是散文，算不了"
         },
         {
           "id": "D2",
@@ -58986,7 +58989,10 @@
           "rule": "每个节点有 path + decision{summary, acceptance, ≥1 expectation}",
           "now": "✓ 11/11 全齐（path + summary + acceptance + provenance）。",
           "unjudged": "★ 设计完整性的判据目前没有检查器（等 Expectation 与 invariant 合成一个抽象后才能跑）",
-          "debt": "D-design-completeness"
+          "debt": "D-design-completeness",
+          "expect": "(() => {\n    // ★ 只要【任务系统核心】：写入口（dsl_ops）/ 巡检（patrol）/ 规则（domain）\n    //   ★ 不要渲染/画图（bricks / derive / render_* / opl 等）—— 那些是\"展示层\"，不该被任务系统要求设计。\n    const SCOPE = ['src/application/design/dsl_ops/', 'src/application/patrol/', 'src/domain/'];\n    const inScope = nodes.filter((n) => SCOPE.some((s) => String(n.description ?? '').replace(/\\\\/g, '/').startsWith(s)));\n    const bad = inScope.filter((n) => {\n      const d = n.decision;\n      return !d || !String(d.summary ?? '').trim() || !String(d.acceptance ?? '').trim() || (d.expectations ?? []).length < 1;\n    });\n    return bad.length === 0;\n  })()",
+          "expect_note": "★ 只要求 dsl_ops / patrol / domain 三个目录；渲染/画图（bricks/derive/render）不要求",
+          "blocked_by": "等 25 个核心节点写设计（dsl_ops/ 8 个 + domain/ 17 个，清单见 design:check 的详情）—— ★ 这是「活没干完」，不是「忘了」"
         },
         {
           "id": "D3",
@@ -58994,7 +59000,8 @@
           "rule": "每条 expectation 的 kind ∈ EXPECTATION_KINDS（validateDSL 兜）",
           "now": "✓（validate 通过）",
           "unjudged": "★ 设计完整性的判据目前没有检查器（等 Expectation 与 invariant 合成一个抽象后才能跑）",
-          "debt": "D-design-completeness"
+          "debt": "D-design-completeness",
+          "expect": "(() => {\n    const KINDS = ['file-exists','symbol-exists','signature-matches','edge-exists','edge-absent','call-exists','run'];\n    const bad = [];\n    for (const n of nodes) for (const e of (n.decision?.expectations ?? [])) {\n      if (!KINDS.includes(e.kind)) bad.push(n.id + ':' + String(e.kind));\n    }\n    return bad.length === 0;\n  })()"
         },
         {
           "id": "D4",
@@ -59479,5 +59486,5 @@
       "release_reason": "promoted to file_src_domain_validator_ts"
     }
   ],
-  "_dsl_rev": 6
+  "_dsl_rev": 9
 }
