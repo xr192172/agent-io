@@ -38,6 +38,8 @@ certs/.work/
 # ★ 唯一例外：设计侧（手写权威）必须进 git
 !.agent-io/design/
 !.agent-io/design/**
+# ★ 测试夹具里的 .agent-io（含 cache.db）不进 git
+certs/*/.agent-io/
 # DSL 布局/内容的自动备份目录（带时间戳成批生成，不入库，避免大体积误提交）
 .agent-io.bak-*/
 # MCP server 运行时 DSL（项目根，随使用场景变化，不入库）
