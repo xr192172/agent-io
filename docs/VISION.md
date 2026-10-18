@@ -277,11 +277,12 @@ node.update 的 data.decision 是整体替换
 ★ 现在不阻塞（三步 agent 能走），但它是"标准化"该收的
 ```
 
-## Q2 · `updateFeature` **失败也重写 base**（子代理 B 实测）
+## Q2 · ✅ **已修（2026-10-18）** —— `updateFeature` 失败曾重写 base（子代理 B 实测）
 
 ```
-任何一次调用（含失败回滚）都会重写 base ⇒ `_sync` 被删 + 追加 `_dsl_rev: 1`
-⇒ ★ "失败"不等于"没发生" —— 这是**最危险的一类**（用户看不见的写）
+★ 已修：回滚 = 写回【调用前的原始文件字节】（restoreRaw），不走 saveDSL
+★ 验收：跑一次失败操作 ⇒ 文件 sha 完全不变（273c2a2b → 273c2a2b）
+⇒ 「失败」现在真的等于「没发生」
 ```
 
 ## Q3 · 巡检的 `missed_close` 会把 `candidate + satisfied` 也算进去（今天死锁的来源）
