@@ -5961,7 +5961,16 @@
               "symbol": "resolveActor",
               "why": "★ actor 的解析只许一处（读 AGENT_IO_ACTOR）；claim 与写共用同一个解析 ⇒ 才保证 owner === actor 这条判据成立"
             }
-          ]
+          ],
+          "creator": "workbuddy-main",
+          "source": {
+            "kind": "user",
+            "ref": "2026-10-18 用户：「改设计的前提是决策卡，办什么事都要有卡」"
+          },
+          "handoff": {
+            "to": "design",
+            "brief": "把两条判据（有卡 / 卡是你的）落成 expectations + calls；注意 resolveActor 空值必须抛错，不许返回 null"
+          }
         },
         "task": {
           "id": "file_src_application_write_gate_ts",

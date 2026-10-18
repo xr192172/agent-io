@@ -64,6 +64,33 @@ const before = JSON.stringify(node.decision);
 if (arg('summary') !== undefined) { node.decision.summary = arg('summary'); changed.push('summary'); }
 if (arg('acceptance') !== undefined) { node.decision.acceptance = arg('acceptance'); changed.push('acceptance'); }
 
+// ★★★ 2026-10-18（§10 决策卡=登记表）：补三个栏目
+//   ① creator —— **自动获取**（读 AGENT_IO_ACTOR），**不许手填**（手填=自报家门）
+//   ② source  —— 依据：{kind:'doc'|'user', ref:'…'}
+//   ③ handoff —— 交办：{to:'design'|'impl'|'verify', brief:'…'} ⇒ ★ 没有它，单子就停在填单人手里
+if (has('init')) {
+  node.decision.creator = process.env.AGENT_IO_ACTOR ?? 'unknown（AGENT_IO_ACTOR 未设）';
+  changed.push('creator（自动获取）');
+}
+if (arg('source') !== undefined) {
+  try {
+    node.decision.source = JSON.parse(arg('source'));
+  } catch (err) {
+    console.error('★ --source 不是合法 JSON（要 {kind,ref}）：' + String(err.message));
+    process.exit(2);
+  }
+  changed.push('source');
+}
+if (arg('handoff') !== undefined) {
+  try {
+    node.decision.handoff = JSON.parse(arg('handoff'));
+  } catch (err) {
+    console.error("★ --handoff 不是合法 JSON（要 {to,brief}）：" + String(err.message));
+    process.exit(2);
+  }
+  changed.push('handoff');
+}
+
 // ── 增 ────────────────────────────────────────────────
 if (arg('add-expectation') !== undefined) {
   let e;
