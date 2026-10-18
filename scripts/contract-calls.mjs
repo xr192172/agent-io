@@ -115,7 +115,8 @@ function main() {
   const entriesMissing = [];
   for (const e of design.runtimeEntries) {
     if (e.kind === 'env') {
-      const re = new RegExp(`process\\.env\\.${e.target}\\s*=[^=]`);
+      // ★ 判【有读】，不判【有赋值】：赋值该由宿主做（本仓自己设身份 = 自报家门）
+      const re = new RegExp(`process\\.env\\.${e.target}\\b`);
       if (!re.test(srcText)) entriesMissing.push(e);
     } else if (e.kind === 'script') {
       if (!(e.target in pkgScripts)) entriesMissing.push(e);

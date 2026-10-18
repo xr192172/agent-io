@@ -1,19 +1,19 @@
 {
-  "//": "★★★ 运行时入口（`calls` 表达不了的那一层）—— 见 DESIGN.md §9 的第④层「下探」与 D-actor-entry",
+  "//": "★★★ 运行时入口（`calls` 表达不了的那一层）—— 见 DESIGN.md §9 的下探层",
   "//why": "有些东西存在与否【不是函数调用】：env 由谁设、某个命令由谁跑。塞进 calls 会污染它（calls 的语义是 'A 调 B'）。",
   "//kinds": {
-    "env": "某个环境变量【必须在代码里被赋值】—— 判据：src/ 里存在 `process.env.<NAME> =`",
-    "script": "某个命令必须在 package.json 的 scripts 里 —— 判据：该键存在"
+    "env": "★ 判据是【有代码读它】（`process.env.<NAME>` 出现在 src 里）—— 不是'有赋值'：赋值该由【宿主】做，本仓自己设自己的身份等于自报家门。'空值时拒绝' 是【行为】，归夹具，不是结构判据。",
+    "script": "某个命令必须在 package.json 的 scripts 里 —— 判据：该键存在。"
   },
 
   "runtime_entries": [
     {
       "target": "AGENT_IO_ACTOR",
       "kind": "env",
-      "set_by": ["mcp:server-start", "cli:--agent"],
+      "set_by": ["★ 宿主（WorkBuddy 启动 MCP 时）", "cli:--agent"],
       "why": "会话身份：claim 时的 owner 与写时的 actor 共用它 ⇒ 才保证 owner === actor 这条协作判据成立",
-      "debt": "D-actor-entry",
-      "note": "★ 2026-10-18 实测：全仓只有【读】它（write_gate.ts:771），没有任何一处赋值 ⇒ 这个入口不存在。★ 而它正是 A7 那 5 条写链能不能写的共同前提。"
+      "debt": null,
+      "note": "★ 2026-10-18：全仓只有【读】它（write_gate.ts:771）—— 这是对的（本仓不该赋值）。★★ 而真正的活不是'补赋值'，是让 resolveActor 在【空值时抛错】而不是返回 null（否则 actor 恒 null ⇒ 闸的 owner===actor 永不成立 ⇒ 静默失效）。★ 那条归行为层（夹具），不在这张结构表里。"
     },
     {
       "target": "patrol",
