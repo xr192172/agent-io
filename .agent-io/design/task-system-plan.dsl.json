@@ -4276,7 +4276,7 @@
         },
         "arch_layer": "core",
         "decision": {
-          "summary": "publish / claim / release / complete 四个 op，写 design/<f>.dsl.json 的 task 格。★ 并负责「从 diff 的差异建卡」：publishFromDiff —— 差异里出现、但该节点没有卡 ⇒ 建 L1 建构卡（活 = 补 decision），对应 VISION §7 的「无卡 ⇒ 补卡」那条路。",
+          "summary": "publish / claim / release / complete / void 五个 op，写 design/<f>.dsl.json 的 task 格。★ void 是卡生命周期的出口（candidate → void）：没有它会死锁 —— candidate + satisfied 时 claim 拒（satisfied 只可收口）、complete 拒（未领不能收口）⇒ 永远卡住；而'代码先于卡存在'时必然发生。★ publishFromDiff：从 diff 的差异建 L1 卡（VISION §7「无卡 ⇒ 补卡」）。",
           "acceptance": "三个 op 各过一枚证；claim 在并发下不互相覆盖",
           "expectations": [
             {
@@ -4329,6 +4329,12 @@
               "path": "src/application/design/dsl_ops/task_ops.ts",
               "symbol": "publishFromDiff",
               "why": "★ diff 之后「无卡 ⇒ 补卡」的唯一入口（VISION §7）；它让差异能被上架，而不是靠人手点 publish"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/task_ops.ts",
+              "symbol": "voidTask",
+              "why": "★ 卡生命周期的出口（candidate → void）；没有它，代码先于卡存在会让卡永久卡在 candidate + satisfied（claim 拒 / complete 拒）"
             }
           ]
         }
@@ -6000,9 +6006,8 @@
               "why": "节点地址（已存在，作为基线）"
             }
           ],
-          "state": "candidate"
-        },
-        "status": "draft"
+          "state": "void"
+        }
       },
       {
         "id": "file_src_domain_animation_ts",
@@ -43911,8 +43916,7 @@
           }
         ],
         "lines": 1210,
-        "layer": "core",
-        "status": "draft"
+        "layer": "core"
       },
       {
         "id": "file_src_domain_animation_ts",
@@ -57313,11 +57317,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-18T04:54:45.841Z",
+    "saved_at": "2026-10-18T09:31:42.578Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792256311960,
-    "age": 42973881
+    "scanRev": 1792314946341,
+    "age": 956237
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",

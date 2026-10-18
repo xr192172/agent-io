@@ -469,7 +469,7 @@ export const TRANSITIONS: readonly TaskTransition[] = [
     id: 't_void',
     from: 'candidate',
     to: 'void',
-    state: { kind: 'unimplemented', why: '全仓没有代码写 state:"void"（grep 赋值 0 处）；task_ops 也没有对应 op' },
+    state: { kind: 'ready' },
     guard: {
       clauses: ['target 在 DB 查不到（files / edges 任一查无此 target）'],
     },

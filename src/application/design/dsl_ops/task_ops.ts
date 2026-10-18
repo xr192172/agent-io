@@ -663,6 +663,8 @@ export async function applyTaskOp(
       return releaseTask(input);
     case 'complete':
       return completeTask(input);
+    case 'void':
+      return voidTask(input);
     default:
       // ★ 合法性由 `OP_SPECS` 判（`task.ops` 只有三个）；走到这里说明表与分派漂了。
       throw new Error(`task 不支持操作: ${op.op}（合法值由 op_data_spec.ts 的 OP_SPECS.task.ops 判定）`);
@@ -698,5 +700,51 @@ export function publishFromDiff(feature: string, nodeId: string): EditResult {
     ...r,
     message:
       `★ 从 diff 建卡（VISION §7「无卡 ⇒ 补卡」）：\n` + String(r.message),
+  };
+}
+
+// ─────────────────────────────────────────────────────────────
+// void：作废一张卡（candidate → void）
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * ★ **作废一张卡**（`candidate → void`）—— **卡生命周期的出口**。
+ *
+ * ## 为什么需要它（2026-10-18 实测：没有它会死锁）
+ * 三格全堵的情形：
+ * ```
+ * candidate + satisfied  ⇒  claim 拒（satisfied 只可收口）
+ *                        ⇒  complete 拒（candidate 不能直接 done，OQ1 有意挡）
+ *                        ⇒  ★ 永远卡在 candidate
+ * ```
+ * 而这在**"代码先于卡存在"**时必然发生（先写了代码，再立卡 ⇒ 卡一立就 satisfied）。
+ * ⇒ **`void` 是唯一出口**：活不需要做 ⇒ 作废，而不是硬凑成 done。
+ *
+ * ## 为什么不复用 `release`
+ * `release` 是 **`claimed → candidate`**（放回去，别人还能领）；
+ * `void` 是 **`candidate → void`**（终结：这事不做了）。**两者语义相反，不能合并。**
+ *
+ * ## 规矩
+ * ★ `reason` 必填（为什么这张卡不需要做了）—— 由 `OP_SPECS.task.required.void` 先拒。
+ * ★ 已 `done` / 已 `void` 的卡不许再 void（终态不可变）。
+ */
+export function voidTask(input: TaskOpInput): EditResult {
+  const { feature, node_id, reason } = input;
+  if (!reason || !reason.trim()) {
+    throw new Error('void 被拒：必须给 `data.reason`（为什么这张卡不需要做了 —— 不留理由的作废等于静默丢弃）。');
+  }
+  const { card } = loadTask(feature, node_id);
+  if (card.state === 'done' || card.state === 'void') {
+    throw new Error(`void 被拒：state=${card.state} 是终态，不可再作废。`);
+  }
+  assertTransition(card.state, 'void', 'void');
+  writeTask(feature, node_id, { ...card, state: 'void' });
+  return {
+    message:
+      `已作废任务 "${node_id}"：${card.state} → void。\n` +
+      `★ 理由：${reason.trim()}\n` +
+      `★ 卡上的判据（${(card.expectations ?? []).length} 条）与证据都保留 —— 作废的是"这活要做"，不是"这活存在过"。`,
+    feature,
+    data: { node_id, state: 'void' as TaskState, reason: reason.trim() },
   };
 }
