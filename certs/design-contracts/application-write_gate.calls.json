@@ -1,0 +1,240 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/application/write_gate.ts（**fork 自 cache.db，全量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T06:13:52.202Z",
+    "note": "★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls = 设计说\"这些调用必须成立\"",
+  "calls": [
+    {
+      "from": "src/application/write_gate.ts#writeSourceFiles",
+      "to": "src/application/refactor/snapshot/file_snapshot.ts#snapshotBeforeWrite"
+    },
+    {
+      "from": "src/application/write_gate.ts#snapshotAndRecordSelfWrite",
+      "to": "src/application/refactor/snapshot/file_snapshot.ts#snapshotBeforeWrite"
+    },
+    {
+      "from": "src/application/write_gate.ts#assertSourceWriteRegisteredFor",
+      "to": "src/application/write_gate.ts#assertSourceWriteRegistered"
+    },
+    {
+      "from": "src/application/write_gate.ts#writeSourceFiles",
+      "to": "src/application/write_gate.ts#assertSourceWriteRegistered"
+    },
+    {
+      "from": "src/application/write_gate.ts#snapshotAndRecordSelfWrite",
+      "to": "src/application/write_gate.ts#assertSourceWriteRegistered"
+    },
+    {
+      "from": "src/application/write_gate.ts#assertSourceWriteRegistered",
+      "to": "src/application/write_gate.ts#collectGateCoverage"
+    },
+    {
+      "from": "src/application/write_gate.ts#syncSelfWrites",
+      "to": "src/application/write_gate.ts#finishWriteThrough"
+    },
+    {
+      "from": "src/application/write_gate.ts#syncSelfWritesSync",
+      "to": "src/application/write_gate.ts#finishWriteThrough"
+    },
+    {
+      "from": "src/application/write_gate.ts#syncSelfWrites",
+      "to": "src/application/write_gate.ts#hasLiveIndex"
+    },
+    {
+      "from": "src/application/write_gate.ts#syncSelfWritesSync",
+      "to": "src/application/write_gate.ts#hasLiveIndex"
+    },
+    {
+      "from": "src/application/write_gate.ts#reopenAndResolveAfterWrite",
+      "to": "src/application/write_gate.ts#hasLiveIndex"
+    },
+    {
+      "from": "src/application/write_gate.ts#snapshotAndRecordSelfWrite",
+      "to": "src/application/write_gate.ts#hasLiveIndex"
+    },
+    {
+      "from": "src/application/write_gate.ts#collectGateCoverage",
+      "to": "src/application/write_gate.ts#nodeFilePath"
+    },
+    {
+      "from": "src/application/write_gate.ts#syncSelfWritesSync",
+      "to": "src/application/write_gate.ts#recordSelfWrite"
+    },
+    {
+      "from": "src/application/write_gate.ts#writeSourceFiles",
+      "to": "src/application/write_gate.ts#recordSelfWrite"
+    },
+    {
+      "from": "src/application/write_gate.ts#snapshotAndRecordSelfWrite",
+      "to": "src/application/write_gate.ts#recordSelfWrite"
+    },
+    {
+      "from": "src/application/write_gate.ts#assertSourceWriteRegistered",
+      "to": "src/application/write_gate.ts#recordUnaddressableWarnings"
+    },
+    {
+      "from": "src/application/write_gate.ts#assertSourceWriteRegisteredFor",
+      "to": "src/application/write_gate.ts#resolveActor"
+    },
+    {
+      "from": "src/application/write_gate.ts#assertSourceWriteRegistered",
+      "to": "src/application/write_gate.ts#resolveActor"
+    },
+    {
+      "from": "src/application/write_gate.ts#finishWriteThrough",
+      "to": "src/application/write_gate.ts#resolveRefsAfterWrite"
+    },
+    {
+      "from": "src/application/write_gate.ts#reopenAndResolveAfterWrite",
+      "to": "src/application/write_gate.ts#resolveRefsAfterWrite"
+    },
+    {
+      "from": "src/application/write_gate.ts#writeSourceFiles",
+      "to": "src/application/write_gate.ts#syncSelfWrites"
+    },
+    {
+      "from": "src/application/write_gate.ts#recordSelfWrite",
+      "to": "src/application/write_gate.ts#writeSelfWrites"
+    },
+    {
+      "from": "src/application/write_gate.ts#assertSourceWriteRegistered",
+      "to": "src/domain/task_schema.ts#progressOf"
+    },
+    {
+      "from": "src/application/write_gate.ts#syncSelfWrites",
+      "to": "src/infrastructure/index/db.ts#beginBatch"
+    },
+    {
+      "from": "src/application/write_gate.ts#syncSelfWritesSync",
+      "to": "src/infrastructure/index/db.ts#beginBatch"
+    },
+    {
+      "from": "src/application/write_gate.ts#syncSelfWrites",
+      "to": "src/infrastructure/index/db.ts#endBatch"
+    },
+    {
+      "from": "src/application/write_gate.ts#syncSelfWritesSync",
+      "to": "src/infrastructure/index/db.ts#endBatch"
+    },
+    {
+      "from": "src/application/write_gate.ts#hasLiveIndex",
+      "to": "src/infrastructure/index/db.ts#getProjectCacheDb"
+    },
+    {
+      "from": "src/application/write_gate.ts#syncSelfWrites",
+      "to": "src/infrastructure/index/db.ts#getProjectCacheDb"
+    },
+    {
+      "from": "src/application/write_gate.ts#syncSelfWritesSync",
+      "to": "src/infrastructure/index/db.ts#getProjectCacheDb"
+    },
+    {
+      "from": "src/application/write_gate.ts#reopenAndResolveAfterWrite",
+      "to": "src/infrastructure/index/db.ts#getProjectCacheDb"
+    },
+    {
+      "from": "src/application/write_gate.ts#hasLiveIndex",
+      "to": "src/infrastructure/index/db.ts#projectCacheDbPath"
+    },
+    {
+      "from": "src/application/write_gate.ts#syncSelfWrites",
+      "to": "src/infrastructure/index/index_freshness.ts#indexCoversDisk"
+    },
+    {
+      "from": "src/application/write_gate.ts#syncSelfWritesSync",
+      "to": "src/infrastructure/index/index_freshness.ts#indexCoversDisk"
+    },
+    {
+      "from": "src/application/write_gate.ts#reopenAndResolveAfterWrite",
+      "to": "src/infrastructure/index/index_freshness.ts#indexCoversDisk"
+    },
+    {
+      "from": "src/application/write_gate.ts#recordSelfWrite",
+      "to": "src/infrastructure/index/self_writes.ts#readSelfWrites"
+    },
+    {
+      "from": "src/application/write_gate.ts#writeSelfWrites",
+      "to": "src/infrastructure/index/self_writes.ts#selfWritesPath"
+    },
+    {
+      "from": "src/application/write_gate.ts#resolveRefsAfterWrite",
+      "to": "src/infrastructure/index/symbols.ts#changedSymbolNames"
+    },
+    {
+      "from": "src/application/write_gate.ts#syncSelfWrites",
+      "to": "src/infrastructure/index/symbols.ts#removeFile"
+    },
+    {
+      "from": "src/application/write_gate.ts#syncSelfWritesSync",
+      "to": "src/infrastructure/index/symbols.ts#removeFile"
+    },
+    {
+      "from": "src/application/write_gate.ts#resolveRefsAfterWrite",
+      "to": "src/infrastructure/index/symbols.ts#reopenRefsTo"
+    },
+    {
+      "from": "src/application/write_gate.ts#resolveRefsAfterWrite",
+      "to": "src/infrastructure/index/symbols.ts#resolveCrossFileCalls"
+    },
+    {
+      "from": "src/application/write_gate.ts#syncSelfWrites",
+      "to": "src/infrastructure/index/symbols.ts#syncFile"
+    },
+    {
+      "from": "src/application/write_gate.ts#syncSelfWritesSync",
+      "to": "src/infrastructure/index/symbols.ts#syncFileSync"
+    },
+    {
+      "from": "src/application/write_gate.ts#recordSelfWrite",
+      "to": "src/infrastructure/index/symbols.ts#toIndexKey"
+    },
+    {
+      "from": "src/application/write_gate.ts#syncSelfWrites",
+      "to": "src/infrastructure/index/symbols.ts#toIndexKey"
+    },
+    {
+      "from": "src/application/write_gate.ts#syncSelfWritesSync",
+      "to": "src/infrastructure/index/symbols.ts#toIndexKey"
+    },
+    {
+      "from": "src/application/write_gate.ts#assertSourceWriteRegistered",
+      "to": "src/infrastructure/index/symbols.ts#toIndexKey"
+    },
+    {
+      "from": "src/application/write_gate.ts#reopenAndResolveAfterWrite",
+      "to": "src/infrastructure/index/symbols.ts#toIndexKey"
+    },
+    {
+      "from": "src/application/write_gate.ts#writeSourceFiles",
+      "to": "src/infrastructure/index/symbols.ts#toIndexKey"
+    },
+    {
+      "from": "src/application/write_gate.ts#snapshotAndRecordSelfWrite",
+      "to": "src/infrastructure/index/symbols.ts#toIndexKey"
+    },
+    {
+      "from": "src/application/write_gate.ts#recordUnaddressableWarnings",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/application/write_gate.ts#collectGateCoverage",
+      "to": "src/infrastructure/storage.ts#listFeatures"
+    },
+    {
+      "from": "src/application/write_gate.ts#recordUnaddressableWarnings",
+      "to": "src/infrastructure/storage.ts#saveDSL"
+    },
+    {
+      "from": "src/application/write_gate.ts#assertSourceWriteRegistered",
+      "to": "src/infrastructure/storage_overlay.ts#loadOverlay"
+    },
+    {
+      "from": "src/application/write_gate.ts#assertSourceWriteRegistered",
+      "to": "src/infrastructure/storage_overlay.ts#loadOverlay"
+    }
+  ],
+  "removed": []
+}

@@ -1,0 +1,112 @@
+#!/usr/bin/env node
+/**
+ * fork-design —— ★ **从实际侧 fork 出设计侧**（像 `git checkout -b`）。
+ *
+ * ## 语义（用户 2026-10-18 明确）
+ * > "直接像 Git 那样创建一个新分支不行吗？你也创建一个一模一样的 DB 加设计 DSL，然后一模一样。"
+ *
+ * ⇒ **fork 三份，都从实际侧来**：
+ * | 设计侧 | 从哪 fork | 怎么 fork |
+ * |---|---|---|
+ * | `design/<f>.dsl.json` | `live/<f>.dsl.json` | 结构复制（★ 已有则**不覆盖**，除非 --force） |
+ * | `<node>.contract.ts`（符号） | `cache.db.nodes` | 调 `gen-contracts.mjs` |
+ * | `<node>.calls.json`（调用） | `cache.db.edges(kind='call')` | ★ 本脚本生成（**全量**） |
+ *
+ * ## ★★★ 为什么 calls 要【全量】（与 §8 的"只写在意的"相反）
+ * "只写在意的"是**手写**时的省事做法 —— 而手写一定漏。
+ * **fork 的做法是"全量复制，然后改"**：
+ *   · fork 时：**实际有什么调用，设计就有什么**（一模一样）；
+ *   · 改的时候：**删掉不该有的 / 加上该有的** ⇒ ★ **"删了哪些"本身也成为可表达的差异**。
+ * ⇒ 所以本脚本生成的 `calls.json` 带 `calls`（全量）+ `removed`（空，等人删）。
+ *
+ * 用法：
+ *   node scripts/fork-design.mjs            # 已有 design 则不覆盖，只补契约/调用
+ *   node scripts/fork-design.mjs --force    # 连 design 结构也重 fork（★ 会丢手写 decision，慎用）
+ */
+import fs from 'node:fs';
+import path from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { DatabaseSync } from 'node:sqlite';
+
+const FEATURE = 'task-system-plan';
+const DESIGN = path.join('.agent-io', 'design', `${FEATURE}.dsl.json`);
+const LIVE = path.join('.agent-io', 'live', `${FEATURE}.dsl.json`);
+const OUT_DIR = path.join('certs', 'design-contracts');
+const DB = path.join('.agent-io', 'cache.db');
+const force = process.argv.includes('--force');
+const log = [];
+
+// ═══ ① 结构 fork：live → design ═══
+if (!fs.existsSync(DESIGN) || force) {
+  if (!fs.existsSync(LIVE)) {
+    console.error(`★ 没有实际侧：${LIVE} 不存在 ⇒ 先跑 import_project`);
+    process.exit(2);
+  }
+  const live = JSON.parse(fs.readFileSync(LIVE, 'utf8'));
+  const dsl = {
+    ...live,
+    _forked_from: { source: LIVE, at: new Date().toISOString(), note: '★ 设计侧 = 实际侧的完整副本（图纸）' },
+  };
+  fs.mkdirSync(path.dirname(DESIGN), { recursive: true });
+  fs.writeFileSync(DESIGN, JSON.stringify(dsl, null, 2) + '\n');
+  log.push(`结构 fork：${LIVE} → ${DESIGN}（${(live.geometry?.nodes ?? []).length} 节点）`);
+} else {
+  log.push(`结构 fork：跳过（design 已存在；--force 可重 fork，但会丢手写 decision）`);
+}
+
+// ═══ ② 符号 fork：cache.db.nodes → contract.ts（复用生成器）═══
+try {
+  const out = execFileSync(process.execPath, ['scripts/gen-contracts.mjs'], { encoding: 'utf8' });
+  log.push('符号 fork：' + out.trim().split('\n').filter(Boolean).pop());
+} catch (e) {
+  log.push('★ 符号 fork 失败：' + String(e.message).split('\n')[0]);
+}
+
+// ═══ ③ 调用 fork：cache.db.edges(kind='call') → <node>.calls.json（全量）═══
+const design = JSON.parse(fs.readFileSync(DESIGN, 'utf8'));
+/**
+ * ★ 只给**有 decision 的节点**生成 calls（= "我改过的那 11 处"）。
+ *   "全量"指的是【这个文件的所有调用】，不是【所有文件】——
+ *   否则会生成 338 份（每个 file 节点一份），而其中 327 个节点我从没设计过。
+ */
+const designFileSet = new Set(
+  (design.geometry?.nodes ?? [])
+    .filter((n) => n.type === 'file' && n.description && n.decision)
+    .map((n) => String(n.description).replace(/\\/g, '/')),
+);
+
+const db = new DatabaseSync(DB, { readOnly: true });
+const callRows = db.prepare(`SELECT source, target FROM edges WHERE kind = 'call'`).all();
+db.close();
+
+/** 按"源文件"分组：只收设计侧收录的文件 */
+const byFile = new Map();
+let total = 0;
+for (const r of callRows) {
+  const [srcFile] = String(r.source).split('#');
+  const f = srcFile.replace(/\\/g, '/');
+  if (!designFileSet.has(f)) continue;
+  if (!byFile.has(f)) byFile.set(f, []);
+  byFile.get(f).push({ from: String(r.source).replace(/\\/g, '/'), to: String(r.target).replace(/\\/g, '/') });
+  total++;
+}
+
+fs.mkdirSync(OUT_DIR, { recursive: true });
+const slug = (p) => p.replace(/^src\//, '').replace(/\.ts$/, '').replace(/\//g, '-');
+let written = 0;
+for (const [file, calls] of byFile) {
+  const out = {
+    '//': `★★★ 设计侧契约（结构级·调用）—— ${file}（**fork 自 cache.db，全量**）`,
+    '//forked_from': { db: DB, at: new Date().toISOString(), note: '★ 全量复制：实际有什么调用，设计就有什么；改的时候删/加，差异就显形' },
+    '//how': '对拍用 scripts/contract-calls.mjs；calls = 设计说"这些调用必须成立"',
+    calls: calls.sort((a, b) => (a.to < b.to ? -1 : 1)),
+    removed: [],
+  };
+  fs.writeFileSync(path.join(OUT_DIR, `${slug(file)}.calls.json`), JSON.stringify(out, null, 2) + '\n');
+  written++;
+}
+log.push(`调用 fork：${written} 个文件 · ${total} 条调用边（全量）`);
+
+console.log('════ fork 设计侧 ════');
+for (const l of log) console.log('  · ' + l);
+console.log('\n★ 三份都在 certs/design-contracts/ 与 .agent-io/design/ 下 —— 已"一模一样"，可以开始改。');

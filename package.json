@@ -104,7 +104,8 @@
     "contract": "tsc --noEmit -p tsconfig.contract.json",
     "contract:calls": "node scripts/contract-calls.mjs",
     "patrol": "node scripts/patrol.mjs",
-    "diff": "node scripts/design-diff.mjs"
+    "diff": "node scripts/design-diff.mjs",
+    "fork": "node scripts/fork-design.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
