@@ -31,7 +31,16 @@ import { type Expectation, normPath, normSignature } from '../../../domain/expec
 // ★ T257：TS/JS 家族扩展名的**唯一判据**（`infrastructure/parse/source_exts.ts`）—— 不另写一把尺
 import { TS_JS_EXTS } from '../../../infrastructure/parse/source_exts.js';
 
-export type Verdict = 'pass' | 'fail' | 'unsupported';
+/**
+ * ★★★ 2026-10-18（用户："让它报进行中"）：**三值，不是两值**。
+ *
+ * `pending` = **这条债现在判不了 / 修不了，但它是真的在等某件事**（等宿主 / 等外部 / 等前置）。
+ *   ★ 为什么必须有它（而不是让它红着）：**永远红的契约 = 又一个被绕的门**
+ *     —— 今天"4 道门被绕 7 次"就是这么来的。
+ *   ★ 而它和 `unsupported` 的区别：`unsupported` = "这个判据我判不了"（工具/索引不够）；
+ *     `pending` = "**这活还没干完，卡在某处**"（而"卡在哪"写在契约的 `blocked_by` 里）。
+ */
+export type Verdict = 'pass' | 'fail' | 'unsupported' | 'pending';
 
 export interface ExpectationItem {
   node_id: string;
@@ -267,10 +276,21 @@ export async function judgeExpectations(
       //   ★ 求值域只有这三个名字（不是任意代码执行）：input / root / validateDSL。
       //   ★ 不建 fixtures/ 目录：input 就是夹具，内联在契约里。
       case 'run': {
+        // ★★★ 2026-10-18：**blocked_by 优先** —— 声明的"卡在哪"比"跑出来 fail"更准。
+        //   ★ 跑只会给一个误导的 fail（"断言不成立"），而真实情况是"这活还没干完"。
+        if (e.blocked_by) {
+          push(it, 'pending', `进行中 · 卡在：${e.blocked_by}`);
+          break;
+        }
         try {
           const { validateDSL } = await import('../../../domain/validator.js');
-          const fn = new Function('input', 'root', 'validateDSL', `"use strict"; return (${e.expect});`);
-          const ok = Boolean(fn((e as { input?: unknown }).input, root, validateDSL));
+          // ★★★ 2026-10-18：求值域扩到 fs / path —— "读文件 / grep" 类债也能配 run。
+          //   ★ 仍不是任意代码执行：能用的只有 input / root / validateDSL / fs / path。
+          //   ★ 纪律：run 只许【读 + 判】，不许有副作用（写盘 / 调 claimTask 这类会改状态的，别放进来）。
+          const { default: fsMod } = await import('node:fs');
+          const { default: pathMod } = await import('node:path');
+          const fn = new Function('input', 'root', 'validateDSL', 'fs', 'path', `"use strict"; return (${e.expect});`);
+          const ok = Boolean(fn((e as { input?: unknown }).input, root, validateDSL, fsMod, pathMod));
           push(it, ok ? 'pass' : 'fail', ok ? `断言成立：${e.expect}` : `断言**不成立**：${e.expect}`);
         } catch (err) {
           push(it, 'fail', `run 判不了：${(err as Error).message}`);

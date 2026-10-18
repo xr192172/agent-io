@@ -5972,6 +5972,12 @@
               "path": "src/application/write_gate.ts",
               "symbol": "resolveActor",
               "why": "★ actor 的解析只许一处（读 AGENT_IO_ACTOR）；claim 与写共用同一个解析 ⇒ 才保证 owner === actor 这条判据成立"
+            },
+            {
+              "kind": "run",
+              "expect": "(() => {\n    const dirs = ['src/application', 'src/presentation', 'src/infrastructure', 'src/domain'];\n    let hit = 0;\n    const walk = (d) => {\n      for (const f of fs.readdirSync(path.join(root, d), { withFileTypes: true })) {\n        const p = path.join(d, f.name);\n        if (f.isDirectory()) { walk(p); continue; }\n        if (!/.(ts|mjs|js)$/.test(f.name)) continue;\n        if (/process.env.AGENT_IO_ACTORs*=[^=]/.test(fs.readFileSync(path.join(root, p), 'utf8'))) hit++;\n      }\n    };\n    for (const d of dirs) walk(d);\n    return hit >= 1;\n  })()",
+              "blocked_by": "等 5 个写源码的工具加 agent 参数（★ actor 该从调用方进，不是从 env）",
+              "why": "★ D-actor-entry：闸要判「卡是不是你的」，而 actor 现在没有可靠来源"
             }
           ],
           "creator": "workbuddy-main",
@@ -5983,7 +5989,7 @@
             "to": "design",
             "brief": "把两条判据（有卡 / 卡是你的）落成 expectations + calls；注意 resolveActor 空值必须抛错，不许返回 null"
           },
-          "updated_at": "2026-10-18T09:59:33.117Z"
+          "updated_at": "2026-10-18T13:32:50.295Z"
         },
         "task": {
           "id": "file_src_application_write_gate_ts",
@@ -6107,6 +6113,53 @@
                 "brief": "把两条判据（有卡 / 卡是你的）落成 expectations + calls；注意 resolveActor 空值必须抛错，不许返回 null"
               },
               "updated_at": "2026-10-18T09:59:32.997Z"
+            }
+          },
+          {
+            "at": "2026-10-18T13:32:50.295Z",
+            "decision": {
+              "summary": "改源码之前，该节点必须：① 有一张决策卡（summary + ≥1 条 post 期望）② 卡被你 claim 了（owner === actor）。★ 只判①不够 —— 那会让「别人领的卡我也能写」，那不是协作，是混乱；任务系统本质是多子代理并行领活的协作系统。★ actor 的来源是会话级 AGENT_IO_ACTOR（claim 与写共用它 ⇒ 保证一致）；★ 卡上记着来源（用户需求 / 文档翻译），供事后追溯。",
+              "acceptance": "① 该节点有决策卡（summary + ≥1 条 post 期望）② 卡被 claim 了，且 owner === 当前 actor。★ actor 来源：会话级 AGENT_IO_ACTOR（claim 与写都用它 ⇒ 保证一致）。★ claim 时 owner ≠ AGENT_IO_ACTOR ⇒ 拒（那是替别人领卡）。★★ 这两条是【协作】的底线：任务系统本质是多子代理并行领活的协作系统 —— 只判①会让别人领的卡我也能写，那不是协作，是混乱。",
+              "provenance": {
+                "kind": "friction",
+                "where": "docs/_extract/static-review-1.md 的 A7 + A1（叠加）：巡检不跑 ⇒ 卡永不过期 ⇒ 别人领的卡 = 永久万能钥匙",
+                "note": "★ 活证据：今天我自己裸改 10+ 个源文件、一张卡都没挂、闸一次都没拦 —— 因为我直接写盘，闸压根没被调用"
+              },
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "WriteActor",
+                  "why": "★ 写闸要知道\"谁在写\" —— 现在 assertSourceWriteRegistered(projectRoot, files) 签名里没有身份维度"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "assertSourceWriteRegisteredFor",
+                  "why": "★ 按 actor 判定的入口：要求\"覆盖该文件的节点上存在 claimed 卡，且 owner === actor\"（现在只要求\"存在 claimed 卡\"）"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/application/write_gate.ts",
+                  "why": "节点地址（已存在，作为基线）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/write_gate.ts",
+                  "symbol": "resolveActor",
+                  "why": "★ actor 的解析只许一处（读 AGENT_IO_ACTOR）；claim 与写共用同一个解析 ⇒ 才保证 owner === actor 这条判据成立"
+                }
+              ],
+              "creator": "workbuddy-main",
+              "source": {
+                "kind": "user",
+                "ref": "2026-10-18 用户：「改设计的前提是决策卡，办什么事都要有卡」"
+              },
+              "handoff": {
+                "to": "design",
+                "brief": "把两条判据（有卡 / 卡是你的）落成 expectations + calls；注意 resolveActor 空值必须抛错，不许返回 null"
+              },
+              "updated_at": "2026-10-18T09:59:33.117Z"
             }
           }
         ]
@@ -59426,5 +59479,5 @@
       "release_reason": "promoted to file_src_domain_validator_ts"
     }
   ],
-  "_dsl_rev": 5
+  "_dsl_rev": 6
 }

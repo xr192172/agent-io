@@ -73,7 +73,20 @@ export type Expectation =
    *   why:'坏边必须被点名' }
    * ```
    */
-  | { kind: 'run'; input?: unknown; input_ref?: string; expect: string; why: string };
+  | {
+      kind: 'run';
+      input?: unknown;
+      input_ref?: string;
+      expect: string;
+      why: string;
+      /**
+       * ★★★ 2026-10-18（用户："让它报进行中"）：**卡在哪**。
+       * ★ 有值 ⇒ **判 `pending`，不跑 `expect`**（"等某件事"的时候，跑断言只会给出误导的 fail）。
+       * ★ 值要具体：`'等宿主传 agent'` / `'等 install_mcp 支持 env'` / `'等外部 API'`。
+       * ★ 没有它 ⇒ 正常跑 `expect`（pass/fail）。
+       */
+      blocked_by?: string;
+    };
 
 export const EXPECTATION_KINDS = ['file-exists', 'symbol-exists', 'signature-matches', 'edge-exists', 'edge-absent', 'call-exists', 'run'] as const;
 
