@@ -32,6 +32,9 @@ export interface BoardView {
   /**
    * 每个状态各几张卡（没有就是 0 —— 形状固定，读端不用判 undefined）。
    *
+   * ★★★ 2026-10-18：**债已还** —— `superseded` 已从 `task_schema.ts#TASK_STATES` 删除（`apply_refactor_plan` 落盘），
+   *   所以这里改回了 `Record<TaskState, number>`（下面那段历史保留，说明它曾经为什么是 `Partial`）。
+   *
    * ★★ 用 `Partial<TaskState>` 而不是 `TaskState`，**是因为一个真实的矛盾**（不是偷懒）：
    *   - **设计侧**（`docs/…dsl.json` 的 `state_machine.states`）已于 2026-10-17 **删掉 `superseded`**；
    *   - 而**源码**的 `task_schema.ts#TaskState` **还留着它**（`TASK_STATES` 五态）。
@@ -39,7 +42,7 @@ export interface BoardView {
    *   ⇒ 过渡期用 `Partial` 绕开，**同时挂债**：`D-superseded-remove`（删源码的那个死状态）。
    *   ★ 债还了之后，这里应改回 `Record<TaskState, number>`。
    */
-  byState: Partial<Record<TaskState, number>>;
+  byState: Record<TaskState, number>;
   /** 总卡数 */
   total: number;
   /** 展开显示的（= `total - folded`） */
@@ -66,16 +69,16 @@ export function listPool(feature: string): BoardView {
     );
   }
 
-  const byState: Partial<Record<TaskState, number>> = { candidate: 0, claimed: 0, done: 0, void: 0 };
+  const byState: Record<TaskState, number> = { candidate: 0, claimed: 0, done: 0, void: 0 };
   let total = 0;
   for (const node of dsl.geometry?.nodes ?? []) {
     const state = node.task?.state;
     // ★ 没有卡（无 task）不计入池 —— 池是"卡"的集合，不是"节点"的集合
     if (!state || !ALL_STATES.includes(state)) continue;
-    byState[state] = (byState[state] ?? 0) + 1;
+    byState[state]++;
     total++;
   }
 
-  const folded = (byState.done ?? 0) + (byState.void ?? 0);
+  const folded = byState.done + byState.void;
   return { byState, total, shown: total - folded, folded };
 }

@@ -11,4 +11,4 @@
 import * as m0 from '../../src/application/design/dsl_ops/task_ops.js'; // src/application/design/dsl_ops/task_ops.ts
 export type _0 = typeof m0.publishTask; // ★ publishTask（function）—— 立卡：从设计 DSL 抽出这一块 ⇒ 形成任务卡（= board 的发布动作）。★ 缺它则闸对'尚无
 import * as m1 from '../../src/application/design/dsl_ops/task_ops.js'; // src/application/design/dsl_ops/task_ops.ts
-export type _1 = typeof m1.publishFromDiff; // ★ publishFromDiff（kind 未知⇒按 value）—— ★ diff 之后「无卡 ⇒ 补卡」的唯一入口（VISION §7）；它让差异能被上架，而不是靠人手
+export type _1 = typeof m1.publishFromDiff; // ★ publishFromDiff（function）—— ★ diff 之后「无卡 ⇒ 补卡」的唯一入口（VISION §7）；它让差异能被上架，而不是靠人手

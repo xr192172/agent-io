@@ -512,15 +512,6 @@ export const TRANSITIONS: readonly TaskTransition[] = [
       ],
     },
   },
-  {
-    id: 't_supersede',
-    from: 'candidate',
-    to: 'superseded',
-    state: { kind: 'unimplemented', why: '全仓没有代码写 state:"superseded"；replaces 字段既无写入方也无读取方' },
-    guard: {
-      clauses: ['新卡带 replaces: <old_id>，且 old_id 在卡集里存在'],
-    },
-  },
 ];
 
 /**

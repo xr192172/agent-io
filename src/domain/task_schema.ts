@@ -40,13 +40,13 @@ import type { DiagramStatus } from './geometry.js';
  * ★ 五态与 `docs/task-system-plan.dsl.json` 的 `task_plan.state_machine.states` **逐字一致**；
  *   这里是**唯一住处**，别处不许再抄一份字面量。
  */
-export const TASK_STATES = ['candidate', 'claimed', 'done', 'void', 'superseded'] as const;
+export const TASK_STATES = ['candidate', 'claimed', 'done', 'void'] as const;
 
-/** 五态中某一态。 */
+/** 四态中某一态。 */
 export type TaskState = (typeof TASK_STATES)[number];
 
 /** 终态（迁移表里 `terminal_states` 的同一批，★ 只此一处）。 */
-export const TERMINAL_TASK_STATES = ['done', 'void', 'superseded'] as const;
+export const TERMINAL_TASK_STATES = ['done', 'void'] as const;
 
 /**
  * 运行期形状守卫：`unknown` ⇒ `TaskState`。
@@ -62,7 +62,6 @@ export function isTerminalTaskState(s: TaskState): boolean {
   switch (s) {
     case 'done':
     case 'void':
-    case 'superseded':
       return true;
     default:
       return false;
@@ -102,7 +101,6 @@ export function progressOf(task: Pick<TaskSpec, 'state'> | null | undefined): Di
     case 'done':
       return 'done';
     case 'void':
-    case 'superseded':
       return undefined;
   }
 }
