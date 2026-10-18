@@ -611,6 +611,9 @@ export function saveDSL(dsl: DesignDSL, source: string = 'mcp', base_dsl_rev?: n
   const nextRev = (base_dsl_rev ?? currentDslRev(dsl.feature)) + 1;
   dsl._dsl_rev = nextRev;
   // ★★★ 2026-10-18：写**设计侧**（唯一权威）；不再写 features/ 存档，也不写全局活态 agent-io.json
+  // ★★ 这一改顺便修好了 import_project 的 fork：它此前调 saveDSL(designDsl) 想「fork 一份设计」，
+  //   而 saveDSL 写的是 features/（派生）⇒ **设计侧从来没被真的 fork 过** ⇒ 那正是「rebuild_design 调了没生效」的根因。
+  //   ⇒ 现在 saveDSL 写 design/，fork 才真的落到设计侧。
   const file = getDesignSheetFile(dsl.feature);
   // ★★★ 2026-10-12（T188）：**改成原子写**（临时文件 + rename）—— 治的是 M4 的**根因**。
   //   为什么必须：本函数原先用**裸 `writeFileSync`** 直写目标文件（全仓 `renameSync` **0** 处）
