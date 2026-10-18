@@ -34,7 +34,10 @@ vitest.config.ts.timestamp-*.mjs
 certs/.work/
 
 # 运行时持久化的 DSL（用户实际使用时生成；examples/ 目录的示例需要提交）
-.agent-io/
+.agent-io/*
+# ★ 唯一例外：设计侧（手写权威）必须进 git
+!.agent-io/design/
+!.agent-io/design/**
 # DSL 布局/内容的自动备份目录（带时间戳成批生成，不入库，避免大体积误提交）
 .agent-io.bak-*/
 # MCP server 运行时 DSL（项目根，随使用场景变化，不入库）
@@ -125,14 +128,12 @@ docs/*
 #   ★ 尤其 docs/DESIGN.md —— 它是【唯一文档】。★ 曾经它不在 git 里（写完才发现），
 #     而项目外备份是在写它之前做的 ⇒ 一旦本地丢失就全丢。（这是 priciple P4「判据要有执行者」的反面：文档也得有人守）
 !docs/DESIGN.md
-!docs/task-system-plan.handwritten.json
 !docs/accounting.jsonl
 !docs/board.md
 !docs/GOAL.md
 !docs/todo.md
 !docs/discussion-log.md
 !docs/frictions.jsonl
-!docs/task-system-plan.dsl.json
 # 内部交接/狗食试产产物
 HANDOVER_DOGFOOD.md
 # 内部后续开发路径规划（含竞品/许可/变现/缺陷审计等内部结论，不入发布仓库）

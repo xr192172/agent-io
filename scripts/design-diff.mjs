@@ -22,7 +22,7 @@
  */
 import fs from 'node:fs';
 
-const DESIGN = 'docs/task-system-plan.dsl.json';
+const DESIGN = '.agent-io/design/task-system-plan.dsl.json'; // ★ 唯一位置（2026-10-18 统一）
 const LIVE = '.agent-io/live/task-system-plan.dsl.json';
 
 const argv = process.argv.slice(2);
