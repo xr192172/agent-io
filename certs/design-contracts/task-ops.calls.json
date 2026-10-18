@@ -4,19 +4,48 @@
   "//judged_by": "scripts/contract-calls.mjs —— 拿这里的 (from,to) 去 cache.db 的 edges(kind='call') 里逐条比",
   "//required": "设计说【必须成立】的调用。缺一条 ⇒ exit 1。",
   "//expected_missing": "★ 设计说【应该成立但目前没有】的调用 —— 显式挂债。缺了是符合预期；★ 如果它突然有了 ⇒ 提醒「该销账了」。",
-
   "required": [
-    { "from": "src/application/design/dsl_ops/task_ops.ts#publishTask", "to": "src/application/design/dsl_ops/task_ops.ts#writeTask", "why": "立卡必须落盘" },
-    { "from": "src/application/design/dsl_ops/task_ops.ts#claimTask", "to": "src/domain/task_machine.ts#cardStanding", "why": "领卡前必须判「有没有本卡能改的红」" },
-    { "from": "src/application/design/dsl_ops/task_ops.ts#claimTask", "to": "src/domain/task_machine.ts#isClaimable", "why": "接取判据 = cardStanding ∈ {work, violated}" },
-    { "from": "src/application/design/dsl_ops/task_ops.ts#completeTask", "to": "src/domain/task_machine.ts#isSatisfied", "why": "收口前判「后态全过 ∧ 前态无红」" },
-    { "from": "src/application/design/dsl_ops/task_ops.ts#completeTask", "to": "src/domain/overlay.ts#validateProgressEvidence", "why": "置 done 必须带一条证据" },
-    { "from": "src/application/design/dsl_ops/task_ops.ts#completeTask", "to": "src/application/design/dsl_ops/status_tools.ts#updateStatus", "why": "进度落盘走唯一写函数（含 evidence 闸与投影）" },
-    { "from": "src/application/design/dsl_ops/task_ops.ts#applyTaskOp", "to": "src/application/design/dsl_ops/task_ops.ts#publishTask", "why": "四个动作的唯一对外入口是 applyTaskOp" },
-
-    { "from": "src/application/write_gate.ts#assertSourceWriteRegisteredFor", "to": "src/application/write_gate.ts#resolveActor", "why": "★ For 入口内部必须解析 actor（2026-10-18 结构对拍证实：这一条已经成立 ⇒ 从 expected_missing 移进 required）" }
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#publishTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#writeTask",
+      "why": "立卡必须落盘"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#claimTask",
+      "to": "src/domain/task_machine.ts#cardStanding",
+      "why": "领卡前必须判「有没有本卡能改的红」"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#claimTask",
+      "to": "src/domain/task_machine.ts#isClaimable",
+      "why": "接取判据 = cardStanding ∈ {work, violated}"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#completeTask",
+      "to": "src/domain/task_machine.ts#isSatisfied",
+      "why": "收口前判「后态全过 ∧ 前态无红」"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#completeTask",
+      "to": "src/domain/overlay.ts#validateProgressEvidence",
+      "why": "置 done 必须带一条证据"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#completeTask",
+      "to": "src/application/design/dsl_ops/status_tools.ts#updateStatus",
+      "why": "进度落盘走唯一写函数（含 evidence 闸与投影）"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyTaskOp",
+      "to": "src/application/design/dsl_ops/task_ops.ts#publishTask",
+      "why": "四个动作的唯一对外入口是 applyTaskOp"
+    },
+    {
+      "from": "src/application/write_gate.ts#assertSourceWriteRegisteredFor",
+      "to": "src/application/write_gate.ts#resolveActor",
+      "why": "★ For 入口内部必须解析 actor（2026-10-18 结构对拍证实：这一条已经成立 ⇒ 从 expected_missing 移进 required）"
+    }
   ],
-
   "expected_missing": [
     {
       "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
@@ -31,6 +60,23 @@
       "why": "★ 设计说：巡检要用同一把尺（cardStanding）重算每张卡",
       "debt": "A1",
       "note": "★ 根问题是「patrolDrift 全仓零调用方」—— 连入口都没有，内部调用自然也不会有。"
+    }
+  ],
+  "expected_callers": [
+    {
+      "target": "src/application/patrol/task_drift.ts#patrolDrift",
+      "why": "★ 巡检必须有入口（现在零调用方）—— 否则它算得再对也没人跑",
+      "debt": "A1"
+    },
+    {
+      "target": "src/domain/discussion_log.ts#renderMicro",
+      "why": "★ 设计说：discussion 格的微缩渲染必须被读端调用（现在零 src 调用）",
+      "debt": "B5"
+    },
+    {
+      "target": "src/application/write_gate.ts#assertSourceWriteRegisteredFor",
+      "why": "★ 生产写链必须调 For 入口（现在零调用方，5 个写链全调旧入口）",
+      "debt": "D-actor-wire"
     }
   ]
 }
