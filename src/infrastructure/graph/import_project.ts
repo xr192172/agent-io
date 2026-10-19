@@ -700,7 +700,14 @@ function parsedKindToSymbolKind(kind: string): Symbol['kind'] {
 }
 
 export async function importProject(input: ImportProjectInput): Promise<ImportProjectResult> {
-  const { feature, max_files = 200, include_tests = false, include_docs = false } = input;
+  // ★★★ 2026-10-19（用户："max_files 直接删掉吧 —— 我们不是有懒加载吗"）：
+  //   **默认不再截断**。理由（用户原话归纳）：
+  //   ① 增量架构里"多一个就加一个"—— watch_project 只处理变更的文件，index_backfill 分小批续建
+  //   ② "保鲜只保鲜局部变动"，所以"一次全量"只在首次发生（本项目 558 文件 ≈ 23s，一次性）
+  //   ③ ★ 而"截断 200"的代价是：**索引永远缺一半，而缺的那一半只记一条 skipped、没人知道缺**
+  //   ⇒ 用"一次多花 20 秒"换"索引缺一半"是笔坏账。
+  //   ★ 参数仍保留（显式传 max_files 才截断），只是默认 = 不截断。
+  const { feature, max_files = Number.POSITIVE_INFINITY, include_tests = false, include_docs = false } = input;
   // ★ T88：文档节点收了几篇（只在 include_docs 时非空；★ 必须声明在**函数体层**，
   //   因为"收集"与"拼 message"在**两个不同的块**里 —— 块内声明块外读不到，我第一版就栽在这)
   let docNote: string | null = null;
