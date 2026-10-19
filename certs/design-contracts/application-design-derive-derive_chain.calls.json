@@ -1,0 +1,164 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/application/design/derive/derive_chain.ts（**实际全量 + 设计意图增量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T11:04:53.419Z",
+    "note": "★ calls = 实际全量 ∪ 带 why 的（dep 加的）· removed = 原样保留（dep 删的）"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls 里\"实际没有\"的会红（= 该接线）",
+  "calls": [
+    {
+      "from": "src/application/design/derive/derive_chain.ts#deriveDetailChain",
+      "to": "src/application/design/derive/derive_chain.ts#buildCallGraph"
+    },
+    {
+      "from": "src/application/design/derive/derive_chain.ts#deriveDetailChain",
+      "to": "src/application/design/derive/derive_chain.ts#detectLang"
+    },
+    {
+      "from": "src/application/design/derive/derive_chain.ts#deriveDetailChain",
+      "to": "src/application/design/derive/derive_chain.ts#detectLang"
+    },
+    {
+      "from": "src/application/design/derive/derive_chain.ts#mapGoType",
+      "to": "src/application/design/derive/derive_chain.ts#mapGoType"
+    },
+    {
+      "from": "src/application/design/derive/derive_chain.ts#mapGoType",
+      "to": "src/application/design/derive/derive_chain.ts#mapGoType"
+    },
+    {
+      "from": "src/application/design/derive/derive_chain.ts#mapType",
+      "to": "src/application/design/derive/derive_chain.ts#mapGoType"
+    },
+    {
+      "from": "src/application/design/derive/derive_chain.ts#parseGoReturns",
+      "to": "src/application/design/derive/derive_chain.ts#mapGoType"
+    },
+    {
+      "from": "src/application/design/derive/derive_chain.ts#parseGoReturns",
+      "to": "src/application/design/derive/derive_chain.ts#mapGoType"
+    },
+    {
+      "from": "src/application/design/derive/derive_chain.ts#mapPyType",
+      "to": "src/application/design/derive/derive_chain.ts#mapPyType"
+    },
+    {
+      "from": "src/application/design/derive/derive_chain.ts#mapPyType",
+      "to": "src/application/design/derive/derive_chain.ts#mapPyType"
+    },
+    {
+      "from": "src/application/design/derive/derive_chain.ts#mapType",
+      "to": "src/application/design/derive/derive_chain.ts#mapPyType"
+    },
+    {
+      "from": "src/application/design/derive/derive_chain.ts#mapTsType",
+      "to": "src/application/design/derive/derive_chain.ts#mapTsType"
+    },
+    {
+      "from": "src/application/design/derive/derive_chain.ts#mapTsType",
+      "to": "src/application/design/derive/derive_chain.ts#mapTsType"
+    },
+    {
+      "from": "src/application/design/derive/derive_chain.ts#mapTsType",
+      "to": "src/application/design/derive/derive_chain.ts#mapTsType"
+    },
+    {
+      "from": "src/application/design/derive/derive_chain.ts#mapTsType",
+      "to": "src/application/design/derive/derive_chain.ts#mapTsType"
+    },
+    {
+      "from": "src/application/design/derive/derive_chain.ts#mapType",
+      "to": "src/application/design/derive/derive_chain.ts#mapTsType"
+    },
+    {
+      "from": "src/application/design/derive/derive_chain.ts#signatureToShapes",
+      "to": "src/application/design/derive/derive_chain.ts#mapType"
+    },
+    {
+      "from": "src/application/design/derive/derive_chain.ts#signatureToShapes",
+      "to": "src/application/design/derive/derive_chain.ts#mapType"
+    },
+    {
+      "from": "src/application/design/derive/derive_chain.ts#signatureToShapes",
+      "to": "src/application/design/derive/derive_chain.ts#parseGoReturns"
+    },
+    {
+      "from": "src/application/design/derive/derive_chain.ts#signatureToShapes",
+      "to": "src/application/design/derive/derive_chain.ts#parseParams"
+    },
+    {
+      "from": "src/application/design/derive/derive_chain.ts#deriveDetailChain",
+      "to": "src/application/design/derive/derive_chain.ts#pickEntry"
+    },
+    {
+      "from": "src/application/design/derive/derive_chain.ts#deriveDetailChain",
+      "to": "src/application/design/derive/derive_chain.ts#sanitize"
+    },
+    {
+      "from": "src/application/design/derive/derive_chain.ts#deriveDetailChain",
+      "to": "src/application/design/derive/derive_chain.ts#sanitize"
+    },
+    {
+      "from": "src/application/design/derive/derive_chain.ts#deriveDetailChain",
+      "to": "src/application/design/derive/derive_chain.ts#sanitize"
+    },
+    {
+      "from": "src/application/design/derive/derive_chain.ts#deriveDetailChain",
+      "to": "src/application/design/derive/derive_chain.ts#signatureToShapes"
+    },
+    {
+      "from": "src/application/design/derive/derive_chain.ts#deriveDetailChain",
+      "to": "src/application/design/derive/derive_chain.ts#signatureToShapes"
+    },
+    {
+      "from": "src/application/design/derive/derive_chain.ts#deriveDetailChain",
+      "to": "src/application/design/derive/derive_chain.ts#signatureToShapes"
+    },
+    {
+      "from": "src/application/design/derive/derive_chain.ts#signatureToShapes",
+      "to": "src/application/design/derive/derive_chain.ts#splitSignature"
+    },
+    {
+      "from": "src/application/design/derive/derive_chain.ts#mapTsType",
+      "to": "src/application/design/derive/derive_chain.ts#splitTopLevel"
+    },
+    {
+      "from": "src/application/design/derive/derive_chain.ts#parseParams",
+      "to": "src/application/design/derive/derive_chain.ts#splitTopLevel"
+    },
+    {
+      "from": "src/application/design/derive/derive_chain.ts#parseParams",
+      "to": "src/application/design/derive/derive_chain.ts#splitTopLevel"
+    },
+    {
+      "from": "src/application/design/derive/derive_chain.ts#parseGoReturns",
+      "to": "src/application/design/derive/derive_chain.ts#splitTopLevel"
+    },
+    {
+      "from": "src/application/design/derive/derive_chain.ts#pickEntry",
+      "to": "src/application/design/derive/derive_chain.ts#walkChain"
+    },
+    {
+      "from": "src/application/design/derive/derive_chain.ts#deriveDetailChain",
+      "to": "src/application/design/derive/derive_chain.ts#walkChain"
+    },
+    {
+      "from": "src/application/design/derive/derive_chain.ts#deriveDetailChain",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#extractFunctionCfg"
+    },
+    {
+      "from": "src/application/design/derive/derive_chain.ts#deriveDetailChain",
+      "to": "src/infrastructure/index/db.ts#nearestCacheDb"
+    },
+    {
+      "from": "src/application/design/derive/derive_chain.ts#deriveDetailChain",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/application/design/derive/derive_chain.ts#deriveDetailChain",
+      "to": "src/infrastructure/storage.ts#saveDSL"
+    }
+  ],
+  "removed": []
+}

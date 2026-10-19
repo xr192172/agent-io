@@ -1,0 +1,244 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/presentation/cli/install_package_cli.ts（**实际全量 + 设计意图增量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T11:04:53.437Z",
+    "note": "★ calls = 实际全量 ∪ 带 why 的（dep 加的）· removed = 原样保留（dep 删的）"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls 里\"实际没有\"的会红（= 该接线）",
+  "calls": [
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/infrastructure/packages/template_compat.ts#templateCompatFromFacts"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#collect",
+      "to": "src/infrastructure/packages/template_compat.ts#templateCompatFromPkgJson"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#installPrecheck",
+      "to": "src/infrastructure/packages/template_compat.ts#templateCompatFromPkgJson"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/infrastructure/packages/template_compat.ts#templateCompatFromPkgJson"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#compatVerdict",
+      "to": "src/infrastructure/packages/template_compat.ts#templateCompatReason"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#compatVerdict",
+      "to": "src/infrastructure/packages/template_compat.ts#templateCompatReason"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#collect",
+      "to": "src/infrastructure/packages/template_compat.ts#usesNanBinding"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/infrastructure/packages/template_compat.ts#usesNanBinding"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#hasHostPrebuild",
+      "to": "src/infrastructure/parse/languages.ts#moduleSpecOfPkg"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#registryInstallScript",
+      "to": "src/infrastructure/parse/languages.ts#moduleSpecOfPkg"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#readLangPkgJson",
+      "to": "src/infrastructure/parse/languages.ts#moduleSpecOfPkg"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#checkPrebuild",
+      "to": "src/infrastructure/parse/languages.ts#moduleSpecOfPkg"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#isInstalled",
+      "to": "src/infrastructure/parse/languages.ts#moduleSpecOfPkg"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#collect",
+      "to": "src/infrastructure/parse/languages.ts#moduleSpecOfPkg"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/presentation/cli/install_package_cli.ts#checkPrebuild"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#rangeOk",
+      "to": "src/presentation/cli/install_package_cli.ts#cmp"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#rangeOk",
+      "to": "src/presentation/cli/install_package_cli.ts#cmp"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#rangeOk",
+      "to": "src/presentation/cli/install_package_cli.ts#cmp"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/presentation/cli/install_package_cli.ts#collect"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/presentation/cli/install_package_cli.ts#compatVerdict"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/presentation/cli/install_package_cli.ts#compatVerdict"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/presentation/cli/install_package_cli.ts#compatVerdict"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#verifyAbi",
+      "to": "src/presentation/cli/install_package_cli.ts#coreTreeSitterVersion"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/presentation/cli/install_package_cli.ts#coreTreeSitterVersion"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/presentation/cli/install_package_cli.ts#coreTreeSitterVersion"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#hasHostPrebuild",
+      "to": "src/presentation/cli/install_package_cli.ts#findNodeModulesRoot"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#registryInstallScript",
+      "to": "src/presentation/cli/install_package_cli.ts#findNodeModulesRoot"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#readPkgJson",
+      "to": "src/presentation/cli/install_package_cli.ts#findNodeModulesRoot"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#checkPrebuild",
+      "to": "src/presentation/cli/install_package_cli.ts#findNodeModulesRoot"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#isInstalled",
+      "to": "src/presentation/cli/install_package_cli.ts#findNodeModulesRoot"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#runNpm",
+      "to": "src/presentation/cli/install_package_cli.ts#findNodeModulesRoot"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#installPrecheck",
+      "to": "src/presentation/cli/install_package_cli.ts#findRowByName"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/presentation/cli/install_package_cli.ts#findRowByName"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/presentation/cli/install_package_cli.ts#findRowByName"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/presentation/cli/install_package_cli.ts#findRowByName"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/presentation/cli/install_package_cli.ts#findRowByName"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/presentation/cli/install_package_cli.ts#findRowByName"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/presentation/cli/install_package_cli.ts#findRowByName"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/presentation/cli/install_package_cli.ts#ghSource"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#collect",
+      "to": "src/presentation/cli/install_package_cli.ts#hasHostPrebuild"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/presentation/cli/install_package_cli.ts#hasHostPrebuild"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/presentation/cli/install_package_cli.ts#installPrecheck"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#collect",
+      "to": "src/presentation/cli/install_package_cli.ts#isInstalled"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#rangeOk",
+      "to": "src/presentation/cli/install_package_cli.ts#parseVer"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#rangeOk",
+      "to": "src/presentation/cli/install_package_cli.ts#parseVer"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#verifyAbi",
+      "to": "src/presentation/cli/install_package_cli.ts#rangeOk"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/presentation/cli/install_package_cli.ts#rangeOk"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#verifyAbi",
+      "to": "src/presentation/cli/install_package_cli.ts#readLangPkgJson"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#installPrecheck",
+      "to": "src/presentation/cli/install_package_cli.ts#readLangPkgJson"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/presentation/cli/install_package_cli.ts#readLangPkgJson"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#readLangPkgJson",
+      "to": "src/presentation/cli/install_package_cli.ts#readPkgJson"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#coreTreeSitterVersion",
+      "to": "src/presentation/cli/install_package_cli.ts#readPkgJson"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#collect",
+      "to": "src/presentation/cli/install_package_cli.ts#readPkgJson"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#installPrecheck",
+      "to": "src/presentation/cli/install_package_cli.ts#registryInstallScript"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/presentation/cli/install_package_cli.ts#registryInstallScript"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/presentation/cli/install_package_cli.ts#runNpm"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/presentation/cli/install_package_cli.ts#runNpm"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/presentation/cli/install_package_cli.ts#verifyAbi"
+    }
+  ],
+  "removed": []
+}

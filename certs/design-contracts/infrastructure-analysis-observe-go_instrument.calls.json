@@ -1,0 +1,72 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/infrastructure/analysis/observe/go_instrument.ts（**实际全量 + 设计意图增量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T11:04:53.455Z",
+    "note": "★ calls = 实际全量 ∪ 带 why 的（dep 加的）· removed = 原样保留（dep 删的）"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls 里\"实际没有\"的会红（= 该接线）",
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/observe/go_instrument.ts#ensureGoObserveIntegration",
+      "to": "src/infrastructure/analysis/observe/go_instrument.ts#checkGoObserveDeps"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/go_instrument.ts#vendorGoProbe",
+      "to": "src/infrastructure/analysis/observe/go_instrument.ts#goObserveDir"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/go_instrument.ts#instrumentGoProject",
+      "to": "src/infrastructure/analysis/observe/go_instrument.ts#goObserveDir"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/go_instrument.ts#restoreGoProject",
+      "to": "src/infrastructure/analysis/observe/go_instrument.ts#goObserveDir"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/go_instrument.ts#checkGoObserveDeps",
+      "to": "src/infrastructure/analysis/observe/go_instrument.ts#goObserveDir"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/go_instrument.ts#instrumentGoProject",
+      "to": "src/infrastructure/analysis/observe/go_instrument.ts#parseReport"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/go_instrument.ts#restoreGoProject",
+      "to": "src/infrastructure/analysis/observe/go_instrument.ts#parseReport"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/go_instrument.ts#vendorGoProbe",
+      "to": "src/infrastructure/analysis/observe/go_instrument.ts#readGoModuleName"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/go_instrument.ts#instrumentGoProject",
+      "to": "src/infrastructure/analysis/observe/go_instrument.ts#readGoModuleName"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/go_instrument.ts#instrumentGoProject",
+      "to": "src/infrastructure/analysis/observe/go_instrument.ts#runGo"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/go_instrument.ts#restoreGoProject",
+      "to": "src/infrastructure/analysis/observe/go_instrument.ts#runGo"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/go_instrument.ts#scanDir",
+      "to": "src/infrastructure/analysis/observe/go_instrument.ts#scanDir"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/go_instrument.ts#isGoProject",
+      "to": "src/infrastructure/analysis/observe/go_instrument.ts#scanDir"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/go_instrument.ts#restoreGoProject",
+      "to": "src/infrastructure/analysis/observe/go_instrument.ts#unvendorGoProbe"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/go_instrument.ts#instrumentGoProject",
+      "to": "src/infrastructure/analysis/observe/go_instrument.ts#vendorGoProbe"
+    }
+  ],
+  "removed": []
+}

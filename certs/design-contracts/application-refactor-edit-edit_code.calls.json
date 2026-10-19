@@ -1,0 +1,372 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/application/refactor/edit/edit_code.ts（**实际全量 + 设计意图增量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T11:04:53.464Z",
+    "note": "★ calls = 实际全量 ∪ 带 why 的（dep 加的）· removed = 原样保留（dep 删的）"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls 里\"实际没有\"的会红（= 该接线）",
+  "calls": [
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/refactor/edit/edit_code.ts#buildAmbiguityError"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/refactor/edit/edit_code.ts#buildAmbiguityError"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#planReplaceText",
+      "to": "src/application/refactor/edit/edit_code.ts#buildGenericDiff"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/refactor/edit/edit_code.ts#buildGenericDiff"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/refactor/edit/edit_code.ts#buildGenericDiff"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/refactor/edit/edit_code.ts#buildRangePreview"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#buildRangePreview",
+      "to": "src/application/refactor/edit/edit_code.ts#describeSymbol"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#describeSymbolCtx",
+      "to": "src/application/refactor/edit/edit_code.ts#describeSymbol"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/refactor/edit/edit_code.ts#describeSymbol"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/refactor/edit/edit_code.ts#describeSymbol"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/refactor/edit/edit_code.ts#describeSymbol"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/refactor/edit/edit_code.ts#describeSymbol"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/refactor/edit/edit_code.ts#describeSymbol"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/refactor/edit/edit_code.ts#describeSymbol"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#buildAmbiguityError",
+      "to": "src/application/refactor/edit/edit_code.ts#describeSymbolCtx"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeCore",
+      "to": "src/application/refactor/edit/edit_code.ts#editCodeBatch"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCode",
+      "to": "src/application/refactor/edit/edit_code.ts#editCodeCore"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeCore",
+      "to": "src/application/refactor/edit/edit_code.ts#editCodeInner"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/refactor/edit/edit_code.ts#findBodyRange"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#planReplaceText",
+      "to": "src/application/refactor/edit/edit_code.ts#hasSyntaxError"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#planReplaceText",
+      "to": "src/application/refactor/edit/edit_code.ts#hasSyntaxError"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/refactor/edit/edit_code.ts#hasSyntaxError"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/refactor/edit/edit_code.ts#hasSyntaxError"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/refactor/edit/edit_code.ts#hasSyntaxError"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/refactor/edit/edit_code.ts#hasSyntaxError"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/refactor/edit/edit_code.ts#hasSyntaxError"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#realignCode",
+      "to": "src/application/refactor/edit/edit_code.ts#leadingSpaces"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/refactor/edit/edit_code.ts#leadingSpaces"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/refactor/edit/edit_code.ts#leadingSpaces"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/refactor/edit/edit_code.ts#leadingWhitespaceOfLine"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/refactor/edit/edit_code.ts#leadingWhitespaceOfLine"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/refactor/edit/edit_code.ts#looksLikeBareBody"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/refactor/edit/edit_code.ts#looksLikeBareBody"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/refactor/edit/edit_code.ts#matchSymbols"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/refactor/edit/edit_code.ts#matchSymbols"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/refactor/edit/edit_code.ts#matchSymbols"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/refactor/edit/edit_code.ts#normalizeCode"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/refactor/edit/edit_code.ts#normalizeCode"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/refactor/edit/edit_code.ts#normalizeCode"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/refactor/edit/edit_code.ts#normalizeCode"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/refactor/edit/edit_code.ts#planReplaceText"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeBatch",
+      "to": "src/application/refactor/edit/edit_code.ts#planReplaceText"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/refactor/edit/edit_code.ts#realignCode"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/refactor/edit/edit_code.ts#squeezeBlankRuns"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/refactor/edit/edit_code.ts#subBodyHint"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/refactor/edit/edit_code.ts#subBodyHint"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCode",
+      "to": "src/application/refactor/edit/edit_code.ts#touchedOf"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/refactor/snapshot/file_snapshot.ts#snapshotBeforeWrite"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeBatch",
+      "to": "src/application/refactor/snapshot/file_snapshot.ts#snapshotBeforeWrite"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/write_gate.ts#assertSourceWriteRegisteredFor"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeBatch",
+      "to": "src/application/write_gate.ts#assertSourceWriteRegisteredFor"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/write_gate.ts#reopenAndResolveAfterWrite"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/write_gate.ts#reopenAndResolveAfterWrite"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/write_gate.ts#reopenAndResolveAfterWrite"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/write_gate.ts#reopenAndResolveAfterWrite"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/write_gate.ts#reopenAndResolveAfterWrite"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeBatch",
+      "to": "src/application/write_gate.ts#reopenAndResolveAfterWrite"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/write_gate.ts#reopenNote"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/write_gate.ts#reopenNote"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/write_gate.ts#reopenNote"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/write_gate.ts#reopenNote"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/write_gate.ts#reopenNote"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/write_gate.ts#reopenNote"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/write_gate.ts#reopenNote"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeBatch",
+      "to": "src/application/write_gate.ts#reopenNote"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/application/write_gate.ts#resolveActor"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeBatch",
+      "to": "src/application/write_gate.ts#resolveActor"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCode",
+      "to": "src/domain/b_terms.ts#withTouched"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/infrastructure/index/db.ts#getProjectCacheDb"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/infrastructure/index/db.ts#getProjectCacheDb"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/infrastructure/index/db.ts#getProjectCacheDb"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/infrastructure/index/db.ts#getProjectCacheDb"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/infrastructure/index/db.ts#getProjectCacheDb"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeBatch",
+      "to": "src/infrastructure/index/db.ts#getProjectCacheDb"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/infrastructure/index/symbols.ts#syncFile"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/infrastructure/index/symbols.ts#syncFile"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/infrastructure/index/symbols.ts#syncFile"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/infrastructure/index/symbols.ts#syncFile"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/infrastructure/index/symbols.ts#syncFile"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeBatch",
+      "to": "src/infrastructure/index/symbols.ts#syncFile"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#touchedOf",
+      "to": "src/infrastructure/index/symbols.ts#toIndexKey"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#planReplaceText",
+      "to": "src/infrastructure/parse/fuzzy_match.ts#locateReplaceText"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#planReplaceText",
+      "to": "src/infrastructure/parse/fuzzy_match.ts#realignNewTextTo"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/infrastructure/text/line_utils.ts#detectEol"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeBatch",
+      "to": "src/infrastructure/text/line_utils.ts#detectEol"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#squeezeBlankRuns",
+      "to": "src/infrastructure/text/line_utils.ts#isBlankLine"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/infrastructure/text/line_utils.ts#isBlankLine"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/infrastructure/text/line_utils.ts#isBlankLine"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/infrastructure/text/line_utils.ts#splitKeepEnds"
+    },
+    {
+      "from": "src/application/refactor/edit/edit_code.ts#editCodeInner",
+      "to": "src/infrastructure/text/line_utils.ts#splitKeepEnds"
+    }
+  ],
+  "removed": []
+}

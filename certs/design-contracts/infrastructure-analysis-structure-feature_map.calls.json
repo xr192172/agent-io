@@ -1,0 +1,64 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/infrastructure/analysis/structure/feature_map.ts（**实际全量 + 设计意图增量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T11:04:53.452Z",
+    "note": "★ calls = 实际全量 ∪ 带 why 的（dep 加的）· removed = 原样保留（dep 删的）"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls 里\"实际没有\"的会红（= 该接线）",
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/structure/feature_map.ts#buildFeatureMap",
+      "to": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#detectDeadImports"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/feature_map.ts#buildFeatureMap",
+      "to": "src/infrastructure/analysis/refactor/langs/python/dead_imports.ts#detectDeadPyImports"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/feature_map.ts#detectRepeatedFamilies",
+      "to": "src/infrastructure/analysis/structure/feature_map.ts#basename"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/feature_map.ts#buildFeatureMap",
+      "to": "src/infrastructure/analysis/structure/feature_map.ts#detectLangs"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/feature_map.ts#buildFeatureMap",
+      "to": "src/infrastructure/analysis/structure/feature_map.ts#detectRepeatedFamilies"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/feature_map.ts#detectRepeatedFamilies",
+      "to": "src/infrastructure/analysis/structure/feature_map.ts#familyRoot"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/feature_map.ts#buildFeatureMap",
+      "to": "src/infrastructure/analysis/structure/feature_map.ts#featureIdOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/feature_map.ts#buildFeatureMap",
+      "to": "src/infrastructure/analysis/structure/feature_map.ts#featureIdOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/feature_map.ts#buildFeatureMap",
+      "to": "src/infrastructure/analysis/structure/feature_map.ts#featureIdOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/feature_map.ts#buildFeatureMap",
+      "to": "src/infrastructure/analysis/structure/feature_map.ts#scanSourceFiles"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/feature_map.ts#buildFeatureMap",
+      "to": "src/infrastructure/analysis/structure/feature_map.ts#sideOfLayer"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/feature_map.ts#buildFeatureMap",
+      "to": "src/infrastructure/analysis/structure/layer_detect.ts#matchLayer"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/feature_map.ts#buildFeatureMap",
+      "to": "src/infrastructure/analysis/structure/layer_detect.ts#matchLayer"
+    }
+  ],
+  "removed": []
+}

@@ -1,0 +1,136 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/infrastructure/analysis/observe/instrument_java.ts（**实际全量 + 设计意图增量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T11:04:53.457Z",
+    "note": "★ calls = 实际全量 ∪ 带 why 的（dep 加的）· removed = 原样保留（dep 删的）"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls 里\"实际没有\"的会红（= 该接线）",
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_java.ts#scanFunctions",
+      "to": "src/infrastructure/analysis/observe/instrument_java.ts#bodyOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_java.ts#scanFunctions",
+      "to": "src/infrastructure/analysis/observe/instrument_java.ts#bodyOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_java.ts#collectSitesImpl",
+      "to": "src/infrastructure/analysis/observe/instrument_java.ts#braceInner"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_java.ts#collectSitesImpl",
+      "to": "src/infrastructure/analysis/observe/instrument_java.ts#collectReturns"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_java.ts#collectSitesImpl",
+      "to": "src/infrastructure/analysis/observe/instrument_java.ts#declFor"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_java.ts#collectSitesImpl",
+      "to": "src/infrastructure/analysis/observe/instrument_java.ts#declFor"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_java.ts#bodyOf",
+      "to": "src/infrastructure/analysis/observe/instrument_java.ts#findFirstChild"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_java.ts#collectSitesImpl",
+      "to": "src/infrastructure/analysis/observe/instrument_java.ts#indentOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_java.ts#collectSitesImpl",
+      "to": "src/infrastructure/analysis/observe/instrument_java.ts#lineEnd"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_java.ts#collectSitesImpl",
+      "to": "src/infrastructure/analysis/observe/instrument_java.ts#lineIndent"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_java.ts#collectSitesImpl",
+      "to": "src/infrastructure/analysis/observe/instrument_java.ts#lineInfo"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_java.ts#collectSitesImpl",
+      "to": "src/infrastructure/analysis/observe/instrument_java.ts#lineInfo"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_java.ts#scanFunctions",
+      "to": "src/infrastructure/analysis/observe/instrument_java.ts#paramNames"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_java.ts#collectSitesImpl",
+      "to": "src/infrastructure/analysis/observe/instrument_java.ts#probeCall"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_java.ts#collectSitesImpl",
+      "to": "src/infrastructure/analysis/observe/instrument_java.ts#probeCall"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_java.ts#collectSitesImpl",
+      "to": "src/infrastructure/analysis/observe/instrument_java.ts#probeCall"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_java.ts#collectSitesImpl",
+      "to": "src/infrastructure/analysis/observe/instrument_java.ts#probeNameOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_java.ts#collectSitesImpl",
+      "to": "src/infrastructure/analysis/observe/instrument_java.ts#returnValueOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_java.ts#collectSitesImpl",
+      "to": "src/infrastructure/analysis/observe/instrument_java.ts#scanFunctions"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_java.ts#probeCall",
+      "to": "src/infrastructure/analysis/observe/instrument_java.ts#str"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_java.ts#probeCall",
+      "to": "src/infrastructure/analysis/observe/instrument_java.ts#str"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_java.ts#probeCall",
+      "to": "src/infrastructure/analysis/observe/instrument_java.ts#str"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_java.ts#probeCall",
+      "to": "src/infrastructure/analysis/observe/instrument_java.ts#str"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_java.ts#probeCall",
+      "to": "src/infrastructure/analysis/observe/instrument_java.ts#str"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_java.ts#probeCall",
+      "to": "src/infrastructure/analysis/observe/instrument_java.ts#str"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_java.ts#collectJavaFiles",
+      "to": "src/infrastructure/analysis/observe/instrument_skeleton.ts#collectSourceFiles"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_java.ts#instrumentJavaProject",
+      "to": "src/infrastructure/analysis/observe/instrument_skeleton.ts#instrumentProjectWithHooks"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_java.ts#collectSitesImpl",
+      "to": "src/infrastructure/analysis/observe/instrument_skeleton.ts#isBracelessBodyReturn"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_java.ts#collectSitesImpl",
+      "to": "src/infrastructure/analysis/observe/instrument_skeleton.ts#matchesContract"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_java.ts#collectSitesImpl",
+      "to": "src/infrastructure/analysis/observe/instrument_skeleton.ts#matchesContract"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_java.ts#collectSitesImpl",
+      "to": "src/infrastructure/analysis/observe/instrument_skeleton.ts#matchesContract"
+    }
+  ],
+  "removed": []
+}

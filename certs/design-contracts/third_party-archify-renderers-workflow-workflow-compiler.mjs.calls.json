@@ -1,0 +1,2536 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— third_party/archify/renderers/workflow/workflow-compiler.mjs（**实际全量 + 设计意图增量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T11:04:53.409Z",
+    "note": "★ calls = 实际全量 ∪ 带 why 的（dep 加的）· removed = 原样保留（dep 删的）"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls 里\"实际没有\"的会红（= 该接线）",
+  "calls": [
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.renderNode",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#brandLabelFitWidth"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.renderNode",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#brandMetadataFor"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateWorkflow",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#brandTopRailProblem"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.renderNode",
+      "to": "third_party/archify/renderers/shared/brand-marks.mjs#renderBrandMark"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.renderNode",
+      "to": "third_party/archify/renderers/shared/cli.mjs#animateAttr"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.renderEdgePath",
+      "to": "third_party/archify/renderers/shared/cli.mjs#animateAttr"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.renderEdgePath",
+      "to": "third_party/archify/renderers/shared/cli.mjs#focusEdgeAttrs"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.renderEdgeLabel",
+      "to": "third_party/archify/renderers/shared/cli.mjs#focusEdgeAttrs"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.renderNode",
+      "to": "third_party/archify/renderers/shared/cli.mjs#focusNodeAttrs"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.renderNode",
+      "to": "third_party/archify/renderers/shared/cli.mjs#focusNodeTitle"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.renderSvg",
+      "to": "third_party/archify/renderers/shared/cli.mjs#svgAccessibleText"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.renderSvg",
+      "to": "third_party/archify/renderers/shared/cli.mjs#svgRootAttrs"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.enforceLegacyColumnCapacity",
+      "to": "third_party/archify/renderers/shared/diagnostics.mjs#throwDiagnosticError"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.throwExplicitPinConflict",
+      "to": "third_party/archify/renderers/shared/diagnostics.mjs#throwDiagnosticError"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadableInputsBeforeRouting",
+      "to": "third_party/archify/renderers/shared/diagnostics.mjs#throwDiagnosticError"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticVia",
+      "to": "third_party/archify/renderers/shared/diagnostics.mjs#throwDiagnosticError"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readablePresetVia",
+      "to": "third_party/archify/renderers/shared/diagnostics.mjs#throwDiagnosticError"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.finalizeReadableViewBox",
+      "to": "third_party/archify/renderers/shared/diagnostics.mjs#throwDiagnosticError"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.finalizeReadableViewBox",
+      "to": "third_party/archify/renderers/shared/diagnostics.mjs#throwDiagnosticError"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateWorkflow",
+      "to": "third_party/archify/renderers/shared/diagnostics.mjs#throwDiagnosticProblems"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateWorkflow",
+      "to": "third_party/archify/renderers/shared/diagnostics.mjs#throwDiagnosticProblems"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.acceptsFix",
+      "to": "third_party/archify/renderers/shared/diagnostics.mjs#withDiagnosticRecordingSuppressed"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableMigrationProvidesCapacity",
+      "to": "third_party/archify/renderers/shared/diagnostics.mjs#withDiagnosticRecordingSuppressed"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticRoute",
+      "to": "third_party/archify/renderers/shared/diagnostics.mjs#withDiagnosticRecordingSuppressed"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.legacyAutomaticOneBendSides",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#anchor"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.legacyAutomaticOneBendSides",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#anchor"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticSides",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#anchor"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticSides",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#anchor"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableCandidateCost",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#anchor"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableCandidateCost",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#anchor"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticRoute",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#anchor"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticRoute",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#anchor"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticRoute",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#anchor"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticRoute",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#anchor"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableControlledRoute",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#anchor"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableControlledRoute",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#anchor"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.pathFor",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#anchor"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.pathFor",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#anchor"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#readableGroupBounds",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#canonicalReadableWorkflow",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#canonicalReadableWorkflow",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#canonicalReadableWorkflow",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#canonicalReadableWorkflow",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#canonicalReadableWorkflow",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#semanticContractDiagnostics",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#semanticContractDiagnostics",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#semanticContractDiagnostics",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#semanticContractDiagnostics",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#semanticContractDiagnostics",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#semanticContractDiagnostics",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#semanticContractDiagnostics",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#semanticContractDiagnostics",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#semanticContractDiagnostics",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#semanticContractDiagnostics",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.nodeContext",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.nodeContext",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.laneTop",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.lastLaneBottom",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.workflowCompositionFrames",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.workflowCompositionFrames",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.workflowSceneLabelObstacles",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.workflowSceneLabelObstacles",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.workflowSceneLabelObstacles",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.nodeStep",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.throwExplicitPinConflict",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.throwExplicitPinConflict",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateWorkflow",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateWorkflow",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateWorkflow",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateWorkflow",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateWorkflow",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateWorkflow",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.measuredContentBounds",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.measuredContentBounds",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.measuredContentBounds",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.measuredContentBounds",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.measuredContentBounds",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.renderSvg",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.renderSvg",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#automaticPortSpread"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.edgeSides",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#chosenSide"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.edgeSides",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#chosenSide"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateWorkflow",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#cleanAmbiguousCorridorProblems"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateWorkflow",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#cleanBorderRunProblems"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateWorkflow",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#cleanCrossingProblems"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateWorkflow",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#cleanEndpointSideProblems"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateWorkflow",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#cleanFlowProblems"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateWorkflow",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#cleanLabelRouteClearanceProblems"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateWorkflow",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#cleanRouteRhythmProblems"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePairwisePinConflicts",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#collectAmbiguousCorridors"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#collectBorderRuns"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeClearsFrameBorders",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#collectBorderRuns"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.classifyFailedAutomaticCandidatePins",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#collectLabelRouteClearance"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.classifyFailedAutomaticCandidatePins",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#collectLabelRouteClearance"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePairwisePinConflicts",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#collectLabelRouteClearance"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticSides",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#defaultFromSide"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticSides",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#defaultFromSide"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.edgeSides",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#defaultFromSide"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticRoute",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#defaultFromSide"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableControlledRoute",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#defaultFromSide"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticSides",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#defaultToSide"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticSides",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#defaultToSide"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.edgeSides",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#defaultToSide"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticRoute",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#defaultToSide"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableControlledRoute",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#defaultToSide"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePairwisePinConflicts",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#forwardCollinearAnalysisSegments"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePairwisePinConflicts",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#forwardCollinearAnalysisSegments"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#isFinitePoint"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateWorkflow",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#isFinitePoint"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadableInputsBeforeRouting",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#isFinitePoint"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.orthogonalRoute",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#isFinitePoint"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableControlledRoute",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#isFinitePoint"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.workflowEdgeLabelPoint",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#labelPoint"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.workflowEdgeLabelPoint",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#labelPoint"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.workflowEdgeLabelPoint",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#labelPoint"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.workflowEdgeLabelPoint",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#labelPoint"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.corridorTopologyMatches",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#normalizeRoutePoints"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.corridorTopologyMatches",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#normalizeRoutePoints"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeMatchesPresetFamily",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#normalizeRoutePoints"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.oneBendCrossLaneVia",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#normalizeRoutePoints"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticCandidateSet",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#normalizeRoutePoints"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticVia",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#normalizeRoutePoints"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticVia",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#normalizeRoutePoints"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticVia",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#normalizeRoutePoints"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readablePresetVia",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#normalizeRoutePoints"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticRoute",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#normalizeRoutePoints"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableControlledRoute",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#normalizeRoutePoints"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableControlledRoute",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#normalizeRoutePoints"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.pathFor",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#normalizeRoutePoints"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.pathFor",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#polylinePath"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.pathFor",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#polylinePath"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.pathFor",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#polylinePath"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedLegacyAlternative",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#rectsOverlap"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.classifyFailedAutomaticCandidatePins",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#rectsOverlap"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePairwisePinConflicts",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#rectsOverlap"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#rectsOverlap"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#rectsOverlap"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#rectsOverlap"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateWorkflow",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#rectsOverlap"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateWorkflow",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#rectsOverlap"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateWorkflow",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#rectsOverlap"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadableInputsBeforeRouting",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#rectsOverlap"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeLabelClearsNodes",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#rectsOverlap"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeClearsPlacedLabels",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#rectsOverlap"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeClearsLegend",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#rectsOverlap"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeClearsSceneLabelObstacles",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#rectsOverlap"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticVia",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#rectsOverlap"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticVia",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#rectsOverlap"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#routeHonorsEndpointSides"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.oneBendCrossLaneVia",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#routeHonorsEndpointSides"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableCandidateIsFeasible",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#routeHonorsEndpointSides"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableControlledRoute",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#routeHonorsEndpointSides"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.renderEdgePath",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#routePointsValue"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#segmentIntersectsRect"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#segmentIntersectsRect"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeClearsUnrelatedNodes",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#segmentIntersectsRect"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.firstRouteNodeCollision",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#segmentIntersectsRect"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeClearsEndpointNodes",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#segmentIntersectsRect"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeClearsEndpointNodes",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#segmentIntersectsRect"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeClearsLegend",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#segmentIntersectsRect"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeClearsSceneLabelObstacles",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#segmentIntersectsRect"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.labelRouteClearanceDeficit",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#segmentRectClearance"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.labelRouteClearanceDeficit",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#segmentRectClearance"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeClearsPlacedLabels",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#segmentRectClearance"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeClearsPlacedLabels",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#segmentRectClearance"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticVia",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#segmentRectClearance"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePairwisePinConflicts",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#sourceSegmentIndexAtPoint"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePairwisePinConflicts",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#sourceSegmentIndexAtPoint"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateWorkflow",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#suggestLabelObstacleFix"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateWorkflow",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#suggestLabelPairFix"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.renderPhase",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#variantAccent"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.renderGroup",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#variantAccent"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.renderEdgeLabel",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#variantAccent"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal",
+      "to": "third_party/archify/renderers/shared/legend.mjs#legendFootprint"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal",
+      "to": "third_party/archify/renderers/shared/legend.mjs#legendFootprint"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.workflowLegendRects",
+      "to": "third_party/archify/renderers/shared/legend.mjs#measureLegend"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.renderLegend",
+      "to": "third_party/archify/renderers/shared/legend.mjs#relationshipLegendObstacles"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal",
+      "to": "third_party/archify/renderers/shared/legend.mjs#resolveLegend"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedReducedWidths",
+      "to": "third_party/archify/renderers/shared/text-fit.mjs#availableNodeTextWidth"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedReducedWidths",
+      "to": "third_party/archify/renderers/shared/text-fit.mjs#availableNodeTextWidth"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateWorkflow",
+      "to": "third_party/archify/renderers/shared/text-fit.mjs#availableNodeTextWidth"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.renderNode",
+      "to": "third_party/archify/renderers/shared/text-fit.mjs#fittedNodeFontSize"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.renderNode",
+      "to": "third_party/archify/renderers/shared/text-fit.mjs#fittedNodeFontSize"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.renderNode",
+      "to": "third_party/archify/renderers/shared/text-fit.mjs#fittedNodeFontSize"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedReducedWidths",
+      "to": "third_party/archify/renderers/shared/text-fit.mjs#minimumNodeTextWidth"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedReducedWidths",
+      "to": "third_party/archify/renderers/shared/text-fit.mjs#minimumNodeTextWidth"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateWorkflow",
+      "to": "third_party/archify/renderers/shared/text-fit.mjs#minimumNodeTextWidth"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.renderSvg",
+      "to": "third_party/archify/renderers/shared/utils.mjs#renderDefinitions"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.renderNode",
+      "to": "third_party/archify/renderers/shared/utils.mjs#renderSemanticSigil"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#workflowLabelWidth",
+      "to": "third_party/archify/renderers/shared/utils.mjs#textUnits"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#readableGroupBounds",
+      "to": "third_party/archify/renderers/shared/utils.mjs#textUnits"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/shared/utils.mjs#textUnits"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/shared/utils.mjs#textUnits"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/shared/utils.mjs#textUnits"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/shared/utils.mjs#textUnits"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/shared/utils.mjs#textUnits"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/shared/utils.mjs#textUnits"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.workflowSceneLabelObstacles",
+      "to": "third_party/archify/renderers/shared/utils.mjs#textUnits"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.workflowSceneLabelObstacles",
+      "to": "third_party/archify/renderers/shared/utils.mjs#textUnits"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedReducedWidths",
+      "to": "third_party/archify/renderers/shared/utils.mjs#textUnits"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateWorkflow",
+      "to": "third_party/archify/renderers/shared/utils.mjs#textUnits"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateWorkflow",
+      "to": "third_party/archify/renderers/shared/utils.mjs#textUnits"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.phaseSpan",
+      "to": "third_party/archify/renderers/shared/utils.mjs#textUnits"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.measuredContentBounds",
+      "to": "third_party/archify/renderers/shared/utils.mjs#textUnits"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal",
+      "to": "third_party/archify/renderers/shared/validator.mjs#validateSchema"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#verticalIntervalsOverlap",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#authoredNodeHeight"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#authoredNodeHeight"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#authoredNodeHeight"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#authoredNodeHeight"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#authoredNodeHeight"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#nodeWidthContributor",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#authoredNodeWidth"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#readableGroupBounds",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#authoredNodeWidth"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#authoredNodeWidth"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#authoredNodeWidth"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#authoredNodeWidth"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#authoredNodeWidth"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#authoredNodeWidth"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#authoredNodeWidth"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#authoredNodeWidth"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#authoredNodeWidth"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#canonicalReadableWorkflow"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.acceptsFix",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#cloneWorkflow"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowWithFeedback",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedLegacyAlternative",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.acceptsFix"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedReducedWidths",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.acceptsFix"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedEdgeFix",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.acceptsFix"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedPinRemovalAlternatives",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.acceptsFix"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedPinReferenceAlternatives",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.acceptsFix"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadableInputsBeforeRouting",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.acceptsFix"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadableInputsBeforeRouting",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.acceptsFix"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadableInputsBeforeRouting",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.acceptsFix"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadableInputsBeforeRouting",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.acceptsFix"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadableInputsBeforeRouting",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.acceptsFix"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadableInputsBeforeRouting",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.acceptsFix"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readablePresetVia",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.acceptsFix"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readablePresetVia",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.acceptsFix"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.finalizeReadableViewBox",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.acceptsFix"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.finalizeReadableViewBox",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.acceptsFix"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.conflictPinsFromRemovalSets",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.authoredPinEvidence"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedPinReferenceAlternatives",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.authoredPinEvidence"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedPinReferenceAlternatives",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.authoredPinEvidence"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.authoredPinEvidence"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.authoredPinEvidence"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.authoredPinEvidence"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.authoredPinEvidence"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.hasAuthoredRouteAssertions",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.authoredRouteAssertionFields"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedRoutePairPinAlternatives",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.authoredRouteAssertionFields"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedLabelRoutePinAlternatives",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.authoredRouteAssertionFields"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedRouteGeometryPinAlternatives",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.authoredRouteAssertionFields"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableCandidateCost",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.automaticForwardReversePx"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.edgeSides",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.automaticOneBendSides"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeInteractionMetrics",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.axisOverlapLength"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.classifyFailedAutomaticCandidatePins",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.candidateLabelRect"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.labelRouteClearanceDeficit",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.candidateLabelRect"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeClearsPlacedLabels",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.candidateLabelRect"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeClearsLegend",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.candidateLabelRect"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeClearsSceneLabelObstacles",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.candidateLabelRect"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeExtentCoordinates",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.candidateLabelRect"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticVia",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.candidateLabelRect"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticVia",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.classifyFailedAutomaticCandidatePins"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.combinations",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.combinations"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedPinRemovalAlternatives",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.combinations"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedPinReferenceAlternatives",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.combinations"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticSides",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.compareCost"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticCandidateSet",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.compareCost"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticRoute",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.compareCost"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableControlledRoute",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.compareCost"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.conflictPinsFromRemovalSets"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.conflictPinsFromRemovalSets"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticRoute",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.conflictPinsFromRemovalSets"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeMatchesPresetFamily",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.corridorTopologyMatches"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeMatchesPresetFamily",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.corridorTopologyMatches"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeMatchesPresetFamily",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.corridorTopologyMatches"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticCandidateSet",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.corridorViaX"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticCandidateSet",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.corridorViaX"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticCandidateSet",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.corridorViaX"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticVia",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.corridorViaX"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticVia",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.corridorViaX"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticCandidateSet",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.corridorViaY"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticCandidateSet",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.corridorViaY"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticCandidateSet",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.corridorViaY"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.edgeSides"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.edgeSides"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateWorkflow",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.edgeSides"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateWorkflow",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.edgeSides"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.pathFor",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.edgeSides"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.endpointSideIsHonored"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.endpointSideIsHonored"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateWorkflow",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.enforceLegacyColumnCapacity"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.finalizeReadableViewBox"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.firstRouteNodeCollision"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticCandidateSet",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.gapYBetween"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readablePresetVia",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.gapYBetween"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeVia",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.gapYBetween"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeVia",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.gapYBetween"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.workflowCompositionFrames",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.groupSpan"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.workflowSceneLabelObstacles",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.groupSpan"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.measuredContentBounds",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.groupSpan"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.renderGroup",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.groupSpan"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.classifyFailedAutomaticCandidatePins",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.hasAbsoluteRoutePins"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticVia",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.hasAbsoluteRoutePins"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.throwReadableLabelRoutePinConflict",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.hasAuthoredRouteAssertions"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePairwisePinConflicts",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.hasAuthoredRouteAssertions"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePairwisePinConflicts",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.hasAuthoredRouteAssertions"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePairwisePinConflicts",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.hasAuthoredRouteAssertions"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePairwisePinConflicts",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.hasAuthoredRouteAssertions"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePairwisePinConflicts",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.hasAuthoredRouteAssertions"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePairwisePinConflicts",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.hasAuthoredRouteAssertions"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.pathFor",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.isReadableControlledRoute"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.classifyFailedAutomaticCandidatePins",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.labelRectFor"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePairwisePinConflicts",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.labelRectFor"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.labelRectFor"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.labelRectFor"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateWorkflow",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.labelRectFor"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.labelRouteClearanceDeficit",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.labelRectFor"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeClearsPlacedLabels",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.labelRectFor"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticVia",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.labelRectFor"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticVia",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.labelRectFor"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.measuredContentBounds",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.labelRectFor"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableCandidateCost",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.labelRouteClearanceDeficit"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.measureNode",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.laneGroupFooterH"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.measureNode",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.laneGroupHeaderH"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateWorkflow",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.laneGroupHeaderH"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.laneTop",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.laneHeight"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.lastLaneBottom",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.laneHeight"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.measureNode",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.laneHeight"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.workflowCompositionFrames",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.laneHeight"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.workflowCompositionFrames",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.laneHeight"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateWorkflow",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.laneHeight"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.gapYBetween",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.laneHeight"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticCandidateSet",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.laneHeight"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticCandidateSet",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.laneHeight"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.measuredContentBounds",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.laneHeight"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.renderLane",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.laneHeight"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.renderGroup",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.laneHeight"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.measureNode",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.laneTop"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.workflowCompositionFrames",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.laneTop"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.workflowCompositionFrames",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.laneTop"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.workflowSceneLabelObstacles",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.laneTop"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.workflowSceneLabelObstacles",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.laneTop"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateWorkflow",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.laneTop"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.gapYBetween",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.laneTop"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.gapYBetween",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.laneTop"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticCandidateSet",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.laneTop"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticCandidateSet",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.laneTop"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticCandidateSet",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.laneTop"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticCandidateSet",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.laneTop"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.measuredContentBounds",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.laneTop"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.measuredContentBounds",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.laneTop"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.renderLane",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.laneTop"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.renderGroup",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.laneTop"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.legendY",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.lastLaneBottom"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.workflowLegendLayout",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.lastLaneBottom"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticSides",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.legacyAutomaticOneBendSides"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.automaticOneBendSides",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.legacyAutomaticOneBendSides"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.workflowLegendLayout",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.legendY"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateWorkflow",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.legendY"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateWorkflow",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.legendY"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.measuredContentBounds",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.legendY"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.measureNode"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.finalizeReadableViewBox",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.measuredContentBounds"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.renderNode",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.nodeContext"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.renderNode",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.nodeStep"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.legacyAutomaticOneBendSides",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.oneBendCrossLaneVia"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeVia",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.oneBendCrossLaneVia"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableCandidateIsFeasible",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.orthogonalRoute"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.corridorViaY",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.outwardStub"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.corridorViaY",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.outwardStub"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.corridorViaX",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.outwardStub"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.corridorViaX",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.outwardStub"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.pathFor"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.pathFor"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.throwReadableLabelRoutePinConflict",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.pathFor"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePairwisePinConflicts",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.pathFor"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.pathFor"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateWorkflow",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.pathFor"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.labelRectFor",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.pathFor"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.measuredContentBounds",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.pathFor"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.renderEdgePath",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.pathFor"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.renderEdgeLabel",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.pathFor"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.renderLegend",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.pathFor"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.workflowSceneLabelObstacles",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.phaseSpan"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateWorkflow",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.phaseSpan"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.measuredContentBounds",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.phaseSpan"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.renderPhase",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.phaseSpan"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadableRouteControls",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.presentChannelPins"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.presentChannelPins"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableControlledRoute",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.presentChannelPins"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.presentRouteGeometryFields"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.presentRouteGeometryFields"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeInteractionMetrics",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.properAxisCrossing"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePairwisePinConflicts",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.properOrthogonalIntersection"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticSides",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticCandidateSet"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticVia",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticCandidateSet"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticRoute",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticCandidateSet"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.pathFor",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticRoute"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.automaticOneBendSides",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticSides"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readablePresetVia",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticVia"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeVia",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticVia"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticRoute",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticVia"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticCandidateSet",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableCandidateCost"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticRoute",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableCandidateCost"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableControlledRoute",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableCandidateCost"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticCandidateSet",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableCandidateIsFeasible"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticVia",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableCandidateIsFeasible"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticVia",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableCandidateIsFeasible"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readablePresetVia",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableCandidateIsFeasible"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableControlledRoute",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableCandidateIsFeasible"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.pathFor",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableControlledRoute"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.enforceLegacyColumnCapacity",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableMigrationProvidesCapacity"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeVia",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readablePresetVia"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableControlledRoute",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readablePresetVia"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.renderSvg",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.renderLegend"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.renderSvg"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableCandidateIsFeasible",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeClearsEndpointNodes"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableCandidateIsFeasible",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeClearsFrameBorders"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableCandidateIsFeasible",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeClearsLegend"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableCandidateIsFeasible",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeClearsPlacedLabels"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableCandidateIsFeasible",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeClearsSceneLabelObstacles"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.oneBendCrossLaneVia",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeClearsUnrelatedNodes"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableCandidateIsFeasible",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeClearsUnrelatedNodes"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.corridorTopologyMatches",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeContainsChannelPin"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeContainsChannelPin"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableControlledRoute",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeContainsChannelPin"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeFitsCanvasOrigin",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeExtentCoordinates"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableCandidateIsFeasible",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeFitsCanvasOrigin"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableCandidateCost",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeInteractionMetrics"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableCandidateIsFeasible",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeLabelClearsNodes"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeMatchesPresetFamily"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readablePresetVia",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeMatchesPresetFamily"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableControlledRoute",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeMatchesPresetFamily"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableCandidateIsFeasible",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeMeetsHardRhythm"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.corridorTopologyMatches",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeSegments"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.corridorTopologyMatches",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeSegments"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeMatchesPresetFamily",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeSegments"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableControlledRoute",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeVia"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.pathFor",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeVia"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeVia",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.sameLaneAutoVia"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.properOrthogonalIntersection",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.segmentOrientation"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.properOrthogonalIntersection",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.segmentOrientation"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeSegments",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.segmentOrientation"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.phaseSpan",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.spanForCols"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.groupSpan",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.spanForCols"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.throwReadableLabelRoutePinConflict",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.throwExplicitPinConflict"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.throwReadableLabelLabelPinConflict",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.throwExplicitPinConflict"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePairwisePinConflicts",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.throwExplicitPinConflict"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePairwisePinConflicts",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.throwExplicitPinConflict"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadableRouteControls",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.throwExplicitPinConflict"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.throwExplicitPinConflict"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.throwExplicitPinConflict"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.throwExplicitPinConflict"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.throwExplicitPinConflict"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.throwExplicitPinConflict"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.throwExplicitPinConflict"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.throwExplicitPinConflict"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.throwExplicitPinConflict"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.throwExplicitPinConflict"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.throwExplicitPinConflict"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.throwExplicitPinConflict"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.throwExplicitPinConflict"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.throwExplicitPinConflict"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.throwExplicitPinConflict"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.throwExplicitPinConflict"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.throwExplicitPinConflict"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticRoute",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.throwExplicitPinConflict"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.classifyFailedAutomaticCandidatePins",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.throwReadableLabelLabelPinConflict"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePairwisePinConflicts",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.throwReadableLabelLabelPinConflict"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.classifyFailedAutomaticCandidatePins",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.throwReadableLabelRoutePinConflict"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.classifyFailedAutomaticCandidatePins",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.throwReadableLabelRoutePinConflict"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePairwisePinConflicts",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.throwReadableLabelRoutePinConflict"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadableInputsBeforeRouting"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePairwisePinConflicts"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadableRouteControls"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateWorkflow"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedAutomaticRouteFix"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedAutomaticRouteFix"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedAutomaticRouteFix"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedAutomaticRouteFix",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedEdgeFix"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedLabelAtAlternatives",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedEdgeFix"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedLabelAtNudge",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedEdgeFix"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedEdgeFix"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedEdgeFix"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedEdgeFix"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedEdgeFix"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedRepairsWithLabelNudges",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedLabelAtAlternatives"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedLabelAtNudge",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedLabelAtAlternatives"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedLabelAtNudge"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.throwReadableLabelLabelPinConflict",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedLabelPairPinAlternatives"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.throwReadableLabelRoutePinConflict",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedLabelRoutePinAlternatives"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.enforceLegacyColumnCapacity",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedLegacyAlternative"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedRoutePairPinAlternatives",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedPinReferenceAlternatives"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedLabelRoutePinAlternatives",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedPinReferenceAlternatives"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedLabelPairPinAlternatives",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedPinReferenceAlternatives"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedRouteGeometryPinAlternatives",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedPinReferenceAlternatives"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadableRouteControls",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedPinReferenceAlternatives"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedPinReferenceAlternatives"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedPinRemovalAlternatives"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedPinRemovalAlternatives"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticRoute",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedPinRemovalAlternatives"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.enforceLegacyColumnCapacity",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedReducedWidths"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.throwReadableLabelRoutePinConflict",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedRepairsWithLabelNudges"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.throwReadableLabelLabelPinConflict",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedRepairsWithLabelNudges"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedRouteGeometryPinAlternatives"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedRouteGeometryPinAlternatives"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedRouteGeometryPinAlternatives"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedRouteGeometryPinAlternatives"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedRouteGeometryPinAlternatives"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedRouteGeometryPinAlternatives"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedRouteGeometryPinAlternatives"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedRouteGeometryPinAlternatives"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePairwisePinConflicts",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedRoutePairPinAlternatives"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePairwisePinConflicts",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedRoutePairPinAlternatives"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.workflowCompositionFrames"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateWorkflow",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.workflowCompositionFrames"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeClearsFrameBorders",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.workflowCompositionFrames"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.workflowEdgeLabelPoint"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeLabelClearsNodes",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.workflowEdgeLabelPoint"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.candidateLabelRect",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.workflowEdgeLabelPoint"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.labelRectFor",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.workflowEdgeLabelPoint"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.renderEdgeLabel",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.workflowEdgeLabelPoint"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.workflowLegendRects",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.workflowLegendLayout"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.renderLegend",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.workflowLegendLayout"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.workflowLegendRects"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.workflowLegendRects"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeClearsLegend",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.workflowLegendRects"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.measuredContentBounds",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.workflowLegendRects"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.workflowSceneLabelObstacles"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.workflowSceneLabelObstacles"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeClearsSceneLabelObstacles",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.workflowSceneLabelObstacles"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.acceptsFix",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowWithFeedback"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableMigrationProvidesCapacity",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowWithFeedback"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableMigrationProvidesCapacity",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowWithFeedback"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableMigrationProvidesCapacity",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowWithFeedback"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableMigrationProvidesCapacity",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowWithFeedback"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflow",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowWithFeedback"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compilerFailure"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compilerFailure"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compilerFailure"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compilerFailure"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#feedbackFailure",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compilerFailure"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createLegacyLayout"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableMigrationProvidesCapacity",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowWithFeedback",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#feedbackFailure"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#nodeWidthContributor"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#nodeWidthContributor"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#nodeWidthContributor"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#nodeWidthContributor"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#nodeWidthContributor"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#nodeWidthContributor"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#nodeWidthContributor"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#nodeWidthContributor"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#readableGroupBounds"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#readableGroupBounds"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#readableGroupBounds"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.groupSpan",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#readableGroupBounds"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#semanticContractDiagnostics"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#semanticContractDiagnostics",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#semanticContractDiagnostics.reachable"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#canonicalReadableWorkflow",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#stableCompare"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#canonicalReadableWorkflow",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#stableCompare"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#canonicalReadableWorkflow",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#stableCompare"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#canonicalReadableWorkflow",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#stableCompare"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#canonicalReadableWorkflow",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#stableCompare"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#canonicalReadableWorkflow",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#stableCompare"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#canonicalReadableWorkflow",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#stableCompare"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#canonicalReadableWorkflow",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#stableCompare"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#canonicalReadableWorkflow",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#stableCompare"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#stableCompare",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#stableText"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#stableCompare",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#stableText"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#stableValueKey"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#stableValueKey"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#stableValueKey",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#stableValueKey"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#canonicalReadableWorkflow",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#stableValueKey"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.edgeSides",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#stableValueKey"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#verticalIntervalsOverlap"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.enforceLegacyColumnCapacity",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#verticalIntervalsOverlap"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#workflowEdgeName"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedAutomaticRouteFix",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#workflowEdgeName"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.authoredPinEvidence",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#workflowEdgeName"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedPinRemovalAlternatives",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#workflowEdgeName"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedPinReferenceAlternatives",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#workflowEdgeName"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.throwExplicitPinConflict",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#workflowEdgeName"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedLabelAtAlternatives",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#workflowEdgeName"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.verifiedLabelAtNudge",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#workflowEdgeName"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#workflowEdgeName"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadablePinnedGeometry",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#workflowEdgeName"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.validateReadableInputsBeforeRouting",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#workflowEdgeName"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableAutomaticVia",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#workflowEdgeName"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readablePresetVia",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#workflowEdgeName"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readablePresetVia",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#workflowEdgeName"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#workflowLabelWidth"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#createReadableLayout",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#workflowLabelWidth"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#workflowLabelWidth"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeLabelClearsNodes",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#workflowLabelWidth"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.routeLabelClearsNodes",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#workflowLabelWidth"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.candidateLabelRect",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#workflowLabelWidth"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.labelRectFor",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#workflowLabelWidth"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.renderEdgeLabel",
+      "to": "third_party/archify/renderers/workflow/workflow-compiler.mjs#workflowLabelWidth"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableMigrationProvidesCapacity",
+      "to": "third_party/archify/renderers/workflow/workflow-migration-geometry.mjs#createMappedWorkflowCandidate"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableMigrationProvidesCapacity",
+      "to": "third_party/archify/renderers/workflow/workflow-migration-geometry.mjs#intrinsicWorkflow"
+    },
+    {
+      "from": "third_party/archify/renderers/workflow/workflow-compiler.mjs#compileWorkflowInternal.readableMigrationProvidesCapacity",
+      "to": "third_party/archify/renderers/workflow/workflow-migration-geometry.mjs#planningWorkflow"
+    }
+  ],
+  "removed": []
+}

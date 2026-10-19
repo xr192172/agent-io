@@ -1,0 +1,100 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/application/design/dsl_ops/node_ops.ts（**实际全量 + 设计意图增量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T11:04:53.460Z",
+    "note": "★ calls = 实际全量 ∪ 带 why 的（dep 加的）· removed = 原样保留（dep 删的）"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls 里\"实际没有\"的会红（= 该接线）",
+  "calls": [
+    {
+      "from": "src/application/design/dsl_ops/node_ops.ts#addNode",
+      "to": "src/application/design/dsl_ops/node_ops.ts#applyDecisionWrite"
+    },
+    {
+      "from": "src/application/design/dsl_ops/node_ops.ts#updateNode",
+      "to": "src/application/design/dsl_ops/node_ops.ts#applyDecisionWrite"
+    },
+    {
+      "from": "src/application/design/dsl_ops/node_ops.ts#assertValidSchema",
+      "to": "src/application/design/dsl_ops/node_ops.ts#assertValidSchema"
+    },
+    {
+      "from": "src/application/design/dsl_ops/node_ops.ts#assertValidSchema",
+      "to": "src/application/design/dsl_ops/node_ops.ts#assertValidSchema"
+    },
+    {
+      "from": "src/application/design/dsl_ops/node_ops.ts#assertValidShapes",
+      "to": "src/application/design/dsl_ops/node_ops.ts#assertValidSchema"
+    },
+    {
+      "from": "src/application/design/dsl_ops/node_ops.ts#assertValidShapes",
+      "to": "src/application/design/dsl_ops/node_ops.ts#assertValidSchema"
+    },
+    {
+      "from": "src/application/design/dsl_ops/node_ops.ts#addNode",
+      "to": "src/application/design/dsl_ops/node_ops.ts#assertValidShapes"
+    },
+    {
+      "from": "src/application/design/dsl_ops/node_ops.ts#updateNode",
+      "to": "src/application/design/dsl_ops/node_ops.ts#assertValidShapes"
+    },
+    {
+      "from": "src/application/design/dsl_ops/node_ops.ts#addNode",
+      "to": "src/application/design/dsl_ops/node_ops.ts#normalizeNodePath"
+    },
+    {
+      "from": "src/application/design/dsl_ops/node_ops.ts#updateNode",
+      "to": "src/application/design/dsl_ops/node_ops.ts#normalizeNodePath"
+    },
+    {
+      "from": "src/application/design/dsl_ops/node_ops.ts#addNode",
+      "to": "src/application/design/dsl_ops/status_tools.ts#updateStatus"
+    },
+    {
+      "from": "src/application/design/dsl_ops/node_ops.ts#updateNode",
+      "to": "src/application/design/dsl_ops/status_tools.ts#updateStatus"
+    },
+    {
+      "from": "src/application/design/dsl_ops/node_ops.ts#addNode",
+      "to": "src/domain/expectation.ts#assertValidExpectations"
+    },
+    {
+      "from": "src/application/design/dsl_ops/node_ops.ts#applyDecisionWrite",
+      "to": "src/domain/expectation.ts#assertValidExpectations"
+    },
+    {
+      "from": "src/application/design/dsl_ops/node_ops.ts#applyDecisionWrite",
+      "to": "src/domain/scope.ts#formatScope"
+    },
+    {
+      "from": "src/application/design/dsl_ops/node_ops.ts#applyDecisionWrite",
+      "to": "src/domain/scope.ts#parseScope"
+    },
+    {
+      "from": "src/application/design/dsl_ops/node_ops.ts#addNode",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/application/design/dsl_ops/node_ops.ts#updateNode",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/application/design/dsl_ops/node_ops.ts#deleteNode",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/application/design/dsl_ops/node_ops.ts#addNode",
+      "to": "src/infrastructure/storage.ts#saveDSL"
+    },
+    {
+      "from": "src/application/design/dsl_ops/node_ops.ts#updateNode",
+      "to": "src/infrastructure/storage.ts#saveDSL"
+    },
+    {
+      "from": "src/application/design/dsl_ops/node_ops.ts#deleteNode",
+      "to": "src/infrastructure/storage.ts#saveDSL"
+    }
+  ],
+  "removed": []
+}

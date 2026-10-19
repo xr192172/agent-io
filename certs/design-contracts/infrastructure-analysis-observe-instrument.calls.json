@@ -1,0 +1,300 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/infrastructure/analysis/observe/instrument.ts（**实际全量 + 设计意图增量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T11:04:53.456Z",
+    "note": "★ calls = 实际全量 ∪ 带 why 的（dep 加的）· removed = 原样保留（dep 删的）"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls 里\"实际没有\"的会红（= 该接线）",
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#parenInner",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#asInstr"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#collectSites",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#catchErrExpr"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#extractParamNames",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#collectPatternNames"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#collectPatternNames",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#collectPatternNames"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#collectPatternNames",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#collectPatternNames"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#collectSites",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#collectReturns"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#handleReturn",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#containsFunctionLike"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#containsFunctionLike",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#containsFunctionLike"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#collectDeepSites",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#deepProbeInjected"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#collectDeepSites",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#deepProbeInjected"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#collectDeepSites",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#deepProbeName"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#collectDeepSites",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#deepProbeName"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#collectDeepSites",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#deepProbeName"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#collectSites",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#detectEnclosingFunction"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#collectSites",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#detectEnclosingFunction"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#collectSites",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#detectEnclosingFunction"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#collectSites",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#detectEnclosingFunction"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#deepProbeName",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#detectEnclosingFunction"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#handleReturn",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#detectEnclosingFunction"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#collectSites",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#extractParamNames"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#collectSites",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#extractParamNames"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#collectDeepSites",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#findBlockChild"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#firstIdentifier",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#firstIdentifier"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#collectSites",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#handleReturn"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#collectSites",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#isBlockBody"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#collectSites",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#isBlockBody"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#handleReturn",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#isBracelessGuardReturn"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#isSideEffectFreeExpr",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#isSideEffectFreeExpr"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#collectDeepSites",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#isSideEffectFreeExpr"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#collectDeepSites",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#isSideEffectFreeExpr"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#isSimpleExpr",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#isSimpleExpr"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#collectSites",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#isTsHost"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#saveProbeLedger",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#ledgerPath"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#loadProbeLedger",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#ledgerPath"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#clearProbeLedger",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#ledgerPath"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#restoreInstrumented",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#listBackups"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#detectEnclosingFunction",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#methodAccessorKind"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#collectSites",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#moduleBase"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#collectSites",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#moduleBase"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#collectSites",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#moduleBase"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#collectSites",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#moduleBase"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#deepProbeName",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#moduleBase"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#handleReturn",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#moduleBase"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#detectModuleSystem",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#nearestPackageType"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#collectDeepSites",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#parenInner"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#restoreInstrumented",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#restoreOne"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#handleReturn",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#returnExpr"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#collectSites",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#scopeRef"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#collectSites",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#scopeRef"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#collectSites",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#scopeRef"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#collectSites",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#scopeRef"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#collectSites",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#scopeRef"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#collectTsFiles",
+      "to": "src/infrastructure/analysis/observe/instrument_skeleton.ts#collectSourceFiles"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#instrumentFile",
+      "to": "src/infrastructure/analysis/observe/instrument_skeleton.ts#instrumentFileWithHooks"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#instrumentProject",
+      "to": "src/infrastructure/analysis/observe/instrument_skeleton.ts#instrumentProjectWithHooks"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#isBracelessGuardReturn",
+      "to": "src/infrastructure/analysis/observe/instrument_skeleton.ts#isBracelessBodyReturn"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#collectSites",
+      "to": "src/infrastructure/analysis/observe/instrument_skeleton.ts#matchesContract"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#collectSites",
+      "to": "src/infrastructure/analysis/observe/instrument_skeleton.ts#matchesContract"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#collectSites",
+      "to": "src/infrastructure/analysis/observe/instrument_skeleton.ts#matchesContract"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#collectSites",
+      "to": "src/infrastructure/analysis/observe/instrument_skeleton.ts#matchesContract"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#collectSites",
+      "to": "src/infrastructure/analysis/observe/instrument_skeleton.ts#matchesContract"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#collectSites",
+      "to": "src/infrastructure/analysis/observe/instrument_skeleton.ts#matchesContract"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#collectSites",
+      "to": "src/infrastructure/analysis/observe/instrument_skeleton.ts#matchesContract"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#collectSites",
+      "to": "src/infrastructure/analysis/observe/instrument_skeleton.ts#matchesContract"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#collectDeepSites",
+      "to": "src/infrastructure/analysis/observe/instrument_skeleton.ts#matchesContract"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#collectDeepSites",
+      "to": "src/infrastructure/analysis/observe/instrument_skeleton.ts#matchesContract"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#collectDeepSites",
+      "to": "src/infrastructure/analysis/observe/instrument_skeleton.ts#matchesContract"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#handleReturn",
+      "to": "src/infrastructure/analysis/observe/instrument_skeleton.ts#matchesContract"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#isInstrumentableTsJsFile",
+      "to": "src/infrastructure/parse/source_exts.ts#isNoiseFileName"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#isTsHost",
+      "to": "src/infrastructure/parse/source_exts.ts#isTsExt"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#isInstrumentableTsJsFile",
+      "to": "src/infrastructure/parse/source_exts.ts#isTsJsExt"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument.ts#moduleBase",
+      "to": "src/infrastructure/parse/source_exts.ts#isTsJsExt"
+    }
+  ],
+  "removed": []
+}

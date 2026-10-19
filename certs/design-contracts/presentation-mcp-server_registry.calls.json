@@ -1,0 +1,276 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/presentation/mcp/server_registry.ts（**实际全量 + 设计意图增量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T11:04:53.454Z",
+    "note": "★ calls = 实际全量 ∪ 带 why 的（dep 加的）· removed = 原样保留（dep 删的）"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls 里\"实际没有\"的会红（= 该接线）",
+  "calls": [
+    {
+      "from": "src/presentation/mcp/server_registry.ts#invokeTool",
+      "to": "src/application/dispatch.ts#collectPendingAlertText"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#renderNextNote",
+      "to": "src/application/meta/index.ts#renderHandoffPanel"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#composedDefs",
+      "to": "src/application/meta/registry/capability_map.ts#catalogOf"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#registerAtomicEntry",
+      "to": "src/application/meta/registry/capability_map.ts#catalogOf"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#renderNextNote",
+      "to": "src/application/meta/registry/capability_map.ts#collectInputPaths"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#composedDefs",
+      "to": "src/application/meta/registry/tool_faces.ts#facesOf"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#registerAllTools",
+      "to": "src/application/meta/registry/tool_faces.ts#mcpFace"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#argValidatorOf",
+      "to": "src/application/plumbing.ts#looseInputSchema"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#registerAllTools",
+      "to": "src/application/plumbing.ts#looseInputSchema"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#renderNextNote",
+      "to": "src/application/plumbing.ts#parseDataBlock"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#registerAtomicEntry",
+      "to": "src/application/plumbing.ts#textOut"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#registerAtomicEntry",
+      "to": "src/application/plumbing.ts#textOut"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#registerAtomicEntry",
+      "to": "src/application/plumbing.ts#textOut"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#registerAtomicEntry",
+      "to": "src/application/plumbing.ts#textOut"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#registerAtomicEntry",
+      "to": "src/application/plumbing.ts#textOut"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#registerAtomicEntry",
+      "to": "src/application/plumbing.ts#textOut"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#registerAllTools",
+      "to": "src/application/plumbing.ts#textOut"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#invokeTool",
+      "to": "src/application/stage_registry.ts#ensureStage"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#staleIndexWarning",
+      "to": "src/application/write_gate.ts#hasLiveIndex"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#firstContactBackfill",
+      "to": "src/application/write_gate.ts#hasLiveIndex"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#trustNoteFor",
+      "to": "src/application/write_gate.ts#hasLiveIndex"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#invokeTool",
+      "to": "src/application/write_gate.ts#hasLiveIndex"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#invokeTool",
+      "to": "src/domain/chain_wiring.ts#nextHopsOf"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#renderNextNote",
+      "to": "src/domain/chain_wiring.ts#nextHopsOf"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#renderNextNote",
+      "to": "src/domain/chain_wiring.ts#renderNextHops"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#resolveRootFromArgs",
+      "to": "src/infrastructure/analysis/project_root/index.ts#resolveProjectRoot"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#invokeTool",
+      "to": "src/infrastructure/dogfood_stats.ts#recordDogfoodUsage"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#invokeTool",
+      "to": "src/infrastructure/dogfood_stats.ts#recordDogfoodUsage"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#staleIndexWarning",
+      "to": "src/infrastructure/index/db.ts#getProjectCacheDb"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#trustNoteFor",
+      "to": "src/infrastructure/index/db.ts#getProjectCacheDb"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#backfillProgressNote",
+      "to": "src/infrastructure/index/index_backfill.ts#backfillState"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#invokeTool",
+      "to": "src/infrastructure/index/index_backfill.ts#isBackfillRunning"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#firstContactBackfill",
+      "to": "src/infrastructure/index/index_backfill.ts#scheduleBackfill"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#staleIndexWarning",
+      "to": "src/infrastructure/index/index_freshness.ts#detectStaleIndex"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#liveDslFallbackWarning",
+      "to": "src/infrastructure/storage.ts#getLiveFallback"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#liveDslFallbackWarning",
+      "to": "src/infrastructure/storage.ts#isLiveDslParseable"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#invokeTool",
+      "to": "src/infrastructure/text/arg_suggest.ts#renderArgHints"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#invokeTool",
+      "to": "src/infrastructure/text/arg_suggest.ts#unknownArgHints"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#validateToolArgs",
+      "to": "src/presentation/mcp/server_registry.ts#argValidatorOf"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#firstContactBackfill",
+      "to": "src/presentation/mcp/server_registry.ts#backfillProgressNote"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#firstContactBackfill",
+      "to": "src/presentation/mcp/server_registry.ts#backfillProgressNote"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#staleSourceWarning",
+      "to": "src/presentation/mcp/server_registry.ts#cachedSrcMtime"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#resolveRootFromArgs",
+      "to": "src/presentation/mcp/server_registry.ts#collectArgPaths"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#registerAllTools",
+      "to": "src/presentation/mcp/server_registry.ts#composedDefs"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#invokeTool",
+      "to": "src/presentation/mcp/server_registry.ts#ensureKernelPrewarmed"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#invokeTool",
+      "to": "src/presentation/mcp/server_registry.ts#firstContactBackfill"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#invokeTool",
+      "to": "src/presentation/mcp/server_registry.ts#freshnessRefusedWarning"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#registerAtomicEntry",
+      "to": "src/presentation/mcp/server_registry.ts#invokeTool"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#registerAllTools",
+      "to": "src/presentation/mcp/server_registry.ts#invokeTool"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#invokeTool",
+      "to": "src/presentation/mcp/server_registry.ts#liveDslFallbackWarning"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#cachedSrcMtime",
+      "to": "src/presentation/mcp/server_registry.ts#newestMtime"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#staleSourceWarning",
+      "to": "src/presentation/mcp/server_registry.ts#newestMtime"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#resolveRootFromArgs",
+      "to": "src/presentation/mcp/server_registry.ts#projectRootArg"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#registerAllTools",
+      "to": "src/presentation/mcp/server_registry.ts#registerAtomicEntry"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#invokeTool",
+      "to": "src/presentation/mcp/server_registry.ts#renderNextNote"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#invokeTool",
+      "to": "src/presentation/mcp/server_registry.ts#resolveRootFromArgs"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#staleBuildWarning",
+      "to": "src/presentation/mcp/server_registry.ts#safeMtimeMs"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#newestMtime",
+      "to": "src/presentation/mcp/server_registry.ts#safeMtimeMs"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#invokeTool",
+      "to": "src/presentation/mcp/server_registry.ts#staleBuildWarning"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#staleBuildWarning",
+      "to": "src/presentation/mcp/server_registry.ts#staleBuildWarningFor"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#invokeTool",
+      "to": "src/presentation/mcp/server_registry.ts#staleIndexWarning"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#invokeTool",
+      "to": "src/presentation/mcp/server_registry.ts#staleSourceWarning"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#staleSourceWarning",
+      "to": "src/presentation/mcp/server_registry.ts#staleSourceWarningFor"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#invokeTool",
+      "to": "src/presentation/mcp/server_registry.ts#trustNoteFor"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#invokeTool",
+      "to": "src/presentation/mcp/server_registry.ts#validateToolArgs"
+    },
+    {
+      "from": "src/presentation/mcp/server_registry.ts#invokeTool",
+      "to": "src/presentation/mcp/tool_warnings.ts#emitWarnings"
+    }
+  ],
+  "removed": []
+}

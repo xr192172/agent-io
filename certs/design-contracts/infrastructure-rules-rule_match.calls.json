@@ -1,0 +1,88 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/infrastructure/rules/rule_match.ts（**实际全量 + 设计意图增量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T11:04:53.415Z",
+    "note": "★ calls = 实际全量 ∪ 带 why 的（dep 加的）· removed = 原样保留（dep 删的）"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls 里\"实际没有\"的会红（= 该接线）",
+  "calls": [
+    {
+      "from": "src/infrastructure/rules/rule_match.ts#matchLine",
+      "to": "src/infrastructure/rules/rule_match.ts#balanced"
+    },
+    {
+      "from": "src/infrastructure/rules/rule_match.ts#matchRule",
+      "to": "src/infrastructure/rules/rule_match.ts#finalize"
+    },
+    {
+      "from": "src/infrastructure/rules/rule_match.ts#matchRule",
+      "to": "src/infrastructure/rules/rule_match.ts#finalize"
+    },
+    {
+      "from": "src/infrastructure/rules/rule_match.ts#matchRule",
+      "to": "src/infrastructure/rules/rule_match.ts#holeNamesOf"
+    },
+    {
+      "from": "src/infrastructure/rules/rule_match.ts#matchRule",
+      "to": "src/infrastructure/rules/rule_match.ts#indexFile"
+    },
+    {
+      "from": "src/infrastructure/rules/rule_match.ts#applyMatch",
+      "to": "src/infrastructure/rules/rule_match.ts#instantiateReplace"
+    },
+    {
+      "from": "src/infrastructure/rules/rule_match.ts#matchRule",
+      "to": "src/infrastructure/rules/rule_match.ts#matchLine"
+    },
+    {
+      "from": "src/infrastructure/rules/rule_match.ts#matchRule",
+      "to": "src/infrastructure/rules/rule_match.ts#matchLine"
+    },
+    {
+      "from": "src/infrastructure/rules/rule_match.ts#matchRule",
+      "to": "src/infrastructure/rules/rule_match.ts#matchLine"
+    },
+    {
+      "from": "src/infrastructure/rules/rule_match.ts#matchRule",
+      "to": "src/infrastructure/rules/rule_match.ts#matchLine"
+    },
+    {
+      "from": "src/infrastructure/rules/rule_match.ts#matchLine",
+      "to": "src/infrastructure/rules/rule_match.ts#matchLiteral"
+    },
+    {
+      "from": "src/infrastructure/rules/rule_match.ts#indexFile",
+      "to": "src/infrastructure/rules/rule_match.ts#norm"
+    },
+    {
+      "from": "src/infrastructure/rules/rule_match.ts#matchLiteral",
+      "to": "src/infrastructure/rules/rule_match.ts#norm"
+    },
+    {
+      "from": "src/infrastructure/rules/rule_match.ts#matchRule",
+      "to": "src/infrastructure/rules/rule_match.ts#tokenizePattern"
+    },
+    {
+      "from": "src/infrastructure/rules/rule_match.ts#matchRule",
+      "to": "src/infrastructure/rules/rule_tokens.ts#leadingWs"
+    },
+    {
+      "from": "src/infrastructure/rules/rule_match.ts#matchRule",
+      "to": "src/infrastructure/rules/rule_tokens.ts#leadingWs"
+    },
+    {
+      "from": "src/infrastructure/rules/rule_match.ts#tokenizePattern",
+      "to": "src/infrastructure/rules/rule_tokens.ts#splitLines"
+    },
+    {
+      "from": "src/infrastructure/rules/rule_match.ts#indexFile",
+      "to": "src/infrastructure/rules/rule_tokens.ts#splitLines"
+    },
+    {
+      "from": "src/infrastructure/rules/rule_match.ts#instantiateReplace",
+      "to": "src/infrastructure/rules/rule_tokens.ts#splitLines"
+    }
+  ],
+  "removed": []
+}

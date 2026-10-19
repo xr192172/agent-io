@@ -1,0 +1,64 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/infrastructure/analysis/observe/proposal_store.ts（**实际全量 + 设计意图增量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T11:04:53.431Z",
+    "note": "★ calls = 实际全量 ∪ 带 why 的（dep 加的）· removed = 原样保留（dep 删的）"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls 里\"实际没有\"的会红（= 该接线）",
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.constructor",
+      "to": "src/infrastructure/analysis/observe/dsl_store.ts#defaultDSLDir"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/proposal_store.ts#declKey",
+      "to": "src/infrastructure/analysis/observe/ledger_fold.ts#parseKnownSpread"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.get",
+      "to": "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.filePath"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.write",
+      "to": "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.filePath"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/proposal_store.ts#validateDecls",
+      "to": "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.get"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.reject",
+      "to": "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.get"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.create",
+      "to": "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.write"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.reject",
+      "to": "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.write"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.writeRaw",
+      "to": "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.write"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/proposal_store.ts#validateDecls",
+      "to": "src/infrastructure/analysis/observe/proposal_store.ts#declKey"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.create",
+      "to": "src/infrastructure/analysis/observe/proposal_store.ts#nextProposalID"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.create",
+      "to": "src/infrastructure/analysis/observe/proposal_store.ts#validateDecls"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.write",
+      "to": "src/infrastructure/analysis/observe/proposal_store.ts#writeAtomic"
+    }
+  ],
+  "removed": []
+}

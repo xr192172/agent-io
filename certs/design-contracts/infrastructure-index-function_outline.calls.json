@@ -1,0 +1,72 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/infrastructure/index/function_outline.ts（**实际全量 + 设计意图增量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T11:04:53.415Z",
+    "note": "★ calls = 实际全量 ∪ 带 why 的（dep 加的）· removed = 原样保留（dep 删的）"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls 里\"实际没有\"的会红（= 该接线）",
+  "calls": [
+    {
+      "from": "src/infrastructure/index/function_outline.ts#withCacheDb",
+      "to": "src/infrastructure/index/db.ts#findCacheDb"
+    },
+    {
+      "from": "src/infrastructure/index/function_outline.ts#buildFunctionOutline",
+      "to": "src/infrastructure/index/db.ts#findCacheDb"
+    },
+    {
+      "from": "src/infrastructure/index/function_outline.ts#withCacheDb",
+      "to": "src/infrastructure/index/db.ts#openDb"
+    },
+    {
+      "from": "src/infrastructure/index/function_outline.ts#buildFunctionOutline",
+      "to": "src/infrastructure/index/function_outline.ts#attachDocs"
+    },
+    {
+      "from": "src/infrastructure/index/function_outline.ts#buildFunctionOutline",
+      "to": "src/infrastructure/index/function_outline.ts#attachFunctionFeatures"
+    },
+    {
+      "from": "src/infrastructure/index/function_outline.ts#attachFunctionFeatures",
+      "to": "src/infrastructure/index/function_outline.ts#buildFeatureIndex"
+    },
+    {
+      "from": "src/infrastructure/index/function_outline.ts#queryFunctionOutline",
+      "to": "src/infrastructure/index/function_outline.ts#filePathFromId"
+    },
+    {
+      "from": "src/infrastructure/index/function_outline.ts#attachDocs",
+      "to": "src/infrastructure/index/function_outline.ts#fnDocAt"
+    },
+    {
+      "from": "src/infrastructure/index/function_outline.ts#fnDocAt",
+      "to": "src/infrastructure/index/function_outline.ts#isCommentLineTrim"
+    },
+    {
+      "from": "src/infrastructure/index/function_outline.ts#fnDocAt",
+      "to": "src/infrastructure/index/function_outline.ts#isCommentLineTrim"
+    },
+    {
+      "from": "src/infrastructure/index/function_outline.ts#buildFunctionOutline",
+      "to": "src/infrastructure/index/function_outline.ts#queryFunctionOutline"
+    },
+    {
+      "from": "src/infrastructure/index/function_outline.ts#queryFunctionOutline",
+      "to": "src/infrastructure/index/function_outline.ts#symbolNameFromId"
+    },
+    {
+      "from": "src/infrastructure/index/function_outline.ts#listFunctionDirs",
+      "to": "src/infrastructure/index/function_outline.ts#withCacheDb"
+    },
+    {
+      "from": "src/infrastructure/index/function_outline.ts#buildFunctionOutline",
+      "to": "src/infrastructure/index/function_outline.ts#withCacheDb"
+    },
+    {
+      "from": "src/infrastructure/index/function_outline.ts#buildFunctionOutline",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    }
+  ],
+  "removed": []
+}

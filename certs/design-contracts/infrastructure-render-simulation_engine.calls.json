@@ -1,0 +1,88 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/infrastructure/render/simulation_engine.ts（**实际全量 + 设计意图增量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T11:04:53.413Z",
+    "note": "★ calls = 实际全量 ∪ 带 why 的（dep 加的）· removed = 原样保留（dep 删的）"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls 里\"实际没有\"的会红（= 该接线）",
+  "calls": [
+    {
+      "from": "src/infrastructure/render/simulation_engine.ts#SimulationEngine.reset",
+      "to": "src/infrastructure/render/simulation_engine.ts#SimulationEngine.clone"
+    },
+    {
+      "from": "src/infrastructure/render/simulation_engine.ts#SimulationEngine.getState",
+      "to": "src/infrastructure/render/simulation_engine.ts#SimulationEngine.clone"
+    },
+    {
+      "from": "src/infrastructure/render/simulation_engine.ts#SimulationEngine.executeAction",
+      "to": "src/infrastructure/render/simulation_engine.ts#SimulationEngine.clone"
+    },
+    {
+      "from": "src/infrastructure/render/simulation_engine.ts#SimulationEngine.executeAction",
+      "to": "src/infrastructure/render/simulation_engine.ts#SimulationEngine.clone"
+    },
+    {
+      "from": "src/infrastructure/render/simulation_engine.ts#SimulationEngine.recordTrace",
+      "to": "src/infrastructure/render/simulation_engine.ts#SimulationEngine.clone"
+    },
+    {
+      "from": "src/infrastructure/render/simulation_engine.ts#SimulationEngine.processEvent",
+      "to": "src/infrastructure/render/simulation_engine.ts#SimulationEngine.evaluateCondition"
+    },
+    {
+      "from": "src/infrastructure/render/simulation_engine.ts#SimulationEngine.mapStateToNodes",
+      "to": "src/infrastructure/render/simulation_engine.ts#SimulationEngine.evaluateCondition"
+    },
+    {
+      "from": "src/infrastructure/render/simulation_engine.ts#SimulationEngine.executeAction",
+      "to": "src/infrastructure/render/simulation_engine.ts#SimulationEngine.evaluateExpression"
+    },
+    {
+      "from": "src/infrastructure/render/simulation_engine.ts#SimulationEngine.processEvent",
+      "to": "src/infrastructure/render/simulation_engine.ts#SimulationEngine.executeAction"
+    },
+    {
+      "from": "src/infrastructure/render/simulation_engine.ts#SimulationEngine.executeAction",
+      "to": "src/infrastructure/render/simulation_engine.ts#SimulationEngine.interpolateObject"
+    },
+    {
+      "from": "src/infrastructure/render/simulation_engine.ts#SimulationEngine.mapStateToNodes",
+      "to": "src/infrastructure/render/simulation_engine.ts#SimulationEngine.interpolateTemplate"
+    },
+    {
+      "from": "src/infrastructure/render/simulation_engine.ts#SimulationEngine.executeAction",
+      "to": "src/infrastructure/render/simulation_engine.ts#SimulationEngine.interpolateTemplate"
+    },
+    {
+      "from": "src/infrastructure/render/simulation_engine.ts#SimulationEngine.interpolateObject",
+      "to": "src/infrastructure/render/simulation_engine.ts#SimulationEngine.interpolateTemplate"
+    },
+    {
+      "from": "src/infrastructure/render/simulation_engine.ts#SimulationEngine.executeAction",
+      "to": "src/infrastructure/render/simulation_engine.ts#SimulationEngine.mapStateToNodes"
+    },
+    {
+      "from": "src/infrastructure/render/simulation_engine.ts#SimulationEngine.processEvent",
+      "to": "src/infrastructure/render/simulation_engine.ts#SimulationEngine.processEvent"
+    },
+    {
+      "from": "src/infrastructure/render/simulation_engine.ts#SimulationEngine.run",
+      "to": "src/infrastructure/render/simulation_engine.ts#SimulationEngine.processEvent"
+    },
+    {
+      "from": "src/infrastructure/render/simulation_engine.ts#SimulationEngine.processEvent",
+      "to": "src/infrastructure/render/simulation_engine.ts#SimulationEngine.recordTrace"
+    },
+    {
+      "from": "src/infrastructure/render/simulation_engine.ts#SimulationEngine.processEvent",
+      "to": "src/infrastructure/render/simulation_engine.ts#SimulationEngine.recordTrace"
+    },
+    {
+      "from": "src/infrastructure/render/simulation_engine.ts#SimulationEngine.constructor",
+      "to": "src/infrastructure/render/simulation_engine.ts#SimulationEngine.reset"
+    }
+  ],
+  "removed": []
+}

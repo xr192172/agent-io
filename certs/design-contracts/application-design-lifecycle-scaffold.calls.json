@@ -1,0 +1,204 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/application/design/lifecycle/scaffold.ts（**实际全量 + 设计意图增量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T11:04:53.453Z",
+    "note": "★ calls = 实际全量 ∪ 带 why 的（dep 加的）· removed = 原样保留（dep 删的）"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls 里\"实际没有\"的会红（= 该接线）",
+  "calls": [
+    {
+      "from": "src/application/design/lifecycle/scaffold.ts#generateVue",
+      "to": "src/application/design/api_signature.ts#extractFuncName"
+    },
+    {
+      "from": "src/application/design/lifecycle/scaffold.ts#generateReact",
+      "to": "src/application/design/api_signature.ts#extractFuncName"
+    },
+    {
+      "from": "src/application/design/lifecycle/scaffold.ts#generateUiSkeleton",
+      "to": "src/application/design/lifecycle/scaffold.ts#buildInlineStyle"
+    },
+    {
+      "from": "src/application/design/lifecycle/scaffold.ts#generateUiSkeleton",
+      "to": "src/application/design/lifecycle/scaffold.ts#buildStyleClass"
+    },
+    {
+      "from": "src/application/design/lifecycle/scaffold.ts#scaffoldCore",
+      "to": "src/application/design/lifecycle/scaffold.ts#detectLang"
+    },
+    {
+      "from": "src/application/design/lifecycle/scaffold.ts#generateUiSkeleton",
+      "to": "src/application/design/lifecycle/scaffold.ts#escapeXml"
+    },
+    {
+      "from": "src/application/design/lifecycle/scaffold.ts#generateUiSkeleton",
+      "to": "src/application/design/lifecycle/scaffold.ts#escapeXml"
+    },
+    {
+      "from": "src/application/design/lifecycle/scaffold.ts#scaffoldCore",
+      "to": "src/application/design/lifecycle/scaffold.ts#generateGo"
+    },
+    {
+      "from": "src/application/design/lifecycle/scaffold.ts#scaffoldCore",
+      "to": "src/application/design/lifecycle/scaffold.ts#generateHtml"
+    },
+    {
+      "from": "src/application/design/lifecycle/scaffold.ts#scaffoldCore",
+      "to": "src/application/design/lifecycle/scaffold.ts#generateInvariants"
+    },
+    {
+      "from": "src/application/design/lifecycle/scaffold.ts#scaffoldCore",
+      "to": "src/application/design/lifecycle/scaffold.ts#generateJs"
+    },
+    {
+      "from": "src/application/design/lifecycle/scaffold.ts#scaffoldCore",
+      "to": "src/application/design/lifecycle/scaffold.ts#generatePy"
+    },
+    {
+      "from": "src/application/design/lifecycle/scaffold.ts#scaffoldCore",
+      "to": "src/application/design/lifecycle/scaffold.ts#generateReact"
+    },
+    {
+      "from": "src/application/design/lifecycle/scaffold.ts#scaffoldCore",
+      "to": "src/application/design/lifecycle/scaffold.ts#generateTs"
+    },
+    {
+      "from": "src/application/design/lifecycle/scaffold.ts#generateUiSkeleton",
+      "to": "src/application/design/lifecycle/scaffold.ts#generateUiSkeleton"
+    },
+    {
+      "from": "src/application/design/lifecycle/scaffold.ts#generateVue",
+      "to": "src/application/design/lifecycle/scaffold.ts#generateUiSkeleton"
+    },
+    {
+      "from": "src/application/design/lifecycle/scaffold.ts#generateReact",
+      "to": "src/application/design/lifecycle/scaffold.ts#generateUiSkeleton"
+    },
+    {
+      "from": "src/application/design/lifecycle/scaffold.ts#generateHtml",
+      "to": "src/application/design/lifecycle/scaffold.ts#generateUiSkeleton"
+    },
+    {
+      "from": "src/application/design/lifecycle/scaffold.ts#renderCustomTemplate",
+      "to": "src/application/design/lifecycle/scaffold.ts#generateUiSkeleton"
+    },
+    {
+      "from": "src/application/design/lifecycle/scaffold.ts#scaffoldCore",
+      "to": "src/application/design/lifecycle/scaffold.ts#generateVue"
+    },
+    {
+      "from": "src/application/design/lifecycle/scaffold.ts#generateGo",
+      "to": "src/application/design/lifecycle/scaffold.ts#goPackageName"
+    },
+    {
+      "from": "src/application/design/lifecycle/scaffold.ts#renderCustomTemplate",
+      "to": "src/application/design/lifecycle/scaffold.ts#goPackageName"
+    },
+    {
+      "from": "src/application/design/lifecycle/scaffold.ts#generateGo",
+      "to": "src/application/design/lifecycle/scaffold.ts#goReturnStmt"
+    },
+    {
+      "from": "src/application/design/lifecycle/scaffold.ts#generateGo",
+      "to": "src/application/design/lifecycle/scaffold.ts#goReturnStmt"
+    },
+    {
+      "from": "src/application/design/lifecycle/scaffold.ts#generateTs",
+      "to": "src/application/design/lifecycle/scaffold.ts#groupByClass"
+    },
+    {
+      "from": "src/application/design/lifecycle/scaffold.ts#generatePy",
+      "to": "src/application/design/lifecycle/scaffold.ts#groupByClass"
+    },
+    {
+      "from": "src/application/design/lifecycle/scaffold.ts#generateJs",
+      "to": "src/application/design/lifecycle/scaffold.ts#groupByClass"
+    },
+    {
+      "from": "src/application/design/lifecycle/scaffold.ts#makeMarkerComment",
+      "to": "src/application/design/lifecycle/scaffold.ts#makeMarker"
+    },
+    {
+      "from": "src/application/design/lifecycle/scaffold.ts#scaffoldCore",
+      "to": "src/application/design/lifecycle/scaffold.ts#makeMarkerComment"
+    },
+    {
+      "from": "src/application/design/lifecycle/scaffold.ts#scaffoldCore",
+      "to": "src/application/design/lifecycle/scaffold.ts#renderCustomTemplate"
+    },
+    {
+      "from": "src/application/design/lifecycle/scaffold.ts#generateGo",
+      "to": "src/application/design/lifecycle/scaffold.ts#responsibilityOf"
+    },
+    {
+      "from": "src/application/design/lifecycle/scaffold.ts#generateTs",
+      "to": "src/application/design/lifecycle/scaffold.ts#responsibilityOf"
+    },
+    {
+      "from": "src/application/design/lifecycle/scaffold.ts#generatePy",
+      "to": "src/application/design/lifecycle/scaffold.ts#responsibilityOf"
+    },
+    {
+      "from": "src/application/design/lifecycle/scaffold.ts#generateJs",
+      "to": "src/application/design/lifecycle/scaffold.ts#responsibilityOf"
+    },
+    {
+      "from": "src/application/design/lifecycle/scaffold.ts#generateVue",
+      "to": "src/application/design/lifecycle/scaffold.ts#responsibilityOf"
+    },
+    {
+      "from": "src/application/design/lifecycle/scaffold.ts#generateReact",
+      "to": "src/application/design/lifecycle/scaffold.ts#responsibilityOf"
+    },
+    {
+      "from": "src/application/design/lifecycle/scaffold.ts#generateHtml",
+      "to": "src/application/design/lifecycle/scaffold.ts#responsibilityOf"
+    },
+    {
+      "from": "src/application/design/lifecycle/scaffold.ts#scaffoldCore",
+      "to": "src/application/design/lifecycle/scaffold.ts#responsibilityOf"
+    },
+    {
+      "from": "src/application/design/lifecycle/scaffold.ts#scaffold",
+      "to": "src/application/design/lifecycle/scaffold.ts#scaffoldCore"
+    },
+    {
+      "from": "src/application/design/lifecycle/scaffold.ts#scaffold",
+      "to": "src/application/design/lifecycle/scaffold.ts#touchedOf"
+    },
+    {
+      "from": "src/application/design/lifecycle/scaffold.ts#scaffoldCore",
+      "to": "src/application/design/no_file_entries.ts#noFileEntriesMessage"
+    },
+    {
+      "from": "src/application/design/lifecycle/scaffold.ts#scaffoldCore",
+      "to": "src/application/write_gate.ts#snapshotAndRecordSelfWrite"
+    },
+    {
+      "from": "src/application/design/lifecycle/scaffold.ts#scaffoldCore",
+      "to": "src/application/write_gate.ts#syncSelfWritesSync"
+    },
+    {
+      "from": "src/application/design/lifecycle/scaffold.ts#scaffold",
+      "to": "src/domain/b_terms.ts#withTouched"
+    },
+    {
+      "from": "src/application/design/lifecycle/scaffold.ts#scaffoldCore",
+      "to": "src/domain/semantic.ts#hasFileEntries"
+    },
+    {
+      "from": "src/application/design/lifecycle/scaffold.ts#scaffoldCore",
+      "to": "src/infrastructure/index/symbols.ts#toIndexKey"
+    },
+    {
+      "from": "src/application/design/lifecycle/scaffold.ts#touchedOf",
+      "to": "src/infrastructure/index/symbols.ts#toIndexKey"
+    },
+    {
+      "from": "src/application/design/lifecycle/scaffold.ts#scaffoldCore",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    }
+  ],
+  "removed": []
+}

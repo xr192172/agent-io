@@ -1,0 +1,116 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/application/refactor/rename/symbol_move.ts（**实际全量 + 设计意图增量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T11:04:53.465Z",
+    "note": "★ calls = 实际全量 ∪ 带 why 的（dep 加的）· removed = 原样保留（dep 删的）"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls 里\"实际没有\"的会红（= 该接线）",
+  "calls": [
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+      "to": "src/application/refactor/rename/symbol_move.ts#applyEdits"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#findNamedDeclInExport",
+      "to": "src/application/refactor/rename/symbol_move.ts#declName"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#findTopLevelDeclRange",
+      "to": "src/application/refactor/rename/symbol_move.ts#declName"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#findTopLevelDeclRange",
+      "to": "src/application/refactor/rename/symbol_move.ts#findNamedDeclInExport"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+      "to": "src/application/refactor/rename/symbol_move.ts#findTopLevelDeclRange"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#findNamedDeclInExport",
+      "to": "src/application/refactor/rename/symbol_move.ts#isDeclNodeType"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#findTopLevelDeclRange",
+      "to": "src/application/refactor/rename/symbol_move.ts#isDeclNodeType"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbol",
+      "to": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+      "to": "src/application/refactor/rename/symbol_move.ts#relImportPath"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+      "to": "src/application/refactor/rename/symbol_move.ts#squeezeBlankRuns"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+      "to": "src/application/refactor/rename/symbol_move.ts#stripQuotes"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbol",
+      "to": "src/application/refactor/rename/symbol_move.ts#touchedOfMove"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+      "to": "src/application/refactor/snapshot/file_snapshot.ts#snapshotBeforeWrite"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+      "to": "src/application/write_gate.ts#assertSourceWriteRegisteredFor"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+      "to": "src/application/write_gate.ts#reopenAndResolveAfterWrite"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+      "to": "src/application/write_gate.ts#resolveActor"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+      "to": "src/infrastructure/analysis/project_root/index.ts#expandClosureDetailed"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+      "to": "src/infrastructure/analysis/project_root/index.ts#loadAliasConfig"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+      "to": "src/infrastructure/analysis/project_root/index.ts#loadAliasConfig"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+      "to": "src/infrastructure/analysis/project_root/index.ts#resolveAliasedImport"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+      "to": "src/infrastructure/analysis/project_root/index.ts#resolveProjectRoot"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+      "to": "src/infrastructure/index/db.ts#getProjectCacheDb"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+      "to": "src/infrastructure/index/symbols.ts#syncFile"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+      "to": "src/infrastructure/text/line_utils.ts#detectEol"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#squeezeBlankRuns",
+      "to": "src/infrastructure/text/line_utils.ts#isBlankLine"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+      "to": "src/infrastructure/text/line_utils.ts#splitKeepEnds"
+    }
+  ],
+  "removed": []
+}

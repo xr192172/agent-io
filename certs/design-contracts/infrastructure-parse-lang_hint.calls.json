@@ -1,0 +1,68 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/infrastructure/parse/lang_hint.ts（**实际全量 + 设计意图增量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T11:04:53.438Z",
+    "note": "★ calls = 实际全量 ∪ 带 why 的（dep 加的）· removed = 原样保留（dep 删的）"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls 里\"实际没有\"的会红（= 该接线）",
+  "calls": [
+    {
+      "from": "src/infrastructure/parse/lang_hint.ts#capabilityGaps",
+      "to": "src/infrastructure/analysis/capability/capability_matrix.ts#aggregateGaps"
+    },
+    {
+      "from": "src/infrastructure/parse/lang_hint.ts#capabilityGaps",
+      "to": "src/infrastructure/analysis/capability/capability_matrix.ts#diagnoseCapabilities"
+    },
+    {
+      "from": "src/infrastructure/parse/lang_hint.ts#levelClause",
+      "to": "src/infrastructure/analysis/capability/capability_matrix.ts#getCapability"
+    },
+    {
+      "from": "src/infrastructure/parse/lang_hint.ts#capabilityGaps",
+      "to": "src/infrastructure/analysis/capability/capability_matrix.ts#languageCatalog"
+    },
+    {
+      "from": "src/infrastructure/parse/lang_hint.ts#levelClause",
+      "to": "src/infrastructure/analysis/capability/capability_matrix.ts#levelFor"
+    },
+    {
+      "from": "src/infrastructure/parse/lang_hint.ts#missingLanguageHint",
+      "to": "src/infrastructure/packages/template_compat.ts#templateCompatReason"
+    },
+    {
+      "from": "src/infrastructure/parse/lang_hint.ts#missingLanguageHint",
+      "to": "src/infrastructure/parse/lang_hint.ts#capabilityGaps"
+    },
+    {
+      "from": "src/infrastructure/parse/lang_hint.ts#missingLanguageHint",
+      "to": "src/infrastructure/parse/lang_hint.ts#levelClause"
+    },
+    {
+      "from": "src/infrastructure/parse/lang_hint.ts#missingLanguageHint",
+      "to": "src/infrastructure/parse/lang_hint.ts#normExt"
+    },
+    {
+      "from": "src/infrastructure/parse/lang_hint.ts#missingLanguageHint",
+      "to": "src/infrastructure/parse/languages.ts#findLanguageByExt"
+    },
+    {
+      "from": "src/infrastructure/parse/lang_hint.ts#missingLanguageHint",
+      "to": "src/infrastructure/parse/languages.ts#languageModuleSpec"
+    },
+    {
+      "from": "src/infrastructure/parse/lang_hint.ts#missingLanguageHint",
+      "to": "src/infrastructure/parse/languages.ts#languageModuleSpec"
+    },
+    {
+      "from": "src/infrastructure/parse/lang_hint.ts#missingLanguageHint",
+      "to": "src/infrastructure/parse/probe.ts#isExtSupported"
+    },
+    {
+      "from": "src/infrastructure/parse/lang_hint.ts#missingLanguageHint",
+      "to": "src/infrastructure/parse/probe.ts#languagePackageStatus"
+    }
+  ],
+  "removed": []
+}

@@ -1,0 +1,212 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/application/design/bricks/brickify.ts（**实际全量 + 设计意图增量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T11:04:53.446Z",
+    "note": "★ calls = 实际全量 ∪ 带 why 的（dep 加的）· removed = 原样保留（dep 删的）"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls 里\"实际没有\"的会红（= 该接线）",
+  "calls": [
+    {
+      "from": "src/application/design/bricks/brickify.ts#buildFileDeps",
+      "to": "src/application/design/bricks/brick_bag.ts#resolveSpecifier"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#detectMixedFiles",
+      "to": "src/application/design/bricks/brickify.ts#UnionFind.find"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#detectMixedFiles",
+      "to": "src/application/design/bricks/brickify.ts#UnionFind.find"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#detectMixedFiles",
+      "to": "src/application/design/bricks/brickify.ts#UnionFind.find"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#UnionFind.find",
+      "to": "src/application/design/bricks/brickify.ts#UnionFind.find"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#UnionFind.union",
+      "to": "src/application/design/bricks/brickify.ts#UnionFind.find"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#computeCommunities",
+      "to": "src/application/design/bricks/brickify.ts#UnionFind.find"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#computeCommunities",
+      "to": "src/application/design/bricks/brickify.ts#UnionFind.find"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#computeBrickSubClusters",
+      "to": "src/application/design/bricks/brickify.ts#UnionFind.find"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#detectMixedFiles",
+      "to": "src/application/design/bricks/brickify.ts#UnionFind.union"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#computeCommunities",
+      "to": "src/application/design/bricks/brickify.ts#UnionFind.union"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#computeBrickSubClusters",
+      "to": "src/application/design/bricks/brickify.ts#UnionFind.union"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#buildBrickify",
+      "to": "src/application/design/bricks/brickify.ts#buildFileDeps"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#importBindings",
+      "to": "src/application/design/bricks/brickify.ts#childNodes"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#importBindings",
+      "to": "src/application/design/bricks/brickify.ts#childNodes"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#importBindings",
+      "to": "src/application/design/bricks/brickify.ts#childNodes"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#declNamesOf",
+      "to": "src/application/design/bricks/brickify.ts#childNodes"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#detectMixedFiles",
+      "to": "src/application/design/bricks/brickify.ts#childNodes"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#importBindings",
+      "to": "src/application/design/bricks/brickify.ts#childrenOf"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#detectMixedFiles",
+      "to": "src/application/design/bricks/brickify.ts#collectRefs"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#buildBrickify",
+      "to": "src/application/design/bricks/brickify.ts#computeBrickSubClusters"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#buildBrickify",
+      "to": "src/application/design/bricks/brickify.ts#computeCommunities"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#detectMixedFiles",
+      "to": "src/application/design/bricks/brickify.ts#declNamesOf"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#detectMixedFiles",
+      "to": "src/application/design/bricks/brickify.ts#declNamesOf"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#buildBrickify",
+      "to": "src/application/design/bricks/brickify.ts#detectMixedFiles"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#detectMixedFiles",
+      "to": "src/application/design/bricks/brickify.ts#importBindings"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#buildFileDeps",
+      "to": "src/application/design/bricks/brickify.ts#readRel"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#detectMixedFiles",
+      "to": "src/application/design/bricks/brickify.ts#readRel"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#computeBrickSubClusters",
+      "to": "src/application/design/bricks/brickify.ts#roleOfFile"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#buildBrickify",
+      "to": "src/application/design/bricks/brickify.ts#roleOfFile"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#roleOfFile",
+      "to": "src/application/design/bricks/brickify.ts#roleOfLayer"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#buildBrickify",
+      "to": "src/application/design/bricks/brickify.ts#summarizeRoles"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#buildFileDeps",
+      "to": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#enumerateTsSources"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#computeCommunities",
+      "to": "src/infrastructure/analysis/structure/feature_map.ts#featureIdOf"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#computeCommunities",
+      "to": "src/infrastructure/analysis/structure/feature_map.ts#featureIdOf"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#computeCommunities",
+      "to": "src/infrastructure/analysis/structure/feature_map.ts#featureIdOf"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#computeCommunities",
+      "to": "src/infrastructure/analysis/structure/feature_map.ts#featureIdOf"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#computeBrickSubClusters",
+      "to": "src/infrastructure/analysis/structure/feature_map.ts#featureIdOf"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#buildBrickify",
+      "to": "src/infrastructure/analysis/structure/feature_map.ts#featureIdOf"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#buildBrickify",
+      "to": "src/infrastructure/analysis/structure/feature_map.ts#featureIdOf"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#buildBrickify",
+      "to": "src/infrastructure/analysis/structure/feature_map.ts#featureIdOf"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#buildBrickify",
+      "to": "src/infrastructure/analysis/structure/feature_map.ts#scanSourceFiles"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#computeBrickSubClusters",
+      "to": "src/infrastructure/analysis/structure/feature_map.ts#sideOfLayer"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#buildBrickify",
+      "to": "src/infrastructure/analysis/structure/feature_map.ts#sideOfLayer"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#roleOfFile",
+      "to": "src/infrastructure/analysis/structure/layer_detect.ts#matchLayer"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#computeBrickSubClusters",
+      "to": "src/infrastructure/analysis/structure/layer_detect.ts#matchLayer"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#buildBrickify",
+      "to": "src/infrastructure/analysis/structure/layer_detect.ts#matchLayer"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#detectMixedFiles",
+      "to": "src/infrastructure/parse/kernel.ts#parseContent"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#detectMixedFiles",
+      "to": "src/infrastructure/parse/languages.ts#findLanguageByExt"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#detectMixedFiles",
+      "to": "src/infrastructure/parse/loader.ts#getParser"
+    }
+  ],
+  "removed": []
+}

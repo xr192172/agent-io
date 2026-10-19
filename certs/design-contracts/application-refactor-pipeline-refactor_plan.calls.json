@@ -1,0 +1,72 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/application/refactor/pipeline/refactor_plan.ts（**实际全量 + 设计意图增量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T11:04:53.421Z",
+    "note": "★ calls = 实际全量 ∪ 带 why 的（dep 加的）· removed = 原样保留（dep 删的）"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls 里\"实际没有\"的会红（= 该接线）",
+  "calls": [
+    {
+      "from": "src/application/refactor/pipeline/refactor_plan.ts#applyRefactorPlan",
+      "to": "src/application/refactor/edit/edit_code.ts#editCode"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_plan.ts#buildRefactorPlan",
+      "to": "src/application/refactor/edit/edit_code.ts#planReplaceText"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_plan.ts#applyRefactorPlan",
+      "to": "src/application/refactor/edit/edit_code.ts#planReplaceText"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_plan.ts#buildRefactorPlan",
+      "to": "src/application/refactor/pipeline/refactor_plan.ts#computePlanId"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_plan.ts#applyRefactorPlan",
+      "to": "src/application/refactor/pipeline/refactor_plan.ts#computePlanId"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_plan.ts#computePlanId",
+      "to": "src/application/refactor/pipeline/refactor_plan.ts#fingerprint"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_plan.ts#buildRefactorPlan",
+      "to": "src/application/refactor/pipeline/refactor_plan.ts#fingerprint"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_plan.ts#buildRefactorPlan",
+      "to": "src/application/refactor/pipeline/refactor_plan.ts#fingerprint"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_plan.ts#applyRefactorPlan",
+      "to": "src/application/refactor/pipeline/refactor_plan.ts#fingerprint"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_plan.ts#buildRefactorPlan",
+      "to": "src/application/refactor/pipeline/refactor_plan.ts#relOf"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_plan.ts#buildRefactorPlan",
+      "to": "src/application/refactor/pipeline/refactor_plan.ts#relOf"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_plan.ts#applyRefactorPlan",
+      "to": "src/infrastructure/parse/fuzzy_match.ts#locateReplaceText"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_plan.ts#applyRefactorPlan",
+      "to": "src/infrastructure/parse/fuzzy_match.ts#locateReplaceText"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_plan.ts#buildRefactorPlan",
+      "to": "src/infrastructure/text/line_utils.ts#detectEol"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_plan.ts#applyRefactorPlan",
+      "to": "src/infrastructure/text/line_utils.ts#detectEol"
+    }
+  ],
+  "removed": []
+}

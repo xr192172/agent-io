@@ -1,0 +1,184 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/infrastructure/llm_gateway.ts（**实际全量 + 设计意图增量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T11:04:53.444Z",
+    "note": "★ calls = 实际全量 ∪ 带 why 的（dep 加的）· removed = 原样保留（dep 删的）"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls 里\"实际没有\"的会红（= 该接线）",
+  "calls": [
+    {
+      "from": "src/infrastructure/llm_gateway.ts#providerFromEnv",
+      "to": "src/infrastructure/llm_agnes.ts#resolveAgnesApiBaseUrl"
+    },
+    {
+      "from": "src/infrastructure/llm_gateway.ts#providerFromEnv",
+      "to": "src/infrastructure/llm_agnes.ts#resolveAgnesKeys"
+    },
+    {
+      "from": "src/infrastructure/llm_gateway.ts#providerFromEnv",
+      "to": "src/infrastructure/llm_agnes.ts#resolveAgnesModel"
+    },
+    {
+      "from": "src/infrastructure/llm_gateway.ts#chatViaGateway",
+      "to": "src/infrastructure/llm_gateway.ts#callProvider"
+    },
+    {
+      "from": "src/infrastructure/llm_gateway.ts#testProvider",
+      "to": "src/infrastructure/llm_gateway.ts#callProvider"
+    },
+    {
+      "from": "src/infrastructure/llm_gateway.ts#handleOpenAICompatRequest",
+      "to": "src/infrastructure/llm_gateway.ts#chatViaGateway"
+    },
+    {
+      "from": "src/infrastructure/llm_gateway.ts#firstUsableProvider",
+      "to": "src/infrastructure/llm_gateway.ts#effectiveProviders"
+    },
+    {
+      "from": "src/infrastructure/llm_gateway.ts#listProvidersMasked",
+      "to": "src/infrastructure/llm_gateway.ts#effectiveProviders"
+    },
+    {
+      "from": "src/infrastructure/llm_gateway.ts#hasEnabledProvider",
+      "to": "src/infrastructure/llm_gateway.ts#effectiveProviders"
+    },
+    {
+      "from": "src/infrastructure/llm_gateway.ts#pickEndpoint",
+      "to": "src/infrastructure/llm_gateway.ts#effectiveProviders"
+    },
+    {
+      "from": "src/infrastructure/llm_gateway.ts#testProvider",
+      "to": "src/infrastructure/llm_gateway.ts#effectiveProviders"
+    },
+    {
+      "from": "src/infrastructure/llm_gateway.ts#upsertProvider",
+      "to": "src/infrastructure/llm_gateway.ts#ensureSeededFromEnv"
+    },
+    {
+      "from": "src/infrastructure/llm_gateway.ts#deleteProvider",
+      "to": "src/infrastructure/llm_gateway.ts#ensureSeededFromEnv"
+    },
+    {
+      "from": "src/infrastructure/llm_gateway.ts#chatViaGateway",
+      "to": "src/infrastructure/llm_gateway.ts#ensureSeededFromEnv"
+    },
+    {
+      "from": "src/infrastructure/llm_gateway.ts#testProvider",
+      "to": "src/infrastructure/llm_gateway.ts#ensureSeededFromEnv"
+    },
+    {
+      "from": "src/infrastructure/llm_gateway.ts#handleOpenAICompatRequest",
+      "to": "src/infrastructure/llm_gateway.ts#ensureSeededFromEnv"
+    },
+    {
+      "from": "src/infrastructure/llm_gateway.ts#loadGatewayConfig",
+      "to": "src/infrastructure/llm_gateway.ts#gatewayCfgPath"
+    },
+    {
+      "from": "src/infrastructure/llm_gateway.ts#saveGatewayConfig",
+      "to": "src/infrastructure/llm_gateway.ts#gatewayCfgPath"
+    },
+    {
+      "from": "src/infrastructure/llm_gateway.ts#saveGatewayConfig",
+      "to": "src/infrastructure/llm_gateway.ts#gatewayCfgPath"
+    },
+    {
+      "from": "src/infrastructure/llm_gateway.ts#loadStats",
+      "to": "src/infrastructure/llm_gateway.ts#gatewayStatsPath"
+    },
+    {
+      "from": "src/infrastructure/llm_gateway.ts#saveStats",
+      "to": "src/infrastructure/llm_gateway.ts#gatewayStatsPath"
+    },
+    {
+      "from": "src/infrastructure/llm_gateway.ts#saveStats",
+      "to": "src/infrastructure/llm_gateway.ts#gatewayStatsPath"
+    },
+    {
+      "from": "src/infrastructure/llm_gateway.ts#handleOpenAICompatRequest",
+      "to": "src/infrastructure/llm_gateway.ts#hasEnabledProvider"
+    },
+    {
+      "from": "src/infrastructure/llm_gateway.ts#recordUsage",
+      "to": "src/infrastructure/llm_gateway.ts#keyFingerprint"
+    },
+    {
+      "from": "src/infrastructure/llm_gateway.ts#chatViaGateway",
+      "to": "src/infrastructure/llm_gateway.ts#keyFingerprint"
+    },
+    {
+      "from": "src/infrastructure/llm_gateway.ts#ensureSeededFromEnv",
+      "to": "src/infrastructure/llm_gateway.ts#loadGatewayConfig"
+    },
+    {
+      "from": "src/infrastructure/llm_gateway.ts#effectiveProviders",
+      "to": "src/infrastructure/llm_gateway.ts#loadGatewayConfig"
+    },
+    {
+      "from": "src/infrastructure/llm_gateway.ts#upsertProvider",
+      "to": "src/infrastructure/llm_gateway.ts#loadGatewayConfig"
+    },
+    {
+      "from": "src/infrastructure/llm_gateway.ts#deleteProvider",
+      "to": "src/infrastructure/llm_gateway.ts#loadGatewayConfig"
+    },
+    {
+      "from": "src/infrastructure/llm_gateway.ts#recordUsage",
+      "to": "src/infrastructure/llm_gateway.ts#loadStats"
+    },
+    {
+      "from": "src/infrastructure/llm_gateway.ts#getStats",
+      "to": "src/infrastructure/llm_gateway.ts#loadStats"
+    },
+    {
+      "from": "src/infrastructure/llm_gateway.ts#chatViaGateway",
+      "to": "src/infrastructure/llm_gateway.ts#pickEndpoint"
+    },
+    {
+      "from": "src/infrastructure/llm_gateway.ts#pickEndpoint",
+      "to": "src/infrastructure/llm_gateway.ts#poolForProvider"
+    },
+    {
+      "from": "src/infrastructure/llm_gateway.ts#ensureSeededFromEnv",
+      "to": "src/infrastructure/llm_gateway.ts#providerFromEnv"
+    },
+    {
+      "from": "src/infrastructure/llm_gateway.ts#chatViaGateway",
+      "to": "src/infrastructure/llm_gateway.ts#recordUsage"
+    },
+    {
+      "from": "src/infrastructure/llm_gateway.ts#chatViaGateway",
+      "to": "src/infrastructure/llm_gateway.ts#recordUsage"
+    },
+    {
+      "from": "src/infrastructure/llm_gateway.ts#ensureSeededFromEnv",
+      "to": "src/infrastructure/llm_gateway.ts#saveGatewayConfig"
+    },
+    {
+      "from": "src/infrastructure/llm_gateway.ts#upsertProvider",
+      "to": "src/infrastructure/llm_gateway.ts#saveGatewayConfig"
+    },
+    {
+      "from": "src/infrastructure/llm_gateway.ts#deleteProvider",
+      "to": "src/infrastructure/llm_gateway.ts#saveGatewayConfig"
+    },
+    {
+      "from": "src/infrastructure/llm_gateway.ts#recordUsage",
+      "to": "src/infrastructure/llm_gateway.ts#saveStats"
+    },
+    {
+      "from": "src/infrastructure/llm_gateway.ts#resetStats",
+      "to": "src/infrastructure/llm_gateway.ts#saveStats"
+    },
+    {
+      "from": "src/infrastructure/llm_gateway.ts#gatewayCfgPath",
+      "to": "src/infrastructure/storage.ts#getStorageRoot"
+    },
+    {
+      "from": "src/infrastructure/llm_gateway.ts#gatewayStatsPath",
+      "to": "src/infrastructure/storage.ts#getStorageRoot"
+    }
+  ],
+  "removed": []
+}

@@ -1,0 +1,40 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/application/refactor/parse_capability/parse_capability.ts（**实际全量 + 设计意图增量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T11:04:53.421Z",
+    "note": "★ calls = 实际全量 ∪ 带 why 的（dep 加的）· removed = 原样保留（dep 删的）"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls 里\"实际没有\"的会红（= 该接线）",
+  "calls": [
+    {
+      "from": "src/application/refactor/parse_capability/parse_capability.ts#parseCapabilityForFile",
+      "to": "src/application/refactor/parse_capability/parse_capability.ts#granularityOf"
+    },
+    {
+      "from": "src/application/refactor/parse_capability/parse_capability.ts#renderGranularityNote",
+      "to": "src/application/refactor/parse_capability/parse_capability.ts#parseCapabilityForFile"
+    },
+    {
+      "from": "src/application/refactor/parse_capability/parse_capability.ts#summarizeLanguagesByTier",
+      "to": "src/application/refactor/parse_capability/parse_capability.ts#parseCapabilityForFile"
+    },
+    {
+      "from": "src/application/refactor/parse_capability/parse_capability.ts#parseCapabilityForFile",
+      "to": "src/application/refactor/parse_capability/parse_capability.ts#tierForLanguage"
+    },
+    {
+      "from": "src/application/refactor/parse_capability/parse_capability.ts#granularityOf",
+      "to": "src/infrastructure/parse/lang_hint.ts#missingLanguageHint"
+    },
+    {
+      "from": "src/application/refactor/parse_capability/parse_capability.ts#parseCapabilityForFile",
+      "to": "src/infrastructure/parse/languages.ts#findLanguageByExt"
+    },
+    {
+      "from": "src/application/refactor/parse_capability/parse_capability.ts#parseCapabilityForFile",
+      "to": "src/infrastructure/parse/probe.ts#isExtSupported"
+    }
+  ],
+  "removed": []
+}

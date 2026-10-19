@@ -1,0 +1,212 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/application/harvest/harvest_decisions.ts（**实际全量 + 设计意图增量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T11:04:53.449Z",
+    "note": "★ calls = 实际全量 ∪ 带 why 的（dep 加的）· removed = 原样保留（dep 删的）"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls 里\"实际没有\"的会红（= 该接线）",
+  "calls": [
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#makeLandable",
+      "to": "src/application/design/dsl_ops/update_feature.ts#findDecisionTargetNode"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+      "to": "src/application/design/dsl_ops/update_feature.ts#normRel"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+      "to": "src/application/design/dsl_ops/update_feature.ts#normRel"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+      "to": "src/application/design/dsl_ops/update_feature.ts#normRel"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+      "to": "src/application/harvest/harvest_decisions.ts#accumulate"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+      "to": "src/application/harvest/harvest_decisions.ts#applyOutputLimit"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+      "to": "src/application/harvest/harvest_decisions.ts#applyOutputLimit"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+      "to": "src/application/harvest/harvest_decisions.ts#askEvidenceBatch"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#docsEvidence",
+      "to": "src/application/harvest/harvest_decisions.ts#bodyLines"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+      "to": "src/application/harvest/harvest_decisions.ts#buildEvidenceByFile"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#writeCandidates",
+      "to": "src/application/harvest/harvest_decisions.ts#buildLead"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+      "to": "src/application/harvest/harvest_decisions.ts#chunk"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#evidenceForSource",
+      "to": "src/application/harvest/harvest_decisions.ts#codeEvidence"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#docTargets",
+      "to": "src/application/harvest/harvest_decisions.ts#collectMdFiles"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#readDocCorpus",
+      "to": "src/application/harvest/harvest_decisions.ts#collectMdFiles"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#docsEvidence",
+      "to": "src/application/harvest/harvest_decisions.ts#commentLines"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+      "to": "src/application/harvest/harvest_decisions.ts#docTargets"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#evidenceForSource",
+      "to": "src/application/harvest/harvest_decisions.ts#docsEvidence"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+      "to": "src/application/harvest/harvest_decisions.ts#evidenceForSource"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#askEvidenceBatch",
+      "to": "src/application/harvest/harvest_decisions.ts#extractJsonObject"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#docsEvidence",
+      "to": "src/application/harvest/harvest_decisions.ts#firstMention"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisions",
+      "to": "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#evidenceForSource",
+      "to": "src/application/harvest/harvest_decisions.ts#historyEvidence"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+      "to": "src/application/harvest/harvest_decisions.ts#indexedCodeTargets"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+      "to": "src/application/harvest/harvest_decisions.ts#isGitRepo"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#writeCandidates",
+      "to": "src/application/harvest/harvest_decisions.ts#lifecycleHint"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#requireLlmConfig",
+      "to": "src/application/harvest/harvest_decisions.ts#loadCfgOrNull"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+      "to": "src/application/harvest/harvest_decisions.ts#loadCfgOrNull"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+      "to": "src/application/harvest/harvest_decisions.ts#makeLandable"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#accumulate",
+      "to": "src/application/harvest/harvest_decisions.ts#normalizeWhy"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#writeCandidates",
+      "to": "src/application/harvest/harvest_decisions.ts#rankBins"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+      "to": "src/application/harvest/harvest_decisions.ts#readDocCorpus"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#docTargets",
+      "to": "src/application/harvest/harvest_decisions.ts#relOf"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#readDocCorpus",
+      "to": "src/application/harvest/harvest_decisions.ts#relOf"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+      "to": "src/application/harvest/harvest_decisions.ts#requireLlmConfig"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+      "to": "src/application/harvest/harvest_decisions.ts#runBatches"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#loadCfgOrNull",
+      "to": "src/application/harvest/harvest_decisions.ts#toLlmCfg"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisions",
+      "to": "src/application/harvest/harvest_decisions.ts#touchedOf"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+      "to": "src/application/harvest/harvest_decisions.ts#writeCandidates"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisions",
+      "to": "src/domain/b_terms.ts#withTouched"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#isGitRepo",
+      "to": "src/infrastructure/exec_guard.ts#gitAvailable"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+      "to": "src/infrastructure/index/index_freshness.ts#ensureProjectIndex"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#codeEvidence",
+      "to": "src/infrastructure/index/symbols.ts#getRawImportsOfFile"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#codeEvidence",
+      "to": "src/infrastructure/index/symbols.ts#getResolvedImportSources"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#requireLlmConfig",
+      "to": "src/infrastructure/llm_agnes.ts#describeAgnesConfigHint"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+      "to": "src/infrastructure/llm_agnes.ts#describeAgnesConfigHint"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#askEvidenceBatch",
+      "to": "src/infrastructure/llm_focus.ts#callChat"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#loadCfgOrNull",
+      "to": "src/infrastructure/llm_focus.ts#loadExplainConfig"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#loadCfgOrNull",
+      "to": "src/infrastructure/llm_focus.ts#loadLlmConfig"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    }
+  ],
+  "removed": []
+}

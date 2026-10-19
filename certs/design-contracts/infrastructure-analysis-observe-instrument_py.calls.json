@@ -1,0 +1,144 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/infrastructure/analysis/observe/instrument_py.ts（**实际全量 + 设计意图增量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T11:04:53.456Z",
+    "note": "★ calls = 实际全量 ∪ 带 why 的（dep 加的）· removed = 原样保留（dep 删的）"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls 里\"实际没有\"的会红（= 该接线）",
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_py.ts#collectPySites",
+      "to": "src/infrastructure/analysis/observe/instrument_py.ts#collectDefSites"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_py.ts#collectPySites",
+      "to": "src/infrastructure/analysis/observe/instrument_py.ts#collectLambdaSite"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_py.ts#collectDefSites",
+      "to": "src/infrastructure/analysis/observe/instrument_py.ts#collectReturns"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_py.ts#paramNames",
+      "to": "src/infrastructure/analysis/observe/instrument_py.ts#firstIdent"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_py.ts#firstIdent",
+      "to": "src/infrastructure/analysis/observe/instrument_py.ts#firstIdent"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_py.ts#collectDefSites",
+      "to": "src/infrastructure/analysis/observe/instrument_py.ts#handleReturnSite"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_py.ts#collectDefSites",
+      "to": "src/infrastructure/analysis/observe/instrument_py.ts#indentInfo"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_py.ts#collectDefSites",
+      "to": "src/infrastructure/analysis/observe/instrument_py.ts#indentInfo"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_py.ts#handleReturnSite",
+      "to": "src/infrastructure/analysis/observe/instrument_py.ts#indentInfo"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_py.ts#scanFunctions",
+      "to": "src/infrastructure/analysis/observe/instrument_py.ts#lambdaName"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_py.ts#scanFunctions",
+      "to": "src/infrastructure/analysis/observe/instrument_py.ts#paramNames"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_py.ts#scanFunctions",
+      "to": "src/infrastructure/analysis/observe/instrument_py.ts#paramNames"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_py.ts#collectDefSites",
+      "to": "src/infrastructure/analysis/observe/instrument_py.ts#probeCall"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_py.ts#collectDefSites",
+      "to": "src/infrastructure/analysis/observe/instrument_py.ts#probeCall"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_py.ts#handleReturnSite",
+      "to": "src/infrastructure/analysis/observe/instrument_py.ts#probeCall"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_py.ts#handleReturnSite",
+      "to": "src/infrastructure/analysis/observe/instrument_py.ts#probeCall"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_py.ts#collectDefSites",
+      "to": "src/infrastructure/analysis/observe/instrument_py.ts#pyDict"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_py.ts#collectLambdaSite",
+      "to": "src/infrastructure/analysis/observe/instrument_py.ts#pyDict"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_py.ts#handleReturnSite",
+      "to": "src/infrastructure/analysis/observe/instrument_py.ts#returnExprOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_py.ts#collectPySites",
+      "to": "src/infrastructure/analysis/observe/instrument_py.ts#scanFunctions"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_py.ts#collectDefSites",
+      "to": "src/infrastructure/analysis/observe/instrument_py.ts#str"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_py.ts#collectDefSites",
+      "to": "src/infrastructure/analysis/observe/instrument_py.ts#str"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_py.ts#handleReturnSite",
+      "to": "src/infrastructure/analysis/observe/instrument_py.ts#str"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_py.ts#handleReturnSite",
+      "to": "src/infrastructure/analysis/observe/instrument_py.ts#str"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_py.ts#collectLambdaSite",
+      "to": "src/infrastructure/analysis/observe/instrument_py.ts#str"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_py.ts#collectPyFiles",
+      "to": "src/infrastructure/analysis/observe/instrument_skeleton.ts#collectSourceFiles"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_py.ts#instrumentPyProject",
+      "to": "src/infrastructure/analysis/observe/instrument_skeleton.ts#instrumentProjectWithHooks"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_py.ts#collectDefSites",
+      "to": "src/infrastructure/analysis/observe/instrument_skeleton.ts#matchesContract"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_py.ts#collectDefSites",
+      "to": "src/infrastructure/analysis/observe/instrument_skeleton.ts#matchesContract"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_py.ts#handleReturnSite",
+      "to": "src/infrastructure/analysis/observe/instrument_skeleton.ts#matchesContract"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_py.ts#collectLambdaSite",
+      "to": "src/infrastructure/analysis/observe/instrument_skeleton.ts#matchesContract"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_py.ts#collectLambdaSite",
+      "to": "src/infrastructure/analysis/observe/instrument_skeleton.ts#matchesContract"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_py.ts#isInstrumentablePyFile",
+      "to": "src/infrastructure/parse/source_exts.ts#isNoiseFileName"
+    }
+  ],
+  "removed": []
+}

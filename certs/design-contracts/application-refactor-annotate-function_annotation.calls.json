@@ -1,0 +1,76 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/application/refactor/annotate/function_annotation.ts（**实际全量 + 设计意图增量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T11:04:53.446Z",
+    "note": "★ calls = 实际全量 ∪ 带 why 的（dep 加的）· removed = 原样保留（dep 删的）"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls 里\"实际没有\"的会红（= 该接线）",
+  "calls": [
+    {
+      "from": "src/application/refactor/annotate/function_annotation.ts#planFunctionAnnotation",
+      "to": "src/application/refactor/annotate/function_annotation.ts#applyAnnotationsToSource"
+    },
+    {
+      "from": "src/application/refactor/annotate/function_annotation.ts#scanFileAnnotations",
+      "to": "src/application/refactor/annotate/function_annotation.ts#classify"
+    },
+    {
+      "from": "src/application/refactor/annotate/function_annotation.ts#scanFileAnnotations",
+      "to": "src/application/refactor/annotate/function_annotation.ts#docBlock"
+    },
+    {
+      "from": "src/application/refactor/annotate/function_annotation.ts#classify",
+      "to": "src/application/refactor/annotate/function_annotation.ts#hasDescriptive"
+    },
+    {
+      "from": "src/application/refactor/annotate/function_annotation.ts#scanFileAnnotations",
+      "to": "src/application/refactor/annotate/function_annotation.ts#hashOf"
+    },
+    {
+      "from": "src/application/refactor/annotate/function_annotation.ts#scanFileAnnotations",
+      "to": "src/application/refactor/annotate/function_annotation.ts#hashOf"
+    },
+    {
+      "from": "src/application/refactor/annotate/function_annotation.ts#docBlock",
+      "to": "src/application/refactor/annotate/function_annotation.ts#isCommentLine"
+    },
+    {
+      "from": "src/application/refactor/annotate/function_annotation.ts#docBlock",
+      "to": "src/application/refactor/annotate/function_annotation.ts#isCommentLine"
+    },
+    {
+      "from": "src/application/refactor/annotate/function_annotation.ts#scanFileAnnotations",
+      "to": "src/application/refactor/annotate/function_annotation.ts#isEmptyBody"
+    },
+    {
+      "from": "src/application/refactor/annotate/function_annotation.ts#planFunctionAnnotation",
+      "to": "src/application/refactor/annotate/function_annotation.ts#llmDescriptions"
+    },
+    {
+      "from": "src/application/refactor/annotate/function_annotation.ts#classify",
+      "to": "src/application/refactor/annotate/function_annotation.ts#markerHash"
+    },
+    {
+      "from": "src/application/refactor/annotate/function_annotation.ts#planFunctionAnnotation",
+      "to": "src/application/refactor/annotate/function_annotation.ts#newBlock"
+    },
+    {
+      "from": "src/application/refactor/annotate/function_annotation.ts#planFunctionAnnotation",
+      "to": "src/application/refactor/annotate/function_annotation.ts#scanFileAnnotations"
+    },
+    {
+      "from": "src/application/refactor/annotate/function_annotation.ts#planFunctionAnnotation",
+      "to": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#scanProjectSourceFiles"
+    },
+    {
+      "from": "src/application/refactor/annotate/function_annotation.ts#llmDescriptions",
+      "to": "src/infrastructure/llm_focus.ts#callChat"
+    },
+    {
+      "from": "src/application/refactor/annotate/function_annotation.ts#planFunctionAnnotation",
+      "to": "src/infrastructure/llm_focus.ts#loadLlmConfig"
+    }
+  ],
+  "removed": []
+}

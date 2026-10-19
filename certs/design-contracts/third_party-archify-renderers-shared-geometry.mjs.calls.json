@@ -1,0 +1,536 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— third_party/archify/renderers/shared/geometry.mjs（**实际全量 + 设计意图增量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T11:04:53.407Z",
+    "note": "★ calls = 实际全量 ∪ 带 why 的（dep 加的）· removed = 原样保留（dep 删的）"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls 里\"实际没有\"的会红（= 该接线）",
+  "calls": [
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#cleanEndpointSideProblems",
+      "to": "third_party/archify/renderers/shared/diagnostics.mjs#recordDiagnostic"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#cleanFlowProblems",
+      "to": "third_party/archify/renderers/shared/diagnostics.mjs#recordDiagnostic"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#cleanCrossingProblems",
+      "to": "third_party/archify/renderers/shared/diagnostics.mjs#recordDiagnostic"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#cleanAmbiguousCorridorProblems",
+      "to": "third_party/archify/renderers/shared/diagnostics.mjs#recordDiagnostic"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#cleanBorderRunProblems",
+      "to": "third_party/archify/renderers/shared/diagnostics.mjs#recordDiagnostic"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#cleanRouteRhythmProblems",
+      "to": "third_party/archify/renderers/shared/diagnostics.mjs#recordDiagnostic"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#cleanLabelRouteClearanceProblems",
+      "to": "third_party/archify/renderers/shared/diagnostics.mjs#recordDiagnostic"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#automaticPortSpread",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#anchor"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#collectLabelRouteClearance",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#collectLabelRouteClearance",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#cleanEndpointSideProblems",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#cleanFlowProblems",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#forwardCollinearAnalysisSegments",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#sourceSegmentIndexAtPoint",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#authoredAnalysisSegments",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#cleanCrossingProblems",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#collectAmbiguousCorridors",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#collectBorderRuns",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#collectBorderRuns",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#collectBorderRuns",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#routeBudgetMetrics",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#collectRouteRhythmIssues",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#collectEligibleRoutedRelations",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#normalizeRoutePoints",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#automaticPortSpread",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#routePointsValue",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#asArray"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#cleanCrossingProblems",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#authoredAnalysisSegments"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#automaticPortSpread",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#chosenSide"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#automaticPortSpread",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#chosenSide"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#cleanAmbiguousCorridorProblems",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#collectAmbiguousCorridors"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#cleanBorderRunProblems",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#collectBorderRuns"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#cleanAmbiguousCorridorProblems",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#collectEligibleRoutedRelations"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#cleanBorderRunProblems",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#collectEligibleRoutedRelations"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#cleanRouteRhythmProblems",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#collectEligibleRoutedRelations"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#cleanLabelRouteClearanceProblems",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#collectEligibleRoutedRelations"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#cleanLabelRouteClearanceProblems",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#collectLabelRouteClearance"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#cleanRouteRhythmProblems",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#collectRouteRhythmIssues"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#automaticPortRhythmBridge",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#collectRouteRhythmIssues"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#collectAmbiguousCorridors",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#collinearAxisOverlap"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#collectBorderRuns",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#collinearAxisOverlap"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#normalizeRoutePoints",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#collinearForward"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#pointLiesOnSegment",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#crossProduct"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#collinearForward",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#crossProduct"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#properSegmentIntersection",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#crossProduct"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#properSegmentIntersection",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#crossProduct"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#properSegmentIntersection",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#crossProduct"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#properSegmentIntersection",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#crossProduct"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#automaticPortSpread",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#defaultFromSide"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#automaticPortSpread",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#defaultToSide"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#routeHonorsEndpointSides",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#endpointSideIssue"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#routeHonorsEndpointSides",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#endpointSideIssue"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#cleanEndpointSideProblems",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#endpointSideIssue"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#cleanEndpointSideProblems",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#endpointSideIssue"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#suggestLabelObstacleFix",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#formatDelta"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#cleanLabelRouteClearanceProblems",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#formatRect"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#suggestLabelObstacleFix",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#formatRect"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#suggestLabelObstacleFix",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#formatRect"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#suggestLabelPairFix",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#formatRect"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#suggestComponentSeparation",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#formatRect"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#cleanCrossingProblems",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#forwardCollinearAnalysisSegments"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#collectBorderRuns",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#frameBorderSegments"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#rectsOverlap",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#isFinitePoint"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#segmentRectClearance",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#isFinitePoint"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#segmentRectIntersectionLength",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#isFinitePoint"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#collectLabelRouteClearance",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#isFinitePoint"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#cleanFlowProblems",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#isFinitePoint"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#cleanFlowProblems",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#isFinitePoint"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#segmentsContinueForward",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#isFinitePoint"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#pointLiesOnSegment",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#isFinitePoint"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#cleanCrossingProblems",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#isFinitePoint"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#collectBorderRuns",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#isFinitePoint"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#collectBorderRuns",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#isFinitePoint"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#normalizeRoutePoints",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#isFinitePoint"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#frameBorderSegments",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#isFinitePoint"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#frameBorderSegments",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#isFinitePoint"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#automaticPortRhythmBridge",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#isFinitePoint"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#routePointsValue",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#isFinitePoint"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#collectBorderRuns",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#mergeBorderOverlaps"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#collectLabelRouteClearance",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#normalizeRoutePoints"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#endpointSideIssue",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#normalizeRoutePoints"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#collectAmbiguousCorridors",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#normalizeRoutePoints"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#routeBudgetMetrics",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#normalizeRoutePoints"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#collectRouteRhythmIssues",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#normalizeRoutePoints"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#automaticPortRhythmBridge",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#normalizeRoutePoints"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#segmentsIntersect",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#onSegment"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#segmentsIntersect",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#onSegment"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#segmentsIntersect",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#onSegment"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#segmentsIntersect",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#onSegment"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#segmentsIntersect",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#orientation"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#segmentsIntersect",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#orientation"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#segmentsIntersect",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#orientation"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#segmentsIntersect",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#orientation"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#segmentIntersectsRect",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#pointInBox"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#sourceSegmentIndexAtPoint",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#pointLiesOnSegment"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#segmentRectClearance",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#pointRectDistance"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#segmentRectClearance",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#pointRectDistance"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#segmentRectClearance",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#pointSegmentDistance"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#roundedPath",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#polylinePath"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#cleanCrossingProblems",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#properSegmentIntersection"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#cleanCrossingProblems",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#qualityProfileForGate"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#cleanAmbiguousCorridorProblems",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#qualityProfileForGate"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#cleanBorderRunProblems",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#qualityProfileForGate"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#cleanRouteRhythmProblems",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#qualityProfileForGate"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#cleanLabelRouteClearanceProblems",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#qualityProfileForGate"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#collectLabelRouteClearance",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#relationshipIdentity"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#collectLabelRouteClearance",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#relationshipIdentity"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#cleanEndpointSideProblems",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#relationshipSubject"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#cleanFlowProblems",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#relationshipSubject"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#cleanCrossingProblems",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#relationshipSubject"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#cleanCrossingProblems",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#relationshipSubject"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#cleanAmbiguousCorridorProblems",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#relationshipSubject"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#cleanAmbiguousCorridorProblems",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#relationshipSubject"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#cleanBorderRunProblems",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#relationshipSubject"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#cleanRouteRhythmProblems",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#relationshipSubject"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#cleanLabelRouteClearanceProblems",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#relationshipSubject"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#cleanLabelRouteClearanceProblems",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#relationshipSubject"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#automaticPortRhythmBridge",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#routeHonorsEndpointSides"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#collectLabelRouteClearance",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#sameRelationship"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#segmentRectClearance",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#segmentIntersectsRect"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#cleanFlowProblems",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#segmentIntersectsRect"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#routeBudgetMetrics",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#segmentPosition"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#collectRouteRhythmIssues",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#segmentPosition"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#collectLabelRouteClearance",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#segmentRectClearance"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#collectLabelRouteClearance",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#segmentRectIntersectionLength"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#forwardCollinearAnalysisSegments",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#segmentsContinueForward"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#segmentIntersectsRect",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#segmentsIntersect"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#segmentIntersectsRect",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#segmentsIntersect"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#segmentIntersectsRect",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#segmentsIntersect"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#segmentIntersectsRect",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#segmentsIntersect"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#cleanCrossingProblems",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#sourceSegmentIndexAtPoint"
+    },
+    {
+      "from": "third_party/archify/renderers/shared/geometry.mjs#cleanCrossingProblems",
+      "to": "third_party/archify/renderers/shared/geometry.mjs#sourceSegmentIndexAtPoint"
+    }
+  ],
+  "removed": []
+}

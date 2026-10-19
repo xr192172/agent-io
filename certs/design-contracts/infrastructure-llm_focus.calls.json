@@ -1,0 +1,80 @@
+{
+  "//": "★★★ 设计侧契约（结构级·调用）—— src/infrastructure/llm_focus.ts（**实际全量 + 设计意图增量**）",
+  "//forked_from": {
+    "db": ".agent-io\\cache.db",
+    "at": "2026-10-18T11:04:53.444Z",
+    "note": "★ calls = 实际全量 ∪ 带 why 的（dep 加的）· removed = 原样保留（dep 删的）"
+  },
+  "//how": "对拍用 scripts/contract-calls.mjs；calls 里\"实际没有\"的会红（= 该接线）",
+  "calls": [
+    {
+      "from": "src/infrastructure/llm_focus.ts#loadAgentConfig",
+      "to": "src/infrastructure/llm_agnes.ts#agnesApiBaseUrl"
+    },
+    {
+      "from": "src/infrastructure/llm_focus.ts#pickKeyNodes",
+      "to": "src/infrastructure/llm_focus.ts#callChat"
+    },
+    {
+      "from": "src/infrastructure/llm_focus.ts#configFileReadPath",
+      "to": "src/infrastructure/llm_focus.ts#configFilePath"
+    },
+    {
+      "from": "src/infrastructure/llm_focus.ts#loadAgentConfig",
+      "to": "src/infrastructure/llm_focus.ts#configFileReadPath"
+    },
+    {
+      "from": "src/infrastructure/llm_focus.ts#loadLlmConfig",
+      "to": "src/infrastructure/llm_focus.ts#configFileReadPath"
+    },
+    {
+      "from": "src/infrastructure/llm_focus.ts#loadExplainConfig",
+      "to": "src/infrastructure/llm_focus.ts#configFileReadPath"
+    },
+    {
+      "from": "src/infrastructure/llm_focus.ts#configFilePath",
+      "to": "src/infrastructure/llm_focus.ts#getConfigHome"
+    },
+    {
+      "from": "src/infrastructure/llm_focus.ts#pickKeyNodes",
+      "to": "src/infrastructure/llm_focus.ts#heuristicFocus"
+    },
+    {
+      "from": "src/infrastructure/llm_focus.ts#pickKeyNodes",
+      "to": "src/infrastructure/llm_focus.ts#heuristicFocus"
+    },
+    {
+      "from": "src/infrastructure/llm_focus.ts#pickKeyNodes",
+      "to": "src/infrastructure/llm_focus.ts#heuristicFocus"
+    },
+    {
+      "from": "src/infrastructure/llm_focus.ts#loadLlmConfig",
+      "to": "src/infrastructure/llm_focus.ts#loadAgentConfig"
+    },
+    {
+      "from": "src/infrastructure/llm_focus.ts#callChat",
+      "to": "src/infrastructure/llm_gateway.ts#chatViaGateway"
+    },
+    {
+      "from": "src/infrastructure/llm_focus.ts#loadAgentConfig",
+      "to": "src/infrastructure/llm_gateway.ts#ensureSeededFromEnv"
+    },
+    {
+      "from": "src/infrastructure/llm_focus.ts#loadExplainConfig",
+      "to": "src/infrastructure/llm_gateway.ts#ensureSeededFromEnv"
+    },
+    {
+      "from": "src/infrastructure/llm_focus.ts#loadAgentConfig",
+      "to": "src/infrastructure/llm_gateway.ts#firstUsableProvider"
+    },
+    {
+      "from": "src/infrastructure/llm_focus.ts#loadExplainConfig",
+      "to": "src/infrastructure/llm_gateway.ts#firstUsableProvider"
+    },
+    {
+      "from": "src/infrastructure/llm_focus.ts#callChat",
+      "to": "src/infrastructure/llm_gateway.ts#hasEnabledProvider"
+    }
+  ],
+  "removed": []
+}
