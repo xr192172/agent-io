@@ -1212,3 +1212,60 @@ TS 报错时 `dist/` 里留下了语法错的 `index.js` ⇒ **连编辑工具�
 | `gen-db` | 设计 DSL → 设计 DB | ✅ |
 | `rewrite` | ⑥ 设计 DB → 源码 | ✅ 需 `apply=true` |
 | `diff` | 节点级 diff（+/-/~） | ❌ |
+
+---
+
+## 2026-10-19 深夜（二十）· 设计链 6 个脚本：4 个搬进工具，2 个删除
+
+### 1. 最终处置
+
+| 脚本 | 处置 | 理由 |
+|---|---|---|
+| `design-line.mjs` | → `action=report` | 纯读，最好搬 |
+| `gen-design-db.mjs` | → `action=gen-db` | 读 DSL + cache.db，写生成物；输出逐字相同 |
+| `rewrite.mjs` | → `action=rewrite` | 编排只有四步；判据已先在 src |
+| `design-diff.mjs` | → `action=diff` | 节点级 id 列表是它独有的 |
+| `fork-design.mjs` | ★ **删除** | 三步全废，且第③步会毁 design-db |
+| `sync.mjs` | ★ **删除** | `--apply` 绕过 `edit_dsl` 的全部闸 |
+
+### 2. ★ `fork-design` 为什么该删（不是搬）
+
+它的三步分别被替代，而第③步**有害**：
+
+```
+③ 调用 fork：写 certs/design-db/<a-b>.calls.json 的 {calls, removed}
+   而 gen-design-db 写同一批文件的 {path, symbols, imports, calls, requirements}
+   ⇒ 同名同目录、格式不同 ⇒ 跑一次就把 366 份覆盖成"只剩 calls"
+```
+
+**证据**：现有 366 份里「有 `removed` 字段的 = 0」「有 `symbols` 的 = 343」
+⇒ ③ **从来没跑过**（跑了就会留下 `removed`，且 `symbols` 会消失）。
+
+### 3. ★ `sync` 为什么该删（比上面更严重）
+
+```js
+const { updateFeature } = await import(dist/.../update_feature.js);   // 直接调底层
+await updateFeature({ feature, agent: 'sync-script', operations: [...] });
+```
+
+**没有 `reason`、没有 `evidence`、不过 T20、不过 L4** —— 静默删设计节点，无审计、无理由。
+`edit_dsl` 上那三道闸（变更原因 / 证据可回溯 / 先取事实）在这条路径上**全部失效**。
+
+而它的读数部分（待补/待清）已被 `action=diff` 覆盖，且 diff 是**全量**（它只比 `src/`）。
+
+### 4. 留下的缺口（如实记录）
+
+> **「批量删孤儿节点」现在没有安全的一键路径** —— 只能逐条走 `edit_dsl`（带 reason + evidence）。
+
+★ 这是**有意的**：删设计节点是危险动作，它就该有理由、有证据、有审计。
+要恢复一键能力，应该**做一个走 `edit_dsl` 的工具**，而不是绕过它调 `updateFeature`。
+
+### 5. 这一轮的收尾数
+
+```
+scripts/*.mjs        58 → 49（9 个脚本消失）
+design_line          4 个 action（report / gen-db / rewrite / diff）
+工具面               65
+门                   tsc 0 · calls 10/10 · design:check 10/10 · mutate 636 / 0 存活
+备份                 _labs/dsl.backup-20261019-224322.json（md5 0da15f80，623 节点 / 45 decision）
+```
