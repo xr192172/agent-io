@@ -6877,7 +6877,72 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "decision": {
+          "summary": "**[B] 契约的受控术语表 + 链的接口的唯一住处**：字段级词表 `B_TERMS`（每词给 `kind` / `type` / 规范 `meaning`，`debt: true` = 现状与定义不符、拆清前不许新增使用者）、`Touched`（一次调用\"动了哪些对象\"的锚点契约，只在**真落盘**时给写类字段）、`withTouched`（**唯一构造点** —— 包一层，让\"某个 return 漏加 touched\"在结构上不可能）、以及**工具级**例外表 `B_TOUCHED_EXEMPT`（回答\"这个 [B] 为什么不该给 touched\"，三类：分派器 / 纯计算 / 无根）。`B_TERMS_DEBT` 是**派生计数**（棘轮：只许减不许增）。★ 它**不做**：不做命名普查/量具（那是 `scripts/measure_b_contract.mjs`，直读本文件的 AST）；不判\"某个 [B] 到底给没给 touched\"（量具的活）；不落盘、不读盘、无 IO；不定义 DSL 顶层（那是 `types.ts`）；`retired` 必须是**结构字段**，不许用散文里的\"已退役\"三字当判据（2026-10-06 实测过这个假阳性）。",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/b_terms.ts",
+              "symbol": "withTouched",
+              "why": "`touched` 的唯一构造点；多出口的 [B] 全靠它包一层，漏加在结构上不可能"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/b_terms.ts",
+              "symbol": "B_TERMS",
+              "why": "字段级词表的唯一住处（新写 [B] 的字段名从这里选；`contract_page` / `capability_map` 都读它）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/b_terms.ts",
+              "symbol": "B_TOUCHED_EXEMPT",
+              "why": "工具级豁免表的唯一数据源（量具读它区分\"已登记例外\"与\"该给未给\"）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/b_terms.ts",
+              "symbol": "B_TERMS_DEBT",
+              "why": "债务棘轮的唯一读数（只许减不许增）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/b_terms.ts",
+              "symbol": "Touched",
+              "why": "产物端锚点契约本体；链的接法表直接从它派生 `AnchorKey`"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/domain/b_terms.ts",
+                "check": "B_TERMS_DEBT 必须是派生值，不是手写数字"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/b_terms.ts'), 'utf8'); return /export const B_TERMS_DEBT = Object\\.values\\(B_TERMS\\)\\.filter\\(\\(t\\) => t\\.debt\\)\\.length;/.test(s) && !/B_TERMS_DEBT = \\d+/.test(s); })()",
+              "why": "棘轮的分母必须是**现算的**：手写数字会在删/加词条时静默失真（\"只许减不许增\"就没人守得住）。这条只读源码、判表达式形态，不冒充运行期数值。"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/domain/b_terms.ts",
+                "check": "Touched 无 read_files；withTouched 只做浅拷贝"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/b_terms.ts'), 'utf8'); const m = /^export interface Touched \\{[\\s\\S]*?^\\}/m.exec(s); if (!m) return false; if (/\\bread_files\\?/.test(m[0])) return false; const fn = /export function withTouched<T extends object>\\([\\s\\S]*?\\n\\}/.exec(s); if (!fn) return false; return /return \\{ \\.\\.\\.product, touched \\};/.test(fn[0]) && !/product\\.\\w+ =/.test(fn[0]); })()",
+              "why": "`read_files` 被撤出这件事只有**类型**能守住（散文写了不算）；而 `withTouched` 必须是纯浅拷贝 —— 一旦它开始改 `product`，所有调用方的产物就会被静默改写。"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/domain/b_terms.ts",
+                "check": "retired 是结构字段（三档），不是散文判据"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/b_terms.ts'), 'utf8'); const m = /^export interface BTerm \\{[\\s\\S]*?^\\}/m.exec(s); if (!m) return false; return /retired\\?: 'product' \\| 'input' \\| 'both';/.test(m[0]) && /read_files: \\{[\\s\\S]*?retired: 'product',/.test(s); })()",
+              "why": "2026-10-06 的假阳性就出在\"拿文本当行为\"（`file` 词条的注释提到\"已退役\"⇒ 被判成已退役）。判据只能落在**结构字段**上：`BTerm.retired` 三档、且 `read_files` 真的用它退役。"
+            }
+          ],
+          "acceptance": "`withTouched(product, touched)` 返回 `{ ...product, touched }` —— 浅拷贝、不修改入参 `product`；`Touched` 里**没有** `read_files`（已于 2026-10-05 撤出，剪贴板不占链的接口）；`B_TERMS_DEBT` 由 `Object.values(B_TERMS).filter(t => t.debt).length` **现算**，不是手写常量；`BTerm.retired` 只允许 `\"product\" | \"input\" | \"both\"` 三档且 `read_files` 词条确实以 `retired: \"product\"` 退役，而不是靠 `meaning` 里写\"已退役\"来判断；`B_TOUCHED_EXEMPT` 的键是 **工具名**、`B_TERMS` 的键是**字段名**，两张表两个命名空间。",
+          "updated_at": "2026-10-19T01:20:17.330Z",
+          "agent": "design-filler"
+        }
       },
       {
         "id": "file_src_domain_canvas_note_ts",
@@ -6909,7 +6974,69 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "decision": {
+          "summary": "**链的接法表（上游产物 → 下游入参）的唯一住处**：`CHAIN_EDGES`（**只放真跑过的** `verified` 边）/ `CHAIN_EDGES_PENDING`（文档写了但从没真跑过 —— 单列一张表，让\"没验\"在读数里看得见）、`chainExprOf`（**全仓唯一**生成\"选一个\"的表达式 `touched.<key>` / `touched.<key>[i]`）、`applyChainEdge`（**执行一次接续**：不替调用方选、不静默降级）、`CHAINS`（链 = 一等公民）+ `hopsOf`（逐段只给 `strong` / `scope-only` 两档）+ `SCOPE_PATHS`（作用域锚点必须从\"对象交接\"判定里剔除，否则恒真）、`evidenceLabel`（`verified` ⇒ `ran` 的**唯一呈现词**）、`deriveObjectChains`（从已验证对象边枚举**候选**链）。★ 它**不做**：不判\"这条链到底通不通\"（那要知道下游要不要对象入参 = `ToolDef`，住 `application` 层，本文件在 `domain` **不许反向依赖**）；不执行任何工具、不读盘不落盘、不写 DSL；**不把 pending 写成 verified**；不按工具展开通配边（那是零信息量）。",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/chain_wiring.ts",
+              "symbol": "applyChainEdge",
+              "why": "\"把上一步的值放进下一步入参\"的唯一纯函数入口（`next_hop_args` / `invokeTool` 都走它）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/chain_wiring.ts",
+              "symbol": "chainExprOf",
+              "why": "\"选一个\"的表达式只许由它生成（别处手抄 = 第二份副本）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/chain_wiring.ts",
+              "symbol": "hopsOf",
+              "why": "逐段判定的唯一实现；`capability_map` / `first_hop_args` 读它"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/domain/chain_wiring.ts",
+                "check": "verified / pending 两张表不许混"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/chain_wiring.ts'), 'utf8'); const v = /export const CHAIN_EDGES: readonly ChainEdge\\[\\] = \\[[\\s\\S]*?\\n\\];/.exec(s); const p = /export const CHAIN_EDGES_PENDING: readonly ChainEdge\\[\\] = \\[[\\s\\S]*?\\n\\];/.exec(s); if (!v || !p) return false; const count = (t, re) => (t.match(re) || []).length; return count(v[0], /evidence: '/g) === count(v[0], /evidence: 'verified'/g) && count(p[0], /evidence: '/g) === count(p[0], /evidence: 'pending'/g) && count(v[0], /evidence: '/g) > 0 && count(p[0], /evidence: '/g) > 0; })()",
+              "why": "本表的第一条纪律是\"**不许把没跑过的写成跑过**\"。这条判的是**结构分离**：已验证表里一条 pending 都不许有，待验表里一条 verified 都不许有。★ 它不判\"边对不对\"（那要真跑，不是 run 能干的）。"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/domain/chain_wiring.ts",
+                "check": "pick 不替调用方选、不静默降级"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/chain_wiring.ts'), 'utf8'); const a = s.indexOf('export function applyChainEdge'); const b = s.indexOf('export interface Chain {'); if (a < 0 || b < 0 || b <= a) return false; const f = s.slice(a, b); return /const expr = chainExprOf\\(edge\\);/.test(f) && /const i = opts\\?\\.pick;/.test(f) && /if \\(i === undefined\\) \\{[\\s\\S]*?if \\(xs\\.length === 1\\) return \\{ ok: true/.test(f) && /\\*\\*要你给下标\\*\\*/.test(f) && !/pick \\?\\? 0/.test(f) && !/opts\\?\\.pick \\|\\| 0/.test(f) && /candidates: xs/.test(f); })()",
+              "why": "★ 这条只能钉**接线**：`run` 的求值域只有 `input / root / validateDSL / fs / path`，**不加载业务函数**（`applyChainEdge` 不在池子里）⇒ 无法真调它看它抛不抛。这里断言的是：表达式由 `chainExprOf` 生成、`pick` 缺省时先走\"候选=1 直接取\"、否则 `ok:false` 并把 `candidates` 列全、**没有任何 `?? 0` 的兜底**。真实返回值形状由函数本体 + `next_hop_args` 的证覆盖；本条不冒充行为证。"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/domain/chain_wiring.ts",
+                "check": "hopsOf 两档且剔除作用域边"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/chain_wiring.ts'), 'utf8'); if (!/export const SCOPE_PATHS = new Set\\(\\['project_dir', 'feature'\\]\\);/.test(s)) return false; const hop = /export function hopsOf[\\s\\S]*?\\n\\}/.exec(s); if (!hop) return false; return /objectEdges = all\\.filter\\(\\(e\\) => !SCOPE_PATHS\\.has\\(e\\.toPath\\)\\)/.test(hop[0]) && /scopeEdges = all\\.filter\\(\\(e\\) => SCOPE_PATHS\\.has\\(e\\.toPath\\)\\)/.test(hop[0]) && /kind: objectEdges\\.length > 0 \\? 'strong' : 'scope-only'/.test(hop[0]); })()",
+              "why": "2026-10-06 的实测教训：不剔作用域边 ⇒ 判定**恒真**（任何一段都\"有边\"），机器给 `design-import` 判\"每段都有已验证边\"，而同日真跑证明它断在第 2 段。这条钉住\"对象边 / 作用域边\"的分流仍在一处。"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/domain/chain_wiring.ts",
+                "check": "evidenceLabel：改词不改数据"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/chain_wiring.ts'), 'utf8'); const a = s.indexOf('export function evidenceLabel'); const b = s.indexOf('export function renderChains'); if (a < 0 || b < 0 || b <= a) return false; const f = s.slice(a, b); return /return e === 'verified' \\? 'ran' : 'pending';/.test(f) && /verified' \\| 'pending'/.test(s); })()",
+              "why": "`[verified]` 会被读成\"现在能用\"，而 `design-import` 正是 `verified` 却真跑断链 ⇒ 用户裁定\"**改词、不改数据**\"：域里仍是枚举，给人读时统一成 `[ran]`。这条判映射只有一处、且域取值没被改掉。"
+            }
+          ],
+          "acceptance": "`CHAIN_EDGES` 里**每一条**都是 `evidence: \"verified\"`，`CHAIN_EDGES_PENDING` 里每一条都显式 `evidence: \"pending\"`（两张表不许混）；`applyChainEdge` 在 `cardinality:\"pick\"` 且候选 >1 而调用方没给 `pick` 时 ⇒ `ok:false` 且 `candidates` 列全（**不默认取第 0 个**），候选只有 1 个时 ⇒ `ok:true`（无需选）；字段缺失 / 空数组 / `single` 却给多元素 ⇒ `ok:false` + 人话 `reason`，**绝不返回 undefined**；`hopsOf` 的 `objectEdges` 一律排除 `SCOPE_PATHS`（`project_dir` / `feature`），`kind` 只能是 `strong` / `scope-only`；`evidenceLabel(\"verified\") === \"ran\"`、`evidenceLabel(\"pending\") === \"pending\"`（改**词**、不改域取值）。",
+          "updated_at": "2026-10-19T01:20:17.362Z",
+          "agent": "design-filler"
+        }
       },
       {
         "id": "file_src_domain_contract_ts",
@@ -7220,7 +7347,51 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "decision": {
+          "summary": "**L3 思维导图的类型骨架**：`MindMapKind`（11 档节点类型：root / feature / community / file / note / stepgroup / step / shared / proposal / brick / capability）、`MindMapNode`（`meta` 里承载产线视图的全部投影：`inputs` / `outputs` / `filePins` / `flowEdges` / `fileEdges` / `gaps` / `narration` / `apis` / `storyboard` / `pending`）、teach 模式的 `TeachStep` / `TeachPin` / `TeachFlowEdge` / `TeachGap`（缺口四档）、叠加层 `FeatureDep` / `SharedCapability` / `ProposalFeature`，以及顶层 `MindMap`（`mode` llm|rule、`view` structure|teach、`deps` / `flows` / `foundations` / `shared` / 两个重建缓存 / `proposals` / `pipeline_like`）。★ 它**不做**：不生成导图（`derive_mind_map.ts` 在 `application` 层）；不读盘、不调 LLM、不聚类、不投影针脚（针脚是**契约投影自 actual_apis 签名**，采集侧的事）；不判 `storyboard` 何时为 `pending`（只声明字段，`pending` 绝不冒充成品）；**文件内无任何运行期逻辑**。",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/mindmap.ts",
+              "symbol": "MindMap",
+              "why": "L3 顶层的唯一形状；`overview` / `serve` / `derive_mind_map` 都从这里取类型"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/mindmap.ts",
+              "symbol": "MindMapNode",
+              "why": "节点形状 + `meta` 投影面的唯一住处（产线视图全部挂在这里）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/mindmap.ts",
+              "symbol": "TeachGap",
+              "why": "产线缺口的唯一形状（四档 kind 决定前端怎么提示\"管线可能漏了一步\"）"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/domain/mindmap.ts",
+                "check": "MindMapKind 恰好 11 档"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/mindmap.ts'), 'utf8'); const m = /^export type MindMapKind =[\\s\\S]*?;$/m.exec(s); if (!m) return false; const kinds = [...m[0].matchAll(/\\|\\s*'([a-z_]+)'/g)].map((x) => x[1]); const want = ['root', 'feature', 'community', 'file', 'note', 'stepgroup', 'step', 'shared', 'proposal', 'brick', 'capability']; return kinds.length === want.length && want.every((k) => kinds.includes(k)); })()",
+              "why": "纯类型文件的符号判定在旧 dist 里会假红（只认 function/method），本批实测 T258 已去掉 kind 过滤 ⇒ `symbol-exists` 可用；但\"**恰好 11 档、一档不多一档不少**\"这个**集合语义** symbol-exists 表达不了 ⇒ 只能读源码锚定行首 `export type MindMapKind =` 的块。多一档 = 前端渲染缺失；少一档 = 该有的分支消失。"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/domain/mindmap.ts",
+                "check": "meta 投影面 / 值域 / 纯类型"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/mindmap.ts'), 'utf8'); const keys = ['inputs?: TeachPin[];', 'outputs?: TeachPin[];', 'filePins?:', 'flowEdges?: TeachFlowEdge[];', 'fileEdges?: TeachFlowEdge[];', 'gaps?: TeachGap[];', 'narration?: NarrScene[];', 'apis?: string[];', \"storyboard?: 'done' | 'pending';\", 'pending?: boolean;']; if (!keys.every((k) => s.includes(k))) return false; if (!/kind: 'in_missing' \\| 'out_missing' \\| 'in_no_source' \\| 'out_no_consumer';/.test(s)) return false; if (!/mode: 'llm' \\| 'rule';/.test(s) || !/view\\?: 'structure' \\| 'teach';/.test(s)) return false; if (/from 'node:/.test(s)) return false; if (!/import type \\{ NarrScene \\} from '\\.\\/narration\\.js';/.test(s)) return false; return !/^export (function|const|let|var) /m.test(s); })()",
+              "why": "钉三件事：① `meta` 的十个投影键仍在（少一个前端就少一块视图，且是**静默**的）；② 三个值域（缺口四档 / mode / view）没被放宽；③ 本文件仍是**纯类型**（无 `node:` 导入、无运行期导出），与 narration 只做 type-only 互引（不造运行期环）。"
+            }
+          ],
+          "acceptance": "`MindMapKind` 仍是**恰好 11 档**且含 `brick` 与 `capability`；`MindMapNode.meta` 仍可选且带 `inputs` / `outputs` / `filePins` / `flowEdges` / `fileEdges` / `gaps` / `narration` / `apis` / `storyboard`（`done|pending`）/ `pending` 十个键；`TeachGap.kind` 恰四档 `in_missing | out_missing | in_no_source | out_no_consumer`；顶层 `MindMap` 的 `mode` 只 `llm | rule`、`view?` 只 `structure | teach`、`proposals?` / `pipeline_like?` 保持可选；`narration` 只以 **type-only** 方式从 `./narration.js` 取 `NarrScene`，文件里**没有函数实现**、**没有 `node:` 导入**。",
+          "updated_at": "2026-10-19T01:20:17.396Z",
+          "agent": "design-filler"
+        }
       },
       {
         "id": "file_src_domain_narration_ts",
@@ -7236,7 +7407,45 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "decision": {
+          "summary": "**叙事分镜纯函数（manim 式三段：进料口 → 工序 → 出料口）**：`humanOf` 把语言类型名翻成人话（容器类型走词表、其余**回退类型本身**，不丢信息）、`buildScenes` 把工序的入/出针脚 + 名/讲解 + 可选签名 build 成 `NarrScene[]` —— **facts 逐条引用真实针脚**（`名（人话，类型 X）` / `签名：…`），绝不发明签名里没有的类型或流程。两条路复用：`narrate_step`（MCP 工具）与 `derive_mind_map`（给每个工序盒挂 `meta.narration`）。★ 它**不做**：不生成/推导针脚（那是契约投影，上游的事）；不调 LLM、不做名词以外的\"人话创作\"；不读盘、不落盘、零副作用；不校验签名格式；不决定分镜该有几镜（由针脚有无决定）。",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/narration.ts",
+              "symbol": "buildScenes",
+              "why": "分镜的唯一构造器（`narrate_step` 与 `derive_mind_map` 共用，不许各拼一套）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/narration.ts",
+              "symbol": "humanOf",
+              "why": "类型名 → 人话的**唯一**词表入口（两处复用，别在调用点各写一份映射）"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/domain/narration.ts",
+                "check": "三镜顺序 + facts 来自真实针脚"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/narration.ts'), 'utf8'); const a = s.indexOf('export function buildScenes'); const b = s.indexOf('if (scenes.length === 0)'); if (a < 0 || b <= a) return false; const f = s.slice(a, b); const iIn = f.indexOf(\"title: '进料口'\"); const iMain = f.indexOf('title: title.slice(0, 10)'); const iOut = f.indexOf(\"title: '出料口'\"); return iIn >= 0 && iMain > iIn && iOut > iMain && f.includes('facts: pinFacts(inputs)') && f.includes('facts: pinFacts(outputs)') && f.includes('facts: signature ?') && f.includes('签名：'); })()",
+              "why": "★ 这条只能钉**接线与顺序**：`run` 不加载业务函数（求值域只有 `input / root / validateDSL / fs / path`）⇒ 不能真调 `buildScenes` 看它返回几镜。这里断言：进料口在工序前、出料口在工序后；两侧 facts 一律走 `pinFacts(...)`（**不许就地拼字符串**，否则\"忠实引用真实针脚\"就成了散文）；签名只进工序镜。返回值形状见 acceptance，由函数本体保证；本条不冒充行为证。"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/domain/narration.ts",
+                "check": "humanOf 兜底 + 零 IO"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/narration.ts'), 'utf8'); const a = s.indexOf('export const humanOf'); const b = s.indexOf('function pinFacts'); if (a < 0 || b <= a) return false; const f = s.slice(a, b); return /return m\\[t\\] \\?\\? t;/.test(f) && f.includes(\"string: '文本'\") && !f.includes('未知') && !/from 'node:/.test(s) && !/\\brequire\\(/.test(s); })()",
+              "why": "\"忠实\"的反面是**编造**：词表里没有的类型必须**回退类型本身**（`?? t`），一旦改成 `\"未知\"`，前端就再也看不到真实类型；同时本模块必须仍是纯函数（无 `node:` 导入 / 无 `require`），否则两条复用路都会被 IO 绑住。"
+            }
+          ],
+          "acceptance": "`buildScenes(undefined, \"标题\", \"讲解\")` ⇒ **恰好 1 镜**（工序，`facts` 为空）；给了 `inputs` ⇒ 第 1 镜是 `进料口` 且 `facts` 逐条来自 `pinFacts(inputs)`；给了 `outputs` ⇒ 最后一镜是 `出料口`；三镜顺序恒为 进料口 → 工序 → 出料口；标题被 `slice(0, 10)` 截断、空标题回退 `\"工序\"`；传了 `signature` ⇒ 工序镜 `facts === [\"签名：…\"]`；`humanOf(\"string\") === \"文本\"`、`humanOf(\"WeirdType\") === \"WeirdType\"`（**兜底不返回\"未知\"**）；整文件**零 IO**（无 `node:` 导入、只 type-only 依赖 `mindmap.js`）。",
+          "updated_at": "2026-10-19T01:20:17.429Z",
+          "agent": "design-filler"
+        }
       },
       {
         "id": "file_src_domain_overlay_ts",
@@ -7376,7 +7585,51 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "decision": {
+          "summary": "**Agent 推理演示（脚本式回放）的类型骨架**：`ReasoningSystem{version, entry, budget?, steps[], folds?}` + `ReasoningStep`（`id` / `node` / `kind` / `tokens` / `reasoning` 必填，另有真实调用树字段 `parent` / `depth` / `order` / `calls` / `round` / `args` / `result` 可选 —— 来自 Go 编译期插桩 trace）+ `ReasoningFold`（`at_step` 从 1 起、`folded` 引用 step id）+ 两个值域 `ReasoningStepKind`（think/tool/respond/fold）与 `ReasoningFoldKind`（summarize/evict）。★ 它**不做**：不执行/回放、不算 token 累积、不判何时折叠；**不做引用完整性校验**（`validateReasoning` 住 `validator.ts`：entry / step.node / folds.at_step / folded 的悬空与重复都在那里报）；不渲染（复用动画引擎的 card_fold / card_evict，属前端）；**文件内无任何运行期逻辑**。",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/reasoning.ts",
+              "symbol": "ReasoningSystem",
+              "why": "DSL 顶层 `reasoning` 字段的唯一形状（`types.ts` 只做 re-export）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/reasoning.ts",
+              "symbol": "ReasoningStep",
+              "why": "步骤形状的唯一住处；`folds.folded` 引用的就是它的 `id`"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/reasoning.ts",
+              "symbol": "ReasoningFold",
+              "why": "折叠点形状的唯一住处（`at_step` 的 1 起口径只在这里声明）"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/domain/reasoning.ts",
+                "check": "两个值域的档数"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/reasoning.ts'), 'utf8'); return /export type ReasoningStepKind = 'think' \\| 'tool' \\| 'respond' \\| 'fold';/.test(s) && /export type ReasoningFoldKind = 'summarize' \\| 'evict';/.test(s); })()",
+              "why": "两档值域是渲染器与动画引擎的分支依据：多一档前端没有对应动效、少一档该有的分支消失（且都**静默**）。这条只判联合类型本体，不判渲染。"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/domain/reasoning.ts",
+                "check": "必填/可选的边界 + 无运行期实现"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/reasoning.ts'), 'utf8'); const sys = /^export interface ReasoningSystem \\{[\\s\\S]*?^\\}/m.exec(s); const step = /^export interface ReasoningStep \\{[\\s\\S]*?^\\}/m.exec(s); if (!sys || !step) return false; const needSys = ['  version: number;', '  entry: ReasoningEntry;', '  steps: ReasoningStep[];']; const optSys = ['  budget?: ReasoningBudget;', '  folds?: ReasoningFold[];']; const needStep = ['  id: string;', '  node: string;', '  kind: ReasoningStepKind;', '  tokens: number;', '  reasoning: string;']; const optStep = ['  parent?: number;', '  depth?: number;', '  order?: number;', '  calls?: number;', '  round?: number;', '  args?: string;', '  result?: string;']; return needSys.every((k) => sys[0].includes(k)) && optSys.every((k) => sys[0].includes(k)) && needStep.every((k) => step[0].includes(k)) && optStep.every((k) => step[0].includes(k)) && !/^export (function|const|let|var) /m.test(s); })()",
+              "why": "必填/可选的分界就是\"**不编造**\"的边界：真实 trace 取不到的字段必须可省略（省略 ≠ 填假值），而 `id/node/tokens` 一旦变可选，`folds.folded` 与 token 条就没有可引用的锚。末句确认它仍是纯类型（`validateReasoning` 住 `validator.ts`，不在这儿另写一套）。"
+            }
+          ],
+          "acceptance": "`ReasoningSystem` 顶层**必填** `version` / `entry` / `steps`，`budget` / `folds` 可选；`ReasoningStep` 必填 `id` / `node` / `kind` / `tokens` / `reasoning`，且 `parent` / `depth` / `order` / `calls` / `round` / `args` / `result` 全是可选（真实 trace 字段缺了就省略，不填假值）；`ReasoningStepKind` **恰四档**、`ReasoningFoldKind` **恰两档**；`ReasoningFold.folded` 是 `string[]`（引用 step id）；文件里**没有** `export function` / `export const` 实现，也没有 `node:` 导入。",
+          "updated_at": "2026-10-19T01:20:17.459Z",
+          "agent": "design-filler"
+        }
       },
       {
         "id": "file_src_domain_scope_ts",
@@ -58746,11 +58999,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-19T01:14:40.967Z",
+    "saved_at": "2026-10-19T01:21:13.711Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792314946341,
-    "age": 57534626
+    "age": 57927370
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -60510,9 +60763,9 @@
       "id": "todo_symbol-exists-cannot-type-only",
       "summary": "symbol-exists 只认 function/method —— 对【纯类型文件】（types.ts / contract.ts 那种全是 type/interface 的）会假红：实测 parseFileSymbols(types.ts) 只给 interface:DesignDSL，contract.ts 给 0 个 ⇒ 只能改用「行首锚定 export interface 块」的 run 冒充。★ 这是 D8（kind 表达力缺口）的活实例；2026-10-19 子代理补 domain 设计时发现",
       "expectations": [],
-      "state": "candidate",
+      "state": "void",
       "owner": null
     }
   ],
-  "_dsl_rev": 32
+  "_dsl_rev": 37
 }
