@@ -17753,7 +17753,76 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "decision": {
+          "summary": "三方判定的冲突按【维度】成立：命名维度（label/description/status）· 结构维度（lines/symbols/apis/deps）· 符号维度（signature）。★ 同一维度两边都改且不同 ⇒ conflict；不同维度各自改 ⇒ both_moved（两条独立待裁项，不是冲突）。",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/refactor/diff_views/diff_views.ts",
+              "symbol": "metaChanged",
+              "why": "命名维度的判据必须独立成函数（否则又会被混回 fileChanged）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/refactor/diff_views/diff_views.ts",
+              "symbol": "structChanged",
+              "why": "结构维度的判据必须独立成函数"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/application/refactor/diff_views/diff_views.ts",
+              "must": [
+                "both_moved"
+              ],
+              "why": "不同维度各自改要有独立的分类（不是 conflict）"
+            }
+          ],
+          "rationale": "实测（2026-10-19）：src/domain/expectation.ts —— base 206 行 / design 206 行（只改了 label「期望（判据的类型定义处）」）/ live 281 行。设计改命名、实际改内容，是两个维度。而现行 fileChanged 把 label 与 lines 混进同一个布尔 ⇒ desChanged=true 且 livChanged=true ⇒ 走进 conflict 分支。三条冲突全是这个形状。这与 design-diff 的 COMPARABLE 表（按 kind 决定可比性）是同一个抽象，只是没推广到 merge。",
+          "consequences": "① summary 多一个 both_moved 字段，ThreeWayState 多一个值；② conflict 数会下降（更准），但 both_moved 会增加；③ 读端若按 conflict 分支处理，要同时看 both_moved。★ 代价是 fileChanged 被拆成 metaChanged + structChanged，四处调用点要跟。",
+          "acceptance": "对同一份 feature 数据，diff_views 与 merge.mjs 给出同一份分类（conflict / design_only / live_only / both_moved 数量一致）；expectation.ts 那条不再出现在 conflict 里。",
+          "status": "active",
+          "updated_at": "2026-10-19T12:41:32.663Z",
+          "author": "llm",
+          "agent": "workbuddy"
+        },
+        "task": {
+          "id": "file_src_application_refactor_diff_views_diff_views_ts",
+          "summary": "三方判定的冲突按【维度】成立：命名维度（label/description/status）· 结构维度（lines/symbols/apis/deps）· 符号维度（signature）。★ 同一维度两边都改且不同 ⇒ conflict；不同维度各自改 ⇒ both_moved（两条独立待裁项，不是冲突）。",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/refactor/diff_views/diff_views.ts",
+              "symbol": "metaChanged",
+              "why": "命名维度的判据必须独立成函数（否则又会被混回 fileChanged）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/refactor/diff_views/diff_views.ts",
+              "symbol": "structChanged",
+              "why": "结构维度的判据必须独立成函数"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/application/refactor/diff_views/diff_views.ts",
+              "must": [
+                "both_moved"
+              ],
+              "why": "不同维度各自改要有独立的分类（不是 conflict）"
+            }
+          ],
+          "state": "done",
+          "owner": "workbuddy",
+          "claimed_at": "2026-10-19T12:42:27.163Z",
+          "evidence": [
+            {
+              "kind": "expectations",
+              "at": "2026-10-19T12:46:32.071Z",
+              "verdict": "pass"
+            }
+          ]
+        },
+        "status": "done"
       },
       {
         "id": "file_src_application_refactor_edit_apply_writes_ts",
@@ -79587,7 +79656,8 @@
           }
         ],
         "lines": 991,
-        "layer": "core"
+        "layer": "core",
+        "status": "done"
       },
       {
         "id": "file_src_application_refactor_edit_apply_writes_ts",
@@ -94000,11 +94070,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-19T10:39:31.692Z",
+    "saved_at": "2026-10-19T12:46:32.104Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792406363292,
-    "age": 8400
+    "scanRev": 1792413991689,
+    "age": 415
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -95785,5 +95855,5 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 477
+  "_dsl_rev": 479
 }

@@ -100,7 +100,9 @@ export interface EdgeDiff {
  * - deleted_from_live：实现删除、设计仍在（结构塌方）
  * - design_only：仅设计改动（意图增量，待同步到实现）
  * - live_only：仅实现改动（实现增量/fix，待回填设计）；含「实现新增未登记」
- * - conflict：两侧都改动且结果不一致 → 需 LLM 读 diff 裁决
+ * - conflict：两侧在【同一维度】上都改动且结果不一致 → 需 LLM 读 diff 裁决
+ * - both_moved：两侧都动了，但动的是【不同维度】（例：设计改命名、实现改结构）⇒ 两条独立待裁项，
+ *   ★ **不是冲突**（2026-10-19：实测 expectation.ts 被误判成 conflict，就是因为把两个维度混成一个布尔）
  * - converged：两侧都改动但结果一致（已收敛，可直接采用）
  * - unchanged：相对基线无变化
  */
@@ -112,6 +114,7 @@ export type ThreeWayState =
   | 'design_only'
   | 'live_only'
   | 'conflict'
+  | 'both_moved'
   | 'converged'
   | 'unchanged';
 
@@ -168,8 +171,10 @@ export interface ThreeWaySummary {
   design_only: number;
   /** 仅实现改动（实现增量/fix） */
   live_only: number;
-  /** 两侧都改动且不一致 → 需裁决 */
+  /** 两侧在【同一维度】都改动且不一致 → 需裁决 */
   conflict: number;
+  /** 两侧都动、但动的是【不同维度】→ 两条独立待裁项，不是冲突 */
+  both_moved: number;
   /** 两侧都改动但结果一致 */
   converged: number;
 }
@@ -407,7 +412,7 @@ function diffViewsCore(input: DiffViewsInput): DiffViewsResult {
   const threeWay: ThreeWayFile[] = [];
   const twSummary: ThreeWaySummary = {
     unchanged: 0, added: 0, implemented: 0, removed: 0,
-    deleted_from_live: 0, design_only: 0, live_only: 0, conflict: 0, converged: 0,
+    deleted_from_live: 0, design_only: 0, live_only: 0, conflict: 0, both_moved: 0, converged: 0,
   };
   if (baseline) {
     // 视图整体缺失时的退化语义：
@@ -420,12 +425,21 @@ function diffViewsCore(input: DiffViewsInput): DiffViewsResult {
       const des = designByPath.get(path);
       const liv = liveByPath.get(path);
 
+      // ★★★ 2026-10-19：把"谁动了"拆成两个**正交维度**，冲突才有意义。
+      //   旧写法只有一个布尔 ⇒「设计改命名」+「实现改行数」= 都 changed ⇒ 直接落 conflict。
+      const desMeta = metaChanged(base, des);
+      const desStruct = structChanged(base, des, baseline?.source_root, design?.source_root);
+      const livMeta = metaChanged(base, liv);
+      const livStruct = structChanged(base, liv, baseline?.source_root, live?.source_root);
+
       const desChanged =
-        fileChanged(base, des, baseline?.source_root, design?.source_root) ||
+        desMeta ||
+        desStruct ||
         fileDecisionChanged(baseline, design, path, base?.id, des?.id) ||
         symbolsDecisionChanged(base, des);
       const livChanged =
-        fileChanged(base, liv, baseline?.source_root, live?.source_root) ||
+        livMeta ||
+        livStruct ||
         fileDecisionChanged(baseline, live, path, base?.id, liv?.id) ||
         symbolsDecisionChanged(base, liv);
       // desEqLiv：设计 vs 实现语义一致 → converged 非 conflict。
@@ -456,7 +470,11 @@ function diffViewsCore(input: DiffViewsInput): DiffViewsResult {
         else if (desChanged && !livChanged) state = 'design_only';
         else if (!desChanged && livChanged) state = 'live_only';
         else if (desEqLiv) state = 'converged';
-        else state = 'conflict';
+        // ★★★ 2026-10-19：冲突只在【同一维度】两边都改时成立。
+        //   不同维度各自改（设计改命名 / 实现改结构）⇒ both_moved：两条独立待裁项，不是冲突。
+        //   实测 expectation.ts：design 只改了 label，live 从 206 行涨到 281 行 —— 旧逻辑判 conflict。
+        else if ((desMeta && livMeta) || (desStruct && livStruct)) state = 'conflict';
+        else state = 'both_moved';
       } else if (!base && des && !liv) {
         state = 'added';
       } else if (!base && des && liv) {
@@ -556,7 +574,7 @@ function diffViewsCore(input: DiffViewsInput): DiffViewsResult {
       `  ─ 三方对比（基线 → 意图 / 实现）─`,
       `  意图增量（基线→设计）: ${tw.design_only} 文件设计改动 + ${tw.added} 新增未实现`,
       `  实现增量（基线→实现）: ${tw.live_only} 文件实现改动 + ${tw.implemented} 新增已实现`,
-      `  冲突待裁决: ${tw.conflict} 文件（两侧都动且不一致）`,
+      `  冲突待裁决: ${tw.conflict} 文件（同维度都改且不一致）· 另 ${tw.both_moved} 文件两侧动了不同维度（各自待裁，不算冲突）`,
       `  已收敛: ${tw.converged} 文件 · 一致未动: ${tw.unchanged} 文件 · 设计撤销 ${tw.removed} · 实现塌方 ${tw.deleted_from_live}`,
     );
   }
@@ -740,6 +758,56 @@ export function diffViews(input: DiffViewsInput): TouchedProduct<DiffViewsResult
  * 判断两个文件内容是否不同（相对比较用，非严格全等）。
  * 只比较语义相关字段：行数、层级标签、符号、API。两方都不存在视为相同。
  */
+/**
+ * `responsibility` 是**混合量**：`"核心层 · src/domain — 9 个 API（导入自 3 个模块）"`。
+ * 后面那截是派生的（符号数变了它就变）⇒ 比之前必须剥掉，否则「实现新增了一个函数」
+ * 会被误报成「设计改了职责」—— 和 `label` 上踩过的是同一个坑。
+ */
+function humanResponsibility(s: string | undefined): string {
+  return String(s ?? '')
+    .replace(/—\s*\d+\s*个\s*API.*$/u, '')
+    .replace(/（导入自[^）]*）/gu, '')
+    .trim();
+}
+
+/**
+ * ★★★ 命名维度：**人改的那一层**（层归属 / 一句话职责）。
+ *
+ * ## 为什么要与 `structChanged` 分开（2026-10-19 实测）
+ * `fileChanged` 把五样东西混成一个布尔（lines / layer / symbols / apis）。
+ * 于是「设计改了命名」+「实现改了行数」= 两边都 changed ⇒ 直接落进 `conflict` 分支。
+ * 实测 3 条冲突全是这个形状（`design_lines == baseline_lines` 而 `live_lines` 变了）。
+ *
+ * ★ 边界：`label` 在 `geometry.nodes` 上、不在 `SemanticFile` 里 ⇒ 本函数比不了 label；
+ *   它只比 SemanticFile 自身有的"人写字段"（且剥掉其中的派生部分）。
+ */
+function metaChanged(a: SemanticFile | undefined, b: SemanticFile | undefined): boolean {
+  if (a === b) return false;
+  if (!a || !b) return true;
+  return (
+    (a.layer ?? '') !== (b.layer ?? '') ||
+    humanResponsibility(a.responsibility) !== humanResponsibility(b.responsibility)
+  );
+}
+
+/**
+ * ★★★ 结构维度：**机器扫的那一层**（行数 / 符号 / API）。
+ * 它与 `metaChanged` 正交：一个改"叫什么"，一个改"长什么样"。
+ * 冲突只在**同一维度**两边都改时成立 —— 见 `ThreeWayState` 的 `both_moved` 注释。
+ */
+function structChanged(
+  a: SemanticFile | undefined,
+  b: SemanticFile | undefined,
+  aRoot?: string,
+  bRoot?: string,
+): boolean {
+  if (a === b) return false;
+  if (!a || !b) return true;
+  if (a.lines !== b.lines) return true;
+  if (diffSymbols(a.symbols ?? [], b.symbols ?? []).length > 0) return true;
+  return diffApis(mergedApis(aRoot, a.path, a.expected_apis), mergedApis(bRoot, b.path, b.expected_apis)).length > 0;
+}
+
 function fileChanged(
   a: SemanticFile | undefined,
   b: SemanticFile | undefined,
