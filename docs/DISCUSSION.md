@@ -1313,3 +1313,57 @@ release：只能 claimed → candidate
 
 ★ 这给下一步排了序：**`done` 卡可重开 > `task_plan` 写端**。
 理由：写端影响的是一块数据，重开影响的是**每一条后续改动能不能有卡**。
+
+---
+
+## 2026-10-19 深夜（二二）· `done` 可重开（`cf8e9b1f`）—— 以及门第一次先于我
+
+### 1. `t_reopen`（done → claimed）
+
+```
+guard：owner 必填（谁接手）· reason 必填（为什么重开）· CAS state=done
+```
+
+`TERMINAL_TASK_STATES` 从 `['done','void']` 改成 `['void']`（done 可迁出了）。
+★ 顺带发现：这个常量**此前零消费者**（grep 只命中定义行）—— 一直是装饰。
+
+### 2. ★ `edit_dsl` 的 op 判据原来有**三份**，而且已经漂了
+
+| 住处 | 状态 |
+|---|---|
+| `OP_SPECS` | 真判据 |
+| zod 的 `z.enum([...])` | 硬编码，**缺 `void`** ⇒ 该操作根本调不通 |
+| 两处手写文案 | 各写一份，互不一致 |
+
+漂的后果：报错只说「类型/取值不符：operations」，**不说是哪个 op**。
+
+⇒ zod 改成 `z.string()`，判据回到 `OP_SPECS` 一处（`checkOpSpec` 报错会列全合法值）。
+★ 代价：MCP 面的“可选项自动补全”没了 —— 但那份可选项本来就是第二份判据。
+
+### 3. ★★ design:check 第一次先于我发现自己漏了
+
+加完 `t_reopen` 后 **D4b 红了**：
+
+> 每条 `ready` 迁移必须有 `executor`（指向 `task_ops.ts` 里的真实函数）
+
+我漏了 ⇒ 补 `executor: "reopenTask"`；**D9**（程序自洽：有判据 fail 就不算自洽）随之转绿。
+
+**这是今天唯一一次“门比我先发现问题”。** 之前所有缺陷都是我撞出来的 —— 这次是门抓的。
+
+### 4. ★★ OQ1 的影响面比原来估计的大
+
+实测链：
+
+```
+reopen  ✓
+release ✓
+publish ✓（重翻 3 条判据）
+claim     ✗ 拒（satisfied，没活干）
+complete  ✗ 拒（candidate → done 被 OQ1 blocked）
+```
+
+⇒ **OQ1 不只挡“先做后立卡”，还挡「重开一个已经干完的活」。**
+
+当前：`handlers.ts` 的卡停在 **candidate + satisfied**，无路可走 —— 如实留在那儿等 OQ1。
+
+★ 这反过来印证了 OQ1 的优先级：它现在同时挡住**新活的追溯**和**旧活的补账**。
