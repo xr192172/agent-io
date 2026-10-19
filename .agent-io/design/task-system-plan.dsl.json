@@ -4078,7 +4078,46 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "decision": {
+          "summary": "画布批注的**写端**（`addAnnotationByTool` / `resolveAnnotation`）与读端（`listAnnotations`）：批注落在 `dsl.annotations[]`，是**人**对某个节点/整体提的意见 —— LLM 读它改设计，改完关闭。★ 为什么存在：人审回路需要一条**不改几何、不改语义**的旁路通道 —— 意见与设计结论分开存，就不必为了说一句\"这里不对\"去动节点或决策卡。★ 边界（它不做什么）：**不判批注对不对**；**不自动关闭**（`resolve` 只置 `resolved` + 时间戳，谁改的、改成什么由调用方负责）；**不触发重渲染、不发通知**；**不走审批流**（`submitApproval` / `reviewAnnotation` 住 `observe/reconcile/approval.ts`，本文件只管批注本身）；也**不做去重/合并** —— 每条批注是独立事件。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/design/dsl_ops/annotation_tools.ts",
+              "why": "动作要有落点（基线）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/annotation_tools.ts",
+              "symbol": "addAnnotationByTool",
+              "why": "批注的新增入口（写端）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/annotation_tools.ts",
+              "symbol": "resolveAnnotation",
+              "why": "批注的关闭入口（写端另一半）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/annotation_tools.ts",
+              "symbol": "listAnnotations",
+              "why": "批注的读端（LLM 的唯一取数口）"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "note": "新批注必未解决；关闭必置 resolved + 时间戳"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/dsl_ops/annotation_tools.ts'), 'utf8'); return s.includes('resolved: false') && s.includes('dsl.annotations.push') && s.includes('anno.resolved = true') && s.includes('anno.resolved_at =') && s.includes('annotation_id') && s.includes('不存在'); })()",
+              "why": "★ 钉住两个方向的默认值：**新增必是未解决**（不许一出生就是 resolved:true），**关闭必写 resolved=true + resolved_at**；且找不到 id 时必须报「不存在」而不是静默成功。"
+            }
+          ],
+          "acceptance": "`addAnnotationByTool` 必产生**新 id**（`anno_<ts>_<rand>`）、`resolved:false`、`author` 缺省 `'llm'`，push 进 `dsl.annotations` 后落盘；`resolveAnnotation` 对「feature 不存在 / 没有 annotations / annotation_id 不存在」**分别抛错**（不静默建一条），成功则 `resolved:true` 并写 `resolved_at`，只有给了 `resolution_note` 才写它；`listAnnotations` 的 `node_id` / `severity` / `unresolved_only` **同时成立**才保留。",
+          "updated_at": "2026-10-19T00:48:56.240Z",
+          "agent": "design-filler"
+        }
       },
       {
         "id": "file_src_application_design_dsl_ops_api_ops_ts",
@@ -4270,7 +4309,34 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "decision": {
+          "summary": "所有 `edit_dsl` op 的**统一返回形状**（`EditResult`）：`message`（人话，首行必须自足）+ `feature`（目标）+ **可选** `data`（结构化产物）。★ 为什么存在：`wrap()` 会把 `r.data` 送进 `---DATA---` 机器通道；此前没有 `data` 字段 ⇒ 已经算出结构化结果的 op（如整块重写契约的增删清单）**只能压成散文**，agent 得正则解析 —— 这正是本仓 §5 纪律①「产物结构化，非 message 串」的落点。★ 边界（它不做什么）：它**只是类型** —— 不校验、不序列化、不决定 `data` 的内容与形状（那由各 op 自己负责，且每条 `data` 要自带定位字段）；`data` 是 **optional**，不填就**不产生** DATA 段，因此**不破坏任何既有 op**。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/design/dsl_ops/edit_result.ts",
+              "why": "动作要有落点（基线）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/edit_result.ts",
+              "symbol": "EditResult",
+              "why": "全仓 op 返回值的唯一形状（interface）"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "note": "message+feature 必填，data 可选 unknown"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/dsl_ops/edit_result.ts'), 'utf8'); const m = s.match(/interface EditResult\\s*\\{([\\s\\S]*?)\\n\\}/); if (!m) return false; const b = m[1]; return /message\\s*:\\s*string/.test(b) && /feature\\s*:\\s*string/.test(b) && /data\\?\\s*:\\s*unknown/.test(b); })()",
+              "why": "★ 纯类型文件没有可调函数 ⇒ 用\"形状断言\"判：三个字段齐、`data` 带 `?`、类型是 `unknown`。这三条一破就会在编译期伤到全部既有 op。"
+            }
+          ],
+          "acceptance": "`EditResult` 恰好三个字段：`message: string`、`feature: string`、`data?: unknown`；`data` 必须是**可选**（带 `?`）—— 去掉 `?` 或改成必填，所有不产出结构化结果的既有 op 会**编译失败**；`data` 的类型是 `unknown`（不是 `any` / `object`），调用方必须自己收窄。",
+          "updated_at": "2026-10-19T00:48:56.171Z",
+          "agent": "design-filler"
+        }
       },
       {
         "id": "file_src_application_design_dsl_ops_feature_ops_ts",
@@ -4527,7 +4593,140 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "decision": {
+          "summary": "**进度投影的唯一入口**（`updateStatus`）：手动设某节点进度时，只写 `<feature>.overlay.json` 锚点的 `progress`（唯一权威），再用 `applyOverlay` 把它**投影回** base 的 `node.status`；**不落库 `dsl.status`** —— feature 整体状态是 `computeFeatureStatus` 现算的**派生值**，读侧统一走 `domain/geometry.ts#resolveDiagramStatus`。★ 与任务系统的关系：任务格里 **`task.state` 才是权威**，`node.status` 只是它的**派生**（`task_schema.ts#progressOf`）—— 本文件只负责\"手动投影\"这一条路，**不是**任务态写端，也不该被用来把任务格勾成 done。★ 其它边界：置 `done` **必须带 evidence**（`validateProgressEvidence`，三档之一），否则当场拒、不静默补、不自动降级；`check_status`（按 `TODO` 文本猜完成度）已移除，不再提供；本文件**不判**\"这件事是否真做完\"（那是 evidence 的来源责任）。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/design/dsl_ops/status_tools.ts",
+              "why": "动作要有落点（基线）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/status_tools.ts",
+              "symbol": "updateStatus",
+              "why": "进度写的唯一入口"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/status_tools.ts",
+              "symbol": "computeFeatureStatus",
+              "why": "整体状态是纯派生值（只算不写）—— 它是\"status 不是权威\"的落点"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "feature": "task-system-plan",
+                "node_id": "n1",
+                "status": "done"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/dsl_ops/status_tools.ts'), 'utf8'); const gate = s.indexOf('validateProgressEvidence(status, evidence)'); const thr = s.indexOf('if (!gate.ok) throw new Error(gate.reason)'); const save = s.indexOf('saveOverlay(next)'); return !!input && input.status === 'done' && input.evidence === undefined && gate >= 0 && thr > gate && save > thr; })()",
+              "why": "★ 这条 input 正是「置 done 不带 evidence」：闸必须在**落盘之前**被调用（`gate` < `thr` < `saveOverlay`），且闸的结论直接 `throw`。★ run 的求值域不加载写端函数（避免副作用），所以这里钉的是**闸的接线与顺序**；`validateProgressEvidence` 本身的拒绝行为是纯函数，另有 t328/t334 证。"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "note": "单一进度权威：只有 anchor.progress，没有裸写 dsl.status / node.status"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/dsl_ops/status_tools.ts'), 'utf8'); return !/\\n\\s*(dsl|node)\\.status\\s*=/.test(s) && s.includes('anchor.progress = status') && s.includes('computeFeatureStatus(applied.geometry.nodes)'); })()",
+              "why": "★ T328 的实质：本文件不许再有**第二处进度权威** —— 不裸写 `dsl.status` / `node.status`，只写 `anchor.progress` 并由 `applyOverlay` 投影；整体状态只现算。"
+            }
+          ],
+          "acceptance": "置 `done` 但不给 `evidence` ⇒ **抛错**，reason 以「拒绝：progress='done' 必须带一条 evidence（三档之一）」开头，且 overlay 与 base **一个字节都没改**；`attestation` 写端自动补 `source_node_id = node_id`（调用方传了也被覆盖），并对**已有 `expectations` 判据**的锚点**拒绝**被 attestation 覆盖；成功时 `overlay.anchors[id].progress === status`、base 的 `node.status` 是它的投影、`dsl.status` **不落盘**（回执里的整体状态是现算的）。",
+          "updated_at": "2026-10-19T00:49:26.970Z",
+          "agent": "design-filler"
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-19T00:49:26.937Z",
+            "decision": {
+              "summary": "**进度投影的唯一入口**（`updateStatus`）：手动设某节点进度时，只写 `<feature>.overlay.json` 锚点的 `progress`（唯一权威），再用 `applyOverlay` 把它**投影回** base 的 `node.status`；**不落库 `dsl.status`** —— feature 整体状态是 `computeFeatureStatus` 现算的**派生值**，读侧统一走 `domain/geometry.ts#resolveDiagramStatus`。★ 与任务系统的关系：任务格里 **`task.state` 才是权威**，`node.status` 只是它的**派生**（`task_schema.ts#progressOf`）—— 本文件只负责\"手动投影\"这一条路，**不是**任务态写端，也不该被用来把任务格勾成 done。★ 其它边界：置 `done` **必须带 evidence**（`validateProgressEvidence`，三档之一），否则当场拒、不静默补、不自动降级；`check_status`（按 `TODO` 文本猜完成度）已移除，不再提供；本文件**不判**\"这件事是否真做完\"（那是 evidence 的来源责任）。",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/application/design/dsl_ops/status_tools.ts",
+                  "why": "动作要有落点（基线）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/status_tools.ts",
+                  "symbol": "updateStatus",
+                  "why": "进度写的唯一入口"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/status_tools.ts",
+                  "symbol": "computeFeatureStatus",
+                  "why": "整体状态是纯派生值（只算不写）—— 它是\"status 不是权威\"的落点"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "feature": "task-system-plan",
+                    "node_id": "n1",
+                    "status": "done"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/dsl_ops/status_tools.ts'), 'utf8'); const gate = s.indexOf('validateProgressEvidence(status, evidence)'); const thr = s.indexOf('if (!gate.ok) throw new Error(gate.reason)'); const save = s.indexOf('saveOverlay(next)'); return !!input && input.status === 'done' && input.evidence === undefined && gate >= 0 && thr > gate && save > thr; })()",
+                  "why": "★ 这条 input 正是「置 done 不带 evidence」：闸必须在**落盘之前**被调用（`gate` < `thr` < `saveOverlay`），且闸的结论直接 `throw`。★ run 的求值域不加载写端函数（避免副作用），所以这里钉的是**闸的接线与顺序**；`validateProgressEvidence` 本身的拒绝行为是纯函数，另有 t328/t334 证。"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "note": "单一进度权威：只有 anchor.progress，没有裸写 dsl.status / node.status"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/dsl_ops/status_tools.ts'), 'utf8'); return !/\\bdsl\\.status\\s*=/.test(s) && !/\\bnode\\.status\\s*=/.test(s) && s.includes('anchor.progress = status') && s.includes('computeFeatureStatus(applied.geometry.nodes)'); })()",
+                  "why": "★ T328 的实质：本文件不许再有**第二处进度权威** —— 不裸写 `dsl.status` / `node.status`，只写 `anchor.progress` 并由 `applyOverlay` 投影；整体状态只现算。"
+                }
+              ],
+              "acceptance": "置 `done` 但不给 `evidence` ⇒ **抛错**，reason 以「拒绝：progress='done' 必须带一条 evidence（三档之一）」开头，且 overlay 与 base **一个字节都没改**；`attestation` 写端自动补 `source_node_id = node_id`（调用方传了也被覆盖），并对**已有 `expectations` 判据**的锚点**拒绝**被 attestation 覆盖；成功时 `overlay.anchors[id].progress === status`、base 的 `node.status` 是它的投影、`dsl.status` **不落盘**（回执里的整体状态是现算的）。",
+              "updated_at": "2026-10-19T00:48:56.205Z",
+              "agent": "design-filler"
+            },
+            "note": "修两条 run 的文本判据（注释里出现的词导致误红）",
+            "agent": "design-filler"
+          },
+          {
+            "at": "2026-10-19T00:49:26.970Z",
+            "decision": {
+              "summary": "**进度投影的唯一入口**（`updateStatus`）：手动设某节点进度时，只写 `<feature>.overlay.json` 锚点的 `progress`（唯一权威），再用 `applyOverlay` 把它**投影回** base 的 `node.status`；**不落库 `dsl.status`** —— feature 整体状态是 `computeFeatureStatus` 现算的**派生值**，读侧统一走 `domain/geometry.ts#resolveDiagramStatus`。★ 与任务系统的关系：任务格里 **`task.state` 才是权威**，`node.status` 只是它的**派生**（`task_schema.ts#progressOf`）—— 本文件只负责\"手动投影\"这一条路，**不是**任务态写端，也不该被用来把任务格勾成 done。★ 其它边界：置 `done` **必须带 evidence**（`validateProgressEvidence`，三档之一），否则当场拒、不静默补、不自动降级；`check_status`（按 `TODO` 文本猜完成度）已移除，不再提供；本文件**不判**\"这件事是否真做完\"（那是 evidence 的来源责任）。",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/application/design/dsl_ops/status_tools.ts",
+                  "why": "动作要有落点（基线）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/status_tools.ts",
+                  "symbol": "updateStatus",
+                  "why": "进度写的唯一入口"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/status_tools.ts",
+                  "symbol": "computeFeatureStatus",
+                  "why": "整体状态是纯派生值（只算不写）—— 它是\"status 不是权威\"的落点"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "feature": "task-system-plan",
+                    "node_id": "n1",
+                    "status": "done"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/dsl_ops/status_tools.ts'), 'utf8'); const gate = s.indexOf('validateProgressEvidence(status, evidence)'); const thr = s.indexOf('if (!gate.ok) throw new Error(gate.reason)'); const save = s.indexOf('saveOverlay(next)'); return !!input && input.status === 'done' && input.evidence === undefined && gate >= 0 && thr > gate && save > thr; })()",
+                  "why": "★ 这条 input 正是「置 done 不带 evidence」：闸必须在**落盘之前**被调用（`gate` < `thr` < `saveOverlay`），且闸的结论直接 `throw`。★ run 的求值域不加载写端函数（避免副作用），所以这里钉的是**闸的接线与顺序**；`validateProgressEvidence` 本身的拒绝行为是纯函数，另有 t328/t334 证。"
+                }
+              ],
+              "acceptance": "置 `done` 但不给 `evidence` ⇒ **抛错**，reason 以「拒绝：progress='done' 必须带一条 evidence（三档之一）」开头，且 overlay 与 base **一个字节都没改**；`attestation` 写端自动补 `source_node_id = node_id`（调用方传了也被覆盖），并对**已有 `expectations` 判据**的锚点**拒绝**被 attestation 覆盖；成功时 `overlay.anchors[id].progress === status`、base 的 `node.status` 是它的投影、`dsl.status` **不落盘**（回执里的整体状态是现算的）。",
+              "updated_at": "2026-10-19T00:49:26.937Z",
+              "agent": "design-filler"
+            },
+            "note": "修两条 run 的文本判据（注释里出现的词导致误红）",
+            "agent": "design-filler"
+          }
+        ]
       },
       {
         "id": "file_src_application_design_dsl_ops_task_ops_ts",
@@ -4622,7 +4821,206 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "decision": {
+          "summary": "`edit_dsl` 的**唯一写入口**（`updateFeature`）：node/edge/file/api/binding/status/annotation/approval/snapshot/layout/simulation/tag/decision/todo/task 全部写操作都从这一处收口。它只做三件事且顺序固定：①**逐 op 应用**（先过 `checkOpSpec` 的 data 契约，再路由到各自原子实现）；②**自洽性闸**（全部 op 落定后回读 DSL 跑 `validateDSL`，只把 `after.keys − baseline.keys` —— **本次新引入**的错 —— 判为失败）；③**失败回滚到调用前字节**（任一 op 抛错或闸判红，就用调用前的原始文件字节覆盖回去 —— 不是 `saveDSL(backup)`，`_dsl_rev` / `_sync` 原样不动）。★ 边界（它不做什么）：**不判业务对错**（一条边该不该有、决策该怎么写，是各 op 与人的设计结论）；**不改 schema、不改 `validateDSL` 判定**；**不做重试/补偿**（失败就是全回滚，没有半成功）；**不是任务态写端**（task 的 claim/complete 只经 `task_ops`）；也**不把决策搬进 overlay**（那是收口后的 `syncDecisionsToOverlay`，本函数只是调用它）。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/design/dsl_ops/update_feature.ts",
+              "why": "动作要有落点（基线）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/update_feature.ts",
+              "symbol": "updateFeature",
+              "why": "`edit_dsl` 的唯一入口本体"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/update_feature.ts",
+              "symbol": "findDecisionTargetNode",
+              "why": "决策卡落点解析与 touched.nodes 共用同一份（不在别处另写一把尺）"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "id": "demo",
+                "type": "feature_diagram",
+                "feature": "demo",
+                "version": "1.0.0",
+                "geometry": {
+                  "layout": "vertical_flow",
+                  "width": 800,
+                  "height": 600,
+                  "nodes": [
+                    {
+                      "id": "a",
+                      "label": "a",
+                      "type": "file",
+                      "x": 0,
+                      "y": 0
+                    }
+                  ],
+                  "edges": [
+                    {
+                      "id": "e1",
+                      "from": "a",
+                      "to": "ghost"
+                    }
+                  ]
+                }
+              },
+              "expect": "validateDSL(input).keys.some(k => k === 'dangling_edge:edge:e1:to')",
+              "why": "★ 自洽性闸的判据演示：这个 input 正是「删掉被指向的节点」这一 op 的**落定后状态** —— `dangling_edge:edge:e1:to` 会出现在 after 的键集里，而调用前没有这个键 ⇒ `newErrors` 非空 ⇒ 必须拒 + 回滚。闸只认这个差集，不认\"错误文本变了\"。"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "note": "Q2：回滚用调用前字节，不用 saveDSL(backup)"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/dsl_ops/update_feature.ts'), 'utf8'); return s.includes('fs.readFileSync(designFile') && s.includes('fs.writeFileSync(designFile, rawBackup') && !/^\\s*saveDSL\\(backup\\)/m.test(s); })()",
+              "why": "★ 钉住 Q2 的实质：回滚必须写回**原始字节**（`_sync` / `_dsl_rev` 不动）；若退回 `saveDSL(backup)`，内容回滚了而元数据前进 ⇒ 乐观锁误判\"有人改过\"。这条用源码事实判（run 的求值域不加载写端函数，避免副作用）。"
+            }
+          ],
+          "acceptance": "① 任一 op 抛错 ⇒ 回执首行是「操作 i/N 失败，已回滚全部 k 个已应用变更」，且落盘文件的 **sha256 与调用前逐字节相同**（`_sync` / `_dsl_rev` 也不前进 —— Q2 的判据就是\"回滚不推进元数据\"）；② 本次改动**新引入** `validateDSL` 错误（如删节点留下悬空边）⇒ 闸抛「拒绝提交（自洽性闸 validateDSL）：…新增 n 条」并同样回滚；调用前**已有**的同键错误不拦（重命名只改错误文本 ⇒ 键不变 ⇒ 仍放行）；③ 全部成功时 `message` 逐条列出 `[i/N]` 首行，`data` 只在有结构化产物时出现（1 条给元素本身、多条给数组）。",
+          "updated_at": "2026-10-19T00:49:26.905Z",
+          "agent": "design-filler"
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-19T00:49:26.874Z",
+            "decision": {
+              "summary": "`edit_dsl` 的**唯一写入口**（`updateFeature`）：node/edge/file/api/binding/status/annotation/approval/snapshot/layout/simulation/tag/decision/todo/task 全部写操作都从这一处收口。它只做三件事且顺序固定：①**逐 op 应用**（先过 `checkOpSpec` 的 data 契约，再路由到各自原子实现）；②**自洽性闸**（全部 op 落定后回读 DSL 跑 `validateDSL`，只把 `after.keys − baseline.keys` —— **本次新引入**的错 —— 判为失败）；③**失败回滚到调用前字节**（任一 op 抛错或闸判红，就用调用前的原始文件字节覆盖回去 —— 不是 `saveDSL(backup)`，`_dsl_rev` / `_sync` 原样不动）。★ 边界（它不做什么）：**不判业务对错**（一条边该不该有、决策该怎么写，是各 op 与人的设计结论）；**不改 schema、不改 `validateDSL` 判定**；**不做重试/补偿**（失败就是全回滚，没有半成功）；**不是任务态写端**（task 的 claim/complete 只经 `task_ops`）；也**不把决策搬进 overlay**（那是收口后的 `syncDecisionsToOverlay`，本函数只是调用它）。",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "why": "动作要有落点（基线）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "symbol": "updateFeature",
+                  "why": "`edit_dsl` 的唯一入口本体"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "symbol": "findDecisionTargetNode",
+                  "why": "决策卡落点解析与 touched.nodes 共用同一份（不在别处另写一把尺）"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "id": "demo",
+                    "type": "feature_diagram",
+                    "feature": "demo",
+                    "version": "1.0.0",
+                    "geometry": {
+                      "layout": "vertical_flow",
+                      "width": 800,
+                      "height": 600,
+                      "nodes": [
+                        {
+                          "id": "a",
+                          "label": "a",
+                          "type": "file",
+                          "x": 0,
+                          "y": 0
+                        }
+                      ],
+                      "edges": [
+                        {
+                          "id": "e1",
+                          "from": "a",
+                          "to": "ghost"
+                        }
+                      ]
+                    }
+                  },
+                  "expect": "validateDSL(input).keys.some(k => k === 'dangling_edge:edge:e1:to')",
+                  "why": "★ 自洽性闸的判据演示：这个 input 正是「删掉被指向的节点」这一 op 的**落定后状态** —— `dangling_edge:edge:e1:to` 会出现在 after 的键集里，而调用前没有这个键 ⇒ `newErrors` 非空 ⇒ 必须拒 + 回滚。闸只认这个差集，不认\"错误文本变了\"。"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "note": "Q2：回滚用调用前字节，不用 saveDSL(backup)"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/dsl_ops/update_feature.ts'), 'utf8'); return s.includes('fs.readFileSync(designFile') && s.includes('fs.writeFileSync(designFile, rawBackup') && !s.includes('saveDSL(backup)'); })()",
+                  "why": "★ 钉住 Q2 的实质：回滚必须写回**原始字节**（`_sync` / `_dsl_rev` 不动）；若退回 `saveDSL(backup)`，内容回滚了而元数据前进 ⇒ 乐观锁误判\"有人改过\"。这条用源码事实判（run 的求值域不加载写端函数，避免副作用）。"
+                }
+              ],
+              "acceptance": "① 任一 op 抛错 ⇒ 回执首行是「操作 i/N 失败，已回滚全部 k 个已应用变更」，且落盘文件的 **sha256 与调用前逐字节相同**（`_sync` / `_dsl_rev` 也不前进 —— Q2 的判据就是\"回滚不推进元数据\"）；② 本次改动**新引入** `validateDSL` 错误（如删节点留下悬空边）⇒ 闸抛「拒绝提交（自洽性闸 validateDSL）：…新增 n 条」并同样回滚；调用前**已有**的同键错误不拦（重命名只改错误文本 ⇒ 键不变 ⇒ 仍放行）；③ 全部成功时 `message` 逐条列出 `[i/N]` 首行，`data` 只在有结构化产物时出现（1 条给元素本身、多条给数组）。",
+              "updated_at": "2026-10-19T00:48:56.131Z",
+              "agent": "design-filler"
+            },
+            "note": "修两条 run 的文本判据（注释里出现的词导致误红）",
+            "agent": "design-filler"
+          },
+          {
+            "at": "2026-10-19T00:49:26.905Z",
+            "decision": {
+              "summary": "`edit_dsl` 的**唯一写入口**（`updateFeature`）：node/edge/file/api/binding/status/annotation/approval/snapshot/layout/simulation/tag/decision/todo/task 全部写操作都从这一处收口。它只做三件事且顺序固定：①**逐 op 应用**（先过 `checkOpSpec` 的 data 契约，再路由到各自原子实现）；②**自洽性闸**（全部 op 落定后回读 DSL 跑 `validateDSL`，只把 `after.keys − baseline.keys` —— **本次新引入**的错 —— 判为失败）；③**失败回滚到调用前字节**（任一 op 抛错或闸判红，就用调用前的原始文件字节覆盖回去 —— 不是 `saveDSL(backup)`，`_dsl_rev` / `_sync` 原样不动）。★ 边界（它不做什么）：**不判业务对错**（一条边该不该有、决策该怎么写，是各 op 与人的设计结论）；**不改 schema、不改 `validateDSL` 判定**；**不做重试/补偿**（失败就是全回滚，没有半成功）；**不是任务态写端**（task 的 claim/complete 只经 `task_ops`）；也**不把决策搬进 overlay**（那是收口后的 `syncDecisionsToOverlay`，本函数只是调用它）。",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "why": "动作要有落点（基线）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "symbol": "updateFeature",
+                  "why": "`edit_dsl` 的唯一入口本体"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "symbol": "findDecisionTargetNode",
+                  "why": "决策卡落点解析与 touched.nodes 共用同一份（不在别处另写一把尺）"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "id": "demo",
+                    "type": "feature_diagram",
+                    "feature": "demo",
+                    "version": "1.0.0",
+                    "geometry": {
+                      "layout": "vertical_flow",
+                      "width": 800,
+                      "height": 600,
+                      "nodes": [
+                        {
+                          "id": "a",
+                          "label": "a",
+                          "type": "file",
+                          "x": 0,
+                          "y": 0
+                        }
+                      ],
+                      "edges": [
+                        {
+                          "id": "e1",
+                          "from": "a",
+                          "to": "ghost"
+                        }
+                      ]
+                    }
+                  },
+                  "expect": "validateDSL(input).keys.some(k => k === 'dangling_edge:edge:e1:to')",
+                  "why": "★ 自洽性闸的判据演示：这个 input 正是「删掉被指向的节点」这一 op 的**落定后状态** —— `dangling_edge:edge:e1:to` 会出现在 after 的键集里，而调用前没有这个键 ⇒ `newErrors` 非空 ⇒ 必须拒 + 回滚。闸只认这个差集，不认\"错误文本变了\"。"
+                }
+              ],
+              "acceptance": "① 任一 op 抛错 ⇒ 回执首行是「操作 i/N 失败，已回滚全部 k 个已应用变更」，且落盘文件的 **sha256 与调用前逐字节相同**（`_sync` / `_dsl_rev` 也不前进 —— Q2 的判据就是\"回滚不推进元数据\"）；② 本次改动**新引入** `validateDSL` 错误（如删节点留下悬空边）⇒ 闸抛「拒绝提交（自洽性闸 validateDSL）：…新增 n 条」并同样回滚；调用前**已有**的同键错误不拦（重命名只改错误文本 ⇒ 键不变 ⇒ 仍放行）；③ 全部成功时 `message` 逐条列出 `[i/N]` 首行，`data` 只在有结构化产物时出现（1 条给元素本身、多条给数组）。",
+              "updated_at": "2026-10-19T00:49:26.874Z",
+              "agent": "design-filler"
+            },
+            "note": "修两条 run 的文本判据（注释里出现的词导致误红）",
+            "agent": "design-filler"
+          }
+        ]
       },
       {
         "id": "file_src_application_design_handlers_ts",
@@ -58060,11 +58458,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-19T00:40:13.675Z",
+    "saved_at": "2026-10-19T00:50:31.093Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792314946341,
-    "age": 55467334
+    "age": 56084752
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -59812,7 +60210,14 @@
       "expectations": [],
       "state": "candidate",
       "owner": null
+    },
+    {
+      "id": "todo_run-cannot-load-module",
+      "summary": "run 契约的求值域【不加载业务函数】（只有 validateDSL/fs/path）⇒ \"调用 updateStatus 看它抛不抛\"这类【真行为契约】写不出来，只能钉\"闸的接线与顺序\"（grep 级）。★ 2026-10-19 子代理补 status_tools 设计时发现；它单独跑过 validateProgressEvidence(done, undefined) 确实拒，但没法写成 expectation",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
     }
   ],
-  "_dsl_rev": 16
+  "_dsl_rev": 24
 }
