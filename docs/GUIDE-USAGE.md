@@ -55,30 +55,15 @@
 
 ### 1.5 命令（真调，不是"编译过了"）
 
-```bash
-cd <repo>
-# 类型层
-npx tsc --noEmit; echo "EXIT=$?"
-# 产物层（★ 只有主控能跑；并行执行者不许，会重写共享 dist）
-npm run build; echo "BUILD_EXIT=$?"
-# 结构读数（应三态全 0）
-npm run structure:gap
-# 真调新工具
-node dist/src/presentation/cli/cli.js <new_tool> --json '{...}'
-#   无参调一次 ⇒ 应给人话缺参错误，不是 Node 原始异常
-#   paths[0] / Cannot read propert / The "path" argument 都是不合格
-```
-
-（`dc-add-tool` §五）
+★ **与 §8「验收四条」是同一套命令**（tsc / build / structure:gap / 真调），不再各写一遍 —— 见 §8。
+★ 加工具场景额外要做的，只有"无参调一次 ⇒ 应给人话缺参错误"这一条（§8 第 4 条已含）。
 
 - ★ **纪律（2026-10-05 用户裁定）**：**不养门**。判据只有两条 —— 测试通过 + 与契约相符；把"注释里一句话写错"升级成"纪律/新门"是过度工程化。（`dc-add-tool` §五）
 
 ### 1.6 加工具的坑
 
-- `AGENTS.md` 是生成物，改它会被 build 回滚（见上）。（`dc-add-tool` §一.5）
-- 临时脚本写到**仓外会话工作区**（`.inspect/`）或系统临时目录；`tests/` 已不存在。（`dc-add-tool` §二）
-- `node -e` 里别放反引号 / `${}` / `(`，bash 会抢插值 ⇒ 写成 `.mjs` 再跑。（`dc-add-tool` §二）
-- `.mjs` / 生成物**务必 LF**（CRLF 的 `.mjs` 会让 vitest 报 `SyntaxError`——这是框架时代的坑，写成 LF 仍是好习惯）。（`dc-add-tool` §二）
+- ★ **`AGENTS.md` 是生成物**：改它会被 `build` 回滚 ⇒ 改源头（见 §1.2 末）。（`dc-add-tool` §一.5）
+- ★ **引号 / 编码 / 临时脚本**：见 §7.2（`node -e` 抢插值、`.mjs` 用 LF、临时脚本放仓外）。（`dc-add-tool` §二）
 
 ---
 
@@ -157,7 +142,7 @@ comm -23 /tmp/a /tmp/b     # ← 这里应只剩已删工具，其它为空
 - **已删工具**应报 `未知工具名: <name>`（证明注册表真的少了它）。
 - **保留工具**要真跑 happy path（防"删多了"）：临时项目 + `AGENT_IO_HOME=<隔离目录>`。
 - 工具**计数**：`grep -h "^    name: '" src/application/*/index.ts | wc -l`，与 README 的"共注册 N"对齐。
-- ★ Windows 上必须用 `C:/tmp/...` 这类**真路径**；Git Bash 的 `/c/tmp/...` 交给 `path.resolve` 会变成 `C:\c\tmp` ⇒ **静默得 0 文件**。
+- ★ Windows 路径（`/c/tmp` 交给 `path.resolve` ⇒ `C:\c\tmp`，静默得 0 文件）见 §7.3。
 
 （`dc-remove-tool` §四）
 

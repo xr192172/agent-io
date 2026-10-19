@@ -22,7 +22,7 @@
 
 **它想防的病**：设计说了、代码没做，而没人知道。
 
-**现在什么状态**：★ 骨架在、闸有了、但**覆盖面只有 1.7%**，且**闸管不到绕过它的人**（见 §4）。
+**现在什么状态**：★ 骨架在、闸有了、但**覆盖面只有 18%**（2026-10-19 实测：177 导出 / 35 声明），且**闸管不到绕过它的人**（见 §4）。
 
 ---
 
@@ -51,7 +51,7 @@
 ★ **收归 = 让错误组合在类型上无法表达**（例：`TransitionState` 三值必填，取代 `enabled` + `blocked_by_open_question`）。
 
 ### P3 · **提醒必须稀缺**
-> 覆盖率 1.7% 时若每笔都提醒 ⇒ 98.3% 的操作都在响 ⇒ 半小时内学会忽略 ⇒ **噪音比没有更坏**（它看起来在工作）。
+> 覆盖率 18% 时若每笔都提醒 ⇒ 82% 的操作都在响 ⇒ 半小时内学会忽略 ⇒ **噪音比没有更坏**（它看起来在工作）。
 
 ⇒ hook 每会话每文件**只提醒一次**。
 
@@ -181,7 +181,7 @@
 
 ---
 
-## 4 · 已知缺陷（还活着的 12 条；**已修的不列在这里**）
+## 4 · 已知缺陷（还活着的 10 条；**已修的不列在这里**）
 
 ### ★ 最近修好的（2026-10-17，只记结果，过程见 git）
 - **A2 `cardStanding` 的红归属**：`blocked` 两头都漏（漏 orphan ⇒ 假 blocked 且 reason 撒谎；漏"部分 pending" ⇒ 假 work）⇒ 重写成 **`RedAttribution` + `RED_DISPOSITION`** 穷尽表；★ 顺带想清 **`dep-done` 也算 wait**（闸只认该节点的卡）。
@@ -193,7 +193,6 @@
 
 | # | 位置 | 缺陷 | 怎么判 |
 |---|---|---|---|
-| **A1** | ✅ **已销（2026-10-18）**：`npm run patrol` 是运行时入口（TS 入度对运行时入口不适用）；★ 本行与 §6 的 A1 是同一问题的两种说法，已合并 | ★★★ **`patrolDrift` 全仓零调用方** ⇒ 巡检一次都不跑 ⇒ `lease_ttl` 永不回收 ⇒ `claimed_at` 成死锁字段 | 该文件每个 export 至少要有 1 条 call 边；今天 0 |
 | **A3** | `task_ops.ts:462` | claim 是 check-then-act（读→判→写，中间夹异步 `cardStanding`，无锁） | 静态判"写前是否重读并比对 state/owner" —— 不成立 |
 | **A4** | `task_ops.ts:601` | ★★ 证据闸只校验**形状**：L1 卡可用手填 `{all_green:true}` 收口，**从不与真实判定对账** | L1 遇 `kind:'expectations'` 直接拒；L2 断言与本次 report 一致 |
 | **A5** | `task_drift.ts:168` | L1 卡永远进不了 `missed_close` | ★ **真根因见 §6「L1 判据缺口」** |
@@ -297,7 +296,7 @@
 |---|---|---|---|
 | **`.agent-io/design/<f>.dsl.json`** | ★★★ **设计 DSL（唯一权威）** —— 手写；结构 = fork 自实际侧 + 我改的那几处（带 `decision`） | `storage.ts#getDesignSheet` · `scripts/design-diff.mjs` | ✅ **白名单**（见下） |
 | `.agent-io/live/<f>.dsl.json` | **实际 DSL**（扫描产物） | `getLiveFeatureResolved` | ❌ |
-| `.agent-io/features/<f>.json` | **派生**（扫描 ⊕ overlay 合并） | `getDSL` / `edit_dsl` / 写闸 / 巡检 | ❌ |
+| `.agent-io/features/<f>.overlay.json` | **进度 overlay**（★ `features/<f>.json` 派生文件已退场，这里只剩 overlay） | `getDSL` / `edit_dsl` / 写闸 / 巡检——★ 都已读 design 侧 | ❌ |
 | `.agent-io/cache.db` | 符号 / 调用 / import（`edges.kind = call 7528 · type_ref 4832 · import 1223`） | `get_dsl{query:'calls'}` 等 | ❌ |
 | `docs/DESIGN.md` | 设计文档（人读） | 人 | ✅ |
 
@@ -392,7 +391,7 @@ merge  = 三条线全绿 ⇒ 分支意图被主支实现
 | 结构级可对拍 | 节点 ✅ / **边 ❌（语义不同）** / 调用（在 `cache.db`，没接） | ⚠️ 半 |
 | 行为级 = 判据 + 夹具 | 46 条 expectations（无夹具） | ⚠️ 半 |
 | 设计侧进 git、事实不进 | `docs/` vs `.agent-io/` | ✅ 已对 |
-| `get_dsl` / `edit_dsl` 读写设计侧 | ★ 读写 `features/`（派生） | ❌ **两套世界** |
+| `get_dsl` / `edit_dsl` 读写设计侧 | ✅ 已读 `design/`（`features/<f>.json` 退场） | ✅ |
 | `rebuild_design` 能 fork 自实际 | ★ 调了**没生效** | ❌ **未做成** |
 
 ★★★ **这七条就是重写的工作量** —— 而**第 1 条（符号级换成 `.d.ts`）是根，其余六条都在它下面**。
@@ -415,13 +414,14 @@ merge  = 三条线全绿 ⇒ 分支意图被主支实现
 
 | 层 | 是什么 | 在 DSL 里 | 改它的工具 |
 |---|---|---|---|
-| **① 意图** | 加一个功能，做什么 | `decision.summary` / `acceptance` | ✅ `npm run dec` |
-| **② 约束** | 这个功能需要什么符号 / 签名 / 行为 | `decision.expectations`（6 种 kind） | ✅ `npm run dec --add-expectation` |
-| **③ 依赖** | 它和现有功能的关系（谁依赖谁、谁调谁） | `geometry.edges`（文件级）· 设计 DB 的 `calls`（符号级） | ❌ **没有工具**（★ 缺） |
+| **① 意图** | 加一个功能，做什么 | `decision.summary` / `acceptance` | ✅ `edit_dsl {type:'decision', op:'update'}` |
+| **② 约束** | 这个功能需要什么符号 / 签名 / 行为 | `decision.expectations`（6 种 kind） | ✅ `edit_dsl {op:'expectation.add'}` |
+| **③ 依赖** | 它和现有功能的关系（谁依赖谁、谁调谁） | `geometry.edges`（文件级）· 设计 DB 的 `calls`（符号级） | ✅ `npm run dep`（写 `*.calls.json`） |
 | **④ 源码** | 逆着再回去，把设计变成代码 | —（不是 DSL） | ✍️ **写代码**（不是工具） |
 
 ★★★ **所以「改整个设计」= 改 ①②③ 三层** —— **而 ④ 是"实现"，它靠写代码，不靠工具。**
-★ **而 `npm run dec` 只做了 ①（和一点 ②）** ⇒ **③ 是当前缺的那一层。**
+★ **三层各自都有落点了**（`edit_dsl` 的 `decision` op · `edit_dsl` 的元素级 op · `npm run dep`）——
+★ 但 **①② 的 op 语义是否已按新 DSL 标准化** 仍未验（见 `D-…` 与 AGENT-NOTES §8）。
 
 ### ★ 为什么 ③ 必须显式设计（不能靠 ④ 反推）
 
@@ -438,9 +438,9 @@ merge  = 三条线全绿 ⇒ 分支意图被主支实现
 ### 所以「逆着回去」的完整动作（设计侧）
 
 ```
-① npm run dec --node X --summary "我要加一个能力"
-② npm run dec --node X --add-expectation '{kind,path,symbol,why}'
-③ ★ npm run dep --from <fileA#fn> --to <fileB#fn> --why "…"     ← 缺，要做
+① edit_dsl {type:'decision', op:'update', id:X, data:{decision:{…现有, summary:'我要加一个能力'}}}
+② edit_dsl {type:'decision', op:'expectation.add', id:X, data:{expectation:{kind,path,symbol,why}}}
+③ npm run dep --from <fileA#fn> --to <fileB#fn> --why "…"
 ④ 写代码（实现）→ npm run contract / contract:calls / diff / patrol 验
 ```
 
