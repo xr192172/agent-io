@@ -128,6 +128,12 @@ for (const f of files) {
       '//': `Design DB —— ${rel}（★ 全量、与实际 DB 同构；从 design/${f} 的节点生成）`,
       '//generated_by': 'scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）',
       '//source': `design/${f}`,
+      /**
+       * ★ 2026-10-19：**副本自报路径**（机器可读）。
+       * 此前路径只写在首行 `//` 注释里（`Design DB —— src/xxx.ts（…）`），
+       * 消费者（design_line 的 ⑥ 覆盖率）只能解析注释 —— 而注释是给人看的，格式一变就断。
+       */
+      path: rel,
       symbols,
       imports,
       calls,

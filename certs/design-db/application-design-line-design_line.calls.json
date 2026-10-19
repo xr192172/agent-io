@@ -1,0 +1,86 @@
+{
+  "//": "Design DB —— src/application/design/line/design_line.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "path": "src/application/design/line/design_line.ts",
+  "symbols": [
+    {
+      "name": "LineStep",
+      "kind": "interface",
+      "line": 29,
+      "signature": "LineStep()"
+    },
+    {
+      "name": "LineReport",
+      "kind": "interface",
+      "line": 42,
+      "signature": "LineReport()"
+    },
+    {
+      "name": "n",
+      "kind": "const",
+      "line": 49,
+      "signature": "const n = (x: number): string => x.toLocaleString('en-US')"
+    },
+    {
+      "name": "lineReport",
+      "kind": "function",
+      "line": 52,
+      "signature": "lineReport(root: string, feature: string): LineReport"
+    },
+    {
+      "name": "designLineHandler",
+      "kind": "function",
+      "line": 197,
+      "signature": "designLineHandler(input: { project_dir: string; feature: string }): {\n  message: string;\n  data: LineReport;\n}"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "node:sqlite",
+      "kind": "package"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/design/line/design_line.ts#designLineHandler",
+      "to": "src/application/design/line/design_line.ts#lineReport"
+    },
+    {
+      "from": "src/application/design/line/design_line.ts#lineReport",
+      "to": "src/application/design/line/design_line.ts#n"
+    },
+    {
+      "from": "src/application/design/line/design_line.ts#lineReport",
+      "to": "src/application/design/line/design_line.ts#n"
+    },
+    {
+      "from": "src/application/design/line/design_line.ts#lineReport",
+      "to": "src/application/design/line/design_line.ts#n"
+    },
+    {
+      "from": "src/application/design/line/design_line.ts#lineReport",
+      "to": "src/application/design/line/design_line.ts#n"
+    },
+    {
+      "from": "src/application/design/line/design_line.ts#lineReport",
+      "to": "src/application/design/line/design_line.ts#n"
+    },
+    {
+      "from": "src/application/design/line/design_line.ts#lineReport",
+      "to": "src/application/design/line/design_line.ts#n"
+    },
+    {
+      "from": "src/application/design/line/design_line.ts#lineReport",
+      "to": "src/application/design/line/design_line.ts#n"
+    }
+  ]
+}

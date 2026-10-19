@@ -2,11 +2,12 @@
   "//": "Design DB —— src/application/design/index.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
   "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
   "//source": "design/task-system-plan.dsl.json",
+  "path": "src/application/design/index.ts",
   "symbols": [
     {
       "name": "DESIGN_TOOLS",
       "kind": "const",
-      "line": 54,
+      "line": 55,
       "signature": "const DESIGN_TOOLS = [ { name: 'get_dsl', title: 'Query feature data', descrip…"
     }
   ],
@@ -62,6 +63,10 @@
     },
     {
       "source": "./handlers.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./line/design_line.js",
       "kind": "relative"
     },
     {

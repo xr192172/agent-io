@@ -2,6 +2,7 @@
   "//": "Design DB —— src/application/refactor/diff_views/diff_views.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
   "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
   "//source": "design/task-system-plan.dsl.json",
+  "path": "src/application/refactor/diff_views/diff_views.ts",
   "symbols": [
     {
       "name": "DiffViewsInput",
@@ -42,116 +43,140 @@
     {
       "name": "ThreeWayState",
       "kind": "type",
-      "line": 107,
+      "line": 109,
       "signature": "ThreeWayState()"
     },
     {
       "name": "DecisionCardRef",
       "kind": "interface",
-      "line": 119,
+      "line": 122,
       "signature": "DecisionCardRef()"
     },
     {
       "name": "ThreeWayFile",
       "kind": "interface",
-      "line": 135,
+      "line": 138,
       "signature": "ThreeWayFile()"
     },
     {
       "name": "ThreeWaySummary",
       "kind": "interface",
-      "line": 157,
+      "line": 160,
       "signature": "ThreeWaySummary()"
     },
     {
       "name": "DiffViewsResult",
       "kind": "interface",
-      "line": 178,
+      "line": 183,
       "signature": "DiffViewsResult()"
     },
     {
       "name": "diffViewsCore",
       "kind": "function",
-      "line": 248,
+      "line": 258,
       "signature": "diffViewsCore(input: DiffViewsInput): DiffViewsResult"
     },
     {
       "name": "touchedOf",
       "kind": "function",
-      "line": 722,
+      "line": 761,
       "signature": "touchedOf(input: DiffViewsInput): Touched"
     },
     {
       "name": "diffViews",
       "kind": "function",
-      "line": 732,
+      "line": 771,
       "signature": "diffViews(input: DiffViewsInput): TouchedProduct<DiffViewsResult>"
+    },
+    {
+      "name": "humanResponsibility",
+      "kind": "function",
+      "line": 787,
+      "signature": "humanResponsibility(s: string | undefined): string"
+    },
+    {
+      "name": "metaChanged",
+      "kind": "function",
+      "line": 805,
+      "signature": "metaChanged(a: SemanticFile | undefined, b: SemanticFile | undefined): boolean"
+    },
+    {
+      "name": "structChanged",
+      "kind": "function",
+      "line": 819,
+      "signature": "structChanged(a: SemanticFile | undefined,\r\n  b: SemanticFile | undefined,\r\n  aRoot?: string,\r\n  bRoot?: string,): boolean"
+    },
+    {
+      "name": "baselineAdvanceBlockers",
+      "kind": "function",
+      "line": 842,
+      "signature": "baselineAdvanceBlockers(summary: ThreeWaySummary): string[]"
     },
     {
       "name": "fileChanged",
       "kind": "function",
-      "line": 743,
-      "signature": "fileChanged(a: SemanticFile | undefined,\n  b: SemanticFile | undefined,\n  // ★ T20：事实（actual_apis）已不在 DSL 里 ⇒ 要把它算进来就必须知道\"去哪儿取\"（各侧自己的 source_root）\n  aRoot?: string,\n  bRoot?: string,): boolean"
+      "line": 851,
+      "signature": "fileChanged(a: SemanticFile | undefined,\r\n  b: SemanticFile | undefined,\r\n  // ★ T20：事实（actual_apis）已不在 DSL 里 ⇒ 要把它算进来就必须知道\"去哪儿取\"（各侧自己的 source_root）\r\n  aRoot?: string,\r\n  bRoot?: string,): boolean"
     },
     {
       "name": "isDiffNoiseSymbol",
       "kind": "function",
-      "line": 770,
+      "line": 878,
       "signature": "isDiffNoiseSymbol(s: Symbol): boolean"
     },
     {
       "name": "symbolsSemanticallyEqual",
       "kind": "function",
-      "line": 779,
+      "line": 887,
       "signature": "symbolsSemanticallyEqual(a: Symbol[], b: Symbol[]): boolean"
     },
     {
       "name": "diffSymbols",
       "kind": "function",
-      "line": 792,
+      "line": 900,
       "signature": "diffSymbols(design: Symbol[], live: Symbol[]): SymbolDiff[]"
     },
     {
       "name": "diffApis",
       "kind": "function",
-      "line": 843,
+      "line": 951,
       "signature": "diffApis(design: ExpectedApi[], live: ExpectedApi[]): ApiDiff[]"
     },
     {
       "name": "diffEdges",
       "kind": "function",
-      "line": 886,
-      "signature": "diffEdges(design: Edge[],\n  live: Edge[],\n  designFileIds: Set<string>,\n  liveFileIds: Set<string>,): EdgeDiff[]"
+      "line": 994,
+      "signature": "diffEdges(design: Edge[],\r\n  live: Edge[],\r\n  designFileIds: Set<string>,\r\n  liveFileIds: Set<string>,): EdgeDiff[]"
     },
     {
       "name": "fileDecisionChanged",
       "kind": "function",
-      "line": 918,
+      "line": 1026,
       "signature": "fileDecisionChanged(a: DesignDSL | null, b: DesignDSL | null, path: string, aId?: string, bId?: string): boolean"
     },
     {
       "name": "symbolsDecisionChanged",
       "kind": "function",
-      "line": 931,
+      "line": 1039,
       "signature": "symbolsDecisionChanged(fa: SemanticFile | undefined, fb: SemanticFile | undefined): boolean"
     },
     {
       "name": "fileDecisionRef",
       "kind": "function",
-      "line": 942,
+      "line": 1050,
       "signature": "fileDecisionRef(dsl: DesignDSL | null, filePath: string, fileId?: string): DecisionCardRef | undefined"
     },
     {
       "name": "symbolDecisionRefs",
       "kind": "function",
-      "line": 959,
+      "line": 1067,
       "signature": "symbolDecisionRefs(dsl: DesignDSL | null, filePath: string): Record<string, DecisionCardRef>"
     },
     {
       "name": "getArchiveRef",
       "kind": "function",
-      "line": 977,
-      "signature": "getArchiveRef(feature: string,\n  filePath: string,\n  state: ThreeWayState,\n  live_dir?: string,): { retire_reason?: string; merged_into?: string; archived_at?: string } | undefined"
+      "line": 1085,
+      "signature": "getArchiveRef(feature: string,\r\n  filePath: string,\r\n  state: ThreeWayState,\r\n  live_dir?: string,): { retire_reason?: string; merged_into?: string; archived_at?: string } | undefined"
     }
   ],
   "imports": [
@@ -180,7 +205,15 @@
   "calls": [
     {
       "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
-      "to": "src/application/refactor/diff_views/diff_views.ts#diffApis"
+      "to": "src/application/refactor/diff_views/diff_views.ts#baselineAdvanceBlockers"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
+      "to": "src/application/refactor/diff_views/diff_views.ts#baselineAdvanceBlockers"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
+      "to": "src/application/refactor/diff_views/diff_views.ts#baselineAdvanceBlockers"
     },
     {
       "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
@@ -192,6 +225,14 @@
     },
     {
       "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
+      "to": "src/application/refactor/diff_views/diff_views.ts#diffApis"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
+      "to": "src/application/refactor/diff_views/diff_views.ts#diffApis"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#structChanged",
       "to": "src/application/refactor/diff_views/diff_views.ts#diffApis"
     },
     {
@@ -215,20 +256,16 @@
       "to": "src/application/refactor/diff_views/diff_views.ts#diffSymbols"
     },
     {
+      "from": "src/application/refactor/diff_views/diff_views.ts#structChanged",
+      "to": "src/application/refactor/diff_views/diff_views.ts#diffSymbols"
+    },
+    {
       "from": "src/application/refactor/diff_views/diff_views.ts#fileChanged",
       "to": "src/application/refactor/diff_views/diff_views.ts#diffSymbols"
     },
     {
       "from": "src/application/refactor/diff_views/diff_views.ts#diffViews",
       "to": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore"
-    },
-    {
-      "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
-      "to": "src/application/refactor/diff_views/diff_views.ts#fileChanged"
-    },
-    {
-      "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
-      "to": "src/application/refactor/diff_views/diff_views.ts#fileChanged"
     },
     {
       "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
@@ -251,6 +288,10 @@
       "to": "src/application/refactor/diff_views/diff_views.ts#getArchiveRef"
     },
     {
+      "from": "src/application/refactor/diff_views/diff_views.ts#metaChanged",
+      "to": "src/application/refactor/diff_views/diff_views.ts#humanResponsibility"
+    },
+    {
       "from": "src/application/refactor/diff_views/diff_views.ts#symbolsSemanticallyEqual",
       "to": "src/application/refactor/diff_views/diff_views.ts#isDiffNoiseSymbol"
     },
@@ -265,6 +306,22 @@
     {
       "from": "src/application/refactor/diff_views/diff_views.ts#diffSymbols",
       "to": "src/application/refactor/diff_views/diff_views.ts#isDiffNoiseSymbol"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
+      "to": "src/application/refactor/diff_views/diff_views.ts#metaChanged"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
+      "to": "src/application/refactor/diff_views/diff_views.ts#metaChanged"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
+      "to": "src/application/refactor/diff_views/diff_views.ts#structChanged"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
+      "to": "src/application/refactor/diff_views/diff_views.ts#structChanged"
     },
     {
       "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
@@ -336,6 +393,10 @@
     },
     {
       "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
+      "to": "src/infrastructure/index/file_facts.ts#mergedApis"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#structChanged",
       "to": "src/infrastructure/index/file_facts.ts#mergedApis"
     },
     {

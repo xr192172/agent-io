@@ -118,9 +118,9 @@ export function lineReport(root: string, feature: string): LineReport {
       dbSyms += j.symbols?.length ?? 0;
       dbCalls2 += j.calls?.length ?? 0;
       dbReqs += j.requirements_calls?.length ?? 0;
-      // ★ 路径从副本首行的 `//` 注释里取（形如 `Design DB —— src/xxx.ts（★ 全量…）`）。
-      // ★ 这是**临时手段**：`gen-design-db` 目前不输出 `path` 字段 ⇒ 只能解析注释。
-      //   已记待办：让生成器自带 `path`，届时这里改成读字段（注释解析对格式变更脆）。
+      // ★ 2026-10-19：**优先读 `path` 字段**（副本自报路径，gen-design-db 已输出）。
+      //   只有在读旧产物（没有该字段）时才退回解析首行 `//` 注释 —— 那是给人看的，格式一变就断，
+      //   不再作为主路径。
       if (typeof j.path === 'string') covered.add(j.path.replace(/\\/g, '/'));
       else {
         const m = String(j['//'] ?? '').match(/——\s*([^\s（(]+)/u);
