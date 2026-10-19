@@ -6,37 +6,37 @@
     {
       "name": "FeatureOperation",
       "kind": "interface",
-      "line": 53,
+      "line": 55,
       "signature": "FeatureOperation()"
     },
     {
       "name": "UpdateFeatureInput",
       "kind": "interface",
-      "line": 126,
+      "line": 128,
       "signature": "UpdateFeatureInput()"
     },
     {
       "name": "updateFeatureCore",
       "kind": "function",
-      "line": 169,
+      "line": 171,
       "signature": "updateFeatureCore(input: UpdateFeatureInput): Promise<EditResult>"
     },
     {
       "name": "touchedOf",
       "kind": "function",
-      "line": 317,
+      "line": 319,
       "signature": "touchedOf(input: UpdateFeatureInput): Touched"
     },
     {
       "name": "touchedNodeIds",
       "kind": "function",
-      "line": 355,
+      "line": 357,
       "signature": "touchedNodeIds(input: UpdateFeatureInput): string[]"
     },
     {
       "name": "updateFeature",
       "kind": "function",
-      "line": 393,
+      "line": 395,
       "signature": "updateFeature(input: UpdateFeatureInput): Promise<TouchedProduct<EditResult>>"
     },
     {
@@ -454,24 +454,8 @@
       "to": "src/application/design/dsl_ops/update_feature.ts#updateFeatureCore"
     },
     {
-      "from": "src/application/design/dsl_ops/update_feature.ts#applySimulationOp",
-      "to": "src/application/design/lifecycle/simulation.ts#resetSimulation"
-    },
-    {
-      "from": "src/application/design/dsl_ops/update_feature.ts#applySnapshotOp",
-      "to": "src/application/design/lifecycle/snapshot.ts#deleteSnapshot"
-    },
-    {
-      "from": "src/application/design/dsl_ops/update_feature.ts#applyLayoutOp",
-      "to": "src/application/design/lifecycle/snapshot.ts#pruneSnapshots"
-    },
-    {
       "from": "src/application/design/dsl_ops/update_feature.ts#applySnapshotOp",
       "to": "src/application/design/lifecycle/snapshot.ts#rollbackSnapshot"
-    },
-    {
-      "from": "src/application/design/dsl_ops/update_feature.ts#applyLayoutOp",
-      "to": "src/application/design/lifecycle/snapshot.ts#saveAutoSnapshot"
     },
     {
       "from": "src/application/design/dsl_ops/update_feature.ts#applySnapshotOp",
@@ -480,14 +464,6 @@
     {
       "from": "src/application/design/dsl_ops/update_feature.ts#applyLayoutOp",
       "to": "src/application/design/workbench/dag_layout.ts#dagLayout"
-    },
-    {
-      "from": "src/application/design/dsl_ops/update_feature.ts#applyLayoutOp",
-      "to": "src/application/design/workbench/dag_layout.ts#forceLayout"
-    },
-    {
-      "from": "src/application/design/dsl_ops/update_feature.ts#applyLayoutOp",
-      "to": "src/application/design/workbench/dag_layout.ts#gridAlign"
     },
     {
       "from": "src/application/design/dsl_ops/update_feature.ts#applyApprovalOp",
@@ -564,10 +540,6 @@
     {
       "from": "src/application/design/dsl_ops/update_feature.ts#applyNodeOp",
       "to": "src/infrastructure/storage.ts#saveDSL"
-    },
-    {
-      "from": "src/application/design/dsl_ops/update_feature.ts#updateFeature",
-      "to": "src/infrastructure/storage_overlay.ts#syncDecisionsToOverlay"
     },
     {
       "from": "src/application/design/dsl_ops/update_feature.ts#updateFeature",

@@ -6,73 +6,73 @@
     {
       "name": "QueryFeatureInput",
       "kind": "interface",
-      "line": 79,
+      "line": 78,
       "signature": "QueryFeatureInput()"
     },
     {
       "name": "QueryFeatureResult",
       "kind": "interface",
-      "line": 163,
+      "line": 161,
       "signature": "QueryFeatureResult()"
     },
     {
       "name": "DSLWithMeta",
       "kind": "interface",
-      "line": 170,
+      "line": 168,
       "signature": "DSLWithMeta()"
     },
     {
       "name": "requireFeature",
       "kind": "function",
-      "line": 174,
+      "line": 172,
       "signature": "requireFeature(input: QueryFeatureInput): string"
     },
     {
       "name": "loadDSL",
       "kind": "function",
-      "line": 181,
+      "line": 179,
       "signature": "loadDSL(input: QueryFeatureInput)"
     },
     {
       "name": "queryFileCalls",
       "kind": "function",
-      "line": 200,
+      "line": 198,
       "signature": "queryFileCalls(db: Database, relPath: string): { incoming: Array<{ caller: string; callee: string; line: number; cross: boolean }>; outgoing: Array<{ caller: string; callee: string; line: number; cross: boolean }> }"
     },
     {
       "name": "symbolNameFromId",
       "kind": "function",
-      "line": 239,
+      "line": 237,
       "signature": "symbolNameFromId(nodeId: string): string"
     },
     {
       "name": "filePathFromId",
       "kind": "function",
-      "line": 245,
+      "line": 243,
       "signature": "filePathFromId(nodeId: string): string"
     },
     {
       "name": "dedupePreserve",
       "kind": "function",
-      "line": 257,
+      "line": 255,
       "signature": "dedupePreserve(xs: string[]): string[]"
     },
     {
       "name": "compactList",
       "kind": "function",
-      "line": 269,
+      "line": 267,
       "signature": "compactList(xs: string[], cap = 5): string"
     },
     {
       "name": "contractHint",
       "kind": "function",
-      "line": 274,
+      "line": 272,
       "signature": "contractHint(c: BrickContract): string"
     },
     {
       "name": "queryFeature",
       "kind": "function",
-      "line": 288,
+      "line": 286,
       "signature": "queryFeature(input: QueryFeatureInput): QueryFeatureResult"
     }
   ],
@@ -104,10 +104,6 @@
     },
     {
       "source": "../../design/lifecycle/snapshot.js",
-      "kind": "relative"
-    },
-    {
-      "source": "../../design/lifecycle/templates.js",
       "kind": "relative"
     },
     {
@@ -184,10 +180,6 @@
     {
       "from": "src/application/meta/explore/query_feature.ts#queryFeature",
       "to": "src/application/design/lifecycle/snapshot.ts#listSnapshots"
-    },
-    {
-      "from": "src/application/meta/explore/query_feature.ts#queryFeature",
-      "to": "src/application/design/lifecycle/templates.ts#listTemplates"
     },
     {
       "from": "src/application/meta/explore/query_feature.ts#contractHint",

@@ -97,7 +97,7 @@
       "name": "buildProbeLedger",
       "kind": "function",
       "line": 271,
-      "signature": "buildProbeLedger(results: InstrumentFileResult[],\r\n  projectRoot: string,\r\n  opts?: { contractMode?: boolean },): ProbeLedger"
+      "signature": "buildProbeLedger(results: InstrumentFileResult[],\n  projectRoot: string,\n  opts?: { contractMode?: boolean },): ProbeLedger"
     },
     {
       "name": "saveProbeLedger",
@@ -301,7 +301,7 @@
       "name": "collectSites",
       "kind": "function",
       "line": 806,
-      "signature": "collectSites(root: InstrNode,\r\n  file: string,\r\n  content: string,\r\n  insertions: { index: number; removeTo?: number; site: InstrumentedSite }[],\r\n  fileRel: string,\r\n  probes?: string[],\r\n  scope = false,): void"
+      "signature": "collectSites(root: InstrNode,\n  file: string,\n  content: string,\n  insertions: { index: number; removeTo?: number; site: InstrumentedSite }[],\n  fileRel: string,\n  probes?: string[],\n  scope = false,): void"
     },
     {
       "name": "isSideEffectFreeExpr",
@@ -337,13 +337,13 @@
       "name": "collectDeepSites",
       "kind": "function",
       "line": 1109,
-      "signature": "collectDeepSites(root: InstrNode,\r\n  file: string,\r\n  content: string,\r\n  insertions: { index: number; removeTo?: number; site: InstrumentedSite }[],\r\n  fileRel: string,\r\n  probes?: string[],): void"
+      "signature": "collectDeepSites(root: InstrNode,\n  file: string,\n  content: string,\n  insertions: { index: number; removeTo?: number; site: InstrumentedSite }[],\n  fileRel: string,\n  probes?: string[],): void"
     },
     {
       "name": "handleReturn",
       "kind": "function",
       "line": 1181,
-      "signature": "handleReturn(n: InstrNode,\r\n  root: InstrNode,\r\n  file: string,\r\n  content: string,\r\n  insertions: { index: number; removeTo?: number; site: InstrumentedSite }[],\r\n  fileRel: string,\r\n  parent?: InstrNode,\r\n  probes?: string[],): void"
+      "signature": "handleReturn(n: InstrNode,\n  root: InstrNode,\n  file: string,\n  content: string,\n  insertions: { index: number; removeTo?: number; site: InstrumentedSite }[],\n  fileRel: string,\n  parent?: InstrNode,\n  probes?: string[],): void"
     },
     {
       "name": "containsFunctionLike",

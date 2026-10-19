@@ -33435,12 +33435,6 @@
             {
               "kind": "symbol-exists",
               "path": "src/domain/overlay.ts",
-              "symbol": "mergeDecisionsIntoOverlay",
-              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
-            },
-            {
-              "kind": "symbol-exists",
-              "path": "src/domain/overlay.ts",
               "symbol": "mergeLifecycleIntoOverlay",
               "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
             },
@@ -33482,7 +33476,7 @@
             }
           ],
           "acceptance": "`validateProgressEvidence(\"done\", undefined)` ⇒ `ok:false`，`reason` 以「拒绝：progress='done' 必须带一条 evidence（三档之一）」开头；`(\"in_progress\", undefined)` ⇒ `ok:true`；`(\"done\", {kind:\"expectations\",all_green:true,unsupported:0})` ⇒ `ok:true`；同档 `unsupported:1` ⇒ `ok:false`；`(\"done\", {kind:\"reading\",command:\"\",observed:\"x\",at:\"t\"})` ⇒ `ok:false`。`applyOverlay(base, seedOverlayFromDsl(base))` 后 decision / decision_history / attributes / progress / lifecycle / global.function_tags 都按 overlay 投影回 base；overlay 没写 `progress` 时 **不抹掉** base 的原值。",
-          "updated_at": "2026-10-19T02:08:02.581Z",
+          "updated_at": "2026-10-19T08:22:52.731Z",
           "agent": "workbuddy-main"
         },
         "decision_history": [
@@ -36893,6 +36887,216 @@
               "acceptance": "`validateProgressEvidence(\"done\", undefined)` ⇒ `ok:false`，`reason` 以「拒绝：progress='done' 必须带一条 evidence（三档之一）」开头；`(\"in_progress\", undefined)` ⇒ `ok:true`；`(\"done\", {kind:\"expectations\",all_green:true,unsupported:0})` ⇒ `ok:true`；同档 `unsupported:1` ⇒ `ok:false`；`(\"done\", {kind:\"reading\",command:\"\",observed:\"x\",at:\"t\"})` ⇒ `ok:false`。`applyOverlay(base, seedOverlayFromDsl(base))` 后 decision / decision_history / attributes / progress / lifecycle / global.function_tags 都按 overlay 投影回 base；overlay 没写 `progress` 时 **不抹掉** base 的原值。",
               "updated_at": "2026-10-19T01:47:32.744Z",
               "agent": "all-externalize"
+            },
+            "agent": "workbuddy-main"
+          },
+          {
+            "at": "2026-10-19T08:22:52.731Z",
+            "decision": {
+              "summary": "**overlay 的唯一读写口**（领域侧）：overlay 文档/锚点/边意图/全局件的**类型与全部读写语义**都从这里出 —— 首次迁移 `seedOverlayFromDsl`、对账 `reconcileOverlay`、投影回 base `applyOverlay`、三个收口同步 `mergeDecisionsIntoOverlay` / `mergeTagsIntoOverlay` / `mergeLifecycleIntoOverlay`，以及锚点“有内容”的唯一判据 `hasAnchorPayload`。★★ `validateProgressEvidence` 是**「done 必带证据」的唯一一把尺**（三档 evidence，形状与拒绝理由都在这里；`updateStatus` / `task_ops.complete` 只调它，不另写第二套）。★ 它**不做**：不做 IO（`<feature>.overlay.json` 的读写住 `storage_overlay.ts`，那里只搬字节、不立判据）；不重建 base（`import_project`）；不定义决策卡字段（`geometry.ts`）；不校验整份 DSL（`validator.ts`）。",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "validateProgressEvidence",
+                  "why": "「done 必带证据」的唯一闸；写端不允许另写第二把自己尺"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "applyOverlay",
+                  "why": "overlay → base 的唯一投影口（决策/进度/lifecycle/tags 都从这里回填）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "seedOverlayFromDsl",
+                  "why": "首次迁移的唯一入口（只收人类意图字段，不收可再生的派生字段）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "reconcileOverlay",
+                  "why": "base 重建后“保留/迁移/孤儿/过期”的唯一对账口"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "progress": "done",
+                    "evidence": null,
+                    "check": "done 无证据的分支必须走到拒绝"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/overlay.ts'), 'utf8'); const a = s.indexOf('export function validateProgressEvidence'); const b = s.indexOf('function validateEvidenceShape'); if (a < 0 || b < 0 || b <= a) return false; const f = s.slice(a, b); const notDone = f.indexOf(\"if (progress !== 'done')\"); const firstShape = f.indexOf('return validateEvidenceShape(evidence);'); if (notDone < 0 || firstShape <= notDone) return false; const tail = f.slice(firstShape + 'return validateEvidenceShape(evidence);'.length); return /^\\s*\\}\\s*if \\(evidence === undefined\\) \\{/.test(tail) && /return bad\\('而这次一个 evidence 都没给'\\)/.test(tail) && /return validateEvidenceShape\\(evidence\\);/.test(tail); })()",
+                  "why": "★ 这条**只能钉闸的分支接线**：`run` 的求值域只有 `input / root / validateDSL / fs / path`，**不加载业务函数**（`validateProgressEvidence` 不在池子里），所以无法真调它。这里先切出非 done 分支（`return validateEvidenceShape` 之前），再断言其后**紧跟** `if (evidence === undefined) { return bad(...) }`，最后才 `return validateEvidenceShape(evidence)` —— 顺序或分支错了这条就红。**真实行为**（拒绝/放行/三档形状）由纯函数本体与 `certs/` 下 t328/t334 证覆盖；本条不冒充行为证。",
+                  "mutants_ignore": [
+                    "*"
+                  ]
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "src/domain/overlay.ts",
+                    "check": "domain 纯净：不持 IO"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/overlay.ts'), 'utf8'); return !/from ['\"]node:fs['\"]/.test(s) && !/from ['\"]node:path['\"]/.test(s) && /export function applyOverlay\\(/.test(s) && /export function seedOverlayFromDsl\\(/.test(s); })()",
+                  "why": "“唯一读写口”指**语义**唯一，不是把 IO 也塞进 domain：落盘在 `storage_overlay.ts`。这条钉住领域层仍不 import fs/path（纯函数可测），同时两个投影口仍在。",
+                  "mutants_ignore": [
+                    "*"
+                  ]
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/overlay.ts",
+                  "why": "动作要有落点（基线）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "AnchorCandidate",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "DesignOverlay",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "EdgeCandidate",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "OverlayAnchor",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "OverlayEdgeIntent",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "OverlayGlobal",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "OverlayGoal",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "ProgressEvidence",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "ReconcileStats",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "attestationAppliesTo",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "buildCandidates",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "buildEdgeCandidates",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "computeFileSignature",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "decodeDirId",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "hasAnchorPayload",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "mergeById",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "mergeDecisionsIntoOverlay",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "mergeLifecycleIntoOverlay",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "mergeTagsIntoOverlay",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "nodePath",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "nodePathKind",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "nonEmpty",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "statsLine",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "validateEvidenceShape",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                }
+              ],
+              "acceptance": "`validateProgressEvidence(\"done\", undefined)` ⇒ `ok:false`，`reason` 以「拒绝：progress='done' 必须带一条 evidence（三档之一）」开头；`(\"in_progress\", undefined)` ⇒ `ok:true`；`(\"done\", {kind:\"expectations\",all_green:true,unsupported:0})` ⇒ `ok:true`；同档 `unsupported:1` ⇒ `ok:false`；`(\"done\", {kind:\"reading\",command:\"\",observed:\"x\",at:\"t\"})` ⇒ `ok:false`。`applyOverlay(base, seedOverlayFromDsl(base))` 后 decision / decision_history / attributes / progress / lifecycle / global.function_tags 都按 overlay 投影回 base；overlay 没写 `progress` 时 **不抹掉** base 的原值。",
+              "updated_at": "2026-10-19T02:08:02.581Z",
+              "agent": "workbuddy-main"
             },
             "agent": "workbuddy-main"
           }
@@ -96938,5 +97142,5 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 414
+  "_dsl_rev": 415
 }

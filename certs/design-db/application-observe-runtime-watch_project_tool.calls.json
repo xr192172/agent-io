@@ -250,18 +250,6 @@
       "to": "src/application/design/intent/detect_drift.ts#detectDrift"
     },
     {
-      "from": "src/application/observe/runtime/watch_project_tool.ts#impactWatch",
-      "to": "src/application/meta/impact/impact_report.ts#listImpactReports"
-    },
-    {
-      "from": "src/application/observe/runtime/watch_project_tool.ts#impactWatch",
-      "to": "src/application/meta/impact/impact_report.ts#readImpactReport"
-    },
-    {
-      "from": "src/application/observe/runtime/watch_project_tool.ts#doWork",
-      "to": "src/application/meta/impact/impact_report.ts#runImpactReport"
-    },
-    {
       "from": "src/application/observe/runtime/watch_project_tool.ts#startWatch",
       "to": "src/application/observe/runtime/watch_project_tool.ts#createRebuildThrottler"
     },

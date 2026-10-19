@@ -2,32 +2,7 @@
   "//": "Design DB —— src/application/design/bricks/taxonomy.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
   "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
   "//source": "design/task-system-plan.dsl.json",
-  "symbols": [
-    {
-      "name": "TaxonomySlot",
-      "kind": "interface",
-      "line": 17,
-      "signature": "TaxonomySlot()"
-    },
-    {
-      "name": "Taxonomy",
-      "kind": "interface",
-      "line": 28,
-      "signature": "Taxonomy()"
-    },
-    {
-      "name": "defaultPipelineTaxonomy",
-      "kind": "function",
-      "line": 36,
-      "signature": "defaultPipelineTaxonomy(): Taxonomy"
-    },
-    {
-      "name": "slotIndex",
-      "kind": "function",
-      "line": 89,
-      "signature": "slotIndex(t: Taxonomy): Map<string, TaxonomySlot>"
-    }
-  ],
+  "symbols": [],
   "imports": [],
   "calls": []
 }

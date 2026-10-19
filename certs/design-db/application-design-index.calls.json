@@ -6,7 +6,7 @@
     {
       "name": "DESIGN_TOOLS",
       "kind": "const",
-      "line": 60,
+      "line": 54,
       "signature": "const DESIGN_TOOLS = [ { name: 'get_dsl', title: 'Query feature data', descrip…"
     }
   ],
@@ -55,30 +55,6 @@
       "source": "../../infrastructure/graph/import_project.js",
       "kind": "relative",
       "type_only": true
-    },
-    {
-      "source": "./lifecycle/manage_feature.js",
-      "kind": "relative"
-    },
-    {
-      "source": "./bricks/render_brickwork.js",
-      "kind": "relative"
-    },
-    {
-      "source": "./bricks/brickify.js",
-      "kind": "relative"
-    },
-    {
-      "source": "./bricks/signal_review.js",
-      "kind": "relative"
-    },
-    {
-      "source": "./lifecycle/split_stage.js",
-      "kind": "relative"
-    },
-    {
-      "source": "./lifecycle/scaffold.js",
-      "kind": "relative"
     },
     {
       "source": "./intent/set_design_intent.js",

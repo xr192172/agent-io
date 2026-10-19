@@ -6,67 +6,67 @@
     {
       "name": "MAX_FILES",
       "kind": "const",
-      "line": 56,
-      "signature": "const MAX_FILES = 200"
+      "line": 58,
+      "signature": "const MAX_FILES = Number.POSITIVE_INFINITY"
     },
     {
       "name": "LANG_COLORS",
       "kind": "const",
-      "line": 59,
+      "line": 61,
       "signature": "const LANG_COLORS = { go: { bg: '#1a4a7a', color: '#ffffff' }, ts: { bg: '#15…"
     },
     {
       "name": "DEFAULT_FILE_COLOR",
       "kind": "const",
-      "line": 67,
+      "line": 69,
       "signature": "const DEFAULT_FILE_COLOR = { bg: '#37474f', color: '#eceff1' }"
     },
     {
       "name": "DIR_STYLE",
       "kind": "const",
-      "line": 68,
+      "line": 70,
       "signature": "const DIR_STYLE = { bg: '#152141', color: '#90caf9' }"
     },
     {
       "name": "toPosix",
       "kind": "const",
-      "line": 70,
+      "line": 72,
       "signature": "const toPosix = (p: string): string => p.split(path.sep).join('/')"
     },
     {
       "name": "sanitize",
       "kind": "const",
-      "line": 71,
+      "line": 73,
       "signature": "const sanitize = (s: string): string => s.replace(/[^a-zA-Z0-9_-]/g, '_')"
     },
     {
       "name": "fileNodeId",
       "kind": "const",
-      "line": 72,
+      "line": 74,
       "signature": "const fileNodeId = (rel: string): string => `file_${sanitize(rel)}`"
     },
     {
       "name": "dirNodeId",
       "kind": "const",
-      "line": 73,
+      "line": 75,
       "signature": "const dirNodeId = (rel: string): string => `dir_${sanitize(rel)}`"
     },
     {
       "name": "kindOf",
       "kind": "function",
-      "line": 76,
+      "line": 78,
       "signature": "kindOf(kind: string): Symbol['kind']"
     },
     {
       "name": "ParsedFact",
       "kind": "interface",
-      "line": 89,
+      "line": 91,
       "signature": "ParsedFact()"
     },
     {
       "name": "renderLiveFromDb",
       "kind": "function",
-      "line": 102,
+      "line": 104,
       "signature": "renderLiveFromDb(feature: string): DesignDSL | null"
     }
   ],

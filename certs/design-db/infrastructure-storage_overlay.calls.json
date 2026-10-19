@@ -28,33 +28,27 @@
       "signature": "MergeResult()"
     },
     {
-      "name": "syncDecisionsToOverlay",
-      "kind": "function",
-      "line": 65,
-      "signature": "syncDecisionsToOverlay(feature: string,\n  dsl: DesignDSL,): { changed: boolean; written: number; cleared: number; file: string | null; notes: string[] }"
-    },
-    {
       "name": "syncTagsToOverlay",
       "kind": "function",
-      "line": 88,
+      "line": 78,
       "signature": "syncTagsToOverlay(feature: string,\n  dsl: DesignDSL,): { changed: boolean; written: number; cleared: boolean; file: string | null }"
     },
     {
       "name": "syncLifecycleToOverlay",
       "kind": "function",
-      "line": 118,
+      "line": 108,
       "signature": "syncLifecycleToOverlay(feature: string,\n  dsl: DesignDSL,): { changed: boolean; written: number; cleared: number; file: string | null; notes: string[] }"
     },
     {
       "name": "dropLifecycleFromOverlay",
       "kind": "function",
-      "line": 155,
+      "line": 145,
       "signature": "dropLifecycleFromOverlay(feature: string,\n  fileId: string,): { changed: boolean; file: string | null }"
     },
     {
       "name": "mergeDesignLayer",
       "kind": "function",
-      "line": 179,
+      "line": 169,
       "signature": "mergeDesignLayer(base: DesignDSL): MergeResult"
     }
   ],
@@ -104,10 +98,6 @@
       "to": "src/domain/overlay.ts#hasAnchorPayload"
     },
     {
-      "from": "src/infrastructure/storage_overlay.ts#syncDecisionsToOverlay",
-      "to": "src/domain/overlay.ts#mergeDecisionsIntoOverlay"
-    },
-    {
       "from": "src/infrastructure/storage_overlay.ts#syncLifecycleToOverlay",
       "to": "src/domain/overlay.ts#mergeLifecycleIntoOverlay"
     },
@@ -144,10 +134,6 @@
       "to": "src/infrastructure/storage_overlay.ts#getOverlayFile"
     },
     {
-      "from": "src/infrastructure/storage_overlay.ts#syncDecisionsToOverlay",
-      "to": "src/infrastructure/storage_overlay.ts#loadOverlay"
-    },
-    {
       "from": "src/infrastructure/storage_overlay.ts#syncTagsToOverlay",
       "to": "src/infrastructure/storage_overlay.ts#loadOverlay"
     },
@@ -162,10 +148,6 @@
     {
       "from": "src/infrastructure/storage_overlay.ts#mergeDesignLayer",
       "to": "src/infrastructure/storage_overlay.ts#loadOverlay"
-    },
-    {
-      "from": "src/infrastructure/storage_overlay.ts#syncDecisionsToOverlay",
-      "to": "src/infrastructure/storage_overlay.ts#saveOverlay"
     },
     {
       "from": "src/infrastructure/storage_overlay.ts#syncTagsToOverlay",

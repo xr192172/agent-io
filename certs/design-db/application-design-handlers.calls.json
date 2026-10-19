@@ -6,55 +6,49 @@
     {
       "name": "consistencyHandler",
       "kind": "const",
-      "line": 38,
+      "line": 37,
       "signature": "const consistencyHandler = wrapData(async (a) => { const r = await checkConsistencyR…"
     },
     {
       "name": "renderExpectationsSection",
       "kind": "function",
-      "line": 309,
+      "line": 308,
       "signature": "renderExpectationsSection(// ★ 判定器是 async ⇒ 这里要 `Awaited<>`（否则拿到的是 Promise）\n  exp: Awaited<ReturnType<typeof judgeExpectations>> | null,\n  notes: readonly string[],): string"
     },
     {
       "name": "detectDriftHandler",
       "kind": "const",
-      "line": 342,
+      "line": 341,
       "signature": "const detectDriftHandler = wrapData(async (a) => { const r = await detectDrift({ fea…"
     },
     {
       "name": "editDslHandler",
       "kind": "const",
-      "line": 360,
+      "line": 359,
       "signature": "const editDslHandler = wrap(async (a) => { // 视图写护栏：live 是代码快照，只能由 import/watch …"
     },
     {
       "name": "getDslHandler",
       "kind": "const",
-      "line": 495,
+      "line": 494,
       "signature": "const getDslHandler = wrapData(async (a) => queryFeature(a as never))"
-    },
-    {
-      "name": "manageFeatureHandler",
-      "kind": "const",
-      "line": 498,
-      "signature": "const manageFeatureHandler = wrapData(async (a) => manageFeature(a as never))"
     },
     {
       "name": "renderDesignHandler",
       "kind": "const",
-      "line": 511,
+      "line": 508,
       "signature": "const renderDesignHandler = wrap(async (a) => { // 默认 mindmap：现行思维导图架构（root → 目录分组 → …"
     },
     {
       "name": "groupExpectationFails",
       "kind": "function",
-      "line": 565,
+      "line": 562,
       "signature": "groupExpectationFails(items: readonly { verdict: string; expectation: Parameters<typeof expectationSubjectPath>[0] }[],\n  inScope: (p: string) => boolean,): { failByPath: Map<string, number>; outsideScope: string[]; unsupportedInScope: number; unsupportedOutside: number }"
     },
     {
       "name": "diffDesignSheetHandler",
       "kind": "const",
-      "line": 612,
+      "line": 609,
       "signature": "const diffDesignSheetHandler = wrapData(async (a) => { const feature = requireStr(a, 'fe…"
     }
   ],
@@ -85,10 +79,6 @@
     },
     {
       "source": "../../infrastructure/render/export.js",
-      "kind": "relative"
-    },
-    {
-      "source": ".././design/lifecycle/manage_feature.js",
       "kind": "relative"
     },
     {

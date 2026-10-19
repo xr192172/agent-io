@@ -54,121 +54,115 @@
     {
       "name": "OverlayGlobal",
       "kind": "interface",
-      "line": 264,
+      "line": 262,
       "signature": "OverlayGlobal()"
     },
     {
       "name": "OverlayGoal",
       "kind": "interface",
-      "line": 298,
+      "line": 296,
       "signature": "OverlayGoal()"
     },
     {
       "name": "OverlayEdgeIntent",
       "kind": "interface",
-      "line": 307,
+      "line": 305,
       "signature": "OverlayEdgeIntent()"
     },
     {
       "name": "DesignOverlay",
       "kind": "interface",
-      "line": 340,
+      "line": 338,
       "signature": "DesignOverlay()"
     },
     {
       "name": "AnchorCandidate",
       "kind": "interface",
-      "line": 351,
+      "line": 349,
       "signature": "AnchorCandidate()"
     },
     {
       "name": "ReconcileStats",
       "kind": "interface",
-      "line": 360,
+      "line": 358,
       "signature": "ReconcileStats()"
     },
     {
       "name": "nodePath",
       "kind": "function",
-      "line": 376,
+      "line": 374,
       "signature": "nodePath(n: { id: string; type?: string; description?: string; path?: string }): string"
     },
     {
       "name": "decodeDirId",
       "kind": "function",
-      "line": 385,
+      "line": 383,
       "signature": "decodeDirId(id: string): string"
     },
     {
       "name": "buildCandidates",
       "kind": "function",
-      "line": 391,
+      "line": 389,
       "signature": "buildCandidates(dsl: DesignDSL): AnchorCandidate[]"
     },
     {
       "name": "EdgeCandidate",
       "kind": "interface",
-      "line": 412,
+      "line": 410,
       "signature": "EdgeCandidate()"
     },
     {
       "name": "buildEdgeCandidates",
       "kind": "function",
-      "line": 419,
+      "line": 417,
       "signature": "buildEdgeCandidates(base: DesignDSL): EdgeCandidate[]"
     },
     {
       "name": "reconcileOverlay",
       "kind": "function",
-      "line": 424,
+      "line": 422,
       "signature": "reconcileOverlay(old: DesignOverlay,\n  newCandidates: AnchorCandidate[],\n  newEdgeCandidates?: EdgeCandidate[],): { overlay: DesignOverlay; stats: ReconcileStats }"
     },
     {
       "name": "mergeById",
       "kind": "function",
-      "line": 523,
+      "line": 521,
       "signature": "mergeById(list: T[], add: T[]): T[]"
     },
     {
       "name": "applyOverlay",
       "kind": "function",
-      "line": 535,
+      "line": 533,
       "signature": "applyOverlay(base: DesignDSL, overlay: DesignOverlay): DesignDSL"
     },
     {
       "name": "seedOverlayFromDsl",
       "kind": "function",
-      "line": 640,
+      "line": 638,
       "signature": "seedOverlayFromDsl(dsl: DesignDSL | null): DesignOverlay"
     },
     {
       "name": "nodePathKind",
       "kind": "function",
-      "line": 742,
+      "line": 740,
       "signature": "nodePathKind(n: { id: string; type?: string }): OverlayAnchor['kind']"
-    },
-    {
-      "name": "mergeDecisionsIntoOverlay",
-      "kind": "function",
-      "line": 776,
-      "signature": "mergeDecisionsIntoOverlay(ov: DesignOverlay,\n  dsl: DesignDSL,): { overlay: DesignOverlay; written: number; cleared: number; notes: string[] }"
     },
     {
       "name": "mergeTagsIntoOverlay",
       "kind": "function",
-      "line": 855,
+      "line": 797,
       "signature": "mergeTagsIntoOverlay(ov: DesignOverlay,\n  dsl: DesignDSL,): { overlay: DesignOverlay; tags: Record<string, string[]> | undefined; written: number; cleared: boolean }"
     },
     {
       "name": "mergeLifecycleIntoOverlay",
       "kind": "function",
-      "line": 912,
+      "line": 854,
       "signature": "mergeLifecycleIntoOverlay(ov: DesignOverlay,\n  dsl: DesignDSL,): { overlay: DesignOverlay; written: number; cleared: number; notes: string[] }"
     },
     {
       "name": "statsLine",
       "kind": "function",
-      "line": 983,
+      "line": 925,
       "signature": "statsLine(stats: ReconcileStats): string"
     }
   ],
@@ -217,10 +211,6 @@
       "to": "src/domain/overlay.ts#decodeDirId"
     },
     {
-      "from": "src/domain/overlay.ts#mergeDecisionsIntoOverlay",
-      "to": "src/domain/overlay.ts#hasAnchorPayload"
-    },
-    {
       "from": "src/domain/overlay.ts#mergeLifecycleIntoOverlay",
       "to": "src/domain/overlay.ts#hasAnchorPayload"
     },
@@ -241,15 +231,7 @@
       "to": "src/domain/overlay.ts#nodePath"
     },
     {
-      "from": "src/domain/overlay.ts#mergeDecisionsIntoOverlay",
-      "to": "src/domain/overlay.ts#nodePath"
-    },
-    {
       "from": "src/domain/overlay.ts#seedOverlayFromDsl",
-      "to": "src/domain/overlay.ts#nodePathKind"
-    },
-    {
-      "from": "src/domain/overlay.ts#mergeDecisionsIntoOverlay",
       "to": "src/domain/overlay.ts#nodePathKind"
     },
     {

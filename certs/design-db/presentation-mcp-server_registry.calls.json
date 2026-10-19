@@ -462,20 +462,8 @@
       "to": "src/infrastructure/index/db.ts#getProjectCacheDb"
     },
     {
-      "from": "src/presentation/mcp/server_registry.ts#backfillProgressNote",
-      "to": "src/infrastructure/index/index_backfill.ts#backfillState"
-    },
-    {
       "from": "src/presentation/mcp/server_registry.ts#invokeTool",
       "to": "src/infrastructure/index/index_backfill.ts#isBackfillRunning"
-    },
-    {
-      "from": "src/presentation/mcp/server_registry.ts#firstContactBackfill",
-      "to": "src/infrastructure/index/index_backfill.ts#scheduleBackfill"
-    },
-    {
-      "from": "src/presentation/mcp/server_registry.ts#staleIndexWarning",
-      "to": "src/infrastructure/index/index_freshness.ts#detectStaleIndex"
     },
     {
       "from": "src/presentation/mcp/server_registry.ts#liveDslFallbackWarning",

@@ -2,38 +2,7 @@
   "//": "Design DB —— src/application/design/lifecycle/wizard_steps.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
   "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
   "//source": "design/task-system-plan.dsl.json",
-  "symbols": [
-    {
-      "name": "WizardRole",
-      "kind": "type",
-      "line": 17,
-      "signature": "WizardRole()"
-    },
-    {
-      "name": "WizardTool",
-      "kind": "type",
-      "line": 30,
-      "signature": "WizardTool()"
-    },
-    {
-      "name": "WizardStep",
-      "kind": "interface",
-      "line": 46,
-      "signature": "WizardStep()"
-    },
-    {
-      "name": "wizardSteps",
-      "kind": "function",
-      "line": 62,
-      "signature": "wizardSteps(): WizardStep[]"
-    },
-    {
-      "name": "ROLE_LABEL",
-      "kind": "const",
-      "line": 165,
-      "signature": "const ROLE_LABEL = { brick: '积木', contract: '契约', glue: '胶水', flow: '流程', st…"
-    }
-  ],
+  "symbols": [],
   "imports": [],
   "calls": []
 }

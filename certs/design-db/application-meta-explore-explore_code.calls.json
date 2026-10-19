@@ -67,7 +67,7 @@
       "name": "readCode",
       "kind": "function",
       "line": 434,
-      "signature": "readCode(root: string | undefined,\r\n  file: string,\r\n  opts: ReadCodeOptions = {},): Promise<{ message: string; data: ReadCodeData }>"
+      "signature": "readCode(root: string | undefined,\n  file: string,\n  opts: ReadCodeOptions = {},): Promise<{ message: string; data: ReadCodeData }>"
     }
   ],
   "imports": [
