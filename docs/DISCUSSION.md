@@ -203,3 +203,93 @@ candidate ──claim(判据有红)──→ claimed ──complete(判据全绿
   哪些还在用、哪些早没人用但没人敢删？（★ 这是"砍掉一半工具面"的前提）
 - **watch 到底在不在跑**：一次可复现的对照（改文件 → 记时间 → 看 live）。
 - **94% 没有意图的节点**：是"还没写"，还是"本来就不该进设计 DSL"？
+
+---
+
+## 2026-10-19 晚（二）· observe 线在这条链上的位置 —— 以及「run 契约」的真相
+
+### 1. 用户的问题
+> 「observe 线是插桩跑运行契约的，但 DSL 里好像已经有另一种契约了：直接一句话编写契约，
+> 然后一次性测试。」
+
+### 2. ★★ 先纠正一个事实：`run` 里只有 7 条真在跑
+
+```
+run 类判据 43 条
+├─ 读源码文本（readFileSync + includes）  36 条   ← 84%
+└─ 真调用函数（跑代码看返回值）            7 条
+```
+
+**两种东西套了同一个 `kind`**：
+
+| 形态 | 例子 | 判的是什么 |
+|---|---|---|
+| 真执行 | `validateDSL(input).keys.some(k => k === 'dangling_edge:...')` | **行为**：给输入，看输出对不对 |
+| 读文本 | `fs.readFileSync(f).includes('resolved: false') && ...` | **实现细节**：源码里有没有这句话 |
+
+后者的问题（不是小问题）：
+1. **重构就红**：改变量名 / 换写法，行为没变，判据红 ⇒ **假阳性**
+2. **判的是实现细节，不是意图** —— 与"DSL 只有结构 + 意图"直接冲突
+3. **它会让人以为"测过了"** —— 最难查的一种绿
+
+★ 而且仓里本来就有 `source-has` 这个 kind（4 条），专门干"文本在不在"这件事。
+⇒ **这 36 条是 `kind` 装错了**：`run` 的语义是"执行"，它们干的是 `source-has` 的活。
+（名称不是同义 —— 又一个实例。）
+
+### 3. observe 在这条链上的真实位置
+
+```
+⑥（设计 → 实际）     回写：设计 DB 改源码
+observe（实际 → 设计） 回流：跑起来的行为 ≠ 设计 ⇒ 提提案
+```
+
+`observe_proposals` 就是**回流通道**：`list / show / approve / reject`，
+`approve` 过四层门（L1 规则回归 → L2 LLM 复核 → L3 覆盖校验 → L4 定稿），任一层不过即**冻结**（失败方向恒为"拒"）。
+确认人是**下一个接手的 Agent**（与 `review_changes` 同一条规矩）。
+
+**这正是「有人绕过监管改了实际侧」的正式出口** —— 而且比 merge 更早发现：
+merge 要比两边的**结构**，observe 直接看**跑起来的行为**。
+
+★ **但它是空转的**：`observe_proposals action=list` ⇒ **0 条**。
+回执自己写着："0 条 ≠ 都没问题，只代表没人提过"。
+
+### 4. run 与 observe 的分工（不是替代）
+
+| | `run`（真执行的那 7 条） | observe |
+|---|---|---|
+| 视角 | **黑盒**：给输入，看输出 | **白盒**：看内部怎么跑 |
+| 成本 | 低（跑一个函数） | 高（要插桩 + 真实流量 + 收事件） |
+| 能判 | 结果对不对 | 调用路径 / 入参出参 / 耗时 / 缺帧 / 内存 |
+| 现状 | 7 条 | 0 条提案 |
+
+⇒ **判结果用 `run`，判过程用 observe**。项目的 43 条契约里，36 条连"结果"都没判。
+
+### 5. 64 个工具按链路位置分类
+
+| 位置 | 工具 | 数 |
+|---|---|---|
+| ① 扫描/索引 | `import_project` `index_integrity` `code_health` | 3 |
+| ② 投影 | `render_design` `get_dsl` | 2 |
+| ③ 分支/对拍 | `consistency_check` `detect_drift` `sync_contracts` | 3 |
+| ④ 写意图 | `edit_dsl` `design_intent` | 2 |
+| ⑤ 设计 DB | `extract_contracts` `contract_page` | 2 |
+| ⑥ 回写 | `edit_code` `plan_refactor` `apply_refactor_plan` `snapshot` | 4 |
+| ⑥ 扩展（结构重写） | `rename_*` `move_*` `remove_dead_imports` `deprecate_offline` `refactor_pipeline` `refactor_judge` `annotate_functions` `archive` | 10 |
+| 对拍/影响面 | `diff_views` `impact_analysis` `find_references` | 3 |
+| 门/审核 | `review_changes` `rules` | 2 |
+| **observe（实际→设计回流）** | `observe_instrument` `observe_trace` `observe_log` `observe_judge` `observe_proposals` `recommend_observe_points` `behavior_baseline` `feature_line` `memory_observe` `reconcile_chain` `reconcile_effects` | **11** |
+| 辅助/自省 | `suggest_renames` `find_similar_names` `structure_gap` `diagnose` `diagnose_loop` `upgrade` `gateway_provider` `tool_usage` `capability_map` `capability_audit` `next_hop_args` `first_hop_args` | 12 |
+| 其他 | `canvas_notes` `narrate_step` `read_project_docs` `run_tests` `translate_go_ts` `go_originals` `cross_repo_symbol_index` `harvest_decisions` `harvest_closure` | 9 |
+
+★ 结论：**链上必需的约 31 个**（①②③④⑤⑥ + 对拍 + 门），其余 33 个里，
+11 个是 observe（有用但空转），22 个是辅助/历史。
+
+### 6. 我的判断（待用户确认）
+
+1. **`run` 的 36 条读文本判据应该改成 `source-has`** —— 它们不是测试，是文本断言。
+   混在 `run` 里会让人以为"行为被测过了"。
+2. **observe 值得留，但要用对地方**：只在"过程本身是需求"时才用
+   （例：这个操作必须走 3 步、必须不重试、必须不超 200ms）。
+   日常"结果对不对"用 `run` 就够，别为它插桩。
+3. **回流通道（`observe_proposals`）现在 0 条，不是"没问题"，是没人跑。**
+   如果这条链要闭环，它必须被真的用起来——否则"实际侧改了设计不知道"永远无解。
