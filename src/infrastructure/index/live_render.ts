@@ -52,8 +52,10 @@ import { findCacheDb } from './db.js';
 import { getFileParse } from './symbols.js';
 import { scanRevOf } from './scan_rev.js';
 
-/** 与 `import_project` 的默认 `max_files` 一致（"现有 live 文件里那批"的同一截断口径）。 */
-const MAX_FILES = 200;
+/** ★★★ 2026-10-19（用户：max_files 直接删掉）—— 与 `import_project` 的默认【不截断】保持一致。
+ *  ★ 原为 200：注释说"与 import_project 的默认一致"，而那个默认已改 ⇒ 这个必须跟着改，
+ *  否则两个渲染器（layered vs renderLiveFromDb）会产出 656 vs 227 个节点的巨大差异。 */
+const MAX_FILES = Number.POSITIVE_INFINITY;
 
 /** 各语言文件节点配色（★ 复制自 `import_project.ts`：那两个表**未导出**，为不改写端只能本地持一份）。 */
 const LANG_COLORS: Record<string, { bg: string; color: string }> = {
