@@ -51,6 +51,7 @@ import { setDesignIntent } from './intent/set_design_intent.js';
 import { consistencyHandler, detectDriftHandler, editDslHandler, getDslHandler, renderDesignHandler } from './handlers.js';
 import { designLineHandler } from './line/design_line.js';
 import { genDesignDb } from './db/gen_design_db.js';
+import { rewriteSymbols } from './rewrite/rewrite.js';
 import type { ToolDef } from '../types.js';
 
 export const DESIGN_TOOLS: ToolDef[] = [
@@ -370,10 +371,16 @@ export const DESIGN_TOOLS: ToolDef[] = [
       project_dir: z.string().describe('项目根目录（含 .agent-io/）'),
       feature: z.string().optional().describe('feature 名（action=report 必填；action=gen-db 省略 = design/ 下全部）'),
       action: z
-        .enum(['report', 'gen-db'])
+        .enum(['report', 'gen-db', 'rewrite'])
         .optional()
-        .describe('report=六步读数（默认，只读）· gen-db=设计 DSL → 设计 DB（写 certs/design-db/）'),
+        .describe(
+          'report=六步读数（默认，只读）· gen-db=设计 DSL → 设计 DB（写 certs/design-db/）· ' +
+            'rewrite=⑥ 设计 DB → 源码（默认零写入，apply=true 才落盘）',
+        ),
       check: z.boolean().optional().describe('★ 仅 action=gen-db：true 只比对不写盘、也不清理陈旧副本'),
+      apply: z.boolean().optional().describe('★ 仅 action=rewrite：true 才真落盘（默认零写入；落盘后会自动重算复核）'),
+      file: z.string().optional().describe('★ 仅 action=rewrite：只算一个文件（仓库相对路径）'),
+      prefix: z.string().optional().describe('★ 仅 action=rewrite：只算某个前缀（如 src/domain/）'),
     },
     handler: wrapData(async (a) => {
       const action = (a.action as string | undefined) ?? 'report';
@@ -391,6 +398,50 @@ export const DESIGN_TOOLS: ToolDef[] = [
           ? `\n\n★ ${r.problems.length} 个问题：\n` + r.problems.slice(0, 12).map((p) => '    ' + p).join('\n')
           : '';
         return { message: head + tail, data: r };
+      }
+      if (action === 'rewrite') {
+        const r = await rewriteSymbols({
+          projectDir: String(a.project_dir),
+          feature: a.feature ? String(a.feature) : undefined,
+          onlyFile: a.file ? String(a.file) : undefined,
+          prefix: a.prefix ? String(a.prefix) : undefined,
+          apply: a.apply === true,
+        });
+        const L: string[] = [
+          `════ REWRITE · ${r.feature || '(未指定 feature)'} · ${r.scanned} 份设计 DB ════`,
+          '',
+          `  ✅ 签名相同          ${r.same}`,
+          `  ★★ 签名不同（可重写） ${r.differ.length}`,
+          `  ⚠️  不可比（不算一致）  ${r.uncompared}`,
+        ];
+        for (const [k, n] of Object.entries(r.uncomparedByKind)) L.push(`       · ${k.padEnd(12)} ${n} 条`);
+        L.push(`  ✗ 设计有·源码没有    ${r.designOnly}   ← 不可生成（DSL 没有实现，人写）`);
+        L.push(`  ✗ 源码有·设计没有    ${r.sourceOnly}   ← 设计漏了（③ sync 的职责）`);
+        if (r.differ.length) {
+          L.push('', '  ── 待重写（前 12）──');
+          for (const t of r.differ.slice(0, 12)) {
+            L.push(`
+  ${t.file}  ${t.name}（${t.kind}）`);
+            L.push(`    - ${t.old_text.slice(0, 110)}`);
+            L.push(`    + ${t.new_text.slice(0, 110)}`);
+          }
+        }
+        if (r.applied) {
+          L.push('', '  ── 落盘 ──');
+          L.push(`  plan_id ${r.applied.plan.plan_id} · ${r.applied.plan.summary.items} 项 / ${r.applied.plan.summary.files} 文件`);
+          L.push(
+            `  applied ${r.applied.res.applied} · already_applied ${r.applied.res.already_applied} · ` +
+              `failed ${r.applied.res.failed} · written=${r.applied.res.written} · ok=${r.applied.ok}`,
+          );
+          for (const it of r.applied.res.items.filter((x) => x.status !== 'applied')) L.push(`    · ${it.status}  ${it.file}  ${it.error ?? ''}`);
+          L.push(`  ★ 复核（落盘后重算）：签名不同 ${r.applied.afterDiffer}  ← 落盘前 ${r.differ.length}`);
+        } else if (r.differ.length === 0) {
+          L.push('', '  ✓ 没有可重写的签名差异（⑥ 的输入为空）。');
+        } else {
+          L.push('', '  ★ 零写入。传 apply=true 真落盘（走 buildRefactorPlan 的语法门 + 幂等 apply）。');
+        }
+        const ok = r.applied ? r.applied.ok : true;
+        return { message: L.join('\n'), data: { ...r, ok } };
       }
       const feature = a.feature ? String(a.feature) : '';
       if (!feature) throw new Error('design_line action=report 需要 feature（六步读数是按 feature 读的）');

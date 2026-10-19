@@ -48806,6 +48806,80 @@
           ]
         },
         "status": "done"
+      },
+      {
+        "id": "file_src_application_design_rewrite_rewrite_ts",
+        "label": "rewrite.ts",
+        "type": "file",
+        "path": "src/application/design/rewrite/rewrite.ts",
+        "description": "src/application/design/rewrite/rewrite.ts",
+        "decision": {
+          "summary": "⑥「设计 DB → 源码」的**编排**：调 `diffSymbols` 拿三种结论（可重写 / 不可生成 / 设计漏了），只把「可重写」的交给 `buildRefactorPlan`（语法门 + plan_id）与 `applyRefactorPlan`（幂等），落盘后**重算一次**做复核。★ 默认零写入，apply=true 才落盘。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/design/rewrite/rewrite.ts",
+              "why": "编排要住 src（工具面）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/rewrite/rewrite.ts",
+              "symbol": "rewriteSymbols",
+              "why": "执行器必须是一个可单测的 async 函数，不是 handler 里拼"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/application/design/rewrite/rewrite.ts",
+              "must": [
+                "落盘后"
+              ],
+              "why": "复核必须写进代码（报告要反映动作之后的状态）"
+            }
+          ],
+          "rationale": "⑥ 是设计链唯一「往回写源码」的一步，工具面此前完全没有 ⇒ 只能 node scripts/rewrite.mjs。判据已先一步搬进 src（symbol_diff.ts），所以这里只剩编排。★ 落盘后重算这条是 2026-10-19 上午踩出来的：屏幕报「0 条签名差异」而源码其实被改了 —— 报告必须反映动作【之后】的状态。",
+          "consequences": "① design_line 多 action=rewrite；② 删 scripts/rewrite.mjs；③ 行为判据是「零写入模式下读数与脚本一致」+「apply 路径照搬 buildRefactorPlan/applyRefactorPlan，不另造」；④ 落盘后复核不为 0 ⇒ ok=false（不能算成功）。",
+          "acceptance": "零写入模式下读数与旧脚本逐项相同（same 2386 / differ 0 / uncompared 1972）；apply=false 时绝不写源码；复核后 differ>0 ⇒ 结果里 ok=false 且明说。",
+          "status": "active",
+          "updated_at": "2026-10-19T14:06:01.194Z",
+          "author": "llm",
+          "agent": "workbuddy"
+        },
+        "task": {
+          "id": "file_src_application_design_rewrite_rewrite_ts",
+          "summary": "⑥「设计 DB → 源码」的**编排**：调 `diffSymbols` 拿三种结论（可重写 / 不可生成 / 设计漏了），只把「可重写」的交给 `buildRefactorPlan`（语法门 + plan_id）与 `applyRefactorPlan`（幂等），落盘后**重算一次**做复核。★ 默认零写入，apply=true 才落盘。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/design/rewrite/rewrite.ts",
+              "why": "编排要住 src（工具面）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/rewrite/rewrite.ts",
+              "symbol": "rewriteSymbols",
+              "why": "执行器必须是一个可单测的 async 函数，不是 handler 里拼"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/application/design/rewrite/rewrite.ts",
+              "must": [
+                "落盘后"
+              ],
+              "why": "复核必须写进代码（报告要反映动作之后的状态）"
+            }
+          ],
+          "state": "done",
+          "owner": "workbuddy",
+          "claimed_at": "2026-10-19T14:06:03.841Z",
+          "evidence": [
+            {
+              "kind": "expectations",
+              "at": "2026-10-19T14:09:05.621Z",
+              "verdict": "pass"
+            }
+          ]
+        },
+        "status": "done"
       }
     ],
     "edges": [
@@ -94384,6 +94458,12 @@
         "path": "src/application/design/rewrite/symbol_diff.ts",
         "responsibility": "设计 DB vs 源码的符号级判据（⑥ 的地基，全仓唯一一份）",
         "status": "done"
+      },
+      {
+        "id": "file_src_application_design_rewrite_rewrite_ts",
+        "path": "src/application/design/rewrite/rewrite.ts",
+        "responsibility": "⑥ 设计 DB → 源码的编排（清单 → 语法门 → 落盘 → 复核）",
+        "status": "done"
       }
     ]
   },
@@ -94446,11 +94526,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-19T14:02:36.741Z",
+    "saved_at": "2026-10-19T14:09:05.650Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792418556484,
-    "age": 257
+    "scanRev": 1792418945426,
+    "age": 224
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -96231,5 +96311,5 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 503
+  "_dsl_rev": 507
 }

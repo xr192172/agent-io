@@ -1,0 +1,58 @@
+{
+  "//": "Design DB —— src/application/design/rewrite/rewrite.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "path": "src/application/design/rewrite/rewrite.ts",
+  "symbols": [
+    {
+      "name": "RewriteArgs",
+      "kind": "interface",
+      "line": 32,
+      "signature": "RewriteArgs()"
+    },
+    {
+      "name": "RewriteResult",
+      "kind": "interface",
+      "line": 45,
+      "signature": "RewriteResult()"
+    },
+    {
+      "name": "rewriteSymbols",
+      "kind": "function",
+      "line": 73,
+      "signature": "rewriteSymbols(args: RewriteArgs): Promise<RewriteResult>"
+    }
+  ],
+  "imports": [
+    {
+      "source": "./symbol_diff.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../refactor/pipeline/refactor_plan.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/design/rewrite/rewrite.ts#rewriteSymbols",
+      "to": "src/application/design/rewrite/symbol_diff.ts#diffSymbols"
+    },
+    {
+      "from": "src/application/design/rewrite/rewrite.ts#rewriteSymbols",
+      "to": "src/application/design/rewrite/symbol_diff.ts#diffSymbols"
+    },
+    {
+      "from": "src/application/design/rewrite/rewrite.ts#rewriteSymbols",
+      "to": "src/application/design/rewrite/symbol_diff.ts#uncomparedTotal"
+    },
+    {
+      "from": "src/application/design/rewrite/rewrite.ts#rewriteSymbols",
+      "to": "src/application/refactor/pipeline/refactor_plan.ts#applyRefactorPlan"
+    },
+    {
+      "from": "src/application/design/rewrite/rewrite.ts#rewriteSymbols",
+      "to": "src/application/refactor/pipeline/refactor_plan.ts#buildRefactorPlan"
+    }
+  ]
+}

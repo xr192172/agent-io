@@ -74,8 +74,8 @@ node scripts/design-line.mjs      # 6 步读数
 node scripts/design-diff.mjs      # 节点级 diff（+/-/~）
 node scripts/design-diff.mjs --signature   # 符号级 diff（⑥ 的判据）
 node dist/src/presentation/cli/cli.js diff_views feature=<f>   # ★ 三方合并已并入 diff_views（merge.mjs 已删）
-node scripts/rewrite.mjs          # ⑥ 设计 DB vs 源码（三种结论）；--apply 才真落盘
-node scripts/rewrite.mjs --apply  # ★ ⑥ 执行器（幂等；落盘后自动复核）
+node dist/src/presentation/cli/cli.js design_line project_dir=. action=rewrite   # ★ ⑥ 三种结论（脚本已收进工具）
+node dist/src/presentation/cli/cli.js design_line project_dir=. action=rewrite apply=true   # ★ 真落盘（幂等；自动复核）
 node scripts/sync.mjs             # ③ 双向（--apply 才写）
 ```
 
