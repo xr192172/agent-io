@@ -16,6 +16,7 @@ import { McpServer, ResourceTemplate } from '@modelcontextprotocol/sdk/server/mc
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { registerAllTools } from './server_registry.js';
 import { importProject } from '../../infrastructure/graph/import_project.js';
+import { getProjectCacheDb } from '../../infrastructure/index/db.js';
 import { watchProjectTool } from '../../application/observe/runtime/watch_project_tool.js';
 import { listFeatures, getDSL } from '../../infrastructure/storage.js';
 import { resolveCanvasNoteTargets, renderCanvasNotesDigest } from '../../application/meta/view/derive_mind_map.js';
@@ -202,7 +203,11 @@ async function runAutoWatchHook(): Promise<void> {
   const reconcileMs = parseInt(process.env.AGENT_IO_WATCH_INTERVAL_MS ?? '30000', 10) || 30000;
 
   try {
-    const imp = await importProject({ project_dir: projectDir, feature });
+    // ★★★ 2026-10-19 修：**必须传 cache_db** —— 不传会走 importProject 的 else 分支
+    //   （只 parseFileFull + ingest，**完全不写 cache.db 的 files/nodes**）⇒ 索引不更新
+    //   ⇒ 保鲜（indexStaleFor）永远说"索引与源码不一致"。（实测：跑 558 文件 22.8s 后
+    //   task_ops/task_drift/task_machine 的 content_hash 仍是旧值。）
+    const imp = await importProject({ project_dir: projectDir, feature, cache_db: getProjectCacheDb(projectDir) });
     console.error(
       `[Auto Watch] 已导入工作空间 ${projectDir} → feature="${feature}" ` +
         `（解析 ${imp.files_parsed} 文件 / ${imp.symbols_found} 符号 / ${imp.dep_edges} 调用边）`,
