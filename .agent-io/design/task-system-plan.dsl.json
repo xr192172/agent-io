@@ -57791,11 +57791,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-18T23:52:55.975Z",
+    "saved_at": "2026-10-19T00:15:55.522Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792314946341,
-    "age": 52629634
+    "age": 54009181
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -59508,6 +59508,34 @@
       "state": "done",
       "owner": null,
       "release_reason": "promoted to file_src_domain_validator_ts"
+    },
+    {
+      "id": "todo_A3",
+      "summary": "A3：claim 是 check-then-act（task_ops.ts:462 —— 读→判→写，中间夹异步 cardStanding，无锁）⇒ 两个 agent 可能同时领到同一张卡",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_A4",
+      "summary": "A4：证据闸只校验【形状】（task_ops.ts:601）—— L1 卡可用手填 {all_green:true} 收口，从不与真实判定对账",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_A5",
+      "summary": "A5：L1 卡永远进不了 missed_close（task_drift.ts:168）—— ★ 真根因见 §6「L1 判据缺口」",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_A6",
+      "summary": "A6：已领卡的 decision 可静默漂移（node_ops.ts:419）—— claimed/done 的 L2 卡，decision 改了没人管（第四条死锁成因没有执行者）",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
     }
   ],
   "_dsl_rev": 12

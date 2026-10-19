@@ -181,7 +181,10 @@
 
 ---
 
-## 4 · 已知缺陷（还活着的 10 条；**已修的不列在这里**）
+## 4 · 已知缺陷（还活着的 4 条；**已修的不列在这里**）
+
+★★★ **2026-10-19：本节的 4 条（A3–A6）已迁成 `todos[]` 里的卡**（`todo_A3`…`todo_A6`）—— **活的在 `todos[]`（能 claim/complete/void），本表保留作详细描述**。
+★ 看活的：读 `.agent-io/design/<f>.dsl.json` 的 `todos[]`。
 
 ### ★ 最近修好的（2026-10-17，只记结果，过程见 git）
 - **A2 `cardStanding` 的红归属**：`blocked` 两头都漏（漏 orphan ⇒ 假 blocked 且 reason 撒谎；漏"部分 pending" ⇒ 假 work）⇒ 重写成 **`RedAttribution` + `RED_DISPOSITION`** 穷尽表；★ 顺带想清 **`dep-done` 也算 wait**（闸只认该节点的卡）。
