@@ -3,7 +3,7 @@
   "//why": "主 tsconfig 的 include 只有 src/** ⇒ certs/ 下的契约【从来没被编译】⇒ '0 错误'是假绿。",
   "//usage": "npx tsc --noEmit -p tsconfig.contract.json  ⇒ 0 错 = 设计要的符号/签名/用法在实际代码上成立",
   "extends": "./tsconfig.json",
-  "include": ["certs/design-contracts/**/*.ts"],
+  "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "dist", "examples"],
   "compilerOptions": {
     "noEmit": true,
