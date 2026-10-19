@@ -207,7 +207,14 @@ async function runAutoWatchHook(): Promise<void> {
     //   （只 parseFileFull + ingest，**完全不写 cache.db 的 files/nodes**）⇒ 索引不更新
     //   ⇒ 保鲜（indexStaleFor）永远说"索引与源码不一致"。（实测：跑 558 文件 22.8s 后
     //   task_ops/task_drift/task_machine 的 content_hash 仍是旧值。）
-    const imp = await importProject({ project_dir: projectDir, feature, cache_db: getProjectCacheDb(projectDir) });
+    // ★★ 2026-10-19：**max_files 要给足** —— 默认 200 会截断（实测本项目 558 个源文件）
+    //   ⇒ 被截断的文件不在索引里 ⇒ 保鲜/对拍在它们上永远判不了。
+    const imp = await importProject({
+      project_dir: projectDir,
+      feature,
+      cache_db: getProjectCacheDb(projectDir),
+      max_files: parseInt(process.env.AGENT_IO_MAX_FILES ?? '5000', 10) || 5000,
+    });
     console.error(
       `[Auto Watch] 已导入工作空间 ${projectDir} → feature="${feature}" ` +
         `（解析 ${imp.files_parsed} 文件 / ${imp.symbols_found} 符号 / ${imp.dep_edges} 调用边）`,

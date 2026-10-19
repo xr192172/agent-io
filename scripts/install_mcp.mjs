@@ -341,6 +341,12 @@ const baseServerValue = {
   env: {
     AGENT_IO_AUTO_WATCH: '1',
     AGENT_IO_PROJECT_DIR: process.cwd(),
+    /**
+     * ★★ 2026-10-19：**feature 名必须显式给** —— 不给时 server.ts 取"目录名"（本项目会得到
+     * `design-canvas`），而设计/保鲜/对拍用的 feature 是 `task-system-plan` ⇒ **两套 feature 对不上**
+     * ⇒ 自动保鲜写的是另一个 feature 的索引，等于没保鲜。
+     */
+    AGENT_IO_WATCH_FEATURE: process.env.AGENT_IO_WATCH_FEATURE || 'task-system-plan',
   },
 };
 
