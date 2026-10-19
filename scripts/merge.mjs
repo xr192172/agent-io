@@ -1,31 +1,48 @@
 #!/usr/bin/env node
 /**
- * merge.mjs —— 三方合并【只读版】（★ 2026-10-19，见 docs/MERGE.md）
+ * merge.mjs —— 三方合并【判定版】（★ 2026-10-19 第五次修正：从「存在性」升级到「内容」）
  *
  * ## 它做什么
  * ```
- * base   = .agent-io/baseline/<f>.dsl.json   （fork 时的共同祖先，永不移动）
+ * base   = .agent-io/baseline/<f>.dsl.json   （fork 时的共同祖先，★ 永不移动）
  * ours   = .agent-io/design/<f>.dsl.json     （人写的意图）
- * theirs = .agent-io/live/<f>.dsl.json       （Agent 改源码后的扫描）
- *
- * ⇒ 算出三类差异，打印【裁决清单】
+ * theirs = .agent-io/live/<f>.dsl.json       （源码改动后的扫描）
  * ```
+ * 对**每个文件节点**做真正的三方判定，产出**待裁清单**。**零写入。**
  *
- * ## 一条硬规则
- * ★ **decision / expectations 永不被 theirs 覆盖** —— 事实可更新，意图不能。
- *   本脚本【绝不写任何文件】（零写入），只告诉你"哪边领先、哪里有冲突、哪条判据失效了"。
+ * ## ★★★ 为什么必须改（前四版的病）
+ * ① 只比「有没有这个文件」⇒ **37 个内容被改过的节点，一个都没报出来**（看起来在工作，实际什么都没判）
+ * ② `startsWith('src/')` 把 `certs/` `scripts/` `third_party/` 的 **178 个文件（35%）直接排除**
+ *    ⇒ 实测 `scripts/merge.mjs` 在 live 里、design 里没有，而 merge 报「0 差异」
+ * ③ 「都有 = 未变」的写法把**内容变化**吞掉了
+ *
+ * ## 判据（一条，别加第二个口径）
+ * 每一侧相对 base 只有三种状态：`absent` / `same` / `changed`。
+ * 两边互相比较 ⇒ 9 种组合，归成 5 类（见 `judge()`）。
+ * **内容** = 节点上「两边本来就该有」的字段；`decision` / `task` **不参与**
+ * （它们天然只住设计侧，参与比较的话 38 个节点全会假"设计改过"）。
+ *
+ * ## ★ 它为什么不做「合并」
+ * 用户 2026-10-19 裁定：*静默合并 = 既没协作、也没理由、还绕过任务系统*。
+ * ⇒ 本脚本**只判、只列**，把每条差异变成一条**待裁项**（带"谁动的/动了几处/建议怎么办"）。
+ *   真正落地必须走：决策卡（理由）→ 任务（谁做）→ ⑥ 回写。
  *
  * ## 用法
- *   node scripts/merge.mjs                     # 默认 feature=task-system-plan
- *   node scripts/merge.mjs --feature=xxx
- *   node scripts/merge.mjs --json              # 机器可读
+ *   node scripts/merge.mjs                  # 全量三方判定 + 待裁清单
+ *   node scripts/merge.mjs --json           # 机器可读（给后续提案/任务用）
+ *   node scripts/merge.mjs --dir=src        # 只看某目录（默认全量，不再默认 src/）
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import { DatabaseSync } from 'node:sqlite';
 
 const ROOT = process.cwd();
-const arg = process.argv.find((a) => a.startsWith('--feature='));
-const FEATURE = arg ? arg.split('=')[1] : 'task-system-plan';
+const argOf = (k) => {
+  const a = process.argv.find((x) => x.startsWith(`--${k}=`));
+  return a ? a.split('=').slice(1).join('=') : undefined;
+};
+const FEATURE = argOf('feature') ?? 'task-system-plan';
+const DIR = argOf('dir'); // 可选：只看某前缀
 const JSON_OUT = process.argv.includes('--json');
 
 const P = {
@@ -33,7 +50,6 @@ const P = {
   ours: path.join(ROOT, '.agent-io', 'design', `${FEATURE}.dsl.json`),
   theirs: path.join(ROOT, '.agent-io', 'live', `${FEATURE}.dsl.json`),
 };
-
 for (const [k, p] of Object.entries(P)) {
   if (!fs.existsSync(p)) {
     console.error(`★ 缺 ${k}：${p}`);
@@ -48,97 +64,129 @@ const theirs = load(P.theirs);
 
 const norm = (s) => String(s ?? '').replace(/\\/g, '/');
 
-/** 取"文件节点"（description 是路径的那些） */
-const fileNodes = (dsl) =>
-  new Map(
-    (dsl.geometry?.nodes ?? [])
-      .filter((n) => norm(n.description).startsWith('src/'))
-      .map((n) => [norm(n.description), n]),
-  );
-
-/** semantic.files 的索引（★ 行数/符号在【这里】，不在 geometry.nodes 里） */
-const semFiles = (dsl) => new Map((dsl.semantic?.files ?? []).map((f) => [norm(f.path), f]));
+/**
+ * ★ 参与比较的字段：**两边本来就该有**的结构事实。
+ * 不含 `decision` / `task`（只住设计侧）、不含 `x/y/width/height`（布局不是内容）。
+ */
+const CONTENT_FIELDS = ['label', 'type', 'status', 'description', 'content', 'attributes', 'sub_dsl'];
 
 /**
- * ★★★ 2026-10-19 第三次修正（这次是【去掉不可靠的判据】，而不是修 bug）：
+ * ★★★ `label` 是**混合量**，比之前必须剥掉派生部分。
  *
- * 前两版都用 `semantic.files` 的 `lines`/`symbols` 做"结构指纹"，但——
- * **`design/` 的 `semantic.files` 是 `fork` 时的快照，永不更新**；
- * 而 `live/` 每次重扫都变 ⇒ 拿它俩比 ⇒ **必然全部"不一致"**（26 + 24 个假象）。
- *
- * ⇒ 所以本脚本现在【只比两件可靠的事】：
- *   ① **文件存在性**（`geometry.nodes` 的 `description`，这是真的）
- *   ② **decision 的有无**（设计独有，实际侧永远没有）
- * ⇒ 其余（行数/符号数）**不比** —— 等设计侧的 semantic 有可靠来源再加回来。
- *
- * ★ 这不是"功能缩水"：一个会骗人的判据，比没有判据更坏。
+ * 实测形态：`"node_ops.ts · 2 APIs"` / `"节点的写入端"` / `"漂移巡检（live 每次重算后跑）"`。
+ * 前者的 `· 2 APIs` 是**派生**的（符号数变了它就变），后者才是**人写的**。
+ * ⇒ 不剥就把「实际侧新增了一个函数」误报成「设计侧改过」——
+ *   而"符号数变了"是 `rewrite` / `design-diff` 的职责，不是 merge 的。
  */
-const fp = () => 'n/a';
+const humanLabel = (n) => String(n?.label ?? '').replace(/\s*·\s*\d+\s*APIs?\s*$/i, '').trim();
+
+const fp = (n) =>
+  n ? JSON.stringify(CONTENT_FIELDS.map((k) => (k === 'label' ? humanLabel(n) : (n[k] ?? null)))) : null;
+const changedFields = (a, b) =>
+  CONTENT_FIELDS.filter(
+    (k) => JSON.stringify(k === 'label' ? humanLabel(a) : (a?.[k] ?? null)) !== JSON.stringify(k === 'label' ? humanLabel(b) : (b?.[k] ?? null)),
+  );
+function fileNodes(dsl) {
+  const m = new Map();
+  for (const n of dsl.geometry?.nodes ?? []) {
+    if (n.type !== 'file') continue;
+    const p = norm(n.description);
+    if (p) m.set(p, n);
+  }
+  return m;
+}
 
 const B = fileNodes(base);
 const O = fileNodes(ours);
 const T = fileNodes(theirs);
 
-const SB = semFiles(base);
-const SO = semFiles(ours);
-const ST = semFiles(theirs);
+const allFiles = [...new Set([...B.keys(), ...O.keys(), ...T.keys()])]
+  .filter((f) => !DIR || f.startsWith(DIR))
+  .sort();
 
-const allFiles = new Set([...B.keys(), ...O.keys(), ...T.keys()]);
+/**
+ * 三方判定 —— 每一侧相对 base 的三种状态，组合成 5 类。
+ *
+ * ```
+ *               ours absent | ours same | ours changed
+ * theirs absent    gone         oursOnly     oursOnly     ← 设计侧要删（⑥ 落地）
+ * theirs same      onlyTheirs   unchanged    designAhead
+ * theirs changed   onlyTheirs   actualAhead  CONFLICT     ← 都动了
+ * ```
+ * ★ `ours changed && theirs changed && fp(ours)===fp(theirs)` ⇒ `converged`（两边各自改成了同一个结果）
+ */
+function judge(f) {
+  const b = B.get(f) ?? null;
+  const o = O.get(f) ?? null;
+  const t = T.get(f) ?? null;
+  const fb = fp(b);
+  const fo = fp(o);
+  const ft = fp(t);
 
-/** 三类差异 */
-const onlyOurs = []; // 设计领先
-const onlyTheirs = []; // 实际领先
-const bothChanged = []; // 冲突
-const unchanged = [];
+  /**
+   * ★★★ 先判「有没有共同祖先」—— fork 之后才出现的文件，**谈不上"谁改的"**。
+   * 实测踩到：`board/pool.ts` 在 baseline 里不存在，design 和 live 都有 ⇒
+   * 前四版逻辑判成「两边都改且不同 = 冲突」，实际是「两边各自新增」。
+   * ⇒ `base` 缺位时只判"新增"，判不了"改动"。
+   */
+  if (!b) {
+    if (o && !t) return { kind: 'onlyOurs', os: 'changed', ts: 'absent' };
+    if (!o && t) return { kind: 'onlyTheirs', os: 'absent', ts: 'changed' };
+    if (o && t) return { kind: fo === ft ? 'converged' : 'bothAdded', os: 'changed', ts: 'changed' };
+    return { kind: 'gone', os: 'absent', ts: 'absent' };
+  }
+
+  const os = o ? (fo === fb ? 'same' : 'changed') : 'absent';
+  const ts = t ? (ft === fb ? 'same' : 'changed') : 'absent';
+
+  if (!o && !t) return { kind: 'gone', os, ts };
+  // 设计侧没有这个文件
+  //   base 有、实际有 ⇒ 设计删了（sync 清的孤儿）⇒ designDeleted
+  //   base 没有、实际有 ⇒ 实际新增 ⇒ onlyTheirs
+  if (!o) return { kind: b ? 'designDeleted' : 'onlyTheirs', os, ts };
+  // 实际侧没有这个文件
+  //   base 有、设计有 ⇒ 实际删了 ⇒ actualDeleted
+  //   base 没有、设计有 ⇒ 设计新增 ⇒ onlyOurs
+  if (!t) return { kind: b ? 'actualDeleted' : 'onlyOurs', os, ts };
+
+  if (os === 'same' && ts === 'same') return { kind: 'unchanged', os, ts };
+  if (os === 'changed' && ts === 'same') return { kind: 'designAhead', os, ts };
+  if (os === 'same' && ts === 'changed') return { kind: 'actualAhead', os, ts };
+  // 两边都 changed
+  if (fo === ft) return { kind: 'converged', os, ts };
+  return { kind: 'conflict', os, ts };
+}
+
+const buckets = {
+  designAhead: [],
+  actualAhead: [],
+  conflict: [],
+  onlyOurs: [],
+  onlyTheirs: [],
+  designDeleted: [],
+  actualDeleted: [],
+  converged: [],
+  bothAdded: [],
+  unchanged: [],
+  gone: [],
+};
 
 for (const f of allFiles) {
+  const v = judge(f);
   const b = B.get(f);
   const o = O.get(f);
   const t = T.get(f);
-  const bSem = SB.get(f);
-  const oSem = SO.get(f);
-  const tSem = ST.get(f);
-  /**
-   * ★★★ 2026-10-19 第四次修正：**用最简的 4 种组合**（不再叠 6 个布尔量，那只会绕死自己）。
-   *
-   * 可靠判据只有"存在性"（`geometry.nodes` 的 description）：
-   * ```
-   * 设计有 · 实际没有  ⇒ onlyOurs    （设计领先，待重写⑥）
-   * 设计无 · 实际有    ⇒ onlyTheirs  （实际领先，待 sync③）
-   * 设计有 · 实际有    ⇒ unchanged   （★ 内容是否变了？—— 没有可靠语义源，不判）
-   * 设计无 · 实际无    ⇒ 都不在（从 base 删了 ⇒ 也无事可做）
-   * ```
-   * ★ 为什么"都有"一律算 unchanged：`design/` 的 semantic 是 fork 快照、`cache.db` 的 call 边只同文件
-   *   ⇒ 任何"内容比较"都会产出假冲突。等 docs/MERGE.md §6 的可靠语义源就位再加回来。
-   */
-  const oursHas = o !== undefined;
-  const theirsHas = t !== undefined;
-
-  if (oursHas && theirsHas) {
-    unchanged.push(f);
-    continue;
-  }
-  if (oursHas && !theirsHas) {
-    onlyOurs.push(f);
-    continue;
-  }
-  if (!oursHas && theirsHas) {
-    onlyTheirs.push(f);
-    continue;
-  }
-  // 两边都没有 ⇒ 从 base 删了，无事可做
-  unchanged.push(f);
+  const rec = {
+    file: f,
+    kind: v.kind,
+    hasIntent: Boolean(o?.decision),
+    oursChangedFields: changedFields(o, b),
+    theirsChangedFields: changedFields(t, b),
+  };
+  (buckets[v.kind] ?? buckets.unchanged).push(rec);
 }
 
-/** ★ 判据失效：ours 的 call-exists 指向的 target，在【真实符号表】里还有没有
- *  ★ 2026-10-19 修正两次：
- *    ① 原来在 `theirs.decision.expectations` 里找 —— 实际侧永远没有 decision ⇒ 全假阳性
- *    ② 改成 `theirs.semantic.files[].symbols` —— ★ 它只收 type/interface，【不收函数】
- *       ⇒ `cardStanding` / `isSatisfied` 这些函数全被判"不存在"（实测 8 个全在源码里）
- *    ③ ★ 最终改用 `cache.db` 的 `nodes` 表（扫描出的完整符号表，8798 个）
- */
-import { DatabaseSync } from 'node:sqlite';
-
+/** 判据失效：设计说 call-exists 的 target，在真实符号表里还有没有 */
 const dbPath = path.join(ROOT, '.agent-io', 'cache.db');
 const theirsSymbols = new Set();
 if (fs.existsSync(dbPath)) {
@@ -148,79 +196,94 @@ if (fs.existsSync(dbPath)) {
   }
   db.close();
 }
-
 const staleExpectations = [];
 for (const [f, n] of O) {
+  if (DIR && !f.startsWith(DIR)) continue;
   for (const e of n.decision?.expectations ?? []) {
     if (e.kind !== 'call-exists') continue;
     if (!theirsSymbols.has(e.target)) {
-      staleExpectations.push({ file: f, symbol: e.symbol, target: e.target, why: e.why?.slice(0, 60) });
+      staleExpectations.push({ file: f, symbol: e.symbol, target: e.target, why: String(e.why ?? '').slice(0, 60) });
     }
   }
 }
 
+const count = (k) => buckets[k].length;
 const result = {
   feature: FEATURE,
-  base: { files: B.size, decisions: countDecisions(base) },
-  ours: { files: O.size, decisions: countDecisions(ours) },
-  theirs: { files: T.size, decisions: countDecisions(theirs) },
-  onlyOurs: onlyOurs.length,
-  onlyTheirs: onlyTheirs.length,
-  bothChanged: bothChanged.length,
-  unchanged: unchanged.length,
-  staleExpectations: staleExpectations.length,
+  dir: DIR ?? null,
+  files: { base: B.size, ours: O.size, theirs: T.size, union: allFiles.length },
+  counts: {
+    designAhead: count('designAhead'),
+    actualAhead: count('actualAhead'),
+    conflict: count('conflict'),
+    onlyOurs: count('onlyOurs'),
+    onlyTheirs: count('onlyTheirs'),
+    designDeleted: count('designDeleted'),
+    actualDeleted: count('actualDeleted'),
+    converged: count('converged'),
+    bothAdded: count('bothAdded'),
+    unchanged: count('unchanged'),
+    gone: count('gone'),
+    staleExpectations: staleExpectations.length,
+  },
+  /** ★ 待裁项：需要人/Agent 决定「跟不跟、删不删」的那些 */
+  pending: [...buckets.conflict, ...buckets.actualAhead, ...buckets.actualDeleted, ...buckets.onlyTheirs].slice(0, 200),
   details: {
-    onlyOurs: onlyOurs.slice(0, 20),
-    onlyTheirs: onlyTheirs.slice(0, 20),
-    bothChanged: bothChanged.slice(0, 20),
+    designAhead: buckets.designAhead.slice(0, 20),
     staleExpectations: staleExpectations.slice(0, 20),
   },
 };
-
-function countDecisions(dsl) {
-  return (dsl.geometry?.nodes ?? []).filter((n) => n.decision).length;
-}
 
 if (JSON_OUT) {
   console.log(JSON.stringify(result, null, 2));
   process.exit(0);
 }
 
-const { onlyOurs: oo, onlyTheirs: ot, bothChanged: bc } = result.details;
-
-console.log(`════ MERGE · ${FEATURE} ════`);
-console.log(`  base   : ${result.base.files} 文件 · ${result.base.decisions} decision`);
-console.log(`  ours   : ${result.ours.files} 文件 · ★ ${result.ours.decisions} decision（人写的意图）`);
-console.log(`  theirs : ${result.theirs.files} 文件 · ${result.theirs.decisions} decision（实际侧永远没有意图）`);
+const c = result.counts;
+console.log(`════ MERGE · ${FEATURE}${DIR ? ` · ${DIR}` : ''} ════`);
+console.log(`  base ${result.files.base} · ours ${result.files.ours} · theirs ${result.files.theirs} · 并集 ${result.files.union} 个文件节点`);
 console.log('');
-console.log(`  ★ 只 ours 变（设计领先，待重写⑥）  : ${result.onlyOurs}`);
-console.log(`  ★ 只 theirs 变（实际领先，待 sync③）: ${result.onlyTheirs}`);
-console.log(`  ★ 两边都变（${result.bothChanged} 冲突，待人裁决）      : ${result.bothChanged}`);
-console.log(`  · 未变                              : ${result.unchanged}`);
+console.log('  ── 设计侧要落地（⑥ 待重写，可直接做）──');
+console.log(`  设计改了内容          ${c.designAhead}`);
+console.log(`  设计新增（实际没有）  ${c.onlyOurs}`);
+console.log(`  设计删了（实际还在）  ${c.designDeleted}`);
+console.log('');
+console.log('  ── ★ 待裁（不能自动合并：要么缺理由，要么两边冲突）──');
+console.log(`  ★★ 两边都改了且不同  ${c.conflict}   ← 真冲突，必须人裁`);
+console.log(`  ★  实际改了（设计没动）${c.actualAhead}   ← 要不要回流进设计？`);
+console.log(`  ★  实际新增（设计没有）${c.onlyTheirs}   ← 要不要进设计？`);
+console.log(`  ★  实际删了（设计还有）${c.actualDeleted}   ← 设计该不该跟着删？`);
+console.log('');
+console.log(`  · 两边改成同一结果      ${c.converged}`);
+console.log(`  · fork 后新增（两边都有）${c.bothAdded}   ← 无共同祖先，谈不上冲突`);
+console.log(`  · 未变                 ${c.unchanged}`);
+console.log('');
 
-if (result.staleExpectations) {
-  console.log('');
-  console.log(`  ★★ 判据失效（设计说有调用，实际侧找不到了）: ${result.staleExpectations}`);
+if (c.staleExpectations) {
+  console.log(`  ★★ 判据失效（设计说有调用，实际侧找不到了）：${c.staleExpectations}`);
   for (const s of result.details.staleExpectations.slice(0, 8)) {
     console.log(`     · ${s.file.split('/').pop()}  ${s.symbol} → ${s.target}`);
   }
+  console.log('');
 }
 
-if (oo.length) {
+const show = (label, arr, note) => {
+  if (!arr.length) return;
+  console.log(`  ── ${label}（前 ${Math.min(8, arr.length)} / ${arr.length}）──`);
+  for (const r of arr.slice(0, 8)) {
+    const f = r.oursChangedFields?.length ? ` [设计动:${r.oursChangedFields.join(',')}]` : '';
+    const t = r.theirsChangedFields?.length ? ` [实际动:${r.theirsChangedFields.join(',')}]` : '';
+    console.log(`     ${r.file}${f}${t}${r.hasIntent ? ' ★有意图' : ''}`);
+  }
+  if (note) console.log(`     ${note}`);
   console.log('');
-  console.log('  ── 设计领先（前 8 个）──');
-  for (const f of oo.slice(0, 8)) console.log(`     ${f}`);
-}
-if (ot.length) {
-  console.log('');
-  console.log('  ── 实际领先（前 8 个）──');
-  for (const f of ot.slice(0, 8)) console.log(`     ${f}`);
-}
-if (bc.length) {
-  console.log('');
-  console.log('  ── 冲突（前 8 个，需人裁决）──');
-  for (const f of bc.slice(0, 8)) console.log(`     ${f}`);
-}
+};
 
-console.log('');
-console.log('  ★ 本脚本零写入（不碰任何文件）。裁决后再谈 apply。');
+show('真冲突（两边都改）', buckets.conflict, '★ 每条都要人裁：留设计？跟实际？还是各改一半？');
+show('实际领先（设计没动）', buckets.actualAhead, '★ 回流要理由：为什么设计该跟着变？');
+show('实际新增（设计没有）', buckets.onlyTheirs, '★ 是新功能漏设计，还是本来就不该进设计？');
+show('实际删了（设计还有）', buckets.actualDeleted, '★ 设计该不该跟着删？删要走 archive，不是直接抹。');
+show('设计领先（可直接 ⑥ 落地）', buckets.designAhead);
+
+console.log('  ★ 本脚本零写入。');
+console.log('  ★ 待裁项不是"合并结果"，是"要办的事"——每一条落地都要：决策卡（理由）→ 任务（谁做）。');
