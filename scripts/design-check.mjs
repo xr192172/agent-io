@@ -61,8 +61,9 @@ for (const c of criteria) {
     continue;
   }
   try {
-    const fn = new Function('dsl', 'nodes', 'paths', 'fs', 'path', `"use strict"; return (${c.expect});`);
-    const ok = Boolean(fn(dsl, nodes, paths, fs, path));
+    // ★ 求值域：dsl / nodes / paths / fs / path / root（root = 被分析项目根，D4 要读源码查"迁移有没有执行者"）
+    const fn = new Function('dsl', 'nodes', 'paths', 'fs', 'path', 'root', `"use strict"; return (${c.expect});`);
+    const ok = Boolean(fn(dsl, nodes, paths, fs, path, ROOT));
     results.push({ id, name, verdict: ok ? 'pass' : 'fail', detail: ok ? '断言成立' : `断言**不成立**：${c.expect.slice(0, 90)}` });
   } catch (e) {
     results.push({ id, name, verdict: 'fail', detail: `判不了：${e.message}` });

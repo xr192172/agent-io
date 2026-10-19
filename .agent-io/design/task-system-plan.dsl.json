@@ -59009,7 +59009,17 @@
           "rule": "每条迁移 state 必填；ready 的必须有代码执行它",
           "now": "★ 5 条迁移:ready 3(t_claim/t_release/t_done_from_claimed)· blocked 1(t_done_from_candidate/OQ1)· unimplemented 1(t_void,depends_on=A1);t_supersede 已删(2026-10-17,用户认可)+ 两条源码待跟已记",
           "unjudged": "★ 设计完整性的判据目前没有检查器（等 Expectation 与 invariant 合成一个抽象后才能跑）",
-          "debt": "D-design-completeness"
+          "debt": "D-design-completeness",
+          "expect": "(() => {\n      const t = dsl.task_plan?.state_machine?.transitions ?? [];\n      return t.every((x) => x && x.state && typeof x.state.kind === 'string' && x.state.kind.trim());\n    })()",
+          "expect_note": "每条迁移的 state.kind 必填（真实形状 {kind}）"
+        },
+        {
+          "id": "D4b",
+          "name": "迁移状态（另一半）",
+          "rule": "每条迁移 state 必填；ready 的必须有代码执行它",
+          "unjudged": "★ 设计完整性的判据目前没有检查器（等 Expectation 与 invariant 合成一个抽象后才能跑）",
+          "debt": "D-design-completeness",
+          "blocked_by": "「ready 的必须有代码执行它」：迁移 id（`t_claim`）与代码函数名（`claimTask`）没有映射记录，判\"id 在代码里出现\"会给假红"
         },
         {
           "id": "D5",
@@ -59017,7 +59027,17 @@
           "rule": "每条判据有归属（machine / review / unjudged + 欠账号）",
           "now": "★ 51 条：machine 30 / review 4 / unjudged 17（17 条全部带 debt 编号）。★ 与 assertion_baseline 同一组数（2026-10-17 统一）。",
           "unjudged": "★ 设计完整性的判据目前没有检查器（等 Expectation 与 invariant 合成一个抽象后才能跑）",
-          "debt": "D-design-completeness"
+          "debt": "D-design-completeness",
+          "expect": "(() => {\n      const b = dsl.task_plan?.assertion_baseline_2026_10_17;\n      if (!b) return false;\n      return (b.machine ?? 0) + (b.review ?? 0) + (b.unjudged ?? 0) === b.total;\n    })()",
+          "expect_note": "machine+review+unjudged = total"
+        },
+        {
+          "id": "D5b",
+          "name": "执行者（另一半）",
+          "rule": "每条判据有归属（machine / review / unjudged + 欠账号）",
+          "unjudged": "★ 设计完整性的判据目前没有检查器（等 Expectation 与 invariant 合成一个抽象后才能跑）",
+          "debt": "D-design-completeness",
+          "blocked_by": "「unjudged 的每条带欠账号」：`unjudged_paths` 是字符串数组（无 debt 字段），欠账号在 DESIGN.md 的债表里"
         },
         {
           "id": "D6",
@@ -59025,7 +59045,8 @@
           "rule": "每个 export 至少 1 个消费者（防\"建了没接\"）",
           "now": "★ 3 处缺：patrolDrift（A1）/ renderMicro（B5）/ WriteActor 旧链未接（A7）。★★ 而设计侧【表达不了】这三处：`call-exists` 需要\"调用者的 path\"，但这三处的调用者【根本不存在】⇒ 见 D8。",
           "unjudged": "★ 设计完整性的判据目前没有检查器（等 Expectation 与 invariant 合成一个抽象后才能跑）",
-          "debt": "D-design-completeness"
+          "debt": "D-design-completeness",
+          "blocked_by": "等 design:check 的求值域加 db（\"每个 export 有消费者\"要读 cache.db 的 call 边）—— 现在求值域只有 dsl/nodes/paths/fs/path/root"
         },
         {
           "id": "D7",
@@ -59033,7 +59054,8 @@
           "rule": "每个体检项必须能【自己坏】（故意造一个反例 ⇒ 它要报）；且检查器认得的判据形式要与真实一致",
           "now": "★ 2026-10-17 已抓 5 次检查器假读数：① 读空文件（路径分隔符不一致）⇒ 报「全 0」假绿；② 只数「其他文件」的引用 ⇒ 报 42 个假孤儿；③ 正则转义多套一层 ⇒ 报 105 个假死代码；④ 漏 ESM 的 js→ts 映射 ⇒ 报「全部无依赖」；⑤ 只认 判据/criteria/rule/check/cmd ⇒ 把 expr / metric / threshold 报成「无判据」（假红）。",
           "unjudged": "★ 设计完整性的判据目前没有检查器（等 Expectation 与 invariant 合成一个抽象后才能跑）",
-          "debt": "D-design-completeness"
+          "debt": "D-design-completeness",
+          "blocked_by": "算不了：「每个体检项必须能自己坏」要【故意造一个反例】看它报不报 —— 那是行为，不是静态断言（★ 它该由 run 契约 + 夹具承担）"
         },
         {
           "id": "D8",
@@ -59043,7 +59065,8 @@
           "debt": "D-kind-expressiveness",
           "relates_to": "two_level_tasks.L1_construct.missing_judge_kind",
           "gap": "设计要能表达\"应该有人调用 X，但现在没有\"",
-          "note": "★ 本字段用 gap 而非 rule —— 因为它是【缺口的描述】,不是一条要执行的判据;若写成 rule,清点器会判它 unjudged ⇒ 违反 assertion_kinds.rule(新判据不许 unjudged)"
+          "note": "★ 本字段用 gap 而非 rule —— 因为它是【缺口的描述】,不是一条要执行的判据;若写成 rule,清点器会判它 unjudged ⇒ 违反 assertion_kinds.rule(新判据不许 unjudged)",
+          "blocked_by": "算不了：本条的 `rule` 是 undefined（它是\"缺口记录\"，不是\"判据\"）—— 要先把它写成一条可判的 rule，才谈得上 expect"
         },
         {
           "id": "D9",
@@ -59052,7 +59075,8 @@
           "now": "★ 2026-10-17 第一次审：18 条（A6/B7/C5）⇒ 没过",
           "by": "不知情子代理（不给它已有结论，只问\"有没有没被记账的毛病\"）",
           "where": "task_plan.static_review_2_2026_10_17",
-          "note": "★ 用 gap 而非 rule（同 D8）：它描述\"要达到什么\"，不是一条能独立执行的判据；★ 它也要求被审方给出\"查了哪些维度\"，否则\"看不出毛病\"是空话"
+          "note": "★ 用 gap 而非 rule（同 D8）：它描述\"要达到什么\"，不是一条能独立执行的判据；★ 它也要求被审方给出\"查了哪些维度\"，否则\"看不出毛病\"是空话",
+          "blocked_by": "算不了：「外部审查通过」是【人审】的结论，没有机器可判的形式 —— ★ 它该作为一次事件记录，不是一条会变绿的断言"
         }
       ],
       "judged_by": "★ 本段**目前没有检查器** —— 这本身就是 D5 的一条 unjudged（欠账 D-design-completeness）。★ 写法与 invariant_checks 同构（判据 + cmd + runner），等 `Expectation` 与 `invariant` 合成同一个可执行抽象后，这一段就能变成可跑的判据。",
@@ -59486,5 +59510,5 @@
       "release_reason": "promoted to file_src_domain_validator_ts"
     }
   ],
-  "_dsl_rev": 9
+  "_dsl_rev": 12
 }
