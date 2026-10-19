@@ -45,16 +45,14 @@ import { getDSL, requireProjectRoot } from '../../infrastructure/storage.js';
 import { proposeChange } from './workbench/code_workbench.js';
 import { importProject } from '../../infrastructure/graph/import_project.js';
 import type { ImportProjectInput } from '../../infrastructure/graph/import_project.js';
-import { MANAGE_ACTIONS } from './lifecycle/manage_feature.js';
 import { buildBrickifyPreview } from './bricks/render_brickwork.js';
 // ★ T15 切片（2026-10-05）：把「混合文件解耦」这对能力从 CLI 面接进 MCP 面 ——
 //   两者共用同一批 application 层核心（与 `brickify_cli` 同源；`split_stage_cli` 已于 2026-10-06 删除），CLI 只是 argv 薄壳。
 import { buildBrickify } from './bricks/brickify.js';
 import { reviewSignals } from './bricks/signal_review.js';
-import { runSplitStage } from './lifecycle/split_stage.js';
 import { scaffold } from './lifecycle/scaffold.js';
 import { setDesignIntent } from './intent/set_design_intent.js';
-import { consistencyHandler, detectDriftHandler, editDslHandler, getDslHandler, manageFeatureHandler, renderDesignHandler } from './handlers.js';
+import { consistencyHandler, detectDriftHandler, editDslHandler, getDslHandler, renderDesignHandler } from './handlers.js';
 import type { ToolDef } from '../types.js';
 
 export const DESIGN_TOOLS: ToolDef[] = [
@@ -288,28 +286,6 @@ export const DESIGN_TOOLS: ToolDef[] = [
     handler: editDslHandler,
   },
 
-  {
-    name: 'manage_feature',
-    title: 'Manage feature lifecycle',
-    description:
-      'feature 生命周期统一入口：create（创建）/ clone（克隆）/ template（从模板创建）/ **list_templates（列出可用模板）** / list（列出已有 feature）/ delete（删除）。' +
-      'create 需 feature 名（^[a-zA-Z0-9_-]+$）；clone 需 source_feature+target_feature；template 需 template_id+feature；' +
-      'delete 需 feature（同时清理设计存档 + 实际快照 + 活态视图）。',
-    // ★★★ T194（2026-10-12）：**入参扁平**（原先 `action` + 一个 `z.record` 袋子）。
-    //   ★ 三条证据（详见 `manage_feature.ts` 头部）：① 5 个键、每 action ≤3、无撞名 ⇒ 嵌套买不到东西
-    //   ② 本文件/`manage_feature.ts` 的旧注释自己记着"调用方很可能已经在顶层传了" ⇒ 扁的是自然心智
-    //   ③ 14 个 action 分派型工具里 12 个是扁的，连 `server.ts` 的引导文案都写 `manage_feature(action=create)`。
-    //   ★ 而且**扁的每个参数都有类型**（可逐字自校验）；袋子 `z.record(unknown)` 让校验器一个字都帮不上。
-    inputSchema: {
-      action: z.enum(MANAGE_ACTIONS).describe('create/clone/template/list_templates/list/delete'),
-      feature: z.string().optional().describe('create / delete / template 用：feature 名（^[a-zA-Z0-9_-]+$）'),
-      title: z.string().optional().describe('create / clone / template 用：标题（可省）'),
-      source_feature: z.string().optional().describe('clone 用：源 feature'),
-      target_feature: z.string().optional().describe('clone 用：目标 feature'),
-      template_id: z.string().optional().describe('template 用：模板 id'),
-    },
-    handler: manageFeatureHandler,
-  },
 
   {
     name: 'render_design',
@@ -460,83 +436,6 @@ export const DESIGN_TOOLS: ToolDef[] = [
     }),
   },
 
-  {
-    // ★ T15 切片（2026-10-05）：原先只存在于 `split_stage_cli`（CLI-only）。
-    name: 'split_stage',
-    title: 'Split adopted concept clusters into separate files',
-    description:
-      '拆分执行器（"拆分链"最后一棒）：消费 `signal_review` 的报告，把复核判**采纳**的概念簇**按簇切出独立文件**。' +
-      '★ **默认 dry_run 只出草稿**（`apply=true` 才真落盘）；落盘由 `derive_split` 内置的编译/测试级验收 + 失败回滚兜底。' +
-      '报告形态：`{signals_scanned: [...], review: {reviews: [...]}}`（即 `signal_review` 的 `report_path` 产物）。',
-    inputSchema: {
-      project_dir: z.string().describe('目标项目根目录'),
-      report_path: z.string().describe('signal_review 的报告 JSON 路径'),
-      source_root: z.string().optional().describe('源码根目录（默认 = project_dir）'),
-      apply: z.boolean().optional().describe('true = 真落盘；省略/false = dry-run 只出草稿（**默认**）'),
-      re_export_extracted: z.boolean().optional().describe('拆分后是否补 re-export（默认 true）'),
-      max_symbols: z.number().optional().describe('单簇最大符号数（超过则不拆，防超大簇乱切）'),
-    },
-    handler: wrapData(async (a) => {
-      const project_dir = requireStr(a, 'project_dir');
-      const reportPath = path.resolve(requireStr(a, 'report_path'));
-      let report: { signals_scanned?: unknown; review?: { reviews?: unknown } };
-      try {
-        report = JSON.parse(fs.readFileSync(reportPath, 'utf8')) as typeof report;
-      } catch (e) {
-        throw new Error(`无法读取报告 ${reportPath}：${(e as Error).message}`);
-      }
-      const signals = (report.signals_scanned ?? []) as never[];
-      const reviews = (report.review?.reviews ?? []) as never[];
-      if (signals.length === 0 || reviews.length === 0) {
-        return { message: '报告内无信号 / 无复核结论 ⇒ 无可拆。', data: { total_plans: 0, total_splits: 0, applied: 0, items: [] } };
-      }
-      // ★ 报告形状守卫（2026-10-05 真调踩到）：手写的报告若缺 `signals[].clusters`，核心会在
-      //   `clusters.length` 处抛**裸 TypeError**（`Cannot read properties of undefined`）——
-      //   属本仓 T41「报错说了等于没说」那一类。这里先响亮说清"哪一条、缺什么、该从哪来"。
-      const badIdx = (signals as Array<{ file?: string; clusters?: unknown }>).findIndex((s) => !Array.isArray(s?.clusters));
-      if (badIdx >= 0) {
-        const at = (signals as Array<{ file?: string }>)[badIdx];
-        throw new Error(
-          `报告不合法：signals_scanned[${badIdx}]${at?.file ? `（${at.file}）` : ''} 缺 \`clusters\`。` +
-            '请用 `signal_review` 产出的报告（传 `report_path` 即可）—— 那批信号来自 brickify 的 `mixed_files`，' +
-            '`split_stage` 靠它的 `clusters` 才知道每个文件里哪些簇可拆；手写报告接不上。',
-        );
-      }
-      const dry_run = a.apply !== true; // ★ 默认 dry-run（与 CLI 的 `--apply` 语义一致）
-      const result = await runSplitStage({
-        project_dir,
-        source_root: a.source_root as string | undefined,
-        signals,
-        reviews,
-        dry_run,
-        re_export_extracted: a.re_export_extracted !== false,
-        max_symbols: a.max_symbols as number | undefined,
-      });
-      const rolled = result.items?.some((i) => i.status === 'rolled_back');
-      // ★★★ T205（2026-10-12）：**把"没判成"从报告里带出来** ——
-      //   ★ 实测（真跑）：`signal_review` 在 LLM 不可用时，报告里每条的 `reviews` 是**空数组**，
-      //     而 `report.review.reviews.length` **恒为"每文件一条"** ⇒ 上面那个"空报告"守卫**拦不住** ⇒
-      //     本工具会回 **`ok: true` + 0 簇**，与"判过了、确实不该拆"**长得一模一样** ✗
-      //   ⇒ ★ 后果：**LLM 挂掉 ⇒ 整条链静静地什么都不做、还报成功**（本仓最反对的"不报错的错"）
-      //   ★ 修法：读报告的 `meta.undecided`（`signal_review` 已按 T205 如实给出）⇒ **明说它不是"驳回"**。
-      const meta = (report.review as { meta?: { undecided?: number; llm_available?: boolean } } | undefined)?.meta;
-      const undecided = meta?.undecided ?? 0;
-      const notJudged =
-        undecided > 0
-          ? `\n★★ 注意：报告里有 **${undecided} 个信号【未判】**（不是"驳回"）—— ` +
-            (meta?.llm_available === false ? '**LLM 不可用** ⇒ ' : '') +
-            '本次"0 簇"**不代表"判定不该拆"**，而是**没判出来**。恢复 LLM 后重跑 `signal_review` 再拆。'
-          : '';
-      return {
-        message:
-          (result.message ? `${result.message}\n` : '') +
-          `采纳 ${result.total_plans} 簇 → 拆出 ${result.total_splits} 簇，成功 ${result.applied}${rolled ? '，**有回滚**' : ''}；` +
-          (dry_run ? 'dry-run：未写文件（确认草稿后传 apply=true）' : '已落盘') +
-          notJudged,
-        data: { ...result, undecided_in_report: undecided },
-      };
-    }),
-  },
 
   {
     name: 'scaffold',

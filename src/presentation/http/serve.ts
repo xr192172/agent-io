@@ -30,8 +30,9 @@ import { importProject } from '../../infrastructure/graph/import_project.js';
 import { getProjectCacheDb, openDb, featureCacheDbPath } from '../../infrastructure/index/db.js';
 import { validateDSLJson } from '../../domain/validator.js';
 import { saveAutoSnapshot, pruneSnapshots } from '../../application/design/lifecycle/snapshot.js';
-import { dagLayout, forceLayout, gridAlign } from '../../application/design/workbench/dag_layout.js';
+// ★ scaffold 是【主路】（DSL → 代码骨架 = 渐入式重写的第 ⑤ 步），不删
 import { scaffold } from '../../application/design/lifecycle/scaffold.js';
+import { dagLayout, forceLayout, gridAlign } from '../../application/design/workbench/dag_layout.js';
 import { checkConsistencyReport } from '../../application/design/intent/consistency.js';
 import { diffImpact } from '../../infrastructure/analysis/impact/diff_impact.js';
 import { diffViews } from '../../application/refactor/diff_views/diff_views.js';

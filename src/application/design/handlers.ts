@@ -15,7 +15,6 @@ import { checkConsistencyReport, retireMarksOf } from '.././design/intent/consis
 import { deriveMindMap } from '.././meta/view/derive_mind_map.js';
 import { detectDrift } from '.././design/intent/detect_drift.js';
 import { exportMarkdown, exportSvg } from '../../infrastructure/render/export.js';
-import { manageFeature } from '.././design/lifecycle/manage_feature.js';
 import { queryFeature } from '.././meta/explore/query_feature.js';
 import { fileFacts } from '../../infrastructure/index/file_facts.js';
 import { validateReason } from '.././observe/reconcile/reason_validator.js';
@@ -494,8 +493,6 @@ export const editDslHandler = wrap(async (a) => {
  *   （dsl / nodes / edges / files / functions …），wrap 会在通道层静默丢弃它。 */
 export const getDslHandler = wrapData(async (a) => queryFeature(a as never));
 
-/** manage_feature：生命周期。★ wrapData：manageFeature 返回 `{ message, data? }`（create/list 等的结构化产物） */
-export const manageFeatureHandler = wrapData(async (a) => manageFeature(a as never));
 
 /** render_design：渲染思维导图/HTML/SVG/Markdown（format 参数聚合导出；view 决定渲染设计或实际视图）
  * ★ 刻意保留 `wrap`（2026-09-29 逐处复核）：把四个分支的 [B] 结果逐字段拆开看过后，
