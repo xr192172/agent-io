@@ -419,6 +419,23 @@ export const editDslHandler = wrap(async (a) => {
     if (p && !targetFiles.includes(p)) targetFiles.push(p);
   }
   /**
+   * ★★★ 2026-10-19（T20 正式化）：**新建文件的依据 = 同一批里声明的 file-exists 期望**。
+   *
+   * 上午那版只是「库里没有 + 已声明 ⇒ 放行 + 回执点名」—— 那不叫依据，叫**豁免**。
+   * 真正的依据是：你在**建它的那一刻**就写下了「它应该存在」这条期望。
+   * ⇒ 要求：本批 node.add 的 data.decision.expectations 里有一条 file-exists 指向该路径。
+   * ★ 为什么要求「同一批」：node.add 的 data 可以直接带 decision；若分成两批
+   *   （先 node 后 decision），T20 跑的时候 DSL 里还没有那个节点 ⇒ 查不到期望。
+   */
+  const declaredNew = new Set<string>();
+  for (const op of ops) {
+    if (String(op.type ?? "") !== "node" || String(op.op ?? "") !== "add") continue;
+    const np = typeof op.data?.["path"] === "string" ? normRef(String(op.data["path"])) : "";
+    const exps = (op.data?.["decision"] as { expectations?: Array<{ kind?: string; path?: string }> } | undefined)?.expectations;
+    if (!np || !Array.isArray(exps)) continue;
+    if (exps.some((e) => e.kind === "file-exists" && normRef(String(e.path ?? "")) === np)) declaredNew.add(np);
+  }
+  /**
    * ★ 2026-10-19：`cache.db` 里**不存在**、但已在 `evidence` 声明的路径（= 新建文件）。
    * 放行，但记下来——回执必须点名（放行不是静默）。
    */
@@ -440,7 +457,7 @@ export const editDslHandler = wrap(async (a) => {
        *   回执里点名「已按【新建】处理」。★ 底线不放宽：**没声明的照样拒**，
        *   **改已有文件不读现状的照样拒**。
        */
-      if (!seen && claimed) {
+      if (!seen && claimed && declaredNew.has(normRef(p))) {
         notIndexed.push(p);
         return false;
       }
@@ -451,7 +468,9 @@ export const editDslHandler = wrap(async (a) => {
         `改 semantic.files 前必须**现取**该文件的事实（T20 第 (4) 步）：${misses.join(' / ')} 缺「现取到事实 + 在 evidence 里声明」。` +
           `怎么做：先读它的事实（get_dsl(query:'file', file_id:…) 或 fileFacts(root, '${misses[0]}')），` +
           `再把该文件的**仓库相对路径**作为 evidence 的一条 ref 传进来（例：evidence=[{type:'node', ref:'${misses[0]}'}]）。` +
-          `★ 为什么：DSL 已不存事实镜像（actual_apis / actual_deps 已移除）⇒ 事实只能**现取**。`,
+          `★ 为什么：DSL 已不存事实镜像（actual_apis / actual_deps 已移除）⇒ 事实只能**现取**。` +
+          `\n★ 如果它是【新建】的：必须在**同一批** node.add 的 data.decision.expectations 里` +
+          `带一条 { kind:"file-exists", path:"${misses[0]}" } —— 那是「它应该存在」的**依据**（不是豁免）。`,
       );
     }
   }
