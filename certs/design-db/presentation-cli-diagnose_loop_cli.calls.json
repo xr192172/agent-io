@@ -1,0 +1,366 @@
+{
+  "//": "Design DB —— src/presentation/cli/diagnose_loop_cli.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "readArg",
+      "kind": "function",
+      "line": 45,
+      "signature": "readArg(name: string): string | undefined"
+    },
+    {
+      "name": "has",
+      "kind": "const",
+      "line": 49,
+      "signature": "const has = (name: string): boolean => process.argv.includes(name)"
+    },
+    {
+      "name": "print",
+      "kind": "function",
+      "line": 51,
+      "signature": "print(...args: unknown[]): void"
+    },
+    {
+      "name": "confirm",
+      "kind": "function",
+      "line": 61,
+      "signature": "confirm(rl: ReturnType<typeof createInterface> | null, question: string): Promise<boolean>"
+    },
+    {
+      "name": "main",
+      "kind": "function",
+      "line": 67,
+      "signature": "main(): Promise<number>"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:child_process",
+      "kind": "package"
+    },
+    {
+      "source": "node:readline/promises",
+      "kind": "package"
+    },
+    {
+      "source": "node:process",
+      "kind": "package"
+    },
+    {
+      "source": "../../infrastructure/analysis/diagnosis/diagnose.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/analysis/diagnosis/repair.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/analysis/diagnosis/verifier.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/analysis/diagnosis/test_contract.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/index/db.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/graph/import_project.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/index/symbols.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/git.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/analysis/diagnosis/repair.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/infrastructure/analysis/diagnosis/diagnose.ts#formatDiagnoseText"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/infrastructure/analysis/diagnosis/diagnose.ts#formatDiagnoseText"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/infrastructure/analysis/diagnosis/diagnose.ts#runDiagnosis"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/infrastructure/analysis/diagnosis/repair.ts#allowedPatchFiles"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/infrastructure/analysis/diagnosis/repair.ts#applyPatches"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/infrastructure/analysis/diagnosis/repair.ts#formatPatchDiff"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/infrastructure/analysis/diagnosis/repair.ts#generatePatch"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/infrastructure/analysis/diagnosis/repair.ts#revertPatches"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/infrastructure/analysis/diagnosis/repair.ts#revertPatches"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/infrastructure/analysis/diagnosis/verifier.ts#detectKind"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/infrastructure/git.ts#gitCommitAll"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/infrastructure/git.ts#gitCommitFiles"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/infrastructure/git.ts#gitDirty"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/infrastructure/git.ts#gitRestoreFiles"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/infrastructure/git.ts#gitRestoreFiles"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/infrastructure/git.ts#isGitRepo"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/infrastructure/graph/import_project.ts#walkFiles"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/infrastructure/index/db.ts#getProjectCacheDb"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/infrastructure/index/symbols.ts#syncProject"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/presentation/cli/diagnose_loop_cli.ts#confirm"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/presentation/cli/diagnose_loop_cli.ts#confirm"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/presentation/cli/diagnose_loop_cli.ts#confirm"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/presentation/cli/diagnose_loop_cli.ts#has"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/presentation/cli/diagnose_loop_cli.ts#has"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/presentation/cli/diagnose_loop_cli.ts#has"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/presentation/cli/diagnose_loop_cli.ts#has"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/presentation/cli/diagnose_loop_cli.ts#print"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/presentation/cli/diagnose_loop_cli.ts#print"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/presentation/cli/diagnose_loop_cli.ts#print"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/presentation/cli/diagnose_loop_cli.ts#print"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/presentation/cli/diagnose_loop_cli.ts#print"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/presentation/cli/diagnose_loop_cli.ts#print"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/presentation/cli/diagnose_loop_cli.ts#print"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/presentation/cli/diagnose_loop_cli.ts#print"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/presentation/cli/diagnose_loop_cli.ts#print"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/presentation/cli/diagnose_loop_cli.ts#print"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/presentation/cli/diagnose_loop_cli.ts#print"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/presentation/cli/diagnose_loop_cli.ts#print"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/presentation/cli/diagnose_loop_cli.ts#print"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/presentation/cli/diagnose_loop_cli.ts#print"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/presentation/cli/diagnose_loop_cli.ts#print"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/presentation/cli/diagnose_loop_cli.ts#print"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/presentation/cli/diagnose_loop_cli.ts#print"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/presentation/cli/diagnose_loop_cli.ts#print"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/presentation/cli/diagnose_loop_cli.ts#print"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/presentation/cli/diagnose_loop_cli.ts#print"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/presentation/cli/diagnose_loop_cli.ts#print"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/presentation/cli/diagnose_loop_cli.ts#print"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/presentation/cli/diagnose_loop_cli.ts#print"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/presentation/cli/diagnose_loop_cli.ts#print"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/presentation/cli/diagnose_loop_cli.ts#print"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/presentation/cli/diagnose_loop_cli.ts#print"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/presentation/cli/diagnose_loop_cli.ts#print"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/presentation/cli/diagnose_loop_cli.ts#print"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/presentation/cli/diagnose_loop_cli.ts#print"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/presentation/cli/diagnose_loop_cli.ts#print"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/presentation/cli/diagnose_loop_cli.ts#print"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/presentation/cli/diagnose_loop_cli.ts#print"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/presentation/cli/diagnose_loop_cli.ts#print"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/presentation/cli/diagnose_loop_cli.ts#print"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/presentation/cli/diagnose_loop_cli.ts#print"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/presentation/cli/diagnose_loop_cli.ts#print"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/presentation/cli/diagnose_loop_cli.ts#print"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/presentation/cli/diagnose_loop_cli.ts#print"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/presentation/cli/diagnose_loop_cli.ts#readArg"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/presentation/cli/diagnose_loop_cli.ts#readArg"
+    },
+    {
+      "from": "src/presentation/cli/diagnose_loop_cli.ts#main",
+      "to": "src/presentation/cli/diagnose_loop_cli.ts#readArg"
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+{
+  "//": "Design DB —— src/application/refactor/edit/apply_writes.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "WriteItem",
+      "kind": "interface",
+      "line": 39,
+      "signature": "WriteItem()"
+    },
+    {
+      "name": "WriteReceipt",
+      "kind": "interface",
+      "line": 44,
+      "signature": "WriteReceipt()"
+    },
+    {
+      "name": "applyWritesCore",
+      "kind": "function",
+      "line": 68,
+      "signature": "applyWritesCore(projectRoot: string,\r\n  items: readonly WriteItem[],\r\n  opts: { dryRun?: boolean; note?: string } = {},): Promise<WriteReceipt>"
+    },
+    {
+      "name": "touchedOf",
+      "kind": "function",
+      "line": 140,
+      "signature": "touchedOf(projectRoot: string, r: WriteReceipt): Touched"
+    },
+    {
+      "name": "applyWrites",
+      "kind": "function",
+      "line": 146,
+      "signature": "applyWrites(projectRoot: string,\r\n  items: readonly WriteItem[],\r\n  opts: { dryRun?: boolean; note?: string } = {},): Promise<TouchedProduct<WriteReceipt>>"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../write_gate.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/index/symbols.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../domain/b_terms.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/refactor/edit/apply_writes.ts#applyWrites",
+      "to": "src/application/refactor/edit/apply_writes.ts#applyWritesCore"
+    },
+    {
+      "from": "src/application/refactor/edit/apply_writes.ts#applyWrites",
+      "to": "src/application/refactor/edit/apply_writes.ts#touchedOf"
+    },
+    {
+      "from": "src/application/refactor/edit/apply_writes.ts#applyWritesCore",
+      "to": "src/application/write_gate.ts#writeSourceFiles"
+    },
+    {
+      "from": "src/application/refactor/edit/apply_writes.ts#applyWrites",
+      "to": "src/domain/b_terms.ts#withTouched"
+    },
+    {
+      "from": "src/application/refactor/edit/apply_writes.ts#applyWritesCore",
+      "to": "src/infrastructure/index/symbols.ts#toIndexKey"
+    }
+  ]
+}

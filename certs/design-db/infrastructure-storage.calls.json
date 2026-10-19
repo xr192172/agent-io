@@ -1,0 +1,676 @@
+{
+  "//": "Design DB —— src/infrastructure/storage.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "getPackageRoot",
+      "kind": "function",
+      "line": 35,
+      "signature": "getPackageRoot(): string"
+    },
+    {
+      "name": "getDataHome",
+      "kind": "function",
+      "line": 62,
+      "signature": "getDataHome(): string"
+    },
+    {
+      "name": "getStorageRoot",
+      "kind": "function",
+      "line": 68,
+      "signature": "getStorageRoot(): string"
+    },
+    {
+      "name": "requireProjectRoot",
+      "kind": "function",
+      "line": 94,
+      "signature": "requireProjectRoot(cands: Record<string, unknown>): string"
+    },
+    {
+      "name": "getFeaturesDir",
+      "kind": "function",
+      "line": 110,
+      "signature": "getFeaturesDir(): string"
+    },
+    {
+      "name": "getLiveDslFile",
+      "kind": "function",
+      "line": 115,
+      "signature": "getLiveDslFile(): string"
+    },
+    {
+      "name": "getFeatureFile",
+      "kind": "function",
+      "line": 120,
+      "signature": "getFeatureFile(feature: string): string"
+    },
+    {
+      "name": "getLiveDir",
+      "kind": "function",
+      "line": 129,
+      "signature": "getLiveDir(baseDir?: string): string"
+    },
+    {
+      "name": "getLiveFeatureFile",
+      "kind": "function",
+      "line": 136,
+      "signature": "getLiveFeatureFile(feature: string, baseDir?: string): string"
+    },
+    {
+      "name": "syncMeta",
+      "kind": "function",
+      "line": 161,
+      "signature": "syncMeta(dsl: DesignDSL, source: string): Record<string, unknown>"
+    },
+    {
+      "name": "saveLiveFeature",
+      "kind": "function",
+      "line": 183,
+      "signature": "saveLiveFeature(dsl: DesignDSL, baseDir?: string): string"
+    },
+    {
+      "name": "getLiveFeature",
+      "kind": "function",
+      "line": 196,
+      "signature": "getLiveFeature(feature: string, baseDir?: string): DesignDSL | null"
+    },
+    {
+      "name": "getDesignDir",
+      "kind": "function",
+      "line": 242,
+      "signature": "getDesignDir(baseDir?: string): string"
+    },
+    {
+      "name": "getDesignSheetFile",
+      "kind": "function",
+      "line": 247,
+      "signature": "getDesignSheetFile(feature: string, baseDir?: string): string"
+    },
+    {
+      "name": "saveDesignSheet",
+      "kind": "function",
+      "line": 255,
+      "signature": "saveDesignSheet(dsl: DesignDSL, baseDir?: string): string"
+    },
+    {
+      "name": "getDesignSheet",
+      "kind": "function",
+      "line": 268,
+      "signature": "getDesignSheet(feature: string, baseDir?: string): DesignDSL | null"
+    },
+    {
+      "name": "getBaselineDir",
+      "kind": "function",
+      "line": 291,
+      "signature": "getBaselineDir(baseDir?: string): string"
+    },
+    {
+      "name": "getBaselineFeatureFile",
+      "kind": "function",
+      "line": 298,
+      "signature": "getBaselineFeatureFile(feature: string, baseDir?: string): string"
+    },
+    {
+      "name": "BaselineFactsFile",
+      "kind": "interface",
+      "line": 328,
+      "signature": "BaselineFactsFile()"
+    },
+    {
+      "name": "getBaselineFactsFile",
+      "kind": "function",
+      "line": 339,
+      "signature": "getBaselineFactsFile(feature: string, baseDir?: string): string"
+    },
+    {
+      "name": "getBaselineFacts",
+      "kind": "function",
+      "line": 347,
+      "signature": "getBaselineFacts(feature: string, baseDir?: string): BaselineFactsFile | null"
+    },
+    {
+      "name": "saveBaselineFactsIfAbsent",
+      "kind": "function",
+      "line": 365,
+      "signature": "saveBaselineFactsIfAbsent(feature: string,\n  sourceRoot: string,\n  rels: readonly string[],\n  readFacts: (rel: string) => { apis: readonly string[]; deps: readonly string[] },\n  baseDir?: string,): { written: boolean; file: string; files: number }"
+    },
+    {
+      "name": "saveBaselineFeature",
+      "kind": "function",
+      "line": 393,
+      "signature": "saveBaselineFeature(dsl: DesignDSL, baseDir?: string): string"
+    },
+    {
+      "name": "getBaselineFeature",
+      "kind": "function",
+      "line": 406,
+      "signature": "getBaselineFeature(feature: string, baseDir?: string): DesignDSL | null"
+    },
+    {
+      "name": "viewBaseDirCandidates",
+      "kind": "function",
+      "line": 438,
+      "signature": "viewBaseDirCandidates(feature: string, explicit?: string): string[]"
+    },
+    {
+      "name": "readViewAtCandidates",
+      "kind": "function",
+      "line": 449,
+      "signature": "readViewAtCandidates(feature: string,\n  explicit: string | undefined,\n  fileAt: (base: string) => string,\n  readAt: (base: string) => T | null,): T | null"
+    },
+    {
+      "name": "getLiveFeatureResolved",
+      "kind": "function",
+      "line": 462,
+      "signature": "getLiveFeatureResolved(feature: string, explicit?: string): DesignDSL | null"
+    },
+    {
+      "name": "getBaselineFeatureResolved",
+      "kind": "function",
+      "line": 476,
+      "signature": "getBaselineFeatureResolved(feature: string, explicit?: string): DesignDSL | null"
+    },
+    {
+      "name": "ensureBaseline",
+      "kind": "function",
+      "line": 484,
+      "signature": "ensureBaseline(dsl: DesignDSL, baseDir?: string): void"
+    },
+    {
+      "name": "ArchiveEntry",
+      "kind": "interface",
+      "line": 500,
+      "signature": "ArchiveEntry()"
+    },
+    {
+      "name": "getArchiveDir",
+      "kind": "function",
+      "line": 518,
+      "signature": "getArchiveDir(feature: string, baseDir?: string): string"
+    },
+    {
+      "name": "getArchiveEntryFile",
+      "kind": "function",
+      "line": 525,
+      "signature": "getArchiveEntryFile(feature: string, entryId: string, baseDir?: string): string"
+    },
+    {
+      "name": "sanitizeEntryId",
+      "kind": "function",
+      "line": 536,
+      "signature": "sanitizeEntryId(p: string): string"
+    },
+    {
+      "name": "saveArchiveEntry",
+      "kind": "function",
+      "line": 542,
+      "signature": "saveArchiveEntry(entry: ArchiveEntry, baseDir?: string): string"
+    },
+    {
+      "name": "listArchiveEntries",
+      "kind": "function",
+      "line": 551,
+      "signature": "listArchiveEntries(feature: string, baseDir?: string): ArchiveEntry[]"
+    },
+    {
+      "name": "getArchiveEntryByPath",
+      "kind": "function",
+      "line": 567,
+      "signature": "getArchiveEntryByPath(feature: string, filePath: string, baseDir?: string): ArchiveEntry | null"
+    },
+    {
+      "name": "clearArchiveEntries",
+      "kind": "function",
+      "line": 572,
+      "signature": "clearArchiveEntries(feature: string, baseDir?: string): void"
+    },
+    {
+      "name": "ensureFeaturesDir",
+      "kind": "function",
+      "line": 578,
+      "signature": "ensureFeaturesDir(): void"
+    },
+    {
+      "name": "DslChangeCallback",
+      "kind": "type",
+      "line": 583,
+      "signature": "DslChangeCallback()"
+    },
+    {
+      "name": "dslChangeCallback",
+      "kind": "const",
+      "line": 584,
+      "signature": "const dslChangeCallback = null"
+    },
+    {
+      "name": "onDslChange",
+      "kind": "function",
+      "line": 587,
+      "signature": "onDslChange(cb: DslChangeCallback): void"
+    },
+    {
+      "name": "saveDSL",
+      "kind": "function",
+      "line": 598,
+      "signature": "saveDSL(dsl: DesignDSL, source: string = 'mcp', base_dsl_rev?: number): string"
+    },
+    {
+      "name": "lastLiveFallback",
+      "kind": "const",
+      "line": 654,
+      "signature": "const lastLiveFallback = null"
+    },
+    {
+      "name": "liveFallbackWarned",
+      "kind": "const",
+      "line": 655,
+      "signature": "const liveFallbackWarned = false"
+    },
+    {
+      "name": "getLiveFallback",
+      "kind": "function",
+      "line": 658,
+      "signature": "getLiveFallback(): { file: string; error: string; at: string } | null"
+    },
+    {
+      "name": "isLiveDslParseable",
+      "kind": "function",
+      "line": 676,
+      "signature": "isLiveDslParseable(): boolean"
+    },
+    {
+      "name": "currentDslRev",
+      "kind": "function",
+      "line": 688,
+      "signature": "currentDslRev(feature: string): number"
+    },
+    {
+      "name": "readDSLRaw",
+      "kind": "function",
+      "line": 694,
+      "signature": "readDSLRaw(feature: string): DesignDSL | null"
+    },
+    {
+      "name": "factsExternalized",
+      "kind": "function",
+      "line": 739,
+      "signature": "factsExternalized(dsl: DesignDSL | null): boolean"
+    },
+    {
+      "name": "factsBackfillBusy",
+      "kind": "const",
+      "line": 748,
+      "signature": "const factsBackfillBusy = false"
+    },
+    {
+      "name": "mergeFacts",
+      "kind": "function",
+      "line": 751,
+      "signature": "mergeFacts(dsl: DesignDSL, rendered: DesignDSL): DesignDSL"
+    },
+    {
+      "name": "withFacts",
+      "kind": "function",
+      "line": 772,
+      "signature": "withFacts(dsl: DesignDSL | null, feature: string): DesignDSL | null"
+    },
+    {
+      "name": "getDSL",
+      "kind": "function",
+      "line": 787,
+      "signature": "getDSL(feature: string): DesignDSL | null"
+    },
+    {
+      "name": "DSLView",
+      "kind": "type",
+      "line": 792,
+      "signature": "DSLView()"
+    },
+    {
+      "name": "getDSLByView",
+      "kind": "function",
+      "line": 799,
+      "signature": "getDSLByView(feature: string, view: DSLView = 'design'): DesignDSL | null"
+    },
+    {
+      "name": "listFeatures",
+      "kind": "function",
+      "line": 810,
+      "signature": "listFeatures(): DesignDSL[]"
+    },
+    {
+      "name": "deleteFeature",
+      "kind": "function",
+      "line": 836,
+      "signature": "deleteFeature(feature: string): void"
+    },
+    {
+      "name": "clearAllFeatures",
+      "kind": "function",
+      "line": 872,
+      "signature": "clearAllFeatures(): void"
+    }
+  ],
+  "imports": [
+    {
+      "source": "./data_dir.js",
+      "kind": "relative"
+    },
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "node:url",
+      "kind": "package"
+    },
+    {
+      "source": "../domain/types.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./index/scan_rev.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./index/live_render.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/storage.ts#getLiveFeatureResolved",
+      "to": "src/infrastructure/index/live_render.ts#renderLiveFromDb"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#withFacts",
+      "to": "src/infrastructure/index/live_render.ts#renderLiveFromDb"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#syncMeta",
+      "to": "src/infrastructure/index/scan_rev.ts#scanRevOf"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#deleteFeature",
+      "to": "src/infrastructure/storage.ts#clearArchiveEntries"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#saveDSL",
+      "to": "src/infrastructure/storage.ts#currentDslRev"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#saveDSL",
+      "to": "src/infrastructure/storage.ts#currentDslRev"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#saveDSL",
+      "to": "src/infrastructure/storage.ts#dslChangeCallback"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#saveDSL",
+      "to": "src/infrastructure/storage.ts#ensureFeaturesDir"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#withFacts",
+      "to": "src/infrastructure/storage.ts#factsExternalized"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#getArchiveEntryFile",
+      "to": "src/infrastructure/storage.ts#getArchiveDir"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#listArchiveEntries",
+      "to": "src/infrastructure/storage.ts#getArchiveDir"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#clearArchiveEntries",
+      "to": "src/infrastructure/storage.ts#getArchiveDir"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#saveArchiveEntry",
+      "to": "src/infrastructure/storage.ts#getArchiveEntryFile"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#getBaselineFeatureFile",
+      "to": "src/infrastructure/storage.ts#getBaselineDir"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#getBaselineFactsFile",
+      "to": "src/infrastructure/storage.ts#getBaselineDir"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#saveBaselineFeature",
+      "to": "src/infrastructure/storage.ts#getBaselineDir"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#getBaselineFacts",
+      "to": "src/infrastructure/storage.ts#getBaselineFactsFile"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#saveBaselineFactsIfAbsent",
+      "to": "src/infrastructure/storage.ts#getBaselineFactsFile"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#getBaselineFeatureResolved",
+      "to": "src/infrastructure/storage.ts#getBaselineFeature"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#ensureBaseline",
+      "to": "src/infrastructure/storage.ts#getBaselineFeature"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#saveBaselineFeature",
+      "to": "src/infrastructure/storage.ts#getBaselineFeatureFile"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#getBaselineFeature",
+      "to": "src/infrastructure/storage.ts#getBaselineFeatureFile"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#getBaselineFeatureResolved",
+      "to": "src/infrastructure/storage.ts#getBaselineFeatureFile"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#deleteFeature",
+      "to": "src/infrastructure/storage.ts#getBaselineFeatureFile"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#getDSLByView",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#getStorageRoot",
+      "to": "src/infrastructure/storage.ts#getDataHome"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#getLiveDslFile",
+      "to": "src/infrastructure/storage.ts#getDataHome"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#getLiveDir",
+      "to": "src/infrastructure/storage.ts#getDataHome"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#getDesignDir",
+      "to": "src/infrastructure/storage.ts#getDataHome"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#getBaselineDir",
+      "to": "src/infrastructure/storage.ts#getDataHome"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#viewBaseDirCandidates",
+      "to": "src/infrastructure/storage.ts#getDataHome"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#getArchiveDir",
+      "to": "src/infrastructure/storage.ts#getDataHome"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#getDesignSheetFile",
+      "to": "src/infrastructure/storage.ts#getDesignDir"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#saveDesignSheet",
+      "to": "src/infrastructure/storage.ts#getDesignDir"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#readDSLRaw",
+      "to": "src/infrastructure/storage.ts#getDesignSheet"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#saveDesignSheet",
+      "to": "src/infrastructure/storage.ts#getDesignSheetFile"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#getDesignSheet",
+      "to": "src/infrastructure/storage.ts#getDesignSheetFile"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#saveDSL",
+      "to": "src/infrastructure/storage.ts#getDesignSheetFile"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#deleteFeature",
+      "to": "src/infrastructure/storage.ts#getFeatureFile"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#getFeatureFile",
+      "to": "src/infrastructure/storage.ts#getFeaturesDir"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#ensureFeaturesDir",
+      "to": "src/infrastructure/storage.ts#getFeaturesDir"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#listFeatures",
+      "to": "src/infrastructure/storage.ts#getFeaturesDir"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#deleteFeature",
+      "to": "src/infrastructure/storage.ts#getFeaturesDir"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#clearAllFeatures",
+      "to": "src/infrastructure/storage.ts#getFeaturesDir"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#getLiveFeatureFile",
+      "to": "src/infrastructure/storage.ts#getLiveDir"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#saveLiveFeature",
+      "to": "src/infrastructure/storage.ts#getLiveDir"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#isLiveDslParseable",
+      "to": "src/infrastructure/storage.ts#getLiveDslFile"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#deleteFeature",
+      "to": "src/infrastructure/storage.ts#getLiveDslFile"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#getLiveFeatureResolved",
+      "to": "src/infrastructure/storage.ts#getLiveFeature"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#saveLiveFeature",
+      "to": "src/infrastructure/storage.ts#getLiveFeatureFile"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#getLiveFeature",
+      "to": "src/infrastructure/storage.ts#getLiveFeatureFile"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#getLiveFeatureResolved",
+      "to": "src/infrastructure/storage.ts#getLiveFeatureFile"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#deleteFeature",
+      "to": "src/infrastructure/storage.ts#getLiveFeatureFile"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#getDSLByView",
+      "to": "src/infrastructure/storage.ts#getLiveFeatureResolved"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#getDataHome",
+      "to": "src/infrastructure/storage.ts#getPackageRoot"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#getFeaturesDir",
+      "to": "src/infrastructure/storage.ts#getStorageRoot"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#getArchiveEntryByPath",
+      "to": "src/infrastructure/storage.ts#listArchiveEntries"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#withFacts",
+      "to": "src/infrastructure/storage.ts#mergeFacts"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#viewBaseDirCandidates",
+      "to": "src/infrastructure/storage.ts#readDSLRaw"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#currentDslRev",
+      "to": "src/infrastructure/storage.ts#readDSLRaw"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#getDSL",
+      "to": "src/infrastructure/storage.ts#readDSLRaw"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#getLiveFeatureResolved",
+      "to": "src/infrastructure/storage.ts#readViewAtCandidates"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#getBaselineFeatureResolved",
+      "to": "src/infrastructure/storage.ts#readViewAtCandidates"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#saveArchiveEntry",
+      "to": "src/infrastructure/storage.ts#sanitizeEntryId"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#ensureBaseline",
+      "to": "src/infrastructure/storage.ts#saveBaselineFeature"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#saveLiveFeature",
+      "to": "src/infrastructure/storage.ts#syncMeta"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#saveDesignSheet",
+      "to": "src/infrastructure/storage.ts#syncMeta"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#saveBaselineFeature",
+      "to": "src/infrastructure/storage.ts#syncMeta"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#readViewAtCandidates",
+      "to": "src/infrastructure/storage.ts#viewBaseDirCandidates"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#deleteFeature",
+      "to": "src/infrastructure/storage.ts#viewBaseDirCandidates"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#getLiveFeatureResolved",
+      "to": "src/infrastructure/storage.ts#withFacts"
+    },
+    {
+      "from": "src/infrastructure/storage.ts#getDSL",
+      "to": "src/infrastructure/storage.ts#withFacts"
+    }
+  ]
+}

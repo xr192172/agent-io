@@ -1,0 +1,54 @@
+{
+  "//": "Design DB —— src/infrastructure/analysis/diagnosis/chain_tracer.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "ChainTraceInput",
+      "kind": "interface",
+      "line": 22,
+      "signature": "ChainTraceInput()"
+    },
+    {
+      "name": "ChainTraceResult",
+      "kind": "interface",
+      "line": 28,
+      "signature": "ChainTraceResult()"
+    },
+    {
+      "name": "SymAdj",
+      "kind": "interface",
+      "line": 35,
+      "signature": "SymAdj()"
+    },
+    {
+      "name": "FileAdj",
+      "kind": "interface",
+      "line": 36,
+      "signature": "FileAdj()"
+    },
+    {
+      "name": "traceChain",
+      "kind": "function",
+      "line": 38,
+      "signature": "traceChain(db: Database, input: ChainTraceInput): ChainTraceResult"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../index/db.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./contract.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": []
+}

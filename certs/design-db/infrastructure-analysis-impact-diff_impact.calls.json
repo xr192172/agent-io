@@ -1,0 +1,133 @@
+{
+  "//": "Design DB —— src/infrastructure/analysis/impact/diff_impact.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "ImpactDirection",
+      "kind": "type",
+      "line": 31,
+      "signature": "ImpactDirection()"
+    },
+    {
+      "name": "EdgeKind",
+      "kind": "type",
+      "line": 32,
+      "signature": "EdgeKind()"
+    },
+    {
+      "name": "DiffImpactInput",
+      "kind": "interface",
+      "line": 34,
+      "signature": "DiffImpactInput()"
+    },
+    {
+      "name": "ImpactedSymbol",
+      "kind": "interface",
+      "line": 47,
+      "signature": "ImpactedSymbol()"
+    },
+    {
+      "name": "ImpactedFile",
+      "kind": "interface",
+      "line": 60,
+      "signature": "ImpactedFile()"
+    },
+    {
+      "name": "DslContractHit",
+      "kind": "interface",
+      "line": 73,
+      "signature": "DslContractHit()"
+    },
+    {
+      "name": "DiffImpactResult",
+      "kind": "interface",
+      "line": 86,
+      "signature": "DiffImpactResult()"
+    },
+    {
+      "name": "SymbolDiffInfo",
+      "kind": "interface",
+      "line": 111,
+      "signature": "SymbolDiffInfo()"
+    },
+    {
+      "name": "emptyResult",
+      "kind": "function",
+      "line": 124,
+      "signature": "emptyResult(feature: string,\n  project_dir: string,\n  changed: string[],\n  direction: ImpactDirection,\n  max_depth: number,\n  warnings: string[],\n  message: string,): DiffImpactResult"
+    },
+    {
+      "name": "toRel",
+      "kind": "function",
+      "line": 151,
+      "signature": "toRel(root: string, p: string): string"
+    },
+    {
+      "name": "dslFileNodeId",
+      "kind": "function",
+      "line": 157,
+      "signature": "dslFileNodeId(rel: string): string"
+    },
+    {
+      "name": "EDGE_KIND_LABEL",
+      "kind": "const",
+      "line": 161,
+      "signature": "const EDGE_KIND_LABEL = { call: '调用边', type_ref: '类型引用', import: 'import 依赖', }"
+    },
+    {
+      "name": "diffImpact",
+      "kind": "function",
+      "line": 167,
+      "signature": "diffImpact(input: DiffImpactInput): DiffImpactResult"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../index/file_facts.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../storage.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../index/db.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/impact/diff_impact.ts#diffImpact",
+      "to": "src/infrastructure/analysis/impact/diff_impact.ts#dslFileNodeId"
+    },
+    {
+      "from": "src/infrastructure/analysis/impact/diff_impact.ts#diffImpact",
+      "to": "src/infrastructure/analysis/impact/diff_impact.ts#emptyResult"
+    },
+    {
+      "from": "src/infrastructure/analysis/impact/diff_impact.ts#diffImpact",
+      "to": "src/infrastructure/analysis/impact/diff_impact.ts#toRel"
+    },
+    {
+      "from": "src/infrastructure/analysis/impact/diff_impact.ts#diffImpact",
+      "to": "src/infrastructure/index/db.ts#getProjectCacheDb"
+    },
+    {
+      "from": "src/infrastructure/analysis/impact/diff_impact.ts#diffImpact",
+      "to": "src/infrastructure/index/db.ts#projectCacheDbPath"
+    },
+    {
+      "from": "src/infrastructure/analysis/impact/diff_impact.ts#diffImpact",
+      "to": "src/infrastructure/index/file_facts.ts#fileFacts"
+    },
+    {
+      "from": "src/infrastructure/analysis/impact/diff_impact.ts#diffImpact",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    }
+  ]
+}

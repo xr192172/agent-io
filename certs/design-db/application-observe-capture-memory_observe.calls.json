@@ -1,0 +1,251 @@
+{
+  "//": "Design DB —— src/application/observe/capture/memory_observe.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "nodeRequire",
+      "kind": "const",
+      "line": 23,
+      "signature": "const nodeRequire = createRequire(import.meta.url)"
+    },
+    {
+      "name": "MB",
+      "kind": "const",
+      "line": 26,
+      "signature": "const MB = (b: number | undefined): number => Math.round((b ?? 0) / …"
+    },
+    {
+      "name": "MemSample",
+      "kind": "interface",
+      "line": 29,
+      "signature": "MemSample()"
+    },
+    {
+      "name": "baselines",
+      "kind": "const",
+      "line": 42,
+      "signature": "const baselines = new Map<string, MemSample>()"
+    },
+    {
+      "name": "getWsCtor",
+      "kind": "function",
+      "line": 45,
+      "signature": "getWsCtor(): Promise<new (url: string) => any>"
+    },
+    {
+      "name": "CdpClient",
+      "kind": "interface",
+      "line": 57,
+      "signature": "CdpClient()"
+    },
+    {
+      "name": "connectCdp",
+      "kind": "function",
+      "line": 63,
+      "signature": "connectCdp(inspectPort: number): Promise<CdpClient>"
+    },
+    {
+      "name": "evalJson",
+      "kind": "function",
+      "line": 117,
+      "signature": "evalJson(c: CdpClient, expression: string): Promise<any>"
+    },
+    {
+      "name": "MEM_EXPR",
+      "kind": "const",
+      "line": 126,
+      "signature": "const MEM_EXPR = `(()=>{const m=process.memoryUsage();const h=process.getH…"
+    },
+    {
+      "name": "sample",
+      "kind": "function",
+      "line": 128,
+      "signature": "sample(c: CdpClient): Promise<MemSample>"
+    },
+    {
+      "name": "sampleRemote",
+      "kind": "function",
+      "line": 133,
+      "signature": "sampleRemote(target: number): Promise<MemSample>"
+    },
+    {
+      "name": "fmt",
+      "kind": "function",
+      "line": 142,
+      "signature": "fmt(s: MemSample, t0: number): string"
+    },
+    {
+      "name": "resolvePort",
+      "kind": "function",
+      "line": 147,
+      "signature": "resolvePort(target: unknown): number"
+    },
+    {
+      "name": "snapshotToFile",
+      "kind": "function",
+      "line": 154,
+      "signature": "snapshotToFile(c: CdpClient, file: string): Promise<number>"
+    },
+    {
+      "name": "MemObserveAction",
+      "kind": "type",
+      "line": 183,
+      "signature": "MemObserveAction()"
+    },
+    {
+      "name": "MemoryObserveInput",
+      "kind": "interface",
+      "line": 191,
+      "signature": "MemoryObserveInput()"
+    },
+    {
+      "name": "memoryObserveHandler",
+      "kind": "function",
+      "line": 201,
+      "signature": "memoryObserveHandler(input: MemoryObserveInput): Promise<{ message: string; data?: unknown }>"
+    },
+    {
+      "name": "memoryTargetsHandler",
+      "kind": "function",
+      "line": 278,
+      "signature": "memoryTargetsHandler(): Promise<{ message: string; data?: unknown }>"
+    }
+  ],
+  "imports": [
+    {
+      "source": "../../../infrastructure/data_dir.js",
+      "kind": "relative"
+    },
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "node:child_process",
+      "kind": "package"
+    },
+    {
+      "source": "node:module",
+      "kind": "package"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#fmt",
+      "to": "src/application/observe/capture/memory_observe.ts#MB"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#memoryObserveHandler",
+      "to": "src/application/observe/capture/memory_observe.ts#MB"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#memoryObserveHandler",
+      "to": "src/application/observe/capture/memory_observe.ts#MB"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#memoryObserveHandler",
+      "to": "src/application/observe/capture/memory_observe.ts#MB"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#memoryObserveHandler",
+      "to": "src/application/observe/capture/memory_observe.ts#MB"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#memoryObserveHandler",
+      "to": "src/application/observe/capture/memory_observe.ts#MB"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#memoryObserveHandler",
+      "to": "src/application/observe/capture/memory_observe.ts#MB"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#memoryObserveHandler",
+      "to": "src/application/observe/capture/memory_observe.ts#MB"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#sampleRemote",
+      "to": "src/application/observe/capture/memory_observe.ts#connectCdp"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#memoryObserveHandler",
+      "to": "src/application/observe/capture/memory_observe.ts#connectCdp"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#sample",
+      "to": "src/application/observe/capture/memory_observe.ts#evalJson"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#memoryObserveHandler",
+      "to": "src/application/observe/capture/memory_observe.ts#evalJson"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#memoryObserveHandler",
+      "to": "src/application/observe/capture/memory_observe.ts#fmt"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#memoryObserveHandler",
+      "to": "src/application/observe/capture/memory_observe.ts#fmt"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#memoryObserveHandler",
+      "to": "src/application/observe/capture/memory_observe.ts#fmt"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#memoryObserveHandler",
+      "to": "src/application/observe/capture/memory_observe.ts#fmt"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#memoryObserveHandler",
+      "to": "src/application/observe/capture/memory_observe.ts#fmt"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#connectCdp",
+      "to": "src/application/observe/capture/memory_observe.ts#getWsCtor"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#getWsCtor",
+      "to": "src/application/observe/capture/memory_observe.ts#nodeRequire"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#memoryObserveHandler",
+      "to": "src/application/observe/capture/memory_observe.ts#resolvePort"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#sampleRemote",
+      "to": "src/application/observe/capture/memory_observe.ts#sample"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#memoryObserveHandler",
+      "to": "src/application/observe/capture/memory_observe.ts#sample"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#memoryObserveHandler",
+      "to": "src/application/observe/capture/memory_observe.ts#sample"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#memoryObserveHandler",
+      "to": "src/application/observe/capture/memory_observe.ts#sample"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#memoryObserveHandler",
+      "to": "src/application/observe/capture/memory_observe.ts#sample"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#memoryObserveHandler",
+      "to": "src/application/observe/capture/memory_observe.ts#sample"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#memoryObserveHandler",
+      "to": "src/application/observe/capture/memory_observe.ts#sample"
+    },
+    {
+      "from": "src/application/observe/capture/memory_observe.ts#memoryObserveHandler",
+      "to": "src/application/observe/capture/memory_observe.ts#snapshotToFile"
+    }
+  ]
+}

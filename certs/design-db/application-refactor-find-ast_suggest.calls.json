@@ -1,0 +1,153 @@
+{
+  "//": "Design DB —— src/application/refactor/find/ast_suggest.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "BAD_NAMES",
+      "kind": "const",
+      "line": 22,
+      "signature": "const BAD_NAMES = new Set([ 'tmp', 'temp', 't', 'val', 'value', 'obj', 'ite…"
+    },
+    {
+      "name": "LOCAL_KINDS",
+      "kind": "const",
+      "line": 28,
+      "signature": "const LOCAL_KINDS = new Set(['const', 'let', 'var', 'param', 'catch'])"
+    },
+    {
+      "name": "SuggestCandidate",
+      "kind": "interface",
+      "line": 30,
+      "signature": "SuggestCandidate()"
+    },
+    {
+      "name": "isIdent",
+      "kind": "function",
+      "line": 46,
+      "signature": "isIdent(s: string): boolean"
+    },
+    {
+      "name": "isBadName",
+      "kind": "function",
+      "line": 50,
+      "signature": "isBadName(name: string, minLen: number): boolean"
+    },
+    {
+      "name": "lineAt",
+      "kind": "function",
+      "line": 56,
+      "signature": "lineAt(src: string, index: number): string"
+    },
+    {
+      "name": "findSuggestCandidates",
+      "kind": "function",
+      "line": 68,
+      "signature": "findSuggestCandidates(src: string,\n  filePath = 'file.ts',\n  minLen = 2,): Promise<SuggestCandidate[]>"
+    },
+    {
+      "name": "SuggestLlm",
+      "kind": "type",
+      "line": 101,
+      "signature": "SuggestLlm()"
+    },
+    {
+      "name": "SuggestOptions",
+      "kind": "interface",
+      "line": 106,
+      "signature": "SuggestOptions()"
+    },
+    {
+      "name": "SuggestResult",
+      "kind": "interface",
+      "line": 115,
+      "signature": "SuggestResult()"
+    },
+    {
+      "name": "DEFAULT_SYSTEM",
+      "kind": "const",
+      "line": 124,
+      "signature": "const DEFAULT_SYSTEM = '你是资深 TypeScript/JS 代码审阅者。给下面的短变量/无意义变量建议更语义化的新名。' + '要求：…"
+    },
+    {
+      "name": "cachedDefault",
+      "kind": "const",
+      "line": 130,
+      "signature": "const cachedDefault = "
+    },
+    {
+      "name": "defaultLlmCands",
+      "kind": "function",
+      "line": 131,
+      "signature": "defaultLlmCands(cands: SuggestCandidate[], filePath: string): Promise<Array<{ name: string; reason?: string }>>"
+    },
+    {
+      "name": "suggestRenames",
+      "kind": "function",
+      "line": 167,
+      "signature": "suggestRenames(src: string,\n  filePath = 'file.ts',\n  opts: SuggestOptions = {},): Promise<SuggestResult>"
+    },
+    {
+      "name": "suggestRenamesInFile",
+      "kind": "function",
+      "line": 209,
+      "signature": "suggestRenamesInFile(args: {\n  project_dir: string;\n  file: string;\n  opts?: SuggestOptions;\n}): Promise<SuggestResult>"
+    }
+  ],
+  "imports": [
+    {
+      "source": "../../../infrastructure/parse/ast_rename.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/llm_focus.js",
+      "kind": "relative"
+    },
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/refactor/find/ast_suggest.ts#suggestRenames",
+      "to": "src/application/refactor/find/ast_suggest.ts#findSuggestCandidates"
+    },
+    {
+      "from": "src/application/refactor/find/ast_suggest.ts#findSuggestCandidates",
+      "to": "src/application/refactor/find/ast_suggest.ts#isBadName"
+    },
+    {
+      "from": "src/application/refactor/find/ast_suggest.ts#defaultLlmCands",
+      "to": "src/application/refactor/find/ast_suggest.ts#isIdent"
+    },
+    {
+      "from": "src/application/refactor/find/ast_suggest.ts#suggestRenames",
+      "to": "src/application/refactor/find/ast_suggest.ts#isIdent"
+    },
+    {
+      "from": "src/application/refactor/find/ast_suggest.ts#findSuggestCandidates",
+      "to": "src/application/refactor/find/ast_suggest.ts#lineAt"
+    },
+    {
+      "from": "src/application/refactor/find/ast_suggest.ts#suggestRenamesInFile",
+      "to": "src/application/refactor/find/ast_suggest.ts#suggestRenames"
+    },
+    {
+      "from": "src/application/refactor/find/ast_suggest.ts#defaultLlmCands",
+      "to": "src/infrastructure/llm_focus.ts#callChat"
+    },
+    {
+      "from": "src/application/refactor/find/ast_suggest.ts#defaultLlmCands",
+      "to": "src/infrastructure/llm_focus.ts#loadLlmConfig"
+    },
+    {
+      "from": "src/application/refactor/find/ast_suggest.ts#findSuggestCandidates",
+      "to": "src/infrastructure/parse/ast_rename.ts#analyzeLocals"
+    }
+  ]
+}

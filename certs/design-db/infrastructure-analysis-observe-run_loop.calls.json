@@ -1,0 +1,103 @@
+{
+  "//": "Design DB —— src/infrastructure/analysis/observe/run_loop.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "LoopOptions",
+      "kind": "interface",
+      "line": 69,
+      "signature": "LoopOptions()"
+    },
+    {
+      "name": "LoopResult",
+      "kind": "interface",
+      "line": 84,
+      "signature": "LoopResult()"
+    },
+    {
+      "name": "withDefaults",
+      "kind": "function",
+      "line": 105,
+      "signature": "withDefaults(o: LoopOptions): Required<Omit<LoopOptions, 'useLlm'>> & { useLlm: boolean }"
+    },
+    {
+      "name": "runLoop",
+      "kind": "function",
+      "line": 125,
+      "signature": "runLoop(eventsPath: string,\n  dataDir: string,\n  projectRoot?: string,\n  opts: LoopOptions = {},): Promise<LoopResult>"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "./contract.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./probe.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./dsl_store.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./proposal_store.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./ledger_fold.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./judge_service.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./judge.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/observe/run_loop.ts#runLoop",
+      "to": "src/infrastructure/analysis/observe/judge_service.ts#judgeEventsWithLLM"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/run_loop.ts#runLoop",
+      "to": "src/infrastructure/analysis/observe/ledger_fold.ts#analyzeLedger"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/run_loop.ts#runLoop",
+      "to": "src/infrastructure/analysis/observe/ledger_fold.ts#knownSpreadDecl"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/run_loop.ts#runLoop",
+      "to": "src/infrastructure/analysis/observe/ledger_fold.ts#knownSpreadIndex"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/run_loop.ts#runLoop",
+      "to": "src/infrastructure/analysis/observe/ledger_fold.ts#parseKnownSpread"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/run_loop.ts#runLoop",
+      "to": "src/infrastructure/analysis/observe/ledger_fold.ts#parseKnownSpread"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/run_loop.ts#runLoop",
+      "to": "src/infrastructure/analysis/observe/ledger_fold.ts#sameSpreadSet"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/run_loop.ts#runLoop",
+      "to": "src/infrastructure/analysis/observe/probe.ts#loadTSEvents"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/run_loop.ts#runLoop",
+      "to": "src/infrastructure/analysis/observe/run_loop.ts#withDefaults"
+    }
+  ]
+}

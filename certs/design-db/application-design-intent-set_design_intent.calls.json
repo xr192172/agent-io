@@ -1,0 +1,116 @@
+{
+  "//": "Design DB —— src/application/design/intent/set_design_intent.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "DesignEdgeIntentWrite",
+      "kind": "interface",
+      "line": 28,
+      "signature": "DesignEdgeIntentWrite()"
+    },
+    {
+      "name": "SetDesignIntentInput",
+      "kind": "interface",
+      "line": 48,
+      "signature": "SetDesignIntentInput()"
+    },
+    {
+      "name": "SetDesignIntentResult",
+      "kind": "interface",
+      "line": 54,
+      "signature": "SetDesignIntentResult()"
+    },
+    {
+      "name": "setDesignIntentCore",
+      "kind": "function",
+      "line": 62,
+      "signature": "setDesignIntentCore(input: SetDesignIntentInput): SetDesignIntentResult"
+    },
+    {
+      "name": "touchedOf",
+      "kind": "function",
+      "line": 154,
+      "signature": "touchedOf(input: SetDesignIntentInput): Touched"
+    },
+    {
+      "name": "setDesignIntent",
+      "kind": "function",
+      "line": 159,
+      "signature": "setDesignIntent(input: SetDesignIntentInput): TouchedProduct<SetDesignIntentResult>"
+    }
+  ],
+  "imports": [
+    {
+      "source": "../../../infrastructure/storage.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/storage_overlay.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../domain/overlay.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../domain/overlay.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../../../domain/b_terms.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/design/intent/set_design_intent.ts#setDesignIntent",
+      "to": "src/application/design/intent/set_design_intent.ts#setDesignIntentCore"
+    },
+    {
+      "from": "src/application/design/intent/set_design_intent.ts#setDesignIntent",
+      "to": "src/application/design/intent/set_design_intent.ts#touchedOf"
+    },
+    {
+      "from": "src/application/design/intent/set_design_intent.ts#setDesignIntent",
+      "to": "src/domain/b_terms.ts#withTouched"
+    },
+    {
+      "from": "src/application/design/intent/set_design_intent.ts#setDesignIntentCore",
+      "to": "src/domain/overlay.ts#applyOverlay"
+    },
+    {
+      "from": "src/application/design/intent/set_design_intent.ts#setDesignIntentCore",
+      "to": "src/domain/overlay.ts#buildCandidates"
+    },
+    {
+      "from": "src/application/design/intent/set_design_intent.ts#setDesignIntentCore",
+      "to": "src/domain/overlay.ts#buildEdgeCandidates"
+    },
+    {
+      "from": "src/application/design/intent/set_design_intent.ts#setDesignIntentCore",
+      "to": "src/domain/overlay.ts#reconcileOverlay"
+    },
+    {
+      "from": "src/application/design/intent/set_design_intent.ts#setDesignIntentCore",
+      "to": "src/domain/overlay.ts#seedOverlayFromDsl"
+    },
+    {
+      "from": "src/application/design/intent/set_design_intent.ts#setDesignIntentCore",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/application/design/intent/set_design_intent.ts#setDesignIntentCore",
+      "to": "src/infrastructure/storage.ts#saveDSL"
+    },
+    {
+      "from": "src/application/design/intent/set_design_intent.ts#setDesignIntentCore",
+      "to": "src/infrastructure/storage_overlay.ts#loadOverlay"
+    },
+    {
+      "from": "src/application/design/intent/set_design_intent.ts#setDesignIntentCore",
+      "to": "src/infrastructure/storage_overlay.ts#saveOverlay"
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+{
+  "//": "Design DB —— src/application/observe/capture/feature_line.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "FeatureLineNode",
+      "kind": "interface",
+      "line": 13,
+      "signature": "FeatureLineNode()"
+    },
+    {
+      "name": "FeatureLine",
+      "kind": "interface",
+      "line": 24,
+      "signature": "FeatureLine()"
+    },
+    {
+      "name": "ENTRY_HINT",
+      "kind": "const",
+      "line": 31,
+      "signature": "const ENTRY_HINT = /^(main|run|handle|execute|start|serve|process|entry|work…"
+    },
+    {
+      "name": "pickEntry",
+      "kind": "function",
+      "line": 34,
+      "signature": "pickEntry(fns: FunctionOutlineFn[]): FunctionOutlineFn | undefined"
+    },
+    {
+      "name": "buildMainChain",
+      "kind": "function",
+      "line": 53,
+      "signature": "buildMainChain(entry: FunctionOutlineFn,\n  allFns: FunctionOutlineFn[],\n  maxSteps = 24,): FeatureLineNode[]"
+    },
+    {
+      "name": "deriveLineFromFunctions",
+      "kind": "function",
+      "line": 85,
+      "signature": "deriveLineFromFunctions(fns: FunctionOutlineFn[],\n  opts: { targetId?: string; targetName?: string; maxSteps?: number } = {},): { line: FeatureLine; chosenFeature: string }"
+    },
+    {
+      "name": "getFeatureLine",
+      "kind": "function",
+      "line": 119,
+      "signature": "getFeatureLine(feature?: string,\n  sourceRoot?: string,\n  opts: { target?: string; maxSteps?: number } = {},): { ok: boolean; line?: FeatureLine; features?: Array<{ feature: string; entry: string; steps: number }>; note?: string }"
+    }
+  ],
+  "imports": [
+    {
+      "source": "../../../infrastructure/index/function_outline.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/observe/capture/feature_line.ts#deriveLineFromFunctions",
+      "to": "src/application/observe/capture/feature_line.ts#buildMainChain"
+    },
+    {
+      "from": "src/application/observe/capture/feature_line.ts#getFeatureLine",
+      "to": "src/application/observe/capture/feature_line.ts#buildMainChain"
+    },
+    {
+      "from": "src/application/observe/capture/feature_line.ts#getFeatureLine",
+      "to": "src/application/observe/capture/feature_line.ts#deriveLineFromFunctions"
+    },
+    {
+      "from": "src/application/observe/capture/feature_line.ts#deriveLineFromFunctions",
+      "to": "src/application/observe/capture/feature_line.ts#pickEntry"
+    },
+    {
+      "from": "src/application/observe/capture/feature_line.ts#getFeatureLine",
+      "to": "src/application/observe/capture/feature_line.ts#pickEntry"
+    },
+    {
+      "from": "src/application/observe/capture/feature_line.ts#getFeatureLine",
+      "to": "src/infrastructure/index/function_outline.ts#buildFunctionOutline"
+    }
+  ]
+}

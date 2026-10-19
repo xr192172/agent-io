@@ -1,0 +1,81 @@
+{
+  "//": "Design DB —— src/infrastructure/authoring/version_upgrade/adapters/types.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "ToolName",
+      "kind": "type",
+      "line": 23,
+      "signature": "ToolName()"
+    },
+    {
+      "name": "VersionInfo",
+      "kind": "interface",
+      "line": 26,
+      "signature": "VersionInfo()"
+    },
+    {
+      "name": "AdapterDeclaration",
+      "kind": "interface",
+      "line": 32,
+      "signature": "AdapterDeclaration()"
+    },
+    {
+      "name": "SourceFile",
+      "kind": "interface",
+      "line": 40,
+      "signature": "SourceFile()"
+    },
+    {
+      "name": "FeatureRule",
+      "kind": "interface",
+      "line": 46,
+      "signature": "FeatureRule()"
+    },
+    {
+      "name": "DeprecationKind",
+      "kind": "type",
+      "line": 55,
+      "signature": "DeprecationKind()"
+    },
+    {
+      "name": "RemovedRule",
+      "kind": "interface",
+      "line": 58,
+      "signature": "RemovedRule()"
+    },
+    {
+      "name": "StaticGateItem",
+      "kind": "interface",
+      "line": 68,
+      "signature": "StaticGateItem()"
+    },
+    {
+      "name": "DynamicGateItem",
+      "kind": "interface",
+      "line": 75,
+      "signature": "DynamicGateItem()"
+    },
+    {
+      "name": "ProbeSpec",
+      "kind": "interface",
+      "line": 82,
+      "signature": "ProbeSpec()"
+    },
+    {
+      "name": "LanguageAdapter",
+      "kind": "interface",
+      "line": 92,
+      "signature": "LanguageAdapter()"
+    }
+  ],
+  "imports": [
+    {
+      "source": "../../../verify_refactor.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": []
+}

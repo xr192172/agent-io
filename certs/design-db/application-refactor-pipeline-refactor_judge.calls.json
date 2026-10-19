@@ -1,0 +1,75 @@
+{
+  "//": "Design DB —— src/application/refactor/pipeline/refactor_judge.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "Verdict",
+      "kind": "type",
+      "line": 24,
+      "signature": "Verdict()"
+    },
+    {
+      "name": "JudgeIssue",
+      "kind": "interface",
+      "line": 26,
+      "signature": "JudgeIssue()"
+    },
+    {
+      "name": "JudgeDecision",
+      "kind": "interface",
+      "line": 43,
+      "signature": "JudgeDecision()"
+    },
+    {
+      "name": "JudgeInput",
+      "kind": "interface",
+      "line": 52,
+      "signature": "JudgeInput()"
+    },
+    {
+      "name": "JudgeResult",
+      "kind": "interface",
+      "line": 64,
+      "signature": "JudgeResult()"
+    },
+    {
+      "name": "normalize",
+      "kind": "function",
+      "line": 76,
+      "signature": "normalize(issues: JudgeIssue[]): { list: JudgeIssue[]; generated: number }"
+    },
+    {
+      "name": "pushEscalation",
+      "kind": "function",
+      "line": 97,
+      "signature": "pushEscalation(issue: JudgeIssue, projectDir: string): void"
+    },
+    {
+      "name": "runRefactorJudge",
+      "kind": "function",
+      "line": 106,
+      "signature": "runRefactorJudge(input: JudgeInput): Promise<JudgeResult>"
+    }
+  ],
+  "imports": [
+    {
+      "source": "../../../infrastructure/alert_inbox.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/refactor/pipeline/refactor_judge.ts#runRefactorJudge",
+      "to": "src/application/refactor/pipeline/refactor_judge.ts#normalize"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_judge.ts#runRefactorJudge",
+      "to": "src/application/refactor/pipeline/refactor_judge.ts#pushEscalation"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_judge.ts#pushEscalation",
+      "to": "src/infrastructure/alert_inbox.ts#pushAlert"
+    }
+  ]
+}

@@ -1,0 +1,430 @@
+{
+  "//": "Design DB —— src/infrastructure/index/symbols.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "SyncStatus",
+      "kind": "type",
+      "line": 34,
+      "signature": "SyncStatus()"
+    },
+    {
+      "name": "SyncFileResult",
+      "kind": "interface",
+      "line": 36,
+      "signature": "SyncFileResult()"
+    },
+    {
+      "name": "SyncProjectResult",
+      "kind": "interface",
+      "line": 47,
+      "signature": "SyncProjectResult()"
+    },
+    {
+      "name": "SymbolHit",
+      "kind": "interface",
+      "line": 59,
+      "signature": "SymbolHit()"
+    },
+    {
+      "name": "IndexStats",
+      "kind": "interface",
+      "line": 68,
+      "signature": "IndexStats()"
+    },
+    {
+      "name": "toIndexKey",
+      "kind": "function",
+      "line": 97,
+      "signature": "toIndexKey(projectRoot: string, p: string): string | null"
+    },
+    {
+      "name": "toRelPath",
+      "kind": "function",
+      "line": 111,
+      "signature": "toRelPath(projectRoot: string, absPath: string): string"
+    },
+    {
+      "name": "contentHash",
+      "kind": "function",
+      "line": 128,
+      "signature": "contentHash(content: string): string"
+    },
+    {
+      "name": "countLinesOf",
+      "kind": "function",
+      "line": 132,
+      "signature": "countLinesOf(content: string): number"
+    },
+    {
+      "name": "SymbolStatus",
+      "kind": "type",
+      "line": 143,
+      "signature": "SymbolStatus()"
+    },
+    {
+      "name": "mergeSymbolStatus",
+      "kind": "function",
+      "line": 146,
+      "signature": "mergeSymbolStatus(a: SymbolStatus | undefined,\n  b: SymbolStatus | undefined,): SymbolStatus | undefined"
+    },
+    {
+      "name": "symbolSpanHash",
+      "kind": "function",
+      "line": 164,
+      "signature": "symbolSpanHash(lines: string[], startLine: number, endLine: number, lang: string): string"
+    },
+    {
+      "name": "hashSetsOf",
+      "kind": "function",
+      "line": 177,
+      "signature": "hashSetsOf(rows: Array<{ qualified_name: string; sym_hash: string | null }>): Map<string, Set<string>>"
+    },
+    {
+      "name": "resolveImportTarget",
+      "kind": "function",
+      "line": 207,
+      "signature": "resolveImportTarget(projectRoot: string,\n  fromRel: string,\n  source: string,\n  exts?: readonly string[],): string | null"
+    },
+    {
+      "name": "SyncPrelude",
+      "kind": "interface",
+      "line": 224,
+      "signature": "SyncPrelude()"
+    },
+    {
+      "name": "PreludeResult",
+      "kind": "type",
+      "line": 235,
+      "signature": "PreludeResult()"
+    },
+    {
+      "name": "syncFilePrelude",
+      "kind": "function",
+      "line": 245,
+      "signature": "syncFilePrelude(db: Database, projectRoot: string, absPath: string): PreludeResult"
+    },
+    {
+      "name": "applyParsedToIndex",
+      "kind": "function",
+      "line": 286,
+      "signature": "applyParsedToIndex(db: Database, projectRoot: string, pre: SyncPrelude, parsed: ParsedFile): SyncFileResult"
+    },
+    {
+      "name": "syncFile",
+      "kind": "function",
+      "line": 526,
+      "signature": "syncFile(db: Database, projectRoot: string, absPath: string): Promise<SyncFileResult>"
+    },
+    {
+      "name": "syncFileSync",
+      "kind": "function",
+      "line": 543,
+      "signature": "syncFileSync(db: Database, projectRoot: string, absPath: string): SyncFileResult"
+    },
+    {
+      "name": "ReopenRefsResult",
+      "kind": "interface",
+      "line": 571,
+      "signature": "ReopenRefsResult()"
+    },
+    {
+      "name": "reopenRefsTo",
+      "kind": "function",
+      "line": 583,
+      "signature": "reopenRefsTo(db: Database, names: readonly string[]): ReopenRefsResult"
+    },
+    {
+      "name": "changedSymbolNames",
+      "kind": "function",
+      "line": 629,
+      "signature": "changedSymbolNames(db: Database, rel: string): string[]"
+    },
+    {
+      "name": "syncProject",
+      "kind": "function",
+      "line": 654,
+      "signature": "syncProject(db: Database,\n  projectRoot: string,\n  absPaths: string[],): Promise<SyncProjectResult>"
+    },
+    {
+      "name": "removeFileRel",
+      "kind": "function",
+      "line": 685,
+      "signature": "removeFileRel(db: Database, rel: string): void"
+    },
+    {
+      "name": "removeFile",
+      "kind": "function",
+      "line": 692,
+      "signature": "removeFile(db: Database, projectRoot: string, absPath: string): void"
+    },
+    {
+      "name": "BUILTIN_PREFIXES",
+      "kind": "const",
+      "line": 701,
+      "signature": "const BUILTIN_PREFIXES = new Set([ 'Math', 'JSON', 'Array', 'Object', 'String', 'N…"
+    },
+    {
+      "name": "BUILTIN_CALLEES",
+      "kind": "const",
+      "line": 717,
+      "signature": "const BUILTIN_CALLEES = new Set([ 'String', 'Number', 'Boolean', 'Object', 'Array…"
+    },
+    {
+      "name": "CrossFileResolveStats",
+      "kind": "interface",
+      "line": 728,
+      "signature": "CrossFileResolveStats()"
+    },
+    {
+      "name": "resolveCrossFileCalls",
+      "kind": "function",
+      "line": 752,
+      "signature": "resolveCrossFileCalls(db: Database,\n  projectRoot: string,\n  opts: { scopeFiles?: readonly string[]; keepUnresolvedPending?: boolean } = {},): CrossFileResolveStats"
+    },
+    {
+      "name": "BUILTIN_TYPES",
+      "kind": "const",
+      "line": 887,
+      "signature": "const BUILTIN_TYPES = new Set([ 'string', 'number', 'boolean', 'void', 'any', '…"
+    },
+    {
+      "name": "findCrossFileTarget",
+      "kind": "function",
+      "line": 897,
+      "signature": "findCrossFileTarget(db: Database,\n  relImportsByFile: Map<string, Array<{ source: string; line: number }>>,\n  projectRoot: string,\n  fromRel: string,\n  name: string,\n  namesByFile: Map<string, Set<string>>,): { file: string; qn: string } | null"
+    },
+    {
+      "name": "pruneDeletedFiles",
+      "kind": "function",
+      "line": 939,
+      "signature": "pruneDeletedFiles(db: Database, projectRoot: string, absPaths: string[]): string[]"
+    },
+    {
+      "name": "CachedSymbol",
+      "kind": "interface",
+      "line": 964,
+      "signature": "CachedSymbol()"
+    },
+    {
+      "name": "CachedImport",
+      "kind": "interface",
+      "line": 975,
+      "signature": "CachedImport()"
+    },
+    {
+      "name": "CachedFileParse",
+      "kind": "interface",
+      "line": 981,
+      "signature": "CachedFileParse()"
+    },
+    {
+      "name": "getFileParse",
+      "kind": "function",
+      "line": 992,
+      "signature": "getFileParse(db: Database, relPath: string): CachedFileParse | null"
+    },
+    {
+      "name": "searchSymbols",
+      "kind": "function",
+      "line": 1014,
+      "signature": "searchSymbols(db: Database, query: string, limit = 20): SymbolHit[]"
+    },
+    {
+      "name": "getIndexStats",
+      "kind": "function",
+      "line": 1030,
+      "signature": "getIndexStats(db: Database): IndexStats"
+    },
+    {
+      "name": "hasAnyIndexedFiles",
+      "kind": "function",
+      "line": 1043,
+      "signature": "hasAnyIndexedFiles(db: Database): boolean"
+    },
+    {
+      "name": "isFileIndexed",
+      "kind": "function",
+      "line": 1049,
+      "signature": "isFileIndexed(db: Database, relPath: string): boolean"
+    },
+    {
+      "name": "getResolvedImportTargets",
+      "kind": "function",
+      "line": 1059,
+      "signature": "getResolvedImportTargets(db: Database, relPath: string): string[]"
+    },
+    {
+      "name": "getResolvedImportSources",
+      "kind": "function",
+      "line": 1071,
+      "signature": "getResolvedImportSources(db: Database, relPath: string): string[]"
+    },
+    {
+      "name": "getRawImportsOfFile",
+      "kind": "function",
+      "line": 1083,
+      "signature": "getRawImportsOfFile(db: Database,\n  relPath: string,): Array<{ source: string; kind: 'relative' | 'package'; type_only: boolean; line: number }>"
+    },
+    {
+      "name": "findFilesImportingAnySource",
+      "kind": "function",
+      "line": 1107,
+      "signature": "findFilesImportingAnySource(db: Database, sources: string[]): string[]"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "node:crypto",
+      "kind": "package"
+    },
+    {
+      "source": "./db.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../parse/index.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../parse/source_exts.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../project_view.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./db.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/index/symbols.ts#applyParsedToIndex",
+      "to": "src/infrastructure/index/db.ts#inTransaction"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#reopenRefsTo",
+      "to": "src/infrastructure/index/db.ts#inTransaction"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#resolveCrossFileCalls",
+      "to": "src/infrastructure/index/db.ts#inTransaction"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#pruneDeletedFiles",
+      "to": "src/infrastructure/index/db.ts#inTransaction"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#syncFile",
+      "to": "src/infrastructure/index/symbols.ts#applyParsedToIndex"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#syncFileSync",
+      "to": "src/infrastructure/index/symbols.ts#applyParsedToIndex"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#syncFilePrelude",
+      "to": "src/infrastructure/index/symbols.ts#contentHash"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#applyParsedToIndex",
+      "to": "src/infrastructure/index/symbols.ts#countLinesOf"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#resolveCrossFileCalls",
+      "to": "src/infrastructure/index/symbols.ts#findCrossFileTarget"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#resolveCrossFileCalls",
+      "to": "src/infrastructure/index/symbols.ts#findCrossFileTarget"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#applyParsedToIndex",
+      "to": "src/infrastructure/index/symbols.ts#hashSetsOf"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#applyParsedToIndex",
+      "to": "src/infrastructure/index/symbols.ts#mergeSymbolStatus"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#removeFile",
+      "to": "src/infrastructure/index/symbols.ts#removeFileRel"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#pruneDeletedFiles",
+      "to": "src/infrastructure/index/symbols.ts#removeFileRel"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#syncProject",
+      "to": "src/infrastructure/index/symbols.ts#resolveCrossFileCalls"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#applyParsedToIndex",
+      "to": "src/infrastructure/index/symbols.ts#resolveImportTarget"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#findCrossFileTarget",
+      "to": "src/infrastructure/index/symbols.ts#resolveImportTarget"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#applyParsedToIndex",
+      "to": "src/infrastructure/index/symbols.ts#symbolSpanHash"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#applyParsedToIndex",
+      "to": "src/infrastructure/index/symbols.ts#symbolSpanHash"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#syncProject",
+      "to": "src/infrastructure/index/symbols.ts#syncFile"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#syncFile",
+      "to": "src/infrastructure/index/symbols.ts#syncFilePrelude"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#syncFileSync",
+      "to": "src/infrastructure/index/symbols.ts#syncFilePrelude"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#toRelPath",
+      "to": "src/infrastructure/index/symbols.ts#toIndexKey"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#syncFilePrelude",
+      "to": "src/infrastructure/index/symbols.ts#toRelPath"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#removeFile",
+      "to": "src/infrastructure/index/symbols.ts#toRelPath"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#pruneDeletedFiles",
+      "to": "src/infrastructure/index/symbols.ts#toRelPath"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#pruneDeletedFiles",
+      "to": "src/infrastructure/parse/source_exts.ts#codeSourceExtSet"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#syncFile",
+      "to": "src/infrastructure/project_view.ts#invalidateProjectView"
+    },
+    {
+      "from": "src/infrastructure/index/symbols.ts#syncFileSync",
+      "to": "src/infrastructure/project_view.ts#invalidateProjectView"
+    }
+  ]
+}

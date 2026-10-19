@@ -1,0 +1,213 @@
+{
+  "//": "Design DB —— src/infrastructure/authoring/translate/ts_codegen.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "GO_TO_TS",
+      "kind": "const",
+      "line": 18,
+      "signature": "const GO_TO_TS = { int: 'number', int8: 'number', int16: 'number', int32: …"
+    },
+    {
+      "name": "MappedType",
+      "kind": "interface",
+      "line": 40,
+      "signature": "MappedType()"
+    },
+    {
+      "name": "mapGoType",
+      "kind": "function",
+      "line": 53,
+      "signature": "mapGoType(goType: string): MappedType"
+    },
+    {
+      "name": "splitTopLevel",
+      "kind": "function",
+      "line": 168,
+      "signature": "splitTopLevel(s: string): string[]"
+    },
+    {
+      "name": "mapParam",
+      "kind": "function",
+      "line": 186,
+      "signature": "mapParam({ name, type }: TranslateParam, notes: string[]): string"
+    },
+    {
+      "name": "typeParamString",
+      "kind": "function",
+      "line": 193,
+      "signature": "typeParamString(u: TransUnit): string"
+    },
+    {
+      "name": "channelShimSource",
+      "kind": "function",
+      "line": 204,
+      "signature": "channelShimSource(): string"
+    },
+    {
+      "name": "renderFuncSkeleton",
+      "kind": "function",
+      "line": 232,
+      "signature": "renderFuncSkeleton(u: TransUnit): { code: string; notes: string[] }"
+    },
+    {
+      "name": "tsCaseLabel",
+      "kind": "function",
+      "line": 247,
+      "signature": "tsCaseLabel(l: string): string"
+    },
+    {
+      "name": "renderDecisionBody",
+      "kind": "function",
+      "line": 254,
+      "signature": "renderDecisionBody(u: TransUnit): string"
+    },
+    {
+      "name": "renderTypeSkeleton",
+      "kind": "function",
+      "line": 275,
+      "signature": "renderTypeSkeleton(u: TransUnit): { code: string; notes: string[] }"
+    },
+    {
+      "name": "renderConstSkeleton",
+      "kind": "function",
+      "line": 314,
+      "signature": "renderConstSkeleton(u: TransUnit): { code: string; notes: string[] }"
+    },
+    {
+      "name": "renderTsSkeleton",
+      "kind": "function",
+      "line": 323,
+      "signature": "renderTsSkeleton(u: TransUnit): string"
+    }
+  ],
+  "imports": [
+    {
+      "source": "./unit.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#mapParam",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#renderFuncSkeleton",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#renderTypeSkeleton",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#renderTypeSkeleton",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#renderTypeSkeleton",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#renderFuncSkeleton",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#mapParam"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#renderTypeSkeleton",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#mapParam"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#renderTsSkeleton",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#renderConstSkeleton"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#renderFuncSkeleton",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#renderDecisionBody"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#renderTsSkeleton",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#renderFuncSkeleton"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#renderTsSkeleton",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#renderTypeSkeleton"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#splitTopLevel"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#splitTopLevel"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#mapGoType",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#splitTopLevel"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#renderFuncSkeleton",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#typeParamString"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#renderTypeSkeleton",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#typeParamString"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#renderTypeSkeleton",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#typeParamString"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#renderTypeSkeleton",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#typeParamString"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/ts_codegen.ts#renderTsSkeleton",
+      "to": "src/infrastructure/authoring/translate/unit.ts#withConstraints"
+    }
+  ]
+}

@@ -1,0 +1,203 @@
+{
+  "//": "Design DB —— src/application/refactor/annotate/function_annotation.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "FNHASH_PREFIX",
+      "kind": "const",
+      "line": 27,
+      "signature": "const FNHASH_PREFIX = '@fnhash'"
+    },
+    {
+      "name": "FnCommentStatus",
+      "kind": "type",
+      "line": 30,
+      "signature": "FnCommentStatus()"
+    },
+    {
+      "name": "FnTarget",
+      "kind": "interface",
+      "line": 32,
+      "signature": "FnTarget()"
+    },
+    {
+      "name": "AnnotationSummary",
+      "kind": "interface",
+      "line": 50,
+      "signature": "AnnotationSummary()"
+    },
+    {
+      "name": "AnnotationPlanResult",
+      "kind": "interface",
+      "line": 62,
+      "signature": "AnnotationPlanResult()"
+    },
+    {
+      "name": "hashOf",
+      "kind": "function",
+      "line": 74,
+      "signature": "hashOf(text: string): string"
+    },
+    {
+      "name": "isCommentLine",
+      "kind": "function",
+      "line": 78,
+      "signature": "isCommentLine(trim: string): boolean"
+    },
+    {
+      "name": "docBlock",
+      "kind": "function",
+      "line": 86,
+      "signature": "docBlock(lines: string[], decl0: number): { blockLines: string[]; blockStart: number }"
+    },
+    {
+      "name": "markerHash",
+      "kind": "function",
+      "line": 97,
+      "signature": "markerHash(blockLines: string[]): string | null"
+    },
+    {
+      "name": "hasDescriptive",
+      "kind": "function",
+      "line": 106,
+      "signature": "hasDescriptive(blockLines: string[]): boolean"
+    },
+    {
+      "name": "classify",
+      "kind": "function",
+      "line": 117,
+      "signature": "classify(existingLines: string[], bodyHash: string): FnCommentStatus"
+    },
+    {
+      "name": "isEmptyBody",
+      "kind": "function",
+      "line": 126,
+      "signature": "isEmptyBody(body: string): boolean"
+    },
+    {
+      "name": "scanFileAnnotations",
+      "kind": "function",
+      "line": 134,
+      "signature": "scanFileAnnotations(absFile: string): Promise<FnTarget[]>"
+    },
+    {
+      "name": "newBlock",
+      "kind": "function",
+      "line": 165,
+      "signature": "newBlock(go: boolean, indent: string, desc: string, hash: string): string[]"
+    },
+    {
+      "name": "applyAnnotationsToSource",
+      "kind": "function",
+      "line": 175,
+      "signature": "applyAnnotationsToSource(content: string,\n  jobs: Array<{ startLine: number; status: FnCommentStatus; blockLines: string[]; blockStart: number; newBlock: string[] }>,): string"
+    },
+    {
+      "name": "llmDescriptions",
+      "kind": "function",
+      "line": 195,
+      "signature": "llmDescriptions(targets: FnTarget[], cfg: NonNullable<ReturnType<typeof loadLlmConfig>>): Promise<Map<number, string>>"
+    },
+    {
+      "name": "PlanAnnotationInput",
+      "kind": "interface",
+      "line": 226,
+      "signature": "PlanAnnotationInput()"
+    },
+    {
+      "name": "planFunctionAnnotation",
+      "kind": "function",
+      "line": 234,
+      "signature": "planFunctionAnnotation(input: PlanAnnotationInput): Promise<AnnotationPlanResult>"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:crypto",
+      "kind": "package"
+    },
+    {
+      "source": "../../../infrastructure/parse/index.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/llm_focus.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/analysis/deadcode/detect_dead_imports.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/refactor/annotate/function_annotation.ts#planFunctionAnnotation",
+      "to": "src/application/refactor/annotate/function_annotation.ts#applyAnnotationsToSource"
+    },
+    {
+      "from": "src/application/refactor/annotate/function_annotation.ts#scanFileAnnotations",
+      "to": "src/application/refactor/annotate/function_annotation.ts#classify"
+    },
+    {
+      "from": "src/application/refactor/annotate/function_annotation.ts#scanFileAnnotations",
+      "to": "src/application/refactor/annotate/function_annotation.ts#docBlock"
+    },
+    {
+      "from": "src/application/refactor/annotate/function_annotation.ts#classify",
+      "to": "src/application/refactor/annotate/function_annotation.ts#hasDescriptive"
+    },
+    {
+      "from": "src/application/refactor/annotate/function_annotation.ts#scanFileAnnotations",
+      "to": "src/application/refactor/annotate/function_annotation.ts#hashOf"
+    },
+    {
+      "from": "src/application/refactor/annotate/function_annotation.ts#scanFileAnnotations",
+      "to": "src/application/refactor/annotate/function_annotation.ts#hashOf"
+    },
+    {
+      "from": "src/application/refactor/annotate/function_annotation.ts#docBlock",
+      "to": "src/application/refactor/annotate/function_annotation.ts#isCommentLine"
+    },
+    {
+      "from": "src/application/refactor/annotate/function_annotation.ts#docBlock",
+      "to": "src/application/refactor/annotate/function_annotation.ts#isCommentLine"
+    },
+    {
+      "from": "src/application/refactor/annotate/function_annotation.ts#scanFileAnnotations",
+      "to": "src/application/refactor/annotate/function_annotation.ts#isEmptyBody"
+    },
+    {
+      "from": "src/application/refactor/annotate/function_annotation.ts#planFunctionAnnotation",
+      "to": "src/application/refactor/annotate/function_annotation.ts#llmDescriptions"
+    },
+    {
+      "from": "src/application/refactor/annotate/function_annotation.ts#classify",
+      "to": "src/application/refactor/annotate/function_annotation.ts#markerHash"
+    },
+    {
+      "from": "src/application/refactor/annotate/function_annotation.ts#planFunctionAnnotation",
+      "to": "src/application/refactor/annotate/function_annotation.ts#newBlock"
+    },
+    {
+      "from": "src/application/refactor/annotate/function_annotation.ts#planFunctionAnnotation",
+      "to": "src/application/refactor/annotate/function_annotation.ts#scanFileAnnotations"
+    },
+    {
+      "from": "src/application/refactor/annotate/function_annotation.ts#planFunctionAnnotation",
+      "to": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#scanProjectSourceFiles"
+    },
+    {
+      "from": "src/application/refactor/annotate/function_annotation.ts#llmDescriptions",
+      "to": "src/infrastructure/llm_focus.ts#callChat"
+    },
+    {
+      "from": "src/application/refactor/annotate/function_annotation.ts#planFunctionAnnotation",
+      "to": "src/infrastructure/llm_focus.ts#loadLlmConfig"
+    }
+  ]
+}

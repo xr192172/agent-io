@@ -1,0 +1,117 @@
+{
+  "//": "Design DB —— src/application/observe/capture/observe_trace.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "ObserveTraceCfg",
+      "kind": "interface",
+      "line": 17,
+      "signature": "ObserveTraceCfg()"
+    },
+    {
+      "name": "ObserveTraceResult",
+      "kind": "interface",
+      "line": 30,
+      "signature": "ObserveTraceResult()"
+    },
+    {
+      "name": "defaultEventsCandidates",
+      "kind": "function",
+      "line": 53,
+      "signature": "defaultEventsCandidates(cwd = process.cwd()): string[]"
+    },
+    {
+      "name": "loadEventsText",
+      "kind": "function",
+      "line": 63,
+      "signature": "loadEventsText(cfg: ObserveTraceCfg, cwd = process.cwd()): { text: string; source: string }"
+    },
+    {
+      "name": "loadNeedles",
+      "kind": "function",
+      "line": 82,
+      "signature": "loadNeedles(cfg: ObserveTraceCfg, cwd = process.cwd()): ObserveTraceResult"
+    },
+    {
+      "name": "traceToText",
+      "kind": "function",
+      "line": 113,
+      "signature": "traceToText(t: SamplingNeedle, maxDepth = 40): string"
+    },
+    {
+      "name": "compactNode",
+      "kind": "function",
+      "line": 128,
+      "signature": "compactNode(n: RunTreeNode): unknown"
+    },
+    {
+      "name": "needleToData",
+      "kind": "function",
+      "line": 140,
+      "signature": "needleToData(t: SamplingNeedle): Record<string, unknown>"
+    },
+    {
+      "name": "observeTrace",
+      "kind": "function",
+      "line": 151,
+      "signature": "observeTrace(cfg: ObserveTraceCfg, cwd = process.cwd()): { message: string; data: unknown }"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:os",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../../infrastructure/analysis/observe/run_trace_replay.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/analysis/observe/snapshot_needle.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/observe/capture/observe_trace.ts#needleToData",
+      "to": "src/application/observe/capture/observe_trace.ts#compactNode"
+    },
+    {
+      "from": "src/application/observe/capture/observe_trace.ts#loadEventsText",
+      "to": "src/application/observe/capture/observe_trace.ts#defaultEventsCandidates"
+    },
+    {
+      "from": "src/application/observe/capture/observe_trace.ts#loadNeedles",
+      "to": "src/application/observe/capture/observe_trace.ts#loadEventsText"
+    },
+    {
+      "from": "src/application/observe/capture/observe_trace.ts#observeTrace",
+      "to": "src/application/observe/capture/observe_trace.ts#loadNeedles"
+    },
+    {
+      "from": "src/application/observe/capture/observe_trace.ts#observeTrace",
+      "to": "src/application/observe/capture/observe_trace.ts#needleToData"
+    },
+    {
+      "from": "src/application/observe/capture/observe_trace.ts#observeTrace",
+      "to": "src/application/observe/capture/observe_trace.ts#traceToText"
+    },
+    {
+      "from": "src/application/observe/capture/observe_trace.ts#loadNeedles",
+      "to": "src/infrastructure/analysis/observe/run_trace_replay.ts#parseRunTraces"
+    },
+    {
+      "from": "src/application/observe/capture/observe_trace.ts#loadNeedles",
+      "to": "src/infrastructure/analysis/observe/snapshot_needle.ts#sampleNeedles"
+    }
+  ]
+}

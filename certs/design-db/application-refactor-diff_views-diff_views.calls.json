@@ -1,0 +1,366 @@
+{
+  "//": "Design DB —— src/application/refactor/diff_views/diff_views.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "DiffViewsInput",
+      "kind": "interface",
+      "line": 33,
+      "signature": "DiffViewsInput()"
+    },
+    {
+      "name": "FileChangeType",
+      "kind": "type",
+      "line": 41,
+      "signature": "FileChangeType()"
+    },
+    {
+      "name": "FileDiff",
+      "kind": "interface",
+      "line": 44,
+      "signature": "FileDiff()"
+    },
+    {
+      "name": "SymbolDiff",
+      "kind": "interface",
+      "line": 63,
+      "signature": "SymbolDiff()"
+    },
+    {
+      "name": "ApiDiff",
+      "kind": "interface",
+      "line": 78,
+      "signature": "ApiDiff()"
+    },
+    {
+      "name": "EdgeDiff",
+      "kind": "interface",
+      "line": 86,
+      "signature": "EdgeDiff()"
+    },
+    {
+      "name": "ThreeWayState",
+      "kind": "type",
+      "line": 107,
+      "signature": "ThreeWayState()"
+    },
+    {
+      "name": "DecisionCardRef",
+      "kind": "interface",
+      "line": 119,
+      "signature": "DecisionCardRef()"
+    },
+    {
+      "name": "ThreeWayFile",
+      "kind": "interface",
+      "line": 135,
+      "signature": "ThreeWayFile()"
+    },
+    {
+      "name": "ThreeWaySummary",
+      "kind": "interface",
+      "line": 157,
+      "signature": "ThreeWaySummary()"
+    },
+    {
+      "name": "DiffViewsResult",
+      "kind": "interface",
+      "line": 178,
+      "signature": "DiffViewsResult()"
+    },
+    {
+      "name": "diffViewsCore",
+      "kind": "function",
+      "line": 248,
+      "signature": "diffViewsCore(input: DiffViewsInput): DiffViewsResult"
+    },
+    {
+      "name": "touchedOf",
+      "kind": "function",
+      "line": 722,
+      "signature": "touchedOf(input: DiffViewsInput): Touched"
+    },
+    {
+      "name": "diffViews",
+      "kind": "function",
+      "line": 732,
+      "signature": "diffViews(input: DiffViewsInput): TouchedProduct<DiffViewsResult>"
+    },
+    {
+      "name": "fileChanged",
+      "kind": "function",
+      "line": 743,
+      "signature": "fileChanged(a: SemanticFile | undefined,\n  b: SemanticFile | undefined,\n  // ★ T20：事实（actual_apis）已不在 DSL 里 ⇒ 要把它算进来就必须知道\"去哪儿取\"（各侧自己的 source_root）\n  aRoot?: string,\n  bRoot?: string,): boolean"
+    },
+    {
+      "name": "isDiffNoiseSymbol",
+      "kind": "function",
+      "line": 770,
+      "signature": "isDiffNoiseSymbol(s: Symbol): boolean"
+    },
+    {
+      "name": "symbolsSemanticallyEqual",
+      "kind": "function",
+      "line": 779,
+      "signature": "symbolsSemanticallyEqual(a: Symbol[], b: Symbol[]): boolean"
+    },
+    {
+      "name": "diffSymbols",
+      "kind": "function",
+      "line": 792,
+      "signature": "diffSymbols(design: Symbol[], live: Symbol[]): SymbolDiff[]"
+    },
+    {
+      "name": "diffApis",
+      "kind": "function",
+      "line": 843,
+      "signature": "diffApis(design: ExpectedApi[], live: ExpectedApi[]): ApiDiff[]"
+    },
+    {
+      "name": "diffEdges",
+      "kind": "function",
+      "line": 886,
+      "signature": "diffEdges(design: Edge[],\n  live: Edge[],\n  designFileIds: Set<string>,\n  liveFileIds: Set<string>,): EdgeDiff[]"
+    },
+    {
+      "name": "fileDecisionChanged",
+      "kind": "function",
+      "line": 918,
+      "signature": "fileDecisionChanged(a: DesignDSL | null, b: DesignDSL | null, path: string, aId?: string, bId?: string): boolean"
+    },
+    {
+      "name": "symbolsDecisionChanged",
+      "kind": "function",
+      "line": 931,
+      "signature": "symbolsDecisionChanged(fa: SemanticFile | undefined, fb: SemanticFile | undefined): boolean"
+    },
+    {
+      "name": "fileDecisionRef",
+      "kind": "function",
+      "line": 942,
+      "signature": "fileDecisionRef(dsl: DesignDSL | null, filePath: string, fileId?: string): DecisionCardRef | undefined"
+    },
+    {
+      "name": "symbolDecisionRefs",
+      "kind": "function",
+      "line": 959,
+      "signature": "symbolDecisionRefs(dsl: DesignDSL | null, filePath: string): Record<string, DecisionCardRef>"
+    },
+    {
+      "name": "getArchiveRef",
+      "kind": "function",
+      "line": 977,
+      "signature": "getArchiveRef(feature: string,\n  filePath: string,\n  state: ThreeWayState,\n  live_dir?: string,): { retire_reason?: string; merged_into?: string; archived_at?: string } | undefined"
+    }
+  ],
+  "imports": [
+    {
+      "source": "../../../domain/types.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../../infrastructure/storage.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/index/file_facts.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../domain/b_terms.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
+      "to": "src/application/refactor/diff_views/diff_views.ts#diffApis"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
+      "to": "src/application/refactor/diff_views/diff_views.ts#diffApis"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
+      "to": "src/application/refactor/diff_views/diff_views.ts#diffApis"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
+      "to": "src/application/refactor/diff_views/diff_views.ts#diffApis"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#fileChanged",
+      "to": "src/application/refactor/diff_views/diff_views.ts#diffApis"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
+      "to": "src/application/refactor/diff_views/diff_views.ts#diffEdges"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
+      "to": "src/application/refactor/diff_views/diff_views.ts#diffSymbols"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
+      "to": "src/application/refactor/diff_views/diff_views.ts#diffSymbols"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
+      "to": "src/application/refactor/diff_views/diff_views.ts#diffSymbols"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#fileChanged",
+      "to": "src/application/refactor/diff_views/diff_views.ts#diffSymbols"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#diffViews",
+      "to": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
+      "to": "src/application/refactor/diff_views/diff_views.ts#fileChanged"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
+      "to": "src/application/refactor/diff_views/diff_views.ts#fileChanged"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
+      "to": "src/application/refactor/diff_views/diff_views.ts#fileDecisionChanged"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
+      "to": "src/application/refactor/diff_views/diff_views.ts#fileDecisionChanged"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
+      "to": "src/application/refactor/diff_views/diff_views.ts#fileDecisionRef"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
+      "to": "src/application/refactor/diff_views/diff_views.ts#fileDecisionRef"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
+      "to": "src/application/refactor/diff_views/diff_views.ts#getArchiveRef"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#symbolsSemanticallyEqual",
+      "to": "src/application/refactor/diff_views/diff_views.ts#isDiffNoiseSymbol"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#symbolsSemanticallyEqual",
+      "to": "src/application/refactor/diff_views/diff_views.ts#isDiffNoiseSymbol"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#diffSymbols",
+      "to": "src/application/refactor/diff_views/diff_views.ts#isDiffNoiseSymbol"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#diffSymbols",
+      "to": "src/application/refactor/diff_views/diff_views.ts#isDiffNoiseSymbol"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
+      "to": "src/application/refactor/diff_views/diff_views.ts#symbolDecisionRefs"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
+      "to": "src/application/refactor/diff_views/diff_views.ts#symbolsDecisionChanged"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
+      "to": "src/application/refactor/diff_views/diff_views.ts#symbolsDecisionChanged"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
+      "to": "src/application/refactor/diff_views/diff_views.ts#symbolsDecisionChanged"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
+      "to": "src/application/refactor/diff_views/diff_views.ts#symbolsSemanticallyEqual"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#diffViews",
+      "to": "src/application/refactor/diff_views/diff_views.ts#touchedOf"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#diffViews",
+      "to": "src/domain/b_terms.ts#withTouched"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
+      "to": "src/infrastructure/index/file_facts.ts#diagnoseFactsOffset"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
+      "to": "src/infrastructure/index/file_facts.ts#mergedApis"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
+      "to": "src/infrastructure/index/file_facts.ts#mergedApis"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
+      "to": "src/infrastructure/index/file_facts.ts#mergedApis"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
+      "to": "src/infrastructure/index/file_facts.ts#mergedApis"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
+      "to": "src/infrastructure/index/file_facts.ts#mergedApis"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
+      "to": "src/infrastructure/index/file_facts.ts#mergedApis"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
+      "to": "src/infrastructure/index/file_facts.ts#mergedApis"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
+      "to": "src/infrastructure/index/file_facts.ts#mergedApis"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
+      "to": "src/infrastructure/index/file_facts.ts#mergedApis"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
+      "to": "src/infrastructure/index/file_facts.ts#mergedApis"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#fileChanged",
+      "to": "src/infrastructure/index/file_facts.ts#mergedApis"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#fileChanged",
+      "to": "src/infrastructure/index/file_facts.ts#mergedApis"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#getArchiveRef",
+      "to": "src/infrastructure/storage.ts#getArchiveEntryByPath"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
+      "to": "src/infrastructure/storage.ts#getBaselineFeatureResolved"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/application/refactor/diff_views/diff_views.ts#diffViewsCore",
+      "to": "src/infrastructure/storage.ts#getLiveFeatureResolved"
+    }
+  ]
+}

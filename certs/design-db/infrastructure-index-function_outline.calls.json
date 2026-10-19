@@ -1,0 +1,183 @@
+{
+  "//": "Design DB —— src/infrastructure/index/function_outline.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "FuncCallRef",
+      "kind": "interface",
+      "line": 17,
+      "signature": "FuncCallRef()"
+    },
+    {
+      "name": "FunctionOutlineFn",
+      "kind": "interface",
+      "line": 24,
+      "signature": "FunctionOutlineFn()"
+    },
+    {
+      "name": "FunctionOutline",
+      "kind": "interface",
+      "line": 45,
+      "signature": "FunctionOutline()"
+    },
+    {
+      "name": "symbolNameFromId",
+      "kind": "function",
+      "line": 54,
+      "signature": "symbolNameFromId(nodeId: string): string"
+    },
+    {
+      "name": "filePathFromId",
+      "kind": "function",
+      "line": 59,
+      "signature": "filePathFromId(nodeId: string): string"
+    },
+    {
+      "name": "queryFunctionOutline",
+      "kind": "function",
+      "line": 66,
+      "signature": "queryFunctionOutline(db: Database, opts: { dir?: string } = {}): FunctionOutline"
+    },
+    {
+      "name": "listFunctionDirs",
+      "kind": "function",
+      "line": 161,
+      "signature": "listFunctionDirs(feature?: string, sourceRoot?: string): { ok: boolean; dirs: Array<{ dir: string; files: number; fns: number }>; note?: string }"
+    },
+    {
+      "name": "withCacheDb",
+      "kind": "function",
+      "line": 190,
+      "signature": "withCacheDb(feature: string | undefined,\n  sourceRoot: string | undefined,\n  fn: (db: Database) => T,): { ok: boolean; note?: string; data: T }"
+    },
+    {
+      "name": "buildFunctionOutline",
+      "kind": "function",
+      "line": 213,
+      "signature": "buildFunctionOutline(feature?: string, sourceRoot?: string, opts?: { dir?: string }): { ok: boolean; outline: FunctionOutline; note?: string }"
+    },
+    {
+      "name": "FeatureIndexDsl",
+      "kind": "interface",
+      "line": 244,
+      "signature": "FeatureIndexDsl()"
+    },
+    {
+      "name": "FeatureIndexEntry",
+      "kind": "interface",
+      "line": 255,
+      "signature": "FeatureIndexEntry()"
+    },
+    {
+      "name": "buildFeatureIndex",
+      "kind": "function",
+      "line": 268,
+      "signature": "buildFeatureIndex(dsl: FeatureIndexDsl | null | undefined): Map<string, FeatureIndexEntry>"
+    },
+    {
+      "name": "attachFunctionFeatures",
+      "kind": "function",
+      "line": 294,
+      "signature": "attachFunctionFeatures(fns: FunctionOutlineFn[],\n  dsl: FeatureIndexDsl | null | undefined,): FunctionOutlineFn[]"
+    },
+    {
+      "name": "isCommentLineTrim",
+      "kind": "function",
+      "line": 311,
+      "signature": "isCommentLineTrim(t: string): boolean"
+    },
+    {
+      "name": "fnDocAt",
+      "kind": "function",
+      "line": 316,
+      "signature": "fnDocAt(lines: string[], decl0: number): string | undefined"
+    },
+    {
+      "name": "attachDocs",
+      "kind": "function",
+      "line": 338,
+      "signature": "attachDocs(fns: FunctionOutlineFn[], sourceRoot: string): void"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "../storage.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./db.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/index/function_outline.ts#withCacheDb",
+      "to": "src/infrastructure/index/db.ts#findCacheDb"
+    },
+    {
+      "from": "src/infrastructure/index/function_outline.ts#buildFunctionOutline",
+      "to": "src/infrastructure/index/db.ts#findCacheDb"
+    },
+    {
+      "from": "src/infrastructure/index/function_outline.ts#withCacheDb",
+      "to": "src/infrastructure/index/db.ts#openDb"
+    },
+    {
+      "from": "src/infrastructure/index/function_outline.ts#buildFunctionOutline",
+      "to": "src/infrastructure/index/function_outline.ts#attachDocs"
+    },
+    {
+      "from": "src/infrastructure/index/function_outline.ts#buildFunctionOutline",
+      "to": "src/infrastructure/index/function_outline.ts#attachFunctionFeatures"
+    },
+    {
+      "from": "src/infrastructure/index/function_outline.ts#attachFunctionFeatures",
+      "to": "src/infrastructure/index/function_outline.ts#buildFeatureIndex"
+    },
+    {
+      "from": "src/infrastructure/index/function_outline.ts#queryFunctionOutline",
+      "to": "src/infrastructure/index/function_outline.ts#filePathFromId"
+    },
+    {
+      "from": "src/infrastructure/index/function_outline.ts#attachDocs",
+      "to": "src/infrastructure/index/function_outline.ts#fnDocAt"
+    },
+    {
+      "from": "src/infrastructure/index/function_outline.ts#fnDocAt",
+      "to": "src/infrastructure/index/function_outline.ts#isCommentLineTrim"
+    },
+    {
+      "from": "src/infrastructure/index/function_outline.ts#fnDocAt",
+      "to": "src/infrastructure/index/function_outline.ts#isCommentLineTrim"
+    },
+    {
+      "from": "src/infrastructure/index/function_outline.ts#buildFunctionOutline",
+      "to": "src/infrastructure/index/function_outline.ts#queryFunctionOutline"
+    },
+    {
+      "from": "src/infrastructure/index/function_outline.ts#queryFunctionOutline",
+      "to": "src/infrastructure/index/function_outline.ts#symbolNameFromId"
+    },
+    {
+      "from": "src/infrastructure/index/function_outline.ts#listFunctionDirs",
+      "to": "src/infrastructure/index/function_outline.ts#withCacheDb"
+    },
+    {
+      "from": "src/infrastructure/index/function_outline.ts#buildFunctionOutline",
+      "to": "src/infrastructure/index/function_outline.ts#withCacheDb"
+    },
+    {
+      "from": "src/infrastructure/index/function_outline.ts#buildFunctionOutline",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    }
+  ]
+}

@@ -1,0 +1,124 @@
+{
+  "//": "Design DB —— src/application/design/lifecycle/simulation.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "engineCache",
+      "kind": "const",
+      "line": 15,
+      "signature": "const engineCache = new Map<string, SimulationEngine>()"
+    },
+    {
+      "name": "getEngine",
+      "kind": "function",
+      "line": 18,
+      "signature": "getEngine(feature: string): SimulationEngine"
+    },
+    {
+      "name": "RunSimulationInput",
+      "kind": "interface",
+      "line": 31,
+      "signature": "RunSimulationInput()"
+    },
+    {
+      "name": "RunSimulationResult",
+      "kind": "interface",
+      "line": 37,
+      "signature": "RunSimulationResult()"
+    },
+    {
+      "name": "runSimulation",
+      "kind": "function",
+      "line": 46,
+      "signature": "runSimulation(input: RunSimulationInput): RunSimulationResult"
+    },
+    {
+      "name": "GetSimulationStateInput",
+      "kind": "interface",
+      "line": 99,
+      "signature": "GetSimulationStateInput()"
+    },
+    {
+      "name": "GetSimulationStateResult",
+      "kind": "interface",
+      "line": 103,
+      "signature": "GetSimulationStateResult()"
+    },
+    {
+      "name": "getSimulationState",
+      "kind": "function",
+      "line": 111,
+      "signature": "getSimulationState(input: GetSimulationStateInput): GetSimulationStateResult"
+    },
+    {
+      "name": "ResetSimulationInput",
+      "kind": "interface",
+      "line": 166,
+      "signature": "ResetSimulationInput()"
+    },
+    {
+      "name": "ResetSimulationResult",
+      "kind": "interface",
+      "line": 170,
+      "signature": "ResetSimulationResult()"
+    },
+    {
+      "name": "resetSimulation",
+      "kind": "function",
+      "line": 177,
+      "signature": "resetSimulation(input: ResetSimulationInput): ResetSimulationResult"
+    },
+    {
+      "name": "clearEngineCache",
+      "kind": "function",
+      "line": 214,
+      "signature": "clearEngineCache(): void"
+    }
+  ],
+  "imports": [
+    {
+      "source": "../../../infrastructure/storage.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/render/simulation_engine.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../domain/types.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/design/lifecycle/simulation.ts#runSimulation",
+      "to": "src/application/design/lifecycle/simulation.ts#getEngine"
+    },
+    {
+      "from": "src/application/design/lifecycle/simulation.ts#getSimulationState",
+      "to": "src/application/design/lifecycle/simulation.ts#getEngine"
+    },
+    {
+      "from": "src/application/design/lifecycle/simulation.ts#resetSimulation",
+      "to": "src/application/design/lifecycle/simulation.ts#getEngine"
+    },
+    {
+      "from": "src/application/design/lifecycle/simulation.ts#getEngine",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/application/design/lifecycle/simulation.ts#runSimulation",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/application/design/lifecycle/simulation.ts#getSimulationState",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/application/design/lifecycle/simulation.ts#resetSimulation",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    }
+  ]
+}

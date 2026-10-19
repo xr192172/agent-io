@@ -27,7 +27,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-const DIR = path.join('certs', 'design-contracts');
+const DIR = path.join('certs', 'design-db');
 const argv = process.argv.slice(2);
 const arg = (n) => { const i = argv.indexOf(`--${n}`); return i >= 0 ? argv[i + 1] : undefined; };
 const asJson = argv.includes('--json');

@@ -1,0 +1,75 @@
+{
+  "//": "Design DB —— src/infrastructure/authoring/version_upgrade/rewrite.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "RewriteItem",
+      "kind": "interface",
+      "line": 21,
+      "signature": "RewriteItem()"
+    },
+    {
+      "name": "buildRewritePlan",
+      "kind": "function",
+      "line": 33,
+      "signature": "buildRewritePlan(featureGroups: Array<{ declaration: { projectDir: string }; hits: FeatureHit[] }>,\n  removedGroups: Array<{ declaration: { projectDir: string }; hits: RemovedHit[] }>): RewriteItem[]"
+    },
+    {
+      "name": "PlanEdit",
+      "kind": "interface",
+      "line": 72,
+      "signature": "PlanEdit()"
+    },
+    {
+      "name": "SAFE_SUBSTITUTIONS",
+      "kind": "const",
+      "line": 79,
+      "signature": "const SAFE_SUBSTITUTIONS = [ // Node：new Buffer() 构造器（废弃）→ Buffer.from()，语义一致 { kind…"
+    },
+    {
+      "name": "suggestDeterministicEdits",
+      "kind": "function",
+      "line": 85,
+      "signature": "suggestDeterministicEdits(hits: RemovedHit[]): PlanEdit[]"
+    },
+    {
+      "name": "ApplyResult",
+      "kind": "interface",
+      "line": 98,
+      "signature": "ApplyResult()"
+    },
+    {
+      "name": "applyEdits",
+      "kind": "function",
+      "line": 108,
+      "signature": "applyEdits(root: string, edits: PlanEdit[]): ApplyResult"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "./features.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./removed.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/authoring/version_upgrade/rewrite.ts#buildRewritePlan",
+      "to": "src/infrastructure/authoring/version_upgrade/rewrite.ts#suggestDeterministicEdits"
+    }
+  ]
+}

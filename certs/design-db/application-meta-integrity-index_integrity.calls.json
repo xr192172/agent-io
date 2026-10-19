@@ -1,0 +1,237 @@
+{
+  "//": "Design DB —— src/application/meta/integrity/index_integrity.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "FileKindCounts",
+      "kind": "interface",
+      "line": 38,
+      "signature": "FileKindCounts()"
+    },
+    {
+      "name": "IntegrityIssue",
+      "kind": "interface",
+      "line": 49,
+      "signature": "IntegrityIssue()"
+    },
+    {
+      "name": "IndexIntegrityResult",
+      "kind": "interface",
+      "line": 60,
+      "signature": "IndexIntegrityResult()"
+    },
+    {
+      "name": "NOT_FRESH_SAMPLE",
+      "kind": "const",
+      "line": 173,
+      "signature": "const NOT_FRESH_SAMPLE = 20"
+    },
+    {
+      "name": "repairStaleResolvedRefs",
+      "kind": "function",
+      "line": 185,
+      "signature": "repairStaleResolvedRefs(db: ReturnType<typeof getProjectCacheDb>,\r\n  root: string,): { names: number; reopened: number; cross: { total: number; resolved: number; external: number; failed: number } }"
+    },
+    {
+      "name": "integrityVerdict",
+      "kind": "function",
+      "line": 222,
+      "signature": "integrityVerdict(args: {\r\n  /** 有没有可用索引（`false` ⇒ 查不了） */\r\n  hasIndex: boolean;\r\n  /** 有没有 blocker 级问题（陈旧断言 / 未保鲜文件 …） */\r\n  hasBlocker: boolean;\r\n  /** 有没有幽灵行（索引有、磁盘无） */\r\n  hasGhost: boolean;\r\n}): 'trusted' | 'untrusted' | 'unknown'"
+    },
+    {
+      "name": "receiptOf",
+      "kind": "function",
+      "line": 235,
+      "signature": "receiptOf(r: FreshnessReport,\r\n  state: IndexState,): NonNullable<IndexIntegrityResult['refresh_receipt']>"
+    },
+    {
+      "name": "indexIntegrityCore",
+      "kind": "function",
+      "line": 256,
+      "signature": "indexIntegrityCore(opts: {\r\n  project_dir: string;\r\n  refresh?: boolean;\r\n  sample?: number;\r\n}): Promise<IndexIntegrityResult>"
+    },
+    {
+      "name": "touchedOf",
+      "kind": "function",
+      "line": 619,
+      "signature": "touchedOf(opts: { project_dir: string; project_dir_explicit?: boolean }): Touched"
+    },
+    {
+      "name": "indexIntegrity",
+      "kind": "function",
+      "line": 639,
+      "signature": "indexIntegrity(opts: {\r\n  project_dir: string;\r\n  /** ★ 调用方是否**显式**给了 `project_dir`：`false` ⇒ `touched.project_dir` 整项省略（见 {@link touchedOf}）。\r\n   *  缺省 `true`（保守：直接调本函数、未经\"自定位兜底\"的调用方，视为显式给了根）。 */\r\n  project_dir_explicit?: boolean;\r\n  refresh?: boolean;\r\n  sample?: number;\r\n}): Promise<TouchedProduct<IndexIntegrityResult>>"
+    },
+    {
+      "name": "renderIntegrity",
+      "kind": "function",
+      "line": 652,
+      "signature": "renderIntegrity(r: IndexIntegrityResult): string"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../../infrastructure/index/db.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/index/symbols.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/project_view.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/parse/source_exts.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../write_gate.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/index/self_writes.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/index/index_backfill.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/index/index_freshness.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/graph/import_project.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../refactor/parse_capability/parse_capability.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../domain/b_terms.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/meta/integrity/index_integrity.ts#indexIntegrity",
+      "to": "src/application/meta/integrity/index_integrity.ts#indexIntegrityCore"
+    },
+    {
+      "from": "src/application/meta/integrity/index_integrity.ts#indexIntegrityCore",
+      "to": "src/application/meta/integrity/index_integrity.ts#integrityVerdict"
+    },
+    {
+      "from": "src/application/meta/integrity/index_integrity.ts#indexIntegrityCore",
+      "to": "src/application/meta/integrity/index_integrity.ts#integrityVerdict"
+    },
+    {
+      "from": "src/application/meta/integrity/index_integrity.ts#indexIntegrityCore",
+      "to": "src/application/meta/integrity/index_integrity.ts#receiptOf"
+    },
+    {
+      "from": "src/application/meta/integrity/index_integrity.ts#indexIntegrityCore",
+      "to": "src/application/meta/integrity/index_integrity.ts#receiptOf"
+    },
+    {
+      "from": "src/application/meta/integrity/index_integrity.ts#indexIntegrityCore",
+      "to": "src/application/meta/integrity/index_integrity.ts#repairStaleResolvedRefs"
+    },
+    {
+      "from": "src/application/meta/integrity/index_integrity.ts#indexIntegrity",
+      "to": "src/application/meta/integrity/index_integrity.ts#touchedOf"
+    },
+    {
+      "from": "src/application/meta/integrity/index_integrity.ts#indexIntegrityCore",
+      "to": "src/application/refactor/parse_capability/parse_capability.ts#summarizeLanguagesByTier"
+    },
+    {
+      "from": "src/application/meta/integrity/index_integrity.ts#indexIntegrityCore",
+      "to": "src/application/write_gate.ts#hasLiveIndex"
+    },
+    {
+      "from": "src/application/meta/integrity/index_integrity.ts#indexIntegrity",
+      "to": "src/domain/b_terms.ts#withTouched"
+    },
+    {
+      "from": "src/application/meta/integrity/index_integrity.ts#indexIntegrityCore",
+      "to": "src/infrastructure/graph/import_project.ts#walkFiles"
+    },
+    {
+      "from": "src/application/meta/integrity/index_integrity.ts#indexIntegrityCore",
+      "to": "src/infrastructure/index/db.ts#getProjectCacheDb"
+    },
+    {
+      "from": "src/application/meta/integrity/index_integrity.ts#indexIntegrityCore",
+      "to": "src/infrastructure/index/index_backfill.ts#backfillState"
+    },
+    {
+      "from": "src/application/meta/integrity/index_integrity.ts#indexIntegrityCore",
+      "to": "src/infrastructure/index/index_backfill.ts#backfillState"
+    },
+    {
+      "from": "src/application/meta/integrity/index_integrity.ts#indexIntegrityCore",
+      "to": "src/infrastructure/index/index_backfill.ts#backfillSummary"
+    },
+    {
+      "from": "src/application/meta/integrity/index_integrity.ts#indexIntegrityCore",
+      "to": "src/infrastructure/index/index_backfill.ts#backfillSummary"
+    },
+    {
+      "from": "src/application/meta/integrity/index_integrity.ts#indexIntegrityCore",
+      "to": "src/infrastructure/index/index_freshness.ts#ensureProjectIndex"
+    },
+    {
+      "from": "src/application/meta/integrity/index_integrity.ts#repairStaleResolvedRefs",
+      "to": "src/infrastructure/index/index_freshness.ts#indexCoversDisk"
+    },
+    {
+      "from": "src/application/meta/integrity/index_integrity.ts#indexIntegrityCore",
+      "to": "src/infrastructure/index/index_freshness.ts#indexCoversDisk"
+    },
+    {
+      "from": "src/application/meta/integrity/index_integrity.ts#indexIntegrityCore",
+      "to": "src/infrastructure/index/self_writes.ts#pendingSelfWrites"
+    },
+    {
+      "from": "src/application/meta/integrity/index_integrity.ts#indexIntegrityCore",
+      "to": "src/infrastructure/index/self_writes.ts#pendingSelfWrites"
+    },
+    {
+      "from": "src/application/meta/integrity/index_integrity.ts#repairStaleResolvedRefs",
+      "to": "src/infrastructure/index/symbols.ts#reopenRefsTo"
+    },
+    {
+      "from": "src/application/meta/integrity/index_integrity.ts#repairStaleResolvedRefs",
+      "to": "src/infrastructure/index/symbols.ts#resolveCrossFileCalls"
+    },
+    {
+      "from": "src/application/meta/integrity/index_integrity.ts#indexIntegrityCore",
+      "to": "src/infrastructure/parse/source_exts.ts#isNoiseFileName"
+    },
+    {
+      "from": "src/application/meta/integrity/index_integrity.ts#indexIntegrityCore",
+      "to": "src/infrastructure/parse/source_exts.ts#isTestFileName"
+    },
+    {
+      "from": "src/application/meta/integrity/index_integrity.ts#indexIntegrityCore",
+      "to": "src/infrastructure/parse/source_exts.ts#isUnderSkippedDir"
+    },
+    {
+      "from": "src/application/meta/integrity/index_integrity.ts#indexIntegrityCore",
+      "to": "src/infrastructure/project_view.ts#getProjectView"
+    }
+  ]
+}

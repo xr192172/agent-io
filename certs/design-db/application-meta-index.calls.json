@@ -1,0 +1,208 @@
+{
+  "//": "Design DB —— src/application/meta/index.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "handoffTouchedShape",
+      "kind": "const",
+      "line": 131,
+      "signature": "const handoffTouchedShape = { feature: z.string().optional().describe('作用到的 feature（D…"
+    },
+    {
+      "name": "touchedObjectOf",
+      "kind": "function",
+      "line": 148,
+      "signature": "touchedObjectOf(v: unknown): Record<string, unknown>"
+    },
+    {
+      "name": "META_TOOLS",
+      "kind": "const",
+      "line": 168,
+      "signature": "const META_TOOLS = [ { name: 'explore_code', title: 'Explore, analyze and un…"
+    },
+    {
+      "name": "renderHandoffPanel",
+      "kind": "function",
+      "line": 1264,
+      "signature": "renderHandoffPanel(fromTool: string | undefined,\r\n  touched: Record<string, unknown> | undefined,\r\n  /**\r\n   * 下游工具的**入参路径表**（由 `collectInputPaths(d.inputSchema)` 提供；★ 与 `CHAIN_EDGES.toPath` 同形）。\r\n   * ★★★ 为什么不是 `readonly string[]`（=`catalogOf(...).requiredKeys`）：那只给**顶层 + schema 必填**\r\n   *   ⇒ 照不出**模式相关必填**（见 `missingOf` 与 `declaredRequiredMembersOf` 的头注，T140）。\r\n   */\r\n  pathsOf: (tool: string) => readonly InputPath[],): string"
+    }
+  ],
+  "imports": [
+    {
+      "source": "zod",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../plumbing.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../plumbing.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./diagnosis/diagnose_loop.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./diagnosis/diagnose_loop.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/analysis/diagnosis/contract.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../../infrastructure/analysis/diagnosis/diagnose.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/storage.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/analysis/structure/structure_gap.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./archive/archive_node.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../design/workbench/code_workbench.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/analysis/observe/proposal_store.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/analysis/observe/approve_gated.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/analysis/observe/dsl_store.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/dictionary.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./upgrade/upgrade.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./registry/capability_map.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./registry/capability_map.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../../infrastructure/parse/probe.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/analysis/capability/capability_matrix.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/analysis/capability/register_capabilities.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./view/derive_mind_map.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./explore/explore_code.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./explore/contract_page.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./explore/next_hop_args.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./explore/first_hop_args.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/llm_gateway.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./integrity/index_integrity.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/dogfood_coverage.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./llm/llm_decider.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./docs/project_docs.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./docs/project_docs.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./handlers.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../types.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../../domain/chain_wiring.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/meta/index.ts#renderHandoffPanel",
+      "to": "src/application/meta/index.ts#touchedObjectOf"
+    },
+    {
+      "from": "src/application/meta/index.ts#renderHandoffPanel",
+      "to": "src/application/meta/registry/capability_map.ts#declaredRequiredMembersOf"
+    },
+    {
+      "from": "src/application/meta/index.ts#renderHandoffPanel",
+      "to": "src/domain/chain_wiring.ts#applyChainEdge"
+    },
+    {
+      "from": "src/application/meta/index.ts#renderHandoffPanel",
+      "to": "src/domain/chain_wiring.ts#applyChainEdge"
+    },
+    {
+      "from": "src/application/meta/index.ts#renderHandoffPanel",
+      "to": "src/domain/chain_wiring.ts#nextHopsOf"
+    },
+    {
+      "from": "src/application/meta/index.ts#renderHandoffPanel",
+      "to": "src/domain/chain_wiring.ts#universalHopsOf"
+    }
+  ]
+}

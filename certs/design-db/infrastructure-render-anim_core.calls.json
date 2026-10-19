@@ -1,0 +1,206 @@
+{
+  "//": "Design DB —— src/infrastructure/render/anim_core.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "BranchLike",
+      "kind": "interface",
+      "line": 21,
+      "signature": "BranchLike()"
+    },
+    {
+      "name": "ErrorDeclLike",
+      "kind": "interface",
+      "line": 33,
+      "signature": "ErrorDeclLike()"
+    },
+    {
+      "name": "evalCondition",
+      "kind": "function",
+      "line": 57,
+      "signature": "evalCondition(expr: string | undefined | null, value?: unknown, result?: unknown): boolean"
+    },
+    {
+      "name": "pickBranch",
+      "kind": "function",
+      "line": 74,
+      "signature": "pickBranch(branches: BranchLike[] | undefined | null,\n  value?: unknown,\n  result?: unknown,): { branch: BranchLike; index: number } | null"
+    },
+    {
+      "name": "createMockRotator",
+      "kind": "function",
+      "line": 92,
+      "signature": "createMockRotator(mockValues: unknown[] | undefined | null): () => unknown"
+    },
+    {
+      "name": "resolvePath",
+      "kind": "function",
+      "line": 110,
+      "signature": "resolvePath(context: { value?: unknown; result?: unknown },\n  path: string | undefined | null,): unknown"
+    },
+    {
+      "name": "setPath",
+      "kind": "function",
+      "line": 135,
+      "signature": "setPath(target: any, path: string, val: unknown): void"
+    },
+    {
+      "name": "applyInputMapping",
+      "kind": "function",
+      "line": 153,
+      "signature": "applyInputMapping(mapping: Record<string, string> | undefined | null,\n  value?: unknown,\n  result?: unknown,): Record<string, unknown>"
+    },
+    {
+      "name": "applyOutputMapping",
+      "kind": "function",
+      "line": 173,
+      "signature": "applyOutputMapping(mapping: Record<string, string> | undefined | null,\n  value: unknown,\n  result: unknown,): unknown"
+    },
+    {
+      "name": "parseApiName",
+      "kind": "function",
+      "line": 206,
+      "signature": "parseApiName(signature: string | undefined | null): string"
+    },
+    {
+      "name": "formatHandlerArgs",
+      "kind": "function",
+      "line": 223,
+      "signature": "formatHandlerArgs(args: Record<string, unknown>,\n  maxLen?: number,): string"
+    },
+    {
+      "name": "formatValueShort",
+      "kind": "function",
+      "line": 249,
+      "signature": "formatValueShort(v: unknown, maxLen?: number): string"
+    },
+    {
+      "name": "matchError",
+      "kind": "function",
+      "line": 275,
+      "signature": "matchError(errors: ErrorDeclLike[] | undefined | null,\n  result: unknown,): ErrorDeclLike | null"
+    },
+    {
+      "name": "isErrorResult",
+      "kind": "function",
+      "line": 295,
+      "signature": "isErrorResult(result: unknown): boolean"
+    },
+    {
+      "name": "ErrorClassification",
+      "kind": "interface",
+      "line": 304,
+      "signature": "ErrorClassification()"
+    },
+    {
+      "name": "classifyError",
+      "kind": "function",
+      "line": 321,
+      "signature": "classifyError(errors: ErrorDeclLike[] | undefined | null,\n  result: unknown,): ErrorClassification"
+    },
+    {
+      "name": "ValueSchemaLike",
+      "kind": "interface",
+      "line": 336,
+      "signature": "ValueSchemaLike()"
+    },
+    {
+      "name": "extractStringLiterals",
+      "kind": "function",
+      "line": 349,
+      "signature": "extractStringLiterals(condition: string | undefined | null): string[]"
+    },
+    {
+      "name": "presetCandidates",
+      "kind": "function",
+      "line": 365,
+      "signature": "presetCandidates(decl: ErrorDeclLike): unknown[]"
+    },
+    {
+      "name": "buildPresetValue",
+      "kind": "function",
+      "line": 388,
+      "signature": "buildPresetValue(decl: ErrorDeclLike): { value: unknown; hit: boolean }"
+    },
+    {
+      "name": "validateValueSchema",
+      "kind": "function",
+      "line": 403,
+      "signature": "validateValueSchema(schema: ValueSchemaLike | undefined | null, value: unknown): string[]"
+    },
+    {
+      "name": "makeSnapshot",
+      "kind": "function",
+      "line": 478,
+      "signature": "makeSnapshot(data: unknown): string | null"
+    }
+  ],
+  "imports": [],
+  "calls": [
+    {
+      "from": "src/infrastructure/render/anim_core.ts#pickBranch",
+      "to": "src/infrastructure/render/anim_core.ts#evalCondition"
+    },
+    {
+      "from": "src/infrastructure/render/anim_core.ts#matchError",
+      "to": "src/infrastructure/render/anim_core.ts#evalCondition"
+    },
+    {
+      "from": "src/infrastructure/render/anim_core.ts#buildPresetValue",
+      "to": "src/infrastructure/render/anim_core.ts#evalCondition"
+    },
+    {
+      "from": "src/infrastructure/render/anim_core.ts#presetCandidates",
+      "to": "src/infrastructure/render/anim_core.ts#extractStringLiterals"
+    },
+    {
+      "from": "src/infrastructure/render/anim_core.ts#validateValueSchema.walk",
+      "to": "src/infrastructure/render/anim_core.ts#formatValueShort"
+    },
+    {
+      "from": "src/infrastructure/render/anim_core.ts#classifyError",
+      "to": "src/infrastructure/render/anim_core.ts#isErrorResult"
+    },
+    {
+      "from": "src/infrastructure/render/anim_core.ts#classifyError",
+      "to": "src/infrastructure/render/anim_core.ts#matchError"
+    },
+    {
+      "from": "src/infrastructure/render/anim_core.ts#buildPresetValue",
+      "to": "src/infrastructure/render/anim_core.ts#presetCandidates"
+    },
+    {
+      "from": "src/infrastructure/render/anim_core.ts#applyInputMapping",
+      "to": "src/infrastructure/render/anim_core.ts#resolvePath"
+    },
+    {
+      "from": "src/infrastructure/render/anim_core.ts#applyOutputMapping",
+      "to": "src/infrastructure/render/anim_core.ts#resolvePath"
+    },
+    {
+      "from": "src/infrastructure/render/anim_core.ts#applyOutputMapping",
+      "to": "src/infrastructure/render/anim_core.ts#setPath"
+    },
+    {
+      "from": "src/infrastructure/render/anim_core.ts#validateValueSchema.walk",
+      "to": "src/infrastructure/render/anim_core.ts#validateValueSchema.typeName"
+    },
+    {
+      "from": "src/infrastructure/render/anim_core.ts#validateValueSchema.walk",
+      "to": "src/infrastructure/render/anim_core.ts#validateValueSchema.typeOk"
+    },
+    {
+      "from": "src/infrastructure/render/anim_core.ts#validateValueSchema",
+      "to": "src/infrastructure/render/anim_core.ts#validateValueSchema.walk"
+    },
+    {
+      "from": "src/infrastructure/render/anim_core.ts#validateValueSchema.walk",
+      "to": "src/infrastructure/render/anim_core.ts#validateValueSchema.walk"
+    },
+    {
+      "from": "src/infrastructure/render/anim_core.ts#validateValueSchema.walk",
+      "to": "src/infrastructure/render/anim_core.ts#validateValueSchema.walk"
+    }
+  ]
+}

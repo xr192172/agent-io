@@ -1,0 +1,230 @@
+{
+  "//": "Design DB —— src/application/design/lifecycle/snapshot.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "getSnapshotsDir",
+      "kind": "function",
+      "line": 22,
+      "signature": "getSnapshotsDir(feature: string): string"
+    },
+    {
+      "name": "snapshotFileName",
+      "kind": "function",
+      "line": 30,
+      "signature": "snapshotFileName(label: string, timestamp: string): string"
+    },
+    {
+      "name": "SaveSnapshotInput",
+      "kind": "interface",
+      "line": 35,
+      "signature": "SaveSnapshotInput()"
+    },
+    {
+      "name": "SnapshotInfo",
+      "kind": "interface",
+      "line": 41,
+      "signature": "SnapshotInfo()"
+    },
+    {
+      "name": "SaveSnapshotResult",
+      "kind": "interface",
+      "line": 53,
+      "signature": "SaveSnapshotResult()"
+    },
+    {
+      "name": "saveSnapshot",
+      "kind": "function",
+      "line": 62,
+      "signature": "saveSnapshot(input: SaveSnapshotInput): SaveSnapshotResult"
+    },
+    {
+      "name": "geometrySignature",
+      "kind": "function",
+      "line": 107,
+      "signature": "geometrySignature(dsl: DesignDSL): string"
+    },
+    {
+      "name": "latestSnapshotGeometrySignature",
+      "kind": "function",
+      "line": 113,
+      "signature": "latestSnapshotGeometrySignature(feature: string): string | null"
+    },
+    {
+      "name": "saveAutoSnapshot",
+      "kind": "function",
+      "line": 129,
+      "signature": "saveAutoSnapshot(feature: string, reason: string): SaveSnapshotResult | null"
+    },
+    {
+      "name": "pruneSnapshots",
+      "kind": "function",
+      "line": 138,
+      "signature": "pruneSnapshots(feature: string, max = 20): number"
+    },
+    {
+      "name": "ListSnapshotsInput",
+      "kind": "interface",
+      "line": 151,
+      "signature": "ListSnapshotsInput()"
+    },
+    {
+      "name": "ListSnapshotsResult",
+      "kind": "interface",
+      "line": 155,
+      "signature": "ListSnapshotsResult()"
+    },
+    {
+      "name": "listSnapshots",
+      "kind": "function",
+      "line": 162,
+      "signature": "listSnapshots(input: ListSnapshotsInput): ListSnapshotsResult"
+    },
+    {
+      "name": "RollbackSnapshotInput",
+      "kind": "interface",
+      "line": 221,
+      "signature": "RollbackSnapshotInput()"
+    },
+    {
+      "name": "RollbackSnapshotResult",
+      "kind": "interface",
+      "line": 226,
+      "signature": "RollbackSnapshotResult()"
+    },
+    {
+      "name": "rollbackSnapshot",
+      "kind": "function",
+      "line": 234,
+      "signature": "rollbackSnapshot(input: RollbackSnapshotInput): RollbackSnapshotResult"
+    },
+    {
+      "name": "DeleteSnapshotInput",
+      "kind": "interface",
+      "line": 310,
+      "signature": "DeleteSnapshotInput()"
+    },
+    {
+      "name": "DeleteSnapshotResult",
+      "kind": "interface",
+      "line": 315,
+      "signature": "DeleteSnapshotResult()"
+    },
+    {
+      "name": "deleteSnapshot",
+      "kind": "function",
+      "line": 322,
+      "signature": "deleteSnapshot(input: DeleteSnapshotInput): DeleteSnapshotResult"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../../infrastructure/storage.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/storage.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../domain/types.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../../../domain/geometry.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/design/lifecycle/snapshot.ts#latestSnapshotGeometrySignature",
+      "to": "src/application/design/lifecycle/snapshot.ts#geometrySignature"
+    },
+    {
+      "from": "src/application/design/lifecycle/snapshot.ts#saveAutoSnapshot",
+      "to": "src/application/design/lifecycle/snapshot.ts#geometrySignature"
+    },
+    {
+      "from": "src/application/design/lifecycle/snapshot.ts#saveSnapshot",
+      "to": "src/application/design/lifecycle/snapshot.ts#getSnapshotsDir"
+    },
+    {
+      "from": "src/application/design/lifecycle/snapshot.ts#latestSnapshotGeometrySignature",
+      "to": "src/application/design/lifecycle/snapshot.ts#getSnapshotsDir"
+    },
+    {
+      "from": "src/application/design/lifecycle/snapshot.ts#pruneSnapshots",
+      "to": "src/application/design/lifecycle/snapshot.ts#getSnapshotsDir"
+    },
+    {
+      "from": "src/application/design/lifecycle/snapshot.ts#listSnapshots",
+      "to": "src/application/design/lifecycle/snapshot.ts#getSnapshotsDir"
+    },
+    {
+      "from": "src/application/design/lifecycle/snapshot.ts#rollbackSnapshot",
+      "to": "src/application/design/lifecycle/snapshot.ts#getSnapshotsDir"
+    },
+    {
+      "from": "src/application/design/lifecycle/snapshot.ts#deleteSnapshot",
+      "to": "src/application/design/lifecycle/snapshot.ts#getSnapshotsDir"
+    },
+    {
+      "from": "src/application/design/lifecycle/snapshot.ts#saveAutoSnapshot",
+      "to": "src/application/design/lifecycle/snapshot.ts#latestSnapshotGeometrySignature"
+    },
+    {
+      "from": "src/application/design/lifecycle/snapshot.ts#saveAutoSnapshot",
+      "to": "src/application/design/lifecycle/snapshot.ts#saveSnapshot"
+    },
+    {
+      "from": "src/application/design/lifecycle/snapshot.ts#saveSnapshot",
+      "to": "src/application/design/lifecycle/snapshot.ts#snapshotFileName"
+    },
+    {
+      "from": "src/application/design/lifecycle/snapshot.ts#rollbackSnapshot",
+      "to": "src/application/design/lifecycle/snapshot.ts#snapshotFileName"
+    },
+    {
+      "from": "src/application/design/lifecycle/snapshot.ts#saveSnapshot",
+      "to": "src/domain/geometry.ts#resolveDiagramStatus"
+    },
+    {
+      "from": "src/application/design/lifecycle/snapshot.ts#listSnapshots",
+      "to": "src/domain/geometry.ts#resolveDiagramStatus"
+    },
+    {
+      "from": "src/application/design/lifecycle/snapshot.ts#rollbackSnapshot",
+      "to": "src/domain/geometry.ts#resolveDiagramStatus"
+    },
+    {
+      "from": "src/application/design/lifecycle/snapshot.ts#saveSnapshot",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/application/design/lifecycle/snapshot.ts#saveAutoSnapshot",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/application/design/lifecycle/snapshot.ts#rollbackSnapshot",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/application/design/lifecycle/snapshot.ts#getSnapshotsDir",
+      "to": "src/infrastructure/storage.ts#getStorageRoot"
+    },
+    {
+      "from": "src/application/design/lifecycle/snapshot.ts#rollbackSnapshot",
+      "to": "src/infrastructure/storage.ts#saveDSL"
+    }
+  ]
+}

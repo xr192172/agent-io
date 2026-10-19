@@ -1,0 +1,58 @@
+{
+  "//": "Design DB —— src/domain/diff_blocks.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "hasDiff",
+      "kind": "function",
+      "line": 35,
+      "signature": "hasDiff(f: FileDiff): boolean"
+    },
+    {
+      "name": "FileDiff",
+      "kind": "interface",
+      "line": 42,
+      "signature": "FileDiff()"
+    },
+    {
+      "name": "DiffBlock",
+      "kind": "interface",
+      "line": 80,
+      "signature": "DiffBlock()"
+    },
+    {
+      "name": "DiffBlocksResult",
+      "kind": "interface",
+      "line": 101,
+      "signature": "DiffBlocksResult()"
+    },
+    {
+      "name": "buildDiffBlocks",
+      "kind": "function",
+      "line": 122,
+      "signature": "buildDiffBlocks(files: readonly FileDiff[],\n  scope: Scope,\n  group_by: 'arch_layer' | 'scope' = 'arch_layer',\n  compared?: number,): DiffBlocksResult"
+    }
+  ],
+  "imports": [
+    {
+      "source": "./scope.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./scope.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/domain/diff_blocks.ts#buildDiffBlocks",
+      "to": "src/domain/scope.ts#formatScope"
+    },
+    {
+      "from": "src/domain/diff_blocks.ts#buildDiffBlocks",
+      "to": "src/domain/scope.ts#formatScope"
+    }
+  ]
+}

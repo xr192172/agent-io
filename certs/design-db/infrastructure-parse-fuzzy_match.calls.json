@@ -1,0 +1,138 @@
+{
+  "//": "Design DB —— src/infrastructure/parse/fuzzy_match.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "FuzzyLevel",
+      "kind": "type",
+      "line": 29,
+      "signature": "FuzzyLevel()"
+    },
+    {
+      "name": "FUZZY_LEVEL_LABEL",
+      "kind": "const",
+      "line": 32,
+      "signature": "const FUZZY_LEVEL_LABEL = { 1: 'exact', 2: '空白归一', 3: '缩进弹性', 4: '省略号占位', }"
+    },
+    {
+      "name": "FuzzyMatch",
+      "kind": "interface",
+      "line": 39,
+      "signature": "FuzzyMatch()"
+    },
+    {
+      "name": "LocateResult",
+      "kind": "interface",
+      "line": 53,
+      "signature": "LocateResult()"
+    },
+    {
+      "name": "leadingWs",
+      "kind": "function",
+      "line": 63,
+      "signature": "leadingWs(line: string): string"
+    },
+    {
+      "name": "keyWhitespace",
+      "kind": "function",
+      "line": 69,
+      "signature": "keyWhitespace(line: string): string"
+    },
+    {
+      "name": "keyIndentFree",
+      "kind": "function",
+      "line": 77,
+      "signature": "keyIndentFree(line: string): string | null"
+    },
+    {
+      "name": "isEllipsisLine",
+      "kind": "const",
+      "line": 83,
+      "signature": "const isEllipsisLine = (line: string): boolean => { const t = line.trim(); retur…"
+    },
+    {
+      "name": "LineIndex",
+      "kind": "interface",
+      "line": 89,
+      "signature": "LineIndex()"
+    },
+    {
+      "name": "buildLineIndex",
+      "kind": "function",
+      "line": 96,
+      "signature": "buildLineIndex(content: string): LineIndex"
+    },
+    {
+      "name": "windowToMatch",
+      "kind": "function",
+      "line": 119,
+      "signature": "windowToMatch(idx: LineIndex,\n  i: number,\n  j: number,\n  level: Exclude<FuzzyLevel, 0>,\n  needIndent: boolean,): FuzzyMatch"
+    },
+    {
+      "name": "hasEllipsisLine",
+      "kind": "function",
+      "line": 139,
+      "signature": "hasEllipsisLine(oldText: string): boolean"
+    },
+    {
+      "name": "locateReplaceText",
+      "kind": "function",
+      "line": 143,
+      "signature": "locateReplaceText(content: string, oldText: string): LocateResult"
+    },
+    {
+      "name": "realignNewTextTo",
+      "kind": "function",
+      "line": 306,
+      "signature": "realignNewTextTo(newText: string, targetIndent: string, eol: string): string"
+    }
+  ],
+  "imports": [],
+  "calls": [
+    {
+      "from": "src/infrastructure/parse/fuzzy_match.ts#locateReplaceText",
+      "to": "src/infrastructure/parse/fuzzy_match.ts#buildLineIndex"
+    },
+    {
+      "from": "src/infrastructure/parse/fuzzy_match.ts#locateReplaceText",
+      "to": "src/infrastructure/parse/fuzzy_match.ts#isEllipsisLine"
+    },
+    {
+      "from": "src/infrastructure/parse/fuzzy_match.ts#locateReplaceText",
+      "to": "src/infrastructure/parse/fuzzy_match.ts#keyIndentFree"
+    },
+    {
+      "from": "src/infrastructure/parse/fuzzy_match.ts#locateReplaceText",
+      "to": "src/infrastructure/parse/fuzzy_match.ts#keyIndentFree"
+    },
+    {
+      "from": "src/infrastructure/parse/fuzzy_match.ts#locateReplaceText",
+      "to": "src/infrastructure/parse/fuzzy_match.ts#keyIndentFree"
+    },
+    {
+      "from": "src/infrastructure/parse/fuzzy_match.ts#keyWhitespace",
+      "to": "src/infrastructure/parse/fuzzy_match.ts#leadingWs"
+    },
+    {
+      "from": "src/infrastructure/parse/fuzzy_match.ts#windowToMatch",
+      "to": "src/infrastructure/parse/fuzzy_match.ts#leadingWs"
+    },
+    {
+      "from": "src/infrastructure/parse/fuzzy_match.ts#locateReplaceText",
+      "to": "src/infrastructure/parse/fuzzy_match.ts#windowToMatch"
+    },
+    {
+      "from": "src/infrastructure/parse/fuzzy_match.ts#locateReplaceText",
+      "to": "src/infrastructure/parse/fuzzy_match.ts#windowToMatch"
+    },
+    {
+      "from": "src/infrastructure/parse/fuzzy_match.ts#locateReplaceText",
+      "to": "src/infrastructure/parse/fuzzy_match.ts#windowToMatch"
+    },
+    {
+      "from": "src/infrastructure/parse/fuzzy_match.ts#locateReplaceText",
+      "to": "src/infrastructure/parse/fuzzy_match.ts#windowToMatch"
+    }
+  ]
+}

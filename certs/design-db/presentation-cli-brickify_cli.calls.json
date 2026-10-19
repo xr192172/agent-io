@@ -1,0 +1,251 @@
+{
+  "//": "Design DB —— src/presentation/cli/brickify_cli.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "readArg",
+      "kind": "function",
+      "line": 37,
+      "signature": "readArg(name: string): string | undefined"
+    },
+    {
+      "name": "has",
+      "kind": "const",
+      "line": 41,
+      "signature": "const has = (name: string): boolean => process.argv.includes(name)"
+    },
+    {
+      "name": "main",
+      "kind": "function",
+      "line": 43,
+      "signature": "main(): Promise<void>"
+    },
+    {
+      "name": "countBridges",
+      "kind": "function",
+      "line": 251,
+      "signature": "countBridges(r: { call_edges: Array<{ from: string; to: string }>; communities: { id: string; bricks: string[] }[] }): number"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../application/design/bricks/brickify.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../application/design/bricks/render_brickwork.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./render/render_mindmap.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../application/design/bricks/cluster_narrator.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./render/render_cluster_workbench.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./render/render_dep_canvas.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../application/design/bricks/classify_bricks.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./render/render_anatomy.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../application/meta/registry/registry_extract.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../application/meta/registry/cli_extract.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../application/meta/registry/collect_functions.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../application/meta/registry/classify_tools.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./render/render_tools_map.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./render/render_wizard.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./render/render_workbench.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/index/registry.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../application/design/workbench/workbench_data.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/presentation/cli/brickify_cli.ts#main",
+      "to": "src/application/design/bricks/brickify.ts#buildBrickify"
+    },
+    {
+      "from": "src/presentation/cli/brickify_cli.ts#main",
+      "to": "src/application/design/bricks/classify_bricks.ts#classifyBricks"
+    },
+    {
+      "from": "src/presentation/cli/brickify_cli.ts#main",
+      "to": "src/application/design/bricks/classify_bricks.ts#classifyBricks"
+    },
+    {
+      "from": "src/presentation/cli/brickify_cli.ts#main",
+      "to": "src/application/design/bricks/classify_bricks.ts#classifyBricks"
+    },
+    {
+      "from": "src/presentation/cli/brickify_cli.ts#main",
+      "to": "src/application/design/bricks/cluster_narrator.ts#narrateClusters"
+    },
+    {
+      "from": "src/presentation/cli/brickify_cli.ts#main",
+      "to": "src/application/design/bricks/render_brickwork.ts#renderBrickifyWorkbenchHtml"
+    },
+    {
+      "from": "src/presentation/cli/brickify_cli.ts#main",
+      "to": "src/application/design/bricks/render_brickwork.ts#renderWorkbenchHtml"
+    },
+    {
+      "from": "src/presentation/cli/brickify_cli.ts#main",
+      "to": "src/application/design/workbench/workbench_data.ts#buildWorkbenchData"
+    },
+    {
+      "from": "src/presentation/cli/brickify_cli.ts#main",
+      "to": "src/application/design/workbench/workbench_data.ts#writeWorkbenchDataJson"
+    },
+    {
+      "from": "src/presentation/cli/brickify_cli.ts#main",
+      "to": "src/application/meta/registry/classify_tools.ts#classifyTools"
+    },
+    {
+      "from": "src/presentation/cli/brickify_cli.ts#main",
+      "to": "src/application/meta/registry/cli_extract.ts#extractCliCommands"
+    },
+    {
+      "from": "src/presentation/cli/brickify_cli.ts#main",
+      "to": "src/application/meta/registry/collect_functions.ts#collectFunctions"
+    },
+    {
+      "from": "src/presentation/cli/brickify_cli.ts#main",
+      "to": "src/application/meta/registry/registry_extract.ts#extractRegistryToolsFromFile"
+    },
+    {
+      "from": "src/presentation/cli/brickify_cli.ts#main",
+      "to": "src/infrastructure/index/registry.ts#registerArtifact"
+    },
+    {
+      "from": "src/presentation/cli/brickify_cli.ts#main",
+      "to": "src/presentation/cli/brickify_cli.ts#countBridges"
+    },
+    {
+      "from": "src/presentation/cli/brickify_cli.ts#main",
+      "to": "src/presentation/cli/brickify_cli.ts#has"
+    },
+    {
+      "from": "src/presentation/cli/brickify_cli.ts#main",
+      "to": "src/presentation/cli/brickify_cli.ts#readArg"
+    },
+    {
+      "from": "src/presentation/cli/brickify_cli.ts#main",
+      "to": "src/presentation/cli/brickify_cli.ts#readArg"
+    },
+    {
+      "from": "src/presentation/cli/brickify_cli.ts#main",
+      "to": "src/presentation/cli/brickify_cli.ts#readArg"
+    },
+    {
+      "from": "src/presentation/cli/brickify_cli.ts#main",
+      "to": "src/presentation/cli/brickify_cli.ts#readArg"
+    },
+    {
+      "from": "src/presentation/cli/brickify_cli.ts#main",
+      "to": "src/presentation/cli/brickify_cli.ts#readArg"
+    },
+    {
+      "from": "src/presentation/cli/brickify_cli.ts#main",
+      "to": "src/presentation/cli/brickify_cli.ts#readArg"
+    },
+    {
+      "from": "src/presentation/cli/brickify_cli.ts#main",
+      "to": "src/presentation/cli/brickify_cli.ts#readArg"
+    },
+    {
+      "from": "src/presentation/cli/brickify_cli.ts#main",
+      "to": "src/presentation/cli/brickify_cli.ts#readArg"
+    },
+    {
+      "from": "src/presentation/cli/brickify_cli.ts#main",
+      "to": "src/presentation/cli/brickify_cli.ts#readArg"
+    },
+    {
+      "from": "src/presentation/cli/brickify_cli.ts#main",
+      "to": "src/presentation/cli/brickify_cli.ts#readArg"
+    },
+    {
+      "from": "src/presentation/cli/brickify_cli.ts#main",
+      "to": "src/presentation/cli/brickify_cli.ts#readArg"
+    },
+    {
+      "from": "src/presentation/cli/brickify_cli.ts#main",
+      "to": "src/presentation/cli/brickify_cli.ts#readArg"
+    },
+    {
+      "from": "src/presentation/cli/brickify_cli.ts#main",
+      "to": "src/presentation/cli/brickify_cli.ts#readArg"
+    },
+    {
+      "from": "src/presentation/cli/brickify_cli.ts#main",
+      "to": "src/presentation/cli/render/render_anatomy.ts#renderAnatomyHtml"
+    },
+    {
+      "from": "src/presentation/cli/brickify_cli.ts#main",
+      "to": "src/presentation/cli/render/render_cluster_workbench.ts#renderClusterWorkbenchHtml"
+    },
+    {
+      "from": "src/presentation/cli/brickify_cli.ts#main",
+      "to": "src/presentation/cli/render/render_dep_canvas.ts#renderDepCanvasHtml"
+    },
+    {
+      "from": "src/presentation/cli/brickify_cli.ts#main",
+      "to": "src/presentation/cli/render/render_mindmap.ts#renderBrickifyMindMapHtml"
+    },
+    {
+      "from": "src/presentation/cli/brickify_cli.ts#main",
+      "to": "src/presentation/cli/render/render_tools_map.ts#renderToolsMapHtml"
+    },
+    {
+      "from": "src/presentation/cli/brickify_cli.ts#main",
+      "to": "src/presentation/cli/render/render_wizard.ts#renderWizardHtml"
+    }
+  ]
+}

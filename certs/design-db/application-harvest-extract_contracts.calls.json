@@ -1,0 +1,342 @@
+{
+  "//": "Design DB —— src/application/harvest/extract_contracts.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "ExtractContractsInput",
+      "kind": "interface",
+      "line": 40,
+      "signature": "ExtractContractsInput()"
+    },
+    {
+      "name": "FileContractReport",
+      "kind": "interface",
+      "line": 54,
+      "signature": "FileContractReport()"
+    },
+    {
+      "name": "ExtractContractsResult",
+      "kind": "interface",
+      "line": 72,
+      "signature": "ExtractContractsResult()"
+    },
+    {
+      "name": "BUSINESS_SEED_PATTERNS",
+      "kind": "const",
+      "line": 99,
+      "signature": "const BUSINESS_SEED_PATTERNS = [ { re: /(^|\\/)cmd\\//, reason: 'cmd 入口目录' }, { re: /(^|\\/…"
+    },
+    {
+      "name": "seedReason",
+      "kind": "function",
+      "line": 107,
+      "signature": "seedReason(p: string): string | undefined"
+    },
+    {
+      "name": "classifyRoles",
+      "kind": "function",
+      "line": 122,
+      "signature": "classifyRoles(graph: ImportGraph): Map<string, { role: BrickRole; fanIn: number; fanOut: number }>"
+    },
+    {
+      "name": "SymbolRow",
+      "kind": "interface",
+      "line": 187,
+      "signature": "SymbolRow()"
+    },
+    {
+      "name": "TS_FIELD_RE",
+      "kind": "const",
+      "line": 197,
+      "signature": "const TS_FIELD_RE = /^[\\s]*(?:public\\s+|private\\s+|protected\\s+|readonly\\s+|s…"
+    },
+    {
+      "name": "GO_FIELD_RE",
+      "kind": "const",
+      "line": 199,
+      "signature": "const GO_FIELD_RE = /^[\\t ]*([A-Z]\\w*)\\s+([\\w\\[\\]\\*\\.\\{\\}\"' ]+?)[\\t ]*(?:\\/\\/…"
+    },
+    {
+      "name": "GO_METHOD_RE",
+      "kind": "const",
+      "line": 201,
+      "signature": "const GO_METHOD_RE = /^[\\t ]*(\\w+)\\s*\\(([^)]*)\\)\\s*(.*)$/"
+    },
+    {
+      "name": "PY_FIELD_RE",
+      "kind": "const",
+      "line": 203,
+      "signature": "const PY_FIELD_RE = /^[\\s]*([a-zA-Z_]\\w*)\\s*:\\s*([^=#\\n]+)/"
+    },
+    {
+      "name": "isPyLang",
+      "kind": "function",
+      "line": 206,
+      "signature": "isPyLang(language: string): boolean"
+    },
+    {
+      "name": "parseShapeFields",
+      "kind": "function",
+      "line": 210,
+      "signature": "parseShapeFields(lines: string[], language: string, kind: string): ShapeField[]"
+    },
+    {
+      "name": "extractShapes",
+      "kind": "function",
+      "line": 250,
+      "signature": "extractShapes(db: Database, root: string, langOf: Map<string, string>): Map<string, ShapeSchema[]>"
+    },
+    {
+      "name": "GO_ENV_RES",
+      "kind": "const",
+      "line": 289,
+      "signature": "const GO_ENV_RES = [ /\\bos\\.Getenv\\(\\s*\"([^\"]+)\"\\s*\\)/g, /\\bflag\\.\\w+\\(\\s*\"(…"
+    },
+    {
+      "name": "TS_ENV_RES",
+      "kind": "const",
+      "line": 293,
+      "signature": "const TS_ENV_RES = [ /\\bprocess\\.env\\.([A-Za-z_][A-Za-z0-9_]*)/g, /\\bprocess…"
+    },
+    {
+      "name": "PY_ENV_RES",
+      "kind": "const",
+      "line": 297,
+      "signature": "const PY_ENV_RES = [ /\\bos\\.(?:environ|getenv)\\.?get\\(\\s*['\"]([^'\"]+)['\"]/g,…"
+    },
+    {
+      "name": "scanConfigKeys",
+      "kind": "function",
+      "line": 303,
+      "signature": "scanConfigKeys(source: string, language: string): string[]"
+    },
+    {
+      "name": "collectModuleVars",
+      "kind": "function",
+      "line": 320,
+      "signature": "collectModuleVars(source: string, language: string): Set<string>"
+    },
+    {
+      "name": "scanVarWrites",
+      "kind": "function",
+      "line": 364,
+      "signature": "scanVarWrites(source: string, moduleVars: Set<string>): EffectTarget[]"
+    },
+    {
+      "name": "GO_FILE_WRITE_RES",
+      "kind": "const",
+      "line": 388,
+      "signature": "const GO_FILE_WRITE_RES = [ { re: /\\bos\\.WriteFile\\(\\s*(?:\"([^\"]+)\"|([\\w.]+))/g, op…"
+    },
+    {
+      "name": "TS_FILE_WRITE_RES",
+      "kind": "const",
+      "line": 392,
+      "signature": "const TS_FILE_WRITE_RES = [ { re: /\\bfs\\.(?:writeFile|writeFileSync)\\(\\s*(?:['\"]([^…"
+    },
+    {
+      "name": "GO_HOLD_RES",
+      "kind": "const",
+      "line": 399,
+      "signature": "const GO_HOLD_RES = [ { re: /net\\.Listen\\(\\s*\"[^\"]*\"\\s*,\\s*(?:\"([^\"]+)\"|([\\w.…"
+    },
+    {
+      "name": "TS_HOLD_RES",
+      "kind": "const",
+      "line": 407,
+      "signature": "const TS_HOLD_RES = [ { re: /\\.listen\\(\\s*(\\d+)/g, make: (m) => ({ target: `l…"
+    },
+    {
+      "name": "PY_FILE_WRITE_RES",
+      "kind": "const",
+      "line": 416,
+      "signature": "const PY_FILE_WRITE_RES = [ { re: /\\bopen\\(\\s*(?:['\"]([^'\"]+)['\"]|([\\w.]+))\\s*,\\s*(…"
+    },
+    {
+      "name": "PY_HOLD_RES",
+      "kind": "const",
+      "line": 422,
+      "signature": "const PY_HOLD_RES = [ { re: /\\.(?:bind|listen)\\(\\s*\\(?['\"]?([\\w:.\\-]+)/g, mak…"
+    },
+    {
+      "name": "GO_CHAN_KEYWORDS",
+      "kind": "const",
+      "line": 430,
+      "signature": "const GO_CHAN_KEYWORDS = new Set([ 'case', 'default', 'if', 'for', 'return', 'swit…"
+    },
+    {
+      "name": "scanGoEmits",
+      "kind": "function",
+      "line": 435,
+      "signature": "scanGoEmits(source: string): string[]"
+    },
+    {
+      "name": "scanTsEmits",
+      "kind": "function",
+      "line": 453,
+      "signature": "scanTsEmits(source: string): string[]"
+    },
+    {
+      "name": "scanPyEmits",
+      "kind": "function",
+      "line": 469,
+      "signature": "scanPyEmits(source: string): string[]"
+    },
+    {
+      "name": "EffectCandidates",
+      "kind": "interface",
+      "line": 479,
+      "signature": "EffectCandidates()"
+    },
+    {
+      "name": "scanEffectCandidates",
+      "kind": "function",
+      "line": 486,
+      "signature": "scanEffectCandidates(source: string, language: string): EffectCandidates"
+    },
+    {
+      "name": "extractContractsCore",
+      "kind": "function",
+      "line": 514,
+      "signature": "extractContractsCore(input: ExtractContractsInput): ExtractContractsResult"
+    },
+    {
+      "name": "touchedOf",
+      "kind": "function",
+      "line": 686,
+      "signature": "touchedOf(input: ExtractContractsInput): Touched"
+    },
+    {
+      "name": "extractContracts",
+      "kind": "function",
+      "line": 707,
+      "signature": "extractContracts(input: ExtractContractsInput): TouchedProduct<ExtractContractsResult>"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../infrastructure/storage.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/index/db.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/graph/import_graph.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../domain/contract.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../../domain/b_terms.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/harvest/extract_contracts.ts#extractContractsCore",
+      "to": "src/application/harvest/extract_contracts.ts#classifyRoles"
+    },
+    {
+      "from": "src/application/harvest/extract_contracts.ts#scanEffectCandidates",
+      "to": "src/application/harvest/extract_contracts.ts#collectModuleVars"
+    },
+    {
+      "from": "src/application/harvest/extract_contracts.ts#extractContracts",
+      "to": "src/application/harvest/extract_contracts.ts#extractContractsCore"
+    },
+    {
+      "from": "src/application/harvest/extract_contracts.ts#extractContractsCore",
+      "to": "src/application/harvest/extract_contracts.ts#extractShapes"
+    },
+    {
+      "from": "src/application/harvest/extract_contracts.ts#parseShapeFields",
+      "to": "src/application/harvest/extract_contracts.ts#isPyLang"
+    },
+    {
+      "from": "src/application/harvest/extract_contracts.ts#scanConfigKeys",
+      "to": "src/application/harvest/extract_contracts.ts#isPyLang"
+    },
+    {
+      "from": "src/application/harvest/extract_contracts.ts#collectModuleVars",
+      "to": "src/application/harvest/extract_contracts.ts#isPyLang"
+    },
+    {
+      "from": "src/application/harvest/extract_contracts.ts#scanEffectCandidates",
+      "to": "src/application/harvest/extract_contracts.ts#isPyLang"
+    },
+    {
+      "from": "src/application/harvest/extract_contracts.ts#extractShapes",
+      "to": "src/application/harvest/extract_contracts.ts#parseShapeFields"
+    },
+    {
+      "from": "src/application/harvest/extract_contracts.ts#extractContractsCore",
+      "to": "src/application/harvest/extract_contracts.ts#scanConfigKeys"
+    },
+    {
+      "from": "src/application/harvest/extract_contracts.ts#extractContractsCore",
+      "to": "src/application/harvest/extract_contracts.ts#scanEffectCandidates"
+    },
+    {
+      "from": "src/application/harvest/extract_contracts.ts#scanEffectCandidates",
+      "to": "src/application/harvest/extract_contracts.ts#scanGoEmits"
+    },
+    {
+      "from": "src/application/harvest/extract_contracts.ts#scanEffectCandidates",
+      "to": "src/application/harvest/extract_contracts.ts#scanPyEmits"
+    },
+    {
+      "from": "src/application/harvest/extract_contracts.ts#scanEffectCandidates",
+      "to": "src/application/harvest/extract_contracts.ts#scanTsEmits"
+    },
+    {
+      "from": "src/application/harvest/extract_contracts.ts#scanEffectCandidates",
+      "to": "src/application/harvest/extract_contracts.ts#scanVarWrites"
+    },
+    {
+      "from": "src/application/harvest/extract_contracts.ts#classifyRoles",
+      "to": "src/application/harvest/extract_contracts.ts#seedReason"
+    },
+    {
+      "from": "src/application/harvest/extract_contracts.ts#extractContracts",
+      "to": "src/application/harvest/extract_contracts.ts#touchedOf"
+    },
+    {
+      "from": "src/application/harvest/extract_contracts.ts#extractContracts",
+      "to": "src/domain/b_terms.ts#withTouched"
+    },
+    {
+      "from": "src/application/harvest/extract_contracts.ts#extractContractsCore",
+      "to": "src/infrastructure/graph/import_graph.ts#buildImportGraph"
+    },
+    {
+      "from": "src/application/harvest/extract_contracts.ts#extractContractsCore",
+      "to": "src/infrastructure/index/db.ts#getProjectCacheDb"
+    },
+    {
+      "from": "src/application/harvest/extract_contracts.ts#extractContractsCore",
+      "to": "src/infrastructure/index/db.ts#projectCacheDbPath"
+    },
+    {
+      "from": "src/application/harvest/extract_contracts.ts#extractContractsCore",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/application/harvest/extract_contracts.ts#extractContractsCore",
+      "to": "src/infrastructure/storage.ts#saveDSL"
+    }
+  ]
+}

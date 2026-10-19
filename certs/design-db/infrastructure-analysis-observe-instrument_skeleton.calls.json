@@ -1,0 +1,192 @@
+{
+  "//": "Design DB —— src/infrastructure/analysis/observe/instrument_skeleton.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "AstNode",
+      "kind": "interface",
+      "line": 56,
+      "signature": "AstNode()"
+    },
+    {
+      "name": "asNode",
+      "kind": "function",
+      "line": 68,
+      "signature": "asNode(n: unknown): AstNode"
+    },
+    {
+      "name": "Insertion",
+      "kind": "type",
+      "line": 73,
+      "signature": "Insertion()"
+    },
+    {
+      "name": "matchesContract",
+      "kind": "function",
+      "line": 84,
+      "signature": "matchesContract(probeName: string, probes?: string[]): boolean"
+    },
+    {
+      "name": "applyInsertions",
+      "kind": "function",
+      "line": 101,
+      "signature": "applyInsertions(content: string, insertions: Insertion[]): string"
+    },
+    {
+      "name": "prependAfterShebang",
+      "kind": "function",
+      "line": 154,
+      "signature": "prependAfterShebang(content: string, head: string): string"
+    },
+    {
+      "name": "headOffset",
+      "kind": "function",
+      "line": 170,
+      "signature": "headOffset(root: AstNode, packageDeclNode?: string): number"
+    },
+    {
+      "name": "CollectSitesCtx",
+      "kind": "interface",
+      "line": 181,
+      "signature": "CollectSitesCtx()"
+    },
+    {
+      "name": "isBracelessBodyReturn",
+      "kind": "function",
+      "line": 221,
+      "signature": "isBracelessBodyReturn(parent: AstNode | undefined, guardTypes: ReadonlySet<string>): boolean"
+    },
+    {
+      "name": "InstrumentHooks",
+      "kind": "interface",
+      "line": 229,
+      "signature": "InstrumentHooks()"
+    },
+    {
+      "name": "BACKUP_DIR",
+      "kind": "const",
+      "line": 275,
+      "signature": "const BACKUP_DIR = '.agent-io/observe-backup'"
+    },
+    {
+      "name": "backupPathFor",
+      "kind": "function",
+      "line": 278,
+      "signature": "backupPathFor(backupRoot: string, file: string): string"
+    },
+    {
+      "name": "backupOriginal",
+      "kind": "function",
+      "line": 284,
+      "signature": "backupOriginal(backupRoot: string, file: string, content: string): void"
+    },
+    {
+      "name": "instrumentFileWithHooks",
+      "kind": "function",
+      "line": 298,
+      "signature": "instrumentFileWithHooks(file: string,\n  hooks: InstrumentHooks,\n  opts: InstrumentOptions = {},): Promise<InstrumentFileResult>"
+    },
+    {
+      "name": "countFunctionNodes",
+      "kind": "function",
+      "line": 415,
+      "signature": "countFunctionNodes(root: AstNode, fnTypes: ReadonlySet<string>): number"
+    },
+    {
+      "name": "collectSourceFiles",
+      "kind": "function",
+      "line": 430,
+      "signature": "collectSourceFiles(root: string, isInstrumentable: (rel: string) => boolean): string[]"
+    },
+    {
+      "name": "inferProjectRootByMarker",
+      "kind": "function",
+      "line": 461,
+      "signature": "inferProjectRootByMarker(file: string, markerRel: string, hint?: string): string"
+    },
+    {
+      "name": "instrumentProjectWithHooks",
+      "kind": "function",
+      "line": 484,
+      "signature": "instrumentProjectWithHooks(root: string,\n  hooks: InstrumentHooks,\n  isInstrumentable: (rel: string) => boolean,\n  opts: InstrumentOptions = {},): Promise<InstrumentFileResult[]>"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../parse/kernel.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../parse/source_exts.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./instrument.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_skeleton.ts#instrumentFileWithHooks",
+      "to": "src/infrastructure/analysis/observe/instrument_skeleton.ts#applyInsertions"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_skeleton.ts#instrumentFileWithHooks",
+      "to": "src/infrastructure/analysis/observe/instrument_skeleton.ts#asNode"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_skeleton.ts#instrumentFileWithHooks",
+      "to": "src/infrastructure/analysis/observe/instrument_skeleton.ts#backupOriginal"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_skeleton.ts#backupOriginal",
+      "to": "src/infrastructure/analysis/observe/instrument_skeleton.ts#backupPathFor"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_skeleton.ts#instrumentProjectWithHooks",
+      "to": "src/infrastructure/analysis/observe/instrument_skeleton.ts#collectSourceFiles"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_skeleton.ts#instrumentFileWithHooks",
+      "to": "src/infrastructure/analysis/observe/instrument_skeleton.ts#countFunctionNodes"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_skeleton.ts#countFunctionNodes",
+      "to": "src/infrastructure/analysis/observe/instrument_skeleton.ts#countFunctionNodes"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_skeleton.ts#instrumentFileWithHooks",
+      "to": "src/infrastructure/analysis/observe/instrument_skeleton.ts#headOffset"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_skeleton.ts#instrumentFileWithHooks",
+      "to": "src/infrastructure/analysis/observe/instrument_skeleton.ts#inferProjectRootByMarker"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_skeleton.ts#instrumentProjectWithHooks",
+      "to": "src/infrastructure/analysis/observe/instrument_skeleton.ts#instrumentFileWithHooks"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_skeleton.ts#instrumentFileWithHooks",
+      "to": "src/infrastructure/analysis/observe/instrument_skeleton.ts#prependAfterShebang"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_skeleton.ts#instrumentFileWithHooks",
+      "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/instrument_skeleton.ts#collectSourceFiles",
+      "to": "src/infrastructure/parse/source_exts.ts#skipDirSet"
+    }
+  ]
+}

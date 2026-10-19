@@ -1,0 +1,70 @@
+{
+  "//": "Design DB —— src/infrastructure/verify_refactor.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "VerifyCommand",
+      "kind": "interface",
+      "line": 28,
+      "signature": "VerifyCommand()"
+    },
+    {
+      "name": "VerificationOutcome",
+      "kind": "interface",
+      "line": 36,
+      "signature": "VerificationOutcome()"
+    },
+    {
+      "name": "runVerification",
+      "kind": "function",
+      "line": 43,
+      "signature": "runVerification(opts: { cwd: string; commands: VerifyCommand[] }): VerificationOutcome"
+    },
+    {
+      "name": "defaultVerifyCommands",
+      "kind": "function",
+      "line": 72,
+      "signature": "defaultVerifyCommands(cwd: string): VerifyCommand[]"
+    },
+    {
+      "name": "VerifyOutcomeKind",
+      "kind": "type",
+      "line": 127,
+      "signature": "VerifyOutcomeKind()"
+    },
+    {
+      "name": "ApplyWithVerifyResult",
+      "kind": "interface",
+      "line": 129,
+      "signature": "ApplyWithVerifyResult()"
+    },
+    {
+      "name": "ApplyWithVerifyOpts",
+      "kind": "interface",
+      "line": 139,
+      "signature": "ApplyWithVerifyOpts()"
+    },
+    {
+      "name": "applyWithVerify",
+      "kind": "function",
+      "line": 152,
+      "signature": "applyWithVerify(opts: ApplyWithVerifyOpts): ApplyWithVerifyResult"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "node:child_process",
+      "kind": "package"
+    }
+  ],
+  "calls": []
+}

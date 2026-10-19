@@ -1,0 +1,57 @@
+{
+  "//": "Design DB —— src/domain/simulation.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "SimulationRule",
+      "kind": "interface",
+      "line": 8,
+      "signature": "SimulationRule()"
+    },
+    {
+      "name": "SimulationDepEdge",
+      "kind": "interface",
+      "line": 28,
+      "signature": "SimulationDepEdge()"
+    },
+    {
+      "name": "SimulationAction",
+      "kind": "interface",
+      "line": 38,
+      "signature": "SimulationAction()"
+    },
+    {
+      "name": "SimulationStateDef",
+      "kind": "interface",
+      "line": 56,
+      "signature": "SimulationStateDef()"
+    },
+    {
+      "name": "SimulationNodeMapping",
+      "kind": "interface",
+      "line": 68,
+      "signature": "SimulationNodeMapping()"
+    },
+    {
+      "name": "Simulation",
+      "kind": "interface",
+      "line": 80,
+      "signature": "Simulation()"
+    },
+    {
+      "name": "SimulationTrace",
+      "kind": "interface",
+      "line": 98,
+      "signature": "SimulationTrace()"
+    }
+  ],
+  "imports": [
+    {
+      "source": "./geometry.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": []
+}

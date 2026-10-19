@@ -1,0 +1,33 @@
+{
+  "//": "Design DB —— src/infrastructure/parse/import_text.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "RELATIVE_NAMED_IMPORT_RE",
+      "kind": "const",
+      "line": 20,
+      "signature": "const RELATIVE_NAMED_IMPORT_RE = /import\\s+(?:type\\s+)?\\{([^}]+)\\}\\s+from\\s+'(\\.[^']+)'/g"
+    },
+    {
+      "name": "SPEC_ALIAS_RE",
+      "kind": "const",
+      "line": 23,
+      "signature": "const SPEC_ALIAS_RE = /^([A-Za-z_$][\\w$]*)\\s+as\\s+([A-Za-z_$][\\w$]*)$/"
+    },
+    {
+      "name": "SPEC_PLAIN_RE",
+      "kind": "const",
+      "line": 24,
+      "signature": "const SPEC_PLAIN_RE = /^[A-Za-z_$][\\w$]*$/"
+    },
+    {
+      "name": "parseRelativeNamedImportMap",
+      "kind": "function",
+      "line": 42,
+      "signature": "parseRelativeNamedImportMap(src: string): Map<string, string>"
+    }
+  ],
+  "imports": [],
+  "calls": []
+}

@@ -1,0 +1,230 @@
+{
+  "//": "Design DB —— src/infrastructure/analysis/structure/derive_feature_tree.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "FeatureTreeInput",
+      "kind": "interface",
+      "line": 43,
+      "signature": "FeatureTreeInput()"
+    },
+    {
+      "name": "FeatureTreeResult",
+      "kind": "interface",
+      "line": 54,
+      "signature": "FeatureTreeResult()"
+    },
+    {
+      "name": "toLlmCfg",
+      "kind": "function",
+      "line": 71,
+      "signature": "toLlmCfg(c: ReturnType<typeof loadExplainConfig>)"
+    },
+    {
+      "name": "dirOf",
+      "kind": "function",
+      "line": 76,
+      "signature": "dirOf(p: string): string"
+    },
+    {
+      "name": "DIR_FEATURE_NAMES",
+      "kind": "const",
+      "line": 85,
+      "signature": "const DIR_FEATURE_NAMES = { dsl: 'DSL 协议定义', db: '数据存储', daemon: '守护进程', renderer: …"
+    },
+    {
+      "name": "isInfraPath",
+      "kind": "function",
+      "line": 103,
+      "signature": "isInfraPath(relPath: string): boolean"
+    },
+    {
+      "name": "normPath",
+      "kind": "function",
+      "line": 114,
+      "signature": "normPath(p: string): string"
+    },
+    {
+      "name": "isTestPath",
+      "kind": "function",
+      "line": 123,
+      "signature": "isTestPath(p: string): boolean"
+    },
+    {
+      "name": "communityKeyOf",
+      "kind": "function",
+      "line": 130,
+      "signature": "communityKeyOf(c: { files: string[] }): string"
+    },
+    {
+      "name": "fileKeyOf",
+      "kind": "function",
+      "line": 149,
+      "signature": "fileKeyOf(relPath: string): string"
+    },
+    {
+      "name": "ruleLabelOf",
+      "kind": "function",
+      "line": 156,
+      "signature": "ruleLabelOf(key: string): string"
+    },
+    {
+      "name": "groupByDir",
+      "kind": "function",
+      "line": 166,
+      "signature": "groupByDir(comms: Array<{ id: number; name: string; files: string[]; est_lines: number; symbol_count: number }>,): FeatureNode[]"
+    },
+    {
+      "name": "renameGroupsByLLM",
+      "kind": "function",
+      "line": 188,
+      "signature": "renameGroupsByLLM(groups: FeatureNode[]): Promise<string[] | null>"
+    },
+    {
+      "name": "dirFallbackTree",
+      "kind": "function",
+      "line": 226,
+      "signature": "dirFallbackTree(input: FeatureTreeInput,\n  liveDsl: DesignDSL | null,\n  semanticFiles: Array<{ id: string; path: string }>,\n  reason: string,): FeatureTreeResult"
+    },
+    {
+      "name": "deriveFeatureTree",
+      "kind": "function",
+      "line": 267,
+      "signature": "deriveFeatureTree(input: FeatureTreeInput,): Promise<FeatureTreeResult>"
+    }
+  ],
+  "imports": [
+    {
+      "source": "./analyze_monolith.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../storage.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../llm_focus.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../domain/types.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#deriveFeatureTree",
+      "to": "src/infrastructure/analysis/structure/analyze_monolith.ts#analyzeMonolith"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#groupByDir",
+      "to": "src/infrastructure/analysis/structure/derive_feature_tree.ts#communityKeyOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#deriveFeatureTree",
+      "to": "src/infrastructure/analysis/structure/derive_feature_tree.ts#communityKeyOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#deriveFeatureTree",
+      "to": "src/infrastructure/analysis/structure/derive_feature_tree.ts#communityKeyOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#deriveFeatureTree",
+      "to": "src/infrastructure/analysis/structure/derive_feature_tree.ts#deriveFeatureTree.communityOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#deriveFeatureTree",
+      "to": "src/infrastructure/analysis/structure/derive_feature_tree.ts#deriveFeatureTree.communityOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#deriveFeatureTree",
+      "to": "src/infrastructure/analysis/structure/derive_feature_tree.ts#deriveFeatureTree.inFeature"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#deriveFeatureTree",
+      "to": "src/infrastructure/analysis/structure/derive_feature_tree.ts#dirFallbackTree"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#dirFallbackTree",
+      "to": "src/infrastructure/analysis/structure/derive_feature_tree.ts#fileKeyOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#deriveFeatureTree",
+      "to": "src/infrastructure/analysis/structure/derive_feature_tree.ts#fileKeyOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#deriveFeatureTree",
+      "to": "src/infrastructure/analysis/structure/derive_feature_tree.ts#fileKeyOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#deriveFeatureTree",
+      "to": "src/infrastructure/analysis/structure/derive_feature_tree.ts#fileKeyOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#deriveFeatureTree",
+      "to": "src/infrastructure/analysis/structure/derive_feature_tree.ts#groupByDir"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#communityKeyOf",
+      "to": "src/infrastructure/analysis/structure/derive_feature_tree.ts#isTestPath"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#isTestPath",
+      "to": "src/infrastructure/analysis/structure/derive_feature_tree.ts#normPath"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#communityKeyOf",
+      "to": "src/infrastructure/analysis/structure/derive_feature_tree.ts#normPath"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#fileKeyOf",
+      "to": "src/infrastructure/analysis/structure/derive_feature_tree.ts#normPath"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#deriveFeatureTree",
+      "to": "src/infrastructure/analysis/structure/derive_feature_tree.ts#renameGroupsByLLM"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#groupByDir",
+      "to": "src/infrastructure/analysis/structure/derive_feature_tree.ts#ruleLabelOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#dirFallbackTree",
+      "to": "src/infrastructure/analysis/structure/derive_feature_tree.ts#ruleLabelOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#deriveFeatureTree",
+      "to": "src/infrastructure/analysis/structure/derive_feature_tree.ts#ruleLabelOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#renameGroupsByLLM",
+      "to": "src/infrastructure/analysis/structure/derive_feature_tree.ts#toLlmCfg"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#renameGroupsByLLM",
+      "to": "src/infrastructure/llm_focus.ts#callChat"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#renameGroupsByLLM",
+      "to": "src/infrastructure/llm_focus.ts#loadExplainConfig"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#renameGroupsByLLM",
+      "to": "src/infrastructure/llm_focus.ts#loadLlmConfig"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#deriveFeatureTree",
+      "to": "src/infrastructure/storage.ts#getDSLByView"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#dirFallbackTree",
+      "to": "src/infrastructure/storage.ts#saveDSL"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/derive_feature_tree.ts#deriveFeatureTree",
+      "to": "src/infrastructure/storage.ts#saveDSL"
+    }
+  ]
+}

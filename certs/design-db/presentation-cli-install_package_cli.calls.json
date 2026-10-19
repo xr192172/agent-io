@@ -1,0 +1,399 @@
+{
+  "//": "Design DB —— src/presentation/cli/install_package_cli.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "LangPackRow",
+      "kind": "interface",
+      "line": 48,
+      "signature": "LangPackRow()"
+    },
+    {
+      "name": "hasHostPrebuild",
+      "kind": "function",
+      "line": 77,
+      "signature": "hasHostPrebuild(pkg: string): boolean"
+    },
+    {
+      "name": "compatVerdict",
+      "kind": "function",
+      "line": 95,
+      "signature": "compatVerdict(compat: TemplateCompat, prebuild: boolean | null, usesNan: boolean | null = null): string"
+    },
+    {
+      "name": "registryInstallScript",
+      "kind": "function",
+      "line": 116,
+      "signature": "registryInstallScript(pkg: string): {\n  script: string | null;\n  /** 上游 latest 版本号（取不到 ⇒ null） */\n  version: string | null;\n  /** 上游 latest 是否 NAN 绑定（取不到 ⇒ null） */\n  usesNan: boolean | null;\n  /**\n   * 上游 latest 声明的 `peerDependencies['tree-sitter']`（没声明 ⇒ null）。\n   * ★★ 2026-10-08 补：**只看\"模板修了\"会推荐一个装不上的版本** —— 实测 `tree-sitter-css`：\n   *   latest 0.25.0 已是 node-gyp-build，但它 `peerDependencies: tree-sitter ^0.25.0`，\n   *   而本机核心是 **0.21.1** ⇒ 真去装**当场 ERESOLVE**（本笔实测踩到）。\n   *   而**同核心线上**的 `0.21.0` 是真能载入的（本笔实测：`setLanguage` + `parse` 出 `stylesheet`）。\n   */\n  peer: string | null;\n  missing: boolean;\n  error?: string;\n}"
+    },
+    {
+      "name": "DERIVED",
+      "kind": "const",
+      "line": 192,
+      "signature": "const DERIVED = { tsx: 'typescript', jsx: 'javascript' }"
+    },
+    {
+      "name": "readLangPkgJson",
+      "kind": "function",
+      "line": 199,
+      "signature": "readLangPkgJson(pkg: string): Record<string, any> | null"
+    },
+    {
+      "name": "readPkgJson",
+      "kind": "function",
+      "line": 205,
+      "signature": "readPkgJson(name: string): Record<string, any> | null"
+    },
+    {
+      "name": "coreTreeSitterVersion",
+      "kind": "function",
+      "line": 214,
+      "signature": "coreTreeSitterVersion(): string | undefined"
+    },
+    {
+      "name": "parseVer",
+      "kind": "function",
+      "line": 220,
+      "signature": "parseVer(s: string): [number, number, number, number]"
+    },
+    {
+      "name": "cmp",
+      "kind": "function",
+      "line": 226,
+      "signature": "cmp(a: [number, number, number], b: [number, number, number]): number"
+    },
+    {
+      "name": "rangeOk",
+      "kind": "function",
+      "line": 239,
+      "signature": "rangeOk(range: string, version: string): boolean"
+    },
+    {
+      "name": "verifyAbi",
+      "kind": "function",
+      "line": 267,
+      "signature": "verifyAbi(pkg: string): string[]"
+    },
+    {
+      "name": "checkPrebuild",
+      "kind": "function",
+      "line": 281,
+      "signature": "checkPrebuild(pkg: string): string[]"
+    },
+    {
+      "name": "isInstalled",
+      "kind": "function",
+      "line": 303,
+      "signature": "isInstalled(pkg: string): { installed: boolean; version?: string }"
+    },
+    {
+      "name": "findNodeModulesRoot",
+      "kind": "function",
+      "line": 319,
+      "signature": "findNodeModulesRoot(): string"
+    },
+    {
+      "name": "collect",
+      "kind": "function",
+      "line": 339,
+      "signature": "collect(): LangPackRow[]"
+    },
+    {
+      "name": "findRowByName",
+      "kind": "function",
+      "line": 371,
+      "signature": "findRowByName(rows: LangPackRow[], key: string): LangPackRow | undefined"
+    },
+    {
+      "name": "installPrecheck",
+      "kind": "function",
+      "line": 385,
+      "signature": "installPrecheck(targets: string[], rows: LangPackRow[]): string[]"
+    },
+    {
+      "name": "runNpm",
+      "kind": "function",
+      "line": 411,
+      "signature": "runNpm(args: string[]): { status: number; out: string }"
+    },
+    {
+      "name": "GH_SOURCES",
+      "kind": "const",
+      "line": 421,
+      "signature": "const GH_SOURCES = { go: 'https://github.com/tree-sitter/tree-sitter-go', py…"
+    },
+    {
+      "name": "ghSource",
+      "kind": "function",
+      "line": 432,
+      "signature": "ghSource(pkg: string): string"
+    },
+    {
+      "name": "main",
+      "kind": "function",
+      "line": 438,
+      "signature": "main(): void"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "node:child_process",
+      "kind": "package"
+    },
+    {
+      "source": "../../infrastructure/parse/languages.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/packages/template_compat.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/packages/package_pins.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/infrastructure/packages/template_compat.ts#templateCompatFromFacts"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#collect",
+      "to": "src/infrastructure/packages/template_compat.ts#templateCompatFromPkgJson"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#installPrecheck",
+      "to": "src/infrastructure/packages/template_compat.ts#templateCompatFromPkgJson"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/infrastructure/packages/template_compat.ts#templateCompatFromPkgJson"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#compatVerdict",
+      "to": "src/infrastructure/packages/template_compat.ts#templateCompatReason"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#compatVerdict",
+      "to": "src/infrastructure/packages/template_compat.ts#templateCompatReason"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#collect",
+      "to": "src/infrastructure/packages/template_compat.ts#usesNanBinding"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/infrastructure/packages/template_compat.ts#usesNanBinding"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#hasHostPrebuild",
+      "to": "src/infrastructure/parse/languages.ts#moduleSpecOfPkg"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#registryInstallScript",
+      "to": "src/infrastructure/parse/languages.ts#moduleSpecOfPkg"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#readLangPkgJson",
+      "to": "src/infrastructure/parse/languages.ts#moduleSpecOfPkg"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#checkPrebuild",
+      "to": "src/infrastructure/parse/languages.ts#moduleSpecOfPkg"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#isInstalled",
+      "to": "src/infrastructure/parse/languages.ts#moduleSpecOfPkg"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#collect",
+      "to": "src/infrastructure/parse/languages.ts#moduleSpecOfPkg"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/presentation/cli/install_package_cli.ts#checkPrebuild"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#rangeOk",
+      "to": "src/presentation/cli/install_package_cli.ts#cmp"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#rangeOk",
+      "to": "src/presentation/cli/install_package_cli.ts#cmp"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#rangeOk",
+      "to": "src/presentation/cli/install_package_cli.ts#cmp"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/presentation/cli/install_package_cli.ts#collect"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/presentation/cli/install_package_cli.ts#compatVerdict"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/presentation/cli/install_package_cli.ts#compatVerdict"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/presentation/cli/install_package_cli.ts#compatVerdict"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#verifyAbi",
+      "to": "src/presentation/cli/install_package_cli.ts#coreTreeSitterVersion"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/presentation/cli/install_package_cli.ts#coreTreeSitterVersion"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/presentation/cli/install_package_cli.ts#coreTreeSitterVersion"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#hasHostPrebuild",
+      "to": "src/presentation/cli/install_package_cli.ts#findNodeModulesRoot"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#registryInstallScript",
+      "to": "src/presentation/cli/install_package_cli.ts#findNodeModulesRoot"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#readPkgJson",
+      "to": "src/presentation/cli/install_package_cli.ts#findNodeModulesRoot"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#checkPrebuild",
+      "to": "src/presentation/cli/install_package_cli.ts#findNodeModulesRoot"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#isInstalled",
+      "to": "src/presentation/cli/install_package_cli.ts#findNodeModulesRoot"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#runNpm",
+      "to": "src/presentation/cli/install_package_cli.ts#findNodeModulesRoot"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#installPrecheck",
+      "to": "src/presentation/cli/install_package_cli.ts#findRowByName"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/presentation/cli/install_package_cli.ts#findRowByName"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/presentation/cli/install_package_cli.ts#findRowByName"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/presentation/cli/install_package_cli.ts#findRowByName"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/presentation/cli/install_package_cli.ts#findRowByName"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/presentation/cli/install_package_cli.ts#findRowByName"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/presentation/cli/install_package_cli.ts#findRowByName"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/presentation/cli/install_package_cli.ts#ghSource"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#collect",
+      "to": "src/presentation/cli/install_package_cli.ts#hasHostPrebuild"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/presentation/cli/install_package_cli.ts#hasHostPrebuild"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/presentation/cli/install_package_cli.ts#installPrecheck"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#collect",
+      "to": "src/presentation/cli/install_package_cli.ts#isInstalled"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#rangeOk",
+      "to": "src/presentation/cli/install_package_cli.ts#parseVer"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#rangeOk",
+      "to": "src/presentation/cli/install_package_cli.ts#parseVer"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#verifyAbi",
+      "to": "src/presentation/cli/install_package_cli.ts#rangeOk"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/presentation/cli/install_package_cli.ts#rangeOk"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#verifyAbi",
+      "to": "src/presentation/cli/install_package_cli.ts#readLangPkgJson"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#installPrecheck",
+      "to": "src/presentation/cli/install_package_cli.ts#readLangPkgJson"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/presentation/cli/install_package_cli.ts#readLangPkgJson"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#readLangPkgJson",
+      "to": "src/presentation/cli/install_package_cli.ts#readPkgJson"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#coreTreeSitterVersion",
+      "to": "src/presentation/cli/install_package_cli.ts#readPkgJson"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#collect",
+      "to": "src/presentation/cli/install_package_cli.ts#readPkgJson"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#installPrecheck",
+      "to": "src/presentation/cli/install_package_cli.ts#registryInstallScript"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/presentation/cli/install_package_cli.ts#registryInstallScript"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/presentation/cli/install_package_cli.ts#runNpm"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/presentation/cli/install_package_cli.ts#runNpm"
+    },
+    {
+      "from": "src/presentation/cli/install_package_cli.ts#main",
+      "to": "src/presentation/cli/install_package_cli.ts#verifyAbi"
+    }
+  ]
+}

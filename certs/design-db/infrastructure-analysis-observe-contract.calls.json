@@ -1,0 +1,92 @@
+{
+  "//": "Design DB —— src/infrastructure/analysis/observe/contract.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "TSDLDecl",
+      "kind": "interface",
+      "line": 20,
+      "signature": "TSDLDecl()"
+    },
+    {
+      "name": "TSDesignDSLDoc",
+      "kind": "interface",
+      "line": 43,
+      "signature": "TSDesignDSLDoc()"
+    },
+    {
+      "name": "DeviationKind",
+      "kind": "type",
+      "line": 50,
+      "signature": "DeviationKind()"
+    },
+    {
+      "name": "TSDeviation",
+      "kind": "interface",
+      "line": 53,
+      "signature": "TSDeviation()"
+    },
+    {
+      "name": "TSDiffReport",
+      "kind": "interface",
+      "line": 65,
+      "signature": "TSDiffReport()"
+    },
+    {
+      "name": "TSProbeObs",
+      "kind": "interface",
+      "line": 77,
+      "signature": "TSProbeObs()"
+    },
+    {
+      "name": "TSComparator",
+      "kind": "class",
+      "line": 87,
+      "signature": "TSComparator()"
+    },
+    {
+      "name": "renderTSDiffReport",
+      "kind": "function",
+      "line": 243,
+      "signature": "renderTSDiffReport(r: TSDiffReport): string"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "./probe.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./chain.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./judge.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./ledger_fold.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/observe/contract.ts#TSComparator.compare",
+      "to": "src/infrastructure/analysis/observe/chain.ts#matchChainDecl"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/contract.ts#TSComparator.compare",
+      "to": "src/infrastructure/analysis/observe/judge.ts#observeRulePredicate"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/contract.ts#TSComparator.compare",
+      "to": "src/infrastructure/analysis/observe/ledger_fold.ts#knownSpreadIndex"
+    }
+  ]
+}

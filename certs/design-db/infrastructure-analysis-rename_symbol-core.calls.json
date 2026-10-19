@@ -1,0 +1,96 @@
+{
+  "//": "Design DB —— src/infrastructure/analysis/rename_symbol/core.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "RenameSymbolInput",
+      "kind": "interface",
+      "line": 48,
+      "signature": "RenameSymbolInput()"
+    },
+    {
+      "name": "renameSymbolCore",
+      "kind": "function",
+      "line": 63,
+      "signature": "renameSymbolCore(input: RenameSymbolInput): Promise<RenameSymbolResult>"
+    },
+    {
+      "name": "touchedOf",
+      "kind": "function",
+      "line": 116,
+      "signature": "touchedOf(input: RenameSymbolInput, r: RenameSymbolResult): Touched"
+    },
+    {
+      "name": "renameSymbol",
+      "kind": "function",
+      "line": 142,
+      "signature": "renameSymbol(input: RenameSymbolInput): Promise<TouchedProduct<RenameSymbolResult>>"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../../infrastructure/analysis/project_root/index.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/parse/lang_hint.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../domain/b_terms.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./languages/registry.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./parts.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./parts.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./parts.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/rename_symbol/core.ts#renameSymbol",
+      "to": "src/domain/b_terms.ts#withTouched"
+    },
+    {
+      "from": "src/infrastructure/analysis/rename_symbol/core.ts#renameSymbolCore",
+      "to": "src/infrastructure/analysis/project_root/index.ts#loadAliasConfig"
+    },
+    {
+      "from": "src/infrastructure/analysis/rename_symbol/core.ts#renameSymbolCore",
+      "to": "src/infrastructure/analysis/project_root/index.ts#resolveProjectRoot"
+    },
+    {
+      "from": "src/infrastructure/analysis/rename_symbol/core.ts#renameSymbol",
+      "to": "src/infrastructure/analysis/rename_symbol/core.ts#renameSymbolCore"
+    },
+    {
+      "from": "src/infrastructure/analysis/rename_symbol/core.ts#renameSymbol",
+      "to": "src/infrastructure/analysis/rename_symbol/core.ts#touchedOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/rename_symbol/core.ts#renameSymbolCore",
+      "to": "src/infrastructure/analysis/rename_symbol/languages/registry.ts#findLangPackage"
+    },
+    {
+      "from": "src/infrastructure/analysis/rename_symbol/core.ts#renameSymbolCore",
+      "to": "src/infrastructure/parse/lang_hint.ts#missingLanguageHint"
+    }
+  ]
+}

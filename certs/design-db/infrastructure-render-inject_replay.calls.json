@@ -1,0 +1,102 @@
+{
+  "//": "Design DB —— src/infrastructure/render/inject_replay.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "InjectReplayInput",
+      "kind": "interface",
+      "line": 26,
+      "signature": "InjectReplayInput()"
+    },
+    {
+      "name": "ReplayRoute",
+      "kind": "interface",
+      "line": 39,
+      "signature": "ReplayRoute()"
+    },
+    {
+      "name": "ShapeCheck",
+      "kind": "interface",
+      "line": 52,
+      "signature": "ShapeCheck()"
+    },
+    {
+      "name": "InjectReplayResult",
+      "kind": "interface",
+      "line": 59,
+      "signature": "InjectReplayResult()"
+    },
+    {
+      "name": "checkShape",
+      "kind": "function",
+      "line": 71,
+      "signature": "checkShape(schema: AnimationValueSchema,\n  inject: unknown,\n  target: string,): ShapeCheck"
+    },
+    {
+      "name": "findFlow",
+      "kind": "function",
+      "line": 80,
+      "signature": "findFlow(flows: AnimationFlow[], flowId: string): AnimationFlow"
+    },
+    {
+      "name": "injectReplay",
+      "kind": "function",
+      "line": 89,
+      "signature": "injectReplay(input: InjectReplayInput): InjectReplayResult"
+    }
+  ],
+  "imports": [
+    {
+      "source": "../storage.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./anim_core.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../domain/types.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/render/inject_replay.ts#injectReplay",
+      "to": "src/infrastructure/render/anim_core.ts#buildPresetValue"
+    },
+    {
+      "from": "src/infrastructure/render/inject_replay.ts#injectReplay",
+      "to": "src/infrastructure/render/anim_core.ts#classifyError"
+    },
+    {
+      "from": "src/infrastructure/render/inject_replay.ts#injectReplay",
+      "to": "src/infrastructure/render/anim_core.ts#formatValueShort"
+    },
+    {
+      "from": "src/infrastructure/render/inject_replay.ts#injectReplay",
+      "to": "src/infrastructure/render/anim_core.ts#formatValueShort"
+    },
+    {
+      "from": "src/infrastructure/render/inject_replay.ts#injectReplay",
+      "to": "src/infrastructure/render/anim_core.ts#pickBranch"
+    },
+    {
+      "from": "src/infrastructure/render/inject_replay.ts#checkShape",
+      "to": "src/infrastructure/render/anim_core.ts#validateValueSchema"
+    },
+    {
+      "from": "src/infrastructure/render/inject_replay.ts#injectReplay",
+      "to": "src/infrastructure/render/inject_replay.ts#checkShape"
+    },
+    {
+      "from": "src/infrastructure/render/inject_replay.ts#injectReplay",
+      "to": "src/infrastructure/render/inject_replay.ts#findFlow"
+    },
+    {
+      "from": "src/infrastructure/render/inject_replay.ts#injectReplay",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    }
+  ]
+}

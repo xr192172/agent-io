@@ -1,0 +1,61 @@
+{
+  "//": "Design DB —— src/application/tool_registry.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "LANE_SOURCES",
+      "kind": "const",
+      "line": 44,
+      "signature": "const LANE_SOURCES = [ ['observe', OBSERVE_TOOLS], ['cross', CROSS_TOOLS], ['d…"
+    },
+    {
+      "name": "TOOL_DEFS",
+      "kind": "const",
+      "line": 53,
+      "signature": "const TOOL_DEFS = LANE_SOURCES.flatMap(([, defs]) => [...defs])"
+    },
+    {
+      "name": "laneOfFromSources",
+      "kind": "function",
+      "line": 59,
+      "signature": "laneOfFromSources(sources: ReadonlyArray<readonly [LaneId, readonly ToolDef[]]> = LANE_SOURCES,): Record<string, LaneAssign>"
+    }
+  ],
+  "imports": [
+    {
+      "source": "./observe/index.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./cross/index.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./design/index.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./meta/index.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./refactor/index.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./harvest/index.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./meta/registry/capability_map.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./types.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": []
+}

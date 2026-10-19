@@ -1,0 +1,226 @@
+{
+  "//": "Design DB —— src/application/refactor/edit/remove_dead_imports.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "RemoveImportsResult",
+      "kind": "interface",
+      "line": 34,
+      "signature": "RemoveImportsResult()"
+    },
+    {
+      "name": "escRe",
+      "kind": "function",
+      "line": 43,
+      "signature": "escRe(s: string): string"
+    },
+    {
+      "name": "removeGoImports",
+      "kind": "function",
+      "line": 50,
+      "signature": "removeGoImports(src: string, target: string): RemoveImportsResult"
+    },
+    {
+      "name": "removeTsImports",
+      "kind": "function",
+      "line": 126,
+      "signature": "removeTsImports(src: string, target: string): RemoveImportsResult"
+    },
+    {
+      "name": "removeImportsFromSource",
+      "kind": "function",
+      "line": 185,
+      "signature": "removeImportsFromSource(src: string, target: string, lang: 'go' | 'ts'): RemoveImportsResult"
+    },
+    {
+      "name": "DeadImportRemoval",
+      "kind": "interface",
+      "line": 192,
+      "signature": "DeadImportRemoval()"
+    },
+    {
+      "name": "FileRemoval",
+      "kind": "interface",
+      "line": 198,
+      "signature": "FileRemoval()"
+    },
+    {
+      "name": "RemoveDeadImportResult",
+      "kind": "interface",
+      "line": 205,
+      "signature": "RemoveDeadImportResult()"
+    },
+    {
+      "name": "langOfFile",
+      "kind": "function",
+      "line": 217,
+      "signature": "langOfFile(rel: string): 'go' | 'ts' | null"
+    },
+    {
+      "name": "computeChanges",
+      "kind": "function",
+      "line": 225,
+      "signature": "computeChanges(opts: {\r\n  project_dir: string;\r\n  dead: DeadDepCandidate[];\r\n}): {\r\n  absToNew: Map<string, string>;\r\n  originals: Map<string, string>;\r\n  result: RemoveDeadImportResult;\r\n}"
+    },
+    {
+      "name": "removeDeadImportsCore",
+      "kind": "function",
+      "line": 293,
+      "signature": "removeDeadImportsCore(opts: {\r\n  project_dir: string;\r\n  dead: DeadDepCandidate[];\r\n}): RemoveDeadImportResult"
+    },
+    {
+      "name": "touchedOf",
+      "kind": "function",
+      "line": 329,
+      "signature": "touchedOf(opts: { project_dir: string }, r: RemoveDeadImportResult): Touched"
+    },
+    {
+      "name": "writtenFilesOf",
+      "kind": "function",
+      "line": 347,
+      "signature": "writtenFilesOf(projectDir: string, r: RemoveDeadImportResult): string[]"
+    },
+    {
+      "name": "removeDeadImports",
+      "kind": "function",
+      "line": 358,
+      "signature": "removeDeadImports(opts: {\r\n  project_dir: string;\r\n  dead: DeadDepCandidate[];\r\n}): TouchedProduct<RemoveDeadImportResult>"
+    },
+    {
+      "name": "RemoveDeadImportsVerifyResult",
+      "kind": "interface",
+      "line": 369,
+      "signature": "RemoveDeadImportsVerifyResult()"
+    },
+    {
+      "name": "RemoveDeadImportsVerifyOptions",
+      "kind": "interface",
+      "line": 381,
+      "signature": "RemoveDeadImportsVerifyOptions()"
+    },
+    {
+      "name": "removeDeadImportsWithVerify",
+      "kind": "function",
+      "line": 390,
+      "signature": "removeDeadImportsWithVerify(opts: RemoveDeadImportsVerifyOptions): RemoveDeadImportsVerifyResult"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../../infrastructure/graph/dead_deps.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../../../infrastructure/verify_refactor.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../write_gate.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/index/symbols.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../domain/b_terms.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/refactor/edit/remove_dead_imports.ts#removeDeadImportsCore",
+      "to": "src/application/refactor/edit/remove_dead_imports.ts#computeChanges"
+    },
+    {
+      "from": "src/application/refactor/edit/remove_dead_imports.ts#removeDeadImportsWithVerify",
+      "to": "src/application/refactor/edit/remove_dead_imports.ts#computeChanges"
+    },
+    {
+      "from": "src/application/refactor/edit/remove_dead_imports.ts#removeGoImports",
+      "to": "src/application/refactor/edit/remove_dead_imports.ts#escRe"
+    },
+    {
+      "from": "src/application/refactor/edit/remove_dead_imports.ts#removeTsImports",
+      "to": "src/application/refactor/edit/remove_dead_imports.ts#escRe"
+    },
+    {
+      "from": "src/application/refactor/edit/remove_dead_imports.ts#computeChanges",
+      "to": "src/application/refactor/edit/remove_dead_imports.ts#langOfFile"
+    },
+    {
+      "from": "src/application/refactor/edit/remove_dead_imports.ts#removeDeadImportsWithVerify",
+      "to": "src/application/refactor/edit/remove_dead_imports.ts#removeDeadImports"
+    },
+    {
+      "from": "src/application/refactor/edit/remove_dead_imports.ts#removeDeadImportsWithVerify",
+      "to": "src/application/refactor/edit/remove_dead_imports.ts#removeDeadImports"
+    },
+    {
+      "from": "src/application/refactor/edit/remove_dead_imports.ts#removeDeadImports",
+      "to": "src/application/refactor/edit/remove_dead_imports.ts#removeDeadImportsCore"
+    },
+    {
+      "from": "src/application/refactor/edit/remove_dead_imports.ts#removeImportsFromSource",
+      "to": "src/application/refactor/edit/remove_dead_imports.ts#removeGoImports"
+    },
+    {
+      "from": "src/application/refactor/edit/remove_dead_imports.ts#computeChanges",
+      "to": "src/application/refactor/edit/remove_dead_imports.ts#removeImportsFromSource"
+    },
+    {
+      "from": "src/application/refactor/edit/remove_dead_imports.ts#removeImportsFromSource",
+      "to": "src/application/refactor/edit/remove_dead_imports.ts#removeTsImports"
+    },
+    {
+      "from": "src/application/refactor/edit/remove_dead_imports.ts#removeDeadImports",
+      "to": "src/application/refactor/edit/remove_dead_imports.ts#touchedOf"
+    },
+    {
+      "from": "src/application/refactor/edit/remove_dead_imports.ts#touchedOf",
+      "to": "src/application/refactor/edit/remove_dead_imports.ts#writtenFilesOf"
+    },
+    {
+      "from": "src/application/refactor/edit/remove_dead_imports.ts#removeDeadImportsCore",
+      "to": "src/application/write_gate.ts#snapshotAndRecordSelfWrite"
+    },
+    {
+      "from": "src/application/refactor/edit/remove_dead_imports.ts#removeDeadImportsWithVerify",
+      "to": "src/application/write_gate.ts#snapshotAndRecordSelfWrite"
+    },
+    {
+      "from": "src/application/refactor/edit/remove_dead_imports.ts#removeDeadImportsCore",
+      "to": "src/application/write_gate.ts#syncSelfWritesSync"
+    },
+    {
+      "from": "src/application/refactor/edit/remove_dead_imports.ts#removeDeadImportsWithVerify",
+      "to": "src/application/write_gate.ts#syncSelfWritesSync"
+    },
+    {
+      "from": "src/application/refactor/edit/remove_dead_imports.ts#removeDeadImports",
+      "to": "src/domain/b_terms.ts#withTouched"
+    },
+    {
+      "from": "src/application/refactor/edit/remove_dead_imports.ts#writtenFilesOf",
+      "to": "src/infrastructure/index/symbols.ts#toIndexKey"
+    },
+    {
+      "from": "src/application/refactor/edit/remove_dead_imports.ts#removeDeadImportsWithVerify",
+      "to": "src/infrastructure/verify_refactor.ts#applyWithVerify"
+    },
+    {
+      "from": "src/application/refactor/edit/remove_dead_imports.ts#removeDeadImportsWithVerify",
+      "to": "src/infrastructure/verify_refactor.ts#defaultVerifyCommands"
+    }
+  ]
+}

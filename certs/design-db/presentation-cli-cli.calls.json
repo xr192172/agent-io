@@ -1,0 +1,208 @@
+{
+  "//": "Design DB —— src/presentation/cli/cli.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "die",
+      "kind": "function",
+      "line": 41,
+      "signature": "die(msg: string): never"
+    },
+    {
+      "name": "argv",
+      "kind": "const",
+      "line": 46,
+      "signature": "const argv = process.argv.slice(2)"
+    },
+    {
+      "name": "cmd",
+      "kind": "const",
+      "line": 47,
+      "signature": "const cmd = argv[0]"
+    },
+    {
+      "name": "asJson",
+      "kind": "const",
+      "line": 69,
+      "signature": "const asJson = argv.includes('--json')"
+    },
+    {
+      "name": "w",
+      "kind": "const",
+      "line": 79,
+      "signature": "const w = Math.max(...TOOL_DEFS.map((d) => d.name.length))"
+    },
+    {
+      "name": "found",
+      "kind": "const",
+      "line": 87,
+      "signature": "const found = TOOL_DEFS.find((d) => d.name === cmd)"
+    },
+    {
+      "name": "like",
+      "kind": "const",
+      "line": 89,
+      "signature": "const like = TOOL_DEFS.map((d) => d.name).filter((n) => n.includes(cmd…"
+    },
+    {
+      "name": "def",
+      "kind": "const",
+      "line": 97,
+      "signature": "const def = found"
+    },
+    {
+      "name": "bareKeyValues",
+      "kind": "function",
+      "line": 115,
+      "signature": "bareKeyValues(): Record<string, string>"
+    },
+    {
+      "name": "ZodLike",
+      "kind": "interface",
+      "line": 137,
+      "signature": "ZodLike()"
+    },
+    {
+      "name": "coerceKeyValues",
+      "kind": "function",
+      "line": 166,
+      "signature": "coerceKeyValues(kv: Record<string, string>, def: ToolDef): Record<string, unknown>"
+    },
+    {
+      "name": "readArgs",
+      "kind": "function",
+      "line": 203,
+      "signature": "readArgs(): Promise<Record<string, unknown>>"
+    },
+    {
+      "name": "ZodFieldMeta",
+      "kind": "type",
+      "line": 239,
+      "signature": "ZodFieldMeta()"
+    },
+    {
+      "name": "fieldDesc",
+      "kind": "const",
+      "line": 240,
+      "signature": "const fieldDesc = (s: ZodFieldMeta): string => s.description ?? s._def?.des…"
+    },
+    {
+      "name": "fieldType",
+      "kind": "const",
+      "line": 241,
+      "signature": "const fieldType = (s: ZodFieldMeta): string => String(s._def?.type ?? s._de…"
+    },
+    {
+      "name": "schema",
+      "kind": "const",
+      "line": 243,
+      "signature": "const schema = (def.inputSchema ?? {}) as Record<string, ZodFieldMeta>"
+    },
+    {
+      "name": "rows",
+      "kind": "const",
+      "line": 244,
+      "signature": "const rows = Object.entries(schema).map(([k, s]) => ({ k, required: s.…"
+    },
+    {
+      "name": "fmt",
+      "kind": "const",
+      "line": 250,
+      "signature": "const fmt = (r: (typeof rows)[number]) => ` ${r.required ? '*' : ' '}…"
+    },
+    {
+      "name": "req",
+      "kind": "const",
+      "line": 251,
+      "signature": "const req = rows.filter((r) => r.required)"
+    },
+    {
+      "name": "opt",
+      "kind": "const",
+      "line": 252,
+      "signature": "const opt = rows.filter((r) => !r.required)"
+    },
+    {
+      "name": "args",
+      "kind": "const",
+      "line": 267,
+      "signature": "const args = "
+    },
+    {
+      "name": "r",
+      "kind": "const",
+      "line": 275,
+      "signature": "const r = await invokeTool(def, args)"
+    },
+    {
+      "name": "outText",
+      "kind": "const",
+      "line": 280,
+      "signature": "const outText = r.text"
+    },
+    {
+      "name": "miss",
+      "kind": "const",
+      "line": 281,
+      "signature": "const miss = /缺参数\\s*\"([^\"]+)\"/.exec(outText)"
+    },
+    {
+      "name": "schema",
+      "kind": "const",
+      "line": 283,
+      "signature": "const schema = (def.inputSchema ?? {}) as Record<string, ZodFieldMeta>"
+    },
+    {
+      "name": "keyList",
+      "kind": "const",
+      "line": 284,
+      "signature": "const keyList = (wantReq: boolean) => Object.entries(schema) .filter(([, …"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "../../application/tool_registry.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../application/types.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../mcp/server_registry.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/presentation/cli/cli.ts#readArgs",
+      "to": "src/presentation/cli/cli.ts#bareKeyValues"
+    },
+    {
+      "from": "src/presentation/cli/cli.ts#readArgs",
+      "to": "src/presentation/cli/cli.ts#coerceKeyValues"
+    },
+    {
+      "from": "src/presentation/cli/cli.ts#coerceKeyValues",
+      "to": "src/presentation/cli/cli.ts#die"
+    },
+    {
+      "from": "src/presentation/cli/cli.ts#readArgs",
+      "to": "src/presentation/cli/cli.ts#die"
+    },
+    {
+      "from": "src/presentation/cli/cli.ts#readArgs",
+      "to": "src/presentation/cli/cli.ts#die"
+    },
+    {
+      "from": "src/presentation/cli/cli.ts#readArgs",
+      "to": "src/presentation/cli/cli.ts#die"
+    }
+  ]
+}

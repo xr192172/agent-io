@@ -1,0 +1,173 @@
+{
+  "//": "Design DB —— src/infrastructure/analysis/diagnosis/root_cause_aggregator.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "AggregateInput",
+      "kind": "interface",
+      "line": 27,
+      "signature": "AggregateInput()"
+    },
+    {
+      "name": "AggregateResult",
+      "kind": "interface",
+      "line": 39,
+      "signature": "AggregateResult()"
+    },
+    {
+      "name": "CaptureOpts",
+      "kind": "interface",
+      "line": 51,
+      "signature": "CaptureOpts()"
+    },
+    {
+      "name": "captureSnippet",
+      "kind": "function",
+      "line": 63,
+      "signature": "captureSnippet(absFile: string, startLine: number, endLine?: number, opts: CaptureOpts = {}): string | undefined"
+    },
+    {
+      "name": "Scored",
+      "kind": "interface",
+      "line": 95,
+      "signature": "Scored()"
+    },
+    {
+      "name": "clamp",
+      "kind": "const",
+      "line": 103,
+      "signature": "const clamp = (v: number): number => Math.min(1, Math.max(0, v))"
+    },
+    {
+      "name": "toRel",
+      "kind": "function",
+      "line": 105,
+      "signature": "toRel(root: string, p: string): string"
+    },
+    {
+      "name": "pickRoot",
+      "kind": "function",
+      "line": 110,
+      "signature": "pickRoot(db: Database | undefined, input: AggregateInput): { root?: RootCause; scored: Scored[] }"
+    },
+    {
+      "name": "aggregateRule",
+      "kind": "function",
+      "line": 195,
+      "signature": "aggregateRule(input: AggregateInput): AggregateResult"
+    },
+    {
+      "name": "LlmRootCauseJson",
+      "kind": "interface",
+      "line": 265,
+      "signature": "LlmRootCauseJson()"
+    },
+    {
+      "name": "buildPrompt",
+      "kind": "function",
+      "line": 276,
+      "signature": "buildPrompt(input: AggregateInput, rule: AggregateResult, snippet: string | undefined): string"
+    },
+    {
+      "name": "parseLlmJson",
+      "kind": "function",
+      "line": 316,
+      "signature": "parseLlmJson(raw: string): LlmRootCauseJson"
+    },
+    {
+      "name": "aggregateWithLlm",
+      "kind": "function",
+      "line": 324,
+      "signature": "aggregateWithLlm(cfg: LlmConfig, input: AggregateInput, rule: AggregateResult): Promise<AggregateResult>"
+    },
+    {
+      "name": "aggregateRootCause",
+      "kind": "function",
+      "line": 383,
+      "signature": "aggregateRootCause(input: AggregateInput, opts?: { skipLlm?: boolean }): Promise<AggregateResult>"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../index/db.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../../llm_focus.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./contract.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/diagnosis/root_cause_aggregator.ts#aggregateRootCause",
+      "to": "src/infrastructure/analysis/diagnosis/root_cause_aggregator.ts#aggregateRule"
+    },
+    {
+      "from": "src/infrastructure/analysis/diagnosis/root_cause_aggregator.ts#aggregateRootCause",
+      "to": "src/infrastructure/analysis/diagnosis/root_cause_aggregator.ts#aggregateWithLlm"
+    },
+    {
+      "from": "src/infrastructure/analysis/diagnosis/root_cause_aggregator.ts#aggregateWithLlm",
+      "to": "src/infrastructure/analysis/diagnosis/root_cause_aggregator.ts#buildPrompt"
+    },
+    {
+      "from": "src/infrastructure/analysis/diagnosis/root_cause_aggregator.ts#aggregateWithLlm",
+      "to": "src/infrastructure/analysis/diagnosis/root_cause_aggregator.ts#captureSnippet"
+    },
+    {
+      "from": "src/infrastructure/analysis/diagnosis/root_cause_aggregator.ts#pickRoot",
+      "to": "src/infrastructure/analysis/diagnosis/root_cause_aggregator.ts#clamp"
+    },
+    {
+      "from": "src/infrastructure/analysis/diagnosis/root_cause_aggregator.ts#aggregateWithLlm",
+      "to": "src/infrastructure/analysis/diagnosis/root_cause_aggregator.ts#clamp"
+    },
+    {
+      "from": "src/infrastructure/analysis/diagnosis/root_cause_aggregator.ts#aggregateWithLlm",
+      "to": "src/infrastructure/analysis/diagnosis/root_cause_aggregator.ts#parseLlmJson"
+    },
+    {
+      "from": "src/infrastructure/analysis/diagnosis/root_cause_aggregator.ts#aggregateRule",
+      "to": "src/infrastructure/analysis/diagnosis/root_cause_aggregator.ts#pickRoot"
+    },
+    {
+      "from": "src/infrastructure/analysis/diagnosis/root_cause_aggregator.ts#pickRoot",
+      "to": "src/infrastructure/analysis/diagnosis/root_cause_aggregator.ts#toRel"
+    },
+    {
+      "from": "src/infrastructure/analysis/diagnosis/root_cause_aggregator.ts#pickRoot",
+      "to": "src/infrastructure/analysis/diagnosis/root_cause_aggregator.ts#toRel"
+    },
+    {
+      "from": "src/infrastructure/analysis/diagnosis/root_cause_aggregator.ts#pickRoot",
+      "to": "src/infrastructure/analysis/diagnosis/root_cause_aggregator.ts#toRel"
+    },
+    {
+      "from": "src/infrastructure/analysis/diagnosis/root_cause_aggregator.ts#pickRoot",
+      "to": "src/infrastructure/analysis/diagnosis/root_cause_aggregator.ts#toRel"
+    },
+    {
+      "from": "src/infrastructure/analysis/diagnosis/root_cause_aggregator.ts#aggregateWithLlm",
+      "to": "src/infrastructure/llm_focus.ts#callChat"
+    },
+    {
+      "from": "src/infrastructure/analysis/diagnosis/root_cause_aggregator.ts#aggregateRootCause",
+      "to": "src/infrastructure/llm_focus.ts#loadLlmConfig"
+    }
+  ]
+}

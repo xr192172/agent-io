@@ -1,0 +1,66 @@
+{
+  "//": "Design DB —— src/presentation/http/archify/archify_project.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "ArchifyTreeNode",
+      "kind": "interface",
+      "line": 15,
+      "signature": "ArchifyTreeNode()"
+    },
+    {
+      "name": "ArchifyTreeEdge",
+      "kind": "interface",
+      "line": 27,
+      "signature": "ArchifyTreeEdge()"
+    },
+    {
+      "name": "adaptIRTree",
+      "kind": "function",
+      "line": 41,
+      "signature": "adaptIRTree(input: unknown): ArchifyTreeNode"
+    },
+    {
+      "name": "adaptIREdge",
+      "kind": "function",
+      "line": 78,
+      "signature": "adaptIREdge(input: unknown): ArchifyTreeEdge"
+    },
+    {
+      "name": "ROLE_TYPE",
+      "kind": "const",
+      "line": 89,
+      "signature": "const ROLE_TYPE = { client: 'external', human: 'external', user: 'external'…"
+    },
+    {
+      "name": "ARCHIFY_TYPE_COLOR",
+      "kind": "const",
+      "line": 100,
+      "signature": "const ARCHIFY_TYPE_COLOR = { frontend: '#22D3EE', backend: '#34D399', database: '#A7…"
+    },
+    {
+      "name": "ARCHIFY_COLOR_TOKEN",
+      "kind": "const",
+      "line": 104,
+      "signature": "const ARCHIFY_COLOR_TOKEN = { canvas: '#020617', mask: '#0F172A', ink: '#FFFFFF', mut…"
+    },
+    {
+      "name": "roleToType",
+      "kind": "function",
+      "line": 106,
+      "signature": "roleToType(role: string): string"
+    }
+  ],
+  "imports": [],
+  "calls": [
+    {
+      "from": "src/presentation/http/archify/archify_project.ts#adaptIRTree",
+      "to": "src/presentation/http/archify/archify_project.ts#adaptIRTree"
+    },
+    {
+      "from": "src/presentation/http/archify/archify_project.ts#adaptIRTree",
+      "to": "src/presentation/http/archify/archify_project.ts#adaptIRTree"
+    }
+  ]
+}

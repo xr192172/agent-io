@@ -1,0 +1,227 @@
+{
+  "//": "Design DB —— src/application/stage_registry.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "StageId",
+      "kind": "type",
+      "line": 58,
+      "signature": "StageId()"
+    },
+    {
+      "name": "StageOwner",
+      "kind": "type",
+      "line": 83,
+      "signature": "StageOwner()"
+    },
+    {
+      "name": "StageCtx",
+      "kind": "interface",
+      "line": 85,
+      "signature": "StageCtx()"
+    },
+    {
+      "name": "StageBase",
+      "kind": "interface",
+      "line": 105,
+      "signature": "StageBase()"
+    },
+    {
+      "name": "DerivedStage",
+      "kind": "interface",
+      "line": 117,
+      "signature": "DerivedStage()"
+    },
+    {
+      "name": "SourceStage",
+      "kind": "interface",
+      "line": 126,
+      "signature": "SourceStage()"
+    },
+    {
+      "name": "PendingStage",
+      "kind": "interface",
+      "line": 132,
+      "signature": "PendingStage()"
+    },
+    {
+      "name": "Stage",
+      "kind": "type",
+      "line": 137,
+      "signature": "Stage()"
+    },
+    {
+      "name": "STAGES",
+      "kind": "const",
+      "line": 143,
+      "signature": "const STAGES = [ // ── 已接上产者（4 道）───────────────────────────────────────…"
+    },
+    {
+      "name": "BY_ID",
+      "kind": "const",
+      "line": 374,
+      "signature": "const BY_ID = new Map(STAGES.map((s) => [s.id, s]))"
+    },
+    {
+      "name": "getStage",
+      "kind": "function",
+      "line": 376,
+      "signature": "getStage(id: StageId): Stage"
+    },
+    {
+      "name": "pendingStages",
+      "kind": "function",
+      "line": 383,
+      "signature": "pendingStages(): PendingStage[]"
+    },
+    {
+      "name": "weakFreshnessStages",
+      "kind": "function",
+      "line": 388,
+      "signature": "weakFreshnessStages(): DerivedStage[]"
+    },
+    {
+      "name": "assertAcyclic",
+      "kind": "function",
+      "line": 396,
+      "signature": "assertAcyclic(): void"
+    },
+    {
+      "name": "renderStageTable",
+      "kind": "function",
+      "line": 413,
+      "signature": "renderStageTable(): string"
+    },
+    {
+      "name": "PRODUCE_ATTEMPTS",
+      "kind": "const",
+      "line": 428,
+      "signature": "const PRODUCE_ATTEMPTS = 3"
+    },
+    {
+      "name": "EnsureResult",
+      "kind": "interface",
+      "line": 430,
+      "signature": "EnsureResult()"
+    },
+    {
+      "name": "ensureStage",
+      "kind": "function",
+      "line": 455,
+      "signature": "ensureStage(id: StageId, ctx: StageCtx = {}): Promise<EnsureResult>"
+    },
+    {
+      "name": "ensureUpstream",
+      "kind": "function",
+      "line": 482,
+      "signature": "ensureUpstream(id: StageId, ctx: StageCtx): Promise<void>"
+    },
+    {
+      "name": "LocateState",
+      "kind": "type",
+      "line": 509,
+      "signature": "LocateState()"
+    },
+    {
+      "name": "locateState",
+      "kind": "function",
+      "line": 515,
+      "signature": "locateState(stage: Stage, ctx: StageCtx): LocateState"
+    },
+    {
+      "name": "isFresh",
+      "kind": "function",
+      "line": 526,
+      "signature": "isFresh(stage: DerivedStage, ctx: StageCtx): boolean"
+    },
+    {
+      "name": "produceWithRetry",
+      "kind": "function",
+      "line": 552,
+      "signature": "produceWithRetry(stage: DerivedStage, ctx: StageCtx = {}): Promise<void>"
+    },
+    {
+      "name": "needFeature",
+      "kind": "function",
+      "line": 567,
+      "signature": "needFeature(ctx: StageCtx): string"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "../infrastructure/storage.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../infrastructure/index/db.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../infrastructure/index/index_freshness.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./write_gate.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../infrastructure/project_view.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./observe/capture/observe_points.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/stage_registry.ts#ensureUpstream",
+      "to": "src/application/stage_registry.ts#ensureStage"
+    },
+    {
+      "from": "src/application/stage_registry.ts#ensureStage",
+      "to": "src/application/stage_registry.ts#ensureUpstream"
+    },
+    {
+      "from": "src/application/stage_registry.ts#assertAcyclic",
+      "to": "src/application/stage_registry.ts#getStage"
+    },
+    {
+      "from": "src/application/stage_registry.ts#ensureStage",
+      "to": "src/application/stage_registry.ts#getStage"
+    },
+    {
+      "from": "src/application/stage_registry.ts#ensureUpstream",
+      "to": "src/application/stage_registry.ts#getStage"
+    },
+    {
+      "from": "src/application/stage_registry.ts#ensureStage",
+      "to": "src/application/stage_registry.ts#isFresh"
+    },
+    {
+      "from": "src/application/stage_registry.ts#isFresh",
+      "to": "src/application/stage_registry.ts#isFresh"
+    },
+    {
+      "from": "src/application/stage_registry.ts#ensureStage",
+      "to": "src/application/stage_registry.ts#locateState"
+    },
+    {
+      "from": "src/application/stage_registry.ts#ensureUpstream",
+      "to": "src/application/stage_registry.ts#locateState"
+    },
+    {
+      "from": "src/application/stage_registry.ts#isFresh",
+      "to": "src/application/stage_registry.ts#locateState"
+    },
+    {
+      "from": "src/application/stage_registry.ts#ensureStage",
+      "to": "src/application/stage_registry.ts#produceWithRetry"
+    }
+  ]
+}

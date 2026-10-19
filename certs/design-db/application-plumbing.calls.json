@@ -1,0 +1,124 @@
+{
+  "//": "Design DB —— src/application/plumbing.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "textOut",
+      "kind": "function",
+      "line": 16,
+      "signature": "textOut(text: string, isError = false)"
+    },
+    {
+      "name": "machinePayload",
+      "kind": "function",
+      "line": 37,
+      "signature": "machinePayload(r: { data?: unknown; touched?: unknown }): unknown"
+    },
+    {
+      "name": "wrap",
+      "kind": "function",
+      "line": 48,
+      "signature": "wrap(fn: (args: Record<string, unknown>) => { message: string; data?: unknown } | Promise<{ message: string; data?: unknown }>,): ToolDef['handler']"
+    },
+    {
+      "name": "DATA_MARKER",
+      "kind": "const",
+      "line": 74,
+      "signature": "const DATA_MARKER = '---DATA---'"
+    },
+    {
+      "name": "parseDataBlock",
+      "kind": "function",
+      "line": 104,
+      "signature": "parseDataBlock(text: string): unknown | null"
+    },
+    {
+      "name": "wrapData",
+      "kind": "function",
+      "line": 120,
+      "signature": "wrapData(fn: (args: Record<string, unknown>) => { message: string; data?: unknown } | Promise<{ message: string; data?: unknown }>,): ToolDef['handler']"
+    },
+    {
+      "name": "requireStr",
+      "kind": "function",
+      "line": 156,
+      "signature": "requireStr(a: Record<string, unknown>, key: string): string"
+    },
+    {
+      "name": "requireArr",
+      "kind": "function",
+      "line": 170,
+      "signature": "requireArr(a: Record<string, unknown>, key: string, hint: string): unknown[]"
+    },
+    {
+      "name": "optionalArr",
+      "kind": "function",
+      "line": 189,
+      "signature": "optionalArr(a: Record<string, unknown>, key: string, hint: string): unknown[] | undefined"
+    },
+    {
+      "name": "optionalStr",
+      "kind": "function",
+      "line": 214,
+      "signature": "optionalStr(a: Record<string, unknown>, key: string, hint = 'string'): string | undefined"
+    },
+    {
+      "name": "optionalNum",
+      "kind": "function",
+      "line": 221,
+      "signature": "optionalNum(a: Record<string, unknown>, key: string, hint = 'number'): number | undefined"
+    },
+    {
+      "name": "optionalBool",
+      "kind": "function",
+      "line": 228,
+      "signature": "optionalBool(a: Record<string, unknown>, key: string, hint = 'boolean'): boolean | undefined"
+    },
+    {
+      "name": "shapeErr",
+      "kind": "function",
+      "line": 236,
+      "signature": "shapeErr(key: string, hint: string, v: unknown): string"
+    },
+    {
+      "name": "looseInputSchema",
+      "kind": "function",
+      "line": 253,
+      "signature": "looseInputSchema(shape: Record<string, unknown>): unknown"
+    }
+  ],
+  "imports": [
+    {
+      "source": "zod",
+      "kind": "package"
+    },
+    {
+      "source": "./types.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/plumbing.ts#wrap",
+      "to": "src/application/plumbing.ts#machinePayload"
+    },
+    {
+      "from": "src/application/plumbing.ts#wrapData",
+      "to": "src/application/plumbing.ts#machinePayload"
+    },
+    {
+      "from": "src/application/plumbing.ts#optionalStr",
+      "to": "src/application/plumbing.ts#shapeErr"
+    },
+    {
+      "from": "src/application/plumbing.ts#optionalNum",
+      "to": "src/application/plumbing.ts#shapeErr"
+    },
+    {
+      "from": "src/application/plumbing.ts#optionalBool",
+      "to": "src/application/plumbing.ts#shapeErr"
+    }
+  ]
+}

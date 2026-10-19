@@ -1,0 +1,72 @@
+{
+  "//": "Design DB —— src/presentation/http/archify/view_inputs.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "ViewNode",
+      "kind": "interface",
+      "line": 18,
+      "signature": "ViewNode()"
+    },
+    {
+      "name": "ViewEdge",
+      "kind": "interface",
+      "line": 36,
+      "signature": "ViewEdge()"
+    },
+    {
+      "name": "ViewGroup",
+      "kind": "interface",
+      "line": 42,
+      "signature": "ViewGroup()"
+    },
+    {
+      "name": "ViewDiagram",
+      "kind": "interface",
+      "line": 47,
+      "signature": "ViewDiagram()"
+    },
+    {
+      "name": "RenderViews",
+      "kind": "interface",
+      "line": 56,
+      "signature": "RenderViews()"
+    },
+    {
+      "name": "dependencyDepth",
+      "kind": "function",
+      "line": 65,
+      "signature": "dependencyDepth(nodes: SemanticNode[], edges: SemanticEdge[]): Map<string, number>"
+    },
+    {
+      "name": "deriveViewInputs",
+      "kind": "function",
+      "line": 82,
+      "signature": "deriveViewInputs(sem: SemanticSurface): RenderViews"
+    },
+    {
+      "name": "stateRoleAt",
+      "kind": "function",
+      "line": 130,
+      "signature": "stateRoleAt(sem: SemanticSurface, nodeMap: Map<string, SemanticNode>, want: string, _i: number): NonNullable<ViewNode['stateRole']> | undefined"
+    }
+  ],
+  "imports": [
+    {
+      "source": "./archify_semantics.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/presentation/http/archify/view_inputs.ts#deriveViewInputs",
+      "to": "src/presentation/http/archify/view_inputs.ts#dependencyDepth"
+    },
+    {
+      "from": "src/presentation/http/archify/view_inputs.ts#deriveViewInputs",
+      "to": "src/presentation/http/archify/view_inputs.ts#stateRoleAt"
+    }
+  ]
+}

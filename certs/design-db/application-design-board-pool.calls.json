@@ -1,0 +1,42 @@
+{
+  "//": "Design DB —— src/application/design/board/pool.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "ALL_STATES",
+      "kind": "const",
+      "line": 24,
+      "signature": "const ALL_STATES = ['candidate', 'claimed', 'done', 'void']"
+    },
+    {
+      "name": "BoardView",
+      "kind": "interface",
+      "line": 31,
+      "signature": "BoardView()"
+    },
+    {
+      "name": "listPool",
+      "kind": "function",
+      "line": 63,
+      "signature": "listPool(feature: string): BoardView"
+    }
+  ],
+  "imports": [
+    {
+      "source": "../../../infrastructure/storage.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../domain/task_schema.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/design/board/pool.ts#listPool",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    }
+  ]
+}

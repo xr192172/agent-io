@@ -1,0 +1,88 @@
+{
+  "//": "Design DB —— src/infrastructure/authoring/version_upgrade/adapters/python.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "PY",
+      "kind": "const",
+      "line": 29,
+      "signature": "const PY = process.platform === 'win32' ? 'python' : 'python3'"
+    },
+    {
+      "name": "PY_FEATURES",
+      "kind": "const",
+      "line": 33,
+      "signature": "const PY_FEATURES = [ { name: 'f-string 字符串', tool: 'python', since: 6, patte…"
+    },
+    {
+      "name": "PY_REMOVED",
+      "kind": "const",
+      "line": 39,
+      "signature": "const PY_REMOVED = [ { name: 'distutils 打包模块', tool: 'python', since: 12, ki…"
+    },
+    {
+      "name": "minVersionFromSpec",
+      "kind": "function",
+      "line": 50,
+      "signature": "minVersionFromSpec(spec: string): { version: string; raw: string } | null"
+    },
+    {
+      "name": "parsePyproject",
+      "kind": "function",
+      "line": 60,
+      "signature": "parsePyproject(content: string): { version: string; raw: string } | null"
+    },
+    {
+      "name": "astGate",
+      "kind": "function",
+      "line": 75,
+      "signature": "astGate(file: SourceFile, boundary: number): StaticGateItem"
+    },
+    {
+      "name": "runProbe",
+      "kind": "function",
+      "line": 117,
+      "signature": "runProbe(file: SourceFile): DynamicGateItem"
+    },
+    {
+      "name": "pythonAdapter",
+      "kind": "const",
+      "line": 150,
+      "signature": "const pythonAdapter = { lang: 'python', label: 'Python', declarationFiles: ['py…"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:os",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "node:child_process",
+      "kind": "package"
+    },
+    {
+      "source": "./types.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/authoring/version_upgrade/adapters/python.ts#parsePyproject",
+      "to": "src/infrastructure/authoring/version_upgrade/adapters/python.ts#minVersionFromSpec"
+    },
+    {
+      "from": "src/infrastructure/authoring/version_upgrade/adapters/python.ts#parsePyproject",
+      "to": "src/infrastructure/authoring/version_upgrade/adapters/python.ts#minVersionFromSpec"
+    }
+  ]
+}

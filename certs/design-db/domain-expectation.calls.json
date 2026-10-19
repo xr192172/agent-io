@@ -1,0 +1,142 @@
+{
+  "//": "Design DB —— src/domain/expectation.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "Expectation",
+      "kind": "type",
+      "line": 35,
+      "signature": "Expectation()"
+    },
+    {
+      "name": "EXPECTATION_KINDS",
+      "kind": "const",
+      "line": 111,
+      "signature": "const EXPECTATION_KINDS = ['file-exists', 'symbol-exists', 'signature-matches', 'ed…"
+    },
+    {
+      "name": "ExpectationPhase",
+      "kind": "type",
+      "line": 145,
+      "signature": "ExpectationPhase()"
+    },
+    {
+      "name": "PHASE_BY_KIND",
+      "kind": "const",
+      "line": 152,
+      "signature": "const PHASE_BY_KIND = { // ★ run 是「跑起来看结果」⇒ 必然属【后态】（跑之前谈不上结果） run: 'post', 'sou…"
+    },
+    {
+      "name": "expectationPhase",
+      "kind": "function",
+      "line": 169,
+      "signature": "expectationPhase(e: Expectation): ExpectationPhase"
+    },
+    {
+      "name": "postExpectations",
+      "kind": "function",
+      "line": 180,
+      "signature": "postExpectations(expectations: readonly Expectation[]): Expectation[]"
+    },
+    {
+      "name": "normPath",
+      "kind": "function",
+      "line": 185,
+      "signature": "normPath(p: string): string"
+    },
+    {
+      "name": "normSignature",
+      "kind": "function",
+      "line": 190,
+      "signature": "normSignature(s: string): string"
+    },
+    {
+      "name": "describeExpectation",
+      "kind": "function",
+      "line": 195,
+      "signature": "describeExpectation(e: Expectation): string"
+    },
+    {
+      "name": "assertValidExpectations",
+      "kind": "function",
+      "line": 209,
+      "signature": "assertValidExpectations(v: unknown): asserts v is Expectation[]"
+    },
+    {
+      "name": "expectationSubjectPath",
+      "kind": "function",
+      "line": 258,
+      "signature": "expectationSubjectPath(e: Expectation): string"
+    },
+    {
+      "name": "expectationPaths",
+      "kind": "function",
+      "line": 266,
+      "signature": "expectationPaths(e: Expectation): string[]"
+    },
+    {
+      "name": "collectExpectations",
+      "kind": "function",
+      "line": 273,
+      "signature": "collectExpectations(dsl: DesignDSL): Array<{ node_id: string; node_label: string; expectation: Expectation }>"
+    }
+  ],
+  "imports": [
+    {
+      "source": "./types.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/domain/expectation.ts#postExpectations",
+      "to": "src/domain/expectation.ts#expectationPhase"
+    },
+    {
+      "from": "src/domain/expectation.ts#describeExpectation",
+      "to": "src/domain/expectation.ts#normPath"
+    },
+    {
+      "from": "src/domain/expectation.ts#describeExpectation",
+      "to": "src/domain/expectation.ts#normPath"
+    },
+    {
+      "from": "src/domain/expectation.ts#describeExpectation",
+      "to": "src/domain/expectation.ts#normPath"
+    },
+    {
+      "from": "src/domain/expectation.ts#describeExpectation",
+      "to": "src/domain/expectation.ts#normPath"
+    },
+    {
+      "from": "src/domain/expectation.ts#describeExpectation",
+      "to": "src/domain/expectation.ts#normPath"
+    },
+    {
+      "from": "src/domain/expectation.ts#describeExpectation",
+      "to": "src/domain/expectation.ts#normPath"
+    },
+    {
+      "from": "src/domain/expectation.ts#describeExpectation",
+      "to": "src/domain/expectation.ts#normPath"
+    },
+    {
+      "from": "src/domain/expectation.ts#expectationSubjectPath",
+      "to": "src/domain/expectation.ts#normPath"
+    },
+    {
+      "from": "src/domain/expectation.ts#expectationSubjectPath",
+      "to": "src/domain/expectation.ts#normPath"
+    },
+    {
+      "from": "src/domain/expectation.ts#expectationPaths",
+      "to": "src/domain/expectation.ts#normPath"
+    },
+    {
+      "from": "src/domain/expectation.ts#expectationPaths",
+      "to": "src/domain/expectation.ts#normPath"
+    }
+  ]
+}

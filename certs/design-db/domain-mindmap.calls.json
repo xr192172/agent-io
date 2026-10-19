@@ -1,0 +1,75 @@
+{
+  "//": "Design DB —— src/domain/mindmap.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "MindMapKind",
+      "kind": "type",
+      "line": 17,
+      "signature": "MindMapKind()"
+    },
+    {
+      "name": "TeachStep",
+      "kind": "interface",
+      "line": 33,
+      "signature": "TeachStep()"
+    },
+    {
+      "name": "TeachPin",
+      "kind": "interface",
+      "line": 50,
+      "signature": "TeachPin()"
+    },
+    {
+      "name": "TeachFlowEdge",
+      "kind": "interface",
+      "line": 57,
+      "signature": "TeachFlowEdge()"
+    },
+    {
+      "name": "TeachGap",
+      "kind": "interface",
+      "line": 65,
+      "signature": "TeachGap()"
+    },
+    {
+      "name": "MindMapNode",
+      "kind": "interface",
+      "line": 78,
+      "signature": "MindMapNode()"
+    },
+    {
+      "name": "FeatureDep",
+      "kind": "interface",
+      "line": 126,
+      "signature": "FeatureDep()"
+    },
+    {
+      "name": "SharedCapability",
+      "kind": "interface",
+      "line": 140,
+      "signature": "SharedCapability()"
+    },
+    {
+      "name": "ProposalFeature",
+      "kind": "interface",
+      "line": 152,
+      "signature": "ProposalFeature()"
+    },
+    {
+      "name": "MindMap",
+      "kind": "interface",
+      "line": 172,
+      "signature": "MindMap()"
+    }
+  ],
+  "imports": [
+    {
+      "source": "./narration.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": []
+}

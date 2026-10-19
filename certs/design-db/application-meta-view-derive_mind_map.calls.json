@@ -1,0 +1,1179 @@
+{
+  "//": "Design DB —— src/application/meta/view/derive_mind_map.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "DeriveMindMapInput",
+      "kind": "interface",
+      "line": 40,
+      "signature": "DeriveMindMapInput()"
+    },
+    {
+      "name": "DeriveMindMapResult",
+      "kind": "interface",
+      "line": 58,
+      "signature": "DeriveMindMapResult()"
+    },
+    {
+      "name": "getMindMapFile",
+      "kind": "function",
+      "line": 69,
+      "signature": "getMindMapFile(feature: string, view: 'structure' | 'teach' = 'structure'): string"
+    },
+    {
+      "name": "basename",
+      "kind": "function",
+      "line": 75,
+      "signature": "basename(p: string): string"
+    },
+    {
+      "name": "NOISE_COMMUNITY_RE",
+      "kind": "const",
+      "line": 86,
+      "signature": "const NOISE_COMMUNITY_RE = /^(min|max|small|big)?(heap|hash|map|set|list|stack|queue…"
+    },
+    {
+      "name": "isNoiseCommunity",
+      "kind": "function",
+      "line": 88,
+      "signature": "isNoiseCommunity(name: string): boolean"
+    },
+    {
+      "name": "NOISE_ZH",
+      "kind": "const",
+      "line": 92,
+      "signature": "const NOISE_ZH = '内部组件'"
+    },
+    {
+      "name": "FileInfo",
+      "kind": "interface",
+      "line": 94,
+      "signature": "FileInfo()"
+    },
+    {
+      "name": "FileIndex",
+      "kind": "type",
+      "line": 108,
+      "signature": "FileIndex()"
+    },
+    {
+      "name": "buildFileIndex",
+      "kind": "function",
+      "line": 113,
+      "signature": "buildFileIndex(dsl: DesignDSL): FileIndex"
+    },
+    {
+      "name": "lookupFile",
+      "kind": "function",
+      "line": 146,
+      "signature": "lookupFile(idx: { exact: Map<string, FileInfo>; bySuffix: Map<string, FileInfo> }, rel: string): FileInfo | undefined"
+    },
+    {
+      "name": "TYPE_HUMAN",
+      "kind": "const",
+      "line": 165,
+      "signature": "const TYPE_HUMAN = [ [/raw\\s*event/i, '原始事件'], [/event/i, '事件'], [/probe\\s*(…"
+    },
+    {
+      "name": "pinNameFromParam",
+      "kind": "function",
+      "line": 185,
+      "signature": "pinNameFromParam(name: string): string"
+    },
+    {
+      "name": "humanizeType",
+      "kind": "function",
+      "line": 194,
+      "signature": "humanizeType(t: string): string"
+    },
+    {
+      "name": "projectSignature",
+      "kind": "function",
+      "line": 213,
+      "signature": "projectSignature(sig: string): { ins: TeachPin[]; outs: TeachPin[] } | null"
+    },
+    {
+      "name": "toHumanName",
+      "kind": "function",
+      "line": 289,
+      "signature": "toHumanName(param: string, typeToken: string): string"
+    },
+    {
+      "name": "signatureScore",
+      "kind": "function",
+      "line": 300,
+      "signature": "signatureScore(sig: string): number"
+    },
+    {
+      "name": "projectStepDataShape",
+      "kind": "function",
+      "line": 321,
+      "signature": "projectStepDataShape(involves: string[] | undefined,\n  fileIndex: FileIndex,\n  cap = 6,): { inputs: TeachPin[]; outputs: TeachPin[] } | null"
+    },
+    {
+      "name": "projectFileDataShape",
+      "kind": "function",
+      "line": 365,
+      "signature": "projectFileDataShape(file: string,\n  fileIndex: FileIndex,\n  cap = 3,): { inputs: TeachPin[]; outputs: TeachPin[] } | null"
+    },
+    {
+      "name": "GENERIC_T",
+      "kind": "const",
+      "line": 409,
+      "signature": "const GENERIC_T = new Set([ 'string', 'number', 'boolean', 'bool', 'int', '…"
+    },
+    {
+      "name": "GENERIC_T_ZH",
+      "kind": "const",
+      "line": 422,
+      "signature": "const GENERIC_T_ZH = new Set([ '文本', '字符串', '数字', '数值', '布尔', '数组', '对象', '字典'…"
+    },
+    {
+      "name": "cleanPinStr",
+      "kind": "function",
+      "line": 428,
+      "signature": "cleanPinStr(s: string): string"
+    },
+    {
+      "name": "pinIdentity",
+      "kind": "function",
+      "line": 439,
+      "signature": "pinIdentity(p: TeachPin): { key: string; name: string } | null"
+    },
+    {
+      "name": "pinIdentityKeys",
+      "kind": "function",
+      "line": 457,
+      "signature": "pinIdentityKeys(pins: TeachPin[] | undefined): Set<string>"
+    },
+    {
+      "name": "StepFlowOut",
+      "kind": "interface",
+      "line": 466,
+      "signature": "StepFlowOut()"
+    },
+    {
+      "name": "deriveStepFlow",
+      "kind": "function",
+      "line": 476,
+      "signature": "deriveStepFlow(steps: TeachStep[],\n  stepIds: string[],\n  global?: { produced?: Set<string>; consumed?: Set<string> },): StepFlowOut"
+    },
+    {
+      "name": "CrossFeatureFlowEdge",
+      "kind": "interface",
+      "line": 585,
+      "signature": "CrossFeatureFlowEdge()"
+    },
+    {
+      "name": "deriveCrossFeatureFlow",
+      "kind": "function",
+      "line": 595,
+      "signature": "deriveCrossFeatureFlow(features: Array<{ id: string; steps: TeachStep[] }>,): CrossFeatureFlowEdge[]"
+    },
+    {
+      "name": "FileFlowNode",
+      "kind": "interface",
+      "line": 638,
+      "signature": "FileFlowNode()"
+    },
+    {
+      "name": "deriveFileFlow",
+      "kind": "function",
+      "line": 646,
+      "signature": "deriveFileFlow(files: FileFlowNode[]): TeachFlowEdge[]"
+    },
+    {
+      "name": "ruleFeatureDesc",
+      "kind": "function",
+      "line": 673,
+      "signature": "ruleFeatureDesc(f: { name: string; communities: unknown[] }, fileCount: number): string"
+    },
+    {
+      "name": "ruleCommunityDesc",
+      "kind": "function",
+      "line": 678,
+      "signature": "ruleCommunityDesc(c: { files: string[]; est_lines?: number; symbol_count?: number }): string"
+    },
+    {
+      "name": "ruleFileDesc",
+      "kind": "function",
+      "line": 686,
+      "signature": "ruleFileDesc(f: FileInfo): string"
+    },
+    {
+      "name": "llmEnrichDescriptions",
+      "kind": "function",
+      "line": 700,
+      "signature": "llmEnrichDescriptions(nodes: Array<{ id: string; label: string; kind: string; hint: string; owner?: string }>,\n  projectTitle: string,): Promise<Map<string, string> | null>"
+    },
+    {
+      "name": "extractToolContext",
+      "kind": "function",
+      "line": 770,
+      "signature": "extractToolContext(dsl: DesignDSL): { text: string; readError?: string }"
+    },
+    {
+      "name": "llmSynthesizeCapabilities",
+      "kind": "function",
+      "line": 807,
+      "signature": "llmSynthesizeCapabilities(features: FeatureNode[],\n  toolContext: string,\n  title: string,): Promise<Array<{ name: string; explanation: string; features: string[] }> | null>"
+    },
+    {
+      "name": "countFiles",
+      "kind": "function",
+      "line": 881,
+      "signature": "countFiles(n: MindMapNode): number"
+    },
+    {
+      "name": "TeachScript",
+      "kind": "interface",
+      "line": 893,
+      "signature": "TeachScript()"
+    },
+    {
+      "name": "makeFileMatcher",
+      "kind": "function",
+      "line": 901,
+      "signature": "makeFileMatcher(featureRels: string[]): (p: string) => boolean"
+    },
+    {
+      "name": "loadCallEdges",
+      "kind": "function",
+      "line": 921,
+      "signature": "loadCallEdges(db: Database, featureRels: string[], maxEdges = 40): string[]"
+    },
+    {
+      "name": "loadFileHeat",
+      "kind": "function",
+      "line": 952,
+      "signature": "loadFileHeat(db: Database, featureRels: string[]): Map<string, number>"
+    },
+    {
+      "name": "loadFeatureDeps",
+      "kind": "function",
+      "line": 977,
+      "signature": "loadFeatureDeps(db: Database,\n  featureNames: string[],\n  featureRels: string[][],): {\n  deps: Array<{ from: string; to: string; weight: number; via_files?: string[] }>;\n  foundations: string[];\n  shared: Array<{ file: string; used_by: Array<{ feature: string; count: number }>; total: number }>;\n}"
+    },
+    {
+      "name": "TECH_NOISE_RE",
+      "kind": "const",
+      "line": 1075,
+      "signature": "const TECH_NOISE_RE = /[\\w./-]+\\(\\s*\\)|[\\w-]+\\.(ts|tsx|js|mjs|go|py|rs|java)\\b|…"
+    },
+    {
+      "name": "mapLimit",
+      "kind": "function",
+      "line": 1079,
+      "signature": "mapLimit(items: T[], limit: number, fn: (item: T, index: number) => Promise<R>): Promise<R[]>"
+    },
+    {
+      "name": "llmTeachFeature",
+      "kind": "function",
+      "line": 1098,
+      "signature": "llmTeachFeature(material: string, featureName = ''): Promise<TeachScript | null>"
+    },
+    {
+      "name": "buildTeachMaterial",
+      "kind": "function",
+      "line": 1225,
+      "signature": "buildTeachMaterial(projectTitle: string,\n  fName: string,\n  rels: string[],\n  communities: FeatureTree['features'][number]['communities'],\n  fileIndex: ReturnType<typeof buildFileIndex>,\n  callEdges: string[],\n  ownerNotes: string[],): string"
+    },
+    {
+      "name": "fileTokenSet",
+      "kind": "function",
+      "line": 1276,
+      "signature": "fileTokenSet(base: string): Set<string>"
+    },
+    {
+      "name": "stepSimilarity",
+      "kind": "function",
+      "line": 1281,
+      "signature": "stepSimilarity(file: string, step: TeachStep): number"
+    },
+    {
+      "name": "polishStepInvolves",
+      "kind": "function",
+      "line": 1293,
+      "signature": "polishStepInvolves(script: { steps: TeachStep[] }, rels: string[]): void"
+    },
+    {
+      "name": "brickCardFromSemantic",
+      "kind": "function",
+      "line": 1363,
+      "signature": "brickCardFromSemantic(sf: SemanticFile): MindMapNode"
+    },
+    {
+      "name": "appendBrickZone",
+      "kind": "function",
+      "line": 1383,
+      "signature": "appendBrickZone(root: MindMapNode, dsl: DesignDSL): void"
+    },
+    {
+      "name": "buildTeachMindMap",
+      "kind": "function",
+      "line": 1396,
+      "signature": "buildTeachMindMap(dsl: DesignDSL,\n  feature: string,\n  title: string,\n  useLlm: boolean,): Promise<DeriveMindMapResult>"
+    },
+    {
+      "name": "PlaceProposalsResult",
+      "kind": "interface",
+      "line": 1933,
+      "signature": "PlaceProposalsResult()"
+    },
+    {
+      "name": "placeProposals",
+      "kind": "function",
+      "line": 1940,
+      "signature": "placeProposals(feature: string): Promise<PlaceProposalsResult>"
+    },
+    {
+      "name": "deriveMindMapCore",
+      "kind": "function",
+      "line": 2047,
+      "signature": "deriveMindMapCore(input: DeriveMindMapInput): Promise<DeriveMindMapResult>"
+    },
+    {
+      "name": "touchedOf",
+      "kind": "function",
+      "line": 2448,
+      "signature": "touchedOf(input: DeriveMindMapInput): Touched"
+    },
+    {
+      "name": "deriveMindMap",
+      "kind": "function",
+      "line": 2458,
+      "signature": "deriveMindMap(input: DeriveMindMapInput): Promise<TouchedProduct<DeriveMindMapResult>>"
+    },
+    {
+      "name": "ResolvedNoteTarget",
+      "kind": "interface",
+      "line": 2471,
+      "signature": "ResolvedNoteTarget()"
+    },
+    {
+      "name": "ResolvedCanvasNote",
+      "kind": "interface",
+      "line": 2497,
+      "signature": "ResolvedCanvasNote()"
+    },
+    {
+      "name": "TeachStepIdx",
+      "kind": "interface",
+      "line": 2512,
+      "signature": "TeachStepIdx()"
+    },
+    {
+      "name": "TeachIndex",
+      "kind": "interface",
+      "line": 2524,
+      "signature": "TeachIndex()"
+    },
+    {
+      "name": "NoteCtx",
+      "kind": "interface",
+      "line": 2534,
+      "signature": "NoteCtx()"
+    },
+    {
+      "name": "resolveCanvasNoteTargets",
+      "kind": "function",
+      "line": 2545,
+      "signature": "resolveCanvasNoteTargets(feature: string): ResolvedCanvasNote[]"
+    },
+    {
+      "name": "resolveCanvasNotesFromDSL",
+      "kind": "function",
+      "line": 2555,
+      "signature": "resolveCanvasNotesFromDSL(dsl: DesignDSL, feature: string): ResolvedCanvasNote[]"
+    },
+    {
+      "name": "groupNotesBySet",
+      "kind": "function",
+      "line": 2576,
+      "signature": "groupNotesBySet(notes: CanvasNote[]): CanvasNote[][]"
+    },
+    {
+      "name": "resolveNoteGroup",
+      "kind": "function",
+      "line": 2587,
+      "signature": "resolveNoteGroup(group: CanvasNote[], ctx: NoteCtx): ResolvedCanvasNote"
+    },
+    {
+      "name": "resolveTarget",
+      "kind": "function",
+      "line": 2604,
+      "signature": "resolveTarget(note: CanvasNote, ctx: NoteCtx): ResolvedNoteTarget | null"
+    },
+    {
+      "name": "anchorPointOf",
+      "kind": "function",
+      "line": 2626,
+      "signature": "anchorPointOf(note: CanvasNote): [number, number] | undefined"
+    },
+    {
+      "name": "positionedNodes",
+      "kind": "function",
+      "line": 2638,
+      "signature": "positionedNodes(nodes: Node[]): Array<{ id: string; x: number; y: number; w: number; h: number }>"
+    },
+    {
+      "name": "hitTestNode",
+      "kind": "function",
+      "line": 2648,
+      "signature": "hitTestNode(wx: number, wy: number, nodes: Node[]): string | undefined"
+    },
+    {
+      "name": "nearestNode",
+      "kind": "function",
+      "line": 2656,
+      "signature": "nearestNode(wx: number, wy: number, nodes: Node[]): string | undefined"
+    },
+    {
+      "name": "resolveNodeId",
+      "kind": "function",
+      "line": 2668,
+      "signature": "resolveNodeId(id: string, ctx: NoteCtx): ResolvedNoteTarget | null"
+    },
+    {
+      "name": "resolveNavId",
+      "kind": "function",
+      "line": 2685,
+      "signature": "resolveNavId(id: string, ctx: NoteCtx): ResolvedNoteTarget | null"
+    },
+    {
+      "name": "fileTarget",
+      "kind": "function",
+      "line": 2714,
+      "signature": "fileTarget(path: string, ctx: NoteCtx): ResolvedNoteTarget | null"
+    },
+    {
+      "name": "stepTarget",
+      "kind": "function",
+      "line": 2737,
+      "signature": "stepTarget(fid: string, st: TeachStepIdx, _ctx: NoteCtx): ResolvedNoteTarget"
+    },
+    {
+      "name": "featureTarget",
+      "kind": "function",
+      "line": 2753,
+      "signature": "featureTarget(fid: string, ctx: NoteCtx): ResolvedNoteTarget"
+    },
+    {
+      "name": "nodeTarget",
+      "kind": "function",
+      "line": 2760,
+      "signature": "nodeTarget(id: string, ctx: NoteCtx): ResolvedNoteTarget | null"
+    },
+    {
+      "name": "lookupSemanticFile",
+      "kind": "function",
+      "line": 2793,
+      "signature": "lookupSemanticFile(idx: FileIndex, rel: string): FileInfo | undefined"
+    },
+    {
+      "name": "loadTeachIndex",
+      "kind": "function",
+      "line": 2805,
+      "signature": "loadTeachIndex(feature: string): TeachIndex"
+    },
+    {
+      "name": "CanvasNotesDigest",
+      "kind": "interface",
+      "line": 2866,
+      "signature": "CanvasNotesDigest()"
+    },
+    {
+      "name": "NOTE_STATUS_LABEL",
+      "kind": "const",
+      "line": 2879,
+      "signature": "const NOTE_STATUS_LABEL = { open: '待处理', done: '已处理', rejected: '已驳回' }"
+    },
+    {
+      "name": "renderNoteWorkItem",
+      "kind": "function",
+      "line": 2882,
+      "signature": "renderNoteWorkItem(n: ResolvedCanvasNote, index: number): string"
+    },
+    {
+      "name": "renderCanvasNotesDigest",
+      "kind": "function",
+      "line": 2916,
+      "signature": "renderCanvasNotesDigest(feature: string, notes: ResolvedCanvasNote[]): CanvasNotesDigest"
+    },
+    {
+      "name": "markCanvasNotesStatus",
+      "kind": "function",
+      "line": 2957,
+      "signature": "markCanvasNotesStatus(dsl: DesignDSL, updates: Array<{ id: string; status: 'open' | 'done' | 'rejected' }>): CanvasNote[]"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../../infrastructure/storage.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./explain_gen.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/llm_focus.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/llm_focus.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../../../infrastructure/llm_gateway.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/index/db.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/index/db.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../../../infrastructure/index/file_facts.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../domain/types.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../../../domain/mindmap.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../../../domain/narration.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../domain/b_terms.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#resolveTarget",
+      "to": "src/application/meta/view/derive_mind_map.ts#anchorPointOf"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#buildTeachMindMap",
+      "to": "src/application/meta/view/derive_mind_map.ts#appendBrickZone"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#buildTeachMindMap",
+      "to": "src/application/meta/view/derive_mind_map.ts#appendBrickZone"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#deriveMindMapCore",
+      "to": "src/application/meta/view/derive_mind_map.ts#appendBrickZone"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#buildTeachMindMap",
+      "to": "src/application/meta/view/derive_mind_map.ts#basename"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#buildTeachMindMap",
+      "to": "src/application/meta/view/derive_mind_map.ts#basename"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#buildTeachMindMap",
+      "to": "src/application/meta/view/derive_mind_map.ts#basename"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#buildTeachMindMap",
+      "to": "src/application/meta/view/derive_mind_map.ts#basename"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#deriveMindMapCore",
+      "to": "src/application/meta/view/derive_mind_map.ts#basename"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#deriveMindMapCore",
+      "to": "src/application/meta/view/derive_mind_map.ts#basename"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#deriveMindMapCore",
+      "to": "src/application/meta/view/derive_mind_map.ts#basename"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#deriveMindMapCore",
+      "to": "src/application/meta/view/derive_mind_map.ts#basename"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#deriveMindMapCore",
+      "to": "src/application/meta/view/derive_mind_map.ts#basename"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#fileTarget",
+      "to": "src/application/meta/view/derive_mind_map.ts#basename"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#fileTarget",
+      "to": "src/application/meta/view/derive_mind_map.ts#basename"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#nodeTarget",
+      "to": "src/application/meta/view/derive_mind_map.ts#basename"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#nodeTarget",
+      "to": "src/application/meta/view/derive_mind_map.ts#basename"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#buildTeachMindMap",
+      "to": "src/application/meta/view/derive_mind_map.ts#buildFileIndex"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#deriveMindMapCore",
+      "to": "src/application/meta/view/derive_mind_map.ts#buildFileIndex"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#resolveCanvasNotesFromDSL",
+      "to": "src/application/meta/view/derive_mind_map.ts#buildFileIndex"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#buildTeachMindMap",
+      "to": "src/application/meta/view/derive_mind_map.ts#buildTeachMaterial"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#placeProposals",
+      "to": "src/application/meta/view/derive_mind_map.ts#buildTeachMindMap"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#deriveMindMapCore",
+      "to": "src/application/meta/view/derive_mind_map.ts#buildTeachMindMap"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#signatureScore",
+      "to": "src/application/meta/view/derive_mind_map.ts#cleanPinStr"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#pinIdentity",
+      "to": "src/application/meta/view/derive_mind_map.ts#cleanPinStr"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#pinIdentity",
+      "to": "src/application/meta/view/derive_mind_map.ts#cleanPinStr"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#countFiles",
+      "to": "src/application/meta/view/derive_mind_map.ts#countFiles"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#deriveMindMapCore",
+      "to": "src/application/meta/view/derive_mind_map.ts#countFiles"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#buildTeachMindMap",
+      "to": "src/application/meta/view/derive_mind_map.ts#deriveFileFlow"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#deriveMindMap",
+      "to": "src/application/meta/view/derive_mind_map.ts#deriveMindMapCore"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#buildTeachMindMap",
+      "to": "src/application/meta/view/derive_mind_map.ts#deriveStepFlow"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#buildTeachMindMap",
+      "to": "src/application/meta/view/derive_mind_map.ts#extractToolContext"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#deriveMindMapCore",
+      "to": "src/application/meta/view/derive_mind_map.ts#extractToolContext"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#resolveNodeId",
+      "to": "src/application/meta/view/derive_mind_map.ts#featureTarget"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#resolveNodeId",
+      "to": "src/application/meta/view/derive_mind_map.ts#featureTarget"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#resolveNavId",
+      "to": "src/application/meta/view/derive_mind_map.ts#featureTarget"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#resolveNavId",
+      "to": "src/application/meta/view/derive_mind_map.ts#featureTarget"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#resolveNavId",
+      "to": "src/application/meta/view/derive_mind_map.ts#fileTarget"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#nodeTarget",
+      "to": "src/application/meta/view/derive_mind_map.ts#fileTarget"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#stepSimilarity",
+      "to": "src/application/meta/view/derive_mind_map.ts#fileTokenSet"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#stepSimilarity",
+      "to": "src/application/meta/view/derive_mind_map.ts#fileTokenSet"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#buildTeachMindMap",
+      "to": "src/application/meta/view/derive_mind_map.ts#getMindMapFile"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#placeProposals",
+      "to": "src/application/meta/view/derive_mind_map.ts#getMindMapFile"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#deriveMindMapCore",
+      "to": "src/application/meta/view/derive_mind_map.ts#getMindMapFile"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#deriveMindMapCore",
+      "to": "src/application/meta/view/derive_mind_map.ts#getMindMapFile"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#loadTeachIndex",
+      "to": "src/application/meta/view/derive_mind_map.ts#getMindMapFile"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#resolveCanvasNotesFromDSL",
+      "to": "src/application/meta/view/derive_mind_map.ts#groupNotesBySet"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#resolveTarget",
+      "to": "src/application/meta/view/derive_mind_map.ts#hitTestNode"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#projectSignature",
+      "to": "src/application/meta/view/derive_mind_map.ts#humanizeType"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#projectSignature",
+      "to": "src/application/meta/view/derive_mind_map.ts#humanizeType"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#toHumanName",
+      "to": "src/application/meta/view/derive_mind_map.ts#humanizeType"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#buildTeachMaterial",
+      "to": "src/application/meta/view/derive_mind_map.ts#isNoiseCommunity"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#buildTeachMindMap",
+      "to": "src/application/meta/view/derive_mind_map.ts#isNoiseCommunity"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#buildTeachMindMap",
+      "to": "src/application/meta/view/derive_mind_map.ts#llmEnrichDescriptions"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#deriveMindMapCore",
+      "to": "src/application/meta/view/derive_mind_map.ts#llmEnrichDescriptions"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#buildTeachMindMap",
+      "to": "src/application/meta/view/derive_mind_map.ts#llmSynthesizeCapabilities"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#deriveMindMapCore",
+      "to": "src/application/meta/view/derive_mind_map.ts#llmSynthesizeCapabilities"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#buildTeachMindMap",
+      "to": "src/application/meta/view/derive_mind_map.ts#llmTeachFeature"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#buildTeachMindMap",
+      "to": "src/application/meta/view/derive_mind_map.ts#loadCallEdges"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#buildTeachMindMap",
+      "to": "src/application/meta/view/derive_mind_map.ts#loadFeatureDeps"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#buildTeachMindMap",
+      "to": "src/application/meta/view/derive_mind_map.ts#loadFileHeat"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#resolveCanvasNotesFromDSL",
+      "to": "src/application/meta/view/derive_mind_map.ts#loadTeachIndex"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#projectStepDataShape",
+      "to": "src/application/meta/view/derive_mind_map.ts#lookupFile"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#projectFileDataShape",
+      "to": "src/application/meta/view/derive_mind_map.ts#lookupFile"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#buildTeachMaterial",
+      "to": "src/application/meta/view/derive_mind_map.ts#lookupFile"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#buildTeachMindMap",
+      "to": "src/application/meta/view/derive_mind_map.ts#lookupFile"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#buildTeachMindMap",
+      "to": "src/application/meta/view/derive_mind_map.ts#lookupFile"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#buildTeachMindMap",
+      "to": "src/application/meta/view/derive_mind_map.ts#lookupFile"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#deriveMindMapCore",
+      "to": "src/application/meta/view/derive_mind_map.ts#lookupFile"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#fileTarget",
+      "to": "src/application/meta/view/derive_mind_map.ts#lookupSemanticFile"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#loadCallEdges",
+      "to": "src/application/meta/view/derive_mind_map.ts#makeFileMatcher"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#loadFileHeat",
+      "to": "src/application/meta/view/derive_mind_map.ts#makeFileMatcher"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#loadFeatureDeps",
+      "to": "src/application/meta/view/derive_mind_map.ts#makeFileMatcher"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#buildTeachMindMap",
+      "to": "src/application/meta/view/derive_mind_map.ts#mapLimit"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#resolveTarget",
+      "to": "src/application/meta/view/derive_mind_map.ts#nearestNode"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#resolveNodeId",
+      "to": "src/application/meta/view/derive_mind_map.ts#nodeTarget"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#resolveNavId",
+      "to": "src/application/meta/view/derive_mind_map.ts#nodeTarget"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#projectStepDataShape",
+      "to": "src/application/meta/view/derive_mind_map.ts#pinIdentity"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#projectStepDataShape",
+      "to": "src/application/meta/view/derive_mind_map.ts#pinIdentity"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#projectStepDataShape",
+      "to": "src/application/meta/view/derive_mind_map.ts#pinIdentity"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#projectFileDataShape",
+      "to": "src/application/meta/view/derive_mind_map.ts#pinIdentity"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#projectFileDataShape",
+      "to": "src/application/meta/view/derive_mind_map.ts#pinIdentity"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#projectFileDataShape",
+      "to": "src/application/meta/view/derive_mind_map.ts#pinIdentity"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#pinIdentityKeys",
+      "to": "src/application/meta/view/derive_mind_map.ts#pinIdentity"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#deriveStepFlow",
+      "to": "src/application/meta/view/derive_mind_map.ts#pinIdentity"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#deriveStepFlow",
+      "to": "src/application/meta/view/derive_mind_map.ts#pinIdentity"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#deriveCrossFeatureFlow",
+      "to": "src/application/meta/view/derive_mind_map.ts#pinIdentity"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#deriveCrossFeatureFlow",
+      "to": "src/application/meta/view/derive_mind_map.ts#pinIdentity"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#deriveFileFlow",
+      "to": "src/application/meta/view/derive_mind_map.ts#pinIdentity"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#deriveFileFlow",
+      "to": "src/application/meta/view/derive_mind_map.ts#pinIdentity"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#projectSignature",
+      "to": "src/application/meta/view/derive_mind_map.ts#pinNameFromParam"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#buildTeachMindMap",
+      "to": "src/application/meta/view/derive_mind_map.ts#polishStepInvolves"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#hitTestNode",
+      "to": "src/application/meta/view/derive_mind_map.ts#positionedNodes"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#nearestNode",
+      "to": "src/application/meta/view/derive_mind_map.ts#positionedNodes"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#buildTeachMindMap",
+      "to": "src/application/meta/view/derive_mind_map.ts#projectFileDataShape"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#signatureScore",
+      "to": "src/application/meta/view/derive_mind_map.ts#projectSignature"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#projectStepDataShape",
+      "to": "src/application/meta/view/derive_mind_map.ts#projectSignature"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#projectFileDataShape",
+      "to": "src/application/meta/view/derive_mind_map.ts#projectSignature"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#buildTeachMindMap",
+      "to": "src/application/meta/view/derive_mind_map.ts#projectStepDataShape"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#renderCanvasNotesDigest",
+      "to": "src/application/meta/view/derive_mind_map.ts#renderNoteWorkItem"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#resolveCanvasNoteTargets",
+      "to": "src/application/meta/view/derive_mind_map.ts#resolveCanvasNotesFromDSL"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#resolveNodeId",
+      "to": "src/application/meta/view/derive_mind_map.ts#resolveNavId"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#resolveTarget",
+      "to": "src/application/meta/view/derive_mind_map.ts#resolveNodeId"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#resolveTarget",
+      "to": "src/application/meta/view/derive_mind_map.ts#resolveNodeId"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#resolveTarget",
+      "to": "src/application/meta/view/derive_mind_map.ts#resolveNodeId"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#resolveNavId",
+      "to": "src/application/meta/view/derive_mind_map.ts#resolveNodeId"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#resolveCanvasNotesFromDSL",
+      "to": "src/application/meta/view/derive_mind_map.ts#resolveNoteGroup"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#resolveNoteGroup",
+      "to": "src/application/meta/view/derive_mind_map.ts#resolveTarget"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#deriveMindMapCore",
+      "to": "src/application/meta/view/derive_mind_map.ts#ruleCommunityDesc"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#deriveMindMapCore",
+      "to": "src/application/meta/view/derive_mind_map.ts#ruleCommunityDesc"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#deriveMindMapCore",
+      "to": "src/application/meta/view/derive_mind_map.ts#ruleFeatureDesc"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#deriveMindMapCore",
+      "to": "src/application/meta/view/derive_mind_map.ts#ruleFeatureDesc"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#projectStepDataShape",
+      "to": "src/application/meta/view/derive_mind_map.ts#signatureScore"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#projectFileDataShape",
+      "to": "src/application/meta/view/derive_mind_map.ts#signatureScore"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#polishStepInvolves",
+      "to": "src/application/meta/view/derive_mind_map.ts#stepSimilarity"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#resolveNodeId",
+      "to": "src/application/meta/view/derive_mind_map.ts#stepTarget"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#resolveNavId",
+      "to": "src/application/meta/view/derive_mind_map.ts#stepTarget"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#projectSignature",
+      "to": "src/application/meta/view/derive_mind_map.ts#toHumanName"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#deriveMindMap",
+      "to": "src/application/meta/view/derive_mind_map.ts#touchedOf"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#llmEnrichDescriptions",
+      "to": "src/application/meta/view/explain_gen.ts#extractJsonObject"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#llmSynthesizeCapabilities",
+      "to": "src/application/meta/view/explain_gen.ts#extractJsonObject"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#llmTeachFeature",
+      "to": "src/application/meta/view/explain_gen.ts#extractJsonObject"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#buildTeachMindMap",
+      "to": "src/application/meta/view/explain_gen.ts#extractJsonObject"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#placeProposals",
+      "to": "src/application/meta/view/explain_gen.ts#extractJsonObject"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#deriveMindMap",
+      "to": "src/domain/b_terms.ts#withTouched"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#buildTeachMindMap",
+      "to": "src/domain/narration.ts#buildScenes"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#buildTeachMindMap",
+      "to": "src/infrastructure/index/db.ts#findCacheDb"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#buildTeachMindMap",
+      "to": "src/infrastructure/index/db.ts#openDb"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#buildFileIndex",
+      "to": "src/infrastructure/index/file_facts.ts#fileFacts"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#deriveMindMapCore",
+      "to": "src/infrastructure/index/file_facts.ts#fileFacts"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#deriveMindMapCore",
+      "to": "src/infrastructure/index/file_facts.ts#fileFacts"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#llmSynthesizeCapabilities",
+      "to": "src/infrastructure/llm_focus.ts#callChat"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#llmSynthesizeCapabilities",
+      "to": "src/infrastructure/llm_focus.ts#loadAgentConfig"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#buildTeachMindMap",
+      "to": "src/infrastructure/llm_focus.ts#loadAgentConfig"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#buildTeachMindMap",
+      "to": "src/infrastructure/llm_focus.ts#loadAgentConfig"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#deriveMindMapCore",
+      "to": "src/infrastructure/llm_focus.ts#loadAgentConfig"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#deriveMindMapCore",
+      "to": "src/infrastructure/llm_focus.ts#loadAgentConfig"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#deriveMindMapCore",
+      "to": "src/infrastructure/llm_focus.ts#loadAgentConfig"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#llmEnrichDescriptions",
+      "to": "src/infrastructure/llm_gateway.ts#chatViaGateway"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#llmTeachFeature",
+      "to": "src/infrastructure/llm_gateway.ts#chatViaGateway"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#buildTeachMindMap",
+      "to": "src/infrastructure/llm_gateway.ts#chatViaGateway"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#placeProposals",
+      "to": "src/infrastructure/llm_gateway.ts#chatViaGateway"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#llmEnrichDescriptions",
+      "to": "src/infrastructure/llm_gateway.ts#hasEnabledProvider"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#llmTeachFeature",
+      "to": "src/infrastructure/llm_gateway.ts#hasEnabledProvider"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#buildTeachMindMap",
+      "to": "src/infrastructure/llm_gateway.ts#hasEnabledProvider"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#placeProposals",
+      "to": "src/infrastructure/llm_gateway.ts#hasEnabledProvider"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#placeProposals",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#deriveMindMapCore",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#resolveCanvasNoteTargets",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#extractToolContext",
+      "to": "src/infrastructure/storage.ts#getPackageRoot"
+    },
+    {
+      "from": "src/application/meta/view/derive_mind_map.ts#getMindMapFile",
+      "to": "src/infrastructure/storage.ts#getStorageRoot"
+    }
+  ]
+}

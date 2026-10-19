@@ -1,0 +1,143 @@
+{
+  "//": "Design DB —— src/domain/types.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "ThemeConfig",
+      "kind": "interface",
+      "line": 109,
+      "signature": "ThemeConfig()"
+    },
+    {
+      "name": "ThemeId",
+      "kind": "type",
+      "line": 133,
+      "signature": "ThemeId()"
+    },
+    {
+      "name": "ArchLayer",
+      "kind": "interface",
+      "line": 136,
+      "signature": "ArchLayer()"
+    },
+    {
+      "name": "FeatureCommunity",
+      "kind": "interface",
+      "line": 154,
+      "signature": "FeatureCommunity()"
+    },
+    {
+      "name": "FeatureNode",
+      "kind": "interface",
+      "line": 170,
+      "signature": "FeatureNode()"
+    },
+    {
+      "name": "CommunityDirDiffEntry",
+      "kind": "interface",
+      "line": 188,
+      "signature": "CommunityDirDiffEntry()"
+    },
+    {
+      "name": "FeatureTree",
+      "kind": "interface",
+      "line": 204,
+      "signature": "FeatureTree()"
+    },
+    {
+      "name": "DesignDSL",
+      "kind": "interface",
+      "line": 216,
+      "signature": "DesignDSL()"
+    },
+    {
+      "name": "UserNode",
+      "kind": "interface",
+      "line": 266,
+      "signature": "UserNode()"
+    }
+  ],
+  "imports": [
+    {
+      "source": "./geometry.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./semantic.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./annotation.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./animation.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./simulation.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./reasoning.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./canvas_note.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./geometry.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./semantic.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./contract.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./annotation.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./annotation.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./animation.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./simulation.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./reasoning.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./canvas_note.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": []
+}

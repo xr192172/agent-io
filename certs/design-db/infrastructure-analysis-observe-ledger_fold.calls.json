@@ -1,0 +1,112 @@
+{
+  "//": "Design DB —— src/infrastructure/analysis/observe/ledger_fold.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "SpreadPattern",
+      "kind": "interface",
+      "line": 32,
+      "signature": "SpreadPattern()"
+    },
+    {
+      "name": "LedgerStats",
+      "kind": "interface",
+      "line": 41,
+      "signature": "LedgerStats()"
+    },
+    {
+      "name": "KNOWN_SPREAD_RULE",
+      "kind": "const",
+      "line": 51,
+      "signature": "const KNOWN_SPREAD_RULE = 'design:impact-known-spread'"
+    },
+    {
+      "name": "KnownSpreadConstraint",
+      "kind": "interface",
+      "line": 54,
+      "signature": "KnownSpreadConstraint()"
+    },
+    {
+      "name": "analyzeLedger",
+      "kind": "function",
+      "line": 65,
+      "signature": "analyzeLedger(projectRoot: string, minRepeat = 2): LedgerStats"
+    },
+    {
+      "name": "foldEntries",
+      "kind": "function",
+      "line": 70,
+      "signature": "foldEntries(entries: LedgerEntry[], minRepeat = 2): LedgerStats"
+    },
+    {
+      "name": "parseKnownSpread",
+      "kind": "function",
+      "line": 112,
+      "signature": "parseKnownSpread(d: TSDLDecl): KnownSpreadConstraint | null"
+    },
+    {
+      "name": "knownSpreadIndex",
+      "kind": "function",
+      "line": 142,
+      "signature": "knownSpreadIndex(decls: readonly TSDLDecl[]): Map<string, Set<string>>"
+    },
+    {
+      "name": "joinComma",
+      "kind": "function",
+      "line": 157,
+      "signature": "joinComma(parts: string[]): string"
+    },
+    {
+      "name": "joinQuoted",
+      "kind": "function",
+      "line": 167,
+      "signature": "joinQuoted(files: string[], max: number): string"
+    },
+    {
+      "name": "knownSpreadDecl",
+      "kind": "function",
+      "line": 173,
+      "signature": "knownSpreadDecl(p: SpreadPattern): TSDLDecl"
+    },
+    {
+      "name": "sameSpreadSet",
+      "kind": "function",
+      "line": 186,
+      "signature": "sameSpreadSet(c: KnownSpreadConstraint, p: SpreadPattern): boolean"
+    }
+  ],
+  "imports": [
+    {
+      "source": "../impact/impact_ledger_store.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./contract.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/observe/ledger_fold.ts#analyzeLedger",
+      "to": "src/infrastructure/analysis/impact/impact_ledger_store.ts#loadLedger"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/ledger_fold.ts#analyzeLedger",
+      "to": "src/infrastructure/analysis/observe/ledger_fold.ts#foldEntries"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/ledger_fold.ts#joinQuoted",
+      "to": "src/infrastructure/analysis/observe/ledger_fold.ts#joinComma"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/ledger_fold.ts#knownSpreadDecl",
+      "to": "src/infrastructure/analysis/observe/ledger_fold.ts#joinQuoted"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/ledger_fold.ts#knownSpreadIndex",
+      "to": "src/infrastructure/analysis/observe/ledger_fold.ts#parseKnownSpread"
+    }
+  ]
+}

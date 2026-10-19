@@ -1,0 +1,96 @@
+{
+  "//": "Design DB —— src/infrastructure/authoring/version_upgrade/adapters/registry.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "adapters",
+      "kind": "const",
+      "line": 18,
+      "signature": "const adapters = [javaAdapter, goAdapter, nodeAdapter, pythonAdapter, csha…"
+    },
+    {
+      "name": "adapterForLang",
+      "kind": "function",
+      "line": 21,
+      "signature": "adapterForLang(lang: ToolName): LanguageAdapter | undefined"
+    },
+    {
+      "name": "adapterForExt",
+      "kind": "function",
+      "line": 26,
+      "signature": "adapterForExt(ext: string): LanguageAdapter | undefined"
+    },
+    {
+      "name": "adaptersForFile",
+      "kind": "function",
+      "line": 32,
+      "signature": "adaptersForFile(name: string): LanguageAdapter[]"
+    },
+    {
+      "name": "ALL_DECLARATION_FILES",
+      "kind": "const",
+      "line": 37,
+      "signature": "const ALL_DECLARATION_FILES = [ ...new Set(adapters.flatMap((a) => a.declarationFiles)), ]"
+    },
+    {
+      "name": "ADAPTER_SKIP_DIRS",
+      "kind": "const",
+      "line": 42,
+      "signature": "const ADAPTER_SKIP_DIRS = new Set(adapters.flatMap((a) => a.skipDirs ?? []))"
+    },
+    {
+      "name": "ALL_ADAPTER_EXTS",
+      "kind": "const",
+      "line": 50,
+      "signature": "const ALL_ADAPTER_EXTS = new Set(adapters.flatMap((a) => a.sourceExts))"
+    },
+    {
+      "name": "adapterMissHint",
+      "kind": "function",
+      "line": 61,
+      "signature": "adapterMissHint(extOrLang: string): string"
+    }
+  ],
+  "imports": [
+    {
+      "source": "./types.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./java.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./go.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./node.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./python.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./csharp.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./c.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../parse/lang_hint.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/authoring/version_upgrade/adapters/registry.ts#adapterMissHint",
+      "to": "src/infrastructure/parse/lang_hint.ts#missingLanguageHint"
+    }
+  ]
+}

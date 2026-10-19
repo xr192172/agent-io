@@ -1,0 +1,80 @@
+{
+  "//": "Design DB —— src/infrastructure/packages/template_compat.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "TemplateCompat",
+      "kind": "type",
+      "line": 49,
+      "signature": "TemplateCompat()"
+    },
+    {
+      "name": "BindingGeneration",
+      "kind": "type",
+      "line": 60,
+      "signature": "BindingGeneration()"
+    },
+    {
+      "name": "BindingFacts",
+      "kind": "interface",
+      "line": 71,
+      "signature": "BindingFacts()"
+    },
+    {
+      "name": "bindingGenerationOf",
+      "kind": "function",
+      "line": 84,
+      "signature": "bindingGenerationOf(f: BindingFacts): BindingGeneration"
+    },
+    {
+      "name": "bindingVerdictOf",
+      "kind": "function",
+      "line": 93,
+      "signature": "bindingVerdictOf(gen: BindingGeneration): TemplateCompat"
+    },
+    {
+      "name": "templateCompatFromPkgJson",
+      "kind": "function",
+      "line": 110,
+      "signature": "templateCompatFromPkgJson(j: Record<string, unknown> | null,\n  opts?: { hasBuiltBinding?: boolean | null },): TemplateCompat"
+    },
+    {
+      "name": "templateCompatFromFacts",
+      "kind": "function",
+      "line": 137,
+      "signature": "templateCompatFromFacts(usesNan: boolean | null,\n  installScript: string | null,\n  hasBuiltBinding: boolean | null = null,): TemplateCompat"
+    },
+    {
+      "name": "usesNanBinding",
+      "kind": "function",
+      "line": 150,
+      "signature": "usesNanBinding(j: Record<string, unknown> | null): boolean | null"
+    },
+    {
+      "name": "templateCompatReason",
+      "kind": "function",
+      "line": 163,
+      "signature": "templateCompatReason(compat: TemplateCompat,\n  usesNan: boolean | null,\n  gen?: BindingGeneration,): string"
+    }
+  ],
+  "imports": [],
+  "calls": [
+    {
+      "from": "src/infrastructure/packages/template_compat.ts#templateCompatFromFacts",
+      "to": "src/infrastructure/packages/template_compat.ts#bindingGenerationOf"
+    },
+    {
+      "from": "src/infrastructure/packages/template_compat.ts#templateCompatFromFacts",
+      "to": "src/infrastructure/packages/template_compat.ts#bindingVerdictOf"
+    },
+    {
+      "from": "src/infrastructure/packages/template_compat.ts#templateCompatFromPkgJson",
+      "to": "src/infrastructure/packages/template_compat.ts#templateCompatFromFacts"
+    },
+    {
+      "from": "src/infrastructure/packages/template_compat.ts#templateCompatFromPkgJson",
+      "to": "src/infrastructure/packages/template_compat.ts#usesNanBinding"
+    }
+  ]
+}

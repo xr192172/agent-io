@@ -1,0 +1,396 @@
+{
+  "//": "Design DB —— src/application/meta/registry/capability_map.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "LANE_IDS",
+      "kind": "const",
+      "line": 49,
+      "signature": "const LANE_IDS = ['design', 'refactor', 'observe', 'harvest', 'cross', 'me…"
+    },
+    {
+      "name": "LaneId",
+      "kind": "type",
+      "line": 50,
+      "signature": "LaneId()"
+    },
+    {
+      "name": "ToolCatalogEntry",
+      "kind": "interface",
+      "line": 53,
+      "signature": "ToolCatalogEntry()"
+    },
+    {
+      "name": "LaneTool",
+      "kind": "interface",
+      "line": 72,
+      "signature": "LaneTool()"
+    },
+    {
+      "name": "Lane",
+      "kind": "interface",
+      "line": 81,
+      "signature": "Lane()"
+    },
+    {
+      "name": "LaneAssign",
+      "kind": "interface",
+      "line": 104,
+      "signature": "LaneAssign()"
+    },
+    {
+      "name": "LANE_META",
+      "kind": "const",
+      "line": 120,
+      "signature": "const LANE_META = [ { id: 'design', label: '设计 / 活文档', desc: 'DSL 读写、featur…"
+    },
+    {
+      "name": "renderVolumesNote",
+      "kind": "function",
+      "line": 202,
+      "signature": "renderVolumesNote(projectRoot: string): string"
+    },
+    {
+      "name": "WHEN_OVERRIDES",
+      "kind": "const",
+      "line": 253,
+      "signature": "const WHEN_OVERRIDES = { // ★ T202：与 `diagnose` 的分工是**本工具最容易选错的地方** ⇒ 必写。 diagno…"
+    },
+    {
+      "name": "_toolDefs",
+      "kind": "const",
+      "line": 363,
+      "signature": "const _toolDefs = null"
+    },
+    {
+      "name": "bindToolDefs",
+      "kind": "function",
+      "line": 369,
+      "signature": "bindToolDefs(defs: ToolDef[]): void"
+    },
+    {
+      "name": "listToolDefs",
+      "kind": "function",
+      "line": 379,
+      "signature": "listToolDefs(): ToolDef[]"
+    },
+    {
+      "name": "_laneOf",
+      "kind": "const",
+      "line": 391,
+      "signature": "const _laneOf = null"
+    },
+    {
+      "name": "bindLaneOf",
+      "kind": "function",
+      "line": 397,
+      "signature": "bindLaneOf(table: Readonly<Record<string, LaneAssign>>): void"
+    },
+    {
+      "name": "resetLaneOfForTest",
+      "kind": "function",
+      "line": 402,
+      "signature": "resetLaneOfForTest(): void"
+    },
+    {
+      "name": "resolveAssign",
+      "kind": "function",
+      "line": 414,
+      "signature": "resolveAssign(assign?: Readonly<Record<string, LaneAssign>>): Readonly<Record<string, LaneAssign>>"
+    },
+    {
+      "name": "DomainNavView",
+      "kind": "interface",
+      "line": 439,
+      "signature": "DomainNavView()"
+    },
+    {
+      "name": "_domains",
+      "kind": "const",
+      "line": 448,
+      "signature": "const _domains = null"
+    },
+    {
+      "name": "bindDomains",
+      "kind": "function",
+      "line": 459,
+      "signature": "bindDomains(domains: readonly DomainNavView[] | null): void"
+    },
+    {
+      "name": "listDomains",
+      "kind": "function",
+      "line": 464,
+      "signature": "listDomains(): readonly DomainNavView[] | null"
+    },
+    {
+      "name": "resetDomainsForTest",
+      "kind": "function",
+      "line": 469,
+      "signature": "resetDomainsForTest(): void"
+    },
+    {
+      "name": "domainsOfLane",
+      "kind": "function",
+      "line": 483,
+      "signature": "domainsOfLane(lane: LaneId, all: readonly DomainNavView[]): DomainNavView[]"
+    },
+    {
+      "name": "renderDomainText",
+      "kind": "function",
+      "line": 490,
+      "signature": "renderDomainText(lanes: readonly Lane[], all: readonly DomainNavView[] | null, why = ''): string"
+    },
+    {
+      "name": "BuiltLanes",
+      "kind": "interface",
+      "line": 520,
+      "signature": "BuiltLanes()"
+    },
+    {
+      "name": "buildLanes",
+      "kind": "function",
+      "line": 535,
+      "signature": "buildLanes(catalog: readonly ToolCatalogEntry[],\n  assign?: Readonly<Record<string, LaneAssign>>,): BuiltLanes"
+    },
+    {
+      "name": "describeForNav",
+      "kind": "function",
+      "line": 572,
+      "signature": "describeForNav(t: ToolCatalogEntry, max = 60): string"
+    },
+    {
+      "name": "validateLanes",
+      "kind": "function",
+      "line": 606,
+      "signature": "validateLanes(catalog: readonly ToolCatalogEntry[],\n  assign?: Readonly<Record<string, LaneAssign>>,): string[]"
+    },
+    {
+      "name": "laneMaintenanceReport",
+      "kind": "function",
+      "line": 631,
+      "signature": "laneMaintenanceReport(catalog: readonly ToolCatalogEntry[],\n  assign?: Readonly<Record<string, LaneAssign>>,): {\n  derived: string[];\n  curated: number;\n  unassigned: string[];\n  stale: string[];\n  staleWhen: string[];\n}"
+    },
+    {
+      "name": "renderLaneText",
+      "kind": "function",
+      "line": 658,
+      "signature": "renderLaneText(lanes: readonly Lane[], laneIds: readonly LaneId[] = []): string"
+    },
+    {
+      "name": "renderUnassigned",
+      "kind": "function",
+      "line": 674,
+      "signature": "renderUnassigned(unassigned: readonly ToolCatalogEntry[]): string"
+    },
+    {
+      "name": "CapabilityMapInput",
+      "kind": "interface",
+      "line": 685,
+      "signature": "CapabilityMapInput()"
+    },
+    {
+      "name": "collectRequiredKeys",
+      "kind": "function",
+      "line": 723,
+      "signature": "collectRequiredKeys(schema: unknown): string[]"
+    },
+    {
+      "name": "collectInputKeys",
+      "kind": "function",
+      "line": 734,
+      "signature": "collectInputKeys(schema: unknown): string[]"
+    },
+    {
+      "name": "InputPath",
+      "kind": "interface",
+      "line": 786,
+      "signature": "InputPath()"
+    },
+    {
+      "name": "collectInputPaths",
+      "kind": "function",
+      "line": 797,
+      "signature": "collectInputPaths(schema: unknown): InputPath[]"
+    },
+    {
+      "name": "declaredRequiredMembersOf",
+      "kind": "function",
+      "line": 885,
+      "signature": "declaredRequiredMembersOf(paths: readonly InputPath[]): InputPath[]"
+    },
+    {
+      "name": "catalogOf",
+      "kind": "function",
+      "line": 894,
+      "signature": "catalogOf(defs: readonly ToolDef[]): ToolCatalogEntry[]"
+    },
+    {
+      "name": "objectInputsOf",
+      "kind": "function",
+      "line": 905,
+      "signature": "objectInputsOf(name: string, catalog: readonly ToolCatalogEntry[]): readonly string[]"
+    },
+    {
+      "name": "ChainHopVerdict",
+      "kind": "interface",
+      "line": 912,
+      "signature": "ChainHopVerdict()"
+    },
+    {
+      "name": "chainVerdictsOf",
+      "kind": "function",
+      "line": 926,
+      "signature": "chainVerdictsOf(chain: Chain, catalog: readonly ToolCatalogEntry[]): readonly ChainHopVerdict[]"
+    },
+    {
+      "name": "renderChainVerdicts",
+      "kind": "function",
+      "line": 943,
+      "signature": "renderChainVerdicts(catalog: readonly ToolCatalogEntry[]): string"
+    },
+    {
+      "name": "makeCapabilityMapHandler",
+      "kind": "function",
+      "line": 975,
+      "signature": "makeCapabilityMapHandler(getCatalog: () => readonly ToolCatalogEntry[])"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../types.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../../../domain/chain_wiring.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../domain/b_terms.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/storage.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/data_dir.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./tool_faces.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/meta/registry/capability_map.ts#validateLanes",
+      "to": "src/application/meta/registry/capability_map.ts#buildLanes"
+    },
+    {
+      "from": "src/application/meta/registry/capability_map.ts#laneMaintenanceReport",
+      "to": "src/application/meta/registry/capability_map.ts#buildLanes"
+    },
+    {
+      "from": "src/application/meta/registry/capability_map.ts#makeCapabilityMapHandler",
+      "to": "src/application/meta/registry/capability_map.ts#buildLanes"
+    },
+    {
+      "from": "src/application/meta/registry/capability_map.ts#renderChainVerdicts",
+      "to": "src/application/meta/registry/capability_map.ts#chainVerdictsOf"
+    },
+    {
+      "from": "src/application/meta/registry/capability_map.ts#catalogOf",
+      "to": "src/application/meta/registry/capability_map.ts#collectInputKeys"
+    },
+    {
+      "from": "src/application/meta/registry/capability_map.ts#catalogOf",
+      "to": "src/application/meta/registry/capability_map.ts#collectRequiredKeys"
+    },
+    {
+      "from": "src/application/meta/registry/capability_map.ts#buildLanes",
+      "to": "src/application/meta/registry/capability_map.ts#describeForNav"
+    },
+    {
+      "from": "src/application/meta/registry/capability_map.ts#renderUnassigned",
+      "to": "src/application/meta/registry/capability_map.ts#describeForNav"
+    },
+    {
+      "from": "src/application/meta/registry/capability_map.ts#renderDomainText",
+      "to": "src/application/meta/registry/capability_map.ts#domainsOfLane"
+    },
+    {
+      "from": "src/application/meta/registry/capability_map.ts#makeCapabilityMapHandler",
+      "to": "src/application/meta/registry/capability_map.ts#listDomains"
+    },
+    {
+      "from": "src/application/meta/registry/capability_map.ts#makeCapabilityMapHandler",
+      "to": "src/application/meta/registry/capability_map.ts#listDomains"
+    },
+    {
+      "from": "src/application/meta/registry/capability_map.ts#chainVerdictsOf",
+      "to": "src/application/meta/registry/capability_map.ts#objectInputsOf"
+    },
+    {
+      "from": "src/application/meta/registry/capability_map.ts#makeCapabilityMapHandler",
+      "to": "src/application/meta/registry/capability_map.ts#renderChainVerdicts"
+    },
+    {
+      "from": "src/application/meta/registry/capability_map.ts#makeCapabilityMapHandler",
+      "to": "src/application/meta/registry/capability_map.ts#renderDomainText"
+    },
+    {
+      "from": "src/application/meta/registry/capability_map.ts#makeCapabilityMapHandler",
+      "to": "src/application/meta/registry/capability_map.ts#renderDomainText"
+    },
+    {
+      "from": "src/application/meta/registry/capability_map.ts#makeCapabilityMapHandler",
+      "to": "src/application/meta/registry/capability_map.ts#renderLaneText"
+    },
+    {
+      "from": "src/application/meta/registry/capability_map.ts#makeCapabilityMapHandler",
+      "to": "src/application/meta/registry/capability_map.ts#renderLaneText"
+    },
+    {
+      "from": "src/application/meta/registry/capability_map.ts#makeCapabilityMapHandler",
+      "to": "src/application/meta/registry/capability_map.ts#renderUnassigned"
+    },
+    {
+      "from": "src/application/meta/registry/capability_map.ts#makeCapabilityMapHandler",
+      "to": "src/application/meta/registry/capability_map.ts#renderVolumesNote"
+    },
+    {
+      "from": "src/application/meta/registry/capability_map.ts#makeCapabilityMapHandler",
+      "to": "src/application/meta/registry/capability_map.ts#renderVolumesNote"
+    },
+    {
+      "from": "src/application/meta/registry/capability_map.ts#buildLanes",
+      "to": "src/application/meta/registry/capability_map.ts#resolveAssign"
+    },
+    {
+      "from": "src/application/meta/registry/capability_map.ts#makeCapabilityMapHandler",
+      "to": "src/application/meta/registry/tool_faces.ts#renderFaces"
+    },
+    {
+      "from": "src/application/meta/registry/capability_map.ts#chainVerdictsOf",
+      "to": "src/domain/chain_wiring.ts#hopsOf"
+    },
+    {
+      "from": "src/application/meta/registry/capability_map.ts#makeCapabilityMapHandler",
+      "to": "src/domain/chain_wiring.ts#renderChainWiring"
+    },
+    {
+      "from": "src/application/meta/registry/capability_map.ts#renderVolumesNote",
+      "to": "src/infrastructure/storage.ts#getDataHome"
+    }
+  ]
+}

@@ -1,0 +1,247 @@
+{
+  "//": "Design DB —— src/application/meta/llm/llm_decider.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "DecideAction",
+      "kind": "type",
+      "line": 35,
+      "signature": "DecideAction()"
+    },
+    {
+      "name": "NoteDecisionResult",
+      "kind": "interface",
+      "line": 38,
+      "signature": "NoteDecisionResult()"
+    },
+    {
+      "name": "DecideCanvasNotesInput",
+      "kind": "interface",
+      "line": 60,
+      "signature": "DecideCanvasNotesInput()"
+    },
+    {
+      "name": "DecideCanvasNotesResult",
+      "kind": "interface",
+      "line": 70,
+      "signature": "DecideCanvasNotesResult()"
+    },
+    {
+      "name": "FileExcerpt",
+      "kind": "interface",
+      "line": 92,
+      "signature": "FileExcerpt()"
+    },
+    {
+      "name": "safeRel",
+      "kind": "function",
+      "line": 100,
+      "signature": "safeRel(rel: string): string | null"
+    },
+    {
+      "name": "readFileExcerpt",
+      "kind": "function",
+      "line": 108,
+      "signature": "readFileExcerpt(project_dir: string, rel: string, maxLines: number): FileExcerpt | null"
+    },
+    {
+      "name": "targetFileRel",
+      "kind": "function",
+      "line": 122,
+      "signature": "targetFileRel(n: ResolvedCanvasNote): string | null"
+    },
+    {
+      "name": "RawDecision",
+      "kind": "interface",
+      "line": 132,
+      "signature": "RawDecision()"
+    },
+    {
+      "name": "extractJson",
+      "kind": "function",
+      "line": 139,
+      "signature": "extractJson(text: string): Record<string, unknown> | null"
+    },
+    {
+      "name": "normalizeChangeOp",
+      "kind": "function",
+      "line": 153,
+      "signature": "normalizeChangeOp(change: RawDecision['change']): { kind: ChangeKind; op: ChangeOp } | null"
+    },
+    {
+      "name": "parseRawDecision",
+      "kind": "function",
+      "line": 181,
+      "signature": "parseRawDecision(text: string): RawDecision | null"
+    },
+    {
+      "name": "decideMode",
+      "kind": "function",
+      "line": 198,
+      "signature": "decideMode(cfg: LlmConfig | null): { mode: 'llm' | 'mock' | 'off'; cfg: LlmConfig | null; note: string }"
+    },
+    {
+      "name": "mockDecide",
+      "kind": "function",
+      "line": 212,
+      "signature": "mockDecide(n: ResolvedCanvasNote, file: FileExcerpt | null): { action: DecideAction; reason: string; change?: { kind: ChangeKind; op: ChangeOp } }"
+    },
+    {
+      "name": "collectBatchTargets",
+      "kind": "function",
+      "line": 232,
+      "signature": "collectBatchTargets(notes: ResolvedCanvasNote[]): DocTargetSet"
+    },
+    {
+      "name": "buildNotePrompt",
+      "kind": "function",
+      "line": 245,
+      "signature": "buildNotePrompt(n: ResolvedCanvasNote, file: FileExcerpt | null, docsBlock: string): ChatMessage[]"
+    },
+    {
+      "name": "llmDecide",
+      "kind": "function",
+      "line": 274,
+      "signature": "llmDecide(cfg: LlmConfig | null, n: ResolvedCanvasNote, file: FileExcerpt | null, docsBlock: string): Promise<{ action: DecideAction; reason: string; change?: { kind: ChangeKind; op: ChangeOp }; llm: boolean }>"
+    },
+    {
+      "name": "decideCanvasNotes",
+      "kind": "function",
+      "line": 303,
+      "signature": "decideCanvasNotes(input: DecideCanvasNotesInput): Promise<DecideCanvasNotesResult>"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../../infrastructure/storage.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/llm_focus.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../view/derive_mind_map.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../design/workbench/code_workbench.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../docs/project_docs.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/llm_gateway.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/meta/llm/llm_decider.ts#decideCanvasNotes",
+      "to": "src/application/design/workbench/code_workbench.ts#proposeChange"
+    },
+    {
+      "from": "src/application/meta/llm/llm_decider.ts#decideCanvasNotes",
+      "to": "src/application/meta/docs/project_docs.ts#buildDocsPromptBlock"
+    },
+    {
+      "from": "src/application/meta/llm/llm_decider.ts#decideCanvasNotes",
+      "to": "src/application/meta/docs/project_docs.ts#listProjectDocs"
+    },
+    {
+      "from": "src/application/meta/llm/llm_decider.ts#llmDecide",
+      "to": "src/application/meta/llm/llm_decider.ts#buildNotePrompt"
+    },
+    {
+      "from": "src/application/meta/llm/llm_decider.ts#decideCanvasNotes",
+      "to": "src/application/meta/llm/llm_decider.ts#collectBatchTargets"
+    },
+    {
+      "from": "src/application/meta/llm/llm_decider.ts#decideCanvasNotes",
+      "to": "src/application/meta/llm/llm_decider.ts#decideMode"
+    },
+    {
+      "from": "src/application/meta/llm/llm_decider.ts#parseRawDecision",
+      "to": "src/application/meta/llm/llm_decider.ts#extractJson"
+    },
+    {
+      "from": "src/application/meta/llm/llm_decider.ts#decideCanvasNotes",
+      "to": "src/application/meta/llm/llm_decider.ts#llmDecide"
+    },
+    {
+      "from": "src/application/meta/llm/llm_decider.ts#decideCanvasNotes",
+      "to": "src/application/meta/llm/llm_decider.ts#mockDecide"
+    },
+    {
+      "from": "src/application/meta/llm/llm_decider.ts#llmDecide",
+      "to": "src/application/meta/llm/llm_decider.ts#normalizeChangeOp"
+    },
+    {
+      "from": "src/application/meta/llm/llm_decider.ts#llmDecide",
+      "to": "src/application/meta/llm/llm_decider.ts#parseRawDecision"
+    },
+    {
+      "from": "src/application/meta/llm/llm_decider.ts#decideCanvasNotes",
+      "to": "src/application/meta/llm/llm_decider.ts#readFileExcerpt"
+    },
+    {
+      "from": "src/application/meta/llm/llm_decider.ts#readFileExcerpt",
+      "to": "src/application/meta/llm/llm_decider.ts#safeRel"
+    },
+    {
+      "from": "src/application/meta/llm/llm_decider.ts#decideCanvasNotes",
+      "to": "src/application/meta/llm/llm_decider.ts#targetFileRel"
+    },
+    {
+      "from": "src/application/meta/llm/llm_decider.ts#decideCanvasNotes",
+      "to": "src/application/meta/view/derive_mind_map.ts#markCanvasNotesStatus"
+    },
+    {
+      "from": "src/application/meta/llm/llm_decider.ts#decideCanvasNotes",
+      "to": "src/application/meta/view/derive_mind_map.ts#resolveCanvasNoteTargets"
+    },
+    {
+      "from": "src/application/meta/llm/llm_decider.ts#llmDecide",
+      "to": "src/infrastructure/llm_focus.ts#callChat"
+    },
+    {
+      "from": "src/application/meta/llm/llm_decider.ts#decideCanvasNotes",
+      "to": "src/infrastructure/llm_focus.ts#loadLlmConfig"
+    },
+    {
+      "from": "src/application/meta/llm/llm_decider.ts#llmDecide",
+      "to": "src/infrastructure/llm_gateway.ts#chatViaGateway"
+    },
+    {
+      "from": "src/application/meta/llm/llm_decider.ts#decideMode",
+      "to": "src/infrastructure/llm_gateway.ts#hasEnabledProvider"
+    },
+    {
+      "from": "src/application/meta/llm/llm_decider.ts#llmDecide",
+      "to": "src/infrastructure/llm_gateway.ts#hasEnabledProvider"
+    },
+    {
+      "from": "src/application/meta/llm/llm_decider.ts#decideCanvasNotes",
+      "to": "src/infrastructure/llm_gateway.ts#hasEnabledProvider"
+    },
+    {
+      "from": "src/application/meta/llm/llm_decider.ts#decideCanvasNotes",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/application/meta/llm/llm_decider.ts#decideCanvasNotes",
+      "to": "src/infrastructure/storage.ts#saveDSL"
+    }
+  ]
+}

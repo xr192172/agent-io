@@ -1,0 +1,65 @@
+{
+  "//": "Design DB —— src/application/design/dsl_ops/edge_ops.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "AddEdgeInput",
+      "kind": "interface",
+      "line": 13,
+      "signature": "AddEdgeInput()"
+    },
+    {
+      "name": "addEdge",
+      "kind": "function",
+      "line": 24,
+      "signature": "addEdge(input: AddEdgeInput): EditResult"
+    },
+    {
+      "name": "DeleteEdgeInput",
+      "kind": "interface",
+      "line": 72,
+      "signature": "DeleteEdgeInput()"
+    },
+    {
+      "name": "deleteEdge",
+      "kind": "function",
+      "line": 77,
+      "signature": "deleteEdge(input: DeleteEdgeInput): EditResult"
+    }
+  ],
+  "imports": [
+    {
+      "source": "../../../domain/types.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../../../infrastructure/storage.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./edit_result.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/design/dsl_ops/edge_ops.ts#addEdge",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/application/design/dsl_ops/edge_ops.ts#deleteEdge",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/application/design/dsl_ops/edge_ops.ts#addEdge",
+      "to": "src/infrastructure/storage.ts#saveDSL"
+    },
+    {
+      "from": "src/application/design/dsl_ops/edge_ops.ts#deleteEdge",
+      "to": "src/infrastructure/storage.ts#saveDSL"
+    }
+  ]
+}

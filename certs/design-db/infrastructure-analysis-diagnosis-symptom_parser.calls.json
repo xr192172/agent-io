@@ -1,0 +1,186 @@
+{
+  "//": "Design DB —— src/infrastructure/analysis/diagnosis/symptom_parser.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "ERROR_TYPE_PATTERNS",
+      "kind": "const",
+      "line": 28,
+      "signature": "const ERROR_TYPE_PATTERNS = [ // 顺序敏感：TS 编译错误（error TSxxxx: …）优先于其内部嵌套的 \"Cannot find …"
+    },
+    {
+      "name": "KNOWN_ERROR_KINDS",
+      "kind": "const",
+      "line": 39,
+      "signature": "const KNOWN_ERROR_KINDS = new Set([ 'TypeError', 'ReferenceError', 'RangeError', 'S…"
+    },
+    {
+      "name": "detectErrorType",
+      "kind": "function",
+      "line": 47,
+      "signature": "detectErrorType(text: string): string | undefined"
+    },
+    {
+      "name": "FILE_LINE_RES",
+      "kind": "const",
+      "line": 69,
+      "signature": "const FILE_LINE_RES = /([\\w@./\\\\-]+\\.(?:ts|tsx|js|jsx|mjs|cjs|go|py|java|rs|rb|…"
+    },
+    {
+      "name": "COLON_LINE_RES",
+      "kind": "const",
+      "line": 72,
+      "signature": "const COLON_LINE_RES = /((?:[A-Za-z]:[\\\\/]|\\/)?[\\w@./\\\\-]+\\.(?:ts|tsx|js|jsx|mjs…"
+    },
+    {
+      "name": "PY_TRACEBACK_RES",
+      "kind": "const",
+      "line": 75,
+      "signature": "const PY_TRACEBACK_RES = /File \"([^\"]+)\", line (\\d+)/g"
+    },
+    {
+      "name": "sanitizePath",
+      "kind": "function",
+      "line": 80,
+      "signature": "sanitizePath(p: string): string"
+    },
+    {
+      "name": "extractLocations",
+      "kind": "function",
+      "line": 84,
+      "signature": "extractLocations(symptom: string): Array<{ file: string; line?: number }>"
+    },
+    {
+      "name": "READING_RES",
+      "kind": "const",
+      "line": 111,
+      "signature": "const READING_RES = /reading\\s+'([A-Za-z_$][\\w$]*)'/g"
+    },
+    {
+      "name": "NOT_FUNCTION_RES",
+      "kind": "const",
+      "line": 112,
+      "signature": "const NOT_FUNCTION_RES = /([A-Za-z_$][\\w$]*(?:\\.[A-Za-z_$][\\w$]*)*)\\s+is not a fun…"
+    },
+    {
+      "name": "NOT_DEFINED_RES",
+      "kind": "const",
+      "line": 113,
+      "signature": "const NOT_DEFINED_RES = /([A-Za-z_$][\\w$]*(?:\\.[A-Za-z_$][\\w$]*)*)\\s+is not defin…"
+    },
+    {
+      "name": "NOT_CONSTRUCTOR_RES",
+      "kind": "const",
+      "line": 114,
+      "signature": "const NOT_CONSTRUCTOR_RES = /([A-Za-z_$][\\w$]*(?:\\.[A-Za-z_$][\\w$]*)*)\\s+is not a con…"
+    },
+    {
+      "name": "STACK_AT_RES",
+      "kind": "const",
+      "line": 115,
+      "signature": "const STACK_AT_RES = /at\\s+([A-Za-z_$][\\w$]*(?:\\.[A-Za-z_$][\\w$]*)*)\\s+\\(/g"
+    },
+    {
+      "name": "PY_IN_RES",
+      "kind": "const",
+      "line": 116,
+      "signature": "const PY_IN_RES = /,\\s+in\\s+([A-Za-z_$][\\w$]*)/g"
+    },
+    {
+      "name": "extractSymbols",
+      "kind": "function",
+      "line": 118,
+      "signature": "extractSymbols(symptom: string): string[]"
+    },
+    {
+      "name": "STOPWORDS",
+      "kind": "const",
+      "line": 146,
+      "signature": "const STOPWORDS = new Set([ 'the', 'a', 'an', 'is', 'are', 'was', 'were', '…"
+    },
+    {
+      "name": "ABS_FILE_RES",
+      "kind": "const",
+      "line": 170,
+      "signature": "const ABS_FILE_RES = /(?:[A-Za-z]:[\\\\/]|file:\\/\\/\\/|\\/(?!\\/))(?:[^，。；：\\s\"\"''（）…"
+    },
+    {
+      "name": "FILE_URL_RES",
+      "kind": "const",
+      "line": 172,
+      "signature": "const FILE_URL_RES = /file:\\/\\/[^，。；：\\s\"\"''（）()<>'\"]+(?:[ ][^，。；：\\s\"\"''（）()<>'…"
+    },
+    {
+      "name": "HTTP_URL_RES",
+      "kind": "const",
+      "line": 173,
+      "signature": "const HTTP_URL_RES = /https?:\\/\\/[^，。；：\\s\"\"''（）()<>'\"]+/gi"
+    },
+    {
+      "name": "basenameOf",
+      "kind": "function",
+      "line": 176,
+      "signature": "basenameOf(matched: string): string"
+    },
+    {
+      "name": "stripAbsPaths",
+      "kind": "function",
+      "line": 184,
+      "signature": "stripAbsPaths(symptom: string): string"
+    },
+    {
+      "name": "extractKeywords",
+      "kind": "function",
+      "line": 192,
+      "signature": "extractKeywords(symptom: string): string[]"
+    },
+    {
+      "name": "parseSymptom",
+      "kind": "function",
+      "line": 212,
+      "signature": "parseSymptom(symptom: string): SymptomParsed"
+    }
+  ],
+  "imports": [
+    {
+      "source": "./contract.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/diagnosis/symptom_parser.ts#parseSymptom",
+      "to": "src/infrastructure/analysis/diagnosis/symptom_parser.ts#detectErrorType"
+    },
+    {
+      "from": "src/infrastructure/analysis/diagnosis/symptom_parser.ts#parseSymptom",
+      "to": "src/infrastructure/analysis/diagnosis/symptom_parser.ts#extractKeywords"
+    },
+    {
+      "from": "src/infrastructure/analysis/diagnosis/symptom_parser.ts#parseSymptom",
+      "to": "src/infrastructure/analysis/diagnosis/symptom_parser.ts#extractLocations"
+    },
+    {
+      "from": "src/infrastructure/analysis/diagnosis/symptom_parser.ts#parseSymptom",
+      "to": "src/infrastructure/analysis/diagnosis/symptom_parser.ts#extractSymbols"
+    },
+    {
+      "from": "src/infrastructure/analysis/diagnosis/symptom_parser.ts#extractLocations",
+      "to": "src/infrastructure/analysis/diagnosis/symptom_parser.ts#sanitizePath"
+    },
+    {
+      "from": "src/infrastructure/analysis/diagnosis/symptom_parser.ts#extractLocations",
+      "to": "src/infrastructure/analysis/diagnosis/symptom_parser.ts#sanitizePath"
+    },
+    {
+      "from": "src/infrastructure/analysis/diagnosis/symptom_parser.ts#extractLocations",
+      "to": "src/infrastructure/analysis/diagnosis/symptom_parser.ts#sanitizePath"
+    },
+    {
+      "from": "src/infrastructure/analysis/diagnosis/symptom_parser.ts#extractKeywords",
+      "to": "src/infrastructure/analysis/diagnosis/symptom_parser.ts#stripAbsPaths"
+    }
+  ]
+}

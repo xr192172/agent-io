@@ -1,0 +1,99 @@
+{
+  "//": "Design DB —— src/infrastructure/analysis/rename_symbol/languages/go.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "GO_DEF_NODE_TYPES",
+      "kind": "const",
+      "line": 30,
+      "signature": "const GO_DEF_NODE_TYPES = new Set(['function_declaration', 'type_spec', 'const_spec…"
+    },
+    {
+      "name": "analyzeGoSource",
+      "kind": "function",
+      "line": 32,
+      "signature": "analyzeGoSource(src: string): Promise<GoModuleAnalysis | null>"
+    },
+    {
+      "name": "renameGoSymbol",
+      "kind": "function",
+      "line": 153,
+      "signature": "renameGoSymbol(args: {\n  file: string; // 定义文件绝对路径\n  symbol: string;\n  to: string;\n  dryRun: boolean;\n  resolvedRoot: string;\n  blocked: string[];\n}): Promise<RenameSymbolResult>"
+    },
+    {
+      "name": "goPackage",
+      "kind": "const",
+      "line": 308,
+      "signature": "const goPackage = { exts: ['.go'], rename: (a) => renameGoSymbol({ file: a.…"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../../../infrastructure/parse/loader.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../../infrastructure/parse/languages.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../../infrastructure/parse/kernel.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../../infrastructure/analysis/refactor/protect.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../parts.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/rename_symbol/languages/go.ts#renameGoSymbol",
+      "to": "src/infrastructure/analysis/refactor/protect.ts#createProtectGuard"
+    },
+    {
+      "from": "src/infrastructure/analysis/rename_symbol/languages/go.ts#renameGoSymbol",
+      "to": "src/infrastructure/analysis/rename_symbol/languages/go.ts#analyzeGoSource"
+    },
+    {
+      "from": "src/infrastructure/analysis/rename_symbol/languages/go.ts#renameGoSymbol",
+      "to": "src/infrastructure/analysis/rename_symbol/languages/go.ts#analyzeGoSource"
+    },
+    {
+      "from": "src/infrastructure/analysis/rename_symbol/languages/go.ts#renameGoSymbol",
+      "to": "src/infrastructure/analysis/rename_symbol/parts.ts#applyEdits"
+    },
+    {
+      "from": "src/infrastructure/analysis/rename_symbol/languages/go.ts#renameGoSymbol",
+      "to": "src/infrastructure/analysis/rename_symbol/parts.ts#toOps"
+    },
+    {
+      "from": "src/infrastructure/analysis/rename_symbol/languages/go.ts#analyzeGoSource",
+      "to": "src/infrastructure/parse/kernel.ts#parseContent"
+    },
+    {
+      "from": "src/infrastructure/analysis/rename_symbol/languages/go.ts#analyzeGoSource",
+      "to": "src/infrastructure/parse/kernel.ts#stripQuotes"
+    },
+    {
+      "from": "src/infrastructure/analysis/rename_symbol/languages/go.ts#analyzeGoSource",
+      "to": "src/infrastructure/parse/languages.ts#findLanguageByExt"
+    },
+    {
+      "from": "src/infrastructure/analysis/rename_symbol/languages/go.ts#analyzeGoSource",
+      "to": "src/infrastructure/parse/loader.ts#getParser"
+    }
+  ]
+}

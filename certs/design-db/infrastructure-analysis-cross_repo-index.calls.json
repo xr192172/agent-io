@@ -1,0 +1,89 @@
+{
+  "//": "Design DB —— src/infrastructure/analysis/cross_repo/index.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "CrossRepoSym",
+      "kind": "interface",
+      "line": 27,
+      "signature": "CrossRepoSym()"
+    },
+    {
+      "name": "ProjectSymbolIndex",
+      "kind": "interface",
+      "line": 38,
+      "signature": "ProjectSymbolIndex()"
+    },
+    {
+      "name": "SymbolCollision",
+      "kind": "interface",
+      "line": 46,
+      "signature": "SymbolCollision()"
+    },
+    {
+      "name": "CrossRepoReport",
+      "kind": "interface",
+      "line": 55,
+      "signature": "CrossRepoReport()"
+    },
+    {
+      "name": "buildProjectIndex",
+      "kind": "function",
+      "line": 75,
+      "signature": "buildProjectIndex(root: string): Promise<ProjectSymbolIndex>"
+    },
+    {
+      "name": "normSig",
+      "kind": "function",
+      "line": 96,
+      "signature": "normSig(s: string): string"
+    },
+    {
+      "name": "defFingerprint",
+      "kind": "function",
+      "line": 101,
+      "signature": "defFingerprint(defs: CrossRepoSym[]): string"
+    },
+    {
+      "name": "isDuplicate",
+      "kind": "function",
+      "line": 109,
+      "signature": "isDuplicate(a: CrossRepoSym[], b: CrossRepoSym[]): boolean"
+    },
+    {
+      "name": "compareProjects",
+      "kind": "function",
+      "line": 116,
+      "signature": "compareProjects(aRoot: string, bRoot: string): Promise<CrossRepoReport>"
+    }
+  ],
+  "imports": [
+    {
+      "source": "../impact/index.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/cross_repo/index.ts#compareProjects",
+      "to": "src/infrastructure/analysis/cross_repo/index.ts#buildProjectIndex"
+    },
+    {
+      "from": "src/infrastructure/analysis/cross_repo/index.ts#isDuplicate",
+      "to": "src/infrastructure/analysis/cross_repo/index.ts#defFingerprint"
+    },
+    {
+      "from": "src/infrastructure/analysis/cross_repo/index.ts#compareProjects",
+      "to": "src/infrastructure/analysis/cross_repo/index.ts#isDuplicate"
+    },
+    {
+      "from": "src/infrastructure/analysis/cross_repo/index.ts#defFingerprint",
+      "to": "src/infrastructure/analysis/cross_repo/index.ts#normSig"
+    },
+    {
+      "from": "src/infrastructure/analysis/cross_repo/index.ts#buildProjectIndex",
+      "to": "src/infrastructure/analysis/impact/index.ts#buildImpactGraph"
+    }
+  ]
+}

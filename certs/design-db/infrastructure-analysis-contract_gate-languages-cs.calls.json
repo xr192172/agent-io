@@ -1,0 +1,32 @@
+{
+  "//": "Design DB —— src/infrastructure/analysis/contract_gate/languages/cs.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "CS_RESERVED",
+      "kind": "const",
+      "line": 7,
+      "signature": "const CS_RESERVED = new Set([ 'if', 'for', 'while', 'switch', 'return', 'new'…"
+    },
+    {
+      "name": "CS_GLOBALS",
+      "kind": "const",
+      "line": 17,
+      "signature": "const CS_GLOBALS = new Set([ 'System', 'String', 'Console', 'Math', 'Convert…"
+    },
+    {
+      "name": "cgCsPackage",
+      "kind": "const",
+      "line": 21,
+      "signature": "const cgCsPackage = { lang: 'cs', exts: ['.cs'], reserved: CS_RESERVED, globa…"
+    }
+  ],
+  "imports": [
+    {
+      "source": "../parts.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": []
+}

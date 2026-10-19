@@ -1,0 +1,168 @@
+{
+  "//": "Design DB —— src/application/observe/reconcile/reconcile_effects.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "ReconcileEffectsInput",
+      "kind": "interface",
+      "line": 33,
+      "signature": "ReconcileEffectsInput()"
+    },
+    {
+      "name": "FileReconcileReport",
+      "kind": "interface",
+      "line": 44,
+      "signature": "FileReconcileReport()"
+    },
+    {
+      "name": "ReconcileEffectsResult",
+      "kind": "interface",
+      "line": 67,
+      "signature": "ReconcileEffectsResult()"
+    },
+    {
+      "name": "EffectEvent",
+      "kind": "interface",
+      "line": 89,
+      "signature": "EffectEvent()"
+    },
+    {
+      "name": "RawEvent",
+      "kind": "interface",
+      "line": 96,
+      "signature": "RawEvent()"
+    },
+    {
+      "name": "FileObservation",
+      "kind": "interface",
+      "line": 103,
+      "signature": "FileObservation()"
+    },
+    {
+      "name": "listEventFiles",
+      "kind": "function",
+      "line": 116,
+      "signature": "listEventFiles(dir: string): string[]"
+    },
+    {
+      "name": "discoverEventFiles",
+      "kind": "function",
+      "line": 138,
+      "signature": "discoverEventFiles(root: string): string[]"
+    },
+    {
+      "name": "legacyEventFiles",
+      "kind": "function",
+      "line": 143,
+      "signature": "legacyEventFiles(root: string): string[]"
+    },
+    {
+      "name": "readEffectEvents",
+      "kind": "function",
+      "line": 148,
+      "signature": "readEffectEvents(files: string[]): Promise<EffectEvent[]>"
+    },
+    {
+      "name": "holdMatches",
+      "kind": "function",
+      "line": 189,
+      "signature": "holdMatches(observedTarget: string, candidateTarget: string): boolean"
+    },
+    {
+      "name": "reconcileEffectsCore",
+      "kind": "function",
+      "line": 197,
+      "signature": "reconcileEffectsCore(input: ReconcileEffectsInput): Promise<ReconcileEffectsResult>"
+    },
+    {
+      "name": "touchedOf",
+      "kind": "function",
+      "line": 393,
+      "signature": "touchedOf(input: ReconcileEffectsInput): Touched"
+    },
+    {
+      "name": "reconcileEffects",
+      "kind": "function",
+      "line": 397,
+      "signature": "reconcileEffects(input: ReconcileEffectsInput): Promise<TouchedProduct<ReconcileEffectsResult>>"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "node:readline",
+      "kind": "package"
+    },
+    {
+      "source": "../../../infrastructure/storage.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/data_dir.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../domain/contract.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../../../domain/b_terms.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/observe/reconcile/reconcile_effects.ts#reconcileEffectsCore",
+      "to": "src/application/observe/reconcile/reconcile_effects.ts#discoverEventFiles"
+    },
+    {
+      "from": "src/application/observe/reconcile/reconcile_effects.ts#reconcileEffectsCore",
+      "to": "src/application/observe/reconcile/reconcile_effects.ts#holdMatches"
+    },
+    {
+      "from": "src/application/observe/reconcile/reconcile_effects.ts#reconcileEffectsCore",
+      "to": "src/application/observe/reconcile/reconcile_effects.ts#legacyEventFiles"
+    },
+    {
+      "from": "src/application/observe/reconcile/reconcile_effects.ts#discoverEventFiles",
+      "to": "src/application/observe/reconcile/reconcile_effects.ts#listEventFiles"
+    },
+    {
+      "from": "src/application/observe/reconcile/reconcile_effects.ts#legacyEventFiles",
+      "to": "src/application/observe/reconcile/reconcile_effects.ts#listEventFiles"
+    },
+    {
+      "from": "src/application/observe/reconcile/reconcile_effects.ts#reconcileEffectsCore",
+      "to": "src/application/observe/reconcile/reconcile_effects.ts#readEffectEvents"
+    },
+    {
+      "from": "src/application/observe/reconcile/reconcile_effects.ts#reconcileEffects",
+      "to": "src/application/observe/reconcile/reconcile_effects.ts#reconcileEffectsCore"
+    },
+    {
+      "from": "src/application/observe/reconcile/reconcile_effects.ts#reconcileEffects",
+      "to": "src/application/observe/reconcile/reconcile_effects.ts#touchedOf"
+    },
+    {
+      "from": "src/application/observe/reconcile/reconcile_effects.ts#reconcileEffects",
+      "to": "src/domain/b_terms.ts#withTouched"
+    },
+    {
+      "from": "src/application/observe/reconcile/reconcile_effects.ts#reconcileEffectsCore",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/application/observe/reconcile/reconcile_effects.ts#reconcileEffectsCore",
+      "to": "src/infrastructure/storage.ts#saveDSL"
+    }
+  ]
+}

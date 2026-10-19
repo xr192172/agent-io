@@ -1,0 +1,92 @@
+{
+  "//": "Design DB —— src/infrastructure/analysis/observe/judge_service.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "JudgeEntry",
+      "kind": "interface",
+      "line": 24,
+      "signature": "JudgeEntry()"
+    },
+    {
+      "name": "JudgeEntryWithLLM",
+      "kind": "interface",
+      "line": 30,
+      "signature": "JudgeEntryWithLLM()"
+    },
+    {
+      "name": "JudgeResult",
+      "kind": "interface",
+      "line": 36,
+      "signature": "JudgeResult()"
+    },
+    {
+      "name": "normalizeEvents",
+      "kind": "function",
+      "line": 46,
+      "signature": "normalizeEvents(input: unknown): { events: TSEvent[]; error?: string }"
+    },
+    {
+      "name": "judgeEvents",
+      "kind": "function",
+      "line": 74,
+      "signature": "judgeEvents(events: TSEvent[], ctx?: ObserveRuleCtx): JudgeResult"
+    },
+    {
+      "name": "judgeEventsWithLLM",
+      "kind": "function",
+      "line": 85,
+      "signature": "judgeEventsWithLLM(events: TSEvent[],\n  useLlm = false,\n  ctx?: ObserveRuleCtx,): Promise<JudgeResult>"
+    },
+    {
+      "name": "buildLLMPrompt",
+      "kind": "function",
+      "line": 128,
+      "signature": "buildLLMPrompt(ev: TSEvent, rule: string): string"
+    },
+    {
+      "name": "renderJudgeReport",
+      "kind": "function",
+      "line": 145,
+      "signature": "renderJudgeReport(r: JudgeResult): string"
+    }
+  ],
+  "imports": [
+    {
+      "source": "./judge.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../llm_focus.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./probe.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/observe/judge_service.ts#judgeEvents",
+      "to": "src/infrastructure/analysis/observe/judge.ts#judgeEvent"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/judge_service.ts#judgeEventsWithLLM",
+      "to": "src/infrastructure/analysis/observe/judge_service.ts#buildLLMPrompt"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/judge_service.ts#judgeEventsWithLLM",
+      "to": "src/infrastructure/analysis/observe/judge_service.ts#judgeEvents"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/judge_service.ts#judgeEventsWithLLM",
+      "to": "src/infrastructure/llm_focus.ts#callChat"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/judge_service.ts#judgeEventsWithLLM",
+      "to": "src/infrastructure/llm_focus.ts#loadLlmConfig"
+    }
+  ]
+}

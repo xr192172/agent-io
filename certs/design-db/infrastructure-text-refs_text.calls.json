@@ -1,0 +1,95 @@
+{
+  "//": "Design DB —— src/infrastructure/text/refs_text.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "TextRefHit",
+      "kind": "interface",
+      "line": 24,
+      "signature": "TextRefHit()"
+    },
+    {
+      "name": "IMPORT_RE",
+      "kind": "const",
+      "line": 36,
+      "signature": "const IMPORT_RE = /(?:from|require\\s*\\()\\s*['\"]([^'\"]+)['\"]/g"
+    },
+    {
+      "name": "specifierCandidates",
+      "kind": "function",
+      "line": 43,
+      "signature": "specifierCandidates(rel: string): string[]"
+    },
+    {
+      "name": "SKIP_DIR",
+      "kind": "const",
+      "line": 58,
+      "signature": "const SKIP_DIR = skipDirSet([])"
+    },
+    {
+      "name": "SRC_EXT",
+      "kind": "const",
+      "line": 61,
+      "signature": "const SRC_EXT = new Set<string>(SOURCE_EXTS)"
+    },
+    {
+      "name": "walkSourceFiles",
+      "kind": "function",
+      "line": 64,
+      "signature": "walkSourceFiles(root: string, limit = 20000): string[]"
+    },
+    {
+      "name": "buildTextImportIndex",
+      "kind": "function",
+      "line": 96,
+      "signature": "buildTextImportIndex(root: string,\n  files: readonly string[],): { importers: Map<string, string[]>; scanned: number; bytes: number }"
+    },
+    {
+      "name": "importLookupKeys",
+      "kind": "function",
+      "line": 130,
+      "signature": "importLookupKeys(targetRel: string): string[]"
+    },
+    {
+      "name": "scanTextImporters",
+      "kind": "function",
+      "line": 137,
+      "signature": "scanTextImporters(root: string,\n  targetRel: string,\n  files: readonly string[],): TextRefHit[]"
+    },
+    {
+      "name": "scanTextMentions",
+      "kind": "function",
+      "line": 171,
+      "signature": "scanTextMentions(root: string,\n  name: string,\n  files: readonly string[],\n  opts: { limitPerFile?: number; maxFiles?: number } = {},): TextRefHit[]"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../parse/index.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../parse/source_exts.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/text/refs_text.ts#importLookupKeys",
+      "to": "src/infrastructure/text/refs_text.ts#specifierCandidates"
+    },
+    {
+      "from": "src/infrastructure/text/refs_text.ts#scanTextImporters",
+      "to": "src/infrastructure/text/refs_text.ts#specifierCandidates"
+    }
+  ]
+}

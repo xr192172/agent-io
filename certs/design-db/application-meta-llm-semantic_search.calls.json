@@ -1,0 +1,289 @@
+{
+  "//": "Design DB —— src/application/meta/llm/semantic_search.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "EmbeddingConfig",
+      "kind": "interface",
+      "line": 31,
+      "signature": "EmbeddingConfig()"
+    },
+    {
+      "name": "DEFAULT_BASE_URL",
+      "kind": "const",
+      "line": 38,
+      "signature": "const DEFAULT_BASE_URL = 'https://api.siliconflow.cn/v1'"
+    },
+    {
+      "name": "DEFAULT_MODEL",
+      "kind": "const",
+      "line": 39,
+      "signature": "const DEFAULT_MODEL = 'BAAI/bge-m3'"
+    },
+    {
+      "name": "DEFAULT_DIM",
+      "kind": "const",
+      "line": 40,
+      "signature": "const DEFAULT_DIM = 1024"
+    },
+    {
+      "name": "loadEmbeddingConfig",
+      "kind": "function",
+      "line": 43,
+      "signature": "loadEmbeddingConfig(): EmbeddingConfig | null"
+    },
+    {
+      "name": "embedCache",
+      "kind": "const",
+      "line": 82,
+      "signature": "const embedCache = new Map<string, number[]>()"
+    },
+    {
+      "name": "cacheHits",
+      "kind": "const",
+      "line": 85,
+      "signature": "const cacheHits = 0"
+    },
+    {
+      "name": "apiCalls",
+      "kind": "const",
+      "line": 86,
+      "signature": "const apiCalls = 0"
+    },
+    {
+      "name": "embeddingCacheStats",
+      "kind": "function",
+      "line": 89,
+      "signature": "embeddingCacheStats(): { cache_size: number; cache_hits: number; api_calls: number }"
+    },
+    {
+      "name": "cacheKey",
+      "kind": "function",
+      "line": 93,
+      "signature": "cacheKey(cfg: EmbeddingConfig, text: string): string"
+    },
+    {
+      "name": "EmbeddingResponseItem",
+      "kind": "interface",
+      "line": 98,
+      "signature": "EmbeddingResponseItem()"
+    },
+    {
+      "name": "embedTexts",
+      "kind": "function",
+      "line": 107,
+      "signature": "embedTexts(cfg: EmbeddingConfig, texts: string[], db?: Database): Promise<number[][]>"
+    },
+    {
+      "name": "encodeVectorBlob",
+      "kind": "function",
+      "line": 178,
+      "signature": "encodeVectorBlob(v: number[]): Uint8Array"
+    },
+    {
+      "name": "decodeVectorBlob",
+      "kind": "function",
+      "line": 188,
+      "signature": "decodeVectorBlob(b: Uint8Array): number[]"
+    },
+    {
+      "name": "callEmbeddings",
+      "kind": "function",
+      "line": 198,
+      "signature": "callEmbeddings(cfg: EmbeddingConfig, inputs: string[]): Promise<number[][]>"
+    },
+    {
+      "name": "cosineSimilarity",
+      "kind": "function",
+      "line": 231,
+      "signature": "cosineSimilarity(a: number[], b: number[]): number"
+    },
+    {
+      "name": "SemanticHit",
+      "kind": "interface",
+      "line": 249,
+      "signature": "SemanticHit()"
+    },
+    {
+      "name": "SemanticSearchInput",
+      "kind": "interface",
+      "line": 260,
+      "signature": "SemanticSearchInput()"
+    },
+    {
+      "name": "SemanticSearchResult",
+      "kind": "interface",
+      "line": 267,
+      "signature": "SemanticSearchResult()"
+    },
+    {
+      "name": "SYMBOL_QUERY_RE",
+      "kind": "const",
+      "line": 279,
+      "signature": "const SYMBOL_QUERY_RE = /^[A-Za-z_$][\\w$]*(\\.[A-Za-z_$][\\w$]*)*$/"
+    },
+    {
+      "name": "symbolText",
+      "kind": "function",
+      "line": 282,
+      "signature": "symbolText(row: { name: string; qualified_name: string; file_path: string; signature: string | null }): string"
+    },
+    {
+      "name": "semanticSearchCore",
+      "kind": "function",
+      "line": 291,
+      "signature": "semanticSearchCore(input: SemanticSearchInput): Promise<SemanticSearchResult>"
+    },
+    {
+      "name": "touchedOf",
+      "kind": "function",
+      "line": 415,
+      "signature": "touchedOf(input: SemanticSearchInput, r: SemanticSearchResult): Touched"
+    },
+    {
+      "name": "semanticSearch",
+      "kind": "function",
+      "line": 429,
+      "signature": "semanticSearch(input: SemanticSearchInput): Promise<TouchedProduct<SemanticSearchResult>>"
+    },
+    {
+      "name": "ftsFallback",
+      "kind": "function",
+      "line": 434,
+      "signature": "ftsFallback(db: Database, query: string, limit: number, indexed: number, reason?: string, freshNote = '',): SemanticSearchResult"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:crypto",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../../infrastructure/llm_focus.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/index/db.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/index/symbols.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/index/index_freshness.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../domain/b_terms.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/meta/llm/semantic_search.ts#embedTexts",
+      "to": "src/application/meta/llm/semantic_search.ts#cacheKey"
+    },
+    {
+      "from": "src/application/meta/llm/semantic_search.ts#embedTexts",
+      "to": "src/application/meta/llm/semantic_search.ts#cacheKey"
+    },
+    {
+      "from": "src/application/meta/llm/semantic_search.ts#embedTexts",
+      "to": "src/application/meta/llm/semantic_search.ts#cacheKey"
+    },
+    {
+      "from": "src/application/meta/llm/semantic_search.ts#embedTexts",
+      "to": "src/application/meta/llm/semantic_search.ts#cacheKey"
+    },
+    {
+      "from": "src/application/meta/llm/semantic_search.ts#embedTexts",
+      "to": "src/application/meta/llm/semantic_search.ts#cacheKey"
+    },
+    {
+      "from": "src/application/meta/llm/semantic_search.ts#embedTexts",
+      "to": "src/application/meta/llm/semantic_search.ts#callEmbeddings"
+    },
+    {
+      "from": "src/application/meta/llm/semantic_search.ts#semanticSearchCore",
+      "to": "src/application/meta/llm/semantic_search.ts#cosineSimilarity"
+    },
+    {
+      "from": "src/application/meta/llm/semantic_search.ts#embedTexts",
+      "to": "src/application/meta/llm/semantic_search.ts#decodeVectorBlob"
+    },
+    {
+      "from": "src/application/meta/llm/semantic_search.ts#semanticSearchCore",
+      "to": "src/application/meta/llm/semantic_search.ts#embedTexts"
+    },
+    {
+      "from": "src/application/meta/llm/semantic_search.ts#semanticSearchCore",
+      "to": "src/application/meta/llm/semantic_search.ts#embedTexts"
+    },
+    {
+      "from": "src/application/meta/llm/semantic_search.ts#semanticSearchCore",
+      "to": "src/application/meta/llm/semantic_search.ts#embeddingCacheStats"
+    },
+    {
+      "from": "src/application/meta/llm/semantic_search.ts#semanticSearchCore",
+      "to": "src/application/meta/llm/semantic_search.ts#embeddingCacheStats"
+    },
+    {
+      "from": "src/application/meta/llm/semantic_search.ts#embedTexts",
+      "to": "src/application/meta/llm/semantic_search.ts#encodeVectorBlob"
+    },
+    {
+      "from": "src/application/meta/llm/semantic_search.ts#semanticSearchCore",
+      "to": "src/application/meta/llm/semantic_search.ts#ftsFallback"
+    },
+    {
+      "from": "src/application/meta/llm/semantic_search.ts#semanticSearchCore",
+      "to": "src/application/meta/llm/semantic_search.ts#ftsFallback"
+    },
+    {
+      "from": "src/application/meta/llm/semantic_search.ts#semanticSearchCore",
+      "to": "src/application/meta/llm/semantic_search.ts#loadEmbeddingConfig"
+    },
+    {
+      "from": "src/application/meta/llm/semantic_search.ts#semanticSearch",
+      "to": "src/application/meta/llm/semantic_search.ts#semanticSearchCore"
+    },
+    {
+      "from": "src/application/meta/llm/semantic_search.ts#semanticSearch",
+      "to": "src/application/meta/llm/semantic_search.ts#touchedOf"
+    },
+    {
+      "from": "src/application/meta/llm/semantic_search.ts#semanticSearch",
+      "to": "src/domain/b_terms.ts#withTouched"
+    },
+    {
+      "from": "src/application/meta/llm/semantic_search.ts#semanticSearchCore",
+      "to": "src/infrastructure/index/db.ts#getProjectCacheDb"
+    },
+    {
+      "from": "src/application/meta/llm/semantic_search.ts#semanticSearchCore",
+      "to": "src/infrastructure/index/index_freshness.ts#ensureFreshIndex"
+    },
+    {
+      "from": "src/application/meta/llm/semantic_search.ts#semanticSearchCore",
+      "to": "src/infrastructure/index/symbols.ts#searchSymbols"
+    },
+    {
+      "from": "src/application/meta/llm/semantic_search.ts#ftsFallback",
+      "to": "src/infrastructure/index/symbols.ts#searchSymbols"
+    },
+    {
+      "from": "src/application/meta/llm/semantic_search.ts#loadEmbeddingConfig",
+      "to": "src/infrastructure/llm_focus.ts#configFileReadPath"
+    }
+  ]
+}

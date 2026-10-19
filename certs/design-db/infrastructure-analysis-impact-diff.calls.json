@@ -1,0 +1,47 @@
+{
+  "//": "Design DB —— src/infrastructure/analysis/impact/diff.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "DiffFeaturesInput",
+      "kind": "interface",
+      "line": 7,
+      "signature": "DiffFeaturesInput()"
+    },
+    {
+      "name": "DiffItem",
+      "kind": "interface",
+      "line": 16,
+      "signature": "DiffItem()"
+    },
+    {
+      "name": "DiffFeaturesResult",
+      "kind": "interface",
+      "line": 26,
+      "signature": "DiffFeaturesResult()"
+    },
+    {
+      "name": "diffFeatures",
+      "kind": "function",
+      "line": 38,
+      "signature": "diffFeatures(input: DiffFeaturesInput): DiffFeaturesResult"
+    }
+  ],
+  "imports": [
+    {
+      "source": "../../storage.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/impact/diff.ts#diffFeatures",
+      "to": "src/infrastructure/storage.ts#getDSLByView"
+    },
+    {
+      "from": "src/infrastructure/analysis/impact/diff.ts#diffFeatures",
+      "to": "src/infrastructure/storage.ts#getDSLByView"
+    }
+  ]
+}

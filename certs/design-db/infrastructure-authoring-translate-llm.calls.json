@@ -1,0 +1,96 @@
+{
+  "//": "Design DB —— src/infrastructure/authoring/translate/llm.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "PooledTranslatorConfig",
+      "kind": "interface",
+      "line": 15,
+      "signature": "PooledTranslatorConfig()"
+    },
+    {
+      "name": "ChatMessage",
+      "kind": "interface",
+      "line": 20,
+      "signature": "ChatMessage()"
+    },
+    {
+      "name": "normalizeBody",
+      "kind": "function",
+      "line": 26,
+      "signature": "normalizeBody(c: string): string"
+    },
+    {
+      "name": "buildChat",
+      "kind": "function",
+      "line": 36,
+      "signature": "buildChat(config: PooledTranslatorConfig): (messages: ChatMessage[]) => Promise<string>"
+    },
+    {
+      "name": "SYSTEM_FILL",
+      "kind": "const",
+      "line": 43,
+      "signature": "const SYSTEM_FILL = '你是源码翻译器。严格遵守 user 的约束：只输出目标函数体，不得生成 export function 外壳、不…"
+    },
+    {
+      "name": "SYSTEM_BATCH",
+      "kind": "const",
+      "line": 44,
+      "signature": "const SYSTEM_BATCH = '你是源码翻译器。必须为每个函数各输出一个 `<unit id=\"...\">函数体</unit>` 标记块，块数=…"
+    },
+    {
+      "name": "createPooledHoleTranslator",
+      "kind": "function",
+      "line": 51,
+      "signature": "createPooledHoleTranslator(config: PooledTranslatorConfig = {}): HoleTranslator"
+    },
+    {
+      "name": "createPooledBatchTranslator",
+      "kind": "function",
+      "line": 63,
+      "signature": "createPooledBatchTranslator(config: PooledTranslatorConfig = {}): BatchHoleTranslator"
+    }
+  ],
+  "imports": [
+    {
+      "source": "./fill.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./prompts.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../llm_gateway.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/authoring/translate/llm.ts#createPooledHoleTranslator",
+      "to": "src/infrastructure/authoring/translate/llm.ts#buildChat"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/llm.ts#createPooledBatchTranslator",
+      "to": "src/infrastructure/authoring/translate/llm.ts#buildChat"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/llm.ts#createPooledHoleTranslator",
+      "to": "src/infrastructure/authoring/translate/llm.ts#normalizeBody"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/llm.ts#createPooledBatchTranslator",
+      "to": "src/infrastructure/authoring/translate/llm.ts#normalizeBody"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/llm.ts#createPooledBatchTranslator",
+      "to": "src/infrastructure/authoring/translate/prompts.ts#buildBatchFillPrompt"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/llm.ts#buildChat",
+      "to": "src/infrastructure/llm_gateway.ts#chatViaGateway"
+    }
+  ]
+}

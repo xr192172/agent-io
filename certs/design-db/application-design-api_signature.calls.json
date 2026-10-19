@@ -1,0 +1,15 @@
+{
+  "//": "Design DB —— src/application/design/api_signature.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "extractFuncName",
+      "kind": "function",
+      "line": 18,
+      "signature": "extractFuncName(sig: string): string"
+    }
+  ],
+  "imports": [],
+  "calls": []
+}

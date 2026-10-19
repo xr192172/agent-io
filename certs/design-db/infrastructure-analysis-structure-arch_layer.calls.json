@@ -1,0 +1,156 @@
+{
+  "//": "Design DB —— src/infrastructure/analysis/structure/arch_layer.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "ArchLayerInput",
+      "kind": "interface",
+      "line": 33,
+      "signature": "ArchLayerInput()"
+    },
+    {
+      "name": "ArchLayerFileAssign",
+      "kind": "interface",
+      "line": 46,
+      "signature": "ArchLayerFileAssign()"
+    },
+    {
+      "name": "LayerMatrixRow",
+      "kind": "interface",
+      "line": 58,
+      "signature": "LayerMatrixRow()"
+    },
+    {
+      "name": "ArchLayerResult",
+      "kind": "interface",
+      "line": 64,
+      "signature": "ArchLayerResult()"
+    },
+    {
+      "name": "collectSources",
+      "kind": "function",
+      "line": 85,
+      "signature": "collectSources(sourceRoot: string,\n  rels: string[],): Promise<Array<{ path: string; src: string }>>"
+    },
+    {
+      "name": "scanImportEdges",
+      "kind": "function",
+      "line": 101,
+      "signature": "scanImportEdges(files: Array<{ path: string; src: string }>): ImportEdge[]"
+    },
+    {
+      "name": "buildLayerMatrix",
+      "kind": "function",
+      "line": 122,
+      "signature": "buildLayerMatrix(edges: ImportEdge[], fileLayers: Record<string, string>): LayerMatrixRow[]"
+    },
+    {
+      "name": "dslFingerprint",
+      "kind": "function",
+      "line": 140,
+      "signature": "dslFingerprint(dsl: DesignDSL): string"
+    },
+    {
+      "name": "dslSourceRels",
+      "kind": "function",
+      "line": 156,
+      "signature": "dslSourceRels(dsl: DesignDSL): string[]"
+    },
+    {
+      "name": "archLayer",
+      "kind": "function",
+      "line": 165,
+      "signature": "archLayer(input: ArchLayerInput): Promise<ArchLayerResult>"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "node:crypto",
+      "kind": "package"
+    },
+    {
+      "source": "../../storage.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./layer_detect.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../domain/types.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../health/health_cache.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/structure/arch_layer.ts#archLayer",
+      "to": "src/infrastructure/analysis/health/health_cache.ts#fileFingerprint"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/arch_layer.ts#archLayer",
+      "to": "src/infrastructure/analysis/health/health_cache.ts#healthKey"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/arch_layer.ts#archLayer",
+      "to": "src/infrastructure/analysis/health/health_cache.ts#readHealthCache"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/arch_layer.ts#archLayer",
+      "to": "src/infrastructure/analysis/health/health_cache.ts#writeHealthCache"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/arch_layer.ts#archLayer",
+      "to": "src/infrastructure/analysis/structure/arch_layer.ts#buildLayerMatrix"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/arch_layer.ts#archLayer",
+      "to": "src/infrastructure/analysis/structure/arch_layer.ts#collectSources"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/arch_layer.ts#archLayer",
+      "to": "src/infrastructure/analysis/structure/arch_layer.ts#dslFingerprint"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/arch_layer.ts#archLayer",
+      "to": "src/infrastructure/analysis/structure/arch_layer.ts#dslSourceRels"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/arch_layer.ts#archLayer",
+      "to": "src/infrastructure/analysis/structure/arch_layer.ts#scanImportEdges"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/arch_layer.ts#archLayer",
+      "to": "src/infrastructure/analysis/structure/layer_detect.ts#detectArchLayers"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/arch_layer.ts#archLayer",
+      "to": "src/infrastructure/analysis/structure/layer_detect.ts#detectLayerViolations"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/arch_layer.ts#scanImportEdges",
+      "to": "src/infrastructure/analysis/structure/layer_detect.ts#parseImportsLight"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/arch_layer.ts#archLayer",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/arch_layer.ts#archLayer",
+      "to": "src/infrastructure/storage.ts#saveDSL"
+    }
+  ]
+}

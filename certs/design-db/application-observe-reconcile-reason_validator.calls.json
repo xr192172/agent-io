@@ -1,0 +1,90 @@
+{
+  "//": "Design DB —— src/application/observe/reconcile/reason_validator.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "ReasonFailLayer",
+      "kind": "type",
+      "line": 24,
+      "signature": "ReasonFailLayer()"
+    },
+    {
+      "name": "ReasonValidationResult",
+      "kind": "interface",
+      "line": 27,
+      "signature": "ReasonValidationResult()"
+    },
+    {
+      "name": "ReasonEvidenceRef",
+      "kind": "interface",
+      "line": 36,
+      "signature": "ReasonEvidenceRef()"
+    },
+    {
+      "name": "ReasonEvidenceResolver",
+      "kind": "interface",
+      "line": 42,
+      "signature": "ReasonEvidenceResolver()"
+    },
+    {
+      "name": "ValidateReasonInput",
+      "kind": "interface",
+      "line": 52,
+      "signature": "ValidateReasonInput()"
+    },
+    {
+      "name": "MIN_REASON_CHARS",
+      "kind": "const",
+      "line": 73,
+      "signature": "const MIN_REASON_CHARS = 6"
+    },
+    {
+      "name": "FILLER_WORDS",
+      "kind": "const",
+      "line": 80,
+      "signature": "const FILLER_WORDS = [ '更新代码', '修复bug', '修复 bug', '优化代码', '优化', '改进', '调整', '修…"
+    },
+    {
+      "name": "METRIC_RE",
+      "kind": "const",
+      "line": 112,
+      "signature": "const METRIC_RE = /\\d+(\\.\\d+)?\\s*(?:s|ms|token|tokens|tok|%|k|KB|MB|GB)?\\b/i"
+    },
+    {
+      "name": "FUNCTION_WORDS",
+      "kind": "const",
+      "line": 118,
+      "signature": "const FUNCTION_WORDS = [ '只是', '而已', '一下', '简单地', '稍微', '仅', '只要', '就是', '仅仅', '…"
+    },
+    {
+      "name": "validateReason",
+      "kind": "function",
+      "line": 135,
+      "signature": "validateReason(input: ValidateReasonInput): ReasonValidationResult"
+    },
+    {
+      "name": "isFillerOnly",
+      "kind": "function",
+      "line": 213,
+      "signature": "isFillerOnly(text: string): boolean"
+    },
+    {
+      "name": "matchesConcreteEntity",
+      "kind": "function",
+      "line": 230,
+      "signature": "matchesConcreteEntity(text: string, resolver: ReasonEvidenceResolver): boolean"
+    }
+  ],
+  "imports": [],
+  "calls": [
+    {
+      "from": "src/application/observe/reconcile/reason_validator.ts#validateReason",
+      "to": "src/application/observe/reconcile/reason_validator.ts#isFillerOnly"
+    },
+    {
+      "from": "src/application/observe/reconcile/reason_validator.ts#validateReason",
+      "to": "src/application/observe/reconcile/reason_validator.ts#matchesConcreteEntity"
+    }
+  ]
+}

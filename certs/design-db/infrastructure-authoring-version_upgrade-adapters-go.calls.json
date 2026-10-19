@@ -1,0 +1,47 @@
+{
+  "//": "Design DB —— src/infrastructure/authoring/version_upgrade/adapters/go.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "GO_FEATURES",
+      "kind": "const",
+      "line": 23,
+      "signature": "const GO_FEATURES = [ { name: '泛型函数（类型参数）', tool: 'go', since: 18, pattern: /…"
+    },
+    {
+      "name": "GO_REMOVED",
+      "kind": "const",
+      "line": 27,
+      "signature": "const GO_REMOVED = [ { name: 'io/ioutil', tool: 'go', since: 16, kind: 'depr…"
+    },
+    {
+      "name": "parseGoMod",
+      "kind": "function",
+      "line": 32,
+      "signature": "parseGoMod(content: string): { version: string; raw: string } | null"
+    },
+    {
+      "name": "goAdapter",
+      "kind": "const",
+      "line": 38,
+      "signature": "const goAdapter = { lang: 'go', label: 'Go', declarationFiles: ['go.mod', '…"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "./types.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": []
+}

@@ -1,0 +1,114 @@
+{
+  "//": "Design DB —— src/infrastructure/alert_inbox.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "PendingAlert",
+      "kind": "interface",
+      "line": 25,
+      "signature": "PendingAlert()"
+    },
+    {
+      "name": "LoggedAlert",
+      "kind": "interface",
+      "line": 33,
+      "signature": "LoggedAlert()"
+    },
+    {
+      "name": "ALERT_INBOX_CAP",
+      "kind": "const",
+      "line": 38,
+      "signature": "const ALERT_INBOX_CAP = 10"
+    },
+    {
+      "name": "ALERT_LOG_CAP",
+      "kind": "const",
+      "line": 41,
+      "signature": "const ALERT_LOG_CAP = 200"
+    },
+    {
+      "name": "inbox",
+      "kind": "const",
+      "line": 43,
+      "signature": "const inbox = []"
+    },
+    {
+      "name": "alertLog",
+      "kind": "const",
+      "line": 44,
+      "signature": "const alertLog = []"
+    },
+    {
+      "name": "nextAlertId",
+      "kind": "const",
+      "line": 45,
+      "signature": "const nextAlertId = 1"
+    },
+    {
+      "name": "alertListener",
+      "kind": "const",
+      "line": 46,
+      "signature": "const alertListener = null"
+    },
+    {
+      "name": "setAlertListener",
+      "kind": "function",
+      "line": 49,
+      "signature": "setAlertListener(fn: ((a: LoggedAlert) => void) | null): void"
+    },
+    {
+      "name": "pushAlert",
+      "kind": "function",
+      "line": 54,
+      "signature": "pushAlert(a: PendingAlert): void"
+    },
+    {
+      "name": "takeAlerts",
+      "kind": "function",
+      "line": 70,
+      "signature": "takeAlerts(): PendingAlert[]"
+    },
+    {
+      "name": "peekAlerts",
+      "kind": "function",
+      "line": 78,
+      "signature": "peekAlerts(): readonly PendingAlert[]"
+    },
+    {
+      "name": "alertsSince",
+      "kind": "function",
+      "line": 83,
+      "signature": "alertsSince(cursor: number): { alerts: LoggedAlert[]; cursor: number }"
+    },
+    {
+      "name": "clearAlertInbox",
+      "kind": "function",
+      "line": 89,
+      "signature": "clearAlertInbox(): void"
+    },
+    {
+      "name": "SELF_CARRYING_TOOLS",
+      "kind": "const",
+      "line": 109,
+      "signature": "const SELF_CARRYING_TOOLS = new Set<string>()"
+    },
+    {
+      "name": "appendPendingAlerts",
+      "kind": "function",
+      "line": 115,
+      "signature": "appendPendingAlerts(text: string, toolName: string): string"
+    }
+  ],
+  "imports": [],
+  "calls": [
+    {
+      "from": "src/infrastructure/alert_inbox.ts#pushAlert",
+      "to": "src/infrastructure/alert_inbox.ts#alertListener"
+    },
+    {
+      "from": "src/infrastructure/alert_inbox.ts#appendPendingAlerts",
+      "to": "src/infrastructure/alert_inbox.ts#takeAlerts"
+    }
+  ]
+}

@@ -1,0 +1,203 @@
+{
+  "//": "Design DB —— src/application/observe/reconcile/reconcile_chain.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "ReconcileChainInput",
+      "kind": "interface",
+      "line": 36,
+      "signature": "ReconcileChainInput()"
+    },
+    {
+      "name": "ReconcileChainFunction",
+      "kind": "interface",
+      "line": 51,
+      "signature": "ReconcileChainFunction()"
+    },
+    {
+      "name": "ReconcileChainObserved",
+      "kind": "interface",
+      "line": 60,
+      "signature": "ReconcileChainObserved()"
+    },
+    {
+      "name": "ReconcileChainDeviation",
+      "kind": "interface",
+      "line": 67,
+      "signature": "ReconcileChainDeviation()"
+    },
+    {
+      "name": "ReconcileChainResult",
+      "kind": "interface",
+      "line": 74,
+      "signature": "ReconcileChainResult()"
+    },
+    {
+      "name": "discoverEventFiles",
+      "kind": "function",
+      "line": 112,
+      "signature": "discoverEventFiles(root: string): string[]"
+    },
+    {
+      "name": "legacyEventFiles",
+      "kind": "function",
+      "line": 123,
+      "signature": "legacyEventFiles(root: string): string[]"
+    },
+    {
+      "name": "locateHostSource",
+      "kind": "function",
+      "line": 134,
+      "signature": "locateHostSource(dsl: { semantic?: { files?: Array<{ id: string; path: string }> } },\n  nodeId: string,\n  projectRoot: string,): string | null"
+    },
+    {
+      "name": "hasDerivedChain",
+      "kind": "function",
+      "line": 149,
+      "signature": "hasDerivedChain(dsl: {\n  geometry: { nodes: Array<{ id: string; host?: string; layer?: string }> };\n}, nodeId: string): boolean"
+    },
+    {
+      "name": "readDerivedChain",
+      "kind": "function",
+      "line": 158,
+      "signature": "readDerivedChain(dsl: {\n    geometry: { nodes: Array<{ id: string; x?: number; host?: string; layer?: string; label?: string; description?: string }> };\n    semantic?: { files?: Array<{ id: string; path: string }> };\n  },\n  nodeId: string,\n  projectRoot: string,): { chain: ReconcileChainFunction[]; hostFile: string | null }"
+    },
+    {
+      "name": "bare",
+      "kind": "function",
+      "line": 194,
+      "signature": "bare(s: string): string"
+    },
+    {
+      "name": "reconcileChainCore",
+      "kind": "function",
+      "line": 202,
+      "signature": "reconcileChainCore(input: ReconcileChainInput): Promise<ReconcileChainResult>"
+    },
+    {
+      "name": "touchedOf",
+      "kind": "function",
+      "line": 348,
+      "signature": "touchedOf(input: ReconcileChainInput, r: ReconcileChainResult): Touched"
+    },
+    {
+      "name": "reconcileChain",
+      "kind": "function",
+      "line": 358,
+      "signature": "reconcileChain(input: ReconcileChainInput): Promise<TouchedProduct<ReconcileChainResult>>"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../../infrastructure/storage.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/data_dir.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../design/derive/derive_chain.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/analysis/observe/log_query.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/analysis/observe/judge.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/analysis/observe/chain.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/analysis/observe/probe.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../domain/b_terms.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/observe/reconcile/reconcile_chain.ts#reconcileChainCore",
+      "to": "src/application/design/derive/derive_chain.ts#deriveDetailChain"
+    },
+    {
+      "from": "src/application/observe/reconcile/reconcile_chain.ts#reconcileChainCore",
+      "to": "src/application/observe/reconcile/reconcile_chain.ts#discoverEventFiles"
+    },
+    {
+      "from": "src/application/observe/reconcile/reconcile_chain.ts#reconcileChainCore",
+      "to": "src/application/observe/reconcile/reconcile_chain.ts#hasDerivedChain"
+    },
+    {
+      "from": "src/application/observe/reconcile/reconcile_chain.ts#reconcileChainCore",
+      "to": "src/application/observe/reconcile/reconcile_chain.ts#legacyEventFiles"
+    },
+    {
+      "from": "src/application/observe/reconcile/reconcile_chain.ts#readDerivedChain",
+      "to": "src/application/observe/reconcile/reconcile_chain.ts#locateHostSource"
+    },
+    {
+      "from": "src/application/observe/reconcile/reconcile_chain.ts#reconcileChainCore",
+      "to": "src/application/observe/reconcile/reconcile_chain.ts#locateHostSource"
+    },
+    {
+      "from": "src/application/observe/reconcile/reconcile_chain.ts#reconcileChainCore",
+      "to": "src/application/observe/reconcile/reconcile_chain.ts#readDerivedChain"
+    },
+    {
+      "from": "src/application/observe/reconcile/reconcile_chain.ts#reconcileChain",
+      "to": "src/application/observe/reconcile/reconcile_chain.ts#reconcileChainCore"
+    },
+    {
+      "from": "src/application/observe/reconcile/reconcile_chain.ts#reconcileChain",
+      "to": "src/application/observe/reconcile/reconcile_chain.ts#touchedOf"
+    },
+    {
+      "from": "src/application/observe/reconcile/reconcile_chain.ts#reconcileChain",
+      "to": "src/domain/b_terms.ts#withTouched"
+    },
+    {
+      "from": "src/application/observe/reconcile/reconcile_chain.ts#reconcileChainCore",
+      "to": "src/infrastructure/analysis/observe/chain.ts#matchChainDecl"
+    },
+    {
+      "from": "src/application/observe/reconcile/reconcile_chain.ts#reconcileChainCore",
+      "to": "src/infrastructure/analysis/observe/chain.ts#rebuildChains"
+    },
+    {
+      "from": "src/application/observe/reconcile/reconcile_chain.ts#reconcileChainCore",
+      "to": "src/infrastructure/analysis/observe/judge.ts#judgeEvent"
+    },
+    {
+      "from": "src/application/observe/reconcile/reconcile_chain.ts#reconcileChainCore",
+      "to": "src/infrastructure/analysis/observe/log_query.ts#queryObserveLog"
+    },
+    {
+      "from": "src/application/observe/reconcile/reconcile_chain.ts#reconcileChainCore",
+      "to": "src/infrastructure/analysis/observe/probe.ts#loadTSEvents"
+    },
+    {
+      "from": "src/application/observe/reconcile/reconcile_chain.ts#reconcileChainCore",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/application/observe/reconcile/reconcile_chain.ts#reconcileChainCore",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    }
+  ]
+}

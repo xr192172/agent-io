@@ -1,0 +1,95 @@
+{
+  "//": "Design DB —— src/presentation/daemon/memory_watch.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "MB",
+      "kind": "const",
+      "line": 17,
+      "signature": "const MB = (b: number): number => Math.round(b / 1048576)"
+    },
+    {
+      "name": "MemoryWatchOpts",
+      "kind": "interface",
+      "line": 19,
+      "signature": "MemoryWatchOpts()"
+    },
+    {
+      "name": "MemoryVerdict",
+      "kind": "type",
+      "line": 36,
+      "signature": "MemoryVerdict()"
+    },
+    {
+      "name": "JudgeOpts",
+      "kind": "interface",
+      "line": 38,
+      "signature": "JudgeOpts()"
+    },
+    {
+      "name": "judgeLeak",
+      "kind": "function",
+      "line": 45,
+      "signature": "judgeLeak(series: MemSample[], o: JudgeOpts): MemoryVerdict"
+    },
+    {
+      "name": "FORMAT",
+      "kind": "const",
+      "line": 74,
+      "signature": "const FORMAT = (v: MemoryVerdict): string => v === 'grow' ? 'grow' : v =…"
+    },
+    {
+      "name": "TargetState",
+      "kind": "interface",
+      "line": 83,
+      "signature": "TargetState()"
+    },
+    {
+      "name": "startMemoryWatch",
+      "kind": "function",
+      "line": 92,
+      "signature": "startMemoryWatch(opts: MemoryWatchOpts = {}): Promise<() => void>"
+    }
+  ],
+  "imports": [
+    {
+      "source": "../../application/observe/capture/memory_observe.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/alert_inbox.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/presentation/daemon/memory_watch.ts#startMemoryWatch",
+      "to": "src/application/observe/capture/memory_observe.ts#memoryTargetsHandler"
+    },
+    {
+      "from": "src/presentation/daemon/memory_watch.ts#startMemoryWatch",
+      "to": "src/application/observe/capture/memory_observe.ts#sampleRemote"
+    },
+    {
+      "from": "src/presentation/daemon/memory_watch.ts#startMemoryWatch",
+      "to": "src/infrastructure/alert_inbox.ts#pushAlert"
+    },
+    {
+      "from": "src/presentation/daemon/memory_watch.ts#startMemoryWatch",
+      "to": "src/presentation/daemon/memory_watch.ts#FORMAT"
+    },
+    {
+      "from": "src/presentation/daemon/memory_watch.ts#startMemoryWatch",
+      "to": "src/presentation/daemon/memory_watch.ts#MB"
+    },
+    {
+      "from": "src/presentation/daemon/memory_watch.ts#startMemoryWatch",
+      "to": "src/presentation/daemon/memory_watch.ts#MB"
+    },
+    {
+      "from": "src/presentation/daemon/memory_watch.ts#startMemoryWatch",
+      "to": "src/presentation/daemon/memory_watch.ts#judgeLeak"
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "//": "Design DB —— src/infrastructure/analysis/observe/judge_guard.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "judgeGuardEnabled",
+      "kind": "function",
+      "line": 20,
+      "signature": "judgeGuardEnabled(): boolean"
+    },
+    {
+      "name": "judgeGuardLog",
+      "kind": "function",
+      "line": 25,
+      "signature": "judgeGuardLog(ev: TSEvent): void"
+    }
+  ],
+  "imports": [
+    {
+      "source": "./judge.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./probe.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/observe/judge_guard.ts#judgeGuardLog",
+      "to": "src/infrastructure/analysis/observe/judge.ts#judgeEvent"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/judge_guard.ts#judgeGuardLog",
+      "to": "src/infrastructure/analysis/observe/judge_guard.ts#judgeGuardEnabled"
+    }
+  ]
+}

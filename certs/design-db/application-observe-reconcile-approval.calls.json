@@ -1,0 +1,190 @@
+{
+  "//": "Design DB —— src/application/observe/reconcile/approval.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "now",
+      "kind": "function",
+      "line": 15,
+      "signature": "now(): string"
+    },
+    {
+      "name": "uid",
+      "kind": "function",
+      "line": 19,
+      "signature": "uid(prefix: string = 'h'): string"
+    },
+    {
+      "name": "ensureHistory",
+      "kind": "function",
+      "line": 24,
+      "signature": "ensureHistory(ann: Annotation): ApprovalHistoryEntry[]"
+    },
+    {
+      "name": "addHistory",
+      "kind": "function",
+      "line": 30,
+      "signature": "addHistory(ann: Annotation, action: ApprovalHistoryEntry['action'], status: ApprovalStatus, actor: string, comment?: string): void"
+    },
+    {
+      "name": "SubmitApprovalInput",
+      "kind": "interface",
+      "line": 53,
+      "signature": "SubmitApprovalInput()"
+    },
+    {
+      "name": "SubmitApprovalResult",
+      "kind": "interface",
+      "line": 61,
+      "signature": "SubmitApprovalResult()"
+    },
+    {
+      "name": "submitApproval",
+      "kind": "function",
+      "line": 68,
+      "signature": "submitApproval(input: SubmitApprovalInput): SubmitApprovalResult"
+    },
+    {
+      "name": "APPROVAL_DECISIONS",
+      "kind": "const",
+      "line": 114,
+      "signature": "const APPROVAL_DECISIONS = ['approve', 'reject', 'request_revision'] as const"
+    },
+    {
+      "name": "ApprovalDecision",
+      "kind": "type",
+      "line": 117,
+      "signature": "ApprovalDecision()"
+    },
+    {
+      "name": "DECISION_EFFECT",
+      "kind": "const",
+      "line": 124,
+      "signature": "const DECISION_EFFECT = { approve: { action: 'approve', status: 'approved', label…"
+    },
+    {
+      "name": "ReviewAnnotationInput",
+      "kind": "interface",
+      "line": 130,
+      "signature": "ReviewAnnotationInput()"
+    },
+    {
+      "name": "ReviewAnnotationResult",
+      "kind": "interface",
+      "line": 138,
+      "signature": "ReviewAnnotationResult()"
+    },
+    {
+      "name": "reviewAnnotation",
+      "kind": "function",
+      "line": 145,
+      "signature": "reviewAnnotation(input: ReviewAnnotationInput): ReviewAnnotationResult"
+    },
+    {
+      "name": "ListApprovalsInput",
+      "kind": "interface",
+      "line": 186,
+      "signature": "ListApprovalsInput()"
+    },
+    {
+      "name": "ListApprovalsResult",
+      "kind": "interface",
+      "line": 192,
+      "signature": "ListApprovalsResult()"
+    },
+    {
+      "name": "listApprovals",
+      "kind": "function",
+      "line": 206,
+      "signature": "listApprovals(input: ListApprovalsInput): ListApprovalsResult"
+    },
+    {
+      "name": "GetApprovalHistoryInput",
+      "kind": "interface",
+      "line": 270,
+      "signature": "GetApprovalHistoryInput()"
+    },
+    {
+      "name": "GetApprovalHistoryResult",
+      "kind": "interface",
+      "line": 275,
+      "signature": "GetApprovalHistoryResult()"
+    },
+    {
+      "name": "getApprovalHistory",
+      "kind": "function",
+      "line": 283,
+      "signature": "getApprovalHistory(input: GetApprovalHistoryInput): GetApprovalHistoryResult"
+    }
+  ],
+  "imports": [
+    {
+      "source": "../../../infrastructure/storage.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../domain/types.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../../../domain/types.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/observe/reconcile/approval.ts#submitApproval",
+      "to": "src/application/observe/reconcile/approval.ts#addHistory"
+    },
+    {
+      "from": "src/application/observe/reconcile/approval.ts#reviewAnnotation",
+      "to": "src/application/observe/reconcile/approval.ts#addHistory"
+    },
+    {
+      "from": "src/application/observe/reconcile/approval.ts#addHistory",
+      "to": "src/application/observe/reconcile/approval.ts#ensureHistory"
+    },
+    {
+      "from": "src/application/observe/reconcile/approval.ts#uid",
+      "to": "src/application/observe/reconcile/approval.ts#now"
+    },
+    {
+      "from": "src/application/observe/reconcile/approval.ts#addHistory",
+      "to": "src/application/observe/reconcile/approval.ts#now"
+    },
+    {
+      "from": "src/application/observe/reconcile/approval.ts#addHistory",
+      "to": "src/application/observe/reconcile/approval.ts#now"
+    },
+    {
+      "from": "src/application/observe/reconcile/approval.ts#addHistory",
+      "to": "src/application/observe/reconcile/approval.ts#uid"
+    },
+    {
+      "from": "src/application/observe/reconcile/approval.ts#submitApproval",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/application/observe/reconcile/approval.ts#reviewAnnotation",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/application/observe/reconcile/approval.ts#listApprovals",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/application/observe/reconcile/approval.ts#getApprovalHistory",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/application/observe/reconcile/approval.ts#submitApproval",
+      "to": "src/infrastructure/storage.ts#saveDSL"
+    },
+    {
+      "from": "src/application/observe/reconcile/approval.ts#reviewAnnotation",
+      "to": "src/infrastructure/storage.ts#saveDSL"
+    }
+  ]
+}

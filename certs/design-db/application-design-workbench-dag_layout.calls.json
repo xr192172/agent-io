@@ -1,0 +1,196 @@
+{
+  "//": "Design DB —— src/application/design/workbench/dag_layout.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "DagLayoutInput",
+      "kind": "interface",
+      "line": 16,
+      "signature": "DagLayoutInput()"
+    },
+    {
+      "name": "ForceLayoutInput",
+      "kind": "interface",
+      "line": 30,
+      "signature": "ForceLayoutInput()"
+    },
+    {
+      "name": "assertFlatLayoutSafe",
+      "kind": "function",
+      "line": 53,
+      "signature": "assertFlatLayoutSafe(dsl: DesignDSL, algo: string): void"
+    },
+    {
+      "name": "dagLayoutCore",
+      "kind": "function",
+      "line": 65,
+      "signature": "dagLayoutCore(input: DagLayoutInput): { message: string; rank_count: number; edge_crossings: number }"
+    },
+    {
+      "name": "touchedOf",
+      "kind": "function",
+      "line": 295,
+      "signature": "touchedOf(input: DagLayoutInput): Touched"
+    },
+    {
+      "name": "dagLayout",
+      "kind": "function",
+      "line": 299,
+      "signature": "dagLayout(input: DagLayoutInput): TouchedProduct<ReturnType<typeof dagLayoutCore>>"
+    },
+    {
+      "name": "countEdgeCrossings",
+      "kind": "function",
+      "line": 305,
+      "signature": "countEdgeCrossings(dsl: DesignDSL): number"
+    },
+    {
+      "name": "segmentsIntersect",
+      "kind": "function",
+      "line": 340,
+      "signature": "segmentsIntersect(x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, x4: number, y4: number): boolean"
+    },
+    {
+      "name": "direction",
+      "kind": "function",
+      "line": 354,
+      "signature": "direction(x1: number, y1: number, x2: number, y2: number, x3: number, y3: number): number"
+    },
+    {
+      "name": "onSegment",
+      "kind": "function",
+      "line": 358,
+      "signature": "onSegment(x1: number, y1: number, x2: number, y2: number, x: number, y: number): boolean"
+    },
+    {
+      "name": "ForceNode",
+      "kind": "interface",
+      "line": 363,
+      "signature": "ForceNode()"
+    },
+    {
+      "name": "forceLayout",
+      "kind": "function",
+      "line": 372,
+      "signature": "forceLayout(input: ForceLayoutInput): { message: string; iterations: number; edge_crossings: number }"
+    },
+    {
+      "name": "GridAlignInput",
+      "kind": "interface",
+      "line": 514,
+      "signature": "GridAlignInput()"
+    },
+    {
+      "name": "gridAlign",
+      "kind": "function",
+      "line": 520,
+      "signature": "gridAlign(input: GridAlignInput): { message: string; grid_size: number; aligned_count: number }"
+    }
+  ],
+  "imports": [
+    {
+      "source": "../../../domain/types.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../../../infrastructure/storage.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../domain/b_terms.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/design/workbench/dag_layout.ts#dagLayoutCore",
+      "to": "src/application/design/workbench/dag_layout.ts#assertFlatLayoutSafe"
+    },
+    {
+      "from": "src/application/design/workbench/dag_layout.ts#forceLayout",
+      "to": "src/application/design/workbench/dag_layout.ts#assertFlatLayoutSafe"
+    },
+    {
+      "from": "src/application/design/workbench/dag_layout.ts#dagLayoutCore",
+      "to": "src/application/design/workbench/dag_layout.ts#countEdgeCrossings"
+    },
+    {
+      "from": "src/application/design/workbench/dag_layout.ts#forceLayout",
+      "to": "src/application/design/workbench/dag_layout.ts#countEdgeCrossings"
+    },
+    {
+      "from": "src/application/design/workbench/dag_layout.ts#dagLayout",
+      "to": "src/application/design/workbench/dag_layout.ts#dagLayoutCore"
+    },
+    {
+      "from": "src/application/design/workbench/dag_layout.ts#segmentsIntersect",
+      "to": "src/application/design/workbench/dag_layout.ts#direction"
+    },
+    {
+      "from": "src/application/design/workbench/dag_layout.ts#segmentsIntersect",
+      "to": "src/application/design/workbench/dag_layout.ts#direction"
+    },
+    {
+      "from": "src/application/design/workbench/dag_layout.ts#segmentsIntersect",
+      "to": "src/application/design/workbench/dag_layout.ts#direction"
+    },
+    {
+      "from": "src/application/design/workbench/dag_layout.ts#segmentsIntersect",
+      "to": "src/application/design/workbench/dag_layout.ts#direction"
+    },
+    {
+      "from": "src/application/design/workbench/dag_layout.ts#segmentsIntersect",
+      "to": "src/application/design/workbench/dag_layout.ts#onSegment"
+    },
+    {
+      "from": "src/application/design/workbench/dag_layout.ts#segmentsIntersect",
+      "to": "src/application/design/workbench/dag_layout.ts#onSegment"
+    },
+    {
+      "from": "src/application/design/workbench/dag_layout.ts#segmentsIntersect",
+      "to": "src/application/design/workbench/dag_layout.ts#onSegment"
+    },
+    {
+      "from": "src/application/design/workbench/dag_layout.ts#segmentsIntersect",
+      "to": "src/application/design/workbench/dag_layout.ts#onSegment"
+    },
+    {
+      "from": "src/application/design/workbench/dag_layout.ts#countEdgeCrossings",
+      "to": "src/application/design/workbench/dag_layout.ts#segmentsIntersect"
+    },
+    {
+      "from": "src/application/design/workbench/dag_layout.ts#dagLayout",
+      "to": "src/application/design/workbench/dag_layout.ts#touchedOf"
+    },
+    {
+      "from": "src/application/design/workbench/dag_layout.ts#dagLayout",
+      "to": "src/domain/b_terms.ts#withTouched"
+    },
+    {
+      "from": "src/application/design/workbench/dag_layout.ts#dagLayoutCore",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/application/design/workbench/dag_layout.ts#forceLayout",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/application/design/workbench/dag_layout.ts#gridAlign",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/application/design/workbench/dag_layout.ts#dagLayoutCore",
+      "to": "src/infrastructure/storage.ts#saveDSL"
+    },
+    {
+      "from": "src/application/design/workbench/dag_layout.ts#forceLayout",
+      "to": "src/infrastructure/storage.ts#saveDSL"
+    },
+    {
+      "from": "src/application/design/workbench/dag_layout.ts#gridAlign",
+      "to": "src/infrastructure/storage.ts#saveDSL"
+    }
+  ]
+}

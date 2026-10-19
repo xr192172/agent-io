@@ -1,0 +1,94 @@
+{
+  "//": "Design DB —— src/infrastructure/analysis/observe/chain.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "SCOPE_EVENT_SUFFIXES",
+      "kind": "const",
+      "line": 20,
+      "signature": "const SCOPE_EVENT_SUFFIXES = ['.enter', '.exit', '.catch']"
+    },
+    {
+      "name": "baseProbeName",
+      "kind": "function",
+      "line": 23,
+      "signature": "baseProbeName(probe: string): string"
+    },
+    {
+      "name": "TSChainObs",
+      "kind": "interface",
+      "line": 31,
+      "signature": "TSChainObs()"
+    },
+    {
+      "name": "MAX_CHAINS",
+      "kind": "const",
+      "line": 42,
+      "signature": "const MAX_CHAINS = 512"
+    },
+    {
+      "name": "MAX_CHAIN_FRAMES",
+      "kind": "const",
+      "line": 43,
+      "signature": "const MAX_CHAIN_FRAMES = 4096"
+    },
+    {
+      "name": "MAX_SEQUENCE_EXPORT",
+      "kind": "const",
+      "line": 44,
+      "signature": "const MAX_SEQUENCE_EXPORT = 128"
+    },
+    {
+      "name": "rebuildChains",
+      "kind": "function",
+      "line": 50,
+      "signature": "rebuildChains(events: TSEvent[]): { chains: TSChainObs[]; dropped: number }"
+    },
+    {
+      "name": "isSubsequence",
+      "kind": "function",
+      "line": 125,
+      "signature": "isSubsequence(want: string[], seq: string[]): boolean"
+    },
+    {
+      "name": "TSChainMatch",
+      "kind": "interface",
+      "line": 130,
+      "signature": "TSChainMatch()"
+    },
+    {
+      "name": "matchChainDecl",
+      "kind": "function",
+      "line": 142,
+      "signature": "matchChainDecl(want: string[], chains: TSChainObs[]): { satisfied: boolean; best: TSChainMatch | null }"
+    },
+    {
+      "name": "subsequencePrefixLen",
+      "kind": "function",
+      "line": 155,
+      "signature": "subsequencePrefixLen(want: string[], seq: string[]): number"
+    }
+  ],
+  "imports": [
+    {
+      "source": "./probe.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/observe/chain.ts#rebuildChains",
+      "to": "src/infrastructure/analysis/observe/chain.ts#baseProbeName"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/chain.ts#isSubsequence",
+      "to": "src/infrastructure/analysis/observe/chain.ts#subsequencePrefixLen"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/chain.ts#matchChainDecl",
+      "to": "src/infrastructure/analysis/observe/chain.ts#subsequencePrefixLen"
+    }
+  ]
+}

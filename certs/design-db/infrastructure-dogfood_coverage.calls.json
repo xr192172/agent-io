@@ -1,0 +1,53 @@
+{
+  "//": "Design DB —— src/infrastructure/dogfood_coverage.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "ToolUsageRow",
+      "kind": "interface",
+      "line": 37,
+      "signature": "ToolUsageRow()"
+    },
+    {
+      "name": "DogfoodCoverage",
+      "kind": "interface",
+      "line": 51,
+      "signature": "DogfoodCoverage()"
+    },
+    {
+      "name": "computeDogfoodCoverage",
+      "kind": "function",
+      "line": 78,
+      "signature": "computeDogfoodCoverage(registry: readonly string[],\n  registrySource: string,): DogfoodCoverage"
+    },
+    {
+      "name": "summarizeCoverage",
+      "kind": "function",
+      "line": 109,
+      "signature": "summarizeCoverage(c: DogfoodCoverage): string"
+    },
+    {
+      "name": "renderDogfoodCoverage",
+      "kind": "function",
+      "line": 119,
+      "signature": "renderDogfoodCoverage(c: DogfoodCoverage): string"
+    }
+  ],
+  "imports": [
+    {
+      "source": "./dogfood_stats.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/dogfood_coverage.ts#renderDogfoodCoverage",
+      "to": "src/infrastructure/dogfood_coverage.ts#summarizeCoverage"
+    },
+    {
+      "from": "src/infrastructure/dogfood_coverage.ts#computeDogfoodCoverage",
+      "to": "src/infrastructure/dogfood_stats.ts#snapshotDogfoodStats"
+    }
+  ]
+}

@@ -1,0 +1,121 @@
+{
+  "//": "Design DB —— src/application/design/dsl_ops/file_ops.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "AddFileInput",
+      "kind": "interface",
+      "line": 22,
+      "signature": "AddFileInput()"
+    },
+    {
+      "name": "addFile",
+      "kind": "function",
+      "line": 33,
+      "signature": "addFile(input: AddFileInput): EditResult"
+    },
+    {
+      "name": "UpdateFileInput",
+      "kind": "interface",
+      "line": 81,
+      "signature": "UpdateFileInput()"
+    },
+    {
+      "name": "updateFile",
+      "kind": "function",
+      "line": 103,
+      "signature": "updateFile(input: UpdateFileInput): EditResult"
+    },
+    {
+      "name": "DeleteFileInput",
+      "kind": "interface",
+      "line": 145,
+      "signature": "DeleteFileInput()"
+    },
+    {
+      "name": "deleteFile",
+      "kind": "function",
+      "line": 162,
+      "signature": "deleteFile(input: DeleteFileInput): EditResult"
+    }
+  ],
+  "imports": [
+    {
+      "source": "../../../domain/types.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../../../domain/semantic.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../domain/dsl_removal.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/storage_overlay.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/storage.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./edit_result.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./status_tools.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/design/dsl_ops/file_ops.ts#addFile",
+      "to": "src/application/design/dsl_ops/status_tools.ts#updateStatus"
+    },
+    {
+      "from": "src/application/design/dsl_ops/file_ops.ts#updateFile",
+      "to": "src/application/design/dsl_ops/status_tools.ts#updateStatus"
+    },
+    {
+      "from": "src/application/design/dsl_ops/file_ops.ts#deleteFile",
+      "to": "src/domain/dsl_removal.ts#removeFileFromDsl"
+    },
+    {
+      "from": "src/application/design/dsl_ops/file_ops.ts#updateFile",
+      "to": "src/domain/semantic.ts#assertLifecycle"
+    },
+    {
+      "from": "src/application/design/dsl_ops/file_ops.ts#addFile",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/application/design/dsl_ops/file_ops.ts#updateFile",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/application/design/dsl_ops/file_ops.ts#deleteFile",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/application/design/dsl_ops/file_ops.ts#addFile",
+      "to": "src/infrastructure/storage.ts#saveDSL"
+    },
+    {
+      "from": "src/application/design/dsl_ops/file_ops.ts#updateFile",
+      "to": "src/infrastructure/storage.ts#saveDSL"
+    },
+    {
+      "from": "src/application/design/dsl_ops/file_ops.ts#deleteFile",
+      "to": "src/infrastructure/storage.ts#saveDSL"
+    },
+    {
+      "from": "src/application/design/dsl_ops/file_ops.ts#deleteFile",
+      "to": "src/infrastructure/storage_overlay.ts#dropLifecycleFromOverlay"
+    }
+  ]
+}

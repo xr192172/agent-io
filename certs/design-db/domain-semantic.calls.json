@@ -1,0 +1,110 @@
+{
+  "//": "Design DB —— src/domain/semantic.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "ExpectedApi",
+      "kind": "interface",
+      "line": 9,
+      "signature": "ExpectedApi()"
+    },
+    {
+      "name": "Symbol",
+      "kind": "interface",
+      "line": 24,
+      "signature": "Symbol()"
+    },
+    {
+      "name": "SymbolLifecycle",
+      "kind": "interface",
+      "line": 47,
+      "signature": "SymbolLifecycle()"
+    },
+    {
+      "name": "SemanticFile",
+      "kind": "interface",
+      "line": 63,
+      "signature": "SemanticFile()"
+    },
+    {
+      "name": "FileLifecycle",
+      "kind": "interface",
+      "line": 116,
+      "signature": "FileLifecycle()"
+    },
+    {
+      "name": "LIFECYCLE_KEYS",
+      "kind": "const",
+      "line": 147,
+      "signature": "const LIFECYCLE_KEYS = [ 'status', 'merged_into', 'merged_from', 'retire_reason'…"
+    },
+    {
+      "name": "LifecycleKeysMissing",
+      "kind": "type",
+      "line": 156,
+      "signature": "LifecycleKeysMissing()"
+    },
+    {
+      "name": "_assertLifecycleKeysNoMissing",
+      "kind": "const",
+      "line": 157,
+      "signature": "const _assertLifecycleKeysNoMissing = true"
+    },
+    {
+      "name": "LifecycleKeysExtra",
+      "kind": "type",
+      "line": 161,
+      "signature": "LifecycleKeysExtra()"
+    },
+    {
+      "name": "_assertLifecycleKeysNoExtra",
+      "kind": "const",
+      "line": 162,
+      "signature": "const _assertLifecycleKeysNoExtra = true"
+    },
+    {
+      "name": "assertLifecycle",
+      "kind": "function",
+      "line": 188,
+      "signature": "assertLifecycle(lc: FileLifecycle): void"
+    },
+    {
+      "name": "CodeTemplate",
+      "kind": "interface",
+      "line": 262,
+      "signature": "CodeTemplate()"
+    },
+    {
+      "name": "ScaffoldConfig",
+      "kind": "interface",
+      "line": 276,
+      "signature": "ScaffoldConfig()"
+    },
+    {
+      "name": "Semantic",
+      "kind": "interface",
+      "line": 288,
+      "signature": "Semantic()"
+    },
+    {
+      "name": "hasFileEntries",
+      "kind": "function",
+      "line": 315,
+      "signature": "hasFileEntries(semantic: Semantic | undefined | null): semantic is Semantic"
+    }
+  ],
+  "imports": [
+    {
+      "source": "./geometry.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./contract.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": []
+}

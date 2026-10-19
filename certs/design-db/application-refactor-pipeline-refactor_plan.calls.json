@@ -1,0 +1,185 @@
+{
+  "//": "Design DB —— src/application/refactor/pipeline/refactor_plan.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "RefactorTarget",
+      "kind": "interface",
+      "line": 38,
+      "signature": "RefactorTarget()"
+    },
+    {
+      "name": "PlanHit",
+      "kind": "interface",
+      "line": 45,
+      "signature": "PlanHit()"
+    },
+    {
+      "name": "RefactorPlanItem",
+      "kind": "interface",
+      "line": 54,
+      "signature": "RefactorPlanItem()"
+    },
+    {
+      "name": "RefactorPlanFile",
+      "kind": "interface",
+      "line": 67,
+      "signature": "RefactorPlanFile()"
+    },
+    {
+      "name": "RefactorPlan",
+      "kind": "interface",
+      "line": 79,
+      "signature": "RefactorPlan()"
+    },
+    {
+      "name": "SCHEMA",
+      "kind": "const",
+      "line": 88,
+      "signature": "const SCHEMA = 'refactor_plan/1' as const"
+    },
+    {
+      "name": "fingerprint",
+      "kind": "function",
+      "line": 91,
+      "signature": "fingerprint(content: string): string"
+    },
+    {
+      "name": "relOf",
+      "kind": "function",
+      "line": 95,
+      "signature": "relOf(projectRoot: string, abs: string): string"
+    },
+    {
+      "name": "computePlanId",
+      "kind": "function",
+      "line": 104,
+      "signature": "computePlanId(plan: Pick<RefactorPlan, 'schema' | 'items' | 'files'>): string"
+    },
+    {
+      "name": "buildRefactorPlan",
+      "kind": "function",
+      "line": 123,
+      "signature": "buildRefactorPlan(args: {\n  project_dir: string;\n  targets: RefactorTarget[];\n}): Promise<RefactorPlan>"
+    },
+    {
+      "name": "ApplyItemStatus",
+      "kind": "type",
+      "line": 183,
+      "signature": "ApplyItemStatus()"
+    },
+    {
+      "name": "ApplyPlanItemResult",
+      "kind": "interface",
+      "line": 185,
+      "signature": "ApplyPlanItemResult()"
+    },
+    {
+      "name": "ApplyPlanResult",
+      "kind": "interface",
+      "line": 194,
+      "signature": "ApplyPlanResult()"
+    },
+    {
+      "name": "Decision",
+      "kind": "type",
+      "line": 207,
+      "signature": "Decision()"
+    },
+    {
+      "name": "applyRefactorPlan",
+      "kind": "function",
+      "line": 219,
+      "signature": "applyRefactorPlan(args: {\n  project_dir: string;\n  plan: RefactorPlan;\n  atomic?: boolean;\n}): Promise<ApplyPlanResult>"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "node:crypto",
+      "kind": "package"
+    },
+    {
+      "source": "../../../infrastructure/text/line_utils.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/parse/fuzzy_match.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../edit/edit_code.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/refactor/pipeline/refactor_plan.ts#applyRefactorPlan",
+      "to": "src/application/refactor/edit/edit_code.ts#editCode"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_plan.ts#buildRefactorPlan",
+      "to": "src/application/refactor/edit/edit_code.ts#planReplaceText"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_plan.ts#applyRefactorPlan",
+      "to": "src/application/refactor/edit/edit_code.ts#planReplaceText"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_plan.ts#buildRefactorPlan",
+      "to": "src/application/refactor/pipeline/refactor_plan.ts#computePlanId"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_plan.ts#applyRefactorPlan",
+      "to": "src/application/refactor/pipeline/refactor_plan.ts#computePlanId"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_plan.ts#computePlanId",
+      "to": "src/application/refactor/pipeline/refactor_plan.ts#fingerprint"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_plan.ts#buildRefactorPlan",
+      "to": "src/application/refactor/pipeline/refactor_plan.ts#fingerprint"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_plan.ts#buildRefactorPlan",
+      "to": "src/application/refactor/pipeline/refactor_plan.ts#fingerprint"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_plan.ts#applyRefactorPlan",
+      "to": "src/application/refactor/pipeline/refactor_plan.ts#fingerprint"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_plan.ts#buildRefactorPlan",
+      "to": "src/application/refactor/pipeline/refactor_plan.ts#relOf"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_plan.ts#buildRefactorPlan",
+      "to": "src/application/refactor/pipeline/refactor_plan.ts#relOf"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_plan.ts#applyRefactorPlan",
+      "to": "src/infrastructure/parse/fuzzy_match.ts#locateReplaceText"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_plan.ts#applyRefactorPlan",
+      "to": "src/infrastructure/parse/fuzzy_match.ts#locateReplaceText"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_plan.ts#buildRefactorPlan",
+      "to": "src/infrastructure/text/line_utils.ts#detectEol"
+    },
+    {
+      "from": "src/application/refactor/pipeline/refactor_plan.ts#applyRefactorPlan",
+      "to": "src/infrastructure/text/line_utils.ts#detectEol"
+    }
+  ]
+}

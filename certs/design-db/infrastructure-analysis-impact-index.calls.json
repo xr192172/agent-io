@@ -1,0 +1,179 @@
+{
+  "//": "Design DB —— src/infrastructure/analysis/impact/index.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "ImpactSite",
+      "kind": "interface",
+      "line": 31,
+      "signature": "ImpactSite()"
+    },
+    {
+      "name": "ImpactedFile",
+      "kind": "interface",
+      "line": 42,
+      "signature": "ImpactedFile()"
+    },
+    {
+      "name": "ImpactChangePoint",
+      "kind": "interface",
+      "line": 54,
+      "signature": "ImpactChangePoint()"
+    },
+    {
+      "name": "ImpactReport",
+      "kind": "interface",
+      "line": 61,
+      "signature": "ImpactReport()"
+    },
+    {
+      "name": "HubFile",
+      "kind": "interface",
+      "line": 83,
+      "signature": "HubFile()"
+    },
+    {
+      "name": "ImpactOptions",
+      "kind": "interface",
+      "line": 92,
+      "signature": "ImpactOptions()"
+    },
+    {
+      "name": "EdgeMap",
+      "kind": "type",
+      "line": 100,
+      "signature": "EdgeMap()"
+    },
+    {
+      "name": "GraphResult",
+      "kind": "interface",
+      "line": 102,
+      "signature": "GraphResult()"
+    },
+    {
+      "name": "TYPE_KINDS",
+      "kind": "const",
+      "line": 117,
+      "signature": "const TYPE_KINDS = new Set<ParsedSymbol['kind']>(['interface', 'type', 'clas…"
+    },
+    {
+      "name": "resolveImportTarget",
+      "kind": "function",
+      "line": 128,
+      "signature": "resolveImportTarget(fromRel: string, source: string, rels: Set<string>, exts: string[]): string | null"
+    },
+    {
+      "name": "buildImpactGraph",
+      "kind": "function",
+      "line": 133,
+      "signature": "buildImpactGraph(root: string): Promise<GraphResult>"
+    },
+    {
+      "name": "riskLevel",
+      "kind": "function",
+      "line": 316,
+      "signature": "riskLevel(depth: number, depCount: number): ImpactedFile['risk']"
+    },
+    {
+      "name": "hubRisk",
+      "kind": "function",
+      "line": 322,
+      "signature": "hubRisk(depCount: number): HubFile['risk']"
+    },
+    {
+      "name": "analyzeImpact",
+      "kind": "function",
+      "line": 330,
+      "signature": "analyzeImpact(root: string,\n  changePoints: ImpactChangePoint[],\n  options: ImpactOptions = {},): Promise<ImpactReport>"
+    },
+    {
+      "name": "computeImpact",
+      "kind": "function",
+      "line": 341,
+      "signature": "computeImpact(graph: GraphResult,\n  root: string,\n  changePoints: ImpactChangePoint[],\n  maxDepth: number = Number.POSITIVE_INFINITY,): ImpactReport"
+    },
+    {
+      "name": "analyzeHubs",
+      "kind": "function",
+      "line": 426,
+      "signature": "analyzeHubs(root: string,\n  top = 10,): Promise<{ root: string; files: HubFile[]; fileCount: number; edgeCount: number; bounds: ScanBounds }>"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../parse/index.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../parse/source_exts.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../scan_bounds.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../authoring/version_upgrade/detect.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/impact/index.ts#analyzeImpact",
+      "to": "src/infrastructure/analysis/impact/index.ts#buildImpactGraph"
+    },
+    {
+      "from": "src/infrastructure/analysis/impact/index.ts#analyzeHubs",
+      "to": "src/infrastructure/analysis/impact/index.ts#buildImpactGraph"
+    },
+    {
+      "from": "src/infrastructure/analysis/impact/index.ts#analyzeImpact",
+      "to": "src/infrastructure/analysis/impact/index.ts#computeImpact"
+    },
+    {
+      "from": "src/infrastructure/analysis/impact/index.ts#analyzeHubs",
+      "to": "src/infrastructure/analysis/impact/index.ts#hubRisk"
+    },
+    {
+      "from": "src/infrastructure/analysis/impact/index.ts#buildImpactGraph",
+      "to": "src/infrastructure/analysis/impact/index.ts#resolveImportTarget"
+    },
+    {
+      "from": "src/infrastructure/analysis/impact/index.ts#buildImpactGraph",
+      "to": "src/infrastructure/analysis/impact/index.ts#resolveImportTarget"
+    },
+    {
+      "from": "src/infrastructure/analysis/impact/index.ts#computeImpact",
+      "to": "src/infrastructure/analysis/impact/index.ts#riskLevel"
+    },
+    {
+      "from": "src/infrastructure/analysis/impact/index.ts#buildImpactGraph",
+      "to": "src/infrastructure/authoring/version_upgrade/detect.ts#collectSourceFiles"
+    },
+    {
+      "from": "src/infrastructure/analysis/impact/index.ts#buildImpactGraph",
+      "to": "src/infrastructure/parse/source_exts.ts#codeSourceExts"
+    },
+    {
+      "from": "src/infrastructure/analysis/impact/index.ts#buildImpactGraph",
+      "to": "src/infrastructure/parse/source_exts.ts#isTsJsExt"
+    },
+    {
+      "from": "src/infrastructure/analysis/impact/index.ts#buildImpactGraph",
+      "to": "src/infrastructure/parse/source_exts.ts#partitionByCodeLang"
+    },
+    {
+      "from": "src/infrastructure/analysis/impact/index.ts#computeImpact",
+      "to": "src/infrastructure/scan_bounds.ts#boundsSkipFromExcluded"
+    },
+    {
+      "from": "src/infrastructure/analysis/impact/index.ts#analyzeHubs",
+      "to": "src/infrastructure/scan_bounds.ts#boundsSkipFromExcluded"
+    }
+  ]
+}

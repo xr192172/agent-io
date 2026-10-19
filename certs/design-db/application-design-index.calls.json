@@ -1,0 +1,98 @@
+{
+  "//": "Design DB —— src/application/design/index.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "DESIGN_TOOLS",
+      "kind": "const",
+      "line": 60,
+      "signature": "const DESIGN_TOOLS = [ { name: 'get_dsl', title: 'Query feature data', descrip…"
+    }
+  ],
+  "imports": [
+    {
+      "source": "zod",
+      "kind": "package"
+    },
+    {
+      "source": "../plumbing.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./dsl_ops/op_data_spec.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../domain/types.js",
+      "kind": "relative"
+    },
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../infrastructure/index/db.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/storage.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./workbench/code_workbench.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/graph/import_project.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/graph/import_project.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./lifecycle/manage_feature.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./bricks/render_brickwork.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./bricks/brickify.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./bricks/signal_review.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./lifecycle/split_stage.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./lifecycle/scaffold.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./intent/set_design_intent.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./handlers.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../types.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": []
+}

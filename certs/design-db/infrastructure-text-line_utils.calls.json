@@ -1,0 +1,27 @@
+{
+  "//": "Design DB —— src/infrastructure/text/line_utils.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "splitKeepEnds",
+      "kind": "function",
+      "line": 14,
+      "signature": "splitKeepEnds(content: string): string[]"
+    },
+    {
+      "name": "detectEol",
+      "kind": "function",
+      "line": 21,
+      "signature": "detectEol(content: string): string"
+    },
+    {
+      "name": "isBlankLine",
+      "kind": "function",
+      "line": 25,
+      "signature": "isBlankLine(line: string): boolean"
+    }
+  ],
+  "imports": [],
+  "calls": []
+}

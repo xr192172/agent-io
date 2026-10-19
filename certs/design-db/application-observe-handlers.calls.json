@@ -1,0 +1,129 @@
+{
+  "//": "Design DB —— src/application/observe/handlers.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "PROBE_SUFFIX_RE",
+      "kind": "const",
+      "line": 36,
+      "signature": "const PROBE_SUFFIX_RE = /\\.(enter|exit|catch|defer|recover|writefile|mkdir|rename…"
+    },
+    {
+      "name": "GO_PLATFORM_SUFFIXES",
+      "kind": "const",
+      "line": 39,
+      "signature": "const GO_PLATFORM_SUFFIXES = new Set([ // GOOS 'aix', 'android', 'darwin', 'dragonfly'…"
+    },
+    {
+      "name": "hasGoBuildConstraint",
+      "kind": "function",
+      "line": 58,
+      "signature": "hasGoBuildConstraint(file: string): boolean"
+    },
+    {
+      "name": "observeInstrumentHandler",
+      "kind": "const",
+      "line": 77,
+      "signature": "const observeInstrumentHandler = wrapData(async (a) => { const targetArg = a.target as str…"
+    },
+    {
+      "name": "observeJudgeHandler",
+      "kind": "const",
+      "line": 373,
+      "signature": "const observeJudgeHandler = wrap(async (a) => { const events = a.events; if (!Array.i…"
+    },
+    {
+      "name": "observeLogHandler",
+      "kind": "const",
+      "line": 460,
+      "signature": "const observeLogHandler = wrapData(async (a) => { const eventsFile = a.events_file …"
+    },
+    {
+      "name": "observeTraceHandler",
+      "kind": "const",
+      "line": 490,
+      "signature": "const observeTraceHandler = wrapData(async (a) => { const cfg = { events_path: typeof…"
+    },
+    {
+      "name": "reconcileChainHandler",
+      "kind": "const",
+      "line": 507,
+      "signature": "const reconcileChainHandler = wrapData(async (a) => { const input = a as unknown as Rec…"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": ".././plumbing.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/analysis/observe/chain.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/analysis/observe/contract.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/analysis/observe/contract.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../../infrastructure/analysis/observe/judge_service.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/analysis/observe/judge.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../../infrastructure/analysis/observe/ledger_fold.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/analysis/observe/observe_langs.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/analysis/observe/instrument.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/analysis/observe/dsl_store.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/analysis/observe/log_query.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/storage.js",
+      "kind": "relative"
+    },
+    {
+      "source": ".././observe/capture/observe_trace.js",
+      "kind": "relative"
+    },
+    {
+      "source": ".././observe/reconcile/reconcile_chain.js",
+      "kind": "relative"
+    },
+    {
+      "source": ".././observe/reconcile/reconcile_chain.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": []
+}

@@ -1,0 +1,119 @@
+{
+  "//": "Design DB —— src/infrastructure/analysis/refactor/langs/python/dead_imports.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "SKIP_DIRS",
+      "kind": "const",
+      "line": 23,
+      "signature": "const SKIP_DIRS = skipDirSet([])"
+    },
+    {
+      "name": "PyDeadImportCandidate",
+      "kind": "interface",
+      "line": 25,
+      "signature": "PyDeadImportCandidate()"
+    },
+    {
+      "name": "DetectPyDeadImportsResult",
+      "kind": "interface",
+      "line": 33,
+      "signature": "DetectPyDeadImportsResult()"
+    },
+    {
+      "name": "scanPySourceFiles",
+      "kind": "function",
+      "line": 41,
+      "signature": "scanPySourceFiles(project_dir: string, files?: string[]): string[]"
+    },
+    {
+      "name": "PyImportRef",
+      "kind": "interface",
+      "line": 70,
+      "signature": "PyImportRef()"
+    },
+    {
+      "name": "PyImportAnalysis",
+      "kind": "interface",
+      "line": 77,
+      "signature": "PyImportAnalysis()"
+    },
+    {
+      "name": "analyzePyImports",
+      "kind": "function",
+      "line": 89,
+      "signature": "analyzePyImports(src: string): PyImportAnalysis"
+    },
+    {
+      "name": "enumeratePyImports",
+      "kind": "function",
+      "line": 142,
+      "signature": "enumeratePyImports(src: string): PyImportRef[]"
+    },
+    {
+      "name": "stripPyImports",
+      "kind": "function",
+      "line": 147,
+      "signature": "stripPyImports(src: string): string"
+    },
+    {
+      "name": "escRe",
+      "kind": "const",
+      "line": 154,
+      "signature": "const escRe = (s: string): string => s.replace(/[.*+?^${}()|[\\]\\\\]/g, '…"
+    },
+    {
+      "name": "detectDeadPyImports",
+      "kind": "function",
+      "line": 157,
+      "signature": "detectDeadPyImports(opts: { project_dir: string; files?: string[] }): DetectPyDeadImportsResult"
+    },
+    {
+      "name": "removePyImportsFromSource",
+      "kind": "function",
+      "line": 216,
+      "signature": "removePyImportsFromSource(src: string, source: string): { removed: number; output: string }"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../../../parse/source_exts.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/refactor/langs/python/dead_imports.ts#enumeratePyImports",
+      "to": "src/infrastructure/analysis/refactor/langs/python/dead_imports.ts#analyzePyImports"
+    },
+    {
+      "from": "src/infrastructure/analysis/refactor/langs/python/dead_imports.ts#detectDeadPyImports",
+      "to": "src/infrastructure/analysis/refactor/langs/python/dead_imports.ts#analyzePyImports"
+    },
+    {
+      "from": "src/infrastructure/analysis/refactor/langs/python/dead_imports.ts#detectDeadPyImports",
+      "to": "src/infrastructure/analysis/refactor/langs/python/dead_imports.ts#escRe"
+    },
+    {
+      "from": "src/infrastructure/analysis/refactor/langs/python/dead_imports.ts#removePyImportsFromSource",
+      "to": "src/infrastructure/analysis/refactor/langs/python/dead_imports.ts#escRe"
+    },
+    {
+      "from": "src/infrastructure/analysis/refactor/langs/python/dead_imports.ts#detectDeadPyImports",
+      "to": "src/infrastructure/analysis/refactor/langs/python/dead_imports.ts#scanPySourceFiles"
+    },
+    {
+      "from": "src/infrastructure/analysis/refactor/langs/python/dead_imports.ts#detectDeadPyImports",
+      "to": "src/infrastructure/analysis/refactor/langs/python/dead_imports.ts#stripPyImports"
+    }
+  ]
+}

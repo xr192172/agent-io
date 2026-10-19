@@ -1,0 +1,304 @@
+{
+  "//": "Design DB —— src/infrastructure/authoring/translate/project.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "SKIP_DIRS",
+      "kind": "const",
+      "line": 28,
+      "signature": "const SKIP_DIRS = skipDirSet(['vendor', 'target'])"
+    },
+    {
+      "name": "walkGoFiles",
+      "kind": "function",
+      "line": 31,
+      "signature": "walkGoFiles(dir: string): string[]"
+    },
+    {
+      "name": "ProjectModule",
+      "kind": "interface",
+      "line": 54,
+      "signature": "ProjectModule()"
+    },
+    {
+      "name": "ReportEntry",
+      "kind": "interface",
+      "line": 76,
+      "signature": "ReportEntry()"
+    },
+    {
+      "name": "TypesMapEntry",
+      "kind": "interface",
+      "line": 86,
+      "signature": "TypesMapEntry()"
+    },
+    {
+      "name": "ConflictEntry",
+      "kind": "interface",
+      "line": 96,
+      "signature": "ConflictEntry()"
+    },
+    {
+      "name": "ProjectResult",
+      "kind": "interface",
+      "line": 103,
+      "signature": "ProjectResult()"
+    },
+    {
+      "name": "ProjectOptions",
+      "kind": "interface",
+      "line": 116,
+      "signature": "ProjectOptions()"
+    },
+    {
+      "name": "toPosix",
+      "kind": "function",
+      "line": 130,
+      "signature": "toPosix(abs: string): string"
+    },
+    {
+      "name": "relImportPath",
+      "kind": "function",
+      "line": 134,
+      "signature": "relImportPath(fromGoRel: string, toGoRel: string): string"
+    },
+    {
+      "name": "collectCallRefs",
+      "kind": "function",
+      "line": 149,
+      "signature": "collectCallRefs(fileAbs: string, src: string): Promise<string[]>"
+    },
+    {
+      "name": "SymbolDef",
+      "kind": "interface",
+      "line": 169,
+      "signature": "SymbolDef()"
+    },
+    {
+      "name": "assembleModule",
+      "kind": "function",
+      "line": 175,
+      "signature": "assembleModule(m: ProjectModule): void"
+    },
+    {
+      "name": "buildReport",
+      "kind": "function",
+      "line": 190,
+      "signature": "buildReport(modules: ProjectModule[], fillRequested: boolean): ReportEntry[]"
+    },
+    {
+      "name": "writeReport",
+      "kind": "function",
+      "line": 216,
+      "signature": "writeReport(outDir: string, report: ReportEntry[]): void"
+    },
+    {
+      "name": "buildTypesMap",
+      "kind": "function",
+      "line": 239,
+      "signature": "buildTypesMap(modules: ProjectModule[]): TypesMapEntry[]"
+    },
+    {
+      "name": "detectConflicts",
+      "kind": "function",
+      "line": 249,
+      "signature": "detectConflicts(modules: ProjectModule[]): ConflictEntry[]"
+    },
+    {
+      "name": "writeTypesMap",
+      "kind": "function",
+      "line": 269,
+      "signature": "writeTypesMap(outDir: string, map: TypesMapEntry[]): void"
+    },
+    {
+      "name": "ProjectCallContext",
+      "kind": "interface",
+      "line": 293,
+      "signature": "ProjectCallContext()"
+    },
+    {
+      "name": "buildProjectCallNote",
+      "kind": "function",
+      "line": 299,
+      "signature": "buildProjectCallNote(m: ProjectModule, defined: Map<string, SymbolDef>, ctx?: ProjectCallContext): string"
+    },
+    {
+      "name": "TscCluster",
+      "kind": "interface",
+      "line": 337,
+      "signature": "TscCluster()"
+    },
+    {
+      "name": "TS_CODE_LABEL",
+      "kind": "const",
+      "line": 344,
+      "signature": "const TS_CODE_LABEL = { 2304: '未定义的名字/类型', 2307: '找不到模块', 2503: '找不到命名空间', 2339…"
+    },
+    {
+      "name": "clusterKeyFor",
+      "kind": "function",
+      "line": 351,
+      "signature": "clusterKeyFor(code: number, msg: string): string"
+    },
+    {
+      "name": "verifyProjectTree",
+      "kind": "function",
+      "line": 363,
+      "signature": "verifyProjectTree(modules: ProjectModule[]): TscCluster[]"
+    },
+    {
+      "name": "translateGoProject",
+      "kind": "function",
+      "line": 409,
+      "signature": "translateGoProject(projectDir: string, opts: ProjectOptions = {}): Promise<ProjectResult>"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "typescript",
+      "kind": "package"
+    },
+    {
+      "source": "./pairs.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./ts_codegen.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./referenced.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./fill.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./llm.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./fixers.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./go_extractor.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../../parse/index.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./unit.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./verify.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../../parse/source_exts.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/authoring/translate/project.ts#translateGoProject",
+      "to": "src/infrastructure/authoring/translate/fill.ts#fillUnitsBatched"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/project.ts#translateGoProject",
+      "to": "src/infrastructure/authoring/translate/fill.ts#fillUnitsWithRetry"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/project.ts#assembleModule",
+      "to": "src/infrastructure/authoring/translate/fixers.ts#applyDeterministicFixers"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/project.ts#translateGoProject",
+      "to": "src/infrastructure/authoring/translate/llm.ts#createPooledBatchTranslator"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/project.ts#translateGoProject",
+      "to": "src/infrastructure/authoring/translate/pairs.ts#translateGoToTs"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/project.ts#translateGoProject",
+      "to": "src/infrastructure/authoring/translate/project.ts#assembleModule"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/project.ts#translateGoProject",
+      "to": "src/infrastructure/authoring/translate/project.ts#buildProjectCallNote"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/project.ts#translateGoProject",
+      "to": "src/infrastructure/authoring/translate/project.ts#buildReport"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/project.ts#translateGoProject",
+      "to": "src/infrastructure/authoring/translate/project.ts#buildTypesMap"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/project.ts#verifyProjectTree",
+      "to": "src/infrastructure/authoring/translate/project.ts#clusterKeyFor"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/project.ts#translateGoProject",
+      "to": "src/infrastructure/authoring/translate/project.ts#collectCallRefs"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/project.ts#translateGoProject",
+      "to": "src/infrastructure/authoring/translate/project.ts#detectConflicts"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/project.ts#translateGoProject",
+      "to": "src/infrastructure/authoring/translate/project.ts#relImportPath"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/project.ts#translateGoProject",
+      "to": "src/infrastructure/authoring/translate/project.ts#toPosix"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/project.ts#translateGoProject",
+      "to": "src/infrastructure/authoring/translate/project.ts#verifyProjectTree"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/project.ts#translateGoProject",
+      "to": "src/infrastructure/authoring/translate/project.ts#walkGoFiles"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/project.ts#translateGoProject",
+      "to": "src/infrastructure/authoring/translate/project.ts#writeReport"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/project.ts#translateGoProject",
+      "to": "src/infrastructure/authoring/translate/project.ts#writeTypesMap"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/project.ts#buildProjectCallNote",
+      "to": "src/infrastructure/authoring/translate/referenced.ts#collectExternalTypeRefs"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/project.ts#translateGoProject",
+      "to": "src/infrastructure/authoring/translate/referenced.ts#collectExternalTypeRefs"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/project.ts#assembleModule",
+      "to": "src/infrastructure/authoring/translate/ts_codegen.ts#channelShimSource"
+    }
+  ]
+}

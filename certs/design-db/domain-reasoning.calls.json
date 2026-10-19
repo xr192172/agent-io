@@ -1,0 +1,51 @@
+{
+  "//": "Design DB —— src/domain/reasoning.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "ReasoningStepKind",
+      "kind": "type",
+      "line": 14,
+      "signature": "ReasoningStepKind()"
+    },
+    {
+      "name": "ReasoningFoldKind",
+      "kind": "type",
+      "line": 17,
+      "signature": "ReasoningFoldKind()"
+    },
+    {
+      "name": "ReasoningStep",
+      "kind": "interface",
+      "line": 20,
+      "signature": "ReasoningStep()"
+    },
+    {
+      "name": "ReasoningFold",
+      "kind": "interface",
+      "line": 56,
+      "signature": "ReasoningFold()"
+    },
+    {
+      "name": "ReasoningBudget",
+      "kind": "interface",
+      "line": 70,
+      "signature": "ReasoningBudget()"
+    },
+    {
+      "name": "ReasoningEntry",
+      "kind": "interface",
+      "line": 78,
+      "signature": "ReasoningEntry()"
+    },
+    {
+      "name": "ReasoningSystem",
+      "kind": "interface",
+      "line": 86,
+      "signature": "ReasoningSystem()"
+    }
+  ],
+  "imports": [],
+  "calls": []
+}

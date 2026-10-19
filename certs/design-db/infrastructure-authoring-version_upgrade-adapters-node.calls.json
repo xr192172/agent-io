@@ -1,0 +1,101 @@
+{
+  "//": "Design DB —— src/infrastructure/authoring/version_upgrade/adapters/node.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "NODE_FEATURES",
+      "kind": "const",
+      "line": 31,
+      "signature": "const NODE_FEATURES = [ { name: '可选链 ?.', tool: 'node', since: 14, pattern: /\\?…"
+    },
+    {
+      "name": "NODE_REMOVED",
+      "kind": "const",
+      "line": 37,
+      "signature": "const NODE_REMOVED = [ { name: 'new Buffer(...)', tool: 'node', since: 6, kind…"
+    },
+    {
+      "name": "parsePackageJson",
+      "kind": "function",
+      "line": 43,
+      "signature": "parsePackageJson(content: string): { version: string; raw: string } | null"
+    },
+    {
+      "name": "MODULE_RESOLVE_RE",
+      "kind": "const",
+      "line": 57,
+      "signature": "const MODULE_RESOLVE_RE = /Cannot find module|ERR_MODULE_NOT_FOUND|Cannot use impor…"
+    },
+    {
+      "name": "NodeRunMode",
+      "kind": "type",
+      "line": 61,
+      "signature": "NodeRunMode()"
+    },
+    {
+      "name": "nodeRunMode",
+      "kind": "function",
+      "line": 70,
+      "signature": "nodeRunMode(dir: string, filePath: string): NodeRunMode"
+    },
+    {
+      "name": "nodeRunProbe",
+      "kind": "function",
+      "line": 93,
+      "signature": "nodeRunProbe(dir: string, file: SourceFile): DynamicGateItem"
+    },
+    {
+      "name": "nodeAdapter",
+      "kind": "const",
+      "line": 133,
+      "signature": "const nodeAdapter = { lang: 'node', label: 'Node', declarationFiles: ['.nvmrc…"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:os",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "node:child_process",
+      "kind": "package"
+    },
+    {
+      "source": "../../behavior/index.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../parse/index.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./types.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../../../verify_refactor.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/authoring/version_upgrade/adapters/node.ts#nodeRunProbe",
+      "to": "src/infrastructure/authoring/behavior/index.ts#transpileToCjs"
+    },
+    {
+      "from": "src/infrastructure/authoring/version_upgrade/adapters/node.ts#nodeRunProbe",
+      "to": "src/infrastructure/authoring/version_upgrade/adapters/node.ts#nodeRunMode"
+    }
+  ]
+}

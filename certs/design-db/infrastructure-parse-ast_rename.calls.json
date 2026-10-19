@@ -1,0 +1,407 @@
+{
+  "//": "Design DB —— src/infrastructure/parse/ast_rename.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "NodeLike",
+      "kind": "interface",
+      "line": 28,
+      "signature": "NodeLike()"
+    },
+    {
+      "name": "LocalBinding",
+      "kind": "interface",
+      "line": 38,
+      "signature": "LocalBinding()"
+    },
+    {
+      "name": "LocalScope",
+      "kind": "interface",
+      "line": 54,
+      "signature": "LocalScope()"
+    },
+    {
+      "name": "ScopeNode",
+      "kind": "interface",
+      "line": 64,
+      "signature": "ScopeNode()"
+    },
+    {
+      "name": "B",
+      "kind": "interface",
+      "line": 71,
+      "signature": "B()"
+    },
+    {
+      "name": "DeclUnit",
+      "kind": "interface",
+      "line": 85,
+      "signature": "DeclUnit()"
+    },
+    {
+      "name": "subtreeHasCall",
+      "kind": "function",
+      "line": 95,
+      "signature": "subtreeHasCall(node: NodeLike): boolean"
+    },
+    {
+      "name": "scanCall",
+      "kind": "function",
+      "line": 98,
+      "signature": "scanCall(node: NodeLike, depth: number): boolean"
+    },
+    {
+      "name": "nextId",
+      "kind": "const",
+      "line": 110,
+      "signature": "const nextId = 1"
+    },
+    {
+      "name": "resetIds",
+      "kind": "function",
+      "line": 113,
+      "signature": "resetIds(): void"
+    },
+    {
+      "name": "resolveTo",
+      "kind": "function",
+      "line": 118,
+      "signature": "resolveTo(state: { name: string; scope: ScopeNode }): B | null"
+    },
+    {
+      "name": "Decl",
+      "kind": "interface",
+      "line": 128,
+      "signature": "Decl()"
+    },
+    {
+      "name": "forEachIdentifier",
+      "kind": "function",
+      "line": 135,
+      "signature": "forEachIdentifier(node: NodeLike, cb: (id: NodeLike) => void): void"
+    },
+    {
+      "name": "walkIds",
+      "kind": "function",
+      "line": 138,
+      "signature": "walkIds(node: NodeLike, cb: (id: NodeLike) => void, depth: number): void"
+    },
+    {
+      "name": "collectDeclaratorDecls",
+      "kind": "function",
+      "line": 151,
+      "signature": "collectDeclaratorDecls(node: NodeLike): Decl[]"
+    },
+    {
+      "name": "isVarNode",
+      "kind": "function",
+      "line": 167,
+      "signature": "isVarNode(node: NodeLike): boolean"
+    },
+    {
+      "name": "FN_SCOPE_TYPES",
+      "kind": "const",
+      "line": 171,
+      "signature": "const FN_SCOPE_TYPES = new Set([ 'function_declaration', 'function_expression', …"
+    },
+    {
+      "name": "PARAM_TYPES",
+      "kind": "const",
+      "line": 179,
+      "signature": "const PARAM_TYPES = new Set(['formal_parameters', 'parameters'])"
+    },
+    {
+      "name": "FOR_TYPES",
+      "kind": "const",
+      "line": 180,
+      "signature": "const FOR_TYPES = new Set(['for_statement', 'for_in_statement', 'for_of_sta…"
+    },
+    {
+      "name": "ownFnName",
+      "kind": "function",
+      "line": 183,
+      "signature": "ownFnName(fallback: string, fnNode: NodeLike): string"
+    },
+    {
+      "name": "build",
+      "kind": "function",
+      "line": 194,
+      "signature": "build(src: string,\n  filePath: string,): Promise<{ bindings: B[]; scopes: LocalScope[]; units: DeclUnit[] } | null>"
+    },
+    {
+      "name": "toPublic",
+      "kind": "function",
+      "line": 363,
+      "signature": "toPublic(b: B): LocalBinding"
+    },
+    {
+      "name": "BuiltRaw",
+      "kind": "interface",
+      "line": 379,
+      "signature": "BuiltRaw()"
+    },
+    {
+      "name": "buildRaw",
+      "kind": "function",
+      "line": 384,
+      "signature": "buildRaw(src: string, filePath: string): Promise<BuiltRaw>"
+    },
+    {
+      "name": "built",
+      "kind": "function",
+      "line": 390,
+      "signature": "built(src: string, filePath: string): Promise<{ bindings: LocalBinding[]; scopes: LocalScope[] }>"
+    },
+    {
+      "name": "analyzeLocals",
+      "kind": "function",
+      "line": 400,
+      "signature": "analyzeLocals(src: string, filePath = 'file.ts'): Promise<LocalBinding[]>"
+    },
+    {
+      "name": "analyzeScopes",
+      "kind": "function",
+      "line": 405,
+      "signature": "analyzeScopes(src: string, filePath = 'file.ts'): Promise<LocalScope[]>"
+    },
+    {
+      "name": "lineNumberOf",
+      "kind": "function",
+      "line": 410,
+      "signature": "lineNumberOf(src: string, index: number): number"
+    },
+    {
+      "name": "LocalAddressCandidate",
+      "kind": "interface",
+      "line": 418,
+      "signature": "LocalAddressCandidate()"
+    },
+    {
+      "name": "LocalAddressResolution",
+      "kind": "type",
+      "line": 427,
+      "signature": "LocalAddressResolution()"
+    },
+    {
+      "name": "resolveLocalAddress",
+      "kind": "function",
+      "line": 445,
+      "signature": "resolveLocalAddress(bindings: readonly LocalBinding[],\n  src: string,\n  addr: { symbol: string; declLine?: number },): LocalAddressResolution"
+    },
+    {
+      "name": "renameLocal",
+      "kind": "function",
+      "line": 503,
+      "signature": "renameLocal(src: string,\n  targetId: number,\n  to: string,\n  filePath = 'file.ts',): Promise<{ out: string; changed: number }>"
+    },
+    {
+      "name": "RenameItem",
+      "kind": "interface",
+      "line": 531,
+      "signature": "RenameItem()"
+    },
+    {
+      "name": "RenameApplied",
+      "kind": "interface",
+      "line": 536,
+      "signature": "RenameApplied()"
+    },
+    {
+      "name": "renameMany",
+      "kind": "function",
+      "line": 559,
+      "signature": "renameMany(src: string,\n  items: RenameItem[],\n  filePath = 'file.ts',): Promise<{ out: string; applied: RenameApplied[] }>"
+    },
+    {
+      "name": "deleteDeadLocals",
+      "kind": "function",
+      "line": 618,
+      "signature": "deleteDeadLocals(src: string,\n  filePath = 'file.ts',): Promise<{ out: string; deleted: Array<{ name: string; start: number; end: number }> }>"
+    }
+  ],
+  "imports": [
+    {
+      "source": "./loader.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./languages.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./kernel.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/parse/ast_rename.ts#renameMany",
+      "to": "src/infrastructure/parse/ast_rename.ts#analyzeLocals"
+    },
+    {
+      "from": "src/infrastructure/parse/ast_rename.ts#buildRaw",
+      "to": "src/infrastructure/parse/ast_rename.ts#build"
+    },
+    {
+      "from": "src/infrastructure/parse/ast_rename.ts#build.tr",
+      "to": "src/infrastructure/parse/ast_rename.ts#build.scanFn"
+    },
+    {
+      "from": "src/infrastructure/parse/ast_rename.ts#build",
+      "to": "src/infrastructure/parse/ast_rename.ts#build.tr"
+    },
+    {
+      "from": "src/infrastructure/parse/ast_rename.ts#build.trValue",
+      "to": "src/infrastructure/parse/ast_rename.ts#build.tr"
+    },
+    {
+      "from": "src/infrastructure/parse/ast_rename.ts#build.trValue",
+      "to": "src/infrastructure/parse/ast_rename.ts#build.tr"
+    },
+    {
+      "from": "src/infrastructure/parse/ast_rename.ts#build.tr",
+      "to": "src/infrastructure/parse/ast_rename.ts#build.tr"
+    },
+    {
+      "from": "src/infrastructure/parse/ast_rename.ts#build.tr",
+      "to": "src/infrastructure/parse/ast_rename.ts#build.tr"
+    },
+    {
+      "from": "src/infrastructure/parse/ast_rename.ts#build.tr",
+      "to": "src/infrastructure/parse/ast_rename.ts#build.tr"
+    },
+    {
+      "from": "src/infrastructure/parse/ast_rename.ts#build.tr",
+      "to": "src/infrastructure/parse/ast_rename.ts#build.tr"
+    },
+    {
+      "from": "src/infrastructure/parse/ast_rename.ts#build.scanFn",
+      "to": "src/infrastructure/parse/ast_rename.ts#build.tr"
+    },
+    {
+      "from": "src/infrastructure/parse/ast_rename.ts#build.tr",
+      "to": "src/infrastructure/parse/ast_rename.ts#build.trValue"
+    },
+    {
+      "from": "src/infrastructure/parse/ast_rename.ts#build.tr",
+      "to": "src/infrastructure/parse/ast_rename.ts#build.trValue"
+    },
+    {
+      "from": "src/infrastructure/parse/ast_rename.ts#build.scanFn",
+      "to": "src/infrastructure/parse/ast_rename.ts#build.trValue"
+    },
+    {
+      "from": "src/infrastructure/parse/ast_rename.ts#built",
+      "to": "src/infrastructure/parse/ast_rename.ts#buildRaw"
+    },
+    {
+      "from": "src/infrastructure/parse/ast_rename.ts#deleteDeadLocals",
+      "to": "src/infrastructure/parse/ast_rename.ts#buildRaw"
+    },
+    {
+      "from": "src/infrastructure/parse/ast_rename.ts#analyzeLocals",
+      "to": "src/infrastructure/parse/ast_rename.ts#built"
+    },
+    {
+      "from": "src/infrastructure/parse/ast_rename.ts#analyzeScopes",
+      "to": "src/infrastructure/parse/ast_rename.ts#built"
+    },
+    {
+      "from": "src/infrastructure/parse/ast_rename.ts#renameLocal",
+      "to": "src/infrastructure/parse/ast_rename.ts#built"
+    },
+    {
+      "from": "src/infrastructure/parse/ast_rename.ts#build.tr",
+      "to": "src/infrastructure/parse/ast_rename.ts#collectDeclaratorDecls"
+    },
+    {
+      "from": "src/infrastructure/parse/ast_rename.ts#build.tr",
+      "to": "src/infrastructure/parse/ast_rename.ts#collectDeclaratorDecls"
+    },
+    {
+      "from": "src/infrastructure/parse/ast_rename.ts#collectDeclaratorDecls",
+      "to": "src/infrastructure/parse/ast_rename.ts#forEachIdentifier"
+    },
+    {
+      "from": "src/infrastructure/parse/ast_rename.ts#build.tr",
+      "to": "src/infrastructure/parse/ast_rename.ts#forEachIdentifier"
+    },
+    {
+      "from": "src/infrastructure/parse/ast_rename.ts#build.tr",
+      "to": "src/infrastructure/parse/ast_rename.ts#forEachIdentifier"
+    },
+    {
+      "from": "src/infrastructure/parse/ast_rename.ts#build.scanFn",
+      "to": "src/infrastructure/parse/ast_rename.ts#forEachIdentifier"
+    },
+    {
+      "from": "src/infrastructure/parse/ast_rename.ts#collectDeclaratorDecls",
+      "to": "src/infrastructure/parse/ast_rename.ts#isVarNode"
+    },
+    {
+      "from": "src/infrastructure/parse/ast_rename.ts#resolveLocalAddress",
+      "to": "src/infrastructure/parse/ast_rename.ts#lineNumberOf"
+    },
+    {
+      "from": "src/infrastructure/parse/ast_rename.ts#resolveLocalAddress",
+      "to": "src/infrastructure/parse/ast_rename.ts#lineNumberOf"
+    },
+    {
+      "from": "src/infrastructure/parse/ast_rename.ts#resolveLocalAddress",
+      "to": "src/infrastructure/parse/ast_rename.ts#lineNumberOf"
+    },
+    {
+      "from": "src/infrastructure/parse/ast_rename.ts#resolveLocalAddress",
+      "to": "src/infrastructure/parse/ast_rename.ts#lineNumberOf"
+    },
+    {
+      "from": "src/infrastructure/parse/ast_rename.ts#resolveLocalAddress",
+      "to": "src/infrastructure/parse/ast_rename.ts#lineNumberOf"
+    },
+    {
+      "from": "src/infrastructure/parse/ast_rename.ts#build.tr",
+      "to": "src/infrastructure/parse/ast_rename.ts#ownFnName"
+    },
+    {
+      "from": "src/infrastructure/parse/ast_rename.ts#build",
+      "to": "src/infrastructure/parse/ast_rename.ts#resetIds"
+    },
+    {
+      "from": "src/infrastructure/parse/ast_rename.ts#build.tr",
+      "to": "src/infrastructure/parse/ast_rename.ts#resolveTo"
+    },
+    {
+      "from": "src/infrastructure/parse/ast_rename.ts#subtreeHasCall",
+      "to": "src/infrastructure/parse/ast_rename.ts#scanCall"
+    },
+    {
+      "from": "src/infrastructure/parse/ast_rename.ts#scanCall",
+      "to": "src/infrastructure/parse/ast_rename.ts#scanCall"
+    },
+    {
+      "from": "src/infrastructure/parse/ast_rename.ts#build.tr",
+      "to": "src/infrastructure/parse/ast_rename.ts#subtreeHasCall"
+    },
+    {
+      "from": "src/infrastructure/parse/ast_rename.ts#forEachIdentifier",
+      "to": "src/infrastructure/parse/ast_rename.ts#walkIds"
+    },
+    {
+      "from": "src/infrastructure/parse/ast_rename.ts#walkIds",
+      "to": "src/infrastructure/parse/ast_rename.ts#walkIds"
+    },
+    {
+      "from": "src/infrastructure/parse/ast_rename.ts#build",
+      "to": "src/infrastructure/parse/kernel.ts#parseContent"
+    },
+    {
+      "from": "src/infrastructure/parse/ast_rename.ts#build",
+      "to": "src/infrastructure/parse/languages.ts#findLanguageByExt"
+    },
+    {
+      "from": "src/infrastructure/parse/ast_rename.ts#build",
+      "to": "src/infrastructure/parse/loader.ts#getParser"
+    }
+  ]
+}

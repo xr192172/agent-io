@@ -1,0 +1,270 @@
+{
+  "//": "Design DB —— src/infrastructure/index/watch_project.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "IGNORE_DIRS",
+      "kind": "const",
+      "line": 46,
+      "signature": "const IGNORE_DIRS = skipDirSet(['vendor', 'target', 'bin', 'obj', 'scaffold',…"
+    },
+    {
+      "name": "SKIP_FILE_RE",
+      "kind": "const",
+      "line": 49,
+      "signature": "const SKIP_FILE_RE = /(_test\\.go$|\\.test\\.[tj]sx?$|\\.spec\\.[tj]sx?$|\\.min\\.js$…"
+    },
+    {
+      "name": "isIgnoredRel",
+      "kind": "function",
+      "line": 52,
+      "signature": "isIgnoredRel(rel: string): boolean"
+    },
+    {
+      "name": "shouldSyncRel",
+      "kind": "function",
+      "line": 68,
+      "signature": "shouldSyncRel(rel: string): boolean"
+    },
+    {
+      "name": "MAX_FLUSH_WAIT_MS",
+      "kind": "const",
+      "line": 76,
+      "signature": "const MAX_FLUSH_WAIT_MS = 2000"
+    },
+    {
+      "name": "decideFlushDelay",
+      "kind": "function",
+      "line": 83,
+      "signature": "decideFlushDelay(lastFlushAt: number, windowMs: number, maxWaitMs: number, now: number): number"
+    },
+    {
+      "name": "WatchEventType",
+      "kind": "type",
+      "line": 92,
+      "signature": "WatchEventType()"
+    },
+    {
+      "name": "WatchEventResult",
+      "kind": "interface",
+      "line": 94,
+      "signature": "WatchEventResult()"
+    },
+    {
+      "name": "handleWatchEvent",
+      "kind": "function",
+      "line": 108,
+      "signature": "handleWatchEvent(db: Database,\r\n  projectRoot: string,\r\n  absPath: string,): Promise<WatchEventResult>"
+    },
+    {
+      "name": "WatchBatchSummary",
+      "kind": "interface",
+      "line": 132,
+      "signature": "WatchBatchSummary()"
+    },
+    {
+      "name": "FlushBatchOptions",
+      "kind": "interface",
+      "line": 153,
+      "signature": "FlushBatchOptions()"
+    },
+    {
+      "name": "flushBatch",
+      "kind": "function",
+      "line": 178,
+      "signature": "flushBatch(db: Database,\r\n  projectRoot: string,\r\n  rels: string[],\r\n  opts: FlushBatchOptions = {},): Promise<WatchBatchSummary>"
+    },
+    {
+      "name": "ReconcileSummary",
+      "kind": "interface",
+      "line": 246,
+      "signature": "ReconcileSummary()"
+    },
+    {
+      "name": "scanSyncFiles",
+      "kind": "function",
+      "line": 260,
+      "signature": "scanSyncFiles(root: string): string[]"
+    },
+    {
+      "name": "reconcileProject",
+      "kind": "function",
+      "line": 290,
+      "signature": "reconcileProject(db: Database, projectRoot: string): Promise<ReconcileSummary>"
+    },
+    {
+      "name": "WatchProjectOptions",
+      "kind": "interface",
+      "line": 331,
+      "signature": "WatchProjectOptions()"
+    },
+    {
+      "name": "WatchHandle",
+      "kind": "interface",
+      "line": 350,
+      "signature": "WatchHandle()"
+    },
+    {
+      "name": "watchProject",
+      "kind": "function",
+      "line": 362,
+      "signature": "watchProject(opts: WatchProjectOptions): WatchHandle"
+    },
+    {
+      "name": "walkDirs",
+      "kind": "function",
+      "line": 522,
+      "signature": "walkDirs(root: string): string[]"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "./db.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./symbols.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./index_freshness.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./index_freshness.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../parse/source_exts.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../project_view.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/index/watch_project.ts#flushBatch",
+      "to": "src/infrastructure/index/index_freshness.ts#indexCoversDisk"
+    },
+    {
+      "from": "src/infrastructure/index/watch_project.ts#flushBatch",
+      "to": "src/infrastructure/index/index_freshness.ts#indexedRelativeSet"
+    },
+    {
+      "from": "src/infrastructure/index/watch_project.ts#flushBatch",
+      "to": "src/infrastructure/index/symbols.ts#changedSymbolNames"
+    },
+    {
+      "from": "src/infrastructure/index/watch_project.ts#reconcileProject",
+      "to": "src/infrastructure/index/symbols.ts#pruneDeletedFiles"
+    },
+    {
+      "from": "src/infrastructure/index/watch_project.ts#handleWatchEvent",
+      "to": "src/infrastructure/index/symbols.ts#removeFile"
+    },
+    {
+      "from": "src/infrastructure/index/watch_project.ts#flushBatch",
+      "to": "src/infrastructure/index/symbols.ts#reopenRefsTo"
+    },
+    {
+      "from": "src/infrastructure/index/watch_project.ts#flushBatch",
+      "to": "src/infrastructure/index/symbols.ts#resolveCrossFileCalls"
+    },
+    {
+      "from": "src/infrastructure/index/watch_project.ts#handleWatchEvent",
+      "to": "src/infrastructure/index/symbols.ts#syncFile"
+    },
+    {
+      "from": "src/infrastructure/index/watch_project.ts#handleWatchEvent",
+      "to": "src/infrastructure/index/symbols.ts#toRelPath"
+    },
+    {
+      "from": "src/infrastructure/index/watch_project.ts#scanSyncFiles",
+      "to": "src/infrastructure/index/symbols.ts#toRelPath"
+    },
+    {
+      "from": "src/infrastructure/index/watch_project.ts#reconcileProject",
+      "to": "src/infrastructure/index/symbols.ts#toRelPath"
+    },
+    {
+      "from": "src/infrastructure/index/watch_project.ts#watchProject",
+      "to": "src/infrastructure/index/symbols.ts#toRelPath"
+    },
+    {
+      "from": "src/infrastructure/index/watch_project.ts#watchProject",
+      "to": "src/infrastructure/index/watch_project.ts#decideFlushDelay"
+    },
+    {
+      "from": "src/infrastructure/index/watch_project.ts#reconcileProject",
+      "to": "src/infrastructure/index/watch_project.ts#flushBatch"
+    },
+    {
+      "from": "src/infrastructure/index/watch_project.ts#watchProject",
+      "to": "src/infrastructure/index/watch_project.ts#flushBatch"
+    },
+    {
+      "from": "src/infrastructure/index/watch_project.ts#flushBatch",
+      "to": "src/infrastructure/index/watch_project.ts#handleWatchEvent"
+    },
+    {
+      "from": "src/infrastructure/index/watch_project.ts#shouldSyncRel",
+      "to": "src/infrastructure/index/watch_project.ts#isIgnoredRel"
+    },
+    {
+      "from": "src/infrastructure/index/watch_project.ts#scanSyncFiles",
+      "to": "src/infrastructure/index/watch_project.ts#isIgnoredRel"
+    },
+    {
+      "from": "src/infrastructure/index/watch_project.ts#walkDirs",
+      "to": "src/infrastructure/index/watch_project.ts#isIgnoredRel"
+    },
+    {
+      "from": "src/infrastructure/index/watch_project.ts#watchProject",
+      "to": "src/infrastructure/index/watch_project.ts#reconcileProject"
+    },
+    {
+      "from": "src/infrastructure/index/watch_project.ts#watchProject",
+      "to": "src/infrastructure/index/watch_project.ts#reconcileProject"
+    },
+    {
+      "from": "src/infrastructure/index/watch_project.ts#reconcileProject",
+      "to": "src/infrastructure/index/watch_project.ts#scanSyncFiles"
+    },
+    {
+      "from": "src/infrastructure/index/watch_project.ts#handleWatchEvent",
+      "to": "src/infrastructure/index/watch_project.ts#shouldSyncRel"
+    },
+    {
+      "from": "src/infrastructure/index/watch_project.ts#scanSyncFiles",
+      "to": "src/infrastructure/index/watch_project.ts#shouldSyncRel"
+    },
+    {
+      "from": "src/infrastructure/index/watch_project.ts#watchProject",
+      "to": "src/infrastructure/index/watch_project.ts#shouldSyncRel"
+    },
+    {
+      "from": "src/infrastructure/index/watch_project.ts#watchProject",
+      "to": "src/infrastructure/index/watch_project.ts#walkDirs"
+    },
+    {
+      "from": "src/infrastructure/index/watch_project.ts#shouldSyncRel",
+      "to": "src/infrastructure/parse/source_exts.ts#codeSourceExtSet"
+    },
+    {
+      "from": "src/infrastructure/index/watch_project.ts#watchProject",
+      "to": "src/infrastructure/project_view.ts#invalidateProjectView"
+    }
+  ]
+}

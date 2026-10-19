@@ -6,7 +6,7 @@
  * 于是"为了兼容旧格式"把自己做成了半吊子 —— 那正是"在旧东西上打补丁"。
  * ⇒ 现在**只认一种格式**，旧的手写契约（`task-ops.calls.json`）已删。
  *
- * ## 唯一的格式（`certs/design-contracts/<file>.calls.json`）
+ * ## 唯一的格式（`certs/design-db/<file>.calls.json`）
  * ```json
  * {
  *   "calls":   [ { "from":"src/a.ts#f", "to":"src/b.ts#g", "why":"…", "debt":"A1" } ],
@@ -22,7 +22,7 @@
  *
  * ## 口径从哪来
  * 实际 = `cache.db` 的 `edges(kind='call')`（7528 条，`source/target` 形如 `path#symbol`）。
- * 设计 = `certs/design-contracts/*.calls.json`（全量 fork 自实际 + `dep` 加/删的增量）。
+ * 设计 = `certs/design-db/*.calls.json`（全量 fork 自实际 + `dep` 加/删的增量）。
  *
  * 用法：`node scripts/contract-calls.mjs [--json] [--selftest]`
  */
@@ -30,7 +30,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 
-const DIR = path.join('certs', 'design-contracts');
+const DIR = path.join('certs', 'design-db');
 const DB = path.join('.agent-io', 'cache.db');
 
 const norm = (s) => String(s).replace(/\\/g, '/');
@@ -43,7 +43,10 @@ function loadDesign() {
   for (const f of fs.readdirSync(DIR)) {
     if (!f.endsWith('.calls.json')) continue;
     const j = JSON.parse(fs.readFileSync(path.join(DIR, f), 'utf8'));
-    for (const c of j.calls ?? []) calls.push({ ...c, _file: f });
+    // ★★★ 2026-10-19（用户："全量之后契约门失效了"）：**只读 requirements_calls（设计要求）**。
+    //   ★ 绝不回落 `calls` —— `calls` 是全量（实际 DB 的镜像，5356 条），读它 = "实际 × 实际" = 必然全绿。
+    //   ★ 没有 `requirements_calls` 的文件 = "设计对它没有调用要求" ⇒ 贡献 0 条，这是正确语义。
+    for (const c of (j.requirements_calls ?? [])) calls.push({ ...c, _file: f });
     for (const c of j.removed ?? []) removed.push({ ...c, _file: f });
     for (const e of j.runtime_entries ?? []) runtimeEntries.push({ ...e, _file: f });
   }

@@ -1,0 +1,88 @@
+{
+  "//": "Design DB —— src/infrastructure/authoring/translate/verify_behavior.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "typeSamples",
+      "kind": "function",
+      "line": 17,
+      "signature": "typeSamples(goType: string): unknown[]"
+    },
+    {
+      "name": "zeroOf",
+      "kind": "function",
+      "line": 26,
+      "signature": "zeroOf(goType: string): unknown"
+    },
+    {
+      "name": "generateCasesFor",
+      "kind": "function",
+      "line": 39,
+      "signature": "generateCasesFor(params: TranslateParam[]): BehaviorCase[]"
+    },
+    {
+      "name": "ParityOptions",
+      "kind": "interface",
+      "line": 55,
+      "signature": "ParityOptions()"
+    },
+    {
+      "name": "ParityResult",
+      "kind": "interface",
+      "line": 70,
+      "signature": "ParityResult()"
+    },
+    {
+      "name": "checkTranslationParity",
+      "kind": "function",
+      "line": 77,
+      "signature": "checkTranslationParity(opts: ParityOptions): ParityResult"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:os",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../behavior/index.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./unit.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/authoring/translate/verify_behavior.ts#checkTranslationParity",
+      "to": "src/infrastructure/authoring/behavior/index.ts#diffRuns"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/verify_behavior.ts#checkTranslationParity",
+      "to": "src/infrastructure/authoring/translate/verify_behavior.ts#generateCasesFor"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/verify_behavior.ts#generateCasesFor",
+      "to": "src/infrastructure/authoring/translate/verify_behavior.ts#typeSamples"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/verify_behavior.ts#generateCasesFor",
+      "to": "src/infrastructure/authoring/translate/verify_behavior.ts#zeroOf"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/verify_behavior.ts#generateCasesFor",
+      "to": "src/infrastructure/authoring/translate/verify_behavior.ts#zeroOf"
+    }
+  ]
+}

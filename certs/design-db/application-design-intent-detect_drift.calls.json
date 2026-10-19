@@ -1,0 +1,171 @@
+{
+  "//": "Design DB —— src/application/design/intent/detect_drift.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "DetectDriftInput",
+      "kind": "interface",
+      "line": 25,
+      "signature": "DetectDriftInput()"
+    },
+    {
+      "name": "DriftStatus",
+      "kind": "type",
+      "line": 52,
+      "signature": "DriftStatus()"
+    },
+    {
+      "name": "DriftData",
+      "kind": "interface",
+      "line": 54,
+      "signature": "DriftData()"
+    },
+    {
+      "name": "driftFile",
+      "kind": "function",
+      "line": 82,
+      "signature": "driftFile(feature: string): string"
+    },
+    {
+      "name": "gitChangedFiles",
+      "kind": "function",
+      "line": 91,
+      "signature": "gitChangedFiles(root: string, ref: string): string[]"
+    },
+    {
+      "name": "norm",
+      "kind": "const",
+      "line": 107,
+      "signature": "const norm = (p: string): string => path.resolve(p).toLowerCase()"
+    },
+    {
+      "name": "driftStatusLabel",
+      "kind": "function",
+      "line": 113,
+      "signature": "driftStatusLabel(status: DriftStatus): string"
+    },
+    {
+      "name": "detectDriftCore",
+      "kind": "function",
+      "line": 119,
+      "signature": "detectDriftCore(input: DetectDriftInput): Promise<DriftData & { message: string }>"
+    },
+    {
+      "name": "touchedOf",
+      "kind": "function",
+      "line": 269,
+      "signature": "touchedOf(input: DetectDriftInput): Touched"
+    },
+    {
+      "name": "detectDrift",
+      "kind": "function",
+      "line": 286,
+      "signature": "detectDrift(input: DetectDriftInput): Promise<TouchedProduct<DriftData & { message: string }>>"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "node:child_process",
+      "kind": "package"
+    },
+    {
+      "source": "../../../infrastructure/storage.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/analysis/project_root/index.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./consistency.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../domain/b_terms.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/design/intent/detect_drift.ts#detectDriftCore",
+      "to": "src/application/design/intent/consistency.ts#checkConsistencyReport"
+    },
+    {
+      "from": "src/application/design/intent/detect_drift.ts#detectDriftCore",
+      "to": "src/application/design/intent/consistency.ts#comparisonState"
+    },
+    {
+      "from": "src/application/design/intent/detect_drift.ts#detectDrift",
+      "to": "src/application/design/intent/detect_drift.ts#detectDriftCore"
+    },
+    {
+      "from": "src/application/design/intent/detect_drift.ts#detectDriftCore",
+      "to": "src/application/design/intent/detect_drift.ts#driftFile"
+    },
+    {
+      "from": "src/application/design/intent/detect_drift.ts#detectDriftCore",
+      "to": "src/application/design/intent/detect_drift.ts#driftFile"
+    },
+    {
+      "from": "src/application/design/intent/detect_drift.ts#detectDriftCore",
+      "to": "src/application/design/intent/detect_drift.ts#driftFile"
+    },
+    {
+      "from": "src/application/design/intent/detect_drift.ts#detectDriftCore",
+      "to": "src/application/design/intent/detect_drift.ts#driftStatusLabel"
+    },
+    {
+      "from": "src/application/design/intent/detect_drift.ts#detectDriftCore",
+      "to": "src/application/design/intent/detect_drift.ts#driftStatusLabel"
+    },
+    {
+      "from": "src/application/design/intent/detect_drift.ts#detectDriftCore",
+      "to": "src/application/design/intent/detect_drift.ts#gitChangedFiles"
+    },
+    {
+      "from": "src/application/design/intent/detect_drift.ts#detectDriftCore",
+      "to": "src/application/design/intent/detect_drift.ts#norm"
+    },
+    {
+      "from": "src/application/design/intent/detect_drift.ts#detectDriftCore",
+      "to": "src/application/design/intent/detect_drift.ts#norm"
+    },
+    {
+      "from": "src/application/design/intent/detect_drift.ts#detectDriftCore",
+      "to": "src/application/design/intent/detect_drift.ts#norm"
+    },
+    {
+      "from": "src/application/design/intent/detect_drift.ts#detectDrift",
+      "to": "src/application/design/intent/detect_drift.ts#touchedOf"
+    },
+    {
+      "from": "src/application/design/intent/detect_drift.ts#detectDrift",
+      "to": "src/domain/b_terms.ts#withTouched"
+    },
+    {
+      "from": "src/application/design/intent/detect_drift.ts#detectDriftCore",
+      "to": "src/infrastructure/analysis/project_root/index.ts#gitRootOf"
+    },
+    {
+      "from": "src/application/design/intent/detect_drift.ts#detectDriftCore",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/application/design/intent/detect_drift.ts#touchedOf",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/application/design/intent/detect_drift.ts#driftFile",
+      "to": "src/infrastructure/storage.ts#getStorageRoot"
+    }
+  ]
+}

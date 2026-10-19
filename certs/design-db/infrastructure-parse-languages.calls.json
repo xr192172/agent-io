@@ -1,0 +1,50 @@
+{
+  "//": "Design DB —— src/infrastructure/parse/languages.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "LangKind",
+      "kind": "type",
+      "line": 44,
+      "signature": "LangKind()"
+    },
+    {
+      "name": "LanguageEntry",
+      "kind": "interface",
+      "line": 46,
+      "signature": "LanguageEntry()"
+    },
+    {
+      "name": "LANGUAGES",
+      "kind": "const",
+      "line": 99,
+      "signature": "const LANGUAGES = [ // === Web/JS 生态 === // TS 符号宇宙 v6 扩容：type_alias/enum/a…"
+    },
+    {
+      "name": "findLanguageByExt",
+      "kind": "function",
+      "line": 294,
+      "signature": "findLanguageByExt(ext: string): LanguageEntry | undefined"
+    },
+    {
+      "name": "languageModuleSpec",
+      "kind": "function",
+      "line": 311,
+      "signature": "languageModuleSpec(pkg: string, pkgSpec?: string | null): string | null"
+    },
+    {
+      "name": "moduleSpecOfPkg",
+      "kind": "function",
+      "line": 331,
+      "signature": "moduleSpecOfPkg(pkg: string): string | null"
+    }
+  ],
+  "imports": [],
+  "calls": [
+    {
+      "from": "src/infrastructure/parse/languages.ts#moduleSpecOfPkg",
+      "to": "src/infrastructure/parse/languages.ts#languageModuleSpec"
+    }
+  ]
+}

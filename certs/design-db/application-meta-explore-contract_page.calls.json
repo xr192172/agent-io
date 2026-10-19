@@ -1,0 +1,214 @@
+{
+  "//": "Design DB —— src/application/meta/explore/contract_page.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "MAX_SITES",
+      "kind": "const",
+      "line": 47,
+      "signature": "const MAX_SITES = 40"
+    },
+    {
+      "name": "ContractPageInput",
+      "kind": "interface",
+      "line": 49,
+      "signature": "ContractPageInput()"
+    },
+    {
+      "name": "ContractPageResolution",
+      "kind": "type",
+      "line": 60,
+      "signature": "ContractPageResolution()"
+    },
+    {
+      "name": "ContractDefinition",
+      "kind": "interface",
+      "line": 62,
+      "signature": "ContractDefinition()"
+    },
+    {
+      "name": "ContractSite",
+      "kind": "interface",
+      "line": 76,
+      "signature": "ContractSite()"
+    },
+    {
+      "name": "ContractEdge",
+      "kind": "interface",
+      "line": 84,
+      "signature": "ContractEdge()"
+    },
+    {
+      "name": "ContractTerm",
+      "kind": "interface",
+      "line": 97,
+      "signature": "ContractTerm()"
+    },
+    {
+      "name": "ContractPageResult",
+      "kind": "interface",
+      "line": 109,
+      "signature": "ContractPageResult()"
+    },
+    {
+      "name": "lookupTerm",
+      "kind": "function",
+      "line": 139,
+      "signature": "lookupTerm(symbol: string): { key: string; term: ContractTerm } | null"
+    },
+    {
+      "name": "relatedEdges",
+      "kind": "function",
+      "line": 166,
+      "signature": "relatedEdges(symbol: string, members: readonly string[]): ContractEdge[]"
+    },
+    {
+      "name": "sitesOfKind",
+      "kind": "function",
+      "line": 181,
+      "signature": "sitesOfKind(fieldRefFiles: ReadonlyArray<{ file: string; refs: ReadonlyArray<{ line: number; kind: string; snippet?: string }> }>,\n  kinds: ReadonlySet<string>,): ContractSite[]"
+    },
+    {
+      "name": "contractPageCore",
+      "kind": "function",
+      "line": 200,
+      "signature": "contractPageCore(input: ContractPageInput): Promise<ContractPageResult>"
+    },
+    {
+      "name": "touchedOf",
+      "kind": "function",
+      "line": 397,
+      "signature": "touchedOf(input: ContractPageInput, r: ContractPageResult): Touched"
+    },
+    {
+      "name": "contractPage",
+      "kind": "function",
+      "line": 410,
+      "signature": "contractPage(input: ContractPageInput): Promise<TouchedProduct<ContractPageResult>>"
+    },
+    {
+      "name": "renderContractPage",
+      "kind": "function",
+      "line": 416,
+      "signature": "renderContractPage(r: ContractPageResult): string"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../../infrastructure/parse/index.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/index/index_freshness.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/index/symbols.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/analysis/diagnosis/candidate_locator.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/analysis/diagnosis/contract.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../../refactor/find/find_references.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../refactor/rename/rename_symbols.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../domain/chain_wiring.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../domain/b_terms.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/meta/explore/contract_page.ts#contractPage",
+      "to": "src/application/meta/explore/contract_page.ts#contractPageCore"
+    },
+    {
+      "from": "src/application/meta/explore/contract_page.ts#contractPageCore",
+      "to": "src/application/meta/explore/contract_page.ts#lookupTerm"
+    },
+    {
+      "from": "src/application/meta/explore/contract_page.ts#contractPageCore",
+      "to": "src/application/meta/explore/contract_page.ts#relatedEdges"
+    },
+    {
+      "from": "src/application/meta/explore/contract_page.ts#contractPageCore",
+      "to": "src/application/meta/explore/contract_page.ts#relatedEdges"
+    },
+    {
+      "from": "src/application/meta/explore/contract_page.ts#contractPageCore",
+      "to": "src/application/meta/explore/contract_page.ts#sitesOfKind"
+    },
+    {
+      "from": "src/application/meta/explore/contract_page.ts#contractPageCore",
+      "to": "src/application/meta/explore/contract_page.ts#sitesOfKind"
+    },
+    {
+      "from": "src/application/meta/explore/contract_page.ts#contractPage",
+      "to": "src/application/meta/explore/contract_page.ts#touchedOf"
+    },
+    {
+      "from": "src/application/meta/explore/contract_page.ts#contractPageCore",
+      "to": "src/application/refactor/find/find_references.ts#findReferences"
+    },
+    {
+      "from": "src/application/meta/explore/contract_page.ts#contractPageCore",
+      "to": "src/application/refactor/find/find_references.ts#findReferences"
+    },
+    {
+      "from": "src/application/meta/explore/contract_page.ts#lookupTerm",
+      "to": "src/application/refactor/rename/rename_symbols.ts#camelToSnake"
+    },
+    {
+      "from": "src/application/meta/explore/contract_page.ts#contractPageCore",
+      "to": "src/application/refactor/rename/rename_symbols.ts#camelToSnake"
+    },
+    {
+      "from": "src/application/meta/explore/contract_page.ts#contractPage",
+      "to": "src/domain/b_terms.ts#withTouched"
+    },
+    {
+      "from": "src/application/meta/explore/contract_page.ts#relatedEdges",
+      "to": "src/domain/chain_wiring.ts#chainExprOf"
+    },
+    {
+      "from": "src/application/meta/explore/contract_page.ts#relatedEdges",
+      "to": "src/domain/chain_wiring.ts#evidenceLabel"
+    },
+    {
+      "from": "src/application/meta/explore/contract_page.ts#contractPageCore",
+      "to": "src/infrastructure/analysis/diagnosis/candidate_locator.ts#locateCandidates"
+    },
+    {
+      "from": "src/application/meta/explore/contract_page.ts#contractPageCore",
+      "to": "src/infrastructure/index/index_freshness.ts#ensureProjectIndex"
+    },
+    {
+      "from": "src/application/meta/explore/contract_page.ts#contractPageCore",
+      "to": "src/infrastructure/index/symbols.ts#hasAnyIndexedFiles"
+    }
+  ]
+}

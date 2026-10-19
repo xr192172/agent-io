@@ -1,0 +1,127 @@
+{
+  "//": "Design DB —— src/domain/geometry.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "DiagramStatus",
+      "kind": "type",
+      "line": 11,
+      "signature": "DiagramStatus()"
+    },
+    {
+      "name": "resolveDiagramStatus",
+      "kind": "function",
+      "line": 23,
+      "signature": "resolveDiagramStatus(dsl: { id?: string; status?: DiagramStatus }): DiagramStatus"
+    },
+    {
+      "name": "NodeLayer",
+      "kind": "type",
+      "line": 34,
+      "signature": "NodeLayer()"
+    },
+    {
+      "name": "NodeStyle",
+      "kind": "interface",
+      "line": 37,
+      "signature": "NodeStyle()"
+    },
+    {
+      "name": "BlockStyle",
+      "kind": "interface",
+      "line": 59,
+      "signature": "BlockStyle()"
+    },
+    {
+      "name": "ContentBlock",
+      "kind": "interface",
+      "line": 69,
+      "signature": "ContentBlock()"
+    },
+    {
+      "name": "NodeContent",
+      "kind": "interface",
+      "line": 107,
+      "signature": "NodeContent()"
+    },
+    {
+      "name": "Node",
+      "kind": "interface",
+      "line": 115,
+      "signature": "Node()"
+    },
+    {
+      "name": "DecisionAuthor",
+      "kind": "type",
+      "line": 213,
+      "signature": "DecisionAuthor()"
+    },
+    {
+      "name": "NodeDecision",
+      "kind": "interface",
+      "line": 216,
+      "signature": "NodeDecision()"
+    },
+    {
+      "name": "DecisionDissent",
+      "kind": "interface",
+      "line": 321,
+      "signature": "DecisionDissent()"
+    },
+    {
+      "name": "DecisionHistoryEntry",
+      "kind": "interface",
+      "line": 331,
+      "signature": "DecisionHistoryEntry()"
+    },
+    {
+      "name": "EdgeStyle",
+      "kind": "interface",
+      "line": 351,
+      "signature": "EdgeStyle()"
+    },
+    {
+      "name": "Edge",
+      "kind": "interface",
+      "line": 358,
+      "signature": "Edge()"
+    },
+    {
+      "name": "Swimlane",
+      "kind": "interface",
+      "line": 377,
+      "signature": "Swimlane()"
+    },
+    {
+      "name": "Geometry",
+      "kind": "interface",
+      "line": 392,
+      "signature": "Geometry()"
+    },
+    {
+      "name": "ForceParams",
+      "kind": "interface",
+      "line": 420,
+      "signature": "ForceParams()"
+    }
+  ],
+  "imports": [
+    {
+      "source": "./types.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./animation.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./task_schema.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": []
+}

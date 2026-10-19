@@ -1,0 +1,39 @@
+{
+  "//": "Design DB —— src/domain/contract.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "ShapeField",
+      "kind": "interface",
+      "line": 15,
+      "signature": "ShapeField()"
+    },
+    {
+      "name": "ShapeSchema",
+      "kind": "interface",
+      "line": 23,
+      "signature": "ShapeSchema()"
+    },
+    {
+      "name": "EffectTarget",
+      "kind": "interface",
+      "line": 35,
+      "signature": "EffectTarget()"
+    },
+    {
+      "name": "BrickRole",
+      "kind": "interface",
+      "line": 50,
+      "signature": "BrickRole()"
+    },
+    {
+      "name": "BrickContract",
+      "kind": "interface",
+      "line": 61,
+      "signature": "BrickContract()"
+    }
+  ],
+  "imports": [],
+  "calls": []
+}

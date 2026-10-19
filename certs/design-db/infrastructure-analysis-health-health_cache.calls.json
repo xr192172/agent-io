@@ -1,0 +1,97 @@
+{
+  "//": "Design DB —— src/infrastructure/analysis/health/health_cache.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "FingerprintFile",
+      "kind": "interface",
+      "line": 22,
+      "signature": "FingerprintFile()"
+    },
+    {
+      "name": "healthCacheDir",
+      "kind": "function",
+      "line": 36,
+      "signature": "healthCacheDir(root: string): string"
+    },
+    {
+      "name": "fileFingerprint",
+      "kind": "function",
+      "line": 41,
+      "signature": "fileFingerprint(files: FingerprintFile[]): string"
+    },
+    {
+      "name": "singleFileFingerprint",
+      "kind": "function",
+      "line": 55,
+      "signature": "singleFileFingerprint(abs: string): string"
+    },
+    {
+      "name": "readHealthCache",
+      "kind": "function",
+      "line": 65,
+      "signature": "readHealthCache(key: string, root: string): T | null"
+    },
+    {
+      "name": "writeHealthCache",
+      "kind": "function",
+      "line": 76,
+      "signature": "writeHealthCache(key: string, data: unknown, root: string): void"
+    },
+    {
+      "name": "healthKey",
+      "kind": "function",
+      "line": 93,
+      "signature": "healthKey(prefix: string, parts: Array<string | number | boolean>): string"
+    },
+    {
+      "name": "MAX_HEALTH_CACHE_FILES",
+      "kind": "const",
+      "line": 113,
+      "signature": "const MAX_HEALTH_CACHE_FILES = 20"
+    },
+    {
+      "name": "pruneHealthCache",
+      "kind": "function",
+      "line": 122,
+      "signature": "pruneHealthCache(root: string, max = MAX_HEALTH_CACHE_FILES): number"
+    }
+  ],
+  "imports": [
+    {
+      "source": "../../data_dir.js",
+      "kind": "relative"
+    },
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "node:crypto",
+      "kind": "package"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/health/health_cache.ts#readHealthCache",
+      "to": "src/infrastructure/analysis/health/health_cache.ts#healthCacheDir"
+    },
+    {
+      "from": "src/infrastructure/analysis/health/health_cache.ts#writeHealthCache",
+      "to": "src/infrastructure/analysis/health/health_cache.ts#healthCacheDir"
+    },
+    {
+      "from": "src/infrastructure/analysis/health/health_cache.ts#pruneHealthCache",
+      "to": "src/infrastructure/analysis/health/health_cache.ts#healthCacheDir"
+    },
+    {
+      "from": "src/infrastructure/analysis/health/health_cache.ts#writeHealthCache",
+      "to": "src/infrastructure/analysis/health/health_cache.ts#pruneHealthCache"
+    }
+  ]
+}

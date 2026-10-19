@@ -1,0 +1,452 @@
+{
+  "//": "Design DB —— src/application/design/dsl_ops/task_ops.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "TaskOpRequest",
+      "kind": "interface",
+      "line": 53,
+      "signature": "TaskOpRequest()"
+    },
+    {
+      "name": "TaskOpInput",
+      "kind": "interface",
+      "line": 60,
+      "signature": "TaskOpInput()"
+    },
+    {
+      "name": "Loaded",
+      "kind": "interface",
+      "line": 77,
+      "signature": "Loaded()"
+    },
+    {
+      "name": "loadTask",
+      "kind": "function",
+      "line": 83,
+      "signature": "loadTask(feature: string, nodeId: string): Loaded"
+    },
+    {
+      "name": "requireRoot",
+      "kind": "function",
+      "line": 112,
+      "signature": "requireRoot(dsl: { source_root?: string }): string"
+    },
+    {
+      "name": "assertTransition",
+      "kind": "function",
+      "line": 124,
+      "signature": "assertTransition(from: TaskState, to: TaskState, action: string): void"
+    },
+    {
+      "name": "writeTask",
+      "kind": "function",
+      "line": 140,
+      "signature": "writeTask(feature: string, nodeId: string, next: TaskSpec): void"
+    },
+    {
+      "name": "ConstructBasis",
+      "kind": "interface",
+      "line": 190,
+      "signature": "ConstructBasis()"
+    },
+    {
+      "name": "constructBasis",
+      "kind": "function",
+      "line": 200,
+      "signature": "constructBasis(dsl: NonNullable<ReturnType<typeof getDesignSheet>>,\n  node: { id: string; type?: string; label?: string; title?: string; description?: string; path?: string },): ConstructBasis"
+    },
+    {
+      "name": "constructionVerdict",
+      "kind": "function",
+      "line": 243,
+      "signature": "constructionVerdict(dsl: NonNullable<ReturnType<typeof getDesignSheet>>,\n  nodeId: string,): { complete: boolean; missing: string[]; post: number }"
+    },
+    {
+      "name": "publishTask",
+      "kind": "function",
+      "line": 262,
+      "signature": "publishTask(input: TaskOpInput): EditResult"
+    },
+    {
+      "name": "claimTask",
+      "kind": "function",
+      "line": 428,
+      "signature": "claimTask(input: TaskOpInput): Promise<EditResult>"
+    },
+    {
+      "name": "releaseTask",
+      "kind": "function",
+      "line": 522,
+      "signature": "releaseTask(input: TaskOpInput): Promise<EditResult>"
+    },
+    {
+      "name": "completeTask",
+      "kind": "function",
+      "line": 568,
+      "signature": "completeTask(input: TaskOpInput): Promise<EditResult>"
+    },
+    {
+      "name": "applyTaskOp",
+      "kind": "function",
+      "line": 688,
+      "signature": "applyTaskOp(feature: string,\n  op: TaskOpRequest,\n  agent?: string,): Promise<EditResult>"
+    },
+    {
+      "name": "publishFromDiff",
+      "kind": "function",
+      "line": 745,
+      "signature": "publishFromDiff(feature: string, nodeId: string): EditResult"
+    },
+    {
+      "name": "voidTask",
+      "kind": "function",
+      "line": 779,
+      "signature": "voidTask(input: TaskOpInput): EditResult"
+    },
+    {
+      "name": "applyTodoOp",
+      "kind": "function",
+      "line": 818,
+      "signature": "applyTodoOp(feature: string,\n  op: { op: string; id?: string; data?: Record<string, unknown> },\n  agent?: string,): EditResult"
+    }
+  ],
+  "imports": [
+    {
+      "source": "./edit_result.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "../../../infrastructure/storage.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/storage_overlay.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../domain/overlay.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../domain/task_machine.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../domain/expectation.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../domain/task_schema.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./status_tools.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#completeTask",
+      "to": "src/application/design/dsl_ops/status_tools.ts#updateStatus"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#claimTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#assertTransition"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#releaseTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#assertTransition"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#completeTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#assertTransition"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#completeTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#assertTransition"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#voidTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#assertTransition"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyTaskOp",
+      "to": "src/application/design/dsl_ops/task_ops.ts#claimTask"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyTaskOp",
+      "to": "src/application/design/dsl_ops/task_ops.ts#completeTask"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#publishTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#constructBasis"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#claimTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#constructionVerdict"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#completeTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#constructionVerdict"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#claimTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#loadTask"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#releaseTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#loadTask"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#completeTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#loadTask"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#voidTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#loadTask"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyTaskOp",
+      "to": "src/application/design/dsl_ops/task_ops.ts#publishTask"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#publishFromDiff",
+      "to": "src/application/design/dsl_ops/task_ops.ts#publishTask"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyTaskOp",
+      "to": "src/application/design/dsl_ops/task_ops.ts#releaseTask"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#claimTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#requireRoot"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#completeTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#requireRoot"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyTaskOp",
+      "to": "src/application/design/dsl_ops/task_ops.ts#voidTask"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#publishTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#writeTask"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#publishTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#writeTask"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#claimTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#writeTask"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#releaseTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#writeTask"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#completeTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#writeTask"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#voidTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#writeTask"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#constructionVerdict",
+      "to": "src/domain/expectation.ts#postExpectations"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#publishTask",
+      "to": "src/domain/expectation.ts#postExpectations"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#writeTask",
+      "to": "src/domain/overlay.ts#applyOverlay"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyTodoOp",
+      "to": "src/domain/overlay.ts#applyOverlay"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyTodoOp",
+      "to": "src/domain/overlay.ts#applyOverlay"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#writeTask",
+      "to": "src/domain/overlay.ts#seedOverlayFromDsl"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyTodoOp",
+      "to": "src/domain/overlay.ts#seedOverlayFromDsl"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyTodoOp",
+      "to": "src/domain/overlay.ts#seedOverlayFromDsl"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#completeTask",
+      "to": "src/domain/overlay.ts#validateProgressEvidence"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#assertTransition",
+      "to": "src/domain/task_machine.ts#applicableTransitions"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#assertTransition",
+      "to": "src/domain/task_machine.ts#applicableTransitions"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#claimTask",
+      "to": "src/domain/task_machine.ts#cardStanding"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#claimTask",
+      "to": "src/domain/task_machine.ts#isClaimable"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#completeTask",
+      "to": "src/domain/task_machine.ts#isSatisfied"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#publishTask",
+      "to": "src/domain/task_schema.ts#progressOf"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#publishTask",
+      "to": "src/domain/task_schema.ts#progressOf"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#claimTask",
+      "to": "src/domain/task_schema.ts#progressOf"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#releaseTask",
+      "to": "src/domain/task_schema.ts#progressOf"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#completeTask",
+      "to": "src/domain/task_schema.ts#progressOf"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#publishTask",
+      "to": "src/domain/task_schema.ts#taskLevel"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#publishTask",
+      "to": "src/domain/task_schema.ts#taskLevel"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#claimTask",
+      "to": "src/domain/task_schema.ts#taskLevel"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#completeTask",
+      "to": "src/domain/task_schema.ts#taskLevel"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#loadTask",
+      "to": "src/infrastructure/storage.ts#getDesignSheet"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#writeTask",
+      "to": "src/infrastructure/storage.ts#getDesignSheet"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#publishTask",
+      "to": "src/infrastructure/storage.ts#getDesignSheet"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyTodoOp",
+      "to": "src/infrastructure/storage.ts#getDesignSheet"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyTodoOp",
+      "to": "src/infrastructure/storage.ts#getDesignSheet"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#completeTask",
+      "to": "src/infrastructure/storage.ts#getDesignSheetFile"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#writeTask",
+      "to": "src/infrastructure/storage.ts#saveDesignSheet"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyTodoOp",
+      "to": "src/infrastructure/storage.ts#saveDesignSheet"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyTodoOp",
+      "to": "src/infrastructure/storage.ts#saveDesignSheet"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#writeTask",
+      "to": "src/infrastructure/storage_overlay.ts#loadOverlay"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyTodoOp",
+      "to": "src/infrastructure/storage_overlay.ts#loadOverlay"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyTodoOp",
+      "to": "src/infrastructure/storage_overlay.ts#loadOverlay"
+    }
+  ],
+  "requirements": [
+    {
+      "kind": "call-exists",
+      "symbol": "claimTask",
+      "target": "cardStanding",
+      "why": "★ 讨论 2 · P30：claim 读**可领**那一侧（work/violated 才可领）；satisfied 必拒（没活干不许领）"
+    },
+    {
+      "kind": "call-exists",
+      "symbol": "completeTask",
+      "target": "isSatisfied",
+      "why": "★ 讨论 2 · P30 的结构判据：complete 读**可收口**那一侧（isSatisfied），★ 不许再与 claim 共用同一个判据 —— 共用会放行 violated 卡（后态全过、前态越权）"
+    },
+    {
+      "kind": "call-exists",
+      "symbol": "completeTask",
+      "target": "validateProgressEvidence",
+      "why": "★ 接点③（证据闸）：置 done 前必须过既有 validateProgressEvidence（overlay.ts）—— ★ 复用，不新造第二把证据尺"
+    },
+    {
+      "kind": "call-exists",
+      "symbol": "completeTask",
+      "target": "updateStatus",
+      "why": "★ 接点④（状态唯一入口）：状态落盘只许走既有 updateStatus（status_tools.ts），不在 task 侧另写一份写盘 —— ★ 复用"
+    }
+  ],
+  "requirements_calls": [
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#claimTask",
+      "to": "src/domain/task_machine.ts#cardStanding",
+      "why": "★ 讨论 2 · P30：claim 读**可领**那一侧（work/violated 才可领）；satisfied 必拒（没活干不许领）"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#completeTask",
+      "to": "src/domain/task_machine.ts#isSatisfied",
+      "why": "★ 讨论 2 · P30 的结构判据：complete 读**可收口**那一侧（isSatisfied），★ 不许再与 claim 共用同一个判据 —— 共用会放行 violated 卡（后态全过、前态越权）"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#completeTask",
+      "to": "src/domain/overlay.ts#validateProgressEvidence",
+      "why": "★ 接点③（证据闸）：置 done 前必须过既有 validateProgressEvidence（overlay.ts）—— ★ 复用，不新造第二把证据尺"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#completeTask",
+      "to": "src/application/design/dsl_ops/status_tools.ts#updateStatus",
+      "why": "★ 接点④（状态唯一入口）：状态落盘只许走既有 updateStatus（status_tools.ts），不在 task 侧另写一份写盘 —— ★ 复用"
+    }
+  ]
+}

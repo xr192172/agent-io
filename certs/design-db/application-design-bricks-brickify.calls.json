@@ -1,0 +1,415 @@
+{
+  "//": "Design DB —— src/application/design/bricks/brickify.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "BrickifyOptions",
+      "kind": "interface",
+      "line": 34,
+      "signature": "BrickifyOptions()"
+    },
+    {
+      "name": "FileDep",
+      "kind": "interface",
+      "line": 42,
+      "signature": "FileDep()"
+    },
+    {
+      "name": "MixedFileSignal",
+      "kind": "interface",
+      "line": 49,
+      "signature": "MixedFileSignal()"
+    },
+    {
+      "name": "Community",
+      "kind": "interface",
+      "line": 58,
+      "signature": "Community()"
+    },
+    {
+      "name": "BrickSubCluster",
+      "kind": "interface",
+      "line": 74,
+      "signature": "BrickSubCluster()"
+    },
+    {
+      "name": "BrickifyBrick",
+      "kind": "interface",
+      "line": 100,
+      "signature": "BrickifyBrick()"
+    },
+    {
+      "name": "BrickifyResult",
+      "kind": "interface",
+      "line": 124,
+      "signature": "BrickifyResult()"
+    },
+    {
+      "name": "TS_EXT",
+      "kind": "const",
+      "line": 142,
+      "signature": "const TS_EXT = /\\.(ts|tsx|js|jsx|mjs|cjs|mts|cts)$/"
+    },
+    {
+      "name": "BrickRole",
+      "kind": "type",
+      "line": 149,
+      "signature": "BrickRole()"
+    },
+    {
+      "name": "ROLE_LABEL",
+      "kind": "const",
+      "line": 151,
+      "signature": "const ROLE_LABEL = { brick: '积木', contract: '契约', glue: '胶水', }"
+    },
+    {
+      "name": "roleOfLayer",
+      "kind": "function",
+      "line": 161,
+      "signature": "roleOfLayer(layer: string): BrickRole"
+    },
+    {
+      "name": "roleOfFile",
+      "kind": "function",
+      "line": 168,
+      "signature": "roleOfFile(rel: string): BrickRole"
+    },
+    {
+      "name": "readRel",
+      "kind": "function",
+      "line": 173,
+      "signature": "readRel(sourceRoot: string, rel: string): string"
+    },
+    {
+      "name": "buildFileDeps",
+      "kind": "function",
+      "line": 185,
+      "signature": "buildFileDeps(sourceRoot: string, rels: string[]): FileDep[]"
+    },
+    {
+      "name": "NodeLike",
+      "kind": "interface",
+      "line": 215,
+      "signature": "NodeLike()"
+    },
+    {
+      "name": "collectRefs",
+      "kind": "function",
+      "line": 224,
+      "signature": "collectRefs(text: string): Set<string>"
+    },
+    {
+      "name": "DECL_TYPES",
+      "kind": "const",
+      "line": 230,
+      "signature": "const DECL_TYPES = new Set([ 'function_declaration', 'class_declaration', 'a…"
+    },
+    {
+      "name": "childrenOf",
+      "kind": "function",
+      "line": 239,
+      "signature": "childrenOf(node: NodeLike, type: string): NodeLike[]"
+    },
+    {
+      "name": "importBindings",
+      "kind": "function",
+      "line": 249,
+      "signature": "importBindings(node: NodeLike): Array<{ local: string; module: string }>"
+    },
+    {
+      "name": "childNodes",
+      "kind": "function",
+      "line": 278,
+      "signature": "childNodes(node: NodeLike | null): NodeLike[]"
+    },
+    {
+      "name": "declNamesOf",
+      "kind": "function",
+      "line": 289,
+      "signature": "declNamesOf(decl: NodeLike): string[] | null"
+    },
+    {
+      "name": "detectMixedFiles",
+      "kind": "function",
+      "line": 309,
+      "signature": "detectMixedFiles(sourceRoot: string, rels: string[]): Promise<MixedFileSignal[]>"
+    },
+    {
+      "name": "UnionFind",
+      "kind": "class",
+      "line": 412,
+      "signature": "UnionFind()"
+    },
+    {
+      "name": "computeCommunities",
+      "kind": "function",
+      "line": 429,
+      "signature": "computeCommunities(rels: string[], fileDeps: FileDep[]): Community[]"
+    },
+    {
+      "name": "computeBrickSubClusters",
+      "kind": "function",
+      "line": 511,
+      "signature": "computeBrickSubClusters(brickId: string,\n  files: string[],\n  fileDeps: FileDep[],): BrickSubCluster[]"
+    },
+    {
+      "name": "buildBrickify",
+      "kind": "function",
+      "line": 587,
+      "signature": "buildBrickify(opts: BrickifyOptions): Promise<BrickifyResult>"
+    },
+    {
+      "name": "RoleTotals",
+      "kind": "type",
+      "line": 707,
+      "signature": "RoleTotals()"
+    },
+    {
+      "name": "summarizeRoles",
+      "kind": "function",
+      "line": 710,
+      "signature": "summarizeRoles(bricks: BrickifyBrick[]): RoleTotals"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../../infrastructure/analysis/structure/feature_map.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/analysis/structure/layer_detect.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/analysis/deadcode/detect_dead_imports.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./brick_bag.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/parse/loader.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/parse/languages.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/parse/kernel.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/design/bricks/brickify.ts#buildFileDeps",
+      "to": "src/application/design/bricks/brick_bag.ts#resolveSpecifier"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#detectMixedFiles",
+      "to": "src/application/design/bricks/brickify.ts#UnionFind.find"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#detectMixedFiles",
+      "to": "src/application/design/bricks/brickify.ts#UnionFind.find"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#detectMixedFiles",
+      "to": "src/application/design/bricks/brickify.ts#UnionFind.find"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#UnionFind.find",
+      "to": "src/application/design/bricks/brickify.ts#UnionFind.find"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#UnionFind.union",
+      "to": "src/application/design/bricks/brickify.ts#UnionFind.find"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#computeCommunities",
+      "to": "src/application/design/bricks/brickify.ts#UnionFind.find"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#computeCommunities",
+      "to": "src/application/design/bricks/brickify.ts#UnionFind.find"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#computeBrickSubClusters",
+      "to": "src/application/design/bricks/brickify.ts#UnionFind.find"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#detectMixedFiles",
+      "to": "src/application/design/bricks/brickify.ts#UnionFind.union"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#computeCommunities",
+      "to": "src/application/design/bricks/brickify.ts#UnionFind.union"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#computeBrickSubClusters",
+      "to": "src/application/design/bricks/brickify.ts#UnionFind.union"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#buildBrickify",
+      "to": "src/application/design/bricks/brickify.ts#buildFileDeps"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#importBindings",
+      "to": "src/application/design/bricks/brickify.ts#childNodes"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#importBindings",
+      "to": "src/application/design/bricks/brickify.ts#childNodes"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#importBindings",
+      "to": "src/application/design/bricks/brickify.ts#childNodes"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#declNamesOf",
+      "to": "src/application/design/bricks/brickify.ts#childNodes"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#detectMixedFiles",
+      "to": "src/application/design/bricks/brickify.ts#childNodes"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#importBindings",
+      "to": "src/application/design/bricks/brickify.ts#childrenOf"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#detectMixedFiles",
+      "to": "src/application/design/bricks/brickify.ts#collectRefs"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#buildBrickify",
+      "to": "src/application/design/bricks/brickify.ts#computeBrickSubClusters"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#buildBrickify",
+      "to": "src/application/design/bricks/brickify.ts#computeCommunities"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#detectMixedFiles",
+      "to": "src/application/design/bricks/brickify.ts#declNamesOf"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#detectMixedFiles",
+      "to": "src/application/design/bricks/brickify.ts#declNamesOf"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#buildBrickify",
+      "to": "src/application/design/bricks/brickify.ts#detectMixedFiles"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#detectMixedFiles",
+      "to": "src/application/design/bricks/brickify.ts#importBindings"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#buildFileDeps",
+      "to": "src/application/design/bricks/brickify.ts#readRel"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#detectMixedFiles",
+      "to": "src/application/design/bricks/brickify.ts#readRel"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#computeBrickSubClusters",
+      "to": "src/application/design/bricks/brickify.ts#roleOfFile"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#buildBrickify",
+      "to": "src/application/design/bricks/brickify.ts#roleOfFile"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#roleOfFile",
+      "to": "src/application/design/bricks/brickify.ts#roleOfLayer"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#buildBrickify",
+      "to": "src/application/design/bricks/brickify.ts#summarizeRoles"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#buildFileDeps",
+      "to": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#enumerateTsSources"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#computeCommunities",
+      "to": "src/infrastructure/analysis/structure/feature_map.ts#featureIdOf"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#computeCommunities",
+      "to": "src/infrastructure/analysis/structure/feature_map.ts#featureIdOf"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#computeCommunities",
+      "to": "src/infrastructure/analysis/structure/feature_map.ts#featureIdOf"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#computeCommunities",
+      "to": "src/infrastructure/analysis/structure/feature_map.ts#featureIdOf"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#computeBrickSubClusters",
+      "to": "src/infrastructure/analysis/structure/feature_map.ts#featureIdOf"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#buildBrickify",
+      "to": "src/infrastructure/analysis/structure/feature_map.ts#featureIdOf"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#buildBrickify",
+      "to": "src/infrastructure/analysis/structure/feature_map.ts#featureIdOf"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#buildBrickify",
+      "to": "src/infrastructure/analysis/structure/feature_map.ts#featureIdOf"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#buildBrickify",
+      "to": "src/infrastructure/analysis/structure/feature_map.ts#scanSourceFiles"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#computeBrickSubClusters",
+      "to": "src/infrastructure/analysis/structure/feature_map.ts#sideOfLayer"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#buildBrickify",
+      "to": "src/infrastructure/analysis/structure/feature_map.ts#sideOfLayer"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#roleOfFile",
+      "to": "src/infrastructure/analysis/structure/layer_detect.ts#matchLayer"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#computeBrickSubClusters",
+      "to": "src/infrastructure/analysis/structure/layer_detect.ts#matchLayer"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#buildBrickify",
+      "to": "src/infrastructure/analysis/structure/layer_detect.ts#matchLayer"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#detectMixedFiles",
+      "to": "src/infrastructure/parse/kernel.ts#parseContent"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#detectMixedFiles",
+      "to": "src/infrastructure/parse/languages.ts#findLanguageByExt"
+    },
+    {
+      "from": "src/application/design/bricks/brickify.ts#detectMixedFiles",
+      "to": "src/infrastructure/parse/loader.ts#getParser"
+    }
+  ]
+}

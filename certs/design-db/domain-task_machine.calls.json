@@ -1,0 +1,188 @@
+{
+  "//": "Design DB —— src/domain/task_machine.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "CardStanding",
+      "kind": "type",
+      "line": 70,
+      "signature": "CardStanding()"
+    },
+    {
+      "name": "StandingNode",
+      "kind": "interface",
+      "line": 73,
+      "signature": "StandingNode()"
+    },
+    {
+      "name": "StandingInput",
+      "kind": "interface",
+      "line": 79,
+      "signature": "StandingInput()"
+    },
+    {
+      "name": "SatisfactionCounts",
+      "kind": "interface",
+      "line": 96,
+      "signature": "SatisfactionCounts()"
+    },
+    {
+      "name": "ViolationCounts",
+      "kind": "interface",
+      "line": 104,
+      "signature": "ViolationCounts()"
+    },
+    {
+      "name": "StandingVerdict",
+      "kind": "interface",
+      "line": 110,
+      "signature": "StandingVerdict()"
+    },
+    {
+      "name": "RedAttribution",
+      "kind": "type",
+      "line": 142,
+      "signature": "RedAttribution()"
+    },
+    {
+      "name": "RedDisposition",
+      "kind": "type",
+      "line": 149,
+      "signature": "RedDisposition()"
+    },
+    {
+      "name": "RED_DISPOSITION",
+      "kind": "const",
+      "line": 162,
+      "signature": "const RED_DISPOSITION = { own: 'claim', orphan: 'claim', 'dep-pending': 'wait', '…"
+    },
+    {
+      "name": "cardStanding",
+      "kind": "function",
+      "line": 192,
+      "signature": "cardStanding(card: TaskSpec, opts: StandingInput): Promise<StandingVerdict>"
+    },
+    {
+      "name": "isClaimable",
+      "kind": "function",
+      "line": 320,
+      "signature": "isClaimable(standing: CardStanding): boolean"
+    },
+    {
+      "name": "SatisfactionVerdict",
+      "kind": "interface",
+      "line": 324,
+      "signature": "SatisfactionVerdict()"
+    },
+    {
+      "name": "isSatisfied",
+      "kind": "function",
+      "line": 340,
+      "signature": "isSatisfied(card: TaskSpec, opts: StandingInput): Promise<SatisfactionVerdict>"
+    },
+    {
+      "name": "LeaseReleaseEvent",
+      "kind": "interface",
+      "line": 350,
+      "signature": "LeaseReleaseEvent()"
+    },
+    {
+      "name": "releaseIfExpired",
+      "kind": "function",
+      "line": 379,
+      "signature": "releaseIfExpired(cards: readonly TaskSpec[],\n  nowMs: number,\n  ttlMs: number,): LeaseReleaseEvent[]"
+    },
+    {
+      "name": "TransitionState",
+      "kind": "type",
+      "line": 427,
+      "signature": "TransitionState()"
+    },
+    {
+      "name": "TaskTransition",
+      "kind": "interface",
+      "line": 433,
+      "signature": "TaskTransition()"
+    },
+    {
+      "name": "TRANSITIONS",
+      "kind": "const",
+      "line": 452,
+      "signature": "const TRANSITIONS = [ { id: 't_claim', from: 'candidate', to: 'claimed', stat…"
+    },
+    {
+      "name": "applicableTransitions",
+      "kind": "function",
+      "line": 524,
+      "signature": "applicableTransitions(from: TaskState): TaskTransition[]"
+    }
+  ],
+  "imports": [
+    {
+      "source": "../application/design/intent/expectations.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./expectation.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./task_schema.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/domain/task_machine.ts#cardStanding",
+      "to": "src/application/design/intent/expectations.ts#judgeExpectations"
+    },
+    {
+      "from": "src/domain/task_machine.ts#cardStanding",
+      "to": "src/application/design/intent/expectations.ts#judgeExpectations"
+    },
+    {
+      "from": "src/domain/task_machine.ts#cardStanding",
+      "to": "src/domain/expectation.ts#expectationPhase"
+    },
+    {
+      "from": "src/domain/task_machine.ts#cardStanding",
+      "to": "src/domain/expectation.ts#expectationSubjectPath"
+    },
+    {
+      "from": "src/domain/task_machine.ts#cardStanding",
+      "to": "src/domain/expectation.ts#normPath"
+    },
+    {
+      "from": "src/domain/task_machine.ts#cardStanding",
+      "to": "src/domain/expectation.ts#normPath"
+    },
+    {
+      "from": "src/domain/task_machine.ts#cardStanding",
+      "to": "src/domain/expectation.ts#postExpectations"
+    },
+    {
+      "from": "src/domain/task_machine.ts#isSatisfied",
+      "to": "src/domain/task_machine.ts#cardStanding"
+    },
+    {
+      "from": "src/domain/task_machine.ts#releaseIfExpired",
+      "to": "src/domain/task_schema.ts#isTaskState"
+    }
+  ],
+  "requirements": [
+    {
+      "kind": "call-exists",
+      "symbol": "cardStanding",
+      "target": "judgeExpectations",
+      "why": "★ 五值读数 = 对着代码判 expectations（复用现成判定器，不新造第二把尺）"
+    }
+  ],
+  "requirements_calls": [
+    {
+      "from": "src/domain/task_machine.ts#cardStanding",
+      "to": "src/application/design/intent/expectations.ts#judgeExpectations",
+      "why": "★ 五值读数 = 对着代码判 expectations（复用现成判定器，不新造第二把尺）"
+    }
+  ]
+}

@@ -1,0 +1,137 @@
+{
+  "//": "Design DB —— src/application/harvest/harvest_closure.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "HarvestClosureInput",
+      "kind": "interface",
+      "line": 29,
+      "signature": "HarvestClosureInput()"
+    },
+    {
+      "name": "ClosureFile",
+      "kind": "interface",
+      "line": 42,
+      "signature": "ClosureFile()"
+    },
+    {
+      "name": "ExternalDep",
+      "kind": "interface",
+      "line": 58,
+      "signature": "ExternalDep()"
+    },
+    {
+      "name": "HarvestClosureResult",
+      "kind": "interface",
+      "line": 66,
+      "signature": "HarvestClosureResult()"
+    },
+    {
+      "name": "NODE_BUILTINS",
+      "kind": "const",
+      "line": 98,
+      "signature": "const NODE_BUILTINS = new Set([ 'assert', 'async_hooks', 'buffer', 'child_proce…"
+    },
+    {
+      "name": "PY_STDLIB",
+      "kind": "const",
+      "line": 106,
+      "signature": "const PY_STDLIB = new Set([ 'abc', 'argparse', 'asyncio', 'base64', 'bisect…"
+    },
+    {
+      "name": "classifyPackageImport",
+      "kind": "function",
+      "line": 118,
+      "signature": "classifyPackageImport(source: string, language: string): ExternalDep['class']"
+    },
+    {
+      "name": "toRel",
+      "kind": "function",
+      "line": 139,
+      "signature": "toRel(root: string, p: string): string"
+    },
+    {
+      "name": "harvestClosureCore",
+      "kind": "function",
+      "line": 144,
+      "signature": "harvestClosureCore(input: HarvestClosureInput): HarvestClosureResult"
+    },
+    {
+      "name": "touchedOf",
+      "kind": "function",
+      "line": 447,
+      "signature": "touchedOf(input: HarvestClosureInput, r: HarvestClosureResult): Touched"
+    },
+    {
+      "name": "harvestClosure",
+      "kind": "function",
+      "line": 471,
+      "signature": "harvestClosure(input: HarvestClosureInput): TouchedProduct<HarvestClosureResult>"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../infrastructure/storage.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/index/db.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/graph/import_graph.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../domain/b_terms.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/harvest/harvest_closure.ts#harvestClosureCore",
+      "to": "src/application/harvest/harvest_closure.ts#classifyPackageImport"
+    },
+    {
+      "from": "src/application/harvest/harvest_closure.ts#harvestClosure",
+      "to": "src/application/harvest/harvest_closure.ts#harvestClosureCore"
+    },
+    {
+      "from": "src/application/harvest/harvest_closure.ts#harvestClosureCore",
+      "to": "src/application/harvest/harvest_closure.ts#toRel"
+    },
+    {
+      "from": "src/application/harvest/harvest_closure.ts#harvestClosure",
+      "to": "src/application/harvest/harvest_closure.ts#touchedOf"
+    },
+    {
+      "from": "src/application/harvest/harvest_closure.ts#harvestClosure",
+      "to": "src/domain/b_terms.ts#withTouched"
+    },
+    {
+      "from": "src/application/harvest/harvest_closure.ts#harvestClosureCore",
+      "to": "src/infrastructure/graph/import_graph.ts#buildImportGraph"
+    },
+    {
+      "from": "src/application/harvest/harvest_closure.ts#harvestClosureCore",
+      "to": "src/infrastructure/index/db.ts#getProjectCacheDb"
+    },
+    {
+      "from": "src/application/harvest/harvest_closure.ts#harvestClosureCore",
+      "to": "src/infrastructure/index/db.ts#projectCacheDbPath"
+    },
+    {
+      "from": "src/application/harvest/harvest_closure.ts#harvestClosureCore",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    }
+  ]
+}

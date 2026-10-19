@@ -1,0 +1,271 @@
+{
+  "//": "Design DB —— src/application/refactor/rename/symbol_move.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "MoveSymbolInput",
+      "kind": "interface",
+      "line": 54,
+      "signature": "MoveSymbolInput()"
+    },
+    {
+      "name": "MoveRedirect",
+      "kind": "interface",
+      "line": 69,
+      "signature": "MoveRedirect()"
+    },
+    {
+      "name": "MoveSymbolResult",
+      "kind": "interface",
+      "line": 80,
+      "signature": "MoveSymbolResult()"
+    },
+    {
+      "name": "TS_EXTS",
+      "kind": "const",
+      "line": 118,
+      "signature": "const TS_EXTS = new Set<string>(TS_JS_EXTS)"
+    },
+    {
+      "name": "Edit",
+      "kind": "interface",
+      "line": 120,
+      "signature": "Edit()"
+    },
+    {
+      "name": "stripQuotes",
+      "kind": "function",
+      "line": 126,
+      "signature": "stripQuotes(s: string): string"
+    },
+    {
+      "name": "applyEdits",
+      "kind": "function",
+      "line": 133,
+      "signature": "applyEdits(src: string, edits: Edit[]): string"
+    },
+    {
+      "name": "squeezeBlankRuns",
+      "kind": "function",
+      "line": 142,
+      "signature": "squeezeBlankRuns(lines: string[]): string[]"
+    },
+    {
+      "name": "relImportPath",
+      "kind": "function",
+      "line": 152,
+      "signature": "relImportPath(fromAbs: string, toAbs: string): string"
+    },
+    {
+      "name": "IDENT_LIKE",
+      "kind": "const",
+      "line": 159,
+      "signature": "const IDENT_LIKE = new Set(['identifier', 'type_identifier', 'property_ident…"
+    },
+    {
+      "name": "isDeclNodeType",
+      "kind": "function",
+      "line": 161,
+      "signature": "isDeclNodeType(t: string): boolean"
+    },
+    {
+      "name": "declName",
+      "kind": "function",
+      "line": 176,
+      "signature": "declName(node: { type: string; childForFieldName(f: string): unknown }): string | null"
+    },
+    {
+      "name": "findNamedDeclInExport",
+      "kind": "function",
+      "line": 192,
+      "signature": "findNamedDeclInExport(stmt: { type: string; childCount: number; child(i: number): unknown }, symbol: string): unknown | null"
+    },
+    {
+      "name": "findTopLevelDeclRange",
+      "kind": "function",
+      "line": 213,
+      "signature": "findTopLevelDeclRange(src: string,\n  filePath: string,\n  symbol: string,): Promise<{ startIndex: number; endIndex: number } | null>"
+    },
+    {
+      "name": "moveSymbol",
+      "kind": "function",
+      "line": 254,
+      "signature": "moveSymbol(input: MoveSymbolInput): Promise<MoveSymbolResult>"
+    },
+    {
+      "name": "touchedOfMove",
+      "kind": "function",
+      "line": 269,
+      "signature": "touchedOfMove(input: MoveSymbolInput, r: MoveSymbolResult): Touched"
+    },
+    {
+      "name": "moveSymbolCore",
+      "kind": "function",
+      "line": 279,
+      "signature": "moveSymbolCore(input: MoveSymbolInput): Promise<MoveSymbolResult>"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../../infrastructure/analysis/rename_symbol/index.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/analysis/project_root/index.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/parse/index.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/index/symbols.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../domain/b_terms.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../../../infrastructure/index/db.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/text/line_utils.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../snapshot/file_snapshot.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../write_gate.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../write_gate.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/scan_bounds.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+      "to": "src/application/refactor/rename/symbol_move.ts#applyEdits"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#findNamedDeclInExport",
+      "to": "src/application/refactor/rename/symbol_move.ts#declName"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#findTopLevelDeclRange",
+      "to": "src/application/refactor/rename/symbol_move.ts#declName"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#findTopLevelDeclRange",
+      "to": "src/application/refactor/rename/symbol_move.ts#findNamedDeclInExport"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+      "to": "src/application/refactor/rename/symbol_move.ts#findTopLevelDeclRange"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#findNamedDeclInExport",
+      "to": "src/application/refactor/rename/symbol_move.ts#isDeclNodeType"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#findTopLevelDeclRange",
+      "to": "src/application/refactor/rename/symbol_move.ts#isDeclNodeType"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbol",
+      "to": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+      "to": "src/application/refactor/rename/symbol_move.ts#relImportPath"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+      "to": "src/application/refactor/rename/symbol_move.ts#squeezeBlankRuns"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+      "to": "src/application/refactor/rename/symbol_move.ts#stripQuotes"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbol",
+      "to": "src/application/refactor/rename/symbol_move.ts#touchedOfMove"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+      "to": "src/application/refactor/snapshot/file_snapshot.ts#snapshotBeforeWrite"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+      "to": "src/application/write_gate.ts#assertSourceWriteRegisteredFor"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+      "to": "src/application/write_gate.ts#reopenAndResolveAfterWrite"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+      "to": "src/application/write_gate.ts#resolveActor"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+      "to": "src/infrastructure/analysis/project_root/index.ts#expandClosureDetailed"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+      "to": "src/infrastructure/analysis/project_root/index.ts#loadAliasConfig"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+      "to": "src/infrastructure/analysis/project_root/index.ts#loadAliasConfig"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+      "to": "src/infrastructure/analysis/project_root/index.ts#resolveAliasedImport"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+      "to": "src/infrastructure/analysis/project_root/index.ts#resolveProjectRoot"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+      "to": "src/infrastructure/index/db.ts#getProjectCacheDb"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+      "to": "src/infrastructure/index/symbols.ts#syncFile"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+      "to": "src/infrastructure/text/line_utils.ts#detectEol"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#squeezeBlankRuns",
+      "to": "src/infrastructure/text/line_utils.ts#isBlankLine"
+    },
+    {
+      "from": "src/application/refactor/rename/symbol_move.ts#moveSymbolCore",
+      "to": "src/infrastructure/text/line_utils.ts#splitKeepEnds"
+    }
+  ]
+}

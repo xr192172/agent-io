@@ -1,0 +1,117 @@
+{
+  "//": "Design DB —— src/presentation/http/dict_gen.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "DictClassResult",
+      "kind": "type",
+      "line": 19,
+      "signature": "DictClassResult()"
+    },
+    {
+      "name": "classifyTerm",
+      "kind": "function",
+      "line": 36,
+      "signature": "classifyTerm(term: string,\n  projectHint: string,): Promise<DictClassResult>"
+    },
+    {
+      "name": "DictGenerationResult",
+      "kind": "interface",
+      "line": 75,
+      "signature": "DictGenerationResult()"
+    },
+    {
+      "name": "generateDictEntry",
+      "kind": "function",
+      "line": 87,
+      "signature": "generateDictEntry(term: string,): Promise<DictGenerationResult>"
+    },
+    {
+      "name": "IngestResult",
+      "kind": "interface",
+      "line": 134,
+      "signature": "IngestResult()"
+    },
+    {
+      "name": "ingestTerm",
+      "kind": "function",
+      "line": 152,
+      "signature": "ingestTerm(source: string,\n  projectRoot: string,\n  projectHint: string,\n  opts: { save?: boolean } = {},): Promise<IngestResult>"
+    },
+    {
+      "name": "makeManualEntry",
+      "kind": "function",
+      "line": 193,
+      "signature": "makeManualEntry(term: string,\n  kind: 'global' | 'project',\n  narrations: { newbie: string; pm: string; senior: string },\n  projectRoot?: string,): DictEntry"
+    }
+  ],
+  "imports": [
+    {
+      "source": "../../infrastructure/llm_gateway.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../application/meta/view/explain_gen.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/dictionary.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/presentation/http/dict_gen.ts#classifyTerm",
+      "to": "src/application/meta/view/explain_gen.ts#extractJsonObject"
+    },
+    {
+      "from": "src/presentation/http/dict_gen.ts#generateDictEntry",
+      "to": "src/application/meta/view/explain_gen.ts#extractJsonObject"
+    },
+    {
+      "from": "src/presentation/http/dict_gen.ts#ingestTerm",
+      "to": "src/infrastructure/dictionary.ts#loadGlobalDict"
+    },
+    {
+      "from": "src/presentation/http/dict_gen.ts#ingestTerm",
+      "to": "src/infrastructure/dictionary.ts#loadProjectDict"
+    },
+    {
+      "from": "src/presentation/http/dict_gen.ts#ingestTerm",
+      "to": "src/infrastructure/dictionary.ts#saveGlobalEntry"
+    },
+    {
+      "from": "src/presentation/http/dict_gen.ts#makeManualEntry",
+      "to": "src/infrastructure/dictionary.ts#saveGlobalEntry"
+    },
+    {
+      "from": "src/presentation/http/dict_gen.ts#ingestTerm",
+      "to": "src/infrastructure/dictionary.ts#saveProjectEntry"
+    },
+    {
+      "from": "src/presentation/http/dict_gen.ts#makeManualEntry",
+      "to": "src/infrastructure/dictionary.ts#saveProjectEntry"
+    },
+    {
+      "from": "src/presentation/http/dict_gen.ts#classifyTerm",
+      "to": "src/infrastructure/llm_gateway.ts#chatViaGateway"
+    },
+    {
+      "from": "src/presentation/http/dict_gen.ts#generateDictEntry",
+      "to": "src/infrastructure/llm_gateway.ts#chatViaGateway"
+    },
+    {
+      "from": "src/presentation/http/dict_gen.ts#ingestTerm",
+      "to": "src/infrastructure/llm_gateway.ts#hasEnabledProvider"
+    },
+    {
+      "from": "src/presentation/http/dict_gen.ts#ingestTerm",
+      "to": "src/presentation/http/dict_gen.ts#classifyTerm"
+    },
+    {
+      "from": "src/presentation/http/dict_gen.ts#ingestTerm",
+      "to": "src/presentation/http/dict_gen.ts#generateDictEntry"
+    }
+  ]
+}

@@ -1,0 +1,107 @@
+{
+  "//": "Design DB —— src/application/refactor/parse_capability/parse_capability.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "ParseTier",
+      "kind": "type",
+      "line": 26,
+      "signature": "ParseTier()"
+    },
+    {
+      "name": "ParseCapability",
+      "kind": "interface",
+      "line": 28,
+      "signature": "ParseCapability()"
+    },
+    {
+      "name": "tierForLanguage",
+      "kind": "function",
+      "line": 42,
+      "signature": "tierForLanguage(lang: LanguageEntry | undefined, parserInstalled: boolean): ParseTier"
+    },
+    {
+      "name": "granularityOf",
+      "kind": "function",
+      "line": 55,
+      "signature": "granularityOf(tier: ParseTier, lang: string | null, ext: string): string"
+    },
+    {
+      "name": "parseCapabilityForFile",
+      "kind": "function",
+      "line": 74,
+      "signature": "parseCapabilityForFile(relOrAbs: string): ParseCapability"
+    },
+    {
+      "name": "renderGranularityNote",
+      "kind": "function",
+      "line": 88,
+      "signature": "renderGranularityNote(files: Array<string | undefined>,\n  tool: 'refs' | 'impact',): string"
+    },
+    {
+      "name": "LanguageTierSummary",
+      "kind": "interface",
+      "line": 109,
+      "signature": "LanguageTierSummary()"
+    },
+    {
+      "name": "summarizeLanguagesByTier",
+      "kind": "function",
+      "line": 120,
+      "signature": "summarizeLanguagesByTier(relFiles: string[]): LanguageTierSummary[]"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../../infrastructure/parse/languages.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/parse/kernel.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/parse/probe.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/parse/lang_hint.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/refactor/parse_capability/parse_capability.ts#parseCapabilityForFile",
+      "to": "src/application/refactor/parse_capability/parse_capability.ts#granularityOf"
+    },
+    {
+      "from": "src/application/refactor/parse_capability/parse_capability.ts#renderGranularityNote",
+      "to": "src/application/refactor/parse_capability/parse_capability.ts#parseCapabilityForFile"
+    },
+    {
+      "from": "src/application/refactor/parse_capability/parse_capability.ts#summarizeLanguagesByTier",
+      "to": "src/application/refactor/parse_capability/parse_capability.ts#parseCapabilityForFile"
+    },
+    {
+      "from": "src/application/refactor/parse_capability/parse_capability.ts#parseCapabilityForFile",
+      "to": "src/application/refactor/parse_capability/parse_capability.ts#tierForLanguage"
+    },
+    {
+      "from": "src/application/refactor/parse_capability/parse_capability.ts#granularityOf",
+      "to": "src/infrastructure/parse/lang_hint.ts#missingLanguageHint"
+    },
+    {
+      "from": "src/application/refactor/parse_capability/parse_capability.ts#parseCapabilityForFile",
+      "to": "src/infrastructure/parse/languages.ts#findLanguageByExt"
+    },
+    {
+      "from": "src/application/refactor/parse_capability/parse_capability.ts#parseCapabilityForFile",
+      "to": "src/infrastructure/parse/probe.ts#isExtSupported"
+    }
+  ]
+}

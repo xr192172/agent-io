@@ -1,0 +1,307 @@
+{
+  "//": "Design DB —— src/infrastructure/index/index_freshness.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "IndexState",
+      "kind": "type",
+      "line": 45,
+      "signature": "IndexState()"
+    },
+    {
+      "name": "FreshnessReport",
+      "kind": "interface",
+      "line": 53,
+      "signature": "FreshnessReport()"
+    },
+    {
+      "name": "emptyReport",
+      "kind": "function",
+      "line": 85,
+      "signature": "emptyReport(): FreshnessReport"
+    },
+    {
+      "name": "MAX_ADDS_PER_REFRESH",
+      "kind": "const",
+      "line": 108,
+      "signature": "const MAX_ADDS_PER_REFRESH = 100"
+    },
+    {
+      "name": "MAX_BOOTSTRAP_FILES",
+      "kind": "const",
+      "line": 115,
+      "signature": "const MAX_BOOTSTRAP_FILES = 2000"
+    },
+    {
+      "name": "MAX_TEXT_IMPORTERS_PER_SEED",
+      "kind": "const",
+      "line": 118,
+      "signature": "const MAX_TEXT_IMPORTERS_PER_SEED = 20"
+    },
+    {
+      "name": "FreshnessOptions",
+      "kind": "interface",
+      "line": 120,
+      "signature": "FreshnessOptions()"
+    },
+    {
+      "name": "hasChanges",
+      "kind": "function",
+      "line": 128,
+      "signature": "hasChanges(r: FreshnessReport | null): boolean"
+    },
+    {
+      "name": "ProjectIndex",
+      "kind": "interface",
+      "line": 132,
+      "signature": "ProjectIndex()"
+    },
+    {
+      "name": "indexedRelativeSet",
+      "kind": "function",
+      "line": 162,
+      "signature": "indexedRelativeSet(db: Database): Set<string>"
+    },
+    {
+      "name": "isIndexedRelative",
+      "kind": "function",
+      "line": 167,
+      "signature": "isIndexedRelative(db: Database, rel: string): boolean"
+    },
+    {
+      "name": "StaleIndexProbe",
+      "kind": "interface",
+      "line": 173,
+      "signature": "StaleIndexProbe()"
+    },
+    {
+      "name": "detectStaleIndex",
+      "kind": "function",
+      "line": 200,
+      "signature": "detectStaleIndex(db: Database,\n  projectRoot: string,\n  opts: { maxScan?: number; sample?: number } = {},): StaleIndexProbe"
+    },
+    {
+      "name": "TileOptions",
+      "kind": "interface",
+      "line": 234,
+      "signature": "TileOptions()"
+    },
+    {
+      "name": "TileReport",
+      "kind": "interface",
+      "line": 263,
+      "signature": "TileReport()"
+    },
+    {
+      "name": "fileOfNode",
+      "kind": "const",
+      "line": 286,
+      "signature": "const fileOfNode = (id: string): string => id.split('#')[0]"
+    },
+    {
+      "name": "ensureIndexAround",
+      "kind": "function",
+      "line": 292,
+      "signature": "ensureIndexAround(db: Database,\n  projectRoot: string,\n  seeds: readonly string[],\n  opts: TileOptions = {},): Promise<TileReport>"
+    },
+    {
+      "name": "ensureIndexAroundSeed",
+      "kind": "function",
+      "line": 473,
+      "signature": "ensureIndexAroundSeed(projectRoot: string,\n  seeds: readonly string[],\n  opts: TileOptions = {},): Promise<TileReport & { db: Database }>"
+    },
+    {
+      "name": "ensureProjectIndex",
+      "kind": "function",
+      "line": 496,
+      "signature": "ensureProjectIndex(projectRoot: string,\n  opts: FreshnessOptions = {},): Promise<ProjectIndex>"
+    },
+    {
+      "name": "indexCovers",
+      "kind": "function",
+      "line": 533,
+      "signature": "indexCovers(coveredRel: ReadonlySet<string>, diskRel: readonly string[]): boolean"
+    },
+    {
+      "name": "indexCoversDisk",
+      "kind": "function",
+      "line": 545,
+      "signature": "indexCoversDisk(db: Database, root: string): boolean"
+    },
+    {
+      "name": "ensureFreshIndex",
+      "kind": "function",
+      "line": 555,
+      "signature": "ensureFreshIndex(db: Database,\n  projectRoot: string,\n  opts: FreshnessOptions = {},): Promise<FreshnessReport>"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "./db.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./symbols.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../graph/import_project.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../text/refs_text.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../project_view.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./self_writes.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/index/index_freshness.ts#indexCoversDisk",
+      "to": "src/infrastructure/graph/import_project.ts#walkFiles"
+    },
+    {
+      "from": "src/infrastructure/index/index_freshness.ts#ensureFreshIndex",
+      "to": "src/infrastructure/graph/import_project.ts#walkFiles"
+    },
+    {
+      "from": "src/infrastructure/index/index_freshness.ts#ensureFreshIndex",
+      "to": "src/infrastructure/graph/import_project.ts#walkFiles"
+    },
+    {
+      "from": "src/infrastructure/index/index_freshness.ts#ensureFreshIndex",
+      "to": "src/infrastructure/index/db.ts#beginBatch"
+    },
+    {
+      "from": "src/infrastructure/index/index_freshness.ts#ensureFreshIndex",
+      "to": "src/infrastructure/index/db.ts#endBatch"
+    },
+    {
+      "from": "src/infrastructure/index/index_freshness.ts#ensureFreshIndex",
+      "to": "src/infrastructure/index/db.ts#endBatch"
+    },
+    {
+      "from": "src/infrastructure/index/index_freshness.ts#ensureIndexAroundSeed",
+      "to": "src/infrastructure/index/db.ts#getProjectCacheDb"
+    },
+    {
+      "from": "src/infrastructure/index/index_freshness.ts#ensureProjectIndex",
+      "to": "src/infrastructure/index/db.ts#getProjectCacheDb"
+    },
+    {
+      "from": "src/infrastructure/index/index_freshness.ts#ensureFreshIndex",
+      "to": "src/infrastructure/index/index_freshness.ts#emptyReport"
+    },
+    {
+      "from": "src/infrastructure/index/index_freshness.ts#ensureFreshIndex",
+      "to": "src/infrastructure/index/index_freshness.ts#emptyReport"
+    },
+    {
+      "from": "src/infrastructure/index/index_freshness.ts#ensureFreshIndex",
+      "to": "src/infrastructure/index/index_freshness.ts#emptyReport"
+    },
+    {
+      "from": "src/infrastructure/index/index_freshness.ts#ensureFreshIndex",
+      "to": "src/infrastructure/index/index_freshness.ts#emptyReport"
+    },
+    {
+      "from": "src/infrastructure/index/index_freshness.ts#ensureFreshIndex",
+      "to": "src/infrastructure/index/index_freshness.ts#emptyReport"
+    },
+    {
+      "from": "src/infrastructure/index/index_freshness.ts#ensureProjectIndex",
+      "to": "src/infrastructure/index/index_freshness.ts#ensureFreshIndex"
+    },
+    {
+      "from": "src/infrastructure/index/index_freshness.ts#ensureIndexAroundSeed",
+      "to": "src/infrastructure/index/index_freshness.ts#ensureIndexAround"
+    },
+    {
+      "from": "src/infrastructure/index/index_freshness.ts#ensureIndexAround",
+      "to": "src/infrastructure/index/index_freshness.ts#fileOfNode"
+    },
+    {
+      "from": "src/infrastructure/index/index_freshness.ts#ensureIndexAround",
+      "to": "src/infrastructure/index/index_freshness.ts#fileOfNode"
+    },
+    {
+      "from": "src/infrastructure/index/index_freshness.ts#indexCoversDisk",
+      "to": "src/infrastructure/index/index_freshness.ts#indexCovers"
+    },
+    {
+      "from": "src/infrastructure/index/index_freshness.ts#ensureFreshIndex",
+      "to": "src/infrastructure/index/index_freshness.ts#indexCovers"
+    },
+    {
+      "from": "src/infrastructure/index/index_freshness.ts#indexCoversDisk",
+      "to": "src/infrastructure/index/index_freshness.ts#indexedRelativeSet"
+    },
+    {
+      "from": "src/infrastructure/index/index_freshness.ts#detectStaleIndex",
+      "to": "src/infrastructure/index/self_writes.ts#pendingSelfWrites"
+    },
+    {
+      "from": "src/infrastructure/index/index_freshness.ts#ensureFreshIndex",
+      "to": "src/infrastructure/index/self_writes.ts#pendingSelfWrites"
+    },
+    {
+      "from": "src/infrastructure/index/index_freshness.ts#ensureFreshIndex",
+      "to": "src/infrastructure/index/symbols.ts#changedSymbolNames"
+    },
+    {
+      "from": "src/infrastructure/index/index_freshness.ts#ensureFreshIndex",
+      "to": "src/infrastructure/index/symbols.ts#removeFile"
+    },
+    {
+      "from": "src/infrastructure/index/index_freshness.ts#ensureFreshIndex",
+      "to": "src/infrastructure/index/symbols.ts#reopenRefsTo"
+    },
+    {
+      "from": "src/infrastructure/index/index_freshness.ts#ensureIndexAround",
+      "to": "src/infrastructure/index/symbols.ts#resolveCrossFileCalls"
+    },
+    {
+      "from": "src/infrastructure/index/index_freshness.ts#ensureFreshIndex",
+      "to": "src/infrastructure/index/symbols.ts#resolveCrossFileCalls"
+    },
+    {
+      "from": "src/infrastructure/index/index_freshness.ts#ensureIndexAround",
+      "to": "src/infrastructure/index/symbols.ts#syncFile"
+    },
+    {
+      "from": "src/infrastructure/index/index_freshness.ts#ensureFreshIndex",
+      "to": "src/infrastructure/index/symbols.ts#syncFile"
+    },
+    {
+      "from": "src/infrastructure/index/index_freshness.ts#ensureFreshIndex",
+      "to": "src/infrastructure/index/symbols.ts#syncProject"
+    },
+    {
+      "from": "src/infrastructure/index/index_freshness.ts#ensureIndexAround",
+      "to": "src/infrastructure/project_view.ts#getProjectView"
+    },
+    {
+      "from": "src/infrastructure/index/index_freshness.ts#ensureIndexAround",
+      "to": "src/infrastructure/text/refs_text.ts#buildTextImportIndex"
+    },
+    {
+      "from": "src/infrastructure/index/index_freshness.ts#ensureIndexAround",
+      "to": "src/infrastructure/text/refs_text.ts#importLookupKeys"
+    }
+  ]
+}

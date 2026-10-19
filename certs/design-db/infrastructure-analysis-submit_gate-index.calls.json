@@ -1,0 +1,77 @@
+{
+  "//": "Design DB —— src/infrastructure/analysis/submit_gate/index.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "EmbedRequirement",
+      "kind": "interface",
+      "line": 20,
+      "signature": "EmbedRequirement()"
+    },
+    {
+      "name": "SubmitCheckResult",
+      "kind": "interface",
+      "line": 33,
+      "signature": "SubmitCheckResult()"
+    },
+    {
+      "name": "GO_FILE",
+      "kind": "const",
+      "line": 40,
+      "signature": "const GO_FILE = '*.go'"
+    },
+    {
+      "name": "walkGoFiles",
+      "kind": "function",
+      "line": 42,
+      "signature": "walkGoFiles(root: string): string[]"
+    },
+    {
+      "name": "gitTrackedFiles",
+      "kind": "function",
+      "line": 66,
+      "signature": "gitTrackedFiles(cwd: string): Set<string> | null"
+    },
+    {
+      "name": "expandEmbed",
+      "kind": "function",
+      "line": 77,
+      "signature": "expandEmbed(absFile: string, pattern: string): string[]"
+    },
+    {
+      "name": "checkEmbedSubmissions",
+      "kind": "function",
+      "line": 112,
+      "signature": "checkEmbedSubmissions(cwd: string): SubmitCheckResult"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "node:child_process",
+      "kind": "package"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/submit_gate/index.ts#checkEmbedSubmissions",
+      "to": "src/infrastructure/analysis/submit_gate/index.ts#expandEmbed"
+    },
+    {
+      "from": "src/infrastructure/analysis/submit_gate/index.ts#checkEmbedSubmissions",
+      "to": "src/infrastructure/analysis/submit_gate/index.ts#gitTrackedFiles"
+    },
+    {
+      "from": "src/infrastructure/analysis/submit_gate/index.ts#checkEmbedSubmissions",
+      "to": "src/infrastructure/analysis/submit_gate/index.ts#walkGoFiles"
+    }
+  ]
+}

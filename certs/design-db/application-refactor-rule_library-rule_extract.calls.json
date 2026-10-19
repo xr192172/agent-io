@@ -1,0 +1,180 @@
+{
+  "//": "Design DB —— src/application/refactor/rule_library/rule_extract.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "LineDiff",
+      "kind": "interface",
+      "line": 32,
+      "signature": "LineDiff()"
+    },
+    {
+      "name": "diffLines",
+      "kind": "function",
+      "line": 43,
+      "signature": "diffLines(before: string[], after: string[]): LineDiff[]"
+    },
+    {
+      "name": "KEYWORDS",
+      "kind": "const",
+      "line": 104,
+      "signature": "const KEYWORDS = new Set([ 'function', 'const', 'let', 'var', 'return', 'i…"
+    },
+    {
+      "name": "GLOBALS",
+      "kind": "const",
+      "line": 113,
+      "signature": "const GLOBALS = new Set(['console', 'window', 'document', 'process', 'glo…"
+    },
+    {
+      "name": "Token",
+      "kind": "interface",
+      "line": 115,
+      "signature": "Token()"
+    },
+    {
+      "name": "lexLine",
+      "kind": "function",
+      "line": 124,
+      "signature": "lexLine(line: string): Token[]"
+    },
+    {
+      "name": "abstractableIdents",
+      "kind": "function",
+      "line": 145,
+      "signature": "abstractableIdents(line: string): string[]"
+    },
+    {
+      "name": "GeneralizeResult",
+      "kind": "interface",
+      "line": 157,
+      "signature": "GeneralizeResult()"
+    },
+    {
+      "name": "generalizeChange",
+      "kind": "function",
+      "line": 178,
+      "signature": "generalizeChange(beforeLines: string[],\n  afterLines: string[],\n  limit = Number.POSITIVE_INFINITY,): GeneralizeResult"
+    },
+    {
+      "name": "buildFixtures",
+      "kind": "function",
+      "line": 219,
+      "signature": "buildFixtures(beforeText: string, afterText: string, lang = ''): RuleFixture[]"
+    },
+    {
+      "name": "ValidateIssue",
+      "kind": "interface",
+      "line": 230,
+      "signature": "ValidateIssue()"
+    },
+    {
+      "name": "ValidateResult",
+      "kind": "interface",
+      "line": 236,
+      "signature": "ValidateResult()"
+    },
+    {
+      "name": "validateRule",
+      "kind": "function",
+      "line": 251,
+      "signature": "validateRule(pattern: string, replace: string, fixtures: RuleFixture[]): ValidateResult"
+    },
+    {
+      "name": "ExtractInput",
+      "kind": "interface",
+      "line": 337,
+      "signature": "ExtractInput()"
+    },
+    {
+      "name": "ExtractResult",
+      "kind": "interface",
+      "line": 352,
+      "signature": "ExtractResult()"
+    },
+    {
+      "name": "extractRule",
+      "kind": "function",
+      "line": 383,
+      "signature": "extractRule(input: ExtractInput): ExtractResult"
+    }
+  ],
+  "imports": [
+    {
+      "source": "../../../infrastructure/rules/rule_tokens.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/rules/rule_match.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./rule_library.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/refactor/rule_library/rule_extract.ts#extractRule",
+      "to": "src/application/refactor/rule_library/rule_extract.ts#buildFixtures"
+    },
+    {
+      "from": "src/application/refactor/rule_library/rule_extract.ts#extractRule",
+      "to": "src/application/refactor/rule_library/rule_extract.ts#diffLines"
+    },
+    {
+      "from": "src/application/refactor/rule_library/rule_extract.ts#extractRule",
+      "to": "src/application/refactor/rule_library/rule_extract.ts#generalizeChange"
+    },
+    {
+      "from": "src/application/refactor/rule_library/rule_extract.ts#extractRule",
+      "to": "src/application/refactor/rule_library/rule_extract.ts#generalizeChange"
+    },
+    {
+      "from": "src/application/refactor/rule_library/rule_extract.ts#abstractableIdents",
+      "to": "src/application/refactor/rule_library/rule_extract.ts#lexLine"
+    },
+    {
+      "from": "src/application/refactor/rule_library/rule_extract.ts#generalizeChange",
+      "to": "src/application/refactor/rule_library/rule_extract.ts#lexLine"
+    },
+    {
+      "from": "src/application/refactor/rule_library/rule_extract.ts#extractRule",
+      "to": "src/application/refactor/rule_library/rule_extract.ts#validateRule"
+    },
+    {
+      "from": "src/application/refactor/rule_library/rule_extract.ts#extractRule",
+      "to": "src/application/refactor/rule_library/rule_extract.ts#validateRule"
+    },
+    {
+      "from": "src/application/refactor/rule_library/rule_extract.ts#validateRule",
+      "to": "src/infrastructure/rules/rule_match.ts#holeNamesOf"
+    },
+    {
+      "from": "src/application/refactor/rule_library/rule_extract.ts#validateRule",
+      "to": "src/infrastructure/rules/rule_match.ts#instantiateReplace"
+    },
+    {
+      "from": "src/application/refactor/rule_library/rule_extract.ts#validateRule",
+      "to": "src/infrastructure/rules/rule_match.ts#matchRule"
+    },
+    {
+      "from": "src/application/refactor/rule_library/rule_extract.ts#validateRule",
+      "to": "src/infrastructure/rules/rule_match.ts#matchRule"
+    },
+    {
+      "from": "src/application/refactor/rule_library/rule_extract.ts#validateRule",
+      "to": "src/infrastructure/rules/rule_match.ts#matchRule"
+    },
+    {
+      "from": "src/application/refactor/rule_library/rule_extract.ts#extractRule",
+      "to": "src/infrastructure/rules/rule_tokens.ts#splitLines"
+    },
+    {
+      "from": "src/application/refactor/rule_library/rule_extract.ts#extractRule",
+      "to": "src/infrastructure/rules/rule_tokens.ts#splitLines"
+    }
+  ]
+}

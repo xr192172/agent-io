@@ -1,0 +1,283 @@
+{
+  "//": "Design DB —— src/application/meta/upgrade/upgrade.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "TOOL_LABEL",
+      "kind": "const",
+      "line": 41,
+      "signature": "const TOOL_LABEL = { java: 'JDK', node: 'Node', go: 'Go', python: 'Python' }"
+    },
+    {
+      "name": "statusBadge",
+      "kind": "function",
+      "line": 43,
+      "signature": "statusBadge(status: string): string"
+    },
+    {
+      "name": "renderToolchain",
+      "kind": "function",
+      "line": 54,
+      "signature": "renderToolchain(scan: ContractScanResult['scan']): string[]"
+    },
+    {
+      "name": "renderFeatures",
+      "kind": "function",
+      "line": 80,
+      "signature": "renderFeatures(res: ContractScanResult): string[]"
+    },
+    {
+      "name": "renderUncovered",
+      "kind": "function",
+      "line": 102,
+      "signature": "renderUncovered(res: ContractScanResult): string[]"
+    },
+    {
+      "name": "renderRemoved",
+      "kind": "function",
+      "line": 111,
+      "signature": "renderRemoved(res: ContractScanResult): string[]"
+    },
+    {
+      "name": "renderGates",
+      "kind": "function",
+      "line": 132,
+      "signature": "renderGates(gates: StaticGateResult[]): string[]"
+    },
+    {
+      "name": "renderDynamicGates",
+      "kind": "function",
+      "line": 160,
+      "signature": "renderDynamicGates(gates: DynamicGateResult[]): string[]"
+    },
+    {
+      "name": "renderSummary",
+      "kind": "function",
+      "line": 188,
+      "signature": "renderSummary(res: ContractScanResult): string[]"
+    },
+    {
+      "name": "upgradeScanData",
+      "kind": "function",
+      "line": 199,
+      "signature": "upgradeScanData(res: ContractScanResult,\r\n  gates: StaticGateResult[] = [],\r\n  dynamicGates: DynamicGateResult[] = []): Record<string, unknown>"
+    },
+    {
+      "name": "UpgradeScanResult",
+      "kind": "interface",
+      "line": 246,
+      "signature": "UpgradeScanResult()"
+    },
+    {
+      "name": "UpgradeScanOptions",
+      "kind": "interface",
+      "line": 256,
+      "signature": "UpgradeScanOptions()"
+    },
+    {
+      "name": "runUpgradeScan",
+      "kind": "function",
+      "line": 265,
+      "signature": "runUpgradeScan(root: string, opts: UpgradeScanOptions = {}): Promise<UpgradeScanResult>"
+    },
+    {
+      "name": "UpgradeApplyResult",
+      "kind": "interface",
+      "line": 280,
+      "signature": "UpgradeApplyResult()"
+    },
+    {
+      "name": "dirMissingLine",
+      "kind": "function",
+      "line": 293,
+      "signature": "dirMissingLine(root: string): string | null"
+    },
+    {
+      "name": "scanAndPlan",
+      "kind": "function",
+      "line": 299,
+      "signature": "scanAndPlan(root: string, lines: string[], report: Record<string, unknown>): void"
+    },
+    {
+      "name": "runUpgradePlanReport",
+      "kind": "function",
+      "line": 329,
+      "signature": "runUpgradePlanReport(root: string): UpgradeApplyResult"
+    },
+    {
+      "name": "runUpgradeApplyLoop",
+      "kind": "function",
+      "line": 344,
+      "signature": "runUpgradeApplyLoop(root: string,\r\n  edits: PlanEdit[],\r\n  skipVerify = false): Promise<UpgradeApplyResult>"
+    },
+    {
+      "name": "upgradeHandler",
+      "kind": "const",
+      "line": 456,
+      "signature": "const upgradeHandler = wrapData(async (a) => { const projectDir = requireStr(a, …"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../plumbing.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/authoring/version_upgrade/detect.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/authoring/version_upgrade/gate.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/authoring/version_upgrade/adapters/registry.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/authoring/version_upgrade/features.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../../../infrastructure/authoring/version_upgrade/removed.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../../../infrastructure/authoring/version_upgrade/rewrite.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/verify_refactor.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/git.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/meta/upgrade/upgrade.ts#runUpgradePlanReport",
+      "to": "src/application/meta/upgrade/upgrade.ts#dirMissingLine"
+    },
+    {
+      "from": "src/application/meta/upgrade/upgrade.ts#runUpgradeApplyLoop",
+      "to": "src/application/meta/upgrade/upgrade.ts#dirMissingLine"
+    },
+    {
+      "from": "src/application/meta/upgrade/upgrade.ts#runUpgradeScan",
+      "to": "src/application/meta/upgrade/upgrade.ts#renderDynamicGates"
+    },
+    {
+      "from": "src/application/meta/upgrade/upgrade.ts#runUpgradeScan",
+      "to": "src/application/meta/upgrade/upgrade.ts#renderFeatures"
+    },
+    {
+      "from": "src/application/meta/upgrade/upgrade.ts#runUpgradeScan",
+      "to": "src/application/meta/upgrade/upgrade.ts#renderGates"
+    },
+    {
+      "from": "src/application/meta/upgrade/upgrade.ts#runUpgradeScan",
+      "to": "src/application/meta/upgrade/upgrade.ts#renderRemoved"
+    },
+    {
+      "from": "src/application/meta/upgrade/upgrade.ts#runUpgradeScan",
+      "to": "src/application/meta/upgrade/upgrade.ts#renderSummary"
+    },
+    {
+      "from": "src/application/meta/upgrade/upgrade.ts#runUpgradeScan",
+      "to": "src/application/meta/upgrade/upgrade.ts#renderToolchain"
+    },
+    {
+      "from": "src/application/meta/upgrade/upgrade.ts#runUpgradeScan",
+      "to": "src/application/meta/upgrade/upgrade.ts#renderUncovered"
+    },
+    {
+      "from": "src/application/meta/upgrade/upgrade.ts#runUpgradePlanReport",
+      "to": "src/application/meta/upgrade/upgrade.ts#scanAndPlan"
+    },
+    {
+      "from": "src/application/meta/upgrade/upgrade.ts#runUpgradeApplyLoop",
+      "to": "src/application/meta/upgrade/upgrade.ts#scanAndPlan"
+    },
+    {
+      "from": "src/application/meta/upgrade/upgrade.ts#renderToolchain",
+      "to": "src/application/meta/upgrade/upgrade.ts#statusBadge"
+    },
+    {
+      "from": "src/application/meta/upgrade/upgrade.ts#runUpgradeScan",
+      "to": "src/application/meta/upgrade/upgrade.ts#upgradeScanData"
+    },
+    {
+      "from": "src/application/meta/upgrade/upgrade.ts#renderUncovered",
+      "to": "src/infrastructure/authoring/version_upgrade/adapters/registry.ts#adapterMissHint"
+    },
+    {
+      "from": "src/application/meta/upgrade/upgrade.ts#runUpgradeScan",
+      "to": "src/infrastructure/authoring/version_upgrade/detect.ts#runContractScan"
+    },
+    {
+      "from": "src/application/meta/upgrade/upgrade.ts#scanAndPlan",
+      "to": "src/infrastructure/authoring/version_upgrade/detect.ts#runContractScan"
+    },
+    {
+      "from": "src/application/meta/upgrade/upgrade.ts#runUpgradeScan",
+      "to": "src/infrastructure/authoring/version_upgrade/gate.ts#runDynamicGates"
+    },
+    {
+      "from": "src/application/meta/upgrade/upgrade.ts#runUpgradeScan",
+      "to": "src/infrastructure/authoring/version_upgrade/gate.ts#runStaticGates"
+    },
+    {
+      "from": "src/application/meta/upgrade/upgrade.ts#runUpgradeApplyLoop",
+      "to": "src/infrastructure/authoring/version_upgrade/rewrite.ts#applyEdits"
+    },
+    {
+      "from": "src/application/meta/upgrade/upgrade.ts#scanAndPlan",
+      "to": "src/infrastructure/authoring/version_upgrade/rewrite.ts#buildRewritePlan"
+    },
+    {
+      "from": "src/application/meta/upgrade/upgrade.ts#runUpgradeApplyLoop",
+      "to": "src/infrastructure/git.ts#gitCommitAll"
+    },
+    {
+      "from": "src/application/meta/upgrade/upgrade.ts#runUpgradeApplyLoop",
+      "to": "src/infrastructure/git.ts#gitCommitFiles"
+    },
+    {
+      "from": "src/application/meta/upgrade/upgrade.ts#runUpgradeApplyLoop",
+      "to": "src/infrastructure/git.ts#gitDirty"
+    },
+    {
+      "from": "src/application/meta/upgrade/upgrade.ts#runUpgradeApplyLoop",
+      "to": "src/infrastructure/git.ts#gitRestoreFiles"
+    },
+    {
+      "from": "src/application/meta/upgrade/upgrade.ts#runUpgradeApplyLoop",
+      "to": "src/infrastructure/git.ts#gitRestoreFiles"
+    },
+    {
+      "from": "src/application/meta/upgrade/upgrade.ts#runUpgradeApplyLoop",
+      "to": "src/infrastructure/git.ts#isGitRepo"
+    },
+    {
+      "from": "src/application/meta/upgrade/upgrade.ts#runUpgradeApplyLoop",
+      "to": "src/infrastructure/verify_refactor.ts#defaultVerifyCommands"
+    },
+    {
+      "from": "src/application/meta/upgrade/upgrade.ts#runUpgradeApplyLoop",
+      "to": "src/infrastructure/verify_refactor.ts#runVerification"
+    }
+  ]
+}

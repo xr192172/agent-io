@@ -1,0 +1,104 @@
+{
+  "//": "Design DB —— src/infrastructure/parse/loader.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "Language",
+      "kind": "type",
+      "line": 16,
+      "signature": "Language()"
+    },
+    {
+      "name": "ParserInstance",
+      "kind": "type",
+      "line": 17,
+      "signature": "ParserInstance()"
+    },
+    {
+      "name": "parserCache",
+      "kind": "const",
+      "line": 19,
+      "signature": "const parserCache = new Map<string, ParserInstance>()"
+    },
+    {
+      "name": "failedPks",
+      "kind": "const",
+      "line": 20,
+      "signature": "const failedPks = new Set<string>()"
+    },
+    {
+      "name": "failedWarned",
+      "kind": "const",
+      "line": 21,
+      "signature": "const failedWarned = new Set<string>()"
+    },
+    {
+      "name": "FAIL_RETRY_MS",
+      "kind": "const",
+      "line": 29,
+      "signature": "const FAIL_RETRY_MS = 30_000"
+    },
+    {
+      "name": "failAt",
+      "kind": "const",
+      "line": 30,
+      "signature": "const failAt = new Map<string, number>()"
+    },
+    {
+      "name": "isTransient",
+      "kind": "const",
+      "line": 32,
+      "signature": "const isTransient = (e: unknown): boolean => (e as { code?: string })?.code =…"
+    },
+    {
+      "name": "loadLanguage",
+      "kind": "function",
+      "line": 45,
+      "signature": "loadLanguage(lang: LanguageEntry): Promise<Language | null>"
+    },
+    {
+      "name": "getParser",
+      "kind": "function",
+      "line": 104,
+      "signature": "getParser(ext: string, lang: LanguageEntry): Promise<ParserInstance | null>"
+    },
+    {
+      "name": "getParserSync",
+      "kind": "function",
+      "line": 133,
+      "signature": "getParserSync(ext: string): ParserInstance | null"
+    },
+    {
+      "name": "clearLoaderCache",
+      "kind": "function",
+      "line": 138,
+      "signature": "clearLoaderCache(): void"
+    }
+  ],
+  "imports": [
+    {
+      "source": "tree-sitter",
+      "kind": "package",
+      "type_only": true
+    },
+    {
+      "source": "./languages.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/parse/loader.ts#loadLanguage",
+      "to": "src/infrastructure/parse/languages.ts#languageModuleSpec"
+    },
+    {
+      "from": "src/infrastructure/parse/loader.ts#loadLanguage",
+      "to": "src/infrastructure/parse/loader.ts#isTransient"
+    },
+    {
+      "from": "src/infrastructure/parse/loader.ts#getParser",
+      "to": "src/infrastructure/parse/loader.ts#loadLanguage"
+    }
+  ]
+}

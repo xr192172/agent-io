@@ -1,0 +1,15 @@
+{
+  "//": "Design DB —— src/infrastructure/index/schema.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "SCHEMA_SQL",
+      "kind": "const",
+      "line": 32,
+      "signature": "const SCHEMA_SQL = ` -- schema 版本追踪（迁移机制从第一版就占位） CREATE TABLE IF NOT EXISTS …"
+    }
+  ],
+  "imports": [],
+  "calls": []
+}

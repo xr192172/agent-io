@@ -1,0 +1,144 @@
+{
+  "//": "Design DB —— src/infrastructure/parse/type_members.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "TYPE_DECL_NODES",
+      "kind": "const",
+      "line": 36,
+      "signature": "const TYPE_DECL_NODES = new Set([ 'interface_declaration', 'type_alias_declaratio…"
+    },
+    {
+      "name": "BODY_NODES",
+      "kind": "const",
+      "line": 45,
+      "signature": "const BODY_NODES = new Set([ 'interface_body', 'object_type', 'class_body', …"
+    },
+    {
+      "name": "MEMBER_NODES",
+      "kind": "const",
+      "line": 53,
+      "signature": "const MEMBER_NODES = new Set([ 'property_signature', 'method_signature', 'publ…"
+    },
+    {
+      "name": "ParsedTypeMember",
+      "kind": "interface",
+      "line": 64,
+      "signature": "ParsedTypeMember()"
+    },
+    {
+      "name": "ParsedTypeDecl",
+      "kind": "interface",
+      "line": 77,
+      "signature": "ParsedTypeDecl()"
+    },
+    {
+      "name": "memberNameOf",
+      "kind": "function",
+      "line": 85,
+      "signature": "memberNameOf(m: SyntaxNodeLike): string | null"
+    },
+    {
+      "name": "hasDirectToken",
+      "kind": "function",
+      "line": 98,
+      "signature": "hasDirectToken(node: SyntaxNodeLike, type: string): boolean"
+    },
+    {
+      "name": "METHOD_NODES",
+      "kind": "const",
+      "line": 107,
+      "signature": "const METHOD_NODES = new Set([ 'method_signature', 'method_definition', 'abstr…"
+    },
+    {
+      "name": "typeMembersOf",
+      "kind": "function",
+      "line": 114,
+      "signature": "typeMembersOf(decl: SyntaxNodeLike): ParsedTypeMember[]"
+    },
+    {
+      "name": "memberNamesOf",
+      "kind": "function",
+      "line": 146,
+      "signature": "memberNamesOf(decl: SyntaxNodeLike): string[]"
+    },
+    {
+      "name": "findTypeDeclByName",
+      "kind": "function",
+      "line": 151,
+      "signature": "findTypeDeclByName(root: SyntaxNodeLike, name: string): SyntaxNodeLike | null"
+    },
+    {
+      "name": "firstTypeDecl",
+      "kind": "function",
+      "line": 172,
+      "signature": "firstTypeDecl(root: SyntaxNodeLike): SyntaxNodeLike | null"
+    },
+    {
+      "name": "declNameOf",
+      "kind": "function",
+      "line": 190,
+      "signature": "declNameOf(decl: SyntaxNodeLike): string | null"
+    },
+    {
+      "name": "SignatureDeclResult",
+      "kind": "type",
+      "line": 219,
+      "signature": "SignatureDeclResult()"
+    },
+    {
+      "name": "typeDeclFromSignature",
+      "kind": "function",
+      "line": 224,
+      "signature": "typeDeclFromSignature(signature: string,\n  filePath: string,): Promise<SignatureDeclResult>"
+    },
+    {
+      "name": "normalizeMemberType",
+      "kind": "function",
+      "line": 243,
+      "signature": "normalizeMemberType(t: string | undefined): string | undefined"
+    }
+  ],
+  "imports": [
+    {
+      "source": "./kernel.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./kernel.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/parse/type_members.ts#typeDeclFromSignature",
+      "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
+    },
+    {
+      "from": "src/infrastructure/parse/type_members.ts#typeDeclFromSignature",
+      "to": "src/infrastructure/parse/type_members.ts#declNameOf"
+    },
+    {
+      "from": "src/infrastructure/parse/type_members.ts#typeDeclFromSignature",
+      "to": "src/infrastructure/parse/type_members.ts#firstTypeDecl"
+    },
+    {
+      "from": "src/infrastructure/parse/type_members.ts#typeMembersOf",
+      "to": "src/infrastructure/parse/type_members.ts#hasDirectToken"
+    },
+    {
+      "from": "src/infrastructure/parse/type_members.ts#typeMembersOf",
+      "to": "src/infrastructure/parse/type_members.ts#memberNameOf"
+    },
+    {
+      "from": "src/infrastructure/parse/type_members.ts#memberNamesOf",
+      "to": "src/infrastructure/parse/type_members.ts#typeMembersOf"
+    },
+    {
+      "from": "src/infrastructure/parse/type_members.ts#typeDeclFromSignature",
+      "to": "src/infrastructure/parse/type_members.ts#typeMembersOf"
+    }
+  ]
+}

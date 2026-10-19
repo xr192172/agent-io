@@ -1,0 +1,215 @@
+{
+  "//": "Design DB —— src/application/design/intent/expectations.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "Verdict",
+      "kind": "type",
+      "line": 43,
+      "signature": "Verdict()"
+    },
+    {
+      "name": "ExpectationItem",
+      "kind": "interface",
+      "line": 45,
+      "signature": "ExpectationItem()"
+    },
+    {
+      "name": "ExpectationsReport",
+      "kind": "interface",
+      "line": 54,
+      "signature": "ExpectationsReport()"
+    },
+    {
+      "name": "ExpectationConflict",
+      "kind": "interface",
+      "line": 70,
+      "signature": "ExpectationConflict()"
+    },
+    {
+      "name": "findExpectationConflicts",
+      "kind": "function",
+      "line": 90,
+      "signature": "findExpectationConflicts(items: ReadonlyArray<{ node_id: string; node_label: string; expectation: Expectation }>,): ExpectationConflict[]"
+    },
+    {
+      "name": "indexStaleFor",
+      "kind": "function",
+      "line": 147,
+      "signature": "indexStaleFor(root: string, rels: readonly string[]): string | null"
+    },
+    {
+      "name": "depFactsIncomplete",
+      "kind": "function",
+      "line": 172,
+      "signature": "depFactsIncomplete(root: string, relPath: string): string | null"
+    },
+    {
+      "name": "judgeExpectations",
+      "kind": "function",
+      "line": 204,
+      "signature": "judgeExpectations(root: string,\n  items: ReadonlyArray<{ node_id: string; node_label: string; expectation: Expectation }>,): Promise<ExpectationsReport>"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../../infrastructure/index/file_facts.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/index/db.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/index/symbols.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/parse/ast_parser.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../meta/explore/query_feature.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../domain/expectation.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/parse/source_exts.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/design/intent/expectations.ts#judgeExpectations",
+      "to": "src/application/design/intent/expectations.ts#depFactsIncomplete"
+    },
+    {
+      "from": "src/application/design/intent/expectations.ts#judgeExpectations",
+      "to": "src/application/design/intent/expectations.ts#findExpectationConflicts"
+    },
+    {
+      "from": "src/application/design/intent/expectations.ts#judgeExpectations",
+      "to": "src/application/design/intent/expectations.ts#indexStaleFor"
+    },
+    {
+      "from": "src/application/design/intent/expectations.ts#judgeExpectations",
+      "to": "src/application/design/intent/expectations.ts#indexStaleFor"
+    },
+    {
+      "from": "src/application/design/intent/expectations.ts#judgeExpectations",
+      "to": "src/application/meta/explore/query_feature.ts#queryFileCalls"
+    },
+    {
+      "from": "src/application/design/intent/expectations.ts#findExpectationConflicts",
+      "to": "src/domain/expectation.ts#normPath"
+    },
+    {
+      "from": "src/application/design/intent/expectations.ts#findExpectationConflicts",
+      "to": "src/domain/expectation.ts#normPath"
+    },
+    {
+      "from": "src/application/design/intent/expectations.ts#indexStaleFor",
+      "to": "src/domain/expectation.ts#normPath"
+    },
+    {
+      "from": "src/application/design/intent/expectations.ts#judgeExpectations",
+      "to": "src/domain/expectation.ts#normPath"
+    },
+    {
+      "from": "src/application/design/intent/expectations.ts#judgeExpectations",
+      "to": "src/domain/expectation.ts#normPath"
+    },
+    {
+      "from": "src/application/design/intent/expectations.ts#judgeExpectations",
+      "to": "src/domain/expectation.ts#normPath"
+    },
+    {
+      "from": "src/application/design/intent/expectations.ts#judgeExpectations",
+      "to": "src/domain/expectation.ts#normPath"
+    },
+    {
+      "from": "src/application/design/intent/expectations.ts#judgeExpectations",
+      "to": "src/domain/expectation.ts#normPath"
+    },
+    {
+      "from": "src/application/design/intent/expectations.ts#judgeExpectations",
+      "to": "src/domain/expectation.ts#normPath"
+    },
+    {
+      "from": "src/application/design/intent/expectations.ts#judgeExpectations",
+      "to": "src/domain/expectation.ts#normPath"
+    },
+    {
+      "from": "src/application/design/intent/expectations.ts#findExpectationConflicts",
+      "to": "src/domain/expectation.ts#normSignature"
+    },
+    {
+      "from": "src/application/design/intent/expectations.ts#judgeExpectations",
+      "to": "src/domain/expectation.ts#normSignature"
+    },
+    {
+      "from": "src/application/design/intent/expectations.ts#indexStaleFor",
+      "to": "src/infrastructure/index/db.ts#getProjectCacheDb"
+    },
+    {
+      "from": "src/application/design/intent/expectations.ts#depFactsIncomplete",
+      "to": "src/infrastructure/index/db.ts#getProjectCacheDb"
+    },
+    {
+      "from": "src/application/design/intent/expectations.ts#judgeExpectations",
+      "to": "src/infrastructure/index/db.ts#getProjectCacheDb"
+    },
+    {
+      "from": "src/application/design/intent/expectations.ts#judgeExpectations",
+      "to": "src/infrastructure/index/db.ts#getProjectCacheDb"
+    },
+    {
+      "from": "src/application/design/intent/expectations.ts#judgeExpectations",
+      "to": "src/infrastructure/index/db.ts#getProjectCacheDb"
+    },
+    {
+      "from": "src/application/design/intent/expectations.ts#indexStaleFor",
+      "to": "src/infrastructure/index/file_facts.ts#fileFacts"
+    },
+    {
+      "from": "src/application/design/intent/expectations.ts#depFactsIncomplete",
+      "to": "src/infrastructure/index/file_facts.ts#fileFacts"
+    },
+    {
+      "from": "src/application/design/intent/expectations.ts#judgeExpectations",
+      "to": "src/infrastructure/index/file_facts.ts#fileFacts"
+    },
+    {
+      "from": "src/application/design/intent/expectations.ts#indexStaleFor",
+      "to": "src/infrastructure/index/symbols.ts#contentHash"
+    },
+    {
+      "from": "src/application/design/intent/expectations.ts#depFactsIncomplete",
+      "to": "src/infrastructure/index/symbols.ts#getRawImportsOfFile"
+    },
+    {
+      "from": "src/application/design/intent/expectations.ts#judgeExpectations",
+      "to": "src/infrastructure/index/symbols.ts#getRawImportsOfFile"
+    },
+    {
+      "from": "src/application/design/intent/expectations.ts#judgeExpectations",
+      "to": "src/infrastructure/parse/ast_parser.ts#isSupportedFile"
+    },
+    {
+      "from": "src/application/design/intent/expectations.ts#judgeExpectations",
+      "to": "src/infrastructure/parse/ast_parser.ts#parseFileSymbols"
+    }
+  ]
+}

@@ -1,0 +1,91 @@
+{
+  "//": "Design DB —— src/infrastructure/analysis/capability/language_concepts.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "ConceptDef",
+      "kind": "interface",
+      "line": 23,
+      "signature": "ConceptDef()"
+    },
+    {
+      "name": "CONCEPTS",
+      "kind": "const",
+      "line": 33,
+      "signature": "const CONCEPTS = [ { id: 'generic', name: '泛型', explanation: '用类型参数（如 <T>）…"
+    },
+    {
+      "name": "CONCEPT_BY_ID",
+      "kind": "const",
+      "line": 102,
+      "signature": "const CONCEPT_BY_ID = new Map(CONCEPTS.map((c) => [c.id, c]))"
+    },
+    {
+      "name": "SymbolInput",
+      "kind": "interface",
+      "line": 108,
+      "signature": "SymbolInput()"
+    },
+    {
+      "name": "detectConcepts",
+      "kind": "function",
+      "line": 122,
+      "signature": "detectConcepts(sym: SymbolInput): string[]"
+    },
+    {
+      "name": "ConceptHit",
+      "kind": "interface",
+      "line": 208,
+      "signature": "ConceptHit()"
+    },
+    {
+      "name": "LanguageConceptsInput",
+      "kind": "interface",
+      "line": 220,
+      "signature": "LanguageConceptsInput()"
+    },
+    {
+      "name": "LanguageConceptsResult",
+      "kind": "interface",
+      "line": 230,
+      "signature": "LanguageConceptsResult()"
+    },
+    {
+      "name": "resolveConceptFilter",
+      "kind": "function",
+      "line": 243,
+      "signature": "resolveConceptFilter(ids?: string[]): Set<string> | null"
+    },
+    {
+      "name": "languageConcepts",
+      "kind": "function",
+      "line": 251,
+      "signature": "languageConcepts(input: LanguageConceptsInput): LanguageConceptsResult"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../index/db.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/capability/language_concepts.ts#languageConcepts",
+      "to": "src/infrastructure/analysis/capability/language_concepts.ts#detectConcepts"
+    },
+    {
+      "from": "src/infrastructure/analysis/capability/language_concepts.ts#languageConcepts",
+      "to": "src/infrastructure/analysis/capability/language_concepts.ts#resolveConceptFilter"
+    },
+    {
+      "from": "src/infrastructure/analysis/capability/language_concepts.ts#languageConcepts",
+      "to": "src/infrastructure/index/db.ts#getProjectCacheDb"
+    }
+  ]
+}

@@ -1,0 +1,527 @@
+{
+  "//": "Design DB —— src/application/design/derive/derive_split.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "execFileAsync",
+      "kind": "const",
+      "line": 38,
+      "signature": "const execFileAsync = promisify(execFile)"
+    },
+    {
+      "name": "SubSplitMethod",
+      "kind": "interface",
+      "line": 45,
+      "signature": "SubSplitMethod()"
+    },
+    {
+      "name": "SubSplitGroupPlan",
+      "kind": "interface",
+      "line": 51,
+      "signature": "SubSplitGroupPlan()"
+    },
+    {
+      "name": "CommunitySubSplitPlan",
+      "kind": "interface",
+      "line": 57,
+      "signature": "CommunitySubSplitPlan()"
+    },
+    {
+      "name": "DeriveSplitInput",
+      "kind": "interface",
+      "line": 65,
+      "signature": "DeriveSplitInput()"
+    },
+    {
+      "name": "DeriveSplitResult",
+      "kind": "interface",
+      "line": 92,
+      "signature": "DeriveSplitResult()"
+    },
+    {
+      "name": "LangId",
+      "kind": "type",
+      "line": 140,
+      "signature": "LangId()"
+    },
+    {
+      "name": "detectLang",
+      "kind": "function",
+      "line": 143,
+      "signature": "detectLang(ext: string): LangId | null"
+    },
+    {
+      "name": "IMPORT_NODE_TYPES",
+      "kind": "const",
+      "line": 151,
+      "signature": "const IMPORT_NODE_TYPES = { ts: ['import_statement'], go: ['import_declaration'], p…"
+    },
+    {
+      "name": "mergeRanges",
+      "kind": "function",
+      "line": 162,
+      "signature": "mergeRanges(ranges: Array<[number, number]>): Array<[number, number]>"
+    },
+    {
+      "name": "removeLineRanges",
+      "kind": "function",
+      "line": 179,
+      "signature": "removeLineRanges(content: string, ranges: Array<[number, number]>): string"
+    },
+    {
+      "name": "sliceLineRanges",
+      "kind": "function",
+      "line": 189,
+      "signature": "sliceLineRanges(content: string, ranges: Array<[number, number]>): string"
+    },
+    {
+      "name": "dedupByOutermost",
+      "kind": "function",
+      "line": 199,
+      "signature": "dedupByOutermost(list: ParsedSymbol[]): ParsedSymbol[]"
+    },
+    {
+      "name": "collectImportRanges",
+      "kind": "function",
+      "line": 214,
+      "signature": "collectImportRanges(filePath: string,\r\n  content: string,\r\n  lang: LangId,): Promise<Array<{ start: number; end: number; text: string }>>"
+    },
+    {
+      "name": "importSourceOf",
+      "kind": "function",
+      "line": 236,
+      "signature": "importSourceOf(text: string): string"
+    },
+    {
+      "name": "referNames",
+      "kind": "function",
+      "line": 267,
+      "signature": "referNames(text: string, names: string[], filePath: string): string[]"
+    },
+    {
+      "name": "escapeRe",
+      "kind": "function",
+      "line": 282,
+      "signature": "escapeRe(s: string): string"
+    },
+    {
+      "name": "goPackage",
+      "kind": "function",
+      "line": 287,
+      "signature": "goPackage(content: string): string"
+    },
+    {
+      "name": "isPythonPackage",
+      "kind": "function",
+      "line": 293,
+      "signature": "isPythonPackage(projectRoot: string, fileRel: string): boolean"
+    },
+    {
+      "name": "Wiring",
+      "kind": "interface",
+      "line": 310,
+      "signature": "Wiring()"
+    },
+    {
+      "name": "buildWiring",
+      "kind": "function",
+      "line": 349,
+      "signature": "buildWiring(lang: LangId,\r\n  projectRoot: string,\r\n  targetRel: string,\r\n  newRel: string,\r\n  content: string,\r\n  extractedText: string,\r\n  remainingNames: string[],\r\n  extractedNames: string[],\r\n  /**\r\n   * ★★★ T211（2026-10-12）：**原文件抽走那些符号之后剩下的正文**。\r\n   *\r\n   * ## 为什么需要它（★ 实测踩到的真 bug）\r\n   * 原先 ts/js 分支写的是 *\"`import { 【全部被抽走的符号】 } from './新文件'`\"* ⇒ ★ **无脑全给** ✗\r\n   * 实测（真落盘，夹具 `mixed.ts`）：切完之后 `mixed.ts` **只用到 `toCsv`/`downloadCsv`**\r\n   * ⇒ ★ **它一个被抽走的符号都不需要** ⇒ 却被硬塞了\r\n   * `import { SECRET, signToken, verifyToken } from './fixture-session-token'` ⇒\r\n   * ★★ 而 `SECRET` 在原文件里是**模块私有的**（`const SECRET`，没 `export`）⇒\r\n   * ★★★ **TS2459：declares 'SECRET' locally, but it is not exported** ⇒ **切出来的代码【编不过】** ✓\r\n   *\r\n   * ⇒ ★ 判据（就是要它）：**只把\"残余正文里真的还引用到\"的那些接回来** ✓\r\n   *   ★ 而\"谁真的被引用\"已有现成助手 `referNames`（本文件已在用另一个方向 ✓）⇒ ★ **不再造第二把尺** ✓\r\n   */\r\n  remainingText: string,): Wiring"
+    },
+    {
+      "name": "insertImport",
+      "kind": "function",
+      "line": 448,
+      "signature": "insertImport(content: string, importLine: string): string"
+    },
+    {
+      "name": "stripQuotesStr",
+      "kind": "function",
+      "line": 468,
+      "signature": "stripQuotesStr(s: string): string"
+    },
+    {
+      "name": "GoImportSpec",
+      "kind": "interface",
+      "line": 474,
+      "signature": "GoImportSpec()"
+    },
+    {
+      "name": "collectGoImportSpecs",
+      "kind": "function",
+      "line": 483,
+      "signature": "collectGoImportSpecs(filePath: string, content: string): Promise<GoImportSpec[]>"
+    },
+    {
+      "name": "pruneGoImports",
+      "kind": "function",
+      "line": 510,
+      "signature": "pruneGoImports(content: string, filePath: string): Promise<string>"
+    },
+    {
+      "name": "pythonBoundNames",
+      "kind": "function",
+      "line": 595,
+      "signature": "pythonBoundNames(stmtText: string): string[]"
+    },
+    {
+      "name": "prunePythonImports",
+      "kind": "function",
+      "line": 619,
+      "signature": "prunePythonImports(content: string, filePath: string): Promise<string>"
+    },
+    {
+      "name": "pruneUnusedImports",
+      "kind": "function",
+      "line": 647,
+      "signature": "pruneUnusedImports(content: string,\r\n  filePath: string,\r\n  lang: LangId,): Promise<{ content: string; pruned: string[] }>"
+    },
+    {
+      "name": "prunedDiffs",
+      "kind": "function",
+      "line": 666,
+      "signature": "prunedDiffs(before: string, after: string, lang: LangId): string[]"
+    },
+    {
+      "name": "shq",
+      "kind": "function",
+      "line": 679,
+      "signature": "shq(p: string): string"
+    },
+    {
+      "name": "runCompile",
+      "kind": "function",
+      "line": 688,
+      "signature": "runCompile(lang: LangId,\r\n  projectDir: string,\r\n  targetRel: string,\r\n  newRel: string,): Promise<{ command: string; ok?: boolean; output: string; skipped?: string }>"
+    },
+    {
+      "name": "runShell",
+      "kind": "function",
+      "line": 747,
+      "signature": "runShell(command: string, cwd: string): Promise<{ ok: boolean; output: string }>"
+    },
+    {
+      "name": "hasTestFiles",
+      "kind": "function",
+      "line": 758,
+      "signature": "hasTestFiles(projectDir: string, re: RegExp): boolean"
+    },
+    {
+      "name": "runTest",
+      "kind": "function",
+      "line": 783,
+      "signature": "runTest(lang: LangId,\r\n  projectDir: string,\r\n  targetRel: string,\r\n  newRel: string,): Promise<{ command: string; ok?: boolean; output: string; skipped?: string }>"
+    },
+    {
+      "name": "splitOnce",
+      "kind": "function",
+      "line": 833,
+      "signature": "splitOnce(input: DeriveSplitInput): Promise<DeriveSplitResult>"
+    },
+    {
+      "name": "runSubSplit",
+      "kind": "function",
+      "line": 1155,
+      "signature": "runSubSplit(input: DeriveSplitInput): Promise<DeriveSplitResult>"
+    },
+    {
+      "name": "deriveSplitCore",
+      "kind": "function",
+      "line": 1239,
+      "signature": "deriveSplitCore(input: DeriveSplitInput): Promise<DeriveSplitResult>"
+    },
+    {
+      "name": "touchedOf",
+      "kind": "function",
+      "line": 1247,
+      "signature": "touchedOf(input: DeriveSplitInput, r: DeriveSplitResult): Touched"
+    },
+    {
+      "name": "deriveSplit",
+      "kind": "function",
+      "line": 1274,
+      "signature": "deriveSplit(input: DeriveSplitInput): Promise<TouchedProduct<DeriveSplitResult>>"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:os",
+      "kind": "package"
+    },
+    {
+      "source": "node:child_process",
+      "kind": "package"
+    },
+    {
+      "source": "node:util",
+      "kind": "package"
+    },
+    {
+      "source": "../../../infrastructure/parse/index.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../domain/b_terms.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/parse/comments.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/design/derive/derive_split.ts#splitOnce",
+      "to": "src/application/design/derive/derive_split.ts#buildWiring"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#splitOnce",
+      "to": "src/application/design/derive/derive_split.ts#collectImportRanges"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#splitOnce",
+      "to": "src/application/design/derive/derive_split.ts#dedupByOutermost"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#splitOnce",
+      "to": "src/application/design/derive/derive_split.ts#dedupByOutermost"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#splitOnce",
+      "to": "src/application/design/derive/derive_split.ts#dedupByOutermost"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#splitOnce",
+      "to": "src/application/design/derive/derive_split.ts#dedupByOutermost"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#deriveSplit",
+      "to": "src/application/design/derive/derive_split.ts#deriveSplitCore"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#splitOnce",
+      "to": "src/application/design/derive/derive_split.ts#detectLang"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#referNames",
+      "to": "src/application/design/derive/derive_split.ts#escapeRe"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#prunePythonImports",
+      "to": "src/application/design/derive/derive_split.ts#escapeRe"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#splitOnce",
+      "to": "src/application/design/derive/derive_split.ts#escapeRe"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#splitOnce",
+      "to": "src/application/design/derive/derive_split.ts#escapeRe"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#runCompile",
+      "to": "src/application/design/derive/derive_split.ts#execFileAsync"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#runCompile",
+      "to": "src/application/design/derive/derive_split.ts#execFileAsync"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#runCompile",
+      "to": "src/application/design/derive/derive_split.ts#execFileAsync"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#runShell",
+      "to": "src/application/design/derive/derive_split.ts#execFileAsync"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#buildWiring",
+      "to": "src/application/design/derive/derive_split.ts#goPackage"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#runTest",
+      "to": "src/application/design/derive/derive_split.ts#hasTestFiles"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#runTest",
+      "to": "src/application/design/derive/derive_split.ts#hasTestFiles"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#splitOnce",
+      "to": "src/application/design/derive/derive_split.ts#importSourceOf"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#splitOnce",
+      "to": "src/application/design/derive/derive_split.ts#insertImport"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#splitOnce",
+      "to": "src/application/design/derive/derive_split.ts#insertImport"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#splitOnce",
+      "to": "src/application/design/derive/derive_split.ts#insertImport"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#buildWiring",
+      "to": "src/application/design/derive/derive_split.ts#isPythonPackage"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#splitOnce",
+      "to": "src/application/design/derive/derive_split.ts#isPythonPackage"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#pruneGoImports",
+      "to": "src/application/design/derive/derive_split.ts#mergeRanges"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#prunePythonImports",
+      "to": "src/application/design/derive/derive_split.ts#mergeRanges"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#prunePythonImports",
+      "to": "src/application/design/derive/derive_split.ts#mergeRanges"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#splitOnce",
+      "to": "src/application/design/derive/derive_split.ts#mergeRanges"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#pruneUnusedImports",
+      "to": "src/application/design/derive/derive_split.ts#pruneGoImports"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#pruneUnusedImports",
+      "to": "src/application/design/derive/derive_split.ts#prunePythonImports"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#splitOnce",
+      "to": "src/application/design/derive/derive_split.ts#pruneUnusedImports"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#splitOnce",
+      "to": "src/application/design/derive/derive_split.ts#pruneUnusedImports"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#pruneUnusedImports",
+      "to": "src/application/design/derive/derive_split.ts#prunedDiffs"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#pruneUnusedImports",
+      "to": "src/application/design/derive/derive_split.ts#prunedDiffs"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#prunePythonImports",
+      "to": "src/application/design/derive/derive_split.ts#pythonBoundNames"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#buildWiring",
+      "to": "src/application/design/derive/derive_split.ts#referNames"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#buildWiring",
+      "to": "src/application/design/derive/derive_split.ts#referNames"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#buildWiring",
+      "to": "src/application/design/derive/derive_split.ts#referNames"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#buildWiring",
+      "to": "src/application/design/derive/derive_split.ts#referNames"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#pruneGoImports",
+      "to": "src/application/design/derive/derive_split.ts#removeLineRanges"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#prunePythonImports",
+      "to": "src/application/design/derive/derive_split.ts#removeLineRanges"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#prunePythonImports",
+      "to": "src/application/design/derive/derive_split.ts#removeLineRanges"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#splitOnce",
+      "to": "src/application/design/derive/derive_split.ts#removeLineRanges"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#splitOnce",
+      "to": "src/application/design/derive/derive_split.ts#runCompile"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#runTest",
+      "to": "src/application/design/derive/derive_split.ts#runShell"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#runTest",
+      "to": "src/application/design/derive/derive_split.ts#runShell"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#runTest",
+      "to": "src/application/design/derive/derive_split.ts#runShell"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#deriveSplitCore",
+      "to": "src/application/design/derive/derive_split.ts#runSubSplit"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#splitOnce",
+      "to": "src/application/design/derive/derive_split.ts#runTest"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#runCompile",
+      "to": "src/application/design/derive/derive_split.ts#shq"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#runCompile",
+      "to": "src/application/design/derive/derive_split.ts#shq"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#runTest",
+      "to": "src/application/design/derive/derive_split.ts#shq"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#splitOnce",
+      "to": "src/application/design/derive/derive_split.ts#sliceLineRanges"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#runSubSplit",
+      "to": "src/application/design/derive/derive_split.ts#splitOnce"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#deriveSplitCore",
+      "to": "src/application/design/derive/derive_split.ts#splitOnce"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#collectGoImportSpecs",
+      "to": "src/application/design/derive/derive_split.ts#stripQuotesStr"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#pruneGoImports",
+      "to": "src/application/design/derive/derive_split.ts#stripQuotesStr"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#deriveSplit",
+      "to": "src/application/design/derive/derive_split.ts#touchedOf"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#deriveSplit",
+      "to": "src/domain/b_terms.ts#withTouched"
+    },
+    {
+      "from": "src/application/design/derive/derive_split.ts#referNames",
+      "to": "src/infrastructure/parse/comments.ts#stripCommentsSync"
+    }
+  ]
+}

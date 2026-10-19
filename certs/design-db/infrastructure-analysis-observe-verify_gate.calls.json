@@ -1,0 +1,134 @@
+{
+  "//": "Design DB —— src/infrastructure/analysis/observe/verify_gate.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "RuleRegression",
+      "kind": "interface",
+      "line": 70,
+      "signature": "RuleRegression()"
+    },
+    {
+      "name": "DATA_DECL_RULES",
+      "kind": "const",
+      "line": 93,
+      "signature": "const DATA_DECL_RULES = new Set([KNOWN_SPREAD_RULE])"
+    },
+    {
+      "name": "registeredRules",
+      "kind": "const",
+      "line": 95,
+      "signature": "const registeredRules = (): Set<string> => new Set([...OBSERVE_RULE_IDS, ...DATA_…"
+    },
+    {
+      "name": "verifyRuleRegression",
+      "kind": "function",
+      "line": 101,
+      "signature": "verifyRuleRegression(decls: TSDLDecl[]): RuleRegression"
+    },
+    {
+      "name": "regressionSummary",
+      "kind": "function",
+      "line": 118,
+      "signature": "regressionSummary(r: RuleRegression): string"
+    },
+    {
+      "name": "regressionDescribe",
+      "kind": "function",
+      "line": 123,
+      "signature": "regressionDescribe(r: RuleRegression): string"
+    },
+    {
+      "name": "regressionEvidence",
+      "kind": "function",
+      "line": 130,
+      "signature": "regressionEvidence(r: RuleRegression, llmCount: number): string"
+    },
+    {
+      "name": "DeclVerdict",
+      "kind": "interface",
+      "line": 141,
+      "signature": "DeclVerdict()"
+    },
+    {
+      "name": "verifyLLMCoverage",
+      "kind": "function",
+      "line": 153,
+      "signature": "verifyLLMCoverage(uncovered: string[], verdicts: DeclVerdict[]): void"
+    },
+    {
+      "name": "finalizeDecls",
+      "kind": "function",
+      "line": 173,
+      "signature": "finalizeDecls(decls: TSDLDecl[], reg: RuleRegression, llmVerdicts: DeclVerdict[]): TSDLDecl[]"
+    },
+    {
+      "name": "rejectedByReview",
+      "kind": "function",
+      "line": 210,
+      "signature": "rejectedByReview(decls: TSDLDecl[], llmVerdicts: DeclVerdict[]): DeclVerdict[]"
+    },
+    {
+      "name": "mergeLoopDecls",
+      "kind": "function",
+      "line": 236,
+      "signature": "mergeLoopDecls(current: TSDLDecl[], incoming: TSDLDecl[]): TSDLDecl[]"
+    },
+    {
+      "name": "droppedDeclCount",
+      "kind": "function",
+      "line": 272,
+      "signature": "droppedDeclCount(current: TSDLDecl[] | null, incoming: TSDLDecl[]): number"
+    }
+  ],
+  "imports": [
+    {
+      "source": "./judge.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./ledger_fold.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./contract.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./proposal_store.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/observe/verify_gate.ts#mergeLoopDecls",
+      "to": "src/infrastructure/analysis/observe/proposal_store.ts#declKey"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/verify_gate.ts#mergeLoopDecls",
+      "to": "src/infrastructure/analysis/observe/proposal_store.ts#declKey"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/verify_gate.ts#verifyRuleRegression",
+      "to": "src/infrastructure/analysis/observe/verify_gate.ts#registeredRules"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/verify_gate.ts#finalizeDecls",
+      "to": "src/infrastructure/analysis/observe/verify_gate.ts#registeredRules"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/verify_gate.ts#rejectedByReview",
+      "to": "src/infrastructure/analysis/observe/verify_gate.ts#registeredRules"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/verify_gate.ts#regressionEvidence",
+      "to": "src/infrastructure/analysis/observe/verify_gate.ts#regressionSummary"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/verify_gate.ts#regressionEvidence",
+      "to": "src/infrastructure/analysis/observe/verify_gate.ts#regressionSummary"
+    }
+  ]
+}

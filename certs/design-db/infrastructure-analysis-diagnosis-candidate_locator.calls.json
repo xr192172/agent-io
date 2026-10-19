@@ -1,0 +1,111 @@
+{
+  "//": "Design DB —— src/infrastructure/analysis/diagnosis/candidate_locator.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "LocateInput",
+      "kind": "interface",
+      "line": 21,
+      "signature": "LocateInput()"
+    },
+    {
+      "name": "LocateResult",
+      "kind": "interface",
+      "line": 28,
+      "signature": "LocateResult()"
+    },
+    {
+      "name": "SOURCE_EXT_RE",
+      "kind": "const",
+      "line": 33,
+      "signature": "const SOURCE_EXT_RE = /\\.(ts|tsx|js|jsx|mjs|cjs|go|py|java|rs|rb|vue|svelte|css…"
+    },
+    {
+      "name": "NodeRow",
+      "kind": "interface",
+      "line": 35,
+      "signature": "NodeRow()"
+    },
+    {
+      "name": "toCacheRel",
+      "kind": "function",
+      "line": 49,
+      "signature": "toCacheRel(root: string, file: string): string"
+    },
+    {
+      "name": "probeCachePath",
+      "kind": "function",
+      "line": 58,
+      "signature": "probeCachePath(db: Database, root: string, file: string): string | undefined"
+    },
+    {
+      "name": "exactBySymbol",
+      "kind": "function",
+      "line": 73,
+      "signature": "exactBySymbol(db: Database, name: string, limit = 5): NodeRow[]"
+    },
+    {
+      "name": "symbolAtLine",
+      "kind": "function",
+      "line": 84,
+      "signature": "symbolAtLine(db: Database, cachePath: string, line?: number): NodeRow | undefined"
+    },
+    {
+      "name": "locateCandidates",
+      "kind": "function",
+      "line": 106,
+      "signature": "locateCandidates(db: Database, input: LocateInput): LocateResult"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../index/db.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../../index/symbols.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./contract.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/diagnosis/candidate_locator.ts#locateCandidates",
+      "to": "src/infrastructure/analysis/diagnosis/candidate_locator.ts#exactBySymbol"
+    },
+    {
+      "from": "src/infrastructure/analysis/diagnosis/candidate_locator.ts#locateCandidates",
+      "to": "src/infrastructure/analysis/diagnosis/candidate_locator.ts#exactBySymbol"
+    },
+    {
+      "from": "src/infrastructure/analysis/diagnosis/candidate_locator.ts#locateCandidates",
+      "to": "src/infrastructure/analysis/diagnosis/candidate_locator.ts#probeCachePath"
+    },
+    {
+      "from": "src/infrastructure/analysis/diagnosis/candidate_locator.ts#locateCandidates",
+      "to": "src/infrastructure/analysis/diagnosis/candidate_locator.ts#probeCachePath"
+    },
+    {
+      "from": "src/infrastructure/analysis/diagnosis/candidate_locator.ts#locateCandidates",
+      "to": "src/infrastructure/analysis/diagnosis/candidate_locator.ts#symbolAtLine"
+    },
+    {
+      "from": "src/infrastructure/analysis/diagnosis/candidate_locator.ts#probeCachePath",
+      "to": "src/infrastructure/analysis/diagnosis/candidate_locator.ts#toCacheRel"
+    },
+    {
+      "from": "src/infrastructure/analysis/diagnosis/candidate_locator.ts#locateCandidates",
+      "to": "src/infrastructure/index/symbols.ts#searchSymbols"
+    }
+  ]
+}

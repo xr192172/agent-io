@@ -1,0 +1,147 @@
+{
+  "//": "Design DB —— src/application/meta/registry/classify_tools.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "ToolDomain",
+      "kind": "interface",
+      "line": 23,
+      "signature": "ToolDomain()"
+    },
+    {
+      "name": "defaultDomains",
+      "kind": "function",
+      "line": 30,
+      "signature": "defaultDomains(): ToolDomain[]"
+    },
+    {
+      "name": "ToolAnnotation",
+      "kind": "interface",
+      "line": 43,
+      "signature": "ToolAnnotation()"
+    },
+    {
+      "name": "MappedTool",
+      "kind": "interface",
+      "line": 52,
+      "signature": "MappedTool()"
+    },
+    {
+      "name": "ToolsMapResult",
+      "kind": "interface",
+      "line": 70,
+      "signature": "ToolsMapResult()"
+    },
+    {
+      "name": "toLlmCfg",
+      "kind": "function",
+      "line": 77,
+      "signature": "toLlmCfg(c: ReturnType<typeof loadExplainConfig>)"
+    },
+    {
+      "name": "annotateByRule",
+      "kind": "function",
+      "line": 82,
+      "signature": "annotateByRule(tools: FunctionEntry[], taxonomy: Taxonomy): Record<string, ToolAnnotation>"
+    },
+    {
+      "name": "annotateByLlm",
+      "kind": "function",
+      "line": 126,
+      "signature": "annotateByLlm(cfg: { apiKey: string; model: string; baseURL: string },\n  tools: FunctionEntry[],\n  domains: ToolDomain[],\n  taxonomy: Taxonomy,): Promise<Record<string, ToolAnnotation> | null>"
+    },
+    {
+      "name": "classifyToolsCore",
+      "kind": "function",
+      "line": 193,
+      "signature": "classifyToolsCore(tools: FunctionEntry[],\n  r: BrickifyResult,\n  opts: { taxonomy?: Taxonomy; domains?: ToolDomain[] } = {},): Promise<ToolsMapResult>"
+    },
+    {
+      "name": "touchedOf",
+      "kind": "function",
+      "line": 273,
+      "signature": "touchedOf(r: BrickifyResult): Touched"
+    },
+    {
+      "name": "classifyTools",
+      "kind": "function",
+      "line": 283,
+      "signature": "classifyTools(tools: FunctionEntry[],\n  r: BrickifyResult,\n  opts: { taxonomy?: Taxonomy; domains?: ToolDomain[] } = {},): Promise<TouchedProduct<ToolsMapResult>>"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "./collect_functions.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../../design/bricks/brickify.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../../../infrastructure/llm_focus.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../design/bricks/taxonomy.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../domain/b_terms.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/meta/registry/classify_tools.ts#classifyToolsCore",
+      "to": "src/application/design/bricks/taxonomy.ts#defaultPipelineTaxonomy"
+    },
+    {
+      "from": "src/application/meta/registry/classify_tools.ts#classifyToolsCore",
+      "to": "src/application/meta/registry/classify_tools.ts#annotateByLlm"
+    },
+    {
+      "from": "src/application/meta/registry/classify_tools.ts#classifyToolsCore",
+      "to": "src/application/meta/registry/classify_tools.ts#annotateByRule"
+    },
+    {
+      "from": "src/application/meta/registry/classify_tools.ts#classifyTools",
+      "to": "src/application/meta/registry/classify_tools.ts#classifyToolsCore"
+    },
+    {
+      "from": "src/application/meta/registry/classify_tools.ts#classifyToolsCore",
+      "to": "src/application/meta/registry/classify_tools.ts#defaultDomains"
+    },
+    {
+      "from": "src/application/meta/registry/classify_tools.ts#classifyToolsCore",
+      "to": "src/application/meta/registry/classify_tools.ts#toLlmCfg"
+    },
+    {
+      "from": "src/application/meta/registry/classify_tools.ts#classifyTools",
+      "to": "src/application/meta/registry/classify_tools.ts#touchedOf"
+    },
+    {
+      "from": "src/application/meta/registry/classify_tools.ts#classifyTools",
+      "to": "src/domain/b_terms.ts#withTouched"
+    },
+    {
+      "from": "src/application/meta/registry/classify_tools.ts#annotateByLlm",
+      "to": "src/infrastructure/llm_focus.ts#callChat"
+    },
+    {
+      "from": "src/application/meta/registry/classify_tools.ts#classifyToolsCore",
+      "to": "src/infrastructure/llm_focus.ts#loadExplainConfig"
+    },
+    {
+      "from": "src/application/meta/registry/classify_tools.ts#classifyToolsCore",
+      "to": "src/infrastructure/llm_focus.ts#loadLlmConfig"
+    }
+  ]
+}

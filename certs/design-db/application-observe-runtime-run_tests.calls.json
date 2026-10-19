@@ -1,0 +1,83 @@
+{
+  "//": "Design DB —— src/application/observe/runtime/run_tests.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "RunTestsResult",
+      "kind": "interface",
+      "line": 18,
+      "signature": "RunTestsResult()"
+    },
+    {
+      "name": "TAIL_CHARS",
+      "kind": "const",
+      "line": 44,
+      "signature": "const TAIL_CHARS = 4000"
+    },
+    {
+      "name": "runTests",
+      "kind": "function",
+      "line": 46,
+      "signature": "runTests(input: { project_dir?: string; filter?: string; timeoutMs?: number }): RunTestsResult"
+    },
+    {
+      "name": "fail",
+      "kind": "function",
+      "line": 159,
+      "signature": "fail(error: string): RunTestsResult"
+    },
+    {
+      "name": "tail",
+      "kind": "function",
+      "line": 174,
+      "signature": "tail(s: string): { text: string; truncated: boolean }"
+    },
+    {
+      "name": "quoteForShell",
+      "kind": "function",
+      "line": 180,
+      "signature": "quoteForShell(s: string): string"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:child_process",
+      "kind": "package"
+    },
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/observe/runtime/run_tests.ts#runTests",
+      "to": "src/application/observe/runtime/run_tests.ts#fail"
+    },
+    {
+      "from": "src/application/observe/runtime/run_tests.ts#runTests",
+      "to": "src/application/observe/runtime/run_tests.ts#fail"
+    },
+    {
+      "from": "src/application/observe/runtime/run_tests.ts#runTests",
+      "to": "src/application/observe/runtime/run_tests.ts#fail"
+    },
+    {
+      "from": "src/application/observe/runtime/run_tests.ts#runTests",
+      "to": "src/application/observe/runtime/run_tests.ts#quoteForShell"
+    },
+    {
+      "from": "src/application/observe/runtime/run_tests.ts#runTests",
+      "to": "src/application/observe/runtime/run_tests.ts#tail"
+    },
+    {
+      "from": "src/application/observe/runtime/run_tests.ts#runTests",
+      "to": "src/application/observe/runtime/run_tests.ts#tail"
+    }
+  ]
+}

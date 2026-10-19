@@ -1,0 +1,177 @@
+{
+  "//": "Design DB —— src/application/refactor/snapshot/file_snapshot.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "FileSnapshotEntry",
+      "kind": "interface",
+      "line": 35,
+      "signature": "FileSnapshotEntry()"
+    },
+    {
+      "name": "FileSnapshotMeta",
+      "kind": "interface",
+      "line": 44,
+      "signature": "FileSnapshotMeta()"
+    },
+    {
+      "name": "MAX_FILE_SNAPSHOTS",
+      "kind": "const",
+      "line": 89,
+      "signature": "const MAX_FILE_SNAPSHOTS = 20"
+    },
+    {
+      "name": "fileSnapshotsDir",
+      "kind": "function",
+      "line": 91,
+      "signature": "fileSnapshotsDir(root: string): string"
+    },
+    {
+      "name": "normalizeRel",
+      "kind": "function",
+      "line": 95,
+      "signature": "normalizeRel(root: string, file: string): string | null"
+    },
+    {
+      "name": "makeId",
+      "kind": "function",
+      "line": 102,
+      "signature": "makeId(now: Date = new Date()): string"
+    },
+    {
+      "name": "createFileSnapshot",
+      "kind": "function",
+      "line": 112,
+      "signature": "createFileSnapshot(root: string,\n  opts: { reason: string; files: readonly string[] },): FileSnapshotMeta"
+    },
+    {
+      "name": "listFileSnapshots",
+      "kind": "function",
+      "line": 196,
+      "signature": "listFileSnapshots(root: string): FileSnapshotMeta[]"
+    },
+    {
+      "name": "getFileSnapshot",
+      "kind": "function",
+      "line": 213,
+      "signature": "getFileSnapshot(root: string, id: string): FileSnapshotMeta | null"
+    },
+    {
+      "name": "RollbackResult",
+      "kind": "interface",
+      "line": 223,
+      "signature": "RollbackResult()"
+    },
+    {
+      "name": "rollbackFileSnapshot",
+      "kind": "function",
+      "line": 240,
+      "signature": "rollbackFileSnapshot(root: string,\n  id?: string,\n  filter?: { file?: string },): RollbackResult"
+    },
+    {
+      "name": "pruneFileSnapshots",
+      "kind": "function",
+      "line": 306,
+      "signature": "pruneFileSnapshots(root: string, max = MAX_FILE_SNAPSHOTS): number"
+    },
+    {
+      "name": "snapshotBeforeWrite",
+      "kind": "function",
+      "line": 325,
+      "signature": "snapshotBeforeWrite(root: string,\n  reason: string,\n  files: readonly string[],): FileSnapshotMeta | null"
+    }
+  ],
+  "imports": [
+    {
+      "source": "../../../infrastructure/data_dir.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/index/file_facts.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/storage.js",
+      "kind": "relative"
+    },
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/refactor/snapshot/file_snapshot.ts#snapshotBeforeWrite",
+      "to": "src/application/refactor/snapshot/file_snapshot.ts#createFileSnapshot"
+    },
+    {
+      "from": "src/application/refactor/snapshot/file_snapshot.ts#createFileSnapshot",
+      "to": "src/application/refactor/snapshot/file_snapshot.ts#fileSnapshotsDir"
+    },
+    {
+      "from": "src/application/refactor/snapshot/file_snapshot.ts#listFileSnapshots",
+      "to": "src/application/refactor/snapshot/file_snapshot.ts#fileSnapshotsDir"
+    },
+    {
+      "from": "src/application/refactor/snapshot/file_snapshot.ts#getFileSnapshot",
+      "to": "src/application/refactor/snapshot/file_snapshot.ts#fileSnapshotsDir"
+    },
+    {
+      "from": "src/application/refactor/snapshot/file_snapshot.ts#rollbackFileSnapshot",
+      "to": "src/application/refactor/snapshot/file_snapshot.ts#fileSnapshotsDir"
+    },
+    {
+      "from": "src/application/refactor/snapshot/file_snapshot.ts#rollbackFileSnapshot",
+      "to": "src/application/refactor/snapshot/file_snapshot.ts#fileSnapshotsDir"
+    },
+    {
+      "from": "src/application/refactor/snapshot/file_snapshot.ts#pruneFileSnapshots",
+      "to": "src/application/refactor/snapshot/file_snapshot.ts#fileSnapshotsDir"
+    },
+    {
+      "from": "src/application/refactor/snapshot/file_snapshot.ts#rollbackFileSnapshot",
+      "to": "src/application/refactor/snapshot/file_snapshot.ts#getFileSnapshot"
+    },
+    {
+      "from": "src/application/refactor/snapshot/file_snapshot.ts#rollbackFileSnapshot",
+      "to": "src/application/refactor/snapshot/file_snapshot.ts#listFileSnapshots"
+    },
+    {
+      "from": "src/application/refactor/snapshot/file_snapshot.ts#pruneFileSnapshots",
+      "to": "src/application/refactor/snapshot/file_snapshot.ts#listFileSnapshots"
+    },
+    {
+      "from": "src/application/refactor/snapshot/file_snapshot.ts#createFileSnapshot",
+      "to": "src/application/refactor/snapshot/file_snapshot.ts#makeId"
+    },
+    {
+      "from": "src/application/refactor/snapshot/file_snapshot.ts#createFileSnapshot",
+      "to": "src/application/refactor/snapshot/file_snapshot.ts#normalizeRel"
+    },
+    {
+      "from": "src/application/refactor/snapshot/file_snapshot.ts#rollbackFileSnapshot",
+      "to": "src/application/refactor/snapshot/file_snapshot.ts#normalizeRel"
+    },
+    {
+      "from": "src/application/refactor/snapshot/file_snapshot.ts#createFileSnapshot",
+      "to": "src/application/refactor/snapshot/file_snapshot.ts#pruneFileSnapshots"
+    },
+    {
+      "from": "src/application/refactor/snapshot/file_snapshot.ts#createFileSnapshot",
+      "to": "src/infrastructure/index/file_facts.ts#fileFacts"
+    },
+    {
+      "from": "src/application/refactor/snapshot/file_snapshot.ts#createFileSnapshot",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/application/refactor/snapshot/file_snapshot.ts#createFileSnapshot",
+      "to": "src/infrastructure/storage.ts#listFeatures"
+    }
+  ]
+}

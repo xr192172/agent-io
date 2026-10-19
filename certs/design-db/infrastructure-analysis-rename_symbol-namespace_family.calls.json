@@ -1,0 +1,108 @@
+{
+  "//": "Design DB —— src/infrastructure/analysis/rename_symbol/namespace_family.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "NamespaceDeclRule",
+      "kind": "interface",
+      "line": 49,
+      "signature": "NamespaceDeclRule()"
+    },
+    {
+      "name": "NamespaceLangRules",
+      "kind": "interface",
+      "line": 64,
+      "signature": "NamespaceLangRules()"
+    },
+    {
+      "name": "NamespaceLangSpec",
+      "kind": "interface",
+      "line": 98,
+      "signature": "NamespaceLangSpec()"
+    },
+    {
+      "name": "makeNamespaceAnalyzer",
+      "kind": "function",
+      "line": 114,
+      "signature": "makeNamespaceAnalyzer(rules: NamespaceLangRules)"
+    },
+    {
+      "name": "NamespaceRenameArgs",
+      "kind": "interface",
+      "line": 268,
+      "signature": "NamespaceRenameArgs()"
+    },
+    {
+      "name": "renameNamespaceSymbol",
+      "kind": "function",
+      "line": 282,
+      "signature": "renameNamespaceSymbol(spec: NamespaceLangSpec, args: NamespaceRenameArgs): Promise<RenameSymbolResult>"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../../infrastructure/analysis/refactor/protect.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/parse/loader.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/parse/languages.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/parse/kernel.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./parts.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./parts.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/rename_symbol/namespace_family.ts#renameNamespaceSymbol",
+      "to": "src/infrastructure/analysis/refactor/protect.ts#createProtectGuard"
+    },
+    {
+      "from": "src/infrastructure/analysis/rename_symbol/namespace_family.ts#renameNamespaceSymbol",
+      "to": "src/infrastructure/analysis/rename_symbol/parts.ts#applyEdits"
+    },
+    {
+      "from": "src/infrastructure/analysis/rename_symbol/namespace_family.ts#renameNamespaceSymbol",
+      "to": "src/infrastructure/analysis/rename_symbol/parts.ts#collectFilesByExt"
+    },
+    {
+      "from": "src/infrastructure/analysis/rename_symbol/namespace_family.ts#renameNamespaceSymbol",
+      "to": "src/infrastructure/analysis/rename_symbol/parts.ts#toOps"
+    },
+    {
+      "from": "src/infrastructure/analysis/rename_symbol/namespace_family.ts#makeNamespaceAnalyzer",
+      "to": "src/infrastructure/parse/kernel.ts#parseContent"
+    },
+    {
+      "from": "src/infrastructure/analysis/rename_symbol/namespace_family.ts#makeNamespaceAnalyzer",
+      "to": "src/infrastructure/parse/languages.ts#findLanguageByExt"
+    },
+    {
+      "from": "src/infrastructure/analysis/rename_symbol/namespace_family.ts#makeNamespaceAnalyzer",
+      "to": "src/infrastructure/parse/loader.ts#getParser"
+    }
+  ]
+}

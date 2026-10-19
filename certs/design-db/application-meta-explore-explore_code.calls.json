@@ -1,0 +1,674 @@
+{
+  "//": "Design DB —— src/application/meta/explore/explore_code.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "EXPLORE_ACTIONS",
+      "kind": "const",
+      "line": 47,
+      "signature": "const EXPLORE_ACTIONS = [ 'search', 'read', 'diff_impact', 'arch_layer', 'guided_…"
+    },
+    {
+      "name": "ExploreAction",
+      "kind": "type",
+      "line": 65,
+      "signature": "ExploreAction()"
+    },
+    {
+      "name": "errMessage",
+      "kind": "function",
+      "line": 69,
+      "signature": "errMessage(err: unknown): string"
+    },
+    {
+      "name": "toResult",
+      "kind": "function",
+      "line": 92,
+      "signature": "toResult(r: unknown, isAsync = false): { message: string; data: unknown }"
+    },
+    {
+      "name": "exploreCode",
+      "kind": "function",
+      "line": 99,
+      "signature": "exploreCode(params: { action: ExploreAction; args: Record<string, unknown> }): Promise<{ message: string; data: unknown }>"
+    },
+    {
+      "name": "READ_PREVIEW_CAP",
+      "kind": "const",
+      "line": 392,
+      "signature": "const READ_PREVIEW_CAP = 500"
+    },
+    {
+      "name": "SYMBOL_TABLE_CAP",
+      "kind": "const",
+      "line": 393,
+      "signature": "const SYMBOL_TABLE_CAP = 30"
+    },
+    {
+      "name": "SymbolIndexItem",
+      "kind": "type",
+      "line": 396,
+      "signature": "SymbolIndexItem()"
+    },
+    {
+      "name": "ReadCodeOptions",
+      "kind": "interface",
+      "line": 407,
+      "signature": "ReadCodeOptions()"
+    },
+    {
+      "name": "ReadCodeData",
+      "kind": "interface",
+      "line": 419,
+      "signature": "ReadCodeData()"
+    },
+    {
+      "name": "readCode",
+      "kind": "function",
+      "line": 434,
+      "signature": "readCode(root: string | undefined,\r\n  file: string,\r\n  opts: ReadCodeOptions = {},): Promise<{ message: string; data: ReadCodeData }>"
+    }
+  ],
+  "imports": [
+    {
+      "source": "../../plumbing.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./explore_arg_spec.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../llm/semantic_search.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/index/index_freshness.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/index/index_backfill.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/analysis/impact/diff_impact.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/analysis/structure/arch_layer.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/analysis/structure/layer_detect.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../../../infrastructure/index/guided_tour.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/analysis/structure/monolith.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/render/inject_replay.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../design/lifecycle/simulation.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../dispatch.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../design/derive/derive_algorithm.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../design/derive/derive_chain.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../design/derive/derive_split.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../view/derive_anim_flow.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../view/derive_mind_map.js",
+      "kind": "relative"
+    },
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../../infrastructure/parse/index.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/text/line_utils.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../refactor/edit/edit_code.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/design/derive/derive_algorithm.ts#deriveAlgorithm"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/design/derive/derive_chain.ts#deriveDetailChain"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/design/derive/derive_split.ts#deriveSplit"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/design/lifecycle/simulation.ts#resetSimulation"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/design/lifecycle/simulation.ts#runSimulation"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/dispatch.ts#dispatchWatch"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/meta/explore/explore_arg_spec.ts#assertExploreArgKeys"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/meta/explore/explore_arg_spec.ts#assertExploreRequired"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/meta/explore/explore_code.ts#errMessage"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/meta/explore/explore_code.ts#errMessage"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/meta/explore/explore_code.ts#readCode"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/meta/explore/explore_code.ts#toResult"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/meta/explore/explore_code.ts#toResult"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/meta/explore/explore_code.ts#toResult"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/meta/explore/explore_code.ts#toResult"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/meta/explore/explore_code.ts#toResult"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/meta/explore/explore_code.ts#toResult"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/meta/explore/explore_code.ts#toResult"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/meta/explore/explore_code.ts#toResult"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/meta/explore/explore_code.ts#toResult"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/meta/explore/explore_code.ts#toResult"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/meta/explore/explore_code.ts#toResult"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/meta/explore/explore_code.ts#toResult"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/meta/explore/explore_code.ts#toResult"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/meta/llm/semantic_search.ts#semanticSearch"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/meta/view/derive_anim_flow.ts#deriveAnimFlow"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/meta/view/derive_mind_map.ts#deriveMindMap"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalArr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalArr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalArr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalArr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalBool"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalBool"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalBool"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalBool"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalBool"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalBool"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalBool"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalBool"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalBool"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalBool"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalBool"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalBool"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalBool"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalBool"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalBool"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalBool"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalNum"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalNum"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalNum"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalNum"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalNum"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalNum"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalNum"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalNum"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalNum"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalNum"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalNum"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalNum"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalNum"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalNum"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalNum"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalNum"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalNum"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalNum"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalNum"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalStr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalStr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalStr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalStr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalStr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalStr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalStr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalStr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalStr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalStr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalStr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalStr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalStr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalStr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalStr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalStr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalStr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalStr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalStr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalStr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalStr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalStr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#optionalStr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#requireStr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#requireStr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#requireStr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#requireStr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#requireStr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#requireStr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#requireStr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#requireStr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#requireStr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#requireStr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#requireStr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#requireStr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#requireStr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#requireStr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#requireStr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#requireStr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#requireStr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#requireStr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#requireStr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#requireStr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#requireStr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/application/plumbing.ts#requireStr"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#readCode",
+      "to": "src/application/refactor/edit/edit_code.ts#describeSymbol"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#readCode",
+      "to": "src/application/refactor/edit/edit_code.ts#describeSymbol"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#readCode",
+      "to": "src/application/refactor/edit/edit_code.ts#describeSymbol"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#readCode",
+      "to": "src/application/refactor/edit/edit_code.ts#matchSymbols"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/infrastructure/analysis/impact/diff_impact.ts#diffImpact"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/infrastructure/analysis/structure/arch_layer.ts#archLayer"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/infrastructure/analysis/structure/monolith.ts#checkMonolith"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/infrastructure/index/guided_tour.ts#guidedTour"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/infrastructure/index/index_backfill.ts#backfillState"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/infrastructure/index/index_backfill.ts#backfillSummary"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/infrastructure/index/index_backfill.ts#scheduleBackfill"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/infrastructure/index/index_freshness.ts#ensureIndexAroundSeed"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/infrastructure/index/index_freshness.ts#ensureProjectIndex"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#exploreCode",
+      "to": "src/infrastructure/render/inject_replay.ts#injectReplay"
+    },
+    {
+      "from": "src/application/meta/explore/explore_code.ts#readCode",
+      "to": "src/infrastructure/text/line_utils.ts#splitKeepEnds"
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "//": "Design DB —— src/infrastructure/analysis/contract_gate/languages/registry.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "CG_LANG_PACKAGES",
+      "kind": "const",
+      "line": 21,
+      "signature": "const CG_LANG_PACKAGES = [ cgTsPackage, cgGoPackage, cgPyPackage, cgJavaPackage, c…"
+    },
+    {
+      "name": "cgPackageForLang",
+      "kind": "function",
+      "line": 31,
+      "signature": "cgPackageForLang(lang: Lang): CgLangPackage | undefined"
+    },
+    {
+      "name": "langOfFile",
+      "kind": "function",
+      "line": 36,
+      "signature": "langOfFile(rel: string): Lang | null"
+    }
+  ],
+  "imports": [
+    {
+      "source": "../parts.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./ts.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./go.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./py.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./java.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./cs.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./c.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": []
+}

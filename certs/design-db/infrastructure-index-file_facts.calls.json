@@ -1,0 +1,107 @@
+{
+  "//": "Design DB —— src/infrastructure/index/file_facts.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "FileFacts",
+      "kind": "interface",
+      "line": 36,
+      "signature": "FileFacts()"
+    },
+    {
+      "name": "EMPTY",
+      "kind": "const",
+      "line": 54,
+      "signature": "const EMPTY = { apis: [], deps: [], source: null, matched_path: null }"
+    },
+    {
+      "name": "pickDb",
+      "kind": "function",
+      "line": 64,
+      "signature": "pickDb(root: string, dbPath: string): Database"
+    },
+    {
+      "name": "resolveFilePath",
+      "kind": "function",
+      "line": 81,
+      "signature": "resolveFilePath(db: Database, fileRel: string): string | null"
+    },
+    {
+      "name": "fileFacts",
+      "kind": "function",
+      "line": 91,
+      "signature": "fileFacts(root: string, fileRel: string, feature?: string): FileFacts"
+    },
+    {
+      "name": "apiSignaturesOf",
+      "kind": "function",
+      "line": 120,
+      "signature": "apiSignaturesOf(root: string, fileRel: string, feature?: string): string[]"
+    },
+    {
+      "name": "diagnoseFactsOffset",
+      "kind": "function",
+      "line": 171,
+      "signature": "diagnoseFactsOffset(dRoot: string | undefined, lRoot: string | undefined): string[]"
+    },
+    {
+      "name": "mergedApis",
+      "kind": "function",
+      "line": 188,
+      "signature": "mergedApis(root: string | undefined,\n  fileRel: string | undefined,\n  /** ★ 入参放宽到 `ExpectedApi` 形态（`name` 可选、`signature` 可能缺）—— 免得每个调用点都强转 */\n  expected: ReadonlyArray<{ name?: string; signature?: string }> | undefined,\n  feature?: string,\n  /** ★ 产物与 DSL 的 `ExpectedApi` **可赋值**（`signature` 必填）—— 这样它能直接喂 `diffApis(ExpectedApi[], ExpectedApi[])` */): Array<{ name?: string; signature: string }>"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "./db.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/index/file_facts.ts#fileFacts",
+      "to": "src/infrastructure/index/db.ts#findCacheDb"
+    },
+    {
+      "from": "src/infrastructure/index/file_facts.ts#pickDb",
+      "to": "src/infrastructure/index/db.ts#getProjectCacheDb"
+    },
+    {
+      "from": "src/infrastructure/index/file_facts.ts#pickDb",
+      "to": "src/infrastructure/index/db.ts#openDb"
+    },
+    {
+      "from": "src/infrastructure/index/file_facts.ts#pickDb",
+      "to": "src/infrastructure/index/db.ts#projectCacheDbPath"
+    },
+    {
+      "from": "src/infrastructure/index/file_facts.ts#fileFacts",
+      "to": "src/infrastructure/index/db.ts#projectCacheDbPath"
+    },
+    {
+      "from": "src/infrastructure/index/file_facts.ts#apiSignaturesOf",
+      "to": "src/infrastructure/index/file_facts.ts#fileFacts"
+    },
+    {
+      "from": "src/infrastructure/index/file_facts.ts#mergedApis",
+      "to": "src/infrastructure/index/file_facts.ts#fileFacts"
+    },
+    {
+      "from": "src/infrastructure/index/file_facts.ts#fileFacts",
+      "to": "src/infrastructure/index/file_facts.ts#pickDb"
+    },
+    {
+      "from": "src/infrastructure/index/file_facts.ts#fileFacts",
+      "to": "src/infrastructure/index/file_facts.ts#resolveFilePath"
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "//": "Design DB —— src/infrastructure/analysis/package_migration/languages/go.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "collectGoImportAliasEdits",
+      "kind": "function",
+      "line": 12,
+      "signature": "collectGoImportAliasEdits(node: SyntaxNodeLike,\n  exactPath: string,\n  from: string,\n  to: string,): { edits: AliasEdit[]; confirmed: boolean }"
+    },
+    {
+      "name": "collectGoSelectorEdits",
+      "kind": "function",
+      "line": 53,
+      "signature": "collectGoSelectorEdits(node: SyntaxNodeLike, from: string, to: string): AliasEdit[]"
+    },
+    {
+      "name": "goAliasEdits",
+      "kind": "function",
+      "line": 81,
+      "signature": "goAliasEdits(src: string,\n  exactPath: string,\n  from: string,\n  to: string,\n  fileAbs: string,): Promise<{ ok: boolean; edits: AliasEdit[] }>"
+    },
+    {
+      "name": "goPackage",
+      "kind": "const",
+      "line": 104,
+      "signature": "const goPackage = { exts: ['.go'], collect: (a) => goAliasEdits(a.src, a.ex…"
+    }
+  ],
+  "imports": [
+    {
+      "source": "../../../../infrastructure/parse/index.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../../infrastructure/parse/index.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../parts.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/package_migration/languages/go.ts#goAliasEdits",
+      "to": "src/infrastructure/analysis/package_migration/languages/go.ts#collectGoImportAliasEdits"
+    },
+    {
+      "from": "src/infrastructure/analysis/package_migration/languages/go.ts#goAliasEdits",
+      "to": "src/infrastructure/analysis/package_migration/languages/go.ts#collectGoSelectorEdits"
+    },
+    {
+      "from": "src/infrastructure/analysis/package_migration/languages/go.ts#collectGoImportAliasEdits",
+      "to": "src/infrastructure/analysis/package_migration/parts.ts#stripQuotes"
+    }
+  ]
+}

@@ -1,0 +1,203 @@
+{
+  "//": "Design DB —— src/application/refactor/rule_library/rule_library.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "RuleLevel",
+      "kind": "type",
+      "line": 64,
+      "signature": "RuleLevel()"
+    },
+    {
+      "name": "RULE_LEVELS",
+      "kind": "const",
+      "line": 67,
+      "signature": "const RULE_LEVELS = ['error', 'warn', 'info'] as const"
+    },
+    {
+      "name": "RuleFixture",
+      "kind": "interface",
+      "line": 70,
+      "signature": "RuleFixture()"
+    },
+    {
+      "name": "Rule",
+      "kind": "interface",
+      "line": 83,
+      "signature": "Rule()"
+    },
+    {
+      "name": "rulesDir",
+      "kind": "function",
+      "line": 105,
+      "signature": "rulesDir(root: string): string"
+    },
+    {
+      "name": "baselinePath",
+      "kind": "function",
+      "line": 110,
+      "signature": "baselinePath(root: string): string"
+    },
+    {
+      "name": "firstFence",
+      "kind": "function",
+      "line": 117,
+      "signature": "firstFence(body: string, lang: string): string | null"
+    },
+    {
+      "name": "allFences",
+      "kind": "function",
+      "line": 124,
+      "signature": "allFences(body: string, lang: string): string[]"
+    },
+    {
+      "name": "parseFrontmatter",
+      "kind": "function",
+      "line": 133,
+      "signature": "parseFrontmatter(raw: string): Record<string, string | string[]>"
+    },
+    {
+      "name": "parseRule",
+      "kind": "function",
+      "line": 157,
+      "signature": "parseRule(md: string, id: string, sourcePath?: string): Rule"
+    },
+    {
+      "name": "parseFixtures",
+      "kind": "function",
+      "line": 201,
+      "signature": "parseFixtures(body: string): RuleFixture[]"
+    },
+    {
+      "name": "fmLine",
+      "kind": "function",
+      "line": 227,
+      "signature": "fmLine(key: string, val: string | string[]): string"
+    },
+    {
+      "name": "serializeRule",
+      "kind": "function",
+      "line": 233,
+      "signature": "serializeRule(rule: Rule): string"
+    },
+    {
+      "name": "RuleLoadError",
+      "kind": "interface",
+      "line": 259,
+      "signature": "RuleLoadError()"
+    },
+    {
+      "name": "LoadRulesResult",
+      "kind": "interface",
+      "line": 264,
+      "signature": "LoadRulesResult()"
+    },
+    {
+      "name": "loadRules",
+      "kind": "function",
+      "line": 271,
+      "signature": "loadRules(root: string): LoadRulesResult"
+    },
+    {
+      "name": "writeRule",
+      "kind": "function",
+      "line": 292,
+      "signature": "writeRule(root: string, rule: Rule): string"
+    },
+    {
+      "name": "isLegalRuleId",
+      "kind": "function",
+      "line": 301,
+      "signature": "isLegalRuleId(id: string): boolean"
+    },
+    {
+      "name": "hasNegativeFixture",
+      "kind": "function",
+      "line": 306,
+      "signature": "hasNegativeFixture(rule: Rule): boolean"
+    },
+    {
+      "name": "hasPositiveFixture",
+      "kind": "function",
+      "line": 311,
+      "signature": "hasPositiveFixture(rule: Rule): boolean"
+    }
+  ],
+  "imports": [
+    {
+      "source": "../../../infrastructure/data_dir.js",
+      "kind": "relative"
+    },
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/refactor/rule_library/rule_library.ts#parseRule",
+      "to": "src/application/refactor/rule_library/rule_library.ts#firstFence"
+    },
+    {
+      "from": "src/application/refactor/rule_library/rule_library.ts#parseRule",
+      "to": "src/application/refactor/rule_library/rule_library.ts#firstFence"
+    },
+    {
+      "from": "src/application/refactor/rule_library/rule_library.ts#serializeRule",
+      "to": "src/application/refactor/rule_library/rule_library.ts#fmLine"
+    },
+    {
+      "from": "src/application/refactor/rule_library/rule_library.ts#serializeRule",
+      "to": "src/application/refactor/rule_library/rule_library.ts#fmLine"
+    },
+    {
+      "from": "src/application/refactor/rule_library/rule_library.ts#serializeRule",
+      "to": "src/application/refactor/rule_library/rule_library.ts#fmLine"
+    },
+    {
+      "from": "src/application/refactor/rule_library/rule_library.ts#serializeRule",
+      "to": "src/application/refactor/rule_library/rule_library.ts#fmLine"
+    },
+    {
+      "from": "src/application/refactor/rule_library/rule_library.ts#serializeRule",
+      "to": "src/application/refactor/rule_library/rule_library.ts#fmLine"
+    },
+    {
+      "from": "src/application/refactor/rule_library/rule_library.ts#serializeRule",
+      "to": "src/application/refactor/rule_library/rule_library.ts#fmLine"
+    },
+    {
+      "from": "src/application/refactor/rule_library/rule_library.ts#parseRule",
+      "to": "src/application/refactor/rule_library/rule_library.ts#parseFixtures"
+    },
+    {
+      "from": "src/application/refactor/rule_library/rule_library.ts#parseRule",
+      "to": "src/application/refactor/rule_library/rule_library.ts#parseFrontmatter"
+    },
+    {
+      "from": "src/application/refactor/rule_library/rule_library.ts#loadRules",
+      "to": "src/application/refactor/rule_library/rule_library.ts#parseRule"
+    },
+    {
+      "from": "src/application/refactor/rule_library/rule_library.ts#baselinePath",
+      "to": "src/application/refactor/rule_library/rule_library.ts#rulesDir"
+    },
+    {
+      "from": "src/application/refactor/rule_library/rule_library.ts#loadRules",
+      "to": "src/application/refactor/rule_library/rule_library.ts#rulesDir"
+    },
+    {
+      "from": "src/application/refactor/rule_library/rule_library.ts#writeRule",
+      "to": "src/application/refactor/rule_library/rule_library.ts#rulesDir"
+    },
+    {
+      "from": "src/application/refactor/rule_library/rule_library.ts#writeRule",
+      "to": "src/application/refactor/rule_library/rule_library.ts#serializeRule"
+    }
+  ]
+}

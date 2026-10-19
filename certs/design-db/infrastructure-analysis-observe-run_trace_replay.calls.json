@@ -1,0 +1,60 @@
+{
+  "//": "Design DB —— src/infrastructure/analysis/observe/run_trace_replay.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "RunFrame",
+      "kind": "interface",
+      "line": 13,
+      "signature": "RunFrame()"
+    },
+    {
+      "name": "RunTreeNode",
+      "kind": "interface",
+      "line": 30,
+      "signature": "RunTreeNode()"
+    },
+    {
+      "name": "RunTrace",
+      "kind": "interface",
+      "line": 34,
+      "signature": "RunTrace()"
+    },
+    {
+      "name": "RawEvent",
+      "kind": "interface",
+      "line": 40,
+      "signature": "RawEvent()"
+    },
+    {
+      "name": "baseProbe",
+      "kind": "function",
+      "line": 51,
+      "signature": "baseProbe(p: string): string"
+    },
+    {
+      "name": "parseRunTraces",
+      "kind": "function",
+      "line": 59,
+      "signature": "parseRunTraces(jsonl: string): RunTrace[]"
+    },
+    {
+      "name": "loadRunTracesFromText",
+      "kind": "function",
+      "line": 145,
+      "signature": "loadRunTracesFromText(text: string): RunTrace[]"
+    }
+  ],
+  "imports": [],
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/observe/run_trace_replay.ts#parseRunTraces",
+      "to": "src/infrastructure/analysis/observe/run_trace_replay.ts#baseProbe"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/run_trace_replay.ts#loadRunTracesFromText",
+      "to": "src/infrastructure/analysis/observe/run_trace_replay.ts#parseRunTraces"
+    }
+  ]
+}

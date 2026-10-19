@@ -1,0 +1,106 @@
+{
+  "//": "Design DB —— src/infrastructure/analysis/rename_symbol/languages/c.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "analyzeCLanguage",
+      "kind": "function",
+      "line": 27,
+      "signature": "analyzeCLanguage(src: string): Promise<GoModuleAnalysis | null>"
+    },
+    {
+      "name": "renameCSymbol",
+      "kind": "function",
+      "line": 114,
+      "signature": "renameCSymbol(args: {\n  file: string;\n  symbol: string;\n  to: string;\n  dryRun: boolean;\n  resolvedRoot: string;\n  blocked: string[];\n}): Promise<RenameSymbolResult>"
+    },
+    {
+      "name": "cPackage",
+      "kind": "const",
+      "line": 218,
+      "signature": "const cPackage = { exts: ['.c', '.h'], rename: (a) => renameCSymbol({ file…"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../../../infrastructure/parse/loader.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../../infrastructure/parse/languages.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../../infrastructure/parse/kernel.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../../infrastructure/analysis/refactor/protect.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../parts.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../parts.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/rename_symbol/languages/c.ts#renameCSymbol",
+      "to": "src/infrastructure/analysis/refactor/protect.ts#createProtectGuard"
+    },
+    {
+      "from": "src/infrastructure/analysis/rename_symbol/languages/c.ts#renameCSymbol",
+      "to": "src/infrastructure/analysis/rename_symbol/languages/c.ts#analyzeCLanguage"
+    },
+    {
+      "from": "src/infrastructure/analysis/rename_symbol/languages/c.ts#renameCSymbol",
+      "to": "src/infrastructure/analysis/rename_symbol/languages/c.ts#analyzeCLanguage"
+    },
+    {
+      "from": "src/infrastructure/analysis/rename_symbol/languages/c.ts#renameCSymbol",
+      "to": "src/infrastructure/analysis/rename_symbol/languages/c.ts#renameCSymbol.mDefNote"
+    },
+    {
+      "from": "src/infrastructure/analysis/rename_symbol/languages/c.ts#renameCSymbol",
+      "to": "src/infrastructure/analysis/rename_symbol/parts.ts#applyEdits"
+    },
+    {
+      "from": "src/infrastructure/analysis/rename_symbol/languages/c.ts#renameCSymbol",
+      "to": "src/infrastructure/analysis/rename_symbol/parts.ts#collectFilesByExt"
+    },
+    {
+      "from": "src/infrastructure/analysis/rename_symbol/languages/c.ts#renameCSymbol",
+      "to": "src/infrastructure/analysis/rename_symbol/parts.ts#collectFilesByExt"
+    },
+    {
+      "from": "src/infrastructure/analysis/rename_symbol/languages/c.ts#renameCSymbol",
+      "to": "src/infrastructure/analysis/rename_symbol/parts.ts#toOps"
+    },
+    {
+      "from": "src/infrastructure/analysis/rename_symbol/languages/c.ts#analyzeCLanguage",
+      "to": "src/infrastructure/parse/kernel.ts#parseContent"
+    },
+    {
+      "from": "src/infrastructure/analysis/rename_symbol/languages/c.ts#analyzeCLanguage",
+      "to": "src/infrastructure/parse/languages.ts#findLanguageByExt"
+    },
+    {
+      "from": "src/infrastructure/analysis/rename_symbol/languages/c.ts#analyzeCLanguage",
+      "to": "src/infrastructure/parse/loader.ts#getParser"
+    }
+  ]
+}

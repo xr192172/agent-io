@@ -1,0 +1,93 @@
+{
+  "//": "Design DB —— src/infrastructure/analysis/observe/log_query.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "LogEntry",
+      "kind": "interface",
+      "line": 18,
+      "signature": "LogEntry()"
+    },
+    {
+      "name": "LogQueryOptions",
+      "kind": "interface",
+      "line": 29,
+      "signature": "LogQueryOptions()"
+    },
+    {
+      "name": "LogQueryResult",
+      "kind": "interface",
+      "line": 37,
+      "signature": "LogQueryResult()"
+    },
+    {
+      "name": "norm",
+      "kind": "const",
+      "line": 52,
+      "signature": "const norm = (s: string): string => s.replaceAll('\\\\', '/')"
+    },
+    {
+      "name": "matchesFile",
+      "kind": "function",
+      "line": 55,
+      "signature": "matchesFile(ev: TSEvent, files: string[]): boolean"
+    },
+    {
+      "name": "toEntry",
+      "kind": "function",
+      "line": 67,
+      "signature": "toEntry(ev: TSEvent): LogEntry"
+    },
+    {
+      "name": "queryObserveLog",
+      "kind": "function",
+      "line": 86,
+      "signature": "queryObserveLog(eventsPath: string, opts: LogQueryOptions = {}): LogQueryResult"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "./probe.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./judge.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/observe/log_query.ts#toEntry",
+      "to": "src/infrastructure/analysis/observe/judge.ts#judgeEvent"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/log_query.ts#queryObserveLog",
+      "to": "src/infrastructure/analysis/observe/judge.ts#judgeEvent"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/log_query.ts#queryObserveLog",
+      "to": "src/infrastructure/analysis/observe/judge.ts#judgeEvent"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/log_query.ts#queryObserveLog",
+      "to": "src/infrastructure/analysis/observe/log_query.ts#matchesFile"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/log_query.ts#matchesFile",
+      "to": "src/infrastructure/analysis/observe/log_query.ts#norm"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/log_query.ts#matchesFile",
+      "to": "src/infrastructure/analysis/observe/log_query.ts#norm"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/log_query.ts#queryObserveLog",
+      "to": "src/infrastructure/analysis/observe/probe.ts#loadTSEvents"
+    }
+  ]
+}

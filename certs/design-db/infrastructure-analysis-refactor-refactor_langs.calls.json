@@ -1,0 +1,136 @@
+{
+  "//": "Design DB —— src/infrastructure/analysis/refactor/refactor_langs.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "DeadImportsStepCfg",
+      "kind": "interface",
+      "line": 30,
+      "signature": "DeadImportsStepCfg()"
+    },
+    {
+      "name": "DeadStatementsStepCfg",
+      "kind": "interface",
+      "line": 34,
+      "signature": "DeadStatementsStepCfg()"
+    },
+    {
+      "name": "PackageMigrationStepCfg",
+      "kind": "interface",
+      "line": 40,
+      "signature": "PackageMigrationStepCfg()"
+    },
+    {
+      "name": "FunctionAnnotationStepCfg",
+      "kind": "interface",
+      "line": 44,
+      "signature": "FunctionAnnotationStepCfg()"
+    },
+    {
+      "name": "RefactorStepsCfg",
+      "kind": "interface",
+      "line": 50,
+      "signature": "RefactorStepsCfg()"
+    },
+    {
+      "name": "RefactorStageKind",
+      "kind": "type",
+      "line": 61,
+      "signature": "RefactorStageKind()"
+    },
+    {
+      "name": "PackageMigrationSpec",
+      "kind": "interface",
+      "line": 67,
+      "signature": "PackageMigrationSpec()"
+    },
+    {
+      "name": "FileMove",
+      "kind": "interface",
+      "line": 93,
+      "signature": "FileMove()"
+    },
+    {
+      "name": "RunningChangePlan",
+      "kind": "interface",
+      "line": 98,
+      "signature": "RunningChangePlan()"
+    },
+    {
+      "name": "RefactorStageComputeArgs",
+      "kind": "interface",
+      "line": 130,
+      "signature": "RefactorStageComputeArgs()"
+    },
+    {
+      "name": "RefactorStageExecutor",
+      "kind": "interface",
+      "line": 141,
+      "signature": "RefactorStageExecutor()"
+    },
+    {
+      "name": "LanguageRefactorExecutor",
+      "kind": "interface",
+      "line": 151,
+      "signature": "LanguageRefactorExecutor()"
+    },
+    {
+      "name": "manifestPresent",
+      "kind": "function",
+      "line": 170,
+      "signature": "manifestPresent(cwd: string, files?: string[]): boolean"
+    },
+    {
+      "name": "DEFAULT_SKIP",
+      "kind": "const",
+      "line": 179,
+      "signature": "const DEFAULT_SKIP = skipDirSet(['target'])"
+    },
+    {
+      "name": "dirHasSource",
+      "kind": "function",
+      "line": 182,
+      "signature": "dirHasSource(cwd: string, isSourceFile: (rel: string) => boolean): boolean"
+    },
+    {
+      "name": "RefactorLangRegistry",
+      "kind": "class",
+      "line": 207,
+      "signature": "RefactorLangRegistry()"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../verify_refactor.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../../parse/source_exts.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/refactor/refactor_langs.ts#RefactorLangRegistry.forProject",
+      "to": "src/infrastructure/analysis/refactor/refactor_langs.ts#RefactorLangRegistry.all"
+    },
+    {
+      "from": "src/infrastructure/analysis/refactor/refactor_langs.ts#RefactorLangRegistry.get",
+      "to": "src/infrastructure/analysis/refactor/refactor_langs.ts#RefactorLangRegistry.get"
+    },
+    {
+      "from": "src/infrastructure/analysis/refactor/refactor_langs.ts#RefactorLangRegistry.forProject",
+      "to": "src/infrastructure/analysis/refactor/refactor_langs.ts#dirHasSource"
+    }
+  ]
+}

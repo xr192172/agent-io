@@ -1,0 +1,187 @@
+{
+  "//": "Design DB —— src/infrastructure/storage_overlay.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "getOverlayFile",
+      "kind": "function",
+      "line": 18,
+      "signature": "getOverlayFile(feature: string): string"
+    },
+    {
+      "name": "saveOverlay",
+      "kind": "function",
+      "line": 26,
+      "signature": "saveOverlay(ov: DesignOverlay): string"
+    },
+    {
+      "name": "loadOverlay",
+      "kind": "function",
+      "line": 34,
+      "signature": "loadOverlay(feature: string): DesignOverlay | null"
+    },
+    {
+      "name": "MergeResult",
+      "kind": "interface",
+      "line": 44,
+      "signature": "MergeResult()"
+    },
+    {
+      "name": "syncDecisionsToOverlay",
+      "kind": "function",
+      "line": 65,
+      "signature": "syncDecisionsToOverlay(feature: string,\n  dsl: DesignDSL,): { changed: boolean; written: number; cleared: number; file: string | null; notes: string[] }"
+    },
+    {
+      "name": "syncTagsToOverlay",
+      "kind": "function",
+      "line": 88,
+      "signature": "syncTagsToOverlay(feature: string,\n  dsl: DesignDSL,): { changed: boolean; written: number; cleared: boolean; file: string | null }"
+    },
+    {
+      "name": "syncLifecycleToOverlay",
+      "kind": "function",
+      "line": 118,
+      "signature": "syncLifecycleToOverlay(feature: string,\n  dsl: DesignDSL,): { changed: boolean; written: number; cleared: number; file: string | null; notes: string[] }"
+    },
+    {
+      "name": "dropLifecycleFromOverlay",
+      "kind": "function",
+      "line": 155,
+      "signature": "dropLifecycleFromOverlay(feature: string,\n  fileId: string,): { changed: boolean; file: string | null }"
+    },
+    {
+      "name": "mergeDesignLayer",
+      "kind": "function",
+      "line": 179,
+      "signature": "mergeDesignLayer(base: DesignDSL): MergeResult"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "./storage.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../domain/types.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../domain/overlay.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../domain/overlay.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/storage_overlay.ts#mergeDesignLayer",
+      "to": "src/domain/overlay.ts#applyOverlay"
+    },
+    {
+      "from": "src/infrastructure/storage_overlay.ts#mergeDesignLayer",
+      "to": "src/domain/overlay.ts#buildCandidates"
+    },
+    {
+      "from": "src/infrastructure/storage_overlay.ts#mergeDesignLayer",
+      "to": "src/domain/overlay.ts#buildEdgeCandidates"
+    },
+    {
+      "from": "src/infrastructure/storage_overlay.ts#dropLifecycleFromOverlay",
+      "to": "src/domain/overlay.ts#hasAnchorPayload"
+    },
+    {
+      "from": "src/infrastructure/storage_overlay.ts#syncDecisionsToOverlay",
+      "to": "src/domain/overlay.ts#mergeDecisionsIntoOverlay"
+    },
+    {
+      "from": "src/infrastructure/storage_overlay.ts#syncLifecycleToOverlay",
+      "to": "src/domain/overlay.ts#mergeLifecycleIntoOverlay"
+    },
+    {
+      "from": "src/infrastructure/storage_overlay.ts#syncTagsToOverlay",
+      "to": "src/domain/overlay.ts#mergeTagsIntoOverlay"
+    },
+    {
+      "from": "src/infrastructure/storage_overlay.ts#mergeDesignLayer",
+      "to": "src/domain/overlay.ts#reconcileOverlay"
+    },
+    {
+      "from": "src/infrastructure/storage_overlay.ts#mergeDesignLayer",
+      "to": "src/domain/overlay.ts#seedOverlayFromDsl"
+    },
+    {
+      "from": "src/infrastructure/storage_overlay.ts#mergeDesignLayer",
+      "to": "src/domain/overlay.ts#statsLine"
+    },
+    {
+      "from": "src/infrastructure/storage_overlay.ts#mergeDesignLayer",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/infrastructure/storage_overlay.ts#getOverlayFile",
+      "to": "src/infrastructure/storage.ts#getFeaturesDir"
+    },
+    {
+      "from": "src/infrastructure/storage_overlay.ts#saveOverlay",
+      "to": "src/infrastructure/storage_overlay.ts#getOverlayFile"
+    },
+    {
+      "from": "src/infrastructure/storage_overlay.ts#loadOverlay",
+      "to": "src/infrastructure/storage_overlay.ts#getOverlayFile"
+    },
+    {
+      "from": "src/infrastructure/storage_overlay.ts#syncDecisionsToOverlay",
+      "to": "src/infrastructure/storage_overlay.ts#loadOverlay"
+    },
+    {
+      "from": "src/infrastructure/storage_overlay.ts#syncTagsToOverlay",
+      "to": "src/infrastructure/storage_overlay.ts#loadOverlay"
+    },
+    {
+      "from": "src/infrastructure/storage_overlay.ts#syncLifecycleToOverlay",
+      "to": "src/infrastructure/storage_overlay.ts#loadOverlay"
+    },
+    {
+      "from": "src/infrastructure/storage_overlay.ts#dropLifecycleFromOverlay",
+      "to": "src/infrastructure/storage_overlay.ts#loadOverlay"
+    },
+    {
+      "from": "src/infrastructure/storage_overlay.ts#mergeDesignLayer",
+      "to": "src/infrastructure/storage_overlay.ts#loadOverlay"
+    },
+    {
+      "from": "src/infrastructure/storage_overlay.ts#syncDecisionsToOverlay",
+      "to": "src/infrastructure/storage_overlay.ts#saveOverlay"
+    },
+    {
+      "from": "src/infrastructure/storage_overlay.ts#syncTagsToOverlay",
+      "to": "src/infrastructure/storage_overlay.ts#saveOverlay"
+    },
+    {
+      "from": "src/infrastructure/storage_overlay.ts#syncLifecycleToOverlay",
+      "to": "src/infrastructure/storage_overlay.ts#saveOverlay"
+    },
+    {
+      "from": "src/infrastructure/storage_overlay.ts#dropLifecycleFromOverlay",
+      "to": "src/infrastructure/storage_overlay.ts#saveOverlay"
+    },
+    {
+      "from": "src/infrastructure/storage_overlay.ts#mergeDesignLayer",
+      "to": "src/infrastructure/storage_overlay.ts#saveOverlay"
+    }
+  ]
+}

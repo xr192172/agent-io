@@ -1,0 +1,211 @@
+{
+  "//": "Design DB —— src/infrastructure/analysis/structure/analyze_monolith.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "MonolithCommunity",
+      "kind": "interface",
+      "line": 38,
+      "signature": "MonolithCommunity()"
+    },
+    {
+      "name": "MonolithFileView",
+      "kind": "interface",
+      "line": 55,
+      "signature": "MonolithFileView()"
+    },
+    {
+      "name": "AnalyzeMonolithInput",
+      "kind": "interface",
+      "line": 64,
+      "signature": "AnalyzeMonolithInput()"
+    },
+    {
+      "name": "AnalyzeMonolithResult",
+      "kind": "interface",
+      "line": 82,
+      "signature": "AnalyzeMonolithResult()"
+    },
+    {
+      "name": "SubSplitGroup",
+      "kind": "interface",
+      "line": 99,
+      "signature": "SubSplitGroup()"
+    },
+    {
+      "name": "CommunitySubSplit",
+      "kind": "interface",
+      "line": 113,
+      "signature": "CommunitySubSplit()"
+    },
+    {
+      "name": "ROLE_SUFFIX_RE",
+      "kind": "const",
+      "line": 130,
+      "signature": "const ROLE_SUFFIX_RE = /(Service|Services|Handler|Handlers|Repo|Repository|Repos…"
+    },
+    {
+      "name": "FuncNode",
+      "kind": "interface",
+      "line": 133,
+      "signature": "FuncNode()"
+    },
+    {
+      "name": "ownerOf",
+      "kind": "function",
+      "line": 150,
+      "signature": "ownerOf(name: string, qn: string, file: string, parent?: string | null): string | undefined"
+    },
+    {
+      "name": "CallGraph",
+      "kind": "interface",
+      "line": 160,
+      "signature": "CallGraph()"
+    },
+    {
+      "name": "buildCallGraphFromCache",
+      "kind": "function",
+      "line": 168,
+      "signature": "buildCallGraphFromCache(db: Database): { funcs: FuncNode[]; graph: CallGraph }"
+    },
+    {
+      "name": "roleScore",
+      "kind": "function",
+      "line": 220,
+      "signature": "roleScore(name: string): number"
+    },
+    {
+      "name": "exportScore",
+      "kind": "function",
+      "line": 225,
+      "signature": "exportScore(name: string, file: string): number"
+    },
+    {
+      "name": "scoreAnchors",
+      "kind": "function",
+      "line": 242,
+      "signature": "scoreAnchors(funcs: FuncNode[],\n  graph: CallGraph,): { idx: number; score: number; anchor: boolean }[]"
+    },
+    {
+      "name": "labelPropagation",
+      "kind": "function",
+      "line": 276,
+      "signature": "labelPropagation(funcs: FuncNode[],\n  graph: CallGraph,\n  anchors: { idx: number; score: number }[],\n  maxIter = 12,\n  ownerClusters: number[][] = [],): Map<number, number[]>"
+    },
+    {
+      "name": "splitOversizedGroups",
+      "kind": "function",
+      "line": 374,
+      "signature": "splitOversizedGroups(funcs: FuncNode[],\n  graph: CallGraph,\n  groups: Map<number, number[]>,\n  maxFiles: number,\n  depth = 0,): Map<number, number[]>"
+    },
+    {
+      "name": "estimateLines",
+      "kind": "function",
+      "line": 436,
+      "signature": "estimateLines(members: number[], funcs: FuncNode[]): number"
+    },
+    {
+      "name": "assessCommunitySubSplit",
+      "kind": "function",
+      "line": 469,
+      "signature": "assessCommunitySubSplit(funcs: FuncNode[],\n  communities: MonolithCommunity[],\n  callRows: Array<{ source: string; target: string }>,\n  minGroup = 3,\n  maxCrossRatio = 0.4,): CommunitySubSplit[]"
+    },
+    {
+      "name": "communityName",
+      "kind": "function",
+      "line": 549,
+      "signature": "communityName(group: number[], funcs: FuncNode[], anchorIdx: Set<number>): string"
+    },
+    {
+      "name": "analyzeMonolith",
+      "kind": "function",
+      "line": 565,
+      "signature": "analyzeMonolith(input: AnalyzeMonolithInput): AnalyzeMonolithResult"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../index/db.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/structure/analyze_monolith.ts#analyzeMonolith",
+      "to": "src/infrastructure/analysis/structure/analyze_monolith.ts#assessCommunitySubSplit"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/analyze_monolith.ts#analyzeMonolith",
+      "to": "src/infrastructure/analysis/structure/analyze_monolith.ts#buildCallGraphFromCache"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/analyze_monolith.ts#analyzeMonolith",
+      "to": "src/infrastructure/analysis/structure/analyze_monolith.ts#communityName"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/analyze_monolith.ts#assessCommunitySubSplit",
+      "to": "src/infrastructure/analysis/structure/analyze_monolith.ts#estimateLines"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/analyze_monolith.ts#analyzeMonolith",
+      "to": "src/infrastructure/analysis/structure/analyze_monolith.ts#estimateLines"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/analyze_monolith.ts#scoreAnchors",
+      "to": "src/infrastructure/analysis/structure/analyze_monolith.ts#exportScore"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/analyze_monolith.ts#scoreAnchors",
+      "to": "src/infrastructure/analysis/structure/analyze_monolith.ts#exportScore"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/analyze_monolith.ts#splitOversizedGroups",
+      "to": "src/infrastructure/analysis/structure/analyze_monolith.ts#labelPropagation"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/analyze_monolith.ts#analyzeMonolith",
+      "to": "src/infrastructure/analysis/structure/analyze_monolith.ts#labelPropagation"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/analyze_monolith.ts#buildCallGraphFromCache",
+      "to": "src/infrastructure/analysis/structure/analyze_monolith.ts#ownerOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/analyze_monolith.ts#scoreAnchors",
+      "to": "src/infrastructure/analysis/structure/analyze_monolith.ts#roleScore"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/analyze_monolith.ts#scoreAnchors",
+      "to": "src/infrastructure/analysis/structure/analyze_monolith.ts#roleScore"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/analyze_monolith.ts#splitOversizedGroups",
+      "to": "src/infrastructure/analysis/structure/analyze_monolith.ts#scoreAnchors"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/analyze_monolith.ts#analyzeMonolith",
+      "to": "src/infrastructure/analysis/structure/analyze_monolith.ts#scoreAnchors"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/analyze_monolith.ts#splitOversizedGroups",
+      "to": "src/infrastructure/analysis/structure/analyze_monolith.ts#splitOversizedGroups"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/analyze_monolith.ts#analyzeMonolith",
+      "to": "src/infrastructure/analysis/structure/analyze_monolith.ts#splitOversizedGroups"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/analyze_monolith.ts#analyzeMonolith",
+      "to": "src/infrastructure/index/db.ts#openDb"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/analyze_monolith.ts#analyzeMonolith",
+      "to": "src/infrastructure/index/db.ts#projectCacheDbPath"
+    }
+  ]
+}

@@ -1,0 +1,151 @@
+{
+  "//": "Design DB —— src/infrastructure/dogfood_stats.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "DogfoodUsage",
+      "kind": "interface",
+      "line": 25,
+      "signature": "DogfoodUsage()"
+    },
+    {
+      "name": "MAX_ERR_LEN",
+      "kind": "const",
+      "line": 46,
+      "signature": "const MAX_ERR_LEN = 200"
+    },
+    {
+      "name": "dogfoodLogDir",
+      "kind": "function",
+      "line": 49,
+      "signature": "dogfoodLogDir(): string"
+    },
+    {
+      "name": "logFile",
+      "kind": "function",
+      "line": 52,
+      "signature": "logFile(): string"
+    },
+    {
+      "name": "recordDogfoodUsage",
+      "kind": "function",
+      "line": 57,
+      "signature": "recordDogfoodUsage(u: DogfoodUsage): void"
+    },
+    {
+      "name": "DogfoodActionStat",
+      "kind": "interface",
+      "line": 67,
+      "signature": "DogfoodActionStat()"
+    },
+    {
+      "name": "DogfoodToolStat",
+      "kind": "interface",
+      "line": 73,
+      "signature": "DogfoodToolStat()"
+    },
+    {
+      "name": "DogfoodSnapshot",
+      "kind": "interface",
+      "line": 84,
+      "signature": "DogfoodSnapshot()"
+    },
+    {
+      "name": "emptyAction",
+      "kind": "function",
+      "line": 91,
+      "signature": "emptyAction(): DogfoodActionStat"
+    },
+    {
+      "name": "snapshotDogfoodStats",
+      "kind": "function",
+      "line": 96,
+      "signature": "snapshotDogfoodStats(): DogfoodSnapshot"
+    },
+    {
+      "name": "renderDogfoodSnapshot",
+      "kind": "function",
+      "line": 148,
+      "signature": "renderDogfoodSnapshot(s: DogfoodSnapshot): string"
+    },
+    {
+      "name": "renderDogfoodSummary",
+      "kind": "function",
+      "line": 179,
+      "signature": "renderDogfoodSummary(s: DogfoodSnapshot): string"
+    },
+    {
+      "name": "runDogfoodCLI",
+      "kind": "function",
+      "line": 195,
+      "signature": "runDogfoodCLI(argv: string[]): void"
+    },
+    {
+      "name": "isMain",
+      "kind": "const",
+      "line": 202,
+      "signature": "const isMain = import.meta.url === pathToFileURL(path.resolve(process.ar…"
+    }
+  ],
+  "imports": [
+    {
+      "source": "./data_dir.js",
+      "kind": "relative"
+    },
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "node:url",
+      "kind": "package"
+    },
+    {
+      "source": "./storage.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/dogfood_stats.ts#logFile",
+      "to": "src/infrastructure/dogfood_stats.ts#dogfoodLogDir"
+    },
+    {
+      "from": "src/infrastructure/dogfood_stats.ts#recordDogfoodUsage",
+      "to": "src/infrastructure/dogfood_stats.ts#dogfoodLogDir"
+    },
+    {
+      "from": "src/infrastructure/dogfood_stats.ts#snapshotDogfoodStats",
+      "to": "src/infrastructure/dogfood_stats.ts#emptyAction"
+    },
+    {
+      "from": "src/infrastructure/dogfood_stats.ts#recordDogfoodUsage",
+      "to": "src/infrastructure/dogfood_stats.ts#logFile"
+    },
+    {
+      "from": "src/infrastructure/dogfood_stats.ts#snapshotDogfoodStats",
+      "to": "src/infrastructure/dogfood_stats.ts#logFile"
+    },
+    {
+      "from": "src/infrastructure/dogfood_stats.ts#runDogfoodCLI",
+      "to": "src/infrastructure/dogfood_stats.ts#renderDogfoodSnapshot"
+    },
+    {
+      "from": "src/infrastructure/dogfood_stats.ts#runDogfoodCLI",
+      "to": "src/infrastructure/dogfood_stats.ts#renderDogfoodSummary"
+    },
+    {
+      "from": "src/infrastructure/dogfood_stats.ts#runDogfoodCLI",
+      "to": "src/infrastructure/dogfood_stats.ts#snapshotDogfoodStats"
+    },
+    {
+      "from": "src/infrastructure/dogfood_stats.ts#dogfoodLogDir",
+      "to": "src/infrastructure/storage.ts#getDataHome"
+    }
+  ]
+}

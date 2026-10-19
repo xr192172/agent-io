@@ -1,0 +1,99 @@
+{
+  "//": "Design DB —— src/domain/animation.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "ElementState",
+      "kind": "interface",
+      "line": 9,
+      "signature": "ElementState()"
+    },
+    {
+      "name": "AnimationStage",
+      "kind": "interface",
+      "line": 34,
+      "signature": "AnimationStage()"
+    },
+    {
+      "name": "Animation",
+      "kind": "interface",
+      "line": 46,
+      "signature": "Animation()"
+    },
+    {
+      "name": "AnimationTrigger",
+      "kind": "interface",
+      "line": 62,
+      "signature": "AnimationTrigger()"
+    },
+    {
+      "name": "AnimationValueSchema",
+      "kind": "interface",
+      "line": 79,
+      "signature": "AnimationValueSchema()"
+    },
+    {
+      "name": "NodeShapes",
+      "kind": "interface",
+      "line": 97,
+      "signature": "NodeShapes()"
+    },
+    {
+      "name": "AnimationValue",
+      "kind": "interface",
+      "line": 105,
+      "signature": "AnimationValue()"
+    },
+    {
+      "name": "AnimationHandlerMapping",
+      "kind": "interface",
+      "line": 115,
+      "signature": "AnimationHandlerMapping()"
+    },
+    {
+      "name": "AnimationError",
+      "kind": "interface",
+      "line": 121,
+      "signature": "AnimationError()"
+    },
+    {
+      "name": "AnimationHandler",
+      "kind": "interface",
+      "line": 142,
+      "signature": "AnimationHandler()"
+    },
+    {
+      "name": "AnimationBranch",
+      "kind": "interface",
+      "line": 162,
+      "signature": "AnimationBranch()"
+    },
+    {
+      "name": "AnimationFlow",
+      "kind": "interface",
+      "line": 174,
+      "signature": "AnimationFlow()"
+    },
+    {
+      "name": "AnimationRuntime",
+      "kind": "interface",
+      "line": 197,
+      "signature": "AnimationRuntime()"
+    },
+    {
+      "name": "AnimationSystem",
+      "kind": "interface",
+      "line": 212,
+      "signature": "AnimationSystem()"
+    }
+  ],
+  "imports": [
+    {
+      "source": "./geometry.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": []
+}

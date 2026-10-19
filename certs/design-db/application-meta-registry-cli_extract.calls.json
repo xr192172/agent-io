@@ -1,0 +1,51 @@
+{
+  "//": "Design DB —— src/application/meta/registry/cli_extract.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "CliCommand",
+      "kind": "interface",
+      "line": 25,
+      "signature": "CliCommand()"
+    },
+    {
+      "name": "CliExtractResult",
+      "kind": "interface",
+      "line": 38,
+      "signature": "CliExtractResult()"
+    },
+    {
+      "name": "extractImportMap",
+      "kind": "const",
+      "line": 49,
+      "signature": "const extractImportMap = parseRelativeNamedImportMap"
+    },
+    {
+      "name": "extractCliCommands",
+      "kind": "function",
+      "line": 52,
+      "signature": "extractCliCommands(dir: string): CliExtractResult"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../../infrastructure/parse/import_text.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/meta/registry/cli_extract.ts#extractCliCommands",
+      "to": "src/application/meta/registry/cli_extract.ts#extractImportMap"
+    }
+  ]
+}

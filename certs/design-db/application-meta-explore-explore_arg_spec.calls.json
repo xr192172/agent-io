@@ -1,0 +1,44 @@
+{
+  "//": "Design DB —— src/application/meta/explore/explore_arg_spec.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "EXPLORE_ARGS",
+      "kind": "const",
+      "line": 30,
+      "signature": "const EXPLORE_ARGS = { search: ['min_score', 'project_dir', 'query', 'top_k'],…"
+    },
+    {
+      "name": "editDistance",
+      "kind": "function",
+      "line": 63,
+      "signature": "editDistance(a: string, b: string): number"
+    },
+    {
+      "name": "assertExploreArgKeys",
+      "kind": "function",
+      "line": 83,
+      "signature": "assertExploreArgKeys(action: string, args: Record<string, unknown>): void"
+    },
+    {
+      "name": "EXPLORE_REQUIRED",
+      "kind": "const",
+      "line": 123,
+      "signature": "const EXPLORE_REQUIRED = { run_simulation: ['feature'], reset_simulation: ['featur…"
+    },
+    {
+      "name": "assertExploreRequired",
+      "kind": "function",
+      "line": 139,
+      "signature": "assertExploreRequired(action: string, args: Record<string, unknown>): void"
+    }
+  ],
+  "imports": [],
+  "calls": [
+    {
+      "from": "src/application/meta/explore/explore_arg_spec.ts#assertExploreArgKeys",
+      "to": "src/application/meta/explore/explore_arg_spec.ts#editDistance"
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "//": "Design DB —— src/infrastructure/index/scan_rev.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "ScanRev",
+      "kind": "interface",
+      "line": 23,
+      "signature": "ScanRev()"
+    },
+    {
+      "name": "NONE",
+      "kind": "const",
+      "line": 31,
+      "signature": "const NONE = { rev: null, db: null }"
+    },
+    {
+      "name": "scanRevOf",
+      "kind": "function",
+      "line": 38,
+      "signature": "scanRevOf(opts: { feature?: string; sourceRoot?: string } = {}): ScanRev"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:sqlite",
+      "kind": "package"
+    },
+    {
+      "source": "./db.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/index/scan_rev.ts#scanRevOf",
+      "to": "src/infrastructure/index/db.ts#findCacheDb"
+    }
+  ]
+}

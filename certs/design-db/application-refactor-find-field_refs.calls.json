@@ -1,0 +1,269 @@
+{
+  "//": "Design DB —— src/application/refactor/find/field_refs.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "FieldRefKind",
+      "kind": "type",
+      "line": 34,
+      "signature": "FieldRefKind()"
+    },
+    {
+      "name": "FieldRefPoint",
+      "kind": "interface",
+      "line": 36,
+      "signature": "FieldRefPoint()"
+    },
+    {
+      "name": "FieldRefFile",
+      "kind": "interface",
+      "line": 56,
+      "signature": "FieldRefFile()"
+    },
+    {
+      "name": "FieldScopeReport",
+      "kind": "interface",
+      "line": 66,
+      "signature": "FieldScopeReport()"
+    },
+    {
+      "name": "TypeConstructCandidate",
+      "kind": "interface",
+      "line": 79,
+      "signature": "TypeConstructCandidate()"
+    },
+    {
+      "name": "lineOf",
+      "kind": "function",
+      "line": 88,
+      "signature": "lineOf(src: string, offset: number): number"
+    },
+    {
+      "name": "lineText",
+      "kind": "function",
+      "line": 94,
+      "signature": "lineText(src: string, offset: number): string"
+    },
+    {
+      "name": "escapeRegex",
+      "kind": "function",
+      "line": 100,
+      "signature": "escapeRegex(s: string): string"
+    },
+    {
+      "name": "captureReads",
+      "kind": "function",
+      "line": 105,
+      "signature": "captureReads(src: string, field: string): FieldRefPoint[]"
+    },
+    {
+      "name": "ClassifiedFieldRef",
+      "kind": "interface",
+      "line": 120,
+      "signature": "ClassifiedFieldRef()"
+    },
+    {
+      "name": "classifyKeyOffsets",
+      "kind": "function",
+      "line": 126,
+      "signature": "classifyKeyOffsets(root: SyntaxNodeLike, src: string, field: string): Map<number, ClassifiedFieldRef>"
+    },
+    {
+      "name": "enclosingTypeName",
+      "kind": "function",
+      "line": 144,
+      "signature": "enclosingTypeName(path: SyntaxNodeLike[]): string | undefined"
+    },
+    {
+      "name": "classifyOffset",
+      "kind": "function",
+      "line": 160,
+      "signature": "classifyOffset(root: SyntaxNodeLike, offset: number, _field: string): ClassifiedFieldRef | null"
+    },
+    {
+      "name": "STRING_LEAF_TYPES",
+      "kind": "const",
+      "line": 193,
+      "signature": "const STRING_LEAF_TYPES = new Set(['string', 'string_fragment', 'template_string', …"
+    },
+    {
+      "name": "ofTypeDeclFiles",
+      "kind": "function",
+      "line": 201,
+      "signature": "ofTypeDeclFiles(root: string, candidates: string[], ofType: string): Promise<string[]>"
+    },
+    {
+      "name": "hasTypeDeclNamed",
+      "kind": "function",
+      "line": 219,
+      "signature": "hasTypeDeclNamed(root: SyntaxNodeLike, name: string): boolean"
+    },
+    {
+      "name": "collectFieldRefs",
+      "kind": "function",
+      "line": 256,
+      "signature": "collectFieldRefs(input: {\n  project_dir: string;\n  field: string;\n  /** 定义文件（可选）：提供时默认按闭包扫描 */\n  file?: string;\n  /** closure（默认，给 file 时按 import 闭包）| all（全项目扫） */\n  scope?: 'closure' | 'all';\n  /** ★ 所属类型名：把字段引用限定到该类型（见上方 of_type 说明）。 */\n  of_type?: string;\n}): Promise<{ files: FieldRefFile[]; scope?: FieldScopeReport }>"
+    },
+    {
+      "name": "collectTypeConstructCandidates",
+      "kind": "function",
+      "line": 360,
+      "signature": "collectTypeConstructCandidates(input: {\n  project_dir: string;\n  file: string;\n  symbol: string;\n  scope?: 'closure' | 'all';\n  /** 交叠成员数阈值，默认 2 */\n  min_hit?: number;\n}): Promise<{ members: string[]; candidates: TypeConstructCandidate[] }>"
+    },
+    {
+      "name": "extractTypeMembers",
+      "kind": "function",
+      "line": 417,
+      "signature": "extractTypeMembers(fileAbs: string, src: string, symbol: string): string[]"
+    },
+    {
+      "name": "findNodesByType",
+      "kind": "function",
+      "line": 445,
+      "signature": "findNodesByType(node: SyntaxNodeLike, types: Set<string>): SyntaxNodeLike[]"
+    },
+    {
+      "name": "objectLiteralKeys",
+      "kind": "function",
+      "line": 459,
+      "signature": "objectLiteralKeys(obj: SyntaxNodeLike): string[]"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../../infrastructure/parse/kernel.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/analysis/project_root/index.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/refactor/find/field_refs.ts#collectFieldRefs",
+      "to": "src/application/refactor/find/field_refs.ts#captureReads"
+    },
+    {
+      "from": "src/application/refactor/find/field_refs.ts#collectFieldRefs",
+      "to": "src/application/refactor/find/field_refs.ts#classifyKeyOffsets"
+    },
+    {
+      "from": "src/application/refactor/find/field_refs.ts#classifyKeyOffsets",
+      "to": "src/application/refactor/find/field_refs.ts#classifyOffset"
+    },
+    {
+      "from": "src/application/refactor/find/field_refs.ts#classifyOffset",
+      "to": "src/application/refactor/find/field_refs.ts#enclosingTypeName"
+    },
+    {
+      "from": "src/application/refactor/find/field_refs.ts#captureReads",
+      "to": "src/application/refactor/find/field_refs.ts#escapeRegex"
+    },
+    {
+      "from": "src/application/refactor/find/field_refs.ts#classifyKeyOffsets",
+      "to": "src/application/refactor/find/field_refs.ts#escapeRegex"
+    },
+    {
+      "from": "src/application/refactor/find/field_refs.ts#ofTypeDeclFiles",
+      "to": "src/application/refactor/find/field_refs.ts#escapeRegex"
+    },
+    {
+      "from": "src/application/refactor/find/field_refs.ts#collectFieldRefs",
+      "to": "src/application/refactor/find/field_refs.ts#escapeRegex"
+    },
+    {
+      "from": "src/application/refactor/find/field_refs.ts#extractTypeMembers",
+      "to": "src/application/refactor/find/field_refs.ts#escapeRegex"
+    },
+    {
+      "from": "src/application/refactor/find/field_refs.ts#collectTypeConstructCandidates",
+      "to": "src/application/refactor/find/field_refs.ts#extractTypeMembers"
+    },
+    {
+      "from": "src/application/refactor/find/field_refs.ts#collectTypeConstructCandidates",
+      "to": "src/application/refactor/find/field_refs.ts#findNodesByType"
+    },
+    {
+      "from": "src/application/refactor/find/field_refs.ts#ofTypeDeclFiles",
+      "to": "src/application/refactor/find/field_refs.ts#hasTypeDeclNamed"
+    },
+    {
+      "from": "src/application/refactor/find/field_refs.ts#lineText",
+      "to": "src/application/refactor/find/field_refs.ts#lineOf"
+    },
+    {
+      "from": "src/application/refactor/find/field_refs.ts#collectFieldRefs",
+      "to": "src/application/refactor/find/field_refs.ts#lineOf"
+    },
+    {
+      "from": "src/application/refactor/find/field_refs.ts#collectFieldRefs",
+      "to": "src/application/refactor/find/field_refs.ts#lineText"
+    },
+    {
+      "from": "src/application/refactor/find/field_refs.ts#collectTypeConstructCandidates",
+      "to": "src/application/refactor/find/field_refs.ts#lineText"
+    },
+    {
+      "from": "src/application/refactor/find/field_refs.ts#collectTypeConstructCandidates",
+      "to": "src/application/refactor/find/field_refs.ts#objectLiteralKeys"
+    },
+    {
+      "from": "src/application/refactor/find/field_refs.ts#collectFieldRefs",
+      "to": "src/application/refactor/find/field_refs.ts#ofTypeDeclFiles"
+    },
+    {
+      "from": "src/application/refactor/find/field_refs.ts#collectFieldRefs",
+      "to": "src/infrastructure/analysis/project_root/index.ts#expandClosure"
+    },
+    {
+      "from": "src/application/refactor/find/field_refs.ts#collectFieldRefs",
+      "to": "src/infrastructure/analysis/project_root/index.ts#expandClosure"
+    },
+    {
+      "from": "src/application/refactor/find/field_refs.ts#collectTypeConstructCandidates",
+      "to": "src/infrastructure/analysis/project_root/index.ts#expandClosure"
+    },
+    {
+      "from": "src/application/refactor/find/field_refs.ts#collectFieldRefs",
+      "to": "src/infrastructure/analysis/project_root/index.ts#loadAliasConfig"
+    },
+    {
+      "from": "src/application/refactor/find/field_refs.ts#collectFieldRefs",
+      "to": "src/infrastructure/analysis/project_root/index.ts#loadAliasConfig"
+    },
+    {
+      "from": "src/application/refactor/find/field_refs.ts#collectTypeConstructCandidates",
+      "to": "src/infrastructure/analysis/project_root/index.ts#loadAliasConfig"
+    },
+    {
+      "from": "src/application/refactor/find/field_refs.ts#collectFieldRefs",
+      "to": "src/infrastructure/analysis/project_root/index.ts#walkProjectFiles"
+    },
+    {
+      "from": "src/application/refactor/find/field_refs.ts#collectTypeConstructCandidates",
+      "to": "src/infrastructure/analysis/project_root/index.ts#walkProjectFiles"
+    },
+    {
+      "from": "src/application/refactor/find/field_refs.ts#ofTypeDeclFiles",
+      "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
+    },
+    {
+      "from": "src/application/refactor/find/field_refs.ts#collectFieldRefs",
+      "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
+    },
+    {
+      "from": "src/application/refactor/find/field_refs.ts#collectTypeConstructCandidates",
+      "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
+    }
+  ]
+}

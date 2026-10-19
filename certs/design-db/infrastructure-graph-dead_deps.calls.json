@@ -1,0 +1,191 @@
+{
+  "//": "Design DB —— src/infrastructure/graph/dead_deps.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "DeadDepCandidate",
+      "kind": "interface",
+      "line": 41,
+      "signature": "DeadDepCandidate()"
+    },
+    {
+      "name": "DeadDepsResult",
+      "kind": "interface",
+      "line": 47,
+      "signature": "DeadDepsResult()"
+    },
+    {
+      "name": "SymbolRow",
+      "kind": "interface",
+      "line": 58,
+      "signature": "SymbolRow()"
+    },
+    {
+      "name": "LIMITATIONS",
+      "kind": "const",
+      "line": 68,
+      "signature": "const LIMITATIONS = [ '静态可达性看不见反射/接口动态分发/字符串引用符号——瘦身为行动前必须过编译+源测试+observe 四层验…"
+    },
+    {
+      "name": "goImportQualifierCandidates",
+      "kind": "function",
+      "line": 80,
+      "signature": "goImportQualifierCandidates(p: string): string[]"
+    },
+    {
+      "name": "parseGoImportQualifiers",
+      "kind": "function",
+      "line": 94,
+      "signature": "parseGoImportQualifiers(src: string): Map<string, string[]>"
+    },
+    {
+      "name": "parseTsImportQualifiers",
+      "kind": "function",
+      "line": 122,
+      "signature": "parseTsImportQualifiers(src: string, mod: string): string[] | null"
+    },
+    {
+      "name": "stripGoCommentishLines",
+      "kind": "function",
+      "line": 174,
+      "signature": "stripGoCommentishLines(src: string): string"
+    },
+    {
+      "name": "qualifierLines",
+      "kind": "function",
+      "line": 182,
+      "signature": "qualifierLines(src: string, qualifier: string, lang: 'go' | 'ts' | 'go-bare'): number[]"
+    },
+    {
+      "name": "qualifierMemberLines",
+      "kind": "function",
+      "line": 201,
+      "signature": "qualifierMemberLines(src: string, qualifier: string): Array<{ line: number; member: string }>"
+    },
+    {
+      "name": "stripTsImportLines",
+      "kind": "function",
+      "line": 226,
+      "signature": "stripTsImportLines(src: string): string"
+    },
+    {
+      "name": "enclosingSymbol",
+      "kind": "function",
+      "line": 233,
+      "signature": "enclosingSymbol(symbols: SymbolRow[], line: number): SymbolRow | null"
+    },
+    {
+      "name": "analyzeDeadThirdParty",
+      "kind": "function",
+      "line": 248,
+      "signature": "analyzeDeadThirdParty(opts: {\n  db: Database;\n  projectDir: string;\n  /** 闭包内部文件（缓存基准相对路径） */\n  closureFiles: string[];\n  /** 种子文件（同基准） */\n  seedFiles: string[];\n  /** 闭包外部依赖（harvest_closure 结果，只取 third_party 类） */\n  external: ExternalDep[];\n  /** 值可达文件集（harvest_closure.value_files）：从种子只沿值 import 边可达。\n   *  TS 顶层 const 的\"模块初始化即执行\"特权只对值可达文件生效——type 边拉进\n   *  闭包的纯类型文件运行时不加载，其 const 不执行、三方依赖判死候选。\n   *  缺省 = 全部闭包文件按值可达处理（向后兼容旧调用方） */\n  valueFiles?: string[];\n}): DeadDepsResult"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../index/db.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../../application/harvest/harvest_closure.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./import_project.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/graph/dead_deps.ts#analyzeDeadThirdParty",
+      "to": "src/infrastructure/graph/dead_deps.ts#analyzeDeadThirdParty.activateDir"
+    },
+    {
+      "from": "src/infrastructure/graph/dead_deps.ts#analyzeDeadThirdParty",
+      "to": "src/infrastructure/graph/dead_deps.ts#analyzeDeadThirdParty.activateDir"
+    },
+    {
+      "from": "src/infrastructure/graph/dead_deps.ts#analyzeDeadThirdParty.activateDir",
+      "to": "src/infrastructure/graph/dead_deps.ts#analyzeDeadThirdParty.activateDir"
+    },
+    {
+      "from": "src/infrastructure/graph/dead_deps.ts#analyzeDeadThirdParty",
+      "to": "src/infrastructure/graph/dead_deps.ts#enclosingSymbol"
+    },
+    {
+      "from": "src/infrastructure/graph/dead_deps.ts#analyzeDeadThirdParty",
+      "to": "src/infrastructure/graph/dead_deps.ts#enclosingSymbol"
+    },
+    {
+      "from": "src/infrastructure/graph/dead_deps.ts#analyzeDeadThirdParty",
+      "to": "src/infrastructure/graph/dead_deps.ts#enclosingSymbol"
+    },
+    {
+      "from": "src/infrastructure/graph/dead_deps.ts#parseGoImportQualifiers",
+      "to": "src/infrastructure/graph/dead_deps.ts#goImportQualifierCandidates"
+    },
+    {
+      "from": "src/infrastructure/graph/dead_deps.ts#parseGoImportQualifiers",
+      "to": "src/infrastructure/graph/dead_deps.ts#goImportQualifierCandidates"
+    },
+    {
+      "from": "src/infrastructure/graph/dead_deps.ts#analyzeDeadThirdParty",
+      "to": "src/infrastructure/graph/dead_deps.ts#parseGoImportQualifiers"
+    },
+    {
+      "from": "src/infrastructure/graph/dead_deps.ts#analyzeDeadThirdParty",
+      "to": "src/infrastructure/graph/dead_deps.ts#parseGoImportQualifiers"
+    },
+    {
+      "from": "src/infrastructure/graph/dead_deps.ts#analyzeDeadThirdParty",
+      "to": "src/infrastructure/graph/dead_deps.ts#parseTsImportQualifiers"
+    },
+    {
+      "from": "src/infrastructure/graph/dead_deps.ts#analyzeDeadThirdParty",
+      "to": "src/infrastructure/graph/dead_deps.ts#qualifierLines"
+    },
+    {
+      "from": "src/infrastructure/graph/dead_deps.ts#analyzeDeadThirdParty",
+      "to": "src/infrastructure/graph/dead_deps.ts#qualifierLines"
+    },
+    {
+      "from": "src/infrastructure/graph/dead_deps.ts#analyzeDeadThirdParty",
+      "to": "src/infrastructure/graph/dead_deps.ts#qualifierMemberLines"
+    },
+    {
+      "from": "src/infrastructure/graph/dead_deps.ts#qualifierLines",
+      "to": "src/infrastructure/graph/dead_deps.ts#stripGoCommentishLines"
+    },
+    {
+      "from": "src/infrastructure/graph/dead_deps.ts#qualifierMemberLines",
+      "to": "src/infrastructure/graph/dead_deps.ts#stripGoCommentishLines"
+    },
+    {
+      "from": "src/infrastructure/graph/dead_deps.ts#analyzeDeadThirdParty",
+      "to": "src/infrastructure/graph/dead_deps.ts#stripTsImportLines"
+    },
+    {
+      "from": "src/infrastructure/graph/dead_deps.ts#analyzeDeadThirdParty",
+      "to": "src/infrastructure/graph/import_project.ts#buildIndex"
+    },
+    {
+      "from": "src/infrastructure/graph/dead_deps.ts#analyzeDeadThirdParty",
+      "to": "src/infrastructure/graph/import_project.ts#readGoModules"
+    },
+    {
+      "from": "src/infrastructure/graph/dead_deps.ts#analyzeDeadThirdParty",
+      "to": "src/infrastructure/graph/import_project.ts#resolveImport"
+    }
+  ]
+}

@@ -1,0 +1,192 @@
+{
+  "//": "Design DB —— src/application/observe/capture/observe_points.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "PointReason",
+      "kind": "interface",
+      "line": 35,
+      "signature": "PointReason()"
+    },
+    {
+      "name": "ObservePoint",
+      "kind": "interface",
+      "line": 44,
+      "signature": "ObservePoint()"
+    },
+    {
+      "name": "RecommendOptions",
+      "kind": "interface",
+      "line": 57,
+      "signature": "RecommendOptions()"
+    },
+    {
+      "name": "FOCUS_BOOST",
+      "kind": "const",
+      "line": 73,
+      "signature": "const FOCUS_BOOST = 0.25"
+    },
+    {
+      "name": "RecommendStats",
+      "kind": "interface",
+      "line": 75,
+      "signature": "RecommendStats()"
+    },
+    {
+      "name": "RecommendResult",
+      "kind": "interface",
+      "line": 89,
+      "signature": "RecommendResult()"
+    },
+    {
+      "name": "SIGNAL_WEIGHTS",
+      "kind": "const",
+      "line": 101,
+      "signature": "const SIGNAL_WEIGHTS = { indegree: 0.3, recentlyChanged: 0.2, io: 0.2, silentCat…"
+    },
+    {
+      "name": "IO_NAMES",
+      "kind": "const",
+      "line": 111,
+      "signature": "const IO_NAMES = [ 'writeFileSync', 'writeFile', 'appendFileSync', 'append…"
+    },
+    {
+      "name": "DEFAULT_MAX_POINTS",
+      "kind": "const",
+      "line": 131,
+      "signature": "const DEFAULT_MAX_POINTS = 40"
+    },
+    {
+      "name": "DEFAULT_MAX_FILES",
+      "kind": "const",
+      "line": 132,
+      "signature": "const DEFAULT_MAX_FILES = 20"
+    },
+    {
+      "name": "MAX_PER_SYMBOL",
+      "kind": "const",
+      "line": 134,
+      "signature": "const MAX_PER_SYMBOL = 3"
+    },
+    {
+      "name": "MAX_PER_FILE",
+      "kind": "const",
+      "line": 135,
+      "signature": "const MAX_PER_FILE = 8"
+    },
+    {
+      "name": "HOT_FILE_MS",
+      "kind": "const",
+      "line": 136,
+      "signature": "const HOT_FILE_MS = 24 * 3600 * 1000"
+    },
+    {
+      "name": "BIG_SYMBOL_LINES",
+      "kind": "const",
+      "line": 137,
+      "signature": "const BIG_SYMBOL_LINES = 40"
+    },
+    {
+      "name": "SymbolRow",
+      "kind": "interface",
+      "line": 139,
+      "signature": "SymbolRow()"
+    },
+    {
+      "name": "indegreeMap",
+      "kind": "function",
+      "line": 150,
+      "signature": "indegreeMap(db: Database): Map<string, number>"
+    },
+    {
+      "name": "recentlyChangedSet",
+      "kind": "function",
+      "line": 158,
+      "signature": "recentlyChangedSet(db: Database): Set<string>"
+    },
+    {
+      "name": "fileMtimes",
+      "kind": "function",
+      "line": 175,
+      "signature": "fileMtimes(db: Database): Map<string, number>"
+    },
+    {
+      "name": "scanSpan",
+      "kind": "function",
+      "line": 184,
+      "signature": "scanSpan(src: string): { io: string[]; silentCatch: number }"
+    },
+    {
+      "name": "sliceLines",
+      "kind": "function",
+      "line": 197,
+      "signature": "sliceLines(text: string, startLine: number, endLine: number): string"
+    },
+    {
+      "name": "observePointsFile",
+      "kind": "function",
+      "line": 207,
+      "signature": "observePointsFile(root: string): string"
+    },
+    {
+      "name": "recommendObservePoints",
+      "kind": "function",
+      "line": 214,
+      "signature": "recommendObservePoints(db: Database,\n  projectRoot: string,\n  opts: RecommendOptions = {},): Promise<RecommendResult>"
+    }
+  ],
+  "imports": [
+    {
+      "source": "../../../infrastructure/data_dir.js",
+      "kind": "relative"
+    },
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../../infrastructure/index/db.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../../../infrastructure/analysis/observe/instrument.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/observe/capture/observe_points.ts#recommendObservePoints",
+      "to": "src/application/observe/capture/observe_points.ts#fileMtimes"
+    },
+    {
+      "from": "src/application/observe/capture/observe_points.ts#recommendObservePoints",
+      "to": "src/application/observe/capture/observe_points.ts#indegreeMap"
+    },
+    {
+      "from": "src/application/observe/capture/observe_points.ts#recommendObservePoints",
+      "to": "src/application/observe/capture/observe_points.ts#observePointsFile"
+    },
+    {
+      "from": "src/application/observe/capture/observe_points.ts#recommendObservePoints",
+      "to": "src/application/observe/capture/observe_points.ts#recentlyChangedSet"
+    },
+    {
+      "from": "src/application/observe/capture/observe_points.ts#recommendObservePoints",
+      "to": "src/application/observe/capture/observe_points.ts#scanSpan"
+    },
+    {
+      "from": "src/application/observe/capture/observe_points.ts#recommendObservePoints",
+      "to": "src/application/observe/capture/observe_points.ts#sliceLines"
+    },
+    {
+      "from": "src/application/observe/capture/observe_points.ts#recommendObservePoints",
+      "to": "src/infrastructure/analysis/observe/instrument.ts#instrumentFile"
+    }
+  ]
+}

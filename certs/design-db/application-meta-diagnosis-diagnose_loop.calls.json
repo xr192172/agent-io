@@ -1,0 +1,145 @@
+{
+  "//": "Design DB —— src/application/meta/diagnosis/diagnose_loop.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "DiagnoseLoopStage",
+      "kind": "type",
+      "line": 40,
+      "signature": "DiagnoseLoopStage()"
+    },
+    {
+      "name": "DiagnoseLoopInput",
+      "kind": "interface",
+      "line": 42,
+      "signature": "DiagnoseLoopInput()"
+    },
+    {
+      "name": "DiagnoseLoopResult",
+      "kind": "interface",
+      "line": 53,
+      "signature": "DiagnoseLoopResult()"
+    },
+    {
+      "name": "diagnoseLoop",
+      "kind": "function",
+      "line": 91,
+      "signature": "diagnoseLoop(input: DiagnoseLoopInput): Promise<DiagnoseLoopResult>"
+    },
+    {
+      "name": "diagnoseLoopInner",
+      "kind": "function",
+      "line": 104,
+      "signature": "diagnoseLoopInner(input: DiagnoseLoopInput): Promise<DiagnoseLoopResult>"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:child_process",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../../infrastructure/index/db.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/graph/import_project.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/index/symbols.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/analysis/diagnosis/diagnose.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/analysis/diagnosis/repair.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/analysis/diagnosis/verifier.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/analysis/diagnosis/test_contract.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/git.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoop",
+      "to": "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner"
+    },
+    {
+      "from": "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner",
+      "to": "src/infrastructure/analysis/diagnosis/diagnose.ts#formatDiagnoseText"
+    },
+    {
+      "from": "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner",
+      "to": "src/infrastructure/analysis/diagnosis/diagnose.ts#formatDiagnoseText"
+    },
+    {
+      "from": "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner",
+      "to": "src/infrastructure/analysis/diagnosis/diagnose.ts#runDiagnosis"
+    },
+    {
+      "from": "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner",
+      "to": "src/infrastructure/analysis/diagnosis/repair.ts#allowedPatchFiles"
+    },
+    {
+      "from": "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner",
+      "to": "src/infrastructure/analysis/diagnosis/repair.ts#applyPatches"
+    },
+    {
+      "from": "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner",
+      "to": "src/infrastructure/analysis/diagnosis/repair.ts#formatPatchDiff"
+    },
+    {
+      "from": "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner",
+      "to": "src/infrastructure/analysis/diagnosis/repair.ts#generatePatch"
+    },
+    {
+      "from": "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner",
+      "to": "src/infrastructure/analysis/diagnosis/repair.ts#revertPatches"
+    },
+    {
+      "from": "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner",
+      "to": "src/infrastructure/analysis/diagnosis/repair.ts#revertPatches"
+    },
+    {
+      "from": "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner",
+      "to": "src/infrastructure/analysis/diagnosis/verifier.ts#detectKind"
+    },
+    {
+      "from": "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner",
+      "to": "src/infrastructure/git.ts#gitRestoreFiles"
+    },
+    {
+      "from": "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner",
+      "to": "src/infrastructure/git.ts#gitRestoreFiles"
+    },
+    {
+      "from": "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner",
+      "to": "src/infrastructure/graph/import_project.ts#walkFiles"
+    },
+    {
+      "from": "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner",
+      "to": "src/infrastructure/index/db.ts#getProjectCacheDb"
+    },
+    {
+      "from": "src/application/meta/diagnosis/diagnose_loop.ts#diagnoseLoopInner",
+      "to": "src/infrastructure/index/symbols.ts#syncProject"
+    }
+  ]
+}

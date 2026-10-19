@@ -1,0 +1,195 @@
+{
+  "//": "Design DB —— src/presentation/mcp/server.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "SERVER_NAME",
+      "kind": "const",
+      "line": 28,
+      "signature": "const SERVER_NAME = 'agent-io'"
+    },
+    {
+      "name": "SERVER_VERSION",
+      "kind": "const",
+      "line": 29,
+      "signature": "const SERVER_VERSION = '0.1.3'"
+    },
+    {
+      "name": "server",
+      "kind": "const",
+      "line": 31,
+      "signature": "const server = new McpServer( { name: SERVER_NAME, version: SERVER_VERSI…"
+    },
+    {
+      "name": "resources",
+      "kind": "const",
+      "line": 99,
+      "signature": "const resources = listFeatures() .filter((d) => (d.canvas_notes ?? []).leng…"
+    },
+    {
+      "name": "feature",
+      "kind": "const",
+      "line": 111,
+      "signature": "const feature = String(variables.feature ?? '').replace(/[^a-zA-Z0-9_-]/g…"
+    },
+    {
+      "name": "resolved",
+      "kind": "const",
+      "line": 115,
+      "signature": "const resolved = resolveCanvasNoteTargets(feature)"
+    },
+    {
+      "name": "digest",
+      "kind": "const",
+      "line": 116,
+      "signature": "const digest = renderCanvasNotesDigest(feature, resolved)"
+    },
+    {
+      "name": "resources",
+      "kind": "const",
+      "line": 129,
+      "signature": "const resources = listFeatures() .map((d) => ({ uri: `agent-io://${d.featur…"
+    },
+    {
+      "name": "feature",
+      "kind": "const",
+      "line": 140,
+      "signature": "const feature = String(variables.feature ?? '').replace(/[^a-zA-Z0-9_-]/g…"
+    },
+    {
+      "name": "dsl",
+      "kind": "const",
+      "line": 144,
+      "signature": "const dsl = getDSL(feature)"
+    },
+    {
+      "name": "man",
+      "kind": "const",
+      "line": 145,
+      "signature": "const man = listProjectDocs(dsl?.source_root ?? '', feature)"
+    },
+    {
+      "name": "toc",
+      "kind": "const",
+      "line": 157,
+      "signature": "const toc = man.docs .map((d) => `- \\`${d.id}\\`（${d.lines} 行${d.tagge…"
+    },
+    {
+      "name": "resolveProjectDir",
+      "kind": "function",
+      "line": 177,
+      "signature": "resolveProjectDir(): string"
+    },
+    {
+      "name": "deriveFeatureName",
+      "kind": "function",
+      "line": 183,
+      "signature": "deriveFeatureName(projectDir: string): string"
+    },
+    {
+      "name": "runAutoWatchHook",
+      "kind": "function",
+      "line": 199,
+      "signature": "runAutoWatchHook(): Promise<void>"
+    },
+    {
+      "name": "main",
+      "kind": "function",
+      "line": 242,
+      "signature": "main(): Promise<void>"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "@modelcontextprotocol/sdk/server/mcp.js",
+      "kind": "package"
+    },
+    {
+      "source": "@modelcontextprotocol/sdk/server/stdio.js",
+      "kind": "package"
+    },
+    {
+      "source": "./server_registry.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/graph/import_project.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/index/db.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../application/observe/runtime/watch_project_tool.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/storage.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../application/meta/view/derive_mind_map.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../application/meta/docs/project_docs.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./lifecycle.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../application/observe/runtime/watch_project_tool.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/index/db.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/presentation/mcp/server.ts#main",
+      "to": "src/application/observe/runtime/watch_project_tool.ts#closeAllActiveWatches"
+    },
+    {
+      "from": "src/presentation/mcp/server.ts#runAutoWatchHook",
+      "to": "src/application/observe/runtime/watch_project_tool.ts#watchProjectTool"
+    },
+    {
+      "from": "src/presentation/mcp/server.ts#runAutoWatchHook",
+      "to": "src/infrastructure/graph/import_project.ts#importProject"
+    },
+    {
+      "from": "src/presentation/mcp/server.ts#main",
+      "to": "src/infrastructure/index/db.ts#closeAllProjectCacheDbs"
+    },
+    {
+      "from": "src/presentation/mcp/server.ts#runAutoWatchHook",
+      "to": "src/infrastructure/index/db.ts#getProjectCacheDb"
+    },
+    {
+      "from": "src/presentation/mcp/server.ts#main",
+      "to": "src/presentation/mcp/lifecycle.ts#installLifecycle"
+    },
+    {
+      "from": "src/presentation/mcp/server.ts#runAutoWatchHook",
+      "to": "src/presentation/mcp/server.ts#deriveFeatureName"
+    },
+    {
+      "from": "src/presentation/mcp/server.ts#runAutoWatchHook",
+      "to": "src/presentation/mcp/server.ts#resolveProjectDir"
+    },
+    {
+      "from": "src/presentation/mcp/server.ts#main",
+      "to": "src/presentation/mcp/server.ts#runAutoWatchHook"
+    }
+  ]
+}

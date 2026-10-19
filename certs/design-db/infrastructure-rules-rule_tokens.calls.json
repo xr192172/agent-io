@@ -1,0 +1,52 @@
+{
+  "//": "Design DB —— src/infrastructure/rules/rule_tokens.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "splitLines",
+      "kind": "function",
+      "line": 10,
+      "signature": "splitLines(s: string): string[]"
+    },
+    {
+      "name": "fold",
+      "kind": "function",
+      "line": 15,
+      "signature": "fold(s: string): string"
+    },
+    {
+      "name": "leadingWs",
+      "kind": "function",
+      "line": 20,
+      "signature": "leadingWs(line: string): string"
+    },
+    {
+      "name": "keyedLines",
+      "kind": "function",
+      "line": 29,
+      "signature": "keyedLines(text: string): string[]"
+    },
+    {
+      "name": "countLines",
+      "kind": "function",
+      "line": 36,
+      "signature": "countLines(text: string): number"
+    }
+  ],
+  "imports": [],
+  "calls": [
+    {
+      "from": "src/infrastructure/rules/rule_tokens.ts#keyedLines",
+      "to": "src/infrastructure/rules/rule_tokens.ts#fold"
+    },
+    {
+      "from": "src/infrastructure/rules/rule_tokens.ts#keyedLines",
+      "to": "src/infrastructure/rules/rule_tokens.ts#splitLines"
+    },
+    {
+      "from": "src/infrastructure/rules/rule_tokens.ts#countLines",
+      "to": "src/infrastructure/rules/rule_tokens.ts#splitLines"
+    }
+  ]
+}

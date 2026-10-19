@@ -1,0 +1,261 @@
+{
+  "//": "Design DB —— src/application/refactor/deprecate_offline/deprecate_offline.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "DeprecateOfflinePlan",
+      "kind": "interface",
+      "line": 55,
+      "signature": "DeprecateOfflinePlan()"
+    },
+    {
+      "name": "DeprecateOfflineOptions",
+      "kind": "interface",
+      "line": 62,
+      "signature": "DeprecateOfflineOptions()"
+    },
+    {
+      "name": "DeprecateOutcome",
+      "kind": "type",
+      "line": 76,
+      "signature": "DeprecateOutcome()"
+    },
+    {
+      "name": "DeprecateOfflineItem",
+      "kind": "interface",
+      "line": 88,
+      "signature": "DeprecateOfflineItem()"
+    },
+    {
+      "name": "DeprecateOfflineResult",
+      "kind": "interface",
+      "line": 96,
+      "signature": "DeprecateOfflineResult()"
+    },
+    {
+      "name": "DeprecateSink",
+      "kind": "interface",
+      "line": 112,
+      "signature": "DeprecateSink()"
+    },
+    {
+      "name": "goModulePrefix",
+      "kind": "function",
+      "line": 121,
+      "signature": "goModulePrefix(project_dir: string): string | null"
+    },
+    {
+      "name": "resolveGoPackageFile",
+      "kind": "function",
+      "line": 132,
+      "signature": "resolveGoPackageFile(project_dir: string, sub: string): string | null"
+    },
+    {
+      "name": "goPackageOfFile",
+      "kind": "function",
+      "line": 146,
+      "signature": "goPackageOfFile(project_dir: string, moduleRel: string): string | null"
+    },
+    {
+      "name": "resolveConsumerSource",
+      "kind": "function",
+      "line": 155,
+      "signature": "resolveConsumerSource(project_dir: string, consumerRel: string, source: string): string | null"
+    },
+    {
+      "name": "aggregateProjectSources",
+      "kind": "function",
+      "line": 193,
+      "signature": "aggregateProjectSources(project_dir: string,\n  dead: DeadDepCandidate[],): Map<string, { moduleFile: string; consumers: number }>"
+    },
+    {
+      "name": "remainingImporters",
+      "kind": "function",
+      "line": 218,
+      "signature": "remainingImporters(project_dir: string,\n  moduleRel: string,\n  scannedFiles: string[],): number"
+    },
+    {
+      "name": "enumerateDeriveSources",
+      "kind": "function",
+      "line": 259,
+      "signature": "enumerateDeriveSources(src: string): Set<string>"
+    },
+    {
+      "name": "hasActiveReference",
+      "kind": "function",
+      "line": 276,
+      "signature": "hasActiveReference(project_dir: string, moduleRel: string, scannedFiles: string[]): boolean"
+    },
+    {
+      "name": "deprecateOfflineCore",
+      "kind": "function",
+      "line": 320,
+      "signature": "deprecateOfflineCore(opts: DeprecateOfflineOptions, sink: DeprecateSink): Promise<DeprecateOfflineResult>"
+    },
+    {
+      "name": "touchedOf",
+      "kind": "function",
+      "line": 489,
+      "signature": "touchedOf(opts: DeprecateOfflineOptions, r: DeprecateOfflineResult, sink: DeprecateSink): Touched"
+    },
+    {
+      "name": "deprecateOffline",
+      "kind": "function",
+      "line": 501,
+      "signature": "deprecateOffline(opts: DeprecateOfflineOptions): Promise<TouchedProduct<DeprecateOfflineResult>>"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "../../../infrastructure/analysis/deadcode/detect_dead_imports.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../edit/remove_dead_imports.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/graph/dead_deps.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/verify_refactor.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/parse/index.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../domain/b_terms.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/refactor/deprecate_offline/deprecate_offline.ts#deprecateOfflineCore",
+      "to": "src/application/refactor/deprecate_offline/deprecate_offline.ts#aggregateProjectSources"
+    },
+    {
+      "from": "src/application/refactor/deprecate_offline/deprecate_offline.ts#deprecateOffline",
+      "to": "src/application/refactor/deprecate_offline/deprecate_offline.ts#deprecateOfflineCore"
+    },
+    {
+      "from": "src/application/refactor/deprecate_offline/deprecate_offline.ts#remainingImporters",
+      "to": "src/application/refactor/deprecate_offline/deprecate_offline.ts#enumerateDeriveSources"
+    },
+    {
+      "from": "src/application/refactor/deprecate_offline/deprecate_offline.ts#hasActiveReference",
+      "to": "src/application/refactor/deprecate_offline/deprecate_offline.ts#enumerateDeriveSources"
+    },
+    {
+      "from": "src/application/refactor/deprecate_offline/deprecate_offline.ts#goPackageOfFile",
+      "to": "src/application/refactor/deprecate_offline/deprecate_offline.ts#goModulePrefix"
+    },
+    {
+      "from": "src/application/refactor/deprecate_offline/deprecate_offline.ts#resolveConsumerSource",
+      "to": "src/application/refactor/deprecate_offline/deprecate_offline.ts#goModulePrefix"
+    },
+    {
+      "from": "src/application/refactor/deprecate_offline/deprecate_offline.ts#remainingImporters",
+      "to": "src/application/refactor/deprecate_offline/deprecate_offline.ts#goPackageOfFile"
+    },
+    {
+      "from": "src/application/refactor/deprecate_offline/deprecate_offline.ts#hasActiveReference",
+      "to": "src/application/refactor/deprecate_offline/deprecate_offline.ts#goPackageOfFile"
+    },
+    {
+      "from": "src/application/refactor/deprecate_offline/deprecate_offline.ts#deprecateOfflineCore",
+      "to": "src/application/refactor/deprecate_offline/deprecate_offline.ts#hasActiveReference"
+    },
+    {
+      "from": "src/application/refactor/deprecate_offline/deprecate_offline.ts#deprecateOfflineCore",
+      "to": "src/application/refactor/deprecate_offline/deprecate_offline.ts#remainingImporters"
+    },
+    {
+      "from": "src/application/refactor/deprecate_offline/deprecate_offline.ts#aggregateProjectSources",
+      "to": "src/application/refactor/deprecate_offline/deprecate_offline.ts#resolveConsumerSource"
+    },
+    {
+      "from": "src/application/refactor/deprecate_offline/deprecate_offline.ts#remainingImporters",
+      "to": "src/application/refactor/deprecate_offline/deprecate_offline.ts#resolveConsumerSource"
+    },
+    {
+      "from": "src/application/refactor/deprecate_offline/deprecate_offline.ts#hasActiveReference",
+      "to": "src/application/refactor/deprecate_offline/deprecate_offline.ts#resolveConsumerSource"
+    },
+    {
+      "from": "src/application/refactor/deprecate_offline/deprecate_offline.ts#resolveConsumerSource",
+      "to": "src/application/refactor/deprecate_offline/deprecate_offline.ts#resolveGoPackageFile"
+    },
+    {
+      "from": "src/application/refactor/deprecate_offline/deprecate_offline.ts#deprecateOffline",
+      "to": "src/application/refactor/deprecate_offline/deprecate_offline.ts#touchedOf"
+    },
+    {
+      "from": "src/application/refactor/deprecate_offline/deprecate_offline.ts#deprecateOfflineCore",
+      "to": "src/application/refactor/edit/remove_dead_imports.ts#removeDeadImportsWithVerify"
+    },
+    {
+      "from": "src/application/refactor/deprecate_offline/deprecate_offline.ts#deprecateOfflineCore",
+      "to": "src/application/refactor/edit/remove_dead_imports.ts#writtenFilesOf"
+    },
+    {
+      "from": "src/application/refactor/deprecate_offline/deprecate_offline.ts#deprecateOffline",
+      "to": "src/domain/b_terms.ts#withTouched"
+    },
+    {
+      "from": "src/application/refactor/deprecate_offline/deprecate_offline.ts#deprecateOfflineCore",
+      "to": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#detectDeadImports"
+    },
+    {
+      "from": "src/application/refactor/deprecate_offline/deprecate_offline.ts#deprecateOfflineCore",
+      "to": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#scanProjectSourceFiles"
+    },
+    {
+      "from": "src/application/refactor/deprecate_offline/deprecate_offline.ts#deprecateOfflineCore",
+      "to": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#scanProjectSourceFiles"
+    },
+    {
+      "from": "src/application/refactor/deprecate_offline/deprecate_offline.ts#remainingImporters",
+      "to": "src/infrastructure/graph/dead_deps.ts#parseGoImportQualifiers"
+    },
+    {
+      "from": "src/application/refactor/deprecate_offline/deprecate_offline.ts#hasActiveReference",
+      "to": "src/infrastructure/graph/dead_deps.ts#parseGoImportQualifiers"
+    },
+    {
+      "from": "src/application/refactor/deprecate_offline/deprecate_offline.ts#hasActiveReference",
+      "to": "src/infrastructure/graph/dead_deps.ts#parseTsImportQualifiers"
+    },
+    {
+      "from": "src/application/refactor/deprecate_offline/deprecate_offline.ts#hasActiveReference",
+      "to": "src/infrastructure/graph/dead_deps.ts#qualifierLines"
+    },
+    {
+      "from": "src/application/refactor/deprecate_offline/deprecate_offline.ts#hasActiveReference",
+      "to": "src/infrastructure/graph/dead_deps.ts#qualifierLines"
+    },
+    {
+      "from": "src/application/refactor/deprecate_offline/deprecate_offline.ts#hasActiveReference",
+      "to": "src/infrastructure/graph/dead_deps.ts#stripTsImportLines"
+    },
+    {
+      "from": "src/application/refactor/deprecate_offline/deprecate_offline.ts#deprecateOfflineCore",
+      "to": "src/infrastructure/verify_refactor.ts#defaultVerifyCommands"
+    },
+    {
+      "from": "src/application/refactor/deprecate_offline/deprecate_offline.ts#deprecateOfflineCore",
+      "to": "src/infrastructure/verify_refactor.ts#runVerification"
+    }
+  ]
+}

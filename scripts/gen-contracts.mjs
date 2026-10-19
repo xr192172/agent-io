@@ -29,7 +29,7 @@ import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 
 const DESIGN = '.agent-io/design/task-system-plan.dsl.json';
-const OUT_DIR = path.join('certs', 'design-contracts');
+const OUT_DIR = path.join('certs', 'design-db');
 const DB = path.join('.agent-io', 'cache.db');
 const dry = process.argv.includes('--dry');
 

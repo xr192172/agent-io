@@ -1,0 +1,135 @@
+{
+  "//": "Design DB —— src/infrastructure/analysis/package_migration/parts.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "DEFAULT_SKIP",
+      "kind": "const",
+      "line": 19,
+      "signature": "const DEFAULT_SKIP = new Set([ '.git', 'node_modules', DATA_DIR_NAME, 'dist', …"
+    },
+    {
+      "name": "DEFAULT_EXTS",
+      "kind": "const",
+      "line": 24,
+      "signature": "const DEFAULT_EXTS = new Set<string>(SOURCE_EXTS)"
+    },
+    {
+      "name": "escapeRe",
+      "kind": "function",
+      "line": 26,
+      "signature": "escapeRe(s: string): string"
+    },
+    {
+      "name": "collectSourceFiles",
+      "kind": "function",
+      "line": 31,
+      "signature": "collectSourceFiles(proj: string,\n  exts: Set<string>,\n  skipDirs: Set<string>,): string[]"
+    },
+    {
+      "name": "rewriteImportPaths",
+      "kind": "function",
+      "line": 62,
+      "signature": "rewriteImportPaths(src: string, oldAbs: string, newAbs: string): string"
+    },
+    {
+      "name": "AliasEdit",
+      "kind": "interface",
+      "line": 72,
+      "signature": "AliasEdit()"
+    },
+    {
+      "name": "stripQuotes",
+      "kind": "function",
+      "line": 79,
+      "signature": "stripQuotes(s: string): string"
+    },
+    {
+      "name": "applyAliasEdits",
+      "kind": "function",
+      "line": 88,
+      "signature": "applyAliasEdits(src: string, edits: AliasEdit[], from: string): string"
+    },
+    {
+      "name": "cleanAliasRegex",
+      "kind": "function",
+      "line": 106,
+      "signature": "cleanAliasRegex(src: string, exactPath: string, from: string, to: string): string"
+    },
+    {
+      "name": "renamePackageDecl",
+      "kind": "function",
+      "line": 125,
+      "signature": "renamePackageDecl(src: string, from: string, to: string): string"
+    },
+    {
+      "name": "isTopLevelOf",
+      "kind": "function",
+      "line": 140,
+      "signature": "isTopLevelOf(fileAbs: string, dirAbs: string): boolean"
+    },
+    {
+      "name": "PmCollectArgs",
+      "kind": "interface",
+      "line": 153,
+      "signature": "PmCollectArgs()"
+    },
+    {
+      "name": "PmCollectResult",
+      "kind": "interface",
+      "line": 166,
+      "signature": "PmCollectResult()"
+    },
+    {
+      "name": "PmLangPackage",
+      "kind": "interface",
+      "line": 171,
+      "signature": "PmLangPackage()"
+    }
+  ],
+  "imports": [
+    {
+      "source": "../../../infrastructure/data_dir.js",
+      "kind": "relative"
+    },
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../../infrastructure/parse/index.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/package_migration/parts.ts#cleanAliasRegex",
+      "to": "src/infrastructure/analysis/package_migration/parts.ts#escapeRe"
+    },
+    {
+      "from": "src/infrastructure/analysis/package_migration/parts.ts#cleanAliasRegex",
+      "to": "src/infrastructure/analysis/package_migration/parts.ts#escapeRe"
+    },
+    {
+      "from": "src/infrastructure/analysis/package_migration/parts.ts#cleanAliasRegex",
+      "to": "src/infrastructure/analysis/package_migration/parts.ts#escapeRe"
+    },
+    {
+      "from": "src/infrastructure/analysis/package_migration/parts.ts#cleanAliasRegex",
+      "to": "src/infrastructure/analysis/package_migration/parts.ts#escapeRe"
+    },
+    {
+      "from": "src/infrastructure/analysis/package_migration/parts.ts#renamePackageDecl",
+      "to": "src/infrastructure/analysis/package_migration/parts.ts#escapeRe"
+    },
+    {
+      "from": "src/infrastructure/analysis/package_migration/parts.ts#renamePackageDecl",
+      "to": "src/infrastructure/analysis/package_migration/parts.ts#escapeRe"
+    }
+  ]
+}

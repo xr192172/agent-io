@@ -1,0 +1,63 @@
+{
+  "//": "Design DB —— src/domain/b_terms.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "BTermKind",
+      "kind": "type",
+      "line": 36,
+      "signature": "BTermKind()"
+    },
+    {
+      "name": "BTerm",
+      "kind": "interface",
+      "line": 51,
+      "signature": "BTerm()"
+    },
+    {
+      "name": "Touched",
+      "kind": "interface",
+      "line": 97,
+      "signature": "Touched()"
+    },
+    {
+      "name": "withTouched",
+      "kind": "function",
+      "line": 191,
+      "signature": "withTouched(product: T,\n  touched: Touched,): T & { touched: Touched }"
+    },
+    {
+      "name": "TouchedProduct",
+      "kind": "type",
+      "line": 199,
+      "signature": "TouchedProduct()"
+    },
+    {
+      "name": "BReceipt",
+      "kind": "interface",
+      "line": 204,
+      "signature": "BReceipt()"
+    },
+    {
+      "name": "B_TERMS",
+      "kind": "const",
+      "line": 214,
+      "signature": "const B_TERMS = { // ── anchor：链的接口（Touched 的字段）────────────────────── fe…"
+    },
+    {
+      "name": "B_TERMS_DEBT",
+      "kind": "const",
+      "line": 632,
+      "signature": "const B_TERMS_DEBT = Object.values(B_TERMS).filter((t) => t.debt).length"
+    },
+    {
+      "name": "B_TOUCHED_EXEMPT",
+      "kind": "const",
+      "line": 659,
+      "signature": "const B_TOUCHED_EXEMPT = { // ── (b) [C] 级分派器（3）── // ★★ 判据（比\"有没有 switch\"锋利）：**入参 …"
+    }
+  ],
+  "imports": [],
+  "calls": []
+}

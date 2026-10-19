@@ -1,0 +1,212 @@
+{
+  "//": "Design DB —— src/application/meta/explore/next_hop_args.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "SlotState",
+      "kind": "type",
+      "line": 54,
+      "signature": "SlotState()"
+    },
+    {
+      "name": "PreparedSlot",
+      "kind": "interface",
+      "line": 65,
+      "signature": "PreparedSlot()"
+    },
+    {
+      "name": "PreparedHop",
+      "kind": "interface",
+      "line": 86,
+      "signature": "PreparedHop()"
+    },
+    {
+      "name": "NextHopResolution",
+      "kind": "type",
+      "line": 99,
+      "signature": "NextHopResolution()"
+    },
+    {
+      "name": "NextHopArgsResult",
+      "kind": "interface",
+      "line": 109,
+      "signature": "NextHopArgsResult()"
+    },
+    {
+      "name": "NextHopArgsInput",
+      "kind": "interface",
+      "line": 124,
+      "signature": "NextHopArgsInput()"
+    },
+    {
+      "name": "shortHint",
+      "kind": "function",
+      "line": 137,
+      "signature": "shortHint(desc: string): string"
+    },
+    {
+      "name": "intentMarker",
+      "kind": "const",
+      "line": 149,
+      "signature": "const intentMarker = (path: string, desc: string): string => { const h = short…"
+    },
+    {
+      "name": "unresolvedMarker",
+      "kind": "const",
+      "line": 153,
+      "signature": "const unresolvedMarker = (path: string, reason: string): string => `<拿不到：${path} —…"
+    },
+    {
+      "name": "pickMarker",
+      "kind": "const",
+      "line": 154,
+      "signature": "const pickMarker = (path: string, candidates: readonly string[]): string => …"
+    },
+    {
+      "name": "assignPath",
+      "kind": "function",
+      "line": 163,
+      "signature": "assignPath(root: Record<string, unknown>, path: string, value: unknown): void"
+    },
+    {
+      "name": "EdgeOutcome",
+      "kind": "type",
+      "line": 187,
+      "signature": "EdgeOutcome()"
+    },
+    {
+      "name": "buildHop",
+      "kind": "function",
+      "line": 201,
+      "signature": "buildHop(to: string,\n  edges: readonly ChainEdge[],\n  touchedObj: Record<string, unknown>,\n  paths: readonly InputPath[],\n  fromTool: string | undefined,): PreparedHop"
+    },
+    {
+      "name": "nextHopArgs",
+      "kind": "function",
+      "line": 314,
+      "signature": "nextHopArgs(touchedObj: Record<string, unknown>,\n  input: NextHopArgsInput,): NextHopArgsResult"
+    },
+    {
+      "name": "candidateEdgesForKeys",
+      "kind": "function",
+      "line": 436,
+      "signature": "candidateEdgesForKeys(touchedKeys: readonly string[]): readonly ChainEdge[]"
+    },
+    {
+      "name": "renderNextHopArgs",
+      "kind": "function",
+      "line": 448,
+      "signature": "renderNextHopArgs(r: NextHopArgsResult): string"
+    }
+  ],
+  "imports": [
+    {
+      "source": "../../../domain/chain_wiring.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../registry/capability_map.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../types.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/meta/explore/next_hop_args.ts#buildHop",
+      "to": "src/application/meta/explore/next_hop_args.ts#assignPath"
+    },
+    {
+      "from": "src/application/meta/explore/next_hop_args.ts#buildHop",
+      "to": "src/application/meta/explore/next_hop_args.ts#assignPath"
+    },
+    {
+      "from": "src/application/meta/explore/next_hop_args.ts#buildHop",
+      "to": "src/application/meta/explore/next_hop_args.ts#assignPath"
+    },
+    {
+      "from": "src/application/meta/explore/next_hop_args.ts#buildHop",
+      "to": "src/application/meta/explore/next_hop_args.ts#assignPath"
+    },
+    {
+      "from": "src/application/meta/explore/next_hop_args.ts#nextHopArgs",
+      "to": "src/application/meta/explore/next_hop_args.ts#buildHop"
+    },
+    {
+      "from": "src/application/meta/explore/next_hop_args.ts#nextHopArgs",
+      "to": "src/application/meta/explore/next_hop_args.ts#buildHop"
+    },
+    {
+      "from": "src/application/meta/explore/next_hop_args.ts#nextHopArgs",
+      "to": "src/application/meta/explore/next_hop_args.ts#candidateEdgesForKeys"
+    },
+    {
+      "from": "src/application/meta/explore/next_hop_args.ts#buildHop",
+      "to": "src/application/meta/explore/next_hop_args.ts#intentMarker"
+    },
+    {
+      "from": "src/application/meta/explore/next_hop_args.ts#buildHop",
+      "to": "src/application/meta/explore/next_hop_args.ts#pickMarker"
+    },
+    {
+      "from": "src/application/meta/explore/next_hop_args.ts#buildHop",
+      "to": "src/application/meta/explore/next_hop_args.ts#unresolvedMarker"
+    },
+    {
+      "from": "src/application/meta/explore/next_hop_args.ts#nextHopArgs",
+      "to": "src/application/meta/registry/capability_map.ts#collectInputPaths"
+    },
+    {
+      "from": "src/application/meta/explore/next_hop_args.ts#buildHop",
+      "to": "src/application/meta/registry/capability_map.ts#declaredRequiredMembersOf"
+    },
+    {
+      "from": "src/application/meta/explore/next_hop_args.ts#buildHop",
+      "to": "src/domain/chain_wiring.ts#applyChainEdge"
+    },
+    {
+      "from": "src/application/meta/explore/next_hop_args.ts#nextHopArgs",
+      "to": "src/domain/chain_wiring.ts#applyChainEdge"
+    },
+    {
+      "from": "src/application/meta/explore/next_hop_args.ts#buildHop",
+      "to": "src/domain/chain_wiring.ts#chainExprOf"
+    },
+    {
+      "from": "src/application/meta/explore/next_hop_args.ts#buildHop",
+      "to": "src/domain/chain_wiring.ts#chainExprOf"
+    },
+    {
+      "from": "src/application/meta/explore/next_hop_args.ts#buildHop",
+      "to": "src/domain/chain_wiring.ts#chainExprOf"
+    },
+    {
+      "from": "src/application/meta/explore/next_hop_args.ts#nextHopArgs",
+      "to": "src/domain/chain_wiring.ts#chainExprOf"
+    },
+    {
+      "from": "src/application/meta/explore/next_hop_args.ts#buildHop",
+      "to": "src/domain/chain_wiring.ts#evidenceLabel"
+    },
+    {
+      "from": "src/application/meta/explore/next_hop_args.ts#buildHop",
+      "to": "src/domain/chain_wiring.ts#evidenceLabel"
+    },
+    {
+      "from": "src/application/meta/explore/next_hop_args.ts#buildHop",
+      "to": "src/domain/chain_wiring.ts#evidenceLabel"
+    },
+    {
+      "from": "src/application/meta/explore/next_hop_args.ts#nextHopArgs",
+      "to": "src/domain/chain_wiring.ts#nextHopsOf"
+    },
+    {
+      "from": "src/application/meta/explore/next_hop_args.ts#nextHopArgs",
+      "to": "src/domain/chain_wiring.ts#universalHopsOf"
+    }
+  ]
+}

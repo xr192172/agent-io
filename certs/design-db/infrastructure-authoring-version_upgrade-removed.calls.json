@@ -1,0 +1,83 @@
+{
+  "//": "Design DB —— src/infrastructure/authoring/version_upgrade/removed.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "removedRulesForExt",
+      "kind": "function",
+      "line": 28,
+      "signature": "removedRulesForExt(ext: string): RemovedRule[]"
+    },
+    {
+      "name": "RemovedHit",
+      "kind": "interface",
+      "line": 33,
+      "signature": "RemovedHit()"
+    },
+    {
+      "name": "SourceFile",
+      "kind": "interface",
+      "line": 44,
+      "signature": "SourceFile()"
+    },
+    {
+      "name": "scanRemovedApis",
+      "kind": "function",
+      "line": 55,
+      "signature": "scanRemovedApis(files: SourceFile[], declaredVersion: number): RemovedHit[]"
+    },
+    {
+      "name": "extOf",
+      "kind": "function",
+      "line": 88,
+      "signature": "extOf(p: string): string"
+    }
+  ],
+  "imports": [
+    {
+      "source": "./adapters/registry.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./adapters/types.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./adapters/types.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./adapters/java.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./adapters/go.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./adapters/node.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./adapters/python.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/authoring/version_upgrade/removed.ts#removedRulesForExt",
+      "to": "src/infrastructure/authoring/version_upgrade/adapters/registry.ts#adapterForExt"
+    },
+    {
+      "from": "src/infrastructure/authoring/version_upgrade/removed.ts#scanRemovedApis",
+      "to": "src/infrastructure/authoring/version_upgrade/removed.ts#extOf"
+    },
+    {
+      "from": "src/infrastructure/authoring/version_upgrade/removed.ts#scanRemovedApis",
+      "to": "src/infrastructure/authoring/version_upgrade/removed.ts#removedRulesForExt"
+    }
+  ]
+}

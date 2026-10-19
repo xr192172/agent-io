@@ -1,0 +1,125 @@
+{
+  "//": "Design DB —— src/application/design/lifecycle/manage_feature.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "MANAGE_ACTIONS",
+      "kind": "const",
+      "line": 32,
+      "signature": "const MANAGE_ACTIONS = ['create', 'clone', 'template', 'list_templates', 'list',…"
+    },
+    {
+      "name": "ManageAction",
+      "kind": "type",
+      "line": 33,
+      "signature": "ManageAction()"
+    },
+    {
+      "name": "ManageFeatureInput",
+      "kind": "interface",
+      "line": 40,
+      "signature": "ManageFeatureInput()"
+    },
+    {
+      "name": "ManageFeatureResult",
+      "kind": "interface",
+      "line": 54,
+      "signature": "ManageFeatureResult()"
+    },
+    {
+      "name": "manageFeature",
+      "kind": "function",
+      "line": 59,
+      "signature": "manageFeature(input: ManageFeatureInput): ManageFeatureResult"
+    }
+  ],
+  "imports": [
+    {
+      "source": "../../plumbing.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../dsl_ops/feature_ops.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./templates.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/storage.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../domain/geometry.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/design/lifecycle/manage_feature.ts#manageFeature",
+      "to": "src/application/design/dsl_ops/feature_ops.ts#cloneFeature"
+    },
+    {
+      "from": "src/application/design/lifecycle/manage_feature.ts#manageFeature",
+      "to": "src/application/design/dsl_ops/feature_ops.ts#createFeature"
+    },
+    {
+      "from": "src/application/design/lifecycle/manage_feature.ts#manageFeature",
+      "to": "src/application/design/lifecycle/manage_feature.ts#manageFeature.rejectLegacyArgs"
+    },
+    {
+      "from": "src/application/design/lifecycle/manage_feature.ts#manageFeature",
+      "to": "src/application/design/lifecycle/manage_feature.ts#manageFeature.req"
+    },
+    {
+      "from": "src/application/design/lifecycle/manage_feature.ts#manageFeature",
+      "to": "src/application/design/lifecycle/manage_feature.ts#manageFeature.req"
+    },
+    {
+      "from": "src/application/design/lifecycle/manage_feature.ts#manageFeature",
+      "to": "src/application/design/lifecycle/manage_feature.ts#manageFeature.req"
+    },
+    {
+      "from": "src/application/design/lifecycle/manage_feature.ts#manageFeature",
+      "to": "src/application/design/lifecycle/manage_feature.ts#manageFeature.req"
+    },
+    {
+      "from": "src/application/design/lifecycle/manage_feature.ts#manageFeature",
+      "to": "src/application/design/lifecycle/manage_feature.ts#manageFeature.req"
+    },
+    {
+      "from": "src/application/design/lifecycle/manage_feature.ts#manageFeature",
+      "to": "src/application/design/lifecycle/manage_feature.ts#manageFeature.req"
+    },
+    {
+      "from": "src/application/design/lifecycle/manage_feature.ts#manageFeature",
+      "to": "src/application/design/lifecycle/templates.ts#createFromTemplate"
+    },
+    {
+      "from": "src/application/design/lifecycle/manage_feature.ts#manageFeature",
+      "to": "src/application/design/lifecycle/templates.ts#listTemplates"
+    },
+    {
+      "from": "src/application/design/lifecycle/manage_feature.ts#manageFeature",
+      "to": "src/application/plumbing.ts#optionalStr"
+    },
+    {
+      "from": "src/application/design/lifecycle/manage_feature.ts#manageFeature.req",
+      "to": "src/application/plumbing.ts#requireStr"
+    },
+    {
+      "from": "src/application/design/lifecycle/manage_feature.ts#manageFeature",
+      "to": "src/domain/geometry.ts#resolveDiagramStatus"
+    },
+    {
+      "from": "src/application/design/lifecycle/manage_feature.ts#manageFeature",
+      "to": "src/domain/geometry.ts#resolveDiagramStatus"
+    },
+    {
+      "from": "src/application/design/lifecycle/manage_feature.ts#manageFeature",
+      "to": "src/infrastructure/storage.ts#deleteFeature"
+    }
+  ]
+}

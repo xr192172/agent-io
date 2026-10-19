@@ -1,0 +1,72 @@
+{
+  "//": "Design DB —— src/infrastructure/daemon/client.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "daemonPort",
+      "kind": "function",
+      "line": 14,
+      "signature": "daemonPort(): number"
+    },
+    {
+      "name": "daemonBaseUrl",
+      "kind": "function",
+      "line": 19,
+      "signature": "daemonBaseUrl(): string"
+    },
+    {
+      "name": "DaemonHealth",
+      "kind": "interface",
+      "line": 23,
+      "signature": "DaemonHealth()"
+    },
+    {
+      "name": "probeDaemon",
+      "kind": "function",
+      "line": 42,
+      "signature": "probeDaemon(timeoutMs = 400): Promise<DaemonHealth | null>"
+    },
+    {
+      "name": "postWatch",
+      "kind": "function",
+      "line": 58,
+      "signature": "postWatch(input: Record<string, unknown>, timeoutMs = 10_000): Promise<Record<string, unknown>>"
+    },
+    {
+      "name": "postDsl",
+      "kind": "function",
+      "line": 79,
+      "signature": "postDsl(req: {\n    feature: string;\n    ops?: Record<string, unknown>;\n    base_dsl_rev?: number;\n    source?: string;\n  },\n  timeoutMs = 10_000,): Promise<{ ok: boolean; rev: number; conflict?: boolean; current_rev?: number; message?: string }>"
+    },
+    {
+      "name": "fetchAlertsSince",
+      "kind": "function",
+      "line": 106,
+      "signature": "fetchAlertsSince(cursor: number,\n  timeoutMs = 800,): Promise<{ alerts: Array<{ id: number; project_dir: string; seq: number; line: string; created_at: string }>; cursor: number }>"
+    }
+  ],
+  "imports": [],
+  "calls": [
+    {
+      "from": "src/infrastructure/daemon/client.ts#probeDaemon",
+      "to": "src/infrastructure/daemon/client.ts#daemonBaseUrl"
+    },
+    {
+      "from": "src/infrastructure/daemon/client.ts#postWatch",
+      "to": "src/infrastructure/daemon/client.ts#daemonBaseUrl"
+    },
+    {
+      "from": "src/infrastructure/daemon/client.ts#postDsl",
+      "to": "src/infrastructure/daemon/client.ts#daemonBaseUrl"
+    },
+    {
+      "from": "src/infrastructure/daemon/client.ts#fetchAlertsSince",
+      "to": "src/infrastructure/daemon/client.ts#daemonBaseUrl"
+    },
+    {
+      "from": "src/infrastructure/daemon/client.ts#daemonBaseUrl",
+      "to": "src/infrastructure/daemon/client.ts#daemonPort"
+    }
+  ]
+}

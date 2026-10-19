@@ -1,0 +1,172 @@
+{
+  "//": "Design DB —— src/application/refactor/index.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "refactorPlanSchema",
+      "kind": "const",
+      "line": 69,
+      "signature": "const refactorPlanSchema = z.object({ schema: z.literal('refactor_plan/1'), plan_id:…"
+    },
+    {
+      "name": "renderLiteralsSummary",
+      "kind": "function",
+      "line": 121,
+      "signature": "renderLiteralsSummary(literals: ReadonlyArray<{ needle: string; matches: ReadonlyArray<unknown> }>,): string"
+    },
+    {
+      "name": "REFACTOR_TOOLS",
+      "kind": "const",
+      "line": 130,
+      "signature": "const REFACTOR_TOOLS = [ { name: 'diff_views', title: 'Compare design view vs li…"
+    }
+  ],
+  "imports": [
+    {
+      "source": "zod",
+      "kind": "package"
+    },
+    {
+      "source": "../plumbing.js",
+      "kind": "relative"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../infrastructure/analysis/impact/index.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/analysis/impact/index.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./find/ast_suggest.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./deprecate_offline/deprecate_offline.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./find/ast_suggest.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./edit/apply_writes.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./edit/edit_code.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./snapshot/file_snapshot.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./rename/move_domain.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./find/find_references.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./annotate/function_annotation.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./parse_capability/parse_capability.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./pipeline/refactor_judge.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./pipeline/refactor_judge.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./pipeline/refactor_pipeline.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./edit/remove_dead_imports.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./edit/remove_dead_imports.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./rename/rename_files.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./rename/rename_symbols.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./rule_library/rule_apply.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./rule_library/rule_extract.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./rule_library/rule_library.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./rule_library/rule_library.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./find/similar_names.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./rename/symbol_move.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/analysis/structure/structure_gap.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./pipeline/refactor_plan.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./pipeline/refactor_plan.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./handlers.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/scan_bounds.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../types.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": []
+}

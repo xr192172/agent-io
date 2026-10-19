@@ -1,0 +1,83 @@
+{
+  "//": "Design DB —— src/infrastructure/authoring/version_upgrade/features.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "rulesForExt",
+      "kind": "function",
+      "line": 25,
+      "signature": "rulesForExt(ext: string): FeatureRule[]"
+    },
+    {
+      "name": "FeatureHit",
+      "kind": "interface",
+      "line": 30,
+      "signature": "FeatureHit()"
+    },
+    {
+      "name": "SourceFile",
+      "kind": "interface",
+      "line": 40,
+      "signature": "SourceFile()"
+    },
+    {
+      "name": "scanFeatureHits",
+      "kind": "function",
+      "line": 51,
+      "signature": "scanFeatureHits(files: SourceFile[], minVersion: number): FeatureHit[]"
+    },
+    {
+      "name": "extOf",
+      "kind": "function",
+      "line": 83,
+      "signature": "extOf(p: string): string"
+    }
+  ],
+  "imports": [
+    {
+      "source": "./adapters/registry.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./adapters/types.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./adapters/types.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./adapters/java.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./adapters/go.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./adapters/node.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./adapters/python.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/authoring/version_upgrade/features.ts#rulesForExt",
+      "to": "src/infrastructure/authoring/version_upgrade/adapters/registry.ts#adapterForExt"
+    },
+    {
+      "from": "src/infrastructure/authoring/version_upgrade/features.ts#scanFeatureHits",
+      "to": "src/infrastructure/authoring/version_upgrade/features.ts#extOf"
+    },
+    {
+      "from": "src/infrastructure/authoring/version_upgrade/features.ts#scanFeatureHits",
+      "to": "src/infrastructure/authoring/version_upgrade/features.ts#rulesForExt"
+    }
+  ]
+}

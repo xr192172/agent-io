@@ -1,0 +1,44 @@
+{
+  "//": "Design DB —— src/infrastructure/parse/ast_node.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "N",
+      "kind": "interface",
+      "line": 18,
+      "signature": "N()"
+    },
+    {
+      "name": "NodeType",
+      "kind": "type",
+      "line": 29,
+      "signature": "NodeType()"
+    },
+    {
+      "name": "TS_EXTS",
+      "kind": "const",
+      "line": 32,
+      "signature": "const TS_EXTS = new Set<string>(TS_JS_EXTS)"
+    },
+    {
+      "name": "stripQuotes",
+      "kind": "function",
+      "line": 35,
+      "signature": "stripQuotes(s: string): string"
+    },
+    {
+      "name": "nameInfo",
+      "kind": "function",
+      "line": 42,
+      "signature": "nameInfo(n: N): { text: string; offset: number } | null"
+    }
+  ],
+  "imports": [
+    {
+      "source": "./source_exts.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": []
+}

@@ -1,0 +1,81 @@
+{
+  "//": "Design DB —— src/application/meta/registry/registry_extract.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "RegistryTool",
+      "kind": "interface",
+      "line": 22,
+      "signature": "RegistryTool()"
+    },
+    {
+      "name": "RegistryExtractResult",
+      "kind": "interface",
+      "line": 33,
+      "signature": "RegistryExtractResult()"
+    },
+    {
+      "name": "extractDescription",
+      "kind": "function",
+      "line": 42,
+      "signature": "extractDescription(block: string): string"
+    },
+    {
+      "name": "extractImportMap",
+      "kind": "const",
+      "line": 54,
+      "signature": "const extractImportMap = parseRelativeNamedImportMap"
+    },
+    {
+      "name": "handlerDefBody",
+      "kind": "function",
+      "line": 57,
+      "signature": "handlerDefBody(src: string, handlerName: string): string"
+    },
+    {
+      "name": "extractRegistryTools",
+      "kind": "function",
+      "line": 69,
+      "signature": "extractRegistryTools(src: string): RegistryExtractResult"
+    },
+    {
+      "name": "extractRegistryToolsFromFile",
+      "kind": "function",
+      "line": 115,
+      "signature": "extractRegistryToolsFromFile(registryFile: string,): RegistryExtractResult"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../../infrastructure/parse/import_text.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/meta/registry/registry_extract.ts#extractRegistryTools",
+      "to": "src/application/meta/registry/registry_extract.ts#extractDescription"
+    },
+    {
+      "from": "src/application/meta/registry/registry_extract.ts#extractRegistryTools",
+      "to": "src/application/meta/registry/registry_extract.ts#extractImportMap"
+    },
+    {
+      "from": "src/application/meta/registry/registry_extract.ts#extractRegistryToolsFromFile",
+      "to": "src/application/meta/registry/registry_extract.ts#extractRegistryTools"
+    },
+    {
+      "from": "src/application/meta/registry/registry_extract.ts#extractRegistryTools",
+      "to": "src/application/meta/registry/registry_extract.ts#handlerDefBody"
+    }
+  ]
+}

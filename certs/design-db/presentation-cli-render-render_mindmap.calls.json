@@ -1,0 +1,140 @@
+{
+  "//": "Design DB —— src/presentation/cli/render/render_mindmap.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "MNode",
+      "kind": "interface",
+      "line": 15,
+      "signature": "MNode()"
+    },
+    {
+      "name": "ROLE_CLS",
+      "kind": "const",
+      "line": 28,
+      "signature": "const ROLE_CLS = { brick: 'r-brick', contract: 'r-contract', glue: 'r-glue' }"
+    },
+    {
+      "name": "ROLE_TXT",
+      "kind": "const",
+      "line": 29,
+      "signature": "const ROLE_TXT = { brick: '积木', contract: '契约', glue: '胶水' }"
+    },
+    {
+      "name": "KIND_ICON",
+      "kind": "const",
+      "line": 30,
+      "signature": "const KIND_ICON = { project: '⌂', community: '◎', brick: '🧱', sub: '▤', fi…"
+    },
+    {
+      "name": "esc",
+      "kind": "function",
+      "line": 38,
+      "signature": "esc(s: string): string"
+    },
+    {
+      "name": "jsonForScript",
+      "kind": "function",
+      "line": 42,
+      "signature": "jsonForScript(o: unknown): string"
+    },
+    {
+      "name": "buildMindMapTree",
+      "kind": "function",
+      "line": 47,
+      "signature": "buildMindMapTree(r: BrickifyResult): MNode"
+    },
+    {
+      "name": "basenameOf",
+      "kind": "function",
+      "line": 131,
+      "signature": "basenameOf(rel: string): string"
+    },
+    {
+      "name": "cs",
+      "kind": "function",
+      "line": 134,
+      "signature": "cs(c: Community): string"
+    },
+    {
+      "name": "degenerateNote",
+      "kind": "function",
+      "line": 137,
+      "signature": "degenerateNote(s: BrickSubCluster): string | undefined"
+    },
+    {
+      "name": "roleOf",
+      "kind": "function",
+      "line": 141,
+      "signature": "roleOf(_f: string, s: BrickSubCluster): 'brick' | 'contract' | 'glue'"
+    },
+    {
+      "name": "renderBrickifyMindMapHtml",
+      "kind": "function",
+      "line": 145,
+      "signature": "renderBrickifyMindMapHtml(r: BrickifyResult): string"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../../application/design/bricks/brickify.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/presentation/cli/render/render_mindmap.ts#buildMindMapTree",
+      "to": "src/presentation/cli/render/render_mindmap.ts#basenameOf"
+    },
+    {
+      "from": "src/presentation/cli/render/render_mindmap.ts#buildMindMapTree",
+      "to": "src/presentation/cli/render/render_mindmap.ts#basenameOf"
+    },
+    {
+      "from": "src/presentation/cli/render/render_mindmap.ts#renderBrickifyMindMapHtml",
+      "to": "src/presentation/cli/render/render_mindmap.ts#buildMindMapTree"
+    },
+    {
+      "from": "src/presentation/cli/render/render_mindmap.ts#buildMindMapTree",
+      "to": "src/presentation/cli/render/render_mindmap.ts#cs"
+    },
+    {
+      "from": "src/presentation/cli/render/render_mindmap.ts#buildMindMapTree",
+      "to": "src/presentation/cli/render/render_mindmap.ts#degenerateNote"
+    },
+    {
+      "from": "src/presentation/cli/render/render_mindmap.ts#renderBrickifyMindMapHtml",
+      "to": "src/presentation/cli/render/render_mindmap.ts#esc"
+    },
+    {
+      "from": "src/presentation/cli/render/render_mindmap.ts#renderBrickifyMindMapHtml",
+      "to": "src/presentation/cli/render/render_mindmap.ts#esc"
+    },
+    {
+      "from": "src/presentation/cli/render/render_mindmap.ts#renderBrickifyMindMapHtml",
+      "to": "src/presentation/cli/render/render_mindmap.ts#jsonForScript"
+    },
+    {
+      "from": "src/presentation/cli/render/render_mindmap.ts#renderBrickifyMindMapHtml",
+      "to": "src/presentation/cli/render/render_mindmap.ts#jsonForScript"
+    },
+    {
+      "from": "src/presentation/cli/render/render_mindmap.ts#renderBrickifyMindMapHtml",
+      "to": "src/presentation/cli/render/render_mindmap.ts#jsonForScript"
+    },
+    {
+      "from": "src/presentation/cli/render/render_mindmap.ts#renderBrickifyMindMapHtml",
+      "to": "src/presentation/cli/render/render_mindmap.ts#jsonForScript"
+    },
+    {
+      "from": "src/presentation/cli/render/render_mindmap.ts#buildMindMapTree",
+      "to": "src/presentation/cli/render/render_mindmap.ts#roleOf"
+    }
+  ]
+}

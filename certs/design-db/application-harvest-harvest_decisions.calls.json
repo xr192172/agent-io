@@ -1,0 +1,648 @@
+{
+  "//": "Design DB —— src/application/harvest/harvest_decisions.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "HarvestSource",
+      "kind": "type",
+      "line": 81,
+      "signature": "HarvestSource()"
+    },
+    {
+      "name": "EvidenceSource",
+      "kind": "type",
+      "line": 89,
+      "signature": "EvidenceSource()"
+    },
+    {
+      "name": "EVIDENCE_SOURCES",
+      "kind": "const",
+      "line": 96,
+      "signature": "const EVIDENCE_SOURCES = ['code', 'history', 'docs']"
+    },
+    {
+      "name": "EVIDENCE_LABEL",
+      "kind": "const",
+      "line": 99,
+      "signature": "const EVIDENCE_LABEL = { code: '代码证据（该文件的符号/导出/依赖/被谁引用）', history: '历史证据（该文件的 gi…"
+    },
+    {
+      "name": "LifecycleHint",
+      "kind": "interface",
+      "line": 105,
+      "signature": "LifecycleHint()"
+    },
+    {
+      "name": "DecisionElements",
+      "kind": "interface",
+      "line": 119,
+      "signature": "DecisionElements()"
+    },
+    {
+      "name": "AlternativeWhy",
+      "kind": "interface",
+      "line": 137,
+      "signature": "AlternativeWhy()"
+    },
+    {
+      "name": "HarvestCandidate",
+      "kind": "interface",
+      "line": 147,
+      "signature": "HarvestCandidate()"
+    },
+    {
+      "name": "HarvestResult",
+      "kind": "interface",
+      "line": 199,
+      "signature": "HarvestResult()"
+    },
+    {
+      "name": "EvidenceExcerpt",
+      "kind": "interface",
+      "line": 219,
+      "signature": "EvidenceExcerpt()"
+    },
+    {
+      "name": "FileEvidence",
+      "kind": "interface",
+      "line": 228,
+      "signature": "FileEvidence()"
+    },
+    {
+      "name": "HarvestInput",
+      "kind": "interface",
+      "line": 242,
+      "signature": "HarvestInput()"
+    },
+    {
+      "name": "BATCH_SIZE",
+      "kind": "const",
+      "line": 285,
+      "signature": "const BATCH_SIZE = 20"
+    },
+    {
+      "name": "CONCURRENCY",
+      "kind": "const",
+      "line": 287,
+      "signature": "const CONCURRENCY = 3"
+    },
+    {
+      "name": "MAX_SIGNAL_LINES",
+      "kind": "const",
+      "line": 289,
+      "signature": "const MAX_SIGNAL_LINES = 40"
+    },
+    {
+      "name": "GIT_LOG_LIMIT",
+      "kind": "const",
+      "line": 296,
+      "signature": "const GIT_LOG_LIMIT = 30"
+    },
+    {
+      "name": "EVIDENCE_MAX",
+      "kind": "const",
+      "line": 298,
+      "signature": "const EVIDENCE_MAX = 240"
+    },
+    {
+      "name": "SOURCE_EXT_RE",
+      "kind": "const",
+      "line": 300,
+      "signature": "const SOURCE_EXT_RE = /\\.(ts|tsx|mts|cts|js|jsx|mjs|cjs|go|py)$/i"
+    },
+    {
+      "name": "MAX_DOC_MENTIONS",
+      "kind": "const",
+      "line": 302,
+      "signature": "const MAX_DOC_MENTIONS = 3"
+    },
+    {
+      "name": "LIFECYCLE_RULES",
+      "kind": "const",
+      "line": 304,
+      "signature": "const LIFECYCLE_RULES = [ { kw: ['弃用', '下线', '废弃', '删除'], type: 'retired' }, { kw…"
+    },
+    {
+      "name": "lifecycleHint",
+      "kind": "function",
+      "line": 311,
+      "signature": "lifecycleHint(text: string): LifecycleHint | undefined"
+    },
+    {
+      "name": "LlmCfg",
+      "kind": "type",
+      "line": 325,
+      "signature": "LlmCfg()"
+    },
+    {
+      "name": "toLlmCfg",
+      "kind": "function",
+      "line": 328,
+      "signature": "toLlmCfg(c: ReturnType<typeof loadExplainConfig>): LlmCfg | null"
+    },
+    {
+      "name": "loadCfgOrNull",
+      "kind": "function",
+      "line": 336,
+      "signature": "loadCfgOrNull(): LlmCfg | null"
+    },
+    {
+      "name": "requireLlmConfig",
+      "kind": "function",
+      "line": 345,
+      "signature": "requireLlmConfig(): LlmCfg"
+    },
+    {
+      "name": "buildLead",
+      "kind": "function",
+      "line": 362,
+      "signature": "buildLead(el: DecisionElements,\r\n  rest: {\r\n    source: HarvestSource;\r\n    votes: number;\r\n    samples: number;\r\n    evidence_source: EvidenceSource[];\r\n    evidence: string;\r\n    /** 详细理由（一句话，**不参与归一**）—— 落到 `decision.rationale`（NodeDecision 既有字段，语义不变） */\r\n    rationale?: string;\r\n    /** 其余分歧结论（各带票数 + 证据源）；收敛时缺省 ⇒ 落为空数组 */\r\n    alternatives?: AlternativeWhy[];\r\n    lifecycle_hint?: LifecycleHint;\r\n    /** ★★ 落点可行性（见 {@link HarvestCandidate.landing}）—— 由 {@link makeLandable} 判定 */\r\n    landing: HarvestCandidate['landing'];\r\n  },): HarvestCandidate | null"
+    },
+    {
+      "name": "makeLandable",
+      "kind": "function",
+      "line": 413,
+      "signature": "makeLandable(dsl: DesignDSL): (rel: string) => boolean"
+    },
+    {
+      "name": "TargetFile",
+      "kind": "interface",
+      "line": 423,
+      "signature": "TargetFile()"
+    },
+    {
+      "name": "SignalLine",
+      "kind": "interface",
+      "line": 432,
+      "signature": "SignalLine()"
+    },
+    {
+      "name": "EvidenceSignal",
+      "kind": "interface",
+      "line": 438,
+      "signature": "EvidenceSignal()"
+    },
+    {
+      "name": "codeEvidence",
+      "kind": "function",
+      "line": 457,
+      "signature": "codeEvidence(target: TargetFile, ctx: EvidenceCtx): EvidenceSignal | null"
+    },
+    {
+      "name": "historyEvidence",
+      "kind": "function",
+      "line": 492,
+      "signature": "historyEvidence(target: TargetFile, ctx: EvidenceCtx): EvidenceSignal | null"
+    },
+    {
+      "name": "commentLines",
+      "kind": "function",
+      "line": 519,
+      "signature": "commentLines(content: string): SignalLine[]"
+    },
+    {
+      "name": "bodyLines",
+      "kind": "function",
+      "line": 539,
+      "signature": "bodyLines(content: string): SignalLine[]"
+    },
+    {
+      "name": "DocCorpusEntry",
+      "kind": "interface",
+      "line": 549,
+      "signature": "DocCorpusEntry()"
+    },
+    {
+      "name": "docsEvidence",
+      "kind": "function",
+      "line": 560,
+      "signature": "docsEvidence(target: TargetFile, ctx: EvidenceCtx): EvidenceSignal | null"
+    },
+    {
+      "name": "firstMention",
+      "kind": "function",
+      "line": 591,
+      "signature": "firstMention(d: DocCorpusEntry, rel: string, key: string): { line: number; text: string } | null"
+    },
+    {
+      "name": "EvidenceCtx",
+      "kind": "interface",
+      "line": 603,
+      "signature": "EvidenceCtx()"
+    },
+    {
+      "name": "evidenceForSource",
+      "kind": "function",
+      "line": 618,
+      "signature": "evidenceForSource(ev: EvidenceSource, target: TargetFile, ctx: EvidenceCtx): EvidenceSignal | null"
+    },
+    {
+      "name": "RawHit",
+      "kind": "interface",
+      "line": 632,
+      "signature": "RawHit()"
+    },
+    {
+      "name": "extractJsonObject",
+      "kind": "function",
+      "line": 645,
+      "signature": "extractJsonObject(raw: string): Record<string, unknown>"
+    },
+    {
+      "name": "normalizeWhy",
+      "kind": "function",
+      "line": 669,
+      "signature": "normalizeWhy(s: string): string"
+    },
+    {
+      "name": "EVIDENCE_SYSTEM_PROMPT",
+      "kind": "const",
+      "line": 677,
+      "signature": "const EVIDENCE_SYSTEM_PROMPT = '你是项目结构解读助手。给定若干文件，以及这些文件的**一份特定证据**（代码证据 / 历史证据 / 文档与注释证…"
+    },
+    {
+      "name": "askEvidenceBatch",
+      "kind": "function",
+      "line": 693,
+      "signature": "askEvidenceBatch(cfg: LlmCfg, batch: EvidenceSignal[], ev: EvidenceSource): Promise<RawHit[]>"
+    },
+    {
+      "name": "runBatches",
+      "kind": "function",
+      "line": 720,
+      "signature": "runBatches(batches: T[][],\r\n  ask: (batch: T[]) => Promise<RawHit[]>,): Promise<RawHit[]>"
+    },
+    {
+      "name": "chunk",
+      "kind": "function",
+      "line": 742,
+      "signature": "chunk(arr: T[], size: number): T[][]"
+    },
+    {
+      "name": "VoteBin",
+      "kind": "interface",
+      "line": 751,
+      "signature": "VoteBin()"
+    },
+    {
+      "name": "VoteTable",
+      "kind": "type",
+      "line": 765,
+      "signature": "VoteTable()"
+    },
+    {
+      "name": "accumulate",
+      "kind": "function",
+      "line": 771,
+      "signature": "accumulate(table: VoteTable, hits: RawHit[]): void"
+    },
+    {
+      "name": "rankBins",
+      "kind": "function",
+      "line": 793,
+      "signature": "rankBins(byWhy: Map<string, VoteBin>): VoteBin[]"
+    },
+    {
+      "name": "EvidenceByRel",
+      "kind": "type",
+      "line": 798,
+      "signature": "EvidenceByRel()"
+    },
+    {
+      "name": "writeCandidates",
+      "kind": "function",
+      "line": 805,
+      "signature": "writeCandidates(targets: TargetFile[],\r\n  table: VoteTable,\r\n  evidenceByRel: EvidenceByRel,\r\n  landable: (rel: string) => boolean,): HarvestCandidate[]"
+    },
+    {
+      "name": "collectMdFiles",
+      "kind": "function",
+      "line": 847,
+      "signature": "collectMdFiles(dir: string): string[]"
+    },
+    {
+      "name": "relOf",
+      "kind": "function",
+      "line": 861,
+      "signature": "relOf(root: string, abs: string): string"
+    },
+    {
+      "name": "indexedCodeTargets",
+      "kind": "function",
+      "line": 866,
+      "signature": "indexedCodeTargets(db: Database, root: string): TargetFile[]"
+    },
+    {
+      "name": "docTargets",
+      "kind": "function",
+      "line": 878,
+      "signature": "docTargets(docDir: string, root: string): TargetFile[]"
+    },
+    {
+      "name": "readDocCorpus",
+      "kind": "function",
+      "line": 886,
+      "signature": "readDocCorpus(docDir: string, root: string): DocCorpusEntry[]"
+    },
+    {
+      "name": "isGitRepo",
+      "kind": "function",
+      "line": 907,
+      "signature": "isGitRepo(gitRoot: string): boolean"
+    },
+    {
+      "name": "applyOutputLimit",
+      "kind": "function",
+      "line": 930,
+      "signature": "applyOutputLimit(xs: T[], limit: number | undefined): T[]"
+    },
+    {
+      "name": "harvestDecisionsCore",
+      "kind": "function",
+      "line": 934,
+      "signature": "harvestDecisionsCore(input: HarvestInput): Promise<HarvestResult>"
+    },
+    {
+      "name": "buildEvidenceByFile",
+      "kind": "function",
+      "line": 1120,
+      "signature": "buildEvidenceByFile(targets: TargetFile[],\r\n  evidenceByRel: EvidenceByRel,\r\n  landable: (rel: string) => boolean,): FileEvidence[]"
+    },
+    {
+      "name": "touchedOf",
+      "kind": "function",
+      "line": 1147,
+      "signature": "touchedOf(input: HarvestInput): Touched"
+    },
+    {
+      "name": "harvestDecisions",
+      "kind": "function",
+      "line": 1160,
+      "signature": "harvestDecisions(input: HarvestInput): Promise<TouchedProduct<HarvestResult>>"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "node:child_process",
+      "kind": "package"
+    },
+    {
+      "source": "../../infrastructure/exec_guard.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/index/index_freshness.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/index/db.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../../infrastructure/index/symbols.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/llm_focus.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/llm_agnes.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../domain/b_terms.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../domain/geometry.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../../infrastructure/storage.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../design/dsl_ops/update_feature.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../domain/types.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#makeLandable",
+      "to": "src/application/design/dsl_ops/update_feature.ts#findDecisionTargetNode"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+      "to": "src/application/design/dsl_ops/update_feature.ts#normRel"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+      "to": "src/application/design/dsl_ops/update_feature.ts#normRel"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+      "to": "src/application/design/dsl_ops/update_feature.ts#normRel"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+      "to": "src/application/harvest/harvest_decisions.ts#accumulate"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+      "to": "src/application/harvest/harvest_decisions.ts#applyOutputLimit"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+      "to": "src/application/harvest/harvest_decisions.ts#applyOutputLimit"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+      "to": "src/application/harvest/harvest_decisions.ts#askEvidenceBatch"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#docsEvidence",
+      "to": "src/application/harvest/harvest_decisions.ts#bodyLines"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+      "to": "src/application/harvest/harvest_decisions.ts#buildEvidenceByFile"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#writeCandidates",
+      "to": "src/application/harvest/harvest_decisions.ts#buildLead"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+      "to": "src/application/harvest/harvest_decisions.ts#chunk"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#evidenceForSource",
+      "to": "src/application/harvest/harvest_decisions.ts#codeEvidence"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#docTargets",
+      "to": "src/application/harvest/harvest_decisions.ts#collectMdFiles"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#readDocCorpus",
+      "to": "src/application/harvest/harvest_decisions.ts#collectMdFiles"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#docsEvidence",
+      "to": "src/application/harvest/harvest_decisions.ts#commentLines"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+      "to": "src/application/harvest/harvest_decisions.ts#docTargets"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#evidenceForSource",
+      "to": "src/application/harvest/harvest_decisions.ts#docsEvidence"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+      "to": "src/application/harvest/harvest_decisions.ts#evidenceForSource"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#askEvidenceBatch",
+      "to": "src/application/harvest/harvest_decisions.ts#extractJsonObject"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#docsEvidence",
+      "to": "src/application/harvest/harvest_decisions.ts#firstMention"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisions",
+      "to": "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#evidenceForSource",
+      "to": "src/application/harvest/harvest_decisions.ts#historyEvidence"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+      "to": "src/application/harvest/harvest_decisions.ts#indexedCodeTargets"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+      "to": "src/application/harvest/harvest_decisions.ts#isGitRepo"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#writeCandidates",
+      "to": "src/application/harvest/harvest_decisions.ts#lifecycleHint"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#requireLlmConfig",
+      "to": "src/application/harvest/harvest_decisions.ts#loadCfgOrNull"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+      "to": "src/application/harvest/harvest_decisions.ts#loadCfgOrNull"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+      "to": "src/application/harvest/harvest_decisions.ts#makeLandable"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#accumulate",
+      "to": "src/application/harvest/harvest_decisions.ts#normalizeWhy"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#writeCandidates",
+      "to": "src/application/harvest/harvest_decisions.ts#rankBins"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+      "to": "src/application/harvest/harvest_decisions.ts#readDocCorpus"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#docTargets",
+      "to": "src/application/harvest/harvest_decisions.ts#relOf"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#readDocCorpus",
+      "to": "src/application/harvest/harvest_decisions.ts#relOf"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+      "to": "src/application/harvest/harvest_decisions.ts#requireLlmConfig"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+      "to": "src/application/harvest/harvest_decisions.ts#runBatches"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#loadCfgOrNull",
+      "to": "src/application/harvest/harvest_decisions.ts#toLlmCfg"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisions",
+      "to": "src/application/harvest/harvest_decisions.ts#touchedOf"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+      "to": "src/application/harvest/harvest_decisions.ts#writeCandidates"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisions",
+      "to": "src/domain/b_terms.ts#withTouched"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#isGitRepo",
+      "to": "src/infrastructure/exec_guard.ts#gitAvailable"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+      "to": "src/infrastructure/index/index_freshness.ts#ensureProjectIndex"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#codeEvidence",
+      "to": "src/infrastructure/index/symbols.ts#getRawImportsOfFile"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#codeEvidence",
+      "to": "src/infrastructure/index/symbols.ts#getResolvedImportSources"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#requireLlmConfig",
+      "to": "src/infrastructure/llm_agnes.ts#describeAgnesConfigHint"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+      "to": "src/infrastructure/llm_agnes.ts#describeAgnesConfigHint"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#askEvidenceBatch",
+      "to": "src/infrastructure/llm_focus.ts#callChat"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#loadCfgOrNull",
+      "to": "src/infrastructure/llm_focus.ts#loadExplainConfig"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#loadCfgOrNull",
+      "to": "src/infrastructure/llm_focus.ts#loadLlmConfig"
+    },
+    {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    }
+  ]
+}

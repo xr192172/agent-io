@@ -1,0 +1,164 @@
+{
+  "//": "Design DB —— src/presentation/http/archify/archify_mappers.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "DIAGRAM_TYPES",
+      "kind": "const",
+      "line": 13,
+      "signature": "const DIAGRAM_TYPES = ['architecture', 'workflow', 'sequence', 'dataflow', 'lif…"
+    },
+    {
+      "name": "DiagramType",
+      "kind": "type",
+      "line": 14,
+      "signature": "DiagramType()"
+    },
+    {
+      "name": "DiagramCandidate",
+      "kind": "interface",
+      "line": 15,
+      "signature": "DiagramCandidate()"
+    },
+    {
+      "name": "metaFor",
+      "kind": "function",
+      "line": 17,
+      "signature": "metaFor(sem: SemanticSurface, type: string): Record<string, unknown>"
+    },
+    {
+      "name": "edgeLabel",
+      "kind": "function",
+      "line": 22,
+      "signature": "edgeLabel(e: SemanticEdge, fallback: string): string"
+    },
+    {
+      "name": "toArchitecture",
+      "kind": "function",
+      "line": 28,
+      "signature": "toArchitecture(sem: SemanticSurface): DiagramCandidate"
+    },
+    {
+      "name": "toWorkflow",
+      "kind": "function",
+      "line": 58,
+      "signature": "toWorkflow(sem: SemanticSurface): DiagramCandidate"
+    },
+    {
+      "name": "mainPathAlongEdges",
+      "kind": "function",
+      "line": 118,
+      "signature": "mainPathAlongEdges(sem: SemanticSurface): string[]"
+    },
+    {
+      "name": "componentWidth",
+      "kind": "function",
+      "line": 130,
+      "signature": "componentWidth(label: string, sublabel?: string): number"
+    },
+    {
+      "name": "archBoundaries",
+      "kind": "function",
+      "line": 135,
+      "signature": "archBoundaries(sem: SemanticSurface): Array<{ kind: 'region'; label: string; wraps: string[] }>"
+    },
+    {
+      "name": "archPosComponents",
+      "kind": "function",
+      "line": 150,
+      "signature": "archPosComponents(sem: SemanticSurface): Record<string, unknown>[]"
+    },
+    {
+      "name": "toSequence",
+      "kind": "function",
+      "line": 170,
+      "signature": "toSequence(sem: SemanticSurface): DiagramCandidate | null"
+    },
+    {
+      "name": "toDataflow",
+      "kind": "function",
+      "line": 203,
+      "signature": "toDataflow(sem: SemanticSurface): DiagramCandidate | null"
+    },
+    {
+      "name": "toLifecycle",
+      "kind": "function",
+      "line": 271,
+      "signature": "toLifecycle(sem: SemanticSurface): DiagramCandidate | null"
+    },
+    {
+      "name": "seqParticipantLabel",
+      "kind": "function",
+      "line": 339,
+      "signature": "seqParticipantLabel(label: string): string"
+    },
+    {
+      "name": "likelyTopologyOf",
+      "kind": "function",
+      "line": 352,
+      "signature": "likelyTopologyOf(sem: SemanticSurface): typeof sem.nodes"
+    }
+  ],
+  "imports": [
+    {
+      "source": "./archify_semantics.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/presentation/http/archify/archify_mappers.ts#toArchitecture",
+      "to": "src/presentation/http/archify/archify_mappers.ts#archBoundaries"
+    },
+    {
+      "from": "src/presentation/http/archify/archify_mappers.ts#toArchitecture",
+      "to": "src/presentation/http/archify/archify_mappers.ts#archPosComponents"
+    },
+    {
+      "from": "src/presentation/http/archify/archify_mappers.ts#archPosComponents",
+      "to": "src/presentation/http/archify/archify_mappers.ts#componentWidth"
+    },
+    {
+      "from": "src/presentation/http/archify/archify_mappers.ts#toSequence",
+      "to": "src/presentation/http/archify/archify_mappers.ts#edgeLabel"
+    },
+    {
+      "from": "src/presentation/http/archify/archify_mappers.ts#toDataflow",
+      "to": "src/presentation/http/archify/archify_mappers.ts#edgeLabel"
+    },
+    {
+      "from": "src/presentation/http/archify/archify_mappers.ts#toSequence",
+      "to": "src/presentation/http/archify/archify_mappers.ts#likelyTopologyOf"
+    },
+    {
+      "from": "src/presentation/http/archify/archify_mappers.ts#toWorkflow",
+      "to": "src/presentation/http/archify/archify_mappers.ts#mainPathAlongEdges"
+    },
+    {
+      "from": "src/presentation/http/archify/archify_mappers.ts#toArchitecture",
+      "to": "src/presentation/http/archify/archify_mappers.ts#metaFor"
+    },
+    {
+      "from": "src/presentation/http/archify/archify_mappers.ts#toWorkflow",
+      "to": "src/presentation/http/archify/archify_mappers.ts#metaFor"
+    },
+    {
+      "from": "src/presentation/http/archify/archify_mappers.ts#toSequence",
+      "to": "src/presentation/http/archify/archify_mappers.ts#metaFor"
+    },
+    {
+      "from": "src/presentation/http/archify/archify_mappers.ts#toDataflow",
+      "to": "src/presentation/http/archify/archify_mappers.ts#metaFor"
+    },
+    {
+      "from": "src/presentation/http/archify/archify_mappers.ts#toLifecycle",
+      "to": "src/presentation/http/archify/archify_mappers.ts#metaFor"
+    },
+    {
+      "from": "src/presentation/http/archify/archify_mappers.ts#toSequence",
+      "to": "src/presentation/http/archify/archify_mappers.ts#seqParticipantLabel"
+    }
+  ]
+}

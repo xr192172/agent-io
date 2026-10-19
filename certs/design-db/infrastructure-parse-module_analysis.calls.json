@@ -1,0 +1,173 @@
+{
+  "//": "Design DB —— src/infrastructure/parse/module_analysis.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "TS_LANG_NAMES",
+      "kind": "const",
+      "line": 30,
+      "signature": "const TS_LANG_NAMES = new Set(['typescript', 'tsx', 'javascript', 'jsx'])"
+    },
+    {
+      "name": "ScopeMap",
+      "kind": "type",
+      "line": 32,
+      "signature": "ScopeMap()"
+    },
+    {
+      "name": "ImportEdge",
+      "kind": "interface",
+      "line": 35,
+      "signature": "ImportEdge()"
+    },
+    {
+      "name": "ModuleRef",
+      "kind": "interface",
+      "line": 52,
+      "signature": "ModuleRef()"
+    },
+    {
+      "name": "ModuleAnalysis",
+      "kind": "interface",
+      "line": 58,
+      "signature": "ModuleAnalysis()"
+    },
+    {
+      "name": "FN_TYPES",
+      "kind": "const",
+      "line": 75,
+      "signature": "const FN_TYPES = new Set([ 'function_declaration', 'generator_function_dec…"
+    },
+    {
+      "name": "CLASS_TYPES",
+      "kind": "const",
+      "line": 83,
+      "signature": "const CLASS_TYPES = new Set(['class_declaration', 'abstract_class_declaration'])"
+    },
+    {
+      "name": "VAR_TYPES",
+      "kind": "const",
+      "line": 84,
+      "signature": "const VAR_TYPES = new Set(['lexical_declaration', 'variable_declaration', '…"
+    },
+    {
+      "name": "FOR_TYPES",
+      "kind": "const",
+      "line": 85,
+      "signature": "const FOR_TYPES = new Set(['for_statement', 'for_in_statement', 'for_of_sta…"
+    },
+    {
+      "name": "isRefType",
+      "kind": "function",
+      "line": 87,
+      "signature": "isRefType(t: string): NodeType | null"
+    },
+    {
+      "name": "fieldText",
+      "kind": "function",
+      "line": 93,
+      "signature": "fieldText(n: N | null, f: string): string"
+    },
+    {
+      "name": "isFakePatternName",
+      "kind": "function",
+      "line": 98,
+      "signature": "isFakePatternName(t: string): boolean"
+    },
+    {
+      "name": "analyzeModuleSource",
+      "kind": "function",
+      "line": 103,
+      "signature": "analyzeModuleSource(src: string, filePath = 'file.ts'): Promise<ModuleAnalysis | null>"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "./loader.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./languages.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./kernel.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./ast_node.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/parse/module_analysis.ts#analyzeModuleSource",
+      "to": "src/infrastructure/parse/ast_node.ts#nameInfo"
+    },
+    {
+      "from": "src/infrastructure/parse/module_analysis.ts#analyzeModuleSource",
+      "to": "src/infrastructure/parse/ast_node.ts#nameInfo"
+    },
+    {
+      "from": "src/infrastructure/parse/module_analysis.ts#analyzeModuleSource",
+      "to": "src/infrastructure/parse/ast_node.ts#nameInfo"
+    },
+    {
+      "from": "src/infrastructure/parse/module_analysis.ts#analyzeModuleSource",
+      "to": "src/infrastructure/parse/ast_node.ts#nameInfo"
+    },
+    {
+      "from": "src/infrastructure/parse/module_analysis.ts#analyzeModuleSource",
+      "to": "src/infrastructure/parse/ast_node.ts#nameInfo"
+    },
+    {
+      "from": "src/infrastructure/parse/module_analysis.ts#analyzeModuleSource",
+      "to": "src/infrastructure/parse/ast_node.ts#nameInfo"
+    },
+    {
+      "from": "src/infrastructure/parse/module_analysis.ts#analyzeModuleSource",
+      "to": "src/infrastructure/parse/kernel.ts#isTypeOnlyModuleStatement"
+    },
+    {
+      "from": "src/infrastructure/parse/module_analysis.ts#analyzeModuleSource",
+      "to": "src/infrastructure/parse/kernel.ts#isTypeOnlyModuleStatement"
+    },
+    {
+      "from": "src/infrastructure/parse/module_analysis.ts#analyzeModuleSource",
+      "to": "src/infrastructure/parse/kernel.ts#parseContent"
+    },
+    {
+      "from": "src/infrastructure/parse/module_analysis.ts#analyzeModuleSource",
+      "to": "src/infrastructure/parse/kernel.ts#stripQuotes"
+    },
+    {
+      "from": "src/infrastructure/parse/module_analysis.ts#analyzeModuleSource",
+      "to": "src/infrastructure/parse/kernel.ts#stripQuotes"
+    },
+    {
+      "from": "src/infrastructure/parse/module_analysis.ts#analyzeModuleSource",
+      "to": "src/infrastructure/parse/languages.ts#findLanguageByExt"
+    },
+    {
+      "from": "src/infrastructure/parse/module_analysis.ts#analyzeModuleSource",
+      "to": "src/infrastructure/parse/loader.ts#getParser"
+    },
+    {
+      "from": "src/infrastructure/parse/module_analysis.ts#analyzeModuleSource",
+      "to": "src/infrastructure/parse/module_analysis.ts#fieldText"
+    },
+    {
+      "from": "src/infrastructure/parse/module_analysis.ts#analyzeModuleSource",
+      "to": "src/infrastructure/parse/module_analysis.ts#isFakePatternName"
+    },
+    {
+      "from": "src/infrastructure/parse/module_analysis.ts#analyzeModuleSource",
+      "to": "src/infrastructure/parse/module_analysis.ts#isRefType"
+    }
+  ]
+}

@@ -1,0 +1,87 @@
+{
+  "//": "Design DB —— src/application/meta/view/explain_gen.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "GeneratedNarrations",
+      "kind": "interface",
+      "line": 26,
+      "signature": "GeneratedNarrations()"
+    },
+    {
+      "name": "extractJsonObject",
+      "kind": "function",
+      "line": 33,
+      "signature": "extractJsonObject(text: string): Record<string, unknown> | null"
+    },
+    {
+      "name": "generateModuleNarrations",
+      "kind": "function",
+      "line": 53,
+      "signature": "generateModuleNarrations(moduleLabel: string,\n  background: string,): Promise<GeneratedNarrations>"
+    },
+    {
+      "name": "getExplainGenFile",
+      "kind": "function",
+      "line": 96,
+      "signature": "getExplainGenFile(): string"
+    },
+    {
+      "name": "loadGeneratedNarrations",
+      "kind": "function",
+      "line": 104,
+      "signature": "loadGeneratedNarrations(): Record<string, GeneratedNarrations>"
+    },
+    {
+      "name": "saveGeneratedNarrations",
+      "kind": "function",
+      "line": 125,
+      "signature": "saveGeneratedNarrations(entries: Array<{ title: string; narrations: GeneratedNarrations }>): string"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../../infrastructure/llm_gateway.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/storage.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/meta/view/explain_gen.ts#generateModuleNarrations",
+      "to": "src/application/meta/view/explain_gen.ts#extractJsonObject"
+    },
+    {
+      "from": "src/application/meta/view/explain_gen.ts#loadGeneratedNarrations",
+      "to": "src/application/meta/view/explain_gen.ts#getExplainGenFile"
+    },
+    {
+      "from": "src/application/meta/view/explain_gen.ts#saveGeneratedNarrations",
+      "to": "src/application/meta/view/explain_gen.ts#getExplainGenFile"
+    },
+    {
+      "from": "src/application/meta/view/explain_gen.ts#saveGeneratedNarrations",
+      "to": "src/application/meta/view/explain_gen.ts#loadGeneratedNarrations"
+    },
+    {
+      "from": "src/application/meta/view/explain_gen.ts#generateModuleNarrations",
+      "to": "src/infrastructure/llm_gateway.ts#chatViaGateway"
+    },
+    {
+      "from": "src/application/meta/view/explain_gen.ts#getExplainGenFile",
+      "to": "src/infrastructure/storage.ts#getStorageRoot"
+    }
+  ]
+}

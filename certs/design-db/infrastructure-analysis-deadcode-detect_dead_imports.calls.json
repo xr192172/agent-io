@@ -1,0 +1,227 @@
+{
+  "//": "Design DB —— src/infrastructure/analysis/deadcode/detect_dead_imports.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "DeadImportCandidate",
+      "kind": "interface",
+      "line": 38,
+      "signature": "DeadImportCandidate()"
+    },
+    {
+      "name": "NeedsReviewCandidate",
+      "kind": "interface",
+      "line": 53,
+      "signature": "NeedsReviewCandidate()"
+    },
+    {
+      "name": "UnjudgedCandidate",
+      "kind": "interface",
+      "line": 60,
+      "signature": "UnjudgedCandidate()"
+    },
+    {
+      "name": "DetectDeadImportsOptions",
+      "kind": "interface",
+      "line": 65,
+      "signature": "DetectDeadImportsOptions()"
+    },
+    {
+      "name": "DetectDeadImportsResult",
+      "kind": "interface",
+      "line": 71,
+      "signature": "DetectDeadImportsResult()"
+    },
+    {
+      "name": "FileKind",
+      "kind": "type",
+      "line": 101,
+      "signature": "FileKind()"
+    },
+    {
+      "name": "TS_RE",
+      "kind": "const",
+      "line": 103,
+      "signature": "const TS_RE = /\\.(ts|tsx|js|jsx|mjs|cjs)$/"
+    },
+    {
+      "name": "GO_RE",
+      "kind": "const",
+      "line": 104,
+      "signature": "const GO_RE = /\\.go$/"
+    },
+    {
+      "name": "langOf",
+      "kind": "function",
+      "line": 106,
+      "signature": "langOf(rel: string): 'go' | 'ts' | null"
+    },
+    {
+      "name": "classifyFileKind",
+      "kind": "function",
+      "line": 117,
+      "signature": "classifyFileKind(rel: string): FileKind"
+    },
+    {
+      "name": "scanProjectSourceFiles",
+      "kind": "function",
+      "line": 140,
+      "signature": "scanProjectSourceFiles(project_dir: string, files?: string[]): string[]"
+    },
+    {
+      "name": "SourceVerdict",
+      "kind": "type",
+      "line": 194,
+      "signature": "SourceVerdict()"
+    },
+    {
+      "name": "judgeSource",
+      "kind": "function",
+      "line": 196,
+      "signature": "judgeSource(abs: string, src: string, source: string, lang: 'go' | 'ts'): SourceVerdict"
+    },
+    {
+      "name": "TS_TRY_EXTS",
+      "kind": "const",
+      "line": 221,
+      "signature": "const TS_TRY_EXTS = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs']"
+    },
+    {
+      "name": "resolveInProject",
+      "kind": "function",
+      "line": 229,
+      "signature": "resolveInProject(proj: string, fromRel: string, spec: string): string | null"
+    },
+    {
+      "name": "hasLoadEffects",
+      "kind": "function",
+      "line": 260,
+      "signature": "hasLoadEffects(src: string): boolean"
+    },
+    {
+      "name": "gatedByLoadEffects",
+      "kind": "function",
+      "line": 284,
+      "signature": "gatedByLoadEffects(proj: string,\n  fromRel: string,\n  source: string,\n  importersOf: Map<string, Set<string>>,\n  contentByRel: Map<string, string>,): boolean"
+    },
+    {
+      "name": "detectDeadImports",
+      "kind": "function",
+      "line": 300,
+      "signature": "detectDeadImports(opts: DetectDeadImportsOptions): DetectDeadImportsResult"
+    },
+    {
+      "name": "stripTsComments",
+      "kind": "function",
+      "line": 450,
+      "signature": "stripTsComments(src: string): string"
+    },
+    {
+      "name": "enumerateTsSources",
+      "kind": "function",
+      "line": 463,
+      "signature": "enumerateTsSources(src: string): string[]"
+    }
+  ],
+  "imports": [
+    {
+      "source": "../../data_dir.js",
+      "kind": "relative"
+    },
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../graph/dead_deps.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../health/index.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#detectDeadImports",
+      "to": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#classifyFileKind"
+    },
+    {
+      "from": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#detectDeadImports",
+      "to": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#enumerateTsSources"
+    },
+    {
+      "from": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#detectDeadImports",
+      "to": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#enumerateTsSources"
+    },
+    {
+      "from": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#detectDeadImports",
+      "to": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#gatedByLoadEffects"
+    },
+    {
+      "from": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#gatedByLoadEffects",
+      "to": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#hasLoadEffects"
+    },
+    {
+      "from": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#detectDeadImports",
+      "to": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#judgeSource"
+    },
+    {
+      "from": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#scanProjectSourceFiles",
+      "to": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#langOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#scanProjectSourceFiles",
+      "to": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#langOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#detectDeadImports",
+      "to": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#langOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#detectDeadImports",
+      "to": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#langOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#gatedByLoadEffects",
+      "to": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#resolveInProject"
+    },
+    {
+      "from": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#detectDeadImports",
+      "to": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#scanProjectSourceFiles"
+    },
+    {
+      "from": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#hasLoadEffects",
+      "to": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#stripTsComments"
+    },
+    {
+      "from": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#enumerateTsSources",
+      "to": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#stripTsComments"
+    },
+    {
+      "from": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#judgeSource",
+      "to": "src/infrastructure/analysis/health/index.ts#importBindingFactsSync"
+    },
+    {
+      "from": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#judgeSource",
+      "to": "src/infrastructure/graph/dead_deps.ts#parseGoImportQualifiers"
+    },
+    {
+      "from": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#detectDeadImports",
+      "to": "src/infrastructure/graph/dead_deps.ts#parseGoImportQualifiers"
+    },
+    {
+      "from": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#detectDeadImports",
+      "to": "src/infrastructure/graph/dead_deps.ts#parseGoImportQualifiers"
+    },
+    {
+      "from": "src/infrastructure/analysis/deadcode/detect_dead_imports.ts#judgeSource",
+      "to": "src/infrastructure/graph/dead_deps.ts#qualifierLines"
+    }
+  ]
+}

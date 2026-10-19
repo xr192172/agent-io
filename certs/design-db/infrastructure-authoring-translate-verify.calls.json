@@ -1,0 +1,92 @@
+{
+  "//": "Design DB —— src/infrastructure/authoring/translate/verify.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "VerifyIssue",
+      "kind": "interface",
+      "line": 17,
+      "signature": "VerifyIssue()"
+    },
+    {
+      "name": "bodyText",
+      "kind": "function",
+      "line": 25,
+      "signature": "bodyText(code: string): string"
+    },
+    {
+      "name": "structureCheck",
+      "kind": "function",
+      "line": 33,
+      "signature": "structureCheck(u: TransUnit): string | null"
+    },
+    {
+      "name": "escapeRe",
+      "kind": "function",
+      "line": 86,
+      "signature": "escapeRe(s: string): string"
+    },
+    {
+      "name": "countTopLevelParams",
+      "kind": "function",
+      "line": 91,
+      "signature": "countTopLevelParams(s: string): number"
+    },
+    {
+      "name": "verifySkeletons",
+      "kind": "function",
+      "line": 108,
+      "signature": "verifySkeletons(units: TransUnit[]): Promise<VerifyIssue[]>"
+    }
+  ],
+  "imports": [
+    {
+      "source": "../../parse/index.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./unit.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/authoring/translate/verify.ts#structureCheck",
+      "to": "src/infrastructure/authoring/translate/verify.ts#bodyText"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/verify.ts#structureCheck",
+      "to": "src/infrastructure/authoring/translate/verify.ts#countTopLevelParams"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/verify.ts#structureCheck",
+      "to": "src/infrastructure/authoring/translate/verify.ts#escapeRe"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/verify.ts#structureCheck",
+      "to": "src/infrastructure/authoring/translate/verify.ts#escapeRe"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/verify.ts#structureCheck",
+      "to": "src/infrastructure/authoring/translate/verify.ts#escapeRe"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/verify.ts#structureCheck",
+      "to": "src/infrastructure/authoring/translate/verify.ts#escapeRe"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/verify.ts#structureCheck",
+      "to": "src/infrastructure/authoring/translate/verify.ts#escapeRe"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/verify.ts#structureCheck",
+      "to": "src/infrastructure/authoring/translate/verify.ts#escapeRe"
+    },
+    {
+      "from": "src/infrastructure/authoring/translate/verify.ts#verifySkeletons",
+      "to": "src/infrastructure/authoring/translate/verify.ts#structureCheck"
+    }
+  ]
+}

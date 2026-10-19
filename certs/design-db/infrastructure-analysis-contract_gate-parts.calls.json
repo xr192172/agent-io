@@ -1,0 +1,45 @@
+{
+  "//": "Design DB —— src/infrastructure/analysis/contract_gate/parts.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "Lang",
+      "kind": "type",
+      "line": 11,
+      "signature": "Lang()"
+    },
+    {
+      "name": "FileSymbols",
+      "kind": "interface",
+      "line": 17,
+      "signature": "FileSymbols()"
+    },
+    {
+      "name": "RefHit",
+      "kind": "interface",
+      "line": 24,
+      "signature": "RefHit()"
+    },
+    {
+      "name": "scanDotRefs",
+      "kind": "function",
+      "line": 34,
+      "signature": "scanDotRefs(text: string,\n  skip: ReadonlySet<string>,\n  skipLine?: (line: string) => boolean,): RefHit[]"
+    },
+    {
+      "name": "CgLangPackage",
+      "kind": "interface",
+      "line": 57,
+      "signature": "CgLangPackage()"
+    },
+    {
+      "name": "addDeclared",
+      "kind": "function",
+      "line": 75,
+      "signature": "addDeclared(set: Set<string>, m: RegExpMatchArray | null, idx = 1): void"
+    }
+  ],
+  "imports": [],
+  "calls": []
+}

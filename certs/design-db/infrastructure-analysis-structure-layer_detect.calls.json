@@ -1,0 +1,110 @@
+{
+  "//": "Design DB —— src/infrastructure/analysis/structure/layer_detect.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "LayerDef",
+      "kind": "interface",
+      "line": 23,
+      "signature": "LayerDef()"
+    },
+    {
+      "name": "LAYER_DEFS",
+      "kind": "const",
+      "line": 33,
+      "signature": "const LAYER_DEFS = [ { id: 'api', name: 'API 层', desc: 'HTTP 端点、路由处理器与接口控制',…"
+    },
+    {
+      "name": "CORE_DEF",
+      "kind": "const",
+      "line": 107,
+      "signature": "const CORE_DEF = { id: 'core', name: '核心层', desc: '核心/未归类文件', color: '#657…"
+    },
+    {
+      "name": "DEFAULT_ALLOWED_DEPS",
+      "kind": "const",
+      "line": 111,
+      "signature": "const DEFAULT_ALLOWED_DEPS = { api: ['api', 'service', 'middleware', 'data', 'utility'…"
+    },
+    {
+      "name": "matchLayer",
+      "kind": "function",
+      "line": 128,
+      "signature": "matchLayer(rel: string, layers: LayerDef[] = LAYER_DEFS): string"
+    },
+    {
+      "name": "defOf",
+      "kind": "const",
+      "line": 143,
+      "signature": "const defOf = (id: string, layers: LayerDef[] = LAYER_DEFS): LayerDef =…"
+    },
+    {
+      "name": "detectArchLayers",
+      "kind": "function",
+      "line": 154,
+      "signature": "detectArchLayers(dsl: DesignDSL, layers?: LayerDef[]): DesignDSL"
+    },
+    {
+      "name": "ImportEdge",
+      "kind": "interface",
+      "line": 198,
+      "signature": "ImportEdge()"
+    },
+    {
+      "name": "LayerViolation",
+      "kind": "interface",
+      "line": 205,
+      "signature": "LayerViolation()"
+    },
+    {
+      "name": "DetectLayerViolationsInput",
+      "kind": "interface",
+      "line": 213,
+      "signature": "DetectLayerViolationsInput()"
+    },
+    {
+      "name": "parseImportsLight",
+      "kind": "function",
+      "line": 225,
+      "signature": "parseImportsLight(src: string): string[]"
+    },
+    {
+      "name": "pyRelToPath",
+      "kind": "function",
+      "line": 261,
+      "signature": "pyRelToPath(p: string): string"
+    },
+    {
+      "name": "detectLayerViolations",
+      "kind": "function",
+      "line": 278,
+      "signature": "detectLayerViolations(input: DetectLayerViolationsInput): LayerViolation[]"
+    }
+  ],
+  "imports": [
+    {
+      "source": "../../../domain/types.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/structure/layer_detect.ts#detectArchLayers",
+      "to": "src/infrastructure/analysis/structure/layer_detect.ts#defOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/layer_detect.ts#detectArchLayers",
+      "to": "src/infrastructure/analysis/structure/layer_detect.ts#defOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/layer_detect.ts#detectArchLayers",
+      "to": "src/infrastructure/analysis/structure/layer_detect.ts#matchLayer"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/layer_detect.ts#parseImportsLight",
+      "to": "src/infrastructure/analysis/structure/layer_detect.ts#pyRelToPath"
+    }
+  ]
+}

@@ -1,0 +1,78 @@
+{
+  "//": "Design DB —— src/infrastructure/analysis/observe/snapshot_needle.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "NeedleSignals",
+      "kind": "interface",
+      "line": 15,
+      "signature": "NeedleSignals()"
+    },
+    {
+      "name": "RepresentativeJudge",
+      "kind": "type",
+      "line": 23,
+      "signature": "RepresentativeJudge()"
+    },
+    {
+      "name": "SamplingNeedle",
+      "kind": "interface",
+      "line": 25,
+      "signature": "SamplingNeedle()"
+    },
+    {
+      "name": "NEEDLE_MARKER",
+      "kind": "const",
+      "line": 35,
+      "signature": "const NEEDLE_MARKER = /\\[\\[KEEP\\]\\]|\\[\\[keep\\]\\]/"
+    },
+    {
+      "name": "ERROR_SIGNAL",
+      "kind": "const",
+      "line": 36,
+      "signature": "const ERROR_SIGNAL = /error|失败|exception|panic|超时/i"
+    },
+    {
+      "name": "collectTexts",
+      "kind": "function",
+      "line": 39,
+      "signature": "collectTexts(n: RunTreeNode, out: string[]): void"
+    },
+    {
+      "name": "defaultSignalsFor",
+      "kind": "const",
+      "line": 51,
+      "signature": "const defaultSignalsFor = (t: RunTrace): string[] => { const sig: string[] = []; co…"
+    },
+    {
+      "name": "defaultJudge",
+      "kind": "function",
+      "line": 63,
+      "signature": "defaultJudge(t: RunTrace): NeedleSignals"
+    },
+    {
+      "name": "sampleNeedles",
+      "kind": "function",
+      "line": 74,
+      "signature": "sampleNeedles(traces: RunTrace[],\n  judge: RepresentativeJudge = defaultJudge,): { kept: SamplingNeedle[]; dropped: number }"
+    }
+  ],
+  "imports": [
+    {
+      "source": "./run_trace_replay.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/observe/snapshot_needle.ts#collectTexts",
+      "to": "src/infrastructure/analysis/observe/snapshot_needle.ts#collectTexts"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/snapshot_needle.ts#defaultJudge",
+      "to": "src/infrastructure/analysis/observe/snapshot_needle.ts#defaultSignalsFor"
+    }
+  ]
+}

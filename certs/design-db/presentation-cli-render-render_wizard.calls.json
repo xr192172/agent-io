@@ -1,0 +1,121 @@
+{
+  "//": "Design DB —— src/presentation/cli/render/render_wizard.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "esc",
+      "kind": "function",
+      "line": 21,
+      "signature": "esc(s: string): string"
+    },
+    {
+      "name": "jsonForScript",
+      "kind": "function",
+      "line": 24,
+      "signature": "jsonForScript(o: unknown): string"
+    },
+    {
+      "name": "ROLE_BADGE",
+      "kind": "const",
+      "line": 28,
+      "signature": "const ROLE_BADGE = { brick: 'wz-badge-brick', contract: 'wz-badge-contract',…"
+    },
+    {
+      "name": "KIND_BADGE",
+      "kind": "const",
+      "line": 36,
+      "signature": "const KIND_BADGE = { mcp: 'wz-kind-mcp', cli: 'wz-kind-cli', human: 'wz-kind…"
+    },
+    {
+      "name": "KIND_TXT",
+      "kind": "const",
+      "line": 37,
+      "signature": "const KIND_TXT = { mcp: 'MCP', cli: 'CLI', human: '人' }"
+    },
+    {
+      "name": "NODE_W",
+      "kind": "const",
+      "line": 39,
+      "signature": "const NODE_W = 190"
+    },
+    {
+      "name": "NODE_H",
+      "kind": "const",
+      "line": 40,
+      "signature": "const NODE_H = 128"
+    },
+    {
+      "name": "GAP_X",
+      "kind": "const",
+      "line": 41,
+      "signature": "const GAP_X = 88"
+    },
+    {
+      "name": "PAD",
+      "kind": "const",
+      "line": 42,
+      "signature": "const PAD = 46"
+    },
+    {
+      "name": "renderWizardHtml",
+      "kind": "function",
+      "line": 44,
+      "signature": "renderWizardHtml(projectName: string): string"
+    },
+    {
+      "name": "buildWizardHtml",
+      "kind": "function",
+      "line": 346,
+      "signature": "buildWizardHtml(opts: { projectName: string; out_file: string }): string"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../../application/design/lifecycle/wizard_steps.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/presentation/cli/render/render_wizard.ts#renderWizardHtml",
+      "to": "src/application/design/lifecycle/wizard_steps.ts#wizardSteps"
+    },
+    {
+      "from": "src/presentation/cli/render/render_wizard.ts#renderWizardHtml",
+      "to": "src/presentation/cli/render/render_wizard.ts#esc"
+    },
+    {
+      "from": "src/presentation/cli/render/render_wizard.ts#renderWizardHtml",
+      "to": "src/presentation/cli/render/render_wizard.ts#esc"
+    },
+    {
+      "from": "src/presentation/cli/render/render_wizard.ts#renderWizardHtml",
+      "to": "src/presentation/cli/render/render_wizard.ts#esc"
+    },
+    {
+      "from": "src/presentation/cli/render/render_wizard.ts#renderWizardHtml",
+      "to": "src/presentation/cli/render/render_wizard.ts#esc"
+    },
+    {
+      "from": "src/presentation/cli/render/render_wizard.ts#renderWizardHtml",
+      "to": "src/presentation/cli/render/render_wizard.ts#esc"
+    },
+    {
+      "from": "src/presentation/cli/render/render_wizard.ts#renderWizardHtml",
+      "to": "src/presentation/cli/render/render_wizard.ts#jsonForScript"
+    },
+    {
+      "from": "src/presentation/cli/render/render_wizard.ts#buildWizardHtml",
+      "to": "src/presentation/cli/render/render_wizard.ts#renderWizardHtml"
+    }
+  ]
+}

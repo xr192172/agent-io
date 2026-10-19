@@ -1,0 +1,98 @@
+{
+  "//": "Design DB —— src/domain/task_schema.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "TASK_STATES",
+      "kind": "const",
+      "line": 42,
+      "signature": "const TASK_STATES = ['candidate', 'claimed', 'done', 'void'] as const"
+    },
+    {
+      "name": "TaskState",
+      "kind": "type",
+      "line": 45,
+      "signature": "TaskState()"
+    },
+    {
+      "name": "TERMINAL_TASK_STATES",
+      "kind": "const",
+      "line": 48,
+      "signature": "const TERMINAL_TASK_STATES = ['done', 'void'] as const"
+    },
+    {
+      "name": "isTaskState",
+      "kind": "function",
+      "line": 55,
+      "signature": "isTaskState(v: unknown): v is TaskState"
+    },
+    {
+      "name": "isTerminalTaskState",
+      "kind": "function",
+      "line": 60,
+      "signature": "isTerminalTaskState(s: TaskState): boolean"
+    },
+    {
+      "name": "progressOf",
+      "kind": "function",
+      "line": 90,
+      "signature": "progressOf(task: Pick<TaskSpec, 'state'> | null | undefined): DiagramStatus | undefined"
+    },
+    {
+      "name": "TaskDiscussion",
+      "kind": "interface",
+      "line": 107,
+      "signature": "TaskDiscussion()"
+    },
+    {
+      "name": "TaskEvidenceRecord",
+      "kind": "interface",
+      "line": 129,
+      "signature": "TaskEvidenceRecord()"
+    },
+    {
+      "name": "TaskSpec",
+      "kind": "interface",
+      "line": 145,
+      "signature": "TaskSpec()"
+    },
+    {
+      "name": "taskLevel",
+      "kind": "function",
+      "line": 208,
+      "signature": "taskLevel(card: Pick<TaskSpec, 'expectations'>): 'L1' | 'L2'"
+    }
+  ],
+  "imports": [
+    {
+      "source": "./expectation.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./expectation.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./overlay.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./geometry.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/domain/task_schema.ts#taskLevel",
+      "to": "src/domain/expectation.ts#postExpectations"
+    },
+    {
+      "from": "src/domain/task_schema.ts#progressOf",
+      "to": "src/domain/task_schema.ts#isTaskState"
+    }
+  ]
+}

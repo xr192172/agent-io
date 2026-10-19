@@ -1,0 +1,253 @@
+{
+  "//": "Design DB —— src/presentation/daemon/daemon.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "extractTouchedElements",
+      "kind": "function",
+      "line": 47,
+      "signature": "extractTouchedElements(ops?: Record<string, unknown>): string[]"
+    },
+    {
+      "name": "lastTouchedByFeature",
+      "kind": "const",
+      "line": 59,
+      "signature": "const lastTouchedByFeature = new Map<string, string[]>()"
+    },
+    {
+      "name": "regionsOverlap",
+      "kind": "function",
+      "line": 65,
+      "signature": "regionsOverlap(a: string[], b: string[]): boolean"
+    },
+    {
+      "name": "dslWriteHandler",
+      "kind": "function",
+      "line": 87,
+      "signature": "dslWriteHandler(req: DslWriteRequest): Promise<DslWriteResult>"
+    },
+    {
+      "name": "startedAt",
+      "kind": "const",
+      "line": 141,
+      "signature": "const startedAt = new Date().toISOString()"
+    },
+    {
+      "name": "pidfilePath",
+      "kind": "function",
+      "line": 147,
+      "signature": "pidfilePath(port: number): string"
+    },
+    {
+      "name": "writePidfile",
+      "kind": "function",
+      "line": 151,
+      "signature": "writePidfile(port: number): void"
+    },
+    {
+      "name": "removePidfile",
+      "kind": "function",
+      "line": 155,
+      "signature": "removePidfile(port: number): void"
+    },
+    {
+      "name": "LOOP_COOLDOWN_MS",
+      "kind": "const",
+      "line": 168,
+      "signature": "const LOOP_COOLDOWN_MS = 10_000"
+    },
+    {
+      "name": "LOOP_TIMEOUT_MS",
+      "kind": "const",
+      "line": 170,
+      "signature": "const LOOP_TIMEOUT_MS = 60_000"
+    },
+    {
+      "name": "loopCooldown",
+      "kind": "const",
+      "line": 171,
+      "signature": "const loopCooldown = new Map<string, number>()"
+    },
+    {
+      "name": "loopRunning",
+      "kind": "const",
+      "line": 172,
+      "signature": "const loopRunning = false"
+    },
+    {
+      "name": "scheduleLoopTrigger",
+      "kind": "function",
+      "line": 195,
+      "signature": "scheduleLoopTrigger(projectDir: string, broadcast: (event: string, data: unknown) => void): void"
+    },
+    {
+      "name": "withTimeout",
+      "kind": "function",
+      "line": 265,
+      "signature": "withTimeout(p: Promise<T>, ms: number, msg: string): Promise<T>"
+    },
+    {
+      "name": "main",
+      "kind": "function",
+      "line": 285,
+      "signature": "main(): Promise<void>"
+    }
+  ],
+  "imports": [
+    {
+      "source": "../../infrastructure/data_dir.js",
+      "kind": "relative"
+    },
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:os",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../infrastructure/analysis/observe/run_loop.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../application/observe/runtime/watch_project_tool.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/alert_inbox.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/storage.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../application/design/dsl_ops/update_feature.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./server.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../infrastructure/daemon/client.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./memory_watch.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/presentation/daemon/daemon.ts#dslWriteHandler",
+      "to": "src/application/design/dsl_ops/update_feature.ts#updateFeature"
+    },
+    {
+      "from": "src/presentation/daemon/daemon.ts#main",
+      "to": "src/application/observe/runtime/watch_project_tool.ts#listActiveWatches"
+    },
+    {
+      "from": "src/presentation/daemon/daemon.ts#main",
+      "to": "src/application/observe/runtime/watch_project_tool.ts#listActiveWatches"
+    },
+    {
+      "from": "src/presentation/daemon/daemon.ts#main",
+      "to": "src/application/observe/runtime/watch_project_tool.ts#setWatchToolEventListener"
+    },
+    {
+      "from": "src/presentation/daemon/daemon.ts#main",
+      "to": "src/application/observe/runtime/watch_project_tool.ts#watchProjectTool"
+    },
+    {
+      "from": "src/presentation/daemon/daemon.ts#main",
+      "to": "src/application/observe/runtime/watch_project_tool.ts#watchProjectTool"
+    },
+    {
+      "from": "src/presentation/daemon/daemon.ts#main",
+      "to": "src/infrastructure/alert_inbox.ts#alertsSince"
+    },
+    {
+      "from": "src/presentation/daemon/daemon.ts#dslWriteHandler",
+      "to": "src/infrastructure/alert_inbox.ts#pushAlert"
+    },
+    {
+      "from": "src/presentation/daemon/daemon.ts#scheduleLoopTrigger",
+      "to": "src/infrastructure/alert_inbox.ts#pushAlert"
+    },
+    {
+      "from": "src/presentation/daemon/daemon.ts#main",
+      "to": "src/infrastructure/alert_inbox.ts#setAlertListener"
+    },
+    {
+      "from": "src/presentation/daemon/daemon.ts#scheduleLoopTrigger",
+      "to": "src/infrastructure/analysis/observe/run_loop.ts#runLoop"
+    },
+    {
+      "from": "src/presentation/daemon/daemon.ts#main",
+      "to": "src/infrastructure/daemon/client.ts#daemonPort"
+    },
+    {
+      "from": "src/presentation/daemon/daemon.ts#main",
+      "to": "src/infrastructure/daemon/client.ts#probeDaemon"
+    },
+    {
+      "from": "src/presentation/daemon/daemon.ts#dslWriteHandler",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/presentation/daemon/daemon.ts#dslWriteHandler",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    },
+    {
+      "from": "src/presentation/daemon/daemon.ts#dslWriteHandler",
+      "to": "src/presentation/daemon/daemon.ts#extractTouchedElements"
+    },
+    {
+      "from": "src/presentation/daemon/daemon.ts#writePidfile",
+      "to": "src/presentation/daemon/daemon.ts#pidfilePath"
+    },
+    {
+      "from": "src/presentation/daemon/daemon.ts#removePidfile",
+      "to": "src/presentation/daemon/daemon.ts#pidfilePath"
+    },
+    {
+      "from": "src/presentation/daemon/daemon.ts#main",
+      "to": "src/presentation/daemon/daemon.ts#pidfilePath"
+    },
+    {
+      "from": "src/presentation/daemon/daemon.ts#dslWriteHandler",
+      "to": "src/presentation/daemon/daemon.ts#regionsOverlap"
+    },
+    {
+      "from": "src/presentation/daemon/daemon.ts#main",
+      "to": "src/presentation/daemon/daemon.ts#removePidfile"
+    },
+    {
+      "from": "src/presentation/daemon/daemon.ts#main",
+      "to": "src/presentation/daemon/daemon.ts#scheduleLoopTrigger"
+    },
+    {
+      "from": "src/presentation/daemon/daemon.ts#scheduleLoopTrigger",
+      "to": "src/presentation/daemon/daemon.ts#withTimeout"
+    },
+    {
+      "from": "src/presentation/daemon/daemon.ts#main",
+      "to": "src/presentation/daemon/daemon.ts#writePidfile"
+    },
+    {
+      "from": "src/presentation/daemon/daemon.ts#main",
+      "to": "src/presentation/daemon/memory_watch.ts#startMemoryWatch"
+    },
+    {
+      "from": "src/presentation/daemon/daemon.ts#main",
+      "to": "src/presentation/daemon/server.ts#createDaemonServer"
+    }
+  ]
+}

@@ -1,0 +1,182 @@
+{
+  "//": "Design DB —— src/presentation/cli/render/render_workbench.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "esc",
+      "kind": "function",
+      "line": 25,
+      "signature": "esc(s: string): string"
+    },
+    {
+      "name": "jsonForScript",
+      "kind": "function",
+      "line": 28,
+      "signature": "jsonForScript(o: unknown): string"
+    },
+    {
+      "name": "slotFootHtml",
+      "kind": "function",
+      "line": 34,
+      "signature": "slotFootHtml(s: WorkbenchSlot): string"
+    },
+    {
+      "name": "composeHtmlFor",
+      "kind": "function",
+      "line": 45,
+      "signature": "composeHtmlFor(s: WorkbenchSlot): string"
+    },
+    {
+      "name": "issueCardHtml",
+      "kind": "function",
+      "line": 68,
+      "signature": "issueCardHtml(it: WorkbenchIssue): string"
+    },
+    {
+      "name": "issuesHtmlFor",
+      "kind": "function",
+      "line": 83,
+      "signature": "issuesHtmlFor(s: WorkbenchSlot): string"
+    },
+    {
+      "name": "dataJsonFor",
+      "kind": "function",
+      "line": 90,
+      "signature": "dataJsonFor(s: WorkbenchSlot): string"
+    },
+    {
+      "name": "renderWorkbenchHtml",
+      "kind": "function",
+      "line": 117,
+      "signature": "renderWorkbenchHtml(result: BrickifyResult,\n  anatomy: AnatomyResult,\n  narratives: ClusterNarratives,\n  projectName: string,): string"
+    },
+    {
+      "name": "renderFromWorkbenchData",
+      "kind": "function",
+      "line": 128,
+      "signature": "renderFromWorkbenchData(data: WorkbenchData,\n  stats: { classifyStats: string; narrateStats: string },): string"
+    },
+    {
+      "name": "buildWorkbenchHtml",
+      "kind": "function",
+      "line": 494,
+      "signature": "buildWorkbenchHtml(opts: {\n  out_file: string;\n  result: BrickifyResult;\n  anatomy: AnatomyResult;\n  narratives: ClusterNarratives;\n  projectName: string;\n}): string"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "../../../application/design/bricks/brickify.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../../../application/design/bricks/classify_bricks.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../../../application/design/bricks/cluster_narrator.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../../../application/design/workbench/workbench_data.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./workbench_shell_css.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/presentation/cli/render/render_workbench.ts#renderWorkbenchHtml",
+      "to": "src/application/design/workbench/workbench_data.ts#buildWorkbenchData"
+    },
+    {
+      "from": "src/presentation/cli/render/render_workbench.ts#renderFromWorkbenchData",
+      "to": "src/presentation/cli/render/render_workbench.ts#composeHtmlFor"
+    },
+    {
+      "from": "src/presentation/cli/render/render_workbench.ts#renderFromWorkbenchData",
+      "to": "src/presentation/cli/render/render_workbench.ts#dataJsonFor"
+    },
+    {
+      "from": "src/presentation/cli/render/render_workbench.ts#composeHtmlFor",
+      "to": "src/presentation/cli/render/render_workbench.ts#esc"
+    },
+    {
+      "from": "src/presentation/cli/render/render_workbench.ts#composeHtmlFor",
+      "to": "src/presentation/cli/render/render_workbench.ts#esc"
+    },
+    {
+      "from": "src/presentation/cli/render/render_workbench.ts#composeHtmlFor",
+      "to": "src/presentation/cli/render/render_workbench.ts#esc"
+    },
+    {
+      "from": "src/presentation/cli/render/render_workbench.ts#issueCardHtml",
+      "to": "src/presentation/cli/render/render_workbench.ts#esc"
+    },
+    {
+      "from": "src/presentation/cli/render/render_workbench.ts#issueCardHtml",
+      "to": "src/presentation/cli/render/render_workbench.ts#esc"
+    },
+    {
+      "from": "src/presentation/cli/render/render_workbench.ts#renderFromWorkbenchData",
+      "to": "src/presentation/cli/render/render_workbench.ts#esc"
+    },
+    {
+      "from": "src/presentation/cli/render/render_workbench.ts#renderFromWorkbenchData",
+      "to": "src/presentation/cli/render/render_workbench.ts#esc"
+    },
+    {
+      "from": "src/presentation/cli/render/render_workbench.ts#renderFromWorkbenchData",
+      "to": "src/presentation/cli/render/render_workbench.ts#esc"
+    },
+    {
+      "from": "src/presentation/cli/render/render_workbench.ts#renderFromWorkbenchData",
+      "to": "src/presentation/cli/render/render_workbench.ts#esc"
+    },
+    {
+      "from": "src/presentation/cli/render/render_workbench.ts#renderFromWorkbenchData",
+      "to": "src/presentation/cli/render/render_workbench.ts#esc"
+    },
+    {
+      "from": "src/presentation/cli/render/render_workbench.ts#renderFromWorkbenchData",
+      "to": "src/presentation/cli/render/render_workbench.ts#esc"
+    },
+    {
+      "from": "src/presentation/cli/render/render_workbench.ts#renderFromWorkbenchData",
+      "to": "src/presentation/cli/render/render_workbench.ts#esc"
+    },
+    {
+      "from": "src/presentation/cli/render/render_workbench.ts#renderFromWorkbenchData",
+      "to": "src/presentation/cli/render/render_workbench.ts#issuesHtmlFor"
+    },
+    {
+      "from": "src/presentation/cli/render/render_workbench.ts#renderFromWorkbenchData",
+      "to": "src/presentation/cli/render/render_workbench.ts#jsonForScript"
+    },
+    {
+      "from": "src/presentation/cli/render/render_workbench.ts#renderWorkbenchHtml",
+      "to": "src/presentation/cli/render/render_workbench.ts#renderFromWorkbenchData"
+    },
+    {
+      "from": "src/presentation/cli/render/render_workbench.ts#buildWorkbenchHtml",
+      "to": "src/presentation/cli/render/render_workbench.ts#renderWorkbenchHtml"
+    },
+    {
+      "from": "src/presentation/cli/render/render_workbench.ts#renderFromWorkbenchData",
+      "to": "src/presentation/cli/render/render_workbench.ts#slotFootHtml"
+    }
+  ]
+}

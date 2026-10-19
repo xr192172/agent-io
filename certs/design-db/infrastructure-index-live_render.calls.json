@@ -1,0 +1,259 @@
+{
+  "//": "Design DB —— src/infrastructure/index/live_render.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "MAX_FILES",
+      "kind": "const",
+      "line": 56,
+      "signature": "const MAX_FILES = 200"
+    },
+    {
+      "name": "LANG_COLORS",
+      "kind": "const",
+      "line": 59,
+      "signature": "const LANG_COLORS = { go: { bg: '#1a4a7a', color: '#ffffff' }, ts: { bg: '#15…"
+    },
+    {
+      "name": "DEFAULT_FILE_COLOR",
+      "kind": "const",
+      "line": 67,
+      "signature": "const DEFAULT_FILE_COLOR = { bg: '#37474f', color: '#eceff1' }"
+    },
+    {
+      "name": "DIR_STYLE",
+      "kind": "const",
+      "line": 68,
+      "signature": "const DIR_STYLE = { bg: '#152141', color: '#90caf9' }"
+    },
+    {
+      "name": "toPosix",
+      "kind": "const",
+      "line": 70,
+      "signature": "const toPosix = (p: string): string => p.split(path.sep).join('/')"
+    },
+    {
+      "name": "sanitize",
+      "kind": "const",
+      "line": 71,
+      "signature": "const sanitize = (s: string): string => s.replace(/[^a-zA-Z0-9_-]/g, '_')"
+    },
+    {
+      "name": "fileNodeId",
+      "kind": "const",
+      "line": 72,
+      "signature": "const fileNodeId = (rel: string): string => `file_${sanitize(rel)}`"
+    },
+    {
+      "name": "dirNodeId",
+      "kind": "const",
+      "line": 73,
+      "signature": "const dirNodeId = (rel: string): string => `dir_${sanitize(rel)}`"
+    },
+    {
+      "name": "kindOf",
+      "kind": "function",
+      "line": 76,
+      "signature": "kindOf(kind: string): Symbol['kind']"
+    },
+    {
+      "name": "ParsedFact",
+      "kind": "interface",
+      "line": 89,
+      "signature": "ParsedFact()"
+    },
+    {
+      "name": "renderLiveFromDb",
+      "kind": "function",
+      "line": 102,
+      "signature": "renderLiveFromDb(feature: string): DesignDSL | null"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "node:sqlite",
+      "kind": "package"
+    },
+    {
+      "source": "../../domain/types.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../storage.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../analysis/structure/layer_detect.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../graph/import_project.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../graph/import_project.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./db.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./symbols.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./scan_rev.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/index/live_render.ts#renderLiveFromDb",
+      "to": "src/infrastructure/analysis/structure/layer_detect.ts#detectArchLayers"
+    },
+    {
+      "from": "src/infrastructure/index/live_render.ts#renderLiveFromDb",
+      "to": "src/infrastructure/graph/import_project.ts#buildIndex"
+    },
+    {
+      "from": "src/infrastructure/index/live_render.ts#renderLiveFromDb",
+      "to": "src/infrastructure/graph/import_project.ts#collectGitignore"
+    },
+    {
+      "from": "src/infrastructure/index/live_render.ts#renderLiveFromDb",
+      "to": "src/infrastructure/graph/import_project.ts#layoutGroup"
+    },
+    {
+      "from": "src/infrastructure/index/live_render.ts#renderLiveFromDb",
+      "to": "src/infrastructure/graph/import_project.ts#readGoModules"
+    },
+    {
+      "from": "src/infrastructure/index/live_render.ts#renderLiveFromDb",
+      "to": "src/infrastructure/graph/import_project.ts#resolveImport"
+    },
+    {
+      "from": "src/infrastructure/index/live_render.ts#renderLiveFromDb",
+      "to": "src/infrastructure/graph/import_project.ts#walkFiles"
+    },
+    {
+      "from": "src/infrastructure/index/live_render.ts#renderLiveFromDb",
+      "to": "src/infrastructure/index/db.ts#findCacheDb"
+    },
+    {
+      "from": "src/infrastructure/index/live_render.ts#renderLiveFromDb",
+      "to": "src/infrastructure/index/live_render.ts#dirNodeId"
+    },
+    {
+      "from": "src/infrastructure/index/live_render.ts#renderLiveFromDb",
+      "to": "src/infrastructure/index/live_render.ts#dirNodeId"
+    },
+    {
+      "from": "src/infrastructure/index/live_render.ts#renderLiveFromDb",
+      "to": "src/infrastructure/index/live_render.ts#dirNodeId"
+    },
+    {
+      "from": "src/infrastructure/index/live_render.ts#renderLiveFromDb",
+      "to": "src/infrastructure/index/live_render.ts#dirNodeId"
+    },
+    {
+      "from": "src/infrastructure/index/live_render.ts#renderLiveFromDb",
+      "to": "src/infrastructure/index/live_render.ts#dirNodeId"
+    },
+    {
+      "from": "src/infrastructure/index/live_render.ts#renderLiveFromDb",
+      "to": "src/infrastructure/index/live_render.ts#dirNodeId"
+    },
+    {
+      "from": "src/infrastructure/index/live_render.ts#renderLiveFromDb",
+      "to": "src/infrastructure/index/live_render.ts#dirNodeId"
+    },
+    {
+      "from": "src/infrastructure/index/live_render.ts#renderLiveFromDb",
+      "to": "src/infrastructure/index/live_render.ts#dirNodeId"
+    },
+    {
+      "from": "src/infrastructure/index/live_render.ts#renderLiveFromDb",
+      "to": "src/infrastructure/index/live_render.ts#dirNodeId"
+    },
+    {
+      "from": "src/infrastructure/index/live_render.ts#renderLiveFromDb",
+      "to": "src/infrastructure/index/live_render.ts#fileNodeId"
+    },
+    {
+      "from": "src/infrastructure/index/live_render.ts#renderLiveFromDb",
+      "to": "src/infrastructure/index/live_render.ts#fileNodeId"
+    },
+    {
+      "from": "src/infrastructure/index/live_render.ts#renderLiveFromDb",
+      "to": "src/infrastructure/index/live_render.ts#fileNodeId"
+    },
+    {
+      "from": "src/infrastructure/index/live_render.ts#renderLiveFromDb",
+      "to": "src/infrastructure/index/live_render.ts#fileNodeId"
+    },
+    {
+      "from": "src/infrastructure/index/live_render.ts#renderLiveFromDb",
+      "to": "src/infrastructure/index/live_render.ts#fileNodeId"
+    },
+    {
+      "from": "src/infrastructure/index/live_render.ts#renderLiveFromDb",
+      "to": "src/infrastructure/index/live_render.ts#fileNodeId"
+    },
+    {
+      "from": "src/infrastructure/index/live_render.ts#renderLiveFromDb",
+      "to": "src/infrastructure/index/live_render.ts#fileNodeId"
+    },
+    {
+      "from": "src/infrastructure/index/live_render.ts#renderLiveFromDb",
+      "to": "src/infrastructure/index/live_render.ts#fileNodeId"
+    },
+    {
+      "from": "src/infrastructure/index/live_render.ts#renderLiveFromDb",
+      "to": "src/infrastructure/index/live_render.ts#kindOf"
+    },
+    {
+      "from": "src/infrastructure/index/live_render.ts#renderLiveFromDb",
+      "to": "src/infrastructure/index/live_render.ts#sanitize"
+    },
+    {
+      "from": "src/infrastructure/index/live_render.ts#renderLiveFromDb",
+      "to": "src/infrastructure/index/live_render.ts#sanitize"
+    },
+    {
+      "from": "src/infrastructure/index/live_render.ts#renderLiveFromDb",
+      "to": "src/infrastructure/index/live_render.ts#sanitize"
+    },
+    {
+      "from": "src/infrastructure/index/live_render.ts#renderLiveFromDb",
+      "to": "src/infrastructure/index/live_render.ts#sanitize"
+    },
+    {
+      "from": "src/infrastructure/index/live_render.ts#renderLiveFromDb",
+      "to": "src/infrastructure/index/live_render.ts#toPosix"
+    },
+    {
+      "from": "src/infrastructure/index/live_render.ts#renderLiveFromDb",
+      "to": "src/infrastructure/index/scan_rev.ts#scanRevOf"
+    },
+    {
+      "from": "src/infrastructure/index/live_render.ts#renderLiveFromDb",
+      "to": "src/infrastructure/index/symbols.ts#getFileParse"
+    },
+    {
+      "from": "src/infrastructure/index/live_render.ts#renderLiveFromDb",
+      "to": "src/infrastructure/storage.ts#getDSL"
+    }
+  ]
+}

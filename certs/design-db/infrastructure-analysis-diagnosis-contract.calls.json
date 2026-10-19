@@ -1,0 +1,69 @@
+{
+  "//": "Design DB —— src/infrastructure/analysis/diagnosis/contract.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "SymptomType",
+      "kind": "type",
+      "line": 9,
+      "signature": "SymptomType()"
+    },
+    {
+      "name": "DiagnoseInput",
+      "kind": "interface",
+      "line": 11,
+      "signature": "DiagnoseInput()"
+    },
+    {
+      "name": "SymptomParsed",
+      "kind": "interface",
+      "line": 27,
+      "signature": "SymptomParsed()"
+    },
+    {
+      "name": "Candidate",
+      "kind": "interface",
+      "line": 39,
+      "signature": "Candidate()"
+    },
+    {
+      "name": "EvidenceStep",
+      "kind": "interface",
+      "line": 51,
+      "signature": "EvidenceStep()"
+    },
+    {
+      "name": "RootCause",
+      "kind": "interface",
+      "line": 58,
+      "signature": "RootCause()"
+    },
+    {
+      "name": "Impact",
+      "kind": "interface",
+      "line": 73,
+      "signature": "Impact()"
+    },
+    {
+      "name": "FixSuggestion",
+      "kind": "interface",
+      "line": 81,
+      "signature": "FixSuggestion()"
+    },
+    {
+      "name": "Verification",
+      "kind": "interface",
+      "line": 90,
+      "signature": "Verification()"
+    },
+    {
+      "name": "DiagnoseOutput",
+      "kind": "interface",
+      "line": 95,
+      "signature": "DiagnoseOutput()"
+    }
+  ],
+  "imports": [],
+  "calls": []
+}

@@ -1,0 +1,178 @@
+{
+  "//": "Design DB —— src/infrastructure/authoring/version_upgrade/toolchain.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "ToolchainDeclaration",
+      "kind": "interface",
+      "line": 32,
+      "signature": "ToolchainDeclaration()"
+    },
+    {
+      "name": "RuntimeInfo",
+      "kind": "interface",
+      "line": 41,
+      "signature": "RuntimeInfo()"
+    },
+    {
+      "name": "RuntimeMatch",
+      "kind": "interface",
+      "line": 47,
+      "signature": "RuntimeMatch()"
+    },
+    {
+      "name": "ToolchainScan",
+      "kind": "interface",
+      "line": 57,
+      "signature": "ToolchainScan()"
+    },
+    {
+      "name": "SKIP_DIRS",
+      "kind": "const",
+      "line": 69,
+      "signature": "const SKIP_DIRS = skipDirSet([...ADAPTER_SKIP_DIRS, 'target', 'bin', 'vendo…"
+    },
+    {
+      "name": "collectDeclarationFiles",
+      "kind": "function",
+      "line": 72,
+      "signature": "collectDeclarationFiles(root: string): string[]"
+    },
+    {
+      "name": "parseDeclarationFile",
+      "kind": "function",
+      "line": 101,
+      "signature": "parseDeclarationFile(filePath: string): ToolchainDeclaration[]"
+    },
+    {
+      "name": "scanToolchainDeclarations",
+      "kind": "function",
+      "line": 113,
+      "signature": "scanToolchainDeclarations(root: string): ToolchainDeclaration[]"
+    },
+    {
+      "name": "parseToolchainVersion",
+      "kind": "function",
+      "line": 129,
+      "signature": "parseToolchainVersion(tool: ToolName, v: string): { major: number; minor?: number } | null"
+    },
+    {
+      "name": "versionSatisfies",
+      "kind": "function",
+      "line": 134,
+      "signature": "versionSatisfies(tool: ToolName, declared: string, local: string): boolean"
+    },
+    {
+      "name": "probeRuntime",
+      "kind": "function",
+      "line": 144,
+      "signature": "probeRuntime(adapter: { lang: ToolName; probe: { cmd: string; args: string[]; parse: (out: string) => string | null } }): string | null"
+    },
+    {
+      "name": "probeLocalRuntimes",
+      "kind": "function",
+      "line": 156,
+      "signature": "probeLocalRuntimes(): RuntimeInfo[]"
+    },
+    {
+      "name": "matchRuntimes",
+      "kind": "function",
+      "line": 165,
+      "signature": "matchRuntimes(declarations: ToolchainDeclaration[], runtimes: RuntimeInfo[]): RuntimeMatch[]"
+    },
+    {
+      "name": "scanToolchains",
+      "kind": "function",
+      "line": 183,
+      "signature": "scanToolchains(root: string): ToolchainScan"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "node:child_process",
+      "kind": "package"
+    },
+    {
+      "source": "./adapters/registry.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./adapters/types.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "../../parse/source_exts.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./adapters/types.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./adapters/types.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/authoring/version_upgrade/toolchain.ts#parseToolchainVersion",
+      "to": "src/infrastructure/authoring/version_upgrade/adapters/registry.ts#adapterForLang"
+    },
+    {
+      "from": "src/infrastructure/authoring/version_upgrade/toolchain.ts#versionSatisfies",
+      "to": "src/infrastructure/authoring/version_upgrade/adapters/registry.ts#adapterForLang"
+    },
+    {
+      "from": "src/infrastructure/authoring/version_upgrade/toolchain.ts#parseDeclarationFile",
+      "to": "src/infrastructure/authoring/version_upgrade/adapters/registry.ts#adaptersForFile"
+    },
+    {
+      "from": "src/infrastructure/authoring/version_upgrade/toolchain.ts#scanToolchainDeclarations",
+      "to": "src/infrastructure/authoring/version_upgrade/toolchain.ts#collectDeclarationFiles"
+    },
+    {
+      "from": "src/infrastructure/authoring/version_upgrade/toolchain.ts#scanToolchains",
+      "to": "src/infrastructure/authoring/version_upgrade/toolchain.ts#matchRuntimes"
+    },
+    {
+      "from": "src/infrastructure/authoring/version_upgrade/toolchain.ts#parseDeclarationFile",
+      "to": "src/infrastructure/authoring/version_upgrade/toolchain.ts#parseDeclarationFile"
+    },
+    {
+      "from": "src/infrastructure/authoring/version_upgrade/toolchain.ts#scanToolchainDeclarations",
+      "to": "src/infrastructure/authoring/version_upgrade/toolchain.ts#parseDeclarationFile"
+    },
+    {
+      "from": "src/infrastructure/authoring/version_upgrade/toolchain.ts#scanToolchains",
+      "to": "src/infrastructure/authoring/version_upgrade/toolchain.ts#probeLocalRuntimes"
+    },
+    {
+      "from": "src/infrastructure/authoring/version_upgrade/toolchain.ts#probeLocalRuntimes",
+      "to": "src/infrastructure/authoring/version_upgrade/toolchain.ts#probeRuntime"
+    },
+    {
+      "from": "src/infrastructure/authoring/version_upgrade/toolchain.ts#scanToolchains",
+      "to": "src/infrastructure/authoring/version_upgrade/toolchain.ts#scanToolchainDeclarations"
+    },
+    {
+      "from": "src/infrastructure/authoring/version_upgrade/toolchain.ts#versionSatisfies",
+      "to": "src/infrastructure/authoring/version_upgrade/toolchain.ts#versionSatisfies"
+    },
+    {
+      "from": "src/infrastructure/authoring/version_upgrade/toolchain.ts#matchRuntimes",
+      "to": "src/infrastructure/authoring/version_upgrade/toolchain.ts#versionSatisfies"
+    }
+  ]
+}

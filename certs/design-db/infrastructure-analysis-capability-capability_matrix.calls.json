@@ -1,0 +1,141 @@
+{
+  "//": "Design DB —— src/infrastructure/analysis/capability/capability_matrix.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "SUPPORT_LEVELS",
+      "kind": "const",
+      "line": 28,
+      "signature": "const SUPPORT_LEVELS = ['full_ast', 'partial_ast', 'regex_fallback', 'unimplemen…"
+    },
+    {
+      "name": "SupportLevel",
+      "kind": "type",
+      "line": 29,
+      "signature": "SupportLevel()"
+    },
+    {
+      "name": "LangId",
+      "kind": "type",
+      "line": 32,
+      "signature": "LangId()"
+    },
+    {
+      "name": "SUPPORT_META",
+      "kind": "const",
+      "line": 39,
+      "signature": "const SUPPORT_META = { full_ast: { label: 'AST 全量', badge: '🟢', needWork: fal…"
+    },
+    {
+      "name": "CapabilityDecl",
+      "kind": "interface",
+      "line": 52,
+      "signature": "CapabilityDecl()"
+    },
+    {
+      "name": "declared",
+      "kind": "const",
+      "line": 71,
+      "signature": "const declared = new Map<string, CapabilityDecl>()"
+    },
+    {
+      "name": "declareCapability",
+      "kind": "function",
+      "line": 74,
+      "signature": "declareCapability(c: CapabilityDecl): void"
+    },
+    {
+      "name": "getCapability",
+      "kind": "function",
+      "line": 79,
+      "signature": "getCapability(id: string): CapabilityDecl | undefined"
+    },
+    {
+      "name": "allCapabilities",
+      "kind": "function",
+      "line": 84,
+      "signature": "allCapabilities(): CapabilityDecl[]"
+    },
+    {
+      "name": "_resetRegistry",
+      "kind": "function",
+      "line": 89,
+      "signature": "_resetRegistry(): void"
+    },
+    {
+      "name": "levelFor",
+      "kind": "function",
+      "line": 94,
+      "signature": "levelFor(c: CapabilityDecl, langName: string): SupportLevel"
+    },
+    {
+      "name": "languageCatalog",
+      "kind": "function",
+      "line": 103,
+      "signature": "languageCatalog(): LanguageEntry[]"
+    },
+    {
+      "name": "installedLanguages",
+      "kind": "function",
+      "line": 108,
+      "signature": "installedLanguages(probe: () => LanguageEntry[]): LanguageEntry[]"
+    },
+    {
+      "name": "CapabilityCell",
+      "kind": "interface",
+      "line": 112,
+      "signature": "CapabilityCell()"
+    },
+    {
+      "name": "CapabilityAuditRow",
+      "kind": "interface",
+      "line": 118,
+      "signature": "CapabilityAuditRow()"
+    },
+    {
+      "name": "diagnoseCapabilities",
+      "kind": "function",
+      "line": 133,
+      "signature": "diagnoseCapabilities(langNames: string[]): CapabilityAuditRow[]"
+    },
+    {
+      "name": "diagnoseCapabilitiesByEntries",
+      "kind": "function",
+      "line": 148,
+      "signature": "diagnoseCapabilitiesByEntries(langs: LanguageEntry[]): CapabilityAuditRow[]"
+    },
+    {
+      "name": "aggregateGaps",
+      "kind": "function",
+      "line": 153,
+      "signature": "aggregateGaps(rows: CapabilityAuditRow[]): Record<string, string[]>"
+    },
+    {
+      "name": "renderAuditText",
+      "kind": "function",
+      "line": 163,
+      "signature": "renderAuditText(rows: CapabilityAuditRow[], title = '能力矩阵 · 缺口自检'): string"
+    }
+  ],
+  "imports": [
+    {
+      "source": "../../parse/languages.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/capability/capability_matrix.ts#diagnoseCapabilities",
+      "to": "src/infrastructure/analysis/capability/capability_matrix.ts#allCapabilities"
+    },
+    {
+      "from": "src/infrastructure/analysis/capability/capability_matrix.ts#diagnoseCapabilitiesByEntries",
+      "to": "src/infrastructure/analysis/capability/capability_matrix.ts#diagnoseCapabilities"
+    },
+    {
+      "from": "src/infrastructure/analysis/capability/capability_matrix.ts#diagnoseCapabilities",
+      "to": "src/infrastructure/analysis/capability/capability_matrix.ts#levelFor"
+    }
+  ]
+}

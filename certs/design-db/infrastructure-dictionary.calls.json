@@ -1,0 +1,213 @@
+{
+  "//": "Design DB —— src/infrastructure/dictionary.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "DictKind",
+      "kind": "type",
+      "line": 29,
+      "signature": "DictKind()"
+    },
+    {
+      "name": "DictEntry",
+      "kind": "interface",
+      "line": 31,
+      "signature": "DictEntry()"
+    },
+    {
+      "name": "DictLinks",
+      "kind": "interface",
+      "line": 49,
+      "signature": "DictLinks()"
+    },
+    {
+      "name": "DictionaryView",
+      "kind": "interface",
+      "line": 54,
+      "signature": "DictionaryView()"
+    },
+    {
+      "name": "_allowedRoots",
+      "kind": "const",
+      "line": 70,
+      "signature": "const _allowedRoots = null"
+    },
+    {
+      "name": "setAllowedProjectRoots",
+      "kind": "function",
+      "line": 72,
+      "signature": "setAllowedProjectRoots(roots: string[]): void"
+    },
+    {
+      "name": "getAllowedRoots",
+      "kind": "function",
+      "line": 76,
+      "signature": "getAllowedRoots(): string[]"
+    },
+    {
+      "name": "validateProjectRoot",
+      "kind": "function",
+      "line": 86,
+      "signature": "validateProjectRoot(projectRoot: string, context = 'project_dir'): string"
+    },
+    {
+      "name": "getGlobalDictFile",
+      "kind": "function",
+      "line": 124,
+      "signature": "getGlobalDictFile(): string"
+    },
+    {
+      "name": "getProjectDictFile",
+      "kind": "function",
+      "line": 130,
+      "signature": "getProjectDictFile(projectRoot: string): string"
+    },
+    {
+      "name": "readDictFile",
+      "kind": "function",
+      "line": 138,
+      "signature": "readDictFile(file: string): DictEntry[]"
+    },
+    {
+      "name": "writeDictFile",
+      "kind": "function",
+      "line": 153,
+      "signature": "writeDictFile(file: string, entries: DictEntry[]): void"
+    },
+    {
+      "name": "loadGlobalDict",
+      "kind": "function",
+      "line": 159,
+      "signature": "loadGlobalDict(): DictEntry[]"
+    },
+    {
+      "name": "loadProjectDict",
+      "kind": "function",
+      "line": 165,
+      "signature": "loadProjectDict(projectRoot: string): DictEntry[]"
+    },
+    {
+      "name": "saveGlobalEntry",
+      "kind": "function",
+      "line": 175,
+      "signature": "saveGlobalEntry(entry: DictEntry): number"
+    },
+    {
+      "name": "saveProjectEntry",
+      "kind": "function",
+      "line": 189,
+      "signature": "saveProjectEntry(projectRoot: string, entry: DictEntry): number"
+    },
+    {
+      "name": "buildDictionaryView",
+      "kind": "function",
+      "line": 208,
+      "signature": "buildDictionaryView(projectRoot?: string | null): DictionaryView"
+    },
+    {
+      "name": "findDictHits",
+      "kind": "function",
+      "line": 251,
+      "signature": "findDictHits(text: string,\n  view: DictionaryView,): Array<{ term: string; start: number; end: number }[]>"
+    },
+    {
+      "name": "splitHighlights",
+      "kind": "function",
+      "line": 285,
+      "signature": "splitHighlights(text: string, view: DictionaryView): Array<{ text: string; term?: string }>"
+    }
+  ],
+  "imports": [
+    {
+      "source": "./data_dir.js",
+      "kind": "relative"
+    },
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "./storage.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/dictionary.ts#validateProjectRoot",
+      "to": "src/infrastructure/dictionary.ts#getAllowedRoots"
+    },
+    {
+      "from": "src/infrastructure/dictionary.ts#loadGlobalDict",
+      "to": "src/infrastructure/dictionary.ts#getGlobalDictFile"
+    },
+    {
+      "from": "src/infrastructure/dictionary.ts#saveGlobalEntry",
+      "to": "src/infrastructure/dictionary.ts#getGlobalDictFile"
+    },
+    {
+      "from": "src/infrastructure/dictionary.ts#loadProjectDict",
+      "to": "src/infrastructure/dictionary.ts#getProjectDictFile"
+    },
+    {
+      "from": "src/infrastructure/dictionary.ts#saveProjectEntry",
+      "to": "src/infrastructure/dictionary.ts#getProjectDictFile"
+    },
+    {
+      "from": "src/infrastructure/dictionary.ts#saveGlobalEntry",
+      "to": "src/infrastructure/dictionary.ts#loadGlobalDict"
+    },
+    {
+      "from": "src/infrastructure/dictionary.ts#buildDictionaryView",
+      "to": "src/infrastructure/dictionary.ts#loadGlobalDict"
+    },
+    {
+      "from": "src/infrastructure/dictionary.ts#buildDictionaryView",
+      "to": "src/infrastructure/dictionary.ts#loadProjectDict"
+    },
+    {
+      "from": "src/infrastructure/dictionary.ts#loadGlobalDict",
+      "to": "src/infrastructure/dictionary.ts#readDictFile"
+    },
+    {
+      "from": "src/infrastructure/dictionary.ts#loadProjectDict",
+      "to": "src/infrastructure/dictionary.ts#readDictFile"
+    },
+    {
+      "from": "src/infrastructure/dictionary.ts#saveProjectEntry",
+      "to": "src/infrastructure/dictionary.ts#readDictFile"
+    },
+    {
+      "from": "src/infrastructure/dictionary.ts#loadProjectDict",
+      "to": "src/infrastructure/dictionary.ts#validateProjectRoot"
+    },
+    {
+      "from": "src/infrastructure/dictionary.ts#saveProjectEntry",
+      "to": "src/infrastructure/dictionary.ts#validateProjectRoot"
+    },
+    {
+      "from": "src/infrastructure/dictionary.ts#saveGlobalEntry",
+      "to": "src/infrastructure/dictionary.ts#writeDictFile"
+    },
+    {
+      "from": "src/infrastructure/dictionary.ts#saveProjectEntry",
+      "to": "src/infrastructure/dictionary.ts#writeDictFile"
+    },
+    {
+      "from": "src/infrastructure/dictionary.ts#getAllowedRoots",
+      "to": "src/infrastructure/storage.ts#getDataHome"
+    },
+    {
+      "from": "src/infrastructure/dictionary.ts#getGlobalDictFile",
+      "to": "src/infrastructure/storage.ts#getDataHome"
+    },
+    {
+      "from": "src/infrastructure/dictionary.ts#loadProjectDict",
+      "to": "src/infrastructure/storage.ts#getDataHome"
+    }
+  ]
+}

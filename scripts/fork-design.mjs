@@ -31,7 +31,7 @@ import { DatabaseSync } from 'node:sqlite';
 const FEATURE = 'task-system-plan';
 const DESIGN = path.join('.agent-io', 'design', `${FEATURE}.dsl.json`);
 const LIVE = path.join('.agent-io', 'live', `${FEATURE}.dsl.json`);
-const OUT_DIR = path.join('certs', 'design-contracts');
+const OUT_DIR = path.join('certs', 'design-db');
 const DB = path.join('.agent-io', 'cache.db');
 const force = process.argv.includes('--force');
 const log = [];
@@ -150,4 +150,4 @@ log.push(`调用 fork：${written} 个文件 · ${total} 条实际边 + ${keptIn
 
 console.log('════ fork 设计侧 ════');
 for (const l of log) console.log('  · ' + l);
-console.log('\n★ 三份都在 certs/design-contracts/ 与 .agent-io/design/ 下 —— 已"一模一样"，可以开始改。');
+console.log('\n★ 三份都在 certs/design-db/ 与 .agent-io/design/ 下 —— 已"一模一样"，可以开始改。');

@@ -1,0 +1,95 @@
+{
+  "//": "Design DB —— src/infrastructure/llm_agnes.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "DEFAULT_AGNES_UPSTREAM",
+      "kind": "const",
+      "line": 33,
+      "signature": "const DEFAULT_AGNES_UPSTREAM = 'https://apihub.agnes-ai.com'"
+    },
+    {
+      "name": "DEFAULT_AGNES_MODEL",
+      "kind": "const",
+      "line": 35,
+      "signature": "const DEFAULT_AGNES_MODEL = 'agnes-2.5-flash'"
+    },
+    {
+      "name": "AGNES_ENV",
+      "kind": "const",
+      "line": 45,
+      "signature": "const AGNES_ENV = { /** 上游根（不含 /v1）；`AGNES_BASE_URL` 是它的等价旧写法（含 /v1） */ ups…"
+    },
+    {
+      "name": "describeAgnesConfigHint",
+      "kind": "function",
+      "line": 67,
+      "signature": "describeAgnesConfigHint(): string"
+    },
+    {
+      "name": "toAgnesUpstreamRoot",
+      "kind": "function",
+      "line": 82,
+      "signature": "toAgnesUpstreamRoot(raw: string): string"
+    },
+    {
+      "name": "agnesApiBaseUrl",
+      "kind": "function",
+      "line": 87,
+      "signature": "agnesApiBaseUrl(root: string): string"
+    },
+    {
+      "name": "resolveAgnesUpstreamBase",
+      "kind": "function",
+      "line": 95,
+      "signature": "resolveAgnesUpstreamBase(explicit?: string): string"
+    },
+    {
+      "name": "resolveAgnesApiBaseUrl",
+      "kind": "function",
+      "line": 104,
+      "signature": "resolveAgnesApiBaseUrl(): string"
+    },
+    {
+      "name": "resolveAgnesModel",
+      "kind": "function",
+      "line": 109,
+      "signature": "resolveAgnesModel(): string"
+    },
+    {
+      "name": "resolveAgnesKeys",
+      "kind": "function",
+      "line": 118,
+      "signature": "resolveAgnesKeys(): string[]"
+    }
+  ],
+  "imports": [
+    {
+      "source": "./llm_pool.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/llm_agnes.ts#resolveAgnesApiBaseUrl",
+      "to": "src/infrastructure/llm_agnes.ts#agnesApiBaseUrl"
+    },
+    {
+      "from": "src/infrastructure/llm_agnes.ts#resolveAgnesApiBaseUrl",
+      "to": "src/infrastructure/llm_agnes.ts#resolveAgnesUpstreamBase"
+    },
+    {
+      "from": "src/infrastructure/llm_agnes.ts#agnesApiBaseUrl",
+      "to": "src/infrastructure/llm_agnes.ts#toAgnesUpstreamRoot"
+    },
+    {
+      "from": "src/infrastructure/llm_agnes.ts#resolveAgnesUpstreamBase",
+      "to": "src/infrastructure/llm_agnes.ts#toAgnesUpstreamRoot"
+    },
+    {
+      "from": "src/infrastructure/llm_agnes.ts#resolveAgnesKeys",
+      "to": "src/infrastructure/llm_pool.ts#loadKeys"
+    }
+  ]
+}

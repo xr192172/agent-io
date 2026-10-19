@@ -1,0 +1,215 @@
+{
+  "//": "Design DB —— src/infrastructure/llm_focus.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "LlmConfig",
+      "kind": "interface",
+      "line": 32,
+      "signature": "LlmConfig()"
+    },
+    {
+      "name": "getConfigHome",
+      "kind": "function",
+      "line": 41,
+      "signature": "getConfigHome(): string"
+    },
+    {
+      "name": "configFilePath",
+      "kind": "function",
+      "line": 46,
+      "signature": "configFilePath(): string"
+    },
+    {
+      "name": "configFileReadPath",
+      "kind": "function",
+      "line": 54,
+      "signature": "configFileReadPath(): string"
+    },
+    {
+      "name": "AgentConfig",
+      "kind": "interface",
+      "line": 75,
+      "signature": "AgentConfig()"
+    },
+    {
+      "name": "loadAgentConfig",
+      "kind": "function",
+      "line": 94,
+      "signature": "loadAgentConfig(): AgentConfig | null"
+    },
+    {
+      "name": "loadLlmConfig",
+      "kind": "function",
+      "line": 126,
+      "signature": "loadLlmConfig(): LlmConfig | null"
+    },
+    {
+      "name": "ExplainConfig",
+      "kind": "interface",
+      "line": 167,
+      "signature": "ExplainConfig()"
+    },
+    {
+      "name": "DEFAULT_DS_BASE_URL",
+      "kind": "const",
+      "line": 173,
+      "signature": "const DEFAULT_DS_BASE_URL = 'https://api.deepseek.com/v1'"
+    },
+    {
+      "name": "DEFAULT_DS_MODEL",
+      "kind": "const",
+      "line": 174,
+      "signature": "const DEFAULT_DS_MODEL = 'deepseek-v4-flash'"
+    },
+    {
+      "name": "loadExplainConfig",
+      "kind": "function",
+      "line": 177,
+      "signature": "loadExplainConfig(): ExplainConfig | null"
+    },
+    {
+      "name": "ChatMessage",
+      "kind": "interface",
+      "line": 237,
+      "signature": "ChatMessage()"
+    },
+    {
+      "name": "callChat",
+      "kind": "function",
+      "line": 249,
+      "signature": "callChat(cfg: LlmConfig,\n  messages: ChatMessage[],\n  temperature = 0.2,\n  /** 请求超时（默认 90s；慢端点上大 prompt 曾出现 5 分钟悬挂，必须有保护） */\n  timeoutMs = 90_000,): Promise<string>"
+    },
+    {
+      "name": "FocusNode",
+      "kind": "interface",
+      "line": 268,
+      "signature": "FocusNode()"
+    },
+    {
+      "name": "ChainNodeInfo",
+      "kind": "interface",
+      "line": 273,
+      "signature": "ChainNodeInfo()"
+    },
+    {
+      "name": "FocusResult",
+      "kind": "interface",
+      "line": 284,
+      "signature": "FocusResult()"
+    },
+    {
+      "name": "pickKeyNodes",
+      "kind": "function",
+      "line": 298,
+      "signature": "pickKeyNodes(cfg: LlmConfig | null,\n  chain: ChainNodeInfo[],\n  opts?: { max?: number; userFocus?: string },): Promise<FocusResult>"
+    },
+    {
+      "name": "heuristicFocus",
+      "kind": "function",
+      "line": 358,
+      "signature": "heuristicFocus(chain: ChainNodeInfo[], max: number): FocusNode[]"
+    }
+  ],
+  "imports": [
+    {
+      "source": "./data_dir.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./llm_agnes.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./llm_gateway.js",
+      "kind": "relative"
+    },
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:os",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "./storage.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/llm_focus.ts#loadAgentConfig",
+      "to": "src/infrastructure/llm_agnes.ts#agnesApiBaseUrl"
+    },
+    {
+      "from": "src/infrastructure/llm_focus.ts#pickKeyNodes",
+      "to": "src/infrastructure/llm_focus.ts#callChat"
+    },
+    {
+      "from": "src/infrastructure/llm_focus.ts#configFileReadPath",
+      "to": "src/infrastructure/llm_focus.ts#configFilePath"
+    },
+    {
+      "from": "src/infrastructure/llm_focus.ts#loadAgentConfig",
+      "to": "src/infrastructure/llm_focus.ts#configFileReadPath"
+    },
+    {
+      "from": "src/infrastructure/llm_focus.ts#loadLlmConfig",
+      "to": "src/infrastructure/llm_focus.ts#configFileReadPath"
+    },
+    {
+      "from": "src/infrastructure/llm_focus.ts#loadExplainConfig",
+      "to": "src/infrastructure/llm_focus.ts#configFileReadPath"
+    },
+    {
+      "from": "src/infrastructure/llm_focus.ts#configFilePath",
+      "to": "src/infrastructure/llm_focus.ts#getConfigHome"
+    },
+    {
+      "from": "src/infrastructure/llm_focus.ts#pickKeyNodes",
+      "to": "src/infrastructure/llm_focus.ts#heuristicFocus"
+    },
+    {
+      "from": "src/infrastructure/llm_focus.ts#pickKeyNodes",
+      "to": "src/infrastructure/llm_focus.ts#heuristicFocus"
+    },
+    {
+      "from": "src/infrastructure/llm_focus.ts#pickKeyNodes",
+      "to": "src/infrastructure/llm_focus.ts#heuristicFocus"
+    },
+    {
+      "from": "src/infrastructure/llm_focus.ts#loadLlmConfig",
+      "to": "src/infrastructure/llm_focus.ts#loadAgentConfig"
+    },
+    {
+      "from": "src/infrastructure/llm_focus.ts#callChat",
+      "to": "src/infrastructure/llm_gateway.ts#chatViaGateway"
+    },
+    {
+      "from": "src/infrastructure/llm_focus.ts#loadAgentConfig",
+      "to": "src/infrastructure/llm_gateway.ts#ensureSeededFromEnv"
+    },
+    {
+      "from": "src/infrastructure/llm_focus.ts#loadExplainConfig",
+      "to": "src/infrastructure/llm_gateway.ts#ensureSeededFromEnv"
+    },
+    {
+      "from": "src/infrastructure/llm_focus.ts#loadAgentConfig",
+      "to": "src/infrastructure/llm_gateway.ts#firstUsableProvider"
+    },
+    {
+      "from": "src/infrastructure/llm_focus.ts#loadExplainConfig",
+      "to": "src/infrastructure/llm_gateway.ts#firstUsableProvider"
+    },
+    {
+      "from": "src/infrastructure/llm_focus.ts#callChat",
+      "to": "src/infrastructure/llm_gateway.ts#hasEnabledProvider"
+    }
+  ]
+}

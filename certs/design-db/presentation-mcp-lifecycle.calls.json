@@ -1,0 +1,64 @@
+{
+  "//": "Design DB —— src/presentation/mcp/lifecycle.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "LifecycleDeps",
+      "kind": "interface",
+      "line": 21,
+      "signature": "LifecycleDeps()"
+    },
+    {
+      "name": "LifecycleHook",
+      "kind": "interface",
+      "line": 32,
+      "signature": "LifecycleHook()"
+    },
+    {
+      "name": "LifecycleHandle",
+      "kind": "interface",
+      "line": 38,
+      "signature": "LifecycleHandle()"
+    },
+    {
+      "name": "LifecycleHandlers",
+      "kind": "interface",
+      "line": 42,
+      "signature": "LifecycleHandlers()"
+    },
+    {
+      "name": "describeError",
+      "kind": "function",
+      "line": 48,
+      "signature": "describeError(e: unknown): string"
+    },
+    {
+      "name": "createLifecycleHandlers",
+      "kind": "function",
+      "line": 58,
+      "signature": "createLifecycleHandlers(deps: LifecycleDeps, hooks: LifecycleHook = {}): LifecycleHandlers"
+    },
+    {
+      "name": "installLifecycle",
+      "kind": "function",
+      "line": 107,
+      "signature": "installLifecycle(deps: LifecycleDeps, hooks: LifecycleHook = {}): LifecycleHandle"
+    }
+  ],
+  "imports": [],
+  "calls": [
+    {
+      "from": "src/presentation/mcp/lifecycle.ts#installLifecycle",
+      "to": "src/presentation/mcp/lifecycle.ts#createLifecycleHandlers"
+    },
+    {
+      "from": "src/presentation/mcp/lifecycle.ts#createLifecycleHandlers",
+      "to": "src/presentation/mcp/lifecycle.ts#describeError"
+    },
+    {
+      "from": "src/presentation/mcp/lifecycle.ts#createLifecycleHandlers",
+      "to": "src/presentation/mcp/lifecycle.ts#describeError"
+    }
+  ]
+}

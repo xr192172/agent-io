@@ -1,0 +1,155 @@
+{
+  "//": "Design DB —— src/infrastructure/index/db.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "Database",
+      "kind": "type",
+      "line": 27,
+      "signature": "Database()"
+    },
+    {
+      "name": "txDepth",
+      "kind": "const",
+      "line": 39,
+      "signature": "const txDepth = new WeakMap<object, number>()"
+    },
+    {
+      "name": "inTransaction",
+      "kind": "function",
+      "line": 42,
+      "signature": "inTransaction(db: Database): boolean"
+    },
+    {
+      "name": "beginBatch",
+      "kind": "function",
+      "line": 47,
+      "signature": "beginBatch(db: Database): void"
+    },
+    {
+      "name": "endBatch",
+      "kind": "function",
+      "line": 55,
+      "signature": "endBatch(db: Database, rollback = false): void"
+    },
+    {
+      "name": "SCHEMA_VERSION",
+      "kind": "const",
+      "line": 66,
+      "signature": "const SCHEMA_VERSION = 8"
+    },
+    {
+      "name": "getDbFile",
+      "kind": "function",
+      "line": 69,
+      "signature": "getDbFile(): string"
+    },
+    {
+      "name": "projectCacheDbPath",
+      "kind": "function",
+      "line": 104,
+      "signature": "projectCacheDbPath(root: string): string"
+    },
+    {
+      "name": "featureCacheDbPath",
+      "kind": "function",
+      "line": 109,
+      "signature": "featureCacheDbPath(feature: string): string"
+    },
+    {
+      "name": "findCacheDb",
+      "kind": "function",
+      "line": 128,
+      "signature": "findCacheDb(opts: { feature?: string; sourceRoot?: string } = {}): string | null"
+    },
+    {
+      "name": "nearestCacheDb",
+      "kind": "function",
+      "line": 144,
+      "signature": "nearestCacheDb(dir: string): string | null"
+    },
+    {
+      "name": "openDb",
+      "kind": "function",
+      "line": 161,
+      "signature": "openDb(dbFile: string = getDbFile()): Database"
+    },
+    {
+      "name": "projectCachePool",
+      "kind": "const",
+      "line": 208,
+      "signature": "const projectCachePool = new Map<string, Database>()"
+    },
+    {
+      "name": "getProjectCacheDb",
+      "kind": "function",
+      "line": 217,
+      "signature": "getProjectCacheDb(projectRoot: string): Database"
+    },
+    {
+      "name": "closeAllProjectCacheDbs",
+      "kind": "function",
+      "line": 228,
+      "signature": "closeAllProjectCacheDbs(): void"
+    },
+    {
+      "name": "closeProjectCacheDb",
+      "kind": "function",
+      "line": 240,
+      "signature": "closeProjectCacheDb(projectRoot: string): void"
+    }
+  ],
+  "imports": [
+    {
+      "source": "../data_dir.js",
+      "kind": "relative"
+    },
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "node:sqlite",
+      "kind": "package"
+    },
+    {
+      "source": "../storage.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./schema.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/index/db.ts#findCacheDb",
+      "to": "src/infrastructure/index/db.ts#featureCacheDbPath"
+    },
+    {
+      "from": "src/infrastructure/index/db.ts#getProjectCacheDb",
+      "to": "src/infrastructure/index/db.ts#openDb"
+    },
+    {
+      "from": "src/infrastructure/index/db.ts#findCacheDb",
+      "to": "src/infrastructure/index/db.ts#projectCacheDbPath"
+    },
+    {
+      "from": "src/infrastructure/index/db.ts#getProjectCacheDb",
+      "to": "src/infrastructure/index/db.ts#projectCacheDbPath"
+    },
+    {
+      "from": "src/infrastructure/index/db.ts#getDbFile",
+      "to": "src/infrastructure/storage.ts#getStorageRoot"
+    },
+    {
+      "from": "src/infrastructure/index/db.ts#featureCacheDbPath",
+      "to": "src/infrastructure/storage.ts#getStorageRoot"
+    }
+  ]
+}

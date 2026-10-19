@@ -1,0 +1,132 @@
+{
+  "//": "Design DB —— src/domain/validator.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "AddFormatsFn",
+      "kind": "type",
+      "line": 16,
+      "signature": "AddFormatsFn()"
+    },
+    {
+      "name": "addFormats",
+      "kind": "const",
+      "line": 17,
+      "signature": "const addFormats = ( (addFormatsNS as unknown as { default?: AddFormatsFn })…"
+    },
+    {
+      "name": "ajv",
+      "kind": "const",
+      "line": 22,
+      "signature": "const ajv = new Ajv({ allErrors: true, strict: false })"
+    },
+    {
+      "name": "validateSchema",
+      "kind": "const",
+      "line": 24,
+      "signature": "const validateSchema = ajv.compile<DesignDSL>(schema)"
+    },
+    {
+      "name": "ValidationErrorItem",
+      "kind": "interface",
+      "line": 36,
+      "signature": "ValidationErrorItem()"
+    },
+    {
+      "name": "ValidationResult",
+      "kind": "interface",
+      "line": 43,
+      "signature": "ValidationResult()"
+    },
+    {
+      "name": "toResult",
+      "kind": "function",
+      "line": 55,
+      "signature": "toResult(items: ValidationErrorItem[]): ValidationResult"
+    },
+    {
+      "name": "formatAjvErrors",
+      "kind": "function",
+      "line": 60,
+      "signature": "formatAjvErrors(errors: ErrorObject[] | null | undefined): ValidationErrorItem[]"
+    },
+    {
+      "name": "validateSemanticAnchoring",
+      "kind": "function",
+      "line": 70,
+      "signature": "validateSemanticAnchoring(dsl: DesignDSL): ValidationErrorItem[]"
+    },
+    {
+      "name": "validateReasoningIntegrity",
+      "kind": "function",
+      "line": 148,
+      "signature": "validateReasoningIntegrity(dsl: DesignDSL): ValidationErrorItem[]"
+    },
+    {
+      "name": "validateDSL",
+      "kind": "function",
+      "line": 219,
+      "signature": "validateDSL(dsl: unknown): ValidationResult"
+    },
+    {
+      "name": "validateDSLJson",
+      "kind": "function",
+      "line": 242,
+      "signature": "validateDSLJson(json: string): ValidationResult & { dsl?: DesignDSL }"
+    }
+  ],
+  "imports": [
+    {
+      "source": "ajv",
+      "kind": "package"
+    },
+    {
+      "source": "ajv-formats",
+      "kind": "package"
+    },
+    {
+      "source": "../../schema/design_dsl.schema.json",
+      "kind": "relative"
+    },
+    {
+      "source": "./types.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/domain/validator.ts#validateDSL",
+      "to": "src/domain/validator.ts#formatAjvErrors"
+    },
+    {
+      "from": "src/domain/validator.ts#validateDSL",
+      "to": "src/domain/validator.ts#toResult"
+    },
+    {
+      "from": "src/domain/validator.ts#validateDSL",
+      "to": "src/domain/validator.ts#toResult"
+    },
+    {
+      "from": "src/domain/validator.ts#validateDSL",
+      "to": "src/domain/validator.ts#toResult"
+    },
+    {
+      "from": "src/domain/validator.ts#validateDSLJson",
+      "to": "src/domain/validator.ts#validateDSL"
+    },
+    {
+      "from": "src/domain/validator.ts#validateDSL",
+      "to": "src/domain/validator.ts#validateReasoningIntegrity"
+    },
+    {
+      "from": "src/domain/validator.ts#validateDSL",
+      "to": "src/domain/validator.ts#validateSchema"
+    },
+    {
+      "from": "src/domain/validator.ts#validateDSL",
+      "to": "src/domain/validator.ts#validateSemanticAnchoring"
+    }
+  ]
+}

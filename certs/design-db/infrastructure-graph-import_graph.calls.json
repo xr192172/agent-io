@@ -1,0 +1,53 @@
+{
+  "//": "Design DB —— src/infrastructure/graph/import_graph.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "ImportGraph",
+      "kind": "interface",
+      "line": 18,
+      "signature": "ImportGraph()"
+    },
+    {
+      "name": "buildImportGraph",
+      "kind": "function",
+      "line": 35,
+      "signature": "buildImportGraph(db: Database, root: string): ImportGraph"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../index/db.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./import_project.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../parse/kernel.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/graph/import_graph.ts#buildImportGraph",
+      "to": "src/infrastructure/graph/import_project.ts#buildIndex"
+    },
+    {
+      "from": "src/infrastructure/graph/import_graph.ts#buildImportGraph",
+      "to": "src/infrastructure/graph/import_project.ts#readGoModules"
+    },
+    {
+      "from": "src/infrastructure/graph/import_graph.ts#buildImportGraph",
+      "to": "src/infrastructure/graph/import_project.ts#resolveImport"
+    }
+  ]
+}

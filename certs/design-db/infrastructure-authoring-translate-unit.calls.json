@@ -1,0 +1,57 @@
+{
+  "//": "Design DB —— src/infrastructure/authoring/translate/unit.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "TranslateKind",
+      "kind": "type",
+      "line": 18,
+      "signature": "TranslateKind()"
+    },
+    {
+      "name": "TranslateParam",
+      "kind": "interface",
+      "line": 21,
+      "signature": "TranslateParam()"
+    },
+    {
+      "name": "TranslateMethod",
+      "kind": "interface",
+      "line": 29,
+      "signature": "TranslateMethod()"
+    },
+    {
+      "name": "TransUnit",
+      "kind": "interface",
+      "line": 40,
+      "signature": "TransUnit()"
+    },
+    {
+      "name": "DecisionCase",
+      "kind": "interface",
+      "line": 94,
+      "signature": "DecisionCase()"
+    },
+    {
+      "name": "DecisionShape",
+      "kind": "interface",
+      "line": 100,
+      "signature": "DecisionShape()"
+    },
+    {
+      "name": "DEFAULT_CONSTRAINTS",
+      "kind": "const",
+      "line": 109,
+      "signature": "const DEFAULT_CONSTRAINTS = [ '不得新增或删除顶层导出（export）', '不得改动函数签名、参数名与返回类型', '不得引入除目标函数体…"
+    },
+    {
+      "name": "withConstraints",
+      "kind": "function",
+      "line": 117,
+      "signature": "withConstraints(existing: string[], more: string[]): string[]"
+    }
+  ],
+  "imports": [],
+  "calls": []
+}

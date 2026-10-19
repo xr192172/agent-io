@@ -1,0 +1,202 @@
+{
+  "//": "Design DB —— src/domain/chain_wiring.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "AnchorKey",
+      "kind": "type",
+      "line": 50,
+      "signature": "AnchorKey()"
+    },
+    {
+      "name": "ANY_TOOL",
+      "kind": "const",
+      "line": 53,
+      "signature": "const ANY_TOOL = '*'"
+    },
+    {
+      "name": "ChainEdge",
+      "kind": "interface",
+      "line": 55,
+      "signature": "ChainEdge()"
+    },
+    {
+      "name": "CHAIN_EDGES",
+      "kind": "const",
+      "line": 91,
+      "signature": "const CHAIN_EDGES = [ // ── 作用域类：两端逐字同名，任何 [B] 之间直通（已验：17/17 按 feature 工作的 [B…"
+    },
+    {
+      "name": "CHAIN_EDGES_PENDING",
+      "kind": "const",
+      "line": 490,
+      "signature": "const CHAIN_EDGES_PENDING = [ // ── ★★★ T202b（2026-10-12）：诊断闭环的产物边（★ **诚实标 pending** …"
+    },
+    {
+      "name": "findChainEdges",
+      "kind": "function",
+      "line": 578,
+      "signature": "findChainEdges(from: string,\n  to: string,\n  opts?: { fromKey?: string; toPath?: string },): readonly ChainEdge[]"
+    },
+    {
+      "name": "chainExprOf",
+      "kind": "function",
+      "line": 594,
+      "signature": "chainExprOf(e: ChainEdge): string"
+    },
+    {
+      "name": "ChainHandoff",
+      "kind": "type",
+      "line": 614,
+      "signature": "ChainHandoff()"
+    },
+    {
+      "name": "applyChainEdge",
+      "kind": "function",
+      "line": 618,
+      "signature": "applyChainEdge(touched: Record<string, unknown>,\n  edge: ChainEdge,\n  opts?: { pick?: number },): ChainHandoff"
+    },
+    {
+      "name": "Chain",
+      "kind": "interface",
+      "line": 686,
+      "signature": "Chain()"
+    },
+    {
+      "name": "CHAINS",
+      "kind": "const",
+      "line": 706,
+      "signature": "const CHAINS = [ { name: 'refactor', steps: ['find_references', 'rename_…"
+    },
+    {
+      "name": "verifiedEdgesBetween",
+      "kind": "function",
+      "line": 792,
+      "signature": "verifiedEdgesBetween(from: string, to: string): readonly ChainEdge[]"
+    },
+    {
+      "name": "SCOPE_PATHS",
+      "kind": "const",
+      "line": 803,
+      "signature": "const SCOPE_PATHS = new Set(['project_dir', 'feature'])"
+    },
+    {
+      "name": "HopVerdict",
+      "kind": "interface",
+      "line": 830,
+      "signature": "HopVerdict()"
+    },
+    {
+      "name": "hopsOf",
+      "kind": "function",
+      "line": 843,
+      "signature": "hopsOf(chain: Chain): readonly HopVerdict[]"
+    },
+    {
+      "name": "evidenceLabel",
+      "kind": "function",
+      "line": 887,
+      "signature": "evidenceLabel(e: Chain['evidence']): string"
+    },
+    {
+      "name": "renderChains",
+      "kind": "function",
+      "line": 892,
+      "signature": "renderChains(max = 20): string"
+    },
+    {
+      "name": "deriveObjectChains",
+      "kind": "function",
+      "line": 945,
+      "signature": "deriveObjectChains(minLen = 2, maxLen = 6): string[][]"
+    },
+    {
+      "name": "nextHopsOf",
+      "kind": "function",
+      "line": 984,
+      "signature": "nextHopsOf(tool: string): readonly ChainEdge[]"
+    },
+    {
+      "name": "universalHopsOf",
+      "kind": "function",
+      "line": 989,
+      "signature": "universalHopsOf(): readonly ChainEdge[]"
+    },
+    {
+      "name": "renderNextHops",
+      "kind": "function",
+      "line": 1001,
+      "signature": "renderNextHops(tool: string): string"
+    },
+    {
+      "name": "renderDerivedChains",
+      "kind": "function",
+      "line": 1020,
+      "signature": "renderDerivedChains(): string"
+    },
+    {
+      "name": "renderChainWiring",
+      "kind": "function",
+      "line": 1033,
+      "signature": "renderChainWiring(max = 20): string"
+    }
+  ],
+  "imports": [
+    {
+      "source": "./b_terms.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/domain/chain_wiring.ts#applyChainEdge",
+      "to": "src/domain/chain_wiring.ts#chainExprOf"
+    },
+    {
+      "from": "src/domain/chain_wiring.ts#renderNextHops",
+      "to": "src/domain/chain_wiring.ts#chainExprOf"
+    },
+    {
+      "from": "src/domain/chain_wiring.ts#renderNextHops",
+      "to": "src/domain/chain_wiring.ts#chainExprOf"
+    },
+    {
+      "from": "src/domain/chain_wiring.ts#renderChainWiring",
+      "to": "src/domain/chain_wiring.ts#chainExprOf"
+    },
+    {
+      "from": "src/domain/chain_wiring.ts#renderDerivedChains",
+      "to": "src/domain/chain_wiring.ts#deriveObjectChains"
+    },
+    {
+      "from": "src/domain/chain_wiring.ts#renderChains",
+      "to": "src/domain/chain_wiring.ts#evidenceLabel"
+    },
+    {
+      "from": "src/domain/chain_wiring.ts#renderChains",
+      "to": "src/domain/chain_wiring.ts#hopsOf"
+    },
+    {
+      "from": "src/domain/chain_wiring.ts#renderNextHops",
+      "to": "src/domain/chain_wiring.ts#nextHopsOf"
+    },
+    {
+      "from": "src/domain/chain_wiring.ts#renderChainWiring",
+      "to": "src/domain/chain_wiring.ts#renderChains"
+    },
+    {
+      "from": "src/domain/chain_wiring.ts#renderChainWiring",
+      "to": "src/domain/chain_wiring.ts#renderDerivedChains"
+    },
+    {
+      "from": "src/domain/chain_wiring.ts#renderNextHops",
+      "to": "src/domain/chain_wiring.ts#universalHopsOf"
+    },
+    {
+      "from": "src/domain/chain_wiring.ts#hopsOf",
+      "to": "src/domain/chain_wiring.ts#verifiedEdgesBetween"
+    }
+  ]
+}

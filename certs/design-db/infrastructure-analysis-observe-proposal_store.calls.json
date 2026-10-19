@@ -1,0 +1,150 @@
+{
+  "//": "Design DB —— src/infrastructure/analysis/observe/proposal_store.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "ProposalStatus",
+      "kind": "type",
+      "line": 40,
+      "signature": "ProposalStatus()"
+    },
+    {
+      "name": "PROPOSAL_PENDING",
+      "kind": "const",
+      "line": 42,
+      "signature": "const PROPOSAL_PENDING = 'pending'"
+    },
+    {
+      "name": "PROPOSAL_APPROVED",
+      "kind": "const",
+      "line": 43,
+      "signature": "const PROPOSAL_APPROVED = 'approved'"
+    },
+    {
+      "name": "PROPOSAL_REJECTED",
+      "kind": "const",
+      "line": 44,
+      "signature": "const PROPOSAL_REJECTED = 'rejected'"
+    },
+    {
+      "name": "Proposal",
+      "kind": "interface",
+      "line": 47,
+      "signature": "Proposal()"
+    },
+    {
+      "name": "proposalSeq",
+      "kind": "const",
+      "line": 66,
+      "signature": "const proposalSeq = 0"
+    },
+    {
+      "name": "nextProposalID",
+      "kind": "function",
+      "line": 69,
+      "signature": "nextProposalID(): string"
+    },
+    {
+      "name": "declKey",
+      "kind": "function",
+      "line": 86,
+      "signature": "declKey(d: TSDLDecl): string"
+    },
+    {
+      "name": "validateDecls",
+      "kind": "function",
+      "line": 107,
+      "signature": "validateDecls(decls: TSDLDecl[]): void"
+    },
+    {
+      "name": "writeAtomic",
+      "kind": "function",
+      "line": 135,
+      "signature": "writeAtomic(file: string, data: string): void"
+    },
+    {
+      "name": "ProposalStore",
+      "kind": "class",
+      "line": 152,
+      "signature": "ProposalStore()"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "./dsl_store.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./contract.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./ledger_fold.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.constructor",
+      "to": "src/infrastructure/analysis/observe/dsl_store.ts#defaultDSLDir"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/proposal_store.ts#declKey",
+      "to": "src/infrastructure/analysis/observe/ledger_fold.ts#parseKnownSpread"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.get",
+      "to": "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.filePath"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.write",
+      "to": "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.filePath"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/proposal_store.ts#validateDecls",
+      "to": "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.get"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.reject",
+      "to": "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.get"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.create",
+      "to": "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.write"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.reject",
+      "to": "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.write"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.writeRaw",
+      "to": "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.write"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/proposal_store.ts#validateDecls",
+      "to": "src/infrastructure/analysis/observe/proposal_store.ts#declKey"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.create",
+      "to": "src/infrastructure/analysis/observe/proposal_store.ts#nextProposalID"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.create",
+      "to": "src/infrastructure/analysis/observe/proposal_store.ts#validateDecls"
+    },
+    {
+      "from": "src/infrastructure/analysis/observe/proposal_store.ts#ProposalStore.write",
+      "to": "src/infrastructure/analysis/observe/proposal_store.ts#writeAtomic"
+    }
+  ]
+}

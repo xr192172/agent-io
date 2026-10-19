@@ -1,0 +1,227 @@
+{
+  "//": "Design DB —— src/application/refactor/rule_library/rule_apply.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "ApplyState",
+      "kind": "type",
+      "line": 33,
+      "signature": "ApplyState()"
+    },
+    {
+      "name": "FileRuleOutcome",
+      "kind": "interface",
+      "line": 35,
+      "signature": "FileRuleOutcome()"
+    },
+    {
+      "name": "commentStyleFor",
+      "kind": "function",
+      "line": 53,
+      "signature": "commentStyleFor(file: string): string"
+    },
+    {
+      "name": "insertTodo",
+      "kind": "function",
+      "line": 61,
+      "signature": "insertTodo(content: string, line: number, ruleId: string, reason: string, style: string): string"
+    },
+    {
+      "name": "applyRuleToContent",
+      "kind": "function",
+      "line": 73,
+      "signature": "applyRuleToContent(file: string,\n  content: string,\n  rule: Rule,\n  opts: { todo?: boolean } = {},): FileRuleOutcome"
+    },
+    {
+      "name": "SKIP_DIRS",
+      "kind": "const",
+      "line": 109,
+      "signature": "const SKIP_DIRS = skipDirSet(['third_party'])"
+    },
+    {
+      "name": "CODE_EXT",
+      "kind": "const",
+      "line": 112,
+      "signature": "const CODE_EXT = new Set<string>(SOURCE_EXTS)"
+    },
+    {
+      "name": "collectRuleTargets",
+      "kind": "function",
+      "line": 115,
+      "signature": "collectRuleTargets(root: string, opts: { glob?: string; maxFiles?: number } = {}): string[]"
+    },
+    {
+      "name": "ApplySummary",
+      "kind": "interface",
+      "line": 149,
+      "signature": "ApplySummary()"
+    },
+    {
+      "name": "applyRulesToFiles",
+      "kind": "function",
+      "line": 159,
+      "signature": "applyRulesToFiles(root: string,\n  files: string[],\n  rules: Rule[],\n  opts: { todo?: boolean; fileContents?: (rel: string) => string | null } = {},): ApplySummary"
+    },
+    {
+      "name": "BaselineEntry",
+      "kind": "interface",
+      "line": 196,
+      "signature": "BaselineEntry()"
+    },
+    {
+      "name": "Baseline",
+      "kind": "interface",
+      "line": 203,
+      "signature": "Baseline()"
+    },
+    {
+      "name": "entryKey",
+      "kind": "const",
+      "line": 209,
+      "signature": "const entryKey = (e: BaselineEntry): string => `${e.ruleId}\\u0000${e.file}`"
+    },
+    {
+      "name": "loadBaseline",
+      "kind": "function",
+      "line": 211,
+      "signature": "loadBaseline(root: string): Baseline | null"
+    },
+    {
+      "name": "writeBaseline",
+      "kind": "function",
+      "line": 223,
+      "signature": "writeBaseline(root: string, summary: ApplySummary): Baseline"
+    },
+    {
+      "name": "RatchetDelta",
+      "kind": "interface",
+      "line": 242,
+      "signature": "RatchetDelta()"
+    },
+    {
+      "name": "ratchetDelta",
+      "kind": "function",
+      "line": 251,
+      "signature": "ratchetDelta(summary: ApplySummary, baseline: Baseline | null): RatchetDelta[]"
+    },
+    {
+      "name": "FixtureRunResult",
+      "kind": "interface",
+      "line": 277,
+      "signature": "FixtureRunResult()"
+    },
+    {
+      "name": "runFixtures",
+      "kind": "function",
+      "line": 284,
+      "signature": "runFixtures(rule: Rule): FixtureRunResult"
+    },
+    {
+      "name": "runAllFixtures",
+      "kind": "function",
+      "line": 311,
+      "signature": "runAllFixtures(root: string): { results: FixtureRunResult[]; total: number; failed: number }"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "../../../infrastructure/parse/index.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/rules/rule_match.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/rules/rule_match.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./rule_library.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/rules/rule_tokens.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../../infrastructure/parse/source_exts.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/refactor/rule_library/rule_apply.ts#applyRulesToFiles",
+      "to": "src/application/refactor/rule_library/rule_apply.ts#applyRuleToContent"
+    },
+    {
+      "from": "src/application/refactor/rule_library/rule_apply.ts#applyRuleToContent",
+      "to": "src/application/refactor/rule_library/rule_apply.ts#commentStyleFor"
+    },
+    {
+      "from": "src/application/refactor/rule_library/rule_apply.ts#writeBaseline",
+      "to": "src/application/refactor/rule_library/rule_apply.ts#entryKey"
+    },
+    {
+      "from": "src/application/refactor/rule_library/rule_apply.ts#ratchetDelta",
+      "to": "src/application/refactor/rule_library/rule_apply.ts#entryKey"
+    },
+    {
+      "from": "src/application/refactor/rule_library/rule_apply.ts#ratchetDelta",
+      "to": "src/application/refactor/rule_library/rule_apply.ts#entryKey"
+    },
+    {
+      "from": "src/application/refactor/rule_library/rule_apply.ts#applyRuleToContent",
+      "to": "src/application/refactor/rule_library/rule_apply.ts#insertTodo"
+    },
+    {
+      "from": "src/application/refactor/rule_library/rule_apply.ts#loadBaseline",
+      "to": "src/application/refactor/rule_library/rule_library.ts#baselinePath"
+    },
+    {
+      "from": "src/application/refactor/rule_library/rule_apply.ts#writeBaseline",
+      "to": "src/application/refactor/rule_library/rule_library.ts#baselinePath"
+    },
+    {
+      "from": "src/application/refactor/rule_library/rule_apply.ts#runAllFixtures",
+      "to": "src/application/refactor/rule_library/rule_library.ts#loadRules"
+    },
+    {
+      "from": "src/application/refactor/rule_library/rule_apply.ts#writeBaseline",
+      "to": "src/application/refactor/rule_library/rule_library.ts#rulesDir"
+    },
+    {
+      "from": "src/application/refactor/rule_library/rule_apply.ts#runFixtures",
+      "to": "src/infrastructure/rules/rule_match.ts#instantiateReplace"
+    },
+    {
+      "from": "src/application/refactor/rule_library/rule_apply.ts#applyRuleToContent",
+      "to": "src/infrastructure/rules/rule_match.ts#matchRule"
+    },
+    {
+      "from": "src/application/refactor/rule_library/rule_apply.ts#runFixtures",
+      "to": "src/infrastructure/rules/rule_match.ts#matchRule"
+    },
+    {
+      "from": "src/application/refactor/rule_library/rule_apply.ts#runFixtures",
+      "to": "src/infrastructure/rules/rule_match.ts#matchRule"
+    },
+    {
+      "from": "src/application/refactor/rule_library/rule_apply.ts#insertTodo",
+      "to": "src/infrastructure/rules/rule_tokens.ts#leadingWs"
+    },
+    {
+      "from": "src/application/refactor/rule_library/rule_apply.ts#insertTodo",
+      "to": "src/infrastructure/rules/rule_tokens.ts#splitLines"
+    }
+  ]
+}

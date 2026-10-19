@@ -1,0 +1,406 @@
+{
+  "//": "Design DB —— src/infrastructure/analysis/structure/cfg.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "CfgNodeKind",
+      "kind": "type",
+      "line": 26,
+      "signature": "CfgNodeKind()"
+    },
+    {
+      "name": "CfgNode",
+      "kind": "interface",
+      "line": 28,
+      "signature": "CfgNode()"
+    },
+    {
+      "name": "CfgEdge",
+      "kind": "interface",
+      "line": 40,
+      "signature": "CfgEdge()"
+    },
+    {
+      "name": "FunctionCfg",
+      "kind": "interface",
+      "line": 47,
+      "signature": "FunctionCfg()"
+    },
+    {
+      "name": "CtrlKind",
+      "kind": "type",
+      "line": 61,
+      "signature": "CtrlKind()"
+    },
+    {
+      "name": "TS_CTRL",
+      "kind": "const",
+      "line": 63,
+      "signature": "const TS_CTRL = { if_statement: 'branch', for_statement: 'loop', for_in_s…"
+    },
+    {
+      "name": "CTRL",
+      "kind": "const",
+      "line": 77,
+      "signature": "const CTRL = { go: { if_statement: 'branch', for_statement: 'loop', ex…"
+    },
+    {
+      "name": "FUNC_NODES",
+      "kind": "const",
+      "line": 107,
+      "signature": "const FUNC_NODES = { go: ['function_declaration', 'method_declaration'], typ…"
+    },
+    {
+      "name": "Exit",
+      "kind": "interface",
+      "line": 120,
+      "signature": "Exit()"
+    },
+    {
+      "name": "Ctx",
+      "kind": "interface",
+      "line": 125,
+      "signature": "Ctx()"
+    },
+    {
+      "name": "addNode",
+      "kind": "function",
+      "line": 143,
+      "signature": "addNode(ctx: Ctx, kind: CfgNodeKind, label: string, col: number, src?: SyntaxNodeLike, condition?: string): string"
+    },
+    {
+      "name": "link",
+      "kind": "function",
+      "line": 151,
+      "signature": "link(ctx: Ctx, exits: Exit[], to: string): void"
+    },
+    {
+      "name": "oneLine",
+      "kind": "function",
+      "line": 163,
+      "signature": "oneLine(s: string, max = 40): string"
+    },
+    {
+      "name": "summarize",
+      "kind": "function",
+      "line": 169,
+      "signature": "summarize(stmts: SyntaxNodeLike[]): string"
+    },
+    {
+      "name": "headText",
+      "kind": "function",
+      "line": 175,
+      "signature": "headText(node: SyntaxNodeLike, lang: string): string"
+    },
+    {
+      "name": "condText",
+      "kind": "function",
+      "line": 187,
+      "signature": "condText(node: SyntaxNodeLike, lang: string): string"
+    },
+    {
+      "name": "isNamedNode",
+      "kind": "function",
+      "line": 198,
+      "signature": "isNamedNode(n: SyntaxNodeLike): boolean"
+    },
+    {
+      "name": "stmtsOf",
+      "kind": "function",
+      "line": 203,
+      "signature": "stmtsOf(block: SyntaxNodeLike | null): SyntaxNodeLike[]"
+    },
+    {
+      "name": "consequenceOf",
+      "kind": "function",
+      "line": 214,
+      "signature": "consequenceOf(stmt: SyntaxNodeLike): SyntaxNodeLike | null"
+    },
+    {
+      "name": "elseParts",
+      "kind": "function",
+      "line": 231,
+      "signature": "elseParts(stmt: SyntaxNodeLike): SyntaxNodeLike[]"
+    },
+    {
+      "name": "unwrapElse",
+      "kind": "function",
+      "line": 248,
+      "signature": "unwrapElse(node: SyntaxNodeLike): { stmts: SyntaxNodeLike[]; elseIf: boolean }"
+    },
+    {
+      "name": "SeqResult",
+      "kind": "interface",
+      "line": 267,
+      "signature": "SeqResult()"
+    },
+    {
+      "name": "buildSeq",
+      "kind": "function",
+      "line": 276,
+      "signature": "buildSeq(ctx: Ctx, stmts: SyntaxNodeLike[], col: number, depth: number): SeqResult"
+    },
+    {
+      "name": "findFuncNode",
+      "kind": "function",
+      "line": 486,
+      "signature": "findFuncNode(root: SyntaxNodeLike, funcTypes: string[], name: string, depth = 0): SyntaxNodeLike | null"
+    },
+    {
+      "name": "extractFunctionCfg",
+      "kind": "function",
+      "line": 510,
+      "signature": "extractFunctionCfg(filePath: string,\n  content: string,\n  funcName: string,\n  maxDepth = 3,): Promise<FunctionCfg | null>"
+    }
+  ],
+  "imports": [
+    {
+      "source": "../../parse/kernel.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../../parse/kernel.js",
+      "kind": "relative",
+      "type_only": true
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#addNode"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#addNode"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#addNode"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#addNode"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#addNode"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#addNode"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#addNode"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#addNode"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#addNode"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#addNode"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#addNode"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#addNode"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#extractFunctionCfg",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#addNode"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#extractFunctionCfg",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#addNode"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#buildSeq"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#buildSeq"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#buildSeq"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#buildSeq"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#buildSeq"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#buildSeq"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#extractFunctionCfg",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#buildSeq"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#condText"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#consequenceOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#elseParts"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#findFuncNode",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#findFuncNode"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#extractFunctionCfg",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#findFuncNode"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#condText",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#headText"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#headText"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#stmtsOf",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#isNamedNode"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#unwrapElse",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#isNamedNode"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#link"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#link"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#link"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#link"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#link"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#link"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#link"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#link"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#link"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#extractFunctionCfg",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#link"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#summarize",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#oneLine"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#headText",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#oneLine"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#condText",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#oneLine"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#oneLine"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#oneLine"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#oneLine"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#oneLine"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#unwrapElse",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#stmtsOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#unwrapElse",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#stmtsOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#stmtsOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#stmtsOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#stmtsOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#stmtsOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#stmtsOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#stmtsOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#extractFunctionCfg",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#stmtsOf"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#summarize"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#buildSeq",
+      "to": "src/infrastructure/analysis/structure/cfg.ts#unwrapElse"
+    },
+    {
+      "from": "src/infrastructure/analysis/structure/cfg.ts#extractFunctionCfg",
+      "to": "src/infrastructure/parse/kernel.ts#parseAstRoot"
+    }
+  ]
+}

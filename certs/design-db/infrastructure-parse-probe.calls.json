@@ -1,0 +1,195 @@
+{
+  "//": "Design DB —— src/infrastructure/parse/probe.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "nodeRequire",
+      "kind": "const",
+      "line": 46,
+      "signature": "const nodeRequire = createRequire(import.meta.url)"
+    },
+    {
+      "name": "toFsPath",
+      "kind": "function",
+      "line": 49,
+      "signature": "toFsPath(u: string): string"
+    },
+    {
+      "name": "resolvePackage",
+      "kind": "function",
+      "line": 53,
+      "signature": "resolvePackage(pkgName: string): string | null"
+    },
+    {
+      "name": "nearestPackageJson",
+      "kind": "function",
+      "line": 70,
+      "signature": "nearestPackageJson(entryFile: string): string | null"
+    },
+    {
+      "name": "hasBuiltBindingNear",
+      "kind": "function",
+      "line": 105,
+      "signature": "hasBuiltBindingNear(pkgJsonPath: string): boolean"
+    },
+    {
+      "name": "isLoadablePackage",
+      "kind": "function",
+      "line": 114,
+      "signature": "isLoadablePackage(pkgJsonPath: string): boolean"
+    },
+    {
+      "name": "resolvedIsLoadable",
+      "kind": "function",
+      "line": 126,
+      "signature": "resolvedIsLoadable(pkgName: string): boolean"
+    },
+    {
+      "name": "loadable",
+      "kind": "const",
+      "line": 134,
+      "signature": "const loadable = new Set<string>()"
+    },
+    {
+      "name": "unloadable",
+      "kind": "const",
+      "line": 136,
+      "signature": "const unloadable = new Set<string>()"
+    },
+    {
+      "name": "isLanguageInstalled",
+      "kind": "function",
+      "line": 143,
+      "signature": "isLanguageInstalled(pkgName: string): boolean"
+    },
+    {
+      "name": "LanguagePackageStatus",
+      "kind": "interface",
+      "line": 172,
+      "signature": "LanguagePackageStatus()"
+    },
+    {
+      "name": "languagePackageStatus",
+      "kind": "function",
+      "line": 191,
+      "signature": "languagePackageStatus(moduleSpec: string | null): LanguagePackageStatus"
+    },
+    {
+      "name": "probeInstalledLanguages",
+      "kind": "function",
+      "line": 218,
+      "signature": "probeInstalledLanguages(): LanguageEntry[]"
+    },
+    {
+      "name": "isExtSupported",
+      "kind": "function",
+      "line": 223,
+      "signature": "isExtSupported(ext: string): LanguageEntry | null"
+    },
+    {
+      "name": "resetProbeCache",
+      "kind": "function",
+      "line": 231,
+      "signature": "resetProbeCache(): void"
+    },
+    {
+      "name": "listSupportedExts",
+      "kind": "function",
+      "line": 237,
+      "signature": "listSupportedExts(): string[]"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "node:module",
+      "kind": "package"
+    },
+    {
+      "source": "node:url",
+      "kind": "package"
+    },
+    {
+      "source": "./languages.js",
+      "kind": "relative"
+    },
+    {
+      "source": "../packages/template_compat.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/parse/probe.ts#isLoadablePackage",
+      "to": "src/infrastructure/packages/template_compat.ts#templateCompatFromPkgJson"
+    },
+    {
+      "from": "src/infrastructure/parse/probe.ts#languagePackageStatus",
+      "to": "src/infrastructure/packages/template_compat.ts#templateCompatFromPkgJson"
+    },
+    {
+      "from": "src/infrastructure/parse/probe.ts#languagePackageStatus",
+      "to": "src/infrastructure/packages/template_compat.ts#usesNanBinding"
+    },
+    {
+      "from": "src/infrastructure/parse/probe.ts#isExtSupported",
+      "to": "src/infrastructure/parse/languages.ts#findLanguageByExt"
+    },
+    {
+      "from": "src/infrastructure/parse/probe.ts#isLanguageInstalled",
+      "to": "src/infrastructure/parse/languages.ts#languageModuleSpec"
+    },
+    {
+      "from": "src/infrastructure/parse/probe.ts#isLoadablePackage",
+      "to": "src/infrastructure/parse/probe.ts#hasBuiltBindingNear"
+    },
+    {
+      "from": "src/infrastructure/parse/probe.ts#probeInstalledLanguages",
+      "to": "src/infrastructure/parse/probe.ts#isLanguageInstalled"
+    },
+    {
+      "from": "src/infrastructure/parse/probe.ts#isExtSupported",
+      "to": "src/infrastructure/parse/probe.ts#isLanguageInstalled"
+    },
+    {
+      "from": "src/infrastructure/parse/probe.ts#resolvedIsLoadable",
+      "to": "src/infrastructure/parse/probe.ts#isLoadablePackage"
+    },
+    {
+      "from": "src/infrastructure/parse/probe.ts#resolvedIsLoadable",
+      "to": "src/infrastructure/parse/probe.ts#nearestPackageJson"
+    },
+    {
+      "from": "src/infrastructure/parse/probe.ts#languagePackageStatus",
+      "to": "src/infrastructure/parse/probe.ts#nearestPackageJson"
+    },
+    {
+      "from": "src/infrastructure/parse/probe.ts#listSupportedExts",
+      "to": "src/infrastructure/parse/probe.ts#probeInstalledLanguages"
+    },
+    {
+      "from": "src/infrastructure/parse/probe.ts#resolvedIsLoadable",
+      "to": "src/infrastructure/parse/probe.ts#resolvePackage"
+    },
+    {
+      "from": "src/infrastructure/parse/probe.ts#languagePackageStatus",
+      "to": "src/infrastructure/parse/probe.ts#resolvePackage"
+    },
+    {
+      "from": "src/infrastructure/parse/probe.ts#isLanguageInstalled",
+      "to": "src/infrastructure/parse/probe.ts#resolvedIsLoadable"
+    },
+    {
+      "from": "src/infrastructure/parse/probe.ts#resolvePackage",
+      "to": "src/infrastructure/parse/probe.ts#toFsPath"
+    }
+  ]
+}

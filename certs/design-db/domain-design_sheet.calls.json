@@ -1,0 +1,199 @@
+{
+  "//": "Design DB —— src/domain/design_sheet.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "symbols": [
+    {
+      "name": "DESIGN_SHEET_NODE_KEYS",
+      "kind": "const",
+      "line": 51,
+      "signature": "const DESIGN_SHEET_NODE_KEYS = [ 'label', 'type', 'title', 'description', 'status', 'lay…"
+    },
+    {
+      "name": "NodeAttrDiff",
+      "kind": "interface",
+      "line": 63,
+      "signature": "NodeAttrDiff()"
+    },
+    {
+      "name": "SameIdDiff",
+      "kind": "interface",
+      "line": 75,
+      "signature": "SameIdDiff()"
+    },
+    {
+      "name": "ResolvedDiff",
+      "kind": "interface",
+      "line": 88,
+      "signature": "ResolvedDiff()"
+    },
+    {
+      "name": "DesignSheetDiff",
+      "kind": "interface",
+      "line": 98,
+      "signature": "DesignSheetDiff()"
+    },
+    {
+      "name": "nodesOf",
+      "kind": "function",
+      "line": 128,
+      "signature": "nodesOf(dsl: DesignDSL | null | undefined): ReadonlyArray<Node>"
+    },
+    {
+      "name": "sameValue",
+      "kind": "function",
+      "line": 133,
+      "signature": "sameValue(a: unknown, b: unknown): boolean"
+    },
+    {
+      "name": "designSheetRef",
+      "kind": "function",
+      "line": 153,
+      "signature": "designSheetRef(n: Node): string"
+    },
+    {
+      "name": "designSheetPendingRefs",
+      "kind": "function",
+      "line": 194,
+      "signature": "designSheetPendingRefs(dsl: DesignDSL | null | undefined): string[]"
+    },
+    {
+      "name": "PendingEntry",
+      "kind": "interface",
+      "line": 204,
+      "signature": "PendingEntry()"
+    },
+    {
+      "name": "trimStr",
+      "kind": "const",
+      "line": 213,
+      "signature": "const trimStr = (v: unknown): string => (typeof v === 'string' ? v.trim()…"
+    },
+    {
+      "name": "goalsOf",
+      "kind": "function",
+      "line": 216,
+      "signature": "goalsOf(dsl: DesignDSL | null | undefined): Array<Record<string, unknown>>"
+    },
+    {
+      "name": "goalPendingEntries",
+      "kind": "function",
+      "line": 223,
+      "signature": "goalPendingEntries(dsl: DesignDSL | null | undefined): PendingEntry[]"
+    },
+    {
+      "name": "nodePendingEntries",
+      "kind": "function",
+      "line": 235,
+      "signature": "nodePendingEntries(dsl: DesignDSL | null | undefined): PendingEntry[]"
+    },
+    {
+      "name": "pendingEntries",
+      "kind": "function",
+      "line": 245,
+      "signature": "pendingEntries(dsl: DesignDSL | null | undefined): PendingEntry[]"
+    },
+    {
+      "name": "diffDesignSheet",
+      "kind": "function",
+      "line": 258,
+      "signature": "diffDesignSheet(design: DesignDSL, live: DesignDSL): DesignSheetDiff"
+    },
+    {
+      "name": "diffDesignSheetLine",
+      "kind": "function",
+      "line": 341,
+      "signature": "diffDesignSheetLine(d: DesignSheetDiff): string"
+    }
+  ],
+  "imports": [
+    {
+      "source": "./geometry.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./types.js",
+      "kind": "relative",
+      "type_only": true
+    },
+    {
+      "source": "./overlay.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/domain/design_sheet.ts#nodePendingEntries",
+      "to": "src/domain/design_sheet.ts#designSheetRef"
+    },
+    {
+      "from": "src/domain/design_sheet.ts#diffDesignSheet",
+      "to": "src/domain/design_sheet.ts#designSheetRef"
+    },
+    {
+      "from": "src/domain/design_sheet.ts#designSheetPendingRefs",
+      "to": "src/domain/design_sheet.ts#goalPendingEntries"
+    },
+    {
+      "from": "src/domain/design_sheet.ts#pendingEntries",
+      "to": "src/domain/design_sheet.ts#goalPendingEntries"
+    },
+    {
+      "from": "src/domain/design_sheet.ts#goalPendingEntries",
+      "to": "src/domain/design_sheet.ts#goalsOf"
+    },
+    {
+      "from": "src/domain/design_sheet.ts#pendingEntries",
+      "to": "src/domain/design_sheet.ts#nodePendingEntries"
+    },
+    {
+      "from": "src/domain/design_sheet.ts#nodePendingEntries",
+      "to": "src/domain/design_sheet.ts#nodesOf"
+    },
+    {
+      "from": "src/domain/design_sheet.ts#diffDesignSheet",
+      "to": "src/domain/design_sheet.ts#nodesOf"
+    },
+    {
+      "from": "src/domain/design_sheet.ts#diffDesignSheet",
+      "to": "src/domain/design_sheet.ts#nodesOf"
+    },
+    {
+      "from": "src/domain/design_sheet.ts#diffDesignSheet",
+      "to": "src/domain/design_sheet.ts#pendingEntries"
+    },
+    {
+      "from": "src/domain/design_sheet.ts#diffDesignSheet",
+      "to": "src/domain/design_sheet.ts#sameValue"
+    },
+    {
+      "from": "src/domain/design_sheet.ts#goalPendingEntries",
+      "to": "src/domain/design_sheet.ts#trimStr"
+    },
+    {
+      "from": "src/domain/design_sheet.ts#goalPendingEntries",
+      "to": "src/domain/design_sheet.ts#trimStr"
+    },
+    {
+      "from": "src/domain/design_sheet.ts#goalPendingEntries",
+      "to": "src/domain/design_sheet.ts#trimStr"
+    },
+    {
+      "from": "src/domain/design_sheet.ts#nodePendingEntries",
+      "to": "src/domain/design_sheet.ts#trimStr"
+    },
+    {
+      "from": "src/domain/design_sheet.ts#nodePendingEntries",
+      "to": "src/domain/design_sheet.ts#trimStr"
+    },
+    {
+      "from": "src/domain/design_sheet.ts#diffDesignSheet",
+      "to": "src/domain/design_sheet.ts#trimStr"
+    },
+    {
+      "from": "src/domain/design_sheet.ts#diffDesignSheet",
+      "to": "src/domain/overlay.ts#nodePath"
+    }
+  ]
+}
