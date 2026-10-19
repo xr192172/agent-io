@@ -94943,11 +94943,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-19T02:31:22.382Z",
+    "saved_at": "2026-10-19T03:24:38.376Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792314946341,
-    "age": 62136041
+    "scanRev": 1792379792020,
+    "age": 486356
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -96767,6 +96767,13 @@
     {
       "id": "todo_rescan-no-hash-update",
       "summary": "★★ import_project 重扫【不更新 content_hash】：实测跑 558 个文件（22.8s）后，task_ops.ts / task_drift.ts / task_machine.ts 的 files.content_hash 仍是旧值（722f11 / 239d8cad / 95bc5dd7），而当前 sha1 是 ca4d3f / 17260312 / 72583af2 ⇒ 保鲜（indexStaleFor）永远说\"索引与源码不一致\" ⇒ 13 条 call-exists/edge-exists 永远判不了。★ 根因待查（syncProject 的增量分支 / toRelPath / max_files 之外）—— 不是\"保鲜坏了\"，是\"重扫没生效\"",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_install-mcp-no-workbuddy",
+      "summary": "★★ install_mcp.mjs 的平台列表里【没有 WorkBuddy】—— 而真正在用的 MCP 配置是 ~/.workbuddy/mcp.json（env 空）。今天自动保鲜的 env 是靠手改它才生效的；下次换项目/重装又漏。★ 修法：给 PLATFORMS 加一项 { label:\"WorkBuddy\", configPath: ~/.workbuddy/mcp.json, keyPath:\"mcpServers\", serverKey:\"agent-io\", probe:null }",
       "expectations": [],
       "state": "candidate",
       "owner": null
