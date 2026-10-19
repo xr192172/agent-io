@@ -37,8 +37,9 @@ import type { ToolDef } from './types.js';
  * 总得有一处把两者接到线 id（`'design'`）上。把它压到**唯一一处**即可；
  * 再在 `capability_map.ts` 里存第二份，就是漂移源（P1c 之前的 `LANE_OF` 正是那份）。
  *
- * 顺序**不是**对外契约（MCP 工具按名寻址，见 tests/server_registry.tool_snapshot.test.ts）。
- * 文件名 ↔ 线 id 是否配对、六份来源是否两两不交且并集 = TOOL_DEFS，由 tests/registry/lane_sources.test.ts 兜。
+ * 顺序**不是**对外契约（MCP 工具按名寻址）—— ★ 原先这里引用 `tests/server_registry.tool_snapshot.test.ts`
+ * 与 `tests/registry/lane_sources.test.ts`，而 **`tests/` 已在测试框架移除时一起删掉**（2026-10-19 核实）⇒
+ * 那两条约束现在**没有执行者**（★ 这是"文档承诺了机器不查的东西"的一个样本，别再引用它们）。
  */
 export const LANE_SOURCES: ReadonlyArray<readonly [LaneId, readonly ToolDef[]]> = [
   ['observe', OBSERVE_TOOLS],
