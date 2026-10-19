@@ -3889,118 +3889,6 @@
         "arch_layer": "core"
       },
       {
-        "id": "file_src_application_design_bricks_brick_bag_ts",
-        "label": "brick_bag.ts · 5 APIs",
-        "x": 12370,
-        "y": 10884,
-        "width": 240,
-        "height": 64,
-        "type": "file",
-        "description": "src/application/design/bricks/brick_bag.ts",
-        "style": {
-          "bg": "#1565c0",
-          "color": "#ffffff",
-          "borderRadius": 4
-        },
-        "arch_layer": "core"
-      },
-      {
-        "id": "file_src_application_design_bricks_brickify_ts",
-        "label": "brickify.ts · 17 APIs",
-        "x": 12020,
-        "y": 10884,
-        "width": 240,
-        "height": 64,
-        "type": "file",
-        "description": "src/application/design/bricks/brickify.ts",
-        "style": {
-          "bg": "#1565c0",
-          "color": "#ffffff",
-          "borderRadius": 4
-        },
-        "arch_layer": "core"
-      },
-      {
-        "id": "file_src_application_design_bricks_classify_bricks_ts",
-        "label": "classify_bricks.ts · 7 APIs",
-        "x": 11320,
-        "y": 10988,
-        "width": 240,
-        "height": 64,
-        "type": "file",
-        "description": "src/application/design/bricks/classify_bricks.ts",
-        "style": {
-          "bg": "#1565c0",
-          "color": "#ffffff",
-          "borderRadius": 4
-        },
-        "arch_layer": "core"
-      },
-      {
-        "id": "file_src_application_design_bricks_cluster_narrator_ts",
-        "label": "cluster_narrator.ts · 9 APIs",
-        "x": 11670,
-        "y": 10884,
-        "width": 240,
-        "height": 64,
-        "type": "file",
-        "description": "src/application/design/bricks/cluster_narrator.ts",
-        "style": {
-          "bg": "#1565c0",
-          "color": "#ffffff",
-          "borderRadius": 4
-        },
-        "arch_layer": "core"
-      },
-      {
-        "id": "file_src_application_design_bricks_render_brickwork_ts",
-        "label": "render_brickwork.ts · 12 APIs",
-        "x": 11320,
-        "y": 10884,
-        "width": 240,
-        "height": 64,
-        "type": "file",
-        "description": "src/application/design/bricks/render_brickwork.ts",
-        "style": {
-          "bg": "#1565c0",
-          "color": "#ffffff",
-          "borderRadius": 4
-        },
-        "arch_layer": "core"
-      },
-      {
-        "id": "file_src_application_design_bricks_signal_review_ts",
-        "label": "signal_review.ts · 3 APIs",
-        "x": 11320,
-        "y": 11092,
-        "width": 240,
-        "height": 64,
-        "type": "file",
-        "description": "src/application/design/bricks/signal_review.ts",
-        "style": {
-          "bg": "#1565c0",
-          "color": "#ffffff",
-          "borderRadius": 4
-        },
-        "arch_layer": "core"
-      },
-      {
-        "id": "file_src_application_design_bricks_taxonomy_ts",
-        "label": "taxonomy.ts · 2 APIs",
-        "x": 11670,
-        "y": 10988,
-        "width": 240,
-        "height": 64,
-        "type": "file",
-        "description": "src/application/design/bricks/taxonomy.ts",
-        "style": {
-          "bg": "#1565c0",
-          "color": "#ffffff",
-          "borderRadius": 4
-        },
-        "arch_layer": "core"
-      },
-      {
         "id": "file_src_application_design_derive_derive_algorithm_ts",
         "label": "derive_algorithm.ts · 3 APIs",
         "x": 14550,
@@ -16631,38 +16519,6 @@
         "arch_layer": "core"
       },
       {
-        "id": "file_src_application_design_lifecycle_manage_feature_ts",
-        "label": "manage_feature.ts · 1 APIs",
-        "x": 12760,
-        "y": 11890,
-        "width": 240,
-        "height": 64,
-        "type": "file",
-        "description": "src/application/design/lifecycle/manage_feature.ts",
-        "style": {
-          "bg": "#1565c0",
-          "color": "#ffffff",
-          "borderRadius": 4
-        },
-        "arch_layer": "core"
-      },
-      {
-        "id": "file_src_application_design_lifecycle_scaffold_ts",
-        "label": "scaffold.ts · 23 APIs",
-        "x": 12760,
-        "y": 11370,
-        "width": 240,
-        "height": 64,
-        "type": "file",
-        "description": "src/application/design/lifecycle/scaffold.ts",
-        "style": {
-          "bg": "#1565c0",
-          "color": "#ffffff",
-          "borderRadius": 4
-        },
-        "arch_layer": "core"
-      },
-      {
         "id": "file_src_application_design_lifecycle_simulation_ts",
         "label": "simulation.ts · 5 APIs",
         "x": 12760,
@@ -16687,54 +16543,6 @@
         "height": 64,
         "type": "file",
         "description": "src/application/design/lifecycle/snapshot.ts",
-        "style": {
-          "bg": "#1565c0",
-          "color": "#ffffff",
-          "borderRadius": 4
-        },
-        "arch_layer": "core"
-      },
-      {
-        "id": "file_src_application_design_lifecycle_split_stage_ts",
-        "label": "split_stage.ts · 5 APIs",
-        "x": 12760,
-        "y": 11578,
-        "width": 240,
-        "height": 64,
-        "type": "file",
-        "description": "src/application/design/lifecycle/split_stage.ts",
-        "style": {
-          "bg": "#1565c0",
-          "color": "#ffffff",
-          "borderRadius": 4
-        },
-        "arch_layer": "core"
-      },
-      {
-        "id": "file_src_application_design_lifecycle_templates_ts",
-        "label": "templates.ts · 2 APIs",
-        "x": 13110,
-        "y": 11370,
-        "width": 240,
-        "height": 64,
-        "type": "file",
-        "description": "src/application/design/lifecycle/templates.ts",
-        "style": {
-          "bg": "#1565c0",
-          "color": "#ffffff",
-          "borderRadius": 4
-        },
-        "arch_layer": "core"
-      },
-      {
-        "id": "file_src_application_design_lifecycle_wizard_steps_ts",
-        "label": "wizard_steps.ts · 1 APIs",
-        "x": 12760,
-        "y": 11786,
-        "width": 240,
-        "height": 64,
-        "type": "file",
-        "description": "src/application/design/lifecycle/wizard_steps.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -16783,22 +16591,6 @@
         "height": 64,
         "type": "file",
         "description": "src/application/design/workbench/dag_layout.ts",
-        "style": {
-          "bg": "#1565c0",
-          "color": "#ffffff",
-          "borderRadius": 4
-        },
-        "arch_layer": "core"
-      },
-      {
-        "id": "file_src_application_design_workbench_workbench_data_ts",
-        "label": "workbench_data.ts · 2 APIs",
-        "x": 11320,
-        "y": 11474,
-        "width": 240,
-        "height": 64,
-        "type": "file",
-        "description": "src/application/design/workbench/workbench_data.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -17135,22 +16927,6 @@
         "height": 64,
         "type": "file",
         "description": "src/application/meta/registry/capability_map.ts",
-        "style": {
-          "bg": "#1565c0",
-          "color": "#ffffff",
-          "borderRadius": 4
-        },
-        "arch_layer": "core"
-      },
-      {
-        "id": "file_src_application_meta_registry_classify_tools_ts",
-        "label": "classify_tools.ts · 7 APIs",
-        "x": 8400,
-        "y": 10884,
-        "width": 240,
-        "height": 64,
-        "type": "file",
-        "description": "src/application/meta/registry/classify_tools.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -47037,7 +46813,20 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "utility"
+        "arch_layer": "utility",
+        "decision": {
+          "summary": "解析内核：把源码解析成 ParsedFile（symbols/imports/calls/type_refs）。★ v9 起 TS 系（typescript/tsx/javascript/jsx）共享一份 import 绑定提取器 —— 四个适配器各写一份会各自漂移；被 syncFile / parseFileFull 调用，bindings 落 imports 表后供 resolveCrossFileCalls 判 external。",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "symbol": "TS_LIKE_IMPORT_BINDINGS",
+              "path": "src/infrastructure/parse/kernel.ts",
+              "why": "★ v9 的共享实现：四个 TS 系适配器共用这一份 import 绑定提取器（今天实测：四个都没实现 ⇒ bindings 恒空 ⇒ 2,728 条引用误判 failed）"
+            }
+          ],
+          "updated_at": "2026-10-19T09:27:37.964Z",
+          "agent": "workbuddy-main"
+        }
       },
       {
         "id": "file_src_infrastructure_parse_lang_hint_ts",
@@ -47392,22 +47181,6 @@
         "arch_layer": "core"
       },
       {
-        "id": "file_src_presentation_cli_brickify_cli_ts",
-        "label": "brickify_cli.ts · 3 APIs",
-        "x": 3510,
-        "y": 696,
-        "width": 240,
-        "height": 64,
-        "type": "file",
-        "description": "src/presentation/cli/brickify_cli.ts",
-        "style": {
-          "bg": "#1565c0",
-          "color": "#ffffff",
-          "borderRadius": 4
-        },
-        "arch_layer": "core"
-      },
-      {
         "id": "file_src_presentation_cli_cli_ts",
         "label": "cli.ts · 4 APIs",
         "x": 3510,
@@ -47448,134 +47221,6 @@
         "height": 64,
         "type": "file",
         "description": "src/presentation/cli/install_package_cli.ts",
-        "style": {
-          "bg": "#1565c0",
-          "color": "#ffffff",
-          "borderRadius": 4
-        },
-        "arch_layer": "core"
-      },
-      {
-        "id": "file_src_presentation_cli_render_render_anatomy_ts",
-        "label": "render_anatomy.ts · 4 APIs",
-        "x": 3880,
-        "y": 1162,
-        "width": 240,
-        "height": 64,
-        "type": "file",
-        "description": "src/presentation/cli/render/render_anatomy.ts",
-        "style": {
-          "bg": "#1565c0",
-          "color": "#ffffff",
-          "borderRadius": 4
-        },
-        "arch_layer": "core"
-      },
-      {
-        "id": "file_src_presentation_cli_render_render_cluster_workbench_ts",
-        "label": "render_cluster_workbench.ts · 6 APIs",
-        "x": 3880,
-        "y": 850,
-        "width": 240,
-        "height": 64,
-        "type": "file",
-        "description": "src/presentation/cli/render/render_cluster_workbench.ts",
-        "style": {
-          "bg": "#1565c0",
-          "color": "#ffffff",
-          "borderRadius": 4
-        },
-        "arch_layer": "core"
-      },
-      {
-        "id": "file_src_presentation_cli_render_render_dep_canvas_ts",
-        "label": "render_dep_canvas.ts · 9 APIs",
-        "x": 3880,
-        "y": 538,
-        "width": 240,
-        "height": 64,
-        "type": "file",
-        "description": "src/presentation/cli/render/render_dep_canvas.ts",
-        "style": {
-          "bg": "#1565c0",
-          "color": "#ffffff",
-          "borderRadius": 4
-        },
-        "arch_layer": "core"
-      },
-      {
-        "id": "file_src_presentation_cli_render_render_mindmap_ts",
-        "label": "render_mindmap.ts · 8 APIs",
-        "x": 3880,
-        "y": 1058,
-        "width": 240,
-        "height": 64,
-        "type": "file",
-        "description": "src/presentation/cli/render/render_mindmap.ts",
-        "style": {
-          "bg": "#1565c0",
-          "color": "#ffffff",
-          "borderRadius": 4
-        },
-        "arch_layer": "core"
-      },
-      {
-        "id": "file_src_presentation_cli_render_render_tools_map_ts",
-        "label": "render_tools_map.ts · 6 APIs",
-        "x": 3880,
-        "y": 954,
-        "width": 240,
-        "height": 64,
-        "type": "file",
-        "description": "src/presentation/cli/render/render_tools_map.ts",
-        "style": {
-          "bg": "#1565c0",
-          "color": "#ffffff",
-          "borderRadius": 4
-        },
-        "arch_layer": "core"
-      },
-      {
-        "id": "file_src_presentation_cli_render_render_wizard_ts",
-        "label": "render_wizard.ts · 4 APIs",
-        "x": 3880,
-        "y": 746,
-        "width": 240,
-        "height": 64,
-        "type": "file",
-        "description": "src/presentation/cli/render/render_wizard.ts",
-        "style": {
-          "bg": "#1565c0",
-          "color": "#ffffff",
-          "borderRadius": 4
-        },
-        "arch_layer": "core"
-      },
-      {
-        "id": "file_src_presentation_cli_render_render_workbench_ts",
-        "label": "render_workbench.ts · 10 APIs",
-        "x": 3880,
-        "y": 642,
-        "width": 240,
-        "height": 64,
-        "type": "file",
-        "description": "src/presentation/cli/render/render_workbench.ts",
-        "style": {
-          "bg": "#1565c0",
-          "color": "#ffffff",
-          "borderRadius": 4
-        },
-        "arch_layer": "core"
-      },
-      {
-        "id": "file_src_presentation_cli_render_workbench_shell_css_ts",
-        "label": "workbench_shell_css.ts · 0 APIs",
-        "x": 4230,
-        "y": 538,
-        "width": 240,
-        "height": 64,
-        "type": "file",
-        "description": "src/presentation/cli/render/workbench_shell_css.ts",
         "style": {
           "bg": "#1565c0",
           "color": "#ffffff",
@@ -49330,48 +48975,6 @@
         "label": "contains"
       },
       {
-        "id": "contains_src_application_design_bricks_src_application_design_bricks_brick_bag_ts",
-        "from": "dir_src_application_design_bricks",
-        "to": "file_src_application_design_bricks_brick_bag_ts",
-        "label": "contains"
-      },
-      {
-        "id": "contains_src_application_design_bricks_src_application_design_bricks_brickify_ts",
-        "from": "dir_src_application_design_bricks",
-        "to": "file_src_application_design_bricks_brickify_ts",
-        "label": "contains"
-      },
-      {
-        "id": "contains_src_application_design_bricks_src_application_design_bricks_classify_bricks_ts",
-        "from": "dir_src_application_design_bricks",
-        "to": "file_src_application_design_bricks_classify_bricks_ts",
-        "label": "contains"
-      },
-      {
-        "id": "contains_src_application_design_bricks_src_application_design_bricks_cluster_narrator_ts",
-        "from": "dir_src_application_design_bricks",
-        "to": "file_src_application_design_bricks_cluster_narrator_ts",
-        "label": "contains"
-      },
-      {
-        "id": "contains_src_application_design_bricks_src_application_design_bricks_render_brickwork_ts",
-        "from": "dir_src_application_design_bricks",
-        "to": "file_src_application_design_bricks_render_brickwork_ts",
-        "label": "contains"
-      },
-      {
-        "id": "contains_src_application_design_bricks_src_application_design_bricks_signal_review_ts",
-        "from": "dir_src_application_design_bricks",
-        "to": "file_src_application_design_bricks_signal_review_ts",
-        "label": "contains"
-      },
-      {
-        "id": "contains_src_application_design_bricks_src_application_design_bricks_taxonomy_ts",
-        "from": "dir_src_application_design_bricks",
-        "to": "file_src_application_design_bricks_taxonomy_ts",
-        "label": "contains"
-      },
-      {
         "id": "contains_src_application_design_derive_src_application_design_derive_derive_algorithm_ts",
         "from": "dir_src_application_design_derive",
         "to": "file_src_application_design_derive_derive_algorithm_ts",
@@ -49498,18 +49101,6 @@
         "label": "contains"
       },
       {
-        "id": "contains_src_application_design_lifecycle_src_application_design_lifecycle_manage_feature_ts",
-        "from": "dir_src_application_design_lifecycle",
-        "to": "file_src_application_design_lifecycle_manage_feature_ts",
-        "label": "contains"
-      },
-      {
-        "id": "contains_src_application_design_lifecycle_src_application_design_lifecycle_scaffold_ts",
-        "from": "dir_src_application_design_lifecycle",
-        "to": "file_src_application_design_lifecycle_scaffold_ts",
-        "label": "contains"
-      },
-      {
         "id": "contains_src_application_design_lifecycle_src_application_design_lifecycle_simulation_ts",
         "from": "dir_src_application_design_lifecycle",
         "to": "file_src_application_design_lifecycle_simulation_ts",
@@ -49519,24 +49110,6 @@
         "id": "contains_src_application_design_lifecycle_src_application_design_lifecycle_snapshot_ts",
         "from": "dir_src_application_design_lifecycle",
         "to": "file_src_application_design_lifecycle_snapshot_ts",
-        "label": "contains"
-      },
-      {
-        "id": "contains_src_application_design_lifecycle_src_application_design_lifecycle_split_stage_ts",
-        "from": "dir_src_application_design_lifecycle",
-        "to": "file_src_application_design_lifecycle_split_stage_ts",
-        "label": "contains"
-      },
-      {
-        "id": "contains_src_application_design_lifecycle_src_application_design_lifecycle_templates_ts",
-        "from": "dir_src_application_design_lifecycle",
-        "to": "file_src_application_design_lifecycle_templates_ts",
-        "label": "contains"
-      },
-      {
-        "id": "contains_src_application_design_lifecycle_src_application_design_lifecycle_wizard_steps_ts",
-        "from": "dir_src_application_design_lifecycle",
-        "to": "file_src_application_design_lifecycle_wizard_steps_ts",
         "label": "contains"
       },
       {
@@ -49555,12 +49128,6 @@
         "id": "contains_src_application_design_workbench_src_application_design_workbench_dag_layout_ts",
         "from": "dir_src_application_design_workbench",
         "to": "file_src_application_design_workbench_dag_layout_ts",
-        "label": "contains"
-      },
-      {
-        "id": "contains_src_application_design_workbench_src_application_design_workbench_workbench_data_ts",
-        "from": "dir_src_application_design_workbench",
-        "to": "file_src_application_design_workbench_workbench_data_ts",
         "label": "contains"
       },
       {
@@ -49687,12 +49254,6 @@
         "id": "contains_src_application_meta_registry_src_application_meta_registry_capability_map_ts",
         "from": "dir_src_application_meta_registry",
         "to": "file_src_application_meta_registry_capability_map_ts",
-        "label": "contains"
-      },
-      {
-        "id": "contains_src_application_meta_registry_src_application_meta_registry_classify_tools_ts",
-        "from": "dir_src_application_meta_registry",
-        "to": "file_src_application_meta_registry_classify_tools_ts",
         "label": "contains"
       },
       {
@@ -51268,12 +50829,6 @@
         "label": "contains"
       },
       {
-        "id": "contains_src_presentation_cli_src_presentation_cli_brickify_cli_ts",
-        "from": "dir_src_presentation_cli",
-        "to": "file_src_presentation_cli_brickify_cli_ts",
-        "label": "contains"
-      },
-      {
         "id": "contains_src_presentation_cli_src_presentation_cli_cli_ts",
         "from": "dir_src_presentation_cli",
         "to": "file_src_presentation_cli_cli_ts",
@@ -51289,54 +50844,6 @@
         "id": "contains_src_presentation_cli_src_presentation_cli_install_package_cli_ts",
         "from": "dir_src_presentation_cli",
         "to": "file_src_presentation_cli_install_package_cli_ts",
-        "label": "contains"
-      },
-      {
-        "id": "contains_src_presentation_cli_render_src_presentation_cli_render_render_anatomy_ts",
-        "from": "dir_src_presentation_cli_render",
-        "to": "file_src_presentation_cli_render_render_anatomy_ts",
-        "label": "contains"
-      },
-      {
-        "id": "contains_src_presentation_cli_render_src_presentation_cli_render_render_cluster_workbench_ts",
-        "from": "dir_src_presentation_cli_render",
-        "to": "file_src_presentation_cli_render_render_cluster_workbench_ts",
-        "label": "contains"
-      },
-      {
-        "id": "contains_src_presentation_cli_render_src_presentation_cli_render_render_dep_canvas_ts",
-        "from": "dir_src_presentation_cli_render",
-        "to": "file_src_presentation_cli_render_render_dep_canvas_ts",
-        "label": "contains"
-      },
-      {
-        "id": "contains_src_presentation_cli_render_src_presentation_cli_render_render_mindmap_ts",
-        "from": "dir_src_presentation_cli_render",
-        "to": "file_src_presentation_cli_render_render_mindmap_ts",
-        "label": "contains"
-      },
-      {
-        "id": "contains_src_presentation_cli_render_src_presentation_cli_render_render_tools_map_ts",
-        "from": "dir_src_presentation_cli_render",
-        "to": "file_src_presentation_cli_render_render_tools_map_ts",
-        "label": "contains"
-      },
-      {
-        "id": "contains_src_presentation_cli_render_src_presentation_cli_render_render_wizard_ts",
-        "from": "dir_src_presentation_cli_render",
-        "to": "file_src_presentation_cli_render_render_wizard_ts",
-        "label": "contains"
-      },
-      {
-        "id": "contains_src_presentation_cli_render_src_presentation_cli_render_render_workbench_ts",
-        "from": "dir_src_presentation_cli_render",
-        "to": "file_src_presentation_cli_render_render_workbench_ts",
-        "label": "contains"
-      },
-      {
-        "id": "contains_src_presentation_cli_render_src_presentation_cli_render_workbench_shell_css_ts",
-        "from": "dir_src_presentation_cli_render",
-        "to": "file_src_presentation_cli_render_workbench_shell_css_ts",
         "label": "contains"
       },
       {
@@ -52240,62 +51747,6 @@
         "label": "contains"
       },
       {
-        "id": "dep_src_application_design_bricks_brickify_ts_src_application_design_bricks_brick_bag_ts",
-        "from": "file_src_application_design_bricks_brickify_ts",
-        "to": "file_src_application_design_bricks_brick_bag_ts",
-        "label": "imports",
-        "type": "dashed"
-      },
-      {
-        "id": "dep_src_application_design_bricks_classify_bricks_ts_src_application_design_bricks_brickify_ts",
-        "from": "file_src_application_design_bricks_classify_bricks_ts",
-        "to": "file_src_application_design_bricks_brickify_ts",
-        "label": "imports",
-        "type": "dashed"
-      },
-      {
-        "id": "dep_src_application_design_bricks_classify_bricks_ts_src_application_design_bricks_cluster_narrator_ts",
-        "from": "file_src_application_design_bricks_classify_bricks_ts",
-        "to": "file_src_application_design_bricks_cluster_narrator_ts",
-        "label": "imports",
-        "type": "dashed"
-      },
-      {
-        "id": "dep_src_application_design_bricks_classify_bricks_ts_src_application_design_bricks_taxonomy_ts",
-        "from": "file_src_application_design_bricks_classify_bricks_ts",
-        "to": "file_src_application_design_bricks_taxonomy_ts",
-        "label": "imports",
-        "type": "dashed"
-      },
-      {
-        "id": "dep_src_application_design_bricks_cluster_narrator_ts_src_application_design_bricks_brickify_ts",
-        "from": "file_src_application_design_bricks_cluster_narrator_ts",
-        "to": "file_src_application_design_bricks_brickify_ts",
-        "label": "imports",
-        "type": "dashed"
-      },
-      {
-        "id": "dep_src_application_design_bricks_render_brickwork_ts_src_application_design_bricks_brick_bag_ts",
-        "from": "file_src_application_design_bricks_render_brickwork_ts",
-        "to": "file_src_application_design_bricks_brick_bag_ts",
-        "label": "imports",
-        "type": "dashed"
-      },
-      {
-        "id": "dep_src_application_design_bricks_render_brickwork_ts_src_application_design_bricks_brickify_ts",
-        "from": "file_src_application_design_bricks_render_brickwork_ts",
-        "to": "file_src_application_design_bricks_brickify_ts",
-        "label": "imports",
-        "type": "dashed"
-      },
-      {
-        "id": "dep_src_application_design_bricks_signal_review_ts_src_application_design_bricks_brickify_ts",
-        "from": "file_src_application_design_bricks_signal_review_ts",
-        "to": "file_src_application_design_bricks_brickify_ts",
-        "label": "imports",
-        "type": "dashed"
-      },
-      {
         "id": "dep_src_application_design_derive_derive_chain_ts_src_application_design_derive_derive_algorithm_ts",
         "from": "file_src_application_design_derive_derive_chain_ts",
         "to": "file_src_application_design_derive_derive_algorithm_ts",
@@ -52464,13 +51915,6 @@
         "type": "dashed"
       },
       {
-        "id": "dep_src_application_design_lifecycle_manage_feature_ts_src_application_design_lifecycle_templates_ts",
-        "from": "file_src_application_design_lifecycle_manage_feature_ts",
-        "to": "file_src_application_design_lifecycle_templates_ts",
-        "label": "imports",
-        "type": "dashed"
-      },
-      {
         "id": "dep_src_application_harvest_handlers_ts_src_application_harvest_harvest_decisions_ts",
         "from": "file_src_application_harvest_handlers_ts",
         "to": "file_src_application_harvest_harvest_decisions_ts",
@@ -52523,13 +51967,6 @@
         "id": "dep_src_application_meta_registry_capability_map_ts_src_application_meta_registry_tool_faces_ts",
         "from": "file_src_application_meta_registry_capability_map_ts",
         "to": "file_src_application_meta_registry_tool_faces_ts",
-        "label": "imports",
-        "type": "dashed"
-      },
-      {
-        "id": "dep_src_application_meta_registry_classify_tools_ts_src_application_meta_registry_collect_functions_ts",
-        "from": "file_src_application_meta_registry_classify_tools_ts",
-        "to": "file_src_application_meta_registry_collect_functions_ts",
         "label": "imports",
         "type": "dashed"
       },
@@ -54431,13 +53868,6 @@
         "type": "dashed"
       },
       {
-        "id": "dep_src_presentation_cli_render_render_workbench_ts_src_presentation_cli_render_workbench_shell_css_ts",
-        "from": "file_src_presentation_cli_render_render_workbench_ts",
-        "to": "file_src_presentation_cli_render_workbench_shell_css_ts",
-        "label": "imports",
-        "type": "dashed"
-      },
-      {
         "id": "dep_src_presentation_daemon_daemon_ts_src_presentation_daemon_server_ts",
         "from": "file_src_presentation_daemon_daemon_ts",
         "to": "file_src_presentation_daemon_server_ts",
@@ -56047,16 +55477,6 @@
         "to": "dir_src_infrastructure_index",
         "label": "imports ×2",
         "type": "dashed"
-      },
-      {
-        "id": "dep_file_src_presentation_cli_brickify_cli_ts_dir_src_presentation_cli_render",
-        "from": "file_src_presentation_cli_brickify_cli_ts",
-        "to": "dir_src_presentation_cli_render",
-        "label": "imports ×7",
-        "type": "dashed",
-        "style": {
-          "strokeWidth": 2
-        }
       },
       {
         "id": "dep_file_src_presentation_http_serve_ts_dir_src_presentation_http_archify",
@@ -75856,391 +75276,6 @@
         "layer": "core"
       },
       {
-        "id": "file_src_application_design_bricks_brick_bag_ts",
-        "path": "src/application/design/bricks/brick_bag.ts",
-        "responsibility": "核心层 · src/application/design/bricks — 5 个 API（导入自 5 个模块）",
-        "symbols": [
-          {
-            "name": "BrickFileGroups",
-            "kind": "interface",
-            "line": 25,
-            "end_line": 29,
-            "signature": "BrickFileGroups()"
-          },
-          {
-            "name": "BrickFamily",
-            "kind": "interface",
-            "line": 31,
-            "end_line": 34,
-            "signature": "BrickFamily()"
-          },
-          {
-            "name": "BrickDeprecation",
-            "kind": "interface",
-            "line": 36,
-            "end_line": 39,
-            "signature": "BrickDeprecation()"
-          },
-          {
-            "name": "SimilarPeer",
-            "kind": "interface",
-            "line": 41,
-            "end_line": 46,
-            "signature": "SimilarPeer()"
-          },
-          {
-            "name": "CallPeer",
-            "kind": "interface",
-            "line": 48,
-            "end_line": 54,
-            "signature": "CallPeer()"
-          },
-          {
-            "name": "BrickPeer",
-            "kind": "type",
-            "line": 56,
-            "end_line": 56,
-            "signature": "BrickPeer()"
-          },
-          {
-            "name": "Brick",
-            "kind": "interface",
-            "line": 58,
-            "end_line": 70,
-            "signature": "Brick()"
-          },
-          {
-            "name": "FeatureCallEdges",
-            "kind": "interface",
-            "line": 73,
-            "end_line": 77,
-            "signature": "FeatureCallEdges()"
-          },
-          {
-            "name": "BrickBag",
-            "kind": "interface",
-            "line": 79,
-            "end_line": 90,
-            "signature": "BrickBag()"
-          },
-          {
-            "name": "sideCmp",
-            "kind": "type",
-            "line": 92,
-            "end_line": 92,
-            "signature": "const sideCmp = { frontend: 0, backend: 1, shared: 2 }"
-          }
-        ],
-        "lines": 264,
-        "layer": "core"
-      },
-      {
-        "id": "file_src_application_design_bricks_brickify_ts",
-        "path": "src/application/design/bricks/brickify.ts",
-        "responsibility": "核心层 · src/application/design/bricks — 17 个 API（导入自 9 个模块）",
-        "symbols": [
-          {
-            "name": "BrickifyOptions",
-            "kind": "interface",
-            "line": 34,
-            "end_line": 39,
-            "signature": "BrickifyOptions()"
-          },
-          {
-            "name": "FileDep",
-            "kind": "interface",
-            "line": 42,
-            "end_line": 46,
-            "signature": "FileDep()"
-          },
-          {
-            "name": "MixedFileSignal",
-            "kind": "interface",
-            "line": 49,
-            "end_line": 55,
-            "signature": "MixedFileSignal()"
-          },
-          {
-            "name": "Community",
-            "kind": "interface",
-            "line": 58,
-            "end_line": 65,
-            "signature": "Community()"
-          },
-          {
-            "name": "BrickSubCluster",
-            "kind": "interface",
-            "line": 74,
-            "end_line": 93,
-            "signature": "BrickSubCluster()"
-          },
-          {
-            "name": "BrickifyBrick",
-            "kind": "interface",
-            "line": 100,
-            "end_line": 122,
-            "signature": "BrickifyBrick()"
-          },
-          {
-            "name": "BrickifyResult",
-            "kind": "interface",
-            "line": 124,
-            "end_line": 140,
-            "signature": "BrickifyResult()"
-          },
-          {
-            "name": "TS_EXT",
-            "kind": "type",
-            "line": 142,
-            "end_line": 142,
-            "signature": "const TS_EXT = /\\.(ts|tsx|js|jsx|mjs|cjs|mts|cts)$/"
-          },
-          {
-            "name": "BrickRole",
-            "kind": "type",
-            "line": 149,
-            "end_line": 149,
-            "signature": "BrickRole()"
-          },
-          {
-            "name": "ROLE_LABEL",
-            "kind": "type",
-            "line": 151,
-            "end_line": 155,
-            "signature": "const ROLE_LABEL = { brick: '积木', contract: '契约', glue: '胶水', }"
-          },
-          {
-            "name": "NodeLike",
-            "kind": "interface",
-            "line": 215,
-            "end_line": 221,
-            "signature": "NodeLike()"
-          },
-          {
-            "name": "DECL_TYPES",
-            "kind": "type",
-            "line": 230,
-            "end_line": 237,
-            "signature": "const DECL_TYPES = new Set([ 'function_declaration', 'class_declaration', 'a…"
-          },
-          {
-            "name": "UnionFind",
-            "kind": "class",
-            "line": 412,
-            "end_line": 425,
-            "signature": "UnionFind()"
-          },
-          {
-            "name": "RoleTotals",
-            "kind": "type",
-            "line": 707,
-            "end_line": 707,
-            "signature": "RoleTotals()"
-          }
-        ],
-        "lines": 714,
-        "layer": "core"
-      },
-      {
-        "id": "file_src_application_design_bricks_classify_bricks_ts",
-        "path": "src/application/design/bricks/classify_bricks.ts",
-        "responsibility": "核心层 · src/application/design/bricks — 7 个 API（导入自 6 个模块）",
-        "symbols": [
-          {
-            "name": "ClusterClassification",
-            "kind": "interface",
-            "line": 24,
-            "end_line": 29,
-            "signature": "ClusterClassification()"
-          },
-          {
-            "name": "AnatomySlotView",
-            "kind": "interface",
-            "line": 31,
-            "end_line": 46,
-            "signature": "AnatomySlotView()"
-          },
-          {
-            "name": "AnatomyResult",
-            "kind": "interface",
-            "line": 48,
-            "end_line": 59,
-            "signature": "AnatomyResult()"
-          },
-          {
-            "name": "ClassifyOptions",
-            "kind": "interface",
-            "line": 61,
-            "end_line": 63,
-            "signature": "ClassifyOptions()"
-          }
-        ],
-        "lines": 295,
-        "layer": "core"
-      },
-      {
-        "id": "file_src_application_design_bricks_cluster_narrator_ts",
-        "path": "src/application/design/bricks/cluster_narrator.ts",
-        "responsibility": "核心层 · src/application/design/bricks — 9 个 API（导入自 5 个模块）",
-        "symbols": [
-          {
-            "name": "ClusterNarrative",
-            "kind": "interface",
-            "line": 29,
-            "end_line": 34,
-            "signature": "ClusterNarrative()"
-          },
-          {
-            "name": "ProjectOverview",
-            "kind": "interface",
-            "line": 37,
-            "end_line": 45,
-            "signature": "ProjectOverview()"
-          },
-          {
-            "name": "ClusterNarratives",
-            "kind": "interface",
-            "line": 48,
-            "end_line": 59,
-            "signature": "ClusterNarratives()"
-          },
-          {
-            "name": "NarrateOptions",
-            "kind": "interface",
-            "line": 61,
-            "end_line": 66,
-            "signature": "NarrateOptions()"
-          },
-          {
-            "name": "EXPORT_RE",
-            "kind": "type",
-            "line": 72,
-            "end_line": 73,
-            "signature": "const EXPORT_RE = /export\\s+(?:default\\s+)?(?:async\\s+)?(?:function|const|l…"
-          },
-          {
-            "name": "EXPORT_LIST_RE",
-            "kind": "type",
-            "line": 74,
-            "end_line": 74,
-            "signature": "const EXPORT_LIST_RE = /export\\s*\\{([^}]+)\\}/g"
-          },
-          {
-            "name": "NarrUnit",
-            "kind": "interface",
-            "line": 108,
-            "end_line": 117,
-            "signature": "NarrUnit()"
-          }
-        ],
-        "lines": 448,
-        "layer": "core"
-      },
-      {
-        "id": "file_src_application_design_bricks_render_brickwork_ts",
-        "path": "src/application/design/bricks/render_brickwork.ts",
-        "responsibility": "核心层 · src/application/design/bricks — 12 个 API（导入自 6 个模块）",
-        "symbols": [
-          {
-            "name": "SIDE_LABEL",
-            "kind": "type",
-            "line": 21,
-            "end_line": 21,
-            "signature": "const SIDE_LABEL = { frontend: '前端', backend: '后端', shared: '通用' }"
-          },
-          {
-            "name": "SIDE_COLOR",
-            "kind": "type",
-            "line": 22,
-            "end_line": 22,
-            "signature": "const SIDE_COLOR = { frontend: '#2563eb', backend: '#d97706', shared: '#6b72…"
-          },
-          {
-            "name": "RenderEdge",
-            "kind": "interface",
-            "line": 24,
-            "end_line": 32,
-            "signature": "RenderEdge()"
-          }
-        ],
-        "lines": 826,
-        "layer": "core"
-      },
-      {
-        "id": "file_src_application_design_bricks_signal_review_ts",
-        "path": "src/application/design/bricks/signal_review.ts",
-        "responsibility": "核心层 · src/application/design/bricks — 3 个 API（导入自 5 个模块）",
-        "symbols": [
-          {
-            "name": "ClusterReview",
-            "kind": "interface",
-            "line": 30,
-            "end_line": 41,
-            "signature": "ClusterReview()"
-          },
-          {
-            "name": "SignalReview",
-            "kind": "interface",
-            "line": 44,
-            "end_line": 50,
-            "signature": "SignalReview()"
-          },
-          {
-            "name": "ReviewOptions",
-            "kind": "interface",
-            "line": 52,
-            "end_line": 62,
-            "signature": "ReviewOptions()"
-          },
-          {
-            "name": "ReviewResult",
-            "kind": "interface",
-            "line": 64,
-            "end_line": 83,
-            "signature": "ReviewResult()"
-          },
-          {
-            "name": "DEFAULT_MAX_SRC",
-            "kind": "type",
-            "line": 94,
-            "end_line": 94,
-            "signature": "const DEFAULT_MAX_SRC = 12_000"
-          },
-          {
-            "name": "BATCH",
-            "kind": "type",
-            "line": 184,
-            "end_line": 184,
-            "signature": "const BATCH = 4"
-          }
-        ],
-        "lines": 232,
-        "layer": "core"
-      },
-      {
-        "id": "file_src_application_design_bricks_taxonomy_ts",
-        "path": "src/application/design/bricks/taxonomy.ts",
-        "responsibility": "核心层 · src/application/design/bricks — 2 个 API（导入自 0 个模块）",
-        "symbols": [
-          {
-            "name": "TaxonomySlot",
-            "kind": "interface",
-            "line": 17,
-            "end_line": 26,
-            "signature": "TaxonomySlot()"
-          },
-          {
-            "name": "Taxonomy",
-            "kind": "interface",
-            "line": 28,
-            "end_line": 33,
-            "signature": "Taxonomy()"
-          }
-        ],
-        "lines": 91,
-        "layer": "core"
-      },
-      {
         "id": "file_src_application_design_derive_derive_algorithm_ts",
         "path": "src/application/design/derive/derive_algorithm.ts",
         "responsibility": "核心层 · src/application/design/derive — 3 个 API（导入自 7 个模块）",
@@ -77326,73 +76361,6 @@
         "layer": "core"
       },
       {
-        "id": "file_src_application_design_lifecycle_manage_feature_ts",
-        "path": "src/application/design/lifecycle/manage_feature.ts",
-        "responsibility": "核心层 · src/application/design/lifecycle — 1 个 API（导入自 5 个模块）",
-        "symbols": [
-          {
-            "name": "MANAGE_ACTIONS",
-            "kind": "type",
-            "line": 32,
-            "end_line": 32,
-            "signature": "const MANAGE_ACTIONS = ['create', 'clone', 'template', 'list_templates', 'list',…"
-          },
-          {
-            "name": "ManageAction",
-            "kind": "type",
-            "line": 33,
-            "end_line": 33,
-            "signature": "ManageAction()"
-          },
-          {
-            "name": "ManageFeatureInput",
-            "kind": "interface",
-            "line": 40,
-            "end_line": 52,
-            "signature": "ManageFeatureInput()"
-          },
-          {
-            "name": "ManageFeatureResult",
-            "kind": "interface",
-            "line": 54,
-            "end_line": 57,
-            "signature": "ManageFeatureResult()"
-          }
-        ],
-        "lines": 152,
-        "layer": "core"
-      },
-      {
-        "id": "file_src_application_design_lifecycle_scaffold_ts",
-        "path": "src/application/design/lifecycle/scaffold.ts",
-        "responsibility": "核心层 · src/application/design/lifecycle — 23 个 API（导入自 10 个模块）",
-        "symbols": [
-          {
-            "name": "ScaffoldInput",
-            "kind": "interface",
-            "line": 34,
-            "end_line": 45,
-            "signature": "ScaffoldInput()"
-          },
-          {
-            "name": "ScaffoldResult",
-            "kind": "interface",
-            "line": 47,
-            "end_line": 52,
-            "signature": "ScaffoldResult()"
-          },
-          {
-            "name": "Lang",
-            "kind": "type",
-            "line": 58,
-            "end_line": 58,
-            "signature": "Lang()"
-          }
-        ],
-        "lines": 864,
-        "layer": "core"
-      },
-      {
         "id": "file_src_application_design_lifecycle_simulation_ts",
         "path": "src/application/design/lifecycle/simulation.ts",
         "responsibility": "核心层 · src/application/design/lifecycle — 5 个 API（导入自 3 个模块）",
@@ -77523,138 +76491,6 @@
         "layer": "core"
       },
       {
-        "id": "file_src_application_design_lifecycle_split_stage_ts",
-        "path": "src/application/design/lifecycle/split_stage.ts",
-        "responsibility": "核心层 · src/application/design/lifecycle — 5 个 API（导入自 4 个模块）",
-        "symbols": [
-          {
-            "name": "SplitStagePlan",
-            "kind": "interface",
-            "line": 35,
-            "end_line": 42,
-            "signature": "SplitStagePlan()"
-          },
-          {
-            "name": "SplitStageOptions",
-            "kind": "interface",
-            "line": 44,
-            "end_line": 65,
-            "signature": "SplitStageOptions()"
-          },
-          {
-            "name": "SplitOutcome",
-            "kind": "type",
-            "line": 67,
-            "end_line": 67,
-            "signature": "SplitOutcome()"
-          },
-          {
-            "name": "SplitStageItem",
-            "kind": "interface",
-            "line": 69,
-            "end_line": 79,
-            "signature": "SplitStageItem()"
-          },
-          {
-            "name": "SplitStageResult",
-            "kind": "interface",
-            "line": 81,
-            "end_line": 90,
-            "signature": "SplitStageResult()"
-          }
-        ],
-        "lines": 250,
-        "layer": "core"
-      },
-      {
-        "id": "file_src_application_design_lifecycle_templates_ts",
-        "path": "src/application/design/lifecycle/templates.ts",
-        "responsibility": "核心层 · src/application/design/lifecycle — 2 个 API（导入自 2 个模块）",
-        "symbols": [
-          {
-            "name": "TemplateInfo",
-            "kind": "interface",
-            "line": 17,
-            "end_line": 24,
-            "signature": "TemplateInfo()"
-          },
-          {
-            "name": "Template",
-            "kind": "interface",
-            "line": 26,
-            "end_line": 29,
-            "signature": "Template()"
-          },
-          {
-            "name": "templates",
-            "kind": "type",
-            "line": 40,
-            "end_line": 197,
-            "signature": "const templates = [ { info: { id: 'crud_service', name: 'CRUD 服务', descript…"
-          },
-          {
-            "name": "ListTemplatesResult",
-            "kind": "interface",
-            "line": 203,
-            "end_line": 206,
-            "signature": "ListTemplatesResult()"
-          },
-          {
-            "name": "CreateFromTemplateInput",
-            "kind": "interface",
-            "line": 218,
-            "end_line": 222,
-            "signature": "CreateFromTemplateInput()"
-          },
-          {
-            "name": "CreateFromTemplateResult",
-            "kind": "interface",
-            "line": 224,
-            "end_line": 230,
-            "signature": "CreateFromTemplateResult()"
-          }
-        ],
-        "lines": 271,
-        "layer": "core"
-      },
-      {
-        "id": "file_src_application_design_lifecycle_wizard_steps_ts",
-        "path": "src/application/design/lifecycle/wizard_steps.ts",
-        "responsibility": "核心层 · src/application/design/lifecycle — 1 个 API（导入自 0 个模块）",
-        "symbols": [
-          {
-            "name": "WizardRole",
-            "kind": "type",
-            "line": 17,
-            "end_line": 17,
-            "signature": "WizardRole()"
-          },
-          {
-            "name": "WizardTool",
-            "kind": "type",
-            "line": 30,
-            "end_line": 44,
-            "signature": "WizardTool()"
-          },
-          {
-            "name": "WizardStep",
-            "kind": "interface",
-            "line": 46,
-            "end_line": 59,
-            "signature": "WizardStep()"
-          },
-          {
-            "name": "ROLE_LABEL",
-            "kind": "type",
-            "line": 165,
-            "end_line": 172,
-            "signature": "const ROLE_LABEL = { brick: '积木', contract: '契约', glue: '胶水', flow: '流程', st…"
-          }
-        ],
-        "lines": 172,
-        "layer": "core"
-      },
-      {
         "id": "file_src_application_design_no_file_entries_ts",
         "path": "src/application/design/no_file_entries.ts",
         "responsibility": "核心层 · src/application/design — 1 个 API（导入自 0 个模块）",
@@ -77768,71 +76604,6 @@
           }
         ],
         "lines": 555,
-        "layer": "core"
-      },
-      {
-        "id": "file_src_application_design_workbench_workbench_data_ts",
-        "path": "src/application/design/workbench/workbench_data.ts",
-        "responsibility": "核心层 · src/application/design/workbench — 2 个 API（导入自 5 个模块）",
-        "symbols": [
-          {
-            "name": "WorkbenchIssue",
-            "kind": "interface",
-            "line": 38,
-            "end_line": 46,
-            "signature": "WorkbenchIssue()"
-          },
-          {
-            "name": "WorkbenchCluster",
-            "kind": "interface",
-            "line": 49,
-            "end_line": 60,
-            "signature": "WorkbenchCluster()"
-          },
-          {
-            "name": "WorkbenchGroup",
-            "kind": "interface",
-            "line": 63,
-            "end_line": 67,
-            "signature": "WorkbenchGroup()"
-          },
-          {
-            "name": "WorkbenchSlot",
-            "kind": "interface",
-            "line": 70,
-            "end_line": 90,
-            "signature": "WorkbenchSlot()"
-          },
-          {
-            "name": "WorkbenchPath",
-            "kind": "interface",
-            "line": 93,
-            "end_line": 96,
-            "signature": "WorkbenchPath()"
-          },
-          {
-            "name": "WorkbenchData",
-            "kind": "interface",
-            "line": 98,
-            "end_line": 121,
-            "signature": "WorkbenchData()"
-          },
-          {
-            "name": "SLOT_LAYOUT",
-            "kind": "type",
-            "line": 125,
-            "end_line": 133,
-            "signature": "const SLOT_LAYOUT = [ { id: 'intake', label: '输入摄取', icon: 'scan-search', x: …"
-          },
-          {
-            "name": "MOCK_PATHS",
-            "kind": "type",
-            "line": 135,
-            "end_line": 144,
-            "signature": "const MOCK_PATHS = [ { d: 'M240,146 C260,146 280,146 300,146', active: false…"
-          }
-        ],
-        "lines": 296,
         "layer": "core"
       },
       {
@@ -79100,43 +77871,6 @@
           }
         ],
         "lines": 1045,
-        "layer": "core"
-      },
-      {
-        "id": "file_src_application_meta_registry_classify_tools_ts",
-        "path": "src/application/meta/registry/classify_tools.ts",
-        "responsibility": "核心层 · src/application/meta/registry — 7 个 API（导入自 6 个模块）",
-        "symbols": [
-          {
-            "name": "ToolDomain",
-            "kind": "interface",
-            "line": 23,
-            "end_line": 27,
-            "signature": "ToolDomain()"
-          },
-          {
-            "name": "ToolAnnotation",
-            "kind": "interface",
-            "line": 43,
-            "end_line": 50,
-            "signature": "ToolAnnotation()"
-          },
-          {
-            "name": "MappedTool",
-            "kind": "interface",
-            "line": 52,
-            "end_line": 68,
-            "signature": "MappedTool()"
-          },
-          {
-            "name": "ToolsMapResult",
-            "kind": "interface",
-            "line": 70,
-            "end_line": 75,
-            "signature": "ToolsMapResult()"
-          }
-        ],
-        "lines": 290,
         "layer": "core"
       },
       {
@@ -91483,22 +90217,6 @@
         "layer": "core"
       },
       {
-        "id": "file_src_presentation_cli_brickify_cli_ts",
-        "path": "src/presentation/cli/brickify_cli.ts",
-        "responsibility": "核心层 · src/presentation/cli — 3 个 API（导入自 19 个模块）",
-        "symbols": [
-          {
-            "name": "has",
-            "kind": "type",
-            "line": 41,
-            "end_line": 41,
-            "signature": "const has = (name: string): boolean => process.argv.includes(name)"
-          }
-        ],
-        "lines": 260,
-        "layer": "core"
-      },
-      {
         "id": "file_src_presentation_cli_cli_ts",
         "path": "src/presentation/cli/cli.ts",
         "responsibility": "核心层 · src/presentation/cli — 4 个 API（导入自 4 个模块）",
@@ -91705,314 +90423,6 @@
           }
         ],
         "lines": 681,
-        "layer": "core"
-      },
-      {
-        "id": "file_src_presentation_cli_render_render_anatomy_ts",
-        "path": "src/presentation/cli/render/render_anatomy.ts",
-        "responsibility": "核心层 · src/presentation/cli/render — 4 个 API（导入自 6 个模块）",
-        "symbols": [
-          {
-            "name": "ROLE_BADGE",
-            "kind": "type",
-            "line": 30,
-            "end_line": 34,
-            "signature": "const ROLE_BADGE = { brick: 'an-badge-ok', contract: 'an-badge-info', glue: …"
-          },
-          {
-            "name": "ROLE_TXT",
-            "kind": "type",
-            "line": 35,
-            "end_line": 35,
-            "signature": "const ROLE_TXT = { brick: '积木', contract: '契约', glue: '胶水' }"
-          }
-        ],
-        "lines": 258,
-        "layer": "core"
-      },
-      {
-        "id": "file_src_presentation_cli_render_render_cluster_workbench_ts",
-        "path": "src/presentation/cli/render/render_cluster_workbench.ts",
-        "responsibility": "核心层 · src/presentation/cli/render — 6 个 API（导入自 5 个模块）",
-        "symbols": [
-          {
-            "name": "ROLE_CLS",
-            "kind": "type",
-            "line": 22,
-            "end_line": 22,
-            "signature": "const ROLE_CLS = { brick: 'r-brick', contract: 'r-contract', glue: 'r-glue' }"
-          },
-          {
-            "name": "ROLE_TXT",
-            "kind": "type",
-            "line": 23,
-            "end_line": 23,
-            "signature": "const ROLE_TXT = { brick: '积木', contract: '契约', glue: '胶水' }"
-          },
-          {
-            "name": "ClusterEdge",
-            "kind": "interface",
-            "line": 33,
-            "end_line": 37,
-            "signature": "ClusterEdge()"
-          }
-        ],
-        "lines": 318,
-        "layer": "core"
-      },
-      {
-        "id": "file_src_presentation_cli_render_render_dep_canvas_ts",
-        "path": "src/presentation/cli/render/render_dep_canvas.ts",
-        "responsibility": "核心层 · src/presentation/cli/render — 9 个 API（导入自 5 个模块）",
-        "symbols": [
-          {
-            "name": "CanvasNode",
-            "kind": "interface",
-            "line": 33,
-            "end_line": 49,
-            "signature": "CanvasNode()"
-          },
-          {
-            "name": "CanvasEdge",
-            "kind": "interface",
-            "line": 51,
-            "end_line": 57,
-            "signature": "CanvasEdge()"
-          },
-          {
-            "name": "CanvasLayout",
-            "kind": "interface",
-            "line": 59,
-            "end_line": 64,
-            "signature": "CanvasLayout()"
-          },
-          {
-            "name": "NODE_W",
-            "kind": "type",
-            "line": 66,
-            "end_line": 66,
-            "signature": "const NODE_W = 180"
-          },
-          {
-            "name": "NODE_H",
-            "kind": "type",
-            "line": 67,
-            "end_line": 67,
-            "signature": "const NODE_H = 118"
-          },
-          {
-            "name": "GAP_X",
-            "kind": "type",
-            "line": 68,
-            "end_line": 68,
-            "signature": "const GAP_X = 90"
-          },
-          {
-            "name": "GAP_Y",
-            "kind": "type",
-            "line": 69,
-            "end_line": 69,
-            "signature": "const GAP_Y = 26"
-          },
-          {
-            "name": "PAD",
-            "kind": "type",
-            "line": 70,
-            "end_line": 70,
-            "signature": "const PAD = 40"
-          },
-          {
-            "name": "ICONS",
-            "kind": "type",
-            "line": 220,
-            "end_line": 231,
-            "signature": "const ICONS = { observe: '<path d=\"M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2…"
-          },
-          {
-            "name": "STATUS_TXT",
-            "kind": "type",
-            "line": 270,
-            "end_line": 270,
-            "signature": "const STATUS_TXT = { ok: '正常', warn: '整层耦合', gray: '待解读' }"
-          },
-          {
-            "name": "ROLE_BADGE",
-            "kind": "type",
-            "line": 271,
-            "end_line": 275,
-            "signature": "const ROLE_BADGE = { brick: 'dslw-badge-ok', contract: 'dslw-badge-info', gl…"
-          },
-          {
-            "name": "ROLE_TXT",
-            "kind": "type",
-            "line": 276,
-            "end_line": 276,
-            "signature": "const ROLE_TXT = { brick: '积木', contract: '契约', glue: '胶水' }"
-          }
-        ],
-        "lines": 576,
-        "layer": "core"
-      },
-      {
-        "id": "file_src_presentation_cli_render_render_mindmap_ts",
-        "path": "src/presentation/cli/render/render_mindmap.ts",
-        "responsibility": "核心层 · src/presentation/cli/render — 8 个 API（导入自 2 个模块）",
-        "symbols": [
-          {
-            "name": "MNode",
-            "kind": "interface",
-            "line": 15,
-            "end_line": 26,
-            "signature": "MNode()"
-          },
-          {
-            "name": "ROLE_CLS",
-            "kind": "type",
-            "line": 28,
-            "end_line": 28,
-            "signature": "const ROLE_CLS = { brick: 'r-brick', contract: 'r-contract', glue: 'r-glue' }"
-          },
-          {
-            "name": "ROLE_TXT",
-            "kind": "type",
-            "line": 29,
-            "end_line": 29,
-            "signature": "const ROLE_TXT = { brick: '积木', contract: '契约', glue: '胶水' }"
-          },
-          {
-            "name": "KIND_ICON",
-            "kind": "type",
-            "line": 30,
-            "end_line": 36,
-            "signature": "const KIND_ICON = { project: '⌂', community: '◎', brick: '🧱', sub: '▤', fi…"
-          }
-        ],
-        "lines": 266,
-        "layer": "core"
-      },
-      {
-        "id": "file_src_presentation_cli_render_render_tools_map_ts",
-        "path": "src/presentation/cli/render/render_tools_map.ts",
-        "responsibility": "核心层 · src/presentation/cli/render — 6 个 API（导入自 5 个模块）",
-        "symbols": [
-          {
-            "name": "TIER_BADGE",
-            "kind": "type",
-            "line": 28,
-            "end_line": 28,
-            "signature": "const TIER_BADGE = { P0: 'tm-tier-p0', P1: 'tm-tier-p1', P2: 'tm-tier-p2' }"
-          },
-          {
-            "name": "TIER_TXT",
-            "kind": "type",
-            "line": 29,
-            "end_line": 29,
-            "signature": "const TIER_TXT = { P0: 'P0 日常', P1: 'P1 进阶', P2: 'P2 专家' }"
-          },
-          {
-            "name": "KIND_BADGE",
-            "kind": "type",
-            "line": 30,
-            "end_line": 30,
-            "signature": "const KIND_BADGE = { mcp_only: 'tm-kind-mcp', cli_only: 'tm-kind-cli', both:…"
-          },
-          {
-            "name": "KIND_TXT",
-            "kind": "type",
-            "line": 31,
-            "end_line": 31,
-            "signature": "const KIND_TXT = { mcp_only: 'MCP', cli_only: 'CLI', both: 'MCP+CLI' }"
-          },
-          {
-            "name": "GroupDef",
-            "kind": "interface",
-            "line": 33,
-            "end_line": 37,
-            "signature": "GroupDef()"
-          }
-        ],
-        "lines": 318,
-        "layer": "core"
-      },
-      {
-        "id": "file_src_presentation_cli_render_render_wizard_ts",
-        "path": "src/presentation/cli/render/render_wizard.ts",
-        "responsibility": "核心层 · src/presentation/cli/render — 4 个 API（导入自 3 个模块）",
-        "symbols": [
-          {
-            "name": "ROLE_BADGE",
-            "kind": "type",
-            "line": 28,
-            "end_line": 35,
-            "signature": "const ROLE_BADGE = { brick: 'wz-badge-brick', contract: 'wz-badge-contract',…"
-          },
-          {
-            "name": "KIND_BADGE",
-            "kind": "type",
-            "line": 36,
-            "end_line": 36,
-            "signature": "const KIND_BADGE = { mcp: 'wz-kind-mcp', cli: 'wz-kind-cli', human: 'wz-kind…"
-          },
-          {
-            "name": "KIND_TXT",
-            "kind": "type",
-            "line": 37,
-            "end_line": 37,
-            "signature": "const KIND_TXT = { mcp: 'MCP', cli: 'CLI', human: '人' }"
-          },
-          {
-            "name": "NODE_W",
-            "kind": "type",
-            "line": 39,
-            "end_line": 39,
-            "signature": "const NODE_W = 190"
-          },
-          {
-            "name": "NODE_H",
-            "kind": "type",
-            "line": 40,
-            "end_line": 40,
-            "signature": "const NODE_H = 128"
-          },
-          {
-            "name": "GAP_X",
-            "kind": "type",
-            "line": 41,
-            "end_line": 41,
-            "signature": "const GAP_X = 88"
-          },
-          {
-            "name": "PAD",
-            "kind": "type",
-            "line": 42,
-            "end_line": 42,
-            "signature": "const PAD = 46"
-          }
-        ],
-        "lines": 352,
-        "layer": "core"
-      },
-      {
-        "id": "file_src_presentation_cli_render_render_workbench_ts",
-        "path": "src/presentation/cli/render/render_workbench.ts",
-        "responsibility": "核心层 · src/presentation/cli/render — 10 个 API（导入自 7 个模块）",
-        "lines": 506,
-        "layer": "core"
-      },
-      {
-        "id": "file_src_presentation_cli_render_workbench_shell_css_ts",
-        "path": "src/presentation/cli/render/workbench_shell_css.ts",
-        "responsibility": "核心层 · src/presentation/cli/render — 0 个 API（导入自 0 个模块）",
-        "symbols": [
-          {
-            "name": "WORKBENCH_SHELL_CSS",
-            "kind": "type",
-            "line": 9,
-            "end_line": 1175,
-            "signature": "const WORKBENCH_SHELL_CSS = ` /* DSL Workbench — adapted from Minimalist design syste…"
-          }
-        ],
-        "lines": 1175,
         "layer": "core"
       },
       {
@@ -97142,5 +95552,5 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 415
+  "_dsl_rev": 474
 }

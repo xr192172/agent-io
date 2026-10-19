@@ -267,6 +267,10 @@
       "to": "src/infrastructure/index/db.ts#getProjectCacheDb"
     },
     {
+      "from": "src/application/refactor/find/find_references.ts#findReferencesCore",
+      "to": "src/infrastructure/index/index_freshness.ts#ensureProjectIndex"
+    },
+    {
       "from": "src/application/refactor/find/find_references.ts#indexCandidateFiles",
       "to": "src/infrastructure/project_view.ts#getProjectView"
     },

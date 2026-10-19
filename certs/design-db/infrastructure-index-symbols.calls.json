@@ -114,163 +114,163 @@
     {
       "name": "syncFile",
       "kind": "function",
-      "line": 526,
+      "line": 534,
       "signature": "syncFile(db: Database, projectRoot: string, absPath: string): Promise<SyncFileResult>"
     },
     {
       "name": "syncFileSync",
       "kind": "function",
-      "line": 543,
+      "line": 551,
       "signature": "syncFileSync(db: Database, projectRoot: string, absPath: string): SyncFileResult"
     },
     {
       "name": "ReopenRefsResult",
       "kind": "interface",
-      "line": 571,
+      "line": 579,
       "signature": "ReopenRefsResult()"
     },
     {
       "name": "reopenRefsTo",
       "kind": "function",
-      "line": 583,
+      "line": 591,
       "signature": "reopenRefsTo(db: Database, names: readonly string[]): ReopenRefsResult"
     },
     {
       "name": "changedSymbolNames",
       "kind": "function",
-      "line": 629,
+      "line": 637,
       "signature": "changedSymbolNames(db: Database, rel: string): string[]"
     },
     {
       "name": "syncProject",
       "kind": "function",
-      "line": 654,
+      "line": 662,
       "signature": "syncProject(db: Database,\n  projectRoot: string,\n  absPaths: string[],): Promise<SyncProjectResult>"
     },
     {
       "name": "removeFileRel",
       "kind": "function",
-      "line": 685,
+      "line": 693,
       "signature": "removeFileRel(db: Database, rel: string): void"
     },
     {
       "name": "removeFile",
       "kind": "function",
-      "line": 692,
+      "line": 700,
       "signature": "removeFile(db: Database, projectRoot: string, absPath: string): void"
     },
     {
       "name": "BUILTIN_PREFIXES",
       "kind": "const",
-      "line": 701,
+      "line": 709,
       "signature": "const BUILTIN_PREFIXES = new Set([ 'Math', 'JSON', 'Array', 'Object', 'String', 'N…"
     },
     {
       "name": "BUILTIN_CALLEES",
       "kind": "const",
-      "line": 717,
+      "line": 725,
       "signature": "const BUILTIN_CALLEES = new Set([ 'String', 'Number', 'Boolean', 'Object', 'Array…"
     },
     {
       "name": "CrossFileResolveStats",
       "kind": "interface",
-      "line": 728,
+      "line": 736,
       "signature": "CrossFileResolveStats()"
     },
     {
       "name": "resolveCrossFileCalls",
       "kind": "function",
-      "line": 752,
+      "line": 760,
       "signature": "resolveCrossFileCalls(db: Database,\n  projectRoot: string,\n  opts: { scopeFiles?: readonly string[]; keepUnresolvedPending?: boolean } = {},): CrossFileResolveStats"
     },
     {
       "name": "BUILTIN_TYPES",
       "kind": "const",
-      "line": 887,
+      "line": 935,
       "signature": "const BUILTIN_TYPES = new Set([ 'string', 'number', 'boolean', 'void', 'any', '…"
     },
     {
       "name": "findCrossFileTarget",
       "kind": "function",
-      "line": 897,
+      "line": 945,
       "signature": "findCrossFileTarget(db: Database,\n  relImportsByFile: Map<string, Array<{ source: string; line: number }>>,\n  projectRoot: string,\n  fromRel: string,\n  name: string,\n  namesByFile: Map<string, Set<string>>,): { file: string; qn: string } | null"
     },
     {
       "name": "pruneDeletedFiles",
       "kind": "function",
-      "line": 939,
+      "line": 987,
       "signature": "pruneDeletedFiles(db: Database, projectRoot: string, absPaths: string[]): string[]"
     },
     {
       "name": "CachedSymbol",
       "kind": "interface",
-      "line": 964,
+      "line": 1012,
       "signature": "CachedSymbol()"
     },
     {
       "name": "CachedImport",
       "kind": "interface",
-      "line": 975,
+      "line": 1023,
       "signature": "CachedImport()"
     },
     {
       "name": "CachedFileParse",
       "kind": "interface",
-      "line": 981,
+      "line": 1029,
       "signature": "CachedFileParse()"
     },
     {
       "name": "getFileParse",
       "kind": "function",
-      "line": 992,
+      "line": 1040,
       "signature": "getFileParse(db: Database, relPath: string): CachedFileParse | null"
     },
     {
       "name": "searchSymbols",
       "kind": "function",
-      "line": 1014,
+      "line": 1062,
       "signature": "searchSymbols(db: Database, query: string, limit = 20): SymbolHit[]"
     },
     {
       "name": "getIndexStats",
       "kind": "function",
-      "line": 1030,
+      "line": 1078,
       "signature": "getIndexStats(db: Database): IndexStats"
     },
     {
       "name": "hasAnyIndexedFiles",
       "kind": "function",
-      "line": 1043,
+      "line": 1091,
       "signature": "hasAnyIndexedFiles(db: Database): boolean"
     },
     {
       "name": "isFileIndexed",
       "kind": "function",
-      "line": 1049,
+      "line": 1097,
       "signature": "isFileIndexed(db: Database, relPath: string): boolean"
     },
     {
       "name": "getResolvedImportTargets",
       "kind": "function",
-      "line": 1059,
+      "line": 1107,
       "signature": "getResolvedImportTargets(db: Database, relPath: string): string[]"
     },
     {
       "name": "getResolvedImportSources",
       "kind": "function",
-      "line": 1071,
+      "line": 1119,
       "signature": "getResolvedImportSources(db: Database, relPath: string): string[]"
     },
     {
       "name": "getRawImportsOfFile",
       "kind": "function",
-      "line": 1083,
+      "line": 1131,
       "signature": "getRawImportsOfFile(db: Database,\n  relPath: string,): Array<{ source: string; kind: 'relative' | 'package'; type_only: boolean; line: number }>"
     },
     {
       "name": "findFilesImportingAnySource",
       "kind": "function",
-      "line": 1107,
+      "line": 1155,
       "signature": "findFilesImportingAnySource(db: Database, sources: string[]): string[]"
     }
   ],

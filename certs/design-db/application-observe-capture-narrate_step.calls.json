@@ -101,6 +101,10 @@
   ],
   "calls": [
     {
+      "from": "src/application/observe/capture/narrate_step.ts#projectPins",
+      "to": "src/application/meta/view/derive_mind_map.ts#projectSignature"
+    },
+    {
       "from": "src/application/observe/capture/narrate_step.ts#narrateStepCore",
       "to": "src/application/observe/capture/narrate_step.ts#factsig"
     },

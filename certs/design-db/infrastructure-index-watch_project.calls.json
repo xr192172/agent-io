@@ -160,6 +160,10 @@
     },
     {
       "from": "src/infrastructure/index/watch_project.ts#flushBatch",
+      "to": "src/infrastructure/index/index_freshness.ts#indexedRelativeSet"
+    },
+    {
+      "from": "src/infrastructure/index/watch_project.ts#flushBatch",
       "to": "src/infrastructure/index/symbols.ts#changedSymbolNames"
     },
     {

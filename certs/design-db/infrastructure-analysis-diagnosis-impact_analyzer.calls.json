@@ -27,5 +27,10 @@
       "type_only": true
     }
   ],
-  "calls": []
+  "calls": [
+    {
+      "from": "src/infrastructure/analysis/diagnosis/impact_analyzer.ts#analyzeImpact",
+      "to": "src/infrastructure/analysis/impact/diff_impact.ts#diffImpact"
+    }
+  ]
 }

@@ -454,8 +454,24 @@
       "to": "src/application/design/dsl_ops/update_feature.ts#updateFeatureCore"
     },
     {
+      "from": "src/application/design/dsl_ops/update_feature.ts#applySimulationOp",
+      "to": "src/application/design/lifecycle/simulation.ts#resetSimulation"
+    },
+    {
+      "from": "src/application/design/dsl_ops/update_feature.ts#applySnapshotOp",
+      "to": "src/application/design/lifecycle/snapshot.ts#deleteSnapshot"
+    },
+    {
+      "from": "src/application/design/dsl_ops/update_feature.ts#applyLayoutOp",
+      "to": "src/application/design/lifecycle/snapshot.ts#pruneSnapshots"
+    },
+    {
       "from": "src/application/design/dsl_ops/update_feature.ts#applySnapshotOp",
       "to": "src/application/design/lifecycle/snapshot.ts#rollbackSnapshot"
+    },
+    {
+      "from": "src/application/design/dsl_ops/update_feature.ts#applyLayoutOp",
+      "to": "src/application/design/lifecycle/snapshot.ts#saveAutoSnapshot"
     },
     {
       "from": "src/application/design/dsl_ops/update_feature.ts#applySnapshotOp",
@@ -464,6 +480,14 @@
     {
       "from": "src/application/design/dsl_ops/update_feature.ts#applyLayoutOp",
       "to": "src/application/design/workbench/dag_layout.ts#dagLayout"
+    },
+    {
+      "from": "src/application/design/dsl_ops/update_feature.ts#applyLayoutOp",
+      "to": "src/application/design/workbench/dag_layout.ts#forceLayout"
+    },
+    {
+      "from": "src/application/design/dsl_ops/update_feature.ts#applyLayoutOp",
+      "to": "src/application/design/workbench/dag_layout.ts#gridAlign"
     },
     {
       "from": "src/application/design/dsl_ops/update_feature.ts#applyApprovalOp",

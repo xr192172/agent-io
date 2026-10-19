@@ -609,6 +609,10 @@
       "to": "src/infrastructure/exec_guard.ts#gitAvailable"
     },
     {
+      "from": "src/application/harvest/harvest_decisions.ts#harvestDecisionsCore",
+      "to": "src/infrastructure/index/index_freshness.ts#ensureProjectIndex"
+    },
+    {
       "from": "src/application/harvest/harvest_decisions.ts#codeEvidence",
       "to": "src/infrastructure/index/symbols.ts#getRawImportsOfFile"
     },

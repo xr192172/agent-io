@@ -147,6 +147,18 @@
   "calls": [
     {
       "from": "src/presentation/http/archify/archify_semantics.ts#deriveSemantics",
+      "to": "src/application/meta/view/derive_mind_map.ts#deriveCrossFeatureFlow"
+    },
+    {
+      "from": "src/presentation/http/archify/archify_semantics.ts#foldDetail",
+      "to": "src/application/meta/view/derive_mind_map.ts#pinIdentityKeys"
+    },
+    {
+      "from": "src/presentation/http/archify/archify_semantics.ts#foldDetail",
+      "to": "src/application/meta/view/derive_mind_map.ts#projectFileDataShape"
+    },
+    {
+      "from": "src/presentation/http/archify/archify_semantics.ts#deriveSemantics",
       "to": "src/presentation/http/archify/archify_project.ts#roleToType"
     },
     {
