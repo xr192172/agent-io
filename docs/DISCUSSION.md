@@ -1048,3 +1048,44 @@ D 删从未索引的路径        ⇒ 通过（不再被 T20 拦）             
 
 ★ 场景 D 是改的过程中才发现的：**清理一个从未入库的探针节点，也会被本闸拦**，
 只能编一条 evidence 才过得去 —— 那是**为流程服务的假证据**。
+
+---
+
+## 2026-10-19 晚（十六）· 第 3 步第 2 个 action：`gen-db`
+
+### 1. 搬家的判据是「逐字相同」，不是「看起来对」
+
+```
+旧 scripts/gen-design-db.mjs 跑一遍 → 340 份 md5 → hash-old
+新 design_line action=gen-db 跑一遍 → 340 份 md5 → hash-new
+diff = 0
+```
+
+★ 为此一个格式细节都没"顺手优化"：`JSON.stringify(…, 2) + '\n'`、键的插入顺序、
+`outNameOf` 的替换规则、可选字段"空就不写"。
+
+### 2. `design_line` 变成 action 分派
+
+```
+action=report（默认）  只读六步读数
+action=gen-db          写 certs/design-db/；check=true 只比对不写、也不清理陈旧
+```
+
+剩下的 `fork` / `sync` / `diff` / `rewrite` 都按这个形状加。
+
+### 3. ★ T20 修复的第一次真实使用
+
+给 `gen_design_db.ts` 建节点时**文件还不存在** —— 旧闸会拒（必须先造空壳）。
+现在直接通过，回执点名「已按【新建】处理」。**不用再造仪式性的空壳文件。**
+
+### 4. 边界（写进代码注释，不让调用方以为它全管）
+
+- 只处理 `description` 以 `src/` 开头的节点（其他目录不进设计 DB）
+- `symbols` / `imports` / `calls` 的事实取自 `cache.db`（设计 DSL 不存符号级事实）
+- `check=true` 不写盘、不清理陈旧
+
+### 5. 进度
+
+设计链 6 个脚本：搬完 **2**（`design-line` → `report`、`gen-design-db` → `gen-db`）。
+`scripts/*.mjs` 58 → **53**。工具面 65（`design_line` 一个工具承载两个 action）。
+门：tsc 0 · calls 10/10 · design:check 10/10 · mutate **626** / 0 存活。
