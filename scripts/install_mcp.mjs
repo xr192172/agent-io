@@ -185,7 +185,16 @@ function sameTomlServer(text, p) {
   const want = serverValueOf(p);
   if (!sameCommand(tomlScalar(kv.command), want.command)) return false;
   const got = tomlStringArray(kv.args);
-  return got.length === want.args.length && got.every((x, i) => normForCompare(x) === normForCompare(want.args[i]));
+  if (!(got.length === want.args.length && got.every((x, i) => normForCompare(x) === normForCompare(want.args[i])))) return false;
+  // ★ 2026-10-19：env 子表也要比（`[mcp_servers.x.env]`）
+  const wantEnv = want.env ?? {};
+  const tableName = 'mcp_servers.' + p.serverKey + '.env';
+  const envSec = tomlSectionBody(text, tableName);
+  const envKv = envSec ? parseTomlAssignments(envSec) : {};
+  const wantKeys = Object.keys(wantEnv).sort();
+  const gotKeys = Object.keys(envKv).sort();
+  if (wantKeys.length !== gotKeys.length || wantKeys.some((k, i) => k !== gotKeys[i])) return false;
+  return wantKeys.every((k) => tomlScalar(envKv[k]) === String(wantEnv[k]));
 }
 
 /**
@@ -212,10 +221,15 @@ function patchToml(content, serverKey, serverValue) {
     .join('\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
+  const envEntries = Object.entries(serverValue.env ?? {});
+  const envBlock = envEntries.length
+    ? '\n[mcp_servers.' + serverKey + '.env]\n' + envEntries.map(([k, v]) => k + ' = ' + tomlQuote(v)).join('\n') + '\n'
+    : '';
   const block =
     `[mcp_servers.${serverKey}]\n` +
     `command = ${tomlQuote(serverValue.command)}\n` +
-    `args = [${(serverValue.args ?? []).map(tomlQuote).join(', ')}]\n`;
+    `args = [${(serverValue.args ?? []).map(tomlQuote).join(', ')}]\n` +
+    envBlock;
   return body ? `${body}\n\n${block}` : block;
 }
 
@@ -311,6 +325,23 @@ const PLATFORMS = [
 const baseServerValue = {
   command: process.execPath || 'node',
   args: [SERVER],
+  /**
+   * ★★★ 2026-10-19（用户："MCP 起来了，它就应该自动保鲜"）：**注册时就把自动保鲜打开**。
+   *
+   * ## 为什么必须在这里写
+   * `server.ts` 的 `runAutoWatchHook` 靠两个环境变量决定"要不要自动保鲜"：
+   *   AGENT_IO_AUTO_WATCH=1 · AGENT_IO_PROJECT_DIR=<dir>
+   * 而**注册脚本此前只写 command + args，不写 env** ⇒ 两个变量传不进 MCP server
+   * ⇒ 钩子永不启动 ⇒ 索引只能靠人手动跑 import_project（而它还有"不传 cache_db 就不写索引"的坑）。
+   * ⇒ **所以"自动保鲜"的启动开关，就是这行 env。**
+   *
+   * ## 为什么不写 AGENT_IO_ACTOR
+   * ★ 注册时写死一个 agent 名是错的（一个注册会被多个会话用）—— 身份该在调用时传 / 由会话自述。
+   */
+  env: {
+    AGENT_IO_AUTO_WATCH: '1',
+    AGENT_IO_PROJECT_DIR: process.cwd(),
+  },
 };
 
 /** 平台级 serverValue：部分平台（如 TRAE）要求 command 不含空格，可覆盖 command/args */
@@ -352,7 +383,14 @@ function sameServer(cur, want) {
   if (!sameCommand(cur.command, want.command)) return false;
   const a = Array.isArray(cur.args) ? cur.args.map(normForCompare) : [];
   const b = Array.isArray(want.args) ? want.args.map(normForCompare) : [];
-  return a.length === b.length && a.every((x, i) => x === b[i]);
+  if (!(a.length === b.length && a.every((x, i) => x === b[i]))) return false;
+  // ★ 2026-10-19：env 也要比 —— 否则"env 变了"会被判"已安装、无需重写"（幂等判据漏一维）
+  const ea = cur.env && typeof cur.env === 'object' ? cur.env : {};
+  const eb = want.env && typeof want.env === 'object' ? want.env : {};
+  const ka = Object.keys(ea).sort();
+  const kb = Object.keys(eb).sort();
+  if (ka.length !== kb.length || ka.some((k, i) => k !== kb[i])) return false;
+  return ka.every((k) => String(ea[k]) === String(eb[k]));
 }
 
 /** 该 client 是否已安装（`probe == null` = 项目级配置 ⇒ 恒真） */
@@ -537,7 +575,7 @@ for (const p of targets) {
   if (DRY) {
     const sv = serverValueOf(p);
     console.log(`  ! ${p.label.padEnd(22)} [dry-run] ${p.configPath}（${STATE_LABEL[st.state]}）`);
-    console.log(`      将写 server 块: ${JSON.stringify({ command: sv.command, args: sv.args })}`);
+    console.log(`      将写 server 块: ${JSON.stringify({ command: sv.command, args: sv.args, env: sv.env })}`);
     for (const k of removedLegacyOf(p, st.text)) console.log(`      将删旧品牌键: ${k}`);
     continue;
   }

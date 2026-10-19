@@ -4,7 +4,11 @@
       "command": "node",
       "args": [
         "${workspaceFolder}/dist/src/presentation/mcp/server.js"
-      ]
+      ],
+      "env": {
+        "AGENT_IO_AUTO_WATCH": "1",
+        "AGENT_IO_PROJECT_DIR": "D:\\project_develop\\design-canvas"
+      }
     }
   }
 }
