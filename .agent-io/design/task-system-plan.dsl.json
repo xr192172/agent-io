@@ -94943,11 +94943,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-19T01:21:13.711Z",
+    "saved_at": "2026-10-19T02:31:22.382Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792314946341,
-    "age": 57927370
+    "age": 62136041
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -96205,7 +96205,7 @@
           "now": "✓（validate 通过）",
           "unjudged": "★ 设计完整性的判据目前没有检查器（等 Expectation 与 invariant 合成一个抽象后才能跑）",
           "debt": "D-design-completeness",
-          "expect": "(() => {\n    const KINDS = ['file-exists','symbol-exists','signature-matches','edge-exists','edge-absent','call-exists','run'];\n    const bad = [];\n    for (const n of nodes) for (const e of (n.decision?.expectations ?? [])) {\n      if (!KINDS.includes(e.kind)) bad.push(n.id + ':' + String(e.kind));\n    }\n    return bad.length === 0;\n  })()"
+          "expect": "(() => {\n  // ★ kind 白名单（★ 加新 kind 时这里必须同步 —— 2026-10-19 加 source-has 时漏了，D3 立刻红）\n  const KINDS = ['file-exists','symbol-exists','signature-matches','edge-exists','edge-absent','call-exists','run','source-has'];\n  const bad = [];\n  for (const n of nodes) for (const e of (n.decision?.expectations ?? [])) {\n    if (!KINDS.includes(e.kind)) bad.push(n.id + ':' + String(e.kind));\n  }\n  return bad.length === 0;\n})()"
         },
         {
           "id": "D4",
@@ -96756,7 +96756,21 @@
       "expectations": [],
       "state": "void",
       "owner": null
+    },
+    {
+      "id": "todo_rescan-index",
+      "summary": "cache.db 索引过期：task_ops.ts / task_drift.ts / task_machine.ts 的内容改过（今天大量改动），而索引还是旧的 ⇒ 13 条 call-exists/edge-exists 判不了（unsupported）⇒ D6 红。★ 修法：跑 import_project 重扫（MCP 工具，我在子代理里调不到）",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_rescan-no-hash-update",
+      "summary": "★★ import_project 重扫【不更新 content_hash】：实测跑 558 个文件（22.8s）后，task_ops.ts / task_drift.ts / task_machine.ts 的 files.content_hash 仍是旧值（722f11 / 239d8cad / 95bc5dd7），而当前 sha1 是 ca4d3f / 17260312 / 72583af2 ⇒ 保鲜（indexStaleFor）永远说\"索引与源码不一致\" ⇒ 13 条 call-exists/edge-exists 永远判不了。★ 根因待查（syncProject 的增量分支 / toRelPath / max_files 之外）—— 不是\"保鲜坏了\"，是\"重扫没生效\"",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
     }
   ],
-  "_dsl_rev": 412
+  "_dsl_rev": 413
 }
