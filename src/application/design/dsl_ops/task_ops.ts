@@ -579,7 +579,14 @@ export async function completeTask(input: TaskOpInput): Promise<EditResult> {
   const { dsl, card } = loadTask(feature, node_id);
   assertTransition(card.state, 'done', 'complete');
 
-  if (!card.owner) {
+  /**
+   * ★★ 2026-10-20（OQ1 裁定）：**从 candidate 直接收口时允许 owner 为空** ——
+   *   这张卡一出生就 satisfied，"领"对它没有意义（`claim` 会拒它），所以它可能从没被领过。
+   *   ★ 但 `claimed → done`（t_done_from_claimed）**仍然要求 owner**：
+   *     那条路的语义是"我领了并做完了"，没有 owner 就没有主体。
+   */
+  const fromCandidate = card.state === 'candidate';
+  if (!card.owner && !fromCandidate) {
     throw new Error(`complete 被拒：节点 "${node_id}" 的任务格没有 owner ⇒ 未领不可能被收口（t_done_from_claimed 第 1 条）。`);
   }
 
@@ -638,7 +645,12 @@ export async function completeTask(input: TaskOpInput): Promise<EditResult> {
       {
         kind: evidence!.kind,
         at,
-        ...(evidence!.kind === 'attestation' ? { by: evidence!.by, why: evidence!.why } : {}),
+        // ★★★ 2026-10-20：**主体必记**（OQ1 的另一半）——
+        //   此前 `by` 只在 attestation 时写 ⇒ expectations 收口的卡看不出"谁宣布的"。
+        //   现在所有 kind 都记：`by` 分人/机器，`agent` 记具体是谁。
+        by: evidence!.kind === 'attestation' ? evidence!.by : 'llm',
+        ...(evidence!.kind === 'attestation' && evidence!.why ? { why: evidence!.why } : {}),
+        ...(input.agent ? { agent: input.agent } : {}),
         verdict: 'pass',
       },
     ],

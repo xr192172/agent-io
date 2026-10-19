@@ -91,31 +91,31 @@
     {
       "name": "reopenTask",
       "kind": "function",
-      "line": 705,
+      "line": 717,
       "signature": "reopenTask(input: TaskOpInput): Promise<EditResult>"
     },
     {
       "name": "applyTaskOp",
       "kind": "function",
-      "line": 732,
+      "line": 744,
       "signature": "applyTaskOp(feature: string,\n  op: TaskOpRequest,\n  agent?: string,): Promise<EditResult>"
     },
     {
       "name": "publishFromDiff",
       "kind": "function",
-      "line": 791,
+      "line": 803,
       "signature": "publishFromDiff(feature: string, nodeId: string): EditResult"
     },
     {
       "name": "voidTask",
       "kind": "function",
-      "line": 825,
+      "line": 837,
       "signature": "voidTask(input: TaskOpInput): EditResult"
     },
     {
       "name": "applyTodoOp",
       "kind": "function",
-      "line": 864,
+      "line": 876,
       "signature": "applyTodoOp(feature: string,\n  op: { op: string; id?: string; data?: Record<string, unknown> },\n  agent?: string,): EditResult"
     }
   ],

@@ -138,6 +138,13 @@ export interface TaskEvidenceRecord {
   kind: ProgressEvidence['kind'];
   at: string;
   by?: 'human' | 'llm';
+  /**
+   * ★ 2026-10-20（OQ1 的另一半）：**具体是谁宣布的**（agent 名，如 `workbuddy`）。
+   *
+   * `by` 只分"人/机器"两档 ⇒ 记不下"哪一个"。而 OQ1 裁定「显式收口」的核心是
+   * **状态变化要有主体宣布** —— 主体不记名字，"显式"和"自动"就没有区别了。
+   */
+  agent?: string;
   /** 那次判定的结论（★ 结论可落，"读数"不落） */
   verdict: 'pass' | 'fail' | 'unsupported';
 }

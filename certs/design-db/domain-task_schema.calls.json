@@ -55,13 +55,13 @@
     {
       "name": "TaskSpec",
       "kind": "interface",
-      "line": 152,
+      "line": 159,
       "signature": "TaskSpec()"
     },
     {
       "name": "taskLevel",
       "kind": "function",
-      "line": 215,
+      "line": 222,
       "signature": "taskLevel(card: Pick<TaskSpec, 'expectations'>): 'L1' | 'L2'"
     }
   ],

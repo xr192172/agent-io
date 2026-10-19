@@ -519,12 +519,16 @@ export const TRANSITIONS: readonly TaskTransition[] = [
     id: 't_done_from_candidate',
     from: 'candidate',
     to: 'done',
-    // ★★ OQ1 未拍 ⇒ 不实现（设计 DSL 逐字："否则此迁移必须不存在"）
-    state: { kind: 'blocked', by: 'OQ1' },
+    // ★★★ 2026-10-20 用户裁定（OQ1）：**显式收口**，不是"自动收口"
+    //   —— 一张卡若一出生就 satisfied，则"领"没有意义（claim 会拒它）；
+    //     但必须留一条"不领也能收口"的路，否则它永远停在 candidate（实测死锁）。
+    state: { kind: 'ready' },
     guard: {
       clauses: [
-        '仅当 OQ1 裁定为「自动收口」才允许存在；否则此迁移必须不存在',
-        '即便允许，也只能由 patrol drift 的 missed_close **提示**，不得由 patrol 直接置 done',
+        '★ 用户 2026-10-20 裁定（OQ1）：允许 complete 从 candidate 起步 —— 由【主体显式宣布】，不是自动置 done',
+        '★ 仍排除自动：不得由 patrol 直接置 done（状态变化要有主体宣布，这是 OQ1 的第二条 guard 原意）',
+        '必须 isSatisfied(card)：后态全过 ∧ 前态无红（判据同 t_done_from_claimed，不另写一把尺）',
+        '★ owner 可以为空：这张卡可能从没被领过（一出生就满足），收口不要求曾经领过',
       ],
     },
   },
