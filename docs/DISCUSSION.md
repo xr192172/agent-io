@@ -911,3 +911,52 @@ baselineAdvanceBlockers(summary): string[]
 **② `decision update` 的 `expectations` 是整体替换**
 只传 2 条 ⇒ 静默冲掉之前 3 条（实测：5 条变 2 条，无任何报错）。
 ⇒ ★ **纪律：改 `expectations` 必须传全量。** 这是"合并语义只覆盖了顶层字段、子字段仍整体替换"的坑。
+
+---
+
+## 2026-10-19 晚（十三）· 第 3 步开张：`design_line` 工具 + ⑥ 变成真读数
+
+### 1. 搬完第一个 action
+
+`scripts/design-line.mjs`（105 行，纯读）→ 工具 `design_line`：
+- `lineReport(root, feature)` 是**纯函数**（给 root + feature，返回结构化读数）；handler 只做入参适配
+- 六步各给 `{id, name, by, status, reading}` + `tally{ok, missing, pending}`
+- **只读**：不碰 DSL、不碰源码
+
+### 2. ★ ⑥ 从「未实现」变成读数
+
+旧脚本对 ⑥ 只能打印：`未实现 —— 这是 VISION.md §6 的"接入重构线"`。**那是一句装饰**：读的人拿不到任何数。
+
+现在：
+
+```
+覆盖：设计 DB 338 份 / 源码 459 文件 = 73.6%；★ 未覆盖 128 个
+```
+
+★ 这是**计数级**，不是符号级（符号级差分归 `rewrite` / `design-diff`）—— 边界写进 description，不让读的人以为它全比了。
+
+### 3. ★ T20 闸的「鸡生蛋」
+
+T20 要求：写 `semantic.files` 前必须**现取该文件的事实**（cache.db 里有 `matched_path`）。
+但**新文件还不存在 ⇒ 取不到事实**。而"设计先行"恰恰要在实现之前写设计。
+
+⇒ 这一轮绕开方式：**先建空壳文件（一行注释）→ 重扫 → cache.db 有行 → 建节点 → 立卡 → 实现**。
+⇒ ★ 记一笔：**这条闸让"新建文件的设计"必须先有文件，与"设计先行"有张力**（未改闸，先记）。
+
+### 4. 第二次走完整生命周期
+
+```
+空壳 → node.add + file.add（两个 op 必须同批，否则 anchor_broken）
+→ decision（3 条判据）→ publish（file-exists 绿 / 2 条 symbol 红 ⇒ 有活）
+→ claim → 实现 → judge 3 绿 → complete（L2）
+```
+
+### 5. 顺带踩的两个坑
+
+- `node.layer` 只认 `main|error|detail`（**不是** `core`）；`arch_layer` **不是** node 的合法键
+- `file.add` 需要 `id`（约定 `file_<路径的 / 和 . 换成 _>`），且必须与 `node.add` **同批**
+
+### 6. 进度
+
+工具面 **64 → 65**。设计链 6 个脚本已搬 1 个（`design-line` → `design_line`），
+剩 5 个：`fork-design` / `sync` / `design-diff` / `gen-design-db` / `rewrite`。
