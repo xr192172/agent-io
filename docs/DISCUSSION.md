@@ -758,3 +758,66 @@ baseline 可前移到 live ⟺
 **当前读数**：`actualAhead 0 · conflict 0 · actualDeleted 0 · onlyTheirs 19`
 ⇒ **只差那 19 条**，而它们全是今天写的 `scripts/*.mjs` + 2 个 `.tmp-*.mjs`。
 ⇒ **卡住基线移动的，正是"工具脚本算不算产品"这个问题。**
+
+---
+
+## 2026-10-19 晚（十）· 工具面收敛：第 1 步做完，第 2 步发现「两个实现对同一问题给出不同答案」
+
+### 1. 工具面审计（64 脚本 × 64 工具）
+
+| 类别 | 例 | 结论 |
+|---|---|---|
+| **壳脚本**（工具完全覆盖） | `impact.mjs` / `structure_gap.mjs` / `snapshot.mjs` | ✅ **已删**（第 1 步） |
+| **同能力两实现** | `design-diff.mjs` ↔ `diff_views` · `contract-calls.mjs` ↔ `consistency_check` | ★ 见下文 |
+| **设计链核心（无工具）** | `fork-design` `sync` `merge` `rewrite` `gen-design-db` `design-line` `verify` | 第 3 步要收成 1 个工具 |
+| 一次性摆证 | 11 个 `probe_*.mjs` | 应移出 `scripts/` |
+
+### 2. ★★ 第 2 步的反转：`diff_views` 已实现三方，但判据有误
+
+`diff_views`（工具）**早就有三方对比**，比我新写的 `merge.mjs` 功能更全（文件/符号/API/依赖/行数五层）。
+但对同一份数据，两个结论不同：
+
+| | `diff_views` | `merge.mjs` |
+|---|---|---|
+| 冲突 | **3** | 0 |
+| 修改 | **58** | 11 |
+
+**取证**（`src/domain/expectation.ts`）：
+
+```
+base  : lines 206, 4 symbols, label "expectation.ts · 9 APIs"
+ours  : lines 206, 4 symbols, label "期望（判据的类型定义处）"   ← 设计只改了 label
+theirs: lines 281, 4 symbols, label "expectation.ts · 9 APIs"   ← 实际涨了 75 行
+```
+
+⇒ 设计侧**只改名字**、实际侧**只改内容**——这是**两个维度**，不是冲突。
+而 `diff_views` 三个"冲突"全是这个形状（`design_lines == baseline_lines`，`live_lines` 变了）。
+
+⇒ **两个实现各错一半**：
+
+| | 比 label | 比行数/符号 | 冲突判定 |
+|---|---|---|---|
+| `diff_views` | ✅ 算改动 | ✅ 算改动 | **过宽**（不同维度也判冲突） |
+| `merge.mjs` | ✅ 算改动 | ❌ 不比 | **过窄**（实际改行数不报） |
+
+### 3. 正确的判据：按维度分别判
+
+```
+命名维度（label / description / status）     ← 人改的
+结构维度（lines / symbols / apis / deps）    ← 机器扫的
+符号维度（signature，按 kind 决定可比）       ← rewrite 已经在做
+
+同一维度两边都改且不同  ⇒ 真冲突
+不同维度各自改          ⇒ 两条独立待裁项（不冲突）
+```
+
+★ 这跟 `design-diff` 的 `COMPARABLE` 表（按 kind 决定可比性）是**同一个抽象**。
+我们已经有对的写法，只是**没推广到 merge**。
+
+⇒ 所以第 2 步不是"删一个留一个"，而是 **把"按维度判"这条判据统一进 `diff_views`**，
+再删掉 `merge.mjs` / `design-diff.mjs` 两边的重复实现。
+
+### 4. 第 1 步的成果（已提交 `6d8471fc`）
+
+删 `impact.mjs` / `structure_gap.mjs` / `snapshot.mjs`；npm 入口保留但改指 CLI。
+`scripts/*.mjs` 58 → 55。门全绿（tsc 0 · calls 10/10 · design:check 10/10 · mutate 613/0）。
