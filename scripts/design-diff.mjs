@@ -200,73 +200,70 @@ console.log(`★ 要动的地方：+ 才能建（只看"真要建"）· - 要补
 console.log(`  边里的"扫描遗漏"是 live 扫漏，**不需要动**`);
 
 // ═══════════════════════════════════════════════════════════════
-// ★★★ 签名级 diff（2026-10-19，⑥ 结构重写的入口）
+// ★★★★★ 符号级 diff（2026-10-19 结构性重写；⑥ 的唯一可靠判据）
 // ═══════════════════════════════════════════════════════════════
 //
-// ## 为什么需要它
-// 上面那些都是**节点级**（有没有这个文件 / decision 变没变）。
-// 但 ⑥ 要落地的是【签名替换】：设计说 `claimTask(role): boolean`，源码是 `claimTask(role)`。
-// ⇒ 只有签名级 diff 才能产出 `{ file, old_text, new_text }`（`buildRefactorPlan` 的入参）。
+// ## 第一版错在哪（都是"判据不可靠"，不是 bug）
+// ① 配对键用 `name` ⇒ `server.ts` 里两处 `const resources` 被当成一个（配错对象）
+// ② `type`/`interface` 比 `signature` ⇒ 两边都是 `Name()`（实测 `StandingNode()`）
+//    ⇒ **永远相等** ⇒ 1,170 条被算成"一致"（★ 那是最坏的一种谎）
+// ③ `const` 比 `signature` ⇒ 实际侧被截断到 60 字符（`const resources = listFeatures`）
+//    ⇒ 长声明永远"不一致"（假阳性）
 //
-// ## 两侧的签名都在，而且都是完整的
-//   · 设计侧：`certs/design-db/<file>.calls.json` 的 `symbols[].signature`
-//   · 实际侧：**现场 `parseFileFull`** 的 `symbols[].signature`
-//     ★ 不用 `cache.db.nodes.signature` —— 它被格式化成 `name()`（实测 `CardStanding()`），丢了参数
+// ## 结构性的做法
+// **一个符号是否"可比"，由它的 `kind` 决定**（而不是"一律比 signature"）：
+// ```
+// kind       可比字段            依据
+// function   signature          两边都完整（AST 抽的是原文片段）
+// class      signature          —— 但实测也是 Name() ⇒ 归 uncompared
+// type       ✗ 不可比           两边都没有成员列表（实测 members=null）
+// interface  ✗ 不可比           同上
+// const      ✗ 不可比           实际侧 signature 被截断（60 字符）
+// ```
+// ⇒ **输出三态**：`same` / `differ` / `uncompared`，而 `uncompared` **必须显式报数**
+//    （把它算进"一致"就是撒谎 —— 这是本脚本最重要的纪律）
 //
-// ## 为什么只做"签名"不做"函数体"
-// 设计 DB 里**没有函数体**（"DSL 只有结构+意图，没有实现"）。所以能重写的只有签名，
-// 实现永远人写。这不是能力不足，是设计边界。
+// ## 配对键
+// `(file, name, line)`：**同名不同 line = 两个符号**（`server.ts` 的 L99 / L129 就是实例）。
+// ⇒ 若一边有 2 处、另一边 1 处，配不上的那些进 `unpaired`（不判 same/differ）。
 if (argv.includes('--signature') || argv.includes('--all')) {
-  const { pathToFileURL } = await import('node:url');
+  // ★★ 判据只住一处：`scripts/lib/symbol-diff.mjs`。这里**只负责打印**，不重算。
+  const { diffSymbols, uncomparedTotal } = await import('./lib/symbol-diff.mjs');
   const ROOT = process.cwd();
-  const { parseFileFull } = await import(pathToFileURL(path.join(ROOT, 'dist/src/infrastructure/parse/kernel.js')).href);
+  const r = await diffSymbols({ projectDir: ROOT });
+  const { scanned, same, differ, uncompared, unpaired } = r;
 
-  const DDIR = path.join(ROOT, 'certs', 'design-db');
-  const targets = [];
-  let scanned = 0;
+  const totalUncompared = uncomparedTotal(uncompared);
+  console.log(`\n════ 符号级 diff ════`);
+  console.log(`  扫了 ${scanned} 份设计 DB`);
+  console.log(`  ✅ 可比且相同: ${same.length}`);
+  console.log(`  ★★ 可比且不同: ${differ.length}   ← 这是 ⑥ 要重写的`);
+  console.log(`  ⚠️  不可比（不算"一致"，也不算"不同"）: ${totalUncompared}`);
+  for (const [k, n] of [...uncompared.entries()].sort((a, b) => b[1] - a[1])) {
+    console.log(`       · ${k.padEnd(14)} ${n} 条 —— 两侧都没有可比内容`);
+  }
+  if (unpaired.length) {
+    console.log(`  ⚠️  未配对（同名处数不一致）: ${unpaired.length}`);
+    for (const u of unpaired.slice(0, 6)) console.log(`       · ${u.file.split('/').pop()}  ${u.name}  ← ${u.why}`);
+  }
+  console.log(`  · 设计有·源码没有: ${r.designOnly.length}   · 源码有·设计没有: ${r.sourceOnly.length}`);
 
-  if (fs.existsSync(DDIR)) {
-    for (const f of fs.readdirSync(DDIR).filter((x) => x.endsWith('.calls.json'))) {
-      const dd = JSON.parse(fs.readFileSync(path.join(DDIR, f), 'utf8'));
-      // ★ design-db 的源码路径藏在 `//` 的描述里：
-      //   `//` = "Design DB —— src/domain/task_machine.ts（★ 全量、与实际 DB 同构；…）"
-      //   `//source` 是"设计 DSL 的路径"，不是源码路径
-      const desc = String(dd['//'] ?? '');
-      const m = desc.match(/(src\/[^\s（(]+)/);
-      const rel = m ? m[1].replace(/\\/g, '/') : '';
-      if (!rel.startsWith('src/')) continue;
-      const abs = path.join(ROOT, rel);
-      if (!fs.existsSync(abs)) continue;
-      scanned++;
-
-      const parsed = await parseFileFull(abs, fs.readFileSync(abs, 'utf8'));
-      const actual = new Map((parsed.symbols ?? []).map((s) => [s.name, s]));
-      for (const d of dd.symbols ?? []) {
-        const a = actual.get(d.name);
-        if (!a) continue; // 设计有源码没有 ⇒ "待新增"，不是签名替换
-        const ds = String(d.signature ?? '').trim();
-        const as = String(a.signature ?? '').trim();
-        if (!ds || !as || ds === as) continue;
-        // ★ old_text 必须是源码里的连续文本（signature 就是 AST 抽出的原文片段）
-        targets.push({ file: rel, symbol: d.name, old_text: as, new_text: ds });
-      }
+  if (differ.length) {
+    console.log('\n  ── 可比且不同（前 12）──');
+    for (const t of differ.slice(0, 12)) {
+      console.log(`\n  ${t.file.split('/').pop()}  ${t.name}（${t.kind}）`);
+      console.log(`    - ${t.old_text.slice(0, 110)}`);
+      console.log(`    + ${t.new_text.slice(0, 110)}`);
     }
+    if (differ.length > 12) console.log(`\n  … 另 ${differ.length - 12} 条`);
   }
 
-  console.log(`\n════ 签名级 diff ════`);
-  console.log(`  扫了 ${scanned} 份设计 DB · 签名不一致 ${targets.length} 条`);
-  for (const t of targets.slice(0, 12)) {
-    console.log(`\n  ${t.file.split('/').pop()}  ${t.symbol}`);
-    console.log(`    - ${t.old_text.slice(0, 110)}`);
-    console.log(`    + ${t.new_text.slice(0, 110)}`);
-  }
-  if (targets.length > 12) console.log(`\n  … 另 ${targets.length - 12} 条`);
-
-  if (process.argv.includes('--write-plan') && targets.length) {
+  if (process.argv.includes('--write-plan') && differ.length) {
     const out = path.join(ROOT, '.agent-io', 'refactor-plan.json');
+    const targets = differ.map((t) => ({ file: t.file, old_text: t.old_text, new_text: t.new_text }));
     fs.writeFileSync(out, JSON.stringify({ feature: 'task-system-plan', targets }, null, 2));
-    console.log(`\n  ✓ 已写 ${out}（${targets.length} 条）—— 下一步：buildRefactorPlan 校验（语法门）→ applyRefactorPlan 落盘`);
-  } else if (targets.length) {
-    console.log('\n  ★ 零写入。加 --write-plan 写清单；清单要再喂 buildRefactorPlan（语法门 + 幂等）。');
+    console.log(`\n  ✓ 已写 ${out}（${targets.length} 条）→ 落盘走：node scripts/rewrite.mjs --apply`);
+  } else if (differ.length) {
+    console.log('\n  ★ 零写入。加 --write-plan 写清单，或直接 node scripts/rewrite.mjs --apply');
   }
 }

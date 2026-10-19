@@ -1,6 +1,9 @@
 # HANDOFF —— 交接给下一个窗口
 
 > 生成：2026-10-19 18:00（本窗口 7:43 → 18:00，约 10.3 小时）
+> ★ **18:20 修订**：⑥ **闭环**（`rewrite.mjs --apply` 落地 + 消融自证）·
+>   第四道门命令改对（`npm run design:mutate`，原写 `mutate` 是错的）·
+>   §4/§7/§9 已按新读数更新（`sourceOnly` 94 → 0，全是口径假差异）
 > 仓库：`D:\project_develop\design-canvas`
 > ★ 先读这一份，再读 §1 列出的"必读文档"。**本文件是索引，不是替代。**
 
@@ -59,7 +62,9 @@ certs/design-contracts/*.calls.json    设计 DB 的调用（7531 条）
 ③ 实际 DSL → 设计 DSL  ✅ fork（一次性）+ ★ sync.mjs（双向：补 + 清）
 ④ 在设计 DSL 上写意图  ✅ edit_dsl / design_intent（38 decision / 518 判据）
 ⑤ 设计 DSL → 设计 DB  ✅ gen-design-db（331 份全量 + 9 条 requirements 要求）
-⑥ 设计 DB → 源码      ★ 入口打通（design-diff --signature）· 管道现成（buildRefactorPlan → applyRefactorPlan）
+⑥ 设计 DB → 源码      ✅ **闭环**（2026-10-19 18:15 消融自证过）：`rewrite.mjs --apply`
+                      → buildRefactorPlan（语法门 + plan_id）→ applyRefactorPlan（幂等）
+                      ★ 证明：注入 1 条签名差异 ⇒ differ=1 ⇒ 落盘 applied=1 ⇒ 复核 0 ⇒ 重放零写入
 ```
 
 **验收脚本（一条命令看全貌）**
@@ -68,7 +73,8 @@ node scripts/design-line.mjs      # 6 步读数
 node scripts/design-diff.mjs      # 节点级 diff（+/-/~）
 node scripts/design-diff.mjs --signature   # 符号级 diff（⑥ 的判据）
 node scripts/merge.mjs            # 三方合并（base/ours/theirs）
-node scripts/rewrite.mjs          # 设计 DB vs 源码（斜差点）
+node scripts/rewrite.mjs          # ⑥ 设计 DB vs 源码（三种结论）；--apply 才真落盘
+node scripts/rewrite.mjs --apply  # ★ ⑥ 执行器（幂等；落盘后自动复核）
 node scripts/sync.mjs             # ③ 双向（--apply 才写）
 ```
 
@@ -88,7 +94,9 @@ node scripts/sync.mjs             # ③ 双向（--apply 才写）
 | **`nodes.signature`（cache.db）** | ❌ | 被格式化成 `name()`（`CardStanding()`），丢了参数 |
 | **`ParsedSymbol.signature`（现场解析）** | ✅ | **完整签名**（`cardStanding(card: TaskSpec, opts: StandingInput): Promise<…>`） |
 | **`design-db` 的 `signature`** | ✅ | 也是完整的（从 `parseFileFull` 来的） |
-| `type`/`interface` 的成员列表 | ❌ **两侧都没有** | 1,170 条"内容不可比"（只能报 `uncompared`） |
+| `type`/`interface` 的成员列表 | ❌ **两侧都没有** | 1,180 条"内容不可比"（= interface 992 + type 178 + class 10，由 `rewrite.mjs` 派生；只能报 `uncompared`） |
+| **`sourceOnly`（源码有·设计没有）** | ✅ **已归零** | 原先报 94 条是**假的**：82 条 `method`（设计 DB 只收**顶层**，从不收方法）+ 12 条**函数体内的局部 interface**（`parent≠null`）⇒ 判据已按「口径内 kind + 顶层」过滤 |
+| **`symbol-diff.mjs` 的 `sourceOnly` 口径** | ✅ | 判据只在 `scripts/lib/symbol-diff.mjs` 一处；`design-diff --signature` 与 `rewrite` 读数**逐字相同**（已对过） |
 
 **⇒ 判据铁律：先问"这个字段是谁写的、会不会失真"，再拿它当判据。**
 
@@ -125,8 +133,13 @@ src/presentation/      MCP server（server_registry）/ HTTP（serve）/ CLI
 npx tsc --noEmit -p tsconfig.contract.json    # ① contract: 0 错
 node scripts/contract-calls.mjs               # ② calls: 9/9 成立
 npm run design:check                          # ③ design:check: 10/10 通过
-npm run mutate                                # ④ mutate: 613 通过 / 0 失败
+npm run design:mutate                         # ④ mutate: 613 杀死 / 0 存活
 ```
+
+★ **门的命令名必须和 `package.json` 对齐**：仓库里**没有** `mutate` 这个 script，
+第四道门的真名是 **`design:mutate`**（`node scripts/mutate.mjs`）。
+交接文档早先写成 `npm run mutate` ⇒ **跑起来是 `Missing script`，会静默地什么都没跑**。
+⇒ 纪律：**写完门命令，先跑一次看退出码**，别凭记忆抄。
 
 **当前状态：`contract 0` · `calls 9/9` · `design:check 10/10` · `mutate 613/0`**（全绿）
 
@@ -147,6 +160,17 @@ npm run mutate                                # ④ mutate: 613 通过 / 0 失�
 6. **`theirs` / `ours` 的配对键不能用 `name`**（`server.ts` 里两处 `const resources`）⇒ 用 `(name, line 最近)`
 7. **`imports` 表原先不存 `bindings`** ⇒ `readdirSync` 无法知道来自 `node:fs` ⇒ 2,728 条误判 `failed`
    ⇒ **v9 已修**（`SCHEMA_VERSION = 9`，清库重建）
+8. **报告用 apply 前的读数 = 会撒谎**（2026-10-19 实测：`--apply` 屏幕报"0 条签名差异"，
+   而源码确实被改写了 ⇒ 数和做的不是一回事，**最难查的一种错**）
+   ⇒ **正确做法：落盘后【重算】一次**（`rewrite.mjs` 已改成
+   `复核（落盘后重算）：签名不同 0 ← 落盘前 1`，并且复核不为 0 就 `exit 1`）
+   ⇒ ★ 通则：**任何"执行了某个动作"的报告，数字必须取自动作【之后】的重新测量**
+9. **`sourceOnly` 会数出"假漏"**（2026-10-19 实测：报 94 条"源码有·设计没有"，逐条查**全是口径差**）
+   ⇒ 82 条 `method`（设计 DB 只收顶层符号，从来不收方法）
+   ⇒ 12 条**函数体内的局部 interface**（`live_render.ts` 的 `DirNode`，其 `parent = renderLiveFromDb`）
+   ⇒ **修完归零**。正确判据 = `kind ∈ DESIGN_DB_KINDS` **且** `parent == null`
+   ⇒ ★ 通则：**报"少了什么"之前，先问"这个 kind 本来该被收吗、这个符号是不是顶层的"** ——
+     否则你报的是"两侧口径不同"，读者会当成"设计漏了 94 个符号"
 
 ---
 
@@ -161,27 +185,48 @@ npm run mutate                                # ④ mutate: 613 通过 / 0 失�
 
 ---
 
-## 9 · 下一步（⑥ 只剩接三根线）
+## 9 · 下一步（⑥ 已闭环；剩下的是"让它有活干"）
 
+### 9.1 ⑥ 怎么跑
 ```bash
-# ① 出清单（已有）
-node scripts/design-diff.mjs --signature --write-plan
-#    ⇒ .agent-io/refactor-plan.json（targets = [{file, old_text, new_text}]）
-#    ★ 当前实测：2,378 个 function 签名【全部一致】⇒ 清单为空（正常）
-#    ★ 1,870 条 type/interface/const/class 不可比（两侧都没有可比内容）
-
-# ② 校验（现成，要写 10 行胶水）
-buildRefactorPlan({ project_dir, targets })     # 语法门 + 幂等 + plan_id
-# ③ 落盘（现成）
-applyRefactorPlan(plan)
+node scripts/rewrite.mjs                 # 零写入：三种结论（可重写 / 不可生成 / 设计漏了）
+node scripts/rewrite.mjs --apply         # ★ 真落盘（幂等 + 落盘后复核）
+node scripts/rewrite.mjs --prefix=src/infrastructure/   # 限定范围
+node scripts/rewrite.mjs --json          # 结构化（胶水 / CI 用）
 ```
 
-★ **写完 ②③ 的胶水（`rewrite.mjs --apply`），⑥ 就闭环了。**
+**判据只有一处**：`scripts/lib/symbol-diff.mjs`。
+`design-diff.mjs --signature`（打印）与 `rewrite.mjs`（执行）都消费它 ——
+此前是两份实现（`rewrite` 按 `name` 配对 = 坑 #6），**已合并**。
 
-### 其余待办（按优先级）
+### 9.2 当前读数（2026-10-19 18:20 实测，两入口逐字相同）
+
+| 项 | 数 |
+|---|---|
+| 签名相同 | 2,378 |
+| **签名不同（= ⑥ 的输入）** | **0** |
+| 不可比 | 1,964（interface 992 / const 690 / type 178 / method 82 / 局部 interface 12 / class 10） |
+| 设计有·源码没有 | 0 |
+| 源码有·设计没有 | 0 |
+
+★ **"0 条"不等于"⑥ 没工作"** —— 见 9.3 的消融自证。它只说明**设计 DB 与源码此刻完全对齐**。
+
+### 9.3 ⑥ 的消融自证（可复跑，约 1 分钟）
+```bash
+# ① 注入一条【设计侧】签名差异（只改 certs/design-db，不动源码）
+#    例：application-design-api_signature.calls.json 里 extractFuncName 的
+#        "sig: string" → "sig : string"
+# ② node scripts/rewrite.mjs --apply
+#    期望：签名不同 1 → plan_id 99001e87ea978d2c → applied 1 · written=true → 复核 0
+# ③ 再跑一次 --apply
+#    期望：清单为空 · 源码 md5 不变（幂等）
+# ④ git checkout 还原两个文件
+```
+
+### 9.4 其余待办（按优先级）
 1. **跨文件 `call` 边**（23,345 条 `obj.method()`）⇒ 要接 `tsc` 的 **LanguageService**（不是手写，是接现成的）
-2. **`type`/`interface` 的成员列表**（现在两侧都没有 ⇒ 1,170 条不可比）⇒ 给 `parseFileFull` 加 `members`
-3. **`const` 的 `signature` 不再截断**（实际侧 60 字符）
+2. **`type`/`interface`/`class` 的成员列表**（1,180 条不可比）⇒ 给 `parseFileFull` 加 `members`
+3. **`const` 的 `signature` 不再截断**（实际侧 60 字符 ⇒ 690 条不可比）
 4. `coverage` 漏 2（`assertDecisionFieldShapes` / `applyTodoOp` —— 内部函数，可标"已知豁免"）
 5. 18 个 `candidate` 预决策还没立案（在 `todos[]` 里）
 
@@ -206,7 +251,7 @@ node scripts/gen-design-db.mjs       # 设计 DSL → 设计 DB
 node scripts/design-line.mjs         # 6 步读数
 node scripts/merge.mjs               # 三方（base/ours/theirs）
 node scripts/design-diff.mjs [--signature] [--detail]
-node scripts/rewrite.mjs --prefix=src/
+node scripts/rewrite.mjs [--apply] [--prefix=src/]   # ⑥ 三种结论；--apply 才落盘
 node scripts/sync.mjs [--apply]      # ③ 双向
 ```
 
