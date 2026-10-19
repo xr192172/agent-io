@@ -1089,3 +1089,40 @@ action=gen-db          写 certs/design-db/；check=true 只比对不写、也�
 设计链 6 个脚本：搬完 **2**（`design-line` → `report`、`gen-design-db` → `gen-db`）。
 `scripts/*.mjs` 58 → **53**。工具面 65（`design_line` 一个工具承载两个 action）。
 门：tsc 0 · calls 10/10 · design:check 10/10 · mutate **626** / 0 存活。
+
+---
+
+## 2026-10-19 晚（十七）· 先搬「判据」而不是「脚本」
+
+### 1. 为什么顺序反了
+
+准备搬 `rewrite` 时发现它 `import './lib/symbol-diff.mjs'` —— **判据住在 `scripts/lib/`**。
+而 ⑥ 的执行器在 `src/application/design/` ⇒ **src 不能反向依赖 scripts**。
+
+⇒ **判据住在 scripts，等于"工具面没有判据"。** 所以这一卡先搬判据，编排下一卡再搬。
+
+### 2. 搬家判据：读数**逐项相同**
+
+```
+OLD(scripts/lib):        scanned 333 · same 2386 · differ 0 · uncompared 1972
+  按 kind              const 693 / interface 996 / type 179 / interface(局部) 12 / method 82 / class 10
+NEW(src/…/symbol_diff.ts) 完全一致（逐项）
+```
+
+判定逻辑**一个 if 都没改**，三条纪律原样保留：
+① 可比性由 `kind` 决定 · ② `uncompared` 显式报数 · ③ 按 `line 距离最近` 配对。
+
+### 3. 顺手改对的一处（且证明等价）
+
+`sourceRelOf` 改为**优先读 `path` 字段**（今天刚让 `gen-design-db` 写它），
+只在旧产物没该字段时才退回解析首行 `//` 注释。
+
+★ 读数**不变**（333/2386/0/1972）⇒ 这条改动等价，不是"顺便改了行为"。
+
+### 4. 两个消费者的 import 改指向 dist，然后删 lib
+
+`scripts/rewrite.mjs` · `scripts/design-diff.mjs` → 动态 `import(dist)`。
+删 `scripts/lib/symbol-diff.mjs`（目录一并删空）。删后两个脚本读数仍 2386 / 0 / 1972。
+
+★ 这条纪律值得单独立住：**判据只能住在 src**。scripts 可以是"薄投影"，但**不能持有判据**——
+否则"谁在判"这件事就有两个答案。
