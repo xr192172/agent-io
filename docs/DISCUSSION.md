@@ -712,3 +712,49 @@ t1 (现在)：源码变 → cache.db → live（变）   ·   design 被改（�
 
 ⇒ 「三方」= **live / design / baseline** 三份 **DSL**。
 DB 只有两份：`cache.db`（实际）与 `certs/design-db`（设计）。
+
+### 5. 纠正：基线侧**也有 DB**，而且「函数签名不缺参数」
+
+`ls .agent-io/baseline/` 实测：
+
+```
+task-system-plan.dsl.json     1.8MB   10-18 00:51
+task-system-plan.facts.json   367KB   10-18 00:51   ← 基线 DB
+```
+
+`facts.json` 结构：`{ version, feature, saved_at, source_root, files: { 路径: { apis: [...], deps: [...] } } }`，
+**443 个文件，`apis` 里是完整签名**。⇒ 三侧都有 DSL + DB，用户说得对。
+
+★★ **但「cache.db 的签名丢了参数」是个误读，要纠正**：
+
+```
+function  cardStanding    cardStanding(card: TaskSpec, opts: StandingInput): Promise<StandingVerdict>  ✅ 完整
+function  extractFuncName extractFuncName(sig: string): string                                          ✅ 完整
+class     Camprobe        Camprobe()                                                                    ← 退化
+```
+
+- **函数签名两侧都完整**（cache.db 与 baseline.facts 一样）
+- **只有 `class` / `interface` / `type` 退化成 `Name()`** —— 这是内核的归一化，不是"丢参数"
+- ⇒ 「基线 DB 比实际 DB 更可信」**不成立**；那 1,180 条「不可比」的真正来源是**类型成员拿不到**，
+  也正是 `type_members.ts` 存在的理由
+
+### 6. ★ 基线什么时候移动（用户裁定，精确化）
+
+用户原话：*「实际侧和基线的差异为零。设计侧可能还有没做完的设计，但是实际侧的修改全都被合并进去了
+以后，这个基线就应该移动了。因为基线还是要立足实际的，它只是为了保证实际受到改动后你能发觉到。」*
+
+判据：
+
+```
+baseline 可前移到 live ⟺
+  actualAhead == 0  ∧  conflict == 0  ∧  onlyTheirs == 0  ∧  actualDeleted == 0
+
+★ designAhead / onlyOurs 不算（那是 ⑥ 还没落地的活，不阻塞基线）
+```
+
+**为什么**：baseline 的职责是"发现实际侧被动过"。一旦每处实际改动都被设计侧回应，
+旧出发点就没用了——留着只会让下一次 merge 把"已经处理过的事"再报一遍。
+
+**当前读数**：`actualAhead 0 · conflict 0 · actualDeleted 0 · onlyTheirs 19`
+⇒ **只差那 19 条**，而它们全是今天写的 `scripts/*.mjs` + 2 个 `.tmp-*.mjs`。
+⇒ **卡住基线移动的，正是"工具脚本算不算产品"这个问题。**
