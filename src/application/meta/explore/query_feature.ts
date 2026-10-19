@@ -56,6 +56,13 @@ import { listApprovals, getApprovalHistory } from '../../observe/reconcile/appro
 import { listSnapshots } from '../../design/lifecycle/snapshot.js';
 import { listTemplates } from '../../design/lifecycle/templates.js';
 import { getSimulationState } from '../../design/lifecycle/simulation.js';
+// ★★★ 2026-10-19：**任务池的读端**（`board/pool.ts` 的 `listPool`）。
+//   为什么现在才接：那份 DSL 的 `decision.acceptance` 早就写着"**能经 `get_dsl` 的查询触达**"，
+//   但 `decision.expectations` 里**只有 4 条"存在性"判据**（file-exists + 3×symbol-exists）——
+//   ★ 而 `task_plan.work_rule` 规定"**只有 fail 的成分进待办的活**" ⇒
+//   ★★ **验收句没被翻成期望 ⇒ 永远不进待办 ⇒ 文件落地了却没人接**。
+//   ⇒ 这条 import + 下面那个 `case 'pool'` 就是把那句话兑成事实。
+import { listPool } from '../../design/board/pool.js';
 import { diffFeatures } from '../../../infrastructure/analysis/impact/diff.js';
 import type { Node, Edge, NodeDecision } from '../../../domain/geometry.js';
 import { resolveDiagramStatus } from '../../../domain/geometry.js';
@@ -94,6 +101,7 @@ export interface QueryFeatureInput {
     | 'goals'
     | 'edge_intents'
     | 'tag'
+    | 'pool'
     | 'pending';
   /** feature 名（dsl/nodes/edges/node/decisions/files/file/digest/annotations/approvals/approval_history/snapshots/simulation_state 必填；features/templates 忽略；diff 用 feature_a/feature_b） */
   feature?: string;
@@ -1297,6 +1305,27 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
 
     // ── 欠账视图（只读 · 直读 overlay 权威）─────────────────────────────
     //
+    // ★★★ 2026-10-19：**任务池**（`board`）—— 把各节点上的 `task` 卡按状态归拢成"池"。
+    //
+    // ★ 为什么要有它（那份 DSL 的 `provenance` 逐字）：
+    //   「今天实测：**卡挂了以后只能 `node -e` 读到 state=candidate，没有任何读端**」
+    //   ⇒ 没有它，看"池子里有什么"就又得手写一个读入口 —— 那正是本仓明令不许的"第二个读 DB 拼图"。
+    //
+    // ★★ 口径由 `listPool` 一处保证（这里**不重算**）：
+    //   `shown = total - folded`、`folded = done + void` ⇒ `shown + folded === total` **由构造保证**；
+    //   ★ `feature` 不存在 ⇒ **抛**（**绝不返回空池** —— 空池会被读成"没有卡"，而真相是"没有这个 feature"）。
+    case 'pool': {
+      const feature = requireFeature(input);
+      const v = listPool(feature);
+      const fold = v.folded > 0 ? `（其中终态折叠 ${v.folded} 张）` : '';
+      return {
+        message:
+          `任务池：共 ${v.total} 张卡${fold} ⇒ 候选 ${v.byState.candidate} / 已领 ${v.byState.claimed}` +
+          ` / 已完成 ${v.byState.done} / 作废 ${v.byState.void} ${viewTag}`,
+        data: v,
+      };
+    }
+
     // ★★★ T330（全景判据⑤的便宜那一半）：「欠账」= **尚未做完**的锚点。
     //
     // ★★ 为什么**必须直读 overlay**（而不是最接近的 `query=files&file_status=draft|in_progress`）：

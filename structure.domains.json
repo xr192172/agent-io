@@ -254,6 +254,13 @@
       "note": "**意图 / 漂移 / 一致性族**：`set_design_intent`（设计意图 why：goals + edge_intents，或 propose 审批卡）/ `detect_drift`（DSL 与代码的语义漂移）/ `consistency`（expected_apis vs 实际实现的一致性检查，`detect_drift` 的底座）。"
     },
     {
+      "id": "design-board",
+      "layer": "application",
+      "role": "capability",
+      "dir": "src/application/design/board",
+      "note": "**任务看板（「池」的读端）**：`pool`（`listPool` ⇒ `BoardView{byState,total,shown,folded}` —— 把各节点上的 `task` 卡按 candidate/claimed/done/void 归拢成池；`shown+folded===total` **由构造保证**；`feature` 不存在 ⇒ **抛**，**绝不返回空池**——空池会被读成「没有卡」，而真相是「没有这个 feature」）。★ 为什么要有它（设计侧 `provenance` 逐字）：「卡挂了以后只能 `node -e` 读到 state=candidate，没有任何读端」。★★ 2026-10-19 才接进 `get_dsl` 的 `query=pool`：此前文件**已落地但不可达** —— 因为验收句「能经 `get_dsl` 触达」**没被翻成一条可判期望**（`expectations` 里只有 file-exists + 3×symbol-exists），而 `task_plan.work_rule` 规定「只有 fail 的成分进待办的活」⇒ 它永远不进待办。"
+    },
+    {
       "id": "rename",
       "layer": "application",
       "role": "capability",

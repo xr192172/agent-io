@@ -4,7 +4,7 @@
 > ★ 理由：原文件 3232 行 / 370KB，105 条里 26 条已完成、79 条未做 —— **一条条展开会淹没"现在该做什么"**。
 > ★★ **完成的条目不要再往这里加** —— 收进本节末尾的"最近做完的"一段，或直接写进 `DESIGN.md` 的欠账表。
 
-## 还没做的（79 条）
+## 还没做的（80 条）
 
 ### 任务系统（11）
 
@@ -18,8 +18,9 @@
 - [ ] T127 ★★★ 「谁会信它」—— 一致性闸门的
 - [ ] T287 ★★★★ 【工具自己撒谎】`edit_code` 的 `op=replace_text` 回执说「未找到 old_text」，而实际【写入了】
 - [ ] T329 ★★★ 【增补】范围型决策：给决策卡加 `scope` 引用（补上用户原话"这一范围"缺的那个字段）
+- [ ] T331 ★★★★ 【判据】`acceptance` 里的话**没被翻成 `expectations` 就永远不会被做** —— 实证：`board/pool.ts` 落地一天**不可达**（`acceptance` 写着"能经 `get_dsl` 触达"，而 `expectations` 只有 file-exists + 3×symbol-exists；`task_plan.work_rule` 只把 verdict=fail 的当活）⇒ 2026-10-19 已手工接线（`query=pool`）；★ 待做：给这条补一条 `call-exists`（path=`src/application/meta/explore/query_feature.ts` · symbol=`queryFeature` · target=`listPool`，★ 注意它读索引里的调用边 ⇒ 索引 stale 会判 unsupported）**并普查其余 `acceptance` 有没有对应的可判期望**
 
-### 其他方向（68）
+### 其他方向（69）
 
 - [ ] T168 ★★★★【盘点】工具面的现状读数 —— ★ 用户问"有哪些工具 / 链路顺吗"，本笔的真读数
 - [ ] T163 ★★★★★ 用户裁定层级：
@@ -89,6 +90,7 @@
 - [ ] T326 ★★★ 【读数】工具面
 - [ ] T327 ★★★ 【缺口】LLM 手里的
 - [ ] T328 ★★★ 【收归】进度轴：新权威（`progress`@overlay）已立，
+- [ ] T332 ★★★★★ 【证据基础崩了】证夹具**没跟上 10-18「设计侧统一到 `.agent-io/design/`」那次搬家** —— 2026-10-19 全量实测 **65 张 · 崩 28 · 有红 16 · 真证书全绿 21**（上一份 10-17 的读数是 64/3崩/2红/59，★ 说明是那次搬家之后哑的）。★ 机理：`t182` 等证 `FEATURE="run82"` ⇒ `getDSL("run82")` 返 **null**，因为 `.agent-io/design/` 里**没有 `run82.dsl.json`**（老家 `.agent-io/features/run82.json` 还在）⇒ ★★ 而 **`verify` 的 4 道门完全覆盖不到这类"数据侧搬家"** ⇒ 「门全绿」与「套件全红」可以同时成立。★ 待做：(a) 给证夹具补 `.agent-io/design/run82.dsl.json`（或让 `t185-reset` 一并还原到新家）；(b) 或让证走 `getDSLByView` 的**正确视图**；(c) ★ 加一条门/判据：「设计侧目录变了 ⇒ 证夹具清单必须跟着变」（否则还会再哑一次）
 
 ## 最近做完的（26 条，只记标题）
 
