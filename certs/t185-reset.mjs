@@ -18,6 +18,18 @@ const TARGETS = [
   ['agent-io.json', `${BASE}/agent-io.json`],
   ['.agent-io/features/run82.json', `${BASE}/run82.json`],
   ['.agent-io/features/run82.overlay.json', `${BASE}/run82.overlay.json`],
+  // ★★★ 2026-10-19（T332 的一个岔路，★ **我走错了，记在这儿别再走**）：
+  //   我曾在这里加过第 4 条 —— 把 `certs/t185-base/run82.json` 也写进
+  //   `.agent-io/design/run82.dsl.json`，好让 `getDSL('run82')` 不再返 null（它确实让 t182/t183 绿了）。
+  //   ★★ 用户当场指出：**`run82` 属于已退役的 `Future` 设计 DSL 线，那条线本该全线删除**；
+  //      `design/` 是**唯一真实 DSL** —— 而 `.agent-io/features/run82.json` 是**旧格式**
+  //      （顶层带 `status` / `_sync` / `meta`，真设计侧没有这三个键）。
+  //   ⇒ ★ 把退役格式塞进唯一权威目录 = **给退役线续命**，比让它红更坏。
+  //   ⇒ 已撤回。★ 那 25 张依赖 `run82` 的证怎么处置（退役 / 改指向），要单独裁 —— 见 T332/T333。
+  //
+  // ★ 另外一条**别踩**的：`.agent-io/features/` **不是**纯退役目录 ——
+  //   `loadOverlay` 仍 `path.join(getFeaturesDir(), …)` 读它，头注逐字"base 可再生成，**overlay 独立保留**"
+  //   ⇒ ★ **删这个目录会连 `design-canvas` / `task-system-plan` 的意图一起销毁**。
 ];
 
 /**
