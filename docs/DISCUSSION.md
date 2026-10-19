@@ -874,3 +874,40 @@ conflict 3 → 0 ／ both_moved 3 ／ 意图增量 25 / 实现增量 34 不变
 `merge.mjs`（文件级、带"待裁"语义、带基线移动判据）与 `diff_views`（五层、工具面）。
 ⇒ 要么把"待裁 + 基线移动判据"加进 `diff_views`，要么让 `merge` 只做视图层。
 **下一步要选一个，不能两个都留着。**
+
+---
+
+## 2026-10-19 晚（十二）· 收尾：合并语义并入 `diff_views`，删除 `merge.mjs`（`3939b636`）
+
+### 1. 并入的两块语义
+
+```ts
+baselineAdvanceBlockers(summary): string[]
+// 基线可前移 ⟺ live_only=0 ∧ conflict=0 ∧ both_moved=0 ∧ deleted_from_live=0
+// design_only / added / removed 不阻塞（那是 ⑥ 未落地的活）
+```
+
+输出加 `three_way.baseline_can_advance{ok, blockers, note}`，文本直接给阻塞项：
+
+```
+★ 基线不可前移：live_only=34（实际改了，设计没跟）· both_moved=3 · deleted_from_live=2
+```
+
+★ **只判不写** —— 前移等于"宣布新出发点"，必须有决策卡。
+
+### 2. 删 `merge.mjs` 后的口径变化（重要）
+
+`diff_views` 报 `live_only=34`，而 `merge.mjs` 报 `onlyTheirs=19`。
+**差在 15 个"实际改了内容、但文件没增删"的**——`merge.mjs` 只比文件级字段，漏了行数变化。
+⇒ **工具的宽口径更准**（"实际侧被动过"就该报）。
+
+### 3. ★ 撞到两个结构问题
+
+**① `done` 的卡不能重翻**
+`publish` 被拒：*"覆盖它等于把已完成/正在做的判据换掉"*；而 `release` 只能 `claimed → candidate`。
+⇒ **同一节点的第二个工作项无处安放**（节点一卡、卡只四态）。
+本次绕开：`decision` 更新到 5 条判据，`task` 卡停在 3 条 —— **如实记录不一致，不假装同步**。
+
+**② `decision update` 的 `expectations` 是整体替换**
+只传 2 条 ⇒ 静默冲掉之前 3 条（实测：5 条变 2 条，无任何报错）。
+⇒ ★ **纪律：改 `expectations` 必须传全量。** 这是"合并语义只覆盖了顶层字段、子字段仍整体替换"的坑。
