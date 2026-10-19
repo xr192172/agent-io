@@ -51,6 +51,33 @@ if (!criteria.length) {
 
 const results = [];
 
+// ★★★ 2026-10-19（D6 的正解）：预跑"全部 call-exists 期望"，结果交给 expect 用。
+//   ★ 为什么是它：D6 说"每个 export 至少 1 个消费者" —— 而"消费者"的判据就是 `call-exists`（它内部读 cache.db 的 call 边）。
+//   ★ 关键：`checked` 必须 ≥1 —— **没有判据不算通过**（D6 若 0 条 call-exists ⇒ 该红，不是真空过）。
+let callReport = null;
+{
+  const callItems = [];
+  for (const n of dsl.geometry?.nodes ?? []) {
+    for (const e of n.decision?.expectations ?? []) {
+      if (e.kind === 'call-exists') callItems.push({ node_id: n.id, node_label: String(n.description ?? n.id), expectation: e });
+    }
+  }
+  if (callItems.length) {
+    try {
+      const je = await import(pathToFileURL(path.join(ROOT, 'dist/src/application/design/intent/expectations.js')).href);
+      const rep = await je.judgeExpectations(ROOT, callItems);
+      callReport = {
+        checked: rep.checked,
+        passed: rep.passed,
+        failed: rep.failed,
+        detail: rep.items.filter((x) => x.verdict !== 'pass').slice(0, 5).map((x) => `${x.node_id.replace('file_src_', '')}: ${x.detail}`),
+      };
+    } catch (e) {
+      callReport = { error: String(e.message) };
+    }
+  }
+}
+
 // ★★★ 2026-10-19（用户："能不能自动做突变测试"）：先跑一遍突变，结果交给 expect 用。
 //   ★ 为什么要预跑：D7 的判据就是"有没有存活的装饰判据" —— 而它要靠 mutate 才知道。
 //   ★ 只在 D7 需要时才跑（省时间）；没有 D7 就跳过。
@@ -78,8 +105,8 @@ for (const c of criteria) {
   }
   try {
     // ★ 求值域：dsl / nodes / paths / fs / path / root（root = 被分析项目根，D4 要读源码查"迁移有没有执行者"）
-    const fn = new Function('dsl', 'nodes', 'paths', 'fs', 'path', 'root', 'mutateReport', `"use strict"; return (${c.expect});`);
-    const ok = Boolean(fn(dsl, nodes, paths, fs, path, ROOT, mutateReport));
+    const fn = new Function('dsl', 'nodes', 'paths', 'fs', 'path', 'root', 'mutateReport', 'callReport', 'results', `"use strict"; return (${c.expect});`);
+    const ok = Boolean(fn(dsl, nodes, paths, fs, path, ROOT, mutateReport, callReport, results));
     results.push({ id, name, verdict: ok ? 'pass' : 'fail', detail: ok ? '断言成立' : `断言**不成立**：${c.expect.slice(0, 90)}` });
   } catch (e) {
     results.push({ id, name, verdict: 'fail', detail: `判不了：${e.message}` });
