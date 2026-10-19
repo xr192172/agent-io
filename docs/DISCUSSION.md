@@ -1618,3 +1618,53 @@ src/_probe_bad.ts(1,7): error TS2322: Type 'string' is not assignable to type 'n
 
 ★ 这一步**没做**，只记方向。它的前提是"先有 C2 的变异链"——
 因为只有真的跑起来，才知道 `testRunner` 那一列到底需要什么形状。
+
+---
+
+## 2026-10-20 早（二七）· 体检「还有多少正则」+ 可变异点抽取（`msg46` 那笔）
+
+### 1. 用户问：还有多少功能是正则解析、建在 DB 上、或有漏字段？
+
+扫描候选（同时有 `readFileSync` + 正则匹配）**12 个**。但扫描器只是候选生成器，逐条判：
+
+| 文件 | 用正则干什么 | 判定 |
+|---|---|---|
+| `refactor/edit/remove_dead_imports.ts` | 匹配 `import ... from "X"` 并**删除** | ★ **真问题**：改代码用正则，字符串/注释里的 import 也会命中 |
+| `refactor/find/find_references.ts` | `\bneedle\b` 找引用 | ★ **真问题**：漏（别名/解构/动态）+ 误报（注释） |
+| `refactor/find/field_refs.ts` | `\.field\b` 找字段 | ★ **真问题**：同上 |
+| `design/derive/*`（3 个）· `meta/registry/*`（2 个）· 其余 | 读 JSON / 生成文本 | 合理（不是解析源码） |
+
+⇒ **结论：12 个候选里 3 个是真问题**，且全在 `refactor/` 下（**改代码**和**找引用**这两类最不能靠正则）。
+
+★ 已知的第四处是 `design/line/design_diff.ts#checkEdgeInSource`（浅正则判"源码里有没有引用"）——
+它自己在注释里写着"不清 AST"，属于**已声明的债**。
+
+### 2. C2a：从树里抽可变异点
+
+`src/infrastructure/parse/mutants.ts` + `kernel.ts#parseTreeForFile`（5 行薄入口）。
+
+**树本来就现成**：`parseFileFull` 每次解析都拿到，抽完 4 类就丢了；
+`binary_expression` 在 `kernel.ts` 里**此前出现 0 次** ⇒ 是**没抄**，不是 AST 给不了。
+
+### 3. ★★ 分水岭，用数据说话
+
+```
+task_machine.ts
+  可变异点（AST）：19 个 · 偏移全部命中（slice 出来正好是运算符）
+  全文 ===/!== ：33 次
+  ⇒ 差 14 处，在【注释/字符串】里
+```
+
+**正则会把那 14 处也改掉；AST 只给真的运算符。**
+
+### 4. 边界（写进注释，不假装全语言）
+
+- `binary_expression` 是 tree-sitter-javascript/typescript 的叫法；Python 是 `comparison_operator`
+  ⇒ **其他语言要各自一张表**，「全语言通用」在这里的落点就是这张表
+- 只抽比较运算符；`&&`/`||`、常量、返回值是后续算子
+- **不动 `ParsedFile` 契约**（550 个消费者）
+
+### 5. 顺带：T20 正式化第一次拦住我
+
+建 `mutants.ts` 节点时忘了在同批 `node.add` 的 data 里带 `file-exists` ⇒ **被拒**。
+补上后放行，回执点名「已按【新建】处理」。**门槛按设计工作了。**
