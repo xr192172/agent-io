@@ -60500,7 +60500,8 @@
           "now": "★ 2026-10-17 已抓 5 次检查器假读数：① 读空文件（路径分隔符不一致）⇒ 报「全 0」假绿；② 只数「其他文件」的引用 ⇒ 报 42 个假孤儿；③ 正则转义多套一层 ⇒ 报 105 个假死代码；④ 漏 ESM 的 js→ts 映射 ⇒ 报「全部无依赖」；⑤ 只认 判据/criteria/rule/check/cmd ⇒ 把 expr / metric / threshold 报成「无判据」（假红）。",
           "unjudged": "★ 设计完整性的判据目前没有检查器（等 Expectation 与 invariant 合成一个抽象后才能跑）",
           "debt": "D-design-completeness",
-          "blocked_by": "算不了：「每个体检项必须能自己坏」要【故意造一个反例】看它报不报 —— 那是行为，不是静态断言（★ 它该由 run 契约 + 夹具承担）"
+          "expect": "(() => {\n  // ★ D7 的正解（用户 2026-10-19）：不靠人写反例，靠【系统自动突变】\n  //   · 存活（改坏了还 pass）= 装饰判据 ⇒ 必须为 0\n  //   · run 类跳过（expect 是任意表达式，改哪个字段会 fail 不可知）⇒ 如实计入 skipped，不假绿\n  if (!mutateReport) return false;\n  if (mutateReport.error) return false;\n  return mutateReport.survived === 0;\n})()",
+          "expect_note": "mutateReport.survived === 0（结构类判据全部被自动突变杀死；run 类跳过并计入 skipped）"
         },
         {
           "id": "D8",
@@ -61004,5 +61005,5 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 43
+  "_dsl_rev": 44
 }

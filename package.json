@@ -109,7 +109,8 @@
     "dep": "node scripts/dep.mjs",
     "coverage": "node scripts/coverage.mjs",
     "impact": "node scripts/impact.mjs",
-    "design:check": "node scripts/design-check.mjs"
+    "design:check": "node scripts/design-check.mjs",
+    "design:mutate": "node scripts/mutate.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",

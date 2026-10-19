@@ -23,6 +23,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 const args = process.argv.slice(2);
 const argOf = (n) => {
@@ -49,6 +50,21 @@ if (!criteria.length) {
 }
 
 const results = [];
+
+// ★★★ 2026-10-19（用户："能不能自动做突变测试"）：先跑一遍突变，结果交给 expect 用。
+//   ★ 为什么要预跑：D7 的判据就是"有没有存活的装饰判据" —— 而它要靠 mutate 才知道。
+//   ★ 只在 D7 需要时才跑（省时间）；没有 D7 就跳过。
+const needsMutate = criteria.some((c) => typeof c.expect === 'string' && c.expect.includes('mutateReport'));
+let mutateReport = null;
+if (needsMutate) {
+  try {
+    const { runMutate } = await import(pathToFileURL(path.join(ROOT, 'scripts', 'mutate.mjs')).href);
+    mutateReport = await runMutate(FEATURE, ROOT);
+  } catch (e) {
+    mutateReport = { error: String(e.message) };
+  }
+}
+
 for (const c of criteria) {
   const id = c.id ?? '?';
   const name = c.name ?? '';
@@ -62,8 +78,8 @@ for (const c of criteria) {
   }
   try {
     // ★ 求值域：dsl / nodes / paths / fs / path / root（root = 被分析项目根，D4 要读源码查"迁移有没有执行者"）
-    const fn = new Function('dsl', 'nodes', 'paths', 'fs', 'path', 'root', `"use strict"; return (${c.expect});`);
-    const ok = Boolean(fn(dsl, nodes, paths, fs, path, ROOT));
+    const fn = new Function('dsl', 'nodes', 'paths', 'fs', 'path', 'root', 'mutateReport', `"use strict"; return (${c.expect});`);
+    const ok = Boolean(fn(dsl, nodes, paths, fs, path, ROOT, mutateReport));
     results.push({ id, name, verdict: ok ? 'pass' : 'fail', detail: ok ? '断言成立' : `断言**不成立**：${c.expect.slice(0, 90)}` });
   } catch (e) {
     results.push({ id, name, verdict: 'fail', detail: `判不了：${e.message}` });
