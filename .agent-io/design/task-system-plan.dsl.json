@@ -48535,6 +48535,76 @@
             "agent": "all-externalize"
           }
         ]
+      },
+      {
+        "id": "file_src_application_design_line_design_line_ts",
+        "label": "design_line.ts",
+        "type": "file",
+        "path": "src/application/design/line/design_line.ts",
+        "description": "src/application/design/line/design_line.ts",
+        "decision": {
+          "summary": "设计链【六步读数】是工具 `design_line`（action=report），不是脚本。每步给 status（ok/missing/pending）+ reading + 该步的工具名。★ ⑥ 不再是「未实现」：报「设计 DB 份数 / 源码文件数 / 差 = 无设计覆盖的文件数」这一条真读数。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/design/line/design_line.ts",
+              "why": "读数逻辑要住 src（工具面），不是 scripts"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/line/design_line.ts",
+              "symbol": "designLineHandler",
+              "why": "工具 handler 是注册入口"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/line/design_line.ts",
+              "symbol": "lineReport",
+              "why": "读数必须是一个纯函数（可单测），不是 handler 里拼字符串"
+            }
+          ],
+          "rationale": "六个脚本共 993 行（fork/sync/design-diff/gen-design-db/rewrite/design-line）全住 scripts/，而 MCP 工具面一个都没有 ⇒ 想跑设计线只能 `node scripts/xxx.mjs`，这也是脚本越堆越多的根因。用户裁定：同类能力收成一个工具，多余脚本删掉。先搬最安全的那个（纯读、无副作用）。",
+          "consequences": "① 新增工具 design_line（先只实现 report，其余 action 后续逐个搬）；② 删 scripts/design-line.mjs；③ ⑥ 从装饰变成读数（覆盖差），但也只是**计数**级，不是符号级。",
+          "acceptance": "design_line action=report 输出六步，每步含 {id, name, by, status, reading}；⑥ 的 status 不再是「未实现」；设计 DB 与源码的文件差数可复现。",
+          "status": "active",
+          "updated_at": "2026-10-19T13:09:55.118Z",
+          "author": "llm",
+          "agent": "workbuddy"
+        },
+        "task": {
+          "id": "file_src_application_design_line_design_line_ts",
+          "summary": "设计链【六步读数】是工具 `design_line`（action=report），不是脚本。每步给 status（ok/missing/pending）+ reading + 该步的工具名。★ ⑥ 不再是「未实现」：报「设计 DB 份数 / 源码文件数 / 差 = 无设计覆盖的文件数」这一条真读数。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/design/line/design_line.ts",
+              "why": "读数逻辑要住 src（工具面），不是 scripts"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/line/design_line.ts",
+              "symbol": "designLineHandler",
+              "why": "工具 handler 是注册入口"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/line/design_line.ts",
+              "symbol": "lineReport",
+              "why": "读数必须是一个纯函数（可单测），不是 handler 里拼字符串"
+            }
+          ],
+          "state": "done",
+          "owner": "workbuddy",
+          "claimed_at": "2026-10-19T13:10:06.076Z",
+          "evidence": [
+            {
+              "kind": "expectations",
+              "at": "2026-10-19T13:13:08.173Z",
+              "verdict": "pass"
+            }
+          ]
+        },
+        "status": "done"
       }
     ],
     "edges": [
@@ -94094,6 +94164,12 @@
         ],
         "lines": 182,
         "layer": "core"
+      },
+      {
+        "id": "file_src_application_design_line_design_line_ts",
+        "path": "src/application/design/line/design_line.ts",
+        "responsibility": "设计链六步读数（工具 design_line 的 report action）",
+        "status": "done"
       }
     ]
   },
@@ -94156,11 +94232,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-19T12:46:32.104Z",
+    "saved_at": "2026-10-19T13:13:08.201Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792413991689,
-    "age": 415
+    "scanRev": 1792415587940,
+    "age": 261
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -95941,5 +96017,5 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 481
+  "_dsl_rev": 485
 }

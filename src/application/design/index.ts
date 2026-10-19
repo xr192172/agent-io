@@ -49,6 +49,7 @@ import type { ImportProjectInput } from '../../infrastructure/graph/import_proje
 //   两者共用同一批 application 层核心（与 `brickify_cli` 同源；`split_stage_cli` 已于 2026-10-06 删除），CLI 只是 argv 薄壳。
 import { setDesignIntent } from './intent/set_design_intent.js';
 import { consistencyHandler, detectDriftHandler, editDslHandler, getDslHandler, renderDesignHandler } from './handlers.js';
+import { designLineHandler } from './line/design_line.js';
 import type { ToolDef } from '../types.js';
 
 export const DESIGN_TOOLS: ToolDef[] = [
@@ -354,6 +355,23 @@ export const DESIGN_TOOLS: ToolDef[] = [
       mode: z.enum(['check', 'status']).optional().describe('check=重新计算并写台账（默认）；status=只读最近一次台账'),
     },
     handler: detectDriftHandler,
+  },
+
+  {
+    name: 'design_line',
+    title: 'Design line: six-step reading',
+    description:
+      '设计链【六步读数】：源码 →① 实际 DB →② 实际 DSL →③ 设计 DSL →④ 人写意图 →⑤ 设计 DB →⑥ 重写回源码。' +
+      '每步给 status（ok/missing/pending）+ 该步的执行者 + 一条带数字的读数。★ 只读：不改 DSL、不改源码。' +
+      '★ ⑥ 给的是**覆盖差**（设计 DB 份数 / 源码文件数 = 覆盖率，并列出未覆盖数），不再是一句"未实现"；' +
+      '要动某一步请用它自己的工具：① import_project · ③ fork-design · ④ edit_dsl / design_intent · ⑤ gen-design-db · ⑥ rewrite。',
+    inputSchema: {
+      project_dir: z.string().describe('项目根目录（含 .agent-io/）'),
+      feature: z.string().describe('feature 名'),
+    },
+    handler: wrapData(async (a) =>
+      designLineHandler({ project_dir: String(a.project_dir), feature: String(a.feature) }),
+    ),
   },
 
   {

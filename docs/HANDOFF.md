@@ -249,7 +249,7 @@ npm run mutate                       # 变异测试（613/0）
 
 # 数据管线
 node scripts/gen-design-db.mjs       # 设计 DSL → 设计 DB
-node scripts/design-line.mjs         # 6 步读数
+node dist/src/presentation/cli/cli.js design_line project_dir=. feature=<f>   # ★ 六步读数（脚本已收进工具）
 node dist/src/presentation/cli/cli.js diff_views feature=<f>   # 三方（含基线前移判据）
 node scripts/design-diff.mjs [--signature] [--detail]
 node scripts/rewrite.mjs [--apply] [--prefix=src/]   # ⑥ 三种结论；--apply 才落盘
