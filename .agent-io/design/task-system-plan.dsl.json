@@ -96252,8 +96252,8 @@
           "now": "★ 3 处缺：patrolDrift（A1）/ renderMicro（B5）/ WriteActor 旧链未接（A7）。★★ 而设计侧【表达不了】这三处：`call-exists` 需要\"调用者的 path\"，但这三处的调用者【根本不存在】⇒ 见 D8。",
           "unjudged": "★ 设计完整性的判据目前没有检查器（等 Expectation 与 invariant 合成一个抽象后才能跑）",
           "debt": "D-design-completeness",
-          "expect": "(() => {\n  // ★ D6 的正解：不是\"数每个 export 的消费者\"（工具函数被 MCP 外部调，数不出来），\n  //   而是【所有 call-exists 期望都成立】—— 那正是\"有消费者\"的可判形式。\n  //   ★ checked >= 1：没有判据不算通过（0 条 call-exists ⇒ 该红，不是真空过）。\n  if (!callReport) return false;\n  if (callReport.error) return false;\n  return callReport.checked >= 1 && callReport.failed === 0;\n})()",
-          "expect_note": "checked>=1 且 failed===0（call-exists 期望全成立；0 条也不算通过）"
+          "expect": "(() => {\n  // ★ D6：所有 call-exists 期望都成立。\n  //   ★★ 2026-10-19 修假绿：原来只判 \"checked>=1 && failed===0\" —— 而 9 条全是 unsupported（索引过期）\n  //      ⇒ failed=0 ⇒ 绿。⇒ 现在必须【unsupported === 0】（判不了不算通过）。\n  if (!callReport) return false;\n  if (callReport.error) return false;\n  return callReport.checked >= 1 && callReport.failed === 0 && callReport.unsupported === 0;\n})()",
+          "expect_note": "checked>=1 且 failed===0 且 ★ unsupported===0（判不了不算通过 —— 2026-10-19 修假绿）"
         },
         {
           "id": "D7",
@@ -96758,5 +96758,5 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 411
+  "_dsl_rev": 412
 }

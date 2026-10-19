@@ -70,6 +70,7 @@ let callReport = null;
         checked: rep.checked,
         passed: rep.passed,
         failed: rep.failed,
+        unsupported: rep.unsupported,  // ★ 判不了的也要带上（否则 D6 把 9 条 unsupported 当通过）
         detail: rep.items.filter((x) => x.verdict !== 'pass').slice(0, 5).map((x) => `${x.node_id.replace('file_src_', '')}: ${x.detail}`),
       };
     } catch (e) {
