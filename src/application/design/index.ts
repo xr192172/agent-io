@@ -45,11 +45,8 @@ import { getDSL, requireProjectRoot } from '../../infrastructure/storage.js';
 import { proposeChange } from './workbench/code_workbench.js';
 import { importProject } from '../../infrastructure/graph/import_project.js';
 import type { ImportProjectInput } from '../../infrastructure/graph/import_project.js';
-import { buildBrickifyPreview } from './bricks/render_brickwork.js';
 // ★ T15 切片（2026-10-05）：把「混合文件解耦」这对能力从 CLI 面接进 MCP 面 ——
 //   两者共用同一批 application 层核心（与 `brickify_cli` 同源；`split_stage_cli` 已于 2026-10-06 删除），CLI 只是 argv 薄壳。
-import { buildBrickify } from './bricks/brickify.js';
-import { reviewSignals } from './bricks/signal_review.js';
 import { scaffold } from './lifecycle/scaffold.js';
 import { setDesignIntent } from './intent/set_design_intent.js';
 import { consistencyHandler, detectDriftHandler, editDslHandler, getDslHandler, renderDesignHandler } from './handlers.js';
@@ -305,136 +302,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
     handler: renderDesignHandler,
   },
 
-  {
-    name: 'render_brickwork',
-    title: 'Render the dependency-driven community workbench (brickify)',
-    description:
-      '可视化协作平台的**依赖驱动积木化工作台**渲染（后端数据线路的交付出口）：' +
-      '扫描 project_dir → 文件级依赖图 → 目录种子积木 → 混合文件信号(AST 顶层概念簇) → ' +
-      '结构簇(依赖边连通分量+内聚度) → 生成**自包含单 HTML 社区工作台**。' +
-      '取代旧"按目录硬切+基名相似"启发式：每块积木=目录种子聚出的结构块，社区=积木依赖簇，' +
-      '混合文件=一文件多概念(解耦候选信号，需人/LLM 确认拆分)。' +
-      '返回 HTML 文件路径，浏览器可直接打开验收。',
-    inputSchema: {
-      project_dir: z.string().describe('目标项目根目录（扫描依赖的源）'),
-      source_root: z.string().optional().describe('源码根目录（默认 = project_dir）'),
-      output_path: z.string().optional().describe('输出 HTML 路径（默认 <agent-io>/docs/brickify_preview.html）'),
-    },
-    handler: wrapData(async (a) => {
-      // ★ 缺根时此前抛 `paths[0]` 原始异常 —— 先守根。
-      const project_dir = requireStr(a, 'project_dir');
-      const out = await buildBrickifyPreview({
-        project_dir,
-        source_root: a.source_root as string | undefined,
-        out_file: a.output_path as string | undefined,
-      });
-      const fileUrl = `file:///${out.replace(/\\/g, '/')}`;
-      return { message: `已生成依赖驱动结构簇工作台：${out}\n（浏览器打开 ${fileUrl} 查看积木社区/混合文件诊断）` };
-    }),
-  },
 
-  {
-    // ★ T15 切片（2026-10-05）：原先只存在于 `signal_review_cli`（CLI-only）⇒ 能力被藏在 MCP 面之外。
-    name: 'signal_review',
-    title: 'Review mixed-file decoupling signals (LLM)',
-    description:
-      '混合文件解耦信号的**LLM 复核**（"拆分链"第一棒）：先跑 brickify 取 `mixed_files` 信号' +
-      '（一个文件里多概念 = 解耦候选），再逐信号喂 LLM（读文件全文 + 注释）⇒ 逐簇产出【采纳/驳回 + 积木名 + 理由】。' +
-      '判据：独立使用者 / 独立演进 / 文档证据 ⇒ 工具函数簇**驳回**；新旧世代并存且注释明言 ⇒ **采纳**。' +
-      '★ LLM 不可用（未配置 apiKey）时**诚实降级**：`llm_available=false`，原样返回信号、**不伪造复核结论**。' +
-      '产物（`signals_scanned` + `review.reviews`）可直接喂 `split_stage`（给 `report_path` 落盘即可）。',
-    inputSchema: {
-      project_dir: z.string().describe('目标项目根目录'),
-      source_root: z.string().optional().describe('源码根目录（默认 = project_dir）'),
-      only: z.array(z.string()).optional().describe('只复核这几个文件（仓库相对路径）；省略 = 全部混合文件信号'),
-      timeout_ms: z.number().optional().describe('单次 LLM 调用超时（毫秒）'),
-      max_source_chars: z.number().optional().describe('喂给 LLM 的单文件最大字符数（防大文件淹上下文）'),
-      report_path: z
-        .string()
-        .optional()
-        .describe('把报告落到该路径（JSON：`{signals_scanned, review}`，正是 split_stage 要吃的形态）'),
-    },
-    handler: wrapData(async (a) => {
-      const project_dir = requireStr(a, 'project_dir');
-      const source_root = a.source_root as string | undefined;
-      const brick = await buildBrickify({ project_dir, source_root });
-      if (brick.mixed_files.length === 0) {
-        return {
-          // ★★★ 2026-10-12（T188）修一处**输出在误导**：这里原先回 `llm_available: true` ——
-          //   ★ 而本分支**根本没探测过 LLM**（没有任何信号要复核）⇒ 那是**凭空的断言**，
-          //     且与同文件另一分支（`:345` 的 `false`）构成**两个口径**。
-          //   ⇒ 判据：**读不到就【省略整个键】**，不编一个看起来最好看的值
-          //     （★ 同 `scope_files` 的家规："没圈到就省略，不给空数组"）。
-          //   ★ 机器形状因此与另两分支不同 —— 那是**诚实**：这条读数**不存在**。
-          message:
-            `无混合文件解耦信号（扫了 ${brick.meta.scanned_files} 个文件）⇒ 无需复核。` +
-            '★ **本次未探测 LLM 是否可用**（没有要复核的信号）⇒ `llm_available` 省略，不谎报 true。',
-          data: { signals_scanned: [], review: null },
-          // ★ T209：产物锚点 —— ★ 本分支**没写任何文件** ⇒ 只给 `project_dir` ✓
-          touched: { project_dir: path.resolve(project_dir) },
-        };
-      }
-      const only = (a.only as string[] | undefined) ?? [];
-      const result = await reviewSignals({
-        project_dir,
-        source_root,
-        signals: brick.mixed_files,
-        timeout_ms: a.timeout_ms as number | undefined,
-        max_source_chars: a.max_source_chars as number | undefined,
-        only: only.length ? only : undefined,
-      });
-      if (!result) {
-        return {
-          message:
-            `LLM 不可用（未配置 apiKey）⇒ **未复核**：${brick.mixed_files.length} 个信号原样返回，` +
-            '没有编造"采纳/驳回"结论（诚实降级）。',
-          data: { signals_scanned: brick.mixed_files, review: null, llm_available: false },
-          // ★ T209：产物锚点 —— ★ LLM 不可用这条**在写报告之前就返回了** ⇒ 没有产物文件 ⇒ 只给 `project_dir` ✓
-          touched: { project_dir: path.resolve(project_dir) },
-        };
-      }
-      const report_path = a.report_path as string | undefined;
-      let written: string | undefined;
-      if (report_path) {
-        written = path.resolve(report_path);
-        fs.mkdirSync(path.dirname(written), { recursive: true });
-        fs.writeFileSync(written, JSON.stringify({ signals_scanned: brick.mixed_files, review: result }, null, 2), 'utf-8');
-      }
-      return {
-        message:
-          `${result.meta.total_signals} 个信号 → ${result.meta.actionable} 个采纳 / ${result.meta.rejected} 个驳回` +
-          // ★★★ T205（2026-10-12）：**"没判成"必须单独说出来**。
-          //   ★ 原先汇总只有"采纳/驳回"两个数，而 `rejected` 把"没判成"也算了进去 ⇒
-          //     实测（真跑）出现 `1 个信号 → 0 个采纳 / 1 个驳回`，**而真相是 LLM 不可用、谁都没判** ⇒
-          //     读者会得出"工具判定这个文件不该拆"的**错结论**，下游 `split_stage` 也只会看到"0 个采纳"
-          //     ⇒ **静静地什么都不拆**（★ 本仓最反对的"猜错不报错"）。
-          (result.meta.undecided > 0
-            ? `\n★ 其中 ${result.meta.undecided} 个【**未判**】：本轮**没产出任何结论**（LLM 不可用）—— ★ **这不是"驳回"** ✓`
-            : '') +
-          '。' +
-          (written ? `\n报告已落盘：${written}（可直接喂 split_stage）` : '') +
-          (result.meta.llm_available
-            ? ''
-            : '\n★★ `llm_available = false` ⇒ **上面的结论不完整**（有信号没判过）⇒ 恢复 LLM 后重跑再拆。'),
-        // ★ `llm_available` **从结果如实带出**（原先这里**写死 `true`** ⇒ 与真实状态矛盾：LLM 明明全失败了）。
-        data: {
-          signals_scanned: brick.mixed_files,
-          review: result,
-          llm_available: result.meta.llm_available,
-          ...(written ? { report_path: written } : {}),
-        },
-        // ★★★ T209：**产物锚点**（`Touched`）—— ★ 没有它，`split_stage` 就**接不上本工具**
-        //   （链的接法表记的是"上游的产物 → 下游的入参位置"）。
-        // ★ 口径（照契约）：`project_dir` = **解析后的绝对根**；`written_files` = ★ **只在报告真落盘时给**
-        //   （★ 报告就是本工具**唯一**的产物文件 ⇒ 它正是 `split_stage.report_path` 要的那份 ✓）。
-        //   ★ 没给 `report_path`（只诊断、不留档）⇒ **整个 `written_files` 省略**（★ 不给空数组 ✓）。
-        touched: {
-          project_dir: path.resolve(project_dir),
-          ...(written ? { written_files: [written] } : {}),
-        },
-      };
-    }),
-  },
 
 
   {
