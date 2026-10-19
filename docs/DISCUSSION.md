@@ -821,3 +821,56 @@ theirs: lines 281, 4 symbols, label "expectation.ts · 9 APIs"   ← 实际涨�
 
 删 `impact.mjs` / `structure_gap.mjs` / `snapshot.mjs`；npm 入口保留但改指 CLI。
 `scripts/*.mjs` 58 → 55。门全绿（tsc 0 · calls 10/10 · design:check 10/10 · mutate 613/0）。
+
+---
+
+## 2026-10-19 晚（十一）· 第 2 步：判据按维度拆开（commit `cdadaea5`）
+
+### 1. 真正的病根（比"两个实现"更准）
+
+`diff_views` 里：
+
+```js
+desChanged = fileChanged(...) || fileDecisionChanged(...) || symbolsDecisionChanged(...);
+desEqLiv   = 结构相等 && !symbolsDecisionChanged(des, liv);
+// 两个布尔一相与 ⇒ conflict
+```
+
+**`decision` 天然只住设计侧。** 把它算进"内容是否一致"，等于：
+**只要这张卡有决策卡、实际侧又动过 ⇒ 一定冲突** —— 38 张卡里谁动谁中。
+
+### 2. 修法
+
+- 新增 `metaChanged`（命名维度：`layer` + `responsibility`，★ 剥掉 `— N 个 API` 派生段）
+- 新增 `structChanged`（结构维度：`lines` / `symbols` / `apis`）
+- `ThreeWayState` 新增 **`both_moved`**：两侧动的是不同维度 ⇒ 两条独立待裁项，**不是冲突**
+- `conflict` 只在【同一维度】两边都改时成立
+
+### 3. 读数
+
+```
+conflict 3 → 0 ／ both_moved 3 ／ 意图增量 25 / 实现增量 34 不变
+三态验证：改前 3 条判据全红 → 改后全绿
+门：tsc 0 · calls 10/10 · design:check 10/10 · design:mutate 616 杀死 / 0 存活
+```
+
+### 4. ★★ 第一次走通完整任务生命周期（先卡后改）
+
+```
+决策卡（summary / rationale / consequences / acceptance + 3 条可判判据）
+  → publish   （candidate，判据 3 红 ⇒ 有活干）
+  → claim     （work，owner=workbuddy）
+  → 改代码
+  → judge     （3 绿 ⇒ satisfied）
+  → complete  （L2，evidence=expectations）
+```
+
+★ 与今天上午那次**反序**（先改代码、后立卡 ⇒ 一出生就 satisfied ⇒ 撞 OQ1 死锁）形成对照：
+**顺序本身就是判据。** 先立卡 ⇒ 判据必然是红的 ⇒ 任务有活 ⇒ 走完全程。
+
+### 5. 第 2 步还差最后一下
+
+判据修好了，但两个实现**仍并存**：
+`merge.mjs`（文件级、带"待裁"语义、带基线移动判据）与 `diff_views`（五层、工具面）。
+⇒ 要么把"待裁 + 基线移动判据"加进 `diff_views`，要么让 `merge` 只做视图层。
+**下一步要选一个，不能两个都留着。**
