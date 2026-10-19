@@ -64,15 +64,21 @@
       "signature": "validateReasoningIntegrity(dsl: DesignDSL): ValidationErrorItem[]"
     },
     {
+      "name": "validateNoReadingSnapshots",
+      "kind": "function",
+      "line": 234,
+      "signature": "validateNoReadingSnapshots(dsl: DesignDSL): ValidationErrorItem[]"
+    },
+    {
       "name": "validateDSL",
       "kind": "function",
-      "line": 219,
+      "line": 262,
       "signature": "validateDSL(dsl: unknown): ValidationResult"
     },
     {
       "name": "validateDSLJson",
       "kind": "function",
-      "line": 242,
+      "line": 290,
       "signature": "validateDSLJson(json: string): ValidationResult & { dsl?: DesignDSL }"
     }
   ],
@@ -113,8 +119,16 @@
       "to": "src/domain/validator.ts#toResult"
     },
     {
+      "from": "src/domain/validator.ts#validateDSL",
+      "to": "src/domain/validator.ts#toResult"
+    },
+    {
       "from": "src/domain/validator.ts#validateDSLJson",
       "to": "src/domain/validator.ts#validateDSL"
+    },
+    {
+      "from": "src/domain/validator.ts#validateDSL",
+      "to": "src/domain/validator.ts#validateNoReadingSnapshots"
     },
     {
       "from": "src/domain/validator.ts#validateDSL",
@@ -127,6 +141,21 @@
     {
       "from": "src/domain/validator.ts#validateDSL",
       "to": "src/domain/validator.ts#validateSemanticAnchoring"
+    }
+  ],
+  "requirements": [
+    {
+      "kind": "call-exists",
+      "symbol": "validateDSL",
+      "target": "validateNoReadingSnapshots",
+      "why": "★ 闸必须被 validateDSL **真调用**，否则是孤岛。本笔第一版就踩过：把它写在 validateReasoningIntegrity 末尾，被该函数第三行的 `if (!reasoning) return errors;` 挡掉 ⇒ 一次都没跑过，而\"三态全绿\"看起来像\"闸没问题\"。"
+    }
+  ],
+  "requirements_calls": [
+    {
+      "from": "src/domain/validator.ts#validateDSL",
+      "to": "src/domain/validator.ts#validateNoReadingSnapshots",
+      "why": "★ 闸必须被 validateDSL **真调用**，否则是孤岛。本笔第一版就踩过：把它写在 validateReasoningIntegrity 末尾，被该函数第三行的 `if (!reasoning) return errors;` 挡掉 ⇒ 一次都没跑过，而\"三态全绿\"看起来像\"闸没问题\"。"
     }
   ]
 }

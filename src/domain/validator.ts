@@ -208,6 +208,49 @@ function validateReasoningIntegrity(dsl: DesignDSL): ValidationErrorItem[] {
 }
 
 /**
+ * ★★★ 2026-10-19：**读数快照不许落盘**（`task_plan` 不变量 #2 的第一个可判形态）
+ *
+ * ## 为什么这条闸必须有（今天的实证，不是假想）
+ * `task_plan.plan_to_work.reading_now` 停在 **2026-10-16**：`checked 25 / passed 12 / failed 12`。
+ * 而 **2026-10-19 实跑 `judgeExpectations`**：`checked 517 / passed 515 / failed 0`。
+ * ⇒ **快照说"还有 12 条红"，实际 0 条。** 它躺在"唯一手写源"里，读它的人（含下一个窗口的 LLM）
+ *   会以为还有 12 件活；而且它引用的复跑入口 `certs/.work/probe-plan-detail.mjs` 读的是
+ *   **已删除**的 `docs/task-system-plan.dsl.json` ⇒ 连"怎么复跑"都是断的。
+ *
+ * ## 判据
+ * 读数是**派生量**（跑一次就有），只能【读时现算】。落盘 = 第二份真相 = 会过期 = 会骗人。
+ * ★ 这条同时补上了 `task_plan.invariants[1]` 的 `covered_by`（那条不变量此前写着 `covered_by: null`
+ *   —— "只落意图与事件，不落读数快照"**无法判**，于是 DSL 自己违反了也无人知）。
+ *
+ * ## 为什么是独立函数，不塞进 anchoring / reasoning
+ * ★ 踩过：第一次把它写在 `validateReasoningIntegrity` 末尾，而那个函数第三行是
+ *   `if (!reasoning) return errors;` —— 本 DSL 没有 `reasoning` ⇒ **闸一次都没跑过，而三态全绿**
+ *   （"没跑"与"没报错"长得一模一样）。独立函数 ⇒ 不继承任何人的 early return。
+ *
+ * ## 边界（不在这条闸里管的）
+ * `layers[].count` 也是读数，但它是 `ArchLayer` 的**必填类型字段**（`types.ts:149`）⇒
+ * 删它要连类型与构造处一起改，属于单独一笔（已记进 todos）。
+ */
+function validateNoReadingSnapshots(dsl: DesignDSL): ValidationErrorItem[] {
+  const errors: ValidationErrorItem[] = [];
+  const tp = (dsl as DesignDSL & { task_plan?: { plan_to_work?: Record<string, unknown> } }).task_plan;
+  const ptw = tp?.plan_to_work;
+  for (const k of ['reading_now', 'block_readings'] as const) {
+    if (ptw?.[k] !== undefined) {
+      errors.push({
+        key: `reading_snapshot:task_plan.plan_to_work.${k}`,
+        message:
+          `[reading_snapshot] "task_plan.plan_to_work.${k}" 是**读数快照**，不许落盘 ` +
+          `（不变量 #2：只落意图与事件）—— 读数会过期，过期就会骗人。` +
+          `改成**读时现算**：跑 judgeExpectations / 对应 probe；要留痕就写进 decision（带 at + 命令 + 读数），` +
+          `不要写成 DSL 字段。`,
+      });
+    }
+  }
+  return errors;
+}
+
+/**
  * 校验 DSL 对象
  *
  * 用法：
@@ -230,6 +273,11 @@ export function validateDSL(dsl: unknown): ValidationResult {
   const reasoningErrors = validateReasoningIntegrity(dsl as DesignDSL);
   if (reasoningErrors.length > 0) {
     return toResult(reasoningErrors);
+  }
+  // ★★★ 2026-10-19：读数快照（读时现算，不许落盘）—— 独立一段，不继承上面任何人的 early return
+  const snapshotErrors = validateNoReadingSnapshots(dsl as DesignDSL);
+  if (snapshotErrors.length > 0) {
+    return toResult(snapshotErrors);
   }
   return { valid: true, errors: [], keys: [] };
 }

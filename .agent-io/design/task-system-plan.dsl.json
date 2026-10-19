@@ -29040,12 +29040,6 @@
               "why": "展开条件必须可判，否则又靠人记"
             },
             {
-              "kind": "edge-exists",
-              "from": "src/domain/discussion_log.ts",
-              "to": "src/domain/task_schema.ts",
-              "why": "★ T3/G2：本块的唯一依赖是 `import type { TaskDiscussion } from './task_schema.js'`（type-only，运行时擦除）。按设计 type-only **不建依赖边**（infrastructure/index/symbols.ts:435）⇒ 正确判定是 **unsupported（判不了）**，**不是 fail**（假红）。★ 这条判据正是 §83.3 里'不修就先别补'的那条边：expectations.ts:337 的 type-only 冤案排解是死代码时，它一跑就是假红（把合法的 import type 读成'不存在'）；本笔先把死代码修掉，再落这条判据 ⇒ 判据从此诚实。"
-            },
-            {
               "kind": "symbol-exists",
               "path": "src/domain/discussion_log.ts",
               "symbol": "DiscussionMicro",
@@ -29107,7 +29101,8 @@
             }
           ],
           "updated_at": "2026-10-19T01:47:28.922Z",
-          "agent": "all-externalize"
+          "agent": "all-externalize",
+          "rationale": "★ 2026-10-19：本条原有一条 `edge-exists: discussion_log.ts → task_schema.ts` 判据，但它断言的是 `import type` 的 type-only 依赖 —— 按 T3/G2 设计 **type-only 不建依赖边** ⇒ 该判据**永远 unsupported**（判不了），并因此让 `green_done` 的 `unsupported==0` 永远不达。★ 处置：判据删除，理由记在这里（决策是意图，判据是它的**可判**形态；不可判的部分不许硬塞成假项）。"
         },
         "decision_history": [
           {
@@ -42634,7 +42629,7 @@
         },
         "arch_layer": "service",
         "decision": {
-          "summary": "DSL 的【结构自洽】校验器：ajv schema + 两项 schema 表达不了的语义（nodes.id 唯一 / semantic.files.id 必须能在 nodes 里找到）。★★ 它**不判决策卡**（decision 根本不在 schema 里）—— 那是【tsc 契约】的事（设计侧符号级，certs/design-contracts）。★ 范围是【有意收窄】的：**结构错看得见，意图错看不见**；后者靠 tsc + 对拍 + 影响面。⇒ 所以「validateDSL 不看 decision」不是缺陷，是分工（本文件只答\"DSL 自不自洽\"）。",
+          "summary": "DSL 的【结构自洽】校验器：ajv schema + **三项** schema 表达不了的语义（nodes.id 唯一 / semantic.files.id 必须能在 nodes 里找到 / ★ **读数快照不许落盘**）。★★ 它**不判决策卡**（decision 根本不在 schema 里）—— 那是【tsc 契约】的事（设计侧符号级，certs/design-contracts）。★ 范围仍是【有意收窄】的：**结构错看得见，意图错看不见**；后者靠 tsc + 对拍 + 影响面。",
           "expectations": [
             {
               "kind": "file-exists",
@@ -42775,15 +42770,30 @@
               "path": "src/domain/validator.ts",
               "symbol": "validateSemanticAnchoring",
               "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/validator.ts",
+              "symbol": "validateNoReadingSnapshots",
+              "why": "闸的落点：本条的判据就在这个函数里（函数名即判据）。"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/domain/validator.ts",
+              "symbol": "validateDSL",
+              "target": "validateNoReadingSnapshots",
+              "why": "★ 闸必须被 validateDSL **真调用**，否则是孤岛。本笔第一版就踩过：把它写在 validateReasoningIntegrity 末尾，被该函数第三行的 `if (!reasoning) return errors;` 挡掉 ⇒ 一次都没跑过，而\"三态全绿\"看起来像\"闸没问题\"。"
             }
           ],
-          "acceptance": "validateDSL(dsl) 能点名每条错（code + 位置）；errors 与 keys 一一对应（★ 重命名\"被指向的名字\"不改键 ⇒ 不误报\"新增错\"）；validateDSLJson 在 JSON 层就拒掉非对象/语法错。",
-          "updated_at": "2026-10-19T05:13:03.665Z",
-          "agent": "verify"
+          "acceptance": "validateDSL(dsl) 能点名每条错（code + 位置）；errors 与 keys 一一对应（★ 重命名\"被指向的名字\"不改键 ⇒ 不误报\"新增错\"）；validateDSLJson 在 JSON 层就拒掉非对象/语法错。；★ 读数快照（task_plan.plan_to_work.reading_now / block_readings）存在 ⇒ validateDSL 必须点名。",
+          "updated_at": "2026-10-19T10:39:23.467Z",
+          "agent": "verify",
+          "rationale": "★ 2026-10-19 加第三项（读数快照）—— 实证不是假想：`task_plan.plan_to_work.reading_now` 停在 2026-10-16（checked 25 / passed 12 / failed 12），而 2026-10-19 实跑 judgeExpectations 是 checked 516 / failed 0 ⇒ **快照说\"还有 12 条红\"，实际 0 条**；且它引用的复跑入口 `certs/.work/probe-plan-detail.mjs` 读的是**已删除**的 `docs/task-system-plan.dsl.json` ⇒ 连\"怎么复跑\"都断了。读数是**派生量**，落盘 = 第二份真相 = 会过期 = 会骗人。",
+          "consequences": "读者必须**现算**（跑 judgeExpectations / 对应 probe），成本从\"写者一次\"变成\"每次读\"。换来的是：不会再有人读到过期读数。★ 边界：`layers[].count` 同为读数，但它是 `ArchLayer` 的**必填类型字段**（types.ts:149）⇒ 删它要连带改类型与构造处，另记一笔，不在本闸范围。"
         },
         "task": {
           "id": "file_src_domain_validator_ts",
-          "summary": "DSL 的【结构自洽】校验器：ajv schema + 两项 schema 表达不了的语义（nodes.id 唯一 / semantic.files.id 必须能在 nodes 里找到）。★★ 它**不判决策卡**（decision 根本不在 schema 里）—— 那是【tsc 契约】的事（设计侧符号级，certs/design-contracts）。★ 范围是【有意收窄】的：**结构错看得见，意图错看不见**；后者靠 tsc + 对拍 + 影响面。⇒ 所以「validateDSL 不看 decision」不是缺陷，是分工（本文件只答\"DSL 自不自洽\"）。",
+          "summary": "DSL 的【结构自洽】校验器：ajv schema + **三项** schema 表达不了的语义（nodes.id 唯一 / semantic.files.id 必须能在 nodes 里找到 / ★ **读数快照不许落盘**）。★★ 它**不判决策卡**（decision 根本不在 schema 里）—— 那是【tsc 契约】的事（设计侧符号级，certs/design-contracts）。★ 范围仍是【有意收窄】的：**结构错看得见，意图错看不见**；后者靠 tsc + 对拍 + 影响面。",
           "expectations": [
             {
               "kind": "file-exists",
@@ -42807,10 +42817,139 @@
               "path": "src/domain/validator.ts",
               "symbol": "ValidationResult",
               "why": "返回值形状是契约（errors + keys，调用方按它对账）"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "id": "demo",
+                "type": "feature_diagram",
+                "feature": "demo",
+                "geometry": {
+                  "nodes": [
+                    {
+                      "id": "a",
+                      "type": "file"
+                    },
+                    {
+                      "id": "b",
+                      "type": "file"
+                    }
+                  ],
+                  "edges": [
+                    {
+                      "id": "e1",
+                      "from": "a",
+                      "to": "zzz"
+                    }
+                  ]
+                }
+              },
+              "expect": "validateDSL(input).keys.some(k => k.includes('dangling') || k.includes('zzz'))",
+              "why": "★ 行为契约第一次选型：边指向不存在的节点 ⇒ 必须被点名（input 合法但悬空）"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "id": "demo",
+                "type": "feature_diagram",
+                "feature": "demo",
+                "geometry": {
+                  "nodes": [
+                    {
+                      "id": "a",
+                      "type": "file"
+                    },
+                    {
+                      "id": "b",
+                      "type": "file"
+                    }
+                  ],
+                  "edges": [
+                    {
+                      "id": "e1",
+                      "from": "a",
+                      "to": "b"
+                    },
+                    {
+                      "id": "e1",
+                      "from": "a",
+                      "to": "b"
+                    }
+                  ]
+                }
+              },
+              "expect": "validateDSL(input).keys.some(k => k.includes('duplicate') || k.includes('e1'))",
+              "why": "★ 证明 D-edge-id-unique 是真债：两条 id 相同的边 ⇒ 校验器必须报重复"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/validator.ts",
+              "symbol": "AddFormatsFn",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/validator.ts",
+              "symbol": "ValidationErrorItem",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/validator.ts",
+              "symbol": "addFormats",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/validator.ts",
+              "symbol": "ajv",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/validator.ts",
+              "symbol": "formatAjvErrors",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/validator.ts",
+              "symbol": "toResult",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/validator.ts",
+              "symbol": "validateReasoningIntegrity",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/validator.ts",
+              "symbol": "validateSchema",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/validator.ts",
+              "symbol": "validateSemanticAnchoring",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/validator.ts",
+              "symbol": "validateNoReadingSnapshots",
+              "why": "闸的落点：本条的判据就在这个函数里（函数名即判据）。"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/domain/validator.ts",
+              "symbol": "validateDSL",
+              "target": "validateNoReadingSnapshots",
+              "why": "★ 闸必须被 validateDSL **真调用**，否则是孤岛。本笔第一版就踩过：把它写在 validateReasoningIntegrity 末尾，被该函数第三行的 `if (!reasoning) return errors;` 挡掉 ⇒ 一次都没跑过，而\"三态全绿\"看起来像\"闸没问题\"。"
             }
           ],
-          "state": "candidate",
-          "owner": null
+          "state": "candidate"
         },
         "status": "draft",
         "decision_history": [
@@ -44252,6 +44391,158 @@
               "agent": "all-externalize"
             },
             "agent": "verify"
+          },
+          {
+            "at": "2026-10-19T10:39:23.467Z",
+            "decision": {
+              "summary": "DSL 的【结构自洽】校验器：ajv schema + 两项 schema 表达不了的语义（nodes.id 唯一 / semantic.files.id 必须能在 nodes 里找到）。★★ 它**不判决策卡**（decision 根本不在 schema 里）—— 那是【tsc 契约】的事（设计侧符号级，certs/design-contracts）。★ 范围是【有意收窄】的：**结构错看得见，意图错看不见**；后者靠 tsc + 对拍 + 影响面。⇒ 所以「validateDSL 不看 decision」不是缺陷，是分工（本文件只答\"DSL 自不自洽\"）。",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/validator.ts",
+                  "why": "动作要有落点（基线）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/validator.ts",
+                  "symbol": "validateDSL",
+                  "why": "唯一入口：DSL ⇒ 错误清单"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/validator.ts",
+                  "symbol": "validateDSLJson",
+                  "why": "JSON 层的入口（先拒语法错，再谈语义）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/validator.ts",
+                  "symbol": "ValidationResult",
+                  "why": "返回值形状是契约（errors + keys，调用方按它对账）"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "id": "demo",
+                    "type": "feature_diagram",
+                    "feature": "demo",
+                    "geometry": {
+                      "nodes": [
+                        {
+                          "id": "a",
+                          "type": "file"
+                        },
+                        {
+                          "id": "b",
+                          "type": "file"
+                        }
+                      ],
+                      "edges": [
+                        {
+                          "id": "e1",
+                          "from": "a",
+                          "to": "zzz"
+                        }
+                      ]
+                    }
+                  },
+                  "expect": "validateDSL(input).keys.some(k => k.includes('dangling') || k.includes('zzz'))",
+                  "why": "★ 行为契约第一次选型：边指向不存在的节点 ⇒ 必须被点名（input 合法但悬空）"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "id": "demo",
+                    "type": "feature_diagram",
+                    "feature": "demo",
+                    "geometry": {
+                      "nodes": [
+                        {
+                          "id": "a",
+                          "type": "file"
+                        },
+                        {
+                          "id": "b",
+                          "type": "file"
+                        }
+                      ],
+                      "edges": [
+                        {
+                          "id": "e1",
+                          "from": "a",
+                          "to": "b"
+                        },
+                        {
+                          "id": "e1",
+                          "from": "a",
+                          "to": "b"
+                        }
+                      ]
+                    }
+                  },
+                  "expect": "validateDSL(input).keys.some(k => k.includes('duplicate') || k.includes('e1'))",
+                  "why": "★ 证明 D-edge-id-unique 是真债：两条 id 相同的边 ⇒ 校验器必须报重复"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/validator.ts",
+                  "symbol": "AddFormatsFn",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/validator.ts",
+                  "symbol": "ValidationErrorItem",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/validator.ts",
+                  "symbol": "addFormats",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/validator.ts",
+                  "symbol": "ajv",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/validator.ts",
+                  "symbol": "formatAjvErrors",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/validator.ts",
+                  "symbol": "toResult",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/validator.ts",
+                  "symbol": "validateReasoningIntegrity",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/validator.ts",
+                  "symbol": "validateSchema",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/validator.ts",
+                  "symbol": "validateSemanticAnchoring",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                }
+              ],
+              "acceptance": "validateDSL(dsl) 能点名每条错（code + 位置）；errors 与 keys 一一对应（★ 重命名\"被指向的名字\"不改键 ⇒ 不误报\"新增错\"）；validateDSLJson 在 JSON 层就拒掉非对象/语法错。",
+              "updated_at": "2026-10-19T05:13:03.665Z",
+              "agent": "verify"
+            },
+            "note": "2026-10-19 读数快照漏洞：reading_now 停在 10-16（说 12 条红，实跑 0 条）⇒ 删快照 + 给 validator 加第三项检查（不变量 #2 的可判形态）。"
           }
         ]
       },
@@ -93709,11 +94000,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-19T05:22:34.160Z",
+    "saved_at": "2026-10-19T10:39:31.692Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792387349125,
-    "age": 5035
+    "scanRev": 1792406363292,
+    "age": 8400
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -93746,73 +94037,15 @@
       },
       "red_green": {
         "red_now": {
-          "cmd": "node --input-type=module -e \"import fs from 'node:fs';import{judgeExpectations}from'./dist/src/application/design/intent/expectations.js';const d=JSON.parse(fs.readFileSync('docs/task-system-plan.dsl.json','utf8'));const it=d.geometry.nodes.flatMap(n=>(n.decision?.expectations||[]).map(e=>({node_id:n.id,node_label:n.label||n.id,expectation:e})));const r=await judgeExpectations('.',it);console.log(JSON.stringify({checked:r.checked,passed:r.passed,failed:r.failed,unsupported:r.unsupported}));process.exit(r.checked===it.length&&r.passed===0&&r.failed===r.checked&&r.unsupported===0?0:1)\"",
+          "cmd": "node --input-type=module -e \"import fs from 'node:fs';import{judgeExpectations}from'./dist/src/application/design/intent/expectations.js';const d=JSON.parse(fs.readFileSync('.agent-io/design/task-system-plan.dsl.json','utf8'));const it=d.geometry.nodes.flatMap(n=>(n.decision?.expectations||[]).map(e=>({node_id:n.id,node_label:n.label||n.id,expectation:e})));const r=await judgeExpectations('.',it);console.log(JSON.stringify({checked:r.checked,passed:r.passed,failed:r.failed,unsupported:r.unsupported}));process.exit(r.checked===it.length&&r.passed===0&&r.failed===r.checked&&r.unsupported===0?0:1)\"",
           "pass_when": "exit==0 ⇒ checked==count_expr 且 passed==0 且 failed==checked 且 unsupported==0（全红，红的条数 == 可数项 count_expr）",
           "meaning": "现在应为红：方案里的文件/符号/调用/边在真仓都还没有 ⇒ 期望全 fail。★ 这不是失败，是**待实现的活**。"
         },
         "green_done": {
-          "cmd": "node --input-type=module -e \"import fs from 'node:fs';import{judgeExpectations}from'./dist/src/application/design/intent/expectations.js';const d=JSON.parse(fs.readFileSync('docs/task-system-plan.dsl.json','utf8'));const it=d.geometry.nodes.flatMap(n=>(n.decision?.expectations||[]).map(e=>({node_id:n.id,node_label:n.label||n.id,expectation:e})));const r=await judgeExpectations('.',it);console.log(JSON.stringify({checked:r.checked,failed:r.failed,unsupported:r.unsupported}));process.exit(r.failed===0&&r.unsupported===0?0:1)\"",
+          "cmd": "node --input-type=module -e \"import fs from 'node:fs';import{judgeExpectations}from'./dist/src/application/design/intent/expectations.js';const d=JSON.parse(fs.readFileSync('.agent-io/design/task-system-plan.dsl.json','utf8'));const it=d.geometry.nodes.flatMap(n=>(n.decision?.expectations||[]).map(e=>({node_id:n.id,node_label:n.label||n.id,expectation:e})));const r=await judgeExpectations('.',it);console.log(JSON.stringify({checked:r.checked,failed:r.failed,unsupported:r.unsupported}));process.exit(r.failed===0&&r.unsupported===0?0:1)\"",
           "pass_when": "exit==0 ⇒ failed==0 且 unsupported==0（方案已被实现）",
           "meaning": "绿 = 活干完了。★ unsupported>0 不算绿（判不了≠通过）"
         }
-      },
-      "reading_now": {
-        "at": "2026-10-16",
-        "method": "实跑 judgeExpectations（本笔亲手跑，非推断）",
-        "checked": 25,
-        "passed": 12,
-        "failed": 12,
-        "unsupported": 1,
-        "conflicts": 0,
-        "note": "★ 已实现两块：第一块（task_schema + task_machine，共 9 条）+ 第二块（discussion_log，共 4 条 = 3 绿 + 1 判不了[type-only 依赖边，T3 起显式判 unsupported]）= 13 条；余 2 块 12 条仍红（task_ops 5 + task_drift 7）= 剩下的活。",
-        "note_readings": "★ 两处读数都要看（同一入口 certs/.work/probe-plan-detail.mjs，差别只在 root）：① 真仓 root：passed 10 / failed 12 / unsupported 3 —— 3 条判不了 = 状态机节点的 call-exists + edge-exists（新文件还没进真仓 cache.db）+ discussion_log 的 edge-exists（同理：真仓索引里还没有 discussion_log.ts）；② 重算后的 root（临时目录 + 独立 AGENT_IO_HOME）：passed 12 / failed 12 / unsupported 1 —— 那 1 条 = discussion_log→task_schema 的 **type-only** 依赖（T3/G2：按设计不建依赖边 ⇒ 正确判定是『判不了』，**不是 fail** 的假红）。★ 所以『12 绿』的前提是索引重算过（= 路线图第 ④ 步）。",
-        "stale_criteria": "★ 本字段改动后，同目录 red_green.red_now 的 pass_when（『passed==0 且 failed==checked』= 全红）对**已实现的两块**已不成立 ⇒ 它现在只是『开工前』的判据，不再是『此刻』的判据。"
-      },
-      "block_readings": {
-        "note": "★ 逐块读数（同一入口 probe-plan-detail.mjs；★『红』= verdict=='fail'，unsupported 单列——它既不算活也不算绿）。",
-        "at": "2026-10-16",
-        "items": [
-          {
-            "node": "file_src_domain_task_schema_ts",
-            "label": "task 格",
-            "red": 0,
-            "green": 3,
-            "unsupported": 0,
-            "block": "第一块（已实现）"
-          },
-          {
-            "node": "file_src_domain_task_machine_ts",
-            "label": "状态机",
-            "red": 0,
-            "green": 4,
-            "unsupported": 2,
-            "block": "第一块（已实现）"
-          },
-          {
-            "node": "file_src_domain_discussion_log_ts",
-            "label": "discussion 格",
-            "red": 0,
-            "green": 3,
-            "unsupported": 0,
-            "block": "第二块（本笔实现）"
-          },
-          {
-            "node": "file_src_application_design_dsl_ops_task_ops_ts",
-            "label": "task_ops",
-            "red": 5,
-            "green": 0,
-            "unsupported": 0,
-            "block": "第三块（未做）"
-          },
-          {
-            "node": "file_src_application_patrol_task_drift_ts",
-            "label": "漂移巡检",
-            "red": 7,
-            "green": 0,
-            "unsupported": 0,
-            "block": "第四块（未做）"
-          }
-        ]
       }
     },
     "constructs_wiring": {
@@ -95552,5 +95785,5 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 474
+  "_dsl_rev": 477
 }
