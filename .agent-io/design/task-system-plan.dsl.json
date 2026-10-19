@@ -95095,11 +95095,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-19T03:24:38.376Z",
+    "saved_at": "2026-10-19T05:22:34.160Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792379792020,
-    "age": 486356
+    "scanRev": 1792387349125,
+    "age": 5035
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -96926,6 +96926,13 @@
     {
       "id": "todo_install-mcp-no-workbuddy",
       "summary": "★★ install_mcp.mjs 的平台列表里【没有 WorkBuddy】—— 而真正在用的 MCP 配置是 ~/.workbuddy/mcp.json（env 空）。今天自动保鲜的 env 是靠手改它才生效的；下次换项目/重装又漏。★ 修法：给 PLATFORMS 加一项 { label:\"WorkBuddy\", configPath: ~/.workbuddy/mcp.json, keyPath:\"mcpServers\", serverKey:\"agent-io\", probe:null }",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_delete-coldstart-trio",
+      "summary": "★★★ 删【冷启动三件套】（ensureIndexAround + index_backfill + index_freshness）—— 实测删 2 个文件后 tsc 报 13 个消费者（server_registry / watch_project / index_integrity / explore_code / diagnosis / write_gate / stage_registry / find_references / observe / semantic_search / contract_page / harvest×2）⇒ ★ 它和\"老工具面\"是同一张网，必须【成组删】（组 A+B+C 一起），单删会留半成品。★ 前提已变：import_project 现在全量不截断 ⇒ 不需要\"按需索引 + 后台续建 + 懒校验\"",
       "expectations": [],
       "state": "candidate",
       "owner": null
