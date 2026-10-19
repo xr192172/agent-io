@@ -48736,6 +48736,76 @@
           ]
         },
         "status": "done"
+      },
+      {
+        "id": "file_src_application_design_rewrite_symbol_diff_ts",
+        "label": "symbol_diff.ts",
+        "type": "file",
+        "path": "src/application/design/rewrite/symbol_diff.ts",
+        "description": "src/application/design/rewrite/symbol_diff.ts",
+        "decision": {
+          "summary": "「设计 DB vs 源码」的**符号级判据**，全仓唯一一份。三条纪律：① 可比性由 kind 决定（function 比 signature；class/type/interface/const 不可比）；② uncompared 必须显式报数（算进一致是最坏的谎）；③ 配对不能只用 name（同名多义按 line 距离最近配，配不上进 unpaired）。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/design/rewrite/symbol_diff.ts",
+              "why": "判据要住 src（工具面），scripts 只能消费"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/rewrite/symbol_diff.ts",
+              "symbol": "diffSymbols",
+              "why": "唯一入口：算差异（只读）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/rewrite/symbol_diff.ts",
+              "symbol": "sourceRelOf",
+              "why": "取源码路径的判据必须单独一个函数（优先 path 字段，退回注释）"
+            }
+          ],
+          "rationale": "搬家理由：判据住在 scripts/lib/，而 ⑥ 的执行器要从 src 调用它 ⇒ **src 不能反向依赖 scripts**。更深一层：它此前住过两处（design-diff 正确版 + rewrite 错误版按 name 配对），抽成一份解决分叉；现在把它搬进 src 才算真正**在工具面内**。★ 顺手改进：源码路径优先读 design-db 的 `path` 字段（此前只从首行 `//` 注释正则抠，格式一变就断）。",
+          "consequences": "① 判据进 src，scripts 的两个消费者改成依赖 dist（不再有两份）；② 删 scripts/lib/symbol-diff.mjs；③ ★ 判定逻辑一字不改 —— 判据是「读数逐项相同」（2379 same / 0 differ / 1964 uncompared），不是『看起来对』。",
+          "acceptance": "新旧实现在同一份数据上给出逐项相同的读数（same / differ / uncompared 各 kind / unpaired / designOnly / sourceOnly 全等），且 differ 仍为 0。",
+          "status": "active",
+          "updated_at": "2026-10-19T13:59:13.906Z",
+          "author": "llm",
+          "agent": "workbuddy"
+        },
+        "task": {
+          "id": "file_src_application_design_rewrite_symbol_diff_ts",
+          "summary": "「设计 DB vs 源码」的**符号级判据**，全仓唯一一份。三条纪律：① 可比性由 kind 决定（function 比 signature；class/type/interface/const 不可比）；② uncompared 必须显式报数（算进一致是最坏的谎）；③ 配对不能只用 name（同名多义按 line 距离最近配，配不上进 unpaired）。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/design/rewrite/symbol_diff.ts",
+              "why": "判据要住 src（工具面），scripts 只能消费"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/rewrite/symbol_diff.ts",
+              "symbol": "diffSymbols",
+              "why": "唯一入口：算差异（只读）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/rewrite/symbol_diff.ts",
+              "symbol": "sourceRelOf",
+              "why": "取源码路径的判据必须单独一个函数（优先 path 字段，退回注释）"
+            }
+          ],
+          "state": "done",
+          "owner": "workbuddy",
+          "claimed_at": "2026-10-19T13:59:16.532Z",
+          "evidence": [
+            {
+              "kind": "expectations",
+              "at": "2026-10-19T14:02:36.713Z",
+              "verdict": "pass"
+            }
+          ]
+        },
+        "status": "done"
       }
     ],
     "edges": [
@@ -94308,6 +94378,12 @@
         "path": "src/application/design/db/gen_design_db.ts",
         "responsibility": "设计 DSL → 设计 DB（全量、与实际 DB 同构）",
         "status": "done"
+      },
+      {
+        "id": "file_src_application_design_rewrite_symbol_diff_ts",
+        "path": "src/application/design/rewrite/symbol_diff.ts",
+        "responsibility": "设计 DB vs 源码的符号级判据（⑥ 的地基，全仓唯一一份）",
+        "status": "done"
       }
     ]
   },
@@ -94370,11 +94446,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-19T13:47:42.095Z",
+    "saved_at": "2026-10-19T14:02:36.741Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792417661856,
-    "age": 239
+    "scanRev": 1792418556484,
+    "age": 257
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -96155,5 +96231,5 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 499
+  "_dsl_rev": 503
 }

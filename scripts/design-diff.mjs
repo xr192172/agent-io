@@ -24,6 +24,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 const DESIGN = '.agent-io/design/task-system-plan.dsl.json'; // ★ 唯一位置（2026-10-18 统一）
 const LIVE = '.agent-io/live/task-system-plan.dsl.json';
@@ -228,7 +229,7 @@ console.log(`  边里的"扫描遗漏"是 live 扫漏，**不需要动**`);
 // ⇒ 若一边有 2 处、另一边 1 处，配不上的那些进 `unpaired`（不判 same/differ）。
 if (argv.includes('--signature') || argv.includes('--all')) {
   // ★★ 判据只住一处：`scripts/lib/symbol-diff.mjs`。这里**只负责打印**，不重算。
-  const { diffSymbols, uncomparedTotal } = await import('./lib/symbol-diff.mjs');
+  const { diffSymbols, uncomparedTotal } = await import(pathToFileURL(path.join(process.cwd(), 'dist/src/application/design/rewrite/symbol_diff.js')).href);
   const ROOT = process.cwd();
   const r = await diffSymbols({ projectDir: ROOT });
   const { scanned, same, differ, uncompared, unpaired } = r;

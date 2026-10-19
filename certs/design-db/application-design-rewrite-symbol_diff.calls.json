@@ -1,0 +1,144 @@
+{
+  "//": "Design DB —— src/application/design/rewrite/symbol_diff.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "path": "src/application/design/rewrite/symbol_diff.ts",
+  "symbols": [
+    {
+      "name": "norm",
+      "kind": "const",
+      "line": 38,
+      "signature": "const norm = (s: unknown): string => String(s ?? '').replace(/\\\\/g, '/')"
+    },
+    {
+      "name": "COMPARABLE",
+      "kind": "const",
+      "line": 41,
+      "signature": "const COMPARABLE = { function: 'signature', class: null, type: null, interfa…"
+    },
+    {
+      "name": "DESIGN_DB_KINDS",
+      "kind": "const",
+      "line": 62,
+      "signature": "const DESIGN_DB_KINDS = new Set(['function', 'class', 'type', 'interface', 'const'])"
+    },
+    {
+      "name": "inDesignScope",
+      "kind": "const",
+      "line": 64,
+      "signature": "const inDesignScope = (kind: string): boolean => DESIGN_DB_KINDS.has(kind)"
+    },
+    {
+      "name": "isTopLevel",
+      "kind": "const",
+      "line": 73,
+      "signature": "const isTopLevel = (sym: SideSymbol): boolean => sym.parent == null"
+    },
+    {
+      "name": "SideSymbol",
+      "kind": "interface",
+      "line": 76,
+      "signature": "SideSymbol()"
+    },
+    {
+      "name": "sourceRelOf",
+      "kind": "function",
+      "line": 92,
+      "signature": "sourceRelOf(dd: Record<string, unknown>): string"
+    },
+    {
+      "name": "byName",
+      "kind": "function",
+      "line": 99,
+      "signature": "byName(syms: SideSymbol[]): Map<string, SideSymbol[]>"
+    },
+    {
+      "name": "SymbolDiffArgs",
+      "kind": "interface",
+      "line": 109,
+      "signature": "SymbolDiffArgs()"
+    },
+    {
+      "name": "SymbolDiffResult",
+      "kind": "interface",
+      "line": 122,
+      "signature": "SymbolDiffResult()"
+    },
+    {
+      "name": "diffSymbols",
+      "kind": "function",
+      "line": 136,
+      "signature": "diffSymbols(args: SymbolDiffArgs): Promise<SymbolDiffResult>"
+    },
+    {
+      "name": "uncomparedTotal",
+      "kind": "function",
+      "line": 266,
+      "signature": "uncomparedTotal(uncompared: Map<string, number>): number"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "node:url",
+      "kind": "package"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/design/rewrite/symbol_diff.ts#diffSymbols",
+      "to": "src/application/design/rewrite/symbol_diff.ts#byName"
+    },
+    {
+      "from": "src/application/design/rewrite/symbol_diff.ts#diffSymbols",
+      "to": "src/application/design/rewrite/symbol_diff.ts#byName"
+    },
+    {
+      "from": "src/application/design/rewrite/symbol_diff.ts#diffSymbols",
+      "to": "src/application/design/rewrite/symbol_diff.ts#inDesignScope"
+    },
+    {
+      "from": "src/application/design/rewrite/symbol_diff.ts#diffSymbols",
+      "to": "src/application/design/rewrite/symbol_diff.ts#inDesignScope"
+    },
+    {
+      "from": "src/application/design/rewrite/symbol_diff.ts#diffSymbols",
+      "to": "src/application/design/rewrite/symbol_diff.ts#inDesignScope"
+    },
+    {
+      "from": "src/application/design/rewrite/symbol_diff.ts#diffSymbols",
+      "to": "src/application/design/rewrite/symbol_diff.ts#inDesignScope"
+    },
+    {
+      "from": "src/application/design/rewrite/symbol_diff.ts#diffSymbols",
+      "to": "src/application/design/rewrite/symbol_diff.ts#isTopLevel"
+    },
+    {
+      "from": "src/application/design/rewrite/symbol_diff.ts#diffSymbols",
+      "to": "src/application/design/rewrite/symbol_diff.ts#isTopLevel"
+    },
+    {
+      "from": "src/application/design/rewrite/symbol_diff.ts#sourceRelOf",
+      "to": "src/application/design/rewrite/symbol_diff.ts#norm"
+    },
+    {
+      "from": "src/application/design/rewrite/symbol_diff.ts#sourceRelOf",
+      "to": "src/application/design/rewrite/symbol_diff.ts#norm"
+    },
+    {
+      "from": "src/application/design/rewrite/symbol_diff.ts#diffSymbols",
+      "to": "src/application/design/rewrite/symbol_diff.ts#norm"
+    },
+    {
+      "from": "src/application/design/rewrite/symbol_diff.ts#diffSymbols",
+      "to": "src/application/design/rewrite/symbol_diff.ts#sourceRelOf"
+    }
+  ]
+}

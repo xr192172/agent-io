@@ -30,9 +30,13 @@
  */
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { diffSymbols, uncomparedTotal } from './lib/symbol-diff.mjs';
 
 const ROOT = process.cwd();
+/** ★ 2026-10-19：判据已搬进 src（`application/design/rewrite/symbol_diff.ts`）——
+ *  scripts 只能消费 dist，不再持有第二份。 */
+const { diffSymbols, uncomparedTotal } = await import(
+  pathToFileURL(path.join(ROOT, 'dist/src/application/design/rewrite/symbol_diff.js')).href
+);
 const argOf = (k) => {
   const a = process.argv.find((x) => x.startsWith(`--${k}=`));
   return a ? a.split('=').slice(1).join('=') : undefined;

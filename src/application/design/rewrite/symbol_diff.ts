@@ -1,12 +1,13 @@
-#!/usr/bin/env node
 /**
- * symbol-diff.mjs —— 「设计 DB vs 源码」的**唯一**符号级判据（⑥ 结构重写的地基）
+ * symbol_diff —— 「设计 DB vs 源码」的**唯一**符号级判据（⑥ 结构重写的地基）
  *
- * ## 为什么要抽成一个模块（2026-10-19）
+ * ## 为什么要抽成一个模块（2026-10-19，从 `scripts/lib/symbol-diff.mjs` 搬进 src）
  * 这条判据此前**住了两处、各持一份**：
  *   · `design-diff.mjs --signature`：按 `kind` 决定可比性 + 按 (name, line 最近) 配对  ← 正确
- *   · `rewrite.mjs`：按 `name` 配对 + 只比存在性                                ← 坑 #6（同名多义被并成一个）
+ *   · `rewrite.mjs`：按 `name` 配对 + 只比存在性                                ← 同名多义被并成一个
  * ⇒ 同一条规则两处实现，是最容易"改一处漏一处"的形态。这里只留一份，两边都消费它。
+ * ★ 搬进 `src/` 的理由：⑥ 的执行器在 `src/application/design/`，而 **src 不能反向依赖 scripts**。
+ *   判据住在 scripts 里，就等于"工具面没有判据"。
  *
  * ## 判据的三条纪律（都是踩出来的）
  * ① **一个符号是否可比，由它的 `kind` 决定**，而不是"一律比 signature"
@@ -28,19 +29,16 @@
  *
  * ## 数据源
  * 设计侧：`certs/design-db/<a-b>.calls.json` 的 `symbols[]`
- *         （源码路径藏在 `//` 的说明里；`//source` 是设计 DSL 的路径，不是源码路径）
  * 实际侧：对源码现场 `parseFileFull`
  */
-
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-const BS = String.fromCharCode(92);
-const norm = (s) => String(s ?? '').split(BS).join('/');
+const norm = (s: unknown): string => String(s ?? '').replace(/\\/g, '/');
 
 /** kind → 用哪个字段比；null = 不可比（见头注 ①） */
-export const COMPARABLE = {
+export const COMPARABLE: Record<string, string | null> = {
   function: 'signature',
   class: null,
   type: null,
@@ -63,7 +61,7 @@ export const COMPARABLE = {
  */
 export const DESIGN_DB_KINDS = new Set(['function', 'class', 'type', 'interface', 'const']);
 
-const inDesignScope = (kind) => DESIGN_DB_KINDS.has(kind);
+const inDesignScope = (kind: string): boolean => DESIGN_DB_KINDS.has(kind);
 
 /**
  * ★ 设计 DB 只收**顶层**符号 ⇒ `sourceOnly` 也必须只数顶层。
@@ -72,87 +70,115 @@ const inDesignScope = (kind) => DESIGN_DB_KINDS.has(kind);
  * （`live_render.ts` 的 `DirNode` 其 `parent = renderLiveFromDb`）。
  * ⇒ 非顶层的一律进 `uncompared`，不冒充"设计漏了"。
  */
-const isTopLevel = (sym) => sym.parent == null;
+const isTopLevel = (sym: SideSymbol): boolean => sym.parent == null;
 
-/** 从设计 DB 的 `//` 说明里取源码相对路径 */
-function sourceRelOf(dd) {
-  const m = String(dd['//'] ?? '').match(/(src\/[^\s（(]+)/);
+/** 两侧符号的最小形状（设计侧的 line 是 `line`，实际侧是 `start_line`） */
+export interface SideSymbol {
+  name: string;
+  kind?: string;
+  line?: number;
+  start_line?: number;
+  signature?: string | null;
+  parent?: string | null;
+}
+
+/**
+ * ★ 从设计 DB 里取**源码相对路径**。
+ *
+ * 优先读 `path` 字段（2026-10-19 起 `gen-design-db` 会写）；旧产物没有该字段时，
+ * 才退回解析首行 `//` 注释（`Design DB —— src/xxx.ts（…）`）——
+ * **注释是给人看的，格式一变就断**，所以它只能是兜底，不能是主路径。
+ */
+export function sourceRelOf(dd: Record<string, unknown>): string {
+  if (typeof dd.path === 'string' && dd.path) return norm(dd.path);
+  const m = String(dd['//'] ?? '').match(/(src\/[^\s（(]+)/u);
   return m ? norm(m[1]) : '';
 }
 
 /** 按 name 分桶（同名多义 = 桶里多个） */
-function byName(syms) {
-  const map = new Map();
+function byName(syms: SideSymbol[]): Map<string, SideSymbol[]> {
+  const map = new Map<string, SideSymbol[]>();
   for (const s of syms) {
-    if (!map.has(s.name)) map.set(s.name, []);
-    map.get(s.name).push(s);
+    const arr = map.get(s.name) ?? [];
+    arr.push(s);
+    map.set(s.name, arr);
   }
   return map;
 }
 
+export interface SymbolDiffArgs {
+  /** 仓库根（绝对路径） */
+  projectDir: string;
+  /** `certs/design-db`（默认 projectDir 下） */
+  designDbDir?: string;
+  /** 注入解析器（默认从 dist 动态载入内核）；给测试用 */
+  parseFileFull?: (abs: string, content: string) => Promise<{ symbols?: SideSymbol[] }>;
+  /** 只算一个文件（仓库相对路径） */
+  onlyFile?: string;
+  /** 只算某个前缀 */
+  prefix?: string;
+}
+
+export interface SymbolDiffResult {
+  scanned: number;
+  same: Array<{ file: string; name: string; kind: string }>;
+  differ: Array<{ file: string; name: string; kind: string; dLine: number; aLine: number; old_text: string; new_text: string }>;
+  uncompared: Map<string, number>;
+  unpaired: Array<{ file: string; name: string; why: string }>;
+  designOnly: Array<{ file: string; name: string; kind: string; line: number }>;
+  sourceOnly: Array<{ file: string; name: string; kind: string; line: number }>;
+}
+
 /**
  * 算差异（**只读**，不写任何文件）。
- *
- * @param {object} args
- * @param {string} args.projectDir            仓库根（绝对路径）
- * @param {string} [args.designDbDir]         `certs/design-db`
- * @param {(abs:string, content:string)=>Promise<any>} [args.parseFileFull]  默认从 dist 动态载入
- * @param {string} [args.onlyFile]            只算一个文件（相对 projectDir）
- * @param {string} [args.prefix]              只算某个前缀
- * @returns {Promise<{
- *   scanned:number,
- *   same:Array<{file:string,name:string,kind:string}>,
- *   differ:Array<{file:string,name:string,kind:string,dLine:number,aLine:number,old_text:string,new_text:string}>,
- *   uncompared:Map<string,number>,
- *   unpaired:Array<{file:string,name:string,why:string}>,
- *   designOnly:Array<{file:string,name:string,kind:string,line:number}>,
- *   sourceOnly:Array<{file:string,name:string,kind:string,line:number}>,
- * }>}
+ * ★ 判定逻辑与 `scripts/lib/symbol-diff.mjs` **逐字等价** —— 搬家时一个 if 都没改。
  */
-export async function diffSymbols(args) {
+export async function diffSymbols(args: SymbolDiffArgs): Promise<SymbolDiffResult> {
   const projectDir = path.resolve(args.projectDir);
   const designDbDir = args.designDbDir ?? path.join(projectDir, 'certs', 'design-db');
 
   let parseFileFull = args.parseFileFull;
   if (!parseFileFull) {
     const kernel = pathToFileURL(path.join(projectDir, 'dist/src/infrastructure/parse/kernel.js')).href;
-    parseFileFull = (await import(kernel)).parseFileFull;
+    const mod = (await import(kernel)) as {
+      parseFileFull: (abs: string, content: string) => Promise<{ symbols?: SideSymbol[] }>;
+    };
+    parseFileFull = mod.parseFileFull;
   }
 
-  const same = [];
-  const differ = [];
-  const uncompared = new Map();
-  const unpaired = [];
-  const designOnly = [];
-  const sourceOnly = [];
+  const same: SymbolDiffResult['same'] = [];
+  const differ: SymbolDiffResult['differ'] = [];
+  const uncompared = new Map<string, number>();
+  const unpaired: SymbolDiffResult['unpaired'] = [];
+  const designOnly: SymbolDiffResult['designOnly'] = [];
+  const sourceOnly: SymbolDiffResult['sourceOnly'] = [];
   let scanned = 0;
 
   if (!fs.existsSync(designDbDir)) {
     return { scanned, same, differ, uncompared, unpaired, designOnly, sourceOnly };
   }
 
-  const want = (rel) =>
+  const want = (rel: string): boolean =>
     (!args.onlyFile || rel === norm(args.onlyFile)) &&
-    (!args.prefix || rel.startsWith(args.prefix.replace(/^\.?\//, '')));
+    (!args.prefix || rel.startsWith(String(args.prefix).replace(/^\.?\//, '')));
 
   for (const f of fs.readdirSync(designDbDir).filter((x) => x.endsWith('.calls.json')).sort()) {
-    const dd = JSON.parse(fs.readFileSync(path.join(designDbDir, f), 'utf8'));
+    const dd = JSON.parse(fs.readFileSync(path.join(designDbDir, f), 'utf8')) as Record<string, unknown>;
     const rel = sourceRelOf(dd);
     if (!rel.startsWith('src/')) continue;
     if (!want(rel)) continue;
 
     const abs = path.join(projectDir, rel);
+    const dSyms = (dd.symbols ?? []) as Array<{ name: string; kind?: string; line?: number }>;
     if (!fs.existsSync(abs)) {
       // 设计 DB 有、源码文件没了 ⇒ 整份都是"设计领先"
-      for (const d of dd.symbols ?? []) {
-        designOnly.push({ file: rel, name: d.name, kind: d.kind ?? 'unknown', line: d.line ?? -1 });
-      }
+      for (const d of dSyms) designOnly.push({ file: rel, name: d.name, kind: d.kind ?? 'unknown', line: d.line ?? -1 });
       continue;
     }
-    scanned++;
+    scanned += 1;
 
     const parsed = await parseFileFull(abs, fs.readFileSync(abs, 'utf8'));
-    const dByName = byName(dd.symbols ?? []);
+    const dByName = byName(dSyms);
     const aByName = byName(parsed.symbols ?? []);
 
     for (const [name, ds] of dByName) {
@@ -163,7 +189,7 @@ export async function diffSymbols(args) {
       }
 
       // 桶内配对：按 line 距离最近（同名多义时唯一可靠的消歧）
-      const usedA = new Set();
+      const usedA = new Set<number>();
       for (const d of ds) {
         let best = -1;
         let bestDist = Infinity;
@@ -182,25 +208,25 @@ export async function diffSymbols(args) {
         usedA.add(best);
         const a = as[best];
 
-        const field = COMPARABLE[d.kind] ?? null;
+        const kind = d.kind ?? 'unknown';
+        const field = COMPARABLE[kind] ?? null;
         if (!field) {
-          const key = d.kind ?? 'unknown';
-          uncompared.set(key, (uncompared.get(key) ?? 0) + 1);
+          uncompared.set(kind, (uncompared.get(kind) ?? 0) + 1);
           continue;
         }
-        const dv = String(d[field] ?? '').trim();
-        const av = String(a[field] ?? '').trim();
+        const dv = String((d as unknown as Record<string, unknown>)[field] ?? '').trim();
+        const av = String((a as unknown as Record<string, unknown>)[field] ?? '').trim();
         if (!dv || !av) {
-          const key = `${d.kind}(空值)`;
+          const key = `${kind}(空值)`;
           uncompared.set(key, (uncompared.get(key) ?? 0) + 1);
           continue;
         }
-        if (dv === av) same.push({ file: rel, name, kind: d.kind });
+        if (dv === av) same.push({ file: rel, name, kind });
         else
           differ.push({
             file: rel,
             name,
-            kind: d.kind,
+            kind,
             dLine: d.line ?? -1,
             aLine: a.start_line ?? -1,
             old_text: av,
@@ -237,7 +263,7 @@ export async function diffSymbols(args) {
 }
 
 /** `uncompared`（Map）→ 总数 */
-export function uncomparedTotal(uncompared) {
+export function uncomparedTotal(uncompared: Map<string, number>): number {
   let n = 0;
   for (const v of uncompared.values()) n += v;
   return n;
