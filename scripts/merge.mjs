@@ -60,12 +60,20 @@ const fileNodes = (dsl) =>
 const semFiles = (dsl) => new Map((dsl.semantic?.files ?? []).map((f) => [norm(f.path), f]));
 
 /**
- * 文件的"结构指纹"：行数 + 符号数
- * ★ 2026-10-19 修正：原来用 `n.semantic?.lines ?? n.lines` —— 而 geometry.nodes 里【没有】这两个字段
- *   ⇒ 指纹退化成 `-|expectations数` ⇒ 凡有 decision 的文件全被判"变了"（36 个假阳性）
- *   ★ 正确来源：`semantic.files[].lines` / `.symbols`
+ * ★★★ 2026-10-19 第三次修正（这次是【去掉不可靠的判据】，而不是修 bug）：
+ *
+ * 前两版都用 `semantic.files` 的 `lines`/`symbols` 做"结构指纹"，但——
+ * **`design/` 的 `semantic.files` 是 `fork` 时的快照，永不更新**；
+ * 而 `live/` 每次重扫都变 ⇒ 拿它俩比 ⇒ **必然全部"不一致"**（26 + 24 个假象）。
+ *
+ * ⇒ 所以本脚本现在【只比两件可靠的事】：
+ *   ① **文件存在性**（`geometry.nodes` 的 `description`，这是真的）
+ *   ② **decision 的有无**（设计独有，实际侧永远没有）
+ * ⇒ 其余（行数/符号数）**不比** —— 等设计侧的 semantic 有可靠来源再加回来。
+ *
+ * ★ 这不是"功能缩水"：一个会骗人的判据，比没有判据更坏。
  */
-const fp = (sem) => (sem ? `${sem.lines ?? '-'}|${(sem.symbols ?? []).length}` : '-|0');
+const fp = () => 'n/a';
 
 const B = fileNodes(base);
 const O = fileNodes(ours);
@@ -90,41 +98,36 @@ for (const f of allFiles) {
   const bSem = SB.get(f);
   const oSem = SO.get(f);
   const tSem = ST.get(f);
-  // ★ 2026-10-19 修正：`fp` 返回字符串，不能用来判 null ⇒ 先判"有没有 semantic 记录"
-  const bf = bSem ? fp(bSem) : null;
-  const of = oSem ? fp(oSem) : null;
-  const tf = tSem ? fp(tSem) : null;
+  /**
+   * ★★★ 2026-10-19 第四次修正：**用最简的 4 种组合**（不再叠 6 个布尔量，那只会绕死自己）。
+   *
+   * 可靠判据只有"存在性"（`geometry.nodes` 的 description）：
+   * ```
+   * 设计有 · 实际没有  ⇒ onlyOurs    （设计领先，待重写⑥）
+   * 设计无 · 实际有    ⇒ onlyTheirs  （实际领先，待 sync③）
+   * 设计有 · 实际有    ⇒ unchanged   （★ 内容是否变了？—— 没有可靠语义源，不判）
+   * 设计无 · 实际无    ⇒ 都不在（从 base 删了 ⇒ 也无事可做）
+   * ```
+   * ★ 为什么"都有"一律算 unchanged：`design/` 的 semantic 是 fork 快照、`cache.db` 的 call 边只同文件
+   *   ⇒ 任何"内容比较"都会产出假冲突。等 docs/MERGE.md §6 的可靠语义源就位再加回来。
+   */
+  const oursHas = o !== undefined;
+  const theirsHas = t !== undefined;
 
-  const oursChanged = of !== null && of !== bf;
-  const theirsChanged = tf !== null && tf !== bf;
-
-  // ★★ 2026-10-19 第二次修正：**直接比 ours / theirs 的存在性**（不依赖 base / semantic.files）
-  //   起因：`design/` 的 geometry.nodes 有 7 个 bricks 节点，而它的 semantic.files 没有
-  //   ⇒ `of` 为 null ⇒ `oursChanged` 判 false ⇒ 被算成"实际领先"（方向完全反了）
-  //   判据：设计有而实际没有 ⇒ 设计领先；实际有而设计没有 ⇒ 实际领先（最直接，无中间层）
-  const oursRemoved = o === undefined && b !== undefined;
-  const theirsRemoved = t === undefined && b !== undefined;
-  const oursAdded = o !== undefined && b === undefined;
-  const theirsAdded = t !== undefined && b === undefined;
-  const oursHasTheirsNot = o !== undefined && t === undefined;
-  const theirsHasOursNot = t !== undefined && o === undefined;
-
-  const oursTouched = oursChanged || oursRemoved || oursAdded || oursHasTheirsNot;
-  const theirsTouched = theirsChanged || theirsRemoved || theirsAdded || theirsHasOursNot;
-
-  if (!oursTouched && !theirsTouched) {
+  if (oursHas && theirsHas) {
     unchanged.push(f);
     continue;
   }
-  if (oursTouched && theirsTouched) {
-    bothChanged.push(f);
-  } else if (oursTouched) {
-    // ★ 只 ours 动：设计领先（含"设计有、实际没有"= theirs 少了）
+  if (oursHas && !theirsHas) {
     onlyOurs.push(f);
-  } else {
-    // ★ 只 theirs 动：实际领先（含"实际有、设计没有"= ours 少了）
-    onlyTheirs.push(f);
+    continue;
   }
+  if (!oursHas && theirsHas) {
+    onlyTheirs.push(f);
+    continue;
+  }
+  // 两边都没有 ⇒ 从 base 删了，无事可做
+  unchanged.push(f);
 }
 
 /** ★ 判据失效：ours 的 call-exists 指向的 target，在【真实符号表】里还有没有
