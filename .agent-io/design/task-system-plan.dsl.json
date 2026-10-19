@@ -6845,7 +6845,69 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "decision": {
+          "summary": "**[动画系统类型] 动画 DSL 的唯一形状定义 —— 两代并存**：旧版阶段快照 `Animation{stages[]}`（`AnimationStage` + `ElementState` 的**增量**覆盖）保留向后兼容，新 DSL 一律走 V2 `AnimationSystem{version, flows[], runtime?}`：`AnimationTrigger`（periodic / event / state_change / manual 四档）、`AnimationFlow`（`from` + `to` 直连，或 L3 的 `branches[]` 条件分支）、`AnimationValueSchema` / `AnimationValue` / `NodeShapes`（L0-L2 的**数据形状卡**，`NodeShapes` = 进/出各一张）、`AnimationHandler`（L4 函数映射 + `mock_result` / `mock_results` / `live` 开关）、`AnimationError`（L4.5，`expected` 走红路径 / `unexpected` 闪红 + 日志）、`AnimationRuntime`（mock 推演 / live 真调两档）。★ 它**不做**：不跑 flow、不求值 `condition` / `input_mapping` 里的表达式、不插值、不推进时间轴、不渲染（引擎在前端）；**不校验引用完整性**（`flow.from/to`、`handler.file_id`、`errors.to` 的悬空不由本文件判 —— 这里没有校验函数）；文件内**零运行期代码**（唯一 import 是 `import type`，从 `geometry.js` 取 `NodeContent` / `NodeStyle`）。",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/animation.ts",
+              "symbol": "AnimationSystem",
+              "why": "V2 动画的唯一顶层形状（`version` + `flows` + `runtime`）；DSL 的 animation 字段只该引用它"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/animation.ts",
+              "symbol": "AnimationFlow",
+              "why": "一条数据流的唯一形状：`from` 必填、`to`/`branches` 二选一、`handler` 只在 L4+ 出现 —— 少了它前端就没有可播放的单元"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/animation.ts",
+              "symbol": "AnimationHandler",
+              "why": "L4 函数映射与 mock 数据（`mock_result` / `mock_results` / `live`）的唯一住处；演示「不真跑代码」全靠这张卡"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/animation.ts",
+              "symbol": "AnimationError",
+              "why": "L4.5 异常路径的唯一形状：`expected` / `unexpected` 的分档决定红线还是闪红 + 日志，不能退化成一句字符串"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/animation.ts",
+              "symbol": "AnimationTrigger",
+              "why": "四种启动方式的唯一声明处（periodic / event / state_change / manual）；少了它 flow 无法被谁启动就说不清"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/animation.ts",
+              "symbol": "NodeShapes",
+              "why": "D1 形状卡（进料口 / 出料口各一份 `AnimationValueSchema`）；接口形状展示与粒子标注都读它"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/domain/animation.ts",
+                "check": "三个值域的档数 + 旧版仍在"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/animation.ts'), 'utf8'); return /type: 'periodic' \\| 'event' \\| 'state_change' \\| 'manual';/.test(s) && /mode: 'mock' \\| 'live';/.test(s) && /severity: 'expected' \\| 'unexpected';/.test(s) && /^export interface Animation \\{/m.test(s) && /  stages: AnimationStage\\[\\];/.test(s) && /  elements: ElementState\\[\\];/.test(s); })()",
+              "why": "三个联合类型是渲染器与仿真器的分支依据：多一档前端没有对应动效、少一档该有的分支消失（且都**静默**）。旧版 `Animation` / `stages` / `elements` 一并判，是因为它们一旦被\"顺手清理\"，向后兼容就无声断掉。本条只读源码判字面量，不冒充运行期行为。"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/domain/animation.ts",
+                "check": "纯类型：零运行期导出 + 唯一 import 是 type-only"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/animation.ts'), 'utf8'); const imports = [...s.matchAll(/^import .*$/gm)].map((m) => m[0]); return imports.length === 1 && imports[0] === \"import type { NodeContent, NodeStyle } from './geometry.js';\" && !/^export (function|const|let|var) /m.test(s); })()",
+              "why": "这一层必须**没有行为**：一旦有人把求值/插值顺手写进来，动画语义就有两个实现处。import 必须是 `import type` —— 值导入会把 geometry 的运行期依赖拖进纯类型层（循环依赖的常见起点）。"
+            }
+          ],
+          "acceptance": "`AnimationSystem` 的 `version: number` 必填、`flows?` / `runtime?` 可选；`AnimationTrigger.type` **恰四档** `'periodic' | 'event' | 'state_change' | 'manual'`，`AnimationRuntime.mode` **恰两档** `'mock' | 'live'`，`AnimationError.severity` **恰两档** `'expected' | 'unexpected'`；`AnimationFlow` 的 `to?` 与 `branches?` **同时可选**（L2 直连 / L3 分支二选一，靠语义而非必填强制）；`AnimationHandler` 同时声明 `mock_result?: unknown` / `mock_results?: unknown[]` / `live?: boolean`，且注释写明 `mock_results` **优先于** `mock_result`；旧版 `Animation.stages: AnimationStage[]` 与 `AnimationStage.elements: ElementState[]` 仍在；文件里**没有** `export function` / `export const` / `export let` / `export var`，且**全部** import 只有一行 `import type { NodeContent, NodeStyle } from './geometry.js';`。",
+          "updated_at": "2026-10-19T01:24:25.772Z",
+          "agent": "design-filler"
+        }
       },
       {
         "id": "file_src_domain_annotation_ts",
@@ -6861,7 +6923,60 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "decision": {
+          "summary": "**标注与审批的形状 + 审批状态值的唯一可渲染处**：`Annotation`（一条标注/工单：`target_id` / `node_id` 定位、`type` / `severity`、`approval_status`、`approval_history` 审计链、`pos` 便签坐标）与 `ApprovalHistoryEntry`（`action` 六档 + `actor` + `timestamp` 的审计三要素）。`ApprovalStatus` 是**类型**、渲染不进 MCP 描述 ⇒ `APPROVAL_STATUSES` 是**运行时唯一一份**合法值列表（描述从它渲染，不手写第二份）；`_AssertStatusesCover` / `_AssertStatusesNoExtra` 两条**类型级断言**把常量与类型**双向**钉死（漏一个或多一个 ⇒ `tsc` 红）。★ 它**不做**：不判状态流转是否合法（谁能到谁）、不写审批记录、不落盘、不渲染、无 IO；`APPROVAL_STATUSES` 只是**值表**，不是状态机。",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/annotation.ts",
+              "symbol": "ApprovalStatus",
+              "why": "审批状态的类型本体；`Annotation.approval_status` 与 `ApprovalHistoryEntry.status` 都只许引用它"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/annotation.ts",
+              "symbol": "APPROVAL_STATUSES",
+              "why": "★ 唯一可渲染的值表：描述里的\"合法值有哪些\"只能从这里渲染，手写第二份就会漂"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/annotation.ts",
+              "symbol": "_AssertStatusesCover",
+              "why": "类型级断言一（常量**不漏**类型的成员）；删掉它，值表少一项也无人报错"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/annotation.ts",
+              "symbol": "_AssertStatusesNoExtra",
+              "why": "类型级断言二（常量**不多**）；删掉它，值表多一项就渲染出非法状态"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/annotation.ts",
+              "symbol": "ApprovalHistoryEntry",
+              "why": "审批审计链的单条形状；\"谁在何时做了什么\"必须可查，不能挤进 `comment` 散文"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/annotation.ts",
+              "symbol": "Annotation",
+              "why": "标注/工单的唯一形状（含 `approval_status` / `approval_history` / `pos`）"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/domain/annotation.ts",
+                "check": "值表与类型同集同序，且两条断言都在"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/annotation.ts'), 'utf8'); const t = /export type ApprovalStatus = ([^;]+);/.exec(s); const c = /export const APPROVAL_STATUSES = \\[([^\\]]+)\\] as const;/.exec(s); if (!t || !c) return false; const norm = (x) => x.split(/[|,]/).map((v) => v.trim().replace(/^'|'$/g, '')).filter(Boolean); const a = norm(t[1]); const b = norm(c[1]); return a.length === 5 && b.length === 5 && a.every((v, i) => v === b[i]) && /export const _assertStatusesCover: _AssertStatusesCover = true;/.test(s) && /export const _assertStatusesNoExtra: _AssertStatusesNoExtra = true;/.test(s) && /approval_status\\?: ApprovalStatus;/.test(s) && /approval_history\\?: ApprovalHistoryEntry\\[\\];/.test(s); })()",
+              "why": "防漂移的全部价值在\"**两份逐项相同**\"：只判各自长度会把顺序错、拼写错漏掉。断言常量必须在（它们是 `tsc` 侧的判据，删了不会有任何运行期症状）。本题不 import 模块（run 的求值域不加载业务函数），只读源码比对两份字面量。"
+            }
+          ],
+          "acceptance": "`APPROVAL_STATUSES` **恰 5 项**且与 `ApprovalStatus` 联合类型**同集同序**（draft / pending_review / approved / rejected / needs_revision）；`_assertStatusesCover` 与 `_assertStatusesNoExtra` 都声明为 `true`，且各自的 `Exclude<...> extends never` 成立（`tsc` 通过即证明\"不多不少\"）；`Annotation.approval_status?: ApprovalStatus`（**引用类型**，不是又抄一份字符串联合）、`approval_history?: ApprovalHistoryEntry[]`；`ApprovalHistoryEntry` 的 `id` / `status` / `action` / `actor` / `timestamp` 必填，`comment?` 可选；`action` **恰六档**（submit / approve / reject / request_revision / revise / close）。",
+          "updated_at": "2026-10-19T01:24:25.820Z",
+          "agent": "design-filler"
+        }
       },
       {
         "id": "file_src_domain_b_terms_ts",
@@ -6958,7 +7073,36 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "decision": {
+          "summary": "**画布手绘批注覆盖层的形状**（阶段 C）：一份独立的 `CanvasNote[]` 挂在 DSL 顶层 `canvas_notes`，**与语义模型解耦** —— 只给前端画布渲染与协作，**不参与 `get_dsl` 的语义/代码侧逻辑**。坐标为**画布世界坐标**（world px，随 world transform 缩放平移）。`groupId` = 一次批注会话（开启→关闭）内创建的图元共享同一套；`anchor{nodeId, ox, oy}` 让图元**跟随锚定节点**移动/布局重排（缺省 = 绝对坐标）；`status` 三档 `open / done / rejected` 是语义工单闭环。★ 它**不做**：不做命中测试与坐标变换（前端）、不落盘、不校验 `anchor.nodeId` 是否存在、不把批注混进语义分析；末尾 `[key: string]: unknown` 只是**不阻断解析**，不代表未知字段合法。",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/canvas_note.ts",
+              "symbol": "CanvasNote",
+              "why": "批注图元的唯一形状（`canvas_notes` 数组的元素类型）；锚定、会话分组、工单状态都只在这里声明"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/canvas_note.ts",
+              "symbol": "CanvasNoteType",
+              "why": "五档图元类型的唯一值域：多一档前端没有对应绘制分支，少一档该图元画不出来"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/domain/canvas_note.ts",
+                "check": "五档图元 + anchor 三要素 + 工单三档 + 索引签名"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/canvas_note.ts'), 'utf8'); const t = /export type CanvasNoteType = ([^;]+);/.exec(s); const body = /^export interface CanvasNote \\{[\\s\\S]*?^\\}/m.exec(s); if (!t || !body) return false; const kinds = t[1].split('|').map((v) => v.trim().replace(/^'|'$/g, '')); return kinds.length === 5 && ['highlight', 'arrow', 'oval', 'sticky', 'text'].every((k) => kinds.includes(k)) && /  id: string;/.test(body[0]) && /  type: CanvasNoteType;/.test(body[0]) && /  anchor\\?: \\{ nodeId: string; ox: number; oy: number \\};/.test(body[0]) && /  status\\?: 'open' \\| 'done' \\| 'rejected';/.test(body[0]) && /\\[key: string\\]: unknown;/.test(body[0]); })()",
+              "why": "`anchor` 的 `ox/oy` 是\"随节点移动\"的全部依据：三者缺一，批注在布局重排后就会飘到错误位置（且不报错）。索引签名与 `status` 一并判，是因为前者决定\"未知字段不阻断解析\"，后者决定工单闭环有没有终态。只读源码，不冒充前端渲染行为。"
+            }
+          ],
+          "acceptance": "`CanvasNoteType` **恰五档**（highlight / arrow / oval / sticky / text）；`CanvasNote` 的 `id` 与 `type` **必填**，其余（`groupId` / `anchor` / `points` / `x` `y` `w` `h` / `text` / `color` / `strokeWidth` / `status`）**全部可选**；`anchor` 的形状是 `{ nodeId: string; ox: number; oy: number }`（三个都必填，缺一个就跟不上节点）；`status` **恰三档** `'open' | 'done' | 'rejected'`；接口末尾**有** `[key: string]: unknown` 索引签名（未知扩展字段不阻断解析）。",
+          "updated_at": "2026-10-19T01:24:25.854Z",
+          "agent": "design-filler"
+        }
       },
       {
         "id": "file_src_domain_chain_wiring_ts",
@@ -7235,7 +7379,45 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "decision": {
+          "summary": "**\"从一个设计 DSL 里彻底移除一个文件节点\"的唯一判据**（T185）。删一个文件在 DSL 里是**三件事**：语义 `semantic.files`、几何 `geometry.nodes`、以及 `from` / `to` 指向它的 `geometry.edges` —— 此前这条判据**住两处且不一样**（`archive_node` 三清；`deleteFile` 只 splice 语义 ⇒ 留下幽灵几何节点，`get_dsl` 仍查得到、按下标遍历几何层看不出已删，属\"不报错的错\"）。现在 `removeFileFromDsl(dsl, fileId)` 是**唯一实现**，返回 `{ dsl, removal }`：新 dsl + **如实报账**（`file?` / `node_removed` / `edges_removed`）。★ 它**不做**：不改入参（纯函数，`filter` + spread 出新对象）、无 IO、**不判断\"找不到文件算不算错\"**（`FileRemoval` 只说\"什么都没动\"，报不报错与文案留给调用方）、不生成错误消息、不重排布局/索引、不清理 `canvas_notes` 这类**节点之外**的引用（只动上述三处）。",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/dsl_removal.ts",
+              "symbol": "removeFileFromDsl",
+              "why": "★ 三清的唯一实现；`archive_node` 与 `deleteFile` 都必须调它，不许再各写一份 filter"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/dsl_removal.ts",
+              "symbol": "FileRemoval",
+              "why": "报账契约（`file?` / `node_removed` / `edges_removed`）；没有它调用方只能猜\"到底动了什么\""
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/domain/dsl_removal.ts",
+                "check": "纯函数：不改入参、边两端都过滤、计数现算"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/dsl_removal.ts'), 'utf8'); const fn = /export function removeFileFromDsl\\([\\s\\S]*?\\n\\}/.exec(s); if (!fn) return false; const b = fn[0]; return !/\\.splice\\(|\\.push\\(/.test(b) && !/dsl\\.(semantic|geometry)\\s*=/.test(b) && /\\.filter\\(\\(e\\) => e\\.from !== fileId && e\\.to !== fileId\\)/.test(b) && /node_removed:\\s*nodeRemoved/.test(b) && /edges_removed:\\s*edgesRemoved/.test(b) && /nextNodes\\.length < prevNodes\\.length/.test(b) && /prevEdges\\.length - nextEdges\\.length/.test(b); })()",
+              "why": "这条判据存在的理由就是\"别半删\"：`from`/`to` 只过滤一端会留下悬空边（而且照样不报错）。\"不改入参\"必须是结构性的（`.splice` / 直接赋值都是就地改），因为调用方常常还持有旧 dsl 做 diff。"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/domain/dsl_removal.ts",
+                "check": "找不到文件不是错；缺 semantic/geometry 不炸"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/dsl_removal.ts'), 'utf8'); return /\\.\\.\\.\\(file \\? \\{ file \\} : \\{\\}\\)/.test(s) && /dsl\\.semantic\\?\\.files\\.find\\(\\(f\\) => f\\.id === fileId\\)/.test(s) && /const nextSemantic = dsl\\.semantic\\s*\\? \\{ \\.\\.\\.dsl\\.semantic, files: dsl\\.semantic\\.files\\.filter\\(\\(f\\) => f\\.id !== fileId\\) \\}\\s*: dsl\\.semantic;/.test(s) && /geometry: dsl\\.geometry \\? \\{ \\.\\.\\.dsl\\.geometry, nodes: nextNodes, edges: nextEdges \\} : dsl\\.geometry,/.test(s); })()",
+              "why": "\"找不到算不算错\"是**调用方**的判断（archive 与 deleteFile 的文案不同）—— 本函数把 `file` 设为条件展开，正是为了让\"没找到\"可被如实表达而不是抛错。两个三目保证 `semantic` / `geometry` 本身缺失时仍返回同构对象，不会因为可选字段把整个移除流程炸掉。"
+            }
+          ],
+          "acceptance": "`removeFileFromDsl(dsl, fileId)` 返回 `{ dsl, removal }`，且**入参 `dsl` 不被修改**（三处都走 `filter` + 对象 spread，函数体内无 `splice` / `push` / 对 `dsl.semantic|geometry` 的赋值）；`removal.node_removed` 由 `nextNodes.length < prevNodes.length` **现算**、`removal.edges_removed` 由 `prevEdges.length - nextEdges.length` **现算**（不是猜的布尔/计数）；`removal.file` **只在语义层找到时**才出现（`...(file ? { file } : {})` —— 找不到不是错）；边过滤**同时**判 `e.from !== fileId && e.to !== fileId`（漏一边就留下半条悬空边，且计数也不对）；`semantic` / `geometry` 缺失时**不炸**（可选链 + 三目保持原形）。",
+          "updated_at": "2026-10-19T01:24:25.888Z",
+          "agent": "design-filler"
+        }
       },
       {
         "id": "file_src_domain_expectation_ts",
@@ -7741,7 +7923,63 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "decision": {
+          "summary": "**事件驱动状态机的类型骨架**：`Simulation{id, initial_state[], rules[], mappings?}` —— 一条 `SimulationRule` = `event`（触发）→ `condition?`（JS 表达式，访问 `state` / `payload`）→ `actions[]`（执行）→ `emits?`（发射下游事件），并带 `from_node` / `to_nodes` 供画布连**可视化依赖边**（`SimulationDepEdge`）；`SimulationAction.type` **九档**（set_state / increment / decrement / push / pop / move / highlight / log / call）；`SimulationStateDef` 定义初值；`SimulationNodeMapping` 把 state 键映射到画布节点（`labelTemplate` / `styleMap`）；`SimulationTrace` 是**运行时填充**的单步日志（`step` / `ruleId` / `conditionMet` / `stateSnapshot` …）。★ 它**不做**：不执行规则、不求值 `condition`、不维护 state、不产出 trace（引擎/前端负责）；**不校验引用完整性**（`rule.from_node` / `to_nodes` / `mapping.nodeId` 的悬空不在本文件判）；文件内**零运行期代码**（唯一 import 是 `import type { NodeStyle }`）。",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/simulation.ts",
+              "symbol": "Simulation",
+              "why": "仿真器顶层形状的唯一住处（初值 + 规则 + 映射 + trace）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/simulation.ts",
+              "symbol": "SimulationRule",
+              "why": "「事件 → 条件 → 动作 → 发射」这条链的唯一形状；少了 `emits` 就没有级联，少了 `from_node` 就画不出依赖边"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/simulation.ts",
+              "symbol": "SimulationAction",
+              "why": "九档动作的唯一形状；每档用哪个字段（`amount` / `value` / `message`）只在这里说"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/simulation.ts",
+              "symbol": "SimulationTrace",
+              "why": "可回放轨迹的单步形状（`conditionMet` / `stateSnapshot` 让\"为什么没触发\"也能查）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/simulation.ts",
+              "symbol": "SimulationDepEdge",
+              "why": "规则到画布连线的桥（`rule_id` + `event`）；没有它仿真规则与图上边无法对应"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/domain/simulation.ts",
+                "check": "九档动作 + 必填/可选边界 + 轨迹字段齐全"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/simulation.ts'), 'utf8'); const t = /type: 'set_state' \\| 'increment' \\| 'decrement' \\| 'push' \\| 'pop' \\| 'move' \\| 'highlight' \\| 'log' \\| 'call';/.exec(s); const sim = /^export interface Simulation \\{[\\s\\S]*?^\\}/m.exec(s); const tr = /^export interface SimulationTrace \\{[\\s\\S]*?^\\}/m.exec(s); if (!t || !sim || !tr) return false; const needSim = ['  initial_state: SimulationStateDef[];', '  rules: SimulationRule[];', '  mappings?: SimulationNodeMapping[];', '  trace?: SimulationTrace[];']; const needTr = ['  step: number;', '  event: string;', '  ruleId: string;', '  conditionMet: boolean;', '  actions: SimulationAction[];', '  emittedEvents: string[];', '  timestamp: string;', '  stateSnapshot: Record<string, unknown>;']; return needSim.every((k) => sim[0].includes(k)) && needTr.every((k) => tr[0].includes(k)); })()",
+              "why": "动作档数决定执行器有没有分支可走（多/少一档都静默）；`SimulationTrace` 的八项缺任何一项，回放就只能\"看个大概\"（`conditionMet` 与 `stateSnapshot` 正是排查\"为什么没触发\"的依据）。只读源码判结构，不假装跑过仿真。"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/domain/simulation.ts",
+                "check": "纯类型：零运行期导出 + 唯一 import 是 type-only"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/simulation.ts'), 'utf8'); const imports = [...s.matchAll(/^import .*$/gm)].map((m) => m[0]); return imports.length === 1 && imports[0] === \"import type { NodeStyle } from './geometry.js';\" && !/^export (function|const|let|var) /m.test(s); })()",
+              "why": "本文件只描述\"状态机长什么样\"，执行语义（求值 `condition`、推进 state）必须只有一处实现（引擎侧）。值导入会把 geometry 运行期拖进纯类型层；`export const` 一旦出现，就说明有人开始在这里塞逻辑。"
+            }
+          ],
+          "acceptance": "`Simulation.initial_state` 与 `rules` **必填**，`mappings?` / `trace?` 可选；`SimulationAction.type` **恰九档**，而 `target?` / `value?` / `amount?` / `from?` / `to?` / `message?` **全可选**（九档共用一张扁平结构，靠 type 决定用哪几个）；`SimulationTrace` 的 `step` / `event` / `ruleId` / `conditionMet` / `actions` / `emittedEvents` / `timestamp` / `stateSnapshot` **全必填**（日志缺一项就不是可回放的轨迹）；`SimulationRule.event` / `actions` 必填、`condition?` / `emits?` / `from_node?` / `to_nodes?` 可选（后两者只服务可视化连线，不参与求值）；文件里**没有** `export function` / `export const`，且唯一 import 是 `import type { NodeStyle } from './geometry.js';`。",
+          "updated_at": "2026-10-19T01:24:25.936Z",
+          "agent": "design-filler"
+        }
       },
       {
         "id": "file_src_domain_task_machine_ts",
@@ -60199,8 +60437,7 @@
           "unjudged": "★ 设计完整性的判据目前没有检查器（等 Expectation 与 invariant 合成一个抽象后才能跑）",
           "debt": "D-design-completeness",
           "expect": "(() => {\n    // ★ 只要【任务系统核心】：写入口（dsl_ops）/ 巡检（patrol）/ 规则（domain）\n    //   ★ 不要渲染/画图（bricks / derive / render_* / opl 等）—— 那些是\"展示层\"，不该被任务系统要求设计。\n    const SCOPE = ['src/application/design/dsl_ops/', 'src/application/patrol/', 'src/domain/'];\n    const inScope = nodes.filter((n) => SCOPE.some((s) => String(n.description ?? '').replace(/\\\\/g, '/').startsWith(s)));\n    const bad = inScope.filter((n) => {\n      const d = n.decision;\n      return !d || !String(d.summary ?? '').trim() || !String(d.acceptance ?? '').trim() || (d.expectations ?? []).length < 1;\n    });\n    return bad.length === 0;\n  })()",
-          "expect_note": "★ 只要求 dsl_ops / patrol / domain 三个目录；渲染/画图（bricks/derive/render）不要求",
-          "blocked_by": "等 25 个核心节点写设计（dsl_ops/ 8 个 + domain/ 17 个，清单见 design:check 的详情）—— ★ 这是「活没干完」，不是「忘了」"
+          "expect_note": "★ 只要求 dsl_ops / patrol / domain 三个目录；渲染/画图（bricks/derive/render）不要求"
         },
         {
           "id": "D3",
@@ -60767,5 +61004,5 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 37
+  "_dsl_rev": 43
 }
