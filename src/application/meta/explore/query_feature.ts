@@ -54,7 +54,6 @@ import type { DSLView } from '../../../infrastructure/storage.js';
 import { listAnnotations } from '../../design/dsl_ops/annotation_tools.js';
 import { listApprovals, getApprovalHistory } from '../../observe/reconcile/approval.js';
 import { listSnapshots } from '../../design/lifecycle/snapshot.js';
-import { listTemplates } from '../../design/lifecycle/templates.js';
 import { getSimulationState } from '../../design/lifecycle/simulation.js';
 // ★★★ 2026-10-19：**任务池的读端**（`board/pool.ts` 的 `listPool`）。
 //   为什么现在才接：那份 DSL 的 `decision.acceptance` 早就写着"**能经 `get_dsl` 的查询触达**"，
@@ -95,7 +94,6 @@ export interface QueryFeatureInput {
     | 'approvals'
     | 'approval_history'
     | 'snapshots'
-    | 'templates'
     | 'simulation_state'
     | 'diff'
     | 'goals'
@@ -1177,10 +1175,6 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
       return { message: r.message, data: r.snapshots };
     }
 
-    case 'templates': {
-      const r = listTemplates();
-      return { message: r.message, data: r.templates };
-    }
 
     case 'simulation_state': {
       const feature = requireFeature(input);

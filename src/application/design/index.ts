@@ -47,7 +47,6 @@ import { importProject } from '../../infrastructure/graph/import_project.js';
 import type { ImportProjectInput } from '../../infrastructure/graph/import_project.js';
 // ★ T15 切片（2026-10-05）：把「混合文件解耦」这对能力从 CLI 面接进 MCP 面 ——
 //   两者共用同一批 application 层核心（与 `brickify_cli` 同源；`split_stage_cli` 已于 2026-10-06 删除），CLI 只是 argv 薄壳。
-import { scaffold } from './lifecycle/scaffold.js';
 import { setDesignIntent } from './intent/set_design_intent.js';
 import { consistencyHandler, detectDriftHandler, editDslHandler, getDslHandler, renderDesignHandler } from './handlers.js';
 import type { ToolDef } from '../types.js';
@@ -305,41 +304,6 @@ export const DESIGN_TOOLS: ToolDef[] = [
 
 
 
-  {
-    name: 'scaffold',
-    title: 'Scaffold: generate a code skeleton from the DSL',
-    description:
-      '从 DSL semantic 层生成代码骨架（输出根缺省 `<cwd>/scaffold/<feature>`）。支持语言 .go/.ts/.py/.js/.vue/.tsx。' +
-      '额外生成 INVARIANTS.md 记录跨文件不变式。已存在文件默认**不覆盖**（`overwrite=true` 才覆盖）。' +
-      '★ 2026-10-01：原先的 `action=backfill`（把代码解析出的 API 签名**镜像回填进 DSL** 的 `actual_apis`）' +
-      '**已整条剔除** —— 那是"把代码的事实抄进意图册"，是第二份可写副本。要读事实请用 `explore_code`/`query_feature`，' +
-      '它们现取解析数据（唯一入口 `infrastructure/index/file_facts`）。',
-    inputSchema: {
-      feature: z.string().describe('feature 名'),
-      output_dir: z.string().optional().describe('generate 用：输出根目录（默认 <cwd>/scaffold/<feature>）'),
-      overwrite: z.boolean().optional().describe('generate 用：是否覆盖已存在文件（默认 false）'),
-      ui_framework: z.enum(['vue', 'react', 'html']).optional().describe('generate 用：UI 骨架类型（覆盖 DSL 配置）'),
-      project_dir: z.string().optional().describe('项目根（索引归属），提供时生成物登记为自写（读路径优先同步索引）'),
-    },
-    handler: wrapData(async (a) => {
-      const action = 'generate';
-      const feature = requireStr(a, 'feature');
-
-      {
-        const r = scaffold({
-          feature,
-          project_dir: a.project_dir as string | undefined,
-          output_dir: a.output_dir as string | undefined,
-          overwrite: a.overwrite as boolean | undefined,
-          ui_framework: a.ui_framework as 'vue' | 'react' | 'html' | undefined,
-        });
-        // ★ 回执编排：written_files（生成的文件路径表）与 dir（输出根）是 agent 后续要引用的机器可读产物，
-        //   旧入口用 wrapData 时已在回（★ 2026-10-05 随 [B] 还债把 `files` 拆成 `written_files`）。
-        return { message: r.message, data: { action, written_files: r.written_files, dir: r.dir } };
-      }
-
-    }),
-  },
 
   {
     name: 'consistency_check',

@@ -30,8 +30,6 @@ import { importProject } from '../../infrastructure/graph/import_project.js';
 import { getProjectCacheDb, openDb, featureCacheDbPath } from '../../infrastructure/index/db.js';
 import { validateDSLJson } from '../../domain/validator.js';
 import { saveAutoSnapshot, pruneSnapshots } from '../../application/design/lifecycle/snapshot.js';
-// ★ scaffold 是【主路】（DSL → 代码骨架 = 渐入式重写的第 ⑤ 步），不删
-import { scaffold } from '../../application/design/lifecycle/scaffold.js';
 import { dagLayout, forceLayout, gridAlign } from '../../application/design/workbench/dag_layout.js';
 import { checkConsistencyReport } from '../../application/design/intent/consistency.js';
 import { diffImpact } from '../../infrastructure/analysis/impact/diff_impact.js';
@@ -1149,31 +1147,6 @@ async function handleApiLayout(req: http.IncomingMessage, res: http.ServerRespon
   }
 }
 
-async function handleApiScaffold(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
-  try {
-    const body = await readBody(req);
-    const params = JSON.parse(body.toString('utf-8'));
-    let safeOutputDir: string | undefined;
-    if (params.output_dir) {
-      // 显式传了 output_dir：必须落在允许的项目根范围内（防止写入系统目录）
-      safeOutputDir = validateProjectRoot(params.output_dir, '/api/scaffold output_dir');
-    }
-    const result = scaffold({
-      feature: params.feature || 'agent-io',
-      output_dir: safeOutputDir,
-      overwrite: params.overwrite,
-      ui_framework: params.ui_framework,
-    });
-    sendJson(res, 200, {
-      success: true,
-      ...result,
-    });
-  } catch (e) {
-    const code =
-      (e as Error).message.includes('超出允许范围') || (e as Error).message.includes('路径穿越') || (e as Error).message.includes('不能为空') ? 403 : 500;
-    sendError(res, code, (e as Error).message);
-  }
-}
 
 async function handleApiConsistency(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
   try {
@@ -2998,11 +2971,6 @@ export async function startServer(port?: number): Promise<void> {
 
     if (url.startsWith('/api/layout/grid') && method === 'POST') {
       handleApiLayout(req, res, 'grid');
-      return;
-    }
-
-    if (url.startsWith('/api/scaffold') && method === 'POST') {
-      handleApiScaffold(req, res);
       return;
     }
 
