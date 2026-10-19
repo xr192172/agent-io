@@ -13,7 +13,7 @@ import type {
   DesignOverlay,
   ReconcileStats,
 } from '../domain/overlay.js';
-import { reconcileOverlay, buildCandidates, buildEdgeCandidates, seedOverlayFromDsl, applyOverlay, statsLine, mergeDecisionsIntoOverlay, mergeTagsIntoOverlay, mergeLifecycleIntoOverlay, hasAnchorPayload } from '../domain/overlay.js';
+import { reconcileOverlay, buildCandidates, buildEdgeCandidates, seedOverlayFromDsl, applyOverlay, statsLine, mergeTagsIntoOverlay, mergeLifecycleIntoOverlay, hasAnchorPayload } from '../domain/overlay.js';
 
 function getOverlayFile(feature: string): string {
   if (!/^[a-zA-Z0-9_-]+$/.test(feature)) {
@@ -62,19 +62,9 @@ export interface MergeResult {
  * ★ **没有变化就不写盘**（避免无谓 churn 与 mtime 抖动）。
  * ★ 返回 `changed=false` 时**不要**把它当成"失败了" —— 那是"本来就已经同步过"。
  */
-export function syncDecisionsToOverlay(
-  feature: string,
-  dsl: DesignDSL,
-): { changed: boolean; written: number; cleared: number; file: string | null; notes: string[] } {
-  const before = loadOverlay(feature);
-  const ov: DesignOverlay = before ?? { version: 1, feature, anchors: {} };
-  const r = mergeDecisionsIntoOverlay(ov, dsl);
-  const a = JSON.stringify(before?.anchors ?? {});
-  const b = JSON.stringify(r.overlay.anchors);
-  if (a === b) return { changed: false, written: r.written, cleared: r.cleared, file: null, notes: r.notes };
-  const file = saveOverlay(r.overlay);
-  return { changed: true, written: r.written, cleared: r.cleared, file, notes: r.notes };
-}
+// ★★★ 2026-10-19（设计只住一处）：syncDecisionsToOverlay **已删除** ——
+//   它是"把 decision 从 base 同步进 overlay"的 IO 入口，正是"写两处"的另一半。
+//   decision 只住 design/，由 edit_dsl 直接写；overlay 不再需要"决策同步"。
 
 /**
  * ★★★ 把 base 上的**功能标记**（`meta.function_tags`）同步进 `overlay.global.function_tags` 并落盘

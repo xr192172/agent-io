@@ -14,8 +14,10 @@
 
 import fs from 'node:fs';
 import { getDSL, saveDSL, getDesignSheetFile } from '../../../infrastructure/storage.js';
-// ★★ T75：决策卡必须活过 base 重建 ⇒ 每次 edit_dsl 收口时同步进 overlay
-import { syncDecisionsToOverlay, syncTagsToOverlay, syncLifecycleToOverlay } from '../../../infrastructure/storage_overlay.js';
+// ★★★ 2026-10-19（设计只住一处）：**syncDecisionsToOverlay 已退役** ——
+//   T75 当年加它是因为「base 重建会把 decision 冲掉」；而 design/ 现在是独立手写文件，
+//   重建不碰它 ⇒ 那个前提已不存在。decision 只住 design/，不再同步进 overlay。
+import { syncTagsToOverlay, syncLifecycleToOverlay } from '../../../infrastructure/storage_overlay.js';
 import type { EditResult } from './edit_result.js';
 import { addNode, updateNode, deleteNode } from './node_ops.js';
 import type { AddNodeInput, UpdateNodeInput } from './node_ops.js';
@@ -409,7 +411,6 @@ export async function updateFeature(input: UpdateFeatureInput): Promise<TouchedP
         `（★ 不静默降级成空 DSL：那会把 overlay 里的标记**当成"已被清空"而抹掉**）`,
     );
   }
-  const syncDecisions = syncDecisionsToOverlay(input.feature, dslNow);
   const syncTags = syncTagsToOverlay(input.feature, dslNow);
   // ★★★ T182（2026-10-11）：**文件生命周期**（`deprecated` 待删标记）也走**同一个收口**。
   //   ★ 同款理由：它也是"**人写的意图**"，而 `import_project` 的显式重建会**整个替换 base**
@@ -424,7 +425,6 @@ export async function updateFeature(input: UpdateFeatureInput): Promise<TouchedP
   //   ⇒ ★ 于是"**清掉了 N 个待删标记**"**没有任何人看得到**（§2.3「不报错的错」的教科书形态）。
   //   ★ 修法：**把清除数报进回执**（只在真有清除时说话，免得日常噪声淹没它）。
   const clearedLines: string[] = [];
-  if (syncDecisions.cleared > 0) clearedLines.push(`决策 ${syncDecisions.cleared} 个`);
   if (syncTags.cleared) clearedLines.push('功能标记 1 组');
   if (syncLifecycle.cleared > 0) clearedLines.push(`★ 文件生命周期标记 ${syncLifecycle.cleared} 个（待删标记）`);
   const r2: EditResult =

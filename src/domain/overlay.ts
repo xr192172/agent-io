@@ -34,8 +34,8 @@ import { progressOf } from './task_schema.js';
  */
 export function hasAnchorPayload(a: OverlayAnchor): boolean {
   return !!(
-    a.decision ||
-    a.decision_history ||
+    // ★ 2026-10-19：decision 不再参与"锚点是否为空"的判断（它不在这了）
+    
     a.attributes ||
     a.lifecycle ||
     a.progress ||
@@ -205,10 +205,8 @@ export interface OverlayAnchor {
   kind?: 'file' | 'dir' | 'brick' | 'symbol' | 'doc';
   /** 接口指纹（仅 file 节点有；dir/brick 无 → 永不判 stale） */
   signature?: string;
-  /** 决策卡：结论/理由/替代/后果/验收 */
-  decision?: NodeDecision;
-  /** 决策卡·版本栈 */
-  decision_history?: DecisionHistoryEntry[];
+  // ★★★ 2026-10-19（用户：设计只住一处）：decision / decision_history **已移除** ——
+  //   它们只住 design/<f>.dsl.json。overlay 只持有【运行时】：status / progress / evidence / attributes。
   /** 决策卡·参数表 */
   attributes?: Record<string, string | number | boolean>;
   /** 挂在该节点上的标注 */
@@ -684,7 +682,7 @@ export function seedOverlayFromDsl(dsl: DesignDSL | null): DesignOverlay {
     const pg = progressById.get(n.id);
     // ★ 判据加了 `lc`（T182）与 `pg`（进度轴）：否则"只有 lifecycle / 只有进度、没有决策"的文件
     //   会被 `continue` 跳过 ⇒ 首次迁移就漏掉它。
-    if (!n.decision && !n.decision_history && !n.attributes && !anns?.length && !lc && !pg) continue;
+    if (!n.attributes && !anns?.length && !lc && !pg) continue;
     const a: OverlayAnchor = { path: nodePath(n), kind: nodePathKind(n) };
     // ★★★ 2026-10-19（用户裁定「设计只住一处」）：**不再 seed decision**。
     //   decision / decision_history 只住 design/<f>.dsl.json（DESIGN.md:300 的「唯一权威」）；
@@ -773,66 +771,10 @@ function nodePathKind(n: { id: string; type?: string }): OverlayAnchor['kind'] {
  * 3. ★ **不留空壳**：搬完/清完只剩 `path`/`kind` 的锚点要删掉，免得 overlay 越堆越虚。
  *    ★ 但**有 `signature` 的不能删** —— 那是 rename 认亲用的接口指纹（`reconcileOverlay` 的 `bySig`）。
  */
-export function mergeDecisionsIntoOverlay(
-  ov: DesignOverlay,
-  dsl: DesignDSL,
-): { overlay: DesignOverlay; written: number; cleared: number; notes: string[] } {
-  type NodeLike = {
-    id: string;
-    type?: string;
-    description?: string;
-    decision?: NodeDecision;
-    decision_history?: DecisionHistoryEntry[];
-  };
-  const anchors: Record<string, OverlayAnchor> = { ...ov.anchors };
-  const notes: string[] = [];
-  let written = 0;
-  let cleared = 0;
-
-  const nodes = (dsl.geometry?.nodes ?? []) as unknown as NodeLike[];
-  const withDecision: NodeLike[] = [];
-
-  // ① 先扫"清除"：base 上没有、而 overlay 里有的 ⇒ 一起清（纪律 2，防僵尸决策）
-  for (const n of nodes) {
-    if (n.decision || n.decision_history) {
-      withDecision.push(n);
-      continue;
-    }
-    const prev = anchors[n.id];
-    if (prev && (prev.decision || prev.decision_history)) {
-      const next = { ...prev };
-      delete next.decision;
-      delete next.decision_history;
-      anchors[n.id] = next;
-      cleared++;
-    }
-  }
-
-  // ② 再搬"写入"
-  for (const n of withDecision) {
-    const prev = anchors[n.id];
-    const next: OverlayAnchor = { ...(prev ?? { path: nodePath(n), kind: nodePathKind(n) }) };
-    if (n.decision) next.decision = n.decision;
-    else delete next.decision;
-    if (n.decision_history) next.decision_history = n.decision_history;
-    else delete next.decision_history;
-    anchors[n.id] = next;
-    written++;
-  }
-
-  // ③ 清空壳（纪律 3）—— ★ 判据住一处：`hasAnchorPayload`（见其注释：两份清单漂移会静默丢字段）
-  let pruned = 0;
-  for (const [id, a] of Object.entries(anchors)) {
-    if (!hasAnchorPayload(a)) {
-      delete anchors[id];
-      pruned++;
-    }
-  }
-  if (pruned) notes.push(`清掉 ${pruned} 个只剩路径、没有内容的空锚点`);
-  if (cleared) notes.push(`**同步清除了 ${cleared} 个决策**（base 上已删，overlay 不许留僵尸决策）`);
-
-  return { overlay: { ...ov, anchors }, written, cleared, notes };
-}
+// ★★★ 2026-10-19（设计只住一处）：mergeDecisionsIntoOverlay **已删除**。
+//   它的职责是"把 base 的 decision 同步进 overlay"—— 那正是"同一份决策写两处"的实现。
+//   现在 decision 只住 design/（edit_dsl 直接写），不需要同步到第二处。
+//   ★ 若将来要"设计侧的运行时视图"，读 design/ 即可（getDSL 已合并没有 overlay 的 decision）。
 
 /**
  * ★★★ 把 **base 上的功能标记**（`meta.function_tags`）同步进 overlay.global（2026-10-09，功能标记 MVP）。

@@ -1359,8 +1359,8 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
           path: a.path,
           progress: a.progress,
           progress_evidence: a.progress_evidence,
-          // ★ `decision?.scope`（T329 新字段）：**有就带上、没有就省略**（不造空值）
-          ...(a.decision?.scope ? { decision_scope: a.decision.scope } : {}),
+          // ★★★ 2026-10-19（设计只住一处）：overlay 不再持有 decision ⇒ 这里不再带 decision_scope。
+          //   若要 decision.scope，读 design/<f>.dsl.json 的节点（getDSL）。
         }))
         .sort((x, y) => x.id.localeCompare(y.id));
 
@@ -1379,7 +1379,6 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
         debts.forEach((d, i) => {
           lines.push('', `  ${i + 1}. [${d.id}]${d.path ? ` ${d.path}` : ''} · progress=${d.progress}`);
           lines.push(`     evidence: ${d.progress_evidence ? JSON.stringify(d.progress_evidence) : '(无)'}`);
-          if (d.decision_scope) lines.push(`     decision.scope: ${d.decision_scope}`);
         });
       }
       return { message: lines.join('\n'), data: debts };
