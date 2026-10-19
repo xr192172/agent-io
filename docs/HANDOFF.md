@@ -73,7 +73,7 @@ certs/design-contracts/*.calls.json    设计 DB 的调用（7531 条）
 node scripts/design-line.mjs      # 6 步读数
 node scripts/design-diff.mjs      # 节点级 diff（+/-/~）
 node scripts/design-diff.mjs --signature   # 符号级 diff（⑥ 的判据）
-node scripts/merge.mjs            # 三方合并（base/ours/theirs）
+node dist/src/presentation/cli/cli.js diff_views feature=<f>   # ★ 三方合并已并入 diff_views（merge.mjs 已删）
 node scripts/rewrite.mjs          # ⑥ 设计 DB vs 源码（三种结论）；--apply 才真落盘
 node scripts/rewrite.mjs --apply  # ★ ⑥ 执行器（幂等；落盘后自动复核）
 node scripts/sync.mjs             # ③ 双向（--apply 才写）
@@ -250,7 +250,7 @@ npm run mutate                       # 变异测试（613/0）
 # 数据管线
 node scripts/gen-design-db.mjs       # 设计 DSL → 设计 DB
 node scripts/design-line.mjs         # 6 步读数
-node scripts/merge.mjs               # 三方（base/ours/theirs）
+node dist/src/presentation/cli/cli.js diff_views feature=<f>   # 三方（含基线前移判据）
 node scripts/design-diff.mjs [--signature] [--detail]
 node scripts/rewrite.mjs [--apply] [--prefix=src/]   # ⑥ 三种结论；--apply 才落盘
 node scripts/sync.mjs [--apply]      # ③ 双向

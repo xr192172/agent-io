@@ -69,6 +69,8 @@ input: `{ feature }` → output: `FileDiff[]`（`added` / `removed` / `modified`
 ③ sync    ：theirs → ours    只补【结构】（文件/符号/调用边），不碰 decision
 ⑥ rewrite ：ours   → 源码    按设计 DB 重写（将来接重构线）
 merge     ：两边都变          生成"待裁决清单" → 人裁决 → 写回 design
+            ★ 2026-10-19：这一格的能力已并入 `diff_views` 工具（含按维度的 conflict/both_moved、
+              待裁清单、基线前移判据 `baseline_can_advance`）；`scripts/merge.mjs` 已删除。
 ```
 
 ### `merge` 的输出（新工具/新脚本）

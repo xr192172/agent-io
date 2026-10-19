@@ -241,6 +241,11 @@ export interface DiffViewsResult {
       baseline_files: number;
       summary: ThreeWaySummary;
       files: ThreeWayFile[];
+      /**
+       * ★ 基线能否前移到 live（2026-10-19）：**实际侧清零**即可，设计的活不阻塞。
+       * ★ 本工具**只判不写** —— 前移等于宣布新出发点，必须有决策卡。
+       */
+      baseline_can_advance: { ok: boolean; blockers: string[]; note: string };
     };
   };
 }
@@ -576,6 +581,12 @@ function diffViewsCore(input: DiffViewsInput): DiffViewsResult {
       `  实现增量（基线→实现）: ${tw.live_only} 文件实现改动 + ${tw.implemented} 新增已实现`,
       `  冲突待裁决: ${tw.conflict} 文件（同维度都改且不一致）· 另 ${tw.both_moved} 文件两侧动了不同维度（各自待裁，不算冲突）`,
       `  已收敛: ${tw.converged} 文件 · 一致未动: ${tw.unchanged} 文件 · 设计撤销 ${tw.removed} · 实现塌方 ${tw.deleted_from_live}`,
+      (() => {
+        const bl = baselineAdvanceBlockers(tw);
+        return bl.length === 0
+          ? '  ★ 基线可前移到 live：实际侧已清零（设计侧的未落地活不阻塞）'
+          : `  ★ 基线**不可**前移：${bl.join(' · ')}`;
+      })(),
     );
   }
 
@@ -730,6 +741,16 @@ function diffViewsCore(input: DiffViewsInput): DiffViewsResult {
             baseline_files: baselineFiles.length,
             summary: twSummary,
             files: threeWay,
+            /**
+             * ★ 基线能否前移到 live：**实际侧清零**即可（设计的活不算阻塞）。
+             * ★ 这一步**不做**任何写操作 —— 前移等于"宣布新的出发点"，
+             *   必须有理由（决策卡），不能由只读工具代劳。
+             */
+            baseline_can_advance: {
+              ok: baselineAdvanceBlockers(twSummary).length === 0,
+              blockers: baselineAdvanceBlockers(twSummary),
+              note: 'design_only / added / removed 不阻塞（那是 ⑥ 未落地的活）；前移需决策卡，本工具只判不写。',
+            },
           }
         : undefined,
     },
@@ -806,6 +827,25 @@ function structChanged(
   if (a.lines !== b.lines) return true;
   if (diffSymbols(a.symbols ?? [], b.symbols ?? []).length > 0) return true;
   return diffApis(mergedApis(aRoot, a.path, a.expected_apis), mergedApis(bRoot, b.path, b.expected_apis)).length > 0;
+}
+
+/**
+ * ★★★ **基线前移的阻塞项**（2026-10-19，用户裁定）：
+ * *「实际侧和基线的差异为零……但是实际侧的修改全都被合并进去了以后，这个基线就应该移动了。」*
+ *
+ * 判据只有一条：**实际侧的改动必须清零**。设计侧未落地的活（`design_only` / `added` / `removed`）
+ * **不算阻塞** —— 那是 ⑥ 的工作，不该卡住基线。
+ *
+ * ★ 为什么它必须是独立纯函数：它是"什么时候可以宣布新出发点"的唯一判据，
+ *   散在输出拼接里会变成第二个口径（本仓头号病）。
+ */
+export function baselineAdvanceBlockers(summary: ThreeWaySummary): string[] {
+  const blockers: string[] = [];
+  if (summary.live_only > 0) blockers.push(`live_only=${summary.live_only}（实际改了，设计没跟）`);
+  if (summary.conflict > 0) blockers.push(`conflict=${summary.conflict}（同维度两边都改）`);
+  if (summary.both_moved > 0) blockers.push(`both_moved=${summary.both_moved}（两侧动了不同维度）`);
+  if (summary.deleted_from_live > 0) blockers.push(`deleted_from_live=${summary.deleted_from_live}（实际删了，设计还有）`);
+  return blockers;
 }
 
 function fileChanged(
