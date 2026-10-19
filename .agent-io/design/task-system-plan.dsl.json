@@ -58060,11 +58060,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-19T00:15:55.522Z",
+    "saved_at": "2026-10-19T00:40:13.675Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792314946341,
-    "age": 54009181
+    "age": 55467334
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -59802,6 +59802,13 @@
     {
       "id": "todo_A6",
       "summary": "A6：已领卡的 decision 可静默漂移（node_ops.ts:419）—— claimed/done 的 L2 卡，decision 改了没人管（第四条死锁成因没有执行者）",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_api_setNodeSemantic-dumbwrite",
+      "summary": "api_ops.setNodeSemantic 现在是【空写】：只 saveDSL(dsl) 而不改任何字段（T328 留下的哑写）⇒ 调用方以为它在写，实际什么都没变。★ 子代理 2026-10-19 补设计时发现",
       "expectations": [],
       "state": "candidate",
       "owner": null
