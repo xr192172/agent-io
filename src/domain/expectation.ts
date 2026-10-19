@@ -51,6 +51,19 @@ export type Expectation =
    */
   | { kind: 'call-exists'; path: string; symbol: string; target: string; why: string }
   /**
+   * ★★★ 2026-10-19（突变抓到的"等价突变体"）：**源码文本判据** —— 它是"grep 型"契约的正式名字。
+   *
+   * ## 为什么需要它
+   * 之前有 5 条 `run` 的 `expect` 是 `fs.readFileSync(...).indexOf('…')` —— 即"查源码里有没有某段"。
+   * 它们的 `input` 是**摆设** ⇒ 突变"改 input"必然无感 ⇒ 被误判成"判据装饰"。
+   * ⇒ 给它们一个**不装 input 的 kind**，名字诚实；而突变对它有效（改 `must` 成不存在的串 ⇒ 该 fail）。
+   *
+   * ## 边界
+   * ★ 它**只验文本存在**，不懂语义（注释里出现也算）—— 写 `must` 时要避开这种坑。
+   * ★ 它**不替代** `symbol-exists`（后者按 AST 判"符号导出"）；这里只用于"必须有一段特定写法"。
+   */
+  | { kind: 'source-has'; path: string; must?: string[]; mustNot?: string[]; why: string }
+  /**
    * ★★★ 2026-10-18（用户："校验的过程就是夹具"）：**行为契约** —— 一条 `run` = 一个自包含的测试。
    *
    * ## 为什么只有【一个】kind（而不是"返回值/退出码/输出/状态"各一种）
@@ -86,9 +99,16 @@ export type Expectation =
        * ★ 没有它 ⇒ 正常跑 `expect`（pass/fail）。
        */
       blocked_by?: string;
+      /**
+       * ★★★ 2026-10-19（突变测试抓到的"等价突变体"）：**这些 input 字段不参与突变**。
+       * ★ 为什么需要：若 `expect` 只读 `input.status`，那改 `input.feature` 必然无感 ——
+       *   那是"改了不改行为"的**等价突变体**，不该算"判据装饰"。
+       * ★ 写清你**不**读哪些字段（例：`['feature']`），而不是让突变去猜。
+       */
+      mutants_ignore?: string[];
     };
 
-export const EXPECTATION_KINDS = ['file-exists', 'symbol-exists', 'signature-matches', 'edge-exists', 'edge-absent', 'call-exists', 'run'] as const;
+export const EXPECTATION_KINDS = ['file-exists', 'symbol-exists', 'signature-matches', 'edge-exists', 'edge-absent', 'call-exists', 'run', 'source-has'] as const;
 
 /**
  * ★★★ 判据的**阶段**维度（2026-10-16 · T10 · `docs/principle-rewrite-not-patch.md` §四）。
@@ -132,6 +152,7 @@ export type ExpectationPhase = 'pre' | 'post';
 const PHASE_BY_KIND: Record<Expectation['kind'], ExpectationPhase> = {
   // ★ run 是「跑起来看结果」⇒ 必然属【后态】（跑之前谈不上结果）
   run: 'post',
+  'source-has': 'post',
   'file-exists': 'post',
   'symbol-exists': 'post',
   'signature-matches': 'post',
@@ -180,6 +201,7 @@ export function describeExpectation(e: Expectation): string {
     case 'edge-absent': return `edge-absent  ${normPath(e.from)} ⇸ ${normPath(e.to)}`;
     case 'call-exists': return `call-exists  ${normPath(e.path)} :: ${e.symbol}() → ${e.target}()`;
     case 'run': return `run  ${String(e.expect).slice(0, 70)}`;
+    case 'source-has': return `source-has  ${normPath(e.path)} :: must ${(e.must ?? []).length} / mustNot ${(e.mustNot ?? []).length}`;
   }
 }
 
@@ -205,6 +227,12 @@ export function assertValidExpectations(v: unknown): asserts v is Expectation[] 
     else if (kind === 'signature-matches') { need('path'); need('symbol'); need('signature'); }
     else if (kind === 'call-exists') { need('path'); need('symbol'); need('target'); }
     else if (kind === 'run') { need('expect'); }
+    else if (kind === 'source-has') {
+      need('path');
+      const hasMust = Array.isArray(o.must) && o.must.length > 0;
+      const hasMustNot = Array.isArray(o.mustNot) && o.mustNot.length > 0;
+      if (!hasMust && !hasMustNot) throw new Error(`${at} 必须给 must[] 或 mustNot[] 至少一个（kind=source-has）`);
+    }
     else { need('from'); need('to'); }
   });
 }
@@ -230,6 +258,7 @@ export function assertValidExpectations(v: unknown): asserts v is Expectation[] 
 export function expectationSubjectPath(e: Expectation): string {
   // ★ run 没有主体文件 —— 它验的是「跑起来」，不是「某个文件」⇒ 返回空串（不硬凑一个文件）
   if (e.kind === 'run') return '';
+  if (e.kind === 'source-has') return normPath(e.path);
   return normPath(e.kind === 'edge-exists' || e.kind === 'edge-absent' ? e.from : e.path);
 }
 
@@ -237,6 +266,7 @@ export function expectationSubjectPath(e: Expectation): string {
 export function expectationPaths(e: Expectation): string[] {
   // ★ run 无路径（同 subjectPath 的理由）
   if (e.kind === 'run') return [];
+  if (e.kind === 'source-has') return [normPath(e.path)];
   return e.kind === 'edge-exists' || e.kind === 'edge-absent' ? [normPath(e.from), normPath(e.to)] : [normPath(e.path)];
 }
 /** 汇总某个 DSL 里所有决策卡上的 expectations（★ 只读、不改；供对账用） */

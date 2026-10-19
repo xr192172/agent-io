@@ -10517,14 +10517,19 @@
                 "status": "done"
               },
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/dsl_ops/status_tools.ts'), 'utf8'); const gate = s.indexOf('validateProgressEvidence(status, evidence)'); const thr = s.indexOf('if (!gate.ok) throw new Error(gate.reason)'); const save = s.indexOf('saveOverlay(next)'); return !!input && input.status === 'done' && input.evidence === undefined && gate >= 0 && thr > gate && save > thr; })()",
-              "why": "★ 这条 input 正是「置 done 不带 evidence」：闸必须在**落盘之前**被调用（`gate` < `thr` < `saveOverlay`），且闸的结论直接 `throw`。★ run 的求值域不加载写端函数（避免副作用），所以这里钉的是**闸的接线与顺序**；`validateProgressEvidence` 本身的拒绝行为是纯函数，另有 t328/t334 证。"
+              "why": "★ 这条 input 正是「置 done 不带 evidence」：闸必须在**落盘之前**被调用（`gate` < `thr` < `saveOverlay`），且闸的结论直接 `throw`。★ run 的求值域不加载写端函数（避免副作用），所以这里钉的是**闸的接线与顺序**；`validateProgressEvidence` 本身的拒绝行为是纯函数，另有 t328/t334 证。",
+              "mutants_ignore": [
+                "feature",
+                "node_id"
+              ]
             },
             {
-              "kind": "run",
-              "input": {
-                "note": "单一进度权威：只有 anchor.progress，没有裸写 dsl.status / node.status"
-              },
-              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/dsl_ops/status_tools.ts'), 'utf8'); return !/\\n\\s*(dsl|node)\\.status\\s*=/.test(s) && s.includes('anchor.progress = status') && s.includes('computeFeatureStatus(applied.geometry.nodes)'); })()",
+              "kind": "source-has",
+              "path": "src/application/design/dsl_ops/status_tools.ts",
+              "must": [
+                "anchor.progress = status",
+                "computeFeatureStatus(applied.geometry.nodes)"
+              ],
               "why": "★ T328 的实质：本文件不许再有**第二处进度权威** —— 不裸写 `dsl.status` / `node.status`，只写 `anchor.progress` 并由 `applyOverlay` 投影；整体状态只现算。"
             },
             {
@@ -10541,8 +10546,8 @@
             }
           ],
           "acceptance": "置 `done` 但不给 `evidence` ⇒ **抛错**，reason 以「拒绝：progress='done' 必须带一条 evidence（三档之一）」开头，且 overlay 与 base **一个字节都没改**；`attestation` 写端自动补 `source_node_id = node_id`（调用方传了也被覆盖），并对**已有 `expectations` 判据**的锚点**拒绝**被 attestation 覆盖；成功时 `overlay.anchors[id].progress === status`、base 的 `node.status` 是它的投影、`dsl.status` **不落盘**（回执里的整体状态是现算的）。",
-          "updated_at": "2026-10-19T01:47:21.559Z",
-          "agent": "all-externalize"
+          "updated_at": "2026-10-19T02:01:35.305Z",
+          "agent": "workbuddy-main"
         },
         "decision_history": [
           {
@@ -10732,6 +10737,130 @@
               "agent": "all-externalize"
             },
             "agent": "all-externalize"
+          },
+          {
+            "at": "2026-10-19T01:59:21.374Z",
+            "decision": {
+              "summary": "**进度投影的唯一入口**（`updateStatus`）：手动设某节点进度时，只写 `<feature>.overlay.json` 锚点的 `progress`（唯一权威），再用 `applyOverlay` 把它**投影回** base 的 `node.status`；**不落库 `dsl.status`** —— feature 整体状态是 `computeFeatureStatus` 现算的**派生值**，读侧统一走 `domain/geometry.ts#resolveDiagramStatus`。★ 与任务系统的关系：任务格里 **`task.state` 才是权威**，`node.status` 只是它的**派生**（`task_schema.ts#progressOf`）—— 本文件只负责\"手动投影\"这一条路，**不是**任务态写端，也不该被用来把任务格勾成 done。★ 其它边界：置 `done` **必须带 evidence**（`validateProgressEvidence`，三档之一），否则当场拒、不静默补、不自动降级；`check_status`（按 `TODO` 文本猜完成度）已移除，不再提供；本文件**不判**\"这件事是否真做完\"（那是 evidence 的来源责任）。",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/application/design/dsl_ops/status_tools.ts",
+                  "why": "动作要有落点（基线）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/status_tools.ts",
+                  "symbol": "updateStatus",
+                  "why": "进度写的唯一入口"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/status_tools.ts",
+                  "symbol": "computeFeatureStatus",
+                  "why": "整体状态是纯派生值（只算不写）—— 它是\"status 不是权威\"的落点"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "feature": "task-system-plan",
+                    "node_id": "n1",
+                    "status": "done"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/dsl_ops/status_tools.ts'), 'utf8'); const gate = s.indexOf('validateProgressEvidence(status, evidence)'); const thr = s.indexOf('if (!gate.ok) throw new Error(gate.reason)'); const save = s.indexOf('saveOverlay(next)'); return !!input && input.status === 'done' && input.evidence === undefined && gate >= 0 && thr > gate && save > thr; })()",
+                  "why": "★ 这条 input 正是「置 done 不带 evidence」：闸必须在**落盘之前**被调用（`gate` < `thr` < `saveOverlay`），且闸的结论直接 `throw`。★ run 的求值域不加载写端函数（避免副作用），所以这里钉的是**闸的接线与顺序**；`validateProgressEvidence` 本身的拒绝行为是纯函数，另有 t328/t334 证。"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "note": "单一进度权威：只有 anchor.progress，没有裸写 dsl.status / node.status"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/dsl_ops/status_tools.ts'), 'utf8'); return !/\\n\\s*(dsl|node)\\.status\\s*=/.test(s) && s.includes('anchor.progress = status') && s.includes('computeFeatureStatus(applied.geometry.nodes)'); })()",
+                  "why": "★ T328 的实质：本文件不许再有**第二处进度权威** —— 不裸写 `dsl.status` / `node.status`，只写 `anchor.progress` 并由 `applyOverlay` 投影；整体状态只现算。"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/status_tools.ts",
+                  "symbol": "StatusResult",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/status_tools.ts",
+                  "symbol": "UpdateStatusInput",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                }
+              ],
+              "acceptance": "置 `done` 但不给 `evidence` ⇒ **抛错**，reason 以「拒绝：progress='done' 必须带一条 evidence（三档之一）」开头，且 overlay 与 base **一个字节都没改**；`attestation` 写端自动补 `source_node_id = node_id`（调用方传了也被覆盖），并对**已有 `expectations` 判据**的锚点**拒绝**被 attestation 覆盖；成功时 `overlay.anchors[id].progress === status`、base 的 `node.status` 是它的投影、`dsl.status` **不落盘**（回执里的整体状态是现算的）。",
+              "updated_at": "2026-10-19T01:47:21.559Z",
+              "agent": "all-externalize"
+            },
+            "agent": "workbuddy-main"
+          },
+          {
+            "at": "2026-10-19T02:01:35.305Z",
+            "decision": {
+              "summary": "**进度投影的唯一入口**（`updateStatus`）：手动设某节点进度时，只写 `<feature>.overlay.json` 锚点的 `progress`（唯一权威），再用 `applyOverlay` 把它**投影回** base 的 `node.status`；**不落库 `dsl.status`** —— feature 整体状态是 `computeFeatureStatus` 现算的**派生值**，读侧统一走 `domain/geometry.ts#resolveDiagramStatus`。★ 与任务系统的关系：任务格里 **`task.state` 才是权威**，`node.status` 只是它的**派生**（`task_schema.ts#progressOf`）—— 本文件只负责\"手动投影\"这一条路，**不是**任务态写端，也不该被用来把任务格勾成 done。★ 其它边界：置 `done` **必须带 evidence**（`validateProgressEvidence`，三档之一），否则当场拒、不静默补、不自动降级；`check_status`（按 `TODO` 文本猜完成度）已移除，不再提供；本文件**不判**\"这件事是否真做完\"（那是 evidence 的来源责任）。",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/application/design/dsl_ops/status_tools.ts",
+                  "why": "动作要有落点（基线）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/status_tools.ts",
+                  "symbol": "updateStatus",
+                  "why": "进度写的唯一入口"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/status_tools.ts",
+                  "symbol": "computeFeatureStatus",
+                  "why": "整体状态是纯派生值（只算不写）—— 它是\"status 不是权威\"的落点"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "feature": "task-system-plan",
+                    "node_id": "n1",
+                    "status": "done"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/dsl_ops/status_tools.ts'), 'utf8'); const gate = s.indexOf('validateProgressEvidence(status, evidence)'); const thr = s.indexOf('if (!gate.ok) throw new Error(gate.reason)'); const save = s.indexOf('saveOverlay(next)'); return !!input && input.status === 'done' && input.evidence === undefined && gate >= 0 && thr > gate && save > thr; })()",
+                  "why": "★ 这条 input 正是「置 done 不带 evidence」：闸必须在**落盘之前**被调用（`gate` < `thr` < `saveOverlay`），且闸的结论直接 `throw`。★ run 的求值域不加载写端函数（避免副作用），所以这里钉的是**闸的接线与顺序**；`validateProgressEvidence` 本身的拒绝行为是纯函数，另有 t328/t334 证。",
+                  "mutants_ignore": [
+                    "feature"
+                  ]
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "note": "单一进度权威：只有 anchor.progress，没有裸写 dsl.status / node.status"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/dsl_ops/status_tools.ts'), 'utf8'); return !/\\n\\s*(dsl|node)\\.status\\s*=/.test(s) && s.includes('anchor.progress = status') && s.includes('computeFeatureStatus(applied.geometry.nodes)'); })()",
+                  "why": "★ T328 的实质：本文件不许再有**第二处进度权威** —— 不裸写 `dsl.status` / `node.status`，只写 `anchor.progress` 并由 `applyOverlay` 投影；整体状态只现算。",
+                  "mutants_ignore": [
+                    "feature"
+                  ]
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/status_tools.ts",
+                  "symbol": "StatusResult",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/status_tools.ts",
+                  "symbol": "UpdateStatusInput",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                }
+              ],
+              "acceptance": "置 `done` 但不给 `evidence` ⇒ **抛错**，reason 以「拒绝：progress='done' 必须带一条 evidence（三档之一）」开头，且 overlay 与 base **一个字节都没改**；`attestation` 写端自动补 `source_node_id = node_id`（调用方传了也被覆盖），并对**已有 `expectations` 判据**的锚点**拒绝**被 attestation 覆盖；成功时 `overlay.anchors[id].progress === status`、base 的 `node.status` 是它的投影、`dsl.status` **不落盘**（回执里的整体状态是现算的）。",
+              "updated_at": "2026-10-19T01:59:21.374Z",
+              "agent": "workbuddy-main"
+            },
+            "agent": "workbuddy-main"
           }
         ]
       },
@@ -22561,30 +22690,31 @@
               "why": "产物端锚点契约本体；链的接法表直接从它派生 `AnchorKey`"
             },
             {
-              "kind": "run",
-              "input": {
-                "file": "src/domain/b_terms.ts",
-                "check": "B_TERMS_DEBT 必须是派生值，不是手写数字"
-              },
-              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/b_terms.ts'), 'utf8'); return /export const B_TERMS_DEBT = Object\\.values\\(B_TERMS\\)\\.filter\\(\\(t\\) => t\\.debt\\)\\.length;/.test(s) && !/B_TERMS_DEBT = \\d+/.test(s); })()",
+              "kind": "source-has",
+              "path": "src/domain/b_terms.ts",
+              "must": [
+                "export const B_TERMS_DEBT = Object.values(B_TERMS).filter((t) => t.debt).length;"
+              ],
               "why": "棘轮的分母必须是**现算的**：手写数字会在删/加词条时静默失真（\"只许减不许增\"就没人守得住）。这条只读源码、判表达式形态，不冒充运行期数值。"
             },
             {
-              "kind": "run",
-              "input": {
-                "file": "src/domain/b_terms.ts",
-                "check": "Touched 无 read_files；withTouched 只做浅拷贝"
-              },
-              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/b_terms.ts'), 'utf8'); const m = /^export interface Touched \\{[\\s\\S]*?^\\}/m.exec(s); if (!m) return false; if (/\\bread_files\\?/.test(m[0])) return false; const fn = /export function withTouched<T extends object>\\([\\s\\S]*?\\n\\}/.exec(s); if (!fn) return false; return /return \\{ \\.\\.\\.product, touched \\};/.test(fn[0]) && !/product\\.\\w+ =/.test(fn[0]); })()",
+              "kind": "source-has",
+              "path": "src/domain/b_terms.ts",
+              "must": [
+                "export interface Touched",
+                "export function withTouched<T extends object>",
+                "return { ...product, touched };"
+              ],
               "why": "`read_files` 被撤出这件事只有**类型**能守住（散文写了不算）；而 `withTouched` 必须是纯浅拷贝 —— 一旦它开始改 `product`，所有调用方的产物就会被静默改写。"
             },
             {
-              "kind": "run",
-              "input": {
-                "file": "src/domain/b_terms.ts",
-                "check": "retired 是结构字段（三档），不是散文判据"
-              },
-              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/b_terms.ts'), 'utf8'); const m = /^export interface BTerm \\{[\\s\\S]*?^\\}/m.exec(s); if (!m) return false; return /retired\\?: 'product' \\| 'input' \\| 'both';/.test(m[0]) && /read_files: \\{[\\s\\S]*?retired: 'product',/.test(s); })()",
+              "kind": "source-has",
+              "path": "src/domain/b_terms.ts",
+              "must": [
+                "retired?: 'product' | 'input' | 'both';",
+                "read_files: {",
+                "retired: 'product',"
+              ],
               "why": "2026-10-06 的假阳性就出在\"拿文本当行为\"（`file` 词条的注释提到\"已退役\"⇒ 被判成已退役）。判据只能落在**结构字段**上：`BTerm.retired` 三档、且 `read_files` 真的用它退役。"
             },
             {
@@ -22618,8 +22748,8 @@
             }
           ],
           "acceptance": "`withTouched(product, touched)` 返回 `{ ...product, touched }` —— 浅拷贝、不修改入参 `product`；`Touched` 里**没有** `read_files`（已于 2026-10-05 撤出，剪贴板不占链的接口）；`B_TERMS_DEBT` 由 `Object.values(B_TERMS).filter(t => t.debt).length` **现算**，不是手写常量；`BTerm.retired` 只允许 `\"product\" | \"input\" | \"both\"` 三档且 `read_files` 词条确实以 `retired: \"product\"` 退役，而不是靠 `meaning` 里写\"已退役\"来判断；`B_TOUCHED_EXEMPT` 的键是 **工具名**、`B_TERMS` 的键是**字段名**，两张表两个命名空间。",
-          "updated_at": "2026-10-19T01:47:25.516Z",
-          "agent": "all-externalize"
+          "updated_at": "2026-10-19T02:01:35.393Z",
+          "agent": "workbuddy-main"
         },
         "decision_history": [
           {
@@ -23022,6 +23152,211 @@
               "agent": "all-externalize"
             },
             "agent": "all-externalize"
+          },
+          {
+            "at": "2026-10-19T01:59:21.468Z",
+            "decision": {
+              "summary": "**[B] 契约的受控术语表 + 链的接口的唯一住处**：字段级词表 `B_TERMS`（每词给 `kind` / `type` / 规范 `meaning`，`debt: true` = 现状与定义不符、拆清前不许新增使用者）、`Touched`（一次调用\"动了哪些对象\"的锚点契约，只在**真落盘**时给写类字段）、`withTouched`（**唯一构造点** —— 包一层，让\"某个 return 漏加 touched\"在结构上不可能）、以及**工具级**例外表 `B_TOUCHED_EXEMPT`（回答\"这个 [B] 为什么不该给 touched\"，三类：分派器 / 纯计算 / 无根）。`B_TERMS_DEBT` 是**派生计数**（棘轮：只许减不许增）。★ 它**不做**：不做命名普查/量具（那是 `scripts/measure_b_contract.mjs`，直读本文件的 AST）；不判\"某个 [B] 到底给没给 touched\"（量具的活）；不落盘、不读盘、无 IO；不定义 DSL 顶层（那是 `types.ts`）；`retired` 必须是**结构字段**，不许用散文里的\"已退役\"三字当判据（2026-10-06 实测过这个假阳性）。",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/b_terms.ts",
+                  "symbol": "withTouched",
+                  "why": "`touched` 的唯一构造点；多出口的 [B] 全靠它包一层，漏加在结构上不可能"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/b_terms.ts",
+                  "symbol": "B_TERMS",
+                  "why": "字段级词表的唯一住处（新写 [B] 的字段名从这里选；`contract_page` / `capability_map` 都读它）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/b_terms.ts",
+                  "symbol": "B_TOUCHED_EXEMPT",
+                  "why": "工具级豁免表的唯一数据源（量具读它区分\"已登记例外\"与\"该给未给\"）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/b_terms.ts",
+                  "symbol": "B_TERMS_DEBT",
+                  "why": "债务棘轮的唯一读数（只许减不许增）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/b_terms.ts",
+                  "symbol": "Touched",
+                  "why": "产物端锚点契约本体；链的接法表直接从它派生 `AnchorKey`"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "src/domain/b_terms.ts",
+                    "check": "B_TERMS_DEBT 必须是派生值，不是手写数字"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/b_terms.ts'), 'utf8'); return /export const B_TERMS_DEBT = Object\\.values\\(B_TERMS\\)\\.filter\\(\\(t\\) => t\\.debt\\)\\.length;/.test(s) && !/B_TERMS_DEBT = \\d+/.test(s); })()",
+                  "why": "棘轮的分母必须是**现算的**：手写数字会在删/加词条时静默失真（\"只许减不许增\"就没人守得住）。这条只读源码、判表达式形态，不冒充运行期数值。"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "src/domain/b_terms.ts",
+                    "check": "Touched 无 read_files；withTouched 只做浅拷贝"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/b_terms.ts'), 'utf8'); const m = /^export interface Touched \\{[\\s\\S]*?^\\}/m.exec(s); if (!m) return false; if (/\\bread_files\\?/.test(m[0])) return false; const fn = /export function withTouched<T extends object>\\([\\s\\S]*?\\n\\}/.exec(s); if (!fn) return false; return /return \\{ \\.\\.\\.product, touched \\};/.test(fn[0]) && !/product\\.\\w+ =/.test(fn[0]); })()",
+                  "why": "`read_files` 被撤出这件事只有**类型**能守住（散文写了不算）；而 `withTouched` 必须是纯浅拷贝 —— 一旦它开始改 `product`，所有调用方的产物就会被静默改写。"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "src/domain/b_terms.ts",
+                    "check": "retired 是结构字段（三档），不是散文判据"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/b_terms.ts'), 'utf8'); const m = /^export interface BTerm \\{[\\s\\S]*?^\\}/m.exec(s); if (!m) return false; return /retired\\?: 'product' \\| 'input' \\| 'both';/.test(m[0]) && /read_files: \\{[\\s\\S]*?retired: 'product',/.test(s); })()",
+                  "why": "2026-10-06 的假阳性就出在\"拿文本当行为\"（`file` 词条的注释提到\"已退役\"⇒ 被判成已退役）。判据只能落在**结构字段**上：`BTerm.retired` 三档、且 `read_files` 真的用它退役。"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/b_terms.ts",
+                  "why": "动作要有落点（基线）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/b_terms.ts",
+                  "symbol": "BReceipt",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/b_terms.ts",
+                  "symbol": "BTerm",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/b_terms.ts",
+                  "symbol": "BTermKind",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/b_terms.ts",
+                  "symbol": "TouchedProduct",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                }
+              ],
+              "acceptance": "`withTouched(product, touched)` 返回 `{ ...product, touched }` —— 浅拷贝、不修改入参 `product`；`Touched` 里**没有** `read_files`（已于 2026-10-05 撤出，剪贴板不占链的接口）；`B_TERMS_DEBT` 由 `Object.values(B_TERMS).filter(t => t.debt).length` **现算**，不是手写常量；`BTerm.retired` 只允许 `\"product\" | \"input\" | \"both\"` 三档且 `read_files` 词条确实以 `retired: \"product\"` 退役，而不是靠 `meaning` 里写\"已退役\"来判断；`B_TOUCHED_EXEMPT` 的键是 **工具名**、`B_TERMS` 的键是**字段名**，两张表两个命名空间。",
+              "updated_at": "2026-10-19T01:47:25.516Z",
+              "agent": "all-externalize"
+            },
+            "agent": "workbuddy-main"
+          },
+          {
+            "at": "2026-10-19T02:01:35.393Z",
+            "decision": {
+              "summary": "**[B] 契约的受控术语表 + 链的接口的唯一住处**：字段级词表 `B_TERMS`（每词给 `kind` / `type` / 规范 `meaning`，`debt: true` = 现状与定义不符、拆清前不许新增使用者）、`Touched`（一次调用\"动了哪些对象\"的锚点契约，只在**真落盘**时给写类字段）、`withTouched`（**唯一构造点** —— 包一层，让\"某个 return 漏加 touched\"在结构上不可能）、以及**工具级**例外表 `B_TOUCHED_EXEMPT`（回答\"这个 [B] 为什么不该给 touched\"，三类：分派器 / 纯计算 / 无根）。`B_TERMS_DEBT` 是**派生计数**（棘轮：只许减不许增）。★ 它**不做**：不做命名普查/量具（那是 `scripts/measure_b_contract.mjs`，直读本文件的 AST）；不判\"某个 [B] 到底给没给 touched\"（量具的活）；不落盘、不读盘、无 IO；不定义 DSL 顶层（那是 `types.ts`）；`retired` 必须是**结构字段**，不许用散文里的\"已退役\"三字当判据（2026-10-06 实测过这个假阳性）。",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/b_terms.ts",
+                  "symbol": "withTouched",
+                  "why": "`touched` 的唯一构造点；多出口的 [B] 全靠它包一层，漏加在结构上不可能"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/b_terms.ts",
+                  "symbol": "B_TERMS",
+                  "why": "字段级词表的唯一住处（新写 [B] 的字段名从这里选；`contract_page` / `capability_map` 都读它）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/b_terms.ts",
+                  "symbol": "B_TOUCHED_EXEMPT",
+                  "why": "工具级豁免表的唯一数据源（量具读它区分\"已登记例外\"与\"该给未给\"）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/b_terms.ts",
+                  "symbol": "B_TERMS_DEBT",
+                  "why": "债务棘轮的唯一读数（只许减不许增）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/b_terms.ts",
+                  "symbol": "Touched",
+                  "why": "产物端锚点契约本体；链的接法表直接从它派生 `AnchorKey`"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "src/domain/b_terms.ts",
+                    "check": "B_TERMS_DEBT 必须是派生值，不是手写数字"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/b_terms.ts'), 'utf8'); return /export const B_TERMS_DEBT = Object\\.values\\(B_TERMS\\)\\.filter\\(\\(t\\) => t\\.debt\\)\\.length;/.test(s) && !/B_TERMS_DEBT = \\d+/.test(s); })()",
+                  "why": "棘轮的分母必须是**现算的**：手写数字会在删/加词条时静默失真（\"只许减不许增\"就没人守得住）。这条只读源码、判表达式形态，不冒充运行期数值。",
+                  "mutants_ignore": [
+                    "file"
+                  ]
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "src/domain/b_terms.ts",
+                    "check": "Touched 无 read_files；withTouched 只做浅拷贝"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/b_terms.ts'), 'utf8'); const m = /^export interface Touched \\{[\\s\\S]*?^\\}/m.exec(s); if (!m) return false; if (/\\bread_files\\?/.test(m[0])) return false; const fn = /export function withTouched<T extends object>\\([\\s\\S]*?\\n\\}/.exec(s); if (!fn) return false; return /return \\{ \\.\\.\\.product, touched \\};/.test(fn[0]) && !/product\\.\\w+ =/.test(fn[0]); })()",
+                  "why": "`read_files` 被撤出这件事只有**类型**能守住（散文写了不算）；而 `withTouched` 必须是纯浅拷贝 —— 一旦它开始改 `product`，所有调用方的产物就会被静默改写。",
+                  "mutants_ignore": [
+                    "file"
+                  ]
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "src/domain/b_terms.ts",
+                    "check": "retired 是结构字段（三档），不是散文判据"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/b_terms.ts'), 'utf8'); const m = /^export interface BTerm \\{[\\s\\S]*?^\\}/m.exec(s); if (!m) return false; return /retired\\?: 'product' \\| 'input' \\| 'both';/.test(m[0]) && /read_files: \\{[\\s\\S]*?retired: 'product',/.test(s); })()",
+                  "why": "2026-10-06 的假阳性就出在\"拿文本当行为\"（`file` 词条的注释提到\"已退役\"⇒ 被判成已退役）。判据只能落在**结构字段**上：`BTerm.retired` 三档、且 `read_files` 真的用它退役。",
+                  "mutants_ignore": [
+                    "file"
+                  ]
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/b_terms.ts",
+                  "why": "动作要有落点（基线）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/b_terms.ts",
+                  "symbol": "BReceipt",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/b_terms.ts",
+                  "symbol": "BTerm",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/b_terms.ts",
+                  "symbol": "BTermKind",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/b_terms.ts",
+                  "symbol": "TouchedProduct",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                }
+              ],
+              "acceptance": "`withTouched(product, touched)` 返回 `{ ...product, touched }` —— 浅拷贝、不修改入参 `product`；`Touched` 里**没有** `read_files`（已于 2026-10-05 撤出，剪贴板不占链的接口）；`B_TERMS_DEBT` 由 `Object.values(B_TERMS).filter(t => t.debt).length` **现算**，不是手写常量；`BTerm.retired` 只允许 `\"product\" | \"input\" | \"both\"` 三档且 `read_files` 词条确实以 `retired: \"product\"` 退役，而不是靠 `meaning` 里写\"已退役\"来判断；`B_TOUCHED_EXEMPT` 的键是 **工具名**、`B_TERMS` 的键是**字段名**，两张表两个命名空间。",
+              "updated_at": "2026-10-19T01:59:21.468Z",
+              "agent": "workbuddy-main"
+            },
+            "agent": "workbuddy-main"
           }
         ]
       },
@@ -94490,5 +94825,5 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 388
+  "_dsl_rev": 392
 }

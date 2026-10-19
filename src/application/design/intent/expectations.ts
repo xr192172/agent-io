@@ -272,6 +272,28 @@ export async function judgeExpectations(
         );
         break;
       }
+      // ★★★ 2026-10-19：**源码文本判据**（grep 型契约的正式名字）—— 不装 input。
+      //   ★ 它的边界：只验"文本存在"，不懂语义（注释里出现也算）。
+      case 'source-has': {
+        const p = normPath(e.path);
+        const abs = path.join(root, p);
+        if (!fs.existsSync(abs)) {
+          push(it, 'fail', `${p} **不存在**（查的是 ${abs}）`);
+          break;
+        }
+        const src = fs.readFileSync(abs, 'utf-8');
+        const missMust = (e.must ?? []).filter((t) => !src.includes(t));
+        const hitMustNot = (e.mustNot ?? []).filter((t) => src.includes(t));
+        if (missMust.length || hitMustNot.length) {
+          const parts = [];
+          if (missMust.length) parts.push(`缺 must：${missMust.map((t) => JSON.stringify(t.slice(0, 40))).join(' / ')}`);
+          if (hitMustNot.length) parts.push(`命中 mustNot：${hitMustNot.map((t) => JSON.stringify(t.slice(0, 40))).join(' / ')}`);
+          push(it, 'fail', parts.join('；'));
+        } else {
+          push(it, 'pass', `${p}：must ${(e.must ?? []).length} 全在 / mustNot ${(e.mustNot ?? []).length} 全无`);
+        }
+        break;
+      }
       // ★★★ 2026-10-18：**行为契约** —— 一条 run = 一个自包含的测试（input + expect 表达式）。
       //   ★ 求值域只有这三个名字（不是任意代码执行）：input / root / validateDSL。
       //   ★ 不建 fixtures/ 目录：input 就是夹具，内联在契约里。
