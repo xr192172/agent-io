@@ -198,3 +198,75 @@ console.log(`\n─────────────────────�
 console.log(`进度：已设计 ${designed}/${total}（${((designed / total) * 100).toFixed(1)}%）`);
 console.log(`★ 要动的地方：+ 才能建（只看"真要建"）· - 要补设计 · ~ 是我已经改过的`);
 console.log(`  边里的"扫描遗漏"是 live 扫漏，**不需要动**`);
+
+// ═══════════════════════════════════════════════════════════════
+// ★★★ 签名级 diff（2026-10-19，⑥ 结构重写的入口）
+// ═══════════════════════════════════════════════════════════════
+//
+// ## 为什么需要它
+// 上面那些都是**节点级**（有没有这个文件 / decision 变没变）。
+// 但 ⑥ 要落地的是【签名替换】：设计说 `claimTask(role): boolean`，源码是 `claimTask(role)`。
+// ⇒ 只有签名级 diff 才能产出 `{ file, old_text, new_text }`（`buildRefactorPlan` 的入参）。
+//
+// ## 两侧的签名都在，而且都是完整的
+//   · 设计侧：`certs/design-db/<file>.calls.json` 的 `symbols[].signature`
+//   · 实际侧：**现场 `parseFileFull`** 的 `symbols[].signature`
+//     ★ 不用 `cache.db.nodes.signature` —— 它被格式化成 `name()`（实测 `CardStanding()`），丢了参数
+//
+// ## 为什么只做"签名"不做"函数体"
+// 设计 DB 里**没有函数体**（"DSL 只有结构+意图，没有实现"）。所以能重写的只有签名，
+// 实现永远人写。这不是能力不足，是设计边界。
+if (argv.includes('--signature') || argv.includes('--all')) {
+  const { pathToFileURL } = await import('node:url');
+  const ROOT = process.cwd();
+  const { parseFileFull } = await import(pathToFileURL(path.join(ROOT, 'dist/src/infrastructure/parse/kernel.js')).href);
+
+  const DDIR = path.join(ROOT, 'certs', 'design-db');
+  const targets = [];
+  let scanned = 0;
+
+  if (fs.existsSync(DDIR)) {
+    for (const f of fs.readdirSync(DDIR).filter((x) => x.endsWith('.calls.json'))) {
+      const dd = JSON.parse(fs.readFileSync(path.join(DDIR, f), 'utf8'));
+      // ★ design-db 的源码路径藏在 `//` 的描述里：
+      //   `//` = "Design DB —— src/domain/task_machine.ts（★ 全量、与实际 DB 同构；…）"
+      //   `//source` 是"设计 DSL 的路径"，不是源码路径
+      const desc = String(dd['//'] ?? '');
+      const m = desc.match(/(src\/[^\s（(]+)/);
+      const rel = m ? m[1].replace(/\\/g, '/') : '';
+      if (!rel.startsWith('src/')) continue;
+      const abs = path.join(ROOT, rel);
+      if (!fs.existsSync(abs)) continue;
+      scanned++;
+
+      const parsed = await parseFileFull(abs, fs.readFileSync(abs, 'utf8'));
+      const actual = new Map((parsed.symbols ?? []).map((s) => [s.name, s]));
+      for (const d of dd.symbols ?? []) {
+        const a = actual.get(d.name);
+        if (!a) continue; // 设计有源码没有 ⇒ "待新增"，不是签名替换
+        const ds = String(d.signature ?? '').trim();
+        const as = String(a.signature ?? '').trim();
+        if (!ds || !as || ds === as) continue;
+        // ★ old_text 必须是源码里的连续文本（signature 就是 AST 抽出的原文片段）
+        targets.push({ file: rel, symbol: d.name, old_text: as, new_text: ds });
+      }
+    }
+  }
+
+  console.log(`\n════ 签名级 diff ════`);
+  console.log(`  扫了 ${scanned} 份设计 DB · 签名不一致 ${targets.length} 条`);
+  for (const t of targets.slice(0, 12)) {
+    console.log(`\n  ${t.file.split('/').pop()}  ${t.symbol}`);
+    console.log(`    - ${t.old_text.slice(0, 110)}`);
+    console.log(`    + ${t.new_text.slice(0, 110)}`);
+  }
+  if (targets.length > 12) console.log(`\n  … 另 ${targets.length - 12} 条`);
+
+  if (process.argv.includes('--write-plan') && targets.length) {
+    const out = path.join(ROOT, '.agent-io', 'refactor-plan.json');
+    fs.writeFileSync(out, JSON.stringify({ feature: 'task-system-plan', targets }, null, 2));
+    console.log(`\n  ✓ 已写 ${out}（${targets.length} 条）—— 下一步：buildRefactorPlan 校验（语法门）→ applyRefactorPlan 落盘`);
+  } else if (targets.length) {
+    console.log('\n  ★ 零写入。加 --write-plan 写清单；清单要再喂 buildRefactorPlan（语法门 + 幂等）。');
+  }
+}
