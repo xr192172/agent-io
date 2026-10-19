@@ -59518,7 +59518,8 @@
           },
           "state": {
             "kind": "ready"
-          }
+          },
+          "executor": "claimTask"
         },
         {
           "id": "t_void",
@@ -59532,11 +59533,10 @@
             "distinct_from": "done：『失效』(target 没了) ≠ 『已满足』(expectations 全过)"
           },
           "state": {
-            "kind": "unimplemented",
-            "why": "★ 全仓没有代码写 state=\"void\"（task_ops 也没有对应 op）—— 但它【该要】",
-            "depends_on": "A1（patrolDrift 全仓零调用 ⇒ should_void 根本不跑）",
-            "why_wait": "★★ 先有\"报\"，才谈\"能作废\"：A1 修好之前，patrolDrift 的 should_void 不会执行 ⇒ 单独实现 void 动作也没人触发。⇒ t_void 的实现与 A1 一起做（同一条链：巡检报出该 void 的卡 → 有动作能作废它）。"
-          }
+            "kind": "ready",
+            "note": "★ 2026-10-19 修正：voidTask 已实现（今天用它作废了 6 张卡）⇒ 原标 unimplemented 是账没更新"
+          },
+          "executor": "voidTask"
         },
         {
           "id": "t_release",
@@ -59555,7 +59555,8 @@
           },
           "state": {
             "kind": "ready"
-          }
+          },
+          "executor": "releaseTask"
         },
         {
           "id": "t_done_from_claimed",
@@ -59571,7 +59572,8 @@
           },
           "state": {
             "kind": "ready"
-          }
+          },
+          "executor": "completeTask"
         },
         {
           "id": "t_done_from_candidate",
@@ -60243,23 +60245,74 @@
       "verdict": "★ 2026-10-17 更正：本对象内必须自洽（total == machine+review+unjudged）。当前 51 = 30 + 4 + 17。★★ 原 verdict 写\"42 条没有执行者\"（与同对象 unjudged=17 矛盾），已作废。",
       "policy": "★ 不一次性补 42 条（会造假 runner）；改为：每领一张卡，顺手把它触及的判据升到 machine 或 review，unjudged 逐轮下降。",
       "unjudged_paths": [
-        "patrols[0].metric",
-        "patrols[1].metrics[0].expr",
-        "patrols[1].metrics[1].expr",
-        "patrols[2].metric",
-        "design_dsl_health.anti_blindspot_checks[0].check",
-        "design_dsl_health.anti_blindspot_checks[1].check",
-        "two_level_tasks.claim_incomplete_rule.rule",
-        "service_flow.steps[2].criteria",
-        "service_flow.steps[6].criteria",
-        "parallel_claim.criteria",
-        "design_completeness.criteria[0].rule",
-        "design_completeness.criteria[1].rule",
-        "design_completeness.criteria[2].rule",
-        "design_completeness.criteria[3].rule",
-        "design_completeness.criteria[4].rule",
-        "design_completeness.criteria[5].rule",
-        "design_completeness.criteria[6].rule"
+        {
+          "path": "patrols[0].metric",
+          "debt": "D-anti-decoration"
+        },
+        {
+          "path": "patrols[1].metrics[0].expr",
+          "debt": "D-anti-decoration"
+        },
+        {
+          "path": "patrols[1].metrics[1].expr",
+          "debt": "D-anti-decoration"
+        },
+        {
+          "path": "patrols[2].metric",
+          "debt": "D-anti-decoration"
+        },
+        {
+          "path": "design_dsl_health.anti_blindspot_checks[0].check",
+          "debt": "D-design-completeness"
+        },
+        {
+          "path": "design_dsl_health.anti_blindspot_checks[1].check",
+          "debt": "D-design-completeness"
+        },
+        {
+          "path": "two_level_tasks.claim_incomplete_rule.rule",
+          "debt": "D-claim-incomplete"
+        },
+        {
+          "path": "service_flow.steps[2].criteria",
+          "debt": "D-design-completeness"
+        },
+        {
+          "path": "service_flow.steps[6].criteria",
+          "debt": "D-design-completeness"
+        },
+        {
+          "path": "parallel_claim.criteria",
+          "debt": "D-parallel"
+        },
+        {
+          "path": "design_completeness.criteria[0].rule",
+          "debt": "D-design-completeness"
+        },
+        {
+          "path": "design_completeness.criteria[1].rule",
+          "debt": "D-design-completeness"
+        },
+        {
+          "path": "design_completeness.criteria[2].rule",
+          "debt": "D-design-completeness"
+        },
+        {
+          "path": "design_completeness.criteria[3].rule",
+          "debt": "D-design-completeness"
+        },
+        {
+          "path": "design_completeness.criteria[4].rule",
+          "debt": "D-design-completeness"
+        },
+        {
+          "path": "design_completeness.criteria[5].rule",
+          "debt": "D-design-completeness"
+        },
+        {
+          "path": "design_completeness.criteria[6].rule",
+          "debt": "D-design-completeness"
+        }
       ],
       "note_on_total": "★ 51 是清点器按【能执行/能判真假】的判据键（criteria/check/red_when/rule/expr/cmd/metric/threshold）数的；★ 早先 49/48 是旧口径（含 answer/proves/core/now 等说明性字段）。以清点器为准。",
       "why_list_not_count": "★★★ 第一版闸只比总数⇒加一条 unjudged 也会因为总数低于历史基线而不报红（自测实测）。所以改成【比对名单】：新出现的 path ⇒ 红。",
@@ -60464,7 +60517,8 @@
           "rule": "每条迁移 state 必填；ready 的必须有代码执行它",
           "unjudged": "★ 设计完整性的判据目前没有检查器（等 Expectation 与 invariant 合成一个抽象后才能跑）",
           "debt": "D-design-completeness",
-          "blocked_by": "「ready 的必须有代码执行它」：迁移 id（`t_claim`）与代码函数名（`claimTask`）没有映射记录，判\"id 在代码里出现\"会给假红"
+          "expect": "(() => {\n    // ★ ready 的每条迁移都要有 executor（指向 task_ops.ts 里的真实函数）\n    const t = dsl.task_plan?.state_machine?.transitions ?? [];\n    return t.every((x) => (x.state?.kind !== 'ready') || (typeof x.executor === 'string' && x.executor.trim().length > 0));\n  })()",
+          "expect_note": "state.kind=ready 的迁移必须有 executor（claimTask / releaseTask / completeTask / voidTask）"
         },
         {
           "id": "D5",
@@ -60482,7 +60536,8 @@
           "rule": "每条判据有归属（machine / review / unjudged + 欠账号）",
           "unjudged": "★ 设计完整性的判据目前没有检查器（等 Expectation 与 invariant 合成一个抽象后才能跑）",
           "debt": "D-design-completeness",
-          "blocked_by": "「unjudged 的每条带欠账号」：`unjudged_paths` 是字符串数组（无 debt 字段），欠账号在 DESIGN.md 的债表里"
+          "expect": "(() => {\n    // ★ unjudged 的每条都要带欠账号\n    const ups = dsl.task_plan?.assertion_baseline_2026_10_17?.unjudged_paths ?? [];\n    return ups.every((p) => p && typeof p === 'object' && typeof p.path === 'string' && typeof p.debt === 'string' && p.debt.trim().length > 0);\n  })()",
+          "expect_note": "unjudged_paths 每条 = {path, debt}（债号指向 DESIGN.md 的债表）"
         },
         {
           "id": "D6",
@@ -61005,5 +61060,5 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 44
+  "_dsl_rev": 45
 }
