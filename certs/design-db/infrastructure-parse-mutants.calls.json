@@ -1,0 +1,50 @@
+{
+  "//": "Design DB —— src/infrastructure/parse/mutants.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "path": "src/infrastructure/parse/mutants.ts",
+  "symbols": [
+    {
+      "name": "Mutant",
+      "kind": "interface",
+      "line": 24,
+      "signature": "Mutant()"
+    },
+    {
+      "name": "COMPARISON_SWAPS",
+      "kind": "const",
+      "line": 42,
+      "signature": "const COMPARISON_SWAPS = { '===': '!==', '!==': '===', '==': '!=', '!=': '==', }"
+    },
+    {
+      "name": "NodeLike",
+      "kind": "interface",
+      "line": 50,
+      "signature": "NodeLike()"
+    },
+    {
+      "name": "extractMutants",
+      "kind": "function",
+      "line": 63,
+      "signature": "extractMutants(filePath: string, content: string): Promise<Mutant[]>"
+    },
+    {
+      "name": "applyMutant",
+      "kind": "function",
+      "line": 95,
+      "signature": "applyMutant(content: string, m: Mutant): string"
+    }
+  ],
+  "imports": [
+    {
+      "source": "./kernel.js",
+      "kind": "relative"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/infrastructure/parse/mutants.ts#extractMutants",
+      "to": "src/infrastructure/parse/kernel.ts#parseTreeForFile"
+    }
+  ]
+}

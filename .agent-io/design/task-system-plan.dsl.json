@@ -49062,6 +49062,114 @@
           ]
         },
         "status": "done"
+      },
+      {
+        "id": "file_src_infrastructure_parse_mutants_ts",
+        "label": "mutants.ts",
+        "type": "file",
+        "path": "src/infrastructure/parse/mutants.ts",
+        "description": "src/infrastructure/parse/mutants.ts",
+        "decision": {
+          "summary": "从 parse 的树里抽【可变异点】—— 目前只做 TS 的二元比较运算符（`===` / `!==` / `==` / `!=`），每个点带 {op, line, from, to, startIndex, endIndex}。★ 不动 `ParsedFile` 的契约（那是 550 个消费者的面），是一个**独立函数**。★ 树是现成的（`parseFileFull` 已在用），这里只是**多走一遍**，不重新 parse。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/infrastructure/parse/mutants.ts",
+              "why": "可变异点的抽取要住 parse 层（与树同源）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/infrastructure/parse/mutants.ts",
+              "symbol": "extractMutants",
+              "why": "唯一入口：给文件内容，返回可变异点"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/infrastructure/parse/mutants.ts",
+              "must": [
+                "binary_expression"
+              ],
+              "why": "★ 必须按 AST 节点名找（不是正则）：这是它与「正则找 ===」的分水岭"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/infrastructure/parse/kernel.ts",
+              "symbol": "parseTreeForFile",
+              "why": "要拿树，必须有一个导出的入口（getParser 是内部函数）"
+            }
+          ],
+          "updated_at": "2026-10-19T23:43:13.381Z",
+          "agent": "workbuddy",
+          "rationale": "实现层变异（`===` → `!==`）需要一个「源码里哪个位置可以改」的清单。此前只能靠正则找 `===`（注释/字符串里也会命中）⇒ 脆。用户 2026-10-20 指出：**AST 本来就有这些信息，是我们只抽了 4 类（symbols/imports/calls/type_refs）**，`binary_expression` 在 kernel 里出现 0 次。★ 为拿到树，需给 kernel 加一个薄导出 `parseTreeForFile`（`getParser` 目前是内部函数）。",
+          "consequences": "① 新增 mutants.ts（独立、不改 ParsedFile 契约）；② kernel 加一个导出（5 行）；③ ★ 全语言通用：节点名 `binary_expression` 是 **TS/tree-sitter-javascript 的叫法**，其他语言要各自一张表 —— 这里只做 TS，并在注释里写明；④ 变异器（改→编译→跑夹具→还原）是下一步，不在本卡。",
+          "acceptance": "对 src/domain/task_machine.ts 能抽出 >0 个可变异点，且每点的 startIndex/endIndex 用 `content.slice()` 取出来**正好是那个运算符**；注释里出现的 `===` **不被抽出**（这是 AST 与正则的分水岭）。",
+          "status": "active",
+          "author": "llm"
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-19T23:43:13.381Z",
+            "decision": {
+              "summary": "从 parse 的树里抽【可变异点】（运算符级），供实现层变异测试用。★ 不动 ParsedFile 的契约，独立函数。",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/infrastructure/parse/mutants.ts",
+                  "why": "它必须存在（这就是「新建」的依据）"
+                }
+              ],
+              "updated_at": "2026-10-19T23:42:51.508Z",
+              "agent": "workbuddy"
+            },
+            "note": "给 src/infrastructure/parse/mutants.ts 写决策卡：从树里抽可变异点（实现层变异的地基）",
+            "author": "llm",
+            "agent": "workbuddy"
+          }
+        ],
+        "task": {
+          "id": "file_src_infrastructure_parse_mutants_ts",
+          "summary": "从 parse 的树里抽【可变异点】—— 目前只做 TS 的二元比较运算符（`===` / `!==` / `==` / `!=`），每个点带 {op, line, from, to, startIndex, endIndex}。★ 不动 `ParsedFile` 的契约（那是 550 个消费者的面），是一个**独立函数**。★ 树是现成的（`parseFileFull` 已在用），这里只是**多走一遍**，不重新 parse。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/infrastructure/parse/mutants.ts",
+              "why": "可变异点的抽取要住 parse 层（与树同源）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/infrastructure/parse/mutants.ts",
+              "symbol": "extractMutants",
+              "why": "唯一入口：给文件内容，返回可变异点"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/infrastructure/parse/mutants.ts",
+              "must": [
+                "binary_expression"
+              ],
+              "why": "★ 必须按 AST 节点名找（不是正则）：这是它与「正则找 ===」的分水岭"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/infrastructure/parse/kernel.ts",
+              "symbol": "parseTreeForFile",
+              "why": "要拿树，必须有一个导出的入口（getParser 是内部函数）"
+            }
+          ],
+          "state": "done",
+          "owner": "workbuddy",
+          "claimed_at": "2026-10-19T23:43:16.107Z",
+          "evidence": [
+            {
+              "kind": "expectations",
+              "at": "2026-10-19T23:44:20.800Z",
+              "by": "llm",
+              "agent": "workbuddy",
+              "verdict": "pass"
+            }
+          ]
+        },
+        "status": "done"
       }
     ],
     "edges": [
@@ -94652,6 +94760,12 @@
         "path": "src/application/design/line/design_diff.ts",
         "responsibility": "设计侧 × 实际侧的节点级 diff（像 git diff，只报不一致）",
         "status": "done"
+      },
+      {
+        "id": "file_src_infrastructure_parse_mutants_ts",
+        "path": "src/infrastructure/parse/mutants.ts",
+        "responsibility": "从 parse 的树里抽【可变异点】（运算符级）",
+        "status": "done"
       }
     ]
   },
@@ -94714,11 +94828,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-19T23:21:18.890Z",
+    "saved_at": "2026-10-19T23:44:20.827Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792452061627,
-    "age": 17263
+    "scanRev": 1792453460404,
+    "age": 423
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -96517,5 +96631,5 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 523
+  "_dsl_rev": 527
 }

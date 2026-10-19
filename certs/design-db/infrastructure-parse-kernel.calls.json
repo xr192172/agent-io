@@ -299,63 +299,69 @@
       "signature": "ParsedFile()"
     },
     {
+      "name": "parseTreeForFile",
+      "kind": "function",
+      "line": 1840,
+      "signature": "parseTreeForFile(filePath: string,\n  content: string,): Promise<{ root: SyntaxNodeLike; langName: string } | null>"
+    },
+    {
       "name": "parseFileFull",
       "kind": "function",
-      "line": 1832,
+      "line": 1853,
       "signature": "parseFileFull(filePath: string, content: string): Promise<ParsedFile>"
     },
     {
       "name": "parseFile",
       "kind": "function",
-      "line": 1861,
+      "line": 1882,
       "signature": "parseFile(filePath: string, content: string): Promise<ParsedSymbol[]>"
     },
     {
       "name": "parseFileFullSync",
       "kind": "function",
-      "line": 1887,
+      "line": 1908,
       "signature": "parseFileFullSync(filePath: string, content: string): ParsedFile"
     },
     {
       "name": "parserReadyForFile",
       "kind": "function",
-      "line": 1914,
+      "line": 1935,
       "signature": "parserReadyForFile(filePath: string): boolean"
     },
     {
       "name": "canParseFileSync",
       "kind": "function",
-      "line": 1924,
+      "line": 1945,
       "signature": "canParseFileSync(filePath: string): boolean"
     },
     {
       "name": "prewarmKernel",
       "kind": "function",
-      "line": 1935,
+      "line": 1956,
       "signature": "prewarmKernel(): Promise<{\n  warmed: number;\n  /** 装了但**加载失败**的扩展名（沿用原字段名 —— 原调用方文案写「语言包」是错的，它是 ext） */\n  missing: string[];\n  /**\n   * ★★ 2026-10-08 新增：**注册了但包没装**的语言名。\n   *\n   * 为什么必须报出来：它们此前落在 `warmed` 与 `missing` 的**夹缝**里，**完全看不见** ——\n   * 因为原实现只遍历 `probeInstalledLanguages()`（**已装的**）⇒ 未装的**连循环都进不去**。\n   * ★ `tsx` / `jsx` 就是在这里藏了很久：`.tsx` 全体解析不出来，\n   *   而预热报告显示的是「34 个解析器就绪，缺 0 个语言包」—— 听起来一切正常。\n   */\n  notInstalled: string[];\n}>"
     },
     {
       "name": "isSupported",
       "kind": "function",
-      "line": 1968,
+      "line": 1989,
       "signature": "isSupported(ext: string): boolean"
     },
     {
       "name": "listSupportedLanguages",
       "kind": "function",
-      "line": 1973,
+      "line": 1994,
       "signature": "listSupportedLanguages(): string[]"
     },
     {
       "name": "listSupportedExtensions",
       "kind": "function",
-      "line": 1978,
+      "line": 1999,
       "signature": "listSupportedExtensions(): string[]"
     },
     {
       "name": "_reset",
       "kind": "function",
-      "line": 1983,
+      "line": 2004,
       "signature": "_reset(): void"
     }
   ],
@@ -600,6 +606,10 @@
       "to": "src/infrastructure/parse/kernel.ts#parseContent"
     },
     {
+      "from": "src/infrastructure/parse/kernel.ts#parseTreeForFile",
+      "to": "src/infrastructure/parse/kernel.ts#parseContent"
+    },
+    {
       "from": "src/infrastructure/parse/kernel.ts#parseFileFull",
       "to": "src/infrastructure/parse/kernel.ts#parseContent"
     },
@@ -752,6 +762,10 @@
       "to": "src/infrastructure/parse/loader.ts#getParser"
     },
     {
+      "from": "src/infrastructure/parse/kernel.ts#parseTreeForFile",
+      "to": "src/infrastructure/parse/loader.ts#getParser"
+    },
+    {
       "from": "src/infrastructure/parse/kernel.ts#parseFileFull",
       "to": "src/infrastructure/parse/loader.ts#getParser"
     },
@@ -774,6 +788,10 @@
     {
       "from": "src/infrastructure/parse/kernel.ts#canParseFileSync",
       "to": "src/infrastructure/parse/loader.ts#getParserSync"
+    },
+    {
+      "from": "src/infrastructure/parse/kernel.ts#parseTreeForFile",
+      "to": "src/infrastructure/parse/probe.ts#isExtSupported"
     },
     {
       "from": "src/infrastructure/parse/kernel.ts#parseFileFull",

@@ -1829,6 +1829,27 @@ export interface ParsedFile {
  *   等把"编辑 .md"误判成"解析失败"（实测 20+ 调用点按 `parsed.error` 抛错/记 fail）。
  *   真正的**加载失败**（包在但 import 抛了，多为 ABI 不匹配）才给可执行提示。
  */
+/**
+ * ★ 2026-10-20：**把树交出去**（薄入口，5 行）。
+ *
+ * `parseFileFull` 抽完 4 类（symbols / imports / calls / type_refs）就把树丢了 ——
+ * 而「可变异点」（运算符位置）**只在树里有**（`binary_expression` 在本文件里出现 0 次）。
+ * ★ 这里只是把 `getParser` + `parseContent` 组合一次，**不改任何现有逻辑**。
+ * ★ 语言通用：节点名因语言而异（TS 是 `binary_expression`）⇒ 由调用方判断，本函数只给树。
+ */
+export async function parseTreeForFile(
+  filePath: string,
+  content: string,
+): Promise<{ root: SyntaxNodeLike; langName: string } | null> {
+  const ext = '.' + (filePath.split('.').pop() || '');
+  const lang = isExtSupported(ext);
+  if (!lang) return null;
+  const parser = await getParser(ext, lang);
+  if (!parser) return null;
+  const tree = parseContent(parser as ParserLike, content);
+  return { root: tree.rootNode, langName: lang.name };
+}
+
 export async function parseFileFull(filePath: string, content: string): Promise<ParsedFile> {
   const empty: ParsedFile = { symbols: [], imports: [], calls: [], type_refs: [] };
   const ext = '.' + (filePath.split('.').pop() || '');
