@@ -1560,3 +1560,61 @@ PASS  Go 编译           682ms
 PASS  Go 静态检查       275ms
 PASS  实现夹具          148ms   ← 新增
 ```
+
+---
+
+## 2026-10-20 早（二六）· 增量编译（`07442d45`）+ 「全语言通用」的方向
+
+### 1. 干了什么（一行配置）
+
+```
+tsconfig: "incremental": true · tsBuildInfoFile → node_modules/.cache/（已 gitignore）
+```
+
+| | 之前 | 之后 |
+|---|---|---|
+| 全量 tsc | 7375 ms | — |
+| 增量 tsc | — | **2241 ms** |
+| verify 里的 ts 门 | 4957 ms | **1547 ms** |
+| verify 总 | ~7 s | **4413 ms** |
+
+### 2. ★ 先验证它没漏错
+
+"变快"也可能是"没真编"。所以注入 `const __probe: number = 'oops';`：
+
+```
+src/_probe_bad.ts(1,7): error TS2322: Type 'string' is not assignable to type 'number'.
+```
+
+删掉后无输出。⇒ 增量没漏。
+
+★ 这条纪律来自本仓最贵的一课：**「没报错」与「没跑」长得一样**。
+
+### 3. ★★ 用户的要求：「这个项目要全语言通用」
+
+这直接决定了 C1 **该怎么写**：
+
+> 增量是 **tsc 专属**能力 ⇒ **不许塞进通用层（verify / gates）**。
+
+现在 C1 只是 `tsconfig` 里的一行 + 一句注释（写明"这是 TS provider 的实现细节"）。
+
+**现状盘点**（老实说）：
+
+| 已经有 | 还没有 |
+|---|---|
+| `verify` 的 `GATES` 是数组，TS 门与 Go 门**并列** ⇒ 多语言形态 | 「编译」这个动作**没有抽象** |
+| `parse/languages.ts` 已有语言表（扩展名 / 解析器 / 语言包） | 语言表里**没有**「编译器」「测试运行器」这两列 |
+
+**因此真正的「全语言通用」不是"支持更多语言"，而是"把语言能力做成一张表"**：
+
+```
+语言能力表（每行一种语言）
+  ext[]        扩展名
+  parser       解析器（tree-sitter-<lang>；加载失败要显式报）
+  compiler     编译器（TS: tsc --incremental · Go: go build · Python: 无）
+  testRunner   测试运行器（TS: node --experimental-strip-types · Go: go test）
+  probes       该语言支持的探针（observe 用）
+```
+
+★ 这一步**没做**，只记方向。它的前提是"先有 C2 的变异链"——
+因为只有真的跑起来，才知道 `testRunner` 那一列到底需要什么形状。
