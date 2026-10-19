@@ -16438,7 +16438,7 @@
         },
         "arch_layer": "api",
         "decision": {
-          "summary": "T20 的判据是「改 semantic.files 前必须现取到该文件的事实」。★ 对 **cache.db 中不存在的路径**（= 新建文件）不阻断，而是**放行 + 回执明说**；★ 但 evidence 里必须声明该路径，且**改已有文件**时仍严格要求现取。",
+          "summary": "T20 的判据是「改 semantic.files 前必须现取到该文件的事实」。★ 对 **cache.db 中不存在的路径**（= 新建文件）不阻断，而是**放行 + 回执明说**；★ 但 evidence 里必须声明该路径，且**改已有文件**时仍严格要求现取。★★ 2026-10-19 正式化：新建文件的**依据** = 同一批 node.add 的 data.decision.expectations 里带一条 file-exists（不是豁免）。",
           "expectations": [
             {
               "kind": "source-has",
@@ -16453,19 +16453,27 @@
               "path": "src/application/design/handlers.ts",
               "symbol": "editDslHandler",
               "why": "改动落在 edit_dsl 的唯一入口里，不许在别的路径再开一份"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/application/design/handlers.ts",
+              "must": [
+                "declaredNew"
+              ],
+              "why": "★ T20 正式化：新建文件的依据是同一批声明的 file-exists 期望（这一条只有真做了才会绿）"
             }
           ],
-          "rationale": "根因：把「充分条件」当成了「必要条件」——「库里有该文件 ⇒ 有依据」成立，反过来不成立：新建文件时依据是**期望**，而库里必然没有 ⇒ matched_path 永远 null ⇒ 永远过不了 ⇒ 逼人先造空壳文件骗过闸（2026-10-19 我本人就这么干了一次）。那是**仪式，不是纪律**。T20 是 2026-10-05 在移除事实镜像后加的，当时只考虑「改已有文件」，适用边界从未写进代码。",
-          "consequences": "① 新建文件不再被挡（但要 evidence 声明）；② 改已有文件不读现状**仍被挡**（原意保住）；③ 回执会点名「该文件库里不存在，已按新建处理」——★ **放行不是静默**，否则就变成绕过。④ 闸从「硬拦」变「拦+说明」，读的人知道发生了什么。",
-          "acceptance": "三种场景可复现：新建+evidence ⇒ 通过且回执含「按【新建】处理」；新建无 evidence ⇒ 拒；已有文件无 evidence ⇒ 拒。",
+          "rationale": "根因：把「充分条件」当成了「必要条件」——「库里有该文件 ⇒ 有依据」成立，反过来不成立：新建文件时依据是**期望**，而库里必然没有 ⇒ matched_path 永远 null ⇒ 永远过不了 ⇒ 逼人先造空壳文件骗过闸（2026-10-19 我本人就这么干了一次）。那是**仪式，不是纪律**。T20 是 2026-10-05 在移除事实镜像后加的，当时只考虑「改已有文件」，适用边界从未写进代码。★ 正式化后：放行条件从「已声明」收紧为「已声明 + 同一批声明了 file-exists」。",
+          "consequences": "① 新建文件不再被挡（但要 evidence + file-exists 期望）；② 改已有文件不读现状**仍被挡**；③ 删（delete）不参与本闸（删不需要现状）；④ 回执点名「已按【新建】处理」；⑤ L4 复用 T20 判出的 notIndexed（一处判断、两处消费）。",
+          "acceptance": "四场景可复现：新建+evidence+file-exists ⇒ 通过并点名；新建+evidence 无期望 ⇒ 拒；改已有无 evidence ⇒ 拒；删从未索引的路径 ⇒ 通过。",
           "status": "active",
-          "updated_at": "2026-10-19T13:28:39.529Z",
+          "updated_at": "2026-10-19T15:13:00.755Z",
           "author": "llm",
           "agent": "workbuddy"
         },
         "task": {
           "id": "file_src_application_design_handlers_ts",
-          "summary": "T20 的判据是「改 semantic.files 前必须现取到该文件的事实」。★ 对 **cache.db 中不存在的路径**（= 新建文件）不阻断，而是**放行 + 回执明说**；★ 但 evidence 里必须声明该路径，且**改已有文件**时仍严格要求现取。",
+          "summary": "T20 的判据是「改 semantic.files 前必须现取到该文件的事实」。★ 对 **cache.db 中不存在的路径**（= 新建文件）不阻断，而是**放行 + 回执明说**；★ 但 evidence 里必须声明该路径，且**改已有文件**时仍严格要求现取。★★ 2026-10-19 正式化：新建文件的**依据** = 同一批 node.add 的 data.decision.expectations 里带一条 file-exists（不是豁免）。",
           "expectations": [
             {
               "kind": "source-has",
@@ -16480,20 +16488,53 @@
               "path": "src/application/design/handlers.ts",
               "symbol": "editDslHandler",
               "why": "改动落在 edit_dsl 的唯一入口里，不许在别的路径再开一份"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/application/design/handlers.ts",
+              "must": [
+                "declaredNew"
+              ],
+              "why": "★ T20 正式化：新建文件的依据是同一批声明的 file-exists 期望（这一条只有真做了才会绿）"
             }
           ],
-          "state": "done",
-          "owner": "workbuddy",
-          "claimed_at": "2026-10-19T13:28:48.823Z",
-          "evidence": [
-            {
-              "kind": "expectations",
-              "at": "2026-10-19T13:32:30.502Z",
-              "verdict": "pass"
-            }
-          ]
+          "state": "candidate"
         },
-        "status": "done"
+        "status": "draft",
+        "decision_history": [
+          {
+            "at": "2026-10-19T15:13:00.755Z",
+            "decision": {
+              "summary": "T20 的判据是「改 semantic.files 前必须现取到该文件的事实」。★ 对 **cache.db 中不存在的路径**（= 新建文件）不阻断，而是**放行 + 回执明说**；★ 但 evidence 里必须声明该路径，且**改已有文件**时仍严格要求现取。",
+              "expectations": [
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/handlers.ts",
+                  "must": [
+                    "按【新建】处理"
+                  ],
+                  "why": "放行必须在回执里说出来（放行不是静默）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/handlers.ts",
+                  "symbol": "editDslHandler",
+                  "why": "改动落在 edit_dsl 的唯一入口里，不许在别的路径再开一份"
+                }
+              ],
+              "rationale": "根因：把「充分条件」当成了「必要条件」——「库里有该文件 ⇒ 有依据」成立，反过来不成立：新建文件时依据是**期望**，而库里必然没有 ⇒ matched_path 永远 null ⇒ 永远过不了 ⇒ 逼人先造空壳文件骗过闸（2026-10-19 我本人就这么干了一次）。那是**仪式，不是纪律**。T20 是 2026-10-05 在移除事实镜像后加的，当时只考虑「改已有文件」，适用边界从未写进代码。",
+              "consequences": "① 新建文件不再被挡（但要 evidence 声明）；② 改已有文件不读现状**仍被挡**（原意保住）；③ 回执会点名「该文件库里不存在，已按新建处理」——★ **放行不是静默**，否则就变成绕过。④ 闸从「硬拦」变「拦+说明」，读的人知道发生了什么。",
+              "acceptance": "三种场景可复现：新建+evidence ⇒ 通过且回执含「按【新建】处理」；新建无 evidence ⇒ 拒；已有文件无 evidence ⇒ 拒。",
+              "status": "active",
+              "updated_at": "2026-10-19T13:28:39.529Z",
+              "author": "llm",
+              "agent": "workbuddy"
+            },
+            "note": "给 src/application/design/handlers.ts 的决策卡补第三条判据：T20 正式化的 declaredNew 落点",
+            "author": "llm",
+            "agent": "workbuddy"
+          }
+        ]
       },
       {
         "id": "file_src_application_design_index_ts",
@@ -77052,7 +77093,7 @@
         ],
         "lines": 685,
         "layer": "api",
-        "status": "done"
+        "status": "draft"
       },
       {
         "id": "file_src_application_design_index_ts",
@@ -94647,11 +94688,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-19T14:34:55.831Z",
+    "saved_at": "2026-10-19T15:13:21.937Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792420495584,
-    "age": 247
+    "scanRev": 1792422779243,
+    "age": 22694
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -94928,6 +94969,25 @@
           "executor": "completeTask"
         },
         {
+          "id": "t_reopen",
+          "from": "done",
+          "to": "claimed",
+          "state": {
+            "kind": "ready"
+          },
+          "guard": {
+            "clauses": [
+              "★ 用户 2026-10-19 裁定：done 是终态时，同一节点的【第二个工作项无处安放】—— publish 拒、release 只能 claimed→candidate",
+              "而\"一个文件会被反复改\"是常态 ⇒ 必须有重开路径",
+              "owner 必填（谁来重开 = 谁接手）",
+              "reason 必填（为什么重开）—— ★ 无理由的重开等于把\"完成\"当摆设",
+              "★ 重开不改判据（expectations 仍来自 decision）；要换判据请先改 decision 再 reopen",
+              "CAS：state=done 时才写（防并发）"
+            ]
+          },
+          "executor": "reopenTask"
+        },
+        {
           "id": "t_done_from_candidate",
           "from": "candidate",
           "to": "done",
@@ -94946,7 +95006,6 @@
         }
       ],
       "terminal_states": [
-        "done",
         "void"
       ],
       "removed_2026_10_17": [
@@ -94961,7 +95020,7 @@
           "note": "★ 这两条源码改动等\"设计全部写完、子代理也看不出毛病\"之后再动；现在只记在这里，不动代码"
         }
       ],
-      "states_note": "★ 2026-10-17：删 `superseded`（t_supersede 已删 ⇒ 它零条入边 = 死状态）。★★ 源码待跟：`task_schema.ts` 的 `TASK_STATES` 也要删（否则类型里还留着，下一个人以为能用）—— 已并进 `removed_2026_10_17.source_pending`。"
+      "states_note": "★ 2026-10-17：删 `superseded`（t_supersede 已删 ⇒ 它零条入边 = 死状态）。★★ 源码待跟：`task_schema.ts` 的 `TASK_STATES` 也要删（否则类型里还留着，下一个人以为能用）—— 已并进 `removed_2026_10_17.source_pending`。 ★ 2026-10-19：done 移出 terminal_states（加 t_reopen）。理由是它有真实成本：T20 正式化那笔改动因为「无处立卡」只能无卡提交。"
     },
     "patrols": [
       {
@@ -96432,5 +96491,5 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 512
+  "_dsl_rev": 519
 }

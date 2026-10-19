@@ -89,27 +89,33 @@
       "signature": "completeTask(input: TaskOpInput): Promise<EditResult>"
     },
     {
+      "name": "reopenTask",
+      "kind": "function",
+      "line": 705,
+      "signature": "reopenTask(input: TaskOpInput): Promise<EditResult>"
+    },
+    {
       "name": "applyTaskOp",
       "kind": "function",
-      "line": 688,
+      "line": 732,
       "signature": "applyTaskOp(feature: string,\n  op: TaskOpRequest,\n  agent?: string,): Promise<EditResult>"
     },
     {
       "name": "publishFromDiff",
       "kind": "function",
-      "line": 745,
+      "line": 791,
       "signature": "publishFromDiff(feature: string, nodeId: string): EditResult"
     },
     {
       "name": "voidTask",
       "kind": "function",
-      "line": 779,
+      "line": 825,
       "signature": "voidTask(input: TaskOpInput): EditResult"
     },
     {
       "name": "applyTodoOp",
       "kind": "function",
-      "line": 818,
+      "line": 864,
       "signature": "applyTodoOp(feature: string,\n  op: { op: string; id?: string; data?: Record<string, unknown> },\n  agent?: string,): EditResult"
     }
   ],
@@ -174,6 +180,10 @@
       "to": "src/application/design/dsl_ops/task_ops.ts#assertTransition"
     },
     {
+      "from": "src/application/design/dsl_ops/task_ops.ts#reopenTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#assertTransition"
+    },
+    {
       "from": "src/application/design/dsl_ops/task_ops.ts#voidTask",
       "to": "src/application/design/dsl_ops/task_ops.ts#assertTransition"
     },
@@ -210,6 +220,10 @@
       "to": "src/application/design/dsl_ops/task_ops.ts#loadTask"
     },
     {
+      "from": "src/application/design/dsl_ops/task_ops.ts#reopenTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#loadTask"
+    },
+    {
       "from": "src/application/design/dsl_ops/task_ops.ts#voidTask",
       "to": "src/application/design/dsl_ops/task_ops.ts#loadTask"
     },
@@ -224,6 +238,10 @@
     {
       "from": "src/application/design/dsl_ops/task_ops.ts#applyTaskOp",
       "to": "src/application/design/dsl_ops/task_ops.ts#releaseTask"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#applyTaskOp",
+      "to": "src/application/design/dsl_ops/task_ops.ts#reopenTask"
     },
     {
       "from": "src/application/design/dsl_ops/task_ops.ts#claimTask",
@@ -255,6 +273,10 @@
     },
     {
       "from": "src/application/design/dsl_ops/task_ops.ts#completeTask",
+      "to": "src/application/design/dsl_ops/task_ops.ts#writeTask"
+    },
+    {
+      "from": "src/application/design/dsl_ops/task_ops.ts#reopenTask",
       "to": "src/application/design/dsl_ops/task_ops.ts#writeTask"
     },
     {

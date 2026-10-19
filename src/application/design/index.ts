@@ -208,26 +208,21 @@ export const DESIGN_TOOLS: ToolDef[] = [
       operations: z
         .array(
           z.object({
+            /**
+             * ★★★ 2026-10-19：**这里原先是硬编码的 `z.enum([...])`** —— 而合法 op 的真判据只有一处：
+             *   `op_data_spec.ts` 的 `OP_SPECS`（`checkOpSpec` 按 type 查表，报错会列出全部合法值）。
+             *
+             * 两份枚举**已经漂了**：schema 里缺 `void`（OP_SPECS 有）⇒ `void` 根本调不通，
+             * 而报错只说"类型/取值不符：operations"，**不说是哪个 op**。
+             * ⇒ 收敛成 `z.string()`：判据回到一处，报错由 `checkOpSpec` 给（它列合法值 + 指路）。
+             *   ★ 代价：MCP 面的"可选项自动补全"没有了 —— 但那份可选项本来就是**第二份判据**。
+             */
             op: z
-              .enum([
-                'add',
-                'update',
-                'delete',
-                'move',
-                'resolve',
-                'submit',
-                'review',
-                'save',
-                'rollback',
-                'apply',
-                'reset',
-                'publish',
-                'claim',
-                'release',
-                'complete',
-              ])
+              .string()
               .describe(
-                '操作：add/update/delete/move 通用；resolve=关闭标注；submit/review=审批；save/rollback/delete=快照；apply=布局；reset=仿真；publish/claim/release/complete=任务格（type=task；★ publish=立卡，内容来自该节点的 decision，**不收** data）',
+                '操作名（★ 合法值**按 type 不同**，唯一判据 = op_data_spec.ts 的 OP_SPECS；' +
+                  '填错会由 checkOpSpec 报出该 type 的全部合法值）。' +
+                  '例：node/edge/file/api 用 add/update/delete/move；task 用 publish/claim/release/complete/void/reopen',
               ),
             type: z
               .enum([

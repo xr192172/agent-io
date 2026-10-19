@@ -19,49 +19,49 @@
     {
       "name": "TERMINAL_TASK_STATES",
       "kind": "const",
-      "line": 48,
-      "signature": "const TERMINAL_TASK_STATES = ['done', 'void'] as const"
+      "line": 55,
+      "signature": "const TERMINAL_TASK_STATES = ['void'] as const"
     },
     {
       "name": "isTaskState",
       "kind": "function",
-      "line": 55,
+      "line": 62,
       "signature": "isTaskState(v: unknown): v is TaskState"
     },
     {
       "name": "isTerminalTaskState",
       "kind": "function",
-      "line": 60,
+      "line": 67,
       "signature": "isTerminalTaskState(s: TaskState): boolean"
     },
     {
       "name": "progressOf",
       "kind": "function",
-      "line": 90,
+      "line": 97,
       "signature": "progressOf(task: Pick<TaskSpec, 'state'> | null | undefined): DiagramStatus | undefined"
     },
     {
       "name": "TaskDiscussion",
       "kind": "interface",
-      "line": 107,
+      "line": 114,
       "signature": "TaskDiscussion()"
     },
     {
       "name": "TaskEvidenceRecord",
       "kind": "interface",
-      "line": 129,
+      "line": 136,
       "signature": "TaskEvidenceRecord()"
     },
     {
       "name": "TaskSpec",
       "kind": "interface",
-      "line": 145,
+      "line": 152,
       "signature": "TaskSpec()"
     },
     {
       "name": "taskLevel",
       "kind": "function",
-      "line": 208,
+      "line": 215,
       "signature": "taskLevel(card: Pick<TaskSpec, 'expectations'>): 'L1' | 'L2'"
     }
   ],

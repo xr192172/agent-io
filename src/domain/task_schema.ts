@@ -44,8 +44,15 @@ export const TASK_STATES = ['candidate', 'claimed', 'done', 'void'] as const;
 /** 四态中某一态。 */
 export type TaskState = (typeof TASK_STATES)[number];
 
-/** 终态（迁移表里 `terminal_states` 的同一批，★ 只此一处）。 */
-export const TERMINAL_TASK_STATES = ['done', 'void'] as const;
+/**
+ * 终态（★ 只此一处）。
+ *
+ * ★★ 2026-10-19：**`done` 移出终态** —— 加了 `t_reopen`（done → claimed），
+ *   因为 done 是终态时，同一节点的**第二个工作项无处安放**（publish 拒、release 只能 claimed→candidate）。
+ *   ⇒ 现在只有 `void` 是真正的终态（作废就回不来了）。
+ * ★ 附注：本常量**此前零消费者**（grep 只命中定义行）—— 它一直是"装饰"。
+ */
+export const TERMINAL_TASK_STATES = ['void'] as const;
 
 /**
  * 运行期形状守卫：`unknown` ⇒ `TaskState`。

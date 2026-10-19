@@ -115,7 +115,7 @@
     {
       "name": "applicableTransitions",
       "kind": "function",
-      "line": 524,
+      "line": 540,
       "signature": "applicableTransitions(from: TaskState): TaskTransition[]"
     }
   ],

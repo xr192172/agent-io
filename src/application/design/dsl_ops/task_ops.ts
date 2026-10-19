@@ -685,6 +685,50 @@ export async function completeTask(input: TaskOpInput): Promise<EditResult> {
 // ─────────────────────────────────────────────────────────────
 
 /** `edit_dsl {type:'task', op:publish|claim|release|complete}` 的分派（★ 四个 action 的唯一入口）。 */
+/**
+ * ★★★ 2026-10-19：**重开已完成的任务**（`done → claimed`）。
+ *
+ * ## 为什么要有它（用户裁定，且有真实成本）
+ * `done` 是终态时，同一节点的**第二个工作项无处安放**：
+ *   `publish` 拒（"覆盖它等于把已完成的判据换掉"）· `release` 只能 `claimed → candidate`。
+ * 而"一个文件会被反复改"是常态 —— 2026-10-19 晚上就有一笔改动（T20 正式化）
+ * 因为无处立卡而只能**无卡提交**。
+ *
+ * ## 三条判据（都在 `t_reopen` 的 guard 里，这里只执行）
+ * ① `owner` 必填（谁来重开 = 谁接手）
+ * ② `reason` 必填（为什么重开）—— ★ 无理由的重开等于把"完成"当摆设
+ * ③ CAS：`state === done` 才写（`assertTransition` 从迁移表读，不另写一把尺）
+ *
+ * ★ **重开不改判据**（`expectations` 仍来自 decision）。要换判据：先 `edit_dsl type=decision`
+ *   改 decision，再 `reopen` —— 否则你会得到一张"用旧判据去验收新工作"的卡。
+ */
+export async function reopenTask(input: TaskOpInput): Promise<EditResult> {
+  const { feature, node_id } = input;
+  if (!input.owner) {
+    throw new Error(`reopen 被拒：缺 \`owner\` —— 重开必须有接手人（t_reopen 第 3 条）。`);
+  }
+  if (!input.reason) {
+    throw new Error(`reopen 被拒：缺 \`reason\` —— 为什么重开？（t_reopen 第 4 条）无理由的重开等于把"完成"当摆设。`);
+  }
+  const { card, dsl } = loadTask(feature, node_id);
+  assertTransition(card.state, 'claimed', 'reopen');
+  const next: TaskSpec = {
+    ...card,
+    state: 'claimed',
+    owner: input.owner,
+    claimed_at: new Date().toISOString(),
+  };
+  writeTask(feature, node_id, next);
+  return {
+    message:
+      `已重开任务 "${node_id}"（done → claimed，owner=${input.owner}）\n` +
+      `  理由：${input.reason}\n` +
+      `  ★ 判据未变（仍来自 decision，${(card.expectations ?? []).length} 条）；` +
+      `要换判据请先 edit_dsl type=decision，再 reopen。`,
+    feature,
+  };
+}
+
 export async function applyTaskOp(
   feature: string,
   op: TaskOpRequest,
@@ -713,6 +757,8 @@ export async function applyTaskOp(
       return completeTask(input);
     case 'void':
       return voidTask(input);
+    case 'reopen':
+      return reopenTask(input);
     default:
       // ★ 合法性由 `OP_SPECS` 判（`task.ops` 只有三个）；走到这里说明表与分派漂了。
       throw new Error(`task 不支持操作: ${op.op}（合法值由 op_data_spec.ts 的 OP_SPECS.task.ops 判定）`);

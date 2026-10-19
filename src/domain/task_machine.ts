@@ -500,6 +500,22 @@ export const TRANSITIONS: readonly TaskTransition[] = [
     },
   },
   {
+    id: 't_reopen',
+    from: 'done',
+    to: 'claimed',
+    state: { kind: 'ready' },
+    guard: {
+      clauses: [
+        '★ 用户 2026-10-19 裁定：done 是终态时，同一节点的【第二个工作项无处安放】—— publish 拒、release 只能 claimed→candidate',
+        '而"一个文件会被反复改"是常态 ⇒ 必须有重开路径',
+        'owner 必填（谁来重开 = 谁接手）',
+        'reason 必填（为什么重开）—— ★ 无理由的重开等于把"完成"当摆设',
+        '★ 重开不改判据（expectations 仍来自 decision）；要换判据请先改 decision 再 reopen',
+        'CAS：state=done 时才写（防并发）',
+      ],
+    },
+  },
+  {
     id: 't_done_from_candidate',
     from: 'candidate',
     to: 'done',
