@@ -111,7 +111,8 @@
     "impact": "node dist/src/presentation/cli/cli.js impact_analysis project_dir=.",
     "design:check": "node scripts/design-check.mjs",
     "design:mutate": "node scripts/mutate.mjs",
-    "design:fixture": "node scripts/impl-fixture.mjs"
+    "design:fixture": "node scripts/impl-fixture.mjs",
+    "design:impl-mutate": "node scripts/impl-mutate.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",

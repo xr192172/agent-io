@@ -49170,6 +49170,106 @@
           ]
         },
         "status": "done"
+      },
+      {
+        "id": "file_scripts_impl-mutate_mjs",
+        "label": "impl-mutate.mjs",
+        "type": "file",
+        "path": "scripts/impl-mutate.mjs",
+        "description": "scripts/impl-mutate.mjs",
+        "decision": {
+          "summary": "实现层变异器：拿 `extractMutants` 的可变异点（AST 给的，不是正则），逐个改 → 增量编译 → 跑夹具 → **必须先变红**（全绿 = 变异存活 = 该实现没被夹具覆盖）。★ 默认只试「改动行附近」的点（`--all` 才全跑）；★ 收尾必须还原源文件（try/finally）。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "scripts/impl-mutate.mjs",
+              "why": "变异器本身要存在"
+            },
+            {
+              "kind": "source-has",
+              "path": "scripts/impl-mutate.mjs",
+              "must": [
+                "extractMutants"
+              ],
+              "why": "★ 必须用 AST 抽的点（不是正则）—— 这是它与「文本变异」的分水岭"
+            },
+            {
+              "kind": "source-has",
+              "path": "scripts/impl-mutate.mjs",
+              "must": [
+                "restore"
+              ],
+              "why": "★ 必须能还原源文件（变异是破坏性的，收不回来就是事故）"
+            }
+          ],
+          "updated_at": "2026-10-19T23:52:14.833Z",
+          "agent": "workbuddy",
+          "rationale": "C2a 已能从树里抽出真的运算符（19 个 vs 全文 33 个）；C2b 要把「改一个 → 看谁红」跑成一条命令。★ 为什么默认收窄：一张卡改的是某几行，那些行附近的运算符才是「这个改动被测到没」。★ 为什么必须先杀：变异存活（夹具全绿）意味着**该实现没有被覆盖**——那不是「通过」，是「没验到」。",
+          "consequences": "① 一条命令能对任意文件跑实现变异；② 增量编译 2.2s/点（收窄后 2-3 点 ≈ 7s）；③ 不挂 `complete`（那是下一步，改闸风险大）；④ 全语言通用：`extractMutants` 目前只认 TS 节点名。",
+          "acceptance": "对 task_machine.ts L238 的 `===` 做变异 ⇒ 夹具 3/4 红（杀死）；源文件 byte-for-byte 还原（md5 相同）；报告给出 杀死/存活 计数。",
+          "status": "active",
+          "author": "llm"
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-19T23:52:14.833Z",
+            "decision": {
+              "summary": "实现层变异器：对指定文件的运算符做变异（=== ↔ !==），每次变异后增量编译并跑夹具；必须先杀死夹具（全绿=变异存活=该实现没被覆盖）。★ 默认只试「改动行附近」的点；--all 才全跑。★ 收尾必须还原源文件（try/finally）。",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "scripts/impl-mutate.mjs",
+                  "why": "它必须存在（这就是「新建」的依据）"
+                }
+              ],
+              "updated_at": "2026-10-19T23:52:02.488Z",
+              "agent": "workbuddy"
+            },
+            "note": "给 scripts/impl-mutate.mjs 写决策卡：实现层变异器（C2b）",
+            "author": "llm",
+            "agent": "workbuddy"
+          }
+        ],
+        "task": {
+          "id": "file_scripts_impl-mutate_mjs",
+          "summary": "实现层变异器：拿 `extractMutants` 的可变异点（AST 给的，不是正则），逐个改 → 增量编译 → 跑夹具 → **必须先变红**（全绿 = 变异存活 = 该实现没被夹具覆盖）。★ 默认只试「改动行附近」的点（`--all` 才全跑）；★ 收尾必须还原源文件（try/finally）。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "scripts/impl-mutate.mjs",
+              "why": "变异器本身要存在"
+            },
+            {
+              "kind": "source-has",
+              "path": "scripts/impl-mutate.mjs",
+              "must": [
+                "extractMutants"
+              ],
+              "why": "★ 必须用 AST 抽的点（不是正则）—— 这是它与「文本变异」的分水岭"
+            },
+            {
+              "kind": "source-has",
+              "path": "scripts/impl-mutate.mjs",
+              "must": [
+                "restore"
+              ],
+              "why": "★ 必须能还原源文件（变异是破坏性的，收不回来就是事故）"
+            }
+          ],
+          "state": "done",
+          "owner": "workbuddy",
+          "claimed_at": "2026-10-19T23:52:17.400Z",
+          "evidence": [
+            {
+              "kind": "expectations",
+              "at": "2026-10-19T23:54:51.220Z",
+              "by": "llm",
+              "agent": "workbuddy",
+              "verdict": "pass"
+            }
+          ]
+        },
+        "status": "done"
       }
     ],
     "edges": [
@@ -94766,6 +94866,12 @@
         "path": "src/infrastructure/parse/mutants.ts",
         "responsibility": "从 parse 的树里抽【可变异点】（运算符级）",
         "status": "done"
+      },
+      {
+        "id": "file_scripts_impl-mutate_mjs",
+        "path": "scripts/impl-mutate.mjs",
+        "responsibility": "实现层变异器（变异→编译→跑夹具→还原）",
+        "status": "done"
       }
     ]
   },
@@ -94828,11 +94934,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-19T23:44:20.827Z",
+    "saved_at": "2026-10-19T23:54:51.245Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792453460404,
-    "age": 423
+    "scanRev": 1792454091022,
+    "age": 223
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -96631,5 +96737,5 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 527
+  "_dsl_rev": 531
 }
