@@ -1126,3 +1126,44 @@ NEW(src/…/symbol_diff.ts) 完全一致（逐项）
 
 ★ 这条纪律值得单独立住：**判据只能住在 src**。scripts 可以是"薄投影"，但**不能持有判据**——
 否则"谁在判"这件事就有两个答案。
+
+---
+
+## 2026-10-19 晚（十八）· 第 3 步第 3 个 action：`rewrite`
+
+### 1. 判据：零写入读数与脚本完全一致
+
+```
+旧 scripts/rewrite.mjs:  2390 same · 0 differ · 1980 uncompared · 0 designOnly · 0 sourceOnly
+新 action=rewrite:       完全相同
+```
+
+（数字从 2386 涨到 2390，是因为中途多搬了两个文件节点的副本，不是行为变化。）
+
+### 2. 编排只做四件事
+
+```
+diffSymbols → 三种结论分类 → buildRefactorPlan（语法门 + plan_id）
+            → applyRefactorPlan（幂等）→ ★ 落盘后重算复核
+```
+
+★ 后两个函数**照搬不另造**：⑥ 的落盘纪律（原子性 / 幂等 / 篡改检出）已经住在那里，
+重写一遍就会分叉。
+
+### 3. ★ 默认零写入
+
+`apply` 不传 = 只看。**一个会把源码改掉的动作，默认必须是"只看"。**
+`apply=true` 才落盘；落盘后 `diffSymbols` 再跑一次，`afterDiffer > 0` ⇒ `ok=false`（不能算成功）。
+
+### 4. `design_line` 现在是三个 action
+
+| action | 干什么 | 写盘？ |
+|---|---|---|
+| `report` | 六步读数 | ❌ 只读 |
+| `gen-db` | 设计 DSL → 设计 DB | ✅ 写 `certs/design-db/` |
+| `rewrite` | ⑥ 设计 DB → 源码 | ✅ **但需 `apply=true`** |
+
+### 5. 一个反复踩的坑
+
+python 三引号里的 `\\n` 会被解释成**真换行**，拼进 TS 就变成未闭合字符串。
+连续踩两次（`gen-db` 那次 + 这次）。★ **以后改 TS 里的 `\n` 一律用 Edit，不用脚本拼。**
