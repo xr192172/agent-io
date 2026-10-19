@@ -110,7 +110,8 @@
     "coverage": "node scripts/coverage.mjs",
     "impact": "node dist/src/presentation/cli/cli.js impact_analysis project_dir=.",
     "design:check": "node scripts/design-check.mjs",
-    "design:mutate": "node scripts/mutate.mjs"
+    "design:mutate": "node scripts/mutate.mjs",
+    "design:fixture": "node scripts/impl-fixture.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
