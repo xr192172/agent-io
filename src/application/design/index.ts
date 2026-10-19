@@ -50,6 +50,7 @@ import type { ImportProjectInput } from '../../infrastructure/graph/import_proje
 import { setDesignIntent } from './intent/set_design_intent.js';
 import { consistencyHandler, detectDriftHandler, editDslHandler, getDslHandler, renderDesignHandler } from './handlers.js';
 import { designLineHandler } from './line/design_line.js';
+import { genDesignDb } from './db/gen_design_db.js';
 import type { ToolDef } from '../types.js';
 
 export const DESIGN_TOOLS: ToolDef[] = [
@@ -367,11 +368,34 @@ export const DESIGN_TOOLS: ToolDef[] = [
       '要动某一步请用它自己的工具：① import_project · ③ fork-design · ④ edit_dsl / design_intent · ⑤ gen-design-db · ⑥ rewrite。',
     inputSchema: {
       project_dir: z.string().describe('项目根目录（含 .agent-io/）'),
-      feature: z.string().describe('feature 名'),
+      feature: z.string().optional().describe('feature 名（action=report 必填；action=gen-db 省略 = design/ 下全部）'),
+      action: z
+        .enum(['report', 'gen-db'])
+        .optional()
+        .describe('report=六步读数（默认，只读）· gen-db=设计 DSL → 设计 DB（写 certs/design-db/）'),
+      check: z.boolean().optional().describe('★ 仅 action=gen-db：true 只比对不写盘、也不清理陈旧副本'),
     },
-    handler: wrapData(async (a) =>
-      designLineHandler({ project_dir: String(a.project_dir), feature: String(a.feature) }),
-    ),
+    handler: wrapData(async (a) => {
+      const action = (a.action as string | undefined) ?? 'report';
+      if (action === 'gen-db') {
+        const r = genDesignDb(String(a.project_dir), {
+          feature: a.feature ? String(a.feature) : undefined,
+          check: a.check === true,
+        });
+        const head =
+          `设计 DB ${r.check ? '检查' : '生成'} · ${r.features} 个 feature · ${r.files} 个文件节点
+` +
+          `  ${r.check ? '不一致' : '生成'} ${r.check ? r.problems.length : r.written} · 未变 ${r.unchanged} · 清理陈旧 ${r.pruned}` +
+          (r.check ? '' : `\n★ 写盘：certs/design-db/（${r.written} 份有变化）`);
+        const tail = r.problems.length
+          ? `\n\n★ ${r.problems.length} 个问题：\n` + r.problems.slice(0, 12).map((p) => '    ' + p).join('\n')
+          : '';
+        return { message: head + tail, data: r };
+      }
+      const feature = a.feature ? String(a.feature) : '';
+      if (!feature) throw new Error('design_line action=report 需要 feature（六步读数是按 feature 读的）');
+      return designLineHandler({ project_dir: String(a.project_dir), feature });
+    }),
   },
 
   {

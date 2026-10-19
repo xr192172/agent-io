@@ -248,7 +248,7 @@ npm run mutate                       # 变异测试（613/0）
 #   ★ expectation 必填：kind / symbol / path / why（为什么 —— 说不理由的验收项将来没人敢删）
 
 # 数据管线
-node scripts/gen-design-db.mjs       # 设计 DSL → 设计 DB
+node dist/src/presentation/cli/cli.js design_line project_dir=. action=gen-db   # ★ 设计 DSL → 设计 DB（脚本已收进工具）
 node dist/src/presentation/cli/cli.js design_line project_dir=. feature=<f>   # ★ 六步读数（脚本已收进工具）
 node dist/src/presentation/cli/cli.js diff_views feature=<f>   # 三方（含基线前移判据）
 node scripts/design-diff.mjs [--signature] [--detail]

@@ -1,0 +1,96 @@
+{
+  "//": "Design DB —— src/application/design/db/gen_design_db.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "path": "src/application/design/db/gen_design_db.ts",
+  "symbols": [
+    {
+      "name": "GenDesignDbOptions",
+      "kind": "interface",
+      "line": 42,
+      "signature": "GenDesignDbOptions()"
+    },
+    {
+      "name": "GenDesignDbResult",
+      "kind": "interface",
+      "line": 49,
+      "signature": "GenDesignDbResult()"
+    },
+    {
+      "name": "AnyNode",
+      "kind": "type",
+      "line": 66,
+      "signature": "AnyNode()"
+    },
+    {
+      "name": "norm",
+      "kind": "const",
+      "line": 71,
+      "signature": "const norm = (s: unknown): string => String(s ?? '').replace(/\\\\/g, '/')"
+    },
+    {
+      "name": "outNameOf",
+      "kind": "const",
+      "line": 74,
+      "signature": "const outNameOf = (rel: string): string => rel.replace(/^src\\//, '').replac…"
+    },
+    {
+      "name": "genDesignDb",
+      "kind": "function",
+      "line": 81,
+      "signature": "genDesignDb(root: string, opts: GenDesignDbOptions = {}): GenDesignDbResult"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    },
+    {
+      "source": "node:sqlite",
+      "kind": "package"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/design/db/gen_design_db.ts#genDesignDb",
+      "to": "src/application/design/db/gen_design_db.ts#norm"
+    },
+    {
+      "from": "src/application/design/db/gen_design_db.ts#genDesignDb",
+      "to": "src/application/design/db/gen_design_db.ts#norm"
+    },
+    {
+      "from": "src/application/design/db/gen_design_db.ts#genDesignDb",
+      "to": "src/application/design/db/gen_design_db.ts#norm"
+    },
+    {
+      "from": "src/application/design/db/gen_design_db.ts#genDesignDb",
+      "to": "src/application/design/db/gen_design_db.ts#norm"
+    },
+    {
+      "from": "src/application/design/db/gen_design_db.ts#genDesignDb",
+      "to": "src/application/design/db/gen_design_db.ts#norm"
+    },
+    {
+      "from": "src/application/design/db/gen_design_db.ts#genDesignDb",
+      "to": "src/application/design/db/gen_design_db.ts#norm"
+    },
+    {
+      "from": "src/application/design/db/gen_design_db.ts#genDesignDb",
+      "to": "src/application/design/db/gen_design_db.ts#outNameOf"
+    },
+    {
+      "from": "src/application/design/db/gen_design_db.ts#genDesignDb",
+      "to": "src/application/design/db/gen_design_db.ts#outNameOf"
+    },
+    {
+      "from": "src/application/design/db/gen_design_db.ts#genDesignDb",
+      "to": "src/application/design/db/gen_design_db.ts#outNameOf"
+    }
+  ]
+}

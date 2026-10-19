@@ -48662,6 +48662,80 @@
           ]
         },
         "status": "done"
+      },
+      {
+        "id": "file_src_application_design_db_gen_design_db_ts",
+        "label": "gen_design_db.ts",
+        "type": "file",
+        "path": "src/application/design/db/gen_design_db.ts",
+        "description": "src/application/design/db/gen_design_db.ts",
+        "decision": {
+          "summary": "设计 DSL → 设计 DB 的生成器，作为工具 `design_line` 的 `action=gen-db`。★ 全量、与实际 DB 同构（symbols / imports / calls 取自 cache.db，requirements 取自 decision.expectations）；每份副本自报 `path`。支持 `check` 模式（只比对不写），并在写模式下清理不再需要的陈旧副本。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/design/db/gen_design_db.ts",
+              "why": "生成逻辑要住 src（工具面）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/db/gen_design_db.ts",
+              "symbol": "genDesignDb",
+              "why": "生成器必须是一个可单测的函数（不是 handler 里拼）"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/application/design/index.ts",
+              "must": [
+                "gen-db"
+              ],
+              "why": "action 要注册进 design_line 的 schema，否则工具面调不到"
+            }
+          ],
+          "rationale": "⑤ 是设计链的第五步，原先只有 scripts/gen-design-db.mjs（178 行），工具面没有 ⇒ 只能 node scripts/xxx。用户裁定第 3 步：把设计链 6 个脚本收成一个工具的多个 action。★ 选它做第二个是因为它最安全（读 DSL + cache.db，写的是生成物 certs/design-db/），且刚补好 path 契约。",
+          "consequences": "① 工具 design_line 多一个 action（report / gen-db）；② 删 scripts/gen-design-db.mjs；③ 生成物（362 份）不受影响 —— ★ 判据是「新旧实现输出逐字相同」，不是『看起来对』。",
+          "acceptance": "gen-db 生成的 362 份与旧脚本产出**逐字相同**（用 --check 与目录 diff 双向验证）；check 模式只报不写；陈旧副本会被清理且计数如实。",
+          "status": "active",
+          "updated_at": "2026-10-19T13:45:28.428Z",
+          "author": "llm",
+          "agent": "workbuddy"
+        },
+        "task": {
+          "id": "file_src_application_design_db_gen_design_db_ts",
+          "summary": "设计 DSL → 设计 DB 的生成器，作为工具 `design_line` 的 `action=gen-db`。★ 全量、与实际 DB 同构（symbols / imports / calls 取自 cache.db，requirements 取自 decision.expectations）；每份副本自报 `path`。支持 `check` 模式（只比对不写），并在写模式下清理不再需要的陈旧副本。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/design/db/gen_design_db.ts",
+              "why": "生成逻辑要住 src（工具面）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/db/gen_design_db.ts",
+              "symbol": "genDesignDb",
+              "why": "生成器必须是一个可单测的函数（不是 handler 里拼）"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/application/design/index.ts",
+              "must": [
+                "gen-db"
+              ],
+              "why": "action 要注册进 design_line 的 schema，否则工具面调不到"
+            }
+          ],
+          "state": "done",
+          "owner": "workbuddy",
+          "claimed_at": "2026-10-19T13:45:44.676Z",
+          "evidence": [
+            {
+              "kind": "expectations",
+              "at": "2026-10-19T13:47:42.066Z",
+              "verdict": "pass"
+            }
+          ]
+        },
+        "status": "done"
       }
     ],
     "edges": [
@@ -94228,6 +94302,12 @@
         "path": "src/application/design/line/design_line.ts",
         "responsibility": "设计链六步读数（工具 design_line 的 report action）",
         "status": "done"
+      },
+      {
+        "id": "file_src_application_design_db_gen_design_db_ts",
+        "path": "src/application/design/db/gen_design_db.ts",
+        "responsibility": "设计 DSL → 设计 DB（全量、与实际 DB 同构）",
+        "status": "done"
       }
     ]
   },
@@ -94290,11 +94370,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-19T13:32:30.526Z",
+    "saved_at": "2026-10-19T13:47:42.095Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792416750097,
-    "age": 429
+    "scanRev": 1792417661856,
+    "age": 239
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -96075,5 +96155,5 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 495
+  "_dsl_rev": 499
 }
