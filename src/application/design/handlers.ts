@@ -402,15 +402,48 @@ export const editDslHandler = wrap(async (a) => {
   const targetFiles: string[] = [];
   for (const op of ops) {
     if (!FILE_ASSERT_OPS.has(String(op.type ?? ''))) continue;
+    /**
+     * ★★ 2026-10-19：**`delete` 不需要"现状"**，不参与本闸。
+     *
+     * 三类 op 断言的东西不同：
+     *   `add`    断言「它**该**存在」 ⇒ 依据 = 新建意图（见下面 `notIndexed`）
+     *   `update` 断言「它的职责/API 是**什么**」 ⇒ 依据 = **必须看现状**
+     *   `delete` 断言「它**不该**存在」 ⇒ **不需要看现状**（删一个从未索引的路径本来就是幂等的）
+     * ★ 实测踩到：清理一个从未入库的探针节点时，本闸把 `delete` 也拦了，
+     *   只能编一条 evidence 才过得去 —— 那是**为流程服务的假证据**。
+     */
+    if (String(op.op ?? '') === 'delete') continue;
     const byId = op.id ? dsl?.semantic?.files?.find((f) => f.id === op.id)?.path : undefined;
     const byData = typeof op.data?.['path'] === 'string' ? String(op.data['path']) : undefined;
     const p = byId ?? byData;
     if (p && !targetFiles.includes(p)) targetFiles.push(p);
   }
+  /**
+   * ★ 2026-10-19：`cache.db` 里**不存在**、但已在 `evidence` 声明的路径（= 新建文件）。
+   * 放行，但记下来——回执必须点名（放行不是静默）。
+   */
+  const notIndexed: string[] = [];
   if (sourceRoot && targetFiles.length > 0) {
     const misses = targetFiles.filter((p) => {
-      const seen = factsOf(p).matched_path !== null;                              // 现取到事实
+      const seen = factsOf(p).matched_path !== null; // 现取到事实
       const claimed = evidence.some((ev) => normRef(String(ev.ref)) === normRef(p)); // 在 evidence 里声明
+      /**
+       * ★★★ 2026-10-19：**新建文件没有现状可读**。
+       *
+       * 根因：本闸把「库里有该文件」这个**充分条件**当成了**必要条件** ——
+       *   「有该文件 ⇒ 有依据」成立；「有依据 ⇒ 有该文件」**不成立**
+       *   （新建时依据是**期望**，而库里必然没有该文件）。
+       * ⇒ 于是一个本该在实现**之前**发生的动作（设计一个新文件），被要求"文件先存在"，
+       *   逼得人先造空壳文件骗过闸 —— **那是仪式，不是纪律**（2026-10-19 实测踩到）。
+       *
+       * ⇒ 处置：`库里没有 + 已声明` ⇒ **放行**（不是未知，是新建），并记进 `notIndexed`；
+       *   回执里点名「已按【新建】处理」。★ 底线不放宽：**没声明的照样拒**，
+       *   **改已有文件不读现状的照样拒**。
+       */
+      if (!seen && claimed) {
+        notIndexed.push(p);
+        return false;
+      }
       return !seen || !claimed;
     });
     if (misses.length > 0) {
@@ -463,6 +496,16 @@ export const editDslHandler = wrap(async (a) => {
   const nodeIds = new Set(((dsl?.geometry?.nodes ?? []) as Array<{ id: string }>).map((n) => n.id));
   const existsFn = (ev: ReasonEvidenceRef): boolean =>
     nodeIds.has(String(ev.ref)) ||
+    /**
+     * ★★★ 2026-10-19：**本批已被 T20 判为「新建」的路径，也算可回溯证据**。
+     *
+     * 不加这条会怎样（实测）：新建文件的 evidence 被 L4 打回 ——
+     * *「evidence 无法回溯：node "…/x.ts" 不存在或对不上」* ⇒ **T20 和 L4 是同一道墙的两段**。
+     * 两条闸的隐含假设都是"文件必须已存在"，而新建文件恰恰不存在。
+     * ⇒ 这里**不重新判一次**，直接吃 T20 已经判出的结论（`notIndexed`）——
+     *   一处判断、两处消费，避免两个口径分叉。
+     */
+    notIndexed.includes(normRef(String(ev.ref))) ||
     (traceResolver?.exists?.(ev) ?? false) ||
     (sourceRoot ? factsOf(normRef(String(ev.ref))).matched_path !== null : false);
   const v = validateReason({
@@ -481,7 +524,17 @@ export const editDslHandler = wrap(async (a) => {
   // 写收敛（方向 E）：daemon 可用则转发单写者队列执行（乐观锁 + 读改写互斥），
   // 否则本地 updateFeature（现状降级）。冲突时抛错，LLM 据此 rebase，绝不静默覆盖。
   const { result } = await dispatchDslEdit(a as unknown as Record<string, unknown>, (input) => updateFeature(input as never));
-  return result;
+  if (notIndexed.length === 0) return result;
+  // ★ 放行必须**说出来**：这些路径在 cache.db 里不存在，本闸按【新建】放行 ——
+  //   但"没读过现状"这件事要说清，否则就是静默绕过。
+  return {
+    ...result,
+    message:
+      `⚠ 以下路径在 \`cache.db\` 里**不存在**，本次已按【新建】处理（T20 的"现取事实"对它们不适用）：\n` +
+      notIndexed.map((p) => `  · ${p}`).join('\n') +
+      '\n★ 这不代表"读过现状" —— 新建文件没有现状可读。请确认它们确实是要新建的（而不是路径写错）。\n\n' +
+      result.message,
+  };
 });
 
 // ─────────────────────────────────────────────────────────────

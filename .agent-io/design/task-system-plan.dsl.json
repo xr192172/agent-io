@@ -16436,7 +16436,64 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "api"
+        "arch_layer": "api",
+        "decision": {
+          "summary": "T20 的判据是「改 semantic.files 前必须现取到该文件的事实」。★ 对 **cache.db 中不存在的路径**（= 新建文件）不阻断，而是**放行 + 回执明说**；★ 但 evidence 里必须声明该路径，且**改已有文件**时仍严格要求现取。",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "path": "src/application/design/handlers.ts",
+              "must": [
+                "按【新建】处理"
+              ],
+              "why": "放行必须在回执里说出来（放行不是静默）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/handlers.ts",
+              "symbol": "editDslHandler",
+              "why": "改动落在 edit_dsl 的唯一入口里，不许在别的路径再开一份"
+            }
+          ],
+          "rationale": "根因：把「充分条件」当成了「必要条件」——「库里有该文件 ⇒ 有依据」成立，反过来不成立：新建文件时依据是**期望**，而库里必然没有 ⇒ matched_path 永远 null ⇒ 永远过不了 ⇒ 逼人先造空壳文件骗过闸（2026-10-19 我本人就这么干了一次）。那是**仪式，不是纪律**。T20 是 2026-10-05 在移除事实镜像后加的，当时只考虑「改已有文件」，适用边界从未写进代码。",
+          "consequences": "① 新建文件不再被挡（但要 evidence 声明）；② 改已有文件不读现状**仍被挡**（原意保住）；③ 回执会点名「该文件库里不存在，已按新建处理」——★ **放行不是静默**，否则就变成绕过。④ 闸从「硬拦」变「拦+说明」，读的人知道发生了什么。",
+          "acceptance": "三种场景可复现：新建+evidence ⇒ 通过且回执含「按【新建】处理」；新建无 evidence ⇒ 拒；已有文件无 evidence ⇒ 拒。",
+          "status": "active",
+          "updated_at": "2026-10-19T13:28:39.529Z",
+          "author": "llm",
+          "agent": "workbuddy"
+        },
+        "task": {
+          "id": "file_src_application_design_handlers_ts",
+          "summary": "T20 的判据是「改 semantic.files 前必须现取到该文件的事实」。★ 对 **cache.db 中不存在的路径**（= 新建文件）不阻断，而是**放行 + 回执明说**；★ 但 evidence 里必须声明该路径，且**改已有文件**时仍严格要求现取。",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "path": "src/application/design/handlers.ts",
+              "must": [
+                "按【新建】处理"
+              ],
+              "why": "放行必须在回执里说出来（放行不是静默）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/handlers.ts",
+              "symbol": "editDslHandler",
+              "why": "改动落在 edit_dsl 的唯一入口里，不许在别的路径再开一份"
+            }
+          ],
+          "state": "done",
+          "owner": "workbuddy",
+          "claimed_at": "2026-10-19T13:28:48.823Z",
+          "evidence": [
+            {
+              "kind": "expectations",
+              "at": "2026-10-19T13:32:30.502Z",
+              "verdict": "pass"
+            }
+          ]
+        },
+        "status": "done"
       },
       {
         "id": "file_src_application_design_index_ts",
@@ -76661,7 +76718,8 @@
           }
         ],
         "lines": 685,
-        "layer": "api"
+        "layer": "api",
+        "status": "done"
       },
       {
         "id": "file_src_application_design_index_ts",
@@ -94232,11 +94290,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-19T13:13:08.201Z",
+    "saved_at": "2026-10-19T13:32:30.526Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792415587940,
-    "age": 261
+    "scanRev": 1792416750097,
+    "age": 429
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -96017,5 +96075,5 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 485
+  "_dsl_rev": 495
 }
