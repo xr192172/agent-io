@@ -6925,7 +6925,33 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "decision": {
+          "summary": "**积木契约的类型骨架**（Brick Harvest Phase 2）：`BrickRole`（业务/功能二分）、`ShapeSchema`（形状匹配 = 可复用）、`EffectTarget`（时空可组合性验收单元）、`BrickContract`（挂在 `SemanticFile.contract` 上的文件级契约）。★ 它**不做**：不提取（`shapes`/`effects` 只接受 AST 与 observe 两个可信源，**LLM 不产生事实**）；不判定 role / 不算 confidence（采集侧）；不校验、不落盘；**无任何运行期逻辑**。",
+          "expectations": [
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/domain/contract.ts",
+                "check": "BrickContract 形状"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/contract.ts'), 'utf8'); const m = /^export interface BrickContract \\{[\\s\\S]*?^\\}/m.exec(s); if (!m) return false; const b = m[0]; return /schema_version: 1;/.test(b) && /^\\s{2}role: BrickRole;/m.test(b) && /exposes: ShapeSchema\\[\\];/.test(b) && /consumes: ShapeSchema\\[\\];/.test(b) && /writes: EffectTarget\\[\\];/.test(b) && /reads_config: string\\[\\];/.test(b); })()",
+              "why": "纯类型文件没有函数符号（实测 `parseFileSymbols` 对 contract.ts 返回空）⇒ `symbol-exists` 必假红。这条只判 `BrickContract` 的块体仍保留那几根骨架，不冒充运行期契约。"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/domain/contract.ts",
+                "check": "值域"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/contract.ts'), 'utf8').replace(/\\/\\*[\\s\\S]*?\\*\\//g, ''); return /class: 'business' \\| 'functional' \\| 'hybrid';/.test(s) && /origin: 'ast' \\| 'runtime' \\| 'llm';/.test(s) && !/function\\s+\\w+\\s*\\(/.test(s); })()",
+              "why": "role 的三分与 shape 来源的三档是契约的语义边界；同时确认本文件没有运行期函数（它只是类型骨架）。"
+            }
+          ],
+          "acceptance": "`BrickContract` 仍含 `schema_version: 1` / `role` / `shapes{exposes,consumes}` / `effects{writes,holds,emits,reads_config}`；`BrickRole.class` 仍是 `business | functional | hybrid`；`ShapeSchema.origin` 仍限 `ast | runtime | llm`；文件内没有运行期函数实现。",
+          "updated_at": "2026-10-19T01:12:08.407Z",
+          "agent": "design-filler"
+        }
       },
       {
         "id": "file_src_domain_design_sheet_ts",
@@ -6941,7 +6967,42 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "decision": {
+          "summary": "**设计图（手写 `design/<f>.dsl.json`）vs 实况（扫描 `live/<f>.dsl.json`）的只读对拍**：`diffDesignSheet` 出四类差异（同名属性差 / 只在设计里=要实现 / 只在 live=未纳入 / 已认亲“赋予同一个 id”），指代口径只在 `designSheetRef` 一处（有 id 用 id，无 id 用名字/路径），未实现条目住 `meta.goals` 且由 `designSheetPendingRefs` 列出。★ 它**不做**：不读盘、不落盘（IO 在 `handlers.ts#diffDesignSheetHandler`）；不重算 live（那是 `import_project`）；不判 overlay 的 orphan/stale（那是 `overlay.ts`）；不修任何一边的 DSL。纯函数。",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/design_sheet.ts",
+              "symbol": "diffDesignSheet",
+              "why": "四类对拍的唯一实现"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/design_sheet.ts",
+              "symbol": "designSheetRef",
+              "why": "“怎么称呼一个节点”的唯一口径（有 id 用 id，无 id 用名字/路径）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/design_sheet.ts",
+              "symbol": "designSheetPendingRefs",
+              "why": "未实现条目（住 meta.goals）的唯一指代口径"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/domain/design_sheet.ts",
+                "check": "复用 overlay.nodePath，不持 IO"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/design_sheet.ts'), 'utf8'); return /import \\{ nodePath \\} from '\\.\\/overlay\\.js';/.test(s) && !/from ['\"]node:fs['\"]/.test(s) && !/from ['\"]node:path['\"]/.test(s); })()",
+              "why": "认亲的“路径”必须与 overlay 用**同一把尺**（`nodePath`），否则同一事实两口径；同时本模块应保持纯函数（无 fs/path）。"
+            }
+          ],
+          "acceptance": "同一对 `(design, live)` 连跑两次，`diffDesignSheet` 输出**逐字相同**；设计侧无 id 的条目若在 live 里按路径（优先）或名字（兜底）认到，则进 `resolved` 并带 live id，且**不再**出现在 `design_only`；认不到就仍留在 `design_only`（不冒充已实现）。`counts.design/live` 等于两边 `geometry.nodes` 长度。",
+          "updated_at": "2026-10-19T01:12:08.332Z",
+          "agent": "design-filler"
+        }
       },
       {
         "id": "file_src_domain_diff_blocks_ts",
@@ -6957,7 +7018,36 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "decision": {
+          "summary": "**把 per-file 差异折成“可重写的区域块”**：`hasDiff` 是“一个文件算不算有差异”的**唯一判据**（含人写的 `expectation_failures` 与 `retire` 待退役），`buildDiffBlocks` 按 `arch_layer`（或整个 `scope`）聚块，块名**只用 `formatScope` 生成**。★ 它**不做**：不算差异本身（扫描对账在 consistency/diff 侧）；不排“先改哪块”（只按差异总数/区域名排序）；不读盘；不生成任务；不修 DSL。纯函数。",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/diff_blocks.ts",
+              "symbol": "hasDiff",
+              "why": "“这个文件算不算有差异”的唯一判据（consistency 两条返回路径共用）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/diff_blocks.ts",
+              "symbol": "buildDiffBlocks",
+              "why": "per-file 差异 → 区域块的唯一折叠器"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/domain/diff_blocks.ts",
+                "check": "块名只由 formatScope 生成"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/diff_blocks.ts'), 'utf8'); return /import \\{ formatScope \\} from '\\.\\/scope\\.js';/.test(s) && /return formatScope\\(scope\\);/.test(s) && /return f\\.arch_layer \\? formatScope\\(\\{ kind: 'arch_layer', value: f\\.arch_layer \\}\\) : '<未分层>';/.test(s); })()",
+              "why": "块名稳定是本模块的第一条纪律；它必须复用 `scope.ts` 的 `formatScope`，不能在这里另拼一套命名（否则同一片区域会有两个名字）。"
+            }
+          ],
+          "acceptance": "`hasDiff` 对 `{missing:0,mismatched:0,unexpected:0}` ⇒ false；任一项 > 0、或 `expectation_failures > 0`、或 `retire` 有值 ⇒ true。`buildDiffBlocks` 只把 `hasDiff` 为真的文件放进块，`clean_files` 收其余；`group_by:\"scope\"` 时块名 === `formatScope(scope)`，`arch_layer` 时块名 === `formatScope({kind:\"arch_layer\",value})`；无差异时 `blocks` 为空且 `notes` 含明确说明（`compared===0` 时须说“没得比”）。",
+          "updated_at": "2026-10-19T01:12:08.441Z",
+          "agent": "design-filler"
+        }
       },
       {
         "id": "file_src_domain_discussion_log_ts",
@@ -7162,7 +7252,115 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "decision": {
+          "summary": "**overlay 的唯一读写口**（领域侧）：overlay 文档/锚点/边意图/全局件的**类型与全部读写语义**都从这里出 —— 首次迁移 `seedOverlayFromDsl`、对账 `reconcileOverlay`、投影回 base `applyOverlay`、三个收口同步 `mergeDecisionsIntoOverlay` / `mergeTagsIntoOverlay` / `mergeLifecycleIntoOverlay`，以及锚点“有内容”的唯一判据 `hasAnchorPayload`。★★ `validateProgressEvidence` 是**「done 必带证据」的唯一一把尺**（三档 evidence，形状与拒绝理由都在这里；`updateStatus` / `task_ops.complete` 只调它，不另写第二套）。★ 它**不做**：不做 IO（`<feature>.overlay.json` 的读写住 `storage_overlay.ts`，那里只搬字节、不立判据）；不重建 base（`import_project`）；不定义决策卡字段（`geometry.ts`）；不校验整份 DSL（`validator.ts`）。",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/overlay.ts",
+              "symbol": "validateProgressEvidence",
+              "why": "「done 必带证据」的唯一闸；写端不允许另写第二把自己尺"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/overlay.ts",
+              "symbol": "applyOverlay",
+              "why": "overlay → base 的唯一投影口（决策/进度/lifecycle/tags 都从这里回填）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/overlay.ts",
+              "symbol": "seedOverlayFromDsl",
+              "why": "首次迁移的唯一入口（只收人类意图字段，不收可再生的派生字段）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/overlay.ts",
+              "symbol": "reconcileOverlay",
+              "why": "base 重建后“保留/迁移/孤儿/过期”的唯一对账口"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "progress": "done",
+                "evidence": null,
+                "check": "done 无证据的分支必须走到拒绝"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/overlay.ts'), 'utf8'); const a = s.indexOf('export function validateProgressEvidence'); const b = s.indexOf('function validateEvidenceShape'); if (a < 0 || b < 0 || b <= a) return false; const f = s.slice(a, b); const notDone = f.indexOf(\"if (progress !== 'done')\"); const firstShape = f.indexOf('return validateEvidenceShape(evidence);'); if (notDone < 0 || firstShape <= notDone) return false; const tail = f.slice(firstShape + 'return validateEvidenceShape(evidence);'.length); return /^\\s*\\}\\s*if \\(evidence === undefined\\) \\{/.test(tail) && /return bad\\('而这次一个 evidence 都没给'\\)/.test(tail) && /return validateEvidenceShape\\(evidence\\);/.test(tail); })()",
+              "why": "★ 这条**只能钉闸的分支接线**：`run` 的求值域只有 `input / root / validateDSL / fs / path`，**不加载业务函数**（`validateProgressEvidence` 不在池子里），所以无法真调它。这里先切出非 done 分支（`return validateEvidenceShape` 之前），再断言其后**紧跟** `if (evidence === undefined) { return bad(...) }`，最后才 `return validateEvidenceShape(evidence)` —— 顺序或分支错了这条就红。**真实行为**（拒绝/放行/三档形状）由纯函数本体与 `certs/` 下 t328/t334 证覆盖；本条不冒充行为证。"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/domain/overlay.ts",
+                "check": "domain 纯净：不持 IO"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/overlay.ts'), 'utf8'); return !/from ['\"]node:fs['\"]/.test(s) && !/from ['\"]node:path['\"]/.test(s) && /export function applyOverlay\\(/.test(s) && /export function seedOverlayFromDsl\\(/.test(s); })()",
+              "why": "“唯一读写口”指**语义**唯一，不是把 IO 也塞进 domain：落盘在 `storage_overlay.ts`。这条钉住领域层仍不 import fs/path（纯函数可测），同时两个投影口仍在。"
+            }
+          ],
+          "acceptance": "`validateProgressEvidence(\"done\", undefined)` ⇒ `ok:false`，`reason` 以「拒绝：progress='done' 必须带一条 evidence（三档之一）」开头；`(\"in_progress\", undefined)` ⇒ `ok:true`；`(\"done\", {kind:\"expectations\",all_green:true,unsupported:0})` ⇒ `ok:true`；同档 `unsupported:1` ⇒ `ok:false`；`(\"done\", {kind:\"reading\",command:\"\",observed:\"x\",at:\"t\"})` ⇒ `ok:false`。`applyOverlay(base, seedOverlayFromDsl(base))` 后 decision / decision_history / attributes / progress / lifecycle / global.function_tags 都按 overlay 投影回 base；overlay 没写 `progress` 时 **不抹掉** base 的原值。",
+          "updated_at": "2026-10-19T01:13:29.964Z",
+          "agent": "design-filler"
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-19T01:13:29.964Z",
+            "decision": {
+              "summary": "**overlay 的唯一读写口**（领域侧）：overlay 文档/锚点/边意图/全局件的**类型与全部读写语义**都从这里出 —— 首次迁移 `seedOverlayFromDsl`、对账 `reconcileOverlay`、投影回 base `applyOverlay`、三个收口同步 `mergeDecisionsIntoOverlay` / `mergeTagsIntoOverlay` / `mergeLifecycleIntoOverlay`，以及锚点“有内容”的唯一判据 `hasAnchorPayload`。★★ `validateProgressEvidence` 是**「done 必带证据」的唯一一把尺**（三档 evidence，形状与拒绝理由都在这里；`updateStatus` / `task_ops.complete` 只调它，不另写第二套）。★ 它**不做**：不做 IO（`<feature>.overlay.json` 的读写住 `storage_overlay.ts`，那里只搬字节、不立判据）；不重建 base（`import_project`）；不定义决策卡字段（`geometry.ts`）；不校验整份 DSL（`validator.ts`）。",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "validateProgressEvidence",
+                  "why": "「done 必带证据」的唯一闸；写端不允许另写第二把自己尺"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "applyOverlay",
+                  "why": "overlay → base 的唯一投影口（决策/进度/lifecycle/tags 都从这里回填）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "seedOverlayFromDsl",
+                  "why": "首次迁移的唯一入口（只收人类意图字段，不收可再生的派生字段）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "reconcileOverlay",
+                  "why": "base 重建后“保留/迁移/孤儿/过期”的唯一对账口"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "progress": "done",
+                    "evidence": null,
+                    "check": "done 无证据的分支必须走到拒绝"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/overlay.ts'), 'utf8'); const a = s.indexOf('export function validateProgressEvidence'); const b = s.indexOf('function validateEvidenceShape'); if (a < 0 || b < 0 || b <= a) return false; const f = s.slice(a, b); const notDone = f.indexOf(\"if (progress !== 'done')\"); const noEv = f.indexOf('if (evidence === undefined)'); return notDone >= 0 && noEv > notDone && f.includes(\"return bad('而这次一个 evidence 都没给')\") && f.includes('return validateEvidenceShape(evidence)'); })()",
+                  "why": "★ 这条**只能钉闸的分支接线**：`run` 的求值域只有 `input / root / validateDSL / fs / path`，**不加载业务函数**（`validateProgressEvidence` 不在池子里），所以无法真调它。这里断言的是：非 done 先放行、done 且 evidence===undefined 走 `bad(...)` 拒绝、给了 evidence 才进形状校验 —— 顺序错了这条就红。**真实行为**（拒绝/放行/三档形状）由纯函数本体与 `certs/` 下 t328/t334 证覆盖；本条不冒充行为证。"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "src/domain/overlay.ts",
+                    "check": "domain 纯净：不持 IO"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/overlay.ts'), 'utf8'); return !/from ['\"]node:fs['\"]/.test(s) && !/from ['\"]node:path['\"]/.test(s) && /export function applyOverlay\\(/.test(s) && /export function seedOverlayFromDsl\\(/.test(s); })()",
+                  "why": "“唯一读写口”指**语义**唯一，不是把 IO 也塞进 domain：落盘在 `storage_overlay.ts`。这条钉住领域层仍不 import fs/path（纯函数可测），同时两个投影口仍在。"
+                }
+              ],
+              "acceptance": "`validateProgressEvidence(\"done\", undefined)` ⇒ `ok:false`，`reason` 以「拒绝：progress='done' 必须带一条 evidence（三档之一）」开头；`(\"in_progress\", undefined)` ⇒ `ok:true`；`(\"done\", {kind:\"expectations\",all_green:true,unsupported:0})` ⇒ `ok:true`；同档 `unsupported:1` ⇒ `ok:false`；`(\"done\", {kind:\"reading\",command:\"\",observed:\"x\",at:\"t\"})` ⇒ `ok:false`。`applyOverlay(base, seedOverlayFromDsl(base))` 后 decision / decision_history / attributes / progress / lifecycle / global.function_tags 都按 overlay 投影回 base；overlay 没写 `progress` 时 **不抹掉** base 的原值。",
+              "updated_at": "2026-10-19T01:12:08.296Z",
+              "agent": "design-filler"
+            },
+            "agent": "design-filler"
+          }
+        ]
       },
       {
         "id": "file_src_domain_reasoning_ts",
@@ -7194,7 +7392,42 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "decision": {
+          "summary": "**圈定范围的唯一原语**：`parseScope` / `formatScope` 是**唯一一对互逆**的文法尺，`resolveScope` 把 `Scope` 解析成**确定**的 `node_ids` / `file_ids` / `paths`（纯函数、排序、不依赖时间/IO）。★★ **`parseScope` 是 scope 的唯一解析尺；非法 scope 必须抛，不许静默降级成空范围**（未知种类、缺参数、非法 `layer` 一律 `throw`，并给出文法和可用种类）。★ 它**不做**：只表达“哪一片”，不表达“要做什么”；不读盘；默认不下钻 `sub_dsl`（只有 `subtree:<id>!` 才下钻，且必须写进 `notes`）；“没命中/空集”必须进 `notes`。",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/scope.ts",
+              "symbol": "parseScope",
+              "why": "scope 文本的唯一解析尺（非法必须抛）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/scope.ts",
+              "symbol": "formatScope",
+              "why": "scope 的唯一规范名（差异块的稳定块名只许用它）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/scope.ts",
+              "symbol": "resolveScope",
+              "why": "scope → 确定文件集合的唯一解析器（纯函数）"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/domain/scope.ts",
+                "check": "非法输入必须 throw，不许 catch 吞掉"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/scope.ts'), 'utf8'); const a = s.indexOf('export function parseScope'); const b = s.indexOf('export function formatScope'); if (a < 0 || b < 0 || b <= a) return false; const f = s.slice(a, b); return (f.match(/throw new Error/g) || []).length >= 3 && f.includes('未知 scope 种类') && f.includes('缺参数') && !/\\bcatch\\b/.test(f); })()",
+              "why": "“非法必须抛、不许静默降级”的可观测形态：解析函数里至少三处显式 `throw`（缺参数 / 非法 layer / 未知种类），且**没有 catch 吞掉**。"
+            }
+          ],
+          "acceptance": "`parseScope(\"layer:nope\")`、`parseScope(\"bogus:x\")`、`parseScope(\"subtree:\")` 都**抛**，最后一种报“缺参数”；`parseScope(\"\")` 与 `parseScope(\"all\")` ⇒ `{kind:\"all\"}`；对任一合法 scope，`formatScope(parseScope(s)) === s`（规范形）；同一 `(dsl, scope)` 两次 `resolveScope` 输出逐字相同；解析出空集时 `notes` 含「节点集为空」。",
+          "updated_at": "2026-10-19T01:12:08.368Z",
+          "agent": "design-filler"
+        }
       },
       {
         "id": "file_src_domain_semantic_ts",
@@ -7210,7 +7443,36 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "decision": {
+          "summary": "**语义层**的类型与两条纯判据：`SemanticFile` / `ExpectedApi` / `Symbol` / `BrickContract` 挂载点，加上 `FileLifecycle` 的**唯一校验器** `assertLifecycle` 与“语义层有没有文件级条目”的**唯一判据** `hasFileEntries`。★ 它**不做**：不扫描、不解析源码（代码事实只在 `cache.db` 的 `fileFacts`，`actual_apis` / `actual_deps` 已按 T20 删除）；不落盘；不定义 DSL 顶层（那是 `types.ts`）；不校验 JSON schema（那是 `validator.ts`）。",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/semantic.ts",
+              "symbol": "assertLifecycle",
+              "why": "`FileLifecycle` 的非法值/缺字段只有这一处会响亮拒绝（两个写端共用）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/semantic.ts",
+              "symbol": "hasFileEntries",
+              "why": "“语义层有没有文件级条目”的唯一判据，status/consistency/scaffold 三处都调它"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/domain/semantic.ts",
+                "check": "FileLifecycle 值域不含 archived"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/semantic.ts'), 'utf8').replace(/\\/\\*[\\s\\S]*?\\*\\//g, ''); const m = /^export interface FileLifecycle \\{[\\s\\S]*?^\\}/m.exec(s); if (!m) return false; return /status: 'active' \\| 'deprecated' \\| 'merged'/.test(m[0]) && !/'archived'/.test(m[0]); })()",
+              "why": "T183 的结论必须留在类型里：`archived` 是**不可达**值（归档 = 移出 DSL）。先剥注释再判，避免像上一批那样被注释里的 `archived` 误命中。"
+            }
+          ],
+          "acceptance": "`assertLifecycle` 对 `{status:\"deprecated\"}`（缺 `retire_reason`）、`{status:\"merged\"}`（既无 `merged_into` 又无 `merged_from`）、`{status:\"archived\"}` 三种输入**都抛**（最后一种须指路 `archive` 工具）；对 `{status:\"active\"}` 放行。`hasFileEntries(undefined)` 与 `{files:[]}` ⇒ false，`{files:[{…}]}` ⇒ true。",
+          "updated_at": "2026-10-19T01:12:08.263Z",
+          "agent": "design-filler"
+        }
       },
       {
         "id": "file_src_domain_simulation_ts",
@@ -7345,7 +7607,33 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "decision": {
+          "summary": "DSL 的**根类型模块**：定义 `DesignDSL` 的顶层形状（`feature` / `geometry` / 可选 `semantic` / `todos` / `layers` / `theme` …），并统一再导出 geometry / semantic / contract / annotation / animation / simulation / reasoning / canvas_note 的类型 —— 外部只从 `domain/types.js` 这一个入口取类型。★ 它**不做**：不定义几何/语义/积木的内部结构（那些住各自模块，本文件只 re-export）；不做运行期校验、默认值或归一化（结构校验住 `validator.ts` 的 ajv）；不读盘、不落盘。纯类型 ⇒ 无函数符号。",
+          "expectations": [
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/domain/types.ts",
+                "check": "DesignDSL 顶层形状"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/types.ts'), 'utf8'); const m = /^export interface DesignDSL \\{[\\s\\S]*?^\\}/m.exec(s); if (!m) return false; const b = m[0]; return /^\\s{2}feature:/m.test(b) && /^\\s{2}geometry:/m.test(b) && /^\\s{2}semantic\\?:/m.test(b) && /^\\s{2}todos\\?:/m.test(b) && /^\\s{2}layers\\?:/m.test(b); })()",
+              "why": "★ 纯类型文件没有函数符号（实测 `parseFileSymbols` 只给 `interface:DesignDSL`），`symbol-exists` 只认 function/method ⇒ 用它必假红。这条 `run` 只读源码、锚定**行首** `export interface DesignDSL {` 的块体，判它仍保留四个顶层键；不是行为断言，也不冒充。"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/domain/types.ts",
+                "check": "单一类型入口（再导出）"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/types.ts'), 'utf8'); const has = (mod, sym) => new RegExp(\"export type \\\\{[\\\\s\\\\S]*?\" + sym + \",[\\\\s\\\\S]*?\\\\} from '\\\\./\" + mod + \"';\").test(s); return has('geometry.js', 'NodeDecision') && has('semantic.js', 'Semantic') && has('contract.js', 'BrickContract'); })()",
+              "why": "`design_sheet` / `overlay` / `expectation` 等模块都从 `types.js` 拿类型 ⇒ “单一入口”必须仍成立；断的是三处再导出真的还在，而不是凭印象。"
+            }
+          ],
+          "acceptance": "`src/domain/types.ts` 仍导出 `DesignDSL`，其顶层**必填** `feature` + `geometry`，且仍带可选 `semantic` / `todos` / `layers`；同时仍 re-export `NodeDecision`（来自 geometry）与 `BrickContract`（来自 contract）—— 外部从 `domain/types.js` 一个入口即可拿到；文件内**没有运行期函数实现**。",
+          "updated_at": "2026-10-19T01:12:08.224Z",
+          "agent": "design-filler"
+        }
       },
       {
         "id": "file_src_domain_validator_ts",
@@ -58458,11 +58746,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-19T00:50:31.093Z",
+    "saved_at": "2026-10-19T01:14:40.967Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
     "scanRev": 1792314946341,
-    "age": 56084752
+    "age": 57534626
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -60217,7 +60505,14 @@
       "expectations": [],
       "state": "candidate",
       "owner": null
+    },
+    {
+      "id": "todo_symbol-exists-cannot-type-only",
+      "summary": "symbol-exists 只认 function/method —— 对【纯类型文件】（types.ts / contract.ts 那种全是 type/interface 的）会假红：实测 parseFileSymbols(types.ts) 只给 interface:DesignDSL，contract.ts 给 0 个 ⇒ 只能改用「行首锚定 export interface 块」的 run 冒充。★ 这是 D8（kind 表达力缺口）的活实例；2026-10-19 子代理补 domain 设计时发现",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
     }
   ],
-  "_dsl_rev": 24
+  "_dsl_rev": 32
 }
