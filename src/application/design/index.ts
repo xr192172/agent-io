@@ -52,6 +52,7 @@ import { consistencyHandler, detectDriftHandler, editDslHandler, getDslHandler, 
 import { designLineHandler } from './line/design_line.js';
 import { genDesignDb } from './db/gen_design_db.js';
 import { rewriteSymbols } from './rewrite/rewrite.js';
+import { designDiff } from './line/design_diff.js';
 import type { ToolDef } from '../types.js';
 
 export const DESIGN_TOOLS: ToolDef[] = [
@@ -371,7 +372,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
       project_dir: z.string().describe('项目根目录（含 .agent-io/）'),
       feature: z.string().optional().describe('feature 名（action=report 必填；action=gen-db 省略 = design/ 下全部）'),
       action: z
-        .enum(['report', 'gen-db', 'rewrite'])
+        .enum(['report', 'gen-db', 'rewrite', 'diff'])
         .optional()
         .describe(
           'report=六步读数（默认，只读）· gen-db=设计 DSL → 设计 DB（写 certs/design-db/）· ' +
@@ -442,6 +443,25 @@ export const DESIGN_TOOLS: ToolDef[] = [
         }
         const ok = r.applied ? r.applied.ok : true;
         return { message: L.join('\n'), data: { ...r, ok } };
+      }
+      if (action === 'diff') {
+        const f = a.feature ? String(a.feature) : '';
+        if (!f) throw new Error('design_line action=diff 需要 feature（diff 是按 feature 读两份 DSL 的）');
+        const d = designDiff(String(a.project_dir), f);
+        const L: string[] = [
+          `════ 设计侧 × 实际侧 diff · ${f} ════`,
+          `设计 ${d.designNodes} 节点 · ${d.designEdges} 边    实际 ${d.liveNodes} 节点 · ${d.liveEdges} 边`,
+          '',
+          `+ 只在设计侧（设计了、实际还没有）：${d.onlyDesign.length} 个`,
+          ...d.onlyDesign.slice(0, 20).map((id) => `    + ${id}`),
+          `- 只在实际侧（实际有、设计没收录）：${d.onlyLive.length} 个`,
+          ...d.onlyLive.slice(0, 20).map((id) => `    - ${id}`),
+          `~ 两边都有但内容不同：${d.changed.length} 个`,
+          ...d.changed.slice(0, 20).map((c) => `    ~ ${c.id}  [${c.fields.join(',')}]`),
+          '',
+          `边：扫描遗漏 ${d.missedEdges.length} · 真要建 ${d.realMissingEdges.length} · 只在实际侧 ${d.onlyLiveEdges.length}`,
+        ];
+        return { message: L.join('\n'), data: d };
       }
       const feature = a.feature ? String(a.feature) : '';
       if (!feature) throw new Error('design_line action=report 需要 feature（六步读数是按 feature 读的）');

@@ -48880,6 +48880,121 @@
           ]
         },
         "status": "done"
+      },
+      {
+        "id": "file_src_application_design_line_design_diff_ts",
+        "label": "design_diff.ts",
+        "type": "file",
+        "path": "src/application/design/line/design_diff.ts",
+        "description": "src/application/design/line/design_diff.ts",
+        "decision": {
+          "summary": "设计侧 × 实际侧的**节点级 diff**（像 git diff，只报不一致）：`+` 只在设计侧 · `-` 只在实际侧 · `~` 两边都有但内容不同。★ 只比「有意义的字段」（decision / task / label / type / arch_layer / description），不渲染噪声。★ 只在设计侧的**边**要再判一次：源码里确有引用 ⇒ 扫描遗漏（live 漏抓），源码里找不到 ⇒ 真要建。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/design/line/design_diff.ts",
+              "why": "diff 逻辑要住 src（工具面）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/line/design_diff.ts",
+              "symbol": "designDiff",
+              "why": "diff 必须是可单测的纯函数"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/application/design/index.ts",
+              "must": [
+                "designDiff",
+                "design_diff"
+              ],
+              "why": "★ 原判据写成 must:[''diff''] —— 那个字符串在 index.ts 里到处都是（diff_views / 注释）⇒ 恒真、卡一出生就 satisfied。改成只有注册了才会出现的标识符（import 的符号名 + 模块路径）。"
+            }
+          ],
+          "rationale": "语义是用户 2026-10-18 的原话：『所谓的对拍其实就像 Git 的 diff』。它比 diff_views 多一样东西 —— **列出具体节点 id**（diff_views 只给文件级数字）。而符号级 diff 已归 rewrite/symbol_diff，所以它只保留节点级 + 边级。★ 边的那条『扫描遗漏 vs 真要建』是它独有的价值：import_project 的边是部分抓取，live 里没有 ≠ 设计说错了。",
+          "consequences": "① design_line 多 action=diff；② 删 scripts/design-diff.mjs；③ ★ 搬家纪律：checkEdgeInSource 的**浅正原样保留**（它自己写着不做完整 AST）；换 AST 会改行为，不是搬家。④ 不搬 --write-plan（那条旧路径的清单现在由 buildRefactorPlan 现算）。",
+          "acceptance": "action=diff 的读数与旧脚本逐项相同（onlyDesign 4 / onlyLive 17 / changed 11 / 边三类）；源码里那处浅判正则一字未改。",
+          "status": "active",
+          "updated_at": "2026-10-19T14:31:58.241Z",
+          "author": "llm",
+          "agent": "workbuddy"
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-19T14:31:58.241Z",
+            "decision": {
+              "summary": "设计侧 × 实际侧的**节点级 diff**（像 git diff，只报不一致）：`+` 只在设计侧 · `-` 只在实际侧 · `~` 两边都有但内容不同。★ 只比「有意义的字段」（decision / task / label / type / arch_layer / description），不渲染噪声。★ 只在设计侧的**边**要再判一次：源码里确有引用 ⇒ 扫描遗漏（live 漏抓），源码里找不到 ⇒ 真要建。",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/application/design/line/design_diff.ts",
+                  "why": "diff 逻辑要住 src（工具面）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/line/design_diff.ts",
+                  "symbol": "designDiff",
+                  "why": "diff 必须是可单测的纯函数"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/index.ts",
+                  "must": [
+                    "'diff'"
+                  ],
+                  "why": "action=diff 必须注册进 design_line 的 schema，否则工具面调不到"
+                }
+              ],
+              "rationale": "语义是用户 2026-10-18 的原话：『所谓的对拍其实就像 Git 的 diff』。它比 diff_views 多一样东西 —— **列出具体节点 id**（diff_views 只给文件级数字）。而符号级 diff 已归 rewrite/symbol_diff，所以它只保留节点级 + 边级。★ 边的那条『扫描遗漏 vs 真要建』是它独有的价值：import_project 的边是部分抓取，live 里没有 ≠ 设计说错了。",
+              "consequences": "① design_line 多 action=diff；② 删 scripts/design-diff.mjs；③ ★ 搬家纪律：checkEdgeInSource 的**浅正原样保留**（它自己写着不做完整 AST）；换 AST 会改行为，不是搬家。④ 不搬 --write-plan（那条旧路径的清单现在由 buildRefactorPlan 现算）。",
+              "acceptance": "action=diff 的读数与旧脚本逐项相同（onlyDesign 4 / onlyLive 17 / changed 11 / 边三类）；源码里那处浅判正则一字未改。",
+              "status": "active",
+              "updated_at": "2026-10-19T14:31:37.776Z",
+              "author": "llm",
+              "agent": "workbuddy"
+            },
+            "note": "把 scripts/design-diff.mjs 的节点级 diff 收成 design_line 的 action=diff（符号级已归 rewrite）",
+            "author": "llm",
+            "agent": "workbuddy"
+          }
+        ],
+        "task": {
+          "id": "file_src_application_design_line_design_diff_ts",
+          "summary": "设计侧 × 实际侧的**节点级 diff**（像 git diff，只报不一致）：`+` 只在设计侧 · `-` 只在实际侧 · `~` 两边都有但内容不同。★ 只比「有意义的字段」（decision / task / label / type / arch_layer / description），不渲染噪声。★ 只在设计侧的**边**要再判一次：源码里确有引用 ⇒ 扫描遗漏（live 漏抓），源码里找不到 ⇒ 真要建。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/design/line/design_diff.ts",
+              "why": "diff 逻辑要住 src（工具面）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/line/design_diff.ts",
+              "symbol": "designDiff",
+              "why": "diff 必须是可单测的纯函数"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/application/design/index.ts",
+              "must": [
+                "designDiff",
+                "design_diff"
+              ],
+              "why": "★ 原判据写成 must:[''diff''] —— 那个字符串在 index.ts 里到处都是（diff_views / 注释）⇒ 恒真、卡一出生就 satisfied。改成只有注册了才会出现的标识符（import 的符号名 + 模块路径）。"
+            }
+          ],
+          "state": "done",
+          "owner": "workbuddy",
+          "claimed_at": "2026-10-19T14:32:08.511Z",
+          "evidence": [
+            {
+              "kind": "expectations",
+              "at": "2026-10-19T14:34:55.803Z",
+              "verdict": "pass"
+            }
+          ]
+        },
+        "status": "done"
       }
     ],
     "edges": [
@@ -94464,6 +94579,12 @@
         "path": "src/application/design/rewrite/rewrite.ts",
         "responsibility": "⑥ 设计 DB → 源码的编排（清单 → 语法门 → 落盘 → 复核）",
         "status": "done"
+      },
+      {
+        "id": "file_src_application_design_line_design_diff_ts",
+        "path": "src/application/design/line/design_diff.ts",
+        "responsibility": "设计侧 × 实际侧的节点级 diff（像 git diff，只报不一致）",
+        "status": "done"
       }
     ]
   },
@@ -94526,11 +94647,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-19T14:09:05.650Z",
+    "saved_at": "2026-10-19T14:34:55.831Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792418945426,
-    "age": 224
+    "scanRev": 1792420495584,
+    "age": 247
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -96311,5 +96432,5 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 507
+  "_dsl_rev": 512
 }

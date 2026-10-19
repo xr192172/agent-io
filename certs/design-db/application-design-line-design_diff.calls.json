@@ -1,0 +1,106 @@
+{
+  "//": "Design DB —— src/application/design/line/design_diff.ts（★ 全量、与实际 DB 同构；从 design/task-system-plan.dsl.json 的节点生成）",
+  "//generated_by": "scripts/gen-design-db.mjs（★ 不许手改：改了下次生成就冲掉）",
+  "//source": "design/task-system-plan.dsl.json",
+  "path": "src/application/design/line/design_diff.ts",
+  "symbols": [
+    {
+      "name": "AnyNode",
+      "kind": "type",
+      "line": 32,
+      "signature": "AnyNode()"
+    },
+    {
+      "name": "AnyEdge",
+      "kind": "type",
+      "line": 33,
+      "signature": "AnyEdge()"
+    },
+    {
+      "name": "DesignDiffResult",
+      "kind": "interface",
+      "line": 35,
+      "signature": "DesignDiffResult()"
+    },
+    {
+      "name": "MEANINGFUL",
+      "kind": "const",
+      "line": 55,
+      "signature": "const MEANINGFUL = ['decision', 'task', 'label', 'type', 'arch_layer', 'desc…"
+    },
+    {
+      "name": "stripExt",
+      "kind": "const",
+      "line": 57,
+      "signature": "const stripExt = (p: string): string => String(p).replace(/\\.(ts|tsx|mts|c…"
+    },
+    {
+      "name": "normPath",
+      "kind": "const",
+      "line": 58,
+      "signature": "const normPath = (p: string): string => stripExt(path.resolve(p)).replace(…"
+    },
+    {
+      "name": "nodePath",
+      "kind": "function",
+      "line": 61,
+      "signature": "nodePath(node: AnyNode | undefined): string | null"
+    },
+    {
+      "name": "importSpecs",
+      "kind": "function",
+      "line": 68,
+      "signature": "importSpecs(text: string): string[]"
+    },
+    {
+      "name": "designDiff",
+      "kind": "function",
+      "line": 76,
+      "signature": "designDiff(projectDir: string, feature: string): DesignDiffResult"
+    }
+  ],
+  "imports": [
+    {
+      "source": "node:fs",
+      "kind": "package"
+    },
+    {
+      "source": "node:path",
+      "kind": "package"
+    }
+  ],
+  "calls": [
+    {
+      "from": "src/application/design/line/design_diff.ts#designDiff",
+      "to": "src/application/design/line/design_diff.ts#designDiff.checkEdgeInSource"
+    },
+    {
+      "from": "src/application/design/line/design_diff.ts#designDiff.checkEdgeInSource",
+      "to": "src/application/design/line/design_diff.ts#importSpecs"
+    },
+    {
+      "from": "src/application/design/line/design_diff.ts#designDiff.checkEdgeInSource",
+      "to": "src/application/design/line/design_diff.ts#nodePath"
+    },
+    {
+      "from": "src/application/design/line/design_diff.ts#designDiff.checkEdgeInSource",
+      "to": "src/application/design/line/design_diff.ts#nodePath"
+    },
+    {
+      "from": "src/application/design/line/design_diff.ts#designDiff.checkEdgeInSource",
+      "to": "src/application/design/line/design_diff.ts#normPath"
+    },
+    {
+      "from": "src/application/design/line/design_diff.ts#designDiff.checkEdgeInSource",
+      "to": "src/application/design/line/design_diff.ts#normPath"
+    },
+    {
+      "from": "src/application/design/line/design_diff.ts#designDiff.checkEdgeInSource",
+      "to": "src/application/design/line/design_diff.ts#stripExt"
+    },
+    {
+      "from": "src/application/design/line/design_diff.ts#designDiff.checkEdgeInSource",
+      "to": "src/application/design/line/design_diff.ts#stripExt"
+    }
+  ]
+}

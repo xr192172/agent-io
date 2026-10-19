@@ -7,7 +7,7 @@
     {
       "name": "DESIGN_TOOLS",
       "kind": "const",
-      "line": 57,
+      "line": 58,
       "signature": "const DESIGN_TOOLS = [ { name: 'get_dsl', title: 'Query feature data', descrip…"
     }
   ],
@@ -75,6 +75,10 @@
     },
     {
       "source": "./rewrite/rewrite.js",
+      "kind": "relative"
+    },
+    {
+      "source": "./line/design_diff.js",
       "kind": "relative"
     },
     {

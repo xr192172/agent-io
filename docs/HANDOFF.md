@@ -71,8 +71,8 @@ certs/design-contracts/*.calls.json    设计 DB 的调用（7531 条）
 **验收脚本（一条命令看全貌）**
 ```bash
 node scripts/design-line.mjs      # 6 步读数
-node scripts/design-diff.mjs      # 节点级 diff（+/-/~）
-node scripts/design-diff.mjs --signature   # 符号级 diff（⑥ 的判据）
+node dist/src/presentation/cli/cli.js design_line project_dir=. feature=<f> action=diff   # ★ 节点级 diff（+/-/~）
+node dist/src/presentation/cli/cli.js design_line project_dir=. action=rewrite   # ★ 符号级（零写入模式，⑥ 的判据）
 node dist/src/presentation/cli/cli.js diff_views feature=<f>   # ★ 三方合并已并入 diff_views（merge.mjs 已删）
 node dist/src/presentation/cli/cli.js design_line project_dir=. action=rewrite   # ★ ⑥ 三种结论（脚本已收进工具）
 node dist/src/presentation/cli/cli.js design_line project_dir=. action=rewrite apply=true   # ★ 真落盘（幂等；自动复核）
@@ -251,7 +251,7 @@ npm run mutate                       # 变异测试（613/0）
 node dist/src/presentation/cli/cli.js design_line project_dir=. action=gen-db   # ★ 设计 DSL → 设计 DB（脚本已收进工具）
 node dist/src/presentation/cli/cli.js design_line project_dir=. feature=<f>   # ★ 六步读数（脚本已收进工具）
 node dist/src/presentation/cli/cli.js diff_views feature=<f>   # 三方（含基线前移判据）
-node scripts/design-diff.mjs [--signature] [--detail]
+node dist/src/presentation/cli/cli.js design_line project_dir=. feature=<f> action=diff
 node scripts/rewrite.mjs [--apply] [--prefix=src/]   # ⑥ 三种结论；--apply 才落盘
 node scripts/sync.mjs [--apply]      # ③ 双向
 ```
