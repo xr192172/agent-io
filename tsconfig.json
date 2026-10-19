@@ -15,6 +15,11 @@
     "declaration": false,
     "sourceMap": true,
     "isolatedModules": true,
+    // ★ 2026-10-20：增量编译（改一个文件 7.4s → 2.3s）。
+    //   ★ 全语言通用提示：这是 **tsc 专属**能力，不许塞进通用层（verify/gates）——
+    //     将来要「按语言插拔编译器」时，这里是 TS provider 的实现细节。
+    "incremental": true,
+    "tsBuildInfoFile": "./node_modules/.cache/tsbuildinfo.json",
     "verbatimModuleSyntax": false
   },
   "include": ["src/**/*"],
