@@ -33,6 +33,7 @@
 | `docs/PITFALLS.md` | 环境坑（Windows / node / 编码） | 遇到怪问题 |
 | `docs/ARBITRATION.md` | 要用户拍的（不自己决定） | 遇到分歧 |
 | `docs/todo.md` | 项目待办 | 想知道还差什么 |
+| **`docs/DISCUSSION.md`** | **讨论记录**（想清楚了什么：快照 vs 事件 · 三方合并的对应 · 任务系统的死锁 · 畅想） | ★ **开发前先翻这里** |
 
 ★ **注意**：`docs/*` 被 `.gitignore` 忽略 ⇒ 新文档要 `git add -f` 或加白名单。
 
