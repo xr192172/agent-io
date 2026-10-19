@@ -1438,3 +1438,64 @@ reopen ✓ → release ✓（candidate + owner=null）→ complete ✓（done + 
 一张**从没被领过**的卡，现在可以收口，而且能查出是谁收的。
 
 ★ 过程中 L3 闸两次拦住我（`release` 的 reason 没写实体名）—— 不是 bug，是它在尽职。
+
+---
+
+## 2026-10-20 早（二四）· 实现层变异：先夹具，再变异（`6d3554da`）
+
+### 1. 用户问「变异是怎么个变异法」
+
+**不是「删掉已有代码」**，是**改一个运算符**：
+
+```
+'&&'   → '||'      后态全过 ∧ 前态无红  →  或
+'every'→ 'some'
+'==='  → '!=='
+```
+
+但真正的问题不是「怎么改坏」，而是 —— **改坏之后谁来发现？**
+
+现有 `design:check` 不碰它，`mutate` 只测 DSL 判据 ⇒ **改坏了没有任何东西会红**。
+⇒ 所以顺序必须是：**夹具 → 变异 → 看红**。没有夹具的变异，测的是「有没有人看」。
+
+### 2. 夹具（`npm run design:fixture`，4 场景）
+
+对着 `cardStanding` 的 4 个分支各写一条，**只钉 `standing`，不钉 `reason` 文案**（文案会改，判据不会）：
+
+| # | 场景 | 期望 |
+|---|---|---|
+| F1 | 后态全过 + 前态无红 | `satisfied` |
+| F2 | 后态有红 | `work` |
+| F3 | 后态全过 + 前态红（`edge-absent` 但边存在） | `violated` |
+| F4 | 零判据 | `unknowable` |
+
+### 3. ★ 第一版夹具写错了 —— 而错法和昨天那条判据是同一族
+
+我拿 DSL 的一条边（`from`/`to` 是**节点 id**，如 `file_src_xxx`）去造 `edge-absent`：
+
+```
+判据"通过" ⇒ 拿到 satisfied（期望 violated）
+```
+
+根因：`edge-absent` 比的是 `fileFacts(from).deps` —— **解析后的文件路径**，
+节点 id 永远不在里面。
+
+> **DSL 边的 `from`/`to` 与文件依赖的 `from`/`to` 长得一模一样，语义完全不同。**
+
+这是「名字像 ≠ 同义」的又一例。改用 `fileFacts(HANDLERS).deps[0]` 才通。
+
+### 4. 变异验证
+
+```
+=== → !==   ⇒  F1 satisfied→blocked ✗ · F2 work→satisfied ✗ · F3 violated→blocked ✗ · F4 不变 ✓
+3/4 红 = 变异被杀死 ⇒ 夹具对该实现敏感
+还原后 4/4，grep MUTANT = 0
+```
+
+### 5. 这一补的边界（不吹）
+
+昨天那张表里「判据实现」是**部分（未覆盖）**。现在它有了**一个可跑的夹具 + 一次变异验证**
+——但只是 **`cardStanding` 的一个分支条件**这一点，不是整格。
+
+`claimTask` / `completeTask` / `releaseIfExpired` / `redAttribution` 这些实现**还没有夹具**。
+⇒ 这一格的路是「逐个补」，不是「一次点亮」。
