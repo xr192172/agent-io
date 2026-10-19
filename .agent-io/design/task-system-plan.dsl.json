@@ -4094,7 +4094,43 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "decision": {
+          "summary": "DSL 的【文件契约】写入原语：`expected_apis` 的增 / 改 / 删（按签名逐字匹配）、`setExpectedApis`（整块重写，T160）与 `setNodeSemantic`（节点↔文件绑定）。★ 它只维护\"这个文件对外**承诺**哪些签名\"这一张清单：**不判签名写得对不对**（tsc 契约的事）、**不判实现有没有**（对拍的事）、**不写进度**（T328 后 `setNodeSemantic` 不再同步 status，进度归 `overlay.progress`）。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/design/dsl_ops/api_ops.ts",
+              "why": "动作要有落点（基线）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/api_ops.ts",
+              "symbol": "addExpectedApi",
+              "why": "增量加契约的入口"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/api_ops.ts",
+              "symbol": "setExpectedApis",
+              "why": "★ 整块重写入口 —— 没有它就只能\"背出旧签名串\"，正是 T160 要废掉的那把尺"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/api_ops.ts",
+              "symbol": "setNodeSemantic",
+              "why": "节点↔文件绑定的唯一入口"
+            },
+            {
+              "kind": "run",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/dsl_ops/api_ops.ts'), 'utf8'); return s.includes(\"mode: 'block-rewrite'\") && s.includes('data.removed') && s.includes('重复 signature') && s.includes('缺少非空 signature'); })()",
+              "why": "★ 三条纪律的可判面：回执必须带 block-rewrite 与增删（不许静默）、两条\"不猜\"闸必须真的存在（缺签名 / 重复签名都拒）。text-grep 是弱尺 —— 但它测的正是\"这三句判据还在不在\""
+            }
+          ],
+          "acceptance": "`setExpectedApis` 是**整块替换而非增量**，返回 `data{ mode:\"block-rewrite\", before, after, added, removed, kept }` 且按签名逐字比；缺 `signature` 或签名重复 ⇒ **抛**（不静默丢条目）；`update/deleteExpectedApi` 找不到该签名 ⇒ 抛；回执首行自足到\"N 条 → M 条（＋/－/＝）\"，删了条目带 ⚠。",
+          "updated_at": "2026-10-19T00:39:02.114Z",
+          "agent": "design-filler"
+        }
       },
       {
         "id": "file_src_application_design_dsl_ops_edge_ops_ts",
@@ -4110,7 +4146,115 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "decision": {
+          "summary": "DSL 的【边】写入原语：`addEdge` / `deleteEdge` 各一条。写前只校验三件**结构**事（feature 在、两端节点在、edge_id 不重），然后 push / splice 一条 `geometry.edges` 并落盘。★ 边界（它不做什么）：**不判\"该不该有这条依赖\"**（那是人的设计结论）；**不排版**（edge_type / arrow / layer 只是透传，不做走线与布局）；**不级联**（删边不删端点、不碰决策卡与标注 —— \"三清\"是 `deleteFile` / `archive` 的事，别在这儿再造一份）。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/design/dsl_ops/edge_ops.ts",
+              "why": "动作要有落点（基线）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/edge_ops.ts",
+              "symbol": "addEdge",
+              "why": "加边的唯一入口"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/edge_ops.ts",
+              "symbol": "deleteEdge",
+              "why": "删边的唯一入口（另一半动作）"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "id": "demo",
+                "type": "feature_diagram",
+                "feature": "demo",
+                "version": "1.0.0",
+                "geometry": {
+                  "layout": "vertical_flow",
+                  "width": 800,
+                  "height": 600,
+                  "nodes": [
+                    {
+                      "id": "a",
+                      "label": "a",
+                      "type": "file",
+                      "x": 0,
+                      "y": 0
+                    },
+                    {
+                      "id": "b",
+                      "label": "b",
+                      "type": "file",
+                      "x": 100,
+                      "y": 0
+                    }
+                  ],
+                  "edges": [
+                    {
+                      "id": "e1",
+                      "from": "a",
+                      "to": "b"
+                    },
+                    {
+                      "id": "e1",
+                      "from": "b",
+                      "to": "a"
+                    }
+                  ]
+                }
+              },
+              "expect": "validateDSL(input).keys.some(k => k === 'duplicate_id:edge:e1')",
+              "why": "★ 前置闸①：overlay.edges 按 id 索引 ⇒ 重复 id 是\"改哪条边靠掷骰子\"的坏形状。addEdge 必须先拦它；这条断言证明该坏形状确实会被点名（否则\"先拦\"就没有理由）"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "id": "demo",
+                "type": "feature_diagram",
+                "feature": "demo",
+                "version": "1.0.0",
+                "geometry": {
+                  "layout": "vertical_flow",
+                  "width": 800,
+                  "height": 600,
+                  "nodes": [
+                    {
+                      "id": "a",
+                      "label": "a",
+                      "type": "file",
+                      "x": 0,
+                      "y": 0
+                    },
+                    {
+                      "id": "b",
+                      "label": "b",
+                      "type": "file",
+                      "x": 100,
+                      "y": 0
+                    }
+                  ],
+                  "edges": [
+                    {
+                      "id": "e1",
+                      "from": "a",
+                      "to": "ghost"
+                    }
+                  ]
+                }
+              },
+              "expect": "validateDSL(input).keys.some(k => k === 'dangling_edge:edge:e1:to')",
+              "why": "★ 前置闸②：端点不存在 ⇒ 写出来就是悬空边。这条断言把\"addEdge 为什么必须先查 to\"钉在可判形状上"
+            }
+          ],
+          "acceptance": "三条前置错（feature 不存在 / 源或目标节点不存在 / edge_id 已存在）都**抛错且 `geometry.edges` 一条不变**（不静默跳过、不写半条）；成功时 edges 只多（少）那一条，`id` / `from` / `to` 与入参逐字相同，其余边的相对顺序不变。",
+          "updated_at": "2026-10-19T00:39:01.907Z",
+          "agent": "design-filler"
+        }
       },
       {
         "id": "file_src_application_design_dsl_ops_edit_result_ts",
@@ -4142,7 +4286,61 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "decision": {
+          "summary": "feature 级生命周期原语：`createFeature` 造一份空骨架、`cloneFeature` 整份深拷贝成新 feature。★ 它只负责\"开一张空白图纸 / 复制一张图纸\"：**不填内容**（节点 / 边 / 语义由 dsl_ops 其它 op 写）、**不判 DSL 结构合法性**（validator 的事）、**不落进度**（新建读作 `draft` 是 `resolveDiagramStatus` 的读侧默认，不是写进 base 的值）。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/design/dsl_ops/feature_ops.ts",
+              "why": "动作要有落点（基线）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/feature_ops.ts",
+              "symbol": "createFeature",
+              "why": "新建 feature 的唯一入口"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/feature_ops.ts",
+              "symbol": "cloneFeature",
+              "why": "克隆入口（★ 返回形状是 CloneFeatureResult，不是 EditResult）"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "id": "feature_demo",
+                "type": "feature_diagram",
+                "feature": "demo",
+                "version": "1.0.0",
+                "title": "demo",
+                "geometry": {
+                  "layout": "vertical_flow",
+                  "width": 800,
+                  "height": 600,
+                  "nodes": [],
+                  "edges": []
+                },
+                "semantic": {
+                  "files": [],
+                  "multi_file_invariants": []
+                },
+                "annotations": []
+              },
+              "expect": "validateDSL(input).valid === true",
+              "why": "★ createFeature 的产出就是这份骨架 —— 它必须**自己合法**（schema 认空图）。这条把\"骨架形状\"从注释变成可判事实"
+            },
+            {
+              "kind": "run",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/dsl_ops/feature_ops.ts'), 'utf8'); return s.split('/^[a-zA-Z0-9_-]+$/').length - 1 === 2 && s.includes(\"'feature_' + target_feature\"); })()",
+              "why": "★ 两件事：名字闸必须**两条路径都有**（create 与 clone 同一把尺，出现 2 次），且 clone 必须**重写 id** —— 漏了就把副本写成同一个 id"
+            }
+          ],
+          "acceptance": "`feature` / `target_feature` 不匹配 `^[a-zA-Z0-9_-]+$` 或已存在 ⇒ 抛错（两条路径同一把尺）；`createFeature` 产出的骨架能过 `validateDSL`（valid===true —— 空图本身合法）；`cloneFeature` 把 `id` 重写为 `feature_<target>`、`feature` 改名、无 title 时标题追加 `(副本)`，且是深拷贝（改副本不回写源）。",
+          "updated_at": "2026-10-19T00:39:02.212Z",
+          "agent": "design-filler"
+        }
       },
       {
         "id": "file_src_application_design_dsl_ops_file_ops_ts",
@@ -4158,7 +4356,78 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "decision": {
+          "summary": "DSL 的【语义文件】写入原语：`addFile` / `updateFile` / `deleteFile`，维护 `semantic.files`（path / responsibility / expected_* / lifecycle）。★ 四条边界都是\"只转交、不另立判据\"：① 进度**不在这里写**（`status` 一律路由 `updateStatus`，带 evidence 闸；base 上的 status 只是 overlay 的**投影**）；② `lifecycle` 合不合法只由 `domain/semantic.ts` 的 `assertLifecycle` 判，本文件只做**合并写**；③ 删文件的\"三清\"只由 `domain/dsl_removal.ts` 的 `removeFileFromDsl` 做；④ 它**不建几何节点**、**不写决策卡**。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/design/dsl_ops/file_ops.ts",
+              "why": "动作要有落点（基线）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/file_ops.ts",
+              "symbol": "addFile",
+              "why": "加语义文件的唯一入口"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/file_ops.ts",
+              "symbol": "updateFile",
+              "why": "改语义文件（含 lifecycle 标记）的唯一入口"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/file_ops.ts",
+              "symbol": "deleteFile",
+              "why": "删语义文件（三清）的唯一入口"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "id": "demo",
+                "type": "feature_diagram",
+                "feature": "demo",
+                "version": "1.0.0",
+                "geometry": {
+                  "layout": "vertical_flow",
+                  "width": 800,
+                  "height": 600,
+                  "nodes": [
+                    {
+                      "id": "a",
+                      "label": "a",
+                      "type": "file",
+                      "x": 0,
+                      "y": 0
+                    }
+                  ],
+                  "edges": []
+                },
+                "semantic": {
+                  "files": [
+                    {
+                      "id": "sem_only",
+                      "path": "src/x.ts",
+                      "responsibility": "x"
+                    }
+                  ]
+                }
+              },
+              "expect": "validateDSL(input).keys.some(k => k === 'anchor_broken:file:sem_only')",
+              "why": "★ 本文件只写 semantic 层、**不建节点** ⇒ \"语义里有、几何里没有\"正是它最容易留下的坏形状；这条断言说明锚定是硬约束（也是 deleteFile 必须三清的理由）"
+            },
+            {
+              "kind": "run",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/dsl_ops/file_ops.ts'), 'utf8'); return s.split('updateStatus({').length - 1 === 2 && s.includes('assertLifecycle(') && !/file\\.status\\s*=/.test(s); })()",
+              "why": "★ 钉住 T328 的实质：进度只经 `updateStatus`（add / update 各一次）、lifecycle 只经 `assertLifecycle`、base 上**没有**裸写 `file.status =` —— 否则就是\"第二处进度权威\"，会绕过 evidence 闸"
+            }
+          ],
+          "acceptance": "`addFile` 遇重复 file_id ⇒ 抛错且回执指向真入口（`edit_dsl` 的 `file.update`，并明说**没有** `update_file` 这个工具）；`updateFile` 的 lifecycle 是**合并**（`merged_from` 等历史不被抹掉）；带 status 的 add/update 必然经 `updateStatus`，源码里**没有一处**裸写 `file.status = …`；`deleteFile` 的回执**首行自足**（三清计数 + \"不留历史\"的 ⚠）。",
+          "updated_at": "2026-10-19T00:39:02.013Z",
+          "agent": "design-filler"
+        }
       },
       {
         "id": "file_src_application_design_dsl_ops_node_ops_ts",
@@ -59538,5 +59807,5 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 12
+  "_dsl_rev": 16
 }
