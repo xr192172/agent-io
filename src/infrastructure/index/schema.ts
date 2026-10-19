@@ -93,7 +93,12 @@ CREATE TABLE IF NOT EXISTS imports (
     line INTEGER NOT NULL,
     source TEXT NOT NULL,
     kind TEXT NOT NULL,      -- 'relative' | 'package'（与 ts_kernel ParsedImport.kind 一致）
-    type_only INTEGER NOT NULL DEFAULT 0  -- v5：TS "import type" 整条运行时擦除——依赖图/闭包不算边
+    type_only INTEGER NOT NULL DEFAULT 0, -- v5：TS "import type" 整条运行时擦除——依赖图/闭包
+    -- ★ v9：该 import 绑定的【本地可用名】（JSON 数组，如 ["readdirSync","statSync"]）
+    --   用途：给定使用点裸名（readdirSync）判断它来自哪个模块
+    --   ⇒ resolveCrossFileCalls 能把它判 external 而不是 failed
+    --   ★ NULL = v9 之前写的旧行（版本升级清库重建时一并填上）
+    bindings TEXT不算边
 );
 CREATE INDEX IF NOT EXISTS idx_imports_file ON imports(file_path);
 

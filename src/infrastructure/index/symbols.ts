@@ -498,9 +498,17 @@ function applyParsedToIndex(db: Database, projectRoot: string, pre: SyncPrelude,
     //    import_project 缓存路径靠它重建依赖边——edges 表只有已解析的相对导入，
     //    Go 包路径 / Python 点分模块的原始 source 串只存在这里
     db.prepare('DELETE FROM imports WHERE file_path = $p').run({ p: rel });
-    const insImport = db.prepare('INSERT INTO imports(file_path, line, source, kind, type_only) VALUES ($fp, $ln, $src, $kind, $typeOnly)');
+    const insImport = db.prepare('INSERT INTO imports(file_path, line, source, kind, type_only, bindings) VALUES ($fp, $ln, $src, $kind, $typeOnly, $bindings)');
     for (const imp of parsed.imports) {
-      insImport.run({ fp: rel, ln: imp.line, src: imp.source, kind: imp.kind, typeOnly: imp.type_only ? 1 : 0 });
+      insImport.run({
+        fp: rel,
+        ln: imp.line,
+        src: imp.source,
+        kind: imp.kind,
+        typeOnly: imp.type_only ? 1 : 0,
+        // ★ v9：本地绑定名（JSON 数组）；无绑定存 NULL（不是 '[]'——"没有"与"空数组"在语义上要能区分）
+        bindings: imp.bindings && imp.bindings.length > 0 ? JSON.stringify(imp.bindings) : null,
+      });
     }
 
     // 5. files 行
@@ -807,6 +815,35 @@ export function resolveCrossFileCalls(
     arr.push(i);
   }
 
+  /**
+   * ★★★ 2026-10-19（v9 · 结构性修复）：**文件 → (本地绑定名 → 来源模块)**
+   *
+   * 为什么必须有它：此前 `readdirSync` 这样的裸名只能沿 **relative** imports 找目标，
+   * 而它其实来自 `node:fs`（package）⇒ 找不到 ⇒ 判 `failed`。
+   * 实测 `failed` 里 2,700+ 条绝大多数是这种"来自 package 的裸名"（`node:fs` / `node:path` 解构）。
+   *
+   * 有了它，判据从"猜"变成"查"：
+   *   · 裸名在 `packageBindings` 里 ⇒ **external**（正确语义：外部依赖，不是未解析）
+   *   · 不在 ⇒ 再沿 relative imports 找（原来的逻辑）
+   */
+  const packageBindingsByFile = new Map<string, Map<string, string>>();
+  for (const row of db
+    .prepare("SELECT file_path, source, bindings FROM imports WHERE kind='package' AND bindings IS NOT NULL")
+    .all() as Array<{ file_path: string; source: string; bindings: string }>) {
+    let m = packageBindingsByFile.get(row.file_path);
+    if (!m) {
+      m = new Map();
+      packageBindingsByFile.set(row.file_path, m);
+    }
+    try {
+      for (const name of JSON.parse(row.bindings) as string[]) {
+        if (!m.has(name)) m.set(name, row.source);
+      }
+    } catch {
+      /* 坏 JSON 跳过（不该发生；坏了也不能让整个解析挂掉） */
+    }
+  }
+
   const updResolved = db.prepare("UPDATE unresolved_refs SET status='resolved' WHERE id = $i");
   const updExternal = db.prepare("UPDATE unresolved_refs SET status='external' WHERE id = $i");
   const updFailed = db.prepare("UPDATE unresolved_refs SET status='failed' WHERE id = $i");
@@ -860,6 +897,17 @@ export function resolveCrossFileCalls(
     }
 
     if (BUILTIN_CALLEES.has(expr)) {
+      updExternal.run({ i: r.id });
+      stats.external++;
+      continue;
+    }
+
+    // ★★★ 2026-10-19（v9）：**先查"这个裸名是不是来自 package import"** —— 是则 external。
+    //   这是"查绑定表"而不是"猜"：`import { readdirSync } from 'node:fs'` 让 readdirSync
+    //   有了明确来源 ⇒ 它不可能是"项目内未解析的调用"，判 external 才诚实。
+    //   ★ 放在 relative 查找【之前】：package 绑定是更强的证据（它是声明出来的）。
+    const pkgSrc = packageBindingsByFile.get(rel)?.get(expr);
+    if (pkgSrc) {
       updExternal.run({ i: r.id });
       stats.external++;
       continue;

@@ -626,6 +626,61 @@ function nthNamedChild(node: SyntaxNodeLike, n: number): SyntaxNodeLike | null {
   return null;
 }
 
+/**
+ * ★★★ 2026-10-19（结构性修复）：TS 系（typescript / tsx / javascript / jsx）的
+ * **import 绑定提取** —— 四个语言语法同源，共享同一份实现（不复制 4 份）。
+ *
+ * 提取的 AST 形状：
+ * ```
+ * import_declaration
+ *   ├─ import_clause
+ *   │    ├─ identifier                     ← default（`import x from`）
+ *   │    ├─ namespace_import ─ identifier  ← `import * as ns from`
+ *   │    └─ named_imports
+ *   │         └─ import_specifier ─ name · alias?
+ *   └─ string（source）
+ * ```
+ * 只取【本地可用名】：default / ns / specifier 的 alias（有则 alias，无则 name）。
+ *
+ * ## 为什么必须有它
+ * `imports.bindings` 是"这个裸名来自哪个模块"的唯一事实来源。
+ * 没有它时 `resolveCrossFileCalls` 拿 `readdirSync` 这样的裸名只能沿 **relative** imports 找，
+ * 找不到就判 `failed` —— 实测有 2,728 条 `failed`，绝大多数是 `node:fs` / `node:path` 解构出来的名字。
+ * 有了它，这些能判成 `external`（正确语义），`failed` 才会只剩"真·设计/实现不一致"。
+ */
+const TS_LIKE_IMPORT_BINDINGS = (node: SyntaxNodeLike): string[] => {
+  const out: string[] = [];
+  const walk = (n: SyntaxNodeLike): void => {
+    const t = n.type;
+    if (t === 'import_specifier') {
+      const alias = n.childForFieldName('alias');
+      const name = n.childForFieldName('name');
+      const local = (alias ?? name)?.text;
+      if (local) out.push(local);
+      return;
+    }
+    if (t === 'namespace_import') {
+      for (let i = 0; i < n.childCount; i++) {
+        const c = n.child(i);
+        if (c?.type === 'identifier' && c.text) out.push(c.text);
+      }
+      return;
+    }
+    if (t === 'import_clause') {
+      for (let i = 0; i < n.childCount; i++) {
+        const c = n.child(i);
+        if (c?.type === 'identifier' && c.text) out.push(c.text);
+      }
+    }
+    for (let i = 0; i < n.childCount; i++) {
+      const c = n.child(i);
+      if (c) walk(c);
+    }
+  };
+  walk(node);
+  return [...new Set(out)];
+};
+
 export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
   go: {
     callNode: 'call_expression',
@@ -877,10 +932,36 @@ export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
   //   ★ 原先这四门在 kernel 里被两处**按语言 if** 特判（import 源提取、TS_FAMILY_LANGS 的
   //     type-only 判定），现各自表项声明；四门形同一份数据，故意不合并成别名——
   //     每门都是独立 npm 包 + 独立扩展名，表项自足才符合"加语言 = 加一行"。
-  typescript: { callNode: 'call_expression', calleeFields: ['function'], importSourceField: 'source', erasedModuleStatements: true, topLevelCall: true },
-  tsx: { callNode: 'call_expression', calleeFields: ['function'], importSourceField: 'source', erasedModuleStatements: true, topLevelCall: true },
-  javascript: { callNode: 'call_expression', calleeFields: ['function'], importSourceField: 'source', erasedModuleStatements: true, topLevelCall: true },
-  jsx: { callNode: 'call_expression', calleeFields: ['function'], importSourceField: 'source', erasedModuleStatements: true, topLevelCall: true },
+  typescript: {
+    callNode: 'call_expression',
+    calleeFields: ['function'],
+    importSourceField: 'source',
+    erasedModuleStatements: true,
+    topLevelCall: true,
+    /**
+     * ★★★ 2026-10-19：**TS 系的 import 绑定提取**（原先没实现 ⇒ `bindings` 恒为 `[]`
+     *   ⇒ `resolveCrossFileCalls` 拿不到"这个裸名来自哪个包"⇒ 外部引用被误判 `failed`）。
+     *
+     * TS 的 `import` AST 形状（tree-sitter-typescript）：
+     * ```
+     * import_declaration
+     *   ├─ import_clause
+     *   │    ├─ identifier                    ← default import（`import x from`）
+     *   │    ├─ namespace_import  ─ identifier ← `import * as ns from`
+     *   │    └─ named_imports
+     *   │         └─ import_specifier ─ name: identifier · alias?: identifier
+     *   └─ string (source)
+     * ```
+     * ⇒ 只取【本地可用名】：default 名 / 命名空间的 ns / specifier 的 alias（有则 alias，无则 name）。
+     * ★ `import type` 也照收（"名字来自哪个模块"是事实；type_only 由调用方另标）。
+     * ★★ 实现抽成 `TS_LIKE_IMPORT_BINDINGS` 常量，供 `typescript` / `tsx` / `javascript` / `jsx`
+     *    【共享】—— 它们语法同源，各写一份就是四个会各自漂移的副本。
+     */
+    extractImportBindings: TS_LIKE_IMPORT_BINDINGS,
+  },
+  tsx: { callNode: 'call_expression', calleeFields: ['function'], importSourceField: 'source', erasedModuleStatements: true, topLevelCall: true, extractImportBindings: TS_LIKE_IMPORT_BINDINGS },
+  javascript: { callNode: 'call_expression', calleeFields: ['function'], importSourceField: 'source', erasedModuleStatements: true, topLevelCall: true, extractImportBindings: TS_LIKE_IMPORT_BINDINGS },
+  jsx: { callNode: 'call_expression', calleeFields: ['function'], importSourceField: 'source', erasedModuleStatements: true, topLevelCall: true, extractImportBindings: TS_LIKE_IMPORT_BINDINGS },
 
   // ═══════════════════════════════════════════════════════════════════
   // 2026-09-29 新增 5 门（scala / groovy / julia / haskell / elixir）
