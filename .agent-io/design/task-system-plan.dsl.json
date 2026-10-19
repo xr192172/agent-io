@@ -4111,7 +4111,10 @@
                 "note": "新批注必未解决；关闭必置 resolved + 时间戳"
               },
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/dsl_ops/annotation_tools.ts'), 'utf8'); return s.includes('resolved: false') && s.includes('dsl.annotations.push') && s.includes('anno.resolved = true') && s.includes('anno.resolved_at =') && s.includes('annotation_id') && s.includes('不存在'); })()",
-              "why": "★ 钉住两个方向的默认值：**新增必是未解决**（不许一出生就是 resolved:true），**关闭必写 resolved=true + resolved_at**；且找不到 id 时必须报「不存在」而不是静默成功。"
+              "why": "★ 钉住两个方向的默认值：**新增必是未解决**（不许一出生就是 resolved:true），**关闭必写 resolved=true + resolved_at**；且找不到 id 时必须报「不存在」而不是静默成功。",
+              "mutants_ignore": [
+                "*"
+              ]
             },
             {
               "kind": "symbol-exists",
@@ -4139,8 +4142,8 @@
             }
           ],
           "acceptance": "`addAnnotationByTool` 必产生**新 id**（`anno_<ts>_<rand>`）、`resolved:false`、`author` 缺省 `'llm'`，push 进 `dsl.annotations` 后落盘；`resolveAnnotation` 对「feature 不存在 / 没有 annotations / annotation_id 不存在」**分别抛错**（不静默建一条），成功则 `resolved:true` 并写 `resolved_at`，只有给了 `resolution_note` 才写它；`listAnnotations` 的 `node_id` / `severity` / `unresolved_only` **同时成立**才保留。",
-          "updated_at": "2026-10-19T01:47:19.148Z",
-          "agent": "all-externalize"
+          "updated_at": "2026-10-19T02:08:01.691Z",
+          "agent": "workbuddy-main"
         },
         "decision_history": [
           {
@@ -4350,6 +4353,73 @@
               "agent": "all-externalize"
             },
             "agent": "all-externalize"
+          },
+          {
+            "at": "2026-10-19T02:08:01.691Z",
+            "decision": {
+              "summary": "画布批注的**写端**（`addAnnotationByTool` / `resolveAnnotation`）与读端（`listAnnotations`）：批注落在 `dsl.annotations[]`，是**人**对某个节点/整体提的意见 —— LLM 读它改设计，改完关闭。★ 为什么存在：人审回路需要一条**不改几何、不改语义**的旁路通道 —— 意见与设计结论分开存，就不必为了说一句\"这里不对\"去动节点或决策卡。★ 边界（它不做什么）：**不判批注对不对**；**不自动关闭**（`resolve` 只置 `resolved` + 时间戳，谁改的、改成什么由调用方负责）；**不触发重渲染、不发通知**；**不走审批流**（`submitApproval` / `reviewAnnotation` 住 `observe/reconcile/approval.ts`，本文件只管批注本身）；也**不做去重/合并** —— 每条批注是独立事件。",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/application/design/dsl_ops/annotation_tools.ts",
+                  "why": "动作要有落点（基线）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/annotation_tools.ts",
+                  "symbol": "addAnnotationByTool",
+                  "why": "批注的新增入口（写端）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/annotation_tools.ts",
+                  "symbol": "resolveAnnotation",
+                  "why": "批注的关闭入口（写端另一半）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/annotation_tools.ts",
+                  "symbol": "listAnnotations",
+                  "why": "批注的读端（LLM 的唯一取数口）"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "note": "新批注必未解决；关闭必置 resolved + 时间戳"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/dsl_ops/annotation_tools.ts'), 'utf8'); return s.includes('resolved: false') && s.includes('dsl.annotations.push') && s.includes('anno.resolved = true') && s.includes('anno.resolved_at =') && s.includes('annotation_id') && s.includes('不存在'); })()",
+                  "why": "★ 钉住两个方向的默认值：**新增必是未解决**（不许一出生就是 resolved:true），**关闭必写 resolved=true + resolved_at**；且找不到 id 时必须报「不存在」而不是静默成功。"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/annotation_tools.ts",
+                  "symbol": "AddAnnotationInput",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/annotation_tools.ts",
+                  "symbol": "AnnotationView",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/annotation_tools.ts",
+                  "symbol": "ListAnnotationsInput",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/annotation_tools.ts",
+                  "symbol": "ResolveAnnotationInput",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                }
+              ],
+              "acceptance": "`addAnnotationByTool` 必产生**新 id**（`anno_<ts>_<rand>`）、`resolved:false`、`author` 缺省 `'llm'`，push 进 `dsl.annotations` 后落盘；`resolveAnnotation` 对「feature 不存在 / 没有 annotations / annotation_id 不存在」**分别抛错**（不静默建一条），成功则 `resolved:true` 并写 `resolved_at`，只有给了 `resolution_note` 才写它；`listAnnotations` 的 `node_id` / `severity` / `unresolved_only` **同时成立**才保留。",
+              "updated_at": "2026-10-19T01:47:19.148Z",
+              "agent": "all-externalize"
+            },
+            "agent": "workbuddy-main"
           }
         ]
       },
@@ -5346,13 +5416,49 @@
                 "note": "message+feature 必填，data 可选 unknown"
               },
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/dsl_ops/edit_result.ts'), 'utf8'); const m = s.match(/interface EditResult\\s*\\{([\\s\\S]*?)\\n\\}/); if (!m) return false; const b = m[1]; return /message\\s*:\\s*string/.test(b) && /feature\\s*:\\s*string/.test(b) && /data\\?\\s*:\\s*unknown/.test(b); })()",
-              "why": "★ 纯类型文件没有可调函数 ⇒ 用\"形状断言\"判：三个字段齐、`data` 带 `?`、类型是 `unknown`。这三条一破就会在编译期伤到全部既有 op。"
+              "why": "★ 纯类型文件没有可调函数 ⇒ 用\"形状断言\"判：三个字段齐、`data` 带 `?`、类型是 `unknown`。这三条一破就会在编译期伤到全部既有 op。",
+              "mutants_ignore": [
+                "*"
+              ]
             }
           ],
           "acceptance": "`EditResult` 恰好三个字段：`message: string`、`feature: string`、`data?: unknown`；`data` 必须是**可选**（带 `?`）—— 去掉 `?` 或改成必填，所有不产出结构化结果的既有 op 会**编译失败**；`data` 的类型是 `unknown`（不是 `any` / `object`），调用方必须自己收窄。",
-          "updated_at": "2026-10-19T00:48:56.171Z",
-          "agent": "design-filler"
-        }
+          "updated_at": "2026-10-19T02:08:01.763Z",
+          "agent": "workbuddy-main"
+        },
+        "decision_history": [
+          {
+            "at": "2026-10-19T02:08:01.763Z",
+            "decision": {
+              "summary": "所有 `edit_dsl` op 的**统一返回形状**（`EditResult`）：`message`（人话，首行必须自足）+ `feature`（目标）+ **可选** `data`（结构化产物）。★ 为什么存在：`wrap()` 会把 `r.data` 送进 `---DATA---` 机器通道；此前没有 `data` 字段 ⇒ 已经算出结构化结果的 op（如整块重写契约的增删清单）**只能压成散文**，agent 得正则解析 —— 这正是本仓 §5 纪律①「产物结构化，非 message 串」的落点。★ 边界（它不做什么）：它**只是类型** —— 不校验、不序列化、不决定 `data` 的内容与形状（那由各 op 自己负责，且每条 `data` 要自带定位字段）；`data` 是 **optional**，不填就**不产生** DATA 段，因此**不破坏任何既有 op**。",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/application/design/dsl_ops/edit_result.ts",
+                  "why": "动作要有落点（基线）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/edit_result.ts",
+                  "symbol": "EditResult",
+                  "why": "全仓 op 返回值的唯一形状（interface）"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "note": "message+feature 必填，data 可选 unknown"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/dsl_ops/edit_result.ts'), 'utf8'); const m = s.match(/interface EditResult\\s*\\{([\\s\\S]*?)\\n\\}/); if (!m) return false; const b = m[1]; return /message\\s*:\\s*string/.test(b) && /feature\\s*:\\s*string/.test(b) && /data\\?\\s*:\\s*unknown/.test(b); })()",
+                  "why": "★ 纯类型文件没有可调函数 ⇒ 用\"形状断言\"判：三个字段齐、`data` 带 `?`、类型是 `unknown`。这三条一破就会在编译期伤到全部既有 op。"
+                }
+              ],
+              "acceptance": "`EditResult` 恰好三个字段：`message: string`、`feature: string`、`data?: unknown`；`data` 必须是**可选**（带 `?`）—— 去掉 `?` 或改成必填，所有不产出结构化结果的既有 op 会**编译失败**；`data` 的类型是 `unknown`（不是 `any` / `object`），调用方必须自己收窄。",
+              "updated_at": "2026-10-19T00:48:56.171Z",
+              "agent": "design-filler"
+            },
+            "agent": "workbuddy-main"
+          }
+        ]
       },
       {
         "id": "file_src_application_design_dsl_ops_feature_ops_ts",
@@ -12614,7 +12720,10 @@
                 "note": "Q2：回滚用调用前字节，不用 saveDSL(backup)"
               },
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/dsl_ops/update_feature.ts'), 'utf8'); return s.includes('fs.readFileSync(designFile') && s.includes('fs.writeFileSync(designFile, rawBackup') && !/^\\s*saveDSL\\(backup\\)/m.test(s); })()",
-              "why": "★ 钉住 Q2 的实质：回滚必须写回**原始字节**（`_sync` / `_dsl_rev` 不动）；若退回 `saveDSL(backup)`，内容回滚了而元数据前进 ⇒ 乐观锁误判\"有人改过\"。这条用源码事实判（run 的求值域不加载写端函数，避免副作用）。"
+              "why": "★ 钉住 Q2 的实质：回滚必须写回**原始字节**（`_sync` / `_dsl_rev` 不动）；若退回 `saveDSL(backup)`，内容回滚了而元数据前进 ⇒ 乐观锁误判\"有人改过\"。这条用源码事实判（run 的求值域不加载写端函数，避免副作用）。",
+              "mutants_ignore": [
+                "*"
+              ]
             },
             {
               "kind": "symbol-exists",
@@ -12762,8 +12871,8 @@
             }
           ],
           "acceptance": "① 任一 op 抛错 ⇒ 回执首行是「操作 i/N 失败，已回滚全部 k 个已应用变更」，且落盘文件的 **sha256 与调用前逐字节相同**（`_sync` / `_dsl_rev` 也不前进 —— Q2 的判据就是\"回滚不推进元数据\"）；② 本次改动**新引入** `validateDSL` 错误（如删节点留下悬空边）⇒ 闸抛「拒绝提交（自洽性闸 validateDSL）：…新增 n 条」并同样回滚；调用前**已有**的同键错误不拦（重命名只改错误文本 ⇒ 键不变 ⇒ 仍放行）；③ 全部成功时 `message` 逐条列出 `[i/N]` 首行，`data` 只在有结构化产物时出现（1 条给元素本身、多条给数组）。",
-          "updated_at": "2026-10-19T01:47:23.363Z",
-          "agent": "all-externalize"
+          "updated_at": "2026-10-19T02:08:01.836Z",
+          "agent": "workbuddy-main"
         },
         "decision_history": [
           {
@@ -16209,6 +16318,219 @@
               "agent": "all-externalize"
             },
             "agent": "all-externalize"
+          },
+          {
+            "at": "2026-10-19T02:08:01.836Z",
+            "decision": {
+              "summary": "`edit_dsl` 的**唯一写入口**（`updateFeature`）：node/edge/file/api/binding/status/annotation/approval/snapshot/layout/simulation/tag/decision/todo/task 全部写操作都从这一处收口。它只做三件事且顺序固定：①**逐 op 应用**（先过 `checkOpSpec` 的 data 契约，再路由到各自原子实现）；②**自洽性闸**（全部 op 落定后回读 DSL 跑 `validateDSL`，只把 `after.keys − baseline.keys` —— **本次新引入**的错 —— 判为失败）；③**失败回滚到调用前字节**（任一 op 抛错或闸判红，就用调用前的原始文件字节覆盖回去 —— 不是 `saveDSL(backup)`，`_dsl_rev` / `_sync` 原样不动）。★ 边界（它不做什么）：**不判业务对错**（一条边该不该有、决策该怎么写，是各 op 与人的设计结论）；**不改 schema、不改 `validateDSL` 判定**；**不做重试/补偿**（失败就是全回滚，没有半成功）；**不是任务态写端**（task 的 claim/complete 只经 `task_ops`）；也**不把决策搬进 overlay**（那是收口后的 `syncDecisionsToOverlay`，本函数只是调用它）。",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "why": "动作要有落点（基线）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "symbol": "updateFeature",
+                  "why": "`edit_dsl` 的唯一入口本体"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "symbol": "findDecisionTargetNode",
+                  "why": "决策卡落点解析与 touched.nodes 共用同一份（不在别处另写一把尺）"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "id": "demo",
+                    "type": "feature_diagram",
+                    "feature": "demo",
+                    "version": "1.0.0",
+                    "geometry": {
+                      "layout": "vertical_flow",
+                      "width": 800,
+                      "height": 600,
+                      "nodes": [
+                        {
+                          "id": "a",
+                          "label": "a",
+                          "type": "file",
+                          "x": 0,
+                          "y": 0
+                        }
+                      ],
+                      "edges": [
+                        {
+                          "id": "e1",
+                          "from": "a",
+                          "to": "ghost"
+                        }
+                      ]
+                    }
+                  },
+                  "expect": "validateDSL(input).keys.some(k => k === 'dangling_edge:edge:e1:to')",
+                  "why": "★ 自洽性闸的判据演示：这个 input 正是「删掉被指向的节点」这一 op 的**落定后状态** —— `dangling_edge:edge:e1:to` 会出现在 after 的键集里，而调用前没有这个键 ⇒ `newErrors` 非空 ⇒ 必须拒 + 回滚。闸只认这个差集，不认\"错误文本变了\"。"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "note": "Q2：回滚用调用前字节，不用 saveDSL(backup)"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/dsl_ops/update_feature.ts'), 'utf8'); return s.includes('fs.readFileSync(designFile') && s.includes('fs.writeFileSync(designFile, rawBackup') && !/^\\s*saveDSL\\(backup\\)/m.test(s); })()",
+                  "why": "★ 钉住 Q2 的实质：回滚必须写回**原始字节**（`_sync` / `_dsl_rev` 不动）；若退回 `saveDSL(backup)`，内容回滚了而元数据前进 ⇒ 乐观锁误判\"有人改过\"。这条用源码事实判（run 的求值域不加载写端函数，避免副作用）。"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "symbol": "DecisionTarget",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "symbol": "DslWithMeta",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "symbol": "FeatureOperation",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "symbol": "UpdateFeatureInput",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "symbol": "applyAnnotationOp",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "symbol": "applyApiOp",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "symbol": "applyApprovalOp",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "symbol": "applyDecisionOp",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "symbol": "applyEdgeOp",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "symbol": "applyFileOp",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "symbol": "applyLayoutOp",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "symbol": "applyNodeOp",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "symbol": "applyOperation",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "symbol": "applySimulationOp",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "symbol": "applySnapshotOp",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "symbol": "applyTagOp",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "symbol": "normRel",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "symbol": "parseAlternatives",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "symbol": "parseDissent",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "symbol": "resolveDecisionTarget",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "symbol": "resolveMemberFiles",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "symbol": "touchedNodeIds",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "symbol": "touchedOf",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/dsl_ops/update_feature.ts",
+                  "symbol": "updateFeatureCore",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                }
+              ],
+              "acceptance": "① 任一 op 抛错 ⇒ 回执首行是「操作 i/N 失败，已回滚全部 k 个已应用变更」，且落盘文件的 **sha256 与调用前逐字节相同**（`_sync` / `_dsl_rev` 也不前进 —— Q2 的判据就是\"回滚不推进元数据\"）；② 本次改动**新引入** `validateDSL` 错误（如删节点留下悬空边）⇒ 闸抛「拒绝提交（自洽性闸 validateDSL）：…新增 n 条」并同样回滚；调用前**已有**的同键错误不拦（重命名只改错误文本 ⇒ 键不变 ⇒ 仍放行）；③ 全部成功时 `message` 逐条列出 `[i/N]` 首行，`data` 只在有结构化产物时出现（1 条给元素本身、多条给数组）。",
+              "updated_at": "2026-10-19T01:47:23.363Z",
+              "agent": "all-externalize"
+            },
+            "agent": "workbuddy-main"
           }
         ]
       },
@@ -21492,7 +21814,10 @@
                 "check": "三个值域的档数 + 旧版仍在"
               },
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/animation.ts'), 'utf8'); return /type: 'periodic' \\| 'event' \\| 'state_change' \\| 'manual';/.test(s) && /mode: 'mock' \\| 'live';/.test(s) && /severity: 'expected' \\| 'unexpected';/.test(s) && /^export interface Animation \\{/m.test(s) && /  stages: AnimationStage\\[\\];/.test(s) && /  elements: ElementState\\[\\];/.test(s); })()",
-              "why": "三个联合类型是渲染器与仿真器的分支依据：多一档前端没有对应动效、少一档该有的分支消失（且都**静默**）。旧版 `Animation` / `stages` / `elements` 一并判，是因为它们一旦被\"顺手清理\"，向后兼容就无声断掉。本条只读源码判字面量，不冒充运行期行为。"
+              "why": "三个联合类型是渲染器与仿真器的分支依据：多一档前端没有对应动效、少一档该有的分支消失（且都**静默**）。旧版 `Animation` / `stages` / `elements` 一并判，是因为它们一旦被\"顺手清理\"，向后兼容就无声断掉。本条只读源码判字面量，不冒充运行期行为。",
+              "mutants_ignore": [
+                "*"
+              ]
             },
             {
               "kind": "run",
@@ -21501,7 +21826,10 @@
                 "check": "纯类型：零运行期导出 + 唯一 import 是 type-only"
               },
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/animation.ts'), 'utf8'); const imports = [...s.matchAll(/^import .*$/gm)].map((m) => m[0]); return imports.length === 1 && imports[0] === \"import type { NodeContent, NodeStyle } from './geometry.js';\" && !/^export (function|const|let|var) /m.test(s); })()",
-              "why": "这一层必须**没有行为**：一旦有人把求值/插值顺手写进来，动画语义就有两个实现处。import 必须是 `import type` —— 值导入会把 geometry 的运行期依赖拖进纯类型层（循环依赖的常见起点）。"
+              "why": "这一层必须**没有行为**：一旦有人把求值/插值顺手写进来，动画语义就有两个实现处。import 必须是 `import type` —— 值导入会把 geometry 的运行期依赖拖进纯类型层（循环依赖的常见起点）。",
+              "mutants_ignore": [
+                "*"
+              ]
             },
             {
               "kind": "file-exists",
@@ -21558,8 +21886,8 @@
             }
           ],
           "acceptance": "`AnimationSystem` 的 `version: number` 必填、`flows?` / `runtime?` 可选；`AnimationTrigger.type` **恰四档** `'periodic' | 'event' | 'state_change' | 'manual'`，`AnimationRuntime.mode` **恰两档** `'mock' | 'live'`，`AnimationError.severity` **恰两档** `'expected' | 'unexpected'`；`AnimationFlow` 的 `to?` 与 `branches?` **同时可选**（L2 直连 / L3 分支二选一，靠语义而非必填强制）；`AnimationHandler` 同时声明 `mock_result?: unknown` / `mock_results?: unknown[]` / `live?: boolean`，且注释写明 `mock_results` **优先于** `mock_result`；旧版 `Animation.stages: AnimationStage[]` 与 `AnimationStage.elements: ElementState[]` 仍在；文件里**没有** `export function` / `export const` / `export let` / `export var`，且**全部** import 只有一行 `import type { NodeContent, NodeStyle } from './geometry.js';`。",
-          "updated_at": "2026-10-19T01:47:25.131Z",
-          "agent": "all-externalize"
+          "updated_at": "2026-10-19T02:08:01.906Z",
+          "agent": "workbuddy-main"
         },
         "decision_history": [
           {
@@ -22363,6 +22691,125 @@
               "agent": "all-externalize"
             },
             "agent": "all-externalize"
+          },
+          {
+            "at": "2026-10-19T02:08:01.906Z",
+            "decision": {
+              "summary": "**[动画系统类型] 动画 DSL 的唯一形状定义 —— 两代并存**：旧版阶段快照 `Animation{stages[]}`（`AnimationStage` + `ElementState` 的**增量**覆盖）保留向后兼容，新 DSL 一律走 V2 `AnimationSystem{version, flows[], runtime?}`：`AnimationTrigger`（periodic / event / state_change / manual 四档）、`AnimationFlow`（`from` + `to` 直连，或 L3 的 `branches[]` 条件分支）、`AnimationValueSchema` / `AnimationValue` / `NodeShapes`（L0-L2 的**数据形状卡**，`NodeShapes` = 进/出各一张）、`AnimationHandler`（L4 函数映射 + `mock_result` / `mock_results` / `live` 开关）、`AnimationError`（L4.5，`expected` 走红路径 / `unexpected` 闪红 + 日志）、`AnimationRuntime`（mock 推演 / live 真调两档）。★ 它**不做**：不跑 flow、不求值 `condition` / `input_mapping` 里的表达式、不插值、不推进时间轴、不渲染（引擎在前端）；**不校验引用完整性**（`flow.from/to`、`handler.file_id`、`errors.to` 的悬空不由本文件判 —— 这里没有校验函数）；文件内**零运行期代码**（唯一 import 是 `import type`，从 `geometry.js` 取 `NodeContent` / `NodeStyle`）。",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/animation.ts",
+                  "symbol": "AnimationSystem",
+                  "why": "V2 动画的唯一顶层形状（`version` + `flows` + `runtime`）；DSL 的 animation 字段只该引用它"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/animation.ts",
+                  "symbol": "AnimationFlow",
+                  "why": "一条数据流的唯一形状：`from` 必填、`to`/`branches` 二选一、`handler` 只在 L4+ 出现 —— 少了它前端就没有可播放的单元"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/animation.ts",
+                  "symbol": "AnimationHandler",
+                  "why": "L4 函数映射与 mock 数据（`mock_result` / `mock_results` / `live`）的唯一住处；演示「不真跑代码」全靠这张卡"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/animation.ts",
+                  "symbol": "AnimationError",
+                  "why": "L4.5 异常路径的唯一形状：`expected` / `unexpected` 的分档决定红线还是闪红 + 日志，不能退化成一句字符串"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/animation.ts",
+                  "symbol": "AnimationTrigger",
+                  "why": "四种启动方式的唯一声明处（periodic / event / state_change / manual）；少了它 flow 无法被谁启动就说不清"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/animation.ts",
+                  "symbol": "NodeShapes",
+                  "why": "D1 形状卡（进料口 / 出料口各一份 `AnimationValueSchema`）；接口形状展示与粒子标注都读它"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "src/domain/animation.ts",
+                    "check": "三个值域的档数 + 旧版仍在"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/animation.ts'), 'utf8'); return /type: 'periodic' \\| 'event' \\| 'state_change' \\| 'manual';/.test(s) && /mode: 'mock' \\| 'live';/.test(s) && /severity: 'expected' \\| 'unexpected';/.test(s) && /^export interface Animation \\{/m.test(s) && /  stages: AnimationStage\\[\\];/.test(s) && /  elements: ElementState\\[\\];/.test(s); })()",
+                  "why": "三个联合类型是渲染器与仿真器的分支依据：多一档前端没有对应动效、少一档该有的分支消失（且都**静默**）。旧版 `Animation` / `stages` / `elements` 一并判，是因为它们一旦被\"顺手清理\"，向后兼容就无声断掉。本条只读源码判字面量，不冒充运行期行为。"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "src/domain/animation.ts",
+                    "check": "纯类型：零运行期导出 + 唯一 import 是 type-only"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/animation.ts'), 'utf8'); const imports = [...s.matchAll(/^import .*$/gm)].map((m) => m[0]); return imports.length === 1 && imports[0] === \"import type { NodeContent, NodeStyle } from './geometry.js';\" && !/^export (function|const|let|var) /m.test(s); })()",
+                  "why": "这一层必须**没有行为**：一旦有人把求值/插值顺手写进来，动画语义就有两个实现处。import 必须是 `import type` —— 值导入会把 geometry 的运行期依赖拖进纯类型层（循环依赖的常见起点）。"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/animation.ts",
+                  "why": "动作要有落点（基线）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/animation.ts",
+                  "symbol": "Animation",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/animation.ts",
+                  "symbol": "AnimationBranch",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/animation.ts",
+                  "symbol": "AnimationHandlerMapping",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/animation.ts",
+                  "symbol": "AnimationRuntime",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/animation.ts",
+                  "symbol": "AnimationStage",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/animation.ts",
+                  "symbol": "AnimationValue",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/animation.ts",
+                  "symbol": "AnimationValueSchema",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/animation.ts",
+                  "symbol": "ElementState",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                }
+              ],
+              "acceptance": "`AnimationSystem` 的 `version: number` 必填、`flows?` / `runtime?` 可选；`AnimationTrigger.type` **恰四档** `'periodic' | 'event' | 'state_change' | 'manual'`，`AnimationRuntime.mode` **恰两档** `'mock' | 'live'`，`AnimationError.severity` **恰两档** `'expected' | 'unexpected'`；`AnimationFlow` 的 `to?` 与 `branches?` **同时可选**（L2 直连 / L3 分支二选一，靠语义而非必填强制）；`AnimationHandler` 同时声明 `mock_result?: unknown` / `mock_results?: unknown[]` / `live?: boolean`，且注释写明 `mock_results` **优先于** `mock_result`；旧版 `Animation.stages: AnimationStage[]` 与 `AnimationStage.elements: ElementState[]` 仍在；文件里**没有** `export function` / `export const` / `export let` / `export var`，且**全部** import 只有一行 `import type { NodeContent, NodeStyle } from './geometry.js';`。",
+              "updated_at": "2026-10-19T01:47:25.131Z",
+              "agent": "all-externalize"
+            },
+            "agent": "workbuddy-main"
           }
         ]
       },
@@ -22427,7 +22874,10 @@
                 "check": "值表与类型同集同序，且两条断言都在"
               },
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/annotation.ts'), 'utf8'); const t = /export type ApprovalStatus = ([^;]+);/.exec(s); const c = /export const APPROVAL_STATUSES = \\[([^\\]]+)\\] as const;/.exec(s); if (!t || !c) return false; const norm = (x) => x.split(/[|,]/).map((v) => v.trim().replace(/^'|'$/g, '')).filter(Boolean); const a = norm(t[1]); const b = norm(c[1]); return a.length === 5 && b.length === 5 && a.every((v, i) => v === b[i]) && /export const _assertStatusesCover: _AssertStatusesCover = true;/.test(s) && /export const _assertStatusesNoExtra: _AssertStatusesNoExtra = true;/.test(s) && /approval_status\\?: ApprovalStatus;/.test(s) && /approval_history\\?: ApprovalHistoryEntry\\[\\];/.test(s); })()",
-              "why": "防漂移的全部价值在\"**两份逐项相同**\"：只判各自长度会把顺序错、拼写错漏掉。断言常量必须在（它们是 `tsc` 侧的判据，删了不会有任何运行期症状）。本题不 import 模块（run 的求值域不加载业务函数），只读源码比对两份字面量。"
+              "why": "防漂移的全部价值在\"**两份逐项相同**\"：只判各自长度会把顺序错、拼写错漏掉。断言常量必须在（它们是 `tsc` 侧的判据，删了不会有任何运行期症状）。本题不 import 模块（run 的求值域不加载业务函数），只读源码比对两份字面量。",
+              "mutants_ignore": [
+                "*"
+              ]
             },
             {
               "kind": "file-exists",
@@ -22448,8 +22898,8 @@
             }
           ],
           "acceptance": "`APPROVAL_STATUSES` **恰 5 项**且与 `ApprovalStatus` 联合类型**同集同序**（draft / pending_review / approved / rejected / needs_revision）；`_assertStatusesCover` 与 `_assertStatusesNoExtra` 都声明为 `true`，且各自的 `Exclude<...> extends never` 成立（`tsc` 通过即证明\"不多不少\"）；`Annotation.approval_status?: ApprovalStatus`（**引用类型**，不是又抄一份字符串联合）、`approval_history?: ApprovalHistoryEntry[]`；`ApprovalHistoryEntry` 的 `id` / `status` / `action` / `actor` / `timestamp` 必填，`comment?` 可选；`action` **恰六档**（submit / approve / reject / request_revision / revise / close）。",
-          "updated_at": "2026-10-19T01:47:25.270Z",
-          "agent": "all-externalize"
+          "updated_at": "2026-10-19T02:08:01.972Z",
+          "agent": "workbuddy-main"
         },
         "decision_history": [
           {
@@ -22638,6 +23088,80 @@
               "agent": "all-externalize"
             },
             "agent": "all-externalize"
+          },
+          {
+            "at": "2026-10-19T02:08:01.972Z",
+            "decision": {
+              "summary": "**标注与审批的形状 + 审批状态值的唯一可渲染处**：`Annotation`（一条标注/工单：`target_id` / `node_id` 定位、`type` / `severity`、`approval_status`、`approval_history` 审计链、`pos` 便签坐标）与 `ApprovalHistoryEntry`（`action` 六档 + `actor` + `timestamp` 的审计三要素）。`ApprovalStatus` 是**类型**、渲染不进 MCP 描述 ⇒ `APPROVAL_STATUSES` 是**运行时唯一一份**合法值列表（描述从它渲染，不手写第二份）；`_AssertStatusesCover` / `_AssertStatusesNoExtra` 两条**类型级断言**把常量与类型**双向**钉死（漏一个或多一个 ⇒ `tsc` 红）。★ 它**不做**：不判状态流转是否合法（谁能到谁）、不写审批记录、不落盘、不渲染、无 IO；`APPROVAL_STATUSES` 只是**值表**，不是状态机。",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/annotation.ts",
+                  "symbol": "ApprovalStatus",
+                  "why": "审批状态的类型本体；`Annotation.approval_status` 与 `ApprovalHistoryEntry.status` 都只许引用它"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/annotation.ts",
+                  "symbol": "APPROVAL_STATUSES",
+                  "why": "★ 唯一可渲染的值表：描述里的\"合法值有哪些\"只能从这里渲染，手写第二份就会漂"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/annotation.ts",
+                  "symbol": "_AssertStatusesCover",
+                  "why": "类型级断言一（常量**不漏**类型的成员）；删掉它，值表少一项也无人报错"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/annotation.ts",
+                  "symbol": "_AssertStatusesNoExtra",
+                  "why": "类型级断言二（常量**不多**）；删掉它，值表多一项就渲染出非法状态"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/annotation.ts",
+                  "symbol": "ApprovalHistoryEntry",
+                  "why": "审批审计链的单条形状；\"谁在何时做了什么\"必须可查，不能挤进 `comment` 散文"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/annotation.ts",
+                  "symbol": "Annotation",
+                  "why": "标注/工单的唯一形状（含 `approval_status` / `approval_history` / `pos`）"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "src/domain/annotation.ts",
+                    "check": "值表与类型同集同序，且两条断言都在"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/annotation.ts'), 'utf8'); const t = /export type ApprovalStatus = ([^;]+);/.exec(s); const c = /export const APPROVAL_STATUSES = \\[([^\\]]+)\\] as const;/.exec(s); if (!t || !c) return false; const norm = (x) => x.split(/[|,]/).map((v) => v.trim().replace(/^'|'$/g, '')).filter(Boolean); const a = norm(t[1]); const b = norm(c[1]); return a.length === 5 && b.length === 5 && a.every((v, i) => v === b[i]) && /export const _assertStatusesCover: _AssertStatusesCover = true;/.test(s) && /export const _assertStatusesNoExtra: _AssertStatusesNoExtra = true;/.test(s) && /approval_status\\?: ApprovalStatus;/.test(s) && /approval_history\\?: ApprovalHistoryEntry\\[\\];/.test(s); })()",
+                  "why": "防漂移的全部价值在\"**两份逐项相同**\"：只判各自长度会把顺序错、拼写错漏掉。断言常量必须在（它们是 `tsc` 侧的判据，删了不会有任何运行期症状）。本题不 import 模块（run 的求值域不加载业务函数），只读源码比对两份字面量。"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/annotation.ts",
+                  "why": "动作要有落点（基线）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/annotation.ts",
+                  "symbol": "_assertStatusesCover",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/annotation.ts",
+                  "symbol": "_assertStatusesNoExtra",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                }
+              ],
+              "acceptance": "`APPROVAL_STATUSES` **恰 5 项**且与 `ApprovalStatus` 联合类型**同集同序**（draft / pending_review / approved / rejected / needs_revision）；`_assertStatusesCover` 与 `_assertStatusesNoExtra` 都声明为 `true`，且各自的 `Exclude<...> extends never` 成立（`tsc` 通过即证明\"不多不少\"）；`Annotation.approval_status?: ApprovalStatus`（**引用类型**，不是又抄一份字符串联合）、`approval_history?: ApprovalHistoryEntry[]`；`ApprovalHistoryEntry` 的 `id` / `status` / `action` / `actor` / `timestamp` 必填，`comment?` 可选；`action` **恰六档**（submit / approve / reject / request_revision / revise / close）。",
+              "updated_at": "2026-10-19T01:47:25.270Z",
+              "agent": "all-externalize"
+            },
+            "agent": "workbuddy-main"
           }
         ]
       },
@@ -23397,7 +23921,10 @@
                 "check": "五档图元 + anchor 三要素 + 工单三档 + 索引签名"
               },
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/canvas_note.ts'), 'utf8'); const t = /export type CanvasNoteType = ([^;]+);/.exec(s); const body = /^export interface CanvasNote \\{[\\s\\S]*?^\\}/m.exec(s); if (!t || !body) return false; const kinds = t[1].split('|').map((v) => v.trim().replace(/^'|'$/g, '')); return kinds.length === 5 && ['highlight', 'arrow', 'oval', 'sticky', 'text'].every((k) => kinds.includes(k)) && /  id: string;/.test(body[0]) && /  type: CanvasNoteType;/.test(body[0]) && /  anchor\\?: \\{ nodeId: string; ox: number; oy: number \\};/.test(body[0]) && /  status\\?: 'open' \\| 'done' \\| 'rejected';/.test(body[0]) && /\\[key: string\\]: unknown;/.test(body[0]); })()",
-              "why": "`anchor` 的 `ox/oy` 是\"随节点移动\"的全部依据：三者缺一，批注在布局重排后就会飘到错误位置（且不报错）。索引签名与 `status` 一并判，是因为前者决定\"未知字段不阻断解析\"，后者决定工单闭环有没有终态。只读源码，不冒充前端渲染行为。"
+              "why": "`anchor` 的 `ox/oy` 是\"随节点移动\"的全部依据：三者缺一，批注在布局重排后就会飘到错误位置（且不报错）。索引签名与 `status` 一并判，是因为前者决定\"未知字段不阻断解析\"，后者决定工单闭环有没有终态。只读源码，不冒充前端渲染行为。",
+              "mutants_ignore": [
+                "*"
+              ]
             },
             {
               "kind": "file-exists",
@@ -23406,8 +23933,8 @@
             }
           ],
           "acceptance": "`CanvasNoteType` **恰五档**（highlight / arrow / oval / sticky / text）；`CanvasNote` 的 `id` 与 `type` **必填**，其余（`groupId` / `anchor` / `points` / `x` `y` `w` `h` / `text` / `color` / `strokeWidth` / `status`）**全部可选**；`anchor` 的形状是 `{ nodeId: string; ox: number; oy: number }`（三个都必填，缺一个就跟不上节点）；`status` **恰三档** `'open' | 'done' | 'rejected'`；接口末尾**有** `[key: string]: unknown` 索引签名（未知扩展字段不阻断解析）。",
-          "updated_at": "2026-10-19T01:47:25.567Z",
-          "agent": "all-externalize"
+          "updated_at": "2026-10-19T02:08:02.039Z",
+          "agent": "workbuddy-main"
         },
         "decision_history": [
           {
@@ -23442,6 +23969,44 @@
               "agent": "design-filler"
             },
             "agent": "all-externalize"
+          },
+          {
+            "at": "2026-10-19T02:08:02.039Z",
+            "decision": {
+              "summary": "**画布手绘批注覆盖层的形状**（阶段 C）：一份独立的 `CanvasNote[]` 挂在 DSL 顶层 `canvas_notes`，**与语义模型解耦** —— 只给前端画布渲染与协作，**不参与 `get_dsl` 的语义/代码侧逻辑**。坐标为**画布世界坐标**（world px，随 world transform 缩放平移）。`groupId` = 一次批注会话（开启→关闭）内创建的图元共享同一套；`anchor{nodeId, ox, oy}` 让图元**跟随锚定节点**移动/布局重排（缺省 = 绝对坐标）；`status` 三档 `open / done / rejected` 是语义工单闭环。★ 它**不做**：不做命中测试与坐标变换（前端）、不落盘、不校验 `anchor.nodeId` 是否存在、不把批注混进语义分析；末尾 `[key: string]: unknown` 只是**不阻断解析**，不代表未知字段合法。",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/canvas_note.ts",
+                  "symbol": "CanvasNote",
+                  "why": "批注图元的唯一形状（`canvas_notes` 数组的元素类型）；锚定、会话分组、工单状态都只在这里声明"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/canvas_note.ts",
+                  "symbol": "CanvasNoteType",
+                  "why": "五档图元类型的唯一值域：多一档前端没有对应绘制分支，少一档该图元画不出来"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "src/domain/canvas_note.ts",
+                    "check": "五档图元 + anchor 三要素 + 工单三档 + 索引签名"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/canvas_note.ts'), 'utf8'); const t = /export type CanvasNoteType = ([^;]+);/.exec(s); const body = /^export interface CanvasNote \\{[\\s\\S]*?^\\}/m.exec(s); if (!t || !body) return false; const kinds = t[1].split('|').map((v) => v.trim().replace(/^'|'$/g, '')); return kinds.length === 5 && ['highlight', 'arrow', 'oval', 'sticky', 'text'].every((k) => kinds.includes(k)) && /  id: string;/.test(body[0]) && /  type: CanvasNoteType;/.test(body[0]) && /  anchor\\?: \\{ nodeId: string; ox: number; oy: number \\};/.test(body[0]) && /  status\\?: 'open' \\| 'done' \\| 'rejected';/.test(body[0]) && /\\[key: string\\]: unknown;/.test(body[0]); })()",
+                  "why": "`anchor` 的 `ox/oy` 是\"随节点移动\"的全部依据：三者缺一，批注在布局重排后就会飘到错误位置（且不报错）。索引签名与 `status` 一并判，是因为前者决定\"未知字段不阻断解析\"，后者决定工单闭环有没有终态。只读源码，不冒充前端渲染行为。"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/canvas_note.ts",
+                  "why": "动作要有落点（基线）"
+                }
+              ],
+              "acceptance": "`CanvasNoteType` **恰五档**（highlight / arrow / oval / sticky / text）；`CanvasNote` 的 `id` 与 `type` **必填**，其余（`groupId` / `anchor` / `points` / `x` `y` `w` `h` / `text` / `color` / `strokeWidth` / `status`）**全部可选**；`anchor` 的形状是 `{ nodeId: string; ox: number; oy: number }`（三个都必填，缺一个就跟不上节点）；`status` **恰三档** `'open' | 'done' | 'rejected'`；接口末尾**有** `[key: string]: unknown` 索引签名（未知扩展字段不阻断解析）。",
+              "updated_at": "2026-10-19T01:47:25.567Z",
+              "agent": "all-externalize"
+            },
+            "agent": "workbuddy-main"
           }
         ]
       },
@@ -23488,7 +24053,10 @@
                 "check": "verified / pending 两张表不许混"
               },
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/chain_wiring.ts'), 'utf8'); const v = /export const CHAIN_EDGES: readonly ChainEdge\\[\\] = \\[[\\s\\S]*?\\n\\];/.exec(s); const p = /export const CHAIN_EDGES_PENDING: readonly ChainEdge\\[\\] = \\[[\\s\\S]*?\\n\\];/.exec(s); if (!v || !p) return false; const count = (t, re) => (t.match(re) || []).length; return count(v[0], /evidence: '/g) === count(v[0], /evidence: 'verified'/g) && count(p[0], /evidence: '/g) === count(p[0], /evidence: 'pending'/g) && count(v[0], /evidence: '/g) > 0 && count(p[0], /evidence: '/g) > 0; })()",
-              "why": "本表的第一条纪律是\"**不许把没跑过的写成跑过**\"。这条判的是**结构分离**：已验证表里一条 pending 都不许有，待验表里一条 verified 都不许有。★ 它不判\"边对不对\"（那要真跑，不是 run 能干的）。"
+              "why": "本表的第一条纪律是\"**不许把没跑过的写成跑过**\"。这条判的是**结构分离**：已验证表里一条 pending 都不许有，待验表里一条 verified 都不许有。★ 它不判\"边对不对\"（那要真跑，不是 run 能干的）。",
+              "mutants_ignore": [
+                "*"
+              ]
             },
             {
               "kind": "run",
@@ -23497,7 +24065,10 @@
                 "check": "pick 不替调用方选、不静默降级"
               },
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/chain_wiring.ts'), 'utf8'); const a = s.indexOf('export function applyChainEdge'); const b = s.indexOf('export interface Chain {'); if (a < 0 || b < 0 || b <= a) return false; const f = s.slice(a, b); return /const expr = chainExprOf\\(edge\\);/.test(f) && /const i = opts\\?\\.pick;/.test(f) && /if \\(i === undefined\\) \\{[\\s\\S]*?if \\(xs\\.length === 1\\) return \\{ ok: true/.test(f) && /\\*\\*要你给下标\\*\\*/.test(f) && !/pick \\?\\? 0/.test(f) && !/opts\\?\\.pick \\|\\| 0/.test(f) && /candidates: xs/.test(f); })()",
-              "why": "★ 这条只能钉**接线**：`run` 的求值域只有 `input / root / validateDSL / fs / path`，**不加载业务函数**（`applyChainEdge` 不在池子里）⇒ 无法真调它看它抛不抛。这里断言的是：表达式由 `chainExprOf` 生成、`pick` 缺省时先走\"候选=1 直接取\"、否则 `ok:false` 并把 `candidates` 列全、**没有任何 `?? 0` 的兜底**。真实返回值形状由函数本体 + `next_hop_args` 的证覆盖；本条不冒充行为证。"
+              "why": "★ 这条只能钉**接线**：`run` 的求值域只有 `input / root / validateDSL / fs / path`，**不加载业务函数**（`applyChainEdge` 不在池子里）⇒ 无法真调它看它抛不抛。这里断言的是：表达式由 `chainExprOf` 生成、`pick` 缺省时先走\"候选=1 直接取\"、否则 `ok:false` 并把 `candidates` 列全、**没有任何 `?? 0` 的兜底**。真实返回值形状由函数本体 + `next_hop_args` 的证覆盖；本条不冒充行为证。",
+              "mutants_ignore": [
+                "*"
+              ]
             },
             {
               "kind": "run",
@@ -23506,7 +24077,10 @@
                 "check": "hopsOf 两档且剔除作用域边"
               },
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/chain_wiring.ts'), 'utf8'); if (!/export const SCOPE_PATHS = new Set\\(\\['project_dir', 'feature'\\]\\);/.test(s)) return false; const hop = /export function hopsOf[\\s\\S]*?\\n\\}/.exec(s); if (!hop) return false; return /objectEdges = all\\.filter\\(\\(e\\) => !SCOPE_PATHS\\.has\\(e\\.toPath\\)\\)/.test(hop[0]) && /scopeEdges = all\\.filter\\(\\(e\\) => SCOPE_PATHS\\.has\\(e\\.toPath\\)\\)/.test(hop[0]) && /kind: objectEdges\\.length > 0 \\? 'strong' : 'scope-only'/.test(hop[0]); })()",
-              "why": "2026-10-06 的实测教训：不剔作用域边 ⇒ 判定**恒真**（任何一段都\"有边\"），机器给 `design-import` 判\"每段都有已验证边\"，而同日真跑证明它断在第 2 段。这条钉住\"对象边 / 作用域边\"的分流仍在一处。"
+              "why": "2026-10-06 的实测教训：不剔作用域边 ⇒ 判定**恒真**（任何一段都\"有边\"），机器给 `design-import` 判\"每段都有已验证边\"，而同日真跑证明它断在第 2 段。这条钉住\"对象边 / 作用域边\"的分流仍在一处。",
+              "mutants_ignore": [
+                "*"
+              ]
             },
             {
               "kind": "run",
@@ -23515,7 +24089,10 @@
                 "check": "evidenceLabel：改词不改数据"
               },
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/chain_wiring.ts'), 'utf8'); const a = s.indexOf('export function evidenceLabel'); const b = s.indexOf('export function renderChains'); if (a < 0 || b < 0 || b <= a) return false; const f = s.slice(a, b); return /return e === 'verified' \\? 'ran' : 'pending';/.test(f) && /verified' \\| 'pending'/.test(s); })()",
-              "why": "`[verified]` 会被读成\"现在能用\"，而 `design-import` 正是 `verified` 却真跑断链 ⇒ 用户裁定\"**改词、不改数据**\"：域里仍是枚举，给人读时统一成 `[ran]`。这条判映射只有一处、且域取值没被改掉。"
+              "why": "`[verified]` 会被读成\"现在能用\"，而 `design-import` 正是 `verified` 却真跑断链 ⇒ 用户裁定\"**改词、不改数据**\"：域里仍是枚举，给人读时统一成 `[ran]`。这条判映射只有一处、且域取值没被改掉。",
+              "mutants_ignore": [
+                "*"
+              ]
             },
             {
               "kind": "file-exists",
@@ -23644,8 +24221,8 @@
             }
           ],
           "acceptance": "`CHAIN_EDGES` 里**每一条**都是 `evidence: \"verified\"`，`CHAIN_EDGES_PENDING` 里每一条都显式 `evidence: \"pending\"`（两张表不许混）；`applyChainEdge` 在 `cardinality:\"pick\"` 且候选 >1 而调用方没给 `pick` 时 ⇒ `ok:false` 且 `candidates` 列全（**不默认取第 0 个**），候选只有 1 个时 ⇒ `ok:true`（无需选）；字段缺失 / 空数组 / `single` 却给多元素 ⇒ `ok:false` + 人话 `reason`，**绝不返回 undefined**；`hopsOf` 的 `objectEdges` 一律排除 `SCOPE_PATHS`（`project_dir` / `feature`），`kind` 只能是 `strong` / `scope-only`；`evidenceLabel(\"verified\") === \"ran\"`、`evidenceLabel(\"pending\") === \"pending\"`（改**词**、不改域取值）。",
-          "updated_at": "2026-10-19T01:47:26.795Z",
-          "agent": "all-externalize"
+          "updated_at": "2026-10-19T02:08:02.105Z",
+          "agent": "workbuddy-main"
         },
         "decision_history": [
           {
@@ -26273,6 +26850,197 @@
               "agent": "all-externalize"
             },
             "agent": "all-externalize"
+          },
+          {
+            "at": "2026-10-19T02:08:02.105Z",
+            "decision": {
+              "summary": "**链的接法表（上游产物 → 下游入参）的唯一住处**：`CHAIN_EDGES`（**只放真跑过的** `verified` 边）/ `CHAIN_EDGES_PENDING`（文档写了但从没真跑过 —— 单列一张表，让\"没验\"在读数里看得见）、`chainExprOf`（**全仓唯一**生成\"选一个\"的表达式 `touched.<key>` / `touched.<key>[i]`）、`applyChainEdge`（**执行一次接续**：不替调用方选、不静默降级）、`CHAINS`（链 = 一等公民）+ `hopsOf`（逐段只给 `strong` / `scope-only` 两档）+ `SCOPE_PATHS`（作用域锚点必须从\"对象交接\"判定里剔除，否则恒真）、`evidenceLabel`（`verified` ⇒ `ran` 的**唯一呈现词**）、`deriveObjectChains`（从已验证对象边枚举**候选**链）。★ 它**不做**：不判\"这条链到底通不通\"（那要知道下游要不要对象入参 = `ToolDef`，住 `application` 层，本文件在 `domain` **不许反向依赖**）；不执行任何工具、不读盘不落盘、不写 DSL；**不把 pending 写成 verified**；不按工具展开通配边（那是零信息量）。",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/chain_wiring.ts",
+                  "symbol": "applyChainEdge",
+                  "why": "\"把上一步的值放进下一步入参\"的唯一纯函数入口（`next_hop_args` / `invokeTool` 都走它）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/chain_wiring.ts",
+                  "symbol": "chainExprOf",
+                  "why": "\"选一个\"的表达式只许由它生成（别处手抄 = 第二份副本）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/chain_wiring.ts",
+                  "symbol": "hopsOf",
+                  "why": "逐段判定的唯一实现；`capability_map` / `first_hop_args` 读它"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "src/domain/chain_wiring.ts",
+                    "check": "verified / pending 两张表不许混"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/chain_wiring.ts'), 'utf8'); const v = /export const CHAIN_EDGES: readonly ChainEdge\\[\\] = \\[[\\s\\S]*?\\n\\];/.exec(s); const p = /export const CHAIN_EDGES_PENDING: readonly ChainEdge\\[\\] = \\[[\\s\\S]*?\\n\\];/.exec(s); if (!v || !p) return false; const count = (t, re) => (t.match(re) || []).length; return count(v[0], /evidence: '/g) === count(v[0], /evidence: 'verified'/g) && count(p[0], /evidence: '/g) === count(p[0], /evidence: 'pending'/g) && count(v[0], /evidence: '/g) > 0 && count(p[0], /evidence: '/g) > 0; })()",
+                  "why": "本表的第一条纪律是\"**不许把没跑过的写成跑过**\"。这条判的是**结构分离**：已验证表里一条 pending 都不许有，待验表里一条 verified 都不许有。★ 它不判\"边对不对\"（那要真跑，不是 run 能干的）。"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "src/domain/chain_wiring.ts",
+                    "check": "pick 不替调用方选、不静默降级"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/chain_wiring.ts'), 'utf8'); const a = s.indexOf('export function applyChainEdge'); const b = s.indexOf('export interface Chain {'); if (a < 0 || b < 0 || b <= a) return false; const f = s.slice(a, b); return /const expr = chainExprOf\\(edge\\);/.test(f) && /const i = opts\\?\\.pick;/.test(f) && /if \\(i === undefined\\) \\{[\\s\\S]*?if \\(xs\\.length === 1\\) return \\{ ok: true/.test(f) && /\\*\\*要你给下标\\*\\*/.test(f) && !/pick \\?\\? 0/.test(f) && !/opts\\?\\.pick \\|\\| 0/.test(f) && /candidates: xs/.test(f); })()",
+                  "why": "★ 这条只能钉**接线**：`run` 的求值域只有 `input / root / validateDSL / fs / path`，**不加载业务函数**（`applyChainEdge` 不在池子里）⇒ 无法真调它看它抛不抛。这里断言的是：表达式由 `chainExprOf` 生成、`pick` 缺省时先走\"候选=1 直接取\"、否则 `ok:false` 并把 `candidates` 列全、**没有任何 `?? 0` 的兜底**。真实返回值形状由函数本体 + `next_hop_args` 的证覆盖；本条不冒充行为证。"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "src/domain/chain_wiring.ts",
+                    "check": "hopsOf 两档且剔除作用域边"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/chain_wiring.ts'), 'utf8'); if (!/export const SCOPE_PATHS = new Set\\(\\['project_dir', 'feature'\\]\\);/.test(s)) return false; const hop = /export function hopsOf[\\s\\S]*?\\n\\}/.exec(s); if (!hop) return false; return /objectEdges = all\\.filter\\(\\(e\\) => !SCOPE_PATHS\\.has\\(e\\.toPath\\)\\)/.test(hop[0]) && /scopeEdges = all\\.filter\\(\\(e\\) => SCOPE_PATHS\\.has\\(e\\.toPath\\)\\)/.test(hop[0]) && /kind: objectEdges\\.length > 0 \\? 'strong' : 'scope-only'/.test(hop[0]); })()",
+                  "why": "2026-10-06 的实测教训：不剔作用域边 ⇒ 判定**恒真**（任何一段都\"有边\"），机器给 `design-import` 判\"每段都有已验证边\"，而同日真跑证明它断在第 2 段。这条钉住\"对象边 / 作用域边\"的分流仍在一处。"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "src/domain/chain_wiring.ts",
+                    "check": "evidenceLabel：改词不改数据"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/chain_wiring.ts'), 'utf8'); const a = s.indexOf('export function evidenceLabel'); const b = s.indexOf('export function renderChains'); if (a < 0 || b < 0 || b <= a) return false; const f = s.slice(a, b); return /return e === 'verified' \\? 'ran' : 'pending';/.test(f) && /verified' \\| 'pending'/.test(s); })()",
+                  "why": "`[verified]` 会被读成\"现在能用\"，而 `design-import` 正是 `verified` 却真跑断链 ⇒ 用户裁定\"**改词、不改数据**\"：域里仍是枚举，给人读时统一成 `[ran]`。这条判映射只有一处、且域取值没被改掉。"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/chain_wiring.ts",
+                  "why": "动作要有落点（基线）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/chain_wiring.ts",
+                  "symbol": "ANY_TOOL",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/chain_wiring.ts",
+                  "symbol": "AnchorKey",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/chain_wiring.ts",
+                  "symbol": "CHAINS",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/chain_wiring.ts",
+                  "symbol": "CHAIN_EDGES",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/chain_wiring.ts",
+                  "symbol": "CHAIN_EDGES_PENDING",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/chain_wiring.ts",
+                  "symbol": "Chain",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/chain_wiring.ts",
+                  "symbol": "ChainEdge",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/chain_wiring.ts",
+                  "symbol": "ChainHandoff",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/chain_wiring.ts",
+                  "symbol": "HopVerdict",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/chain_wiring.ts",
+                  "symbol": "SCOPE_PATHS",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/chain_wiring.ts",
+                  "symbol": "deriveObjectChains",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/chain_wiring.ts",
+                  "symbol": "evidenceLabel",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/chain_wiring.ts",
+                  "symbol": "findChainEdges",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/chain_wiring.ts",
+                  "symbol": "nextHopsOf",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/chain_wiring.ts",
+                  "symbol": "renderChainWiring",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/chain_wiring.ts",
+                  "symbol": "renderChains",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/chain_wiring.ts",
+                  "symbol": "renderDerivedChains",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/chain_wiring.ts",
+                  "symbol": "renderNextHops",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/chain_wiring.ts",
+                  "symbol": "universalHopsOf",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/chain_wiring.ts",
+                  "symbol": "verifiedEdgesBetween",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                }
+              ],
+              "acceptance": "`CHAIN_EDGES` 里**每一条**都是 `evidence: \"verified\"`，`CHAIN_EDGES_PENDING` 里每一条都显式 `evidence: \"pending\"`（两张表不许混）；`applyChainEdge` 在 `cardinality:\"pick\"` 且候选 >1 而调用方没给 `pick` 时 ⇒ `ok:false` 且 `candidates` 列全（**不默认取第 0 个**），候选只有 1 个时 ⇒ `ok:true`（无需选）；字段缺失 / 空数组 / `single` 却给多元素 ⇒ `ok:false` + 人话 `reason`，**绝不返回 undefined**；`hopsOf` 的 `objectEdges` 一律排除 `SCOPE_PATHS`（`project_dir` / `feature`），`kind` 只能是 `strong` / `scope-only`；`evidenceLabel(\"verified\") === \"ran\"`、`evidenceLabel(\"pending\") === \"pending\"`（改**词**、不改域取值）。",
+              "updated_at": "2026-10-19T01:47:26.795Z",
+              "agent": "all-externalize"
+            },
+            "agent": "workbuddy-main"
           }
         ]
       },
@@ -26301,7 +27069,10 @@
                 "check": "BrickContract 形状"
               },
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/contract.ts'), 'utf8'); const m = /^export interface BrickContract \\{[\\s\\S]*?^\\}/m.exec(s); if (!m) return false; const b = m[0]; return /schema_version: 1;/.test(b) && /^\\s{2}role: BrickRole;/m.test(b) && /exposes: ShapeSchema\\[\\];/.test(b) && /consumes: ShapeSchema\\[\\];/.test(b) && /writes: EffectTarget\\[\\];/.test(b) && /reads_config: string\\[\\];/.test(b); })()",
-              "why": "纯类型文件没有函数符号（实测 `parseFileSymbols` 对 contract.ts 返回空）⇒ `symbol-exists` 必假红。这条只判 `BrickContract` 的块体仍保留那几根骨架，不冒充运行期契约。"
+              "why": "纯类型文件没有函数符号（实测 `parseFileSymbols` 对 contract.ts 返回空）⇒ `symbol-exists` 必假红。这条只判 `BrickContract` 的块体仍保留那几根骨架，不冒充运行期契约。",
+              "mutants_ignore": [
+                "*"
+              ]
             },
             {
               "kind": "run",
@@ -26310,7 +27081,10 @@
                 "check": "值域"
               },
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/contract.ts'), 'utf8').replace(/\\/\\*[\\s\\S]*?\\*\\//g, ''); return /class: 'business' \\| 'functional' \\| 'hybrid';/.test(s) && /origin: 'ast' \\| 'runtime' \\| 'llm';/.test(s) && !/function\\s+\\w+\\s*\\(/.test(s); })()",
-              "why": "role 的三分与 shape 来源的三档是契约的语义边界；同时确认本文件没有运行期函数（它只是类型骨架）。"
+              "why": "role 的三分与 shape 来源的三档是契约的语义边界；同时确认本文件没有运行期函数（它只是类型骨架）。",
+              "mutants_ignore": [
+                "*"
+              ]
             },
             {
               "kind": "file-exists",
@@ -26349,8 +27123,8 @@
             }
           ],
           "acceptance": "`BrickContract` 仍含 `schema_version: 1` / `role` / `shapes{exposes,consumes}` / `effects{writes,holds,emits,reads_config}`；`BrickRole.class` 仍是 `business | functional | hybrid`；`ShapeSchema.origin` 仍限 `ast | runtime | llm`；文件内没有运行期函数实现。",
-          "updated_at": "2026-10-19T01:47:27.119Z",
-          "agent": "all-externalize"
+          "updated_at": "2026-10-19T02:08:02.173Z",
+          "agent": "workbuddy-main"
         },
         "decision_history": [
           {
@@ -26617,6 +27391,71 @@
               "agent": "all-externalize"
             },
             "agent": "all-externalize"
+          },
+          {
+            "at": "2026-10-19T02:08:02.173Z",
+            "decision": {
+              "summary": "**积木契约的类型骨架**（Brick Harvest Phase 2）：`BrickRole`（业务/功能二分）、`ShapeSchema`（形状匹配 = 可复用）、`EffectTarget`（时空可组合性验收单元）、`BrickContract`（挂在 `SemanticFile.contract` 上的文件级契约）。★ 它**不做**：不提取（`shapes`/`effects` 只接受 AST 与 observe 两个可信源，**LLM 不产生事实**）；不判定 role / 不算 confidence（采集侧）；不校验、不落盘；**无任何运行期逻辑**。",
+              "expectations": [
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "src/domain/contract.ts",
+                    "check": "BrickContract 形状"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/contract.ts'), 'utf8'); const m = /^export interface BrickContract \\{[\\s\\S]*?^\\}/m.exec(s); if (!m) return false; const b = m[0]; return /schema_version: 1;/.test(b) && /^\\s{2}role: BrickRole;/m.test(b) && /exposes: ShapeSchema\\[\\];/.test(b) && /consumes: ShapeSchema\\[\\];/.test(b) && /writes: EffectTarget\\[\\];/.test(b) && /reads_config: string\\[\\];/.test(b); })()",
+                  "why": "纯类型文件没有函数符号（实测 `parseFileSymbols` 对 contract.ts 返回空）⇒ `symbol-exists` 必假红。这条只判 `BrickContract` 的块体仍保留那几根骨架，不冒充运行期契约。"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "src/domain/contract.ts",
+                    "check": "值域"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/contract.ts'), 'utf8').replace(/\\/\\*[\\s\\S]*?\\*\\//g, ''); return /class: 'business' \\| 'functional' \\| 'hybrid';/.test(s) && /origin: 'ast' \\| 'runtime' \\| 'llm';/.test(s) && !/function\\s+\\w+\\s*\\(/.test(s); })()",
+                  "why": "role 的三分与 shape 来源的三档是契约的语义边界；同时确认本文件没有运行期函数（它只是类型骨架）。"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/contract.ts",
+                  "why": "动作要有落点（基线）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/contract.ts",
+                  "symbol": "BrickContract",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/contract.ts",
+                  "symbol": "BrickRole",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/contract.ts",
+                  "symbol": "EffectTarget",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/contract.ts",
+                  "symbol": "ShapeField",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/contract.ts",
+                  "symbol": "ShapeSchema",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                }
+              ],
+              "acceptance": "`BrickContract` 仍含 `schema_version: 1` / `role` / `shapes{exposes,consumes}` / `effects{writes,holds,emits,reads_config}`；`BrickRole.class` 仍是 `business | functional | hybrid`；`ShapeSchema.origin` 仍限 `ast | runtime | llm`；文件内没有运行期函数实现。",
+              "updated_at": "2026-10-19T01:47:27.119Z",
+              "agent": "all-externalize"
+            },
+            "agent": "workbuddy-main"
           }
         ]
       },
@@ -26663,7 +27502,10 @@
                 "check": "复用 overlay.nodePath，不持 IO"
               },
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/design_sheet.ts'), 'utf8'); return /import \\{ nodePath \\} from '\\.\\/overlay\\.js';/.test(s) && !/from ['\"]node:fs['\"]/.test(s) && !/from ['\"]node:path['\"]/.test(s); })()",
-              "why": "认亲的“路径”必须与 overlay 用**同一把尺**（`nodePath`），否则同一事实两口径；同时本模块应保持纯函数（无 fs/path）。"
+              "why": "认亲的“路径”必须与 overlay 用**同一把尺**（`nodePath`），否则同一事实两口径；同时本模块应保持纯函数（无 fs/path）。",
+              "mutants_ignore": [
+                "*"
+              ]
             },
             {
               "kind": "file-exists",
@@ -26756,8 +27598,8 @@
             }
           ],
           "acceptance": "同一对 `(design, live)` 连跑两次，`diffDesignSheet` 输出**逐字相同**；设计侧无 id 的条目若在 live 里按路径（优先）或名字（兜底）认到，则进 `resolved` 并带 live id，且**不再**出现在 `design_only`；认不到就仍留在 `design_only`（不冒充已实现）。`counts.design/live` 等于两边 `geometry.nodes` 长度。",
-          "updated_at": "2026-10-19T01:47:27.994Z",
-          "agent": "all-externalize"
+          "updated_at": "2026-10-19T02:08:02.240Z",
+          "agent": "workbuddy-main"
         },
         "decision_history": [
           {
@@ -27960,6 +28802,134 @@
               "agent": "all-externalize"
             },
             "agent": "all-externalize"
+          },
+          {
+            "at": "2026-10-19T02:08:02.240Z",
+            "decision": {
+              "summary": "**设计图（手写 `design/<f>.dsl.json`）vs 实况（扫描 `live/<f>.dsl.json`）的只读对拍**：`diffDesignSheet` 出四类差异（同名属性差 / 只在设计里=要实现 / 只在 live=未纳入 / 已认亲“赋予同一个 id”），指代口径只在 `designSheetRef` 一处（有 id 用 id，无 id 用名字/路径），未实现条目住 `meta.goals` 且由 `designSheetPendingRefs` 列出。★ 它**不做**：不读盘、不落盘（IO 在 `handlers.ts#diffDesignSheetHandler`）；不重算 live（那是 `import_project`）；不判 overlay 的 orphan/stale（那是 `overlay.ts`）；不修任何一边的 DSL。纯函数。",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/design_sheet.ts",
+                  "symbol": "diffDesignSheet",
+                  "why": "四类对拍的唯一实现"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/design_sheet.ts",
+                  "symbol": "designSheetRef",
+                  "why": "“怎么称呼一个节点”的唯一口径（有 id 用 id，无 id 用名字/路径）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/design_sheet.ts",
+                  "symbol": "designSheetPendingRefs",
+                  "why": "未实现条目（住 meta.goals）的唯一指代口径"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "src/domain/design_sheet.ts",
+                    "check": "复用 overlay.nodePath，不持 IO"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/design_sheet.ts'), 'utf8'); return /import \\{ nodePath \\} from '\\.\\/overlay\\.js';/.test(s) && !/from ['\"]node:fs['\"]/.test(s) && !/from ['\"]node:path['\"]/.test(s); })()",
+                  "why": "认亲的“路径”必须与 overlay 用**同一把尺**（`nodePath`），否则同一事实两口径；同时本模块应保持纯函数（无 fs/path）。"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/design_sheet.ts",
+                  "why": "动作要有落点（基线）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/design_sheet.ts",
+                  "symbol": "DESIGN_SHEET_NODE_KEYS",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/design_sheet.ts",
+                  "symbol": "DesignSheetDiff",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/design_sheet.ts",
+                  "symbol": "NodeAttrDiff",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/design_sheet.ts",
+                  "symbol": "PendingEntry",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/design_sheet.ts",
+                  "symbol": "ResolvedDiff",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/design_sheet.ts",
+                  "symbol": "SameIdDiff",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/design_sheet.ts",
+                  "symbol": "diffDesignSheetLine",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/design_sheet.ts",
+                  "symbol": "goalPendingEntries",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/design_sheet.ts",
+                  "symbol": "goalsOf",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/design_sheet.ts",
+                  "symbol": "nodePendingEntries",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/design_sheet.ts",
+                  "symbol": "nodesOf",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/design_sheet.ts",
+                  "symbol": "pendingEntries",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/design_sheet.ts",
+                  "symbol": "sameValue",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/design_sheet.ts",
+                  "symbol": "trimStr",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                }
+              ],
+              "acceptance": "同一对 `(design, live)` 连跑两次，`diffDesignSheet` 输出**逐字相同**；设计侧无 id 的条目若在 live 里按路径（优先）或名字（兜底）认到，则进 `resolved` 并带 live id，且**不再**出现在 `design_only`；认不到就仍留在 `design_only`（不冒充已实现）。`counts.design/live` 等于两边 `geometry.nodes` 长度。",
+              "updated_at": "2026-10-19T01:47:27.994Z",
+              "agent": "all-externalize"
+            },
+            "agent": "workbuddy-main"
           }
         ]
       },
@@ -28000,7 +28970,10 @@
                 "check": "块名只由 formatScope 生成"
               },
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/diff_blocks.ts'), 'utf8'); return /import \\{ formatScope \\} from '\\.\\/scope\\.js';/.test(s) && /return formatScope\\(scope\\);/.test(s) && /return f\\.arch_layer \\? formatScope\\(\\{ kind: 'arch_layer', value: f\\.arch_layer \\}\\) : '<未分层>';/.test(s); })()",
-              "why": "块名稳定是本模块的第一条纪律；它必须复用 `scope.ts` 的 `formatScope`，不能在这里另拼一套命名（否则同一片区域会有两个名字）。"
+              "why": "块名稳定是本模块的第一条纪律；它必须复用 `scope.ts` 的 `formatScope`，不能在这里另拼一套命名（否则同一片区域会有两个名字）。",
+              "mutants_ignore": [
+                "*"
+              ]
             },
             {
               "kind": "file-exists",
@@ -28027,8 +29000,8 @@
             }
           ],
           "acceptance": "`hasDiff` 对 `{missing:0,mismatched:0,unexpected:0}` ⇒ false；任一项 > 0、或 `expectation_failures > 0`、或 `retire` 有值 ⇒ true。`buildDiffBlocks` 只把 `hasDiff` 为真的文件放进块，`clean_files` 收其余；`group_by:\"scope\"` 时块名 === `formatScope(scope)`，`arch_layer` 时块名 === `formatScope({kind:\"arch_layer\",value})`；无差异时 `blocks` 为空且 `notes` 含明确说明（`compared===0` 时须说“没得比”）。",
-          "updated_at": "2026-10-19T01:47:28.215Z",
-          "agent": "all-externalize"
+          "updated_at": "2026-10-19T02:08:02.307Z",
+          "agent": "workbuddy-main"
         },
         "decision_history": [
           {
@@ -28195,6 +29168,62 @@
               "agent": "all-externalize"
             },
             "agent": "all-externalize"
+          },
+          {
+            "at": "2026-10-19T02:08:02.307Z",
+            "decision": {
+              "summary": "**把 per-file 差异折成“可重写的区域块”**：`hasDiff` 是“一个文件算不算有差异”的**唯一判据**（含人写的 `expectation_failures` 与 `retire` 待退役），`buildDiffBlocks` 按 `arch_layer`（或整个 `scope`）聚块，块名**只用 `formatScope` 生成**。★ 它**不做**：不算差异本身（扫描对账在 consistency/diff 侧）；不排“先改哪块”（只按差异总数/区域名排序）；不读盘；不生成任务；不修 DSL。纯函数。",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/diff_blocks.ts",
+                  "symbol": "hasDiff",
+                  "why": "“这个文件算不算有差异”的唯一判据（consistency 两条返回路径共用）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/diff_blocks.ts",
+                  "symbol": "buildDiffBlocks",
+                  "why": "per-file 差异 → 区域块的唯一折叠器"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "src/domain/diff_blocks.ts",
+                    "check": "块名只由 formatScope 生成"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/diff_blocks.ts'), 'utf8'); return /import \\{ formatScope \\} from '\\.\\/scope\\.js';/.test(s) && /return formatScope\\(scope\\);/.test(s) && /return f\\.arch_layer \\? formatScope\\(\\{ kind: 'arch_layer', value: f\\.arch_layer \\}\\) : '<未分层>';/.test(s); })()",
+                  "why": "块名稳定是本模块的第一条纪律；它必须复用 `scope.ts` 的 `formatScope`，不能在这里另拼一套命名（否则同一片区域会有两个名字）。"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/diff_blocks.ts",
+                  "why": "动作要有落点（基线）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/diff_blocks.ts",
+                  "symbol": "DiffBlock",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/diff_blocks.ts",
+                  "symbol": "DiffBlocksResult",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/diff_blocks.ts",
+                  "symbol": "FileDiff",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                }
+              ],
+              "acceptance": "`hasDiff` 对 `{missing:0,mismatched:0,unexpected:0}` ⇒ false；任一项 > 0、或 `expectation_failures > 0`、或 `retire` 有值 ⇒ true。`buildDiffBlocks` 只把 `hasDiff` 为真的文件放进块，`clean_files` 收其余；`group_by:\"scope\"` 时块名 === `formatScope(scope)`，`arch_layer` 时块名 === `formatScope({kind:\"arch_layer\",value})`；无差异时 `blocks` 为空且 `notes` 含明确说明（`compared===0` 时须说“没得比”）。",
+              "updated_at": "2026-10-19T01:47:28.215Z",
+              "agent": "all-externalize"
+            },
+            "agent": "workbuddy-main"
           }
         ]
       },
@@ -28962,7 +29991,10 @@
                 "check": "纯函数：不改入参、边两端都过滤、计数现算"
               },
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/dsl_removal.ts'), 'utf8'); const fn = /export function removeFileFromDsl\\([\\s\\S]*?\\n\\}/.exec(s); if (!fn) return false; const b = fn[0]; return !/\\.splice\\(|\\.push\\(/.test(b) && !/dsl\\.(semantic|geometry)\\s*=/.test(b) && /\\.filter\\(\\(e\\) => e\\.from !== fileId && e\\.to !== fileId\\)/.test(b) && /node_removed:\\s*nodeRemoved/.test(b) && /edges_removed:\\s*edgesRemoved/.test(b) && /nextNodes\\.length < prevNodes\\.length/.test(b) && /prevEdges\\.length - nextEdges\\.length/.test(b); })()",
-              "why": "这条判据存在的理由就是\"别半删\"：`from`/`to` 只过滤一端会留下悬空边（而且照样不报错）。\"不改入参\"必须是结构性的（`.splice` / 直接赋值都是就地改），因为调用方常常还持有旧 dsl 做 diff。"
+              "why": "这条判据存在的理由就是\"别半删\"：`from`/`to` 只过滤一端会留下悬空边（而且照样不报错）。\"不改入参\"必须是结构性的（`.splice` / 直接赋值都是就地改），因为调用方常常还持有旧 dsl 做 diff。",
+              "mutants_ignore": [
+                "*"
+              ]
             },
             {
               "kind": "run",
@@ -28971,7 +30003,10 @@
                 "check": "找不到文件不是错；缺 semantic/geometry 不炸"
               },
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/dsl_removal.ts'), 'utf8'); return /\\.\\.\\.\\(file \\? \\{ file \\} : \\{\\}\\)/.test(s) && /dsl\\.semantic\\?\\.files\\.find\\(\\(f\\) => f\\.id === fileId\\)/.test(s) && /const nextSemantic = dsl\\.semantic\\s*\\? \\{ \\.\\.\\.dsl\\.semantic, files: dsl\\.semantic\\.files\\.filter\\(\\(f\\) => f\\.id !== fileId\\) \\}\\s*: dsl\\.semantic;/.test(s) && /geometry: dsl\\.geometry \\? \\{ \\.\\.\\.dsl\\.geometry, nodes: nextNodes, edges: nextEdges \\} : dsl\\.geometry,/.test(s); })()",
-              "why": "\"找不到算不算错\"是**调用方**的判断（archive 与 deleteFile 的文案不同）—— 本函数把 `file` 设为条件展开，正是为了让\"没找到\"可被如实表达而不是抛错。两个三目保证 `semantic` / `geometry` 本身缺失时仍返回同构对象，不会因为可选字段把整个移除流程炸掉。"
+              "why": "\"找不到算不算错\"是**调用方**的判断（archive 与 deleteFile 的文案不同）—— 本函数把 `file` 设为条件展开，正是为了让\"没找到\"可被如实表达而不是抛错。两个三目保证 `semantic` / `geometry` 本身缺失时仍返回同构对象，不会因为可选字段把整个移除流程炸掉。",
+              "mutants_ignore": [
+                "*"
+              ]
             },
             {
               "kind": "file-exists",
@@ -28980,8 +30015,8 @@
             }
           ],
           "acceptance": "`removeFileFromDsl(dsl, fileId)` 返回 `{ dsl, removal }`，且**入参 `dsl` 不被修改**（三处都走 `filter` + 对象 spread，函数体内无 `splice` / `push` / 对 `dsl.semantic|geometry` 的赋值）；`removal.node_removed` 由 `nextNodes.length < prevNodes.length` **现算**、`removal.edges_removed` 由 `prevEdges.length - nextEdges.length` **现算**（不是猜的布尔/计数）；`removal.file` **只在语义层找到时**才出现（`...(file ? { file } : {})` —— 找不到不是错）；边过滤**同时**判 `e.from !== fileId && e.to !== fileId`（漏一边就留下半条悬空边，且计数也不对）；`semantic` / `geometry` 缺失时**不炸**（可选链 + 三目保持原形）。",
-          "updated_at": "2026-10-19T01:47:28.978Z",
-          "agent": "all-externalize"
+          "updated_at": "2026-10-19T02:08:02.376Z",
+          "agent": "workbuddy-main"
         },
         "decision_history": [
           {
@@ -29025,6 +30060,53 @@
               "agent": "design-filler"
             },
             "agent": "all-externalize"
+          },
+          {
+            "at": "2026-10-19T02:08:02.376Z",
+            "decision": {
+              "summary": "**\"从一个设计 DSL 里彻底移除一个文件节点\"的唯一判据**（T185）。删一个文件在 DSL 里是**三件事**：语义 `semantic.files`、几何 `geometry.nodes`、以及 `from` / `to` 指向它的 `geometry.edges` —— 此前这条判据**住两处且不一样**（`archive_node` 三清；`deleteFile` 只 splice 语义 ⇒ 留下幽灵几何节点，`get_dsl` 仍查得到、按下标遍历几何层看不出已删，属\"不报错的错\"）。现在 `removeFileFromDsl(dsl, fileId)` 是**唯一实现**，返回 `{ dsl, removal }`：新 dsl + **如实报账**（`file?` / `node_removed` / `edges_removed`）。★ 它**不做**：不改入参（纯函数，`filter` + spread 出新对象）、无 IO、**不判断\"找不到文件算不算错\"**（`FileRemoval` 只说\"什么都没动\"，报不报错与文案留给调用方）、不生成错误消息、不重排布局/索引、不清理 `canvas_notes` 这类**节点之外**的引用（只动上述三处）。",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/dsl_removal.ts",
+                  "symbol": "removeFileFromDsl",
+                  "why": "★ 三清的唯一实现；`archive_node` 与 `deleteFile` 都必须调它，不许再各写一份 filter"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/dsl_removal.ts",
+                  "symbol": "FileRemoval",
+                  "why": "报账契约（`file?` / `node_removed` / `edges_removed`）；没有它调用方只能猜\"到底动了什么\""
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "src/domain/dsl_removal.ts",
+                    "check": "纯函数：不改入参、边两端都过滤、计数现算"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/dsl_removal.ts'), 'utf8'); const fn = /export function removeFileFromDsl\\([\\s\\S]*?\\n\\}/.exec(s); if (!fn) return false; const b = fn[0]; return !/\\.splice\\(|\\.push\\(/.test(b) && !/dsl\\.(semantic|geometry)\\s*=/.test(b) && /\\.filter\\(\\(e\\) => e\\.from !== fileId && e\\.to !== fileId\\)/.test(b) && /node_removed:\\s*nodeRemoved/.test(b) && /edges_removed:\\s*edgesRemoved/.test(b) && /nextNodes\\.length < prevNodes\\.length/.test(b) && /prevEdges\\.length - nextEdges\\.length/.test(b); })()",
+                  "why": "这条判据存在的理由就是\"别半删\"：`from`/`to` 只过滤一端会留下悬空边（而且照样不报错）。\"不改入参\"必须是结构性的（`.splice` / 直接赋值都是就地改），因为调用方常常还持有旧 dsl 做 diff。"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "src/domain/dsl_removal.ts",
+                    "check": "找不到文件不是错；缺 semantic/geometry 不炸"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/dsl_removal.ts'), 'utf8'); return /\\.\\.\\.\\(file \\? \\{ file \\} : \\{\\}\\)/.test(s) && /dsl\\.semantic\\?\\.files\\.find\\(\\(f\\) => f\\.id === fileId\\)/.test(s) && /const nextSemantic = dsl\\.semantic\\s*\\? \\{ \\.\\.\\.dsl\\.semantic, files: dsl\\.semantic\\.files\\.filter\\(\\(f\\) => f\\.id !== fileId\\) \\}\\s*: dsl\\.semantic;/.test(s) && /geometry: dsl\\.geometry \\? \\{ \\.\\.\\.dsl\\.geometry, nodes: nextNodes, edges: nextEdges \\} : dsl\\.geometry,/.test(s); })()",
+                  "why": "\"找不到算不算错\"是**调用方**的判断（archive 与 deleteFile 的文案不同）—— 本函数把 `file` 设为条件展开，正是为了让\"没找到\"可被如实表达而不是抛错。两个三目保证 `semantic` / `geometry` 本身缺失时仍返回同构对象，不会因为可选字段把整个移除流程炸掉。"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/dsl_removal.ts",
+                  "why": "动作要有落点（基线）"
+                }
+              ],
+              "acceptance": "`removeFileFromDsl(dsl, fileId)` 返回 `{ dsl, removal }`，且**入参 `dsl` 不被修改**（三处都走 `filter` + 对象 spread，函数体内无 `splice` / `push` / 对 `dsl.semantic|geometry` 的赋值）；`removal.node_removed` 由 `nextNodes.length < prevNodes.length` **现算**、`removal.edges_removed` 由 `prevEdges.length - nextEdges.length` **现算**（不是猜的布尔/计数）；`removal.file` **只在语义层找到时**才出现（`...(file ? { file } : {})` —— 找不到不是错）；边过滤**同时**判 `e.from !== fileId && e.to !== fileId`（漏一边就留下半条悬空边，且计数也不对）；`semantic` / `geometry` 缺失时**不炸**（可选链 + 三目保持原形）。",
+              "updated_at": "2026-10-19T01:47:28.978Z",
+              "agent": "all-externalize"
+            },
+            "agent": "workbuddy-main"
           }
         ]
       },
@@ -31119,7 +32201,10 @@
                 "check": "MindMapKind 恰好 11 档"
               },
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/mindmap.ts'), 'utf8'); const m = /^export type MindMapKind =[\\s\\S]*?;$/m.exec(s); if (!m) return false; const kinds = [...m[0].matchAll(/\\|\\s*'([a-z_]+)'/g)].map((x) => x[1]); const want = ['root', 'feature', 'community', 'file', 'note', 'stepgroup', 'step', 'shared', 'proposal', 'brick', 'capability']; return kinds.length === want.length && want.every((k) => kinds.includes(k)); })()",
-              "why": "纯类型文件的符号判定在旧 dist 里会假红（只认 function/method），本批实测 T258 已去掉 kind 过滤 ⇒ `symbol-exists` 可用；但\"**恰好 11 档、一档不多一档不少**\"这个**集合语义** symbol-exists 表达不了 ⇒ 只能读源码锚定行首 `export type MindMapKind =` 的块。多一档 = 前端渲染缺失；少一档 = 该有的分支消失。"
+              "why": "纯类型文件的符号判定在旧 dist 里会假红（只认 function/method），本批实测 T258 已去掉 kind 过滤 ⇒ `symbol-exists` 可用；但\"**恰好 11 档、一档不多一档不少**\"这个**集合语义** symbol-exists 表达不了 ⇒ 只能读源码锚定行首 `export type MindMapKind =` 的块。多一档 = 前端渲染缺失；少一档 = 该有的分支消失。",
+              "mutants_ignore": [
+                "*"
+              ]
             },
             {
               "kind": "run",
@@ -31128,7 +32213,10 @@
                 "check": "meta 投影面 / 值域 / 纯类型"
               },
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/mindmap.ts'), 'utf8'); const keys = ['inputs?: TeachPin[];', 'outputs?: TeachPin[];', 'filePins?:', 'flowEdges?: TeachFlowEdge[];', 'fileEdges?: TeachFlowEdge[];', 'gaps?: TeachGap[];', 'narration?: NarrScene[];', 'apis?: string[];', \"storyboard?: 'done' | 'pending';\", 'pending?: boolean;']; if (!keys.every((k) => s.includes(k))) return false; if (!/kind: 'in_missing' \\| 'out_missing' \\| 'in_no_source' \\| 'out_no_consumer';/.test(s)) return false; if (!/mode: 'llm' \\| 'rule';/.test(s) || !/view\\?: 'structure' \\| 'teach';/.test(s)) return false; if (/from 'node:/.test(s)) return false; if (!/import type \\{ NarrScene \\} from '\\.\\/narration\\.js';/.test(s)) return false; return !/^export (function|const|let|var) /m.test(s); })()",
-              "why": "钉三件事：① `meta` 的十个投影键仍在（少一个前端就少一块视图，且是**静默**的）；② 三个值域（缺口四档 / mode / view）没被放宽；③ 本文件仍是**纯类型**（无 `node:` 导入、无运行期导出），与 narration 只做 type-only 互引（不造运行期环）。"
+              "why": "钉三件事：① `meta` 的十个投影键仍在（少一个前端就少一块视图，且是**静默**的）；② 三个值域（缺口四档 / mode / view）没被放宽；③ 本文件仍是**纯类型**（无 `node:` 导入、无运行期导出），与 narration 只做 type-only 互引（不造运行期环）。",
+              "mutants_ignore": [
+                "*"
+              ]
             },
             {
               "kind": "file-exists",
@@ -31179,8 +32267,8 @@
             }
           ],
           "acceptance": "`MindMapKind` 仍是**恰好 11 档**且含 `brick` 与 `capability`；`MindMapNode.meta` 仍可选且带 `inputs` / `outputs` / `filePins` / `flowEdges` / `fileEdges` / `gaps` / `narration` / `apis` / `storyboard`（`done|pending`）/ `pending` 十个键；`TeachGap.kind` 恰四档 `in_missing | out_missing | in_no_source | out_no_consumer`；顶层 `MindMap` 的 `mode` 只 `llm | rule`、`view?` 只 `structure | teach`、`proposals?` / `pipeline_like?` 保持可选；`narration` 只以 **type-only** 方式从 `./narration.js` 取 `NarrScene`，文件里**没有函数实现**、**没有 `node:` 导入**。",
-          "updated_at": "2026-10-19T01:47:30.856Z",
-          "agent": "all-externalize"
+          "updated_at": "2026-10-19T02:08:02.444Z",
+          "agent": "workbuddy-main"
         },
         "decision_history": [
           {
@@ -31727,6 +32815,101 @@
               "agent": "all-externalize"
             },
             "agent": "all-externalize"
+          },
+          {
+            "at": "2026-10-19T02:08:02.444Z",
+            "decision": {
+              "summary": "**L3 思维导图的类型骨架**：`MindMapKind`（11 档节点类型：root / feature / community / file / note / stepgroup / step / shared / proposal / brick / capability）、`MindMapNode`（`meta` 里承载产线视图的全部投影：`inputs` / `outputs` / `filePins` / `flowEdges` / `fileEdges` / `gaps` / `narration` / `apis` / `storyboard` / `pending`）、teach 模式的 `TeachStep` / `TeachPin` / `TeachFlowEdge` / `TeachGap`（缺口四档）、叠加层 `FeatureDep` / `SharedCapability` / `ProposalFeature`，以及顶层 `MindMap`（`mode` llm|rule、`view` structure|teach、`deps` / `flows` / `foundations` / `shared` / 两个重建缓存 / `proposals` / `pipeline_like`）。★ 它**不做**：不生成导图（`derive_mind_map.ts` 在 `application` 层）；不读盘、不调 LLM、不聚类、不投影针脚（针脚是**契约投影自 actual_apis 签名**，采集侧的事）；不判 `storyboard` 何时为 `pending`（只声明字段，`pending` 绝不冒充成品）；**文件内无任何运行期逻辑**。",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/mindmap.ts",
+                  "symbol": "MindMap",
+                  "why": "L3 顶层的唯一形状；`overview` / `serve` / `derive_mind_map` 都从这里取类型"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/mindmap.ts",
+                  "symbol": "MindMapNode",
+                  "why": "节点形状 + `meta` 投影面的唯一住处（产线视图全部挂在这里）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/mindmap.ts",
+                  "symbol": "TeachGap",
+                  "why": "产线缺口的唯一形状（四档 kind 决定前端怎么提示\"管线可能漏了一步\"）"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "src/domain/mindmap.ts",
+                    "check": "MindMapKind 恰好 11 档"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/mindmap.ts'), 'utf8'); const m = /^export type MindMapKind =[\\s\\S]*?;$/m.exec(s); if (!m) return false; const kinds = [...m[0].matchAll(/\\|\\s*'([a-z_]+)'/g)].map((x) => x[1]); const want = ['root', 'feature', 'community', 'file', 'note', 'stepgroup', 'step', 'shared', 'proposal', 'brick', 'capability']; return kinds.length === want.length && want.every((k) => kinds.includes(k)); })()",
+                  "why": "纯类型文件的符号判定在旧 dist 里会假红（只认 function/method），本批实测 T258 已去掉 kind 过滤 ⇒ `symbol-exists` 可用；但\"**恰好 11 档、一档不多一档不少**\"这个**集合语义** symbol-exists 表达不了 ⇒ 只能读源码锚定行首 `export type MindMapKind =` 的块。多一档 = 前端渲染缺失；少一档 = 该有的分支消失。"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "src/domain/mindmap.ts",
+                    "check": "meta 投影面 / 值域 / 纯类型"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/mindmap.ts'), 'utf8'); const keys = ['inputs?: TeachPin[];', 'outputs?: TeachPin[];', 'filePins?:', 'flowEdges?: TeachFlowEdge[];', 'fileEdges?: TeachFlowEdge[];', 'gaps?: TeachGap[];', 'narration?: NarrScene[];', 'apis?: string[];', \"storyboard?: 'done' | 'pending';\", 'pending?: boolean;']; if (!keys.every((k) => s.includes(k))) return false; if (!/kind: 'in_missing' \\| 'out_missing' \\| 'in_no_source' \\| 'out_no_consumer';/.test(s)) return false; if (!/mode: 'llm' \\| 'rule';/.test(s) || !/view\\?: 'structure' \\| 'teach';/.test(s)) return false; if (/from 'node:/.test(s)) return false; if (!/import type \\{ NarrScene \\} from '\\.\\/narration\\.js';/.test(s)) return false; return !/^export (function|const|let|var) /m.test(s); })()",
+                  "why": "钉三件事：① `meta` 的十个投影键仍在（少一个前端就少一块视图，且是**静默**的）；② 三个值域（缺口四档 / mode / view）没被放宽；③ 本文件仍是**纯类型**（无 `node:` 导入、无运行期导出），与 narration 只做 type-only 互引（不造运行期环）。"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/mindmap.ts",
+                  "why": "动作要有落点（基线）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/mindmap.ts",
+                  "symbol": "FeatureDep",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/mindmap.ts",
+                  "symbol": "MindMapKind",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/mindmap.ts",
+                  "symbol": "ProposalFeature",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/mindmap.ts",
+                  "symbol": "SharedCapability",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/mindmap.ts",
+                  "symbol": "TeachFlowEdge",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/mindmap.ts",
+                  "symbol": "TeachPin",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/mindmap.ts",
+                  "symbol": "TeachStep",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                }
+              ],
+              "acceptance": "`MindMapKind` 仍是**恰好 11 档**且含 `brick` 与 `capability`；`MindMapNode.meta` 仍可选且带 `inputs` / `outputs` / `filePins` / `flowEdges` / `fileEdges` / `gaps` / `narration` / `apis` / `storyboard`（`done|pending`）/ `pending` 十个键；`TeachGap.kind` 恰四档 `in_missing | out_missing | in_no_source | out_no_consumer`；顶层 `MindMap` 的 `mode` 只 `llm | rule`、`view?` 只 `structure | teach`、`proposals?` / `pipeline_like?` 保持可选；`narration` 只以 **type-only** 方式从 `./narration.js` 取 `NarrScene`，文件里**没有函数实现**、**没有 `node:` 导入**。",
+              "updated_at": "2026-10-19T01:47:30.856Z",
+              "agent": "all-externalize"
+            },
+            "agent": "workbuddy-main"
           }
         ]
       },
@@ -31767,7 +32950,10 @@
                 "check": "三镜顺序 + facts 来自真实针脚"
               },
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/narration.ts'), 'utf8'); const a = s.indexOf('export function buildScenes'); const b = s.indexOf('if (scenes.length === 0)'); if (a < 0 || b <= a) return false; const f = s.slice(a, b); const iIn = f.indexOf(\"title: '进料口'\"); const iMain = f.indexOf('title: title.slice(0, 10)'); const iOut = f.indexOf(\"title: '出料口'\"); return iIn >= 0 && iMain > iIn && iOut > iMain && f.includes('facts: pinFacts(inputs)') && f.includes('facts: pinFacts(outputs)') && f.includes('facts: signature ?') && f.includes('签名：'); })()",
-              "why": "★ 这条只能钉**接线与顺序**：`run` 不加载业务函数（求值域只有 `input / root / validateDSL / fs / path`）⇒ 不能真调 `buildScenes` 看它返回几镜。这里断言：进料口在工序前、出料口在工序后；两侧 facts 一律走 `pinFacts(...)`（**不许就地拼字符串**，否则\"忠实引用真实针脚\"就成了散文）；签名只进工序镜。返回值形状见 acceptance，由函数本体保证；本条不冒充行为证。"
+              "why": "★ 这条只能钉**接线与顺序**：`run` 不加载业务函数（求值域只有 `input / root / validateDSL / fs / path`）⇒ 不能真调 `buildScenes` 看它返回几镜。这里断言：进料口在工序前、出料口在工序后；两侧 facts 一律走 `pinFacts(...)`（**不许就地拼字符串**，否则\"忠实引用真实针脚\"就成了散文）；签名只进工序镜。返回值形状见 acceptance，由函数本体保证；本条不冒充行为证。",
+              "mutants_ignore": [
+                "*"
+              ]
             },
             {
               "kind": "run",
@@ -31776,7 +32962,10 @@
                 "check": "humanOf 兜底 + 零 IO"
               },
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/narration.ts'), 'utf8'); const a = s.indexOf('export const humanOf'); const b = s.indexOf('function pinFacts'); if (a < 0 || b <= a) return false; const f = s.slice(a, b); return /return m\\[t\\] \\?\\? t;/.test(f) && f.includes(\"string: '文本'\") && !f.includes('未知') && !/from 'node:/.test(s) && !/\\brequire\\(/.test(s); })()",
-              "why": "\"忠实\"的反面是**编造**：词表里没有的类型必须**回退类型本身**（`?? t`），一旦改成 `\"未知\"`，前端就再也看不到真实类型；同时本模块必须仍是纯函数（无 `node:` 导入 / 无 `require`），否则两条复用路都会被 IO 绑住。"
+              "why": "\"忠实\"的反面是**编造**：词表里没有的类型必须**回退类型本身**（`?? t`），一旦改成 `\"未知\"`，前端就再也看不到真实类型；同时本模块必须仍是纯函数（无 `node:` 导入 / 无 `require`），否则两条复用路都会被 IO 绑住。",
+              "mutants_ignore": [
+                "*"
+              ]
             },
             {
               "kind": "file-exists",
@@ -31803,8 +32992,8 @@
             }
           ],
           "acceptance": "`buildScenes(undefined, \"标题\", \"讲解\")` ⇒ **恰好 1 镜**（工序，`facts` 为空）；给了 `inputs` ⇒ 第 1 镜是 `进料口` 且 `facts` 逐条来自 `pinFacts(inputs)`；给了 `outputs` ⇒ 最后一镜是 `出料口`；三镜顺序恒为 进料口 → 工序 → 出料口；标题被 `slice(0, 10)` 截断、空标题回退 `\"工序\"`；传了 `signature` ⇒ 工序镜 `facts === [\"签名：…\"]`；`humanOf(\"string\") === \"文本\"`、`humanOf(\"WeirdType\") === \"WeirdType\"`（**兜底不返回\"未知\"**）；整文件**零 IO**（无 `node:` 导入、只 type-only 依赖 `mindmap.js`）。",
-          "updated_at": "2026-10-19T01:47:31.086Z",
-          "agent": "all-externalize"
+          "updated_at": "2026-10-19T02:08:02.514Z",
+          "agent": "workbuddy-main"
         },
         "decision_history": [
           {
@@ -32007,6 +33196,71 @@
               "agent": "all-externalize"
             },
             "agent": "all-externalize"
+          },
+          {
+            "at": "2026-10-19T02:08:02.514Z",
+            "decision": {
+              "summary": "**叙事分镜纯函数（manim 式三段：进料口 → 工序 → 出料口）**：`humanOf` 把语言类型名翻成人话（容器类型走词表、其余**回退类型本身**，不丢信息）、`buildScenes` 把工序的入/出针脚 + 名/讲解 + 可选签名 build 成 `NarrScene[]` —— **facts 逐条引用真实针脚**（`名（人话，类型 X）` / `签名：…`），绝不发明签名里没有的类型或流程。两条路复用：`narrate_step`（MCP 工具）与 `derive_mind_map`（给每个工序盒挂 `meta.narration`）。★ 它**不做**：不生成/推导针脚（那是契约投影，上游的事）；不调 LLM、不做名词以外的\"人话创作\"；不读盘、不落盘、零副作用；不校验签名格式；不决定分镜该有几镜（由针脚有无决定）。",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/narration.ts",
+                  "symbol": "buildScenes",
+                  "why": "分镜的唯一构造器（`narrate_step` 与 `derive_mind_map` 共用，不许各拼一套）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/narration.ts",
+                  "symbol": "humanOf",
+                  "why": "类型名 → 人话的**唯一**词表入口（两处复用，别在调用点各写一份映射）"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "src/domain/narration.ts",
+                    "check": "三镜顺序 + facts 来自真实针脚"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/narration.ts'), 'utf8'); const a = s.indexOf('export function buildScenes'); const b = s.indexOf('if (scenes.length === 0)'); if (a < 0 || b <= a) return false; const f = s.slice(a, b); const iIn = f.indexOf(\"title: '进料口'\"); const iMain = f.indexOf('title: title.slice(0, 10)'); const iOut = f.indexOf(\"title: '出料口'\"); return iIn >= 0 && iMain > iIn && iOut > iMain && f.includes('facts: pinFacts(inputs)') && f.includes('facts: pinFacts(outputs)') && f.includes('facts: signature ?') && f.includes('签名：'); })()",
+                  "why": "★ 这条只能钉**接线与顺序**：`run` 不加载业务函数（求值域只有 `input / root / validateDSL / fs / path`）⇒ 不能真调 `buildScenes` 看它返回几镜。这里断言：进料口在工序前、出料口在工序后；两侧 facts 一律走 `pinFacts(...)`（**不许就地拼字符串**，否则\"忠实引用真实针脚\"就成了散文）；签名只进工序镜。返回值形状见 acceptance，由函数本体保证；本条不冒充行为证。"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "src/domain/narration.ts",
+                    "check": "humanOf 兜底 + 零 IO"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/narration.ts'), 'utf8'); const a = s.indexOf('export const humanOf'); const b = s.indexOf('function pinFacts'); if (a < 0 || b <= a) return false; const f = s.slice(a, b); return /return m\\[t\\] \\?\\? t;/.test(f) && f.includes(\"string: '文本'\") && !f.includes('未知') && !/from 'node:/.test(s) && !/\\brequire\\(/.test(s); })()",
+                  "why": "\"忠实\"的反面是**编造**：词表里没有的类型必须**回退类型本身**（`?? t`），一旦改成 `\"未知\"`，前端就再也看不到真实类型；同时本模块必须仍是纯函数（无 `node:` 导入 / 无 `require`），否则两条复用路都会被 IO 绑住。"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/narration.ts",
+                  "why": "动作要有落点（基线）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/narration.ts",
+                  "symbol": "NarrScene",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/narration.ts",
+                  "symbol": "ShapeLike",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/narration.ts",
+                  "symbol": "pinFacts",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                }
+              ],
+              "acceptance": "`buildScenes(undefined, \"标题\", \"讲解\")` ⇒ **恰好 1 镜**（工序，`facts` 为空）；给了 `inputs` ⇒ 第 1 镜是 `进料口` 且 `facts` 逐条来自 `pinFacts(inputs)`；给了 `outputs` ⇒ 最后一镜是 `出料口`；三镜顺序恒为 进料口 → 工序 → 出料口；标题被 `slice(0, 10)` 截断、空标题回退 `\"工序\"`；传了 `signature` ⇒ 工序镜 `facts === [\"签名：…\"]`；`humanOf(\"string\") === \"文本\"`、`humanOf(\"WeirdType\") === \"WeirdType\"`（**兜底不返回\"未知\"**）；整文件**零 IO**（无 `node:` 导入、只 type-only 依赖 `mindmap.js`）。",
+              "updated_at": "2026-10-19T01:47:31.086Z",
+              "agent": "all-externalize"
+            },
+            "agent": "workbuddy-main"
           }
         ]
       },
@@ -32060,7 +33314,10 @@
                 "check": "done 无证据的分支必须走到拒绝"
               },
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/overlay.ts'), 'utf8'); const a = s.indexOf('export function validateProgressEvidence'); const b = s.indexOf('function validateEvidenceShape'); if (a < 0 || b < 0 || b <= a) return false; const f = s.slice(a, b); const notDone = f.indexOf(\"if (progress !== 'done')\"); const firstShape = f.indexOf('return validateEvidenceShape(evidence);'); if (notDone < 0 || firstShape <= notDone) return false; const tail = f.slice(firstShape + 'return validateEvidenceShape(evidence);'.length); return /^\\s*\\}\\s*if \\(evidence === undefined\\) \\{/.test(tail) && /return bad\\('而这次一个 evidence 都没给'\\)/.test(tail) && /return validateEvidenceShape\\(evidence\\);/.test(tail); })()",
-              "why": "★ 这条**只能钉闸的分支接线**：`run` 的求值域只有 `input / root / validateDSL / fs / path`，**不加载业务函数**（`validateProgressEvidence` 不在池子里），所以无法真调它。这里先切出非 done 分支（`return validateEvidenceShape` 之前），再断言其后**紧跟** `if (evidence === undefined) { return bad(...) }`，最后才 `return validateEvidenceShape(evidence)` —— 顺序或分支错了这条就红。**真实行为**（拒绝/放行/三档形状）由纯函数本体与 `certs/` 下 t328/t334 证覆盖；本条不冒充行为证。"
+              "why": "★ 这条**只能钉闸的分支接线**：`run` 的求值域只有 `input / root / validateDSL / fs / path`，**不加载业务函数**（`validateProgressEvidence` 不在池子里），所以无法真调它。这里先切出非 done 分支（`return validateEvidenceShape` 之前），再断言其后**紧跟** `if (evidence === undefined) { return bad(...) }`，最后才 `return validateEvidenceShape(evidence)` —— 顺序或分支错了这条就红。**真实行为**（拒绝/放行/三档形状）由纯函数本体与 `certs/` 下 t328/t334 证覆盖；本条不冒充行为证。",
+              "mutants_ignore": [
+                "*"
+              ]
             },
             {
               "kind": "run",
@@ -32069,7 +33326,10 @@
                 "check": "domain 纯净：不持 IO"
               },
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/overlay.ts'), 'utf8'); return !/from ['\"]node:fs['\"]/.test(s) && !/from ['\"]node:path['\"]/.test(s) && /export function applyOverlay\\(/.test(s) && /export function seedOverlayFromDsl\\(/.test(s); })()",
-              "why": "“唯一读写口”指**语义**唯一，不是把 IO 也塞进 domain：落盘在 `storage_overlay.ts`。这条钉住领域层仍不 import fs/path（纯函数可测），同时两个投影口仍在。"
+              "why": "“唯一读写口”指**语义**唯一，不是把 IO 也塞进 domain：落盘在 `storage_overlay.ts`。这条钉住领域层仍不 import fs/path（纯函数可测），同时两个投影口仍在。",
+              "mutants_ignore": [
+                "*"
+              ]
             },
             {
               "kind": "file-exists",
@@ -32222,8 +33482,8 @@
             }
           ],
           "acceptance": "`validateProgressEvidence(\"done\", undefined)` ⇒ `ok:false`，`reason` 以「拒绝：progress='done' 必须带一条 evidence（三档之一）」开头；`(\"in_progress\", undefined)` ⇒ `ok:true`；`(\"done\", {kind:\"expectations\",all_green:true,unsupported:0})` ⇒ `ok:true`；同档 `unsupported:1` ⇒ `ok:false`；`(\"done\", {kind:\"reading\",command:\"\",observed:\"x\",at:\"t\"})` ⇒ `ok:false`。`applyOverlay(base, seedOverlayFromDsl(base))` 后 decision / decision_history / attributes / progress / lifecycle / global.function_tags 都按 overlay 投影回 base；overlay 没写 `progress` 时 **不抹掉** base 的原值。",
-          "updated_at": "2026-10-19T01:47:32.744Z",
-          "agent": "all-externalize"
+          "updated_at": "2026-10-19T02:08:02.581Z",
+          "agent": "workbuddy-main"
         },
         "decision_history": [
           {
@@ -35431,6 +36691,210 @@
               "agent": "all-externalize"
             },
             "agent": "all-externalize"
+          },
+          {
+            "at": "2026-10-19T02:08:02.581Z",
+            "decision": {
+              "summary": "**overlay 的唯一读写口**（领域侧）：overlay 文档/锚点/边意图/全局件的**类型与全部读写语义**都从这里出 —— 首次迁移 `seedOverlayFromDsl`、对账 `reconcileOverlay`、投影回 base `applyOverlay`、三个收口同步 `mergeDecisionsIntoOverlay` / `mergeTagsIntoOverlay` / `mergeLifecycleIntoOverlay`，以及锚点“有内容”的唯一判据 `hasAnchorPayload`。★★ `validateProgressEvidence` 是**「done 必带证据」的唯一一把尺**（三档 evidence，形状与拒绝理由都在这里；`updateStatus` / `task_ops.complete` 只调它，不另写第二套）。★ 它**不做**：不做 IO（`<feature>.overlay.json` 的读写住 `storage_overlay.ts`，那里只搬字节、不立判据）；不重建 base（`import_project`）；不定义决策卡字段（`geometry.ts`）；不校验整份 DSL（`validator.ts`）。",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "validateProgressEvidence",
+                  "why": "「done 必带证据」的唯一闸；写端不允许另写第二把自己尺"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "applyOverlay",
+                  "why": "overlay → base 的唯一投影口（决策/进度/lifecycle/tags 都从这里回填）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "seedOverlayFromDsl",
+                  "why": "首次迁移的唯一入口（只收人类意图字段，不收可再生的派生字段）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "reconcileOverlay",
+                  "why": "base 重建后“保留/迁移/孤儿/过期”的唯一对账口"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "progress": "done",
+                    "evidence": null,
+                    "check": "done 无证据的分支必须走到拒绝"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/overlay.ts'), 'utf8'); const a = s.indexOf('export function validateProgressEvidence'); const b = s.indexOf('function validateEvidenceShape'); if (a < 0 || b < 0 || b <= a) return false; const f = s.slice(a, b); const notDone = f.indexOf(\"if (progress !== 'done')\"); const firstShape = f.indexOf('return validateEvidenceShape(evidence);'); if (notDone < 0 || firstShape <= notDone) return false; const tail = f.slice(firstShape + 'return validateEvidenceShape(evidence);'.length); return /^\\s*\\}\\s*if \\(evidence === undefined\\) \\{/.test(tail) && /return bad\\('而这次一个 evidence 都没给'\\)/.test(tail) && /return validateEvidenceShape\\(evidence\\);/.test(tail); })()",
+                  "why": "★ 这条**只能钉闸的分支接线**：`run` 的求值域只有 `input / root / validateDSL / fs / path`，**不加载业务函数**（`validateProgressEvidence` 不在池子里），所以无法真调它。这里先切出非 done 分支（`return validateEvidenceShape` 之前），再断言其后**紧跟** `if (evidence === undefined) { return bad(...) }`，最后才 `return validateEvidenceShape(evidence)` —— 顺序或分支错了这条就红。**真实行为**（拒绝/放行/三档形状）由纯函数本体与 `certs/` 下 t328/t334 证覆盖；本条不冒充行为证。"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "src/domain/overlay.ts",
+                    "check": "domain 纯净：不持 IO"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/overlay.ts'), 'utf8'); return !/from ['\"]node:fs['\"]/.test(s) && !/from ['\"]node:path['\"]/.test(s) && /export function applyOverlay\\(/.test(s) && /export function seedOverlayFromDsl\\(/.test(s); })()",
+                  "why": "“唯一读写口”指**语义**唯一，不是把 IO 也塞进 domain：落盘在 `storage_overlay.ts`。这条钉住领域层仍不 import fs/path（纯函数可测），同时两个投影口仍在。"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/overlay.ts",
+                  "why": "动作要有落点（基线）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "AnchorCandidate",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "DesignOverlay",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "EdgeCandidate",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "OverlayAnchor",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "OverlayEdgeIntent",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "OverlayGlobal",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "OverlayGoal",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "ProgressEvidence",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "ReconcileStats",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "attestationAppliesTo",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "buildCandidates",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "buildEdgeCandidates",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "computeFileSignature",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "decodeDirId",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "hasAnchorPayload",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "mergeById",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "mergeDecisionsIntoOverlay",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "mergeLifecycleIntoOverlay",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "mergeTagsIntoOverlay",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "nodePath",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "nodePathKind",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "nonEmpty",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "statsLine",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/overlay.ts",
+                  "symbol": "validateEvidenceShape",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                }
+              ],
+              "acceptance": "`validateProgressEvidence(\"done\", undefined)` ⇒ `ok:false`，`reason` 以「拒绝：progress='done' 必须带一条 evidence（三档之一）」开头；`(\"in_progress\", undefined)` ⇒ `ok:true`；`(\"done\", {kind:\"expectations\",all_green:true,unsupported:0})` ⇒ `ok:true`；同档 `unsupported:1` ⇒ `ok:false`；`(\"done\", {kind:\"reading\",command:\"\",observed:\"x\",at:\"t\"})` ⇒ `ok:false`。`applyOverlay(base, seedOverlayFromDsl(base))` 后 decision / decision_history / attributes / progress / lifecycle / global.function_tags 都按 overlay 投影回 base；overlay 没写 `progress` 时 **不抹掉** base 的原值。",
+              "updated_at": "2026-10-19T01:47:32.744Z",
+              "agent": "all-externalize"
+            },
+            "agent": "workbuddy-main"
           }
         ]
       },
@@ -35477,7 +36941,10 @@
                 "check": "两个值域的档数"
               },
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/reasoning.ts'), 'utf8'); return /export type ReasoningStepKind = 'think' \\| 'tool' \\| 'respond' \\| 'fold';/.test(s) && /export type ReasoningFoldKind = 'summarize' \\| 'evict';/.test(s); })()",
-              "why": "两档值域是渲染器与动画引擎的分支依据：多一档前端没有对应动效、少一档该有的分支消失（且都**静默**）。这条只判联合类型本体，不判渲染。"
+              "why": "两档值域是渲染器与动画引擎的分支依据：多一档前端没有对应动效、少一档该有的分支消失（且都**静默**）。这条只判联合类型本体，不判渲染。",
+              "mutants_ignore": [
+                "*"
+              ]
             },
             {
               "kind": "run",
@@ -35486,7 +36953,10 @@
                 "check": "必填/可选的边界 + 无运行期实现"
               },
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/reasoning.ts'), 'utf8'); const sys = /^export interface ReasoningSystem \\{[\\s\\S]*?^\\}/m.exec(s); const step = /^export interface ReasoningStep \\{[\\s\\S]*?^\\}/m.exec(s); if (!sys || !step) return false; const needSys = ['  version: number;', '  entry: ReasoningEntry;', '  steps: ReasoningStep[];']; const optSys = ['  budget?: ReasoningBudget;', '  folds?: ReasoningFold[];']; const needStep = ['  id: string;', '  node: string;', '  kind: ReasoningStepKind;', '  tokens: number;', '  reasoning: string;']; const optStep = ['  parent?: number;', '  depth?: number;', '  order?: number;', '  calls?: number;', '  round?: number;', '  args?: string;', '  result?: string;']; return needSys.every((k) => sys[0].includes(k)) && optSys.every((k) => sys[0].includes(k)) && needStep.every((k) => step[0].includes(k)) && optStep.every((k) => step[0].includes(k)) && !/^export (function|const|let|var) /m.test(s); })()",
-              "why": "必填/可选的分界就是\"**不编造**\"的边界：真实 trace 取不到的字段必须可省略（省略 ≠ 填假值），而 `id/node/tokens` 一旦变可选，`folds.folded` 与 token 条就没有可引用的锚。末句确认它仍是纯类型（`validateReasoning` 住 `validator.ts`，不在这儿另写一套）。"
+              "why": "必填/可选的分界就是\"**不编造**\"的边界：真实 trace 取不到的字段必须可省略（省略 ≠ 填假值），而 `id/node/tokens` 一旦变可选，`folds.folded` 与 token 条就没有可引用的锚。末句确认它仍是纯类型（`validateReasoning` 住 `validator.ts`，不在这儿另写一套）。",
+              "mutants_ignore": [
+                "*"
+              ]
             },
             {
               "kind": "file-exists",
@@ -35519,8 +36989,8 @@
             }
           ],
           "acceptance": "`ReasoningSystem` 顶层**必填** `version` / `entry` / `steps`，`budget` / `folds` 可选；`ReasoningStep` 必填 `id` / `node` / `kind` / `tokens` / `reasoning`，且 `parent` / `depth` / `order` / `calls` / `round` / `args` / `result` 全是可选（真实 trace 字段缺了就省略，不填假值）；`ReasoningStepKind` **恰四档**、`ReasoningFoldKind` **恰两档**；`ReasoningFold.folded` 是 `string[]`（引用 step id）；文件里**没有** `export function` / `export const` 实现，也没有 `node:` 导入。",
-          "updated_at": "2026-10-19T01:47:33.071Z",
-          "agent": "all-externalize"
+          "updated_at": "2026-10-19T02:08:02.650Z",
+          "agent": "workbuddy-main"
         },
         "decision_history": [
           {
@@ -35818,6 +37288,83 @@
               "agent": "all-externalize"
             },
             "agent": "all-externalize"
+          },
+          {
+            "at": "2026-10-19T02:08:02.650Z",
+            "decision": {
+              "summary": "**Agent 推理演示（脚本式回放）的类型骨架**：`ReasoningSystem{version, entry, budget?, steps[], folds?}` + `ReasoningStep`（`id` / `node` / `kind` / `tokens` / `reasoning` 必填，另有真实调用树字段 `parent` / `depth` / `order` / `calls` / `round` / `args` / `result` 可选 —— 来自 Go 编译期插桩 trace）+ `ReasoningFold`（`at_step` 从 1 起、`folded` 引用 step id）+ 两个值域 `ReasoningStepKind`（think/tool/respond/fold）与 `ReasoningFoldKind`（summarize/evict）。★ 它**不做**：不执行/回放、不算 token 累积、不判何时折叠；**不做引用完整性校验**（`validateReasoning` 住 `validator.ts`：entry / step.node / folds.at_step / folded 的悬空与重复都在那里报）；不渲染（复用动画引擎的 card_fold / card_evict，属前端）；**文件内无任何运行期逻辑**。",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/reasoning.ts",
+                  "symbol": "ReasoningSystem",
+                  "why": "DSL 顶层 `reasoning` 字段的唯一形状（`types.ts` 只做 re-export）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/reasoning.ts",
+                  "symbol": "ReasoningStep",
+                  "why": "步骤形状的唯一住处；`folds.folded` 引用的就是它的 `id`"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/reasoning.ts",
+                  "symbol": "ReasoningFold",
+                  "why": "折叠点形状的唯一住处（`at_step` 的 1 起口径只在这里声明）"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "src/domain/reasoning.ts",
+                    "check": "两个值域的档数"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/reasoning.ts'), 'utf8'); return /export type ReasoningStepKind = 'think' \\| 'tool' \\| 'respond' \\| 'fold';/.test(s) && /export type ReasoningFoldKind = 'summarize' \\| 'evict';/.test(s); })()",
+                  "why": "两档值域是渲染器与动画引擎的分支依据：多一档前端没有对应动效、少一档该有的分支消失（且都**静默**）。这条只判联合类型本体，不判渲染。"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "src/domain/reasoning.ts",
+                    "check": "必填/可选的边界 + 无运行期实现"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/reasoning.ts'), 'utf8'); const sys = /^export interface ReasoningSystem \\{[\\s\\S]*?^\\}/m.exec(s); const step = /^export interface ReasoningStep \\{[\\s\\S]*?^\\}/m.exec(s); if (!sys || !step) return false; const needSys = ['  version: number;', '  entry: ReasoningEntry;', '  steps: ReasoningStep[];']; const optSys = ['  budget?: ReasoningBudget;', '  folds?: ReasoningFold[];']; const needStep = ['  id: string;', '  node: string;', '  kind: ReasoningStepKind;', '  tokens: number;', '  reasoning: string;']; const optStep = ['  parent?: number;', '  depth?: number;', '  order?: number;', '  calls?: number;', '  round?: number;', '  args?: string;', '  result?: string;']; return needSys.every((k) => sys[0].includes(k)) && optSys.every((k) => sys[0].includes(k)) && needStep.every((k) => step[0].includes(k)) && optStep.every((k) => step[0].includes(k)) && !/^export (function|const|let|var) /m.test(s); })()",
+                  "why": "必填/可选的分界就是\"**不编造**\"的边界：真实 trace 取不到的字段必须可省略（省略 ≠ 填假值），而 `id/node/tokens` 一旦变可选，`folds.folded` 与 token 条就没有可引用的锚。末句确认它仍是纯类型（`validateReasoning` 住 `validator.ts`，不在这儿另写一套）。"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/reasoning.ts",
+                  "why": "动作要有落点（基线）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/reasoning.ts",
+                  "symbol": "ReasoningBudget",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/reasoning.ts",
+                  "symbol": "ReasoningEntry",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/reasoning.ts",
+                  "symbol": "ReasoningFoldKind",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/reasoning.ts",
+                  "symbol": "ReasoningStepKind",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                }
+              ],
+              "acceptance": "`ReasoningSystem` 顶层**必填** `version` / `entry` / `steps`，`budget` / `folds` 可选；`ReasoningStep` 必填 `id` / `node` / `kind` / `tokens` / `reasoning`，且 `parent` / `depth` / `order` / `calls` / `round` / `args` / `result` 全是可选（真实 trace 字段缺了就省略，不填假值）；`ReasoningStepKind` **恰四档**、`ReasoningFoldKind` **恰两档**；`ReasoningFold.folded` 是 `string[]`（引用 step id）；文件里**没有** `export function` / `export const` 实现，也没有 `node:` 导入。",
+              "updated_at": "2026-10-19T01:47:33.071Z",
+              "agent": "all-externalize"
+            },
+            "agent": "workbuddy-main"
           }
         ]
       },
@@ -35864,7 +37411,10 @@
                 "check": "非法输入必须 throw，不许 catch 吞掉"
               },
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/scope.ts'), 'utf8'); const a = s.indexOf('export function parseScope'); const b = s.indexOf('export function formatScope'); if (a < 0 || b < 0 || b <= a) return false; const f = s.slice(a, b); return (f.match(/throw new Error/g) || []).length >= 3 && f.includes('未知 scope 种类') && f.includes('缺参数') && !/\\bcatch\\b/.test(f); })()",
-              "why": "“非法必须抛、不许静默降级”的可观测形态：解析函数里至少三处显式 `throw`（缺参数 / 非法 layer / 未知种类），且**没有 catch 吞掉**。"
+              "why": "“非法必须抛、不许静默降级”的可观测形态：解析函数里至少三处显式 `throw`（缺参数 / 非法 layer / 未知种类），且**没有 catch 吞掉**。",
+              "mutants_ignore": [
+                "*"
+              ]
             },
             {
               "kind": "file-exists",
@@ -35915,8 +37465,8 @@
             }
           ],
           "acceptance": "`parseScope(\"layer:nope\")`、`parseScope(\"bogus:x\")`、`parseScope(\"subtree:\")` 都**抛**，最后一种报“缺参数”；`parseScope(\"\")` 与 `parseScope(\"all\")` ⇒ `{kind:\"all\"}`；对任一合法 scope，`formatScope(parseScope(s)) === s`（规范形）；同一 `(dsl, scope)` 两次 `resolveScope` 输出逐字相同；解析出空集时 `notes` 含「节点集为空」。",
-          "updated_at": "2026-10-19T01:47:33.603Z",
-          "agent": "all-externalize"
+          "updated_at": "2026-10-19T02:08:02.719Z",
+          "agent": "workbuddy-main"
         },
         "decision_history": [
           {
@@ -36391,6 +37941,92 @@
               "agent": "all-externalize"
             },
             "agent": "all-externalize"
+          },
+          {
+            "at": "2026-10-19T02:08:02.719Z",
+            "decision": {
+              "summary": "**圈定范围的唯一原语**：`parseScope` / `formatScope` 是**唯一一对互逆**的文法尺，`resolveScope` 把 `Scope` 解析成**确定**的 `node_ids` / `file_ids` / `paths`（纯函数、排序、不依赖时间/IO）。★★ **`parseScope` 是 scope 的唯一解析尺；非法 scope 必须抛，不许静默降级成空范围**（未知种类、缺参数、非法 `layer` 一律 `throw`，并给出文法和可用种类）。★ 它**不做**：只表达“哪一片”，不表达“要做什么”；不读盘；默认不下钻 `sub_dsl`（只有 `subtree:<id>!` 才下钻，且必须写进 `notes`）；“没命中/空集”必须进 `notes`。",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/scope.ts",
+                  "symbol": "parseScope",
+                  "why": "scope 文本的唯一解析尺（非法必须抛）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/scope.ts",
+                  "symbol": "formatScope",
+                  "why": "scope 的唯一规范名（差异块的稳定块名只许用它）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/scope.ts",
+                  "symbol": "resolveScope",
+                  "why": "scope → 确定文件集合的唯一解析器（纯函数）"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "src/domain/scope.ts",
+                    "check": "非法输入必须 throw，不许 catch 吞掉"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/scope.ts'), 'utf8'); const a = s.indexOf('export function parseScope'); const b = s.indexOf('export function formatScope'); if (a < 0 || b < 0 || b <= a) return false; const f = s.slice(a, b); return (f.match(/throw new Error/g) || []).length >= 3 && f.includes('未知 scope 种类') && f.includes('缺参数') && !/\\bcatch\\b/.test(f); })()",
+                  "why": "“非法必须抛、不许静默降级”的可观测形态：解析函数里至少三处显式 `throw`（缺参数 / 非法 layer / 未知种类），且**没有 catch 吞掉**。"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/scope.ts",
+                  "why": "动作要有落点（基线）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/scope.ts",
+                  "symbol": "LAYERS",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/scope.ts",
+                  "symbol": "ResolvedScope",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/scope.ts",
+                  "symbol": "Scope",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/scope.ts",
+                  "symbol": "descendantsOf",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/scope.ts",
+                  "symbol": "normPath",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/scope.ts",
+                  "symbol": "resolveScopeText",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/scope.ts",
+                  "symbol": "uniqSorted",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                }
+              ],
+              "acceptance": "`parseScope(\"layer:nope\")`、`parseScope(\"bogus:x\")`、`parseScope(\"subtree:\")` 都**抛**，最后一种报“缺参数”；`parseScope(\"\")` 与 `parseScope(\"all\")` ⇒ `{kind:\"all\"}`；对任一合法 scope，`formatScope(parseScope(s)) === s`（规范形）；同一 `(dsl, scope)` 两次 `resolveScope` 输出逐字相同；解析出空集时 `notes` 含「节点集为空」。",
+              "updated_at": "2026-10-19T01:47:33.603Z",
+              "agent": "all-externalize"
+            },
+            "agent": "workbuddy-main"
           }
         ]
       },
@@ -36431,7 +38067,10 @@
                 "check": "FileLifecycle 值域不含 archived"
               },
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/semantic.ts'), 'utf8').replace(/\\/\\*[\\s\\S]*?\\*\\//g, ''); const m = /^export interface FileLifecycle \\{[\\s\\S]*?^\\}/m.exec(s); if (!m) return false; return /status: 'active' \\| 'deprecated' \\| 'merged'/.test(m[0]) && !/'archived'/.test(m[0]); })()",
-              "why": "T183 的结论必须留在类型里：`archived` 是**不可达**值（归档 = 移出 DSL）。先剥注释再判，避免像上一批那样被注释里的 `archived` 误命中。"
+              "why": "T183 的结论必须留在类型里：`archived` 是**不可达**值（归档 = 移出 DSL）。先剥注释再判，避免像上一批那样被注释里的 `archived` 误命中。",
+              "mutants_ignore": [
+                "*"
+              ]
             },
             {
               "kind": "file-exists",
@@ -36518,8 +38157,8 @@
             }
           ],
           "acceptance": "`assertLifecycle` 对 `{status:\"deprecated\"}`（缺 `retire_reason`）、`{status:\"merged\"}`（既无 `merged_into` 又无 `merged_from`）、`{status:\"archived\"}` 三种输入**都抛**（最后一种须指路 `archive` 工具）；对 `{status:\"active\"}` 放行。`hasFileEntries(undefined)` 与 `{files:[]}` ⇒ false，`{files:[{…}]}` ⇒ true。",
-          "updated_at": "2026-10-19T01:47:34.488Z",
-          "agent": "all-externalize"
+          "updated_at": "2026-10-19T02:08:02.786Z",
+          "agent": "workbuddy-main"
         },
         "decision_history": [
           {
@@ -37516,6 +39155,122 @@
               "agent": "all-externalize"
             },
             "agent": "all-externalize"
+          },
+          {
+            "at": "2026-10-19T02:08:02.786Z",
+            "decision": {
+              "summary": "**语义层**的类型与两条纯判据：`SemanticFile` / `ExpectedApi` / `Symbol` / `BrickContract` 挂载点，加上 `FileLifecycle` 的**唯一校验器** `assertLifecycle` 与“语义层有没有文件级条目”的**唯一判据** `hasFileEntries`。★ 它**不做**：不扫描、不解析源码（代码事实只在 `cache.db` 的 `fileFacts`，`actual_apis` / `actual_deps` 已按 T20 删除）；不落盘；不定义 DSL 顶层（那是 `types.ts`）；不校验 JSON schema（那是 `validator.ts`）。",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/semantic.ts",
+                  "symbol": "assertLifecycle",
+                  "why": "`FileLifecycle` 的非法值/缺字段只有这一处会响亮拒绝（两个写端共用）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/semantic.ts",
+                  "symbol": "hasFileEntries",
+                  "why": "“语义层有没有文件级条目”的唯一判据，status/consistency/scaffold 三处都调它"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "src/domain/semantic.ts",
+                    "check": "FileLifecycle 值域不含 archived"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/semantic.ts'), 'utf8').replace(/\\/\\*[\\s\\S]*?\\*\\//g, ''); const m = /^export interface FileLifecycle \\{[\\s\\S]*?^\\}/m.exec(s); if (!m) return false; return /status: 'active' \\| 'deprecated' \\| 'merged'/.test(m[0]) && !/'archived'/.test(m[0]); })()",
+                  "why": "T183 的结论必须留在类型里：`archived` 是**不可达**值（归档 = 移出 DSL）。先剥注释再判，避免像上一批那样被注释里的 `archived` 误命中。"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/semantic.ts",
+                  "why": "动作要有落点（基线）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/semantic.ts",
+                  "symbol": "CodeTemplate",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/semantic.ts",
+                  "symbol": "ExpectedApi",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/semantic.ts",
+                  "symbol": "FileLifecycle",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/semantic.ts",
+                  "symbol": "LIFECYCLE_KEYS",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/semantic.ts",
+                  "symbol": "LifecycleKeysExtra",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/semantic.ts",
+                  "symbol": "LifecycleKeysMissing",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/semantic.ts",
+                  "symbol": "ScaffoldConfig",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/semantic.ts",
+                  "symbol": "Semantic",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/semantic.ts",
+                  "symbol": "SemanticFile",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/semantic.ts",
+                  "symbol": "Symbol",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/semantic.ts",
+                  "symbol": "SymbolLifecycle",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/semantic.ts",
+                  "symbol": "_assertLifecycleKeysNoExtra",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/semantic.ts",
+                  "symbol": "_assertLifecycleKeysNoMissing",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                }
+              ],
+              "acceptance": "`assertLifecycle` 对 `{status:\"deprecated\"}`（缺 `retire_reason`）、`{status:\"merged\"}`（既无 `merged_into` 又无 `merged_from`）、`{status:\"archived\"}` 三种输入**都抛**（最后一种须指路 `archive` 工具）；对 `{status:\"active\"}` 放行。`hasFileEntries(undefined)` 与 `{files:[]}` ⇒ false，`{files:[{…}]}` ⇒ true。",
+              "updated_at": "2026-10-19T01:47:34.488Z",
+              "agent": "all-externalize"
+            },
+            "agent": "workbuddy-main"
           }
         ]
       },
@@ -37574,7 +39329,10 @@
                 "check": "九档动作 + 必填/可选边界 + 轨迹字段齐全"
               },
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/simulation.ts'), 'utf8'); const t = /type: 'set_state' \\| 'increment' \\| 'decrement' \\| 'push' \\| 'pop' \\| 'move' \\| 'highlight' \\| 'log' \\| 'call';/.exec(s); const sim = /^export interface Simulation \\{[\\s\\S]*?^\\}/m.exec(s); const tr = /^export interface SimulationTrace \\{[\\s\\S]*?^\\}/m.exec(s); if (!t || !sim || !tr) return false; const needSim = ['  initial_state: SimulationStateDef[];', '  rules: SimulationRule[];', '  mappings?: SimulationNodeMapping[];', '  trace?: SimulationTrace[];']; const needTr = ['  step: number;', '  event: string;', '  ruleId: string;', '  conditionMet: boolean;', '  actions: SimulationAction[];', '  emittedEvents: string[];', '  timestamp: string;', '  stateSnapshot: Record<string, unknown>;']; return needSim.every((k) => sim[0].includes(k)) && needTr.every((k) => tr[0].includes(k)); })()",
-              "why": "动作档数决定执行器有没有分支可走（多/少一档都静默）；`SimulationTrace` 的八项缺任何一项，回放就只能\"看个大概\"（`conditionMet` 与 `stateSnapshot` 正是排查\"为什么没触发\"的依据）。只读源码判结构，不假装跑过仿真。"
+              "why": "动作档数决定执行器有没有分支可走（多/少一档都静默）；`SimulationTrace` 的八项缺任何一项，回放就只能\"看个大概\"（`conditionMet` 与 `stateSnapshot` 正是排查\"为什么没触发\"的依据）。只读源码判结构，不假装跑过仿真。",
+              "mutants_ignore": [
+                "*"
+              ]
             },
             {
               "kind": "run",
@@ -37583,7 +39341,10 @@
                 "check": "纯类型：零运行期导出 + 唯一 import 是 type-only"
               },
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/simulation.ts'), 'utf8'); const imports = [...s.matchAll(/^import .*$/gm)].map((m) => m[0]); return imports.length === 1 && imports[0] === \"import type { NodeStyle } from './geometry.js';\" && !/^export (function|const|let|var) /m.test(s); })()",
-              "why": "本文件只描述\"状态机长什么样\"，执行语义（求值 `condition`、推进 state）必须只有一处实现（引擎侧）。值导入会把 geometry 运行期拖进纯类型层；`export const` 一旦出现，就说明有人开始在这里塞逻辑。"
+              "why": "本文件只描述\"状态机长什么样\"，执行语义（求值 `condition`、推进 state）必须只有一处实现（引擎侧）。值导入会把 geometry 运行期拖进纯类型层；`export const` 一旦出现，就说明有人开始在这里塞逻辑。",
+              "mutants_ignore": [
+                "*"
+              ]
             },
             {
               "kind": "file-exists",
@@ -37604,8 +39365,8 @@
             }
           ],
           "acceptance": "`Simulation.initial_state` 与 `rules` **必填**，`mappings?` / `trace?` 可选；`SimulationAction.type` **恰九档**，而 `target?` / `value?` / `amount?` / `from?` / `to?` / `message?` **全可选**（九档共用一张扁平结构，靠 type 决定用哪几个）；`SimulationTrace` 的 `step` / `event` / `ruleId` / `conditionMet` / `actions` / `emittedEvents` / `timestamp` / `stateSnapshot` **全必填**（日志缺一项就不是可回放的轨迹）；`SimulationRule.event` / `actions` 必填、`condition?` / `emits?` / `from_node?` / `to_nodes?` 可选（后两者只服务可视化连线，不参与求值）；文件里**没有** `export function` / `export const`，且唯一 import 是 `import type { NodeStyle } from './geometry.js';`。",
-          "updated_at": "2026-10-19T01:47:34.679Z",
-          "agent": "all-externalize"
+          "updated_at": "2026-10-19T02:08:02.855Z",
+          "agent": "workbuddy-main"
         },
         "decision_history": [
           {
@@ -37803,6 +39564,83 @@
               "agent": "all-externalize"
             },
             "agent": "all-externalize"
+          },
+          {
+            "at": "2026-10-19T02:08:02.855Z",
+            "decision": {
+              "summary": "**事件驱动状态机的类型骨架**：`Simulation{id, initial_state[], rules[], mappings?}` —— 一条 `SimulationRule` = `event`（触发）→ `condition?`（JS 表达式，访问 `state` / `payload`）→ `actions[]`（执行）→ `emits?`（发射下游事件），并带 `from_node` / `to_nodes` 供画布连**可视化依赖边**（`SimulationDepEdge`）；`SimulationAction.type` **九档**（set_state / increment / decrement / push / pop / move / highlight / log / call）；`SimulationStateDef` 定义初值；`SimulationNodeMapping` 把 state 键映射到画布节点（`labelTemplate` / `styleMap`）；`SimulationTrace` 是**运行时填充**的单步日志（`step` / `ruleId` / `conditionMet` / `stateSnapshot` …）。★ 它**不做**：不执行规则、不求值 `condition`、不维护 state、不产出 trace（引擎/前端负责）；**不校验引用完整性**（`rule.from_node` / `to_nodes` / `mapping.nodeId` 的悬空不在本文件判）；文件内**零运行期代码**（唯一 import 是 `import type { NodeStyle }`）。",
+              "expectations": [
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/simulation.ts",
+                  "symbol": "Simulation",
+                  "why": "仿真器顶层形状的唯一住处（初值 + 规则 + 映射 + trace）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/simulation.ts",
+                  "symbol": "SimulationRule",
+                  "why": "「事件 → 条件 → 动作 → 发射」这条链的唯一形状；少了 `emits` 就没有级联，少了 `from_node` 就画不出依赖边"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/simulation.ts",
+                  "symbol": "SimulationAction",
+                  "why": "九档动作的唯一形状；每档用哪个字段（`amount` / `value` / `message`）只在这里说"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/simulation.ts",
+                  "symbol": "SimulationTrace",
+                  "why": "可回放轨迹的单步形状（`conditionMet` / `stateSnapshot` 让\"为什么没触发\"也能查）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/simulation.ts",
+                  "symbol": "SimulationDepEdge",
+                  "why": "规则到画布连线的桥（`rule_id` + `event`）；没有它仿真规则与图上边无法对应"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "src/domain/simulation.ts",
+                    "check": "九档动作 + 必填/可选边界 + 轨迹字段齐全"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/simulation.ts'), 'utf8'); const t = /type: 'set_state' \\| 'increment' \\| 'decrement' \\| 'push' \\| 'pop' \\| 'move' \\| 'highlight' \\| 'log' \\| 'call';/.exec(s); const sim = /^export interface Simulation \\{[\\s\\S]*?^\\}/m.exec(s); const tr = /^export interface SimulationTrace \\{[\\s\\S]*?^\\}/m.exec(s); if (!t || !sim || !tr) return false; const needSim = ['  initial_state: SimulationStateDef[];', '  rules: SimulationRule[];', '  mappings?: SimulationNodeMapping[];', '  trace?: SimulationTrace[];']; const needTr = ['  step: number;', '  event: string;', '  ruleId: string;', '  conditionMet: boolean;', '  actions: SimulationAction[];', '  emittedEvents: string[];', '  timestamp: string;', '  stateSnapshot: Record<string, unknown>;']; return needSim.every((k) => sim[0].includes(k)) && needTr.every((k) => tr[0].includes(k)); })()",
+                  "why": "动作档数决定执行器有没有分支可走（多/少一档都静默）；`SimulationTrace` 的八项缺任何一项，回放就只能\"看个大概\"（`conditionMet` 与 `stateSnapshot` 正是排查\"为什么没触发\"的依据）。只读源码判结构，不假装跑过仿真。"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "src/domain/simulation.ts",
+                    "check": "纯类型：零运行期导出 + 唯一 import 是 type-only"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/simulation.ts'), 'utf8'); const imports = [...s.matchAll(/^import .*$/gm)].map((m) => m[0]); return imports.length === 1 && imports[0] === \"import type { NodeStyle } from './geometry.js';\" && !/^export (function|const|let|var) /m.test(s); })()",
+                  "why": "本文件只描述\"状态机长什么样\"，执行语义（求值 `condition`、推进 state）必须只有一处实现（引擎侧）。值导入会把 geometry 运行期拖进纯类型层；`export const` 一旦出现，就说明有人开始在这里塞逻辑。"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/simulation.ts",
+                  "why": "动作要有落点（基线）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/simulation.ts",
+                  "symbol": "SimulationNodeMapping",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/simulation.ts",
+                  "symbol": "SimulationStateDef",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                }
+              ],
+              "acceptance": "`Simulation.initial_state` 与 `rules` **必填**，`mappings?` / `trace?` 可选；`SimulationAction.type` **恰九档**，而 `target?` / `value?` / `amount?` / `from?` / `to?` / `message?` **全可选**（九档共用一张扁平结构，靠 type 决定用哪几个）；`SimulationTrace` 的 `step` / `event` / `ruleId` / `conditionMet` / `actions` / `emittedEvents` / `timestamp` / `stateSnapshot` **全必填**（日志缺一项就不是可回放的轨迹）；`SimulationRule.event` / `actions` 必填、`condition?` / `emits?` / `from_node?` / `to_nodes?` 可选（后两者只服务可视化连线，不参与求值）；文件里**没有** `export function` / `export const`，且唯一 import 是 `import type { NodeStyle } from './geometry.js';`。",
+              "updated_at": "2026-10-19T01:47:34.679Z",
+              "agent": "all-externalize"
+            },
+            "agent": "workbuddy-main"
           }
         ]
       },
@@ -40066,7 +41904,10 @@
                 "check": "DesignDSL 顶层形状"
               },
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/types.ts'), 'utf8'); const m = /^export interface DesignDSL \\{[\\s\\S]*?^\\}/m.exec(s); if (!m) return false; const b = m[0]; return /^\\s{2}feature:/m.test(b) && /^\\s{2}geometry:/m.test(b) && /^\\s{2}semantic\\?:/m.test(b) && /^\\s{2}todos\\?:/m.test(b) && /^\\s{2}layers\\?:/m.test(b); })()",
-              "why": "★ 纯类型文件没有函数符号（实测 `parseFileSymbols` 只给 `interface:DesignDSL`），`symbol-exists` 只认 function/method ⇒ 用它必假红。这条 `run` 只读源码、锚定**行首** `export interface DesignDSL {` 的块体，判它仍保留四个顶层键；不是行为断言，也不冒充。"
+              "why": "★ 纯类型文件没有函数符号（实测 `parseFileSymbols` 只给 `interface:DesignDSL`），`symbol-exists` 只认 function/method ⇒ 用它必假红。这条 `run` 只读源码、锚定**行首** `export interface DesignDSL {` 的块体，判它仍保留四个顶层键；不是行为断言，也不冒充。",
+              "mutants_ignore": [
+                "*"
+              ]
             },
             {
               "kind": "run",
@@ -40075,7 +41916,10 @@
                 "check": "单一类型入口（再导出）"
               },
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/types.ts'), 'utf8'); const has = (mod, sym) => new RegExp(\"export type \\\\{[\\\\s\\\\S]*?\" + sym + \",[\\\\s\\\\S]*?\\\\} from '\\\\./\" + mod + \"';\").test(s); return has('geometry.js', 'NodeDecision') && has('semantic.js', 'Semantic') && has('contract.js', 'BrickContract'); })()",
-              "why": "`design_sheet` / `overlay` / `expectation` 等模块都从 `types.js` 拿类型 ⇒ “单一入口”必须仍成立；断的是三处再导出真的还在，而不是凭印象。"
+              "why": "`design_sheet` / `overlay` / `expectation` 等模块都从 `types.js` 拿类型 ⇒ “单一入口”必须仍成立；断的是三处再导出真的还在，而不是凭印象。",
+              "mutants_ignore": [
+                "*"
+              ]
             },
             {
               "kind": "file-exists",
@@ -40138,8 +41982,8 @@
             }
           ],
           "acceptance": "`src/domain/types.ts` 仍导出 `DesignDSL`，其顶层**必填** `feature` + `geometry`，且仍带可选 `semantic` / `todos` / `layers`；同时仍 re-export `NodeDecision`（来自 geometry）与 `BrickContract`（来自 contract）—— 外部从 `domain/types.js` 一个入口即可拿到；文件内**没有运行期函数实现**。",
-          "updated_at": "2026-10-19T01:47:37.031Z",
-          "agent": "all-externalize"
+          "updated_at": "2026-10-19T02:08:02.922Z",
+          "agent": "workbuddy-main"
         },
         "decision_history": [
           {
@@ -40702,6 +42546,95 @@
               "agent": "all-externalize"
             },
             "agent": "all-externalize"
+          },
+          {
+            "at": "2026-10-19T02:08:02.922Z",
+            "decision": {
+              "summary": "DSL 的**根类型模块**：定义 `DesignDSL` 的顶层形状（`feature` / `geometry` / 可选 `semantic` / `todos` / `layers` / `theme` …），并统一再导出 geometry / semantic / contract / annotation / animation / simulation / reasoning / canvas_note 的类型 —— 外部只从 `domain/types.js` 这一个入口取类型。★ 它**不做**：不定义几何/语义/积木的内部结构（那些住各自模块，本文件只 re-export）；不做运行期校验、默认值或归一化（结构校验住 `validator.ts` 的 ajv）；不读盘、不落盘。纯类型 ⇒ 无函数符号。",
+              "expectations": [
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "src/domain/types.ts",
+                    "check": "DesignDSL 顶层形状"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/types.ts'), 'utf8'); const m = /^export interface DesignDSL \\{[\\s\\S]*?^\\}/m.exec(s); if (!m) return false; const b = m[0]; return /^\\s{2}feature:/m.test(b) && /^\\s{2}geometry:/m.test(b) && /^\\s{2}semantic\\?:/m.test(b) && /^\\s{2}todos\\?:/m.test(b) && /^\\s{2}layers\\?:/m.test(b); })()",
+                  "why": "★ 纯类型文件没有函数符号（实测 `parseFileSymbols` 只给 `interface:DesignDSL`），`symbol-exists` 只认 function/method ⇒ 用它必假红。这条 `run` 只读源码、锚定**行首** `export interface DesignDSL {` 的块体，判它仍保留四个顶层键；不是行为断言，也不冒充。"
+                },
+                {
+                  "kind": "run",
+                  "input": {
+                    "file": "src/domain/types.ts",
+                    "check": "单一类型入口（再导出）"
+                  },
+                  "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/types.ts'), 'utf8'); const has = (mod, sym) => new RegExp(\"export type \\\\{[\\\\s\\\\S]*?\" + sym + \",[\\\\s\\\\S]*?\\\\} from '\\\\./\" + mod + \"';\").test(s); return has('geometry.js', 'NodeDecision') && has('semantic.js', 'Semantic') && has('contract.js', 'BrickContract'); })()",
+                  "why": "`design_sheet` / `overlay` / `expectation` 等模块都从 `types.js` 拿类型 ⇒ “单一入口”必须仍成立；断的是三处再导出真的还在，而不是凭印象。"
+                },
+                {
+                  "kind": "file-exists",
+                  "path": "src/domain/types.ts",
+                  "why": "动作要有落点（基线）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/types.ts",
+                  "symbol": "ArchLayer",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/types.ts",
+                  "symbol": "CommunityDirDiffEntry",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/types.ts",
+                  "symbol": "DesignDSL",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/types.ts",
+                  "symbol": "FeatureCommunity",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/types.ts",
+                  "symbol": "FeatureNode",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/types.ts",
+                  "symbol": "FeatureTree",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/types.ts",
+                  "symbol": "ThemeConfig",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/types.ts",
+                  "symbol": "ThemeId",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/domain/types.ts",
+                  "symbol": "UserNode",
+                  "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+                }
+              ],
+              "acceptance": "`src/domain/types.ts` 仍导出 `DesignDSL`，其顶层**必填** `feature` + `geometry`，且仍带可选 `semantic` / `todos` / `layers`；同时仍 re-export `NodeDecision`（来自 geometry）与 `BrickContract`（来自 contract）—— 外部从 `domain/types.js` 一个入口即可拿到；文件内**没有运行期函数实现**。",
+              "updated_at": "2026-10-19T01:47:37.031Z",
+              "agent": "all-externalize"
+            },
+            "agent": "workbuddy-main"
           }
         ]
       },
@@ -94825,5 +96758,5 @@
       "owner": null
     }
   ],
-  "_dsl_rev": 392
+  "_dsl_rev": 411
 }

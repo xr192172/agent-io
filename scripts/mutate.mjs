@@ -183,11 +183,17 @@ export async function runMutate(feature, root = process.cwd()) {
   let killed = 0;
   let survived = 0;
   let skipped = 0;
+  let skippedNoInput = 0; // 无 input
+  let skippedDeclared = 0; // ★ mutants_ignore: ['*'] —— 声明"不参与输入突变"
   const byKind = {};
   for (const it of items) {
     const muts = mutantsOf(it.expectation);
     if (!muts) {
       skipped++;
+      if (it.expectation.kind === 'run') {
+        if (it.expectation.input === undefined) skippedNoInput++;
+        else skippedDeclared++; // expect 不读 input（= 已声明/应声明）
+      }
       continue;
     }
     const k = it.expectation.kind;
@@ -205,7 +211,7 @@ export async function runMutate(feature, root = process.cwd()) {
       }
     }
   }
-  return { feature, checked: items.length, killed, survived, skipped, byKind, survived_items: survivedItems };
+  return { feature, checked: items.length, killed, survived, skipped, skipped_no_input: skippedNoInput, skipped_declared: skippedDeclared, byKind, survived_items: survivedItems };
 }
 
 // ── CLI ──────────────────────────────────────────────────────────────
@@ -234,7 +240,7 @@ if (isCli) {
     console.log(`  expectation ${rep.checked} 条 · 突变 ${rep.killed + rep.survived} 次`);
     console.log(`  ✓ 被杀死（判据有反应）：${rep.killed}`);
     console.log(`  ★ 存活（判据对该突变无感）：${rep.survived}`);
-    console.log(`  … 跳过（无 input / 未知 kind）：${rep.skipped}`);
+    console.log(`  … 跳过：${rep.skipped}（无 input ${rep.skipped_no_input ?? 0} · ★ 声明不参与突变 ${rep.skipped_declared ?? 0}）`);
     console.log(`\n  按 kind：`);
     for (const [k, s] of Object.entries(rep.byKind)) {
       console.log(`    ${k.padEnd(20)} killed ${String(s.killed).padStart(4)} · ★ survived ${s.survived}`);
