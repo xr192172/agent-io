@@ -87,28 +87,42 @@ for (const f of allFiles) {
   const b = B.get(f);
   const o = O.get(f);
   const t = T.get(f);
-  const bf = fp(SB.get(f));
-  const of = fp(SO.get(f));
-  const tf = fp(ST.get(f));
+  const bSem = SB.get(f);
+  const oSem = SO.get(f);
+  const tSem = ST.get(f);
+  // ★ 2026-10-19 修正：`fp` 返回字符串，不能用来判 null ⇒ 先判"有没有 semantic 记录"
+  const bf = bSem ? fp(bSem) : null;
+  const of = oSem ? fp(oSem) : null;
+  const tf = tSem ? fp(tSem) : null;
 
   const oursChanged = of !== null && of !== bf;
   const theirsChanged = tf !== null && tf !== bf;
 
-  // 节点本身的"存在性"变化也算
-  const oursPresence = o ? 1 : 0;
-  const theirsPresence = t ? 1 : 0;
-  const basePresence = b ? 1 : 0;
-  const oursPresenceChanged = oursPresence !== basePresence;
-  const theirsPresenceChanged = theirsPresence !== basePresence;
+  // ★★ 2026-10-19 第二次修正：**直接比 ours / theirs 的存在性**（不依赖 base / semantic.files）
+  //   起因：`design/` 的 geometry.nodes 有 7 个 bricks 节点，而它的 semantic.files 没有
+  //   ⇒ `of` 为 null ⇒ `oursChanged` 判 false ⇒ 被算成"实际领先"（方向完全反了）
+  //   判据：设计有而实际没有 ⇒ 设计领先；实际有而设计没有 ⇒ 实际领先（最直接，无中间层）
+  const oursRemoved = o === undefined && b !== undefined;
+  const theirsRemoved = t === undefined && b !== undefined;
+  const oursAdded = o !== undefined && b === undefined;
+  const theirsAdded = t !== undefined && b === undefined;
+  const oursHasTheirsNot = o !== undefined && t === undefined;
+  const theirsHasOursNot = t !== undefined && o === undefined;
 
-  if (!oursChanged && !theirsChanged && !oursPresenceChanged && !theirsPresenceChanged) {
+  const oursTouched = oursChanged || oursRemoved || oursAdded || oursHasTheirsNot;
+  const theirsTouched = theirsChanged || theirsRemoved || theirsAdded || theirsHasOursNot;
+
+  if (!oursTouched && !theirsTouched) {
     unchanged.push(f);
     continue;
   }
-  if (oursChanged || oursPresenceChanged) {
-    if (theirsChanged || theirsPresenceChanged) bothChanged.push(f);
-    else onlyOurs.push(f);
+  if (oursTouched && theirsTouched) {
+    bothChanged.push(f);
+  } else if (oursTouched) {
+    // ★ 只 ours 动：设计领先（含"设计有、实际没有"= theirs 少了）
+    onlyOurs.push(f);
   } else {
+    // ★ 只 theirs 动：实际领先（含"实际有、设计没有"= ours 少了）
     onlyTheirs.push(f);
   }
 }

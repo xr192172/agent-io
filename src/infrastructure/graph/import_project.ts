@@ -33,7 +33,7 @@ import { parseFileFull, listSupportedExtensions, resolveProjectImport } from '..
 import type { ParsedImport } from '../parse/index.js';
 import { countLines, assessLines } from '../analysis/structure/monolith.js';
 import type { Database } from '../index/db.js';
-import { syncProject, getFileParse, pruneDeletedFiles } from '../index/symbols.js';
+import { syncProject, getFileParse, pruneDeletedFiles, resolveCrossFileCalls } from '../index/symbols.js';
 import { generateFileRoleTitles } from '../analysis/structure/role_title.js';
 
 export interface ImportProjectInput {
@@ -842,23 +842,7 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       lineCounts.set(f.rel, cached.line_count);
       ingest(f.rel, cached.symbols, cached.imports);
     }
-  } else {
-    for (const f of files) {
-      let content: string;
-      try {
-        content = fs.readFileSync(f.abs, 'utf-8');
-      } catch {
-        skipped.push(`读取失败: ${f.rel}`);
-        continue;
-      }
-      lineCounts.set(f.rel, countLines(content));
-      const full = await parseFileFull(f.abs, content);
-      // 解析失败 = 静默丢依赖边 + 空 API 面，必须在结果中可见（区别于"文件本为空"）
-      if (full.error) {
-        skipped.push(`解析失败: ${f.rel}（${full.error}），该文件的依赖边与 API 缺失`);
-      }
-      ingest(f.rel, full.symbols, full.imports);
-    }
+
   }
 
   // 3. 依赖边（文件级，去重，去自环）
