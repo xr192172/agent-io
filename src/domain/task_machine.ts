@@ -510,7 +510,7 @@ export const TRANSITIONS: readonly TaskTransition[] = [
         '而"一个文件会被反复改"是常态 ⇒ 必须有重开路径',
         'owner 必填（谁来重开 = 谁接手）',
         'reason 必填（为什么重开）—— ★ 无理由的重开等于把"完成"当摆设',
-        '★ 重开不改判据（expectations 仍来自 decision）；要换判据请先改 decision 再 reopen',
+        '★ 重开不改判据（expectations 仍来自 decision）；要换判据请走 reopen → 改 decision → publish{reason}（先改再 reopen 会被 A6 闸拒）',
         'CAS：state=done 时才写（防并发）',
       ],
     },

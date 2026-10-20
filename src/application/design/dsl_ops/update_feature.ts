@@ -824,7 +824,7 @@ export function normRel(s: string): string {
 
 /** 决策写入口的目标节点：`id` 可为 **节点 id** 或 **仓库相对路径**（文件/文档节点） */
 interface DecisionTarget {
-  node: { id: string; type?: string; description?: string; decision?: NodeDecision; decision_history?: import('../../../domain/types.js').DecisionHistoryEntry[] };
+  node: { id: string; type?: string; description?: string; decision?: NodeDecision; decision_history?: import('../../../domain/types.js').DecisionHistoryEntry[]; task?: import('../../../domain/task_schema.js').TaskSpec };
   /** 目标的仓库相对路径（人读回执用；取不到给节点 id） */
   path: string;
 }
@@ -1090,6 +1090,8 @@ function applyDecisionOp(feature: string, op: CheckedOperation<FeatureOperation>
     author,
     agent,
     note,
+    // ★ 卡（`node.task`）一并传入：已 claimed/done 的卡上判据不许被 decision 静默换掉
+    card: target.node.task,
   });
   if (nd === undefined) throw new Error('decision.update 内部错误：写入结果为 undefined（summary 已非空，不应发生）');
   target.node.decision = nd;

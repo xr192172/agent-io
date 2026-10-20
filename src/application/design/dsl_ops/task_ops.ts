@@ -156,7 +156,7 @@ function writeTask(feature: string, nodeId: string, next: TaskSpec): void {
  *   `task_schema.ts#TaskSpec.reopened_at`）—— 若"换了等于没换"也放行，账就白结了。
  * ★ 比较时**按键名排序**：decision 里键顺序变了不是"换判据"（同一个判据换了写法）。
  */
-function sameCriteria(card: TaskSpec, summary: string, expectations: readonly unknown[]): boolean {
+export function sameCriteria(card: TaskSpec, summary: string, expectations: readonly unknown[]): boolean {
   if ((card.summary ?? '') !== summary) return false;
   const canon = (xs: readonly unknown[]): string =>
     xs
