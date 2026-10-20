@@ -173,3 +173,57 @@
 **28. `complete` 的 doc guard 仍写 `claimed → done`** — `待处理`
 - OQ1 之后新增了 `candidate → done`，但文档首句没提
 - 子代理按文档写 `publish → claim → complete`，夹具直接红
+
+---
+
+## 2026-10-20 追加（工具链体检时，子代理调了 33 次工具报的）
+
+**29. ★ `design_line` 的 `ok:true` 语义过载（最危险）** — `待处理`
+- 四种情况**输出逐字相同**：①做了且复核干净 ②没事可做 ③路径写错 ④这类符号我不管
+- 实测：`file=不存在的路径` 与 `file=设计DB未覆盖的文件` 与 `真的没差异` ⇒ 全是
+  `✓ 没有可重写的签名差异` + `{"differ":[],"applied":null,"ok":true}`
+- ⇒ 缺一个 `did_work:false` + `reason:'no_design_copy' | 'path_not_found' | 'uncomparable_kind'`
+
+**30. `--help` 不可用** — `待处理`
+- `design_line --help` 返回「入参未通过 schema 校验…缺必填：project_dir」
+- 要读参数得知道 `--schema`（或翻源码）
+
+**31. 必填性靠运行时报错教会调用方** — `待处理`
+- schema 里 `feature` 标 `optional`，但 `action=report` 时必填
+- 只有跑一次才在正文里告诉你「design_line action=report 需要 feature」
+
+**32. `action=report` 答的不是"哪些文件要重写"** — `观察中`
+- 全程没有文件清单、没有判据，只给「344/466=73.8%，未覆盖 129」
+- 要看文件级差异必须自己想到 `action=rewrite file=…`
+
+**33. `uncompared` 只报计数，不报"你看不见什么"** — `待处理`
+- `const 5 / interface 1` —— 子代理"第一次看到时以为自己传错参数"
+- ⇒ 应该明说「这些符号的改动**永远不会被重写发现**」
+
+**34. `feature` 对 rewrite 只影响标题** — `观察中`
+- 源码写明"判定本身不看 feature"，但 CLI 描述让人以为 rewrite 是按 feature 分区
+- 传 `feature=task-system-plan`，实际扫的是**全量设计 DB**
+
+**35. 语法门拦截时脱离标准信封** — `待处理`
+- 无 `---DATA---`、无 REWRITE 头、**exit code 0**
+- 脚本化调用**无法区分成功/失败**，只能人读中文
+
+**36. `edit_code` 的「写盘成功 + 索引失败」塞进同一行 `✓`** — `待处理`
+- 回执：`✓ ... 索引已重建（failed｜⚠️ 引用方重算失败：database is locked）`
+- 文件写成功了，但索引没更新 ⇒ **同一行里既有成功又有失败**
+- 没有重试、没有可判定状态字段（`written` 只在 `---DATA---` 里）
+
+**37. `edit_code` 对 `certs/design-db/*.json` 说"语法门通过"** — `观察中`
+- 它把 JSON 当代码文件做无意义的语法检查 ⇒ 回执会误导人以为"这段 JSON 被验证过"
+
+**38. `remove_dead_imports` 不能按文件调** — `待处理`
+- 必填 `dead`（`DeadDepCandidate` 列表）⇒ **必须先有别的工具算出来**
+- 对一个 6 import 的小文件做体检，**没有入口**
+- 子代理选择"不硬凑假 `dead` 去喂它"（否则就成了"我编造输入证明工具能用"）—— 这个判断是对的
+
+**39. 三个工具三套回执格式** — `观察中`
+- `design_line` 自绘表格 + `---DATA---`；`edit_code` 一行 `✓` + diff + `---DATA---`；失败路径**裸中文**
+- ⇒ 统一回执（尤其失败）比任何功能都更影响可自动化
+
+**40. ★ 全部工具都把「我什么都没做」渲染成 `✓`** — `待处理`
+- 缺一个统一的 `did_work: false`
