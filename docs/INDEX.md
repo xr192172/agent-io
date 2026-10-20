@@ -66,6 +66,9 @@
 | 文件 | 是什么 |
 |---|---|
 | `INDEX.md`（本文件） | **唯一入口** |
+| `AGENTS.md` | 开发动作 → 必用工具（**由 `scripts/gen_agents.mjs` 从 `TRIGGER_ROWS` 生成，别手改**） |
+| `README.md` / `README.en.md` | 项目是什么 + 怎么跑 |
+| `CONTRIBUTING.md` | 加/删工具要动哪几处 |
 | `GOAL.md` | 为什么做这个 |
 | `VISION.md` | 用户对每个功能的描述（原话） |
 | `DESIGN.md` | 缺陷台账（A/C/D 节） |
