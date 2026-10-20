@@ -26,7 +26,7 @@ import { pathToFileURL } from 'node:url';
 
 const ROOT = process.cwd();
 const mod = await import(pathToFileURL(path.join(ROOT, 'dist/src/domain/task_machine.js')).href);
-const { cardStanding, isClaimable, applicableTransitions } = mod;
+const { cardStanding, isClaimable, applicableTransitions, releaseIfExpired, isSatisfied } = mod;
 
 const dsl = JSON.parse(fs.readFileSync(path.join(ROOT, '.agent-io/design/task-system-plan.dsl.json'), 'utf8'));
 const nodes = dsl.geometry.nodes;
@@ -119,7 +119,42 @@ for (const [from, expectIds] of transCases) {
   console.log(`${ok ? '✓' : '✗'} F7 applicableTransitions(${from}) → [${got}]`);
 }
 
-const total = CASES.length + claimableCases.length + transCases.length;
+// ── F8：releaseIfExpired —— 五个"不该释放"的分支 + 一个"该释放" ──
+const NOW = Date.parse('2026-10-20T08:00:00.000Z');
+const TTL = 60_000; // 1 分钟
+const lease = (state, claimedAt) => ({ id: 'file_x', summary: '夹具', expectations: [], state, ...(claimedAt ? { claimed_at: claimedAt } : {}) });
+const old = new Date(NOW - 5 * 60_000).toISOString(); // 5 分钟前 ⇒ 过 TTL
+const fresh = new Date(NOW - 10_000).toISOString(); // 10 秒前 ⇒ 没过
+const leaseCases = [
+  ['claimed + 超时 ⇒ 释放', [lease('claimed', old)], 1],
+  ['claimed + 未超时 ⇒ 不释放', [lease('claimed', fresh)], 0],
+  ['candidate ⇒ 不释放（state !== claimed）', [lease('candidate', old)], 0],
+  ['claimed 但无 claimed_at ⇒ 判不了，不释放', [lease('claimed')], 0],
+  ['claimed + claimed_at 非法 ⇒ 不释放', [lease('claimed', 'not-a-date')], 0],
+  ["非法 state（'bogus'）⇒ 不释放", [lease('bogus', old)], 0],
+];
+for (const [name, cards, expect] of leaseCases) {
+  const got = releaseIfExpired(cards, NOW, TTL).length;
+  const ok = got === expect;
+  if (ok) pass++;
+  else fails.push(`F8 ${name}: 期望 ${expect} 条事件，实际 ${got}`);
+  console.log(`${ok ? '✓' : '✗'} F8 ${name} → ${got} 条`);
+}
+
+// ── F9：isSatisfied 是 cardStanding 的薄投影（standing === 'satisfied'）──
+const satCases = [
+  ['后态全过 ⇒ satisfied:true', card([{ kind: 'file-exists', path: HANDLERS }]), true],
+  ['后态有红 ⇒ satisfied:false', card([{ kind: 'file-exists', path: 'src/__nope__.ts' }]), false],
+];
+for (const [name, c, expect] of satCases) {
+  const v = await isSatisfied(c, { root: ROOT, nodes });
+  const ok = v.satisfied === expect;
+  if (ok) pass++;
+  else fails.push(`F9 ${name}: 期望 ${expect}，实际 ${v.satisfied}（standing=${v.standing}）`);
+  console.log(`${ok ? '✓' : '✗'} F9 ${name} → satisfied=${v.satisfied}`);
+}
+
+const total = CASES.length + claimableCases.length + transCases.length + leaseCases.length + satCases.length;
 console.log(`\n夹具：${pass}/${total} 通过`);
 if (fails.length) {
   console.log('失败明细：');
