@@ -2234,3 +2234,44 @@ task_machine.ts: L39 1887/1993 · L40 1994/2116 · L41 2117/2195
 3. 写闸 —— 我以为它挡着，实际**恒放行**
 
 ★ 每次我都"读代码读得很认真"，但**读代码不等于跑一次**。
+
+---
+
+## 2026-10-20 早（四十）· 堵 reopen 的白洞（`a4680872`）
+
+### 1. 白洞
+
+`reopenTask` 只 `{...card, state:'claimed', owner, claimed_at}` —— 不改判据、不清 evidence
+⇒ 旧判据仍全绿 ⇒ `done → reopen → complete` 就能**再 done 一次，零工作量**。
+
+### 2. 子代理纠正的三点（我先给错了方案）
+
+1. 我给的**行号是错的**（`727-732` 是 `completeTask`，`reopenTask` 在 `797-826`）
+2. **我的候选 A 是自毁的**：`TaskEvidenceRecord.at` 是 **`complete` 自己写的** `new Date()`，
+   不是输入 evidence 的时间 ⇒ "校验 evidence.at > reopened_at" 要么永远为空、要么永远通过
+3. **候选 B 堵不住**：`complete` 本来就强制要一次新证据，清 `card.evidence` 不改变判定
+
+⇒ 它选了 **C′**：`TaskSpec.reopened_at` 账本 + `publish` 结账 + `complete` 的 `reopenGate`。
+
+### 3. 验收 33/33（我自己跑的）
+
+| 正面（堵住） | 反面（不堵死） |
+|---|---|
+| 立刻 complete ⇒ 拒 | 改 decision + publish + complete ⇒ 通 |
+| 什么都不做 ⇒ 拒 | 带 `at ≥ 重开` 的 reading ⇒ 通 |
+| 早于重开的时间戳 ⇒ 拒 | todo 的合法重开 ⇒ 通 |
+| publish 判据没变 ⇒ 拒 | |
+| **`release → publish` 绕路 ⇒ 仍拒**（账跟着卡走） | |
+
+第五条是验收时**新发现的绕路**：`reopen → release → publish → complete`。
+
+### 4. 一个明确不放宽的取舍
+
+"重开后真干活但**判据不变**"被拒。理由：它和"零工作量"在数据上不可区分，
+而"做完了但判据还是绿的"本身就说明**判据没描述这次的工作**。
+
+### 5. 仍可被绕过（写进代码注释，不假装堵死）
+
+- `evidence.at` 是调用方填的字符串 ⇒ **存心伪造时间戳仍能过**
+- 故意把 decision 换成一条"已经成立"的平凡判据再 publish ⇒ 结账
+- ⇒ 本闸只保证"零动作"被拒；后者需要**两次显式动作 + 留下可复核的判据变更**
