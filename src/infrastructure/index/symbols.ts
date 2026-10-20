@@ -409,8 +409,8 @@ function applyParsedToIndex(db: Database, projectRoot: string, pre: SyncPrelude,
       insIdent.run({ fp: rel, nm: idn.name, k: idn.kind, ln: idn.line, col: idn.col, si: idn.start_index, ei: idn.end_index });
     }
     const insNode = db.prepare(
-      `INSERT INTO nodes(id, kind, name, qualified_name, file_path, language, start_line, end_line, parent, signature, docstring, sym_hash, is_closure, members, updated_at)
-       VALUES ($id, $k, $nm, $qn, $fp, $lang, $sl, $el, $par, $sig, NULL, $h, $isClos, $mem, $ts)`,
+      `INSERT INTO nodes(id, kind, name, qualified_name, file_path, language, start_line, end_line, parent, signature, docstring, sym_hash, is_closure, members, params, updated_at)
+       VALUES ($id, $k, $nm, $qn, $fp, $lang, $sl, $el, $par, $sig, NULL, $h, $isClos, $mem, $prms, $ts)`,
     );
     const seenIds = new Set<string>();
     parsed.symbols.forEach((s, i) => {
@@ -423,6 +423,9 @@ function applyParsedToIndex(db: Database, projectRoot: string, pre: SyncPrelude,
         h: symHashList[i], isClos: s.is_closure ? 1 : 0, ts: now,
         // ★ 2026-10-20：类型成员（JSON）—— 没有就存 NULL（function 永远没有）
         mem: s.members && s.members.length ? JSON.stringify(s.members) : null,
+        // ★ v13：函数/方法形参（JSON）—— **零参函数存 `[]`**（与“不是函数”的 NULL 区分开）；
+        //   type/class 没有 `params` 字段 ⇒ NULL。
+        prms: s.params ? JSON.stringify(s.params) : null,
       });
     });
 

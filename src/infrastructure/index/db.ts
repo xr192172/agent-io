@@ -63,7 +63,7 @@ export function endBatch(db: Database, rollback = false): void {
   txDepth.set(key, d - 1);
 }
 
-export const SCHEMA_VERSION = 12; // v12：imports.start_index/end_index（整句 span）—— 旧库无此列，清库重解析 // v11：identifiers 表（标识符位置）—— 旧库无此表，清库重解析 // ★ v10：nodes.members（类型成员）—— 旧库无此列语义，清库重解析
+export const SCHEMA_VERSION = 13; // v13：nodes.params（函数/方法形参 JSON）—— 旧库无此列，清库重解析 // v12：imports.start_index/end_index（整句 span）—— 旧库无此列，清库重解析 // v11：identifiers 表（标识符位置）—— 旧库无此表，清库重解析 // ★ v10：nodes.members（类型成员）—— 旧库无此列语义，清库重解析
 
 /** 默认 db 文件路径：<dataHome>/.agent-io/cache.db */
 export function getDbFile(): string {
@@ -190,6 +190,9 @@ export function openDb(dbFile: string = getDbFile()): Database {
     // ★ v12：imports 整句 span（删整句用）
     'ALTER TABLE imports ADD COLUMN start_index INTEGER',
     'ALTER TABLE imports ADD COLUMN end_index INTEGER',
+    // ★ v13：nodes.params（函数/方法形参 JSON）—— signature 只有一根字符串，
+    //   消费方各拆一次 ⇒ 假差异（T154）；结构化事实落库后只除一处。
+    'ALTER TABLE nodes ADD COLUMN params TEXT',
   ]) {
     try {
       db.exec(ddl);
@@ -205,7 +208,7 @@ export function openDb(dbFile: string = getDbFile()): Database {
   }
   db.prepare(
     'INSERT OR IGNORE INTO schema_versions(version, applied_at, description) VALUES (?, ?, ?)',
-  ).run(SCHEMA_VERSION, Date.now(), 'v8: 局部闭包/辅助函数标记 is_closure——不进 DSL 契约面（消除 diff 冲突假阳性），仍保留供搜索/引用；旧库无该列语义，清库重解析');
+  ).run(SCHEMA_VERSION, Date.now(), 'v13: nodes.params（函数/方法形参 JSON）—— signature 只有一根字符串，消费方各拆一次会出假差异；结构化事实落库，旧库无此列 ⇒ 清库重解析');
   return db;
 }
 

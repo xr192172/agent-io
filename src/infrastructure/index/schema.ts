@@ -68,6 +68,8 @@ CREATE TABLE IF NOT EXISTS nodes (
     docstring TEXT,          -- 预留：kernel 暂未提取，列先占住
     members TEXT,            -- 2026-10-20：类型成员 JSON（name/type/optional）——
                              --   type/interface 的定义本来就没有地方落（signature 只有 Name()）
+    params TEXT,             -- ★ v13（2026-10-20）：函数/方法形参 JSON（name/type/optional/variadic）——
+                             --   signature 只有一根字符串，消费方各拆一次 ⇒ 假差异；此处是结构化事实。
     sym_hash TEXT,           -- v3：符号 span 归一化 hash（去注释/空白）——符号级 diff 依据
     is_closure INTEGER NOT NULL DEFAULT 0,  -- v8: 局部闭包/辅助函数标记——不进 DSL 契约面，但仍保留供搜索/引用
     updated_at INTEGER NOT NULL

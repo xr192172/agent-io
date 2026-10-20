@@ -22,7 +22,7 @@ import path from 'node:path';
 import { resolveProjectRoot, loadAliasConfig, resolveAliasedImport, resolveLangImport } from '../../../infrastructure/analysis/project_root/index.js';
 import { analyzeModuleSource, resolveRel, buildNoExt } from '../../../infrastructure/analysis/rename_symbol/index.js';
 import { camelToSnake, scanLiteralOccurrences, type RawLiteralMatch } from '../rename/rename_symbols.js';
-import { collectFieldRefs, collectTypeConstructCandidates, type FieldRefFile, type FieldScopeReport, type TypeConstructCandidate } from './field_refs.js';
+import { collectFieldRefs, collectTypeConstructCandidates, type FieldRefFile, type FieldScopeReport, type FieldRefVia, type TypeConstructCandidate } from './field_refs.js';
 import { parseFileFull } from '../../../infrastructure/parse/index.js';
 import { getProjectCacheDb } from '../../../infrastructure/index/db.js';
 // ★ T249：「索引能不能用」的**唯一住处**（= cache.db 存在 **且** files 非空）—— 本文件不再手写第三份
@@ -168,6 +168,8 @@ export interface FindReferencesResult {
    *   依据 ownerType 证伪丢了几条、无法判定而**如实保留**了几条。让"限定丢了多少"在产物里看得见。
    */
   fieldScope?: FieldScopeReport;
+  /** ★ v13：字段引用点的**位置出处**（db = identifiers / regex = 兜底）与兜底占比 */
+  fieldVia?: FieldRefVia;
   /** mode=type 时：类型声明的成员字段集 */
   typeMembers?: string[];
   /** mode=type 时：与类型成员交叠 ≥ min_hit 的对象字面量候选构造点 */
@@ -313,7 +315,7 @@ async function findReferencesCore(input: {
   // field 模式：字段的结构引用点（AST 分类：读/构/解/声明，含定义文件内部）
   if (input.mode === 'field') {
     const field = input.field as string; // 缺参已在上方前置校验 throw
-    const { files: fieldRefs, scope: fieldScope } = await collectFieldRefs({
+    const { files: fieldRefs, scope: fieldScope, field_via: fieldVia } = await collectFieldRefs({
       project_dir: projectDir,
       field,
       // ★ 同 type 模式：有锚点就传**绝对** file（断环）；`file` 缺席时仍 `undefined`
@@ -335,6 +337,7 @@ async function findReferencesCore(input: {
       importerCount: 0,
       ...(rootAnchored ? { project_dir: projectDir } : {}),
       fieldRefs,
+      fieldVia,
       ...(fieldScope ? { fieldScope } : {}),
       literals: input.report_literals ? await scanLiterals(projectDir, field) : undefined,
       blocked,

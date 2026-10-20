@@ -28,6 +28,10 @@
  */
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
+import { DatabaseSync } from 'node:sqlite';
+// ★ v13（2026-10-20）：`identifiers` 是**位置**的唯一事实来源；同源判据与索引层同一把尺
+import { findCacheDb } from '../../../infrastructure/index/db.js';
+import { contentHash } from '../../../infrastructure/index/symbols.js';
 import { parseAstRoot, type SyntaxNodeLike } from '../../../infrastructure/parse/kernel.js';
 import { expandClosure, walkProjectFiles, loadAliasConfig } from '../../../infrastructure/analysis/project_root/index.js';
 
@@ -51,6 +55,21 @@ export interface FieldRefPoint {
    *  （`const y: { field: string }` 的 `object_type` 挂在 `type_annotation` 下，没有名字）。
    */
   ownerType?: string;
+  /**
+   * ★ v13：这个引用点的**候选位置从哪来** —— `db` = `identifiers`（AST 写入）；
+   *   `regex` = 正则兜底（`obj['x']` 方括号读 / 无可用索引 / 库与源码不同源）。
+   *   ★ 分类（读/构/解/声明）仍由 AST 定：`identifiers` 按设计只记位置、不记语义（schema.ts:41-44）。
+   */
+  via: 'db' | 'regex';
+}
+
+/** ★ v13 回执：字段引用的位置出处 + 兜底占比 */
+export interface FieldRefVia {
+  db_points: number;
+  regex_points: number;
+  db_files: number;
+  regex_files: number;
+  regex_ratio: number;
 }
 
 export interface FieldRefFile {
@@ -111,7 +130,76 @@ function captureReads(src: string, field: string): FieldRefPoint[] {
     const text = m[0];
     const dotIdx = text.indexOf(field);
     const off = m.index + Math.max(0, dotIdx);
-    out.push({ offset: off, line: 0, text: field, kind: 'field-read', snippet: '' });
+    out.push({ offset: off, line: 0, text: field, kind: 'field-read', snippet: '', via: 'regex' });
+  }
+  return out;
+}
+
+/**
+ * ★ v13：**方括号读**的候选位置（`obj['field']` / `obj["field"]`）。
+ *
+ * 为什么这条**必须**留正则：`identifiers` 只记 `identifier / property_identifier /
+ * type_identifier / shorthand*` —— 方括号里的字段名在 AST 里是 **string 节点**，
+ * 按设计不进标识符表（不然 string 字面量会和其他字符串混为一谈）。
+ * 所以它是**已知缺口**：数量很小（本仓实测 `feature` 6 处 / `summary` 2 处 / `file_path` 0 处），
+ * 用一条**只匹配方括号读**的正则补齐，分类仍由 AST 定（`subscript_expression` ⇒ field-read）。
+ */
+function bracketReadOffsets(src: string, field: string): number[] {
+  const re = new RegExp(`\\[\\s*['"]${escapeRegex(field)}['"]\\s*]`, 'g');
+  const out: number[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(src))) {
+    const idx = m[0].indexOf(field);
+    if (idx >= 0) out.push(m.index + idx);
+  }
+  return out;
+}
+
+/** `identifiers` 的一行（只要位置；语义由 AST 分类） */
+interface IdentRow {
+  name: string;
+  kind: string;
+  si: number;
+  ei: number;
+}
+
+/** 打开项目 cache.db 只读；不存在/读不动 ⇒ null（整轮走正则兜底） */
+function openIdentDb(root: string): DatabaseSync | null {
+  const dbFile = findCacheDb({ sourceRoot: root });
+  if (!dbFile) return null;
+  try {
+    return new DatabaseSync(dbFile, { readOnly: true });
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * 取该文件里 `field` 的全部标识符位置 —— **四道准入**（照 `remove_dead_imports` 的先例）：
+ *   ① 库里有行：该文件在 `identifiers` 里有行（无行 = 没索引过，不是“没引用”）；
+ *   ② 字段齐全：每行都有整数 `start_index/end_index` 与非空 `name`；
+ *   ③ 库与源码同源：`files.content_hash === contentHash(src)`；
+ *   ④ 取出的值能对上：`src.slice(si, ei) === field`。
+ * 任一不过 ⇒ null（调用方整文件退回旧正则路径）。
+ * 返回 [] = **库确认该文件里没有这个名字**（合法结果，不是失败）。
+ */
+function identifiersFor(db: DatabaseSync, rel: string, src: string, field: string): IdentRow[] | null {
+  const file = db.prepare('SELECT content_hash FROM files WHERE path = $p').get({ p: rel }) as
+    | { content_hash: string }
+    | undefined;
+  if (!file || file.content_hash !== contentHash(src)) return null; // ③
+  const cov = db.prepare('SELECT COUNT(*) n FROM identifiers WHERE file_path = $p').get({ p: rel }) as { n: number } | undefined;
+  if (!cov || cov.n <= 0) return null; // ①
+  const rows = db
+    .prepare('SELECT name, kind, start_index si, end_index ei FROM identifiers WHERE file_path = $p AND name = $n')
+    .all({ p: rel, n: field }) as Array<{ name: string; kind: string; si: number | null; ei: number | null }>;
+  const out: IdentRow[] = [];
+  for (const r of rows) {
+    if (typeof r.name !== 'string' || !r.name) return null; // ②
+    if (!Number.isInteger(r.si) || !Number.isInteger(r.ei)) return null; // ②
+    if (r.si! < 0 || r.ei! > src.length || r.si! >= r.ei!) return null; // ②
+    if (src.slice(r.si!, r.ei!) !== field) return null; // ④
+    out.push({ name: r.name, kind: r.kind, si: r.si!, ei: r.ei! });
   }
   return out;
 }
@@ -120,6 +208,8 @@ function captureReads(src: string, field: string): FieldRefPoint[] {
 interface ClassifiedFieldRef {
   kind: FieldRefKind;
   ownerType?: string;
+  /** ★ v13：候选位置出处（缺省 = regex 兜底） */
+  via?: 'db' | 'regex';
 }
 
 /** 对文件 src 的 AST：把每个字段名子串(含偏移)按 AST 归属分类 */
@@ -262,7 +352,7 @@ export async function collectFieldRefs(input: {
   scope?: 'closure' | 'all';
   /** ★ 所属类型名：把字段引用限定到该类型（见上方 of_type 说明）。 */
   of_type?: string;
-}): Promise<{ files: FieldRefFile[]; scope?: FieldScopeReport }> {
+}): Promise<{ files: FieldRefFile[]; scope?: FieldScopeReport; field_via: FieldRefVia }> {
   const resolvedRoot = path.resolve(input.project_dir);
   const field = input.field;
   const ofType = input.of_type;
@@ -298,7 +388,11 @@ export async function collectFieldRefs(input: {
     if (declFilesAbs.length === 0) {
       // ★ 不静默降级：查不到声明 ⇒ 空结果 + 明标（不退回全仓扫）。
       report = { of_type: ofType, resolved: false, declared_in: [], dropped_decl_points: 0, unverified_points: 0 };
-      return { files: [], scope: report };
+      return {
+        files: [],
+        scope: report,
+        field_via: { db_points: 0, regex_points: 0, db_files: 0, regex_files: 0, regex_ratio: 0 },
+      };
     }
     report = {
       of_type: ofType,
@@ -309,6 +403,12 @@ export async function collectFieldRefs(input: {
     };
   }
 
+  const identDb = openIdentDb(resolvedRoot);
+  let dbPoints = 0;
+  let regexPoints = 0;
+  const dbFiles = new Set<string>();
+  const regexFiles = new Set<string>();
+
   const out: FieldRefFile[] = [];
   for (const abs of scopeFiles) {
     let src: string;
@@ -317,18 +417,36 @@ export async function collectFieldRefs(input: {
     } catch {
       continue;
     }
+    const rel = (path.relative(resolvedRoot, abs) || path.basename(abs)).replace(/\\/g, '/');
     const ast = await parseAstRoot(abs, src);
+    // ★ 分格：DB 优先（identifiers 给位置）；四道准入不过 ⇒ 整文件退回旧路径（正则枚举 + AST 分类）
+    const idRows = ast && identDb ? identifiersFor(identDb, rel, src, field) : null;
     let byOff: Map<number, ClassifiedFieldRef>;
     if (ast) {
-      // AST 全量分类（构造/解构/声明/读取，天然去重，且能跳过注释/字符串里的字面）
-      byOff = classifyKeyOffsets(ast.root, src, field);
+      if (idRows !== null) {
+        byOff = new Map<number, ClassifiedFieldRef>();
+        for (const r of idRows) {
+          const cls = classifyOffset(ast.root, r.si, field);
+          if (cls) byOff.set(r.si, { ...cls, via: 'db' });
+        }
+        // 已知缺口：方括号读（string 节点按设计不进 identifiers）——只这一条正则，分类仍走 AST
+        for (const off of bracketReadOffsets(src, field)) {
+          // ★ 只收 AST 确认过的（`subscript_expression` ⇒ read）；数组字面量 `['x']` / 注释 / 字符串
+          //   会被 `classifyOffset` 判 null ⇒ **丢弃**（旧实现在这些位置也误报过；实测 6 处）。
+          const cls = classifyOffset(ast.root, off, field);
+          if (cls) byOff.set(off, { ...cls, via: 'regex' });
+        }
+      } else {
+        // AST 全量分类（构造/解构/声明/读取，天然去重，且能跳过注释/字符串里的字面）
+        byOff = classifyKeyOffsets(ast.root, src, field);
+      }
     } else {
       // 无 AST（语言不支持/解析失败）：正则兜底——.field 读 + field: 构造（保守）
       byOff = new Map<number, ClassifiedFieldRef>();
-      for (const r of captureReads(src, field)) byOff.set(r.offset, { kind: 'field-read' });
+      for (const r of captureReads(src, field)) byOff.set(r.offset, { kind: 'field-read', via: 'regex' });
       const reKey = new RegExp(`\\b${escapeRegex(field)}\\s*:`, 'g');
       let km: RegExpExecArray | null;
-      while ((km = reKey.exec(src))) byOff.set(km.index, { kind: 'field-key' });
+      while ((km = reKey.exec(src))) byOff.set(km.index, { kind: 'field-key', via: 'regex' });
     }
     const points: FieldRefPoint[] = [];
     for (const [off, cls] of byOff) {
@@ -343,17 +461,38 @@ export async function collectFieldRefs(input: {
         // 读/构/解 + ownerType 未知的声明点 ⇒ 无法判定 ⇒ 如实保留（计入"未确证"读数）
         if (!(kind === 'field-decl' && cls.ownerType === ofType)) if (report) report.unverified_points++;
       }
-      const p: FieldRefPoint = { offset: off, line: lineOf(src, off), text: field, kind, snippet: lineText(src, off) };
+      const via: 'db' | 'regex' = cls.via ?? 'regex';
+      if (via === 'db') dbPoints++;
+      else regexPoints++;
+      const p: FieldRefPoint = { offset: off, line: lineOf(src, off), text: field, kind, snippet: lineText(src, off), via };
       if (cls.ownerType) p.ownerType = cls.ownerType;
       points.push(p);
     }
+    if (points.some((p) => p.via === 'db')) dbFiles.add(rel);
+    if (points.some((p) => p.via === 'regex')) regexFiles.add(rel);
     if (points.length > 0) {
       points.sort((a, b) => a.offset - b.offset);
       out.push({ file: (path.relative(resolvedRoot, abs) || path.basename(abs)).replace(/\\/g, '/'), refs: points });
     }
   }
   out.sort((a, b) => a.file.localeCompare(b.file));
-  return { files: out, scope: report };
+  try {
+    identDb?.close();
+  } catch {
+    /* 已关闭 */
+  }
+  const totalPoints = dbPoints + regexPoints;
+  return {
+    files: out,
+    scope: report,
+    field_via: {
+      db_points: dbPoints,
+      regex_points: regexPoints,
+      db_files: dbFiles.size,
+      regex_files: regexFiles.size,
+      regex_ratio: totalPoints > 0 ? Math.round((regexPoints / totalPoints) * 1000) / 1000 : 0,
+    },
+  };
 }
 
 /** type 模式：返回与类型成员集交叠 ≥ 阈值的对象字面量候选构造点 */

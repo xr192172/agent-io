@@ -36,6 +36,11 @@ export {
 } from './type_members.js';
 export type { ParsedTypeMember, ParsedTypeDecl, SignatureDeclResult } from './type_members.js';
 
+// ★ v13（2026-10-20）：函数/方法**形参表** —— 与 `type_members` 同族；`node.params` 与
+//   `consistency_check` 的对拍**必须是同一份**（不再各拆一次 signature 字符串）。
+export { paramsOf, paramsOfNode } from './symbol_params.js';
+export type { ParsedParam } from './symbol_params.js';
+
 export { IMPORT_EXTS, INDEX_FILES, importPathCandidates, completionCandidates, resolveImportPath, resolveExistingPath, resolveProjectImport } from './import_resolve.js';
 export {
   TS_JS_EXTS,

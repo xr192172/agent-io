@@ -28,6 +28,12 @@ export interface ShapeSchema {
   fields: ShapeField[];
   /** 提取来源：ast=符号索引+源码解析 / runtime=observe 观测 / llm=推断（当前仅 ast） */
   origin: 'ast' | 'runtime' | 'llm';
+  /**
+   * ★ v13：字段清单的**出处** —— `db` = `nodes.members`（AST 一次写好）；
+   *   `regex` = 旧的正则兜底（`nodes.members` 缺行/不同源/对不上时保留，一条都不删）。
+   *   回执必带，便于量“兜底占比”。
+   */
+  via?: 'db' | 'regex';
   notes?: string;
 }
 

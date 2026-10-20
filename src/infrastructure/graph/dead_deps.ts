@@ -37,6 +37,8 @@ import path from 'node:path';
 import type { Database } from '../index/db.js';
 import type { ExternalDep } from '../../application/harvest/harvest_closure.js';
 import { buildIndex, readGoModules, resolveImport, type FileEntry } from './import_project.js';
+// ★ v13（2026-10-20）：库与源码**同源**的判据（`files.content_hash`）—— 与 symbols.ts 同一把尺
+import { contentHash } from '../index/symbols.js';
 
 export interface DeadDepCandidate {
   source: string;
@@ -53,6 +55,17 @@ export interface DeadDepsResult {
   live_symbols_by_file: Record<string, string[]>;
   /** live 类型名全集（方法挂靠规则的剪刀侧输入：类型的全部方法随类型活） */
   live_type_names: string[];
+  /**
+   * ★ v13：import 限定符的**出处回执** —— `db` = `imports.bindings`；`regex` = 旧解析兜底。
+   * `regex_ratio` = 兜底 import 条数 / 总判定条数（>0.1 就说明 DB 覆盖不足，应报出来）。
+   */
+  binding_via: {
+    db_imports: number;
+    regex_imports: number;
+    db_files: number;
+    regex_files: number;
+    regex_ratio: number;
+  };
 }
 
 interface SymbolRow {
@@ -364,6 +377,87 @@ export function analyzeDeadThirdParty(opts: {
     }
     return s;
   };
+
+  // ── 2.4 import 限定符：DB 优先（`imports.bindings`），四道准入 ──
+  // ① 库里有行（该文件有 import 行）；② 字段齐全（bindings 非 NULL、JSON 数组、名字非空）；
+  // ③ 库与源码同源（`files.content_hash === contentHash(src)`）；
+  // ④ 取出的值能对上（每个本地绑定名必须在**这份源码**里出现过）。
+  // 任一不过 ⇒ 该 import 退回旧解析（`parseTsImportQualifiers` / `parseGoImportQualifiers`，一字不删）。
+  //
+  // ★ Go 的一处已知限度：`imports.bindings` 存的是“本地可用名”，但**无 alias 时**
+  //   内核只能填路径末段，而 Go 包名并不总等于路径末段（`gopkg.in/yaml.v2` 的包名是 yaml）。
+  //   ⇒ 无 alias（bindings[0] === 路径末段）时**展开**回 `goImportQualifierCandidates(source)`
+  //   同一组候选（多候选只用于“是否被引用”，宁多活不误死）；有 alias 则直接用绑定名。
+  interface ImportBindingRow {
+    source: string;
+    kind: string;
+    type_only: number;
+    bindings: string | null;
+  }
+  const importRowsByFile = new Map<string, ImportBindingRow[]>();
+  for (const r of db
+    .prepare('SELECT file_path, source, kind, type_only, bindings FROM imports')
+    .all() as unknown as Array<ImportBindingRow & { file_path: string }>) {
+    let arr = importRowsByFile.get(r.file_path);
+    if (!arr) importRowsByFile.set(r.file_path, (arr = []));
+    arr.push({ source: r.source, kind: r.kind, type_only: r.type_only, bindings: r.bindings });
+  }
+  const hashByFile = new Map<string, string>();
+  for (const f of db.prepare('SELECT path, content_hash FROM files').all() as Array<{ path: string; content_hash: string }>) {
+    hashByFile.set(f.path, f.content_hash);
+  }
+  const escWord = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const qualifierViaByFile = new Map<string, 'db' | 'regex'>();
+  const markVia = (file: string, via: 'db' | 'regex'): void => {
+    if (via === 'regex' || !qualifierViaByFile.has(file)) qualifierViaByFile.set(file, via);
+  };
+  type QualifierLookup = { quals: string[] | null; via: 'db' | 'regex' };
+  const qualifiersOf = (file: string, source: string, isGo: boolean, src: string): QualifierLookup => {
+    const miss = (): QualifierLookup => {
+      markVia(file, 'regex');
+      return { quals: null, via: 'regex' };
+    };
+    const rows = importRowsByFile.get(file);
+    if (!rows || rows.length === 0) return miss();
+    if (hashByFile.get(file) !== contentHash(src)) return miss(); // ③ 库陈旧 ⇒ 不信任
+    const hits = rows.filter((r) => r.source === source && r.kind === 'package');
+    if (hits.length === 0) return miss();
+    const names: string[] = [];
+    for (const r of hits) {
+      if (!r.bindings) {
+        // ② 无绑定分两种：**副作用导入**（源码就是 `import 'x'`，DB 的“无绑定”正是事实）
+        //    ⇒ 仍走 DB 路径（结论 null，调用方按“活”处理）；旧行/坏行 ⇒ 退回正则。
+        const sideEffect = new RegExp(`import\\s*['\"]${escWord(source)}['\"]`).test(src);
+        if (sideEffect) return { quals: null, via: 'db' };
+        return miss();
+      }
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(r.bindings);
+      } catch {
+        return miss();
+      }
+      if (!Array.isArray(parsed) || parsed.length === 0) return miss();
+      for (const n of parsed) {
+        if (typeof n !== 'string' || n.length === 0) return miss();
+        // ④ 值能对上：本地名必须在源码里出现过（否则是库与源码不同源/坏行）
+        if (!new RegExp(`(^|[^\\w$])${escWord(n)}([^\\w$]|$)`).test(src)) return miss();
+        names.push(n);
+      }
+    }
+    const uniq = [...new Set(names)];
+    markVia(file, 'db');
+    if (!isGo) return { quals: uniq, via: 'db' };
+    const base = source.split('/').pop() ?? '';
+    const expanded: string[] = [];
+    for (const b of uniq) {
+      if (b === '_' || b === '.') expanded.push(b);
+      else if (b !== base) expanded.push(b); // 显式 alias
+      else expanded.push(...goImportQualifierCandidates(source)); // 无 alias ⇒ 候选集
+    }
+    return { quals: [...new Set(expanded)], via: 'db' };
+  };
+
   const pkgLevelPending = new Map<string, Set<string>>();
   const pendPkgLevel = (fromFile: string, symbolId: string): void => {
     const dir = goDir(fromFile);
@@ -407,7 +501,6 @@ export function analyzeDeadThirdParty(opts: {
     for (const f of goClosureFiles) {
       const src = readSrc(f);
       if (!src) continue;
-      const quals = parseGoImportQualifiers(src);
       const fileSyms = byFile.get(f) ?? [];
       const rows = stmtGoImports.all(f) as Array<{
         source: string;
@@ -417,7 +510,8 @@ export function analyzeDeadThirdParty(opts: {
       }>;
       for (const r of rows) {
         if (r.type_only === 1 || r.kind !== 'package') continue;
-        const qc = quals.get(r.source);
+        // ★ v13：qualifiers 优先读 DB（四道准入），不过则退回旧解析
+        const qc = qualifiersOf(f, r.source, true, src).quals ?? undefined;
         const targets = resolveImport(
           { source: r.source, kind: 'package', line: r.line },
           entryByRel.get(f)!,
@@ -560,6 +654,9 @@ export function analyzeDeadThirdParty(opts: {
   const stmtImports = db.prepare(
     'SELECT source, line, kind, type_only FROM imports WHERE file_path = ?',
   );
+  /** ★ v13 回执：限定符来源计数（判定粒度 = 一条 package import） */
+  const bindingVia = { db: 0, regex: 0 };
+  const judgedFiles = new Set<string>();
 
   for (const f of closureFiles) {
     const isGo = f.endsWith('.go');
@@ -570,9 +667,10 @@ export function analyzeDeadThirdParty(opts: {
     const src = readSrc(f);
     if (!src) continue;
     const fileSyms = byFile.get(f) ?? [];
-    const goQuals = isGo ? parseGoImportQualifiers(src) : null;
     // TS：剥离 import/require 行再扫（import 语句本身含绑定名，会假"包级出现"）
     const scanSrc = isGo ? src : stripTsImportLines(src);
+    /** Go 兜底：DB 未命中时**整文件只解析一次**（旧状态机原样保留） */
+    let goQualsFallback: Map<string, string[]> | null = null;
 
     const rows = stmtImports.all(f) as Array<{
       source: string;
@@ -586,16 +684,23 @@ export function analyzeDeadThirdParty(opts: {
       if (!a) continue; // 非三方（stdlib/unresolved）不进死候选
       a.files.add(f);
 
+      // ★ v13：限定符优先读 `imports.bindings`（四道准入）；不过则**逐条**退回旧解析
+      const lookup = qualifiersOf(f, r.source, isGo, src);
+      judgedFiles.add(f);
+      if (lookup.via === 'db') bindingVia.db++;
+      else bindingVia.regex++;
       let quals: string[] | null;
       if (isGo) {
-        const q = goQuals?.get(r.source);
-        if (q === undefined || q.some((x) => x === '.' || x === '_')) {
+        // DB 未命中 ⇒ 旧块状态机兜底（整文件只解析一次）
+        const q = lookup.quals ?? (goQualsFallback ??= parseGoImportQualifiers(src)).get(r.source) ?? null;
+        if (q === null || q.some((x) => x === '.' || x === '_')) {
           if (dirAlive) a.liveHit = true; // 点导入/空导入/解析失败：包活才执行副作用
           continue;
         }
         quals = q;
       } else {
-        quals = parseTsImportQualifiers(src, r.source);
+        // DB 命中（含副作用导入的空绑定）⇒ 直接用；未命中 ⇒ 旧正则兜底
+        quals = lookup.quals ?? parseTsImportQualifiers(src, r.source);
         if (quals === null) {
           a.liveHit = true; // 副作用导入/语法不认识：保守按活
           continue;
@@ -643,6 +748,11 @@ export function analyzeDeadThirdParty(opts: {
   }
   for (const f of Object.keys(liveByFile)) liveByFile[f].sort();
 
+  // ★ v13 回执：限定符出处 + 兜底占比（判定粒度 = 一条 package import）
+  const dbFiles = [...judgedFiles].filter((f) => qualifierViaByFile.get(f) === 'db').length;
+  const regexFiles = judgedFiles.size - dbFiles;
+  const judgedTotal = bindingVia.db + bindingVia.regex;
+
   return {
     live_symbols: live.size,
     total_symbols: symbols.length,
@@ -650,5 +760,12 @@ export function analyzeDeadThirdParty(opts: {
     limitations: LIMITATIONS,
     live_symbols_by_file: liveByFile,
     live_type_names: [...liveTypeNames].sort(),
+    binding_via: {
+      db_imports: bindingVia.db,
+      regex_imports: bindingVia.regex,
+      db_files: dbFiles,
+      regex_files: regexFiles,
+      regex_ratio: judgedTotal > 0 ? Math.round((bindingVia.regex / judgedTotal) * 1000) / 1000 : 0,
+    },
   };
 }

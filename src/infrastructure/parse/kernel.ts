@@ -29,6 +29,7 @@ import { getParser, getParserSync, clearLoaderCache } from './loader.js';
 import { missingLanguageHint } from './lang_hint.js';
 
 import { typeMembersOf, TYPE_DECL_NODES, type ParsedTypeMember } from './type_members.js';
+import { paramsOf, type ParsedParam } from './symbol_params.js';
 
 export interface ParsedSymbol {
   name: string;
@@ -53,6 +54,14 @@ export interface ParsedSymbol {
    * 而对 `function` 是完整的参数列表 —— **两者语义本来就不同**，强行统一会两头不讨好。
    */
   members?: ParsedTypeMember[];
+  /**
+   * ★ 2026-10-20（v13）：**形参表**（name / type / optional / variadic），只对 `function` / `method` 有。
+   *
+   * 为什么不在 `signature` 里拆：签名是**一根字符串**，两侧各拆一次就会各漂各的
+   * （T154「两侧判据不对称」的根因）。形参是**结构化事实** ⇒ 内核给一次，消费方读同一份。
+   * `consistency.ts` 的 `compareSignatures` 原先 `match(/\(([^)]*)\)/)` 拆串，现改读本字段。
+   */
+  params?: ParsedParam[];
 }
 
 /** import 依赖（用于 import_project 的跨文件边推导） */
@@ -417,6 +426,10 @@ function traverseAndExtract(
         qualified_name: qn,
         // ★ 2026-10-20：类型声明把成员抽出来（`typeMembersOf` 早就有，只是没接上）
         ...(TYPE_DECL_NODES.has(node.type) ? { members: typeMembersOf(node) } : {}),
+        // ★ 2026-10-20（v13）：函数/方法把**形参表**抽出来（`symbol_params.ts` 早就有，只是没接上）
+        ...(kind === 'function' || kind === 'method'
+          ? { params: paramsOf(node, lang.field_map.parameters || 'parameters', lang.name) }
+          : {}),
         signature,
         parent: symbolParent,
         is_closure: isClosureSymbol ? true : undefined,
@@ -1899,6 +1912,10 @@ const IDENT_KIND_OF: Record<string, ParsedIdentifier["kind"]> = {
   property_identifier: 'property',
   type_identifier: 'type',
   shorthand_property_identifier: 'shorthand',
+  // ★ 2026-10-20（v13）：**解构简写**（`const { field } = obj` / `function f({ field })`）。
+  //   原先漏这一类 ⇒ `field_refs` 改用 identifiers 后会把解构点整体丢掉（实测 TS 语法里
+  //   它就是独立的 `shorthand_property_identifier_pattern`，与对象字面量的 `shorthand_property_identifier` 不同）。
+  shorthand_property_identifier_pattern: 'shorthand',
 };
 
 /**

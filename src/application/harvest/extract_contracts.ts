@@ -27,6 +27,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { getDSL, saveDSL } from '../../infrastructure/storage.js';
 import { getProjectCacheDb, projectCacheDbPath, type Database } from '../../infrastructure/index/db.js';
+// ★ v13（2026-10-20）：库与源码**同源**的判据（`files.content_hash`）—— 与 symbols.ts 同一把尺
+import { contentHash } from '../../infrastructure/index/symbols.js';
 import { buildImportGraph, type ImportGraph } from '../../infrastructure/graph/import_graph.js';
 import type {
   BrickContract,
@@ -58,6 +60,8 @@ export interface FileContractReport {
   fan_in: number;
   fan_out: number;
   shape_count: number;
+  /** ★ v13：字段清单出处（db = `nodes.members`；regex = 旧正则兜底） */
+  shape_via: { db: number; regex: number };
   reads_config: string[];
   /** effects 候选计数（origin='ast'，待 observe 观测转正）；详情在 DSL 契约 */
   effects: {
@@ -86,6 +90,10 @@ export interface ExtractContractsResult {
     avg_confidence: number;
     low_confidence: number; // < 0.7，LLM 兜底候选
     shapes_extracted: number;
+    /** ★ v13：形状字段的出处计数 + 兜底占比（regex / 总数；0 = 全走 DB） */
+    shapes_via_db: number;
+    shapes_via_regex: number;
+    shapes_regex_ratio: number;
     config_keys: number;
     /** effects 候选汇总（静态扫描，origin='ast'） */
     writes_candidates: number;
@@ -188,6 +196,8 @@ interface SymbolRow {
   name: string;
   kind: string;
   signature: string;
+  /** ★ v13：类型成员 JSON（`nodes.members`）；null = 库没给 / 该类型无成员体 */
+  members: string | null;
   file_path: string;
   start_line: number;
   end_line: number;
@@ -247,35 +257,92 @@ function parseShapeFields(lines: string[], language: string, kind: string): Shap
   return fields.slice(0, 40); // 防御：超大形状截断
 }
 
+/** `nodes.members` 里的一行（JSON 形状见 `type_members.ts` 的 `ParsedTypeMember`） */
+interface MemberRowJson {
+  name?: unknown;
+  type?: unknown;
+  optional?: unknown;
+  member_kind?: unknown;
+}
+
+/**
+ * 从 `nodes.members` 取字段清单 —— **四道准入**（照 `remove_dead_imports` 的先例，不盲信 DB）：
+ *   ① 库里有行：`members` 非 NULL；
+ *   ② 字段齐全：JSON 数组、每项有非空 `name`；
+ *   ③ 库与源码同源：调用方已验 `files.content_hash === contentHash(src)`（不满足不进本函数）；
+ *   ④ 取出的值能对上：每个用到的成员名必须在**该符号 span 的源码**里出现过。
+ * 任一道不过 ⇒ 返回 null（调用方**整形状退回正则**，一条正则都不删）。
+ *
+ * ★ 只收 `member_kind==='property'`：与旧 `TS_FIELD_RE` 的语义对齐（它不匹配 `foo(x): void`）。
+ *   方法是另一类事实（且 members 不存形参），不在此处凑数。
+ */
+function fieldsFromMembers(raw: string | null, spanText: string): ShapeField[] | null {
+  if (!raw) return null;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  if (!Array.isArray(parsed) || parsed.length === 0) return null;
+  const fields: ShapeField[] = [];
+  for (const item of parsed) {
+    if (!item || typeof item !== 'object') return null;
+    const m = item as MemberRowJson;
+    if (typeof m.name !== 'string' || m.name.length === 0) return null;
+    if (!spanText.includes(m.name)) return null; // ④ 值对不上 ⇒ 整形状退回正则
+    if (m.member_kind === 'method') continue; // 旧正则只收字段
+    const type = typeof m.type === 'string' ? m.type.replace(/^\s*:\s*/, '').replace(/\s+/g, ' ').trim() : '';
+    if (!type) continue; // 旧实现也跳过无类型注解的行
+    fields.push({ name: m.name, type, required: m.optional !== true });
+  }
+  return fields.slice(0, 40);
+}
+
 function extractShapes(db: Database, root: string, langOf: Map<string, string>): Map<string, ShapeSchema[]> {
   const rows = db
     .prepare(
-      "SELECT name, kind, signature, file_path, start_line, end_line FROM nodes " +
+      "SELECT name, kind, signature, members, file_path, start_line, end_line FROM nodes " +
         "WHERE kind IN ('struct','interface','class','type') AND file_path != ''",
     )
     .all() as unknown as SymbolRow[];
+  // ③ 同源判据的来源：`files.content_hash`（与 symbols.ts 同一把尺）
+  const hashByFile = new Map<string, string>();
+  for (const f of db.prepare('SELECT path, content_hash FROM files').all() as Array<{ path: string; content_hash: string }>) {
+    hashByFile.set(f.path, f.content_hash);
+  }
   const byFile = new Map<string, ShapeSchema[]>();
-  const srcCache = new Map<string, string[]>();
+  const srcCache = new Map<string, { lines: string[]; hashOk: boolean }>();
 
   for (const r of rows) {
-    let lines = srcCache.get(r.file_path);
-    if (lines === undefined) {
+    let entry = srcCache.get(r.file_path);
+    if (entry === undefined) {
       try {
-        lines = fs.readFileSync(path.join(root, r.file_path), 'utf-8').split('\n');
+        const src = fs.readFileSync(path.join(root, r.file_path), 'utf-8');
+        entry = { lines: src.split('\n'), hashOk: hashByFile.get(r.file_path) === contentHash(src) };
       } catch {
-        lines = [];
+        entry = { lines: [], hashOk: false };
       }
-      srcCache.set(r.file_path, lines);
+      srcCache.set(r.file_path, entry);
     }
-    const span = lines.slice(r.start_line - 1, r.end_line);
+    const span = entry.lines.slice(r.start_line - 1, r.end_line);
     if (span.length === 0) continue;
     const language = langOf.get(r.file_path) ?? (r.file_path.endsWith('.go') ? 'go' : r.file_path.endsWith('.py') ? 'python' : 'ts');
-    const fields = parseShapeFields(span, language, r.kind);
+
+    // ★ 分格：DB 优先；四道准入任一不过 ⇒ 正则兜底（保留 parseShapeFields，一字不删）
+    let via: 'db' | 'regex' = 'db';
+    let fields = entry.hashOk ? fieldsFromMembers(r.members, span.join('\n')) : null;
+    if (fields === null) {
+      via = 'regex';
+      fields = parseShapeFields(span, language, r.kind);
+    }
+
     const shape: ShapeSchema = {
       name: r.name,
       kind: r.kind as ShapeSchema['kind'],
       fields,
       origin: 'ast',
+      via,
     };
     let arr = byFile.get(r.file_path);
     if (!arr) byFile.set(r.file_path, (arr = []));
@@ -591,6 +658,10 @@ function extractContractsCore(input: ExtractContractsInput): ExtractContractsRes
       ...effectCand.holds.slice(0, 1).map((h) => `hold ${h.target}`),
       ...effectCand.emits.slice(0, 1),
     ].slice(0, 3);
+    const shapeVia = {
+      db: contract.shapes.exposes.filter((s) => s.via === 'db').length,
+      regex: contract.shapes.exposes.filter((s) => s.via !== 'db').length,
+    };
     reports.push({
       path: f.rel,
       language: langOf.get(f.rel) ?? 'unknown',
@@ -598,6 +669,7 @@ function extractContractsCore(input: ExtractContractsInput): ExtractContractsRes
       fan_in: fanIn,
       fan_out: fanOut,
       shape_count: contract.shapes.exposes.length,
+      shape_via: shapeVia,
       reads_config: readsConfig,
       effects: {
         writes: effectCand.writes.length,
@@ -640,6 +712,9 @@ function extractContractsCore(input: ExtractContractsInput): ExtractContractsRes
     reports.length > 0 ? reports.reduce((s, r) => s + r.role.confidence, 0) / reports.length : 0;
   const lowConf = reports.filter((r) => r.role.confidence < 0.7).length;
   const shapeCount = reports.reduce((s, r) => s + r.shape_count, 0);
+  const shapesViaDb = reports.reduce((s, r) => s + r.shape_via.db, 0);
+  const shapesViaRegex = reports.reduce((s, r) => s + r.shape_via.regex, 0);
+  const shapesRegexRatio = shapeCount > 0 ? shapesViaRegex / shapeCount : 0;
   const configKeySet = new Set(reports.flatMap((r) => r.reads_config));
   const writesCount = reports.reduce((s, r) => s + r.effects.writes, 0);
   const holdsCount = reports.reduce((s, r) => s + r.effects.holds, 0);
@@ -647,7 +722,8 @@ function extractContractsCore(input: ExtractContractsInput): ExtractContractsRes
 
   const message =
     `契约提取：${reports.length} 个文件（business ${business} / functional ${functional} / hybrid ${hybrid}），` +
-    `形状 ${shapeCount} 个，配置键 ${configKeySet.size} 个，平均置信度 ${avgConf.toFixed(2)}，` +
+    `形状 ${shapeCount} 个（字段出处 db ${shapesViaDb} / regex ${shapesViaRegex}，兜底占比 ${(shapesRegexRatio * 100).toFixed(1)}%），` +
+    `配置键 ${configKeySet.size} 个，平均置信度 ${avgConf.toFixed(2)}，` +
     `低置信（<0.7，LLM 兜底候选）${lowConf} 个；` +
     `effects 候选（origin=ast）：写 ${writesCount} / 占用 ${holdsCount} / 事件 ${emitsCount}` +
     (feature ? (written ? `，已写回 DSL "${feature}"` : `，DSL "${feature}" 无匹配文件未写回`) : '') +
@@ -667,6 +743,9 @@ function extractContractsCore(input: ExtractContractsInput): ExtractContractsRes
       avg_confidence: Math.round(avgConf * 100) / 100,
       low_confidence: lowConf,
       shapes_extracted: shapeCount,
+      shapes_via_db: shapesViaDb,
+      shapes_via_regex: shapesViaRegex,
+      shapes_regex_ratio: Math.round(shapesRegexRatio * 1000) / 1000,
       config_keys: configKeySet.size,
       writes_candidates: writesCount,
       holds_candidates: holdsCount,

@@ -22,7 +22,8 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { getProjectCacheDb } from '../../../infrastructure/index/db.js';
+import { getProjectCacheDb, projectCacheDbPath, SCHEMA_VERSION } from '../../../infrastructure/index/db.js';
+import { DatabaseSync } from 'node:sqlite';
 import { reopenRefsTo, resolveCrossFileCalls } from '../../../infrastructure/index/symbols.js';
 import { getProjectView } from '../../../infrastructure/project_view.js';
 import { INDEX_SKIP_DIR_EXTRA, isNoiseFileName, isTestFileName, isUnderSkippedDir } from '../../../infrastructure/parse/source_exts.js';
@@ -249,6 +250,34 @@ function receiptOf(
 }
 
 /**
+ * ★ v13：**在读库前**取 schema 版本。
+ *
+ * 为什么不能用 `getProjectCacheDb` 取：`openDb` 的迁移策略是“版本落后 ⇒ 清空业务表并写入新版本” ——
+ * 一旦开库，旧版本号就被盖掉了，`index_integrity` 会看到“版本对、但库是空的”，
+ * 只能报“未索引”，报不出**“需重建”**这个真正的原因。
+ * 所以这里用 `readOnly` 直接读文件（不改盘），把“旧版本 → 需重建”说在开库之前。
+ */
+function readRawSchemaVersion(root: string): { exists: boolean; version: number | null } {
+  const dbFile = projectCacheDbPath(root);
+  if (!fs.existsSync(dbFile)) return { exists: false, version: null };
+  let db: DatabaseSync | null = null;
+  try {
+    db = new DatabaseSync(dbFile, { readOnly: true });
+    const row = db.prepare('SELECT MAX(version) v FROM schema_versions').get() as { v: number | null } | undefined;
+    return { exists: true, version: row?.v ?? null };
+  } catch {
+    // 表不存在 / 文件损坏 ⇒ 同样视为“需重建”（但这是推测，消息里写清楚）
+    return { exists: true, version: null };
+  } finally {
+    try {
+      db?.close();
+    } catch {
+      /* 已关闭 */
+    }
+  }
+}
+
+/**
  * 索引可信度自检。
  * @param opts.refresh true = 先跑一次保鲜（`ensureProjectIndex`）再报告；默认 false（纯只读）
  * @param opts.sample  抽样条数上限（默认 20）
@@ -263,6 +292,55 @@ async function indexIntegrityCore(opts: {
   const issues: IntegrityIssue[] = [];
   let refreshed = false;
   let state: IndexState = 'empty';
+
+  // ★ v13（2026-10-20）：**版本不匹配 ⇒ 报“需重建”，且必须在开库前报**。
+  //   开库会走 `openDb` 的迁移（清空业务表 + 写入新版本号）⇒ 旧版本号消失，
+  //   之后就只能看到“空库”，报不出“schema 变了”。`refresh:true` 是“就地重建”的授权，
+  //   故那条路径跳过此判（由 `ensureProjectIndex` 自己按迁移语义处理）。
+  const rawSchema = opts.refresh === true ? null : readRawSchemaVersion(root);
+  if (rawSchema?.exists && rawSchema.version !== SCHEMA_VERSION) {
+    const from = rawSchema.version === null ? '未知（无版本行）' : `v${rawSchema.version}`;
+    const issue: IntegrityIssue = {
+      code: 'schema_outdated',
+      severity: 'blocker',
+      message:
+        `索引 schema 为 ${from}，当前代码要求 v${SCHEMA_VERSION} —— **需重建**：` +
+        '旧库的列语义/表结构已不匹配，继续读会得到静默缺失或错位的数据。',
+      fix: '调 `import_project` 重建索引（或在确认可丢缓存后 `index_integrity({refresh:true})` 就地重建）',
+    };
+    return {
+      project_root: root,
+      state: 'empty',
+      refreshed,
+      counts: {
+        indexed_files: 0,
+        disk_files: 0,
+        not_indexed: 0,
+        ghosts: 0,
+        nodes: 0,
+        edges: 0,
+        disk_files_by_kind: { main: 0, test: 0, noise: 0, excluded: 0 },
+        indexed_files_by_kind: { main: 0, test: 0, noise: 0, excluded: 0 },
+        not_indexed_by_kind: { main: 0, test: 0, noise: 0, excluded: 0 },
+      },
+      refs: { pending: 0, resolved: 0, external: 0, failed: 0, stale_resolved: 0 },
+      freshness: {
+        not_fresh: 0,
+        not_fresh_sample: [],
+        not_fresh_out_of_scope: [],
+        self_writes_pending: pendingSelfWrites(root).length,
+      },
+      backfill: backfillSummary(backfillState(root)),
+      languages: [],
+      issues: [issue],
+      // ★ 库**在**（只是版本旧、不可用）⇒ 这是“查了、发现了”，不是“查不了”
+      verdict: integrityVerdict({ hasIndex: true, hasBlocker: true, hasGhost: false }),
+      trustworthy: false,
+      summary:
+        `索引 schema ${from} ≠ 当前 v${SCHEMA_VERSION} ⇒ **需重建**` +
+        '（旧库的表/列语义已不匹配；重建前任何“基于索引”的读数都不可当真）。',
+    };
+  }
 
   let db: ReturnType<typeof getProjectCacheDb> | null = null;
   /** refresh:true 时的保鲜回执（原样记录保鲜实际做了什么；未 refresh 则 null） */

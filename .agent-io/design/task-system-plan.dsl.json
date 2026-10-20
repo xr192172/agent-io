@@ -17349,17 +17349,14 @@
           "id": "file_src_application_design_intent_consistency_ts",
           "summary": "【L1 待建构】核心层 · src/application/design/intent — 14 个 API（导入自 11 个模块）（src/application/design/intent/consistency.ts） ← 节点 file_src_application_design_intent_consistency_ts",
           "expectations": [],
-          "state": "candidate",
+          "state": "claimed",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_intent_consistency_ts\"].responsibility"
           },
-          "owner": null,
-          "claimed_at": null,
-          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
-          "released_by": "comment-cleanup-bot",
-          "released_at": "2026-10-20T09:40:06.828Z"
+          "owner": "deepseek-v4.1-flash",
+          "claimed_at": "2026-10-20T15:14:17.751Z"
         },
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_design_intent_detect_drift_ts",
@@ -50355,7 +50352,7 @@
               "why": "要真的写表"
             }
           ],
-          "state": "done",
+          "state": "claimed",
           "evidence": [
             {
               "kind": "expectations",
@@ -50364,9 +50361,14 @@
               "agent": "workbuddy",
               "verdict": "pass"
             }
-          ]
+          ],
+          "owner": "deepseek-v4.1-flash",
+          "claimed_at": "2026-10-20T15:14:17.828Z",
+          "reopened_at": "2026-10-20T15:14:17.828Z",
+          "reopen_reason": "schema v13 增加 nodes.params 列",
+          "reopened_from": null
         },
-        "status": "done",
+        "status": "in_progress",
         "decision_history": [
           {
             "at": "2026-10-20T00:47:25.905Z",
@@ -50860,9 +50862,9 @@
               "why": "旧库要能 ALTER 出来（新库靠 CREATE TABLE）"
             }
           ],
-          "state": "done",
-          "owner": "workbuddy",
-          "claimed_at": "2026-10-20T00:01:07.871Z",
+          "state": "claimed",
+          "owner": "deepseek-v4.1-flash",
+          "claimed_at": "2026-10-20T15:14:17.906Z",
           "evidence": [
             {
               "kind": "expectations",
@@ -50871,9 +50873,12 @@
               "agent": "workbuddy",
               "verdict": "pass"
             }
-          ]
+          ],
+          "reopened_at": "2026-10-20T15:14:17.906Z",
+          "reopen_reason": "kernel 从 AST 参数表提取 params",
+          "reopened_from": "workbuddy"
         },
-        "status": "done"
+        "status": "in_progress"
       },
       {
         "id": "file_src_infrastructure_parse_lang_hint_ts",
@@ -81245,7 +81250,7 @@
         ],
         "lines": 1186,
         "layer": "core",
-        "status": "draft"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_design_intent_detect_drift_ts",
@@ -93334,7 +93339,7 @@
         ],
         "lines": 195,
         "layer": "data",
-        "status": "done"
+        "status": "in_progress"
       },
       {
         "id": "file_src_infrastructure_index_self_writes_ts",
@@ -94275,7 +94280,7 @@
         ],
         "lines": 1907,
         "layer": "utility",
-        "status": "done"
+        "status": "in_progress"
       },
       {
         "id": "file_src_infrastructure_parse_lang_hint_ts",
@@ -98801,11 +98806,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-20T13:56:27.232Z",
+    "saved_at": "2026-10-20T15:14:17.932Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792504542536,
-    "age": 44696
+    "scanRev": 1792504668734,
+    "age": 4589198
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",

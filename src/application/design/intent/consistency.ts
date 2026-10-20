@@ -56,6 +56,9 @@ import {
   type ParsedTypeMember,
   type SignatureDeclResult,
   type SyntaxNodeLike,
+  // ★ v13（2026-10-20）：形参表与 `nodes.params` **同源**（`paramsOf` 唯一住处）
+  paramsOf,
+  type ParsedParam,
 } from '../../../infrastructure/parse/index.js';
 
 /**
@@ -366,6 +369,11 @@ export interface ApiMatch {
   match_score: number;
   reason?: string;
   /**
+   * ★ v13：本条签名比对**形参从哪来** —— `ast` = 两侧都读结构化 `params`（`nodes.params` 同源）；
+   *   `regex` = 至少一侧退回文本切分（解析器给不出形参）。回执明写，不许静默降级。
+   */
+  params_via?: 'ast' | 'regex';
+  /**
    * ★ T157（2026-10-11）：**类型契约**（interface/type/class）的成员级明细。
    * ★ 只在"期望侧被解析成类型声明"时填；函数/方法契约**不填**（那是 `reason` 的事）。
    * ★★ `extras` **不算差异**（契约只声明"必需有什么"，实现多出来的成员合法）——
@@ -410,6 +418,8 @@ interface ParsedApi {
   start_line: number;
   end_line?: number;
   kind: string;
+  /** ★ v13：AST 形参表（与 `nodes.params` 同一个提取器）；缺省 = 该语法没给 `parameters` 字段 */
+  params?: ParsedParam[];
 }
 
 function normalizeSignature(sig: string): string {
@@ -453,6 +463,84 @@ function argName(arg: string): string {
 }
 
 /**
+ * 对象形参判据（**两侧同一把尺**）：`{ … }` / `Record<…>` / `object`。
+ * ★ T154 的教训：期望侧用 `: {`、实现侧只认空 `{}` ⇒ “期望对象、实际也是非空对象”被判成不匹配。
+ *   现在两侧都走这一个函数，不再各写一条正则。
+ */
+function isObjectishParamType(t: string | undefined): boolean {
+  if (!t) return false;
+  return t.includes('{') || /^Record\s*</i.test(t) || /^object$/i.test(t);
+}
+
+/** 形参名归一（解构模式折叠空白；无名形参保持空串，仍参与个数比对）。 */
+function normalizeParamName(n: string): string {
+  return n.replace(/\s+/g, ' ').trim();
+}
+
+/** 从设计态签名串解析形参表（**同一个内核解析器**，不是第二把尺）。
+ *  返回 null = 解析不了（后缀不支持 / 包没装 / 这串不是函数声明） ⇒ 调用方退回旧文本切分。 */
+async function expectedParamsOf(signature: string, filePath: string): Promise<ParsedParam[] | null> {
+  const ext = path.extname(filePath).toLowerCase();
+  // 去掉设计串里可能带的声明前缀；合成一段**最小可解析源码**，让内核按真实语法出参。
+  let sig = signature.trim();
+  sig = sig.replace(/^export\s+(?:default\s+)?/, '');
+  sig = sig.replace(/^(?:(?:declare|async|public|private|protected|static|abstract|override|readonly|function)\s+)+/, '');
+  let src: string;
+  if (ext === '.go') src = `package p\nfunc ${sig} {}\n`;
+  else if (ext === '.py') src = `def ${sig}:\n  pass\n`;
+  else if (ext === '.java') src = `class C { ${sig} {} }\n`;
+  else src = `declare function ${sig};\n`;
+  const ast = await parseAstRoot(filePath, src);
+  if (!ast) return null;
+  const decl = findParamsDecl(ast.root);
+  return decl ? paramsOf(decl, 'parameters', ast.langName) : null;
+}
+
+/** 合成源码里第一颗带 `parameters` 字段的函数/方法节点。 */
+function findParamsDecl(root: SyntaxNodeLike): SyntaxNodeLike | null {
+  let hit: SyntaxNodeLike | null = null;
+  const walk = (n: SyntaxNodeLike): void => {
+    if (hit) return;
+    if ((n.type.includes('function') || n.type.includes('method')) && n.childForFieldName('parameters')) {
+      hit = n;
+      return;
+    }
+    for (let i = 0; i < n.childCount; i++) {
+      const c = n.child(i);
+      if (c) walk(c);
+    }
+  };
+  walk(root);
+  return hit;
+}
+
+/**
+ * 返回类型串：取**括号配平**后的 `)` 之后那段（不再用 `split(')')` —— 嵌套对象/函数类型里有 `)`）。
+ * ★ 只用于返回类型；形参已改读 AST `params`。
+ */
+function returnTypeOf(signature: string): string {
+  const open = signature.indexOf('(');
+  if (open < 0) return '';
+  let depth = 0;
+  let quote = '';
+  for (let i = open; i < signature.length; i++) {
+    const c = signature[i];
+    if (quote) {
+      if (c === '\\') i++;
+      else if (c === quote) quote = '';
+      continue;
+    }
+    if (c === "'" || c === '"' || c === '`') quote = c;
+    else if (c === '(') depth++;
+    else if (c === ')') {
+      depth--;
+      if (depth === 0) return signature.slice(i + 1).trim();
+    }
+  }
+  return '';
+}
+
+/**
  * 比对**期望签名**与**实际符号**。
  * ★★★ AB-double-name 病 A 修复：`actual` 的名字**一律取 AST 权威名**（`ParsedSymbol.name`），
  *   以 **`{ name, signature }`** 传入 —— 不再像旧版那样对 `actual.signature` **正则重取**名字。
@@ -462,54 +550,82 @@ function argName(arg: string): string {
  */
 function compareSignatures(
   expected: string,
-  actual: { name: string; signature: string },
-): { score: number; reason?: string } {
+  actual: { name: string; signature: string; params?: ParsedParam[] },
+  /** ★ v13：设计侧形参表（由 `expectedParamsOf` 用**同一个内核解析器**出）；null = 解析不了 */
+  expectedParams?: ParsedParam[] | null,
+): { score: number; reason?: string; params_via: 'ast' | 'regex' } {
   const expectedName = extractFuncName(expected);
   const actualName = actual.name; // ★ AST 权威名（不再对 actual.signature 正则取名）
 
   if (expectedName !== actualName) {
-    return { score: 0, reason: '函数名不匹配' };
+    return { score: 0, reason: '函数名不匹配', params_via: 'regex' };
   }
 
   const expectedNorm = normalizeSignature(expected);
   const actualNorm = normalizeSignature(actual.signature);
 
   if (expectedNorm === actualNorm) {
-    return { score: 100 };
+    return { score: 100, params_via: 'ast' };
   }
 
-  const expectedArgs = expected.match(/\(([^)]*)\)/)?.[1] || '';
-  const actualArgs = actual.signature.match(/\(([^)]*)\)/)?.[1] || '';
-  const expectedArgList = splitTopLevelArgs(expectedArgs);
-  const actualArgList = splitTopLevelArgs(actualArgs);
+  // ── 主路：两侧都有 AST 形参表（v13）────────────────────────────────
+  // ★ T154 的根因：原先两侧都 `match(/\(([^)]*)\)/)` **各拆一次同一根字符串**，
+  //   再各自用不同正则判对象形参 ⇒ 同一事实两个出处，必然漂移。
+  //   现在**形参只从 AST 出一次**（`nodes.params` / `ParsedSymbol.params` 同源），
+  //   两侧只是读同一个字段；下面的文本切分**只作兜底**（保留，不删）。
+  if (expectedParams != null && actual.params != null) {
+    if (expectedParams.length !== actual.params.length) {
+      return {
+        score: 70,
+        reason: `参数数量不匹配：期望 ${expectedParams.length} 个，实际 ${actual.params.length} 个`,
+        params_via: 'ast',
+      };
+    }
 
-  if (expectedArgList.length !== actualArgList.length) {
-    return { score: 70, reason: `参数数量不匹配：期望 ${expectedArgList.length} 个，实际 ${actualArgList.length} 个` };
-  }
+    const nameAligned = expectedParams.every(
+      (p, i) => normalizeParamName(p.name) === normalizeParamName(actual.params![i].name),
+    );
+    if (!nameAligned) {
+      return {
+        score: 90,
+        reason:
+          `形参名不一致：期望 ${expectedParams.map((p) => p.name || '<无名>').join(', ')}，` +
+          `实际 ${actual.params.map((p) => p.name || '<无名>').join(', ')}`,
+        params_via: 'ast',
+      };
+    }
 
-  // 参数名对齐：语义契约的形参名应与实现一致（如都叫 args）
-  const expNames = expectedArgList.map(argName);
-  const actNames = actualArgList.map(argName);
-  const nameAligned = expNames.every((n, i) => n === actNames[i]);
+    // 可选性 / 可变性也是契约（与 `compareTypeContractMembers` 的 `optional` 同一判据）
+    for (let i = 0; i < expectedParams.length; i++) {
+      const e = expectedParams[i];
+      const a = actual.params[i];
+      if (e.optional !== a.optional) {
+        return {
+          score: 90,
+          reason: `形参可选性不一致：${e.name}（期望 ${e.optional ? '可选(?)' : '必填'} / 实际 ${a.optional ? '可选(?)' : '必填'}）`,
+          params_via: 'ast',
+        };
+      }
+      if (e.variadic !== a.variadic) {
+        return {
+          score: 90,
+          reason: `形参可变性不一致：${e.name}（期望 ${e.variadic ? '可变(...)' : '固定'} / 实际 ${a.variadic ? '可变(...)' : '固定'}）`,
+          params_via: 'ast',
+        };
+      }
+    }
 
-  if (nameAligned) {
-    // 对象形参契约：期望为对象字面量时，实现应为对象/Record/任意，而非标量
-    // ★★ 2026-10-11 修**两侧判据不对称**（T154 试点真跑踩到）：
-    //   期望侧 `expHasObj` 用 `: {`（**任意**对象字面量），实现侧 `actIsObj` 却只认
-    //   `{}`（**空**对象）/`{[`/`Record<`/`object` —— 于是「期望对象、实际也是**非空**对象字面量」
-    //   （如 `opts?: { author?: string }`）被判成"不匹配"（**假差异**）。
-    //   实测病灶：`applyDecisionWrite(prev, history, next, opts?: { … })` 的契约与实现**逐字等价**，
-    //   却报 `形参类型不匹配：期望对象形参` ⇒ 把"配上了"读成"没配上"。
-    //   修法：两侧用**同一把尺**（实现侧也收 `: {`）。
-    const expHasObj = /:\s*\{/.test(expectedArgs);
-    const actIsObj = /:\s*\{|Record\s*<|\bobject\b/i.test(actualArgs);
-    if (expHasObj && !actIsObj) {
-      return { score: 80, reason: `形参类型不匹配：期望对象形参，实际 ${actualArgs}` };
+    // 对象形参契约：两侧**同一个判据函数**（T154 的修法，不再各写一条正则）
+    const expHasObj = expectedParams.some((p) => isObjectishParamType(p.type));
+    const actHasObj = actual.params.some((p) => isObjectishParamType(p.type));
+    if (expHasObj && !actHasObj) {
+      const actText = actual.params.map((p) => `${p.name}${p.optional ? '?' : ''}: ${p.type ?? '?'}`).join(', ');
+      return { score: 80, reason: `形参类型不匹配：期望对象形参，实际 ${actText}`, params_via: 'ast' };
     }
 
     // 返回类型：仅当两侧都是具体类型（不含语义省略号 ...）时才严格比对
-    const expectedRet = expected.split(')')[1]?.trim() || '';
-    const actualRet = actual.signature.split(')')[1]?.trim() || '';
+    const expectedRet = returnTypeOf(expected);
+    const actualRet = returnTypeOf(actual.signature);
     const expConcrete = !!expectedRet && !expectedRet.includes('...');
     const actConcrete = !!actualRet && !actualRet.includes('...');
     const retCompatible =
@@ -518,14 +634,52 @@ function compareSignatures(
       expectedRet.toLowerCase().includes(actualRet.toLowerCase()) ||
       actualRet.toLowerCase().includes(expectedRet.toLowerCase());
     if (!retCompatible) {
-      return { score: 80, reason: `返回类型不匹配：期望 ${expectedRet}，实际 ${actualRet}` };
+      return { score: 80, reason: `返回类型不匹配：期望 ${expectedRet}，实际 ${actualRet}`, params_via: 'ast' };
     }
 
-    // 参数名一致且返回兼容 → 契约满足（即使类型措辞不同）
-    return { score: 100 };
+    return { score: 100, params_via: 'ast' };
   }
 
-  return { score: 90, reason: '签名不完全一致' };
+  // ── 兜底：文本切分（**原逻辑原样保留**；只在 AST 给不出形参时走）──────────
+  const expectedArgs = expected.match(/\(([^)]*)\)/)?.[1] || '';
+  const actualArgs = actual.signature.match(/\(([^)]*)\)/)?.[1] || '';
+  const expectedArgList = splitTopLevelArgs(expectedArgs);
+  const actualArgList = splitTopLevelArgs(actualArgs);
+
+  if (expectedArgList.length !== actualArgList.length) {
+    return { score: 70, reason: `参数数量不匹配：期望 ${expectedArgList.length} 个，实际 ${actualArgList.length} 个`, params_via: 'regex' };
+  }
+
+  // 参数名对齐：语义契约的形参名应与实现一致（如都叫 args）
+  const expNames = expectedArgList.map(argName);
+  const actNames = actualArgList.map(argName);
+  const nameAligned = expNames.every((n, i) => n === actNames[i]);
+
+  if (nameAligned) {
+    const expHasObj = /:\s*\{/.test(expectedArgs);
+    const actIsObj = /:\s*\{|Record\s*<|\bobject\b/i.test(actualArgs);
+    if (expHasObj && !actIsObj) {
+      return { score: 80, reason: `形参类型不匹配：期望对象形参，实际 ${actualArgs}`, params_via: 'regex' };
+    }
+
+    // 返回类型：仅当两侧都是具体类型（不含语义省略号 ...）时才严格比对
+    const expectedRet = returnTypeOf(expected);
+    const actualRet = returnTypeOf(actual.signature);
+    const expConcrete = !!expectedRet && !expectedRet.includes('...');
+    const actConcrete = !!actualRet && !actualRet.includes('...');
+    const retCompatible =
+      !expConcrete ||
+      !actConcrete ||
+      expectedRet.toLowerCase().includes(actualRet.toLowerCase()) ||
+      actualRet.toLowerCase().includes(expectedRet.toLowerCase());
+    if (!retCompatible) {
+      return { score: 80, reason: `返回类型不匹配：期望 ${expectedRet}，实际 ${actualRet}`, params_via: 'regex' };
+    }
+
+    return { score: 100, params_via: 'regex' };
+  }
+
+  return { score: 90, reason: '签名不完全一致', params_via: 'regex' };
 }
 
 /**
@@ -710,6 +864,8 @@ export async function checkConsistencyReport(input: ConsistencyInput): Promise<C
       const fileNotes: string[] = [];
       /** ★ T157 期望侧的**形态判定**（下标 → 结果）：只在"文件存在且扩展名受支持"时填 */
       const declExpectations = new Map<number, SignatureDeclResult>();
+      /** ★ v13 期望侧形参（下标 → AST 形参表 / null=解析不了）；与 `nodes.params` 同一个提取器 */
+      const paramExpectations = new Map<number, ParsedParam[] | null>();
       /** ★ T157 实际文件的 AST 根 —— **只在真有类型契约时才解析**（不白付代价）。 */
       let typeAst: SyntaxNodeLike | null = null;
 
@@ -725,6 +881,8 @@ export async function checkConsistencyReport(input: ConsistencyInput): Promise<C
                 start_line: s.start_line,
                 end_line: s.end_line,
                 kind: s.kind,
+                // ★ v13：形参读 AST（与 `nodes.params` 同一个提取器），不再拆 signature
+                params: s.params,
               });
             }
           }
@@ -737,6 +895,11 @@ export async function checkConsistencyReport(input: ConsistencyInput): Promise<C
             const r = await typeDeclFromSignature(expectedApis[i].signature, file.path);
             if (r.kind === 'unparsable') unparsable++;
             declExpectations.set(i, r);
+            // ★ v13：函数/方法契约的形参也走**同一个内核解析器**（不是第二把尺）。
+            //   解析不了 ⇒ null ⇒ 比对时退回文本切分（兜底保留，回执标 via=regex）。
+            if (r.kind !== 'type-decl') {
+              paramExpectations.set(i, await expectedParamsOf(expectedApis[i].signature, file.path));
+            }
           }
           if (unparsable > 0) {
             fileNotes.push(
@@ -802,7 +965,8 @@ export async function checkConsistencyReport(input: ConsistencyInput): Promise<C
 
         if (actual) {
           // ★ 病 A：把**整个 actual**（含 AST 权威名 `name`）传进去，判等用 `actual.name`，不再正则重取。
-          const comparison = compareSignatures(expected.signature, actual);
+          // ★ v13：设计侧形参也由内核解析（`expectedParamsOf`）；两侧都拿到才走 AST 主路。
+          const comparison = compareSignatures(expected.signature, actual, paramExpectations.get(i));
           matchedNames.add(expectedName);
 
           if (comparison.score >= 90) {
@@ -814,6 +978,7 @@ export async function checkConsistencyReport(input: ConsistencyInput): Promise<C
               status: comparison.score === 100 ? 'matched' : 'mismatched',
               match_score: comparison.score,
               reason: comparison.reason,
+              params_via: comparison.params_via,
             });
             if (comparison.score === 100) {
               matchedCount++;
@@ -829,6 +994,7 @@ export async function checkConsistencyReport(input: ConsistencyInput): Promise<C
               status: 'mismatched',
               match_score: comparison.score,
               reason: comparison.reason,
+              params_via: comparison.params_via,
             });
             mismatchedCount++;
           }
