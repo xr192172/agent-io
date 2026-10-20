@@ -557,7 +557,7 @@ export const META_TOOLS: ToolDef[] = [
       '症状诊断：输入"症状"（报错信息 / stack trace / 测试失败输出 / 行为异常描述），' +
       '输出"根因 + 证据链 + 影响面 + 修改建议 + 验证方式"。' +
       '六步流水线：症状解析（正则提取 错误类型/文件:行/符号）→ 候选定位（查 .agent-io/cache.db 符号缓存，' +
-      'exact/file/FTS/anchor 四路）→ 调用链追溯（沿 call/type_ref/import 三类边双向 BFS）→ 影响面分析（复用 diff_impact）→ ' +
+      'exact/file/FTS/anchor 四路）→ 调用链追溯（沿 call/type_ref/import 三类边双向 BFS）→ 影响面分析（复用 impact/diff_impact.ts 的三类边影响图）→ ' +
       '根因聚合（规则引擎先跑，LLM 可选把证据翻成人话根因，未配置自动降级）→ 验证建议（按项目类型给命令，只建议不执行）。' +
       '前置：无需任何准备——缓存为空时会自动冷启建索引；仅在目标目录没有可解析源码时退化为文件级线索。' +
       'anchor 可选：用户已知的线索（文件路径或函数名）帮助聚焦。',

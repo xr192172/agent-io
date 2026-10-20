@@ -94,7 +94,7 @@ export const HARVEST_TOOLS: ToolDef[] = [
     description:
       '积木拎取闭包（Brick Harvest Phase 1）：给定种子文件，沿 import 边算出"拎走这块积木必须连根带走的全部东西"。' +
       '输出：项目内传递闭包（带深度/带入者/import 语句证据）+ 外部依赖三分类（标准库/三方/未归类）。' +
-      '与 diff_impact 正交：diff_impact 答"改这里波及谁"（importer 方向），本工具答"拎走它需要什么"（importee 方向）。' +
+      '与 impact_analysis 正交：它答"改这里波及谁"（importer 方向），本工具答"拎走它需要什么"（importee 方向）。' +
       'include_callers=true 时连调用方一起端走（拎服务层带生态）。前置：项目需先跑 import_project 建符号缓存。' +
       '规划见 docs/plans/2026-08-19-cross-project-brick-harvest.md。',
     inputSchema: {

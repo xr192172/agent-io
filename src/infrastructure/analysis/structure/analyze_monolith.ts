@@ -464,7 +464,7 @@ function estimateLines(members: number[], funcs: FuncNode[]): number {
  *   2. 这些类型单元之间的跨组调用占比低（耦合弱，能独立成文件）
  * 则建议在社区内再做子拆分。
  *
- * 只给证据与启发，不落盘改代码——拆不拆由 derive_split / 人确认。
+ * 只给证据与启发，不落盘改代码——拆不拆由人确认。
  */
 export function assessCommunitySubSplit(
   funcs: FuncNode[],
@@ -770,11 +770,11 @@ export function analyzeMonolith(input: AnalyzeMonolithInput): AnalyzeMonolithRes
     }
     lines.push(
       '',
-      '社区锚点是功能/业务，不设"拆多碎"下限；社区内子拆分是否执行由 derive_split 或人工裁决。',
+      '社区锚点是功能/业务，不设"拆多碎"下限；社区内子拆分是否执行由人工裁决。',
     );
     lines.push(
       '',
-      '本工具只给证据与启发（不落盘改代码）。拆分执行由 derive_split 或人工确认后执行。',
+      '本工具只给证据与启发（不落盘改代码）。拆分执行由人工确认后执行。',
     );
 
     return {
