@@ -470,7 +470,23 @@ export const DESIGN_TOOLS: ToolDef[] = [
           `设计 ${d.designNodes} 节点 · ${d.designEdges} 边    实际 ${d.liveNodes} 节点 · ${d.liveEdges} 边`,
           '',
           `+ 只在设计侧（设计了、实际还没有）：${d.onlyDesign.length} 个`,
-          ...d.onlyDesign.slice(0, 20).map((id) => `    + ${id}`),
+          ...d.onlyDesign.slice(0, 20).flatMap((id) => {
+            // ★ 每条「只在设计侧」都带 `must_have`（该文件/目录**必含的符号**）：
+            //   LLM 写实现（`edit_code op=symbol`）不必再从 scope / 边里猜"该建哪些函数"。
+            //   列不出时**明说** `must_have: []` + `why_empty` —— 不许静默空。
+            const mh = d.mustHave.find((m) => m.id === id);
+            if (!mh) return [`    + ${id}`];
+            const head = `    + ${id}${mh.kind === 'dir' && mh.drilled?.length ? `（下钻 ${mh.drilled.length} 个文件）` : ''}`;
+            if (!mh.must_have.length) {
+              return [head, '        must_have: []', `        why_empty: '${String(mh.why_empty ?? '(未说明)')}'`];
+            }
+            const shown = mh.must_have.slice(0, 24).map((s) => {
+              const tag = s.kind && s.kind !== 'type' && s.kind !== 'symbol-exists' ? `(${s.kind})` : '';
+              return s.name + tag + (mh.kind === 'dir' && s.file ? ` ← ${s.file}` : '');
+            });
+            const more = mh.must_have.length > 24 ? [`        …共 ${mh.must_have.length} 个（完整清单见 data.mustHave）`] : [];
+            return [head, `        must_have: ${shown.join(', ')}`, ...more];
+          }),
           `- 只在实际侧（实际有、设计没收录）：${d.onlyLive.length} 个`,
           ...d.onlyLive.slice(0, 20).map((id) => `    - ${id}`),
           `~ 两边都有但内容不同：${d.changed.length} 个`,

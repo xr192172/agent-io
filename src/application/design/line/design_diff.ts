@@ -28,6 +28,9 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+// ★「只在设计侧」⇒ 必含符号（`must_have`）。逻辑落在 `design_line.ts`（设计链的读数层），
+//   这里只负责把结果并进 diff 的回执 —— 判据一处，别在 diff 里再写一把。
+import { mustHaveFor, type MustHaveReport } from './design_line.js';
 
 type AnyNode = Record<string, unknown> & { id?: string };
 type AnyEdge = { from?: string; to?: string; label?: string };
@@ -39,6 +42,11 @@ export interface DesignDiffResult {
   liveEdges: number;
   /** `+` 只在设计侧（设计了、实际还没有） */
   onlyDesign: string[];
+  /**
+   * ★ 每条「只在设计侧」节点的**必含符号**（`must_have`）—— LLM 写实现前最缺的那一样。
+   * 目录级节点已**下钻到文件级**（`drilled`）再并集；真的列不出时 `must_have: []` + `why_empty`。
+   */
+  mustHave: MustHaveReport[];
   /** `-` 只在实际侧（实际有、设计没收录） */
   onlyLive: string[];
   /** `~` 两边都有但内容不同（人改过） */
@@ -85,6 +93,9 @@ export function designDiff(projectDir: string, feature: string): DesignDiffResul
   for (const n of live.geometry?.nodes ?? []) if (n.id) lNodes.set(n.id, n);
 
   const onlyDesign = [...dNodes.keys()].filter((id) => !lNodes.has(id));
+  // ★ 「只在设计侧」不止要知道"差哪些节点"，还要知道**每个节点里该有什么符号**
+  //   —— 否则 LLM 写实现（`edit_code op=symbol`）只能靠 `scope` / 边去猜，猜错就白写一轮。
+  const mustHave = mustHaveFor(design, onlyDesign);
   const onlyLive = [...lNodes.keys()].filter((id) => !dNodes.has(id));
 
   const changed: DesignDiffResult['changed'] = [];
@@ -166,6 +177,7 @@ export function designDiff(projectDir: string, feature: string): DesignDiffResul
     designEdges: dEdges.size,
     liveEdges: lEdges.size,
     onlyDesign,
+    mustHave,
     onlyLive,
     changed,
     missedEdges: edgeRows.filter((r) => r.verdict !== 'none'),

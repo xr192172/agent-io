@@ -49004,7 +49004,7 @@
               "why": "★ 必含符号清单（LLM 写实现的输入）"
             }
           ],
-          "state": "claimed",
+          "state": "done",
           "owner": "workbuddy",
           "claimed_at": "2026-10-20T03:31:05.501Z",
           "evidence": [
@@ -49012,11 +49012,18 @@
               "kind": "expectations",
               "at": "2026-10-19T13:13:08.173Z",
               "verdict": "pass"
+            },
+            {
+              "kind": "expectations",
+              "at": "2026-10-20T03:56:15.627Z",
+              "by": "llm",
+              "agent": "workbuddy",
+              "verdict": "pass"
             }
           ],
           "reopened_at": null
         },
-        "status": "in_progress",
+        "status": "done",
         "decision_history": [
           {
             "at": "2026-10-20T03:31:18.887Z",
@@ -95299,7 +95306,7 @@
         "id": "file_src_application_design_line_design_line_ts",
         "path": "src/application/design/line/design_line.ts",
         "responsibility": "设计链六步读数（工具 design_line 的 report action）",
-        "status": "in_progress"
+        "status": "done"
       },
       {
         "id": "file_src_application_design_db_gen_design_db_ts",
@@ -95398,11 +95405,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-20T03:47:43.740Z",
+    "saved_at": "2026-10-20T03:56:15.652Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792468063474,
-    "age": 266
+    "scanRev": 1792468575311,
+    "age": 341
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -97297,5 +97304,5 @@
       ]
     }
   ],
-  "_dsl_rev": 543
+  "_dsl_rev": 544
 }

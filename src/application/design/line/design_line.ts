@@ -211,3 +211,212 @@ export function designLineHandler(input: { project_dir: string; feature: string 
   lines.push('★ 只读：不改 DSL、不改源码。');
   return { message: lines.join('\n'), data: report };
 }
+
+
+// ───────────────────────────────────────────────────────────────────────────
+// ★「只在设计侧」⇒ `must_have`（该文件/目录**必含哪些符号**）
+// ───────────────────────────────────────────────────────────────────────────
+//
+// ## 为什么需要它
+// `action=diff` 原来只报到**节点级**（"这个文件设计了、还没有"），LLM 要写实现
+// （`edit_code op=symbol`）时仍得自己从 `scope` / 边去猜"里面该有哪些函数" —— 猜错就白写一轮。
+// `must_have` 把这件事直接摆在 diff 结果里。
+//
+// ## 符号只能从设计侧**已有的记录**里取（不编造）
+// 三个来源，按可信度排序：
+// 1. `decision.expectations[kind=symbol-exists]` —— 决策卡**明说**"这个文件里必须有这个符号"
+//    （带 `why`）。这是唯一"人以判据形式写过"的来源，优先级最高。
+// 2. `semantic.files[path].symbols` —— 设计 DSL 自带的符号事实（fork 时从源码带来）。
+//    它是**记录**，不是设计意图；所以 `from` 标 `semantic.files`，LLM 自己能分辨。
+// 3. 目录节点：先**下钻到文件级**（子文件节点 ∪ `semantic.files` 条目），再取这些文件的符号。
+//    目录名本身说不出里面有什么 —— 不下钻就等于没答。
+//
+// ## 信息不够时必须明说
+// 一个节点真的没有符号可列（目录下没有文件、文件没有符号记录、也没有决策卡判据）⇒
+// `must_have: []` + `why_empty: '<具体查了什么、缺什么>'`，**不许静默空**。
+// ★ 铁律：宁可空着报 why_empty，也不许把"推测"写成 `must_have`。
+
+/** 设计侧说"这个文件里该有的一个符号" */
+export interface MustHaveSymbol {
+  name: string;
+  /** 种类：`symbol-exists`（决策卡明说）/ `type` / `class` / `interface` …（semantic.files 记录） */
+  kind: string;
+  /** 1-based 行号（**设计侧记录的原行号**，仅供参考，别拿去对源码） */
+  line?: number;
+  /** 声明首行签名（截断后的原文，来自 semantic.files） */
+  signature?: string;
+  /** 目录级下钻时：这个符号属于哪个文件 */
+  file?: string;
+  /** 这条符号从设计侧的哪条事实来（可追溯 ⇒ 不编造） */
+  from: 'decision.expectation' | 'semantic.files';
+  /** `decision.expectation` 带的 `why` */
+  why?: string;
+}
+
+/** 一条「只在设计侧」节点的必含符号清单 */
+export interface MustHaveReport {
+  id: string;
+  /** file=文件节点 / dir=目录节点（已下钻到文件级）/ other=两者都不是 */
+  kind: 'file' | 'dir' | 'other';
+  /** 仓库相对路径（目录节点按 `dir_<rel>` 的既有约定反推，见 import_project.ts:983） */
+  path?: string;
+  /** 必含符号；**空 ⇒ 必须读 why_empty**（不许静默空） */
+  must_have: MustHaveSymbol[];
+  /** 为什么列不出来（信息不够时**明说**） */
+  why_empty?: string;
+  /** 目录节点下钻到的文件（目录级 must_have = 这些文件符号的并集） */
+  drilled?: string[];
+}
+
+type AnyDesignNode = Record<string, unknown>;
+
+/** 路径归一（只用于对齐，不用于展示）：反斜杠→斜杠、去 `./`、小写 */
+const mhNorm = (p: string): string => String(p).replace(/\\/g, '/').replace(/^\.\//, '').toLowerCase();
+
+/** 节点的仓库相对路径：优先 `description`（真路径），其次 `path`；目录节点按 id 约定反推 */
+function mhPathOf(node: AnyDesignNode): string | null {
+  for (const k of ['description', 'path'] as const) {
+    const v = node[k];
+    if (typeof v === 'string' && v.includes('/') && !/\s/.test(v)) return v.replace(/\\/g, '/');
+  }
+  const id = typeof node.id === 'string' ? node.id : '';
+  // ★ 既有约定（import_project.ts:983 就是这么反推 dir 的）：`dir_a_b_c` ⇒ `a/b/c`
+  if (id.startsWith('dir_')) return id.replace(/^dir_/, '').replace(/_/g, '/');
+  return null;
+}
+
+/**
+ * 「只在设计侧」的节点 ⇒ 每条**必含符号**（纯函数：只读传进来的设计 DSL 对象）。
+ *
+ * @param design 设计 DSL（`geometry.nodes` + `semantic.files`）
+ * @param onlyDesignIds `designDiff` 算出的"只在设计侧"节点 id
+ */
+export function mustHaveFor(design: unknown, onlyDesignIds: string[]): MustHaveReport[] {
+  const dsl = (design ?? {}) as {
+    geometry?: { nodes?: AnyDesignNode[] };
+    semantic?: { files?: Array<{ path?: string; symbols?: Array<{ name?: string; kind?: string; line?: number; signature?: string }> }> };
+  };
+  const nodes = dsl.geometry?.nodes ?? [];
+  const byId = new Map<string, AnyDesignNode>();
+  for (const n of nodes) if (typeof n.id === 'string') byId.set(n.id, n);
+
+  /** 来源 ②：设计 DSL 自带的文件符号事实 */
+  const fileSyms = new Map<string, Array<{ name?: string; kind?: string; line?: number; signature?: string }>>();
+  for (const f of dsl.semantic?.files ?? []) {
+    if (typeof f.path === 'string') fileSyms.set(mhNorm(f.path), f.symbols ?? []);
+  }
+
+  /** 来源 ①：决策卡的 `symbol-exists` 判据（按 path 索引；卡片可以挂在任何节点上） */
+  const expected = new Map<string, MustHaveSymbol[]>();
+  for (const n of nodes) {
+    const dec = n.decision as { expectations?: unknown } | undefined;
+    if (!dec || !Array.isArray(dec.expectations)) continue;
+    for (const raw of dec.expectations) {
+      const e = raw as { kind?: string; path?: string; symbol?: string; why?: string };
+      if (e.kind !== 'symbol-exists' || typeof e.path !== 'string' || typeof e.symbol !== 'string') continue;
+      const key = mhNorm(e.path);
+      const list = expected.get(key) ?? [];
+      if (!list.some((s) => s.name === e.symbol)) {
+        list.push({ name: e.symbol, kind: 'symbol-exists', from: 'decision.expectation', ...(e.why ? { why: e.why } : {}) });
+      }
+      expected.set(key, list);
+    }
+  }
+
+  /** 一个文件的必含符号：判据优先，再补 `semantic.files` 的符号记录（同名不重复） */
+  const symbolsOfFile = (file: string): MustHaveSymbol[] => {
+    const key = mhNorm(file);
+    const out: MustHaveSymbol[] = (expected.get(key) ?? []).map((s) => ({ ...s }));
+    for (const s of fileSyms.get(key) ?? []) {
+      if (!s.name || out.some((x) => x.name === s.name)) continue;
+      out.push({
+        name: s.name,
+        kind: s.kind || 'unknown',
+        ...(typeof s.line === 'number' ? { line: s.line } : {}),
+        ...(s.signature ? { signature: s.signature } : {}),
+        from: 'semantic.files',
+      });
+    }
+    return out;
+  };
+
+  const out: MustHaveReport[] = [];
+  for (const id of onlyDesignIds) {
+    const node = byId.get(id) ?? { id };
+    const type = typeof node.type === 'string' ? node.type : '';
+    const path = mhPathOf(node);
+    const kind: MustHaveReport['kind'] =
+      type === 'file' ? 'file' : id.startsWith('dir_') || type === 'module' ? 'dir' : 'other';
+
+    if (kind === 'file') {
+      const file = path ?? id;
+      const must = symbolsOfFile(file);
+      out.push({
+        id,
+        kind,
+        ...(path ? { path } : {}),
+        must_have: must,
+        ...(must.length
+          ? {}
+          : {
+              why_empty:
+                `${file}：设计侧没有 semantic.files 符号记录，也没有任何决策卡写过 symbol-exists 判据 ⇒ ` +
+                `设计侧说不出它该含什么（不是"没要求"，是"没写"）。`,
+            }),
+      });
+      continue;
+    }
+
+    if (kind === 'dir') {
+      const dir = (path ?? '').replace(/\/+$/, '');
+      const prefix = dir ? `${mhNorm(dir)}/` : '';
+      /** ★ 目录必须**下钻到文件级**：子文件节点 ∪ semantic.files 条目（两份都是设计侧说过的话） */
+      const drilled: string[] = [];
+      const add = (p: string): void => {
+        if (!drilled.some((x) => mhNorm(x) === mhNorm(p))) drilled.push(p.replace(/\\/g, '/'));
+      };
+      if (prefix) {
+        for (const n of nodes) {
+          if (n.id === id || n.type !== 'file') continue;
+          const p = mhPathOf(n);
+          if (p && mhNorm(p).startsWith(prefix)) add(p);
+        }
+        for (const f of dsl.semantic?.files ?? []) {
+          if (typeof f.path === 'string' && mhNorm(f.path).startsWith(prefix)) add(f.path);
+        }
+      }
+      /** 目录级 must_have = 下钻文件符号的并集（每个符号带 `file`，LLM 才知道往哪写） */
+      const must: MustHaveSymbol[] = [];
+      for (const f of drilled) {
+        for (const s of symbolsOfFile(f)) {
+          if (must.some((x) => x.name === s.name && x.file === f)) continue;
+          must.push({ ...s, file: f });
+        }
+      }
+      out.push({
+        id,
+        kind,
+        ...(path ? { path } : {}),
+        must_have: must,
+        drilled,
+        ...(must.length
+          ? {}
+          : {
+              why_empty:
+                `目录 ${dir || id}：设计侧没有它的子文件节点、没有 semantic.files 条目、也没有决策卡（含 scope）指向它 ⇒ ` +
+                `设计侧只说"要这个目录"，说不出里面该有什么（信息不够，不编）。`,
+            }),
+      });
+      continue;
+    }
+
+    out.push({
+      id,
+      kind,
+      ...(path ? { path } : {}),
+      must_have: [],
+      why_empty: `节点类型 ${type || '(无)'} 既不是文件也不是目录 ⇒ 设计侧没有"该含哪些符号"的语义。`,
+    });
+  }
+  return out;
+}
