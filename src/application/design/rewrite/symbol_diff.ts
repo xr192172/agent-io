@@ -120,6 +120,12 @@ export interface SymbolDiffArgs {
 }
 
 export interface SymbolDiffResult {
+  /**
+   * ★ 命中本次筛选的**设计 DB 副本数**（`calls.json` 条数，**不论源码文件在不在**）。
+   * 立它的理由（2026-10-20）：`scanned` 只数"副本在、源码也在"的那些 ⇒
+   * 「设计 DB 没这个文件」与「源码路径根本不存在」都读成 `scanned:0`，调用方分不开。
+   */
+  copies: number;
   scanned: number;
   same: Array<{ file: string; name: string; kind: string }>;
   differ: Array<{ file: string; name: string; kind: string; dLine: number; aLine: number; old_text: string; new_text: string }>;
@@ -153,9 +159,11 @@ export async function diffSymbols(args: SymbolDiffArgs): Promise<SymbolDiffResul
   const designOnly: SymbolDiffResult['designOnly'] = [];
   const sourceOnly: SymbolDiffResult['sourceOnly'] = [];
   let scanned = 0;
+  /** 命中筛选的设计 DB 副本数（源码在不在都算 —— 见 `SymbolDiffResult.copies`） */
+  let copies = 0;
 
   if (!fs.existsSync(designDbDir)) {
-    return { scanned, same, differ, uncompared, unpaired, designOnly, sourceOnly };
+    return { scanned, copies, same, differ, uncompared, unpaired, designOnly, sourceOnly };
   }
 
   const want = (rel: string): boolean =>
@@ -167,6 +175,7 @@ export async function diffSymbols(args: SymbolDiffArgs): Promise<SymbolDiffResul
     const rel = sourceRelOf(dd);
     if (!rel.startsWith('src/')) continue;
     if (!want(rel)) continue;
+    copies += 1;
 
     const abs = path.join(projectDir, rel);
     const dSyms = (dd.symbols ?? []) as Array<{ name: string; kind?: string; line?: number }>;
@@ -259,7 +268,7 @@ export async function diffSymbols(args: SymbolDiffArgs): Promise<SymbolDiffResul
     }
   }
 
-  return { scanned, same, differ, uncompared, unpaired, designOnly, sourceOnly };
+  return { scanned, copies, same, differ, uncompared, unpaired, designOnly, sourceOnly };
 }
 
 /** `uncompared`（Map）→ 总数 */

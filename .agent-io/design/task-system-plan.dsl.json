@@ -48938,68 +48938,122 @@
         "path": "src/application/design/line/design_line.ts",
         "description": "src/application/design/line/design_line.ts",
         "decision": {
-          "summary": "设计链【六步读数】是工具 `design_line`（action=report），不是脚本。每步给 status（ok/missing/pending）+ reading + 该步的工具名。★ ⑥ 不再是「未实现」：报「设计 DB 份数 / 源码文件数 / 差 = 无设计覆盖的文件数」这一条真读数。",
+          "summary": "设计链的读侧：`design_line` 的 report / diff / rewrite / gen-db 四个 action。★ 2026-10-20：`action=diff` 已能报「只在设计侧」的节点（今天报 4 个：2 目录 + 2 文件），**但只到节点级** —— 不告诉 LLM「这个新文件里该有哪些符号」。",
           "expectations": [
             {
               "kind": "file-exists",
               "path": "src/application/design/line/design_line.ts",
-              "why": "读数逻辑要住 src（工具面），不是 scripts"
+              "why": "设计链读侧住这里"
             },
             {
               "kind": "symbol-exists",
               "path": "src/application/design/line/design_line.ts",
               "symbol": "designLineHandler",
-              "why": "工具 handler 是注册入口"
+              "why": "工具入口"
             },
             {
               "kind": "symbol-exists",
               "path": "src/application/design/line/design_line.ts",
               "symbol": "lineReport",
-              "why": "读数必须是一个纯函数（可单测），不是 handler 里拼字符串"
+              "why": "report 的实现（可单测）"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/application/design/line/design_line.ts",
+              "must": [
+                "must_have"
+              ],
+              "why": "★ 必含符号清单（LLM 写实现的输入）"
             }
           ],
-          "rationale": "六个脚本共 993 行（fork/sync/design-diff/gen-design-db/rewrite/design-line）全住 scripts/，而 MCP 工具面一个都没有 ⇒ 想跑设计线只能 `node scripts/xxx.mjs`，这也是脚本越堆越多的根因。用户裁定：同类能力收成一个工具，多余脚本删掉。先搬最安全的那个（纯读、无副作用）。",
-          "consequences": "① 新增工具 design_line（先只实现 report，其余 action 后续逐个搬）；② 删 scripts/design-line.mjs；③ ⑥ 从装饰变成读数（覆盖差），但也只是**计数**级，不是符号级。",
-          "acceptance": "design_line action=report 输出六步，每步含 {id, name, by, status, reading}；⑥ 的 status 不再是「未实现」；设计 DB 与源码的文件差数可复现。",
+          "rationale": "用户 2026-10-20：「渐进式重写，有了新设计肯定也有新文件」⇒ 新文件的**必含符号**是 LLM 写实现的输入。现在 LLM 只能从节点详情里的 `scope` / 边自己推，推错就是白写一轮。★ 一个节点的符号来源其实已经在设计侧：它的 `scope`（要建哪些文件）+ 与该文件节点相连的 `api`/`binding` 节点。",
+          "consequences": "① diff 的「只在设计侧」每条要带 `must_have`（该文件/目录必含的符号名）；② 目录级节点要下钻到文件级再列符号（否则 `dir_xxx` 只有一个名字，说不出里面该有什么）；③ 没有符号可列的节点要明说 `must_have: []` + 原因（别静默空）。",
+          "acceptance": "对今天那 4 个「只在设计侧」节点各跑一次：每个都能给出 `must_have`（文件级非空；目录级下钻到文件）；而一个真没符号的目录要明说为空 + 原因。",
           "status": "active",
-          "updated_at": "2026-10-19T13:09:55.118Z",
+          "updated_at": "2026-10-20T03:31:18.887Z",
           "author": "llm",
           "agent": "workbuddy"
         },
         "task": {
           "id": "file_src_application_design_line_design_line_ts",
-          "summary": "设计链【六步读数】是工具 `design_line`（action=report），不是脚本。每步给 status（ok/missing/pending）+ reading + 该步的工具名。★ ⑥ 不再是「未实现」：报「设计 DB 份数 / 源码文件数 / 差 = 无设计覆盖的文件数」这一条真读数。",
+          "summary": "设计链的读侧：`design_line` 的 report / diff / rewrite / gen-db 四个 action。★ 2026-10-20：`action=diff` 已能报「只在设计侧」的节点（今天报 4 个：2 目录 + 2 文件），**但只到节点级** —— 不告诉 LLM「这个新文件里该有哪些符号」。",
           "expectations": [
             {
               "kind": "file-exists",
               "path": "src/application/design/line/design_line.ts",
-              "why": "读数逻辑要住 src（工具面），不是 scripts"
+              "why": "设计链读侧住这里"
             },
             {
               "kind": "symbol-exists",
               "path": "src/application/design/line/design_line.ts",
               "symbol": "designLineHandler",
-              "why": "工具 handler 是注册入口"
+              "why": "工具入口"
             },
             {
               "kind": "symbol-exists",
               "path": "src/application/design/line/design_line.ts",
               "symbol": "lineReport",
-              "why": "读数必须是一个纯函数（可单测），不是 handler 里拼字符串"
+              "why": "report 的实现（可单测）"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/application/design/line/design_line.ts",
+              "must": [
+                "must_have"
+              ],
+              "why": "★ 必含符号清单（LLM 写实现的输入）"
             }
           ],
-          "state": "done",
+          "state": "claimed",
           "owner": "workbuddy",
-          "claimed_at": "2026-10-19T13:10:06.076Z",
+          "claimed_at": "2026-10-20T03:31:05.501Z",
           "evidence": [
             {
               "kind": "expectations",
               "at": "2026-10-19T13:13:08.173Z",
               "verdict": "pass"
             }
-          ]
+          ],
+          "reopened_at": null
         },
-        "status": "done"
+        "status": "in_progress",
+        "decision_history": [
+          {
+            "at": "2026-10-20T03:31:18.887Z",
+            "decision": {
+              "summary": "设计链【六步读数】是工具 `design_line`（action=report），不是脚本。每步给 status（ok/missing/pending）+ reading + 该步的工具名。★ ⑥ 不再是「未实现」：报「设计 DB 份数 / 源码文件数 / 差 = 无设计覆盖的文件数」这一条真读数。",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "why": "读数逻辑要住 src（工具面），不是 scripts"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "designLineHandler",
+                  "why": "工具 handler 是注册入口"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/line/design_line.ts",
+                  "symbol": "lineReport",
+                  "why": "读数必须是一个纯函数（可单测），不是 handler 里拼字符串"
+                }
+              ],
+              "rationale": "六个脚本共 993 行（fork/sync/design-diff/gen-design-db/rewrite/design-line）全住 scripts/，而 MCP 工具面一个都没有 ⇒ 想跑设计线只能 `node scripts/xxx.mjs`，这也是脚本越堆越多的根因。用户裁定：同类能力收成一个工具，多余脚本删掉。先搬最安全的那个（纯读、无副作用）。",
+              "consequences": "① 新增工具 design_line（先只实现 report，其余 action 后续逐个搬）；② 删 scripts/design-line.mjs；③ ⑥ 从装饰变成读数（覆盖差），但也只是**计数**级，不是符号级。",
+              "acceptance": "design_line action=report 输出六步，每步含 {id, name, by, status, reading}；⑥ 的 status 不再是「未实现」；设计 DB 与源码的文件差数可复现。",
+              "status": "active",
+              "updated_at": "2026-10-19T13:09:55.118Z",
+              "author": "llm",
+              "agent": "workbuddy"
+            },
+            "note": "给 src/application/design/line/design_line.ts 的决策卡加两条判据：必含符号清单",
+            "author": "llm",
+            "agent": "workbuddy"
+          }
+        ]
       },
       {
         "id": "file_src_application_design_db_gen_design_db_ts",
@@ -49209,18 +49263,18 @@
         "path": "src/application/design/rewrite/rewrite.ts",
         "description": "src/application/design/rewrite/rewrite.ts",
         "decision": {
-          "summary": "⑥「设计 DB → 源码」的**编排**：调 `diffSymbols` 拿三种结论（可重写 / 不可生成 / 设计漏了），只把「可重写」的交给 `buildRefactorPlan`（语法门 + plan_id）与 `applyRefactorPlan`（幂等），落盘后**重算一次**做复核。★ 默认零写入，apply=true 才落盘。",
+          "summary": "⑥「设计 DB → 源码」的执行器（`design_line action=rewrite`）。只做一件事：源码签名与设计签名不一致时，把源码改回设计签名。★ 2026-10-20 体检发现：它的 `ok:true` 同时表示「做了且复核干净 / 没事可做 / 路径写错 / 这类符号我不管」——**四种情况输出逐字相同**。",
           "expectations": [
             {
               "kind": "file-exists",
               "path": "src/application/design/rewrite/rewrite.ts",
-              "why": "编排要住 src（工具面）"
+              "why": "⑥ 的执行器住这里"
             },
             {
               "kind": "symbol-exists",
               "path": "src/application/design/rewrite/rewrite.ts",
               "symbol": "rewriteSymbols",
-              "why": "执行器必须是一个可单测的 async 函数，不是 handler 里拼"
+              "why": "主入口（可单测）"
             },
             {
               "kind": "source-has",
@@ -49228,31 +49282,47 @@
               "must": [
                 "落盘后"
               ],
-              "why": "复核必须写进代码（报告要反映动作之后的状态）"
+              "why": "落盘后必须重算（2026-10-19 的教训）"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/application/design/rewrite/rewrite.ts",
+              "must": [
+                "did_work"
+              ],
+              "why": "★ 本次是否真的做了事（现在四种情况都 ok:true）"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/application/design/rewrite/rewrite.ts",
+              "must": [
+                "no_design_copy"
+              ],
+              "why": "★ 至少一个具体 reason（区分\"没覆盖\"与\"路径错\"）"
             }
           ],
-          "rationale": "⑥ 是设计链唯一「往回写源码」的一步，工具面此前完全没有 ⇒ 只能 node scripts/rewrite.mjs。判据已先一步搬进 src（symbol_diff.ts），所以这里只剩编排。★ 落盘后重算这条是 2026-10-19 上午踩出来的：屏幕报「0 条签名差异」而源码其实被改了 —— 报告必须反映动作【之后】的状态。",
-          "consequences": "① design_line 多 action=rewrite；② 删 scripts/rewrite.mjs；③ 行为判据是「零写入模式下读数与脚本一致」+「apply 路径照搬 buildRefactorPlan/applyRefactorPlan，不另造」；④ 落盘后复核不为 0 ⇒ ok=false（不能算成功）。",
-          "acceptance": "零写入模式下读数与旧脚本逐项相同（same 2386 / differ 0 / uncompared 1972）；apply=false 时绝不写源码；复核后 differ>0 ⇒ 结果里 ok=false 且明说。",
+          "rationale": "工具链体检（子代理调 33 次工具）实测：`file=不存在的路径` 与 `file=设计DB未覆盖的文件` 与真的没差异，三者输出一字不差（都是 `✓ 没有可重写的签名差异` + `{\"differ\":[],\"applied\":null,\"ok\":true}`）。⇒ 自动化只能靠人读中文判断成败。",
+          "consequences": "① 输出层加 `did_work`（本次是否真的做了事）；② 没做事时给 `reason` 枚举（`no_design_copy` / `path_not_found` / `uncomparable_kind` / `no_diff`）；③ 名字/描述要说清「只同步签名，不生成实现」（现在叫 rewrite，UI 描述像编辑器）；④ 语法门拦截时也要走标准信封（现在无 `---DATA---`、exit 0）。",
+          "acceptance": "对三种输入各跑一次：不存在的路径 / 设计 DB 未覆盖的文件 / 真的没差异 —— 三者都能从 `---DATA---` 里区分（`reason` 不同）；有差异时 `did_work:true` 且 `applied>0`。",
           "status": "active",
-          "updated_at": "2026-10-19T14:06:01.194Z",
+          "updated_at": "2026-10-20T03:31:17.643Z",
           "author": "llm",
           "agent": "workbuddy"
         },
         "task": {
           "id": "file_src_application_design_rewrite_rewrite_ts",
-          "summary": "⑥「设计 DB → 源码」的**编排**：调 `diffSymbols` 拿三种结论（可重写 / 不可生成 / 设计漏了），只把「可重写」的交给 `buildRefactorPlan`（语法门 + plan_id）与 `applyRefactorPlan`（幂等），落盘后**重算一次**做复核。★ 默认零写入，apply=true 才落盘。",
+          "summary": "⑥「设计 DB → 源码」的执行器（`design_line action=rewrite`）。只做一件事：源码签名与设计签名不一致时，把源码改回设计签名。★ 2026-10-20 体检发现：它的 `ok:true` 同时表示「做了且复核干净 / 没事可做 / 路径写错 / 这类符号我不管」——**四种情况输出逐字相同**。",
           "expectations": [
             {
               "kind": "file-exists",
               "path": "src/application/design/rewrite/rewrite.ts",
-              "why": "编排要住 src（工具面）"
+              "why": "⑥ 的执行器住这里"
             },
             {
               "kind": "symbol-exists",
               "path": "src/application/design/rewrite/rewrite.ts",
               "symbol": "rewriteSymbols",
-              "why": "执行器必须是一个可单测的 async 函数，不是 handler 里拼"
+              "why": "主入口（可单测）"
             },
             {
               "kind": "source-has",
@@ -49260,21 +49330,84 @@
               "must": [
                 "落盘后"
               ],
-              "why": "复核必须写进代码（报告要反映动作之后的状态）"
+              "why": "落盘后必须重算（2026-10-19 的教训）"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/application/design/rewrite/rewrite.ts",
+              "must": [
+                "did_work"
+              ],
+              "why": "★ 本次是否真的做了事（现在四种情况都 ok:true）"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/application/design/rewrite/rewrite.ts",
+              "must": [
+                "no_design_copy"
+              ],
+              "why": "★ 至少一个具体 reason（区分\"没覆盖\"与\"路径错\"）"
             }
           ],
           "state": "done",
           "owner": "workbuddy",
-          "claimed_at": "2026-10-19T14:06:03.841Z",
+          "claimed_at": "2026-10-20T03:31:03.019Z",
           "evidence": [
             {
               "kind": "expectations",
               "at": "2026-10-19T14:09:05.621Z",
               "verdict": "pass"
+            },
+            {
+              "kind": "expectations",
+              "at": "2026-10-20T03:47:43.710Z",
+              "by": "llm",
+              "agent": "workbuddy",
+              "verdict": "pass"
             }
-          ]
+          ],
+          "reopened_at": null
         },
-        "status": "done"
+        "status": "done",
+        "decision_history": [
+          {
+            "at": "2026-10-20T03:31:17.643Z",
+            "decision": {
+              "summary": "⑥「设计 DB → 源码」的**编排**：调 `diffSymbols` 拿三种结论（可重写 / 不可生成 / 设计漏了），只把「可重写」的交给 `buildRefactorPlan`（语法门 + plan_id）与 `applyRefactorPlan`（幂等），落盘后**重算一次**做复核。★ 默认零写入，apply=true 才落盘。",
+              "expectations": [
+                {
+                  "kind": "file-exists",
+                  "path": "src/application/design/rewrite/rewrite.ts",
+                  "why": "编排要住 src（工具面）"
+                },
+                {
+                  "kind": "symbol-exists",
+                  "path": "src/application/design/rewrite/rewrite.ts",
+                  "symbol": "rewriteSymbols",
+                  "why": "执行器必须是一个可单测的 async 函数，不是 handler 里拼"
+                },
+                {
+                  "kind": "source-has",
+                  "path": "src/application/design/rewrite/rewrite.ts",
+                  "must": [
+                    "落盘后"
+                  ],
+                  "why": "复核必须写进代码（报告要反映动作之后的状态）"
+                }
+              ],
+              "rationale": "⑥ 是设计链唯一「往回写源码」的一步，工具面此前完全没有 ⇒ 只能 node scripts/rewrite.mjs。判据已先一步搬进 src（symbol_diff.ts），所以这里只剩编排。★ 落盘后重算这条是 2026-10-19 上午踩出来的：屏幕报「0 条签名差异」而源码其实被改了 —— 报告必须反映动作【之后】的状态。",
+              "consequences": "① design_line 多 action=rewrite；② 删 scripts/rewrite.mjs；③ 行为判据是「零写入模式下读数与脚本一致」+「apply 路径照搬 buildRefactorPlan/applyRefactorPlan，不另造」；④ 落盘后复核不为 0 ⇒ ok=false（不能算成功）。",
+              "acceptance": "零写入模式下读数与旧脚本逐项相同（same 2386 / differ 0 / uncompared 1972）；apply=false 时绝不写源码；复核后 differ>0 ⇒ 结果里 ok=false 且明说。",
+              "status": "active",
+              "updated_at": "2026-10-19T14:06:01.194Z",
+              "author": "llm",
+              "agent": "workbuddy"
+            },
+            "note": "给 src/application/design/rewrite/rewrite.ts 的决策卡加两条判据：did_work 与具体 reason",
+            "author": "llm",
+            "agent": "workbuddy"
+          }
+        ]
       },
       {
         "id": "file_src_application_design_line_design_diff_ts",
@@ -95166,7 +95299,7 @@
         "id": "file_src_application_design_line_design_line_ts",
         "path": "src/application/design/line/design_line.ts",
         "responsibility": "设计链六步读数（工具 design_line 的 report action）",
-        "status": "done"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_design_db_gen_design_db_ts",
@@ -95265,11 +95398,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-20T03:00:08.117Z",
+    "saved_at": "2026-10-20T03:47:43.740Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792465118045,
-    "age": 90072
+    "scanRev": 1792468063474,
+    "age": 266
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -97164,5 +97297,5 @@
       ]
     }
   ],
-  "_dsl_rev": 540
+  "_dsl_rev": 543
 }

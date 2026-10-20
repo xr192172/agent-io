@@ -353,24 +353,27 @@ export const DESIGN_TOOLS: ToolDef[] = [
     name: 'design_line',
     title: 'Design line: six-step reading',
     description:
-      '设计链【六步读数】：源码 →① 实际 DB →② 实际 DSL →③ 设计 DSL →④ 人写意图 →⑤ 设计 DB →⑥ 重写回源码。' +
+      '设计链【六步读数】：源码 →① 实际 DB →② 实际 DSL →③ 设计 DSL →④ 人写意图 →⑤ 设计 DB →⑥ 设计签名 → 源码。' +
       '每步给 status（ok/missing/pending）+ 该步的执行者 + 一条带数字的读数。★ 只读：不改 DSL、不改源码。' +
       '★ ⑥ 给的是**覆盖差**（设计 DB 份数 / 源码文件数 = 覆盖率，并列出未覆盖数），不再是一句"未实现"；' +
-      '要动某一步请用它自己的工具：① import_project · ③ fork-design · ④ edit_dsl / design_intent · ⑤ gen-design-db · ⑥ rewrite。',
+      '要动某一步请用它自己的工具：① import_project · ③ fork-design · ④ edit_dsl / design_intent · ⑤ gen-design-db · ⑥ sync-signatures。' +
+      '★ ⑥（`sync-signatures`，旧名 `rewrite`）**只把函数签名同步回源码**：不生成实现体、不新增/删除符号、不新建文件。' +
+      '它的结论是机器可判的 —— `did_work`（本次是否真有差异被 apply）+ `reason`（没做事时是哪种：path_not_found / no_design_copy / uncomparable_kind / no_diff / …）。',
     inputSchema: {
       project_dir: z.string().describe('项目根目录（含 .agent-io/）'),
       feature: z.string().optional().describe('feature 名（action=report 必填；action=gen-db 省略 = design/ 下全部）'),
       action: z
-        .enum(['report', 'gen-db', 'rewrite', 'diff'])
+        .enum(['report', 'gen-db', 'sync-signatures', 'rewrite', 'diff'])
         .optional()
         .describe(
           'report=六步读数（默认，只读）· gen-db=设计 DSL → 设计 DB（写 certs/design-db/）· ' +
-            'rewrite=⑥ 设计 DB → 源码（默认零写入，apply=true 才落盘）',
+            'sync-signatures=⑥ 设计 DB → 源码，**只同步函数签名、不生成实现**（默认零写入，apply=true 才落盘）· ' +
+            'rewrite=同一动作的旧名（保留兼容；输出里的 did_work/reason 一致）',
         ),
       check: z.boolean().optional().describe('★ 仅 action=gen-db：true 只比对不写盘、也不清理陈旧副本'),
-      apply: z.boolean().optional().describe('★ 仅 action=rewrite：true 才真落盘（默认零写入；落盘后会自动重算复核）'),
-      file: z.string().optional().describe('★ 仅 action=rewrite：只算一个文件（仓库相对路径）'),
-      prefix: z.string().optional().describe('★ 仅 action=rewrite：只算某个前缀（如 src/domain/）'),
+      apply: z.boolean().optional().describe('★ 仅 action=sync-signatures/rewrite：true 才真落盘（默认零写入；落盘后会自动重算复核）'),
+      file: z.string().optional().describe('★ 仅 action=sync-signatures/rewrite：只算一个文件（仓库相对路径）'),
+      prefix: z.string().optional().describe('★ 仅 action=sync-signatures/rewrite：只算某个前缀（如 src/domain/）'),
     },
     handler: wrapData(async (a) => {
       const action = (a.action as string | undefined) ?? 'report';
@@ -389,7 +392,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
           : '';
         return { message: head + tail, data: r };
       }
-      if (action === 'rewrite') {
+      if (action === 'sync-signatures' || action === 'rewrite') {
         const r = await rewriteSymbols({
           projectDir: String(a.project_dir),
           feature: a.feature ? String(a.feature) : undefined,
@@ -398,12 +401,17 @@ export const DESIGN_TOOLS: ToolDef[] = [
           apply: a.apply === true,
         });
         const L: string[] = [
-          `════ REWRITE · ${r.feature || '(未指定 feature)'} · ${r.scanned} 份设计 DB ════`,
+          `════ SYNC-SIGNATURES（原 REWRITE · 只同步签名，不生成实现）· ${r.feature || '(未指定 feature)'} · ${r.scanned} 份设计 DB ════`,
+          '',
+          `  ★ did_work=${r.did_work} · reason=${r.reason ?? '(null：本次有差异被 apply)'}`,
+        ];
+        if (r.gate) L.push(`  ★ 被拦截于 ${r.gate.stage}：一个字节都没落盘`);
+        L.push(
           '',
           `  ✅ 签名相同          ${r.same}`,
           `  ★★ 签名不同（可重写） ${r.differ.length}`,
           `  ⚠️  不可比（不算一致）  ${r.uncompared}`,
-        ];
+        );
         for (const [k, n] of Object.entries(r.uncomparedByKind)) L.push(`       · ${k.padEnd(12)} ${n} 条`);
         L.push(`  ✗ 设计有·源码没有    ${r.designOnly}   ← 不可生成（DSL 没有实现，人写）`);
         L.push(`  ✗ 源码有·设计没有    ${r.sourceOnly}   ← 设计漏了（③ sync 的职责）`);
@@ -416,7 +424,12 @@ export const DESIGN_TOOLS: ToolDef[] = [
             L.push(`    + ${t.new_text.slice(0, 110)}`);
           }
         }
-        if (r.applied) {
+        if (r.gate) {
+          // ★ 标准信封：表头已给、data 随 ---DATA--- 出去、退出码非零（见本段 return）
+          L.push('', `  ✗ 拦截原因（${r.gate.stage}）：`);
+          for (const ln of r.gate.error.split('\n').slice(0, 16)) L.push(`    ${ln}`);
+          if (r.gate.error.split('\n').length > 16) L.push('    …（完整原文见 data.gate.error）');
+        } else if (r.applied) {
           L.push('', '  ── 落盘 ──');
           L.push(`  plan_id ${r.applied.plan.plan_id} · ${r.applied.plan.summary.items} 项 / ${r.applied.plan.summary.files} 文件`);
           L.push(
@@ -425,13 +438,28 @@ export const DESIGN_TOOLS: ToolDef[] = [
           );
           for (const it of r.applied.res.items.filter((x) => x.status !== 'applied')) L.push(`    · ${it.status}  ${it.file}  ${it.error ?? ''}`);
           L.push(`  ★ 复核（落盘后重算）：签名不同 ${r.applied.afterDiffer}  ← 落盘前 ${r.differ.length}`);
-        } else if (r.differ.length === 0) {
-          L.push('', '  ✓ 没有可重写的签名差异（⑥ 的输入为空）。');
-        } else {
-          L.push('', '  ★ 零写入。传 apply=true 真落盘（走 buildRefactorPlan 的语法门 + 幂等 apply）。');
+          if (r.reason) L.push(`  ★ 一条也没落盘：reason=${r.reason}（判据见 rewrite.ts 的 RewriteReason）`);
+        } else if (r.reason === 'path_not_found') {
+          L.push('', `  ✗ 路径不存在：${String(a.file ?? '(未给 file)')}`);
+          L.push('     ⇒ 这不是「没差异」：根本没有可比的源码文件。');
+        } else if (r.reason === 'no_design_copy') {
+          L.push('', '  ✗ 设计 DB 没有这份文件的副本（certs/design-db/ 里没有它）⇒ 无可比对。');
+          L.push('     ⇒ 不是「没差异」；先用 ③ sync 设计 / ⑤ gen-design-db 补副本。');
+        } else if (r.reason === 'uncomparable_kind') {
+          const kinds = Object.keys(r.uncomparedByKind).join(' / ') || 'const / interface / type / class';
+          L.push('', `  − 符号全是**不可比**类型（${kinds}）⇒ 这个文件的签名差异**永远发现不了**。`);
+          L.push('     ⇒ 不是「没差异」；判据见 symbol_diff 的 COMPARABLE（只有 function 比 signature）。');
+        } else if (r.reason === 'not_applied') {
+          L.push('', `  ★ ${r.differ.length} 条签名差异，但零写入（apply=false）。传 apply=true 真落盘。`);
+        } else if (r.reason === 'no_diff') {
+          L.push('', '  ✓ 比过了：没有签名差异。');
         }
-        const ok = r.applied ? r.applied.ok : true;
-        return { message: L.join('\n'), data: { ...r, ok } };
+        // ★ `ok` = 「这次调用/这次 apply 有没有失败」。`path_not_found` 是调用方写错了路径 ⇒ 明确 false
+        //   （「设计 DB 没副本」「真的没差异」仍是 true：那不是失败，是**世界就是这样**）。
+        const ok = r.gate ? false : r.applied ? r.applied.ok : r.reason !== 'path_not_found';
+        // ★ 被闸拦截 ⇒ 仍走标准信封，但**退出码非零**（经 wrapData 透传 isError）——
+        //   脚本据此区分「没写成」与「做成了」，不必人读中文。
+        return { message: L.join('\n'), data: { ...r, ok }, ...(r.gate ? { isError: true } : {}) };
       }
       if (action === 'diff') {
         const f = a.feature ? String(a.feature) : '';

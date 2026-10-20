@@ -118,7 +118,11 @@ export function parseDataBlock(text: string): unknown | null {
 }
 
 export function wrapData(
-  fn: (args: Record<string, unknown>) => { message: string; data?: unknown } | Promise<{ message: string; data?: unknown }>,
+  fn: (
+    args: Record<string, unknown>,
+  ) =>
+    | { message: string; data?: unknown; isError?: boolean }
+    | Promise<{ message: string; data?: unknown; isError?: boolean }>,
 ): ToolDef['handler'] {
   return async (args) => {
     try {
@@ -130,7 +134,11 @@ export function wrapData(
         parts.push(DATA_MARKER);
         parts.push(JSON.stringify(payload));
       }
-      return { text: parts.join('\n') };
+      // ★ 2026-10-20：handler 可**显式**声明 `isError`（不声明 ⇒ 行为逐字不变）。
+      //   唯一的用途：**被闸拦截**的写操作既要给标准信封（表头 + `---DATA---` 供脚本判读），
+      //   又要非零退出码 —— 否则「没写成」与「做成了」在脚本里长得一样。
+      //   ★ 不把「报表说世界不好」（`ok:false`）自动升成 isError：那条纪律（调用失败 ≠ 世界不好）没变。
+      return { text: parts.join('\n'), ...(r.isError ? { isError: true } : {}) };
     } catch (e) {
       return { text: (e as Error).message, isError: true };
     }
