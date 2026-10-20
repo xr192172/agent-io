@@ -281,7 +281,7 @@ export async function exploreCode(params: { action: ExploreAction; args: Record<
       return toResult(r, true);
     }
     case 'derive_anim_flow': {
-      // ★★ 2026-10-01（T11 ③，用户裁定"补齐能力"）：**此前这里是纯空壳** ——
+      // ★★ 2026-10-01（T11 ③，补齐能力）：**此前这里是纯空壳** ——
       //   只回显 `project_dir` 却宣告"异步 action 已完成"，**对 agent 说谎**（G7 门 §14.1 的铁证）。
       //   本 action 的职责见 `derive_anim_flow.ts` 头注释：
       //   **路线图序 14 —— L3 条件分支 + L4 函数绑定的自动生成层**：

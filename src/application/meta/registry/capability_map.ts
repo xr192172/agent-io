@@ -196,7 +196,7 @@ export const LANE_META: ReadonlyArray<Omit<Lane, 'tools'>> = [
  * ★ 也不读文件内容（只 `existsSync`）—— 导航是高频入口，别让它做重活。
  *
  * ★★ 2026-10-11（BB 笔）补「**什么被保证**」那一半：末尾加一行指向 `npm run verify`（本仓唯一总门）。
- *   用户原话点名 `capability_map` **不导 verify**；而这里**本来就在导** MANIFEST / COGNITION 的 npm 命令
+ *   ★ 缺口：`capability_map` **不导 verify**；而这里**本来就在导** MANIFEST / COGNITION 的 npm 命令
  *   ⇒ 同一处补 verify 是**就地补齐**，不是新造段。★ 只指路、不写门数（门数住在 `scripts/verify.mjs`，写这儿必漂）。
  */
 function renderVolumesNote(projectRoot: string): string {
@@ -207,7 +207,7 @@ function renderVolumesNote(projectRoot: string): string {
   //   ★★ 旧代码用 `getDataHome()`（= 数据目录）——`AGENT_IO_HOME` 一被覆盖就去别处找 ⇒ **假阴性**（MANIFEST 明明在仓根）。
   //   ★ COGNITION 的 owner 才是数据目录 ⇒ 两者**分开定位**（判据不与 owner 打架）。
   //
-  // ★★★ 2026-10-10（T127 收尾，用户裁定）：**未传 `project_dir` ⇒ 报第三态「未查」，不猜。**
+  // ★★★ 2026-10-10（T127 收尾）：**未传 `project_dir` ⇒ 报第三态「未查」，不猜。**
   //   上一版在未传时退回 `getPackageRoot()`（包安装根）—— 那只是**替调用方猜一个默认值**：
   //   `project_dir` 没给，我们**并不知道**调用方想查哪个项目，拿包安装根去 `existsSync` ⇒
   //   **假阴 / 假阳都可能**（查的仓根本不是目标仓）。本仓铁律：**不许静默降级 / 不许猜**。
@@ -229,7 +229,7 @@ function renderVolumesNote(projectRoot: string): string {
     ` ⇒ **可能过期**，判过期 \`npm run cognition:check\`、重生成 \`npm run cognition\`（等价 \`get_dsl query=digest\`）\n` +
     // ★ 位置口径必须写明：两个文件为什么一个进 Git 一个不进，否则下一个人会把它们"统一"掉（那是判据分叉的入口）
     `  ★ 位置口径：MANIFEST 在**仓根**（低 churn ⇒ 进 Git）；COGNITION 在 ${DATA_DIR_NAME}/（高 churn ⇒ **不进 Git**）\n` +
-    // ★★ 2026-10-11（BB 笔）：补"**什么被保证**"那一半 —— 用户原话点名 `capability_map` **不导 verify**。
+    // ★★ 2026-10-11（BB 笔）：补"**什么被保证**"那一半 —— `capability_map` **原本不导 verify**。
     //   本仓已有 `npm run verify`（**唯一总门**，`scripts/verify.mjs`：三态 PASS/FAIL/SKIP，
     //   返回 0 = **每道门都真跑过并通过**；缺可选工具链（如 Go）时退 2 而不是"假绿"）。
     //   ⇒ 它是"改完东西有没有坏"的**唯一入口** —— 不在这儿点名，就等于藏起来了（同 MANIFEST / COGNITION 的旧账）。
@@ -332,7 +332,7 @@ export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
   archive: '下线库统一入口（action=node/list）—— node：把文件下线归档（写，不可逆，立即落盘，无 dry_run，重复归档被拒）+ 合并记录；list：列某 feature 的下线库归档条目（只读）',
   // ★ 2026-10-12（T186）：PR 的确认人是**下一个接手的 Agent**（不是人）。
   //   ★ 策展文本要**点明"谁用"** —— 否则接手方不会想到"先来看这里有没有别人提的 PR"，
-  //     而那正是用户说的"**下一个接手的 AI 发现自己这里除了原有的设计以外，还有新的 PR**"。
+  //     即"**下一个接手的 AI 发现自己这里除了原有的设计以外，还有新的 PR**"。
   review_changes:
     '待确认的 PR 入口（action=list/show/comment/approve/reject）—— ★ **给下一个接手的 Agent 用**（不是给人）：list 看待确认的提案，comment 开会留意见，approve/reject 拍板（**必须署名，且不许自批**）',
   // ★ 2026-10-12（T186b）：observe 侧那套提案也开了 MCP 口（此前只有 HTTP ⇒ 接手方看不见也批不了）。

@@ -2,7 +2,7 @@
  * meta 线（12 个工具）—— ★ **本文件即该线归属的唯一来源**。
  *
  * ★ 2026-10-11（BB 笔）：本线 11 → 12 —— `tool_usage`（工具使用 / 覆盖读数）接进 MCP 面。
- *   动因（用户原话）：「**"什么被保证 / 什么被用过"没有工具面**」——
+ *   动因：「**"什么被保证 / 什么被用过"没有工具面**」——
  *   `usage.jsonl` 此前只有**不在注册表**的 `npm run dogfood` 能读，且它只答"共 N 次 + 成功率表"，
  *   答不了「**注册了但从未用过**」（死工具）与「**用过但已不在注册表**」（过期记录）。
  *   ★ 统计**不重造**：本工具复用 `dogfood_stats.ts`，只补**集合差**那一维（见 `infrastructure/dogfood_coverage.ts`）。
@@ -273,10 +273,9 @@ export const META_TOOLS: ToolDef[] = [
     title: 'Review pending PRs — the NEXT agent confirms (list / show / comment / approve / reject)',
     description:
       '「待确认的 PR」统一入口（action 分派：list / show / comment / approve / reject）。\n' +
-      '★★★ **这是给【下一个接手的 Agent】用的，不是给人用的**（2026-10-12 用户裁定）：\n' +
-      '  *"PR 现在不应该待在人的代码审批页面，而是应该由**下一个接手的 Agent** 去进行确认。\n' +
-      '   如果他一个人确认不了，可以**召开会议**进行确认……下一个接手的 AI 发现自己这里除了原有的设计以外，\n' +
-      '   还有新的 PR，它根据 PR 去做新的决策。"*\n' +
+      '★★★ **这是给【下一个接手的 Agent】用的，不是给人用的**（2026-10-12）：\n' +
+      '★ 规则：PR **不挂在"人的代码审批页面"上**，由**下一个接手的 Agent** 确认；一个人确认不了就**开会**，\n' +
+      '  接手方会看到"原有的设计之外还有新的 PR"，由它根据 PR 做新的决策。\n' +
       '⇒ 于是 PR 不再是"等人点一下"，而是**交接物**：接手方**先 `list` 看见它**，再自己判。\n' +
       '★ **开会怎么开**：拿不准就先让**别的会话**用 `action=comment` 各自留意见（`reviews[]` 会累积），\n' +
       '  最后由**某一个**会话用 `approve`/`reject` 拍板 —— 谁支持、谁反对、谁拍的板**都留在记录里**。\n' +
@@ -419,7 +418,7 @@ export const META_TOOLS: ToolDef[] = [
     title: 'Observe proposals: list / show / approve (4-layer gate) / reject — the NEXT agent confirms',
     description:
       '「observe 提案」（代码→设计的**契约回流**）的确认入口：action = list / show / approve / reject。\n' +
-      '★★★ **与 `review_changes` 同一条规矩**：**确认人是【下一个接手的 Agent】**（2026-10-12 用户裁定）——\n' +
+      '★★★ **与 `review_changes` 同一条规矩**：**确认人是【下一个接手的 Agent】**（2026-10-12）——\n' +
       '  ★ 这一侧此前**只有 HTTP**（`/api/observe/proposals…`），而**手 agent 不用 HTTP** ⇒ 下一个 Agent\n' +
       '  **看不见、也批不了**（T186b：同一病灶的另一处实例）。\n' +
       '★★ **approve 走四层门**（`approveGated`）—— ★ **门自己才是判据，`agent` 只是审计身份**：\n' +
@@ -934,7 +933,7 @@ export const META_TOOLS: ToolDef[] = [
   },
 
   {
-    // ★★ BB 笔（2026-10-11）：用户原话「**"什么被保证 / 什么被用过"没有工具面**」——
+    // ★★ BB 笔（2026-10-11）：「**"什么被保证 / 什么被用过"没有工具面**」——
     //   ① `usage.jsonl` 只有**不在注册表**的 `npm run dogfood` 能读；
     //   ② 且它只答"共 N 次调用 + 一张成功率表"，答不了「**注册了但从未用过**」与「**用过但已不在注册表**」
     //      —— 而那正是"该收敛哪个工具 / 哪些记录已过期"的直接依据。

@@ -687,7 +687,7 @@ interface ArgValidator {
  * 但**没人传 actor**：`.vscode/mcp.json` 与 `~/.workbuddy/mcp.json` 都没设 `AGENT_IO_ACTOR`
  * ⇒ `resolveActor()` 恒 `null` ⇒ 闸永远走"提醒 + 放行" ⇒ **A7 在生产面一次都不会触发**。
  * 今天验证 A7 看到的拒绝，是靠 CLI 手动 `AGENT_IO_ACTOR=xxx` 才造出来的 ——
- * 即用户原话的"**设计好了但不会用**"（判据在、代码在、**入口没接**）。
+ * 即"**设计好了但不会用**"（判据在、代码在、**入口没接**）。
  *
  * ## 为什么放在**入口**（而不是逐个工具加字段）
  *   · `invokeTool` 是 MCP 面与 CLI 面的**唯一入口**（本文件上面那段注释已经写过这条理由）——
@@ -833,7 +833,7 @@ export async function invokeTool(
         : undefined,
     ok: !r.isError,
     ms: Date.now() - t0,
-    // ★★ 2026-10-06：把「本次给了几条下一棒」也记下来 —— 用户裁定"收敛靠狗食"，这就是那份原料
+    // ★★ 2026-10-06：把「本次给了几条下一棒」也记下来 —— 收敛靠狗食，这就是那份原料
     //   （能答"什么时候使用频率高"）。★ 0 时记 undefined（= 没给），免得日志里全是 0 的噪音。
     nextHops: nextHopsOf(def.name).length || undefined,
     err: r.isError ? (r.text ?? '').slice(0, 200) : undefined,
@@ -861,7 +861,7 @@ export async function invokeTool(
   // ★ 只回**合成好的文本**（含注入的告警块），**不在这里包 MCP 形状** ——
   //   「怎么呈现」是各面自己的事：MCP 面用 `textOut(...)` 包成 `{content:[...]}`，
   //   CLI 面直接打到 stdout。★ 这样两个面共用的就是**同一份合成逻辑**（唯一真相源）。
-  // ⑦ ★★ 2026-10-06：「下一棒」提示（用户裁定：**先不收敛，所有有可能的下一棒都给它**）。
+  // ⑦ ★★ 2026-10-06：「下一棒」提示（**先不收敛，所有有可能的下一棒都给它**）。
   //    ★ 提示插在 DATA 标记之前，保持载荷首行不变；告警和信任附注可能追加在载荷之后。
   //    ★ T251：取机器载荷统一用 `parseDataBlock`，不再假定标记后的整段都是 JSON。
   //    ★ 只在**有已验证出边**的工具上注入（★ 具体哪些、共几个，一律见 `domain/chain_wiring.ts` 的
@@ -925,9 +925,9 @@ function renderNextNote(tool: string, text: string): string {
 }
 
 /**
- * ★★★ MCP 的「面」（2026-10-06，用户裁定）
+ * ★★★ MCP 的「面」（2026-10-06）
  *
- * 用户原话（意思）：「**原工具面其实不用暴露在 MCP 里面，只需要留一个单独的入口、集中在一起就够了**」。
+ * 规则：**原工具面不用都暴露在 MCP 里，只留一个单独的入口、集中在一起就够**。
  *
  * ★ 为什么这条比"裁 `listTools`"对：实测本仓用的 SDK（`server/mcp.js`）——
  *   `ListTools` handler（`:67-68`）与 `CallTool` handler（`:100-102`）读**同一张** `_registeredTools`

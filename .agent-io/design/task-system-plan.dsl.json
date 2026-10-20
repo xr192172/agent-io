@@ -4061,7 +4061,22 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_application_design_derive_derive_split_ts",
+          "summary": "【L1 待建构】核心层 · src/application/design/derive — 30 个 API（导入自 8 个模块）（src/application/design/derive/derive_split.ts） ← 节点 file_src_application_design_derive_derive_split_ts",
+          "expectations": [],
+          "state": "candidate",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_derive_derive_split_ts\"].responsibility"
+          },
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
+          "released_by": "comment-cleanup-bot",
+          "released_at": "2026-10-20T09:40:06.593Z"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_application_design_derive_opl_ts",
@@ -5026,7 +5041,91 @@
             },
             "agent": "all-externalize"
           }
-        ]
+        ],
+        "task": {
+          "id": "file_src_application_design_dsl_ops_api_ops_ts",
+          "summary": "DSL 的【文件契约】写入原语：`expected_apis` 的增 / 改 / 删（按签名逐字匹配）、`setExpectedApis`（整块重写，T160）与 `setNodeSemantic`（节点↔文件绑定）。★ 它只维护\"这个文件对外**承诺**哪些签名\"这一张清单：**不判签名写得对不对**（tsc 契约的事）、**不判实现有没有**（对拍的事）、**不写进度**（T328 后 `setNodeSemantic` 不再同步 status，进度归 `overlay.progress`）。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/design/dsl_ops/api_ops.ts",
+              "why": "动作要有落点（基线）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/api_ops.ts",
+              "symbol": "addExpectedApi",
+              "why": "增量加契约的入口"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/api_ops.ts",
+              "symbol": "setExpectedApis",
+              "why": "★ 整块重写入口 —— 没有它就只能\"背出旧签名串\"，正是 T160 要废掉的那把尺"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/api_ops.ts",
+              "symbol": "setNodeSemantic",
+              "why": "节点↔文件绑定的唯一入口"
+            },
+            {
+              "kind": "run",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/dsl_ops/api_ops.ts'), 'utf8'); return s.includes(\"mode: 'block-rewrite'\") && s.includes('data.removed') && s.includes('重复 signature') && s.includes('缺少非空 signature'); })()",
+              "why": "★ 三条纪律的可判面：回执必须带 block-rewrite 与增删（不许静默）、两条\"不猜\"闸必须真的存在（缺签名 / 重复签名都拒）。text-grep 是弱尺 —— 但它测的正是\"这三句判据还在不在\""
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/api_ops.ts",
+              "symbol": "AddExpectedApiInput",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/api_ops.ts",
+              "symbol": "DeleteExpectedApiInput",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/api_ops.ts",
+              "symbol": "SetExpectedApisData",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/api_ops.ts",
+              "symbol": "SetExpectedApisInput",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/api_ops.ts",
+              "symbol": "SetNodeSemanticInput",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/api_ops.ts",
+              "symbol": "UpdateExpectedApiInput",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/api_ops.ts",
+              "symbol": "deleteExpectedApi",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/api_ops.ts",
+              "symbol": "updateExpectedApi",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            }
+          ],
+          "state": "candidate"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_application_design_dsl_ops_edge_ops_ts",
@@ -6105,7 +6204,96 @@
             },
             "agent": "all-externalize"
           }
-        ]
+        ],
+        "task": {
+          "id": "file_src_application_design_dsl_ops_file_ops_ts",
+          "summary": "DSL 的【语义文件】写入原语：`addFile` / `updateFile` / `deleteFile`，维护 `semantic.files`（path / responsibility / expected_* / lifecycle）。★ 四条边界都是\"只转交、不另立判据\"：① 进度**不在这里写**（`status` 一律路由 `updateStatus`，带 evidence 闸；base 上的 status 只是 overlay 的**投影**）；② `lifecycle` 合不合法只由 `domain/semantic.ts` 的 `assertLifecycle` 判，本文件只做**合并写**；③ 删文件的\"三清\"只由 `domain/dsl_removal.ts` 的 `removeFileFromDsl` 做；④ 它**不建几何节点**、**不写决策卡**。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/design/dsl_ops/file_ops.ts",
+              "why": "动作要有落点（基线）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/file_ops.ts",
+              "symbol": "addFile",
+              "why": "加语义文件的唯一入口"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/file_ops.ts",
+              "symbol": "updateFile",
+              "why": "改语义文件（含 lifecycle 标记）的唯一入口"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/file_ops.ts",
+              "symbol": "deleteFile",
+              "why": "删语义文件（三清）的唯一入口"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "id": "demo",
+                "type": "feature_diagram",
+                "feature": "demo",
+                "version": "1.0.0",
+                "geometry": {
+                  "layout": "vertical_flow",
+                  "width": 800,
+                  "height": 600,
+                  "nodes": [
+                    {
+                      "id": "a",
+                      "label": "a",
+                      "type": "file",
+                      "x": 0,
+                      "y": 0
+                    }
+                  ],
+                  "edges": []
+                },
+                "semantic": {
+                  "files": [
+                    {
+                      "id": "sem_only",
+                      "path": "src/x.ts",
+                      "responsibility": "x"
+                    }
+                  ]
+                }
+              },
+              "expect": "validateDSL(input).keys.some(k => k === 'anchor_broken:file:sem_only')",
+              "why": "★ 本文件只写 semantic 层、**不建节点** ⇒ \"语义里有、几何里没有\"正是它最容易留下的坏形状；这条断言说明锚定是硬约束（也是 deleteFile 必须三清的理由）"
+            },
+            {
+              "kind": "run",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/design/dsl_ops/file_ops.ts'), 'utf8'); return s.split('updateStatus({').length - 1 === 2 && s.includes('assertLifecycle(') && !/file\\.status\\s*=/.test(s); })()",
+              "why": "★ 钉住 T328 的实质：进度只经 `updateStatus`（add / update 各一次）、lifecycle 只经 `assertLifecycle`、base 上**没有**裸写 `file.status =` —— 否则就是\"第二处进度权威\"，会绕过 evidence 闸"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/file_ops.ts",
+              "symbol": "AddFileInput",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/file_ops.ts",
+              "symbol": "DeleteFileInput",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/file_ops.ts",
+              "symbol": "UpdateFileInput",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            }
+          ],
+          "state": "candidate"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_application_design_dsl_ops_node_ops_ts",
@@ -10593,7 +10781,206 @@
             },
             "agent": "all-externalize"
           }
-        ]
+        ],
+        "task": {
+          "id": "file_src_application_design_dsl_ops_op_data_spec_ts",
+          "summary": "edit_dsl 各 type/op 的 data 键集（NODE_DATA_KEYS / OP_SPECS），由类型级断言防漂移",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/op_data_spec.ts",
+              "symbol": "OP_SPECS",
+              "why": "★ 四个 op 的唯一清单（publish/claim/release/complete）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/op_data_spec.ts",
+              "symbol": "NodeKeysMissingFromList",
+              "why": "★ 类型级断言：interface 有、清单没有 ⇒ tsc 红"
+            },
+            {
+              "kind": "file-exists",
+              "path": "src/application/design/dsl_ops/op_data_spec.ts",
+              "why": "动作要有落点（基线）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/op_data_spec.ts",
+              "symbol": "BY_TYPE",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/op_data_spec.ts",
+              "symbol": "CheckedOperation",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/op_data_spec.ts",
+              "symbol": "EDGE_DATA_KEYS",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/op_data_spec.ts",
+              "symbol": "EdgeKeysExtra",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/op_data_spec.ts",
+              "symbol": "EdgeKeysMissing",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/op_data_spec.ts",
+              "symbol": "EdgeOwnedKeys",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/op_data_spec.ts",
+              "symbol": "FILE_DATA_KEYS",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/op_data_spec.ts",
+              "symbol": "FeatureOperationLike",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/op_data_spec.ts",
+              "symbol": "FileKeysExtra",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/op_data_spec.ts",
+              "symbol": "FileKeysMissing",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/op_data_spec.ts",
+              "symbol": "FileOwnedKeys",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/op_data_spec.ts",
+              "symbol": "KnownKeysExtraTypes",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/op_data_spec.ts",
+              "symbol": "KnownKeysMissingTypes",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/op_data_spec.ts",
+              "symbol": "NODE_DATA_KEYS",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/op_data_spec.ts",
+              "symbol": "NodeKeysExtraInList",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/op_data_spec.ts",
+              "symbol": "NodeNonDataKeys",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/op_data_spec.ts",
+              "symbol": "NodeOwnedKeys",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/op_data_spec.ts",
+              "symbol": "OpSpec",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/op_data_spec.ts",
+              "symbol": "TYPE_KNOWN_KEYS",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/op_data_spec.ts",
+              "symbol": "_assertEdgeNoExtra",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/op_data_spec.ts",
+              "symbol": "_assertEdgeNoMissing",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/op_data_spec.ts",
+              "symbol": "_assertFileNoExtra",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/op_data_spec.ts",
+              "symbol": "_assertFileNoMissing",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/op_data_spec.ts",
+              "symbol": "_assertKnownKeysCoverAll",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/op_data_spec.ts",
+              "symbol": "_assertKnownKeysNoExtraType",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/op_data_spec.ts",
+              "symbol": "_assertNodeKeysNoExtra",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/op_data_spec.ts",
+              "symbol": "_assertNodeKeysNoMissing",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/op_data_spec.ts",
+              "symbol": "checkOpSpec",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/application/design/dsl_ops/op_data_spec.ts",
+              "symbol": "renderOpSpecs",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            }
+          ],
+          "state": "candidate"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_application_design_dsl_ops_status_tools_ts",
@@ -16774,7 +17161,7 @@
               "why": "★ T20 正式化：新建文件的依据是同一批声明的 file-exists 期望（这一条只有真做了才会绿）"
             }
           ],
-          "state": "done",
+          "state": "claimed",
           "evidence": [
             {
               "kind": "expectations",
@@ -16796,13 +17183,14 @@
               "verdict": "pass"
             }
           ],
-          "owner": null,
-          "claimed_at": null,
+          "owner": "comment-cleanup-bot",
+          "claimed_at": "2026-10-20T09:35:33.814Z",
           "release_reason": "验证 fromCandidate 收口路径",
           "released_by": "workbuddy",
-          "released_at": "2026-10-19T23:21:10.605Z"
+          "released_at": "2026-10-19T23:21:10.605Z",
+          "reopened_at": "2026-10-20T09:35:33.814Z"
         },
-        "status": "done",
+        "status": "in_progress",
         "decision_history": [
           {
             "at": "2026-10-19T15:13:00.755Z",
@@ -16852,7 +17240,22 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "task": {
+          "id": "file_src_application_design_index_ts",
+          "summary": "【L1 待建构】入口层 · src/application/design — 0 个 API（导入自 20 个模块）（src/application/design/index.ts） ← 节点 file_src_application_design_index_ts",
+          "expectations": [],
+          "state": "candidate",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_index_ts\"].responsibility"
+          },
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
+          "released_by": "comment-cleanup-bot",
+          "released_at": "2026-10-20T09:40:06.711Z"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_application_design_intent_consistency_ts",
@@ -16868,7 +17271,22 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_application_design_intent_consistency_ts",
+          "summary": "【L1 待建构】核心层 · src/application/design/intent — 14 个 API（导入自 11 个模块）（src/application/design/intent/consistency.ts） ← 节点 file_src_application_design_intent_consistency_ts",
+          "expectations": [],
+          "state": "candidate",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_intent_consistency_ts\"].responsibility"
+          },
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
+          "released_by": "comment-cleanup-bot",
+          "released_at": "2026-10-20T09:40:06.828Z"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_application_design_intent_detect_drift_ts",
@@ -16991,9 +17409,9 @@
           },
           "owner": null,
           "claimed_at": null,
-          "release_reason": "本笔改动已落盘并过 verify（回执接线：approveChange 的 result 串接上 gateHumanLines）；L1 卡收不了口 ⇒ 主动 release",
-          "released_by": "codebuddy-deepseek",
-          "released_at": "2026-10-20T08:15:30.910Z"
+          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
+          "released_by": "comment-cleanup-bot",
+          "released_at": "2026-10-20T09:40:08.143Z"
         },
         "status": "draft"
       },
@@ -17091,7 +17509,22 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_application_harvest_harvest_decisions_ts",
+          "summary": "【L1 待建构】核心层 · src/application/harvest — 32 个 API（导入自 14 个模块）（src/application/harvest/harvest_decisions.ts） ← 节点 file_src_application_harvest_harvest_decisions_ts",
+          "expectations": [],
+          "state": "candidate",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_harvest_harvest_decisions_ts\"].responsibility"
+          },
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
+          "released_by": "comment-cleanup-bot",
+          "released_at": "2026-10-20T09:40:06.945Z"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_application_harvest_index_ts",
@@ -17107,7 +17540,22 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "task": {
+          "id": "file_src_application_harvest_index_ts",
+          "summary": "【L1 待建构】入口层 · src/application/harvest — 0 个 API（导入自 10 个模块）（src/application/harvest/index.ts） ← 节点 file_src_application_harvest_index_ts",
+          "expectations": [],
+          "state": "candidate",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_harvest_index_ts\"].responsibility"
+          },
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
+          "released_by": "comment-cleanup-bot",
+          "released_at": "2026-10-20T09:40:07.065Z"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_application_meta_diagnosis_diagnose_loop_ts",
@@ -17155,7 +17603,22 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_application_meta_explore_contract_page_ts",
+          "summary": "【L1 待建构】核心层 · src/application/meta/explore — 7 个 API（导入自 11 个模块）（src/application/meta/explore/contract_page.ts） ← 节点 file_src_application_meta_explore_contract_page_ts",
+          "expectations": [],
+          "state": "candidate",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_explore_contract_page_ts\"].responsibility"
+          },
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
+          "released_by": "comment-cleanup-bot",
+          "released_at": "2026-10-20T09:40:07.193Z"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_application_meta_explore_explore_arg_spec_ts",
@@ -17187,7 +17650,22 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_application_meta_explore_explore_code_ts",
+          "summary": "【L1 待建构】核心层 · src/application/meta/explore — 4 个 API（导入自 23 个模块）（src/application/meta/explore/explore_code.ts） ← 节点 file_src_application_meta_explore_explore_code_ts",
+          "expectations": [],
+          "state": "candidate",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_explore_explore_code_ts\"].responsibility"
+          },
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
+          "released_by": "comment-cleanup-bot",
+          "released_at": "2026-10-20T09:40:07.310Z"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_application_meta_explore_first_hop_args_ts",
@@ -17235,7 +17713,22 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_application_meta_explore_query_feature_ts",
+          "summary": "【L1 待建构】核心层 · src/application/meta/explore — 9 个 API（导入自 20 个模块）（src/application/meta/explore/query_feature.ts） ← 节点 file_src_application_meta_explore_query_feature_ts",
+          "expectations": [],
+          "state": "candidate",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_explore_query_feature_ts\"].responsibility"
+          },
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
+          "released_by": "comment-cleanup-bot",
+          "released_at": "2026-10-20T09:40:07.424Z"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_application_meta_handlers_ts",
@@ -17283,7 +17776,22 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "task": {
+          "id": "file_src_application_meta_index_ts",
+          "summary": "【L1 待建构】入口层 · src/application/meta — 2 个 API（导入自 36 个模块）（src/application/meta/index.ts） ← 节点 file_src_application_meta_index_ts",
+          "expectations": [],
+          "state": "candidate",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_index_ts\"].responsibility"
+          },
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
+          "released_by": "comment-cleanup-bot",
+          "released_at": "2026-10-20T09:40:07.545Z"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_application_meta_integrity_index_integrity_ts",
@@ -17347,7 +17855,22 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_application_meta_registry_capability_map_ts",
+          "summary": "【L1 待建构】核心层 · src/application/meta/registry — 26 个 API（导入自 8 个模块）（src/application/meta/registry/capability_map.ts） ← 节点 file_src_application_meta_registry_capability_map_ts",
+          "expectations": [],
+          "state": "candidate",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_registry_capability_map_ts\"].responsibility"
+          },
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
+          "released_by": "comment-cleanup-bot",
+          "released_at": "2026-10-20T09:40:07.659Z"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_application_meta_registry_cli_extract_ts",
@@ -17427,7 +17950,22 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_application_meta_registry_tool_faces_ts",
+          "summary": "【L1 待建构】核心层 · src/application/meta/registry — 3 个 API（导入自 2 个模块）（src/application/meta/registry/tool_faces.ts） ← 节点 file_src_application_meta_registry_tool_faces_ts",
+          "expectations": [],
+          "state": "candidate",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_registry_tool_faces_ts\"].responsibility"
+          },
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
+          "released_by": "comment-cleanup-bot",
+          "released_at": "2026-10-20T09:40:07.776Z"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_application_meta_upgrade_upgrade_ts",
@@ -17603,7 +18141,22 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_application_observe_capture_trace_evidence_ts",
+          "summary": "【L1 待建构】核心层 · src/application/observe/capture — 6 个 API（导入自 4 个模块）（src/application/observe/capture/trace_evidence.ts） ← 节点 file_src_application_observe_capture_trace_evidence_ts",
+          "expectations": [],
+          "state": "candidate",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_observe_capture_trace_evidence_ts\"].responsibility"
+          },
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
+          "released_by": "comment-cleanup-bot",
+          "released_at": "2026-10-20T09:40:07.896Z"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_application_observe_handlers_ts",
@@ -18120,7 +18673,22 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_application_plumbing_ts",
+          "summary": "【L1 待建构】核心层 · src/application — 13 个 API（导入自 2 个模块）（src/application/plumbing.ts） ← 节点 file_src_application_plumbing_ts",
+          "expectations": [],
+          "state": "candidate",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_plumbing_ts\"].responsibility"
+          },
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
+          "released_by": "comment-cleanup-bot",
+          "released_at": "2026-10-20T09:40:08.021Z"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_application_refactor_annotate_function_annotation_ts",
@@ -18240,18 +18808,19 @@
               "why": "不同维度各自改要有独立的分类（不是 conflict）"
             }
           ],
-          "state": "done",
-          "owner": "workbuddy",
-          "claimed_at": "2026-10-19T12:42:27.163Z",
+          "state": "claimed",
+          "owner": "comment-cleanup-bot",
+          "claimed_at": "2026-10-20T09:35:33.956Z",
           "evidence": [
             {
               "kind": "expectations",
               "at": "2026-10-19T12:46:32.071Z",
               "verdict": "pass"
             }
-          ]
+          ],
+          "reopened_at": "2026-10-20T09:35:33.956Z"
         },
-        "status": "done",
+        "status": "in_progress",
         "decision_history": [
           {
             "at": "2026-10-19T12:52:08.190Z",
@@ -24781,7 +25350,102 @@
             },
             "agent": "workbuddy-main"
           }
-        ]
+        ],
+        "task": {
+          "id": "file_src_domain_b_terms_ts",
+          "summary": "**[B] 契约的受控术语表 + 链的接口的唯一住处**：字段级词表 `B_TERMS`（每词给 `kind` / `type` / 规范 `meaning`，`debt: true` = 现状与定义不符、拆清前不许新增使用者）、`Touched`（一次调用\"动了哪些对象\"的锚点契约，只在**真落盘**时给写类字段）、`withTouched`（**唯一构造点** —— 包一层，让\"某个 return 漏加 touched\"在结构上不可能）、以及**工具级**例外表 `B_TOUCHED_EXEMPT`（回答\"这个 [B] 为什么不该给 touched\"，三类：分派器 / 纯计算 / 无根）。`B_TERMS_DEBT` 是**派生计数**（棘轮：只许减不许增）。★ 它**不做**：不做命名普查/量具（那是 `scripts/measure_b_contract.mjs`，直读本文件的 AST）；不判\"某个 [B] 到底给没给 touched\"（量具的活）；不落盘、不读盘、无 IO；不定义 DSL 顶层（那是 `types.ts`）；`retired` 必须是**结构字段**，不许用散文里的\"已退役\"三字当判据（2026-10-06 实测过这个假阳性）。",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/b_terms.ts",
+              "symbol": "withTouched",
+              "why": "`touched` 的唯一构造点；多出口的 [B] 全靠它包一层，漏加在结构上不可能"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/b_terms.ts",
+              "symbol": "B_TERMS",
+              "why": "字段级词表的唯一住处（新写 [B] 的字段名从这里选；`contract_page` / `capability_map` 都读它）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/b_terms.ts",
+              "symbol": "B_TOUCHED_EXEMPT",
+              "why": "工具级豁免表的唯一数据源（量具读它区分\"已登记例外\"与\"该给未给\"）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/b_terms.ts",
+              "symbol": "B_TERMS_DEBT",
+              "why": "债务棘轮的唯一读数（只许减不许增）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/b_terms.ts",
+              "symbol": "Touched",
+              "why": "产物端锚点契约本体；链的接法表直接从它派生 `AnchorKey`"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/domain/b_terms.ts",
+              "must": [
+                "export const B_TERMS_DEBT = Object.values(B_TERMS).filter((t) => t.debt).length;"
+              ],
+              "why": "棘轮的分母必须是**现算的**：手写数字会在删/加词条时静默失真（\"只许减不许增\"就没人守得住）。这条只读源码、判表达式形态，不冒充运行期数值。"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/domain/b_terms.ts",
+              "must": [
+                "export interface Touched",
+                "export function withTouched<T extends object>",
+                "return { ...product, touched };"
+              ],
+              "why": "`read_files` 被撤出这件事只有**类型**能守住（散文写了不算）；而 `withTouched` 必须是纯浅拷贝 —— 一旦它开始改 `product`，所有调用方的产物就会被静默改写。"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/domain/b_terms.ts",
+              "must": [
+                "retired?: 'product' | 'input' | 'both';",
+                "read_files: {",
+                "retired: 'product',"
+              ],
+              "why": "2026-10-06 的假阳性就出在\"拿文本当行为\"（`file` 词条的注释提到\"已退役\"⇒ 被判成已退役）。判据只能落在**结构字段**上：`BTerm.retired` 三档、且 `read_files` 真的用它退役。"
+            },
+            {
+              "kind": "file-exists",
+              "path": "src/domain/b_terms.ts",
+              "why": "动作要有落点（基线）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/b_terms.ts",
+              "symbol": "BReceipt",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/b_terms.ts",
+              "symbol": "BTerm",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/b_terms.ts",
+              "symbol": "BTermKind",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/b_terms.ts",
+              "symbol": "TouchedProduct",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            }
+          ],
+          "state": "candidate"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_domain_canvas_note_ts",
@@ -27941,7 +28605,206 @@
             },
             "agent": "workbuddy-main"
           }
-        ]
+        ],
+        "task": {
+          "id": "file_src_domain_chain_wiring_ts",
+          "summary": "**链的接法表（上游产物 → 下游入参）的唯一住处**：`CHAIN_EDGES`（**只放真跑过的** `verified` 边）/ `CHAIN_EDGES_PENDING`（文档写了但从没真跑过 —— 单列一张表，让\"没验\"在读数里看得见）、`chainExprOf`（**全仓唯一**生成\"选一个\"的表达式 `touched.<key>` / `touched.<key>[i]`）、`applyChainEdge`（**执行一次接续**：不替调用方选、不静默降级）、`CHAINS`（链 = 一等公民）+ `hopsOf`（逐段只给 `strong` / `scope-only` 两档）+ `SCOPE_PATHS`（作用域锚点必须从\"对象交接\"判定里剔除，否则恒真）、`evidenceLabel`（`verified` ⇒ `ran` 的**唯一呈现词**）、`deriveObjectChains`（从已验证对象边枚举**候选**链）。★ 它**不做**：不判\"这条链到底通不通\"（那要知道下游要不要对象入参 = `ToolDef`，住 `application` 层，本文件在 `domain` **不许反向依赖**）；不执行任何工具、不读盘不落盘、不写 DSL；**不把 pending 写成 verified**；不按工具展开通配边（那是零信息量）。",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/chain_wiring.ts",
+              "symbol": "applyChainEdge",
+              "why": "\"把上一步的值放进下一步入参\"的唯一纯函数入口（`next_hop_args` / `invokeTool` 都走它）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/chain_wiring.ts",
+              "symbol": "chainExprOf",
+              "why": "\"选一个\"的表达式只许由它生成（别处手抄 = 第二份副本）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/chain_wiring.ts",
+              "symbol": "hopsOf",
+              "why": "逐段判定的唯一实现；`capability_map` / `first_hop_args` 读它"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/domain/chain_wiring.ts",
+                "check": "verified / pending 两张表不许混"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/chain_wiring.ts'), 'utf8'); const v = /export const CHAIN_EDGES: readonly ChainEdge\\[\\] = \\[[\\s\\S]*?\\n\\];/.exec(s); const p = /export const CHAIN_EDGES_PENDING: readonly ChainEdge\\[\\] = \\[[\\s\\S]*?\\n\\];/.exec(s); if (!v || !p) return false; const count = (t, re) => (t.match(re) || []).length; return count(v[0], /evidence: '/g) === count(v[0], /evidence: 'verified'/g) && count(p[0], /evidence: '/g) === count(p[0], /evidence: 'pending'/g) && count(v[0], /evidence: '/g) > 0 && count(p[0], /evidence: '/g) > 0; })()",
+              "why": "本表的第一条纪律是\"**不许把没跑过的写成跑过**\"。这条判的是**结构分离**：已验证表里一条 pending 都不许有，待验表里一条 verified 都不许有。★ 它不判\"边对不对\"（那要真跑，不是 run 能干的）。",
+              "mutants_ignore": [
+                "*"
+              ]
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/domain/chain_wiring.ts",
+                "check": "pick 不替调用方选、不静默降级"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/chain_wiring.ts'), 'utf8'); const a = s.indexOf('export function applyChainEdge'); const b = s.indexOf('export interface Chain {'); if (a < 0 || b < 0 || b <= a) return false; const f = s.slice(a, b); return /const expr = chainExprOf\\(edge\\);/.test(f) && /const i = opts\\?\\.pick;/.test(f) && /if \\(i === undefined\\) \\{[\\s\\S]*?if \\(xs\\.length === 1\\) return \\{ ok: true/.test(f) && /\\*\\*要你给下标\\*\\*/.test(f) && !/pick \\?\\? 0/.test(f) && !/opts\\?\\.pick \\|\\| 0/.test(f) && /candidates: xs/.test(f); })()",
+              "why": "★ 这条只能钉**接线**：`run` 的求值域只有 `input / root / validateDSL / fs / path`，**不加载业务函数**（`applyChainEdge` 不在池子里）⇒ 无法真调它看它抛不抛。这里断言的是：表达式由 `chainExprOf` 生成、`pick` 缺省时先走\"候选=1 直接取\"、否则 `ok:false` 并把 `candidates` 列全、**没有任何 `?? 0` 的兜底**。真实返回值形状由函数本体 + `next_hop_args` 的证覆盖；本条不冒充行为证。",
+              "mutants_ignore": [
+                "*"
+              ]
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/domain/chain_wiring.ts",
+                "check": "hopsOf 两档且剔除作用域边"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/chain_wiring.ts'), 'utf8'); if (!/export const SCOPE_PATHS = new Set\\(\\['project_dir', 'feature'\\]\\);/.test(s)) return false; const hop = /export function hopsOf[\\s\\S]*?\\n\\}/.exec(s); if (!hop) return false; return /objectEdges = all\\.filter\\(\\(e\\) => !SCOPE_PATHS\\.has\\(e\\.toPath\\)\\)/.test(hop[0]) && /scopeEdges = all\\.filter\\(\\(e\\) => SCOPE_PATHS\\.has\\(e\\.toPath\\)\\)/.test(hop[0]) && /kind: objectEdges\\.length > 0 \\? 'strong' : 'scope-only'/.test(hop[0]); })()",
+              "why": "2026-10-06 的实测教训：不剔作用域边 ⇒ 判定**恒真**（任何一段都\"有边\"），机器给 `design-import` 判\"每段都有已验证边\"，而同日真跑证明它断在第 2 段。这条钉住\"对象边 / 作用域边\"的分流仍在一处。",
+              "mutants_ignore": [
+                "*"
+              ]
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/domain/chain_wiring.ts",
+                "check": "evidenceLabel：改词不改数据"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/chain_wiring.ts'), 'utf8'); const a = s.indexOf('export function evidenceLabel'); const b = s.indexOf('export function renderChains'); if (a < 0 || b < 0 || b <= a) return false; const f = s.slice(a, b); return /return e === 'verified' \\? 'ran' : 'pending';/.test(f) && /verified' \\| 'pending'/.test(s); })()",
+              "why": "`[verified]` 会被读成\"现在能用\"，而 `design-import` 正是 `verified` 却真跑断链 ⇒ 用户裁定\"**改词、不改数据**\"：域里仍是枚举，给人读时统一成 `[ran]`。这条判映射只有一处、且域取值没被改掉。",
+              "mutants_ignore": [
+                "*"
+              ]
+            },
+            {
+              "kind": "file-exists",
+              "path": "src/domain/chain_wiring.ts",
+              "why": "动作要有落点（基线）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/chain_wiring.ts",
+              "symbol": "ANY_TOOL",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/chain_wiring.ts",
+              "symbol": "AnchorKey",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/chain_wiring.ts",
+              "symbol": "CHAINS",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/chain_wiring.ts",
+              "symbol": "CHAIN_EDGES",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/chain_wiring.ts",
+              "symbol": "CHAIN_EDGES_PENDING",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/chain_wiring.ts",
+              "symbol": "Chain",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/chain_wiring.ts",
+              "symbol": "ChainEdge",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/chain_wiring.ts",
+              "symbol": "ChainHandoff",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/chain_wiring.ts",
+              "symbol": "HopVerdict",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/chain_wiring.ts",
+              "symbol": "SCOPE_PATHS",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/chain_wiring.ts",
+              "symbol": "deriveObjectChains",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/chain_wiring.ts",
+              "symbol": "evidenceLabel",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/chain_wiring.ts",
+              "symbol": "findChainEdges",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/chain_wiring.ts",
+              "symbol": "nextHopsOf",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/chain_wiring.ts",
+              "symbol": "renderChainWiring",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/chain_wiring.ts",
+              "symbol": "renderChains",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/chain_wiring.ts",
+              "symbol": "renderDerivedChains",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/chain_wiring.ts",
+              "symbol": "renderNextHops",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/chain_wiring.ts",
+              "symbol": "universalHopsOf",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/chain_wiring.ts",
+              "symbol": "verifiedEdgesBetween",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            }
+          ],
+          "state": "candidate"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_domain_contract_ts",
@@ -29830,7 +30693,134 @@
             },
             "agent": "workbuddy-main"
           }
-        ]
+        ],
+        "task": {
+          "id": "file_src_domain_design_sheet_ts",
+          "summary": "**设计图（手写 `design/<f>.dsl.json`）vs 实况（扫描 `live/<f>.dsl.json`）的只读对拍**：`diffDesignSheet` 出四类差异（同名属性差 / 只在设计里=要实现 / 只在 live=未纳入 / 已认亲“赋予同一个 id”），指代口径只在 `designSheetRef` 一处（有 id 用 id，无 id 用名字/路径），未实现条目住 `meta.goals` 且由 `designSheetPendingRefs` 列出。★ 它**不做**：不读盘、不落盘（IO 在 `handlers.ts#diffDesignSheetHandler`）；不重算 live（那是 `import_project`）；不判 overlay 的 orphan/stale（那是 `overlay.ts`）；不修任何一边的 DSL。纯函数。",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/design_sheet.ts",
+              "symbol": "diffDesignSheet",
+              "why": "四类对拍的唯一实现"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/design_sheet.ts",
+              "symbol": "designSheetRef",
+              "why": "“怎么称呼一个节点”的唯一口径（有 id 用 id，无 id 用名字/路径）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/design_sheet.ts",
+              "symbol": "designSheetPendingRefs",
+              "why": "未实现条目（住 meta.goals）的唯一指代口径"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/domain/design_sheet.ts",
+                "check": "复用 overlay.nodePath，不持 IO"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/design_sheet.ts'), 'utf8'); return /import \\{ nodePath \\} from '\\.\\/overlay\\.js';/.test(s) && !/from ['\"]node:fs['\"]/.test(s) && !/from ['\"]node:path['\"]/.test(s); })()",
+              "why": "认亲的“路径”必须与 overlay 用**同一把尺**（`nodePath`），否则同一事实两口径；同时本模块应保持纯函数（无 fs/path）。",
+              "mutants_ignore": [
+                "*"
+              ]
+            },
+            {
+              "kind": "file-exists",
+              "path": "src/domain/design_sheet.ts",
+              "why": "动作要有落点（基线）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/design_sheet.ts",
+              "symbol": "DESIGN_SHEET_NODE_KEYS",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/design_sheet.ts",
+              "symbol": "DesignSheetDiff",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/design_sheet.ts",
+              "symbol": "NodeAttrDiff",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/design_sheet.ts",
+              "symbol": "PendingEntry",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/design_sheet.ts",
+              "symbol": "ResolvedDiff",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/design_sheet.ts",
+              "symbol": "SameIdDiff",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/design_sheet.ts",
+              "symbol": "diffDesignSheetLine",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/design_sheet.ts",
+              "symbol": "goalPendingEntries",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/design_sheet.ts",
+              "symbol": "goalsOf",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/design_sheet.ts",
+              "symbol": "nodePendingEntries",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/design_sheet.ts",
+              "symbol": "nodesOf",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/design_sheet.ts",
+              "symbol": "pendingEntries",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/design_sheet.ts",
+              "symbol": "sameValue",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/design_sheet.ts",
+              "symbol": "trimStr",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            }
+          ],
+          "state": "candidate"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_domain_diff_blocks_ts",
@@ -30846,7 +31836,92 @@
             },
             "agent": "all-externalize"
           }
-        ]
+        ],
+        "task": {
+          "id": "file_src_domain_discussion_log_ts",
+          "summary": "micro / user_quote / conclusion / open[] / decided_at / supersedes；默认只渲染 micro + open 计数",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/domain/discussion_log.ts",
+              "why": "讨论登记要有落点"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/discussion_log.ts",
+              "symbol": "renderMicro",
+              "why": "★ 默认渲染只出 micro 一行（字段级排除机制，「不直接展示」才不是空话）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/discussion_log.ts",
+              "symbol": "shouldExpand",
+              "why": "展开条件必须可判，否则又靠人记"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/discussion_log.ts",
+              "symbol": "DiscussionMicro",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/discussion_log.ts",
+              "symbol": "EXPAND_ONLY_FIELDS",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/discussion_log.ts",
+              "symbol": "EXPAND_TRIGGERS",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/discussion_log.ts",
+              "symbol": "ExpandContext",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/discussion_log.ts",
+              "symbol": "ExpandOnlyField",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/discussion_log.ts",
+              "symbol": "ExpandTrigger",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/discussion_log.ts",
+              "symbol": "MICRO_KEYS",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/discussion_log.ts",
+              "symbol": "MicroKey",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/discussion_log.ts",
+              "symbol": "excludedFields",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/discussion_log.ts",
+              "symbol": "matchedExpandTriggers",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            }
+          ],
+          "state": "candidate"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_domain_dsl_removal_ts",
@@ -38252,7 +39327,207 @@
             },
             "agent": "workbuddy-main"
           }
-        ]
+        ],
+        "task": {
+          "id": "file_src_domain_overlay_ts",
+          "summary": "**overlay 的唯一读写口**（领域侧）：overlay 文档/锚点/边意图/全局件的**类型与全部读写语义**都从这里出 —— 首次迁移 `seedOverlayFromDsl`、对账 `reconcileOverlay`、投影回 base `applyOverlay`、三个收口同步 `mergeDecisionsIntoOverlay` / `mergeTagsIntoOverlay` / `mergeLifecycleIntoOverlay`，以及锚点“有内容”的唯一判据 `hasAnchorPayload`。★★ `validateProgressEvidence` 是**「done 必带证据」的唯一一把尺**（三档 evidence，形状与拒绝理由都在这里；`updateStatus` / `task_ops.complete` 只调它，不另写第二套）。★ 它**不做**：不做 IO（`<feature>.overlay.json` 的读写住 `storage_overlay.ts`，那里只搬字节、不立判据）；不重建 base（`import_project`）；不定义决策卡字段（`geometry.ts`）；不校验整份 DSL（`validator.ts`）。",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/overlay.ts",
+              "symbol": "validateProgressEvidence",
+              "why": "「done 必带证据」的唯一闸；写端不允许另写第二把自己尺"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/overlay.ts",
+              "symbol": "applyOverlay",
+              "why": "overlay → base 的唯一投影口（决策/进度/lifecycle/tags 都从这里回填）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/overlay.ts",
+              "symbol": "seedOverlayFromDsl",
+              "why": "首次迁移的唯一入口（只收人类意图字段，不收可再生的派生字段）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/overlay.ts",
+              "symbol": "reconcileOverlay",
+              "why": "base 重建后“保留/迁移/孤儿/过期”的唯一对账口"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "progress": "done",
+                "evidence": null,
+                "check": "done 无证据的分支必须走到拒绝"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/overlay.ts'), 'utf8'); const a = s.indexOf('export function validateProgressEvidence'); const b = s.indexOf('function validateEvidenceShape'); if (a < 0 || b < 0 || b <= a) return false; const f = s.slice(a, b); const notDone = f.indexOf(\"if (progress !== 'done')\"); const firstShape = f.indexOf('return validateEvidenceShape(evidence);'); if (notDone < 0 || firstShape <= notDone) return false; const tail = f.slice(firstShape + 'return validateEvidenceShape(evidence);'.length); return /^\\s*\\}\\s*if \\(evidence === undefined\\) \\{/.test(tail) && /return bad\\('而这次一个 evidence 都没给'\\)/.test(tail) && /return validateEvidenceShape\\(evidence\\);/.test(tail); })()",
+              "why": "★ 这条**只能钉闸的分支接线**：`run` 的求值域只有 `input / root / validateDSL / fs / path`，**不加载业务函数**（`validateProgressEvidence` 不在池子里），所以无法真调它。这里先切出非 done 分支（`return validateEvidenceShape` 之前），再断言其后**紧跟** `if (evidence === undefined) { return bad(...) }`，最后才 `return validateEvidenceShape(evidence)` —— 顺序或分支错了这条就红。**真实行为**（拒绝/放行/三档形状）由纯函数本体与 `certs/` 下 t328/t334 证覆盖；本条不冒充行为证。",
+              "mutants_ignore": [
+                "*"
+              ]
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/domain/overlay.ts",
+                "check": "domain 纯净：不持 IO"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/overlay.ts'), 'utf8'); return !/from ['\"]node:fs['\"]/.test(s) && !/from ['\"]node:path['\"]/.test(s) && /export function applyOverlay\\(/.test(s) && /export function seedOverlayFromDsl\\(/.test(s); })()",
+              "why": "“唯一读写口”指**语义**唯一，不是把 IO 也塞进 domain：落盘在 `storage_overlay.ts`。这条钉住领域层仍不 import fs/path（纯函数可测），同时两个投影口仍在。",
+              "mutants_ignore": [
+                "*"
+              ]
+            },
+            {
+              "kind": "file-exists",
+              "path": "src/domain/overlay.ts",
+              "why": "动作要有落点（基线）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/overlay.ts",
+              "symbol": "AnchorCandidate",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/overlay.ts",
+              "symbol": "DesignOverlay",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/overlay.ts",
+              "symbol": "EdgeCandidate",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/overlay.ts",
+              "symbol": "OverlayAnchor",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/overlay.ts",
+              "symbol": "OverlayEdgeIntent",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/overlay.ts",
+              "symbol": "OverlayGlobal",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/overlay.ts",
+              "symbol": "OverlayGoal",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/overlay.ts",
+              "symbol": "ProgressEvidence",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/overlay.ts",
+              "symbol": "ReconcileStats",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/overlay.ts",
+              "symbol": "attestationAppliesTo",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/overlay.ts",
+              "symbol": "buildCandidates",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/overlay.ts",
+              "symbol": "buildEdgeCandidates",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/overlay.ts",
+              "symbol": "computeFileSignature",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/overlay.ts",
+              "symbol": "decodeDirId",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/overlay.ts",
+              "symbol": "hasAnchorPayload",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/overlay.ts",
+              "symbol": "mergeById",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/overlay.ts",
+              "symbol": "mergeLifecycleIntoOverlay",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/overlay.ts",
+              "symbol": "mergeTagsIntoOverlay",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/overlay.ts",
+              "symbol": "nodePath",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/overlay.ts",
+              "symbol": "nodePathKind",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/overlay.ts",
+              "symbol": "nonEmpty",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/overlay.ts",
+              "symbol": "statsLine",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/overlay.ts",
+              "symbol": "validateEvidenceShape",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            }
+          ],
+          "state": "candidate"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_domain_reasoning_ts",
@@ -40628,7 +41903,122 @@
             },
             "agent": "workbuddy-main"
           }
-        ]
+        ],
+        "task": {
+          "id": "file_src_domain_semantic_ts",
+          "summary": "**语义层**的类型与两条纯判据：`SemanticFile` / `ExpectedApi` / `Symbol` / `BrickContract` 挂载点，加上 `FileLifecycle` 的**唯一校验器** `assertLifecycle` 与“语义层有没有文件级条目”的**唯一判据** `hasFileEntries`。★ 它**不做**：不扫描、不解析源码（代码事实只在 `cache.db` 的 `fileFacts`，`actual_apis` / `actual_deps` 已按 T20 删除）；不落盘；不定义 DSL 顶层（那是 `types.ts`）；不校验 JSON schema（那是 `validator.ts`）。",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/semantic.ts",
+              "symbol": "assertLifecycle",
+              "why": "`FileLifecycle` 的非法值/缺字段只有这一处会响亮拒绝（两个写端共用）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/semantic.ts",
+              "symbol": "hasFileEntries",
+              "why": "“语义层有没有文件级条目”的唯一判据，status/consistency/scaffold 三处都调它"
+            },
+            {
+              "kind": "run",
+              "input": {
+                "file": "src/domain/semantic.ts",
+                "check": "FileLifecycle 值域不含 archived"
+              },
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/semantic.ts'), 'utf8').replace(/\\/\\*[\\s\\S]*?\\*\\//g, ''); const m = /^export interface FileLifecycle \\{[\\s\\S]*?^\\}/m.exec(s); if (!m) return false; return /status: 'active' \\| 'deprecated' \\| 'merged'/.test(m[0]) && !/'archived'/.test(m[0]); })()",
+              "why": "T183 的结论必须留在类型里：`archived` 是**不可达**值（归档 = 移出 DSL）。先剥注释再判，避免像上一批那样被注释里的 `archived` 误命中。",
+              "mutants_ignore": [
+                "*"
+              ]
+            },
+            {
+              "kind": "file-exists",
+              "path": "src/domain/semantic.ts",
+              "why": "动作要有落点（基线）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/semantic.ts",
+              "symbol": "CodeTemplate",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/semantic.ts",
+              "symbol": "ExpectedApi",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/semantic.ts",
+              "symbol": "FileLifecycle",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/semantic.ts",
+              "symbol": "LIFECYCLE_KEYS",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/semantic.ts",
+              "symbol": "LifecycleKeysExtra",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/semantic.ts",
+              "symbol": "LifecycleKeysMissing",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/semantic.ts",
+              "symbol": "ScaffoldConfig",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/semantic.ts",
+              "symbol": "Semantic",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/semantic.ts",
+              "symbol": "SemanticFile",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/semantic.ts",
+              "symbol": "Symbol",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/semantic.ts",
+              "symbol": "SymbolLifecycle",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/semantic.ts",
+              "symbol": "_assertLifecycleKeysNoExtra",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/semantic.ts",
+              "symbol": "_assertLifecycleKeysNoMissing",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            }
+          ],
+          "state": "candidate"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_domain_simulation_ts",
@@ -42744,7 +44134,153 @@
             },
             "agent": "all-externalize"
           }
-        ]
+        ],
+        "task": {
+          "id": "file_src_domain_task_machine_ts",
+          "summary": "五态：候选 → 已领 → 已完成；另有 失效（target 没了）与被取代（replaces）",
+          "expectations": [
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/task_machine.ts",
+              "symbol": "cardStanding",
+              "why": "★ 讨论 2 · P30：『这张卡此刻处在哪种处境』要有**一个具名读数**（work/violated/blocked/satisfied/unknowable），否则接取闸与收口闸只能共用一条布尔（= 一处判据两用）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/task_machine.ts",
+              "symbol": "isSatisfied",
+              "why": "★ 讨论 2 · P30：收口侧要能**独立**被问（complete 与 patrol 的 missed_close 都要问『该收而没收吗』）⇒ 不许把它藏在『可领』函数的内部逻辑里"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/domain/task_machine.ts",
+              "symbol": "cardStanding",
+              "target": "judgeExpectations",
+              "why": "★ 五值读数 = 对着代码判 expectations（复用现成判定器，不新造第二把尺）"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/expectation.ts",
+              "symbol": "expectationPhase",
+              "why": "★ T10 收归：前态判据（edge-absent 等）的分类由「期望自带的 phase」决定，不再由状态机里的一份清单（NEGATIVE_KINDS，已删）决定 ⇒ 否则任务还没领就被误收口"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/task_machine.ts",
+              "symbol": "releaseIfExpired",
+              "why": "TTL 超时回收：claimed_at 不配超时就是死锁字段"
+            },
+            {
+              "kind": "file-exists",
+              "path": "src/domain/task_machine.ts",
+              "why": "★ 其余 4 个节点都对自己的 path 有 file-exists，唯此节点漏了 ⇒ 补上（做不到时 file-exists 判 fail = 红）"
+            },
+            {
+              "kind": "edge-exists",
+              "from": "src/domain/task_machine.ts",
+              "to": "src/domain/task_schema.ts",
+              "why": "★ geometry.edges 有 e_machine_to_schema，但 expectations 里没有对应判据 ⇒ 那条边只是装饰；补上后才可判"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/task_machine.ts",
+              "symbol": "CardStanding",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/task_machine.ts",
+              "symbol": "LeaseReleaseEvent",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/task_machine.ts",
+              "symbol": "RED_DISPOSITION",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/task_machine.ts",
+              "symbol": "RedAttribution",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/task_machine.ts",
+              "symbol": "RedDisposition",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/task_machine.ts",
+              "symbol": "SatisfactionCounts",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/task_machine.ts",
+              "symbol": "SatisfactionVerdict",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/task_machine.ts",
+              "symbol": "StandingInput",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/task_machine.ts",
+              "symbol": "StandingNode",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/task_machine.ts",
+              "symbol": "StandingVerdict",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/task_machine.ts",
+              "symbol": "TRANSITIONS",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/task_machine.ts",
+              "symbol": "TaskTransition",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/task_machine.ts",
+              "symbol": "TransitionState",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/task_machine.ts",
+              "symbol": "ViolationCounts",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/task_machine.ts",
+              "symbol": "applicableTransitions",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/task_machine.ts",
+              "symbol": "isClaimable",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            }
+          ],
+          "state": "candidate"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_domain_task_schema_ts",
@@ -43233,7 +44769,80 @@
             },
             "agent": "all-externalize"
           }
-        ]
+        ],
+        "task": {
+          "id": "file_src_domain_task_schema_ts",
+          "summary": "在 design/<f>.dsl.json 的几何节点上加 task 格：任务 = 设计侧对象，不挂 overlay",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/domain/task_schema.ts",
+              "why": "任务对象要有类型定义"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/task_schema.ts",
+              "symbol": "TaskState",
+              "why": "五态要是显式类型，不许散落字符串"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/task_schema.ts",
+              "symbol": "TaskSpec",
+              "why": "任务格的结构要有具名类型"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/task_schema.ts",
+              "symbol": "TASK_STATES",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/task_schema.ts",
+              "symbol": "TERMINAL_TASK_STATES",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/task_schema.ts",
+              "symbol": "TaskDiscussion",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/task_schema.ts",
+              "symbol": "TaskEvidenceRecord",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/task_schema.ts",
+              "symbol": "isTaskState",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/task_schema.ts",
+              "symbol": "isTerminalTaskState",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/task_schema.ts",
+              "symbol": "progressOf",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/domain/task_schema.ts",
+              "symbol": "taskLevel",
+              "why": "★ 全外化（用户 2026-10-19）：每个导出都要有一条\"它存在\"的判据 —— 漏了不知道漏了，多了只是冗余"
+            }
+          ],
+          "state": "candidate"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_domain_types_ts",
@@ -46005,7 +47614,22 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "service"
+        "arch_layer": "service",
+        "task": {
+          "id": "file_src_infrastructure_analysis_contract_gate_core_ts",
+          "summary": "【L1 待建构】服务层 · src/infrastructure/analysis/contract_gate — 10 个 API（导入自 7 个模块）（src/infrastructure/analysis/contract_gate/core.ts） ← 节点 file_src_infrastructure_analysis_contract_gate_core_ts",
+          "expectations": [],
+          "state": "candidate",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_analysis_contract_gate_core_ts\"].responsibility"
+          },
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
+          "released_by": "comment-cleanup-bot",
+          "released_at": "2026-10-20T09:40:08.259Z"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_analysis_contract_gate_index_ts",
@@ -46133,7 +47757,22 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_infrastructure_analysis_contract_gate_languages_ts_ts",
+          "summary": "【L1 待建构】核心层 · src/infrastructure/analysis/contract_gate/languages — 0 个 API（导入自 2 个模块）（src/infrastructure/analysis/contract_gate/languages/ts.ts） ← 节点 file_src_infrastructure_analysis_contract_gate_languages_ts_ts",
+          "expectations": [],
+          "state": "candidate",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_analysis_contract_gate_languages_ts_ts\"].responsibility"
+          },
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
+          "released_by": "comment-cleanup-bot",
+          "released_at": "2026-10-20T09:40:08.372Z"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_analysis_contract_gate_parts_ts",
@@ -46373,7 +48012,22 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "task": {
+          "id": "file_src_infrastructure_analysis_health_index_ts",
+          "summary": "【L1 待建构】入口层 · src/infrastructure/analysis/health — 21 个 API（导入自 6 个模块）（src/infrastructure/analysis/health/index.ts） ← 节点 file_src_infrastructure_analysis_health_index_ts",
+          "expectations": [],
+          "state": "candidate",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_analysis_health_index_ts\"].responsibility"
+          },
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
+          "released_by": "comment-cleanup-bot",
+          "released_at": "2026-10-20T09:40:08.492Z"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_analysis_impact_diff_ts",
@@ -46453,7 +48107,22 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_infrastructure_analysis_observe_approve_gated_ts",
+          "summary": "【L1 待建构】核心层 · src/infrastructure/analysis/observe — 2 个 API（导入自 4 个模块）（src/infrastructure/analysis/observe/approve_gated.ts） ← 节点 file_src_infrastructure_analysis_observe_approve_gated_ts",
+          "expectations": [],
+          "state": "candidate",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_analysis_observe_approve_gated_ts\"].responsibility"
+          },
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
+          "released_by": "comment-cleanup-bot",
+          "released_at": "2026-10-20T09:40:16.502Z"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_chain_ts",
@@ -46501,7 +48170,22 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_infrastructure_analysis_observe_decl_review_ts",
+          "summary": "【L1 待建构】核心层 · src/infrastructure/analysis/observe — 2 个 API（导入自 4 个模块）（src/infrastructure/analysis/observe/decl_review.ts） ← 节点 file_src_infrastructure_analysis_observe_decl_review_ts",
+          "expectations": [],
+          "state": "candidate",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_analysis_observe_decl_review_ts\"].responsibility"
+          },
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
+          "released_by": "comment-cleanup-bot",
+          "released_at": "2026-10-20T09:40:16.622Z"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_dsl_store_ts",
@@ -46629,7 +48313,22 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_infrastructure_analysis_observe_judge_ts",
+          "summary": "【L1 待建构】核心层 · src/infrastructure/analysis/observe — 5 个 API（导入自 1 个模块）（src/infrastructure/analysis/observe/judge.ts） ← 节点 file_src_infrastructure_analysis_observe_judge_ts",
+          "expectations": [],
+          "state": "candidate",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_analysis_observe_judge_ts\"].responsibility"
+          },
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
+          "released_by": "comment-cleanup-bot",
+          "released_at": "2026-10-20T09:40:16.736Z"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_judge_guard_ts",
@@ -46837,7 +48536,22 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_infrastructure_analysis_observe_verify_gate_ts",
+          "summary": "【L1 待建构】核心层 · src/infrastructure/analysis/observe — 9 个 API（导入自 4 个模块）（src/infrastructure/analysis/observe/verify_gate.ts） ← 节点 file_src_infrastructure_analysis_observe_verify_gate_ts",
+          "expectations": [],
+          "state": "candidate",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_analysis_observe_verify_gate_ts\"].responsibility"
+          },
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
+          "released_by": "comment-cleanup-bot",
+          "released_at": "2026-10-20T09:40:16.851Z"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_analysis_package_migration_core_ts",
@@ -46965,7 +48679,22 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "task": {
+          "id": "file_src_infrastructure_analysis_project_root_index_ts",
+          "summary": "【L1 待建构】入口层 · src/infrastructure/analysis/project_root — 38 个 API（导入自 12 个模块）（src/infrastructure/analysis/project_root/index.ts） ← 节点 file_src_infrastructure_analysis_project_root_index_ts",
+          "expectations": [],
+          "state": "candidate",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_analysis_project_root_index_ts\"].responsibility"
+          },
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
+          "released_by": "comment-cleanup-bot",
+          "released_at": "2026-10-20T09:40:16.968Z"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_analysis_refactor_langs_java_executor_ts",
@@ -47909,7 +49638,22 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_infrastructure_data_dir_ts",
+          "summary": "【L1 待建构】核心层 · src/infrastructure — 0 个 API（导入自 0 个模块）（src/infrastructure/data_dir.ts） ← 节点 file_src_infrastructure_data_dir_ts",
+          "expectations": [],
+          "state": "candidate",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_data_dir_ts\"].responsibility"
+          },
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
+          "released_by": "comment-cleanup-bot",
+          "released_at": "2026-10-20T09:40:18.417Z"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_dictionary_ts",
@@ -47941,7 +49685,22 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_infrastructure_dogfood_coverage_ts",
+          "summary": "【L1 待建构】核心层 · src/infrastructure — 3 个 API（导入自 1 个模块）（src/infrastructure/dogfood_coverage.ts） ← 节点 file_src_infrastructure_dogfood_coverage_ts",
+          "expectations": [],
+          "state": "candidate",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_dogfood_coverage_ts\"].responsibility"
+          },
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
+          "released_by": "comment-cleanup-bot",
+          "released_at": "2026-10-20T09:40:17.082Z"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_dogfood_stats_ts",
@@ -47957,7 +49716,22 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_infrastructure_dogfood_stats_ts",
+          "summary": "【L1 待建构】核心层 · src/infrastructure — 8 个 API（导入自 5 个模块）（src/infrastructure/dogfood_stats.ts） ← 节点 file_src_infrastructure_dogfood_stats_ts",
+          "expectations": [],
+          "state": "candidate",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_dogfood_stats_ts\"].responsibility"
+          },
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
+          "released_by": "comment-cleanup-bot",
+          "released_at": "2026-10-20T09:40:17.202Z"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_exec_guard_ts",
@@ -48065,7 +49839,22 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "data"
+        "arch_layer": "data",
+        "task": {
+          "id": "file_src_infrastructure_index_db_ts",
+          "summary": "【L1 待建构】数据层 · src/infrastructure/index — 12 个 API（导入自 6 个模块）（src/infrastructure/index/db.ts） ← 节点 file_src_infrastructure_index_db_ts",
+          "expectations": [],
+          "state": "candidate",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_index_db_ts\"].responsibility"
+          },
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
+          "released_by": "comment-cleanup-bot",
+          "released_at": "2026-10-20T09:40:17.338Z"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_index_file_facts_ts",
@@ -48081,7 +49870,22 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "entry"
+        "arch_layer": "entry",
+        "task": {
+          "id": "file_src_infrastructure_index_file_facts_ts",
+          "summary": "【L1 待建构】入口层 · src/infrastructure/index — 6 个 API（导入自 3 个模块）（src/infrastructure/index/file_facts.ts） ← 节点 file_src_infrastructure_index_file_facts_ts",
+          "expectations": [],
+          "state": "candidate",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_index_file_facts_ts\"].responsibility"
+          },
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
+          "released_by": "comment-cleanup-bot",
+          "released_at": "2026-10-20T09:40:17.464Z"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_index_function_outline_ts",
@@ -48394,7 +50198,22 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_infrastructure_llm_agnes_ts",
+          "summary": "【L1 待建构】核心层 · src/infrastructure — 7 个 API（导入自 1 个模块）（src/infrastructure/llm_agnes.ts） ← 节点 file_src_infrastructure_llm_agnes_ts",
+          "expectations": [],
+          "state": "candidate",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_llm_agnes_ts\"].responsibility"
+          },
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
+          "released_by": "comment-cleanup-bot",
+          "released_at": "2026-10-20T09:40:17.581Z"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_llm_focus_ts",
@@ -48410,7 +50229,22 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_infrastructure_llm_focus_ts",
+          "summary": "【L1 待建构】核心层 · src/infrastructure — 9 个 API（导入自 7 个模块）（src/infrastructure/llm_focus.ts） ← 节点 file_src_infrastructure_llm_focus_ts",
+          "expectations": [],
+          "state": "candidate",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_llm_focus_ts\"].responsibility"
+          },
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
+          "released_by": "comment-cleanup-bot",
+          "released_at": "2026-10-20T09:40:17.697Z"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_llm_gateway_ts",
@@ -48426,7 +50260,22 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_infrastructure_llm_gateway_ts",
+          "summary": "【L1 待建构】核心层 · src/infrastructure — 27 个 API（导入自 6 个模块）（src/infrastructure/llm_gateway.ts） ← 节点 file_src_infrastructure_llm_gateway_ts",
+          "expectations": [],
+          "state": "candidate",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_llm_gateway_ts\"].responsibility"
+          },
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
+          "released_by": "comment-cleanup-bot",
+          "released_at": "2026-10-20T09:40:17.814Z"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_llm_pool_ts",
@@ -48442,7 +50291,22 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_infrastructure_llm_pool_ts",
+          "summary": "【L1 待建构】核心层 · src/infrastructure — 6 个 API（导入自 0 个模块）（src/infrastructure/llm_pool.ts） ← 节点 file_src_infrastructure_llm_pool_ts",
+          "expectations": [],
+          "state": "candidate",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_llm_pool_ts\"].responsibility"
+          },
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
+          "released_by": "comment-cleanup-bot",
+          "released_at": "2026-10-20T09:40:17.935Z"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_packages_package_pins_ts",
@@ -48538,7 +50402,22 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_infrastructure_parse_comments_ts",
+          "summary": "【L1 待建构】核心层 · src/infrastructure/parse — 2 个 API（导入自 3 个模块）（src/infrastructure/parse/comments.ts） ← 节点 file_src_infrastructure_parse_comments_ts",
+          "expectations": [],
+          "state": "candidate",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_parse_comments_ts\"].responsibility"
+          },
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
+          "released_by": "comment-cleanup-bot",
+          "released_at": "2026-10-20T09:40:18.053Z"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_parse_fuzzy_match_ts",
@@ -49153,7 +51032,22 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_presentation_cli_cli_ts",
+          "summary": "【L1 待建构】核心层 · src/presentation/cli — 4 个 API（导入自 4 个模块）（src/presentation/cli/cli.ts） ← 节点 file_src_presentation_cli_cli_ts",
+          "expectations": [],
+          "state": "candidate",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_presentation_cli_cli_ts\"].responsibility"
+          },
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
+          "released_by": "comment-cleanup-bot",
+          "released_at": "2026-10-20T09:40:18.171Z"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_presentation_cli_diagnose_loop_cli_ts",
@@ -49377,7 +51271,22 @@
           "color": "#ffffff",
           "borderRadius": 4
         },
-        "arch_layer": "core"
+        "arch_layer": "core",
+        "task": {
+          "id": "file_src_presentation_http_serve_ts",
+          "summary": "【L1 待建构】核心层 · src/presentation/http — 50 个 API（导入自 57 个模块）（src/presentation/http/serve.ts） ← 节点 file_src_presentation_http_serve_ts",
+          "expectations": [],
+          "state": "candidate",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_presentation_http_serve_ts\"].responsibility"
+          },
+          "owner": null,
+          "claimed_at": null,
+          "release_reason": "注释清理已落盘（git diff 仅注释行、tsc 绿），卡退回待领",
+          "released_by": "comment-cleanup-bot",
+          "released_at": "2026-10-20T09:40:18.292Z"
+        },
+        "status": "draft"
       },
       {
         "id": "file_src_presentation_mcp_lifecycle_ts",
@@ -78237,7 +80146,8 @@
           }
         ],
         "lines": 1277,
-        "layer": "core"
+        "layer": "core",
+        "status": "draft"
       },
       {
         "id": "file_src_application_design_derive_opl_ts",
@@ -78418,7 +80328,8 @@
           }
         ],
         "lines": 255,
-        "layer": "core"
+        "layer": "core",
+        "status": "draft"
       },
       {
         "id": "file_src_application_design_dsl_ops_edge_ops_ts",
@@ -78517,7 +80428,8 @@
           }
         ],
         "lines": 196,
-        "layer": "core"
+        "layer": "core",
+        "status": "draft"
       },
       {
         "id": "file_src_application_design_dsl_ops_node_ops_ts",
@@ -78773,7 +80685,8 @@
           }
         ],
         "lines": 482,
-        "layer": "core"
+        "layer": "core",
+        "status": "draft"
       },
       {
         "id": "file_src_application_design_dsl_ops_status_tools_ts",
@@ -78930,7 +80843,7 @@
         ],
         "lines": 685,
         "layer": "api",
-        "status": "done"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_design_index_ts",
@@ -78946,7 +80859,8 @@
           }
         ],
         "lines": 866,
-        "layer": "entry"
+        "layer": "entry",
+        "status": "draft"
       },
       {
         "id": "file_src_application_design_intent_consistency_ts",
@@ -79039,7 +80953,8 @@
           }
         ],
         "lines": 1186,
-        "layer": "core"
+        "layer": "core",
+        "status": "draft"
       },
       {
         "id": "file_src_application_design_intent_detect_drift_ts",
@@ -79862,7 +81777,8 @@
           }
         ],
         "lines": 1163,
-        "layer": "core"
+        "layer": "core",
+        "status": "draft"
       },
       {
         "id": "file_src_application_harvest_index_ts",
@@ -79878,7 +81794,8 @@
           }
         ],
         "lines": 153,
-        "layer": "entry"
+        "layer": "entry",
+        "status": "draft"
       },
       {
         "id": "file_src_application_meta_diagnosis_diagnose_loop_ts",
@@ -80024,7 +81941,8 @@
           }
         ],
         "lines": 478,
-        "layer": "core"
+        "layer": "core",
+        "status": "draft"
       },
       {
         "id": "file_src_application_meta_explore_explore_arg_spec_ts",
@@ -80105,7 +82023,8 @@
           }
         ],
         "lines": 593,
-        "layer": "core"
+        "layer": "core",
+        "status": "draft"
       },
       {
         "id": "file_src_application_meta_explore_first_hop_args_ts",
@@ -80279,7 +82198,8 @@
           }
         ],
         "lines": 1366,
-        "layer": "core"
+        "layer": "core",
+        "status": "draft"
       },
       {
         "id": "file_src_application_meta_handlers_ts",
@@ -80355,7 +82275,8 @@
           }
         ],
         "lines": 1356,
-        "layer": "entry"
+        "layer": "entry",
+        "status": "draft"
       },
       {
         "id": "file_src_application_meta_integrity_index_integrity_ts",
@@ -80657,7 +82578,8 @@
           }
         ],
         "lines": 1045,
-        "layer": "core"
+        "layer": "core",
+        "status": "draft"
       },
       {
         "id": "file_src_application_meta_registry_cli_extract_ts",
@@ -80800,7 +82722,8 @@
           }
         ],
         "lines": 163,
-        "layer": "core"
+        "layer": "core",
+        "status": "draft"
       },
       {
         "id": "file_src_application_meta_upgrade_upgrade_ts",
@@ -81382,7 +83305,8 @@
           }
         ],
         "lines": 205,
-        "layer": "core"
+        "layer": "core",
+        "status": "draft"
       },
       {
         "id": "file_src_application_observe_handlers_ts",
@@ -81894,7 +83818,8 @@
           }
         ],
         "lines": 257,
-        "layer": "core"
+        "layer": "core",
+        "status": "draft"
       },
       {
         "id": "file_src_application_refactor_annotate_function_annotation_ts",
@@ -82083,7 +84008,7 @@
         ],
         "lines": 991,
         "layer": "core",
-        "status": "done"
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_refactor_edit_apply_writes_ts",
@@ -83665,7 +85590,8 @@
           }
         ],
         "lines": 683,
-        "layer": "service"
+        "layer": "service",
+        "status": "draft"
       },
       {
         "id": "file_src_domain_canvas_note_ts",
@@ -83767,7 +85693,8 @@
           }
         ],
         "lines": 1054,
-        "layer": "service"
+        "layer": "service",
+        "status": "draft"
       },
       {
         "id": "file_src_domain_contract_ts",
@@ -83869,7 +85796,8 @@
           }
         ],
         "lines": 349,
-        "layer": "service"
+        "layer": "service",
+        "status": "draft"
       },
       {
         "id": "file_src_domain_diff_blocks_ts",
@@ -83964,7 +85892,8 @@
           }
         ],
         "lines": 152,
-        "layer": "service"
+        "layer": "service",
+        "status": "draft"
       },
       {
         "id": "file_src_domain_dsl_removal_ts",
@@ -84320,7 +86249,8 @@
           }
         ],
         "lines": 984,
-        "layer": "service"
+        "layer": "service",
+        "status": "draft"
       },
       {
         "id": "file_src_domain_reasoning_ts",
@@ -84515,7 +86445,8 @@
           }
         ],
         "lines": 317,
-        "layer": "service"
+        "layer": "service",
+        "status": "draft"
       },
       {
         "id": "file_src_domain_simulation_ts",
@@ -84680,7 +86611,8 @@
           }
         ],
         "lines": 535,
-        "layer": "service"
+        "layer": "service",
+        "status": "draft"
       },
       {
         "id": "file_src_domain_task_schema_ts",
@@ -84731,7 +86663,8 @@
           }
         ],
         "lines": 202,
-        "layer": "service"
+        "layer": "service",
+        "status": "draft"
       },
       {
         "id": "file_src_domain_types_ts",
@@ -85136,7 +87069,8 @@
           }
         ],
         "lines": 324,
-        "layer": "service"
+        "layer": "service",
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_analysis_contract_gate_index_ts",
@@ -85325,7 +87259,8 @@
           }
         ],
         "lines": 75,
-        "layer": "core"
+        "layer": "core",
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_analysis_contract_gate_parts_ts",
@@ -86118,7 +88053,8 @@
           }
         ],
         "lines": 1310,
-        "layer": "entry"
+        "layer": "entry",
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_analysis_impact_diff_ts",
@@ -86366,7 +88302,8 @@
           }
         ],
         "lines": 127,
-        "layer": "core"
+        "layer": "core",
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_chain_ts",
@@ -86491,7 +88428,8 @@
           }
         ],
         "lines": 118,
-        "layer": "core"
+        "layer": "core",
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_dsl_store_ts",
@@ -87002,7 +88940,8 @@
           }
         ],
         "lines": 249,
-        "layer": "core"
+        "layer": "core",
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_analysis_observe_judge_guard_ts",
@@ -87591,7 +89530,8 @@
           }
         ],
         "lines": 281,
-        "layer": "core"
+        "layer": "core",
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_analysis_package_migration_core_ts",
@@ -87857,7 +89797,8 @@
           }
         ],
         "lines": 1279,
-        "layer": "entry"
+        "layer": "entry",
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_analysis_refactor_langs_java_executor_ts",
@@ -90328,7 +92269,8 @@
           }
         ],
         "lines": 65,
-        "layer": "core"
+        "layer": "core",
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_dictionary_ts",
@@ -90395,7 +92337,8 @@
           }
         ],
         "lines": 157,
-        "layer": "core"
+        "layer": "core",
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_dogfood_stats_ts",
@@ -90446,7 +92389,8 @@
           }
         ],
         "lines": 210,
-        "layer": "core"
+        "layer": "core",
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_exec_guard_ts",
@@ -90739,7 +92683,8 @@
           }
         ],
         "lines": 251,
-        "layer": "data"
+        "layer": "data",
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_index_file_facts_ts",
@@ -90762,7 +92707,8 @@
           }
         ],
         "lines": 203,
-        "layer": "entry"
+        "layer": "entry",
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_index_function_outline_ts",
@@ -91347,7 +93293,8 @@
           }
         ],
         "lines": 120,
-        "layer": "core"
+        "layer": "core",
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_llm_focus_ts",
@@ -91419,7 +93366,8 @@
           }
         ],
         "lines": 368,
-        "layer": "core"
+        "layer": "core",
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_llm_gateway_ts",
@@ -91519,7 +93467,8 @@
           }
         ],
         "lines": 632,
-        "layer": "core"
+        "layer": "core",
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_llm_pool_ts",
@@ -91535,7 +93484,8 @@
           }
         ],
         "lines": 66,
-        "layer": "core"
+        "layer": "core",
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_packages_package_pins_ts",
@@ -91755,7 +93705,8 @@
           }
         ],
         "lines": 98,
-        "layer": "core"
+        "layer": "core",
+        "status": "draft"
       },
       {
         "id": "file_src_infrastructure_parse_fuzzy_match_ts",
@@ -93179,7 +95130,8 @@
           }
         ],
         "lines": 297,
-        "layer": "core"
+        "layer": "core",
+        "status": "draft"
       },
       {
         "id": "file_src_presentation_cli_diagnose_loop_cli_ts",
@@ -93795,7 +95747,8 @@
           }
         ],
         "lines": 3360,
-        "layer": "core"
+        "layer": "core",
+        "status": "draft"
       },
       {
         "id": "file_src_presentation_mcp_lifecycle_ts",
@@ -96554,11 +98507,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-20T08:27:11.184Z",
+    "saved_at": "2026-10-20T09:40:18.461Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792484732690,
-    "age": 98494
+    "scanRev": 1792489134507,
+    "age": 83954
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
@@ -98521,7 +100474,28 @@
       "expectations": [],
       "state": "candidate",
       "owner": null
+    },
+    {
+      "id": "todo_清注释里的用户原话-102-处-55-个文件-src-下注释写着-用户说-用户原",
+      "summary": "【清注释里的用户原话】102 处 / 55 个文件（src/ 下注释写着「用户说…」「用户原话…」「用户裁定…」）。★ 用户 2026-10-20 明确：「我希望把这些『用户说什么』也从注释里去掉，你仅表达它的功能等这些东西就够了，你老追溯我说了什么干嘛，我说什么只是我对你的，又不是我对程序说的」。★ 做法：把「用户说 XXX」改成「规则：XXX」或直接删掉引用，只留功能/约束本身。★ 不许改代码行为，只改注释。★ 验收：grep 该模式 = 0；tsc 绿；verify 6 门全过。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_重写-agents-md-37kb-src-presentation-的-age",
+      "summary": "【重写 AGENTS.md（37KB）】src/presentation 的 AGENTS.md 是「为 AI agent 编写」的约定，37KB，是最可能诱导 agent 的文件。★ 它部分由 scripts/gen_agents.mjs 从 TRIGGER_ROWS 生成 ⇒ 要改生成源，不许只手改产物。★ 目标：只留现状（开发动作 → 必用工具 的表），删掉所有历史/原话/理由。★ 格式照 docs/INDEX.md。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
+    },
+    {
+      "id": "todo_readme-与-contributing-校准-readme-md-readm",
+      "summary": "【README 与 CONTRIBUTING 校准】README.md / README.en.md / CONTRIBUTING.md 未核对（可能有过期命令与路径）。★ 只校准事实，不重写风格。★ 验收：文中每条命令都能跑通（或标 deprecated）。",
+      "expectations": [],
+      "state": "candidate",
+      "owner": null
     }
   ],
-  "_dsl_rev": 679
+  "_dsl_rev": 681
 }

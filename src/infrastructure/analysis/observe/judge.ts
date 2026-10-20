@@ -199,7 +199,7 @@ export function impactUnplannedSpread(ev: TSEvent, ctx?: ObserveRuleCtx): JudgeV
 //   两处各自维护、各自注册，同一条 `design:silent-error-discard` 还各有一份**字面量重复的谓词**。
 //   ⇒ 本表是唯一的注册点；`TSComparator` 与 `judgeEvent` 都从这里取。
 //
-// ★ 收拢时**采纳 TS 侧的行为**（2026-10-05 用户裁定「留 TS」）：本次只把 TS 两份拷贝里
+// ★ 收拢时**采纳 TS 侧的行为**（2026-10-05 定「留 TS」）：本次只把 TS 两份拷贝里
 //   `benign` 严格性的漂移统一为 Go 的严格 `=== true`，**不动另外两处已裁定的语义分叉**
 //   （TS 跳过链路声明 / 链路探针算已覆盖）—— 那是 P3 的范围。
 

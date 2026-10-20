@@ -43,7 +43,7 @@ import {
 } from '../../index/symbols.js';
 
 /** 本地源扩展名（闭包只收这些）—— ★ 来自内核唯一权威 `SOURCE_EXTS`（`ts_kernel/source_exts.ts`）。
- *  此前就地手写并与 rename_symbol/rename_file 的清单"对齐"——靠人记得对齐 ⇒ **没有登记表**（G4 已于 2026-10-03 有意删除，用户裁定不要免疫系统）—— 该收敛靠人当场看。 */
+ *  此前就地手写并与 rename_symbol/rename_file 的清单"对齐"——靠人记得对齐 ⇒ **没有登记表**（G4 已于 2026-10-03 有意删除，不要免疫系统）—— 该收敛靠人当场看。 */
 const SRC_EXTS = new Set<string>(SOURCE_EXTS);
 
 /** 跳过的目录名（闭包扫描绝不进入） */

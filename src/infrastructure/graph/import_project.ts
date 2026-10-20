@@ -53,7 +53,7 @@ export interface ImportProjectInput {
   /**
    * ★★★ **是否把「文档」也收成 DSL 节点**（`type: 'doc'`，默认 false）—— 2026-10-09（T88）。
    *
-   * ## 为什么需要（用户点破）
+   * ## 为什么需要
    * 现实链条是「**把项目文档翻译成设计 DSL，然后才能对拍**」——
    * 而在此之前 **DSL 里 `docs/` 节点 = 0**（实测）⇒ `harvest_decisions` 采到的候选**无处可挂**
    * （它的出处就是 `docs/xxx.md:行号`）⇒ **采完就断**。
@@ -84,9 +84,9 @@ export interface ImportProjectInput {
    */
   live_only?: boolean;
   /**
-   * ★★★ 可选（T77，2026-10-09 用户裁定"翻"）：**显式要求重建设计 DSL**。
+   * ★★★ 可选（T77，2026-10-09 起）：**显式要求重建设计 DSL**。
    *
-   * ## 默认规则（只有一条，用户原话：*"有的话就不用动了，就只需要对比就可以。"*）
+   * ## 默认规则（只有一条：**有的话就不用动，只对比**）
    *   · **设计不存在** ⇒ 默认**建**（从实际 fork 一份；没东西可丢，不算破坏）；
    *   · **设计已存在** ⇒ 默认**只刷新"实际"，完全不碰设计**。
    *   ⇒ **默认永不破坏**，用户不必记任何开关；要重写设计时才显式 `rebuild_design=true`。
@@ -733,8 +733,8 @@ function parsedKindToSymbolKind(kind: string): Symbol['kind'] {
 }
 
 export async function importProject(input: ImportProjectInput): Promise<ImportProjectResult> {
-  // ★★★ 2026-10-19（用户："max_files 直接删掉吧 —— 我们不是有懒加载吗"）：
-  //   **默认不再截断**。理由（用户原话归纳）：
+  // ★★★ 2026-10-19：**默认不再截断**（已有懒加载，不需要一刀切上限）。
+  //   理由：
   //   ① 增量架构里"多一个就加一个"—— watch_project 只处理变更的文件，index_backfill 分小批续建
   //   ② "保鲜只保鲜局部变动"，所以"一次全量"只在首次发生（本项目 558 文件 ≈ 23s，一次性）
   //   ③ ★ 而"截断 200"的代价是：**索引永远缺一半，而缺的那一半只记一条 skipped、没人知道缺**
@@ -1044,8 +1044,8 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       }
     }
 
-    // ★★★ 2026-10-09（T77，用户裁定"翻"）：**默认永不破坏** ——
-    //   规则只有一条，对应用户原话：*"有的话就不用动了，就只需要对比就可以。"*
+    // ★★★ 2026-10-09（T77）：**默认永不破坏** ——
+    //   规则只有一条：**设计已存在就不动它，只对比**。
     //     · **设计不存在** ⇒ 默认**建**（= 从实际 fork 一份；**没东西可丢**，所以不算破坏）；
     //     · **设计已存在** ⇒ 默认**只刷新"实际"，完全不碰设计**（要重建必须显式 `rebuild_design=true`）。
     //   ⇒ 于是**用户不必记任何开关**：默认永远安全；想重写设计时才显式一次。
@@ -1165,8 +1165,8 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
     // diff_views 三方对比据此裁决冲突。ensureBaseline 只在基线缺失时写入，绝不漂移。
     ensureBaseline(layered, input.live_dir);
     // ★★★ 2026-10-09（T85/D2）：**同时锚定「基线事实」—— 对拍的第二份产物**。
-    //   用户原话：*"这两个产物没有分开是吗？那要赶紧分开啊……怎么可能对拍还放在同一个里面？
-    //   **那这算什么对拍？自己测自己吗？**"*
+    //   规则：**对拍的「期望侧」与「被比的事实」必须是两份分开的产物** ——
+    //   混在同一个里面就是"自己测自己"。
     //   ⇒ 在此之前只有**一份**（`<feature>.json` 的 `expected_apis`，fork 时从事实复制过去），
     //     而对账拿它当"期望侧" ⇒ **自己跟自己比**。
     //   ★ 本步落的这份**独立取**（`fileFacts` = 索引器的事实，**不读 DSL**），时刻 = fork 那一刻

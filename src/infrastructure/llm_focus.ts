@@ -63,7 +63,7 @@ export function configFileReadPath(): string {
 // ─────────────────────────────────────────────────────────────
 // ★ 2026-10-10：此段原住本文件；为消除 `llm_focus ↔ llm_gateway` 的循环依赖（会话线 callChat 出网要经网关，
 //   而网关读 AGNES 配置）已抽到 `llm_agnes.ts`。这里改为 import，语义与归一化口径不变。
-// ★★ 2026-10-11（用户裁定）：**关键的家从 env 改成 gateway** —— AGNES 的 key 由 env **一次性导入** `gateway.json`
+// ★★ 2026-10-11：**key 的家从 env 改成 gateway** —— AGNES 的 key 由 env **一次性导入** `gateway.json`
 //   （`ensureSeededFromEnv`），此后 key 一律从 gateway 读（`firstUsableProvider`）。
 //   ⇒ 本文件**不再调用 `resolveAgnesKeys()` 从 env 取 key**；env 只在"导入那一刻"被读。
 //   ★ 编排上：先 `ensureSeededFromEnv()`（若是"要用 LLM"的入口）⇒ 再 `firstUsableProvider()`（只读 gateway）。
@@ -88,7 +88,7 @@ export interface AgentConfig {
  *   2) config.json 的 agent.mmd 段（{ "agent": { "mmd": {...} } }）
  * 无 key 返回 null（此时管理 Agent 走规则降级）。
  * 说明：Agent 默认后端固定为 AGNES，与科普讲解（DeepSeek）解耦。
- * ★★ 2026-10-11（用户裁定）：**key 的家 = gateway**；env 降级为**导入源**（旧配置一次性迁入）。
+ * ★★ 2026-10-11：**key 的家 = gateway**；env 降级为**导入源**（旧配置一次性迁入）。
  *   本函数**不再从 env 取 key**（旧版 `resolveAgnesKeys()`）—— 那是上一个"呆板住处"。
  */
 export function loadAgentConfig(): AgentConfig | null {
@@ -181,7 +181,7 @@ export function loadExplainConfig(): ExplainConfig | null {
   if (process.env.DEEPSEEK_BASE_URL) dsEnv.baseURL = process.env.DEEPSEEK_BASE_URL;
   if (process.env.DEEPSEEK_MODEL) dsEnv.model = process.env.DEEPSEEK_MODEL;
 
-  // ★ 2026-10-11（用户裁定）：末位兼容后端由 env 改为**网关**（key 的家 = gateway；env 只在导入那一刻被读）。
+  // ★ 2026-10-11：末位兼容后端由 env 改为**网关**（key 的家 = gateway；env 只在导入那一刻被读）。
   //   下面第 3) 步才真正用到它 —— 故种入也放到那一步，避免"明明用 DeepSeek 却也写一份 agnes"。
 
   let fileCfg: Partial<ExplainConfig> = {};

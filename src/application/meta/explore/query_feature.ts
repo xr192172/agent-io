@@ -995,7 +995,7 @@ export function queryFeature(input: QueryFeatureInput): QueryFeatureResult {
           s.push(`生命周期=${f.lifecycle.status}${f.lifecycle.merged_into ? `→${f.lifecycle.merged_into}` : ''}`);
         }
         // ★★★ 2026-10-09（T89，用户提案）：**S 里也要有「决策卡」** —— 那才是**人写的设计意图**。
-        //   ★ 用户原话：*"哪怕是**实际 DSL** 也能**一眼看出来**其上面标注的一些**设计意图**什么的。"*
+        //   ★ 规则：哪怕是**实际 DSL**，也要能**一眼看出来**它上面标注的**设计意图**。
         //   ⇒ 决策卡住在 **`geometry.nodes[].decision`**（`semantic.files` 上没有）⇒ 从这里取。
         //   ★ **同一份渲染、实际 DSL 也成立**：决策卡由 `applyOverlay` 回填进 base ⇒
         //     不管这份是"设计"还是"实际"，**挂上去的意图都会显示** ✓

@@ -9,9 +9,8 @@
  *
  * 配置持久化：<dataHome>/.agent-io/gateway.json —— ★★★ **Key 的唯一住处**（支持池 / 多 key / 多供应商）。
  *
- * ★★★ 2026-10-11（用户裁定）：**key 的家 = gateway，不是 env**。用户原话：「env 里面不放 key，
- *   Gateway 里面放 key 呗，只留那一处…… env 的管理不智能，我们的 Gateway 可以去配池，可以配多条 Key，
- *   可以配多种供应商，但是 env 的话用起来比较呆板。」
+ * ★★★ 2026-10-11：**key 的家 = gateway，不是 env**。规则：key **只留那一处** ——
+ *   Gateway 能配池、能配多条 Key、能配多种供应商；env 的管理不智能（一个上游一把 key，很呆板）。
  *   ⇒ **env 降级为「导入源」**：旧配置（AGNES_*）在其中，**只在种入那一刻被读一次**，之后不再是住处。
  *
  * ★★ 与上一版（`ae17068`）的关系：上一版理由是「env 才是唯一住处 ⇒ 别把 env 抄进 gateway」，方向与上述裁定相反；
@@ -122,14 +121,14 @@ function saveGatewayConfig(cfg: GatewayConfig): void {
 /**
  * ★★★ 从环境变量**导入**的 AGNES 供应商（**全仓唯一的「读 env 取 key」点**，只在 {@link ensureSeededFromEnv} 里被调用）。
  *
- * ## 为什么 env 现在是「导入源」而不是「住处」（2026-10-11 用户裁定）
- * 用户裁定：**key 的家 = `gateway.json`**（能配池 / 多 key / 多供应商）；env（`llm_agnes.ts`）是**呆板的旧住处**，
+ * ## 为什么 env 现在是「导入源」而不是「住处」（2026-10-11）
+ * 规则：**key 的家 = `gateway.json`**（能配池 / 多 key / 多供应商）；env（`llm_agnes.ts`）是**呆板的旧住处**，
  * 降级为**一次性导入源**。⇒ 这里把 env 的 AGNES 配置**转成一条 provider**，交给 `ensureSeededFromEnv` 落进
  * `gateway.json`；**此后所有取 key 都走 `gateway.json`**，不再回到 env。
  *
  * ## 与上一版（`ae17068`）的差别
  * 上一版把这里改成 `envDerivedProvider()` 并在**只读路径按需内存派生**，理由是「env 是唯一住处」——该理由
- * 已被用户裁定推翻。本版保留"**取数点唯一**"（`effectiveProviders`）这一成果，但把它的**数据源换成 gateway**。
+ * 已被 2026-10-11 的口径推翻。本版保留"**取数点唯一**"（`effectiveProviders`）这一成果，但把它的**数据源换成 gateway**。
  *
  * ★ env 无 key ⇒ 返回 `null`（区分"没有"与"有但空"）。
  */
@@ -511,7 +510,7 @@ async function callProvider(
  * 走网关调用 LLM（**全仓唯一出网点**）：加权轮询选供应商 → 池内 round-robin 选 key →
  * 失败自动切下一个 key/供应商。每次调用都记录用量（token/费用/延迟/错误）到 gateway.stats.json。
  *
- * 轮转口径（用户裁定）：池是**跨调用**前进的 —— 第 1 把断了，**下一次从第 2 把开始**；
+ * 轮转口径：池是**跨调用**前进的 —— 第 1 把断了，**下一次从第 2 把开始**；
  * 第 2 把断了从第 3 把开始；**转完一圈才回第 1 把**。调用方**只传 messages**，不碰上游 / key / 池。
  */
 export async function chatViaGateway(

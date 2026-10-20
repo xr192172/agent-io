@@ -1,9 +1,9 @@
 /**
  * llm_agnes —— AGNES 的**环境变量解析器**（叶子模块，不依赖同层其他 LLM 模块）。
  *
- * ★★★ 2026-10-11（用户裁定）：**key 的家 = gateway（`llm_gateway.ts` 的 `gateway.json`），不是 env。**
- *   用户原话：「env 里面不放 key，Gateway 里面放 key 呗，只留那一处…… env 的管理不智能，我们的 Gateway
- *   可以去配池，可以配多条 Key，可以配多种供应商，但是 env 的话用起来比较呆板。」
+ * ★★★ 2026-10-11：**key 的家 = gateway（`llm_gateway.ts` 的 `gateway.json`），不是 env。**
+ *   规则：key **只留一处** —— Gateway 能配池、能配多条 Key、能配多种供应商，
+ *   而 env 只能一个上游一把 key，很呆板。
  *   ⇒ 本模块的角色**降级为「env 导入源」**：它仍解析 AGNES 环境变量，但**只在"种入/导入"那一刻被读一次**
  *     （`llm_gateway.ensureSeededFromEnv`）—— 之后 key 一律从 `gateway.json` 读，env 不再是住处。
  *   ★ 故本文件中「AGNES 配置的唯一住处」那句话**只对"env 这一侧"成立**（变量名唯一），**不再指 key 的住处**。
@@ -61,7 +61,7 @@ export const AGNES_ENV = {
  * ★ **变量名从 {@link AGNES_ENV} 取**（唯一住处），**本函数不手抄任何变量名清单** ——
  *   否则 T108 刚收拢的"上游/key/模型唯一住处"会立刻在这里重新分叉。
  * ★ 纯字符串拼装、无副作用（可被任何提示 / 回执复用）。
- * ★★ 2026-10-11（用户裁定）：**key 的家 = 网关**（可配池 / 多 key / 多供应商）；env 只是**导入源**。
+ * ★★ 2026-10-11：**key 的家 = 网关**（可配池 / 多 key / 多供应商）；env 只是**导入源**。
  *   ⇒ 提示**首选** gateway 工具（`gateway_provider`），env 作为"一次性迁入"的旧路径说明。
  */
 export function describeAgnesConfigHint(): string {
@@ -112,7 +112,7 @@ export function resolveAgnesModel(): string {
 
 /**
  * 解析 key 池。优先级：`AGNES_KEY_POOL`（逗号分隔多把）→ `AGNES_API_KEY`（单把）。复用共享的 `loadKeys`。
- * ★★ 2026-10-11（用户裁定）：本函数是**env 侧的导入源读取器** —— 全仓**只有** `llm_gateway.ensureSeededFromEnv`
+ * ★★ 2026-10-11：本函数是**env 侧的导入源读取器** —— 全仓**只有** `llm_gateway.ensureSeededFromEnv`
  *   在"种入那一刻"调用它。key 的家 = `gateway.json`；调用方（llm_focus 等）不再用本函数取 key。
  */
 export function resolveAgnesKeys(): string[] {
