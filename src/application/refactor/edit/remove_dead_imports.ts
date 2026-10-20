@@ -654,6 +654,20 @@ export function removeDeadImportsWithVerify(opts: RemoveDeadImportsVerifyOptions
 
   const run = opts.verifyImpl ?? runVerification;
   const c = computeChanges(opts);
+  const files = [...c.absToNew.keys()];
+
+  // ★★★ 2026-10-20（P0）：**闸 / 快照 / 登记必须在任何 `writeFileSync` 之前**。
+  //   改前实测（labs 夹具）：`applyWithVerify` 先落盘、`snapshotAndRecordSelfWrite` 后置 ⇒
+  //   闸抛「拒绝落盘（A7「谁在写」）」时**磁盘已改、快照 0 份、自写 0 条**（拒了但写了）。
+  //   ⇒ 顺序改成：`闸+快照+登记` → `写 / 验 / 回滚` → `写穿`。判据仍只住
+  //     `snapshotAndRecordSelfWrite` 内部那一处 `assertSourceWriteRegistered`（本层不自判第二次）。
+  //   ★ 与「写后再验」不冲突：闸是**权限**判定（与盘态无关），验证闭环仍是「写了再验、回归即回滚」。
+  //   ★ 顺带修好快照时点：旧顺序拍的是**写后**（或回滚后）的盘态，现在才是真的「写前」。
+  const idxPre = snapshotAndRecordSelfWrite(cwd, files, {
+    label: 'remove_dead_imports: 验证闭环',
+    // ★★★ 2026-10-20（A7 闭合）：验证闭环这条同样要报身份（它也是真落盘）。
+    actor: opts.actor,
+  });
 
   const ver = applyWithVerify({
     cwd,
@@ -669,16 +683,9 @@ export function removeDeadImportsWithVerify(opts: RemoveDeadImportsVerifyOptions
     },
   });
 
-  // ★ 索引一致性放在 `applyWithVerify` **之后**：此时盘态才是最终态（回滚过就是原样）。
-  //   本路径同样是同步签名 ⇒ 写前快照 + 自写登记（L1b 兜底）；⑤ 同步写穿（2026-09-15）：
-  //   解析器已预热则当场直连 L1a，优先取同步结果（`syncFile` 按内容 hash 判定，
-  //   "写完又回滚回原样"自然落成 skipped，不会假报改动）。
-  const idxPre = snapshotAndRecordSelfWrite(cwd, [...c.absToNew.keys()], {
-    label: 'remove_dead_imports: 验证闭环',
-    // ★★★ 2026-10-20（A7 闭合）：验证闭环这条同样要报身份（它也是真落盘）。
-    actor: opts.actor,
-  });
-  const idxSync = syncSelfWritesSync(cwd, [...c.absToNew.keys()]);
+  // ⑤ 同步写穿（2026-09-15）：写完再试 `syncSelfWritesSync` —— 解析器已预热则当场直连 L1a，
+  //   优先取同步结果（`syncFile` 按内容 hash 判定，"写完又回滚回原样"自然落成 skipped，不会假报改动）。
+  const idxSync = syncSelfWritesSync(cwd, files);
   const idx = idxSync ?? idxPre;
 
   if (ver.outcome === 'baseline_fail') {

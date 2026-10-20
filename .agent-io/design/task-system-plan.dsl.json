@@ -19109,9 +19109,9 @@
             }
           ],
           "reopened_at": "2026-10-20T11:16:04.268Z",
-          "release_reason": "子代理完成，释放",
-          "released_by": "workbuddy",
-          "released_at": "2026-10-20T11:31:04.332Z"
+          "release_reason": "P0 修完（闸前移 + 四条验收通过），释放",
+          "released_by": "codebuddy",
+          "released_at": "2026-10-20T13:09:15.782Z"
         },
         "status": "draft"
       },
@@ -98769,11 +98769,11 @@
     }
   ],
   "_sync": {
-    "saved_at": "2026-10-20T11:31:22.397Z",
+    "saved_at": "2026-10-20T13:09:15.809Z",
     "source": "design_sheet",
     "feature": "task-system-plan",
-    "scanRev": 1792495740842,
-    "age": 141555
+    "scanRev": 1792501319151,
+    "age": 436658
   },
   "_forked_from": {
     "source": ".agent-io/live/task-system-plan.dsl.json",
